@@ -1,0 +1,129 @@
+Thu Jul  8 00:03:32 EDT 1993
+  Tweak to example driver nl2nlc.c:
+153c153
+<	C0 = (real *)Malloc(N*sizeof(real));
+---
+>	C0 = (real *)Malloc(P*sizeof(real));
+
+Fri Jul  9 02:52:17 EDT 1993
+  Adjust nlc.c (and ../edagread.c) to fix a bug in handling common
+expressions used only in a single constraint or objective.
+
+Thu Sep  2 11:09:45 EDT 1993
+  nlc.c: fix bug in handling OPCPOW (constant raised to a power) and
+in subscripts for purely linear variables when -d is not specified.
+
+Thu Nov 18 08:43:30 EST 1993
+  README: comments about ftp updated.
+
+Fri Feb 11 15:38:32 EST 1994
+  Omit test for zero when dividing by a constant.
+
+Tue Apr  5 16:45:38 EDT 1994
+  Add #ifdef KR_headers stuff (for K&R compilers: use -DKR_headers).
+
+Tue Apr 12 09:58:24 EDT 1994
+  New flag -i ==> do not differentiate w.r.t. integer variables.
+
+Sat Sep 10 22:28:03 EDT 1994
+  Update cops.c and *.hd to reflect changes in ampl/solvers/*.
+
+Tue Jan 16 11:54:25 EST 1996
+  Fix bug that could cause the dv array to be declared too small.
+  Omit xcheck routine when it does nothing useful.
+
+Mon Apr 21 22:47:04 EDT 1997
+  Update for revised amplsolver.a and "Hooking Your Solver to AMPL".
+
+Thu Feb  3 23:04:44 EST 2000
+  makefile renamed makefile.u; makefile.vc adjusted reflecting changes
+to ../makefile.vc.
+
+Thu Apr 27 19:16:45 EDT 2000
+  Move opcode.hd to .. (ampl/solvers directory).
+
+Tue Sep 12 15:57:20 EDT 2000
+  ch3.nl:  update to reflect changes to AMPL starting in version
+20000128 that cause the first constraint of this example to be (which
+involves only linear defined variables) to be rendered as an explicitly
+linear constraint and ordered as such.  Sample output files updated
+accordingly.
+
+Tue Feb  6 18:39:13 EST 2001
+  nlc.c: emit auxcom_[], currently with just one element, the number
+of nonlinear constraints.  Under -f, this becomes common /auxcom/ nlc.
+
+Tue Feb 13 23:08:12 EST 2001
+  cops.c: fix bug (leading to invalid C or Fortran) in handling abs().
+
+Wed Feb 14 11:41:52 EST 2001
+  cops.c: fix bug (leading to invalid C or Fortran) under -1 or -3 with
+min(...) and max(...).
+
+Wed Feb 14 23:08:44 EST 2001
+  nlc.c: when generating funelb or funnelb, add x as a param (in case
+it's referenced).
+
+Fri Mar  2 12:52:33 EST 2001
+  nlc.c: add two more command line options (-4 and -5); invoke "nlc -?"
+for details.
+
+Thu Mar  8 15:59:12 EST 2001
+  nlc.c: fix glitch with "nlc -f -1", "nlc -f -3", and "nlc -f -5":
+supply a missing "return" needed when multiple objectives are present.
+
+Mon Mar 12 18:23:13 EST 2001
+  nlc.c:  fix gradient bug that only bit with multiple objectives, and
+(under -f) fix glitch in formatting computed gotos with many targets.
+
+Tue Mar 20 17:33:32 EST 2001
+  nlc.c, cops.c:  fix glitches with max(...) involving defined
+variables and, under -f, with case numbering, both for max(...)
+and for multiple objectives.  Under -f, adjust colrow so it accords
+with funcom_ without -f:  the (new) first nobj entries indicate
+whether the corresponding objective is to be minimized (0) or
+maximized (1).  Fix a bug in computing derivatives of defined variables
+used in several objectives or constraints.  An example where this
+bug bit (with wrong partials w.r.t y) is:
+	var x := .1; var y := -.1;
+	var p = 100*(y - x^2)^2 + (1 - y)^2;
+	var q = x*(x + 1);
+	minimize ox: max(p,q); minimize op: p;
+
+Mon Apr  9 19:20:47 EDT 2001
+  nlc.c:  fix a glitch (missing newline under -f, missing ";" otherwise)
+that could cause "integer cond(350)	double precision t1" or
+"static int cond[350]	double t1" to appear.
+  nlc.c, cops.c:  fix a bug that could cause out-of-range subscripts
+with if-then-else expressions  whose "then" and "else" expressions
+were both constant.  Example (of a bad use of if-then-else):
+	var x{1..2};
+	s.t. foo{i in 1..2}:
+		(if x[i] >= 3 && x[i] <= 4 || x[i] >= 7 && x[i] <= 8
+		then 0 else 1) == 0;
+  nlc.c:  omit some empty "then" and "else" blocks, and perhaps fix a
+derivative-computation bug with "else" blocks (though a simple example
+seems hard to find).
+
+Wed Aug  7 18:33:10 EDT 2002
+  nlc.c: fix bug in Jacobian computations under -d:  some J subscripts
+for nonconstant partials were not adjusted for -d (case STOR_JAC).
+
+Thu Mar  4 01:01:48 MST 2004
+  Update c_op.hd, opcode.hd, r_ops1.hd to accord with solver-interface libarary
+changes of 4 Feb. 2003.
+  nl2nlc.c: add Stderr_init_ASL() call (normally done by ASL_alloc()) so
+references to Stderr do not fault under Linux.
+
+Wed Mar 24 00:33:25 MST 2004
+  nlc.c: emit declarations for auxiliary routines defined in nlcmisc.c;
+ch3.c (sample output) updated accordingly.  (Some compilers complain when
+such declarations are missing.)
+
+Sun Jul 18 22:55:22 MDT 2004
+  nlc.c: fix a bug revealed in a complicated example.
+
+Tue May 26 22:51:09 MDT 2009
+  nlc.c: fix a glitch (missing & on 2nd arg) in calls on
+the C version of domain_(...), which may be called when
+expressions involve atanh() and derivatives of sqrt().

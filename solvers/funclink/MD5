@@ -1,0 +1,96 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-bl master Wed Mar 16 10:35:06 EST 2005
+# http://cm.bell-labs.com/netlib/crc/netlib-bl.html
+CEbtOo7mF2YV1Qqf8bpYaA	00lastchange
+vzzkq9l/mcYFAUrogTyL8Q	README
+/DWQmhDEBx8hrZ1cINc/Vw	amplfunc.def
+uQoQ1Lkqco0kTpuhFamRoQ	amplfunc.lnk
+9iAbHzHNsdgIMhbN6deA+A	changes
+gNbW4/va0e3Hh0RBb1R9Nw	funcadd.c
+KLC9uIadATP1Lvu4aplERg	funcadd0.c
+eXLhS4rPZaSWIxMTEADLSg	funcaddk.c
+NSUcH3OmGz/JLMiSRn6/lQ	funcout.exp
+HbPxBLe4WxyBBtNnxSadwg	htest.out
+nebVlaPuBoKoLJ0gjlhruQ	htest.x
+3Uoen0s9xkDB8oNIBqTjpQ	index
+0JvOPL+nnuFWkUi3D79/6g	libmain.c
+WWgG8PKHFnYV2P/xmF6dmA	makefile.alpha
+Va0DrbYdOSXtNt3zfgG8BQ	makefile.cygwin
+5lh2JyBYG5VPVFveWhnXUA	makefile.freebsd
+4ZWprUCdOe0HknGG9W6Urg	makefile.hp
+ZGwcRxo1SQudAxPF7mDRFA	makefile.i386solaris
+wwO88nOZ0oUPbhgSvsqixA	makefile.krsolaris
+JwsGxoINUlsLH5iPXkpNDg	makefile.linux
+Krey35B73o0ygVt1KPBe5g	makefile.macosx
+a4dgyvnE2Vuy5sMx2DpwBA	makefile.rs6k
+dKQv3w1MX/M6kf8q3lMOXw	makefile.sgi
+y5E1T35vqcR3DU0rzKC7VA	makefile.solaris
+qfI/XEXkJB8B12DwyWKTRg	makefile.sunos
+LhWAJTSrHs6gSEnxfx151A	makefile.vc
+cqX8/9nMqz9egbQwnYbGVg	makefile.wat
+8CSmpQ85OFoJ25yzHPSjNg	outargex.c
+ooNRnRXN4fWKvKcXZ65kVQ	outargex.run
+w0lHM+a1+xEmWdZdjvcorA	silly.2
+tzbZge2+XaxunwCDq7m9nA	silly.out
+42AjPFP6/tps5XvNjc7a7g	silly.x
+32lhz5P/xYtdEo6Cflsbzg	xsum0.out
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBQjhSLL5pvxO9gjtZAQEmmAP8Cnz7p8Ioi4krjpFFWZ7Ft1LeAxWLxoee
+Lwo5Q8o/WdxCmOhekVbLzHVHnZJS9quOONys7jFg5bEj7b8bKMGR41ab1FiqgaZS
+csYfmVoPGIzRWUibvyUkAL/DnUj6GlOAq0g4ORp2lZgqsSQENOtwJNrJ4UaMpXFT
+0fMl8FFeUuA=
+=w5KC
+-----END PGP SIGNATURE-----
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-utk master Thu Aug 11 03:10:29 EDT 2011
+LUqc2gHUXV54309R10RaKA	00lastchange
+gAim3/MhrUp7rJdLaD8LzQ	README
+/DWQmhDEBx8hrZ1cINc/Vw	amplfunc.def
+uQoQ1Lkqco0kTpuhFamRoQ	amplfunc.lnk
+urv0HpQ+RlopVvDLnJ7BlQ	changes
+gNbW4/va0e3Hh0RBb1R9Nw	funcadd.c
+6j8zF8jQyRW+/HZtE+S8Uw	funcadd0.c
+eXLhS4rPZaSWIxMTEADLSg	funcaddk.c
+NSUcH3OmGz/JLMiSRn6/lQ	funcout.exp
+HbPxBLe4WxyBBtNnxSadwg	htest.out
+nebVlaPuBoKoLJ0gjlhruQ	htest.x
+gXFfe1LlnFvLQ0348EqtWg	index
+P2T42oH1MHOw4lQKmDw8YQ	index.html
+0JvOPL+nnuFWkUi3D79/6g	libmain.c
+WWgG8PKHFnYV2P/xmF6dmA	makefile.alpha
+whNIYbcw8k3jCQZwrzePrA	makefile.cygwin
+5lh2JyBYG5VPVFveWhnXUA	makefile.freebsd
+4ZWprUCdOe0HknGG9W6Urg	makefile.hp
+ZGwcRxo1SQudAxPF7mDRFA	makefile.i386solaris
+wwO88nOZ0oUPbhgSvsqixA	makefile.krsolaris
+uD3b3wqurlYz2efY9ly8VQ	makefile.lcc
+JwsGxoINUlsLH5iPXkpNDg	makefile.linux
+Krey35B73o0ygVt1KPBe5g	makefile.macosx
+a4dgyvnE2Vuy5sMx2DpwBA	makefile.rs6k
+dKQv3w1MX/M6kf8q3lMOXw	makefile.sgi
+y5E1T35vqcR3DU0rzKC7VA	makefile.solaris
+qfI/XEXkJB8B12DwyWKTRg	makefile.sunos
+LhWAJTSrHs6gSEnxfx151A	makefile.vc
+cqX8/9nMqz9egbQwnYbGVg	makefile.wat
+ALNaybSxYVpQOKrtlZHm0w	makefile.xsum
+8CSmpQ85OFoJ25yzHPSjNg	outargex.c
+ooNRnRXN4fWKvKcXZ65kVQ	outargex.run
+w0lHM+a1+xEmWdZdjvcorA	silly.2
+tzbZge2+XaxunwCDq7m9nA	silly.out
+42AjPFP6/tps5XvNjc7a7g	silly.x
+IXpmlUlAFIuhZTm0wzQR9w	xsum0.out
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBTkOAb+FlxDEfrjtlAQER/gQAoVhXznDAW29ZzJUm2gs2rnA6q3WFijZ6
+S0gLuNxXdjGWSlIPBNVmXdyPxEytKxn05YHbTkmr8wK0SqOXRLvJaGWkjCnSvgC9
+cXfc0lrcoq3ZPLZrFpVjHBGQAnYg8Kc3knhd+xVGUpLpjg0jC5YemNomZovRAsVt
+guWGZb/oQWM=
+=k094
+-----END PGP SIGNATURE-----

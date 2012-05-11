@@ -1,0 +1,23 @@
+# For Linux
+
+.SUFFIXES: .c .o
+
+# $S = ampl/solvers directory
+S = ..
+CC = cc
+CFLAGS = -I$S -O2
+
+.c.o:
+	$(CC) -c $(CFLAGS) $*.c
+
+amplfunc.dll: funcadd.c
+	$(CC) -c $(CFLAGS) -fPIC funcadd.c
+	$(CC) -shared -o amplfunc.dll funcadd.o
+
+## Sample solver creation...
+
+# $(myobjects) = list of .o files
+myobjects = ....
+
+mysolver: $(myobjects)
+	$(CC) -o mysolver $(myobjects) $S/amplsolver.a -lm -ldl

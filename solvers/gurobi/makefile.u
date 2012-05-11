@@ -1,0 +1,61 @@
+# /****************************************************************
+# Copyright (C) 2009 AMPL Optimization LLC
+# All Rights Reserved
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby
+# granted, provided that the above copyright notice appear in all
+# copies and that both that the copyright notice and this
+# permission notice and warranty disclaimer appear in supporting
+# documentation, and that the name of Lucent or any of its entities
+# not be used in advertising or publicity pertaining to
+# distribution of the software without specific, written prior
+# permission.
+#
+# AMPL Optimization LLC DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
+# SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+# FITNESS.  IN NO EVENT SHALL AMPL Optimization LLC OR ANY OF ITS
+# ENTITIES BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES
+# OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+# WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+# ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
+# SOFTWARE.
+# ****************************************************************/
+
+# For making gurobix (to be invoked by shell script "gurobi") on Linux and MacOSX systems.
+
+CC = cc
+CFLAGS = -O
+
+S = ..
+# "S = .." assumes this directory is solvers/gurobi .
+
+Platform = linux64
+# or linux32 or mac64
+
+G = /home/dmg/l/gurobi/5.0
+### Adjust the above "G =" line suitably for your system and the
+### version of Gurobi that you have.
+### You must obtain gurobi_c.h and gurobi*.so from
+### Gurobi Optimization, Inc.  They are all you really need from
+### Gurobi's large GUROBI distribution.  See http://www.gurobi.com .
+
+L = -L $G/$(Platform)/lib -lgurobi50 $S/amplsolver.a -lpthread -lm -ldl
+INC = -I$G/$(Platform)/include -I$S
+
+gurobix: gurobi.c
+	$(CC) $(CFLAGS) $(INC) -o gurobix gurobi.c $L
+
+### gurobix is meant to be invoked from a "gurobi" script
+### that sets LD_LIBRARY_PATH suitably.
+
+# make xsum.out to check for transmission errors.
+# This assumes you have the xsum program, whose source is
+# /netlib/f2c/src/xsum.c, e.g., http://www.netlib.org/f2c/src/xsum.c .
+#	send xsum.c from f2c/src
+
+xs0 = README.1st README.gurobi gurobi.c makefile.u makefile.vc
+
+xsum.out: $(xs0)
+	xsum $(xs0) >xsum1.out
+	cmp xsum0.out xsum1.out && mv xsum1.out xsum.out || diff xsum[01].out

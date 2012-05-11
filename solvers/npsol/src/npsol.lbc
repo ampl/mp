@@ -1,0 +1,13 @@
+blas1.obj
+blas2.obj
+chsubs.obj
+cmsubs.obj
+cnpsubs.obj
+f06subs.obj
+lssubs.obj
+mcsubs.obj
+npsubs.obj
+opsubs.obj
+qrsubs.obj
+rtsubs.obj
+srsubs.obj

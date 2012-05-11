@@ -1,0 +1,52 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-bl master Thu Dec 4 10:35:42 EST 2003
+# http://cm.bell-labs.com/netlib/crc/netlib-bl.html
+MWwPRHOZ5wA+h8f4zpVRjw	00lastchange
+zE1N9E+m04+3m4oSlV18Qw	README
+7n07AX0ie9xLCUdPv1lRtA	changes
++NEnP/5I8Z9PPwnOSIe95w	index
+ymgGyOqUSrU15DPT7nm7hw	makefile
+6hv7L90tN6TK7seIVs1VHA	makefile.fu
+CizkqKutH0NNxc3+u2HLqg	makefile.u
+mNtFV8rVifNn6O3orH1edQ	makefile.vc
+t9XczZWc8g7HINwzr2f+AQ	snopt.c
+PXE/IKCx6UN2l8SJguEn1w	snopt_.c
+326K3aL6qGiyubf+rv3E1w	snoptver.c
+6oLdGSe32cQCTZIzoc/YKA	snoptver.c0
+k8UKTd6SPASbygCbm0zvjw	xsum0.out
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBP89UT75pvxO9gjtZAQG3iwP+IYNPy5dYlwfZXZ8wiwK6D7RqRpoiuQe1
+5FGOOoGmizYTeY2MHyvZMYw8IzPi1BLlj/eozVeC1d4chocS2NfCsZduFPUwFzok
+DE1H1zgTsluPNAx1hD/LHlJxYj0LPbw1fZRKMq8DHNrm3O5+upSFWIsoOWEAsCjq
+F4WDWl+txec=
+=w4m6
+-----END PGP SIGNATURE-----
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-utk master Fri Jun 3 03:10:02 EDT 2011
+0pOo53oVLmYPRo1GZnd91w	00lastchange
+6LYWt/YouIb3awLG5COdcw	README
+k9zczBHX9p8JSndjN7VQWA	changes
+wRBMzP6dfb8a653Xld4Xzw	configure
+bHzFL/5aDBrK3aXJeVpxmg	configurehere
+YOTGGXM5eEiDmt1A6KLtPw	index
+5EKpfyg9h3euxwl9FW/tdw	index.html
+heSD4TUW1HnotEzT7H9Q+w	makefile.u
+mNtFV8rVifNn6O3orH1edQ	makefile.vc
+Tw8zRsxyzjNr96/1XmelVA	snopt.c
+dS/6OENQAZA37cEiePN5bw	snopt_.c
+TWxTZOoQX/KJWkvTaMLK4w	xsum0.out
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBTeiIy+FlxDEfrjtlAQEL2gP8CCmIBkxbsxL6fJ7sSaiEuDcymTeqUmew
+6BsugJl0Qwkmt/1Iz3/NalesXL/AK0C2vZVoh2qytml1hb3XSn6sygJ/tAtPUfmI
+PDuwIEXQv9vki+SbPgKuIqjsNj3KSBhq7D+kVvFXdf/QNm7wEYVvqm/dJcQn1qlB
+niDD4cm8J+w=
+=qyO3
+-----END PGP SIGNATURE-----

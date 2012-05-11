@@ -1,0 +1,170 @@
+Sun May 16 12:21:33 EDT 1993
+  Add arg need_stub to getstub.c (==> changes to getstub.h, mng.c, nl2.c).
+  Change %ld to %d in some format strings in lin1.c and lin2.c.
+  New variant linrc.c of lin1.c that uses names from stub.row and stub.col
+file if available.
+
+Sun Jun 20 08:59:19 EDT 1993
+  Many minor changes, plus new sample input and output files.
+Postscript for "Hooking Your Solver to AMPL" is now available
+as "93-10 from research/nam".
+
+Wed Jun 30 23:46:08 EDT 1993
+  Postscript for "Hooking Your Solver to AMPL" (available as
+"93-10 from research/nam") updated to describe new ordering of
+nonlinear variables and counts in .nl files that describe
+nonlinear integer variables.
+
+Thu Sep  2 07:52:54 EDT 1993
+  nl2.c: fix bug in loop that checks for bounds on variables:
+<	for(i = j = 0; i < N;  i++)
+---
+>	for(i = j = 0; i < P;  i++)
+
+Thu Nov 18 08:39:21 EST 1993
+  README: comments about ftp updated.
+
+Wed Feb 22 10:20:23 EST 1995
+  dualconv.c: add #ifdef KR_headers stuff for K&R C compilers.
+  linrc.c: minor adjustment to permit compilation on non-Unix systems
+(such as MS-DOS).
+
+Mon Apr 21 22:45:29 EDT 1997
+  Update for revised amplsolver.a and "Hooking Your Solver to AMPL".
+
+Thu Aug 14 00:19:57 EDT 1997
+  Update MATLAB interface files amplfunc.c and spamfunc.c for MATLAB
+5.x, renaming the old MATLAB 4.x versions amplfun4.c and spamfun4.c.
+
+Thu Mar 26 22:22:02 EST 1998
+  Trivial tweaks to ve08.c (we know that nerror >= 0).
+  amplfunc.c, spamfunc.c: new optional 7th left-hand (return) argument
+to amplfunc('stub') and spamfunc('stub'): the cvar array: if positive,
+cvar(i) is the subscript of the variable (in 1..length(x)) that
+complements constraint i.
+  evalg.m: minor correction: initialize j = 0.
+  makefile: adjust to reflect funcadd1.c in the parent (solvers)
+directory.
+
+Fri Mar 27 15:49:25 EST 1998
+  Adjust makefiles to reflect addition of funcadd1.o to ../amplsolver.a.
+
+Wed Apr 15 14:33:56 EDT 1998
+  Adjust amplfunc.c, enewt.m, rvmsg.c, savesol.m, spamfunc.c, tnmain.c,
+and ve08.c to return solve_result to AMPL (by assigning solve_result_num);
+minor tweak to solve message format by solvers "v8" and "ve08".
+
+Tue Jul 14 15:52:34 EDT 1998
+  linrc.c: compute clen and rlen (which matters if constraint or
+variable names exceed 8 characters in length).
+  Cosmetic change to amplfunc.c and spamfunc.c that eliminates a
+pointless warning message by some compilers.
+
+Wed Jul 29 09:32:15 EDT 1998
+  README: add table of possible solve_result_num values for mng, mnh, nl2.
+
+Fri Apr  9 00:46:03 EDT 1999
+  dualconv.c: set asl->i.n_var0 and asl->i.n_con0, which became
+necessary after changes for declared suffixes.
+
+Thu Apr 15 16:25:02 EDT 1999
+  makefile and various .out files: add 2>&1 to various test invocation
+lines.  On Microsoft systems, amplsolv.lib merges stderr with stdout,
+and this change makes the output files agree.
+
+Fri Jun 25 18:32:51 EDT 1999
+  dualconv.c: pass arithmetic code and flags; adjust solve_result_num
+to interchange "infeasible" and "unbounded".
+  linrc.c: formatting tweaks.
+  makefile: omit dietlrc.out (old name for linrcdie.out).
+
+Wed Sep 15 14:33:15 EDT 1999
+  spamfunc.c: trivial tweak: omit two unused variables.
+
+Thu Oct 14 00:34:11 EDT 1999
+  New example nlcopy.c to illustrate new library routine fg_write().
+
+Mon Jan 17 16:25:33 EST 2000
+  qtest.c: fix botch:
+75c75
+< 		nz = n_var + n_con;
+---
+> 		nz = n_obj + n_con;
+
+Thu Feb  3 22:25:26 EST 2000
+  makefile.vc: adjusted reflecting changes to ../makefile.vc.
+
+Sat Aug  5 11:19:33 EDT 2000
+  nlcopy.c: omit an unused variable.
+  ch3mnh.out, ch3mnh.sol: trivial update.
+  evalg.m: change amplfunc(x, 2) to amplfunc(x, 1) to accord with
+documentation.  (Both currently give the same result.)
+  init.m: check for pname not assigned a character stub value.
+
+Wed Sep  6 10:28:50 EDT 2000
+  linrc.c, linrcdie.out: make values in the table of variable
+bounds and cost coefficients agree with the column headings by
+writing cost coefficients in column 2 rather than column 4.
+
+Tue Sep 12 15:44:34 EDT 2000
+  qtest.c: show lower and upper slack values for constraints.  Today's
+changes to solvers/nqpcheck.c (subtraction of constant terms from
+constraint bounds rather than incorporating constant terms into
+constraint bodies) sometimes cause different values for constraint
+bodies, but not for the lower and upper slacks.
+  ch3.nl:  update to reflect changes to AMPL starting in version
+20000128 that cause the first constraint of this example to be (which
+involves only linear defined variables) to be rendered as an explicitly
+linear constraint, and ordered as such.  Sample output files updated
+accordingly.
+
+Mon Jan 22 11:33:05 EST 2001
+  amplfunc.c, spamfunc.c: adjust "Trouble evaluating..." error messages.
+  makefile.u: "make test1" leave unexpected results in directory "bad1"
+and "make test2" leave them in directory "bad".
+  Various *.out files:  update to current output (under IRIX 6.5).
+
+Sat Mar 16 00:07:05 EST 2002
+  ve08.c: add ASL_find_default_no_groups to the flags in the pfg_read
+call when compiled with PSEDREAD #defined by v8.c.  This was made
+necessary by a change to the .nl readers on 20010607:  ve08.c is not
+prepared to deal with group partially separable structure.
+  makefile.u: change the FC assignment to f77 (to cope with some shells
+for which "fc" has special magic meaning).
+
+Tue Aug  9 22:58:01 MDT 2005
+  New files README.gjh and gjh.c, and corresponding updates to makefile.u
+and makefile.vc.  README.gjh describes "solver" gjh, whose source is gjh.c,
+which computes gradients, Jacobian matrices and Hessian matrices and makes
+their values available in an AMPL session (via an "include" command).
+
+Tue Dec  2 20:37:41 MST 2008
+  gjh.c: omit declaration of the unused w0 array.
+  Add hist.c (a way to provide command-line history to interactive programs,
+such as ampl).  Requires the GNU history and readline libraries.  For use with
+ampl, invoke "hist ampl -vi2 ..." (where -vi2 causes prompts to appear).
+
+Wed May 13 21:30:40 MDT 2009
+  spamfunc.c: adjust to accord with a changed return type (mwIndex* rather
+than int*) from functions mxGetIr and mxGetJc) in recent versions of Matlab.
+(For older versions, use -DmwIndex=int when compiling spamfunc.c.)
+  hist.c:  add author name to comments.
+
+Sun Jul 12 23:08:18 MDT 2009
+  Adding source evalchk.c for "solver" evalchk that sets suffix .numerr
+on objectives and constraints to 0 if they can be evalated at the given
+starting point, to 1 if not, and to 2 if the entity but not its gradient
+can be evaluated.
+
+20120216
+  amplfunc.c, spamfunc.c: when there is no objective (n_obj == 0), have
+	[f,c] = amplfunc(x,0)
+and
+	[f,c] = spamfunc(x,0)
+return f = 0, and similarly have
+	[g,J] = amplfunc(x,1)
+and
+	[g,J] = spamfunc(x,1)
+return a vector of zeros for g.
+  makefile.u: omit mention of spamfun4.c.
+  hist.c:  behave better when the client program stops.

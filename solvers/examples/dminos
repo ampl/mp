@@ -1,0 +1,12 @@
+#!/bin/sh
+# Script that uses dualconv to feed a dual LP problem to $dsolver
+dsolver=${dsolver-minos}
+trap "rm -f $1.duw" 1 2 3 4 13
+dualconv $1
+case $? in 0)
+	$dsolver $1 -AMPL
+	case $? in 0) dualconv -u $1;; esac
+	;; esac
+rc=$?
+rm -f $1.duw
+exit $rc

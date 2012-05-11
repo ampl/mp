@@ -1,0 +1,23 @@
+The source files in this directory create gurobi, a variant of the
+Gurobi solver that works with AMPL's solve command.
+
+You need to obtain gurobi_c.h and the relevant Gurobi library from
+Gurobi; see http://www.gurobi.com .
+
+File makefile.u is a generic Unix makefile with comments about changes
+necessary for some systems.  You will need to adjust the "G = ..."
+and "L = ..." assignments to reflect the version of Gurobi you are
+using and where the Gurobi include and lib directories are located
+on your system.  The recommended procedure is to
+
+	cp makefile.u makefile
+
+and then edit makefile if necessary -- see the comments in makefile.u.
+
+File makefile.vc is a corresponding makefile for use with Microsoft's
+Visual C++, e.g., via the invocation "nmake -f makefile.vc".  The
+recommended procedure is to "copy makefile.vc makefile", edit the
+resulting makefile to adjust paths in it (see the comments), and
+then invoke "nmake".
+
+File README.gurobi summarizes the use of solver "gurobi".

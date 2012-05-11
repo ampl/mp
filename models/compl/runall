@@ -1,0 +1,47 @@
+option show_stats 1;
+option solver path;
+
+print 'bertsek...';
+include bertsek.run
+
+reset;
+print 'choi...';
+model choi.mod;
+data choi.dat;
+solve;
+include compchk
+
+reset;
+print 'ehl_def...';
+model ehl_def.mod;
+solve;
+include compchk
+
+reset;
+print 'ehl_kost...';
+model ehl_kost.mod;
+solve;
+include compchk
+
+reset;
+print 'josephy...';
+include josephy.run
+
+reset;
+print 'kojshin...';
+include kojshin.run
+
+reset;
+print 'nash...';
+include nash.run
+
+reset;
+print 'obstacle...';
+include obstacle.run
+
+reset;
+print 'pies...';
+model pies.mod;
+data pies.dat;
+solve;
+include compchk

@@ -1,0 +1,110 @@
+This directory contains a collection of test problems for nonlinear
+programming expressed as AMPL models (the *.mod files).  Many are for
+a fixed problem size and contain a data section.  Some are pure model
+files describing families of problems, with default values that specify
+a small instance; such models are noted with "V" in the classification
+table below.
+
+Comments in the *.mod files give the problem sources (original sources
+or test-problem collections).  Many of the problems were selected and
+coded in AMPL by Elena Bobrovnikova (at Bell Labs in the summer of
+1996), with some subsequent editing by David M. Gay; these problems
+contain the comment
+# Original AMPL coding by Elena Bobrovnikova (summer 1996 at Bell Labs).
+
+Each problem is classified as in the CUTE collection of test problems,
+except that problems with a V code for the number of variables or
+constraints have the default value for that number after the V.
+The classification is a string of the form
+
+	OCSD-KI-n-m
+
+in which the letters are replaced by appropriate codes, as follows:
+
+O = objective code:
+	C = Constant
+	L = Linear
+	N = No objective
+	Q = Quadratic
+	S = Sum of squares
+	O = Other (none of the above)
+
+C = constraint type:
+	B = Bounds on variables
+	L = Linear
+	N = linear Network
+	Q = Quadratic
+	U = Unconstrained
+	X = just fiXed variables
+	O = Other (none of the above)
+
+S = smoothness:
+	R = Twice continuously differentiable
+	I = Other
+
+D = degree of available derivatives: always 2 here; 0, 1, or 2 in general
+
+K = kind of the problem:
+	A = Academic
+	M = Modeling
+	R = Real application
+
+I = internal variables:
+	Y = yes, problems has useful internal variables
+	N = no useful internal variables
+
+n = number of variables; V = varies (followed by default)
+
+m = number of constraints; V = varies (followed by default)
+
+
+Problem		Classification
+
+blend.mod	LOR2-MN-24-38
+branin.mod	OBR2-AN-2-4
+camel1.mod	OBR2-AN-2-4
+chemeq.mod	OLR2-MY-38-50
+chi.mod		OBR2-AN-2-4
+gold.mod	OBR2-AN-2-4
+gridneta.mod	OLR2-MY-V60-V96
+griewank.mod	OBR2-AN-2-4
+hs105.mod	OBR2-RN-8-16
+hs106.mod	LQR2-MN-8-22
+hs109.mod	OOR2-MY-9-26
+hs111.mod	OOR2-MN-10-23
+hs112.mod	OLR2-MY-10-13
+hs114.mod	QOR2-MY-10-31
+hs116.mod	LQR2-MN-13-41
+hs15.mod	OQR2-MN-2-3
+hs23.mod	QQR2-MN-2-9
+hs35.mod	QLR2-MN-3-4
+hs44.mod	QLR2-MN-4-10
+hs5.mod		OBR2-MN-2-4
+hs54.mod	OLR2-MN-6-13
+hs6.mod		QQR2-RN-2-1
+hs62.mod	OLR2-MY-3-7
+hs64.mod	OOR2-MN-3-4
+hs8.mod		CQR2-RN-2-2
+hs87.mod	LOR2-RN-11-24
+kowalik.mod	OBR2-AN-4-8
+levy3.mod	OBR2-AN-2-4
+ljcluster.mod	OUR2-AY-V20-0
+osborne1.mod	OBR2-MN-5-10
+powell.mod	OBR2-AY-4-4
+price.mod	OBR2-AN-2-4
+rosenbr.mod	OUR2-AN-2-0
+s324.mod	QQR2-AN-2-3
+s383.mod	OLR2-AN-14-29
+schwefel.mod	OBR2-AN-5-10
+shekel.mod	OUR2-AN-4-8
+steenbre.mod	ONR2-MY-540-666
+tre.mod		OBR2-AN-2-4
+weapon.mod	OLR2-MN-100-147
+
+
+File minos.out shows results of using MINOS 5.5 to solve the problems
+on an SGI computer, with primal and dual values displayed by the AMPL
+commands
+
+	display _varname, _var;
+	display _conname, _con;

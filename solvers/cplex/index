@@ -1,0 +1,33 @@
+file	ampl/solvers/cplex/README.1st
+
+file	ampl/solvers/cplex/README.cplex
+
+file	ampl/solvers/cplex/ampl110.pdf
+for	"ILOG AMPL CPLEX System Version 11.0 User's Guide"
+,	courtesy of ILOG/CPLEX.
+
+file	ampl/solvers/cplex/changes
+
+file	ampl/solvers/cplex/configure
+
+file	ampl/solvers/cplex/configurehere
+
+file	ampl/solvers/cplex/cplex.c
+
+file	ampl/solvers/cplex/cplex4.c
+
+file	ampl/solvers/cplex/cplex60.c
+
+file	ampl/solvers/cplex/cplex66.c
+
+file	ampl/solvers/cplex/makefile.u
+
+file	ampl/solvers/cplex/makefile.vc
+
+file	ampl/solvers/cplex/version4.c
+
+file	ampl/solvers/cplex/version60.c
+
+file	ampl/solvers/cplex/version66.c
+
+file	ampl/solvers/cplex/xsum0.out

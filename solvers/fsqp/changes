@@ -1,0 +1,16 @@
+Sat Oct 11 15:01:12 EDT 1997
+  makefile: remove unnecessary .f.o rule, -lf2c, and comment about
+f2c calling conventions.
+
+Fri Apr  3 13:15:52 EST 1998
+  fsqp.c: Return solve_result_num to AMPL.
+  makefile: omit $S/funcadd0.o; on most systems, $S/amplsolver.a now
+provides a recommended default funcadd: see ampl/solvers/funclink/README
+for details.
+
+Tue Jul 28 22:24:10 EDT 1998
+  README: add table of possible solve_result_num values.
+
+Thu Aug 11 21:16:10 MDT 2005
+  README:  change URL http://www.isr.umd.edu/Labs/CACSE/FSQP/fsqp.html
+to http://www.aemdesign.com/

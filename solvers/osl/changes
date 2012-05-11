@@ -1,0 +1,413 @@
+Tue Nov 24 13:04:58 EST 1992
+Add #ifdef Student_Edition lines
+to osl.c (they affect the version string),
+and adjust makefile to know about Student_Edition .
+
+Tue Dec 15 21:22:04 EST 1992
+Drop erroneous requirement of integral bounds on
+variables to invoke network solver.
+
+Sun Jan  3 02:24:50 EST 1993
+  Kludge around OSL bug to get correct signs for
+dual variables with OSL's network solver (EKKNSLV);
+add logic to invoke OSL's network solver if flipping
+row signs gives a pure network problem.
+  Change maxiter keyword so it sets both Imaxiter and Imaxiterb.
+  Add Ilinelen keyword.
+
+Fri Jan  8 13:28:04 EST 1993
+  Tweak to invoke edagread rather than edag_read.
+
+Sat Jan  9 19:12:57 EST 1993
+  Fix a glitch in passing the solution back to ampl when the iteration
+limit is reached during solution of a problem with integer variables,
+and osl tries to restore a best-found solution.
+
+Tue Jan 12 23:57:02 EST 1993
+  For "simplify" >= 0, if there are integer variables, add the kludge
+OSL requires to correctly recover the solution.
+  Fix bug that sometimes caused the solution not to be passed back to
+ampl when the return message is "best MIP solution so far restored".
+  Fix bug in feeding OSL the problem when there are general integer
+variables and Special Ordered Sets of Type 2 (added for nonconvex or
+nonconcave piecewise-linear terms): cost coefficients for the
+general integer variables were wrong, and the wrong solution
+components were passed back for these variables.
+  Add text to return message "iteration limit in mpre" to point out
+that this is sometimes a bogus return message (due to an OSL bug).
+[Recanted 21 Jan. 1993].
+  Temporary new keyword for $osl_options: netbug.  Try 'netbug 1'
+if osl reports network simplex iterations and the dual variables
+seem wrong (reduced costs are botched).
+  Avoid invoking EKKMPRE after adding Special Ordered Sets of Type 2
+-- to avoid another OSL bug.
+
+Wed Jan 13 16:27:44 EST 1993
+  Fix with network problems: if a row had to be added to make OSL
+happy, its elements sometimes had wrong signs.
+
+Thu Jan 21 13:12:03 EST 1993
+  Recant tweak of 9 days ago to return message for "iteration limit
+in mpre".  The tweak was prompted by behavior still not fully
+explained: it's either a Sun 4 bug in cc -O or some other bug.
+  Add recognition of Ipricetype and Rnetsamp.
+
+Tue Jan 26 23:27:34 EST 1993
+  Allow 'pricing 3'.
+  Pass the primal initial guess to OSL.
+  New keyword: 'passx0 0' suppresses the primal initial guess.
+  Fix bug in 'startbasis=foo' that (if it bit) could cause a
+memory fault.
+  Fix bug in termination message after the network solver ran with
+barrier >= 0.  In this case, barrier = -1 is assumed, but the
+termination message was reporting 0 barrier iterations.
+
+Tue Mar 16 00:06:18 EST 1993
+  Adjust return messages for MIP problems to indicate when no
+feasible solution is returned.
+
+Mon Mar 22 17:31:26 EST 1993
+Tweaks to osl.c:
+1. Omit decl of xectim_() (now in ../nlp1.h).
+2. New keywords mipdisplay (default 0) and mipdispfreq (default 20):
+	mipdisplay = 1 ==> report each new feasible integer solution found
+	mipdisplay = 2 ==> print best integer solution value every
+			   mipdispfreq iterations (or whenever improved).
+3. Kludge around osl bug in the first time reported by Rprintcpu.
+4. Suppress msg about logical variables added during factorization.
+5. For outlev >= 3, suppress all page headings after the first.
+
+Thu Mar 25 16:27:23 EST 1993
+  Fix glitch in error msg for integer keywords assigned an
+out-of-bounds value (in $osl_options).
+  New keyword simplexinit (default 0).  If neither startbasis nor crash
+is set, simplexinit adjusts passx0 and pricing as follows:
+
+	0: passx0 = 0; pricing left alone (should be 1 or 2).
+	1: passx0 = 1; pricing left alone.
+	2: passx0 = 1; pricing = 3.
+
+  New keyword bdisplay (default 0): interval at which to report
+barrier iterations.
+  New keyword relax to ignore integer variables.
+  Change in priority: if barrier >= 0, a barrier algorithm is run,
+even for network problems.  (If there are discrete variables,
+the barrier algorithm is still suppressed in favor of the MIP solver.)
+
+Wed Apr  7 16:40:51 EDT 1993
+  Tentative new logic to invoke OSL's QP solver (for convex quadratic
+minimization problems, subject to linear constraints).  New keyword
+majorits bounds the number of "decomposition crash" iterations at
+the start of the QP algorithm.
+  Changes to keywords follow; the OSL names are still recognized,
+but README.osl and the forthcoming AMPL/OSL booklet use the osl
+keyword names on the left:
+
+   osl             OSL
+adjactype       Iadjactype
+bbimprove       Rimprove
+bcutoff         Rbcutoff
+changeweight    Rchangeweight
+cholabstol      Rcholabstol
+choltinytol     Rcholtinytol
+degscale        Rdegscale
+densecol        Idensecol
+densethr        Rdensethr
+devexmode       Idevexmode
+droprowct       Idroprowct
+dweight         Rdweight
+fastits         Ifastits
+fixvar1         Rfixvar1
+fixvar2         Rfixvar2
+formntype       Iformntype
+fracweight      Riweight
+linelen         Ilinelen
+maxfactor       Imaxfactor
+maxiterb        Imaxiterb
+maxmin          Rmaxmin
+maxnodes        Imaxnodes
+maxprojns       Imaxprojns
+maxsols         Imaxsols
+mufactor        Rmufactor
+muinit          Rmuinit
+mulimit         Rmulimit
+mulinfac        Rmulinfac
+netprice        Ipricetype
+netsamp         Rnetsamp
+nullcheck       Inullcheck
+objweight       Robjweight
+pdgaptol        Rpdgaptol
+pdstepmult      Rpdstepmult
+pertdiag        Rpertdiag
+possbasis       Ipossbasis
+prepassbranch   Isupertol
+prepassfix      Ithreshold
+prepassimprove  Rthreshold
+prepassmax      Iheurpass
+prestrat        Istrategy
+printcpu        Rprintcpu
+projtol         Rprojtol
+pweight         Rpweight
+rgfactor        Rrgfactor
+rglimit         Rrglimit
+stepmult        Rstepmult
+target          Rtarget
+toldinf         Rtoldinf
+tolint          Rtolint
+tolpinf         Rtolpinf
+
+  Other tweaks:
+
+1.  Maxiter now just controls the number of simplex iterations;
+    it no longer sets maxiterb.
+
+2.  New keyword simplexinit (default 0), applicable only if startbasis
+    is not specified and crash has its default value of 0:
+	0: passx0 = 0; pricing left alone (should be 1 or 2).
+	1: passx0 = 1; pricing left alone.
+	2: passx0 = 1; pricing = 3.
+
+3.  Istrategy split into two keywords: prestrat and branch;
+    The old Istrategy = prestrat + 4*branch.
+
+4.  Other minor things, too numerous to list.
+
+Sat Apr 10 15:11:19 EDT 1993
+  File solvers/osl/qpcheck.c moved to solvers/qpcheck.c (for use
+by other solvers, e.g. korbx).
+
+Mon Apr 12 00:18:44 EDT 1993
+  Minor tweak for QPs (omit unused derp structs); needs revised
+solvers/nlp1.h and solvers/edagread.c.
+
+Wed Apr 28 12:05:44 EDT 1993
+  Omit messages 33-35 ("The problem has been perturbed", "Perturbation
+has ended", "Variable nnn will cause instability and has been rejected")
+when outlev < 3.
+
+Wed May  5 16:44:30 EDT 1993
+  Don't bail out if OSL complains about a nonsymmetric quadratic matrix.
+
+Thu May  6 19:45:45 EDT 1993
+  Don't bail out if OSL complains about an infeasible problem
+during branch-and-bound.
+
+Fri Jun 11 08:17:34 EDT 1993
+  Change last arg to qpcheck() (in osl.c) from 0 to 1 to avoid
+osl message EKK3014W about changing Q to 1/2(Q + Q').
+
+Wed Jun 16 14:48:15 EDT 1993
+  osl.c: change long to fint (in accord with changes to solvers/*.h).
+
+Fri Jun 18 14:07:47 EDT 1993
+  Tweak comments in makefile and $S/makefile.
+
+Thu Jul  1 08:51:43 EDT 1993
+  Report ignoring integrality of nonlinear integer variables when
+$osl_options says "relax" (and, as before, decline to handle nonlinear
+integer variables otherwise).
+  Write temporary files (when solving integer programming problems)
+in directory $TMPDIR.
+  Refuse to "maximize" quadratic programming problems: OSL only
+minimizes them and would botch the sign of the objective in
+intermediate printing if we reversed the signs of the objective
+components.
+  Bail out (exit 4) upon OSL error message 3051, 7060, and 7068
+for nonconvex QPs.
+
+Thu Jul  1 12:07:22 EDT 1993
+  Purge an apparently spurious error message, EKK3035W.
+  Tweak msgs 3051, 7060.
+
+Tue Jul  6 14:12:07 EDT 1993
+  More modifications to printing for QPs; allow maximizing
+a QP (by minimizing its negative; objective values that OSL
+prints will have the wrong sign).
+
+Sat Jul 10 02:45:52 EDT 1993
+  More tweaks to QP error messages.
+
+Tue Jul 13 22:16:35 EDT 1993
+  Still more minor error message tweaks.  (Expect more in August.)
+
+Tue Aug  3 14:50:07 EDT 1993
+  When a dual initial guess is available and osl_options says "dual",
+pass the (true) dual initial guess to osl (as primal initial guess).
+This matters in, e.g.,
+	option solver osl;
+	solve;
+	option osl_options dual;
+	solve;
+in which OSL sometimes computed a wrong solution for the second solve.
+  New keyword for osl_options: dccutoff (tolerance for stopping OSL's
+decomposition crash for quadratic programming, described in
+forthcoming osl booklet).
+
+Thu Aug 19 11:27:55 EDT 1993
+  Patch around OSL bug in the signs of dual variables for QPs.
+
+Fri Aug 27 13:23:33 EDT 1993
+  Tweak for change in callinq sequence of qpcheck -- connected with
+a bug fix to qpcheck: ask netlib@netlib.bell-labs.com to
+	send nlp1.h qpcheck.c xsum0.out from ampl/solvers
+
+Fri Sep 10 16:24:16 EDT 1993
+  Fix bug in osl_options phrase "netbug=1".
+
+Sat Jan 15 11:55:17 EST 1994
+  Fix bug that sometimes caused "Node limit (maxnodes 0)" or
+"Mingap (nnnnnn) reached" to be reported erroneously on integer
+programming problems.  This trouble was possible if heuristics
+found an integer solution (positive if maximizing, negative if
+minimizing) before a continuous solution was computed.
+  Fix bug with bbdisplay > 0: numbers in the Bound column sometimes
+had the wrong sign.
+  Patch around OSL bug with maxsols > 1 (maximum feasible integer
+solutions to compute): OSL behaves as though maxsols were one less
+than the specified value.
+  Abort execution after OSL message 3011 ("duplicate elements in the
+matrix"): this message can be caused by an OSL bug, and OSL tries
+to solve the wrong problem after this message appears.
+
+Sat Feb 26 14:51:27 EST 1994
+  osl.c: omit some unnecessary #includes; version remains 19940115.
+  Omit makefile from xsum.out.
+
+Mon Mar 28 18:47:25 EST 1994
+  osl.c: just show version when invoked "osl -v".
+
+Sun May 15 20:25:56 EDT 1994
+  Allow optional spaces around '=' in keyword phrases (in single
+command-line arguments or $osl_options).  This relies on a new
+function, pr_unknown, just added to amplsolver.a.
+
+Mon Jun 13 11:57:02 EDT 1994
+  Fix bug in handling intial guesses with "dual".
+
+Thu Aug  4 12:14:05 EDT 1994
+  osl.c, line 1395: change "%Allocating" to "Allocating";
+		change "ftncls" to "ftncls_".
+  osl.c, osl.h: add #ifdef WATCOM stuff.
+
+Fri Aug 12 02:20:18 EDT 1994
+  Fix bugs in handling nonconvex piecewise-linear terms when there
+are integers present or a constant term in the (presolved) objective.
+Example:
+	var x{1..2} >= 0;
+	convex: sum{i in 1..2} x[i] = 1;
+	var y integer >= 0 <= 10;
+	minimize zot: sum{i in 1..2}i*x[i]
+		+ <<1,2,4,7,8;-1,1, -1,1, -1,1>>y + 4;
+	option solver osl;
+	# works right without +4 and integer
+
+Fri Aug 12 08:56:32 EDT 1994
+  Tweak code for removing files to work on HP systems (with -DHPUX).
+
+Wed Sep 21 15:30:45 EDT 1994
+  Give nonzero return code after message 7003 (more dspace needed).
+
+Sat Sep 24 01:33:20 EDT 1994
+  Allow command-line options that do not involve a value to appear
+without a trailing =, so the invocations
+	osl foo relax=
+and
+	osl foo relax
+behave the same.  Previously "relax" in the latter invocation was
+quietly ignored.
+
+Sat Oct  1 13:51:49 EDT 1994
+  Do not suppress the barrier algorithm when integer variables are
+present; instead force bs_switch=2.
+  Catch another case where OSL fails to restore the best MIP solution.
+
+Mon Oct  3 11:50:11 EDT 1994
+  Return solution when OSL claims not to have restored the best MIP
+solution, and warn about it; sometimes it might be right.
+
+Wed Oct 19 12:07:21 EDT 1994
+  Update version.c to reflect bug fix to solvers/qpcheck.c.
+
+Fri Oct 28 11:36:32 EDT 1994
+  Fix bugs in handling problems with both general integer variables
+and general piecewise-linear terms, and with general piecewise-linear
+terms when "relax" is specified.
+
+Mon Dec 12 16:52:16 EST 1994
+  Fix bug in handling nonconvex (resp. nonconcave) piecewise-linear
+terms (those that require integer programming): an incorrect weight
+was supplied for the first breakpoint if the term appeared in a
+constraint and its value at the breakpoint was nonzero.
+
+Tue Jun  6 18:00:10 EDT 1995
+  README.osl: update description of pretype (to accord with the
+description in the OSL booklet and in "osl").
+
+Tue Nov 28 19:08:36 EST 1995
+  Fix memory fault with infeasible problems on which ekknslv (OSL's
+network solver) is invoked.
+  Diagnose MIPS whose LP relaxation is infeasible (rather than
+giving a nonzero exit code).
+
+Wed Aug  7 18:42:11 EDT 1996
+  Echo startbasis=... and endbasis=...
+
+Mon Apr 21 22:48:43 EDT 1997
+  Update for revised amplsolver.a and "Hooking Your Solver to AMPL".
+
+Fri May  2 02:17:55 EDT 1997
+  Set need_nl = 0 (as in the old osl.c).
+
+Tue Jun 22 00:43:48 EDT 1999
+  Updated for OSL 2.  Not everything works right -- OSL 2 still has
+some bugs.
+  Source for OSL 1.2 driver moved to subdirectory osl1.2.
+  For OSL 2, keyword "netbug" removed; new keywords iisfind,
+mipstartstatus, sensitivity, sos: see the updated README.osl.
+Statuses are now received from and returned to AMPL.
+  Merge bb_bfile, mb_bfile, mslv_bfile, and mslv_mfile into
+bb_file (or equivalently mslv_file).  Both bfile and mfile must
+be toggled simultaneously, so it's best to merge them.
+
+Thu Jul 22 13:09:35 EDT 1999
+  osl.c, osl.h: minor tweaks for non-SGI systems -- #include "osl.h"
+had somehow been lost.
+
+Thu Aug 12 21:01:38 EDT 1999
+  osl.c: adjust to account for OSL 2's idiotic handling of bounds,
+which is worse than was OSL 1.2's: bounds > 1e28 are mishandled;
+OSL 1.2 was good for bounds up to 1e31.
+
+Thu Aug 19 02:04:35 EDT 1999
+  osl.c, osl.h: minor tweaks; the calling sequences of ekkfopn and
+ekkfcls might finally be consistent across machines.
+  New makefile variants (makefile.vc, makefile.wat) for MS VC++
+and WATCOM.
+
+Thu Aug 19 16:01:21 EDT 1999
+  More tweaks.  Now this stuff works on all 5 platforms on which IBM
+currently offers a "try/buy" version of OSL.
+
+Thu Feb  3 23:11:32 EST 2000
+  makefile.vc: adjusted reflecting changes to ../makefile.vc.
+
+Fri Feb 25 17:42:22 EST 2000
+  osl.c: fix miscount in allocations in priorities().  This bug
+caused a fault in one example.
+
+Fri Jun  8 18:46:25 EDT 2001
+  osl.c: fix a botch in the ordering of keywds (which must be
+strictly sorted for binary search to work) -- mpsout and mipstartstatus
+were interchanged -- and fix glitches under -DKR_headers in the header
+for function priorities().
+
+Tue Apr 30 18:28:49 EDT 2002
+  osl.c: udpate to a form that works with OSL v3 or v2.  (In particular,
+circumvent a bug in OSL v3 whereby ekkmset erroneously complains the
+first time it is called.)
+
+Tue May  7 16:43:29 EDT 2002
+  makefile.*, osl.c: omit version.c0, which is now automatically
+incorporated into osl.c and the solver interface library.
+  osl.c: on problems with integer variables and very vew rows,
+add slightly more rows to allow for cuts.

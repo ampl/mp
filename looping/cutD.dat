@@ -1,0 +1,14 @@
+
+# Chvatal, Problem  13.2(a)
+
+param roll_width := 90 ;
+
+param: WIDTHS: orders :=
+        60        3
+        30       21
+        25.5     94
+        20       50
+        17.25   288
+        15      178
+        12.75   112
+        10      144  ;

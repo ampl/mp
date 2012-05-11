@@ -1,0 +1,46 @@
+Ignoring 1 objectives.
+
+     I     INITIAL X(I)        D(I)
+
+     1      .250000E+00      .133E+01
+     2      .500000E+00      .200E+01
+     3      .750000E+00      .133E+01
+
+    IT   NF      F       RELDF   PRELDF   RELDX  MODEL  STPPAR  D*STEP  NPRELDF
+
+     0    1  .556E-01
+     1    2  .347E-02  .94E+00  .10E+01  .8E-01    G    .0E+00  .2E+00  .10E+01
+     2    3  .268E-05  .10E+01  .10E+01  .1E-01    G    .0E+00  .7E-01  .10E+01
+     3    4  .200E-11  .10E+01  .10E+01  .4E-03    G    .0E+00  .2E-02  .10E+01
+     4    5  .113E-23  .10E+01  .10E+01  .3E-06    G    .0E+00  .2E-05  .10E+01
+
+ ***** ABSOLUTE FUNCTION CONVERGENCE *****
+
+ FUNCTION      .113037E-23   RELDX         .311E-06
+ FUNC. EVALS       5         GRAD. EVALS       5
+ PRELDF        .100E+01      NPRELDF       .100E+01
+
+     I      FINAL X(I)        D(I)          G(I)
+
+     1     .146447E+00      .250E+01     -.284E-11
+     2     .500000E+00      .200E+01      .370E-15
+     3     .853553E+00      .250E+01      .283E-11
+
+    4 EXTRA FUNC. EVALS FOR COVARIANCE AND DIAGNOSTICS.
+    4 EXTRA GRAD. EVALS FOR COVARIANCE AND DIAGNOSTICS.
+
+ RECIPROCAL CONDITION OF F.D. HESSIAN = AT MOST   .10E+00
+
+ COVARIANCE = SCALE * H**-1 * (J**T * J) * H**-1
+ WHERE H = F.D. HESSIAN
+
+ ROW  1      .512E-24
+ ROW  2      .565E-24    .141E-23
+ ROW  3      .194E-24    .565E-24    .512E-24
+
+ REGRESSION DIAGNOSTIC = SQRT( G(I)**T * H(I)**-1 * G(I) / ABS(F) )...
+    .760E+04    .147E+01    .413E+00
+nl2:	Absolute Function Convergence; function = 1.1303689846531975e-24
+	RELDX = 3.11e-07; PRELDF = 1; NPRELDF = 1
+	5 func. evals + 4 for covariance
+	5 grad. evals + 4 for covariance

@@ -1,0 +1,8 @@
+Fri May 13 01:28:03 EDT 1994
+  option presolve_eps commands added to multi.run stoch.run trnloc1p.run.
+(because AMPL now checks that fixed variables are within $presolve_eps
+of their declared ranges).
+
+Mon Jun 19 22:50:48 EDT 1995
+  Examples updated to use named-problem syntax.
+  NEW_CMDS updated.

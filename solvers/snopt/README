@@ -1,0 +1,167 @@
+Solver snopt is a nonlinear solver based on SNOPT, a sparse SQP solver
+by Philip E. Gill, Walter Murray and Michael A. Saunders.  SNOPT is
+available from
+
+	Stanford Business Software
+	2680 Bayshore Parkway, Suite 304
+	Mountain View, CA 94043
+	Phone:	+1-415-962-8719
+	Fax:	+1-415-962-1869
+
+US Academic and Government users may obtain SNOPT from Philip Gill;
+contact pgill@ucsd.edu (Philip Gill) to see about getting source for
+library forms of SNOPT.
+
+It is most convenient to invoke snopt with AMPL's solve command:
+
+	ampl: option solver snopt;
+	ampl: solve;
+
+but snopt can also be run separately, with invocation syntax
+
+	snopt stub [-AMPL] [keywd=[value] ...]
+
+in which stub comes from AMPL's write command.  For example,
+
+	> ampl -obfoo foo.mod foo.dat
+	> snopt foo
+
+demonstrates running snopt separately; the ampl invocation writes file
+foo.nl (stub = "foo"), which snopt reads.
+
+Command-line arguments to snopt either have the form
+	keywd=
+or
+	keywd=value
+where keywd is one of the key words described below.  Alternatively,
+you can invoke snopt the way AMPL's solve command does, i.e.,
+
+	snopt stub -AMPL [keywd=value ...]
+
+where stub was specified in
+
+	ampl -obstub ...
+or
+	ampl -ogstub...
+
+Such an invocation causes snopt to read from stub.nl and to write stub.sol.
+
+-----------------
+Controlling snopt
+-----------------
+
+Snopt reads keywords and values from the environment (shell) variable
+snopt_options and from the command line.  Execute
+
+	snopt -?
+
+or (if your shell requires ? to be quoted)
+
+	snopt '-?'
+
+for a summary of snopt usage and
+
+	snopt -=
+
+(or snopt '-=') for a summary of keywords peculiar to the AMPL/SNOPT
+driver "snopt".  You can also give SNOPT keyword phrases as keywords
+if you change blanks within them to underscores and follow them with
+an = (equals sign).  See the "User's Guide for SNOPT Version 7"
+(http://www.cam.ucsd.edu/~peg/papers/sndoc7.pdf) for a description of
+SNOPT keyword phrases.  A phrase of the form nn=filename associates
+Fortran unit number nn with the file named "filename"; unit 6 is the
+standard output on many systems.
+
+------------------
+Sample Invocations
+------------------
+
+  If you're using AMPL, just say
+
+	option solver snopt;
+	solve;
+
+  If you've executed, say,
+
+	ampl -objunk junk.model junk.data
+
+then you could say
+
+	snopt junk iterations=200 feas_tol=1e-5
+
+to force snopt to run for at most 200 iterations and use feasibility
+tolerance 1e-5.  With the Bourne shell, either of the invocations
+
+	snopt_options='iterations=200 feas_tol=1e-5' snopt junk
+or
+	snopt_options='iterations=200 feas_tol=1e-6'
+	export snopt_options
+	snopt junk
+
+would have the same effect; within AMPL, specifying
+
+	option snopt_options 'iterations=200 feas_tol=1e-5', solver snopt;
+	solve;
+
+would also have this effect.
+
+
+This directory has two makefile variants:  makefile.u for Unix and
+Linux systems, and makefile.vc for Microsoft systems and the Visual
+C++ compiler.  We suggest you copy the relevant variant to "makefile",
+then make any necessary changes to "makefile".  The makefiles assume
+that $M/libsnopt.a $M/libsnprint.a $M/libblas.a (Unix systems) or
+$M/snopt.lib (Microsoft systems) are libraries built from the SNOPT
+source (as of 21 October 2007).  The makefiles and source assume f2c
+calling conventions; see solvers/README.f77 for information on using
+other Fortran compilers.
+
+For possible convenience, directory src also contains analogous
+makefile variants.  See the comments in them.
+
+-----------------------
+solve_result_num values
+=======================
+
+Here is a table of solve_result_num values that "snopt" can return to
+an AMPL session, along with the text that appears in the associated
+solve_message.  The last column gives the value of the snopt output
+parameter INFO, as described in the SNOPT user's guide.
+
+        Value   Message                                       INFO
+
+	0	Optimal solution found				 1
+	1	Feasible point found				 2
+	101	The current point cannot be improved		 3
+	102	Requested accuracy could not be achieved	11
+	202	Infeasible linear constraints			12
+	203	Infeasible linear equalities			13
+	204	Nonlinear infeasibilities minimized		14
+	205	Infeasibilities minimized			21
+	206	Cannot satisfy nonlinear constraints		22
+	301	Unbounded objective				31
+	302	Constraint violation limit reached		32
+	400	Too many iterations				33
+	401	Major iteration limit reached			41
+	402	The superbasics limit is too small		42
+	502	Incorrect gradients from funobj 		43
+	503	Incorrect gradients from funcon 		44
+	508	Singular basis					51
+	513	Error evaluating objective at 1st feas. pt.	52
+	514	Error evaluating initial constraint values	61
+	515	Error evaluating initial objective value
+	522	Ill-conditioned null-space basis		62
+	523	Cannot proceed into undefined region		63
+	524	Wrong basis file dimentions			81
+	550	Work arrays too small				82
+	551	Not enough character storage			83
+	552	Not enough integer storage			84
+	553	Not enough real storage 			91
+	554	Invalid input argument				92
+	555	Wrong number of basic variables		       141
+	556	Error in basis package			       142
+	560	bug: unexpected return from SNOPT
+
+-----------------------
+
+Questions about this stuff?  Contact dmg@ampl.com (David M. Gay).

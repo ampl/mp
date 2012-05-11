@@ -1,0 +1,41 @@
+#!/bin/sh
+
+# "configurehere" for ampl/solvers/minos
+# Originally written by David M. Gay at Sandia National Labs, where it
+# was Approved for Unclassified-Unlimited release: SAND Number 2005-7813P
+# Modified for use in ampl/solvers/minos .
+
+## invoke ./configurehere
+## (no args) to create makefile from makefile.u for compiling "minos"
+## in this directory.  Then link libminos.a to this directory as
+## instructed by comments in "makefile" and invoke "make" to compile minos.
+## Specify CC before invoking to adjust the CC setting in makefile.
+## Specify CFLAGS before invoking to adjust CFLAGS setting in the makefile.
+## CFLAGS may be further adjusted by tests done below.
+## If the ampl/solvers directory is not two levels above this one,
+## i.e., is not ../.. then specify ASLDIR=/full/path/to/ampl/solvers
+## before invoking (with "/full/path/to/ampl/solvers" adjusted suitably).
+
+case $CFLAGS in '') CFLAGS='-O';; esac
+case $CC in '') CC=cc;; esac
+
+SC="s!^CC = cc!CC = $CC!"
+ASLdir=${ASLdir=../../sys.`uname -m`.`uname -s`}
+case $ASLdir in ..);; *)
+	case $ASLdir in "") ASLdir=../../sys.`uname -m`.`uname -s`;; esac
+	SC="$SC;s!^S = ..\$!S = $ASLdir!"
+	;; esac
+
+case `uname -m` in
+	alpha) CFLAGS="$CFLAGS -ieee_with_no_inexact";SC="$SC;s!^L = -lm\$!& -lpthread!";;
+	esac
+
+case `uname -s` in
+	AIX) CFLAGS="$CFLAGS -qnomaf";SC="$SC";;
+	Linux|IRIX*) SC="$SC;s!^L =.*\$!& -ldl!";;
+	CYGWIN_*) SC="$SC;s/a\.out/a.exe/";;
+	esac
+
+case $CFLAGS in -O);; *) SC="$SC;s!^CFLAGS = -O!CFLAGS = $CFLAGS!";; esac
+
+sed "$SC" makefile.u >makefile

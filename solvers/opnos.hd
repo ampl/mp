@@ -1,0 +1,4 @@
+#define PLUS	0
+#define MINUS	1
+#define MULT	2
+#define UMINUS	16

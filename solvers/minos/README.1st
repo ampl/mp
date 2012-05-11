@@ -1,0 +1,58 @@
+The source files in this directory and subdirectory src
+create a version of MINOS version 5.51 called "minos" that works
+with AMPL's solve command or can be used stand-alone to read a SPECS
+and MPS file and solve an LP.
+
+Minos determines how much scratch storage it will need from stub.nl or
+the SPECS file and obtains it from malloc.  For more details, see
+README.minos.
+
+You need to adjust the "M =" assignment to point to the MINOS
+library that you create from the source distributed by Stanford
+Business Software:
+
+	Stanford Business Software
+	2680 Bayshore Parkway, Suite 304
+	Mountain View, CA 94043
+	Phone:	+1-415-962-8719
+	Fax:	+1-415-962-1869
+
+Here, as in /netlib/ampl/solvers and many of its subdirectories,
+after getting the current xsum0.out file for the directory from
+netlib, you can
+
+	make xsum.out
+
+to check for transmission errors and out-of-date files.  This assumes
+you have the xsum program that comes with f2c or with the ampl source.
+Source for xsum is available from netlib, e.g.,
+http://netlib.sandia.gov/f2c/src/xsum.c.gz or
+http://www.netlib.org/f2c/src/xsum.c
+
+On Sun systems running SunOS, you should also add
+"-DMAIN__=MAIN_ -Dxargv=_xargv", so the line becomes
+
+	CFLAGS = -O -DMAIN__=MAIN_ -Dxargv=_xargv
+
+On SGI (IRIX) systems, add "-Dxargv=f77argv" to CFLAGS.
+
+Under DEC's OSF1 (Unix for the Alpha chip), try
+
+	CFLAGS = -O -Dxargv=for__a_argv
+
+On Sun systems running Solaris,
+1. Create a two-line file, fmain.f, consisting of the lines
+
+	call main
+	end
+
+2. Insert "fmain.o " after "m = " in the makefile.
+3. Add "-DMAIN__=main_ -Dxargv=__xargv" to the CFLAGS assignment
+in the makefile.  In this case
+
+	CFLAGS = -O -DMAIN__=main_ -Dxargv=__xargv
+
+may suffice.
+
+Type "make" to create the executable version of MINOS called
+minos mentioned above.

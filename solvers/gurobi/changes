@@ -1,0 +1,112 @@
+20091104
+  gurobi.c, README.gurobi: fix a glitch with iisfind=1 on infeasible
+problems:  solve_result_num previously indicated a failure rather
+than infeasible.
+
+20091214
+  gurobi.c: add "cutoff" keyword to possibilities for $gurobi_options.
+  makefile.u: add rule for xsum.out.
+  README.gurobi: add brief MacOSX discussion.
+
+20100309
+  gurobi.c: fix bugs in handling .ref and .sosno suffixes.
+
+20100418
+  gurobi.c:  extend for Gubobi 3.0; should continue to work with older
+versions of Gurobi as well.  New facilities include keywords for
+requesting .sol files of alternative MIP solutions; new synonym
+lpmethod for simplex and a way to select the (new) barrier algorithm
+(lpmethod=2); new tolerances and an iteration limit for the barrier
+method; control of crossover from barrier solution to basic solution;
+"mipfocus" to help direct the MIP solver; "predual" to present the
+dual of an LP to the solver; "pumppasses" to control the feasibility
+pump; and "symmetry" to control the MIP solver's detection of
+symmetry.  See the output of "gurobi -=" for a summary of the
+currently available keywords.  Complete list of new keywords for
+Gurobi 3.0:  aggfill, ams_eps, ams_epsabs, ams_limit, ams_stub,
+barconvtol, barcorrectors, bariterlim, barorder, crossover,
+crossoverbasis, lpmethod, mipfocus, mipgapabs, networkcuts, param,
+paramfile, predeprow, predual, prepases, pumppasses, resultfile,
+rins, submipcuts, symmetry.
+
+20100424
+  gurobi.c:  fix a couple of typos in the "-=" output; correct
+spelling of "prepasses" and for now make "prepases" a deprecated
+synonym for "prepasses".
+
+20100512
+  gurobi.c: adjust for a gratuitous parameter name change
+("LogfileName" to "LogFile") between versions 2 and 3.
+
+20100523
+  gurobi.c: adding keyword return_mipgap for returning suffixes
+absmipgap and relmipgap on objectives and problems.  (These values
+could already be computed from the bestbound suffix.)
+
+20100720
+  gurobi.c: distinguish explicitly zero initial guesses from those
+that are zero by default.  This affects MIP starting guesses.
+
+20100928
+  gurobi.c: expand description of sos2 (shown with "gurobi -=").
+
+20101021
+   gurobi.c: fix some bugs in statmsg() with error messages not
+normally seen.
+
+20101105
+  gurobi.c, README.gurobi: update for Gurobi 4.0.
+
+20101115
+  gurobi.c:  fix a bug (introduced in adjustments for Gurobi 4) that
+sometimes caused the constant term in objectives to be treated as 0.
+This affected the objective value reported.
+
+20101207
+  gurobi.c, README.gurobi:  set solve_result_num = 567 if the problem has
+complementarity constraints.
+
+20110322
+  gurobi.c: fix a bug in handling problems with integer variables
+(including binary variables) and piecewise-linear terms:  the wrong
+variables were likely treated as integer.  Fix a bug with "writeprob"
+that could occur in problems with piecewise-linear terms:  a call on
+GRBupdatemodel() was missing, which could affect, e.g., a *.lp file
+specified by writeprob.
+
+20110426
+  gurobi.c, README.gurobi: update to Gurobi 4.5.  The updated gurobi.c
+should still work with earlier versions.  The new .unbdd and .dunbdd
+suffixes (for primal and dual rays of unboundedness) are not yet
+reliable.
+
+20110728
+  gurobi.c:  fix a glitch with sos=1 in $gurobi_options that prevented
+.sosno and .ref from being used in problems with only continuous
+variables.
+
+20110920
+  gurobi.c:  add "method"; move the "lpmethod" description to "method"
+and list lpmethod as a synonym for method.  (Driver date 20110907.)
+  README.gurobi, makefile.*: minor tweaks for less dependence on the
+particular version of Gurobi.
+
+??
+  gurobi.c: fix a minor glitch in reporting the names of alternate
+solution files generated when ams_stub is specified in $gurobi_options.
+Update for use with Gurobi 4.6; new keywords:
+	presparsify
+	priorities
+	sifting
+	siftmethod
+	zeroobjnodes
+The priorities keyword controls whether variable.priority values, if
+available, are passed to Gurobi.  (Default = yes.)
+
+20111109
+  gurobi.c:  update for Gurobi 4.6.  Should still work with earlier
+versions of Gurobi.
+
+20120504
+  gurobi.c, README.gurobi, makefile.u: update for Gurobi 5.0.  The
+updated gurobi.c should still work with earlier versions of Gurobi.

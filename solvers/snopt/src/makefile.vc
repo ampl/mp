@@ -1,0 +1,81 @@
+# /****************************************************************
+# Copyright (C) 2001 Lucent Technologies
+# All Rights Reserved
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby
+# granted, provided that the above copyright notice appear in all
+# copies and that both that the copyright notice and this
+# permission notice and warranty disclaimer appear in supporting
+# documentation, and that the name of Lucent or any of its entities
+# not be used in advertising or publicity pertaining to
+# distribution of the software without specific, written prior
+# permission.
+#
+# LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+# INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
+# IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
+# SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
+# IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+# ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+# THIS SOFTWARE.
+# ****************************************************************/
+
+# For making snopt.lib with Microsoft Visual C++ on Intel machines.
+
+# Invoke with "nmake -f makefile.vc" .
+
+CC = cl
+S = ../..
+# Assumes solvers directory is ../..
+# -- e.g., that this directory is solvers/snopt/src.
+# The .c files are assumed to come from f2c applied to
+# the SNOPT source.  $S is assumed to have f2c.h.
+
+CFLAGS = -nologo -Ot1 -I$S
+
+.c.obj:
+	$(CC) -c $(CFLAGS) $*.c
+
+o = \
+	sqopt.obj \
+	snopta.obj \
+	snoptb.obj \
+	snoptc.obj \
+	snoptq.obj \
+	npopt.obj \
+	sq02lib.obj \
+	sn02lib.obj \
+	np02lib.obj \
+	sn03prnt.obj \
+	sn05wrpa.obj \
+	sn05wrpb.obj \
+	sn05wrpc.obj \
+	sn05wrpn.obj \
+	sn10mach.obj \
+	sn12ampl.obj \
+	sn15blas.obj \
+	sn17util.obj \
+	sn20amat.obj \
+	sn25bfac.obj \
+	sn27lu.obj \
+	sn30spec.obj \
+	sn35mps.obj \
+	sn37wrap.obj \
+	sn40bfil.obj \
+	sn50lp.obj \
+	sn55qp.obj \
+	sn56qncg.obj \
+	sn57qopt.obj \
+	sn60srch.obj \
+	sn65rmod.obj \
+	sn70nobj.obj \
+	sn80ncon.obj \
+	sn85hess.obj \
+	sn87sopt.obj \
+	sn90lmqn.obj \
+	sn95fmqn.obj
+
+snopt.lib: $o
+	lib -out:snopt.lib @snopt.lbc

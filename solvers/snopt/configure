@@ -1,0 +1,63 @@
+#!/bin/sh
+
+# "configure" for ampl/solvers/snopt
+# Originally written by David M. Gay at Sandia National Labs, where it
+# was Approved for Unclassified-Unlimited release: SAND Number 2005-7812P
+# Modified to permit "path/to/ASL/snopt/configure" invocations.
+
+## invoke ./configure
+## (no args) to make system-dependent files in directory $OBJDIR
+## (default sys.`uname -m`.`uname -s`).
+## Among other things, create makefile there from makefile.u.
+## Specify CC before invoking to adjust the CC setting in makefile.
+## Specify CFLAGS before invoking to adjust CFLAGS setting in the makefile.
+## CFLAGS may be further adjusted by tests done below.
+
+case $1 in --help) sed '/^## /!d;s/^## //' $0; exit;; esac
+
+CONFdir=`dirname $0`
+case $CONFdir in
+	.)
+	OBJDIR=${OBJDIR=sys.`uname -m`.`uname -s`}
+	rm -rf $OBJDIR makefile Makefile
+	cat <<\! >makefile
+snopt:
+	cd $${OBJDIR=sys.`uname -m`.`uname -s`}; make
+
+clean:
+	cd $${OBJDIR=sys.`uname -m`.`uname -s`}; make clean
+
+veryclean:
+	rm -rf $${OBJDIR=sys.`uname -m`.`uname -s`}
+
+distclean:
+	rm -rf sys.*.*
+!
+	mkdir $OBJDIR
+	;; *)
+	OBJDIR=`pwd`
+	rm -f `sed 's/	.*//' $CONFdir/xsum0.out` makefile Makefile xsum0.out
+	cd $CONFdir
+	;; esac
+
+ln `sed '/\//d;s/	.*//' xsum0.out` xsum0.out $OBJDIR || \
+cp -p `sed '/\//d;s/	.*//' xsum0.out` xsum0.out $OBJDIR
+mkdir $OBJDIR/src
+ln `sed '/\//!d;s/	.*//' xsum0.out` $OBJDIR/src || \
+cp -p `sed '/\//!d;s/	.*//' xsum0.out` $OBJDIR/src
+# cp -p is for cygwin
+cat <<\! >makefile
+snopt:
+	cd $${OBJDIR=sys.`uname -m`.`uname -s`}; make
+
+clean:
+	cd $${OBJDIR=sys.`uname -m`.`uname -s`}; make clean
+
+veryclean:
+	rm -rf $${OBJDIR=sys.`uname -m`.`uname -s`}
+
+distclean:
+	rm -rf sys.*.*
+!
+cd $OBJDIR
+./configurehere

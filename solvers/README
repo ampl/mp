@@ -1,0 +1,261 @@
+This directory contains source for a library of routines that help
+solvers work with AMPL.  In this README file, the library is called
+amplsolver.a (the name it usually has on Unix systems), but on some
+systems it may have another name, such as amplsolver.so or (on
+Microsoft systems) amplsolv.lib.  Services provided by amplsolver.a
+include reading AMPL's generic output (.nl) files, and writing
+solution (.sol) files.  Subdirectories (e.g., cplex, examples, minos)
+contain interface routines for particular solvers; you may wish to
+modify these routines to make your own solver work with AMPL.
+
+To make an executable version of a particular solver, you need
+at least this directory and the solver's subdirectory.  You need
+to invoke "make" once in this directory to create amplsolver.a,
+and then invoke "make" in each solver subdirectory of interest.
+The exact form of the "make" command depends on the system you
+are using.  There is more discussion about "make" and makefiles
+below.
+
+Some installations have several kinds of computers, with various
+hardware and operating systems, and with cross-mounted file systems
+visible from the various computers.  On such systems, the "configure"
+script may be helpful.  It arranges to compile amplsolver.a in
+system-specific subdirectories with names that, unless otherwise
+specified, begin with "sys." and by default are determined by the
+Bourne-shell syntax
+
+	sys.`uname -m`.`uname -s`
+
+Invoking
+
+	./configure
+
+creates a sys.* directory for the current system and adds a
+generic makefile, such that invoking "make" will give the
+same result as
+
+	cd sys.`uname -m`.`uname -s`
+	make
+
+(creating amplsolver.a in the system-specific subdirectory).
+
+Alternatively, if you deal with only one kind of hardware and
+Unix- or Linux-like operating system (including Cygwin or MinGW/MSYS
+under MS Windows), you could invoke
+
+	./configurehere
+
+to arrange for compiling amplsolver.a in this directory.  Either
+way (after "./configure" or "./configurehere") you invoke "make"
+to compile amplsolver.a
+
+
+To get all the source files for amplsolver.a by E-mail, send netlib
+(e.g., netlib@netlib.org) the request
+
+	send all from ampl/solvers
+
+You can also get a tar file of ampl/solvers and all its subdirectories
+with a web browser, by clicking on "tar" in the line "lib: models (tar)" in
+
+	http://netlib.sandia.gov/ampl/
+
+The file you download will be called netlibfiles.tar; executing
+
+	tar xf netlibfiles.tar
+
+will give you directory ampl/solvers containing gzipped files and
+subdirectories; the next step will be
+
+	cd ampl/solvers
+	gzip -dN *.gz
+
+to uncompress the .gz files.  (Do this also in any subdirectories
+of interest.)
+
+Beware that some older versions of Netscape and Internet Explorer
+mishandle "http:" URLs that end in ".gz".
+
+See the comments about tar and .gz files in /netlib/bib/compression.html
+(e.g., http://netlib.sandia.gov/bib/compression.html or
+http://www.netlib.org/bib/compression.html).
+
+For more about AMPL itself, see the AMPL book (second edition):
+
+	"AMPL: A Modeling Language for Mathematical Programming"
+	by Robert M. Fourer, David M. Gay, and Brian W. Kernighan;
+	Duxbury Press / Brooks/Cole Publishing Company, 2002;
+	ISBN 0-534-38809-4
+
+See the pointers to book vendors in
+
+	http://www.ampl.com/BOOK/
+
+
+For solvers written in Fortran, we assume the f2c calling
+conventions.  Source for f2c (Fortran-to-C converter) is
+available by E-mail from netlib@netlib.org and anonymous
+ftp from netlib.bell-labs.com; for details, send the E-mail message
+
+	send index from f2c
+
+to netlib@netlib.org .
+
+See README.f77 for a summary of adjustments that permit use of the
+native Fortran 77 compilers on some systems.
+
+For machines with IBM mainframe arithmetic (i.e., the arithmetic
+of the IBM 360 and 370 series and their successors and imitators,
+such as Amdahl), use arith.ibm as arith.h and add rnd_prod.s to
+the end of the "a =" assignment in the makefile.  For other systems,
+let the makefile compile and execute arithchk.c to create a
+suitable arith.h.  Do not copy arith.h from one kind of computer
+to another.
+
+See the comments in "makefile" about compiling on non-ANSI systems,
+which may require compiling with -DKR_headers, saying "make float.h",
+adding strerror.c to the makefile's "a =" assignment, etc.  Also see
+the comments in "makefile" about compiling on particular systems.
+
+
+Various subdirectories are available, including the following.  They
+provide sample AMPL interfaces, but do not include source or objects
+for the solvers themselves (which you must get from the relevant
+solver vendor, noted in the README.1st file in each subdirectory).
+For more details about, say, MINOS, send the E-mail message
+	send readme from ampl/solvers/minos
+to netlib@netlib.org .
+
+	Subdirectory	Comments
+
+	bpmpd		Research interior LP code by Cs. Meszaros.
+
+	cplex		Uses CPLEX Corp.'s solver: linear (simplex and
+			interior algorithms), network, quadratic, and MIP
+			problems.
+
+	donlp2		General nonlinear optimizer by Peter Spellucci.
+			Uses an SQP algorithm and dense linear algebra.
+
+	examples	Source for examples in "Hooking Your Solver to AMPL".
+
+	fsqp		Based on CFSQP, a nonlinear solver by Craig Lawrence,
+			Jian L. Zhou, and Andre L. Tits.
+
+	funclink	Examples and system-specific makefiles for making
+			shared libraries (.dll files) of imported (i.e.,
+			user-defined) functions.
+
+	lancelot	Based on LANCELOT (by A. R. Conn, Nick Gould, and
+			Ph. L. Toint): general nonlinear programming code
+			using sparse linear algebra.
+
+	loqo		Interior code by Robert Vanderbei: for linear and
+			convex quadratic (or convex nonlinear) problems.
+
+	lpsolve		Simplex and MIP solver based on lp_solve by
+			Michel Berkelaar (michel@es.ele.tue.nl).
+
+	minos		Uses Murtagh & Saunders's code for nonlinear problems;
+			reduces to simplex on linear problems.
+
+	nlc		Source for "nlc" program, which emits Fortran or C
+			for computing objectives, constraint bodies, and
+			their gradients.
+
+	npopt		New version of npsol (see below), available from
+			Philip Gill to people who have npsol.
+
+	npsol		Based on NPSOL (by Gill, Murray, Saunders, Wright),
+			a sequential quadratic programming code for solving
+			nonlinear programming problems.
+
+	path		Based on the PATH solver of Prof. Michael C. Ferris
+			and his former students Steven P. Dirkse and Todd S.
+			Munson, for solving "square" nonlinear
+			complementarity problems.
+
+	snopt		Sparse nonlinear solver by Philip Gill et al.,
+			available from him to people who have npsol.
+
+	xpress		Based on XPRESS-MP, a solver for linear and
+			quadratic programming problems involving continuous
+			or integer variables by Dash Optimization,
+			http://www.dashoptimization.com/
+
+For information about arranging to use other solvers with AMPL,
+see "Hooking Your Solver to AMPL", Postscript for which is
+
+	ftp://www.ampl.com/REFS/hooking.ps.gz
+	http://www.ampl.com/REFS/hooking.ps.gz
+
+and a corresponding html version is
+
+	http://www.ampl.com/REFS/HOOKING/
+
+Be sure to request the changes file periodically to see about bug fixes
+and other updates, or send the 2-word E-mail message
+
+	subscribe ampl
+
+to netlib@netlib.org to receive notification of updates.
+Please send bug reports and other comments to dmg@ampl.com
+(David M. Gay).
+
+
+This directory contains several makefile variants with names of the
+form makefile.*; makefile.u is for Unix systems, and the others are
+for various PC compilers.  Comments in makefile.u describe adaptions
+for particular Unix systems.  The PC variants start (after legal
+disclaimers) with comments saying what compiler they are for and
+telling what "make" incantation to use.  The "examples" subdirectory
+and a few others have analogous makefile variants are obtained from
+makefile.u by changing ".o" to ".obj" and suitably adjusting the rules
+for compiling, linking, and making libraries.
+
+The PC makefiles create "amplsolv.lib" and are set up for Win32;
+some of the PC makefiles have comments explaining changes for MS-DOS.
+If you are using Microsoft Visual C++, see the comments in makefile.vc
+about linking solvers.
+
+The PC makefiles require you to make details.c by hand (since deriving
+it automatically seems hard to do reliably).  It should reflect the
+compiler you are using.  For example, for Microsoft Visual C++ 6.0,
+having details.c consist of the single line
+	char sysdetails_ASL[] = "MS VC++ 6.0";
+would be appropriate.  For systems other than Intel IA32 systems
+(e.g., for IA64 or DEC Alpha systems), the system should also be
+indicated in sysdetails_ASL.  This string is used by some solvers
+as part of the output produced for the "version" keyword and the -v
+command-line option.
+
+Formerly it was necessary to check by hand whether your math library
+sometimes returns NaNs without setting errno when math functions are
+called with invalid arguments, and if so to add -DNANCHECK to the
+CFLAGS assignment of the relevant makefile variant.  Now this detail
+should be handled by a #define in arith.h, which should be computed
+automatically as described above.  If you know that your math library
+never sets errno, adding -DNO_ERRNO to the relevant CFLAGS assignment
+will save a little time and perhaps avoid compiler complaints.
+
+When linking nonlinear solvers on some systems, it's necessary to
+add system-dependent keywords to the linking command, e.g., to make
+dlopen() visible.  Some of the makefiles for specific solvers have
+comments about this, and subdirectory funclink contains sample
+makefiles that illustrate how to do things on for several popular
+systems.
+
+In general, it is necessary once in this directory to give the
+appropriate "make" invocation, such as
+
+	make
+
+on Unix platforms,
+
+	nmake -f makefile.vc
+
+under Windows NT or W9x with MS Visual C++, etc., and then to give
+a suitable "make" invocation in each solver subdirectory of interest.
+On non-Unix systems, in many of the solver subdirectories it may be
+necessary to modify the Unix makefile into the form required by the
+system.

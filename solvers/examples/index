@@ -1,0 +1,164 @@
+#	======  index for ampl/solvers/examples  ======
+####	*.amp, *.nl, *.out, *.row, *.col *.sol are sample input and
+####	output files: see README
+
+file	ampl/solvers/examples/README
+
+file	ampl/solvers/examples/README.gjh
+for	"solver" gjh for computing gradients, Jacobians,
+	and Lagrangian Hessians
+
+file	ampl/solvers/examples/amplfun4.c
+for	MATLAB 4.x .mex file (dense Jacobian, Hessian)
+
+file	ampl/solvers/examples/amplfunc.c
+for	MATLAB 5.x .mex file (dense Jacobian, Hessian)
+
+file	ampl/solvers/examples/ch3.amp
+
+file	ampl/solvers/examples/ch3.nl
+
+file	ampl/solvers/examples/ch3mng.out
+
+file	ampl/solvers/examples/ch3mng.sol
+
+file	ampl/solvers/examples/ch3mnh.out
+
+file	ampl/solvers/examples/ch3mnh.sol
+
+file	ampl/solvers/examples/ch3nl2.out
+
+file	ampl/solvers/examples/ch3nl2.sol
+
+file	ampl/solvers/examples/ch3nl21.out
+
+file	ampl/solvers/examples/ch3qtest.out
+
+file	ampl/solvers/examples/ch3tn.out
+
+file	ampl/solvers/examples/ch3tn.sol
+
+file	ampl/solvers/examples/changes
+
+file	ampl/solvers/examples/diet.amp
+
+file	ampl/solvers/examples/diet.col
+
+file	ampl/solvers/examples/diet.nl
+
+file	ampl/solvers/examples/diet.row
+
+file	ampl/solvers/examples/diet.sol
+
+file	ampl/solvers/examples/dietd.nl
+
+file	ampl/solvers/examples/dietd.sol
+
+file	ampl/solvers/examples/dietl1.out
+
+file	ampl/solvers/examples/dietl2.out
+
+file	ampl/solvers/examples/dietl3.out
+
+file	ampl/solvers/examples/dietu.sol
+
+file	ampl/solvers/examples/dminos
+lang	Bourne shell script
+
+file	ampl/solvers/examples/dualconv.c
+
+file	ampl/solvers/examples/enewt.m
+
+file	ampl/solvers/examples/evalchk.c
+for	source for "solver" evalchk that sets suffix .numerr on
+	constraints and objectives to nonzero values if the 
+	entity cannot be evaluated at the given starting point.
+	
+file	ampl/solvers/examples/evalf.m
+
+file	ampl/solvers/examples/evalg.m
+
+file	ampl/solvers/examples/evalw.m
+
+file	ampl/solvers/examples/fmng1.f
+
+file	ampl/solvers/examples/fnl21.f
+
+file	ampl/solvers/examples/gjh.c
+
+file	ampl/solvers/examples/hist.c
+for	providing command-line history to interactive programs
+	(such as ampl); uses the GNU history and readline libs.
+
+file	ampl/solvers/examples/hkeywds.c
+
+file	ampl/solvers/examples/hs100.amp
+
+file	ampl/solvers/examples/hs100.nl
+
+file	ampl/solvers/examples/hs100.so0
+
+file	ampl/solvers/examples/init.m
+
+file	ampl/solvers/examples/keywds.c
+
+file	ampl/solvers/examples/lin1.c
+
+file	ampl/solvers/examples/lin1diet.out
+
+file	ampl/solvers/examples/lin2.c
+
+file	ampl/solvers/examples/lin2diet.out
+
+file	ampl/solvers/examples/lin3.c
+
+file	ampl/solvers/examples/lin3diet.out
+
+file	ampl/solvers/examples/linrc.c
+
+file	ampl/solvers/examples/linrcdie.out
+
+file	ampl/solvers/examples/makefile
+
+file	ampl/solvers/examples/makefile.sy
+for	Symantec C++
+
+file	ampl/solvers/examples/makefile.vc
+for	Microsoft Visual C++
+
+file	ampl/solvers/examples/makefile.wat
+for	WATCOM C/C++
+
+file	ampl/solvers/examples/mng.c
+
+file	ampl/solvers/examples/mng1.c
+
+file	ampl/solvers/examples/mnh.c
+
+file	ampl/solvers/examples/nl2.c
+
+file	ampl/solvers/examples/nl21.c
+
+file	ampl/solvers/examples/qtest.c
+
+file	ampl/solvers/examples/rvmsg.c
+
+file	ampl/solvers/examples/rvmsg.h
+
+file	ampl/solvers/examples/savesol.m
+
+file	ampl/solvers/examples/spamfunc.c
+for	MATLAB 5.x .mex file (sparse Jacobian, Hessian)
+
+file	ampl/solvers/examples/tnmain.c
+
+file	ampl/solvers/examples/v8.c
+
+file	ampl/solvers/examples/v8ch3.out
+
+file	ampl/solvers/examples/ve08.c
+
+file	ampl/solvers/examples/ve08ch3.out
+
+file	ampl/solvers/examples/xsum0.out
+for	checksums

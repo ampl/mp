@@ -1,0 +1,5 @@
+system nt_dll initinstance terminstance
+libpath d:\watcom\lib386
+export funcadd_ASL_
+file funcadd
+file libmain

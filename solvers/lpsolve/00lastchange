@@ -1,0 +1,2 @@
+Thu Jun 12 23:33:02 EDT 2003
+  Adjust so "lpsolve" (no arguments) shows usage rather than faulting.

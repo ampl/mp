@@ -1,0 +1,22 @@
+# Sample makefile for making "xpress" on Linux or Unix systems.
+# Copy this file to "makefile" and edit the latter.  Then
+# say "make" to make xpress for use with AMPL
+
+S = ..
+# $S =  ampl/solvers directory
+CC = cc
+XPRESSDIR = xp7.1_linux
+CFLAGS = -O
+L = -L$(XPRESSDIR)/lib -lxprl -lxprs -lm
+
+xpress: xpress.o
+	$(CC) -o xpress xpress.o $S/funcadd0.o $S/amplsolver.a $L
+
+xpress.o: xpress.c
+	$(CC) -c $(CFLAGS) -I$S -I$(XPRESSDIR)/include xpress.c
+
+xs0 = README.1st README.xpress xpress.c makefile.u makefile.vc
+
+xsum.out: $(xs0)
+	xsum $(xs0) >xsum1.out
+	cmp xsum0.out xsum1.out && mv xsum1.out xsum.out || diff xsum[01].out

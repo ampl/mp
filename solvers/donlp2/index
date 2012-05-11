@@ -1,0 +1,14 @@
+file	ampl/solvers/donlp2/README
+
+file	ampl/solvers/donlp2/changes
+
+file	ampl/solvers/donlp2/donlp.c
+
+file	ampl/solvers/donlp2/makefile.u
+for	Unix makefile
+
+file	ampl/solvers/donlp2/makefile.vc
+
+file	ampl/solvers/donlp2/xsum0.out
+
+file	ampl/solvers/donlp2/setup1.f

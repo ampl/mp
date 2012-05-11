@@ -1,0 +1,4 @@
+20120423
+  cplex.c: call CPXwriteparam instead of CPXEwriteparam.  The change
+should be invisible for now but may be required with future versions
+of CPLEX.

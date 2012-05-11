@@ -1,0 +1,52 @@
+# /****************************************************************
+# Copyright (C) 2009 AMPL Optimization LLC
+# All Rights Reserved
+# 
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby
+# granted, provided that the above copyright notice appear in all
+# copies and that both that the copyright notice and this
+# permission notice and warranty disclaimer appear in supporting
+# documentation, and that the name of Lucent or any of its entities
+# not be used in advertising or publicity pertaining to
+# distribution of the software without specific, written prior
+# permission.
+# 
+# AMPL Optimization LLC DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
+# SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+# FITNESS.  IN NO EVENT SHALL AMPL Optimization LLC OR ANY OF ITS
+# ENTITIES BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES
+# OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+# WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+# ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
+# SOFTWARE.
+# ****************************************************************/
+
+# For making gurobi.exe with Microsoft Visual C++ on Intel machines.
+
+CC = cl
+CFLAGS = -Ot1 -nologo
+
+# If things don't run right, you may need to change -Ot1 to -Zi and add
+# -Zi to the cplex.exe rule below so you can poke around with a debugger.
+
+Lmt = libcmt.lib /link /NODEFAULTLIB:libc.lib
+S = ..
+# "S = .." assumes this directory is solvers/gurobi .
+
+Platform = win32
+# or win64
+
+G = y:/l/gurobi/4.5/gurobi460
+GLib = gurobi46.lib
+L = $G/$(Platform)/lib/$(GLib) $S/amplsolv.lib $(Lmt) advapi32.lib kernel32.lib wsock32.lib
+### Adjust the above "G =" and "GLib =" lines suitably for your system
+### and version of Gurobi.
+### You must obtain gurobi_c.h, gurobi*.lib and gurobi*.dll from
+### Gurobi Optimization, Inc.  They are all you really need from
+### Gurobi's large GUROBI distribution.  See http://www.gurobi.com .
+
+INC = -I$G/$(Platform)/include -I$S
+
+gurobi.exe: gurobi.c
+	$(CC) $(CFLAGS) $(INC) gurobi.c $L

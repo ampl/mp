@@ -1,0 +1,123 @@
+Solver npopt is a nonlinear solver based on NPOPT, a nonlinear solver
+by Philip E. Gill, Walter Murray and Michael A. Saunders.  NPOPT is an
+updated version of NPSOL and is available from Professor Gill
+to people who have NPSOL; contact peg@optimal.ucsd.edu (Philip Gill)
+to see about getting source for npopt.a, a library form of NPOPT.
+NPSOL is available from
+
+	Stanford Business Software
+	2680 Bayshore Parkway, Suite 304
+	Mountain View, CA 94043
+	Phone:	+1-415-962-8719
+	Fax:	+1-415-962-1869
+
+It is most convenient to invoke npopt with AMPL's solve command:
+
+	ampl: option solver npopt;
+	ampl: solve;
+
+but npopt can also be run separately, with invocation syntax
+
+	npopt stub [-AMPL] [keywd=[value] ...]
+
+in which stub comes from AMPL's write command.  For example,
+
+	> ampl -obfoo foo.mod foo.dat
+	> npopt foo
+
+demonstrates running npopt separately; the ampl invocation
+writes file foo.nl (stub = "foo"), which npopt reads.
+
+Command-line arguments to npopt either have the form
+	keywd=
+or
+	keywd=value
+where keywd is one of the key words described below.  Alternatively,
+you can invoke npopt the way AMPL's solve command does, i.e.,
+
+	npopt stub -AMPL [keywd=value ...]
+
+where stub was specified in
+
+	ampl -obstub ...
+or
+	ampl -ogstub...
+
+Such an invocation causes npopt to read from stub.nl and to write stub.sol.
+
+-----------------
+Controlling npopt
+-----------------
+
+Npopt reads keywords and values from the environment (shell) variable
+npopt_options and from the command line.  Execute
+
+	npopt -=
+
+for a summary of keywords that are synonyms for NPSOL keyword phrases.
+You can also give NPSOL keyword phrases if you change blanks within
+them to underscores and follow them with an = (equals sign).
+
+------------------
+Sample Invocations
+------------------
+
+  If you're using AMPL, just say
+
+	option solver npopt;
+	solve;
+
+  If you've executed, say,
+
+	ampl -objunk junk.model junk.data
+
+then you could say
+
+	npopt junk itera=300 linesearch=1e-6
+
+to force npopt to run for at most 300 iterations and use linesearch
+tolerance 1e-6.  With the Bourne shell, either of the invocations
+
+	npopt_options='iterations=300 linesearch=1e-6' npopt junk
+or
+	npopt_options='iterations=300 linesearch=1e-6'
+	export npopt_options
+	npopt junk
+
+would have the same effect; within AMPL, specifying
+
+	option npopt_options 'iterations=300 linesearch=1e-6', solver npopt;
+	solve;
+
+would also have this effect.
+
+
+The makefile assumes that npopt.a is a library built from the NPOPT
+source.
+
+-----------------------
+solve_result_num values
+=======================
+
+Here is a table of solve_result_num values that "npopt" can return
+to an AMPL session, along with the text that appears in the associated
+solve_message.
+
+	Value	Message
+
+	0	optimal solution
+	100	first-order optimal but not converged
+	200	linear constraints infeasible
+	201	nonlinear constraints infeasible
+	400	major iteration limit
+	501	Bug: INFORM = 5
+	502	stuck (INFORM = 6)
+	503	Bug: bad objective or constraints (INFORM = 7)
+	504	Bug: INFORM = 8
+	505	Bug: invalid input parameter (INFORM = 9)
+	506	unexpected INFORM value
+	507	solution aborted
+
+-----------------------
+
+Questions about this stuff?  Contact dmg@ampl.com (David M. Gay).

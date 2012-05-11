@@ -1,0 +1,10 @@
+The source files in this directory create osl, a solver based on
+version 1.2 of IBM's OSL (Optimization Subroutine Library) that
+handles linear, mixed-integer, and network optimization problems.
+
+OSL 1.2 is no longer distributed.  This directory is just for
+the benefit of people who still have OSL 1.2.
+
+If your float.h doesn't #define DBL_MAX to be a constant,
+compile osl.c with Bad_DBL_MAX #defined, e.g. by adding
+-DBad_DBL_MAX to the CFLAGS assignment in the makefile.

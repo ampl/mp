@@ -1,0 +1,31 @@
+
+# ----------------------------------------
+# SENSITIVITY ANALYSIS
+# FOR THE DIET PROBLEM
+# ----------------------------------------
+
+model sens.mod;   # diet.mod from AMPL book;
+data sens.dat;    # diet2a.dat from AMPL book;
+
+model;
+
+param NAstart := 50000;
+param NAstop := 70000;
+param NAstep := 1000;
+set NALOG default {};
+
+param NAobj {NALOG};
+param NAdual {NALOG};
+
+for {theta in NAstart .. NAstop by NAstep} {
+   let n_max["NA"] := theta;
+   let NALOG := NALOG union {theta};
+   solve;
+
+   let NAobj[theta] := total_cost;
+   let NAdual[theta] := diet["NA"].dual;
+
+   if diet["NA"].dual > -.000001 then break;
+   }
+
+display NAobj, NAdual;

@@ -1,0 +1,39 @@
+BPMPD is a research LP code by
+
+	Cs. Meszaros,
+	MTA SzTAKI, Budapest, Hungary
+	mail: H-1518 Budapest, P.O. Box 63.
+	e-mail: meszaros@lutra.sztaki.hu
+
+Source for BPMPD is available by ftp for non-commercial use from
+netlib ftp servers, e.g.,
+
+	ftp://netlib.bell-labs.com/netlib/opt/bpmpd.tar.gz
+
+Source file main.c is an AMPL driver for BPMPD.  It assumes
+a library form of BPMPD (bpmpd.a on Unix systems) is in the current
+directory.  (To avoid any confusion with BPMPD source file bpmpd.f,
+the driver is "main.c" rather than the more logical "bpmpd.c".)
+
+-----------------------
+solve_result_num values
+=======================
+
+Here is a table of solve_result_num values that "bpmpd" can return
+to an AMPL session, along with the text that appears in the associated
+solve_message.
+
+	Value	Message
+
+	0	Optimal solution found
+	1	Optimal primal solution; some dual values may be wrong.
+	200	Primal infeasible (or badly scaled)
+	300	Dual infeasible (or badly scaled)
+	510	Execution stopped
+	520	Ran out of memory
+
+At the moment (5 May 1999), BPMPD does not return correct dual values
+for constraints that its presolve phase eliminates.  If bpmpd otherwise
+appears to solve the problem correctly, solve_result_num = 1.
+By adding " presolv=" to $bpmpd_options, you can turn off BPMPD's
+presolve phase.

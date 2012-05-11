@@ -1,0 +1,64 @@
+
+# ----------------------------------------
+# BENDERS DECOMPOSITION FOR
+# THE LOCATION-TRANSPORTATION PROBLEM
+# ----------------------------------------
+
+model trnloc1d.mod;
+data trnloc1.dat;
+
+option solver osl;
+option osl_options
+   'bbdisplay 2 bbdispfreq 100 dspace 500000 pretype 2 simplex 1';
+
+option omit_zero_rows 1;
+option display_eps .000001;
+
+problem Master: Build, Max_Ship_Cost, Total_Cost, Cut_Defn;
+
+problem SubPoint: Supply_Price, Demand_Price, Dual_Ship_Cost,
+   Unbounded_Check, Dual_Ship;
+problem SubRay: Supply_Price, Demand_Price, Dummy,
+   Unbounded_Direction, Feasible_Direction;
+
+let nCUT := 0;
+let Max_Ship_Cost := 0;
+let {i in ORIG} build[i] := 1;
+
+param GAP default Infinity;
+
+repeat { printf "\nITERATION %d\n\n", nCUT+1;
+
+   solve SubPoint;
+   printf "\n";
+
+   if Dual_Ship_Cost <= Max_Ship_Cost + 0.00001 then break;
+   else if Dual_Ship_Cost < BIG - 1 then {
+      let GAP := min (GAP, Dual_Ship_Cost - Max_Ship_Cost);
+      option display_1col 0;
+      display GAP, Dual_Ship;
+      let nCUT := nCUT + 1;
+      let cut_type[nCUT] := "point";
+      let {i in ORIG} supply_price[i,nCUT] := Supply_Price[i];
+      let {j in DEST} demand_price[j,nCUT] := Demand_Price[j];
+      }
+   else { printf "\nFINDING EXTREME RAY\n\n";
+      solve SubRay;
+      let nCUT := nCUT + 1;
+      let cut_type[nCUT] := "ray";
+      let {i in ORIG} supply_price[i,nCUT] := Supply_Price[i];
+      let {j in DEST} demand_price[j,nCUT] := Demand_Price[j];
+      };
+
+   printf "\nRE-SOLVING MASTER PROBLEM\n\n";
+
+   solve Master;
+   printf "\n";
+   option display_1col 20;
+   display Build;
+
+   let {i in ORIG} build[i] := Build[i];
+};
+
+option display_1col 0;
+display Dual_Ship;

@@ -1,0 +1,118 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-bl master Mon Feb 10 10:35:23 EST 2003
+# http://cm.bell-labs.com/netlib/crc/netlib-bl.html
+/uzEM9FJgmSmcuKlUXOUBw	00lastchange
+ofCchmSkNZP2+OB96EUWKw	README
+pTNYNuySOw9/5F1D/+HCSQ	blend.mod
+bKkORiJNJBJ21Jlc2qo4jw	branin.mod
+CKY4R4QXrubLXKkTvevl8w	camel1.mod
+zeMmeLuruACmAjeV+j6Qzg	changes
+dKDf2/WlVTZLVfmbRrH7mQ	chemeq.mod
+pFzFuiQST7uzvyizAlZKdA	chi.mod
+CbXavw5QDDdcj/t0loVODA	gold.mod
+4IjPCLubsFjNc0Gwx5OG8w	gridneta.mod
+0EiWLjakW2T5cFhXPV0brw	griewank.mod
+tGh/Z7Add/ZM0dQBuPh10Q	hs105.mod
+1A1g6RUFh5nP4vSQRQK9dQ	hs106.mod
+ioKzJMypK7UplEz+vTaGXw	hs109.mod
+5aL/04xlU6Bf+kdfjQq7vQ	hs111.mod
+Ys503yi/Ncp+4nt/UAdblg	hs112.mod
+yd1lmR2b0q7+o0kbcusSkA	hs114.mod
+erIEQHf/Xv3wywsAUaFGzg	hs116.mod
+IfTGnTS5hy9j77zPuP3dQg	hs15.mod
+MqysZdjrAesuK4PmySoDgw	hs23.mod
+wCEPZ4wwrDApQtfcnpGgPw	hs35.mod
+Tf8i5pf+MXudtEw07owGNg	hs44.mod
+aP6x4I5gDAhRyBMpCS0/Vw	hs5.mod
+rQYhGY6HYEOFUHtVSa3yOw	hs54.mod
+V5ko0AClw3bLmyKhQKhg2w	hs6.mod
+fH3Uxl0fy1Aj4ZKajrwiGA	hs62.mod
+vpbWqhv+jjYd0h+Fx/KJdg	hs64.mod
+nKqFL0DcRKnrgFAD6ehzjQ	hs8.mod
+VZ4kJPkcL9k86FvPPFzNqw	hs87.mod
+1ZQwXve587W1gD8bv/2jbQ	index
+lRYjwooMuFksxyAyT2RWHg	kowalik.mod
+SchPj9WyA9vP9KbL8yA/1w	levy3.mod
+TSvwvPXH21hEnPF4OABblQ	ljcluster.mod
+xSGtG1IG4WPX82iBgwNNJw	minos.out
+yoTA7DAjXBPKnn+M6XcHgg	osborne1.mod
+IOppeqTtiQv/azbw5GjEgw	powell.mod
+UkLrSmwHZ8gW3tO+5ZHcaQ	price.mod
+u2CiUa6taLdLM5fWM6Z9FQ	rosenbr.mod
+nmFZ8Ynl8pZm3/u/WC86Cw	s324.mod
+5p7JvNS4zbVZUe9QArg4ZA	s383.mod
+QQAJFZxPXzpWGo9j8qFQwQ	schwefel.mod
+dHpgJgU+Xj18YA0petDoIw	shekel.mod
+GHs6VcVD1szglDGJfX8Gxg	steenbre.mod
+szdFhfkv9EISvTKORvghBw	tre.mod
+f3cjSkROANFNksSSsPSJcg	weapon.mod
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBPkfGvL5pvxO9gjtZAQFf2AP/QTh8/7RarNdLfMySMPpFiZzh/YyYtnTw
+yk1OS4PA+LxT1zvs9xpmjk0M6xdm2Ee7U9NofL4EwxszaWrX/trIsAZI4vwRWCBG
+i7NFaJyT98KCN3o9j9W/X4QsbPTO5jZhhg43LzoDKfmmGSHWut8Z9yhtoGb1Dd3D
+kion4icp8VU=
+=Czkc
+-----END PGP SIGNATURE-----
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-utk master Fri Apr 27 03:10:20 EDT 2007
+1B2M2Y8AsgTpgAmY7PhCfg	00lastchange
+1B2M2Y8AsgTpgAmY7PhCfg	README
+1B2M2Y8AsgTpgAmY7PhCfg	blend.mod
+1B2M2Y8AsgTpgAmY7PhCfg	branin.mod
+1B2M2Y8AsgTpgAmY7PhCfg	camel1.mod
+1B2M2Y8AsgTpgAmY7PhCfg	changes
+1B2M2Y8AsgTpgAmY7PhCfg	chemeq.mod
+1B2M2Y8AsgTpgAmY7PhCfg	chi.mod
+1B2M2Y8AsgTpgAmY7PhCfg	gold.mod
+1B2M2Y8AsgTpgAmY7PhCfg	gridneta.mod
+1B2M2Y8AsgTpgAmY7PhCfg	griewank.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs105.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs106.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs109.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs111.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs112.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs114.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs116.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs15.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs23.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs35.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs44.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs5.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs54.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs6.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs62.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs64.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs8.mod
+1B2M2Y8AsgTpgAmY7PhCfg	hs87.mod
+1B2M2Y8AsgTpgAmY7PhCfg	index
+ueQuq3hV8PQQTL43//Un5Q	index.html
+1B2M2Y8AsgTpgAmY7PhCfg	kowalik.mod
+1B2M2Y8AsgTpgAmY7PhCfg	levy3.mod
+1B2M2Y8AsgTpgAmY7PhCfg	ljcluster.mod
+1B2M2Y8AsgTpgAmY7PhCfg	minos.out
+1B2M2Y8AsgTpgAmY7PhCfg	osborne1.mod
+1B2M2Y8AsgTpgAmY7PhCfg	powell.mod
+1B2M2Y8AsgTpgAmY7PhCfg	price.mod
+1B2M2Y8AsgTpgAmY7PhCfg	rosenbr.mod
+1B2M2Y8AsgTpgAmY7PhCfg	s324.mod
+1B2M2Y8AsgTpgAmY7PhCfg	s383.mod
+1B2M2Y8AsgTpgAmY7PhCfg	schwefel.mod
+1B2M2Y8AsgTpgAmY7PhCfg	shekel.mod
+1B2M2Y8AsgTpgAmY7PhCfg	steenbre.mod
+1B2M2Y8AsgTpgAmY7PhCfg	tre.mod
+1B2M2Y8AsgTpgAmY7PhCfg	weapon.mod
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBRjGh4eFlxDEfrjtlAQGKywP/Q9FY4LilUFZ4jn8OvoHcoGt27BLNaCO2
+3oHzwkI47Qz6UBJJ/b6kdb4CqwX8B5lkyAd+RJEuZ9wIwYKjV9OF8/yAJgZaVtsx
+/ncPQ0nKzaEOIDop8AOJ1P2sU4Pj4IDTL1lJtQwcwx1suOeDL6AXHmyyBknW2aDV
+NELdHdv7SMY=
+=8QGR
+-----END PGP SIGNATURE-----

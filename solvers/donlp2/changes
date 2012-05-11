@@ -1,0 +1,77 @@
+Thu Oct 16 13:50:02 EDT 1997
+  donlp.c, setup1.f: fix bug in handling linear constraints.
+
+Fri Oct 17 01:13:39 EDT 1997
+  donlp.c, setup1.f: fix more confusion between setup and setup0
+(that caused trouble with infeasible simple-bound constraints).
+Fix sign of objective reported in solution message for maximization
+problems.
+
+Tue Oct 21 10:43:27 EDT 1997
+  Fix bug (typo) that sometimes caused a fault or other failure
+(e.g., on ampl/models/nlmodels/hs109.mod on some systems).
+  New keyword maxit limits the number of iterations.
+  Arrange for "intakt=1" to give detailed output on stdout without
+"silent=0" having to be specified, and (without "silent=0") arrange
+for no surprise files to be written.
+
+Fri Oct 24 00:34:49 EDT 1997
+  Update donlp.c and setup1.f to work with a new version of donlp2
+whose source has just been installed in /netlib/opt/donlp2.
+
+Sat Feb  7 00:25:17 EST 1998
+  Update donlp.c and setup1.f to add keyword epsx to $donlp2_options
+(convergence tolerance).
+
+Mon Feb  9 17:11:40 EST 1998
+  Adjust donlp.c, setup1.f to update the counters that DONLP2 prints
+when you ask for lots of output.  The "component constraint" count
+in the solver summary message now includes evaluations of simple-
+bound constraints.
+
+Thu Apr  2 16:50:21 EST 1998
+  donlp.c: updated to return solve_result_num to AMPL.
+  makefile: omit $S/funcadd0.o; on most systems, $S/amplsolver.a now
+provides a recommended default funcadd: see ampl/solvers/funclink/README
+for details.
+
+Sun Jun  7 01:33:46 EDT 1998
+  donlp2: update for use with DONLP2 version 19980529, which is now
+available from netlib's opt directory.  New source file donlpver.c0,
+which the makefile turns into donlpver.c by inserting the operating
+system name and version.  Now donlp2 recognizes suffix .vsclog10 on
+variables as the base-10 logarithm of a scale factor, so
+(internal variable) * 10^(variable.vsclog10) = (modeler's) variable.
+
+Tue Jul 28 22:22:32 EDT 1998
+  donlpver.c0: adjust to reflect updated /netlib/opt/donlp2/donlp2.f
+(updated 24 June 1998).
+
+Fri Oct 16 01:05:54 EDT 1998
+  setup1.f: omit unused final argument to setup1; it caused the
+implicit length argument for "name0" to be lost and thus sometimes
+caused odd extra characters to be assigned to "name".
+
+Tue May 18 18:52:31 EDT 1999
+  For consistency with other solvers, add "objno" keyword (as a synonym
+for nprob).  If there are too many constraints, report this in the
+solve_message.
+
+Sun Sep  5 23:31:19 EDT 1999
+  donlp.c donlpver.c setup1.f: updated to reflect updated source in
+/netlib/opt/donlp2.
+
+Mon Sep 27 11:57:51 EDT 1999
+  donlp.c: when there are integer variables, note in the solution
+message that they are ignored.
+  makefile: renamed makefile.u.
+
+Thu Feb  3 22:20:46 EST 2000
+  makefile.vc (for Microsoft Visual C++) added.
+
+Tue May  7 16:06:10 EDT 2002
+  makefile.*, donlp.c: omit donlpver.c0, which is now automatically
+incorporated into donlp.c and the solver interface library.
+
+Fri Oct  4 23:17:33 EDT 2002
+  makefile.u, makefile.vc: minor tweaks (favor $FC; fix sdonlp2.exe rule).

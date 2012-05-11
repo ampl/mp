@@ -1,0 +1,18 @@
+file	ampl/solvers/minos/README.1st
+
+file	ampl/solvers/minos/README.minos
+
+file	ampl/solvers/minos/configure
+
+file	ampl/solvers/minos/configurehere
+
+file	ampl/solvers/minos/m551.c
+
+file	ampl/solvers/minos/makefile.u
+
+file	ampl/solvers/minos/makefile.vc
+
+file	ampl/solvers/minos/xsum0.out
+for	checksums
+
+file	ampl/solvers/minos/changes

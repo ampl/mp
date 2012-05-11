@@ -1,0 +1,21 @@
+# Makefile for Solaris with gcc on an i386 machine
+
+.SUFFIXES: .c .o
+
+# $S = ampl/solvers directory
+S = ..
+CC = cc
+CFLAGS = -I$S -O
+.c.o:
+	$(CC) -c $(CFLAGS) $*.c
+
+amplfunc.dll: funcadd.o
+	ld -G -o amplfunc.dll funcadd.o
+
+## Sample solver creation...
+
+# $(myobjects) = list of .o files
+myobjects = ....
+
+mysolver: $(myobjects)
+	$(CC) -o mysolver $(myobjects) $S/amplfunc.a -lm -ldl

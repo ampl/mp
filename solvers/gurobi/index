@@ -1,0 +1,13 @@
+file	ampl/solvers/gurobi/README.1st
+
+file	ampl/solvers/gurobi/README.gurobi
+
+file	ampl/solvers/gurobi/changes
+
+file	ampl/solvers/gurobi/gurobi.c
+
+file	ampl/solvers/gurobi/makefile.u
+
+file	ampl/solvers/gurobi/makefile.vc
+
+file	ampl/solvers/gurobi/xsum0.out

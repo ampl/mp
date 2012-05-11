@@ -1,0 +1,53 @@
+file	ampl/models/compl/README
+
+file	ampl/models/compl/bertsek.dat
+
+file	ampl/models/compl/bertsek.mod
+
+file	ampl/models/compl/bertsek.run
+
+file	ampl/models/compl/changes
+
+file	ampl/models/compl/choi.dat
+
+file	ampl/models/compl/choi.mod
+
+file	ampl/models/compl/compchk
+for	AMPL script for checking complementarity conditions
+
+file	ampl/models/compl/ehl_def.mod
+
+file	ampl/models/compl/ehl_kost.mod
+
+file	ampl/models/compl/josephy.dat
+
+file	ampl/models/compl/josephy.mod
+
+file	ampl/models/compl/josephy.run
+
+file	ampl/models/compl/kojshin.mod
+
+file	ampl/models/compl/kojshin.run
+
+file	ampl/models/compl/munson1.mod
+
+file	ampl/models/compl/nash.dat
+
+file	ampl/models/compl/nash.mod
+
+file	ampl/models/compl/nash.run
+
+file	ampl/models/compl/obstacle.mod
+
+file	ampl/models/compl/obstacle.run
+
+file	ampl/models/compl/pies.dat
+
+file	ampl/models/compl/pies.mod
+
+file	ampl/models/compl/pies.run
+
+file	ampl/models/compl/runall
+for	AMPL script for running most of these examples: the ones
+,	reported in "Expressing Complementarity Problems in an
+,	Algebraic Modeling Language and Communicating Them to Solvers"

@@ -1,0 +1,4 @@
+model pies.mod;
+data pies.dat;
+solve;
+include compchk;

@@ -1,0 +1,104 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-bl master Mon Feb 10 10:35:17 EST 2003
+# http://cm.bell-labs.com/netlib/crc/netlib-bl.html
+Ybjnjh5PD9roeIFqc98jJQ	changes
+WcjgeFKx1JjR6nFz4x6KxA	dist.mod
+ZyRXk2mCrkEMeVuIxt39lg	dist.n
+Ef2U3zRIL8CJpfM31HpfFA	dist03.dat
+Ad8vSycuTM/5dMQ6C9sxLw	dist08.dat
+5vqGAvQIcj62rXG4tsxEnA	dist13.dat
+yLv58Nytrq+URhShBqe6KA	egypt1.dat
+i+Y1U5lDmBshef1k8keo2g	egypt1.mod
+IhfWRcFXtteAuJotMCju/Q	egypt2.dat
+tCE1FwvzrM/0CQStI7pGxQ	egypt2.mod
+GNitK52z4nm6iWx2ToBUuQ	index
+AY59igmGGE9GYUerEOZbtw	m2a
+Dc/6h8PNqL9GvoMiSbKt0A	m2ai
+oMhmh1acsXRRSX24UO+juQ	mod8.dat
+DGJZjQJg+fIfDetOLZTAGQ	mod8.mod
+Hv1DEl7e7c4AAcXyCDv8Fg	mps.mod
+QNPRxi4lTiABszLFRrtFTQ	mps1.mod
+dHQ0IWHB+oV6f/9VV7cFfQ	mpsi.mod
+eWLBRcv8EinuoZhQN1QqVw	oil.dat
+6cMy4tJgjQ/gsQWd98uuWQ	oil.mod
+Btm6tYLPpQIsTdIXHi273A	optimal.val
+Yy/kdQWRonO9XneIs04G2A	p2gon.mod
+184yhc6F8tSsKFHE3txJfg	pgon.mod
+ww3SqyqNokNODi78q5mGGg	prod.mod
+ArT8Jngnv3G7W/gnPbDwQw	prod03.dat
+NUzJOBAe3V6ufK3VESwHIA	prod08.dat
+Ufi11iM803Q6Ga+fChtptg	prod13.dat
+hODihRTXLmuTXhL1RG/HqQ	score.mod
+PweBU8YZ+qAYwF3IdaJllw	score1.dat
+t4hRW0lMcbhi7zmxKqaDKQ	struc.mod
+mv7OBUv3lK28fDOzEmeHGQ	struc1.dat
+TA79lkSG5faxeJ82A/KUtQ	struc6.dat
+TifTxvrvJ9uhh+1YjXeEvA	struc8.dat
+ERqO7NKJlpeHOVZAyD5fAg	train.n
+fkH4TgfJq7gq9T94bj7LSA	train1.dat
+Vna/v7WS6FdTKCsmHb/JLw	train1.mod
+sNOwRnaOP56DvakNqtBqBA	train2.dat
+D5CamPV5wPku4rfns3NmXw	train2.mod
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBPkfGt75pvxO9gjtZAQGOzQP/f1Lh24y+uYKDxBRfaYPaWsnkSS3/Jzdn
+2H1V5bJWqEXJc2nhIHxlhUU8Qu/bglvnFZxQImHroyftpGi7Hu+hxOSa+YaUK5RX
+7jc9sDK7XPxKfBidUCeIegtPCzRepRbm1qLM7xWHN7FOU2C7XTq1HrCCLsLD4WVW
+PYIMHwRXNH0=
+=DDUb
+-----END PGP SIGNATURE-----
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-utk master Tue Nov 29 03:10:40 EST 2011
+Ybjnjh5PD9roeIFqc98jJQ	changes
+WcjgeFKx1JjR6nFz4x6KxA	dist.mod
+ZyRXk2mCrkEMeVuIxt39lg	dist.n
+Ef2U3zRIL8CJpfM31HpfFA	dist03.dat
+Ad8vSycuTM/5dMQ6C9sxLw	dist08.dat
+5vqGAvQIcj62rXG4tsxEnA	dist13.dat
+yLv58Nytrq+URhShBqe6KA	egypt1.dat
+i+Y1U5lDmBshef1k8keo2g	egypt1.mod
+IhfWRcFXtteAuJotMCju/Q	egypt2.dat
+tCE1FwvzrM/0CQStI7pGxQ	egypt2.mod
+GNitK52z4nm6iWx2ToBUuQ	index
+K1Qq+iBz6t1KBiji0+Og3g	index.html
+AY59igmGGE9GYUerEOZbtw	m2a
+Dc/6h8PNqL9GvoMiSbKt0A	m2ai
+oMhmh1acsXRRSX24UO+juQ	mod8.dat
+DGJZjQJg+fIfDetOLZTAGQ	mod8.mod
+Hv1DEl7e7c4AAcXyCDv8Fg	mps.mod
+QNPRxi4lTiABszLFRrtFTQ	mps1.mod
+dHQ0IWHB+oV6f/9VV7cFfQ	mpsi.mod
+eWLBRcv8EinuoZhQN1QqVw	oil.dat
+6cMy4tJgjQ/gsQWd98uuWQ	oil.mod
+Btm6tYLPpQIsTdIXHi273A	optimal.val
+Yy/kdQWRonO9XneIs04G2A	p2gon.mod
+184yhc6F8tSsKFHE3txJfg	pgon.mod
+ww3SqyqNokNODi78q5mGGg	prod.mod
+ArT8Jngnv3G7W/gnPbDwQw	prod03.dat
+NUzJOBAe3V6ufK3VESwHIA	prod08.dat
+Ufi11iM803Q6Ga+fChtptg	prod13.dat
+hODihRTXLmuTXhL1RG/HqQ	score.mod
+PweBU8YZ+qAYwF3IdaJllw	score1.dat
+t4hRW0lMcbhi7zmxKqaDKQ	struc.mod
+mv7OBUv3lK28fDOzEmeHGQ	struc1.dat
+TA79lkSG5faxeJ82A/KUtQ	struc6.dat
+TifTxvrvJ9uhh+1YjXeEvA	struc8.dat
+ERqO7NKJlpeHOVZAyD5fAg	train.n
+fkH4TgfJq7gq9T94bj7LSA	train1.dat
+Vna/v7WS6FdTKCsmHb/JLw	train1.mod
+sNOwRnaOP56DvakNqtBqBA	train2.dat
+D5CamPV5wPku4rfns3NmXw	train2.mod
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBTtSTiuFlxDEfrjtlAQE1fgP/RNf04tI/yMjing7fQdaeW6RuE0u+kSm/
+x0QzNeudp5EuHzbySWLTCU98v3VZmfxft5p+ij3f/VkNce2331tQDfT4zDFG6ZwF
+/MwuYAC2VQKrRJZMgssccUIDHYroL0bLFhkRR9Z6KP4e4ZR9iZ5IQqI6IvivA9CS
+xMoGaYKU89Y=
+=qv9c
+-----END PGP SIGNATURE-----

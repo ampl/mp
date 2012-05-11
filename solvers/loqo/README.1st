@@ -1,0 +1,24 @@
+Solver "loqo" is based on LOQO, an interior-point code for linear and
+convex nonlinear optimization problems by
+
+	Prof. Robert Vanderbei
+	ORFE Building, Room 106
+	Princeton University
+	Princeton NJ 08544
+	Tel: 609-258-2345
+	rvdb@princeton.edu
+	http://www.princeton.edu/~rvdb/
+
+Contact him for details on getting the LOQO source.
+
+Source file aloqo.c is an AMPL driver for LOQO.  (To avoid any
+confustion with LOQO source file loqo.c, the driver is "aloqo.c"
+rather than the more logical "loqo.c".)
+
+The makefile assumes the LOQO objects are in library libloqo.a;
+file lp.h is part of the LOQO source.  See pointers under "LOQO"
+in http://www.princeton.edu/~rvdb/ .
+
+For a summary of using solver "loqo", execute
+
+        loqo '-?'

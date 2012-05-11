@@ -1,0 +1,4 @@
+Tue Apr 30 18:28:49 EDT 2002
+  osl.c: udpate to a form that works with OSL v3 or v2.  (In particular,
+circumvent a bug in OSL v3 whereby ekkmset erroneously complains the
+first time it is called.)

@@ -1,0 +1,172 @@
+Fri Jan  8 13:28:04 EST 1993
+  Tweak to invoke edagread rather than edag_read.
+  Omit unreferenced treerd_().
+
+Wed Feb 10 14:28:54 EST 1993
+  Change time stamp to reflect updates in parent (solvers) directory.
+
+Wed Feb 17 02:36:32 EST 1993
+  Fix memory fault introduced last week (in reading some nonlinear
+problems).
+
+Wed Jun 16 14:51:20 EDT 1993
+  Change long to fint, which, if un#defined, is #defined long
+(for 8-byte long, e.g. DEC Alpha).
+
+Fri Jun 18 14:07:47 EDT 1993
+  Tweak comments in makefile and $S/makefile.
+
+Wed Jun 30 23:29:12 EDT 1993
+  Report ignoring integrality of nonlinear integer variables.
+
+Thu Jul  8 19:26:38 EDT 1993
+  Distinguish "too many iterations" from "too many major iterations".
+
+Thu Sep  2 07:51:06 EDT 1993
+  Update m54ver.c to reflect bug fix to solvers/rops.c (derivative
+of constant ** (variable expression)).
+
+Wed Sep  8 14:45:16 EDT 1993
+  Update m54ver.c to reflect bug fix to solvers/rops.c (derivative
+of atan2(x,y) when y == 0).
+
+Thu Jan 13 11:09:17 EST 1994
+  Fix memory fault in stand-alone invocations of minos (reading
+a SPECS and MPS file on stdin) when $minos_option is set or
+options are given on the command line.
+
+Mon Jan 24 13:03:04 EST 1994
+  Fix botch (undefined minos_keywords) introduced 13 Jan. 1994 that
+only affects linking against minos.a when m54.o is not also linked
+(i.e., non-AMPL uses).
+
+Fri Apr 29 18:17:42 EDT 1994
+  For nonlinear problems, change return message "infeasible problem"
+to "infeasible problem (or bad starting guess)".
+
+Sat May 14 13:45:09 EDT 1994
+  Allow spaces around '=' in $minos_options (and in quoted
+command-line options).  Note: there was a bug fix 11 May 1994
+to solvers/edagread.c that affects minos in unusual circumstances;
+see "changes from ampl/solvers".
+
+Sat Jul  2 21:48:13 EDT 1994
+  Fix glitch in funcon.c (apparently introduced June 1993 but not
+propagated to minos binaries we've distributed) that could cause
+the objective name not to be shown in error messages (that the
+nonlinear objective could not be evaluated).
+
+Sat Sep 10 22:22:30 EDT 1994
+  Change version to 19940910 to reflect bug fixes to
+ampl/solvers/edagread.c.
+
+Thu Oct 13 12:34:11 EDT 1994
+  Adjust makefile's xsum.out rule for unnanounced src/README.0
+introduced 30 Sept. 1994.
+
+Wed Mar 22 15:05:39 EST 1995
+  makefile: fix botch (wrong makefile copied to netlib) of 13 Oct. 1994.
+
+Wed May 17 15:17:20 EDT 1995
+  Adjust m54ver.c to reflect fixing a bug in edagread.c that caused
+wrong derivatives to be computed in problems involving defined variables
+with right-hand sides of the form
+	another_defined_variable + linear_expression
+
+Mon Apr 21 23:01:24 EDT 1997
+  Update for revised amplsolver.a and "Hooking Your Solver to AMPL".
+
+Sat Jul 12 01:44:38 EDT 1997
+  Modify solution message to report numbers of nonlinear evaluations
+(when positive).
+
+Tue Dec  2 23:01:45 EST 1997
+  m55.c: correct type of variable "timing" (a fix invisible on most
+systems).
+
+Thu Mar 26 17:55:12 EST 1998
+  m55.c: update to suport AMPL's new facilities for constraint and
+variable statuses and solver return codes.
+
+Mon Mar 30 17:16:08 EST 1998
+  Simplify makefile to use new facilities in amplsolver.a for importing
+user-defined functions.  Cosmetic tweak to m55.c.
+
+Fri Jun  5 15:01:51 EDT 1998
+  Adjust returned status values so nonbasic slacks for equality
+constraints will have .status value "equ".
+
+Tue Jul 28 22:31:40 EDT 1998
+  README.minos: add table of possible solve_result_num values.
+
+Wed Oct 14 00:37:59 EDT 1998
+  m55.c: updated to fix a bug with problems having a nonlinear
+objective and some purely linear constraint variables that do not
+appear in the objective.  Too much of the gradient was zeroed in
+this case, possibly corrupting memory.  The fix involves an update of
+the AMPL/solver interface library (amplsolver.a or amplsolv.lib), which
+must be recompiled.
+
+Thu Oct 15 07:54:37 EDT 1998
+  m55.c: trivial changes for Purify users: free memory at end.
+
+Tue Dec 29 14:07:33 EST 1998
+  xsum0.out: update to reflect a change on 19 Nov. 1998 to src/xectim.c
+(see ../changes).
+
+Wed Jun 16 23:05:52 EDT 1999
+  Minor housecleaning, preparing for possible alternative makefiles:
+rename makefile makefile.u (for Unix version).
+
+Thu Feb  3 22:54:07 EST 2000
+  PC makefile variants added.
+
+Tue Feb 27 17:12:29 EST 2001
+  m55.c, m55ver.c0:  adjust so non-student versions of minos will again
+work with invocations of the form "minos <specfile 4=foo.mps".  Changes
+a while ago broke this archaic invocation form.
+
+Tue Apr 30 18:32:07 EDT 2002
+  m55.c: minor tweaks:  recognize -f command-line option (to list
+available imported functions), and handle "version" via Ver_val.
+
+Tue May  7 16:38:23 EDT 2002
+  makefile.*, m55.c: omit m55ver.c0, which is now automatically
+incorporated into m55.c and the solver interface library.
+
+Thu May  9 16:53:28 EDT 2002
+makefile.vc: delete the (unwanted) minos.lib and minos.exp files
+after making minos.exe.
+
+Wed Jan 24 23:16:17 MST 2007
+Update to MINOS 5.51.  The old src directory is gone.
+
+Tue Feb 12 08:06:08 MST 2008
+  configure: correct a comment (omit "and maybe MacOSX").
+  m551.c: initialize obj to Infinity and do not report an objective
+value if the objective cannot be evaluated at the initial point.
+(This variable was previously uninitialized, causing a random
+objective value to be reported when the objective could not be
+evaluated at the starting point.)
+
+Sun May 18 23:47:15 MDT 2008
+  m551.c:  New keyword phrase for $minos_options:
+	meminc=f
+(with f a positive decimal number, possibly in floating-point
+notation) causes f megabytes of extra memory to be giving to MINOS
+initially.  More memory will be allocated if necessary, in which case
+a message of the form
+
+  Adding  meminc=0.271  to $minos_options might save time.
+
+will appear in the solve_message.
+  README.minos: add a couple of URLs.
+
+Mon May 25 20:05:51 MDT 2009
+  m551.c: fix an uninitialized variable in an unlikely context:
+insufficient memory with timing requested.  (A botch in the timing
+report was hitherto possible in this context.)
+
+Wed Sep 23 22:22:22 MDT 2009
+  m551.c: tweak for problems with many linear and no nonlinear
+constraints, so "superbasics_limit=nnn" will not be ignored.

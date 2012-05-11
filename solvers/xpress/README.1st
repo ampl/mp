@@ -1,0 +1,26 @@
+Solver "xpress" is based on FICO XPRESS, a solver for linear and
+quadratic programming problems involving continuous or integer
+variables by
+
+	FICO
+	http://www.fico.com/xpress
+
+Contact FICO for details on getting the XPRESS libraries
+and header files.
+
+Source file xpress.c is an AMPL driver for XPRESS.
+
+Files makefile.u and makefile.vc are sample makefiles for Linux or
+Unix systems and for Microsoft Visual C++, respectively.  Copy one of
+them to "makefile" and edit the latter to have assignments to
+XPRESSDIR, S, CFLAGS, etc., that are suitable for your system.
+
+For a summary of using solver "xpress", execute
+
+        xpress '-?'
+or
+	xpress -?
+
+(depending on the syntax required by your shell).  More details
+appear in README.xpress.
+

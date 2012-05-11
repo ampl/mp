@@ -1,0 +1,6 @@
+char donlpvers[] =
+#ifdef Student_Edition
+	"\n@(#) AMPL/DONLP2 Student Version 19990927 (Machine_details)\n";
+#else
+	"\n@(#) AMPL/DONLP2 Version 19990927 (Machine_details)\n";
+#endif

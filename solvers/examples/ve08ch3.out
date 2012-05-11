@@ -1,0 +1,28 @@
+ve08: ignoring 3 constraints
+
+
+
+    **** ITERATION   -1   ( AFTER      1.00 (      1) FUNCTION CALLS)
+
+
+     FUNCTION VALUE =    .555555555555556E-01
+
+     NORM OF THE GRADIENT =     .6285394E+00
+
+
+
+    **** ITERATION    6   ( AFTER      8.00 (      8) FUNCTION CALLS)
+
+
+     FUNCTION VALUE =    .210769396355425E-21
+
+     NORM OF THE GRADIENT =     .5475043E-10
+
+     ************* EXIT OF ROUTINE VE08AD *************
+
+
+     TERMINATION CRITERION OF USER SATISFIED (FLAG= 1)
+ve08: Solved: norm2(grad) < gtol.
+Final f = 2.1076939635542507e-22
+8 evaluations, 6 iters.
+

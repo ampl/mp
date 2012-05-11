@@ -1,0 +1,29 @@
+
+Variable     total_cost      lower bound     upper bound
+Buy['BEEF']  3.19            0               100
+Buy['CHK']   2.59            0               100
+Buy['FISH']  2.29            0               100
+Buy['HAM']   2.89            0               100
+Buy['MCH']   1.89            0               100
+Buy['MTL']   1.99            0               100
+Buy['SPG']   1.99            0               100
+Buy['TUR']   2.49            0               100
+
+diet['A']:
+	700 <= 60*Buy['BEEF'] + 8*Buy['CHK'] + 8*Buy['FISH'] + 40*Buy['HAM']
+		+ 15*Buy['MCH'] + 70*Buy['MTL'] + 25*Buy['SPG']
+		+ 60*Buy['TUR'] <= 10000
+
+diet['B1']:
+	700 <= 10*Buy['BEEF'] + 20*Buy['CHK'] + 15*Buy['FISH'] + 35*Buy['HAM']
+		+ 15*Buy['MCH'] + 15*Buy['MTL'] + 25*Buy['SPG']
+		+ 15*Buy['TUR'] <= 10000
+
+diet['B2']:
+	700 <= 15*Buy['BEEF'] + 20*Buy['CHK'] + 10*Buy['FISH'] + 10*Buy['HAM']
+		+ 15*Buy['MCH'] + 15*Buy['MTL'] + 15*Buy['SPG']
+		+ 10*Buy['TUR'] <= 10000
+
+diet['C']:
+	700 <= 20*Buy['BEEF'] + 10*Buy['FISH'] + 40*Buy['HAM'] + 35*Buy['MCH']
+		+ 30*Buy['MTL'] + 50*Buy['SPG'] + 20*Buy['TUR'] <= 10000

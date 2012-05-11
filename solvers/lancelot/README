@@ -1,0 +1,136 @@
+Solver "lancelot" is an AMPL interface to LANCELOT, which solves general
+nonlinear programming problems.  LANCELOT is described in the book
+
+	"LANCELOT, a Fortran Package for Large-Scale Nonlinear
+	Optimization (Release A)" by A. R. Conn, N. I. M. Gould,
+	and Ph. L. Toint, Springer-Verlag, 1992: Springer Series
+	in Computational Mathematics 17.
+
+Source for LANCELOT is available by ftp; for details, see
+
+	http://www.cse.clrc.ac.uk/Activity/LANCELOT
+
+For simplicity, assume the LANCELOT source appears in subdirectory "src".
+
+The makefile assumes that library liblan.a contains the LANCELOT objects
+from directory src/objects/double .  On most systems, it's OK to put all
+of these objects into liblan.a, but if you are using Solaris 2.5 (aka
+SunOS 5.5) and f77 v4.0, you will need to exclude the following objects:
+	drche.o drchg.o dumbr.o lance.o runlan.o scaln.o speci.o
+(The trouble is that under Solaris 2.5, f77 v4.0 gratuitously loads
+some of these objects, which leads to conflicts.)
+
+For a summary of using solver "lancelot", execute
+
+        lancelot '-?'
+
+
+It is most convenient to invoke lancelot with AMPL's solve command:
+
+	ampl: option solver lancelot;
+	ampl: solve;
+
+but lancelot can also be run separately, with invocation syntax
+
+	lancelot stub [-AMPL] [keywd=[value] ...]
+
+in which stub comes from AMPL's write command.  For example,
+
+	> ampl -obfoo foo.mod foo.dat
+	> lancelot foo
+
+demonstrates running lancelot separately; the ampl invocation
+writes file foo.nl (stub = "foo"), which lancelot reads.
+
+Command-line arguments to lancelot either have the form
+	keywd=
+or
+	keywd=value
+where keywd is one of the key words described below.  Alternatively,
+you can invoke lancelot the way AMPL's solve command does, i.e.,
+
+	lancelot stub -AMPL [keywd=value ...]
+
+where stub was specified in
+
+	ampl -obstub ...
+or
+	ampl -ogstub...
+
+Such an invocation causes lancelot to read from stub.nl and to write stub.sol.
+
+--------------------
+Controlling lancelot
+--------------------
+
+Lancelot reads keywords and values from the environment (shell) variable
+lancelot_options and from the command line.  Execute
+
+	lancelot -=
+
+for a summary of keywords peculiar to the AMPL/LANCELOT driver "lancelot".
+
+------------------
+Sample Invocations
+------------------
+
+  If you're using AMPL, just say
+
+	option solver lancelot;
+	solve;
+
+  If you've executed, say,
+
+	ampl -objunk junk.model junk.data
+
+then you could say
+
+	lancelot junk maxit=300 qmin=1
+
+to force lancelot to run for at most 300 iterations and tightly
+minimize its quadratic model during step computations.  With the
+Bourne shell, either of the invocations
+
+	lancelot_options='maxit=300 qmin=1' lancelot junk
+or
+	lancelot_options='maxit=300 qmin=1'
+	export lancelot_options
+	lancelot junk
+
+would have the same effect; within AMPL, specifying
+
+	option lancelot_options 'maxit=300 qmin=1', solver lancelot;
+	solve;
+
+would also have this effect.
+
+
+NOTE: LANCELOT's SIF reader turns a pure system nonlinear equations
+into a least-squares problem, which sometimes considerably reduces
+the number of iterations that LANCELOT takes; currently, "lancelot"
+does not imitate this behavior.
+
+-----------------------
+solve_result_num values
+=======================
+
+Here is a table of solve_result_num values that "lancelot" can return
+to an AMPL session, along with the text that appears in the associated
+solve_message.
+
+	Value	Message
+
+	0	problem solved
+	400	too many iterations
+	510	trust region got too small
+	511	step got too small
+	500	an integer array was too short
+	501	a floating-point array was too short
+	502	a logical array was too short
+	503	bad KNDOFC
+	520	could not find a feasible solution
+
+-----------------------
+
+Questions about the AMPL/LANCELOT interface?  Contact
+dmg@ampl.com (David M. Gay).

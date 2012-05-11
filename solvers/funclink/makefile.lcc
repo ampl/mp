@@ -1,0 +1,13 @@
+# For lcc-win32
+# $S = ampl/solvers directory
+S = ..
+CC = lcc
+LINK = lcclnk
+CFLAGS = -I$S -O
+
+.c.obj:
+	$(CC) $(CFLAGS) $*.c
+
+amplfunc.dll: funcadd.c
+	$(CC) -c $(CFLAGS) funcadd.c
+	$(LINK) -dll -o amplfunc.dll -nounderscores funcadd.obj funcadd_lcc.def

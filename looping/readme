@@ -1,0 +1,83 @@
+File NEW_CMDS summarizes some new commands, such as the "repeat"
+and "if-then-else" commands mentioned below.
+
+The following file-naming conventions are used in all of the
+examples on this disk:
+
+   *.mod   an AMPL model (or models, for decomposition)
+   *.dat   data for the associated model or models
+   *.run   a "script" of AMPL commands that carry out a procedure
+
+To run a script using the supplied model and data, just
+start up AMPL and "include" it.  For example:
+
+        yourprompt% ampl
+        ampl: commands cut.run;
+
+Each script uses at least one AMPL "repeat" or "for" loop
+to repeatedly solve a series of related optimization problems.
+Within each loop, there is at least one AMPL "if-then-else"
+statement, usually to decide when to stop iterating.
+
+
+Files         Problem          Method
+--------      --------------   -----------
+cut.mod       Cutting stock    Gilmore-Gomory column generation
+cutA.dat      (roll trim)
+cut.run
+
+multi1.mod    multicommodity   Dantzig-Wolfe decomposition
+multi1.dat    network flow     (one subproblem)
+multi1.run
+
+multi2.mod    multicommodity   Dantzig-Wolfe decomposition
+multi2.dat    network flow     (a subproblem for each product)
+multi2.run
+
+multi3.mod    multicommodity   Dantzig-Wolfe decomposition
+multi3.dat    network flow     (alternative model for multi2)
+multi3.run
+
+sens.mod      diet             sensitivity analysis
+sens.dat
+sens.run
+
+stoch.mod     stochastic       Benders decomposition
+stoch.dat     production
+stoch.run     planning
+
+trnloc1d.mod  transportation   Benders decomposition
+trnloc1.dat   location         using dual form of subproblem
+trnloc1d.run
+
+trnloc1p.mod  transportation   Benders decomposition
+trnloc1.dat   location         using primal form of subproblem
+trnloc1p.run
+
+trnloc2a.mod  transportation   Lagrangian relaxation
+trnloc2.dat   location
+trnloc2a.run
+
+trnloc2b.mod  transportation   Lagrangian relaxation
+trnloc2.dat   location         with upper bounds on Ship variables
+trnloc2b.run                   (gives best lower bounds on obj)
+
+trnloc2c.mod  transportation   Lagrangian relaxation
+trnloc2.dat   location         with 0-1 constraints disaggregated
+trnloc2c.run                   (gives better LP relaxation)
+
+
+The trnloc2* problems are too large to be solved by the AMPL
+Student Edition.
+
+See the discussions of looping in the AMPL web site,
+http://www.ampl.com/ampl/ .  Pointers to these discussions
+appear in http://www.ampl.com/ampl/NEW/ .
+
+The AMPL web site has revised versions of the examples in this
+directory: the revised versions use new ".result" facilities
+described in http://www.ampl.com/ampl/NEW/statuses.html .
+The new facilities do not work with older solvers (linked with
+versions of the AMPL/solver interface library prior to 19980325);
+the examples in this directory may be helpful with such older
+solvers.

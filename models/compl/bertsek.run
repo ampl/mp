@@ -1,0 +1,25 @@
+model bertsek.mod;
+data bertsek.dat;
+
+set InitPoints;
+param iptx {InitPoints};
+param ipty {InitPoints};
+param iptz {InitPoints};
+data;
+
+param:	InitPoints:	iptx	ipty	iptz	:=
+	run1		0	0	0
+	run2		0.5	0.5	0.5
+	run3		100	100	100
+	run4		0	0	0
+	run5		0	100	0
+	run6		0	1	0;
+
+for {run in InitPoints}
+{
+	let {i in Nodes} x[i] := iptx[run];
+	let {i in Nodes} y[i] := ipty[run];
+	let {i in Nodes} z[i] := iptz[run];
+	solve;
+	include compchk
+	}

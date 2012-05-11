@@ -1,0 +1,10 @@
+
+# Chvatal, Problem  13.3
+
+param roll_width := 100 ;
+
+param: WIDTHS: orders :=
+          52     600
+          29     600
+          27     600
+          21    1200  ;

@@ -1,0 +1,143 @@
+#!/bin/sh
+# Convert MPS to an AMPL data file.
+# usage: m2a [<]mps.format >ampl.format
+
+awk 'BEGIN { printf "data;\nparam :Aij: A :=\n"
+	HUGE = 1.7014118e+38
+	Integer = m = 0
+	Wrongno = "Wrong number of fields in BOUNDS section!"
+	}
+function fsplit() {
+	if (NF >= 4) {
+		if (NF == 5) {
+			D1 = $1
+			D2 = $2
+			D3 = $3
+			D4 = $4
+			D5 = $5
+			}
+		else {
+			D1 = "\t"
+			D2 = $1
+			D3 = $2
+			D4 = $3
+			D5 = $4
+			}
+		}
+	else if (NF >= 2) {
+		if (NF == 3) {
+			D1 = $1
+			D2 = $2
+			D3 = $3
+			}
+		else {
+			D1 = "\t"
+			D2 = $1
+			D3 = $2
+			}
+		}
+	else {
+		printf "Line %d: got %d fields; expected 2, 3, 4, or 5\n", NR, NF
+		exit 1
+		}
+	}
+/^\*/		{ next }
+/^ROWS/		{ sc = 1; next }
+/^COLUMNS/ 	{ sc = 2; next }
+/^RHS/		{ sc = 3; printf ";\nparam b :=\n";  rhsname = ""; next }
+/^RANGES/	{ sc = 4; printf ";\nparam db :=\n"; rngname = ""; next }
+/^BOUNDS/	{ sc = 5; printf ";\nparam ub :=\n"
+		bndname = ""; next }
+/^ENDATA/	{ print ";"
+		printf "param lb :=\n"
+		for(i in lb) printf "\t\"%s\"\t%s\n", i, lb[i]
+		print ";"
+		print "param :I1: ctype :="
+		for(i = 0; i < m; i++) printf "\t\"%s\"\t%s\n", rn[i], rt[rn[i]]
+		print ";\nset K :=\n"
+		for(i in K) printf "\t\"%s\"\n", i
+		print ";\nend;"
+		exit
+		}
+{if (sc == 1) { rt[$2] = $1; rn[m++] = $2; next }
+ if (sc == 2) { if ($2 == "'"'MARKER'"'") {
+			if ($3 == "'"'INTORG'"'") Integer = 1
+			else Integer = 0
+			next
+			}
+		if (Integer) K[$1]++;
+		printf "\t\"%s\"\t\"%s\"\t%s\n", $2, $1, $3
+		if (NF == 5) printf "\t\"%s\"\t\"%s\"\t%s\n", $4, $1, $5
+		next }
+ if (sc == 3) { fsplit()
+		if (rhsname == "") rhsname = D1
+		else if (rhsname != D1) next
+		printf "\t\"%s\"\t%s\n", D2, D3
+		if (NF >= 4) printf "\t\"%s\"\t%s\n", D4, D5
+		next }
+ if (sc == 4) { fsplit()
+		if (rngname == "") rngname = D1
+		else if (rngname != D1) next
+		v = D3 + 0.
+		if (rt[D2] == "E") {
+			if (v > 0.) rt[D2] = "GR"
+			else if (v < 0.) { rt[D2] = "LR"; v = -v; }
+			}
+		else {
+			if (v < 0.) v = -v
+			else if (v == 0.) next
+			if (rt[D2] == "L") rt[D2] = "LR"
+			else if (rt[D2] == "G") rt[D2] = "GR"
+			}
+		if (v != 0) printf "\t\"%s\"\t%.12g\n", D2, v
+		if (NF < 5) next
+		v = D5 + 0.
+		if (rt[D4] == "E") {
+			if (v > 0.) rt[D4] = "GR"
+			else if (v < 0.) { rt[D4] = "LR"; v = -v; }
+			else next
+			}
+		else {
+			if (v < 0.) v = -v
+			else if (v == 0.) next
+			if (rt[D4] == "L") rt[D4] = "LR"
+			else if (rt[D4] == "G") rt[D4] = "GR"
+			}
+		printf "\t\"%s\"\t%.12g\n", D4, v
+		}
+ if (sc == 5) {
+		if ($1 == "FR" || $1 == "MI") {
+			if (NF == 2 || NF == 3)  {
+				lb[$NF] = -HUGE
+				next
+				}
+			print Wrongno
+			printf "Input line %d = \"%s\"\n", NR, $0
+			exit
+			}
+		if (NF == 4) {
+			if (bndname == "") bndname = $2
+			else if (bndname != $2) next
+			vname = $3
+			bval = $4
+			}
+		else if (NF == 3) { # blank BOUND set name
+			if (bndname == "") bndname = "\t"
+			else if (bndname != "\t") next
+			vname = $2
+			bval = $3
+			}
+		else {
+			print Wrongno
+			printf "Input line %d = \"%s\"\n", NR, $0
+			exit
+			}
+		if ($1 == "LO") { lb[vname] = bval; next }
+		if ($1 == "UP") { printf "\t\"%s\"\t%s\n", vname, bval; next }
+		if ($1 == "FX") { lb[vname] = bval
+				printf "\t\"%s\"\t%s\n", vname, bval; next }
+		if ($1 == "PL") { next }
+		printf "unexpected type %s in bounds section\n", $1 | "cat 1>&2"
+		exit
+		}
+}' $*

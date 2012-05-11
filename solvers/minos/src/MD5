@@ -1,0 +1,29 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-bl master Tue Dec 6 20:35:19 EST 2005
+# http://cm.bell-labs.com/netlib/crc/netlib-bl.html
+eA/tLc0QAsqIfCaGtj4U0w	Malloc.c
+WvgxnZc3uoa2YGW758F02g	README
+DKsViLdQVarykkNWRMNeog	README.0
+6akrAzs/pPuuANwo/u8trQ	d_funcon.c
+DpDC12i4QZMxzbk1nC8FYQ	d_funobj.c
+UO0rE7WsI50u3azXgpog3Q	d_matmod.c
+X2flYOVT81Pz+JzVGCd0mw	index
+QHmvNQYBcrXOBoRWkR4GHA	m55.P
+GYAWt/3kd+EHNeeZOrNsIg	makefile.u
+GzrSAYYlXBds+Zr0HDgxrQ	makefile.vc
+FOLPNS0aVuiXQBlKr6TuxQ	minos.lbc
+a0t5kpJlRi/OJqnspwmFzg	minos2.c
+mgDciF02uyI8aOJE2oFg+A	minos4.f
+VA9gn9e7fSj2/NaZTkjbWA	sprintf.c
+GvcRROBMDW9b/493eGo1Fg	xectim.c
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBQ5Y8WL5pvxO9gjtZAQEJTwQAhTcbj1gAwTp5RHjkvVfZ7DC9cIW4/hap
+aiNpPDSS+hBNR+9PI6RuEL+TVk3+amV3aVHFn73fPt+a7YBNoV6xdWg133mmwkKn
+AulD45BsbZ/0vlMJDPQ1Se1L4ybLO0faLxDa8PZArs4lBgZOeQaaHQrUC3S5vxLU
+Ijw3WItq9F0=
+=fx5Q
+-----END PGP SIGNATURE-----

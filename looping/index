@@ -1,0 +1,80 @@
+file	ampl/looping/NEW_CMDS
+
+file	ampl/looping/README
+
+file	ampl/looping/changes
+
+file	ampl/looping/cut.mod
+
+file	ampl/looping/cut.run
+
+file	ampl/looping/cutA.dat
+
+file	ampl/looping/cutB.dat
+
+file	ampl/looping/cutC.dat
+
+file	ampl/looping/cutD.dat
+
+file	ampl/looping/cutE.dat
+
+file	ampl/looping/cutF.dat
+
+file	ampl/looping/multi1.dat
+
+file	ampl/looping/multi1.mod
+
+file	ampl/looping/multi1.run
+
+file	ampl/looping/multi2.dat
+
+file	ampl/looping/multi2.mod
+
+file	ampl/looping/multi2.run
+
+file	ampl/looping/multi3.dat
+
+file	ampl/looping/multi3.mod
+
+file	ampl/looping/multi3.run
+
+file	ampl/looping/new_cmds
+
+file	ampl/looping/readme
+
+file	ampl/looping/sens.dat
+
+file	ampl/looping/sens.mod
+
+file	ampl/looping/sens.run
+
+file	ampl/looping/stoch.dat
+
+file	ampl/looping/stoch.mod
+
+file	ampl/looping/stoch.run
+
+file	ampl/looping/trnloc1.dat
+
+file	ampl/looping/trnloc1d.mod
+
+file	ampl/looping/trnloc1d.run
+
+file	ampl/looping/trnloc1p.mod
+
+file	ampl/looping/trnloc1p.run
+
+file	ampl/looping/trnloc2.dat
+
+file	ampl/looping/trnloc2a.mod
+
+file	ampl/looping/trnloc2a.run
+
+file	ampl/looping/trnloc2b.mod
+
+file	ampl/looping/trnloc2b.run
+
+file	ampl/looping/trnloc2c.mod
+
+file	ampl/looping/trnloc2c.run
+

@@ -1,0 +1,16 @@
+file	ampl/solvers/lpsolve/README
+
+file	ampl/solvers/lpsolve/changes
+
+file	ampl/solvers/lpsolve/lpsolve.c
+
+file	ampl/solvers/lpsolve/makefile.u
+for	Unix makefile
+
+file	ampl/solvers/lpsolve/makefile.vc
+for	Microsoft VC++ makefile
+
+file	ampl/solvers/lpsolve/xsum0.out
+
+file	ampl/solvers/lpsolve/lp_solve_4.0.tar.gz
+for	lp_solve source used in building ampl/student/*/lpsolve*

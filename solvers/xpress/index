@@ -1,0 +1,13 @@
+file	ampl/solvers/xpress/README.1st
+
+file	ampl/solvers/xpress/README.xpress
+
+file	ampl/solvers/xpress/changes
+
+file	ampl/solvers/xpress/makefile.u
+
+file	ampl/solvers/xpress/makefile.vc
+
+file	ampl/solvers/xpress/xpress.c
+
+file	ampl/solvers/xpress/xsum0.out

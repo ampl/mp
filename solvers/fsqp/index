@@ -1,0 +1,11 @@
+file	ampl/solvers/fsqp/README
+
+file	ampl/solvers/fsqp/changes
+
+file	ampl/solvers/fsqp/fsqp.c
+
+file	ampl/solvers/fsqp/makefile
+
+file	ampl/solvers/fsqp/version.c
+
+file	ampl/solvers/fsqp/xsum0.out

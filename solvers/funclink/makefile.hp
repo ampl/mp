@@ -1,0 +1,22 @@
+# Makefile for HP systems under HP-UX.
+
+.SUFFIXES: .c .o
+
+# $S = ampl/solvers directory
+S = ..
+CC = cc
+CFLAGS = -Aa -I$S -O
+.c.o:
+	$(CC) -c $(CFLAGS) $*.c
+
+amplfunc.dll: funcadd.c
+	$(CC) -c $(CFLAGS) +z funcadd.c
+	ld -b -o amplfunc.dll funcadd.o -lm
+
+## Sample solver creation...
+
+# $(myobjects) = list of .o files
+myobjects = ....
+
+mysolver: $(myobjects)
+	$(CC) -o mysolver $(myobjects) $S/amplsolver.a -ldld -lm

@@ -1,0 +1,33 @@
+Ignoring 3 constraints.
+
+     I     INITIAL X(I)        D(I)
+
+     1      .250000E+00      .100E+01
+     2      .500000E+00      .100E+01
+     3      .750000E+00      .100E+01
+
+    IT   NF       F        RELDF    PRELDF    RELDX   STPPAR   D*STEP   NPRELDF
+
+     0    1   .556E-01
+     1    3   .209E-01   .62E+00   .68E+00   .3E-01   .1E+02   .6E-01   .36E+01
+     2    4   .685E-02   .67E+00   .17E+01   .5E-01   .2E+01   .1E+00   .18E+01
+     3    5   .467E-03   .93E+00   .13E+01   .2E-01   .0E+00   .5E-01   .13E+01
+     4    6   .661E-05   .99E+00   .87E+00   .4E-02   .0E+00   .1E-01   .87E+00
+     5    7   .852E-08   .10E+01   .10E+01   .6E-03   .0E+00   .1E-02   .10E+01
+     6    8   .144E-12   .10E+01   .10E+01   .2E-04   .0E+00   .5E-04   .10E+01
+     7    9   .325E-20   .10E+01   .10E+01   .8E-07   .0E+00   .2E-06   .10E+01
+
+ ***** ABSOLUTE FUNCTION CONVERGENCE *****
+
+ FUNCTION      .325288E-20   RELDX         .833E-07
+ FUNC. EVALS       9         GRAD. EVALS       8
+ PRELDF        .100E+01      NPRELDF       .100E+01
+
+     I      FINAL X(I)        D(I)          G(I)
+
+     1     .146447E+00      .100E+01      .112E-09
+     2     .500000E+00      .100E+01      .333E-10
+     3     .853553E+00      .100E+01     -.185E-09
+mng:	Absolute Function Convergence; function = 3.2528777751399436e-21
+	RELDX = 8.33e-08; PRELDF = 1; NPRELDF = 1
+	9 func. evals; 8 grad. evals

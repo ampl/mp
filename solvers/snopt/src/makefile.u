@@ -1,0 +1,70 @@
+# /****************************************************************
+# Copyright (C) 2001 Lucent Technologies
+# All Rights Reserved
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby
+# granted, provided that the above copyright notice appear in all
+# copies and that both that the copyright notice and this
+# permission notice and warranty disclaimer appear in supporting
+# documentation, and that the name of Lucent or any of its entities
+# not be used in advertising or publicity pertaining to
+# distribution of the software without specific, written prior
+# permission.
+#
+# LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+# INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
+# IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
+# SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
+# IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+# ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+# THIS SOFTWARE.
+# ****************************************************************/
+
+# For making libsnopt.a, libsnprint.a and libblas.a with SNOPT source
+# converted to C by f2c.  For direct Fortran compilation, change the
+# "CC = " line and the suffixes.
+
+# Invoke with "make -f makefile.u" (or copy to "makefile", edit
+# if necessary, and invoke "make").
+
+CC = cc
+S = ../..
+# Assumes solvers directory is ../..
+# -- e.g., that this directory is solvers/snopt/src.
+# The .c files are assumed to come from f2c applied to
+# the SNOPT source.  $S is assumed to have f2c.h.
+
+CFLAGS = -O -I$S
+
+.c.o:
+	$(CC) -c $(CFLAGS) $*.c
+
+o = \
+	sqopt.c snopta.c snoptb.c snoptc.c snoptq.c npopt.c \
+	sq02lib.c sn02lib.c np02lib.c \
+	sn05wrpa.c sn05wrpb.c sn05wrpc.c sn05wrpn.c \
+	sn10mach.c sn12ampl.c sn17util.c sn20amat.c sn25bfac.c sn27lu.c \
+	sn30spec.c sn35mps.c sn37wrap.c sn40bfil.c sn50lp.c sn55qp.c \
+	sn56qncg.c sn57qopt.c sn60srch.c sn65rmod.c sn70nobj.c sn80ncon.c \
+	sn85hess.c sn87sopt.c sn90lmqn.c sn95fmqn.c 
+
+all: libsnopt.a libblas.a libsnprint.a
+
+libsnopt.a: $o
+	$(CC) -c $(CFLAGS) $?
+	x=`echo $? | sed 's/\.c/.o/g'` && ar ruv libsnopt.a $$x && rm $$x
+	ranlib libsnopt.a || true
+
+libblas.a: sn15blas.c
+	$(CC) -c $(CFLAGS) sn15blas.c
+	ar ruv libblas.a sn15blas.o
+	rm sn15blas.o
+	ranlib libblas.a || true
+
+libsnprint.a: sn03prnt.c
+	$(CC) -c $(CFLAGS) sn03prnt.c
+	ar ruv libsnprint.a sn03prnt.o
+	rm sn03prnt.o
+	ranlib libsnprint.a || true

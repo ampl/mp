@@ -1,0 +1,29 @@
+# Makefile for SunOS (with the default K&R compiler, cc)
+
+#### This is the old version.  Due to unavailability of
+#### a SunOS system for testing, it does not reflect
+#### the change of March 1998 to amplfunc.dll.
+
+.SUFFIXES: .c .o
+
+# $S = ampl/solvers directory
+S = ..
+CC = cc
+CFLAGS = -DKR_headers -I$S -O
+.c.o:
+	$(CC) -c $(CFLAGS) $*.c
+
+### To make libampl.so.0.0 in the current directory
+
+libampl.so.0.0: funcaddk.c
+	$(CC) $(CFLAGS) -c -pic funcaddk.c
+	ld -o libampl.so.0.0 funcaddk.o
+
+## Sample solver creation...
+
+# $(myobjects) = list of .o files
+myobjects = ....
+LL = /usr/local/lib
+
+mysolver: $(myobjects)
+	$(CC) -o mysolver -L. -L$(LL) $(myobjects) -lampl $S/amplsolver.a -lm

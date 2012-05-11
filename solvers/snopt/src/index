@@ -1,0 +1,7 @@
+file	ampl/solvers/snopt/src/makefile.fu
+
+file	ampl/solvers/snopt/src/makefile.u
+
+file	ampl/solvers/snopt/src/makefile.vc
+
+file	ampl/solvers/snopt/src/snopt.lbc

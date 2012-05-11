@@ -1,0 +1,48 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-bl master Mon Feb 10 10:36:13 EST 2003
+# http://cm.bell-labs.com/netlib/crc/netlib-bl.html
+frUArMmyKWaMgUgLTyoEZA	README.1st
+jEvXbBR/rPTqvHgrxKt2sw	README.osl
+JW75fU4b27nAG8yqEomEkQ	ftncls.f
+40wh0UYjKIyLBvDPM5m6gA	ftnopn.f
+MmZW+RSm1vWRneBIOEokmw	index
+qi6SMpvMDpF+38W1e2ZyDg	makefile
+MMDSRalW8HUw1z2IEsvzNA	osl.c
+bXE9Bmc9oVlbWWLycuS68w	osl.h
+duZxnT0Zk+lW1sYlgS9bcA	version.c
+hZBIHOBR9S4ubeBhh3MKcA	xsum0.out
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBPkfG7b5pvxO9gjtZAQFiOAP+Pe2m2jeemnyd8dW9gHTpzJRHYN6KgiZO
+BLyNResZCyt5j6UugbG676fH06Jxe9JURmiIX9dlbBjtZnSvcMrL+9KsdT3RQMdw
+UdyizqlmrrTA9wSB70HXKqqhloYV6F1Vh0jFFwUgzXHrg19iP5JC0vnn09KD53M8
+sLbBdwECvjo=
+=WKhI
+-----END PGP SIGNATURE-----
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-utk master Tue Nov 29 03:12:31 EST 2011
+frUArMmyKWaMgUgLTyoEZA	README.1st
+jEvXbBR/rPTqvHgrxKt2sw	README.osl
+JW75fU4b27nAG8yqEomEkQ	ftncls.f
+40wh0UYjKIyLBvDPM5m6gA	ftnopn.f
+MmZW+RSm1vWRneBIOEokmw	index
+jkNrB4iY4VprDeplsoQUmw	index.html
+qi6SMpvMDpF+38W1e2ZyDg	makefile
+MMDSRalW8HUw1z2IEsvzNA	osl.c
+bXE9Bmc9oVlbWWLycuS68w	osl.h
+duZxnT0Zk+lW1sYlgS9bcA	version.c
+hZBIHOBR9S4ubeBhh3MKcA	xsum0.out
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBTtST8+FlxDEfrjtlAQHjsgP8CYkeW3rfvQiT6YQafqkVvniKAnAheC3t
+aCHWqlXZWSvgINvnos31Gpc8OSUqwkkuXEPB/SUc2kD0kVKQGfZbnJNli1bdPHVd
+5dpZtuOb9wWFSen2g8+BbnEVuL+Vm870otZQh4vnS7sUwH2Nd6FboAKz++/snVHi
+GYOwiPTqZXA=
+=RjXX
+-----END PGP SIGNATURE-----

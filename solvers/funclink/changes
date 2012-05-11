@@ -1,0 +1,62 @@
+Fri Nov 14 11:50:34 EST 1997
+  Split makefile.solaris into makefile.krsolaris (for K&R C compilers)
+and makefile.solaris; add -pic or -Kpic flags to these files.
+
+Wed Mar 25 23:49:17 EST 1998
+  Updates to reflect the modified ../funcadd.h.
+
+Fri Mar 27 18:50:51 EST 1998
+  Update makefiles to reflect the modified ../funcadd.h and ../amplsolver.a.
+
+Sat Apr 25 23:59:59 EDT 1998
+  Minor adjustments to funcadd.c to illustrate al->Errmsg and
+comment on funcinfo and TempMem (for reentrant symbolic returns and
+al->Errmsg values).
+
+Fri May  8 11:26:07 EDT 1998
+  Added makefile.wat, libmain.c, and amplfunc.lnk for making NT and W9x
+versions of amplfunc.dll with WATCOM C/C++ 11.0a.
+
+Fri Jun 19 23:24:01 EDT 1998
+  README: add pointers to "User-defined functions" section of "Hooking
+Your Solver to AMPL".
+
+Tue Jul 14 22:35:41 EDT 1998
+  funcout.exp: append _ASL.  (This is for AIX systems.)
+
+Mon Jul 27 11:04:20 EDT 1998
+  makefile.rs6k: adjust comments about AIX 4.2.
+
+Fri Feb  5 12:15:52 EST 1999
+  README, makefile.rs6k: under AIX, shared libraries don't work until
+AIX 4.3.
+
+Mon Sep 27 16:00:48 EDT 1999
+  makefile.sgi: use cc -shared rather than ld (for portability).
+  funcadd.c: omit two unused variables.
+
+Thu Feb  3 22:33:36 EST 2000
+  makefile.freebsd added; comments in makefile.vc adjusted.
+
+Mon Apr 24 17:30:25 EDT 2000
+  makefile.vc: update comments; delete unused amplfunc.lib
+
+Mon Oct  9 17:53:16 EDT 2000
+  Omit "option solver m55;" from htest.x; new makefile.i386solaris.
+  Some makefiles:  omit old comments about LD_LIBRARY_PATH, etc.
+
+Sat Oct 18 22:09:09 EDT 2003
+  funcadd.c: add "getenv" example function.
+
+Tue Mar 15 21:59:40 MST 2005
+  Add makefile.cygwin; change cc to $(CC) in some makefile variants.
+
+Tue Feb  5 23:14:15 MST 2008
+  Add -mno-cygwin to makefile.cygwin (which also works with MinGW).
+  Add makefile.xsum for making xsum.out.
+
+Fri Apr  4 22:53:24 MDT 2008
+  Add makefile.lcc.
+
+Tue May 26 23:20:15 MDT 2009
+  README: update URLs.

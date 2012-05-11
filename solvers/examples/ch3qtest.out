@@ -1,0 +1,7 @@
+Objective 0: nq = -1, value = 0.05555555555555555
+Constraint body 0: nq = 3, value = -1.666666666666667
+		Lslack = -0.333333, Uslack = 0.333333
+Constraint body 1: nq = -1, value = -1
+		Lslack = 0, Uslack = 0
+Constraint body 2: nq = 0, value = 1
+		Lslack = 0, Uslack = 0

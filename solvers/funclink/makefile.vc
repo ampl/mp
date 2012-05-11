@@ -1,0 +1,28 @@
+## Makefile for Microsoft Visual C++ (Windows 9x, NT)
+## amplfunc.dll provides user-defined functions.
+
+# $S = ampl/solvers directory
+S = ..
+CC = cl
+CFLAGS = -I$S -Ot1
+# For DEC Alpha processors, use
+# CFLAGS = -QAieee -I$S -Ot1
+
+.c.obj:
+	$(CC) -c $(CFLAGS) $*.c
+
+## Sample amplfunc.dll (which also creates amplfunc.lib):
+amplfunc.dll: funcadd.obj amplfunc.def
+	link -dll -def:amplfunc.def -out:amplfunc.dll funcadd.obj
+	del amplfunc.exp
+	del amplfunc.lib
+
+## Sample solver creation...
+
+Lmt = libcmt.lib /link /NODEFAULTLIB:libc.lib
+
+# $(myobjects) = list of .obj files
+myobjects = ....
+
+mysolver.exe: $(myobjects)
+	$(CC) -o mysolver.exe $(myobjects) $S\amplsolv.lib $(Lmt)

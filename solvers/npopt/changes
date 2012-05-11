@@ -1,0 +1,8 @@
+Fri Apr  3 13:38:48 EST 1998
+  npopt.c: updated to return solve_result_num to AMPL.
+  makefile: omit $S/funcadd0.o; on most systems, $S/amplsolver.a now
+provides a recommended default funcadd: see ampl/solvers/funclink/README
+for details.
+
+Tue Jul 28 22:32:37 EDT 1998
+  README: add table of possible solve_result_num values.

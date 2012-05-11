@@ -1,0 +1,72 @@
+Thu Jun 26 23:49:03 EDT 1997
+  Fix trouble with m = 0 (no constraints) on systems with a buggy
+malloc (such that malloc(0) = 0).
+
+Sat Jun 28 10:47:30 EDT 1997
+  Updates from rvdb, plus tweaks to aloqo.c to fix bugs in handling
+the "objno" keyword.
+
+Thu Oct 23 11:37:34 EDT 1997
+  Update to loqo version 3.10.
+
+Sat Oct 25 06:19:22 EDT 1997
+  Replace keyword honor_initsol with two keywords, ignore_initsol and
+zero_initsol.  If ignore_initsol is specified, then LOQO makes its
+automatic choice of initial guess; otherwise, if zero_initsol is given,
+LOQO starts at the origin; otherwise, if an explicit initial guess
+appears, it is used; otherwise LOQO makes its automatic choice.  This
+gives the same default behavior as before, but permits more control.
+
+Wed Oct 29 17:46:43 EST 1997
+  Tweak from Bob Vanderbei, so keyword honor_bounds must be assigned
+0 or 1.
+
+Fri Apr  3 13:40:14 EST 1998
+  aloqo.c: updated to return solve_result_num to AMPL.
+  makefile: omit $S/funcadd0.o; on most systems, $S/amplsolver.a now
+provides a recommended default funcadd: see ampl/solvers/funclink/README
+for details.
+
+Tue Jul 28 22:28:02 EDT 1998
+  README.loqo: add table of possible solve_result_num values.
+
+Wed Oct 14 15:39:03 EDT 1998
+  aloqo.c version.c: update to LOQO 3.18.
+
+Fri Feb 18 10:32:44 EST 2000
+  aloqo.c updated for LOQO 4.05c; version.c omitted (it's now in the
+source supplied by Vanderbei); makefile renamed makefile.u; makefile.vc
+added.
+
+Fri Apr 28 18:46:07 EDT 2000
+  aloqo.c:  add an evaluation count (for the objective, its gradient,
+nonlinear constraints and their Jacobian matrix) to the solution
+message and add times for nonlinear evaluations to the output produced
+by "timing=1" or "timing=2".  There is one Hessian evaluation per
+iteration, so in effect the number of Hessian evaluations was already
+being reported.
+
+Fri Jun  2 09:38:34 EDT 2000
+  aloqo.c: tweak for LOQO 5.03.  Show version (short form) in solve
+message.  New keyword version: version=1 in $loqo_options causes more
+detailed version information (the same as with command-line option -v)
+to be included in the solve message.
+
+Wed Nov 15 15:31:16 EST 2000
+  aloqo.c:  clean up qtest(); supply variable and constraint names
+when verbose >= 3.
+
+Sat Jun  2 17:33:42 EDT 2001
+  aloqo.c:  insert hesset() calls.
+
+Tue Jun  5 10:35:40 EDT 2001
+  aloqo.c: minor cleanups:  replace congrd calls with a 2-line "for"
+(copying values just computed by jacval), and omit unused variables.
+
+Tue May  7 16:32:32 EDT 2002
+  aloqo.c: adjust handling of "version" for consistency with other
+solvers.  Driver date added to output for "version" and -v.
+
+20111014
+  aloqo.c: update to LOQO version 6.08.
+  README.1st, makefile.u, makefile.vc: update contact details.

@@ -1,0 +1,11 @@
+file	ampl/solvers/npopt/README
+
+file	ampl/solvers/npopt/changes
+
+file	ampl/solvers/npopt/makefile
+
+file	ampl/solvers/npopt/xsum0.out
+
+file	ampl/solvers/npopt/npopt.c
+
+file	ampl/solvers/npopt/version.c

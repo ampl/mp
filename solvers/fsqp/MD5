@@ -1,0 +1,44 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-bl master Fri Aug 12 10:35:12 EDT 2005
+# http://cm.bell-labs.com/netlib/crc/netlib-bl.html
+cACjHZ9y/Twat4LOkUriaQ	00lastchange
+4yJLqoSwZO7Kre5jhgizlw	README
+3Q/pASpEa3768Vsp/TSiPw	changes
+tGxAWziY9n81b28clteebw	fsqp.c
+VDZsssbSQ8mizGSuDx4VTw	index
+KDcvLsrWfYnC7CR2uFtbRQ	makefile
++8NzYTy/4bWN9vz+jhtwJw	version.c
+wnSClCExdIzTBySv1eAZEA	xsum0.out
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBQvyzob5pvxO9gjtZAQGMSAP9FIOknMizsxyWpIaICi+0+9X3YHgp3SaO
+0N8gTs5t3amDhuKvC9jy//wZhFJClTpGJyJdXeQ0MZOvKo90ITMcuMDMeUzyHoaU
+pWUx0HaT3vo+Mu2TDwL7yPZGhBTolhTth+CcOeMqcCLxyV6jJOR8JVKesAuMqsaJ
+kaZTwSK8j70=
+=PMf3
+-----END PGP SIGNATURE-----
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-utk master Fri Apr 27 03:10:45 EDT 2007
+1B2M2Y8AsgTpgAmY7PhCfg	00lastchange
+1B2M2Y8AsgTpgAmY7PhCfg	README
+1B2M2Y8AsgTpgAmY7PhCfg	changes
+1B2M2Y8AsgTpgAmY7PhCfg	fsqp.c
+1B2M2Y8AsgTpgAmY7PhCfg	index
+iCyHf1m0uGp4rd5Pp3TG5g	index.html
+1B2M2Y8AsgTpgAmY7PhCfg	makefile
+1B2M2Y8AsgTpgAmY7PhCfg	version.c
+1B2M2Y8AsgTpgAmY7PhCfg	xsum0.out
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBRjGh9uFlxDEfrjtlAQFe8QP/YHrlpgB9Z4oU5bDHxGu8b/0/9vOIEhWY
+zjYsLzco+xyph/USwhIKjKR8UMRWcqSDfAQQOIdDkWpLm1w9iUM/JrxDon2H+jkq
+9wPbeKgAPg72OiUsXAnBc56RHrnjI+e73+ek2Eki8+UhtIu9bsgH+Hc7g4B0tCuP
+SciIPfQVNMg=
+=ljbT
+-----END PGP SIGNATURE-----

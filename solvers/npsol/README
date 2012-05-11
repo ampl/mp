@@ -1,0 +1,135 @@
+Solver npsol is an AMPL interface to NPSOL, a nonlinear solver by Philip
+E. Gill, Walter Murray, Michael A. Saunders, and Margaret H. Wright that
+uses a sequential quadratic programming algorithm.  NPSOL is described
+in "User's Guide for NPSOL (Version 4.0):  A Fortran Package for
+Nonlinear Programming", Tech. Rep. SOL 86-2, Systems Optimization
+Laboratory, Department of Operations Research, Stanford University,
+Jan. 1986.  Source for NPSOL is available from
+
+	Stanford Business Software
+	2680 Bayshore Parkway, Suite 304
+	Mountain View, CA 94043
+	Phone:	+1-415-962-8719
+	Fax:	+1-415-962-1869
+
+It is most convenient to invoke npsol with AMPL's solve command:
+
+	ampl: option solver npsol;
+	ampl: solve;
+
+but npsol can also be run separately, with invocation syntax
+
+	npsol stub [-AMPL] [keywd=[value] ...]
+
+in which stub comes from AMPL's write command.  For example,
+
+	> ampl -obfoo foo.mod foo.dat
+	> npsol foo
+
+demonstrates running npsol separately; the ampl invocation
+writes file foo.nl (stub = "foo"), which npsol reads.
+
+Command-line arguments to npsol either have the form
+	keywd=
+or
+	keywd=value
+where keywd is one of the key words described below.  Alternatively,
+you can invoke npsol the way AMPL's solve command does, i.e.,
+
+	npsol stub -AMPL [keywd=value ...]
+
+where stub was specified in
+
+	ampl -obstub ...
+or
+	ampl -ogstub...
+
+Such an invocation causes npsol to read from stub.nl and to write stub.sol.
+
+-----------------
+Controlling npsol
+-----------------
+
+Npsol reads keywords and values from the environment (shell) variable
+npsol_options and from the command line.  Execute
+
+	npsol -=
+
+for a summary of keywords that are synonyms for NPSOL keyword phrases.
+You can also give NPSOL keyword phrases if you change blanks within
+them to underscores and follow them with an = (equals sign).
+
+------------------
+Sample Invocations
+------------------
+
+  If you're using AMPL, just say
+
+	option solver npsol;
+	solve;
+
+  If you've executed, say,
+
+	ampl -objunk junk.model junk.data
+
+then you could say
+
+	npsol junk itera=300 linesearch=1e-6
+
+to force npsol to run for at most 300 iterations and use linesearch
+tolerance 1e-6.  With the Bourne shell, either of the invocations
+
+	npsol_options='iterations=300 linesearch=1e-6' npsol junk
+or
+	npsol_options='iterations=300 linesearch=1e-6'
+	export npsol_options
+	npsol junk
+
+would have the same effect; within AMPL, specifying
+
+	option npsol_options 'iterations=300 linesearch=1e-6', solver npsol;
+	solve;
+
+would also have this effect.
+
+
+NPSOL itself must be licensed from
+
+	Stanford Business Software
+	Phone:	+1 415-962-8719
+	Fax:	+1 415-962-1869
+	2680 Bayshore Parkway, Suite 304
+	Mountain View, CA 94043
+
+The makefiles assume that src/npsol.a or src/npsol.lib is a library
+built from the NPSOL source.  See the comments in the makefiles.
+makefile.u works on Unix systems; makefile.vc works with Microsoft's
+Visual C/C++ 6.  Copy one of them to "makefile", and edit makefile if
+necessary.
+
+-----------------------
+solve_result_num values
+=======================
+
+Here is a table of solve_result_num values that "fsqp" can return
+to an AMPL session, along with the text that appears in the associated
+solve_message.
+
+	Value	Message
+
+	0	optimal solution
+	100	first-order optimal but not converged
+	200	linear constraints infeasible
+	201	nonlinear constraints infeasible
+	400	major iteration limit
+	501	Bug: INFORM = 5
+	502	stuck (INFORM = 6)
+	503	Bug: bad objective or constraints (INFORM = 7)
+	504	Bug: INFORM = 8
+	505	Bug: invalid input parameter (INFORM = 9)
+	506	unexpected INFORM value
+	507	solution aborted
+
+-----------------------
+
+Questions about this stuff?  Contact dmg@ampl.com (David M. Gay).

@@ -1,0 +1,24 @@
+The models in this directory express complementarity problems mentioned
+in the test results (or examples) shown in
+
+Michael C. Ferris, Robert Fourer, and David M. Gay, "Expressing
+	Complementarity Problems in an Algebraic Modeling Language
+	and Communicating Them to Solvers", forthcoming report.
+
+Most of the models in this directory started out as GAMS models in MCPLIB,
+ftp://ftp.cs.wisc.edu/math-prog/mcplib .
+
+Papers describing these models and other possible complementarity
+models are:
+
+Steven P. Dirkse and Michael C. Ferris, "MCPLIB: A Collection of Nonlinear Mixed
+	Complementarity Problem", Optimization Methods and Software 5 (1995),
+	pp. 319-345.
+	ftp://ftp.cs.wisc.edu/tech-reports/reports/94/tr1215.ps.Z
+
+
+M. C. Ferris and J. S. Pang, "Engineering and Economic Applications of
+	Complementarity Problems", SIAM Review 39 (1997), pp. 669-713.
+	http://www.siam.org/journals/sirev/39-4/28596.html
+
+runall is an AMPL script that exercises most of the models.

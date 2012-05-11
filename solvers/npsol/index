@@ -1,0 +1,18 @@
+file	ampl/solvers/npsol/README
+
+file	ampl/solvers/npsol/changes
+
+file	ampl/solvers/npsol/makefile.u
+for	Unix systems
+
+file	ampl/solvers/npsol/makefile.vc
+for	Microsoft VC++
+
+file	ampl/solvers/npsol/xsum0.out
+
+file	ampl/solvers/npsol/npsol.c
+
+file	ampl/solvers/npsol/version.c
+
+lib	ampl/solvers/npsol/src
+for	src/makefile.vc and src/npsol.lbc

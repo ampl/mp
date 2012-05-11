@@ -1,0 +1,24 @@
+19 Feb. 1992:	updated	dist.mod dist.n egypt2.dat egypt2.mod oil.mod
+			train1.mod train2.dat train2.mod
+		added	score1.dat struc1.dat struc6.dat struc8.dat
+
+5 April 1993:	added m2a mps.mod mps1.mod (models for MPS data and
+		an awk script, m2a, that turns MPS into suitable data).
+
+13 Sept. 1996:	optimal.val updated.
+
+31 May 1998:	Last line, consisting of "end;", removed from
+		dist03.dat, egypt1.dat, egypt2.dat, mod8.dat, oil.dat,
+		prod03.dat, prod08.dat, prod13.dat, score1.dat,
+		struc1.dat, struc6.dat, struc8.dat, train1.dat,
+		and train2.dat.
+
+20 Oct. 1998:	m2a: adjusted to handle blank names in RHS, RANGES, and
+		BOUNDS sections.  Variants m2ai and mpsi.mod of m2a and
+		mps.mod added for MPS files with integer 'MARKER' lines.
+
+10 Aug. 1999:	m2ai: put quotes around members of set K.
+		mpsi.mod: mention m2ai rather than m2a.
+
+11 Nov. 1999:	m2a, m2ai: fix glitches in handling FR and MI
+		lines in BOUNDS sections.

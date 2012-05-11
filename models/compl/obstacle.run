@@ -1,0 +1,7 @@
+model obstacle.mod;
+if $presolve == '0' then {
+	fix{i in {0,M+1}, j in X} v[i,j];
+	fix{i in Y, j in {0,N+1}} v[i,j];
+	}
+solve;
+include compchk

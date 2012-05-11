@@ -1,0 +1,10 @@
+
+# Chvatal, Pages 195-96
+
+param roll_width := 100 ;
+
+param: WIDTHS: orders :=
+          45     97
+          36    610
+          31    395
+          14    211   ;

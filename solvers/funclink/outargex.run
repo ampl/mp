@@ -1,0 +1,34 @@
+# Illustration of (silly) use of INOUT and OUT arguments in
+# an AMPL imported function.
+
+# This assumes function outargex from outargex.c.  If outargex.c
+# is compiled into outargex.dll, uncomment the following
+# "load outargex.dll;" line...
+
+#load outargex.dll;
+
+param nr integer > 0 default 4;
+param ns integer > 0 default 3;
+param p{1..nr};
+param s{i in 1..ns} symbolic;
+param sout symbolic;
+
+# outargex(nr, ns, {i in 1..nr} p[i], {i in 1..ns} s[i], sout)
+# returns the sum of the incoming p[i] values,
+# increments the p[i], sets sout to the concatenation of the
+# incoming s[i] and the return value, and modifies the s[i]
+# by "incrementing" non-numeric string values and interchanging
+# the numeric and string representations of ones that look
+# like numbers.
+
+function outargex(Reals, Reals, {i in 1..nr}(Reals INOUT),
+	{1..ns} (INOUT), OUT);
+
+let{i in 1..nr} p[i] := Uniform01();
+let{i in 1..ns} s[i] := 'S_' & i;
+let s[2] := 3.4;
+display p, s;
+call outargex(nr, ns, {i in 1..nr} p[i], {i in 1..ns} s[i], sout);
+display p, s, sout;
+display outargex(nr, ns, {i in 1..nr} p[i], {i in 1..ns} s[i], sout);
+display p, s, sout;

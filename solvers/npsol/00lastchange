@@ -1,0 +1,2 @@
+20081203
+  makefile.u:  add mention of the need to add -ldl or -ldld on some systems.

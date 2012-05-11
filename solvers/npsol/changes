@@ -1,0 +1,22 @@
+Mon Apr 21 22:47:59 EDT 1997
+  Update for revised amplsolver.a and "Hooking Your Solver to AMPL".
+
+Fri Apr  3 14:10:05 EST 1998
+  npsol.c: updated to return solve_result_num to AMPL.
+  makefile: omit $S/funcadd0.o; on most systems, $S/amplsolver.a now
+provides a recommended default funcadd: see ampl/solvers/funclink/README
+for details.
+
+Tue Jul 28 22:33:33 EDT 1998
+  README: add table of possible solve_result_num values.
+
+Tue Apr  3 16:16:02 EDT 2001
+  Rename makefile makefile.u (for Unix systems); add makefile.vc
+(for Microsoft VC++), src/makefile.vc and src/npsol.lbc.
+
+20010411
+  npsol.c:  "return 0;" added to send of obj0fun() to banish a compiler
+warning; version.c not changed.
+
+20081203
+  makefile.u:  add mention of the need to add -ldl or -ldld on some systems.

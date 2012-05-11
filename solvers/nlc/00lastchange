@@ -1,0 +1,4 @@
+Tue May 26 22:51:09 MDT 2009
+  nlc.c: fix a glitch (missing & on 2nd arg) in calls on
+the C version of domain_(...), which may be called when
+expressions involve atanh() and derivatives of sqrt().

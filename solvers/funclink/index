@@ -1,0 +1,75 @@
+file	ampl/solvers/funclink/README
+
+file	ampl/solvers/funclink/amplfunc.def
+for	use with makefile.vc
+
+file	ampl/solvers/funclink/amplfunc.lnk
+for	use with makefile.wat
+
+file	ampl/solvers/funclink/funcadd.c
+
+file	ampl/solvers/funclink/funcadd0.c
+
+file	ampl/solvers/funclink/funcaddk.c
+
+file	ampl/solvers/funclink/funcout.exp
+for	use with makefile.rs6k
+
+file	ampl/solvers/funclink/htest.out
+for	sample output from htest.x
+
+file	ampl/solvers/funclink/htest.x
+
+file	ampl/solvers/funclink/libmain.c
+for	use with makefile.wat
+
+file	ampl/solvers/funclink/makefile.alpha
+
+file	ampl/solvers/funclink/makefile.cygwin
+for	Cygwin and MinGW
+
+file	ampl/solvers/funclink/makefile.freebsd
+
+file	ampl/solvers/funclink/makefile.hp
+
+file	ampl/solvers/funclink/makefile.i386solaris
+
+file	ampl/solvers/funclink/makefile.krsolaris
+
+file	ampl/solvers/funclink/makefile.lcc
+
+file	ampl/solvers/funclink/makefile.linux
+
+file	ampl/solvers/funclink/makefile.macosx
+
+file	ampl/solvers/funclink/makefile.rs6k
+
+file	ampl/solvers/funclink/makefile.sgi
+
+file	ampl/solvers/funclink/makefile.solaris
+
+file	ampl/solvers/funclink/makefile.sunos
+
+file	ampl/solvers/funclink/makefile.vc
+
+file	ampl/solvers/funclink/makefile.wat
+
+file	ampl/solvers/funclink/makefile.xsum
+
+file	ampl/solvers/funclink/outargex.c
+for	illustration of OUT and INOUT args (AMPL only)
+
+file	ampl/solvers/funclink/outargex.run
+for	script using function "outargex" of outargex.c
+
+file	ampl/solvers/funclink/silly.2
+for	sample stderr from silly.x
+
+file	ampl/solvers/funclink/silly.out
+for	sampl stdout from silly.x
+
+file	ampl/solvers/funclink/silly.x
+for	example
+
+file	ampl/solvers/funclink/xsum0.out
+for	checksums

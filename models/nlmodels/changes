@@ -1,0 +1,16 @@
+Wed Aug 20 23:17:38 EDT 1997
+  hs87.mod: correct the data-section value for param b
+(to accord with Himmelblau, rather than Hock & Schittkowski), and
+add comments about modifying the objective to make it continuous.
+
+Mon Oct 20 16:45:16 EDT 1997
+  hs105.mod: correct upper bound on x[2], which should be .499
+rather than .449.
+
+Tue Dec 15 19:35:15 EST 1998
+  hs106.mod: correct upper bound on x[1], which should be 10000
+rather than 1000.
+
+Sun Dec 20 14:53:58 EST 1998
+  steenbre.mod: in the data section, add a := to the "var capacity"
+line, for the benefit of older AMPL processors (prior to 19960819).

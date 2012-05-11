@@ -1,0 +1,58 @@
+Solver lbfgsb minimizes functions subject only to simple-bound
+constraints.  It is based on L-BFGS-B, by Ciyou Zhu, Richard Byrd,
+Peihuang Lu, and Jorge Nocedal; see
+
+	http://www.ece.nwu.edu/~nocedal/software.html
+
+for pointers to more information on the limited-memory BFGS algorithm
+implemented in L-BFGS-B.  Relevant papers include
+
+	%A Ciyou Zhu
+	%A Richard H. Byrd
+	%A Peihuang Lu
+	%A Jorge Nocedal
+	%T Algorithm 778: L-BFGS-B: Fortran Subroutines for
+	Large-Scale Bound-Constrained
+	Optimization
+	%J ACM Trans. Math. Software
+	%V 23
+	%N 4
+	%D 1997
+	%P 550-560
+	
+	%A Richard H. Byrd
+	%A Peihuang Lu
+	%A Jorge Nocedal
+	%A Ciyou Zhu
+	%T A Limited Memory Algorithm for Bound Constrained Optimization
+	%J SIAM J. Sci. Comput.
+	%V 16
+	%N 5
+	%D 1995
+	%P 1190-1208
+
+
+Source file routines.f comes from
+
+	ftp://ftp.mcs.anl.gov/pub/neos/Lbfgs/Lbfgsb.2.1.tar.gz
+
+Execute
+
+	lbfgsb -?
+
+for a summary of usage and
+
+	lbfgsb -=
+
+to see keywords that may appear in assignments in $lbfgsb_options
+or the lbfgsb command line.
+
+Possible solve_result_num values for lbfgsb:
+
+000	Solved: maxnorm(projected gradient) <= pgtol.
+100	Solved? relative function change <= macheps * factr.
+101	No objective: nprob was out of range of stub.nl had no objectives.
+400	More than maxfun function and gradient evaluations.
+401	More than maxit iterations.
+500	Probable bug: inconsistency in linesearch routine.
+501	Error -- probably a bug.

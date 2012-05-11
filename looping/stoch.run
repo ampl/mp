@@ -1,0 +1,72 @@
+
+# ----------------------------------------
+# STOCHASTIC PROGRAMMING PROBLEM
+# USING BENDERS DECOMPOSITION
+# ----------------------------------------
+
+model stoch.mod;
+data stoch.dat;
+
+option solver minos;
+
+option omit_zero_rows 1;
+option display_eps .000001;
+
+problem Master: Make1, Inv1, Sell1, Min_Stage2_Profit,
+   Expected_Profit, Cut_Defn, Time1, Balance1;
+
+option presolve 10;
+
+problem Sub: Make, Inv, Sell, Stage2_Profit, Time, Balance2, Balance;
+
+option presolve 0;
+
+let nCUT := 0;
+let Min_Stage2_Profit := Infinity;
+let {p in PROD} inv1[p] := 0;
+
+param GAP default Infinity;
+
+for {1..50} { printf "\nITERATION %d\n\n", nCUT+1;
+
+   solve Sub;
+   printf "\n";
+
+   if Stage2_Profit < Min_Stage2_Profit - 0.00001 then {
+      let GAP := min (GAP, Min_Stage2_Profit - Stage2_Profit);
+      option display_1col 0;
+      display GAP, Make, Sell, Inv;
+      let nCUT := nCUT + 1;
+      let cut_type[nCUT] := "point";
+      let {t in 2..T, s in SCEN} time_price[t,s,nCUT] := Time[t,s].dual;
+      let {p in PROD, s in SCEN} bal2_price[p,s,nCUT] := Balance2[p,s].dual;
+      let {p in PROD, t in 2..T, s in SCEN}
+         sell_lim_price[p,t,s,nCUT] := Sell[p,t,s].urc;
+      }
+   else break;
+
+   printf "\nRE-SOLVING MASTER PROBLEM\n\n";
+
+   solve Master;
+   printf "\n";
+   option display_1col 20;
+   display Make1, Inv1, Sell1;
+
+   let {p in PROD} inv1[p] := Inv1[p];
+};
+
+printf "\nOPTIMAL SOLUTION FOUND\nExpected Profit = %f\n\n", Expected_Profit;
+option display_1col 0;
+
+param MAKE {p in PROD, t in 1..T, s in SCEN}
+   := if t = 1 then Make1[p].val else Make[p,t,s].val;
+param SELL {p in PROD, t in 1..T, s in SCEN}
+   := if t = 1 then Sell1[p].val else Sell[p,t,s].val;
+param INV {p in PROD, t in 1..T, s in SCEN}
+   := if t = 1 then Inv1[p].val else Inv[p,t,s].val;
+
+for {s in SCEN} {
+   printf "SCENARIO %s\n", s;
+   display {p in PROD, t in 1..T}
+      (MAKE[p,t,s], SELL[p,t,s], INV[p,t,s]);
+   }

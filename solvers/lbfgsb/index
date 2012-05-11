@@ -1,0 +1,13 @@
+file	ampl/solvers/lbfgsb/README
+
+file	ampl/solvers/lbfgsb/changes
+
+file	ampl/solvers/lbfgsb/index
+
+file	ampl/solvers/lbfgsb/lbfgsb.c
+
+file	ampl/solvers/lbfgsb/makefile.u
+
+file	ampl/solvers/lbfgsb/makefile.vc
+
+file	ampl/solvers/lbfgsb/xsum0.out

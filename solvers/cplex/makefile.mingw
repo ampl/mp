@@ -1,0 +1,80 @@
+# /****************************************************************
+# Copyright (C) 2000 Lucent Technologies
+# All Rights Reserved
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby
+# granted, provided that the above copyright notice appear in all
+# copies and that both that the copyright notice and this
+# permission notice and warranty disclaimer appear in supporting
+# documentation, and that the name of Lucent or any of its entities
+# not be used in advertising or publicity pertaining to
+# distribution of the software without specific, written prior
+# permission.
+#
+# LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+# INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
+# IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
+# SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
+# IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+# ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+# THIS SOFTWARE.
+# ****************************************************************/
+
+# For making cplex.exe with MinGW on Intel machines.
+
+# Invoke (under MSys or MinGW) with "make -f makefile.mingw"
+# or "cp makefile.mingw makefile", edit makefile to adjust the
+# CPLEXDIR path below (etc.), and simply invoke "make".
+
+CC = gcc
+CFLAGS = -O2
+
+S = ..
+# "S = .." assumes this directory is solvers/cplex .
+
+# You must obtain cplex102.dll, cplex102.lib and cplex.h from ILOG.
+# They are all you really need from ILOG's large CPLEX distribution.
+# See http://www.cplex.com/
+
+# You may need to adjust the following assignments to reflect
+# where you have installed ILOG's CPLEX distribution its version.
+# $(CPLEXINC) is the directory containing cplex.h and $(CPLEXLIB)
+# is the full path to the relevant cplex*.lib.
+# To run the resulting cplex.exe, you need to have the .dll that
+# corresponds to $(CPLEXLIB) installed in your search PATH or in
+# one of the standard places where .dlls are sought.
+
+CPLEXRELEASE = 110b1
+CPLEXDIR = /z/n_e/ilog/cplex110b1
+CPLEXINC = $(CPLEXDIR)/include/ilcplex
+COMPILER = x86_.net2005_8.0
+# or x86_.net2003_7.1; formerly COMPILER = msvc6
+LIBFORM = stat_mta
+# formerly LIBFORM = stat_mda
+CPLEXLIB = $(CPLEXDIR)/lib/$(COMPILER)/$(LIBFORM)/cplex$(CPLEXRELEASE).lib
+
+# Or just copy cplex102.lib and cplex.h from here and use
+# CPLEXLIB = cplex102.lib
+# CPLEXINC = .
+
+# If you do not have the CPLEX Mixed Integer Option, add -DNO_CPLEX_MIP
+# to CFLAGS (i.e., to the right-hand side of the CFLAGS = assignment).
+
+# If you do not have the CPLEX Barrier Option, add -DNO_BARRIER
+# to CFLAGS, and change qpcheck to linedagread below.
+
+.c.o:
+	$(CC) -c $(CFLAGS) -I$S -I$(CPLEXINC) $*.c
+
+so = studmain.o $S/sjac0dim.o $S/funcadd0.o $S/amplsolver.a $(CPLEXLIB)
+o = cplex.o $S/funcadd0.o $S/amplsolver.a $(CPLEXLIB)
+
+scplex.exe: $(so)
+	$(CC) -o scplex $(so)
+
+cplex.exe: $o
+	$(CC) --large-address-aware -o cplex $o
+
+cplex.o: $(CPLEXINC)/cplex.h $S/getstub.h $S/nlp.h $S/r_opn.hd

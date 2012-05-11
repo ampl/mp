@@ -1,0 +1,48 @@
+
+# ----------------------------------------
+# GILMORE-GOMORY METHOD FOR
+# CUTTING STOCK PROBLEM
+# ----------------------------------------
+
+model cut.mod;
+data cutA.dat;
+
+option solver cplex;
+option solution_round 6;
+
+problem Cutting_Opt: Cut, Number, Fill;
+option relax_integrality 1;
+
+problem Pattern_Gen: Use, Reduced_Cost, Width_Limit;
+option relax_integrality 0;
+
+for {i in WIDTHS} {
+   let nPAT := nPAT + 1;
+   let nbr[i,nPAT] := floor (roll_width/i);
+   let {i2 in WIDTHS: i2 <> i} nbr[i2,nPAT] := 0;
+   };
+
+repeat {
+   solve Cutting_Opt;
+   display Cut;
+
+   let {i in WIDTHS} price[i] := Fill[i].dual;
+
+   solve Pattern_Gen;
+   display price,Use;
+
+   if Reduced_Cost >= -0.00001 then break;
+   else {
+      let nPAT := nPAT + 1;
+      let {i in WIDTHS} nbr[i,nPAT] := Use[i];
+      };
+   };
+
+option Cutting_Opt.relax_integrality 0;
+solve Cutting_Opt;
+
+option display_transpose -10;
+display nbr; display Cut;
+
+printf "WASTE = %5.2f%%\n\n",
+   100 * (1 - (sum {i in WIDTHS} i * orders[i])  / (roll_width * Number));

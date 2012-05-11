@@ -1,0 +1,74 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-bl master Mon Jul 19 10:35:09 EDT 2004
+# http://cm.bell-labs.com/netlib/crc/netlib-bl.html
+b4jRDoyJPKIqjpyiYDhPWA	00lastchange
+Yoc7dVVElqws8eKuUGEzZg	README
+yIaTNevc/99fdO+T1zFfYA	c_op.hd
+yubmeHmVh5ZVkdqvoSgfsw	ch3.amp
+pd/KJTCoPiLHTkkkhCwVWA	ch3.c
+z/S/cBW2m7W9PxmamWjq/g	ch3.f
+i9R+zn1WL7MZPPchc0yGow	ch3.kc
+80yLDPTgnGdLrRbiXP9uNA	ch3.nl
+G/VJQ6n58hwNzzygnKlLXw	ch3mng.out
+c9ZZBS5OCNIkVffoMjsq2g	ch3nl2.out
+pRXD/3RwvPSZDTphfMMArA	changes
+OrE8aaYPACUd7+gV74gILQ	cops.c
+L+AdOClxnF5t6pWBkPxA/Q	index
+9ANH9Iq++oI110zzmIFh7A	makefile.u
+rmMfBgS0Qpu2qO5tUeZAlQ	makefile.vc
+PKPG/utE7KU5ACbDM6leEA	mngnlc.c
+G8M76KXK8hjDMvXrNHoJFg	nl2nlc.c
+vuZ8tPDe/Zw8GEgHwtxKOw	nlc.c
+CkGd6tWt/RcwRCx/3reb3A	nlc.h
+5r7kB6Za6HndtIhMarRePg	nlcmisc.c
+vkGx7TkWiQ2JTcsQ06L3AQ	opcode.hd
+O8iPOd4eL65xiKspRFsaPw	r_ops1.hd
+knjG+ak/WGzB64vWUisczw	xsum0.out
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBQPvcH75pvxO9gjtZAQE7lwQAiN/4/mxeDozYJgPj3Xlf2LguqT3CyhYW
+A4qN9drd2A5g94vAmxKViZFAtyu2pk2xpaK872+tUI1M5GS/kli+0YP1UoN4e20p
+mXL/C9ItoYmKw4UcyUOrBJV+Il9kU7jQEsdiKCj81kdIb1yIcycwTDP48uWuCxMw
+RFWvGHMWekA=
+=dpn4
+-----END PGP SIGNATURE-----
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-utk master Thu May 28 03:10:09 EDT 2009
+AYQgr2GTlbgd8H3Od9xn0A	00lastchange
+dwGCMG9PH2fnocLywkpbwQ	README
+yIaTNevc/99fdO+T1zFfYA	c_op.hd
+yubmeHmVh5ZVkdqvoSgfsw	ch3.amp
+pd/KJTCoPiLHTkkkhCwVWA	ch3.c
+z/S/cBW2m7W9PxmamWjq/g	ch3.f
+i9R+zn1WL7MZPPchc0yGow	ch3.kc
+80yLDPTgnGdLrRbiXP9uNA	ch3.nl
+G/VJQ6n58hwNzzygnKlLXw	ch3mng.out
+c9ZZBS5OCNIkVffoMjsq2g	ch3nl2.out
+P7sI6m6Iz7tGxyI4HRoLvQ	changes
+OrE8aaYPACUd7+gV74gILQ	cops.c
+L+AdOClxnF5t6pWBkPxA/Q	index
+tyzmJ6PBY6ETFShlIPg3ww	index.html
+5Iqkdulcnq/k/MxVykniWw	makefile.u
+nD/uMNCBPSh3VZt2Bw0GdA	makefile.vc
+PKPG/utE7KU5ACbDM6leEA	mngnlc.c
+G8M76KXK8hjDMvXrNHoJFg	nl2nlc.c
+TlTm+KAGTcErSDJ+iTfMlw	nlc.c
+CkGd6tWt/RcwRCx/3reb3A	nlc.h
+5r7kB6Za6HndtIhMarRePg	nlcmisc.c
+vkGx7TkWiQ2JTcsQ06L3AQ	opcode.hd
+O8iPOd4eL65xiKspRFsaPw	r_ops1.hd
+31KNaB29pvnj+j7B4/nP1Q	xsum0.out
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBSh441uFlxDEfrjtlAQHlCgP8DUvsOLisUqoFpFGHBf3wPzYccI8uOtUh
+7VYMfGg8zPKSXnfHO1jAft5NJUXRMOgGk4w+H9jVGcR0YqBKJ4Vhiisq+drM71aU
+QWD2znRX8BDMKlhYCg2/3jEpKnPzzY+3xwDTYNND6YWAK3YBopvIV3swkMVodUXG
+CXRTkSO2cpc=
+=4H+e
+-----END PGP SIGNATURE-----

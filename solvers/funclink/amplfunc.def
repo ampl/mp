@@ -1,0 +1,5 @@
+LIBRARY		AMPLFUNC
+DESCRIPTION	'32 bit DLL version of funcadd'
+HEAPSIZE	8192
+EXPORTS
+	funcadd_ASL	@1

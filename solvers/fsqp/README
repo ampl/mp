@@ -1,0 +1,113 @@
+Solver fsqp is a nonlinear solver based on CFSQP, a nonlinear solver
+by Craig Lawrence, Jian L. Zhou, and Andre L. Tits that uses an SQP
+algorithm that evaluates the objective function only at feasible points.
+For more information on CFSQP and pointers to references on the FSQP
+algorithm, see
+
+	http://www.aemdesign.com/
+
+You must get CFSQP source files cfsqp.c and qld.c separately;
+see the FSQP web site (above) for details.
+
+It is most convenient to invoke fsqp with AMPL's solve command:
+
+	ampl: option solver fsqp;
+	ampl: solve;
+
+but fsqp can also be run separately, with invocation syntax
+
+	fsqp stub [-AMPL] [keywd=[value] ...]
+
+in which stub comes from AMPL's write command.  For example,
+
+	> ampl -obfoo foo.mod foo.dat
+	> fsqp foo
+
+demonstrates running fsqp separately; the ampl invocation
+writes file foo.nl (stub = "foo"), which fsqp reads.
+
+Command-line arguments to fsqp either have the form
+
+	keywd=value
+
+where keywd is a suitable keyword, as discussed below.  Alternatively,
+you can invoke fsqp the way AMPL's solve command does, i.e.,
+
+	fsqp stub -AMPL [keywd=value ...]
+
+where stub was specified in
+
+	ampl -obstub ...
+or
+	ampl -ogstub...
+
+Such an invocation causes fsqp to read from stub.nl and to write stub.sol.
+
+----------------
+Controlling fsqp
+----------------
+
+Fsqp reads keywords and values from the environment (shell) variable
+fsqp_options and from the command line.  Execute
+
+	fsqp -=
+
+for a summary of keywords that fsqp recognizes.
+
+------------------
+Sample Invocations
+------------------
+
+  If you're using AMPL, just say
+
+	option solver fsqp;
+	solve;
+
+  If you've executed, say,
+
+	ampl -objunk junk.model junk.data
+
+then you could say
+
+	fsqp junk maxiter=300 eps=1e-6
+
+to force fsqp to run for at most 300 iterations and use convergence
+tolerance 1e-6.  With the Bourne shell, either of the invocations
+
+	fsqp_options='maxiter=300 eps=1e-6' fsqp junk
+or
+	fsqp_options='maxiter=300 eps=1e-6'
+	export fsqp_options
+	fsqp junk
+
+would have the same effect; within AMPL, specifying
+
+	option fsqp_options 'maxiter=300 eps=1e-6', solver fsqp;
+	solve;
+
+would also have this effect.
+
+-----------------------
+solve_result_num values
+=======================
+
+Here is a table of solve_result_num values that "fsqp" can return
+to an AMPL session, along with the text that appears in the associated
+solve_message.
+
+	Value	Message
+
+	0	Optimal
+	200	Linear constraints are infeasible
+	201	Cannot satisfy the nonlinear constraints
+	202	Input data are inconsistent (details with iprint > 0)
+	400	Iteration limit
+	501	Line search failure
+	502	QP solver failed (d0)
+	503	QP solver failed (d1)
+	504	Overly tight stopping criteria (eps, epseqn)
+	505	Penalty parameter got too large
+
+-----------------------
+
+Questions about this stuff?  Contact dmg@ampl.com (David M. Gay).

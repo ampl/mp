@@ -1,0 +1,59 @@
+AMPL is a language and system for formulating, solving, and helping
+understand mathematical programming problems (of minimizing or
+maximizing a function subject to constraints).  The AMPL book,
+details of which appear in "ampl.info from ampl", explains AMPL in
+much more detail and provides many examples.
+
+See also "index from ampl", "readme from ampl/solvers", and
+the AMPL Web site at URL
+
+	http://www.ampl.com/ampl/
+
+The material in this directory and its subdirectories, like other
+netlib material, is available by E-mail, ftp, and World Wide Web
+browser.  For more details, send the 2-word E-mail message "send
+readme" to netlib@netlib.org .  If you use the netlib http server
+http://netlib.sandia.gov and look in the "top level index" or in an
+index to which it points, you can get a tar file of a directory and
+its subdirectories by clicking "(tar)".  For example, in
+
+	http://netlib.sandia.gov/ampl/index.html
+
+if you click "(tar)" in the line "lib: solvers (tar)", you will get
+a tar file of the solvers directory and all of its subdirectories.
+(The files in these directories are .gz files; the gzip binaries in
+directory /netlib/gnu/gzip can uncompress .gz and .Z files.)
+
+--------------------
+Change notifications
+--------------------
+
+	Send the E-mail message
+		subscribe ampl
+	to netlib@netlib.org to request notification of new and
+	changed files in netlib's ampl directory or its subdirectories.
+
+	Send the E-mail message
+		unsubscribe ampl
+	to recant your notification request.
+
+---------------------------
+AWK for AMPL pipe functions
+---------------------------
+
+You can get an awk that flushes buffers appropriately for use
+in AMPL pipe functions by
+
+	1. Getting awk source, e.g.,
+
+		http://www.cs.princeton.edu/~bwk/btl.mirror/awk.tar.gz
+
+	2. Editing lib.c to insert
+
+		if (inf == stdin)
+			fflush(stdout);
+
+	   at the beginning of function readrec().
+
+	3. Compiling the resulting source ("make") and
+	   installing the resulting "a.out" as awk.

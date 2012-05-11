@@ -1,0 +1,182 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-bl master Wed Jan 11 20:35:11 EST 2006
+# http://cm.bell-labs.com/netlib/crc/netlib-bl.html
+h6HX7WFxOO73H1ms2a9WPw	00lastchange
+af60cTDcoUUpQdwVG4q0Og	README
+EwR9BmTc5WC7kOMzVFe5+g	README.gjh
+Twrl33RwtXBwrIlLsJYEGA	amplfun4.c
+IU6uKEFV/hptgEVoN7/LzQ	amplfunc.c
+yubmeHmVh5ZVkdqvoSgfsw	ch3.amp
+80yLDPTgnGdLrRbiXP9uNA	ch3.nl
+3caTm5ZeljWYH1dvuN6HFw	ch3mng.out
+L3jfSOoekwn+TGkqSw8Qlg	ch3mng.sol
+yWvMc55NPK1ZhiBLrjFt2g	ch3mnh.out
+/CpwffKuRm6uYqDERItInQ	ch3mnh.sol
+f7KBoPzgTBChOJbUrDm5GA	ch3nl2.out
+v/kQXulgNd86w+MmGYbEvQ	ch3nl2.sol
+rqaOrxsdqNQVyTOe1cfLzg	ch3nl21.out
+kgDRc2BoaucfAkHSIKwfDQ	ch3qtest.out
+Shf3GdqsXvkTHo9l/J6M9Q	ch3tn.out
+Mi5OODW6pym1xy6S+ELV1g	ch3tn.sol
+LZOpufHODyuK0gIksnJAAw	changes
+K2+jSqhOwZDxLyTAaalNSA	diet.amp
+MU+roxPW1LpOELR2v/91hg	diet.col
+VMt1globgRDBf0vPmWlaSQ	diet.nl
+lvTQD8FMCoLB4zs/uI+x0Q	diet.row
+vzM48ZbhXnfW8w1Ljq2dpw	diet.sol
+ISYz+9rYm8q2eGrFHqbLJw	dietd.nl
+i3SyAlMypAJlpG/dW04OEg	dietd.sol
++E7m/SBjx/NPqOC64Y5aBA	dietl1.out
+sjUMib3go/HZ8U98+zQpBA	dietl2.out
+LyxjfkUlJh2gixaUIthNdw	dietl3.out
+fSV8LxaPK6/F4mgBznzpkg	dietu.sol
+Gn6iEeUel0cGcBV3vc+1Zw	dminos
+NOGuKI/xPibt0AMQCnf0Hg	dualconv.c
+9HLSxOGsxz4CE5EiMlnzLg	enewt.m
+GxZzLugghMtXKXuItgdTig	evalf.m
+wQJThsOIEfLoiy/Dh3hkfA	evalg.m
+UAorLTdmJge4NYqkQotzFw	evalw.m
+5MaGnsZqzsWYzPXRsedIlw	fmng1.f
+BKpBrVM8phW7V8TIznvGQw	fnl21.f
+IVfgvWdO2PMvbvSi0e0sFw	gjh.c
+WlL/MziBhQgWV+bHMP9Ijg	hkeywds.c
+WAmG3yDzeuA/6X4yTzYppQ	hs100.amp
+EzvdgeXjRXGz7LrV+WwrgA	hs100.nl
+SO4f4Y3QQ7DSTs7N66rWHA	hs100.so0
+v2VLsTiU0ozRAS6HFmHLWA	index
+joRyxpUFqVKFMERm7MuSqw	init.m
+h14+20TNdDmEIlwA/D4sIA	keywds.c
+W9H2pCccxOMma/AorRpwHw	lin1.c
++E7m/SBjx/NPqOC64Y5aBA	lin1diet.out
+1cVwVe3tabrhNm9sDo0B+g	lin2.c
+sjUMib3go/HZ8U98+zQpBA	lin2diet.out
+CMFL3j3HeTS9Ey/QxsRjvw	lin3.c
+LyxjfkUlJh2gixaUIthNdw	lin3diet.out
+QKDr7CXZKqWqbhWl5oRAuA	linrc.c
+PfFTDrIjID0gVRvD7Q43VA	linrcdie.out
+RGl0txq/ZQquOubsI43iVg	makefile
+T7lOCyIswiEiea86mCKGmA	makefile.sy
+UI0S18+tpewXezrEXaNnHg	makefile.u
+h9rwa0ucR5IHF/LB2F02Pg	makefile.vc
+fCR5pt2Mv3/k35v1NAqbEw	makefile.wat
+0ouXDuYr7VqTCvxCBq8HSw	mng.c
+EAPql9McwxA2ae/15ehGzQ	mng1.c
+epop8+wd9+9oVa4d6xv+Rw	mnh.c
+tmIcApidmXxdtTExcBG7qg	nl2.c
+pcb4OEEsDfcbf7H/KoOPrA	nl21.c
+laRM/4ecbEBS32qrHS7/ng	nlcopy.c
+xkG0kRzSd//XSdiQgXFyaw	qtest.c
+e/H/nBCFq2sSdoEAXp0TFw	rvmsg.c
+PaTkqqm3l2Llmkqeuyx09g	rvmsg.h
+BW3gZGUTv2nKsI48YR8G8Q	savesol.m
+pIILugIIwu05iEn8jBRHOw	spamfun4.c
+6/G6MBcrOkdxT9iVXMJe3g	spamfunc.c
+qTNFiQdyfULFasO7zW7Xuw	tnmain.c
+bp7vcnipBC66hmgScWKswQ	v8.c
+u0Y2c0UQUzdwZbCwlTJEKg	v8ch3.out
+VGD/XzA/N0OaKBLS/axi6w	ve08.c
+1yUHGOgzQvXADj4bfc+c+Q	ve08ch3.out
+Mx2TGCu2hsRx0KeK6pq1kQ	xsum0.out
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBQ8WyU75pvxO9gjtZAQFFLAP+JPUF+Kvux+uFrLV2d6rvRNa6c1FRtJDy
+n/9ltTsu0U3KxB2y1dc+UZcJXq1g8eLgJdevkVbr2/Ld1umNvaNvXtwKRY7kwNQA
+tf4exVrSFfF342OKVXacFsZaNS7gWcw6lKESsdcQplrBchHsE1n0BqyHCKVtiqVZ
+SBjCNu/332M=
+=DIEr
+-----END PGP SIGNATURE-----
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-utk master Sat Feb 18 03:10:02 EST 2012
+1a2ZNUdvqh57CCwY0W35mQ	00lastchange
+FD82bUDo9aFiKka6LGcrNQ	README
+EwR9BmTc5WC7kOMzVFe5+g	README.gjh
+Twrl33RwtXBwrIlLsJYEGA	amplfun4.c
+6ej8pg5DPXSJ5iNzTZU36w	amplfunc.c
+yubmeHmVh5ZVkdqvoSgfsw	ch3.amp
+80yLDPTgnGdLrRbiXP9uNA	ch3.nl
+3caTm5ZeljWYH1dvuN6HFw	ch3mng.out
+L3jfSOoekwn+TGkqSw8Qlg	ch3mng.sol
+yWvMc55NPK1ZhiBLrjFt2g	ch3mnh.out
+/CpwffKuRm6uYqDERItInQ	ch3mnh.sol
+f7KBoPzgTBChOJbUrDm5GA	ch3nl2.out
+v/kQXulgNd86w+MmGYbEvQ	ch3nl2.sol
+rqaOrxsdqNQVyTOe1cfLzg	ch3nl21.out
+kgDRc2BoaucfAkHSIKwfDQ	ch3qtest.out
+Shf3GdqsXvkTHo9l/J6M9Q	ch3tn.out
+Mi5OODW6pym1xy6S+ELV1g	ch3tn.sol
+puOJKTexSZ3zeuhN/8CEkA	changes
+K2+jSqhOwZDxLyTAaalNSA	diet.amp
+MU+roxPW1LpOELR2v/91hg	diet.col
+VMt1globgRDBf0vPmWlaSQ	diet.nl
+lvTQD8FMCoLB4zs/uI+x0Q	diet.row
+vzM48ZbhXnfW8w1Ljq2dpw	diet.sol
+ISYz+9rYm8q2eGrFHqbLJw	dietd.nl
+i3SyAlMypAJlpG/dW04OEg	dietd.sol
++E7m/SBjx/NPqOC64Y5aBA	dietl1.out
+sjUMib3go/HZ8U98+zQpBA	dietl2.out
+LyxjfkUlJh2gixaUIthNdw	dietl3.out
+fSV8LxaPK6/F4mgBznzpkg	dietu.sol
+Gn6iEeUel0cGcBV3vc+1Zw	dminos
+NOGuKI/xPibt0AMQCnf0Hg	dualconv.c
+9HLSxOGsxz4CE5EiMlnzLg	enewt.m
+tBCWFuDGwFWLpygghgYlQA	evalchk.c
+GxZzLugghMtXKXuItgdTig	evalf.m
+wQJThsOIEfLoiy/Dh3hkfA	evalg.m
+UAorLTdmJge4NYqkQotzFw	evalw.m
+5MaGnsZqzsWYzPXRsedIlw	fmng1.f
+BKpBrVM8phW7V8TIznvGQw	fnl21.f
+vt8YOPkrIYTML7TagqQ1Mg	gjh.c
++/kPFdjCCWSIaYLUgHcV7A	hist.c
+WlL/MziBhQgWV+bHMP9Ijg	hkeywds.c
+WAmG3yDzeuA/6X4yTzYppQ	hs100.amp
+EzvdgeXjRXGz7LrV+WwrgA	hs100.nl
+SO4f4Y3QQ7DSTs7N66rWHA	hs100.so0
+fiujPbdgJN+AyuRIjlAjFA	index
+a+v9Uaerg/eD9Is4E3yiwg	index.html
+joRyxpUFqVKFMERm7MuSqw	init.m
+h14+20TNdDmEIlwA/D4sIA	keywds.c
+W9H2pCccxOMma/AorRpwHw	lin1.c
++E7m/SBjx/NPqOC64Y5aBA	lin1diet.out
+1cVwVe3tabrhNm9sDo0B+g	lin2.c
+sjUMib3go/HZ8U98+zQpBA	lin2diet.out
+CMFL3j3HeTS9Ey/QxsRjvw	lin3.c
+LyxjfkUlJh2gixaUIthNdw	lin3diet.out
+QKDr7CXZKqWqbhWl5oRAuA	linrc.c
+PfFTDrIjID0gVRvD7Q43VA	linrcdie.out
+8HK2WCNC8Ib2TvDTtoQBNg	makefile
+3GauJfwvlXbYN+qOnI5bGg	makefile.sy
+8HK2WCNC8Ib2TvDTtoQBNg	makefile.u
+dfo6iwiCtxpRpeUdsNCLhw	makefile.vc
+j+mVUNGie8AcdZ32IBuxNA	makefile.wat
+0ouXDuYr7VqTCvxCBq8HSw	mng.c
+EAPql9McwxA2ae/15ehGzQ	mng1.c
+epop8+wd9+9oVa4d6xv+Rw	mnh.c
+tmIcApidmXxdtTExcBG7qg	nl2.c
+pcb4OEEsDfcbf7H/KoOPrA	nl21.c
+laRM/4ecbEBS32qrHS7/ng	nlcopy.c
+xkG0kRzSd//XSdiQgXFyaw	qtest.c
+e/H/nBCFq2sSdoEAXp0TFw	rvmsg.c
+PaTkqqm3l2Llmkqeuyx09g	rvmsg.h
+BW3gZGUTv2nKsI48YR8G8Q	savesol.m
+pIILugIIwu05iEn8jBRHOw	spamfun4.c
+hOvpw2y9ouxGnd+PTuyIgg	spamfunc.c
+qTNFiQdyfULFasO7zW7Xuw	tnmain.c
+bp7vcnipBC66hmgScWKswQ	v8.c
+u0Y2c0UQUzdwZbCwlTJEKg	v8ch3.out
+VGD/XzA/N0OaKBLS/axi6w	ve08.c
+1yUHGOgzQvXADj4bfc+c+Q	ve08ch3.out
+uybw48gm24nCEVcdgHA2bQ	xsum0.out
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBTz9c4eFlxDEfrjtlAQGGigQAox1SIM+ejVRCsESFJEiNBZkdNWfjpkj5
+rjW5PUUtO005V6KG25l+x/SLLoTSQ0VcswMUgHmxLStW7O5PxIzsoclRoDRgyTRR
+T6GJBO4MXmmO0LlCWo1NucnJhrHl5d9lcAyHGSpp1BsUctZgmCVte5Z+jQzDFqVT
+XyfGiVj1xfg=
+=UOZg
+-----END PGP SIGNATURE-----

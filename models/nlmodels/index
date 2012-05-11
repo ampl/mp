@@ -1,0 +1,88 @@
+#	===== index for ampl/models/nlmodels =====
+
+file	ampl/models/nlmodels/README
+
+file	ampl/models/nlmodels/blend.mod
+
+file	ampl/models/nlmodels/branin.mod
+
+file	ampl/models/nlmodels/camel1.mod
+
+file	ampl/models/nlmodels/changes
+
+file	ampl/models/nlmodels/chemeq.mod
+
+file	ampl/models/nlmodels/chi.mod
+
+file	ampl/models/nlmodels/gold.mod
+
+file	ampl/models/nlmodels/gridneta.mod
+
+file	ampl/models/nlmodels/griewank.mod
+
+file	ampl/models/nlmodels/hs105.mod
+
+file	ampl/models/nlmodels/hs106.mod
+
+file	ampl/models/nlmodels/hs109.mod
+
+file	ampl/models/nlmodels/hs111.mod
+
+file	ampl/models/nlmodels/hs112.mod
+
+file	ampl/models/nlmodels/hs114.mod
+
+file	ampl/models/nlmodels/hs116.mod
+
+file	ampl/models/nlmodels/hs15.mod
+
+file	ampl/models/nlmodels/hs23.mod
+
+file	ampl/models/nlmodels/hs35.mod
+
+file	ampl/models/nlmodels/hs44.mod
+
+file	ampl/models/nlmodels/hs5.mod
+
+file	ampl/models/nlmodels/hs54.mod
+
+file	ampl/models/nlmodels/hs6.mod
+
+file	ampl/models/nlmodels/hs62.mod
+
+file	ampl/models/nlmodels/hs64.mod
+
+file	ampl/models/nlmodels/hs8.mod
+
+file	ampl/models/nlmodels/hs87.mod
+
+file	ampl/models/nlmodels/kowalik.mod
+
+file	ampl/models/nlmodels/levy3.mod
+
+file	ampl/models/nlmodels/ljcluster.mod
+
+file	ampl/models/nlmodels/minos.out
+for	solutions computed by MINOS 5.5 for *.mod
+
+file	ampl/models/nlmodels/osborne1.mod
+
+file	ampl/models/nlmodels/powell.mod
+
+file	ampl/models/nlmodels/price.mod
+
+file	ampl/models/nlmodels/rosenbr.mod
+
+file	ampl/models/nlmodels/s324.mod
+
+file	ampl/models/nlmodels/s383.mod
+
+file	ampl/models/nlmodels/schwefel.mod
+
+file	ampl/models/nlmodels/shekel.mod
+
+file	ampl/models/nlmodels/steenbre.mod
+
+file	ampl/models/nlmodels/tre.mod
+
+file	ampl/models/nlmodels/weapon.mod

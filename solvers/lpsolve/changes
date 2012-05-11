@@ -1,0 +1,51 @@
+Fri Apr  3 10:53:49 EST 1998
+  Update to reflect lp_solve version 2.2 (by changing "2.0" to "2.2"
+in various places).  Return solve_result_num and .sstatus to AMPL.
+(Unfortunately, there seems to be no way to suggest a starting
+basis to lp_solve.)  Shift variables with negative lower bounds
+to reflect lp_solve's restriction to variables with nonnegative
+lower bounds.
+
+Tue Jul 28 22:30:00 EDT 1998
+  README: add table of possible solve_result_num values.
+
+Sun Nov 14 18:21:48 EST 1999
+  README, lpsolve.c, makefile: adjust for version 3.0; should future
+versions of lp_solve appear, it may suffice to change the LPSOLVE =
+line in the makefile to point to the directory for the version of
+interest.
+
+Thu Nov 18 16:02:45 EST 1999
+ lpsolve.c: portability tweak: change (int) to Intcast.
+ makefile: renamed makefile.u (for Unix); makefile.vc added.
+
+Thu Feb  3 22:39:16 EST 2000
+  makefile.vc: adjusted reflecting changes to ../makefile.vc.
+
+Tue Oct  3 00:28:07 EDT 2000
+  lpsolve.c: fix bug in supplying variable bounds in problems
+involving some free variables (-Infinity <= var <= +Infinity)
+followed by variables with finite nonzero bounds.  Example:
+steelpl5.mod + steelpl5.dat in the AMPL book.
+
+Wed Apr 10 14:30 EDT 2002
+  lpsolve.c: use sos_add() and sos_finish() to handle .sosno and .ref;
+add "version" keyword.
+  makefile.*: adjust for lp_solve_3.2.
+
+Tue May  7 16:36:21 EDT 2002
+  More tweaks to "version" for consistency with other solvers.
+
+Thu Feb  7 13:14:00 EDT 2002
+  lpsolve.c: use sos_add() and sos_finish() to handle .sosno and .ref;
+add "version" keyword.
+  makefile.*: adjust for lp_solve_3.2.
+
+Fri Feb 28 19:03:12 EST 2003
+  Update for lp_solve_4.0 (lpsolve.c still works with 3.x).
+
+Fri Mar 28 16:06:14 EST 2003
+  README:  mention lpsolve_options.
+
+Thu Jun 12 23:33:02 EDT 2003
+  Adjust so "lpsolve" (no arguments) shows usage rather than faulting.

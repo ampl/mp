@@ -1,0 +1,42 @@
+file	ampl/solvers/nlc/README
+
+file	ampl/solvers/nlc/c_op.hd
+
+file	ampl/solvers/nlc/cops.c
+
+file	ampl/solvers/nlc/makefile.u
+
+file	ampl/solvers/nlc/makefile.vc
+
+file	ampl/solvers/nlc/nlc.c
+
+file	ampl/solvers/nlc/nlc.h
+
+file	ampl/solvers/nlc/nlcmisc.c
+
+file	ampl/solvers/nlc/r_ops1.hd
+
+file	ampl/solvers/nlc/xsum0.out
+
+file	ampl/solvers/nlc/changes
+
+####	sample input and output files: see README ####
+
+file	ampl/solvers/nlc/ch3.amp
+
+file	ampl/solvers/nlc/ch3.nl
+
+file	ampl/solvers/nlc/ch3.c
+
+file	ampl/solvers/nlc/ch3.kc
+
+file	ampl/solvers/nlc/ch3.f
+
+file	ampl/solvers/nlc/mngnlc.c
+
+file	ampl/solvers/nlc/nl2nlc.c
+
+file	ampl/solvers/nlc/ch3mng.out
+
+file	ampl/solvers/nlc/ch3nl2.out
+

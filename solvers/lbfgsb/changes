@@ -1,0 +1,5 @@
+20110120
+Adjust for an updated L-BFGS-B, which uses a longer work array.
+
+20110622
+Fix a wrong subscript in the test for exceeding the iteration limit.

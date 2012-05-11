@@ -1,0 +1,11 @@
+Fri Apr  3 11:11:40 EST 1998
+  main.c: return solve_result_num to AMPL.
+
+Wed Jul 29 09:38:31 EDT 1998
+  README: add table of possible solve_result_num values.
+
+Wed May  5 11:08:29 EDT 1999
+  README, main.c: add iteration counts to solve message; if dual
+values may be wrong because of BPMPD's presolve phase, note this in
+the solve message and return solve_result_num = 1 (rather than 0) when
+BPMPD claims to have solved the problem.

@@ -1,0 +1,50 @@
+This directory (solvers/nlc) has source for a program, nlc, that
+converts a .nl file (written by "ampl -obstub ...", "ampl -ogstub ...",
+or AMPL's "write bstub;" or "write gstub;" commands) to C or Fortran
+(on stdout).  Invoke
+
+	nlc '-?'
+
+for a summary of nlc's usage.
+
+File nlcmisc.c is source for some auxiliary routines on which the
+resulting C or Fortran may rely.  For more discussion of nlc, see
+"Hooking Your Solver to AMPL", which you can download in several forms
+from http://www.ampl.com/hooking.html .
+
+For machines with 64-bit pointers, specify -DX64_bit_pointers
+in $CFLAGS.
+
+Example input, output, and usage files:
+
+	File		Remarks
+
+	ch3.amp		AMPL version of Chebyquad 3 problem, both as
+			least-squares and as minimization problem.
+
+	ch3.nl		From "ampl -ogch3 ch3.amp".
+
+	ch3.c		From "nlc ch3 >ch3.c".
+
+	ch3.kc		From "nlc -k ch3 >ch3.kc".
+
+	ch3.f		From "nlc -f ch3 >ch3.f".
+
+	mngnlc.c	Variant of solvers/examples/mng.c that uses ch3.c
+			or (with f2c conventions) ch3.f; for use with
+
+				make mngnlc
+
+	ch3mng.out	From "mngnlc >ch3mng.out".
+
+	nl2nlc.c	Variant of solvers/examples/nl2.c that uses ch3.c
+			or (with f2c conventions) ch3.f; for use with
+
+				make nl2nlc
+
+	ch3nl2.out	From "nl2nlc >ch3nl2.out".
+
+See the comments in the makefiles.  Copy the relevant makefile.*
+to "makefile" and edit the latter.
+Type "make test" to see if your system can reproduce the output
+files mentioned above.

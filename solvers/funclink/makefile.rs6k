@@ -1,0 +1,31 @@
+# Makefile For IBM RS 6000 under AIX
+
+.SUFFIXES: .c .o
+
+# $S = ampl/solvers directory
+S = ..
+CC = cc
+CFLAGS = -I$S -qnomaf -O
+.c.o:
+	$(CC) -c $(CFLAGS) $*.c
+
+SL = -bM:SRE -T512 -H512 -lm -lc
+
+### The folling ld invocation may elicit an error message about a bad
+### suffix (.dll), but it should still produce a correct amplfunc.dll.
+
+amplfunc.dll: funcadd.o
+	ld -o amplfunc.dll funcadd.o -bE:funcout.exp $(SL)
+
+## Sample solver creation, AIX versions prior to 4.3...
+## For AIX >= 4.3, it is possible for amplsolver.a to
+## offer a funcadd1.o that invokes dlopen to load the amplfunc.dll
+## (if any) in the current directory.  This makes it possible
+## to dispense with the $(LL) stuff below...
+
+# $(myobjects) = list of .o files
+myobjects = ....
+LL = /usr/local/lib
+
+mysolver: $(myobjects)
+	$(CC) -o mysolver -L. -L$(LL) $(myobjects) $(LL)/amplfunc.o $S/amplsolver.a -lm

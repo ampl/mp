@@ -1,0 +1,132 @@
+
+# ----------------------------------------
+# DANTZIG-WOLFE DECOMPOSITION FOR
+# MULTI-COMMODITY TRANSPORTATION
+# ----------------------------------------
+
+model multi3.mod;
+data multi3.dat;
+
+param nIter default 0;
+param nNegRC;
+
+let {p in PROD} nPROP[p] := 0;
+let {p in PROD} price_convex[p] := 1;
+let {i in ORIG, j in DEST} price[i,j] := 0;
+
+option solver minos;
+option omit_zero_rows 1;
+option display_1col 0;
+option display_eps .000001;
+option presolve_eps 2e-13;
+
+# ----------------------------------------------------------
+
+problem MasterI: Artificial, Weight, Excess, Multi, Convex;
+problem SubI: Artif_Reduced_Cost, Trans, Supply, Demand;
+
+repeat {
+
+   let nIter := nIter + 1;
+   let nNegRC := 0;
+   printf "\nPHASE I -- ITERATION %d\n", nIter;
+
+   for {p in PROD} { printf "\nPRODUCT %s\n\n", p;
+
+      let prod := p;
+
+      solve SubI;
+      printf "\n";
+      display Trans;
+
+      if Artif_Reduced_Cost < - 0.00001 then {
+         let nNegRC := nNegRC + 1;
+         let nPROP[p] := nPROP[p] + 1;
+         let {i in ORIG, j in DEST}
+            prop_ship[i,j,p,nPROP[p]] := Trans[i,j];
+         let prop_cost[p,nPROP[p]] :=
+            sum {i in ORIG, j in DEST} cost[i,j,p] * Trans[i,j];
+      };
+   };
+
+   if nNegRC = 0 then {
+      printf "\n*** NO FEASIBLE SOLUTION ***\n";
+      break;
+   };
+
+   solve MasterI;
+   printf "\n";
+   display Weight; display Multi.dual;
+   display {i in ORIG, j in DEST}
+      limit[i,j] - sum {p in PROD, k in 1..nPROP[p]}
+         prop_ship[i,j,p,k] * Weight[p,k];
+
+   if Excess <= 0.00001 then break;
+   else {
+      let {i in ORIG, j in DEST} price[i,j] := Multi[i,j].dual;
+      let {p in PROD} price_convex[p] := Convex[p].dual;
+   };
+};
+
+# ----------------------------------------------------------
+
+printf "\nSETTING UP FOR PHASE II\n";
+
+problem MasterII: Total_Cost, Weight, Multi, Convex;
+problem SubII: Reduced_Cost, Trans, Supply, Demand;
+
+solve MasterII;
+printf "\n";
+display Weight; display Multi.dual; display Multi.slack;
+
+let {i in ORIG, j in DEST} price[i,j] := Multi[i,j].dual;
+let {p in PROD} price_convex[p] := Convex[p].dual;
+
+repeat {
+
+   let nIter := nIter + 1;
+   let nNegRC := 0;
+   printf "\nPHASE II -- ITERATION %d\n\n", nIter;
+
+   for {p in PROD} { printf "\nPRODUCT %s\n\n", p;
+
+      let prod := p;
+
+      solve SubII;
+      printf "\n";
+      display Trans;
+
+      if Reduced_Cost < - 0.00001 then  {
+         let nNegRC := nNegRC + 1;
+         let nPROP[p] := nPROP[p] + 1;
+         let {i in ORIG, j in DEST}
+            prop_ship[i,j,p,nPROP[p]] := Trans[i,j];
+         let prop_cost[p,nPROP[p]] :=
+            sum {i in ORIG, j in DEST} cost[i,j,p] * Trans[i,j];
+      };
+   };
+
+   if nNegRC = 0 then break;
+
+   solve MasterII;
+
+   printf "\n";
+   display Weight;
+
+   let {i in ORIG, j in DEST} price[i,j] := Multi[i,j].dual;
+   let {p in PROD} price_convex[p] := Convex[p].dual;
+};
+
+# ----------------------------------------------------------
+
+printf "\nPHASE III\n";
+
+param true_Trans {i in ORIG, j in DEST, p in PROD}
+   := sum {k in 1..nPROP[p]} prop_ship[i,j,p,k] * Weight[p,k].val;
+
+param true_Total_Cost
+   := sum {i in ORIG, j in DEST, p in PROD} cost[i,j,p] * true_Trans[i,j,p];
+
+printf "\n";
+display true_Total_Cost;
+display true_Trans;

@@ -1,0 +1,50 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-bl master Fri Jan 26 04:47:21 EST 2007
+# http://cm.bell-labs.com/netlib/crc/netlib-bl.html
+DhfuCTTygxiUxu18owelIw	00lastchange
+K8muv9VB47t92cJ8lvxzYQ	README.1st
+dnGv3L1r5h3gZEHfJqYhRg	README.minos
+uzSJGU4bNN0Qqw7XpQ7wFg	changes
+3jrVzESOX46UF5JN0Yjt2g	configure
+LzvwwJ4aa9yyFZtAoVzPNg	configurehere
+PNeNqxWf7wWN0phKmkiFqA	index
+3MUK04+w/NJDL6Gwd6OUgA	m551.c
+8lwVpTgH0T7JBz8dhgXgwA	makefile.u
+J+52hsPhxhIrFf4S+OW+pw	makefile.vc
+Hq1fh+9HzVtfiMjmIe+O9g	xsum0.out
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBRbnOKb5pvxO9gjtZAQHL+wQAh1g7DcVO9R5zSW306R2WgXb9lDnFqYak
+sraJu7RsrlSHVwLXyjAhOTd8C+Y2YeUEAp7mD8nxw5hi6Vt8CyuYt9gR4d2npxH/
+qpJi62YzXPCtHa0ts/FlFr8MaThitmlarNxCTHKDHfCMKrT3VzOrFujUruc7x094
+9NolTiUvDEc=
+=M6Ri
+-----END PGP SIGNATURE-----
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-utk master Fri Sep 25 03:10:12 EDT 2009
+VS1c06KuYu6hBck4Pr2u1g	00lastchange
+RWMENUr2MqOnAn6DxW3RrQ	README.1st
+SYCz/KesQMxvMl/flhyBjw	README.minos
+mxTcbmmfCJZvufsgEaMVnA	changes
+SwvzInEHw60ozSNW37GXuw	configure
+rUr206u40pqrQ2OCmEr5xw	configurehere
+PNeNqxWf7wWN0phKmkiFqA	index
+7dpVuCAaXp3gz4kkjToPZQ	index.html
+UXTw/0YJIrxGTAAEjg9weA	m551.c
+v9G/TLriPPwHwTpmimp0fQ	makefile.u
+J+52hsPhxhIrFf4S+OW+pw	makefile.vc
+TAlP5MQhMzVVpsHzEtxhNQ	xsum0.out
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBSrxs2uFlxDEfrjtlAQHokwQAmG4O8fxuHkfm5Gbi6kJIvXKqg0WejnM9
+1Oso6CtYX/7Coy82v6mMfub1wYldv9V+1etcZDbHE/fZ3vzAnoSZZPI6GsbJ9d5t
+ZklmhG1v/cHQCAp+1qdDURabiU8jZaDg5dDNAQ+OD8MB0pfhzmX62iruwQRZugQP
+nFKPZK85vCU=
+=5jHw
+-----END PGP SIGNATURE-----

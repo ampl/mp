@@ -1,0 +1,20 @@
+file	ampl/solvers/snopt/README
+
+file	ampl/solvers/snopt/changes
+
+file	ampl/solvers/snopt/configure
+
+file	ampl/solvers/snopt/configurehere
+
+file	ampl/solvers/snopt/makefile.u
+
+file	ampl/solvers/snopt/makefile.vc
+
+file	ampl/solvers/snopt/snopt.c
+
+file	ampl/solvers/snopt/snopt_.c
+
+file	ampl/solvers/snopt/xsum0.out
+
+lib	ampl/solvers/snopt/src
+for	makefiles for snopt lib

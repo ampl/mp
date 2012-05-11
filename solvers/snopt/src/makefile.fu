@@ -1,0 +1,66 @@
+# /****************************************************************
+# Copyright (C) 2001 Lucent Technologies
+# All Rights Reserved
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby
+# granted, provided that the above copyright notice appear in all
+# copies and that both that the copyright notice and this
+# permission notice and warranty disclaimer appear in supporting
+# documentation, and that the name of Lucent or any of its entities
+# not be used in advertising or publicity pertaining to
+# distribution of the software without specific, written prior
+# permission.
+#
+# LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+# INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
+# IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
+# SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
+# IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+# ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+# THIS SOFTWARE.
+# ****************************************************************/
+
+# For making libsnopt.a, libsnprint.a and libblas.a -- Fortran
+# variant of makefile.u.
+
+# Invoke with "make -f makefile.fu" (or copy to "makefile", edit
+# if necessary, and invoke "make").
+
+F77 = f77
+# Assumes solvers directory is ../..
+# -- e.g., that this directory is solvers/snopt/src.
+
+FFLAGS = -O
+
+.f.o:
+	$(F77) $(FFLAGS) -c $*.f
+
+o = \
+	sqopt.f snopta.f snoptb.f snoptc.f snoptq.f npopt.f \
+	sq02lib.f sn02lib.f np02lib.f \
+	sn05wrpa.f sn05wrpb.f sn05wrpc.f sn05wrpn.f \
+	sn10mach.f sn12ampl.f sn17util.f sn20amat.f sn25bfac.f sn27lu.f \
+	sn30spec.f sn35mps.f sn37wrap.f sn40bfil.f sn50lp.f sn55qp.f \
+	sn56qncg.f sn57qopt.f sn60srch.f sn65rmod.f sn70nobj.f sn80ncon.f \
+	sn85hess.f sn87sopt.f sn90lmqn.f sn95fmqn.f 
+
+all: libsnopt.a libblas.a libsnprint.a
+
+libsnopt.a: $o
+	$(F77) $(FFLAGS) -c $?
+	x=`echo $? | sed 's/\.f/.o/g'` && ar ruv libsnopt.a $$x && rm $$x
+	ranlib libsnopt.a || true
+
+libblas.a: sn15blas.f
+	$(F77) $(FFLAGS) -c sn15blas.f
+	ar ruv libblas.a sn15blas.o
+	rm sn15blas.o
+	ranlib libblas.a || true
+
+libsnprint.a: sn03prnt.f
+	$(F77) $(FFLAGS) -c sn03prnt.f
+	ar ruv libsnprint.a sn03prnt.o
+	rm sn03prnt.o
+	ranlib libsnprint.a || true

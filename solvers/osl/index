@@ -1,0 +1,24 @@
+file	ampl/solvers/osl/README.1st
+
+file	ampl/solvers/osl/README.osl
+
+file	ampl/solvers/osl/changes
+
+file	ampl/solvers/osl/makefile.u
+for	Unix makefile
+
+file	ampl/solvers/osl/makefile.vc
+for	MS VC++ makefile
+
+file	ampl/solvers/osl/makefile.wat
+for	WATCOM makefile
+
+file	ampl/solvers/osl/osl.c
+
+file	ampl/solvers/osl/osl.h
+
+lib	ampl/solvers/osl/osl1.2
+for	AMPL/OSL 1.2 driver
+
+file	ampl/solvers/osl/xsum0.out
+for	checksums

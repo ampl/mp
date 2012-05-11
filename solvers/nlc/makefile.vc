@@ -1,0 +1,110 @@
+# /****************************************************************
+# Copyright (C) 1997 Lucent Technologies
+# All Rights Reserved
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby
+# granted, provided that the above copyright notice appear in all
+# copies and that both that the copyright notice and this
+# permission notice and warranty disclaimer appear in supporting
+# documentation, and that the name of Lucent or any of its entities
+# not be used in advertising or publicity pertaining to
+# distribution of the software without specific, written prior
+# permission.
+#
+# LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+# INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
+# IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
+# SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
+# IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+# ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+# THIS SOFTWARE.
+# ****************************************************************/
+
+# For compiling examples with Microsoft Visual C++.
+
+# Invoke with "nmake -f makefile.vc" .
+
+CC = cl
+Lmt = libcmt.lib /link /NODEFAULTLIB:libc.lib
+S = ..
+# "S = .." assumes this directory is solvers/nlc .
+
+CFLAGS = -I$S
+
+.c.obj:
+	$(CC) -c $(CFLAGS) $*.c
+
+nlc = nlc.obj cops.obj $S/funcadd0.obj $S/amplsolv.lib
+nlc.exe: $(nlc)
+	$(CC) $(CFLAGS) -Fenlc.exe $(nlc) $(Lmt)
+
+clean:
+	deltree /Y *.obj *.exe
+
+# make xsum.out to check for transmission errors.
+# This assumes you have the xsum program, whose source
+# you can get by asking research!netlib to
+#	send xsum.c from f2c/src
+
+xs0 = README c_op.hd cops.c makefile.u makefile.vc nlc.c nlc.h nlcmisc.c\
+ opcode.hd r_ops1.hd\
+ ch3.amp ch3.nl ch3.c ch3.kc ch3.f mngnlc.c ch3mng.out nl2nlc.c ch3nl2.out
+
+xsum.out: $(xs0)
+	xsum $(xs0) | rmcr >xsum1.out
+	cmp xsum0.out xsum1.out && mv xsum1.out xsum.out || diff xsum[01].out
+
+
+# Examples of using .c files written by nlc.  These assume
+# that $S/examples contains "all from ampl/solvers/examples".
+
+E = $S/examples
+A = $E/rvmsg.obj $E/keywds.obj $S/funcadd0.obj $S/amplsolv.lib
+Lf2c = $S/vcf2c.lib
+cport = $E/cport.lib
+# $(cport) = PORT subroutine library.
+# Ask netlib@netlib.org to
+#	send dmngb dmnhb dn2g dn2gb dq7rgs from port
+# to get source for the relevant (small) part of PORT.
+# -lf2c is for f2c's version of Fortran I/O: we assume
+# $(cport) was compiled by f2c and cc.
+Lp = $(cport) $(Lf2c) $(Lmt)
+
+$E/rvmsg.obj:
+	cd $E; make rvmsg.obj
+
+$E/keywds.obj:
+	cd $E; make keywds.obj
+
+mngnlc = mngnlc.obj ch3.obj nlcmisc.obj $A
+mngnlc.exe: $(mngnlc)
+	$(CC) $(CFLAGS) -Femngnlc.exe $(mngnlc) $(Lp)
+
+nl2nlc = nl2nlc.obj ch3.obj nlcmisc.obj $A
+nl2nlc.exe: $(nl2nlc)
+	$(CC) $(CFLAGS) -Fenl2nlc.exe $(nl2nlc) $(Lp)
+
+mngnlc.obj: mngnlc.c $E/rvmsg.h
+	$(CC) -c $(CFLAGS) -I$E mngnlc.c
+
+nl2nlc.obj: nl2nlc.c $E/rvmsg.h
+	$(CC) -c $(CFLAGS) -I$E nl2nlc.c
+
+### "make test" to compare outputs...
+
+all = nlc.exe mngnlc.exe nl2nlc.exe 
+
+test: $(all)
+	nlc ch3 | rmcr >foo
+	cmp foo ch3.c
+	nlc -k ch3 | rmcr >foo
+	cmp foo ch3.kc
+	nlc -f ch3 | rmcr >foo
+	cmp foo ch3.f
+	mngnlc | rmcr >foo
+	cmp foo ch3mng.out
+	nl2nlc | rmcr >foo
+	cmp foo ch3nl2.out
+	del foo

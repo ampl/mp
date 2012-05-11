@@ -1,0 +1,79 @@
+# /****************************************************************
+# Copyright (C) 2000 Lucent Technologies
+# All Rights Reserved
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby
+# granted, provided that the above copyright notice appear in all
+# copies and that both that the copyright notice and this
+# permission notice and warranty disclaimer appear in supporting
+# documentation, and that the name of Lucent or any of its entities
+# not be used in advertising or publicity pertaining to
+# distribution of the software without specific, written prior
+# permission.
+#
+# LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+# INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
+# IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
+# SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
+# IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+# ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+# THIS SOFTWARE.
+# ****************************************************************/
+
+# For making cplex.exe with Microsoft Visual C++ on Intel machines.
+
+# Invoke with "nmake -f makefile.vc" .
+
+CC = cl
+CFLAGS = -Ot1
+
+# If things don't run right, you may need to change -Ot1 to -Zi and add
+# -Zi to the cplex.exe rule below so you can poke around with a debugger.
+
+Lmt = libcmt.lib /link /NODEFAULTLIB:libc.lib
+S = ..
+# "S = .." assumes this directory is solvers/cplex .
+
+# You must obtain cplex*.dll, cplex*.lib and cplex.h from ILOG.
+# They are all you really need from ILOG's large CPLEX distribution.
+# See http://www.cplex.com/
+
+# You may need to adjust the following assignments to reflect the
+# CPLEX release, where you have installed ILOG's CPLEX distribution and
+# your choice of compilers.  $(CPLEXINC) is the directory
+# containing cplex.h and $(CPLEXLIB) is the full path to cplex*.lib.
+# As of CPLEX release 10.2, there were 5 choices of cplex102.lib
+# for x86 systems, but all were the same, so the choice did not matter.
+# To run the resulting cplex.exe, you need to have the .dll that
+# corresponds to $(CPLEXLIB) installed in your search PATH or in
+# one of the standard places where .dlls are sought.
+
+
+CPLEXRELEASE = 110
+CPLEXDIR = C:/ILOG/CPLEX$(CPLEXRELEASE)
+CPLEXINC = $(CPLEXDIR)/include/ilcplex
+COMPILER = x86_.net2005_8.0
+# or x86_.net2003_7.1; formerly COMPILER = msvc6
+LIBFORM = stat_mta
+# formerly LIBFORM = stat_mda
+CPLEXLIB = $(CPLEXDIR)/lib/$(COMPILER)/$(LIBFORM)/cplex$(CPLEXRELEASE).lib
+
+# If you do not have the CPLEX Mixed Integer Option, add -DNO_CPLEX_MIP
+# to CFLAGS (i.e., to the right-hand side of the CFLAGS = assignment).
+
+# If you do not have the CPLEX Barrier Option, add -DNO_BARRIER
+# to CFLAGS, and change qpcheck to linedagread below.
+
+.c.obj:
+	$(CC) -c $(CFLAGS) -I$S -I$(CPLEXINC) $*.c
+
+o = cplex.obj $S/funcadd0.obj $S/amplsolv.lib $(CPLEXLIB)
+
+cplex.exe: $o
+	$(CC) -Fecplex.exe $o $(Lmt)
+	del cplex.exp
+	del cplex.lib
+
+cplex.obj: $(CPLEXINC)/cplex.h $S/getstub.h $S/nlp.h $S/r_opn.hd

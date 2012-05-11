@@ -1,0 +1,68 @@
+ginv(i) [*] :=
+-3  -0.333333
+-2  -0.5
+-1  -1
+ 0   0
+ 1   1
+ 2   0.5
+ 3   0.333333
+;
+
+sginv(i) [*] :=
+-3  x-0.3333333333333333
+-2  x-0.5
+-1  x-1
+ 0  x0
+ 1  x1
+ 2  x0.5
+ 3  x0.3333333333333333
+;
+
+hypot(3, 4) = 5
+
+ncall() [*] :=
+1  1
+2  1
+3  1
+;
+
+rncall() [*] :=
+1  2
+2  3
+3  4
+;
+
+mean0(2, 3, 4) = 3
+
+mean('a', 2, 3, 4) = 2.25
+
+kth(i, 'a', i + 10, 'Last arg') [*] :=
+1  a
+2  12
+3  'Last arg'
+;
+
+ginvae(i) [*] :=
+0  0
+1  1
+2  0.5
+;
+
+Got to At_reset: n = 3
+Got to At_reset: n = 2
+Got to At_reset: n = 1
+ginvae(i) [*] :=
+-1  -1
+ 0   0
+ 1   1
+;
+
+Got to At_reset: n = 6
+Got to At_reset: n = 5
+Got to At_reset: n = 4
+Got to At_end: n = 6
+Got to At_end: n = 5
+Got to At_end: n = 4
+Got to At_end: n = 3
+Got to At_end: n = 2
+Got to At_end: n = 1

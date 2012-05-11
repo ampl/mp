@@ -1,0 +1,12 @@
+# for making xsum.out
+
+xs0 = README amplfunc.def amplfunc.lnk funcadd.c funcadd0.c funcaddk.c\
+	funcout.exp htest.out htest.x libmain.c \
+	makefile.alpha makefile.cygwin makefile.freebsd makefile.hp makefile.i386solaris \
+	makefile.krsolaris makefile.lcc makefile.linux makefile.macosx makefile.rs6k \
+	makefile.sgi makefile.solaris makefile.sunos makefile.vc makefile.wat \
+	makefile.xsum outargex.c outargex.run silly.2 silly.out silly.x
+
+xsum.out:
+	xsum $(xs0) >xsum1.out
+	cmp xsum0.out xsum1.out && mv xsum1.out xsum.out || diff xsum[01].out

@@ -1,0 +1,14 @@
+The source files in this directory create osl, a solver based on
+IBM's OSL (Optimization Subroutine Library) that handles linear,
+mixed-integer, network, and quadratic optimization problems.
+
+You need to obtain OSL from IBM or OST: see
+
+	http://ism.boulder.ibm.com/es/oslv2/features/welcome.htm
+
+If your float.h doesn't #define DBL_MAX to be a constant,
+compile osl.c with Bad_DBL_MAX #defined, e.g. by adding
+-DBad_DBL_MAX to the CFLAGS assignment in the makefile.
+
+Directory osl1.2 contains source for the OSL 1.2 AMPL/OSL driver.
+OSL 1.2 is no longer sold, but some people still use it.

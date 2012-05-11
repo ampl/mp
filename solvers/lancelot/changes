@@ -1,0 +1,75 @@
+Tue May 27 17:53:27 EDT 1997
+  Fix glitch (in lancelot.c) that caused "lancelot" to look
+in environment variable lance_options rather than lancelot_options
+for options, and caused "lancelot -?" to show solver name "lance".
+
+Wed Jun  4 11:45:18 EDT 1997
+  Fix bug in Hessian computations when several constraints share the
+same linear transformation to local coordinates.  The fix uses new field
+col of struct psb_elem in psinfo.h.
+  Add #ifdef KR_headers stuff to lancelot.c.
+
+Wed Jun 11 21:01:15 EDT 1997
+  README: omit incorrect statement (a dreg from another README) about
+LANCELOT keyword phrases with underscores.
+  lancelot.c: add "imeth" keyword to specify how to solve the linear
+system (for the step computation); see "lancelot -=" for the choices.
+
+Wed Aug 13 12:47:06 EDT 1997
+  When there is no objective, say so in the solution message, rather
+than trying to print the objective value that LANCELOT returns
+(which can be NaN).
+
+Thu Aug 14 14:08:32 EDT 1997
+  Fix glitch with the constant objective 0 (as in "minimize f: 0;").
+Other constant objectives were OK.
+
+Tue Sep 23 11:07:42 EDT 1997
+  Adjust comments for firstc and firstg produced by "lancelot -=".
+
+Tue Dec  2 23:21:40 EST 1997
+  Add -t command-line option and timing keyword.
+
+Thu Apr  2 17:05:15 EST 1998
+  lancelot.c: updated to return solve_result_num to AMPL.
+  makefile: omit $S/funcadd0.o; on most systems, $S/amplsolver.a now
+provides a recommended default funcadd: see ampl/solvers/funclink/README
+for details.
+
+Tue Jul 28 22:25:17 EDT 1998
+  lancelot.c: fix some glitches in the solve_result_num assignments.
+  README: add table of possible solve_result_num values.
+
+Fri Aug 28 05:53:07 EDT 1998
+  lancelot.c: return the solution when the "step got too small"; fix
+problems with "constant" terms like cos(x-x).
+
+Fri Oct 30 12:19:10 EST 1998
+  makefile: add system-dependent comments about -ldld or -ldl.
+
+Thu May 13 11:59:20 EDT 1999
+  lancelot.c makefile version.c0: add "version" keyword.
+
+Thu Jul 29 15:49:50 EDT 1999
+  lancelot.c: assign errno = 0 before function evaluations (in case
+something elsewhere, such as file operations, set made it nonzero).
+This sometimes matters under MS Windows.
+
+Mon Jan 15 17:21:20 EST 2001
+  lancelot.c:  fix Hessian bug in handling
+	unary(unary(terms(x))
+where terms(x) is the sum of two or more terms involving different
+subsets of the variables x.  Example:
+
+	var x{1..2} := .5; minimize zot: sin(-(x[1] + x[2]));
+
+The bug fix relies on today's changes to pfgh_read() -- be sure to
+bring your amplsolver.a (or amplsolv.lib) up to date before linking.
+
+Thu Jun  7 17:42:32 EDT 2001
+  lancelot.c:  modify pfgh_read invocation to accord with today's
+changes to pfgh_read and asl.h.
+
+20020506
+  version.c omitted; lancelot.c updated accordingly; makefile renamed
+makefile.u

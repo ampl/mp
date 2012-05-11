@@ -1,0 +1,37 @@
+20110312
+  xpress.c, README.1st, README.xpress:  update to version 7.1.
+
+20110325
+  xpress.c: omit the "debug" keyword unless compiled with -DRWA_DEBUG .
+
+20110419
+  xpress.c: fix a bug with quadratic constraints involving some
+variables that only appear linearly.
+
+20110825
+  xpress.c: some bug fixes, e.g., in handling quadratic forms,
+supplied by David Nielsen.
+
+20110913
+  xpress.c: add support for indicator constraints, i.e., logical
+constraints of the form
+	s.t. foo: b == c ==> constraint1 [else constraint2]
+with b a binary variable, c = 0 or 1, and the constraints simple
+inequality or equality constraints.  This requires linking with
+version >= 20110913 of the AMPL/solver interface library.
+
+20111010
+ xpress.c: fix a bug in the update of 20110825.
+
+20111220
+ xpress.c: increase constraint.sstatus array length by one to fix
+a possible fault.
+
+20111223
+ xpress.c: catch SIGINT (control-C) and return the best available
+solution.  Quickly giving several control-C's may sometimes lead to
+the new solve_result_num value 520 (and no returned solution).
+ README.xpress: minor adjustments.
+
+20120417
+ xpress.c: updates for XPRESS 22.

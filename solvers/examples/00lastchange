@@ -1,0 +1,12 @@
+20120216
+  amplfunc.c, spamfunc.c: when there is no objective (n_obj == 0), have
+	[f,c] = amplfunc(x,0)
+and
+	[f,c] = spamfunc(x,0)
+return f = 0, and similarly have
+	[g,J] = amplfunc(x,1)
+and
+	[g,J] = spamfunc(x,1)
+return a vector of zeros for g.
+  makefile.u: omit mention of spamfun4.c.
+  hist.c:  behave better when the client program stops.

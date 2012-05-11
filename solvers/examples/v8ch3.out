@@ -1,0 +1,33 @@
+v8: ignoring 3 constraints
+9 initial elements
+4 distinct linear terms
+0 duplicate linear terms in different elements
+9 duplicate linear terms in the same element
+2 adjusted elements
+
+
+
+    **** ITERATION   -1   ( AFTER      1.00 (      2) FUNCTION CALLS)
+
+
+     FUNCTION VALUE =    .555555555555556E-01
+
+     NORM OF THE GRADIENT =     .6285394E+00
+
+
+
+    **** ITERATION    6   ( AFTER      8.00 (     16) FUNCTION CALLS)
+
+
+     FUNCTION VALUE =    .210769396365697E-21
+
+     NORM OF THE GRADIENT =     .5475043E-10
+
+     ************* EXIT OF ROUTINE VE08AD *************
+
+
+     TERMINATION CRITERION OF USER SATISFIED (FLAG= 1)
+v8: Solved: norm2(grad) < gtol.
+Final f = 2.107693963656967e-22
+16 evaluations, 6 iters.
+

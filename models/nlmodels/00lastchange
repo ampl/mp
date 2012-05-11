@@ -1,0 +1,9 @@
+Tue Oct 15 13:44:20 EDT 2002
+
+steenbre.mod:  to accord with new use of = in param declarations,
+make the following change:
+22c22,23
+< param cost {(i,j) in ROADS} = cost[j,i], >= 0;
+---
+> param cost {(i,j) in ROADS} >= 0;
+> check {(i,j) in ROADS: i < j}: cost[i,j] = cost[j,i];

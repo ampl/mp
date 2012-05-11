@@ -1,0 +1,19 @@
+# Sample makefile for making "xpress.exe" with Microsoft Visual C++.
+# Copy this file to "makefile" and edit the latter.  Then
+# say "nmake" to make xpress.exe for use with AMPL
+
+S = ..
+# $S =  ampl/solvers directory
+CC = cl
+XPRESSDIR = z:/dmg-h/backup/solvers/xpressmp/20050817/win32
+CFLAGS = -Ot1
+L = $S/amplsolv.lib  $(XPRESSDIR)/lib/xprs.lib
+Lmt = libcmt.lib /link /NODEFAULTLIB:libc.lib
+
+.c.obj:
+	$(CC) -c -I$S -I$(XPRESSDIR)/include $(CFLAGS) $*.c
+
+xpress.exe: xpress.obj
+	$(CC) -Fexpress.exe xpress.obj $S/funcadd0.obj $L $(Lmt)
+	del xpress.exp
+	del xpress.lib

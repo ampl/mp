@@ -1,0 +1,59 @@
+# /****************************************************************
+# Copyright (C) 1997-1998, 2000 Lucent Technologies
+# All Rights Reserved
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby
+# granted, provided that the above copyright notice appear in all
+# copies and that both that the copyright notice and this
+# permission notice and warranty disclaimer appear in supporting
+# documentation, and that the name of Lucent or any of its entities
+# not be used in advertising or publicity pertaining to
+# distribution of the software without specific, written prior
+# permission.
+#
+# LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+# INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
+# IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
+# SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
+# IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+# ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+# THIS SOFTWARE.
+# ****************************************************************/
+
+# For making donlp2.exe and sdonlp2.exe with Microsoft Visual C++ .
+
+# Invoke with "nmake -f makefile.vc" .
+
+S = ..
+# "S = .." assumes this directory is solvers/donlp2 .
+CC = cl
+CFLAGS = -nologo -Ot1 -I$S
+Lmt = libcmt.lib /link /NODEFAULTLIB:libc.lib
+
+.c.obj:
+	$(CC) -c $(CFLAGS) $*.c
+
+donlp2 = donlp.obj donlp2.obj setup1.obj dummy.obj $S/amplsolv.lib
+donlp2.exe: $(donlp2)
+	$(CC) -Fedonlp2.exe $(donlp2) $S/vcf2c.lib $(Lmt)
+	del donlp2.exp
+	del donlp2.lib
+
+sdonlp2 = donlp.obj donlp2.obj setup1.obj dummy.obj $S/sjac0dim.obj $S/amplsolv.lib
+sdonlp2.exe: $(sdonlp2)
+	$(CC) -Fesdonlp2.exe $(sdonlp2) $S/vcf2c.lib $(Lmt)
+	del sdonlp2.exp
+	del sdonlp2.lib
+
+# make xsum.out to check for transmission errors.
+# This assumes you have the xsum program, whose source
+# you can get by asking research!netlib to
+#	send xsum.c from f2c/src
+
+xs0 = README donlp.c setup1.f makefile.u makefile.vc
+
+xsum.out: $(xs0)
+	xsum $(xs0) >xsum1.out
+	cmp xsum0.out xsum1.out && mv xsum1.out xsum.out || diff xsum[01].out

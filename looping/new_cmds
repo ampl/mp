@@ -1,0 +1,716 @@
+The following documentation is preliminary.  More detailed documentation,
+with examples, is available through the AMPL World Wide Web sites
+
+        http://www.iems.nwu.edu/ampl/ampl.html
+        http://netlib.att.com/netlib/att/cs/home/ampl/ampl.html
+
+and will eventually be available in printed form.
+
+------------
+SHOW COMMAND
+------------
+The "show" command has several forms:
+
+        show;
+or
+        show >filename;
+
+lists all model entities.
+
+        show name;
+or
+        show name >filename;
+
+shows name's declaration if it has one, or else lists model
+entities of the kind indicated by the first letters of name:
+
+        ch... ==> checks        c...  ==> constraints
+        e...  ==> environments  f...  ==> functions
+        o...  ==> objectives    pr... ==> problems
+        p...  ==> parameters    s...  ==> sets
+        v...  ==> variables
+
+
+---------------
+FLOW OF CONTROL
+---------------
+Several new commands permit conditional execution of and
+looping over lists of AMPL commands:
+
+        if lexpr then cmd
+        if lexpr then cmd else cmd   # else matches nearest available if
+        for opt_name indexing cmd    # dummies from indexing may appear in cmd
+        repeat opt_name opt_while { cmds } opt_while ;
+        break opt_name ;
+        continue opt_name ;
+
+cmd is either a single command (ending with ;) or { cmds } .
+cmds is a sequence of 0 or more commands .
+lexpr is a logical expression.
+opt_name is an optional loop name (which must be an unbound
+before the syntactic start of the loop), which goes out of
+scope after syntactic end of the loop.
+opt_while clauses are optional.  If not null, opt_while
+has the form
+
+        while lexpr
+or
+        until lexpr
+
+If the optional loop name is not specified, break and continue
+apply to the immediately enclosing loop; otherwise they apply
+to the named loop; break terminates the loop, and continue
+causes its next iteration to begin (if permitted by the
+optional initial and final opt_while clauses of a repeat loop,
+or by the indexing of a for loop).
+
+Loops and if-then-else structures are treasured up until syntactically
+complete.  Because else clauses are optional, AMPL must look ahead one
+token to check for their presence.  At the outermost level, one must
+thus issue a null command (just a semicolon) or some other command or
+declaration to execute an outermost else-less "if ...  then stmt".
+(In this regard, end-of-file implies an implicit null statement.)
+
+New options prompt3 and prompt4 control prompting within the new
+flow-of-control commands.
+
+As a convenience, semicolons that precede right braces may be elided,
+as may the semicolon at the end of a repeat loop whose opt_while is
+null.  (Whether such elisions will be documented as "official" AMPL
+syntax is undecided.)
+
+
+-------------
+INPUT CHANGES
+-------------
+Both "model filename" and "data filename" are now treated as commands.
+AMPL returns to model mode at the end of the file unless the file ends
+in the middle of data.
+
+When a "data" command or the (hitherto undocumented) "commands" command
+appears within a compound command (i.e., the body of a loop or the then
+or else part of an if command, or simply in a sequence of commands
+enclosed in braces), it is now executed when the flow of control reaches
+it, instead of when the compound command is being read.  In this case,
+if it does not specify a file, AMPL reads commands or data from the
+current input file until it encounters either an "end" command or
+the end of the current file.  New option insertprompt (default '<%d>'),
+if nonnull, specifies an insert-prompt (in which %d is the current
+insert level, i.e., nesting of "data" and "commands" commands
+specifying files and appearing within a compound command) that
+immediately precedes the usual prompt for input from stdin.
+Commands read by "include" or "model" are at insert-level 0.  Two
+variants of the "break" command work with the "commands" command:
+        break commands;
+        break all;
+terminate, respectively, the current "commands" command or all "commands"
+commands, if any, and otherwise act as a "quit" command.
+
+
+------------
+READ COMMAND
+------------
+The new "read" command has syntax similar to the print command, except
+that only simple or subscripted params, variables, and constraints
+(dual values) can be read.  Optional input redirections are specified
+by < filename or < 'quoted_file_name' (before the read command's
+terminating semicolon).  If no redirection is specified, values are read
+from the current input stream.  To read from stdin, specify <- .
+Examples (reading from the current input steam):
+
+        param p;
+        read p;
+        4.2
+        display p;
+
+        param ps symbolic;
+        read ps;
+        'some funny text\
+        with a newline'
+        display ps;
+
+        param q{1..3};
+        read{i in 1..3} q[i];
+        1.1 2.2
+        3.3 display q;
+
+        param i;
+        param j;
+        param A{1..10,1..10};
+        param n;
+        read n,{1..n}(i,j,A[i,j]);
+        3
+        2 4 2.4
+        3 5 3.5
+        4 7 4.7
+        display A;
+
+
+----------------
+SINGLE-STEP MODE
+----------------
+As a (perhaps preliminary) scheme to help debug loops and complicated
+scripts,
+
+        option single_step n;
+
+where n is a positive integer, specifies that if the insert level
+is at most n, AMPL should behave as though "commands -;" were inserted
+before each command: it should read commands from stdin until "end" or
+eof (control-D on Unix systems, control-Z under MS-DOS).  Some special
+commands may appear in this mode:
+
+        command         meaning
+
+        step            execute the next command
+
+        skip            skip the next command
+
+        next            if the next command is an if-then-else
+                        or looping command, execute the entire
+                        compound command before stopping again
+                        (unless the compound command itself
+                        specifies "commands -;")
+
+        cont            execute until the end of the end of all
+                        currently nested compound commands at the
+                        current insert level
+
+
+-------------------------------
+NAMED PROBLEMS AND ENVIRONMENTS
+-------------------------------
+The new "problem" declaration/command has three functions:
+declaring a new problem, making a previously declared problem
+current, and printing the name of the current problem (in the form
+of a problem command establishing the current problem).
+
+        problem name optional_indexing optional_environ : itemlist ;
+
+declares a new problem and specifies the variables, constraints, and
+objectives that are in it.  Other variables appearing in the specified
+constraints and objectives are fixed (but can be unfixed by the
+"unfix" command).  The new problem becomes the current problem.
+"Current" is always a synonym for the current problem.
+Initially the current problem is "Initial".  The "itemlist" in a
+problem declaration is a comma-separated list of possibly subscripted
+names of variables, constraints, and objectives, each optionally
+preceded by an indexing, as in {i in A} foo[i].  More generally,
+nested indexings similar to those allowed in function calls may be
+specified, as in
+
+        {i in A} (foo[i], goo[i], {(i,j) in B} zoo[i,j])
+
+The command
+
+        problem name;
+
+makes name (a previously declared problem) current.  And
+
+        problem;
+or
+        problem >filename;
+
+prints the current problem name (as "problem name;").  Drop/restore
+and fix/unfix commands apply only to the current problem.  Variable
+values, like params, are global; just the fixed/unfixed status of a
+variable depends on the problem.  Similarly, the drop/restore status
+of a constraint depends on the problem (as do reduced costs).  The
+current problem does not restrict the "let" command.
+
+When a problem is declared, it can optionally specify an environment
+associated with the problem:  the optional_environ phrase has the form
+
+        environ envname
+
+to specify that the problem's initial environment is envname.
+Otherwise a new environment with the same name as the problem is
+created, and it inherits the then current environment (set of option
+values).  In option commands, unadorned (conventional) option names
+refer to options in the current environment, and the notation
+envname.opname refers to $opname in environment envname.
+
+The new declaration
+
+        environ envname optional_indexing;
+
+declares a environment envname (or a set of environments, subscripted
+by the indexing if specified).  If there is no indexing, envname
+becomes the current environment for the current problem.
+
+The new command
+
+        environ optional_indexing envname := envname1;
+
+where envname and envname1 are optionally subscripted environment names,
+copies environment envname1 to envname.
+
+Starting with version 19951027, problems (including the current one)
+are adjusted when their indexing expressions change, except that
+previous explicit drop, restore, fix, and unfix commands remain in
+effect.  The new "reset problem" command cancels this treatment of
+previous explicit drop, restore, fix, and unfix commands, and brings
+the problem to its declared drop/fix state.  This command has the
+forms
+
+	reset problem;		# applies to the current problem
+	reset problem foo;
+	reset problem goo[subscripting];
+
+If the latter forms mention the current problem, they have the same
+effect as the first form.  For now, at least, "reset problem"
+does not affect the problem's environment.
+
+-------
+STRINGS
+-------
+Strings passed to functions used to be quoted if they would need to be
+quoted in a data section.  Now they are not quoted:  they are stripped
+of surrounding quotes and the \ before a newline.  This affects the
+print command.  For example,
+
+        print 'a b';
+
+now prints
+
+        a b
+
+rather than
+
+        'a b'
+
+The printf command now recognizes two new formats: %q prints with
+data-section quoting rules (omit quotes if omitting them is allowed in a
+data section); %Q always quotes strings.
+
+Expressions may involve the new concatenation operator &, which has
+precedence below all arithmetic operators and performs string
+concatenation.  It accepts numeric operands and converts them to
+full-precision decimal strings (as though by printf format "%.g", which
+is equivalent to "%.0g": recall that in AMPL, these formats give full
+precision, rather than behaving like "%.1g").  For example,
+
+        print 'abc' & 1 + 2;
+
+gives
+
+        abc3
+
+Contexts (other than alias strings in declarations) that previously
+required literal strings now also accept an expression in parentheses.
+Thus
+        print 1/7 >('abc' & 1 + 2);
+
+prints 0.14285714285714285 on file "abc3".
+
+Expressions in commands may involve operands of the form $value
+(a $ followed by an environment name) and $environ.value (where
+environ is the possibly subscripted and previously declared name of
+an environment).  $values may not be used in declarations.
+
+Several new builtin functions work with strings:
+
+        num('12.34') = 12.34    # convert string to number
+        num('12.34x') = error   # complain if stripping leading and
+                                # trailing white space doesn't yield
+                                # a valid decimal number
+        num0('12.34x') = 12.34  # strip leading white space, and
+                                # interpret as much as possible as
+                                # a number, but never complain
+        ichar('A') = 65         # Unicode value of the first character
+                                # in its argument string
+        char(65) = 'A'          # inverse of ichar
+        length('abcd') = 4      # length of string
+        substr('abcdef',3,2) = 'cd'     # substring
+        substr('abcdef',3) = 'cdef'     # substring
+        sprintf("stuff %.2f blah %g Blah %.g", 13/3, 2/7, 3/11)
+                = 'stuff 4.33 blah 0.285714 Blah 0.2727272727272727'
+                                # general formatted conversion to string
+        match('abcde','cd') = 3 # starting position of arg2 in arg1
+        match('abcde','xy') = 0 # or 0 if not found; arg2 can be a general
+                                # regular expression
+        sub('abcdecd','cd','XYZ') = 'abXYZecd'
+                                # substitute arg3 for the first occurrence
+                                # of arg2 in arg1
+        gsub('abcdecd','cd','XYZ') = 'abXYZeXYZ'
+                                # substitute arg3 for all occurrences of
+                                # of arg2 in arg1
+        arity('S') = arity of S if S is a set; else 0
+                                # for use with _SETS, as in
+                                # display{s in _SETS} arith(s);
+        indexarity('foo') = arity of foo's index set if foo has been
+                                # declared to be something indexed, or 0
+                                # if foo has been declared as something
+                                # that is not indexed, or -1 if foo has
+                                # not been declared.
+	ctime() = ctime(time()) = current time, a string formatted as in
+				#	'Sat Jul 27 23:37:43 1996'
+				# time() = current time in seconds (numeric)
+				# from a system-dependent origin, shown by
+				# ctime(0) (often 1 January 1970 GMT).
+
+There is no implicit conversion of strings to numbers, but the new
+builtin functions num(string) and num0(string) perform explicit
+conversions.  Both ignore leading and trailing white space; num
+complains if what remains is not a valid number, whereas num0 just
+converts as much as it can (returning 0 if it sees no digits).
+
+The expressions
+                'abc' & x+3
+and
+                'abc' & sprintf("%.g",x+3)
+
+yield the same strings, and
+
+        setof{i in 1..3} 'ABC' & i
+
+yields
+
+        {'ABC1', 'ABC2', 'ABC3'}.
+
+The match, sub, and gsub functions accept strings representing regular
+expressions as their second arguments.  Such expressions are as in
+plan 9.  They are similar to the regular expressions recognized by the
+Unix editors ed and sed, except that parentheses as operators must not
+be escaped, and, in addition to * for 0 or more occurrences of the
+preceding item, + means 1 or more occurrences, and ?  means 0 or 1
+occurrence.  The replacement patterns (third arguments) for sub and
+gsub are like those for ed and sed:  & stands for the whole matched
+string, as does \0, and \1, \2, ...  \9 stand for the string matched
+by the first, second, ..., ninth parenthesized expression in the
+pattern.
+
+
+------------
+CALL COMMAND
+------------
+
+The new "call" command directly invokes a user-defined function for
+its side effects:  rather than, e.g., saying "print foo(1,2,3);" or
+"let Dummy := foo(1,2,3);" to force foo(1,2,3) to be called, you can
+now say "call foo(1,2,3);".  Syntax:
+	call [indexing] function [(arglist)];
+
+----------
+CD COMMAND
+----------
+The new "cd" command reports or changes the current working directory.
+With no argument, it reports the current directory; given a directory
+argument (a string expression in which quotes can be omitted as for
+file names), the "cd" command tries to change to that directory.  It
+always reports the current directory that results from its execution.
+This printing may be directed to a file with the usual file redirection
+notation.
+
+--------------
+EXPAND COMMAND
+--------------
+The new "expand" command prints generated constraints and objectives:
+
+        expand [indexing] itemlist [>filename];
+
+The itemlist can assume the same forms allowed in problem declarations.
+If it is empty, all non-dropped constraints and objectives are expanded.
+The variant
+
+        solexpand [indexing] itemlist [>filename];
+
+shows how constraints and objectives appear to the solver.  It omits
+constraints and variables eliminated by presolve unless they are
+explicitly specified in the itemlist.
+
+Both the "expand" and "solexpand" commands permit variables to appear
+in the itemlist; for each, the commands show the linear coefficients
+of the variable in the relevant (non-dropped and, for solexpand,
+not eliminated by presolve) constraints and objectives, and indicates
+" + nonlinear" when the variable also participates nonlinearly in a
+constraint or objective.
+
+The new options expand_precision and expand_round control printing of
+numbers by expand.  By default they are currently printed to 6
+significant figures (option expand_precision 6).
+
+
+------------
+NEW SYNONYMS
+------------
+The following act as params and are automatically updated:
+
+        _nvars = number of variables in current model
+        _ncons = number of constraints in  "      "
+        _nobjs = number of objectives in   "      "
+        _varname{1.._nvars} = names of variables in current model
+        _conname{1.._ncons} =   "   "       "      "    "       "
+        _objname{1.._nobjs} =   "   "       "      "    "       "
+
+The following are synonyms for current model entities:
+
+        _var{1.._nvars} = synonyms for variables   in current model
+        _con{1.._ncons} =     "     "  constraints  "   "       "
+        _obj{1.._nobjs} =     "     "  objectives   "   "       "
+
+These synonyms can be used in display and other commands.  They
+present the modeler's view (before presolve).  Similarly automatically
+updated entities with _ changed to _s (i.e., _snvars, _svarnames,
+_svar, etc.) give the solver's view, i.e., the view after presolve.
+
+The following "system" params are available only in "_s" form
+(solver's view):
+	_snbvars  = number of binary variables used linearly
+	_snivars  = number of general integer variables used linearly
+	_snnlcons = number of nonlinear constraints
+	_snnlobjs = number of nonlinear objectives
+	_snzcons  = number of nonzeros in the constraint Jacobian matrix
+	_snzobjs  = number of nonzeros in objective gradients
+
+The following "system" sets are automatically updated:
+
+        _PARS   = set of all declared param names
+        _SETS   =  "   "   "    "     set      "
+        _VARS   =  "   "   "    "     variable "
+        _CONS   =  "   "   "    "     constraint names
+        _OBJS   =  "   "   "    "     objective    "
+        _PROBS  =  "   "   "    "     problem      "
+        _ENVS   =  "   "   "    "     environment  "
+        _FUNCS  =  "   "   "    "     (user-defined) functions
+    _AVAILFUNCS =  "   "   " user-defined functions that have been
+		linked (statically or dynamically) with AMPL and thus
+		can be declared and evaluated in the AMPL session.
+		(Other user-defined functions may be declared and used
+		in constraints and objectives, but AMPL will not be able
+		to evaluate them.  It can, however, pass them by name to
+		solvers that know how to use them.)
+
+These sets may appear in commands, such as display and print.
+They may not appear in declarations.
+
+
+------------------------------------------------------
+ADJUSTING DECLARATIONS: XREF, DELETE, PURGE, REDECLARE
+------------------------------------------------------
+The new "xref" command shows entities that depend directly or indirectly
+on specified entities.  Syntax:
+        xref itemlist optional_redirection;
+
+The new command
+        delete foo;
+deletes foo, restoring any previous meaning foo had, provided no other
+entities depend on foo, i.e., if "xref foo;" reports no dependents.
+Variant
+        delete check n;
+deletes the n-th check (n = 1, 2, ...).
+
+The new command
+        purge foo;
+deletes foo and all its (direct or indirect) dependents.
+
+A declaration may now be prefixed by "redeclare", which causes it to
+replace any existing declaration of the specified entity with the given
+one, provided either that the entity has no dependents, or that the new
+declaration does not change the character of the entity (its kind, such
+as set or param, and its number of subscripts).  Redeclarations that
+would cause circular dependencies are rejected.  To redeclare the n-th
+check, start with
+	redeclare check n
+
+----------------
+MISC. EXTENSIONS
+----------------
+The new reserved word "all" may be used in "drop all;", "fix all;",
+"restore all;", and "unfix all;".
+
+"objective;" or "objective >filename;" prints commands establishing the
+current drop status of objectives.  In particular, if one had previously
+said "objective foo[3];", "objective;" would print "objective foo[3];".
+
+Similarly, "drop;" or "drop >filename;" or "restore;" or
+"restore > filename;" prints commands establishing the current drop stat
+of the constraints and objectives, and "fix;" or "fix >filename;" or
+"unfix;" or "unfix >filename;" prints commands establishing the current
+"fix" state of the variables.  In these contexts, "drop" and "restore"
+are interchangeable, as are "fix" and "unfix".
+
+New variant of close command: "close;" closes all files opened by
+input or output redirections.
+
+The new symbolic system parameter solve_message is assigned the message
+shown (when not suppressed by "option solver_msg 0;") by the solve
+and solution commands.  One can assign solve_message with "let", but
+may not delete or redeclare it.
+
+If $solver_auxfiles (for "solve" commands, or $auxfiles for "write"
+commands) contains capital letters and the current problem is
+nonlinear (with binary and integer variables counted as nonlinearities),
+they are treated as the corresponding lower-case letters.  Capital
+letters have no effect on linear problems.  The default $minos_auxfiles
+is now RF rather than rf, causing .row and .fix files to be written only
+for nonlinear problems.
+
+In solve and write commands, .fix files no longer show the values of
+variables fixed by presolve unless 'v' appears in $solver_auxfiles
+(or $auxfiles, as appropriate).  (The main recent use of .fix files
+is to supply names of defined variables for printing error messages.)
+
+The following have been added to the reserved-word list: Current, Initial,
+all, dotname, environ, inout, option, out.  Other new names mentioned
+above may be declared to be something else.  Deleting their
+declaration restores their former meanings.  The new reserved words
+"inout" and "out" are for use in forthcoming extensions.
+
+_pid is a predefined param that gives the process ID of the AMPL process
+(a number unique among processes running on the system).
+
+-----------
+NEW OPTIONS
+-----------
+abs_boundtol, rel_boundtol, and show_boundtol (all default 0) are
+        meant to help deduce correct dual values for constraints
+        eliminated by presolve when the solver uses an interior-point
+        algorithm and returns a solution with no bounds strictly
+        holding.  All three new options have default value 0, which
+        gives the previous behavior.  Suppose for some variable x that
+        the solver sees the bounds lb <= x <= ub.  The lower-bound
+        constraint lb <= x is considered active (during reconstruction
+        of dual values) if
+
+                x <= lb
+                or (x - lb < ub - x
+                        and x - lb <= max($abs_boundtol,
+                                        |lb|*$rel_boundtol)),
+
+        and similarly for the simple upper-bound constraint (x <= ub).
+        Thus negative values of $abs_boundtol and $rel_boundtol behave
+        like 0.  The condition x - lb < ub - x ensures that x is closer
+        to lb than half-way between lb and ub, ensuring that AMPL picks
+        the more appropriate bound no matter how large $abs_boundtol
+        and $rel_boundtol are.
+
+bad_subscripts (default 3): ampl now discards invalid subscripts
+        (read in a data section or assigned by "let"), and the
+        accompanying error message now shows at most $bad_subscripts
+        invalid subscripts per entity (when there is more than one
+        bad subscript).
+
+cmdprompt1 (default '%s ampl: '): primary prompt, i.e., prompt for
+        new command within flow-of-control commands; %s
+        is replaced by a string suggesting the context.
+
+cmdprompt2 (default '%s ampl? '): secondary prompt, i.e., prompt for
+        incomplete command within flow-of-control commands; %s
+        is replaced by a string suggesting the context.
+
+constraint_drop_tol (default 0), introduced to deal with subtle
+        presolve bug apparently caused by roundoff error:  with
+        $presolve > 1 and $var_bounds == 1 (the defaults), constraint
+        bounds were very occasionally relaxed due to bounds only
+        conveyed for $var_bounds > 1; this could increase the size of
+        the feasible region, possibly making the problem unbounded.
+        (Only known example:  test problem MAROS from netlib's lp/data.)
+        The fix involves keeping two sets of constraint bounds and
+        switching between them based on $var_bounds.  The constraint
+        bounds for $var_bounds == 1 are only relaxed if roundoff poses
+        no danger or the deduced bounds on the constraint body are
+        sharper than the declared bounds by at least
+        $constraint_drop_tol.  (The default $constraint_drop_tol value 0
+        causes both sets of constraint bounds to be the same and gives
+        the same behavior as before this change.)  New constraint dot
+        values:  constraint.lbs1, .ubs1, lbs2, .ubs2 = versions of .lbs,
+        .ubs corresponding to $var_bounds <= 1 or > 1, respectively.
+        Constraint.lbs, .ubs still reflect the bounds sent to the
+        solver.
+
+dataprompt1 (default 'ampl data: '): prompt given in data mode when
+        AMPL is ready to read a new statement or a command that returns
+        AMPL to model mode.
+
+dataprompt2 (default 'ampl data? '): prompt given in data mode within a
+        statement.  To make prompts appear as they do in the AMPL book,
+        issue the command
+           option dataprompt1 $prompt1, dataprompt2 $prompt2;
+
+expand_precision (default 6) and
+expand_round (default '') control printing precision in the "expand"
+        command.
+
+format_range_errmsg, if not '', replaces %i, %d, %o, %u, %x, or %X in
+	printf commands or sprintf invocations in which the number to be
+	converted is outside the appropriate range of integers.
+	If $format_range_errmsg has its default value of '', an error
+	message appears and the command is aborted.
+
+insertprompt (default '<%d>') used when executing a "commands" or "data"
+        command within a compound command when the "commands" or "data"
+        command does not specify a file.
+
+log_file (default ''): if $log_file is not '', then all lines
+        read from stdin or written to stdout or stderr are copied
+        to file $log_file.
+
+nl_permute (default 3) tells whether to permute constraints and variables as
+described in "Hooking Your Solver to AMPL".  The value, mod 4, tells
+what to permute:
+		0	nothing
+		1	just constraints
+		2	just variables
+		3	both constraints and variables
+Note that some solvers, such as cplex, minos, and osl, require the
+permutations.
+
+presolve_fixeps (default 0) and
+presolve_fixepsmax  (default 0): if presolve finds or deduces lower and
+        upper bounds on a variable that differ by at most $presolve_fixeps,
+        it fixes the variable at the average of the bound values.  When
+        changes below $presolve_fixepsmax to $presolve_fixeps would affect
+        presolve, the $show_stats output reports these changes.  Presolve
+        now behaves as though $presolve_eps were max($presolve_eps,
+        $presolve_fixeps):  when $presolve_eps < $presolve_fixeps,
+        variable bounds declared or deduced to be within $presolve_fixeps
+        of each other in absolute value result in the variable being fixed
+        at the average of the bounds.
+
+presolve_inteps (default 1e-6): tolerance for rounding updated bounds
+        on integer variables to integer values during presolve:
+        if x.dlb and x.dub denote the new deduced lower
+        and upper bounds on x, then for $presolve_inteps < 1,
+        x.dlb :=  ceil(x.dlb - $presolve_inteps)  and
+        x.dub := floor(x.dub + $presolve_inteps).
+        For $presolve_inteps >= 1,
+        x.dlb := floor(x.dlb) and x.dub := ceil(x.dub).
+
+presolve_intepsmax (default 1e-5): the message
+        "Setting $presolve_inteps >= nnn might help" is suppressed if
+        nnn > $presolve_intepsmax.
+
+presolve_warnings (default 5) limits the number of warning messages
+        printed during presolve; subsequent warning messages are
+        suppressed, and the number of suppressed warnings (if positive)
+        is reported at the end of presolve.  When
+                $presolve_warnings < |$eexit|
+        (as is true by default), a subsequent "Ignoring solve command
+        because presolve finds no feasible solution possible" may now
+        appear even when presolve finds at least |$eexit| causes for
+        infeasibility.
+
+rel_boundtol: see abs_boundtol above.
+
+relax_integrality (default 0):
+                option relax_integrality 1;
+        causes "integer" and "binary" attributes of variables to be
+        ignored (in solve and write commands).
+
+show_boundtol (default 0) works similarly to $show_stats, except
+        that it delivers its messages when it is on (nonzero) and
+        another dual-value computation occurs or (like $show_stats)
+        when it is set to 1.  It reports changes to $abs_boundtol and
+        $rel_boundtol that would change the outcome of the dual
+        computation, and is silent if the values of $abs_boundtol and
+        $rel_boundtol do not matter.  [$show_boundtol was called
+        $show_boundstats prior to 20 Dec. 1993.]
+
+single_step (default 0): if positive, use single-step mode as long
+        the insert level (see "INPUT CHANGES" above) is at most
+        $single_step.
+
+solver_msg (default 1): if set to 1, the solution message normally
+        printed by the solve and solution commands is suppressed.
+        It is still assigned to param solve_message.

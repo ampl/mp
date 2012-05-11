@@ -1,0 +1,1748 @@
+============================================================================
+AMPL/OSL SOLVER DRAFT (much text supplied by Thong Vukhac)
+
+
+Introduction
+------------
+
+The IBM Optimization Subroutine Library (OSL) is a collection of high
+performance mathematical subroutines for manipulating and solving mathematical
+optimization problems. The OSL subroutines can be used to find optimal solutions
+to linear programming, mixed integer programming, quadratic programming, and
+network programming problems. OSL subroutines can be called from C, FORTRAN,
+PL/I, and APL2 programs at different levels: high-level subroutines can solve a
+problem without the user having detailed knowledge of mathematical programming;
+low-level subroutines give the user the flexibility to structure algorithms
+without having to write detailed programs. This means that OSL is ideal for use
+in making business decisions, as well as for use in the research of new
+algorithms and techniques.
+
+The AMPL/OSL solver uses a subset of the available OSL subroutines to solve
+linear and mixed integer programming problems generated using AMPL. The AMPL/OSL
+solver options available to AMPL users are summarized in Table 1. This document
+is intended to be an introductory guide to the use of these options. For a more
+detailed discussion of these options and the algorithms used by OSL please
+consult references [1] and [2].
+
+
+Invoking the AMPL/OSL solver
+----------------------------
+
+The AMPL/OSL solver ("osl") reads AMPL's generic output files and calls
+selected OSL subroutines to solve linear programming (LP) and mixed integer
+programming (MIP) problems. It offers both simplex and interior point algorithms
+for LP problems and special code for pure network LP problems. Invocation is:
+
+	osl stub [-AMPL] [nondefault settings -- see below]
+
+in which stub.nl should be an AMPL generic output file (e.g., written by
+"ampl -obstub" or "ampl -ogstub"); osl writes a stub.sol file for use by AMPL's
+solve and solution commands. When running ampl (the AMPL processor), you can
+use osl to solve your problem by giving the commands:
+
+	option solver osl;
+	solve;
+
+You can control osl by setting the environment variable osl_options
+appropriately (either by using ampl's option command, or by using the
+shell's set and export commands before you invoke ampl).  You can put
+one or more (white-space separated) phrases in $osl_options.  A few
+of the phrases are single words:
+
+	Phrase		Meaning
+
+	maximize	maximize the objective, regardless of what the model says
+	minimize	minimize the objective, regardless of what the model says
+	primal		solve the primal problem
+	dual		solve the dual problem
+
+Other phrases are name-value pairs, as in
+
+	maxiter 600
+
+which limits osl to 600 iterations.
+
+
+If you invoke "osl stub" or "osl stub -AMPL", you can also supply
+additional command-line arguments of the form name=value.
+Such arguments override specifications in $osl_options.  Example:
+
+	ampl -obfoo foo.model foo.data
+	nohup osl foo -AMPL timing=2 2>>times&
+
+to solve a problem whose solution will take a while; after osl
+finishes,
+
+	ampl foo.model foo.data -
+	solution foo.sol;
+	display ... /* things involving the computed solution */;
+
+(Here, - denotes standard input, and ampl reads the "solution..."
+and "display..." lines.)
+
+It is important to keep in mind that the options discussed here are AMPL/OSL
+solver options and not true OSL options. In fact, since OSL is a library
+of subroutines and not a standalone executable, it does not have command line
+options as such. Users who access OSL directly can control the execution of OSL
+by passing appropriate arguments to the OSL subroutines and through the use of
+numerous OSL "control variables". Some of the AMPL/OSL options discussed here
+are in one to one correspondence with OSL control variables. The remainder are
+derived from various combinations of subroutine arguments and selected control
+variables. As a general rule, AMPL/OSL solver options having the form Ixxxx and
+Rxxxx correspond to and have the same meaning as OSL control variables with the
+same name.
+
+The list of AMPL/OSL solver options shown in Table 1 is quite long. This is
+consistent with OSL's philosophy of giving the user maximum flexibility in
+controling the solution process. However, most of these options are just what
+they are supposed to be - options. For most problems, accepting the default
+values of the AMPL/OSL solver should result in very satisfactory performance.
+
+Case is ignored in AMPL/OSL solver options.  For example, Maxmin is treated
+the same as maxmin.
+
+
+Using AMPL/OSL simplex solver
+-----------------------------
+
+The simplex method for solving linear programming problems was developed by
+George Dantzig in 1947.  OSL includes several solvers based on the simplex
+method.  In this method, a computationally efficient, systematic search for the
+optimal value of the linear objective function is performed among the vertices
+of the feasible region determined by the linear constraints of the problem.
+
+The OSL implementation of the simplex algorithm contains two related algorithms,
+the primal simplex algorithm and the dual simplex algorithm.
+
+In any implementation of the simplex method, considerable execution time is
+spent "pricing", selecting a particular variable (based on its current
+importance in the objective function) whose value is to be changed in
+determining the next candidate vertex in the systematic search for the optimum.
+Thus, a good pricing strategy can significantly improve the performance of the
+solver. In all the solvers of OSL that are based on the simplex method, special
+provision has been made to allow a knowledgeable user to influence the pricing
+strategy to enhance performance.
+
+In textbook explanations of the simplex method, the work is divided into two
+phases.  In phase one an auxiliary objective function is minimized to obtain a
+feasible solution, and in phase two the true objective function is minimized
+(or maximized) starting from this feasible solution. In the state of the art
+variant of the method implemented as the standard LP solver in OSL, the work is
+not divided into two phases, but instead a composite objective function is used
+throughout. This composite objective function is a linear combination of the
+phase one and phase two objective functions. Thus, the variables are
+simultaneously moved toward their optimum values as feasibility is approached.
+It may decide to allow a variable to become infeasible if the composite
+objective is improved. You may notice the current solution becoming infeasible,
+even after being feasible. This is done deliberately, to allow the algorithm to
+"slide" around vertices. Also, variables may violate their bound up to a
+tolerance (set by the tolpinf option). This violation can happen in any linear
+programming algorithm, but in OSL it is deliberate. It is possible for variables
+to leave the basis at small negative levels. Therefore, you should not worry if
+the final solution shows nonbasic variables that are violating their bounds by
+less than tolpinf.
+
+For most cases the primal algorithm will be the preferred method. However, OSL
+will inform you if the problem is primal degenerate. If that is the case, and
+the problem takes many iterations to solve, it may be worth trying the dual
+algorithm.  It may also make sense if the problem is initially dual feasible.
+OSL implements a true dual algorithm with a phase 1, phase 2, and a composite
+phase 1/2. Be aware that the primal algorithm is slightly more accurate, and in
+pathological cases, OSL may decide to switch back to primal.
+
+
+AMPL/OSL simplex solver options
+-------------------------------
+
+Note:	     In this document, maxint and maxreal refer to the maximum allowable
+	     integer and real values. On most systems these values are
+	     2147483647 and 1.79e+308 respectively.
+
+Basic options
+-------------
+
+crash	     Use OSL subroutine EKKCRSH to get a good starting basis.
+	     EKKCRSH tries to form a triangular basis. This has the tendency
+	     to improve feasibility. Calling EKKCRSH before EKKSSLV can improve
+	     performance.
+
+	       0 : no explicit invocation of EKKCRSH.
+	       1 : dual feasibility may not be maintained.
+	       2 : dual feasibility is maintained, if possible, by not pivoting
+		   in variables that are in the objective function.
+	       3 : dual feasibility may not be maintained, but the sum of
+		   the infeasibilities will never increase.
+	       4 : same as 2, but do not let the sum of infeasibilities
+		   increase.
+
+	     Type: integer; Range: [0,4]; Default: 0
+
+
+pricing      Pricing strategy to be used by EKKSSLV. This is the "init"
+	     argument of EKKSSLV.
+
+	       1 : Devex pricing is used.
+	       2 : random pricing is used first for "fast" iterations, then
+		   Devex pricing is used.
+
+	     Type: integer; Range: [1,2]; Default: 2
+
+
+endbasis     File to which the final basis is written.	If, e.g., EKKSSLV
+	     has stopped because it did maxiter iterations, the final
+	     basis file from this run could be used as the startbasis
+	     file in a subsequent run, which would let EKKSSLV pick up
+	     where it left off.  (This is unlikely to give you exactly
+	     the same total number of iterations for both runs as
+	     specifying a larger maxiter and solving the problem in one
+	     run, but it should give you roughly the same number.)
+
+	     Type: file name.  Default: no endbasis file written.
+
+
+scale	     Use OSL subroutine EKKSCAL to scale the problem matrix.
+	     Scaling increases numerical stability on many problems.
+
+	       0 : do not scale the problem.
+	       1 : invoke EKKSCAL to scale the problem,
+
+	     Type: integer; Range: [0,1]; Default: 0
+
+
+simplex      Select a simplex algorithm. This option corresponds to the "alg"
+	     argument of EKKSSLV.
+
+	       0 : let OSL select an algorithm based on problem characteristics.
+	       1 : use primal simplex.
+	       2 : use dual simplex.
+
+	     Type: integer; Range: [0,2]; Default: 0
+
+
+simplify     Use the pair of OSL subroutines EKKPRSL, EKKPSSL to presolve
+	     and postsolve the problem.
+
+	      -1 : do not invoke OSL presolve/postsolve.
+	       0 : basic presolve. The redundant rows are eliminated, the
+		   variables summing to zero are fixed. If just one variable
+		   in a row is not fixed, then OSL uses the row to impose an
+		   implicit upper or lower bound on the variable and then
+		   eliminates the row.
+	       1 : basic presolve and elimination of doubleton rows.
+	       2 : basic presolve plus rows with all nonnegative variables
+		   having one coefficient of 1.0, the rest of -1.0.
+	       3 : both 1 and 2.
+
+	     Type: integer; Range: [-1,3]; Default: -1
+
+
+startbasis   File from which a starting basis is read, probably specified
+	     as the endbasis file in a previous run of the same problem.
+
+	     Type: file name.  Default: no starting basis file read.
+
+
+Advanced options
+----------------
+
+
+devexmode    The type of Devex pricing to be used. Devexmode is used by
+	     the Devex pricing algorithm in EKKSSLV.  Devex iterations are
+	     only done in EKKSSLV after the initial random pricing iterations.
+	     In the primal simplex case, a negative value for devexmode
+	     indicates that the standard Devex method should be used until
+	     the problem becomes feasible.  For the dual simplex case,
+	     negative settings of devexmode have the same meaning as the
+	     positive setting.	That is, for dual, setting devexmode
+	     to -1 is the same as setting it to 1.
+
+	     Following is the meaning of the positive settings of devexmode:
+
+	     If devexmode = 0, switch off Devex pricing. This option is not
+	     recommended for general use.
+
+	     If devexmode = 1, the approximate Devex method is used.
+
+	     If devexmode = 2, the exact Devex method is used for the
+	     primal case, and the steepest edge method using inaccurate
+	     initial norms is used for the dual.
+
+	     If devexmode = 3, the exact steepest edge method is used.
+	     This involves computing column norms initially.  If the
+	     basis is full, this can involve significant overhead.
+
+	     For the majority of problems, a setting of 1 (the default)
+	     or -2 gives the best results for the primal case, while
+	     3 (or -3) usually gives the best results for the dual case.
+
+	     Type: integer; Range: [-3,3]; Default: 1
+
+
+fastits      The fast iteration switch. The default OSL primal simplex
+	     strategies are for a majority of problems, and are intended to
+	     minimize the number of iterations. However, there are some
+	     problems where techniques such as Devex pricing are not needed,
+	     or are not cost effective, such as problems with a matrix that
+	     has many more columns than rows. In these problems, the decrease
+	     in the number of iterations is outweighed by the increase in time
+	     per iteration.  The random strategy addresses this problem, but
+	     it is switched off for one of two reasons: a low success rate or
+	     an inverse that requires a large amount of storage. The value of
+	     fastits modifies this pricing change as follows:
+
+	      - If fastits is a positive number, OSL switches to Devex on the
+		first refactorization after fastits iterations. Before the
+		change to Devex, however, OSL continues pricing out a random
+		subset, but it will use the correct reduced costs. These
+		iterations are, therefore, not as fast as the early ones, but
+		will be much faster than a full examination of the matrix.
+
+	      - If fastits is a negative number, OSL takes a subset of the
+		matrix at each refactorization and uses this as a working
+		matrix until the next refactorization.
+
+	     fastits is only useful if random pricing was used to start with,
+	     that is, the "pricing" option is set to 2.
+
+	     Type: integer; Range: [-maxint,maxint]; Default: 0
+
+
+linelen      Length of lines printed by OSL.
+
+	     Type: integer; Range: [60, 150]; Default: 80
+
+
+majorits     Maximum cycles of "decomposition crash" when solving
+	     convex quadratic minimization problems (by a simplex-like
+	     algorithm).
+
+	     Type: integer; Range: [0,999]; default: 30
+
+
+maxfactor    The maximum number of iterations before a refactorization
+	     (invert) of the basis must be performed. OSL decides when to
+	     refactorize based on certain heuristics. A lower value of
+	     maxfactor forces OSL to refactorize at least every maxfactor
+	     iterations. For a small class of problems, it may be worth
+	     experimenting with maxfactor.
+
+	     Type: integer; Range: [0,999]; Default: 100+(number of rows)/100
+
+
+changeweight The rate of change for pweight or dweight. It is a nonlinear
+	     factor based on case-dependent heuristics. The default of 0.5
+	     gives a reasonable change if progress towards feasibility is slow.
+	     A value of 1.0 would give a greater change, while 0.1 would give
+	     a smaller change, and 0.01 would give a very slow change.
+
+	     Type: real; Range: [1e-12,1.0]; Default: 0.5
+
+
+dweight      The proportion of the feasible objective that is used when the
+	     current solution is dual infeasible.
+
+	     Type: real; Range: [0.0,1.0]; Default: 0.1
+
+
+pweight      The multiplier of the feasible objective that is used when the
+	     current solution is primal infeasible. It starts as 0.1, but is
+	     decreased continually. It is decreased by a large amount if the
+	     infeasibilities increase, and by small amounts if progress to
+	     feasibility is slow. You may want to set pweight to a smaller
+	     value when the problem begins as feasible.
+
+	     Type: real; Range: [1e-12,1e+10]; Default: 0.1
+
+
+toldinf      The allowed amount of dual infeasibility. This variable is the
+	     dual equivalent to the primal option tolpinf.
+
+	     Type: real; Range: [1e-12,1e-1]; Default: 1e-7
+
+
+tolpinf      The allowed amount of primal infeasibility. For most problems,
+	     the default value of tolpinf is adequate, but it might be
+	     necessary to increase its value if EKKPRSL finds a small
+	     infeasibility or if the solution is slightly infeasible. If
+	     possible, the problem definition should be corrected, but in some
+	     cases this is impractical because of the limitations of finite
+	     precision. Increasing tolpinf too much may lead to instability,
+	     but a modest increase can give the algorithm added flexibility
+	     and decrease the iteration count.
+
+	     Type: real; Range: [1e-12,1e-1]; Default: 1e-8
+
+
+
+Using AMPL/OSL interior point solver
+------------------------------------
+
+One of the more significant events in mathematical programming in recent
+years has been the development of polynomial time algorithms for linear
+programming. This has not only answered a long standing theoretical question
+but has also raised the possibility of developing algorithms that are more
+efficient than the simplex method. The ellipsoid algorithm, attributed to
+Khachiyan (1979), first attracted widespread interest. A later more efficient
+polynomial algorithm of Karmarkar (1984) has stimulated research into
+radically different practical alternatives to the simplex method.
+
+Most of these polynomial time algorithms for LP problems produce a sequence of
+points that converge to the optimum along a trajectory through the interior of
+the feasible region instead of skirting its periphery, as the simplex method
+does.  Methods that use this approach have come to be known as interior point
+methods.  Three new algorithms of this type are included in OSL. All three are
+based on the "logarithmic barrier" method, which minimizes a sequence of
+functions, each of which is a linear objective function augmented by a sum of
+logarithmic terms multiplied by a barrier parameter. The additional terms form
+a barrier that keeps successive approximations to the solution inside the
+feasible region, because they grow very large in magnitude as the values of the
+variables approach their upper and lower bounds. As the minimization progresses,
+the barrier parameter is progressively reduced, and a sequence of successive
+approximations to the optimal point is generated.
+
+The three interior point algorithms included in OSL are a primal barrier
+method, and two primal-dual barrier methods, one with a predictor-corrector
+scheme and one without.  In the primal barrier method the linear part of the
+objective function is the primal objective function, and successive step
+directions are the projections of the direction of steepest descent of the
+augmented objective function onto the space in which all the constraints of the
+problem are satisfied.	In the two primal-dual barrier methods, solutions of
+the primal and dual problems are addressed simultaneously.  Differences in the
+two methods arise from the techniques used to solve the mildly nonlinear system
+of equations defined by the necessary conditions for both problems to have a
+solution.  The predictor-corrector method uses an inner-outer iteration to
+solve the system directly, while the other method uses a Newton iteration
+scheme.  All the interior point solvers provide the option to switch over to
+the simplex method solver at (or near) the completion of the interior point
+iterations.
+
+Experiments with numerous practical LP problems indicate that the
+predictor-corrector method is usually the fastest and the most stable of the
+three and should be considered the method of choice.
+
+
+AMPL/OSL interior point solver options
+--------------------------------------
+
+Basic options
+-------------
+
+barrier      Use OSL subroutine EKKBSLV to solve the problem.
+
+	     -1 : do not use barrier method (use simplex)
+	      0 : let OSL choose appropriate barrier method.
+	      1 : primal barrier.
+	      2 : primal-dual barrier.
+	      3 : primal-dual barrier with predictor-corrector.
+
+	     Type: integer; Range: [-1,3]; Default: -1
+
+
+bs_switch    Barrier to simplex switch. This option corresponds to the
+	     "sslvswch" argument of EKKBSLV.
+
+	     0 : never switch to simplex.
+	     1 : switch to simplex if numerical instabilities arise.
+	     2 : switch to simplex at end.
+	     3 : let OSL decide when to switch to simplex.
+	     4 : immediately create a basis for simplex then switch.
+
+	     Type: integer; Range: [0,4]; Default: 0
+
+
+crash	     The simplex "crash" option should NOT be used together with the
+	     "barrier" option.
+
+logfreqb     Frequency to display summary lines during barrier iterations.
+
+	     Type: integer; Range: [0,maxint]; Default: 0
+
+
+maxiterb     The maximum number of iterations of the interior point barrier
+	     algorithm.
+
+	     Type: integer; Range: [0,maxint]; Default: 100
+
+
+scale	     Same as simplex "scale" option. However, the scale option should
+	     NOT be used with the two primal-dual barrier methods.
+
+
+simplify     Same as simplex "simplify" option.
+
+
+Advanced options
+----------------
+
+	     Note: For definitions of the matrices A and L discussed in this
+	     section, please refer to the OSL Guide and Reference manual [1].
+
+adjactype    The formation of the adjacency matrix A*trans(A).
+
+	     0 : causes the nonzero structure of A*trans(A) computed by taking
+		 the symbolic outer products of all the columns, accumulating
+		 them in a list, sorting them, and eliminating the duplicates.
+
+	     1 : uses or creates row and column copies of A. The nonzero
+		 positions are found by matrix multiplication. This is faster,
+		 but requires a storage-by-rows copy of A.
+
+	     Type: integer; Range: [0,1]; Default: 1
+
+
+formntype    The formation of the normal matrix.
+
+	     0 : creates a mapping of the outer products of the matrix columns
+		 onto the nonzero positions of L. The map is then used at every
+		 iteration to build the normal matrix which is factorized. This
+		 procedure generally uses a large amount of storage, but it
+		 allows for efficient vectorization. If there is not enough
+		 storage, OSL automatically resets formntype to 1.
+
+	     1 : uses or creates row and column copies of A. The nonzero values
+		 are found by using the copies directly at each iteration to
+		 create the normal matrix. This does not take advantage of
+		 vector processing.
+
+	     Type: integer; Range: [0,1]; Default: 0
+
+
+densecol     The dense column threshold. Any matrix column with more nonzeros
+	     than densecol is treated as dense and kept out of the
+	     preconditioner for conjugate gradients. Dense columns inhibit
+	     direct solution of a set of equations for the direction vector
+	     and require the use of a conjugate gradient method (or the
+	     simplex method).
+
+	     Type: integer; Range: [10,maxint]; Default: 99999
+
+
+droprowct    The constraint dropping threshold. This is a sensitive parameter
+	     for problems that may be very rank-deficient.
+
+	     1 <= droprowct <= 16 means that if a diagonal element for
+	     a particular row has been rejected droprowct consecutive times,
+	     the row is declared redundant (free) for the rest of the barrier
+	     algorithm.  If there are difficulties with unboundedness, a larger
+	     value of droprowct may prevent this.
+
+	     Droprowct > 16 means that the constraints will never be freed.
+
+	     Type: integer; Range: [1,30]; Default: 1
+
+
+maxprojns    The maximum null space projections.  Maxprojns > 1 means that
+	     (maxprojns - 1) number of iterations are made to improve the
+	     projection so that its direction stays below the projection
+	     error tolerance, projtol.  Maxprojns = 1 means no attempt at an
+	     improvement is made.
+
+	     Type: integer; Range: [1,10]; Default: 3
+
+
+nullcheck    The null space checking switch. This check is useful to see if
+	     the direction vector p (projected descent direction) lies in the
+	     null space of A when using the primal barrier algorithm.
+	     When using one of the primal-dual algorithms, an analogous check
+	     is made to see if the direction vector deltax satisfies
+	     A*deltax = b - Ax.
+
+	     Nullcheck >= 0 computes the ratio norm(A*p)/norm(p). If this
+	     ratio is less than projtol (the projection error tolerance),
+	     the direction is accepted. If this ratio is greater or equal
+	     to projtol, its value is printed and an attempt to iteratively
+	     improve the projection may be made. Maxprojns controls the
+	     number of such tries.
+
+	     Nullcheck < 0 means that these checks are not made.
+
+	     Type: integer; Range: [-maxint,maxint]; Default: 0
+
+
+possbasis    The potential basis flag.	Possbasis > 0 means that at the end
+	     of the barrier algorithm, the variables significantly away from
+	     their bounds are marked as potentially basic, as are slack
+	     variables on rows with small dual values.
+
+	     Type: integer; Range: [0,maxint]; Default: 1
+
+
+cholabstol   The absolute pivot tolerance for Cholesky factorization. If a
+	     diagonal value drops below cholabstol during factorization but
+	     is larger than choltinytol, then its value is set to cholabstol.
+
+	     Type: real; Range: [1e-30,1e-6]; Default: 1e-15
+
+
+choltinytol  The cut-off tolerance for Cholesky factorization. If a diagonal
+	     value drops below choltinytol, the row is essentially treated as
+	     dependent and ignored in the factorization.  Choltinytol should be
+	     set to a value less than or equal to cholabstol.
+
+	     Type: real; Range: [1e-30,1e-6]; Default: 1e-18
+
+
+densethr     The density threshold for Cholesky processing. When the symbolic
+	     factorization encounters a column of L that has densethr
+	     proportion of nonzeros and the remaining part of L is at least
+	     12x12, the remainder of L is treated as dense. In practice, the
+	     lower right part of the Cholesky triangular factor L is quite
+	     dense and it can be computationally more efficient to treat it as
+	     100% dense.
+
+	     densethr <= 0.0 causes all dense processing.
+	     densethr >= 1.0 causes all sparse processing.
+
+	     Type: real; Range: [-maxreal,maxreal]; Default: 0.7
+
+
+fixvar1      The tolerance for fixing variables in the barrier method when
+	     infeasible. If some of the variables in a new solution approach
+	     their bounds within the tolerance fixvar1, they are fixed to
+	     their bounds and not used in the algorithm.  This is quite common
+	     because some variables must be at bound in all feasible solutions
+	     for many models. In general, fixvar1 should be set to a larger
+	     value than fixvar2 because recomputing the artificial vector
+	     compensates for small infeasibilities introduced by fixing
+	     variables when infeasible.
+
+	     Type: real; Range: [0.0,1e-3]; Default: 1e-7
+
+
+fixvar2      The tolerance for fixing variables in the barrier method when
+	     feasible. If some of the variables in a new solution approach
+	     their bounds within the tolerance fixvar2, they are fixed to
+	     their bounds and not used in the algorithm. In general, fixvar2
+	     should be set to a small value to avoid introducing
+	     infeasibilities.
+
+	     Type: real; Range: [0.0,1e-3]; Default: 1e-8
+
+
+mufactor     The reduction factor for mu in the primal barrier algorithm.
+	     The barrier parameter is multiplied by mufactor when it is
+	     determined that the value of mu should be reduced.
+
+	     Type: real; Range: [1e-6,0.99999]; Default: 0.1
+
+
+muinit       The initial value of mu for the primal barrier algorithm. This
+	     value is scaled internally by OSL. If you expect the objective
+	     function values to get very large, set muinit to 1e+3 when
+	     using the "barrier" option.
+
+	     Type: real; Range: [1e-20,1e+6]; Default: 0.1
+
+
+mulimit      The lower limit for mu in the primal barrier algorithm. This value
+	     is scaled in the same way as muinit. When mu is reduced below
+	     mulimit, then the final value of mu is computed. When the next
+	     target level for the reduced gradient is reached, the barrier
+	     method will stop.
+
+	     The accuracy of the final solution may depend on the setting of
+	     mulimit. However, it may be advisable not to make this value too
+	     small, and instead allow the simplex method to take over and find
+	     an optimal basic solution. You can do this by setting the
+	     "bs_switch" option to 2.
+
+	     Type: real; Range: [1e-16,1.0]; Default: 1e-8
+
+
+mulinfac     The multiple of mu to add to the linear objective. Adding a small
+	     multiple of mu to each coefficient of the true objective can help
+	     prevent models from becoming unbounded if they have constraint
+	     sets that are not closed.	Normally, this multiple is 0.
+
+	     Type: real; Range: [0.0,1.0]; Default: 0.0
+
+
+objweight    The weight given to the true objective in primal composite phase 1.
+	     In phase 1 of the primal barrier method, the objective coefficients
+	     will consist of a 1.0 for the artificial column and objweight
+	     multiplied by the true objective for the real columns. In general,
+	     objweight should be small if there is some difficulty in finding
+	     any feasible solutions and big if the feasible solution space is
+	     large, or if the first feasible solutions obtained are undesirable.
+
+	     Type: real; Range: [0.0,1e+8]; Default: 0.1
+
+
+pdgaptol     The barrier method primal-dual gap tolerance. The relative gap
+	     between the primal and dual objectives that will be accepted for
+	     optimality when both the primal and dual problems are feasible.
+
+	     Type: real; Range: [1e-12,1e-1]; Default: 1e-7
+
+
+pdstepmult   The primal-dual barrier method step-length multiplier. The maximum
+	     feasible step-length chosen by the primal-dual (or primal-dual
+	     with predictor-corrector) algorithm is multiplied by pdstepmult.
+	     This number must be less than 1 to prevent moving beyond the
+	     barrier. An actual step-length greater than 1 indicates numerical
+	     difficulties.
+
+	     Type: real; Range: [0.01,0.999999]; Default: 0.99995
+
+
+pertdiag     The diagonal perturbation for Cholesky factorization.  Pertdiag
+	     is added to the diagonal matrix used in forming the normal matrix
+	     whose Cholesky factors are computed in EKKBSLV. This helps avoid
+	     spurious indications of rank deficiency.
+
+	     Type: real; Range: [0.0,1e-6]; Default: 1e-12
+
+
+projtol      The projection error tolerance. If the projected direction vector
+	     is denoted p, and the value of norm(A*p)/norm(p) exceeds this
+	     tolerance, as determined when the check triggered by
+	     nullcheck >= 0 is made, then an effort will be made to project
+	     the direction into the null space of the constraint matrix, up to
+	     a maximum of (maxprojns-1) additional times.
+
+	     Type: real; Range: [0.0,1.0]; Default: 1e-6
+
+
+rgfactor     The reduced gradient target reduction factor. The next target
+	     reduced gradient norm is computed by multiplying the current
+	     reduced gradient by rgfactor.
+
+	     Type: real; Range: [1e-6,0.99999]; Default: 0.1
+
+
+rglimit      The reduced gradient limit for the primal barrier algorithm.
+	     The barrier primal algorithm terminates if the reduced gradient
+	     norm falls below this limit.
+
+	     Type: real; Range: [0.0,1.0]; Default: 0.0
+
+
+stepmult     The step-length multiplier for the primal barrier algorithm. The
+	     maximum feasible step-length in a chosen direction is multiplied
+	     by stepmult which must be less than 1 to prevent moving beyond
+	     the barrier. A step-length greater than 1 indicates numerical
+	     difficulties.
+
+	     Type: real; Range: [0.01,0.99999]; Default: 0.99
+
+
+
+Using AMPL/OSL network solver
+-----------------------------
+
+The pure network solver included in OSL, EKKNSLV, is an implementation of the
+simplex method that takes advantage of the special form of the constraint matrix
+of the problem. Constraint matrices for pure network programming problems take
+a particularly simple form. Each column has only two nonzero entries, and the
+values of these entries are plus one and minus one. Consequently, many of the
+intermediate computations of the simplex method, such as matrix multiplications
+and factoring of certain coefficient matrices, can be performed implicitly or
+avoided altogether. In addition, storage requirements are significantly reduced.
+The net result is that EKKNSLV is significantly faster than EKKSSLV and is the
+preferred solver for pure network problems.
+
+
+AMPL/OSL network solver options
+-------------------------------
+
+netprice     Control the sample size in EKKNSLV's pricing step.
+
+	     0 : dynamically adjust the sample size based on problem
+		 characteristics and the solution process.
+	     1 : use the sample size given by netsamp.
+
+	     Type: integer; Range: [0,1]; Default: 0
+
+
+netalg	     Select a network algorithm.
+
+	     0 : do not use a network algorithm.
+	     1 : primal simplex network algorithm.
+	     2 : dual simplex network algorithm. Problem must be dual
+		 feasible on entry to EKKNSLV.
+	     -1: no network algorithm, but modify the matrix (adding a dummy
+		 free row if necessary so all columns have 2 entries) as though
+		 invoking EKKNSLV.
+
+	     Type: integer; Range: [-1,2]; Default: 1
+
+
+netbug	     Negate the dual variables computed by EKKNSLV.  Sometimes
+	     EKKNSLV gets the signs of the dual variables wrong.  Whether
+	     this happens depends on the problem and the version of OSL
+	     against which the AMPL/OSL solver is linked.
+
+	     0 : do not negate the dual values computed by EKKNSLV.
+	     1 : negate the dual values computed by EKKNSLV.
+
+	     Type: integer; Range: [0,1]; Default: 0
+
+
+netinit      Type of start-up processing being done by EKKNSLV. This is the
+	     "init" argument of EKKNSLV but restricted to values of 1 and 3.
+
+	     1 : current solution is used to develop an advanced basis.
+	     3 : an artificial basis is used.
+
+	     Type: integer; Range: [1,3]; Default: 3
+
+
+netsamp      Sample size for the EKKNSLV pricing algorithm: the fraction
+	     of arcs for which reduced costs are computed.
+
+	     Type: real; Range: [0.0,1.0]; Default: 0.05
+
+
+
+Using AMPL/OSL mixed integer solver
+-----------------------------------
+
+A mixed integer programming problem is a linear programming problem in
+which some of the variables must be integers. When the integer variables must
+be 0 or 1 the problem is called the mixed 0-1 problem. For MIP problems, the
+solution strategy implemented in OSL includes a branch and bound solver
+(EKKMSLV) and an optional preprocessor (EKKMPRE) that does extensive
+preprocessing of the MIP problem.
+
+Briefly, the branch and bound strategy proceeds as follows. As a first
+approximation, the solution of the LP problem obtained from the original
+problem by removing the integrality constraints is found. The solution of this
+problem gives a bound for the optimal value for the MIP problem because the
+integer solution can not be better than the solution of the problem without
+integrality constraints. If the values of all the variables in the solution of
+this unrestricted problem that are required to be integers in the MIP problem
+are indeed integers, then this solution is optimal for the original problem. If
+not, then an initial branching of the problem is performed as follows.
+
+A candidate variable with a noninteger value, say X1, is selected as the
+branching variable, and two new subsidiary problems are considered. This is
+described as "adding two nodes to a branch and bound tree". One subsidiary
+problem, or branch of the tree, corresponds to a MIP problem in which X1 is
+constrained to be less than or equal to the largest integer less than X1, and
+the other branch corresponds to a MIP problem in which X1 is constrained to be
+greater than or equal to the next higher integer. Each subsidiary problem is a
+new MIP problem with one strengthened constraint. Ignoring the integrality
+constraints again gives new LP problems that can be analyzed. If, for any
+subsidiary problem, all the solution variables that are required to have integer
+values do have integer values, then this solution is a candidate optimum for
+the original problem, and its optimal value is a bound for all other possible
+solutions. If not, another candidate variable with a noninteger value, say X2,
+is selected as the new branching variable, and two new nodes are added to the
+branch and bound tree. These two nodes (or subsidiary problems) can be solved
+and recursively split into more nodes until the best integer solution is found.
+New bounds for the solution are obtained as new integer solutions are found.
+
+After solving some node, K, in the tree, it may be found that the objective
+value for the LP problem at K, without integrality constraints, is not as good
+as the current bound given by the best objective value from among all other
+known feasible integer solutions. If this occurs, then node K can be pruned from
+the tree, and the time that would have been spent solving child nodes of K
+can be saved.
+
+For special ordered sets (SOS), the branches are more powerful. The variables
+in such a set are in order, and OSL can set all variables before a certain
+point to zero on a specified branch - forcing the solution to lie in the up part
+of the set, or setting all beyond a point to be zero - forcing the solution to
+lie in the down branch.
+
+The subroutine EKKMPRE allows you to preprocess the mixed integer data
+structures. This preprocessing reduces the size of the initial branch and bound
+tree by performing analysis based on the 0-1 structure of your problem. It also
+optionally causes a simpler form of this analysis to be performed at some nodes
+when EKKMSLV is called. This analysis is referred to as supernode because it is
+comparable to analyzing many nodes of the branch-and-bound tree at once.
+
+The analysis performed by EKKMPRE is as follows:
+
+   1. Start the initial phase of EKKMPRE.
+
+   2. Perform an analysis of the current matrix and bounds to either tighten
+      the bounds or declare the problem infeasible.
+
+   3. Use a heuristic approach to set all 0-1 variables to 0 or 1. This is done
+      to determine if a valid solution can be obtained.
+
+   4. Fix each 0-1 variable in turn, first to 0 and then to 1, and determine
+      all the consequences for all other variables. In many cases, this shows
+      that setting a variable one way is not feasible, in which case the
+      variable may be fixed the other way. Also, if setting the variable both
+      to 0 and to 1 is infeasible, then the problem is infeasible and supernode
+      processing is ended. The effect of this processing is similar to branching
+      in branch-and-bound, but it uses a logical analysis that does not require
+      solving all the corresponding LP problems. This is referred to as
+      "probing". When setting the variable both to 0 and to 1 is feasible, OSL
+      determines if fixing the variable implies that other variables are fixed
+      to their bounds. This is referred to as building implication lists. OSL
+      may also determine that fixing a variable causes a constraint in the
+      matrix to become redundant. In this case, the coefficient for that
+      variable in that constraint may be modified so that the constraint remains
+      the same if the variable is fixed the other way but is stronger when the
+      variable lies between 0 and 1. This gives a better LP relaxation. This is
+      termed coefficient reduction, or more accurately, coefficient
+      strengthening.
+
+   5. Add constraint rows to the matrix to make the solution to the LP problem
+      closer to the solution of the mixed integer programming problem. This is
+      known as adding cuts. One way these rows are added is by examining the
+      implication lists. For example, if x = 1 implies that y must be 0, then
+      x + y must be less than or equal to 1. This is a constraint that can be
+      added if the solution to the LP problem has shown their sum to be greater
+      than 1.
+
+   6. Rebuild the matrix and data structures.
+
+   7. If the number of variables fixed is greater than the value of the integer
+      control variable prepassfix, or the objective function has improved by an
+      amount greater than the value of the real control variable prepassimprove,
+      then repeat the process from step 2. Otherwise go to the next step.
+
+   8. If the current phase of EKKMPRE is the initial one, end it and save all
+      data structures for use by EKKMSLV. If you have requested heuristic
+      passes, this process is repeated from step 2 with the following three
+      modifications:
+
+	a. Instead of terminating the supernode, using heuristics a set of 0-1
+	   variables are chosen and set to their bound.
+
+	b. The user exit subroutine EKKHEUU is called, so you may use your
+	   knowledge of the problem to fix variables.
+
+	c. Continue processing from step 2 until a solution is obtained or the
+	   problem becomes infeasible.
+
+On some problems, particularly small ones, the time required for the extra work
+done by EKKMPRE may result in longer solution time. Specifically, EKKMPRE can be
+thought of as having a processing time on the order of k**2 to k**3, where k is
+the number of nonzero elements in the matrix, whereas EKKMSLV without EKKMPRE
+preprocessing and supernodes has a processing time on the order of 2**n, where
+n is the number of integer variables. If it appears that EKKMPRE will take more
+time than normal branch-and-bound, the option "pretype" should be set to 0 so
+that the AMPL/OSL solver will bypass the call to EKKMPRE.
+
+For problems with several integer (or binary) variable declarations, it
+sometimes helps to specify branching priorities for the integer variables.
+When AMPL/OSL has a choice of which integer variable to bound (or fix) during
+its branch-and-bound algorithm, it chooses a variable with the highest
+priority.  You can specify priorities in the AMPL option mip_priorities
+(i.e., environment variable $mip_priorities), which should contain zero or
+more white-space separated pairs of the form
+	variable-name priority
+Each priority should be an integer between 1 and 999.  All components of an
+indexed variable have the same priority; the variable-name should not have a
+subscript.  (Should sufficient need arise, we could arrange to allow subscripts
+in $mip_priorities.  To make higher numbers denote higher priorities,
+AMPL/OSL passes 1001 minus the given priority to EKKIMDL.)
+
+Note: At present, the AMPL/OSL solver does not allow the user to gain control
+      of OSL execution through the use of user exit subroutines.
+
+
+AMPL/OSL mixed integer solver options
+-------------------------------------
+
+Basic options
+-------------
+
+
+bb_bfile     Select memory or disk file to store basis information created by
+	     EKKMSLV.
+
+	     0 : keep basis information in memory.
+	     1 : keep basis information in a disk file (FORTRAN unit 3).
+
+	     Type: integer; Range: [0,1]; Default: 1
+
+
+bb_mfile     Select memory or disk file to store matrix information created by
+	     EKKMSLV.
+
+	     0 : keep matrix information in memory.
+	     1 : keep matrix information in a disk file (FORTRAN unit 4).
+
+	     Type: integer; Range: [0,1]; Default: 1
+
+
+bbdisplay    What summary lines to display during branch-and-bound iterations.
+	     0 : no summary lines.
+	     1 : summary line for each improved integer-feasible solution.
+	     2 : summary line every bbdispfreq nodes.
+
+	     Type: integer; Range: [0,2]; Default: 0
+
+
+bbdispfreq   How often to display summary lines when bbdisplay = 2.
+
+	     Type: integer; Range: [1,maxint]; Default: 20
+
+
+maxnodes     The maximum number of nodes to evaluate.
+
+	     Type: integer; Range: [0,maxint]; Default: 9999999
+
+
+maxsols      The maximum number of feasible integer solutions to find.
+
+	     Type: integer; Range: [0,maxint]; Default: 9999999
+
+
+prestrat     Bit mask that selects various steps of the MIP presolve algorithm.
+	     Prestrat affects EKKMPRE preprocessing. and supernode processing
+	     in EKKMSLV.
+
+	     Prestrat is a mask; the meanings of the bit settings are listed
+	     below. To perform more than one of these functions, set prestrat
+	     to the sum of the desired option values.
+
+	     1 : Perform probing only on satisfied 0-1 variables. This is the
+		 default setting in OSL. When a 0-1 variable is satisfied (i.e.
+		 currently at 0 or 1), OSL will do probing to determine what
+		 other variables can be fixed as a result. If this bit is not
+		 on, OSL will perform probing on all 0-1 integer variables. If
+		 they are still fractional, OSL will try setting them both ways
+		 and use probing to build an implication list for each
+		 direction.
+
+	     2 : Use solution strategies that assume a valid integer solution
+		 has been found. OSL uses different strategies when looking for
+		 the first integer solution than when looking for a better one.
+		 If you already have a solution from a previous run and have set
+		 a cutoff value (bbcutoff), this option will cause OSL to
+		 operate as though it already has an integer solution. This is
+		 beneficial for restarting and should reduce the time necessary
+		 to reach integer optimality.
+
+	     Type: integer; Range: [0,3]; Default: 1
+
+branch       Bit mask that selects various steps of the MIP solution algorithm.
+	     Branch affects supernode processing in EKKMSLV.
+
+	     Branch is a mask; the meanings of the bit settings are listed
+	     below. To perform more than one of these functions, set branch
+	     to the sum of the desired option values.
+
+	     1 : Take the branch opposite the maximum pseudo-cost. Normally,
+		 OSL will branch on the node whose smaller pseudo-cost is
+		 highest. This has the effect of choosing a node where both
+		 branches cause significant degradation in the objective
+		 function, probably allowing the tree to be pruned earlier.
+		 With this option, OSL will branch on the node whose larger
+		 pseudo-cost is highest; the branch taken will be in the
+		 opposite direction of this cost. This has the effect of forcing
+		 the most nearly integer values to integers earlier and may be
+		 useful when any integer solution is desired, even if not
+		 optimal. Here the tree could potentially grow much larger, but
+		 if the search is successful and any integer solution is
+		 adequate, then most of it will never have to be explored.
+
+	     2 : Compute new pseudo-costs as variables are branched on.
+		 Pseudo-costs assigned by the user or OSL are normally left as
+		 is during the solution process. Setting this option will cause
+		 OSL to make new estimates, using heuristics, as each branch is
+		 selected.
+
+	     4 : Compute pseudo-costs for unsatisfied variables. Pseudo-costs
+		 assigned by the user or OSL defaults are normally left as is
+		 during the solution process. Setting this option will cause OSL
+		 to make new estimates, using heuristics, for any unsatisfied
+		 variables' pseudo-costs in both directions. This is done only
+		 the first time the variable is found to be unsatisfied. In some
+		 cases, variables will be fixed to a bound by this process,
+		 leading to better performance in EKKMSLV. This work is
+		 equivalent to making two branches for every variable
+		 investigated. Note that this can be very time-consuming if it
+		 does not prove effective and should be weighed against the time
+		 expected to be spent in EKKMSLV.
+
+	     8 : Compute pseudo-costs for satisfied variables as well as
+		 unsatisfied variables. Here, if 16 is also on, OSL will compute
+		 new estimated pseudo-costs for the satisfied variables, as well
+		 as the unsatisfied ones. Again, this is very computationally
+		 expensive, but can improve performance on some problems.
+
+	     The default value for branch is 0. For definitions of probing,
+	     pseudo-costs, and implication lists, please refer to the OSL Guide
+	     and Reference manual [1].
+
+	     It is difficult to predict whether any of these approaches will
+	     improve performance on a particular problem. The default was chosen
+	     in an attempt to perform best overall, but there are many models
+	     where changing branch can provide significantly improved
+	     performance. It must be noted, however, that there are also many
+	     models where these options could degrade performance. If you are
+	     going to run a large, difficult model repeatedly in production,
+	     experimentation with branch may be worthwhile.
+
+	     Type: integer; Range: [0,15]; Default: 0
+
+
+pretype      When this directive is set to 2, the 0-1 preprocessing heuristics
+	     are applied both initially at the root node, and at subsequent
+	     supernodes.   The default setting of 1 suppresses the supernode
+	     option, so that 0-1 preprocessing occurs only at the root node.
+	     A setting of 0 suppresses all 0-1 preprocessing.
+
+	     Type: integer; Range: [0,2]; Default: 1
+
+
+rowinc	     Multiple of M (number of rows) extra rows to allow for the cuts
+	     added by EKKMPRE.
+
+	     Type: real; Range: [0.0,1e6]; Default: max(0.25, 100./M)
+
+
+Advanced options
+----------------
+
+
+prepassmax   The number of heuristic passes to be made by EKKMPRE. This does
+	     not affect EKKMSLV supernode processing.
+
+	     Type: integer; Range: [0,maxint]; Default: 1
+
+
+prepassbranch The number of branches allowed inside a supernode before supernode
+	     processing ends. EKKMSLV supernode processing ends if all of the
+	     following are true:
+
+		- The number of integer variables fixed is less than prepassfix.
+		- The improvement to the objective function is less than
+		  prepassimprove.
+		- The number of branches taken inside a supernode is greater
+		  than prepassbranch.
+
+	     Type: integer; Range: [0,maxint]; Default: Number of 0-1 variables.
+
+
+Iter_inc     The number of extra iterations allowed for recovering the
+	     best integer solution so far found when EKKMSLV stops because
+	     it reaches the iteration limit maxiter.
+
+	     Type: integer; Range: [0,maxint]; Default: 2000.
+
+
+prepassfix   Number of integer variables that must be fixed for supernode
+	     processing to continue. In EKKMPRE, the current phase ends and
+	     one or more variables are fixed before the next phase begins. In
+	     EKKMSLV, a branch is performed if both of the following are true:
+
+		- The number of integer variables fixed is less than prepassfix.
+		- The improvement to the objective function is less than
+		  prepassimprove.
+
+	     Type: integer; Range: [0,maxint]; Default: 1
+
+
+bbcutoff     The cutoff for the branch and bound. All branches where the
+	     objective is at or above bbcutoff will be pruned.  Bbcutoff is
+	     initialized to plus infinity. This allows all solutions. Whenever
+	     a valid integer solution is found, the cutoff is changed to the
+	     objective minus bbimprove.
+
+	     Type: real; Range: [-1e+20,maxreal]; Default: 1e+31
+
+
+degscale     The scale factor for all degradation. OSL uses the pseudocosts and
+	     fracweight to compute an estimate of how much worse the objective
+	     will become when continuing from a node (the estimated
+	     degradation). This estimate is computed when the node is generated.
+	     The estimate of the objective at a solution used in choosing the
+	     node is the objective at the node + degscale x the estimated
+	     degradation.  This is computed when the node choice is made.
+
+	     A small value for degscale causes nodes with a good objective,
+	     but possibly far away from a valid solution to be chosen. A large
+	     value biases the choice towards nodes that are closer to a valid
+	     solution.
+
+	     Setting degscale to zero has special significance to OSL. After
+	     computation of the estimated degradation, a value for degscale is
+	     computed such that the estimated objective at a solution used in
+	     choosing the node (the objective at the node + degscale x the
+	     estimated degradation) is exactly the value of target. This is a
+	     quick way of getting reasonable estimates.
+
+	     Therefore, one way of using degscale is to set a reasonable value
+	     for target, and then allow OSL to compute degscale to give a
+	     plausible search.	When a solution is found, degscale could be
+	     set to a small value to search using just the objective.
+
+	     Type: real; Range: [0.0,maxreal]; Default: 1.0
+
+
+bbimprove    The amount by which a new solution must be better. When a valid
+	     solution is obtained, bbcutoff is set to the objective minus
+	     bbimprove. Because the default value is small this only stops
+	     alternative solutions with the same value.
+
+	     If bbimprove is set to a large negative value all solutions of any
+	     value will be allowed.
+
+	     Bbimprove can be set to a large positive value if you are not
+	     interested in solutions with values close together.
+
+	     Bbimprove can be set to 0.9999 if the only variables with costs
+	     are integer variables, and the costs have integer values. This can
+	     be useful in pruning the tree earlier than would otherwise be the
+	     case.
+
+	     Type: real; Range: [-maxreal,maxreal]; Default: 1e-5
+
+
+fracweight   The weight for each integer infeasibility. For some types of
+	     integer problems, the values of fractional variables are of use.
+	     For example, if one variable is greater than another it is more
+	     likely to be in the optimal solution. But for many pure 0-1
+	     problems, only the number of variables at fractional values are
+	     important. By changing fracweight the balance between the
+	     contribution of the pseudocosts and the contribution of the number
+	     of fractional variables can be changed.
+
+	     Type: real; Range: [0.0,maxreal]; Default: 1.0
+
+
+target       This is a target value of the objective for a valid solution.
+	     In choosing a node to evaluate, preference is given to those with
+	     objective function values better than target, even if their
+	     estimated value is worse than a node whose objective is worse than
+	     target.
+
+	     Target is also used if degscale is zero. If you do not set
+	     target, then it will be set to 5% worse than the continuous
+	     solution.
+
+	     Type: real; Range: [-maxreal,maxreal]; default: 5 % worse than the
+	     continuous solution.
+
+
+prepassimprove The supernode processing threshold. If prepassimprove is 0.0, the
+	     default, then EKKMPRE sets it to the smaller of (1e-4 x objective
+	     function + 1e-12) and (1e-3 x distance from the continuous solution
+	     to the cutoff), and EKKMSLV sets prepassimprove to 10 times this
+	     value.  In EKKMPRE, the current phase ends and one or more
+	     variables are fixed before the next phase begins. In EKKMSLV, a
+	     branch is performed if both of the following are true:
+
+	       1. The number of integer variables fixed is less than prepassfix.
+	       2. The improvement to the objective function is less than
+		  prepassimprove.
+
+	     Type: real; Range: [0.0,maxreal]; Default: 0.0
+
+
+tolint       The integer tolerance. In some problems where the accuracy of the
+	     data is questionable, it may not be worth forcing all variables
+	     exactly to integer values. It may be best to declare the solution
+	     valid when all fractional values are less than 0.005, and then
+	     round the solution outside of OSL.
+
+	     Type: real; Range: [1e-12,1e-1]; Default: 1e-6
+
+
+sos2	     Use Special Order Sets of type 2 for nonconvex piecewise-linear
+	     terms.
+
+	     0 : do not use SOS type 2.
+	     1 : use SOS type 2.
+
+	     Type: integer; Range: [0,1]; Default: 1
+
+
+Miscellaneous AMPL/OSL options
+------------------------------
+
+In addition to the options that are specific to a given algorithm or a solution
+method discussed above, following options (with a few exceptions) are
+applicable to all the problems that can be handled by the AMPL/OSL solver.
+
+
+dspace	     Number of extra double words (beyond the default) to be
+	     allocated for the OSL work area "dspace".
+
+	     Type: integer; Range: [0,maxint]; Default: 0
+
+
+dual	     Solve the dual problem.
+
+
+logfreq      Set iteration log frequency. Setting logfreq to n prints log
+	     information every n iterations. However, log messages are always
+	     printed after problem matrix refactorizations, feasibility weight
+	     changes, and switches from random to Devex pricing, unless messages
+	     have been turned off by the "outlev" option.
+
+	     Type: integer; Range: [0,maxint]; Default: 0 (no iteration log)
+
+
+maximize     Maximize the objective, regardless of what the model says.
+	     Same as specifying maxmin -1.0.
+
+
+maxiter      Maximum number of simplex iterations.
+	     Type: integer; Range: [0,maxint]; Default: 9999999
+
+
+maxmin       The weight of linear objective.
+
+	      0.0 : OSL will ignore the objective function and declares
+		    optimality as soon as the current solution becomes feasible.
+	      1.0 : minimize the objective function.
+	     -1.0 : maximize the objective function.
+
+	     Type: real; Range: [-1.0,1.0]; Default: 1.0
+
+
+minimize     Minimize the objective, regardless of what the model says.
+	     Same as specifying maxmin 1.0.
+
+
+mpsout	     Create an MPS file on FORTRAN unit 8.
+
+	     0 : Do not create an MPS file.
+	     1 : create an MPS file with 1 non-zero per line.
+	     2 : create an MPS file with 2 non-zeros per line.
+
+	     Type: integer; Range: [0,2]; Default: 0
+
+
+objno	     Objective number to solve. Default is to use the first objective.
+	     0 means no objective (just find a feasible point).
+	     Type: integer; Range: [0, number of objectives]; Default: 1
+
+
+outlev	     Amount and type of AMPL/OSL solver output listing.
+
+	     0 :  suppress all informational messages.
+	     1 :  suppress OSL messages 16-20, 87-171, 183-243 and message
+		  numbers.
+	     2 :  same as 1 but print message numbers.
+	     3 :  print most messages but suppress message numbers.
+	     4 :  do not even suppress message numbers.
+
+	     Type: integer; Range: [0,4]; Default: 1
+
+
+primal	     Solve the primal problem.
+
+
+printcpu     Print CPU time used by OSL subroutines. If printcpu
+	     is set to a positive value x.xx, then any OSL subroutine that
+	     takes more than x.xx seconds will print a message indicating how
+	     much time the subroutine took, and the total CPU time used by OSL
+	     thus far. If this option has the default value of 0.0, then no
+	     messages about CPU time will be printed.
+
+	     Type: real; Range: [0.0,maxreal]; Default: 0.0
+
+
+stderr	     File to which stderr is redirected.
+
+	     Type: valid file name; Default: not redirected:
+	     any command-line redirection remains in effect.
+
+
+timing	     Show timing information.
+
+	     0 : do not show timing information.
+	     1 : show times on stdout.
+	     2 : show times on stderr.
+	     3 : show times on both stdout and stderr.
+
+	     Type: integer; Range: [0,3]; Default: 0
+
+
+trace	     Show OSL subroutines invoked.
+
+	     0 : do not show the OSL routines.
+	     1 : show the OSL routines.
+	     2 : show the OSL routines and message numbers.
+
+	     Type: integer; Range: [0,2]; Default: 0
+
+
+
+TABLE 1
+-------
+
+AMPL/OSL SOLVER OPTIONS
+================================================================================
+
+Single word options
+-------------------
+
+Name	       Meaning
+--------------------------------------------------------------------------------
+
+maximize       Maximize the objective, regardless of what the model says
+minimize       Minimize the objective, regardless of what the model says
+primal	       Solve the primal problem
+dual	       Solve the dual problem
+
+
+Name-Value pair options
+-----------------------
+
+Basic Options
+-------------
+
+Name	       Value		 Meaning
+--------------------------------------------------------------------------------
+barrier        [-1,3]		 Select an interior point barrier method.
+	       default: -1	 Use simplex, do not use barrier.
+
+bb_bfile       [0,1]		 Select memory or disk file to store
+				 basis information created by EKKMSLV.
+	       default: 1	 Store this info. at Fortran unit 3.
+
+bb_mfile       [0,1]		 Select memory or disk file to store
+				 matrix information created by EKKMSLV.
+	       default: 1	 Store this info. at Fortran unit 4.
+
+bbdisplay      [0,2]		 Kind of branch-and-bound summary lines.
+				 0 = none, 1 = every new integer solution,
+	       default: 0	 2 = every bbdispfreq nodes.
+
+bbdispfreq     [1,maxint]	 Frequency of branch-and-bound summary
+	       default: 20	 lines when bbdisplay = 2.
+
+branch	       [0,15]		 Bit mask that selects various steps of the
+	       default: 0	 MIP solution algorithm.
+
+bs_switch      [0,4]		 Barrier to simplex switch.
+	       default: 0	 Never switch to simplex.
+
+crash	       [0,4]		 Use EKKCRSH to get a starting basis.
+	       default: 0	 Do not use EKKCRSH.
+
+dspace	       [0,maxint]	 Extra double words for OSL "dspace".
+	       default: 0
+
+endbasis       filename		 File to which the final basis is written.
+	       default: no
+	       endbasis file
+
+logfreqb       [0,maxint]	 Frequency of barrier iteration summary lines.
+	       default: 0	 Do not print summary lines.
+
+maxiterb       [0,maxint]	 Maximum number of iterations of the
+				 interior point barrier algorithm.
+	       default: 100
+
+maxnodes       [0,maxint]	 The maximum number of nodes to evaluate.
+	       default: 9999999
+
+maxsols        [0,maxint]	 The maximum number of feasible integer
+				 solutions to find.
+	       default: 9999999
+
+prestrat       [0,3]		 Bit mask that selects various steps of the
+				 MIP presolve algorithm.
+	       default: 1
+
+logfreq        [0,maxint]	 Set iteration log frequency.
+	       default: 0	 No iteration log.
+
+maxmin         [-1.0,1.0]	 The weight of linear objective
+	       default: 1.0	 Minimize the objective function.
+
+pretype        [0,5]		 Type of EKKMPRE MIP preprocessing.
+	       default: 2	 Do not use EKKMPRE.
+
+mpsout	       [0,2]		 Create an MPS file on FORTRAN unit 8.
+	       default: 0	 Do not create an MPS file.
+
+netalg	       [-1,2]		 Select algorithm for network solver.
+	       default: 1	 Primal simplex network algorithm.
+
+netbug	       [0,1]		 Whether to negate the dual variables
+	       default: 0	 returned by EKKNSLV (0 = no).
+
+netinit        [1,3]		 Start up processing for network solver.
+	       default: 3	 Use artificial basis.
+
+objno	       [0, number of objectives]
+				 Objective number to solve.
+	       default: 1	 Select first objective.
+
+outlev	       [0,4]		 Amount and type of AMPL/OSL output listing.
+	       default: 1	 Minimum nonvoid output listing.
+
+pricing        [1,2]		 Pricing strategy for EKKSSLV ("init" arg).
+	       default: 2	 Random for "fast" iters, then Devex.
+
+printcpu       [0.0,maxreal]	 Print CPU timing information of each OSL
+				 subroutines that is greater than this value.
+	       default: 0.0	 Do not print CPU timing.
+
+rowinc	       [0.0,1e6]	 Multiple of M (number of rows) extra rows
+				 to allow for cuts added by EKKMPRE.
+	       default: max(0.25,
+	       100./M)
+
+scale	       [0,1]		 Use EKKSCAL to scale the problem.
+	       default: 0	 do not use EKKSCAL.
+
+simplex        [0,2]		 Select primal/dual simplex algorithm.
+	       default: 0	 Let OSL select the algorithm.
+
+simplify       [-1,3]		 Use EKKPRSL/EKKPSSL to presolve and
+				 postsolve problem.
+	       default: -1	 Do not use EKKPRSL/EKKPSSL.
+
+startbasis     filename		 File from which the initial basis is read.
+	       default: no
+	       startbasis file
+
+stderr	       filename		 File to which stderr is redirected.
+	       default: not
+	       redirected.
+
+timing	       [0,3]		 Show timing information.
+	       default: 0	 Do not show timing information.
+
+trace	       [0,2]		 Show OSL subroutines invoked.
+				 2 means include message numbers.
+	       default: 0	 Do not show OSL subroutines invoked.
+
+
+Advanced options
+----------------
+
+Name	       Value		 Meaning
+--------------------------------------------------------------------------------
+adjactype      [0,1]		 The formation of the adjacency matrix.
+	       default: 1
+
+densecol       [10,maxint]	 The dense column threshold.
+	       default: 99999
+
+devexmode      [-3,3]		 The type of Devex pricing to be used.
+	       default: 1	 Approximate Devex.
+
+droprowct      [1,30]		 The constraint dropping threshold.
+	       default: 1
+
+fastits        [-maxint,maxint]  The fast iteration switch.
+	       default: 0
+
+formntype      [0,1]		 The formation of the normal matrix.
+	       default: 0
+
+prepassmax     [0,maxint]	 The number of heuristic passes to be made by
+				 EKKMPRE.
+	       default: 1
+
+linelen        [60,150]		 Length of lines printed by OSL.
+	       default: 80
+
+majorits       [0,999]		 Maximum cycles of "decomposition crash"
+				 when solving convex quadratic minimization
+	       default: 30	 problems (by a simplex-like algorithm).
+
+maxfactor      [0,999]		 The maximum number of iterations before a
+				 refactorization (invert) of the basis.
+	       default: 100 +
+	       (no. of rows)/100
+
+maxprojns      [1,10]		 The maximum null space projections.
+	       default: 3
+
+nullcheck      [-maxint,maxint]  The null space checking switch.
+	       default: 0
+
+possbasis      [0,maxint]	 The potential basis flag.
+	       default: 1
+
+netprice       [0,1]		 Control the sample size in EKKNSLV's pricing
+	       default: 0	 step (0 = automatic, 1 = use netsamp).
+
+prepassbranch  [0,maxint]	 The number of branches allowed inside a
+				 supernode before supernode processing ends.
+	       default: number
+	       of 0-1 variables
+
+Iter_inc       [0,maxint]	 Number of extra iterations for recovering
+				 the best integer solution after EKKMSLV
+				 reaches the iteration limit, maxiter.
+	       default: 2000
+
+prepassfix     [0,maxint]	 Number of integer variables that must be fixed
+				 for supernode processing to continue.
+	       default: 1
+
+bbcutoff       [-1e+20,maxreal]  The cutoff for the branch and bound.
+	       default: 1e+31
+
+changeweight   [1e-12,1.0]	 The rate of change for pweight or dweight.
+	       default: 0.5
+
+cholabstol     [1e-30,1e-6]	 Absolute pivot tol. for Cholesky factorization.
+	       default: 1e-15
+
+choltinytol    [1e-30,1e-6]	 Cut-off tolerance for Cholesky factorization.
+	       default: 1e-18
+
+degscale       [0.0,maxreal]	 The scale factor for all degradation.
+	       default: 1.0
+
+densethr       [-maxreal,	 The density threshold for Cholesky processing.
+		   maxreal]
+	       default: 0.7
+
+dweight        [0.0,1.0]	 Proportion of the feasible obj. that is used
+	       default: 0.1	 when the current solution is dual infeasible.
+
+fixvar1        [0.0,1e-3]	 The tolerance for fixing variables in the
+	       default: 1e-7	 barrier method when infeasible.
+
+fixvar2        [0.0,1e-3]	 The tolerance for fixing variables in the
+				 barrier method when feasible.
+	       default: 1e-8
+
+bbimprove      [-maxreal,	 Amount by which a new solution must be better.
+		 maxreal]
+	       default: 1e-5
+
+fracweight     [0.0,maxreal]	 The weight for each integer infeasibility.
+	       default: 1.0
+
+mufactor       [1e-6,0.99999]	 The reduction factor for mu in the primal
+				 barrier algorithm.
+	       default: 0.1
+
+muinit         [1e-20,1e+6]	 The initial value of mu for the primal barrier
+				 algorithm.
+	       default: 0.1
+
+mulimit        [1e-16,1.0]	 The lower limit for mu in the primal barrier
+				 algorithm.
+	       default: 1e-8
+
+mulinfac       [0.0,1.0]	 Multiple of mu to add to the linear objective.
+	       default: 0.0
+
+netsamp        [0.0,1.0]	 Sample size for the EKKNSLV pricing algorithm.
+	       default: 0.05
+
+objweight      [0.0,1e+8]	 The weight given to the true objective in
+	       default: 0.1	 primal composite phase 1.
+
+pdgaptol       [1e-12,1e-1]	 The barrier method primal-dual gap tolerance.
+	       default: 1e-7
+
+pdstepmult     [0.01,0.999999]	 The primal-dual barrier method step-length
+				 multiplier.
+	       default: 0.99995
+
+pertdiag       [0.0,1e-6]	 The diagonal perturbation for Cholesky
+	       default: 1e-12	 factorization.
+
+projtol        [0.0,1.0]	 The projection error tolerance.
+	       default: 1e-6
+
+pweight        [1e-12,1e+10]	 Multiplier of the feasible obj. that is used
+	       default: 0.1	 when the current solution is primal infeasible.
+
+rgfactor       [1e-6,0.99999]	 The reduced gradient target reduction factor.
+	       default: 0.1
+
+rglimit        [0.0,1.0]	 The reduced gradient limit for the primal
+				 barrier algorithm.
+	       default: 0.0
+
+stepmult       [0.01,0.99999]	 The step-length multiplier for the primal
+				 barrier algorithm.
+	       default: 0.99
+
+target         [-maxreal,	 Target value of the objective for a valid
+		 maxreal]	 solution.
+	       default: 	 5% worse than continuous solution.
+
+prepassimprove [0.0,maxreal]	 The supernode processing threshold.
+	       default: 0.0
+
+toldinf        [1e-12,1e-1]	 The allowed amount of dual infeasibility.
+	       default: 1e-7
+
+tolint         [1e-12,1e-1]	 The integer tolerance.
+	       default: 1e-6
+
+tolpinf        [1e-12,1e-1]	 The allowed amount of primal infeasibility.
+	       default: 1e-8
+
+sos2	       [0,1]		 Use Special Order Sets of type 2
+				 for nonconvex piecewise-linear terms.
+	       default: 1	 Do not use SOS type 2.
+
+================================================================================
+
+
+
+References
+----------
+
+[1] Optimization Subroutine Library Guide and Reference, Release 2,
+    IBM Corporation, SC23-0519-03, June 1992; available through IBM branch
+    offices.
+
+[2] IBM Systems Journal, Special issue: Optimization Subroutine Library,
+    Vol. 31, No. 1, 1992.
+
+================================================================================
+
+
+
+The following table relates osl keywords to the OSL control-variable names
+used in the above references:
+
+   osl             OSL
+adjactype       Iadjactype
+bbimprove       Rimprove
+bcutoff         Rbcutoff
+changeweight    Rchangeweight
+cholabstol      Rcholabstol
+choltinytol     Rcholtinytol
+degscale        Rdegscale
+densecol        Idensecol
+densethr        Rdensethr
+devexmode       Idevexmode
+droprowct       Idroprowct
+dweight         Rdweight
+fastits         Ifastits
+fixvar1         Rfixvar1
+fixvar2         Rfixvar2
+formntype       Iformntype
+fracweight      Riweight
+linelen         Ilinelen
+maxfactor       Imaxfactor
+maxiterb        Imaxiterb
+maxmin          Rmaxmin
+maxnodes        Imaxnodes
+maxprojns       Imaxprojns
+maxsols         Imaxsols
+mufactor        Rmufactor
+muinit          Rmuinit
+mulimit         Rmulimit
+mulinfac        Rmulinfac
+netprice        Ipricetype
+netsamp         Rnetsamp
+nullcheck       Inullcheck
+objweight       Robjweight
+pdgaptol        Rpdgaptol
+pdstepmult      Rpdstepmult
+pertdiag        Rpertdiag
+possbasis       Ipossbasis
+prepassbranch   Isupertol
+prepassfix      Ithreshold
+prepassimprove  Rthreshold
+prepassmax      Iheurpass
+prestrat        Istrategy
+printcpu        Rprintcpu
+projtol         Rprojtol
+pweight         Rpweight
+rgfactor        Rrgfactor
+rglimit         Rrglimit
+stepmult        Rstepmult
+target          Rtarget
+toldinf         Rtoldinf
+tolint          Rtolint
+tolpinf         Rtolpinf

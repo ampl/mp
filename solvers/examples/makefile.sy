@@ -1,0 +1,226 @@
+# /****************************************************************
+# Copyright (C) 1997-1999 Lucent Technologies
+# All Rights Reserved
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby
+# granted, provided that the above copyright notice appear in all
+# copies and that both that the copyright notice and this
+# permission notice and warranty disclaimer appear in supporting
+# documentation, and that the name of Lucent or any of its entities
+# not be used in advertising or publicity pertaining to
+# distribution of the software without specific, written prior
+# permission.
+#
+# LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+# INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
+# IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
+# SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
+# IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+# ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+# THIS SOFTWARE.
+# ****************************************************************/
+
+# For compiling solvers/examples with Symantec 7.x .
+
+# Invoke with "make -f makefile.sy" ,
+# or "copy makefile.sy makefile", possibly edit makefile,
+# and just invoke with "make".
+
+# This is for NT console applications; for DOS,
+# change "-mn" to "-mx".
+
+CC = sc
+S = ..
+# "S = .." assumes this directory is solvers/examples .
+
+CFLAGS = -s -mn -I$S
+
+.c.obj:
+	$(CC) -c $(CFLAGS) $*.c
+
+.f.obj:
+	f2cx -A $*.f
+	$(CC) -c $(CFLAGS) $*.c
+	del $*.c
+
+Lf2c = $S\syf2c.lib
+Lp = cport.lib $(Lf2c)
+Mf2c = $S\main.obj
+
+# cport.lib = PORT subroutine library.
+# Ask netlib@netlib.org to
+#	send dmngb dmnhb dn2g dn2gb dq7rgs from port
+# to get source for the relevant (small) part of PORT.
+# f2c.lib is for f2c's version of Fortran I/O: we assume
+# cport.lib was compiled by f2c and $CC.
+# With Symantec, it is necessary to explicitly load f2c.lib's main.obj,
+# which here is denoted $(Mf2c).
+
+A = $S\amplsolv.lib
+Af = $S\funcadd0.obj $A
+all1 = lin1.exe lin2.exe lin3.exe linrc.exe dualconv.exe qtest.exe
+all = mng1.exe fmng1.exe nl21.exe fnl21.exe mng.exe mnh.exe nl2.exe tn.exe v8.exe ve08.exe
+
+all: $(all1) $(all)
+	echo all made >all
+
+# "make all" requires various routines from netlib's opt and port
+# directories; "make all1" requires just files distributed with
+# this directory.
+
+all1: $(all1)
+
+lin1 = lin1.obj $(Af)
+lin1.exe: $(lin1)
+	$(CC) $(CFLAGS) -olin1.exe $(lin1)
+
+lin2 = lin2.obj $A
+lin2.exe: $(lin2)
+	$(CC) $(CFLAGS) -olin2.exe $(lin2)
+
+lin3 = lin3.obj $A
+lin3.exe: $(lin3)
+	$(CC) $(CFLAGS) -olin3.exe $(lin3)
+
+linrc = linrc.obj $A
+linrc.exe: $(linrc)
+	$(CC) $(CFLAGS) -olinrc.exe $(linrc)
+
+mng1 = mng1.obj $(Mf2c) $(Af)
+
+mng1.exe: $(mng1)
+	$(CC) $(CFLAGS) -omng1.exe $(mng1) $(Lp)
+
+nl21 = nl21.obj $(Mf2c) $(Af)
+
+nl21.exe: $(nl21)
+	$(CC) $(CFLAGS) -onl21.exe $(nl21) $(Lp)
+
+mng = mng.obj rvmsg.obj keywds.obj $(Mf2c) $A
+
+mng.exe: $(mng)
+	$(CC) $(CFLAGS) -omng.exe $(mng) $(Lp)
+
+mnh = mnh.obj rvmsg.obj hkeywds.obj $(Mf2c) $A
+
+mnh.exe: $(mnh)
+	$(CC) $(CFLAGS) -omnh.exe $(mnh) $(Lp)
+
+nl2 = nl2.obj rvmsg.obj keywds.obj $(Mf2c) $A
+
+nl2.exe: $(nl2)
+	$(CC) $(CFLAGS) -onl2.exe $(nl2) $(Lp)
+
+fmng1 = fmng1.obj $(Mf2c) $(Af)
+
+fmng1.exe: $(fmng1)
+	$(CC) $(CFLAGS) -ofmng1.exe $(fmng1) $(Lp)
+
+fnl21 = fnl21.obj $(Mf2c) $(Af)
+
+fnl21.exe: $(fnl21)
+	$(CC) $(CFLAGS) -ofnl21.exe $(fnl21) $(Lp)
+
+# tn.f and blas.f are available from netlib.exe: ask for "tn from opt".
+
+tn = tnmain.obj tn.obj blas.obj $(Mf2c) $(Af)
+
+tn.exe: $(tn)
+	$(CC) $(CFLAGS) -otn.exe $(tn) $(Lf2c)
+
+# ve08ad.f is available from netlib.exe: ask for "ve08 from opt".
+# See comments in README about a possible adjustment to ve08ad.f .
+
+v8.o.exe: ve08.c
+
+v8 = v8.obj ve08ad.obj $(Mf2c) $(Af)
+
+v8.exe: $(v8)
+	$(CC) $(CFLAGS) -ov8.exe $(v8) $(Lp)
+
+ve08 = ve08.obj ve08ad.obj $(Mf2c) $(Af)
+
+ve08.exe: $(ve08)
+	$(CC) $(CFLAGS) -ove08.exe $(ve08) $(Lp)
+
+dualconv = dualconv.obj $A
+dualconv.exe: $(dualconv)
+	$(CC) $(CFLAGS) -odualconv.exe $(dualconv)
+
+nlcopy = nlcopy.obj $A
+nlcopy.exe: $(nlcopy)
+	$(CC) $(CFLAGS) -onlcopy.exe $(nlcopy)
+
+qtest.exe: qtest.obj
+	$(CC) $(CFLAGS) -oqtest.exe qtest.obj $(Af)
+
+$S\amplsolv.lib.exe:
+	cd $S; make amplsolv.lib
+
+clean:
+	deltree /Y *.exe *.obj all test test1 dietd.duw
+
+### "make test" to compare outputs.
+
+### "make test1" to compare outputs that do not require things
+### from other netlib directories.  See the comments below
+### about limitations of Symantec's "make".
+
+test1:
+	lin1 diet | rmcr >foo
+	diff foo lin1diet.out
+	lin2 diet | rmcr >foo
+	diff foo lin2diet.out
+	lin3 diet | rmcr >foo
+	diff foo lin3diet.out
+	linrc diet | rmcr >foo
+	diff foo linrcdie.out
+	dualconv diet foo
+	rmcr foo.nl >goo
+	diff goo dietd.nl
+	copy foo.duw dietd.duw
+	dualconv -u dietd foo
+	rmcr foo.sol >goo
+	diff goo dietu.sol
+	del foo.nl
+	del foo.sol
+	qtest ch3 | rmcr >foo
+	diff foo ch3qtest.out
+	echo test1 done >test1
+
+# Symantec's "make" does not process "|" or ">" correctly.
+# To "make test", use WATCOM's wmake or Microsoft's nmake.
+# With WATCOM's wmakel, you need to insert ".SUFFIXES: .f" at the top.
+
+test: all test1
+	mng ch3 | rmcr >foo
+	diff foo ch3mng.out
+	mnh ch3 | rmcr >foo
+	diff foo ch3mnh.out
+	nl2 ch3 | rmcr >foo
+	diff foo ch3nl2.out
+	nl21 ch3 | rmcr >foo
+	diff foo ch3nl21.out
+	tn ch3 | rmcr >foo
+	diff foo ch3tn.out
+	mng ch3 -AMPL
+	rmcr ch3.sol >foo
+	diff foo ch3mng.sol
+	mnh ch3 -AMPL
+	rmcr ch3.sol >foo
+	diff foo ch3mnh.sol
+	nl2 ch3 -AMPL
+	rmcr ch3.sol >foo
+	diff foo ch3nl2.sol
+	tn ch3 -AMPL
+	rmcr ch3.sol >foo
+	diff foo ch3tn.sol
+	del ch3.sol
+	v8 ch3 | rmcr >foo
+	diff foo v8ch3.out
+	ve08 ch3 | rmcr >foo
+	diff foo ve08ch3.out
+	del foo
+	echo tests done. >test

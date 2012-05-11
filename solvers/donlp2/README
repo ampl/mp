@@ -1,0 +1,62 @@
+DONLP2 is a general nonlinear programming code by
+
+	Prof. Dr. Peter Spellucci
+	e-mail: spellucci@mathematik.th-darmstadt.de
+
+It uses an SQP algorithm and dense-matrix linear algebra.
+
+Source for DONLP2 is available from
+
+ ftp://ftp.mathematik.tu-darmstadt.de/pub/department/software/opti/DONLP2
+
+File donlp2.o (mentioned in the makefile) is an object form of DONLP2
+source file donlp2.f .  See the DONLP2 source for documentation.
+For a summary of using solver "donlp2", execute
+
+	donlp2 '-?'
+
+Donlp2 reads keywords and values from the environment (shell) variable
+donlp2_options (known in an AMPL session as option donlp2_options) and
+from the command line.  Execute
+
+	donlp2 -=
+
+for a summary of keywords that donlp2 recognizes.
+
+Possible solve_result_num values for donlp2:
+
+0	Success! KKT conditions satisfied
+100	nearly feasible with small directional deriv.
+101	relaxed KKT conditions satisfied: singular point
+101	small QP correction: nearly feasible and singular
+200	tiny correction from QP at infeasible point
+400	reached maxit steps
+500	N too large (the Fortran donlp2 routines must be recompiled)
+501	unknown termination reason
+510	cannot evaluate constraints
+511	cannot evaluate objective
+520	dual extended QP failure: singular working set
+521	infeasible QP
+522	no descent in QP
+523	tiny QP step from infeasible point
+524	nondescent direction from QP
+525	no acceptable step size
+527	tiny step
+528	more than NRESET small primal corrections
+529	max(N,10) small penalty function differences
+540	slow primal progress: singular or ill-conditioned problem?
+
+
+Scaling (new 19980606):  in an AMPL session, if you declare
+
+	option suffix vsclog10;
+
+then variable.vsclog10 (default 0) is passed to donlp2, which scales
+the variable internally by 10^-variable.vsclog10.  Thus if variables x
+and y are distances in meters that have typical values of a few
+centimeters and a few kilometers, respectively, then
+	let x.vsclog10 := -2;
+	let y.vsclog10 := 3;
+woudl probably be appropriate, since it would give the internal
+variables typical values around 1.
+
