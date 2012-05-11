@@ -1,0 +1,17 @@
+
+OPTIONS FOR CONCERT SOLVER
+
+                Allowed values are 1 => yes, 0 => no if not otherwise shown.
+
+uselinconstr    Treat embedded LP as "global" constraint? (0)
+keeplinconstr   Keep LP constraints out of ILOG Solver's problem? (0)
+
+usenonlin       Use nonlinear propagation techniques? (0)
+keepnonlin      Keep nonlinear constraints out of ILOG Solver's problem? (1)
+
+timing          Are timings reported? (0)
+
+usenumberof     Are 'numberof' expressions consolidated
+                by use of IloDistribute constraints? (1)
+
+debugexpr       Print a line for each expression tree node? (0)
