@@ -1,0 +1,66 @@
+Solver path solvers "square" nonlinear complementarity problem;
+it is based on the PATH solver of Professor Michael C. Ferris and
+his (current or former) students Steven P. Dirkse and Todd S. Munson.
+
+The makefile in this directory assumes that pathlib is a directory
+of source for PATH (or at least that it contains a library built
+from this source and the associated header files).  Contact
+Professor Ferris (ferris@cs.wisc.edu) to see about getting the
+pathlib directory.
+
+Compilation with -DNEOS causes recognition of keywords "logfile",
+"optfile", and "statusfile" in $path_options to be omitted.  With or
+without -DNEOS, default values for these files may be specified with
+-DLOGFILE='"logfile_name"', -DSTATUSFILE='"statusfile_name"', and
+-DOPTFILE='"optfile_name"', respectively.  Absent such specifications,
+or with 0 or NULL in place of a quoted string, the default is no such
+file.
+
+
+Papers related to PATH include
+
+S. P. Dirkse, "Robust Solution of Mixed Complementarity Problems",
+	Ph.D. thesis, Computer Sciences Dept., Univ. of Wisconsin,
+	Madison, 1994.  Available from
+	ftp://ftp.cs.wisc.edu/math-prog/tech-reports/.
+
+Steven P. Dirkse and Michael C. Ferris, "The PATH Solver: A
+	Non-Monotone Stabilization Scheme for Mixed Complementarity
+	Problems", Optimization Methods and Software 5 (1995),
+	pp. 123-156.
+
+M. C. Ferris and T. S. Munson, "Interfaces to PATH 3.0: Design,
+	Implementation and Usage", Math. Prog. Tech. Rep. 97-12,
+	Univ. of Wisconsin, Madison, Computer Sciences Dept., 1997.
+	Available from ftp://ftp.cs.wisc.edu/math-prog/tech-reports/.
+
+Pointers to other relevant papers appear in
+	http://www.cs.wisc.edu/~ferris/papers.html
+
+-----------------------
+solve_result_num values
+=======================
+
+Here is a table of solve_result_num values that "path" can return
+to an AMPL session, along with the text that appears in the associated
+solve_message.
+
+	Value	Message
+
+	0	Solution found
+	200	Inconsistent bounds
+	201	Infeasible
+	400	Major iteration limit
+	401	Cumulative iteration limit
+	402	Time limit
+	403	User interrupt (such as control-C)
+	500	Bug -- unexpected return code from PATH
+	501	Solver error
+	503	Domain error
+	504	Nonsquare system (when "sqwarn" requires square)
+	505	Problem has side inequalities (when "sideineq" allows none)
+	510	Not enough progress
+
+-----------------------
+
+Questions about this stuff?  Contact dmg@ampl.com (David M. Gay).

@@ -1,0 +1,73 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-bl master Wed Dec 7 03:35:08 EST 2005
+# http://cm.bell-labs.com/netlib/crc/netlib-bl.html
+7fVqnCJx2b/4V++gV4sh/w	00lastchange
+o+QUVJP0tFekRVFQ1P45aA	README
+Eu4afIY6TQtei6/cLWquRg	TABLES.RME
+mndExrCp1arycHGs0QCQ5Q	amplodbc.c
+Smzcl8ZnCuEWGn6lIhJbOw	ampltabl.def
+MoiCP23+/P4XgeMQiO/TRw	ampltabl.dll.gz
+Axgth9KsnrCxHZvbRJWn3g	calories.tab
+4qFVlDzcKqcHo2gWB1KCHw	changes
+nwierY6zzvVSFoPVWaRlYA	diet.mod
+v0mjbMirut9I8jbDUs338A	diet2a.dat
+94zSfSOHMb6d7PZQ95q5xA	diettab.x
+2dw07FwI2PIEy+86UoYC9g	diettabw.x
+GBjlY1p3go+ybehz5wB2IQ	dietwrit.x
+o2k7Yj61PxDQubaJf+ollg	foods.tab
+UKsO48n5rWxPXZJ3kIFrWw	fullbit.c
+CrDduEIpl2AmdFKfkXohCA	index
+QctKWRzYJeYuMT9dfWS6Sw	makefile.linux
+qsdh6pE54sOyvrOkcJ3ynQ	makefile.sgi
+S07RRzsmyMWg9sxIJSCyTA	makefile.vc
+uKJHPVcpp6uwzwtShT+9pQ	nutrients.tab
+WhuIfq4vxjRPEoMsrK8u7Q	simpbit.c
+AcX54nKDv9vpF8WVQ+cCoA	xsum0.out
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBQ5aevb5pvxO9gjtZAQHEWAP9GgaztJK2lX87Ij1Qa/ZDK8nWW7c81g8l
+dhPzmHsGM870O0q4VPAC88KhGtGCUD5szXaRy1orV8iIsiGVpPaSJBV15KpRgBFN
+9koSTfWkqSpo03XLjMv5eK3nBMik3VMB+fqREZZMptVLKV0pEUmfrHiCmT9gEp+h
+SktRBTvUnwA=
+=9+U9
+-----END PGP SIGNATURE-----
+-----BEGIN PGP SIGNED MESSAGE-----
+
+# netlib-utk master Sun Apr 8 03:11:03 EDT 2012
+og9vwn6WXnp8O9wF8p3cQQ	00lastchange
+tH+7jjyuO1u+rd6pxS+8ng	README
+Eu4afIY6TQtei6/cLWquRg	TABLES.RME
+0C6N6V81/LIXM+sOTirZew	amplodbc.c
+Smzcl8ZnCuEWGn6lIhJbOw	ampltabl.def
+5ahv90x9QRUaqTL5OaiOmw	ampltabl.dll.gz
+Axgth9KsnrCxHZvbRJWn3g	calories.tab
+RLcxFUtGRUOwRKfKPXTCtw	changes
+nwierY6zzvVSFoPVWaRlYA	diet.mod
+v0mjbMirut9I8jbDUs338A	diet2a.dat
+94zSfSOHMb6d7PZQ95q5xA	diettab.x
+2dw07FwI2PIEy+86UoYC9g	diettabw.x
+GBjlY1p3go+ybehz5wB2IQ	dietwrit.x
+o2k7Yj61PxDQubaJf+ollg	foods.tab
+3SbHe+C0CM/PATIxJ4q2WQ	fullbit.c
+q144M4Z5J+CD3s8wc7S0Ng	index
+53RZjg14nsWRY9M4L7Ajgw	index.html
+yeYFphJYKVV/Jg+zj2Vb9w	makefile.linux
+lLVTgBT5rQgIcqzwU8KP2g	makefile.vc
+uKJHPVcpp6uwzwtShT+9pQ	nutrients.tab
+UtdHMqhzeJVmicSthzgKHQ	simpbit.c
+cM91M3mCzFc01xKs1EwYPQ	tableproxy.c
+56TiSYBF2fhBZwEyuCeK/w	tableproxyver.h
+7ixl1DH2tCPXzJjGxSNf3w	xsum0.out
+
+-----BEGIN PGP SIGNATURE-----
+Version: 2.6.2
+
+iQCVAwUBT4E6DOFlxDEfrjtlAQETqwP9EWmXgNtj54k2izIPKtzKks8KK9iikVD9
+ysXX0prumx355k7KI2bUiwJbdiY2v+lSU2O2ujl129tLMulzvNYQnPkvQ3H8ITSb
+du1Vp99yW0xOXV66ft5Q6Ssk1kpf2Y1Lpado2sE2XLjF0bPQpKPPGRStcPBxJtD6
+IvEp0uBuho0=
+=jxIY
+-----END PGP SIGNATURE-----

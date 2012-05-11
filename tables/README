@@ -1,0 +1,117 @@
+Copyright (C) 2000 Lucent Technologies.  All Rights Reserved.
+
+File TABLES.RME describes table declarations, the "read table"
+and "write table" commands, and table handlers; it applies
+to AMPL versions >= 20000209.  Student versions of AMPL that
+work with tables are available in the system-dependent
+subdirectories of http://www.netlib.org/ampl/student and its
+mirrors (such as http://netlib.sandia.gov/ampl/student ).
+For more details, including examples, see
+
+	http://www.ampl.com/ampl/NEW/tables.html
+
+File ampltabl.dll provides a "standard" ODBC table handler for use
+under Microsoft Windows (W9x, NT, XP, etc.).  It works with Microsoft
+Access, Microsoft Excel, and other "databases" that are accessible via
+ODBC.  (Source for ampltabl.dll appears in file amplodbc.c.  Simple
+changes to this file may permit creating ODBC table handlers on other
+systems, but amplodbc.c is not the best place to start learning about
+writing table handlers.  Files simpbit.c and fullbit.c, studied as
+indicated below, should be better starting places.)
+
+The sample makefiles assume that ../solvers is your "solvers"
+directory, which contains some necessary header files.
+
+Table handlers are provided by the imported-function mechanism, which
+is discussed briefly in the section on "User-defined functions" in
+"Hooking Your Solver to AMPL", to which there are pointers in
+
+	http://www.ampl.com/ampl/hooking.html
+
+See also the platform-specific information in directory
+/netlib/ampl/solvers/funclink, e.g.,
+
+	http://www.netlib.org/ampl/solvers/funclink
+
+While testing your handlers, you may find it helpful to use AMPL's
+commands for loading and unloading shared libraries and removing
+files, which are summarized below.
+
+When it starts execution, AMPL tries to import functions and table
+handlers from shared libraries named ampltabl.dll and amplfunc.dll.
+The former is sought in one of the platform-specific standard places,
+whereas the latter is sought in the invocation directory, i.e., the
+directory that AMPL finds current when it starts to run.  The idea is
+that one can install a "standard" ampltabl.dll that is loaded no
+matter what the invocation directory, whereas the amplfunc.dll (if
+any) that is loaded depends on the invocation directory.  Table
+handlers can also come from libraries loaded explicitly with the
+"load" and "reload" commands.
+
+Two "instructive" examples of table handlers are provided here:
+
+1. simpbit.c is source for simpbit.dll, a simplified form of
+AMPL's builtin "bit" table handlers.
+
+2. fullbit.c is source for fullbit.dll, which is equivalent to
+AMPL's builtin "bit" and "tab" handlers.
+
+To make it easier to show that simpbit.dll is working, it reads and
+writes .bit and .abt files (i.e., files whose names end in .bit or
+.abt).  Both have the same format.
+
+The simplified table reader in simpbit.c does not permit column names
+to be reordered, requires the table being read to have exactly the
+number of columns specified in the AMPL table declaration, requires
+the columns to be in the same order as in the declaration, and only
+deals with the native binary format.  The reader in fullbit.c, on the
+other hand, permits "extra" columns and permits the columns to be
+permuted.  It also swaps bytes if necessary, so it can deal with both
+little-endian and big-endian IEEE arithmetic numbers (on machines that
+use IEEE arithmetic, i.e., most most machines these days).
+
+The simplified table writer in simpbit.c makes no attempt to preserve
+any rows or columns it is not writing.  The more complete writers in
+fullbit.c do preserve rows and columns that they are not writing.
+They do this by reading the old table and adjusting their TableInfo
+structure.  Note how they use TI->Lookup while reading the old table.
+
+For starters, it may be helpful to look at the .tab table writer in
+fullbit.c, i.e., function Write_ampl_tab, since it is the simplest
+example of a table writer.  Reading .tab files is rather more
+elaborate, which is why .tab files are not included in simpbit.c.
+
+Files with names ending in ".x" are example AMPL scripts that use
+tables.  See the initial comments in the *.x files for details.
+
+-----------------------------------------------
+Command summary (load, unload, reload, remove):
+-----------------------------------------------
+
+Commands
+	load	[libname [, libname ...] ];
+	unload	[libname [, libname ...] ];
+	reload	[libname [, libname ...] ];
+load, unload, or reload shared libraries (from which functions and
+table handlers are imported).  When at least one libname is mentioned
+in the load and unload commands, $AMPLFUNC is modified to reflect the
+full pathnames of the currently loaded libraries.  The reload command
+first unloads its arguments, then loads them.  This can change the
+order of loaded libraries and affect the visibility of imported
+functions: the first name wins.  With no libname arguments, "load;"
+loads all the libraries currently in $AMPLFUNC; "unload;" unloads
+all currently loaded libraries, and "reload;" reloads them (which
+might be useful if some have been recompiled).
+  New and adjusted system sets:
+	_LIB = currently loaded libraries;
+	_AVAILFUNCS = currently available imported functions
+			(which still must be declared before use)
+	_AVAILFUNC2 = (available function, library) pairs
+			(permits seeing which library is currently
+			supplying an available imported function)
+	_SFUNCS = imported functions that "solve;" currently uses.
+  Command
+	remove [filename [, filename ...]];
+closes and removes the files mentioned.  "remove;" does nothing.
+Exception: "remove ($log_file);" just truncates (removes and
+then reopens) $log_file, much as "close ($log_file);" does.

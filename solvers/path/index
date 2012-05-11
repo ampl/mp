@@ -1,0 +1,16 @@
+file	ampl/solvers/path/README
+
+file	ampl/solvers/path/changes
+
+file	ampl/solvers/path/makefile.u
+
+file	ampl/solvers/path/makefile.vc
+
+file	ampl/solvers/path/path.c
+for	PATH 4.6
+
+file	ampl/solvers/path/path44.c
+for	PATH 4.4
+
+file	ampl/solvers/path/xsum0.out
+for	checksums

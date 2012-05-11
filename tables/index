@@ -1,0 +1,43 @@
+file	ampl/tables/README
+
+file	ampl/tables/TABLES.RME
+
+file	ampl/tables/amplodbc.c
+
+file	ampl/tables/ampltabl.def
+
+file	ampl/tables/ampltabl.dll.gz
+for	"standard" ODBC table handler for Microsoft Windows (W9x, NT)
+,	available only by ftp or http (as ampltabl.dll.gz)
+
+file	ampl/tables/calories.tab
+
+file	ampl/tables/changes
+
+file	ampl/tables/diet.mod
+
+file	ampl/tables/diet2a.dat
+
+file	ampl/tables/diettab.x
+
+file	ampl/tables/diettabw.x
+
+file	ampl/tables/dietwrit.x
+
+file	ampl/tables/foods.tab
+
+file	ampl/tables/fullbit.c
+
+file	ampl/tables/makefile.linux
+
+file	ampl/tables/makefile.vc
+
+file	ampl/tables/nutrients.tab
+
+file	ampl/tables/simpbit.c
+
+file	ampl/tables/tableproxy.c
+
+file	ampl/tables/tableproxyver.h
+
+file	ampl/tables/xsum0.out

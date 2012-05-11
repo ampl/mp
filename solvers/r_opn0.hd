@@ -1,0 +1,17 @@
+#define f_OPPLUS 0
+#define f_OPMINUS 1
+#define f_OPMULT 2
+#define f_OPDIV 3
+#define f_OPPOW 5
+#define f_OPUMINUS 16
+#define f_OPSUMLIST 54
+#define f_OPPLTERM 64
+#define f_OPIFSYM 65
+#define f_OP1POW 75
+#define f_OP2POW 76
+#define f_OPCPOW 77
+#define f_OPFUNCALL 78
+#define f_OPNUM 79
+#define f_OPHOL 80
+#define f_OPVARVAL 81
+#define N_OPS 82

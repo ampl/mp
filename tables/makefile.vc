@@ -1,0 +1,55 @@
+## Makefile for Microsoft Visual C++
+
+## ampltabl.dll is for table handlers to be imported
+## automatically at the start of AMPL's execution.
+## It can also provide user-defined functions.
+## Table handlers can also appear in shared libraries
+## (DLLs) read with AMPL's "load" and "reload" commands.
+
+# $S = ampl/solvers directory
+S = ../solvers
+CC = cl
+CFLAGS = -I$S -Ot1
+# For DEC Alpha processors, use
+# CFLAGS = -QAieee -I$S -Ot1
+
+.c.obj:
+	$(CC) -c $(CFLAGS) $*.c
+
+all: simpbit.dll fullbit.dll
+
+## ampltabl.def is set to make "ampltabl.dll"; ignore
+## warnings about its "/OUT:AMPLTABL.dll directive".
+
+simpbit.dll: simpbit.obj ampltabl.def
+	link -dll -def:ampltabl.def -out:simpbit.dll simpbit.obj
+	del simpbit.exp
+	del simpbit.lib
+
+fullbit.dll: fullbit.obj ampltabl.def
+	link -dll -def:ampltabl.def -out:fullbit.dll fullbit.obj
+	del fullbit.exp
+	del fullbit.lib
+
+ampltabl.dll: tableproxy.c amplodbc.c ampltabl.def
+	$(CC) -c $(CFLAGS) -I$S -DOTHER_FUNCADD=funcaddodbc_ASL tableproxy.c
+	$(CC) -c $(CFLAGS) -Dfuncadd_ASL=funcaddodbc_ASL amplodbc.c
+	link -dll -def:ampltabl.def -out:ampltabl.dll tableproxy.obj amplodbc.obj odbc32.lib advapi32.lib user32.lib wsock32.lib
+	del ampltabl.exp
+	del ampltabl.lib
+	del amplodbc.obj
+	del tableproxy.obj
+
+printf_tp.obj: $S/printf.c
+	$(CC) -c $(CFLAGS) -I$S -Foprintf_tp.obj $S/printf.c
+
+tableproxy32.obj: tableproxy.c tableproxyver.h
+	$(CC) -c $(CFLAGS) -I$S -Fotableproxy32.obj -DSTAND_ALONE -DNO_sockaddr_in6 -Dsoclen_t=int tableproxy.c
+
+tableproxy32.exe: tableproxy32.obj printf_tp.obj
+	$(CC) $(CFLAGS) -I$S -Fetableproxy32.exe tableproxy32.obj printf_tp.obj commode.obj $(LMT) $S/amplsolv.lib wsock32.lib
+	del tableproxy32.exp
+	del tableproxy32.lib
+
+clean:
+	deltree /Y *.obj *.dll

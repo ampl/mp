@@ -1,0 +1,83 @@
+Wed Oct 30 08:51:43 EST 2002
+amplodbc.c, ampltabl.dll, TABLES.RME:  extend the "standard" ODBC
+table handler to recognize new optional string maxlen=nnn (just before
+the optional 'verbose') among the Strings to specify the maximum
+length of strings (symbolic parameters) read from the table.  The
+default is 480, which will probably suffice for most purposes.
+Strings longer than maxlen will be truncated to maxlen characters when
+the table is read.
+
+Tue Aug  5 22:51:54 EDT 2003
+amplodbc.c, ampltabl.dll:  have "write table" preserve old columns
+of an INOUT table even when the table is initially empty, and for
+columns of type text, retain the text type even when the column
+ends up having exlusively numeric values.
+
+Tue Dec  6 09:59:00 EST 2005
+amplodbc.c: minor tweaks for portability to 64-bit MS Windows.
+
+Tue Jan  1 17:57:59 MST 2008
+amplodbc.c:  tweak for MS SQL Server 2005:  for numeric values,
+successively try SQL_DOUBLE, SQL_FLOAT, SQL_REAL, and SQL_NUMERIC
+rather than SQL_DOUBLE, SQL_NUMERIC, and SQL_REAL.
+
+Wed Jan  2 23:25:35 MST 2008
+amplodbc.c:  adjust the date shown when "version" is specified.
+(Missed updating this lately when making changes.)
+
+Thu Sep 23 13:31:28 MDT 2010
+amplodbc.c:  attempt to pass a plausible window handle to
+SQLDriverConnect().  If need be, a handle can be specified by setting
+$sw_HWND to a hexadecimal value (without a leading 0x) in the
+environment passed to AMPL.  With some incomplete or incorrect
+DRIVER=...  settings, this will cause a dialogue box to appear
+in which corrections can be attempted.  Setting $sw_HWND to 0
+disables this new behavior.
+  Ignore case for "DRIVER=", "SQL=", and "DSN=" (e.g., treat "Driver="
+and "driver=" the same as "DRIVER=").
+
+Tue Nov  2 17:26:08 MDT 2010
+amplodbc.c:  fix a bug that led to a seldom-seen error message of
+the form "ColAlloc: cols[5].sinv already allocated."
+
+20111024
+  amplodbc.c: Add optional strings 'nsmix=...' and 'write=append' or
+'write=drop' to the possibilities for strings in table declarations
+for tables handled by the ODBC table handler (usually called
+ampltabl.dll), and allow 'verbose=n', with 0 <= n <= 3, as
+alternatives to 'verbose'.  For details, in an AMPL session with
+the updated ampltabl.dll loaded, issue the command
+	print _handler_desc['odbc'];
+
+20120306
+  amplodbc.c:  Fix a glitch with the default 'nsmix' that caused
+some numeric strings, such as 100000 (but not 10000) to be treated
+as string rather than numeric values.  Fix a bug in parsing
+"write=drop" or "write=append" that sometimes resulted in an erroneous
+error message.
+  fullbit.c, simpbit.c: allow optional strings 'lib-bit' or 'simple-bit'.
+  Add source files tableproxy.c and tableproxyver.h; add rules involving
+them to makefile.linux and makefile.vc; omit makefile.sgi.
+See http://www.ampl.com/NEW/TABLEPROXY/ .
+
+20120315
+  amplodbc.c:  Fix a glitch in the error message for missing columns:
+a buffer was too small, leading to a possible fault with tables having
+many columns.
+   There appears to be a bug in some versions of Microsoft's ODBC
+processing for Excel that causes too few columns to be reported for
+tables having more than 255 columns.  This may only be an issue with
+*.xlsx files, as MS Access and Excel limit (most or all?) other
+kinds of files they produce to at most 255 columns.
+
+20120402
+ tableproxy.c:  fix faults in tableproxy*.exe in processing some error
+messages and recycling string buffers.
+
+20120405
+ tableproxy.c:  when a shared-library name (such as ampltabl.dll)
+does not contain a slash (or, for MS Windows, start with a drive
+letter), have tableproxy*.exe look in $ampl_libpath (if set) for the
+library.  Note that AMPL versions starting with 20120404 export
+$ampl_libpath.  When $ampl_libpath is not set, behave as though
+$ampl_libpath were set to the current directory.
