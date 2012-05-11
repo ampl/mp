@@ -1,0 +1,458 @@
+AMPL's "table" facility provides a way to obtain data from and return
+data to an external medium, such as a database, file, or spreadsheet.
+Tables are introduced with a table declaration, read into the AMPL
+session with a "read table" command, and written to an external medium
+with a "write table" command.  Tables are available in AMPL versions
+>= 20000209.
+
+First consider table declarations.  In the following explanations of
+syntax, \[ and \] denote actual left and right brackets, and [...]
+otherwise denotes an optional item.  Table declarations have the form
+
+	table table_name [indexing] [inout] Strings :
+		[key_set direction] keycols [inout] [in set] [,]
+		colgroup_1 ,
+		colgroup_2 ,
+		...
+		colgroup_n [,]
+		;
+
+in which keycols has the form
+
+	\[ col_1, col_2, ... col_n \]
+
+(with col_i explained below) and each colgroup has one of the forms
+
+	pvname [~ tname] [inout]
+	indexing pvname [~ tname] [OUT]
+	indexing ( pvname_1 [~ tname_1], pvname_2 [~ tname_2] [OUT], ... )
+	indexing < colg_1 [, colg_2, ...] >
+
+where colg_i has any of the first three forms above; in the last form,
+each iteration of the indexing adds columns, whereas in the third
+form, the indexing contributes elements to the columns on which it
+operates.  A table declaration introduces table table_name and
+associates the pvnames and optionally key_set with it; the Strings
+specify the external representation associated with the table.  There
+are zero or more Strings, optionally separated by commas.  Each String
+is either a quoted string or a string-valued expression, enclosed in
+parentheses; such expressions are evaluated just before the table is
+read or written.  In general, the number of Strings and their
+interpretation are determined by the table handlers, which may be
+builtin, supplied by an AMPL vendor (e.g., in ampltabl.dll), or
+supplied by the user in a shared library, such as amplfunc.dll, via
+the imported function mechanism.
+
+Both ampltabl.dll and amplfunc.dll are optional shared libraries:
+AMPL tries to import table handlers and other functions from them if
+they are present.  This works under MS Windows NT and W9x systems and
+current Unix systems, but not on some older systems, such as MS-DOS
+and AIX prior to version 4.3.
+
+For debugging and demonstration purposes, a single String that ends in
+.tab is recognized as naming a ".tab" file, an ASCII file whose first
+line is a list of column names and whose subsequent lines are rows in
+the table.  Giving no Strings is equivalent to giving one string of
+the form "table_name.tab" (constructed by appending ".tab" to the
+table name).  Similarly, a single String that ends in .bit is
+recognized as naming a ".bit" file, a binary file logically equivalent
+to a ".tab" file, but that has a different layout and can be read and
+written much more quickly, since no conversions are involved.  The
+handlers for ".tab" and ".bit" files are builtin, but are considered
+last, so they may be overridden handlers in ampltabl.dll or
+amplfunc.dll.
+
+Each col_i has one of the forms
+
+	tcol_i
+	d_i ~ tcol_i
+
+in which tcol_i is the name of a column in table_name's external
+representation, and d_i is a dummy index that may appear in subscripts
+of subsequent pvnames.  If tcol_i has the form of a valid dummy index,
+then the first form is equivalent to "tcol_i ~ tcol_i"; otherwise (if
+the first form is used and tcol_i does not have the form of a valid
+dummy name) there is no dummy index for index i.
+
+The forms permitted for a pvname depend on whether the table is being
+read or written (general expressions are allowed for writing), and are
+explained in more detail below.  The optional tname is the name of the
+corresponding column in the external representation; if no tname is
+present, then pvname is itself the name of the column.  If present,
+tname may be a quoted or unquoted string or expression in parentheses;
+in the former cases, it must be quoted if it contains nonalphanumeric
+characters.  If a particular pvname is not subscripted, it is treated
+as pvname \[d_1, d_2, ..., d_n \], where d_i is a dummy for col_i
+(whether given explicitly or not).  For a table being read, subscripts
+usually involve col_i values but must not involve pvname values.
+
+[inout] is optionally one of the keywords IN, OUT, or INOUT.  These
+indicate whether the corresponding entity is to be read from (IN),
+written to (OUT), or both read from and written to (INOUT) the table;
+if absent, the initial [inout] is taken to be INOUT; it gives the
+default for the whole table, which may be overridden by subsequent
+[inout] keywords for individual entities.
+
+The optional key_set is for the set of row indices of the table, i.e.,
+the [col_1, col_2, ..., col_n] tuples.  If present, key_set must have
+one of the forms
+
+	set_name
+	set_name \[ subscript_expressions \]
+	indexing
+
+where "indexing" has the form of an indexing set, so that it starts
+with a left brace and ends with a right brace; key_set must be
+followed by one of three possible direction arrows:
+
+	<-
+	->
+	<->
+
+which correspond to IN, OUT, and INOUT, respectively.  When key_set is
+an indexing, for each col_i with no explicit d_i, if key_set specifies
+a corresponding dummy, that dummy is used as d_i.  The "show table"
+command reflects the resulting transformation.
+
+For n = 1, ": \[Name\] inout" is taken to mean ": Name dir \[Name\]",
+where inout is explicitly one of IN, OUT, or INOUT and dir corresponds
+with inout.  Similarly, ": \[i ~ Name\] inout" is taken to mean
+": Name dir \[i ~ Name\]".  Thus, for example, the last line of
+
+	model diet.mod;
+	table foods IN 'foods.tab':
+		FOOD -> [FOOD] cost, f_min, f_max;
+
+is equivalent to
+
+		[FOOD] IN, cost, f_min, f_max;
+
+
+The command
+
+	read table table_name;
+
+causes the table to be read (or re-read) when the command is executed,
+defining the pvnames in table_name (and retaining the values of
+entities whose subscripts do not appear in the table).  If table_name
+is indexed,
+
+	read table table_name;
+
+and
+
+	read table {dummies in indexing} table_name[dummies];
+
+work alike.  If table_name specifies a key_set of direction <- or <->
+for the set of row labels \[col_1, ..., col_n\] in the table, then
+key_set must be the possibly subscripted name of a declared set, and
+the value of this set is completely specified by read table.  Each IN
+or INOUT pvname in a table that is read must be the optionally
+subscripted name of a previously declared parameter, variable, or
+constraint (in which case it stands for the constraint's dual
+variable), or a declared suffix appended to an optionally subscripted
+variable or constraint name.  In this regard, .sstatus and .relax
+count as declared suffixes.  Note that pvnames in "indexing (...)"
+colgroups must have direction OUT (which is assumed if not explicitly
+given), so they do not participate in read table commands.  If the
+optional "in set" phrase is present, the read table command quietly
+ignores any row whose key-column tuple is not in the set.
+
+Executing
+
+	write table table_name;
+
+causes the table OUT and INOUT entities of the table to be written (or
+rewritten) when the command is executed.  If a key_set of direction ->
+or <-> was specified in the table declaration, the set's current value
+determines which subscripts are written.  Otherwise all currently
+defined subscripts are written, as with the display command.  The
+forms permitted for OUT pvnames include those for IN pvnames plus any
+expression (other than a set-valued expression) that can be displayed
+by a display command.
+
+When a table is written, questions arise about what to do with "extra"
+rows and columns in the external representation that do not correspond
+to AMPL's version of the table.  The answers are up to the table
+handler, which may use the Strings in the table's declaration and the
+direction (<-, ->, or <->) of the optional key_set to determine the
+disposition of any extra and rows and columns, and of rows in AMPL's
+version of the table that do not appear in the external
+representation.
+
+More on the string arguments:  The most important function of the
+strings following table_name would be to tell the database handler how
+to retrieve or create the relational table that is referenced in the
+rest of the statement.  Thus they would provide such information as
+the name of a database file, the name of a relational table within the
+file, or SQL statement whose result is a relational table.  Any other
+information useful to a database handler could be provided for, of
+course.  This information is provided in arbitrary strings, rather
+than some more specific AMPL syntax, because it is likely to vary a
+great deal from one situation to the next.
+
+For the database to be read successfully, any tuple [col_1, col_2, ...
+col_n] would have to appear at most once in the relational table --
+that is, col_1, col_2, etc.  would have to correspond to "key" fields
+of the table.  Also, unless explicitly subscripted, the IN and INOUT
+pvnames would have to have arity n, and would have to be indexed over
+a set that contains all the tuples defined by the key fields.  This
+implies that, for example, if two params are indexed as p {A,B,C} and
+q {B,C,A} and are stored in the same relational table, at least one of
+them must bear an explicit subscript when it appears in a table
+declaration.
+
+New builtin set _HANDLERS contains the names of the available table
+handlers.  New builtin symbolic parameters _handler_lib{_HANDLERS} and
+_handler_desc{_HANDLERS} provide auxiliary information about each
+handler.  Specifically, for each h in _HANDLERS, _handler_lib[h] tells
+which shared library provided handler h, and _handler_desc[h] gives a
+description of the Strings the handler accepts and perhaps other usage
+details.  For builtin handlers, _handler_lib[h] = "<builtin>".
+
+ODBC:  on Microsoft systems that have ODBC installed, a sample
+ampltabl.dll provides a table handler that recognizes Strings in the
+form
+
+ 'ODBC', connection [table_name] ['time=...'] ['maxlen=nnn'] ['verbose']
+
+where the first String is 'ODBC' and the second provides connection
+details, as discussed under "Connection String Details" below.  The
+optional third String gives the name that the table has in the
+database; if omitted, the name in the database is assumed to be that
+of the AMPL table.  For pure IN tables, table_name can also be a
+string that begins "SQL=", after which a suitable SQL statement, such
+as a SELECT statement, appears.  In the optional 'time=...'  string,
+the ...  is a comma- or space-separated list of database column names
+that should be recorded in the database as timestamp data when the
+columns in question are created.  For existing database columns, the
+ODBC handler determines from the database whether to treat the column
+as timestamp data.  In the AMPL session, a timestamp value is a
+decimal number of the form YYYYMMDDhhmmss, with 01 <= MM <= 12,
+01 <= DD <= 31, 00 <= hh < 24, 00 <= mm < 60, and 00 <= ss < 60.
+(The column names in the ...  may contain quoted white space and may
+even contain the quote character if it is doubled, as in
+'time="a b c",def,"gh""ij"'.)  The optional 'verbose' string causes some
+diagnostic printing, such as of the DSN= string that ODBC reports using.
+The diagnostic printing starts with a line that tells the version of
+the ODBC table handler, a decimal string in the form YYYYMMDD.  When
+the version is >= 20021028, the optional 'maxlen=nnn' string may appear.
+It gives a bound on the length of strings that may b read from a table.
+(Strings longer than maxlen will simply be truncated to maxlen
+characters.  This is necessary because ODBC apparently cannot report
+the length of the longest string in a result set.)  The default value
+of maxlen is 480.
+
+-------------------------
+Connection String Details
+-------------------------
+
+The connection String can be one of the following:
+
+1.  the name of the database file (such as 'mydata.mdb' or 'mydata.xls'
+    -- the extension indicates the kind of database); or
+
+2.  an ODBC connection string, starting with "DSN=" or "DRIVER="; or
+
+3.  a name shown in the "ODBC Data Source Administrator" window that is
+    available in the control panel under a name mentioning "ODBC",
+    such as "ODBC", "ODBC Data Sources", or "ODBC Data Sources (32bit)"
+    -- the exact name seems to be system-dependent; in this case, if a
+    database file has been associated with the name (via the "Configure"
+    button in the "ODBC Data Source Administrator" window), then
+    this database file is used; or
+
+4.  the name of a ".dsn" file (filename.dsn), which is treated as a file
+    written with the help of the "File DSN" tab in the "ODBC Data Source
+    Administrator" window.
+
+
+----------------------
+IMPLEMENTATION DETAILS
+----------------------
+
+To provide table handlers, one prepares a shared library that
+defines function
+
+	void funcadd(AmplExports *ae)
+
+which calls add_table_handler(...) once for each handler.  An AMPL
+vendor can also statically link an analogous
+
+	void func0add(AmplExports *ae)
+
+with the AMPL binaries it sells to provide "builtin" table handlers
+and may also supply custom "builtin" functions and decoding routines
+for encrypted models and data by making suitable calls in its
+func0add().
+
+Relevant types include
+
+	typedef struct DbCol {
+		double	*dval;
+		char	**sval;
+		} DbCol;
+
+	typedef struct TableInfo TableInfo;
+
+	struct TableInfo {
+		int (*AddRows)(TableInfo *TI, DbCol *cols, long nrows);
+		char *tname;	/* name of this table */
+		char **strings;
+		char **colnames;
+		DbCol *cols;
+		char *Missing;
+		char *Errmsg;
+		void *Vinfo;
+		struct TMInfo *TMI;
+		int nstrings;
+		int arity;
+		int ncols;
+		int flags;
+		long nrows;
+		void *Private;
+		int (*Lookup)(double *dv, char **sv, TableInfo *TI);
+		long (*AdjustMaxrows) ANSI((TableInfo*, long new_maxrows));
+		void *(*ColAlloc) ANSI((TableInfo*, int ncol, int sval));
+		long maxrows;
+		};
+
+	void add_table_handler(
+		int (*DbRead) (AmplExports *ae, TableInfo *TI),
+		int (*DbWrite)(AmplExports *ae, TableInfo *TI),
+		char *handler_info,
+		int flags,
+		void *Vinfo
+		);
+
+	enum {	/* return values from (*DbRead)(...) */
+		DB_Done = 0,	/* Table read or written. */
+		DB_Refuse = 1,	/* Refuse to handle this table. */
+		DB_Error = 2	/* Error reading or writing table. */
+		};
+
+	enum {	/* bits in flags field of TableInfo */
+		DBTI_flags_IN = 1,	/* table has IN  or INOUT entities */
+		DBTI_flags_OUT = 2,	/* table has OUT or INOUT entities */
+		DBTI_flags_INSET = 4	/* table has "in set" phrase: */
+					/* DbRead could omit rows for */
+					/* which Lookup(...) == -1; AMPL */
+					/* will ignore such rows if DbRead */
+					/* offers them. */
+		};
+
+Other bits in flags are for possible future use.
+
+The handler_info passed to add_table_handler consists of both a
+handler name (on the first line of handler_info) and a short
+description (following the first newline) that AMPL stores in
+_handler_desc.  If the handler name is the same as that of a
+previously loaded handler, AMPL complains and rejects the new handler.
+Otherwise, it adds the handler name to the system set _HANDLERS and
+adds corresponding entries to _handler_desc and _handler_lib (which
+records the library from which the handler was loaded).
+
+Temporary memory of length len (as though from malloc(len)) is
+available to DbRead and DbWrite from TempMem(TI->TMI, len), i.e.,
+(*ae->Tempmem)(TI->TMI, len) (see the #define of TempMem in
+funcadd.h).  Such memory is freed automatically after DbRead and
+DbWrite return (and after values read by DbRead have been saved, so
+that memory allocated by TempMem can be used for these values).
+Though DbRead and DbWrite could call malloc(), realloc(), and free(),
+use of TempMem(TI->TMI, len) is preferred to avoid fragmenting memory.
+
+For possible private use by DbRead and DbWRite, TI->Vinfo has the
+value given in the corresponding call on add_table_handler.
+
+Array colnames provides the names of the columns to be read by DbRead
+or written by DbWrite:
+
+	TI->colnames[i] = tcol_i, 0 <= i < TI->arity
+and
+	TI->colnames[i+TI->arity] =	tname_i (if present)
+					or pvname_i (otherwise),
+					0 <= i < TI->ncols.
+
+To read a table, AMPL calls the non-null DbRead routines in turn until
+one provides data by making zero or more calls on (*TI->AddRows)(...)
+and returning DB_Done, or returns DB_Error (indicating an error -- see
+the discussion of DB_Error below).  DbRead routines can refuse to
+handle the current table (perhaps after inspecting its strings) by
+returning DB_Refuse; this causes AMPL to try the next handler.
+
+Each (*TI->AddRows)(TI, cols, nrows) call provides nrows of data as a
+table whose columns are cols[i] for 0 <= i < TI->arity + TI->ncols.
+The first TI->arity columns are for the col_1, ..., col_n values in
+the description above of the table declaration, i.e., n = TI->arity.
+The remaining TI->ncols columns are for the pvname_i values.  Each
+column may contain purely numeric values, purely symbolic values, or
+both.  If colj = &cols[j], then column j contains numeric values if
+colj->dval is not null and contains symbolic values if colj->sval is
+not null.  If both colj->dval and colj->sval are non-null, then the
+relevant value in row i is colj->sval[i] if this value is not null and
+is not TI->Missing; otherwise colj->dval[i] is the relevant value.  If
+colj->sval[j] == TI->Missing, the entity is not present; this is only
+permitted in the data columns (cols[j] for j >= TI->arity).  The
+TI->Missing passed to the DbRead routine has a magic value that does
+not necessarily point to a valid character string.
+
+If all goes well, (*TI->AddRows)(...) returns 0; but if it detects an
+error, it gives a nonzero return, in which case DbRead should likewise
+return DB_Error.
+
+TI->cols may be used as the "cols" (second) argument to (*TI->AddRows).
+When AMPL calls DbRead, the dval and sval arrays in each component of
+TI->cols have length 1.  For calls on (*TI->AddRows) with nrows > 1,
+you must suitably adjust the dval and sval fields of each component
+of TI->cols, either making them NULL or assigning them arrays
+(allocated by TempMem) of length >= nrows.
+
+To write a table after reading it, AMPL calls the corresponding
+DbWrite routine -- the one provided with the DbRead routine that read
+the table -- unless DbWrite is null.
+
+To write a table that has not been read (i.e., all of which is OUT),
+or that was read by a DbRead routine whose corresponding DbWrite is
+null, AMPL calls the non-null DbWrite routines in turn until one
+returns DB_Done (indicating a successful write) or DB_Error
+(indicating an error).  As with DbRead, DbWrite can refuse to write a
+table by returning DB_Refuse, which causes AMPL to try the next
+handler.
+
+DbWrite is given the entire table to be written; TI->cols has the same
+interpretation as for DbRead.  The table has TI->nrows rows.  The
+external representation may contain other columns and may order the
+columns as it sees fit.  TI->colnames connects the columns seen by
+DbRead or DbWrite with the external representation.  Missing values
+are possible; they are indicated with TI->Missing, as in reading
+tables.
+
+When (flags & DBTI_flags_IN) is nonzero and the external table already
+exists, DbWrite may attempt to retain rows and columns not currently
+in its TableInfo argument TI.  Functions (*TI->Lookup),
+(*TI->AdjustMaxrows), and (*TI->ColAlloc) can be useful in this
+regard:  (*TI->Lookup)(dv,sv,TI) returns n >= 0 if its arguments dv
+and sv describe a subscript currently in TI at subscript n, i.e., for
+0 <= i < TI->arity, if sv and sv[i] are not null, then
+sv[i] = TI->cols[n].sval[i]; otherwise dv[i] = TI->cols[n].dval[i].
+To add new columns, adjust TI->ncols and assign new values to
+TI->colnames and TI->cols (with memory obtained from (*ae->Tempmem)).
+Do not directly allocate new TI->cols[n].dval or TI->cols[n].sval;
+rather, call (*TI->ColAlloc)(TI,n,0) to allocate TI->cols[n].dval and
+(*TI->ColAlloc)(TI,n,1) to allocate TI->cols[n].sval; (*TI->ColAlloc)
+returns the value it assigns.  To add a new row,
+
+	if (TI->nrows >= TI->maxrows)
+		(*TI->AdjustMaxrows)(TI, 2*TI->maxrows);
+	n = TI->nrows++;
+
+and assign appropriate values to TI->cols[i].dval[n] or
+TI->cols[i]->sval[n], 0 <= i < TI->ncols.  TI->AdjustMaxrows increases
+the lengths of the arrays in TI->cols so they are at least as long as
+its second argument (and it returns the TI->maxrows value it assigns).
+
+ERRORS:  Prior to returning DB_Error, DbRead or DbWrite may set
+TI->Errmsg to a string describing the error.  The string may be
+allocated in TempMem, but this is not required.  AMPL may also use the
+handler name provided in argument handler_info to add_table_handler in
+constructing the error message it gives.

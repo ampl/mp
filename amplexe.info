@@ -1,0 +1,47 @@
+Ampl.exe.gz is a compressed MSDOS extended-memory Student Edition
+version of AMPL.  It is a "current" (frequently updated) version
+of the AMPL.EXE that accompanies the AMPL book.  As such, it
+is restricted to 300 variables and 300 constraints.  See ampl.info
+for information about other platforms and unrestricted versions.
+
+Ampl.exe requires an Intel 80386 or equivalent (e.g., i486).
+It was compiled by Symantec C/C++ version 6. It uses the DOSX 386
+DOS Extender, which tries to work with whatever extended-memory
+driver your system's CONFIG.SYS file may provide.  For example,
+Symantec reports that DOSX works with Microsoft's HIMEM.SYS,
+RAMDRIVE.SYS, SMARTDRV.SYS, with Microsoft Windows Versions 3.0
+and 3.1 in Standard, Real, and Enhanced 386 modes, with Qualitas
+386^MAX Version 5.0 and later (but not earlier), and with IBM's
+VDISK.SYS and Quarterdeck's QEMM memory manager.
+
+Watampl.exe.gz is similar to ampl.exe.gz, but was compiled by
+WATCOM C/C++32 version 10.6 (which works around the Pentium
+divide bug).  It requires a helper program, DOS4GW.EXE
+(provided by WATCOM for use with programs compiled by WATCOM
+and available in compressed form as dos4gw.exe.gz), that provides
+extended-memory services.  We solicit feedback on the relative
+merits of AMPL.EXE and WATAMPL.EXE.  Both require at least a 386,
+and neither will run on all all configurations of such PCs.  This
+is true of every compiler we have tried; such is the dreadful state
+of computing under MS-DOS and Microsoft Windows.  Please send
+feedback to dmg@ampl.com (David M. Gay).
+
+Compression of .gz files is by gzip, source for which is available by
+ftp in prep.ai.mit.edu:/pub/gnu.  As a convenience, gzip binaries for
+several systems (with names of the form system.executable) and
+source for the gzip used to compress the *.gz files is available
+for ftp from netlib directory gnu/gzip.  In particular, if you copy
+gnu/gzip/dos.executable to an MSDOS machine (in binary mode), rename
+it gzip.exe, and rename ampl.exe.gz ampl.exz, then on the MSDOS
+machine you can recover ampl.exe by executing "gzip -dN ampl.exz".
+"gzip -d" also uncompresses .Z files.
+
+To use WATAMPL.EXE in a DOS window under MS Windows on a machine
+that lacks a math coprocessor, it is necessary to have WEMU387.386
+on the machine, say in the Windows directory (normally C:\WINDOWS),
+and to add a line of the form
+	device=C:\WINDOWS\WEMU387.386
+to the SYSTEM.INI file in the Windows directory (normally
+C:\WINDOWS\SYSTEM.INI).  WEMU387.386 is another program provided by
+WATCOM for use with programs compiled by WATCOM compilers;
+wemu387.386.gz is the result of using gzip to compress WEMU387.386.

@@ -1,0 +1,3 @@
+20120507
+  Add a test to explicitly enforce an implicit limit of 199 on the
+lengths of names.

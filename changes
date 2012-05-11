@@ -1,0 +1,2956 @@
+*** AMPL change log and recent bug fixes ***
+
+Below is a summary of AMPL changes from 30 Nov. 1992,
+including a summary of recent bug fixes.  For a much more complete
+list of bug fixes, e obtain /netlib/ampl/fixlog, which is available
+at various URLs, such as
+
+	http://www.ampl.com/netlib/ampl/fixlog
+	http://www.netlib.org/ampl/fixlog
+	http://netlib.sandia.gov/ampl/fixlog.gz
+
+Note that AMPL versions are strings of the form yyyymmdd, giving
+the date (year = yyyy, month = mm, date = dd) of the last change
+affecting the version.  You can determine the version of your
+"ampl" program by issuing the AMPL command
+
+	option version;
+
+or by invoking ampl with the -vv option.  To see the version
+without executing ampl further, use the invocation
+
+	ampl -vvq
+
+An up-to-date summary of AMPL changes and recent bug fixes is available
+by electronic mail: send netlib@netlib.bell-labs.com the E-mail message
+
+	send changes from ampl
+
+Here is a summary of changes and recent bug repairs.  Each block of
+changes is preceded by the version (yyyymmdd) in which the changes
+first appeared.
+
+19921218:
+  Add initial version of "show" command:
+	        "show;" or "show >filename;"
+	lists all model entities.
+	        "show name;" or "show name >filename;"
+	shows name's declaration if it has one, or else
+	lists model entities of the kind indicated by the
+	first letters of name:
+	        ch... ==> checks        c... ==> constraints
+	        f...  ==> functions     o... ==> objectives
+	        p...  ==> parameters    s... ==> sets
+	        v...  ==> variables
+
+
+19930208:
+  Add new option relax_integrality:
+	option relax_integrality 1;
+causes "integer" and "binary" attributes of variables to be ignored
+(in solve and write commands).
+
+19930303:
+  Variable.lb3, .ub3 withdrawn.
+  Add logic and option constraint_drop_tol (default 0) to deal with
+subtle presolve bug apparently caused by roundoff error:  with $presolve
+> 1 and $var_bounds == 1 (the defaults), constraint bounds were very
+occasionally relaxed due to bounds only conveyed for $var_bounds > 1;
+this could increase the size of the feasible region, possibly making the
+problem unbounded.  (Only known example:  test problem MAROS from
+netlib's lp/data.)  The fix involves keeping two sets of constraint
+bounds and switching between them based on $var_bounds.  The constraint
+bounds for $var_bounds == 1 are only relaxed if roundoff poses no danger
+or the deduced bounds on the constraint body are sharper than the
+declared bounds by at least $constraint_drop_tol.  (The default
+$constraint_drop_tol value 0 causes both sets of constraint bounds to be
+the same and gives the same behavior as before this change.)  New
+constraint dot values:  constraint.lbs1, .ubs1, lbs2, .ubs2 = versions
+of .lbs, .ubs corresponding to $var_bounds <= 1 or > 1, respectively.
+Constraint.lbs, .ubs still reflect the bounds sent to the solver.
+  Delete warning about possibly incorrect dual values inferred for
+constraints eliminated by presolve: the inferred dual values are
+now believed to be correct in all cases.
+
+19930315:
+  Adjust presolve to use directed roundings on (some) IEEE-arithmetic
+machines.  This sometimes leads to fewer surprises, such as an
+unbounded objective under default conditions with netlib's "maros
+from lp/data".
+
+19930506:
+  New command-line option -v2 merges stderr with stdout both for
+ampl and for subprocesses (whereas -ve just merges them for ampl).
+  Allow negative precision with %f, with formatting as for the
+print command with $print_round < 0.
+
+19930515:
+  For entities with several subscripts, enforce the rule that literals
+must be quoted in the model.  The first printing of thet AMPL book
+(middle of p. 252) erroneously shows some unquoted literals, which the
+AMPL translator should not have accepted.
+
+19930615:
+  Use stronger deduced variable bounds rather than declared variable
+bounds in deciding whether an integer variable is binary.
+
+19930208): option presolve 0 ignored integrality.
+  Adjust .nl files to convey (in their first 10 lines) counts of
+nonlinear integer variables and of nonlinear variables used in both
+constraints and objectives (nlvb).  When nlvo > nlvc, arrange for
+the first nlvb variables to be the nonlinear variables common to both
+constraints and objectives (and the next nlvc - nlvb to be just in
+constraints).  Adjust tables in "Hooking Your Solver to AMPL" to
+describe the new ordering of nonlinear variables; Postscript for
+this revised report is available by E-mail: ask
+netlib@netlib.bell-labs.com to
+
+	send 93-10 from research/nam
+
+19930805:
+  New option presolve_inteps (default 1e-6) gives tolerance for
+rounding updated bounds on integer variables to integer values
+during presolve:  if x.dlb and x.dub denote the new deduced lower
+and upper bounds on x, then for $presolve_inteps < 1,
+x.dlb :=  ceil(x.dlb - $presolve_inteps)  and
+x.dub := floor(x.dub + $presolve_inteps).  For $presolve_inteps >= 1,
+x.dlb := floor(x.dlb) and x.dub := ceil(x.dub).
+  Adjust presolve complaints about impossible deduced bounds to
+take $presolve_eps into account.
+
+19930914:
+  New dot notation variable.dual applies to defined variables and
+gives the dual value for the defining equality constraint; this
+gives the partial derivative of the Lagrangian function (objective
+minus sum of duals times constraints) with respect to the defined
+variable.  For other variables, variable.dual = 0.
+
+
+19930928:
+---------------
+FLOW OF CONTROL
+---------------
+  Several new commands permit conditional execution of and
+looping over lists of AMPL commands:
+
+	if lexpr then cmd
+	if lexpr then cmd else cmd	# else matches nearest
+					# available if
+	for opt_name indexing cmd	# dummies from indexing
+					# may appear in cmd
+	repeat opt_name opt_while { cmds } opt_while ;
+	break opt_name ;
+	continue opt_name ;
+
+cmd is either a single command (ending with ;) or { cmds } .
+cmds is a sequence of 0 or more commands .
+lexpr is a logical expression.
+opt_name is an optional loop name (which must be an unbound
+before the syntactic start of the loop), which goes out of
+scope after syntactic end of the loop.
+opt_while clauses are optional.  If not null, opt_while
+has the form
+
+	while lexpr
+or
+	until lexpr
+
+If the optional loop name is not specified, break and continue
+apply to the immediately enclosing loop; otherwise they apply
+to the named loop; break terminates the loop, and continue
+causes its next iteration to begin (if permitted by the
+optional initial and final opt_while clauses of a repeat loop,
+or by the indexing of a for loop).
+
+Loops and if-then-else structures are treasured up until syntactically
+complete.  Because else clauses are optional, AMPL must look ahead one
+token to check for their presence.  At the outermost level, one must
+thus issue a null command (just a semicolon) or some other command or
+declaration to execute an outermost else-less "if ...  then stmt".
+(In this regard, end-of-file implies an implicit null statement.)
+
+New options cmdprompt1 and cmdprompt2 (called prompt3 and prompt4
+until 19930423) control prompting within the new flow-of-control
+commands.
+
+19931005:
+  New options $abs_boundtol, $rel_boundtol, and $show_boundtol are
+meant to help deduce correct dual values for constraints eliminated
+by presolve when the solver uses an interior-point algorithm and
+returns a solution with no bounds strictly holding.  All three new
+options have default value 0, which gives the previous behavior.
+Suppose for some variable x that the solver sees the bounds
+lb <= x <= ub.  The lower-bound constraint lb <= x is considered
+active (during reconstruction of dual values) if
+
+	x <= lb
+	or (x - lb < ub - x
+		and x - lb <= max($abs_boundtol, |lb|*$rel_boundtol)),
+
+and similarly for the simple upper-bound constraint (x <= ub).
+Thus negative values of $abs_boundtol and $rel_boundtol behave
+like 0.  The condition x - lb < ub - x ensures that x is closer
+to lb than half-way between lb and ub, ensuring that AMPL picks the
+more appropriate bound no matter how large $abs_boundtol and
+$rel_boundtol are.
+  New option $show_boundtol works similarly to $show_stats, except
+that it delivers its messages when it is on (nonzero) and
+another dual-value computation occurs or (like $show_stats)
+when it is set to 1.  It reports changes to $abs_boundtol and
+$rel_boundtol that would change the outcome of the dual computation,
+and is silent if the values of $abs_boundtol and $rel_boundtol do
+not matter.  [$show_boundtol was called $show_boundstats until
+20 Dec. 1993.]
+  Have option redirections affect printing for "option show_stats 1;"
+and "option show_boundtol 1;".
+
+19931029:
+  Arrange for expressions involving primal and dual variable values
+to be recomputed when those values change.  Example:
+	set S := 1..6;
+	var x;
+	for{i in 2..4} {
+		let x := i;
+		display {j in S: j > x.val};
+		}
+formerly displayed the same set thrice; now each is distinct.
+  Treat variable as variable.val, constraint as constraint.dual
+in indexing expressions for "fix", "unfix", "drop", "restore".
+  New syntax for fix and unfix commands: an optional := expr
+may appear before the terminating semicolon, in which case the
+expression is assigned to the variable being fixed or unfixed
+(as though assigned by "let").
+  New option ampl_include gives a white-space separated list of
+directories in which to search for files in "include", "model",
+and "data" commands.  In this list, a single period stands
+for the current directory.  The default, '.' (a single period)
+gives the same behavior as heretofore.  References to absolute
+file names (starting with "/" or, for MSDOS, one of "/", "\", or
+"x:", where x is any printing character) are not affected by
+$ampl_include .
+
+19931113:
+  Add "exit" as synonym for "quit".
+  Recognize file names that start with "./" as file names relative to
+the current directory (and ignore $ampl_include for such file names).
+  Arrange for all (?) expressions involving dot notation to be
+recomputed when the "dot value" changes.  This involves adding
+"system" parameters _Solution_Count and _Initial_Guess_Count that,
+for debugging, may be referenced as params (but which may become
+invisible later).
+  New option presolve_intepsmax (default 1e-5).  The message
+"Setting $presolve_inteps >= nnn might help" is suppressed if
+nnn > $presolve_intepsmax.
+  New option presolve_warnings (default 5) limits the number of warning
+messages printed during presolve; subsequent warning messages are
+suppressed, and the number of suppressed warnings (if positive) is
+reported at the end of presolve.  When $presolve_warnings < |$eexit|
+(as is true by default), a subsequent "Ignoring solve command
+because presolve finds no feasible solution possible" may now appear
+even when presolve finds at least |$eexit| causes for infeasibility.
+
+19931123:
+  New option log_file (default '').  If $log_file is not '', then all
+lines read from stdin or written to stdout or stderr are copied to file
+$log_file.
+
+19931203:
+  New option bad_subscripts: ampl now discards invalid subscripts
+(read in a data section or assigned by "let"), and the accompanying
+error message now shows at most $bad_subscripts (default 3) invalid
+subscripts per entity (when there is more than one bad subscript).
+
+19940303:
+  Allow any option value that does not need to be quoted in a
+data section to be unquoted in option commands.  Option values
+have always been printed without quotes when quotes can be elided
+in a data section, which made it impossible for $OPTIONS_INOUT to
+restore a value like a.b (or just ".", the default value for
+$ampl_include).  Side effect: numeric option values are no
+longer rounded (to the shortest decimal string rounding to their
+numerical value rounded to the machine's arithmetic).  For example,
+previously
+
+	option foo 00123, goo '00123', zoo 1.234567890123456789;
+	option foo, goo, zoo;
+
+printed
+
+	option foo 123;
+	option goo 00123;
+	option zoo 1.2345678901234567;
+
+and now it prints
+
+	option foo 00123;
+	option goo 00123;
+	option zoo 1.234567890123456789;
+
+19940317:
+  Allow "let S := {};" for sets S of arbitrary arity.
+
+19930423:
+  Allow any UTF character beyond the 7-bit ASCII characters to appear
+in names.
+  New options dataprompt1 and dataprompt2 are analogous to prompt1
+and prompt2, but for data mode; defaults 'ampl data:' and 'ampl data?'.
+  Catch SIGINT ("break" or "del" key).  When received, terminate
+reading all files except stdin, and abort compound commands.
+Stop if a second SIGINT arrives before a successful read on stdin.
+
+19940429:
+  Abort compound commands when solve returns a nonzero status
+(e.g., if the solver was stopped by a SIGINT).
+
+19940506:
+  Test whether variables fixed by the "fix" command lie within
+$presolve_eps of their declared ranges.
+
+19940512:
+  Arrange that
+	set A default {expr};
+	...
+	let A := A;
+will keep A at its current value when the value of expr changes.  Before
+A is assigned a value by let (or in a data section), the value of A will
+change when expr changes value.
+
+19940807:
+  Abort compound commands when solve or write says "Ignoring ...".
+  Rerun presolve after changes to $presolve_eps.
+  Allow inconsistencies up to $presolve_eps in declared variable and
+constraint lower and upper bounds.
+  For inconsistent problems (detected by presolve), tell changes to
+$presolve_eps that would make AMPL ignore the inconsistencies,
+provided the larger $presolve_eps would be at most $presolve_epsmax
+(a new option with default 0).  Report changes (below $presolve_epsmax)
+to $presolve_eps that would affect presolve results with $show_stats
+output.
+  New options presolve_fixeps and presolve_fixepsmax (both with
+default 0): if presolve finds or deduces lower and upper bounds on
+a variable that differ by at most $presolve_fixeps, it fixes the
+variable at the average of the bound values.  When changes below
+$presolve_fixepsmax to $presolve_fixeps would affect presolve,
+the $show_stats output reports these changes.  Presolve now behaves
+as though $presolve_eps were max($presolve_eps, $presolve_fixeps):
+when $presolve_eps < $presolve_fixeps, variable bounds declared or
+deduced to be within $presolve_fixeps of each other in absolute
+value result in the variable being fixed at the average of the bounds.
+
+19941003:
+  Instantiate the entire index set of a for loop before starting
+execution of the loop, so the set of dummy indices for which the loop
+body is executed will be unaffected by assignments in the loop body.
+Example:
+	set S default {1,2,3,4};
+	for {i in S} let S := S union {i + 4};
+	display S;	# used to give 1..5; now gives 1..8
+	## The loop could be stated more efficiently:
+	##	let S := S union setof{i in S} i+4;
+  Allow write and solve commands to proceed if only error messages
+about discarded subscripts appear.
+  Disallow write and solve commands when presolve complains about
+inconsistent bounds; at the second attempt, show the least value
+of $presolve_eps that would allow the command to proceed.
+  Apply $presolve_fixeps test to the declared bounds on each
+variable; although the description of $presolve_fixeps suggested
+that it should apply to the declared bounds, it did not.
+  Change to behavior of "model filename" and "data filename", which
+are now commands: AMPL returns to model mode at the end of the file
+unless the file ends in the middle of data.
+  Change to behavior of "data" and (hitherto undocumented) "commands"
+commands: when they appear within a compound command (i.e.,
+the body of a loop or the then or else part of an if command,
+or simply in a sequence of commands enclosed in braces),
+they are now executed when the flow of control reaches them,
+instead of when the compound command is being read.  In this case,
+if they do not specify a file, AMPL reads commands or data from the
+current input file until it encounters either an "end" command or
+the end of the current file.  New option insertprompt (default '<%d>'),
+if nonnull, specifies an insert-prompt (in which %d is the current
+insert level, i.e., nesting of "data" and "commands" commands
+specifying files and appearing within a compound command) that
+immediately precedes the usual prompt for input from stdin.
+  New single-step mode, details of which may change:
+
+	option single_step n;
+
+where n is a positive integer, specifies that if the insert level
+is at most n, AMPL should behave as though "commands -;" were inserted
+before each command: it should read commands from stdin until "end" or
+eof (control-D on Unix systems).  Some special commands may appear in
+this mode:
+
+	command		meaning
+
+	step		execute the next command
+
+	skip		skip the next command
+
+	next		if the next command is an if-then-else
+			or looping command, execute the entire
+			compound command before stopping again
+			(unless the compound command itself
+			specifies "commands -;")
+
+	cont		execute until the end of the end of all
+			currently nested compound commands at the
+			current insert level
+
+  Allow "reset data" and "update data" commands to appear in
+compound commands.
+  New option solver_msg (default 0; called omit_solmsg until 19941007):
+if set to 0, the solution message normally printed by the solve and
+solution commands is suppressed.
+
+19941028:
+  Omit (for now) recognition of @ (which once upon a time was a
+synonym for "cross" but now is reserved for future use).
+  Adjust some insert-mode details; commands read by "include" or "model"
+are now at insert-level 0.
+  New "read" command with syntax similar to the print command, except
+that the only simple or subscripted params, variables, and constraints
+(dual values) can be read.  Optional input redirections are specified
+by < filename or < 'quoted_file_name' (before the read command's
+terminating semicolon).  If no redirection is specified, values are read
+from the current input stream.  To read from stdin, specify <- .
+Examples (reading from the current input steam):
+
+	param p;
+	read p;
+	4.2
+	display p;
+
+	param ps symbolic;
+	read ps;
+	'some funny text\
+	with a newline'
+	display ps;
+
+	param q{1..3};
+	read{i in 1..3} q[i];
+	1.1 2.2
+	3.3 display q;
+
+	param i;
+	param j;
+	param A{1..10,1..10};
+	param n;
+	read n,{1..n}(i,j,A[i,j]);
+	3
+	2 4 2.4
+	3 5 3.5
+	4 7 4.7
+	display A;
+
+19941127:
+  Omit check for violation of declared bound constraints by variables
+fixed with the "fix" command.
+  Abort compound commands (and the reading of files other than stdin)
+after "Ignoring solve command..." or "Ignoring write command...".
+
+19950315:
+  Provisional versions (subject to change as we gain experience and
+get feedback) of several extensions are now available.
+
+  New reserved word "all", used in "drop all;", "fix all;",
+"restore all;", "unfix all;".
+
+  Extension to "objective" command: "objective;" or
+"objective >filename;" prints commands establishing the current drop
+status of objectives.  In particular, if one had previously said
+"objective foo[3];", "objective;" would print "objective foo[3];".
+
+  Similarly, "drop;" or "drop >filename;" or "restore;" or
+"restore > filename;" prints commands establishing the
+current drop state of the constraints and objectives, and
+"fix;" or "fix >filename;" or "unfix;" or "unfix >filename;"
+prints commands establishing the current "fix" state
+of the variables.  In these contexts, "drop" and "restore"
+are interchangeable, as are "fix" and "unfix".
+
+  New "problem" declaration/command has three functions:
+declaring a new problem, making a previously declared problem
+current, and printing the name of the current problem (in the form
+of a problem command establishing the current problem).
+
+	problem name optional_indexing optional_environ : itemlist ;
+
+declares a new problem and specifies the variables, constraints,
+and objectives that are in it.  Other variables appearing in the
+specified constraints and objectives are fixed (but can be
+unfixed by the "unfix" command).  The new problem becomes the
+current problem.  Initially the current problem is "Initial".
+The "itemlist" in a problem declaration is a comma-separated
+list of possibly subscripted names of variables, constraints,
+and objectives, each optionally preceded by an indexing, as in
+{i in A} foo[i].  More generally, nested indexings similar to
+those allowed in function calls may be specified, as in
+	{i in A} (foo[i], goo[i], {(i,j) in B} zoo[i,j])
+
+The command
+
+	problem name;
+
+makes name (a previously declared problem) current.  And
+
+	problem;
+or
+	problem >filename;
+
+prints the current problem name (as "problem name;").
+Drop/restore and fix/unfix commands apply only to the
+current problem.  Variable values, like params, are global;
+just the fixed/unfixed status of a variable depends on the
+problem.  Similarly, the drop/restore status of a constraint
+depends on the problem (as do reduced costs).  The
+current problem does not restrict the "let" command.
+
+When a problem is declared, it can optionally specify an
+environment associated with the problem: the optional_environ
+phrase has the form
+
+	environ envname
+
+to specify that the problem's initial environment is envname.
+Otherwise a new environment with the same name as the problem
+is created, and it inherits the then current environment (set of
+option values).  In option commands, unadorned (conventional)
+option names refer to options in the current environment, and
+the notation envname.opname refers to $opname in environment envname.
+The new declaration
+
+	environ envname optional_indexing;
+
+declares a environment envname (or a set of environments,
+subscripted by the indexing if specified).  If there is no indexing,
+envname becomes the current environment for the current problem.
+
+  New command
+
+	environ optional_indexing envname := envname1;
+
+where envname and envname1 are optionally subscripted environment names,
+copies environment envname1 to envname.
+
+  New "expand" command prints generated constraints and objectives
+(much as the linrc program does):
+
+	expand [indexing] itemlist [>filename];
+
+The itemlist can assume the same forms allowed in problem declarations.
+If it is empty, all non-dropped constraints and objectives are expanded.
+The variant
+
+	solexpand [indexing] itemlist [>filename];
+
+shows how constraints and objectives appear to the solver.  It omits
+constraints and variables eliminated by presolve unless they are
+explicitly specified in the itemlist.
+
+  Both the "expand" and "solexpand" commands permit variables to appear
+in the itemlist; for each, the commands show the linear coefficients
+of the variable in the relevant (non-dropped and, for solexpand,
+not eliminated by presolve) constraints and objectives, and indicates
+" + nonlinear" when the variable also participates nonlinearly in a
+constraint or objective.
+
+  New options expand_precision and expand_round control printing of
+numbers by expand.  By default they are currently printed to 6
+significant figures (option expand_precision 6).
+
+  Change to function calling conventions: symbolic arguments were
+formerly quoted (as though they were symbols in a data section);
+now they are stripped of quotes and the \ before a newline.  Examples:
+
+	print 'a b';
+
+now prints
+
+	a b
+
+rather than
+
+	'a b'
+
+  New printf format %q prints with data-section quoting rules
+(omit quotes if omitting them is allowed in a data section);
+new printf format %Q always quotes strings.
+
+  New concatenation operator & has precedence below all arithmetic
+operators and performs string concatenation.  It accepts numeric
+operands and converts them to full-precision decimal strings
+(as though by printf format "%.g": recall that AMPL's "%.0g"
+gives full precision, rather than behaving like "%.1g").
+
+  Contexts (other than alias strings in declarations) that previously
+required literal strings now also accept an expression in parentheses.
+
+  Expressions in commands may involve operands of the form $value
+(a $ followed by an environment name) and $environ.value (where
+environ is the possibly subscripted and previously declared name of
+an environment).  $values may not be used in declarations.
+
+  New builtin functions involved with strings:
+
+	num('12.34') = 12.34	# convert string to number
+	num('12.34x') = error	# complain if stripping leading and
+				# trailing white space doesn't yield
+				# a valid decimal number
+	num0('12.34x') = 12.34	# strip leading white space, and
+				# interpret as much as possible as
+				# a number, but never complain
+	ichar('A') = 65		# Unicode value of the first character
+				# in its argument string
+	char(65) = 'A'		# inverse of ichar
+	length('abcd') = 4	# length of string
+	substr('abcdef',3,2) = 'cd'	# substring
+	substr('abcdef',3) = 'cdef'	# substring
+	sprintf("stuff %.2f blah %g Blah %.g", 13/3, 2/7, 3/11)
+		= 'stuff 4.33 blah 0.285714 Blah 0.2727272727272727'
+				# general formatted conversion to string
+	match('abcde','cd') = 3 # starting position of arg2 in arg1
+	match('abcde','xy') = 0	# or 0 if not found; arg2 can be a general
+				# regular expression
+	sub('abcdecd','cd','XYZ') = 'abXYZecd'
+				# substitute arg3 for the first occurrence
+				# of arg2 in arg1
+	gsub('abcdecd','cd','XYZ') = 'abXYZeXYZ'
+				# substitute arg3 for all occurrences of
+				# of arg2 in arg1
+	arity('S') = arity of S if S is a set; else 0
+				# for use with _SETS, as in
+				# display{s in _SETS} arith(s);
+
+  There is no implicit conversion of strings to numbers, but new
+builtin functions num(string) and num0(string) perform explicit
+conversions.  Both ignore leading and trailing white space; num
+complains if what remains is not a valid number, whereas num0 just
+converts as much as it can (returning 0 if it sees no digits).
+
+The expressions
+		'abc' & x+3
+and
+		'abc' & sprintf("%.g",x+3)
+
+yield the same strings.  Now, e.g.,
+
+	setof{i in 1..3} 'ABC' & i = {'ABC1', 'ABC2', 'ABC3'}.
+
+The match, sub, and gsub functions accept strings representing
+regular expressions as their second arguments.  Such expressions
+are as in plan 9.  They are similar to the regular expressions
+recognized by the Unix editors ed and sed, except that parentheses
+as operators must not be escaped, and, in addition to * for 0 or
+more occurrences of the preceding item, + means 1 or more occurrences,
+and ? means 0 or 1 occurrence.  The replacement patterns (third
+arguments) for sub and gsub are like those for ed and sed: & stands
+for the whole matched string, as does \0, and \1, \2, ... \9 stand
+for the string matched by the first, second, ..., ninth parenthesized
+expression in the pattern.
+
+  New "cd" command reports or changes the current working directory.
+
+  New automatically updated params
+
+	_nvars = number of variables in current model
+	_ncons = number of constraints in  "	  "
+	_nobjs = number of objectives in   "	  "
+	_varname{1.._nvars} = names of variables in current model
+	_conname{1.._ncons} =   "   "	    "	   "	"	"
+	_objname{1.._nobjs} =   "   "	    "	   "	"	"
+
+and synonyms for current model entities:
+
+	_var{1.._nvars} = synonyms for variables   in current model
+	_con{1.._ncons} =     "	    "  constraints  "	"	"
+	_obj{1.._nobjs} =     "	    "  objectives   "	"	"
+
+These synonyms can be used in display and other commands.  They
+present the modeler's view (before presolve).  Similarly automatically
+updated entities with _ changed to _s (i.e., _snvars, _svarnames,
+_svar, etc.) give the solver's view, i.e., the view after presolve.
+
+  New automatically updated sets:
+
+	_PARS	= set of all declared param names
+	_SETS	=  "   "   "	"     set      "
+	_VARS	=  "   "   "	"     variable "
+	_CONS	=  "   "   "	"     constraint names
+	_OBJS	=  "   "   "	"     objective    "
+	_PROBS	=  "   "   "	"     problem	   "
+	_ENVS	=  "   "   "	"     environment  "
+	_FUNCS	=  "   "   "	"     (user-defined) functions
+
+These sets may appear in commands, such as display and print.
+
+  New additions to the reserved-word list: Current, Initial, all,
+environ, option.  The other new names appearing above may be declared
+to be something else.
+
+19950412:
+  Enforce the restriction that $values and synonyms (such as _VARS
+and _nvars) may not appear in declarations.
+  Abort reading commands from files other than stdin after
+detecting an error.
+  WATCOM binaries are now compiled to circumvent the Pentium divide bug.
+  Preliminary implementations of xref, delete, purge, and redeclare:
+  New command xref shows entities that depend directly or indirectly
+on specified entities.  Syntax:
+	xref itemlist optional_redirection;
+  New command
+	delete foo;
+deletes foo, restoring any previous meaning foo had, provided no other
+entities depend on foo, i.e., if "xref foo;" reports no dependents.
+  New command
+	purge foo;
+deletes foo and all its (direct or indirect) dependents.
+  New form of declaration: "redeclare" followed by an ordinary
+redeclaration replaces any existing declaration of the specified
+entity with the given one, provided either that the entity has no
+dependents, or that the new declaration does not change the character
+of the entity (its kind, such as set or param, and its number of
+subscripts).  Redeclarations that would cause circular dependencies
+are rejected.
+  New symbolic system parameter solve_message is assigned the message
+shown (when not suppressed by "option solver_msg 0;") by the solve
+and solution commands.  One can assign solve_message with "let", but
+may not delete or redeclare it.
+  New variants of break:
+	break commands;
+	break all;
+terminate, respectively, the current commands command or all commands
+commands, if any, and otherwise act as a "quit" command.
+
+19950416:
+  Extend $solver_auxfiles interpretation: capital letters have no
+affect on linear problems, but on nonlinear problems (including
+problems with binary or integer variables) are treated the same as
+their lower-case equivalents.  The default $minos_auxfiles is now RF
+rather than rf, causing .row and .fix files to be written only for
+nonlinear problems.
+
+19950501:
+  New function
+	indexarity('foo')
+gives the arity of foo's index set if foo has been declared to be
+something indexed, or 0 if foo has been declared as something that
+is not indexed, or -1 if foo has not been declared.  Example:
+	display{i in _PARS} indexarity(i);
+
+19950517:
+  Check statements are now only enforced during solve, write, and
+solution commands, or when the new command
+	check;
+is executed.
+  Dot notations that require presolve are now excluded from
+declarations.
+
+19950521:
+  New variant of close command:
+	close;
+closes all files opened by redirections.
+
+19950614
+  Arrange for option funcwarn only to affect constraint and objective
+declarations.  Thus it no longer affects
+	function zot;
+	param p := zot(3); # used to get msg about variable in :=
+	display p;	   # now elicits msg about zot missing
+  Change in writing of auxiliary .fix file: values of variables
+fixed by presolve are suppressed unless $auxfiles or
+$($solver & '_auxfiles') contains "v".  (The primary reason use
+of the .fix file is now to convey names of defined variables
+for use in printing error messages.  This change omits sometimes
+lengthy work that is hardly ever useful.)
+  Warn of missing subscripts on sets.  (Later we hope to warn about
+other missing subscripts, but that's harder.)
+
+19950619
+  Introduce variant _display of the display command; _display is meant
+for possible use by front ends.  Like the display command, _display
+emits one or more tables, but _display replaces display's table
+header with a line consisting of "_display" and three integers:
+	s = number of subscripts of each item in each table line
+	k = number of items on each table line
+	n = number of table lines
+Each table line consists of s subscripts followed by k items,
+all separated by commas.  No semicolon is appended to the table.
+
+19950720
+  Add another variant of the display command: csvdisplay is similar to
+_display, except that it only writes one table (complaining if asked
+to write more than one), and it replaces the initial _display output
+that describes the following table with $1,$2,...,$n  (where n is the
+number of items in one line of the table that follows).  New options
+csvdisplay_precision and csvdisplay_round govern the precision of
+printing for csvdisplay; the defaults  (0 and '') give full precision.
+
+19950726
+  Adjust _display's printing so numeric precision is governed by
+$csvdisplay_precision and $csvdisplay_round.
+  In -M output and printing by the show command, insert "s.t. "
+before constraints.
+  New option csvdisplay_header (default 1): if nonzero, cvsdisplay's
+first line now has the form
+	Index_1,Index_2,...,Index_k,Expr_1,...,Expr_n
+(where k is the number of subscripts and n the number of
+expressions in one line of the table that follows); if the jth
+expression is a simple name (not of the form Index_i or Expr_i)
+that has not appeared previously in the current csvdisplay header
+line, then that name appears rather than "Expr_j".  If
+$csvdisplay_header is 0, this header line is omitted.
+  Adjust line breaking for "show" and omit some extraneous commas.
+  Diagnose some more undefined names (e.g., in problem declarations).
+  Recognize repetition counts in
+	next nnn
+	skip nnn
+	step nnn
+
+19950810
+  Allow the print command to have no arguments, which causes
+it to behave the same as
+	printf "\n";
+
+19950827
+  New debugging option: $debug_stub, if not '' (its default value),
+is used to construct stubs of the form ($debug_stub & '_1'),
+($debug_stub & '_2'), ... in solve commands.  If a file named
+($debug_stub & '_1.sol'), ($debug_stub & '_2.sol'), etc. exists,
+"solve" behaves as "solution" and reads the .sol file.  Otherwise it
+leaves behind its .nl and .sol files, so a subsequent ampl run can
+read the .sol files (and the .nl files are available for debugging
+purposes).  This permits recreating some situations without rerunning
+the solvers involved.  The .nl files (and hence .sol) files are ASCII
+files to make it easy to create them on one kind of machine and use
+them on another.
+
+19951009
+  New command:
+	reset function;
+closes all pipe functions and unlinks all dynamically linked functions,
+causing them to be restarted or relinked if invoked again.  For
+a specific function foo,
+	reset data foo;
+acts just on function foo.
+  New command:
+	delete check n;
+deletes the n-th check.
+  Extension of redeclare syntax:
+	redeclare check n optional_indexing : ...;
+redeclares the n-th check.
+  New addition to reserved-word list: dotname (for use in a forthcoming
+extension).
+
+19951020
+  Allow "reset data p;" even when p is declared with a := expression,
+to force recomputation of random functions in the := expression (and
+to force reevaluation of any user-defined functions in the expression).
+Extend "reset data;" to force recomputation of all := expressions.
+
+19951027
+  Now problems (including the current one) should be adjusted when
+their indexing expressions change, except that previous explicit drop,
+restore, fix, and unfix commands remain in effect.  The new
+"reset problem" command cancels this treatment of previous explicit
+drop, restore, fix, and unfix commands, and brings the problem to its
+declared drop/fix state.  This command has the forms
+
+	reset problem;		# applies to the current problem
+	reset problem foo;
+	reset problem goo[subscripting];
+
+If the latter forms mention the current problem, they have the same
+effect as the first form.  For now, at least, "reset problem"
+does not affect the problem's environment.
+
+19951202
+  Arrange for
+	option relax_integrality 2;
+to assume integrality during presolve, but tell the solver that there
+are no integer variables.  Force presolve to run again after
+$relax_integrality has changed.
+  Increase default value of $pl_bigM from 1e4 to 1e6.  Arrange for
+changes to $pl_bigM to cause presolve to run again when its results
+would be affected by the change to $pl_bigM.
+
+19951204
+  Arrange to run presolve (when nothing else has caused it to run) so
+defined variables involved in dropped objectives or constraints appear
+to have the "right" values.  Example:
+	var x := 2;
+	var y = x^2 + 1;
+	minimize zot: y + 10;
+	drop zot;
+	print zot;	# used to print 11 rather than 15
+  Disallow declarations involving defined_variable.val.  (Instead,
+declare a new param, use the param in the declaration, and use "let"
+to give it the right value.  This helps clarify when things are to be
+evaluated.)
+
+19960202
+  Adjust DOS .exe files to print nonzero return codes from solve
+and shell commands.
+
+19960306
+  Allow printf's "+" flag to reveal the sign of 0.
+
+19960313
+  Arrange for redeclarations of variables, constraints, and objectives
+to retain current values and drop/fix status.
+
+19960330
+  New call command for directly invoking user-defined functions
+for their side effects: rather than, e.g., saying "print foo(1,2,3);"
+or "let Dummy := foo(1,2,3);" to force foo(1,2,3) to be called, you
+can now say "call foo(1,2,3);".  Syntax:
+	call [indexing] function [(arglist)];
+
+19960418
+  Terminate includes within the file in a read command's "<" redirection
+when the read command ends.
+
+19960425
+  Adjust xref command so it does not show nodes cited in arc
+declarations.  Make it possible to delete and purge arcs.
+
+19960606
+  Adjust option debug_stub to honor (and retain) ($solver)_auxfiles.
+  Pretend a semicolon appears at the end of command files that end with
+a compound command with optional final parts missing:
+	repeat ...  { ... }	# no final condition or semicolon
+	if ... then { ... } 	# no else clause
+
+19960627
+  New option (for debugging nonlinear models): option nl_permute
+(default 3) tells whether to permute constraints and variables as
+described in "Hooking Your Solver to AMPL".  The value, mod 4, tells
+what to permute:
+		0	nothing
+		1	just constraints
+		2	just variables
+		3	both constraints and variables
+
+Note that some solvers, such as cplex, minos, and osl, require the
+permutations.
+
+19960709
+  Prevent execution of problem commands from running presolve (and thus
+possibly giving an erroneous message about inconsistent constraints).
+
+19960729
+  Disallow writing MPS files for problems with nonlinear variables.
+  Omit INITIAL bounds from .mps files; they were only needed long ago
+by minos.
+  New builtin functions: time() returns the current time (in seconds
+since 00:00:00 1 Jan. 1970 GMT); ctime() returns a 24-character string
+representing the current time, and ctime(t) returns a similar time
+representing time t (or the current time, if t is not numeric).
+
+19960816
+  New predefined param _pid gives the process ID of the AMPL process
+(a number unique among processes running on the system).
+  New option format_range_errmsg, if not '', replaces %i, %d, %o, %u,
+%x, or %X in printf commands or sprintf invocations in which the
+number to be converted is outside the appropriate range of integers.
+If $format_range_errmsg has its default value of '', an error message
+appears and the command is aborted.
+  New automatically determined set:
+	_AVAILFUNCS = user-defined functions that have been linked
+(statically or dynamically) with AMPL and thus can be declared and
+evaluated in the AMPL session.  (Other user-defined functions may be
+declared and used in constraints and objectives, but AMPL will not
+be able to evaluate them.  It can, however, pass them by name to
+solvers that know how to evaluate them.)
+  New automatically updated params give some problem statistics
+the solver sees:
+	_snbvars  = number of binary variables used linearly
+	_snivars  = number of general integer variables used linearly
+	_snnlcons = number of nonlinear constraints
+	_snnlobjs = number of nonlinear objectives
+	_snzcons  = number of nonzeros in the constraint Jacobian matrix
+	_snzobjs  = number of nonzeros in objective gradients
+
+19960829
+  Add "inout" and "out" to the reserved-word list (for use in upcoming
+extensions).
+
+19961017
+  New option show_write_files controls whether the write command
+reports the names of the files it writes:
+	0 ==> no (default)
+	1 ==> yes for "write;", no for "write gstub;"
+	2 ==> yes
+
+19961210
+  Adjust most commands (but not declarations) to permit unqualified
+objective, constraint, and variable names in () expressions.  Hitherto
+one had to use objective.val, constraint.dual, and variable.val.  Now
+one can write something like
+	option cplex_options (sprintf('... uppercutoff=%.f ',_obj[1]));
+(rather than _obj[1].val) to adjust an option to reflect an objective
+value from the most recent solve.
+  Disallow expressions involving variables in arguments to member, ord,
+ord0, next, nextw, prev, and prevw, when they appear in constraint and
+objective declarations.
+
+19970307
+  Arrange for variable values of 0 assigned by "let" to be explicitly
+conveyed to solvers unless $reset_initial_guesses is nonzero.
+Previously they were explicitly conveyed only after a solve, or if
+they were given in a data section or variable declaration.
+
+19970314
+  Arrange for "option gentimes 2" to show total memory rather than
+incremental memory.
+  Tweak -T output so "genmod times" lines (other than headers) always
+start with "## ".  This was hitherto only true for seq numbers <= 99.
+
+19970528
+  Extension to expand command: recognize synonyms (possibly subscripted
+_con, _obj, _var, _scon, _sobj, _svar).
+
+19970615
+  Adjust the tests involving $pl_bigM (done when linearizing nonconvex
+piecewise-linear terms) to assume a lower bound of
+		(smallest breakpoint) - $pl_bigM
+and upper bound of
+		(biggest breakpoint)  + $pl_bigM
+on the variable "multiplied" by a piecewise-linear coefficient when
+the true bounds on the variable exceed these values (instead of just
+when the true bounds are infinite).
+
+19970729
+  Fix bug with random functions that caused some expressions involving
+them not to be reevaluated.  Example:
+	set S default {};
+	repeat { let S := S union {Uniform(0,15)}; } while(card(S)) < 5;
+looped infinitely.
+  Change exit to a command of the form
+	exit ;
+or
+	exit expression ;
+The expression, if given, must be numeric and specifies the process
+return code; an omitted expression is treated as 0.
+  Change "quit;" to be equivalent to "exit <oldrc>;", which means it may
+now appear in compound commands.  Here, <oldrc> stands for the return
+code that "quit" has always given, which reflects recent syntax errors
+(and is cleared to 0 by successful command executions).
+  Fix some bugs with "break commands;" and "break all;"; adjust these
+commands so if no "commands" command is being executed, they terminate
+the current nest of includes, if any, and otherwise are no-ops.
+
+19970731
+  Fix bug in presolve for problems with integer (or binary) variables:
+for $presolve > 1, if a constraint with two remaining nonzeros caused
+an integer variable to be fixed and the constraint had previously
+implied a bound on the other variable, that bound was not conveyed
+to the solver.  (Note that $presolve is 10 by default; specifying
+"option presolve 1;" avoids the bug.)
+  Add a Caution for writing an MPS file for problems with integer
+variables having infinite bounds.  There's no "standard" MPS way to
+express such problems.
+
+19970814
+  With invocations with -o (and no commands that would cause the -o
+command-line option to be ignored), if presolve fixes all variables,
+say so and give process return code 16 rather than 0.
+  New command-line option -R (recognized only as the first command-line
+option and not mentioned in the "-?" listing of options) puts AMPL into
+"server mode", in which it declines to execute cd and shell commands,
+forbids changes to options TMPDIR, ampl_include, and PATH (or whatever
+is the usual name of the search path for the operating system being
+used), disallows pipe functions, and restricts names in option solver
+and file redirections to be alphanumeric (so they can only write to the
+current directory, which, on Unix systems at least, cannot be changed).
+By invoking ampl from a shell script that suitably adjusts the current
+directory and environment variables TMPDIR, ampl_include, and PATH
+before it invokes "ampl -R", one can control the environment in which
+"ampl -R" operates.
+
+19980127
+  New syntax for expressing complementarity constraints: in addition
+to previous forms, constraint declarations may now have the form
+	constraint_start : constr1 complements constr2 ;
+in which constr1 and constr2 consist of 1, 2, or 3 expressions
+separated by the operators <=, >=, or == (or =).  As with other
+constraint declarations, constraint_start gives a name to the
+constraint, an optional descriptive string (alias), and, if the
+declaration describes a collection of constraints, an indexing
+expression.  In constr1 and constr2 together, there must be a total
+of two explicit inequality operators, with == counting as two.  A
+complementarity constraint is satisfied if both constr1 and constr2
+hold and at least one inequality is tight, i.e., satisfied as an
+equality.  If one of constr1 or constr2 involves two inequalities,
+then the constraint must have one of the forms
+	expr1 <= expr2 <= expr3 complements expr4
+	expr3 >= expr2 >= expr1 complements expr4
+	expr4 complements expr1 <= expr2 <= expr3
+	expr4 complements expr3 >= expr2 >= expr1
+In all of these cases, the constraint requires the inequalities to
+hold, with
+	expr4 >= 0 if expr1 == expr2
+	expr4 <= 0 if expr2 == expr3
+	expr4 == 0 if expr1 < expr2 < expr3
+  For expressing MPECs (math. programs with equilibrium constraints),
+complementarity constraints may coexist with other constraints and
+objectives.
+  The suffix notations, such as constraint.lb, constraint.body, etc.,
+are extended so that for a complementarity constraint,
+constraint.Lsuffix and constraint.Rsuffix correspond to constr1.suffix
+and constr2.suffix, respectively, and complementarity_constraint.slack
+(or the unadorned name) stands for a measure of the extent to which
+the complementarity constraint is satisfied: if constr1 and constr2
+each involves one inequality, then the new measure is min(constr1.slack,
+constr2.slack) (which is positive if both are strictly satisfied,
+0 if the complementarity constraint is satisfied exactly, and negative
+if at least one of constr1 or constr2 is violated).  For constraints of
+the form expr1 <= expr2 <= expr3 complements expr4, the .slack value is
+	min(expr1-expr2,  expr4) if expr1 >= expr2
+	min(expr2-expr3, -expr4) if expr3 <= expr2
+	-abs(expr4)		 if expr1 < expr2 < expr3
+so in all cases, the .slack value is 0 if the complementarity constraint
+holds exactly and is negative if one of the requisite inequalities
+is violated.
+  Solvers see complementarity constraints in the standard form
+	expr complements lb <= variable <= ub
+A new synonym, _scvar{i in 1.._sncons}, indicates which variable, if
+any, complements constraint _scon[i]: if _scvar[i] in 1.._snvars, then
+variable _svar[_scvar[i]] complements constraint _scon[i]; otherwise
+_scvar[i] == 0, and _con[i] is an ordinary constraint.  Other new
+synonyms: _cconname{1.._nccons} are the names of the complementarity
+constraints as the modeler sees them.
+  A forthcoming paper ("Expressing Complementarity Problems in an
+Algebraic Modeling Language and Communicating Them to Solvers", by
+Michael C. Ferris, Robert Fourer, and David M. Gay) discusses the new
+complementarity syntax.  The paper will be available from the AMPL web
+site (http://www.ampl.com/ampl/) after it has gone through the Bell Labs
+release process.
+  Anticipating extensions to be described later, the following words
+	IN
+	INOUT
+	LOCAL
+	OUT
+	suffix
+are now reserved.  This breaks the blend.mod and blend.dat distributed
+with the AMPL book, in which it's necessary to change OUT to Out and
+IN to In.
+
+19980128
+  Introduce some new automatically updated params that give information
+about the current problem, either as seen by the modeler (_nccons), or by
+the solver (names that start with "_s"):
+	Name		Meaning
+	_nccons		No. of complementarity constraints before presolve
+	_snbvars	No. of binary (0,1) variables
+	_snccons	No. of complementarity constraints after presolve
+	_snivars	No. of  general integer variables (excluding binaries)
+	_snlcc		No. of linear complementarity constraints
+	_snlnc		No. of linear network constraints
+	_snnlcc		No. of nonlinear compl. constrs.:
+				_snccons = _snlcc + _snnlcc
+	_snnlcons	No. of nonlinear constraints
+	_snnlnc		No. of nonlinear network constraints
+	_snnlobjs	No. of nonlinear objectives
+	_snnlv		No. of nonlinear variables
+	_snzcons	No. of constraint Jacobian matrix nonzeros
+	_snzobjs	No. of objective gradient nonzeros
+
+19980208
+  New builtin suffixes: variable.defeqn is the subscript of _con for
+the corresponding defining constraint if the variable is a defined
+variable, and is 0 otherwise.  Similarly, constraint.defvar is the
+subscript of _var for the resulting defined variable if the constraint
+defines a defined variable (either through the var = syntax or because
+of option substout), and is 0 otherwise.
+  New options log_model and log_data (default 0): if option log_file
+is not '', declarations and commands in included files are copied to
+$log_file if $log_model is 1, and included data sections are copied
+to $log_file if $log_data is 1.
+  Edit change description of 19950619 above to describe _display.
+For convenience, here is a summary of _display and csvdisplay.
+  Commands _display and csvdisplay are variants of display that emit
+tables in a more regular format than does display:  each line of a
+table starts with s subscripts and ends with k items, all separated
+by commas.  _display and csvdisplay differ in the table headers they
+emit.  The header for _display consists of a line starting with
+"_display" and followed by three integers s, k, and n (the number of
+table lines that follow the header), each preceded by a space.  Whether
+csvdisplay emits a header is determined by option csvdisplay_header
+(default 1): if $csvdisplay_header is 1, cvsdisplay's first line has
+the form
+	Index_1,Index_2,...,Index_k,Expr_1,...,Expr_n
+(where k is the number of subscripts and n the number of
+expressions in one line of the table that follows); if the jth
+expression is a simple name (not of the form Index_i or Expr_i)
+that has not appeared previously in the current csvdisplay header
+line, then that name appears rather than "Expr_j".  If
+$csvdisplay_header is 0, this header line is omitted.
+  Options csvdisplay_precision and csvdisplay_round govern the
+precision of printing for _display and csvdisplay; the defaults
+(0 and '') give full precision.
+
+19980302
+  Introduce (on all systems other than AIX and MSDOS, but including W95
+and NT) a new scheme for acquiring imported functions: execute ampl -i?
+for more details.  More extensive documentation will appear later.
+
+19980309
+  Change to option pl_linearize: the default value (1) now uses a
+more efficient linearization of nonconvex (resp. nonconcave)
+piecewise-linear terms and uses suffixes .sos and .sosref to
+tell solvers that handle SOS sets about the variables and constraints
+that imply the SOS2 constraints introduced by the linearization.
+A forthcoming update to the AMPL/solver interface library will
+provide sample interfaces that exploit this new information.
+To get the old behavior, specify
+	option pl_linearize 2;
+Versions 19980305 and 19980308 had glitches in this change.
+
+19980325
+  New options
+	shell_exitcode_max (default 2^16)
+	solve_exitcode_max (default 0)
+cause compound commands to be aborted if a shell command results in
+$shell_exitcode > $shell_exitcode_max or a solve command results in
+$solve_exitcode > $solve_exitcode_max .  The defaults give the old
+behavior (except for the unlikely case of shell_exitcode > 2^16).
+
+19980408
+  Remove prohibition on "reset data" and "update data" commands
+appearing in compound commands.
+
+19980525
+  When "solve;" fails, set solve_result = '?', solve_result_num = -1,
+and solve_message = '?'.
+
+19980605
+  Recognize _obj.astatus, _sobj.statsus, _obj.astatus_num, and
+_sobj.astatus_num.  The latter two are always 0 (in the problem), the
+former two "in" unless $astatus_table has been changed from its default
+value.
+
+19980615
+  Permit potential defining constraints (other than those introduced by
+"var ... = ..." declarations) to participate in the strong bound
+deductions attempted when $presolve > 1, unless $substout mod 4 == 2.
+Previously, if there were any "var ... = ... " declarations or
+$substout was nonzero, potential defining constraints were excluded
+from the strong bound deductions.  Specifying "option substout 2" gives
+the old behavior of "option substout 0", and "option substout 3" gives
+the old behavior of "option substout 1".  The new $substout values 2 and
+3 are for possible debugging and their effect may be withdrawn later;
+values 0 and 1 are the only ones that should normally be of interest.
+  Adjust logic for checking conditions on sets and parameters: when
+"update data" and "let" provide new subscripts or modify existing
+values, just check the new or changed items.  This changes the time
+for some loops from quadratic in the number of iterations to linear.
+If reports of failed conditions are interrupted by $eexit, the list
+of questionable subscripts is currently not purged.  Otherwise each
+new value causes only one warning if it fails a condition.
+
+19980625
+  New builtin param _cmdno is 0 initially (or after reset) and is
+incremented each time a command is executed.
+  New option project_fixed_vars (default 1): if nonzero, presolve
+projects fixed variables onto their bounds (even if $presolve is 0).
+If $project_fixed_vars == 2, a message is printed for each fixed
+variable that is projected (until $presolve_warnings such messages
+have appeared).
+  It is possible for a variable to appear only in constraints that
+imply bounds on the variable.  When $presolve > 0, such constraints
+are eliminated.  Presolve now projects such variables onto the interval
+given by their tightest deduced bounds.  Here is an example illustrating
+this and the new option project_fixed_vars:
+	var x >= 3 <= 3 := 4;
+	var y >= 0 := 7;
+	s.t. foo: x + y <= 3.5;
+	display y;
+	fix x;
+	solexpand;
+	display y;
+
+Previously, this example gave the output
+
+	y = 7
+
+	presolve, variable y:
+		impossible deduced bounds: lower = 0, upper = -0.5
+	Infeasible constraints determined by presolve.
+	s.t. foo:
+		 <= -0.5;
+
+	y = 7
+
+The message about infeasibility appeared because "fix x" fixed x at 4,
+which made constraint foo impossible to satisfy.  Now the example gives
+
+	y = 7
+
+	Solution determined by presolve.
+	y = 0.5
+
+Notice that y has been projected onto the interval [0,.5] implied by
+constraint foo with x == 3.
+
+19980714
+  Upon encountering end-of-file after at least one variable declaration
+but no objective or constraint declarations, print "No variables used"
+rather than "No variables declared".
+
+19980717
+  Do not terminate compound commands when a command, such as solve,
+incurs infeasibility (or other) warnings from presolve.
+  Have the solve command set solve_result_num to 299 (rather than 200)
+when presolve determines that the problem is inconsistent.
+
+19980716
+  Minor cosmetic tweak: when echoing new suffix declarations issued by a
+solve or solution command, only put an extra newline in front of the
+first echoed suffix declaration.
+
+19980722
+  For symbolic suffixes, binary or integer applies to the _num value.
+  New builtin suffixes .no and .sno: if foo[i] is _xxx[j],
+then foo[i].no = j (for xxx in {"con", "var", "obj"}); similarly,
+if foo[i] is _sxxx[j] then foo[i].sno = j, and foo[i].sno = 0
+if the solver does not see foo[i].
+  Permit "display _obj.user_defined_suffix;" and
+"display _sobj.user_defined_suffix;".
+
+19980730
+  Record settings of $linelim and $substout in .nl files, and adjust
+these options, if necessary, when reading solutions.
+
+19980905
+  Adjust "display x;", where x is an indexed variable, so it does not
+run presolve.
+
+19980912
+  Correction to 'Adjust "display x;"' in 19980904 above; if x was a
+defined variable, sometimes it was not recomputed.
+
+19981009
+  Permit ":= {}" in set declarations.
+  Permit set expressions of the forms
+	if test then {} else set_expr
+and
+	if test then set_expr else {}
+with the set_expr supplying the dimen (arity) of the empty set {}.
+
+19981014
+  Permit "display p.result;" for indexed collections of problems p.
+  For infeasibility detected by presolve, have the solution, solve, and
+write commands update the 'result' suffix of the current problem.
+
+19981109
+  New builtin params recording execution times (where possible):
+	_solve_time = _solve_user_time + _solve_system_time
+record CPU seconds for the most recent solve command, and
+_solve_elapsed_time records wall-clock seconds for the most recent
+solve; prepending _total gives sums of the corresponding entities
+for all solve commands; changing "solve" to "shell" gives analogous
+values for shell commands.  And
+	_ampl_time = _ampl_user_time + _ampl_system_time
+and _ampl_elapsed_time give analogous times for AMPL itself, excluding
+times for shell and solve commands.
+  On all systems, the elapsed time params are computed by the time()
+function, which has a granularity of whole seconds.  The new CPU time
+params report true CPU seconds on Unix and Windows NT systems (with
+Win32 binaries, such as
+ftp://netlib.bell-labs.com/netlib/ampl/student/mswin/samplnt.exe.gz).
+On Windows 9x or 3.x, and on MS-DOS systems, CPU times are not
+available; the system times are set to 0, and user times are elapsed
+(wall-clock) seconds since the start of execution -- with a finer
+granularity than the time() function.
+
+19981214
+  Adjust error message for a symbolic data-section value for a numeric
+parameter.  For example, the old message
+	type['HOST'] cannot be #ENDPOINT
+is now
+	type['HOST'] must be numeric, not 'ENDPOINT'
+  Adjust "objective;" command so it does not try to instantiate the
+current problem unless there is a partially dropped array of objectives
+(in which case ampl must worry about which subscripts are valid).
+  "Invisible" change: put suffix information ahead of nonlinear
+information in .nl file, so .nl reading can be influenced by suffixes.
+
+19990112
+  Ignore gratuitous reset commands.
+  Modified linearization of piecewise-linear terms.  To get the
+linearization that had been the default since 19980309, specify
+	option pl_linearize 3;
+
+19990120
+  New addition to reserved-word list: table.
+
+19990304
+  ftp://netlib.bell-labs.com/netlib/ampl/student/mswin/samplnt.exz:
+Under W9x, treat '/' as '\' in the names of programs invoked by the
+shell and solve commands.  (This already worked under NT, but Microsoft
+does not tolerate much consistency among its operating systems.)
+
+19990421
+  Try to avoid leaving temporary files behind in the face of various
+signals, such as SIGINT and SIGHUP.
+  Have
+	printf "%q",'';
+print '' rather than nothing.
+  New builtin symbolic param _cd is set to the current directory
+initially and each time the cd command is executed.
+  New variant -bs (and -brs) of command-line option -b for GUIs
+that want to run solvers themselves.  Ask dmg for details.
+  Have "option solver_msg 0;" suppress messages that appear when
+presolve determines the solution (as well as the solution_message
+returned by a solver).
+
+19990607
+  Table and out-arg extensions, to be described later.
+
+19990804
+  When an input file ends with a #comment not terminated by a newline,
+assume a newline after the comment.
+  Permit the close command to mention a comma-separated list of files
+to close.
+  Change to filename syntax: disallow commas in unquoted filenames.
+This permits one to say things like
+	load lib1, lib2;
+and
+	close file1.stuff, file2.xyz;
+without treating the "," as part of the file name.
+  Change to $ampl_include: previously it was a white-space separated
+list of directories in which to look for files mentioned by "include",
+"model", and "data"; now spaces are allowed within directory names
+(but not before or after them), and directory names in $ampl_include
+should be separated by newlines (or tabs, but tabs invite confusion;
+for example, X-Windows turns tabs into spaces).
+  Change $AMPLFUNC to behave similarly to $ampl_include: directory
+and file names may contain internal blanks, and $AMPLFUNC now specifies
+a sequence of zero or more file or directory names from which to
+import functions.  Each name is first treated as the name of a shared
+library (or DLL -- suffixes, such as .dll, must be explicit); if a
+library by that name cannot be opened, the name is treated as a
+directory name, and "/amplfunc.dll" (or "\amplfunc.dll" under MS
+Windows) is appended to obtain the name of a library to load.
+  The solve command now adjusts $ampl_funclibs to be a newline-
+separated list of full pathnames of libraries from which functions
+in the current problem instance were imported.
+  New commands
+	load	[libname [, libname ...] ];
+	unload	[libname [, libname ...] ];
+	reload	[libname [, libname ...] ];
+load, unload, or reload shared libraries (from which functions and
+table handlers are imported).  When at least one libname is mentioned
+in the load and unload commands, $AMPLFUNC is modified to reflect the
+full pathnames of the currently loaded libraries.  The reload command
+first unloads its arguments, then loads them.  This can change the
+order of loaded libraries and affect the visibility of imported
+functions: the first name wins.  With no libname arguments, "load;"
+loads all the libraries currently in $AMPLFUNC; "unload;" unloads
+all currently loaded libraries, and "reload;" reloads them (which
+might be useful if some have been recompiled).
+  New and adjusted system sets:
+	_LIB = currently loaded libraries;
+	_AVAILFUNCS = currently available imported functions
+			(which still must be declared before use)
+	_AVAILFUNC2 = (available function, library) pairs
+			(permits seeing which library is currently
+			supplying an available imported function)
+	_SFUNCS = imported functions that "solve;" currently uses.
+  New command
+	remove [filename [, filename ...]];
+closes and removes the files mentioned.  "remove;" does nothing.
+Exception: "remove ($log_file);" just truncates (removes and
+then reopens) $log_file, much as "close ($log_file);" does.
+  Extensions of funcadd.h for (still to be described) table handlers;
+the updated funcadd.h is now in /netlib/ampl/solvers.
+
+19990818
+  MSDOS and Win32 "ampl" binaries: add expansion of * and ? in command-
+line arguments, and replace command-line arguments of the form @filename
+with the contents of file filename.
+  Win32 "ampl" binaries: recognize quoted white space in command-line
+arguments, no matter who provides the command line (e.g., another
+program calling CreateProcess).  White space may be quoted with either
+single or doubled quotes (' or ").  Within a quoted string, the quote
+character may appear if it is doubled (as in AMPL strings).
+
+19991130
+  Win32 binaries only: adjust the cd command so sequences like
+	cd c:/some/place/other/than/the/starting/directory;
+	cd d:;
+	print 'something' >'c:zot';
+	shell;
+will show the adjusted current directories to spawned processes
+(in "solve" and "shell" commands) and will interpret 'c:zot' correctly
+(as c:/some/place/other/than/the/starting/directory/zot).  Note that
+under DOS, W9x, and NT, you can use / in place of \ in file names.
+[For reasons known only to Microsoft, under W9x, a spawned command.com
+gets its current directory information in some other way than do Win32
+programs, so "shell" commands under W9x only reflect cd commands for
+the current drive.  This problem goes away if you set option COMSPEC
+to a Win32 command processor.]
+
+20000128
+  New command-line option -vi[nnn] to specify whether stdin should be
+treated as interactive.  The default is to choose based on isatty():
+if stdin and stderr both appear to be a terminal, i.e., isatty(0) and
+isatty(2) both return 1, assume stdin is interactive.  Invoke
+	ampl -v?
+for a summary of all -v options; the description of -vi is
+	-vi[nnn] {interactive mode?  (Must be first.)
+		   nnn = 0 ==> no, nnn = 1 ==> yes but no prompts,
+		   nnn = 2 ==> yes with prompts,
+		   nnn = 3 ==> 0 or 2, based on isatty()}
+In non-interactive mode, syntax errors now inhibit execution of
+commands and terminate reading of the current file; previously,
+commands were sometimes executed.  (Block input mode, used by AMPL Plus
+and sample GUIs in http://www.ampl.com/ampl/GUI/expermt.html, remains
+interactive.)
+  New default presolve behavior: simplifications that appear to convert
+nonlinear expressions to linear expressions really do so.
+  Change to option linelim: "option linelim 0" and "option linelim 1"
+work as before, while "option linelim 2" and "option linelim 3"
+suppress the new conversion of "nonlinear" linear expressions
+resulting from presolve simplification to true linear expressions,
+and otherwise behave like "option linelim 0" and "option linelim 1",
+respectively.
+
+20000216
+  Increase the resolution of _solve_elapsed_time, _shell_elapsed_time,
+and "option randseed 0;".  The latter now changes more quickly.
+  Warn about "fix x := 3;" when x is a subscripted variable.
+  New builtin LOCAL suffix .relax:  for integer or binary variables,
+.relax > 0 indicates that the integrality of the variable should be
+ignored.
+  Turn <<0;0,0>>x into 0.
+
+20000217
+  Arrange for integer_variable.relax values >= 2 to cause solvers to
+see the variable as continuous, but for presolve to treat it as an
+integer variable.  Also, have nonzero $relax_integrality to take
+precedence over .relax suffix values, so
+	option relax_integrality 1;	# ignore integrality everywhere
+and
+	option relax_integrality 2;	# use integrality in presolve,
+					# but tell solvers all variables
+					# are continuous
+operate as heretofore, regardless of .relax settings.
+  For "let" assignments to variable.declared_suffix, do not require
+the "collect" phase.
+
+20000228
+  Under MS Windows, allow for spaces in $TMPDIR.
+  In situations where bounds on a defined variable are equivalent to
+bounds on a problem variable that the solver sees, reflect bounds on
+the defined variable to the problem variable and remove the constraint
+that implied the bounds on the defined variable.  Example:
+	var x; var y = 3*x + 2;
+	s.t. ybound: 5 <= y <= 11;	# reflect into bounds on x
+	minimize zot: y^2;
+  Deduce bounds on defined variables in more cases.
+  Temporary(?) treatment of $substout: the "4" bit of $substout,
+i.e., arranging that ($substout mod 8) >= 4, suppresses today's
+reflection of bounds and stronger deductions of defined-variable bounds.
+
+20000307
+  Arrange for "option presolve_warnings -1;" to suppress both the
+presolve message about how many presolve messages were suppressed and
+the message about which modified options might help.
+
+20000316
+  Increase the resolution of _ampl_elapsed_time, and have "reset;"
+reset _ampl_elapsed_time, even when there were no declarations to
+discard.  (Otherwise, "reset;" is a no-op in this case.)
+
+20000327
+  Tweak to hash-table logic to speed up reading data on some large
+examples (with many symbols).
+  Tweak to "option linelim 1" output: nonlinear defined variables that
+have no linear terms but are used linearly in a constraint or objective
+are no longer split into two parts (unless, temporarily, the "4" bit of
+$linelim is on, i.e., $linelim mod 8 >= 4).
+  Command-line option -L now accepts an optional integer immediately
+following the "L" (no space) to specify the initial $linelim setting.
+No integer ==> -L1 (the old behavior).
+  Change the default option linelim from 0 to 1.
+
+20000427
+  Tweak permitting use of AuxInfo (new field ae->AI) in imported
+functions.  This is available when ae->ASLdate >= 20000427.  In calls
+from AMPL, ae->AI is always null, but solvers can arrange for it to
+have useful values.
+
+20000505
+  Arrange for "option compl_warn 0" to suppress the warning message
+about nonsquare complementarity systems and for "option compl_warn 2"
+to cause nonsquare complementarity systems to be infeasible.
+
+20000602
+  Treat variables in defining declarations (var x = ...) as defined
+variables even when bounds are reflected on them.
+
+20000608
+  Addition to funcadd.h: char* getenv(const char*), which lets
+imported functions and table handlers access the current environment
+(as modified by option, environ, and problem commands).  Only use
+getenv (i.e., (*ae->Getenv)) if al->ASLdate >= 20000608.
+
+20000615
+  Fussy numeric detail: ignore case in recognizing Infinity and NaN in
+data sections and in format %q, so
+	printf "%q\n", 'nan';
+now prints
+	'nan'
+rather than
+	nan
+This fixes a glitch with AMPL's writing of .tab values involving
+symbolic parameters with values like 'infinity' and 'nan', which
+should be kept as strings, not turned into numbers, much as
+'123' and 123 are distinguished.
+
+20000706
+  When loading a library, arrange for subsequent unloading of the
+library to happen after any at_exit() or at_reset() processing requested
+directly or indirectly by addfunc().  (This matters to an experimental
+facility for importing Java functions.)
+  In calls on imported functions, ensure that al->dig == 0 when
+al->deriv == 0.
+
+20000814
+  Recognize command-line option -b?.
+
+20000825
+  Adjust prompts to indicate "Waiting for end of line after #" and
+"Saw /*; waiting for */".  To indicate the former, # is inserted at
+the start of the prompt; for the latter, * is similarly inserted.
+If the prompt string would otherwise be the empty string, nothing is
+inserted.
+  Change to builtin "sub" and "gsub" functions: treat \n as newline
+(as in the "sam" editor of plan 9).  Thus the pattern (.|\n)* now matches
+everything until the end of the string, including intervening newlines.
+  Make variable.no independent of whether the variable is fixed.
+  Adjust presolve to make more ambitious the extended presolve
+iterations that occur when $presolve > 1:  when a variable is fixed,
+consider implications of modified constraints involving two or more
+remaining (unfixed) variables in the current extended presolve
+iteration rather than the next one; and when fixing two or more
+variables leads to simplifications of the same constraint, the first
+with implications for one bound (lower or upper), the second for
+the other, consider implications for both bounds.  (Temporarily,
+option presolve_debug 3 suppresses these changes.)
+  Have presolve use values of $presolve_eps, $presolve_fixeps, and
+$presolve_inteps that are rounded up by function
+	R(x) = if x > 0 then 1.1^ceil(log(x)/log(1.1)) else 0.
+Encode the relevant values in .nl file headers and arrange for
+the solution command to issue option commands if necessary to
+set $presolve_eps, $presolve_fixeps, and $presolve_inteps to values
+that permit correctly reading the solution.
+  In addition to using option presolve_fixeps during simple presolve
+reductions (those for $presolve = 1) to decide when tighter bounds
+lb and ub on a variable v (lb <= v <= ub) are close enough to
+consider v fixed (when ub - lb <= R($presolve_fixeps)), also use this
+test when extended presolve iterations ($presolve > 1) reduce ub - lb;
+in this case, v is fixed to if ub < 0 then ub else if lb > 0 then lb
+else 0.  (Temporarily, "option presolve_debug 8" suppresses this.)
+  New system params _presolve_eps_L and _presolve_eps_U
+indicate whether changes to $presolve_eps would matter: they should
+not matter if
+	_presolve_eps_L <= R($presolve_eps) < _presolve_eps_U.
+Similarly, new system parameters
+	_presolve_fixeps_L	_presolve_fixeps_U
+	_presolve_inteps_L	_presolve_inteps_U
+give corresponding bounds for $presolve_fixeps and $presolve_inteps:
+presolve results should not change as long as
+	_presolve_fixeps_L <= $presolve_fixeps < _presolve_fixeps_U
+and
+	_presolve_inteps_L <= $presolve_inteps < _presolve_inteps_U.
+  Rerun presolve if $constraint_drop_tol changes.  This already
+happened for $presolve_eps, $presolve_fixeps and $presolve_inteps.
+  Arrange for option show_stats 2 to produce the same output as
+option show_stats 1, plus an additional line about $presolve settings:
+report current $presolve and indicate whether a smaller value would
+suffice (albeit saving no time) or a larger value might give stronger
+bounds.  In the latter case, the possible improvements are sometimes
+minuscule.  Two new builtin params give values that help determine the
+new line:  _presolve_req is the value of $presolve needed to
+reproduced the results of the last run of presolve.  (This value has
+long been encoded in .nl files to facilitate correctly reading .sol
+files.)  _presolve_sug = presolve_req if further presolve iterations
+would not help and is otherwise either $presolve + 1 (if $presolve >
+0) or 10 (if $presolve = 0).
+  Values of $presolve_*eps shown in output for $show_stats = 1 or 2
+are now rounded to assure changes to R($presolve_*eps).
+
+20000906
+  Arrange for redeclarations of unsubscripted sets with no := clause
+to retain their values (when redeclared to be a set of the same arity).
+Example:
+	set S ordered; data; set S := a b c;
+	display S; redeclare set S ordered;
+	display S; # OK now; previously "no data for set S"
+
+20001002
+  Add "contains" to the reserved-word list.  (Later, it will be a
+set-comparison operator, with A contains B <==> B within A.)
+
+20001006
+  Turn v1*sum{i in A} p[i]*v[i] into zero, where v1 and v[i] are
+variables and p[i] == 0 for all i.
+
+20001128
+  ampltabl.dll:  handle .dsn files better (no longer require them
+to contain DBQ= lines); no longer require DSN=... strings to contain
+DBQ=...; permit DRIVER=... to specify a full connection string (as
+well as DSN=...); handle driver-specific types in addition to the
+ODBC standard ones.
+
+20010129
+  In iterated commands and expressions, permit {if logical_expression}
+wherever indexing expressions were previously allowed.
+
+20010130
+  For completeness, permit {if logical_expression} as the indexing
+in iterated reduction operators (sum, prod, min, max, exists, forall).
+
+20010322
+  Again adjust "option randseed '';" and AMPL's -s command-line option
+to make it more likely that successive invocations will give different
+values.  The changes are visible mainly on Microsoft systems.
+
+20010405
+  New Caution:  unless $Caution is 0, warn about numeric option
+settings where part of the option string is ignored.
+  In response to "solve;" after a previous command has caused
+presolve to determined the solution or eliminate all variables,
+if $solver_msg is nonzero (as it is by default), print solve_message
+again -- it should also have appeared after the previous command,
+and it explains the situation.  Example:
+
+	var x >= 1 <= 2 := 3; var y = x + 2;
+	solve; # "No variables used after elimination of defined variables."
+	solve; # now gives the same message, rather than silence.
+
+20010507
+  In imported (user-defined) functions, have printf("%s",0) print
+"<NULL>" rather than fault.
+  When presolve determines a feasible solution, set
+solve_result_num = 99.
+
+20010816
+  Sample ampltabl.dll for MS Windows:  when reading tables in an
+explicitly specified file, use the full pathname in "DBQ=..." to avoid
+confusion with similar names known to the ODBC Data Source
+Administrator.  When writing tables, the sample ampltabl.dll still
+tries to use "DSN=..." if possible.  Note that to permit writing .xls
+files, it's necessary for the ODBC Data Source Administrator to have
+a DSN (e.g., a User DSN) associated with the Microsoft Excel driver with
+the "Read Only" box unchecked (under Options in ODBC Microsoft Excel
+Setup).
+
+20011119
+  Ensure that A union B puts members of A first.  Usually it did, but
+under some conditions the members of B came first.
+
+20011206
+  Adjust processing of (the default) "option linelim 1" so defined
+variables that are not involved in the current problem will not be
+affected by "option linelim 1" (which took considerable time in a
+motivating example).  The temporary interpretation of the "4" bit of
+$linelim, introduced 20000327, is rescinded.  Now, temporarily (for
+debugging), when the "4" bit of $linelim is on, today's change to
+processing for "option linelim 1" will be suppressed.
+
+20011231
+  New option presolve_assoc (default 7) affects simplification of constants
+in nonlinear contexts during presolve:  sum of
+	1 ==> permit using associative law on + and - operations;
+	2 ==> permit using associative law on * and / operations;
+	4 ==> permit using distributive law on
+		const*(const*thing +- const*thing).
+  Change command-line option -o to write a .nl file at the end of the last
+command-line input file if a "solve;" command would write a new .nl file.
+(Note that if no command-line input files are given explicitly, then stdin
+is treated as the single command-line input file.)
+
+20020409
+  For properly behaving solvers linked with interface library versions
+>= 20020402, adjust the reading of .sol files to omit the backspaces
+that used to appear when the solvers did not report any option
+settings.
+
+20020503
+  Add SnprintF and VsnprintF to AmplExports, to make snprintf and
+vsnprintf available to imported functions.
+
+20020708
+  Change to handling of multiple objectives:  previously objectives
+were always reordered so that nonlinear objectives came first.  Now
+the default is not to do this reordering.  Option nl_permute is
+extended to allow indicating that objectives should be reordered as
+heretofore.  $nl_permute is now the sum of
+	1 ==> reorder constraints
+	2 ==> reorder variables
+	4 ==> reorder objectives
+The default value for $nl_permute remains 3.
+
+20020716
+  Obscure enhancement to handling of complementarity constraints of
+the form equation complements unbounded_variable:  indicate to solvers
+that the unbounded variable is associated with the equation.
+Turning the "4" bit of $compl_warn on (usually by
+"option compl_warn 5;") suppresses this adjustment.
+
+20020801
+  Tweak to single-step mode: accept a semicolon or white space after
+the optional repetition count after "next", "skip", and "step".
+  In problems with variables in singleton complementarity constraints,
+let the complementarity constraints imply the variable bounds when
+$var_bounds is 1 (the default), unless the variables are also matched
+with other complementarity conditions.  Example:
+
+	var x; var y;
+	s.t. c1: x >= 0 complements y >= 0;
+	s.t. c2: x + y = 1;
+	display _varname, _var.lb, _var.ub;
+	# above now shows no bounds on y
+
+20020814
+  In the display command's printing of 2D tables, permit the final ":="
+part of the ": ... :=" header to exceed $display_width (to make the
+output a bit more regular).  We can always recant this tweak if it
+turns out to cause more trouble than it avoids.
+  In set and param declarations, treat = (or ==) as a synonym for :=,
+so = behaves as it does in var declarations.  For param declarations,
+this is simply an extension.  For param declarations, it changes the
+meaning of =, which previously implied a surprising test that the
+param had the specified value.  (We believe that = was almost never
+seriously used in this way, so that this change will be harmless.
+If not, "option old_param eq 1;" restores the old meaning of = in
+param declarations, at least for now.)
+  Arrange that failed consistency checks detected during a "solve"
+command will result in solve_result = '?' and solve_result_num = -1,
+just as they are at the start of execution.  Previously they retained
+their values from the last successful "solve".
+  Change "s.t." to "subject to" in "show" and "expand" commands.
+
+20020924
+  When foo is a subscripted problem whose declaration does not specify
+a subscripted environment, have "problem foo;" make foo's environment
+current.
+
+20021025
+  Arrange for variables to which piecewise-linear terms are applied
+to be defined by the linearizations of the terms.  On problem 14.7(d)
+in the AMPL book (first edition; 17.7(d) of the second), this reduces
+the numbers of variables and constraints by 1/3.  Turning the "4"
+bit of $pl_linearize on, e.g., with
+	option pl_linearize 5;
+suppresses this change.
+  Infer bounds of 0 and 1 on binary variables, even when they are
+relaxed by assignment of 1 to their .relax suffix.
+
+20030204
+  Cut over to a version that works as described in the second
+edition of the AMPL book, including such relatively obscure
+features as new tabular forms in data sections, handling of
+"in union_of_intervals" phrases in variable declarations, and
+$(expr) string expressions.  Some new constraint-logic programming
+features, described in INFORMS J. Computing 14#4 (2002) pp. 322-344,
+are also recognized.  (Variables in subscripts are still missing.)
+
+20030227
+  New option strict_ineq_warn (default 1) determines how to handle
+constraints involving a strict inequality when the constraint would
+be an algebraic constraint if the comparison were changed to permit
+equality (i.e., < were changed to <= or > were changed to >=):
+	0 ==> quietly treat the constraint as a logical constraint;
+	1 ==> print a caution and treat as a logical constraint;
+	2 ==> print a warning and reject the constraint.
+Before 20030204, AMPL behaved as though $strict_ineq_warn were 2.
+
+20030319
+  Fix glitches with "unload" (which did not completely unload the
+indicated library) and "delete function_name" (e.g., when the
+function name coincided with a builtin random function).
+
+20030328
+  Fix a fault introduced 20030319 in handling ampltabl.dll after a
+reset.  Fix a glitch that sometimes caused "unaligned access" errors
+on systems with 64-bit addressing.
+
+20030331
+  Adjust option relax_integrality so binary variables added to
+linear nonconvex piecewise-linear terms are retained under
+	option relax_integrality 1;
+and are relaxed, with no suffix information about them transmitted
+to the .nl file, under
+	option relax_integrality 2;
+Before this change, solvers might fault unless explicitly told to
+ignore SOS information when $relax_integrality was 1 and the problem
+had nonconvex piecewise-linear terms.
+
+20030527
+  Adjust the output of "expand _con;" and "expand _con[n];" so that
+when complementarity constraints are present, they are only indicated
+by a ".L" or ".R" suffix on the constraint name.  Previously, if, say,
+the first constraint was a complementarity constraint, then
+both "expand _con[1];", "expand _con[2];" and "expand _ccon[1];" all
+produced the same output, except for the decorations ".L" and ".R" in
+the constraint names shown for _con[1] and _con[2].  Similarly,
+"expand _con;" showed complementarity constraints twice, distinguished
+only by ".L" and ".R" decorations.  These decorations now appear after
+rather than before subscripts.
+
+20030626
+  Adjust changes made, if necessary, by the "solution" command to
+$presolve_eps, $presolve_fixeps, and $presolve_inteps to properly read
+a .sol file corresponding to a .nl file written before changes to
+those options:  multiply the R(x) value shown in the changes of
+20000825 by .95 (to put the value roughly halfway between the relevant
+integer powers of 1.1), then round the result to 3 significant
+figures.  For example, with a suitable solver and problem instance, in
+
+	write bfoo; solve;
+	option presolve_inteps 37; solution b.sol;
+
+the solution command now issues
+
+	option presolve_inteps 1.04e-06;
+
+rather than yesterday's
+
+	option presolve_inteps 1.0950988861107401e-06;
+
+Because of how $presolve_inteps is discretized,
+"option presolve_inteps 1.04e-6" has the same effect as the default
+"option presolve_inteps 1e-6".  Today's changes also correct a bug in
+deciding whether to restore $presolve_inteps.  On the relatively rare
+occasions when this bug bit, it might cause reading the .sol file to
+fail after a surprising "option presolve_inteps..." command was
+generated and presolve ran again.
+
+20030724
+  Fix a bug in handling logical constraints (a forthcoming extension):
+if $auxfiles or $($solver & '_auxfiles') requested a .row file and the
+problem contained both logical constraints and objectives, a fault was
+likely.
+  New feature related to this bug fix:  when new option
+convert_logical_to_algebraic has its default value 1, constraints that
+appear to be logical constraints because they are surrounded by
+parentheses but that would be recognized as algebraic constraints
+without the surrounding parentheses are converted to algebraic
+constraints during parsing.  Specifying
+	option convert_logical_to_algebraic 0;
+suppresses this conversion.
+
+20031017
+  Diagnose ": =" instead of ":=" in data tables.
+
+20040103
+  Adjust linearization of a nonconvex piecewise-linear term to use
+	max($pl_bigM, 2*max{b in Breakpoints} abs(b),
+		if lb > -Infinity then abs(lb) else 0,
+		if ub < +Infinity then abs(ub) else 0)
+where $pl_bigM was previously used (with lb and ub the lower and
+upper bounds on the variable that the piecewise-linear term
+multiplies).  Turning the "8" bit of $pl_linearize on, e.g., by
+	option pl_linearize 9;
+suppresses this change, at least for now.
+
+20040821
+  Print NaN values as NaN, regardless of their sign bits.  Previously
+-Nan was sometimes (incorrectly) printed.  The sign bit of a NaN is not
+supposed to have any meaning.
+  Add new system param NaN (which, on systems with IEEE arithmetic, has
+the value NaN and in general has the value Infinity - Infinity).
+
+20050530
+  If a "read" command issued in interactive mode encounters end-of-file,
+permit further interactive input.
+
+20050702
+  Note that to get correct dual values for constraints removed by presolve
+when using an interior-point solver, it's necessary to set $abs_boundtol
+or $rel_boundtol to a suitable positive value.  These options are not
+described in the AMPL book, but are described in the entry for 19931005
+of /netlib/ampl/changes.  Note also that not all changes to $abs_boundtol
+and $rel_boundtol cause recomputations; AMPL records ranges of values for
+these options that have the same effect and avoids recomputations for
+changes that do not matter.
+
+20060314
+  For imported functions, change unsigned long args to size_t, to
+permit allocating memory blocks of size >= 4GB (a mostly invisible
+change; for solvers, this requires ASLdate >= 20060122).
+
+20060430
+  Arrange for presolve to turn logical constraints into algebraic
+constraints (when deductions make this possible), and then to process
+the new algebraic constraints.
+  New builtin params:
+	_nlog_algcons = number of logical constraints turned by
+			presolve into algebraic constraints
+	_npre_log_algcons = number of such constraints subsequently
+			eliminated by presolve.
+These numbers also appear in the output for "option show_stats 3;".
+
+20060725
+  Have "display" honor $display_precision when printing symbolic
+parameters having numeric values.
+  When "expand" or "solexpand" prints out a constant objective,
+show its value as "number" or "-number" rather than "0 + number"
+or "0 - number".
+
+20060905
+  When x is a variable, have "reset data x;" discard x's current
+value (and, as before, permit new default data for x's initial value
+in a data section).  If x has a random default expression, it gets
+resampled when x is next needed.  Previously, "reset data x" worked
+this way until x was assigned a value by "let" or "solve", after which
+x retained the assigned value.
+
+20060912
+  New option csvdisplay_restrict:  with $csvdisplay_restrict at its
+default value, an undocumented restriction on csvdisplay is henceforth
+relaxed.  Specifying "option csvdisplay_restrict 1;" enforces the
+restriction in question, namely that csvdisplay issues an error
+message (meant to help debug GUIs that use csvdisplay) when asked to
+display more than one table.  Example:
+	set A{i in 1..4} = i .. i^2;
+	csvdisplay A;	# used to be disallowed
+	option csvdisplay_restrict 1;
+	csvdisplay A;	# gives the old behavior:
+	# complains "csvdisplay would emit 4 tables."
+
+20061023
+  Tentatively introduce option presolve_logfile with possible values
+"filename" to write file filename anew each time presolve runs;
+">>filename" to append to filename each time presolve runs; and
+"-" to write to the standard output file (stdout).  When
+$presolve_logfile is not "" (its default value), each time presolve
+updates a bound, the constraint and variable involved and updated bound
+are written to $presolve_logfile.
+  New builtin symbolic param _table_errmsg records the last error message
+from the most recent "write table" or "read table" command, and is set
+to "" if the last such command had no error.
+  New option table_errbreak determines whether "write table" and/or
+"read table" commands report errors and terminate processing of
+commands, or suppress error reports and simply record the last error
+in _table_errmsg.  $table_errorbreak (default 0) is the sum of
+
+	1 {suppress error reporting for "write table"}
+	2 {suppress error reporting for "read table"}
+	4 {for iterated "read table" and "write table" commands,
+		do all iterations despite errors}
+
+Hitherto, $table_errbreak = 4 was the old behavior; now the default
+value 0 stops iterated table commands at the first error.
+
+20061121
+  Add messages distinguishing "Solution determined by presolve" from
+"All variables fixed" and "All relevant variables fixed".  (In the
+latter case, some unused variables are not fixed.)  All these cases
+still get solve_result_num = 99.
+  Have main() call exit rather than returning, to prevent a fault
+on an odd version of Linux.
+
+20070301
+  Tweak to $csvdisplay_restrict: when $csvdisplay_restrict mod 2 == 1,
+provide a more detailed error message when csvdisplay would emit more
+than one table, unless $csvdisplay_restrict mod 4 == 3, in which case
+the former, one-line error message appears.
+
+20070317
+  Addition to error messages for commands:  the current _cmdno (the
+count of commands executed) is now reported unless input is from the
+standard input.  For the standard input, setting option stdin_offset
+to 1 causes the input offset and _cmdno to be reported in error
+messages for commands.
+  New option single_step_cmdno causes $single_step to be set large
+enough to cause single stepping when _cmdno == $single_step_cmdno.
+This provides a way to repeat the execution (after "reset;" or a fresh
+invocation) and enter single-step mode just before an error, to permit
+looking at current values, which might shed light on the error.
+
+20070410
+  Add "	7	rand	random variable in current problem"
+to $astatus_table.
+
+20070612
+  Tweak printing of sets under complicated conditions, such as error
+messages involving next() and prev() under obscure conditions in
+which the sets are now shown as a list of elements, enclosed in
+braces.  Previously the braces were omitted and the elements printed
+one per line, which was confusing.
+
+20070903
+  In the breakpoint and slope lists of piecewise-linear expressions,
+i.e., the ... of <<...; ...>>, permit iterating parenthesized lists
+of expressions, as in function calls.  Here is an example that is
+now acceptable, but formerly elicited a syntax error message:
+
+	var x in [-15,15];
+	minimize zot: <<{i in 1..3} i^2; {i in 1..2} (-1,1)>> x;
+
+20070923
+  Permit Infinity (as well as NaN) as values in data sections.
+  Disallow deleting some suffixes not previously noted as system
+suffixes.
+  System suffix stage was quietly introduced a while ago, for use with
+random variable declarations (a forthcoming extension).  Permit explicit
+declaration of suffix stage if no random variables have been declared,
+which disallows subsequent declarations of random variables and permits
+using stage as an ordinary declared suffix.
+
+20080102
+  When a constraint implies a bound on a variable and integrality of
+the variable causes a further adjustment to the bound, do not treat
+the constraint as tight when inferring dual values.  Before this change,
+constraints eliminated by presolve were sometimes given nonzero dual
+values, even though they were slack.
+  Tweak ODBC table handler so (e.g.) with MS SQL Server it will choose
+a better type for numeric data.
+
+20080307
+  New variant -Rw of command-line option -R (described in change-log
+entry for 19970814) disables output redirections ("> filename" and
+">> filename").
+
+20080312
+  New option ampl_libpath specifies a sequence of directories,
+one per line (analogous to $ampl_include) in which to look for
+libraries mentioned in "load" commands.  When $ampl_libpath is
+empty or contains only white space, the "load" command looks in
+the current directory.  (The "unload" command looks for names
+mentioned in previous "load" commands and quietly ignores names
+not found; "reload" is a combination of "unload" and "load", so
+it honors $ampl_libpath when doing its "load".  Note that
+$AMPLFUNC and the builtin sets _AVAILFUNCS, _AVAILFUNC2, _LIBS
+are updated by "load", "unload", and hence "reload".)
+
+20080423
+  New builtin params _last_solno, _primal_solno, _dual_solno,
+_status_solno:  _last_solno is incremented at each "solve" and
+"solution" command that reads at least some solution information.
+If any primal or dual variable or solver status (.sstatus) values
+are read from the .sol file, _primal_solno, _dual_solno, and/or
+_status_solno, respectively, is/are set to the new _last_solno value.
+If "solve" results in "Solution determined by presolve" or
+"Infeasible constraints determined by presolve", these parameters
+are also updated.
+
+20080616
+  Adjust reporting of memory used to avoid confusion under some
+64-bit versions of Linux where there can be large gaps in the
+addresses returned by malloc().  This change affects the memory
+usage reported with "option times 1;" and "option gentimes 1;".
+
+20080629
+  Write "Solution determined by presolve" messages to stdout rather
+than stderr.
+  New builtin solve_result_num values:
+	999 ==> error running solver (nonzero solve_exitcode);
+	998 ==> nonexistent .sol file;
+	997 ==> error in .sol file;
+	996 ==> error in restoring state to read .sol file.
+Treat any of these as exit code 1024 from the solver as far as
+option solve_exitcode_max is concerned.  (The default value of 0
+for $solve_exitcode_max will then cause a break in the execution
+of commands.)  This applies to both "solve" and "solution" commands.
+(Of course, solve_result_num cannot be set to 999 by a "solution"
+command.)
+
+20080701
+  In some cases of failed "solve" and "shell" commands, report where
+in what input file the error occurs.
+
+20080804
+New params (mainly for use in debugging carelessly written models):
+
+	_backslash_map default 0;	# 0 ==> no mapping
+					# 1 ==> map \\ to /
+	_filename_case default 0;	# 0 == retain given case
+					# 1 == force to lower case
+	set _file_prefixmap dimen 2;
+		# for (a,b) in _file_prefixmap, map prefix a to b
+
+Note that under MS Windows, you have always been able to use / instead
+of \ in file names.  Use of \ causes gratuitous unportability.
+
+20080907
+  Arrange for
+	printf "%+011.0f\n", -12345;
+to print "-0000012345" rather than "     -12345".
+  Extend printf to accept the C99 formats %a and %A.
+
+20080926
+  Add option shell_exitignore to suppress the message
+"exit code n" from "shell" commands when n <= $shell_exitignore.
+(On Unix and Linux systems, n = shell_exitcode/256.)
+
+20081026
+  Add "q" as synonym for "quit".
+
+20081208
+  New option mpsfile_numwidth (default 12) controls the field width
+and format of floating-point values written by the -om output option
+(for MPS files, which are to be discouraged, as they are slow to read
+and write and omit important problem details, such as the sense of
+optimization).  Positive values specify that field width; negative
+values specify fieldwidth -$mpsfile_numwidth with nonnegative values
+having an initial space, so both x and -x are printed to the same
+number of significant digits.  Specifying "option mpsfile_numwidth 0"
+causes numbers to be written to full precision, the same as printf
+format %.g (in AMPL -- a sensible departure from the unfortunate C99
+provision that %.0g be treated as %.1g).  Some solvers may not cope
+properly with values of abs($mpsfile_numwidth) > 12.
+  New option no_hexfp.  When $no_hexfp is 0 (its default), C99-style
+hexadecimal floating point constants are recognized: they are strings
+that start with 0x or 0X followed by a string of hexadecimal digits
+possibly containing one decimal point, optionally followed by an
+exponent part consisting of p or P, an optional sign (+ or -) and
+a nonempty string of decimal digits (the power of 2 by which to
+multiply the hexadecimal value preceding the exponent part).  When
+$no_hexfp is 1, hexadecimal floating-point values are not recognized,
+thus restoring AMPL's previous behavior, in which hexadecimal floating
+values without a decimal point could be used as normal identifiers,
+and general hexadecimal floating-point values could appear unquoted
+in data sections and be treated as symbolic values.
+  One reason for interest in hexadecimal floating-point numbers is that
+they are faster to read and write than decimal values.  Note that the
+printf formats %a or %A can be used to write hexadecimal
+floating-point values.  We expect most AMPL users to be unconcerned
+with hexadecimal floating-point notation, but on occasion a few may
+find it convenient to be able to read and write them.
+  New builtin set _LOCAL_OPTIONS is set initially to most of the option
+values that AMPL provides, except for ones found in the incoming
+environment, and except for
+	AMPLFUNC
+	amplfunc0
+	objective_precision
+	version
+which are always exported, as some solvers use them.  When carrying
+out a "solve" or "shell" command, AMPL does not pass to the invoked
+program environment variables whose names appear in _LOCAL_OPTIONS.
+This set is retained across reset commands and can by modified by
+"let" commands.  To restore the old behavior of exporting all options,
+invoke
+	let _LOCAL_OPTIONS := {};
+initially.
+
+20081210
+  New command _solexpand, a variant of solexpand meant for program
+rather than human consumption, and only useful (so far) for linear
+constraints and objectives.  For each constraint or objective treated,
+it writes a one-line header, followed by linear terms, one per line.
+The header has the form
+
+	What sno bt nlin isnl bound(s) name
+
+where What is one of
+	Min for an objective to be minimized,
+	Max for an objective to be maximized, or
+	Con for a constraint;
+sno is the objective or constraint number as seen by the solver:
+0 for the first, 1 for the second, etc.; bt is 0 for objectives
+and for constraints is
+	  (if the constraint's lower bound is finite then 1 else 0)
+	+ (if the constraint's upper bound is finite then 2 else 0);
+nlin is the number of linear terms that follow; isnl is 1 if the
+objective or constraint also has a nonlinear part and is 0 otherwise;
+if 0 <= bt <= 2, bound(s) is a single number, either the objective's
+constant term or the constraint's one finite bound; if bt is 3, then
+bound(s) is two numbers: the constraint's lower bound followed by the
+constraint's upper bound; finally name is the possibly subscripted
+name of the objective or constraint in question.  The nlin lines for
+linear terms that follow the header line have the form
+
+	varno coef
+
+where varno is 0 for the first variable that the solver sees, 1 for
+the second, etc., and coef is the coefficient of the variable.
+Floating-point numbers by default are written by format %a (i.e.,
+C99-style hexadecimal floating-point format, which now can be read
+by the strtod routine in the AMPL/solver interface library); if
+$no_hexfp is set to 1, floating-point numbers are written with
+format %.g (i.e., full precision decimal).
+
+20090209
+  Complain when a var declaration specifies the variable to be in
+a disjoint union of intervals involving an infinity.
+
+20090316
+  Extension:  in data sections, after a : ... := header, permit ": :="
+(which may be written "::=") to reuse the same header.  Example:
+
+	set S dimen 3; param p{S};
+	data;
+	set S :=
+		(a,x,1) (a,x,2) (a,y,1) (a,y,2)
+		(b,x,1) (b,x,2) (b,y,1) (b,y,2);
+	param p [a,*,*] : 1 2 :=
+	x 1.1 2.2
+	y 3.3 4.4
+	[b,*,*]::=
+	x 5.5 6.6
+	y 7.7 8.8;
+	display p;
+
+  Extension:  in data sections, permit a "param-data-alternate" header
+that specifies a set-name and one parameter name to accept ": ... :="
+tables instead of a ":= value-item ..." list.  Example:
+
+	set S dimen 3; param p{S};
+	data;
+	param :S:p [a,*,*] : 1 2 :=
+	x 1.1 2.2
+	y 3.3 4.4
+	[b,*,*]::=
+	x 5.5 6.6
+	y 7.7 8.8
+	[c,*,*]::=
+	z 9.9 0.2;
+	
+	display p, S;
+
+20090323
+  New error message "The current problem is empty." appears in
+response to a "solve" or "write" command after a new, empty problem
+declaration not followed by any subsequent variable, constraint, or
+objective declarations.  Previously one of the messages
+"All constraints and objectives dropped."  or (if some defined
+variables had been declared) "Solution determined by presolve."
+appeared in this context.  Examples:
+
+	model diet.mod; data diet.dat;
+	problem zork; solve;
+	# said "All constraints and objectives dropped."
+
+and a defined-variable variant
+
+	model diet.mod; data diet.dat;
+	var Buysum = sum{j in FOOD} Buy[j];
+	problem zork; solve;
+	# said "Solution determined by presolve."
+
+20090508
+  This is a note about a longstanding feature that apparently we missed
+documenting:  with interactive input, "/*" leads to prompt "*ampl:" until
+"*/" appears in the input.  In general, the prompt the prompt that
+would otherwise appear, preceded by *.
+
+20090707
+  For linear problems with the student versions of AMPL, increase the
+allowed number of variables and objectives+constraints to 500 each.
+
+20090726
+  Add option allow_NaN (default 0).  If $allow_NaN is positive,
+objective and constraint values are set to NaN in the face of a
+numeric evaluation error that depend on current variable values,
+rather than giving an error message.
+
+20090811
+  Add a warning about comparisons with strings and one of the operators
+<, <=, >=, > (to catch some instances of use of & rather than &&).
+
+20090926
+  Changing default value of option show_boundtol from 0 to 1
+and adding option boundtol_max (default 1e-5).  When
+"option show_boundtol 1;" is in effect, report changes that
+would affect dual variable computations whenever dual variables
+are recomputed, not just when a solution is read, but report
+them only if the new $abs_boundtol or $rel_boundtol value would
+not be more than $boundtol_max.
+
+20091112
+  Exclude defined variables (and their defining constraints) from
+the count of constraints used in deciding whether a problem is
+small enough for the student version.
+
+20091122
+  Fix a glitch that caused an error message of the form
+"invalid refct -2147483647 in opgen" after execution of a huge
+number of suitable commands.  (In the example that led to this fix,
+the message arose at _cmdno 7123157887, which is well over 2^32.)
+
+20100228
+  Allow an optional output redirection after "commands filename", which
+applies to output that would otherwise go to the standard output.
+Closing the target of the redirection during execution of the commands
+in filename causes such output again to go to the standard output.
+
+20100320
+  Fix a fault with "option presolve 0" on some problems with
+piece-wise linear terms.  (Work-around:  leave option presolve at its
+default setting.)
+
+20100330
+  Fix a bug (fault) with "reset data;" when (e.g.) two params indexed
+by the same set were affected.  Example:
+
+	set S; param n_min{S}; param n_max{S};
+	table foo "nutrients.tab" IN: S <- [NUTR], n_min, n_max;
+	read table foo;
+	display n_min, n_max;
+	reset data;	# faulted
+
+20100402
+  Fix a bug (possible fault or worse) in handling nonconvex
+piecewise-linear terms.  Values for introduced variables that were
+then eliminated by substitution were mistakenly stored after
+"solve" with a possibly out-of-bounds subscript.  (Whether this
+caused trouble was problem-dependent.)  Work-around:
+"option pl_linearize 5;".
+  Fix a bug with applying piecewise-linear operators to defined
+variables.  Incorrect problem transforms sometimes resulted.
+
+20100429
+  Fix a bug (fault) in handling valid input followed (e.g.) by an
+empty line and "*/" without a newline at the end of file.
+
+20100705
+  Fix trouble that could arise in 32-bit binaries after they execute
+more than 2^31 commands.
+
+20100708
+  Fix a bug introduced 20100228 in the "commands" command:  when
+used inside a loop, a fault (or worse) was possible.
+
+20100715
+  Fix a glitch in the regular expression functions (sub and gsub):
+^ only matched the beginning of the string and not the beginnings of
+internal lines (i.e., the text following a \n character).  Now it
+also matches the character following each \n (just as $ matches the
+end of each internal line as well as the end of the string).
+
+Example: before the bug fix,
+    num0(sub(solve_message, '(.|\n)*\n([0-9]+) MIP(.|\n)*', '\2'))
+was the only way to extract the number of MIP simplex iterations
+from the solve_message returned by cplex.  The bug fix lets us replace
+the first \n with ^:
+    num0(sub(solve_message, '(.|\n)*^([0-9]+) MIP(.|\n)*', '\2'))
+
+  Extension to the regular expressions processed by sub and gsub:
+@ is similar to ., but also matches \n, i.e., @ is a synonym
+for (.|\n).  The above example can now be written
+    num0(sub(solve_message, '@*^([0-9]+) MIP@*', '\1'))
+Of course, a literal @ appearing in a regular expression must now
+be escaped, as in
+    sub('x@y', '\@', ' at ')
+in which previously the \ was not required (but was allowed).
+
+20100915
+  Fix a bug (fault) with variables declared to be in a union of more
+than two intervals.
+  Fix bugs (e.g, possible fault) in cleaning up after a solve with
+piecewise-linear terms or variables in unions of intervals, and with
+models that had both piecewise-linear terms and variables in unions
+of intervals.
+
+20100928
+  Adjust environment changes so if one declares two problems,
+(with distinct environments) then sets option randseed to the same
+value in each, switching between these problems will not cause option
+randseed to be reset to the common value, but the random number
+sequence will continue.  For example,
+
+	var x;
+	minimize zip: sin(x);
+	minimize zap: cos(x);
+	problem p1: x, zip;
+	problem p2: x, zap;
+	option randseed 42;
+	print Uniform01();
+	problem p1;
+	option randseed 42;
+	print Uniform01();
+	problem p2;
+	print Uniform01();
+
+used to print "0.31376060558952107" thrice.  Now the third "print"
+gives a different value (0.8653543517772044).  Best practice (least
+confusing) is to adjust option randseed before declaring problems or
+new environments, in which case the this change to environment
+processing makes no difference.
+  Fix a bug with _ampl_time and related quantities, such as
+_ampl_elapsed_time:  they were only computed once and appeared to
+be constant thereafter.
+  Fix a bug that could cause assignments to variable.relax not
+to take effect until completion of the outermost containing loop.
+(Insertion of "display somevariable.astatus;" after such assignments
+was a work-around; the choice of variable did not matter.)
+  New builtin suffix "int" on variables is 0 for a continuous variable
+and 1 for an integer or binary variable (unless $relax_integrality is
+nonzero or the variable's .relax suffix is positive, in which case .int
+is 0 and solvers will see the variable as continuous).
+
+20101103
+  Work around getenv() trouble seen on a version of Linux.
+The bug would cause a solver not to be found after a change to
+option PATH.
+
+20101105
+  Fix a bug in converting decimal strings of more than 40 significant
+digits when the first appears after the decimal point.  Example:
+
+	print .010000000000000000057612911342378542997169;
+
+gave 4.008336720017946e-292 rather than 0.01.
+
+20101125:
+  Fix a bug (fault) with unsubscripted symbolic variables (a forthcoming
+feature, not yet described).
+
+20101203:
+  Fix a bug (fault, rarely seen) affecting 64-bit binaries.
+
+20101206
+  Fix a bug (fault) possible with some uses of random variables (a
+forthcoming feature).
+
+20110112
+  Fix a rarely seen bug (fault) that bit under the "right" conditions
+when making adjustments for new suffixes.
+
+20110121
+  Fix a rarely seen parse error on a command after an in-line data
+section.
+  Add warning that variables in subscripts are not yet allowed.
+
+20110219
+  Fix a rarely seen bug that caused a fault in a complicated example.
+  Fix a bug in "table write":  symbolic params with numeric values were
+sometimes treated as having the corresponding string value.
+  Add an error message for table declarations that involve row-index
+dummy variables in OUT or INOUT columns and do not specify "set -->"
+or "set <-->", as in the following example.
+
+	set S; set T = 1..4; param p{S,T};
+	table goo:
+	  S <-- [r ~ R], {t in T} < p[r,t] ~ ("col" & t) >;
+
+Previously "write table goo" faulted (but worked fine with "S <--"
+changed to "S <-->" or "S -->").
+
+20110222
+  Fix a bug with solexpand applied to a defining constraint:
+a spurious "complements" sometimes appeared and a constant term
+was possibly lost.
+
+20110306
+  Fix glitches with iterated columns in table declarations, i.e., with
+	indexing < colg_1 [, colg_2, ...] >
+The indexing set was treated as the empty set in some situations,
+which might have caused "read table" not to read the columns in
+question or have caused "write table" to fault.
+  Fix a glitch in the processing of "include filename" where filename
+is not quoted.  If a nonblank character immediately followed filename,
+as in "include foo;" (in which semicolon is the nonblank character),
+that character was sometimes seen at the wrong time.  For example,
+"if 1 < 0 then include f;" was treated as "if 1 < 0 then; include f".
+(Recall that an include phrase, such here as "include f", is processed
+before parsing; that is, "include" is unaware of the context in which
+it appears.)
+
+20110321
+  Fix "sd botch in ordered_genall" in the following example:
+	set S ordered by 1..10 default 1..10; display S;
+
+20110413
+  Fix a fault that could arise in a complicated example with fixing
+and unfixing a defined variable within a bigger loop.  Such fixing
+and unfixing is not allowed, but in the example, the bug bit before
+an error message about the inappropriate operation was issued.
+
+20110419
+  Fix a fault in the "objective" command that was possible with some
+forms of iterated objectives.  Example:
+
+	set A dimen 2; var x;
+	minimize Obj{(i,'N') in A}: x^i;
+	data; set A := 1 x  2 N;
+	objective;	# faulted
+
+20110524
+  Fix a bug (fault or worse) with some models having both defined
+variables and logical constraints.
+  Fix a bug in simplifying logical constraints with constant logical
+expressions; the wrong truth value sometimes appeared in a platform-
+dependent way.
+
+20110531
+  Adjust processing for $substout=1 to allow mutually recursive
+variable definitions from several indexed defining constraints.
+
+20110614
+  Fix a glitch in computing Jacobian sparsity in some problems in
+which a nonlinear defined variable appears linearly in a nonlinear
+constraint and "option substout 1" is specified.  Example:
+
+	set I = 1..2; var x{I}; var y{I};
+	s.t. c1: y[1] = x[1] + 1;
+	s.t. ydef: y[2] = y[1] + x[2] - x[1];
+	minimize zot: y[2]^2;
+	s.t. bletch{i in I}: x[i]*y[i] >= 3;
+
+With $substout = 1, bletch[2] was incorrectly indicated to depend
+on x[1].  Aside from sparsity issues, this was harmless.
+
+20110630
+  Omit "Highest address used = ..." from "Too much memory" message;
+the "highest address" seems pointless when virtual memory is used.
+  Fix two bugs in handling complementarity constraints.  In a
+command-line invocation of the form
+	ampl -obfoo foo.mod foo.dat
+complementarities might sometimes have been misidentified, and
+"complementarities" of the form v complements expr1 == expr2 (which
+should just be simplified to expr1 == expr2) may have been conveyed as
+complementarities (which seemed not to bother the "path" solver).
+
+20110713
+  Change the default computation of c.slack for a complementary
+constraint of the form
+
+	c:  L <= expr1 <= U complements expr2
+
+with L and U finite to
+
+	min(expr1 - L, U - expr1,
+		if expr1 <= 0.5*(L+U) then expr2 else -expr2)
+
+Setting new option $old_complementarity_slack to 1 restores the
+old computation:
+
+	min(expr1 - L, U - expr1,
+		if expr1 <= L then expr2
+		else if expr1 >= U then -expr2
+		else -abs(expr2))
+
+The new default computation is more useful than the old when
+an interior-point algorithm is used.  With it, a slack value of
+zero means the constraint is satisfied exactly, a small positive
+value is a complementarity violation, and a negative value is a
+constraint violation.  Unless we hear feedback that having
+option old_complementarity_slack is useful, this new option may
+eventually be withdrawn.
+  When writing a .nl file after a solve or solution command,
+i.e., when primal or dual values for implicit variables or
+constraints are available, include their values, if nonzero,
+with the primal or dual initial guess.
+  Fix glitches in "expand cc;" and "solexpand cc;", where cc is
+a complementarity constraint:  bounds were sometimes not shown.
+  Add two numbers to line 3 of the .nl header when complementarities
+are present: nd = number of "double" complementarities, i.e., those
+involving a double inequality, such as
+	L <= expr <= U complements expr1
+and nzlb = number of complemented variables with a nonzero lower
+bound.  The new numbers are used in a new facility soon to be added
+to the AMPL/ solver interrface library for optionally modifying
+complementarity conditions to v1 >= 0 complements v2 >= 0.  (With
+older versions of AMPL, the facility uses upper bounds on nd and
+nzlb.)
+
+20110722
+  Fix some bugs with logical constraints.  Problem commands did not
+cause logical constraints to be dropped or restored when they should
+have been.  The "delete suffix ..."  command ignored logical
+constraints.  The "drop;" command did not show dropped logical
+constraints.  The "delete lcon;" command, for lcon a logical
+constraint, misbehaved.  For a logical constraint lcon, "expand lcon;"
+and "solexpand lcon;" sometimes printed an extraneous Infinity.
+
+20110725
+  Fix a bug with redeclarations involving variables.  Input of the
+form
+	# ...
+	write bfoo1;
+	var newvar;
+	redeclare minimize o: ... /* involving newvar */;
+	write bfoo2;
+could have resulted in an incorrect foo2.nl.
+
+20110726
+  Extend command-line option -Rw to forbid "write" commands.
+
+20110813
+  Fix glitches in "show f;" when f is a pipe function.
+  Fix a fault with empty slices that arose under rare conditions.
+  In equality constraints in which one side involves numeric variables,
+assume the other side must also be numeric.  This matters when the
+other side involves an if-then-else expressions whose "then" or "else"
+expression consists only of a dummy variable, such as
+
+	set I := 1..2; var x{I}; var y{I};
+	subject to c{i in I}: x[i] = if i == 1 then y[i]
+				else if i == 2 then i;
+
+which previously was treated as a logical constraint.  (Changing
+"then i" to "then i + 0" was necessary to make constraint c into
+an algebraic constraint.)
+
+20110825
+  Fix a parsing bug: an include phrase following an "if" command that
+could be followed by an "else" command (which might be in the included
+file), but is followed by something else was mishandled.
+
+20110901
+  Fix a parsing bug ("syntax error") seen in the following example:
+
+	param p; var x{1..2};
+	minimize zot: sum{i in 1..2} (1-x[i])^2;
+	data goo.dat;
+	if p > 3 then commands goo1.mod;
+	expand;
+
+Changing "expand;" to "expand ;" or ";expand;" worked around the bug.
+
+20110906
+  Extend "option show_stats 1" output to list the numbers (if
+nonzero) of equality, inequality, and range (i.e., double
+inequality) constraints.
+  On Unix-like systems, add command-line option -g to start in a new
+process group.
+  Extend option relax_integrality to apply to binary variables
+introduced to handle "in union_of_intervals" phrases in variable
+declarations.
+
+20110908
+  Fix a bug with complementarity constraints.  With certain (somewhat
+rare) problem dimensions, an incorrect .nl file was generated.  An
+example where this bug bit:
+
+	var x {1..2} >= 0; minimize obj: x[1] + x[2];
+	subj to con: x[1] <= 3 complements x[2] <= 5;
+
+20110909
+  Fix a memory leak seen in a script involving a number of solves of
+large problems.
+  Arrange for printing variables not to require instantiating
+constraints.  With some command sequences, "ampl -t ..." or
+"ampl -T ..." or the equivalent "option times 1;" or
+"option gentimes 1;" will produce less output than before.
+
+20110913
+  Fix a rarely seen bug that caused a fault in recent 32-bit Windows
+binaries.
+
+20111005
+  Allow "ampl -R" (server mode) to use imported functions provided by
+"load"  commands (but not pipe functions).
+
+20111011
+  Fix a glibc bug that had crept in with the values of
+_solve_elapsed_time and _shell_elapsed_time under Linux.
+
+20111015
+  Fix a bug sometimes seen with "show" after a redeclaration:  wrong
+variable names were sometimes reported (depending on details of the
+redeclaration).  Example:
+
+	var x; var y;
+	minimize zap: x + y;
+	s.t. C: 2*y <= 5;
+	expand C;	# OK
+	param p default 2;
+	redeclare s.t. C: p*y <= 5;
+	expand C;	# mentioned x rather than y
+
+20111016
+  Fix more variable-reordering trouble with redeclare (not caught
+by yesterday's example).  Example:
+
+	var w; var x; var y; var z;
+	minimize foo: w + 2*x + 3*y + 4*z;
+	s.t. c1: x + 5*y <= 37;
+	s.t. c2: y + 6*z >= 43;
+	s.t. c3: 4 <= z + 7*x <= 19;
+	expand;
+	redeclare var y = x^2 + z; # "xrenumber bug" with version 20111015
+	expand;	# wrong constraint c3 prior to 20111015
+
+20111107
+  Supply missing initialization of SnprintF and VsnprintF in the
+AmplExports structure passed to imported functions and table handlers.
+(They have long been provided to imported functions used by solvers.)
+  When imported functions or table handlers see ae->ASLdate >= 20111028
+and ae->asl == 0, ae->Getenv(0) returns a char** value for the complete
+current environment.
+  On Unix-like systems, set FD_CLOEXEC when opening files, to prevent
+child processes (e.g., from "solve" or "shell" commands) from seeing
+irrelevant open file descriptors, a bit of tidiness seldom relevant in
+practice.
+  Fix the obscure glitch that prompts were preceded by # after reading
+a file that ended in an incomplete #comment line (one without a
+terminating newline character).  The # persisted until the next
+complete comment had been read.  Now the # should only appear if
+you manually enter an incomplete comment (e.g., under Unix or Linux,
+by typing control-D at the end of a # comment line).
+  Fix a bug (e.g., fault) that bit under complicated conditions, e.g.,
+with solving sequences of named problems.
+
+20111110
+  Fix bugs (giving a surprising error message or fault) with updating
+sets over which subscripted objectives and problems are indexed.
+
+20111121
+  Fix a bug with testing membership in "system sets", i.e., any of
+_CONS, _ENVS, _FUNCS, _LOGCONS, _OBJS, _PARS, _PROBS, _RANDVARS,
+_SETS, _SUFFIXES, _SYMVARS, _SYSTEM_SUFFIXES, _TABLES, _VARS or
+_VARSETS.  The test sometimes came out wrong.  Example:
+
+	reset; print if 'XX' in _SETS then 'yes' else 'no';
+	# printed yes rather than no
+
+  Add a warning about "data;" not being allowed in a compound command.
+Other error messages are likely to appear after the new warning.
+Note that "data filename;" and "data (filename_expr);" may appear in
+a compound statement.
+
+20111216
+  For the -ix command-line option, in addition to allowing multiple
+files on separate lines of a suitably quoted x, allow multiple files
+on the same line if each file name is enclosed in single or double
+quotes.  Add a brief explanation of multiple files to the "-i?"
+output.
+  Fix a bug (introduced 20110531) with "option substout 1":  an
+incorrect .nl file was sometimes generated when several constraints
+could be chosen to define a particular variable.  Here is an example
+in which the bug bit, giving a .nl file incorrectly containing
+"nonlinear" constraints:
+
+	option substout 1;
+	var x >= 3;
+	var y{i in 1..2} >= i;
+	var z;
+	var v = z + 3;
+	var w = v + x;
+	s.t. c{i in 1..2}: z = x + i*y[i];
+	minimize foo: x + z;
+
+20120104
+  Fix a bug that could lead to an error message of the form
+"presolve has k = 11, P.nfc = 17".
+
+20120117
+  Fix a glitch that caused the unload command not to fully
+unload the specified library.  It's not clear whether this
+ever caused any visible symptoms other perhaps than some
+memory not being reclaimed.
+  New builtin suffix ".sense_num" on objectives is -1 for
+minimization and 1 for maximization.  New builtin suffix
+".sense" is a symbolic version of ".sense_num" with default
+values "minimize" and "maximize" given by option sense_table.
+
+20120126
+  Fix glitches with _obj.sense.
+  Adjust "load" command to facilitate using a 32-bit AMPL binary
+with a 64-bit solver binary or vice versa:  for a 64-bit AMPL,
+if the library name involves '.' and the final '.' is
+preceded by "_32", change the "32" to "64".  Otherwise, if the
+library fails to load and there is a '.' in the name, insert
+"_64" before the final '.' unless it is already preceded by
+"_64".  (For a 32-bit AMPL, the rules are similar, with the roles
+of "32" and "64" reversed.)  The builtin set _LIBS still shows
+the names by which libraries were loaded, whereas option AMPLFUNC
+reflects the adjusted names.  The unload command operates on
+names in _LIBS.  Temporarily, at least, you can suppress the new
+behavior by specifying "option map_32_64 0;".
+  Under MS Windows, add a test to the "load" command to ignore
+shared libraries (DLLs) compiled for the wrong number of address
+bits.  (With more sensible operating systems, such libraries
+simply fail to load.)
+  Fix a bug with option AMPLFUNC:  after a sequence of the form
+
+	load 'something';
+	load 'more';
+	unload 'something'; # or 'more'
+	load 'another';
+
+option AMPLFUNC did not show the new library.
+  Change the default value for $ampl_libpath from "" to the
+directory containing the AMPL binary and (if different) the
+current directory.  Absent command-line option -i (invoke
+ampl "-i?" for details), or an incoming $AMPLFUNC value, look
+for both amplfunc.dll and ampltabl.dll at startup by the AMPL
+search rules (rather, for ampltabl.dll, than by system-dependent
+rules).
+
+20120131
+  Fix a possible fault during startup that could happen with version
+20120126 on Unix-like systems.
+  Fix a bug in simplifying a piecewise-linear term applied to a
+variable with a negative upper bound greater than the first negative
+breakpoint when the term has only two negative breakpoints and at
+least one positive one (after simplification for common slopes).
+Wrong information was transmitted to the solver.
+
+20120208
+  Fix an obscure and rarely seen bug that arose under complicated
+conditions with repeated solves involving several entities having
+the same indexing when the size of the common index set changed.
+The example that revealed the bug faulted.
+
+20120214
+  Correct the change of 20120208 to handle another case.
+  On Unix-like systems, add command history processing similar to
+that of the "sw" program under MS Windows.  The up- and down-arrow
+keys move among the history lines, and the left- and right-arrow
+keys move left or right one character in the current line.  Where
+available, the "home" key moves to the start of the current line,
+the "end" key moves to the end of the current line, page-up moves up
+10 lines and page-down moves down 10 lines.  The control-right-arrow
+key moves forward one alphanumeric "word", and the control-left-arrow
+key moves left one "word".  Control-W deletes the preceding "word".
+Control-D sends the current text without ending the line and signals
+end-of-file when there is no current text.  Command history can be
+turned off by invoking "ampl -vi2 ..."; the -vi2 must come first;
+invoke
+	ampl "-v?"
+for more on -v options.
+
+20120217
+  Fix the bug that after, e.g., "display _VARS;", _VARS was not
+updated after subsequent variable declarations or deletions.
+
+20120306
+  Add command-line option --version:  when given as the sole
+command-line argument, --version causes AMPL to print its version
+and exit, regardless of any needed license file or manager.
+  Adjust default computation of $ampl_libdirs to work correctly
+with non-ASCII directory names (where "ASCII" means "7-bit ASCII").
+Note that AMPL has long handled UTF-8 encoding of Unicode, which
+can involve non-ASCII characters.  On MS Windows systems, use of
+non-ASCII names can cause confusion when different code pages
+are involved.  This is an issue outside the scope of AMPL.
+
+20120317
+  Fix a bug (possible fault) in handling very long error messages.
+  Fix a similar bug with long error messages in the ODBC table handler.
+  Map NaNs in sets to a specific quiet NaN and fix a bug in testing
+whether NaN is a set member.  Here is an example that now works and
+previously misbehaved:
+    set S; param p{S}; data; param :S: p := NaN 37; print p[NaN];
+
+20120328
+  Fix a bug (possible fault) with variables and constraints indexed
+over a subscripted set.  The fault was only possible if such a
+variable or constraint had to be regenerated.
+
+20120406
+  Remove ampl_libpath from the default _LOCAL_OPTIONS (thus making
+$ampl_libpath available for possible use by the proxy table handle).
+  Fix a glitch introduced 20120214 (on Unix-like systems) with a
+"shell;" command:  the AMPL process could die from a SIGTTIN signal.
+
+20120505
+  Fix a presolve bug with logical constraints (e.g., indicator
+constraints) that bit under complicated conditions.
+  Fix a bug in the expand command's processing of a logical constraint
+that could cause it incorrectly to indicate whether presolve had
+removed the constraint.
+
+20120507
+  Add a test to explicitly enforce an implicit limit of 199 on the
+lengths of names.
