@@ -10,14 +10,14 @@
 /* October 2000: Linear/Nonlinear version                                  */
 /*-------------------------------------------------------------------------*/
 
-#include <iostream.h>
+#include <iostream>
 #include <stdio.h>
 #include <assert.h>
 #include "string.h"
 
 #include <ilconcert/ilomodel.h>
 #include <ilcplex/ilocplex.h>
-#include <ilsolver/ilosolver.h>
+#include <ilcp/cp.h>
 
 #include "asl.h"
 #include "nlp.h"
@@ -49,21 +49,20 @@ IloExpr build_expr (expr *e)
    expr_if *eif;
    de *d;
 
-   IloInt opnum;
    IloExpr sumExpr, targetExpr;
    IloConstraint ifCond;
    IloNumVar minmaxVar, ifVar;
    IloNumVarArray minmaxArray;
 
    IloNumArray loSubBnd, upSubBnd;
-   IloNumVar selectVar, resultVar;
+   IloNumVar resultVar;
 
    plterm *p;
    int npce, i, j;
    real *pce;
    IloNumArray bkps, slps;
 
-   opnum = (int) e->op;
+   size_t opnum = reinterpret_cast<size_t>(e->op);
    PR ("op %d  optype %2d  ", opnum, optype[opnum]);
 
    switch(opnum) {
@@ -306,7 +305,7 @@ IloExpr build_expr (expr *e)
          PR ("number of\n");
 
          ep = e->L.ep;
-         if ((int) (*ep)->op != NUM_opno || !usenumberof) {
+         if (reinterpret_cast<size_t>((*ep)->op) != NUM_opno || !usenumberof) {
             sumExpr = IloExpr(env);
             targetExpr = build_expr (*ep);
             for (*ep++; ep < e->R.ep; *ep++)
@@ -316,28 +315,14 @@ IloExpr build_expr (expr *e)
          else
             return build_numberof (e);
 
-      //case /* VARSUBVAR_opno */ 99: 
-      //   PR ("vars in subscript of var\n");
-
-      //   selectVar = IloIntVar (env,loSubBnd[e->a],upSubBnd[e->a]); 
-      //   mod.add (selectVar == build_expr (e->L.e)); 
-
-      //   resultVar = IloNumVar (env,-IloInfinity,IloInfinity); 
-
-      //   mod.add (resultVar == Var(selectVar)); 
-      //   return (resultVar);
-
-      //case /* VARSUBVAR_opno */ 99: 
-      //   PR ("vars in subscript of var\n");
-      //   return (Var(build_expr(e->L.e)));
-
-      case /* VARSUBVAR_opno */ 99: 
+      case /* VARSUBVAR_opno */ 99: {
          PR ("vars in subscript of var\n");
 
-         selectVar = IloIntVar (env,loSubBnd[e->a],upSubBnd[e->a]); 
+         IloIntVar selectVar = IloIntVar (env,loSubBnd[e->a],upSubBnd[e->a]); 
          mod.add (selectVar == build_expr (e->L.e)); 
 
-         return (Var(selectVar));
+         return Var[selectVar];
+      }
 
       case ATMOST_opno:
          Printf ("invalid atmost in expression\n");

@@ -11,14 +11,14 @@
 /* into ILOG Solver IloDistribute calls.                                   */
 /*-------------------------------------------------------------------------*/
 
-#include <iostream.h>
+#include <iostream>
 #include <stdio.h>
 #include <assert.h>
 #include "string.h"
 
 #include <ilconcert/ilomodel.h>
 #include <ilcplex/ilocplex.h>
-#include <ilsolver/ilosolver.h>
+#include <ilcp/cp.h>
 
 #include "asl.h"
 #include "nlp.h"
@@ -110,12 +110,12 @@ IloNumVar build_numberof (expr *e)
       (np->values).add (((expr_n*)(*ep))->v);
 
       for (*ep++; ep < e->R.ep; *ep++) {
-         listVar = IloIntVar(env, -IloInfinity, IloInfinity);
+         listVar = IloIntVar(env, IloIntMin, IloIntMax);
          (np->vars).add (listVar);
          mod.add (listVar == build_expr (*ep));
       }
 
-      cardVar = IloIntVar(env, -IloInfinity, IloInfinity);
+      cardVar = IloIntVar(env, IloIntMin, IloIntMax);
       (np->cards).add (cardVar);
       return cardVar;
    }
@@ -130,7 +130,7 @@ IloNumVar build_numberof (expr *e)
 
       (np->values).add (((expr_n*)(*e->L.ep))->v);
 
-      cardVar = IloIntVar(env, -IloInfinity, IloInfinity);
+      cardVar = IloIntVar(env, IloIntMin, IloIntMax);
       (np->cards).add (cardVar);
       return cardVar;
    }
@@ -142,8 +142,8 @@ IloBool same_expr (expr *e1, expr *e2)
    expr **ep1, **ep2;
    expr_if *eif1, *eif2;
 
-   IloInt opnum1 = (int) e1->op;
-   IloInt opnum2 = (int) e2->op;
+   size_t opnum1 = reinterpret_cast<size_t>(e1->op);
+   size_t opnum2 = reinterpret_cast<size_t>(e2->op);
 
    if (optype[opnum1] != optype[opnum2])
       return IloFalse;
