@@ -10,14 +10,14 @@
 /* October 2000: Linear/Nonlinear version                                  */
 /*-------------------------------------------------------------------------*/
 
-#include <iostream.h>
+#include <iostream>
 #include <stdio.h>
 #include <assert.h>
 #include "string.h"
 
 #include <ilconcert/ilomodel.h>
 #include <ilcplex/ilocplex.h>
-#include <ilsolver/ilosolver.h>
+#include <ilcp/cp.h>
 
 #include "asl.h"
 #include "nlp.h"
@@ -46,14 +46,12 @@ IloConstraint build_constr (expr *e)
    expr **ep;
    expr_if *eif;
 
-   IloInt opnum;
    IloOr disjunction;
    IloAnd conjunction;
    IloConstraint ifCond;
    IloNumVar dummy, alldiffVar;
-   IloNumVarArray alldiffArray;
 
-   opnum = (int) e->op;
+   size_t opnum = reinterpret_cast<size_t>(e->op);
    PR ("op %d  optype %d  ", opnum, optype[opnum]);
 
    switch(opnum) {
@@ -349,18 +347,20 @@ IloConstraint build_constr (expr *e)
          PR ("!=\n");
          return  build_expr (e->L.e) !=  build_expr (e->R.e);
 
-      case ALLDIFF_opno:
+      case ALLDIFF_opno: {
          PR ("all different\n");
-         alldiffArray = IloNumVarArray(env);
+         IloIntVarArray alldiffArray(env);
          for (ep = e->L.ep; ep < e->R.ep; *ep++) {
-            if ((int) (*ep)->op == VARVAL_opno)
-               alldiffArray.add (Var[(*ep)->a]); 
+            if (reinterpret_cast<size_t>((*ep)->op) == VARVAL_opno)
+               alldiffArray.add (Var[(*ep)->a]);
             else {
-               alldiffVar = IloIntVar (env, -IloInfinity, IloInfinity);
+               alldiffVar = IloIntVar (env, IloIntMin, IloIntMax);
                mod.add (alldiffVar == build_expr (*ep));
-               alldiffArray.add (alldiffVar); }
+               alldiffArray.add (alldiffVar);
             }
+         }
          return IloAllDiff (env, alldiffArray);
+      }
 
       default:
          Printf ("other\n");

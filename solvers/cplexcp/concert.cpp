@@ -10,20 +10,21 @@
 /* October 2000: Linear/Nonlinear version                                  */
 /*-------------------------------------------------------------------------*/
 
-#include <iostream.h>
+#include <iostream>
 #include <stdio.h>
 #include <assert.h>
 #include "string.h"
 
 #include <ilconcert/ilomodel.h>
 #include <ilcplex/ilocplex.h>
-#include <ilsolver/ilosolver.h>
-#include <ilsolver/ilohybrid.h>
+#include <ilcp/cp.h>
 
 #include "asl.h"
 #include "nlp.h"
 #include "getstub.h"
 #include "r_opn.hd" /* for N_OPS */
+
+using namespace std;
 
 #define CHR (char*)  // for suppressing "String literal to char*" warnings
 
@@ -59,8 +60,6 @@ int debugexpr = 0;
 int ilogopttype = -1;
 int timing = 0;
 int keeplinconstr = 0;
-int keepnonlin = 1;
-int uselinconstr = 0;
 int usenumberof = 1;
 int usenonlin = 0;
 
@@ -73,11 +72,7 @@ static keyword keywds[] = { /* must be alphabetical */
       CHR"use ILOG Solver optimizer"),
    KW(CHR"keeplinconstr", I_val, &keeplinconstr, 
       CHR"embedded LP as constraint only"),
-   KW(CHR"keepnonlin", I_val, &keepnonlin, 
-      CHR"nonlin propagation techniques only"),
    KW(CHR"timing", I_val, &timing, CHR"display timings for the run"),
-   KW(CHR"uselinconstr", I_val, &uselinconstr, 
-      CHR"use embedded LP as constraint"),
    KW(CHR"usenonlin", I_val, &usenonlin, 
       CHR"use nonlinear propagation techniques"),
    KW(CHR"usenumberof", I_val, &usenumberof, 
@@ -198,28 +193,6 @@ int main(int argc, char **argv) {
          n_badvals++;
          }
 
-   switch(keepnonlin) {
-      case 0:
-         break;
-      case 1:
-         break;
-      default:
-         cerr << "Invalid value " << keepnonlin 
-            << " for directive keepnonlin" << endl;
-         n_badvals++;
-         }
-
-   switch(uselinconstr) {
-      case 0:
-         break;
-      case 1:
-         break;
-      default:
-         cerr << "Invalid value " << uselinconstr 
-            << " for directive uselinconstr" << endl;
-         n_badvals++;
-         }
-
    switch(usenumberof) {
       case 0:
          break;
@@ -312,8 +285,7 @@ int main(int argc, char **argv) {
 
          if (timing) Times[3] = timer.getTime();
 
-         IloAssignment sol(env);
-         cplex.copyAssignment (sol);
+         double objValue = cplex.getObjValue();
 
          int sSoFar = 0;
          char sMsg[256];
@@ -326,7 +298,7 @@ int main(int argc, char **argv) {
             sSoFar += Sprintf(sMsg+sSoFar, " nodes, ");
             sSoFar += g_fmtop(sMsg+sSoFar,cplex.getNiterations());
             sSoFar += Sprintf(sMsg+sSoFar, " iterations, objective ");
-            g_fmtop(sMsg+sSoFar, sol(MinOrMax));
+            g_fmtop(sMsg+sSoFar, objValue);
 
             real *Xopt = new real [n_var];
             for(j = 0; j < n_var; j++) Xopt[j] = cplex.getValue(Var[j]);
@@ -337,7 +309,7 @@ int main(int argc, char **argv) {
          else {
             sSoFar += g_fmtop(sMsg+sSoFar,cplex.getNiterations());
             sSoFar += Sprintf(sMsg+sSoFar, " iterations, objective ");
-            g_fmtop(sMsg+sSoFar, sol(MinOrMax));
+            g_fmtop(sMsg+sSoFar, objValue);
 
             real *Xopt = new real [n_var];
             real *Piopt = new real [n_con];
@@ -357,18 +329,6 @@ int main(int argc, char **argv) {
 
       else {
          IloSolver solver (env);
-
-         if (uselinconstr)
-            if (keeplinconstr) 
-               IloLinConstraint lincon (solver, IloTrue);
-            else 
-               IloLinConstraint lincon (solver, IloFalse);
-         if (usenonlin)
-            if (keepnonlin) 
-               solver.useNonLinConstraint(IloTrue);
-            else 
-               solver.useNonLinConstraint(IloFalse);
-
          solver.extract (mod);
 
          if (timing) Times[2] = timer.getTime();
