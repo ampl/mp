@@ -25,3 +25,8 @@ A few options have been implemented -- see OPTION-KEY for details.
 More options for built-in search strategies will be needed.  Also
 some sort of variable preference mechanism is likely to be useful.
 
+See also the article "Extending an Algebraic Modeling Language to
+Support Constraint Programming" by Robert Fourer and David M. Gay,
+INFORMS Journal on Computing, Fall 2002, vol. 14, no. 4, 322-344
+(http://joc.journal.informs.org/content/14/4/322).
+
