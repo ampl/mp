@@ -36,7 +36,7 @@ IloBool same_expr (expr*,expr*);
 class numberof {
 public:
    IloIntVarArray cards;
-   IloNumArray values;
+   IloIntArray values;
    IloIntVarArray vars;
    expr *numberofexpr;
    numberof *next;
@@ -103,7 +103,7 @@ IloNumVar build_numberof (expr *e)
       np->numberofexpr = e;
 
       np->cards = IloIntVarArray(env);
-      np->values = IloNumArray(env);
+      np->values = IloIntArray(env);
       np->vars = IloIntVarArray(env);
 
       ep = e->L.ep;
