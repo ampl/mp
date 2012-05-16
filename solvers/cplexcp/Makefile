@@ -1,5 +1,5 @@
-SYSTEM=ultrasparc_5_5.0
-LIBFORMAT=static_pic_mt
+SYSTEM    = x86-64_sles10_4.1
+LIBFORMAT = static_pic
 
 CPLEXSTUDIODIR = /opt/ibm/ILOG/CPLEX_Studio124
 CONCERTDIR     = $(CPLEXSTUDIODIR)/concert
@@ -17,7 +17,7 @@ CPOPTIMIZER_LIB=$(CPOPTIMIZERDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
 AMPL_INC=$(AMPLDIR)
 #AMPL_LIB=$(AMPLDIR)/amplsolver.a $(AMPLDIR)/funcadd0.o
 AMPL_LIB=$(AMPLDIR)/amplsolver.a
-LIBS=-lsocket -lnsl -lm -lsunmath -ldl
+LIBS=-lnsl -lm -ldl -lpthread
 
 #DEBUG= -w -xO2 -xtarget=ultra -xarch=v8plus -DNDEBUG
 DEBUG = -g
@@ -26,14 +26,14 @@ LDMTFLAGS = -mt
 
 CXX_FLAGS = $(DEBUG) -I$(CONCERT_INC) -I$(CPLEX_INC) -I$(CPOPTIMIZER_INC) \
             -I$(AMPL_INC) $(MTFLAGS) -DIL_STD
-LD_FLAGS  = -L$(CPOPTIMIZER_LIB) -lhybrid -lsolver -L$(CPLEX_LIB) -lilocplex \
-            -lcplex -L$(CONCERT_LIB) -lconcert $(LDMTFLAGS) $(AMPL_LIB) $(LIBS)
+LD_FLAGS  = -L$(CPOPTIMIZER_LIB) -lcp -L$(CPLEX_LIB) -lilocplex -lcplex \
+            -L$(CONCERT_LIB) -lconcert $(LDMTFLAGS) $(AMPL_LIB) $(LIBS)
 
 BINARIES = concert.o build_expr.o build_constr.o build_numberof.o
 EXTRAS = objconst0.o
 
-concert: $(BINARIES) $(EXTRAS)
-	$(CXX) -o concert $(BINARIES) $(EXTRAS) $(LD_FLAGS)
+cplexcp: $(BINARIES) $(EXTRAS)
+	$(CXX) -o $@ $(BINARIES) $(EXTRAS) $(LD_FLAGS)
 
 %.o: %.cpp
 	$(CXX) $(CXX_FLAGS) -c $<
