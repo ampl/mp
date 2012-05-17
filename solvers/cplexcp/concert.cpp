@@ -31,7 +31,7 @@ using namespace std;
 #define R_OPS asl->I.r_ops_
 #define asl ((ASL_fg*)a)
 
-extern real objconst0(ASL_fg*, int);
+extern "C" real objconst0(ASL_fg*, int);
 #undef objconst
 #define objconst(n) objconst0(asl, n)
 
@@ -88,7 +88,7 @@ static Option_Info Oinfo = { CHR"testampl", CHR"ILOG CONCERT 1.0",
 
 ----------------------------------------------------------------------*/
 
-int main(int argc, char **argv) {
+int cplexcp_main(int argc, char **argv) {
 
    FILE *nl;
    ASL *a;

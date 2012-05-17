@@ -4,6 +4,9 @@
 #undef f_OPNUM
 #include "r_opn0.hd"
 
+#ifdef __cplusplus
+extern "C"
+#endif
  real
 objconst0(ASL_fg *a, int n)
 {
