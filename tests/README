@@ -1,0 +1,12 @@
+This directory contains the AMPL solver tests implemented using the Google C++
+Testing Framework (http://code.google.com/p/googletest/) also known as Google
+Test. The "gtest" subdirectory contains the source code for Google Test.
+The source code for the framework is stored here because it is recommended
+that each project compiles Google Test itself instead of using pre-compiled
+libraries. See the Google Test FAQ at http://bit.ly/JiWbQw for details.
+
+To build the tests you need to have CMake which can be downloaded from
+http://www.cmake.org/cmake/resources/software.html
+
+Once you have CMake installed, invoke "cmake ." to generate Makefiles and then
+"make" to build the tests and "make test" to run them.
