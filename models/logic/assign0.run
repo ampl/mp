@@ -1,0 +1,23 @@
+
+model assign0.mod
+data assign0.dat
+
+objective Total_Rank;
+
+option solver cplex;
+option cplex_options 'mipdisplay 2 prestats 1';
+solve;
+
+option display_eps .000001;
+option omit_zero_rows 1;
+option display_1col 1000;
+
+display {s in STU, p in PRJ} rank[s,p] * Assign[s,p];
+display {p in PRJ, s in STU} rank[s,p] * Assign[s,p];
+
+display {p in PRJ} sum {s in STU} car[s] * Assign[s,p];
+
+display {g in GRP, p in PRJ} max {s in MEM[g]} rank[s,p] * Assign[s,p];
+display {p in PRJ, g in GRP} max {s in MEM[g]} rank[s,p] * Assign[s,p];
+
+display sum {s in STU, p in PRJ} rank[s,p] * Assign[s,p];

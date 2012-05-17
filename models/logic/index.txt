@@ -1,0 +1,55 @@
+ 
+
+EXAMPLES OF CONSTRAINT PROGRAMMING FORMULATIONS
+
+--> see also www.ampl.com/NEW/FUTURE/LOGICpaper! <--
+
+
+GROUP ASSIGNMENT
+assign0.mod/dat/run -- 
+   integer program for assignment of students to project groups
+assign1.mod/dat/run -- 
+   constraint program for assignment of students to project groups.
+   using "numberof" operator
+assign1a.mod/dat -- 
+   same but with object-valued (specifically, project-valued) variables
+
+BALANCED GROUP ASSIGNMENT
+balassign0.mod/dat --
+   integer program for assignment of people to groups 
+   so that each group is "balanced" by various criteria
+balassign1.mod/dat --
+   constraint program for balanced assignment of people to groups,
+   using "numberof" operator
+
+MAGIC SEQUENCE
+magic.mod -- 
+   constraint program for finding a magic sequence of length n+1
+   (jth number in the sequence equals number of js in the sequence)
+   using "numberof" operator
+
+N QUEENS
+nqueens0.mod --
+   integer program for the n queens problem: put n queens on an
+   n-by-n chessboard so that no queen is attacking any other queen
+nqueens.mod --
+   constraint program for the n queens problem,
+   using the "alldiff" operator
+
+PROGRESSIVE PARTY PROBLEM
+party1.mod/dat --
+   constraint program for the progressive party problem,
+   using "alldiff", "atmost", "if-then", "!=" as logic operators
+party2.mod/dat -- 
+   alternative constraint program using "==>" as an "implies" op
+[for a MIP formulation see E. Kalvelagen, 
+   Computers and Operations Research 30 (2003) 1713-1726]
+
+PLANT SCHEDULING
+plantsched5.mod/dat --
+   integer program for plant scheduling subject to various rules
+plantsched5a.mod/dat --
+   constraint program for the same, using "atmost" and "or"
+   and avoiding all zero-one variables
+
+
