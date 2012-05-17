@@ -29,7 +29,7 @@ CXX_FLAGS = $(DEBUG) -I$(CONCERT_INC) -I$(CPLEX_INC) -I$(CPOPTIMIZER_INC) \
 LD_FLAGS  = -L$(CPOPTIMIZER_LIB) -lcp -L$(CPLEX_LIB) -lilocplex -lcplex \
             -L$(CONCERT_LIB) -lconcert $(LDMTFLAGS) $(AMPL_LIB) $(LIBS)
 
-BINARIES = concert.o build_expr.o build_constr.o build_numberof.o
+BINARIES = concert.o build_expr.o build_constr.o build_numberof.o main.o
 EXTRAS = objconst0.o
 
 cplexcp: $(BINARIES) $(EXTRAS)
