@@ -16,7 +16,6 @@
 #include "string.h"
 
 #include <ilconcert/ilomodel.h>
-#include <ilcplex/ilocplex.h>
 #include <ilcp/cp.h>
 
 #include "asl.h"
