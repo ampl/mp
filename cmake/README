@@ -1,0 +1,17 @@
+This directory contains CMake modules for finding various software libraries.
+To use any of the modules, first add the path to this directory to the
+CMAKE_MODULE_PATH variable in CMakeLists.txt:
+
+  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /path/to/ampl/cmake)
+
+and then load the module with the find_package command, for example:
+
+  find_package(CPLEX)
+
+This will define the variables such as CPLEX_FOUND. See the comment section at
+the beginning of the module for details.
+
+Modules:
+
+  FindCPLEX.cmake - finds the CPLEX, Concert, IloCplex and CP Optimizer
+                    libraries
