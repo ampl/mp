@@ -20,8 +20,20 @@
 
 include(FindPackageHandleStandardArgs)
 
-set(CPLEX_STUDIO_PATH /opt/ibm/ILOG)
-set(CPLEX_LIB_PATH_SUFFIXES lib/x86-64_sles10_4.1/static_pic)
+# Recent versions of CPLEX Studio are installed in the following locations:
+#   /opt/ibm/ILOG/CPLEX_Studio<version> - Linux (checked version 12.4)
+#   C:\ILOG\CPLEX_Studio<version> - Windows (checked version 12.2)
+if (NOT WIN32)
+  set(CPLEX_STUDIO_PATH /opt/ibm/ILOG)
+  set(CPLEX_LIB_PATH_SUFFIXES lib/x86-64_sles10_4.1/static_pic)
+else ()
+  set(CPLEX_STUDIO_PATH C:/ILOG)
+  set(CPLEX_LIB_PATH_SUFFIXES
+    lib/x86_windows_vs2008/stat_mda
+    lib/x86_windows_vs2008/stat_mta
+    lib/x86_.net2005_8.0/stat_mda
+    lib/x86_.net2005_8.0/stat_mta)
+endif ()
 
 # ----------------------------------------------------------------------------
 # CPLEX
@@ -33,8 +45,21 @@ find_path(CPLEX_INCLUDE_DIR ilcplex/cplex.h
   PATHS ${CPLEX_PATHS} PATH_SUFFIXES include)
 
 # Find the CPLEX library.
-find_library(CPLEX_LIBRARY NAMES cplex
-  PATHS ${CPLEX_PATHS} PATH_SUFFIXES ${CPLEX_LIB_PATH_SUFFIXES})
+if (NOT WIN32)
+  find_library(CPLEX_LIBRARY NAMES cplex
+    PATHS ${CPLEX_PATHS} PATH_SUFFIXES ${CPLEX_LIB_PATH_SUFFIXES})
+elseif (NOT CPLEX_LIBRARY)
+  # On Windows the version is appended to the library name which cannot be
+  # handled by find_library, so search manually.
+  foreach (p ${CPLEX_PATHS})
+    file(GLOB CPLEX_LIBRARY_CANDIDATES "${p}/*/*/*/cplex*.lib")
+    if (CPLEX_LIBRARY_CANDIDATES)
+      list(GET CPLEX_LIBRARY_CANDIDATES 0 CPLEX_LIB)
+      set(CPLEX_LIBRARY ${CPLEX_LIB} CACHE FILEPATH "Path to the CPLEX library")
+      break ()
+    endif ()
+  endforeach ()
+endif ()
 
 # Handle the QUIETLY and REQUIRED arguments and set CPLEX_FOUND to TRUE
 # if all listed variables are TRUE.
@@ -118,5 +143,8 @@ set(CPLEX_CP_INCLUDE_DIRS
   ${CPLEX_CP_INCLUDE_DIR} ${CPLEX_CONCERT_INCLUDE_DIRS})
 set(CPLEX_CP_LIBRARIES
   ${CPLEX_CP_LIBRARY} ${CPLEX_CONCERT_LIBRARIES})
+if (WIN32)
+  set(CPLEX_CP_LIBRARIES ${CPLEX_CP_LIBRARIES} Ws2_32.lib)
+endif ()
 
 mark_as_advanced(CPLEX_CP_INCLUDE_DIR CPLEX_CP_LIBRARY)
