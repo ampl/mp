@@ -3,6 +3,8 @@
 cmake_minimum_required(VERSION 2.6)
 project(TESTS)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${TESTS_SOURCE_DIR}/../cmake")
+
 # Setup testing.
 enable_testing()
 add_subdirectory(gtest)
@@ -14,32 +16,22 @@ find_path(SOLVER_LIB_DIR amplsolver.a ../solvers)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
-# TODO: move to FindCPLEX.cmake
-set(SYSTEM "x86-64_sles10_4.1")
-set(LIBFORMAT static_pic)
+find_package(CPLEX)
+if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
+  add_definitions(-DIL_STD)
 
-set(CPLEX_STUDIO_DIR /opt/ibm/ILOG/CPLEX_Studio124)
-set(CPLEX_DIR ${CPLEX_STUDIO_DIR}/cplex)
-set(CONCERT_DIR ${CPLEX_STUDIO_DIR}/concert)
-set(CPOPTIMIZER_DIR ${CPLEX_STUDIO_DIR}/cpoptimizer)
+  include_directories(${CPLEX_ILOCPLEX_INCLUDE_DIRS} ${CPLEX_CP_INCLUDE_DIRS})
 
-add_definitions(-DIL_STD)
+  cxx_test_with_flags(cplexcp_test ""
+    "gtest;gtest_main;${SOLVER_LIB_DIR}/amplsolver.a;dl"
+    ../solvers/cplexcp/build_constr.cpp
+    ../solvers/cplexcp/build_expr.cpp
+    ../solvers/cplexcp/build_numberof.cpp
+    ../solvers/cplexcp/concert.cpp
+    ../solvers/cplexcp/objconst0.c
+    cplexcp_test.cc)
 
-include_directories(
-  ${CPLEX_DIR}/include
-  ${CONCERT_DIR}/include
-  ${CPOPTIMIZER_DIR}/include)
+  target_link_libraries(cplexcp_test
+    ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_CP_LIBRARIES} ${CPLEX_LIBRARIES})
+endif ()
 
-link_directories(
-  ${CPLEX_DIR}/lib/${SYSTEM}/${LIBFORMAT}
-  ${CONCERT_DIR}/lib/${SYSTEM}/${LIBFORMAT}
-  ${CPOPTIMIZER_DIR}/lib/${SYSTEM}/${LIBFORMAT})
-
-cxx_test_with_flags(cplexcp_test ""
-  "gtest;gtest_main;cp;concert;ilocplex;cplex;${SOLVER_LIB_DIR}/amplsolver.a;dl"
-  ../solvers/cplexcp/build_constr.cpp
-  ../solvers/cplexcp/build_expr.cpp
-  ../solvers/cplexcp/build_numberof.cpp
-  ../solvers/cplexcp/concert.cpp
-  ../solvers/cplexcp/objconst0.c
-  cplexcp_test.cc)
