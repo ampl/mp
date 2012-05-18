@@ -12,6 +12,7 @@ add_subdirectory(gtest)
 include_directories(gtest/include)
 link_directories(${TESTS_BINARY_DIR}gtest)
 
+# Find the AMPL solver library.
 include_directories(../solvers)
 if (NOT WIN32)
   find_path(SOLVER_LIB_DIR amplsolver.a ../solvers)
@@ -20,7 +21,10 @@ else ()
   set(SOLVER_LIBS ../solvers/amplsolv)
 endif ()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+if (NOT MSVC)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")
+endif ()
 
 find_package(CPLEX)
 if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
