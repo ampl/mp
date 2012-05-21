@@ -28,7 +28,7 @@ endif ()
 
 find_package(CPLEX)
 if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
-  add_definitions(-DIL_STD)
+  add_definitions(${CPLEX_CONCERT_DEFINITIONS})
 
   include_directories(${CPLEX_ILOCPLEX_INCLUDE_DIRS} ${CPLEX_CP_INCLUDE_DIRS})
 
