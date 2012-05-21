@@ -5,8 +5,19 @@ The source code for the framework is stored here because it is recommended
 that each project compiles Google Test itself instead of using pre-compiled
 libraries. See the Google Test FAQ at http://bit.ly/JiWbQw for details.
 
-To build the tests you need to have CMake which can be downloaded from
-http://www.cmake.org/cmake/resources/software.html
+Building the tests:
 
-Once you have CMake installed, invoke "cmake ." to generate Makefiles and then
-"make" to build the tests and "make test" to run them.
+1. Install CMake which can be downloaded from
+   http://www.cmake.org/cmake/resources/software.html
+
+2. Build the AMPL solver library in the "solvers" directory. Note that on
+   Windows the AMPL solver library should be built with the shared (DLL)
+   runtime using the command "nmake RUNTIME=-MD -f makefile.vc". This is
+   necessary to avoid linkage errors with IBM ILOG CP Optimizer which doesn't
+   provide libraries linked with static runtime.
+
+3. Generate the makefiles using the command "cmake .".
+
+4. Build the tests with the command "make".
+
+Once the tests have been built invoke "make test" to run them.
