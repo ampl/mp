@@ -74,7 +74,7 @@ IloNumVar build_numberof (expr *e)
    // having the same expression-list?
 
    ep = e->L.ep;
-   for (*ep++, elen = 0; ep < e->R.ep; *ep++, elen++);
+   for (ep++, elen = 0; ep < e->R.ep; ep++, elen++);
 
    for (np = numberofstart; np; np = np->next) {
       if (np->vars.getSize() != elen)
@@ -82,7 +82,7 @@ IloNumVar build_numberof (expr *e)
 
       ep = e->L.ep;
       enp = np->numberofexpr->L.ep;
-      for (*ep++, *enp++; ep < e->R.ep; *ep++, *enp++)
+      for (ep++, enp++; ep < e->R.ep; ep++, enp++)
          if (!same_expr(*ep,*enp))
             break;
 
@@ -108,7 +108,7 @@ IloNumVar build_numberof (expr *e)
       ep = e->L.ep;
       (np->values).add (((expr_n*)(*ep))->v);
 
-      for (*ep++; ep < e->R.ep; *ep++) {
+      for (ep++; ep < e->R.ep; ep++) {
          listVar = IloIntVar(env, IloIntMin, IloIntMax);
          (np->vars).add (listVar);
          mod.add (listVar == build_expr (*ep));
@@ -176,8 +176,8 @@ IloBool same_expr (expr *e1, expr *e2)
 
       case 6:
       case 11:
-         for (ep1 = e1->L.ep, ep2 = e2->L.ep; 
-              ep1 < e1->R.ep && ep2 < e2->R.ep; *ep1++, *ep2++)
+         for (ep1 = e1->L.ep, ep2 = e2->L.ep;
+              ep1 < e1->R.ep && ep2 < e2->R.ep; ep1++, ep2++)
             if (!same_expr (*ep1, *ep2))
                return IloFalse;
          return !(ep1 < e1->R.ep) && !(ep2 < e2->R.ep);
@@ -200,6 +200,7 @@ IloBool same_expr (expr *e1, expr *e2)
          Printf ("unknown operator type %d in build_numberof\n",
             optype[opnum1]);
          exit(1);
+         return false;
    }
 }
 
