@@ -67,7 +67,7 @@ static keyword keywds[] = { /* must be alphabetical */
    KW(CHR"ilogcplex", IK1_val, &ilogopttype,
       CHR"use ILOG CPLEX optimizer"),
    KW(CHR"ilogsolver", IK0_val, &ilogopttype,
-      CHR"use ILOG Solver optimizer"),
+      CHR"use ILOG Constraint Programming optimizer"),
    KW(CHR"timing", I_val, &timing, CHR"display timings for the run"),
    KW(CHR"usenumberof", I_val, &usenumberof,
       CHR"consolidate 'numberof' expressions"),
@@ -83,7 +83,7 @@ static Option_Info Oinfo = { CHR"concert", CHR"ILOG CONCERT 1.0",
 
 ----------------------------------------------------------------------*/
 
-int cplexcp_main(int argc, char **argv) {
+int concert_main(int argc, char **argv) {
 
    FILE *nl;
    ASL *a;
