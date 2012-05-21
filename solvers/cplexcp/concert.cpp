@@ -73,8 +73,9 @@ static keyword keywds[] = { /* must be alphabetical */
       CHR"consolidate 'numberof' expressions"),
    };
 
-static Option_Info Oinfo = { CHR"testampl", CHR"ILOG CONCERT 1.0",
-   CHR"concert_options", keywds, nkeywds, 0, CHR"ILOG CONCERT 1.0" };
+static Option_Info Oinfo = { CHR"concert", CHR"ILOG CONCERT 1.0",
+   CHR"concert_options", keywds, nkeywds, 0, CHR"ILOG CONCERT 1.0",
+   0, 0, 0, 0, 0, 20120521, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 /*----------------------------------------------------------------------
 
@@ -87,14 +88,13 @@ int cplexcp_main(int argc, char **argv) {
    FILE *nl;
    ASL *a;
 
-   int i, j, k, n_var_int;
-   char *stub, *getenvErr;
+   int i, j, n_var_int;
+   char *stub;
 
    cgrad *cg;
    ograd *og;
 
    efunc *r_ops_int[N_OPS];
-   cde *LCON_DE;
 
    /*** Initialize Concert ***/
 

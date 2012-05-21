@@ -43,7 +43,6 @@ extern IloNumVar build_numberof (expr*);
 
 IloExpr build_expr (expr *e)
 {
-   efunc *op;
    expr **ep;
    expr_if *eif;
    de *d;
@@ -210,7 +209,7 @@ IloExpr build_expr (expr *e)
          PR ("summation\n");
 
          sumExpr = IloExpr(env);
-         for (ep = e->L.ep; ep < e->R.ep; *ep++)
+         for (ep = e->L.ep; ep < e->R.ep; ep++)
             sumExpr += build_expr (*ep);
          return sumExpr;
 
@@ -296,7 +295,7 @@ IloExpr build_expr (expr *e)
          PR ("count\n");
 
          sumExpr = IloExpr(env);
-         for (ep = e->L.ep; ep < e->R.ep; *ep++)
+         for (ep = e->L.ep; ep < e->R.ep; ep++)
             sumExpr += build_constr (*ep);
          return sumExpr;
 
@@ -307,7 +306,7 @@ IloExpr build_expr (expr *e)
          if (reinterpret_cast<size_t>((*ep)->op) != NUM_opno || !usenumberof) {
             sumExpr = IloExpr(env);
             targetExpr = build_expr (*ep);
-            for (*ep++; ep < e->R.ep; *ep++)
+            for (ep++; ep < e->R.ep; ep++)
                sumExpr += (build_expr (*ep) == targetExpr);
             return sumExpr;
          }
@@ -374,5 +373,6 @@ IloExpr build_expr (expr *e)
       default:
          Printf ("other -- not implemented\n");
          exit(1);
+         return IloExpr();
    }
 }

@@ -41,7 +41,6 @@ extern IloExpr build_expr (expr*);
 
 IloConstraint build_constr (expr *e)
 {
-   efunc *op;
    expr **ep;
    expr_if *eif;
 
@@ -54,7 +53,6 @@ IloConstraint build_constr (expr *e)
    PR ("op %d  optype %d  ", opnum, optype[opnum]);
 
    switch(opnum) {
-
       case PLUS_opno:
          Printf ("incomplete constraint expression using +\n");
          exit(1);
@@ -292,7 +290,7 @@ IloConstraint build_constr (expr *e)
       case ORLIST_opno:
          PR ("logical EXISTS\n");
          disjunction = IloOr(env);
-         for (ep = e->L.ep; ep < e->R.ep; *ep++)
+         for (ep = e->L.ep; ep < e->R.ep; ep++)
             disjunction.add (build_constr (*ep));
          return disjunction;
 
@@ -303,7 +301,7 @@ IloConstraint build_constr (expr *e)
       case ANDLIST_opno:
          PR ("logical FORALL\n");
          conjunction = IloAnd(env);
-         for (ep = e->L.ep; ep < e->R.ep; *ep++)
+         for (ep = e->L.ep; ep < e->R.ep; ep++)
             conjunction.add (build_constr (*ep));
          return conjunction;
 
@@ -349,7 +347,7 @@ IloConstraint build_constr (expr *e)
       case ALLDIFF_opno: {
          PR ("all different\n");
          IloIntVarArray alldiffArray(env);
-         for (ep = e->L.ep; ep < e->R.ep; *ep++) {
+         for (ep = e->L.ep; ep < e->R.ep; ep++) {
             if (reinterpret_cast<size_t>((*ep)->op) == VARVAL_opno)
                alldiffArray.add (Var[(*ep)->a]);
             else {
@@ -364,5 +362,6 @@ IloConstraint build_constr (expr *e)
       default:
          Printf ("other\n");
          exit(1);
+         return IloConstraint();
    }
 }
