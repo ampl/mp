@@ -13,6 +13,7 @@
 #  CPLEX_CONCERT_FOUND - System has Concert
 #  CPLEX_CONCERT_INCLUDE_DIRS - The Concert include directories
 #  CPLEX_CONCERT_LIBRARIES - The libraries needed to use Concert
+#  CPLEX_CONCERT_DEFINITIONS - Compiler switches required for using Concert
 #
 #  CPLEX_CP_FOUND - System has CP Optimizer
 #  CPLEX_CP_INCLUDE_DIRS - The CP Optimizer include directories
@@ -81,6 +82,9 @@ mark_as_advanced(CPLEX_INCLUDE_DIR CPLEX_LIBRARY)
 # Concert
 
 file(GLOB CPLEX_CONCERT_PATHS "${CPLEX_STUDIO_PATH}/*/concert")
+
+# Require standard compliance.
+set(CPLEX_CONCERT_DEFINITIONS -DIL_STD)
 
 # Find the Concert include directory.
 find_path(CPLEX_CONCERT_INCLUDE_DIR ilconcert/ilosys.h
