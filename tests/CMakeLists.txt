@@ -32,16 +32,16 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
 
   include_directories(${CPLEX_ILOCPLEX_INCLUDE_DIRS} ${CPLEX_CP_INCLUDE_DIRS})
 
-  cxx_test_with_flags(cplexcp_test ""
+  cxx_test_with_flags(concert_test ""
     "gtest;gtest_main;${SOLVER_LIBS}"
-    ../solvers/cplexcp/build_constr.cpp
-    ../solvers/cplexcp/build_expr.cpp
-    ../solvers/cplexcp/build_numberof.cpp
-    ../solvers/cplexcp/concert.cpp
-    ../solvers/cplexcp/objconst0.c
-    cplexcp_test.cc)
+    ../solvers/concert/build_constr.cpp
+    ../solvers/concert/build_expr.cpp
+    ../solvers/concert/build_numberof.cpp
+    ../solvers/concert/concert.cpp
+    ../solvers/concert/objconst0.c
+    concert_test.cc)
 
-  target_link_libraries(cplexcp_test
+  target_link_libraries(concert_test
     ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_CP_LIBRARIES} ${CPLEX_LIBRARIES})
 endif ()
 
