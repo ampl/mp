@@ -59,23 +59,17 @@ void finish_building_numberof ();
 int debugexpr = 0;
 int ilogopttype = -1;
 int timing = 0;
-int keeplinconstr = 0;
 int usenumberof = 1;
-int usenonlin = 0;
 
 static keyword keywds[] = { /* must be alphabetical */
-   KW(CHR"debugexpr", I_val, &debugexpr, 
+   KW(CHR"debugexpr", I_val, &debugexpr,
       CHR"print debugging information for expression trees"),
-   KW(CHR"ilogcplex", IK1_val, &ilogopttype, 
+   KW(CHR"ilogcplex", IK1_val, &ilogopttype,
       CHR"use ILOG CPLEX optimizer"),
-   KW(CHR"ilogsolver", IK0_val, &ilogopttype, 
+   KW(CHR"ilogsolver", IK0_val, &ilogopttype,
       CHR"use ILOG Solver optimizer"),
-   KW(CHR"keeplinconstr", I_val, &keeplinconstr, 
-      CHR"embedded LP as constraint only"),
    KW(CHR"timing", I_val, &timing, CHR"display timings for the run"),
-   KW(CHR"usenonlin", I_val, &usenonlin, 
-      CHR"use nonlinear propagation techniques"),
-   KW(CHR"usenumberof", I_val, &usenumberof, 
+   KW(CHR"usenumberof", I_val, &usenumberof,
       CHR"consolidate 'numberof' expressions"),
    };
 
@@ -182,17 +176,6 @@ int cplexcp_main(int argc, char **argv) {
          n_badvals++;
          }
 
-   switch(keeplinconstr) {
-      case 0:
-         break;
-      case 1:
-         break;
-      default:
-         cerr << "Invalid value " << keeplinconstr 
-            << " for directive keeplinconstr" << endl;
-         n_badvals++;
-         }
-
    switch(usenumberof) {
       case 0:
          break;
@@ -201,17 +184,6 @@ int cplexcp_main(int argc, char **argv) {
       default:
          cerr << "Invalid value " << usenumberof 
             << " for directive usenumberof" << endl;
-         n_badvals++;
-         }
-
-   switch(usenonlin) {
-      case 0:
-         break;
-      case 1:
-         break;
-      default:
-         cerr << "Invalid value " << usenonlin 
-            << " for directive usenonlin" << endl;
          n_badvals++;
          }
 
