@@ -10,6 +10,8 @@
 /* October 2000: Linear/Nonlinear version                                  */
 /*-------------------------------------------------------------------------*/
 
+#include "concert.h"
+
 #include <iostream>
 #include <stdio.h>
 #include <assert.h>
@@ -46,7 +48,6 @@ IloEnv env;
 IloModel mod(env);
 IloNumVarArray Var;
 
-IloExpr build_expr (expr*);
 IloConstraint build_constr (expr*);
 void finish_building_numberof ();
 
