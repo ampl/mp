@@ -1,4 +1,4 @@
-extern int cplexcp_main(int argc, char **argv);
+#include "concert.h"
 
 int main(int argc, char **argv) {
   return concert_main(argc, argv);

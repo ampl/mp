@@ -10,6 +10,8 @@
 /* October 2000: Linear/Nonlinear version                                  */
 /*-------------------------------------------------------------------------*/
 
+#include "concert.h"
+
 #include <iostream>
 #include <stdio.h>
 #include <assert.h>
@@ -23,16 +25,10 @@
 #include "getstub.h"
 #include "opnames.hd"
 
-extern IloEnv env;
-extern IloModel mod;
-extern IloNumVarArray Var;
-
-extern int usenumberof;
-extern int debugexpr;
 #define PR if(debugexpr)Printf
 
-extern IloConstraint build_constr (expr*);
-extern IloNumVar build_numberof (expr*);
+IloConstraint build_constr (expr*);
+IloNumVar build_numberof (expr*);
 
 /*----------------------------------------------------------------------
 

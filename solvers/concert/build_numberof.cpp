@@ -11,6 +11,8 @@
 /* into ILOG Solver IloDistribute calls.                                   */
 /*-------------------------------------------------------------------------*/
 
+#include "concert.h"
+
 #include <iostream>
 #include <stdio.h>
 #include <assert.h>
@@ -24,12 +26,7 @@
 #include "getstub.h"
 #include "opnames.hd"
 
-extern IloEnv env;
-extern IloModel mod;
-extern IloNumVarArray Var;
-
-extern IloConstraint build_constr (expr*);
-extern IloExpr build_expr (expr*);
+IloConstraint build_constr (expr*);
 IloBool same_expr (expr*,expr*);
 
 class numberof {

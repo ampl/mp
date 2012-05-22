@@ -23,14 +23,15 @@ endif ()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 if (NOT MSVC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -std=c++0x")
 endif ()
 
 find_package(CPLEX)
 if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
   add_definitions(${CPLEX_CONCERT_DEFINITIONS})
 
-  include_directories(${CPLEX_ILOCPLEX_INCLUDE_DIRS} ${CPLEX_CP_INCLUDE_DIRS})
+  include_directories(${CPLEX_ILOCPLEX_INCLUDE_DIRS}
+    ${CPLEX_CP_INCLUDE_DIRS} ../solvers/concert)
 
   cxx_test_with_flags(concert_test ""
     "gtest;gtest_main;${SOLVER_LIBS}"
@@ -38,6 +39,7 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
     ../solvers/concert/build_expr.cpp
     ../solvers/concert/build_numberof.cpp
     ../solvers/concert/concert.cpp
+    ../solvers/concert/concert.h
     ../solvers/concert/objconst0.c
     concert_test.cc)
 
