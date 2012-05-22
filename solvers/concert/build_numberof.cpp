@@ -21,9 +21,9 @@
 #include <ilconcert/ilomodel.h>
 #include <ilcp/cp.h>
 
-#include "asl.h"
-#include "nlp.h"
-#include "getstub.h"
+#include "solvers/asl.h"
+#include "solvers/nlp.h"
+#include "solvers/getstub.h"
 #include "opnames.hd"
 
 IloConstraint build_constr (expr*);
