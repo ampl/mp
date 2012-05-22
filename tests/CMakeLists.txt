@@ -13,7 +13,7 @@ include_directories(gtest/include)
 link_directories(${TESTS_BINARY_DIR}gtest)
 
 # Find the AMPL solver library.
-include_directories(../solvers)
+include_directories(..)
 if (NOT WIN32)
   find_path(SOLVER_LIB_DIR amplsolver.a ../solvers)
   set(SOLVER_LIBS "${SOLVER_LIB_DIR}/amplsolver.a" dl)
@@ -29,9 +29,7 @@ endif ()
 find_package(CPLEX)
 if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
   add_definitions(${CPLEX_CONCERT_DEFINITIONS})
-
-  include_directories(${CPLEX_ILOCPLEX_INCLUDE_DIRS}
-    ${CPLEX_CP_INCLUDE_DIRS} ../solvers/concert)
+  include_directories(${CPLEX_ILOCPLEX_INCLUDE_DIRS} ${CPLEX_CP_INCLUDE_DIRS})
 
   cxx_test_with_flags(concert_test ""
     "gtest;gtest_main;${SOLVER_LIBS}"

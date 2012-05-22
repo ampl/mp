@@ -20,15 +20,28 @@
 #include <ilconcert/ilomodel.h>
 #include <ilcp/cp.h>
 
-#include "asl.h"
-#include "nlp.h"
-#include "getstub.h"
+#include "solvers/asl.h"
+#include "solvers/nlp.h"
+#include "solvers/getstub.h"
+#include "solvers/opcode.hd"
 #include "opnames.hd"
 
 #define PR if(debugexpr)Printf
 
 IloConstraint build_constr (expr*);
 IloNumVar build_numberof (expr*);
+
+// Builds a Concert expression for the integer division using the formula:
+// a div b = if a / b >= 0 then floor(a / b) else ceil(a / b)
+IloNumExpr build_intdiv (IloNumExpr lhs, IloNumExpr rhs)
+{
+   IloNumExpr quotient = lhs / rhs;
+   IloConstraint condition = quotient >= IloExpr(env, 0);
+   IloNumVar result = IloNumVar (env, -IloInfinity, IloInfinity);
+   mod.add (IloIfThen (env, condition,  result == IloFloor(quotient)));
+   mod.add (IloIfThen (env, !condition, result == IloCeil (quotient)));
+   return result;
+}
 
 /*----------------------------------------------------------------------
 
@@ -61,25 +74,28 @@ IloExpr build_expr (expr *e)
 
    switch(opnum) {
 
-      case PLUS_opno:
+      case OPPLUS:
          PR ("+\n");
          return build_expr (e->L.e) + build_expr (e->R.e);
 
-      case MINUS_opno:
+      case OPMINUS:
          PR ("-\n");
          return build_expr (e->L.e) - build_expr (e->R.e);
 
-      case MULT_opno:
+      case OPMULT:
          PR ("*\n");
          return build_expr (e->L.e) * build_expr (e->R.e);
 
-      case DIV_opno:
+      case OPDIV:
          PR ("/\n");
          return build_expr (e->L.e) / build_expr (e->R.e);
 
-      case REM_opno:
-         Printf ("remainder -- not implemented\n");
-         exit(1);
+      case REM_opno: {
+         PR ("remainder\n");
+         // a mod b = a - a div b * b
+         IloNumExpr lhs = build_expr (e->L.e), rhs = build_expr (e->R.e);
+         return lhs - build_intdiv(lhs, rhs) * rhs;
+      }
 
       case LESS_opno:
          PR ("less\n");
@@ -210,8 +226,8 @@ IloExpr build_expr (expr *e)
          return sumExpr;
 
       case intDIV_opno:
-         Printf ("int division -- not implemented\n");
-         exit(1);
+         PR ("int division\n");
+         return build_intdiv (build_expr (e->L.e), build_expr (e->R.e));
 
       case precision_opno:
          Printf ("precision -- not implemented\n");

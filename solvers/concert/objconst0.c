@@ -1,8 +1,8 @@
 
 #define SKIP_NL2_DEFINES
-#include "nlp.h"
+#include "solvers/nlp.h"
 #undef f_OPNUM
-#include "r_opn0.hd"
+#include "solvers/r_opn0.hd"
 
 #ifdef __cplusplus
 extern "C"

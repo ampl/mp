@@ -5,7 +5,7 @@ CPLEXSTUDIODIR = /opt/ibm/ILOG/CPLEX_Studio124
 CONCERTDIR     = $(CPLEXSTUDIODIR)/concert
 CPLEXDIR       = $(CPLEXSTUDIODIR)/cplex
 CPOPTIMIZERDIR = $(CPLEXSTUDIODIR)/cpoptimizer
-AMPLDIR        = ..
+AMPLDIR        = ../..
 
 CONCERT_INC=$(CONCERTDIR)/include
 CONCERT_LIB=$(CONCERTDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
@@ -13,10 +13,8 @@ CPLEX_INC=$(CPLEXDIR)/include
 CPLEX_LIB=$(CPLEXDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
 CPOPTIMIZER_INC=$(CPOPTIMIZERDIR)/include
 CPOPTIMIZER_LIB=$(CPOPTIMIZERDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
-#AMPL_INC=$(AMPLDIR)/ampl_include
 AMPL_INC=$(AMPLDIR)
-#AMPL_LIB=$(AMPLDIR)/amplsolver.a $(AMPLDIR)/funcadd0.o
-AMPL_LIB=$(AMPLDIR)/amplsolver.a
+AMPL_LIB=$(AMPLDIR)/solvers/amplsolver.a
 LIBS=-lnsl -lm -ldl -lpthread
 
 #DEBUG= -w -xO2 -xtarget=ultra -xarch=v8plus -DNDEBUG

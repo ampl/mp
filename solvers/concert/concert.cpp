@@ -21,10 +21,10 @@
 #include <ilcplex/ilocplex.h>
 #include <ilcp/cp.h>
 
-#include "asl.h"
-#include "nlp.h"
-#include "getstub.h"
-#include "r_opn.hd" /* for N_OPS */
+#include "solvers/asl.h"
+#include "solvers/nlp.h"
+#include "solvers/getstub.h"
+#include "solvers/r_opn.hd" /* for N_OPS */
 
 using namespace std;
 
