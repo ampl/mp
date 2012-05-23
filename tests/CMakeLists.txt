@@ -25,7 +25,10 @@ if (NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -std=c++0x")
 endif ()
 
+# Check C++ compiler capabilities.
 include(CheckCXXSourceCompiles)
+CHECK_CXX_SOURCE_COMPILES(
+  "int main() { int *p = nullptr; }" HAVE_NULLPTR)
 CHECK_CXX_SOURCE_COMPILES(
   "#include <memory>\nint main() { std::unique_ptr<int> p; }" HAVE_UNIQUE_PTR)
 configure_file(
