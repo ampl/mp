@@ -1,0 +1,6 @@
+#ifndef TESTS_CONFIG_H_
+#define TESTS_CONFIG_H_
+
+#cmakedefine HAVE_UNIQUE_PTR 1
+
+#endif  // TESTS_CONFIG_H_
