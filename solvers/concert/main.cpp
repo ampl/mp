@@ -1,5 +1,10 @@
 #include "concert.h"
+#include "solvers/asl.h"
 
 int main(int argc, char **argv) {
-  return concert_main(argc, argv);
+  try {
+    return concert_main(argc, argv);
+  } catch (const Error& e) {
+    Printf("%s\n", e.what());
+  }
 }

@@ -31,16 +31,13 @@
 IloConstraint build_constr (expr*);
 IloNumVar build_numberof (expr*);
 
-// Builds a Concert expression for the integer division using the formula:
-// a div b = if a / b >= 0 then floor(a / b) else ceil(a / b)
-IloNumExpr build_intdiv (IloNumExpr lhs, IloNumExpr rhs)
+// Builds an array of expressions from the argument list of e.
+IloNumExprArray build_minmax_array(expr *e)
 {
-   IloNumExpr quotient = lhs / rhs;
-   IloConstraint condition = quotient >= IloExpr(env, 0);
-   IloNumVar result = IloNumVar (env, -IloInfinity, IloInfinity);
-   mod.add (IloIfThen (env, condition,  result == IloFloor(quotient)));
-   mod.add (IloIfThen (env, !condition, result == IloCeil (quotient)));
-   return result;
+   IloNumExprArray array(env);
+   for (de *d = reinterpret_cast<expr_va*>(e)->L.d; d->e; ++d)
+      array.add (build_expr (d->e));
+   return array;
 }
 
 /*----------------------------------------------------------------------
@@ -53,13 +50,8 @@ IloNumExpr build_intdiv (IloNumExpr lhs, IloNumExpr rhs)
 IloExpr build_expr (expr *e)
 {
    expr **ep;
-   expr_if *eif;
-   de *d;
 
    IloExpr sumExpr, targetExpr;
-   IloConstraint ifCond;
-   IloNumVar minmaxVar, ifVar;
-   IloNumVarArray minmaxArray;
 
    IloNumArray loSubBnd, upSubBnd;
    IloNumVar resultVar;
@@ -73,7 +65,6 @@ IloExpr build_expr (expr *e)
    PR ("op %d  optype %2d  ", opnum, optype[opnum]);
 
    switch(opnum) {
-
       case OPPLUS:
          PR ("+\n");
          return build_expr (e->L.e) + build_expr (e->R.e);
@@ -90,64 +81,55 @@ IloExpr build_expr (expr *e)
          PR ("/\n");
          return build_expr (e->L.e) / build_expr (e->R.e);
 
-      case REM_opno: {
+      case OPREM: {
          PR ("remainder\n");
-         // a mod b = a - a div b * b
+         // a mod b = a - trunc(a / b) * b
          IloNumExpr lhs = build_expr (e->L.e), rhs = build_expr (e->R.e);
-         return lhs - build_intdiv(lhs, rhs) * rhs;
+         return lhs - IloTrunc(lhs / rhs) * rhs;
       }
 
-      case LESS_opno:
+      case OPPOW:
+         PR ("^\n");
+         return IloPower (IloExprBase(build_expr (e->L.e)),
+                          IloExprBase(build_expr (e->R.e)));
+
+      case OPLESS:
          PR ("less\n");
          return IloMax (build_expr (e->L.e) - build_expr (e->R.e), 0.0);
 
-      case MINLIST_opno:
+      case MINLIST:
          PR ("min\n");
+         return IloMin(build_minmax_array(e));
 
-         minmaxArray = IloNumVarArray(env);
-         for (d = ((expr_va*)e)->L.d; d->e; d++) {
-            minmaxVar = IloNumVar (env, -IloInfinity, IloInfinity);
-            mod.add (minmaxVar == build_expr (d->e));
-            minmaxArray.add (minmaxVar);
-         }
-         return IloMin(minmaxArray);
-
-      case MAXLIST_opno:
+      case MAXLIST:
          PR ("max\n");
+         return IloMax(build_minmax_array(e));
 
-         minmaxArray = IloNumVarArray(env);
-         for (d = ((expr_va*)e)->L.d; d->e; d++) {
-            minmaxVar = IloNumVar (env, -IloInfinity, IloInfinity);
-            mod.add (minmaxVar == build_expr (d->e));
-            minmaxArray.add (minmaxVar);
-         }
-         return IloMax(minmaxArray);
+      case FLOOR:
+         PR ("floor\n");
+         return IloFloor(build_expr(e->L.e));
 
-      case FLOOR_opno:
-         Printf ("floor -- not implemented\n");
-         exit(1);
+      case CEIL:
+         PR ("ceil\n");
+         return IloCeil(build_expr(e->L.e));
 
-      case CEIL_opno:
-         Printf ("ceil -- not implemented\n");
-         exit(1);
-
-      case ABS_opno:
+      case ABS:
          PR ("abs\n");
          return IloAbs (build_expr (e->L.e));
 
-      case UMINUS_opno:
+      case OPUMINUS:
          PR ("unary -\n");
          return - build_expr (e->L.e);
 
-      case IFnl_opno:
+      case OPIFnl: {
          PR ("if\n");
-
-         eif = (expr_if*)e;
-         ifCond = build_constr (eif->e);
-         ifVar = IloNumVar (env, -IloInfinity, IloInfinity);
+         expr_if *eif = reinterpret_cast<expr_if*>(e);
+         IloConstraint ifCond = build_constr (eif->e);
+         IloNumVar ifVar = IloNumVar (env, -IloInfinity, IloInfinity);
          mod.add (IloIfThen (env, ifCond,  ifVar == build_expr (eif->T)));
          mod.add (IloIfThen (env, !ifCond, ifVar == build_expr (eif->F)));
          return ifVar;
+      }
 
       case tanh_opno:
          Printf ("tanh -- not implemented\n");
@@ -227,7 +209,7 @@ IloExpr build_expr (expr *e)
 
       case intDIV_opno:
          PR ("int division\n");
-         return build_intdiv (build_expr (e->L.e), build_expr (e->R.e));
+         return IloTrunc (build_expr (e->L.e) / build_expr (e->R.e));
 
       case precision_opno:
          Printf ("precision -- not implemented\n");
@@ -253,18 +235,15 @@ IloExpr build_expr (expr *e)
          PR ("cpow %e\n", e->L.en->v);
 	 return IloPower (e->L.en->v, IloExprBase(build_expr (e->R.e)));
 
-      case POW_opno:
-         PR ("^\n");
-         return IloPower (IloExprBase(build_expr (e->L.e)), 
-                          IloExprBase(build_expr (e->R.e)));
-
       case FUNCALL_opno:
          Printf ("function call -- not implemented\n");
          exit(1);
 
-      case NUM_opno:
-         PR ("%e\n", ((expr_n*)e)->v);
-         return IloExpr (env, ((expr_n*)e)->v);
+      case NUM_opno: {
+         double n = reinterpret_cast<expr_n*>(e)->v;
+         PR ("%e\n", n);
+         return IloExpr (env, n);
+      }
 
       case PLTERM_opno:
          p = e->L.p;
@@ -346,37 +325,32 @@ IloExpr build_expr (expr *e)
          Printf ("invalid exactly in expression\n");
          exit(1);
 
-      case OR_opno:
-         Printf ("invalid logical OR in expression\n");
-         exit(1);
+      case OPOR:
+         throw Error("invalid logical OR in expression");
 
-      case AND_opno:
-         Printf ("invalid logical AND in expression\n");
-         exit(1);
+      case OPAND:
+         throw Error("invalid logical AND in expression");
 
-      case LT_opno:
-         Printf ("invalid < in expression\n");
-         exit(1);
+      case LT:
+         throw Error("invalid < in expression");
 
-      case LE_opno:
-         Printf ("invalid <= in expression\n");
-         exit(1);
+      case LE:
+         throw Error("invalid <= in expression");
 
-      case EQ_opno:
-         Printf ("invalid = in expression\n");
-         exit(1);
+      case EQ:
+         throw Error("invalid = in expression");
 
-      case GE_opno:
-         Printf ("invalid >= in expression\n");
-         exit(1);
+      case GE:
+         throw Error("invalid >= in expression");
 
-      case GT_opno:
-         Printf ("invalid > in expression\n");
-         exit(1);
+      case GT:
+         throw Error("invalid > in expression");
 
-      case NE_opno:
-         Printf ("invalid != in expression\n");
-         exit(1);
+      case NE:
+         throw Error("invalid != in expression");
+
+      case OPNOT:
+         throw Error("invalid logical NOT in expression");
 
       case ALLDIFF_opno:
          Printf ("invalid alldiff in expression\n");
