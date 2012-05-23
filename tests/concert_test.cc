@@ -10,6 +10,7 @@
 #include "solvers/asl.h"
 #include "solvers/nlp.h"
 #include "solvers/opcode.hd"
+#include "tests/config.h"
 
 namespace {
 
@@ -48,7 +49,7 @@ void ExprDeleter::operator()(expr *e) const {
 }
 
 class ConcertTest : public ::testing::Test {
-protected:
+ protected:
   void SetUp() {
     env = IloEnv();
     mod = IloModel(env);
@@ -62,7 +63,12 @@ protected:
     Var = IloNumVarArray();
   }
 
+#if HAVE_UNIQUE_PTR
   typedef std::unique_ptr<expr, ExprDeleter> ExprPtr;
+#else
+  // Fall back to std::auto_ptr - leaks subexpressions.
+  typedef std::auto_ptr<expr> ExprPtr;
+#endif
 
   // Creates an ASL expression representing a number.
   static ExprPtr NewNum(double n) {
@@ -78,6 +84,14 @@ protected:
 
   // Creates a binary ASL expression.
   static ExprPtr NewBinary(int opcode, ExprPtr lhs, ExprPtr rhs) {
+    expr e = {reinterpret_cast<efunc*>(opcode), 0, 0,
+              {lhs.release()}, {rhs.release()}, 0};
+    return ExprPtr(new expr(e));
+  }
+
+  // Creates a variable-argument ASL expression.
+  static ExprPtr NewExpr(int opcode, ExprPtr lhs, ExprPtr rhs) {
+    // TODO
     expr e = {reinterpret_cast<efunc*>(opcode), 0, 0,
               {lhs.release()}, {rhs.release()}, 0};
     return ExprPtr(new expr(e));
@@ -144,5 +158,18 @@ TEST_F(ConcertTest, ConvertRem) {
   EXPECT_FALSE(iter.ok());
 }
 
+TEST_F(ConcertTest, ConvertPow) {
+  EXPECT_EQ("x ^ 42", str(build_expr(
+    NewBinary(OPPOW, NewVar(0), NewNum(42)).get())));
+  EXPECT_EQ("x ^ y", str(build_expr(
+    NewBinary(OPPOW, NewVar(0), NewVar(1)).get())));
+}
+
+TEST_F(ConcertTest, ConvertLess) {
+  EXPECT_EQ("max(x + -42 , 0)", str(build_expr(
+    NewBinary(OPLESS, NewVar(0), NewNum(42)).get())));
+  EXPECT_EQ("max(x + -1 * y , 0)", str(build_expr(
+    NewBinary(OPLESS, NewVar(0), NewVar(1)).get())));
+}
 }
 
