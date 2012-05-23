@@ -72,8 +72,8 @@ class ConcertTest : public ::testing::Test {
 
   // Creates an ASL expression representing a number.
   static ExprPtr NewNum(double n) {
-    return ExprPtr(reinterpret_cast<expr*>(
-      new expr_n {reinterpret_cast<efunc_n*>(OPNUM), n}));
+    expr_n e = {reinterpret_cast<efunc_n*>(OPNUM), n};
+    return ExprPtr(reinterpret_cast<expr*>(new expr_n(e)));
   }
 
   // Creates an ASL expression representing a variable.
