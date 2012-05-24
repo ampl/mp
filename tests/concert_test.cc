@@ -18,6 +18,15 @@ namespace {
 
 bool AreBothSpaces(char lhs, char rhs) { return lhs == ' ' && rhs == ' '; }
 
+// Replace all occurrences of string old_s in s with new_s.
+void Replace(string& s, const string& old_s, const string& new_s) {
+  size_t pos = 0;
+  while ((pos = s.find(old_s, pos)) != string::npos) {
+    s.replace(pos, old_s.length(), new_s);
+    pos += new_s.length();
+  }
+}
+
 // Returns a string representation of the argument.
 template <typename T>
 string str(T t) {
@@ -30,6 +39,8 @@ string str(T t) {
   if (*(end - 1) == ' ') --end;
   s.erase(end, s.end());
 
+  // Normalize representation of infinity.
+  Replace(s, "1.#INF", "inf");
   return s;
 }
 
@@ -372,7 +383,7 @@ TEST_F(ConcertTest, ConvertAtan2) {
   EXPECT_FALSE(iter.ok());
 
   // Check that (1) and (2) both yield NaN when x == 0 and y == 0.
-  double d = IloArcTan(0.0 / 0.0);
+  double zero = 0, d = IloArcTan(zero / zero);
   EXPECT_TRUE(d != d);
   double d1 = d + 3.14;
   EXPECT_TRUE(d1 != d1);

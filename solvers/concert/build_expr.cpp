@@ -148,7 +148,7 @@ IloExpr build_expr (expr *e)
       case OP_sinh: {
          PR ("sinh\n");
          IloNumExpr arg(build_expr(e->L.e));
-         return (IloExponent(arg) - IloExponent(-arg)) / 2;
+         return (IloExponent(arg) - IloExponent(-arg)) * 0.5;
       }
 
       case OP_sin:
@@ -170,7 +170,7 @@ IloExpr build_expr (expr *e)
       case OP_cosh: {
          PR ("cosh\n");
          IloNumExpr arg(build_expr(e->L.e));
-         return (IloExponent(arg) + IloExponent(-arg)) / 2;
+         return (IloExponent(arg) + IloExponent(-arg)) * 0.5;
       }
 
       case OP_cos:
@@ -180,7 +180,7 @@ IloExpr build_expr (expr *e)
       case OP_atanh: {
          PR ("atanh\n");
          IloNumExpr arg(build_expr(e->L.e));
-         return (IloLog(1 + arg) - IloLog(1 - arg)) / 2;
+         return (IloLog(1 + arg) - IloLog(1 - arg)) * 0.5;
       }
 
       case OP_atan2: {
@@ -201,7 +201,7 @@ IloExpr build_expr (expr *e)
       case OP_asinh: {
          PR ("asinh\n");
          IloNumExpr arg(build_expr(e->L.e));
-         return IloLog(arg + IloPower(IloPower(arg, 2) + 1, 0.5));
+         return IloLog(arg + IloPower(IloSquare(arg) + 1, 0.5));
       }
 
       case OP_asin:
