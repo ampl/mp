@@ -30,7 +30,7 @@ LD_FLAGS  = -L$(CPOPTIMIZER_LIB) -lcp -L$(CPLEX_LIB) -lilocplex -lcplex \
 BINARIES = concert.o build_expr.o build_constr.o build_numberof.o main.o
 EXTRAS = objconst0.o
 
-cplexcp: $(BINARIES) $(EXTRAS)
+concert: $(BINARIES) $(EXTRAS)
 	$(CXX) -o $@ $(BINARIES) $(EXTRAS) $(LD_FLAGS)
 
 %.o: %.cpp
