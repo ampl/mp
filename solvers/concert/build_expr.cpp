@@ -13,9 +13,7 @@
 #include "concert.h"
 
 #include <iostream>
-#include <stdio.h>
-#include <assert.h>
-#include "string.h"
+#include <cmath>
 
 #include <ilconcert/ilomodel.h>
 #include <ilcp/cp.h>
@@ -83,8 +81,7 @@ IloExpr build_expr (expr *e)
 
       case OPREM: {
          PR ("remainder\n");
-         // a mod b = a - trunc(a / b) * b
-         IloNumExpr lhs = build_expr (e->L.e), rhs = build_expr (e->R.e);
+         IloNumExpr lhs(build_expr (e->L.e)), rhs(build_expr (e->R.e));
          return lhs - IloTrunc(lhs / rhs) * rhs;
       }
 
@@ -124,78 +121,97 @@ IloExpr build_expr (expr *e)
       case OPIFnl: {
          PR ("if\n");
          expr_if *eif = reinterpret_cast<expr_if*>(e);
-         IloConstraint ifCond = build_constr (eif->e);
-         IloNumVar ifVar = IloNumVar (env, -IloInfinity, IloInfinity);
+         IloConstraint ifCond(build_constr (eif->e));
+         IloNumVar ifVar(env, -IloInfinity, IloInfinity);
          mod.add (IloIfThen (env, ifCond,  ifVar == build_expr (eif->T)));
          mod.add (IloIfThen (env, !ifCond, ifVar == build_expr (eif->F)));
          return ifVar;
       }
 
-      case tanh_opno:
-         Printf ("tanh -- not implemented\n");
-         exit(1);
+      case OP_tanh: {
+         PR ("tanh\n");
+         IloNumExpr exp(IloExponent(2 * build_expr(e->L.e)));
+         return (exp - 1) / (exp + 1);
+      }
 
-      case tan_opno:
+      case OP_tan:
          PR ("tan\n");
          return IloTan (build_expr (e->L.e));
 
-      case sqrt_opno:
+      case OP_sqrt:
          PR ("sqrt\n");
          return IloPower (IloExprBase(build_expr (e->L.e)), 0.5);
 
-      case sinh_opno:
-         Printf ("sinh -- not implemented\n");
-         exit(1);
+      case OP_sinh: {
+         PR ("sinh\n");
+         IloNumExpr arg(build_expr(e->L.e));
+         return (IloExponent(arg) - IloExponent(-arg)) / 2;
+      }
 
-      case sin_opno:
+      case OP_sin:
          PR ("sin\n");
          return IloSin (build_expr (e->L.e));
 
-      case log10_opno:
+      case OP_log10:
          PR ("log10\n");
          return IloLog (build_expr (e->L.e)) / IloLog(10);
 
-      case log_opno:
+      case OP_log:
          PR ("log\n");
          return IloLog (build_expr (e->L.e));
 
-      case exp_opno:
+      case OP_exp:
          PR ("exp\n");
          return IloExponent (build_expr (e->L.e));
 
-      case cosh_opno:
-         Printf ("cosh -- not implemented\n");
-         exit(1);
+      case OP_cosh: {
+         PR ("cosh\n");
+         IloNumExpr arg(build_expr(e->L.e));
+         return (IloExponent(arg) + IloExponent(-arg)) / 2;
+      }
 
-      case cos_opno:
+      case OP_cos:
          PR ("cos\n");
          return IloCos (build_expr (e->L.e));
 
-      case atanh_opno:
-         Printf ("atanh -- not implemented\n");
-         exit(1);
+      case OP_atanh: {
+         PR ("atanh\n");
+         IloNumExpr arg(build_expr(e->L.e));
+         return (IloLog(1 + arg) - IloLog(1 - arg)) / 2;
+      }
 
-      case atan2_opno:
-         Printf ("atan2 -- not implemented\n");
-         exit(1);
+      case OP_atan2: {
+         PR ("atan2\n");
+         IloNumExpr y(build_expr(e->L.e)), x(build_expr(e->R.e));
+         IloNumExpr atan(IloArcTan(y / x));
+         IloNumVar result(env, -IloInfinity, IloInfinity);
+         mod.add(IloIfThen(env, x >= 0, result == atan));
+         mod.add(IloIfThen(env, x <= 0 && y >= 0, result == atan + M_PI));
+         mod.add(IloIfThen(env, x <= 0 && y <= 0, result == atan - M_PI));
+         return result;
+      }
 
-      case atan_opno:
+      case OP_atan:
          PR ("atan\n");
          return IloArcTan (build_expr (e->L.e));
 
-      case asinh_opno:
-         Printf ("asin -- not implemented\n");
-         exit(1);
+      case OP_asinh: {
+         PR ("asinh\n");
+         IloNumExpr arg(build_expr(e->L.e));
+         return IloLog(arg + IloPower(IloPower(arg, 2) + 1, 0.5));
+      }
 
-      case asin_opno:
+      case OP_asin:
          PR ("asin\n");
          return IloArcSin (build_expr (e->L.e));
 
-      case acosh_opno:
-         Printf ("acos -- not implemented\n");
-         exit(1);
+      case OP_acosh: {
+         PR ("acosh\n");
+         IloNumExpr arg(build_expr(e->L.e));
+         return IloLog(arg + IloPower(arg + 1, 0.5) * IloPower(arg - 1, 0.5));
+      }
 
-      case acos_opno:
+      case OP_acos:
          PR ("acos\n");
          return IloArcCos (build_expr (e->L.e));
 

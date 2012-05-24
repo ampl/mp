@@ -1,8 +1,10 @@
 #include <ilconcert/ilomodel.h>
+#include <ilcp/cp.h>
 
 #include <algorithm>
 #include <memory>
 #include <sstream>
+#include <cmath>
 
 #include "gtest/gtest.h"
 
@@ -65,6 +67,14 @@ void ExprDeleter::operator()(expr *e) const {
   delete e;
 }
 
+#if HAVE_UNIQUE_PTR
+typedef std::unique_ptr<expr, ExprDeleter> ExprPtr;
+#else
+// Fall back to std::auto_ptr - leaks subexpressions.
+typedef std::auto_ptr<expr> ExprPtr;
+ExprPtr move(ExprPtr e) { return e; }
+#endif
+
 class ConcertTest : public ::testing::Test {
  protected:
   void SetUp() {
@@ -79,13 +89,6 @@ class ConcertTest : public ::testing::Test {
   void TearDown() {
     Var = IloNumVarArray();
   }
-
-#if HAVE_UNIQUE_PTR
-  typedef std::unique_ptr<expr, ExprDeleter> ExprPtr;
-#else
-  // Fall back to std::auto_ptr - leaks subexpressions.
-  typedef std::auto_ptr<expr> ExprPtr;
-#endif
 
   // Creates an ASL expression representing a number.
   static ExprPtr NewNum(double n) {
@@ -119,29 +122,39 @@ class ConcertTest : public ::testing::Test {
   }
 
   // Creates a variable-argument ASL expression with 3 arguments.
-  static ExprPtr NewExpr(int opcode, ExprPtr e1, ExprPtr e2, ExprPtr e3) {
-    expr_va e = {reinterpret_cast<efunc*>(opcode), 0,
-                 {0}, {0}, 0, 0, 0};
-    expr_va *copy = new expr_va(e);
-    ExprPtr result(reinterpret_cast<expr*>(copy));
-    de *args = new de[4];
-    args[0] = MakeDE(move(e1));
-    args[1] = MakeDE(move(e2));
-    args[2] = MakeDE(move(e3));
-    args[3] = MakeDE(ExprPtr());
-    copy->L.d = args;
-    return result;
-  }
+  static ExprPtr NewExpr(int opcode, ExprPtr e1, ExprPtr e2, ExprPtr e3);
 
   // Creates an if ASL expression.
   static ExprPtr NewIf(ExprPtr condition,
-      ExprPtr true_expr, ExprPtr false_expr) {
-    expr_if e = {reinterpret_cast<efunc*>(OPIFnl), 0, condition.release(),
-                 true_expr.release(), false_expr.release(),
-                 0, 0, 0, 0, {0}, {0}, 0, 0};
-    return ExprPtr(reinterpret_cast<expr*>(new expr_if(e)));
+      ExprPtr true_expr, ExprPtr false_expr);
+
+  static double EvalRem(double lhs, double rhs) {
+    IloExpr e(build_expr(NewBinary(OPREM, NewNum(lhs), NewNum(rhs)).get()));
+    return e.getImpl()->eval(IloAlgorithm());
   }
 };
+
+ExprPtr ConcertTest::NewExpr(int opcode, ExprPtr e1, ExprPtr e2, ExprPtr e3) {
+  expr_va e = {reinterpret_cast<efunc*>(opcode), 0,
+               {0}, {0}, 0, 0, 0};
+  expr_va *copy = new expr_va(e);
+  ExprPtr result(reinterpret_cast<expr*>(copy));
+  de *args = new de[4];
+  args[0] = MakeDE(move(e1));
+  args[1] = MakeDE(move(e2));
+  args[2] = MakeDE(move(e3));
+  args[3] = MakeDE(ExprPtr());
+  copy->L.d = args;
+  return result;
+}
+
+ExprPtr ConcertTest::NewIf(ExprPtr condition,
+    ExprPtr true_expr, ExprPtr false_expr) {
+  expr_if e = {reinterpret_cast<efunc*>(OPIFnl), 0, condition.release(),
+               true_expr.release(), false_expr.release(),
+               0, 0, 0, 0, {0}, {0}, 0, 0};
+  return ExprPtr(reinterpret_cast<expr*>(new expr_if(e)));
+}
 
 TEST_F(ConcertTest, ConvertNum) {
   EXPECT_EQ("0.42", str(build_expr(NewNum(0.42).get())));
@@ -182,6 +195,12 @@ TEST_F(ConcertTest, ConvertDiv) {
 TEST_F(ConcertTest, ConvertRem) {
   EXPECT_EQ("x + trunc(x / y ) * y * -1", str(build_expr(
     NewBinary(OPREM, NewVar(0), NewVar(1)).get())));
+  EXPECT_EQ(0, EvalRem(9, 3));
+  EXPECT_EQ(2, EvalRem(8, 3));
+  EXPECT_EQ(-2, EvalRem(-8, 3));
+  EXPECT_EQ(2, EvalRem(8, -3));
+  EXPECT_EQ(-2, EvalRem(-8, -3));
+  EXPECT_EQ(1.5, EvalRem(7.5, 3));
 }
 
 TEST_F(ConcertTest, ConvertPow) {
@@ -209,23 +228,19 @@ TEST_F(ConcertTest, ConvertMax) {
 }
 
 TEST_F(ConcertTest, ConvertFloor) {
-  EXPECT_EQ("floor(x )", str(build_expr(
-    NewUnary(FLOOR, NewVar(0)).get())));
+  EXPECT_EQ("floor(x )", str(build_expr(NewUnary(FLOOR, NewVar(0)).get())));
 }
 
 TEST_F(ConcertTest, ConvertCeil) {
-  EXPECT_EQ("ceil(x )", str(build_expr(
-    NewUnary(CEIL, NewVar(0)).get())));
+  EXPECT_EQ("ceil(x )", str(build_expr(NewUnary(CEIL, NewVar(0)).get())));
 }
 
 TEST_F(ConcertTest, ConvertAbs) {
-  EXPECT_EQ("abs(x )", str(build_expr(
-    NewUnary(ABS, NewVar(0)).get())));
+  EXPECT_EQ("abs(x )", str(build_expr(NewUnary(ABS, NewVar(0)).get())));
 }
 
 TEST_F(ConcertTest, ConvertUMinus) {
-  EXPECT_EQ("-1 * x", str(build_expr(
-    NewUnary(OPUMINUS, NewVar(0)).get())));
+  EXPECT_EQ("-1 * x", str(build_expr(NewUnary(OPUMINUS, NewVar(0)).get())));
 }
 
 TEST_F(ConcertTest, ConvertLogicalOrComparisonThrows) {
@@ -240,8 +255,8 @@ TEST_F(ConcertTest, ConvertLogicalOrComparisonThrows) {
 }
 
 TEST_F(ConcertTest, ConvertIf) {
-  build_expr(NewIf(NewBinary(EQ,
-    NewVar(0), NewNum(0)), NewVar(1), NewNum(42)).get());
+  EXPECT_EQ("IloNumVar(7)[-inf..inf]", str(build_expr(NewIf(NewBinary(EQ,
+    NewVar(0), NewNum(0)), NewVar(1), NewNum(42)).get())));
 
   IloModel::Iterator iter(mod);
   ASSERT_TRUE(iter.ok());
@@ -261,5 +276,142 @@ TEST_F(ConcertTest, ConvertIf) {
   ++iter;
   EXPECT_FALSE(iter.ok());
 }
+
+TEST_F(ConcertTest, ConvertTanh) {
+  EXPECT_EQ("exp(2 * x ) + -1 / exp(2 * x ) + 1",
+            str(build_expr(NewUnary(OP_tanh, NewVar(0)).get())));
+  // Concert incorrectly omits brackets around the dividend and divisor
+  // above, so test also by evaluating the expression at several points.
+  IloExpr e(build_expr(NewUnary(OP_tanh, NewNum(1)).get()));
+  EXPECT_NEAR(0.761594, e.getImpl()->eval(IloAlgorithm()), 1e-5);
+  e = build_expr(NewUnary(OP_tanh, NewNum(0)).get());
+  EXPECT_EQ(0, e.getImpl()->eval(IloAlgorithm()));
+  e = build_expr(NewUnary(OP_tanh, NewNum(-2)).get());
+  EXPECT_NEAR(-0.964027, e.getImpl()->eval(IloAlgorithm()), 1e-5);
 }
 
+TEST_F(ConcertTest, ConvertTan) {
+  EXPECT_EQ("tan(x )", str(build_expr(NewUnary(OP_tan, NewVar(0)).get())));
+}
+
+TEST_F(ConcertTest, ConvertSqrt) {
+  EXPECT_EQ("x ^ 0.5",
+            str(build_expr(NewUnary(OP_sqrt, NewVar(0)).get())));
+}
+
+TEST_F(ConcertTest, ConvertSinh) {
+  EXPECT_EQ("exp(x ) * 0.5 + exp(-1 * x ) * -0.5",
+            str(build_expr(NewUnary(OP_sinh, NewVar(0)).get())));
+}
+
+TEST_F(ConcertTest, ConvertSin) {
+  EXPECT_EQ("sin(x )", str(build_expr(NewUnary(OP_sin, NewVar(0)).get())));
+}
+
+TEST_F(ConcertTest, ConvertLog10) {
+  EXPECT_EQ("log(x )/ 2.30259",
+            str(build_expr(NewUnary(OP_log10, NewVar(0)).get())));
+}
+
+TEST_F(ConcertTest, ConvertLog) {
+  EXPECT_EQ("log(x )", str(build_expr(NewUnary(OP_log, NewVar(0)).get())));
+}
+
+TEST_F(ConcertTest, ConvertExp) {
+  EXPECT_EQ("exp(x )", str(build_expr(NewUnary(OP_exp, NewVar(0)).get())));
+}
+
+TEST_F(ConcertTest, ConvertCosh) {
+  EXPECT_EQ("exp(x ) * 0.5 + exp(-1 * x ) * 0.5",
+            str(build_expr(NewUnary(OP_cosh, NewVar(0)).get())));
+}
+
+TEST_F(ConcertTest, ConvertCos) {
+  EXPECT_EQ("cos(x )", str(build_expr(NewUnary(OP_cos, NewVar(0)).get())));
+}
+
+TEST_F(ConcertTest, ConvertAtanh) {
+  EXPECT_EQ("log(x + 1 ) * 0.5 + log(-1 * x + 1 ) * -0.5",
+            str(build_expr(NewUnary(OP_atanh, NewVar(0)).get())));
+}
+
+TEST_F(ConcertTest, ConvertAtan2) {
+  EXPECT_EQ("IloNumVar(8)[-inf..inf]",
+            str(build_expr(NewBinary(OP_atan2, NewVar(1), NewVar(0)).get())));
+
+  IloModel::Iterator iter(mod);
+  ASSERT_TRUE(iter.ok());
+  IloIfThenI *ifXNonnegative = dynamic_cast<IloIfThenI*>((*iter).getImpl());
+  ASSERT_TRUE(ifXNonnegative != nullptr);
+  EXPECT_EQ("0 <= x", str(ifXNonnegative->getLeft()));
+  EXPECT_EQ("IloNumVar(8)[-inf..inf] == arc-tan(y / x )", // (1)
+            str(ifXNonnegative->getRight()));
+
+  ++iter;
+  ASSERT_TRUE(iter.ok());
+  IloIfThenI *ifDiffSigns = dynamic_cast<IloIfThenI*>((*iter).getImpl());
+  ASSERT_TRUE(ifDiffSigns != nullptr);
+  EXPECT_EQ("(x <= 0 ) && (0 <= y )", str(ifDiffSigns->getLeft()));
+  EXPECT_EQ("IloNumVar(8)[-inf..inf] == arc-tan(y / x ) + 3.14159", // (2)
+            str(ifDiffSigns->getRight()));
+
+  ++iter;
+  ASSERT_TRUE(iter.ok());
+  IloIfThenI *ifSameSigns = dynamic_cast<IloIfThenI*>((*iter).getImpl());
+  ASSERT_TRUE(ifSameSigns != nullptr);
+  EXPECT_EQ("(x <= 0 ) && (y <= 0 )", str(ifSameSigns->getLeft()));
+  EXPECT_EQ("IloNumVar(8)[-inf..inf] == arc-tan(y / x ) + -3.14159",
+            str(ifSameSigns->getRight()));
+
+  ++iter;
+  EXPECT_FALSE(iter.ok());
+
+  // Check that (1) and (2) both yield NaN when x == 0 and y == 0.
+  double d = IloArcTan(0.0 / 0.0);
+  EXPECT_TRUE(d != d);
+  double d1 = d + M_PI;
+  EXPECT_TRUE(d1 != d1);
+}
+
+TEST_F(ConcertTest, ConvertAtan) {
+  EXPECT_EQ("arc-tan(x )",
+            str(build_expr(NewUnary(OP_atan, NewVar(0)).get())));
+}
+
+TEST_F(ConcertTest, ConvertAsinh) {
+  EXPECT_EQ("log(x + square(x ) + 1 ^ 0.5)",
+            str(build_expr(NewUnary(OP_asinh, NewVar(0)).get())));
+  // Concert incorrectly omits brackets around square(x) + 1
+  // above, so test also by evaluating the expression at several points.
+  IloExpr e(build_expr(NewUnary(OP_asinh, NewNum(1)).get()));
+  EXPECT_NEAR(0.881373, e.getImpl()->eval(IloAlgorithm()), 1e-5);
+  e = build_expr(NewUnary(OP_asinh, NewNum(0)).get());
+  EXPECT_EQ(0, e.getImpl()->eval(IloAlgorithm()));
+  e = build_expr(NewUnary(OP_asinh, NewNum(-2)).get());
+  EXPECT_NEAR(-1.443635, e.getImpl()->eval(IloAlgorithm()), 1e-5);
+}
+
+TEST_F(ConcertTest, ConvertAsin) {
+  EXPECT_EQ("arc-sin(x )",
+            str(build_expr(NewUnary(OP_asin, NewVar(0)).get())));
+}
+
+TEST_F(ConcertTest, ConvertAcosh) {
+  EXPECT_EQ("log(x + x + 1 ^ 0.5 * x + -1 ^ 0.5)",
+            str(build_expr(NewUnary(OP_acosh, NewVar(0)).get())));
+  // Concert incorrectly omits brackets around x + 1 and x + -1
+  // above, so test also by evaluating the expression at several points.
+  IloExpr e(build_expr(NewUnary(OP_acosh, NewNum(1)).get()));
+  EXPECT_NEAR(0, e.getImpl()->eval(IloAlgorithm()), 1e-5);
+  e = build_expr(NewUnary(OP_acosh, NewNum(10)).get());
+  EXPECT_NEAR(2.993222, e.getImpl()->eval(IloAlgorithm()), 1e-5);
+  e = build_expr(NewUnary(OP_acosh, NewNum(0)).get());
+  double n = e.getImpl()->eval(IloAlgorithm());
+  EXPECT_TRUE(n != n);
+}
+
+TEST_F(ConcertTest, ConvertAcos) {
+  EXPECT_EQ("arc-cos(x )",
+            str(build_expr(NewUnary(OP_acos, NewVar(0)).get())));
+}
+}
