@@ -348,7 +348,7 @@ int concert_main(int argc, char **argv) {
               << "Output = " << Times[4] - Times[3] << endl;
       }
    }
-   catch (IloException& ex) { 
+   catch (const IloException& ex) {
       cerr << "Error: " << ex << endl;
       exit (-1);
    }
