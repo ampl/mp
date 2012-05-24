@@ -12,7 +12,6 @@
 
 #include "concert.h"
 
-#include <iostream>
 #include <cmath>
 
 #include <ilconcert/ilomodel.h>
@@ -25,6 +24,10 @@
 #include "opnames.hd"
 
 #define PR if(debugexpr)Printf
+
+#ifndef M_PI
+# define M_PI 3.14159265358979323846
+#endif
 
 IloConstraint build_constr (expr*);
 IloNumVar build_numberof (expr*);
@@ -49,7 +52,7 @@ IloExpr build_expr (expr *e)
 {
    expr **ep;
 
-   IloExpr sumExpr, targetExpr;
+   IloExpr targetExpr;
 
    IloNumArray loSubBnd, upSubBnd;
    IloNumVar resultVar;
@@ -215,15 +218,15 @@ IloExpr build_expr (expr *e)
          PR ("acos\n");
          return IloArcCos (build_expr (e->L.e));
 
-      case SUMLIST_opno:
+      case OPSUMLIST: {
          PR ("summation\n");
-
-         sumExpr = IloExpr(env);
+         IloExpr sumExpr(env);
          for (ep = e->L.ep; ep < e->R.ep; ep++)
             sumExpr += build_expr (*ep);
          return sumExpr;
+      }
 
-      case intDIV_opno:
+      case OPintDIV:
          PR ("int division\n");
          return IloTrunc (build_expr (e->L.e) / build_expr (e->R.e));
 
@@ -298,20 +301,20 @@ IloExpr build_expr (expr *e)
         Logic extensions
       ----------------------------------------------------------------*/
 
-      case COUNT_opno:
+      case COUNT_opno: {
          PR ("count\n");
-
-         sumExpr = IloExpr(env);
+         IloExpr sumExpr(env);
          for (ep = e->L.ep; ep < e->R.ep; ep++)
             sumExpr += build_constr (*ep);
          return sumExpr;
+      }
 
       case NUMBEROF_opno:
          PR ("number of\n");
 
          ep = e->L.ep;
          if (reinterpret_cast<size_t>((*ep)->op) != NUM_opno || !usenumberof) {
-            sumExpr = IloExpr(env);
+            IloExpr sumExpr(env);
             targetExpr = build_expr (*ep);
             for (ep++; ep < e->R.ep; ep++)
                sumExpr += (build_expr (*ep) == targetExpr);
