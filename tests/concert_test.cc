@@ -1,10 +1,8 @@
 #include <ilconcert/ilomodel.h>
-#include <ilcp/cp.h>
 
 #include <algorithm>
 #include <memory>
 #include <sstream>
-#include <cmath>
 
 #include "gtest/gtest.h"
 
@@ -14,19 +12,21 @@
 #include "solvers/opcode.hd"
 #include "tests/config.h"
 
+using std::string;
+
 namespace {
 
 bool AreBothSpaces(char lhs, char rhs) { return lhs == ' ' && rhs == ' '; }
 
 // Returns a string representation of the argument.
 template <typename T>
-std::string str(T t) {
+string str(T t) {
   std::ostringstream ss;
   ss << t;
-  auto s = ss.str();
+  string s = ss.str();
 
   // Replace adjacent duplicate spaces and possible trailing space.
-  auto end = std::unique(s.begin(), s.end(), AreBothSpaces);
+  string::iterator end = std::unique(s.begin(), s.end(), AreBothSpaces);
   if (*(end - 1) == ' ') --end;
   s.erase(end, s.end());
 
@@ -60,6 +60,11 @@ void ExprDeleter::operator()(expr *e) const {
     delete eif;
     return;
   }
+  case OPSUMLIST:
+    for (expr **i = e->L.ep, **end = e->R.ep; i < end; ++i)
+      (*this)(*i);
+    delete e;
+    return;
   }
   // Delete subexpressions recursively.
   (*this)(e->L.e);
@@ -369,7 +374,7 @@ TEST_F(ConcertTest, ConvertAtan2) {
   // Check that (1) and (2) both yield NaN when x == 0 and y == 0.
   double d = IloArcTan(0.0 / 0.0);
   EXPECT_TRUE(d != d);
-  double d1 = d + M_PI;
+  double d1 = d + 3.14;
   EXPECT_TRUE(d1 != d1);
 }
 
@@ -413,5 +418,22 @@ TEST_F(ConcertTest, ConvertAcosh) {
 TEST_F(ConcertTest, ConvertAcos) {
   EXPECT_EQ("arc-cos(x )",
             str(build_expr(NewUnary(OP_acos, NewVar(0)).get())));
+}
+
+TEST_F(ConcertTest, ConvertSum) {
+  expr e = {reinterpret_cast<efunc*>(OPSUMLIST), 0, 0, {0}, {0}, 0};
+  ExprPtr sum(new expr(e));
+  expr** args = sum->L.ep = new expr*[3];
+  sum->R.ep = args + 3;
+  ExprPtr x(NewVar(0)), y(NewVar(1)), n(NewNum(42));
+  args[0] = x.release();
+  args[1] = y.release();
+  args[2] = n.release();
+  EXPECT_EQ("x + y + 42", str(build_expr(sum.get())));
+}
+
+TEST_F(ConcertTest, ConvertIntDiv) {
+  EXPECT_EQ("trunc(x / y )", str(build_expr(
+    NewBinary(OPintDIV, NewVar(0), NewVar(1)).get())));
 }
 }
