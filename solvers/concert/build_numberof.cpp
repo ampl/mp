@@ -25,8 +25,6 @@
 
 using std::size_t;
 
-bool same_expr (expr*,expr*);
-
 namespace {
 
 class numberof {
@@ -133,15 +131,14 @@ bool same_expr (expr *e1, expr *e2)
       return false;
 
    switch(optype[opnum1]) {
-
-      case 1:
+      case OPTYPE_UNARY:
          return same_expr (e1->L.e, e2->L.e);
 
-      case 2:
+      case OPTYPE_BINARY:
          return same_expr (e1->L.e, e2->L.e) && 
                 same_expr (e1->R.e, e2->R.e);
 
-      case 3: {
+      case OPTYPE_VARARG: {
          de *d1 = ((expr_va*)e1)->L.d;
          de *d2 = ((expr_va*)e2)->L.d;
          for (; d1->e && d2->e; d1++, d2++)
@@ -150,11 +147,11 @@ bool same_expr (expr *e1, expr *e2)
          return !d1->e && !d2->e;
       }
 
-      case 4:
+      case OPTYPE_PLTERM:
          Printf ("pl terms not implemented in build_numberof\n");
          exit(1);
 
-      case 5: {
+      case OPTYPE_IF: {
          expr_if *eif1 = (expr_if*)e1;
          expr_if *eif2 = (expr_if*)e2;
          return same_expr (eif1->e, eif2->e) &&
@@ -162,8 +159,8 @@ bool same_expr (expr *e1, expr *e2)
                 same_expr (eif1->F, eif2->F);
       }
 
-      case 6:
-      case 11: {
+      case OPTYPE_SUM:
+      case OPTYPE_COUNT: {
          expr **ep1 = e1->L.ep;
          expr **ep2 = e2->L.ep;
          for (; ep1 < e1->R.ep && ep2 < e2->R.ep; ep1++, ep2++)
@@ -172,18 +169,18 @@ bool same_expr (expr *e1, expr *e2)
          return !(ep1 < e1->R.ep) && !(ep2 < e2->R.ep);
       }
 
-      case 7:
+      case OPTYPE_FUNCALL:
          Printf ("function calls not implemented in build_numberof\n");
          exit(1);
 
-      case 8:
+      case OPTYPE_STRING:
          Printf ("string arguments not implemented in build_numberof\n");
          exit(1);
 
-      case 9:
+      case OPTYPE_NUMBER:
          return ((expr_n*)e1)->v == ((expr_n*)e2)->v;
 
-      case 10:
+      case OPTYPE_VARIABLE:
          return e1->a == e2->a;
 
       default:
