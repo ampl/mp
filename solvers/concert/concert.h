@@ -20,7 +20,43 @@ extern int usenumberof;
 extern int debugexpr;
 
 // Variable subscripted by a variable - not implemented in AMPL yet.
-enum {OPVARSUBVAR = 99};
+enum { OPVARSUBVAR = 99 };
+
+// Operation types
+enum {
+  // Unary operation
+  OPTYPE_UNARY = 1,
+
+  // Binary operation
+  OPTYPE_BINARY = 2,
+
+  // Variable-argument function such as min or max
+  OPTYPE_VARARG = 3,
+
+  // Piecewise-linear term
+  OPTYPE_PLTERM = 4,
+
+  // The if-then-else expression
+  OPTYPE_IF = 5,
+
+  // The sum expression
+  OPTYPE_SUM = 6,
+
+  // Function call
+  OPTYPE_FUNCALL = 7,
+
+  // String
+  OPTYPE_STRING = 8,
+
+  // Number
+  OPTYPE_NUMBER = 9,
+
+  // Variable
+  OPTYPE_VARIABLE = 10,
+
+  // The count expression
+  OPTYPE_COUNT = 11
+};
 
 IloExpr build_expr(expr *e);
 IloConstraint build_constr (expr*);
