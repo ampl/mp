@@ -12,33 +12,36 @@
 
 #include "concert.h"
 
+#include <cstddef>
 #include <cmath>
 
 #include <ilconcert/ilomodel.h>
-#include <ilcp/cp.h>
 
 #include "solvers/asl.h"
 #include "solvers/nlp.h"
-#include "solvers/getstub.h"
 #include "solvers/opcode.hd"
-#include "opnames.hd"
 
-#define PR if(debugexpr)Printf
+#define PR if (debugexpr) Printf
 
 #ifndef M_PI
 # define M_PI 3.14159265358979323846
 #endif
 
-IloConstraint build_constr (expr*);
-IloNumVar build_numberof (expr*);
+using std::size_t;
 
 // Builds an array of expressions from the argument list of e.
-IloNumExprArray build_minmax_array(expr *e)
+static IloNumExprArray build_minmax_array(expr *e)
 {
    IloNumExprArray array(env);
    for (de *d = reinterpret_cast<expr_va*>(e)->L.d; d->e; ++d)
       array.add (build_expr (d->e));
    return array;
+}
+
+static bool has_zero_rhs(expr *e)
+{
+   expr_n *rhs = e->R.en;
+   return reinterpret_cast<size_t>(rhs->op) == OPNUM && rhs->v == 0;
 }
 
 /*----------------------------------------------------------------------
@@ -50,18 +53,6 @@ IloNumExprArray build_minmax_array(expr *e)
 
 IloExpr build_expr (expr *e)
 {
-   expr **ep;
-
-   IloExpr targetExpr;
-
-   IloNumArray loSubBnd, upSubBnd;
-   IloNumVar resultVar;
-
-   plterm *p;
-   int npce, i, j;
-   real *pce;
-   IloNumArray bkps, slps;
-
    size_t opnum = reinterpret_cast<size_t>(e->op);
    PR ("op %d  optype %2d  ", opnum, optype[opnum]);
 
@@ -157,7 +148,7 @@ IloExpr build_expr (expr *e)
 
       case OP_log10:
          PR ("log10\n");
-         return IloLog (build_expr (e->L.e)) / IloLog(10);
+         return IloLog10 (build_expr (e->L.e));
 
       case OP_log:
          PR ("log\n");
@@ -221,7 +212,7 @@ IloExpr build_expr (expr *e)
       case OPSUMLIST: {
          PR ("summation\n");
          IloExpr sumExpr(env);
-         for (ep = e->L.ep; ep < e->R.ep; ep++)
+         for (expr **ep = e->L.ep, **end = e->R.ep; ep != end; ep++)
             sumExpr += build_expr (*ep);
          return sumExpr;
       }
@@ -230,70 +221,59 @@ IloExpr build_expr (expr *e)
          PR ("int division\n");
          return IloTrunc (build_expr (e->L.e) / build_expr (e->R.e));
 
-      case precision_opno:
-         Printf ("precision -- not implemented\n");
-         exit(1);
+      case OPround:
+         PR ("round\n");
+         if (!has_zero_rhs(e))
+            throw UnsupportedExprError("round with nonzero second parameter");
+         // Note that IloOplRound rounds half up.
+         return IloOplRound(build_expr(e->L.e));
 
-      case round_opno:
-         Printf ("round -- not implemented\n");
-         exit(1);
+      case OPtrunc:
+         PR ("trunc\n");
+         if (!has_zero_rhs(e))
+            throw UnsupportedExprError("trunc with nonzero second parameter");
+         return IloTrunc(build_expr(e->L.e));
 
-      case trunc_opno:
-         Printf ("trunc -- not implemented\n");
-         exit(1);
-
-      case POWBAS_opno:
+      case OP1POW:
          PR ("1pow %e\n", e->R.en->v);
-	 return IloPower (IloExprBase(build_expr (e->L.e)), e->R.en->v);
+         return IloPower (build_expr (e->L.e), e->R.en->v);
 
-      case POW2_opno:
+      case OP2POW:
          PR ("^2\n");
          return IloSquare (build_expr (e->L.e));
 
-      case POWEXP_opno:
+      case OPCPOW:
          PR ("cpow %e\n", e->L.en->v);
-	 return IloPower (e->L.en->v, IloExprBase(build_expr (e->R.e)));
+         return IloPower (e->L.en->v, build_expr (e->R.e));
 
-      case FUNCALL_opno:
-         Printf ("function call -- not implemented\n");
-         exit(1);
-
-      case NUM_opno: {
+      case OPNUM: {
          double n = reinterpret_cast<expr_n*>(e)->v;
          PR ("%e\n", n);
          return IloExpr (env, n);
       }
 
-      case PLTERM_opno:
-         p = e->L.p;
-         npce = p->n;
-         pce = p->bs;
-         j = ((expr_v *)e->R.e)->a;
+      case OPPLTERM: {
+         plterm *p = e->L.p;
+         int npce = p->n - 1;
+         real *pce = p->bs;
+         int j = reinterpret_cast<expr_v*>(e->R.e)->a;
 
          PR ("pl ");
-         for (i = 0; i < npce-1; i++)
+         for (int i = 0; i < npce; i++)
             PR ("slp %f bkp %f ", pce[2*i], pce[2*i+1]);
-         PR ("slp %f ", pce[2*(npce-1)]);
+         PR ("slp %f ", pce[2 * npce]);
          PR ("X[%d]\n", j+1);
 
-         bkps = IloNumArray(env);
-         slps = IloNumArray(env);
-         for (i = 0; i < npce-1; i++) {
+         IloNumArray bkps(env), slps(env);
+         for (int i = 0; i < npce; i++) {
             slps.add (pce[2*i]);
             bkps.add (pce[2*i+1]);
          }
-         slps.add (pce[2*(npce-1)]);
-         return IloPiecewiseLinear (Var[j],bkps,slps,0,0);
+         slps.add (pce[2 * npce]);
+         return IloPiecewiseLinear (Var[j], bkps, slps, 0, 0);
+      }
 
-      case IFSYM_opno:
-         Printf ("if sym -- not implemented\n");
-         exit(1);
-
-      case HOL_opno:
-         Printf ("string argument -- not implemented\n");
-         exit(1);
-
-      case VARVAL_opno:
+      case OPVARVAL:
          PR ("X[%d]\n", e->a + 1);
          return Var[e->a];
 
@@ -301,83 +281,37 @@ IloExpr build_expr (expr *e)
         Logic extensions
       ----------------------------------------------------------------*/
 
-      case COUNT_opno: {
+      case OPCOUNT: {
          PR ("count\n");
          IloExpr sumExpr(env);
-         for (ep = e->L.ep; ep < e->R.ep; ep++)
+         for (expr **ep = e->L.ep, **end = e->R.ep; ep != end; ep++)
             sumExpr += build_constr (*ep);
          return sumExpr;
       }
 
-      case NUMBEROF_opno:
+      case OPNUMBEROF: {
          PR ("number of\n");
-
-         ep = e->L.ep;
-         if (reinterpret_cast<size_t>((*ep)->op) != NUM_opno || !usenumberof) {
+         expr **ep = e->L.ep;
+         if (reinterpret_cast<size_t>((*ep)->op) != OPNUM || !usenumberof) {
             IloExpr sumExpr(env);
-            targetExpr = build_expr (*ep);
-            for (ep++; ep < e->R.ep; ep++)
+            IloExpr targetExpr(build_expr (*ep++));
+            for (expr **end = e->R.ep; ep != end; ep++)
                sumExpr += (build_expr (*ep) == targetExpr);
             return sumExpr;
          }
          else
             return build_numberof (e);
+      }
 
-      case /* VARSUBVAR_opno */ 99: {
+      case OPVARSUBVAR: {
          PR ("vars in subscript of var\n");
-
-         IloIntVar selectVar = IloIntVar (env,loSubBnd[e->a],upSubBnd[e->a]); 
-         mod.add (selectVar == build_expr (e->L.e)); 
-
+         // AMPL should provide bounds for selectVar, use arbitrary for now.
+         IloIntVar selectVar = IloIntVar (env, 0, Var.getSize() - 1);
+         mod.add (selectVar == build_expr (e->L.e));
          return Var[selectVar];
       }
 
-      case ATMOST_opno:
-         Printf ("invalid atmost in expression\n");
-         exit(1);
-
-      case ATLEAST_opno:
-         Printf ("invalid atleast in expression\n");
-         exit(1);
-
-      case EXACTLY_opno:
-         Printf ("invalid exactly in expression\n");
-         exit(1);
-
-      case OPOR:
-         throw Error("invalid logical OR in expression");
-
-      case OPAND:
-         throw Error("invalid logical AND in expression");
-
-      case LT:
-         throw Error("invalid < in expression");
-
-      case LE:
-         throw Error("invalid <= in expression");
-
-      case EQ:
-         throw Error("invalid = in expression");
-
-      case GE:
-         throw Error("invalid >= in expression");
-
-      case GT:
-         throw Error("invalid > in expression");
-
-      case NE:
-         throw Error("invalid != in expression");
-
-      case OPNOT:
-         throw Error("invalid logical NOT in expression");
-
-      case ALLDIFF_opno:
-         Printf ("invalid alldiff in expression\n");
-         exit(1);
-
       default:
-         Printf ("other -- not implemented\n");
-         exit(1);
-         return IloExpr();
+         throw UnsupportedExprError(get_opname(opnum));
    }
 }

@@ -12,20 +12,16 @@
 
 #include "concert.h"
 
-#include <iostream>
-#include <stdio.h>
-#include <assert.h>
-#include "string.h"
-
 #include <ilconcert/ilomodel.h>
-#include <ilcp/cp.h>
 
 #include "solvers/asl.h"
 #include "solvers/nlp.h"
 #include "solvers/getstub.h"
 #include "opnames.hd"
 
-#define PR if(debugexpr)Printf
+#define PR if (debugexpr) Printf
+
+using std::size_t;
 
 /*----------------------------------------------------------------------
 

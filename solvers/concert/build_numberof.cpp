@@ -26,7 +26,8 @@
 #include "solvers/getstub.h"
 #include "opnames.hd"
 
-IloConstraint build_constr (expr*);
+using std::size_t;
+
 IloBool same_expr (expr*,expr*);
 
 class numberof {
