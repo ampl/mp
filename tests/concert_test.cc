@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <memory>
 #include <sstream>
+#include <string>
+#include <cstdlib>
 
 #include "gtest/gtest.h"
 
@@ -12,6 +14,7 @@
 #include "solvers/opcode.hd"
 #include "tests/config.h"
 
+using std::size_t;
 using std::string;
 
 namespace {
@@ -19,7 +22,7 @@ namespace {
 bool AreBothSpaces(char lhs, char rhs) { return lhs == ' ' && rhs == ' '; }
 
 // Replace all occurrences of string old_s in s with new_s.
-void Replace(string& s, const string& old_s, const string& new_s) {
+void Replace(string &s, const string &old_s, const string &new_s) {
   size_t pos = 0;
   while ((pos = s.find(old_s, pos)) != string::npos) {
     s.replace(pos, old_s.length(), new_s);
@@ -42,6 +45,11 @@ string str(T t) {
   // Normalize representation of infinity.
   Replace(s, "1.#INF", "inf");
   return s;
+}
+
+// Evaluates a Concert expression.
+double eval(IloExpr e) {
+  return e.getImpl()->eval(IloAlgorithm());
 }
 
 // A functor for deleting ASL expressions recursively.
@@ -71,9 +79,14 @@ void ExprDeleter::operator()(expr *e) const {
     delete eif;
     return;
   }
-  case OPSUMLIST:
+  case OPSUMLIST: case OPCOUNT: case OPNUMBEROF:
     for (expr **i = e->L.ep, **end = e->R.ep; i < end; ++i)
       (*this)(*i);
+    delete e;
+    return;
+  case OPPLTERM:
+    std::free(e->L.p);
+    (*this)(e->R.e);
     delete e;
     return;
   }
@@ -100,6 +113,7 @@ class ConcertTest : public ::testing::Test {
     Var[0] = IloNumVar(env, 0, 1, "x");
     Var[1] = IloNumVar(env, 0, 1, "y");
     Var[2] = IloNumVar(env, 0, 1, "theta");
+    usenumberof = 0;
   }
 
   void TearDown() {
@@ -144,9 +158,10 @@ class ConcertTest : public ::testing::Test {
   static ExprPtr NewIf(ExprPtr condition,
       ExprPtr true_expr, ExprPtr false_expr);
 
+  static ExprPtr NewSum(int opcode, ExprPtr arg1, ExprPtr arg2, ExprPtr arg3);
+
   static double EvalRem(double lhs, double rhs) {
-    IloExpr e(build_expr(NewBinary(OPREM, NewNum(lhs), NewNum(rhs)).get()));
-    return e.getImpl()->eval(IloAlgorithm());
+    return eval(build_expr(NewBinary(OPREM, NewNum(lhs), NewNum(rhs)).get()));
   }
 };
 
@@ -170,6 +185,18 @@ ExprPtr ConcertTest::NewIf(ExprPtr condition,
                true_expr.release(), false_expr.release(),
                0, 0, 0, 0, {0}, {0}, 0, 0};
   return ExprPtr(reinterpret_cast<expr*>(new expr_if(e)));
+}
+
+ExprPtr ConcertTest::NewSum(int opcode,
+    ExprPtr arg1, ExprPtr arg2, ExprPtr arg3) {
+  expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {0}, {0}, 0};
+  ExprPtr sum(new expr(e));
+  expr** args = sum->L.ep = new expr*[3];
+  sum->R.ep = args + 3;
+  args[0] = arg1.release();
+  args[1] = arg2.release();
+  args[2] = arg3.release();
+  return sum;
 }
 
 TEST_F(ConcertTest, ConvertNum) {
@@ -259,15 +286,21 @@ TEST_F(ConcertTest, ConvertUMinus) {
   EXPECT_EQ("-1 * x", str(build_expr(NewUnary(OPUMINUS, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertLogicalOrComparisonThrows) {
-  int ops[] = {OPOR, OPAND, LT, LE, EQ, GE, GT, NE, OPNOT};
+TEST_F(ConcertTest, ConvertUnsupportedOpThrows) {
+  int ops[] = {
+      OPOR, OPAND, LT, LE, EQ, GE, GT, NE, OPNOT,
+      OPprecision, OPFUNCALL, OPIFSYM, OPHOL, OPNUMBEROFs,
+      OPATLEAST, OPATMOST, OPEXACTLY, OPALLDIFF,
+      OPNOTATLEAST, OPNOTATMOST, OPNOTEXACTLY,
+      ANDLIST, ORLIST, OPIMPELSE, OP_IFF, N_OPS, -1, 500
+  };
   size_t i = 0;
   for (size_t num_ops = sizeof(ops) / sizeof(*ops); i < num_ops; ++i) {
     EXPECT_THROW(build_expr(
-      NewBinary(ops[i], NewVar(0), NewVar(1)).get()), Error);
+      NewBinary(ops[i], NewVar(0), NewVar(1)).get()), UnsupportedExprError);
   }
   // Paranoid: make sure that the loop body has been executed enough times.
-  EXPECT_EQ(9u, i);
+  EXPECT_EQ(28u, i);
 }
 
 TEST_F(ConcertTest, ConvertIf) {
@@ -299,11 +332,11 @@ TEST_F(ConcertTest, ConvertTanh) {
   // Concert incorrectly omits brackets around the dividend and divisor
   // above, so test also by evaluating the expression at several points.
   IloExpr e(build_expr(NewUnary(OP_tanh, NewNum(1)).get()));
-  EXPECT_NEAR(0.761594, e.getImpl()->eval(IloAlgorithm()), 1e-5);
+  EXPECT_NEAR(0.761594, eval(e), 1e-5);
   e = build_expr(NewUnary(OP_tanh, NewNum(0)).get());
-  EXPECT_EQ(0, e.getImpl()->eval(IloAlgorithm()));
+  EXPECT_EQ(0, eval(e));
   e = build_expr(NewUnary(OP_tanh, NewNum(-2)).get());
-  EXPECT_NEAR(-0.964027, e.getImpl()->eval(IloAlgorithm()), 1e-5);
+  EXPECT_NEAR(-0.964027, eval(e), 1e-5);
 }
 
 TEST_F(ConcertTest, ConvertTan) {
@@ -360,7 +393,7 @@ TEST_F(ConcertTest, ConvertAtan2) {
   IloIfThenI *ifXNonnegative = dynamic_cast<IloIfThenI*>((*iter).getImpl());
   ASSERT_TRUE(ifXNonnegative != nullptr);
   EXPECT_EQ("0 <= x", str(ifXNonnegative->getLeft()));
-  EXPECT_EQ("IloNumVar(8)[-inf..inf] == arc-tan(y / x )", // (1)
+  EXPECT_EQ("IloNumVar(8)[-inf..inf] == arc-tan(y / x )",  // (1)
             str(ifXNonnegative->getRight()));
 
   ++iter;
@@ -368,7 +401,7 @@ TEST_F(ConcertTest, ConvertAtan2) {
   IloIfThenI *ifDiffSigns = dynamic_cast<IloIfThenI*>((*iter).getImpl());
   ASSERT_TRUE(ifDiffSigns != nullptr);
   EXPECT_EQ("(x <= 0 ) && (0 <= y )", str(ifDiffSigns->getLeft()));
-  EXPECT_EQ("IloNumVar(8)[-inf..inf] == arc-tan(y / x ) + 3.14159", // (2)
+  EXPECT_EQ("IloNumVar(8)[-inf..inf] == arc-tan(y / x ) + 3.14159",  // (2)
             str(ifDiffSigns->getRight()));
 
   ++iter;
@@ -400,11 +433,11 @@ TEST_F(ConcertTest, ConvertAsinh) {
   // Concert incorrectly omits brackets around square(x) + 1
   // above, so test also by evaluating the expression at several points.
   IloExpr e(build_expr(NewUnary(OP_asinh, NewNum(1)).get()));
-  EXPECT_NEAR(0.881373, e.getImpl()->eval(IloAlgorithm()), 1e-5);
+  EXPECT_NEAR(0.881373, eval(e), 1e-5);
   e = build_expr(NewUnary(OP_asinh, NewNum(0)).get());
-  EXPECT_EQ(0, e.getImpl()->eval(IloAlgorithm()));
+  EXPECT_EQ(0, eval(e));
   e = build_expr(NewUnary(OP_asinh, NewNum(-2)).get());
-  EXPECT_NEAR(-1.443635, e.getImpl()->eval(IloAlgorithm()), 1e-5);
+  EXPECT_NEAR(-1.443635, eval(e), 1e-5);
 }
 
 TEST_F(ConcertTest, ConvertAsin) {
@@ -418,11 +451,11 @@ TEST_F(ConcertTest, ConvertAcosh) {
   // Concert incorrectly omits brackets around x + 1 and x + -1
   // above, so test also by evaluating the expression at several points.
   IloExpr e(build_expr(NewUnary(OP_acosh, NewNum(1)).get()));
-  EXPECT_NEAR(0, e.getImpl()->eval(IloAlgorithm()), 1e-5);
+  EXPECT_NEAR(0, eval(e), 1e-5);
   e = build_expr(NewUnary(OP_acosh, NewNum(10)).get());
-  EXPECT_NEAR(2.993222, e.getImpl()->eval(IloAlgorithm()), 1e-5);
+  EXPECT_NEAR(2.993222, eval(e), 1e-5);
   e = build_expr(NewUnary(OP_acosh, NewNum(0)).get());
-  double n = e.getImpl()->eval(IloAlgorithm());
+  double n = eval(e);
   EXPECT_TRUE(n != n);
 }
 
@@ -432,19 +465,98 @@ TEST_F(ConcertTest, ConvertAcos) {
 }
 
 TEST_F(ConcertTest, ConvertSum) {
-  expr e = {reinterpret_cast<efunc*>(OPSUMLIST), 0, 0, {0}, {0}, 0};
-  ExprPtr sum(new expr(e));
-  expr** args = sum->L.ep = new expr*[3];
-  sum->R.ep = args + 3;
-  ExprPtr x(NewVar(0)), y(NewVar(1)), n(NewNum(42));
-  args[0] = x.release();
-  args[1] = y.release();
-  args[2] = n.release();
-  EXPECT_EQ("x + y + 42", str(build_expr(sum.get())));
+  EXPECT_EQ("x + y + 42", str(build_expr(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get())));
 }
 
 TEST_F(ConcertTest, ConvertIntDiv) {
   EXPECT_EQ("trunc(x / y )", str(build_expr(
     NewBinary(OPintDIV, NewVar(0), NewVar(1)).get())));
+}
+
+TEST_F(ConcertTest, ConvertRound) {
+  EXPECT_EQ("round(x )", str(build_expr(
+    NewBinary(OPround, NewVar(0), NewNum(0)).get())));
+
+  EXPECT_EQ(1235, eval(build_expr(
+    NewBinary(OPround, NewNum(1234.56), NewNum(0)).get())));
+  EXPECT_EQ(3, eval(build_expr(
+    NewBinary(OPround, NewNum(2.5), NewNum(0)).get())));
+  EXPECT_EQ(-2, eval(build_expr(
+    NewBinary(OPround, NewNum(-2.5), NewNum(0)).get())));
+
+  EXPECT_THROW(build_expr(
+    NewBinary(OPround, NewVar(0), NewVar(1)).get()), UnsupportedExprError);
+}
+
+TEST_F(ConcertTest, ConvertTrunc) {
+  EXPECT_EQ("trunc(x )", str(build_expr(
+    NewBinary(OPtrunc, NewVar(0), NewNum(0)).get())));
+  EXPECT_EQ(1234, eval(build_expr(
+    NewBinary(OPtrunc, NewNum(1234.56), NewNum(0)).get())));
+  EXPECT_THROW(build_expr(
+    NewBinary(OPtrunc, NewVar(0), NewVar(1)).get()), UnsupportedExprError);
+}
+
+TEST_F(ConcertTest, Convert1Pow) {
+  EXPECT_EQ("x ^ 42", str(build_expr(
+    NewBinary(OP1POW, NewVar(0), NewNum(42)).get())));
+}
+
+TEST_F(ConcertTest, Convert2Pow) {
+  EXPECT_EQ("square(x )", str(build_expr(
+    NewUnary(OP2POW, NewVar(0)).get())));
+}
+
+TEST_F(ConcertTest, ConvertCPow) {
+  EXPECT_EQ("42 ^ x", str(build_expr(
+    NewBinary(OPCPOW, NewNum(42), NewVar(0)).get())));
+}
+
+TEST_F(ConcertTest, ConvertPLTerm) {
+  expr e = {reinterpret_cast<efunc*>(OPPLTERM), 0, 0, {0}, {0}, 0};
+  ExprPtr pl(new expr(e));
+  pl->L.p = static_cast<plterm*>(
+      std::calloc(1, sizeof(plterm) + sizeof(real) * 4));
+  pl->L.p->n = 3;
+  real *args = pl->L.p->bs;
+  args[0] = -1;
+  args[1] =  5;
+  args[2] =  0;
+  args[3] = 10;
+  args[4] =  1;
+  pl->R.e = NewVar(0).release();
+  EXPECT_EQ("piecewiselinear(x[0..1] , [5, 10], [-1, 0, 1], 0, 0)",
+            str(build_expr(pl.get())));
+}
+
+TEST_F(ConcertTest, ConvertCount) {
+  ExprPtr a(NewBinary(EQ, NewVar(0), NewNum(0)));
+  ExprPtr b(NewBinary(LE, NewVar(1), NewNum(42)));
+  ExprPtr c(NewBinary(GE, NewVar(2), NewNum(0)));
+  EXPECT_EQ("x == 0 + y <= 42 + 0 <= theta", str(build_expr(
+      NewSum(OPCOUNT, move(a), move(b), move(c)).get())));
+}
+
+TEST_F(ConcertTest, ConvertNumberOf) {
+  usenumberof = 1;
+  EXPECT_EQ("x == theta + y == theta", str(build_expr(
+      NewSum(OPNUMBEROF, NewVar(2), NewVar(0), NewVar(1)).get())));
+  usenumberof = 0;
+  EXPECT_EQ("x == 42 + y == 42", str(build_expr(
+      NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)).get())));
+  // TODO: test if usenumberof is 1
+}
+
+TEST_F(ConcertTest, ConvertVarSubVar) {
+  EXPECT_EQ("num-exprs[IloIntVar(4)[0..2] ]", str(build_expr(
+      NewUnary(OPVARSUBVAR, NewVar(0)).get())));
+
+  IloModel::Iterator iter(mod);
+  ASSERT_TRUE(iter.ok());
+  EXPECT_EQ("IloIntVar(4)[0..2] == x", str(*iter));
+
+  ++iter;
+  EXPECT_FALSE(iter.ok());
 }
 }
