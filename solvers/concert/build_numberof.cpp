@@ -13,22 +13,21 @@
 
 #include "concert.h"
 
-#include <iostream>
-#include <stdio.h>
-#include <assert.h>
-#include "string.h"
+#include <cassert>
+#include <cstddef>
 
 #include <ilconcert/ilomodel.h>
-#include <ilcp/cp.h>
 
 #include "solvers/asl.h"
 #include "solvers/nlp.h"
-#include "solvers/getstub.h"
+#include "solvers/opcode.hd"
 #include "opnames.hd"
 
 using std::size_t;
 
-IloBool same_expr (expr*,expr*);
+bool same_expr (expr*,expr*);
+
+namespace {
 
 class numberof {
 public:
@@ -41,9 +40,11 @@ public:
 
 numberof *numberofstart = 0;
 
+}
+
 /*----------------------------------------------------------------------
 
-  Given a node for a number-of operator 
+  Given a node for a number-of operator
   that has a constant as its first operand,
   add it to the driver's data structure that collects these operators.
 
@@ -51,23 +52,13 @@ numberof *numberofstart = 0;
 
 IloNumVar build_numberof (expr *e)
 {
+   assert(reinterpret_cast<size_t>(e->op) == OPNUMBEROF &&
+          reinterpret_cast<size_t>((*e->L.ep)->op) == OPNUM);
    expr **ep, **enp;
    int elen, i;
 
    numberof *np;
    IloIntVar cardVar, listVar;
-/*
-   if ((int) e->op != NUMBEROF_opno) {
-      Printf ("Invalid node type %d in build_numberof./n", (int) e->op);
-      return 0;
-   }
-
-   if ((int) (*e->L.ep)->op != NUM_opno) {
-      Printf ("Invalid left operand type %d in build_numberof./n", 
-         (*e->L.ep)->op);
-      return 0;
-   }
-*/
    // Did we previously see a number-of operator
    // having the same expression-list?
 
@@ -133,17 +124,13 @@ IloNumVar build_numberof (expr *e)
    }
 }
 
-IloBool same_expr (expr *e1, expr *e2)
+bool same_expr (expr *e1, expr *e2)
 {
-   de *d1, *d2;
-   expr **ep1, **ep2;
-   expr_if *eif1, *eif2;
-
    size_t opnum1 = reinterpret_cast<size_t>(e1->op);
    size_t opnum2 = reinterpret_cast<size_t>(e2->op);
 
-   if (optype[opnum1] != optype[opnum2])
-      return IloFalse;
+   if (opnum1 != opnum2)
+      return false;
 
    switch(optype[opnum1]) {
 
@@ -154,31 +141,36 @@ IloBool same_expr (expr *e1, expr *e2)
          return same_expr (e1->L.e, e2->L.e) && 
                 same_expr (e1->R.e, e2->R.e);
 
-      case 3:
-         for (d1 = ((expr_va*)e1)->L.d, 
-              d2 = ((expr_va*)e2)->L.d; d1->e && d2->e; d1++, d2++)
+      case 3: {
+         de *d1 = ((expr_va*)e1)->L.d;
+         de *d2 = ((expr_va*)e2)->L.d;
+         for (; d1->e && d2->e; d1++, d2++)
             if (!same_expr (d1->e, d2->e))
-               return IloFalse;
+               return false;
          return !d1->e && !d2->e;
+      }
 
       case 4:
          Printf ("pl terms not implemented in build_numberof\n");
          exit(1);
 
-      case 5:
-         eif1 = (expr_if*)e1;
-         eif2 = (expr_if*)e2;
+      case 5: {
+         expr_if *eif1 = (expr_if*)e1;
+         expr_if *eif2 = (expr_if*)e2;
          return same_expr (eif1->e, eif2->e) &&
                 same_expr (eif1->T, eif2->T) &&
                 same_expr (eif1->F, eif2->F);
+      }
 
       case 6:
-      case 11:
-         for (ep1 = e1->L.ep, ep2 = e2->L.ep;
-              ep1 < e1->R.ep && ep2 < e2->R.ep; ep1++, ep2++)
+      case 11: {
+         expr **ep1 = e1->L.ep;
+         expr **ep2 = e2->L.ep;
+         for (; ep1 < e1->R.ep && ep2 < e2->R.ep; ep1++, ep2++)
             if (!same_expr (*ep1, *ep2))
-               return IloFalse;
+               return false;
          return !(ep1 < e1->R.ep) && !(ep2 < e2->R.ep);
+      }
 
       case 7:
          Printf ("function calls not implemented in build_numberof\n");
