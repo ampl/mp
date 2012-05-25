@@ -25,6 +25,7 @@ enum {OPVARSUBVAR = 99};
 IloExpr build_expr(expr *e);
 IloConstraint build_constr (expr*);
 IloNumVar build_numberof (expr*);
+bool same_expr (expr *e1, expr *e2);
 
 const char *get_opname(int opcode);
 
