@@ -59,41 +59,48 @@ struct ExprDeleter {
 
 void ExprDeleter::operator()(expr *e) const {
   if (!e) return;
-  size_t op = reinterpret_cast<size_t>(e->op);
-  switch (op) {
-  case OPNUM:
-    delete reinterpret_cast<expr_n*>(e);
-    return;
-  case MINLIST: case MAXLIST: {
+  switch (optype[reinterpret_cast<size_t>(e->op)]) {
+  case OPTYPE_UNARY:
+    (*this)(e->L.e);
+    delete e;
+    break;
+  case OPTYPE_BINARY:
+    (*this)(e->L.e);
+    (*this)(e->R.e);
+    delete e;
+    break;
+  case OPTYPE_VARARG: {
     expr_va *eva = reinterpret_cast<expr_va*>(e);
     for (de *d = reinterpret_cast<expr_va*>(e)->L.d; d->e; ++d)
       (*this)(d->e);
     delete eva;
-    return;
+    break;
   }
-  case OPIFnl: {
+  case OPTYPE_PLTERM:
+    std::free(e->L.p);
+    (*this)(e->R.e);
+    delete e;
+    break;
+  case OPTYPE_IF: {
     expr_if *eif = reinterpret_cast<expr_if*>(e);
     (*this)(eif->e);
     (*this)(eif->T);
     (*this)(eif->F);
     delete eif;
-    return;
+    break;
   }
-  case OPSUMLIST: case OPCOUNT: case OPNUMBEROF:
+  case OPTYPE_SUM: case OPTYPE_COUNT:
     for (expr **i = e->L.ep, **end = e->R.ep; i < end; ++i)
       (*this)(*i);
     delete e;
-    return;
-  case OPPLTERM:
-    std::free(e->L.p);
-    (*this)(e->R.e);
+    break;
+  case OPTYPE_NUMBER:
+    delete reinterpret_cast<expr_n*>(e);
+    break;
+  default:
     delete e;
-    return;
+    break;
   }
-  // Delete subexpressions recursively.
-  (*this)(e->L.e);
-  (*this)(e->R.e);
-  delete e;
 }
 
 #if HAVE_UNIQUE_PTR
@@ -151,21 +158,26 @@ class ConcertTest : public ::testing::Test {
     return result;
   }
 
-  // Creates a variable-argument ASL expression with 3 arguments.
-  static ExprPtr NewExpr(int opcode, ExprPtr e1, ExprPtr e2, ExprPtr e3);
+  // Creates a variable-argument ASL expression with up to 3 arguments.
+  static ExprPtr NewVarArg(int opcode, ExprPtr e1, ExprPtr e2,
+      ExprPtr e3 = ExprPtr());
 
-  // Creates an if ASL expression.
-  static ExprPtr NewIf(ExprPtr condition,
+  static ExprPtr NewPLTerm(int size, const double *args, int var_index);
+
+  // Creates an ASL expression representing if-then-else.
+  static ExprPtr NewIf(int opcode, ExprPtr condition,
       ExprPtr true_expr, ExprPtr false_expr);
 
-  static ExprPtr NewSum(int opcode, ExprPtr arg1, ExprPtr arg2, ExprPtr arg3);
+  // Creates an ASL expression representing a sum with up to 3 arguments.
+  static ExprPtr NewSum(int opcode, ExprPtr arg1, ExprPtr arg2,
+      ExprPtr arg3 = ExprPtr());
 
   static double EvalRem(double lhs, double rhs) {
     return eval(build_expr(NewBinary(OPREM, NewNum(lhs), NewNum(rhs)).get()));
   }
 };
 
-ExprPtr ConcertTest::NewExpr(int opcode, ExprPtr e1, ExprPtr e2, ExprPtr e3) {
+ExprPtr ConcertTest::NewVarArg(int opcode, ExprPtr e1, ExprPtr e2, ExprPtr e3) {
   expr_va e = {reinterpret_cast<efunc*>(opcode), 0,
                {0}, {0}, 0, 0, 0};
   expr_va *copy = new expr_va(e);
@@ -179,9 +191,22 @@ ExprPtr ConcertTest::NewExpr(int opcode, ExprPtr e1, ExprPtr e2, ExprPtr e3) {
   return result;
 }
 
-ExprPtr ConcertTest::NewIf(ExprPtr condition,
+ExprPtr ConcertTest::NewPLTerm(int size, const double *args, int var_index) {
+  expr e = {reinterpret_cast<efunc*>(OPPLTERM), 0, 0, {0}, {0}, 0};
+  ExprPtr pl(new expr(e));
+  pl->L.p = static_cast<plterm*>(
+      std::calloc(1, sizeof(plterm) + sizeof(real) * (size - 1)));
+  pl->L.p->n = 3;
+  real *bs = pl->L.p->bs;
+  for (int i = 0; i < size; i++)
+    bs[i] = args[i];
+  pl->R.e = NewVar(var_index).release();
+  return pl;
+}
+
+ExprPtr ConcertTest::NewIf(int opcode, ExprPtr condition,
     ExprPtr true_expr, ExprPtr false_expr) {
-  expr_if e = {reinterpret_cast<efunc*>(OPIFnl), 0, condition.release(),
+  expr_if e = {reinterpret_cast<efunc*>(opcode), 0, condition.release(),
                true_expr.release(), false_expr.release(),
                0, 0, 0, 0, {0}, {0}, 0, 0};
   return ExprPtr(reinterpret_cast<expr*>(new expr_if(e)));
@@ -192,7 +217,7 @@ ExprPtr ConcertTest::NewSum(int opcode,
   expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {0}, {0}, 0};
   ExprPtr sum(new expr(e));
   expr** args = sum->L.ep = new expr*[3];
-  sum->R.ep = args + 3;
+  sum->R.ep = args + (arg3 ? 3 : 2);
   args[0] = arg1.release();
   args[1] = arg2.release();
   args[2] = arg3.release();
@@ -262,12 +287,12 @@ TEST_F(ConcertTest, ConvertLess) {
 
 TEST_F(ConcertTest, ConvertMin) {
   EXPECT_EQ("min( [x , y , 42 ])", str(build_expr(
-    NewExpr(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get())));
+    NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get())));
 }
 
 TEST_F(ConcertTest, ConvertMax) {
   EXPECT_EQ("max([x , y , 42 ])", str(build_expr(
-    NewExpr(MAXLIST, NewVar(0), NewVar(1), NewNum(42)).get())));
+    NewVarArg(MAXLIST, NewVar(0), NewVar(1), NewNum(42)).get())));
 }
 
 TEST_F(ConcertTest, ConvertFloor) {
@@ -304,8 +329,8 @@ TEST_F(ConcertTest, ConvertUnsupportedOpThrows) {
 }
 
 TEST_F(ConcertTest, ConvertIf) {
-  EXPECT_EQ("IloNumVar(7)[-inf..inf]", str(build_expr(NewIf(NewBinary(EQ,
-    NewVar(0), NewNum(0)), NewVar(1), NewNum(42)).get())));
+  EXPECT_EQ("IloNumVar(7)[-inf..inf]", str(build_expr(NewIf(OPIFnl,
+      NewBinary(EQ, NewVar(0), NewNum(0)), NewVar(1), NewNum(42)).get())));
 
   IloModel::Iterator iter(mod);
   ASSERT_TRUE(iter.ok());
@@ -514,20 +539,9 @@ TEST_F(ConcertTest, ConvertCPow) {
 }
 
 TEST_F(ConcertTest, ConvertPLTerm) {
-  expr e = {reinterpret_cast<efunc*>(OPPLTERM), 0, 0, {0}, {0}, 0};
-  ExprPtr pl(new expr(e));
-  pl->L.p = static_cast<plterm*>(
-      std::calloc(1, sizeof(plterm) + sizeof(real) * 4));
-  pl->L.p->n = 3;
-  real *args = pl->L.p->bs;
-  args[0] = -1;
-  args[1] =  5;
-  args[2] =  0;
-  args[3] = 10;
-  args[4] =  1;
-  pl->R.e = NewVar(0).release();
+  double args[] = {-1, 5, 0, 10, 1};
   EXPECT_EQ("piecewiselinear(x[0..1] , [5, 10], [-1, 0, 1], 0, 0)",
-            str(build_expr(pl.get())));
+            str(build_expr(NewPLTerm(5, args, 0).get())));
 }
 
 TEST_F(ConcertTest, ConvertCount) {
@@ -558,5 +572,156 @@ TEST_F(ConcertTest, ConvertVarSubVar) {
 
   ++iter;
   EXPECT_FALSE(iter.ok());
+}
+
+TEST_F(ConcertTest, SameNum) {
+  EXPECT_TRUE(same_expr(NewNum(0.42).get(), NewNum(0.42).get()));
+  EXPECT_FALSE(same_expr(NewNum(0.42).get(), NewNum(42).get()));
+}
+
+TEST_F(ConcertTest, SameVar) {
+  EXPECT_TRUE(same_expr(NewVar(0).get(), NewVar(0).get()));
+  EXPECT_FALSE(same_expr(NewVar(0).get(), NewVar(1).get()));
+  EXPECT_FALSE(same_expr(NewVar(0).get(), NewNum(0).get()));
+}
+
+TEST_F(ConcertTest, SameUnary) {
+  EXPECT_TRUE(same_expr(NewUnary(OPUMINUS, NewVar(0)).get(),
+                        NewUnary(OPUMINUS, NewVar(0)).get()));
+  EXPECT_FALSE(same_expr(NewUnary(OPUMINUS, NewVar(0)).get(),
+                         NewVar(0).get()));
+  EXPECT_FALSE(same_expr(NewUnary(OPUMINUS, NewVar(0)).get(),
+                         NewUnary(FLOOR, NewVar(0)).get()));
+  EXPECT_FALSE(same_expr(NewUnary(OPUMINUS, NewVar(0)).get(),
+                         NewUnary(OPUMINUS, NewVar(1)).get()));
+}
+
+TEST_F(ConcertTest, SameBinary) {
+  EXPECT_TRUE(same_expr(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
+                        NewBinary(OPPLUS, NewVar(0), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
+                         NewBinary(OPMINUS, NewVar(0), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
+                         NewBinary(OPPLUS, NewNum(42), NewVar(0)).get()));
+  EXPECT_FALSE(same_expr(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
+                         NewBinary(OPPLUS, NewVar(0), NewNum(0)).get()));
+  EXPECT_FALSE(same_expr(NewNum(42).get(),
+                         NewBinary(OPPLUS, NewVar(0), NewNum(42)).get()));
+}
+
+TEST_F(ConcertTest, SameVarArg) {
+  EXPECT_TRUE(same_expr(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewVarArg(MINLIST, NewVar(0), NewVar(1)).get()));
+  EXPECT_FALSE(same_expr(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1)).get(),
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewVarArg(MAXLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(0)).get()));
+  EXPECT_FALSE(same_expr(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewNum(42).get()));
+}
+
+TEST_F(ConcertTest, SamePLTerm) {
+  double args[] = {-1, 5, 0, 10, 1};
+  EXPECT_TRUE(same_expr(
+      NewPLTerm(5, args, 0).get(),
+      NewPLTerm(5, args, 0).get()));
+  EXPECT_FALSE(same_expr(
+      NewPLTerm(5, args, 0).get(),
+      NewPLTerm(3, args, 0).get()));
+  EXPECT_FALSE(same_expr(
+      NewPLTerm(5, args, 0).get(),
+      NewPLTerm(5, args, 1).get()));
+  double args2[] = {-1, 5, 0, 11, 1};
+  EXPECT_FALSE(same_expr(
+      NewPLTerm(5, args, 0).get(),
+      NewPLTerm(5, args2, 0).get()));
+  EXPECT_FALSE(same_expr(
+      NewPLTerm(5, args, 0).get(),
+      NewNum(42).get()));
+}
+
+TEST_F(ConcertTest, SameIf) {
+  EXPECT_TRUE(same_expr(
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewIf(OPIFSYM, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(0)).get()));
+  EXPECT_FALSE(same_expr(
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewNum(42).get()));
+}
+
+TEST_F(ConcertTest, SameSum) {
+  EXPECT_TRUE(same_expr(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1)).get(),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(0)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewNum(42).get()));
+}
+
+TEST_F(ConcertTest, SameCount) {
+  EXPECT_TRUE(same_expr(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1)).get(),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(0)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewNum(42).get()));
+}
+
+TEST_F(ConcertTest, ConvertSameExprThrowsOnUnsupportedOp) {
+  EXPECT_THROW(same_expr(
+      NewUnary(OPFUNCALL, ExprPtr()).get(),
+      NewUnary(OPFUNCALL, ExprPtr()).get()),
+      UnsupportedExprError);
+  EXPECT_THROW(same_expr(
+      NewUnary(OPHOL, ExprPtr()).get(),
+      NewUnary(OPHOL, ExprPtr()).get()),
+      UnsupportedExprError);
+}
+
+TEST_F(ConcertTest, ConvertSameExprThrowsOnUnknownOp) {
+  EXPECT_THROW(same_expr(
+      NewUnary(7, ExprPtr()).get(),
+      NewUnary(7, ExprPtr()).get()),
+      Error);
 }
 }

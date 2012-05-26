@@ -67,12 +67,18 @@ const char *get_opname(int opcode);
 
 int concert_main(int argc, char **argv);
 
-// Thrown when an ASL expression cannot be converted to a Concert one.
-class UnsupportedExprError : public std::runtime_error {
+// A general solver error.
+class Error : public std::runtime_error {
  public:
-  UnsupportedExprError(const char *expr) :
-    std::runtime_error(std::string("unsupported expression: ") + expr) {}
+  Error(const std::string &message) : std::runtime_error(message) {}
 };
 
+// An exception that is thrown when an ASL expression cannot be converted
+// to a Concert expression.
+class UnsupportedExprError : public Error {
+ public:
+  UnsupportedExprError(const char *expr) :
+    Error(std::string("unsupported expression: ") + expr) {}
+};
 
 #endif // AMPL_SOLVERS_CONCERT_H
