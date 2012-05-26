@@ -15,6 +15,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <sstream>
 
 #include <ilconcert/ilomodel.h>
 
@@ -124,13 +125,12 @@ IloNumVar build_numberof (expr *e)
 
 bool same_expr (expr *e1, expr *e2)
 {
-   size_t opnum1 = reinterpret_cast<size_t>(e1->op);
-   size_t opnum2 = reinterpret_cast<size_t>(e2->op);
-
-   if (opnum1 != opnum2)
+   size_t opnum = reinterpret_cast<size_t>(e1->op);
+   if (opnum != reinterpret_cast<size_t>(e2->op))
       return false;
 
-   switch(optype[opnum1]) {
+   int type = optype[opnum];
+   switch (type) {
       case OPTYPE_UNARY:
          return same_expr (e1->L.e, e2->L.e);
 
@@ -139,21 +139,29 @@ bool same_expr (expr *e1, expr *e2)
                 same_expr (e1->R.e, e2->R.e);
 
       case OPTYPE_VARARG: {
-         de *d1 = ((expr_va*)e1)->L.d;
-         de *d2 = ((expr_va*)e2)->L.d;
+         de *d1 = reinterpret_cast<expr_va*>(e1)->L.d;
+         de *d2 = reinterpret_cast<expr_va*>(e2)->L.d;
          for (; d1->e && d2->e; d1++, d2++)
             if (!same_expr (d1->e, d2->e))
                return false;
          return !d1->e && !d2->e;
       }
 
-      case OPTYPE_PLTERM:
-         Printf ("pl terms not implemented in build_numberof\n");
-         exit(1);
+      case OPTYPE_PLTERM: {
+         plterm *p1 = e1->L.p, *p2 = e2->L.p;
+         if (p1->n != p2->n)
+            return false;
+         real *pce1 = p1->bs, *pce2 = p2->bs;
+         for (int i = 0, n = p1->n * 2 - 1; i < n; i++) {
+            if (pce1[i] != pce2[i])
+               return false;
+         }
+         return same_expr (e1->R.e, e2->R.e);
+      }
 
       case OPTYPE_IF: {
-         expr_if *eif1 = (expr_if*)e1;
-         expr_if *eif2 = (expr_if*)e2;
+         expr_if *eif1 = reinterpret_cast<expr_if*>(e1);
+         expr_if *eif2 = reinterpret_cast<expr_if*>(e2);
          return same_expr (eif1->e, eif2->e) &&
                 same_expr (eif1->T, eif2->T) &&
                 same_expr (eif1->F, eif2->F);
@@ -170,31 +178,26 @@ bool same_expr (expr *e1, expr *e2)
       }
 
       case OPTYPE_FUNCALL:
-         Printf ("function calls not implemented in build_numberof\n");
-         exit(1);
-
       case OPTYPE_STRING:
-         Printf ("string arguments not implemented in build_numberof\n");
-         exit(1);
+         throw UnsupportedExprError(get_opname(opnum));
 
       case OPTYPE_NUMBER:
-         return ((expr_n*)e1)->v == ((expr_n*)e2)->v;
+         return reinterpret_cast<expr_n*>(e1)->v ==
+                reinterpret_cast<expr_n*>(e2)->v;
 
       case OPTYPE_VARIABLE:
          return e1->a == e2->a;
 
-      default:
-         Printf ("unknown operator type %d in build_numberof\n",
-            optype[opnum1]);
-         exit(1);
-         return false;
+      default: {
+         std::ostringstream oss;
+         oss << "unknown operator type " << type << " in build_numberof";
+         throw Error(oss.str());
+      }
    }
 }
 
-void finish_building_numberof () 
+void finish_building_numberof ()
 {
-   numberof *np;
-
-   for (np = numberofstart; np; np = np->next)
+   for (numberof *np = numberofstart; np; np = np->next)
       mod.add (IloDistribute (env, np->cards, np->values, np->vars));
 }
