@@ -1,4 +1,5 @@
 #include <ilconcert/ilomodel.h>
+#include <ilconcert/ilopathi.h>
 
 #include <algorithm>
 #include <memory>
@@ -9,6 +10,7 @@
 #include "gtest/gtest.h"
 
 #include "solvers/concert/concert.h"
+#include "solvers/concert/util.h"
 #include "solvers/asl.h"
 #include "solvers/nlp.h"
 #include "solvers/opcode.hd"
@@ -559,7 +561,135 @@ TEST_F(ConcertTest, ConvertNumberOf) {
   usenumberof = 0;
   EXPECT_EQ("x == 42 + y == 42", str(build_expr(
       NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)).get())));
-  // TODO: test if usenumberof is 1
+}
+
+TEST_F(ConcertTest, IloArrayCopyingIsCheap) {
+  IloIntArray array(env);
+  array.add(42);
+  EXPECT_TRUE(array.getImpl() != nullptr);
+  EXPECT_EQ(array.getImpl(), IloIntArray(array).getImpl());
+}
+
+TEST_F(ConcertTest, ConvertSingleNumberOfToIloDistribute) {
+  usenumberof = 1;
+  std::ostringstream os;
+  os << "[" << IloIntMin << ".." << IloIntMax << "]";
+  string bounds = os.str();
+  EXPECT_EQ("IloIntVar(10)" + bounds, str(build_expr(
+      NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)).get())));
+  finish_building_numberof();
+  IloModel::Iterator iter(mod);
+  ASSERT_TRUE(iter.ok());
+  EXPECT_EQ("IloIntVar(4)" + bounds + " == x", str(*iter));
+  ++iter;
+  ASSERT_TRUE(iter.ok());
+  EXPECT_EQ("IloIntVar(7)" + bounds + " == y", str(*iter));
+  ++iter;
+  ASSERT_TRUE(iter.ok());
+  IloDistributeI *dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
+  ASSERT_TRUE(dist != nullptr);
+  EXPECT_EQ("[IloIntVar(10)" + bounds + " ]", str(dist->getCardVarArray()));
+  EXPECT_EQ("[IloIntVar(4)" + bounds + " , IloIntVar(7)" + bounds + " ]",
+      str(dist->getVarArray()));
+  EXPECT_EQ("[42]", str(dist->getValueArray()));
+  ++iter;
+  EXPECT_FALSE(iter.ok());
+}
+
+TEST_F(ConcertTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
+  usenumberof = 1;
+  std::ostringstream os;
+  os << "[" << IloIntMin << ".." << IloIntMax << "]";
+  string bounds = os.str();
+  ExprPtr expr(NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)));
+  EXPECT_EQ("IloIntVar(10)" + bounds, str(build_expr(expr.get())));
+  EXPECT_EQ("IloIntVar(10)" + bounds, str(build_expr(
+      NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)).get())));
+  finish_building_numberof();
+  IloModel::Iterator iter(mod);
+  ASSERT_TRUE(iter.ok());
+  EXPECT_EQ("IloIntVar(4)" + bounds + " == x", str(*iter));
+  ++iter;
+  ASSERT_TRUE(iter.ok());
+  EXPECT_EQ("IloIntVar(7)" + bounds + " == y", str(*iter));
+  ++iter;
+  ASSERT_TRUE(iter.ok());
+  IloDistributeI *dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
+  ASSERT_TRUE(dist != nullptr);
+  EXPECT_EQ("[IloIntVar(10)" + bounds + " ]", str(dist->getCardVarArray()));
+  EXPECT_EQ("[IloIntVar(4)" + bounds + " , IloIntVar(7)" + bounds + " ]",
+      str(dist->getVarArray()));
+  EXPECT_EQ("[42]", str(dist->getValueArray()));
+  ++iter;
+  EXPECT_FALSE(iter.ok());
+}
+
+TEST_F(ConcertTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
+  usenumberof = 1;
+  std::ostringstream os;
+  os << "[" << IloIntMin << ".." << IloIntMax << "]";
+  string bounds = os.str();
+  ExprPtr expr(NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)));
+  EXPECT_EQ("IloIntVar(10)" + bounds, str(build_expr(expr.get())));
+  EXPECT_EQ("IloIntVar(12)" + bounds, str(build_expr(
+      NewSum(OPNUMBEROF, NewNum(43), NewVar(0), NewVar(1)).get())));
+  finish_building_numberof();
+  IloModel::Iterator iter(mod);
+  ASSERT_TRUE(iter.ok());
+  EXPECT_EQ("IloIntVar(4)" + bounds + " == x", str(*iter));
+  ++iter;
+  ASSERT_TRUE(iter.ok());
+  EXPECT_EQ("IloIntVar(7)" + bounds + " == y", str(*iter));
+  ++iter;
+  ASSERT_TRUE(iter.ok());
+  IloDistributeI *dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
+  ASSERT_TRUE(dist != nullptr);
+  EXPECT_EQ("[IloIntVar(10)" + bounds + " , IloIntVar(12)" + bounds + " ]",
+      str(dist->getCardVarArray()));
+  EXPECT_EQ("[IloIntVar(4)" + bounds + " , IloIntVar(7)" + bounds + " ]",
+      str(dist->getVarArray()));
+  EXPECT_EQ("[42, 43]", str(dist->getValueArray()));
+  ++iter;
+  EXPECT_FALSE(iter.ok());
+}
+
+TEST_F(ConcertTest, ConvertTwoNumberOfsWithDiffExprs) {
+  usenumberof = 1;
+  std::ostringstream os;
+  os << "[" << IloIntMin << ".." << IloIntMax << "]";
+  string bounds = os.str();
+  ExprPtr expr(NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)));
+  EXPECT_EQ("IloIntVar(10)" + bounds, str(build_expr(expr.get())));
+  EXPECT_EQ("IloIntVar(15)" + bounds, str(build_expr(
+      NewSum(OPNUMBEROF, NewNum(42), NewVar(2)).get())));
+  finish_building_numberof();
+  IloModel::Iterator iter(mod);
+  ASSERT_TRUE(iter.ok());
+  EXPECT_EQ("IloIntVar(4)" + bounds + " == x", str(*iter));
+  ++iter;
+  ASSERT_TRUE(iter.ok());
+  EXPECT_EQ("IloIntVar(7)" + bounds + " == y", str(*iter));
+  ++iter;
+  ASSERT_TRUE(iter.ok());
+  EXPECT_EQ("IloIntVar(12)" + bounds + " == theta", str(*iter));
+  ++iter;
+  ASSERT_TRUE(iter.ok());
+  IloDistributeI *dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
+  ASSERT_TRUE(dist != nullptr);
+  EXPECT_EQ("[IloIntVar(10)" + bounds + " ]", str(dist->getCardVarArray()));
+  EXPECT_EQ("[IloIntVar(4)" + bounds + " , IloIntVar(7)" + bounds + " ]",
+      str(dist->getVarArray()));
+  EXPECT_EQ("[42]", str(dist->getValueArray()));
+  ++iter;
+  ASSERT_TRUE(iter.ok());
+  dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
+  ASSERT_TRUE(dist != nullptr);
+  EXPECT_EQ("[IloIntVar(15)" + bounds + " ]", str(dist->getCardVarArray()));
+  EXPECT_EQ("[IloIntVar(12)" + bounds + " ]",
+      str(dist->getVarArray()));
+  EXPECT_EQ("[42]", str(dist->getValueArray()));
+  ++iter;
+  EXPECT_FALSE(iter.ok());
 }
 
 TEST_F(ConcertTest, ConvertVarSubVar) {
@@ -718,10 +848,5 @@ TEST_F(ConcertTest, ConvertSameExprThrowsOnUnsupportedOp) {
       UnsupportedExprError);
 }
 
-TEST_F(ConcertTest, ConvertSameExprThrowsOnUnknownOp) {
-  EXPECT_THROW(same_expr(
-      NewUnary(7, ExprPtr()).get(),
-      NewUnary(7, ExprPtr()).get()),
-      Error);
-}
+\
 }

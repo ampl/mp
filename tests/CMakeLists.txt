@@ -6,6 +6,11 @@ project(TESTS)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
   "${CMAKE_CURRENT_SOURCE_DIR}/../cmake")
 
+if (NOT CMAKE_BUILD_TYPE)
+  message(STATUS "No build type selected, default to Debug")
+  set(CMAKE_BUILD_TYPE Debug)
+endif ()
+
 # Setup testing.
 enable_testing()
 add_subdirectory(gtest)
@@ -44,7 +49,8 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
     "gtest;gtest_main;${SOLVER_LIBS}"
     ../solvers/concert/build_constr.cpp
     ../solvers/concert/build_expr.cpp
-    ../solvers/concert/build_numberof.cpp
+    ../solvers/concert/util.cpp
+    ../solvers/concert/util.h
     ../solvers/concert/concert.cpp
     ../solvers/concert/concert.h
     ../solvers/concert/objconst0.c

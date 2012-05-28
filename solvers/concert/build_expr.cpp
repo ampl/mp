@@ -14,9 +14,12 @@
 
 #include <cstddef>
 #include <cmath>
+#include <algorithm>
+#include <vector>
 
 #include <ilconcert/ilomodel.h>
 
+#include "util.h"
 #include "solvers/asl.h"
 #include "solvers/nlp.h"
 #include "solvers/opcode.hd"
@@ -28,9 +31,12 @@
 #endif
 
 using std::size_t;
+using std::vector;
+
+namespace {
 
 // Builds an array of expressions from the argument list of e.
-static IloNumExprArray build_minmax_array(expr *e)
+IloNumExprArray build_minmax_array(expr *e)
 {
    IloNumExprArray array(env);
    for (de *d = reinterpret_cast<expr_va*>(e)->L.d; d->e; ++d)
@@ -38,10 +44,135 @@ static IloNumExprArray build_minmax_array(expr *e)
    return array;
 }
 
-static bool has_zero_rhs(expr *e)
+bool has_zero_rhs(expr *e)
 {
    expr_n *rhs = e->R.en;
    return reinterpret_cast<size_t>(rhs->op) == OPNUM && rhs->v == 0;
+}
+
+class NumberOf {
+ private:
+  IloIntVarArray cards;
+  IloIntArray values;
+  IloIntVarArray vars;
+  const expr *numberofexpr;
+
+  static std::vector<NumberOf> numberofs;
+
+ public:
+  NumberOf(IloIntVarArray cards, IloIntArray values,
+      IloIntVarArray vars, const expr *e) :
+    cards(cards), values(values), vars(vars), numberofexpr(e) {}
+
+  IloInt num_vars() const {
+    return vars.getSize();
+  }
+
+  const expr *get_expr() const {
+    return numberofexpr;
+  }
+
+  static IloNumVar build(const expr *e);
+  static void finish_building();
+};
+
+vector<NumberOf> NumberOf::numberofs;
+
+class SameExpr {
+ private:
+  const expr *e;
+  int elen;
+
+ public:
+  SameExpr(const expr *e);
+
+  // Returns true if the stored expression is the same as the argument's
+  // expression.
+  bool operator()(const NumberOf& nof) const;
+};
+
+SameExpr::SameExpr(const expr *e) : e(e), elen(0)
+{
+   for (expr **ep = e->L.ep + 1; ep < e->R.ep; ep++, elen++);
+}
+
+bool SameExpr::operator()(const NumberOf& nof) const
+{
+   if (nof.num_vars() != elen)
+      return false;
+
+   for (expr **ep = e->L.ep + 1, **enp = nof.get_expr()->L.ep + 1;
+        ep != e->R.ep; ep++, enp++) {
+      if (!same_expr(*ep, *enp))
+         return false;
+   }
+   return true;
+}
+
+/*----------------------------------------------------------------------
+
+  Given a node for a number-of operator
+  that has a constant as its first operand,
+  add it to the driver's data structure that collects these operators.
+
+----------------------------------------------------------------------*/
+
+IloNumVar NumberOf::build (const expr *e)
+{
+   assert(reinterpret_cast<size_t>(e->op) == OPNUMBEROF &&
+          reinterpret_cast<size_t>((*e->L.ep)->op) == OPNUM);
+
+   // Did we previously see a number-of operator
+   // having the same expression-list?
+
+   vector<NumberOf>::reverse_iterator np =
+     find_if(numberofs.rbegin(), numberofs.rend(), SameExpr(e));
+
+   // New expression-list:
+   // Build a new numberof structure.
+
+   if (np == numberofs.rend()) {
+      expr **ep = e->L.ep;
+      IloIntArray values(env);
+      values.add (reinterpret_cast<expr_n*>(*ep)->v);
+
+      IloIntVarArray vars(env);
+      for (ep++; ep < e->R.ep; ep++) {
+         IloIntVar listVar(env, IloIntMin, IloIntMax);
+         vars.add (listVar);
+         mod.add (listVar == build_expr (*ep));
+      }
+
+      IloIntVar cardVar(env, IloIntMin, IloIntMax);
+      IloIntVarArray cards(env);
+      cards.add (cardVar);
+      numberofs.push_back(NumberOf(cards, values, vars, e));
+      return cardVar;
+   }
+
+   // Previously seen expression-list:
+   // Add to its numberof structure.
+
+   real value = reinterpret_cast<expr_n*>(*e->L.ep)->v;
+   for (int i = 0; i < np->values.getSize(); i++)
+      if (np->values[i] == value)
+         return np->cards[i];
+
+   np->values.add (value);
+
+   IloIntVar cardVar(env, IloIntMin, IloIntMax);
+   np->cards.add (cardVar);
+   return cardVar;
+}
+
+void NumberOf::finish_building ()
+{
+   for (vector<NumberOf>::const_iterator
+       i = numberofs.begin(), end = numberofs.end(); i != end; ++i) {
+      mod.add (IloDistribute (env, i->cards, i->values, i->vars));
+   }
+   numberofs.clear();
+}
 }
 
 /*----------------------------------------------------------------------
@@ -292,15 +423,13 @@ IloExpr build_expr (expr *e)
       case OPNUMBEROF: {
          PR ("number of\n");
          expr **ep = e->L.ep;
-         if (reinterpret_cast<size_t>((*ep)->op) != OPNUM || !usenumberof) {
-            IloExpr sumExpr(env);
-            IloExpr targetExpr(build_expr (*ep++));
-            for (expr **end = e->R.ep; ep != end; ep++)
-               sumExpr += (build_expr (*ep) == targetExpr);
-            return sumExpr;
-         }
-         else
-            return build_numberof (e);
+         if (reinterpret_cast<size_t>((*ep)->op) == OPNUM && usenumberof)
+            return NumberOf::build (e);
+         IloExpr sumExpr(env);
+         IloExpr targetExpr(build_expr (*ep++));
+         for (expr **end = e->R.ep; ep != end; ep++)
+            sumExpr += (build_expr (*ep) == targetExpr);
+         return sumExpr;
       }
 
       case OPVARSUBVAR: {
@@ -314,4 +443,9 @@ IloExpr build_expr (expr *e)
       default:
          throw UnsupportedExprError(get_opname(opnum));
    }
+}
+
+void finish_building_numberof()
+{
+   return NumberOf::finish_building();
 }
