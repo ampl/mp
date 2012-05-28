@@ -20,7 +20,7 @@ extern int debugexpr;
 // Variable subscripted by a variable - not implemented in AMPL yet.
 enum { OPVARSUBVAR = 99 };
 
-IloExpr build_expr(expr *e);
+IloExpr build_expr(const expr *e);
 IloConstraint build_constr (expr*);
 void finish_building_numberof ();
 

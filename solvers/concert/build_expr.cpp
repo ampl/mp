@@ -36,15 +36,15 @@ using std::vector;
 namespace {
 
 // Builds an array of expressions from the argument list of e.
-IloNumExprArray build_minmax_array(expr *e)
+IloNumExprArray build_minmax_array(const expr *e)
 {
    IloNumExprArray array(env);
-   for (de *d = reinterpret_cast<expr_va*>(e)->L.d; d->e; ++d)
+   for (de *d = reinterpret_cast<const expr_va*>(e)->L.d; d->e; ++d)
       array.add (build_expr (d->e));
    return array;
 }
 
-bool has_zero_rhs(expr *e)
+bool has_zero_rhs(const expr *e)
 {
    expr_n *rhs = e->R.en;
    return reinterpret_cast<size_t>(rhs->op) == OPNUM && rhs->v == 0;
@@ -182,7 +182,7 @@ void NumberOf::finish_building ()
 
 ----------------------------------------------------------------------*/
 
-IloExpr build_expr (expr *e)
+IloExpr build_expr (const expr *e)
 {
    size_t opnum = reinterpret_cast<size_t>(e->op);
    PR ("op %d  optype %2d  ", opnum, optype[opnum]);
@@ -245,7 +245,7 @@ IloExpr build_expr (expr *e)
 
       case OPIFnl: {
          PR ("if\n");
-         expr_if *eif = reinterpret_cast<expr_if*>(e);
+         const expr_if *eif = reinterpret_cast<const expr_if*>(e);
          IloConstraint ifCond(build_constr (eif->e));
          IloNumVar ifVar(env, -IloInfinity, IloInfinity);
          mod.add (IloIfThen (env, ifCond,  ifVar == build_expr (eif->T)));
@@ -378,7 +378,7 @@ IloExpr build_expr (expr *e)
          return IloPower (e->L.en->v, build_expr (e->R.e));
 
       case OPNUM: {
-         double n = reinterpret_cast<expr_n*>(e)->v;
+         double n = reinterpret_cast<const expr_n*>(e)->v;
          PR ("%e\n", n);
          return IloExpr (env, n);
       }
