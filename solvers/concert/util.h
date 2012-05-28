@@ -70,4 +70,12 @@ class UnsupportedExprError : public Error {
     Error(std::string("unsupported expression: ") + expr) {}
 };
 
+// An exception that is thrown when an incomplete constraint expression
+// is encountered.
+class IncompleteConstraintExprError : public Error {
+ public:
+  IncompleteConstraintExprError(const char *expr) :
+    Error(std::string("incomplete constraint expression using ") + expr) {}
+};
+
 #endif  // AMPL_SOLVERS_UTIL_H
