@@ -41,15 +41,13 @@ extern "C" real objconst0(ASL_fg*, int);
 /*----------------------------------------------------------------------
 
   Initialize CONCERT environment
-  Define array of decision variables and functions for tree-walking
+  Define array of decision variables
 
 ----------------------------------------------------------------------*/
 
 IloEnv env;
 IloModel mod(env);
 IloNumVarArray Var;
-
-IloConstraint build_constr (expr*);
 
 /*----------------------------------------------------------------------
 
@@ -101,8 +99,6 @@ int concert_main(int argc, char **argv) {
    efunc *r_ops_int[N_OPS];
 
    /*** Initialize Concert ***/
-
-   //IloModel mod(env);
 
    IloTimer timer(env);
    timer.start();

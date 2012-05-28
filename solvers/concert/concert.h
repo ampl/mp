@@ -21,8 +21,8 @@ extern int debugexpr;
 enum { OPVARSUBVAR = 99 };
 
 IloExpr build_expr(const expr *e);
-IloConstraint build_constr (expr*);
-void finish_building_numberof ();
+IloConstraint build_constr(const expr* e);
+void finish_building_numberof();
 
 int concert_main(int argc, char **argv);
 
