@@ -1,4 +1,5 @@
 #include "concert.h"
+#include "util.h"
 #include "solvers/asl.h"
 
 int main(int argc, char **argv) {
