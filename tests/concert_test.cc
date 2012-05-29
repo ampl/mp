@@ -1,4 +1,5 @@
 #include <ilconcert/ilomodel.h>
+#include <ilconcert/ilodiffi.h>
 #include <ilconcert/ilopathi.h>
 
 #include <algorithm>
@@ -119,7 +120,7 @@ class ConcertTest : public ::testing::Test {
     env = IloEnv();
     mod = IloModel(env);
     Var = IloNumVarArray(env, 3);
-    Var[0] = IloNumVar(env, 0, 1, "x");
+    Var[0] = IloIntVar(env, 0, 1, "x");
     Var[1] = IloNumVar(env, 0, 1, "y");
     Var[2] = IloNumVar(env, 0, 1, "theta");
     usenumberof = 0;
@@ -313,7 +314,7 @@ TEST_F(ConcertTest, ConvertUMinus) {
   EXPECT_EQ("-1 * x", str(build_expr(NewUnary(OPUMINUS, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertUnsupportedOpThrows) {
+TEST_F(ConcertTest, ConvertUnsupportedExprThrows) {
   int ops[] = {
       OPOR, OPAND, LT, LE, EQ, GE, GT, NE, OPNOT,
       OPprecision, OPFUNCALL, OPIFSYM, OPHOL, OPNUMBEROFs,
@@ -848,5 +849,220 @@ TEST_F(ConcertTest, ConvertSameExprThrowsOnUnsupportedOp) {
       UnsupportedExprError);
 }
 
-\
+TEST_F(ConcertTest, ConvertIncompleteConstraintExprThrows) {
+  int ops[] = {
+      OPPLUS, OPMINUS, OPMULT, OPDIV, OPREM,
+      OPPOW, OPLESS, FLOOR, CEIL, ABS, OPUMINUS,
+      OP_tanh, OP_tan, OP_sqrt, OP_sinh, OP_sin, OP_log10,
+      OP_log, OP_exp, OP_cosh, OP_cos, OP_atanh, OP_atan2,
+      OP_atan, OP_asinh, OP_asin, OP_acosh, OP_acos,
+      OPintDIV, OPprecision, OPround, OPtrunc,
+      OP1POW, OP2POW, OPCPOW, OPFUNCALL, OPHOL, OPVARVAL,
+      N_OPS, -1, 500
+  };
+  size_t i = 0;
+  for (size_t num_ops = sizeof(ops) / sizeof(*ops); i < num_ops; ++i) {
+    EXPECT_THROW(build_constr(
+      NewBinary(ops[i], NewVar(0), NewVar(1)).get()),
+      IncompleteConstraintExprError);
+  }
+  // Paranoid: make sure that the loop body has been executed enough times.
+  EXPECT_EQ(41u, i);
+
+  EXPECT_THROW(build_constr(
+    NewVarArg(MINLIST, NewVar(0), NewVar(1)).get()),
+    IncompleteConstraintExprError);
+  EXPECT_THROW(build_constr(
+    NewVarArg(MAXLIST, NewVar(0), NewVar(1)).get()),
+    IncompleteConstraintExprError);
+  EXPECT_THROW(build_constr(
+    NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(0)).get()),
+    IncompleteConstraintExprError);
+  EXPECT_THROW(build_constr(
+    NewIf(OPIFSYM, NewVar(0), NewVar(1), NewNum(0)).get()),
+    IncompleteConstraintExprError);
+  EXPECT_THROW(build_constr(
+    NewSum(OPSUMLIST, NewVar(0), NewVar(1)).get()),
+    IncompleteConstraintExprError);
+  EXPECT_THROW(build_constr(
+    NewSum(OPCOUNT, NewVar(0), NewVar(1)).get()),
+    IncompleteConstraintExprError);
+  EXPECT_THROW(build_constr(
+    NewSum(OPNUMBEROF, NewVar(0), NewVar(1)).get()),
+    IncompleteConstraintExprError);
+  EXPECT_THROW(build_constr(
+    NewSum(OPNUMBEROFs, NewVar(0), NewVar(1)).get()),
+    IncompleteConstraintExprError);
+  EXPECT_THROW(build_constr(
+    NewPLTerm(0, 0, 0).get()), IncompleteConstraintExprError);
+}
+
+TEST_F(ConcertTest, ConvertFalse) {
+  EXPECT_EQ("IloNumVar(4)[1..1] == 0", str(build_constr(NewNum(0).get())));
+}
+
+TEST_F(ConcertTest, ConvertTrue) {
+  EXPECT_EQ("IloNumVar(4)[1..1] == 1", str(build_constr(NewNum(1).get())));
+}
+
+TEST_F(ConcertTest, ThrowsOnNumInConstraint) {
+  EXPECT_THROW(build_constr(NewNum(42).get()), Error);
+}
+
+TEST_F(ConcertTest, ConvertLT) {
+  IloConstraint c(build_constr(NewBinary(LT, NewVar(0), NewNum(42)).get()));
+  IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
+  ASSERT_TRUE(n != nullptr);
+  EXPECT_EQ("42 <= x", str(n->getConstraint()));
+}
+
+TEST_F(ConcertTest, ConvertLE) {
+  EXPECT_EQ("x <= 42", str(build_constr(
+      NewBinary(LE, NewVar(0), NewNum(42)).get())));
+}
+
+TEST_F(ConcertTest, ConvertEQ) {
+  EXPECT_EQ("x == 42", str(build_constr(
+      NewBinary(EQ, NewVar(0), NewNum(42)).get())));
+}
+
+TEST_F(ConcertTest, ConvertGE) {
+  EXPECT_EQ("42 <= x", str(build_constr(
+      NewBinary(GE, NewVar(0), NewNum(42)).get())));
+}
+
+TEST_F(ConcertTest, ConvertGT) {
+  IloConstraint c(build_constr(NewBinary(GT, NewVar(0), NewNum(42)).get()));
+  IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
+  ASSERT_TRUE(n != nullptr);
+  EXPECT_EQ("x <= 42", str(n->getConstraint()));
+}
+
+TEST_F(ConcertTest, ConvertNE) {
+  EXPECT_EQ("x != 42", str(build_constr(
+      NewBinary(NE, NewVar(0), NewNum(42)).get())));
+}
+
+TEST_F(ConcertTest, ConvertAtMost) {
+  EXPECT_EQ("42 <= x", str(build_constr(
+      NewBinary(OPATMOST, NewVar(0), NewNum(42)).get())));
+}
+
+TEST_F(ConcertTest, ConvertNotAtMost) {
+  IloConstraint c(build_constr(
+      NewBinary(OPNOTATMOST, NewVar(0), NewNum(42)).get()));
+  IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
+  ASSERT_TRUE(n != nullptr);
+  EXPECT_EQ("42 <= x", str(n->getConstraint()));
+}
+
+TEST_F(ConcertTest, ConvertAtLeast) {
+  EXPECT_EQ("x <= 42", str(build_constr(
+      NewBinary(OPATLEAST, NewVar(0), NewNum(42)).get())));
+}
+
+TEST_F(ConcertTest, ConvertNotAtLeast) {
+  IloConstraint c(build_constr(
+      NewBinary(OPNOTATLEAST, NewVar(0), NewNum(42)).get()));
+  IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
+  ASSERT_TRUE(n != nullptr);
+  EXPECT_EQ("x <= 42", str(n->getConstraint()));
+}
+
+TEST_F(ConcertTest, ConvertExactly) {
+  EXPECT_EQ("x == 42", str(build_constr(
+      NewBinary(OPEXACTLY, NewVar(0), NewNum(42)).get())));
+}
+
+TEST_F(ConcertTest, ConvertNotExactly) {
+  EXPECT_EQ("x != 42", str(build_constr(
+      NewBinary(OPNOTEXACTLY, NewVar(0), NewNum(42)).get())));
+}
+
+TEST_F(ConcertTest, ConvertOr) {
+  EXPECT_EQ("(x == 1 ) || (x == 2 )", str(build_constr(NewBinary(OPOR,
+      NewBinary(EQ, NewVar(0), NewNum(1)),
+      NewBinary(EQ, NewVar(0), NewNum(2))).get())));
+}
+
+TEST_F(ConcertTest, ConvertExists) {
+  EXPECT_EQ("(x == 1 ) || (x == 2 ) || (x == 3 )",
+      str(build_constr(NewSum(ORLIST,
+      NewBinary(EQ, NewVar(0), NewNum(1)),
+      NewBinary(EQ, NewVar(0), NewNum(2)),
+      NewBinary(EQ, NewVar(0), NewNum(3))).get())));
+}
+
+TEST_F(ConcertTest, ConvertAnd) {
+  EXPECT_EQ("(x == 1 ) && (x == 2 )", str(build_constr(NewBinary(OPAND,
+      NewBinary(EQ, NewVar(0), NewNum(1)),
+      NewBinary(EQ, NewVar(0), NewNum(2))).get())));
+}
+
+TEST_F(ConcertTest, ConvertForAll) {
+  EXPECT_EQ("(x == 1 ) && (x == 2 ) && (x == 3 )",
+      str(build_constr(NewSum(ANDLIST,
+      NewBinary(EQ, NewVar(0), NewNum(1)),
+      NewBinary(EQ, NewVar(0), NewNum(2)),
+      NewBinary(EQ, NewVar(0), NewNum(3))).get())));
+}
+
+TEST_F(ConcertTest, ConvertNot) {
+  IloConstraint c(build_constr(
+      NewUnary(OPNOT, NewBinary(LE, NewVar(0), NewNum(42))).get()));
+  IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
+  ASSERT_TRUE(n != nullptr);
+  EXPECT_EQ("x <= 42", str(n->getConstraint()));
+}
+
+TEST_F(ConcertTest, ConvertIff) {
+  EXPECT_EQ("x == 1 == x == 2", str(build_constr(NewBinary(OP_IFF,
+      NewBinary(EQ, NewVar(0), NewNum(1)),
+      NewBinary(EQ, NewVar(0), NewNum(2))).get())));
+}
+
+TEST_F(ConcertTest, ConvertImpElse) {
+  IloConstraint con(build_constr(NewIf(OPIMPELSE,
+      NewBinary(EQ, NewVar(0), NewNum(0)),
+      NewBinary(EQ, NewVar(0), NewNum(1)),
+      NewBinary(EQ, NewVar(0), NewNum(2))).get()));
+  IloAndI* conjunction = dynamic_cast<IloAndI*>(con.getImpl());
+  ASSERT_TRUE(conjunction != nullptr);
+
+  IloAndI::Iterator iter(conjunction);
+  ASSERT_TRUE(iter.ok());
+  IloIfThenI *ifTrue = dynamic_cast<IloIfThenI*>(*iter);
+  ASSERT_TRUE(ifTrue != nullptr);
+  EXPECT_EQ("x == 0", str(ifTrue->getLeft()));
+  EXPECT_EQ("x == 1", str(ifTrue->getRight()));
+
+  ++iter;
+  ASSERT_TRUE(iter.ok());
+  IloIfThenI *ifFalse = dynamic_cast<IloIfThenI*>(*iter);
+  ASSERT_TRUE(ifFalse != nullptr);
+  IloNotI *ifNot = dynamic_cast<IloNotI*>(ifFalse->getLeft().getImpl());
+  EXPECT_EQ("x == 0", str(ifNot->getConstraint()));
+  EXPECT_EQ("x == 2", str(ifFalse->getRight()));
+
+  ++iter;
+  EXPECT_FALSE(iter.ok());
+}
+
+TEST_F(ConcertTest, ConvertAllDiff) {
+  IloConstraint con(build_constr(
+      NewSum(OPALLDIFF, NewVar(0), NewNum(42)).get()));
+  IloAllDiffI* diff = dynamic_cast<IloAllDiffI*>(con.getImpl());
+  ASSERT_TRUE(diff != nullptr);
+  std::ostringstream os;
+  os << "[" << IloIntMin << ".." << IloIntMax << "]";
+  string bounds = os.str();
+  EXPECT_EQ("[x[0..1] , IloIntVar(4)" + bounds + " ]",
+      str(diff->getExprArray()));
+
+  IloModel::Iterator iter(mod);
+  ASSERT_TRUE(iter.ok());
+  EXPECT_EQ("IloIntVar(4)" + bounds +" == 42", str(*iter));
+  ++iter;
+  EXPECT_FALSE(iter.ok());
+}
 }
