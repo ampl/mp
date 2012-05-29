@@ -257,7 +257,7 @@ int concert_main(int argc, char **argv) {
 
          if (timing) Times[3] = timer.getTime();
 
-         double objValue = cplex.getObjValue();
+         IloNum objValue = cplex.getObjValue();
 
          int sSoFar = 0;
          char sMsg[256];
