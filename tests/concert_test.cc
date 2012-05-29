@@ -1,3 +1,5 @@
+// Concert driver tests.
+
 #include <ilconcert/ilomodel.h>
 #include <ilconcert/ilodiffi.h>
 #include <ilconcert/ilopathi.h>
@@ -705,150 +707,6 @@ TEST_F(ConcertTest, ConvertVarSubVar) {
   EXPECT_FALSE(iter.ok());
 }
 
-TEST_F(ConcertTest, SameNum) {
-  EXPECT_TRUE(same_expr(NewNum(0.42).get(), NewNum(0.42).get()));
-  EXPECT_FALSE(same_expr(NewNum(0.42).get(), NewNum(42).get()));
-}
-
-TEST_F(ConcertTest, SameVar) {
-  EXPECT_TRUE(same_expr(NewVar(0).get(), NewVar(0).get()));
-  EXPECT_FALSE(same_expr(NewVar(0).get(), NewVar(1).get()));
-  EXPECT_FALSE(same_expr(NewVar(0).get(), NewNum(0).get()));
-}
-
-TEST_F(ConcertTest, SameUnary) {
-  EXPECT_TRUE(same_expr(NewUnary(OPUMINUS, NewVar(0)).get(),
-                        NewUnary(OPUMINUS, NewVar(0)).get()));
-  EXPECT_FALSE(same_expr(NewUnary(OPUMINUS, NewVar(0)).get(),
-                         NewVar(0).get()));
-  EXPECT_FALSE(same_expr(NewUnary(OPUMINUS, NewVar(0)).get(),
-                         NewUnary(FLOOR, NewVar(0)).get()));
-  EXPECT_FALSE(same_expr(NewUnary(OPUMINUS, NewVar(0)).get(),
-                         NewUnary(OPUMINUS, NewVar(1)).get()));
-}
-
-TEST_F(ConcertTest, SameBinary) {
-  EXPECT_TRUE(same_expr(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
-                        NewBinary(OPPLUS, NewVar(0), NewNum(42)).get()));
-  EXPECT_FALSE(same_expr(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
-                         NewBinary(OPMINUS, NewVar(0), NewNum(42)).get()));
-  EXPECT_FALSE(same_expr(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
-                         NewBinary(OPPLUS, NewNum(42), NewVar(0)).get()));
-  EXPECT_FALSE(same_expr(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
-                         NewBinary(OPPLUS, NewVar(0), NewNum(0)).get()));
-  EXPECT_FALSE(same_expr(NewNum(42).get(),
-                         NewBinary(OPPLUS, NewVar(0), NewNum(42)).get()));
-}
-
-TEST_F(ConcertTest, SameVarArg) {
-  EXPECT_TRUE(same_expr(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
-  EXPECT_FALSE(same_expr(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewVarArg(MINLIST, NewVar(0), NewVar(1)).get()));
-  EXPECT_FALSE(same_expr(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1)).get(),
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
-  EXPECT_FALSE(same_expr(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewVarArg(MAXLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
-  EXPECT_FALSE(same_expr(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(0)).get()));
-  EXPECT_FALSE(same_expr(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewNum(42).get()));
-}
-
-TEST_F(ConcertTest, SamePLTerm) {
-  double args[] = {-1, 5, 0, 10, 1};
-  EXPECT_TRUE(same_expr(
-      NewPLTerm(5, args, 0).get(),
-      NewPLTerm(5, args, 0).get()));
-  EXPECT_FALSE(same_expr(
-      NewPLTerm(5, args, 0).get(),
-      NewPLTerm(3, args, 0).get()));
-  EXPECT_FALSE(same_expr(
-      NewPLTerm(5, args, 0).get(),
-      NewPLTerm(5, args, 1).get()));
-  double args2[] = {-1, 5, 0, 11, 1};
-  EXPECT_FALSE(same_expr(
-      NewPLTerm(5, args, 0).get(),
-      NewPLTerm(5, args2, 0).get()));
-  EXPECT_FALSE(same_expr(
-      NewPLTerm(5, args, 0).get(),
-      NewNum(42).get()));
-}
-
-TEST_F(ConcertTest, SameIf) {
-  EXPECT_TRUE(same_expr(
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get()));
-  EXPECT_FALSE(same_expr(
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewIf(OPIFSYM, NewVar(0), NewVar(1), NewNum(42)).get()));
-  EXPECT_FALSE(same_expr(
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(0)).get()));
-  EXPECT_FALSE(same_expr(
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewNum(42).get()));
-}
-
-TEST_F(ConcertTest, SameSum) {
-  EXPECT_TRUE(same_expr(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
-  EXPECT_FALSE(same_expr(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1)).get()));
-  EXPECT_FALSE(same_expr(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1)).get(),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
-  EXPECT_FALSE(same_expr(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get()));
-  EXPECT_FALSE(same_expr(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(0)).get()));
-  EXPECT_FALSE(same_expr(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewNum(42).get()));
-}
-
-TEST_F(ConcertTest, SameCount) {
-  EXPECT_TRUE(same_expr(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get()));
-  EXPECT_FALSE(same_expr(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1)).get()));
-  EXPECT_FALSE(same_expr(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1)).get(),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get()));
-  EXPECT_FALSE(same_expr(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
-  EXPECT_FALSE(same_expr(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(0)).get()));
-  EXPECT_FALSE(same_expr(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewNum(42).get()));
-}
-
-TEST_F(ConcertTest, ConvertSameExprThrowsOnUnsupportedOp) {
-  EXPECT_THROW(same_expr(
-      NewUnary(OPFUNCALL, ExprPtr()).get(),
-      NewUnary(OPFUNCALL, ExprPtr()).get()),
-      UnsupportedExprError);
-  EXPECT_THROW(same_expr(
-      NewUnary(OPHOL, ExprPtr()).get(),
-      NewUnary(OPHOL, ExprPtr()).get()),
-      UnsupportedExprError);
-}
-
 TEST_F(ConcertTest, ConvertIncompleteConstraintExprThrows) {
   int ops[] = {
       OPPLUS, OPMINUS, OPMULT, OPDIV, OPREM,
@@ -1064,5 +922,226 @@ TEST_F(ConcertTest, ConvertAllDiff) {
   EXPECT_EQ("IloIntVar(4)" + bounds +" == 42", str(*iter));
   ++iter;
   EXPECT_FALSE(iter.ok());
+}
+
+// ----------------------------------------------------------------------------
+// Util tests
+
+TEST_F(ConcertTest, GetOpName) {
+  EXPECT_STREQ("+", get_opname(OPPLUS));
+  EXPECT_STREQ("-", get_opname(OPMINUS));
+  EXPECT_STREQ("*", get_opname(OPMULT));
+  EXPECT_STREQ("/", get_opname(OPDIV));
+  EXPECT_STREQ("mod", get_opname(OPREM));
+  EXPECT_STREQ("^", get_opname(OPPOW));
+  EXPECT_STREQ("less", get_opname(OPLESS));
+  EXPECT_STREQ("min", get_opname(MINLIST));
+  EXPECT_STREQ("max", get_opname(MAXLIST));
+  EXPECT_STREQ("floor", get_opname(FLOOR));
+  EXPECT_STREQ("ceil", get_opname(CEIL));
+  EXPECT_STREQ("abs", get_opname(ABS));
+  EXPECT_STREQ("unary -", get_opname(OPUMINUS));
+  EXPECT_STREQ("||", get_opname(OPOR));
+  EXPECT_STREQ("&&", get_opname(OPAND));
+  EXPECT_STREQ("<", get_opname(LT));
+  EXPECT_STREQ("<=", get_opname(LE));
+  EXPECT_STREQ("=", get_opname(EQ));
+  EXPECT_STREQ(">=", get_opname(GE));
+  EXPECT_STREQ(">", get_opname(GT));
+  EXPECT_STREQ("!=", get_opname(NE));
+  EXPECT_STREQ("!", get_opname(OPNOT));
+  EXPECT_STREQ("if-then-else", get_opname(OPIFnl));
+  EXPECT_STREQ("tanh", get_opname(OP_tanh));
+  EXPECT_STREQ("tan", get_opname(OP_tan));
+  EXPECT_STREQ("sqrt", get_opname(OP_sqrt));
+  EXPECT_STREQ("sinh", get_opname(OP_sinh));
+  EXPECT_STREQ("sin", get_opname(OP_sin));
+  EXPECT_STREQ("log10", get_opname(OP_log10));
+  EXPECT_STREQ("log", get_opname(OP_log));
+  EXPECT_STREQ("exp", get_opname(OP_exp));
+  EXPECT_STREQ("cosh", get_opname(OP_cosh));
+  EXPECT_STREQ("cos", get_opname(OP_cos));
+  EXPECT_STREQ("atanh", get_opname(OP_atanh));
+  EXPECT_STREQ("atan2", get_opname(OP_atan2));
+  EXPECT_STREQ("atan", get_opname(OP_atan));
+  EXPECT_STREQ("asinh", get_opname(OP_asinh));
+  EXPECT_STREQ("asin", get_opname(OP_asin));
+  EXPECT_STREQ("acosh", get_opname(OP_acosh));
+  EXPECT_STREQ("acos", get_opname(OP_acos));
+  EXPECT_STREQ("sum", get_opname(OPSUMLIST));
+  EXPECT_STREQ("div", get_opname(OPintDIV));
+  EXPECT_STREQ("precision", get_opname(OPprecision));
+  EXPECT_STREQ("round", get_opname(OPround));
+  EXPECT_STREQ("trunc", get_opname(OPtrunc));
+  EXPECT_STREQ("count", get_opname(OPCOUNT));
+  EXPECT_STREQ("numberof", get_opname(OPNUMBEROF));
+  EXPECT_STREQ("string numberof", get_opname(OPNUMBEROFs));
+  EXPECT_STREQ("atleast", get_opname(OPATLEAST));
+  EXPECT_STREQ("atmost", get_opname(OPATMOST));
+  EXPECT_STREQ("pl term", get_opname(OPPLTERM));
+  EXPECT_STREQ("string if-then-else", get_opname(OPIFSYM));
+  EXPECT_STREQ("exactly", get_opname(OPEXACTLY));
+  EXPECT_STREQ("not atleast", get_opname(OPNOTATLEAST));
+  EXPECT_STREQ("not atmost", get_opname(OPNOTATMOST));
+  EXPECT_STREQ("not exactly", get_opname(OPNOTEXACTLY));
+  EXPECT_STREQ("forall", get_opname(ANDLIST));
+  EXPECT_STREQ("exists", get_opname(ORLIST));
+  EXPECT_STREQ("implies else", get_opname(OPIMPELSE));
+  EXPECT_STREQ("iff", get_opname(OP_IFF));
+  EXPECT_STREQ("alldiff", get_opname(OPALLDIFF));
+  EXPECT_STREQ("1pow", get_opname(OP1POW));
+  EXPECT_STREQ("^2", get_opname(OP2POW));
+  EXPECT_STREQ("cpow", get_opname(OPCPOW));
+  EXPECT_STREQ("function call", get_opname(OPFUNCALL));
+  EXPECT_STREQ("number", get_opname(OPNUM));
+  EXPECT_STREQ("string", get_opname(OPHOL));
+  EXPECT_STREQ("variable", get_opname(OPVARVAL));
+  EXPECT_STREQ("unknown", get_opname(N_OPS));
+  EXPECT_STREQ("unknown", get_opname(-1));
+  EXPECT_STREQ("unknown", get_opname(500));
+}
+
+TEST_F(ConcertTest, SameNum) {
+  EXPECT_TRUE(same_expr(NewNum(0.42).get(), NewNum(0.42).get()));
+  EXPECT_FALSE(same_expr(NewNum(0.42).get(), NewNum(42).get()));
+}
+
+TEST_F(ConcertTest, SameVar) {
+  EXPECT_TRUE(same_expr(NewVar(0).get(), NewVar(0).get()));
+  EXPECT_FALSE(same_expr(NewVar(0).get(), NewVar(1).get()));
+  EXPECT_FALSE(same_expr(NewVar(0).get(), NewNum(0).get()));
+}
+
+TEST_F(ConcertTest, SameUnary) {
+  EXPECT_TRUE(same_expr(NewUnary(OPUMINUS, NewVar(0)).get(),
+                        NewUnary(OPUMINUS, NewVar(0)).get()));
+  EXPECT_FALSE(same_expr(NewUnary(OPUMINUS, NewVar(0)).get(),
+                         NewVar(0).get()));
+  EXPECT_FALSE(same_expr(NewUnary(OPUMINUS, NewVar(0)).get(),
+                         NewUnary(FLOOR, NewVar(0)).get()));
+  EXPECT_FALSE(same_expr(NewUnary(OPUMINUS, NewVar(0)).get(),
+                         NewUnary(OPUMINUS, NewVar(1)).get()));
+}
+
+TEST_F(ConcertTest, SameBinary) {
+  EXPECT_TRUE(same_expr(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
+                        NewBinary(OPPLUS, NewVar(0), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
+                         NewBinary(OPMINUS, NewVar(0), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
+                         NewBinary(OPPLUS, NewNum(42), NewVar(0)).get()));
+  EXPECT_FALSE(same_expr(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
+                         NewBinary(OPPLUS, NewVar(0), NewNum(0)).get()));
+  EXPECT_FALSE(same_expr(NewNum(42).get(),
+                         NewBinary(OPPLUS, NewVar(0), NewNum(42)).get()));
+}
+
+TEST_F(ConcertTest, SameVarArg) {
+  EXPECT_TRUE(same_expr(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewVarArg(MINLIST, NewVar(0), NewVar(1)).get()));
+  EXPECT_FALSE(same_expr(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1)).get(),
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewVarArg(MAXLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(0)).get()));
+  EXPECT_FALSE(same_expr(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewNum(42).get()));
+}
+
+TEST_F(ConcertTest, SamePLTerm) {
+  double args[] = {-1, 5, 0, 10, 1};
+  EXPECT_TRUE(same_expr(
+      NewPLTerm(5, args, 0).get(),
+      NewPLTerm(5, args, 0).get()));
+  EXPECT_FALSE(same_expr(
+      NewPLTerm(5, args, 0).get(),
+      NewPLTerm(3, args, 0).get()));
+  EXPECT_FALSE(same_expr(
+      NewPLTerm(5, args, 0).get(),
+      NewPLTerm(5, args, 1).get()));
+  double args2[] = {-1, 5, 0, 11, 1};
+  EXPECT_FALSE(same_expr(
+      NewPLTerm(5, args, 0).get(),
+      NewPLTerm(5, args2, 0).get()));
+  EXPECT_FALSE(same_expr(
+      NewPLTerm(5, args, 0).get(),
+      NewNum(42).get()));
+}
+
+TEST_F(ConcertTest, SameIf) {
+  EXPECT_TRUE(same_expr(
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewIf(OPIFSYM, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(0)).get()));
+  EXPECT_FALSE(same_expr(
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewNum(42).get()));
+}
+
+TEST_F(ConcertTest, SameSum) {
+  EXPECT_TRUE(same_expr(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1)).get(),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(0)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewNum(42).get()));
+}
+
+TEST_F(ConcertTest, SameCount) {
+  EXPECT_TRUE(same_expr(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1)).get(),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(0)).get()));
+  EXPECT_FALSE(same_expr(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
+      NewNum(42).get()));
+}
+
+TEST_F(ConcertTest, SameExprThrowsOnUnsupportedOp) {
+  EXPECT_THROW(same_expr(
+      NewUnary(OPFUNCALL, ExprPtr()).get(),
+      NewUnary(OPFUNCALL, ExprPtr()).get()),
+      UnsupportedExprError);
+  EXPECT_THROW(same_expr(
+      NewUnary(OPHOL, ExprPtr()).get(),
+      NewUnary(OPHOL, ExprPtr()).get()),
+      UnsupportedExprError);
 }
 }
