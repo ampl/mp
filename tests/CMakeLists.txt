@@ -47,7 +47,6 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
 
   cxx_test_with_flags(concert_test ""
     "gtest;gtest_main;${SOLVER_LIBS}"
-    ../solvers/concert/build_constr.cpp
     ../solvers/concert/build_expr.cpp
     ../solvers/concert/util.cpp
     ../solvers/concert/util.h
