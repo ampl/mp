@@ -378,7 +378,7 @@ IloExpr build_expr (const expr *e)
          return IloPower (e->L.en->v, build_expr (e->R.e));
 
       case OPNUM: {
-         double n = reinterpret_cast<const expr_n*>(e)->v;
+         real n = reinterpret_cast<const expr_n*>(e)->v;
          PR ("%e\n", n);
          return IloExpr (env, n);
       }
