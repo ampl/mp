@@ -52,7 +52,6 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
     ../solvers/concert/util.h
     ../solvers/concert/concert.cpp
     ../solvers/concert/concert.h
-    ../solvers/concert/objconst0.c
     concert_test.cc)
 
   target_link_libraries(concert_test

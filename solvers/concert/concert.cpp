@@ -34,7 +34,12 @@ using namespace std;
 #define R_OPS asl->I.r_ops_
 #define asl ((ASL_fg*)a)
 
-extern "C" real objconst0(ASL_fg*, int);
+extern "C" real objconst0(ASL_fg *a, int n)
+{
+  expr_n *e = (expr_n*) (a->I.obj_de_ + n)->e;
+  return (e->op == (efunc_n*) (unsigned long) f_OPNUM) ? e->v : 0;
+}
+
 #undef objconst
 #define objconst(n) objconst0(asl, n)
 

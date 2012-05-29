@@ -28,10 +28,9 @@ LD_FLAGS  = -L$(CPOPTIMIZER_LIB) -lcp -L$(CPLEX_LIB) -lilocplex -lcplex \
             -L$(CONCERT_LIB) -lconcert $(LDMTFLAGS) $(AMPL_LIB) $(LIBS)
 
 BINARIES = concert.o build_expr.o main.o util.o
-EXTRAS = objconst0.o
 
-concert: $(BINARIES) $(EXTRAS)
-	$(CXX) -o $@ $(BINARIES) $(EXTRAS) $(LD_FLAGS)
+concert: $(BINARIES)
+	$(CXX) -o $@ $(BINARIES) $(LD_FLAGS)
 
 %.o: %.cpp
 	$(CXX) $(CXX_FLAGS) -c $<
