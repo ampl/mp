@@ -36,6 +36,8 @@ else ()
     lib/x86_.net2005_8.0/stat_mta)
 endif ()
 
+find_package(Threads)
+
 # ----------------------------------------------------------------------------
 # CPLEX
 
@@ -74,7 +76,7 @@ find_package_handle_standard_args(
   CPLEX DEFAULT_MSG CPLEX_LIBRARY CPLEX_INCLUDE_DIR)
 
 set(CPLEX_INCLUDE_DIRS ${CPLEX_INCLUDE_DIR})
-set(CPLEX_LIBRARIES ${CPLEX_LIBRARY})
+set(CPLEX_LIBRARIES ${CPLEX_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 
 mark_as_advanced(CPLEX_INCLUDE_DIR CPLEX_LIBRARY)
 
@@ -100,7 +102,7 @@ find_package_handle_standard_args(
   CPLEX_CONCERT DEFAULT_MSG CPLEX_CONCERT_LIBRARY CPLEX_CONCERT_INCLUDE_DIR)
 
 set(CPLEX_CONCERT_INCLUDE_DIRS ${CPLEX_CONCERT_INCLUDE_DIR})
-set(CPLEX_CONCERT_LIBRARIES ${CPLEX_CONCERT_LIBRARY})
+set(CPLEX_CONCERT_LIBRARIES ${CPLEX_CONCERT_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 
 mark_as_advanced(CPLEX_CONCERT_INCLUDE_DIR CPLEX_CONCERT_LIBRARY)
 
