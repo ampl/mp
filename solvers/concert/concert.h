@@ -46,6 +46,7 @@ class Driver {
   IloModel mod_;
   IloNumVarArray vars_;
   std::vector<NumberOf> numberofs_;
+  std::vector<char> version_;
 
   // Builds an array of expressions from the argument list of e.
   IloNumExprArray build_minmax_array(const expr *e);
@@ -56,7 +57,7 @@ class Driver {
   IloNumVar build_numberof(const expr *e);
 
  public:
-  Driver() : mod_(env_) {}
+  Driver();
   virtual ~Driver();
 
   IloEnv get_env() const { return env_; }

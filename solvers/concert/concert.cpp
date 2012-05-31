@@ -53,8 +53,8 @@ keyword keywds[] = { /* must be alphabetical */
       CSTR("consolidate 'numberof' expressions"))
 };
 
-Option_Info Oinfo = { CSTR("concert"), CSTR("ILOG CONCERT 1.0"),
-   CSTR("concert_options"), keywds, nkeywds, 0, CSTR("ILOG CONCERT 1.0"),
+Option_Info Oinfo = { CSTR("concert"), 0,
+   CSTR("concert_options"), keywds, nkeywds, 0, 0,
    0, 0, 0, 0, 0, 20120521, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 // Returns the constant term in the first objective.
@@ -63,6 +63,17 @@ real objconst0(ASL_fg *a) {
   return reinterpret_cast<size_t>(e->op) == OPNUM ?
       reinterpret_cast<expr_n*>(e)->v : 0;
 }
+}
+
+Driver::Driver() : mod_(env_) {
+   version_.resize(strlen(IloConcertVersion::_ILO_NAME) + 100);
+   snprintf(&version_[0], version_.size() - 1,
+       "%s %d.%d.%d", IloConcertVersion::_ILO_NAME,
+       IloConcertVersion::_ILO_MAJOR_VERSION,
+       IloConcertVersion::_ILO_MINOR_VERSION,
+       IloConcertVersion::_ILO_TECH_VERSION);
+   Oinfo.bsname = &version_[0];
+   Oinfo.version = &version_[0];
 }
 
 Driver::~Driver() {
