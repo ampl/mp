@@ -24,15 +24,15 @@ param numberGrps integer > 0;
 
 set TYPES {k in CATEG} := setof {i in PEOPLE} type[i,k];
 
-var Assign {i in PEOPLE} >= 1, <= numberGrps;
+var Assign {i in PEOPLE} integer >= 1, <= numberGrps;
 
-var MinInGrp <= floor (card(PEOPLE)/numberGrps);
-var MaxInGrp >= ceil (card(PEOPLE)/numberGrps);
+var MinInGrp integer <= floor (card(PEOPLE)/numberGrps);
+var MaxInGrp integer >= ceil (card(PEOPLE)/numberGrps);
 
-var MinType {k in CATEG, t in TYPES[k]} 
+var MinType {k in CATEG, t in TYPES[k]} integer
    <= floor (card {i in PEOPLE: type[i,k] = t} / numberGrps);
 
-var MaxType {k in CATEG, t in TYPES[k]}
+var MaxType {k in CATEG, t in TYPES[k]} integer
    >= ceil (card {i in PEOPLE: type[i,k] = t} / numberGrps);
 
 minimize Variation:  (MaxInGrp - MinInGrp) +
