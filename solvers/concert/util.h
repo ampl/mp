@@ -14,6 +14,7 @@
 #define AMPL_SOLVERS_UTIL_H
 
 #include <stdexcept>
+#include <string>
 
 // Operation types
 enum {

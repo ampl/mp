@@ -15,9 +15,6 @@
 #include <cstddef>
 #include <cmath>
 #include <algorithm>
-#include <vector>
-
-#include <ilconcert/ilomodel.h>
 
 #include "util.h"
 #include "solvers/asl.h"
@@ -35,48 +32,11 @@ using std::vector;
 
 namespace {
 
-// Builds an array of expressions from the argument list of e.
-IloNumExprArray build_minmax_array(const expr *e)
-{
-   IloNumExprArray array(env);
-   for (de *d = reinterpret_cast<const expr_va*>(e)->L.d; d->e; ++d)
-      array.add (build_expr (d->e));
-   return array;
-}
-
 bool has_zero_rhs(const expr *e)
 {
    expr_n *rhs = e->R.en;
    return reinterpret_cast<size_t>(rhs->op) == OPNUM && rhs->v == 0;
 }
-
-class NumberOf {
- private:
-  IloIntVarArray cards;
-  IloIntArray values;
-  IloIntVarArray vars;
-  const expr *numberofexpr;
-
-  static std::vector<NumberOf> numberofs;
-
- public:
-  NumberOf(IloIntVarArray cards, IloIntArray values,
-      IloIntVarArray vars, const expr *e) :
-    cards(cards), values(values), vars(vars), numberofexpr(e) {}
-
-  IloInt num_vars() const {
-    return vars.getSize();
-  }
-
-  const expr *get_expr() const {
-    return numberofexpr;
-  }
-
-  static IloNumVar build(const expr *e);
-  static void finish_building();
-};
-
-vector<NumberOf> NumberOf::numberofs;
 
 class SameExpr {
  private:
@@ -101,88 +61,34 @@ bool SameExpr::operator()(const NumberOf& nof) const
    if (nof.num_vars() != elen)
       return false;
 
-   for (expr **ep = e->L.ep + 1, **enp = nof.get_expr()->L.ep + 1;
+   for (expr **ep = e->L.ep + 1, **enp = nof.numberofexpr()->L.ep + 1;
         ep != e->R.ep; ep++, enp++) {
       if (!same_expr(*ep, *enp))
          return false;
    }
    return true;
 }
+}
 
-/*----------------------------------------------------------------------
+IloIntVar NumberOf::add(real value, IloEnv env) {
+  for (int i = 0, n = values_.getSize(); i < n; i++)
+     if (values_[i] == value)
+        return cards_[i];
+  values_.add (value);
+  IloIntVar cardVar(env, IloIntMin, IloIntMax);
+  cards_.add (cardVar);
+  return cardVar;
+}
 
-  Given a node for a number-of operator
-  that has a constant as its first operand,
-  add it to the driver's data structure that collects these operators.
-
-----------------------------------------------------------------------*/
-
-IloNumVar NumberOf::build (const expr *e)
+IloNumExprArray Driver::build_minmax_array(const expr *e)
 {
-   assert(reinterpret_cast<size_t>(e->op) == OPNUMBEROF &&
-          reinterpret_cast<size_t>((*e->L.ep)->op) == OPNUM);
-
-   // Did we previously see a number-of operator
-   // having the same expression-list?
-
-   vector<NumberOf>::reverse_iterator np =
-     find_if(numberofs.rbegin(), numberofs.rend(), SameExpr(e));
-
-   // New expression-list:
-   // Build a new numberof structure.
-
-   if (np == numberofs.rend()) {
-      expr **ep = e->L.ep;
-      IloIntArray values(env);
-      values.add (reinterpret_cast<expr_n*>(*ep)->v);
-
-      IloIntVarArray vars(env);
-      for (ep++; ep < e->R.ep; ep++) {
-         IloIntVar listVar(env, IloIntMin, IloIntMax);
-         vars.add (listVar);
-         mod.add (listVar == build_expr (*ep));
-      }
-
-      IloIntVar cardVar(env, IloIntMin, IloIntMax);
-      IloIntVarArray cards(env);
-      cards.add (cardVar);
-      numberofs.push_back(NumberOf(cards, values, vars, e));
-      return cardVar;
-   }
-
-   // Previously seen expression-list:
-   // Add to its numberof structure.
-
-   real value = reinterpret_cast<expr_n*>(*e->L.ep)->v;
-   for (int i = 0; i < np->values.getSize(); i++)
-      if (np->values[i] == value)
-         return np->cards[i];
-
-   np->values.add (value);
-
-   IloIntVar cardVar(env, IloIntMin, IloIntMax);
-   np->cards.add (cardVar);
-   return cardVar;
+   IloNumExprArray array(env_);
+   for (de *d = reinterpret_cast<const expr_va*>(e)->L.d; d->e; ++d)
+      array.add (build_expr (d->e));
+   return array;
 }
 
-void NumberOf::finish_building ()
-{
-   for (vector<NumberOf>::const_iterator
-       i = numberofs.begin(), end = numberofs.end(); i != end; ++i) {
-      mod.add (IloDistribute (env, i->cards, i->values, i->vars));
-   }
-   numberofs.clear();
-}
-}
-
-/*----------------------------------------------------------------------
-
-  Walk expression tree and construct function,
-  returning a Concert IloExpr
-
-----------------------------------------------------------------------*/
-
-IloExpr build_expr (const expr *e)
+IloExpr Driver::build_expr (const expr *e)
 {
    size_t opnum = reinterpret_cast<size_t>(e->op);
    PR ("op %d  optype %2d  ", opnum, optype[opnum]);
@@ -247,9 +153,9 @@ IloExpr build_expr (const expr *e)
          PR ("if\n");
          const expr_if *eif = reinterpret_cast<const expr_if*>(e);
          IloConstraint ifCond(build_constr (eif->e));
-         IloNumVar ifVar(env, -IloInfinity, IloInfinity);
-         mod.add (IloIfThen (env, ifCond,  ifVar == build_expr (eif->T)));
-         mod.add (IloIfThen (env, !ifCond, ifVar == build_expr (eif->F)));
+         IloNumVar ifVar(env_, -IloInfinity, IloInfinity);
+         mod_.add (IloIfThen (env_, ifCond,  ifVar == build_expr (eif->T)));
+         mod_.add (IloIfThen (env_, !ifCond, ifVar == build_expr (eif->F)));
          return ifVar;
       }
 
@@ -309,10 +215,10 @@ IloExpr build_expr (const expr *e)
          PR ("atan2\n");
          IloNumExpr y(build_expr(e->L.e)), x(build_expr(e->R.e));
          IloNumExpr atan(IloArcTan(y / x));
-         IloNumVar result(env, -IloInfinity, IloInfinity);
-         mod.add(IloIfThen(env, x >= 0, result == atan));
-         mod.add(IloIfThen(env, x <= 0 && y >= 0, result == atan + M_PI));
-         mod.add(IloIfThen(env, x <= 0 && y <= 0, result == atan - M_PI));
+         IloNumVar result(env_, -IloInfinity, IloInfinity);
+         mod_.add(IloIfThen(env_, x >= 0, result == atan));
+         mod_.add(IloIfThen(env_, x <= 0 && y >= 0, result == atan + M_PI));
+         mod_.add(IloIfThen(env_, x <= 0 && y <= 0, result == atan - M_PI));
          return result;
       }
 
@@ -342,7 +248,7 @@ IloExpr build_expr (const expr *e)
 
       case OPSUMLIST: {
          PR ("summation\n");
-         IloExpr sumExpr(env);
+         IloExpr sumExpr(env_);
          for (expr **ep = e->L.ep, **end = e->R.ep; ep != end; ep++)
             sumExpr += build_expr (*ep);
          return sumExpr;
@@ -380,7 +286,7 @@ IloExpr build_expr (const expr *e)
       case OPNUM: {
          real n = reinterpret_cast<const expr_n*>(e)->v;
          PR ("%e\n", n);
-         return IloExpr (env, n);
+         return IloExpr (env_, n);
       }
 
       case OPPLTERM: {
@@ -395,18 +301,18 @@ IloExpr build_expr (const expr *e)
          PR ("slp %f ", pce[2 * npce]);
          PR ("X[%d]\n", j+1);
 
-         IloNumArray bkps(env), slps(env);
+         IloNumArray bkps(env_), slps(env_);
          for (int i = 0; i < npce; i++) {
             slps.add (pce[2*i]);
             bkps.add (pce[2*i+1]);
          }
          slps.add (pce[2 * npce]);
-         return IloPiecewiseLinear (Var[j], bkps, slps, 0, 0);
+         return IloPiecewiseLinear (vars_[j], bkps, slps, 0, 0);
       }
 
       case OPVARVAL:
          PR ("X[%d]\n", e->a + 1);
-         return Var[e->a];
+         return vars_[e->a];
 
       /*----------------------------------------------------------------
         Logic extensions
@@ -414,7 +320,7 @@ IloExpr build_expr (const expr *e)
 
       case OPCOUNT: {
          PR ("count\n");
-         IloExpr sumExpr(env);
+         IloExpr sumExpr(env_);
          for (expr **ep = e->L.ep, **end = e->R.ep; ep != end; ep++)
             sumExpr += build_constr (*ep);
          return sumExpr;
@@ -424,8 +330,8 @@ IloExpr build_expr (const expr *e)
          PR ("number of\n");
          expr **ep = e->L.ep;
          if (reinterpret_cast<size_t>((*ep)->op) == OPNUM && usenumberof)
-            return NumberOf::build (e);
-         IloExpr sumExpr(env);
+            return build_numberof(e);
+         IloExpr sumExpr(env_);
          IloExpr targetExpr(build_expr (*ep++));
          for (expr **end = e->R.ep; ep != end; ep++)
             sumExpr += (build_expr (*ep) == targetExpr);
@@ -435,9 +341,9 @@ IloExpr build_expr (const expr *e)
       case OPVARSUBVAR: {
          PR ("vars in subscript of var\n");
          // AMPL should provide bounds for selectVar, use arbitrary for now.
-         IloIntVar selectVar = IloIntVar (env, 0, Var.getSize() - 1);
-         mod.add (selectVar == build_expr (e->L.e));
-         return Var[selectVar];
+         IloIntVar selectVar = IloIntVar (env_, 0, vars_.getSize() - 1);
+         mod_.add (selectVar == build_expr (e->L.e));
+         return vars_[selectVar];
       }
 
       default:
@@ -445,14 +351,7 @@ IloExpr build_expr (const expr *e)
    }
 }
 
-/*----------------------------------------------------------------------
-
-  Walk expression tree and construct constraint,
-  returning a Concert IloConstraint
-
-----------------------------------------------------------------------*/
-
-IloConstraint build_constr (const expr *e)
+IloConstraint Driver::build_constr (const expr *e)
 {
    size_t opnum = reinterpret_cast<size_t>(e->op);
    PR ("op %d  optype %d  ", opnum, optype[opnum]);
@@ -461,7 +360,7 @@ IloConstraint build_constr (const expr *e)
       case OPNUM: {
          real value = reinterpret_cast<const expr_n*>(e)->v;
          PR ("%e\n", value);
-         IloNumVar dummy(env, 1, 1);
+         IloNumVar dummy(env_, 1, 1);
          if (value == 1)
             return dummy == 1;
          if (value == 0)
@@ -525,7 +424,7 @@ IloConstraint build_constr (const expr *e)
 
       case ORLIST: {
          PR ("logical EXISTS\n");
-         IloOr disjunction(env);
+         IloOr disjunction(env_);
          for (expr **ep = e->L.ep; ep < e->R.ep; ep++)
             disjunction.add (build_constr (*ep));
          return disjunction;
@@ -537,7 +436,7 @@ IloConstraint build_constr (const expr *e)
 
       case ANDLIST: {
          PR ("logical FORALL\n");
-         IloAnd conjunction(env);
+         IloAnd conjunction(env_);
          for (expr **ep = e->L.ep, **end = e->R.ep; ep < end; ep++)
             conjunction.add (build_constr (*ep));
          return conjunction;
@@ -555,23 +454,23 @@ IloConstraint build_constr (const expr *e)
          PR ("implies else\n");
          const expr_if *eif = reinterpret_cast<const expr_if*>(e);
          IloConstraint ifCond(build_constr (eif->e));
-         return IloIfThen (env,  ifCond, build_constr (eif->T))
-             && IloIfThen (env, !ifCond, build_constr (eif->F));
+         return IloIfThen (env_,  ifCond, build_constr (eif->T))
+             && IloIfThen (env_, !ifCond, build_constr (eif->F));
       }
 
       case OPALLDIFF: {
          PR ("all different\n");
-         IloIntVarArray alldiffArray(env);
+         IloIntVarArray alldiffArray(env_);
          for (expr **ep = e->L.ep, **end = e->R.ep; ep != end; ep++) {
             if (reinterpret_cast<size_t>((*ep)->op) == OPVARVAL) {
-               alldiffArray.add (Var[(*ep)->a]);
+               alldiffArray.add (vars_[(*ep)->a]);
             } else {
-               IloIntVar alldiffVar(env, IloIntMin, IloIntMax);
-               mod.add (alldiffVar == build_expr (*ep));
+               IloIntVar alldiffVar(env_, IloIntMin, IloIntMax);
+               mod_.add (alldiffVar == build_expr (*ep));
                alldiffArray.add (alldiffVar);
             }
          }
-         return IloAllDiff (env, alldiffArray);
+         return IloAllDiff (env_, alldiffArray);
       }
 
       default:
@@ -579,7 +478,49 @@ IloConstraint build_constr (const expr *e)
    }
 }
 
-void finish_building_numberof()
+IloNumVar Driver::build_numberof (const expr *e)
 {
-   return NumberOf::finish_building();
+   assert(reinterpret_cast<size_t>(e->op) == OPNUMBEROF &&
+          reinterpret_cast<size_t>((*e->L.ep)->op) == OPNUM);
+
+   // Did we previously see a number-of operator
+   // having the same expression-list?
+
+   vector<NumberOf>::reverse_iterator np =
+     find_if(numberofs_.rbegin(), numberofs_.rend(), SameExpr(e));
+
+   // New expression-list:
+   // Build a new numberof structure.
+
+   if (np == numberofs_.rend()) {
+      expr **ep = e->L.ep;
+      IloIntArray values(env_);
+      values.add (reinterpret_cast<expr_n*>(*ep)->v);
+
+      IloIntVarArray vars(env_);
+      for (ep++; ep < e->R.ep; ep++) {
+         IloIntVar listVar(env_, IloIntMin, IloIntMax);
+         vars.add (listVar);
+         mod_.add (listVar == build_expr (*ep));
+      }
+
+      IloIntVar cardVar(env_, IloIntMin, IloIntMax);
+      IloIntVarArray cards(env_);
+      cards.add (cardVar);
+      numberofs_.push_back(NumberOf(cards, values, vars, e));
+      return cardVar;
+   }
+
+   // Previously seen expression-list:
+   // Add to its numberof structure.
+   return np->add(reinterpret_cast<expr_n*>(*e->L.ep)->v, env_);
+}
+
+void Driver::finish_building_numberof()
+{
+   for (vector<NumberOf>::const_iterator
+        i = numberofs_.begin(), end = numberofs_.end(); i != end; ++i) {
+      mod_.add (i->to_distribute(env_));
+   }
+   numberofs_.clear();
 }
