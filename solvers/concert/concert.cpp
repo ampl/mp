@@ -31,10 +31,10 @@ using namespace std;
 
 ----------------------------------------------------------------------*/
 
-int debugexpr = 0;
-int ilogopttype = -1;
-int timing = 0;
-int usenumberof = 1;
+int debugexpr;
+int ilogopttype;
+int timing;
+int usenumberof;
 
 namespace {
 
@@ -74,6 +74,11 @@ Driver::Driver() : mod_(env_) {
        IloConcertVersion::_ILO_TECH_VERSION);
    Oinfo.bsname = &version_[0];
    Oinfo.version = &version_[0];
+
+   debugexpr = 0;
+   ilogopttype = -1;
+   timing = 0;
+   usenumberof = 1;
 }
 
 Driver::~Driver() {
