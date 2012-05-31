@@ -233,12 +233,13 @@ ExprPtr ConcertTest::NewSum(int opcode,
   return sum;
 }
 
-int ConcertTest::RunDriver(const char *stub) {
+int ConcertTest::RunDriver(const char *stub = nullptr) {
   // Copy arguments to comply with the Driver::run function signature and
   // avoid unwanted modification.
   const char *args[] = {"concert", "-s", stub};
   vector<char> store;
   size_t num_args = sizeof(args) / sizeof(*args);
+  if (!stub) --num_args;
   for (size_t i = 0; i < num_args; ++i) {
     const char *arg = args[i];
     store.insert(store.end(), arg, arg + strlen(arg) + 1);
@@ -246,7 +247,7 @@ int ConcertTest::RunDriver(const char *stub) {
   vector<char*> argv(num_args + 1);
   for (size_t i = 0, j = 0; i < num_args; j += strlen(args[i]) + 1, ++i)
     argv[i] = &store[j];
-  return d.run(argv.size(), &argv[0]);
+  return d.run(num_args, &argv[0]);
 }
 
 TEST_F(ConcertTest, ConvertNum) {
@@ -1176,6 +1177,19 @@ TEST_F(ConcertTest, SameExprThrowsOnUnsupportedOp) {
 
 // ----------------------------------------------------------------------------
 // Driver tests
+
+TEST_F(ConcertTest, Usage) {
+  system("concert/concert 2> out");
+  std::ifstream ifs("out");
+  size_t BUFFER_SIZE = 4096;
+  char buffer[BUFFER_SIZE];
+  string text;
+  while (ifs) {
+    ifs.read(buffer, BUFFER_SIZE);
+    text += string(buffer, ifs.gcount());
+  }
+  EXPECT_TRUE(text.find("usage: ") != string::npos);
+}
 
 TEST_F(ConcertTest, ObjConst) {
   RunDriver("objconst");
