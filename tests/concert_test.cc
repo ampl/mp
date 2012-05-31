@@ -4,6 +4,7 @@
 #include <ilconcert/ilopathi.h>
 
 #include <algorithm>
+#include <fstream>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -19,6 +20,7 @@
 #include "solvers/opcode.hd"
 #include "tests/config.h"
 
+using std::ifstream;
 using std::size_t;
 using std::string;
 using std::vector;
@@ -117,6 +119,12 @@ typedef std::auto_ptr<expr> ExprPtr;
 ExprPtr move(ExprPtr e) { return e; }
 #endif
 
+struct SolveResult {
+  bool solved;
+  double obj;
+  SolveResult(bool solved, double obj) : solved(solved), obj(obj) {}
+};
+
 class ConcertTest : public ::testing::Test {
  protected:
   Driver d;
@@ -131,7 +139,6 @@ class ConcertTest : public ::testing::Test {
     vars[1] = IloNumVar(env, 0, 1, "y");
     vars[2] = IloNumVar(env, 0, 1, "theta");
     d.set_vars(vars);
-    usenumberof = 0;
   }
 
   // Creates an ASL expression representing a number.
@@ -184,6 +191,8 @@ class ConcertTest : public ::testing::Test {
   }
 
   int RunDriver(const char *stub);
+
+  SolveResult Solve(const char *stub);
 };
 
 ExprPtr ConcertTest::NewVarArg(int opcode, ExprPtr e1, ExprPtr e2, ExprPtr e3) {
@@ -249,6 +258,22 @@ int ConcertTest::RunDriver(const char *stub = nullptr) {
     argv[i] = &store[j];
   return d.run(num_args, &argv[0]);
 }
+
+SolveResult ConcertTest::Solve(const char *stub) {
+  RunDriver(stub);
+  ifstream ifs((string(stub) + ".sol").c_str());
+  string line;
+  getline(ifs, line);
+  getline(ifs, line);
+  bool solved =line.find("solution found") != string::npos;
+  getline(ifs, line);
+  const char obj[] = "objective ";
+  size_t pos = line.find(obj);
+  double zero = 0;
+  return SolveResult(solved, pos != string::npos ?
+      atof(line.c_str() + pos + sizeof(obj) - 1) : zero / zero);
+}
+
 
 TEST_F(ConcertTest, ConvertNum) {
   EXPECT_EQ("0.42", str(d.build_expr(NewNum(0.42).get())));
@@ -1180,7 +1205,7 @@ TEST_F(ConcertTest, SameExprThrowsOnUnsupportedOp) {
 
 TEST_F(ConcertTest, Usage) {
   system("concert/concert 2> out");
-  std::ifstream ifs("out");
+  ifstream ifs("out");
   size_t BUFFER_SIZE = 4096;
   char buffer[BUFFER_SIZE];
   string text;
@@ -1192,10 +1217,34 @@ TEST_F(ConcertTest, Usage) {
 }
 
 TEST_F(ConcertTest, ObjConst) {
-  RunDriver("objconst");
+  RunDriver("data/objconst");
   IloModel::Iterator iter(mod);
   ASSERT_TRUE(iter.ok());
   IloObjective obj = (*iter).asObjective();
   EXPECT_EQ(42, obj.getConstant());
+}
+
+TEST_F(ConcertTest, SolveAssign0) {
+  EXPECT_EQ(61, Solve("data/assign0").obj);
+}
+
+TEST_F(ConcertTest, SolveBalassign0) {
+  EXPECT_EQ(14, Solve("data/balassign0").obj);
+}
+
+TEST_F(ConcertTest, SolveBalassign1) {
+  EXPECT_EQ(14, Solve("data/balassign1").obj);
+}
+
+TEST_F(ConcertTest, SolveMagic) {
+  EXPECT_TRUE(Solve("data/magic").solved);
+}
+
+TEST_F(ConcertTest, SolveNQueens) {
+  EXPECT_TRUE(Solve("data/nqueens").solved);
+}
+
+TEST_F(ConcertTest, SolveNQueens0) {
+  EXPECT_EQ(0, Solve("data/nqueens0").obj);
 }
 }
