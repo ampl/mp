@@ -14,11 +14,7 @@
 
 #include <algorithm>
 #include <iostream>
-#include <stdio.h>
-#include <assert.h>
-#include "string.h"
 
-#include <ilconcert/ilomodel.h>
 #include <ilcplex/ilocplex.h>
 #include <ilcp/cp.h>
 
@@ -29,30 +25,10 @@
 
 using namespace std;
 
-#define CHR (char*)  // for suppressing "String literal to char*" warnings
+// for suppressing "String literal to char*" warnings
+#define CSTR(s) const_cast<char*>(s)
 
-#define R_OPS asl->I.r_ops_
 #define asl ((ASL_fg*)a)
-
-extern "C" real objconst0(ASL_fg *a, int n)
-{
-  expr_n *e = (expr_n*) (a->I.obj_de_ + n)->e;
-  return (e->op == (efunc_n*) (unsigned long) f_OPNUM) ? e->v : 0;
-}
-
-#undef objconst
-#define objconst(n) objconst0(asl, n)
-
-/*----------------------------------------------------------------------
-
-  Initialize CONCERT environment
-  Define array of decision variables
-
-----------------------------------------------------------------------*/
-
-IloEnv env;
-IloModel mod(env);
-IloNumVarArray Var;
 
 /*----------------------------------------------------------------------
 
@@ -68,20 +44,31 @@ int usenumberof = 1;
 namespace {
 
 keyword keywds[] = { /* must be alphabetical */
-   KW(CHR"debugexpr", I_val, &debugexpr,
-      CHR"print debugging information for expression trees"),
-   KW(CHR"ilogcplex", IK1_val, &ilogopttype,
-      CHR"use ILOG CPLEX optimizer"),
-   KW(CHR"ilogsolver", IK0_val, &ilogopttype,
-      CHR"use ILOG Constraint Programming optimizer"),
-   KW(CHR"timing", I_val, &timing, CHR"display timings for the run"),
-   KW(CHR"usenumberof", I_val, &usenumberof,
-      CHR"consolidate 'numberof' expressions"),
-   };
+   KW(CSTR("debugexpr"), I_val, &debugexpr,
+      CSTR("print debugging information for expression trees")),
+   KW(CSTR("ilogcplex"), IK1_val, &ilogopttype,
+      CSTR("use ILOG CPLEX optimizer")),
+   KW(CSTR("ilogsolver"), IK0_val, &ilogopttype,
+      CSTR("use ILOG Constraint Programming optimizer")),
+   KW(CSTR("timing"), I_val, &timing, CSTR("display timings for the run")),
+   KW(CSTR("usenumberof"), I_val, &usenumberof,
+      CSTR("consolidate 'numberof' expressions"))
+};
 
-Option_Info Oinfo = { CHR"concert", CHR"ILOG CONCERT 1.0",
-   CHR"concert_options", keywds, nkeywds, 0, CHR"ILOG CONCERT 1.0",
+Option_Info Oinfo = { CSTR("concert"), CSTR("ILOG CONCERT 1.0"),
+   CSTR("concert_options"), keywds, nkeywds, 0, CSTR("ILOG CONCERT 1.0"),
    0, 0, 0, 0, 0, 20120521, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+// Returns the constant term in the first objective.
+real objconst0(ASL_fg *a) {
+  expr *e = a->I.obj_de_->e;
+  return reinterpret_cast<size_t>(e->op) == OPNUM ?
+      reinterpret_cast<expr_n*>(e)->v : 0;
+}
+}
+
+Driver::~Driver() {
+   env_.end();
 }
 
 /*----------------------------------------------------------------------
@@ -90,7 +77,7 @@ Option_Info Oinfo = { CHR"concert", CHR"ILOG CONCERT 1.0",
 
 ----------------------------------------------------------------------*/
 
-int concert_main(int argc, char **argv) {
+int Driver::run(int argc, char **argv) {
 
    FILE *nl;
    ASL *a;
@@ -105,7 +92,7 @@ int concert_main(int argc, char **argv) {
 
    /*** Initialize Concert ***/
 
-   IloTimer timer(env);
+   IloTimer timer(env_);
    timer.start();
 
    IloNum Times[4];
@@ -129,22 +116,22 @@ int concert_main(int argc, char **argv) {
 
    for (i = 0; i < N_OPS; i++)
       r_ops_int[i] = (efunc*)(unsigned long)i;
-   R_OPS = r_ops_int;
+   asl->I.r_ops_ = r_ops_int;
    want_derivs = 0;
    fg_read(nl,ASL_allow_CLP);
-   R_OPS = 0;
+   asl->I.r_ops_ = 0;
 
    n_var_int = nbv + niv + nlvbi + nlvci + nlvoi;
 
    /*** Set up some useful Concert arrays ***/
 
-   IloNumArray loVarBnd(env,n_var), upVarBnd(env,n_var);
+   IloNumArray loVarBnd(env_,n_var), upVarBnd(env_,n_var);
    for (j = 0; j < n_var; j++) {
       loVarBnd[j] = LUv[j];
       upVarBnd[j] = Uvx[j];
    }
 
-   IloNumArray loConBnd(env,n_con), upConBnd(env,n_con);
+   IloNumArray loConBnd(env_,n_con), upConBnd(env_,n_con);
    for (i = 0; i < n_con; i++) {
       loConBnd[i] = LUrhs[i];
       upConBnd[i] = Urhsx[i];
@@ -162,7 +149,7 @@ int concert_main(int argc, char **argv) {
       case 1:
          break;
       default:
-         cerr << "Invalid value " << timing 
+         cerr << "Invalid value " << timing
             << " for directive timing" << endl;
          n_badvals++;
          }
@@ -176,7 +163,7 @@ int concert_main(int argc, char **argv) {
       case 1:   // ILOG CPLEX
          break;
       default:
-         cerr << "Invalid value " << ilogopttype 
+         cerr << "Invalid value " << ilogopttype
             << " for driver's ilogopttype setting" << endl;
          n_badvals++;
          }
@@ -187,7 +174,7 @@ int concert_main(int argc, char **argv) {
       case 1:
          break;
       default:
-         cerr << "Invalid value " << usenumberof 
+         cerr << "Invalid value " << usenumberof
             << " for directive usenumberof" << endl;
          n_badvals++;
          }
@@ -201,45 +188,46 @@ int concert_main(int argc, char **argv) {
 
    -------------------------------------------------------------------*/
 
-   Var = IloNumVarArray(env,n_var);
+   vars_ = IloNumVarArray(env_,n_var);
 
    for (j = 0; j < n_var - n_var_int; j++)
-      Var[j] = IloNumVar(env, loVarBnd[j], upVarBnd[j], ILOFLOAT);
+      vars_[j] = IloNumVar(env_, loVarBnd[j], upVarBnd[j], ILOFLOAT);
    for (j = n_var - n_var_int; j < n_var; j++)
-      Var[j] = IloNumVar(env, loVarBnd[j], upVarBnd[j], ILOINT);
+      vars_[j] = IloNumVar(env_, loVarBnd[j], upVarBnd[j], ILOINT);
 
-   IloObjective MinOrMax(env);
+   IloObjective MinOrMax(env_);
 
    if (n_obj > 0) {
-      IloExpr objExpr(env,objconst(0));
+      double objConst = objconst0(reinterpret_cast<ASL_fg*>(a));
+      IloExpr objExpr(env_, objConst);
       if (0 < nlo)
          objExpr += build_expr (obj_de[0].e);
       for (og = Ograd[0]; og; og = og->next)
-         objExpr += (og -> coef) * Var[og -> varno];
-      MinOrMax = IloObjective (env, objExpr,
+         objExpr += (og -> coef) * vars_[og -> varno];
+      MinOrMax = IloObjective (env_, objExpr,
          objtype[0] == 0 ? IloObjective::Minimize : IloObjective::Maximize);
-      IloAdd (mod, MinOrMax);
+      IloAdd (mod_, MinOrMax);
    }
 
-   IloRangeArray Con(env,n_con);
+   IloRangeArray Con(env_,n_con);
 
    for (i = 0; i < n_con; i++) {
-      IloExpr conExpr(env);
+      IloExpr conExpr(env_);
       for (cg = Cgrad[i]; cg; cg = cg->next)
-         conExpr += (cg -> coef) * Var[cg -> varno];
+         conExpr += (cg -> coef) * vars_[cg -> varno];
       if (i < nlc) 
          conExpr += build_expr (con_de[i].e);
       Con[i] = (loConBnd[i] <= conExpr <= upConBnd[i]);
       }
 
-   IloConstraintArray LCon(env,n_lcon);
+   IloConstraintArray LCon(env_,n_lcon);
 
    for (i = 0; i < n_lcon; i++) {
       LCon[i] = build_constr (lcon_de[i].e);
       }
 
-   if (n_con > 0) mod.add (Con);
-   if (n_lcon > 0) mod.add (LCon);
+   if (n_con > 0) mod_.add (Con);
+   if (n_lcon > 0) mod_.add (LCon);
 
    finish_building_numberof ();
 
@@ -253,8 +241,8 @@ int concert_main(int argc, char **argv) {
 
    try {
       if (ilogopttype == 1) {
-         IloCplex cplex (env);
-         cplex.extract (mod);
+         IloCplex cplex (env_);
+         cplex.extract (mod_);
 
          if (timing) Times[2] = timer.getTime();
 
@@ -278,10 +266,10 @@ int concert_main(int argc, char **argv) {
             g_fmtop(sMsg+sSoFar, objValue);
 
             real *Xopt = new real [n_var];
-            for(j = 0; j < n_var; j++) Xopt[j] = cplex.getValue(Var[j]);
+            for(j = 0; j < n_var; j++) Xopt[j] = cplex.getValue(vars_[j]);
             write_sol(sMsg, Xopt, 0, &Oinfo);
             delete [] Xopt;
-         } 
+         }
 
          else {
             sSoFar += g_fmtop(sMsg+sSoFar,cplex.getNiterations());
@@ -290,7 +278,7 @@ int concert_main(int argc, char **argv) {
 
             real *Xopt = new real [n_var];
             real *Piopt = new real [n_con];
-            for(j = 0; j < n_var; j++) Xopt[j] = cplex.getValue(Var[j]);
+            for(j = 0; j < n_var; j++) Xopt[j] = cplex.getValue(vars_[j]);
             for(i = 0; i < n_con; i++) Piopt[i] = cplex.getDual(Con[i]);
             write_sol(sMsg, Xopt, Piopt, &Oinfo);
             delete [] Xopt;
@@ -305,12 +293,12 @@ int concert_main(int argc, char **argv) {
    -------------------------------------------------------------------*/
 
       else {
-         IloSolver solver (env);
-         solver.extract (mod);
+         IloSolver solver (env_);
+         solver.extract (mod_);
 
          if (timing) Times[2] = timer.getTime();
 
-         IloBool successful = solver.solve();   // solve(IloSplit(env,Var))
+         IloBool successful = solver.solve();   // solve(IloSplit(env_,vars_))
 
          if (timing) Times[3] = timer.getTime();
 
@@ -332,7 +320,7 @@ int concert_main(int argc, char **argv) {
 
             real *Xopt = new real [n_var];
 
-            for(j = 0; j < n_var; j++) Xopt[j] = solver.getValue(Var[j]);
+            for(j = 0; j < n_var; j++) Xopt[j] = solver.getValue(vars_[j]);
             write_sol(sMsg, Xopt, 0, &Oinfo);
             delete [] Xopt;
          }
@@ -356,6 +344,5 @@ int concert_main(int argc, char **argv) {
       cerr << "Error: " << ex << endl;
       exit (-1);
    }
-   env.end();
    return 0;
 }

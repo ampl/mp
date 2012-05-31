@@ -4,7 +4,7 @@
 
 int main(int argc, char **argv) {
   try {
-    return concert_main(argc, argv);
+    return Driver().run(argc, argv);
   } catch (const Error& e) {
     Printf("%s\n", e.what());
   }
