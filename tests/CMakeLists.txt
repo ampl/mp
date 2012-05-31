@@ -40,6 +40,8 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
   ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
+add_subdirectory(../solvers/concert concert)
+
 find_package(CPLEX)
 if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
   add_definitions(${CPLEX_CONCERT_DEFINITIONS})
