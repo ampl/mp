@@ -1,7 +1,3 @@
-20120405
- tableproxy.c:  when a shared-library name (such as ampltabl.dll)
-does not contain a slash (or, for MS Windows, start with a drive
-letter), have tableproxy*.exe look in $ampl_libpath (if set) for the
-library.  Note that AMPL versions starting with 20120404 export
-$ampl_libpath.  When $ampl_libpath is not set, behave as though
-$ampl_libpath were set to the current directory.
+20120530
+ amplodbc.c:  fix a bug with error messages that prevented some
+possibly helpful details from being reported.

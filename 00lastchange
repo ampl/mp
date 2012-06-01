@@ -1,3 +1,2 @@
-20120507
-  Add a test to explicitly enforce an implicit limit of 199 on the
-lengths of names.
+20120530
+  Fix a glitch under MS Windows with option debug_stub.

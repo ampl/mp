@@ -2954,3 +2954,46 @@ removed the constraint.
 20120507
   Add a test to explicitly enforce an implicit limit of 199 on the
 lengths of names.
+
+20120515
+  On MS Windows systems, if $TMPDIR has a nonblank value, use that
+value as the temporary directory name (as documented in the AMPL book).
+Otherwise use the value of $TEMP.  Hitherto only $TEMP was considered
+on MS Windows systems.  (On most MS Windows systems, $TMPDIR is not
+set, but $TEMP is set to a non-blank value by default; on such
+systems, this change should be invisible.)
+  On MS Windows systems, fix a glitch with embedded blanks in the
+value of $TMPDIR or $TEMP (as appropriate).  Blanks have long been
+tolerated in $TMPDIR on other systems.
+
+20120516
+  Fix a bug with "redeclare" that gave error message "xrenumber bug"
+when the redeclared entity depended on something declared after
+something that depended on the entity.  Example:
+
+	param p default 6; param q = p + 1;
+	param r = 2*q; display p, q, r;
+	param s default 3;
+	redeclare param q = p + s + 1; # "xrenumber bug"
+	display q;
+
+20120517
+  Fix a bug (fault) with some logical "atmost" expressions.
+
+20120522
+  Fix a bug (giving "corrupted del_mblk arg") in "reset data p;"
+when p is a scalar param whose current value was computed from
+a default expression.  The bug was exposed (previously harmless)
+was exposed by the changes of 20120214.  Example:
+
+	param p default 3;
+	reset data p;	# OK
+	print p;	# value computed from default expression
+	reset data p;	# "bug: corrupted del_mblk arg"
+
+  On MS Windows systems, when process creation fails, report the
+path to the program that would not start, rather than just the
+program's name.
+
+20120530
+  Fix a glitch under MS Windows with option debug_stub.

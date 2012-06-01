@@ -1065,7 +1065,7 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 
 #ifdef GRB_INT_PAR_ZEROOBJNODES
  static char zeroobjnodes_desc[] =
-		"Number of nodess to explore at the root MIP node if no other\n\
+		"Number of nodes to explore at the root MIP node if no other\n\
 		heuristic has found a feasible solution.  Default = 0.";
 #endif
 
@@ -1279,7 +1279,7 @@ keywds[] = {	/* must be in alphabetical order */
 
  static Option_Info
 Oinfo = { "gurobi", verbuf, "gurobi_options", keywds, nkeywds, 0, verbuf,
-	   0,0,0,0,0, 20120504 };
+	   0,0,0,0,0, 20120524 };
 
  static void
 enamefailed(GRBenv *env, const char *what, const char *name)
@@ -2329,7 +2329,7 @@ main(int argc, char **argv)
 	Ar = A + nz;
 	LUv = lxr = A + nzcr;
 	Uvx = uxr = lxr + nvr;
-	pi0 = y = uxr + nvr;
+	y = uxr + nvr;
 	rhs = y + nc;
 	lxr += nv;
 	uxr += nv;
@@ -2426,7 +2426,6 @@ main(int argc, char **argv)
 		}
 #if GRB_VERSION_MAJOR >= 5 /*{*/
 	if (!pi0) {
-		y = resid;
 		if (nc) {
 			warmstart = 0;
 			memset(y, 0, nc*sizeof(real));

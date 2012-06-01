@@ -1,3 +1,2 @@
-20120504
-  gurobi.c, README.gurobi, makefile.u: update for Gurobi 5.0.  The
-updated gurobi.c should still work with earlier versions of Gurobi.
+20120524
+  gurobi.c: fix a typo in the "gurobi -=" output.
