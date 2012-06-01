@@ -190,7 +190,7 @@ class ConcertTest : public ::testing::Test {
     return eval(d.build_expr(NewBinary(OPREM, NewNum(lhs), NewNum(rhs)).get()));
   }
 
-  int RunDriver(const char *stub);
+  int RunDriver(const char *stub, const char *opt);
 
   SolveResult Solve(const char *stub);
 };
@@ -242,13 +242,15 @@ ExprPtr ConcertTest::NewSum(int opcode,
   return sum;
 }
 
-int ConcertTest::RunDriver(const char *stub = nullptr) {
+int ConcertTest::RunDriver(const char *stub = nullptr,
+                           const char *opt = nullptr) {
   // Copy arguments to comply with the Driver::run function signature and
   // avoid unwanted modification.
-  const char *args[] = {"concert", "-s", stub};
+  const char *args[] = {"concert", "-s", stub, opt};
   vector<char> store;
   size_t num_args = sizeof(args) / sizeof(*args);
-  if (!stub) --num_args;
+  if (!stub) num_args -= 2;
+  else if (!opt) --num_args;
   for (size_t i = 0; i < num_args; ++i) {
     const char *arg = args[i];
     store.insert(store.end(), arg, arg + strlen(arg) + 1);
@@ -256,7 +258,11 @@ int ConcertTest::RunDriver(const char *stub = nullptr) {
   vector<char*> argv(num_args + 1);
   for (size_t i = 0, j = 0; i < num_args; j += strlen(args[i]) + 1, ++i)
     argv[i] = &store[j];
-  return d.run(num_args, &argv[0]);
+  try {
+    return d.run(num_args, &argv[0]);
+  } catch (IloException e) {
+    throw std::runtime_error(e.getMessage());
+  }
 }
 
 SolveResult ConcertTest::Solve(const char *stub) {
@@ -1222,6 +1228,11 @@ TEST_F(ConcertTest, ObjConst) {
   ASSERT_TRUE(iter.ok());
   IloObjective obj = (*iter).asObjective();
   EXPECT_EQ(42, obj.getConstant());
+}
+
+TEST_F(ConcertTest, SolveNumberOfCplex) {
+  usenumberof = 0;
+  RunDriver("data/numberof", "ilogcplex");
 }
 
 TEST_F(ConcertTest, SolveAssign0) {
