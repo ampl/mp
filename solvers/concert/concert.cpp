@@ -241,31 +241,27 @@ int Driver::run(int argc, char **argv) {
       sSoFar += Sprintf(sMsg,
          "\n%s: optimal solution found\n", Oinfo.bsname);
 
-      if (nbv + niv > 0) {
+      if (cplex.isMIP()) {
          sSoFar += g_fmtop(sMsg+sSoFar,cplex.getNnodes());
          sSoFar += Sprintf(sMsg+sSoFar, " nodes, ");
          sSoFar += g_fmtop(sMsg+sSoFar,cplex.getNiterations());
          sSoFar += Sprintf(sMsg+sSoFar, " iterations, objective ");
          g_fmtop(sMsg+sSoFar, objValue);
 
-         real *Xopt = new real [n_var];
+         vector<real> Xopt(n_var);
          for (int j = 0; j < n_var; j++) Xopt[j] = cplex.getValue(vars_[j]);
-         write_sol(sMsg, Xopt, 0, &Oinfo);
-         delete [] Xopt;
+         write_sol(sMsg, &Xopt[0], 0, &Oinfo);
       }
-
       else {
          sSoFar += g_fmtop(sMsg+sSoFar,cplex.getNiterations());
          sSoFar += Sprintf(sMsg+sSoFar, " iterations, objective ");
          g_fmtop(sMsg+sSoFar, objValue);
 
-         real *Xopt = new real [n_var];
-         real *Piopt = new real [n_con];
+         vector<real> Xopt(n_var);
+         vector<real> Piopt(n_con);
          for (int j = 0; j < n_var; j++) Xopt[j] = cplex.getValue(vars_[j]);
          for (int i = 0; i < n_con; i++) Piopt[i] = cplex.getDual(Con[i]);
-         write_sol(sMsg, Xopt, Piopt, &Oinfo);
-         delete [] Xopt;
-         delete [] Piopt;
+         write_sol(sMsg, &Xopt[0], &Piopt[0], &Oinfo);;
       }
    }
 
