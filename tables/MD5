@@ -36,15 +36,15 @@ SktRBTvUnwA=
 -----END PGP SIGNATURE-----
 -----BEGIN PGP SIGNED MESSAGE-----
 
-# netlib-utk master Sun Apr 8 03:11:03 EDT 2012
-og9vwn6WXnp8O9wF8p3cQQ	00lastchange
+# netlib-utk master Fri Jun 1 03:10:09 EDT 2012
+IZMzBkPBGAZSZT+fDl5Fgw	00lastchange
 tH+7jjyuO1u+rd6pxS+8ng	README
 Eu4afIY6TQtei6/cLWquRg	TABLES.RME
-0C6N6V81/LIXM+sOTirZew	amplodbc.c
+Fo0Dg8LGSJk6TZhoI9qEZg	amplodbc.c
 Smzcl8ZnCuEWGn6lIhJbOw	ampltabl.def
 5ahv90x9QRUaqTL5OaiOmw	ampltabl.dll.gz
 Axgth9KsnrCxHZvbRJWn3g	calories.tab
-RLcxFUtGRUOwRKfKPXTCtw	changes
+dQY2EkhdbAwImDi8WHEY4w	changes
 nwierY6zzvVSFoPVWaRlYA	diet.mod
 v0mjbMirut9I8jbDUs338A	diet2a.dat
 94zSfSOHMb6d7PZQ95q5xA	diettab.x
@@ -60,14 +60,14 @@ uKJHPVcpp6uwzwtShT+9pQ	nutrients.tab
 UtdHMqhzeJVmicSthzgKHQ	simpbit.c
 cM91M3mCzFc01xKs1EwYPQ	tableproxy.c
 56TiSYBF2fhBZwEyuCeK/w	tableproxyver.h
-7ixl1DH2tCPXzJjGxSNf3w	xsum0.out
+bxRymijBOjWkEn+bg3Q77g	xsum0.out
 
 -----BEGIN PGP SIGNATURE-----
 Version: 2.6.2
 
-iQCVAwUBT4E6DOFlxDEfrjtlAQETqwP9EWmXgNtj54k2izIPKtzKks8KK9iikVD9
-ysXX0prumx355k7KI2bUiwJbdiY2v+lSU2O2ujl129tLMulzvNYQnPkvQ3H8ITSb
-du1Vp99yW0xOXV66ft5Q6Ssk1kpf2Y1Lpado2sE2XLjF0bPQpKPPGRStcPBxJtD6
-IvEp0uBuho0=
-=jxIY
+iQCVAwUBT8hq0+FlxDEfrjtlAQEKRQP/Svzo7x+GfCunmFpJjFXC6qbYht1WsEqJ
+Ck/UabhcsPjkcTn1CvDFTQRGgXrNHELrh7DITnWUekshhZyA9th2CVyRRcX6WMWI
+N3Fjryp6gnadX4OC+hA30wl0Uec8Yr6AHaSkVzwrSqYHZkamN5JvRBI86QVXJBQt
+r3tRwrONWqY=
+=L97m
 -----END PGP SIGNATURE-----

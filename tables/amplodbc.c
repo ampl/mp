@@ -141,7 +141,7 @@ prc(HInfo *h, char *who, int i)
 		rv = 0;
 		}
 	errmsg = errmsg0;
-	errmsglen = sizeof(errmsg);
+	errmsglen = sizeof(errmsg0);
 	ae = h->AE;
 	printf("%s returned %d\n", who, i);
 #if 0
@@ -2807,11 +2807,9 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 			dbc = dbc0 + (k = cc[i]);
 			k = p[k];
 			for(s = cs = dbc->val0; *s; s++);
-			while(s > cs && *--s == ' ');
-			s[1] = 0;
-			if (s == cs && *cs == ' ')
-				cs = Missing;
-			else if (!*cs)
+			while(s > cs && *--s == ' ')
+				*s = 0;
+			if (*cs == 0)
 				cs = Missing;
 			else if (*cs == '\'' && s > cs && *s == '\'') {
 				cs++;
