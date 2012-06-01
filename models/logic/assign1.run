@@ -1,0 +1,21 @@
+
+model assign1.mod
+data assign1.dat
+
+# objective Total_Rank;
+
+option solver concert;
+solve;
+
+option display_eps .000001;
+option omit_zero_rows 1;
+option display_1col 1000;
+
+display {s in STU} (Project[s], rank[s,Project[s]]);
+display {p in PRJ, s in STU: p = Project[s]} rank[s,p];
+
+display {p in PRJ} numberof p in ({s in STU: car[s] = 1} Project[s]);
+
+display {g in GRP} max {s in MEM[g]} rank[s,Project[s]];
+
+display sum {s in STU} rank[s,Project[s]];

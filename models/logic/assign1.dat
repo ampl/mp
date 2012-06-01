@@ -1,0 +1,65 @@
+
+param nprj := 6 ;
+
+param:   cars_needed min_team max_team := 
+   1         2          3        4
+   2         2          3        4
+   3         2          3        4
+   4         2          3        4
+   5         2          3        4
+   6         2          3        4 ;
+
+
+param: STU: car :=
+   Cane_Gentil 1
+   Chung_Michael 1
+   Goldrich_Matthew 1
+   Grasparil_Michelle 0
+   Henry_Steve 0
+   Jurishica_Carley 1
+   Laurie_Alina 1
+   Lawless_Katie 0
+   Morrow_Timothy 0
+   Rincones_Daianna 0
+   Shakoor_Kashif 1
+   Sheth_Vihar 1
+   Stewart_Eric 1
+   Urquhart_Geoff 1
+   Walton_Caroline 1
+   Welsch_Todd 1
+   Wible_Barry 1
+   Yee_Christine 0
+   Yuen_Gigi 1 ;
+
+param ngroup := 2 ;
+
+set MEM[1] := Henry_Steve Urquhart_Geoff ;
+set MEM[2] := Laurie_Alina Yee_Christine Yuen_Gigi ;
+
+param rank: 1  2  3  4  5  6 :=
+
+   Cane_Gentil          5 4 3 1 2 6
+   Chung_Michael        1 4 2 5 2 6
+   Goldrich_Matthew     2 5 6 1 3 3
+   Grasparil_Michelle   3 6 4 1 2 5
+   Henry_Steve          5 1 4 6 3 2
+   Jurishica_Carley     2 3 5 1 4 6
+   Laurie_Alina         4 5 2 1 2 6
+   Lawless_Katie        6 1 5 3 2 4
+   Morrow_Timothy       1 1 1 1 1 1
+   Rincones_Daianna     1 2 3 5 4 6
+   Shakoor_Kashif       2 3 1 6 4 5
+   Sheth_Vihar          1 2 3 5 4 6
+   Stewart_Eric         4 2 6 1 4 3
+   Urquhart_Geoff       5 1 4 6 3 2
+   Walton_Caroline      5 1 3 6 4 2
+   Welsch_Todd          5 1 2 6 4 2
+   Wible_Barry          6 3 1 5 3 2
+   Yee_Christine        4 5 2 1 2 6
+   Yuen_Gigi            4 5 2 1 2 6 ;
+
+param cutoff := 2 ;
+
+# set PRJ_PREF := ;
+
+param group_weight 3 ;
