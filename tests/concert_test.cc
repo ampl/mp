@@ -2,6 +2,7 @@
 
 #include <ilconcert/ilodiffi.h>
 #include <ilconcert/ilopathi.h>
+#include <ilcplex/ilocplex.h>
 #include <ilcp/cp.h>
 
 #include <algorithm>
@@ -133,7 +134,7 @@ class ConcertTest : public ::testing::Test {
   IloModel mod;
 
   void SetUp() {
-    env = d.get_env();
+    env = d.env();
     mod = d.mod();
     IloNumVarArray vars = IloNumVarArray(env, 3);
     vars[0] = IloIntVar(env, 0, 1, "x");
@@ -261,9 +262,10 @@ int ConcertTest::RunDriver(const char *stub = nullptr,
     argv[i] = &store[j];
   try {
     return d.run(num_args, &argv[0]);
-  } catch (IloException e) {
+  } catch (const IloException& e) {
     throw std::runtime_error(e.getMessage());
   }
+  return 0;
 }
 
 SolveResult ConcertTest::Solve(const char *stub) {
@@ -620,10 +622,10 @@ TEST_F(ConcertTest, ConvertCount) {
 }
 
 TEST_F(ConcertTest, ConvertNumberOf) {
-  usenumberof = 1;
+  d.use_numberof();
   EXPECT_EQ("x == theta + y == theta", str(d.build_expr(
       NewSum(OPNUMBEROF, NewVar(2), NewVar(0), NewVar(1)).get())));
-  usenumberof = 0;
+  d.use_numberof(false);
   EXPECT_EQ("x == 42 + y == 42", str(d.build_expr(
       NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)).get())));
 }
@@ -636,7 +638,7 @@ TEST_F(ConcertTest, IloArrayCopyingIsCheap) {
 }
 
 TEST_F(ConcertTest, ConvertSingleNumberOfToIloDistribute) {
-  usenumberof = 1;
+  d.use_numberof();
   std::ostringstream os;
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
   string bounds = os.str();
@@ -662,7 +664,7 @@ TEST_F(ConcertTest, ConvertSingleNumberOfToIloDistribute) {
 }
 
 TEST_F(ConcertTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
-  usenumberof = 1;
+  d.use_numberof();
   std::ostringstream os;
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
   string bounds = os.str();
@@ -690,7 +692,7 @@ TEST_F(ConcertTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
 }
 
 TEST_F(ConcertTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
-  usenumberof = 1;
+  d.use_numberof();
   std::ostringstream os;
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
   string bounds = os.str();
@@ -719,7 +721,7 @@ TEST_F(ConcertTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
 }
 
 TEST_F(ConcertTest, ConvertTwoNumberOfsWithDiffExprs) {
-  usenumberof = 1;
+  d.use_numberof();
   std::ostringstream os;
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
   string bounds = os.str();
@@ -1258,7 +1260,7 @@ TEST_F(ConcertTest, ObjConst) {
 }
 
 TEST_F(ConcertTest, SolveNumberOfCplex) {
-  usenumberof = 0;
+  d.use_numberof(false);
   RunDriver("data/numberof", "ilogcplex");
 }
 
@@ -1305,4 +1307,33 @@ TEST_F(ConcertTest, SolveParty2) {
   EXPECT_EQ(3, Solve("data/party2").obj);
 }
 
+// ----------------------------------------------------------------------------
+// Option tests
+
+TEST_F(ConcertTest, DebugExpr0) {
+  RunDriver("data/magic", "debugexpr=0");
+  EXPECT_EQ(0, d.get_option(Driver::DEBUGEXPR));
+}
+
+TEST_F(ConcertTest, DebugExpr1) {
+  RunDriver("data/magic", "debugexpr=1");
+  EXPECT_EQ(1, d.get_option(Driver::DEBUGEXPR));
+}
+
+TEST_F(ConcertTest, DebugExpr42) {
+  RunDriver("data/magic", "debugexpr=42");
+  EXPECT_EQ(42, d.get_option(Driver::DEBUGEXPR));
+}
+
+TEST_F(ConcertTest, IlogSolver) {
+  RunDriver("data/magic", "ilogsolver");
+  EXPECT_EQ(0, d.get_option(Driver::ILOGOPTTYPE));
+  EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) == nullptr);
+}
+
+TEST_F(ConcertTest, IlogCplex) {
+  RunDriver("data/objconst", "ilogcplex");
+  EXPECT_EQ(1, d.get_option(Driver::ILOGOPTTYPE));
+  EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) != nullptr);
+}
 }

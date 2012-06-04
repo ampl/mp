@@ -21,7 +21,7 @@
 #include "solvers/nlp.h"
 #include "solvers/opcode.hd"
 
-#define PR if (debugexpr) Printf
+#define PR if (get_option(DEBUGEXPR)) Printf
 
 #ifndef M_PI
 # define M_PI 3.14159265358979323846
@@ -329,8 +329,10 @@ IloExpr Driver::build_expr (const expr *e)
       case OPNUMBEROF: {
          PR ("number of\n");
          expr **ep = e->L.ep;
-         if (reinterpret_cast<size_t>((*ep)->op) == OPNUM && usenumberof)
+         if (reinterpret_cast<size_t>((*ep)->op) == OPNUM &&
+             get_option(USENUMBEROF)) {
             return build_numberof(e);
+         }
          IloExpr sumExpr(env_);
          IloExpr targetExpr(build_expr (*ep++));
          for (expr **end = e->R.ep; ep != end; ep++)

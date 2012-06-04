@@ -25,37 +25,14 @@
 
 using namespace std;
 
-/*----------------------------------------------------------------------
-
-  Process directives accessible from AMPL
-
-----------------------------------------------------------------------*/
-
-int debugexpr;
-int ilogopttype;
-int timing;
-int usenumberof;
-
-namespace {
-
 // for suppressing "String literal to char*" warnings
 #define CSTR(s) const_cast<char*>(s)
 
-keyword keywds[] = { /* must be alphabetical */
-   KW(CSTR("debugexpr"), I_val, &debugexpr,
-      CSTR("print debugging information for expression trees")),
-   KW(CSTR("ilogcplex"), IK1_val, &ilogopttype,
-      CSTR("use ILOG CPLEX optimizer")),
-   KW(CSTR("ilogsolver"), IK0_val, &ilogopttype,
-      CSTR("use ILOG Constraint Programming optimizer")),
-   KW(CSTR("timing"), I_val, &timing, CSTR("display timings for the run")),
-   KW(CSTR("usenumberof"), I_val, &usenumberof,
-      CSTR("consolidate 'numberof' expressions"))
-};
+namespace {
 
-Option_Info Oinfo = { CSTR("concert"), 0,
-   CSTR("concert_options"), keywds, nkeywds, 0, 0,
-   0, 0, 0, 0, 0, 20120521, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+struct DriverOptionInfo : Option_Info {
+  Driver *driver;
+};
 
 // Returns the constant term in the first objective.
 real objconst0(ASL_fg *a) {
@@ -65,24 +42,66 @@ real objconst0(ASL_fg *a) {
 }
 }
 
+keyword Driver::keywords_[] = { /* must be alphabetical */
+   KW(CSTR("debugexpr"), Driver::set_option, Driver::DEBUGEXPR,
+      CSTR("print debugging information for expression trees")),
+   KW(CSTR("ilogcplex"), Driver::set_option1, Driver::ILOGOPTTYPE,
+      CSTR("use ILOG CPLEX optimizer")),
+   KW(CSTR("ilogsolver"), Driver::set_option0, Driver::ILOGOPTTYPE,
+      CSTR("use ILOG Constraint Programming optimizer")),
+   KW(CSTR("timing"), Driver::set_option, Driver::TIMING,
+      CSTR("display timings for the run")),
+   KW(CSTR("usenumberof"), Driver::set_option, Driver::USENUMBEROF,
+      CSTR("consolidate 'numberof' expressions"))
+};
+
 Driver::Driver() : mod_(env_) {
+   options_[DEBUGEXPR] = 0;
+   options_[ILOGOPTTYPE] = -1;
+   options_[TIMING] = 0;
+   options_[USENUMBEROF] = 1;
+
    version_.resize(strlen(IloConcertVersion::_ILO_NAME) + 100);
    snprintf(&version_[0], version_.size() - 1,
        "%s %d.%d.%d", IloConcertVersion::_ILO_NAME,
        IloConcertVersion::_ILO_MAJOR_VERSION,
        IloConcertVersion::_ILO_MINOR_VERSION,
        IloConcertVersion::_ILO_TECH_VERSION);
-   Oinfo.bsname = &version_[0];
-   Oinfo.version = &version_[0];
-
-   debugexpr = 0;
-   ilogopttype = -1;
-   timing = 0;
-   usenumberof = 1;
+   DriverOptionInfo *doi = 0;
+   oinfo_.reset(doi = new DriverOptionInfo());
+   oinfo_->sname = CSTR("concert");
+   oinfo_->bsname = &version_[0];
+   oinfo_->opname = CSTR("concert_options");
+   oinfo_->keywds = keywords_;
+   oinfo_->n_keywds = sizeof(keywords_) / sizeof(*keywords_);
+   oinfo_->version = &version_[0];
+   oinfo_->driver_date = 20120521;
+   doi->driver = this;
 }
 
 Driver::~Driver() {
    env_.end();
+}
+
+char *Driver::set_option(Option_Info *oi, keyword *kw, char *value) {
+   keyword copy(*kw);
+   Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
+   copy.info = d->options_ + reinterpret_cast<size_t>(kw->info);
+   return I_val(oi, &copy, value);
+}
+
+char *Driver::set_option0(Option_Info *oi, keyword *kw, char *value) {
+   keyword copy(*kw);
+   Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
+   copy.info = d->options_ + reinterpret_cast<size_t>(kw->info);
+   return IK0_val(oi, &copy, value);
+}
+
+char *Driver::set_option1(Option_Info *oi, keyword *kw, char *value) {
+   keyword copy(*kw);
+   Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
+   copy.info = d->options_ + reinterpret_cast<size_t>(kw->info);
+   return IK1_val(oi, &copy, value);
 }
 
 /*----------------------------------------------------------------------
@@ -91,7 +110,7 @@ Driver::~Driver() {
 
 ----------------------------------------------------------------------*/
 
-int Driver::run(int argc, char **argv) {
+int Driver::run(int, char **argv) {
    /*** Initialize timers ***/
 
    IloTimer timer(env_);
@@ -103,9 +122,9 @@ int Driver::run(int argc, char **argv) {
    /*** Get name of .nl file; read problem sizes ***/
 
    ASL_fg *asl = reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg));
-   char *stub = getstub(&argv, &Oinfo);
+   char *stub = getstub(&argv, oinfo_.get());
    if (!stub)
-     usage_ASL(&Oinfo, 1);
+     usage_ASL(oinfo_.get(), 1);
    FILE *nl = jac0dim(stub, strlen(stub));
 
    /*** Read coefficients & bounds & expression tree from .nl file ***/
@@ -125,10 +144,11 @@ int Driver::run(int argc, char **argv) {
 
    /*** Get and process ILOG Concert options ***/
 
-   if (getopts(argv, &Oinfo)) exit(1);
+   if (getopts(argv, oinfo_.get())) exit(1);
 
    int n_badvals = 0;
 
+   int timing = get_option(TIMING);
    switch(timing) {
       case 0:
          break;
@@ -140,20 +160,11 @@ int Driver::run(int argc, char **argv) {
          n_badvals++;
          }
 
-   switch(ilogopttype) {
-      case -1:
-         nlo + nlc + n_lcon > 0 ? ilogopttype = 0 : ilogopttype = 1;
-         break;
-      case 0:   // ILOG Solver
-         break;
-      case 1:   // ILOG CPLEX
-         break;
-      default:
-         cerr << "Invalid value " << ilogopttype
-            << " for driver's ilogopttype setting" << endl;
-         n_badvals++;
-         }
+   int ilogopttype = get_option(ILOGOPTTYPE);
+   if (ilogopttype == -1)
+      ilogopttype = nlo + nlc + n_lcon == 0;
 
+   int usenumberof = get_option(USENUMBEROF);
    switch(usenumberof) {
       case 0:
          break;
@@ -166,7 +177,7 @@ int Driver::run(int argc, char **argv) {
          }
 
    if (n_badvals)
-      exit(1);
+      return 1;
 
    /*-------------------------------------------------------------------
 
@@ -225,6 +236,7 @@ int Driver::run(int argc, char **argv) {
 
    if (ilogopttype == 1) {
       IloCplex cplex (env_);
+      alg_ = cplex;
       cplex.extract (mod_);
 
       if (timing) Times[2] = timer.getTime();
@@ -239,7 +251,7 @@ int Driver::run(int argc, char **argv) {
       char sMsg[256];
 
       sSoFar += Sprintf(sMsg,
-         "\n%s: optimal solution found\n", Oinfo.bsname);
+         "\n%s: optimal solution found\n", oinfo_->bsname);
 
       if (cplex.isMIP()) {
          sSoFar += g_fmtop(sMsg+sSoFar,cplex.getNnodes());
@@ -250,7 +262,7 @@ int Driver::run(int argc, char **argv) {
 
          vector<real> Xopt(n_var);
          for (int j = 0; j < n_var; j++) Xopt[j] = cplex.getValue(vars_[j]);
-         write_sol(sMsg, &Xopt[0], 0, &Oinfo);
+         write_sol(sMsg, &Xopt[0], 0, oinfo_.get());
       }
       else {
          sSoFar += g_fmtop(sMsg+sSoFar,cplex.getNiterations());
@@ -261,7 +273,7 @@ int Driver::run(int argc, char **argv) {
          vector<real> Piopt(n_con);
          for (int j = 0; j < n_var; j++) Xopt[j] = cplex.getValue(vars_[j]);
          for (int i = 0; i < n_con; i++) Piopt[i] = cplex.getDual(Con[i]);
-         write_sol(sMsg, &Xopt[0], &Piopt[0], &Oinfo);;
+         write_sol(sMsg, &Xopt[0], &Piopt[0], oinfo_.get());;
       }
    }
 
@@ -273,6 +285,7 @@ int Driver::run(int argc, char **argv) {
 
    else {
       IloSolver solver (env_);
+      alg_ = solver;
       solver.extract (mod_);
 
       if (timing) Times[2] = timer.getTime();
@@ -286,7 +299,7 @@ int Driver::run(int argc, char **argv) {
 
       if (successful) {
          sSoFar += Sprintf(sMsg,
-            "\n%s: solution found\n", Oinfo.bsname);
+            "\n%s: solution found\n", oinfo_->bsname);
 
          sSoFar += g_fmtop(sMsg+sSoFar,solver.getNumberOfChoicePoints());
          sSoFar += Sprintf(sMsg+sSoFar, " choice points, ");
@@ -300,13 +313,13 @@ int Driver::run(int argc, char **argv) {
          real *Xopt = new real [n_var];
 
          for (int j = 0; j < n_var; j++) Xopt[j] = solver.getValue(vars_[j]);
-         write_sol(sMsg, Xopt, 0, &Oinfo);
+         write_sol(sMsg, Xopt, 0, oinfo_.get());
          delete [] Xopt;
       }
       else {
          sSoFar += Sprintf(sMsg,
-            "\n%s: no solution found!\n", Oinfo.bsname);
-         write_sol(sMsg, 0, 0, &Oinfo);
+            "\n%s: no solution found!\n", oinfo_->bsname);
+         write_sol(sMsg, 0, 0, oinfo_.get());
       }
    }
 
