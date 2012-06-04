@@ -2,6 +2,7 @@
 
 #include <ilconcert/ilodiffi.h>
 #include <ilconcert/ilopathi.h>
+#include <ilcp/cp.h>
 
 #include <algorithm>
 #include <fstream>
@@ -899,9 +900,35 @@ TEST_F(ConcertTest, ConvertNotExactly) {
 }
 
 TEST_F(ConcertTest, ConvertOr) {
-  EXPECT_EQ("(x == 1 ) || (x == 2 )", str(d.build_constr(NewBinary(OPOR,
+  IloConstraint c(d.build_constr(NewBinary(OPOR,
       NewBinary(EQ, NewVar(0), NewNum(1)),
-      NewBinary(EQ, NewVar(0), NewNum(2))).get())));
+      NewBinary(EQ, NewVar(0), NewNum(2))).get()));
+  IloIfThenI *ifThen = dynamic_cast<IloIfThenI*>(c.getImpl());
+  ASSERT_TRUE(ifThen != nullptr);
+  IloNotI *n = dynamic_cast<IloNotI*>(ifThen->getLeft().getImpl());
+  ASSERT_TRUE(n != nullptr);
+  EXPECT_EQ("x == 1", str(n->getConstraint()));
+  EXPECT_EQ("x == 2", str(ifThen->getRight()));
+}
+
+TEST_F(ConcertTest, CheckOrTruthTable) {
+  IloNumVarArray vars = d.vars();
+  vars[0].setBounds(0, 0);
+  vars[1].setBounds(0, 0);
+  mod.add(d.build_constr(NewBinary(OPOR,
+        NewBinary(EQ, NewVar(0), NewNum(1)),
+        NewBinary(EQ, NewVar(1), NewNum(1))).get()));
+  IloCP cp(mod);
+  EXPECT_FALSE(cp.solve());
+  vars[0].setBounds(0, 0);
+  vars[1].setBounds(1, 1);
+  EXPECT_TRUE(cp.solve());
+  vars[0].setBounds(1, 1);
+  vars[1].setBounds(0, 0);
+  EXPECT_TRUE(cp.solve());
+  vars[0].setBounds(1, 1);
+  vars[1].setBounds(1, 1);
+  EXPECT_TRUE(cp.solve());
 }
 
 TEST_F(ConcertTest, ConvertExists) {
@@ -1239,6 +1266,16 @@ TEST_F(ConcertTest, SolveAssign0) {
   EXPECT_EQ(61, Solve("data/assign0").obj);
 }
 
+// Disabled because variables in subscripts are not yet allowed.
+TEST_F(ConcertTest, DISABLED_SolveAssign1) {
+  EXPECT_EQ(61, Solve("data/assign1").obj);
+}
+
+// Disabled because of a syntax error in the model.
+TEST_F(ConcertTest, DISABLED_SolveAssign1a) {
+  EXPECT_EQ(61, Solve("data/assign1a").obj);
+}
+
 TEST_F(ConcertTest, SolveBalassign0) {
   EXPECT_EQ(14, Solve("data/balassign0").obj);
 }
@@ -1258,4 +1295,14 @@ TEST_F(ConcertTest, SolveNQueens) {
 TEST_F(ConcertTest, SolveNQueens0) {
   EXPECT_EQ(0, Solve("data/nqueens0").obj);
 }
+
+// Disabled because of an .nl input problem.
+TEST_F(ConcertTest, DISABLED_SolveParty1) {
+  EXPECT_EQ(61, Solve("data/party1").obj);
+}
+
+TEST_F(ConcertTest, SolveParty2) {
+  EXPECT_EQ(3, Solve("data/party2").obj);
+}
+
 }
