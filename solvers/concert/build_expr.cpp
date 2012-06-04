@@ -420,7 +420,7 @@ IloConstraint Driver::build_constr (const expr *e)
 
       case OPOR:
          PR ("logical OR\n");
-         return build_constr (e->L.e) || build_constr (e->R.e);
+         return IloIfThen (env_, !build_constr (e->L.e), build_constr (e->R.e));
 
       case ORLIST: {
          PR ("logical EXISTS\n");
