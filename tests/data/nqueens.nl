@@ -1,4 +1,4 @@
-g9 0 1 0 0 20120601 0 4 0 240	# problem nqueens
+g9 0 1 0 0 20120604 0 4 0 240	# problem nqueens
  8 0 0 0 0 3	# vars, constraints, objectives, ranges, eqns, lcons
  0 0	# nonlinear constraints, objectives
  0 0	# network constraints: nonlinear, linear

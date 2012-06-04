@@ -1298,7 +1298,7 @@ TEST_F(ConcertTest, SolveNQueens0) {
   EXPECT_EQ(0, Solve("data/nqueens0").obj);
 }
 
-// Disabled because of an .nl input problem.
+// Disabled because it's too difficult to solve.
 TEST_F(ConcertTest, DISABLED_SolveParty1) {
   EXPECT_EQ(61, Solve("data/party1").obj);
 }
