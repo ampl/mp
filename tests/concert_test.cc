@@ -280,7 +280,7 @@ ExprPtr ConcertTest::NewSum(int opcode,
   expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {0}, {0}, 0};
   ExprPtr sum(new expr(e));
   expr** args = sum->L.ep = new expr*[3];
-  sum->R.ep = args + (arg3 ? 3 : 2);
+  sum->R.ep = args + (arg3.get() ? 3 : 2);
   args[0] = arg1.release();
   args[1] = arg2.release();
   args[2] = arg3.release();
@@ -1260,7 +1260,7 @@ TEST_F(ConcertTest, SameExprThrowsOnUnsupportedOp) {
 TEST_F(ConcertTest, Usage) {
   system("concert/concert 2> out");
   ifstream ifs("out");
-  size_t BUFFER_SIZE = 4096;
+  enum { BUFFER_SIZE = 4096 };
   char buffer[BUFFER_SIZE];
   string text;
   while (ifs) {
