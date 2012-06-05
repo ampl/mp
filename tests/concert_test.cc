@@ -127,6 +127,33 @@ struct SolveResult {
   SolveResult(bool solved, double obj) : solved(solved), obj(obj) {}
 };
 
+// Helper class that copies arguments to comply with the Driver::run function
+// signature and avoid unwanted modification.
+class Args {
+ private:
+  int argc_;
+  vector<char> store_;
+  vector<char*> argv_;
+
+ public:
+  Args() : argc_(0) {}
+
+  char **get() {
+    argv_.resize(argc_ + 1);
+    for (int i = 0, j = 0; i < argc_; j += strlen(&store_[j]) + 1, ++i)
+      argv_[i] = &store_[j];
+    return &argv_[0];
+  }
+
+  Args& operator+(const char *arg) {
+    if (arg) {
+      ++argc_;
+      store_.insert(store_.end(), arg, arg + strlen(arg) + 1);
+    }
+    return *this;
+  }
+};
+
 class ConcertTest : public ::testing::Test {
  protected:
   Driver d;
@@ -192,7 +219,23 @@ class ConcertTest : public ::testing::Test {
     return eval(d.build_expr(NewBinary(OPREM, NewNum(lhs), NewNum(rhs)).get()));
   }
 
-  int RunDriver(const char *stub, const char *opt);
+  int RunDriver(const char *stub = nullptr, const char *opt = nullptr) {
+    try {
+      return d.run((Args() + "concert" + "-s" + stub + opt).get());
+    } catch (const IloException& e) {
+      throw std::runtime_error(e.getMessage());
+    }
+    return 0;
+  }
+
+  bool ParseOptions(const char *opt) {
+    try {
+      return d.parse_options((Args() + opt).get());
+    } catch (const IloException& e) {
+      throw std::runtime_error(e.getMessage());
+    }
+    return false;
+  }
 
   SolveResult Solve(const char *stub);
 };
@@ -242,30 +285,6 @@ ExprPtr ConcertTest::NewSum(int opcode,
   args[1] = arg2.release();
   args[2] = arg3.release();
   return sum;
-}
-
-int ConcertTest::RunDriver(const char *stub = nullptr,
-                           const char *opt = nullptr) {
-  // Copy arguments to comply with the Driver::run function signature and
-  // avoid unwanted modification.
-  const char *args[] = {"concert", "-s", stub, opt};
-  vector<char> store;
-  size_t num_args = sizeof(args) / sizeof(*args);
-  if (!stub) num_args -= 2;
-  else if (!opt) --num_args;
-  for (size_t i = 0; i < num_args; ++i) {
-    const char *arg = args[i];
-    store.insert(store.end(), arg, arg + strlen(arg) + 1);
-  }
-  vector<char*> argv(num_args + 1);
-  for (size_t i = 0, j = 0; i < num_args; j += strlen(args[i]) + 1, ++i)
-    argv[i] = &store[j];
-  try {
-    return d.run(num_args, &argv[0]);
-  } catch (const IloException& e) {
-    throw std::runtime_error(e.getMessage());
-  }
-  return 0;
 }
 
 SolveResult ConcertTest::Solve(const char *stub) {
@@ -1311,29 +1330,33 @@ TEST_F(ConcertTest, SolveParty2) {
 // Option tests
 
 TEST_F(ConcertTest, DebugExpr0) {
-  RunDriver("data/magic", "debugexpr=0");
+  EXPECT_TRUE(ParseOptions("debugexpr=0"));
   EXPECT_EQ(0, d.get_option(Driver::DEBUGEXPR));
 }
 
 TEST_F(ConcertTest, DebugExpr1) {
-  RunDriver("data/magic", "debugexpr=1");
+  EXPECT_TRUE(ParseOptions("debugexpr=1"));
   EXPECT_EQ(1, d.get_option(Driver::DEBUGEXPR));
 }
 
 TEST_F(ConcertTest, DebugExpr42) {
-  RunDriver("data/magic", "debugexpr=42");
+  EXPECT_FALSE(ParseOptions("debugexpr=oops"));
+}
+
+TEST_F(ConcertTest, BadValueForDebugExpr) {
+  EXPECT_TRUE(ParseOptions("debugexpr=42"));
   EXPECT_EQ(42, d.get_option(Driver::DEBUGEXPR));
 }
 
 TEST_F(ConcertTest, IlogSolver) {
-  RunDriver("data/magic", "ilogsolver");
-  EXPECT_EQ(0, d.get_option(Driver::ILOGOPTTYPE));
+  EXPECT_TRUE(ParseOptions("ilogsolver"));
+  EXPECT_EQ(Driver::CPOPTIMIZER, d.get_option(Driver::ILOGOPTTYPE));
   EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) == nullptr);
 }
 
 TEST_F(ConcertTest, IlogCplex) {
-  RunDriver("data/objconst", "ilogcplex");
-  EXPECT_EQ(1, d.get_option(Driver::ILOGOPTTYPE));
+  EXPECT_TRUE(ParseOptions("ilogcplex"));
+  EXPECT_EQ(Driver::CPLEX, d.get_option(Driver::ILOGOPTTYPE));
   EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) != nullptr);
 }
 }

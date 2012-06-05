@@ -8,6 +8,7 @@
 struct expr;
 struct keyword;
 struct Option_Info;
+struct ASL_fg;
 
 extern int usenumberof;
 extern int debugexpr;
@@ -50,8 +51,10 @@ class Driver {
   IloNumVarArray vars_;
   IloAlgorithm alg_;
   std::vector<NumberOf> numberofs_;
+  ASL_fg *asl;
   std::vector<char> version_;
   std::auto_ptr<Option_Info> oinfo_;
+  bool gotopttype;
   static keyword keywords_[];
 
   // Do not implement.
@@ -76,12 +79,19 @@ class Driver {
     NUM_OPTIONS
   };
 
+  // Values for the ILOGOPTTYPE option.
+  enum {
+    DEFAULT_OPT = -1,
+    CPOPTIMIZER = 0,
+    CPLEX       = 1
+  };
+
  private:
   int options_[NUM_OPTIONS];
 
   static char *set_option(Option_Info *oi, keyword *kw, char *value);
-  static char *set_option0(Option_Info *oi, keyword *kw, char *value);
-  static char *set_option1(Option_Info *oi, keyword *kw, char *value);
+  static char *use_cplex(Option_Info *oi, keyword *kw, char *value);
+  static char *use_cpoptimizer(Option_Info *oi, keyword *kw, char *value);
 
  public:
   Driver();
@@ -93,6 +103,8 @@ class Driver {
 
   IloNumVarArray vars() const { return vars_; }
   void set_vars(IloNumVarArray vars) { vars_ = vars; }
+
+  bool parse_options(char **argv);
 
   int get_option(Option opt) const { return options_[opt]; }
   void use_numberof(bool use = true) { options_[USENUMBEROF] = use; }
@@ -107,7 +119,7 @@ class Driver {
 
   void finish_building_numberof();
 
-  int run(int argc, char **argv);
+  int run(char **argv);
 };
 
 #endif // AMPL_SOLVERS_CONCERT_H
