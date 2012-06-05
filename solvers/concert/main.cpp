@@ -7,12 +7,12 @@
 using std::cerr;
 using std::endl;
 
-int main(int argc, char **argv) {
+int main(int, char **argv) {
   // Driver should be destroyed after any IloException is handled.
   std::auto_ptr<Driver> d;
   try {
     d.reset(new Driver());
-    return d->run(argc, argv);
+    return d->run(argv);
   } catch (const IloException &e) {
     cerr << "Error: " << e << endl;
   } catch (const Error &e) {
