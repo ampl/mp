@@ -39,23 +39,81 @@ real objconst0(ASL_fg *a) {
   return reinterpret_cast<size_t>(e->op) == OPNUM ?
       reinterpret_cast<expr_n*>(e)->v : 0;
 }
+
+char *skip_space(char *s) {
+  while (*s && !isspace(*s))
+    ++s;
+  return s;
 }
 
-keyword Driver::keywords_[] = { /* must be alphabetical */
-   KW(CSTR("debugexpr"), Driver::set_option, Driver::DEBUGEXPR,
+struct CPOptionInfo {
+  IloCP::IntParam param;
+  int start;
+};
+
+const CPOptionInfo LogVerbosity = {IloCP::LogVerbosity, IloCP::Quiet};
+const CPOptionInfo DefaultInferenceLevel =
+  {IloCP::DefaultInferenceLevel, IloCP::Default};
+
+class CPLEXOptimizer : public Optimizer {
+ private:
+  IloCplex cplex_;
+
+ public:
+  CPLEXOptimizer(IloEnv env) : cplex_(env) {}
+
+  IloCplex cplex() const { return cplex_; }
+  IloAlgorithm algorithm() const { return cplex_; }
+
+  void set_option(const void *key, int value);
+};
+
+void CPLEXOptimizer::set_option(const void *key, int value) {
+  cplex_.setParam(
+      static_cast<IloCplex::IntParam>(reinterpret_cast<size_t>(key)), value);
+}
+
+class CPOptimizer : public Optimizer {
+ private:
+  IloSolver solver_;
+
+ public:
+  CPOptimizer(IloEnv env) : solver_(env) {}
+
+  IloSolver solver() const { return solver_; }
+  IloAlgorithm algorithm() const { return solver_; }
+
+  void set_option(const void *key, int value);
+};
+
+void CPOptimizer::set_option(const void *key, int value) {
+  const CPOptionInfo *info = static_cast<const CPOptionInfo*>(key);
+  solver_.setParameter(info->param, info->start + value);
+}
+}
+
+Optimizer::~Optimizer() {}
+
+keyword Driver::keywords_[] = { /* must be in alphabetical order */
+   KW(CSTR("debugexpr"), Driver::set_int_option, Driver::DEBUGEXPR,
       CSTR("print debugging information for expression trees")),
+   KW(CSTR("defaultinferencelevel"), Driver::set_cp_int_option,
+      &DefaultInferenceLevel, CSTR("default inference level for constraints")),
    KW(CSTR("ilogcplex"), Driver::use_cplex, Driver::ILOGOPTTYPE,
       CSTR("use ILOG CPLEX optimizer")),
    KW(CSTR("ilogsolver"), Driver::use_cpoptimizer, Driver::ILOGOPTTYPE,
       CSTR("use ILOG Constraint Programming optimizer")),
-   KW(CSTR("timing"), Driver::set_option, Driver::TIMING,
+   KW(CSTR("logverbosity"), Driver::set_cp_int_option,
+      &LogVerbosity, CSTR("verbosity of the search log")),
+   KW(CSTR("timing"), Driver::set_bool_option, Driver::TIMING,
       CSTR("display timings for the run")),
-   KW(CSTR("usenumberof"), Driver::set_option, Driver::USENUMBEROF,
+   KW(CSTR("usenumberof"), Driver::set_bool_option, Driver::USENUMBEROF,
       CSTR("consolidate 'numberof' expressions"))
 };
 
 Driver::Driver() :
-   mod_(env_), asl(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))) {
+   mod_(env_), asl(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))),
+   gotopttype(false), n_badvals(0) {
    options_[DEBUGEXPR] = 0;
    options_[ILOGOPTTYPE] = DEFAULT_OPT;
    options_[TIMING] = 0;
@@ -83,18 +141,6 @@ Driver::~Driver() {
    env_.end();
 }
 
-char *Driver::set_option(Option_Info *oi, keyword *kw, char *value) {
-   Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
-   if (!d->gotopttype) {
-      while (*value && !isspace(*value))
-        ++value;
-      return value;
-   }
-   keyword thiskw(*kw);
-   thiskw.info = d->options_ + reinterpret_cast<size_t>(kw->info);
-   return I_val(oi, &thiskw, value);
-}
-
 char *Driver::use_cplex(Option_Info *oi, keyword *, char *value) {
    Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
    if (!d->gotopttype)
@@ -109,6 +155,44 @@ char *Driver::use_cpoptimizer(Option_Info *oi, keyword *, char *value) {
    return value;
 }
 
+char *Driver::set_int_option(Option_Info *oi, keyword *kw, char *value) {
+   Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
+   if (!d->gotopttype)
+      return skip_space(value);
+   keyword thiskw(*kw);
+   thiskw.info = d->options_ + reinterpret_cast<size_t>(kw->info);
+   return I_val(oi, &thiskw, value);
+}
+
+char *Driver::set_bool_option(Option_Info *oi, keyword *kw, char *value) {
+   Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
+   if (!d->gotopttype)
+      return skip_space(value);
+   keyword thiskw(*kw);
+   int intval = 0;
+   thiskw.info = &intval;
+   char *result = I_val(oi, &thiskw, value);
+   if (intval != 0 && intval != 1) {
+     ++d->n_badvals;
+     cerr << "Invalid value " << value
+        << " for directive " << kw->name << endl;
+   } else d->options_[reinterpret_cast<size_t>(kw->info)] = intval;
+   return result;
+}
+
+char *Driver::set_cp_int_option(Option_Info *oi, keyword *kw, char *value) {
+   Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
+   if (!d->gotopttype)
+      return skip_space(value);
+   keyword thiskw(*kw);
+   int intval = 0;
+   thiskw.info = &intval;
+   char *result = I_val(oi, &thiskw, value);
+   d->optimizer_->set_option(kw->info, intval);
+   // TODO: check
+   return result;
+}
+
 bool Driver::parse_options(char **argv) {
    // Get optimizer type.
    gotopttype = false;
@@ -119,12 +203,13 @@ bool Driver::parse_options(char **argv) {
    if (ilogopttype == DEFAULT_OPT)
       ilogopttype = nlo + nlc + n_lcon == 0 ? CPLEX : CPOPTIMIZER;
    if (ilogopttype == CPLEX)
-      alg_ = IloCplex(env_);
-   else alg_ = IloSolver(env_);
+      optimizer_.reset(new CPLEXOptimizer(env_));
+   else optimizer_.reset(new CPOptimizer(env_));
 
    // Parse remaining options.
    gotopttype = true;
-   if (getopts(argv, oinfo_.get()))
+   n_badvals = 0;
+   if (getopts(argv, oinfo_.get()) || n_badvals != 0)
       return false;
    return true;
 }
@@ -164,40 +249,7 @@ int Driver::run(char **argv) {
    fg_read(nl, ASL_allow_CLP);
    asl->I.r_ops_ = 0;
 
-   int n_var_int = nbv + niv + nlvbi + nlvci + nlvoi;
-
-   /*** Get and process ILOG Concert options ***/
-
    if (!parse_options(argv))
-      return 1;
-
-   int n_badvals = 0;
-
-   int timing = get_option(TIMING);
-   switch(timing) {
-      case 0:
-         break;
-      case 1:
-         break;
-      default:
-         cerr << "Invalid value " << timing
-            << " for directive timing" << endl;
-         n_badvals++;
-         }
-
-   int usenumberof = get_option(USENUMBEROF);
-   switch(usenumberof) {
-      case 0:
-         break;
-      case 1:
-         break;
-      default:
-         cerr << "Invalid value " << usenumberof
-            << " for directive usenumberof" << endl;
-         n_badvals++;
-         }
-
-   if (n_badvals)
       return 1;
 
    /*-------------------------------------------------------------------
@@ -208,6 +260,7 @@ int Driver::run(char **argv) {
 
    vars_ = IloNumVarArray(env_,n_var);
 
+   int n_var_int = nbv + niv + nlvbi + nlvci + nlvoi;
    for (int j = 0; j < n_var - n_var_int; j++)
       vars_[j] = IloNumVar(env_, LUv[j], Uvx[j], ILOFLOAT);
    for (int j = n_var - n_var_int; j < n_var; j++)
@@ -247,6 +300,7 @@ int Driver::run(char **argv) {
 
    finish_building_numberof ();
 
+   int timing = get_option(TIMING);
    if (timing) Times[1] = timer.getTime();
 
    /*-------------------------------------------------------------------
@@ -255,13 +309,15 @@ int Driver::run(char **argv) {
 
    -------------------------------------------------------------------*/
 
-   alg_.extract (mod_);
+   IloAlgorithm alg(optimizer_->algorithm());
+   alg.extract (mod_);
    if (timing) Times[2] = timer.getTime();
-   IloBool successful = alg_.solve();
+   IloBool successful = alg.solve();
    if (timing) Times[3] = timer.getTime();
 
-   if (get_option(ILOGOPTTYPE) == Driver::CPLEX) {
-      IloCplex cplex(static_cast<IloCplexI*>(alg_.getImpl()));
+   CPLEXOptimizer *cplex_opt = dynamic_cast<CPLEXOptimizer*>(optimizer_.get());
+   if (cplex_opt) {
+      IloCplex cplex(cplex_opt->cplex());
       IloNum objValue = cplex.getObjValue();
 
       int sSoFar = 0;
@@ -301,7 +357,7 @@ int Driver::run(char **argv) {
    -------------------------------------------------------------------*/
 
    else {
-      IloSolver solver(reinterpret_cast<IloCPI*>(alg_.getImpl()));
+      IloSolver solver(dynamic_cast<CPOptimizer&>(*optimizer_).solver());
 
       int sSoFar = 0;
       char sMsg[256];

@@ -43,18 +43,27 @@ class NumberOf {
   IloIntVar add(double value, IloEnv env);
 };
 
+class Optimizer {
+ public:
+  virtual ~Optimizer();
+
+  virtual IloAlgorithm algorithm() const = 0;
+  virtual void set_option(const void *key, int value) = 0;
+};
+
 // The Concert driver for AMPL.
 class Driver {
  private:
   IloEnv env_;
   IloModel mod_;
   IloNumVarArray vars_;
-  IloAlgorithm alg_;
+  std::auto_ptr<Optimizer> optimizer_;
   std::vector<NumberOf> numberofs_;
   ASL_fg *asl;
   std::vector<char> version_;
   std::auto_ptr<Option_Info> oinfo_;
   bool gotopttype;
+  int n_badvals;
   static keyword keywords_[];
 
   // Do not implement.
@@ -89,9 +98,13 @@ class Driver {
  private:
   int options_[NUM_OPTIONS];
 
-  static char *set_option(Option_Info *oi, keyword *kw, char *value);
   static char *use_cplex(Option_Info *oi, keyword *kw, char *value);
   static char *use_cpoptimizer(Option_Info *oi, keyword *kw, char *value);
+  static char *set_int_option(Option_Info *oi, keyword *kw, char *value);
+  static char *set_bool_option(Option_Info *oi, keyword *kw, char *value);
+
+  // Sets an integer option of the constraint programming optimizer.
+  static char *set_cp_int_option(Option_Info *oi, keyword *kw, char *value);
 
  public:
   Driver();
@@ -99,11 +112,15 @@ class Driver {
 
   IloEnv env() const { return env_; }
   IloModel mod() const { return mod_; }
-  IloAlgorithm alg() const { return alg_; }
+
+  IloAlgorithm alg() const {
+    return optimizer_.get() ? optimizer_->algorithm() : IloAlgorithm();
+  }
 
   IloNumVarArray vars() const { return vars_; }
   void set_vars(IloNumVarArray vars) { vars_ = vars; }
 
+  // Get and process ILOG Concert and driver options.
   bool parse_options(char **argv);
 
   int get_option(Option opt) const { return options_[opt]; }

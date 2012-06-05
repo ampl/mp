@@ -1329,34 +1329,43 @@ TEST_F(ConcertTest, SolveParty2) {
 // ----------------------------------------------------------------------------
 // Option tests
 
-TEST_F(ConcertTest, DebugExpr0) {
+TEST_F(ConcertTest, DebugExprOption) {
   EXPECT_TRUE(ParseOptions("debugexpr=0"));
   EXPECT_EQ(0, d.get_option(Driver::DEBUGEXPR));
-}
-
-TEST_F(ConcertTest, DebugExpr1) {
   EXPECT_TRUE(ParseOptions("debugexpr=1"));
   EXPECT_EQ(1, d.get_option(Driver::DEBUGEXPR));
-}
-
-TEST_F(ConcertTest, DebugExpr42) {
+  EXPECT_TRUE(ParseOptions("debugexpr=42"));
+  EXPECT_EQ(42, d.get_option(Driver::DEBUGEXPR));
   EXPECT_FALSE(ParseOptions("debugexpr=oops"));
 }
 
-TEST_F(ConcertTest, BadValueForDebugExpr) {
-  EXPECT_TRUE(ParseOptions("debugexpr=42"));
-  EXPECT_EQ(42, d.get_option(Driver::DEBUGEXPR));
-}
-
-TEST_F(ConcertTest, IlogSolver) {
+TEST_F(ConcertTest, IlogSolverOption) {
   EXPECT_TRUE(ParseOptions("ilogsolver"));
   EXPECT_EQ(Driver::CPOPTIMIZER, d.get_option(Driver::ILOGOPTTYPE));
   EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) == nullptr);
 }
 
-TEST_F(ConcertTest, IlogCplex) {
+TEST_F(ConcertTest, IlogCplexOption) {
   EXPECT_TRUE(ParseOptions("ilogcplex"));
   EXPECT_EQ(Driver::CPLEX, d.get_option(Driver::ILOGOPTTYPE));
   EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) != nullptr);
+}
+
+TEST_F(ConcertTest, TimingOption) {
+  EXPECT_TRUE(ParseOptions("timing=0"));
+  EXPECT_EQ(0, d.get_option(Driver::TIMING));
+  EXPECT_TRUE(ParseOptions("timing=1"));
+  EXPECT_EQ(1, d.get_option(Driver::TIMING));
+  EXPECT_FALSE(ParseOptions("timing=42"));
+  EXPECT_FALSE(ParseOptions("timing=oops"));
+}
+
+TEST_F(ConcertTest, UseNumberOfOption) {
+  EXPECT_TRUE(ParseOptions("usenumberof=0"));
+  EXPECT_EQ(0, d.get_option(Driver::USENUMBEROF));
+  EXPECT_TRUE(ParseOptions("usenumberof=1"));
+  EXPECT_EQ(1, d.get_option(Driver::USENUMBEROF));
+  EXPECT_FALSE(ParseOptions("usenumberof=42"));
+  EXPECT_FALSE(ParseOptions("timing=oops"));
 }
 }
