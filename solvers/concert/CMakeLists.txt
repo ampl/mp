@@ -16,7 +16,7 @@ include_directories(../..)
 if (NOT WIN32)
   find_path(SOLVER_LIB_DIR amplsolver.a ..)
   set(SOLVER_LIBS "${SOLVER_LIB_DIR}/amplsolver.a" dl)
-else ()
+elseif (NOT SOLVER_LIBS)
   set(SOLVER_LIBS ../amplsolv)
 endif ()
 
