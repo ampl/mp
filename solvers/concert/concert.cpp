@@ -335,7 +335,7 @@ int Driver::run(char **argv) {
 
          vector<real> Xopt(n_var);
          for (int j = 0; j < n_var; j++) Xopt[j] = cplex.getValue(vars_[j]);
-         write_sol(sMsg, &Xopt[0], 0, oinfo_.get());
+         write_sol(sMsg, Xopt.empty() ? 0 : &Xopt[0], 0, oinfo_.get());
       }
       else {
          sSoFar += g_fmtop(sMsg+sSoFar,cplex.getNiterations());
@@ -346,7 +346,8 @@ int Driver::run(char **argv) {
          vector<real> Piopt(n_con);
          for (int j = 0; j < n_var; j++) Xopt[j] = cplex.getValue(vars_[j]);
          for (int i = 0; i < n_con; i++) Piopt[i] = cplex.getDual(Con[i]);
-         write_sol(sMsg, &Xopt[0], &Piopt[0], oinfo_.get());
+         write_sol(sMsg, Xopt.empty() ? 0 : &Xopt[0],
+             Piopt.empty() ? 0 : &Piopt[0], oinfo_.get());
       }
    }
 

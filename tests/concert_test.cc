@@ -1258,7 +1258,11 @@ TEST_F(ConcertTest, SameExprThrowsOnUnsupportedOp) {
 // Driver tests
 
 TEST_F(ConcertTest, Usage) {
-  system("concert/concert 2> out");
+  const char *sep = "/";
+#ifdef WIN32
+  sep = "\\";
+#endif
+  system((string("concert") + sep + "concert > out 2>&1").c_str());
   ifstream ifs("out");
   enum { BUFFER_SIZE = 4096 };
   char buffer[BUFFER_SIZE];
