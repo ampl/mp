@@ -86,11 +86,21 @@ void CPLEXOptimizer::set_option(const void *key, int value) {
       static_cast<IloCplex::IntParam>(reinterpret_cast<size_t>(key)), value);
 }
 
+void CPLEXOptimizer::set_option(const void *key, double value) {
+  cplex_.setParam(
+      static_cast<IloCplex::NumParam>(reinterpret_cast<size_t>(key)), value);
+}
+
 void CPOptimizer::set_option(const void *key, int value) {
   const CPOptionInfo *info = static_cast<const CPOptionInfo*>(key);
   if (value != -1 || !info->accepts_auto)
     value += info->start;
   solver_.setParameter(info->param, value);
+}
+
+void CPOptimizer::set_option(const void *key, double value) {
+  solver_.setParameter(
+      static_cast<IloCP::NumParam>(reinterpret_cast<size_t>(key)), value);
 }
 
 // The following options are not implemented because corresponding
@@ -131,6 +141,10 @@ keyword Driver::keywords_[] = {
   KW(CSTR("dynamicprobing"),
       Driver::set_cp_int_option, &DynamicProbing,
       CSTR("use probing during search")),
+  KW(CSTR("dynamicprobingstrength"),
+      Driver::set_cp_dbl_option, IloCP::DynamicProbingStrength,
+      CSTR("effort dedicated to dynamic probing as a factor of the total "
+           "search effort")),
   KW(CSTR("faillimit"),
       Driver::set_cp_int_option, &FailLimit,
       CSTR("limit on the number of failures allowed before "
@@ -148,13 +162,22 @@ keyword Driver::keywords_[] = {
   KW(CSTR("multipointnumberofsearchpoints"),
       Driver::set_cp_int_option, &MultiPointNumberOfSearchPoints,
       CSTR("number of solutions for the multi-point search algorithm")),
+  KW(CSTR("optimalitytolerance"),
+      Driver::set_cp_dbl_option, IloCP::OptimalityTolerance,
+      CSTR("absolute tolerance on the objective value")),
   KW(CSTR("propagationlog"), Driver::set_cp_int_option,
       &PropagationLog, CSTR("level of propagation trace reporting")),
   KW(CSTR("randomseed"), Driver::set_cp_int_option,
       &RandomSeed, CSTR("seed of the random number generator")),
+  KW(CSTR("relativeoptimalitytolerance"),
+      Driver::set_cp_dbl_option, IloCP::RelativeOptimalityTolerance,
+      CSTR("relative tolerance on the objective value")),
   KW(CSTR("restartfaillimit"),
       Driver::set_cp_int_option, &RestartFailLimit,
       CSTR("number of failures allowed before restarting search")),
+  KW(CSTR("restartgrowthfactor"),
+      Driver::set_cp_dbl_option, IloCP::RestartGrowthFactor,
+      CSTR("increase of the number of allowed failures before restarts")),
   KW(CSTR("searchtype"), Driver::set_cp_int_option,
       &SearchType, CSTR("type of search used for solving a problem")),
   KW(CSTR("solutionlimit"),
@@ -164,6 +187,9 @@ keyword Driver::keywords_[] = {
   KW(CSTR("temporalrelaxation"),
       Driver::set_cp_int_option, &TemporalRelaxation,
       CSTR("use temporal relaxation")),
+  KW(CSTR("timelimit"),
+      Driver::set_cp_dbl_option, IloCP::TimeLimit,
+      CSTR("limit on the CPU time spent solving before terminating a search")),
   KW(CSTR("timemode"),
       Driver::set_cp_int_option, &TimeMode,
       CSTR("specifies how the time is measured in CP Optimizer")),
@@ -262,6 +288,28 @@ char *Driver::set_cp_int_option(Option_Info *oi, keyword *kw, char *value) {
       d->optimizer_->set_option(kw->info, intval);
    } catch (const IloException &e) {
       cerr << "Invalid value " << intval << " for option " << kw->name << endl;
+      ++d->n_badvals;
+   }
+   return result;
+}
+
+char *Driver::set_cp_dbl_option(Option_Info *oi, keyword *kw, char *value) {
+   Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
+   if (!d->gotopttype)
+      return skip_space(value);
+   if (d->get_option(ILOGOPTTYPE) != CPOPTIMIZER) {
+      ++d->n_badvals;
+      cerr << "Invalid option " << kw->name << " for CPLEX optimizer" << endl;
+      return skip_space(value);
+   }
+   keyword thiskw(*kw);
+   double dblval = 0;
+   thiskw.info = &dblval;
+   char *result = D_val(oi, &thiskw, value);
+   try {
+      d->optimizer_->set_option(kw->info, dblval);
+   } catch (const IloException &e) {
+      cerr << "Invalid value " << dblval << " for option " << kw->name << endl;
       ++d->n_badvals;
    }
    return result;
