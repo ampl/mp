@@ -4,6 +4,8 @@
 #include <memory>
 #include <vector>
 #include <ilconcert/ilomodel.h>
+#include <ilcplex/ilocplex.h>
+#include <ilcp/cp.h>
 
 struct expr;
 struct keyword;
@@ -49,6 +51,32 @@ class Optimizer {
 
   virtual IloAlgorithm algorithm() const = 0;
   virtual void set_option(const void *key, int value) = 0;
+};
+
+class CPLEXOptimizer : public Optimizer {
+ private:
+  IloCplex cplex_;
+
+ public:
+  CPLEXOptimizer(IloEnv env) : cplex_(env) {}
+
+  IloCplex cplex() const { return cplex_; }
+  IloAlgorithm algorithm() const { return cplex_; }
+
+  void set_option(const void *key, int value);
+};
+
+class CPOptimizer : public Optimizer {
+ private:
+  IloSolver solver_;
+
+ public:
+  CPOptimizer(IloEnv env) : solver_(env) {}
+
+  IloSolver solver() const { return solver_; }
+  IloAlgorithm algorithm() const { return solver_; }
+
+  void set_option(const void *key, int value);
 };
 
 // The Concert driver for AMPL.
@@ -116,6 +144,8 @@ class Driver {
   IloAlgorithm alg() const {
     return optimizer_.get() ? optimizer_->algorithm() : IloAlgorithm();
   }
+
+  Optimizer *optimizer() const { return optimizer_.get(); }
 
   IloNumVarArray vars() const { return vars_; }
   void set_vars(IloNumVarArray vars) { vars_ = vars; }

@@ -222,27 +222,35 @@ class ConcertTest : public ::testing::Test {
   int RunDriver(const char *stub = nullptr, const char *opt = nullptr) {
     try {
       return d.run((Args() + "concert" + "-s" + stub + opt).get());
-    } catch (const IloException& e) {
+    } catch (const IloException &e) {
       throw std::runtime_error(e.getMessage());
     }
     return 0;
   }
 
-  bool ParseOptions(const char *opt) {
+  bool ParseOptions(const char *opt1, const char *opt2 = nullptr) {
     try {
-      return d.parse_options((Args() + opt).get());
-    } catch (const IloException& e) {
+      return d.parse_options((Args() + opt1 + opt2).get());
+    } catch (const IloException &e) {
       throw std::runtime_error(e.getMessage());
     }
     return false;
   }
 
   SolveResult Solve(const char *stub);
+
+  static string Option(const char *name, int value) {
+    std::ostringstream os;
+    os << name << "=" << value;
+    return os.str();
+  }
+
+  void CheckIntCPOption(const char *option, IloCP::IntParam param,
+      int start, int end, int offset = 0, bool accepts_auto = false);
 };
 
 ExprPtr ConcertTest::NewVarArg(int opcode, ExprPtr e1, ExprPtr e2, ExprPtr e3) {
-  expr_va e = {reinterpret_cast<efunc*>(opcode), 0,
-               {0}, {0}, 0, 0, 0};
+  expr_va e = {reinterpret_cast<efunc*>(opcode), 0, {0}, {0}, 0, 0, 0};
   expr_va *copy = new expr_va(e);
   ExprPtr result(reinterpret_cast<expr*>(copy));
   de *args = new de[4];
@@ -302,6 +310,29 @@ SolveResult ConcertTest::Solve(const char *stub) {
       atof(line.c_str() + pos + sizeof(obj) - 1) : zero / zero);
 }
 
+void ConcertTest::CheckIntCPOption(const char *option,
+    IloCP::IntParam param, int start, int end, int offset, bool accepts_auto) {
+  for (int i = start; i <= std::min(end, 9); ++i) {
+    EXPECT_TRUE(ParseOptions("ilogsolver", Option(option, i).c_str()));
+    CPOptimizer *opt = dynamic_cast<CPOptimizer*>(d.optimizer());
+    ASSERT_TRUE(opt != nullptr);
+    EXPECT_EQ(offset + i, opt->solver().getParameter(param))
+      << "Failed option: " << option;
+  }
+  if (end != INT_MAX)
+    EXPECT_FALSE(ParseOptions("ilogsolver", Option(option, end + 1).c_str()));
+  if (accepts_auto) {
+    EXPECT_TRUE(ParseOptions("ilogsolver", Option(option, -1).c_str()));
+    CPOptimizer *opt = dynamic_cast<CPOptimizer*>(d.optimizer());
+    ASSERT_TRUE(opt != nullptr);
+    EXPECT_EQ(IloCP::Auto, opt->solver().getParameter(param));
+  }
+  int small = start - 1;
+  if (accepts_auto && small == -1)
+    --small;
+  EXPECT_FALSE(ParseOptions("ilogsolver", Option(option, small).c_str()));
+  EXPECT_FALSE(ParseOptions("ilogcplex", Option(option, start).c_str()));
+}
 
 TEST_F(ConcertTest, ConvertNum) {
   EXPECT_EQ("0.42", str(d.build_expr(NewNum(0.42).get())));
@@ -1343,16 +1374,16 @@ TEST_F(ConcertTest, DebugExprOption) {
   EXPECT_FALSE(ParseOptions("debugexpr=oops"));
 }
 
-TEST_F(ConcertTest, IlogSolverOption) {
-  EXPECT_TRUE(ParseOptions("ilogsolver"));
-  EXPECT_EQ(Driver::CPOPTIMIZER, d.get_option(Driver::ILOGOPTTYPE));
-  EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) == nullptr);
-}
-
 TEST_F(ConcertTest, IlogCplexOption) {
   EXPECT_TRUE(ParseOptions("ilogcplex"));
   EXPECT_EQ(Driver::CPLEX, d.get_option(Driver::ILOGOPTTYPE));
   EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) != nullptr);
+}
+
+TEST_F(ConcertTest, IlogSolverOption) {
+  EXPECT_TRUE(ParseOptions("ilogsolver"));
+  EXPECT_EQ(Driver::CPOPTIMIZER, d.get_option(Driver::ILOGOPTTYPE));
+  EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) == nullptr);
 }
 
 TEST_F(ConcertTest, TimingOption) {
@@ -1371,5 +1402,33 @@ TEST_F(ConcertTest, UseNumberOfOption) {
   EXPECT_EQ(1, d.get_option(Driver::USENUMBEROF));
   EXPECT_FALSE(ParseOptions("usenumberof=42"));
   EXPECT_FALSE(ParseOptions("timing=oops"));
+}
+
+TEST_F(ConcertTest, CPOptions) {
+  CheckIntCPOption("alldiffinferencelevel",
+      IloCP::AllDiffInferenceLevel, 0, 4, IloCP::Default);
+  CheckIntCPOption("branchlimit", IloCP::BranchLimit, 0, INT_MAX);
+  CheckIntCPOption("choicepointlimit", IloCP::ChoicePointLimit, 0, INT_MAX);
+  CheckIntCPOption("constraintaggregation",
+      IloCP::ConstraintAggregation, 0, 1, IloCP::Off);
+  CheckIntCPOption("defaultinferencelevel",
+      IloCP::DefaultInferenceLevel, 1, 4, IloCP::Default);
+  CheckIntCPOption("distributeinferencelevel",
+      IloCP::DistributeInferenceLevel, 0, 4, IloCP::Default);
+  CheckIntCPOption("dynamicprobing", IloCP::DynamicProbing, 0, 1, 0, true);
+  CheckIntCPOption("faillimit", IloCP::FailLimit, 0, INT_MAX);
+  CheckIntCPOption("logperiod", IloCP::LogPeriod, 1, INT_MAX);
+  CheckIntCPOption("logverbosity", IloCP::LogVerbosity, 0, 3, IloCP::Quiet);
+  CheckIntCPOption("multipointnumberofsearchpoints",
+      IloCP::MultiPointNumberOfSearchPoints, 2, INT_MAX);
+  CheckIntCPOption("propagationlog", IloCP::PropagationLog, 0, 3, IloCP::Quiet);
+  CheckIntCPOption("randomseed", IloCP::RandomSeed, 0, INT_MAX);
+  CheckIntCPOption("restartfaillimit", IloCP::RestartFailLimit, 1, INT_MAX);
+  CheckIntCPOption("searchtype", IloCP::SearchType,
+      0, 2, IloCP::DepthFirst, true);
+  CheckIntCPOption("solutionlimit", IloCP::SolutionLimit, 0, INT_MAX);
+  CheckIntCPOption("temporalrelaxation", IloCP::TemporalRelaxation, 0, 1);
+  CheckIntCPOption("timemode", IloCP::TimeMode, 0, 1, IloCP::CPUTime);
+  CheckIntCPOption("workers", IloCP::Workers, 0, INT_MAX, 0, true);
 }
 }
