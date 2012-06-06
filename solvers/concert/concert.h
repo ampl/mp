@@ -50,7 +50,9 @@ class Optimizer {
   virtual ~Optimizer();
 
   virtual IloAlgorithm algorithm() const = 0;
+
   virtual void set_option(const void *key, int value) = 0;
+  virtual void set_option(const void *key, double value) = 0;
 };
 
 class CPLEXOptimizer : public Optimizer {
@@ -64,6 +66,7 @@ class CPLEXOptimizer : public Optimizer {
   IloAlgorithm algorithm() const { return cplex_; }
 
   void set_option(const void *key, int value);
+  void set_option(const void *key, double value);
 };
 
 class CPOptimizer : public Optimizer {
@@ -77,6 +80,7 @@ class CPOptimizer : public Optimizer {
   IloAlgorithm algorithm() const { return solver_; }
 
   void set_option(const void *key, int value);
+  void set_option(const void *key, double value);
 };
 
 // The Concert driver for AMPL.
@@ -133,6 +137,9 @@ class Driver {
 
   // Sets an integer option of the constraint programming optimizer.
   static char *set_cp_int_option(Option_Info *oi, keyword *kw, char *value);
+
+  // Sets a double option of the constraint programming optimizer.
+  static char *set_cp_dbl_option(Option_Info *oi, keyword *kw, char *value);
 
  public:
   Driver();

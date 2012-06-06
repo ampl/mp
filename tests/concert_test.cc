@@ -239,7 +239,8 @@ class ConcertTest : public ::testing::Test {
 
   SolveResult Solve(const char *stub);
 
-  static string Option(const char *name, int value) {
+  template <typename T>
+  static string Option(const char *name, T value) {
     std::ostringstream os;
     os << name << "=" << value;
     return os.str();
@@ -247,6 +248,9 @@ class ConcertTest : public ::testing::Test {
 
   void CheckIntCPOption(const char *option, IloCP::IntParam param,
       int start, int end, int offset = 0, bool accepts_auto = false);
+
+  void CheckDblCPOption(const char *option, IloCP::NumParam param,
+      double good, double bad);
 };
 
 ExprPtr ConcertTest::NewVarArg(int opcode, ExprPtr e1, ExprPtr e2, ExprPtr e3) {
@@ -332,6 +336,18 @@ void ConcertTest::CheckIntCPOption(const char *option,
     --small;
   EXPECT_FALSE(ParseOptions("ilogsolver", Option(option, small).c_str()));
   EXPECT_FALSE(ParseOptions("ilogcplex", Option(option, start).c_str()));
+}
+
+void ConcertTest::CheckDblCPOption(const char *option,
+    IloCP::NumParam param, double good, double bad) {
+  EXPECT_TRUE(ParseOptions("ilogsolver", Option(option, good).c_str()));
+  CPOptimizer *opt = dynamic_cast<CPOptimizer*>(d.optimizer());
+  ASSERT_TRUE(opt != nullptr);
+  EXPECT_EQ(good, opt->solver().getParameter(param))
+    << "Failed option: " << option;
+
+  EXPECT_FALSE(ParseOptions("ilogsolver", Option(option, bad).c_str()));
+  EXPECT_FALSE(ParseOptions("ilogcplex", Option(option, good).c_str()));
 }
 
 TEST_F(ConcertTest, ConvertNum) {
@@ -1416,18 +1432,26 @@ TEST_F(ConcertTest, CPOptions) {
   CheckIntCPOption("distributeinferencelevel",
       IloCP::DistributeInferenceLevel, 0, 4, IloCP::Default);
   CheckIntCPOption("dynamicprobing", IloCP::DynamicProbing, 0, 1, 0, true);
+  CheckDblCPOption("dynamicprobingstrength",
+      IloCP::DynamicProbingStrength, 42, -1);
   CheckIntCPOption("faillimit", IloCP::FailLimit, 0, INT_MAX);
   CheckIntCPOption("logperiod", IloCP::LogPeriod, 1, INT_MAX);
   CheckIntCPOption("logverbosity", IloCP::LogVerbosity, 0, 3, IloCP::Quiet);
   CheckIntCPOption("multipointnumberofsearchpoints",
       IloCP::MultiPointNumberOfSearchPoints, 2, INT_MAX);
-  CheckIntCPOption("propagationlog", IloCP::PropagationLog, 0, 3, IloCP::Quiet);
+  CheckDblCPOption("optimalitytolerance", IloCP::OptimalityTolerance, 42, -1);
+  CheckIntCPOption("propagationlog",
+      IloCP::PropagationLog, 0, 3, IloCP::Quiet);
   CheckIntCPOption("randomseed", IloCP::RandomSeed, 0, INT_MAX);
+  CheckDblCPOption("relativeoptimalitytolerance",
+      IloCP::RelativeOptimalityTolerance, 42, -1);
+  CheckDblCPOption("restartgrowthfactor", IloCP::RestartGrowthFactor, 42, -1);
   CheckIntCPOption("restartfaillimit", IloCP::RestartFailLimit, 1, INT_MAX);
   CheckIntCPOption("searchtype", IloCP::SearchType,
       0, 2, IloCP::DepthFirst, true);
   CheckIntCPOption("solutionlimit", IloCP::SolutionLimit, 0, INT_MAX);
   CheckIntCPOption("temporalrelaxation", IloCP::TemporalRelaxation, 0, 1);
+  CheckDblCPOption("timelimit", IloCP::TimeLimit, 42, -1);
   CheckIntCPOption("timemode", IloCP::TimeMode, 0, 1, IloCP::CPUTime);
   CheckIntCPOption("workers", IloCP::Workers, 0, INT_MAX, 0, true);
 }
