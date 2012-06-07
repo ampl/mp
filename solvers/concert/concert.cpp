@@ -8,7 +8,15 @@
 /*                                                                         */
 /* A driver to link AMPL linear integer programs with ILOG Concert 1.0     */
 /* October 2000: Linear/Nonlinear version                                  */
+/* June 2012:    Updated to Concert 12.4 (Victor Zverovich)                */
 /*-------------------------------------------------------------------------*/
+//
+// Possible improvements: Some sort of variable preference mechanism.
+//
+// Reference: "Extending an Algebraic Modeling Language to
+// Support Constraint Programming" by Robert Fourer and David M. Gay,
+// INFORMS Journal on Computing, Fall 2002, vol. 14, no. 4, 322-344
+// (http://joc.journal.informs.org/content/14/4/322).
 
 #include "concert.h"
 

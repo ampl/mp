@@ -163,16 +163,20 @@ class Driver {
   int get_option(Option opt) const { return options_[opt]; }
   void use_numberof(bool use = true) { options_[USENUMBEROF] = use; }
 
-  // Walks an expression tree and constructs a function,
-  // returning a Concert IloExpr.
+  // Converts the specified ASL expression into an equivalent Concert
+  // expression. 'e' must be a numerical expression.
   IloExpr build_expr(const expr *e);
 
-  // Walks an expression tree and constructs a constraint,
-  // returning a Concert IloConstraint.
+  // Converts the specified ASL expression into an equivalent Concert
+  // constraint. 'e' must be a logical expression such as 'or', '<=', or
+  // 'alldiff'.
   IloConstraint build_constr(const expr *e);
 
+  // Combines 'numberof' operators into IloDistribute constraints 
+  // which are much more useful to the solution procedure.
   void finish_building_numberof();
 
+  // Runs the driver.
   int run(char **argv);
 };
 
