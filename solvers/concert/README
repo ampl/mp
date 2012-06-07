@@ -159,7 +159,7 @@ the above single-word phrases, denoting them with "Single-word phrase".
                         the run.
 
      usenumberof        0 or 1 (default 1):  Whether to consolidate 'numberof'
-                        expressions.
+                        expressions by use of IloDistribute constraints.
 
      workers            Number of workers to run in parallel to solve a
                         problem.  Default = 1.
