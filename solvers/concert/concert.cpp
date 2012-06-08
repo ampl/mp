@@ -87,6 +87,9 @@ CP_INT_OPTION(TimeMode, IloCP::CPUTime)
 CP_INT_OPTION(Workers, 0)
 }
 
+Optimizer::Optimizer(IloEnv env, ASL_fg *asl) :
+  vars_(env, n_var), cons_(env, n_con) {}
+
 Optimizer::~Optimizer() {}
 
 void CPLEXOptimizer::set_option(const void *key, int value) {
@@ -99,6 +102,29 @@ void CPLEXOptimizer::set_option(const void *key, double value) {
       static_cast<IloCplex::NumParam>(reinterpret_cast<size_t>(key)), value);
 }
 
+void CPLEXOptimizer::get_solution(ASL_fg *asl, char *message,
+    std::vector<double> &primal, std::vector<double> &dual) const {
+  IloNum objValue = cplex_.getObjValue();
+  primal.resize(n_var);
+  IloNumVarArray vars = Optimizer::vars();
+  for (int j = 0; j < n_var; j++) primal[j] = cplex_.getValue(vars[j]);
+  if (cplex_.isMIP()) {
+    message += g_fmtop(message, cplex_.getNnodes());
+    message += Sprintf(message, " nodes, ");
+    message += g_fmtop(message, cplex_.getNiterations());
+    message += Sprintf(message, " iterations, objective ");
+    g_fmtop(message, objValue);
+  } else {
+    message += g_fmtop(message, cplex_.getNiterations());
+    message += Sprintf(message, " iterations, objective ");
+    g_fmtop(message, objValue);
+    dual.resize(n_con);
+    IloRangeArray cons = Optimizer::cons();
+    for (int i = 0; i < n_con; i++)
+      dual[i] = cplex_.getDual(cons[i]);
+  }
+}
+
 void CPOptimizer::set_option(const void *key, int value) {
   const CPOptionInfo *info = static_cast<const CPOptionInfo*>(key);
   if (value != -1 || !info->accepts_auto)
@@ -109,6 +135,22 @@ void CPOptimizer::set_option(const void *key, int value) {
 void CPOptimizer::set_option(const void *key, double value) {
   solver_.setParameter(
       static_cast<IloCP::NumParam>(reinterpret_cast<size_t>(key)), value);
+}
+
+void CPOptimizer::get_solution(ASL_fg *asl, char *message,
+    std::vector<double> &primal, std::vector<double> &) const {
+  message += g_fmtop(message, solver_.getNumberOfChoicePoints());
+  message += Sprintf(message, " choice points, ");
+  message += g_fmtop(message, solver_.getNumberOfFails());
+  message += Sprintf(message, " fails");
+  if (n_obj > 0) {
+    message += Sprintf(message, ", objective ");
+    g_fmtop(message, solver_.getValue(obj()));
+  }
+  primal.resize(n_var);
+  IloNumVarArray vars = Optimizer::vars();
+  for (int j = 0; j < n_var; j++)
+    primal[j] = solver_.getValue(vars[j]);
 }
 
 // The following options are not implemented because corresponding
@@ -329,12 +371,12 @@ bool Driver::parse_options(char **argv) {
    if (getopts(argv, oinfo_.get()))
       return false;
 
-   int& ilogopttype = options_[ILOGOPTTYPE];
+   int &ilogopttype = options_[ILOGOPTTYPE];
    if (ilogopttype == DEFAULT_OPT)
       ilogopttype = nlo + nlc + n_lcon == 0 ? CPLEX : CPOPTIMIZER;
    if (ilogopttype == CPLEX)
-      optimizer_.reset(new CPLEXOptimizer(env_));
-   else optimizer_.reset(new CPOptimizer(env_));
+      optimizer_.reset(new CPLEXOptimizer(env_, asl));
+   else optimizer_.reset(new CPOptimizer(env_, asl));
 
    // Parse remaining options.
    gotopttype = true;
@@ -388,7 +430,7 @@ int Driver::run(char **argv) {
 
    -------------------------------------------------------------------*/
 
-   vars_ = IloNumVarArray(env_,n_var);
+   vars_ = optimizer_->vars();
 
    int n_var_int = nbv + niv + nlvbi + nlvci + nlvoi;
    for (int j = 0; j < n_var - n_var_int; j++)
@@ -396,20 +438,19 @@ int Driver::run(char **argv) {
    for (int j = n_var - n_var_int; j < n_var; j++)
       vars_[j] = IloNumVar(env_, LUv[j], Uvx[j], ILOINT);
 
-   IloObjective MinOrMax(env_);
-
    if (n_obj > 0) {
       IloExpr objExpr(env_, objconst0(asl));
       if (0 < nlo)
          objExpr += build_expr (obj_de[0].e);
       for (ograd *og = Ograd[0]; og; og = og->next)
          objExpr += (og -> coef) * vars_[og -> varno];
-      MinOrMax = IloObjective (env_, objExpr,
+      IloObjective MinOrMax(env_, objExpr,
          objtype[0] == 0 ? IloObjective::Minimize : IloObjective::Maximize);
+      optimizer_->set_obj(MinOrMax);
       IloAdd (mod_, MinOrMax);
    }
 
-   IloRangeArray Con(env_,n_con);
+   IloRangeArray Con(optimizer_->cons());
 
    for (int i = 0; i < n_con; i++) {
       IloExpr conExpr(env_);
@@ -433,91 +474,55 @@ int Driver::run(char **argv) {
    int timing = get_option(TIMING);
    Times[1] = timing ? timer.getTime() : 0;
 
-   /*-------------------------------------------------------------------
-
-     Solve integer/linear program in CPLEX
-
-   -------------------------------------------------------------------*/
-
+   // Solve the problem.
    IloAlgorithm alg(optimizer_->algorithm());
    alg.extract (mod_);
    Times[2] = timing ? timer.getTime() : 0;
    IloBool successful = alg.solve();
    Times[3] = timing ? timer.getTime() : 0;
 
-   CPLEXOptimizer *cplex_opt = dynamic_cast<CPLEXOptimizer*>(optimizer_.get());
-   if (cplex_opt) {
-      IloCplex cplex(cplex_opt->cplex());
-      IloNum objValue = cplex.getObjValue();
-
-      int sSoFar = 0;
-      char sMsg[256];
-
-      sSoFar += Sprintf(sMsg,
-         "\n%s: optimal solution found\n", oinfo_->bsname);
-
-      if (cplex.isMIP()) {
-         sSoFar += g_fmtop(sMsg+sSoFar,cplex.getNnodes());
-         sSoFar += Sprintf(sMsg+sSoFar, " nodes, ");
-         sSoFar += g_fmtop(sMsg+sSoFar,cplex.getNiterations());
-         sSoFar += Sprintf(sMsg+sSoFar, " iterations, objective ");
-         g_fmtop(sMsg+sSoFar, objValue);
-
-         vector<real> Xopt(n_var);
-         for (int j = 0; j < n_var; j++) Xopt[j] = cplex.getValue(vars_[j]);
-         write_sol(sMsg, Xopt.empty() ? 0 : &Xopt[0], 0, oinfo_.get());
-      }
-      else {
-         sSoFar += g_fmtop(sMsg+sSoFar,cplex.getNiterations());
-         sSoFar += Sprintf(sMsg+sSoFar, " iterations, objective ");
-         g_fmtop(sMsg+sSoFar, objValue);
-
-         vector<real> Xopt(n_var);
-         vector<real> Piopt(n_con);
-         for (int j = 0; j < n_var; j++) Xopt[j] = cplex.getValue(vars_[j]);
-         for (int i = 0; i < n_con; i++) Piopt[i] = cplex.getDual(Con[i]);
-         write_sol(sMsg, Xopt.empty() ? 0 : &Xopt[0],
-             Piopt.empty() ? 0 : &Piopt[0], oinfo_.get());
-      }
+   // Convert solution status.
+   const char *message;
+   switch (alg.getStatus()) {
+   default:
+      // Fall through.
+   case IloAlgorithm::Unknown:
+      solve_result_num = -1;
+      message = "unknown";
+      break;
+   case IloAlgorithm::Feasible:
+      solve_result_num = 100;
+      message = "feasible solution";
+      break;
+   case IloAlgorithm::Optimal:
+      solve_result_num = 0;
+      message = "optimal solution";
+      break;
+   case IloAlgorithm::Infeasible:
+      solve_result_num = 200;
+      message = "infeasible problem";
+      break;
+   case IloAlgorithm::Unbounded:
+      solve_result_num = 300;
+      message = "unbounded problem";
+      break;
+   case IloAlgorithm::InfeasibleOrUnbounded:
+      solve_result_num = 201;
+      message = "infeasible or unbounded problem";
+      break;
+   case IloAlgorithm::Error:
+      solve_result_num = 500;
+      message = "error";
+      break;
    }
 
-   /*-------------------------------------------------------------------
-
-     Solve problem in ILOG Solver
-
-   -------------------------------------------------------------------*/
-
-   else {
-      IloSolver solver(dynamic_cast<CPOptimizer&>(*optimizer_).solver());
-
-      int sSoFar = 0;
-      char sMsg[256];
-
-      if (successful) {
-         sSoFar += Sprintf(sMsg,
-            "\n%s: solution found\n", oinfo_->bsname);
-
-         sSoFar += g_fmtop(sMsg+sSoFar,solver.getNumberOfChoicePoints());
-         sSoFar += Sprintf(sMsg+sSoFar, " choice points, ");
-         sSoFar += g_fmtop(sMsg+sSoFar,solver.getNumberOfFails());
-         sSoFar += Sprintf(sMsg+sSoFar, " fails");
-         if (n_obj > 0) {
-            sSoFar += Sprintf(sMsg+sSoFar, ", objective ");
-            g_fmtop(sMsg+sSoFar, solver.getValue(MinOrMax));
-         }
-
-         real *Xopt = new real [n_var];
-
-         for (int j = 0; j < n_var; j++) Xopt[j] = solver.getValue(vars_[j]);
-         write_sol(sMsg, Xopt, 0, oinfo_.get());
-         delete [] Xopt;
-      }
-      else {
-         sSoFar += Sprintf(sMsg,
-            "\n%s: no solution found!\n", oinfo_->bsname);
-         write_sol(sMsg, 0, 0, oinfo_.get());
-      }
-   }
+   char sMsg[256];
+   int sSoFar = Sprintf(sMsg, "\n%s: %s\n", oinfo_->bsname, message);
+   vector<real> primal, dual;
+   if (successful)
+     optimizer_->get_solution(asl, sMsg + sSoFar, primal, dual);
+   write_sol(sMsg, primal.empty() ? 0 : &primal[0],
+       dual.empty() ? 0 : &dual[0], oinfo_.get());
 
    if (timing) {
       Times[4] = timer.getTime();
