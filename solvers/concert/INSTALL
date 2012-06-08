@@ -47,5 +47,5 @@ Build without CMake
 
 Alternatively you can build the concert driver with make using the
 provided makefile (makefile.u).  First edit the makefile to specify
-the path to CPLEX Optimizatio Studio.  Then type "make -f makefile.u"
+the path to CPLEX Optimization Studio.  Then type "make -f makefile.u"
 to build concert.
