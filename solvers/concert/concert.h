@@ -46,13 +46,28 @@ class NumberOf {
 };
 
 class Optimizer {
+ private:
+  IloObjective obj_;
+  IloNumVarArray vars_;
+  IloRangeArray cons_;
+
  public:
+  Optimizer(IloEnv env, ASL_fg *asl);
   virtual ~Optimizer();
+
+  IloObjective obj() const { return obj_; }
+  void set_obj(IloObjective obj) { obj_ = obj; }
+
+  IloNumVarArray vars() const { return vars_; }
+  IloRangeArray cons() const { return cons_; }
 
   virtual IloAlgorithm algorithm() const = 0;
 
   virtual void set_option(const void *key, int value) = 0;
   virtual void set_option(const void *key, double value) = 0;
+
+  virtual void get_solution(ASL_fg *asl, char *message,
+      std::vector<double> &primal, std::vector<double> &dual) const = 0;
 };
 
 class CPLEXOptimizer : public Optimizer {
@@ -60,13 +75,16 @@ class CPLEXOptimizer : public Optimizer {
   IloCplex cplex_;
 
  public:
-  CPLEXOptimizer(IloEnv env) : cplex_(env) {}
+  CPLEXOptimizer(IloEnv env, ASL_fg *asl) : Optimizer(env, asl), cplex_(env) {}
 
   IloCplex cplex() const { return cplex_; }
   IloAlgorithm algorithm() const { return cplex_; }
 
   void set_option(const void *key, int value);
   void set_option(const void *key, double value);
+
+  void get_solution(ASL_fg *asl, char *message,
+      std::vector<double> &primal, std::vector<double> &dual) const;
 };
 
 class CPOptimizer : public Optimizer {
@@ -74,13 +92,16 @@ class CPOptimizer : public Optimizer {
   IloSolver solver_;
 
  public:
-  CPOptimizer(IloEnv env) : solver_(env) {}
+  CPOptimizer(IloEnv env, ASL_fg *asl) : Optimizer(env, asl), solver_(env) {}
 
   IloSolver solver() const { return solver_; }
   IloAlgorithm algorithm() const { return solver_; }
 
   void set_option(const void *key, int value);
   void set_option(const void *key, double value);
+
+  void get_solution(ASL_fg *asl, char *message,
+      std::vector<double> &primal, std::vector<double> &dual) const;
 };
 
 // The Concert driver for AMPL.
@@ -147,6 +168,7 @@ class Driver {
 
   IloEnv env() const { return env_; }
   IloModel mod() const { return mod_; }
+  ASL_fg *get_asl() const { return asl; }
 
   IloAlgorithm alg() const {
     return optimizer_.get() ? optimizer_->algorithm() : IloAlgorithm();

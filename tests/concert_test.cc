@@ -305,7 +305,8 @@ SolveResult ConcertTest::Solve(const char *stub) {
   string line;
   getline(ifs, line);
   getline(ifs, line);
-  bool solved =line.find("solution found") != string::npos;
+  bool solved = line.find("optimal solution") != string::npos;
+  if (!solved) solved = line.find("feasible solution") != string::npos;
   getline(ifs, line);
   const char obj[] = "objective ";
   size_t pos = line.find(obj);
@@ -1454,5 +1455,28 @@ TEST_F(ConcertTest, CPOptions) {
   CheckDblCPOption("timelimit", IloCP::TimeLimit, 42, -1);
   CheckIntCPOption("timemode", IloCP::TimeMode, 0, 1, IloCP::CPUTime);
   CheckIntCPOption("workers", IloCP::Workers, 0, INT_MAX, 0, true);
+}
+
+// ----------------------------------------------------------------------------
+// Solve code tests
+
+TEST_F(ConcertTest, OptimalSolveCode) {
+  Solve("data/objconst");
+  EXPECT_EQ(0, d.get_asl()->p.solve_code_);
+}
+
+TEST_F(ConcertTest, FeasibleSolveCode) {
+  Solve("data/feasible");
+  EXPECT_EQ(100, d.get_asl()->p.solve_code_);
+}
+
+TEST_F(ConcertTest, InfeasibleSolveCode) {
+  Solve("data/infeasible");
+  EXPECT_EQ(200, d.get_asl()->p.solve_code_);
+}
+
+TEST_F(ConcertTest, InfeasibleOrUnboundedSolveCode) {
+  Solve("data/unbounded");
+  EXPECT_EQ(201, d.get_asl()->p.solve_code_);
 }
 }

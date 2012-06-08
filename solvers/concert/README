@@ -175,6 +175,11 @@ solve_message.
         Value   Message
 
           0     optimal solution
+        100     feasible solution
+        200     infeasible problem
+        201     infeasible or unbounded problem
+        300     unbounded problem
+        500     error
 
 -------------------
 
