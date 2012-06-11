@@ -336,7 +336,7 @@ char *Driver::set_cp_int_option(Option_Info *oi, keyword *kw, char *value) {
    char *result = I_val(oi, &thiskw, value);
    try {
       d->optimizer_->set_option(kw->info, intval);
-   } catch (const IloException &e) {
+   } catch (const IloException &) {
       cerr << "Invalid value " << intval << " for option " << kw->name << endl;
       ++d->n_badvals;
    }
@@ -358,7 +358,7 @@ char *Driver::set_cp_dbl_option(Option_Info *oi, keyword *kw, char *value) {
    char *result = D_val(oi, &thiskw, value);
    try {
       d->optimizer_->set_option(kw->info, dblval);
-   } catch (const IloException &e) {
+   } catch (const IloException &) {
       cerr << "Invalid value " << dblval << " for option " << kw->name << endl;
       ++d->n_badvals;
    }
