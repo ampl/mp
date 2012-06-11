@@ -24,17 +24,25 @@ include(FindPackageHandleStandardArgs)
 # Recent versions of CPLEX Studio are installed in the following locations:
 #   /opt/ibm/ILOG/CPLEX_Studio<version> - Linux (checked version 12.4)
 #   C:\ILOG\CPLEX_Studio<version> - Windows (checked version 12.2)
+#   C:\Program Files\IBM\ILOG\CPLEX_Studio<version> - Windows (README)
 if (NOT WIN32)
-  set(CPLEX_STUDIO_PATH /opt/ibm/ILOG)
+  set(CPLEX_ILOG_DIRS
+      /opt/ibm/ILOG /opt/IBM/ILOG $ENV{HOME}/ILOG $ENV{HOME}/ilog)
   set(CPLEX_LIB_PATH_SUFFIXES lib/x86-64_sles10_4.1/static_pic)
 else ()
-  set(CPLEX_STUDIO_PATH C:/ILOG)
+  set(CPLEX_ILOG_DIRS C:/ILOG "C:/Program Files/IBM/ILOG")
   set(CPLEX_LIB_PATH_SUFFIXES
     lib/x86_windows_vs2008/stat_mda
     lib/x86_windows_vs2008/stat_mta
     lib/x86_.net2005_8.0/stat_mda
     lib/x86_.net2005_8.0/stat_mta)
 endif ()
+foreach (d ${CPLEX_ILOG_DIRS})
+  if (EXISTS ${d})
+    set(CPLEX_STUDIO_PATH ${d})
+    break ()
+  endif ()
+endforeach ()
 
 find_package(Threads)
 
