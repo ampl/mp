@@ -1449,12 +1449,14 @@ TEST_F(ConcertTest, CPOptions) {
   CheckDblCPOption("restartgrowthfactor", IloCP::RestartGrowthFactor, 42, -1);
   CheckIntCPOption("restartfaillimit", IloCP::RestartFailLimit, 1, INT_MAX);
   CheckIntCPOption("searchtype", IloCP::SearchType,
-      0, 2, IloCP::DepthFirst, true);
+      0, 2, IloCP::DepthFirst, CPX_VERSION > 1220);
   CheckIntCPOption("solutionlimit", IloCP::SolutionLimit, 0, INT_MAX);
   CheckIntCPOption("temporalrelaxation", IloCP::TemporalRelaxation, 0, 1);
   CheckDblCPOption("timelimit", IloCP::TimeLimit, 42, -1);
   CheckIntCPOption("timemode", IloCP::TimeMode, 0, 1, IloCP::CPUTime);
-  CheckIntCPOption("workers", IloCP::Workers, 0, INT_MAX, 0, true);
+  if (CPX_VERSION > 1220)
+    CheckIntCPOption("workers", IloCP::Workers, 0, INT_MAX, 0, true);
+  else CheckIntCPOption("workers", IloCP::Workers, 1, 4, 0, false);
 }
 
 // ----------------------------------------------------------------------------
