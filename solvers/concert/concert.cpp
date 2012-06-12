@@ -20,6 +20,7 @@
 
 #include "concert.h"
 
+#include <cctype>
 #include <algorithm>
 #include <iostream>
 
@@ -49,42 +50,90 @@ real objconst0(ASL_fg *a) {
 }
 
 char *skip_space(char *s) {
+  while (isspace(*s))
+    ++s;
+  return s;
+}
+
+char *skip_nonspace(char *s) {
   while (*s && !isspace(*s))
     ++s;
   return s;
 }
 
+char *skip_arg(char *s) {
+  return skip_nonspace(skip_space(s));
+}
+
+const char *InferenceLevels[] = {
+  "default",
+  "low",
+  "basic",
+  "medium",
+  "extended",
+  0
+};
+
+const char *Flags[] = {
+  "off",
+  "on",
+  0
+};
+
+const char *SearchTypes[] = {
+  "depthfirst",
+  "restart",
+  "multipoint",
+  0
+};
+
+const char *Verbosities[] = {
+  "quiet",
+  "terse",
+  "normal",
+  "verbose",
+  0
+};
+
+const char *TimeModes[] = {
+  "cputime",
+  "elapsedtime",
+  0
+};
+
 // Information about a constraint programming solver option.
 struct CPOptionInfo {
   IloCP::IntParam param;
-  int start;         // start value for the enumerated options
-  bool accepts_auto; // true if the option accepts IloCP::Auto value
+  int start;           // start value for the enumerated options
+  bool accepts_auto;   // true if the option accepts IloCP::Auto value
+  const char **values; // string values for enum options
 };
 
-#define CP_INT_OPTION_FULL(name, start, accepts_auto) \
-  const CPOptionInfo name = {IloCP::name, start, accepts_auto};
-#define CP_INT_OPTION(name, start) CP_INT_OPTION_FULL(name, start, false)
-#define CP_INT_OPTION_AUTO(name, start) CP_INT_OPTION_FULL(name, start, true)
+#define CP_INT_OPTION_FULL(name, start, accepts_auto, values) \
+  const CPOptionInfo name = {IloCP::name, start, accepts_auto, values};
+#define CP_INT_OPTION(name) CP_INT_OPTION_FULL(name, 0, false, 0)
+#define CP_ENUM_OPTION(name, start, values) \
+  CP_INT_OPTION_FULL(name, start, false, values)
 
-CP_INT_OPTION(AllDiffInferenceLevel, IloCP::Default)
-CP_INT_OPTION(BranchLimit, 0)
-CP_INT_OPTION(ChoicePointLimit, 0)
-CP_INT_OPTION(ConstraintAggregation, IloCP::Off)
-CP_INT_OPTION(DefaultInferenceLevel, IloCP::Default)
-CP_INT_OPTION(DistributeInferenceLevel, IloCP::Default)
-CP_INT_OPTION_AUTO(DynamicProbing, IloCP::Off)
-CP_INT_OPTION(FailLimit, 0)
-CP_INT_OPTION(LogPeriod, 0)
-CP_INT_OPTION(LogVerbosity, IloCP::Quiet)
-CP_INT_OPTION(MultiPointNumberOfSearchPoints, 0)
-CP_INT_OPTION(PropagationLog, IloCP::Quiet)
-CP_INT_OPTION(RandomSeed, 0)
-CP_INT_OPTION(RestartFailLimit, 0)
-CP_INT_OPTION_AUTO(SearchType, IloCP::DepthFirst)
-CP_INT_OPTION(SolutionLimit, 0)
-CP_INT_OPTION(TemporalRelaxation, IloCP::Off)
-CP_INT_OPTION(TimeMode, IloCP::CPUTime)
-CP_INT_OPTION(Workers, 0)
+CP_ENUM_OPTION(AllDiffInferenceLevel, IloCP::Default, InferenceLevels)
+CP_INT_OPTION(BranchLimit)
+CP_INT_OPTION(ChoicePointLimit)
+CP_ENUM_OPTION(ConstraintAggregation, IloCP::Off, Flags)
+CP_ENUM_OPTION(DefaultInferenceLevel, IloCP::Default, InferenceLevels)
+CP_ENUM_OPTION(DistributeInferenceLevel, IloCP::Default, InferenceLevels)
+CP_INT_OPTION_FULL(DynamicProbing, IloCP::Off, true, Flags)
+CP_INT_OPTION(FailLimit)
+CP_INT_OPTION(LogPeriod)
+CP_ENUM_OPTION(LogVerbosity, IloCP::Quiet, Verbosities)
+CP_INT_OPTION(MultiPointNumberOfSearchPoints)
+CP_ENUM_OPTION(PropagationLog, IloCP::Quiet, Verbosities)
+CP_INT_OPTION(RandomSeed)
+CP_INT_OPTION(RestartFailLimit)
+CP_INT_OPTION_FULL(SearchType, IloCP::DepthFirst, true, SearchTypes)
+CP_INT_OPTION(SolutionLimit)
+CP_ENUM_OPTION(TemporalRelaxation, IloCP::Off, Flags)
+CP_ENUM_OPTION(TimeMode, IloCP::CPUTime, TimeModes)
+CP_INT_OPTION_FULL(Workers, 0, true, 0)
 }
 
 Optimizer::Optimizer(IloEnv env, ASL_fg *asl) :
@@ -274,7 +323,7 @@ Driver::Driver() :
    oinfo_->keywds = keywords_;
    oinfo_->n_keywds = sizeof(keywords_) / sizeof(*keywords_);
    oinfo_->version = &version_[0];
-   oinfo_->driver_date = 20120606;
+   oinfo_->driver_date = 20120612;
    doi->driver = this;
 }
 
@@ -299,7 +348,7 @@ char *Driver::use_cpoptimizer(Option_Info *oi, keyword *, char *value) {
 char *Driver::set_int_option(Option_Info *oi, keyword *kw, char *value) {
    Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
    if (!d->gotopttype)
-      return skip_space(value);
+      return skip_arg(value);
    keyword thiskw(*kw);
    thiskw.info = d->options_ + reinterpret_cast<size_t>(kw->info);
    return I_val(oi, &thiskw, value);
@@ -308,7 +357,7 @@ char *Driver::set_int_option(Option_Info *oi, keyword *kw, char *value) {
 char *Driver::set_bool_option(Option_Info *oi, keyword *kw, char *value) {
    Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
    if (!d->gotopttype)
-      return skip_space(value);
+      return skip_arg(value);
    keyword thiskw(*kw);
    int intval = 0;
    thiskw.info = &intval;
@@ -321,36 +370,66 @@ char *Driver::set_bool_option(Option_Info *oi, keyword *kw, char *value) {
    return result;
 }
 
+void Driver::set_cp_option(keyword *kw, int value) {
+  try {
+     optimizer_->set_option(kw->info, value);
+  } catch (const IloException &) {
+     cerr << "Invalid value " << value << " for option " << kw->name << endl;
+     ++n_badvals;
+  }
+}
+
 char *Driver::set_cp_int_option(Option_Info *oi, keyword *kw, char *value) {
    Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
    if (!d->gotopttype)
-      return skip_space(value);
+      return skip_arg(value);
    if (d->get_option(ILOGOPTTYPE) != CPOPTIMIZER) {
       ++d->n_badvals;
       cerr << "Invalid option " << kw->name << " for CPLEX optimizer" << endl;
-      return skip_space(value);
+      return skip_arg(value);
+   }
+   const CPOptionInfo *info = static_cast<const CPOptionInfo*>(kw->info);
+   if (info->values || info->accepts_auto) {
+     value = skip_space(value);
+     char c = *value;
+     if (!isdigit(c) && c != '+' && c != '-') {
+       char *end = skip_nonspace(value);
+       if (info->values) {
+         // Search for a value in the list of known values.
+         // Use linear search since the number of values is small.
+         for (int i = 0; info->values[i]; ++i) {
+           if (strncmp(value, info->values[i], end - value) == 0) {
+             d->set_cp_option(kw, i);
+             return end;
+           }
+         }
+       }
+       if (info->accepts_auto && strncmp(value, "auto", end - value) == 0) {
+         d->set_cp_option(kw, IloCP::Auto);
+         return end;
+       }
+       cerr << "Invalid value " << string(value, end)
+           << " for option " << kw->name << endl;
+       ++d->n_badvals;
+       return end;
+     }
    }
    keyword thiskw(*kw);
    int intval = 0;
    thiskw.info = &intval;
    char *result = I_val(oi, &thiskw, value);
-   try {
-      d->optimizer_->set_option(kw->info, intval);
-   } catch (const IloException &) {
-      cerr << "Invalid value " << intval << " for option " << kw->name << endl;
-      ++d->n_badvals;
-   }
+   d->set_cp_option(kw, intval);
    return result;
 }
 
 char *Driver::set_cp_dbl_option(Option_Info *oi, keyword *kw, char *value) {
    Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
    if (!d->gotopttype)
-      return skip_space(value);
+      return skip_arg(value);
    if (d->get_option(ILOGOPTTYPE) != CPOPTIMIZER) {
       ++d->n_badvals;
       cerr << "Invalid option " << kw->name << " for CPLEX optimizer" << endl;
-      return skip_space(value);
+      return skip_arg(value);
    }
    keyword thiskw(*kw);
    double dblval = 0;

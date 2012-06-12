@@ -36,9 +36,22 @@ or
 or
      timelimit = 600
 
-any of which limits CP Optimizer search time to 600 seconds.  The following
-names may occur in name-value pairs.  For convenience, the list also repeats
-the above single-word phrases, denoting them with "Single-word phrase".
+any of which limits CP Optimizer search time to 600 seconds.  Options such
+as logverbosity, that take enumerated list of values, accept both numeric
+and string values, so
+
+     logverbosity=terse
+
+is equivalent to
+
+     logverbosity=1
+
+In particular, switches that take values 0 or 1 also accept values
+"off" or "on".
+
+The following names may occur in name-value pairs.  For convenience,
+the list also repeats the above single-word phrases, denoting them with
+"Single-word phrase".
 
      Name               Comment
 
@@ -137,7 +150,7 @@ the above single-word phrases, denoting them with "Single-word phrase".
 
      searchtype         Type of search used for solving a problem.
                         Possible values:
-                              0 = depth first
+                              0 = depthfirst
                               1 = restart (default)
                               2 = multipoint
 
@@ -152,8 +165,8 @@ the above single-word phrases, denoting them with "Single-word phrase".
 
      timemode           Specifies how the time is measured in CP Optimizer.
                         Possible values:
-                              0 = CPU time (default)
-                              1 = elapsed time
+                              0 = cputime (default)
+                              1 = elapsedtime
 
      timing             0 or 1 (default 0):  Whether to display timings for
                         the run.
@@ -161,8 +174,10 @@ the above single-word phrases, denoting them with "Single-word phrase".
      usenumberof        0 or 1 (default 1):  Whether to consolidate 'numberof'
                         expressions by use of IloDistribute constraints.
 
-     workers            Number of workers to run in parallel to solve a
-                        problem.  Default = 1.
+     workers            Number of workers to run in parallel to solve a problem.
+                        In addition to numeric values this option accepts the
+                        value "auto" since CP Optimizer version 12.3.
+                        Default = 1.
 
 -----------------------
 solve_result_num values

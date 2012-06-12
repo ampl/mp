@@ -157,6 +157,7 @@ class Driver {
   static char *set_bool_option(Option_Info *oi, keyword *kw, char *value);
 
   // Sets an integer option of the constraint programming optimizer.
+  void set_cp_option(keyword *kw, int value);
   static char *set_cp_int_option(Option_Info *oi, keyword *kw, char *value);
 
   // Sets a double option of the constraint programming optimizer.
