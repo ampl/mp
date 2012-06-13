@@ -49,20 +49,10 @@ real objconst0(ASL_fg *a) {
       reinterpret_cast<expr_n*>(e)->v : 0;
 }
 
-char *skip_space(char *s) {
-  while (isspace(*s))
-    ++s;
-  return s;
-}
-
 char *skip_nonspace(char *s) {
   while (*s && !isspace(*s))
     ++s;
   return s;
-}
-
-char *skip_arg(char *s) {
-  return skip_nonspace(skip_space(s));
 }
 
 const char *InferenceLevels[] = {
@@ -348,7 +338,7 @@ char *Driver::use_cpoptimizer(Option_Info *oi, keyword *, char *value) {
 char *Driver::set_int_option(Option_Info *oi, keyword *kw, char *value) {
    Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
    if (!d->gotopttype)
-      return skip_arg(value);
+      return skip_nonspace(value);
    keyword thiskw(*kw);
    thiskw.info = d->options_ + reinterpret_cast<size_t>(kw->info);
    return I_val(oi, &thiskw, value);
@@ -357,7 +347,7 @@ char *Driver::set_int_option(Option_Info *oi, keyword *kw, char *value) {
 char *Driver::set_bool_option(Option_Info *oi, keyword *kw, char *value) {
    Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
    if (!d->gotopttype)
-      return skip_arg(value);
+      return skip_nonspace(value);
    keyword thiskw(*kw);
    int intval = 0;
    thiskw.info = &intval;
@@ -382,37 +372,35 @@ void Driver::set_cp_option(keyword *kw, int value) {
 char *Driver::set_cp_int_option(Option_Info *oi, keyword *kw, char *value) {
    Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
    if (!d->gotopttype)
-      return skip_arg(value);
+      return skip_nonspace(value);
    if (d->get_option(ILOGOPTTYPE) != CPOPTIMIZER) {
       ++d->n_badvals;
       cerr << "Invalid option " << kw->name << " for CPLEX optimizer" << endl;
-      return skip_arg(value);
+      return skip_nonspace(value);
    }
    const CPOptionInfo *info = static_cast<const CPOptionInfo*>(kw->info);
-   if (info->values || info->accepts_auto) {
-     value = skip_space(value);
-     char c = *value;
-     if (!isdigit(c) && c != '+' && c != '-') {
-       char *end = skip_nonspace(value);
-       if (info->values) {
-         // Search for a value in the list of known values.
-         // Use linear search since the number of values is small.
-         for (int i = 0; info->values[i]; ++i) {
-           if (strncmp(value, info->values[i], end - value) == 0) {
-             d->set_cp_option(kw, i);
-             return end;
-           }
+   char c = *value;
+   if ((info->values || info->accepts_auto) &&
+       !isdigit(c) && c != '+' && c != '-') {
+     char *end = skip_nonspace(value);
+     if (info->values) {
+       // Search for a value in the list of known values.
+       // Use linear search since the number of values is small.
+       for (int i = 0; info->values[i]; ++i) {
+         if (strncmp(value, info->values[i], end - value) == 0) {
+           d->set_cp_option(kw, i);
+           return end;
          }
        }
-       if (info->accepts_auto && strncmp(value, "auto", end - value) == 0) {
-         d->set_cp_option(kw, IloCP::Auto);
-         return end;
-       }
-       cerr << "Invalid value " << string(value, end)
-           << " for option " << kw->name << endl;
-       ++d->n_badvals;
+     }
+     if (info->accepts_auto && strncmp(value, "auto", end - value) == 0) {
+       d->set_cp_option(kw, IloCP::Auto);
        return end;
      }
+     cerr << "Invalid value " << string(value, end)
+         << " for option " << kw->name << endl;
+     ++d->n_badvals;
+     return end;
    }
    keyword thiskw(*kw);
    int intval = 0;
@@ -425,11 +413,11 @@ char *Driver::set_cp_int_option(Option_Info *oi, keyword *kw, char *value) {
 char *Driver::set_cp_dbl_option(Option_Info *oi, keyword *kw, char *value) {
    Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
    if (!d->gotopttype)
-      return skip_arg(value);
+      return skip_nonspace(value);
    if (d->get_option(ILOGOPTTYPE) != CPOPTIMIZER) {
       ++d->n_badvals;
       cerr << "Invalid option " << kw->name << " for CPLEX optimizer" << endl;
-      return skip_arg(value);
+      return skip_nonspace(value);
    }
    keyword thiskw(*kw);
    double dblval = 0;
@@ -447,6 +435,7 @@ char *Driver::set_cp_dbl_option(Option_Info *oi, keyword *kw, char *value) {
 bool Driver::parse_options(char **argv) {
    // Get optimizer type.
    gotopttype = false;
+   oinfo_->option_echo &= ~ASL_OI_echo;
    if (getopts(argv, oinfo_.get()))
       return false;
 
@@ -460,6 +449,7 @@ bool Driver::parse_options(char **argv) {
    // Parse remaining options.
    gotopttype = true;
    n_badvals = 0;
+   oinfo_->option_echo |= ASL_OI_echo;
    if (getopts(argv, oinfo_.get()) || n_badvals != 0)
       return false;
    return true;
