@@ -128,6 +128,8 @@ the list also repeats the above single-word phrases, denoting them with
                         Absolute tolerance on the objective value.
                         Default = 0.
 
+     outlev             Synonym for "logverbosity".
+
      propagationlog     Level of propagation trace reporting.
                         Possible values:
                               0 = quiet (default)

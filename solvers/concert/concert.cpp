@@ -254,6 +254,8 @@ keyword Driver::keywords_[] = {
   KW(CSTR("optimalitytolerance"),
       Driver::set_cp_dbl_option, IloCP::OptimalityTolerance,
       CSTR("absolute tolerance on the objective value")),
+  KW(CSTR("outlev"), Driver::set_cp_int_option,
+      &LogVerbosity, CSTR("synonym for \"logverbosity\"")),
   KW(CSTR("propagationlog"), Driver::set_cp_int_option,
       &PropagationLog, CSTR("level of propagation trace reporting")),
   KW(CSTR("randomseed"), Driver::set_cp_int_option,
