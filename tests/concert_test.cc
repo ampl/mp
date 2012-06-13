@@ -1485,6 +1485,8 @@ TEST_F(ConcertTest, CPVerbosityOptions) {
   };
   CheckIntCPOption("logverbosity", IloCP::LogVerbosity,
       0, 3, IloCP::Quiet, false, verbosities);
+  CheckIntCPOption("outlev", IloCP::LogVerbosity,
+      0, 3, IloCP::Quiet, false, verbosities);
   CheckIntCPOption("propagationlog", IloCP::PropagationLog,
       0, 3, IloCP::Quiet, false, verbosities);
 }
