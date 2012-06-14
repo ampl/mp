@@ -15,10 +15,10 @@ param t_cum {i in JOBS, j in MACH[i]} :=
    sum {jj in MACH[i]: ord(jj) <= ord(j)} t_proc[i,jj];
 
 param t_offset {i1 in JOBS, i2 in JOBS: i1 <> i2} :=
-   max {j in MACH[i1] inter MACH[i2]} 
+   max {j in MACH[i1] inter MACH[i2]}
       (t_cum[i1,j] - t_cum[i2,j] + t_proc[i2,j]);
 
-param M > 0;
+param M > 0 default 1e6;
 
 var End >= 0;
 var Start {JOBS} >= 0;

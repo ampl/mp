@@ -7,7 +7,7 @@
 set JOBS ordered;
 set ALL_MACH ordered;
 
-set MACH {JOBS} ordered within ALL_MACH;
+set MACH {JOBS} ordered within ALL_MACH default ALL_MACH;
 
 param t_proc {i in JOBS, MACH[i]} > 0;
 
@@ -15,11 +15,11 @@ param t_cum {i in JOBS, j in MACH[i]} :=
    sum {jj in MACH[i]: ord(jj) <= ord(j)} t_proc[i,jj];
 
 param t_offset {i1 in JOBS, i2 in JOBS: i1 <> i2} :=
-   max {j in MACH[i1] inter MACH[i2]} 
+   max {j in MACH[i1] inter MACH[i2]}
       (t_cum[i1,j] - t_cum[i2,j] + t_proc[i2,j]);
 
-var End >= 0;
-var Start {JOBS} >= 0;
+var End integer >= 0;
+var Start {JOBS} integer >= 0;
 
 minimize Makespan: End;
 
