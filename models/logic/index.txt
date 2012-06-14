@@ -2,7 +2,21 @@
 
 EXAMPLES OF CONSTRAINT PROGRAMMING FORMULATIONS
 
---> see also www.ampl.com/NEW/FUTURE/LOGICpaper! <--
+flowshp0.mod	Flowshop problem, using n2 zero-one variables
+flowshp1.mod	. . . instead using n integer variables, with the or operator
+flowshp2.mod	. . . instead using n integer variables, with the if-then operator
+jobassign0.mod	Job assignment problem, using n2 zero-one variables
+jobassign1.mod	. . . instead using n integer variables, with alldiff operator
+jobassign2.mod	. . . also using a variable as a subscript in the objective
+jobassign3.mod	. . . instead using n object-valued variables
+sched0.mod	Job scheduling problem, using n2 zero-one variables
+sched1.mod	. . . instead using n integer variables, with the count operator
+sched2.mod	. . . instead using n integer variables, with the countof operator
+seq0.mod	Job sequencing problem, using n2 zero-one variables
+seq1.mod	. . . instead using 2n integer variables, with variables in subscripts
+seq2.mod	. . . also using min in constraint to define the finish times
+seq0a.mod	Like seq0.mod, but using a set of objects for jobs
+seq1a.mod	Like seq1.mod, but using object-valued variables for jobs
 
 
 GROUP ASSIGNMENT
@@ -52,4 +66,14 @@ plantsched5a.mod/dat --
    constraint program for the same, using "atmost" and "or"
    and avoiding all zero-one variables
 
+Sources
+-------
 
+flowshop: J.N. Hooker and M.A. Osorio, "Mixed Logical/Linear Programming."
+          Technical report, Carnegie Mellon University, Pittsburgh,
+          PA (July 1996).
+
+seq:      C. Jordan and A. Drexl, "A Comparison of Constraint and
+          Mixed-Integer Programming Solvers for Batch Sequencing with
+          Sequence-Dependent Setups." ORSA Journal on Computing 7 (1995)
+          160-165.
