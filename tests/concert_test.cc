@@ -1401,6 +1401,14 @@ TEST_F(ConcertTest, SolveParty2) {
   EXPECT_EQ(3, Solve("data/party2").obj);
 }
 
+TEST_F(ConcertTest, SolveSudokuHard) {
+  EXPECT_TRUE(Solve("data/sudokuHard").solved);
+}
+
+TEST_F(ConcertTest, SolveSudokuVeryEasy) {
+  EXPECT_TRUE(Solve("data/sudokuVeryEasy").solved);
+}
+
 // ----------------------------------------------------------------------------
 // Option tests
 
