@@ -20,4 +20,4 @@ minimize TotalCost:
       if MachineForJob[j] = k then cost[j,k];
 
 subj to CapacityOfMachine {k in MACHINES}:
-   countof(k) {j in JOBS} MachineForJob[j] <= cap[k];
+   numberof k in ({j in JOBS} MachineForJob[j]) <= cap[k];

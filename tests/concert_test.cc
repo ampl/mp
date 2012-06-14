@@ -1380,6 +1380,27 @@ TEST_F(ConcertTest, SolveBalassign1) {
   EXPECT_EQ(14, Solve("data/balassign1").obj);
 }
 
+TEST_F(ConcertTest, SolveFlowshp0) {
+  EXPECT_NEAR(26, Solve("data/flowshp0").obj, 1e-5);
+}
+
+TEST_F(ConcertTest, SolveFlowshp1) {
+  EXPECT_EQ(22, Solve("data/flowshp1").obj);
+}
+
+// Disabled because it's too difficult to solve.
+TEST_F(ConcertTest, DISABLED_SolveFlowshp2) {
+  EXPECT_EQ(14, Solve("data/flowshp2").obj);
+}
+
+TEST_F(ConcertTest, SolveJobassign0) {
+  EXPECT_EQ(6, Solve("data/jobassign0").obj);
+}
+
+TEST_F(ConcertTest, SolveJobassign1) {
+  EXPECT_EQ(6, Solve("data/jobassign1").obj);
+}
+
 TEST_F(ConcertTest, SolveMagic) {
   EXPECT_TRUE(Solve("data/magic").solved);
 }
@@ -1399,6 +1420,26 @@ TEST_F(ConcertTest, DISABLED_SolveParty1) {
 
 TEST_F(ConcertTest, SolveParty2) {
   EXPECT_EQ(3, Solve("data/party2").obj);
+}
+
+TEST_F(ConcertTest, SolveSched0) {
+  EXPECT_EQ(5, Solve("data/sched0").obj);
+}
+
+TEST_F(ConcertTest, SolveSched1) {
+  EXPECT_EQ(5, Solve("data/sched1").obj);
+}
+
+TEST_F(ConcertTest, SolveSched2) {
+  EXPECT_EQ(5, Solve("data/sched2").obj);
+}
+
+TEST_F(ConcertTest, SolveSeq0) {
+  EXPECT_NEAR(332, Solve("data/seq0").obj, 1e-5);
+}
+
+TEST_F(ConcertTest, SolveSeq0a) {
+  EXPECT_NEAR(332, Solve("data/seq0a").obj, 1e-5);
 }
 
 TEST_F(ConcertTest, SolveSudokuHard) {
