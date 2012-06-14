@@ -7,7 +7,7 @@
 set JOBS ordered;
 set ALL_MACH ordered;
 
-set MACH {JOBS} ordered within ALL_MACH;
+set MACH {JOBS} ordered within ALL_MACH default ALL_MACH;
 
 param t_proc {i in JOBS, MACH[i]} > 0;
 
