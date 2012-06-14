@@ -1422,7 +1422,8 @@ TEST_F(ConcertTest, DISABLED_SolveParty1) {
   EXPECT_EQ(61, Solve("data/party1").obj);
 }
 
-TEST_F(ConcertTest, SolveParty2) {
+// Disabled because it's too difficult to solve.
+TEST_F(ConcertTest, DISABLED_SolveParty2) {
   EXPECT_EQ(3, Solve("data/party2").obj);
 }
 

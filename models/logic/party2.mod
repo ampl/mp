@@ -23,6 +23,11 @@ minimize TotalHosts: sum {i in BOATS} isH[i];
 
        # minimize total host boats
 
+subj to VisitHosts {i in BOATS}:
+   isH[i] = 0 ==> atmost 0 {j in BOATS, t in TIMES} (H[j,t] = i);
+
+       # a visitor may not serve as a host: H[j,t] in VISITORS
+
 subj to VisitOnce {j in BOATS}:
    isH[j] = 0 ==> alldiff {t in TIMES} H[j,t];
 subj to HostNever {j in BOATS}:
