@@ -1405,6 +1405,10 @@ TEST_F(ConcertTest, SolveMagic) {
   EXPECT_TRUE(Solve("data/magic").solved);
 }
 
+TEST_F(ConcertTest, SolveMapcoloring) {
+  EXPECT_TRUE(Solve("data/mapcoloring").solved);
+}
+
 TEST_F(ConcertTest, SolveNQueens) {
   EXPECT_TRUE(Solve("data/nqueens").solved);
 }
