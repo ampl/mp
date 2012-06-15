@@ -321,6 +321,7 @@ Driver::Driver() :
 
 Driver::~Driver() {
    env_.end();
+   ASL_free(reinterpret_cast<ASL**>(&asl));
 }
 
 char *Driver::use_cplex(Option_Info *oi, keyword *, char *value) {
