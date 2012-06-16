@@ -18,7 +18,7 @@ param t_offset {i1 in JOBS, i2 in JOBS: i1 <> i2} :=
    max {j in MACH[i1] inter MACH[i2]}
       (t_cum[i1,j] - t_cum[i2,j] + t_proc[i2,j]);
 
-param M > 0 default 1e6;
+param M > 0 default 1e4;
 
 var End >= 0;
 var Start {JOBS} >= 0;
@@ -33,4 +33,4 @@ subj to No12_Conflict {i1 in JOBS, i2 in JOBS: ord(i1) < ord(i2)}:
    Start[i2] >= Start[i1] + t_offset[i1,i2] - M * (1 - Precedes[i1,i2]);
 
 subj to No21_Conflict {i1 in JOBS, i2 in JOBS: ord(i1) < ord(i2)}:
-   Start[i2] >= Start[i1] + t_offset[i2,i1] - M * Precedes[i1,i2];
+   Start[i1] >= Start[i2] + t_offset[i2,i1] - M * Precedes[i1,i2];

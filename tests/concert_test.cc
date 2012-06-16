@@ -1382,7 +1382,7 @@ TEST_F(ConcertTest, SolveBalassign1) {
 }
 
 TEST_F(ConcertTest, SolveFlowshp0) {
-  EXPECT_NEAR(26, Solve("data/flowshp0").obj, 1e-5);
+  EXPECT_NEAR(22, Solve("data/flowshp0").obj, 1e-5);
 }
 
 TEST_F(ConcertTest, SolveFlowshp1) {
@@ -1391,7 +1391,7 @@ TEST_F(ConcertTest, SolveFlowshp1) {
 
 // Disabled because it's too difficult to solve.
 TEST_F(ConcertTest, DISABLED_SolveFlowshp2) {
-  EXPECT_EQ(14, Solve("data/flowshp2").obj);
+  EXPECT_EQ(22, Solve("data/flowshp2").obj);
 }
 
 TEST_F(ConcertTest, SolveJobassign0) {
