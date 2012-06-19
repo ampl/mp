@@ -2,10 +2,10 @@
 <title>Constraint Logic Programming Extensions Recognized by the Concert Driver</title>
 
 <style type="text/css"></style></head>
-
-<h2>
+<body>
+<h1>
 Constraint Logic Programming Extensions Recognized by the Concert Driver
-</h2>
+</h1>
 
         For combinatorial or discrete optimization, AMPL currently
 provides the option of including integer-valued variables in algebraic
@@ -64,16 +64,16 @@ defining a variable's domain:
 Each of these items corresponds to a section below, in which we
 motivate a new group of features and propose corresponding AMPL
 language extensions.  A final paragraph or two in each section
-indicates how the C++ classes and member functions provided by <a href="http://www.ilog.com/">ILOG Solver</a> could be used to solve
+indicates how the C++ classes and member functions provided by
+<a href="http://www.ilog.com/">ILOG Solver</a> could be used to solve
 problems that have been expressed using the proposed features.  (There
 is a further possibility, which we do not pursue here, of defining new
 classes and member functions to more efficiently handle certain AMPL
-features.)<p>
+features.)
 
-<br>
-</p><h3>
+<h2>
 <a name="logop">Logical operators</a>
-</h3>
+</h2>
         Current AMPL constraints consist of numerical-valued
 expressions connected by <tt>&lt; =</tt>, <tt>&gt; =</tt> or <tt&gt =<="" tt="">.  A
 natural extension would be to allow these constraint expressions to be
@@ -235,12 +235,11 @@ operators for exclusive or (<tt>!=</tt>), equivalence (<tt&gt =="&lt;/tt">),
 and implication (<tt>&lt; =</tt>).  The effect of AMPL's iterated logical
 operators can be achieved by using its <tt>IlcCard</tt> function to 
 count the number of instances of a <i>constraint-expr</i> that are
-true; see also the discussion of counting operators below.</tt&gt></p><p>
+true; see also the discussion of counting operators below.</tt&gt></p>
 
-<br>
-</p><h3>
+<h2>
 <a name="condop">Conditional operators</a>
-</h3>
+</h2>
         AMPL already provides an <tt>if-then-else</tt> operator that
 returns a value that can be used in expressions:<p>
 
@@ -340,12 +339,11 @@ using several logical operators.</p><p>
 AMPL's if-then and if-then-else operators, described at the beginning
 of this section, have a direct analogue as a C++ operator, but C++
 does not allow the overloading of that operator that would be
-necessary to permit its use with Solver's constraint data types.</p><p>
+necessary to permit its use with Solver's constraint data types.</p>
 
-<br>
-</p><h3>
+<h2>
 <a name="cardop">Counting operators</a>
-</h3>
+</h2>
         AMPL's <tt>card</tt> operator returns the number of members in
 a set.  When it is applied to a set defined in terms of variables, it
 can count the number of constraints of a given form that are
@@ -528,12 +526,11 @@ feature.  The association between constraints and these binary
 variables is maintained automatically, however, in contrast to the
 integer programming approach where it is necessary to form additional
 constraints (such as <tt>Multi</tt> and <tt>Min_Ship</tt> above) to
-enforce the definition of the binary variables.</p><p>
+enforce the definition of the binary variables.</p>
 
-<br>
-</p><h3>
+<h2>
 <a name="pairop">Pairwise operators</a>
-</h3>
+</h2>
         Various assignment and related combinatorial problems require
 that a collection of entities be pairwise different or disjoint.  New
 iterated operators for these conditions would make them easier to
@@ -607,12 +604,11 @@ that the components of an array of integers (type
 of integer sets (type <tt>IlcIntSetVarArray</tt>) or an array of
 object sets (type <tt>IlcAnySetVarArray</tt>) must be pairwise
 disjoint.  Solver's search procedure handles these relationships
-directly in an efficient way.</p><p>
+directly in an efficient way.</p>
 
-<br>
-</p><h3>
+<h2>
 <a name="varsub">Variables in subscripts</a>
-</h3>
+</h2>
         When we use zero-one variables for the assignment model, it
 is easy to express the objective as a conventional linear programming
 expression:
@@ -740,12 +736,11 @@ in general contain variables, subscripts containing variables could be
 implemented straightforwardly.  This observation also extends to
 Solver's analogous arrays of floating-point numbers (types
 <tt>IlcFloatArray</tt>, <tt>IlcFloatVarArray</tt>) and of objects
-(types <tt>IlcAnyArray</tt>, <tt>IlcAnyVarArray</tt>).</p><p>
+(types <tt>IlcAnyArray</tt>, <tt>IlcAnyVarArray</tt>).</p>
 
-<br>
-</p><h3>
+<h2>
 <a name="objvar">Object-valued variables</a>
-</h3>
+</h2>
         Currently a <tt>var</tt> declaration can use only the
 <tt>&gt; =</tt> and <tt>&lt; =</tt> operators to restrict the domain of a
 variable.  If the <tt>in</tt> operator were also allowed in this
@@ -795,12 +790,11 @@ may be arbitrary objects.  Solver's integer-valued variables can also
 be used in contexts where each integer stands for an object (rather
 than for a numerical value that participates in arithmetic
 expressions).  The <tt>IlcAllDiff</tt> operator required for our
-formulation is applicable to both object and integer arrays.</p><p>
+formulation is applicable to both object and integer arrays.</p>
 
-<br>
-</p><h3>
+<h2>
 <a name="setvar">Set-valued variables</a>
-</h3>
+</h2>
         Many kinds of combinatorial problems are more naturally
 described in terms of choosing an optimal subset, than in terms of any
 numerical decision variables.  Thus a second extension to the
