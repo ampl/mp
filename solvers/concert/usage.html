@@ -1,0 +1,959 @@
+
+<!-- saved from url=(0041)http://www.ampl.com/NEW/FUTURE/logic.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Proposed New AMPL Features: Logic Programming Extensions</title>
+
+<style type="text/css"></style></head>
+
+<body bgcolor="#88dddd">
+
+<hr>
+<table width="100%" border="0" cellspacing="0" cellpadding="0">
+  <tbody><tr>
+    <td align="left">
+      <b><i>Proposed New AMPL Features</i></b>
+    </td><td align="right">
+      <i>Draft of August 19, 1996</i>
+</td></tr></tbody></table>
+<hr>
+
+
+<h2>
+Constraint Logic Programming Extensions
+</h2>
+
+        For combinatorial or discrete optimization, AMPL currently
+provides the option of including integer-valued variables in algebraic
+objectives and constraints.  This is sufficient to make good use of
+integer programming solvers that use a classical branch-and-bound
+procedure.<p>
+
+        Optimization systems for <i>constraint logic programming</i>
+also use a branching or tree search, but are able to work with a much
+broader variety of combinatorial expressions.  In exchange for this
+advantage, logic programming solvers typically forego the ability to
+generate the bounds and cuts that are used to great advantage to limit
+the search in integer programming.  The logic programming approach
+thus tends to be advantageous for problems that are "highly"
+combinatorial, in the sense that their formulation in terms of integer
+variables is artificial and hard to work with, or requires a very
+large number of variables or constraints, or fails to yield strong
+bounds.</p><p>
+
+        AMPL could be extended in a variety of ways to take better
+advantage of the strengths of constraint logic programming solvers.
+Several kinds of constraints useful in logic programming are naturally
+expressed by allowing variables in certain operands or arguments where
+only constant expressions are currently permitted.  The features of
+constraint logic programming systems also suggest some operators and
+functions that should be added to the AMPL language.  Possibilities 
+include:
+
+</p><ul>
+<li><b><i><a href="http://www.ampl.com/NEW/FUTURE/logic.html#logop">Logical operators</a>:</i></b> <tt>and</tt>,
+<tt>or</tt>, <tt>not</tt>; iterated <tt>exists</tt>, <tt>forall</tt>
+
+</li><li><b><i><a href="http://www.ampl.com/NEW/FUTURE/logic.html#condop">Conditional operators</a>:</i></b>
+<tt>if-then</tt>, <tt>if-then-else</tt>
+
+</li><li><b><i><a href="http://www.ampl.com/NEW/FUTURE/logic.html#cardop">Counting operators</a>:</i></b> iterated
+<tt>count</tt>, <tt>atmost1</tt>, <tt>atmost(</tt><i>k</i><tt>)</tt>, 
+etc.
+
+</li><li><b><i><a href="http://www.ampl.com/NEW/FUTURE/logic.html#pairop">Pairwise operators</a>:</i></b> 
+<tt>alldiff</tt>, <tt>alldisjoint</tt>
+
+</li><li><b><i><a href="http://www.ampl.com/NEW/FUTURE/logic.html#varsub">Variables in subscripts</a>:</i></b>
+expressions like <tt>X[S[j]]</tt>, <tt>SC[S[j-1],S[j]]</tt>, etc.
+</li></ul>
+
+Other extensions would permit a broader variety of expressions for
+defining a variable's domain:
+
+<ul>
+<li><b><i><a href="http://www.ampl.com/NEW/FUTURE/logic.html#objvar">Object-valued variables</a></i></b>
+
+</li><li><b><i><a href="http://www.ampl.com/NEW/FUTURE/logic.html#setvar">Set-valued variables</a></i></b>
+</li></ul>
+
+Each of these items corresponds to a section below, in which we
+motivate a new group of features and propose corresponding AMPL
+language extensions.  A final paragraph or two in each section
+indicates how the C++ classes and member functions provided by <a href="http://www.ilog.com/">ILOG Solver</a> could be used to solve
+problems that have been expressed using the proposed features.  (There
+is a further possibility, which we do not pursue here, of defining new
+classes and member functions to more efficiently handle certain AMPL
+features.)<p>
+
+<br>
+</p><h3>
+<a name="logop">Logical operators</a>
+</h3>
+        Current AMPL constraints consist of numerical-valued
+expressions connected by <tt>&lt; =</tt>, <tt>&gt; =</tt> or <tt&gt =<="" tt="">.  A
+natural extension would be to allow these constraint expressions to be
+connected by AMPL's unary and binary logical operators,
+
+<dl><blockquote>
+
+<dt><i>constraint-expr1</i><tt> or </tt><i>constraint-expr2</i> <p>
+
+</p></dt><dd>Satisfied iff at least one of the operands is satisfied.<p>
+
+</p></dd><dt><i>constraint-expr1</i><tt> and </tt><i>constraint-expr2</i> <p>
+
+</p></dt><dd>Satisfied iff both of the operands are satisfied.<p>
+
+</p></dd><dt><tt>not </tt><i>constraint-expr</i> <p>
+
+</p></dt><dd>Satisfied iff the operand is not satisfied.<p>
+
+</p></dd></blockquote></dl>
+
+and AMPL's iterated forms of the binary logical operators:
+
+<dl><blockquote>
+
+<dt><tt>exists {</tt><i>indexing</i><tt>} </tt><i>constraint-expr</i> <p>
+
+</p></dt><dd>Satisfied iff the operand is satisfied for at least one member
+of the indexing set (the iterated form of <tt>or</tt>).<p>
+
+</p></dd><dt><tt>forall {</tt><i>indexing</i><tt>} </tt><i>constraint-expr</i> <p>
+
+</p></dt><dd>Satisfied iff the operand is satisfied for all members
+of the indexing set (the iterated form of <tt>and</tt>).<p>
+
+</p></dd></blockquote></dl>
+
+If we allow <i>constraint-expr</i> to be any valid expression for a
+constraint, and permit grouping of constraint expressions by 
+parentheses, 
+
+<dl><blockquote>
+
+<dt><tt>(</tt> <i>constraint-expr</i> <tt>)</tt><p>
+
+</p></dt><dd>Satisfied iff the <i>constraint-expr</i> is satisfied.<p>
+
+</p></dd></blockquote></dl>
+
+then an AMPL constraint can be any logical combination of equalities
+and inequalities.<p>
+
+        The simplest useful application of this extension would be to
+specify disjunctive constraints.  For example, in
+<tt>multmip3.mod</tt> from the AMPL book, we require for every origin
+<tt>i</tt> and destination <tt>j</tt> that total shipments
+<tt>sum</tt> <tt>{p</tt> <tt>in</tt> <tt>PROD}</tt>
+<tt>Trans[i,j,p]</tt> lie either at zero or between <tt>minload</tt>
+and <tt>limit[i,j]</tt>.  This is accomplished in an integer
+programming framework by introducing auxiliary binary variables
+<tt>Use[i,j]</tt>,</p><p>
+</p><pre>   var Trans {ORIG,DEST,PROD} &gt; = 0;
+   var Use {ORIG,DEST} binary;
+</pre>
+and forming the following constraints:
+<pre>   subject to Multi {i in ORIG, j in DEST}:
+      sum {p in PROD} Trans[i,j,p] &lt; = limit[i,j] * Use[i,j];
+
+   subject to Min_Ship {i in ORIG, j in DEST}:
+      sum {p in PROD} Trans[i,j,p] &gt; = minload * Use[i,j];
+</pre>
+The same restrictions could be stated using the <tt>or</tt> operator
+in this way:
+<pre>   subject to Multi_Min_Ship {i in ORIG, j in DEST}:
+      sum {p in PROD} Trans[i,j,p] = 0 <b>or</b>
+      minload &lt; = sum {p in PROD} Trans[i,j,p] &lt; = limit[i,j];
+</pre>
+Fewer variables and constraints are required, and the statement of
+the constraint is much closer to its original formulation.<p>
+
+        In another example, variables <tt>Assign[i1,i2,j]</tt> have
+been defined to represent the number of people of type
+<tt>(i1,i2)</tt> assigned to location <tt>j</tt>.  The following
+declarations define an additional restriction in integer programming
+terms:</p><p>
+</p><pre>   param upperbnd {(i1,i2) in ISO, j in REST} :=
+      min (ceil((number2[i1,i2]/card {PEOPLE}) * hiDine[j]) + give[i1,i2],
+           hiTargetTitle[i1,j] + giveTitle[i1],
+           hiTargetLoc[i2,j] + giveLoc[i2],
+           number2[i1,i2]);
+
+   var Lone {(i1,i2) in ISO, j in REST} binary;
+
+   subj to Isolation1 {(i1,i2) in ISO, j in REST}:
+      Assign2[i1,i2,j] &lt; = upperbnd[i1,i2,j] * Lone[i1,i2,j];
+
+   subj to Isolation2a {(i1,i2) in ISO, j in REST}:
+      Assign2[i1,i2,j] +
+         sum {ii1 in ADJACENT[i1]: (ii1,i2) in TYPE2} Assign2[ii1,i2,j]
+            &gt; = 2 * Lone[i1,i2,j];
+
+   subj to Isolation2b {(i1,i2) in ISO, j in REST}:
+      Assign2[i1,i2,j] &gt; = Lone[i1,i2,j];
+</pre>
+Using the <tt>or</tt> operator, the same thing can be said much more
+directly and concisely:
+<pre>   subj to Isolation {(i1,i2) in ISO, j in REST}:
+      Assign2[i1,i2,j] = 0 <b>or</b>
+      Assign2[i1,i2,j] +
+         sum {ii1 in ADJACENT[i1]: 
+                       (ii1,i2) in TYPE2} Assign2[ii1,i2,j] &gt; = 2;
+</pre>
+As a further complication under the integer programming approach,
+there are many other ways that this either-or constraint can be
+transformed, through addition of binary variables, to inequalities
+suitable for integer programming.  Other transformations differ in the
+computation of the upper bound parameter, in the details of the
+constraint expressions, and in the choice of "cuts" such as
+<tt>Isolation2b</tt> to tighten the formulation.  The transformation
+exhibited above is not obviously superior to others, though it did
+prove to be superior -- for the data of interest -- in a series of
+empirical tests.<p>
+
+        Although the use of <tt>or</tt> could be limited to simple
+cases like this, it would be desirable to allow the full generality of
+logical operations on constraint equalities and inequalities.  There
+are thorny issues to be dealt with in the general case, however:
+
+</p><ul>
+<li>If <tt>not</tt> is permitted, it is possible to specify a 
+    feasible region that isn't closed.  As a result, optimization
+    problems using continuous variables may be meaningless.  This
+    is illustrated by a very simple problem:
+<pre>        minimize Obj: x;
+        subject to OpenCons: not (x &lt; = 2);
+</pre>
+    The objective has an infimum of 2, but no minimum that
+    satisfies the constraint.  (The same problem arises if we
+    allow &lt;  and &gt;  in the constraints.)<p>
+
+</p></li><li>The arguments to a disjuctive constraint tend to have
+    similarities, which may need to be taken into account in order
+    to deal with the constraint most efficiently.  It may be 
+    important for solvers to know, for example, that the constraint
+    <tt>Multi_Min_Ship</tt> above is a zero-or-range constraint
+    on the common expression <tt>sum</tt> <tt>{p</tt> <tt>in</tt> 
+    <tt>PROD}</tt> <tt>Trans[i,j,p]</tt>.<p>
+</p></li></ul>
+
+Solver drivers would have to detect and deal with these situations by
+analyzing the expression tree that they receive from AMPL.  There are
+ways that AMPL could help,however, such as by identifying common
+subexpressions and by flagging certain common special cases.<p>
+
+        <b>ILOG Solver</b> provides analogues for AMPL's <tt>and</tt>
+(<tt>&amp;&amp;</tt>), <tt>or</tt> (<tt>||</tt>), and <tt>not</tt>
+(<tt>!</tt>) by overloading existing C++ operators.  It also defines
+operators for exclusive or (<tt>!=</tt>), equivalence (<tt&gt =="&lt;/tt">),
+and implication (<tt>&lt; =</tt>).  The effect of AMPL's iterated logical
+operators can be achieved by using its <tt>IlcCard</tt> function to 
+count the number of instances of a <i>constraint-expr</i> that are
+true; see also the discussion of counting operators below.</tt&gt></p><p>
+
+<br>
+</p><h3>
+<a name="condop">Conditional operators</a>
+</h3>
+        AMPL already provides an <tt>if-then-else</tt> operator that
+returns a value that can be used in expressions:<p>
+
+</p><dl><blockquote>
+
+<dt><tt>if </tt><i>logical-expr</i><tt>
+      then </tt><i>object-expr1</i>
+</dt><dt><tt>if </tt><i>logical-expr</i><tt>
+      then </tt><i>object-expr1</i><tt> 
+      else </tt><i>object-expr2</i><p>
+
+</p></dt><dd>Takes the value of <i>object-expr1</i> when the
+<i>logical-expr</i> is true, and the value of <i>object-expr2</i> (or
+0 if omitted) when the <i>logical-expr</i> is false.  Each
+<i>object-expr</i> may be any expression that evaluates to a legal set
+member -- that is, either a number or a string.<p>
+
+</p></dd><dt><tt>if </tt><i>logical-expr</i><tt>
+      then </tt><i>set-expr1</i><tt>
+      else </tt><i>set-expr2</i><p>
+
+</p></dt><dd>Takes the value of <i>set-expr1</i> when the <i>logical-expr</i>
+is true, and the value of <i>set-expr2</i> when the
+<i>logical-expr</i> is false.<p>
+
+</p></dd></blockquote></dl>
+
+When this operator appears in a constraint, the <i>logical-expr</i>
+can contain variables, in which case AMPL handles the constraint like
+other nonlinear constraints, passing an expression tree to the solver.
+In particular, the <i>logical-expr</i> may be any valid
+<i>constraint-expr</i>.<p>
+
+AMPL also has a similar <tt>if-then</tt> form of indexing expression,
+which is used in the context of constraints as follows:
+
+</p><dl><blockquote>
+
+<dt><tt>subject to {if </tt><i>const-logical-expr</i><tt>}:
+      </tt><i>constraint-expr</i><tt>;</tt><p>
+
+</p></dt><dd>Enforces the constraint specified by the <i>constraint-expr</i> 
+if and only if the <i>logical-expr</i> is true.<p>
+
+</p></dd></blockquote></dl>
+
+Thus for example in section 8.4 of the book we have:
+<pre>   subject to Time {if avail &gt;  0}:
+      sum {p in PROD} (1/rate[p]) * Make[p] &lt; = avail;
+</pre>
+It is arguably more natural, howver, to make the <tt>if</tt> condition
+part of the constraint expression:
+<pre>   subject to Time:
+      if avail &gt;  0 then
+         sum {p in PROD} (1/rate[p]) * Make[p] &lt; = avail;
+</pre>
+By allowing variables in the <i>logical-expr</i> following <tt>if</tt>,
+we arrive at another appealing form of constraint for logic programming:
+<dl><blockquote>
+
+<dt><tt>if </tt><i>logical-expr</i><tt> then
+      </tt><i>constraint-expr1</i><p>
+
+</p></dt><dd>Satisfied if the <i>logical-expr</i> is true and
+<i>constraint-expr1</i> is satisfied, or if the <i>logical-expr</i> is
+false.<p>
+
+</p></dd><dt><tt>if </tt><i>logical-expr</i><tt> then
+      </tt><i>constraint-expr1</i><tt> else
+      </tt><i>constraint-expr2</i><p>
+
+</p></dt><dd>Satisfied if the <i>logical-expr</i> is true and
+<i>constraint-expr1</i> is satisfied, or if the <i>logical-expr</i> is
+false and <i>constraint-expr2</i> is satisfied.<p>
+
+</p></dd></blockquote></dl>
+
+By allowing variables following <tt>if</tt>, these forms would
+considerably expand the variety of conditional constraints that AMPL
+could conveniently express.  For example, the previously defined
+<tt>Multi_Min_Ship</tt> constraint could be written:
+<pre>   subject to Multi_Min_Ship {i in ORIG, j in DEST}:
+      if sum {p in PROD} Trans[i,j,p] &gt;  0 then
+         minload &lt; = sum {p in PROD} Trans[i,j,p] &lt; = limit[i,j];
+</pre>
+Again, the <i>logical-expr</i> could be any <i>constraint-expr</i>.
+<p>
+
+<b>ILOG Solver</b> can directly define if-then constraints like
+<tt>Time</tt> and <tt>Multi_Min_Ship</tt> above by use of either a
+constraint-posting function (<tt>IlcIfThen</tt>) or an implication
+operator (<tt>&lt; =</tt>).  There is no direct support for
+if-then-<i>else</i> constraints, however; they have to be built from
+two calls to <tt>IlcIfThen</tt> or an equivalent constraint expression
+using several logical operators.</p><p>
+
+AMPL's if-then and if-then-else operators, described at the beginning
+of this section, have a direct analogue as a C++ operator, but C++
+does not allow the overloading of that operator that would be
+necessary to permit its use with Solver's constraint data types.</p><p>
+
+<br>
+</p><h3>
+<a name="cardop">Counting operators</a>
+</h3>
+        AMPL's <tt>card</tt> operator returns the number of members in
+a set.  When it is applied to a set defined in terms of variables, it
+can count the number of constraints of a given form that are
+satisfied.  For instance, in the <tt>multmip3.mod</tt> example
+previously cited, there is the following constraint on the number of
+destinations served by any origin:
+<pre>   subject to Max_Serve {i in ORIG}:
+      sum {j in DEST} Use[i,j] &lt; = maxserve;
+</pre>
+Using <tt>card</tt>, the same thing could be expressed in terms of
+the natural <tt>Trans[i,j,p]</tt> variables, without recourse to the
+auxiliary zero-one <tt>Use[i,j]</tt> variables:
+<pre>   subject to Max_Serve {i in ORIG}:
+      card {j in DEST: sum {p in PROD} Trans[i,j,p] &gt;  0} &lt; = maxserve;
+</pre>
+This form might be too general, however.  The operand of <tt>card</tt>
+could be any set expression.  To implement the resulting constraint,
+the solver would have to receive enough information to enable it to
+evaluate that set expression given any values of the variables.  We
+could circumvent this difficulty by restricting the ways in which
+variables may appear in the argument to <tt>card</tt>, but we prefer
+to avoid complicating the language design with such restrictions.
+Instead, we could define a new operator that explicitly counts the
+number of times that a certain constraint is satisfied:<p>
+
+</p><dl><blockquote>
+
+<dt><tt>count {</tt><i>indexing</i><tt>}
+    </tt><i>constraint-expr</i> <p>
+
+</p></dt><dd>The number of members of the <i>indexing</i> set such that the 
+<i>constraint-expr</i> is satisfied.<p>
+
+</p></dd></blockquote></dl>
+
+The above constraint would then be written:
+<pre>   subject to Max_Serve {i in ORIG}:
+      count {j in DEST} (sum {p in PROD} Trans[i,j,p] &gt;  0) &lt; = maxserve;
+</pre>
+The <i>constraint-expr</i> could be any valid AMPL constraint.  The
+AMPL translator would instantiate it for each member of the
+<i>indexing</i> set, and would communicate all of the instantiated
+constraints to the solver using the conventions already in place.<p>
+
+Additional iterated logical operators might be defined to simplify 
+the descriptions of constraints in some common special cases:
+
+</p><dl><blockquote>
+
+<dt><tt>atmost1 {</tt><i>indexing</i><tt>}
+    </tt><i>constraint-expr</i> <p>
+
+</p></dt><dd>Satisfied iff the <i>constraint-expr</i> holds for at most
+one member of the <i>indexing</i> set.<p>
+
+</p></dd><dt><tt>atleast1 {</tt><i>indexing</i><tt>}
+    </tt><i>constraint-expr</i> <p>
+
+</p></dt><dd>Satisfied iff the <i>constraint-expr</i> holds for at least
+one member of the <i>indexing</i> set.<p>
+
+</p></dd><dt><tt>exactly1 {</tt><i>indexing</i><tt>}
+    </tt><i>constraint-expr</i> <p>
+
+</p></dt><dd>Satisfied iff the <i>constraint-expr</i> holds for exactly
+one member of the <i>indexing</i> set.<p>
+
+</p></dd></blockquote></dl>
+
+The <tt>atleast1</tt> operator is a synonym for <tt>exists</tt>, but
+the other two are not currently available in AMPL.  A further
+generalization would replace the <tt>1</tt> in these operators by a
+parenthesized number:<p>
+
+</p><dl><blockquote>
+
+<dt><tt>atmost(</tt><i>k</i><tt>) {</tt><i>indexing</i><tt>}
+    </tt><i>constraint-expr</i>
+</dt><dt><tt>atleast(</tt><i>k</i><tt>) {</tt><i>indexing</i><tt>}
+    </tt><i>constraint-expr</i>
+</dt><dt><tt>exactly(</tt><i>k</i><tt>) {</tt><i>indexing</i><tt>}
+    </tt><i>constraint-expr</i> <p>
+
+</p></dt><dd>Satisfied iff the <i>constraint-expr</i> holds for at most (at
+least, exactly) <i>k</i> members of the <i>indexing</i> set.<p>
+
+</p></dd></blockquote></dl>
+
+We could restrict <i>k</i> to a positive integer constant, but in
+principle it could be any constant arithmetic expression that
+evaluates to a positive (or perhaps nonnegative) integer value.<p>
+
+Another particularly important special case occurs when counting the
+number of set members at which a given expression takes a particular
+value.  As a simple example, consider the scheduling problem that
+assigns a number of jobs to a smaller number of machines, so that at
+most <tt>cap[k]</tt> jobs are assigned to machine <tt>k</tt>.  The
+conventional formulation defines a binary (zero-one) variable
+<tt>Assign[j,k]</tt> for each job-machine pair, such that
+<tt>Assign[j,k]</tt> will be 1 if and only if job <tt>j</tt> is
+assigned to machine <tt>k</tt> (<a href="http://www.ampl.com/NEW/FUTURE/LOGIC/sched1.mod"><tt>sched1.mod</tt></a>):
+</p><pre>   param n integer &gt;  0;
+
+   set JOBS := 1..n;
+   set MACHINES := 1..n;
+
+   param cap {MACHINES} integer &gt; = 0;
+
+   var Assign {JOBS,MACHINES} binary;
+</pre>
+The requirements of the assignment can then be specified by one
+algebraic constraint for each job and for each machine:<p>
+</p><pre>   subj to OneMachinePerJob {j in JOBS}:
+      sum {k in MACHINES} Assign[j,k] = 1;
+
+   subj to CapacityOfMachine {k in MACHINES}:
+      sum {j in JOBS} Assign[j,k] &lt; = cap[k];
+</pre>
+As an alternative, we could associate with each job only one variable,
+whose value is taken from the set of machines:
+<pre>   var MachineForJob {JOBS} integer &gt; = 1, &lt; = n;
+</pre>
+For each <tt>j</tt> in <tt>JOBS</tt>, the value of
+<tt>MachineForJob[j]</tt> would be the number of the machine that is
+assigned to do job <tt>j</tt>.  This approach requires fewer variables
+by an order of magnitude, and automatically enforces the requirement
+that one machine be assigned to each job.  To specify that at most
+<tt>cap[k]</tt> jobs are assigned to machine <tt>k</tt>, we could use
+the proposed <tt>count</tt> operator (<a href="http://www.ampl.com/NEW/FUTURE/LOGIC/sched2.mod"><tt>sched2.mod</tt></a>):
+<pre>   subj to CapacityOfMachine {k in MACHINES}:
+      count {j in JOBS} (MachineForJob[j] = k) &lt; = cap[k];
+</pre>
+This is not as readable a statement of the constraint as one might
+like, however, and it is likely to be inefficient.  Because the
+<tt>count</tt> operator can be applied to any AMPL
+<i>constraint-expr</i>, its implementation in the AMPL translator
+would scan through the entire set <tt>JOBS</tt> for each constraint,
+testing <tt>MachineForJob[j]</tt> <tt&gt =<="" tt=""> <tt>k</tt> for every
+combination of job <tt>j</tt> and machine <tt>k</tt> -- even though
+only one pass through the jobs is necessary to accumulate the counts
+for all machines.  These circustances suggest that AMPL should instead
+offer a more specialized iterated operator for counting individual
+values assumed by an indexed expression (<a href="http://www.ampl.com/NEW/FUTURE/LOGIC/sched3.mod"><tt>sched3.mod</tt></a>):<p>
+</p><pre>   subj to CapacityOfMachine {k in MACHINES}:
+      countof(k) {j in JOBS} MachineForJob[j] &lt; = cap[k];
+</pre>
+The general form would be:
+
+<dl><blockquote>
+
+<dt><tt>countof(</tt><i>k</i><tt>) {</tt><i>indexing</i><tt>}
+    </tt><i>object-expr</i> <p>
+
+</p></dt><dd>The number of members of the <i>indexing</i> set such that the 
+<i>object-expr</i> is equal to <i>k</i>.<p>
+
+</p></dd></blockquote></dl>
+
+Although it would still be possible to implement this operator
+inefficiently, the presence of <tt>countof</tt> could alert the
+AMPL translator to the possibility of a more efficient evaluation.<p>
+
+<b>ILOG Solver</b>'s analogue to AMPL's cardinality operators is the
+<tt>IlcCard</tt> function.  <tt>IlcCard</tt> acts like <tt>card</tt>
+when called with one argument representing a set of integers (type
+<tt>IlcIntSetVar</tt>) or objects (type <tt>IlcAnySetVar</tt>).  It
+acts like <tt>count</tt> when called with an index (type
+<tt>IlcIndex</tt>) and a constraint using that index (type
+<tt>IlcConstraint</tt>).  The special case of the
+<tt>countof(</tt><i>k</i><tt>)</tt> operator is implemented
+efficiently through Solver's <tt>IlcDistribute</tt> function.</p><p>
+
+In the case where <tt>IlcCard</tt> is called with two arguments, an
+index is implicitly defined to run over the elements of one or more
+arrays of integers (type <tt>IlcIntVarArray</tt>) or objects (type
+<tt>IlcAnyVarArray</tt>).  To get the effect of AMPL's <tt>count</tt>
+applied to an arbitrary indexed collection of constraints, Solver must
+introduce auxiliary binary variables via its <i>metaconstraint</i>
+feature.  The association between constraints and these binary
+variables is maintained automatically, however, in contrast to the
+integer programming approach where it is necessary to form additional
+constraints (such as <tt>Multi</tt> and <tt>Min_Ship</tt> above) to
+enforce the definition of the binary variables.</p><p>
+
+<br>
+</p><h3>
+<a name="pairop">Pairwise operators</a>
+</h3>
+        Various assignment and related combinatorial problems require
+that a collection of entities be pairwise different or disjoint.  New
+iterated operators for these conditions would make them easier to
+state and would help to make the resulting problems easier to
+solve.<p>
+
+An example is given by the assignment problem that resembles the one
+defined above, but with equal numbers of jobs and machines.  Each
+job is assigned to one machine, as before, but also each machine gets
+one job.  In describing the constraints on the machines, we can
+dispense with the parameters <tt>cap[k]</tt> (which would all be 1)
+and can instead simply say that no two variables
+<tt>MachineForJob[j1]</tt> and <tt>MachineForJob[j2]</tt> have the
+same value.  Such a restriction can be stated in AMPL as follows:
+</p><pre>   subj to OneJobPerMachine {j1 in JOBS, j2 in JOBS: j1 &lt;  j2}:
+      MachineForJob[j1] != MachineForJob[j2];
+</pre>
+This is a cumbersome way to express the simple idea of being pairwise
+different, however, and it gives rise to an order of magnitude more
+constraints than the conventional formulation (<a href="http://www.ampl.com/NEW/FUTURE/LOGIC/assign1.mod"><tt>assign1.mod</tt></a>).  We would prefer to
+regard pairwise inequality as a property of the entire collection of
+<tt>MachineForJob</tt> variables, rather than as a collection of
+binary relations between individual variables.<p>
+
+In AMPL, properties of indexed collections are defined by means of
+iterated operators such as <tt>sum</tt> and <tt>exists</tt>.  Thus it
+would make sense to introduce an analogous operator for pairwise
+difference in an indexed collection of variables 
+(<a href="http://www.ampl.com/NEW/FUTURE/LOGIC/assign2.mod"><tt>assign2.mod</tt></a>):
+</p><pre>   subj to OneJobPerMachine: alldiff {j in JOBS} MachineForJob[j];
+</pre>
+In general, this operator could be applied to any collection of 
+expressions:
+
+<dl><blockquote>
+
+<dt><tt>alldiff {</tt><i>indexing</i><tt>}
+    </tt><i>object-expr</i><p>
+
+</p></dt><dd>Satisfied iff the <i>object-expr</i> takes different values for
+all pairs of different members of the <i>indexing</i> set.<p>
+
+</p></dd></blockquote></dl>
+
+Using <tt>alldiff</tt> makes constraints easier to read, and also
+conveys more useful information to a solver than a large collection of
+individual inequalities.<p>
+
+A similar operator could be introduced for indexed collections of
+set expressions, to express the property of being pairwise disjoint:
+
+</p><dl><blockquote>
+
+<dt><tt>alldisjoint {</tt><i>indexing</i><tt>}
+    </tt><i>set-expr</i><p>
+
+</p></dt><dd>Satisfied iff the <i>set-expr</i> evaluates to nonintersecting sets
+for all pairs of different members of the <i>indexing</i> set.<p>
+
+</p></dd></blockquote></dl>
+
+To express the same thing in current AMPL, it is necessary to state
+for each pair of sets that their intersection has cardinality zero.<p>
+
+<b>ILOG Solver</b> provides functions that correspond closely to these
+iterated pairwise operators.  Function <tt>IlcAllDiff</tt> specifies
+that the components of an array of integers (type
+<tt>IlcIntVarArray</tt>) or an array of objects (type
+<tt>IlcAnyVarArray</tt>) must be pairwise different.  Function
+<tt>IlcAllNullIntersect</tt> specifies that the components of an array
+of integer sets (type <tt>IlcIntSetVarArray</tt>) or an array of
+object sets (type <tt>IlcAnySetVarArray</tt>) must be pairwise
+disjoint.  Solver's search procedure handles these relationships
+directly in an efficient way.</p><p>
+
+<br>
+</p><h3>
+<a name="varsub">Variables in subscripts</a>
+</h3>
+        When we use zero-one variables for the assignment model, it
+is easy to express the objective as a conventional linear programming
+expression:
+<pre>   minimize TotalCost:
+      sum {j in JOBS, k in MACHINES} cost[j,k] * Assign[j,k];
+</pre>
+To use the <tt>MachineForJob</tt> variables, however, we are
+currently forced to resort to a more awkward formulation:
+<pre>   minimize TotalCost:
+      sum {j in JOBS, k in MACHINES} 
+         if MachineForJob[j] = k then cost[j,k];
+</pre>
+If we could simply write the cost of assigning machine <tt>j</tt> to
+job <tt>MachineForJob[j]</tt> as <tt>cost[j,MachineForJob[j]]</tt>,
+then the objective could be expressed much more naturally (<a href="http://www.ampl.com/NEW/FUTURE/LOGIC/assign3.mod"><tt>assign3.mod</tt></a>):
+<pre>   minimize TotalCost:
+      sum {j in JOBS, k in MACHINES} cost[j,MachineForJob[j]];
+</pre>
+This would require an extension to AMPL, since currently variables are
+not allowed to appear in subscripts in the objective of a model.<p>
+
+There is also good reason to want to use variables within subscripts
+in the constraints, as may be seen by considering the related problem
+of sequencing.  In a representative sequencing problem, we may want to
+assign a number of jobs to an equal number of "slots" so that each job
+is assigned to a different slot.  The key difference between these
+slots and the machines of the assignment example is that the slots
+have a significant ordering.  Setup costs and times between jobs are a
+function of this slot ordering, in ways that can be hard to express
+using current AMPL features.</p><p>
+
+To illustrate the difficulties and a prospective remedy, we define 
+data for a simple sequencing problem as follows:
+</p><pre>   param n integer &gt;  0;
+
+   set JOBS := 1..n;
+   set SLOTS := 1..n;
+
+   param procTime {JOBS} &gt;  0;
+   param dueTime {JOBS} &gt;  0;
+   param duePenalty {JOBS} &gt;  0;
+
+   set JOBPAIRS := {j1 in JOBS, j2 in JOBS: j1 != j2};
+   set PREC within JOBPAIRS;
+
+   param setupCost {JOBPAIRS} &gt; = 0;
+   param setupTime {JOBPAIRS} &gt; = 0;
+</pre>
+For each job <tt>j</tt>, <tt>procTime[j]</tt> is the processing time
+required for the job, <tt>dueTime[j]</tt> is the deadline for
+completion of the job, and <tt>duePenalty[j]</tt> is a cost per unit
+of time that the job is finished early.  For each pair of jobs
+<tt>j1</tt> and <tt>j2</tt>, <tt>(j1,j2)</tt> is in the set
+<tt>PREC</tt> if and only if <tt>j1</tt> must be finished before
+<tt>j2</tt>; <tt>setupCost[j1,j2]</tt> and <tt>setupTime[j1,j2]</tt>
+are the cost and time required to set up for job <tt>j2</tt>, if it is
+assigned to the slot immediately following job <tt>j1</tt>'s slot.<p>
+
+Adopting the approach introduced in the assignment example, we could
+define the variables as follows:
+</p><pre>   var SlotForJob {JOBS} integer &gt; = 1, &lt; = n;
+   var JobForSlot {SLOTS} integer &gt; = 1, &lt; = n;
+
+   var FinishTime {{0} union JOBS};
+</pre>
+<tt>SlotForJob[j]</tt> is the slot assigned to job <tt>j</tt>, and
+conversely <tt>JobForSlot[k]</tt> is the job assigned to slot
+<tt>k</tt>.  <tt>FinishTime[j]</tt> is the time that job <tt>j</tt> is
+finished, with <tt>FinishTime[0]</tt> being the same as the start
+time.  The number of variables remains proportional to the number of
+jobs, but we must figure out how to express the objective and
+constraints in terms of these variables.<p>
+
+What is the setup cost associated with the <tt>k</tt>th slot?  It is
+the cost of going from <tt>JobForSlot[k-1]</tt> to
+<tt>JobForSlot[k]</tt>, or
+</p><pre>   setupCost[JobForSlot[k-1],JobForSlot[k]]
+</pre>
+This is not currently a valid AMPL expression, because it uses
+variables as subscripts to a parameter.  It is certainly a very
+natural expression for this kind of problem, however, when the
+variables are defined in the efficient way we have given.  The setup
+times are represented by an analogous expression.  The completion time
+of the job in the <tt>k</tt>th slot is given by the expression
+<pre>   FinishTime[JobForSlot[k]]
+</pre>
+which illustrates that it is equally natural to subscript a variable
+with another variable.  Using these expressions, we can write the
+lower limit for the completion time of the job in the <tt>k</tt>th
+slot as the following constraint:
+<pre>   FinishTime[JobForSlot[k-1]] 
+      + setupTime[JobForSlot[k-1],JobForSlot[k]]
+      + procTime[JobForSlot[k]] 
+           &lt; = FinishTime[JobForSlot[k]]
+</pre>
+The <tt>SlotForJob</tt> variables are needed for the precedence
+constraints; for each pair of jobs <tt>(j1,j2)</tt> in set
+<tt>PREC</tt>,
+<pre>   SlotForJob[j1] &lt;  SlotForJob[j2]
+</pre>
+Finally, to ensure that the <tt>JobForSlot</tt> and
+<tt>SlotForJob</tt> variables describe the same valid sequencing, we
+need one more instance of a variable subscripted by a variable; for
+each job <tt>j</tt>,
+<pre>   JobForSlot[SlotForJob[j]] = j
+</pre>
+This constraint also indirectly ensures that each job is assigned a
+different slot, and each slot is assigned a different job.  In the
+complete model (<a href="http://www.ampl.com/NEW/FUTURE/LOGIC/seq1.mod"><tt>seq1.mod</tt></a>) the
+number of constraints is only on the order of the number of jobs
+(unless there is a huge number of precedence relations).<p>
+
+In general, any subscript in a constraint might be an expression that
+contains variables.  Unlike current AMPL subscripts, these could not
+simply be instantiated when AMPL generates constraints.  Rather, for
+each such subscript, AMPL would have to provide the solver with
+instructions for evaluating the expression, in the form of an
+expression tree or (for linear expressions) a list of coefficients.</p><p>
+
+<b>ILOG Solver</b>'s arrays of integers (type <tt>IlcIntArray</tt>)
+and integer variables (type <tt>IlcIntVarArray</tt>) have a
+subscripting operator that admits any integer expression (type
+<tt>IlcIntExp</tt>) as its argument.  Since an integer expression may
+in general contain variables, subscripts containing variables could be
+implemented straightforwardly.  This observation also extends to
+Solver's analogous arrays of floating-point numbers (types
+<tt>IlcFloatArray</tt>, <tt>IlcFloatVarArray</tt>) and of objects
+(types <tt>IlcAnyArray</tt>, <tt>IlcAnyVarArray</tt>).</p><p>
+
+<br>
+</p><h3>
+<a name="objvar">Object-valued variables</a>
+</h3>
+        Currently a <tt>var</tt> declaration can use only the
+<tt>&gt; =</tt> and <tt>&lt; =</tt> operators to restrict the domain of a
+variable.  If the <tt>in</tt> operator were also allowed in this
+context, then variables could be restricted to taking values from a
+given set:<p>
+
+</p><dl><blockquote>
+
+<dt><tt>var </tt><i>indexing<sub><font size="-2">opt</font></sub></i><tt>
+    </tt><i>var-name</i><tt> in </tt><i>const-set-expr</i><tt> ;</tt> <p>
+
+</p></dt><dd>Restricts the defined variable(s) to values that lie within the set
+specified by the <i>const-set-expr</i>.<p>
+
+</p></dd></blockquote></dl>
+
+In the context of logic programming, the interesting case is where the
+<i>const-set-expr</i> specifies a set of objects denoted by character
+strings (or arbitrary numbers).  The case where this expression is a
+union of significant numerical values and/or intervals is naturally
+handled in the more traditional context of numerical-valued variables
+and integer programming, <i>as will be explained elsewhere . . .</i><p>
+
+As an example, in the preceding assignment model we artificially
+defined <tt>JOBS</tt> and <tt>MACHINES</tt> to be sets of the first
+<tt>n</tt> integers.  If object-valued variables were allowed,
+however, these could be modeled as sets of objects to be read from the
+problem data, with a check that each contained the same number of
+objects:
+</p><pre>   set JOBS;
+   set MACHINES;
+      check card (JOBS) = card (MACHINES);
+</pre>
+For each <tt>j</tt> in <tt>JOBS</tt>, the variable
+<tt>MachineForJob[j]</tt> would then have as its value the member of
+set <tt>MACHINES</tt> that is assigned to do job <tt>j</tt>.  Hence it
+would be declared as an object-valued variable:
+<pre>   var MachineForJob {JOBS} in MACHINES; 
+</pre> 
+The remainder of the formulation (<a href="http://www.ampl.com/NEW/FUTURE/LOGIC/assign4.mod"><tt>assign4.mod</tt></a>) would be the same as
+before.  A similarly minor change to our sequencing model (<a href="http://www.ampl.com/NEW/FUTURE/LOGIC/seq2.mod"><tt>seq2.mod</tt></a>) would permit it also to use
+a set of objects for the jobs.<p>
+
+<b>ILOG Solver</b> provides <i>constrained enumerated variables</i>
+(types <tt>IlcAnyVar</tt> and <tt>IlcAnyVarArray</tt>) whose values
+may be arbitrary objects.  Solver's integer-valued variables can also
+be used in contexts where each integer stands for an object (rather
+than for a numerical value that participates in arithmetic
+expressions).  The <tt>IlcAllDiff</tt> operator required for our
+formulation is applicable to both object and integer arrays.</p><p>
+
+<br>
+</p><h3>
+<a name="setvar">Set-valued variables</a>
+</h3>
+        Many kinds of combinatorial problems are more naturally
+described in terms of choosing an optimal subset, than in terms of any
+numerical decision variables.  Thus a second extension to the
+<tt>var</tt> declaration's domain specification would give rise to
+variables that take subsets as values.<p>
+
+As an example, consider first a simple knapsack problem that concerns
+a set of objects having given values and weights, and an overall
+capacity:
+</p><pre>   set OBJECTS;
+
+   param value {OBJECTS} &gt;  0;
+   param weight {OBJECTS} &gt;  0;
+
+   param capacity &gt;  0;
+</pre>
+The problem can be stated concisely and naturally as follows:  find a
+subset of some given set of objects, such that the total value of the
+subset is maximized, subject to the total weight of the subset being
+less than the capacity.  This statement can be converted to a
+conventional algebraic formulation, by defining binary variable
+corresponding to each object:
+<pre>   var In {OBJECTS} binary;
+
+   maximize Total_Value: 
+      sum {i in OBJECTS} value[i] * In[i];
+
+   subject to Weight_Limit:
+      sum {i in OBJECTS} weight[i] * In[i] &lt; = capacity;
+</pre>
+The concise and natural original description could be expressed
+directly in AMPL, however, by use of a set-valued variable:
+<pre>   var Knapsack within OBJECTS;
+
+   maximize Total_Value: 
+      sum {i in Knapsack} value[i];
+
+   subject to Weight_Limit:
+      sum {i in Knapsack} weight[i] &lt; = capacity;
+</pre>
+The alternative objective and constraint superficially resemble the
+standard algebraic constraints, but they sum over the members of the
+set-valued variable <tt>Knapsack</tt> rather than over the given set
+<tt>OBJECTS</tt>.<p>
+
+The budgeted traveling salesman problem offers a somewhat different
+example.  The problem is stated in terms of a set of cities, one
+designated the home city; a set of city pairs on which travel is
+possible, and travel costs between these pairs; and an overall budget:
+</p><pre>   set CITIES; 
+   param Home symbolic in CITIES; 
+
+   set LINKS within {i in CITIES, j in CITIES: i &lt; &gt;  j}; 
+   param cost {LINKS}; 
+
+   param budget &gt;  0;
+</pre>
+In one version of the problem, the goal is to plan a tour from the
+home city visiting as many cities as possible, using only available
+city-pair links, and subject to the total travel cost being within the
+budget.  For this case we need a variable whose values are
+(circularly) ordered subsets of cities:
+<pre>   var Tour circular within CITIES; 
+
+   maximize Cities_Visited: card {Tour}; 
+
+   subject to Budget_Limit: 
+      sum {c in Tour} cost[c,next(c)] &lt; = budget; 
+
+   subject to Leave_Home: first(Tour) = Home; 
+
+   subject to Link_Exists {c in Tour}: (c,next(c)) in LINKS;
+</pre>
+Unlike the knapsack problem, this one has no especially obvious
+equivalent as an integer program.  The equivalent IPs that do exist,
+moreover, are generally too hard for general-purpose integer
+programming codes except in very small instances.  Most combinatorial
+optimization problems of practical complexity share these
+characteristics.<p>
+
+   The general forms for declarations of set-valued variables
+would be as follows:
+
+</p><dl><blockquote>
+
+<dt><tt>var </tt><i>indexing<sub><font size="-2">opt</font></sub></i><tt>
+    </tt><i>var-name</i><tt> within 
+    </tt><i>const-set-expr</i><tt> ;</tt> <p>
+
+</p></dt><dd>Defines set-valued variables whose domain consists of all unordered
+subsets of the set specified by the <i>const-set-expr</i>.<p>
+
+</p></dd><dt><tt>var </tt><i>indexing<sub><font size="-2">opt</font></sub></i><tt>
+    </tt><i>var-name</i><tt> ordered within 
+    </tt><i>const-set-expr</i><tt> ;</tt> <p>
+
+</p></dt><dd>The same as above, except the <i>const-set-expr</i> must describe
+an ordered set, and induces an ordering on all of the subsets in the
+variable's domain.  Ordered set functions such as <tt>first</tt> and
+<tt>next</tt> may thus be applied to the variable and its members.<p>
+
+</p></dd><dt><tt>var </tt><i>indexing<sub><font size="-2">opt</font></sub></i><tt>
+    </tt><i>var-name</i><tt> circular within 
+    </tt><i>const-set-expr</i><tt> ;</tt> <p>
+
+</p></dt><dd>The same as above, except the orderings are circular.<p>
+
+</p></dd></blockquote></dl>
+
+The use of <tt>within</tt> in the domain specification is sufficient
+to distinguish declarations of set-valued variables.  The distinction
+could be emphasized, however, by starting the declaration with a new
+keyword (such as <tt>var_set</tt>) or an extra keyword (as in
+<tt>var</tt> <tt>set</tt>).<p>
+
+<b>ILOG Solver</b> includes data types for sets of objects
+(<tt>IlcAnySet</tt>) and sets of integers (<tt>IlcIntSet</tt>).
+Set-valued variables are provided by corresponding <i>constrained set
+variables</i> of objects (types <tt>IlcAnySetVar</tt> and
+<tt>IlcAnySetVarArray</tt>) and integers (types <tt>IlcIntSetVar</tt>
+and <tt>IlcIntSetVarArray</tt>).  Functions are provided for the
+standard set operations, including membership, containment, union,
+intersection, and cardinality.</p><p>
+
+
+</p><hr><br>
+<b><i>Comments or questions?</i></b><br>
+Write to <a href="mailto:info@ampl.com"><tt>info@ampl.com</tt></a>
+or use our <a href="http://www.ampl.com/comments.html">comment form</a>.<p>
+
+<i><a href="http://www.ampl.com/NEW/FUTURE/index.html">Return to the AMPL proposed new features page</a>.</i></p><p>
+<i><a href="http://www.ampl.com/NEW/index.html">Return to the AMPL update page</a>.</i></p><p>
+<i><a href="http://www.ampl.com/index.html">Return to the AMPL home page</a>.</i></p><p>
+
+</p><hr width="50%" align="left">
+<font size="-2">LAST MODIFIED 19 AUGUST 1996 BY 
+<a href="mailto:4er@iems.nwu.edu">4er</a>.</font>
+
+
+
+</tt&gt></tt&gt></body></html>
