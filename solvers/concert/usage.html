@@ -61,8 +61,8 @@ CPLEX</a> and
 <a href="http://www.ibm.com/software/integration/optimization/cplex-cp-optimizer/">
 CPLEX CP Optimizer</a> through
 the Concert C++ interface. Each set of extensions corresponds to a section
-below. The final section summarizes the correspondence between AMPL constructs
-and their Concert counterparts.
+below. The final section summarizes correspondence between AMPL and Concert
+constructs.
 
 <h2>
 <a name="logop">Logical operators</a>
@@ -194,7 +194,8 @@ empirical tests.
     closed by using the <tt>not</tt> operator.  As a result, optimization
     problems using continuous variables may be meaningless.  This is
     illustrated by a very simple problem:
-<pre>        minimize Obj: x;
+<pre>        var x;
+        minimize Obj: x;
         subject to OpenCons: not (x &lt;= 2);
 </pre>
     The objective has an infimum of 2, but no minimum that
@@ -202,19 +203,21 @@ empirical tests.
     use strict inequality, that is &lt; and &gt;, constraint expressions.)</p>
 
 <p>
-    However, the above problem doesn't occur in the Concert driver because
-    CP Optimizer only allows discrete variables and CPLEX doesn't support
-    logical constraints.
+    The above problem doesn't occur in CP Optimizer because
+    it only allows discrete variables. <!-- CPLEX - gives error -->
 </p>
 
-<p><b>CP Optimizer</b> provides analogues for AMPL's <tt>and</tt>
-(<tt>&amp;&amp;</tt>), <tt>or</tt> (<tt>||</tt>), and <tt>not</tt>
-(<tt>!</tt>) by overloading corresponding C++ operators.  It also defines
-operators for exclusive or (<tt>!=</tt>), equivalence (<tt>==</tt>),
-and implication (<tt>&lt;=</tt>).  The effect of AMPL's iterated logical
-operators can be achieved by using its <tt>IlcCard</tt> function to 
-count the number of instances of a <i>constraint-expr</i> that are
-true; see also the discussion of counting operators below.</tt&gt></p>
+<p>AMPL's logical constraint expressions involving <tt>and</tt> and
+<tt>not</tt> are converted into corresponding Concert C++ expressions
+that use overloaded operators <tt>&amp;&amp;</tt> and <tt>!</tt>.
+The AMPL expression <tt>c1 or c2</tt> where <tt>c1</tt> and <tt>c2</tt>
+are constraint expression is translated into <tt>IloIfThen(env, !cc1, cc2)</tt>
+where <tt>cc1</tt> and <tt>cc2</tt> are Concert counterparts of
+<tt>c1</tt> and <tt>c2</tt>. The reason logical OR is not translated into
+a Concert expression using overloaded <tt>||</tt> operator is that
+<tt>IloIfThen</tt> accepts more types of constraints on the right-hand
+side. Iterated logical operators <tt>exists</tt> and <tt>forall</tt> are
+implemented using <tt>IloOr</tt> and <tt>IloAnd</tt> respectively.
 
 <h2>
 <a name="condop">Conditional operators</a>
@@ -584,4 +587,52 @@ of integer sets (type <tt>IlcIntSetVarArray</tt>) or an array of
 object sets (type <tt>IlcAnySetVarArray</tt>) must be pairwise
 disjoint.  Solver's search procedure handles these relationships
 directly in an efficient way.</p>
-</body></html>
+
+<h2>
+<a name="pairop">Concert equivalents of AMPL constructs</a>
+</h2>
+
+The following table gives Concert counterparts for AMPL constraint logic
+programming constructs. If <i>constraint-expr</i> is an AMPL constraint
+expression, its Concert equivalent is denoted by <i>constraint-expr'</i>.
+
+<table border="1">
+<tr>
+  <th>AMPL</th>
+  <th>Concert</th>
+</tr>
+<tr>
+  <td><i>constraint-expr1</i> <tt>or</tt> <i>constraint-expr2</i></td>
+  <td><tt>IloIfThen(env, !</tt><i>constraint-expr1'</i><tt>,</tt>
+      <i>constraint-expr2'</i><tt>)</tt></td>
+</tr>
+<tr>
+  <td><i>constraint-expr1</i> <tt>and</tt> <i>constraint-expr2</i></td>
+  <td><i>constraint-expr1'</i> <tt>&&</tt> <i>constraint-expr2'</i></td>
+</tr>
+<tr>
+  <td><tt>not</tt> <i>constraint-expr</i></td>
+  <td><tt>!</tt><i>constraint-expr'</i></td>
+</tr>
+<tr>
+  <td><tt>exists {</tt><i>indexing</i><tt>} </tt><i>constraint-expr</i></td>
+  <td>
+    <tt>IloOr disjunction(env);</tt><br/>
+    <tt>disjunction.add(</tt><i>constraint-expr1'</i><tt>);</tt><br/>
+    <tt>...</tt><br/>
+    <tt>disjunction.add(</tt><i>constraint-exprN'</i><tt>);</tt><br/>
+  </td>
+</tr>
+<tr>
+  <td><tt>forall {</tt><i>indexing</i><tt>} </tt><i>constraint-expr</i></td>
+  <td>
+    <tt>IloAnd conjunction(env);</tt><br/>
+    <tt>conjunction.add(</tt><i>constraint-expr1'</i><tt>);</tt><br/>
+    <tt>...</tt><br/>
+    <tt>conjunction.add(</tt><i>constraint-exprN'</i><tt>);</tt><br/>
+  </td>
+</tr>
+</table>
+
+</body>
+</html>
