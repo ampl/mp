@@ -25,47 +25,52 @@ variables is artificial and hard to work with, or requires a very
 large number of variables or constraints, or fails to yield strong
 bounds.</p><p>
 
-        AMPL could be extended in a variety of ways to take better
+        AMPL has been extended in a variety of ways to take better
 advantage of the strengths of constraint logic programming solvers.
 Several kinds of constraints useful in logic programming are naturally
 expressed by allowing variables in certain operands or arguments where
-only constant expressions are currently permitted.  The features of
-constraint logic programming systems also suggest some operators and
-functions that should be added to the AMPL language.  Possibilities 
-include:</p>
+only constant expressions are normally permitted.  The following
+operators have been added to the AMPL language, or extended to accept
+constraint expressions as operands, in order to facilitate writing
+constraint logical programming models:</p>
 
 <ul>
+<!-- TODO: strict inequalities -->
 <li><b><i><a href="#logop">Logical operators</a>:</i></b> <tt>and</tt>,
 <tt>or</tt>, <tt>not</tt>; iterated <tt>exists</tt>, <tt>forall</tt>
 
+<!-- TODO: ==>, <==> -->
 </li><li><b><i><a href="#condop">Conditional operators</a>:</i></b>
 <tt>if-then</tt>, <tt>if-then-else</tt>
 
+<!-- TODO: check op names -->
 </li><li><b><i><a href="#cardop">Counting operators</a>:</i></b> iterated
-<tt>count</tt>, <tt>atmost1</tt>, <tt>atmost(</tt><i>k</i><tt>)</tt>, 
+<tt>count</tt>, <tt>atmost1</tt>, <tt>atmost(</tt><i>k</i><tt>)</tt>,
 etc.
 
-</li><li><b><i><a href="#pairop">Pairwise operators</a>:</i></b> 
-<tt>alldiff</tt>, <tt>alldisjoint</tt>
+<!-- TODO: check op names -->
+</li><li><b><i><a href="#pairop">Pairwise operators</a>:</i></b>
+<tt>alldiff</tt>, <tt>alldisjoint</tt></li>
 </ul>
 
-Each of these items corresponds to a section below, in which we
-motivate a new group of features and propose corresponding AMPL
-language extensions.  A final paragraph or two in each section
-indicates how the C++ classes and member functions provided by
-<a href="http://www.ilog.com/">ILOG Solver</a> could be used to solve
-problems that have been expressed using the proposed features.  (There
-is a further possibility, which we do not pursue here, of defining new
-classes and member functions to more efficiently handle certain AMPL
-features.)
+In this document we give the syntax and usage summary of the extended
+operators that are recognized in the AMPL Concert driver.
+This driver provides connection to IBM ILOG
+<a href="http://www.ibm.com/software/integration/optimization/cplex-optimizer/">
+CPLEX</a> and 
+<a href="http://www.ibm.com/software/integration/optimization/cplex-cp-optimizer/">
+CPLEX CP Optimizer</a> through
+the Concert C++ interface. Each set of extensions corresponds to a section
+below. The final section summarizes the correspondence between AMPL constructs
+and their Concert counterparts.
 
 <h2>
 <a name="logop">Logical operators</a>
 </h2>
-        Current AMPL constraints consist of numerical-valued
-expressions connected by <tt>&lt; =</tt>, <tt>&gt; =</tt> or <tt&gt =<="" tt="">.  A
-natural extension would be to allow these constraint expressions to be
-connected by AMPL's unary and binary logical operators,
+        Basic AMPL constraints consist of numerical-valued
+expressions connected by <tt>&lt;=</tt>, <tt>&gt;=</tt> or <tt>=</tt>.
+These constraint expressions are now allowed to be connected by AMPL's
+unary and binary logical operators,
 
 <dl><blockquote>
 
@@ -99,9 +104,7 @@ of the indexing set (the iterated form of <tt>and</tt>).<p>
 
 </p></dd></blockquote></dl>
 
-If we allow <i>constraint-expr</i> to be any valid expression for a
-constraint, and permit grouping of constraint expressions by 
-parentheses, 
+Constraint expressions can also be grouped by by parentheses:
 
 <dl><blockquote>
 
@@ -111,33 +114,34 @@ parentheses,
 
 </p></dd></blockquote></dl>
 
-then an AMPL constraint can be any logical combination of equalities
+So an AMPL constraint can be any logical combination of equalities
 and inequalities.<p>
 
-        The simplest useful application of this extension would be to
+        The simplest useful application of this extension is to
 specify disjunctive constraints.  For example, in
-<tt>multmip3.mod</tt> from the AMPL book, we require for every origin
+<a href="http://www.ampl.com/BOOK/EXAMPLES/EXAMPLES2/multmip3.mod">
+multmip3.mod</a> from the AMPL book, we require for every origin
 <tt>i</tt> and destination <tt>j</tt> that total shipments
 <tt>sum</tt> <tt>{p</tt> <tt>in</tt> <tt>PROD}</tt>
 <tt>Trans[i,j,p]</tt> lie either at zero or between <tt>minload</tt>
 and <tt>limit[i,j]</tt>.  This is accomplished in an integer
 programming framework by introducing auxiliary binary variables
 <tt>Use[i,j]</tt>,</p><p>
-</p><pre>   var Trans {ORIG,DEST,PROD} &gt; = 0;
+</p><pre>   var Trans {ORIG,DEST,PROD} &gt;= 0;
    var Use {ORIG,DEST} binary;
 </pre>
 and forming the following constraints:
 <pre>   subject to Multi {i in ORIG, j in DEST}:
-      sum {p in PROD} Trans[i,j,p] &lt; = limit[i,j] * Use[i,j];
+      sum {p in PROD} Trans[i,j,p] &lt;= limit[i,j] * Use[i,j];
 
    subject to Min_Ship {i in ORIG, j in DEST}:
-      sum {p in PROD} Trans[i,j,p] &gt; = minload * Use[i,j];
+      sum {p in PROD} Trans[i,j,p] &gt;= minload * Use[i,j];
 </pre>
-The same restrictions could be stated using the <tt>or</tt> operator
+The same restrictions can be stated using the <tt>or</tt> operator
 in this way:
 <pre>   subject to Multi_Min_Ship {i in ORIG, j in DEST}:
       sum {p in PROD} Trans[i,j,p] = 0 <b>or</b>
-      minload &lt; = sum {p in PROD} Trans[i,j,p] &lt; = limit[i,j];
+      minload &lt;= sum {p in PROD} Trans[i,j,p] &lt;= limit[i,j];
 </pre>
 Fewer variables and constraints are required, and the statement of
 the constraint is much closer to its original formulation.<p>
@@ -156,15 +160,15 @@ terms:</p><p>
    var Lone {(i1,i2) in ISO, j in REST} binary;
 
    subj to Isolation1 {(i1,i2) in ISO, j in REST}:
-      Assign2[i1,i2,j] &lt; = upperbnd[i1,i2,j] * Lone[i1,i2,j];
+      Assign2[i1,i2,j] &lt;= upperbnd[i1,i2,j] * Lone[i1,i2,j];
 
    subj to Isolation2a {(i1,i2) in ISO, j in REST}:
       Assign2[i1,i2,j] +
          sum {ii1 in ADJACENT[i1]: (ii1,i2) in TYPE2} Assign2[ii1,i2,j]
-            &gt; = 2 * Lone[i1,i2,j];
+            &gt;= 2 * Lone[i1,i2,j];
 
    subj to Isolation2b {(i1,i2) in ISO, j in REST}:
-      Assign2[i1,i2,j] &gt; = Lone[i1,i2,j];
+      Assign2[i1,i2,j] &gt;= Lone[i1,i2,j];
 </pre>
 Using the <tt>or</tt> operator, the same thing can be said much more
 directly and concisely:
@@ -172,7 +176,7 @@ directly and concisely:
       Assign2[i1,i2,j] = 0 <b>or</b>
       Assign2[i1,i2,j] +
          sum {ii1 in ADJACENT[i1]: 
-                       (ii1,i2) in TYPE2} Assign2[ii1,i2,j] &gt; = 2;
+                       (ii1,i2) in TYPE2} Assign2[ii1,i2,j] &gt;= 2;
 </pre>
 As a further complication under the integer programming approach,
 there are many other ways that this either-or constraint can be
@@ -183,44 +187,31 @@ constraint expressions, and in the choice of "cuts" such as
 <tt>Isolation2b</tt> to tighten the formulation.  The transformation
 exhibited above is not obviously superior to others, though it did
 prove to be superior -- for the data of interest -- in a series of
-empirical tests.<p>
+empirical tests.
 
-        Although the use of <tt>or</tt> could be limited to simple
-cases like this, it would be desirable to allow the full generality of
-logical operations on constraint equalities and inequalities.  There
-are thorny issues to be dealt with in the general case, however:
-
-</p><ul>
-<li>If <tt>not</tt> is permitted, it is possible to specify a 
-    feasible region that isn't closed.  As a result, optimization
-    problems using continuous variables may be meaningless.  This
-    is illustrated by a very simple problem:
+<p>
+    Note that it is possible to specify a feasible region that isn't
+    closed by using the <tt>not</tt> operator.  As a result, optimization
+    problems using continuous variables may be meaningless.  This is
+    illustrated by a very simple problem:
 <pre>        minimize Obj: x;
-        subject to OpenCons: not (x &lt; = 2);
+        subject to OpenCons: not (x &lt;= 2);
 </pre>
     The objective has an infimum of 2, but no minimum that
     satisfies the constraint.  (The same problem arises if we
-    allow &lt;  and &gt;  in the constraints.)<p>
+    use strict inequality, that is &lt; and &gt;, constraint expressions.)</p>
 
-</p></li><li>The arguments to a disjuctive constraint tend to have
-    similarities, which may need to be taken into account in order
-    to deal with the constraint most efficiently.  It may be 
-    important for solvers to know, for example, that the constraint
-    <tt>Multi_Min_Ship</tt> above is a zero-or-range constraint
-    on the common expression <tt>sum</tt> <tt>{p</tt> <tt>in</tt> 
-    <tt>PROD}</tt> <tt>Trans[i,j,p]</tt>.<p>
-</p></li></ul>
+<p>
+    However, the above problem doesn't occur in the Concert driver because
+    CP Optimizer only allows discrete variables and CPLEX doesn't support
+    logical constraints.
+</p>
 
-Solver drivers would have to detect and deal with these situations by
-analyzing the expression tree that they receive from AMPL.  There are
-ways that AMPL could help,however, such as by identifying common
-subexpressions and by flagging certain common special cases.<p>
-
-        <b>ILOG Solver</b> provides analogues for AMPL's <tt>and</tt>
+<p><b>CP Optimizer</b> provides analogues for AMPL's <tt>and</tt>
 (<tt>&amp;&amp;</tt>), <tt>or</tt> (<tt>||</tt>), and <tt>not</tt>
-(<tt>!</tt>) by overloading existing C++ operators.  It also defines
-operators for exclusive or (<tt>!=</tt>), equivalence (<tt&gt =="&lt;/tt">),
-and implication (<tt>&lt; =</tt>).  The effect of AMPL's iterated logical
+(<tt>!</tt>) by overloading corresponding C++ operators.  It also defines
+operators for exclusive or (<tt>!=</tt>), equivalence (<tt>==</tt>),
+and implication (<tt>&lt;=</tt>).  The effect of AMPL's iterated logical
 operators can be achieved by using its <tt>IlcCard</tt> function to 
 count the number of instances of a <i>constraint-expr</i> that are
 true; see also the discussion of counting operators below.</tt&gt></p>
@@ -276,13 +267,13 @@ if and only if the <i>logical-expr</i> is true.<p>
 
 Thus for example in section 8.4 of the book we have:
 <pre>   subject to Time {if avail &gt;  0}:
-      sum {p in PROD} (1/rate[p]) * Make[p] &lt; = avail;
+      sum {p in PROD} (1/rate[p]) * Make[p] &lt;= avail;
 </pre>
 It is arguably more natural, howver, to make the <tt>if</tt> condition
 part of the constraint expression:
 <pre>   subject to Time:
       if avail &gt;  0 then
-         sum {p in PROD} (1/rate[p]) * Make[p] &lt; = avail;
+         sum {p in PROD} (1/rate[p]) * Make[p] &lt;= avail;
 </pre>
 By allowing variables in the <i>logical-expr</i> following <tt>if</tt>,
 we arrive at another appealing form of constraint for logic programming:
@@ -311,15 +302,15 @@ could conveniently express.  For example, the previously defined
 <tt>Multi_Min_Ship</tt> constraint could be written:
 <pre>   subject to Multi_Min_Ship {i in ORIG, j in DEST}:
       if sum {p in PROD} Trans[i,j,p] &gt;  0 then
-         minload &lt; = sum {p in PROD} Trans[i,j,p] &lt; = limit[i,j];
+         minload &lt;= sum {p in PROD} Trans[i,j,p] &lt;= limit[i,j];
 </pre>
 Again, the <i>logical-expr</i> could be any <i>constraint-expr</i>.
 <p>
 
-<b>ILOG Solver</b> can directly define if-then constraints like
+<b>CP Optimizer</b> can directly define if-then constraints like
 <tt>Time</tt> and <tt>Multi_Min_Ship</tt> above by use of either a
 constraint-posting function (<tt>IlcIfThen</tt>) or an implication
-operator (<tt>&lt; =</tt>).  There is no direct support for
+operator (<tt>&lt;=</tt>).  There is no direct support for
 if-then-<i>else</i> constraints, however; they have to be built from
 two calls to <tt>IlcIfThen</tt> or an equivalent constraint expression
 using several logical operators.</p><p>
@@ -339,13 +330,13 @@ satisfied.  For instance, in the <tt>multmip3.mod</tt> example
 previously cited, there is the following constraint on the number of
 destinations served by any origin:
 <pre>   subject to Max_Serve {i in ORIG}:
-      sum {j in DEST} Use[i,j] &lt; = maxserve;
+      sum {j in DEST} Use[i,j] &lt;= maxserve;
 </pre>
 Using <tt>card</tt>, the same thing could be expressed in terms of
 the natural <tt>Trans[i,j,p]</tt> variables, without recourse to the
 auxiliary zero-one <tt>Use[i,j]</tt> variables:
 <pre>   subject to Max_Serve {i in ORIG}:
-      card {j in DEST: sum {p in PROD} Trans[i,j,p] &gt;  0} &lt; = maxserve;
+      card {j in DEST: sum {p in PROD} Trans[i,j,p] &gt;  0} &lt;= maxserve;
 </pre>
 This form might be too general, however.  The operand of <tt>card</tt>
 could be any set expression.  To implement the resulting constraint,
@@ -369,7 +360,7 @@ number of times that a certain constraint is satisfied:<p>
 
 The above constraint would then be written:
 <pre>   subject to Max_Serve {i in ORIG}:
-      count {j in DEST} (sum {p in PROD} Trans[i,j,p] &gt;  0) &lt; = maxserve;
+      count {j in DEST} (sum {p in PROD} Trans[i,j,p] &gt;  0) &lt;= maxserve;
 </pre>
 The <i>constraint-expr</i> could be any valid AMPL constraint.  The
 AMPL translator would instantiate it for each member of the
@@ -438,7 +429,7 @@ assigned to machine <tt>k</tt> (<a href="http://www.ampl.com/NEW/FUTURE/LOGIC/sc
    set JOBS := 1..n;
    set MACHINES := 1..n;
 
-   param cap {MACHINES} integer &gt; = 0;
+   param cap {MACHINES} integer &gt;= 0;
 
    var Assign {JOBS,MACHINES} binary;
 </pre>
@@ -448,11 +439,11 @@ algebraic constraint for each job and for each machine:<p>
       sum {k in MACHINES} Assign[j,k] = 1;
 
    subj to CapacityOfMachine {k in MACHINES}:
-      sum {j in JOBS} Assign[j,k] &lt; = cap[k];
+      sum {j in JOBS} Assign[j,k] &lt;= cap[k];
 </pre>
 As an alternative, we could associate with each job only one variable,
 whose value is taken from the set of machines:
-<pre>   var MachineForJob {JOBS} integer &gt; = 1, &lt; = n;
+<pre>   var MachineForJob {JOBS} integer &gt;= 1, &lt;= n;
 </pre>
 For each <tt>j</tt> in <tt>JOBS</tt>, the value of
 <tt>MachineForJob[j]</tt> would be the number of the machine that is
@@ -462,7 +453,7 @@ that one machine be assigned to each job.  To specify that at most
 <tt>cap[k]</tt> jobs are assigned to machine <tt>k</tt>, we could use
 the proposed <tt>count</tt> operator (<a href="http://www.ampl.com/NEW/FUTURE/LOGIC/sched2.mod"><tt>sched2.mod</tt></a>):
 <pre>   subj to CapacityOfMachine {k in MACHINES}:
-      count {j in JOBS} (MachineForJob[j] = k) &lt; = cap[k];
+      count {j in JOBS} (MachineForJob[j] = k) &lt;= cap[k];
 </pre>
 This is not as readable a statement of the constraint as one might
 like, however, and it is likely to be inefficient.  Because the
@@ -476,7 +467,7 @@ for all machines.  These circustances suggest that AMPL should instead
 offer a more specialized iterated operator for counting individual
 values assumed by an indexed expression (<a href="http://www.ampl.com/NEW/FUTURE/LOGIC/sched3.mod"><tt>sched3.mod</tt></a>):<p>
 </p><pre>   subj to CapacityOfMachine {k in MACHINES}:
-      countof(k) {j in JOBS} MachineForJob[j] &lt; = cap[k];
+      countof(k) {j in JOBS} MachineForJob[j] &lt;= cap[k];
 </pre>
 The general form would be:
 
@@ -494,7 +485,7 @@ Although it would still be possible to implement this operator
 inefficiently, the presence of <tt>countof</tt> could alert the
 AMPL translator to the possibility of a more efficient evaluation.<p>
 
-<b>ILOG Solver</b>'s analogue to AMPL's cardinality operators is the
+<b>CP Optimizer</b>'s analogue to AMPL's cardinality operators is the
 <tt>IlcCard</tt> function.  <tt>IlcCard</tt> acts like <tt>card</tt>
 when called with one argument representing a set of integers (type
 <tt>IlcIntSetVar</tt>) or objects (type <tt>IlcAnySetVar</tt>).  It
@@ -583,7 +574,7 @@ for all pairs of different members of the <i>indexing</i> set.<p>
 To express the same thing in current AMPL, it is necessary to state
 for each pair of sets that their intersection has cardinality zero.<p>
 
-<b>ILOG Solver</b> provides functions that correspond closely to these
+<b>CP Optimizer</b> provides functions that correspond closely to these
 iterated pairwise operators.  Function <tt>IlcAllDiff</tt> specifies
 that the components of an array of integers (type
 <tt>IlcIntVarArray</tt>) or an array of objects (type
