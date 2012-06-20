@@ -39,9 +39,9 @@ constraint logical programming models:</p>
 <li><b><i><a href="#logop">Logical operators</a>:</i></b> <tt>and</tt>,
 <tt>or</tt>, <tt>not</tt>; iterated <tt>exists</tt>, <tt>forall</tt>
 
-<!-- TODO: ==>, <==> -->
 </li><li><b><i><a href="#condop">Conditional operators</a>:</i></b>
-<tt>if-then</tt>, <tt>if-then-else</tt>
+<tt>if-then</tt>, <tt>if-then-else</tt>, <tt>==></tt>, <tt>==> else</tt>,
+<tt><==></tt>
 
 <!-- TODO: check op names -->
 </li><li><b><i><a href="#cardop">Counting operators</a>:</i></b> iterated
@@ -204,7 +204,8 @@ empirical tests.
 
 <p>
     The above problem doesn't occur in CP Optimizer because
-    it only allows discrete variables. <!-- CPLEX - gives error -->
+    it only allows discrete variables. To avoid this problem CPLEX restricts
+    use of strict inequalities to integer expressions.
 </p>
 
 <p>AMPL's logical constraint expressions involving <tt>and</tt> and
@@ -260,7 +261,7 @@ which is used in the context of constraints as follows:
 
 </p><dl><blockquote>
 
-<dt><tt>subject to {if </tt><i>const-logical-expr</i><tt>}:
+<dt><tt>subject to </tt><i>name</i><tt> {if </tt><i>logical-expr</i><tt>}:
       </tt><i>constraint-expr</i><tt>;</tt><p>
 
 </p></dt><dd>Enforces the constraint specified by the <i>constraint-expr</i> 
@@ -269,27 +270,26 @@ if and only if the <i>logical-expr</i> is true.<p>
 </p></dd></blockquote></dl>
 
 Thus for example in section 8.4 of the book we have:
-<pre>   subject to Time {if avail &gt;  0}:
+<pre>   subject to Time {if avail &gt; 0}:
       sum {p in PROD} (1/rate[p]) * Make[p] &lt;= avail;
 </pre>
-It is arguably more natural, howver, to make the <tt>if</tt> condition
+It is arguably more natural, however, to make the <tt>if</tt> condition
 part of the constraint expression:
 <pre>   subject to Time:
       if avail &gt;  0 then
          sum {p in PROD} (1/rate[p]) * Make[p] &lt;= avail;
 </pre>
-By allowing variables in the <i>logical-expr</i> following <tt>if</tt>,
-we arrive at another appealing form of constraint for logic programming:
+Other forms of conditional constraints for logic programming are as follows:
 <dl><blockquote>
 
-<dt><tt>if </tt><i>logical-expr</i><tt> then
+<dt><i>logical-expr</i><tt> ==&gt;
       </tt><i>constraint-expr1</i><p>
 
 </p></dt><dd>Satisfied if the <i>logical-expr</i> is true and
 <i>constraint-expr1</i> is satisfied, or if the <i>logical-expr</i> is
 false.<p>
 
-</p></dd><dt><tt>if </tt><i>logical-expr</i><tt> then
+</p></dd><dt><i>logical-expr</i><tt> ==&gt;
       </tt><i>constraint-expr1</i><tt> else
       </tt><i>constraint-expr2</i><p>
 
@@ -297,59 +297,40 @@ false.<p>
 <i>constraint-expr1</i> is satisfied, or if the <i>logical-expr</i> is
 false and <i>constraint-expr2</i> is satisfied.<p>
 
+</p></dd><dt><i>logical-expr</i><tt> &lt;==&gt;
+      </tt><i>constraint-expr</i><p>
+
+</p></dt><dd>Satisfied if the <i>logical-expr</i> is true and
+<i>constraint-expr</i> is satisfied, or if the <i>logical-expr</i> is
+false and <i>constraint-expr</i> is not satisfied.<p>
+
 </p></dd></blockquote></dl>
 
-By allowing variables following <tt>if</tt>, these forms would
-considerably expand the variety of conditional constraints that AMPL
-could conveniently express.  For example, the previously defined
-<tt>Multi_Min_Ship</tt> constraint could be written:
+By allowing variables on both sides of <tt>==></tt> and <tt><==></tt>,
+these forms considerably expand the variety of conditional constraints
+that AMPL can conveniently express.  For example, the previously defined
+<tt>Multi_Min_Ship</tt> constraint can be written:
 <pre>   subject to Multi_Min_Ship {i in ORIG, j in DEST}:
-      if sum {p in PROD} Trans[i,j,p] &gt;  0 then
+      sum {p in PROD} Trans[i,j,p] &gt; 0 ==>
          minload &lt;= sum {p in PROD} Trans[i,j,p] &lt;= limit[i,j];
 </pre>
-Again, the <i>logical-expr</i> could be any <i>constraint-expr</i>.
+Again, the <i>logical-expr</i> can be any <i>constraint-expr</i>.
 <p>
 
-<b>CP Optimizer</b> can directly define if-then constraints like
-<tt>Time</tt> and <tt>Multi_Min_Ship</tt> above by use of either a
-constraint-posting function (<tt>IlcIfThen</tt>) or an implication
-operator (<tt>&lt;=</tt>).  There is no direct support for
-if-then-<i>else</i> constraints, however; they have to be built from
-two calls to <tt>IlcIfThen</tt> or an equivalent constraint expression
-using several logical operators.</p><p>
-
-AMPL's if-then and if-then-else operators, described at the beginning
-of this section, have a direct analogue as a C++ operator, but C++
-does not allow the overloading of that operator that would be
-necessary to permit its use with Solver's constraint data types.</p>
+The <tt>if-then</tt> constraints like <tt>Time</tt> and
+<tt>Multi_Min_Ship</tt> above and <tt>==&gt;</tt> constraints are
+converted into the Concert representation using <tt>IloIfThen</tt>.
+For <tt>if-then-else</tt> and <tt>==&gt; else</tt> constraints, a pair
+of <tt>IloIfThen</tt> objects is generated. The <tt>&lt;==&gt;</tt>
+constraint is translated into corresponding Concert C++ expression that
+uses the overloaded operator <tt>==</tt>.</p>
 
 <h2>
 <a name="cardop">Counting operators</a>
 </h2>
-        AMPL's <tt>card</tt> operator returns the number of members in
-a set.  When it is applied to a set defined in terms of variables, it
-can count the number of constraints of a given form that are
-satisfied.  For instance, in the <tt>multmip3.mod</tt> example
-previously cited, there is the following constraint on the number of
-destinations served by any origin:
-<pre>   subject to Max_Serve {i in ORIG}:
-      sum {j in DEST} Use[i,j] &lt;= maxserve;
-</pre>
-Using <tt>card</tt>, the same thing could be expressed in terms of
-the natural <tt>Trans[i,j,p]</tt> variables, without recourse to the
-auxiliary zero-one <tt>Use[i,j]</tt> variables:
-<pre>   subject to Max_Serve {i in ORIG}:
-      card {j in DEST: sum {p in PROD} Trans[i,j,p] &gt;  0} &lt;= maxserve;
-</pre>
-This form might be too general, however.  The operand of <tt>card</tt>
-could be any set expression.  To implement the resulting constraint,
-the solver would have to receive enough information to enable it to
-evaluate that set expression given any values of the variables.  We
-could circumvent this difficulty by restricting the ways in which
-variables may appear in the argument to <tt>card</tt>, but we prefer
-to avoid complicating the language design with such restrictions.
-Instead, we could define a new operator that explicitly counts the
-number of times that a certain constraint is satisfied:<p>
+        AMPL's <tt>count</tt> operator returns the
+number of times that a certain constraint is satisfied:
+<p>
 
 </p><dl><blockquote>
 
@@ -361,13 +342,21 @@ number of times that a certain constraint is satisfied:<p>
 
 </p></dd></blockquote></dl>
 
-The above constraint would then be written:
+Consider the <tt>multmip3.mod</tt> example
+previously cited which has the following constraint on the number of
+destinations served by any origin:
+<pre>   subject to Max_Serve {i in ORIG}:
+      sum {j in DEST} Use[i,j] &lt;= maxserve;
+</pre>
+Using <tt>count</tt>, the same thing can be expressed in terms of
+the natural <tt>Trans[i,j,p]</tt> variables, without recourse to the
+auxiliary zero-one <tt>Use[i,j]</tt> variables:
 <pre>   subject to Max_Serve {i in ORIG}:
       count {j in DEST} (sum {p in PROD} Trans[i,j,p] &gt;  0) &lt;= maxserve;
 </pre>
-The <i>constraint-expr</i> could be any valid AMPL constraint.  The
-AMPL translator would instantiate it for each member of the
-<i>indexing</i> set, and would communicate all of the instantiated
+The <i>constraint-expr</i> can be any valid AMPL constraint.  The
+AMPL translator will instantiate it for each member of the
+<i>indexing</i> set, and will communicate all of the instantiated
 constraints to the solver using the conventions already in place.<p>
 
 Additional iterated logical operators might be defined to simplify 
@@ -630,6 +619,47 @@ expression, its Concert equivalent is denoted by <i>constraint-expr'</i>.
     <tt>conjunction.add(</tt><i>constraint-expr1'</i><tt>);</tt><br/>
     <tt>...</tt><br/>
     <tt>conjunction.add(</tt><i>constraint-exprN'</i><tt>);</tt><br/>
+  </td>
+</tr>
+<tr>
+  <td>
+    <tt>if </tt><i>logical-expr</i><tt> then </tt><i>object-expr1</i>
+    <tt> else </tt><i>object-expr2</i>
+  </td>
+  <td>
+    <tt>IloIfThen(env, </tt><i>logical-expr'</i><tt>, </tt>
+    <i>object-expr1'</i><tt>);</tt><br/>
+    <tt>IloIfThen(env, </tt>!<i>logical-expr'</i><tt>, </tt>
+    <i>object-expr2'</i><tt>);</tt><br/>
+  </td>
+</tr>
+<tr>
+  <td>
+    <tt></tt><i>logical-expr</i><tt> ==> </tt><i>constraint-expr</i>
+  </td>
+  <td>
+    <tt>IloIfThen(env, </tt><i>logical-expr'</i><tt>, </tt>
+    <i>constraint-expr'</i><tt>)</tt><br/>
+  </td>
+</tr>
+<tr>
+  <td>
+    <tt></tt><i>logical-expr</i><tt> ==> </tt><i>constraint-expr1</i>
+    <tt> else </tt><i>constraint-expr2</i>
+  </td>
+  <td>
+    <tt>IloIfThen(env, </tt><i>logical-expr'</i><tt>, </tt>
+    <i>constraint-expr1'</i><tt>) &&</tt><br/>
+    <tt>IloIfThen(env, </tt>!<i>logical-expr'</i><tt>, </tt>
+    <i>constraint-expr2'</i><tt>)</tt><br/>
+  </td>
+</tr>
+<tr>
+  <td>
+    <tt></tt><i>logical-expr</i><tt> <==> </tt><i>constraint-expr</i>
+  </td>
+  <td>
+    <i>logical-expr'</i><tt> == </tt><i>constraint-expr'</i>
   </td>
 </tr>
 </table>
