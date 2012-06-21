@@ -1360,17 +1360,11 @@ TEST_F(ConcertTest, SolveNumberOfCplex) {
 }
 
 TEST_F(ConcertTest, SolveAssign0) {
-  EXPECT_EQ(61, Solve("data/assign0").obj);
+  EXPECT_EQ(6, Solve("data/assign0").obj);
 }
 
-// Disabled because variables in subscripts are not yet allowed.
-TEST_F(ConcertTest, DISABLED_SolveAssign1) {
-  EXPECT_EQ(61, Solve("data/assign1").obj);
-}
-
-// Disabled because of a syntax error in the model.
-TEST_F(ConcertTest, DISABLED_SolveAssign1a) {
-  EXPECT_EQ(61, Solve("data/assign1a").obj);
+TEST_F(ConcertTest, SolveAssign1) {
+  EXPECT_EQ(6, Solve("data/assign1").obj);
 }
 
 TEST_F(ConcertTest, SolveBalassign0) {
@@ -1394,12 +1388,18 @@ TEST_F(ConcertTest, DISABLED_SolveFlowshp2) {
   EXPECT_EQ(22, Solve("data/flowshp2").obj);
 }
 
-TEST_F(ConcertTest, SolveJobassign0) {
-  EXPECT_EQ(6, Solve("data/jobassign0").obj);
+TEST_F(ConcertTest, SolveGrpassign0) {
+  EXPECT_EQ(61, Solve("data/grpassign0").obj);
 }
 
-TEST_F(ConcertTest, SolveJobassign1) {
-  EXPECT_EQ(6, Solve("data/jobassign1").obj);
+// Disabled because variables in subscripts are not yet allowed.
+TEST_F(ConcertTest, DISABLED_SolveGrpassign1) {
+  EXPECT_EQ(61, Solve("data/grpassign1").obj);
+}
+
+// Disabled because object-valued variables are not yet allowed.
+TEST_F(ConcertTest, DISABLED_SolveGrpassign1a) {
+  EXPECT_EQ(61, Solve("data/grpassign1a").obj);
 }
 
 TEST_F(ConcertTest, SolveMagic) {

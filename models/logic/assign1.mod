@@ -1,8 +1,8 @@
 
 # -------------------------------------------------------------
 # ASSIGNMENT
-# jobassign2.mod: using n integer variables
-# with "alldiff" operator and variable as index in objective
+# assign1.mod: using n integer variables
+# with "alldiff" operator
 # -------------------------------------------------------------
 
 param n integer > 0;
@@ -15,7 +15,8 @@ param cost {JOBS,MACHINES} > 0;
 var MachineForJob {JOBS} integer >= 1, <= n;
 
 minimize TotalCost:
-   sum {j in JOBS, k in MACHINES} cost[j,MachineForJob[j]];
+   sum {j in JOBS, k in MACHINES} 
+      if MachineForJob[j] = k then cost[j,k];
 
 subj to OneJobPerMachine: 
    alldiff {j in JOBS} MachineForJob[j];

@@ -1,7 +1,7 @@
 
 # -------------------------------------------------------------
 # ASSIGNMENT
-# jobassign0.mod: IP using n^2 zero-one variables
+# assign0.mod: IP using n^2 zero-one variables
 # -------------------------------------------------------------
 
 param n integer > 0;
