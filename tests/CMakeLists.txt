@@ -26,13 +26,7 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
   include_directories(${CPLEX_ILOCPLEX_INCLUDE_DIRS} ${CPLEX_CP_INCLUDE_DIRS})
 
   cxx_test_with_flags(concert_test ""
-    "gtest;gtest_main;${SOLVER_LIBS}"
-    ../solvers/concert/build_expr.cpp
-    ../solvers/concert/util.cpp
-    ../solvers/concert/util.h
-    ../solvers/concert/concert.cpp
-    ../solvers/concert/concert.h
-    concert_test.cc)
+    "amplconcert;gtest;gtest_main;${SOLVER_LIBS}" concert_test.cc)
 
   target_link_libraries(concert_test
     ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_CP_LIBRARIES} ${CPLEX_LIBRARIES})
