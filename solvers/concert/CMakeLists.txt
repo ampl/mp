@@ -10,14 +10,15 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
   add_definitions(${CPLEX_CONCERT_DEFINITIONS})
   include_directories(${CPLEX_ILOCPLEX_INCLUDE_DIRS} ${CPLEX_CP_INCLUDE_DIRS})
 
-  add_executable(concert
+  add_library(amplconcert
     build_expr.cpp
     concert.cpp
     concert.h
-    main.cpp
     util.cpp
     util.h)
 
-  target_link_libraries(concert ${SOLVER_LIBS}
+  add_executable(concert main.cpp)
+
+  target_link_libraries(concert amplconcert ${SOLVER_LIBS}
     ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_CP_LIBRARIES} ${CPLEX_LIBRARIES})
 endif ()
