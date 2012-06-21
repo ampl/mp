@@ -23,45 +23,131 @@ CONSTRAINT LOGIC PROGRAMMING EXTENSIONS
 <tr></tr>
 
 <tr bgcolor="eeeeee" valign="top">
-<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/jobassign0.mod">jobassign0.mod</a></tt>
+<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/assign0.mod">assign0.mod</a></tt>
 </td><td>Job assignment problem, using 
     <tt>n</tt><sup><font size="-2">2</font></sup> zero-one variables
 </td></tr>
 
 <tr bgcolor="eeeeee" valign="top">
-<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/jobassign1.mod">jobassign1.mod</a></tt>
+<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/assign1.mod">assign1.mod</a></tt>
 </td><td>. . . instead using <tt>n</tt> integer variables, 
     with <tt>alldiff</tt> operator
 </td></tr>
 
 <!--tr bgcolor="eeeeee" valign="top">
-<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/jobassign2.mod">jobassign2.mod</a></tt>
+<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/assign2.mod">assign2.mod</a></tt>
 </td><td>. . . also using a variable as a subscript in the objective
 </td></tr>
 
 <tr bgcolor="eeeeee" valign="top">
-<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/jobassign3.mod">jobassign3.mod</a></tt>
+<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/assign3.mod">assign3.mod</a></tt>
 </td><td>. . . instead using <tt>n</tt> object-valued variables
 </td></tr-->
 
 <tr></tr>
 
 <tr bgcolor="cccccc" valign="top">
+<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/balassign0.mod">balassign0.mod</a></tt><br/>
+<tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/balassign0.dat">balassign0.dat</a></tt>
+</td><td>Integer program for assignment of people to groups 
+   so that each group is "balanced" by various criteria
+</td></tr>
+
+<tr bgcolor="cccccc" valign="top">
+<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/balassign1.mod">balassign1.mod</a></tt><br/>
+<tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/balassign1.dat">balassign1.dat</a></tt>
+</td><td>Constraint program for balanced assignment of people to groups,
+   using the <tt>numberof</tt> operator
+</td></tr>
+
+<tr></tr>
+
+<tr bgcolor="eeeeee" valign="top">
 <td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/flowshp0.mod">flowshp0.mod</a></tt>
 </td><td>Flowshop problem, using 
     <tt>n</tt><sup><font size="-2">2</font></sup> zero-one variables
 </td></tr>
 
-<tr bgcolor="cccccc" valign="top">
+<tr bgcolor="eeeeee" valign="top">
 <td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/flowshp1.mod">flowshp1.mod</a></tt>
 </td><td>. . . instead using <tt>n</tt> integer variables, 
     with the <tt>or</tt> operator
 </td></tr>
 
-<tr bgcolor="cccccc" valign="top">
+<tr bgcolor="eeeeee" valign="top">
 <td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/flowshp2.mod">flowshp2.mod</a></tt>
 </td><td>. . . instead using <tt>n</tt> integer variables, 
     with the <tt>==></tt> operator
+</td></tr>
+
+<tr></tr>
+
+<tr bgcolor="cccccc" valign="top">
+<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/grpassign0.mod">grpassign0.mod</a></tt><br/>
+<tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/grpassign0.dat">grpassign0.dat</a></tt><br/>
+<tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/grpassign0.run">grpassign0.run</a></tt>
+</td><td>Integer program for assignment of students to project groups
+</td></tr>
+
+<!--tr bgcolor="cccccc" valign="top">
+<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/grpassign1.mod">grpassign1.mod</a></tt><br/>
+<tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/grpassign1.dat">assign1.dat</a></tt><br/>
+<tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/grpassign1.run">assign1.run</a></tt>
+</td><td>Constraint program for assignment of students to project groups.
+   using the <tt>numberof</tt> operator
+</td></tr>
+
+<tr bgcolor="cccccc" valign="top">
+<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/grpassign1.mod">grpassign1a.mod</a></tt><br/>
+<tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/grpassign1.dat">grpassign1a.dat</a></tt>
+</td><td>Same but with object-valued (specifically, project-valued) variables
+</td></tr-->
+
+<tr></tr>
+
+<tr bgcolor="eeeeee" valign="top">
+<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/magic.mod">magic.mod</a></tt>
+</td><td>Constraint program for finding a magic sequence of length <tt>n+1</tt>
+   (<tt>j</tt>th number in the sequence equals number of <tt>j</tt>s in the sequence)
+   using the <tt>numberof</tt> operator
+</td></tr>
+
+<tr></tr>
+
+<tr bgcolor="cccccc" valign="top">
+<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/mapcoloring.mod">mapcoloring.mod</a></tt>
+</td><td>Constraint program for map coloring using inequality constraints
+</td></tr>
+
+<tr></tr>
+
+<tr bgcolor="eeeeee" valign="top">
+<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/nqueens0.mod">nqueens0.mod</a></tt>
+</td><td>Integer program for the <tt>n</tt> queens problem: put n queens on an
+   <tt>n</tt>-by-<tt>n</tt> chessboard so that no queen is attacking any other queen
+</td></tr>
+
+<tr bgcolor="eeeeee" valign="top">
+<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/nqueens.mod">nqueens.mod</a></tt>
+</td><td>Constraint program for the <tt>n</tt> queens problem,
+   using the <tt>alldiff</tt> operator
+</td></tr>
+
+<tr></tr>
+
+<tr bgcolor="cccccc" valign="top">
+<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/party1.mod">party1.mod</a></tt><br/>
+<tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/party1.dat">party1.dat</a></tt>
+</td><td>Constraint program for the progressive party problem,
+   using <tt>alldiff</tt>, <tt>atmost</tt>, <tt>if-then</tt>, <tt>!=</tt> as logic operators
+</td></tr>
+
+<tr bgcolor="cccccc" valign="top">
+<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/party2.mod">party2.mod</a></tt><br/>
+<tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/party2.dat">party2.dat</a></tt>
+</td><td>Alternative constraint program using <tt>==></tt> "implies" operator,
+for a MIP formulation see E. Kalvelagen, 
+   Computers and Operations Research 30 (2003) 1713-1726
 </td></tr>
 
 <tr></tr>
@@ -112,6 +198,13 @@ CONSTRAINT LOGIC PROGRAMMING EXTENSIONS
 <td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/seq1a.mod">seq1a.mod</a></tt>
 </td><td>Like <tt>seq1.mod</tt>, but using object-valued variables for jobs
 </td></tr-->
+
+<tr bgcolor="eeeeee" valign="top">
+<td><tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/sudoku.mod">sudoku.mod</a></tt><br/>
+<tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/sudokuHard.dat">sudokuHard.dat</a></tt><br/>
+<tt><a href="https://raw.github.com/vitaut/ampl/master/models/logic/sudokuVeryEasy.dat">sudokuVeryEasy.dat</a></tt>
+</td><td>Sudoku solving model using the <tt>alldiff</tt> operator
+</td></tr>
 
 <tr></tr>
 
