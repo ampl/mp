@@ -214,7 +214,15 @@ where <tt>cc1</tt> and <tt>cc2</tt> are Concert counterparts of
 a Concert expression using overloaded <tt>||</tt> operator is that
 <tt>IloIfThen</tt> accepts more types of constraints on the right-hand
 side. Iterated logical operators <tt>exists</tt> and <tt>forall</tt> are
-implemented using <tt>IloOr</tt> and <tt>IloAnd</tt> respectively.
+implemented using <tt>IloOr</tt> and <tt>IloAnd</tt> respectively.</p>
+
+<p>CPLEX deals with logical operators with the help of indicator constraints.
+An indicator constraint is a way to control with a binary variable whether
+or not a given linear constraint takes effect. Big-M formulations
+provide a conventional alternative to indicator constraints. However these
+formulations can be numerically unstable. CPLEX automatically uses indicator
+constraints when it encounters a constraint within an expression and when it
+encounters expressions which can be linearized.</p>
 
 <h2>
 <a name="condop">Conditional operators</a>
