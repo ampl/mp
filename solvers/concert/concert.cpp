@@ -505,9 +505,14 @@ int Driver::run(char **argv) {
    vars_ = optimizer_->vars();
 
    int n_var_int = nbv + niv + nlvbi + nlvci + nlvoi;
-   for (int j = 0; j < n_var - n_var_int; j++)
+   int n_var_cont = n_var - n_var_int;
+   if (n_var_cont != 0 && get_option(ILOGOPTTYPE) == CPOPTIMIZER) {
+      cerr << "CP Optimizer doesn't support continuous variables" << endl;
+      return 1;
+   }
+   for (int j = 0; j < n_var_cont; j++)
       vars_[j] = IloNumVar(env_, LUv[j], Uvx[j], ILOFLOAT);
-   for (int j = n_var - n_var_int; j < n_var; j++)
+   for (int j = n_var_cont; j < n_var; j++)
       vars_[j] = IloNumVar(env_, LUv[j], Uvx[j], ILOINT);
 
    if (n_obj > 0) {
