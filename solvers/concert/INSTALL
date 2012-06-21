@@ -18,6 +18,11 @@ from https://github.com/vitaut/ampl/.  ASL can be built as follows:
   ./configurehere
   make
 
+On Windows the AMPL solver library should be built with the shared (DLL)
+runtime using the command "nmake RUNTIME=-MD -f makefile.vc".  This is
+necessary to avoid linkage errors with IBM ILOG CP Optimizer which doesn't
+provide libraries linked with static runtime.
+   
 Build using CMake
 -----------------
 
