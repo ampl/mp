@@ -1,7 +1,7 @@
 
 # -------------------------------------------------------------
 # ASSIGNMENT
-# assign3.mod: using n object-valued variables
+# jobassign3.mod: using n object-valued variables
 # with "alldiff" operator and variable as index in objective
 # -------------------------------------------------------------
 

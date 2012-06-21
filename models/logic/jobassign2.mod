@@ -1,7 +1,7 @@
 
 # -------------------------------------------------------------
 # ASSIGNMENT
-# assign2.mod: using n integer variables
+# jobassign2.mod: using n integer variables
 # with "alldiff" operator and variable as index in objective
 # -------------------------------------------------------------
 

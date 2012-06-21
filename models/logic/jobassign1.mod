@@ -1,7 +1,7 @@
 
 # -------------------------------------------------------------
 # ASSIGNMENT
-# assign1.mod: using n integer variables 
+# jobassign1.mod: using n integer variables
 # with "alldiff" operator
 # -------------------------------------------------------------
 
