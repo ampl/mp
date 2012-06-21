@@ -12,7 +12,7 @@ if (NOT WIN32)
   find_path(SOLVER_LIB_DIR amplsolver.a solvers)
   set(SOLVER_LIBS "${SOLVER_LIB_DIR}/amplsolver.a" dl)
 elseif (NOT SOLVER_LIBS)
-  set(SOLVER_LIBS solvers/amplsolv)
+  set(SOLVER_LIBS "${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplsolv.lib")
 endif ()
 
 if (NOT MSVC)
