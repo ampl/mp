@@ -1,7 +1,7 @@
 
 # -------------------------------------------------------------
 # FLOWSHOP
-# flowshop2.mod: using if-then constraints (MLLP form)
+# flowshop2.mod: using ==> constraints (MLLP form)
 # -------------------------------------------------------------
 
 set JOBS ordered;
@@ -31,5 +31,5 @@ subj to Precedence_Defn {i1 in JOBS, i2 in JOBS: ord(i1) < ord(i2)}:
    Precedes[i1,i2]  or  Precedes[i2,i1];
 
 subj to No_Conflict {i1 in JOBS, i2 in JOBS: i1 <> i2}:
-   if Precedes[i1,i2] then 
+   Precedes[i1,i2] ==>
       Start[i2] >= Start[i1] + t_offset[i1,i2];
