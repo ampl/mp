@@ -35,7 +35,6 @@ constraint expressions as operands, in order to facilitate writing
 constraint logical programming models:</p>
 
 <ul>
-<!-- TODO: strict inequalities -->
 <li><b><i><a href="#logop">Logical operators</a>:</i></b> <tt>and</tt>,
 <tt>or</tt>, <tt>not</tt>; iterated <tt>exists</tt>, <tt>forall</tt>
 
@@ -43,14 +42,11 @@ constraint logical programming models:</p>
 <tt>if-then</tt>, <tt>if-then-else</tt>, <tt>==></tt>, <tt>==> else</tt>,
 <tt><==></tt>
 
-<!-- TODO: check op names -->
 </li><li><b><i><a href="#cardop">Counting operators</a>:</i></b> iterated
-<tt>count</tt>, <tt>atmost1</tt>, <tt>atmost(</tt><i>k</i><tt>)</tt>,
-etc.
+<tt>count</tt>, <tt>atmost</tt>, <tt>atleast</tt>, <tt>exactly</tt>
 
-<!-- TODO: check op names -->
 </li><li><b><i><a href="#pairop">Pairwise operators</a>:</i></b>
-<tt>alldiff</tt>, <tt>alldisjoint</tt></li>
+<tt>alldiff</tt></li>
 </ul>
 
 In this document we give the syntax and usage summary of the extended
@@ -342,9 +338,9 @@ number of times that a certain constraint is satisfied:
 
 </p></dd></blockquote></dl>
 
-Consider the <tt>multmip3.mod</tt> example
-previously cited which has the following constraint on the number of
-destinations served by any origin:
+As an example, consider the <tt>multmip3.mod</tt> model previously cited.
+It has the following constraint on the number of destinations served by any
+origin:
 <pre>   subject to Max_Serve {i in ORIG}:
       sum {j in DEST} Use[i,j] &lt;= maxserve;
 </pre>
@@ -359,53 +355,33 @@ AMPL translator will instantiate it for each member of the
 <i>indexing</i> set, and will communicate all of the instantiated
 constraints to the solver using the conventions already in place.<p>
 
-Additional iterated logical operators might be defined to simplify 
+Additional iterated logical operators are defined to simplify 
 the descriptions of constraints in some common special cases:
 
 </p><dl><blockquote>
 
-<dt><tt>atmost1 {</tt><i>indexing</i><tt>}
+<dt><tt>atmost </tt><i>k</i><tt> {</tt><i>indexing</i><tt>}
     </tt><i>constraint-expr</i> <p>
 
 </p></dt><dd>Satisfied iff the <i>constraint-expr</i> holds for at most
-one member of the <i>indexing</i> set.<p>
+<i>k</i> members of the <i>indexing</i> set.<p>
 
-</p></dd><dt><tt>atleast1 {</tt><i>indexing</i><tt>}
+</p></dd><dt><tt>atleast </tt><i>k</i><tt> {</tt><i>indexing</i><tt>}
     </tt><i>constraint-expr</i> <p>
 
 </p></dt><dd>Satisfied iff the <i>constraint-expr</i> holds for at least
-one member of the <i>indexing</i> set.<p>
+<i>k</i> members of the <i>indexing</i> set.<p>
 
-</p></dd><dt><tt>exactly1 {</tt><i>indexing</i><tt>}
+</p></dd><dt><tt>exactly </tt><i>k</i><tt> {</tt><i>indexing</i><tt>}
     </tt><i>constraint-expr</i> <p>
 
 </p></dt><dd>Satisfied iff the <i>constraint-expr</i> holds for exactly
-one member of the <i>indexing</i> set.<p>
+<i>k</i> members of the <i>indexing</i> set.<p>
 
 </p></dd></blockquote></dl>
 
-The <tt>atleast1</tt> operator is a synonym for <tt>exists</tt>, but
-the other two are not currently available in AMPL.  A further
-generalization would replace the <tt>1</tt> in these operators by a
-parenthesized number:<p>
-
-</p><dl><blockquote>
-
-<dt><tt>atmost(</tt><i>k</i><tt>) {</tt><i>indexing</i><tt>}
-    </tt><i>constraint-expr</i>
-</dt><dt><tt>atleast(</tt><i>k</i><tt>) {</tt><i>indexing</i><tt>}
-    </tt><i>constraint-expr</i>
-</dt><dt><tt>exactly(</tt><i>k</i><tt>) {</tt><i>indexing</i><tt>}
-    </tt><i>constraint-expr</i> <p>
-
-</p></dt><dd>Satisfied iff the <i>constraint-expr</i> holds for at most (at
-least, exactly) <i>k</i> members of the <i>indexing</i> set.<p>
-
-</p></dd></blockquote></dl>
-
-We could restrict <i>k</i> to a positive integer constant, but in
-principle it could be any constant arithmetic expression that
-evaluates to a positive (or perhaps nonnegative) integer value.<p>
+<i>k</i> can be any constant arithmetic expression that evaluates to a
+nonnegative integer value.<p>
 
 Another particularly important special case occurs when counting the
 number of set members at which a given expression takes a particular
@@ -443,7 +419,7 @@ assigned to do job <tt>j</tt>.  This approach requires fewer variables
 by an order of magnitude, and automatically enforces the requirement
 that one machine be assigned to each job.  To specify that at most
 <tt>cap[k]</tt> jobs are assigned to machine <tt>k</tt>, we could use
-the proposed <tt>count</tt> operator (<a href="http://www.ampl.com/NEW/FUTURE/LOGIC/sched2.mod"><tt>sched2.mod</tt></a>):
+the <tt>count</tt> operator (<a href="http://www.ampl.com/NEW/FUTURE/LOGIC/sched2.mod"><tt>sched2.mod</tt></a>):
 <pre>   subj to CapacityOfMachine {k in MACHINES}:
       count {j in JOBS} (MachineForJob[j] = k) &lt;= cap[k];
 </pre>
@@ -452,21 +428,21 @@ like, however, and it is likely to be inefficient.  Because the
 <tt>count</tt> operator can be applied to any AMPL
 <i>constraint-expr</i>, its implementation in the AMPL translator
 would scan through the entire set <tt>JOBS</tt> for each constraint,
-testing <tt>MachineForJob[j]</tt> <tt&gt =<="" tt=""> <tt>k</tt> for every
+testing <tt>MachineForJob[j] = k</tt> for every
 combination of job <tt>j</tt> and machine <tt>k</tt> -- even though
 only one pass through the jobs is necessary to accumulate the counts
-for all machines.  These circustances suggest that AMPL should instead
-offer a more specialized iterated operator for counting individual
-values assumed by an indexed expression (<a href="http://www.ampl.com/NEW/FUTURE/LOGIC/sched3.mod"><tt>sched3.mod</tt></a>):<p>
+for all machines.  To address this AMPL offers a more specialized
+iterated operator for counting individual values assumed by an indexed
+expression <!--(<a href="http://www.ampl.com/NEW/FUTURE/LOGIC/sched3.mod"><tt>sched3.mod</tt></a>)-->:<p>
 </p><pre>   subj to CapacityOfMachine {k in MACHINES}:
-      countof(k) {j in JOBS} MachineForJob[j] &lt;= cap[k];
+      numberof k in ({j in JOBS} MachineForJob[j]) &lt;= cap[k];
 </pre>
-The general form would be:
+The general form is:
 
 <dl><blockquote>
 
-<dt><tt>countof(</tt><i>k</i><tt>) {</tt><i>indexing</i><tt>}
-    </tt><i>object-expr</i> <p>
+<dt><tt>numberof </tt><i>k</i><tt> in ({</tt><i>indexing</i><tt>}
+    </tt><i>object-expr</i><tt>)</tt> <p>
 
 </p></dt><dd>The number of members of the <i>indexing</i> set such that the 
 <i>object-expr</i> is equal to <i>k</i>.<p>
@@ -477,27 +453,20 @@ Although it would still be possible to implement this operator
 inefficiently, the presence of <tt>countof</tt> could alert the
 AMPL translator to the possibility of a more efficient evaluation.<p>
 
-<b>CP Optimizer</b>'s analogue to AMPL's cardinality operators is the
-<tt>IlcCard</tt> function.  <tt>IlcCard</tt> acts like <tt>card</tt>
-when called with one argument representing a set of integers (type
-<tt>IlcIntSetVar</tt>) or objects (type <tt>IlcAnySetVar</tt>).  It
-acts like <tt>count</tt> when called with an index (type
-<tt>IlcIndex</tt>) and a constraint using that index (type
-<tt>IlcConstraint</tt>).  The special case of the
-<tt>countof(</tt><i>k</i><tt>)</tt> operator is implemented
-efficiently through Solver's <tt>IlcDistribute</tt> function.</p><p>
+In the Concert driver, the <tt>count</tt> operator is translated
+into a sum of constraint expressions that represent its arguments.
+This approach uses the fact that a constraint expression in Concert
+is evaluated to 1 if satisfied and 0 otherwise and the <tt>+</tt>
+operator has suitable overload.
+The <tt>atmost</tt> (<tt>atleast</tt>, <tt>exactly</tt>) <i>k</i>
+operators are converted into the sum of constraint subexpressions
+<tt>&lt;= </tt> (<tt>&gt;=</tt>, <tt>==</tt>) <i>k</i>.</p>
 
-In the case where <tt>IlcCard</tt> is called with two arguments, an
-index is implicitly defined to run over the elements of one or more
-arrays of integers (type <tt>IlcIntVarArray</tt>) or objects (type
-<tt>IlcAnyVarArray</tt>).  To get the effect of AMPL's <tt>count</tt>
-applied to an arbitrary indexed collection of constraints, Solver must
-introduce auxiliary binary variables via its <i>metaconstraint</i>
-feature.  The association between constraints and these binary
-variables is maintained automatically, however, in contrast to the
-integer programming approach where it is necessary to form additional
-constraints (such as <tt>Multi</tt> and <tt>Min_Ship</tt> above) to
-enforce the definition of the binary variables.</p>
+<p>If the option <tt>usenumberof</tt> is set to 1 (the default), the
+<tt>numberof</tt> operators that have constant <i>k</i> and the same
+expression lists are represented as a single <tt>IloDistribute</tt>
+constraint. Otherwise they are implemented as a sum of constraints of
+the form <i>object-expr</i> <tt> == </tt> <i>k</i>.</p>
 
 <h2>
 <a name="pairop">Pairwise operators</a>
@@ -527,9 +496,9 @@ regard pairwise inequality as a property of the entire collection of
 binary relations between individual variables.<p>
 
 In AMPL, properties of indexed collections are defined by means of
-iterated operators such as <tt>sum</tt> and <tt>exists</tt>.  Thus it
-would make sense to introduce an analogous operator for pairwise
-difference in an indexed collection of variables 
+iterated operators such as <tt>sum</tt> and <tt>exists</tt>.  An analogous
+operator for pairwise difference in an indexed collection of variables has
+been introduced
 (<a href="http://www.ampl.com/NEW/FUTURE/LOGIC/assign2.mod"><tt>assign2.mod</tt></a>):
 </p><pre>   subj to OneJobPerMachine: alldiff {j in JOBS} MachineForJob[j];
 </pre>
@@ -548,34 +517,13 @@ all pairs of different members of the <i>indexing</i> set.<p>
 
 Using <tt>alldiff</tt> makes constraints easier to read, and also
 conveys more useful information to a solver than a large collection of
-individual inequalities.<p>
+individual inequalities.
 
-A similar operator could be introduced for indexed collections of
-set expressions, to express the property of being pairwise disjoint:
-
-</p><dl><blockquote>
-
-<dt><tt>alldisjoint {</tt><i>indexing</i><tt>}
-    </tt><i>set-expr</i><p>
-
-</p></dt><dd>Satisfied iff the <i>set-expr</i> evaluates to nonintersecting sets
-for all pairs of different members of the <i>indexing</i> set.<p>
-
-</p></dd></blockquote></dl>
-
-To express the same thing in current AMPL, it is necessary to state
-for each pair of sets that their intersection has cardinality zero.<p>
-
-<b>CP Optimizer</b> provides functions that correspond closely to these
-iterated pairwise operators.  Function <tt>IlcAllDiff</tt> specifies
-that the components of an array of integers (type
-<tt>IlcIntVarArray</tt>) or an array of objects (type
-<tt>IlcAnyVarArray</tt>) must be pairwise different.  Function
-<tt>IlcAllNullIntersect</tt> specifies that the components of an array
-of integer sets (type <tt>IlcIntSetVarArray</tt>) or an array of
-object sets (type <tt>IlcAnySetVarArray</tt>) must be pairwise
-disjoint.  Solver's search procedure handles these relationships
-directly in an efficient way.</p>
+<p>Concert provides classes that correspond closely to these
+iterated pairwise operators.  Class <tt>IloAllDiff</tt> specifies
+that the components of an array of integer variables (type
+<tt>IloIntVarArray</tt>) must be pairwise different.  Solver's search
+procedure handles these relationships directly in an efficient way.</p>
 
 <h2>
 <a name="pairop">Concert equivalents of AMPL constructs</a>
@@ -662,7 +610,100 @@ expression, its Concert equivalent is denoted by <i>constraint-expr'</i>.
     <i>logical-expr'</i><tt> == </tt><i>constraint-expr'</i>
   </td>
 </tr>
+<tr>
+  <td><tt>count {</tt><i>indexing</i><tt>} </tt><i>constraint-expr</i></td>
+  <td>
+    <i>constraint-expr1'</i><tt> + ... + </tt> <i>constraint-exprN'</i>
+  </td>
+</tr>
+<tr>
+  <td>
+    <tt>atmost </tt><i>k</i><tt> {</tt><i>indexing</i><tt>}
+    </tt><i>constraint-expr</i>
+  </td>
+  <td>
+    <i>constraint-expr1'</i><tt> + ... + </tt> <i>constraint-exprN'</i>
+    <tt> <= </tt><i>k</i>
+  </td>
+</tr>
+<tr>
+  <td>
+    <tt>atleast </tt><i>k</i><tt> {</tt><i>indexing</i><tt>}
+    </tt><i>constraint-expr</i>
+  </td>
+  <td>
+    <i>constraint-expr1'</i><tt> + ... + </tt> <i>constraint-exprN'</i>
+    <tt> >= </tt><i>k</i>
+  </td>
+</tr>
+<tr>
+  <td>
+    <tt>exactly </tt><i>k</i><tt> {</tt><i>indexing</i><tt>}
+    </tt><i>constraint-expr</i>
+  </td>
+  <td>
+    <i>constraint-expr1'</i><tt> + ... + </tt> <i>constraint-exprN'</i>
+    <tt> == </tt><i>k</i>
+  </td>
+</tr>
+<tr>
+  <td>
+    <tt>numberof </tt><i>k</i><tt> in ({</tt><i>indexing</i><tt>}
+    </tt><i>object-expr</i><tt>)</tt>
+  </td>
+  <td>
+    <tt>(</tt><i>object-expr1'</i><tt> == </tt><i>k</i><tt>) + ... +
+    (</tt><i>object-exprN'</i> <tt> == </tt><i>k</i><tt>)</tt>
+    <a href="#numberof-1">[1]</a>
+  </td>
+</tr>
+<tr>
+  <td>
+    <tt>numberof </tt><i>k1</i><tt> in ({</tt><i>indexing</i><tt>}
+    </tt><i>object-expr</i><tt>)</tt><br/>
+    <tt>...</tt><br/>
+    <tt>numberof </tt><i>kN</i><tt> in ({</tt><i>indexing</i><tt>}
+    </tt><i>object-expr</i><tt>)</tt><br/>
+  </td>
+  <td>
+    <tt>IloIntVarArray cards(env);</tt><br/>
+    <tt>IloIntArray values(env);</tt><br/>
+    <tt>IloIntVarArray vars(env);</tt><br/>
+    <tt>cards.add(IloIntVar(env));</tt><br/>
+    <tt>values.add(</tt><i>k1</i><tt>);</tt><br/>
+    <tt>...</tt><br/>
+    <tt>cards.add(IloIntVar(env));</tt><br/>
+    <tt>values.add(</tt><i>kN</i><tt>);</tt><br/>
+    <tt>IloIntVar x1(env);</tt><br/>
+    <tt>x1 == </tt><i>object-expr1'</i><tt>;</tt><br/>
+    <tt>vars.add(x1);</tt><br/>
+    <tt>...</tt><br/>
+    <tt>IloIntVar xM(env);</tt><br/>
+    <tt>xM == </tt><i>object-exprM'</i><tt>;</tt><br/>
+    <tt>vars.add(xM);</tt><br/>
+    <tt>IloDistribute(env, cards, values, vars);</tt><br/>
+    <a href="#numberof-0">[2]</a>
+  </td>
+</tr>
+<tr>
+  <td>
+    <tt>alldiff {</tt><i>indexing</i><tt>} </tt><i>object-expr</i>
+  </td>
+  <td>
+    <tt>IloIntVarArray vars(env);</tt><br/>
+    <tt>IloIntVar x1(env);</tt><br/>
+    <tt>x1 == </tt><i>object-expr1'</i><tt>;</tt><br/>
+    <tt>vars.add(x1);</tt><br/>
+    <tt>...</tt><br/>
+    <tt>IloIntVar xN(env);</tt><br/>
+    <tt>xN == </tt><i>object-exprN'</i><tt>;</tt><br/>
+    <tt>vars.add(xN);</tt><br/>
+    <tt>IloAllDiff(env, vars);</tt><br/>
+  </td>
+</tr>
 </table>
+<p id="numberof-0">[1] If option <tt>usenumberof=0</tt>.</p>
+<p id="numberof-1">[2] If option <tt>usenumberof=1</tt> (the default).</p>
 
 </body>
 </html>
