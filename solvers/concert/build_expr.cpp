@@ -374,7 +374,7 @@ IloConstraint Driver::build_constr (const expr *e)
 
       case LT:
          PR ("<\n");
-         return !(build_expr (e->L.e) >= build_expr (e->R.e));
+         return build_expr (e->L.e) < build_expr (e->R.e);
 
       case LE:
          PR ("<=\n");
@@ -390,7 +390,7 @@ IloConstraint Driver::build_constr (const expr *e)
 
       case GT:
          PR (">\n");
-         return !(build_expr (e->L.e) <= build_expr (e->R.e));
+         return build_expr (e->L.e) > build_expr (e->R.e);
 
       case NE:
          PR ("!=\n");

@@ -922,10 +922,8 @@ TEST_F(ConcertTest, ThrowsOnNumInConstraint) {
 }
 
 TEST_F(ConcertTest, ConvertLT) {
-  IloConstraint c(d.build_constr(NewBinary(LT, NewVar(0), NewNum(42)).get()));
-  IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
-  ASSERT_TRUE(n != nullptr);
-  EXPECT_EQ("42 <= x", str(n->getConstraint()));
+  EXPECT_EQ("x <= 41", str(d.build_constr(
+      NewBinary(LT, NewVar(0), NewNum(42)).get())));
 }
 
 TEST_F(ConcertTest, ConvertLE) {
@@ -944,10 +942,8 @@ TEST_F(ConcertTest, ConvertGE) {
 }
 
 TEST_F(ConcertTest, ConvertGT) {
-  IloConstraint c(d.build_constr(NewBinary(GT, NewVar(0), NewNum(42)).get()));
-  IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
-  ASSERT_TRUE(n != nullptr);
-  EXPECT_EQ("x <= 42", str(n->getConstraint()));
+  EXPECT_EQ("43 <= x", str(d.build_constr(
+      NewBinary(GT, NewVar(0), NewNum(42)).get())));
 }
 
 TEST_F(ConcertTest, ConvertNE) {
@@ -1347,11 +1343,15 @@ TEST_F(ConcertTest, Usage) {
 }
 
 TEST_F(ConcertTest, ObjConst) {
-  RunDriver("data/objconst");
+  EXPECT_EQ(0, RunDriver("data/objconst"));
   IloModel::Iterator iter(mod);
   ASSERT_TRUE(iter.ok());
   IloObjective obj = (*iter).asObjective();
   EXPECT_EQ(42, obj.getConstant());
+}
+
+TEST_F(ConcertTest, CPOptimizerDoesntSupportContinuousVars) {
+  EXPECT_EQ(1, RunDriver("data/objconst", "ilogsolver"));
 }
 
 TEST_F(ConcertTest, SolveNumberOfCplex) {
