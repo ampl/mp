@@ -1,8 +1,8 @@
 
 # -------------------------------------------------------------
 # SCHEDULING
-# sched2.mod: using n integer variables 
-# with "countof" operator
+# sched2.mod: using n integer variables
+# with "numberof" operator
 # -------------------------------------------------------------
 
 param n integer > 0;
