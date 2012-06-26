@@ -2,6 +2,7 @@
 
 #include <math.h>
 
+#include <gsl/gsl_errno.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf_airy.h>
 #include <gsl/gsl_sf_bessel.h>
@@ -153,7 +154,32 @@ static real amplgsl_sf_bessel_J1(arglist *al) {
   return j1;
 }
 
+static real amplgsl_sf_bessel_Y0(arglist *al) {
+  real x = al->ra[0];
+  real y0 = gsl_sf_bessel_Y0(x);
+  if (al->derivs) {
+    *al->derivs = -gsl_sf_bessel_Y1(x);
+    if (al->hes)
+      *al->hes = 0.5 * (gsl_sf_bessel_Yn(2, x) - y0);
+  }
+  return y0;
+}
+
+static real amplgsl_sf_bessel_Y1(arglist *al) {
+  real x = al->ra[0];
+  real y1 = gsl_sf_bessel_Y1(x);
+  if (al->derivs) {
+    *al->derivs = 0.5 * (gsl_sf_bessel_Y0(x) - gsl_sf_bessel_Yn(2, x));
+    if (al->hes)
+      *al->hes = 0.25 * (gsl_sf_bessel_Yn(3, x) - 3 * y1);
+  }
+  return y1;
+}
+
 void funcadd_ASL(AmplExports *ae) {
+  // Don't call abort on error.
+  gsl_set_error_handler_off();
+
   // Elementary Functions
   addfunc("gsl_log1p", amplgsl_log1p, 0, 1, 0);
   addfunc("gsl_expm1", amplgsl_expm1, 0, 1, 0);
@@ -171,5 +197,10 @@ void funcadd_ASL(AmplExports *ae) {
   // Bessel Functions
   addfunc("gsl_sf_bessel_J0", amplgsl_sf_bessel_J0, 0, 1, 0);
   addfunc("gsl_sf_bessel_J1", amplgsl_sf_bessel_J1, 0, 1, 0);
-  // TODO: Jn
+  // TODO: gsl_sf_bessel_Jn
+
+  // Irregular Cylindrical Bessel Functions
+  addfunc("gsl_sf_bessel_Y0", amplgsl_sf_bessel_Y0, 0, 1, 0);
+  addfunc("gsl_sf_bessel_Y1", amplgsl_sf_bessel_Y1, 0, 1, 0);
+  // TODO: gsl_sf_bessel_Yn
 }
