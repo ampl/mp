@@ -240,6 +240,18 @@ double sf_bessel_J1_dx2(double x) {
   return 0.25 * (gsl_sf_bessel_Jn(3, x) - 3 * gsl_sf_bessel_J1(x));
 }
 
+double sf_bessel_Y0_dx(double x) { return -gsl_sf_bessel_Y1(x); }
+double sf_bessel_Y0_dx2(double x) {
+  return 0.5 * (gsl_sf_bessel_Yn(2, x) - gsl_sf_bessel_Y0(x));
+}
+
+double sf_bessel_Y1_dx(double x) {
+  return 0.5 * (gsl_sf_bessel_Y0(x) - gsl_sf_bessel_Yn(2, x));
+}
+double sf_bessel_Y1_dx2(double x) {
+  return 0.25 * (gsl_sf_bessel_Yn(3, x) - 3 * gsl_sf_bessel_Y1(x));
+}
+
 #define TEST_FUNC(name) \
   TestFunc("gsl_" #name, gsl_##name, name##_dx, name##_dx2);
 
@@ -270,5 +282,7 @@ TEST_F(GSLTest, Functions) {
 
   TEST_FUNC(sf_bessel_J0);
   TEST_FUNC(sf_bessel_J1);
+  TEST_FUNC(sf_bessel_Y0);
+  TEST_FUNC(sf_bessel_Y1);
 }
 }
