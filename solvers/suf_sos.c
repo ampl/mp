@@ -207,6 +207,7 @@ suf_sos_ASL(ASL *asl, int flags, int *nsosnz_p, char **sostype_p,
 		zv = zv0 = zz + m;
 		cm = get_vcmap_ASL(asl, ASL_Sufkind_con);
 		vm = get_vcmap_ASL(asl, ASL_Sufkind_var);
+		asl->i.vminv = 0;
 		for(j = 0; j < n && !v[j]; j++)
 			zv[j] = j;
 		col1 = v + j;

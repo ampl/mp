@@ -1279,7 +1279,7 @@ keywds[] = {	/* must be in alphabetical order */
 
  static Option_Info
 Oinfo = { "gurobi", verbuf, "gurobi_options", keywds, nkeywds, 0, verbuf,
-	   0,0,0,0,0, 20120524 };
+	   0,0,0,0,0, 20120606 };
 
  static void
 enamefailed(GRBenv *env, const char *what, const char *name)
@@ -2702,7 +2702,9 @@ main(int argc, char **argv)
 			}
 		if (GRBsetdblattrarray(mdl, GRB_DBL_ATTR_PSTART, 0, nvr, x))
 			failed(env, "GRBsetdblattrarray(PStart)");
-		if (pi0 && GRBsetdblattrarray(mdl, GRB_DBL_ATTR_DSTART, 0, nc, pi0))
+		if (pi0
+		 && nc > nqc
+		 && GRBsetdblattrarray(mdl, GRB_DBL_ATTR_DSTART, 0, nc-nqc, pi0))
 			failed(env, "GRBsetdblattrarray(DStart)");
 		}
 #else /*}{*/

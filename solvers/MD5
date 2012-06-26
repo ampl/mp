@@ -145,8 +145,8 @@ NfE/nd+ZeGE=
 -----END PGP SIGNATURE-----
 -----BEGIN PGP SIGNED MESSAGE-----
 
-# netlib-utk master Wed Apr 25 03:10:04 EDT 2012
-NsugoeWL6ygJtxfbQC73hA	00lastchange
+# netlib-utk master Tue Jun 26 03:10:02 EDT 2012
+URQEggZsdZxej8m0CLEgyw	00lastchange
 E990S8JArV+yhIJ7us6tVg	README
 qOEvOeNxr+tkYXE2CClZWw	README.SGI
 hP/T3OfgkqAwrLqbG8BqQw	README.f77
@@ -156,10 +156,10 @@ HdqA3IzapQAbY10JKtAWQQ	amplsolv.sy
 W/Hetls8127GluivncKZVw	arith.h0
 JLU7TMzPd3AjUmhDdgaGmQ	arith.ibm
 G6vjFVw1aR9lWi5Yl/OtiQ	arithchk.c
-g+7AV303ms1REP7T035O5w	asl.h
+89wrVp3FI4D9VQxp3u4KUQ	asl.h
 cWsQSHLhURv8mvXbE/g9DQ	asl_pfg.h
 p057f6BlUh9XCGR26M/IUA	asl_pfgh.h
-shvZUeDtLanw5n0RksDVeg	asldate.c
+I+UnuFRe8vcLiTZ0BeyXNQ	asldate.c
 MwUvqn7mXvmkvc1afriAnQ	atof.c
 VPgRhBjxjjSUuv9+aVsibA	auxinfo.c
 HcQd+byMFVyPt/z7Djmj+w	avltree.c
@@ -167,7 +167,7 @@ TiTwOwAKkrb9rFuWZPf82A	avltree.h
 Lg714wh1GAnDfWqStFsPbQ	b_search.c
 JX+T6A1nVtQxlH2/gHjQ7w	basename.c
 B9aysZxnc2iCJEcny28lrA	bscanf.c
-b/nxpg9udqB8ay1DgTKDyg	changes
+8YzAKRfxuGU1rKQ6uTAJjA	changes
 iaV5+h9JhXta8i63eG8/QA	com2eval.c
 ViDtWeMTFSx1mxx/G621+Q	comeval.c
 f3BjU/9mf3+4mq1Q2h6CAw	comptry.bat
@@ -189,9 +189,9 @@ QWyPBxRXvgG0v7Zi28e/Mg	dvalue.hd
 u5o5qgx9jlGyMsdmHifylg	dynlink.c
 2epZB8YTgohNOP9y7KpkdQ	errchk.h
 MxllIaNBm8ktuwP2Y1jE7Q	f_read.c
-41upRrvNUSmAanklwtgdxA	fg_read.c
++CzaJPvyfWJJCZRFXZh1Dw	fg_read.c
 VCdLj7oGwNMvvUPvjjbdqg	fg_write.c
-o278+ucTDjEW6JWAR5LT0g	fgh_read.c
+0EDlDGTzoC8CxeSFyHWABw	fgh_read.c
 5rLn2CgrUDmLLWN2dkuczw	float.h0
 edGX4i1yNinmYx102nGCZA	fpecatch.c
 DfA9TbPZZFMwmY1YnX1BcQ	fpinit.c
@@ -209,8 +209,8 @@ pJ+ZB5Tz1YwIkzstPhc9+A	funcaddr.c
 ZHolXMd/A36kjkX7KaIlYA	g_fmt.c
 x35z18AJkoNFjhfhwxa79A	genrowno.c
 2nDiZfhZWzdpJjwicsVGpQ	getenv.c
-i6I6zWYA2SwX6300eQmh/A	getstub.c
-+sMf/v6RoQGZukNYnl9ssA	getstub.h
+eGyYy63hjmlzs3Qm9ikuMw	getstub.c
+DFytV4KoZfLPtg1L8pG88w	getstub.h
 lfkD5wROt+kPrkExYmSO+A	htcl.c
 uNVcCaAsQ8TWYmoV8erzJA	index
 95NtD4gXJvnj6jMvzHiJEw	index.html
@@ -231,8 +231,8 @@ xtdIcVe+mp8CaxVJ7cgpEA	makefile.u
 6JWpTc3EQEzJliux5G5yqQ	makefile.vc
 KP+uMSpRR1zJMzNVEO9oFw	makefile.wat
 hry2XHmn5STIb8L7RESQTQ	mip_pri.c
-wrfhe8NhxmYPmUz59UxSvA	misc.c
-DczSuXgh1kvQTRK70tJoiA	mpec_adj.c
+H4FRsZrNh+mI+nDSO56L+w	misc.c
+pEoVl7rC68/C6MTP8tSTOw	mpec_adj.c
 fuJ5lQNOzoHaOXFo9Fd/mg	mpec_adj0.c
 INdyW9gTly6qmozxCRR2Iw	mypow.c
 QNI8Q0nKAksFmlXWQj+tUw	names.c
@@ -251,9 +251,9 @@ KUApbLjVxhNsSIR9ovDqQw	op_type.c
 4iDVCRa320S7UDXPrXFAOg	op_type.hd
 X9b2Kosc2cm12n8gXKcvlw	op_typeb.hd
 vkGx7TkWiQ2JTcsQ06L3AQ	opcode.hd
-VJihc2Xt1N4g2SUjTNh8lg	opnos.hd
-asroIGsnBxc5wO1MGjGLLQ	pfg_read.c
-+rRLmLLBe2o9n7HgRREreg	pfghread.c
+1dcSehplf6jfcynEI+2yxw	opnos.hd
+BLf8bPn/uTOMtpa1/vF0UQ	pfg_read.c
+kBQP9d1K27Kis2FBvveCHQ	pfghread.c
 YkQRN45z8ZGa7w+01wgcJg	printf.c
 ZcY99Iw0xxFV0aHYnZcd1Q	pshvprod.c
 cpAr37QMvq8EFGNbNfmUsQ	psinfo.h
@@ -280,9 +280,9 @@ HIYBbU+IxYD8verR/ANqSg	sscanf.c
 lMQ9F3KKxWON+31tJsUxHQ	stdio1.h0
 rR1B5Vj4YOBToXBxIuAqzg	strerror.c
 PpDt9u+TCFUWnzFAE/jTJQ	studchk0.c
-ZH3lmVojcXx33NrBLSBogg	suf_sos.c
+OtIl+CKBkMNGgwkexCWwfA	suf_sos.c
 demnClgCWkLStAvxhZBZEw	value.c
-iXRWH9eXo+FMbC7+4i2n0A	writesol.c
+nxwpcoY0W1Jf0jqxVsrJKA	writesol.c
 Ho3VEl45oVz77gehigtxmw	wrtsol_.c
 QFvL+hAoa0SxX7tSqgR2EQ	ws_desc.c
 P/1GUr57z63UU2oA9ycqcg	wsu_desc.c
@@ -290,14 +290,14 @@ fKP4V5GxuMz8ZZhUUZbTxw	x2check.c
 iOcxB/spcU8eiXLk2O9qkA	xectim.c
 j5NdrTSBkS5pnfDyKD0Ezg	xp1known.c
 FAbm67iDBwtMlNOTy8jXHw	xp2known.c
-5PhJ5XAmMq8b77id5Y3auw	xsum0.out
+/vhktWQeShFt8DF5xig/5A	xsum0.out
 
 -----BEGIN PGP SIGNATURE-----
 Version: 2.6.2
 
-iQCVAwUBT5ejdOFlxDEfrjtlAQF12QP/em3BprxCBtgAB9jflhpiwf/Jc8Xfmzxu
-T55DXunRn674/T43wnB6GLXUvlASJ6cCWKxQ25ZL7cEg23bASK122iW0xTT01c+E
-sahL2/vx6HtfthuRraaLX649qSW7jEdePkSOkDRJSfFohyR+SAM7zijrNECbtXo/
-znDWfFIM4Fk=
-=Nfm6
+iQCVAwUBT+lgaeFlxDEfrjtlAQEMpQQAlJULPx4RImTrEBXOLTrLfRhv7ZUx8g6I
+wx+2kbz4tUp7fr7sTIsm0UKuufNM6uEF/WyDURCBm/vtcAtXIQ4Vd3R44Pv7zv3F
+h6oniZRYXDPq/fjg6rQ2uNH6At74xOxW8pHdfNBVTFegQPUvJVHzjnlSgypH3gBV
+tUgjFZ5Jjdw=
+=kyyG
 -----END PGP SIGNATURE-----

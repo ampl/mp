@@ -8834,3 +8834,26 @@ program's name.
 
 20120530
   Fix a glitch under MS Windows with option debug_stub.
+  Under MS Windows, if $Path does not appear in the incoming
+environment but $PATH does, use $PATH rather than $Path as
+the list of directories in which "solve" and "shell" commands
+should look for programs.  Usually $Path is set, but at least
+some versions of the MinGW shell supply $PATH rather than $Path.
+
+20120601
+  Extend warning that variables in subscripts are not yet allowed
+to most subscripts (not just subscripts on variables).
+
+20120604
+  Fix two bugs in handling a problem with logical constraints that
+get converted to algebraic constraints:  an incorrect .nl file was
+produced, and _logconname was miscomputed.
+
+20120614
+  Fix a bug with piecewise-linear terms.  When constraints added to
+linearize such terms increased the total number of constraints
+beyond the next power of two, a fault was sometimes possible.
+
+20120619
+  Fix a glitch that gave rise to "bug: corrupted del_mblk arg"
+after a very large number of commands.

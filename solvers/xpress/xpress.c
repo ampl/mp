@@ -68,7 +68,7 @@ typedef struct
 	int miqp;
   } dims;
 
- static int mipststat = 1, Ray = 0, Round = 1, sos = 1, sos2 = 1;
+ static int mipstart = 1, mipststat = 1, Ray = 0, Round = 1, sos = 1, sos2 = 1;
 
 static char *set_known(Option_Info *oi, keyword *kw, char *v);
 static char *set_int(Option_Info *oi, keyword *kw, char *v);
@@ -550,6 +550,10 @@ static char
 		  abs(MIPOBJVAL - BESTBOUND) < miprelstop * abs(BESTBOUND)\n\
 			(default = 0)",
 	mipstartstatus_desc[]	= "use incoming statuses on MIP problems (default 1 = yes)",
+	mipstartvalue_desc[]	= "whether to use the specified initial guess (if supplied)\n\
+			when solving a MIP problem:\n\
+				0 = no\n\
+				1 = yes (default)",
 #ifdef XPRS_MIPTARGET
 	miptarget_desc[]	=
 		"initial MIP target objective value (default 1e40),\n\
@@ -918,7 +922,9 @@ static keyword keywds[]={
   KW("mippresolve",	set_int, XPRS_MIPPRESOLVE,	mippresolve_desc),
   KW("miprelcutoff",	set_dbl, XPRS_MIPRELCUTOFF,	miprelcutoff_desc),
   KW("miprelstop",	set_dbl, XPRS_MIPRELSTOP,	miprelstop_desc),
+  KW("mipstart",	I_val, &mipstart,		"synonym for mipstartvalue"),
   KW("mipstartstatus",	I_val, &mipststat,		mipstartstatus_desc),
+  KW("mipstartvalue",	I_val, &mipstart,		mipstartvalue_desc),
 #ifdef XPRS_MIPTARGET
   KW("miptarget",	set_dbl, XPRS_MIPTARGET,	miptarget_desc),
 #endif
@@ -984,7 +990,31 @@ static keyword keywds[]={
      };
 
 static Option_Info Oinfo = { "xpress", NULL, "xpress_options",
-           keywds,nkeywds,0,"XPRESS", 0,0,0,0,0, 20120417 };
+           keywds,nkeywds,0,"XPRESS", 0,0,0,0,0, 20120605 };
+
+ static char *
+strcpy1(char *t, const char *s)
+{
+	while((*t = *s++))
+		t++;
+	return t;
+	}
+
+ static void
+adjust_version(void)
+{
+	char *t;
+	const char *s;
+	int n;
+	static char vbuf[40];
+
+	t = strcpy1(Oinfo.bsname = vbuf, "XPRESS ");
+	n = XPRSgetversion(t);
+	t += strlen(t);
+	Oinfo.version = ++t;
+	t = strcpy1(t, "AMPL/");
+	t = strcpy1(t, Oinfo.bsname);
+	}
 
  static int breaking;
  static jmp_buf Jb;
@@ -1035,6 +1065,17 @@ static void xperror(const char *fmt, ...)
   exit(1);
 }
 
+ static void
+licerror(int iret)
+{
+	char buf[512];
+
+	buf[0] = 0;
+	XPRSgetlicerrmsg(buf, sizeof(buf));
+	xperror("initializing Xpress-MP (return code %d):\n%s\n",
+		iret, buf);
+	}
+
 /******************************/
 /* Delete .sol and .glb files */
 /******************************/
@@ -1080,16 +1121,15 @@ int main(int argc, char *argv[])
  Times[0] = xectim_();
 
  /* for debugging, allow -=, -v, -? to work */
+ if (!(iret = XPRSinit(XPRESS)))
+ 	adjust_version();
  if (argc == 2 && *(stub = argv[1]) == '-' && stub[1] && !stub[2]) {
 	asl = (ASL*)ASL_alloc(ASL_read_fg);
 	getstub(&argv, &Oinfo);
 	return 0;
 	}
-
- iret = XPRSinit(XPRESS);
  if (iret)
-   xperror("initialising Xpress-MP (return code %d)\n%s",
-	iret, "Have you set XPRESS?/Is Flex running?");
+   licerror(iret);
 
  iret = XPRScreateprob(&prob);
  if (iret)
@@ -1815,11 +1855,15 @@ amplin(char *stub, char *argv[], dims *d)
  A_rownos = ia = (int*)(a + nz);
  A_colstarts = (int*)(ia + nz);
 
- want_deriv = 0;
- qp_read(nl,ALLOW_CLP);
  if (!n_obj)
   nobj = 0;
- if(getopts(argv, &Oinfo)) exit(1);     /* Set options */
+ if(getopts(argv, &Oinfo))     /* Set options */
+	exit(1);
+ want_deriv = 0;
+ ngents = niv /*+ nbv*/ + nlvbi + nlvci + nlvoi;
+ if (mipstart && ngents + nbv)
+	want_xpi0 = 5;
+ qp_read(nl,ALLOW_CLP);
  if(logfile != NULL)
  {
   if(XPRSsetlogfile(prob,logfile))
@@ -1835,7 +1879,7 @@ amplin(char *stub, char *argv[], dims *d)
  if (!sos2)
   i |= ASL_suf_sos_ignore_amplsos;
  nsets = suf_sos(i, 0, &qstype, 0,0, &msstart, &mscols, &dref);
- ngents = niv + nbv + nlvbi + nlvci + nlvoi;
+ ngents += nbv; /* suf_sos may adjust nbv */
  if ((ngents>0) && (optimopt[1]=='l')) {
 	printf("Ignoring integrality of %d variable%s.\n",
 	    ngents, ngents > 1 ? "s" : "");
@@ -2045,7 +2089,8 @@ amplin(char *stub, char *argv[], dims *d)
 		ka,NULL,ia,a,LUv,Uvx,
 		ngents,nsets,qgtype,mgcols,NULL/*mplim*/,
 		qstype,msstart,mscols,dref);
-  if(iret) xperror("loading the problem");
+  if(iret)
+	xperror("loading the problem");
 #ifndef NO_XPR_CON_INDICATOR
 	if (nlogc)
 		indicator_constrs();
@@ -2056,6 +2101,8 @@ amplin(char *stub, char *argv[], dims *d)
    optimopt[1]='g';       /* Search will be global */
    mip_priorities();      /* using provided priorities */
   }
+  if (mipstart && optimopt[1] == 'g' && X0)
+	XPRSloadmipsol(prob, X0, &iret);
  }
  if (mgcols)
 	free(mgcols);

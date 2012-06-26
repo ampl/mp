@@ -91,7 +91,7 @@ and list lpmethod as a synonym for method.  (Driver date 20110907.)
   README.gurobi, makefile.*: minor tweaks for less dependence on the
 particular version of Gurobi.
 
-??
+20111109
   gurobi.c: fix a minor glitch in reporting the names of alternate
 solution files generated when ams_stub is specified in $gurobi_options.
 Update for use with Gurobi 4.6; new keywords:
@@ -103,10 +103,6 @@ Update for use with Gurobi 4.6; new keywords:
 The priorities keyword controls whether variable.priority values, if
 available, are passed to Gurobi.  (Default = yes.)
 
-20111109
-  gurobi.c:  update for Gurobi 4.6.  Should still work with earlier
-versions of Gurobi.
-
 20120504
   gurobi.c, README.gurobi, makefile.u: update for Gurobi 5.0.  The
 updated gurobi.c should still work with earlier versions of Gurobi.
@@ -116,3 +112,8 @@ updated gurobi.c should still work with earlier versions of Gurobi.
 
 20120524
   gurobi.c: fix a typo in the "gurobi -=" output.
+
+20120606
+  gurobi.c: fix a glitch in providing a dual initial guess (when
+available from a previous solve) in problems with quadratic constraints,
+leading to the message "Index out of range for attribute 'DStart'."

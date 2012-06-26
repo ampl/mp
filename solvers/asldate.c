@@ -1,1 +1,1 @@
-long ASLdate_ASL = 20120417;
+long ASLdate_ASL = 20120624;

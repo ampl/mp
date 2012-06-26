@@ -1,2 +1,3 @@
-20120530
-  Fix a glitch under MS Windows with option debug_stub.
+20120619
+  Fix a glitch that gave rise to "bug: corrupted del_mblk arg"
+after a very large number of commands.

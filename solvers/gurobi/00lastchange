@@ -1,2 +1,4 @@
-20120524
-  gurobi.c: fix a typo in the "gurobi -=" output.
+20120606
+  gurobi.c: fix a glitch in providing a dual initial guess (when
+available from a previous solve) in problems with quadratic constraints,
+leading to the message "Index out of range for attribute 'DStart'."
