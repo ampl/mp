@@ -96,7 +96,7 @@ ofix(char **o, int k)
 	}
 
  void
-usage_ASL(Option_Info *oi, int rc)
+usage_noexit_ASL(Option_Info *oi, int rc)
 {
 	static const char *opts[] = {
 		"-", "end of options",
@@ -175,6 +175,12 @@ usage_ASL(Option_Info *oi, int rc)
 			s = *o;
 			}
 		}
+	}
+
+ void
+usage_ASL(Option_Info *oi, int rc)
+{
+	usage_noexit_ASL(oi, rc);
 	exit(rc);
 	}
 

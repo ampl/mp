@@ -126,15 +126,15 @@ scale(real *x, real *s, real **yp, int n)
 	}
 
  static real*
-copy(int n, real *x, real **yp, int *z, int *zap)
+copy(int n, int n1, real *x, real **yp, int *z, int *zap)
 {
 	int i, j;
 	real *y;
 
 	y = *yp;
 	*yp = y + n;
-	for(i = 0; i < n; ++i)
-		if ((j = z[i]) >= 0)
+	for(i = 0; i < n1; ++i)
+		if ((j = z[i]) >= 0 && j < n)
 			y[j] = x[i];
 	if (zap)
 		for(n = zap[0], i = 1; i <= n; ++i)
@@ -249,7 +249,7 @@ write_solfx_ASL(ASL *asl, char *msg, double *x, double *y, Option_Info *oi,
 			if (asl->i.vscale)
 				x = scale(x, asl->i.vscale, &y1, n_var);
 			if ((ip = asl->i.vmap))
-				x = copy(asl->i.n_var0, x, &y1, ip, asl->i.vzap);
+				x = copy(asl->i.n_var0, n_var, x, &y1, ip, asl->i.vzap);
 			else if (x == x0 && asl->i.n_var0 > n_var) {
 				memcpy(y1, x, n_var*sizeof(real));
 				x = y1;
@@ -264,7 +264,7 @@ write_solfx_ASL(ASL *asl, char *msg, double *x, double *y, Option_Info *oi,
 			if (asl->i.lscale)
 				y = scale(y, asl->i.lscale, &y1, n_con);
 			if ((ip = asl->i.cmap))
-				y = copy(asl->i.n_con0, y, &y1, ip, asl->i.czap);
+				y = copy(asl->i.n_con0, n_con, y, &y1, ip, asl->i.czap);
 			else if (y0 == y && asl->i.n_con0 > n_con) {
 				memcpy(y1, y, n_con*sizeof(real));
 				y = y1;
