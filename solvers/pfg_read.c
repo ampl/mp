@@ -520,6 +520,7 @@ dexpr(Static *S, expr *e, expr *L, expr *R)
 		    else switch(opcode) {
 				case PLUS:
 				case MINUS:	i = Hv_plusL;	break;
+				case DIV:
 				case MULT:	i = Hv_timesL;	break;
 				case UMINUS:	i = Hv_negate;	break;
 				default:	i = Hv_unary;
@@ -3785,53 +3786,6 @@ colstart_inc(Static *S)
 	}
 
  static void
-zerograd_chk(Static *S)
-{
-	int j, n, nv, *z, **zg;
-	ograd *og, **ogp, **ogpe;
-	ASLTYPE *asl = S->asl;
-
-	if (!(nv = asl->i.nlvog))
-		nv = nv0x;
-	zerograds = 0;
-	ogp = Ograd;
-	ogpe = ogp + (j = n_obj);
-	while(ogp < ogpe) {
-		og = *ogp++;
-		n = 0;
-		while(og) {
-			j += og->varno - n;
-			n = og->varno + 1;
-			if (n >= nv)
-				break;
-			og = og->next;
-			}
-		if (n < nv)
-			j += nv - n;
-		}
-	if (j == n_obj)
-		return;
-	zerograds = zg = (int **)mem(n_obj*sizeof(int*)+j*sizeof(int));
-	z = (int*)(zg + n_obj);
-	ogp = Ograd;
-	while(ogp < ogpe) {
-		*zg++ = z;
-		og = *ogp++;
-		n = 0;
-		while(og) {
-			while(n < og->varno)
-				*z++ = n++;
-			og = og->next;
-			if (++n >= nv)
-				break;
-			}
-		while(n < nv)
-			*z++ = n++;
-		*z++ = -1;
-		}
-	}
-
- static void
 cg_zzap(ASLTYPE *asl)
 {
 	cgrad *cg, **cgp,**cgp1, **cgpe;
@@ -3905,8 +3859,6 @@ adjust(Static *S, int flags)
 		funneladjust(S);
 	co_adjust(asl->P.cps, asl->i.n_con0);
 	co_adjust(asl->P.ops, n_obj);
-	if (n_obj)
-		zerograd_chk(S);
 	if (asl->i.n_con0 && !allJ)
 		cg_zzap(asl);
 	if (k_seen) {

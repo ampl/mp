@@ -583,7 +583,6 @@ Edaginfo {
 
 	/* for derivative errors */
 	DerivErrInfo *Derrs, *Derrs0;
-	
 	} Edaginfo;
 
  struct
@@ -898,6 +897,7 @@ enum ASL_writer_error_codes {
  extern int Sprintf(char*, const char*, ...);
  extern void Stderr_init_ASL(void);
  extern void Suf_read_ASL(EdRead*, int);
+ extern void adjust_zerograds_ASL(ASL*, int);
  extern int already_ASL(const char*);
  extern int ascanf(EdRead*, const char*, ...);
  extern void auxinfo_ASL(AmplExports*);

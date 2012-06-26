@@ -905,28 +905,106 @@ flagsave_ASL(ASL *asl, int flags)
 		asl->i.Cgrad0 = asl->i.Cgrad_ = (cgrad **)M1zapalloc(nc*sizeof(cgrad *));
 	}
 
+ static void
+zerograd_chk(ASL *asl)
+{
+	int j, n, nv, nx, *z, **zg;
+	ograd *og, **ogp, **ogpe;
+
+	nx =  asl->i.nsufext[ASL_Sufkind_var];
+	if (!(nv = asl->i.nlvog)) {
+		nv = n_var;
+		if (nv > asl->i.n_var0)
+			nx -= nv - asl->i.n_var0;
+		}
+	zerograds = 0;
+	ogp = Ograd;
+	ogpe = ogp + (j = n_obj);
+	while(ogp < ogpe) {
+		og = *ogp++;
+		n = 0;
+		while(og) {
+			j += og->varno - n;
+			n = og->varno + 1;
+			if (n >= nv)
+				break;
+			og = og->next;
+			}
+		if (n < nv)
+			j += nv - n;
+		}
+	if (j == n_obj)
+		return;
+	j += n_obj * nx;
+	zerograds = zg = (int **)mem(n_obj*sizeof(int*)+j*sizeof(int));
+	z = (int*)(zg + n_obj);
+	ogp = Ograd;
+	while(ogp < ogpe) {
+		*zg++ = z;
+		og = *ogp++;
+		n = 0;
+		while(og) {
+			while(n < og->varno)
+				*z++ = n++;
+			og = og->next;
+			if (++n >= nv)
+				break;
+			}
+		while(n < nv)
+			*z++ = n++;
+		*z++ = -1;
+		z += nx;
+		}
+	}
+
+ void
+adjust_zerograds_ASL(ASL *asl, int nnv)
+{
+	int i, j, k, n, *z, **zg, **zge;
+
+	if (!(zg = zerograds)) {
+		zerograd_chk(asl);
+		return;
+		}
+	n = n_var;
+	for(zge = zg + n_obj; zg < zge; ++zg) {
+		z = *zg;
+		for(i = 0; (k = z[i]) >= 0; ++i) {
+			if (k >= n)
+				break;
+			}
+		for(j = n, k = nnv; k > 0; --k)
+			z[i++] = j++;
+		z[i] = -1;
+		}
+	}
+
  int
 prob_adj_ASL(ASL *asl)
 {
 	cgrad *cg, **pcg, **pcge;
 	int flags, k;
 
+	if (n_obj)
+		adjust_zerograds_ASL(asl, 0);
 	flags = asl->i.rflags;
 	asl->i.Cgrad0 = asl->i.Cgrad_;
 	if (flags & (ASL_obj_replace_eq | ASL_obj_replace_ineq))
 		obj_adj_ASL(asl);
-	if (A_vals)
-		return 0;
-	if (flags & ASL_cc_simplify && n_cc)
-		mpec_adjust_ASL(asl);
-	if (flags & ASL_rowwise_jac) {
-		pcg = Cgrad;
-		pcge = pcg + n_con;
-		k = 0;
-		while(pcg < pcge)
-			for(cg = *pcg++; cg; cg = cg->next)
-				cg->goff = k++;
+	if (!A_vals) {
+		if (flags & ASL_cc_simplify && n_cc)
+			mpec_adjust_ASL(asl);
+		if (flags & ASL_rowwise_jac) {
+			pcg = Cgrad;
+			pcge = pcg + n_con;
+			k = 0;
+			while(pcg < pcge)
+				for(cg = *pcg++; cg; cg = cg->next)
+					cg->goff = k++;
+			}
 		}
+	if (n_obj)
+		zerograd_chk(asl);
 	return 0;
 	}
 
@@ -1033,7 +1111,7 @@ get_vcmap_ASL(ASL *asl, int k)
  int *
 get_vminv_ASL(ASL *asl)
 {
-	int i, n, *vm, *x;
+	int i, j, n, *vm, *x;
 
 	if ((x = asl->i.vminv))
 		return x;
@@ -1044,8 +1122,13 @@ get_vminv_ASL(ASL *asl)
 	for(i = 0; i < n; ++i)
 		x[i] = -1;
 	n = n_var;
-	for(i = 0; i < n; ++i)
-		x[vm[i]] = i;
+	for(i = 0; i < n; ++i) {
+		if ((j = vm[i]) >= 0)
+			x[j] = i;
+		}
+	for(i = 0, j = n; i < n; ++i)
+		if (x[i] < 0)
+			x[i] = j++;
 	return asl->i.vminv = x;
 	}
 

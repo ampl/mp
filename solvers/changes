@@ -2029,3 +2029,20 @@ should not affect solvers.
 
 20120423
   dtoa.c: invisible changes; asldate.c not updated.
+
+20120619
+  opnos.hd pfg_read.c pfghread.c: tweak so division by a constant is
+gives the same sparsity as multiplication by the constant's reciprocal.
+
+20120624
+  asl.h, fgh_read.c, fg_read.c, misc.c: pfghread.c, pfg_read.c:  move
+some common operations to misc.c, where they will happen after some
+problem adjustments.
+  mpec_adj.c: fix bugs in handling problems with integer (including
+binary) variables.
+  suf_sos.c, writesol.c: tweak to work with some problem modifications.
+  getstub.c, getstub.h: add variant usage_noexit_ASL() of usage_ASL()
+(same calling sequence: the exit-code argument affects where the
+usage information is written) that does not exit.  This alternate
+routine may be withdrawn if it we do not see convincing examples of
+its utility.
