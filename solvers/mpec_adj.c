@@ -40,20 +40,14 @@ MPEC_Adjust {
  static expr_n ZeroExpr = { f_OPNUM_ASL, 0. };
 
  static void
-adjust_zerograds(ASL *asl)
+reverse(int *a, int *b)
 {
-	int i, k, n, *z, **zg, **zge;
+	int t;
 
-	n = n_var;
-	zg = zerograds;
-	for(zge = zg + n_obj; zg < zge; ++zg) {
-		z = *zg;
-		for(i = 0; (k = z[i]) >= 0; ++i) {
-			if (k >= n) {
-				z[i] = -1;
-				break;
-				}
-			}
+	while(--b > a) {
+		t = *b;
+		*b = *a;
+		*a++ = t;
 		}
 	}
 
@@ -64,17 +58,19 @@ mpec_adjust_ASL(ASL *asl)
 	cde *cd;
 	cde2 *cd2;
 	cgrad **Cgrd, **Cgrd1, **Cgrda, *cg, *cg1, *ncg, **pcg;
-	int *cc, *ck, *cv, *ind1, *ind2, *map;
-	int i, incc, incv, j, k, m, m0, n, n0, n1, nb, ncc, ncc0;
-	int nn, nz, nz0, nznew, v1, v2, v3, v4;
+	char *hx0;
+	int *cc, *ck, *cv, *ind1, *ind2, *map, *mapinv;
+	int i, incc, incv, j, k, m, m0, n, n0, n1, nb, ncc, ncc0, nib, nib0;
+	int nnv, nz, nz0, nznew, v1, v2, v3, v4;
 	real *Lc, *Lc0, *Lc1, *Lv, *Lv0, *Lv1, *Uc, *Uc0, *Uc1, *Uv, *Uv0, *Uv1;
-	real a, b;
+	real a, b, *x;
 	extern void f_OPVARVAL_ASL(), f2_VARVAL_ASL();
 
 	n = n1 = n0 = n_var;
+	nib = niv + nbv;
+	nib0 = n - nib;	/* offset of first linear integer or binary variable */
 	m = m0 = n_con;
 	nz = nz0 = nzc;
-	nn = nlc;
 	cv = cvar;
 	Cgrd = Cgrad;
 	Cgrd1 = Cgrd + m;
@@ -131,8 +127,9 @@ mpec_adjust_ASL(ASL *asl)
 		}
 	n_var = n;
 	n_con = m;
-	if (zerograds && n < asl->i.n_var0 + asl->i.nsufext[ASL_Sufkind_var])
-		adjust_zerograds(asl);
+	nnv = n - n0;
+	if (n_obj)
+		adjust_zerograds_ASL(asl, nnv);
 	if (n_conjac[1] >= m0)
 		n_conjac[1] = m;
 	nzc = nz;
@@ -147,21 +144,63 @@ mpec_adjust_ASL(ASL *asl)
 	mpa->cc = cc = ind2 + ncc;
 	mpa->ck = ck = mpa->cce = cc + ncc0;
 	mpa->m0 = m0;
-	mpa->n0 = n0;
+	mpa->n0 = n0 - nib;
 	mpa->rhs1 = Lc1;
 	mpa->incc = incc;
 	mpa->incv = incv;
-
+	if (nib) {
+		map = get_vcmap_ASL(asl, ASL_Sufkind_var);
+		/* Three reverse calls move nib values of map up nnv places. */
+		j = n0 - nib;
+		reverse(map+j, map + n0 + nnv);
+		reverse(map+j, map + j + nnv);
+		reverse(map + j + nnv, map + n0 + nnv);
+		i = n0 + nnv;
+		while(--i >= n0) {
+			j = i - nnv;
+			Lv0[incv*i] = Lv0[incv*j];
+			Uv0[incv*i] = Uv0[incv*j];
+			}
+		if ((x = X0)) {
+			i = n0 + nnv;
+			while(--i >= n0)
+				x[i] = x[i-nnv];
+			for(i = n0 - nnv; i < n0; ++i)
+				x[i] = 0.;
+			if ((hx0 = havex0)) {
+				for(i = n0 + nnv; --i >= n0; )
+					hx0[i] = hx0[i-nnv];
+				for(i = n0 - nnv;i < n0; ++i)
+					hx0[i] = 0;
+				}
+			}
+		Lv1 -= j = incv*nib;
+		Uv1 -= j;
+		}
+	else {
+		if ((map = asl->i.vmap)) {
+			j = asl->i.n_var0;
+			for(i = n0; i < n; ++i)
+				map[i] = -1;
+			}
+		if ((x = X0)) {
+			memset(x + n0, 0, nnv*sizeof(real));
+			if ((hx0 = havex0))
+				memset(hx0 + n0, 0, nnv);
+			}
+		}
 #define vset(x,y) *x = y; x += incv;
 	for(i = 0; i < m0; ++i)
 		if ((j = cv[i])) {
+			if (j > nib0)
+				j += nnv;
 			*cc++ = i;
 			pcg = &Cgrd[i];
 			cg = 0;
 			while((cg1 = *pcg))
 				pcg = &(cg = cg1)->next;
 			*Cgrda++ = cg;
-			Lc = Lc0 + incc*i;
+			Lc = Lc0 + incv*i;
 			Uc = Uc0 + incc*i;
 			Lv = Lv0 + incv*--j;
 			Uv = Uv0 + incv*j;
@@ -265,18 +304,22 @@ mpec_adjust_ASL(ASL *asl)
 				}
 			}
 #undef vset
+	if (map) {
+		ind1 -= ncc;
+		ind2 -= ncc;
+		mapinv = get_vminv_ASL(asl);
+		for(i = 0; i < ncc; ++i) {
+			ind1[i] = mapinv[ind1[i]];
+			ind2[i] = mapinv[ind2[i]];
+			}
+		}
 	if ((map = asl->i.cmap)) {
 		j = asl->i.n_con0;
 		Cgrd1 = asl->i.Cgrad0;
 		for(i = m0; i < m; ++i) {
-			Cgrd1[j] = Cgrd[i];
-			map[i] = map[j++];
+			map[i] = -1;
+			Cgrd1[j++] = Cgrd[i];
 			}
-		}
-	if ((map = asl->i.vmap)) {
-		j = asl->i.n_var0;
-		for(i = n0; i < n; ++i)
-			map[i] = map[j++];
 		}
 	i = m0;
 	k = m - m0;

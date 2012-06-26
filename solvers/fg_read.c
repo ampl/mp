@@ -1203,56 +1203,6 @@ colstart_inc(Static *S)
 		++*ka++;
 	}
 
-#ifndef Just_Linear
-
- static void
-zerograd_chk(Static *S)
-{
-	ASL_fg *asl = S->asl;
-	int j, n, nv, *z, **zg;
-	ograd *og, **ogp, **ogpe;
-
-	if (!(nv = asl->i.nlvog))
-		nv = nv0;
-	zerograds = 0;
-	ogp = Ograd;
-	ogpe = ogp + (j = n_obj);
-	while(ogp < ogpe) {
-		og = *ogp++;
-		n = 0;
-		while(og) {
-			j += og->varno - n;
-			n = og->varno + 1;
-			if (n >= nv)
-				break;
-			og = og->next;
-			}
-		if (n < nv)
-			j += nv - n;
-		}
-	if (j == n_obj)
-		return;
-	zerograds = zg = (int **)mem(n_obj*sizeof(int*)+j*sizeof(int));
-	z = (int*)(zg + n_obj);
-	ogp = Ograd;
-	while(ogp < ogpe) {
-		*zg++ = z;
-		og = *ogp++;
-		n = 0;
-		while(og) {
-			while(n < og->varno)
-				*z++ = n++;
-			og = og->next;
-			if (++n >= nv)
-				break;
-			}
-		while(n < nv)
-			*z++ = n++;
-		*z++ = -1;
-		}
-	}
-#endif /* Just_Linear */
-
  static void
 adjust_compl_rhs(ASL_fg *asl, efunc *opnum)
 {
@@ -1310,8 +1260,6 @@ adjust(Static *S, int flags)
 	if (ncom0)
 		funneladjust(asl);
 	com1adjust(asl);
-	if (n_obj)
-		zerograd_chk(S);
 #endif /* Just_Linear */
 	if (k_seen) {
 		if (!A_vals)
