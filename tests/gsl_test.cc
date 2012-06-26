@@ -233,6 +233,13 @@ double sf_bessel_J0_dx2(double x) {
   return 0.5 * (gsl_sf_bessel_Jn(2, x) - gsl_sf_bessel_J0(x));
 }
 
+double sf_bessel_J1_dx(double x) {
+  return 0.5 * (gsl_sf_bessel_J0(x) - gsl_sf_bessel_Jn(2, x));
+}
+double sf_bessel_J1_dx2(double x) {
+  return 0.25 * (gsl_sf_bessel_Jn(3, x) - 3 * gsl_sf_bessel_J1(x));
+}
+
 #define TEST_FUNC(name) \
   TestFunc("gsl_" #name, gsl_##name, name##_dx, name##_dx2);
 
@@ -250,14 +257,18 @@ TEST_F(GSLTest, Functions) {
   TEST_FUNC(expm1);
   TEST_FUNC2(hypot);
   TEST_FUNC3(hypot3);
+
   TEST_FUNC(sf_airy_Ai);
   TEST_FUNC(sf_airy_Ai_scaled);
   ASSERT_NEAR(-0.00888609, sf_airy_Ai_scaled_dx(5), 1e-5);
   ASSERT_NEAR(0.00207512, sf_airy_Ai_scaled_dx2(5), 1e-5);
+
   TEST_FUNC(sf_airy_Bi);
   TEST_FUNC(sf_airy_Bi_scaled);
   ASSERT_NEAR(-0.0203063, sf_airy_Bi_scaled_dx(5), 1e-5);
   ASSERT_NEAR(0.00559418, sf_airy_Bi_scaled_dx2(5), 1e-5);
+
   TEST_FUNC(sf_bessel_J0);
+  TEST_FUNC(sf_bessel_J1);
 }
 }
