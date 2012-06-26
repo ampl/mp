@@ -142,6 +142,17 @@ static real amplgsl_sf_bessel_J0(arglist *al) {
   return j0;
 }
 
+static real amplgsl_sf_bessel_J1(arglist *al) {
+  real x = al->ra[0];
+  real j1 = gsl_sf_bessel_J1(x);
+  if (al->derivs) {
+    *al->derivs = 0.5 * (gsl_sf_bessel_J0(x) - gsl_sf_bessel_Jn(2, x));
+    if (al->hes)
+      *al->hes = 0.25 * (gsl_sf_bessel_Jn(3, x) - 3 * j1);
+  }
+  return j1;
+}
+
 void funcadd_ASL(AmplExports *ae) {
   // Elementary Functions
   addfunc("gsl_log1p", amplgsl_log1p, 0, 1, 0);
@@ -157,5 +168,8 @@ void funcadd_ASL(AmplExports *ae) {
   addfunc("gsl_sf_airy_Ai_scaled", amplgsl_sf_airy_Ai_scaled, 0, 1, 0);
   addfunc("gsl_sf_airy_Bi_scaled", amplgsl_sf_airy_Bi_scaled, 0, 1, 0);
 
+  // Bessel Functions
   addfunc("gsl_sf_bessel_J0", amplgsl_sf_bessel_J0, 0, 1, 0);
+  addfunc("gsl_sf_bessel_J1", amplgsl_sf_bessel_J1, 0, 1, 0);
+  // TODO: Jn
 }
