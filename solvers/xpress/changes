@@ -35,3 +35,11 @@ the new solve_result_num value 520 (and no returned solution).
 
 20120417
  xpress.c: updates for XPRESS 22.
+
+20120605
+ xpress.c: add keyword mipstartvalue with synonym mipstart to
+control whether a starting guess for a MIP problem is passed
+to XPRESS.  Hitherto a starting guess was ignored; now the
+default is to use it, but specifying mipstartvalue=0 will cause
+it not to be used.  Also arrange for "xpress -v" to report the
+version of XPRESS being used.

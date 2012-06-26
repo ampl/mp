@@ -118,7 +118,8 @@ extern char* getstops_ASL (ASL*, char **argv, Option_Info*);
 extern char* getstub_ASL (ASL*, char ***pargv, Option_Info*);
 extern void show_version_ASL(Option_Info*);
 extern char  sysdetails_ASL[];
-extern void  usage_ASL (Option_Info*, int exit_code);
+extern void  usage_ASL(Option_Info*, int exit_code);
+extern void  usage_noexit_ASL(Option_Info*, int exit_code);
 
 #define getstub(a,b)	getstub_ASL((ASL*)asl,a,b)
 #define getstops(a,b)	getstops_ASL((ASL*)asl,a,b)

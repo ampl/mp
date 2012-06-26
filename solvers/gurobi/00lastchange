@@ -1,3 +1,4 @@
-20120504
-  gurobi.c, README.gurobi, makefile.u: update for Gurobi 5.0.  The
-updated gurobi.c should still work with earlier versions of Gurobi.
+20120606
+  gurobi.c: fix a glitch in providing a dual initial guess (when
+available from a previous solve) in problems with quadratic constraints,
+leading to the message "Index out of range for attribute 'DStart'."
