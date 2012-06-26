@@ -2,7 +2,23 @@
 # This script merges changes from the AMPL Solver Library on
 # Netlib http://www.netlib.org/ampl into Github repository
 # https://github.com/vitaut/ampl/
-# WARNING: This script will delete untracked files and directories.
+#
+# WARNING: This script will delete untracked files and directories!
+
+# Workflow:
+#
+#  change   change   change
+#     |        |        |
+#     v        v        v
+# ---------------------------- netlib.org/ampl
+#       |        |        |
+#       | rsync  |        |
+#       v        v        v
+# ---------------------------- github.com/vitaut/ampl [netlib]
+#         |        |        |
+#         | merge  |        |
+#         v        v        v
+# ---------------------------- github.com/vitaut/ampl [master]
 
 git stash
 git checkout netlib
