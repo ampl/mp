@@ -1,0 +1,12 @@
+#!/bin/sh
+# This script merges changes from the AMPL Solver Library on
+# Netlib http://www.netlib.org/ampl into Github repository
+# https://github.com/vitaut/ampl/
+# WARNING: This script may destroy local changes.
+
+git checkout netlib
+rsync -avz --delete --exclude=.git --exclude=student netlib.org::netlib/ampl/ .
+git add .
+git commit -m 'Upstream changes'
+git checkout master
+git merge -s recursive -X theirs netlib
