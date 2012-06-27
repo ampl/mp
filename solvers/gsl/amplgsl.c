@@ -176,6 +176,28 @@ static real amplgsl_sf_bessel_Y1(arglist *al) {
   return y1;
 }
 
+static real amplgsl_sf_bessel_I0(arglist *al) {
+  real x = al->ra[0];
+  real i0 = gsl_sf_bessel_I0(x);
+  if (al->derivs) {
+    *al->derivs = gsl_sf_bessel_I1(x);
+    if (al->hes)
+      *al->hes = 0.5 * (gsl_sf_bessel_In(2, x) + i0);
+  }
+  return i0;
+}
+
+static real amplgsl_sf_bessel_I1(arglist *al) {
+  real x = al->ra[0];
+  real i1 = gsl_sf_bessel_I1(x);
+  if (al->derivs) {
+    *al->derivs = 0.5 * (gsl_sf_bessel_I0(x) + gsl_sf_bessel_In(2, x));
+    if (al->hes)
+      *al->hes = 0.25 * (gsl_sf_bessel_In(3, x) + 3 * i1);
+  }
+  return i1;
+}
+
 void funcadd_ASL(AmplExports *ae) {
   // Don't call abort on error.
   gsl_set_error_handler_off();
@@ -203,4 +225,9 @@ void funcadd_ASL(AmplExports *ae) {
   addfunc("gsl_sf_bessel_Y0", amplgsl_sf_bessel_Y0, 0, 1, 0);
   addfunc("gsl_sf_bessel_Y1", amplgsl_sf_bessel_Y1, 0, 1, 0);
   // TODO: gsl_sf_bessel_Yn
+
+  // Regular Modified Cylindrical Bessel Functions
+  addfunc("gsl_sf_bessel_I0", amplgsl_sf_bessel_I0, 0, 1, 0);
+  addfunc("gsl_sf_bessel_I1", amplgsl_sf_bessel_I1, 0, 1, 0);
+  // TODO: gsl_sf_bessel_In
 }
