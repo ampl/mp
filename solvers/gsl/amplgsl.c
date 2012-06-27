@@ -187,6 +187,36 @@ static real amplgsl_sf_bessel_I0(arglist *al) {
   return i0;
 }
 
+static real amplgsl_sf_bessel_I0_scaled(arglist *al) {
+  real x = al->ra[0];
+  real i0 = gsl_sf_bessel_I0_scaled(x);
+  if (al->derivs) {
+    real x_div_absx = x / abs(x);
+    real i1 = gsl_sf_bessel_I1_scaled(x);
+    *al->derivs = i1 - x_div_absx * i0;
+    if (al->hes) {
+      *al->hes = 1.5 * i0 - 2 * x_div_absx * i1 +
+          0.5 * gsl_sf_bessel_In_scaled(2, x);
+    }
+  }
+  return i0;
+}
+
+static real amplgsl_sf_bessel_I1_scaled(arglist *al) {
+  real x = al->ra[0];
+  real i1 = gsl_sf_bessel_I1_scaled(x);
+  if (al->derivs) {
+    real x_div_absx = x / abs(x);
+    real i0 = gsl_sf_bessel_I0_scaled(x), i2 = gsl_sf_bessel_In_scaled(2, x);
+    *al->derivs = 0.5 * i0 - x_div_absx * i1 + 0.5 * i2;
+    if (al->hes) {
+      *al->hes = -x_div_absx * i0 + 1.75 * i1 - x_div_absx * i2 +
+          0.25 * gsl_sf_bessel_In_scaled(3, x);
+    }
+  }
+  return i1;
+}
+
 static real amplgsl_sf_bessel_I1(arglist *al) {
   real x = al->ra[0];
   real i1 = gsl_sf_bessel_I1(x);
@@ -196,6 +226,64 @@ static real amplgsl_sf_bessel_I1(arglist *al) {
       *al->hes = 0.25 * (gsl_sf_bessel_In(3, x) + 3 * i1);
   }
   return i1;
+}
+
+static real amplgsl_sf_bessel_K0(arglist *al) {
+  real x = al->ra[0];
+  real k0 = gsl_sf_bessel_K0(x);
+  if (al->derivs) {
+    *al->derivs = -gsl_sf_bessel_K1(x);
+    if (al->hes)
+      *al->hes = 0.5 * (gsl_sf_bessel_Kn(2, x) + k0);
+  }
+  return k0;
+}
+
+static real amplgsl_sf_bessel_K0_scaled(arglist *al) {
+  real x = al->ra[0];
+  real k0 = gsl_sf_bessel_K0_scaled(x);
+  if (al->derivs) {
+    real k1 = gsl_sf_bessel_K1_scaled(x);
+    *al->derivs = k0 - k1;
+    if (al->hes)
+      *al->hes = 1.5 * k0 - 2 * k1 + 0.5 * gsl_sf_bessel_Kn_scaled(2, x);
+  }
+  return k0;
+}
+
+static real amplgsl_sf_bessel_K1(arglist *al) {
+  real x = al->ra[0];
+  real k1 = gsl_sf_bessel_K1(x);
+  if (al->derivs) {
+    *al->derivs = -0.5 * (gsl_sf_bessel_K0(x) + gsl_sf_bessel_Kn(2, x));
+    if (al->hes)
+      *al->hes = 0.25 * (gsl_sf_bessel_Kn(3, x) + 3 * k1);
+  }
+  return k1;
+}
+
+static real amplgsl_sf_bessel_K1_scaled(arglist *al) {
+  real x = al->ra[0];
+  real k1 = gsl_sf_bessel_K1_scaled(x);
+  if (al->derivs) {
+    real k0 = gsl_sf_bessel_K0_scaled(x), k2 = gsl_sf_bessel_Kn_scaled(2, x);
+    *al->derivs = -0.5 * k0 + k1 - 0.5 * k2;
+    if (al->hes)
+      *al->hes = -k0 + 1.75 * k1 - k2 + 0.25 * gsl_sf_bessel_Kn_scaled(3, x);
+  }
+  return k1;
+}
+
+static real amplgsl_sf_bessel_j0(arglist *al) {
+  real x = al->ra[0];
+  real j0 = gsl_sf_bessel_j0(x);
+  if (al->derivs) {
+    real x_squared = x * x;
+    *al->derivs = (x * cos(x) - sin(x)) / x_squared;
+    if (al->hes)
+      *al->hes = ((2 - x_squared) * sin(x) - 2 * x * cos(x)) / (x_squared * x);
+  }
+  return j0;
 }
 
 void funcadd_ASL(AmplExports *ae) {
@@ -229,5 +317,22 @@ void funcadd_ASL(AmplExports *ae) {
   // Regular Modified Cylindrical Bessel Functions
   addfunc("gsl_sf_bessel_I0", amplgsl_sf_bessel_I0, 0, 1, 0);
   addfunc("gsl_sf_bessel_I1", amplgsl_sf_bessel_I1, 0, 1, 0);
+  addfunc("gsl_sf_bessel_I0_scaled", amplgsl_sf_bessel_I0_scaled, 0, 1, 0);
+  addfunc("gsl_sf_bessel_I1_scaled", amplgsl_sf_bessel_I1_scaled, 0, 1, 0);
   // TODO: gsl_sf_bessel_In
+
+  // Irregular Modified Cylindrical Bessel Functions
+  addfunc("gsl_sf_bessel_K0", amplgsl_sf_bessel_K0, 0, 1, 0);
+  addfunc("gsl_sf_bessel_K1", amplgsl_sf_bessel_K1, 0, 1, 0);
+  addfunc("gsl_sf_bessel_K0_scaled", amplgsl_sf_bessel_K0_scaled, 0, 1, 0);
+  addfunc("gsl_sf_bessel_K1_scaled", amplgsl_sf_bessel_K1_scaled, 0, 1, 0);
+  // TODO: gsl_sf_bessel_Kn
+
+  // Regular Spherical Bessel Functions
+  addfunc("gsl_sf_bessel_j0", amplgsl_sf_bessel_j0, 0, 1, 0);
+  // TODO: j1, j2, jl
+  // TODO: y0, y1, y2, yl
+  // TODO: i0_scaled, i1_scaled, i2_scaled, il_scaled
+  // TODO: k0_scaled, k1_scaled, k2_scaled, kl_scaled
+  // TODO: Jnu, Ynu, Inu, Inu_scaled, Knu, Knu_scaled
 }
