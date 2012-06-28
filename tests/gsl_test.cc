@@ -323,7 +323,8 @@ double sf_bessel_j1_dx(double x) {
   return (sin(x) - 2 * gsl_sf_bessel_j1(x)) / x;
 }
 double sf_bessel_j1_dx2(double x) {
-  return (x * (x * x - 6) * cos(x) - 3 * (x * x - 2) * sin(x)) / (x * x * x * x);
+  return (x * (x * x - 6) * cos(x) -
+      3 * (x * x - 2) * sin(x)) / (x * x * x * x);
 }
 
 double sf_bessel_j2_dx(double x) {
@@ -353,6 +354,60 @@ double sf_bessel_y2_dx(double x) {
 double sf_bessel_y2_dx2(double x) {
   return ((36 - 5 * x * x) * gsl_sf_bessel_y1(x) -
       (x * x - 12) * cos(x)) / (x * x * x);
+}
+
+double sf_bessel_i0_scaled_dx(double x) {
+  return (exp(-abs(x)) * sqrt(1 / x) * (x * sqrt(x * x) * cosh(x) -
+      (x * x + sqrt(x * x)) * sinh(x))) / (pow(x, 1.5) * sqrt(x * x));
+}
+double sf_bessel_i0_scaled_dx2(double x) {
+  return (2 * exp(-abs(x)) * sqrt(1 / x) * ((x * x + abs(x) *
+      (x * x + 1)) * sinh(x) - x * (x * x + abs(x)) * cosh(x))) /
+      (pow(x, 2.5) * sqrt(x * x));
+}
+
+double sf_bessel_i1_scaled_dx(double x) {
+  return (exp(-abs(x)) * sqrt(1 / x) * ((x * x + abs(x) * (x * x + 2)) *
+      sinh(x) - x * (x * x + 2 * abs(x)) * cosh(x))) /
+      (pow(x, 2.5) * abs(x));
+}
+double sf_bessel_i1_scaled_dx2(double x) {
+  return -(2 * exp(-abs(x)) * sqrt(1 / x) * ((pow(x, 4) + 2 * x * x +
+      abs(x) * (2 * x * x + 3)) * sinh(x) - x * (2 * x * x + abs(x) *
+          (x * x + 3)) * cosh(x))) / (pow(x, 3.5) * abs(x));
+}
+
+double sf_bessel_i2_scaled_dx(double x) {
+  return (exp(-abs(x)) * sqrt(1 / x) * (x * (3 * x * x + abs(x) *
+      (x * x + 9)) * cosh(x) - (pow(x, 4) + 3 * x * x + abs(x) *
+          (4 * x * x + 9)) * sinh(x))) / (pow(x, 3.5) * abs(x));
+}
+double sf_bessel_i2_scaled_dx2(double x) {
+  return (2 * exp(-abs(x)) * sqrt(1 / x) * ((9 * x * x + 2 * abs(x) *
+      (5 * x * x + 9) + (abs(x) + 4) * pow(x, 4)) * sinh(x) -
+      x * (pow(x, 4) + 9 * x * x + 2 * abs(x) * (2 * x * x + 9)) * cosh(x))) /
+      (pow(x, 4.5) * abs(x));
+}
+
+double sf_bessel_k0_scaled_dx(double x) {
+  return -M_PI * sqrt(1 / x) / (2 * pow(x, 1.5));
+}
+double sf_bessel_k0_scaled_dx2(double x) {
+  return M_PI * sqrt(1 / x) / pow(x, 2.5);
+}
+
+double sf_bessel_k1_scaled_dx(double x) {
+  return -(M_PI * sqrt(1 / x) * (x + 2)) / (2 * pow(x, 2.5));
+}
+double sf_bessel_k1_scaled_dx2(double x) {
+  return (M_PI * sqrt(1 / x) * (x + 3)) / pow(x, 3.5);
+}
+
+double sf_bessel_k2_scaled_dx(double x) {
+  return -(M_PI * sqrt(1 / x) * (x + 3) * (x + 3)) / (2 * pow(x, 3.5));
+}
+double sf_bessel_k2_scaled_dx2(double x) {
+  return (M_PI * sqrt(1 / x) * (x * x + 9 * x + 18)) / pow(x, 4.5);
 }
 
 #define TEST_FUNC(name) \
@@ -431,5 +486,36 @@ TEST_F(GSLTest, Functions) {
   TEST_FUNC(sf_bessel_y2);
   ASSERT_NEAR(0.0814411, sf_bessel_y2_dx(5), 1e-5);
   ASSERT_NEAR(-0.157973, sf_bessel_y2_dx2(5), 1e-5);
+
+  TEST_FUNC(sf_bessel_i0_scaled);
+  ASSERT_NEAR(0.0999955, gsl_sf_bessel_i0_scaled(5), 1e-5);
+  ASSERT_NEAR(-0.01999, sf_bessel_i0_scaled_dx(5), 1e-5);
+  ASSERT_NEAR(0.00797784, sf_bessel_i0_scaled_dx2(5), 1e-5);
+
+  TEST_FUNC(sf_bessel_i1_scaled);
+  ASSERT_NEAR(0.0800054, gsl_sf_bessel_i1_scaled(5), 1e-5);
+  ASSERT_NEAR(-0.0120122, sf_bessel_i1_scaled_dx(5), 1e-5);
+  ASSERT_NEAR(0.00322746, sf_bessel_i1_scaled_dx2(5), 1e-5);
+
+  TEST_FUNC(sf_bessel_i2_scaled);
+  ASSERT_NEAR(0.0519922, gsl_sf_bessel_i2_scaled(5), 1e-5);
+  ASSERT_NEAR(-0.00318206, sf_bessel_i2_scaled_dx(5), 1e-5);
+  ASSERT_NEAR(-0.000681812, sf_bessel_i2_scaled_dx2(5), 1e-5);
+
+  TEST_FUNC(sf_bessel_k0_scaled);
+  ASSERT_NEAR(0.314159, gsl_sf_bessel_k0_scaled(5), 1e-5);
+  ASSERT_NEAR(-0.0628319, sf_bessel_k0_scaled_dx(5), 1e-5);
+  ASSERT_NEAR(0.0251327, sf_bessel_k0_scaled_dx2(5), 1e-5);
+
+  TEST_FUNC(sf_bessel_k1_scaled);
+  ASSERT_NEAR(0.376991, gsl_sf_bessel_k1_scaled(5), 1e-5);
+  ASSERT_NEAR(-0.0879646, sf_bessel_k1_scaled_dx(5), 1e-5);
+  ASSERT_NEAR(0.0402124, sf_bessel_k1_scaled_dx2(5), 1e-5);
+
+  TEST_FUNC(sf_bessel_k2_scaled);
+  ASSERT_NEAR(0.540354, gsl_sf_bessel_k2_scaled(5), 1e-5);
+  ASSERT_NEAR(-0.16085, sf_bessel_k2_scaled_dx(5), 1e-5);
+  ASSERT_NEAR(0.0884672, sf_bessel_k2_scaled_dx2(5), 1e-5);
+  // TODO
 }
 }
