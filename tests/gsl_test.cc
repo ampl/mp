@@ -319,6 +319,42 @@ double sf_bessel_j0_dx2(double x) {
   return -((x * x - 2) * sin(x) + 2 * x * cos(x)) / (x * x * x);
 }
 
+double sf_bessel_j1_dx(double x) {
+  return (sin(x) - 2 * gsl_sf_bessel_j1(x)) / x;
+}
+double sf_bessel_j1_dx2(double x) {
+  return (x * (x * x - 6) * cos(x) - 3 * (x * x - 2) * sin(x)) / (x * x * x * x);
+}
+
+double sf_bessel_j2_dx(double x) {
+  return gsl_sf_bessel_j1(x) - (3 * gsl_sf_bessel_j2(x)) / x;
+}
+double sf_bessel_j2_dx2(double x) {
+  return (x * (5 * x * x - 36) * cos(x) +
+      (pow(x, 4) - 17 * x * x + 36) * sin(x)) / pow(x, 5);
+}
+
+double sf_bessel_y0_dx(double x) { return (x * sin(x) + cos(x)) / (x * x); }
+double sf_bessel_y0_dx2(double x) {
+  return ((x * x - 2) * cos(x) - 2 * x * sin(x)) / (x * x * x);
+}
+
+double sf_bessel_y1_dx(double x) {
+  return -(2 * gsl_sf_bessel_y1(x) + cos(x)) / x;
+}
+double sf_bessel_y1_dx2(double x) {
+  return (x * (x * x - 6) * sin(x) +
+      3 * (x * x - 2) * cos(x)) / (x * x * x * x);
+}
+
+double sf_bessel_y2_dx(double x) {
+  return gsl_sf_bessel_y1(x) - (3 * gsl_sf_bessel_y2(x)) / x;
+}
+double sf_bessel_y2_dx2(double x) {
+  return ((36 - 5 * x * x) * gsl_sf_bessel_y1(x) -
+      (x * x - 12) * cos(x)) / (x * x * x);
+}
+
 #define TEST_FUNC(name) \
   TestFunc("gsl_" #name, gsl_##name, name##_dx, name##_dx2);
 
@@ -373,5 +409,27 @@ TEST_F(GSLTest, Functions) {
   ASSERT_NEAR(0.0224065, sf_bessel_K1_scaled_dx2(5), 1e-5);
 
   TEST_FUNC(sf_bessel_j0);
+  ASSERT_NEAR(0.0950894, sf_bessel_j0_dx(5), 1e-5);
+  ASSERT_NEAR(0.153749, sf_bessel_j0_dx2(5), 1e-5);
+
+  TEST_FUNC(sf_bessel_j1);
+  ASSERT_NEAR(-0.153749, sf_bessel_j1_dx(5), 1e-5);
+  ASSERT_NEAR(0.148982, sf_bessel_j1_dx2(5), 1e-5);
+
+  TEST_FUNC(sf_bessel_j2);
+  ASSERT_NEAR(-0.175928, sf_bessel_j2_dx(5), 1e-5);
+  ASSERT_NEAR(-0.0320245, sf_bessel_j2_dx2(5), 1e-5);
+
+  TEST_FUNC(sf_bessel_y0);
+  ASSERT_NEAR(-0.180438, sf_bessel_y0_dx(5), 1e-5);
+  ASSERT_NEAR(0.128908, sf_bessel_y0_dx2(5), 1e-5);
+
+  TEST_FUNC(sf_bessel_y1);
+  ASSERT_NEAR(-0.128908, sf_bessel_y1_dx(5), 1e-5);
+  ASSERT_NEAR(-0.11444, sf_bessel_y1_dx2(5), 1e-5);
+
+  TEST_FUNC(sf_bessel_y2);
+  ASSERT_NEAR(0.0814411, sf_bessel_y2_dx(5), 1e-5);
+  ASSERT_NEAR(-0.157973, sf_bessel_y2_dx2(5), 1e-5);
 }
 }

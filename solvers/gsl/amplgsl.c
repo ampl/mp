@@ -276,14 +276,82 @@ static real amplgsl_sf_bessel_K1_scaled(arglist *al) {
 
 static real amplgsl_sf_bessel_j0(arglist *al) {
   real x = al->ra[0];
-  real j0 = gsl_sf_bessel_j0(x);
   if (al->derivs) {
     real x_squared = x * x;
     *al->derivs = (x * cos(x) - sin(x)) / x_squared;
     if (al->hes)
       *al->hes = ((2 - x_squared) * sin(x) - 2 * x * cos(x)) / (x_squared * x);
   }
-  return j0;
+  return gsl_sf_bessel_j0(x);
+}
+
+static real amplgsl_sf_bessel_j1(arglist *al) {
+  real x = al->ra[0];
+  real j1 = gsl_sf_bessel_j1(x);
+  if (al->derivs) {
+    real sinx = sin(x);
+    *al->derivs = (sinx - 2 * j1) / x;
+    if (al->hes) {
+      real x_squared = x * x;
+      *al->hes = (x * (x_squared - 6) * cos(x) - 3 * (x_squared - 2) * sinx) /
+        (x_squared * x_squared);
+    }
+  }
+  return j1;
+}
+
+static real amplgsl_sf_bessel_j2(arglist *al) {
+  real x = al->ra[0];
+  real j2 = gsl_sf_bessel_j2(x);
+  if (al->derivs) {
+    *al->derivs = gsl_sf_bessel_j1(x) - 3 * j2 / x;
+    if (al->hes) {
+      real x_pow2 = x * x, x_pow4 = x_pow2 * x_pow2;
+      *al->hes = (x * (5 * x_pow2 - 36) * cos(x) +
+          (x_pow4 - 17 * x_pow2 + 36) * sin(x)) / (x_pow4 * x);
+    }
+  }
+  return j2;
+}
+
+static real amplgsl_sf_bessel_y0(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    real x_squared = x * x;
+    *al->derivs = (x * sin(x) + cos(x)) / x_squared;
+    if (al->hes)
+      *al->hes = ((x_squared - 2) * cos(x) - 2 * x * sin(x)) / (x_squared * x);
+  }
+  return gsl_sf_bessel_y0(x);
+}
+
+static real amplgsl_sf_bessel_y1(arglist *al) {
+  real x = al->ra[0];
+  real y1 = gsl_sf_bessel_y1(x);
+  if (al->derivs) {
+    *al->derivs = -(2 * y1 + cos(x)) / x;
+    if (al->hes) {
+      real x_squared = x * x;
+      *al->hes = (x * (x_squared - 6) * sin(x) +
+          3 * (x_squared - 2) * cos(x)) / (x_squared * x_squared);
+    }
+  }
+  return y1;
+}
+
+static real amplgsl_sf_bessel_y2(arglist *al) {
+  real x = al->ra[0];
+  real y2 = gsl_sf_bessel_y2(x);
+  if (al->derivs) {
+    real y1 = gsl_sf_bessel_y1(x);
+    *al->derivs = y1 - (3 * y2) / x;
+    if (al->hes) {
+      real x_squared = x * x;
+      *al->hes = ((36 - 5 * x_squared) * y1 -
+          (x_squared - 12) * cos(x)) / (x_squared * x);
+    }
+  }
+  return y2;
 }
 
 void funcadd_ASL(AmplExports *ae) {
@@ -330,9 +398,22 @@ void funcadd_ASL(AmplExports *ae) {
 
   // Regular Spherical Bessel Functions
   addfunc("gsl_sf_bessel_j0", amplgsl_sf_bessel_j0, 0, 1, 0);
-  // TODO: j1, j2, jl
-  // TODO: y0, y1, y2, yl
+  addfunc("gsl_sf_bessel_j1", amplgsl_sf_bessel_j1, 0, 1, 0);
+  addfunc("gsl_sf_bessel_j2", amplgsl_sf_bessel_j2, 0, 1, 0);
+  // TODO: jl
+
+  // Irregular Spherical Bessel Functions
+  addfunc("gsl_sf_bessel_y0", amplgsl_sf_bessel_y0, 0, 1, 0);
+  addfunc("gsl_sf_bessel_y1", amplgsl_sf_bessel_y1, 0, 1, 0);
+  addfunc("gsl_sf_bessel_y2", amplgsl_sf_bessel_y2, 0, 1, 0);
+  // TODO: yl
+
+  // Regular Modified Spherical Bessel Functions
   // TODO: i0_scaled, i1_scaled, i2_scaled, il_scaled
+
+  // Irregular Modified Spherical Bessel Functions
   // TODO: k0_scaled, k1_scaled, k2_scaled, kl_scaled
+
+  // Regular Bessel Function - Fractional Order
   // TODO: Jnu, Ynu, Inu, Inu_scaled, Knu, Knu_scaled
 }
