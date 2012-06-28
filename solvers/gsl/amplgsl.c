@@ -354,6 +354,91 @@ static real amplgsl_sf_bessel_y2(arglist *al) {
   return y2;
 }
 
+static real amplgsl_sf_bessel_i0_scaled(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    real sqrt_inv_x = sqrt(1 / x);
+    real cosh_x = cosh(x), sinh_x = sinh(x);
+    *al->derivs = exp(-abs(x)) * sqrt_inv_x * (x * abs(x) * cosh_x -
+        (x * x + abs(x)) * sinh_x) / (pow(x, 1.5) * abs(x));
+    if (al->hes) {
+      *al->hes = (2 * exp(-abs(x)) * sqrt_inv_x *
+          ((x * x + abs(x) * (x * x + 1)) * sinh_x -
+              x * (x * x + abs(x)) * cosh_x)) / (pow(x, 2.5) * abs(x));
+    }
+  }
+  return gsl_sf_bessel_i0_scaled(x);
+}
+
+static real amplgsl_sf_bessel_i1_scaled(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    real sqrt_inv_x = sqrt(1 / x), x_squared = x * x;
+    real cosh_x = cosh(x), sinh_x = sinh(x);
+    *al->derivs = (exp(-abs(x)) * sqrt_inv_x * ((x_squared + abs(x) *
+        (x_squared + 2)) * sinh_x - x * (x_squared + 2 * abs(x)) * cosh_x)) /
+        (pow(x, 2.5) * abs(x));
+    if (al->hes) {
+      *al->hes = -(2 * exp(-abs(x)) * sqrt_inv_x * ((pow(x, 4) +
+          2 * x_squared + abs(x) * (2 * x_squared + 3)) * sinh_x -
+          x * (2 * x_squared + abs(x) * (x_squared + 3)) * cosh_x)) /
+              (pow(x, 3.5) * abs(x));
+    }
+  }
+  return gsl_sf_bessel_i1_scaled(x);
+}
+
+static real amplgsl_sf_bessel_i2_scaled(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    real sqrt_inv_x = sqrt(1 / x), x_squared = x * x;
+    real cosh_x = cosh(x), sinh_x = sinh(x);
+    *al->derivs = (exp(-abs(x)) * sqrt_inv_x * (x * (3 * x_squared + abs(x) *
+        (x_squared + 9)) * cosh_x - (pow(x, 4) + 3 * x_squared + abs(x) *
+            (4 * x_squared + 9)) * sinh_x)) / (pow(x, 3.5) * abs(x));
+    if (al->hes) {
+      *al->hes = (2 * exp(-abs(x)) * sqrt_inv_x * ((9 * x_squared + 2 *
+          abs(x) * (5 * x_squared + 9) + (abs(x) + 4) * pow(x, 4)) * sinh(x) -
+          x * (pow(x, 4) + 9 * x_squared + 2 * abs(x) * (2 * x_squared + 9)) *
+          cosh(x))) / (pow(x, 4.5) * abs(x));
+    }
+  }
+  return gsl_sf_bessel_i2_scaled(x);
+}
+
+static real amplgsl_sf_bessel_k0_scaled(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    real pi_sqrt_inv_x = M_PI * sqrt(1 / x);
+    *al->derivs = -pi_sqrt_inv_x / (2 * pow(x, 1.5));
+    if (al->hes)
+      *al->hes = pi_sqrt_inv_x / pow(x, 2.5);
+  }
+  return gsl_sf_bessel_k0_scaled(x);
+}
+
+static real amplgsl_sf_bessel_k1_scaled(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    real pi_sqrt_inv_x = M_PI * sqrt(1 / x);
+    *al->derivs = -(pi_sqrt_inv_x * (x + 2)) / (2 * pow(x, 2.5));
+    if (al->hes)
+      *al->hes = (pi_sqrt_inv_x * (x + 3)) / pow(x, 3.5);
+  }
+  return gsl_sf_bessel_k1_scaled(x);
+}
+
+static real amplgsl_sf_bessel_k2_scaled(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    real pi_sqrt_inv_x = M_PI * sqrt(1 / x);
+    *al->derivs = -pi_sqrt_inv_x * (x + 3) * (x + 3) / (2 * pow(x, 3.5));
+    if (al->hes)
+      *al->hes = pi_sqrt_inv_x * (x * x + 9 * x + 18) / pow(x, 4.5);
+  }
+  return gsl_sf_bessel_k2_scaled(x);
+}
+
 void funcadd_ASL(AmplExports *ae) {
   // Don't call abort on error.
   gsl_set_error_handler_off();
@@ -409,11 +494,26 @@ void funcadd_ASL(AmplExports *ae) {
   // TODO: yl
 
   // Regular Modified Spherical Bessel Functions
-  // TODO: i0_scaled, i1_scaled, i2_scaled, il_scaled
+  addfunc("gsl_sf_bessel_i0_scaled", amplgsl_sf_bessel_i0_scaled, 0, 1, 0);
+  addfunc("gsl_sf_bessel_i1_scaled", amplgsl_sf_bessel_i1_scaled, 0, 1, 0);
+  addfunc("gsl_sf_bessel_i2_scaled", amplgsl_sf_bessel_i2_scaled, 0, 1, 0);
+  // TODO: il_scaled
 
   // Irregular Modified Spherical Bessel Functions
-  // TODO: k0_scaled, k1_scaled, k2_scaled, kl_scaled
+  addfunc("gsl_sf_bessel_k0_scaled", amplgsl_sf_bessel_k0_scaled, 0, 1, 0);
+  addfunc("gsl_sf_bessel_k1_scaled", amplgsl_sf_bessel_k1_scaled, 0, 1, 0);
+  addfunc("gsl_sf_bessel_k2_scaled", amplgsl_sf_bessel_k2_scaled, 0, 1, 0);
+  // TODO: kl_scaled
 
   // Regular Bessel Function - Fractional Order
-  // TODO: Jnu, Ynu, Inu, Inu_scaled, Knu, Knu_scaled
+  // TODO: Jnu
+
+  // Irregular Bessel Functions - Fractional Order
+  // TODO: Ynu
+
+  // Regular Modified Bessel Functions - Fractional Order
+  // TODO: Inu, Inu_scaled
+
+  // Irregular Modified Bessel Functions - Fractional Order
+  // TODO: Knu, Knu_scaled
 }
