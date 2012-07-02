@@ -1,6 +1,7 @@
 // GSL wrapper test.
 
 #include <stdexcept>
+#include <vector>
 
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf_airy.h>
@@ -10,9 +11,20 @@
 #include "solvers/asl.h"
 #include "tests/config.h"
 
+using std::vector;
+
 namespace {
 
+struct Result {
+  double value;
+  bool error;
+
+  Result(double val, bool err = false) : value(val), error(err) {}
+};
+
 typedef double (*Func1)(double);
+typedef double (*FuncN1)(int, double);
+typedef Result (*FuncN1Result)(int, double);
 typedef double (*Func2)(double, double);
 typedef double (*Func3)(double, double, double);
 
@@ -48,33 +60,140 @@ class GSLTest : public ::testing::Test {
   }
 
   void TestFunc(const char *name, Func1 f, Func1 dx, Func1 dx2);
+  void TestFunc(const char *name, FuncN1 f, FuncN1Result dx, FuncN1Result dx2);
   void TestFunc(const char *name, Func2 f, Func2 dx, Func2 dy,
       Func2 dx2, Func2 dxdy, Func2 dy2);
   void TestFunc(const char *name, Func3 f, Func3 dx, Func3 dy, Func3 dz,
       Func3 dx2, Func3 dxdy, Func3 dxdz, Func3 dy2, Func3 dydz, Func3 dz2);
 };
 
+class ArgList {
+ private:
+  TMInfo tmi;
+  vector<real> ra;
+  vector<real> derivs_;
+  vector<real> hes_;
+  arglist args;
+
+  void init(ASL *asl, size_t size) {
+    args.TMI = &tmi;
+    args.AE = asl->i.ae;
+    args.nr = args.n = size;
+    ra.resize(size);
+    args.ra = &ra[0];
+  }
+
+ public:
+  ArgList(ASL *asl, real x) : tmi(), args() {
+    init(asl, 1);
+    ra[0] = x;
+  }
+
+  ArgList(ASL *asl, real x, real y) : tmi(), args() {
+    init(asl, 2);
+    ra[0] = x;
+    ra[1] = y;
+  }
+
+  ArgList(ASL *asl, real x, real y, real z) : tmi(), args() {
+    init(asl, 3);
+    ra[0] = x;
+    ra[1] = y;
+    ra[2] = z;
+  }
+
+  void allocateDerivs() {
+    derivs_.resize(ra.size());
+    args.derivs = &derivs_[0];
+  }
+
+  void allocateHes() {
+    hes_.resize(ra.size() * (ra.size() + 1) / 2);
+    args.hes = &hes_[0];
+  }
+
+  void set(size_t index, real value) { ra[index] = value; }
+
+  arglist *get() { return &args; }
+  arglist *operator->() { return &args; }
+
+  real deriv(size_t index = 0) const { return derivs_[index]; }
+  real hes(size_t index = 0) const { return hes_[index]; }
+};
+
 const double POINTS[] = {-5, 0, 5};
 const size_t NUM_POINTS = sizeof(POINTS) / sizeof(*POINTS);
 
+const double POINTS_FOR_N[] = {
+    INT_MIN, INT_MIN + 1, -2, -1, 0, 1, 2, INT_MAX - 1, INT_MAX};
+const size_t NUM_POINTS_FOR_N = sizeof(POINTS_FOR_N) / sizeof(*POINTS_FOR_N);
+
 #define EXPECT_NEAR_OR_NAN(expected, actual) \
     EXPECT_PRED2(IsNearOrNaN, expected, actual)
+
+real Call(func_info *fi, ArgList &args) {
+  args->Errmsg = nullptr;
+  real value = fi->funcp(args.get());
+  EXPECT_TRUE(args->Errmsg == nullptr) << args->Errmsg;
+  return value;
+}
 
 void GSLTest::TestFunc(const char *name, Func1 f, Func1 dx, Func1 dx2) {
   func_info *fi = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     double x = POINTS[i];
-    arglist args = {0};
-    args.ra = &x;
-    EXPECT_NEAR_OR_NAN(f(x), fi->funcp(&args)) << name << " at " << x;
-    real deriv = 0;
-    args.derivs = &deriv;
-    fi->funcp(&args);
-    EXPECT_NEAR_OR_NAN(dx(x), deriv) << name << " at " << x;
-    real hes = 0;
-    args.hes = &hes;
-    fi->funcp(&args);
-    EXPECT_NEAR_OR_NAN(dx2(x), hes) << name << " at " << x;
+    ArgList args(asl, x);
+    EXPECT_NEAR_OR_NAN(f(x), Call(fi, args)) << name << " at " << x;
+    args.allocateDerivs();
+    Call(fi, args);
+    EXPECT_NEAR_OR_NAN(dx(x), args.deriv()) << name << " at " << x;
+    args.allocateHes();
+    Call(fi, args);
+    EXPECT_NEAR_OR_NAN(dx2(x), args.hes()) << name << " at " << x;
+  }
+}
+
+void GSLTest::TestFunc(const char *name, FuncN1 f,
+    FuncN1Result dx, FuncN1Result dx2) {
+  func_info *fi = GetFunction(name);
+  for (size_t i = 0; i != NUM_POINTS_FOR_N; ++i) {
+    for (size_t j = 0; j != NUM_POINTS; ++j) {
+      int n = POINTS_FOR_N[i];
+      bool skip = n < -100 || n > 100;
+      double x = POINTS[j];
+      ArgList args(asl, static_cast<real>(n), x);
+      if (!skip)
+        EXPECT_NEAR_OR_NAN(f(n, x), Call(fi, args)) << name << " at " << x;
+
+      args.allocateDerivs();
+      fi->funcp(args.get());
+      EXPECT_TRUE(args->Errmsg != nullptr);
+      args->Errmsg = nullptr;
+      char dig = 0;
+      args->dig = &dig;
+      fi->funcp(args.get());
+      EXPECT_TRUE(args->Errmsg != nullptr);
+      args->Errmsg = nullptr;
+      dig = 1;
+      Result r = dx(n, x);
+      if (r.error) {
+        fi->funcp(args.get());
+        EXPECT_TRUE(args->Errmsg != nullptr);
+      } else if (!skip) {
+        Call(fi, args);
+        EXPECT_NEAR_OR_NAN(r.value, args.deriv(1)) << name << " at " << x;
+      }
+
+      args.allocateHes();
+      r = dx2(n, x);
+      if (r.error) {
+        fi->funcp(args.get());
+        EXPECT_TRUE(args->Errmsg != nullptr);
+      } else if (!skip) {
+        Call(fi, args);
+        EXPECT_NEAR_OR_NAN(r.value, args.hes(2)) << name << " at " << x;
+      }
+    }
   }
 }
 
@@ -84,21 +203,17 @@ void GSLTest::TestFunc(const char *name, Func2 f, Func2 dx, Func2 dy,
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
       double x = POINTS[i], y = POINTS[j];
-      arglist args = {0};
-      real xy[] = {x, y};
-      args.ra = xy;
-      EXPECT_NEAR_OR_NAN(f(x, y), fi->funcp(&args));
-      real deriv[2] = {};
-      args.derivs = deriv;
-      fi->funcp(&args);
-      EXPECT_NEAR_OR_NAN(dx(x, y), deriv[0]);
-      EXPECT_NEAR_OR_NAN(dy(x, y), deriv[1]);
-      real hes[3] = {};
-      args.hes = hes;
-      fi->funcp(&args);
-      EXPECT_NEAR_OR_NAN(dx2(x, y),  hes[0]);
-      EXPECT_NEAR_OR_NAN(dxdy(x, y), hes[1]);
-      EXPECT_NEAR_OR_NAN(dy2(x, y),  hes[2]);
+      ArgList args(asl, x, y);
+      EXPECT_NEAR_OR_NAN(f(x, y), Call(fi, args));
+      args.allocateDerivs();
+      Call(fi, args);
+      EXPECT_NEAR_OR_NAN(dx(x, y), args.deriv(0));
+      EXPECT_NEAR_OR_NAN(dy(x, y), args.deriv(1));
+      args.allocateHes();
+      Call(fi, args);
+      EXPECT_NEAR_OR_NAN(dx2(x, y),  args.hes(0));
+      EXPECT_NEAR_OR_NAN(dxdy(x, y), args.hes(1));
+      EXPECT_NEAR_OR_NAN(dy2(x, y),  args.hes(2));
     }
   }
 }
@@ -110,25 +225,21 @@ void GSLTest::TestFunc(const char *name, Func3 f, Func3 dx, Func3 dy, Func3 dz,
     for (size_t j = 0; j != NUM_POINTS; ++j) {
       for (size_t k = 0; k != NUM_POINTS; ++k) {
         double x = POINTS[i], y = POINTS[j], z = POINTS[k];
-        arglist args = {0};
-        real xy[] = {x, y, z};
-        args.ra = xy;
-        EXPECT_NEAR_OR_NAN(f(x, y, z), fi->funcp(&args));
-        real deriv[3] = {};
-        args.derivs = deriv;
-        fi->funcp(&args);
-        EXPECT_NEAR_OR_NAN(dx(x, y, z), deriv[0]);
-        EXPECT_NEAR_OR_NAN(dy(x, y, z), deriv[1]);
-        EXPECT_NEAR_OR_NAN(dz(x, y, z), deriv[2]);
-        real hes[6] = {};
-        args.hes = hes;
-        fi->funcp(&args);
-        EXPECT_NEAR_OR_NAN(dx2(x, y, z),  hes[0]);
-        EXPECT_NEAR_OR_NAN(dxdy(x, y, z), hes[1]);
-        EXPECT_NEAR_OR_NAN(dxdz(x, y, z), hes[2]);
-        EXPECT_NEAR_OR_NAN(dy2(x, y, z),  hes[3]);
-        EXPECT_NEAR_OR_NAN(dydz(x, y, z), hes[4]);
-        EXPECT_NEAR_OR_NAN(dz2(x, y, z),  hes[5]);
+        ArgList args(asl, x, y, z);
+        EXPECT_NEAR_OR_NAN(f(x, y, z), Call(fi, args));
+        args.allocateDerivs();
+        Call(fi, args);
+        EXPECT_NEAR_OR_NAN(dx(x, y, z), args.deriv(0));
+        EXPECT_NEAR_OR_NAN(dy(x, y, z), args.deriv(1));
+        EXPECT_NEAR_OR_NAN(dz(x, y, z), args.deriv(2));
+        args.allocateHes();
+        Call(fi, args);
+        EXPECT_NEAR_OR_NAN(dx2(x, y, z),  args.hes(0));
+        EXPECT_NEAR_OR_NAN(dxdy(x, y, z), args.hes(1));
+        EXPECT_NEAR_OR_NAN(dxdz(x, y, z), args.hes(2));
+        EXPECT_NEAR_OR_NAN(dy2(x, y, z),  args.hes(3));
+        EXPECT_NEAR_OR_NAN(dydz(x, y, z), args.hes(4));
+        EXPECT_NEAR_OR_NAN(dz2(x, y, z),  args.hes(5));
       }
     }
   }
@@ -238,6 +349,20 @@ double sf_bessel_J1_dx(double x) {
 }
 double sf_bessel_J1_dx2(double x) {
   return 0.25 * (gsl_sf_bessel_Jn(3, x) - 3 * gsl_sf_bessel_J1(x));
+}
+
+Result sf_bessel_Jn_dx(int n, double x) {
+  if (n == INT_MIN || n == INT_MAX)
+    return Result(0, true);
+  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
+    return 42;
+  return 0.5 * (gsl_sf_bessel_Jn(n - 1, x) - gsl_sf_bessel_Jn(n + 1, x));
+}
+Result sf_bessel_Jn_dx2(int n, double x) {
+  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
+    return Result(0, true);
+  return 0.25 * (gsl_sf_bessel_Jn(n - 2, x) -
+      2 * gsl_sf_bessel_Jn(n, x) + gsl_sf_bessel_Jn(n + 2, x));
 }
 
 double sf_bessel_Y0_dx(double x) { return -gsl_sf_bessel_Y1(x); }
@@ -413,6 +538,9 @@ double sf_bessel_k2_scaled_dx2(double x) {
 #define TEST_FUNC(name) \
   TestFunc("gsl_" #name, gsl_##name, name##_dx, name##_dx2);
 
+#define TEST_FUNC_N(name) \
+  TestFunc("gsl_" #name, gsl_##name, name##_dx, name##_dx2);
+
 #define TEST_FUNC2(name) \
     TestFunc("gsl_" #name, gsl_##name, name##_dx, name##_dy, \
         name##_dx2, name##_dxdy, name##_dy2);
@@ -437,9 +565,13 @@ TEST_F(GSLTest, Functions) {
   TEST_FUNC(sf_airy_Bi_scaled);
   ASSERT_NEAR(-0.0203063, sf_airy_Bi_scaled_dx(5), 1e-5);
   ASSERT_NEAR(0.00559418, sf_airy_Bi_scaled_dx2(5), 1e-5);
+}
 
+TEST_F(GSLTest, BesselFunctions) {
   TEST_FUNC(sf_bessel_J0);
   TEST_FUNC(sf_bessel_J1);
+  TEST_FUNC_N(sf_bessel_Jn);
+
   TEST_FUNC(sf_bessel_Y0);
   TEST_FUNC(sf_bessel_Y1);
 
@@ -516,6 +648,5 @@ TEST_F(GSLTest, Functions) {
   ASSERT_NEAR(0.540354, gsl_sf_bessel_k2_scaled(5), 1e-5);
   ASSERT_NEAR(-0.16085, sf_bessel_k2_scaled_dx(5), 1e-5);
   ASSERT_NEAR(0.0884672, sf_bessel_k2_scaled_dx2(5), 1e-5);
-  // TODO
 }
 }
