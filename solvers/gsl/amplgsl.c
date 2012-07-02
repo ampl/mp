@@ -324,6 +324,33 @@ static real amplgsl_sf_bessel_I1_scaled(arglist *al) {
   return i1;
 }
 
+static real amplgsl_sf_bessel_In_scaled(arglist *al) {
+  real arg0 = al->ra[0];
+  int n = arg0;
+  if (n != arg0)
+    return error(al, "first argument %g is not an int", arg0);
+  real x = al->ra[1];
+  if (al->derivs) {
+    if (!al->dig || !al->dig[0])
+      return error(al, "first argument is not constant");
+    if ((al->hes && !check_deriv_arg(al, n, INT_MIN + 2, INT_MAX - 2)) ||
+        !check_deriv_arg(al, n, INT_MIN + 1, INT_MAX - 1))
+      return 0;
+    real in = gsl_sf_bessel_In_scaled(n, x);
+    real in_minus1 = gsl_sf_bessel_In_scaled(n - 1, x);
+    real in_plus1 = gsl_sf_bessel_In_scaled(n + 1, x);
+    al->derivs[1] = 0.5 * (in_minus1 - (2 * x * in) / abs(x) + in_plus1);
+    if (al->hes) {
+      al->hes[2] =
+          (abs(x) * (gsl_sf_bessel_In_scaled(n - 2, x) + 6 * in +
+                     gsl_sf_bessel_In_scaled(n + 2, x)) -
+           4 * x * (in_minus1 + in_plus1)) / (4 * abs(x));
+      return in;
+    }
+  }
+  return gsl_sf_bessel_In_scaled(n, x);
+}
+
 static real amplgsl_sf_bessel_K0(arglist *al) {
   real x = al->ra[0];
   real k0 = gsl_sf_bessel_K0(x);
@@ -573,7 +600,8 @@ void funcadd_ASL(AmplExports *ae) {
       FUNCADD_REAL_VALUED, 1, 0);
   addfunc("gsl_sf_bessel_I1_scaled", amplgsl_sf_bessel_I1_scaled,
       FUNCADD_REAL_VALUED, 1, 0);
-  // TODO: gsl_sf_bessel_In
+  addfunc("gsl_sf_bessel_In_scaled", amplgsl_sf_bessel_In_scaled,
+      FUNCADD_REAL_VALUED, 2, 0);
 
   // Irregular Modified Cylindrical Bessel Functions
   addfunc("gsl_sf_bessel_K0", amplgsl_sf_bessel_K0, FUNCADD_REAL_VALUED, 1, 0);

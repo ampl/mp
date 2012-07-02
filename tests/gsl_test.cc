@@ -49,14 +49,15 @@ class GSLTest : public ::testing::Test {
     return fi;
   }
 
-  static bool IsNaN(double x) {
-    return x != x;
-  }
-
-  static bool IsNearOrNaN(double expected, double actual) {
-    testing::internal::FloatingPoint<double> lhs(expected), rhs(actual);
-    return lhs.AlmostEquals(rhs) ||
-        (IsNaN(expected) && IsNaN(actual));
+  // Returns true iff expected is at most kMaxUlps ULP's away from
+  // actual or both are NaN.  In particular, this function:
+  //
+  //   - returns false if either number is (but not both) NAN.
+  //   - treats really large numbers as almost equal to infinity.
+  //   - thinks +0.0 and -0.0 are 0 DLP's apart.
+  static bool AlmostEqualOrNaN(double expected, double actual) {
+    testing::internal::Double lhs(expected), rhs(actual);
+    return (lhs.is_nan() && rhs.is_nan()) || lhs.AlmostEquals(rhs);
   }
 
   void TestFunc(const char *name, Func1 f, Func1 dx, Func1 dx2);
@@ -129,7 +130,7 @@ const double POINTS_FOR_N[] = {
 const size_t NUM_POINTS_FOR_N = sizeof(POINTS_FOR_N) / sizeof(*POINTS_FOR_N);
 
 #define EXPECT_NEAR_OR_NAN(expected, actual) \
-    EXPECT_PRED2(IsNearOrNaN, expected, actual)
+    EXPECT_PRED2(AlmostEqualOrNaN, expected, actual)
 
 real Call(func_info *fi, ArgList &args) {
   args->Errmsg = nullptr;
@@ -438,6 +439,24 @@ double sf_bessel_I1_scaled_dx2(double x) {
       0.25 * gsl_sf_bessel_In_scaled(3, x);
 }
 
+Result sf_bessel_In_scaled_dx(int n, double x) {
+  if (n == INT_MIN || n == INT_MAX)
+    return Result(0, true);
+  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
+    return 42;
+  return 0.5 * (-(2 * x * gsl_sf_bessel_In_scaled(n, x)) / abs(x) +
+      gsl_sf_bessel_In_scaled(n - 1, x) + gsl_sf_bessel_In_scaled(n + 1, x));
+}
+Result sf_bessel_In_scaled_dx2(int n, double x) {
+  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
+    return Result(0, true);
+  return (abs(x) * (gsl_sf_bessel_In_scaled(n - 2, x) +
+                    6 * gsl_sf_bessel_In_scaled(n, x) +
+                    gsl_sf_bessel_In_scaled(n + 2, x)) -
+      4 * x * (gsl_sf_bessel_In_scaled(n - 1, x) +
+               gsl_sf_bessel_In_scaled(n + 1, x))) / (4 * abs(x));
+}
+
 double sf_bessel_K0_dx(double x) { return -gsl_sf_bessel_K1(x); }
 double sf_bessel_K0_dx2(double x) {
   return 0.5 * (gsl_sf_bessel_Kn(2, x) + gsl_sf_bessel_K0(x));
@@ -615,7 +634,7 @@ TEST_F(GSLTest, BesselY) {
   ASSERT_NEAR(-0.149592, sf_bessel_Yn_dx2(3, 5).value, 1e-5);
 }
 
-TEST_F(GSLTest, Bessel) {
+TEST_F(GSLTest, BesselI) {
   TEST_FUNC(sf_bessel_I0);
   TEST_FUNC(sf_bessel_I1);
   TEST_FUNC_N(sf_bessel_In);
@@ -630,6 +649,12 @@ TEST_F(GSLTest, Bessel) {
   ASSERT_NEAR(-0.0132259, sf_bessel_I1_scaled_dx(5), 1e-5);
   ASSERT_NEAR(0.00286143, sf_bessel_I1_scaled_dx2(5), 1e-5);
 
+  TEST_FUNC_N(sf_bessel_In_scaled);
+  ASSERT_NEAR(0.00657472, sf_bessel_In_scaled_dx(3, 5).value, 1e-5);
+  ASSERT_NEAR(-0.00332666, sf_bessel_In_scaled_dx2(3, 5).value, 1e-5);
+}
+
+TEST_F(GSLTest, Bessel) {
   TEST_FUNC(sf_bessel_K0);
   TEST_FUNC(sf_bessel_K0_scaled);
   ASSERT_NEAR(-0.0524663, sf_bessel_K0_scaled_dx(5), 1e-5);
