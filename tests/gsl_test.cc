@@ -500,6 +500,24 @@ double sf_bessel_K1_scaled_dx2(double x) {
       gsl_sf_bessel_Kn_scaled(2, x) + 0.25 * gsl_sf_bessel_Kn_scaled(3, x);
 }
 
+Result sf_bessel_Kn_scaled_dx(int n, double x) {
+  if (n == INT_MIN || n == INT_MAX)
+    return Result(0, true);
+  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
+    return 42;
+  return -0.5 * (gsl_sf_bessel_Kn_scaled(n - 1, x) -
+      2 * gsl_sf_bessel_Kn_scaled(n, x) + gsl_sf_bessel_Kn_scaled(n + 1, x));
+}
+Result sf_bessel_Kn_scaled_dx2(int n, double x) {
+  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
+    return Result(0, true);
+  return 0.25 * (gsl_sf_bessel_Kn_scaled(n - 2, x) -
+      4 * gsl_sf_bessel_Kn_scaled(n - 1, x) +
+      6 * gsl_sf_bessel_Kn_scaled(n, x) -
+      4 * gsl_sf_bessel_Kn_scaled(n + 1, x) +
+      gsl_sf_bessel_Kn_scaled(n + 2, x));
+}
+
 double sf_bessel_j0_dx(double x) { return (x * cos(x) - sin(x)) / (x * x); }
 double sf_bessel_j0_dx2(double x) {
   return -((x * x - 2) * sin(x) + 2 * x * cos(x)) / (x * x * x);
@@ -682,6 +700,10 @@ TEST_F(GSLTest, BesselK) {
   TEST_FUNC(sf_bessel_K1_scaled);
   ASSERT_NEAR(-0.0675885, sf_bessel_K1_scaled_dx(5), 1e-5);
   ASSERT_NEAR(0.0224065, sf_bessel_K1_scaled_dx2(5), 1e-5);
+
+  TEST_FUNC_N(sf_bessel_Kn_scaled);
+  ASSERT_NEAR(-0.295674, sf_bessel_Kn_scaled_dx(3, 5).value, 1e-5);
+  ASSERT_NEAR(0.156927, sf_bessel_Kn_scaled_dx2(3, 5).value, 1e-5);
 }
 
 TEST_F(GSLTest, Bessel) {
