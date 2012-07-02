@@ -462,19 +462,33 @@ double sf_bessel_K0_dx2(double x) {
   return 0.5 * (gsl_sf_bessel_Kn(2, x) + gsl_sf_bessel_K0(x));
 }
 
+double sf_bessel_K1_dx(double x) {
+  return -0.5 * (gsl_sf_bessel_K0(x) + gsl_sf_bessel_Kn(2, x));
+}
+double sf_bessel_K1_dx2(double x) {
+  return 0.25 * (gsl_sf_bessel_Kn(3, x) + 3 * gsl_sf_bessel_K1(x));
+}
+
+Result sf_bessel_Kn_dx(int n, double x) {
+  if (n == INT_MIN || n == INT_MAX)
+    return Result(0, true);
+  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
+    return 42;
+  return -0.5 * (gsl_sf_bessel_Kn(n - 1, x) + gsl_sf_bessel_Kn(n + 1, x));
+}
+Result sf_bessel_Kn_dx2(int n, double x) {
+  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
+    return Result(0, true);
+  return 0.25 * (gsl_sf_bessel_Kn(n - 2, x) +
+      2 * gsl_sf_bessel_Kn(n, x) + gsl_sf_bessel_Kn(n + 2, x));
+}
+
 double sf_bessel_K0_scaled_dx(double x) {
   return gsl_sf_bessel_K0_scaled(x) - gsl_sf_bessel_K1_scaled(x);
 }
 double sf_bessel_K0_scaled_dx2(double x) {
   return 1.5 * gsl_sf_bessel_K0_scaled(x) - 2 * gsl_sf_bessel_K1_scaled(x) +
       0.5 * gsl_sf_bessel_Kn_scaled(2, x);
-}
-
-double sf_bessel_K1_dx(double x) {
-  return -0.5 * (gsl_sf_bessel_K0(x) + gsl_sf_bessel_Kn(2, x));
-}
-double sf_bessel_K1_dx2(double x) {
-  return 0.25 * (gsl_sf_bessel_Kn(3, x) + 3 * gsl_sf_bessel_K1(x));
 }
 
 double sf_bessel_K1_scaled_dx(double x) {
@@ -654,17 +668,23 @@ TEST_F(GSLTest, BesselI) {
   ASSERT_NEAR(-0.00332666, sf_bessel_In_scaled_dx2(3, 5).value, 1e-5);
 }
 
-TEST_F(GSLTest, Bessel) {
+TEST_F(GSLTest, BesselK) {
   TEST_FUNC(sf_bessel_K0);
+  TEST_FUNC(sf_bessel_K1);
+  TEST_FUNC_N(sf_bessel_Kn);
+  ASSERT_NEAR(-0.010284, sf_bessel_Kn_dx(3, 5).value, 1e-5);
+  ASSERT_NEAR(0.0133336, sf_bessel_Kn_dx2(3, 5).value, 1e-5);
+
   TEST_FUNC(sf_bessel_K0_scaled);
   ASSERT_NEAR(-0.0524663, sf_bessel_K0_scaled_dx(5), 1e-5);
   ASSERT_NEAR(0.0151222, sf_bessel_K0_scaled_dx2(5), 1e-5);
 
-  TEST_FUNC(sf_bessel_K1);
   TEST_FUNC(sf_bessel_K1_scaled);
   ASSERT_NEAR(-0.0675885, sf_bessel_K1_scaled_dx(5), 1e-5);
   ASSERT_NEAR(0.0224065, sf_bessel_K1_scaled_dx2(5), 1e-5);
+}
 
+TEST_F(GSLTest, Bessel) {
   TEST_FUNC(sf_bessel_j0);
   ASSERT_NEAR(0.0950894, sf_bessel_j0_dx(5), 1e-5);
   ASSERT_NEAR(0.153749, sf_bessel_j0_dx2(5), 1e-5);

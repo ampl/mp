@@ -11,13 +11,12 @@
 
 enum { MAX_ERROR_MESSAGE_SIZE = 100 };
 
-static real error(arglist *al, const char *format, ...) {
+static void error(arglist *al, const char *format, ...) {
   al->Errmsg = al->AE->Tempmem(al->TMI, MAX_ERROR_MESSAGE_SIZE);
   va_list args;
   va_start(args, format);
   al->AE->VsnprintF(al->Errmsg, MAX_ERROR_MESSAGE_SIZE, format, args);
   va_end(args);
-  return 0;
 }
 
 static real amplgsl_log1p(arglist *al) {
@@ -178,28 +177,40 @@ static int check_deriv_arg(arglist *al, int arg, int min, int max) {
   return 1;
 }
 
-static real amplgsl_sf_bessel_Jn(arglist *al) {
+static int check_bessel_arg(arglist *al) {
   real arg0 = al->ra[0];
   int n = arg0;
-  if (n != arg0)
-    return error(al, "first argument %g is not an int", arg0);
-  real x = al->ra[1];
+  if (n != arg0) {
+    error(al, "first argument %g is not an int", arg0);
+    return 0;
+  }
   if (al->derivs) {
-    if (!al->dig || !al->dig[0])
-      return error(al, "first argument is not constant");
+    if (!al->dig || !al->dig[0]) {
+      error(al, "first argument is not constant");
+      return 0;
+    }
     if ((al->hes && !check_deriv_arg(al, n, INT_MIN + 2, INT_MAX - 2)) ||
         !check_deriv_arg(al, n, INT_MIN + 1, INT_MAX - 1))
       return 0;
+  }
+  return 1;
+}
+
+static real amplgsl_sf_bessel_Jn(arglist *al) {
+  if (!check_bessel_arg(al))
+    return 0;
+  int n = al->ra[0];
+  real x = al->ra[1];
+  real jn = gsl_sf_bessel_Jn(n, x);
+  if (al->derivs) {
     al->derivs[1] = 0.5 *
         (gsl_sf_bessel_Jn(n - 1, x) - gsl_sf_bessel_Jn(n + 1, x));
     if (al->hes) {
-      real jn = gsl_sf_bessel_Jn(n, x);
       al->hes[2] = 0.25 *
           (gsl_sf_bessel_Jn(n - 2, x) - 2 * jn + gsl_sf_bessel_Jn(n + 2, x));
-      return jn;
     }
   }
-  return gsl_sf_bessel_Jn(n, x);
+  return jn;
 }
 
 static real amplgsl_sf_bessel_Y0(arglist *al) {
@@ -225,27 +236,20 @@ static real amplgsl_sf_bessel_Y1(arglist *al) {
 }
 
 static real amplgsl_sf_bessel_Yn(arglist *al) {
-  real arg0 = al->ra[0];
-  int n = arg0;
-  if (n != arg0)
-    return error(al, "first argument %g is not an int", arg0);
+  if (!check_bessel_arg(al))
+    return 0;
+  int n = al->ra[0];
   real x = al->ra[1];
+  real yn = gsl_sf_bessel_Yn(n, x);
   if (al->derivs) {
-    if (!al->dig || !al->dig[0])
-      return error(al, "first argument is not constant");
-    if ((al->hes && !check_deriv_arg(al, n, INT_MIN + 2, INT_MAX - 2)) ||
-        !check_deriv_arg(al, n, INT_MIN + 1, INT_MAX - 1))
-      return 0;
     al->derivs[1] = 0.5 *
         (gsl_sf_bessel_Yn(n - 1, x) - gsl_sf_bessel_Yn(n + 1, x));
     if (al->hes) {
-      real yn = gsl_sf_bessel_Yn(n, x);
       al->hes[2] = 0.25 *
           (gsl_sf_bessel_Yn(n - 2, x) - 2 * yn + gsl_sf_bessel_Yn(n + 2, x));
-      return yn;
     }
   }
-  return gsl_sf_bessel_Yn(n, x);
+  return yn;
 }
 
 static real amplgsl_sf_bessel_I0(arglist *al) {
@@ -271,27 +275,20 @@ static real amplgsl_sf_bessel_I1(arglist *al) {
 }
 
 static real amplgsl_sf_bessel_In(arglist *al) {
-  real arg0 = al->ra[0];
-  int n = arg0;
-  if (n != arg0)
-    return error(al, "first argument %g is not an int", arg0);
+  if (!check_bessel_arg(al))
+    return 0;
+  int n = al->ra[0];
   real x = al->ra[1];
+  real in = gsl_sf_bessel_In(n, x);
   if (al->derivs) {
-    if (!al->dig || !al->dig[0])
-      return error(al, "first argument is not constant");
-    if ((al->hes && !check_deriv_arg(al, n, INT_MIN + 2, INT_MAX - 2)) ||
-        !check_deriv_arg(al, n, INT_MIN + 1, INT_MAX - 1))
-      return 0;
     al->derivs[1] = 0.5 *
         (gsl_sf_bessel_In(n - 1, x) + gsl_sf_bessel_In(n + 1, x));
     if (al->hes) {
-      real in = gsl_sf_bessel_In(n, x);
       al->hes[2] = 0.25 *
           (gsl_sf_bessel_In(n - 2, x) + 2 * in + gsl_sf_bessel_In(n + 2, x));
-      return in;
     }
   }
-  return gsl_sf_bessel_In(n, x);
+  return in;
 }
 
 static real amplgsl_sf_bessel_I0_scaled(arglist *al) {
@@ -325,18 +322,12 @@ static real amplgsl_sf_bessel_I1_scaled(arglist *al) {
 }
 
 static real amplgsl_sf_bessel_In_scaled(arglist *al) {
-  real arg0 = al->ra[0];
-  int n = arg0;
-  if (n != arg0)
-    return error(al, "first argument %g is not an int", arg0);
+  if (!check_bessel_arg(al))
+    return 0;
+  int n = al->ra[0];
   real x = al->ra[1];
+  real in = gsl_sf_bessel_In_scaled(n, x);
   if (al->derivs) {
-    if (!al->dig || !al->dig[0])
-      return error(al, "first argument is not constant");
-    if ((al->hes && !check_deriv_arg(al, n, INT_MIN + 2, INT_MAX - 2)) ||
-        !check_deriv_arg(al, n, INT_MIN + 1, INT_MAX - 1))
-      return 0;
-    real in = gsl_sf_bessel_In_scaled(n, x);
     real in_minus1 = gsl_sf_bessel_In_scaled(n - 1, x);
     real in_plus1 = gsl_sf_bessel_In_scaled(n + 1, x);
     al->derivs[1] = 0.5 * (in_minus1 - (2 * x * in) / abs(x) + in_plus1);
@@ -345,10 +336,9 @@ static real amplgsl_sf_bessel_In_scaled(arglist *al) {
           (abs(x) * (gsl_sf_bessel_In_scaled(n - 2, x) + 6 * in +
                      gsl_sf_bessel_In_scaled(n + 2, x)) -
            4 * x * (in_minus1 + in_plus1)) / (4 * abs(x));
-      return in;
     }
   }
-  return gsl_sf_bessel_In_scaled(n, x);
+  return in;
 }
 
 static real amplgsl_sf_bessel_K0(arglist *al) {
@@ -362,6 +352,34 @@ static real amplgsl_sf_bessel_K0(arglist *al) {
   return k0;
 }
 
+static real amplgsl_sf_bessel_K1(arglist *al) {
+  real x = al->ra[0];
+  real k1 = gsl_sf_bessel_K1(x);
+  if (al->derivs) {
+    *al->derivs = -0.5 * (gsl_sf_bessel_K0(x) + gsl_sf_bessel_Kn(2, x));
+    if (al->hes)
+      *al->hes = 0.25 * (gsl_sf_bessel_Kn(3, x) + 3 * k1);
+  }
+  return k1;
+}
+
+static real amplgsl_sf_bessel_Kn(arglist *al) {
+  if (!check_bessel_arg(al))
+    return 0;
+  int n = al->ra[0];
+  real x = al->ra[1];
+  real kn = gsl_sf_bessel_Kn(n, x);
+  if (al->derivs) {
+    al->derivs[1] = -0.5 *
+        (gsl_sf_bessel_Kn(n - 1, x) + gsl_sf_bessel_Kn(n + 1, x));
+    if (al->hes) {
+      al->hes[2] = 0.25 *
+          (gsl_sf_bessel_Kn(n - 2, x) + 2 * kn + gsl_sf_bessel_Kn(n + 2, x));
+    }
+  }
+  return kn;
+}
+
 static real amplgsl_sf_bessel_K0_scaled(arglist *al) {
   real x = al->ra[0];
   real k0 = gsl_sf_bessel_K0_scaled(x);
@@ -372,17 +390,6 @@ static real amplgsl_sf_bessel_K0_scaled(arglist *al) {
       *al->hes = 1.5 * k0 - 2 * k1 + 0.5 * gsl_sf_bessel_Kn_scaled(2, x);
   }
   return k0;
-}
-
-static real amplgsl_sf_bessel_K1(arglist *al) {
-  real x = al->ra[0];
-  real k1 = gsl_sf_bessel_K1(x);
-  if (al->derivs) {
-    *al->derivs = -0.5 * (gsl_sf_bessel_K0(x) + gsl_sf_bessel_Kn(2, x));
-    if (al->hes)
-      *al->hes = 0.25 * (gsl_sf_bessel_Kn(3, x) + 3 * k1);
-  }
-  return k1;
 }
 
 static real amplgsl_sf_bessel_K1_scaled(arglist *al) {
@@ -606,11 +613,12 @@ void funcadd_ASL(AmplExports *ae) {
   // Irregular Modified Cylindrical Bessel Functions
   addfunc("gsl_sf_bessel_K0", amplgsl_sf_bessel_K0, FUNCADD_REAL_VALUED, 1, 0);
   addfunc("gsl_sf_bessel_K1", amplgsl_sf_bessel_K1, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_Kn", amplgsl_sf_bessel_Kn, FUNCADD_REAL_VALUED, 2, 0);
   addfunc("gsl_sf_bessel_K0_scaled", amplgsl_sf_bessel_K0_scaled,
       FUNCADD_REAL_VALUED, 1, 0);
   addfunc("gsl_sf_bessel_K1_scaled", amplgsl_sf_bessel_K1_scaled,
       FUNCADD_REAL_VALUED, 1, 0);
-  // TODO: gsl_sf_bessel_Kn
+  // TODO: gsl_sf_bessel_Kn_scaled
 
   // Regular Spherical Bessel Functions
   addfunc("gsl_sf_bessel_j0", amplgsl_sf_bessel_j0, FUNCADD_REAL_VALUED, 1, 0);
