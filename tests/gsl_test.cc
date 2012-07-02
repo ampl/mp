@@ -377,6 +377,20 @@ double sf_bessel_Y1_dx2(double x) {
   return 0.25 * (gsl_sf_bessel_Yn(3, x) - 3 * gsl_sf_bessel_Y1(x));
 }
 
+Result sf_bessel_Yn_dx(int n, double x) {
+  if (n == INT_MIN || n == INT_MAX)
+    return Result(0, true);
+  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
+    return 42;
+  return 0.5 * (gsl_sf_bessel_Yn(n - 1, x) - gsl_sf_bessel_Yn(n + 1, x));
+}
+Result sf_bessel_Yn_dx2(int n, double x) {
+  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
+    return Result(0, true);
+  return 0.25 * (gsl_sf_bessel_Yn(n - 2, x) -
+      2 * gsl_sf_bessel_Yn(n, x) + gsl_sf_bessel_Yn(n + 2, x));
+}
+
 double sf_bessel_I0_dx(double x) { return gsl_sf_bessel_I1(x); }
 double sf_bessel_I0_dx2(double x) {
   return 0.5 * (gsl_sf_bessel_In(2, x) + gsl_sf_bessel_I0(x));
@@ -396,6 +410,20 @@ double sf_bessel_I1_dx(double x) {
 }
 double sf_bessel_I1_dx2(double x) {
   return 0.25 * (gsl_sf_bessel_In(3, x) + 3 * gsl_sf_bessel_I1(x));
+}
+
+Result sf_bessel_In_dx(int n, double x) {
+  if (n == INT_MIN || n == INT_MAX)
+    return Result(0, true);
+  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
+    return 42;
+  return 0.5 * (gsl_sf_bessel_In(n - 1, x) + gsl_sf_bessel_In(n + 1, x));
+}
+Result sf_bessel_In_dx2(int n, double x) {
+  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
+    return Result(0, true);
+  return 0.25 * (gsl_sf_bessel_In(n - 2, x) +
+      2 * gsl_sf_bessel_In(n, x) + gsl_sf_bessel_In(n + 2, x));
 }
 
 double sf_bessel_I1_scaled_dx(double x) {
@@ -550,37 +578,54 @@ double sf_bessel_k2_scaled_dx2(double x) {
         name##_dx2, name##_dxdy, name##_dxdz, \
         name##_dy2, name##_dydz, name##_dz2);
 
-TEST_F(GSLTest, Functions) {
+TEST_F(GSLTest, Elementary) {
   TEST_FUNC(log1p);
   TEST_FUNC(expm1);
   TEST_FUNC2(hypot);
   TEST_FUNC3(hypot3);
+}
 
+TEST_F(GSLTest, AiryA) {
   TEST_FUNC(sf_airy_Ai);
   TEST_FUNC(sf_airy_Ai_scaled);
   ASSERT_NEAR(-0.00888609, sf_airy_Ai_scaled_dx(5), 1e-5);
   ASSERT_NEAR(0.00207512, sf_airy_Ai_scaled_dx2(5), 1e-5);
+}
 
+TEST_F(GSLTest, AiryB) {
   TEST_FUNC(sf_airy_Bi);
   TEST_FUNC(sf_airy_Bi_scaled);
   ASSERT_NEAR(-0.0203063, sf_airy_Bi_scaled_dx(5), 1e-5);
   ASSERT_NEAR(0.00559418, sf_airy_Bi_scaled_dx2(5), 1e-5);
 }
 
-TEST_F(GSLTest, BesselFunctions) {
+TEST_F(GSLTest, BesselJ) {
   TEST_FUNC(sf_bessel_J0);
   TEST_FUNC(sf_bessel_J1);
   TEST_FUNC_N(sf_bessel_Jn);
+  ASSERT_NEAR(-0.172334, sf_bessel_Jn_dx(3, 5).value, 1e-5);
+  ASSERT_NEAR(-0.199025, sf_bessel_Jn_dx2(3, 5).value, 1e-5);
+}
 
+TEST_F(GSLTest, BesselY) {
   TEST_FUNC(sf_bessel_Y0);
   TEST_FUNC(sf_bessel_Y1);
+  TEST_FUNC_N(sf_bessel_Yn);
+  ASSERT_NEAR(0.279903, sf_bessel_Yn_dx(3, 5).value, 1e-5);
+  ASSERT_NEAR(-0.149592, sf_bessel_Yn_dx2(3, 5).value, 1e-5);
+}
 
+TEST_F(GSLTest, Bessel) {
   TEST_FUNC(sf_bessel_I0);
+  TEST_FUNC(sf_bessel_I1);
+  TEST_FUNC_N(sf_bessel_In);
+  ASSERT_NEAR(11.30692, sf_bessel_In_dx(3, 5).value, 1e-5);
+  ASSERT_NEAR(11.78897, sf_bessel_In_dx2(3, 5).value, 1e-5);
+
   TEST_FUNC(sf_bessel_I0_scaled);
   ASSERT_NEAR(-0.0195685, sf_bessel_I0_scaled_dx(5), 1e-5);
   ASSERT_NEAR(0.00634264, sf_bessel_I0_scaled_dx2(5), 1e-5);
 
-  TEST_FUNC(sf_bessel_I1);
   TEST_FUNC(sf_bessel_I1_scaled);
   ASSERT_NEAR(-0.0132259, sf_bessel_I1_scaled_dx(5), 1e-5);
   ASSERT_NEAR(0.00286143, sf_bessel_I1_scaled_dx2(5), 1e-5);
