@@ -7,6 +7,7 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf_airy.h>
 #include <gsl/gsl_sf_bessel.h>
+#include <gsl/gsl_sf_clausen.h>
 #include "solvers/funcadd.h"
 
 enum { MAX_ERROR_MESSAGE_SIZE = 100 };
@@ -636,6 +637,15 @@ static real amplgsl_sf_bessel_k2_scaled(arglist *al) {
   return gsl_sf_bessel_k2_scaled(x);
 }
 
+static real amplgsl_sf_clausen(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    error(al, "can't compute derivative");
+    return 0;
+  }
+  return gsl_sf_clausen(x);
+}
+
 void funcadd_ASL(AmplExports *ae) {
   // Don't call abort on error.
   gsl_set_error_handler_off();
@@ -731,5 +741,5 @@ void funcadd_ASL(AmplExports *ae) {
   // TODO: Knu, Knu_scaled
 
   // Clausen Functions
-  // TODO
+  addfunc("gsl_sf_clausen", amplgsl_sf_clausen, FUNCADD_REAL_VALUED, 1, 0);
 }
