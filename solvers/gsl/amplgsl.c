@@ -1,12 +1,24 @@
 // AMPL bindings for the GNU Scientific Library.
 
 #include <math.h>
+#include <stdarg.h>
 
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf_airy.h>
 #include <gsl/gsl_sf_bessel.h>
 #include "solvers/funcadd.h"
+
+enum { MAX_ERROR_MESSAGE_SIZE = 100 };
+
+static real error(arglist *al, const char *format, ...) {
+  al->Errmsg = al->AE->Tempmem(al->TMI, MAX_ERROR_MESSAGE_SIZE);
+  va_list args;
+  va_start(args, format);
+  al->AE->VsnprintF(al->Errmsg, MAX_ERROR_MESSAGE_SIZE, format, args);
+  va_end(args);
+  return 0;
+}
 
 static real amplgsl_log1p(arglist *al) {
   real x = al->ra[0];
@@ -152,6 +164,42 @@ static real amplgsl_sf_bessel_J1(arglist *al) {
       *al->hes = 0.25 * (gsl_sf_bessel_Jn(3, x) - 3 * j1);
   }
   return j1;
+}
+
+static int check_deriv_arg(arglist *al, int arg, int min, int max) {
+  if (arg < min) {
+    error(al, "can't compute derivative: first argument %d too small", arg);
+    return 0;
+  }
+  if (arg > max) {
+    error(al, "can't compute derivative: first argument %d too large", arg);
+    return 0;
+  }
+  return 1;
+}
+
+static real amplgsl_sf_bessel_Jn(arglist *al) {
+  real arg0 = al->ra[0];
+  int n = arg0;
+  if (n != arg0)
+    return error(al, "first argument %g is not an int", arg0);
+  real x = al->ra[1];
+  if (al->derivs) {
+    if (!al->dig || !al->dig[0])
+      return error(al, "first argument is not constant");
+    if ((al->hes && !check_deriv_arg(al, n, INT_MIN + 2, INT_MAX - 2)) ||
+        !check_deriv_arg(al, n, INT_MIN + 1, INT_MAX - 1))
+      return 0;
+    al->derivs[1] = 0.5 *
+        (gsl_sf_bessel_Jn(n - 1, x) - gsl_sf_bessel_Jn(n + 1, x));
+    if (al->hes) {
+      real jn = gsl_sf_bessel_Jn(n, x);
+      al->hes[2] = 0.25 *
+          (gsl_sf_bessel_Jn(n - 2, x) - 2 * jn + gsl_sf_bessel_Jn(n + 2, x));
+      return jn;
+    }
+  }
+  return gsl_sf_bessel_Jn(n, x);
 }
 
 static real amplgsl_sf_bessel_Y0(arglist *al) {
@@ -444,65 +492,77 @@ void funcadd_ASL(AmplExports *ae) {
   gsl_set_error_handler_off();
 
   // Elementary Functions
-  addfunc("gsl_log1p", amplgsl_log1p, 0, 1, 0);
-  addfunc("gsl_expm1", amplgsl_expm1, 0, 1, 0);
-  addfunc("gsl_hypot", amplgsl_hypot, 0, 2, 0);
-  addfunc("gsl_hypot3", amplgsl_hypot3, 0, 3, 0);
+  addfunc("gsl_log1p", amplgsl_log1p, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_expm1", amplgsl_expm1, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_hypot", amplgsl_hypot, FUNCADD_REAL_VALUED, 2, 0);
+  addfunc("gsl_hypot3", amplgsl_hypot3, FUNCADD_REAL_VALUED, 3, 0);
   // AMPL has built-in functions acosh, asinh and atanh so wrappers
   // are not provided for their GSL equivalents.
 
   // Airy Functions
-  addfunc("gsl_sf_airy_Ai", amplgsl_sf_airy_Ai, 0, 1, 0);
-  addfunc("gsl_sf_airy_Bi", amplgsl_sf_airy_Bi, 0, 1, 0);
-  addfunc("gsl_sf_airy_Ai_scaled", amplgsl_sf_airy_Ai_scaled, 0, 1, 0);
-  addfunc("gsl_sf_airy_Bi_scaled", amplgsl_sf_airy_Bi_scaled, 0, 1, 0);
+  addfunc("gsl_sf_airy_Ai", amplgsl_sf_airy_Ai, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_airy_Bi", amplgsl_sf_airy_Bi, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_airy_Ai_scaled", amplgsl_sf_airy_Ai_scaled,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_airy_Bi_scaled", amplgsl_sf_airy_Bi_scaled,
+      FUNCADD_REAL_VALUED, 1, 0);
 
   // Bessel Functions
-  addfunc("gsl_sf_bessel_J0", amplgsl_sf_bessel_J0, 0, 1, 0);
-  addfunc("gsl_sf_bessel_J1", amplgsl_sf_bessel_J1, 0, 1, 0);
-  // TODO: gsl_sf_bessel_Jn
+  addfunc("gsl_sf_bessel_J0", amplgsl_sf_bessel_J0, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_J1", amplgsl_sf_bessel_J1, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_Jn", amplgsl_sf_bessel_Jn, FUNCADD_REAL_VALUED, 2, 0);
 
   // Irregular Cylindrical Bessel Functions
-  addfunc("gsl_sf_bessel_Y0", amplgsl_sf_bessel_Y0, 0, 1, 0);
-  addfunc("gsl_sf_bessel_Y1", amplgsl_sf_bessel_Y1, 0, 1, 0);
+  addfunc("gsl_sf_bessel_Y0", amplgsl_sf_bessel_Y0, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_Y1", amplgsl_sf_bessel_Y1, FUNCADD_REAL_VALUED, 1, 0);
   // TODO: gsl_sf_bessel_Yn
 
   // Regular Modified Cylindrical Bessel Functions
-  addfunc("gsl_sf_bessel_I0", amplgsl_sf_bessel_I0, 0, 1, 0);
-  addfunc("gsl_sf_bessel_I1", amplgsl_sf_bessel_I1, 0, 1, 0);
-  addfunc("gsl_sf_bessel_I0_scaled", amplgsl_sf_bessel_I0_scaled, 0, 1, 0);
-  addfunc("gsl_sf_bessel_I1_scaled", amplgsl_sf_bessel_I1_scaled, 0, 1, 0);
+  addfunc("gsl_sf_bessel_I0", amplgsl_sf_bessel_I0, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_I1", amplgsl_sf_bessel_I1, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_I0_scaled", amplgsl_sf_bessel_I0_scaled,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_I1_scaled", amplgsl_sf_bessel_I1_scaled,
+      FUNCADD_REAL_VALUED, 1, 0);
   // TODO: gsl_sf_bessel_In
 
   // Irregular Modified Cylindrical Bessel Functions
-  addfunc("gsl_sf_bessel_K0", amplgsl_sf_bessel_K0, 0, 1, 0);
-  addfunc("gsl_sf_bessel_K1", amplgsl_sf_bessel_K1, 0, 1, 0);
-  addfunc("gsl_sf_bessel_K0_scaled", amplgsl_sf_bessel_K0_scaled, 0, 1, 0);
-  addfunc("gsl_sf_bessel_K1_scaled", amplgsl_sf_bessel_K1_scaled, 0, 1, 0);
+  addfunc("gsl_sf_bessel_K0", amplgsl_sf_bessel_K0, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_K1", amplgsl_sf_bessel_K1, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_K0_scaled", amplgsl_sf_bessel_K0_scaled,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_K1_scaled", amplgsl_sf_bessel_K1_scaled,
+      FUNCADD_REAL_VALUED, 1, 0);
   // TODO: gsl_sf_bessel_Kn
 
   // Regular Spherical Bessel Functions
-  addfunc("gsl_sf_bessel_j0", amplgsl_sf_bessel_j0, 0, 1, 0);
-  addfunc("gsl_sf_bessel_j1", amplgsl_sf_bessel_j1, 0, 1, 0);
-  addfunc("gsl_sf_bessel_j2", amplgsl_sf_bessel_j2, 0, 1, 0);
+  addfunc("gsl_sf_bessel_j0", amplgsl_sf_bessel_j0, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_j1", amplgsl_sf_bessel_j1, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_j2", amplgsl_sf_bessel_j2, FUNCADD_REAL_VALUED, 1, 0);
   // TODO: jl
 
   // Irregular Spherical Bessel Functions
-  addfunc("gsl_sf_bessel_y0", amplgsl_sf_bessel_y0, 0, 1, 0);
-  addfunc("gsl_sf_bessel_y1", amplgsl_sf_bessel_y1, 0, 1, 0);
-  addfunc("gsl_sf_bessel_y2", amplgsl_sf_bessel_y2, 0, 1, 0);
+  addfunc("gsl_sf_bessel_y0", amplgsl_sf_bessel_y0, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_y1", amplgsl_sf_bessel_y1, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_y2", amplgsl_sf_bessel_y2, FUNCADD_REAL_VALUED, 1, 0);
   // TODO: yl
 
   // Regular Modified Spherical Bessel Functions
-  addfunc("gsl_sf_bessel_i0_scaled", amplgsl_sf_bessel_i0_scaled, 0, 1, 0);
-  addfunc("gsl_sf_bessel_i1_scaled", amplgsl_sf_bessel_i1_scaled, 0, 1, 0);
-  addfunc("gsl_sf_bessel_i2_scaled", amplgsl_sf_bessel_i2_scaled, 0, 1, 0);
+  addfunc("gsl_sf_bessel_i0_scaled", amplgsl_sf_bessel_i0_scaled,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_i1_scaled", amplgsl_sf_bessel_i1_scaled,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_i2_scaled", amplgsl_sf_bessel_i2_scaled,
+      FUNCADD_REAL_VALUED, 1, 0);
   // TODO: il_scaled
 
   // Irregular Modified Spherical Bessel Functions
-  addfunc("gsl_sf_bessel_k0_scaled", amplgsl_sf_bessel_k0_scaled, 0, 1, 0);
-  addfunc("gsl_sf_bessel_k1_scaled", amplgsl_sf_bessel_k1_scaled, 0, 1, 0);
-  addfunc("gsl_sf_bessel_k2_scaled", amplgsl_sf_bessel_k2_scaled, 0, 1, 0);
+  addfunc("gsl_sf_bessel_k0_scaled", amplgsl_sf_bessel_k0_scaled,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_k1_scaled", amplgsl_sf_bessel_k1_scaled,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_k2_scaled", amplgsl_sf_bessel_k2_scaled,
+      FUNCADD_REAL_VALUED, 1, 0);
   // TODO: kl_scaled
 
   // Regular Bessel Function - Fractional Order
@@ -516,4 +576,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   // Irregular Modified Bessel Functions - Fractional Order
   // TODO: Knu, Knu_scaled
+
+  // Clausen Functions
+  // TODO
 }
