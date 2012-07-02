@@ -404,6 +404,25 @@ static real amplgsl_sf_bessel_K1_scaled(arglist *al) {
   return k1;
 }
 
+static real amplgsl_sf_bessel_Kn_scaled(arglist *al) {
+  if (!check_bessel_arg(al))
+    return 0;
+  int n = al->ra[0];
+  real x = al->ra[1];
+  real kn = gsl_sf_bessel_Kn_scaled(n, x);
+  if (al->derivs) {
+    real kn_minus1 = gsl_sf_bessel_Kn_scaled(n - 1, x);
+    real kn_plus1 = gsl_sf_bessel_Kn_scaled(n + 1, x);
+    al->derivs[1] = -0.5 * (kn_minus1 - 2 * kn + kn_plus1);
+    if (al->hes) {
+      al->hes[2] = 0.25 *
+          (gsl_sf_bessel_Kn_scaled(n - 2, x) - 4 * kn_minus1 + 6 * kn -
+              4 * kn_plus1 + gsl_sf_bessel_Kn_scaled(n + 2, x));
+    }
+  }
+  return kn;
+}
+
 static real amplgsl_sf_bessel_j0(arglist *al) {
   real x = al->ra[0];
   if (al->derivs) {
@@ -618,7 +637,8 @@ void funcadd_ASL(AmplExports *ae) {
       FUNCADD_REAL_VALUED, 1, 0);
   addfunc("gsl_sf_bessel_K1_scaled", amplgsl_sf_bessel_K1_scaled,
       FUNCADD_REAL_VALUED, 1, 0);
-  // TODO: gsl_sf_bessel_Kn_scaled
+  addfunc("gsl_sf_bessel_Kn_scaled", amplgsl_sf_bessel_Kn_scaled,
+      FUNCADD_REAL_VALUED, 2, 0);
 
   // Regular Spherical Bessel Functions
   addfunc("gsl_sf_bessel_j0", amplgsl_sf_bessel_j0, FUNCADD_REAL_VALUED, 1, 0);
