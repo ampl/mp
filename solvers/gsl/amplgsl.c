@@ -554,54 +554,89 @@ static real amplgsl_sf_bessel_yl(arglist *al) {
 
 static real amplgsl_sf_bessel_i0_scaled(arglist *al) {
   real x = al->ra[0];
+  real i0 = gsl_sf_bessel_i0_scaled(x);
   if (al->derivs) {
-    real sqrt_inv_x = sqrt(1 / x);
-    real cosh_x = cosh(x), sinh_x = sinh(x);
-    *al->derivs = exp(-abs(x)) * sqrt_inv_x * (x * abs(x) * cosh_x -
-        (x * x + abs(x)) * sinh_x) / (pow(x, 1.5) * abs(x));
+    real hyp_coef = exp(-abs(x)) * sqrt(1 / x) / sqrt(x);
+    real i_minus1 = hyp_coef * cosh(x);
+    real i1 = gsl_sf_bessel_i1_scaled(x);
+    real coef = -(1 + 2 * abs(x)) / x;
+    *al->derivs = 0.5 * (i_minus1 + coef * i0 + i1);
     if (al->hes) {
-      *al->hes = (2 * exp(-abs(x)) * sqrt_inv_x *
-          ((x * x + abs(x) * (x * x + 1)) * sinh_x -
-              x * (x * x + abs(x)) * cosh_x)) / (pow(x, 2.5) * abs(x));
+      coef *= 2;
+      *al->hes = 0.25 * (
+          hyp_coef * sinh(x) - i_minus1 / x +
+          coef * i_minus1 +
+          (3 + 6 * x * x + 4 * abs(x)) * i0 / (x * x) +
+          coef * i1 +
+          gsl_sf_bessel_il_scaled(2, x));
     }
   }
-  return gsl_sf_bessel_i0_scaled(x);
+  return i0;
 }
 
 static real amplgsl_sf_bessel_i1_scaled(arglist *al) {
   real x = al->ra[0];
+  real i1 = gsl_sf_bessel_i1_scaled(x);
   if (al->derivs) {
-    real sqrt_inv_x = sqrt(1 / x), x_squared = x * x;
-    real cosh_x = cosh(x), sinh_x = sinh(x);
-    *al->derivs = (exp(-abs(x)) * sqrt_inv_x * ((x_squared + abs(x) *
-        (x_squared + 2)) * sinh_x - x * (x_squared + 2 * abs(x)) * cosh_x)) /
-        (pow(x, 2.5) * abs(x));
+    real i0 = gsl_sf_bessel_i0_scaled(x);
+    real i2 = gsl_sf_bessel_i2_scaled(x);
+    real coef = -(1 + 2 * abs(x)) / x;
+    *al->derivs = 0.5 * (i0 + coef * i1 + i2);
     if (al->hes) {
-      *al->hes = -(2 * exp(-abs(x)) * sqrt_inv_x * ((pow(x, 4) +
-          2 * x_squared + abs(x) * (2 * x_squared + 3)) * sinh_x -
-          x * (2 * x_squared + abs(x) * (x_squared + 3)) * cosh_x)) /
-              (pow(x, 3.5) * abs(x));
+      coef *= 2;
+      *al->hes = 0.25 * (
+          exp(-abs(x)) * sqrt(1 / x) * cosh(x) / sqrt(x) +
+          coef * i0 +
+          (3 + 6 * x * x + 4 * abs(x)) * i1 / (x * x) +
+          coef * i2 +
+          gsl_sf_bessel_il_scaled(3, x));
     }
   }
-  return gsl_sf_bessel_i1_scaled(x);
+  return i1;
 }
 
 static real amplgsl_sf_bessel_i2_scaled(arglist *al) {
   real x = al->ra[0];
+  real i2 = gsl_sf_bessel_i2_scaled(x);
   if (al->derivs) {
-    real sqrt_inv_x = sqrt(1 / x), x_squared = x * x;
-    real cosh_x = cosh(x), sinh_x = sinh(x);
-    *al->derivs = (exp(-abs(x)) * sqrt_inv_x * (x * (3 * x_squared + abs(x) *
-        (x_squared + 9)) * cosh_x - (pow(x, 4) + 3 * x_squared + abs(x) *
-            (4 * x_squared + 9)) * sinh_x)) / (pow(x, 3.5) * abs(x));
+    real i1 = gsl_sf_bessel_i1_scaled(x);
+    real i3 = gsl_sf_bessel_il_scaled(3, x);
+    real coef = -(1 + 2 * abs(x)) / x;
+    *al->derivs = 0.5 * (i1 + coef * i2 + i3);
     if (al->hes) {
-      *al->hes = (2 * exp(-abs(x)) * sqrt_inv_x * ((9 * x_squared + 2 *
-          abs(x) * (5 * x_squared + 9) + (abs(x) + 4) * pow(x, 4)) * sinh(x) -
-          x * (pow(x, 4) + 9 * x_squared + 2 * abs(x) * (2 * x_squared + 9)) *
-          cosh(x))) / (pow(x, 4.5) * abs(x));
+      coef *= 2;
+      *al->hes = 0.25 * (
+          gsl_sf_bessel_i0_scaled(x) +
+          coef * i1 +
+          (3 + 6 * x * x + 4 * abs(x)) * i2 / (x * x) +
+          coef * i3 +
+          gsl_sf_bessel_il_scaled(4, x));
     }
   }
-  return gsl_sf_bessel_i2_scaled(x);
+  return i2;
+}
+
+static real amplgsl_sf_bessel_il_scaled(arglist *al) {
+  if (!check_bessel_arg(al, 0))
+    return 0;
+  int n = al->ra[0];
+  real x = al->ra[1];
+  real in = gsl_sf_bessel_il_scaled(n, x);
+  if (al->derivs) {
+    real in_minus1 = gsl_sf_bessel_il_scaled(n - 1, x);
+    real in_plus1 = gsl_sf_bessel_il_scaled(n + 1, x);
+    real coef = -(1 + 2 * abs(x)) / x;
+    al->derivs[1] = 0.5 * (in_minus1 + coef * in + in_plus1);
+    if (al->hes) {
+      al->hes[2] =
+          0.25 * gsl_sf_bessel_il_scaled(n - 2, x) +
+          coef * in_minus1 +
+          (3 + 6 * x * x + 4 * abs(x)) * in / (4 * x * x) +
+          coef * in_plus1 +
+          0.25 * gsl_sf_bessel_il_scaled(n + 2, x);
+    }
+  }
+  return in;
 }
 
 static real amplgsl_sf_bessel_k0_scaled(arglist *al) {
@@ -717,7 +752,8 @@ void funcadd_ASL(AmplExports *ae) {
       FUNCADD_REAL_VALUED, 1, 0);
   addfunc("gsl_sf_bessel_i2_scaled", amplgsl_sf_bessel_i2_scaled,
       FUNCADD_REAL_VALUED, 1, 0);
-  // TODO: il_scaled
+  addfunc("gsl_sf_bessel_il_scaled", amplgsl_sf_bessel_il_scaled,
+      FUNCADD_REAL_VALUED, 2, 0);
 
   // Irregular Modified Spherical Bessel Functions
   addfunc("gsl_sf_bessel_k0_scaled", amplgsl_sf_bessel_k0_scaled,

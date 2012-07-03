@@ -599,36 +599,53 @@ Result sf_bessel_yl_dx2(int n, double x) {
 }
 
 double sf_bessel_i0_scaled_dx(double x) {
-  return (exp(-abs(x)) * sqrt(1 / x) * (x * sqrt(x * x) * cosh(x) -
-      (x * x + sqrt(x * x)) * sinh(x))) / (pow(x, 1.5) * sqrt(x * x));
+  double i_minus1 = (exp(-abs(x)) * sqrt(1 / x) * cosh(x)) / sqrt(x);
+  return 0.5 * (i_minus1 -
+      ((1 + 2 * abs(x)) / x) * gsl_sf_bessel_i0_scaled(x) +
+      gsl_sf_bessel_i1_scaled(x));
 }
 double sf_bessel_i0_scaled_dx2(double x) {
-  return (2 * exp(-abs(x)) * sqrt(1 / x) * ((x * x + abs(x) *
-      (x * x + 1)) * sinh(x) - x * (x * x + abs(x)) * cosh(x))) /
-      (pow(x, 2.5) * sqrt(x * x));
+  double coef = -2 * (1 + 2 * abs(x)) / x;
+  double hyp_coef = exp(-abs(x)) * sqrt(1 / x) / sqrt(x);
+  double i_minus1 = hyp_coef * cosh(x);
+  double i_minus2 = hyp_coef * sinh(x) - i_minus1 / x;
+  return 0.25 * (
+      i_minus2 +
+      coef * i_minus1 +
+      (3 + 6 * x * x + 4 * abs(x)) * gsl_sf_bessel_i0_scaled(x) / (x * x) +
+      coef * gsl_sf_bessel_i1_scaled(x) +
+      gsl_sf_bessel_i2_scaled(x));
 }
 
 double sf_bessel_i1_scaled_dx(double x) {
-  return (exp(-abs(x)) * sqrt(1 / x) * ((x * x + abs(x) * (x * x + 2)) *
-      sinh(x) - x * (x * x + 2 * abs(x)) * cosh(x))) /
-      (pow(x, 2.5) * abs(x));
+  return 0.5 * (gsl_sf_bessel_i0_scaled(x) -
+      ((1 + 2 * abs(x)) / x) * gsl_sf_bessel_i1_scaled(x) +
+      gsl_sf_bessel_i2_scaled(x));
 }
 double sf_bessel_i1_scaled_dx2(double x) {
-  return -(2 * exp(-abs(x)) * sqrt(1 / x) * ((pow(x, 4) + 2 * x * x +
-      abs(x) * (2 * x * x + 3)) * sinh(x) - x * (2 * x * x + abs(x) *
-          (x * x + 3)) * cosh(x))) / (pow(x, 3.5) * abs(x));
+  double coef = -2 * (1 + 2 * abs(x)) / x;
+  double i_minus1 = (exp(-abs(x)) * sqrt(1 / x) * cosh(x)) / sqrt(x);
+  return 0.25 * (
+      i_minus1 +
+      coef * gsl_sf_bessel_i0_scaled(x) +
+      (3 + 6 * x * x + 4 * abs(x)) * gsl_sf_bessel_i1_scaled(x) / (x * x) +
+      coef * gsl_sf_bessel_i2_scaled(x) +
+      gsl_sf_bessel_il_scaled(3, x));
 }
 
 double sf_bessel_i2_scaled_dx(double x) {
-  return (exp(-abs(x)) * sqrt(1 / x) * (x * (3 * x * x + abs(x) *
-      (x * x + 9)) * cosh(x) - (pow(x, 4) + 3 * x * x + abs(x) *
-          (4 * x * x + 9)) * sinh(x))) / (pow(x, 3.5) * abs(x));
+  return 0.5 * (gsl_sf_bessel_i1_scaled(x) -
+      ((1 + 2 * abs(x)) / x) * gsl_sf_bessel_i2_scaled(x) +
+      gsl_sf_bessel_il_scaled(3, x));
 }
 double sf_bessel_i2_scaled_dx2(double x) {
-  return (2 * exp(-abs(x)) * sqrt(1 / x) * ((9 * x * x + 2 * abs(x) *
-      (5 * x * x + 9) + (abs(x) + 4) * pow(x, 4)) * sinh(x) -
-      x * (pow(x, 4) + 9 * x * x + 2 * abs(x) * (2 * x * x + 9)) * cosh(x))) /
-      (pow(x, 4.5) * abs(x));
+  double coef = -2 * (1 + 2 * abs(x)) / x;
+  return 0.25 * (
+      gsl_sf_bessel_i0_scaled(x) +
+      coef * gsl_sf_bessel_i1_scaled(x) +
+      (3 + 6 * x * x + 4 * abs(x)) * gsl_sf_bessel_il_scaled(2, x) / (x * x) +
+      coef * gsl_sf_bessel_il_scaled(3, x) +
+      gsl_sf_bessel_il_scaled(4, x));
 }
 
 double sf_bessel_k0_scaled_dx(double x) {
