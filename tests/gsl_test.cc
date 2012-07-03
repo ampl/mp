@@ -690,6 +690,13 @@ double sf_bessel_k2_scaled_dx2(double x) {
   return (M_PI * sqrt(1 / x) * (x * x + 9 * x + 18)) / pow(x, 4.5);
 }
 
+double sf_clausen_dx(double x) {
+  return -log(2 * sin(0.5 * x));
+}
+double sf_clausen_dx2(double x) {
+  return -0.5 * tan(0.5 * M_PI - x);
+}
+
 #define TEST_FUNC(name) \
   TestFunc("gsl_" #name, gsl_##name, name##_dx, name##_dx2);
 
@@ -840,7 +847,7 @@ TEST_F(GSLTest, Besseli) {
   ASSERT_NEAR(-0.00152293, sf_bessel_il_scaled_dx2(3, 5).value, 1e-5);
 }
 
-TEST_F(GSLTest, Bessel) {
+TEST_F(GSLTest, Besselk) {
   TEST_FUNC(sf_bessel_k0_scaled);
   ASSERT_NEAR(0.314159, gsl_sf_bessel_k0_scaled(5), 1e-5);
   ASSERT_NEAR(-0.0628319, sf_bessel_k0_scaled_dx(5), 1e-5);
@@ -858,16 +865,6 @@ TEST_F(GSLTest, Bessel) {
 }
 
 TEST_F(GSLTest, Clausen) {
-  const char *name = "gsl_sf_clausen";
-  func_info *fi = GetFunction(name);
-  for (size_t i = 0; i != NUM_POINTS; ++i) {
-    double x = POINTS[i];
-    ArgList args(asl, x);
-    EXPECT_ALMOST_EQUAL_OR_NAN(
-        gsl_sf_clausen(x), Call(fi, args)) << name << " at " << x;
-    args.allocateDerivs();
-    fi->funcp(args.get());
-    EXPECT_TRUE(args->Errmsg != nullptr);
-  }
+  TEST_FUNC(sf_clausen);
 }
 }

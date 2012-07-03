@@ -676,8 +676,9 @@ static real amplgsl_sf_bessel_k2_scaled(arglist *al) {
 static real amplgsl_sf_clausen(arglist *al) {
   real x = al->ra[0];
   if (al->derivs) {
-    error(al, "can't compute derivative");
-    return 0;
+    *al->derivs = -log(2 * sin(0.5 * x));
+    if (al->hes)
+      *al->hes = -0.5 * tan(0.5 * M_PI - x);
   }
   return gsl_sf_clausen(x);
 }
