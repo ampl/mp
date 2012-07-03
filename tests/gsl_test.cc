@@ -123,7 +123,7 @@ class ArgList {
   real hes(size_t index = 0) const { return hes_[index]; }
 };
 
-const double POINTS[] = {-5, 0, 5};
+const double POINTS[] = {-5, -1.23, 0, 1.23, 5};
 const size_t NUM_POINTS = sizeof(POINTS) / sizeof(*POINTS);
 
 const double POINTS_FOR_N[] = {
@@ -536,8 +536,10 @@ double sf_bessel_j2_dx(double x) {
   return gsl_sf_bessel_j1(x) - (3 * gsl_sf_bessel_j2(x)) / x;
 }
 double sf_bessel_j2_dx2(double x) {
-  return (x * (5 * x * x - 36) * cos(x) +
-      (pow(x, 4) - 17 * x * x + 36) * sin(x)) / pow(x, 5);
+  double x_squared = x * x;
+  return (x * (5 * x_squared - 36) * cos(x) +
+      (x_squared * x_squared - 17 * x_squared + 36) * sin(x)) /
+      (x_squared * x_squared * x);
 }
 
 Result sf_bessel_jl_dx(int n, double x) {
@@ -664,7 +666,7 @@ Result sf_bessel_il_scaled_dx2(int n, double x) {
   return 0.25 * (
       gsl_sf_bessel_il_scaled(n - 2, x) +
       coef * gsl_sf_bessel_il_scaled(n - 1, x) +
-      (3 + 6 * x * x + 4 * abs(x)) * gsl_sf_bessel_il_scaled(n, x) / (x * x) +
+      (3 + 4 * abs(x) + 6 * x * x) * gsl_sf_bessel_il_scaled(n, x) / (x * x) +
       coef * gsl_sf_bessel_il_scaled(n + 1, x) +
       gsl_sf_bessel_il_scaled(n + 2, x));
 }
@@ -688,6 +690,91 @@ double sf_bessel_k2_scaled_dx(double x) {
 }
 double sf_bessel_k2_scaled_dx2(double x) {
   return (M_PI * sqrt(1 / x) * (x * x + 9 * x + 18)) / pow(x, 4.5);
+}
+
+Result sf_bessel_kl_scaled_dx(int n, double x) {
+  if (n == INT_MIN || n == INT_MAX)
+    return Result(0, true);
+  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
+    return 42;
+  return -0.5 * (gsl_sf_bessel_kl_scaled(n - 1, x) +
+      ((1 - 2 * x) / x) * gsl_sf_bessel_kl_scaled(n, x) +
+      gsl_sf_bessel_kl_scaled(n + 1, x));
+}
+Result sf_bessel_kl_scaled_dx2(int n, double x) {
+  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
+    return Result(0, true);
+  double coef = 2 * (1 - 2 * x) / x;
+  return 0.25 * (
+      gsl_sf_bessel_kl_scaled(n - 2, x) +
+      coef * gsl_sf_bessel_kl_scaled(n - 1, x) +
+      (3 - 4 * x + 6 * x * x) * gsl_sf_bessel_kl_scaled(n, x) / (x * x) +
+      coef * gsl_sf_bessel_kl_scaled(n + 1, x) +
+      gsl_sf_bessel_kl_scaled(n + 2, x));
+}
+
+Func2 sf_bessel_Jnu_dx, sf_bessel_Jnu_dx2, sf_bessel_Jnu_dxdy;
+double sf_bessel_Jnu_dy(double x, double y) {
+  return 0.5 * (gsl_sf_bessel_Jnu(x - 1, y) - gsl_sf_bessel_Jnu(x + 1, y));
+}
+double sf_bessel_Jnu_dy2(double x, double y) {
+  return 0.25 * (gsl_sf_bessel_Jnu(x - 2, y) -
+      2 * gsl_sf_bessel_Jnu(x, y) + gsl_sf_bessel_Jnu(x + 2, y));
+}
+
+Func2 sf_bessel_Ynu_dx, sf_bessel_Ynu_dx2, sf_bessel_Ynu_dxdy;
+double sf_bessel_Ynu_dy(double x, double y) {
+  return 0.5 * (gsl_sf_bessel_Ynu(x - 1, y) - gsl_sf_bessel_Ynu(x + 1, y));
+}
+double sf_bessel_Ynu_dy2(double x, double y) {
+  return 0.25 * (gsl_sf_bessel_Ynu(x - 2, y) -
+      2 * gsl_sf_bessel_Ynu(x, y) + gsl_sf_bessel_Ynu(x + 2, y));
+}
+
+Func2 sf_bessel_Inu_dx, sf_bessel_Inu_dx2, sf_bessel_Inu_dxdy;
+double sf_bessel_Inu_dy(double x, double y) {
+  return 0.5 * (gsl_sf_bessel_Inu(x - 1, y) + gsl_sf_bessel_Inu(x + 1, y));
+}
+double sf_bessel_Inu_dy2(double x, double y) {
+  return 0.25 * (gsl_sf_bessel_Inu(x - 2, y) +
+      2 * gsl_sf_bessel_Inu(x, y) + gsl_sf_bessel_Inu(x + 2, y));
+}
+
+Func2 sf_bessel_Inu_scaled_dx;
+Func2 sf_bessel_Inu_scaled_dx2, sf_bessel_Inu_scaled_dxdy;
+double sf_bessel_Inu_scaled_dy(double x, double y) {
+  return 0.5 * (-(2 * y * gsl_sf_bessel_Inu_scaled(x, y)) / abs(y) +
+      gsl_sf_bessel_Inu_scaled(x - 1, y) + gsl_sf_bessel_Inu_scaled(x + 1, y));
+}
+double sf_bessel_Inu_scaled_dy2(double x, double y) {
+  return (abs(y) * (gsl_sf_bessel_Inu_scaled(x - 2, y) +
+                    6 * gsl_sf_bessel_Inu_scaled(x, y) +
+                    gsl_sf_bessel_Inu_scaled(x + 2, y)) -
+      4 * y * (gsl_sf_bessel_Inu_scaled(x - 1, y) +
+               gsl_sf_bessel_Inu_scaled(x + 1, y))) / (4 * abs(y));
+}
+
+Func2 sf_bessel_Knu_dx, sf_bessel_Knu_dx2, sf_bessel_Knu_dxdy;
+double sf_bessel_Knu_dy(double x, double y) {
+  return -0.5 * (gsl_sf_bessel_Knu(x - 1, y) + gsl_sf_bessel_Knu(x + 1, y));
+}
+double sf_bessel_Knu_dy2(double x, double y) {
+  return 0.25 * (gsl_sf_bessel_Knu(x - 2, y) +
+      2 * gsl_sf_bessel_Knu(x, y) + gsl_sf_bessel_Knu(x + 2, y));
+}
+
+Func2 sf_bessel_Knu_scaled_dx;
+Func2 sf_bessel_Knu_scaled_dx2, sf_bessel_Knu_scaled_dxdy;
+double sf_bessel_Knu_scaled_dy(double x, double y) {
+  return -0.5 * (gsl_sf_bessel_Knu_scaled(x - 1, y) -
+      2 * gsl_sf_bessel_Knu_scaled(x, y) + gsl_sf_bessel_Knu_scaled(x + 1, y));
+}
+double sf_bessel_Knu_scaled_dy2(double x, double y) {
+  return 0.25 * (gsl_sf_bessel_Knu_scaled(x - 2, y) -
+      4 * gsl_sf_bessel_Knu_scaled(x - 1, y) +
+      6 * gsl_sf_bessel_Knu_scaled(x, y) -
+      4 * gsl_sf_bessel_Knu_scaled(x + 1, y) +
+      gsl_sf_bessel_Knu_scaled(x + 2, y));
 }
 
 double sf_clausen_dx(double x) {
@@ -862,6 +949,43 @@ TEST_F(GSLTest, Besselk) {
   ASSERT_NEAR(0.540354, gsl_sf_bessel_k2_scaled(5), 1e-5);
   ASSERT_NEAR(-0.16085, sf_bessel_k2_scaled_dx(5), 1e-5);
   ASSERT_NEAR(0.0884672, sf_bessel_k2_scaled_dx2(5), 1e-5);
+
+  TEST_FUNC_N(sf_bessel_kl_scaled);
+  ASSERT_NEAR(0.917345, gsl_sf_bessel_kl_scaled(3, 5), 1e-5);
+  ASSERT_NEAR(-0.356885, sf_bessel_kl_scaled_dx(3, 5).value, 1e-5);
+  ASSERT_NEAR(0.236248, sf_bessel_kl_scaled_dx2(3, 5).value, 1e-5);
+}
+
+TEST_F(GSLTest, BesselFractionalOrder) {
+  TEST_FUNC2(sf_bessel_Jnu);
+  ASSERT_NEAR(0.410029, gsl_sf_bessel_Jnu(3.5, 5), 1e-5);
+  ASSERT_NEAR(-0.0466428, sf_bessel_Jnu_dy(3.5, 5), 1e-5);
+  ASSERT_NEAR(-0.199786, sf_bessel_Jnu_dy2(3.5, 5), 1e-5);
+
+  TEST_FUNC2(sf_bessel_Ynu);
+  ASSERT_NEAR(-0.0275521, gsl_sf_bessel_Ynu(3.5, 5), 1e-5);
+  ASSERT_NEAR(0.313659, sf_bessel_Ynu_dy(3.5, 5), 1e-5);
+  ASSERT_NEAR(-0.0486802, sf_bessel_Ynu_dy2(3.5, 5), 1e-5);
+
+  TEST_FUNC2(sf_bessel_Inu);
+  ASSERT_NEAR(7.417560126111555, gsl_sf_bessel_Inu(3.5, 5), 1e-5);
+  ASSERT_NEAR(8.574590050404494, sf_bessel_Inu_dy(3.5, 5), 1e-5);
+  ASSERT_NEAR(9.337246577825318, sf_bessel_Inu_dy2(3.5, 5), 1e-5);
+
+  TEST_FUNC2(sf_bessel_Inu_scaled);
+  ASSERT_NEAR(0.04997912699226937, gsl_sf_bessel_Inu_scaled(3.5, 5), 1e-5);
+  ASSERT_NEAR(0.00779600630624169, sf_bessel_Inu_scaled_dy(3.5, 5), 1e-5);
+  ASSERT_NEAR(-0.0026572670459736, sf_bessel_Inu_scaled_dy2(3.5, 5), 1e-5);
+
+  TEST_FUNC2(sf_bessel_Knu);
+  ASSERT_NEAR(0.011027711053957217, gsl_sf_bessel_Knu(3.5, 5), 1e-5);
+  ASSERT_NEAR(-0.014215172742155810, sf_bessel_Knu_dy(3.5, 5), 1e-5);
+  ASSERT_NEAR(0.01927432401882742, sf_bessel_Knu_dy2(3.5, 5), 1e-5);
+
+  TEST_FUNC2(sf_bessel_Knu_scaled);
+  ASSERT_NEAR(1.6366574351881952, gsl_sf_bessel_Knu_scaled(3.5, 5), 1e-5);
+  ASSERT_NEAR(-0.4730612586639852, sf_bessel_Knu_scaled_dy(3.5, 5), 1e-5);
+  ASSERT_NEAR(0.2777833646846813, sf_bessel_Knu_scaled_dy2(3.5, 5), 1e-5);
 }
 
 TEST_F(GSLTest, Clausen) {
