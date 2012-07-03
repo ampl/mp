@@ -628,12 +628,13 @@ static real amplgsl_sf_bessel_il_scaled(arglist *al) {
     real coef = -(1 + 2 * abs(x)) / x;
     al->derivs[1] = 0.5 * (in_minus1 + coef * in + in_plus1);
     if (al->hes) {
-      al->hes[2] =
-          0.25 * gsl_sf_bessel_il_scaled(n - 2, x) +
+      coef *= 2;
+      al->hes[2] = 0.25 * (
+          gsl_sf_bessel_il_scaled(n - 2, x) +
           coef * in_minus1 +
-          (3 + 6 * x * x + 4 * abs(x)) * in / (4 * x * x) +
+          (3 + 6 * x * x + 4 * abs(x)) * in / (x * x) +
           coef * in_plus1 +
-          0.25 * gsl_sf_bessel_il_scaled(n + 2, x);
+          gsl_sf_bessel_il_scaled(n + 2, x));
     }
   }
   return in;
