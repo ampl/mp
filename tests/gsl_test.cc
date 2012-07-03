@@ -648,6 +648,27 @@ double sf_bessel_i2_scaled_dx2(double x) {
       gsl_sf_bessel_il_scaled(4, x));
 }
 
+Result sf_bessel_il_scaled_dx(int n, double x) {
+  if (n == INT_MIN || n == INT_MAX)
+    return Result(0, true);
+  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
+    return 42;
+  return 0.5 * (gsl_sf_bessel_il_scaled(n - 1, x) -
+      ((1 + 2 * abs(x)) / x) * gsl_sf_bessel_il_scaled(n, x) +
+      gsl_sf_bessel_il_scaled(n + 1, x));
+}
+Result sf_bessel_il_scaled_dx2(int n, double x) {
+  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
+    return Result(0, true);
+  double coef = -2 * (1 + 2 * abs(x)) / x;
+  return 0.25 * (
+      gsl_sf_bessel_il_scaled(n - 2, x) +
+      coef * gsl_sf_bessel_il_scaled(n - 1, x) +
+      (3 + 6 * x * x + 4 * abs(x)) * gsl_sf_bessel_il_scaled(n, x) / (x * x) +
+      coef * gsl_sf_bessel_il_scaled(n + 1, x) +
+      gsl_sf_bessel_il_scaled(n + 2, x));
+}
+
 double sf_bessel_k0_scaled_dx(double x) {
   return -M_PI * sqrt(1 / x) / (2 * pow(x, 1.5));
 }
@@ -797,7 +818,7 @@ TEST_F(GSLTest, Bessely) {
   ASSERT_NEAR(-0.0629096, sf_bessel_yl_dx2(3, 5).value, 1e-5);
 }
 
-TEST_F(GSLTest, Bessel) {
+TEST_F(GSLTest, Besseli) {
   TEST_FUNC(sf_bessel_i0_scaled);
   ASSERT_NEAR(0.0999955, gsl_sf_bessel_i0_scaled(5), 1e-5);
   ASSERT_NEAR(-0.01999, sf_bessel_i0_scaled_dx(5), 1e-5);
@@ -813,6 +834,13 @@ TEST_F(GSLTest, Bessel) {
   ASSERT_NEAR(-0.00318206, sf_bessel_i2_scaled_dx(5), 1e-5);
   ASSERT_NEAR(-0.000681812, sf_bessel_i2_scaled_dx2(5), 1e-5);
 
+  TEST_FUNC_N(sf_bessel_il_scaled);
+  ASSERT_NEAR(0.0280133, gsl_sf_bessel_il_scaled(3, 5), 1e-5);
+  ASSERT_NEAR(0.00156833, sf_bessel_il_scaled_dx(3, 5).value, 1e-5);
+  ASSERT_NEAR(-0.00152293, sf_bessel_il_scaled_dx2(3, 5).value, 1e-5);
+}
+
+TEST_F(GSLTest, Bessel) {
   TEST_FUNC(sf_bessel_k0_scaled);
   ASSERT_NEAR(0.314159, gsl_sf_bessel_k0_scaled(5), 1e-5);
   ASSERT_NEAR(-0.0628319, sf_bessel_k0_scaled_dx(5), 1e-5);
