@@ -144,6 +144,36 @@ static real amplgsl_sf_airy_Bi_scaled(arglist *al) {
   return value;
 }
 
+static int check_zero_func_arg(arglist *al, unsigned index) {
+  real arg = al->ra[index];
+  unsigned s = arg;
+  if (s != arg) {
+    error(al, "argument n is not an unsigned int, n = %g", arg);
+    return 0;
+  }
+  if (al->derivs) {
+    error(al, "can't compute derivative");
+    return 0;
+  }
+  return 1;
+}
+
+static real amplgsl_sf_airy_zero_Ai(arglist *al) {
+  return check_zero_func_arg(al, 0) ? gsl_sf_airy_zero_Ai(al->ra[0]) : 0;
+}
+
+static real amplgsl_sf_airy_zero_Bi(arglist *al) {
+  return check_zero_func_arg(al, 0) ? gsl_sf_airy_zero_Bi(al->ra[0]) : 0;
+}
+
+static real amplgsl_sf_airy_zero_Ai_deriv(arglist *al) {
+  return check_zero_func_arg(al, 0) ? gsl_sf_airy_zero_Ai_deriv(al->ra[0]) : 0;
+}
+
+static real amplgsl_sf_airy_zero_Bi_deriv(arglist *al) {
+  return check_zero_func_arg(al, 0) ? gsl_sf_airy_zero_Bi_deriv(al->ra[0]) : 0;
+}
+
 static real amplgsl_sf_bessel_J0(arglist *al) {
   real x = al->ra[0];
   real j0 = gsl_sf_bessel_J0(x);
@@ -168,11 +198,11 @@ static real amplgsl_sf_bessel_J1(arglist *al) {
 
 static int check_deriv_arg(arglist *al, int arg, int min, int max) {
   if (arg < min) {
-    error(al, "can't compute derivative: first argument %d too small", arg);
+    error(al, "can't compute derivative: argument n too small, n = %d", arg);
     return 0;
   }
   if (arg > max) {
-    error(al, "can't compute derivative: first argument %d too large", arg);
+    error(al, "can't compute derivative: argument n too large, n = %d", arg);
     return 0;
   }
   return 1;
@@ -187,12 +217,12 @@ static int check_bessel_arg(arglist *al, int flags) {
   real arg0 = al->ra[0];
   int n = arg0;
   if (n != arg0) {
-    error(al, "first argument %g is not an int", arg0);
+    error(al, "argument n is not an int, n = %g", arg0);
     return 0;
   }
   if (al->derivs) {
     if (!al->dig || !al->dig[0]) {
-      error(al, "first argument is not constant");
+      error(al, "argument n is not constant");
       return 0;
     }
     int deriv_min = INT_MIN + ((flags & DERIV_INT_MIN) != 0 ? 0 : 1);
@@ -702,7 +732,7 @@ static real amplgsl_sf_bessel_kl_scaled(arglist *al) {
 static int check_const_arg(arglist *al) {
   if (al->dig && al->dig[0])
     return 1;
-  error(al, "first argument is not constant");
+  error(al, "argument is not constant");
   return 0;
 }
 
@@ -794,6 +824,26 @@ static real amplgsl_sf_bessel_Knu(arglist *al) {
   return kn;
 }
 
+static real amplgsl_sf_bessel_lnKnu(arglist *al) {
+  real n = al->ra[0];
+  real x = al->ra[1];
+  if (al->derivs) {
+    if (!check_const_arg(al))
+      return 0;
+    real kn = gsl_sf_bessel_Knu(n, x);
+    real kn_minus1_plus1 =
+        gsl_sf_bessel_Knu(n - 1, x) + gsl_sf_bessel_Knu(n + 1, x);
+    al->derivs[1] = -0.5 * kn_minus1_plus1 / kn;
+    if (al->hes) {
+      al->hes[2] = 0.25 *
+          (kn * (gsl_sf_bessel_Knu(n - 2, x) + 2 * kn +
+          gsl_sf_bessel_Knu(n + 2, x)) - kn_minus1_plus1 * kn_minus1_plus1) /
+          (kn * kn);
+    }
+  }
+  return gsl_sf_bessel_lnKnu(n, x);
+}
+
 static real amplgsl_sf_bessel_Knu_scaled(arglist *al) {
   real n = al->ra[0];
   real x = al->ra[1];
@@ -811,6 +861,19 @@ static real amplgsl_sf_bessel_Knu_scaled(arglist *al) {
     }
   }
   return kn;
+}
+
+static real amplgsl_sf_bessel_zero_J0(arglist *al) {
+  return check_zero_func_arg(al, 0) ? gsl_sf_bessel_zero_J0(al->ra[0]) : 0;
+}
+
+static real amplgsl_sf_bessel_zero_J1(arglist *al) {
+  return check_zero_func_arg(al, 0) ? gsl_sf_bessel_zero_J1(al->ra[0]) : 0;
+}
+
+static real amplgsl_sf_bessel_zero_Jnu(arglist *al) {
+  return check_zero_func_arg(al, 1) ?
+      gsl_sf_bessel_zero_Jnu(al->ra[0], al->ra[1]) : 0;
 }
 
 static real amplgsl_sf_clausen(arglist *al) {
@@ -841,6 +904,18 @@ void funcadd_ASL(AmplExports *ae) {
   addfunc("gsl_sf_airy_Ai_scaled", amplgsl_sf_airy_Ai_scaled,
       FUNCADD_REAL_VALUED, 1, 0);
   addfunc("gsl_sf_airy_Bi_scaled", amplgsl_sf_airy_Bi_scaled,
+      FUNCADD_REAL_VALUED, 1, 0);
+
+  // Zeros of Airy Functions
+  addfunc("gsl_sf_airy_zero_Ai", amplgsl_sf_airy_zero_Ai,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_airy_zero_Bi", amplgsl_sf_airy_zero_Bi,
+      FUNCADD_REAL_VALUED, 1, 0);
+
+  // Zeros of Derivatives of Airy Functions
+  addfunc("gsl_sf_airy_zero_Ai_deriv", amplgsl_sf_airy_zero_Ai_deriv,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_airy_zero_Bi_deriv", amplgsl_sf_airy_zero_Bi_deriv,
       FUNCADD_REAL_VALUED, 1, 0);
 
   // Bessel Functions
@@ -924,7 +999,16 @@ void funcadd_ASL(AmplExports *ae) {
   // Irregular Modified Bessel Functions - Fractional Order
   addfunc("gsl_sf_bessel_Knu", amplgsl_sf_bessel_Knu,
       FUNCADD_REAL_VALUED, 2, 0);
+  addfunc("gsl_sf_bessel_lnKnu", amplgsl_sf_bessel_lnKnu,
+      FUNCADD_REAL_VALUED, 2, 0);
   addfunc("gsl_sf_bessel_Knu_scaled", amplgsl_sf_bessel_Knu_scaled,
+      FUNCADD_REAL_VALUED, 2, 0);
+
+  addfunc("gsl_sf_bessel_zero_J0", amplgsl_sf_bessel_zero_J0,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_zero_J1", amplgsl_sf_bessel_zero_J1,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_bessel_zero_Jnu", amplgsl_sf_bessel_zero_Jnu,
       FUNCADD_REAL_VALUED, 2, 0);
 
   // Clausen Functions

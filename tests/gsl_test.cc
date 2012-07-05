@@ -24,6 +24,7 @@ struct Result {
 };
 
 typedef double (*Func1)(double);
+typedef double (*FuncU)(unsigned);
 typedef double (*FuncN1)(int, double);
 typedef Result (*FuncN1Result)(int, double);
 typedef double (*Func2)(double, double);
@@ -62,6 +63,7 @@ class GSLTest : public ::testing::Test {
   }
 
   void TestFunc(const char *name, Func1 f, Func1 dx, Func1 dx2);
+  void TestFunc(const char *name, FuncU f);
   void TestFunc(const char *name, FuncN1 f, FuncN1Result dx, FuncN1Result dx2);
   void TestFunc(const char *name, Func2 f, Func2 dx, Func2 dy,
       Func2 dx2, Func2 dxdy, Func2 dy2);
@@ -155,6 +157,24 @@ void GSLTest::TestFunc(const char *name, Func1 f, Func1 dx, Func1 dx2) {
   }
 }
 
+void GSLTest::TestFunc(const char *name, FuncU f) {
+  func_info *fi = GetFunction(name);
+  for (size_t i = 0; i != NUM_POINTS; ++i) {
+    double x = POINTS[i];
+    ArgList args(asl, x);
+    if (static_cast<unsigned>(x) != x) {
+      fi->funcp(args.get());
+      ASSERT_TRUE(args->Errmsg != nullptr);
+      continue;
+    }
+    EXPECT_ALMOST_EQUAL_OR_NAN(f(x), Call(fi, args))
+      << name << " at " << x;
+    args.allocateDerivs();
+    fi->funcp(args.get());
+    ASSERT_TRUE(args->Errmsg != nullptr);
+  }
+}
+
 void GSLTest::TestFunc(const char *name, FuncN1 f,
     FuncN1Result dx, FuncN1Result dx2) {
   func_info *fi = GetFunction(name);
@@ -183,7 +203,8 @@ void GSLTest::TestFunc(const char *name, FuncN1 f,
         EXPECT_TRUE(args->Errmsg != nullptr);
       } else if (!skip) {
         Call(fi, args);
-        EXPECT_ALMOST_EQUAL_OR_NAN(r.value, args.deriv(1)) << name << " at " << x;
+        EXPECT_ALMOST_EQUAL_OR_NAN(r.value, args.deriv(1))
+          << name << " at " << n << ", " << x;
       }
 
       args.allocateHes();
@@ -208,13 +229,23 @@ void GSLTest::TestFunc(const char *name, Func2 f, Func2 dx, Func2 dy,
       ArgList args(asl, x, y);
       EXPECT_ALMOST_EQUAL_OR_NAN(f(x, y), Call(fi, args));
       args.allocateDerivs();
-      Call(fi, args);
-      EXPECT_ALMOST_EQUAL_OR_NAN(dx(x, y), args.deriv(0));
+      char dig = 1;
+      if (dx) {
+        Call(fi, args);
+        EXPECT_ALMOST_EQUAL_OR_NAN(dx(x, y), args.deriv(0));
+      } else {
+        fi->funcp(args.get());
+        EXPECT_TRUE(args->Errmsg != nullptr);
+        args->dig = &dig;
+        Call(fi, args);
+      }
       EXPECT_ALMOST_EQUAL_OR_NAN(dy(x, y), args.deriv(1));
       args.allocateHes();
       Call(fi, args);
-      EXPECT_ALMOST_EQUAL_OR_NAN(dx2(x, y),  args.hes(0));
-      EXPECT_ALMOST_EQUAL_OR_NAN(dxdy(x, y), args.hes(1));
+      if (dx2)
+        EXPECT_ALMOST_EQUAL_OR_NAN(dx2(x, y),  args.hes(0));
+      if (dxdy)
+        EXPECT_ALMOST_EQUAL_OR_NAN(dxdy(x, y), args.hes(1));
       EXPECT_ALMOST_EQUAL_OR_NAN(dy2(x, y),  args.hes(2));
     }
   }
@@ -763,6 +794,19 @@ double sf_bessel_Knu_dy2(double x, double y) {
       2 * gsl_sf_bessel_Knu(x, y) + gsl_sf_bessel_Knu(x + 2, y));
 }
 
+Func2 sf_bessel_lnKnu_dx, sf_bessel_lnKnu_dx2, sf_bessel_lnKnu_dxdy;
+double sf_bessel_lnKnu_dy(double x, double y) {
+  return -0.5 * (gsl_sf_bessel_Knu(x - 1, y) + gsl_sf_bessel_Knu(x + 1, y)) /
+      gsl_sf_bessel_Knu(x, y);
+}
+double sf_bessel_lnKnu_dy2(double x, double y) {
+  double kn = gsl_sf_bessel_Knu(x, y);
+  double kn_plus_minus =
+      gsl_sf_bessel_Knu(x - 1, y) + gsl_sf_bessel_Knu(x + 1, y);
+  return 0.25 * (kn * (gsl_sf_bessel_Knu(x - 2, y) + 2 * kn +
+      gsl_sf_bessel_Knu(x + 2, y)) - kn_plus_minus * kn_plus_minus) / (kn * kn);
+}
+
 Func2 sf_bessel_Knu_scaled_dx;
 Func2 sf_bessel_Knu_scaled_dx2, sf_bessel_Knu_scaled_dxdy;
 double sf_bessel_Knu_scaled_dy(double x, double y) {
@@ -786,6 +830,9 @@ double sf_clausen_dx2(double x) {
 
 #define TEST_FUNC(name) \
   TestFunc("gsl_" #name, gsl_##name, name##_dx, name##_dx2);
+
+#define TEST_FUNC_U(name) \
+  TestFunc("gsl_" #name, gsl_##name);
 
 #define TEST_FUNC_N(name) \
   TestFunc("gsl_" #name, gsl_##name, name##_dx, name##_dx2);
@@ -818,6 +865,13 @@ TEST_F(GSLTest, AiryB) {
   TEST_FUNC(sf_airy_Bi_scaled);
   ASSERT_NEAR(-0.0203063, sf_airy_Bi_scaled_dx(5), 1e-5);
   ASSERT_NEAR(0.00559418, sf_airy_Bi_scaled_dx2(5), 1e-5);
+}
+
+TEST_F(GSLTest, AiryZero) {
+  TEST_FUNC_U(sf_airy_zero_Ai);
+  TEST_FUNC_U(sf_airy_zero_Bi);
+  TEST_FUNC_U(sf_airy_zero_Ai_deriv);
+  TEST_FUNC_U(sf_airy_zero_Bi_deriv);
 }
 
 TEST_F(GSLTest, BesselJ) {
@@ -982,10 +1036,39 @@ TEST_F(GSLTest, BesselFractionalOrder) {
   ASSERT_NEAR(-0.014215172742155810, sf_bessel_Knu_dy(3.5, 5), 1e-5);
   ASSERT_NEAR(0.01927432401882742, sf_bessel_Knu_dy2(3.5, 5), 1e-5);
 
+  TEST_FUNC2(sf_bessel_lnKnu);
+  ASSERT_NEAR(-4.5073439872921324, gsl_sf_bessel_lnKnu(3.5, 5), 1e-5);
+  ASSERT_NEAR(-1.289041095890411, sf_bessel_lnKnu_dy(3.5, 5), 1e-5);
+  ASSERT_NEAR(0.08618127228373, sf_bessel_lnKnu_dy2(3.5, 5), 1e-5);
+
   TEST_FUNC2(sf_bessel_Knu_scaled);
   ASSERT_NEAR(1.6366574351881952, gsl_sf_bessel_Knu_scaled(3.5, 5), 1e-5);
   ASSERT_NEAR(-0.4730612586639852, sf_bessel_Knu_scaled_dy(3.5, 5), 1e-5);
   ASSERT_NEAR(0.2777833646846813, sf_bessel_Knu_scaled_dy2(3.5, 5), 1e-5);
+}
+
+TEST_F(GSLTest, BesselZero) {
+  TEST_FUNC_U(sf_bessel_zero_J0);
+  TEST_FUNC_U(sf_bessel_zero_J1);
+
+  const char *name = "gsl_sf_bessel_zero_Jnu";
+  func_info *fi = GetFunction(name);
+  for (size_t i = 0; i != NUM_POINTS; ++i) {
+    for (size_t j = 0; j != NUM_POINTS; ++j) {
+      double nu = POINTS[i], x = POINTS[j];
+      ArgList args(asl, nu, x);
+      if (static_cast<unsigned>(x) != x) {
+        fi->funcp(args.get());
+        ASSERT_TRUE(args->Errmsg != nullptr);
+        continue;
+      }
+      EXPECT_ALMOST_EQUAL_OR_NAN(gsl_sf_bessel_zero_Jnu(nu, x), Call(fi, args))
+        << name << " at " << x;
+      args.allocateDerivs();
+      fi->funcp(args.get());
+      ASSERT_TRUE(args->Errmsg != nullptr);
+    }
+  }
 }
 
 TEST_F(GSLTest, Clausen) {
