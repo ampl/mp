@@ -18,76 +18,63 @@ using std::vector;
 
 namespace {
 
-struct Result {
-  double value;
-  bool error;
-
-  Result(double val, bool err = false) : value(val), error(err) {}
-};
-
-typedef double (*Func1)(double);
-typedef double (*FuncU)(unsigned);
-typedef double (*FuncN1)(int, double);
-typedef Result (*FuncN1Result)(int, double);
-typedef double (*Func2)(double, double);
-typedef double (*Func3)(double, double, double);
-
 class ArgList {
  private:
-  TMInfo tmi;
   vector<real> ra;
-  vector<real> derivs_;
-  vector<real> hes_;
-  arglist args;
 
-  void init(size_t size) {
-    args.TMI = &tmi;
-    args.nr = args.n = size;
-    ra.resize(size);
-    args.ra = &ra[0];
+  ArgList &operator<<(real arg) {
+    ra.push_back(arg);
+    return *this;
   }
 
  public:
-  ArgList(real x) : tmi(), args() {
-    init(1);
-    ra[0] = x;
+  ArgList(real a0) { *this << a0; }
+  ArgList(real a0, real a1) { *this << a0 << a1; }
+  ArgList(real a0, real a1, real a2) { *this << a0 << a1 << a2; }
+  ArgList(real a0, real a1, real a2, real a3) {
+    *this << a0 << a1 << a2 << a3;
+  }
+  ArgList(real a0, real a1, real a2, real a3, real a4) {
+    *this << a0 << a1 << a2 << a3 << a4;
+  }
+  ArgList(real a0, real a1, real a2, real a3, real a4, real a5) {
+    *this << a0 << a1 << a2 << a3 << a4 << a5;
   }
 
-  ArgList(real x, real y) : tmi(), args() {
-    init(2);
-    ra[0] = x;
-    ra[1] = y;
+  vector<real> copy() const { return ra; }
+};
+
+// Options for an AMPL function call.
+enum {
+  ERROR  = 1, // Function call is expected to produce an error.
+  DERIVS = 2, // Get first partial derivatives.
+  HES    = 6  // Get both first and second partial derivatives.
+};
+
+class AMPLResult {
+ private:
+  real value_;
+  vector<real> derivs_;
+  vector<real> hes_;
+
+ public:
+  AMPLResult() : value_(0) {}
+
+  real *AllocateDerivs(size_t size) {
+    derivs_.resize(size);
+    return &derivs_[0];
   }
 
-  ArgList(real x, real y, real z) : tmi(), args() {
-    init(3);
-    ra[0] = x;
-    ra[1] = y;
-    ra[2] = z;
+  real *AllocateHes(size_t size) {
+    hes_.resize(size * (size + 1) / 2);
+    return &hes_[0];
   }
 
-  ArgList &operator,(real arg) {
-    ra.push_back(arg);
-    args.nr = args.n = ra.size();
-    args.ra = &ra[0];
-    return *this;
+  void SetValue(real value) {
+    value_ = value;
   }
 
-  ArgList &allocateDerivs() {
-    derivs_.resize(ra.size());
-    args.derivs = &derivs_[0];
-    return *this;
-  }
-
-  void allocateHes() {
-    hes_.resize(ra.size() * (ra.size() + 1) / 2);
-    args.hes = &hes_[0];
-  }
-
-  void set(size_t index, real value) { ra[index] = value; }
-
-  arglist *get() { return &args; }
-  arglist *operator->() { return &args; }
+  operator real() const { return value_; }
 
   real deriv(size_t index = 0) const { return derivs_[index]; }
   real hes(size_t index = 0) const { return hes_[index]; }
@@ -101,18 +88,59 @@ class AMPLFunction {
  public:
   AMPLFunction(ASL *asl, func_info *fi) : asl_(asl), fi_(fi) {}
 
-  real operator()(ArgList &args, bool expect_error = false) const {
-    args->AE = asl_->i.ae;
-    args->Errmsg = nullptr;
-    real value = fi_->funcp(args.get());
-    if (args->Errmsg) {
-      if (!expect_error)
-        throw std::runtime_error(args->Errmsg);
-    } else if (expect_error)
+  AMPLResult operator()(const ArgList &args,
+      int options = 0, char *dig = 0, void *info = 0) const {
+    // Initialize the argument list.
+    arglist al = {};
+    TMInfo tmi = {};
+    vector<real> ra(args.copy());
+    al.ra = &ra[0];
+    al.nr = al.n = ra.size();
+    al.TMI = &tmi;
+    al.AE = asl_->i.ae;
+    al.dig = dig;
+    al.funcinfo = info;
+
+    // Allocate derivative storage if needed.
+    AMPLResult result;
+    if ((options & DERIVS) != 0)
+      al.derivs = result.AllocateDerivs(ra.size());
+    if ((options & HES) == HES)
+      al.hes = result.AllocateHes(ra.size());
+
+    // Call the function.
+    real value = fi_->funcp(&al);
+
+    // Check the error message.
+    if (al.Errmsg) {
+      if ((options & ERROR) == 0)
+        throw std::runtime_error(al.Errmsg);
+    } else if ((options & ERROR) != 0)
       throw std::runtime_error("Expected error");
-    return value;
+
+    result.SetValue(value);
+    return result;
+  }
+
+  AMPLResult operator()(real x,
+      int options = 0, char *dig = 0, void *info = 0) const {
+    return (*this)((ArgList(x)), options, dig, info);
   }
 };
+
+struct Result {
+  double value;
+  bool error;
+
+  Result(double val, bool err = false) : value(val), error(err) {}
+};
+
+typedef double (*Func1)(double);
+typedef double (*FuncU)(unsigned);
+typedef double (*FuncN1)(int, double);
+typedef Result (*FuncN1Result)(int, double);
+typedef double (*Func2)(double, double);
+typedef double (*Func3)(double, double, double);
 
 class GSLTest : public ::testing::Test {
  protected:
@@ -128,6 +156,7 @@ class GSLTest : public ::testing::Test {
     ASL_free(&asl);
   }
 
+  // Get an AMPL function by name.
   AMPLFunction GetFunction(const char *name) const {
     func_info *fi = func_lookup(asl, name, 0);
     if (!fi)
@@ -146,8 +175,12 @@ class GSLTest : public ::testing::Test {
     return (lhs.is_nan() && rhs.is_nan()) || lhs.AlmostEquals(rhs);
   }
 
+  // Test a function taking a single argument.
   void TestFunc(const char *name, Func1 f, Func1 dx, Func1 dx2);
+
+  // Test a function taking a single argument of type unsigned int.
   void TestFunc(const char *name, FuncU f);
+
   void TestFunc(const char *name, FuncN1 f, FuncN1Result dx, FuncN1Result dx2);
   void TestFunc(const char *name, Func2 f, Func2 dx, Func2 dy,
       Func2 dx2, Func2 dxdy, Func2 dy2);
@@ -169,14 +202,11 @@ void GSLTest::TestFunc(const char *name, Func1 f, Func1 dx, Func1 dx2) {
   AMPLFunction af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     double x = POINTS[i];
-    ArgList args(x);
-    EXPECT_ALMOST_EQUAL_OR_NAN(f(x), af(args)) << name << " at " << x;
-    args.allocateDerivs();
-    af(args);
-    EXPECT_ALMOST_EQUAL_OR_NAN(dx(x), args.deriv()) << name << " at " << x;
-    args.allocateHes();
-    af(args);
-    EXPECT_ALMOST_EQUAL_OR_NAN(dx2(x), args.hes()) << name << " at " << x;
+    EXPECT_ALMOST_EQUAL_OR_NAN(f(x), af(x)) << name << " at " << x;
+    EXPECT_ALMOST_EQUAL_OR_NAN(dx(x), af(x, DERIVS).deriv())
+      << name << " at " << x;
+    EXPECT_ALMOST_EQUAL_OR_NAN(dx2(x), af(x, HES).hes())
+      << name << " at " << x;
   }
 }
 
@@ -184,15 +214,12 @@ void GSLTest::TestFunc(const char *name, FuncU f) {
   AMPLFunction af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     double x = POINTS[i];
-    ArgList args(x);
     if (static_cast<unsigned>(x) != x) {
-      af(args, true);
+      af(x, ERROR);
       continue;
     }
-    EXPECT_ALMOST_EQUAL_OR_NAN(f(x), af(args))
-      << name << " at " << x;
-    args.allocateDerivs();
-    af(args, true);
+    EXPECT_ALMOST_EQUAL_OR_NAN(f(x), af(x)) << name << " at " << x;
+    af(x, DERIVS | ERROR);
   }
 }
 
@@ -208,28 +235,23 @@ void GSLTest::TestFunc(const char *name, FuncN1 f,
       if (!skip)
         EXPECT_ALMOST_EQUAL_OR_NAN(f(n, x), af(args)) << name << " at " << x;
 
-      args.allocateDerivs();
-      af(args, true);
-      char dig = 0;
-      args->dig = &dig;
-      af(args, true);
-      dig = 1;
+      af(args, DERIVS | ERROR);
+      af(args, DERIVS | ERROR);
+      char dig = 1;
       Result r = dx(n, x);
       if (r.error) {
-        af(args, true);
+        af(args, DERIVS | ERROR, &dig);
       } else if (!skip) {
-        af(args);
-        EXPECT_ALMOST_EQUAL_OR_NAN(r.value, args.deriv(1))
+        EXPECT_ALMOST_EQUAL_OR_NAN(r.value, af(args, DERIVS, &dig).deriv(1))
           << name << " at " << n << ", " << x;
       }
 
-      args.allocateHes();
       r = dx2(n, x);
       if (r.error) {
-        af(args, true);
+        af(args, HES | ERROR, &dig);
       } else if (!skip) {
-        af(args);
-        EXPECT_ALMOST_EQUAL_OR_NAN(r.value, args.hes(2)) << name << " at " << x;
+        EXPECT_ALMOST_EQUAL_OR_NAN(r.value, af(args, HES, &dig).hes(2))
+          << name << " at " << x;
       }
     }
   }
@@ -243,24 +265,23 @@ void GSLTest::TestFunc(const char *name, Func2 f, Func2 dx, Func2 dy,
       double x = POINTS[i], y = POINTS[j];
       ArgList args(x, y);
       EXPECT_ALMOST_EQUAL_OR_NAN(f(x, y), af(args));
-      args.allocateDerivs();
-      char dig = 1;
+      char dig = 0;
+      AMPLResult res;
       if (dx) {
-        af(args);
-        EXPECT_ALMOST_EQUAL_OR_NAN(dx(x, y), args.deriv(0));
+        res = af(args, DERIVS);
+        EXPECT_ALMOST_EQUAL_OR_NAN(dx(x, y), res.deriv(0));
       } else {
-        af(args, true);
-        args->dig = &dig;
-        af(args);
+        af(args, DERIVS | ERROR);
+        dig = 1;
+        res = af(args, DERIVS, &dig);
       }
-      EXPECT_ALMOST_EQUAL_OR_NAN(dy(x, y), args.deriv(1));
-      args.allocateHes();
-      af(args);
+      EXPECT_ALMOST_EQUAL_OR_NAN(dy(x, y), res.deriv(1));
+      res = af(args, HES, &dig);
       if (dx2)
-        EXPECT_ALMOST_EQUAL_OR_NAN(dx2(x, y),  args.hes(0));
+        EXPECT_ALMOST_EQUAL_OR_NAN(dx2(x, y), res.hes(0));
       if (dxdy)
-        EXPECT_ALMOST_EQUAL_OR_NAN(dxdy(x, y), args.hes(1));
-      EXPECT_ALMOST_EQUAL_OR_NAN(dy2(x, y),  args.hes(2));
+        EXPECT_ALMOST_EQUAL_OR_NAN(dxdy(x, y), res.hes(1));
+      EXPECT_ALMOST_EQUAL_OR_NAN(dy2(x, y), res.hes(2));
     }
   }
 }
@@ -274,19 +295,17 @@ void GSLTest::TestFunc(const char *name, Func3 f, Func3 dx, Func3 dy, Func3 dz,
         double x = POINTS[i], y = POINTS[j], z = POINTS[k];
         ArgList args(x, y, z);
         EXPECT_ALMOST_EQUAL_OR_NAN(f(x, y, z), af(args)) << name;
-        args.allocateDerivs();
-        af(args);
-        EXPECT_ALMOST_EQUAL_OR_NAN(dx(x, y, z), args.deriv(0)) << name;
-        EXPECT_ALMOST_EQUAL_OR_NAN(dy(x, y, z), args.deriv(1)) << name;
-        EXPECT_ALMOST_EQUAL_OR_NAN(dz(x, y, z), args.deriv(2)) << name;
-        args.allocateHes();
-        af(args);
-        EXPECT_ALMOST_EQUAL_OR_NAN(dx2(x, y, z),  args.hes(0)) << name;
-        EXPECT_ALMOST_EQUAL_OR_NAN(dxdy(x, y, z), args.hes(1)) << name;
-        EXPECT_ALMOST_EQUAL_OR_NAN(dxdz(x, y, z), args.hes(2)) << name;
-        EXPECT_ALMOST_EQUAL_OR_NAN(dy2(x, y, z),  args.hes(3)) << name;
-        EXPECT_ALMOST_EQUAL_OR_NAN(dydz(x, y, z), args.hes(4)) << name;
-        EXPECT_ALMOST_EQUAL_OR_NAN(dz2(x, y, z),  args.hes(5)) << name;
+        AMPLResult res = af(args, DERIVS);
+        EXPECT_ALMOST_EQUAL_OR_NAN(dx(x, y, z), res.deriv(0)) << name;
+        EXPECT_ALMOST_EQUAL_OR_NAN(dy(x, y, z), res.deriv(1)) << name;
+        EXPECT_ALMOST_EQUAL_OR_NAN(dz(x, y, z), res.deriv(2)) << name;
+        res = af(args, HES);
+        EXPECT_ALMOST_EQUAL_OR_NAN(dx2(x, y, z),  res.hes(0)) << name;
+        EXPECT_ALMOST_EQUAL_OR_NAN(dxdy(x, y, z), res.hes(1)) << name;
+        EXPECT_ALMOST_EQUAL_OR_NAN(dxdz(x, y, z), res.hes(2)) << name;
+        EXPECT_ALMOST_EQUAL_OR_NAN(dy2(x, y, z),  res.hes(3)) << name;
+        EXPECT_ALMOST_EQUAL_OR_NAN(dydz(x, y, z), res.hes(4)) << name;
+        EXPECT_ALMOST_EQUAL_OR_NAN(dz2(x, y, z),  res.hes(5)) << name;
       }
     }
   }
@@ -881,17 +900,39 @@ double sf_hydrogenicR_1_dy2(double x, double y) {
         name##_dx2, name##_dxdy, name##_dxdz, \
         name##_dy2, name##_dydz, name##_dz2);
 
+TEST_F(GSLTest, TestArgList) {
+  static const real ARGS[] = {5, 7, 11, 13, 17, 19};
+  EXPECT_EQ(vector<real>(ARGS, ARGS + 1), ArgList(5).copy());
+  EXPECT_EQ(vector<real>(ARGS, ARGS + 2), ArgList(5, 7).copy());
+  EXPECT_EQ(vector<real>(ARGS, ARGS + 3), ArgList(5, 7, 11).copy());
+  EXPECT_EQ(vector<real>(ARGS, ARGS + 4), ArgList(5, 7, 11, 13).copy());
+  EXPECT_EQ(vector<real>(ARGS, ARGS + 5), ArgList(5, 7, 11, 13, 17).copy());
+  EXPECT_EQ(vector<real>(ARGS, ARGS + 6), ArgList(5, 7, 11, 13, 17, 19).copy());
+}
+
 struct CheckData {
   AmplExports *ae;
-  arglist *args;
+  int n;
+  int nr;
+  vector<real> ra;
+  real *derivs;
+  real *hes;
+  char *dig;
   char *error;
 };
 
 real Check(arglist *args) {
   CheckData *data = reinterpret_cast<CheckData*>(args->funcinfo);
   data->ae = args->AE;
-  data->args = args;
+  data->n = args->n;
+  data->nr = args->nr;
+  data->ra = vector<real>(args->ra, args->ra + args->n);
+  data->derivs = args->derivs;
+  data->hes = args->hes;
+  data->dig = args->dig;
   data->error = args->Errmsg;
+  if (args->derivs)
+    *args->derivs = 123;
   return 42;
 }
 
@@ -902,14 +943,36 @@ TEST_F(GSLTest, TestAMPLFunction) {
   func_info fi = {};
   fi.funcp = Check;
   AMPLFunction f(&testASL, &fi);
-  ArgList args(0);
   CheckData data = {};
-  args->funcinfo = &data;
-  char error = 0;
-  args->Errmsg = &error;
-  EXPECT_EQ(42, f(args));
+  EXPECT_EQ(42, f(777, 0, 0, &data));
   EXPECT_EQ(&ae, data.ae);
-  EXPECT_EQ(args.get(), data.args);
+  ASSERT_EQ(1, data.n);
+  EXPECT_EQ(1, data.nr);
+  EXPECT_EQ(777, data.ra[0]);
+  EXPECT_TRUE(data.derivs == nullptr);
+  EXPECT_TRUE(data.hes == nullptr);
+  EXPECT_TRUE(data.dig == nullptr);
+  EXPECT_TRUE(data.error == nullptr);
+}
+
+TEST_F(GSLTest, TestAMPLFunctionDerivs) {
+  ASL testASL = {};
+  AmplExports ae = {};
+  testASL.i.ae = &ae;
+  func_info fi = {};
+  fi.funcp = Check;
+  AMPLFunction f(&testASL, &fi);
+  CheckData data = {};
+  AMPLResult res = f(777, DERIVS, 0, &data);
+  EXPECT_EQ(42, res);
+  EXPECT_EQ(&ae, data.ae);
+  ASSERT_EQ(1, data.n);
+  EXPECT_EQ(1, data.nr);
+  EXPECT_EQ(777, data.ra[0]);
+  EXPECT_EQ(123, *data.derivs);
+  EXPECT_EQ(123, res.deriv(0));
+  EXPECT_TRUE(data.hes == nullptr);
+  EXPECT_TRUE(data.dig == nullptr);
   EXPECT_TRUE(data.error == nullptr);
 }
 
@@ -1125,13 +1188,12 @@ TEST_F(GSLTest, BesselZero) {
       double nu = POINTS[i], x = POINTS[j];
       ArgList args(nu, x);
       if (static_cast<unsigned>(x) != x) {
-        af(args, true);
+        af(args, ERROR);
         continue;
       }
       EXPECT_ALMOST_EQUAL_OR_NAN(gsl_sf_bessel_zero_Jnu(nu, x), af(args))
         << name << " at " << x;
-      args.allocateDerivs();
-      af(args, true);
+      af(args, DERIVS | ERROR);
     }
   }
 }
@@ -1151,9 +1213,9 @@ TEST_F(GSLTest, Hydrogenic) {
 
   const char *name = "gsl_sf_hydrogenicR";
   AMPLFunction af = GetFunction(name);
-  af((ArgList(0, 0, 0), 0));
-  af((ArgList(0.5, 0, 0), 0), true);
-  af((ArgList(0, 0.5, 0), 0), true);
+  af(ArgList(0, 0, 0, 0));
+  af(ArgList(0.5, 0, 0, 0), ERROR);
+  af(ArgList(0, 0.5, 0, 0), ERROR);
   for (size_t i = 0; i != NUM_POINTS_FOR_N; ++i) {
     for (size_t i = 0; i != NUM_POINTS_FOR_N; ++i) {
       for (size_t k = 0; k != NUM_POINTS; ++k) {
@@ -1161,13 +1223,11 @@ TEST_F(GSLTest, Hydrogenic) {
           int n = POINTS_FOR_N[i], ll = POINTS_FOR_N[l];
           if (n < -1000 || n > 1000) continue;
           double Z = POINTS[k], r = POINTS[l];
-          ArgList args(n, ll, Z);
-          args, r;
+          ArgList args(n, ll, Z, r);
           EXPECT_ALMOST_EQUAL_OR_NAN(
               gsl_sf_hydrogenicR(n, ll, Z, r), af(args))
             << name << " at " << n;
-          args.allocateDerivs();
-          af(args, true);
+          af(args, DERIVS | ERROR);
         }
       }
     }
@@ -1184,8 +1244,7 @@ TEST_F(GSLTest, Coulomb) {
       gsl_sf_result result = {};
       double value = gsl_sf_coulomb_CL_e(x, y, &result) ? GSL_NAN : result.val;
       EXPECT_ALMOST_EQUAL_OR_NAN(value, af(args));
-      args.allocateDerivs();
-      af(args, true);
+      af(args, DERIVS | ERROR);
     }
   }
 }
@@ -1195,14 +1254,14 @@ TEST_F(GSLTest, Coupling) {
   ASSERT_NEAR(0.186989, value, 1e-5);
   const char *name = "gsl_sf_coupling_3j";
   AMPLFunction af = GetFunction(name);
-  EXPECT_ALMOST_EQUAL_OR_NAN(value, af((ArgList(12, 8, 4), 0, 0, 0)));
-  af((ArgList(0, 0, 0), 0, 0, 0));
-  af((ArgList(0.5, 0, 0), 0, 0, 0), true);
-  af((ArgList(0, 0.5, 0), 0, 0, 0), true);
-  af((ArgList(0, 0, 0.5), 0, 0, 0), true);
-  af((ArgList(0, 0, 0), 0.5, 0, 0), true);
-  af((ArgList(0, 0, 0), 0, 0.5, 0), true);
-  af((ArgList(0, 0, 0), 0, 0, 0.5), true);
-  af((ArgList(12, 8, 4), 0, 0, 0).allocateDerivs(), true);
+  EXPECT_ALMOST_EQUAL_OR_NAN(value, af(ArgList(12, 8, 4, 0, 0, 0)));
+  af(ArgList(0, 0, 0, 0, 0, 0));
+  af(ArgList(0.5, 0, 0, 0, 0, 0), ERROR);
+  af(ArgList(0, 0.5, 0, 0, 0, 0), ERROR);
+  af(ArgList(0, 0, 0.5, 0, 0, 0), ERROR);
+  af(ArgList(0, 0, 0, 0.5, 0, 0), ERROR);
+  af(ArgList(0, 0, 0, 0, 0.5, 0), ERROR);
+  af(ArgList(0, 0, 0, 0, 0, 0.5), ERROR);
+  af(ArgList(12, 8, 4, 0, 0, 0), ERROR | DERIVS);
 }
 }
