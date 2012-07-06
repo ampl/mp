@@ -32,47 +32,6 @@ typedef Result (*FuncN1Result)(int, double);
 typedef double (*Func2)(double, double);
 typedef double (*Func3)(double, double, double);
 
-class GSLTest : public ::testing::Test {
- protected:
-  ASL *asl;
-
-  void SetUp() {
-    asl = ASL_alloc(ASL_read_f);
-    i_option_ASL = "../solvers/gsl/libamplgsl.so";
-    func_add(asl);
-  }
-
-  void TearDown() {
-    ASL_free(&asl);
-  }
-
-  func_info *GetFunction(const char *name) const {
-    func_info *fi = func_lookup(asl, name, 0);
-    if (fi == nullptr)
-      throw std::runtime_error(std::string("Function not found: ") + name);
-    return fi;
-  }
-
-  // Returns true iff expected is at most kMaxUlps ULP's away from
-  // actual or both are NaN.  In particular, this function:
-  //
-  //   - returns false if either number is (but not both) NAN.
-  //   - treats really large numbers as almost equal to infinity.
-  //   - thinks +0.0 and -0.0 are 0 DLP's apart.
-  static bool AlmostEqualOrNaN(double expected, double actual) {
-    testing::internal::Double lhs(expected), rhs(actual);
-    return (lhs.is_nan() && rhs.is_nan()) || lhs.AlmostEquals(rhs);
-  }
-
-  void TestFunc(const char *name, Func1 f, Func1 dx, Func1 dx2);
-  void TestFunc(const char *name, FuncU f);
-  void TestFunc(const char *name, FuncN1 f, FuncN1Result dx, FuncN1Result dx2);
-  void TestFunc(const char *name, Func2 f, Func2 dx, Func2 dy,
-      Func2 dx2, Func2 dxdy, Func2 dy2);
-  void TestFunc(const char *name, Func3 f, Func3 dx, Func3 dy, Func3 dz,
-      Func3 dx2, Func3 dxdy, Func3 dxdz, Func3 dy2, Func3 dydz, Func3 dz2);
-};
-
 class ArgList {
  private:
   TMInfo tmi;
@@ -81,28 +40,27 @@ class ArgList {
   vector<real> hes_;
   arglist args;
 
-  void init(ASL *asl, size_t size) {
+  void init(size_t size) {
     args.TMI = &tmi;
-    args.AE = asl->i.ae;
     args.nr = args.n = size;
     ra.resize(size);
     args.ra = &ra[0];
   }
 
  public:
-  ArgList(ASL *asl, real x) : tmi(), args() {
-    init(asl, 1);
+  ArgList(real x) : tmi(), args() {
+    init(1);
     ra[0] = x;
   }
 
-  ArgList(ASL *asl, real x, real y) : tmi(), args() {
-    init(asl, 2);
+  ArgList(real x, real y) : tmi(), args() {
+    init(2);
     ra[0] = x;
     ra[1] = y;
   }
 
-  ArgList(ASL *asl, real x, real y, real z) : tmi(), args() {
-    init(asl, 3);
+  ArgList(real x, real y, real z) : tmi(), args() {
+    init(3);
     ra[0] = x;
     ra[1] = y;
     ra[2] = z;
@@ -133,9 +91,68 @@ class ArgList {
 
   real deriv(size_t index = 0) const { return derivs_[index]; }
   real hes(size_t index = 0) const { return hes_[index]; }
+};
 
-  real Call(func_info *fi);
-  void CallError(func_info *fi);
+class AMPLFunction {
+ private:
+  ASL *asl_;
+  func_info *fi_;
+
+ public:
+  AMPLFunction(ASL *asl, func_info *fi) : asl_(asl), fi_(fi) {}
+
+  real operator()(ArgList &args, bool expect_error = false) const {
+    args->AE = asl_->i.ae;
+    args->Errmsg = nullptr;
+    real value = fi_->funcp(args.get());
+    if (args->Errmsg) {
+      if (!expect_error)
+        throw std::runtime_error(args->Errmsg);
+    } else if (expect_error)
+      throw std::runtime_error("Expected error");
+    return value;
+  }
+};
+
+class GSLTest : public ::testing::Test {
+ protected:
+  ASL *asl;
+
+  void SetUp() {
+    asl = ASL_alloc(ASL_read_f);
+    i_option_ASL = "../solvers/gsl/libamplgsl.so";
+    func_add(asl);
+  }
+
+  void TearDown() {
+    ASL_free(&asl);
+  }
+
+  AMPLFunction GetFunction(const char *name) const {
+    func_info *fi = func_lookup(asl, name, 0);
+    if (!fi)
+      throw std::runtime_error(std::string("Function not found: ") + name);
+    return AMPLFunction(asl, fi);
+  }
+
+  // Returns true iff expected is at most kMaxUlps ULP's away from
+  // actual or both are NaN.  In particular, this function:
+  //
+  //   - returns false if either number is (but not both) NAN.
+  //   - treats really large numbers as almost equal to infinity.
+  //   - thinks +0.0 and -0.0 are 0 DLP's apart.
+  static bool AlmostEqualOrNaN(double expected, double actual) {
+    testing::internal::Double lhs(expected), rhs(actual);
+    return (lhs.is_nan() && rhs.is_nan()) || lhs.AlmostEquals(rhs);
+  }
+
+  void TestFunc(const char *name, Func1 f, Func1 dx, Func1 dx2);
+  void TestFunc(const char *name, FuncU f);
+  void TestFunc(const char *name, FuncN1 f, FuncN1Result dx, FuncN1Result dx2);
+  void TestFunc(const char *name, Func2 f, Func2 dx, Func2 dy,
+      Func2 dx2, Func2 dxdy, Func2 dy2);
+  void TestFunc(const char *name, Func3 f, Func3 dx, Func3 dy, Func3 dz,
+      Func3 dx2, Func3 dxdy, Func3 dxdz, Func3 dy2, Func3 dydz, Func3 dz2);
 };
 
 const double POINTS[] = {-5, -1.23, 0, 1.23, 5};
@@ -148,82 +165,60 @@ const size_t NUM_POINTS_FOR_N = sizeof(POINTS_FOR_N) / sizeof(*POINTS_FOR_N);
 #define EXPECT_ALMOST_EQUAL_OR_NAN(expected, actual) \
     EXPECT_PRED2(AlmostEqualOrNaN, expected, actual)
 
-real Call(func_info *fi, ArgList &args) {
-  args->Errmsg = nullptr;
-  real value = fi->funcp(args.get());
-  EXPECT_TRUE(args->Errmsg == nullptr) << args->Errmsg;
-  return value;
-}
-
-void CallError(func_info *fi, ArgList &args) {
-  args->Errmsg = nullptr;
-  fi->funcp(args.get());
-  EXPECT_TRUE(args->Errmsg != nullptr);
-  args->Errmsg = nullptr;
-}
-
-real ArgList::Call(func_info *fi) {
-  return ::Call(fi, *this);
-}
-
-void ArgList::CallError(func_info *fi) {
-  ::CallError(fi, *this);
-}
-
 void GSLTest::TestFunc(const char *name, Func1 f, Func1 dx, Func1 dx2) {
-  func_info *fi = GetFunction(name);
+  AMPLFunction af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     double x = POINTS[i];
-    ArgList args(asl, x);
-    EXPECT_ALMOST_EQUAL_OR_NAN(f(x), Call(fi, args)) << name << " at " << x;
+    ArgList args(x);
+    EXPECT_ALMOST_EQUAL_OR_NAN(f(x), af(args)) << name << " at " << x;
     args.allocateDerivs();
-    Call(fi, args);
+    af(args);
     EXPECT_ALMOST_EQUAL_OR_NAN(dx(x), args.deriv()) << name << " at " << x;
     args.allocateHes();
-    Call(fi, args);
+    af(args);
     EXPECT_ALMOST_EQUAL_OR_NAN(dx2(x), args.hes()) << name << " at " << x;
   }
 }
 
 void GSLTest::TestFunc(const char *name, FuncU f) {
-  func_info *fi = GetFunction(name);
+  AMPLFunction af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     double x = POINTS[i];
-    ArgList args(asl, x);
+    ArgList args(x);
     if (static_cast<unsigned>(x) != x) {
-      CallError(fi, args);
+      af(args, true);
       continue;
     }
-    EXPECT_ALMOST_EQUAL_OR_NAN(f(x), Call(fi, args))
+    EXPECT_ALMOST_EQUAL_OR_NAN(f(x), af(args))
       << name << " at " << x;
     args.allocateDerivs();
-    CallError(fi, args);
+    af(args, true);
   }
 }
 
 void GSLTest::TestFunc(const char *name, FuncN1 f,
     FuncN1Result dx, FuncN1Result dx2) {
-  func_info *fi = GetFunction(name);
+  AMPLFunction af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS_FOR_N; ++i) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
       int n = POINTS_FOR_N[i];
       bool skip = n < -100 || n > 100;
       double x = POINTS[j];
-      ArgList args(asl, static_cast<real>(n), x);
+      ArgList args(n, x);
       if (!skip)
-        EXPECT_ALMOST_EQUAL_OR_NAN(f(n, x), Call(fi, args)) << name << " at " << x;
+        EXPECT_ALMOST_EQUAL_OR_NAN(f(n, x), af(args)) << name << " at " << x;
 
       args.allocateDerivs();
-      CallError(fi, args);
+      af(args, true);
       char dig = 0;
       args->dig = &dig;
-      CallError(fi, args);
+      af(args, true);
       dig = 1;
       Result r = dx(n, x);
       if (r.error) {
-        CallError(fi, args);
+        af(args, true);
       } else if (!skip) {
-        Call(fi, args);
+        af(args);
         EXPECT_ALMOST_EQUAL_OR_NAN(r.value, args.deriv(1))
           << name << " at " << n << ", " << x;
       }
@@ -231,9 +226,9 @@ void GSLTest::TestFunc(const char *name, FuncN1 f,
       args.allocateHes();
       r = dx2(n, x);
       if (r.error) {
-        CallError(fi, args);
+        af(args, true);
       } else if (!skip) {
-        Call(fi, args);
+        af(args);
         EXPECT_ALMOST_EQUAL_OR_NAN(r.value, args.hes(2)) << name << " at " << x;
       }
     }
@@ -242,25 +237,25 @@ void GSLTest::TestFunc(const char *name, FuncN1 f,
 
 void GSLTest::TestFunc(const char *name, Func2 f, Func2 dx, Func2 dy,
     Func2 dx2, Func2 dxdy, Func2 dy2) {
-  func_info *fi = GetFunction(name);
+  AMPLFunction af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
       double x = POINTS[i], y = POINTS[j];
-      ArgList args(asl, x, y);
-      EXPECT_ALMOST_EQUAL_OR_NAN(f(x, y), Call(fi, args));
+      ArgList args(x, y);
+      EXPECT_ALMOST_EQUAL_OR_NAN(f(x, y), af(args));
       args.allocateDerivs();
       char dig = 1;
       if (dx) {
-        Call(fi, args);
+        af(args);
         EXPECT_ALMOST_EQUAL_OR_NAN(dx(x, y), args.deriv(0));
       } else {
-        CallError(fi, args);
+        af(args, true);
         args->dig = &dig;
-        Call(fi, args);
+        af(args);
       }
       EXPECT_ALMOST_EQUAL_OR_NAN(dy(x, y), args.deriv(1));
       args.allocateHes();
-      Call(fi, args);
+      af(args);
       if (dx2)
         EXPECT_ALMOST_EQUAL_OR_NAN(dx2(x, y),  args.hes(0));
       if (dxdy)
@@ -272,20 +267,20 @@ void GSLTest::TestFunc(const char *name, Func2 f, Func2 dx, Func2 dy,
 
 void GSLTest::TestFunc(const char *name, Func3 f, Func3 dx, Func3 dy, Func3 dz,
     Func3 dx2, Func3 dxdy, Func3 dxdz, Func3 dy2, Func3 dydz, Func3 dz2) {
-  func_info *fi = GetFunction(name);
+  AMPLFunction af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
       for (size_t k = 0; k != NUM_POINTS; ++k) {
         double x = POINTS[i], y = POINTS[j], z = POINTS[k];
-        ArgList args(asl, x, y, z);
-        EXPECT_ALMOST_EQUAL_OR_NAN(f(x, y, z), Call(fi, args)) << name;
+        ArgList args(x, y, z);
+        EXPECT_ALMOST_EQUAL_OR_NAN(f(x, y, z), af(args)) << name;
         args.allocateDerivs();
-        Call(fi, args);
+        af(args);
         EXPECT_ALMOST_EQUAL_OR_NAN(dx(x, y, z), args.deriv(0)) << name;
         EXPECT_ALMOST_EQUAL_OR_NAN(dy(x, y, z), args.deriv(1)) << name;
         EXPECT_ALMOST_EQUAL_OR_NAN(dz(x, y, z), args.deriv(2)) << name;
         args.allocateHes();
-        Call(fi, args);
+        af(args);
         EXPECT_ALMOST_EQUAL_OR_NAN(dx2(x, y, z),  args.hes(0)) << name;
         EXPECT_ALMOST_EQUAL_OR_NAN(dxdy(x, y, z), args.hes(1)) << name;
         EXPECT_ALMOST_EQUAL_OR_NAN(dxdz(x, y, z), args.hes(2)) << name;
@@ -886,6 +881,38 @@ double sf_hydrogenicR_1_dy2(double x, double y) {
         name##_dx2, name##_dxdy, name##_dxdz, \
         name##_dy2, name##_dydz, name##_dz2);
 
+struct CheckData {
+  AmplExports *ae;
+  arglist *args;
+  char *error;
+};
+
+real Check(arglist *args) {
+  CheckData *data = reinterpret_cast<CheckData*>(args->funcinfo);
+  data->ae = args->AE;
+  data->args = args;
+  data->error = args->Errmsg;
+  return 42;
+}
+
+TEST_F(GSLTest, TestAMPLFunction) {
+  ASL testASL = {};
+  AmplExports ae = {};
+  testASL.i.ae = &ae;
+  func_info fi = {};
+  fi.funcp = Check;
+  AMPLFunction f(&testASL, &fi);
+  ArgList args(0);
+  CheckData data = {};
+  args->funcinfo = &data;
+  char error = 0;
+  args->Errmsg = &error;
+  EXPECT_EQ(42, f(args));
+  EXPECT_EQ(&ae, data.ae);
+  EXPECT_EQ(args.get(), data.args);
+  EXPECT_TRUE(data.error == nullptr);
+}
+
 TEST_F(GSLTest, Elementary) {
   TEST_FUNC(log1p);
   TEST_FUNC(expm1);
@@ -1092,19 +1119,19 @@ TEST_F(GSLTest, BesselZero) {
   TEST_FUNC_U(sf_bessel_zero_J1);
 
   const char *name = "gsl_sf_bessel_zero_Jnu";
-  func_info *fi = GetFunction(name);
+  AMPLFunction af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
       double nu = POINTS[i], x = POINTS[j];
-      ArgList args(asl, nu, x);
+      ArgList args(nu, x);
       if (static_cast<unsigned>(x) != x) {
-        CallError(fi, args);
+        af(args, true);
         continue;
       }
-      EXPECT_ALMOST_EQUAL_OR_NAN(gsl_sf_bessel_zero_Jnu(nu, x), Call(fi, args))
+      EXPECT_ALMOST_EQUAL_OR_NAN(gsl_sf_bessel_zero_Jnu(nu, x), af(args))
         << name << " at " << x;
       args.allocateDerivs();
-      CallError(fi, args);
+      af(args, true);
     }
   }
 }
@@ -1123,10 +1150,10 @@ TEST_F(GSLTest, Hydrogenic) {
   ASSERT_NEAR(0.570233, sf_hydrogenicR_1_dy2(3, 1.7), 1e-5);
 
   const char *name = "gsl_sf_hydrogenicR";
-  func_info *fi = GetFunction(name);
-  (ArgList(asl, 0, 0, 0), 0).Call(fi);
-  (ArgList(asl, 0.5, 0, 0), 0).CallError(fi);
-  (ArgList(asl, 0, 0.5, 0), 0).CallError(fi);
+  AMPLFunction af = GetFunction(name);
+  af((ArgList(0, 0, 0), 0));
+  af((ArgList(0.5, 0, 0), 0), true);
+  af((ArgList(0, 0.5, 0), 0), true);
   for (size_t i = 0; i != NUM_POINTS_FOR_N; ++i) {
     for (size_t i = 0; i != NUM_POINTS_FOR_N; ++i) {
       for (size_t k = 0; k != NUM_POINTS; ++k) {
@@ -1134,13 +1161,13 @@ TEST_F(GSLTest, Hydrogenic) {
           int n = POINTS_FOR_N[i], ll = POINTS_FOR_N[l];
           if (n < -1000 || n > 1000) continue;
           double Z = POINTS[k], r = POINTS[l];
-          ArgList args(asl, n, ll, Z);
+          ArgList args(n, ll, Z);
           args, r;
           EXPECT_ALMOST_EQUAL_OR_NAN(
-              gsl_sf_hydrogenicR(n, ll, Z, r), Call(fi, args))
+              gsl_sf_hydrogenicR(n, ll, Z, r), af(args))
             << name << " at " << n;
           args.allocateDerivs();
-          CallError(fi, args);
+          af(args, true);
         }
       }
     }
@@ -1149,16 +1176,16 @@ TEST_F(GSLTest, Hydrogenic) {
 
 TEST_F(GSLTest, Coulomb) {
   const char *name = "gsl_sf_coulomb_CL";
-  func_info *fi = GetFunction(name);
+  AMPLFunction af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
       double x = POINTS[i], y = POINTS[j];
-      ArgList args(asl, x, y);
+      ArgList args(x, y);
       gsl_sf_result result = {};
       double value = gsl_sf_coulomb_CL_e(x, y, &result) ? GSL_NAN : result.val;
-      EXPECT_ALMOST_EQUAL_OR_NAN(value, Call(fi, args));
+      EXPECT_ALMOST_EQUAL_OR_NAN(value, af(args));
       args.allocateDerivs();
-      CallError(fi, args);
+      af(args, true);
     }
   }
 }
@@ -1167,16 +1194,15 @@ TEST_F(GSLTest, Coupling) {
   double value = gsl_sf_coupling_3j(12, 8, 4, 0, 0, 0);
   ASSERT_NEAR(0.186989, value, 1e-5);
   const char *name = "gsl_sf_coupling_3j";
-  func_info *fi = GetFunction(name);
-  EXPECT_ALMOST_EQUAL_OR_NAN(value,
-      (ArgList(asl, 12, 8, 4), 0, 0, 0).Call(fi));
-  (ArgList(asl, 0, 0, 0), 0, 0, 0).Call(fi);
-  (ArgList(asl, 0.5, 0, 0), 0, 0, 0).CallError(fi);
-  (ArgList(asl, 0, 0.5, 0), 0, 0, 0).CallError(fi);
-  (ArgList(asl, 0, 0, 0.5), 0, 0, 0).CallError(fi);
-  (ArgList(asl, 0, 0, 0), 0.5, 0, 0).CallError(fi);
-  (ArgList(asl, 0, 0, 0), 0, 0.5, 0).CallError(fi);
-  (ArgList(asl, 0, 0, 0), 0, 0, 0.5).CallError(fi);
-  (ArgList(asl, 12, 8, 4), 0, 0, 0).allocateDerivs().CallError(fi);
+  AMPLFunction af = GetFunction(name);
+  EXPECT_ALMOST_EQUAL_OR_NAN(value, af((ArgList(12, 8, 4), 0, 0, 0)));
+  af((ArgList(0, 0, 0), 0, 0, 0));
+  af((ArgList(0.5, 0, 0), 0, 0, 0), true);
+  af((ArgList(0, 0.5, 0), 0, 0, 0), true);
+  af((ArgList(0, 0, 0.5), 0, 0, 0), true);
+  af((ArgList(0, 0, 0), 0.5, 0, 0), true);
+  af((ArgList(0, 0, 0), 0, 0.5, 0), true);
+  af((ArgList(0, 0, 0), 0, 0, 0.5), true);
+  af((ArgList(12, 8, 4), 0, 0, 0).allocateDerivs(), true);
 }
 }
