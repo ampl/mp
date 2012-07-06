@@ -9,6 +9,7 @@
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_clausen.h>
 #include <gsl/gsl_sf_coulomb.h>
+#include <gsl/gsl_sf_coupling.h>
 #include "solvers/funcadd.h"
 
 enum { MAX_ERROR_MESSAGE_SIZE = 100 };
@@ -931,6 +932,34 @@ static real amplgsl_sf_hydrogenicR(arglist *al) {
   return gsl_sf_hydrogenicR(al->ra[0], al->ra[1], al->ra[2], al->ra[3]);
 }
 
+static real amplgsl_sf_coulomb_CL(arglist *al) {
+  if (al->derivs) {
+    error(al, "derivative is not provided");
+    return 0;
+  }
+  gsl_sf_result result = {};
+  return gsl_sf_coulomb_CL_e(al->ra[0], al->ra[1], &result) ?
+      GSL_NAN : result.val;
+}
+
+static real amplgsl_sf_coupling_3j(arglist *al) {
+  static const char *ARG_NAMES[] = {
+      "two_ja", "two_jb", "two_jc",
+      "two_ma", "two_mb", "two_mc"
+  };
+  unsigned i = 0, n_args = sizeof(ARG_NAMES) / sizeof(*ARG_NAMES);
+  for (; i < n_args; ++i) {
+    if (!check_int_arg(al, i, ARG_NAMES[i]))
+      return 0;
+  }
+  if (al->derivs) {
+    error(al, "argument is not constant");
+    return 0;
+  }
+  return gsl_sf_coupling_3j(
+      al->ra[0], al->ra[1], al->ra[2], al->ra[3], al->ra[4], al->ra[5]);
+}
+
 void funcadd_ASL(AmplExports *ae) {
   // Don't call abort on error.
   gsl_set_error_handler_off();
@@ -942,6 +971,9 @@ void funcadd_ASL(AmplExports *ae) {
   addfunc("gsl_hypot3", amplgsl_hypot3, FUNCADD_REAL_VALUED, 3, 0);
   // AMPL has built-in functions acosh, asinh and atanh so wrappers
   // are not provided for their GSL equivalents.
+
+  // Wrappers for functions operating on complex numbers are not provided
+  // since this requires support for structures/tuples as function arguments.
 
   // Airy Functions
   addfunc("gsl_sf_airy_Ai", amplgsl_sf_airy_Ai, FUNCADD_REAL_VALUED, 1, 0);
@@ -1049,6 +1081,7 @@ void funcadd_ASL(AmplExports *ae) {
   addfunc("gsl_sf_bessel_Knu_scaled", amplgsl_sf_bessel_Knu_scaled,
       FUNCADD_REAL_VALUED, 2, 0);
 
+  // Zeros of Regular Bessel Functions
   addfunc("gsl_sf_bessel_zero_J0", amplgsl_sf_bessel_zero_J0,
       FUNCADD_REAL_VALUED, 1, 0);
   addfunc("gsl_sf_bessel_zero_J1", amplgsl_sf_bessel_zero_J1,
@@ -1056,7 +1089,7 @@ void funcadd_ASL(AmplExports *ae) {
   addfunc("gsl_sf_bessel_zero_Jnu", amplgsl_sf_bessel_zero_Jnu,
       FUNCADD_REAL_VALUED, 2, 0);
 
-  // Clausen Functions
+  // Clausen Function
   addfunc("gsl_sf_clausen", amplgsl_sf_clausen, FUNCADD_REAL_VALUED, 1, 0);
 
   // Normalized Hydrogenic Bound States
@@ -1064,4 +1097,37 @@ void funcadd_ASL(AmplExports *ae) {
       FUNCADD_REAL_VALUED, 2, 0);
   addfunc("gsl_sf_hydrogenicR", amplgsl_sf_hydrogenicR,
       FUNCADD_REAL_VALUED, 4, 0);
+
+  // Coulomb Wave Function Normalization Constant
+  addfunc("gsl_sf_coulomb_CL", amplgsl_sf_coulomb_CL,
+      FUNCADD_REAL_VALUED, 2, 0);
+
+  // Coupling Coefficients
+  addfunc("gsl_sf_coupling_3j", amplgsl_sf_coupling_3j,
+      FUNCADD_REAL_VALUED, 6, 0);
+  // TODO
+
+  // Dawson Function
+  // TODO
+
+  // Debye Functions
+  // TODO
+
+  // Dilogarithm
+  // TODO
+
+  // Elliptic Integrals
+  // TODO
+
+  // Elliptic Functions (Jacobi)
+  // TODO
+
+  // Error Functions
+  // TODO
+
+  // Complementary Error Function
+  // TODO
+
+  // Log Complementary Error Function
+  // TODO
 }

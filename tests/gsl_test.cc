@@ -8,6 +8,8 @@
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_clausen.h>
 #include <gsl/gsl_sf_coulomb.h>
+#include <gsl/gsl_sf_coupling.h>
+
 #include "gtest/gtest.h"
 #include "solvers/asl.h"
 #include "tests/config.h"
@@ -106,17 +108,17 @@ class ArgList {
     ra[2] = z;
   }
 
-  ArgList(ASL *asl, real x, real y, real z, real arg3) : tmi(), args() {
-    init(asl, 4);
-    ra[0] = x;
-    ra[1] = y;
-    ra[2] = z;
-    ra[3] = arg3;
+  ArgList &operator,(real arg) {
+    ra.push_back(arg);
+    args.nr = args.n = ra.size();
+    args.ra = &ra[0];
+    return *this;
   }
 
-  void allocateDerivs() {
+  ArgList &allocateDerivs() {
     derivs_.resize(ra.size());
     args.derivs = &derivs_[0];
+    return *this;
   }
 
   void allocateHes() {
@@ -132,7 +134,7 @@ class ArgList {
   real deriv(size_t index = 0) const { return derivs_[index]; }
   real hes(size_t index = 0) const { return hes_[index]; }
 
-  void Call(func_info *fi);
+  real Call(func_info *fi);
   void CallError(func_info *fi);
 };
 
@@ -160,8 +162,8 @@ void CallError(func_info *fi, ArgList &args) {
   args->Errmsg = nullptr;
 }
 
-void ArgList::Call(func_info *fi) {
-  ::Call(fi, *this);
+real ArgList::Call(func_info *fi) {
+  return ::Call(fi, *this);
 }
 
 void ArgList::CallError(func_info *fi) {
@@ -1122,9 +1124,9 @@ TEST_F(GSLTest, Hydrogenic) {
 
   const char *name = "gsl_sf_hydrogenicR";
   func_info *fi = GetFunction(name);
-  ArgList(asl, 0, 0, 0, 0).Call(fi);
-  ArgList(asl, 0.5, 0, 0, 0).CallError(fi);
-  ArgList(asl, 0, 0.5, 0, 0).CallError(fi);
+  (ArgList(asl, 0, 0, 0), 0).Call(fi);
+  (ArgList(asl, 0.5, 0, 0), 0).CallError(fi);
+  (ArgList(asl, 0, 0.5, 0), 0).CallError(fi);
   for (size_t i = 0; i != NUM_POINTS_FOR_N; ++i) {
     for (size_t i = 0; i != NUM_POINTS_FOR_N; ++i) {
       for (size_t k = 0; k != NUM_POINTS; ++k) {
@@ -1132,7 +1134,8 @@ TEST_F(GSLTest, Hydrogenic) {
           int n = POINTS_FOR_N[i], ll = POINTS_FOR_N[l];
           if (n < -1000 || n > 1000) continue;
           double Z = POINTS[k], r = POINTS[l];
-          ArgList args(asl, n, ll, Z, r);
+          ArgList args(asl, n, ll, Z);
+          args, r;
           EXPECT_ALMOST_EQUAL_OR_NAN(
               gsl_sf_hydrogenicR(n, ll, Z, r), Call(fi, args))
             << name << " at " << n;
@@ -1142,5 +1145,38 @@ TEST_F(GSLTest, Hydrogenic) {
       }
     }
   }
+}
+
+TEST_F(GSLTest, Coulomb) {
+  const char *name = "gsl_sf_coulomb_CL";
+  func_info *fi = GetFunction(name);
+  for (size_t i = 0; i != NUM_POINTS; ++i) {
+    for (size_t j = 0; j != NUM_POINTS; ++j) {
+      double x = POINTS[i], y = POINTS[j];
+      ArgList args(asl, x, y);
+      gsl_sf_result result = {};
+      double value = gsl_sf_coulomb_CL_e(x, y, &result) ? GSL_NAN : result.val;
+      EXPECT_ALMOST_EQUAL_OR_NAN(value, Call(fi, args));
+      args.allocateDerivs();
+      CallError(fi, args);
+    }
+  }
+}
+
+TEST_F(GSLTest, Coupling) {
+  double value = gsl_sf_coupling_3j(12, 8, 4, 0, 0, 0);
+  ASSERT_NEAR(0.186989, value, 1e-5);
+  const char *name = "gsl_sf_coupling_3j";
+  func_info *fi = GetFunction(name);
+  EXPECT_ALMOST_EQUAL_OR_NAN(value,
+      (ArgList(asl, 12, 8, 4), 0, 0, 0).Call(fi));
+  (ArgList(asl, 0, 0, 0), 0, 0, 0).Call(fi);
+  (ArgList(asl, 0.5, 0, 0), 0, 0, 0).CallError(fi);
+  (ArgList(asl, 0, 0.5, 0), 0, 0, 0).CallError(fi);
+  (ArgList(asl, 0, 0, 0.5), 0, 0, 0).CallError(fi);
+  (ArgList(asl, 0, 0, 0), 0.5, 0, 0).CallError(fi);
+  (ArgList(asl, 0, 0, 0), 0, 0.5, 0).CallError(fi);
+  (ArgList(asl, 0, 0, 0), 0, 0, 0.5).CallError(fi);
+  (ArgList(asl, 12, 8, 4), 0, 0, 0).allocateDerivs().CallError(fi);
 }
 }
