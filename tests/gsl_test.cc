@@ -9,6 +9,8 @@
 #include <gsl/gsl_sf_clausen.h>
 #include <gsl/gsl_sf_coulomb.h>
 #include <gsl/gsl_sf_coupling.h>
+#include <gsl/gsl_sf_dawson.h>
+#include <gsl/gsl_sf_debye.h>
 
 #include "gtest/gtest.h"
 #include "solvers/asl.h"
@@ -39,6 +41,10 @@ class ArgList {
   }
   ArgList(real a0, real a1, real a2, real a3, real a4, real a5) {
     *this << a0 << a1 << a2 << a3 << a4 << a5;
+  }
+  ArgList(real a0, real a1, real a2, real a3,
+      real a4, real a5, real a6, real a7, real a8) {
+    *this << a0 << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8;
   }
 
   vector<real> copy() const { return ra; }
@@ -882,6 +888,39 @@ double sf_hydrogenicR_1_dy2(double x, double y) {
   return 2 * pow(Z, 3.5) * exp(-Z * r);
 }
 
+double sf_dawson_dx(double x) {
+  return 1 - 2 * x * gsl_sf_dawson(x);
+}
+double sf_dawson_dx2(double x) {
+  return - 2 * (gsl_sf_dawson(x) + x * sf_dawson_dx(x));
+}
+
+double debye_dx(int n, double x, double (*func)(double)) {
+  return x != 0 ? n * (1 / (exp(x) - 1) - func(x) / x) : 0;
+}
+double debye_dx2(int n, double x, double (*func)(double)) {
+  return x != 0 ? n * (-exp(x) / ((exp(x) - 1) * (exp(x) - 1)) +
+      func(x) / (x * x) - debye_dx(n, x, func) / x) : 0;
+}
+
+double sf_debye_1_dx(double x) { return debye_dx(1, x, gsl_sf_debye_1); }
+double sf_debye_1_dx2(double x) { return debye_dx2(1, x, gsl_sf_debye_1); }
+
+double sf_debye_2_dx(double x) { return debye_dx(2, x, gsl_sf_debye_2); }
+double sf_debye_2_dx2(double x) { return debye_dx2(2, x, gsl_sf_debye_2); }
+
+double sf_debye_3_dx(double x) { return debye_dx(3, x, gsl_sf_debye_3); }
+double sf_debye_3_dx2(double x) { return debye_dx2(3, x, gsl_sf_debye_3); }
+
+double sf_debye_4_dx(double x) { return debye_dx(4, x, gsl_sf_debye_4); }
+double sf_debye_4_dx2(double x) { return debye_dx2(4, x, gsl_sf_debye_4); }
+
+double sf_debye_5_dx(double x) { return debye_dx(5, x, gsl_sf_debye_5); }
+double sf_debye_5_dx2(double x) { return debye_dx2(5, x, gsl_sf_debye_5); }
+
+double sf_debye_6_dx(double x) { return debye_dx(6, x, gsl_sf_debye_6); }
+double sf_debye_6_dx2(double x) { return debye_dx2(6, x, gsl_sf_debye_6); }
+
 #define TEST_FUNC(name) \
   TestFunc("gsl_" #name, gsl_##name, name##_dx, name##_dx2);
 
@@ -901,13 +940,16 @@ double sf_hydrogenicR_1_dy2(double x, double y) {
         name##_dy2, name##_dydz, name##_dz2);
 
 TEST_F(GSLTest, TestArgList) {
-  static const real ARGS[] = {5, 7, 11, 13, 17, 19};
+  static const real ARGS[] = {5, 7, 11, 13, 17, 19, 23, 29, 31};
   EXPECT_EQ(vector<real>(ARGS, ARGS + 1), ArgList(5).copy());
   EXPECT_EQ(vector<real>(ARGS, ARGS + 2), ArgList(5, 7).copy());
   EXPECT_EQ(vector<real>(ARGS, ARGS + 3), ArgList(5, 7, 11).copy());
   EXPECT_EQ(vector<real>(ARGS, ARGS + 4), ArgList(5, 7, 11, 13).copy());
   EXPECT_EQ(vector<real>(ARGS, ARGS + 5), ArgList(5, 7, 11, 13, 17).copy());
-  EXPECT_EQ(vector<real>(ARGS, ARGS + 6), ArgList(5, 7, 11, 13, 17, 19).copy());
+  EXPECT_EQ(vector<real>(ARGS, ARGS + 6),
+      ArgList(5, 7, 11, 13, 17, 19).copy());
+  EXPECT_EQ(vector<real>(ARGS, ARGS + 9),
+      ArgList(5, 7, 11, 13, 17, 19, 23, 29, 31).copy());
 }
 
 struct CheckData {
@@ -1249,12 +1291,11 @@ TEST_F(GSLTest, Coulomb) {
   }
 }
 
-TEST_F(GSLTest, Coupling) {
-  double value = gsl_sf_coupling_3j(12, 8, 4, 0, 0, 0);
-  ASSERT_NEAR(0.186989, value, 1e-5);
-  const char *name = "gsl_sf_coupling_3j";
-  AMPLFunction af = GetFunction(name);
-  EXPECT_ALMOST_EQUAL_OR_NAN(value, af(ArgList(12, 8, 4, 0, 0, 0)));
+TEST_F(GSLTest, Coupling3j) {
+  double value = gsl_sf_coupling_3j(8, 20, 12, -2, 12, -10);
+  ASSERT_NEAR(0.0812695955, value, 1e-5);
+  AMPLFunction af = GetFunction("gsl_sf_coupling_3j");
+  EXPECT_ALMOST_EQUAL_OR_NAN(value, af(ArgList(8, 20, 12, -2, 12, -10)));
   af(ArgList(0, 0, 0, 0, 0, 0));
   af(ArgList(0.5, 0, 0, 0, 0, 0), ERROR);
   af(ArgList(0, 0.5, 0, 0, 0, 0), ERROR);
@@ -1262,6 +1303,53 @@ TEST_F(GSLTest, Coupling) {
   af(ArgList(0, 0, 0, 0.5, 0, 0), ERROR);
   af(ArgList(0, 0, 0, 0, 0.5, 0), ERROR);
   af(ArgList(0, 0, 0, 0, 0, 0.5), ERROR);
-  af(ArgList(12, 8, 4, 0, 0, 0), ERROR | DERIVS);
+  af(ArgList(8, 20, 12, -2, 12, -10), ERROR | DERIVS);
+}
+
+TEST_F(GSLTest, Coupling6j) {
+  double value = gsl_sf_coupling_6j(2, 4, 6, 8, 10, 12);
+  ASSERT_NEAR(0.0176295295, value, 1e-5);
+  AMPLFunction af = GetFunction("gsl_sf_coupling_6j");
+  EXPECT_ALMOST_EQUAL_OR_NAN(value, af(ArgList(2, 4, 6, 8, 10, 12)));
+  af(ArgList(0, 0, 0, 0, 0, 0));
+  af(ArgList(0.5, 0, 0, 0, 0, 0), ERROR);
+  af(ArgList(0, 0.5, 0, 0, 0, 0), ERROR);
+  af(ArgList(0, 0, 0.5, 0, 0, 0), ERROR);
+  af(ArgList(0, 0, 0, 0.5, 0, 0), ERROR);
+  af(ArgList(0, 0, 0, 0, 0.5, 0), ERROR);
+  af(ArgList(0, 0, 0, 0, 0, 0.5), ERROR);
+  af(ArgList(2, 4, 6, 8, 10, 12), ERROR | DERIVS);
+}
+
+TEST_F(GSLTest, Coupling9j) {
+  double value = gsl_sf_coupling_9j(6, 16, 18, 8, 20, 14, 12, 10, 4);
+  ASSERT_NEAR(-0.000775648399, value, 1e-9);
+  AMPLFunction af = GetFunction("gsl_sf_coupling_9j");
+  return;
+  EXPECT_ALMOST_EQUAL_OR_NAN(value, af(ArgList(6, 16, 18, 8, 20, 14, 12, 10, 4)));
+  af(ArgList(0, 0, 0, 0, 0, 0, 0, 0, 0));
+  af(ArgList(0.5, 0, 0, 0, 0, 0, 0, 0, 0), ERROR);
+  af(ArgList(0, 0.5, 0, 0, 0, 0, 0, 0, 0), ERROR);
+  af(ArgList(0, 0, 0.5, 0, 0, 0, 0, 0, 0), ERROR);
+  af(ArgList(0, 0, 0, 0.5, 0, 0, 0, 0, 0), ERROR);
+  af(ArgList(0, 0, 0, 0, 0.5, 0, 0, 0, 0), ERROR);
+  af(ArgList(0, 0, 0, 0, 0, 0.5, 0, 0, 0), ERROR);
+  af(ArgList(0, 0, 0, 0, 0, 0, 0.5, 0, 0), ERROR);
+  af(ArgList(0, 0, 0, 0, 0, 0, 0, 0.5, 0), ERROR);
+  af(ArgList(0, 0, 0, 0, 0, 0, 0, 0, 0.5), ERROR);
+  af(ArgList(6, 16, 18, 8, 20, 14, 12, 10, 4), ERROR | DERIVS);
+}
+
+TEST_F(GSLTest, Dawson) {
+  TEST_FUNC(sf_dawson);
+}
+
+TEST_F(GSLTest, Debye) {
+  TEST_FUNC(sf_debye_1);
+  TEST_FUNC(sf_debye_2);
+  TEST_FUNC(sf_debye_3);
+  TEST_FUNC(sf_debye_4);
+  TEST_FUNC(sf_debye_5);
+  TEST_FUNC(sf_debye_6);
 }
 }
