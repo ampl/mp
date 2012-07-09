@@ -10,6 +10,8 @@
 #include <gsl/gsl_sf_clausen.h>
 #include <gsl/gsl_sf_coulomb.h>
 #include <gsl/gsl_sf_coupling.h>
+#include <gsl/gsl_sf_dawson.h>
+#include <gsl/gsl_sf_debye.h>
 #include "solvers/funcadd.h"
 
 enum { MAX_ERROR_MESSAGE_SIZE = 100 };
@@ -959,22 +961,101 @@ static real amplgsl_sf_coulomb_CL(arglist *al) {
       GSL_NAN : result.val;
 }
 
+static int check_coupling_args(arglist *al, const char *const* arg_names) {
+  unsigned i = 0, n_args = al->n;
+  for (; i < n_args; ++i) {
+    if (!check_int_arg(al, i, arg_names[i]))
+      return 0;
+  }
+  if (al->derivs) {
+    error(al, "arguments are not constant");
+    return 0;
+  }
+  return 1;
+}
+
 static real amplgsl_sf_coupling_3j(arglist *al) {
   static const char *ARG_NAMES[] = {
       "two_ja", "two_jb", "two_jc",
       "two_ma", "two_mb", "two_mc"
   };
-  unsigned i = 0, n_args = sizeof(ARG_NAMES) / sizeof(*ARG_NAMES);
-  for (; i < n_args; ++i) {
-    if (!check_int_arg(al, i, ARG_NAMES[i]))
-      return 0;
-  }
-  if (al->derivs) {
-    error(al, "argument is not constant");
+  if (!check_coupling_args(al, ARG_NAMES))
     return 0;
-  }
   return gsl_sf_coupling_3j(
       al->ra[0], al->ra[1], al->ra[2], al->ra[3], al->ra[4], al->ra[5]);
+}
+
+static real amplgsl_sf_coupling_6j(arglist *al) {
+  static const char *ARG_NAMES[] = {
+      "two_ja", "two_jb", "two_jc",
+      "two_jd", "two_je", "two_jf"
+  };
+  if (!check_coupling_args(al, ARG_NAMES))
+    return 0;
+  return gsl_sf_coupling_6j(
+      al->ra[0], al->ra[1], al->ra[2], al->ra[3], al->ra[4], al->ra[5]);
+}
+
+static real amplgsl_sf_coupling_9j(arglist *al) {
+  static const char *ARG_NAMES[] = {
+      "two_ja", "two_jb", "two_jc",
+      "two_jd", "two_je", "two_jf",
+      "two_jg", "two_jh", "two_ji"
+  };
+  if (!check_coupling_args(al, ARG_NAMES))
+    return 0;
+  return gsl_sf_coupling_9j(
+      al->ra[0], al->ra[1], al->ra[2], al->ra[3], al->ra[4], al->ra[5],
+      al->ra[6], al->ra[7], al->ra[8]);
+}
+
+static real amplgsl_sf_dawson(arglist *al) {
+  real x = al->ra[0];
+  real f = gsl_sf_dawson(x);
+  if (al->derivs) {
+    real deriv = *al->derivs = 1 - 2 * x * f;
+    if (al->hes)
+      *al->hes = - 2 * (f + x * deriv);
+  }
+  return f;
+}
+
+static real debye(arglist *al, int n, double (*func)(double)) {
+  real x = al->ra[0];
+  real f = func(x);
+  if (al->derivs) {
+    real exp_x = exp(x);
+    real deriv = *al->derivs = x != 0 ? n * (1 / (exp_x - 1) - f / x) : 0;
+    if (al->hes) {
+      *al->hes = x != 0 ? n * (-exp_x / ((exp_x - 1) * (exp_x - 1)) +
+          f / (x * x) - deriv / x) : 0;
+    }
+  }
+  return f;
+}
+
+static real amplgsl_sf_debye_1(arglist *al) {
+  return debye(al, 1, gsl_sf_debye_1);
+}
+
+static real amplgsl_sf_debye_2(arglist *al) {
+  return debye(al, 2, gsl_sf_debye_2);
+}
+
+static real amplgsl_sf_debye_3(arglist *al) {
+  return debye(al, 3, gsl_sf_debye_3);
+}
+
+static real amplgsl_sf_debye_4(arglist *al) {
+  return debye(al, 4, gsl_sf_debye_4);
+}
+
+static real amplgsl_sf_debye_5(arglist *al) {
+  return debye(al, 5, gsl_sf_debye_5);
+}
+
+static real amplgsl_sf_debye_6(arglist *al) {
+  return debye(al, 6, gsl_sf_debye_6);
 }
 
 void funcadd_ASL(AmplExports *ae) {
@@ -1123,29 +1204,37 @@ void funcadd_ASL(AmplExports *ae) {
   /* Coupling Coefficients */
   addfunc("gsl_sf_coupling_3j", amplgsl_sf_coupling_3j,
       FUNCADD_REAL_VALUED, 6, 0);
+  addfunc("gsl_sf_coupling_6j", amplgsl_sf_coupling_6j,
+      FUNCADD_REAL_VALUED, 6, 0);
+  addfunc("gsl_sf_coupling_9j", amplgsl_sf_coupling_9j,
+      FUNCADD_REAL_VALUED, 9, 0);
+
+  /* Dawson Function */
+  addfunc("gsl_sf_dawson", amplgsl_sf_dawson, FUNCADD_REAL_VALUED, 1, 0);
+
+  /* Debye Functions */
+  addfunc("gsl_sf_debye_1", amplgsl_sf_debye_1, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_debye_2", amplgsl_sf_debye_2, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_debye_3", amplgsl_sf_debye_3, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_debye_4", amplgsl_sf_debye_4, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_debye_5", amplgsl_sf_debye_5, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_debye_6", amplgsl_sf_debye_6, FUNCADD_REAL_VALUED, 1, 0);
+
+  /* Dilogarithm */
   // TODO
 
-  // Dawson Function
+  /* Elliptic Integrals */
   // TODO
 
-  // Debye Functions
+  /* Elliptic Functions (Jacobi) */
   // TODO
 
-  // Dilogarithm
+  /* Error Functions */
   // TODO
 
-  // Elliptic Integrals
+  /* Complementary Error Function */
   // TODO
 
-  // Elliptic Functions (Jacobi)
-  // TODO
-
-  // Error Functions
-  // TODO
-
-  // Complementary Error Function
-  // TODO
-
-  // Log Complementary Error Function
+  /* Log Complementary Error Function */
   // TODO
 }
