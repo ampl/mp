@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <gsl/gsl_math.h>
+#include <gsl/gsl_complex_math.h>
 #include <gsl/gsl_sf_airy.h>
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_clausen.h>
@@ -11,6 +12,7 @@
 #include <gsl/gsl_sf_coupling.h>
 #include <gsl/gsl_sf_dawson.h>
 #include <gsl/gsl_sf_debye.h>
+#include <gsl/gsl_sf_dilog.h>
 
 #include "gtest/gtest.h"
 #include "solvers/asl.h"
@@ -896,11 +898,11 @@ double sf_dawson_dx2(double x) {
 }
 
 double debye_dx(int n, double x, double (*func)(double)) {
-  return x != 0 ? n * (1 / (exp(x) - 1) - func(x) / x) : 0;
+  return n * (1 / (exp(x) - 1) - func(x) / x);
 }
 double debye_dx2(int n, double x, double (*func)(double)) {
-  return x != 0 ? n * (-exp(x) / ((exp(x) - 1) * (exp(x) - 1)) +
-      func(x) / (x * x) - debye_dx(n, x, func) / x) : 0;
+  return n * (-exp(x) / ((exp(x) - 1) * (exp(x) - 1)) +
+      func(x) / (x * x) - debye_dx(n, x, func) / x);
 }
 
 double sf_debye_1_dx(double x) { return debye_dx(1, x, gsl_sf_debye_1); }
@@ -920,6 +922,15 @@ double sf_debye_5_dx2(double x) { return debye_dx2(5, x, gsl_sf_debye_5); }
 
 double sf_debye_6_dx(double x) { return debye_dx(6, x, gsl_sf_debye_6); }
 double sf_debye_6_dx2(double x) { return debye_dx2(6, x, gsl_sf_debye_6); }
+
+double sf_dilog_dx(double x) {
+  return x != 0 ?
+      -GSL_REAL(gsl_complex_log(gsl_complex_rect(1 - x, 0))) / x : 1;
+}
+double sf_dilog_dx2(double x) {
+  return x != 0 ? (1 / (1 - x) +
+      GSL_REAL(gsl_complex_log(gsl_complex_rect(1 - x, 0))) / x) / x : 0.5;
+}
 
 #define TEST_FUNC(name) \
   TestFunc("gsl_" #name, gsl_##name, name##_dx, name##_dx2);
@@ -1351,5 +1362,13 @@ TEST_F(GSLTest, Debye) {
   TEST_FUNC(sf_debye_4);
   TEST_FUNC(sf_debye_5);
   TEST_FUNC(sf_debye_6);
+}
+
+TEST_F(GSLTest, Dilog) {
+  TEST_FUNC(sf_dilog);
+  ASSERT_EQ(1, sf_dilog_dx(0));
+  ASSERT_NEAR(-0.277259, sf_dilog_dx(5), 1e-5);
+  ASSERT_EQ(0.5, sf_dilog_dx2(0));
+  ASSERT_NEAR(0.00545177, sf_dilog_dx2(5), 1e-5);
 }
 }
