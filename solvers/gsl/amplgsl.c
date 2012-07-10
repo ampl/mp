@@ -5,6 +5,7 @@
 
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_math.h>
+#include <gsl/gsl_complex_math.h>
 #include <gsl/gsl_sf_airy.h>
 #include <gsl/gsl_sf_bessel.h>
 #include <gsl/gsl_sf_clausen.h>
@@ -12,6 +13,8 @@
 #include <gsl/gsl_sf_coupling.h>
 #include <gsl/gsl_sf_dawson.h>
 #include <gsl/gsl_sf_debye.h>
+#include <gsl/gsl_sf_dilog.h>
+
 #include "solvers/funcadd.h"
 
 enum { MAX_ERROR_MESSAGE_SIZE = 100 };
@@ -1025,10 +1028,10 @@ static real debye(arglist *al, int n, double (*func)(double)) {
   real f = func(x);
   if (al->derivs) {
     real exp_x = exp(x);
-    real deriv = *al->derivs = x != 0 ? n * (1 / (exp_x - 1) - f / x) : 0;
+    real deriv = *al->derivs = n * (1 / (exp_x - 1) - f / x);
     if (al->hes) {
-      *al->hes = x != 0 ? n * (-exp_x / ((exp_x - 1) * (exp_x - 1)) +
-          f / (x * x) - deriv / x) : 0;
+      *al->hes = n * (-exp_x / ((exp_x - 1) * (exp_x - 1)) +
+          f / (x * x) - deriv / x);
     }
   }
   return f;
@@ -1056,6 +1059,17 @@ static real amplgsl_sf_debye_5(arglist *al) {
 
 static real amplgsl_sf_debye_6(arglist *al) {
   return debye(al, 6, gsl_sf_debye_6);
+}
+
+static real amplgsl_sf_dilog(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    real deriv = *al->derivs = x != 0 ?
+        -GSL_REAL(gsl_complex_log(gsl_complex_rect(1 - x, 0))) / x : 1;
+    if (al->hes)
+      *al->hes = x != 0 ? (1 / (1 - x) - deriv) / x : 0.5;
+  }
+  return gsl_sf_dilog(x);
 }
 
 void funcadd_ASL(AmplExports *ae) {
@@ -1221,7 +1235,7 @@ void funcadd_ASL(AmplExports *ae) {
   addfunc("gsl_sf_debye_6", amplgsl_sf_debye_6, FUNCADD_REAL_VALUED, 1, 0);
 
   /* Dilogarithm */
-  // TODO
+  addfunc("gsl_sf_dilog", amplgsl_sf_dilog, FUNCADD_REAL_VALUED, 1, 0);
 
   /* Elliptic Integrals */
   // TODO
