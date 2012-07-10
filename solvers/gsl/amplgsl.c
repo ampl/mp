@@ -14,6 +14,7 @@
 #include <gsl/gsl_sf_dawson.h>
 #include <gsl/gsl_sf_debye.h>
 #include <gsl/gsl_sf_dilog.h>
+#include <gsl/gsl_sf_ellint.h>
 
 #include "solvers/funcadd.h"
 
@@ -505,10 +506,9 @@ static real amplgsl_sf_bessel_Kn_scaled(arglist *al) {
 static real amplgsl_sf_bessel_j0(arglist *al) {
   real x = al->ra[0];
   if (al->derivs) {
-    real x_squared = x * x;
-    *al->derivs = (x * cos(x) - sin(x)) / x_squared;
+    *al->derivs = (x * cos(x) - sin(x)) / gsl_pow_2(x);
     if (al->hes)
-      *al->hes = ((2 - x_squared) * sin(x) - 2 * x * cos(x)) / (x_squared * x);
+      *al->hes = ((2 - gsl_pow_2(x)) * sin(x) - 2 * x * cos(x)) / gsl_pow_3(x);
   }
   return gsl_sf_bessel_j0(x);
 }
@@ -517,12 +517,10 @@ static real amplgsl_sf_bessel_j1(arglist *al) {
   real x = al->ra[0];
   real j1 = gsl_sf_bessel_j1(x);
   if (al->derivs) {
-    real sinx = sin(x);
-    *al->derivs = (sinx - 2 * j1) / x;
+    *al->derivs = (sin(x) - 2 * j1) / x;
     if (al->hes) {
-      real x_squared = x * x;
-      *al->hes = (x * (x_squared - 6) * cos(x) - 3 * (x_squared - 2) * sinx) /
-        (x_squared * x_squared);
+      *al->hes = (x * (gsl_pow_2(x) - 6) * cos(x) -
+          3 * (gsl_pow_2(x) - 2) * sin(x)) / gsl_pow_4(x);
     }
   }
   return j1;
@@ -534,9 +532,8 @@ static real amplgsl_sf_bessel_j2(arglist *al) {
   if (al->derivs) {
     *al->derivs = gsl_sf_bessel_j1(x) - 3 * j2 / x;
     if (al->hes) {
-      real x_pow2 = x * x, x_pow4 = x_pow2 * x_pow2;
-      *al->hes = (x * (5 * x_pow2 - 36) * cos(x) +
-          (x_pow4 - 17 * x_pow2 + 36) * sin(x)) / (x_pow4 * x);
+      *al->hes = (x * (5 * gsl_pow_2(x) - 36) * cos(x) +
+          (gsl_pow_4(x) - 17 * gsl_pow_2(x) + 36) * sin(x)) / gsl_pow_5(x);
     }
   }
   return j2;
@@ -553,12 +550,11 @@ static real amplgsl_sf_bessel_jl(arglist *al) {
     real jn_plus1 = gsl_sf_bessel_jl(n + 1, x);
     al->derivs[1] = n * jn / x - jn_plus1;
     if (al->hes) {
-      real x_squared = x * x;
       al->hes[2] = (
-          x_squared * gsl_sf_bessel_jl(n - 2, x) -
+          gsl_pow_2(x) * gsl_sf_bessel_jl(n - 2, x) -
           2 * x * gsl_sf_bessel_jl(n - 1, x) -
-          (2 * x_squared - 3) * jn + 2 * x * jn_plus1 +
-          x_squared * gsl_sf_bessel_jl(n + 2, x)) / (4 * x_squared);
+          (2 * gsl_pow_2(x) - 3) * jn + 2 * x * jn_plus1 +
+          gsl_pow_2(x) * gsl_sf_bessel_jl(n + 2, x)) / (4 * gsl_pow_2(x));
     }
   }
   return jn;
@@ -567,10 +563,11 @@ static real amplgsl_sf_bessel_jl(arglist *al) {
 static real amplgsl_sf_bessel_y0(arglist *al) {
   real x = al->ra[0];
   if (al->derivs) {
-    real x_squared = x * x;
-    *al->derivs = (x * sin(x) + cos(x)) / x_squared;
-    if (al->hes)
-      *al->hes = ((x_squared - 2) * cos(x) - 2 * x * sin(x)) / (x_squared * x);
+    *al->derivs = (x * sin(x) + cos(x)) / gsl_pow_2(x);
+    if (al->hes) {
+      *al->hes = ((gsl_pow_2(x) - 2) * cos(x) - 2 * x * sin(x)) /
+          gsl_pow_3(x);
+    }
   }
   return gsl_sf_bessel_y0(x);
 }
@@ -581,9 +578,8 @@ static real amplgsl_sf_bessel_y1(arglist *al) {
   if (al->derivs) {
     *al->derivs = -(2 * y1 + cos(x)) / x;
     if (al->hes) {
-      real x_squared = x * x;
-      *al->hes = (x * (x_squared - 6) * sin(x) +
-          3 * (x_squared - 2) * cos(x)) / (x_squared * x_squared);
+      *al->hes = (x * (gsl_pow_2(x) - 6) * sin(x) +
+          3 * (gsl_pow_2(x) - 2) * cos(x)) / gsl_pow_4(x);
     }
   }
   return y1;
@@ -596,9 +592,8 @@ static real amplgsl_sf_bessel_y2(arglist *al) {
     real y1 = gsl_sf_bessel_y1(x);
     *al->derivs = y1 - (3 * y2) / x;
     if (al->hes) {
-      real x_squared = x * x;
-      *al->hes = ((36 - 5 * x_squared) * y1 -
-          (x_squared - 12) * cos(x)) / (x_squared * x);
+      *al->hes = ((36 - 5 * gsl_pow_2(x)) * y1 -
+          (gsl_pow_2(x) - 12) * cos(x)) / gsl_pow_3(x);
     }
   }
   return y2;
@@ -616,11 +611,10 @@ static real amplgsl_sf_bessel_yl(arglist *al) {
     real yn_plus1 = gsl_sf_bessel_yl(n + 1, x);
     al->derivs[1] = 0.5 * (yn_minus1 - yn / x - yn_plus1);
     if (al->hes) {
-      real x_squared = x * x;
       al->hes[2] = (
-          x_squared * gsl_sf_bessel_yl(n - 2, x) - 2 * x * yn_minus1 -
-          (2 * x_squared - 3) * yn + 2 * x * yn_plus1 +
-          x_squared * gsl_sf_bessel_yl(n + 2, x)) / (4 * x_squared);
+          gsl_pow_2(x) * gsl_sf_bessel_yl(n - 2, x) - 2 * x * yn_minus1 -
+          (2 * gsl_pow_2(x) - 3) * yn + 2 * x * yn_plus1 +
+          gsl_pow_2(x) * gsl_sf_bessel_yl(n + 2, x)) / (4 * gsl_pow_2(x));
     }
   }
   return yn;
@@ -640,7 +634,7 @@ static real amplgsl_sf_bessel_i0_scaled(arglist *al) {
       *al->hes = 0.25 * (
           hyp_coef * sinh(x) - i_minus1 / x +
           coef * i_minus1 +
-          (3 + 6 * x * x + 4 * abs(x)) * i0 / (x * x) +
+          (3 + 6 * gsl_pow_2(x) + 4 * abs(x)) * i0 / gsl_pow_2(x) +
           coef * i1 +
           gsl_sf_bessel_il_scaled(2, x));
     }
@@ -661,7 +655,7 @@ static real amplgsl_sf_bessel_i1_scaled(arglist *al) {
       *al->hes = 0.25 * (
           exp(-abs(x)) * sqrt(1 / x) * cosh(x) / sqrt(x) +
           coef * i0 +
-          (3 + 6 * x * x + 4 * abs(x)) * i1 / (x * x) +
+          (3 + 6 * gsl_pow_2(x) + 4 * abs(x)) * i1 / gsl_pow_2(x) +
           coef * i2 +
           gsl_sf_bessel_il_scaled(3, x));
     }
@@ -682,7 +676,7 @@ static real amplgsl_sf_bessel_i2_scaled(arglist *al) {
       *al->hes = 0.25 * (
           gsl_sf_bessel_i0_scaled(x) +
           coef * i1 +
-          (3 + 6 * x * x + 4 * abs(x)) * i2 / (x * x) +
+          (3 + 6 * gsl_pow_2(x) + 4 * abs(x)) * i2 / gsl_pow_2(x) +
           coef * i3 +
           gsl_sf_bessel_il_scaled(4, x));
     }
@@ -707,7 +701,7 @@ static real amplgsl_sf_bessel_il_scaled(arglist *al) {
       al->hes[2] = 0.25 * (
           gsl_sf_bessel_il_scaled(n - 2, x) +
           coef * in_minus1 +
-          (3 + 4 * abs(x) + 6 * x * x) * in / (x * x) +
+          (3 + 4 * abs(x) + 6 * gsl_pow_2(x)) * in / gsl_pow_2(x) +
           coef * in_plus1 +
           gsl_sf_bessel_il_scaled(n + 2, x));
     }
@@ -765,7 +759,7 @@ static real amplgsl_sf_bessel_kl_scaled(arglist *al) {
       al->hes[2] = 0.25 * (
           gsl_sf_bessel_kl_scaled(n - 2, x) +
           coef * kn_minus1 +
-          (3 - 4 * x + 6 * x * x) * kn / (x * x) +
+          (3 - 4 * x + 6 * gsl_pow_2(x)) * kn / gsl_pow_2(x) +
           coef * kn_plus1 +
           gsl_sf_bessel_kl_scaled(n + 2, x));
     }
@@ -935,7 +929,7 @@ static real amplgsl_sf_hydrogenicR_1(arglist *al) {
     derivs[1] = -2 * pow(Z, 2.5) * exp_minusZr;
     if (al->hes) {
       real *hes = al->hes;
-      hes[0] = (exp_minusZr * (4 * r * r * Z * Z - 12 * r * Z + 3)) /
+      hes[0] = (exp_minusZr * (4 * gsl_pow_2(r * Z) - 12 * r * Z + 3)) /
           (2 *sqrt(Z));
       hes[1] = pow(Z, 1.5) * exp_minusZr * (2 * r * Z - 5);
       hes[2] = 2 * pow(Z, 3.5) * exp_minusZr;
@@ -1030,8 +1024,8 @@ static real debye(arglist *al, int n, double (*func)(double)) {
     real exp_x = exp(x);
     real deriv = *al->derivs = n * (1 / (exp_x - 1) - f / x);
     if (al->hes) {
-      *al->hes = n * (-exp_x / ((exp_x - 1) * (exp_x - 1)) +
-          f / (x * x) - deriv / x);
+      *al->hes = n * (-exp_x / gsl_pow_2(exp_x - 1) +
+          f / gsl_pow_2(x) - deriv / x);
     }
   }
   return f;
@@ -1064,12 +1058,73 @@ static real amplgsl_sf_debye_6(arglist *al) {
 static real amplgsl_sf_dilog(arglist *al) {
   real x = al->ra[0];
   if (al->derivs) {
-    real deriv = *al->derivs = x != 0 ?
-        -GSL_REAL(gsl_complex_log(gsl_complex_rect(1 - x, 0))) / x : 1;
+    gsl_complex log = gsl_complex_log(gsl_complex_rect(1 - x, 0));
+    real deriv = *al->derivs = x != 0 ? -GSL_REAL(log) / x : 1;
     if (al->hes)
       *al->hes = x != 0 ? (1 / (1 - x) - deriv) / x : 0.5;
   }
   return gsl_sf_dilog(x);
+}
+
+static real amplgsl_sf_ellint_Kcomp(arglist *al) {
+  real k = al->ra[0];
+  real kcomp = gsl_sf_ellint_Kcomp(k, GSL_PREC_DOUBLE);
+  if (al->derivs) {
+    real ecomp = gsl_sf_ellint_Ecomp(k, GSL_PREC_DOUBLE);
+    real divisor = k * (1 - k * k);
+    *al->derivs = k != 0 ? ecomp / divisor - kcomp / k : 0;
+    if (al->hes) {
+      *al->hes = k != 0 ?
+          ((2 * gsl_pow_4(k) - 3 * gsl_pow_2(k) + 1) * kcomp +
+          (3 * gsl_pow_2(k) - 1) * ecomp) / gsl_pow_2(divisor) : M_PI_4;
+    }
+  }
+  return kcomp;
+}
+
+static real amplgsl_sf_ellint_Ecomp(arglist *al) {
+  real k = al->ra[0];
+  real ecomp = gsl_sf_ellint_Ecomp(k, GSL_PREC_DOUBLE);
+  if (al->derivs) {
+    real kcomp = gsl_sf_ellint_Kcomp(k, GSL_PREC_DOUBLE);
+    *al->derivs = k != 0 ? (ecomp - kcomp) / k : 0;
+    if (al->hes) {
+      *al->hes = k != 0 ?
+          ((k * k - 1) * kcomp + ecomp) / (k * k * (k * k - 1)) : -M_PI_4;
+    }
+  }
+  return ecomp;
+}
+
+inline double pow2(double x) { return x * x; }
+
+static real amplgsl_sf_ellint_Pcomp(arglist *al) {
+  real k = al->ra[0], n = al->ra[1];
+  real pcomp = gsl_sf_ellint_Pcomp(k, n, GSL_PREC_DOUBLE);
+  if (al->derivs) {
+    real ecomp = gsl_sf_ellint_Ecomp(k, GSL_PREC_DOUBLE);
+    real kcomp = gsl_sf_ellint_Kcomp(k, GSL_PREC_DOUBLE);
+    real divisor = (k * k - 1) * (k * k + n);
+    al->derivs[0] = -k * ((k * k - 1) * pcomp + ecomp) / divisor;
+    al->derivs[1] = (-kcomp * (k * k + n) +
+        (k * k - n * n) * pcomp + n * ecomp) / (2 * n * (n + 1) * (k * k + n));
+    if (al->hes) {
+      al->hes[0] = ((k * k - 1) * (kcomp * (k * k + n) +
+          (k * k - 1) * (2 * k * k - n) * pcomp) +
+          (3 * gsl_pow_4(k) - k * k + 2 * n) * ecomp) / gsl_pow_2(divisor);
+      al->hes[1] = (k * ((k * k - 1) * (kcomp * (k * k + n) +
+          (n * (3 * n + 2) - k * k) * pcomp) +
+          n * (-k * k + 2 * n + 3) * ecomp)) /
+          (2 * divisor * n * (n + 1) * (k * k + n));
+      al->hes[2] = (kcomp * (gsl_pow_4(k) * (4 * n + 1) +
+          3 * k * k * n * (3 * n + 1) + n * n * (5 * n + 2)) +
+          n * (k * k * (1 - 2 * n) - n * (5 * n + 2)) * ecomp -
+          (gsl_pow_4(k) * (4 * n + 1) + 2 * k * k * n * (5 * n + 2) -
+              3 * gsl_pow_4(n)) * pcomp) /
+              (4 * gsl_pow_2(n * (n + 1) * (k * k + n)));
+    }
+  }
+  return pcomp;
 }
 
 void funcadd_ASL(AmplExports *ae) {
@@ -1237,8 +1292,19 @@ void funcadd_ASL(AmplExports *ae) {
   /* Dilogarithm */
   addfunc("gsl_sf_dilog", amplgsl_sf_dilog, FUNCADD_REAL_VALUED, 1, 0);
 
-  /* Elliptic Integrals */
-  // TODO
+  /* Legendre Form of Complete Elliptic Integrals */
+  addfunc("gsl_sf_ellint_Kcomp", amplgsl_sf_ellint_Kcomp,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_ellint_Ecomp", amplgsl_sf_ellint_Ecomp,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_ellint_Pcomp", amplgsl_sf_ellint_Pcomp,
+      FUNCADD_REAL_VALUED, 2, 0);
+
+  /* Legendre Form of Incomplete Elliptic Integrals */
+  // TODO: gsl_sf_ellint_F, gsl_sf_ellint_E, gsl_sf_ellint_P, gsl_sf_ellint_D
+
+  /* Carlson Forms */
+  // TODO: gsl_sf_ellint_RC, gsl_sf_ellint_RD, gsl_sf_ellint_RF, gsl_sf_ellint_RJ
 
   /* Elliptic Functions (Jacobi) */
   // TODO

@@ -13,6 +13,7 @@
 #include <gsl/gsl_sf_dawson.h>
 #include <gsl/gsl_sf_debye.h>
 #include <gsl/gsl_sf_dilog.h>
+#include <gsl/gsl_sf_ellint.h>
 
 #include "gtest/gtest.h"
 #include "solvers/asl.h"
@@ -932,6 +933,69 @@ double sf_dilog_dx2(double x) {
       GSL_REAL(gsl_complex_log(gsl_complex_rect(1 - x, 0))) / x) / x : 0.5;
 }
 
+double gsl_sf_ellint_Kcomp(double x) {
+  return ::gsl_sf_ellint_Kcomp(x, GSL_PREC_DOUBLE);
+}
+double gsl_sf_ellint_Ecomp(double x) {
+  return ::gsl_sf_ellint_Ecomp(x, GSL_PREC_DOUBLE);
+}
+
+double sf_ellint_Kcomp_dx(double x) {
+  return x != 0 ? gsl_sf_ellint_Ecomp(x) / (x * (1 - x * x)) -
+      gsl_sf_ellint_Kcomp(x) / x : 0;
+}
+double sf_ellint_Kcomp_dx2(double x) {
+  double x_squared = x * x;
+  double div = x * (1 - x_squared);
+  double K = gsl_sf_ellint_Kcomp(x);
+  double E = gsl_sf_ellint_Ecomp(x);
+  return x != 0 ? ((2 * x_squared * x_squared - 3 * x_squared + 1) * K +
+      (3 * x_squared - 1) * E) / (div * div) : M_PI_4;
+}
+
+double sf_ellint_Ecomp_dx(double x) {
+  return x != 0 ? (gsl_sf_ellint_Ecomp(x) - gsl_sf_ellint_Kcomp(x)) / x : 0;
+}
+double sf_ellint_Ecomp_dx2(double x) {
+  double K = gsl_sf_ellint_Kcomp(x);
+  double E = gsl_sf_ellint_Ecomp(x);
+  return x != 0 ?
+      ((x * x - 1) * K + E) / (x * x * (x * x - 1)) : -M_PI_4;
+}
+
+double gsl_sf_ellint_Pcomp(double x, double y) {
+  return ::gsl_sf_ellint_Pcomp(x, y, GSL_PREC_DOUBLE);
+}
+double sf_ellint_Pcomp_dx(double x, double y) {
+  return -(x * ((x * x - 1) * gsl_sf_ellint_Pcomp(x, y) +
+      gsl_sf_ellint_Ecomp(x))) / ((x * x - 1) * (x * x + y));
+}
+double sf_ellint_Pcomp_dy(double x, double y) {
+  return (-gsl_sf_ellint_Kcomp(x) * (x * x + y) +
+      (x * x - y * y) * gsl_sf_ellint_Pcomp(x, y) +
+      y * gsl_sf_ellint_Ecomp(x)) / (2 * y * (y + 1) * (x * x + y));
+}
+double sf_ellint_Pcomp_dx2(double x, double y) {
+  return ((x * x - 1) * (gsl_sf_ellint_Kcomp(x) * (x * x + y) +
+      (x * x - 1) * (2 * x * x - y) * gsl_sf_ellint_Pcomp(x, y)) +
+      (3 * gsl_pow_4(x) - x * x + 2 * y) * gsl_sf_ellint_Ecomp(x)) /
+      gsl_pow_2((x * x - 1) * (x * x + y));
+}
+double sf_ellint_Pcomp_dxdy(double x, double y) {
+  return (x * ((x * x - 1) * (gsl_sf_ellint_Kcomp(x) * (x * x + y) +
+      (y * (3 * y + 2) - x * x) * gsl_sf_ellint_Pcomp(x, y)) +
+      y * (-x * x + 2 * y + 3) * gsl_sf_ellint_Ecomp(x))) /
+      (2 * (x * x - 1) * y * (y + 1) * gsl_pow_2(x * x +y));
+}
+double sf_ellint_Pcomp_dy2(double x, double y) {
+  return (gsl_sf_ellint_Kcomp(x) * (gsl_pow_4(x) * (4 * y + 1) +
+      3 * x * x * y * (3 * y + 1) + y * y * (5 * y + 2)) +
+      y * (x * x * (1 - 2 * y) - y * (5 * y + 2)) * gsl_sf_ellint_Ecomp(x)-
+      (gsl_pow_4(x) * (4 * y + 1) + 2 * x * x * y * (5 * y + 2) -
+          3 * gsl_pow_4(y)) * gsl_sf_ellint_Pcomp(x, y)) /
+      (4 * gsl_pow_2(y * (y + 1) * (x * x + y)));
+}
+
 #define TEST_FUNC(name) \
   TestFunc("gsl_" #name, gsl_##name, name##_dx, name##_dx2);
 
@@ -1370,5 +1434,32 @@ TEST_F(GSLTest, Dilog) {
   ASSERT_NEAR(-0.277259, sf_dilog_dx(5), 1e-5);
   ASSERT_EQ(0.5, sf_dilog_dx2(0));
   ASSERT_NEAR(0.00545177, sf_dilog_dx2(5), 1e-5);
+}
+
+TEST_F(GSLTest, EllInt) {
+  TEST_FUNC(sf_ellint_Kcomp);
+  ASSERT_EQ(0, sf_ellint_Kcomp_dx(0));
+  ASSERT_NEAR(0.541732, sf_ellint_Kcomp_dx(0.5), 1e-5);
+  ASSERT_EQ(M_PI_4, sf_ellint_Kcomp_dx2(0));
+  ASSERT_NEAR(1.88651, sf_ellint_Kcomp_dx2(0.5), 1e-5);
+
+  TEST_FUNC(sf_ellint_Ecomp);
+  ASSERT_EQ(0, sf_ellint_Ecomp_dx(0));
+  ASSERT_NEAR(-0.436576, sf_ellint_Ecomp_dx(0.5), 1e-5);
+  ASSERT_EQ(-M_PI_4, sf_ellint_Ecomp_dx2(0));
+  ASSERT_NEAR(-1.08346, sf_ellint_Ecomp_dx2(0.5), 1e-5);
+
+  TEST_FUNC2(sf_ellint_Pcomp);
+  ASSERT_NEAR(1.36647, gsl_sf_ellint_Pcomp(0.5, 0.5), 1e-5);
+  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, sf_ellint_Pcomp_dx(0, 0));
+  ASSERT_NEAR(0.393428, sf_ellint_Pcomp_dx(0.5, 0.5), 1e-5);
+  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, sf_ellint_Pcomp_dy(0, 0));
+  ASSERT_NEAR(-0.471628, sf_ellint_Pcomp_dy(0.5, 0.5), 1e-5);
+  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, sf_ellint_Pcomp_dx2(0, 0));
+  ASSERT_NEAR(1.35115, sf_ellint_Pcomp_dx2(0.5, 0.5), 1e-5);
+  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, sf_ellint_Pcomp_dxdy(0, 0));
+  ASSERT_NEAR(-0.210152, sf_ellint_Pcomp_dxdy(0.5, 0.5), 1e-5);
+  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, sf_ellint_Pcomp_dy2(0, 0));
+  ASSERT_NEAR(0.477835, sf_ellint_Pcomp_dy2(0.5, 0.5), 1e-5);
 }
 }
