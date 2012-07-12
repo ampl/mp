@@ -1,5 +1,6 @@
 // GSL wrapper test.
 
+#include <functional>
 #include <stdexcept>
 #include <vector>
 
@@ -20,6 +21,7 @@
 #include "tests/config.h"
 
 using std::vector;
+using std::runtime_error;
 
 namespace {
 
@@ -123,9 +125,9 @@ class AMPLFunction {
     // Check the error message.
     if (al.Errmsg) {
       if ((options & ERROR) == 0)
-        throw std::runtime_error(al.Errmsg);
+        throw runtime_error(al.Errmsg);
     } else if ((options & ERROR) != 0)
-      throw std::runtime_error("Expected error");
+      throw runtime_error(std::string("Expected error in ") + fi_->name);
 
     result.SetValue(value);
     return result;
@@ -169,7 +171,7 @@ class GSLTest : public ::testing::Test {
   AMPLFunction GetFunction(const char *name) const {
     func_info *fi = func_lookup(asl, name, 0);
     if (!fi)
-      throw std::runtime_error(std::string("Function not found: ") + name);
+      throw runtime_error(std::string("Function not found: ") + name);
     return AMPLFunction(asl, fi);
   }
 
@@ -184,13 +186,19 @@ class GSLTest : public ::testing::Test {
     return (lhs.is_nan() && rhs.is_nan()) || lhs.AlmostEquals(rhs);
   }
 
+  static bool NearOrNaN(double expected, double actual, double abs_error) {
+    testing::internal::Double lhs(expected), rhs(actual);
+    return (lhs.is_nan() && rhs.is_nan()) ||
+        fabs(expected - actual) <= abs_error;
+  }
+
   // Test a function taking a single argument.
-  void TestFunc(const char *name, Func1 f, Func1 dx, Func1 dx2);
+  void TestFunc(const char *name, Func1 f, Func1 dx2);
 
   // Test a function taking a single argument of type unsigned int.
   void TestFunc(const char *name, FuncU f);
 
-  void TestFunc(const char *name, FuncN1 f, FuncN1Result dx, FuncN1Result dx2);
+  void TestFunc(const char *name, FuncN1 f, FuncN1Result dx2);
   void TestFunc(const char *name, Func2 f, Func2 dx, Func2 dy,
       Func2 dx2, Func2 dxdy, Func2 dy2);
   void TestFunc(const char *name, Func3 f, Func3 dx, Func3 dy, Func3 dz,
@@ -207,13 +215,52 @@ const size_t NUM_POINTS_FOR_N = sizeof(POINTS_FOR_N) / sizeof(*POINTS_FOR_N);
 #define EXPECT_ALMOST_EQUAL_OR_NAN(expected, actual) \
     EXPECT_PRED2(AlmostEqualOrNaN, expected, actual)
 
-void GSLTest::TestFunc(const char *name, Func1 f, Func1 dx, Func1 dx2) {
+#define EXPECT_NEAR_OR_NAN(expected, actual, abs_error) \
+    EXPECT_PRED3(NearOrNaN, expected, actual, abs_error)
+
+// Differentiates f numerically.
+template <typename F>
+double Diff(F f, double x) {
+  double h = x != 0 ?
+      sqrt(std::numeric_limits<double>::epsilon()) * x : 1e-10;
+  double f_x = f(x), f_left = f(x - h), f_right = f(x + h);
+  double left_deriv = (f_x - f_left) / h;
+  double right_deriv = (f_right - f_x) / h;
+  if (gsl_isnan(f_left))
+    return right_deriv;
+  if (fabs(left_deriv - right_deriv) > 1e-3)
+    return GSL_NAN;
+  double deriv = (f_right - f_left) / (2 * h);
+  if (deriv > 1) {
+    // A heuristic to detect infinity.
+    double small_h = h / 100;
+    double check_deriv = (f(x + small_h) - f(x - small_h)) / (2 * small_h);
+    if (check_deriv > deriv * 1.1)
+      return GSL_POSINF;
+  }
+  return deriv;
+}
+
+void GSLTest::TestFunc(const char *name, Func1 f, Func1 dx2) {
   AMPLFunction af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     double x = POINTS[i];
+    double value = f(x);
+    if (gsl_isnan(value)) {
+      af(x, ERROR);
+      continue;
+    }
     EXPECT_ALMOST_EQUAL_OR_NAN(f(x), af(x)) << name << " at " << x;
-    EXPECT_ALMOST_EQUAL_OR_NAN(dx(x), af(x, DERIVS).deriv())
-      << name << " at " << x;
+    double deriv = Diff(f, x);
+    if (gsl_isnan(deriv)) {
+      af(x, ERROR | DERIVS);
+      continue;
+    }
+    double actual_deriv = af(x, DERIVS).deriv();
+    if (deriv != actual_deriv) {
+      EXPECT_NEAR(deriv, actual_deriv, 1e-5)
+        << name << " at " << x;
+    }
     EXPECT_ALMOST_EQUAL_OR_NAN(dx2(x), af(x, HES).hes())
       << name << " at " << x;
   }
@@ -232,33 +279,35 @@ void GSLTest::TestFunc(const char *name, FuncU f) {
   }
 }
 
-void GSLTest::TestFunc(const char *name, FuncN1 f,
-    FuncN1Result dx, FuncN1Result dx2) {
+void GSLTest::TestFunc(const char *name, FuncN1 f, FuncN1Result dx2) {
   AMPLFunction af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS_FOR_N; ++i) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
       int n = POINTS_FOR_N[i];
-      bool skip = n < -100 || n > 100;
+      if (n < -100 || n > 100) continue;
       double x = POINTS[j];
       ArgList args(n, x);
-      if (!skip)
-        EXPECT_ALMOST_EQUAL_OR_NAN(f(n, x), af(args)) << name << " at " << x;
+      double value = f(n, x);
+      if (gsl_isnan(value)) {
+        af(args, ERROR);
+        continue;
+      }
+      EXPECT_ALMOST_EQUAL_OR_NAN(value, af(args)) << name << " at " << x;
 
-      af(args, DERIVS | ERROR);
       af(args, DERIVS | ERROR);
       char dig = 1;
-      Result r = dx(n, x);
-      if (r.error) {
-        af(args, DERIVS | ERROR, &dig);
-      } else if (!skip) {
-        EXPECT_ALMOST_EQUAL_OR_NAN(r.value, af(args, DERIVS, &dig).deriv(1))
-          << name << " at " << n << ", " << x;
+      double deriv = Diff(std::bind1st(std::ptr_fun(f), n), x);
+      if (gsl_isnan(deriv)) {
+        af(args, ERROR | DERIVS, &dig);
+        continue;
       }
+      EXPECT_NEAR(deriv, af(args, DERIVS, &dig).deriv(1), 1e-5)
+        << name << " at " << n << ", " << x;
 
-      r = dx2(n, x);
+      Result r = dx2(n, x);
       if (r.error) {
         af(args, HES | ERROR, &dig);
-      } else if (!skip) {
+      } else {
         EXPECT_ALMOST_EQUAL_OR_NAN(r.value, af(args, HES, &dig).hes(2))
           << name << " at " << x;
       }
@@ -320,10 +369,8 @@ void GSLTest::TestFunc(const char *name, Func3 f, Func3 dx, Func3 dy, Func3 dz,
   }
 }
 
-double log1p_dx(double x) { return 1 / (x + 1); }
 double log1p_dx2(double x) { return -1 / ((x + 1) * (x + 1)); }
 
-double expm1_dx(double x) { return exp(x); }
 double expm1_dx2(double x) { return exp(x); }
 
 double hypot_dx(double x, double y) { return x / sqrt(x * x + y * y); }
@@ -369,18 +416,12 @@ double hypot3_dz2(double x, double y, double z) {
 double gsl_sf_airy_Ai(double x) {
   return ::gsl_sf_airy_Ai(x, GSL_PREC_DOUBLE);
 }
-double sf_airy_Ai_dx(double x) {
-  return gsl_sf_airy_Ai_deriv(x, GSL_PREC_DOUBLE);
-}
 double sf_airy_Ai_dx2(double x) {
   return x * gsl_sf_airy_Ai(x);
 }
 
 double gsl_sf_airy_Bi(double x) {
   return ::gsl_sf_airy_Bi(x, GSL_PREC_DOUBLE);
-}
-double sf_airy_Bi_dx(double x) {
-  return gsl_sf_airy_Bi_deriv(x, GSL_PREC_DOUBLE);
 }
 double sf_airy_Bi_dx2(double x) {
   return x * gsl_sf_airy_Bi(x);
@@ -389,50 +430,35 @@ double sf_airy_Bi_dx2(double x) {
 double gsl_sf_airy_Ai_scaled(double x) {
   return ::gsl_sf_airy_Ai_scaled(x, GSL_PREC_DOUBLE);
 }
-double sf_airy_Ai_scaled_dx(double x) {
-  return x > 0 ? (gsl_sf_airy_Ai_deriv_scaled(x, GSL_PREC_DOUBLE) +
+double sf_airy_Ai_scaled_dx2(double x) {
+  double dx = x > 0 ? (gsl_sf_airy_Ai_deriv_scaled(x, GSL_PREC_DOUBLE) +
       sqrt(x) * gsl_sf_airy_Ai_scaled(x)) :
       gsl_sf_airy_Ai_deriv(x, GSL_PREC_DOUBLE);
-}
-double sf_airy_Ai_scaled_dx2(double x) {
   return x > 0 ? (gsl_sf_airy_Ai_scaled(x) +
-      4 * x * sf_airy_Ai_scaled_dx(x)) / (2 * sqrt(x)) :
+      4 * x * dx) / (2 * sqrt(x)) :
       x * gsl_sf_airy_Ai(x);
 }
 
 double gsl_sf_airy_Bi_scaled(double x) {
   return ::gsl_sf_airy_Bi_scaled(x, GSL_PREC_DOUBLE);
 }
-double sf_airy_Bi_scaled_dx(double x) {
-  return x > 0 ? (gsl_sf_airy_Bi_deriv_scaled(x, GSL_PREC_DOUBLE) -
+double sf_airy_Bi_scaled_dx2(double x) {
+  double dx = x > 0 ? (gsl_sf_airy_Bi_deriv_scaled(x, GSL_PREC_DOUBLE) -
       sqrt(x) * gsl_sf_airy_Bi_scaled(x)) :
       gsl_sf_airy_Bi_deriv(x, GSL_PREC_DOUBLE);
-}
-double sf_airy_Bi_scaled_dx2(double x) {
   return x > 0 ? -(gsl_sf_airy_Bi_scaled(x) +
-      4 * x * sf_airy_Bi_scaled_dx(x)) / (2 * sqrt(x)) :
+      4 * x * dx) / (2 * sqrt(x)) :
       x * gsl_sf_airy_Bi(x);
 }
 
-double sf_bessel_J0_dx(double x) { return -gsl_sf_bessel_J1(x); }
 double sf_bessel_J0_dx2(double x) {
   return 0.5 * (gsl_sf_bessel_Jn(2, x) - gsl_sf_bessel_J0(x));
 }
 
-double sf_bessel_J1_dx(double x) {
-  return 0.5 * (gsl_sf_bessel_J0(x) - gsl_sf_bessel_Jn(2, x));
-}
 double sf_bessel_J1_dx2(double x) {
   return 0.25 * (gsl_sf_bessel_Jn(3, x) - 3 * gsl_sf_bessel_J1(x));
 }
 
-Result sf_bessel_Jn_dx(int n, double x) {
-  if (n == INT_MIN || n == INT_MAX)
-    return Result(0, true);
-  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
-    return 42;
-  return 0.5 * (gsl_sf_bessel_Jn(n - 1, x) - gsl_sf_bessel_Jn(n + 1, x));
-}
 Result sf_bessel_Jn_dx2(int n, double x) {
   if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
     return Result(0, true);
@@ -440,25 +466,14 @@ Result sf_bessel_Jn_dx2(int n, double x) {
       2 * gsl_sf_bessel_Jn(n, x) + gsl_sf_bessel_Jn(n + 2, x));
 }
 
-double sf_bessel_Y0_dx(double x) { return -gsl_sf_bessel_Y1(x); }
 double sf_bessel_Y0_dx2(double x) {
   return 0.5 * (gsl_sf_bessel_Yn(2, x) - gsl_sf_bessel_Y0(x));
 }
 
-double sf_bessel_Y1_dx(double x) {
-  return 0.5 * (gsl_sf_bessel_Y0(x) - gsl_sf_bessel_Yn(2, x));
-}
 double sf_bessel_Y1_dx2(double x) {
   return 0.25 * (gsl_sf_bessel_Yn(3, x) - 3 * gsl_sf_bessel_Y1(x));
 }
 
-Result sf_bessel_Yn_dx(int n, double x) {
-  if (n == INT_MIN || n == INT_MAX)
-    return Result(0, true);
-  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
-    return 42;
-  return 0.5 * (gsl_sf_bessel_Yn(n - 1, x) - gsl_sf_bessel_Yn(n + 1, x));
-}
 Result sf_bessel_Yn_dx2(int n, double x) {
   if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
     return Result(0, true);
@@ -466,34 +481,20 @@ Result sf_bessel_Yn_dx2(int n, double x) {
       2 * gsl_sf_bessel_Yn(n, x) + gsl_sf_bessel_Yn(n + 2, x));
 }
 
-double sf_bessel_I0_dx(double x) { return gsl_sf_bessel_I1(x); }
 double sf_bessel_I0_dx2(double x) {
   return 0.5 * (gsl_sf_bessel_In(2, x) + gsl_sf_bessel_I0(x));
 }
 
-double sf_bessel_I0_scaled_dx(double x) {
-  return gsl_sf_bessel_I1_scaled(x) - x / abs(x) * gsl_sf_bessel_I0_scaled(x);
-}
 double sf_bessel_I0_scaled_dx2(double x) {
   return 1.5 * gsl_sf_bessel_I0_scaled(x) -
-      2 * x / abs(x) * gsl_sf_bessel_I1_scaled(x) +
+      2 * x / fabs(x) * gsl_sf_bessel_I1_scaled(x) +
       0.5 * gsl_sf_bessel_In_scaled(2, x);
 }
 
-double sf_bessel_I1_dx(double x) {
-  return 0.5 * (gsl_sf_bessel_I0(x) + gsl_sf_bessel_In(2, x));
-}
 double sf_bessel_I1_dx2(double x) {
   return 0.25 * (gsl_sf_bessel_In(3, x) + 3 * gsl_sf_bessel_I1(x));
 }
 
-Result sf_bessel_In_dx(int n, double x) {
-  if (n == INT_MIN || n == INT_MAX)
-    return Result(0, true);
-  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
-    return 42;
-  return 0.5 * (gsl_sf_bessel_In(n - 1, x) + gsl_sf_bessel_In(n + 1, x));
-}
 Result sf_bessel_In_dx2(int n, double x) {
   if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
     return Result(0, true);
@@ -501,55 +502,31 @@ Result sf_bessel_In_dx2(int n, double x) {
       2 * gsl_sf_bessel_In(n, x) + gsl_sf_bessel_In(n + 2, x));
 }
 
-double sf_bessel_I1_scaled_dx(double x) {
-  return 0.5 * gsl_sf_bessel_I0_scaled(x) -
-      x / abs(x) * gsl_sf_bessel_I1_scaled(x) +
-      0.5 * gsl_sf_bessel_In_scaled(2, x);
-}
 double sf_bessel_I1_scaled_dx2(double x) {
-  return -x / abs(x) * gsl_sf_bessel_I0_scaled(x) +
+  return -x / fabs(x) * gsl_sf_bessel_I0_scaled(x) +
       1.75 * gsl_sf_bessel_I1_scaled(x) -
-      x / abs(x) * gsl_sf_bessel_In_scaled(2, x) +
+      x / fabs(x) * gsl_sf_bessel_In_scaled(2, x) +
       0.25 * gsl_sf_bessel_In_scaled(3, x);
 }
 
-Result sf_bessel_In_scaled_dx(int n, double x) {
-  if (n == INT_MIN || n == INT_MAX)
-    return Result(0, true);
-  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
-    return 42;
-  return 0.5 * (-(2 * x * gsl_sf_bessel_In_scaled(n, x)) / abs(x) +
-      gsl_sf_bessel_In_scaled(n - 1, x) + gsl_sf_bessel_In_scaled(n + 1, x));
-}
 Result sf_bessel_In_scaled_dx2(int n, double x) {
   if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
     return Result(0, true);
-  return (abs(x) * (gsl_sf_bessel_In_scaled(n - 2, x) +
+  return (fabs(x) * (gsl_sf_bessel_In_scaled(n - 2, x) +
                     6 * gsl_sf_bessel_In_scaled(n, x) +
                     gsl_sf_bessel_In_scaled(n + 2, x)) -
       4 * x * (gsl_sf_bessel_In_scaled(n - 1, x) +
-               gsl_sf_bessel_In_scaled(n + 1, x))) / (4 * abs(x));
+               gsl_sf_bessel_In_scaled(n + 1, x))) / (4 * fabs(x));
 }
 
-double sf_bessel_K0_dx(double x) { return -gsl_sf_bessel_K1(x); }
 double sf_bessel_K0_dx2(double x) {
   return 0.5 * (gsl_sf_bessel_Kn(2, x) + gsl_sf_bessel_K0(x));
 }
 
-double sf_bessel_K1_dx(double x) {
-  return -0.5 * (gsl_sf_bessel_K0(x) + gsl_sf_bessel_Kn(2, x));
-}
 double sf_bessel_K1_dx2(double x) {
   return 0.25 * (gsl_sf_bessel_Kn(3, x) + 3 * gsl_sf_bessel_K1(x));
 }
 
-Result sf_bessel_Kn_dx(int n, double x) {
-  if (n == INT_MIN || n == INT_MAX)
-    return Result(0, true);
-  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
-    return 42;
-  return -0.5 * (gsl_sf_bessel_Kn(n - 1, x) + gsl_sf_bessel_Kn(n + 1, x));
-}
 Result sf_bessel_Kn_dx2(int n, double x) {
   if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
     return Result(0, true);
@@ -557,31 +534,16 @@ Result sf_bessel_Kn_dx2(int n, double x) {
       2 * gsl_sf_bessel_Kn(n, x) + gsl_sf_bessel_Kn(n + 2, x));
 }
 
-double sf_bessel_K0_scaled_dx(double x) {
-  return gsl_sf_bessel_K0_scaled(x) - gsl_sf_bessel_K1_scaled(x);
-}
 double sf_bessel_K0_scaled_dx2(double x) {
   return 1.5 * gsl_sf_bessel_K0_scaled(x) - 2 * gsl_sf_bessel_K1_scaled(x) +
       0.5 * gsl_sf_bessel_Kn_scaled(2, x);
 }
 
-double sf_bessel_K1_scaled_dx(double x) {
-  return -0.5 * gsl_sf_bessel_K0_scaled(x) + gsl_sf_bessel_K1_scaled(x) -
-      0.5 * gsl_sf_bessel_Kn_scaled(2, x);
-}
 double sf_bessel_K1_scaled_dx2(double x) {
   return -gsl_sf_bessel_K0_scaled(x) + 1.75 * gsl_sf_bessel_K1_scaled(x) -
       gsl_sf_bessel_Kn_scaled(2, x) + 0.25 * gsl_sf_bessel_Kn_scaled(3, x);
 }
 
-Result sf_bessel_Kn_scaled_dx(int n, double x) {
-  if (n == INT_MIN || n == INT_MAX)
-    return Result(0, true);
-  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
-    return 42;
-  return -0.5 * (gsl_sf_bessel_Kn_scaled(n - 1, x) -
-      2 * gsl_sf_bessel_Kn_scaled(n, x) + gsl_sf_bessel_Kn_scaled(n + 1, x));
-}
 Result sf_bessel_Kn_scaled_dx2(int n, double x) {
   if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
     return Result(0, true);
@@ -592,22 +554,15 @@ Result sf_bessel_Kn_scaled_dx2(int n, double x) {
       gsl_sf_bessel_Kn_scaled(n + 2, x));
 }
 
-double sf_bessel_j0_dx(double x) { return (x * cos(x) - sin(x)) / (x * x); }
 double sf_bessel_j0_dx2(double x) {
   return -((x * x - 2) * sin(x) + 2 * x * cos(x)) / (x * x * x);
 }
 
-double sf_bessel_j1_dx(double x) {
-  return (sin(x) - 2 * gsl_sf_bessel_j1(x)) / x;
-}
 double sf_bessel_j1_dx2(double x) {
   return (x * (x * x - 6) * cos(x) -
       3 * (x * x - 2) * sin(x)) / (x * x * x * x);
 }
 
-double sf_bessel_j2_dx(double x) {
-  return gsl_sf_bessel_j1(x) - (3 * gsl_sf_bessel_j2(x)) / x;
-}
 double sf_bessel_j2_dx2(double x) {
   double x_squared = x * x;
   return (x * (5 * x_squared - 36) * cos(x) +
@@ -615,13 +570,6 @@ double sf_bessel_j2_dx2(double x) {
       (x_squared * x_squared * x);
 }
 
-Result sf_bessel_jl_dx(int n, double x) {
-  if (n == INT_MAX)
-    return Result(0, true);
-  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
-    return 42;
-  return (n * gsl_sf_bessel_jl(n, x)) / x - gsl_sf_bessel_jl(n + 1, x);
-}
 Result sf_bessel_jl_dx2(int n, double x) {
   if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
     return Result(0, true);
@@ -633,35 +581,20 @@ Result sf_bessel_jl_dx2(int n, double x) {
       3 * gsl_sf_bessel_jl(n, x)) / (4 * x * x);
 }
 
-double sf_bessel_y0_dx(double x) { return (x * sin(x) + cos(x)) / (x * x); }
 double sf_bessel_y0_dx2(double x) {
   return ((x * x - 2) * cos(x) - 2 * x * sin(x)) / (x * x * x);
 }
 
-double sf_bessel_y1_dx(double x) {
-  return -(2 * gsl_sf_bessel_y1(x) + cos(x)) / x;
-}
 double sf_bessel_y1_dx2(double x) {
   return (x * (x * x - 6) * sin(x) +
       3 * (x * x - 2) * cos(x)) / (x * x * x * x);
 }
 
-double sf_bessel_y2_dx(double x) {
-  return gsl_sf_bessel_y1(x) - (3 * gsl_sf_bessel_y2(x)) / x;
-}
 double sf_bessel_y2_dx2(double x) {
   return ((36 - 5 * x * x) * gsl_sf_bessel_y1(x) -
       (x * x - 12) * cos(x)) / (x * x * x);
 }
 
-Result sf_bessel_yl_dx(int n, double x) {
-  if (n == INT_MIN || n == INT_MAX)
-    return Result(0, true);
-  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
-    return 42;
-  return 0.5 * (gsl_sf_bessel_yl(n - 1, x) -
-      gsl_sf_bessel_yl(n, x) / x - gsl_sf_bessel_yl(n + 1, x));
-}
 Result sf_bessel_yl_dx2(int n, double x) {
   if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
     return Result(0, true);
@@ -673,107 +606,64 @@ Result sf_bessel_yl_dx2(int n, double x) {
       3 * gsl_sf_bessel_yl(n, x)) / (4 * x * x);
 }
 
-double sf_bessel_i0_scaled_dx(double x) {
-  double i_minus1 = (exp(-abs(x)) * sqrt(1 / x) / sqrt(x)) * cosh(x);
-  return 0.5 * (i_minus1 -
-      ((1 + 2 * abs(x)) / x) * gsl_sf_bessel_i0_scaled(x) +
-      gsl_sf_bessel_i1_scaled(x));
-}
 double sf_bessel_i0_scaled_dx2(double x) {
-  double coef = -2 * (1 + 2 * abs(x)) / x;
-  double hyp_coef = exp(-abs(x)) * sqrt(1 / x) / sqrt(x);
+  double coef = -2 * (1 + 2 * fabs(x)) / x;
+  double hyp_coef = exp(-fabs(x)) / x;
   double i_minus1 = hyp_coef * cosh(x);
   double i_minus2 = hyp_coef * sinh(x) - i_minus1 / x;
   return 0.25 * (
       i_minus2 +
       coef * i_minus1 +
-      (3 + 6 * x * x + 4 * abs(x)) * gsl_sf_bessel_i0_scaled(x) / (x * x) +
+      (3 + 6 * x * x + 4 * fabs(x)) * gsl_sf_bessel_i0_scaled(x) / (x * x) +
       coef * gsl_sf_bessel_i1_scaled(x) +
       gsl_sf_bessel_i2_scaled(x));
 }
 
-double sf_bessel_i1_scaled_dx(double x) {
-  return 0.5 * (gsl_sf_bessel_i0_scaled(x) -
-      ((1 + 2 * abs(x)) / x) * gsl_sf_bessel_i1_scaled(x) +
-      gsl_sf_bessel_i2_scaled(x));
-}
 double sf_bessel_i1_scaled_dx2(double x) {
-  double coef = -2 * (1 + 2 * abs(x)) / x;
-  double i_minus1 = (exp(-abs(x)) * sqrt(1 / x) * cosh(x)) / sqrt(x);
+  double coef = -2 * (1 + 2 * fabs(x)) / x;
+  double i_minus1 = (exp(-fabs(x)) * sqrt(1 / x) * cosh(x)) / sqrt(x);
   return 0.25 * (
       i_minus1 +
       coef * gsl_sf_bessel_i0_scaled(x) +
-      (3 + 6 * x * x + 4 * abs(x)) * gsl_sf_bessel_i1_scaled(x) / (x * x) +
+      (3 + 6 * x * x + 4 * fabs(x)) * gsl_sf_bessel_i1_scaled(x) / (x * x) +
       coef * gsl_sf_bessel_i2_scaled(x) +
       gsl_sf_bessel_il_scaled(3, x));
 }
 
-double sf_bessel_i2_scaled_dx(double x) {
-  return 0.5 * (gsl_sf_bessel_i1_scaled(x) -
-      ((1 + 2 * abs(x)) / x) * gsl_sf_bessel_i2_scaled(x) +
-      gsl_sf_bessel_il_scaled(3, x));
-}
 double sf_bessel_i2_scaled_dx2(double x) {
-  double coef = -2 * (1 + 2 * abs(x)) / x;
+  double coef = -2 * (1 + 2 * fabs(x)) / x;
   return 0.25 * (
       gsl_sf_bessel_i0_scaled(x) +
       coef * gsl_sf_bessel_i1_scaled(x) +
-      (3 + 6 * x * x + 4 * abs(x)) * gsl_sf_bessel_il_scaled(2, x) / (x * x) +
+      (3 + 6 * x * x + 4 * fabs(x)) * gsl_sf_bessel_il_scaled(2, x) / (x * x) +
       coef * gsl_sf_bessel_il_scaled(3, x) +
       gsl_sf_bessel_il_scaled(4, x));
 }
 
-Result sf_bessel_il_scaled_dx(int n, double x) {
-  if (n == INT_MIN || n == INT_MAX)
-    return Result(0, true);
-  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
-    return 42;
-  return 0.5 * (gsl_sf_bessel_il_scaled(n - 1, x) -
-      ((1 + 2 * abs(x)) / x) * gsl_sf_bessel_il_scaled(n, x) +
-      gsl_sf_bessel_il_scaled(n + 1, x));
-}
 Result sf_bessel_il_scaled_dx2(int n, double x) {
   if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
     return Result(0, true);
-  double coef = -2 * (1 + 2 * abs(x)) / x;
+  double coef = -2 * (1 + 2 * fabs(x)) / x;
   return 0.25 * (
       gsl_sf_bessel_il_scaled(n - 2, x) +
       coef * gsl_sf_bessel_il_scaled(n - 1, x) +
-      (3 + 4 * abs(x) + 6 * x * x) * gsl_sf_bessel_il_scaled(n, x) / (x * x) +
+      (3 + 4 * fabs(x) + 6 * x * x) * gsl_sf_bessel_il_scaled(n, x) / (x * x) +
       coef * gsl_sf_bessel_il_scaled(n + 1, x) +
       gsl_sf_bessel_il_scaled(n + 2, x));
 }
 
-double sf_bessel_k0_scaled_dx(double x) {
-  return -M_PI * sqrt(1 / x) / (2 * pow(x, 1.5));
-}
 double sf_bessel_k0_scaled_dx2(double x) {
   return M_PI * sqrt(1 / x) / pow(x, 2.5);
 }
 
-double sf_bessel_k1_scaled_dx(double x) {
-  return -(M_PI * sqrt(1 / x) * (x + 2)) / (2 * pow(x, 2.5));
-}
 double sf_bessel_k1_scaled_dx2(double x) {
   return (M_PI * sqrt(1 / x) * (x + 3)) / pow(x, 3.5);
 }
 
-double sf_bessel_k2_scaled_dx(double x) {
-  return -(M_PI * sqrt(1 / x) * (x + 3) * (x + 3)) / (2 * pow(x, 3.5));
-}
 double sf_bessel_k2_scaled_dx2(double x) {
   return (M_PI * sqrt(1 / x) * (x * x + 9 * x + 18)) / pow(x, 4.5);
 }
 
-Result sf_bessel_kl_scaled_dx(int n, double x) {
-  if (n == INT_MIN || n == INT_MAX)
-    return Result(0, true);
-  if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
-    return 42;
-  return -0.5 * (gsl_sf_bessel_kl_scaled(n - 1, x) +
-      ((1 - 2 * x) / x) * gsl_sf_bessel_kl_scaled(n, x) +
-      gsl_sf_bessel_kl_scaled(n + 1, x));
-}
 Result sf_bessel_kl_scaled_dx2(int n, double x) {
   if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
     return Result(0, true);
@@ -816,15 +706,15 @@ double sf_bessel_Inu_dy2(double x, double y) {
 Func2 sf_bessel_Inu_scaled_dx;
 Func2 sf_bessel_Inu_scaled_dx2, sf_bessel_Inu_scaled_dxdy;
 double sf_bessel_Inu_scaled_dy(double x, double y) {
-  return 0.5 * (-(2 * y * gsl_sf_bessel_Inu_scaled(x, y)) / abs(y) +
+  return 0.5 * (-(2 * y * gsl_sf_bessel_Inu_scaled(x, y)) / fabs(y) +
       gsl_sf_bessel_Inu_scaled(x - 1, y) + gsl_sf_bessel_Inu_scaled(x + 1, y));
 }
 double sf_bessel_Inu_scaled_dy2(double x, double y) {
-  return (abs(y) * (gsl_sf_bessel_Inu_scaled(x - 2, y) +
+  return (fabs(y) * (gsl_sf_bessel_Inu_scaled(x - 2, y) +
                     6 * gsl_sf_bessel_Inu_scaled(x, y) +
                     gsl_sf_bessel_Inu_scaled(x + 2, y)) -
       4 * y * (gsl_sf_bessel_Inu_scaled(x - 1, y) +
-               gsl_sf_bessel_Inu_scaled(x + 1, y))) / (4 * abs(y));
+               gsl_sf_bessel_Inu_scaled(x + 1, y))) / (4 * fabs(y));
 }
 
 Func2 sf_bessel_Knu_dx, sf_bessel_Knu_dx2, sf_bessel_Knu_dxdy;
@@ -863,9 +753,6 @@ double sf_bessel_Knu_scaled_dy2(double x, double y) {
       gsl_sf_bessel_Knu_scaled(x + 2, y));
 }
 
-double sf_clausen_dx(double x) {
-  return -log(2 * sin(0.5 * x));
-}
 double sf_clausen_dx2(double x) {
   return -0.5 * tan(0.5 * M_PI - x);
 }
@@ -891,11 +778,9 @@ double sf_hydrogenicR_1_dy2(double x, double y) {
   return 2 * pow(Z, 3.5) * exp(-Z * r);
 }
 
-double sf_dawson_dx(double x) {
-  return 1 - 2 * x * gsl_sf_dawson(x);
-}
 double sf_dawson_dx2(double x) {
-  return - 2 * (gsl_sf_dawson(x) + x * sf_dawson_dx(x));
+  double dx = 1 - 2 * x * gsl_sf_dawson(x);
+  return - 2 * (gsl_sf_dawson(x) + x * dx);
 }
 
 double debye_dx(int n, double x, double (*func)(double)) {
@@ -906,28 +791,13 @@ double debye_dx2(int n, double x, double (*func)(double)) {
       func(x) / (x * x) - debye_dx(n, x, func) / x);
 }
 
-double sf_debye_1_dx(double x) { return debye_dx(1, x, gsl_sf_debye_1); }
 double sf_debye_1_dx2(double x) { return debye_dx2(1, x, gsl_sf_debye_1); }
-
-double sf_debye_2_dx(double x) { return debye_dx(2, x, gsl_sf_debye_2); }
 double sf_debye_2_dx2(double x) { return debye_dx2(2, x, gsl_sf_debye_2); }
-
-double sf_debye_3_dx(double x) { return debye_dx(3, x, gsl_sf_debye_3); }
 double sf_debye_3_dx2(double x) { return debye_dx2(3, x, gsl_sf_debye_3); }
-
-double sf_debye_4_dx(double x) { return debye_dx(4, x, gsl_sf_debye_4); }
 double sf_debye_4_dx2(double x) { return debye_dx2(4, x, gsl_sf_debye_4); }
-
-double sf_debye_5_dx(double x) { return debye_dx(5, x, gsl_sf_debye_5); }
 double sf_debye_5_dx2(double x) { return debye_dx2(5, x, gsl_sf_debye_5); }
-
-double sf_debye_6_dx(double x) { return debye_dx(6, x, gsl_sf_debye_6); }
 double sf_debye_6_dx2(double x) { return debye_dx2(6, x, gsl_sf_debye_6); }
 
-double sf_dilog_dx(double x) {
-  return x != 0 ?
-      -GSL_REAL(gsl_complex_log(gsl_complex_rect(1 - x, 0))) / x : 1;
-}
 double sf_dilog_dx2(double x) {
   return x != 0 ? (1 / (1 - x) +
       GSL_REAL(gsl_complex_log(gsl_complex_rect(1 - x, 0))) / x) / x : 0.5;
@@ -940,10 +810,6 @@ double gsl_sf_ellint_Ecomp(double x) {
   return ::gsl_sf_ellint_Ecomp(x, GSL_PREC_DOUBLE);
 }
 
-double sf_ellint_Kcomp_dx(double x) {
-  return x != 0 ? gsl_sf_ellint_Ecomp(x) / (x * (1 - x * x)) -
-      gsl_sf_ellint_Kcomp(x) / x : 0;
-}
 double sf_ellint_Kcomp_dx2(double x) {
   double x_squared = x * x;
   double div = x * (1 - x_squared);
@@ -953,9 +819,6 @@ double sf_ellint_Kcomp_dx2(double x) {
       (3 * x_squared - 1) * E) / (div * div) : M_PI_4;
 }
 
-double sf_ellint_Ecomp_dx(double x) {
-  return x != 0 ? (gsl_sf_ellint_Ecomp(x) - gsl_sf_ellint_Kcomp(x)) / x : 0;
-}
 double sf_ellint_Ecomp_dx2(double x) {
   double K = gsl_sf_ellint_Kcomp(x);
   double E = gsl_sf_ellint_Ecomp(x);
@@ -963,47 +826,14 @@ double sf_ellint_Ecomp_dx2(double x) {
       ((x * x - 1) * K + E) / (x * x * (x * x - 1)) : -M_PI_4;
 }
 
-double gsl_sf_ellint_Pcomp(double x, double y) {
-  return ::gsl_sf_ellint_Pcomp(x, y, GSL_PREC_DOUBLE);
-}
-double sf_ellint_Pcomp_dx(double x, double y) {
-  return -(x * ((x * x - 1) * gsl_sf_ellint_Pcomp(x, y) +
-      gsl_sf_ellint_Ecomp(x))) / ((x * x - 1) * (x * x + y));
-}
-double sf_ellint_Pcomp_dy(double x, double y) {
-  return (-gsl_sf_ellint_Kcomp(x) * (x * x + y) +
-      (x * x - y * y) * gsl_sf_ellint_Pcomp(x, y) +
-      y * gsl_sf_ellint_Ecomp(x)) / (2 * y * (y + 1) * (x * x + y));
-}
-double sf_ellint_Pcomp_dx2(double x, double y) {
-  return ((x * x - 1) * (gsl_sf_ellint_Kcomp(x) * (x * x + y) +
-      (x * x - 1) * (2 * x * x - y) * gsl_sf_ellint_Pcomp(x, y)) +
-      (3 * gsl_pow_4(x) - x * x + 2 * y) * gsl_sf_ellint_Ecomp(x)) /
-      gsl_pow_2((x * x - 1) * (x * x + y));
-}
-double sf_ellint_Pcomp_dxdy(double x, double y) {
-  return (x * ((x * x - 1) * (gsl_sf_ellint_Kcomp(x) * (x * x + y) +
-      (y * (3 * y + 2) - x * x) * gsl_sf_ellint_Pcomp(x, y)) +
-      y * (-x * x + 2 * y + 3) * gsl_sf_ellint_Ecomp(x))) /
-      (2 * (x * x - 1) * y * (y + 1) * gsl_pow_2(x * x +y));
-}
-double sf_ellint_Pcomp_dy2(double x, double y) {
-  return (gsl_sf_ellint_Kcomp(x) * (gsl_pow_4(x) * (4 * y + 1) +
-      3 * x * x * y * (3 * y + 1) + y * y * (5 * y + 2)) +
-      y * (x * x * (1 - 2 * y) - y * (5 * y + 2)) * gsl_sf_ellint_Ecomp(x)-
-      (gsl_pow_4(x) * (4 * y + 1) + 2 * x * x * y * (5 * y + 2) -
-          3 * gsl_pow_4(y)) * gsl_sf_ellint_Pcomp(x, y)) /
-      (4 * gsl_pow_2(y * (y + 1) * (x * x + y)));
-}
-
 #define TEST_FUNC(name) \
-  TestFunc("gsl_" #name, gsl_##name, name##_dx, name##_dx2);
+  TestFunc("gsl_" #name, gsl_##name, name##_dx2);
 
 #define TEST_FUNC_U(name) \
   TestFunc("gsl_" #name, gsl_##name);
 
 #define TEST_FUNC_N(name) \
-  TestFunc("gsl_" #name, gsl_##name, name##_dx, name##_dx2);
+  TestFunc("gsl_" #name, gsl_##name, name##_dx2);
 
 #define TEST_FUNC2(name) \
     TestFunc("gsl_" #name, gsl_##name, name##_dx, name##_dy, \
@@ -1103,15 +933,13 @@ TEST_F(GSLTest, Elementary) {
 TEST_F(GSLTest, AiryA) {
   TEST_FUNC(sf_airy_Ai);
   TEST_FUNC(sf_airy_Ai_scaled);
-  ASSERT_NEAR(-0.00888609, sf_airy_Ai_scaled_dx(5), 1e-5);
-  ASSERT_NEAR(0.00207512, sf_airy_Ai_scaled_dx2(5), 1e-5);
+  EXPECT_NEAR(0.00207512, sf_airy_Ai_scaled_dx2(5), 1e-5);
 }
 
 TEST_F(GSLTest, AiryB) {
   TEST_FUNC(sf_airy_Bi);
   TEST_FUNC(sf_airy_Bi_scaled);
-  ASSERT_NEAR(-0.0203063, sf_airy_Bi_scaled_dx(5), 1e-5);
-  ASSERT_NEAR(0.00559418, sf_airy_Bi_scaled_dx2(5), 1e-5);
+  EXPECT_NEAR(0.00559418, sf_airy_Bi_scaled_dx2(5), 1e-5);
 }
 
 TEST_F(GSLTest, AiryZero) {
@@ -1125,173 +953,147 @@ TEST_F(GSLTest, BesselJ) {
   TEST_FUNC(sf_bessel_J0);
   TEST_FUNC(sf_bessel_J1);
   TEST_FUNC_N(sf_bessel_Jn);
-  ASSERT_NEAR(-0.172334, sf_bessel_Jn_dx(3, 5).value, 1e-5);
-  ASSERT_NEAR(-0.199025, sf_bessel_Jn_dx2(3, 5).value, 1e-5);
+  EXPECT_NEAR(-0.199025, sf_bessel_Jn_dx2(3, 5).value, 1e-5);
 }
 
 TEST_F(GSLTest, BesselY) {
   TEST_FUNC(sf_bessel_Y0);
   TEST_FUNC(sf_bessel_Y1);
   TEST_FUNC_N(sf_bessel_Yn);
-  ASSERT_NEAR(0.279903, sf_bessel_Yn_dx(3, 5).value, 1e-5);
-  ASSERT_NEAR(-0.149592, sf_bessel_Yn_dx2(3, 5).value, 1e-5);
+  EXPECT_NEAR(-0.149592, sf_bessel_Yn_dx2(3, 5).value, 1e-5);
 }
 
 TEST_F(GSLTest, BesselI) {
   TEST_FUNC(sf_bessel_I0);
   TEST_FUNC(sf_bessel_I1);
   TEST_FUNC_N(sf_bessel_In);
-  ASSERT_NEAR(11.30692, sf_bessel_In_dx(3, 5).value, 1e-5);
-  ASSERT_NEAR(11.78897, sf_bessel_In_dx2(3, 5).value, 1e-5);
+  EXPECT_NEAR(11.78897, sf_bessel_In_dx2(3, 5).value, 1e-5);
 
   TEST_FUNC(sf_bessel_I0_scaled);
-  ASSERT_NEAR(-0.0195685, sf_bessel_I0_scaled_dx(5), 1e-5);
-  ASSERT_NEAR(0.00634264, sf_bessel_I0_scaled_dx2(5), 1e-5);
+  EXPECT_NEAR(0.00634264, sf_bessel_I0_scaled_dx2(5), 1e-5);
 
   TEST_FUNC(sf_bessel_I1_scaled);
-  ASSERT_NEAR(-0.0132259, sf_bessel_I1_scaled_dx(5), 1e-5);
-  ASSERT_NEAR(0.00286143, sf_bessel_I1_scaled_dx2(5), 1e-5);
+  EXPECT_NEAR(0.00286143, sf_bessel_I1_scaled_dx2(5), 1e-5);
 
   TEST_FUNC_N(sf_bessel_In_scaled);
-  ASSERT_NEAR(0.00657472, sf_bessel_In_scaled_dx(3, 5).value, 1e-5);
-  ASSERT_NEAR(-0.00332666, sf_bessel_In_scaled_dx2(3, 5).value, 1e-5);
+  EXPECT_NEAR(-0.00332666, sf_bessel_In_scaled_dx2(3, 5).value, 1e-5);
 }
 
 TEST_F(GSLTest, BesselK) {
   TEST_FUNC(sf_bessel_K0);
   TEST_FUNC(sf_bessel_K1);
   TEST_FUNC_N(sf_bessel_Kn);
-  ASSERT_NEAR(-0.010284, sf_bessel_Kn_dx(3, 5).value, 1e-5);
-  ASSERT_NEAR(0.0133336, sf_bessel_Kn_dx2(3, 5).value, 1e-5);
+  EXPECT_NEAR(0.0133336, sf_bessel_Kn_dx2(3, 5).value, 1e-5);
 
   TEST_FUNC(sf_bessel_K0_scaled);
-  ASSERT_NEAR(-0.0524663, sf_bessel_K0_scaled_dx(5), 1e-5);
-  ASSERT_NEAR(0.0151222, sf_bessel_K0_scaled_dx2(5), 1e-5);
+  EXPECT_NEAR(0.0151222, sf_bessel_K0_scaled_dx2(5), 1e-5);
 
   TEST_FUNC(sf_bessel_K1_scaled);
-  ASSERT_NEAR(-0.0675885, sf_bessel_K1_scaled_dx(5), 1e-5);
-  ASSERT_NEAR(0.0224065, sf_bessel_K1_scaled_dx2(5), 1e-5);
+  EXPECT_NEAR(0.0224065, sf_bessel_K1_scaled_dx2(5), 1e-5);
 
   TEST_FUNC_N(sf_bessel_Kn_scaled);
-  ASSERT_NEAR(-0.295674, sf_bessel_Kn_scaled_dx(3, 5).value, 1e-5);
-  ASSERT_NEAR(0.156927, sf_bessel_Kn_scaled_dx2(3, 5).value, 1e-5);
+  EXPECT_NEAR(0.156927, sf_bessel_Kn_scaled_dx2(3, 5).value, 1e-5);
 }
 
 TEST_F(GSLTest, Besselj) {
   TEST_FUNC(sf_bessel_j0);
-  ASSERT_NEAR(0.0950894, sf_bessel_j0_dx(5), 1e-5);
-  ASSERT_NEAR(0.153749, sf_bessel_j0_dx2(5), 1e-5);
+  EXPECT_NEAR(0.153749, sf_bessel_j0_dx2(5), 1e-5);
 
   TEST_FUNC(sf_bessel_j1);
-  ASSERT_NEAR(-0.153749, sf_bessel_j1_dx(5), 1e-5);
-  ASSERT_NEAR(0.148982, sf_bessel_j1_dx2(5), 1e-5);
+  EXPECT_NEAR(0.148982, sf_bessel_j1_dx2(5), 1e-5);
 
   TEST_FUNC(sf_bessel_j2);
-  ASSERT_NEAR(-0.175928, sf_bessel_j2_dx(5), 1e-5);
-  ASSERT_NEAR(-0.0320245, sf_bessel_j2_dx2(5), 1e-5);
+  EXPECT_NEAR(-0.0320245, sf_bessel_j2_dx2(5), 1e-5);
 
   TEST_FUNC_N(sf_bessel_jl);
-  ASSERT_NEAR(-0.0491253, sf_bessel_jl_dx(3, 5).value, 1e-5);
-  ASSERT_NEAR(-0.0998566, sf_bessel_jl_dx2(3, 5).value, 1e-5);
+  EXPECT_NEAR(-0.0998566, sf_bessel_jl_dx2(3, 5).value, 1e-5);
 }
 
 TEST_F(GSLTest, Bessely) {
   TEST_FUNC(sf_bessel_y0);
-  ASSERT_NEAR(-0.180438, sf_bessel_y0_dx(5), 1e-5);
-  ASSERT_NEAR(0.128908, sf_bessel_y0_dx2(5), 1e-5);
+  EXPECT_NEAR(0.128908, sf_bessel_y0_dx2(5), 1e-5);
 
   TEST_FUNC(sf_bessel_y1);
-  ASSERT_NEAR(-0.128908, sf_bessel_y1_dx(5), 1e-5);
-  ASSERT_NEAR(-0.11444, sf_bessel_y1_dx2(5), 1e-5);
+  EXPECT_NEAR(-0.11444, sf_bessel_y1_dx2(5), 1e-5);
 
   TEST_FUNC(sf_bessel_y2);
-  ASSERT_NEAR(0.0814411, sf_bessel_y2_dx(5), 1e-5);
-  ASSERT_NEAR(-0.157973, sf_bessel_y2_dx2(5), 1e-5);
+  EXPECT_NEAR(-0.157973, sf_bessel_y2_dx2(5), 1e-5);
 
   TEST_FUNC_N(sf_bessel_yl);
-  ASSERT_NEAR(0.17735, sf_bessel_yl_dx(3, 5).value, 1e-5);
-  ASSERT_NEAR(-0.0629096, sf_bessel_yl_dx2(3, 5).value, 1e-5);
+  EXPECT_NEAR(-0.0629096, sf_bessel_yl_dx2(3, 5).value, 1e-5);
 }
 
 TEST_F(GSLTest, Besseli) {
   TEST_FUNC(sf_bessel_i0_scaled);
-  ASSERT_NEAR(0.0999955, gsl_sf_bessel_i0_scaled(5), 1e-5);
-  ASSERT_NEAR(-0.01999, sf_bessel_i0_scaled_dx(5), 1e-5);
-  ASSERT_NEAR(0.00797784, sf_bessel_i0_scaled_dx2(5), 1e-5);
+  EXPECT_NEAR(0.0999955, gsl_sf_bessel_i0_scaled(5), 1e-5);
+  EXPECT_NEAR(0.00797784, sf_bessel_i0_scaled_dx2(5), 1e-5);
 
   TEST_FUNC(sf_bessel_i1_scaled);
-  ASSERT_NEAR(0.0800054, gsl_sf_bessel_i1_scaled(5), 1e-5);
-  ASSERT_NEAR(-0.0120122, sf_bessel_i1_scaled_dx(5), 1e-5);
-  ASSERT_NEAR(0.00322746, sf_bessel_i1_scaled_dx2(5), 1e-5);
+  EXPECT_NEAR(0.0800054, gsl_sf_bessel_i1_scaled(5), 1e-5);
+  EXPECT_NEAR(0.00322746, sf_bessel_i1_scaled_dx2(5), 1e-5);
 
   TEST_FUNC(sf_bessel_i2_scaled);
-  ASSERT_NEAR(0.0519922, gsl_sf_bessel_i2_scaled(5), 1e-5);
-  ASSERT_NEAR(-0.00318206, sf_bessel_i2_scaled_dx(5), 1e-5);
-  ASSERT_NEAR(-0.000681812, sf_bessel_i2_scaled_dx2(5), 1e-5);
+  EXPECT_NEAR(0.0519922, gsl_sf_bessel_i2_scaled(5), 1e-5);
+  EXPECT_NEAR(-0.000681812, sf_bessel_i2_scaled_dx2(5), 1e-5);
 
   TEST_FUNC_N(sf_bessel_il_scaled);
-  ASSERT_NEAR(0.0280133, gsl_sf_bessel_il_scaled(3, 5), 1e-5);
-  ASSERT_NEAR(0.00156833, sf_bessel_il_scaled_dx(3, 5).value, 1e-5);
-  ASSERT_NEAR(-0.00152293, sf_bessel_il_scaled_dx2(3, 5).value, 1e-5);
+  EXPECT_NEAR(0.0280133, gsl_sf_bessel_il_scaled(3, 5), 1e-5);
+  EXPECT_NEAR(-0.00152293, sf_bessel_il_scaled_dx2(3, 5).value, 1e-5);
 }
 
 TEST_F(GSLTest, Besselk) {
   TEST_FUNC(sf_bessel_k0_scaled);
-  ASSERT_NEAR(0.314159, gsl_sf_bessel_k0_scaled(5), 1e-5);
-  ASSERT_NEAR(-0.0628319, sf_bessel_k0_scaled_dx(5), 1e-5);
-  ASSERT_NEAR(0.0251327, sf_bessel_k0_scaled_dx2(5), 1e-5);
+  EXPECT_NEAR(0.314159, gsl_sf_bessel_k0_scaled(5), 1e-5);
+  EXPECT_NEAR(0.0251327, sf_bessel_k0_scaled_dx2(5), 1e-5);
 
   TEST_FUNC(sf_bessel_k1_scaled);
-  ASSERT_NEAR(0.376991, gsl_sf_bessel_k1_scaled(5), 1e-5);
-  ASSERT_NEAR(-0.0879646, sf_bessel_k1_scaled_dx(5), 1e-5);
-  ASSERT_NEAR(0.0402124, sf_bessel_k1_scaled_dx2(5), 1e-5);
+  EXPECT_NEAR(0.376991, gsl_sf_bessel_k1_scaled(5), 1e-5);
+  EXPECT_NEAR(0.0402124, sf_bessel_k1_scaled_dx2(5), 1e-5);
 
   TEST_FUNC(sf_bessel_k2_scaled);
-  ASSERT_NEAR(0.540354, gsl_sf_bessel_k2_scaled(5), 1e-5);
-  ASSERT_NEAR(-0.16085, sf_bessel_k2_scaled_dx(5), 1e-5);
-  ASSERT_NEAR(0.0884672, sf_bessel_k2_scaled_dx2(5), 1e-5);
+  EXPECT_NEAR(0.540354, gsl_sf_bessel_k2_scaled(5), 1e-5);
+  EXPECT_NEAR(0.0884672, sf_bessel_k2_scaled_dx2(5), 1e-5);
 
   TEST_FUNC_N(sf_bessel_kl_scaled);
-  ASSERT_NEAR(0.917345, gsl_sf_bessel_kl_scaled(3, 5), 1e-5);
-  ASSERT_NEAR(-0.356885, sf_bessel_kl_scaled_dx(3, 5).value, 1e-5);
-  ASSERT_NEAR(0.236248, sf_bessel_kl_scaled_dx2(3, 5).value, 1e-5);
+  EXPECT_NEAR(0.917345, gsl_sf_bessel_kl_scaled(3, 5), 1e-5);
+  EXPECT_NEAR(0.236248, sf_bessel_kl_scaled_dx2(3, 5).value, 1e-5);
 }
 
 TEST_F(GSLTest, BesselFractionalOrder) {
   TEST_FUNC2(sf_bessel_Jnu);
-  ASSERT_NEAR(0.410029, gsl_sf_bessel_Jnu(3.5, 5), 1e-5);
-  ASSERT_NEAR(-0.0466428, sf_bessel_Jnu_dy(3.5, 5), 1e-5);
-  ASSERT_NEAR(-0.199786, sf_bessel_Jnu_dy2(3.5, 5), 1e-5);
+  EXPECT_NEAR(0.410029, gsl_sf_bessel_Jnu(3.5, 5), 1e-5);
+  EXPECT_NEAR(-0.0466428, sf_bessel_Jnu_dy(3.5, 5), 1e-5);
+  EXPECT_NEAR(-0.199786, sf_bessel_Jnu_dy2(3.5, 5), 1e-5);
 
   TEST_FUNC2(sf_bessel_Ynu);
-  ASSERT_NEAR(-0.0275521, gsl_sf_bessel_Ynu(3.5, 5), 1e-5);
-  ASSERT_NEAR(0.313659, sf_bessel_Ynu_dy(3.5, 5), 1e-5);
-  ASSERT_NEAR(-0.0486802, sf_bessel_Ynu_dy2(3.5, 5), 1e-5);
+  EXPECT_NEAR(-0.0275521, gsl_sf_bessel_Ynu(3.5, 5), 1e-5);
+  EXPECT_NEAR(0.313659, sf_bessel_Ynu_dy(3.5, 5), 1e-5);
+  EXPECT_NEAR(-0.0486802, sf_bessel_Ynu_dy2(3.5, 5), 1e-5);
 
   TEST_FUNC2(sf_bessel_Inu);
-  ASSERT_NEAR(7.417560126111555, gsl_sf_bessel_Inu(3.5, 5), 1e-5);
-  ASSERT_NEAR(8.574590050404494, sf_bessel_Inu_dy(3.5, 5), 1e-5);
-  ASSERT_NEAR(9.337246577825318, sf_bessel_Inu_dy2(3.5, 5), 1e-5);
+  EXPECT_NEAR(7.417560126111555, gsl_sf_bessel_Inu(3.5, 5), 1e-5);
+  EXPECT_NEAR(8.574590050404494, sf_bessel_Inu_dy(3.5, 5), 1e-5);
+  EXPECT_NEAR(9.337246577825318, sf_bessel_Inu_dy2(3.5, 5), 1e-5);
 
   TEST_FUNC2(sf_bessel_Inu_scaled);
-  ASSERT_NEAR(0.04997912699226937, gsl_sf_bessel_Inu_scaled(3.5, 5), 1e-5);
-  ASSERT_NEAR(0.00779600630624169, sf_bessel_Inu_scaled_dy(3.5, 5), 1e-5);
-  ASSERT_NEAR(-0.0026572670459736, sf_bessel_Inu_scaled_dy2(3.5, 5), 1e-5);
+  EXPECT_NEAR(0.04997912699226937, gsl_sf_bessel_Inu_scaled(3.5, 5), 1e-5);
+  EXPECT_NEAR(0.00779600630624169, sf_bessel_Inu_scaled_dy(3.5, 5), 1e-5);
+  EXPECT_NEAR(-0.0026572670459736, sf_bessel_Inu_scaled_dy2(3.5, 5), 1e-5);
 
   TEST_FUNC2(sf_bessel_Knu);
-  ASSERT_NEAR(0.011027711053957217, gsl_sf_bessel_Knu(3.5, 5), 1e-5);
-  ASSERT_NEAR(-0.014215172742155810, sf_bessel_Knu_dy(3.5, 5), 1e-5);
-  ASSERT_NEAR(0.01927432401882742, sf_bessel_Knu_dy2(3.5, 5), 1e-5);
+  EXPECT_NEAR(0.011027711053957217, gsl_sf_bessel_Knu(3.5, 5), 1e-5);
+  EXPECT_NEAR(-0.014215172742155810, sf_bessel_Knu_dy(3.5, 5), 1e-5);
+  EXPECT_NEAR(0.01927432401882742, sf_bessel_Knu_dy2(3.5, 5), 1e-5);
 
   TEST_FUNC2(sf_bessel_lnKnu);
-  ASSERT_NEAR(-4.5073439872921324, gsl_sf_bessel_lnKnu(3.5, 5), 1e-5);
-  ASSERT_NEAR(-1.289041095890411, sf_bessel_lnKnu_dy(3.5, 5), 1e-5);
-  ASSERT_NEAR(0.08618127228373, sf_bessel_lnKnu_dy2(3.5, 5), 1e-5);
+  EXPECT_NEAR(-4.5073439872921324, gsl_sf_bessel_lnKnu(3.5, 5), 1e-5);
+  EXPECT_NEAR(-1.289041095890411, sf_bessel_lnKnu_dy(3.5, 5), 1e-5);
+  EXPECT_NEAR(0.08618127228373, sf_bessel_lnKnu_dy2(3.5, 5), 1e-5);
 
   TEST_FUNC2(sf_bessel_Knu_scaled);
-  ASSERT_NEAR(1.6366574351881952, gsl_sf_bessel_Knu_scaled(3.5, 5), 1e-5);
-  ASSERT_NEAR(-0.4730612586639852, sf_bessel_Knu_scaled_dy(3.5, 5), 1e-5);
-  ASSERT_NEAR(0.2777833646846813, sf_bessel_Knu_scaled_dy2(3.5, 5), 1e-5);
+  EXPECT_NEAR(1.6366574351881952, gsl_sf_bessel_Knu_scaled(3.5, 5), 1e-5);
+  EXPECT_NEAR(-0.4730612586639852, sf_bessel_Knu_scaled_dy(3.5, 5), 1e-5);
+  EXPECT_NEAR(0.2777833646846813, sf_bessel_Knu_scaled_dy2(3.5, 5), 1e-5);
 }
 
 TEST_F(GSLTest, BesselZero) {
@@ -1321,12 +1123,12 @@ TEST_F(GSLTest, Clausen) {
 
 TEST_F(GSLTest, Hydrogenic) {
   TEST_FUNC2(sf_hydrogenicR_1);
-  ASSERT_NEAR(0.0633592, gsl_sf_hydrogenicR_1(3, 1.7), 1e-5);
-  ASSERT_NEAR(-0.0760311, sf_hydrogenicR_1_dx(3, 1.7), 1e-5);
-  ASSERT_NEAR(-0.190078, sf_hydrogenicR_1_dy(3, 1.7), 1e-5);
-  ASSERT_NEAR(0.0806774, sf_hydrogenicR_1_dx2(3, 1.7), 1e-5);
-  ASSERT_NEAR(0.164734, sf_hydrogenicR_1_dxdy(3, 1.7), 1e-5);
-  ASSERT_NEAR(0.570233, sf_hydrogenicR_1_dy2(3, 1.7), 1e-5);
+  EXPECT_NEAR(0.0633592, gsl_sf_hydrogenicR_1(3, 1.7), 1e-5);
+  EXPECT_NEAR(-0.0760311, sf_hydrogenicR_1_dx(3, 1.7), 1e-5);
+  EXPECT_NEAR(-0.190078, sf_hydrogenicR_1_dy(3, 1.7), 1e-5);
+  EXPECT_NEAR(0.0806774, sf_hydrogenicR_1_dx2(3, 1.7), 1e-5);
+  EXPECT_NEAR(0.164734, sf_hydrogenicR_1_dxdy(3, 1.7), 1e-5);
+  EXPECT_NEAR(0.570233, sf_hydrogenicR_1_dy2(3, 1.7), 1e-5);
 
   const char *name = "gsl_sf_hydrogenicR";
   AMPLFunction af = GetFunction(name);
@@ -1368,7 +1170,7 @@ TEST_F(GSLTest, Coulomb) {
 
 TEST_F(GSLTest, Coupling3j) {
   double value = gsl_sf_coupling_3j(8, 20, 12, -2, 12, -10);
-  ASSERT_NEAR(0.0812695955, value, 1e-5);
+  EXPECT_NEAR(0.0812695955, value, 1e-5);
   AMPLFunction af = GetFunction("gsl_sf_coupling_3j");
   EXPECT_ALMOST_EQUAL_OR_NAN(value, af(ArgList(8, 20, 12, -2, 12, -10)));
   af(ArgList(0, 0, 0, 0, 0, 0));
@@ -1383,7 +1185,7 @@ TEST_F(GSLTest, Coupling3j) {
 
 TEST_F(GSLTest, Coupling6j) {
   double value = gsl_sf_coupling_6j(2, 4, 6, 8, 10, 12);
-  ASSERT_NEAR(0.0176295295, value, 1e-5);
+  EXPECT_NEAR(0.0176295295, value, 1e-5);
   AMPLFunction af = GetFunction("gsl_sf_coupling_6j");
   EXPECT_ALMOST_EQUAL_OR_NAN(value, af(ArgList(2, 4, 6, 8, 10, 12)));
   af(ArgList(0, 0, 0, 0, 0, 0));
@@ -1398,7 +1200,7 @@ TEST_F(GSLTest, Coupling6j) {
 
 TEST_F(GSLTest, Coupling9j) {
   double value = gsl_sf_coupling_9j(6, 16, 18, 8, 20, 14, 12, 10, 4);
-  ASSERT_NEAR(-0.000775648399, value, 1e-9);
+  EXPECT_NEAR(-0.000775648399, value, 1e-9);
   AMPLFunction af = GetFunction("gsl_sf_coupling_9j");
   return;
   EXPECT_ALMOST_EQUAL_OR_NAN(value, af(ArgList(6, 16, 18, 8, 20, 14, 12, 10, 4)));
@@ -1430,36 +1232,32 @@ TEST_F(GSLTest, Debye) {
 
 TEST_F(GSLTest, Dilog) {
   TEST_FUNC(sf_dilog);
-  ASSERT_EQ(1, sf_dilog_dx(0));
-  ASSERT_NEAR(-0.277259, sf_dilog_dx(5), 1e-5);
-  ASSERT_EQ(0.5, sf_dilog_dx2(0));
-  ASSERT_NEAR(0.00545177, sf_dilog_dx2(5), 1e-5);
+  EXPECT_EQ(0.5, sf_dilog_dx2(0));
+  EXPECT_NEAR(0.00545177, sf_dilog_dx2(5), 1e-5);
 }
 
 TEST_F(GSLTest, EllInt) {
   TEST_FUNC(sf_ellint_Kcomp);
-  ASSERT_EQ(0, sf_ellint_Kcomp_dx(0));
-  ASSERT_NEAR(0.541732, sf_ellint_Kcomp_dx(0.5), 1e-5);
-  ASSERT_EQ(M_PI_4, sf_ellint_Kcomp_dx2(0));
-  ASSERT_NEAR(1.88651, sf_ellint_Kcomp_dx2(0.5), 1e-5);
+  EXPECT_EQ(M_PI_4, sf_ellint_Kcomp_dx2(0));
+  EXPECT_NEAR(1.88651, sf_ellint_Kcomp_dx2(0.5), 1e-5);
 
   TEST_FUNC(sf_ellint_Ecomp);
-  ASSERT_EQ(0, sf_ellint_Ecomp_dx(0));
-  ASSERT_NEAR(-0.436576, sf_ellint_Ecomp_dx(0.5), 1e-5);
-  ASSERT_EQ(-M_PI_4, sf_ellint_Ecomp_dx2(0));
-  ASSERT_NEAR(-1.08346, sf_ellint_Ecomp_dx2(0.5), 1e-5);
+  EXPECT_EQ(-M_PI_4, sf_ellint_Ecomp_dx2(0));
+  EXPECT_NEAR(-1.08346, sf_ellint_Ecomp_dx2(0.5), 1e-5);
 
-  TEST_FUNC2(sf_ellint_Pcomp);
-  ASSERT_NEAR(1.36647, gsl_sf_ellint_Pcomp(0.5, 0.5), 1e-5);
-  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, sf_ellint_Pcomp_dx(0, 0));
-  ASSERT_NEAR(0.393428, sf_ellint_Pcomp_dx(0.5, 0.5), 1e-5);
-  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, sf_ellint_Pcomp_dy(0, 0));
-  ASSERT_NEAR(-0.471628, sf_ellint_Pcomp_dy(0.5, 0.5), 1e-5);
-  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, sf_ellint_Pcomp_dx2(0, 0));
-  ASSERT_NEAR(1.35115, sf_ellint_Pcomp_dx2(0.5, 0.5), 1e-5);
-  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, sf_ellint_Pcomp_dxdy(0, 0));
-  ASSERT_NEAR(-0.210152, sf_ellint_Pcomp_dxdy(0.5, 0.5), 1e-5);
-  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, sf_ellint_Pcomp_dy2(0, 0));
-  ASSERT_NEAR(0.477835, sf_ellint_Pcomp_dy2(0.5, 0.5), 1e-5);
+  ArgList Zero(0, 0);
+  ArgList TestPt(0.5, 0.5);
+  AMPLFunction f = GetFunction("gsl_sf_ellint_Pcomp");
+  EXPECT_NEAR(1.36647395300460, f(TestPt), 1e-14);
+  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, f(Zero, DERIVS).deriv(0));
+  EXPECT_NEAR(0.393428217409760, f(TestPt, DERIVS).deriv(0), 1e-15);
+  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, f(Zero, DERIVS).deriv(1));
+  EXPECT_NEAR(-0.471628143501985, f(TestPt, DERIVS).deriv(1), 1e-15);
+  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, f(Zero, HES).hes(0));
+  EXPECT_NEAR(1.35115, f(TestPt, HES).hes(0), 1e-5);
+  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, f(Zero, HES).hes(1));
+  EXPECT_NEAR(-0.210152, f(TestPt, HES).hes(1), 1e-5);
+  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, f(Zero, HES).hes(2));
+  EXPECT_NEAR(0.477835, f(TestPt, HES).hes(2), 1e-5);
 }
 }
