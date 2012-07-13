@@ -185,6 +185,7 @@ class Driver {
 
   int get_option(Option opt) const { return options_[opt]; }
   void use_numberof(bool use = true) { options_[USENUMBEROF] = use; }
+  int wantsol() const;
 
   // Converts the specified ASL expression into an equivalent Concert
   // expression. 'e' must be a numerical expression.
