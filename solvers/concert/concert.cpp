@@ -318,7 +318,7 @@ Driver::Driver() :
    oinfo_->keywds = keywords_;
    oinfo_->n_keywds = sizeof(keywords_) / sizeof(*keywords_);
    oinfo_->version = &version_[0];
-   oinfo_->driver_date = 20120620;
+   oinfo_->driver_date = 20120713;
    doi->driver = this;
 }
 
