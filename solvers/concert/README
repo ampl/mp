@@ -176,6 +176,14 @@ the list also repeats the above single-word phrases, denoting them with
      usenumberof        0 or 1 (default 1):  Whether to consolidate 'numberof'
                         expressions by use of IloDistribute constraints.
 
+     wantsol            In a stand-alone invocation (no -AMPL on the
+                        command line), what solution information to write.
+                        Sum of
+                                1 = write .sol file
+                                2 = primal variables to stdout
+                                4 = dual variables to stdout
+                                8 = suppress solution message
+
      workers            Number of workers to run in parallel to solve a problem.
                         In addition to numeric values this option accepts the
                         value "auto" since CP Optimizer version 12.3.

@@ -1325,12 +1325,12 @@ TEST_F(ConcertTest, SameExprThrowsOnUnsupportedOp) {
 // Driver tests
 
 TEST_F(ConcertTest, Usage) {
-  const char *sep = "/";
-#ifdef WIN32
-  sep = "\\";
-#endif
-  system((string("..") + sep + "solvers" + sep + "concert" +
-    sep + "concert > out 2>&1").c_str());
+  FILE *saved_stderr = Stderr;
+  Stderr = fopen("out", "w");
+  d.run((Args() + "concert").get());
+  fclose(Stderr);
+  Stderr = saved_stderr;
+
   ifstream ifs("out");
   enum { BUFFER_SIZE = 4096 };
   char buffer[BUFFER_SIZE];
@@ -1458,6 +1458,14 @@ TEST_F(ConcertTest, SolveSudokuVeryEasy) {
 
 // ----------------------------------------------------------------------------
 // Option tests
+
+TEST_F(ConcertTest, WantsolOption) {
+  EXPECT_EQ(0, d.wantsol());
+  EXPECT_TRUE(ParseOptions("wantsol=1"));
+  EXPECT_EQ(1, d.wantsol());
+  EXPECT_TRUE(ParseOptions("wantsol=5"));
+  EXPECT_EQ(5, d.wantsol());
+}
 
 TEST_F(ConcertTest, DebugExprOption) {
   EXPECT_TRUE(ParseOptions("debugexpr=0"));

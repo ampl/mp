@@ -288,6 +288,9 @@ keyword Driver::keywords_[] = {
       CSTR("display timings for the run")),
   KW(CSTR("usenumberof"), Driver::set_bool_option, Driver::USENUMBEROF,
       CSTR("consolidate 'numberof' expressions")),
+  KW(CSTR("wantsol"), WS_val, 0,
+      CSTR("specifies what solution information to write in a "
+           "standalone invocation")),
   KW(CSTR("workers"),
       Driver::set_cp_int_option, &Workers,
       CSTR("number of workers to run in parallel to solve a problem"))
@@ -458,6 +461,11 @@ bool Driver::parse_options(char **argv) {
    return true;
 }
 
+int Driver::wantsol() const
+{
+   return oinfo_->wantsol;
+}
+
 /*----------------------------------------------------------------------
 
   Main Program
@@ -476,8 +484,10 @@ int Driver::run(char **argv) {
    /*** Get name of .nl file; read problem sizes ***/
 
    char *stub = getstub(&argv, oinfo_.get());
-   if (!stub)
-     usage_ASL(oinfo_.get(), 1);
+   if (!stub) {
+     usage_noexit_ASL(oinfo_.get(), 1);
+     return 1;
+   }
    FILE *nl = jac0dim(stub, strlen(stub));
 
    /*** Read coefficients & bounds & expression tree from .nl file ***/
