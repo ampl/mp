@@ -52,13 +52,27 @@ class ArgList {
   }
 
   vector<real> copy() const { return ra; }
+
+  friend std::ostream &operator<<(std::ostream &os, const ArgList &args);
 };
+
+std::ostream &operator<<(std::ostream &os, const ArgList &args) {
+  os << "(";
+  if (!args.ra.empty()) {
+    os << args.ra.front();
+    for (size_t i = 1, n = args.ra.size(); i < n; ++i)
+      os << ", " << args.ra[i];
+  }
+  os << ")";
+  return os;
+}
 
 // Options for an AMPL function call.
 enum {
-  ERROR  = 1, // Function call is expected to produce an error.
-  DERIVS = 2, // Get first partial derivatives.
-  HES    = 6  // Get both first and second partial derivatives.
+  ERROR        = 1, // Function call is expected to produce an error.
+  DERIVS       = 2, // Get first partial derivatives.
+  HES          = 6, // Get both first and second partial derivatives.
+  ERROR_TO_NAN = 8  // Convert error to NaN
 };
 
 class AMPLResult {
@@ -98,38 +112,14 @@ class AMPLFunction {
  public:
   AMPLFunction(ASL *asl, func_info *fi) : asl_(asl), fi_(fi) {}
 
+  const char *name() const { return fi_->name; }
+
+  AMPLResult operator()(vector<real> args,
+      int options = 0, char *dig = 0, void *info = 0) const;
+
   AMPLResult operator()(const ArgList &args,
       int options = 0, char *dig = 0, void *info = 0) const {
-    // Initialize the argument list.
-    arglist al = {};
-    TMInfo tmi = {};
-    vector<real> ra(args.copy());
-    al.ra = &ra[0];
-    al.nr = al.n = ra.size();
-    al.TMI = &tmi;
-    al.AE = asl_->i.ae;
-    al.dig = dig;
-    al.funcinfo = info;
-
-    // Allocate derivative storage if needed.
-    AMPLResult result;
-    if ((options & DERIVS) != 0)
-      al.derivs = result.AllocateDerivs(ra.size());
-    if ((options & HES) == HES)
-      al.hes = result.AllocateHes(ra.size());
-
-    // Call the function.
-    real value = fi_->funcp(&al);
-
-    // Check the error message.
-    if (al.Errmsg) {
-      if ((options & ERROR) == 0)
-        ADD_FAILURE() << al.Errmsg;
-    } else if ((options & ERROR) != 0)
-      ADD_FAILURE() << "Expected error in " << fi_->name;
-
-    result.SetValue(value);
-    return result;
+    return (*this)(args.copy(), options, dig, info);
   }
 
   AMPLResult operator()(real x,
@@ -137,6 +127,190 @@ class AMPLFunction {
     return (*this)((ArgList(x)), options, dig, info);
   }
 };
+
+AMPLResult AMPLFunction::operator()(
+    vector<real> args, int options, char *dig, void *info) const {
+  // Initialize the argument list.
+  arglist al = {};
+  TMInfo tmi = {};
+  al.ra = &args[0];
+  al.nr = al.n = args.size();
+  al.TMI = &tmi;
+  al.AE = asl_->i.ae;
+  al.dig = dig;
+  al.funcinfo = info;
+
+  // Allocate storage for the derivatives if needed.
+  AMPLResult result;
+  if ((options & DERIVS) != 0)
+    al.derivs = result.AllocateDerivs(args.size());
+  if ((options & HES) == HES)
+    al.hes = result.AllocateHes(args.size());
+
+  // Call the function.
+  real value = fi_->funcp(&al);
+
+  // Check the error message.
+  if (al.Errmsg) {
+    if ((options & ERROR_TO_NAN) != 0)
+      value = GSL_NAN;
+    else if ((options & ERROR) == 0)
+      ADD_FAILURE() << al.Errmsg;
+  } else if ((options & ERROR) != 0)
+    ADD_FAILURE() << "Expected error in " << fi_->name;
+
+  result.SetValue(value);
+  return result;
+}
+
+template <typename F>
+double SymmetricDifference(F f, double x, double h) {
+  return (f(x + h) - f(x - h)) / (2 * h);
+}
+
+template <typename F>
+double LeftDifference(F f, double x, double h) {
+  return (f(x) - f(x - h)) / h;
+}
+
+template <typename F>
+double RightDifference(F f, double x, double h) {
+  return (f(x + h) - f(x)) / h;
+}
+
+// Returns the derivative of a function f at a point x by Ridders'
+// method of polynomial extrapolation. The implementation is taken from
+// "Numerical Recipes in C", Chapter 5.7.
+template <typename F, typename D>
+double Diff(F f, double x, D d, double *final_h = 0) {
+  const int NTAB = 200;
+  const double CON = 1.4, CON2 = CON * CON;
+  const double BIG = std::numeric_limits<double>::max();
+  const double SAFE = 2;
+  double h = 0.125, ans = GSL_NAN;
+
+  // Successive columns in the Neville tableau will go to smaller
+  // step sizes and higher orders of extrapolation.
+  vector<double> a(NTAB * NTAB);
+
+  a[0] = d(f, x, h);
+  double err = BIG;
+  for (int i = 1; i < NTAB; i++) {
+    // Try new, smaller step size.
+    h /= CON;
+    a[i] = d(f, x, h);
+    double fac = CON2;
+    for (int j = 1; j <= i; j++) {
+      // Compute extrapolations of various orders, requiring no new function
+      // evaluations.
+      a[j * NTAB + i] =
+          (a[(j - 1) * NTAB + i] * fac - a[(j - 1) * NTAB + i - 1]) /
+          (fac - 1);
+      fac = CON2 * fac;
+      double errt = std::max(
+          fabs(a[j * NTAB + i] - a[(j - 1) * NTAB + i]),
+          fabs(a[j * NTAB + i] - a[(j - 1) * NTAB + i - 1]));
+      // The error strategy is to compare each new extrapolation to one order
+      // lower, both at the present step size and the previous one.
+      if (errt <= err) {
+        // If error is decreased, save the improved answer.
+        err = errt;
+        ans = a[j * NTAB + i];
+      }
+    }
+    // If higher order is worse by a significant factor SAFE, then quit early.
+    if (fabs(a[i * NTAB + i] - a[(i - 1) * NTAB + i - 1]) >= SAFE * err)
+      break;
+  }
+
+  if (final_h)
+    *final_h = h;
+  return ans;
+}
+
+// Returns the derivative of a function f at a point x by Ridders'
+// method of polynomial extrapolation. The implementation is taken from
+// "Numerical Recipes in C", Chapter 5.7.
+template <typename F>
+double Diff(F f, double x) {
+  if (gsl_isnan(f(x)))
+    return GSL_NAN;
+  double h = 0;
+  double deriv = Diff(f, x, SymmetricDifference<F>, &h);
+  double right_deriv = Diff(f, x, RightDifference<F>);
+  if (gsl_isnan(deriv))
+    return right_deriv;
+  double left_deriv = Diff(f, x, LeftDifference<F>);
+  if (!(fabs(left_deriv - right_deriv) <= 1e-2))
+    return GSL_NAN;
+  if (deriv > 1) {
+    // Choose h so that x + h and x differ by a number exactly representable
+    // as double. See "Numerical Recipes in C", Chapter 5.7.
+    double small_h = h / 100;
+    volatile double temp = x + h;
+    small_h = temp - x;
+    // A heuristic to detect infinity.
+    double check_deriv = (f(x + small_h) - f(x - small_h)) / (2 * small_h);
+    if (check_deriv > deriv * 1.1)
+      return GSL_POSINF;
+  }
+  return deriv;
+}
+
+template <typename F>
+void CheckDerivative(F f, double x,
+    const AMPLFunction &af, size_t var_index, const ArgList &args) {
+  std::ostringstream os;
+  os << "Checking d/dx" << var_index << " " << af.name() << " at " << args;
+  SCOPED_TRACE(os.str());
+  double dx = Diff(f, x);
+  if (gsl_isnan(dx)) {
+    af(args, ERROR | DERIVS);
+    return;
+  }
+  EXPECT_NEAR(dx, af(args, DERIVS).deriv(var_index), 1e-5);
+}
+
+class Deriv {
+ private:
+  AMPLFunction af_;
+  unsigned deriv_var_index_;
+  unsigned eval_var_index_;
+  vector<real> args_;
+
+ public:
+  Deriv(AMPLFunction af, unsigned eval_var_index,
+      unsigned deriv_var_index, const vector<real> &args)
+  : af_(af), deriv_var_index_(deriv_var_index),
+    eval_var_index_(eval_var_index),  args_(args) {}
+
+  double operator()(double x) {
+    args_[eval_var_index_] = x;
+    AMPLResult result = af_(args_, DERIVS | ERROR_TO_NAN);
+    return gsl_isnan(result) ? GSL_NAN : result.deriv(deriv_var_index_);
+  }
+};
+
+void CheckSecondDerivatives(const AMPLFunction &af, const ArgList &args) {
+  vector<real> ra(args.copy());
+  for (unsigned i = 0, n = ra.size(); i < n; ++i) {
+    for (unsigned j = 0; j < n; ++j) {
+      double d2 = Diff(Deriv(af, i, j, ra), ra[i]);
+      std::ostringstream os;
+      os << "Checking if d/dx" << i << " d/dx" << j
+          << " " << af.name() << " at " << args << " is " << d2;
+      SCOPED_TRACE(os.str());
+      if (gsl_isnan(d2)) {
+        af(args, ERROR | HES);
+        return;
+      }
+      unsigned ii = i, jj = j;
+      if (ii > jj) std::swap(ii, jj);
+      unsigned hes_index = ii * (2 * n - ii - 1) / 2 + jj;
+      EXPECT_NEAR(d2, af(args, HES).hes(hes_index), 1e-5);
+    }
+  }
+}
 
 struct Result {
   double value;
@@ -156,7 +330,7 @@ class Options {
  public:
   virtual ~Options() {}
 
-  virtual bool HasDerivative(const vector<real>&) const {
+  virtual bool HasDerivative(unsigned, const vector<real>&) const {
     return true;
   }
 
@@ -205,16 +379,15 @@ class GSLTest : public ::testing::Test {
   }
 
   // Test a function taking a single argument.
-  void TestFunc(const char *name, Func1 f, Func1 dx2);
+  void TestFunc(const char *name, Func1 f);
 
   // Test a function taking a single argument of type unsigned int.
   void TestFunc(const char *name, FuncU f);
 
   void TestFunc(const char *name, FuncN1 f, FuncN1Result dx2);
-  void TestFunc(const char *name, Func2 f, Func2 dx,
+  void TestFunc(const char *name, Func2 f,
       Func2 dx2, Func2 dxdy, Func2 dy2, const Options& opt);
-  void TestFunc(const char *name, Func3 f, Func3 dx, Func3 dy, Func3 dz,
-      Func3 dx2, Func3 dxdy, Func3 dxdz, Func3 dy2, Func3 dydz, Func3 dz2);
+  void TestFunc(const char *name, Func3 f);
 };
 
 const double POINTS[] = {-5, -1.23, 0, 1.23, 5};
@@ -230,38 +403,7 @@ const size_t NUM_POINTS_FOR_N = sizeof(POINTS_FOR_N) / sizeof(*POINTS_FOR_N);
 #define EXPECT_NEAR_OR_NAN(expected, actual, abs_error) \
     EXPECT_PRED3(NearOrNaN, expected, actual, abs_error)
 
-// Differentiates f numerically.
-template <typename F>
-double Diff(F f, double x) {
-  double h = x != 0 ?
-      sqrt(std::numeric_limits<double>::epsilon()) * x : 1e-10;
-  double f_x = f(x), f_left = f(x - h), f_right = f(x + h);
-  double left_deriv = (f_x - f_left) / h;
-  double right_deriv = (f_right - f_x) / h;
-  if (gsl_isnan(f_left)) {
-    if (x == 0 && fabs(right_deriv) < 1) {
-      // A heuristic to detect zero.
-      double small_h = h / 100;
-      double check_deriv = (f(x + small_h) - f_x) / small_h;
-      if (fabs(check_deriv) < 0.5 * fabs(right_deriv))
-        return 0;
-    }
-    return right_deriv;
-  }
-  if (fabs(left_deriv - right_deriv) > 1e-3)
-    return GSL_NAN;
-  double deriv = (f_right - f_left) / (2 * h);
-  if (deriv > 1) {
-    // A heuristic to detect infinity.
-    double small_h = h / 100;
-    double check_deriv = (f(x + small_h) - f(x - small_h)) / (2 * small_h);
-    if (check_deriv > deriv * 1.1)
-      return GSL_POSINF;
-  }
-  return deriv;
-}
-
-void GSLTest::TestFunc(const char *name, Func1 f, Func1 dx2) {
+void GSLTest::TestFunc(const char *name, Func1 f) {
   AMPLFunction af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     double x = POINTS[i];
@@ -277,17 +419,9 @@ void GSLTest::TestFunc(const char *name, Func1 f, Func1 dx2) {
       continue;
     }
     double actual_deriv = af(x, DERIVS).deriv();
-    if (dx != actual_deriv) {
-      EXPECT_NEAR(dx, actual_deriv, 1e-5)
-        << name << " at " << x;
-    }
-    double deriv2 = dx2(x);
-    if (gsl_isnan(deriv2)) {
-      af(x, ERROR | HES);
-    } else {
-      EXPECT_ALMOST_EQUAL_OR_NAN(deriv2, af(x, HES).hes())
-        << name << " at " << x;
-    }
+    if (dx != actual_deriv)
+      EXPECT_NEAR(dx, actual_deriv, 1e-5) << name << " at " << x;
+    CheckSecondDerivatives(af, ArgList(x));
   }
 }
 
@@ -340,7 +474,7 @@ void GSLTest::TestFunc(const char *name, FuncN1 f, FuncN1Result dx2) {
   }
 }
 
-void GSLTest::TestFunc(const char *name, Func2 f, Func2 dx,
+void GSLTest::TestFunc(const char *name, Func2 f,
     Func2 dx2, Func2 dxdy, Func2 dy2, const Options& opt) {
   AMPLFunction af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
@@ -353,36 +487,32 @@ void GSLTest::TestFunc(const char *name, Func2 f, Func2 dx,
         continue;
       }
       EXPECT_ALMOST_EQUAL_OR_NAN(value, af(args));
-      char dig = 0;
-      AMPLResult res;
-      if (dx) {
-        double deriv = opt.HasDerivative(args.copy()) ?
-            Diff(std::bind2nd(std::ptr_fun(f), y), x) : GSL_NAN;
-        if (gsl_isnan(deriv)) {
-          af(args, ERROR | DERIVS);
-        } else {
-          EXPECT_NEAR(deriv, af(args, DERIVS, &dig).deriv(0), 1e-5)
-                  << name << " at " << x << ", " << y;
-        }
+      char dig[2] = {0, 0};
+      double dx = opt.HasDerivative(0, args.copy()) ?
+          Diff(std::bind2nd(std::ptr_fun(f), y), x) : GSL_NAN;
+      if (gsl_isnan(dx)) {
+        af(args, ERROR | DERIVS);
+        dig[0] = 1;
       } else {
-        af(args, DERIVS | ERROR);
-        dig = 1;
+        EXPECT_NEAR(dx, af(args, DERIVS, dig).deriv(0), 1e-5)
+                << name << " at " << x << ", " << y;
       }
 
-      double deriv = opt.HasDerivative(args.copy()) ?
+      double dy = opt.HasDerivative(1, args.copy()) ?
           Diff(std::bind1st(std::ptr_fun(f), x), y) : GSL_NAN;
-      if (gsl_isnan(deriv)) {
-        af(args, ERROR | DERIVS, &dig);
-        continue;
+      if (gsl_isnan(dy)) {
+        af(args, ERROR | DERIVS, dig);
+      } else {
+        EXPECT_NEAR(dy, af(args, DERIVS, dig).deriv(1), 1e-5)
+          << name << " at " << x << ", " << y;
       }
-      EXPECT_NEAR(deriv, af(args, DERIVS, &dig).deriv(1), 1e-5)
-        << name << " at " << x << ", " << y;
 
-      if (!opt.HasDerivative2(args.copy())) {
-        res = af(args, ERROR | HES, &dig);
+      AMPLResult res;
+      if (!opt.HasDerivative2(args.copy()) || gsl_isnan(dx)) {
+        res = af(args, ERROR | HES);
         continue;
       }
-      res = af(args, HES, &dig);
+      res = af(args, HES, dig);
       if (dx2)
         EXPECT_ALMOST_EQUAL_OR_NAN(dx2(x, y), res.hes(0));
       if (dxdy)
@@ -392,37 +522,62 @@ void GSLTest::TestFunc(const char *name, Func2 f, Func2 dx,
   }
 }
 
-void GSLTest::TestFunc(const char *name, Func3 f, Func3 dx, Func3 dy, Func3 dz,
-    Func3 dx2, Func3 dxdy, Func3 dxdz, Func3 dy2, Func3 dydz, Func3 dz2) {
+class Bind12 {
+ private:
+  Func3 f_;
+  double arg1_;
+  double arg2_;
+
+ public:
+  Bind12(Func3 f, double arg1, double arg2)
+  : f_(f), arg1_(arg1), arg2_(arg2) {}
+
+  double operator()(double arg3) const { return f_(arg1_, arg2_, arg3); }
+};
+
+class Bind13 {
+ private:
+  Func3 f_;
+  double arg1_;
+  double arg3_;
+
+ public:
+  Bind13(Func3 f, double arg1, double arg3)
+  : f_(f), arg1_(arg1), arg3_(arg3) {}
+
+  double operator()(double arg2) const { return f_(arg1_, arg2, arg3_); }
+};
+
+class Bind23 {
+ private:
+  Func3 f_;
+  double arg2_;
+  double arg3_;
+
+ public:
+  Bind23(Func3 f, double arg2, double arg3)
+  : f_(f), arg2_(arg2), arg3_(arg3) {}
+
+  double operator()(double arg1) const { return f_(arg1, arg2_, arg3_); }
+};
+
+void GSLTest::TestFunc(const char *name, Func3 f) {
   AMPLFunction af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
       for (size_t k = 0; k != NUM_POINTS; ++k) {
         double x = POINTS[i], y = POINTS[j], z = POINTS[k];
         ArgList args(x, y, z);
-        EXPECT_ALMOST_EQUAL_OR_NAN(f(x, y, z), af(args)) << name;
-        AMPLResult res = af(args, DERIVS);
-        EXPECT_ALMOST_EQUAL_OR_NAN(dx(x, y, z), res.deriv(0)) << name;
-        EXPECT_ALMOST_EQUAL_OR_NAN(dy(x, y, z), res.deriv(1)) << name;
-        EXPECT_ALMOST_EQUAL_OR_NAN(dz(x, y, z), res.deriv(2)) << name;
-        res = af(args, HES);
-        EXPECT_ALMOST_EQUAL_OR_NAN(dx2(x, y, z),  res.hes(0)) << name;
-        EXPECT_ALMOST_EQUAL_OR_NAN(dxdy(x, y, z), res.hes(1)) << name;
-        EXPECT_ALMOST_EQUAL_OR_NAN(dxdz(x, y, z), res.hes(2)) << name;
-        EXPECT_ALMOST_EQUAL_OR_NAN(dy2(x, y, z),  res.hes(3)) << name;
-        EXPECT_ALMOST_EQUAL_OR_NAN(dydz(x, y, z), res.hes(4)) << name;
-        EXPECT_ALMOST_EQUAL_OR_NAN(dz2(x, y, z),  res.hes(5)) << name;
+        EXPECT_EQ(f(x, y, z), af(args)) << name;
+        CheckDerivative(Bind23(f, y, z), x, af, 0, args);
+        CheckDerivative(Bind13(f, x, z), y, af, 1, args);
+        CheckDerivative(Bind12(f, x, y), z, af, 2, args);
+        CheckSecondDerivatives(af, args);
       }
     }
   }
 }
 
-double log1p_dx2(double x) { return -1 / ((x + 1) * (x + 1)); }
-
-double expm1_dx2(double x) { return exp(x); }
-
-double hypot_dx(double x, double y) { return x / sqrt(x * x + y * y); }
-double hypot_dy(double x, double y) { return y / sqrt(x * x + y * y); }
 double hypot_dx2(double x, double y) {
   return y * y / pow(x * x + y * y, 1.5);
 }
@@ -433,78 +588,20 @@ double hypot_dy2(double x, double y) {
   return x * x / pow(x * x + y * y, 1.5);
 }
 
-double hypot3_dx(double x, double y, double z) {
-  return x / gsl_hypot3(x, y, z);
-}
-double hypot3_dy(double x, double y, double z) {
-  return y / gsl_hypot3(x, y, z);
-}
-double hypot3_dz(double x, double y, double z) {
-  return z / gsl_hypot3(x, y, z);
-}
-double hypot3_dx2(double x, double y, double z) {
-  return (y * y + z * z) / pow(x * x + y * y + z * z, 1.5);
-}
-double hypot3_dxdy(double x, double y, double z) {
-  return - x * y / pow(x * x + y * y + z * z, 1.5);
-}
-double hypot3_dxdz(double x, double y, double z) {
-  return - x * z / pow(x * x + y * y + z * z, 1.5);
-}
-double hypot3_dy2(double x, double y, double z) {
-  return (x * x + z * z) / pow(x * x + y * y + z * z, 1.5);
-}
-double hypot3_dydz(double x, double y, double z) {
-  return - y * z / pow(x * x + y * y + z * z, 1.5);
-}
-double hypot3_dz2(double x, double y, double z) {
-  return (x * x + y * y) / pow(x * x + y * y + z * z, 1.5);
-}
-
 double gsl_sf_airy_Ai(double x) {
   return ::gsl_sf_airy_Ai(x, GSL_PREC_DOUBLE);
-}
-double sf_airy_Ai_dx2(double x) {
-  return x * gsl_sf_airy_Ai(x);
 }
 
 double gsl_sf_airy_Bi(double x) {
   return ::gsl_sf_airy_Bi(x, GSL_PREC_DOUBLE);
 }
-double sf_airy_Bi_dx2(double x) {
-  return x * gsl_sf_airy_Bi(x);
-}
 
 double gsl_sf_airy_Ai_scaled(double x) {
   return ::gsl_sf_airy_Ai_scaled(x, GSL_PREC_DOUBLE);
 }
-double sf_airy_Ai_scaled_dx2(double x) {
-  double dx = x > 0 ? (gsl_sf_airy_Ai_deriv_scaled(x, GSL_PREC_DOUBLE) +
-      sqrt(x) * gsl_sf_airy_Ai_scaled(x)) :
-      gsl_sf_airy_Ai_deriv(x, GSL_PREC_DOUBLE);
-  return x > 0 ? (gsl_sf_airy_Ai_scaled(x) +
-      4 * x * dx) / (2 * sqrt(x)) :
-      x * gsl_sf_airy_Ai(x);
-}
 
 double gsl_sf_airy_Bi_scaled(double x) {
   return ::gsl_sf_airy_Bi_scaled(x, GSL_PREC_DOUBLE);
-}
-double sf_airy_Bi_scaled_dx2(double x) {
-  double dx = x > 0 ? (gsl_sf_airy_Bi_deriv_scaled(x, GSL_PREC_DOUBLE) -
-      sqrt(x) * gsl_sf_airy_Bi_scaled(x)) :
-      gsl_sf_airy_Bi_deriv(x, GSL_PREC_DOUBLE);
-  return x > 0 ? -(gsl_sf_airy_Bi_scaled(x) +
-      4 * x * dx) / (2 * sqrt(x)) :
-      x * gsl_sf_airy_Bi(x);
-}
-
-double sf_bessel_J0_dx2(double x) {
-  return 0.5 * (gsl_sf_bessel_Jn(2, x) - gsl_sf_bessel_J0(x));
-}
-
-double sf_bessel_J1_dx2(double x) {
-  return 0.25 * (gsl_sf_bessel_Jn(3, x) - 3 * gsl_sf_bessel_J1(x));
 }
 
 Result sf_bessel_Jn_dx2(int n, double x) {
@@ -514,14 +611,6 @@ Result sf_bessel_Jn_dx2(int n, double x) {
       2 * gsl_sf_bessel_Jn(n, x) + gsl_sf_bessel_Jn(n + 2, x));
 }
 
-double sf_bessel_Y0_dx2(double x) {
-  return 0.5 * (gsl_sf_bessel_Yn(2, x) - gsl_sf_bessel_Y0(x));
-}
-
-double sf_bessel_Y1_dx2(double x) {
-  return 0.25 * (gsl_sf_bessel_Yn(3, x) - 3 * gsl_sf_bessel_Y1(x));
-}
-
 Result sf_bessel_Yn_dx2(int n, double x) {
   if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
     return Result(0, true);
@@ -529,32 +618,11 @@ Result sf_bessel_Yn_dx2(int n, double x) {
       2 * gsl_sf_bessel_Yn(n, x) + gsl_sf_bessel_Yn(n + 2, x));
 }
 
-double sf_bessel_I0_dx2(double x) {
-  return 0.5 * (gsl_sf_bessel_In(2, x) + gsl_sf_bessel_I0(x));
-}
-
-double sf_bessel_I0_scaled_dx2(double x) {
-  return 1.5 * gsl_sf_bessel_I0_scaled(x) -
-      2 * x / fabs(x) * gsl_sf_bessel_I1_scaled(x) +
-      0.5 * gsl_sf_bessel_In_scaled(2, x);
-}
-
-double sf_bessel_I1_dx2(double x) {
-  return 0.25 * (gsl_sf_bessel_In(3, x) + 3 * gsl_sf_bessel_I1(x));
-}
-
 Result sf_bessel_In_dx2(int n, double x) {
   if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
     return Result(0, true);
   return 0.25 * (gsl_sf_bessel_In(n - 2, x) +
       2 * gsl_sf_bessel_In(n, x) + gsl_sf_bessel_In(n + 2, x));
-}
-
-double sf_bessel_I1_scaled_dx2(double x) {
-  return -x / fabs(x) * gsl_sf_bessel_I0_scaled(x) +
-      1.75 * gsl_sf_bessel_I1_scaled(x) -
-      x / fabs(x) * gsl_sf_bessel_In_scaled(2, x) +
-      0.25 * gsl_sf_bessel_In_scaled(3, x);
 }
 
 /* Computes (x / fabs(x)) * y. Returns 0 if y is 0. */
@@ -571,29 +639,11 @@ Result sf_bessel_In_scaled_dx2(int n, double x) {
              scale_by_sign(x, gsl_sf_bessel_In_scaled(n - 1, x) + gsl_sf_bessel_In_scaled(n + 1, x));
 }
 
-double sf_bessel_K0_dx2(double x) {
-  return 0.5 * (gsl_sf_bessel_Kn(2, x) + gsl_sf_bessel_K0(x));
-}
-
-double sf_bessel_K1_dx2(double x) {
-  return 0.25 * (gsl_sf_bessel_Kn(3, x) + 3 * gsl_sf_bessel_K1(x));
-}
-
 Result sf_bessel_Kn_dx2(int n, double x) {
   if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
     return Result(0, true);
   return 0.25 * (gsl_sf_bessel_Kn(n - 2, x) +
       2 * gsl_sf_bessel_Kn(n, x) + gsl_sf_bessel_Kn(n + 2, x));
-}
-
-double sf_bessel_K0_scaled_dx2(double x) {
-  return 1.5 * gsl_sf_bessel_K0_scaled(x) - 2 * gsl_sf_bessel_K1_scaled(x) +
-      0.5 * gsl_sf_bessel_Kn_scaled(2, x);
-}
-
-double sf_bessel_K1_scaled_dx2(double x) {
-  return -gsl_sf_bessel_K0_scaled(x) + 1.75 * gsl_sf_bessel_K1_scaled(x) -
-      gsl_sf_bessel_Kn_scaled(2, x) + 0.25 * gsl_sf_bessel_Kn_scaled(3, x);
 }
 
 Result sf_bessel_Kn_scaled_dx2(int n, double x) {
@@ -604,22 +654,6 @@ Result sf_bessel_Kn_scaled_dx2(int n, double x) {
       6 * gsl_sf_bessel_Kn_scaled(n, x) -
       4 * gsl_sf_bessel_Kn_scaled(n + 1, x) +
       gsl_sf_bessel_Kn_scaled(n + 2, x));
-}
-
-double sf_bessel_j0_dx2(double x) {
-  return -((x * x - 2) * sin(x) + 2 * x * cos(x)) / (x * x * x);
-}
-
-double sf_bessel_j1_dx2(double x) {
-  return (x * (x * x - 6) * cos(x) -
-      3 * (x * x - 2) * sin(x)) / (x * x * x * x);
-}
-
-double sf_bessel_j2_dx2(double x) {
-  double x_squared = x * x;
-  return (x * (5 * x_squared - 36) * cos(x) +
-      (x_squared * x_squared - 17 * x_squared + 36) * sin(x)) /
-      (x_squared * x_squared * x);
 }
 
 Result sf_bessel_jl_dx2(int n, double x) {
@@ -633,20 +667,6 @@ Result sf_bessel_jl_dx2(int n, double x) {
       3 * gsl_sf_bessel_jl(n, x)) / (4 * x * x);
 }
 
-double sf_bessel_y0_dx2(double x) {
-  return ((x * x - 2) * cos(x) - 2 * x * sin(x)) / (x * x * x);
-}
-
-double sf_bessel_y1_dx2(double x) {
-  return (x * (x * x - 6) * sin(x) +
-      3 * (x * x - 2) * cos(x)) / (x * x * x * x);
-}
-
-double sf_bessel_y2_dx2(double x) {
-  return ((36 - 5 * x * x) * gsl_sf_bessel_y1(x) -
-      (x * x - 12) * cos(x)) / (x * x * x);
-}
-
 Result sf_bessel_yl_dx2(int n, double x) {
   if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
     return Result(0, true);
@@ -656,40 +676,6 @@ Result sf_bessel_yl_dx2(int n, double x) {
       2 * x * gsl_sf_bessel_yl(n - 1, x) +
       2 * x * gsl_sf_bessel_yl(n + 1, x) +
       3 * gsl_sf_bessel_yl(n, x)) / (4 * x * x);
-}
-
-double sf_bessel_i0_scaled_dx2(double x) {
-  double coef = -2 * (1 + 2 * fabs(x)) / x;
-  double hyp_coef = exp(-fabs(x)) / x;
-  double i_minus1 = hyp_coef * cosh(x);
-  double i_minus2 = hyp_coef * sinh(x) - i_minus1 / x;
-  return 0.25 * (
-      i_minus2 +
-      coef * i_minus1 +
-      (3 + 6 * x * x + 4 * fabs(x)) * gsl_sf_bessel_i0_scaled(x) / (x * x) +
-      coef * gsl_sf_bessel_i1_scaled(x) +
-      gsl_sf_bessel_i2_scaled(x));
-}
-
-double sf_bessel_i1_scaled_dx2(double x) {
-  double coef = -2 * (1 + 2 * fabs(x)) / x;
-  double i_minus1 = (exp(-fabs(x)) * sqrt(1 / x) * cosh(x)) / sqrt(x);
-  return 0.25 * (
-      i_minus1 +
-      coef * gsl_sf_bessel_i0_scaled(x) +
-      (3 + 6 * x * x + 4 * fabs(x)) * gsl_sf_bessel_i1_scaled(x) / (x * x) +
-      coef * gsl_sf_bessel_i2_scaled(x) +
-      gsl_sf_bessel_il_scaled(3, x));
-}
-
-double sf_bessel_i2_scaled_dx2(double x) {
-  double coef = -2 * (1 + 2 * fabs(x)) / x;
-  return 0.25 * (
-      gsl_sf_bessel_i0_scaled(x) +
-      coef * gsl_sf_bessel_i1_scaled(x) +
-      (3 + 6 * x * x + 4 * fabs(x)) * gsl_sf_bessel_il_scaled(2, x) / (x * x) +
-      coef * gsl_sf_bessel_il_scaled(3, x) +
-      gsl_sf_bessel_il_scaled(4, x));
 }
 
 Result sf_bessel_il_scaled_dx2(int n, double x) {
@@ -704,18 +690,6 @@ Result sf_bessel_il_scaled_dx2(int n, double x) {
       gsl_sf_bessel_il_scaled(n + 2, x));
 }
 
-double sf_bessel_k0_scaled_dx2(double x) {
-  return M_PI * sqrt(1 / x) / pow(x, 2.5);
-}
-
-double sf_bessel_k1_scaled_dx2(double x) {
-  return (M_PI * sqrt(1 / x) * (x + 3)) / pow(x, 3.5);
-}
-
-double sf_bessel_k2_scaled_dx2(double x) {
-  return (M_PI * sqrt(1 / x) * (x * x + 9 * x + 18)) / pow(x, 4.5);
-}
-
 Result sf_bessel_kl_scaled_dx2(int n, double x) {
   if (n <= INT_MIN + 1 || n >= INT_MAX - 1)
     return Result(0, true);
@@ -728,39 +702,25 @@ Result sf_bessel_kl_scaled_dx2(int n, double x) {
       gsl_sf_bessel_kl_scaled(n + 2, x));
 }
 
-Func2 sf_bessel_Jnu_dx, sf_bessel_Jnu_dx2, sf_bessel_Jnu_dxdy;
-double sf_bessel_Jnu_dy(double x, double y) {
-  return 0.5 * (gsl_sf_bessel_Jnu(x - 1, y) - gsl_sf_bessel_Jnu(x + 1, y));
-}
+Func2 sf_bessel_Jnu_dx2, sf_bessel_Jnu_dxdy;
 double sf_bessel_Jnu_dy2(double x, double y) {
   return 0.25 * (gsl_sf_bessel_Jnu(x - 2, y) -
       2 * gsl_sf_bessel_Jnu(x, y) + gsl_sf_bessel_Jnu(x + 2, y));
 }
 
-Func2 sf_bessel_Ynu_dx, sf_bessel_Ynu_dx2, sf_bessel_Ynu_dxdy;
-double sf_bessel_Ynu_dy(double x, double y) {
-  return 0.5 * (gsl_sf_bessel_Ynu(x - 1, y) - gsl_sf_bessel_Ynu(x + 1, y));
-}
+Func2 sf_bessel_Ynu_dx2, sf_bessel_Ynu_dxdy;
 double sf_bessel_Ynu_dy2(double x, double y) {
   return 0.25 * (gsl_sf_bessel_Ynu(x - 2, y) -
       2 * gsl_sf_bessel_Ynu(x, y) + gsl_sf_bessel_Ynu(x + 2, y));
 }
 
-Func2 sf_bessel_Inu_dx, sf_bessel_Inu_dx2, sf_bessel_Inu_dxdy;
-double sf_bessel_Inu_dy(double x, double y) {
-  return 0.5 * (gsl_sf_bessel_Inu(x - 1, y) + gsl_sf_bessel_Inu(x + 1, y));
-}
+Func2 sf_bessel_Inu_dx2, sf_bessel_Inu_dxdy;
 double sf_bessel_Inu_dy2(double x, double y) {
   return 0.25 * (gsl_sf_bessel_Inu(x - 2, y) +
       2 * gsl_sf_bessel_Inu(x, y) + gsl_sf_bessel_Inu(x + 2, y));
 }
 
-Func2 sf_bessel_Inu_scaled_dx;
 Func2 sf_bessel_Inu_scaled_dx2, sf_bessel_Inu_scaled_dxdy;
-double sf_bessel_Inu_scaled_dy(double x, double y) {
-  return 0.5 * (-(2 * y * gsl_sf_bessel_Inu_scaled(x, y)) / fabs(y) +
-      gsl_sf_bessel_Inu_scaled(x - 1, y) + gsl_sf_bessel_Inu_scaled(x + 1, y));
-}
 double sf_bessel_Inu_scaled_dy2(double x, double y) {
   return 0.25 *
       (gsl_sf_bessel_Inu_scaled(x - 2, y) + 6 * gsl_sf_bessel_Inu_scaled(x, y) +
@@ -768,20 +728,13 @@ double sf_bessel_Inu_scaled_dy2(double x, double y) {
           scale_by_sign(y, gsl_sf_bessel_Inu_scaled(x - 1, y) + gsl_sf_bessel_Inu_scaled(x + 1, y));
 }
 
-Func2 sf_bessel_Knu_dx, sf_bessel_Knu_dx2, sf_bessel_Knu_dxdy;
-double sf_bessel_Knu_dy(double x, double y) {
-  return -0.5 * (gsl_sf_bessel_Knu(x - 1, y) + gsl_sf_bessel_Knu(x + 1, y));
-}
+Func2 sf_bessel_Knu_dx2, sf_bessel_Knu_dxdy;
 double sf_bessel_Knu_dy2(double x, double y) {
   return 0.25 * (gsl_sf_bessel_Knu(x - 2, y) +
       2 * gsl_sf_bessel_Knu(x, y) + gsl_sf_bessel_Knu(x + 2, y));
 }
 
-Func2 sf_bessel_lnKnu_dx, sf_bessel_lnKnu_dx2, sf_bessel_lnKnu_dxdy;
-double sf_bessel_lnKnu_dy(double x, double y) {
-  return -0.5 * (gsl_sf_bessel_Knu(x - 1, y) + gsl_sf_bessel_Knu(x + 1, y)) /
-      gsl_sf_bessel_Knu(x, y);
-}
+Func2 sf_bessel_lnKnu_dx2, sf_bessel_lnKnu_dxdy;
 double sf_bessel_lnKnu_dy2(double x, double y) {
   double kn = gsl_sf_bessel_Knu(x, y);
   double kn_plus_minus =
@@ -790,12 +743,7 @@ double sf_bessel_lnKnu_dy2(double x, double y) {
       gsl_sf_bessel_Knu(x + 2, y)) - kn_plus_minus * kn_plus_minus) / (kn * kn);
 }
 
-Func2 sf_bessel_Knu_scaled_dx;
 Func2 sf_bessel_Knu_scaled_dx2, sf_bessel_Knu_scaled_dxdy;
-double sf_bessel_Knu_scaled_dy(double x, double y) {
-  return -0.5 * (gsl_sf_bessel_Knu_scaled(x - 1, y) -
-      2 * gsl_sf_bessel_Knu_scaled(x, y) + gsl_sf_bessel_Knu_scaled(x + 1, y));
-}
 double sf_bessel_Knu_scaled_dy2(double x, double y) {
   return 0.25 * (gsl_sf_bessel_Knu_scaled(x - 2, y) -
       4 * gsl_sf_bessel_Knu_scaled(x - 1, y) +
@@ -804,18 +752,6 @@ double sf_bessel_Knu_scaled_dy2(double x, double y) {
       gsl_sf_bessel_Knu_scaled(x + 2, y));
 }
 
-double sf_clausen_dx2(double x) {
-  return -0.5 * tan(0.5 * M_PI - x);
-}
-
-double sf_hydrogenicR_1_dx(double x, double y) {
-  double Z = x, r = y;
-  return sqrt(Z) *  exp(-Z * r) * (3 - 2 * r * Z);
-}
-double sf_hydrogenicR_1_dy(double x, double y) {
-  double Z = x, r = y;
-  return -2 * pow(Z, 2.5) * exp(-Z * r);
-}
 double sf_hydrogenicR_1_dx2(double x, double y) {
   double Z = x, r = y;
   return (exp(-Z * r) * (4 * r * r * Z * Z - 12 * r * Z + 3)) / (2 *sqrt(Z));
@@ -829,28 +765,6 @@ double sf_hydrogenicR_1_dy2(double x, double y) {
   return 2 * pow(Z, 3.5) * exp(-Z * r);
 }
 
-double sf_dawson_dx2(double x) {
-  double dx = 1 - 2 * x * gsl_sf_dawson(x);
-  return - 2 * (gsl_sf_dawson(x) + x * dx);
-}
-
-double debye_dx2(int n, double x, double (*func)(double)) {
-  return n * (-exp(x) / ((exp(x) - 1) * (exp(x) - 1)) +
-      func(x) / (x * x) - n * (1 / (exp(x) - 1) - func(x) / x) / x);
-}
-
-double sf_debye_1_dx2(double x) { return debye_dx2(1, x, gsl_sf_debye_1); }
-double sf_debye_2_dx2(double x) { return debye_dx2(2, x, gsl_sf_debye_2); }
-double sf_debye_3_dx2(double x) { return debye_dx2(3, x, gsl_sf_debye_3); }
-double sf_debye_4_dx2(double x) { return debye_dx2(4, x, gsl_sf_debye_4); }
-double sf_debye_5_dx2(double x) { return debye_dx2(5, x, gsl_sf_debye_5); }
-double sf_debye_6_dx2(double x) { return debye_dx2(6, x, gsl_sf_debye_6); }
-
-double sf_dilog_dx2(double x) {
-  return x != 0 ? (1 / (1 - x) +
-      GSL_REAL(gsl_complex_log(gsl_complex_rect(1 - x, 0))) / x) / x : 0.5;
-}
-
 double gsl_sf_ellint_Kcomp(double x) {
   return ::gsl_sf_ellint_Kcomp(x, GSL_PREC_DOUBLE);
 }
@@ -858,24 +772,7 @@ double gsl_sf_ellint_Ecomp(double x) {
   return ::gsl_sf_ellint_Ecomp(x, GSL_PREC_DOUBLE);
 }
 
-double sf_ellint_Kcomp_dx2(double x) {
-  double x_squared = x * x;
-  double div = x * (1 - x_squared);
-  double K = gsl_sf_ellint_Kcomp(x);
-  double E = gsl_sf_ellint_Ecomp(x);
-  return x != 0 ? ((2 * x_squared * x_squared - 3 * x_squared + 1) * K +
-      (3 * x_squared - 1) * E) / (div * div) : M_PI_4;
-}
-
-double sf_ellint_Ecomp_dx2(double x) {
-  double K = gsl_sf_ellint_Kcomp(x);
-  double E = gsl_sf_ellint_Ecomp(x);
-  return x != 0 ?
-      ((x * x - 1) * K + E) / (x * x * (x * x - 1)) : -M_PI_4;
-}
-
-#define TEST_FUNC(name) \
-  TestFunc("gsl_" #name, gsl_##name, name##_dx2);
+#define TEST_FUNC(name) TestFunc("gsl_" #name, gsl_##name);
 
 #define TEST_FUNC_U(name) \
   TestFunc("gsl_" #name, gsl_##name);
@@ -884,17 +781,12 @@ double sf_ellint_Ecomp_dx2(double x) {
   TestFunc("gsl_" #name, gsl_##name, name##_dx2);
 
 #define TEST_FUNC2(name) \
-    TestFunc("gsl_" #name, gsl_##name, name##_dx, \
+    TestFunc("gsl_" #name, gsl_##name, \
         name##_dx2, name##_dxdy, name##_dy2, Options());
 
 #define TEST_FUNC2_OPT(name, opt) \
-    TestFunc("gsl_" #name, gsl_##name, name##_dx, \
+    TestFunc("gsl_" #name, gsl_##name, \
         name##_dx2, name##_dxdy, name##_dy2, opt);
-
-#define TEST_FUNC3(name) \
-    TestFunc("gsl_" #name, gsl_##name, name##_dx, name##_dy, name##_dz, \
-        name##_dx2, name##_dxdy, name##_dxdz, \
-        name##_dy2, name##_dydz, name##_dz2);
 
 TEST_F(GSLTest, TestArgList) {
   static const real ARGS[] = {5, 7, 11, 13, 17, 19, 23, 29, 31};
@@ -907,6 +799,10 @@ TEST_F(GSLTest, TestArgList) {
       ArgList(5, 7, 11, 13, 17, 19).copy());
   EXPECT_EQ(vector<real>(ARGS, ARGS + 9),
       ArgList(5, 7, 11, 13, 17, 19, 23, 29, 31).copy());
+
+  std::ostringstream oss;
+  oss << ArgList(3, 5, 7);
+  EXPECT_EQ("(3, 5, 7)", oss.str());
 }
 
 struct CheckData {
@@ -975,23 +871,31 @@ TEST_F(GSLTest, TestAMPLFunctionDerivs) {
   EXPECT_TRUE(data.error == nullptr);
 }
 
+TEST_F(GSLTest, Diff) {
+  EXPECT_NEAR(1, Diff(sin, 0), 1e-7);
+  EXPECT_NEAR(0.25, Diff(sqrt, 4), 1e-7);
+  EXPECT_TRUE(gsl_isnan(Diff(
+      std::bind2nd(std::ptr_fun(gsl_hypot), 0), 0)));
+  EXPECT_NEAR(0, Diff(std::bind2nd(std::ptr_fun(gsl_hypot), -5), 0), 1e-7);
+  EXPECT_TRUE(gsl_isnan(Diff(log, 0)));
+  EXPECT_NEAR(1, Diff(gsl_log1p, 0), 1e-7);
+}
+
 TEST_F(GSLTest, Elementary) {
   TEST_FUNC(log1p);
   TEST_FUNC(expm1);
   TEST_FUNC2(hypot);
-  TEST_FUNC3(hypot3);
+  TEST_FUNC(hypot3);
 }
 
 TEST_F(GSLTest, AiryA) {
   TEST_FUNC(sf_airy_Ai);
   TEST_FUNC(sf_airy_Ai_scaled);
-  EXPECT_NEAR(0.00207512, sf_airy_Ai_scaled_dx2(5), 1e-5);
 }
 
 TEST_F(GSLTest, AiryB) {
   TEST_FUNC(sf_airy_Bi);
   TEST_FUNC(sf_airy_Bi_scaled);
-  EXPECT_NEAR(0.00559418, sf_airy_Bi_scaled_dx2(5), 1e-5);
 }
 
 TEST_F(GSLTest, AiryZero) {
@@ -1022,11 +926,7 @@ TEST_F(GSLTest, BesselI) {
   EXPECT_NEAR(11.78897, sf_bessel_In_dx2(3, 5).value, 1e-5);
 
   TEST_FUNC(sf_bessel_I0_scaled);
-  EXPECT_NEAR(0.00634264, sf_bessel_I0_scaled_dx2(5), 1e-5);
-
   TEST_FUNC(sf_bessel_I1_scaled);
-  EXPECT_NEAR(0.00286143, sf_bessel_I1_scaled_dx2(5), 1e-5);
-
   TEST_FUNC_N(sf_bessel_In_scaled);
   EXPECT_NEAR(-0.00332666, sf_bessel_In_scaled_dx2(3, 5).value, 1e-5);
 }
@@ -1038,39 +938,23 @@ TEST_F(GSLTest, BesselK) {
   EXPECT_NEAR(0.0133336, sf_bessel_Kn_dx2(3, 5).value, 1e-5);
 
   TEST_FUNC(sf_bessel_K0_scaled);
-  EXPECT_NEAR(0.0151222, sf_bessel_K0_scaled_dx2(5), 1e-5);
-
   TEST_FUNC(sf_bessel_K1_scaled);
-  EXPECT_NEAR(0.0224065, sf_bessel_K1_scaled_dx2(5), 1e-5);
-
   TEST_FUNC_N(sf_bessel_Kn_scaled);
   EXPECT_NEAR(0.156927, sf_bessel_Kn_scaled_dx2(3, 5).value, 1e-5);
 }
 
 TEST_F(GSLTest, Besselj) {
   TEST_FUNC(sf_bessel_j0);
-  EXPECT_NEAR(0.153749, sf_bessel_j0_dx2(5), 1e-5);
-
   TEST_FUNC(sf_bessel_j1);
-  EXPECT_NEAR(0.148982, sf_bessel_j1_dx2(5), 1e-5);
-
   TEST_FUNC(sf_bessel_j2);
-  EXPECT_NEAR(-0.0320245, sf_bessel_j2_dx2(5), 1e-5);
-
   TEST_FUNC_N(sf_bessel_jl);
   EXPECT_NEAR(-0.0998566, sf_bessel_jl_dx2(3, 5).value, 1e-5);
 }
 
 TEST_F(GSLTest, Bessely) {
   TEST_FUNC(sf_bessel_y0);
-  EXPECT_NEAR(0.128908, sf_bessel_y0_dx2(5), 1e-5);
-
   TEST_FUNC(sf_bessel_y1);
-  EXPECT_NEAR(-0.11444, sf_bessel_y1_dx2(5), 1e-5);
-
   TEST_FUNC(sf_bessel_y2);
-  EXPECT_NEAR(-0.157973, sf_bessel_y2_dx2(5), 1e-5);
-
   TEST_FUNC_N(sf_bessel_yl);
   EXPECT_NEAR(-0.0629096, sf_bessel_yl_dx2(3, 5).value, 1e-5);
 }
@@ -1078,16 +962,10 @@ TEST_F(GSLTest, Bessely) {
 TEST_F(GSLTest, Besseli) {
   TEST_FUNC(sf_bessel_i0_scaled);
   EXPECT_NEAR(0.0999955, gsl_sf_bessel_i0_scaled(5), 1e-5);
-  EXPECT_NEAR(0.00797784, sf_bessel_i0_scaled_dx2(5), 1e-5);
-
   TEST_FUNC(sf_bessel_i1_scaled);
   EXPECT_NEAR(0.0800054, gsl_sf_bessel_i1_scaled(5), 1e-5);
-  EXPECT_NEAR(0.00322746, sf_bessel_i1_scaled_dx2(5), 1e-5);
-
   TEST_FUNC(sf_bessel_i2_scaled);
   EXPECT_NEAR(0.0519922, gsl_sf_bessel_i2_scaled(5), 1e-5);
-  EXPECT_NEAR(-0.000681812, sf_bessel_i2_scaled_dx2(5), 1e-5);
-
   TEST_FUNC_N(sf_bessel_il_scaled);
   EXPECT_NEAR(0.0280133, gsl_sf_bessel_il_scaled(3, 5), 1e-5);
   EXPECT_NEAR(-0.00152293, sf_bessel_il_scaled_dx2(3, 5).value, 1e-5);
@@ -1096,16 +974,10 @@ TEST_F(GSLTest, Besseli) {
 TEST_F(GSLTest, Besselk) {
   TEST_FUNC(sf_bessel_k0_scaled);
   EXPECT_NEAR(0.314159, gsl_sf_bessel_k0_scaled(5), 1e-5);
-  EXPECT_NEAR(0.0251327, sf_bessel_k0_scaled_dx2(5), 1e-5);
-
   TEST_FUNC(sf_bessel_k1_scaled);
   EXPECT_NEAR(0.376991, gsl_sf_bessel_k1_scaled(5), 1e-5);
-  EXPECT_NEAR(0.0402124, sf_bessel_k1_scaled_dx2(5), 1e-5);
-
   TEST_FUNC(sf_bessel_k2_scaled);
   EXPECT_NEAR(0.540354, gsl_sf_bessel_k2_scaled(5), 1e-5);
-  EXPECT_NEAR(0.0884672, sf_bessel_k2_scaled_dx2(5), 1e-5);
-
   TEST_FUNC_N(sf_bessel_kl_scaled);
   EXPECT_NEAR(0.917345, gsl_sf_bessel_kl_scaled(3, 5), 1e-5);
   EXPECT_NEAR(0.236248, sf_bessel_kl_scaled_dx2(3, 5).value, 1e-5);
@@ -1113,11 +985,12 @@ TEST_F(GSLTest, Besselk) {
 
 class BesselFractionalOrderOptions : public Options {
  public:
-  bool HasDerivative(const vector<real>& args) const {
+  bool HasDerivative(unsigned var_index, const vector<real>& args) const {
     // Computing gsl_sf_bessel_*nu'(n, x) requires
     // gsl_sf_bessel_*nu(n - 1, x) which doesn't work when the
     // first argument is non-negative, so n should be >= 1.
-    return args[0] >= 1;
+    // Partial derivatives with respect to n are not provided.
+    return var_index == 1 && args[0] >= 1;
   }
 
   bool HasDerivative2(const vector<real>& args) const {
@@ -1131,37 +1004,30 @@ class BesselFractionalOrderOptions : public Options {
 TEST_F(GSLTest, BesselFractionalOrder) {
   TEST_FUNC2_OPT(sf_bessel_Jnu, BesselFractionalOrderOptions());
   EXPECT_NEAR(0.410029, gsl_sf_bessel_Jnu(3.5, 5), 1e-5);
-  EXPECT_NEAR(-0.0466428, sf_bessel_Jnu_dy(3.5, 5), 1e-5);
   EXPECT_NEAR(-0.199786, sf_bessel_Jnu_dy2(3.5, 5), 1e-5);
 
   TEST_FUNC2_OPT(sf_bessel_Ynu, BesselFractionalOrderOptions());
   EXPECT_NEAR(-0.0275521, gsl_sf_bessel_Ynu(3.5, 5), 1e-5);
-  EXPECT_NEAR(0.313659, sf_bessel_Ynu_dy(3.5, 5), 1e-5);
   EXPECT_NEAR(-0.0486802, sf_bessel_Ynu_dy2(3.5, 5), 1e-5);
 
   TEST_FUNC2_OPT(sf_bessel_Inu, BesselFractionalOrderOptions());
   EXPECT_NEAR(7.417560126111555, gsl_sf_bessel_Inu(3.5, 5), 1e-5);
-  EXPECT_NEAR(8.574590050404494, sf_bessel_Inu_dy(3.5, 5), 1e-5);
   EXPECT_NEAR(9.337246577825318, sf_bessel_Inu_dy2(3.5, 5), 1e-5);
 
   TEST_FUNC2_OPT(sf_bessel_Inu_scaled, BesselFractionalOrderOptions());
   EXPECT_NEAR(0.04997912699226937, gsl_sf_bessel_Inu_scaled(3.5, 5), 1e-5);
-  EXPECT_NEAR(0.00779600630624169, sf_bessel_Inu_scaled_dy(3.5, 5), 1e-5);
   EXPECT_NEAR(-0.0026572670459736, sf_bessel_Inu_scaled_dy2(3.5, 5), 1e-5);
 
   TEST_FUNC2_OPT(sf_bessel_Knu, BesselFractionalOrderOptions());
   EXPECT_NEAR(0.011027711053957217, gsl_sf_bessel_Knu(3.5, 5), 1e-5);
-  EXPECT_NEAR(-0.014215172742155810, sf_bessel_Knu_dy(3.5, 5), 1e-5);
   EXPECT_NEAR(0.01927432401882742, sf_bessel_Knu_dy2(3.5, 5), 1e-5);
 
   TEST_FUNC2_OPT(sf_bessel_lnKnu, BesselFractionalOrderOptions());
   EXPECT_NEAR(-4.5073439872921324, gsl_sf_bessel_lnKnu(3.5, 5), 1e-5);
-  EXPECT_NEAR(-1.289041095890411, sf_bessel_lnKnu_dy(3.5, 5), 1e-5);
   EXPECT_NEAR(0.08618127228373, sf_bessel_lnKnu_dy2(3.5, 5), 1e-5);
 
   TEST_FUNC2_OPT(sf_bessel_Knu_scaled, BesselFractionalOrderOptions());
   EXPECT_NEAR(1.6366574351881952, gsl_sf_bessel_Knu_scaled(3.5, 5), 1e-5);
-  EXPECT_NEAR(-0.4730612586639852, sf_bessel_Knu_scaled_dy(3.5, 5), 1e-5);
   EXPECT_NEAR(0.2777833646846813, sf_bessel_Knu_scaled_dy2(3.5, 5), 1e-5);
 }
 
@@ -1193,8 +1059,6 @@ TEST_F(GSLTest, Clausen) {
 TEST_F(GSLTest, Hydrogenic) {
   TEST_FUNC2(sf_hydrogenicR_1);
   EXPECT_NEAR(0.0633592, gsl_sf_hydrogenicR_1(3, 1.7), 1e-5);
-  EXPECT_NEAR(-0.0760311, sf_hydrogenicR_1_dx(3, 1.7), 1e-5);
-  EXPECT_NEAR(-0.190078, sf_hydrogenicR_1_dy(3, 1.7), 1e-5);
   EXPECT_NEAR(0.0806774, sf_hydrogenicR_1_dx2(3, 1.7), 1e-5);
   EXPECT_NEAR(0.164734, sf_hydrogenicR_1_dxdy(3, 1.7), 1e-5);
   EXPECT_NEAR(0.570233, sf_hydrogenicR_1_dy2(3, 1.7), 1e-5);
@@ -1301,18 +1165,11 @@ TEST_F(GSLTest, Debye) {
 
 TEST_F(GSLTest, Dilog) {
   TEST_FUNC(sf_dilog);
-  EXPECT_EQ(0.5, sf_dilog_dx2(0));
-  EXPECT_NEAR(0.00545177, sf_dilog_dx2(5), 1e-5);
 }
 
 TEST_F(GSLTest, EllInt) {
   TEST_FUNC(sf_ellint_Kcomp);
-  EXPECT_EQ(M_PI_4, sf_ellint_Kcomp_dx2(0));
-  EXPECT_NEAR(1.88651, sf_ellint_Kcomp_dx2(0.5), 1e-5);
-
   TEST_FUNC(sf_ellint_Ecomp);
-  EXPECT_EQ(-M_PI_4, sf_ellint_Ecomp_dx2(0));
-  EXPECT_NEAR(-1.08346, sf_ellint_Ecomp_dx2(0.5), 1e-5);
 
   ArgList Zero(0, 0);
   ArgList TestPt(0.5, 0.5);
