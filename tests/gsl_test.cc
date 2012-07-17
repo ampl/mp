@@ -65,23 +65,27 @@ class Result {
   real value_;
   vector<real> derivs_;
   vector<real> hes_;
+  const char *error_;
 
  public:
-  Result(real value, const vector<real> &derivs, const vector<real> &hes) :
-    value_(value), derivs_(derivs), hes_(hes) {}
+  Result(real value, const vector<real> &derivs,
+      const vector<real> &hes, const char *error) :
+    value_(value), derivs_(derivs), hes_(hes), error_(error) {}
 
   operator real() const { return value_; }
 
   real deriv(size_t index = 0) const { return derivs_.at(index); }
   real hes(size_t index = 0) const { return hes_.at(index); }
+
+  const char *error() const { return error_; }
 };
 
 // Options for an AMPL function call.
 enum {
-  ERROR        = 1, // Function call is expected to produce an error.
-  DERIVS       = 2, // Get first partial derivatives.
-  HES          = 6, // Get both first and second partial derivatives.
-  ERROR_TO_NAN = 8  // Convert error to NaN
+  ERROR      = 1, // Function call is expected to produce an error.
+  DERIVS     = 2, // Get first partial derivatives.
+  HES        = 6, // Get both first and second partial derivatives.
+  PASS_ERROR = 8  // Pass error to the caller.
 };
 
 // An AMPL function.
@@ -95,6 +99,9 @@ class Function {
 
   const char *name() const { return fi_->name; }
 
+  // Calls a function.
+  // Argument vector is passed by value intentionally to avoid
+  // rogue functions accidentally overwriting arguments.
   Result operator()(vector<real> args,
       int options = 0, char *dig = 0, void *info = 0) const;
 
@@ -124,11 +131,11 @@ Result Function::operator()(
   // Allocate storage for the derivatives if needed.
   vector<real> derivs, hes;
   if ((options & DERIVS) != 0) {
-    derivs.resize(args.size());
+    derivs.resize(al.n);
     al.derivs = &derivs[0];
   }
   if ((options & HES) == HES) {
-    hes.resize(args.size() * (args.size() + 1) / 2);
+    hes.resize(al.n * (al.n + 1) / 2);
     al.hes = &hes[0];
   }
 
@@ -137,14 +144,12 @@ Result Function::operator()(
 
   // Check the error message.
   if (al.Errmsg) {
-    if ((options & ERROR_TO_NAN) != 0)
-      value = GSL_NAN;
-    else if ((options & ERROR) == 0)
+    if ((options & ERROR) == 0 && (options & PASS_ERROR) == 0)
       ADD_FAILURE() << al.Errmsg;
   } else if ((options & ERROR) != 0)
     ADD_FAILURE() << "Expected error in " << fi_->name;
 
-  return Result(value, derivs, hes);
+  return Result(value, derivs, hes, al.Errmsg);
 }
 
 template <typename F>
@@ -217,6 +222,8 @@ double Diff(F f, double x, D d, double *error = 0, double *final_h = 0) {
 // Returns the derivative of a function f at a point x by Ridders'
 // method of polynomial extrapolation. The implementation is taken from
 // "Numerical Recipes in C", Chapter 5.7.
+// This version tries to detect special cases such as indeterminate
+// and infinity.
 template <typename F>
 double Diff(F f, double x, double *err = 0) {
   if (gsl_isnan(f(x)))
@@ -276,8 +283,8 @@ class Deriv {
 
   double operator()(double x) {
     args_[eval_var_index_] = x;
-    Result result = af_(args_, DERIVS | ERROR_TO_NAN, dig_);
-    return gsl_isnan(result) ? GSL_NAN : result.deriv(deriv_var_index_);
+    Result r = af_(args_, DERIVS | PASS_ERROR, dig_);
+    return r.error() ? GSL_NAN : r.deriv(deriv_var_index_);
   }
 };
 
@@ -575,7 +582,9 @@ TEST_F(GSLTest, TestArgList) {
 
 TEST_F(GSLTest, TestResult) {
   static const real ARGS[] = {5, 7, 11, 13, 17};
-  Result r(42, vector<real>(ARGS, ARGS + 2), vector<real>(ARGS + 2, ARGS + 5));
+  const char *error = "brain overflow";
+  Result r(42, vector<real>(ARGS, ARGS + 2),
+      vector<real>(ARGS + 2, ARGS + 5), error);
   EXPECT_EQ(42, r);
   EXPECT_EQ(5, r.deriv());
   EXPECT_EQ(5, r.deriv(0));
@@ -586,9 +595,10 @@ TEST_F(GSLTest, TestResult) {
   EXPECT_EQ(13, r.hes(1));
   EXPECT_EQ(17, r.hes(2));
   EXPECT_THROW(r.hes(3), std::out_of_range);
+  EXPECT_STREQ(error, r.error());
 }
 
-struct CheckData {
+struct CallData {
   AmplExports *ae;
   int n;
   int nr;
@@ -599,8 +609,8 @@ struct CheckData {
   char *error;
 };
 
-real Check(arglist *args) {
-  CheckData *data = reinterpret_cast<CheckData*>(args->funcinfo);
+real Test(arglist *args) {
+  CallData *data = reinterpret_cast<CallData*>(args->funcinfo);
   data->ae = args->AE;
   data->n = args->n;
   data->nr = args->nr;
@@ -609,21 +619,44 @@ real Check(arglist *args) {
   data->hes = args->hes;
   data->dig = args->dig;
   data->error = args->Errmsg;
-  if (args->derivs)
-    *args->derivs = 123;
+  if (args->ra[0] < 0)
+    args->Errmsg = const_cast<char*>("oops");
+  if (args->derivs) {
+    args->derivs[0] = 123;
+    args->derivs[1] = 456;
+    if (args->n > 2)
+      args->derivs[2] = 789;
+  }
+  if (args->hes) {
+    args->hes[0] = 12;
+    args->hes[1] = 34;
+    args->hes[2] = 56;
+  }
   return 42;
 }
 
-TEST_F(GSLTest, TestAMPLFunction) {
-  ASL testASL = {};
-  AmplExports ae = {};
-  testASL.i.ae = &ae;
-  func_info fi = {};
-  fi.funcp = Check;
-  Function f(&testASL, &fi);
-  CheckData data = {};
-  EXPECT_EQ(42, f(777, 0, 0, &data));
-  EXPECT_EQ(&ae, data.ae);
+class TestFunction {
+ private:
+  ASL testASL_;
+  AmplExports ae_;
+  func_info fi_;
+  Function f_;
+
+ public:
+  TestFunction() : testASL_(), ae_(), fi_(), f_(&testASL_, &fi_) {
+    testASL_.i.ae = &ae_;
+    fi_.funcp = Test;
+  }
+
+  const AmplExports* ae() const { return &ae_; }
+  const Function& get() const { return f_; }
+};
+
+TEST_F(GSLTest, FunctionCall) {
+  TestFunction f;
+  CallData data = {};
+  EXPECT_EQ(42, f.get()(777, 0, 0, &data));
+  EXPECT_EQ(f.ae(), data.ae);
   ASSERT_EQ(1, data.n);
   EXPECT_EQ(1, data.nr);
   EXPECT_EQ(777, data.ra[0]);
@@ -633,22 +666,51 @@ TEST_F(GSLTest, TestAMPLFunction) {
   EXPECT_TRUE(data.error == nullptr);
 }
 
-TEST_F(GSLTest, TestAMPLFunctionDerivs) {
-  ASL testASL = {};
-  AmplExports ae = {};
-  testASL.i.ae = &ae;
-  func_info fi = {};
-  fi.funcp = Check;
-  Function f(&testASL, &fi);
-  CheckData data = {};
-  Result res = f(777, DERIVS, 0, &data);
+TEST_F(GSLTest, FunctionReturnsError) {
+  TestFunction f;
+  CallData data = {};
+  Result r = f.get()(-1, PASS_ERROR, 0, &data);
+  EXPECT_STREQ("oops", r.error());
+}
+
+TEST_F(GSLTest, FunctionReturnsDerivs) {
+  TestFunction f;
+  CallData data = {};
+  Result res = f.get()(ArgList(11, 22, 33), DERIVS, 0, &data);
   EXPECT_EQ(42, res);
-  EXPECT_EQ(&ae, data.ae);
-  ASSERT_EQ(1, data.n);
-  EXPECT_EQ(1, data.nr);
-  EXPECT_EQ(777, data.ra[0]);
+  EXPECT_EQ(f.ae(), data.ae);
+  ASSERT_EQ(3, data.n);
+  EXPECT_EQ(3, data.nr);
+  EXPECT_EQ(11, data.ra[0]);
+  EXPECT_EQ(22, data.ra[1]);
+  EXPECT_EQ(33, data.ra[2]);
   EXPECT_EQ(123, res.deriv(0));
+  EXPECT_EQ(456, res.deriv(1));
+  EXPECT_EQ(789, res.deriv(2));
+  EXPECT_THROW(res.deriv(3), std::out_of_range);
   EXPECT_TRUE(data.hes == nullptr);
+  EXPECT_TRUE(data.dig == nullptr);
+  EXPECT_TRUE(data.error == nullptr);
+}
+
+TEST_F(GSLTest, FunctionReturnsHes) {
+  TestFunction f;
+  CallData data = {};
+  double ARGS[] = {111, 222};
+  Result res = f.get()(vector<real>(ARGS, ARGS + 2), HES, 0, &data);
+  EXPECT_EQ(42, res);
+  EXPECT_EQ(f.ae(), data.ae);
+  ASSERT_EQ(2, data.n);
+  EXPECT_EQ(2, data.nr);
+  EXPECT_EQ(111, data.ra[0]);
+  EXPECT_EQ(222, data.ra[1]);
+  EXPECT_EQ(123, res.deriv(0));
+  EXPECT_EQ(456, res.deriv(1));
+  EXPECT_THROW(res.deriv(2), std::out_of_range);
+  EXPECT_EQ(12, res.hes(0));
+  EXPECT_EQ(34, res.hes(1));
+  EXPECT_EQ(56, res.hes(2));
+  EXPECT_THROW(res.hes(3), std::out_of_range);
   EXPECT_TRUE(data.dig == nullptr);
   EXPECT_TRUE(data.error == nullptr);
 }
@@ -656,6 +718,7 @@ TEST_F(GSLTest, TestAMPLFunctionDerivs) {
 TEST_F(GSLTest, Diff) {
   EXPECT_NEAR(1, Diff(sin, 0), 1e-7);
   EXPECT_NEAR(0.25, Diff(sqrt, 4), 1e-7);
+  EXPECT_TRUE(gsl_isnan(Diff(sqrt, -1)));
   EXPECT_TRUE(gsl_isnan(Diff(
       std::bind2nd(std::ptr_fun(gsl_hypot), 0), 0)));
   EXPECT_NEAR(0, Diff(std::bind2nd(std::ptr_fun(gsl_hypot), -5), 0), 1e-7);
