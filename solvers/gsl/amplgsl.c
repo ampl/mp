@@ -617,17 +617,37 @@ static real amplgsl_sf_bessel_jl(arglist *al) {
     return 0;
   jl = gsl_sf_bessel_jl(el, x);
   if (al->derivs) {
-    real jn_plus_1 = gsl_sf_bessel_jl(el + 1, x);
+    real jl_plus_1 = gsl_sf_bessel_jl(el + 1, x);
     if (x == 0)
       al->derivs[1] = el == 1 ? 1.0 / 3.0 : 0;
     else
-      al->derivs[1] = el * jl / x - jn_plus_1;
+      al->derivs[1] = el * jl / x - jl_plus_1;
     if (al->hes) {
-      al->hes[2] = (
-          gsl_pow_2(x) * gsl_sf_bessel_jl(el - 2, x) -
-          2 * x * gsl_sf_bessel_jl(el - 1, x) -
-          (2 * gsl_pow_2(x) - 3) * jl + 2 * x * jn_plus_1 +
+      double hes = 0;
+      if (x == 0) {
+        if (el == 0)
+          hes = -1.0 / 3.0;
+        else if (el == 2)
+          hes = 2.0 / 15.0;
+      } else {
+        double jl_minus_1 = 0, jl_minus_2 = 0;
+        if (el == 0) {
+          jl_minus_1 = cos(x) / x;
+          jl_minus_2 = -(cos(x) / x + sin(x)) / x;
+        } else if (el == 1) {
+          jl_minus_1 = gsl_sf_bessel_jl(el - 1, x);
+          jl_minus_2 = cos(x) / x;
+        } else {
+          jl_minus_1 = gsl_sf_bessel_jl(el - 1, x);
+          jl_minus_2 = gsl_sf_bessel_jl(el - 2, x);
+        }
+        hes = (
+          gsl_pow_2(x) * jl_minus_2 -
+          2 * x * jl_minus_1 -
+          (2 * gsl_pow_2(x) - 3) * jl + 2 * x * jl_plus_1 +
           gsl_pow_2(x) * gsl_sf_bessel_jl(el + 2, x)) / (4 * gsl_pow_2(x));
+      }
+      al->hes[2] = hes;
     }
   }
   return check_result(al, jl, "gsl_sf_bessel_jl");
@@ -680,13 +700,20 @@ static real amplgsl_sf_bessel_yl(arglist *al) {
     return 0;
   yl = gsl_sf_bessel_yl(el, x);
   if (al->derivs) {
-    real yn_minus_1 = el != 0 ? gsl_sf_bessel_yl(el - 1, x) : sin(x) / x;
-    real yn_plus_1 = gsl_sf_bessel_yl(el + 1, x);
-    al->derivs[1] = 0.5 * (yn_minus_1 - yl / x - yn_plus_1);
+    real yl_minus_1 = el != 0 ? gsl_sf_bessel_yl(el - 1, x) : sin(x) / x;
+    real yl_plus_1 = gsl_sf_bessel_yl(el + 1, x);
+    al->derivs[1] = 0.5 * (yl_minus_1 - yl / x - yl_plus_1);
     if (al->hes) {
+      double yl_minus_2 = 0;
+      if (el == 0)
+        yl_minus_2 = (cos(x) - sin(x) / x) / x;
+      else if (el == 1)
+        yl_minus_2 = sin(x) / x;
+      else
+        yl_minus_2 = gsl_sf_bessel_yl(el - 2, x);
       al->hes[2] = (
-          gsl_pow_2(x) * gsl_sf_bessel_yl(el - 2, x) - 2 * x * yn_minus_1 -
-          (2 * gsl_pow_2(x) - 3) * yl + 2 * x * yn_plus_1 +
+          gsl_pow_2(x) * yl_minus_2 - 2 * x * yl_minus_1 -
+          (2 * gsl_pow_2(x) - 3) * yl + 2 * x * yl_plus_1 +
           gsl_pow_2(x) * gsl_sf_bessel_yl(el + 2, x)) / (4 * gsl_pow_2(x));
     }
   }
@@ -772,38 +799,56 @@ static real amplgsl_sf_bessel_i2_scaled(arglist *al) {
 }
 
 static real amplgsl_sf_bessel_il_scaled(arglist *al) {
-  int n = al->ra[0];
+  int el = al->ra[0];
   real x = al->ra[1];
-  real in = 0;
+  real il = 0;
   if (!check_bessel_args(al, 0))
     return 0;
-  in = gsl_sf_bessel_il_scaled(n, x);
+  il = gsl_sf_bessel_il_scaled(el, x);
   if (al->derivs) {
-    real in_minus_1 = n != 0 ?
-        gsl_sf_bessel_il_scaled(n - 1, x) : exp(-fabs(x)) * cosh(x) / x;
-    real in_plus_1 = gsl_sf_bessel_il_scaled(n + 1, x);
+    real il_minus_1 = el != 0 ?
+        gsl_sf_bessel_il_scaled(el - 1, x) : exp(-fabs(x)) * cosh(x) / x;
+    real il_plus_1 = gsl_sf_bessel_il_scaled(el + 1, x);
     real coef = -(1 + 2 * fabs(x)) / x;
     real deriv = GSL_NAN;
     if (x == 0) {
-      if (n == 1)
+      /* If el <= 0, keep deriv equal to GSL_NAN. */
+      if (el == 1)
         deriv = 1.0 / 3.0;
-      else if (n > 1)
+      else if (el > 1)
         deriv = 0;
-    }
-    if (gsl_isnan(deriv))
-      deriv = 0.5 * (in_minus_1 + coef * in + in_plus_1);
+    } else deriv = 0.5 * (il_minus_1 + coef * il + il_plus_1);
     al->derivs[1] = deriv;
     if (al->hes) {
+      double hes = GSL_NAN;
+      double il_minus_2 = 0;
+      if (el == 0)
+        il_minus_2 = (exp(-fabs(x)) * (sinh(x) - cosh(x) / x)) / x;
+      else if (el == 1)
+        il_minus_2 = exp(-fabs(x)) * cosh(x) / x;
+      else
+        il_minus_2 = gsl_sf_bessel_il_scaled(el - 2, x);
       coef *= 2;
-      al->hes[2] = 0.25 * (
-          gsl_sf_bessel_il_scaled(n - 2, x) +
-          coef * in_minus_1 +
-          (3 + 4 * fabs(x) + 6 * gsl_pow_2(x)) * in / gsl_pow_2(x) +
-          coef * in_plus_1 +
-          gsl_sf_bessel_il_scaled(n + 2, x));
+      if (x == 0) {
+        /* If el == 1 or el < 0, keep hes equal to GSL_NAN. */
+        if (el == 0)
+          hes = 4.0 / 3.0;
+        else if (el == 2)
+          hes = 2.0 / 15.0;
+        else if (el > 2)
+          hes = 0;
+      } else {
+        hes = 0.25 * (
+          il_minus_2 +
+          coef * il_minus_1 +
+          (3 + 4 * fabs(x) + 6 * gsl_pow_2(x)) * il / gsl_pow_2(x) +
+          coef * il_plus_1 +
+          gsl_sf_bessel_il_scaled(el + 2, x));
+      }
+      al->hes[2] = hes;
     }
   }
-  return check_result(al, in, "gsl_sf_bessel_il_scaled");
+  return check_result(al, il, "gsl_sf_bessel_il_scaled");
 }
 
 static real amplgsl_sf_bessel_k0_scaled(arglist *al) {
@@ -843,28 +888,35 @@ static real amplgsl_sf_bessel_k2_scaled(arglist *al) {
 }
 
 static real amplgsl_sf_bessel_kl_scaled(arglist *al) {
-  int n = al->ra[0];
+  int el = al->ra[0];
   real x = al->ra[1];
-  real kn = 0;
+  real kl = 0;
   if (!check_bessel_args(al, 0))
     return 0;
-  kn = gsl_sf_bessel_kl_scaled(n, x);
+  kl = gsl_sf_bessel_kl_scaled(el, x);
   if (al->derivs) {
-    real kn_minus_1 = n != 0 ? gsl_sf_bessel_kl_scaled(n - 1, x) : M_PI_2 / x;
-    real kn_plus_1 = gsl_sf_bessel_kl_scaled(n + 1, x);
+    real kl_minus_1 = el != 0 ? gsl_sf_bessel_kl_scaled(el - 1, x) : M_PI_2 / x;
+    real kl_plus_1 = gsl_sf_bessel_kl_scaled(el + 1, x);
     real coef = (1 - 2 * x) / x;
-    al->derivs[1] = -0.5 * (kn_minus_1 + coef * kn + kn_plus_1);
+    al->derivs[1] = -0.5 * (kl_minus_1 + coef * kl + kl_plus_1);
     if (al->hes) {
+      double kl_minus_2 = 0;
+      if (el == 0)
+        kl_minus_2 = M_PI_2 * (1 / x + 1) / x;
+      else if (el == 1)
+        kl_minus_2 = M_PI_2 / x;
+      else
+        kl_minus_2 = gsl_sf_bessel_kl_scaled(el - 2, x);
       coef *= 2;
       al->hes[2] = 0.25 * (
-          gsl_sf_bessel_kl_scaled(n - 2, x) +
-          coef * kn_minus_1 +
-          (3 - 4 * x + 6 * gsl_pow_2(x)) * kn / gsl_pow_2(x) +
-          coef * kn_plus_1 +
-          gsl_sf_bessel_kl_scaled(n + 2, x));
+          kl_minus_2 +
+          coef * kl_minus_1 +
+          (3 - 4 * x + 6 * gsl_pow_2(x)) * kl / gsl_pow_2(x) +
+          coef * kl_plus_1 +
+          gsl_sf_bessel_kl_scaled(el + 2, x));
     }
   }
-  return check_result(al, kn, "gsl_sf_bessel_kl_scaled");
+  return check_result(al, kl, "gsl_sf_bessel_kl_scaled");
 }
 
 static real amplgsl_sf_bessel_Jnu(arglist *al) {
