@@ -212,6 +212,10 @@ static real amplgsl_hypot3(arglist *al) {
   real hypot = gsl_hypot3(x, y, z);
   if (al->derivs) {
     real *derivs = al->derivs;
+    if (hypot == 0) {
+      eval_error(al, "gsl_hypot3'");
+      return 0;
+    }
     derivs[0] = x / hypot;
     derivs[1] = y / hypot;
     derivs[2] = z / hypot;
@@ -265,11 +269,14 @@ static real amplgsl_sf_airy_Ai_scaled(arglist *al) {
         *al->hes = (value + 4 * x * *al->derivs) / (2 * sqrtx);
     } else {
       *al->derivs = gsl_sf_airy_Ai_deriv(x, GSL_PREC_DOUBLE);
-      if (al->hes)
-        *al->hes = x * value;
+      if (al->hes) {
+        /* Return NaN for x = 0 since the right derivative is infinity
+           and the left derivative is 0 at this point. */
+        *al->hes = x != 0 ? x * value : GSL_NAN;
+      }
     }
   }
-  return value;
+  return check_result(al, value, "gsl_sf_airy_Ai_scaled");
 }
 
 static real amplgsl_sf_airy_Bi_scaled(arglist *al) {
@@ -284,11 +291,14 @@ static real amplgsl_sf_airy_Bi_scaled(arglist *al) {
         *al->hes = -(value + 4 * x * *al->derivs) / (2 * sqrtx);
     } else {
       *al->derivs = gsl_sf_airy_Bi_deriv(x, GSL_PREC_DOUBLE);
-      if (al->hes)
-        *al->hes = x * value;
+      if (al->hes) {
+        /* Return NaN for x = 0 since the right derivative is -infinity
+           and left derivative is 0 at this point. */
+        *al->hes = x != 0 ? x * value : GSL_NAN;
+      }
     }
   }
-  return value;
+  return check_result(al, value, "gsl_sf_airy_Bi_scaled");
 }
 
 static real amplgsl_sf_airy_zero_Ai(arglist *al) {
@@ -565,7 +575,9 @@ static real amplgsl_sf_bessel_j0(arglist *al) {
   if (al->derivs) {
     *al->derivs = x != 0 ? (x * cos(x) - sin(x)) / gsl_pow_2(x) : 0;
     if (al->hes)
-      *al->hes = ((2 - gsl_pow_2(x)) * sin(x) - 2 * x * cos(x)) / gsl_pow_3(x);
+      *al->hes = x != 0 ?
+          ((2 - gsl_pow_2(x)) * sin(x) - 2 * x * cos(x)) / gsl_pow_3(x) :
+          -1.0 / 3.0;
   }
   return check_result(al, gsl_sf_bessel_j0(x), "gsl_sf_bessel_j0");
 }
@@ -576,8 +588,8 @@ static real amplgsl_sf_bessel_j1(arglist *al) {
   if (al->derivs) {
     *al->derivs = x != 0 ? (sin(x) - 2 * j1) / x : 1.0 / 3.0;
     if (al->hes) {
-      *al->hes = (x * (gsl_pow_2(x) - 6) * cos(x) -
-          3 * (gsl_pow_2(x) - 2) * sin(x)) / gsl_pow_4(x);
+      *al->hes = x != 0 ? (x * (gsl_pow_2(x) - 6) * cos(x) -
+          3 * (gsl_pow_2(x) - 2) * sin(x)) / gsl_pow_4(x) : 0;
     }
   }
   return check_result(al, j1, "gsl_sf_bessel_j1");
@@ -589,8 +601,9 @@ static real amplgsl_sf_bessel_j2(arglist *al) {
   if (al->derivs) {
     *al->derivs = x != 0 ? gsl_sf_bessel_j1(x) - 3 * j2 / x : 0;
     if (al->hes) {
-      *al->hes = (x * (5 * gsl_pow_2(x) - 36) * cos(x) +
-          (gsl_pow_4(x) - 17 * gsl_pow_2(x) + 36) * sin(x)) / gsl_pow_5(x);
+      *al->hes = x != 0 ? (x * (5 * gsl_pow_2(x) - 36) * cos(x) +
+          (gsl_pow_4(x) - 17 * gsl_pow_2(x) + 36) * sin(x)) / gsl_pow_5(x) :
+              2.0 / 15.0;
     }
   }
   return check_result(al, j2, "gsl_sf_bessel_j2");
@@ -723,7 +736,7 @@ static real amplgsl_sf_bessel_i1_scaled(arglist *al) {
     if (al->hes) {
       coef *= 2;
       *al->hes = 0.25 * (
-          exp(-fabs(x)) * sqrt(1 / x) * cosh(x) / sqrt(x) +
+          exp(-fabs(x)) * cosh(x) / x +
           coef * i0 +
           (3 + 6 * gsl_pow_2(x) + 4 * fabs(x)) * i1 / gsl_pow_2(x) +
           coef * i2 +
@@ -747,12 +760,12 @@ static real amplgsl_sf_bessel_i2_scaled(arglist *al) {
     *al->derivs = x != 0 ? 0.5 * (i1 + coef * i2 + i3) : 0;
     if (al->hes) {
       coef *= 2;
-      *al->hes = 0.25 * (
+      *al->hes = x != 0 ? 0.25 * (
           gsl_sf_bessel_i0_scaled(x) +
           coef * i1 +
           (3 + 6 * gsl_pow_2(x) + 4 * fabs(x)) * i2 / gsl_pow_2(x) +
           coef * i3 +
-          gsl_sf_bessel_il_scaled(4, x));
+          gsl_sf_bessel_il_scaled(4, x)) : 2.0 / 15.0;
     }
   }
   return check_result(al, i2, "gsl_sf_bessel_i2_scaled");
@@ -1002,9 +1015,9 @@ static real amplgsl_sf_clausen(arglist *al) {
   if (al->derivs) {
     *al->derivs = -log(2 * sin(0.5 * fabs(x)));
     if (al->hes)
-      *al->hes = -0.5 * tan(0.5 * M_PI - x);
+      *al->hes = fmod(x, M_PI) != 0 ? -0.5 * tan(M_PI_2 - 0.5 * x) : GSL_NAN;
   }
-  return gsl_sf_clausen(x);
+  return check_result(al, gsl_sf_clausen(x), "gsl_sf_clausen");
 }
 
 static real amplgsl_sf_hydrogenicR_1(arglist *al) {
@@ -1104,10 +1117,16 @@ static real amplgsl_sf_dawson(arglist *al) {
   return f;
 }
 
-/* Values of the derivatives of the Debye functions at 0. */
+/* Values of the right derivatives of the Debye functions at 0. */
 static const double DEBYE_DERIV_AT_0[] = {
     -1.0 / 4.0, -1.0 / 3.0,  -3.0 / 8.0,
     -2.0 / 5.0, -5.0 / 12.0, -3.0 / 7.0
+};
+
+/* Values of the second right derivatives of the Debye functions at 0. */
+static const double DEBYE_DERIV2_AT_0[] = {
+    1.0 / 18.0, 1.0 / 12.0, 1.0 / 10.0,
+    1.0 / 9.0,  5.0 / 42.0, 1.0 / 8.0
 };
 
 static real debye(arglist *al, int n,
@@ -1119,8 +1138,8 @@ static real debye(arglist *al, int n,
     real deriv = *al->derivs = x != 0 ?
         n * (1 / (exp_x - 1) - f / x) : DEBYE_DERIV_AT_0[n - 1];
     if (al->hes) {
-      *al->hes = n * (-exp_x / gsl_pow_2(exp_x - 1) +
-          f / gsl_pow_2(x) - deriv / x);
+      *al->hes = x != 0 ? n * (-exp_x / gsl_pow_2(exp_x - 1) +
+          f / gsl_pow_2(x) - deriv / x) : DEBYE_DERIV2_AT_0[n - 1];
     }
   }
   return check_result(al, f, name);
