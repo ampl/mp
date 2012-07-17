@@ -5,16 +5,7 @@
 #include <vector>
 
 #include <gsl/gsl_math.h>
-#include <gsl/gsl_complex_math.h>
-#include <gsl/gsl_sf_airy.h>
-#include <gsl/gsl_sf_bessel.h>
-#include <gsl/gsl_sf_clausen.h>
-#include <gsl/gsl_sf_coulomb.h>
-#include <gsl/gsl_sf_coupling.h>
-#include <gsl/gsl_sf_dawson.h>
-#include <gsl/gsl_sf_debye.h>
-#include <gsl/gsl_sf_dilog.h>
-#include <gsl/gsl_sf_ellint.h>
+#include <gsl/gsl_sf.h>
 
 #include "gtest/gtest.h"
 #include "solvers/asl.h"
@@ -24,6 +15,7 @@ using std::vector;
 
 namespace {
 
+// An immutable list of arguments for an AMPL function.
 class ArgList {
  private:
   vector<real> ra;
@@ -51,7 +43,7 @@ class ArgList {
     *this << a0 << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8;
   }
 
-  vector<real> copy() const { return ra; }
+  const vector<real> &get() const { return ra; }
 
   friend std::ostream &operator<<(std::ostream &os, const ArgList &args);
 };
@@ -67,6 +59,23 @@ std::ostream &operator<<(std::ostream &os, const ArgList &args) {
   return os;
 }
 
+// An immutable result of an AMPL function call.
+class Result {
+ private:
+  real value_;
+  vector<real> derivs_;
+  vector<real> hes_;
+
+ public:
+  Result(real value, const vector<real> &derivs, const vector<real> &hes) :
+    value_(value), derivs_(derivs), hes_(hes) {}
+
+  operator real() const { return value_; }
+
+  real deriv(size_t index = 0) const { return derivs_.at(index); }
+  real hes(size_t index = 0) const { return hes_.at(index); }
+};
+
 // Options for an AMPL function call.
 enum {
   ERROR        = 1, // Function call is expected to produce an error.
@@ -75,35 +84,7 @@ enum {
   ERROR_TO_NAN = 8  // Convert error to NaN
 };
 
-class Result {
- private:
-  real value_;
-  vector<real> derivs_;
-  vector<real> hes_;
-
- public:
-  Result() : value_(0) {}
-
-  real *AllocateDerivs(size_t size) {
-    derivs_.resize(size);
-    return &derivs_[0];
-  }
-
-  real *AllocateHes(size_t size) {
-    hes_.resize(size * (size + 1) / 2);
-    return &hes_[0];
-  }
-
-  void SetValue(real value) {
-    value_ = value;
-  }
-
-  operator real() const { return value_; }
-
-  real deriv(size_t index = 0) const { return derivs_[index]; }
-  real hes(size_t index = 0) const { return hes_[index]; }
-};
-
+// An AMPL function.
 class Function {
  private:
   ASL *asl_;
@@ -119,7 +100,7 @@ class Function {
 
   Result operator()(const ArgList &args,
       int options = 0, char *dig = 0, void *info = 0) const {
-    return (*this)(args.copy(), options, dig, info);
+    return (*this)(args.get(), options, dig, info);
   }
 
   Result operator()(real x,
@@ -141,11 +122,15 @@ Result Function::operator()(
   al.funcinfo = info;
 
   // Allocate storage for the derivatives if needed.
-  Result result;
-  if ((options & DERIVS) != 0)
-    al.derivs = result.AllocateDerivs(args.size());
-  if ((options & HES) == HES)
-    al.hes = result.AllocateHes(args.size());
+  vector<real> derivs, hes;
+  if ((options & DERIVS) != 0) {
+    derivs.resize(args.size());
+    al.derivs = &derivs[0];
+  }
+  if ((options & HES) == HES) {
+    hes.resize(args.size() * (args.size() + 1) / 2);
+    al.hes = &hes[0];
+  }
 
   // Call the function.
   real value = fi_->funcp(&al);
@@ -159,8 +144,7 @@ Result Function::operator()(
   } else if ((options & ERROR) != 0)
     ADD_FAILURE() << "Expected error in " << fi_->name;
 
-  result.SetValue(value);
-  return result;
+  return Result(value, derivs, hes);
 }
 
 template <typename F>
@@ -182,7 +166,7 @@ inline double RightDifference(F f, double x, double h) {
 // method of polynomial extrapolation. The implementation is taken from
 // "Numerical Recipes in C", Chapter 5.7.
 template <typename F, typename D>
-double Diff(F f, double x, D d, double *final_h = 0) {
+double Diff(F f, double x, D d, double *error = 0, double *final_h = 0) {
   const int NTAB = 200;
   const double CON = 1.4, CON2 = CON * CON;
   const double BIG = std::numeric_limits<double>::max();
@@ -223,6 +207,8 @@ double Diff(F f, double x, D d, double *final_h = 0) {
       break;
   }
 
+  if (error)
+    *error = err;
   if (final_h)
     *final_h = h;
   return ans;
@@ -232,14 +218,17 @@ double Diff(F f, double x, D d, double *final_h = 0) {
 // method of polynomial extrapolation. The implementation is taken from
 // "Numerical Recipes in C", Chapter 5.7.
 template <typename F>
-double Diff(F f, double x) {
+double Diff(F f, double x, double *err = 0) {
   if (gsl_isnan(f(x)))
     return GSL_NAN;
   double h = 0;
-  double deriv = Diff(f, x, SymmetricDifference<F>, &h);
-  double right_deriv = Diff(f, x, RightDifference<F>);
-  if (gsl_isnan(deriv))
+  double deriv = Diff(f, x, SymmetricDifference<F>, err, &h);
+  double right_err = 0;
+  double right_deriv = Diff(f, x, RightDifference<F>, &right_err);
+  if (gsl_isnan(deriv)) {
+    if (err) *err = right_err;
     return right_deriv;
+  }
   double left_deriv = Diff(f, x, LeftDifference<F>);
   if (!(fabs(left_deriv - right_deriv) <= 1e-2))
     return GSL_NAN;
@@ -296,13 +285,14 @@ const unsigned NO_VAR = ~0u;
 
 void CheckSecondDerivatives(const Function &af,
     const ArgList &args, unsigned skip_var = NO_VAR) {
-  vector<real> ra(args.copy());
+  vector<real> ra(args.get());
   char dig = skip_var != NO_VAR ? skip_var + 1 : 0;
   for (unsigned i = 0, n = ra.size(); i < n; ++i) {
     if (i == skip_var) continue;
     for (unsigned j = 0; j < n; ++j) {
       if (j == skip_var) continue;
-      double d2 = Diff(Deriv(af, i, j, ra, &dig), ra[i]);
+      double err = 0;
+      double d2 = Diff(Deriv(af, i, j, ra, &dig), ra[i], &err);
       std::ostringstream os;
       os << "Checking if d/dx" << i << " d/dx" << j
           << " " << af.name() << " at " << args << " is " << d2;
@@ -314,7 +304,8 @@ void CheckSecondDerivatives(const Function &af,
       unsigned ii = i, jj = j;
       if (ii > jj) std::swap(ii, jj);
       unsigned hes_index = ii * (2 * n - ii - 1) / 2 + jj;
-      EXPECT_NEAR(d2, af(args, HES, &dig).hes(hes_index), 1e-5);
+      EXPECT_NEAR(d2, af(args, HES, &dig).hes(hes_index),
+          err != 0 ? err * 1000 : 1e-10);
     }
   }
 }
@@ -383,8 +374,7 @@ class GSLTest : public ::testing::Test {
   void TestFunc(const char *name, FuncU f);
 
   void TestFunc(const char *name, double (*f)(int, double));
-  void TestFunc(const char *name, Func2 f,
-      Func2 dx2, Func2 dxdy, Func2 dy2, const Options& opt);
+  void TestFunc(const char *name, Func2 f, const Options& opt = Options());
   void TestFunc(const char *name, Func3 f);
 };
 
@@ -465,8 +455,7 @@ void GSLTest::TestFunc(const char *name, double (*f)(int, double)) {
   }
 }
 
-void GSLTest::TestFunc(const char *name, Func2 f,
-    Func2 dx2, Func2 dxdy, Func2 dy2, const Options& opt) {
+void GSLTest::TestFunc(const char *name, Func2 f, const Options& opt) {
   Function af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
@@ -479,7 +468,7 @@ void GSLTest::TestFunc(const char *name, Func2 f,
       }
       EXPECT_ALMOST_EQUAL_OR_NAN(value, af(args));
       char dig[2] = {0, 0};
-      double dx = opt.HasDerivative(0, args.copy()) ?
+      double dx = opt.HasDerivative(0, args.get()) ?
           Diff(std::bind2nd(std::ptr_fun(f), y), x) : GSL_NAN;
       if (gsl_isnan(dx)) {
         af(args, ERROR | DERIVS);
@@ -489,7 +478,7 @@ void GSLTest::TestFunc(const char *name, Func2 f,
                 << name << " at " << x << ", " << y;
       }
 
-      double dy = opt.HasDerivative(1, args.copy()) ?
+      double dy = opt.HasDerivative(1, args.get()) ?
           Diff(std::bind1st(std::ptr_fun(f), x), y) : GSL_NAN;
       if (gsl_isnan(dy)) {
         af(args, ERROR | DERIVS, dig);
@@ -498,17 +487,12 @@ void GSLTest::TestFunc(const char *name, Func2 f,
           << name << " at " << x << ", " << y;
       }
 
-      Result res;
-      if (!opt.HasDerivative2(args.copy()) || gsl_isnan(dx)) {
-        res = af(args, ERROR | HES);
+      if (!opt.HasDerivative2(args.get()) || gsl_isnan(dx)) {
+        af(args, ERROR | HES);
         continue;
       }
-      res = af(args, HES, dig);
-      if (dx2)
-        EXPECT_ALMOST_EQUAL_OR_NAN(dx2(x, y), res.hes(0));
-      if (dxdy)
-        EXPECT_ALMOST_EQUAL_OR_NAN(dxdy(x, y), res.hes(1));
-      EXPECT_ALMOST_EQUAL_OR_NAN(dy2(x, y), res.hes(2));
+      // TODO
+      CheckSecondDerivatives(af, args);
     }
   }
 }
@@ -569,109 +553,39 @@ void GSLTest::TestFunc(const char *name, Func3 f) {
   }
 }
 
-double hypot_dx2(double x, double y) {
-  return y * y / pow(x * x + y * y, 1.5);
-}
-double hypot_dxdy(double x, double y) {
-  return -x * y / pow(x * x + y * y, 1.5);
-}
-double hypot_dy2(double x, double y) {
-  return x * x / pow(x * x + y * y, 1.5);
-}
-
-/* Computes (x / fabs(x)) * y. Returns 0 if y is 0. */
-static double scale_by_sign(double x, double y) {
-  return y != 0 ? (x / fabs(x)) * y : 0;
-}
-
-Func2 sf_bessel_Jnu_dx2, sf_bessel_Jnu_dxdy;
-double sf_bessel_Jnu_dy2(double x, double y) {
-  return 0.25 * (gsl_sf_bessel_Jnu(x - 2, y) -
-      2 * gsl_sf_bessel_Jnu(x, y) + gsl_sf_bessel_Jnu(x + 2, y));
-}
-
-Func2 sf_bessel_Ynu_dx2, sf_bessel_Ynu_dxdy;
-double sf_bessel_Ynu_dy2(double x, double y) {
-  return 0.25 * (gsl_sf_bessel_Ynu(x - 2, y) -
-      2 * gsl_sf_bessel_Ynu(x, y) + gsl_sf_bessel_Ynu(x + 2, y));
-}
-
-Func2 sf_bessel_Inu_dx2, sf_bessel_Inu_dxdy;
-double sf_bessel_Inu_dy2(double x, double y) {
-  return 0.25 * (gsl_sf_bessel_Inu(x - 2, y) +
-      2 * gsl_sf_bessel_Inu(x, y) + gsl_sf_bessel_Inu(x + 2, y));
-}
-
-Func2 sf_bessel_Inu_scaled_dx2, sf_bessel_Inu_scaled_dxdy;
-double sf_bessel_Inu_scaled_dy2(double x, double y) {
-  return 0.25 *
-      (gsl_sf_bessel_Inu_scaled(x - 2, y) + 6 * gsl_sf_bessel_Inu_scaled(x, y) +
-          gsl_sf_bessel_Inu_scaled(x + 2, y)) -
-          scale_by_sign(y, gsl_sf_bessel_Inu_scaled(x - 1, y) + gsl_sf_bessel_Inu_scaled(x + 1, y));
-}
-
-Func2 sf_bessel_Knu_dx2, sf_bessel_Knu_dxdy;
-double sf_bessel_Knu_dy2(double x, double y) {
-  return 0.25 * (gsl_sf_bessel_Knu(x - 2, y) +
-      2 * gsl_sf_bessel_Knu(x, y) + gsl_sf_bessel_Knu(x + 2, y));
-}
-
-Func2 sf_bessel_lnKnu_dx2, sf_bessel_lnKnu_dxdy;
-double sf_bessel_lnKnu_dy2(double x, double y) {
-  double kn = gsl_sf_bessel_Knu(x, y);
-  double kn_plus_minus =
-      gsl_sf_bessel_Knu(x - 1, y) + gsl_sf_bessel_Knu(x + 1, y);
-  return 0.25 * (kn * (gsl_sf_bessel_Knu(x - 2, y) + 2 * kn +
-      gsl_sf_bessel_Knu(x + 2, y)) - kn_plus_minus * kn_plus_minus) / (kn * kn);
-}
-
-Func2 sf_bessel_Knu_scaled_dx2, sf_bessel_Knu_scaled_dxdy;
-double sf_bessel_Knu_scaled_dy2(double x, double y) {
-  return 0.25 * (gsl_sf_bessel_Knu_scaled(x - 2, y) -
-      4 * gsl_sf_bessel_Knu_scaled(x - 1, y) +
-      6 * gsl_sf_bessel_Knu_scaled(x, y) -
-      4 * gsl_sf_bessel_Knu_scaled(x + 1, y) +
-      gsl_sf_bessel_Knu_scaled(x + 2, y));
-}
-
-double sf_hydrogenicR_1_dx2(double x, double y) {
-  double Z = x, r = y;
-  return (exp(-Z * r) * (4 * r * r * Z * Z - 12 * r * Z + 3)) / (2 *sqrt(Z));
-}
-double sf_hydrogenicR_1_dxdy(double x, double y) {
-  double Z = x, r = y;
-  return pow(Z, 1.5) * exp(-Z * r) * (2 * r * Z - 5);
-}
-double sf_hydrogenicR_1_dy2(double x, double y) {
-  double Z = x, r = y;
-  return 2 * pow(Z, 3.5) * exp(-Z * r);
-}
-
 #define TEST_FUNC(name) TestFunc("gsl_" #name, gsl_##name);
-
-#define TEST_FUNC2(name) \
-    TestFunc("gsl_" #name, gsl_##name, \
-        name##_dx2, name##_dxdy, name##_dy2, Options());
-
-#define TEST_FUNC2_OPT(name, opt) \
-    TestFunc("gsl_" #name, gsl_##name, \
-        name##_dx2, name##_dxdy, name##_dy2, opt);
+#define TEST_FUNC_OPT(name) TestFunc("gsl_" #name, gsl_##name, opt);
 
 TEST_F(GSLTest, TestArgList) {
   static const real ARGS[] = {5, 7, 11, 13, 17, 19, 23, 29, 31};
-  EXPECT_EQ(vector<real>(ARGS, ARGS + 1), ArgList(5).copy());
-  EXPECT_EQ(vector<real>(ARGS, ARGS + 2), ArgList(5, 7).copy());
-  EXPECT_EQ(vector<real>(ARGS, ARGS + 3), ArgList(5, 7, 11).copy());
-  EXPECT_EQ(vector<real>(ARGS, ARGS + 4), ArgList(5, 7, 11, 13).copy());
-  EXPECT_EQ(vector<real>(ARGS, ARGS + 5), ArgList(5, 7, 11, 13, 17).copy());
+  EXPECT_EQ(vector<real>(ARGS, ARGS + 1), ArgList(5).get());
+  EXPECT_EQ(vector<real>(ARGS, ARGS + 2), ArgList(5, 7).get());
+  EXPECT_EQ(vector<real>(ARGS, ARGS + 3), ArgList(5, 7, 11).get());
+  EXPECT_EQ(vector<real>(ARGS, ARGS + 4), ArgList(5, 7, 11, 13).get());
+  EXPECT_EQ(vector<real>(ARGS, ARGS + 5), ArgList(5, 7, 11, 13, 17).get());
   EXPECT_EQ(vector<real>(ARGS, ARGS + 6),
-      ArgList(5, 7, 11, 13, 17, 19).copy());
+      ArgList(5, 7, 11, 13, 17, 19).get());
   EXPECT_EQ(vector<real>(ARGS, ARGS + 9),
-      ArgList(5, 7, 11, 13, 17, 19, 23, 29, 31).copy());
+      ArgList(5, 7, 11, 13, 17, 19, 23, 29, 31).get());
 
   std::ostringstream oss;
   oss << ArgList(3, 5, 7);
   EXPECT_EQ("(3, 5, 7)", oss.str());
+}
+
+TEST_F(GSLTest, TestResult) {
+  static const real ARGS[] = {5, 7, 11, 13, 17};
+  Result r(42, vector<real>(ARGS, ARGS + 2), vector<real>(ARGS + 2, ARGS + 5));
+  EXPECT_EQ(42, r);
+  EXPECT_EQ(5, r.deriv());
+  EXPECT_EQ(5, r.deriv(0));
+  EXPECT_EQ(7, r.deriv(1));
+  EXPECT_THROW(r.deriv(2), std::out_of_range);
+  EXPECT_EQ(11, r.hes());
+  EXPECT_EQ(11, r.hes(0));
+  EXPECT_EQ(13, r.hes(1));
+  EXPECT_EQ(17, r.hes(2));
+  EXPECT_THROW(r.hes(3), std::out_of_range);
 }
 
 struct CheckData {
@@ -733,7 +647,6 @@ TEST_F(GSLTest, TestAMPLFunctionDerivs) {
   ASSERT_EQ(1, data.n);
   EXPECT_EQ(1, data.nr);
   EXPECT_EQ(777, data.ra[0]);
-  EXPECT_EQ(123, *data.derivs);
   EXPECT_EQ(123, res.deriv(0));
   EXPECT_TRUE(data.hes == nullptr);
   EXPECT_TRUE(data.dig == nullptr);
@@ -753,7 +666,7 @@ TEST_F(GSLTest, Diff) {
 TEST_F(GSLTest, Elementary) {
   TEST_FUNC(log1p);
   TEST_FUNC(expm1);
-  TEST_FUNC2(hypot);
+  TEST_FUNC(hypot);
   TEST_FUNC(hypot3);
 }
 
@@ -859,33 +772,14 @@ class BesselFractionalOrderOptions : public Options {
 };
 
 TEST_F(GSLTest, BesselFractionalOrder) {
-  TEST_FUNC2_OPT(sf_bessel_Jnu, BesselFractionalOrderOptions());
-  EXPECT_NEAR(0.410029, gsl_sf_bessel_Jnu(3.5, 5), 1e-5);
-  EXPECT_NEAR(-0.199786, sf_bessel_Jnu_dy2(3.5, 5), 1e-5);
-
-  TEST_FUNC2_OPT(sf_bessel_Ynu, BesselFractionalOrderOptions());
-  EXPECT_NEAR(-0.0275521, gsl_sf_bessel_Ynu(3.5, 5), 1e-5);
-  EXPECT_NEAR(-0.0486802, sf_bessel_Ynu_dy2(3.5, 5), 1e-5);
-
-  TEST_FUNC2_OPT(sf_bessel_Inu, BesselFractionalOrderOptions());
-  EXPECT_NEAR(7.417560126111555, gsl_sf_bessel_Inu(3.5, 5), 1e-5);
-  EXPECT_NEAR(9.337246577825318, sf_bessel_Inu_dy2(3.5, 5), 1e-5);
-
-  TEST_FUNC2_OPT(sf_bessel_Inu_scaled, BesselFractionalOrderOptions());
-  EXPECT_NEAR(0.04997912699226937, gsl_sf_bessel_Inu_scaled(3.5, 5), 1e-5);
-  EXPECT_NEAR(-0.0026572670459736, sf_bessel_Inu_scaled_dy2(3.5, 5), 1e-5);
-
-  TEST_FUNC2_OPT(sf_bessel_Knu, BesselFractionalOrderOptions());
-  EXPECT_NEAR(0.011027711053957217, gsl_sf_bessel_Knu(3.5, 5), 1e-5);
-  EXPECT_NEAR(0.01927432401882742, sf_bessel_Knu_dy2(3.5, 5), 1e-5);
-
-  TEST_FUNC2_OPT(sf_bessel_lnKnu, BesselFractionalOrderOptions());
-  EXPECT_NEAR(-4.5073439872921324, gsl_sf_bessel_lnKnu(3.5, 5), 1e-5);
-  EXPECT_NEAR(0.08618127228373, sf_bessel_lnKnu_dy2(3.5, 5), 1e-5);
-
-  TEST_FUNC2_OPT(sf_bessel_Knu_scaled, BesselFractionalOrderOptions());
-  EXPECT_NEAR(1.6366574351881952, gsl_sf_bessel_Knu_scaled(3.5, 5), 1e-5);
-  EXPECT_NEAR(0.2777833646846813, sf_bessel_Knu_scaled_dy2(3.5, 5), 1e-5);
+  BesselFractionalOrderOptions opt;
+  TEST_FUNC_OPT(sf_bessel_Jnu);
+  TEST_FUNC_OPT(sf_bessel_Ynu);
+  TEST_FUNC_OPT(sf_bessel_Inu);
+  TEST_FUNC_OPT(sf_bessel_Inu_scaled);
+  TEST_FUNC_OPT(sf_bessel_Knu);
+  TEST_FUNC_OPT(sf_bessel_lnKnu);
+  TEST_FUNC_OPT(sf_bessel_Knu_scaled);
 }
 
 TEST_F(GSLTest, BesselZero) {
@@ -914,11 +808,7 @@ TEST_F(GSLTest, Clausen) {
 }
 
 TEST_F(GSLTest, Hydrogenic) {
-  TEST_FUNC2(sf_hydrogenicR_1);
-  EXPECT_NEAR(0.0633592, gsl_sf_hydrogenicR_1(3, 1.7), 1e-5);
-  EXPECT_NEAR(0.0806774, sf_hydrogenicR_1_dx2(3, 1.7), 1e-5);
-  EXPECT_NEAR(0.164734, sf_hydrogenicR_1_dxdy(3, 1.7), 1e-5);
-  EXPECT_NEAR(0.570233, sf_hydrogenicR_1_dy2(3, 1.7), 1e-5);
+  TEST_FUNC(sf_hydrogenicR_1);
 
   const char *name = "gsl_sf_hydrogenicR";
   Function af = GetFunction(name);
