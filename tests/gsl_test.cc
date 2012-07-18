@@ -152,91 +152,144 @@ Result Function::operator()(
   return Result(value, derivs, hes, al.Errmsg);
 }
 
-template <typename F>
-inline double SymmetricDifference(F f, double x, double h) {
-  return (f(x + h) - f(x - h)) / (2 * h);
-}
-
-template <typename F>
-inline double LeftDifference(F f, double x, double h) {
-  return (f(x) - f(x - h)) / h;
-}
-
-template <typename F>
-inline double RightDifference(F f, double x, double h) {
-  return (f(x + h) - f(x)) / h;
-}
-
-// Returns the derivative of a function f at a point x by Ridders'
-// method of polynomial extrapolation. The implementation is taken from
+// A utility class for computing the derivative by Ridders' method
+// of polynomial extrapolation. The implementation is taken from
 // "Numerical Recipes in C", Chapter 5.7.
-template <typename F, typename D>
-double Diff(F f, double x, D d, double *error = 0, double *final_h = 0) {
-  const int NTAB = 200;
-  const double CON = 1.4, CON2 = CON * CON;
-  const double BIG = std::numeric_limits<double>::max();
-  const double SAFE = 2;
-  double h = 0.125, ans = GSL_NAN;
+class Differentiator {
+ private:
+  enum {NTAB = 200};
 
   // Successive columns in the Neville tableau will go to smaller
   // step sizes and higher orders of extrapolation.
-  vector<double> a(NTAB * NTAB);
+  vector<double> table_;
 
-  a[0] = d(f, x, h);
-  double err = BIG;
-  for (int i = 1; i < NTAB; i++) {
+  // Returns the element at row i and column j of the Neville tableau.
+  double& at(unsigned i, unsigned j) {
+    return table_[i * NTAB + j];
+  }
+
+  // Statistics.
+  static unsigned num_calls_;
+  static unsigned num_infs_;
+  static double min_error_;
+  static double max_error_;
+
+  static void AddStats(double deriv, double error) {
+    if (gsl_isnan(deriv)) return;
+    min_error_ = std::min(min_error_, error);
+    max_error_ = std::max(max_error_, error);
+  }
+
+  struct StatsPrinter {
+    ~StatsPrinter() {
+      std::cout << "Called numerical differentiation "
+          << num_calls_ << " times with " << num_infs_ << " "
+          << (num_infs_ == 1 ? "infinity" : "infinities")
+          << " detected" << std::endl;
+      std::cout << "Error min=" << min_error_;
+      std::cout << "  max=" << max_error_ << std::endl;
+    }
+  };
+
+  static StatsPrinter stats_printer_;
+
+  // Do not implement.
+  Differentiator() : table_(NTAB * NTAB) {}
+  ~Differentiator() {}
+
+  template <typename F>
+  static double SymmetricDifference(F f, double x, double h) {
+    return (f(x + h) - f(x - h)) / (2 * h);
+  }
+
+  template <typename F>
+  static double LeftDifference(F f, double x, double h) {
+    return (f(x) - f(x - h)) / h;
+  }
+
+  template <typename F>
+  static double RightDifference(F f, double x, double h) {
+    return (f(x + h) - f(x)) / h;
+  }
+
+  // Returns the derivative of a function f at a point x by Ridders'
+  // method of polynomial extrapolation.
+  template <typename F, typename D>
+  double operator()(F f, double x, D d, double *error = 0, double *h = 0);
+
+ public:
+  // Returns the derivative of a function f at a point x by Ridders'
+  // method of polynomial extrapolation handling special cases such as
+  // indeterminate and infinity.
+  template <typename F>
+  static double Diff(F f, double x, double *err);
+};
+
+unsigned Differentiator::num_calls_;
+unsigned Differentiator::num_infs_;
+double Differentiator::min_error_ = std::numeric_limits<double>::max();
+double Differentiator::max_error_ = std::numeric_limits<double>::min();
+Differentiator::StatsPrinter Differentiator::stats_printer_;
+
+template <typename F, typename D>
+double Differentiator::operator()(
+    F f, double x, D d, double *error, double *h) {
+  const double CON = 1.4, CON2 = CON * CON;
+  const double SAFE = 2;
+  double hh = 0.125, ans = GSL_NAN;
+  at(0, 0) = d(f, x, hh);
+  double err = std::numeric_limits<double>::max();
+  for (unsigned i = 1; i < NTAB; i++) {
     // Try new, smaller step size.
-    h /= CON;
-    a[i] = d(f, x, h);
+    hh /= CON;
+    at(0, i) = d(f, x, hh);
     double fac = CON2;
-    for (int j = 1; j <= i; j++) {
+    for (unsigned j = 1; j <= i; j++) {
       // Compute extrapolations of various orders, requiring no new function
       // evaluations.
-      a[j * NTAB + i] =
-          (a[(j - 1) * NTAB + i] * fac - a[(j - 1) * NTAB + i - 1]) /
-          (fac - 1);
+      at(j, i) = (at(j - 1, i) * fac - at(j - 1, i - 1)) / (fac - 1);
       fac = CON2 * fac;
       double errt = std::max(
-          fabs(a[j * NTAB + i] - a[(j - 1) * NTAB + i]),
-          fabs(a[j * NTAB + i] - a[(j - 1) * NTAB + i - 1]));
+          fabs(at(j, i) - at(j - 1, i)), fabs(at(j, i) - at(j - 1, i - 1)));
       // The error strategy is to compare each new extrapolation to one order
       // lower, both at the present step size and the previous one.
       if (errt <= err) {
         // If error is decreased, save the improved answer.
         err = errt;
-        ans = a[j * NTAB + i];
+        ans = at(j, i);
       }
     }
     // If higher order is worse by a significant factor SAFE, then quit early.
-    if (fabs(a[i * NTAB + i] - a[(i - 1) * NTAB + i - 1]) >= SAFE * err)
+    if (fabs(at(i, i) - at(i - 1, i - 1)) >= SAFE * err)
       break;
   }
 
   if (error)
     *error = err;
-  if (final_h)
-    *final_h = h;
+  if (h)
+    *h = hh;
   return ans;
 }
 
-// Returns the derivative of a function f at a point x by Ridders'
-// method of polynomial extrapolation. The implementation is taken from
-// "Numerical Recipes in C", Chapter 5.7.
-// This version tries to detect special cases such as indeterminate
-// and infinity.
 template <typename F>
-double Diff(F f, double x, double *err = 0) {
+double Differentiator::Diff(F f, double x, double *error) {
+  ++num_calls_;
   if (gsl_isnan(f(x)))
     return GSL_NAN;
   double h = 0;
-  double deriv = Diff(f, x, SymmetricDifference<F>, err, &h);
-  double right_err = 0;
-  double right_deriv = Diff(f, x, RightDifference<F>, &right_err);
+  double dummy_error = 0;
+  if (!error)
+    error = &dummy_error;
+  Differentiator diff;
+  double deriv = diff(f, x, SymmetricDifference<F>, error, &h);
+  double right_error = 0;
+  double right_deriv = diff(f, x, RightDifference<F>, &right_error);
   if (gsl_isnan(deriv)) {
-    if (err) *err = right_err;
+    AddStats(right_deriv, right_error);
+    *error = right_error;
     return right_deriv;
   }
-  double left_deriv = Diff(f, x, LeftDifference<F>);
+  double left_deriv = diff(f, x, LeftDifference<F>);
   if (!(fabs(left_deriv - right_deriv) <= 1e-2))
     return GSL_NAN;
   if (deriv > 1) {
@@ -247,44 +300,76 @@ double Diff(F f, double x, double *err = 0) {
     small_h = temp - x;
     // A heuristic to detect infinity.
     double check_deriv = (f(x + small_h) - f(x - small_h)) / (2 * small_h);
-    if (check_deriv > deriv * 1.1)
+    if (check_deriv > deriv * 1.1) {
+      ++num_infs_;
       return GSL_POSINF;
+    }
   }
+  AddStats(deriv, *error);
   return deriv;
 }
 
 template <typename F>
-void CheckDerivative(F f, double x,
-    const Function &af, size_t var_index, const ArgList &args) {
+inline double Diff(F f, double x, double *err = 0) {
+  return Differentiator::Diff(f, x, err);
+}
+
+// Checks the value of the derivative returned by af using numerical
+// differentiation of function f.
+// var_index: index of the variable with respect to which to differentiate
+// args: point at which the derivative is computed
+template <typename F>
+void CheckDerivative(F f, const Function &af,
+    unsigned var_index, const ArgList &args) {
   std::ostringstream os;
   os << "Checking d/dx" << var_index << " " << af.name() << " at " << args;
   SCOPED_TRACE(os.str());
-  double dx = Diff(f, x);
-  if (gsl_isnan(dx)) {
-    af(args, ERROR | DERIVS);
+  double error = 0;
+  double x = args.get().at(var_index);
+  double num_deriv = Diff(f, x, &error);
+  if (!gsl_isnan(num_deriv)) {
+    double deriv = af(args, DERIVS).deriv(var_index);
+    if (num_deriv != deriv)
+      EXPECT_NEAR(num_deriv, deriv, error != 0 ? error * 1000 : 1e-10);
     return;
   }
-  EXPECT_NEAR(dx, af(args, DERIVS).deriv(var_index), 1e-5);
+  Result r = af(args, PASS_ERROR | DERIVS);
+  if (!gsl_isnan(f(x))) {
+    os.str(std::string());
+    os << "can't evaluate " << af.name() << "'" << args;
+    EXPECT_STREQ(os.str().c_str(), r.error());
+  } else
+    EXPECT_TRUE(r.error() != nullptr);
 }
 
-class Deriv {
+// A helper class that wraps a Function's derivative and binds
+// all arguments except one to the given values.
+class Derivative {
  private:
   Function af_;
-  unsigned deriv_var_index_;
-  unsigned eval_var_index_;
+  unsigned deriv_var_;
+  unsigned eval_var_;
   vector<real> args_;
   char *dig_;
 
  public:
-  Deriv(Function af, unsigned eval_var_index,
-      unsigned deriv_var_index, const vector<real> &args, char *dig = 0)
-  : af_(af), deriv_var_index_(deriv_var_index),
-    eval_var_index_(eval_var_index),  args_(args), dig_(dig) {}
+  // Create a Derivative object.
+  // eval_var:  index of a variable which is not bound
+  // deriv_var: index of a variable with respect to which
+  //                  the derivative is taken
+  Derivative(Function af, unsigned deriv_var,
+      unsigned eval_var, const ArgList &args, char *dig)
+  : af_(af), deriv_var_(deriv_var), eval_var_(eval_var),
+    args_(args.get()), dig_(dig) {
+    unsigned num_vars = args_.size();
+    if (deriv_var >= num_vars || eval_var >= num_vars)
+      throw std::out_of_range("variable index is out of range");
+  }
 
   double operator()(double x) {
-    args_[eval_var_index_] = x;
+    args_.at(eval_var_) = x;
     Result r = af_(args_, DERIVS | PASS_ERROR, dig_);
-    return r.error() ? GSL_NAN : r.deriv(deriv_var_index_);
+    return r.error() ? GSL_NAN : r.deriv(deriv_var_);
   }
 };
 
@@ -292,27 +377,30 @@ const unsigned NO_VAR = ~0u;
 
 void CheckSecondDerivatives(const Function &af,
     const ArgList &args, unsigned skip_var = NO_VAR) {
-  vector<real> ra(args.get());
-  char dig = skip_var != NO_VAR ? skip_var + 1 : 0;
-  for (unsigned i = 0, n = ra.size(); i < n; ++i) {
+  const vector<real> &ra = args.get();
+  unsigned num_args = ra.size();
+  vector<char> dig(num_args);
+  if (skip_var != NO_VAR)
+    dig.at(skip_var) = 1;
+  for (unsigned i = 0; i < num_args; ++i) {
     if (i == skip_var) continue;
-    for (unsigned j = 0; j < n; ++j) {
+    for (unsigned j = 0; j < num_args; ++j) {
       if (j == skip_var) continue;
-      double err = 0;
-      double d2 = Diff(Deriv(af, i, j, ra, &dig), ra[i], &err);
+      double error = 0;
+      double d = Diff(Derivative(af, j, i, args, &dig[0]), ra[i], &error);
       std::ostringstream os;
       os << "Checking if d/dx" << i << " d/dx" << j
-          << " " << af.name() << " at " << args << " is " << d2;
+          << " " << af.name() << " at " << args << " is " << d;
       SCOPED_TRACE(os.str());
-      if (gsl_isnan(d2)) {
+      if (gsl_isnan(d)) {
         af(args, ERROR | HES);
         return;
       }
       unsigned ii = i, jj = j;
       if (ii > jj) std::swap(ii, jj);
-      unsigned hes_index = ii * (2 * n - ii - 1) / 2 + jj;
-      EXPECT_NEAR(d2, af(args, HES, &dig).hes(hes_index),
-          err != 0 ? err * 1000 : 1e-10);
+      unsigned hes_index = ii * (2 * num_args - ii - 1) / 2 + jj;
+      EXPECT_NEAR(d, af(args, HES, &dig[0]).hes(hes_index),
+          error != 0 ? error * 1000 : 1e-10);
     }
   }
 }
@@ -402,20 +490,11 @@ void GSLTest::TestUnaryFunc(const char *name, F f) {
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     double x = POINTS[i];
     double value = f(x);
-    if (gsl_isnan(value)) {
-      af(x, ERROR);
-      continue;
-    }
-    EXPECT_ALMOST_EQUAL_OR_NAN(f(x), af(x)) << name << " at " << x;
-    double dx = Diff(f, x);
-    if (gsl_isnan(dx)) {
-      af(x, ERROR | DERIVS);
-      continue;
-    }
-    double actual_deriv = af(x, DERIVS).deriv();
-    if (dx != actual_deriv)
-      EXPECT_NEAR(dx, actual_deriv, 1e-5) << name << " at " << x;
-    CheckSecondDerivatives(af, ArgList(x));
+    if (!gsl_isnan(value))
+      EXPECT_EQ(value, af(x)) << name << " at " << x;
+    else af(x, ERROR);
+    CheckDerivative(f, af, 0, x);
+    CheckSecondDerivatives(af, x);
   }
 }
 
@@ -427,7 +506,14 @@ void GSLTest::TestFunc(const char *name, FuncU f) {
       af(x, ERROR);
       continue;
     }
-    EXPECT_ALMOST_EQUAL_OR_NAN(f(x), af(x)) << name << " at " << x;
+    double value = f(x);
+    if (gsl_isnan(value)) {
+      Result r = af(x, PASS_ERROR);
+      std::ostringstream os;
+      os << "can't evaluate " << af.name() << ArgList(x);
+      EXPECT_STREQ(os.str().c_str(), r.error());
+    } else
+      EXPECT_EQ(value, af(x)) << name << " at " << x;
     af(x, DERIVS | ERROR);
   }
 }
@@ -551,9 +637,9 @@ void GSLTest::TestFunc(const char *name, Func3 f) {
         double x = POINTS[i], y = POINTS[j], z = POINTS[k];
         ArgList args(x, y, z);
         EXPECT_EQ(f(x, y, z), af(args)) << name;
-        CheckDerivative(Bind23(f, y, z), x, af, 0, args);
-        CheckDerivative(Bind13(f, x, z), y, af, 1, args);
-        CheckDerivative(Bind12(f, x, y), z, af, 2, args);
+        CheckDerivative(Bind23(f, y, z), af, 0, args);
+        CheckDerivative(Bind13(f, x, z), af, 1, args);
+        CheckDerivative(Bind12(f, x, y), af, 2, args);
         CheckSecondDerivatives(af, args);
       }
     }
@@ -716,14 +802,47 @@ TEST_F(GSLTest, FunctionReturnsHes) {
 }
 
 TEST_F(GSLTest, Diff) {
-  EXPECT_NEAR(1, Diff(sin, 0), 1e-7);
+  double error = GSL_NAN;
+  EXPECT_NEAR(1, Diff(sin, 0, &error), 1e-7);
+  EXPECT_NEAR(0, error, 1e-10);
   EXPECT_NEAR(0.25, Diff(sqrt, 4), 1e-7);
-  EXPECT_TRUE(gsl_isnan(Diff(sqrt, -1)));
-  EXPECT_TRUE(gsl_isnan(Diff(
-      std::bind2nd(std::ptr_fun(gsl_hypot), 0), 0)));
   EXPECT_NEAR(0, Diff(std::bind2nd(std::ptr_fun(gsl_hypot), -5), 0), 1e-7);
-  EXPECT_TRUE(gsl_isnan(Diff(log, 0)));
   EXPECT_NEAR(1, Diff(gsl_log1p, 0), 1e-7);
+}
+
+TEST_F(GSLTest, DiffPropagatesNaN) {
+  EXPECT_TRUE(gsl_isnan(sqrt(-1)));
+  EXPECT_TRUE(gsl_isnan(Diff(sqrt, -1)));
+}
+
+TEST_F(GSLTest, DiffDetectsNaN) {
+  EXPECT_EQ(0, std::bind2nd(std::ptr_fun(gsl_hypot), 0)(0));
+  EXPECT_TRUE(gsl_isnan(Diff(std::bind2nd(std::ptr_fun(gsl_hypot), 0), 0)));
+  EXPECT_EQ(GSL_NEGINF, log(0));
+  EXPECT_TRUE(gsl_isnan(Diff(log, 0)));
+}
+
+TEST_F(GSLTest, DiffRightDeriv) {
+  // Diff should use the right derivative if the function is not defined for
+  // negative argument.
+  EXPECT_TRUE(gsl_isnan(gsl_sf_bessel_jl(0, -1e-7)));
+  EXPECT_NEAR(0,
+      Diff(std::bind1st(std::ptr_fun(gsl_sf_bessel_jl), 0), 0), 1e-7);
+}
+
+TEST_F(GSLTest, Derivative) {
+  Derivative d(GetFunction("gsl_hypot"), 0, 1, ArgList(1, 0), 0);
+  ASSERT_EQ(1, d(0));
+  ASSERT_EQ(1 / sqrt(2), d(1));
+  d = Derivative(GetFunction("gsl_hypot"), 1, 1, ArgList(1, 0), 0);
+  ASSERT_EQ(0, d(0));
+  ASSERT_EQ(1 / sqrt(2), d(1));
+  EXPECT_THROW(
+      Derivative(GetFunction("gsl_hypot"), 2, 0, ArgList(0, 0), 0),
+      std::out_of_range);
+  EXPECT_THROW(
+      Derivative(GetFunction("gsl_hypot"), 0, 2, ArgList(0, 0), 0),
+      std::out_of_range);
 }
 
 TEST_F(GSLTest, Elementary) {
