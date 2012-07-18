@@ -302,19 +302,27 @@ static real amplgsl_sf_airy_Bi_scaled(arglist *al) {
 }
 
 static real amplgsl_sf_airy_zero_Ai(arglist *al) {
-  return check_zero_func_args(al, 0) ? gsl_sf_airy_zero_Ai(al->ra[0]) : 0;
+  double value = check_zero_func_args(al, 0) ?
+      gsl_sf_airy_zero_Ai(al->ra[0]) : 0;
+  return check_result(al, value, "gsl_sf_airy_zero_Ai");
 }
 
 static real amplgsl_sf_airy_zero_Bi(arglist *al) {
-  return check_zero_func_args(al, 0) ? gsl_sf_airy_zero_Bi(al->ra[0]) : 0;
+  double value = check_zero_func_args(al, 0) ?
+      gsl_sf_airy_zero_Bi(al->ra[0]) : 0;
+  return check_result(al, value, "gsl_sf_airy_zero_Bi");
 }
 
 static real amplgsl_sf_airy_zero_Ai_deriv(arglist *al) {
-  return check_zero_func_args(al, 0) ? gsl_sf_airy_zero_Ai_deriv(al->ra[0]) : 0;
+  double value = check_zero_func_args(al, 0) ?
+      gsl_sf_airy_zero_Ai_deriv(al->ra[0]) : 0;
+  return check_result(al, value, "gsl_sf_airy_zero_Ai_deriv");
 }
 
 static real amplgsl_sf_airy_zero_Bi_deriv(arglist *al) {
-  return check_zero_func_args(al, 0) ? gsl_sf_airy_zero_Bi_deriv(al->ra[0]) : 0;
+  double value = check_zero_func_args(al, 0) ?
+      gsl_sf_airy_zero_Bi_deriv(al->ra[0]) : 0;
+  return check_result(al, value, "gsl_sf_airy_zero_Bi_deriv");
 }
 
 static real amplgsl_sf_bessel_J0(arglist *al) {
@@ -1249,8 +1257,6 @@ static real amplgsl_sf_ellint_Ecomp(arglist *al) {
   }
   return check_result(al, ecomp, "gsl_sf_ellint_Ecomp");
 }
-
-inline double pow2(double x) { return x * x; }
 
 static real amplgsl_sf_ellint_Pcomp(arglist *al) {
   real k = al->ra[0], n = al->ra[1];
