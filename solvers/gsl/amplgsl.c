@@ -6,15 +6,7 @@
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_complex_math.h>
-#include <gsl/gsl_sf_airy.h>
-#include <gsl/gsl_sf_bessel.h>
-#include <gsl/gsl_sf_clausen.h>
-#include <gsl/gsl_sf_coulomb.h>
-#include <gsl/gsl_sf_coupling.h>
-#include <gsl/gsl_sf_dawson.h>
-#include <gsl/gsl_sf_debye.h>
-#include <gsl/gsl_sf_dilog.h>
-#include <gsl/gsl_sf_ellint.h>
+#include <gsl/gsl_sf.h>
 
 #include "solvers/funcadd.h"
 
@@ -1265,26 +1257,44 @@ static real amplgsl_sf_ellint_Pcomp(arglist *al) {
     real ecomp = gsl_sf_ellint_Ecomp(k, GSL_PREC_DOUBLE);
     real kcomp = gsl_sf_ellint_Kcomp(k, GSL_PREC_DOUBLE);
     real divisor = (k * k - 1) * (k * k + n);
-    al->derivs[0] = -k * ((k * k - 1) * pcomp + ecomp) / divisor;
-    al->derivs[1] = (-kcomp * (k * k + n) +
-        (k * k - n * n) * pcomp + n * ecomp) / (2 * n * (n + 1) * (k * k + n));
+    if (k != 0 || n != 0) {
+      al->derivs[0] = -k * ((k * k - 1) * pcomp + ecomp) / divisor;
+      if (n != 0) {
+        al->derivs[1] = (-kcomp * (k * k + n) +
+          (k * k - n * n) * pcomp + n * ecomp) /
+          (2 * n * (n + 1) * (k * k + n));
+      } else {
+        al->derivs[1] =
+            -(4 * kcomp + M_PI * k * k * gsl_sf_hyperg_2F1(0.5, 1.5, 2, k * k) -
+                4 * ecomp) / (8 * k * k);
+      }
+    } else {
+      al->derivs[0] = 0;
+      al->derivs[1] = -M_PI_4;
+    }
     if (al->hes) {
-      al->hes[0] = ((k * k - 1) * (kcomp * (k * k + n) +
-          (k * k - 1) * (2 * k * k - n) * pcomp) +
-          (3 * gsl_pow_4(k) - k * k + 2 * n) * ecomp) / gsl_pow_2(divisor);
-      al->hes[1] = (k * ((k * k - 1) * (kcomp * (k * k + n) +
-          (n * (3 * n + 2) - k * k) * pcomp) +
-          n * (-k * k + 2 * n + 3) * ecomp)) /
-          (2 * divisor * n * (n + 1) * (k * k + n));
-      al->hes[2] = (kcomp * (gsl_pow_4(k) * (4 * n + 1) +
-          3 * k * k * n * (3 * n + 1) + n * n * (5 * n + 2)) +
-          n * (k * k * (1 - 2 * n) - n * (5 * n + 2)) * ecomp -
-          (gsl_pow_4(k) * (4 * n + 1) + 2 * k * k * n * (5 * n + 2) -
-              3 * gsl_pow_4(n)) * pcomp) /
-              (4 * gsl_pow_2(n * (n + 1) * (k * k + n)));
+      if (k != 0 || n != 0) {
+        al->hes[0] = ((k * k - 1) * (kcomp * (k * k + n) +
+            (k * k - 1) * (2 * k * k - n) * pcomp) +
+            (3 * gsl_pow_4(k) - k * k + 2 * n) * ecomp) / gsl_pow_2(divisor);
+        al->hes[1] = (k * ((k * k - 1) * (kcomp * (k * k + n) +
+            (n * (3 * n + 2) - k * k) * pcomp) +
+            n * (-k * k + 2 * n + 3) * ecomp)) /
+            (2 * divisor * n * (n + 1) * (k * k + n));
+        al->hes[2] = (kcomp * (gsl_pow_4(k) * (4 * n + 1) +
+            3 * k * k * n * (3 * n + 1) + n * n * (5 * n + 2)) +
+            n * (k * k * (1 - 2 * n) - n * (5 * n + 2)) * ecomp -
+            (gsl_pow_4(k) * (4 * n + 1) + 2 * k * k * n * (5 * n + 2) -
+                3 * gsl_pow_4(n)) * pcomp) /
+                (4 * gsl_pow_2(n * (n + 1) * (k * k + n)));
+      } else {
+        al->hes[0] = M_PI_4;
+        al->hes[1] = 0;
+        al->hes[2] = 3 * M_PI / 8;
+      }
     }
   }
-  return pcomp;
+  return check_result(al, pcomp, "gsl_sf_ellint_Pcomp");
 }
 
 static real amplgsl_sf_ellint_F(arglist *al) {

@@ -319,7 +319,7 @@ inline double Diff(F f, double x, double *err = 0) {
 // var_index: index of the variable with respect to which to differentiate
 // args: point at which the derivative is computed
 template <typename F>
-void CheckDerivative(F f, const Function &af,
+bool CheckDerivative(F f, const Function &af,
     unsigned var_index, const ArgList &args) {
   std::ostringstream os;
   os << "Checking d/dx" << var_index << " " << af.name() << " at " << args;
@@ -331,7 +331,7 @@ void CheckDerivative(F f, const Function &af,
     double deriv = af(args, DERIVS).deriv(var_index);
     if (num_deriv != deriv)
       EXPECT_NEAR(num_deriv, deriv, error != 0 ? error * 1000 : 1e-10);
-    return;
+    return true;
   }
   Result r = af(args, PASS_ERROR | DERIVS);
   if (!gsl_isnan(f(x))) {
@@ -340,6 +340,7 @@ void CheckDerivative(F f, const Function &af,
     EXPECT_STREQ(os.str().c_str(), r.error());
   } else
     EXPECT_TRUE(r.error() != nullptr);
+  return false;
 }
 
 // A helper class that wraps a Function's derivative and binds
@@ -356,22 +357,27 @@ class Derivative {
   // Create a Derivative object.
   // eval_var:  index of a variable which is not bound
   // deriv_var: index of a variable with respect to which
-  //                  the derivative is taken
+  //            the derivative is taken
   Derivative(Function af, unsigned deriv_var,
-      unsigned eval_var, const ArgList &args, char *dig)
-  : af_(af), deriv_var_(deriv_var), eval_var_(eval_var),
-    args_(args.get()), dig_(dig) {
-    unsigned num_vars = args_.size();
-    if (deriv_var >= num_vars || eval_var >= num_vars)
-      throw std::out_of_range("variable index is out of range");
-  }
+      unsigned eval_var, const ArgList &args, char *dig);
 
-  double operator()(double x) {
-    args_.at(eval_var_) = x;
-    Result r = af_(args_, DERIVS | PASS_ERROR, dig_);
-    return r.error() ? GSL_NAN : r.deriv(deriv_var_);
-  }
+  double operator()(double x);
 };
+
+Derivative::Derivative(Function af, unsigned deriv_var,
+    unsigned eval_var, const ArgList &args, char *dig)
+: af_(af), deriv_var_(deriv_var), eval_var_(eval_var),
+  args_(args.get()), dig_(dig) {
+  unsigned num_vars = args_.size();
+  if (deriv_var >= num_vars || eval_var >= num_vars)
+    throw std::out_of_range("variable index is out of range");
+}
+
+double Derivative::operator()(double x) {
+  args_.at(eval_var_) = x;
+  Result r = af_(args_, DERIVS | PASS_ERROR, dig_);
+  return r.error() ? GSL_NAN : r.deriv(deriv_var_);
+}
 
 const unsigned NO_VAR = ~0u;
 
@@ -394,7 +400,7 @@ void CheckSecondDerivatives(const Function &af,
       SCOPED_TRACE(os.str());
       if (gsl_isnan(d)) {
         af(args, ERROR | HES);
-        return;
+        continue;
       }
       unsigned ii = i, jj = j;
       if (ii > jj) std::swap(ii, jj);
@@ -469,7 +475,33 @@ class GSLTest : public ::testing::Test {
   void TestFunc(const char *name, FuncU f);
 
   void TestFunc(const char *name, double (*f)(int, double));
-  void TestFunc(const char *name, Func2 f, const Options& opt = Options());
+
+  template <typename F>
+  void TestBinaryFunc(const char *name, F f, const Options& opt);
+
+  void TestFunc(const char *name, Func2 f, const Options& opt = Options()) {
+    TestBinaryFunc(name, std::ptr_fun(f), opt);
+  }
+
+  typedef double (*Func2Mode)(double, double, gsl_mode_t);
+
+  class ModeBinder : public std::binary_function<double, double, double> {
+   private:
+    Func2Mode f_;
+
+   public:
+    ModeBinder(Func2Mode f) : f_(f) {}
+
+    double operator()(double x, double y) const {
+      return f_(x, y, GSL_PREC_DOUBLE);
+    }
+  };
+
+  void TestFunc(const char *name, Func2Mode f,
+      const Options& opt = Options()) {
+    TestBinaryFunc(name, ModeBinder(f), opt);
+  }
+
   void TestFunc(const char *name, Func3 f);
 };
 
@@ -502,18 +534,16 @@ void GSLTest::TestFunc(const char *name, FuncU f) {
   Function af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     double x = POINTS[i];
-    if (static_cast<unsigned>(x) != x) {
-      af(x, ERROR);
-      continue;
-    }
-    double value = f(x);
-    if (gsl_isnan(value)) {
-      Result r = af(x, PASS_ERROR);
-      std::ostringstream os;
-      os << "can't evaluate " << af.name() << ArgList(x);
-      EXPECT_STREQ(os.str().c_str(), r.error());
-    } else
-      EXPECT_EQ(value, af(x)) << name << " at " << x;
+    if (static_cast<unsigned>(x) == x) {
+      double value = f(x);
+      if (gsl_isnan(value)) {
+        Result r = af(x, PASS_ERROR);
+        std::ostringstream os;
+        os << "can't evaluate " << af.name() << ArgList(x);
+        EXPECT_STREQ(os.str().c_str(), r.error());
+      } else
+        EXPECT_EQ(value, af(x)) << name << " at " << x;
+    } else af(x, ERROR);
     af(x, DERIVS | ERROR);
   }
 }
@@ -548,7 +578,8 @@ void GSLTest::TestFunc(const char *name, double (*f)(int, double)) {
   }
 }
 
-void GSLTest::TestFunc(const char *name, Func2 f, const Options& opt) {
+template <typename F>
+void GSLTest::TestBinaryFunc(const char *name, F f, const Options& opt) {
   Function af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
@@ -561,18 +592,15 @@ void GSLTest::TestFunc(const char *name, Func2 f, const Options& opt) {
       }
       EXPECT_ALMOST_EQUAL_OR_NAN(value, af(args));
       char dig[2] = {0, 0};
-      double dx = opt.HasDerivative(0, args.get()) ?
-          Diff(std::bind2nd(std::ptr_fun(f), y), x) : GSL_NAN;
-      if (gsl_isnan(dx)) {
+      bool dx_ok = opt.HasDerivative(0, args.get()) &&
+        CheckDerivative(std::bind2nd(f, y), af, 0, args);
+      if (!dx_ok) {
         af(args, ERROR | DERIVS);
         dig[0] = 1;
-      } else {
-        EXPECT_NEAR(dx, af(args, DERIVS, dig).deriv(0), 1e-5)
-                << name << " at " << x << ", " << y;
       }
 
       double dy = opt.HasDerivative(1, args.get()) ?
-          Diff(std::bind1st(std::ptr_fun(f), x), y) : GSL_NAN;
+          Diff(std::bind1st(f, x), y) : GSL_NAN;
       if (gsl_isnan(dy)) {
         af(args, ERROR | DERIVS, dig);
       } else {
@@ -580,7 +608,7 @@ void GSLTest::TestFunc(const char *name, Func2 f, const Options& opt) {
           << name << " at " << x << ", " << y;
       }
 
-      if (!opt.HasDerivative2(args.get()) || gsl_isnan(dx)) {
+      if (!opt.HasDerivative2(args.get()) || !dx_ok) {
         af(args, ERROR | HES);
         continue;
       }
@@ -915,24 +943,16 @@ TEST_F(GSLTest, Bessely) {
 
 TEST_F(GSLTest, Besseli) {
   TEST_FUNC(sf_bessel_i0_scaled);
-  EXPECT_NEAR(0.0999955, gsl_sf_bessel_i0_scaled(5), 1e-5);
   TEST_FUNC(sf_bessel_i1_scaled);
-  EXPECT_NEAR(0.0800054, gsl_sf_bessel_i1_scaled(5), 1e-5);
   TEST_FUNC(sf_bessel_i2_scaled);
-  EXPECT_NEAR(0.0519922, gsl_sf_bessel_i2_scaled(5), 1e-5);
   TEST_FUNC(sf_bessel_il_scaled);
-  EXPECT_NEAR(0.0280133, gsl_sf_bessel_il_scaled(3, 5), 1e-5);
 }
 
 TEST_F(GSLTest, Besselk) {
   TEST_FUNC(sf_bessel_k0_scaled);
-  EXPECT_NEAR(0.314159, gsl_sf_bessel_k0_scaled(5), 1e-5);
   TEST_FUNC(sf_bessel_k1_scaled);
-  EXPECT_NEAR(0.376991, gsl_sf_bessel_k1_scaled(5), 1e-5);
   TEST_FUNC(sf_bessel_k2_scaled);
-  EXPECT_NEAR(0.540354, gsl_sf_bessel_k2_scaled(5), 1e-5);
   TEST_FUNC(sf_bessel_kl_scaled);
-  EXPECT_NEAR(0.917345, gsl_sf_bessel_kl_scaled(3, 5), 1e-5);
 }
 
 class BesselFractionalOrderOptions : public Options {
@@ -1098,22 +1118,9 @@ TEST_F(GSLTest, Dilog) {
 }
 
 TEST_F(GSLTest, EllInt) {
+  // TODO
   TEST_FUNC(sf_ellint_Kcomp);
   TEST_FUNC(sf_ellint_Ecomp);
-
-  ArgList Zero(0, 0);
-  ArgList TestPt(0.5, 0.5);
-  Function f = GetFunction("gsl_sf_ellint_Pcomp");
-  EXPECT_NEAR(1.36647395300460, f(TestPt), 1e-14);
-  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, f(Zero, DERIVS).deriv(0));
-  EXPECT_NEAR(0.393428217409760, f(TestPt, DERIVS).deriv(0), 1e-15);
-  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, f(Zero, DERIVS).deriv(1));
-  EXPECT_NEAR(-0.471628143501985, f(TestPt, DERIVS).deriv(1), 1e-15);
-  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, f(Zero, HES).hes(0));
-  EXPECT_NEAR(1.35115, f(TestPt, HES).hes(0), 1e-5);
-  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, f(Zero, HES).hes(1));
-  EXPECT_NEAR(-0.210152, f(TestPt, HES).hes(1), 1e-5);
-  EXPECT_ALMOST_EQUAL_OR_NAN(GSL_NAN, f(Zero, HES).hes(2));
-  EXPECT_NEAR(0.477835, f(TestPt, HES).hes(2), 1e-5);
+  TEST_FUNC(sf_ellint_Pcomp);
 }
 }
