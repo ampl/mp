@@ -153,16 +153,12 @@ static int check_bessel_args(arglist *al, int flags) {
 
 static real amplgsl_log1p(arglist *al) {
   real x = al->ra[0];
-  if (x <= -1) {
-    error(al, "argument 'x' should be > -1");
-    return 0;
-  }
   if (al->derivs) {
     real deriv = *al->derivs = 1 / (x + 1);
     if (al->hes)
       *al->hes = -deriv * deriv;
   }
-  return gsl_log1p(x);
+  return check_result(al, gsl_log1p(x), "gsl_log1p");
 }
 
 static real amplgsl_expm1(arglist *al) {
