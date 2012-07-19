@@ -72,7 +72,6 @@ class Result {
   Result(real value, const vector<real> &derivs,
       const vector<real> &hes, const char *error) :
     value_(value), derivs_(derivs), hes_(hes), error_(error) {}
-
   operator real() const { return value_; }
 
   real deriv(size_t index = 0) const { return derivs_.at(index); }
@@ -81,7 +80,26 @@ class Result {
   const char *error() const { return error_; }
 };
 
-// Options for an AMPL function call.
+// Function information that can't be obtained automatically, in particular
+// due to limitations of numerical differentiation.
+class FunctionInfo {
+ public:
+  virtual ~FunctionInfo() {}
+
+  virtual double GetDerivative(const vector<real>&) const {
+    return GSL_NAN;
+  }
+
+  virtual bool HasDerivative(unsigned, const vector<real>&) const {
+    return true;
+  }
+
+  virtual bool HasDerivative2(const vector<real>&) const {
+    return true;
+  }
+};
+
+// Flags for an AMPL function call.
 enum {
   ERROR      = 1, // Function call is expected to produce an error.
   DERIVS     = 2, // Get first partial derivatives.
@@ -94,26 +112,30 @@ class Function {
  private:
   ASL *asl_;
   func_info *fi_;
+  const FunctionInfo *info_;
 
  public:
-  Function(ASL *asl, func_info *fi) : asl_(asl), fi_(fi) {}
+  Function(ASL *asl, func_info *fi, const FunctionInfo *info) :
+    asl_(asl), fi_(fi), info_(info) {}
 
   const char *name() const { return fi_->name; }
+
+  const FunctionInfo *info() const { return info_; }
 
   // Calls a function.
   // Argument vector is passed by value intentionally to avoid
   // rogue functions accidentally overwriting arguments.
   Result operator()(vector<real> args,
-      int options = 0, char *dig = 0, void *info = 0) const;
+      int flags = 0, char *dig = 0, void *info = 0) const;
 
   Result operator()(const ArgList &args,
-      int options = 0, char *dig = 0, void *info = 0) const {
-    return (*this)(args.get(), options, dig, info);
+      int flags = 0, char *dig = 0, void *info = 0) const {
+    return (*this)(args.get(), flags, dig, info);
   }
 };
 
 Result Function::operator()(
-    vector<real> args, int options, char *dig, void *info) const {
+    vector<real> args, int flags, char *dig, void *info) const {
   // Initialize the argument list.
   arglist al = {};
   TMInfo tmi = {};
@@ -126,11 +148,11 @@ Result Function::operator()(
 
   // Allocate storage for the derivatives if needed.
   vector<real> derivs, hes;
-  if ((options & DERIVS) != 0) {
+  if ((flags & DERIVS) != 0) {
     derivs.resize(al.n);
     al.derivs = &derivs[0];
   }
-  if ((options & HES) == HES) {
+  if ((flags & HES) == HES) {
     hes.resize(al.n * (al.n + 1) / 2);
     al.hes = &hes[0];
   }
@@ -140,9 +162,9 @@ Result Function::operator()(
 
   // Check the error message.
   if (al.Errmsg) {
-    if ((options & ERROR) == 0 && (options & PASS_ERROR) == 0)
+    if ((flags & ERROR) == 0 && (flags & PASS_ERROR) == 0)
       ADD_FAILURE() << al.Errmsg;
-  } else if ((options & ERROR) != 0)
+  } else if ((flags & ERROR) != 0)
     ADD_FAILURE() << "Expected error in " << fi_->name;
 
   return Result(value, derivs, hes, al.Errmsg);
@@ -374,6 +396,13 @@ bool CheckDerivative(F f, const Function &af,
   double error = 0;
   double x = args.get().at(var_index);
   double numerical_deriv = Diff(f, x, &error);
+  double overridden_deriv = af.info()->GetDerivative(args.get());
+  if (!gsl_isnan(overridden_deriv) && overridden_deriv != numerical_deriv) {
+    std::cout << "Overriding d/dx" << var_index << " " << af.name()
+      << " at " << args << ", computed = " << numerical_deriv
+      << ", overridden = " << overridden_deriv << std::endl;
+    numerical_deriv = overridden_deriv;
+  }
   if (!gsl_isnan(numerical_deriv)) {
     double deriv = af(args, DERIVS, dig).deriv(var_index);
     if (numerical_deriv != deriv)
@@ -460,22 +489,10 @@ void CheckSecondDerivatives(const Function &af,
 typedef double (*FuncU)(unsigned);
 typedef double (*Func3)(double, double, double);
 
-class Options {
- public:
-  virtual ~Options() {}
-
-  virtual bool HasDerivative(unsigned, const vector<real>&) const {
-    return true;
-  }
-
-  virtual bool HasDerivative2(const vector<real>&) const {
-    return true;
-  }
-};
-
 class GSLTest : public ::testing::Test {
  protected:
   ASL *asl;
+  FunctionInfo info; // Default function info.
 
   void SetUp() {
     asl = ASL_alloc(ASL_read_f);
@@ -488,34 +505,34 @@ class GSLTest : public ::testing::Test {
   }
 
   // Get an AMPL function by name.
-  Function GetFunction(const char *name) const {
+  Function GetFunction(const char *name,
+      const FunctionInfo &info = FunctionInfo()) const {
     func_info *fi = func_lookup(asl, name, 0);
     if (!fi)
       throw std::runtime_error(string("Function not found: ") + name);
-    return Function(asl, fi);
+    return Function(asl, fi, &info);
   }
 
   // Test a function taking a single argument.
   template <typename F>
-  void TestUnaryFunc(const char *name, F f);
-  void TestFunc(const char *name, double (*f)(double)) {
-    TestUnaryFunc(name, f);
+  void TestUnaryFunc(const Function &af, F f);
+  void TestFunc(const Function &af, double (*f)(double)) {
+    TestUnaryFunc(af, f);
   }
-  void TestFunc(const char *name, double (*f)(double, gsl_mode_t)) {
-    TestUnaryFunc(name, std::bind2nd(std::ptr_fun(f), GSL_PREC_DOUBLE));
+  void TestFunc(const Function &af, double (*f)(double, gsl_mode_t)) {
+    TestUnaryFunc(af, std::bind2nd(std::ptr_fun(f), GSL_PREC_DOUBLE));
   }
 
   // Test a function taking a single argument of type unsigned int.
-  void TestFunc(const char *name, FuncU f);
+  void TestFunc(const Function &af, FuncU f);
 
-  void TestFunc(const char *name, double (*f)(int, double));
+  void TestFunc(const Function &af, double (*f)(int, double));
 
   template <typename F>
-  void TestBinaryFunc(const char *name, F f, const Options& opt);
+  void TestBinaryFunc(const Function &af, F f);
 
-  void TestFunc(const char *name, double (*f)(double, double),
-      const Options& opt = Options()) {
-    TestBinaryFunc(name, std::ptr_fun(f), opt);
+  void TestFunc(const Function &af, double (*f)(double, double)) {
+    TestBinaryFunc(af, std::ptr_fun(f));
   }
 
   typedef double (*Func2Mode)(double, double, gsl_mode_t);
@@ -533,15 +550,14 @@ class GSLTest : public ::testing::Test {
     }
   };
 
-  void TestFunc(const char *name, Func2Mode f,
-      const Options& opt = Options()) {
-    TestBinaryFunc(name, Func2DoubleMode(f), opt);
+  void TestFunc(const Function &af, Func2Mode f) {
+    TestBinaryFunc(af, Func2DoubleMode(f));
   }
 
-  void TestFunc(const char *name, Func3 f);
+  void TestFunc(const Function &af, Func3 f);
 };
 
-const double POINTS[] = {-5, -1.23, 0, 1.23, 5};
+const double POINTS[] = {-5, -1.23, -1, 0, 1, 1.23, 5};
 const size_t NUM_POINTS = sizeof(POINTS) / sizeof(*POINTS);
 
 const double POINTS_FOR_N[] = {
@@ -549,8 +565,7 @@ const double POINTS_FOR_N[] = {
 const size_t NUM_POINTS_FOR_N = sizeof(POINTS_FOR_N) / sizeof(*POINTS_FOR_N);
 
 template <typename F>
-void GSLTest::TestUnaryFunc(const char *name, F f) {
-  Function af = GetFunction(name);
+void GSLTest::TestUnaryFunc(const Function &af, F f) {
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     double x = POINTS[i];
     CheckFunction(f(x), af, x);
@@ -559,8 +574,7 @@ void GSLTest::TestUnaryFunc(const char *name, F f) {
   }
 }
 
-void GSLTest::TestFunc(const char *name, FuncU f) {
-  Function af = GetFunction(name);
+void GSLTest::TestFunc(const Function &af, FuncU f) {
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     double x = POINTS[i];
     if (static_cast<unsigned>(x) == x) {
@@ -568,19 +582,18 @@ void GSLTest::TestFunc(const char *name, FuncU f) {
       if (gsl_isnan(value))
         EXPECT_STREQ(EvalError(af, x), af(x, PASS_ERROR).error());
       else
-        EXPECT_EQ(value, af(x)) << name << " at " << x;
+        EXPECT_EQ(value, af(x)) << af.name() << " at " << x;
     } else af(x, ERROR);
     af(x, DERIVS | ERROR);
     af(x, HES | ERROR);
   }
 }
 
-void GSLTest::TestFunc(const char *name, double (*f)(int, double)) {
-  Function af = GetFunction(name);
+void GSLTest::TestFunc(const Function &af, double (*f)(int, double)) {
   for (size_t i = 0; i != NUM_POINTS_FOR_N; ++i) {
     int n = POINTS_FOR_N[i];
     if (n < -100 || n > 100) {
-      // TODO: do this through options
+      // TODO: do this through FunctionInfo
       //std::cout << "Skip testing " << name << " for n=" << n << std::endl;
       continue;
     }
@@ -596,8 +609,7 @@ void GSLTest::TestFunc(const char *name, double (*f)(int, double)) {
 }
 
 template <typename F>
-void GSLTest::TestBinaryFunc(const char *name, F f, const Options& opt) {
-  Function af = GetFunction(name);
+void GSLTest::TestBinaryFunc(const Function &af, F f) {
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
       double x = POINTS[i], y = POINTS[j];
@@ -609,23 +621,23 @@ void GSLTest::TestBinaryFunc(const char *name, F f, const Options& opt) {
       }
       EXPECT_EQ(value, af(args));
       char dig[2] = {0, 0};
-      bool dx_ok = opt.HasDerivative(0, args.get()) &&
+      bool dx_ok = af.info()->HasDerivative(0, args.get()) &&
         CheckDerivative(std::bind2nd(f, y), af, 0, args);
       if (!dx_ok) {
         af(args, ERROR | DERIVS);
         dig[0] = 1;
       }
 
-      double dy = opt.HasDerivative(1, args.get()) ?
+      double dy = af.info()->HasDerivative(1, args.get()) ?
           Diff(std::bind1st(f, x), y) : GSL_NAN;
       if (gsl_isnan(dy)) {
         af(args, ERROR | DERIVS, dig);
       } else {
         EXPECT_NEAR(dy, af(args, DERIVS, dig).deriv(1), 1e-5)
-          << name << " at " << x << ", " << y;
+          << af.name() << " at " << x << ", " << y;
       }
 
-      if (!opt.HasDerivative2(args.get()) || !dx_ok) {
+      if (!af.info()->HasDerivative2(args.get()) || !dx_ok) {
         af(args, ERROR | HES);
         continue;
       }
@@ -674,14 +686,13 @@ class Bind23 {
   double operator()(double arg1) const { return f_(arg1, arg2_, arg3_); }
 };
 
-void GSLTest::TestFunc(const char *name, Func3 f) {
-  Function af = GetFunction(name);
+void GSLTest::TestFunc(const Function &af, Func3 f) {
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
       for (size_t k = 0; k != NUM_POINTS; ++k) {
         double x = POINTS[i], y = POINTS[j], z = POINTS[k];
         ArgList args(x, y, z);
-        EXPECT_EQ(f(x, y, z), af(args)) << name;
+        EXPECT_EQ(f(x, y, z), af(args)) << af.name();
         CheckDerivative(Bind23(f, y, z), af, 0, args);
         CheckDerivative(Bind13(f, x, z), af, 1, args);
         CheckDerivative(Bind12(f, x, y), af, 2, args);
@@ -691,8 +702,7 @@ void GSLTest::TestFunc(const char *name, Func3 f) {
   }
 }
 
-#define TEST_FUNC(name) TestFunc("gsl_" #name, gsl_##name);
-#define TEST_FUNC_OPT(name) TestFunc("gsl_" #name, gsl_##name, opt);
+#define TEST_FUNC(name) TestFunc(GetFunction("gsl_" #name, info), gsl_##name);
 
 TEST_F(GSLTest, TestArgList) {
   static const real ARGS[] = {5, 7, 11, 13, 17, 19, 23, 29, 31};
@@ -774,7 +784,7 @@ class TestFunction {
   Function f_;
 
  public:
-  TestFunction() : testASL_(), ae_(), fi_(), f_(&testASL_, &fi_) {
+  TestFunction() : testASL_(), ae_(), fi_(), f_(&testASL_, &fi_, 0) {
     testASL_.i.ae = &ae_;
     fi_.funcp = Test;
   }
@@ -982,8 +992,7 @@ TEST_F(GSLTest, Besselk) {
   TEST_FUNC(sf_bessel_kl_scaled);
 }
 
-class BesselFractionalOrderOptions : public Options {
- public:
+struct BesselFractionalOrderInfo : FunctionInfo {
   bool HasDerivative(unsigned var_index, const vector<real>& args) const {
     // Computing gsl_sf_bessel_*nu'(nu, x) requires
     // gsl_sf_bessel_*nu(nu - 1, x) which doesn't work when the
@@ -1001,14 +1010,14 @@ class BesselFractionalOrderOptions : public Options {
 };
 
 TEST_F(GSLTest, BesselFractionalOrder) {
-  BesselFractionalOrderOptions opt;
-  TEST_FUNC_OPT(sf_bessel_Jnu);
-  TEST_FUNC_OPT(sf_bessel_Ynu);
-  TEST_FUNC_OPT(sf_bessel_Inu);
-  TEST_FUNC_OPT(sf_bessel_Inu_scaled);
-  TEST_FUNC_OPT(sf_bessel_Knu);
-  TEST_FUNC_OPT(sf_bessel_lnKnu);
-  TEST_FUNC_OPT(sf_bessel_Knu_scaled);
+  BesselFractionalOrderInfo info;
+  TEST_FUNC(sf_bessel_Jnu);
+  TEST_FUNC(sf_bessel_Ynu);
+  TEST_FUNC(sf_bessel_Inu);
+  TEST_FUNC(sf_bessel_Inu_scaled);
+  TEST_FUNC(sf_bessel_Knu);
+  TEST_FUNC(sf_bessel_lnKnu);
+  TEST_FUNC(sf_bessel_Knu_scaled);
 }
 
 TEST_F(GSLTest, BesselZero) {
@@ -1144,7 +1153,14 @@ TEST_F(GSLTest, Debye) {
   TEST_FUNC(sf_debye_6);
 }
 
+struct DilogFunctionInfo : FunctionInfo {
+  double GetDerivative(const vector<real> &args) const {
+    return args[0] == 1 ? GSL_POSINF : GSL_NAN;
+  }
+};
+
 TEST_F(GSLTest, Dilog) {
+  DilogFunctionInfo info;
   TEST_FUNC(sf_dilog);
 }
 
