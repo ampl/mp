@@ -294,27 +294,31 @@ static real amplgsl_sf_airy_Bi_scaled(arglist *al) {
 }
 
 static real amplgsl_sf_airy_zero_Ai(arglist *al) {
-  double value = check_zero_func_args(al, 0) ?
-      gsl_sf_airy_zero_Ai(al->ra[0]) : 0;
-  return check_result(al, value, "gsl_sf_airy_zero_Ai");
+  if (!check_zero_func_args(al, 0))
+    return 0;
+  return check_result(al, gsl_sf_airy_zero_Ai(al->ra[0]),
+      "gsl_sf_airy_zero_Ai");
 }
 
 static real amplgsl_sf_airy_zero_Bi(arglist *al) {
-  double value = check_zero_func_args(al, 0) ?
-      gsl_sf_airy_zero_Bi(al->ra[0]) : 0;
-  return check_result(al, value, "gsl_sf_airy_zero_Bi");
+  if (!check_zero_func_args(al, 0))
+    return 0;
+  return check_result(al, gsl_sf_airy_zero_Bi(al->ra[0]),
+      "gsl_sf_airy_zero_Bi");
 }
 
 static real amplgsl_sf_airy_zero_Ai_deriv(arglist *al) {
-  double value = check_zero_func_args(al, 0) ?
-      gsl_sf_airy_zero_Ai_deriv(al->ra[0]) : 0;
-  return check_result(al, value, "gsl_sf_airy_zero_Ai_deriv");
+  if (!check_zero_func_args(al, 0))
+    return 0;
+  return check_result(al, gsl_sf_airy_zero_Ai_deriv(al->ra[0]),
+      "gsl_sf_airy_zero_Ai_deriv");
 }
 
 static real amplgsl_sf_airy_zero_Bi_deriv(arglist *al) {
-  double value = check_zero_func_args(al, 0) ?
-      gsl_sf_airy_zero_Bi_deriv(al->ra[0]) : 0;
-  return check_result(al, value, "gsl_sf_airy_zero_Bi_deriv");
+  if (!check_zero_func_args(al, 0))
+    return 0;
+  return check_result(al, gsl_sf_airy_zero_Bi_deriv(al->ra[0]),
+      "gsl_sf_airy_zero_Bi_deriv");
 }
 
 static real amplgsl_sf_bessel_J0(arglist *al) {
@@ -1050,16 +1054,24 @@ static real amplgsl_sf_bessel_Knu_scaled(arglist *al) {
 }
 
 static real amplgsl_sf_bessel_zero_J0(arglist *al) {
-  return check_zero_func_args(al, 0) ? gsl_sf_bessel_zero_J0(al->ra[0]) : 0;
+  if (!check_zero_func_args(al, 0))
+    return 0;
+  return check_result(al, gsl_sf_bessel_zero_J0(al->ra[0]),
+      "gsl_sf_bessel_zero_J0");
 }
 
 static real amplgsl_sf_bessel_zero_J1(arglist *al) {
-  return check_zero_func_args(al, 0) ? gsl_sf_bessel_zero_J1(al->ra[0]) : 0;
+  if (!check_zero_func_args(al, 0))
+    return 0;
+  return check_result(al, gsl_sf_bessel_zero_J1(al->ra[0]),
+      "gsl_sf_bessel_zero_J1");
 }
 
 static real amplgsl_sf_bessel_zero_Jnu(arglist *al) {
-  return check_zero_func_args(al, 1) ?
-      gsl_sf_bessel_zero_Jnu(al->ra[0], al->ra[1]) : 0;
+  if (!check_zero_func_args(al, 1))
+    return 0;
+  return check_result(al, gsl_sf_bessel_zero_Jnu(al->ra[0], al->ra[1]),
+      "gsl_sf_bessel_zero_Jnu");
 }
 
 static real amplgsl_sf_clausen(arglist *al) {
@@ -1097,7 +1109,8 @@ static real amplgsl_sf_hydrogenicR(arglist *al) {
     error(al, "derivative is not provided");
     return 0;
   }
-  return gsl_sf_hydrogenicR(al->ra[0], al->ra[1], al->ra[2], al->ra[3]);
+  return check_result(al, gsl_sf_hydrogenicR(
+      al->ra[0], al->ra[1], al->ra[2], al->ra[3]), "gsl_sf_hydrogenicR");
 }
 
 static real amplgsl_sf_coulomb_CL(arglist *al) {
@@ -1106,8 +1119,11 @@ static real amplgsl_sf_coulomb_CL(arglist *al) {
     error(al, "derivative is not provided");
     return 0;
   }
-  return gsl_sf_coulomb_CL_e(al->ra[0], al->ra[1], &result) ?
-      GSL_NAN : result.val;
+  if (gsl_sf_coulomb_CL_e(al->ra[0], al->ra[1], &result)) {
+    eval_error(al, "gsl_sf_coulomb_CL");
+    return 0;
+  }
+  return result.val;
 }
 
 static int check_coupling_args(arglist *al, const char *const* arg_names) {

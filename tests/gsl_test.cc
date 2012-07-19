@@ -11,6 +11,7 @@
 #include "solvers/asl.h"
 #include "tests/config.h"
 
+using std::string;
 using std::vector;
 
 namespace {
@@ -108,11 +109,6 @@ class Function {
   Result operator()(const ArgList &args,
       int options = 0, char *dig = 0, void *info = 0) const {
     return (*this)(args.get(), options, dig, info);
-  }
-
-  Result operator()(real x,
-      int options = 0, char *dig = 0, void *info = 0) const {
-    return (*this)((ArgList(x)), options, dig, info);
   }
 };
 
@@ -314,31 +310,80 @@ inline double Diff(F f, double x, double *err = 0) {
   return Differentiator::Diff(f, x, err);
 }
 
-// Checks the value of the derivative returned by af using numerical
-// differentiation of function f.
+// Converts error estimate returned by Diff into an absolute tolerance to
+// be used in EXPECT_NEAR.
+double ConvertErrorToTolerance(double error) {
+  return error != 0 ? error * 1000 : 1e-10;
+}
+
+class EvalError {
+ private:
+  string str;
+
+ public:
+  EvalError(const Function &af, const ArgList &args, const char *suffix = "") {
+    std::ostringstream os;
+    os << "can't evaluate " << af.name() << suffix << args;
+    str = os.str();
+  }
+  operator const char*() const { return str.c_str(); }
+};
+
+// Check if the value returned by af is correct.
+void CheckFunction(double value, const Function &f, const ArgList &args) {
+  std::ostringstream os;
+  os << "Checking if " << f.name() << args << " = " << value;
+  SCOPED_TRACE(os.str());
+  if (gsl_isnan(value))
+    f(args, ERROR);
+  else
+    EXPECT_EQ(value, f(args)) << f.name() << args;
+}
+
+// A helper class that converts a variable index into the dig array.
+// See the dig member of the arglist struct for details.
+class Dig {
+ private:
+  char *dig_;
+  vector<char> store_;
+
+ public:
+  static const unsigned NO_VAR = ~0u;
+
+  Dig(const ArgList &args, unsigned skip_var) : dig_(0) {
+    if (skip_var == NO_VAR) return;
+    store_.resize(args.get().size());
+    store_.at(skip_var) = 1;
+    dig_ = &store_[0];
+  }
+
+  operator char*() { return dig_; }
+};
+
+// Checks if the value of the derivative returned by af agrees with the
+// value returned by numerical differentiation of function f.
 // var_index: index of the variable with respect to which to differentiate
 // args: point at which the derivative is computed
 template <typename F>
 bool CheckDerivative(F f, const Function &af,
-    unsigned var_index, const ArgList &args) {
+    unsigned var_index, const ArgList &args, unsigned skip_var = Dig::NO_VAR) {
   std::ostringstream os;
   os << "Checking d/dx" << var_index << " " << af.name() << " at " << args;
   SCOPED_TRACE(os.str());
+  Dig dig(args, skip_var);
   double error = 0;
   double x = args.get().at(var_index);
-  double num_deriv = Diff(f, x, &error);
-  if (!gsl_isnan(num_deriv)) {
-    double deriv = af(args, DERIVS).deriv(var_index);
-    if (num_deriv != deriv)
-      EXPECT_NEAR(num_deriv, deriv, error != 0 ? error * 1000 : 1e-10);
+  double numerical_deriv = Diff(f, x, &error);
+  if (!gsl_isnan(numerical_deriv)) {
+    double deriv = af(args, DERIVS, dig).deriv(var_index);
+    if (numerical_deriv != deriv)
+      EXPECT_NEAR(numerical_deriv, deriv, ConvertErrorToTolerance(error));
     return true;
   }
-  Result r = af(args, PASS_ERROR | DERIVS);
-  if (!gsl_isnan(f(x))) {
-    os.str(std::string());
-    os << "can't evaluate " << af.name() << "'" << args;
-    EXPECT_STREQ(os.str().c_str(), r.error());
-  } else
+  Result r = af(args, PASS_ERROR | DERIVS, dig);
+  if (!gsl_isnan(f(x)))
+    EXPECT_STREQ(EvalError(af, args, "'"), r.error());
+  else
     EXPECT_TRUE(r.error() != nullptr);
   return false;
 }
@@ -354,7 +399,7 @@ class Derivative {
   char *dig_;
 
  public:
-  // Create a Derivative object.
+  // Creates a Derivative object.
   // eval_var:  index of a variable which is not bound
   // deriv_var: index of a variable with respect to which
   //            the derivative is taken
@@ -379,40 +424,40 @@ double Derivative::operator()(double x) {
   return r.error() ? GSL_NAN : r.deriv(deriv_var_);
 }
 
-const unsigned NO_VAR = ~0u;
-
+// Checks if the values of the second partial derivatives returned by af
+// agree with the values returned by numerical differentiation of the first
+// partial derivatives.
+// args: point at which the derivatives are computed
+// skip_var: index of the variable with respect to which not to differentiate
 void CheckSecondDerivatives(const Function &af,
-    const ArgList &args, unsigned skip_var = NO_VAR) {
+    const ArgList &args, unsigned skip_var = Dig::NO_VAR) {
   const vector<real> &ra = args.get();
   unsigned num_args = ra.size();
-  vector<char> dig(num_args);
-  if (skip_var != NO_VAR)
-    dig.at(skip_var) = 1;
+  Dig dig(args, skip_var);
   for (unsigned i = 0; i < num_args; ++i) {
     if (i == skip_var) continue;
     for (unsigned j = 0; j < num_args; ++j) {
       if (j == skip_var) continue;
       double error = 0;
-      double d = Diff(Derivative(af, j, i, args, &dig[0]), ra[i], &error);
+      double d = Diff(Derivative(af, j, i, args, dig), ra[i], &error);
       std::ostringstream os;
       os << "Checking if d/dx" << i << " d/dx" << j
           << " " << af.name() << " at " << args << " is " << d;
       SCOPED_TRACE(os.str());
       if (gsl_isnan(d)) {
-        af(args, ERROR | HES);
+        af(args, ERROR | HES, dig);
         continue;
       }
       unsigned ii = i, jj = j;
       if (ii > jj) std::swap(ii, jj);
       unsigned hes_index = ii * (2 * num_args - ii - 1) / 2 + jj;
-      EXPECT_NEAR(d, af(args, HES, &dig[0]).hes(hes_index),
-          error != 0 ? error * 1000 : 1e-10);
+      EXPECT_NEAR(d, af(args, HES, dig).hes(hes_index),
+          ConvertErrorToTolerance(error));
     }
   }
 }
 
 typedef double (*FuncU)(unsigned);
-typedef double (*Func2)(double, double);
 typedef double (*Func3)(double, double, double);
 
 class Options {
@@ -446,19 +491,8 @@ class GSLTest : public ::testing::Test {
   Function GetFunction(const char *name) const {
     func_info *fi = func_lookup(asl, name, 0);
     if (!fi)
-      throw std::runtime_error(std::string("Function not found: ") + name);
+      throw std::runtime_error(string("Function not found: ") + name);
     return Function(asl, fi);
-  }
-
-  // Returns true iff expected is at most kMaxUlps ULP's away from
-  // actual or both are NaN.  In particular, this function:
-  //
-  //   - returns false if either number is (but not both) NAN.
-  //   - treats really large numbers as almost equal to infinity.
-  //   - thinks +0.0 and -0.0 are 0 DLP's apart.
-  static bool AlmostEqualOrNaN(double expected, double actual) {
-    testing::internal::Double lhs(expected), rhs(actual);
-    return (lhs.is_nan() && rhs.is_nan()) || lhs.AlmostEquals(rhs);
   }
 
   // Test a function taking a single argument.
@@ -479,18 +513,20 @@ class GSLTest : public ::testing::Test {
   template <typename F>
   void TestBinaryFunc(const char *name, F f, const Options& opt);
 
-  void TestFunc(const char *name, Func2 f, const Options& opt = Options()) {
+  void TestFunc(const char *name, double (*f)(double, double),
+      const Options& opt = Options()) {
     TestBinaryFunc(name, std::ptr_fun(f), opt);
   }
 
   typedef double (*Func2Mode)(double, double, gsl_mode_t);
 
-  class ModeBinder : public std::binary_function<double, double, double> {
+  // Binds the mode argument of Func2Mode to GSL_PREC_DOUBLE.
+  class Func2DoubleMode : public std::binary_function<double, double, double> {
    private:
     Func2Mode f_;
 
    public:
-    ModeBinder(Func2Mode f) : f_(f) {}
+    Func2DoubleMode(Func2Mode f) : f_(f) {}
 
     double operator()(double x, double y) const {
       return f_(x, y, GSL_PREC_DOUBLE);
@@ -499,7 +535,7 @@ class GSLTest : public ::testing::Test {
 
   void TestFunc(const char *name, Func2Mode f,
       const Options& opt = Options()) {
-    TestBinaryFunc(name, ModeBinder(f), opt);
+    TestBinaryFunc(name, Func2DoubleMode(f), opt);
   }
 
   void TestFunc(const char *name, Func3 f);
@@ -512,19 +548,12 @@ const double POINTS_FOR_N[] = {
     INT_MIN, INT_MIN + 1, -2, -1, 0, 1, 2, INT_MAX - 1, INT_MAX};
 const size_t NUM_POINTS_FOR_N = sizeof(POINTS_FOR_N) / sizeof(*POINTS_FOR_N);
 
-// TODO: remove because if f(x) returns NaN, af(x) should return error
-#define EXPECT_ALMOST_EQUAL_OR_NAN(expected, actual) \
-    EXPECT_PRED2(AlmostEqualOrNaN, expected, actual)
-
 template <typename F>
 void GSLTest::TestUnaryFunc(const char *name, F f) {
   Function af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     double x = POINTS[i];
-    double value = f(x);
-    if (!gsl_isnan(value))
-      EXPECT_EQ(value, af(x)) << name << " at " << x;
-    else af(x, ERROR);
+    CheckFunction(f(x), af, x);
     CheckDerivative(f, af, 0, x);
     CheckSecondDerivatives(af, x);
   }
@@ -536,43 +565,31 @@ void GSLTest::TestFunc(const char *name, FuncU f) {
     double x = POINTS[i];
     if (static_cast<unsigned>(x) == x) {
       double value = f(x);
-      if (gsl_isnan(value)) {
-        Result r = af(x, PASS_ERROR);
-        std::ostringstream os;
-        os << "can't evaluate " << af.name() << ArgList(x);
-        EXPECT_STREQ(os.str().c_str(), r.error());
-      } else
+      if (gsl_isnan(value))
+        EXPECT_STREQ(EvalError(af, x), af(x, PASS_ERROR).error());
+      else
         EXPECT_EQ(value, af(x)) << name << " at " << x;
     } else af(x, ERROR);
     af(x, DERIVS | ERROR);
+    af(x, HES | ERROR);
   }
 }
 
 void GSLTest::TestFunc(const char *name, double (*f)(int, double)) {
   Function af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS_FOR_N; ++i) {
+    int n = POINTS_FOR_N[i];
+    if (n < -100 || n > 100) {
+      // TODO: do this through options
+      //std::cout << "Skip testing " << name << " for n=" << n << std::endl;
+      continue;
+    }
     for (size_t j = 0; j != NUM_POINTS; ++j) {
-      int n = POINTS_FOR_N[i];
-      if (n < -100 || n > 100) continue;
       double x = POINTS[j];
       ArgList args(n, x);
-      double value = f(n, x);
-      if (gsl_isnan(value)) {
-        af(args, ERROR);
-        continue;
-      }
-      EXPECT_ALMOST_EQUAL_OR_NAN(value, af(args)) << name << " at " << x;
-
+      CheckFunction(f(n, x), af, args);
       af(args, DERIVS | ERROR);
-      char dig = 1;
-      double deriv = Diff(std::bind1st(std::ptr_fun(f), n), x);
-      if (gsl_isnan(deriv)) {
-        af(args, ERROR | DERIVS, &dig);
-        continue;
-      }
-      EXPECT_NEAR(deriv, af(args, DERIVS, &dig).deriv(1), 1e-5)
-        << name << " at " << n << ", " << x;
-
+      CheckDerivative(std::bind1st(std::ptr_fun(f), n), af, 1, args, 0);
       CheckSecondDerivatives(af, args, 0);
     }
   }
@@ -590,7 +607,7 @@ void GSLTest::TestBinaryFunc(const char *name, F f, const Options& opt) {
         af(args, ERROR);
         continue;
       }
-      EXPECT_ALMOST_EQUAL_OR_NAN(value, af(args));
+      EXPECT_EQ(value, af(args));
       char dig[2] = {0, 0};
       bool dx_ok = opt.HasDerivative(0, args.get()) &&
         CheckDerivative(std::bind2nd(f, y), af, 0, args);
@@ -873,6 +890,16 @@ TEST_F(GSLTest, Derivative) {
       std::out_of_range);
 }
 
+TEST_F(GSLTest, Dig) {
+  EXPECT_TRUE(Dig(0, Dig::NO_VAR) == nullptr);
+  EXPECT_EQ(1, Dig(0, 0)[0]);
+  EXPECT_THROW(Dig(0, 1), std::out_of_range);
+  EXPECT_TRUE(Dig(ArgList(0, 0, 0), Dig::NO_VAR) == nullptr);
+  EXPECT_EQ(string("\1\0\0", 3), string(Dig(ArgList(0, 0, 0), 0), 3));
+  EXPECT_EQ(string("\0\1\0", 3), string(Dig(ArgList(0, 0, 0), 1), 3));
+  EXPECT_EQ(string("\0\0\1", 3), string(Dig(ArgList(0, 0, 0), 2), 3));
+}
+
 TEST_F(GSLTest, Elementary) {
   TEST_FUNC(log1p);
   TEST_FUNC(expm1);
@@ -998,8 +1025,11 @@ TEST_F(GSLTest, BesselZero) {
         af(args, ERROR);
         continue;
       }
-      EXPECT_ALMOST_EQUAL_OR_NAN(gsl_sf_bessel_zero_Jnu(nu, x), af(args))
-        << name << " at " << x;
+      double value = gsl_sf_bessel_zero_Jnu(nu, x);
+      if (gsl_isnan(value))
+        af(args, ERROR);
+      else
+        EXPECT_EQ(value, af(args)) << name << " at " << x;
       af(args, DERIVS | ERROR);
     }
   }
@@ -1014,20 +1044,22 @@ TEST_F(GSLTest, Hydrogenic) {
 
   const char *name = "gsl_sf_hydrogenicR";
   Function af = GetFunction(name);
-  af(ArgList(0, 0, 0, 0));
-  af(ArgList(0.5, 0, 0, 0), ERROR);
-  af(ArgList(0, 0.5, 0, 0), ERROR);
-  for (size_t i = 0; i != NUM_POINTS_FOR_N; ++i) {
-    for (size_t i = 0; i != NUM_POINTS_FOR_N; ++i) {
-      for (size_t k = 0; k != NUM_POINTS; ++k) {
-        for (size_t l = 0; l != NUM_POINTS; ++l) {
-          int n = POINTS_FOR_N[i], ll = POINTS_FOR_N[l];
-          if (n < -1000 || n > 1000) continue;
-          double Z = POINTS[k], r = POINTS[l];
-          ArgList args(n, ll, Z, r);
-          EXPECT_ALMOST_EQUAL_OR_NAN(
-              gsl_sf_hydrogenicR(n, ll, Z, r), af(args))
-            << name << " at " << n;
+  EXPECT_EQ(2, af(ArgList(1, 0, 1, 0)));
+  EXPECT_STREQ("argument 'n' can't be represented as int, n = 1.1",
+      af(ArgList(1.1, 0, 1, 0), PASS_ERROR).error());
+  EXPECT_STREQ("argument 'l' can't be represented as int, l = 0.1",
+      af(ArgList(1, 0.1, 1, 0), PASS_ERROR).error());
+  for (size_t in = 0; in != NUM_POINTS_FOR_N; ++in) {
+    int n = POINTS_FOR_N[in];
+    if (n < -1000 || n > 1000) continue;
+    for (size_t il = 0; il != NUM_POINTS_FOR_N; ++il) {
+      int el = POINTS_FOR_N[il];
+      if (el < -1000 || el > 1000) continue;
+      for (size_t iz = 0; iz != NUM_POINTS; ++iz) {
+        for (size_t ir = 0; ir != NUM_POINTS; ++ir) {
+          double z = POINTS[iz], r = POINTS[ir];
+          ArgList args(n, el, z, r);
+          CheckFunction(gsl_sf_hydrogenicR(n, el, z, r), af, args);
           af(args, DERIVS | ERROR);
         }
       }
@@ -1037,15 +1069,16 @@ TEST_F(GSLTest, Hydrogenic) {
 
 TEST_F(GSLTest, Coulomb) {
   const char *name = "gsl_sf_coulomb_CL";
-  Function af = GetFunction(name);
+  Function f = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
       double x = POINTS[i], y = POINTS[j];
       ArgList args(x, y);
       gsl_sf_result result = {};
       double value = gsl_sf_coulomb_CL_e(x, y, &result) ? GSL_NAN : result.val;
-      EXPECT_ALMOST_EQUAL_OR_NAN(value, af(args));
-      af(args, DERIVS | ERROR);
+      CheckFunction(value, f, args);
+      f(args, DERIVS | ERROR);
+      f(args, HES | ERROR);
     }
   }
 }
@@ -1054,7 +1087,7 @@ TEST_F(GSLTest, Coupling3j) {
   double value = gsl_sf_coupling_3j(8, 20, 12, -2, 12, -10);
   EXPECT_NEAR(0.0812695955, value, 1e-5);
   Function af = GetFunction("gsl_sf_coupling_3j");
-  EXPECT_ALMOST_EQUAL_OR_NAN(value, af(ArgList(8, 20, 12, -2, 12, -10)));
+  EXPECT_EQ(value, af(ArgList(8, 20, 12, -2, 12, -10)));
   af(ArgList(0, 0, 0, 0, 0, 0));
   af(ArgList(0.5, 0, 0, 0, 0, 0), ERROR);
   af(ArgList(0, 0.5, 0, 0, 0, 0), ERROR);
@@ -1067,9 +1100,9 @@ TEST_F(GSLTest, Coupling3j) {
 
 TEST_F(GSLTest, Coupling6j) {
   double value = gsl_sf_coupling_6j(2, 4, 6, 8, 10, 12);
-  EXPECT_NEAR(0.0176295295, value, 1e-5);
+  EXPECT_NEAR(0.0176295295, value, 1e-7);
   Function af = GetFunction("gsl_sf_coupling_6j");
-  EXPECT_ALMOST_EQUAL_OR_NAN(value, af(ArgList(2, 4, 6, 8, 10, 12)));
+  EXPECT_EQ(value, af(ArgList(2, 4, 6, 8, 10, 12)));
   af(ArgList(0, 0, 0, 0, 0, 0));
   af(ArgList(0.5, 0, 0, 0, 0, 0), ERROR);
   af(ArgList(0, 0.5, 0, 0, 0, 0), ERROR);
@@ -1084,9 +1117,7 @@ TEST_F(GSLTest, Coupling9j) {
   double value = gsl_sf_coupling_9j(6, 16, 18, 8, 20, 14, 12, 10, 4);
   EXPECT_NEAR(-0.000775648399, value, 1e-9);
   Function af = GetFunction("gsl_sf_coupling_9j");
-  return;
-  EXPECT_ALMOST_EQUAL_OR_NAN(value,
-      af(ArgList(6, 16, 18, 8, 20, 14, 12, 10, 4)));
+  EXPECT_EQ(value, af(ArgList(6, 16, 18, 8, 20, 14, 12, 10, 4)));
   af(ArgList(0, 0, 0, 0, 0, 0, 0, 0, 0));
   af(ArgList(0.5, 0, 0, 0, 0, 0, 0, 0, 0), ERROR);
   af(ArgList(0, 0.5, 0, 0, 0, 0, 0, 0, 0), ERROR);
