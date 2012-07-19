@@ -1224,12 +1224,20 @@ DEBYE(6)
 static real amplgsl_sf_dilog(arglist *al) {
   real x = al->ra[0];
   if (al->derivs) {
-    gsl_complex log = gsl_complex_log(gsl_complex_rect(1 - x, 0));
-    real deriv = *al->derivs = x != 0 ? -GSL_REAL(log) / x : 1;
+    real deriv = 0;
+    if (x == 0) {
+      deriv = 1;
+    } else if (x == 1) {
+      deriv = GSL_POSINF;
+    } else {
+      gsl_complex log = gsl_complex_log(gsl_complex_rect(1 - x, 0));
+      deriv = -GSL_REAL(log) / x;
+    }
+    *al->derivs = deriv;
     if (al->hes)
       *al->hes = x != 0 ? (1 / (1 - x) - deriv) / x : 0.5;
   }
-  return gsl_sf_dilog(x);
+  return check_result(al, gsl_sf_dilog(x), "gsl_sf_dilog");
 }
 
 static real amplgsl_sf_ellint_Kcomp(arglist *al) {
