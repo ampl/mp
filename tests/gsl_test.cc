@@ -335,7 +335,7 @@ void CheckFunction(double value, const Function &f, const ArgList &args) {
   os << "Checking if " << f.name() << args << " = " << value;
   SCOPED_TRACE(os.str());
   if (gsl_isnan(value))
-    f(args, ERROR);
+    EXPECT_STREQ(EvalError(f, args), f(args, PASS_ERROR).error());
   else
     EXPECT_EQ(value, f(args)) << f.name() << args;
 }
