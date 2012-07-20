@@ -133,15 +133,15 @@ static int check_int_arg(arglist *al, unsigned index, const char *name) {
 }
 
 /* Checks the arguments of a Bessel function. */
-static int check_bessel_args(arglist *al, int flags) {
+static int check_bessel_args(arglist *al, int flags, const char *arg_name) {
   int n = al->ra[0];
-  if (!check_int_arg(al, 0, "n"))
+  if (!check_int_arg(al, 0, arg_name))
     return 0;
   if (al->derivs) {
     int deriv_min = INT_MIN + ((flags & DERIV_INT_MIN) != 0 ? 0 : 1);
     if (!al->dig || !al->dig[0]) {
       /* Can't compute derivative with respect to an integer argument. */
-      error(al, "argument 'n' is not constant");
+      error(al, "argument '%s' is not constant", arg_name);
       return 0;
     }
     if ((al->hes && !check_deriv_arg(al, n, INT_MIN + 2, INT_MAX - 2)) ||
@@ -343,7 +343,7 @@ static real amplgsl_sf_bessel_Jn(arglist *al) {
   int n = al->ra[0];
   real x = al->ra[1];
   real jn = 0;
-  if (!check_bessel_args(al, 0))
+  if (!check_bessel_args(al, 0, "n"))
     return 0;
   jn = gsl_sf_bessel_Jn(n, x);
   if (al->derivs) {
@@ -383,7 +383,7 @@ static real amplgsl_sf_bessel_Yn(arglist *al) {
   int n = al->ra[0];
   real x = al->ra[1];
   real yn = 0;
-  if (!check_bessel_args(al, 0))
+  if (!check_bessel_args(al, 0, "n"))
     return 0;
   yn = gsl_sf_bessel_Yn(n, x);
   if (al->derivs) {
@@ -423,7 +423,7 @@ static real amplgsl_sf_bessel_In(arglist *al) {
   int n = al->ra[0];
   real x = al->ra[1];
   real in = 0;
-  if (!check_bessel_args(al, 0))
+  if (!check_bessel_args(al, 0, "n"))
     return 0;
   in = gsl_sf_bessel_In(n, x);
   if (al->derivs) {
@@ -469,7 +469,7 @@ static real amplgsl_sf_bessel_In_scaled(arglist *al) {
   int n = al->ra[0];
   real x = al->ra[1];
   real in = 0;
-  if (!check_bessel_args(al, 0))
+  if (!check_bessel_args(al, 0, "n"))
     return 0;
   in = gsl_sf_bessel_In_scaled(n, x);
   if (al->derivs) {
@@ -512,7 +512,7 @@ static real amplgsl_sf_bessel_Kn(arglist *al) {
   int n = al->ra[0];
   real x = al->ra[1];
   real kn = 0;
-  if (!check_bessel_args(al, 0))
+  if (!check_bessel_args(al, 0, "n"))
     return 0;
   kn = gsl_sf_bessel_Kn(n, x);
   if (al->derivs) {
@@ -554,7 +554,7 @@ static real amplgsl_sf_bessel_Kn_scaled(arglist *al) {
   int n = al->ra[0];
   real x = al->ra[1];
   real kn = 0;
-  if (!check_bessel_args(al, 0))
+  if (!check_bessel_args(al, 0, "n"))
     return 0;
   kn = gsl_sf_bessel_Kn_scaled(n, x);
   if (al->derivs) {
@@ -613,7 +613,7 @@ static real amplgsl_sf_bessel_jl(arglist *al) {
   int el = al->ra[0];
   real x = al->ra[1];
   real jl = 0;
-  if (!check_bessel_args(al, DERIV_INT_MIN))
+  if (!check_bessel_args(al, DERIV_INT_MIN, "l"))
     return 0;
   jl = gsl_sf_bessel_jl(el, x);
   if (al->derivs) {
@@ -696,7 +696,7 @@ static real amplgsl_sf_bessel_yl(arglist *al) {
   int el = al->ra[0];
   real x = al->ra[1];
   real yl = 0;
-  if (!check_bessel_args(al, 0))
+  if (!check_bessel_args(al, 0, "l"))
     return 0;
   yl = gsl_sf_bessel_yl(el, x);
   if (al->derivs) {
@@ -802,7 +802,7 @@ static real amplgsl_sf_bessel_il_scaled(arglist *al) {
   int el = al->ra[0];
   real x = al->ra[1];
   real il = 0;
-  if (!check_bessel_args(al, 0))
+  if (!check_bessel_args(al, 0, "l"))
     return 0;
   il = gsl_sf_bessel_il_scaled(el, x);
   if (al->derivs) {
@@ -891,7 +891,7 @@ static real amplgsl_sf_bessel_kl_scaled(arglist *al) {
   int el = al->ra[0];
   real x = al->ra[1];
   real kl = 0;
-  if (!check_bessel_args(al, 0))
+  if (!check_bessel_args(al, 0, "l"))
     return 0;
   kl = gsl_sf_bessel_kl_scaled(el, x);
   if (al->derivs) {
