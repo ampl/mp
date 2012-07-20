@@ -478,7 +478,7 @@ int Driver::run(char **argv) {
    IloTimer timer(env_);
    timer.start();
 
-   IloNum Times[4];
+   IloNum Times[5];
    Times[0] = timer.getTime();
 
    /*** Get name of .nl file; read problem sizes ***/
