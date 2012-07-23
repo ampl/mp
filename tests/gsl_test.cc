@@ -80,15 +80,21 @@ class Result {
   const char *error() const { return error_; }
 };
 
+class Function;
+
 // Function information that can't be obtained automatically, in particular
 // due to limitations of numerical differentiation.
 class FunctionInfo {
  public:
   virtual ~FunctionInfo() {}
 
-  virtual double GetDerivative(const Tuple&) { return GSL_NAN; }
-  virtual bool HasDerivative(unsigned, const Tuple&) { return true; }
-  virtual bool HasDerivative2(const Tuple&) { return true; }
+  virtual double GetDerivative(const Tuple &) { return GSL_NAN; }
+  virtual string DerivativeError(const Function &, unsigned, const Tuple &) {
+    return "";
+  }
+  virtual string Derivative2Error(const Function &, const Tuple &) {
+    return "";
+  }
 };
 
 // Flags for an AMPL function call.
@@ -124,10 +130,20 @@ class Function {
       int flags = 0, char *dig = 0, void *info = 0) const {
     return (*this)(args.get(), flags, dig, info);
   }
+
+  string DerivativeError(unsigned var_index, const Tuple &args) const {
+    return info_->DerivativeError(*this, var_index, args);
+  }
+  string Derivative2Error(const Tuple &args) const {
+    return info_->Derivative2Error(*this, args);
+  }
 };
 
 Result Function::operator()(
     vector<real> args, int flags, char *dig, void *info) const {
+  if (fi_->nargs != static_cast<int>(args.size()))
+    throw std::runtime_error("Invalid number of arguments in function call");
+
   // Initialize the argument list.
   arglist al = {};
   TMInfo tmi = {};
@@ -327,6 +343,7 @@ class EvalError {
     str = os.str();
   }
   operator const char*() const { return str.c_str(); }
+  const char* c_str() const { return str.c_str(); }
 };
 
 // Check if the value returned by af is correct.
@@ -370,27 +387,34 @@ bool CheckDerivative(F f, const Function &af,
   std::ostringstream os;
   os << "Checking d/dx" << var_index << " " << af.name() << " at " << args;
   SCOPED_TRACE(os.str());
+  if (var_index != 0 && !af.DerivativeError(0, args).empty())
+    skip_var = 0;
   Dig dig(args, skip_var);
   double error = 0;
   double x = args[var_index];
-  double numerical_deriv = Diff(f, x, &error);
-  double overridden_deriv = af.info()->GetDerivative(args);
-  if (!gsl_isnan(overridden_deriv) && overridden_deriv != numerical_deriv) {
-    std::cout << "Overriding d/dx" << var_index << " " << af.name()
-      << " at " << args << ", computed = " << numerical_deriv
-      << ", overridden = " << overridden_deriv << std::endl;
-    numerical_deriv = overridden_deriv;
-  }
-  if (!gsl_isnan(numerical_deriv)) {
-    double deriv = af(args, DERIVS, dig).deriv(var_index);
-    if (numerical_deriv != deriv)
-      EXPECT_NEAR(numerical_deriv, deriv, ConvertErrorToTolerance(error));
-    return true;
+  string error_message = af.DerivativeError(var_index, args);
+  if (error_message.empty()) {
+    double numerical_deriv = Diff(f, x, &error);
+    double overridden_deriv = af.info()->GetDerivative(args);
+    if (!gsl_isnan(overridden_deriv) && overridden_deriv != numerical_deriv) {
+      std::cout << "Overriding d/dx" << var_index << " " << af.name()
+        << " at " << args << ", computed = " << numerical_deriv
+        << ", overridden = " << overridden_deriv << std::endl;
+      numerical_deriv = overridden_deriv;
+    }
+    if (!gsl_isnan(numerical_deriv)) {
+      double deriv = af(args, DERIVS, dig).deriv(var_index);
+      if (numerical_deriv != deriv)
+        EXPECT_NEAR(numerical_deriv, deriv, ConvertErrorToTolerance(error));
+      return true;
+    }
   }
   Result r = af(args, PASS_ERROR | DERIVS, dig);
-  if (!gsl_isnan(f(x)))
-    EXPECT_STREQ(EvalError(af, args, "'"), r.error());
-  else
+  if (!gsl_isnan(f(x))){
+    if (error_message.empty())
+      error_message = EvalError(af, args, "'");
+    EXPECT_STREQ(error_message.c_str(), r.error());
+  } else
     EXPECT_TRUE(r.error() != nullptr);
   return false;
 }
@@ -446,7 +470,9 @@ void CheckSecondDerivatives(const Function &af,
     for (unsigned j = 0; j < num_args; ++j) {
       if (j == skip_var) continue;
       double error = 0;
-      double d = Diff(Derivative(af, j, i, args, dig), ra[i], &error);
+      string error_message = af.Derivative2Error(args);
+      double d = error_message.empty() ?
+          Diff(Derivative(af, j, i, args, dig), ra[i], &error) : GSL_NAN;
       std::ostringstream os;
       os << "Checking if d/dx" << i << " d/dx" << j
           << " " << af.name() << " at " << args << " is " << d;
@@ -640,76 +666,40 @@ void GSLTest::TestBinaryFunc(const Function &af, F f) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
       double x = POINTS[i], y = POINTS[j];
       Tuple args(x, y);
-      double value = f(x, y);
-      if (gsl_isnan(value)) {
-        af(args, ERROR);
-        continue;
-      }
-      EXPECT_EQ(value, af(args));
-      char dig[2] = {0, 0};
-      bool dx_ok = af.info()->HasDerivative(0, args) &&
-        CheckDerivative(std::bind2nd(f, y), af, 0, args);
-      if (!dx_ok) {
-        af(args, ERROR | DERIVS);
-        dig[0] = 1;
-      }
-
-      double dy = af.info()->HasDerivative(1, args) ?
-          Diff(std::bind1st(f, x), y) : GSL_NAN;
-      if (gsl_isnan(dy)) {
-        af(args, ERROR | DERIVS, dig);
-      } else {
-        EXPECT_NEAR(dy, af(args, DERIVS, dig).deriv(1), 1e-5)
-          << af.name() << " at " << x << ", " << y;
-      }
-
-      if (!af.info()->HasDerivative2(args) || !dx_ok) {
-        af(args, ERROR | HES);
-        continue;
-      }
-      // TODO
+      CheckFunction(f(x, y), af, args);
+      CheckDerivative(std::bind2nd(f, y), af, 0, args);
+      CheckDerivative(std::bind1st(f, x), af, 1, args);
       CheckSecondDerivatives(af, args);
     }
   }
 }
 
-class Bind12 {
+// Binds 2 arguments out of 3.
+class Bind2Of3 {
  private:
   Func3 f_;
+  unsigned unbound_arg_index_;
   double arg1_;
   double arg2_;
 
  public:
-  Bind12(Func3 f, double arg1, double arg2)
-  : f_(f), arg1_(arg1), arg2_(arg2) {}
+  Bind2Of3(Func3 f, unsigned unbound_arg_index, double arg1, double arg2)
+  : f_(f), unbound_arg_index_(unbound_arg_index), arg1_(arg1), arg2_(arg2) {
+    if (unbound_arg_index > 2)
+      throw std::out_of_range("argument index is out of range");
+  }
 
-  double operator()(double arg3) const { return f_(arg1_, arg2_, arg3); }
-};
-
-class Bind13 {
- private:
-  Func3 f_;
-  double arg1_;
-  double arg3_;
-
- public:
-  Bind13(Func3 f, double arg1, double arg3)
-  : f_(f), arg1_(arg1), arg3_(arg3) {}
-
-  double operator()(double arg2) const { return f_(arg1_, arg2, arg3_); }
-};
-
-class Bind23 {
- private:
-  Func3 f_;
-  double arg2_;
-  double arg3_;
-
- public:
-  Bind23(Func3 f, double arg2, double arg3)
-  : f_(f), arg2_(arg2), arg3_(arg3) {}
-
-  double operator()(double arg1) const { return f_(arg1, arg2_, arg3_); }
+  double operator()(double arg3) const {
+    switch (unbound_arg_index_) {
+    default:
+    case 0:
+      return f_(arg3, arg1_, arg2_);
+    case 1:
+      return f_(arg1_, arg3, arg2_);
+    case 2:
+      return f_(arg1_, arg2_, arg3);
+    }
+  }
 };
 
 void GSLTest::TestFunc(const Function &af, Func3 f) {
@@ -718,19 +708,19 @@ void GSLTest::TestFunc(const Function &af, Func3 f) {
       for (size_t k = 0; k != NUM_POINTS; ++k) {
         double x = POINTS[i], y = POINTS[j], z = POINTS[k];
         Tuple args(x, y, z);
-        EXPECT_EQ(f(x, y, z), af(args)) << af.name();
-        CheckDerivative(Bind23(f, y, z), af, 0, args);
-        CheckDerivative(Bind13(f, x, z), af, 1, args);
-        CheckDerivative(Bind12(f, x, y), af, 2, args);
+        CheckFunction(f(x, y, z), af, args);
+        CheckDerivative(Bind2Of3(f, 0, y, z), af, 0, args);
+        CheckDerivative(Bind2Of3(f, 1, x, z), af, 1, args);
+        CheckDerivative(Bind2Of3(f, 2, x, y), af, 2, args);
         CheckSecondDerivatives(af, args);
       }
     }
   }
 }
 
-#define TEST_FUNC(name) TestFunc(GetFunction("gsl_" #name, &info), gsl_##name);
+#define TEST_FUNC(name) TestFunc(GetFunction("gsl_" #name, &info), gsl_##name)
 #define TEST_BESSEL_N(name, test_x, arg) \
-    TestBesselN(GetFunction("gsl_" #name, &info), gsl_##name, test_x, #arg);
+    TestBesselN(GetFunction("gsl_" #name, &info), gsl_##name, test_x, #arg)
 
 TEST_F(GSLTest, Tuple) {
   static const real ARGS[] = {5, 7, 11, 13, 17, 19, 23, 29, 31};
@@ -812,8 +802,10 @@ class TestFunction {
   Function f_;
 
  public:
-  TestFunction() : testASL_(), ae_(), fi_(), f_(&testASL_, &fi_, 0) {
+  TestFunction(int nargs)
+  : testASL_(), ae_(), fi_(), f_(&testASL_, &fi_, 0) {
     testASL_.i.ae = &ae_;
+    fi_.nargs = nargs;
     fi_.funcp = Test;
   }
 
@@ -822,7 +814,7 @@ class TestFunction {
 };
 
 TEST_F(GSLTest, FunctionCall) {
-  TestFunction f;
+  TestFunction f(1);
   CallData data = {};
   EXPECT_EQ(42, f.get()(777, 0, 0, &data));
   EXPECT_EQ(f.ae(), data.ae);
@@ -836,14 +828,14 @@ TEST_F(GSLTest, FunctionCall) {
 }
 
 TEST_F(GSLTest, FunctionReturnsError) {
-  TestFunction f;
+  TestFunction f(1);
   CallData data = {};
   Result r = f.get()(-1, PASS_ERROR, 0, &data);
   EXPECT_STREQ("oops", r.error());
 }
 
 TEST_F(GSLTest, FunctionReturnsDerivs) {
-  TestFunction f;
+  TestFunction f(3);
   CallData data = {};
   Result res = f.get()(Tuple(11, 22, 33), DERIVS, 0, &data);
   EXPECT_EQ(42, res);
@@ -863,7 +855,7 @@ TEST_F(GSLTest, FunctionReturnsDerivs) {
 }
 
 TEST_F(GSLTest, FunctionReturnsHes) {
-  TestFunction f;
+  TestFunction f(2);
   CallData data = {};
   double ARGS[] = {111, 222};
   Result res = f.get()(vector<real>(ARGS, ARGS + 2), HES, 0, &data);
@@ -1021,19 +1013,24 @@ TEST_F(GSLTest, Besselk) {
 }
 
 struct BesselFractionalOrderInfo : FunctionInfo {
-  bool HasDerivative(unsigned var_index, const Tuple &args) {
+  string DerivativeError(const Function &f,
+      unsigned var_index, const Tuple &args) {
+    // Partial derivatives with respect to nu are not provided.
+    if (var_index == 0)
+      return "argument 'nu' is not constant";
     // Computing gsl_sf_bessel_*nu'(nu, x) requires
     // gsl_sf_bessel_*nu(nu - 1, x) which doesn't work when the
     // first argument is non-negative, so nu should be >= 1.
-    // Partial derivatives with respect to nu are not provided.
-    return var_index == 1 && args[0] >= 1;
+    if (args[0] < 1)
+      return EvalError(f, args, "'").c_str();
+    return "";
   }
 
-  bool HasDerivative2(const Tuple &args) {
+  string Derivative2Error(const Function &f, const Tuple &args) {
     // Computing gsl_sf_bessel_*nu''(nu, x) requires
     // gsl_sf_bessel_*nu(nu - 2, x) which doesn't work when the
     // first argument is non-negative, so nu should be >= 2.
-    return args[0] >= 2;
+    return args[0] < 2 ? EvalError(f, args, "''").c_str() : "";
   }
 };
 
@@ -1056,6 +1053,7 @@ TEST_F(GSLTest, BesselZero) {
   Function af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
+      // TODO
       double nu = POINTS[i], x = POINTS[j];
       Tuple args(nu, x);
       if (static_cast<unsigned>(x) != x) {
