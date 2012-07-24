@@ -37,11 +37,8 @@ static int check_zero_func_args(arglist *al, unsigned s_index) {
     error(al, "argument 's' can't be represented as unsigned int, s = %g", arg);
     return 0;
   }
-  if (al->derivs) {
-    /* Derivative information is requested, so the argument is not constant. */
-    error(al, "argument 's' is not constant");
-    return 0;
-  }
+  if (al->derivs)
+    *al->derivs = GSL_NAN;
   return 1;
 }
 
@@ -1128,10 +1125,8 @@ static int check_coupling_args(arglist *al, const char *const* arg_names) {
     if (!check_int_arg(al, i, arg_names[i]))
       return 0;
   }
-  if (al->derivs) {
-    error(al, "arguments are not constant");
-    return 0;
-  }
+  if (al->derivs)
+    *al->derivs = GSL_NAN;
   return 1;
 }
 
@@ -1142,8 +1137,9 @@ static real amplgsl_sf_coupling_3j(arglist *al) {
   };
   if (!check_coupling_args(al, ARG_NAMES))
     return 0;
-  return gsl_sf_coupling_3j(
-      al->ra[0], al->ra[1], al->ra[2], al->ra[3], al->ra[4], al->ra[5]);
+  return check_result(al, gsl_sf_coupling_3j(
+      al->ra[0], al->ra[1], al->ra[2], al->ra[3], al->ra[4], al->ra[5]),
+      "gsl_sf_coupling_3j");
 }
 
 static real amplgsl_sf_coupling_6j(arglist *al) {
@@ -1153,8 +1149,9 @@ static real amplgsl_sf_coupling_6j(arglist *al) {
   };
   if (!check_coupling_args(al, ARG_NAMES))
     return 0;
-  return gsl_sf_coupling_6j(
-      al->ra[0], al->ra[1], al->ra[2], al->ra[3], al->ra[4], al->ra[5]);
+  return check_result(al, gsl_sf_coupling_6j(
+      al->ra[0], al->ra[1], al->ra[2], al->ra[3], al->ra[4], al->ra[5]),
+      "gsl_sf_coupling_6j");
 }
 
 static real amplgsl_sf_coupling_9j(arglist *al) {
@@ -1165,9 +1162,9 @@ static real amplgsl_sf_coupling_9j(arglist *al) {
   };
   if (!check_coupling_args(al, ARG_NAMES))
     return 0;
-  return gsl_sf_coupling_9j(
+  return check_result(al, gsl_sf_coupling_9j(
       al->ra[0], al->ra[1], al->ra[2], al->ra[3], al->ra[4], al->ra[5],
-      al->ra[6], al->ra[7], al->ra[8]);
+      al->ra[6], al->ra[7], al->ra[8]), "gsl_sf_coupling_9j");
 }
 
 static real amplgsl_sf_dawson(arglist *al) {

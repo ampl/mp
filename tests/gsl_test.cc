@@ -16,7 +16,7 @@ using std::vector;
 
 namespace {
 
-// An immutable list of arguments for an AMPL function.
+// An immutable tuple.
 class Tuple {
  private:
   vector<real> items_;
@@ -99,10 +99,9 @@ class FunctionInfo {
 
 // Flags for an AMPL function call.
 enum {
-  ERROR      = 1, // Function call is expected to produce an error.
-  DERIVS     = 2, // Get first partial derivatives.
-  HES        = 6, // Get both first and second partial derivatives.
-  PASS_ERROR = 8  // Pass error to the caller.
+  DERIVS = 1, // Get first partial derivatives.
+  HES    = 3, // Get both first and second partial derivatives.
+  ERROR  = 4  // Pass error to the caller.
 };
 
 // An AMPL function.
@@ -168,12 +167,8 @@ Result Function::operator()(
   // Call the function.
   real value = fi_->funcp(&al);
 
-  // Check the error message.
-  if (al.Errmsg) {
-    if ((flags & ERROR) == 0 && (flags & PASS_ERROR) == 0)
+  if (al.Errmsg && (flags & ERROR) == 0)
       ADD_FAILURE() << al.Errmsg;
-  } else if ((flags & ERROR) != 0)
-    ADD_FAILURE() << "Expected error in " << fi_->name;
 
   return Result(value, derivs, hes, al.Errmsg);
 }
@@ -352,7 +347,7 @@ void CheckFunction(double value, const Function &f, const Tuple &args) {
   os << "Checking if " << f.name() << args << " = " << value;
   SCOPED_TRACE(os.str());
   if (gsl_isnan(value))
-    EXPECT_STREQ(EvalError(f, args), f(args, PASS_ERROR).error());
+    EXPECT_STREQ(EvalError(f, args), f(args, ERROR).error());
   else
     EXPECT_EQ(value, f(args)) << f.name() << args;
 }
@@ -409,7 +404,7 @@ bool CheckDerivative(F f, const Function &af,
       return true;
     }
   }
-  Result r = af(args, PASS_ERROR | DERIVS, dig);
+  Result r = af(args, ERROR | DERIVS, dig);
   if (!gsl_isnan(f(x))){
     if (error_message.empty())
       error_message = EvalError(af, args, "'");
@@ -451,7 +446,7 @@ Derivative::Derivative(Function af, unsigned deriv_var,
 
 double Derivative::operator()(double x) {
   args_.at(eval_var_) = x;
-  Result r = af_(args_, DERIVS | PASS_ERROR, dig_);
+  Result r = af_(args_, DERIVS | ERROR, dig_);
   return r.error() ? GSL_NAN : r.deriv(deriv_var_);
 }
 
@@ -478,8 +473,8 @@ void CheckSecondDerivatives(const Function &af,
           << " " << af.name() << " at " << args << " is " << d;
       SCOPED_TRACE(os.str());
       if (gsl_isnan(d)) {
-        Result r = af(args, PASS_ERROR | HES, dig);
-        if (!af(args, PASS_ERROR | DERIVS, dig).error())
+        Result r = af(args, ERROR | HES, dig);
+        if (!af(args, ERROR | DERIVS, dig).error())
           EXPECT_STREQ(EvalError(af, args, "''"), r.error());
         else
           EXPECT_TRUE(r.error() != nullptr);
@@ -497,6 +492,12 @@ void CheckSecondDerivatives(const Function &af,
 typedef double (*FuncU)(unsigned);
 typedef double (*Func3)(double, double, double);
 typedef double (*FuncBesselN)(int, double);
+
+const double POINTS[] = {-5, -1.23, -1, 0, 1, 1.23, 5};
+const size_t NUM_POINTS = sizeof(POINTS) / sizeof(*POINTS);
+
+const double POINTS_FOR_N[] = {-2, -1, 0, 1, 2};
+const size_t NUM_POINTS_FOR_N = sizeof(POINTS_FOR_N) / sizeof(*POINTS_FOR_N);
 
 class GSLTest : public ::testing::Test {
  protected:
@@ -531,8 +532,16 @@ class GSLTest : public ::testing::Test {
     TestUnaryFunc(af, std::bind2nd(std::ptr_fun(f), GSL_PREC_DOUBLE));
   }
 
-  // Tests a function taking a single argument of type unsigned int.
-  void TestFunc(const Function &af, FuncU f);
+  void TestZeroFunc(const Function &af,
+      double value, const Tuple &args, unsigned s_index);
+
+  // Tests a zero function.
+  void TestFunc(const Function &af, FuncU f) {
+    for (size_t i = 0; i != NUM_POINTS; ++i) {
+      double s = POINTS[i];
+      TestZeroFunc(af, f(s), s, 0);
+    }
+  }
 
   // Tests a Bessel function.
   // test_x is a value of x where the function can be computed for very large
@@ -570,12 +579,6 @@ class GSLTest : public ::testing::Test {
   void TestFunc(const Function &af, Func3 f);
 };
 
-const double POINTS[] = {-5, -1.23, -1, 0, 1, 1.23, 5};
-const size_t NUM_POINTS = sizeof(POINTS) / sizeof(*POINTS);
-
-const double POINTS_FOR_N[] = {-2, -1, 0, 1, 2};
-const size_t NUM_POINTS_FOR_N = sizeof(POINTS_FOR_N) / sizeof(*POINTS_FOR_N);
-
 template <typename F>
 void GSLTest::TestUnaryFunc(const Function &af, F f) {
   for (size_t i = 0; i != NUM_POINTS; ++i) {
@@ -586,26 +589,25 @@ void GSLTest::TestUnaryFunc(const Function &af, F f) {
   }
 }
 
-void GSLTest::TestFunc(const Function &af, FuncU f) {
-  for (size_t i = 0; i != NUM_POINTS; ++i) {
-    double s = POINTS[i];
-    if (static_cast<unsigned>(s) == s) {
-      double value = f(s);
-      if (gsl_isnan(value))
-        EXPECT_STREQ(EvalError(af, s), af(s, PASS_ERROR).error());
-      else
-        EXPECT_EQ(value, af(s)) << af.name() << " at " << s;
-      EXPECT_STREQ("argument 's' is not constant",
-          af(s, DERIVS | PASS_ERROR).error());
-      EXPECT_STREQ("argument 's' is not constant",
-          af(s, HES | PASS_ERROR).error());
+void GSLTest::TestZeroFunc(const Function &af,
+    double value, const Tuple &args, unsigned s_index) {
+  double s = args[s_index];
+  if (static_cast<unsigned>(s) == s) {
+    if (gsl_isnan(value)) {
+      EXPECT_STREQ(EvalError(af, args), af(args, ERROR).error());
+      EXPECT_STREQ(EvalError(af, args), af(args, DERIVS | ERROR).error());
+      EXPECT_STREQ(EvalError(af, args), af(args, HES | ERROR).error());
     } else {
-      std::ostringstream os;
-      os << "argument 's' can't be represented as unsigned int, s = " << s;
-      EXPECT_STREQ(os.str().c_str(), af(s, PASS_ERROR).error());
-      EXPECT_STREQ(os.str().c_str(), af(s, DERIVS | PASS_ERROR).error());
-      EXPECT_STREQ(os.str().c_str(), af(s, HES | PASS_ERROR).error());
+      EXPECT_EQ(value, af(args)) << af.name() << " at " << args;
+      EXPECT_STREQ(EvalError(af, args, "'"), af(args, DERIVS | ERROR).error());
+      EXPECT_STREQ(EvalError(af, args, "'"), af(args, HES | ERROR).error());
     }
+  } else {
+    std::ostringstream os;
+    os << "argument 's' can't be represented as unsigned int, s = " << s;
+    EXPECT_STREQ(os.str().c_str(), af(args, ERROR).error());
+    EXPECT_STREQ(os.str().c_str(), af(args, DERIVS | ERROR).error());
+    EXPECT_STREQ(os.str().c_str(), af(args, HES | ERROR).error());
   }
 }
 
@@ -618,15 +620,15 @@ void GSLTest::TestBesselN(const Function &af, FuncBesselN f,
       Tuple args(n, x);
       CheckFunction(f(n, x), af, args);
       string error("argument '" + arg_name + "' is not constant");
-      EXPECT_STREQ(error.c_str(), af(args, DERIVS | PASS_ERROR).error());
-      EXPECT_STREQ(error.c_str(), af(args, HES | PASS_ERROR).error());
+      EXPECT_STREQ(error.c_str(), af(args, DERIVS | ERROR).error());
+      EXPECT_STREQ(error.c_str(), af(args, HES | ERROR).error());
       CheckDerivative(std::bind1st(std::ptr_fun(f), n), af, 1, args, 0);
       CheckSecondDerivatives(af, args, 0);
     }
   }
   EXPECT_STREQ(("argument '" + arg_name + "' can't be represented as int, " +
       arg_name + " = 0.5").c_str(),
-      af(Tuple(0.5, 0), PASS_ERROR).error());
+      af(Tuple(0.5, 0), ERROR).error());
 
   if (gsl_isnan(test_x))
     return;
@@ -640,22 +642,22 @@ void GSLTest::TestBesselN(const Function &af, FuncBesselN f,
   EXPECT_STREQ(
       ("can't compute derivative: argument '" + arg_name + "' too small, " +
       arg_name + " = -2147483648").c_str(),
-      af(Tuple(INT_MIN, test_x), DERIVS | PASS_ERROR, dig).error());
+      af(Tuple(INT_MIN, test_x), DERIVS | ERROR, dig).error());
   EXPECT_STREQ(
       ("can't compute derivative: argument '" + arg_name + "' too large, " +
       arg_name + " = 2147483647").c_str(),
-      af(Tuple(INT_MAX, test_x), DERIVS | PASS_ERROR, dig).error());
+      af(Tuple(INT_MAX, test_x), DERIVS | ERROR, dig).error());
   EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MIN + 1, test_x), DERIVS, dig).deriv(1)));
   EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MAX - 1, test_x), DERIVS, dig).deriv(1)));
 
   EXPECT_STREQ(
       ("can't compute derivative: argument '" + arg_name + "' too small, " +
       arg_name + " = -2147483647").c_str(),
-      af(Tuple(INT_MIN + 1, test_x), HES | PASS_ERROR, dig).error());
+      af(Tuple(INT_MIN + 1, test_x), HES | ERROR, dig).error());
   EXPECT_STREQ(
       ("can't compute derivative: argument '" + arg_name + "' too large, " +
       arg_name + " = 2147483646").c_str(),
-      af(Tuple(INT_MAX - 1, test_x), HES | PASS_ERROR, dig).error());
+      af(Tuple(INT_MAX - 1, test_x), HES | ERROR, dig).error());
   EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MIN + 2, test_x), HES, dig).hes(2)));
   EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MAX - 2, test_x), HES, dig).hes(2)));
 }
@@ -720,7 +722,7 @@ void GSLTest::TestFunc(const Function &af, Func3 f) {
 
 #define TEST_FUNC(name) TestFunc(GetFunction("gsl_" #name, &info), gsl_##name)
 #define TEST_BESSEL_N(name, test_x, arg) \
-    TestBesselN(GetFunction("gsl_" #name, &info), gsl_##name, test_x, #arg)
+  TestBesselN(GetFunction("gsl_" #name, &info), gsl_##name, test_x, #arg)
 
 TEST_F(GSLTest, Tuple) {
   static const real ARGS[] = {5, 7, 11, 13, 17, 19, 23, 29, 31};
@@ -830,7 +832,7 @@ TEST_F(GSLTest, FunctionCall) {
 TEST_F(GSLTest, FunctionReturnsError) {
   TestFunction f(1);
   CallData data = {};
-  Result r = f.get()(-1, PASS_ERROR, 0, &data);
+  Result r = f.get()(-1, ERROR, 0, &data);
   EXPECT_STREQ("oops", r.error());
 }
 
@@ -1053,19 +1055,8 @@ TEST_F(GSLTest, BesselZero) {
   Function af = GetFunction(name);
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
-      // TODO
-      double nu = POINTS[i], x = POINTS[j];
-      Tuple args(nu, x);
-      if (static_cast<unsigned>(x) != x) {
-        af(args, ERROR);
-        continue;
-      }
-      double value = gsl_sf_bessel_zero_Jnu(nu, x);
-      if (gsl_isnan(value))
-        af(args, ERROR);
-      else
-        EXPECT_EQ(value, af(args)) << name << " at " << x;
-      af(args, DERIVS | ERROR);
+      double nu = POINTS[i], s = POINTS[j];
+      TestZeroFunc(af, gsl_sf_bessel_zero_Jnu(nu, s), Tuple(nu, s), 1);
     }
   }
 }
@@ -1084,25 +1075,24 @@ TEST_F(GSLTest, Clausen) {
 TEST_F(GSLTest, Hydrogenic) {
   TEST_FUNC(sf_hydrogenicR_1);
 
-  const char *name = "gsl_sf_hydrogenicR";
-  Function af = GetFunction(name);
-  EXPECT_EQ(2, af(Tuple(1, 0, 1, 0)));
+  Function f = GetFunction("gsl_sf_hydrogenicR");
+  EXPECT_EQ(2, f(Tuple(1, 0, 1, 0)));
   EXPECT_STREQ("argument 'n' can't be represented as int, n = 1.1",
-      af(Tuple(1.1, 0, 1, 0), PASS_ERROR).error());
+      f(Tuple(1.1, 0, 1, 0), ERROR).error());
   EXPECT_STREQ("argument 'l' can't be represented as int, l = 0.1",
-      af(Tuple(1, 0.1, 1, 0), PASS_ERROR).error());
+      f(Tuple(1, 0.1, 1, 0), ERROR).error());
   for (size_t in = 0; in != NUM_POINTS_FOR_N; ++in) {
     int n = POINTS_FOR_N[in];
-    if (n < -1000 || n > 1000) continue;
     for (size_t il = 0; il != NUM_POINTS_FOR_N; ++il) {
       int el = POINTS_FOR_N[il];
-      if (el < -1000 || el > 1000) continue;
       for (size_t iz = 0; iz != NUM_POINTS; ++iz) {
         for (size_t ir = 0; ir != NUM_POINTS; ++ir) {
           double z = POINTS[iz], r = POINTS[ir];
           Tuple args(n, el, z, r);
-          CheckFunction(gsl_sf_hydrogenicR(n, el, z, r), af, args);
-          af(args, DERIVS | ERROR);
+          CheckFunction(gsl_sf_hydrogenicR(n, el, z, r), f, args);
+          const char *error = "derivative is not provided";
+          EXPECT_STREQ(error, f(args, DERIVS | ERROR).error());
+          EXPECT_STREQ(error, f(args, HES |ERROR).error());
         }
       }
     }
@@ -1110,8 +1100,7 @@ TEST_F(GSLTest, Hydrogenic) {
 }
 
 TEST_F(GSLTest, Coulomb) {
-  const char *name = "gsl_sf_coulomb_CL";
-  Function f = GetFunction(name);
+  Function f = GetFunction("gsl_sf_coulomb_CL");
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
       double x = POINTS[i], y = POINTS[j];
@@ -1119,58 +1108,89 @@ TEST_F(GSLTest, Coulomb) {
       gsl_sf_result result = {};
       double value = gsl_sf_coulomb_CL_e(x, y, &result) ? GSL_NAN : result.val;
       CheckFunction(value, f, args);
-      f(args, DERIVS | ERROR);
-      f(args, HES | ERROR);
+      const char *error = "derivative is not provided";
+      EXPECT_STREQ(error, f(args, DERIVS | ERROR).error());
+      EXPECT_STREQ(error, f(args, HES |ERROR).error());
     }
   }
 }
 
+class NotInt {
+ private:
+  string message;
+
+ public:
+  NotInt(const char *arg_name) {
+    std::ostringstream os;
+    os << "argument '" << arg_name
+        << "' can't be represented as int, " << arg_name << " = 0.5";
+    message = os.str();
+  }
+
+  operator const char*() const { return message.c_str(); }
+};
+
 TEST_F(GSLTest, Coupling3j) {
   double value = gsl_sf_coupling_3j(8, 20, 12, -2, 12, -10);
   EXPECT_NEAR(0.0812695955, value, 1e-5);
-  Function af = GetFunction("gsl_sf_coupling_3j");
-  EXPECT_EQ(value, af(Tuple(8, 20, 12, -2, 12, -10)));
-  af(Tuple(0, 0, 0, 0, 0, 0));
-  af(Tuple(0.5, 0, 0, 0, 0, 0), ERROR);
-  af(Tuple(0, 0.5, 0, 0, 0, 0), ERROR);
-  af(Tuple(0, 0, 0.5, 0, 0, 0), ERROR);
-  af(Tuple(0, 0, 0, 0.5, 0, 0), ERROR);
-  af(Tuple(0, 0, 0, 0, 0.5, 0), ERROR);
-  af(Tuple(0, 0, 0, 0, 0, 0.5), ERROR);
-  af(Tuple(8, 20, 12, -2, 12, -10), ERROR | DERIVS);
+  Function f = GetFunction("gsl_sf_coupling_3j");
+  Tuple args(8, 20, 12, -2, 12, -10);
+  EXPECT_EQ(value, f(args));
+  f(Tuple(0, 0, 0, 0, 0, 0));
+  EXPECT_STREQ(NotInt("two_ja"), f(Tuple(0.5, 0, 0, 0, 0, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_jb"), f(Tuple(0, 0.5, 0, 0, 0, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_jc"), f(Tuple(0, 0, 0.5, 0, 0, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_ma"), f(Tuple(0, 0, 0, 0.5, 0, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_mb"), f(Tuple(0, 0, 0, 0, 0.5, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_mc"), f(Tuple(0, 0, 0, 0, 0, 0.5), ERROR).error());
+  EXPECT_STREQ(EvalError(f, args, "'"), f(args, ERROR | DERIVS).error());
+  EXPECT_STREQ(EvalError(f, args, "'"), f(args, ERROR | HES).error());
 }
 
 TEST_F(GSLTest, Coupling6j) {
   double value = gsl_sf_coupling_6j(2, 4, 6, 8, 10, 12);
   EXPECT_NEAR(0.0176295295, value, 1e-7);
-  Function af = GetFunction("gsl_sf_coupling_6j");
-  EXPECT_EQ(value, af(Tuple(2, 4, 6, 8, 10, 12)));
-  af(Tuple(0, 0, 0, 0, 0, 0));
-  af(Tuple(0.5, 0, 0, 0, 0, 0), ERROR);
-  af(Tuple(0, 0.5, 0, 0, 0, 0), ERROR);
-  af(Tuple(0, 0, 0.5, 0, 0, 0), ERROR);
-  af(Tuple(0, 0, 0, 0.5, 0, 0), ERROR);
-  af(Tuple(0, 0, 0, 0, 0.5, 0), ERROR);
-  af(Tuple(0, 0, 0, 0, 0, 0.5), ERROR);
-  af(Tuple(2, 4, 6, 8, 10, 12), ERROR | DERIVS);
+  Function f = GetFunction("gsl_sf_coupling_6j");
+  Tuple args(2, 4, 6, 8, 10, 12);
+  EXPECT_EQ(value, f(args));
+  EXPECT_TRUE(f(Tuple(0, 0, 0, 0, 0, 0)).error() == nullptr);
+  EXPECT_STREQ(NotInt("two_ja"), f(Tuple(0.5, 0, 0, 0, 0, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_jb"), f(Tuple(0, 0.5, 0, 0, 0, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_jc"), f(Tuple(0, 0, 0.5, 0, 0, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_jd"), f(Tuple(0, 0, 0, 0.5, 0, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_je"), f(Tuple(0, 0, 0, 0, 0.5, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_jf"), f(Tuple(0, 0, 0, 0, 0, 0.5), ERROR).error());
+  EXPECT_STREQ(EvalError(f, args, "'"), f(args, ERROR | DERIVS).error());
+  EXPECT_STREQ(EvalError(f, args, "'"), f(args, ERROR | HES).error());
 }
 
 TEST_F(GSLTest, Coupling9j) {
   double value = gsl_sf_coupling_9j(6, 16, 18, 8, 20, 14, 12, 10, 4);
   EXPECT_NEAR(-0.000775648399, value, 1e-9);
-  Function af = GetFunction("gsl_sf_coupling_9j");
-  EXPECT_EQ(value, af(Tuple(6, 16, 18, 8, 20, 14, 12, 10, 4)));
-  af(Tuple(0, 0, 0, 0, 0, 0, 0, 0, 0));
-  af(Tuple(0.5, 0, 0, 0, 0, 0, 0, 0, 0), ERROR);
-  af(Tuple(0, 0.5, 0, 0, 0, 0, 0, 0, 0), ERROR);
-  af(Tuple(0, 0, 0.5, 0, 0, 0, 0, 0, 0), ERROR);
-  af(Tuple(0, 0, 0, 0.5, 0, 0, 0, 0, 0), ERROR);
-  af(Tuple(0, 0, 0, 0, 0.5, 0, 0, 0, 0), ERROR);
-  af(Tuple(0, 0, 0, 0, 0, 0.5, 0, 0, 0), ERROR);
-  af(Tuple(0, 0, 0, 0, 0, 0, 0.5, 0, 0), ERROR);
-  af(Tuple(0, 0, 0, 0, 0, 0, 0, 0.5, 0), ERROR);
-  af(Tuple(0, 0, 0, 0, 0, 0, 0, 0, 0.5), ERROR);
-  af(Tuple(6, 16, 18, 8, 20, 14, 12, 10, 4), ERROR | DERIVS);
+  Function f = GetFunction("gsl_sf_coupling_9j");
+  Tuple args(6, 16, 18, 8, 20, 14, 12, 10, 4);
+  EXPECT_EQ(value, f(args));
+  EXPECT_TRUE(f(Tuple(0, 0, 0, 0, 0, 0, 0, 0, 0)).error() == nullptr);
+  EXPECT_STREQ(NotInt("two_ja"),
+    f(Tuple(0.5, 0, 0, 0, 0, 0, 0, 0, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_jb"),
+    f(Tuple(0, 0.5, 0, 0, 0, 0, 0, 0, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_jc"),
+    f(Tuple(0, 0, 0.5, 0, 0, 0, 0, 0, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_jd"),
+    f(Tuple(0, 0, 0, 0.5, 0, 0, 0, 0, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_je"),
+    f(Tuple(0, 0, 0, 0, 0.5, 0, 0, 0, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_jf"),
+    f(Tuple(0, 0, 0, 0, 0, 0.5, 0, 0, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_jg"),
+    f(Tuple(0, 0, 0, 0, 0, 0, 0.5, 0, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_jh"),
+    f(Tuple(0, 0, 0, 0, 0, 0, 0, 0.5, 0), ERROR).error());
+  EXPECT_STREQ(NotInt("two_ji"),
+    f(Tuple(0, 0, 0, 0, 0, 0, 0, 0, 0.5), ERROR).error());
+  EXPECT_STREQ(EvalError(f, args, "'"), f(args, ERROR | DERIVS).error());
+  EXPECT_STREQ(EvalError(f, args, "'"), f(args, ERROR | HES).error());
 }
 
 TEST_F(GSLTest, Dawson) {
