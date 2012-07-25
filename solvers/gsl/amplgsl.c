@@ -1320,22 +1320,33 @@ static real amplgsl_sf_ellint_F(arglist *al) {
   if (al->derivs) {
     real e = gsl_sf_ellint_E(phi, k, GSL_PREC_DOUBLE);
     al->derivs[0] = 1 / sqrt(1 - gsl_pow_2(k * sin(phi)));
-    al->derivs[1] = (e + (k * k - 1) * f -
-        (k * k * cos(phi) * sin(phi)) / sqrt(1 - gsl_pow_2(k * sin(phi)))) /
-        (k - gsl_pow_3(k));
+    if (!al->dig || !al->dig[1]) {
+      if (k == 0) {
+        al->derivs[1] = 0;
+      } else if (fabs(k) == 1) {
+        al->derivs[1] = GSL_NAN;
+      } else {
+        al->derivs[1] = (e + (k * k - 1) * f -
+            (k * k * cos(phi) * sin(phi)) / sqrt(1 - gsl_pow_2(k * sin(phi)))) /
+            (k - gsl_pow_3(k));
+      }
+    }
     if (al->hes) {
       real coef = pow(2 - k * k + k * k * cos(2 * phi), 1.5);
       al->hes[0] = (k * k * sin(phi) * cos(phi)) /
           pow(1 - gsl_pow_2(k * sin(phi)), 1.5);
       al->hes[1] = (2 * M_SQRT2 * k * gsl_pow_2(sin(phi))) /
           pow(k * k * cos(2 * phi) - k * k + 2, 1.5);
-      al->hes[2] = -(-M_SQRT2 * (3 * k * k - 1) * coef * e -
-          M_SQRT2 * (1 - 3 * k * k + 2 * gsl_pow_4(k)) * coef * f +
-        4 * gsl_pow_4(k) * ((1 - 3 * k * k) * cos(phi) * gsl_pow_3(sin(phi)) +
-            sin(2 * phi))) / (M_SQRT2 * gsl_pow_2(k * (k * k - 1)) * coef);
+      if (k != 0) {
+        al->hes[2] = -(-M_SQRT2 * (3 * k * k - 1) * coef * e -
+            M_SQRT2 * (1 - 3 * k * k + 2 * gsl_pow_4(k)) * coef * f +
+          4 * gsl_pow_4(k) * ((1 - 3 * k * k) * cos(phi) * gsl_pow_3(sin(phi)) +
+              sin(2 * phi))) / (M_SQRT2 * gsl_pow_2(k * (k * k - 1)) * coef);
+      } else
+        al->hes[2] = 0.5 * (phi - cos(phi) * sin(phi));
     }
   }
-  return f;
+  return check_result(al, f, "gsl_sf_ellint_F");
 }
 
 void funcadd_ASL(AmplExports *ae) {
