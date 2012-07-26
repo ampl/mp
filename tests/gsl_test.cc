@@ -268,6 +268,13 @@ double Differentiator::operator()(
   const double SAFE = 3;
   double hh = 0.125, ans = GSL_NAN;
   at(0, 0) = d(f, x, hh);
+
+  // If at(0, 0) is NaN try reducing hh a couple of times.
+  for (unsigned i = 0; i < 10 && gsl_isnan(at(0, 0)); i++) {
+    hh /= CON;
+    at(0, 0) = d(f, x, hh);
+  }
+
   double err = std::numeric_limits<double>::max();
   for (unsigned i = 1; i < NTAB; i++) {
     // Try new, smaller step size.
