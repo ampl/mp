@@ -14,6 +14,8 @@
 using std::string;
 using std::vector;
 
+#undef DEBUG_DIFFERENTIATOR
+
 namespace {
 
 // An immutable tuple.
@@ -265,8 +267,8 @@ template <typename F, typename D>
 double Differentiator::operator()(
     F f, double x, D d, double *error, double *h) {
   const double CON = 1.4, CON2 = CON * CON;
-  const double SAFE = 3;
-  double hh = 0.125, ans = GSL_NAN;
+  double safe = 20;
+  double hh = 0.125, ans = GSL_NAN, diff = 0;
   at(0, 0) = d(f, x, hh);
 
   // If at(0, 0) is NaN try reducing hh a couple of times.
@@ -276,7 +278,8 @@ double Differentiator::operator()(
   }
 
   double err = std::numeric_limits<double>::max();
-  for (unsigned i = 1; i < NTAB; i++) {
+  unsigned i = 1;
+  for (; i < NTAB; i++, safe *= 0.95) {
     // Try new, smaller step size.
     hh /= CON;
     at(0, i) = d(f, x, hh);
@@ -296,11 +299,16 @@ double Differentiator::operator()(
         ans = at(j, i);
       }
     }
-    // If higher order is worse by a significant factor SAFE, then quit early.
-    double diff = fabs(at(i, i) - at(i - 1, i - 1));
-    if (diff >= SAFE * err || gsl_isnan(diff))
+    // If higher order is worse by a significant factor 'safe', then quit early.
+    diff = fabs(at(i, i) - at(i - 1, i - 1));
+    if (diff >= safe * err || gsl_isnan(diff))
       break;
   }
+
+#ifdef DEBUG_DIFFERENTIATOR
+  std::cout << "deriv=" << ans << " err=" << err << " iter=" << i
+      << " diff=" << diff << std::endl;
+#endif
 
   if (error)
     *error = err;
@@ -327,7 +335,8 @@ double Differentiator::Diff(F f, double x, double *error) {
     *error = right_error;
     return right_deriv;
   }
-  double left_deriv = diff(f, x, LeftDifference<F>);
+  double left_error = GSL_NAN;
+  double left_deriv = diff(f, x, LeftDifference<F>, &left_error);
   if (!(fabs(left_deriv - right_deriv) <= 1e-2)) {
     ++num_nans_;
     return GSL_NAN;
@@ -1243,24 +1252,12 @@ TEST_F(GSLTest, Dilog) {
   TEST_FUNC(sf_dilog);
 }
 
-struct EllIntFFunctionInfo : FunctionInfo {
-  string DerivativeError(const Function &f,
-      unsigned var_index, const Tuple &args) {
-    if (var_index == 1 && fabs(args[1]) == 1)
-      return EvalError(f, args, "'").c_str();
-    return "";
-  }
-};
-
 TEST_F(GSLTest, EllInt) {
   TEST_FUNC(sf_ellint_Kcomp);
   TEST_FUNC(sf_ellint_Ecomp);
   TEST_FUNC(sf_ellint_Pcomp);
-  {
-    EllIntFFunctionInfo info;
-    TEST_FUNC(sf_ellint_F);
-  }
-  //TEST_FUNC(sf_ellint_E);
+  TEST_FUNC(sf_ellint_F);
+  TEST_FUNC(sf_ellint_E);
   // TODO
 }
 }
