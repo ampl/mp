@@ -1332,21 +1332,47 @@ static real amplgsl_sf_ellint_F(arglist *al) {
       }
     }
     if (al->hes) {
-      real coef = pow(2 - k * k + k * k * cos(2 * phi), 1.5);
-      al->hes[0] = (k * k * sin(phi) * cos(phi)) /
+      real k2 = k * k;
+      al->hes[0] = (k2 * sin(phi) * cos(phi)) /
           pow(1 - gsl_pow_2(k * sin(phi)), 1.5);
-      al->hes[1] = (2 * M_SQRT2 * k * gsl_pow_2(sin(phi))) /
-          pow(k * k * cos(2 * phi) - k * k + 2, 1.5);
+      al->hes[1] = k * gsl_pow_2(sin(phi)) /
+          pow(1 - gsl_pow_2(k * sin(phi)), 1.5);
       if (k != 0) {
-        al->hes[2] = -(-M_SQRT2 * (3 * k * k - 1) * coef * e -
-            M_SQRT2 * (1 - 3 * k * k + 2 * gsl_pow_4(k)) * coef * f +
-          4 * gsl_pow_4(k) * ((1 - 3 * k * k) * cos(phi) * gsl_pow_3(sin(phi)) +
-              sin(2 * phi))) / (M_SQRT2 * gsl_pow_2(k * (k * k - 1)) * coef);
+        /* sub1 and sub2 are just common subexpressions */
+        real sub1 = 1 - 3 * k2;
+        real sub2 = M_SQRT2 * pow(2 - k2 + k2 * cos(2 * phi), 1.5);
+        al->hes[2] = -(sub1 * sub2 * e - (sub1 + 2 * gsl_pow_4(k)) * sub2 * f +
+          4 * gsl_pow_4(k) * (sub1 * cos(phi) * gsl_pow_3(sin(phi)) +
+              sin(2 * phi))) / (gsl_pow_2(k * (k2 - 1)) * sub2);
       } else
         al->hes[2] = 0.5 * (phi - cos(phi) * sin(phi));
     }
   }
   return check_result(al, f, "gsl_sf_ellint_F");
+}
+
+static real amplgsl_sf_ellint_E(arglist *al) {
+  real phi = al->ra[0], k = al->ra[1];
+  real e = gsl_sf_ellint_E(phi, k, GSL_PREC_DOUBLE);
+  if (al->derivs) {
+    real f = gsl_sf_ellint_F(phi, k, GSL_PREC_DOUBLE);
+    real d_phi = al->derivs[0] = sqrt(1 - gsl_pow_2(k * sin(phi)));
+    al->derivs[1] = k != 0 ? (e - f) / k : 0;
+    if (al->hes) {
+      real k2 = k * k;
+      al->hes[0] = -k2 * cos(phi) * sin(phi) / d_phi;
+      al->hes[1] = -k * gsl_pow_2(sin(phi)) / d_phi;
+      if (k == 0) {
+        al->hes[2] = -0.5 * phi + 0.25 * sin(2 * phi);
+      } else if (fabs(k) == 1) {
+        al->hes[2] = GSL_NAN;
+      } else {
+        al->hes[2] = ((k2 - 1) * sqrt(4 - 2 * k2 + 2 * k2 * cos(2 * phi)) * f +
+          2 * e * d_phi - k2 * sin(2 * phi)) / (2 * k2 * (k2 - 1) * d_phi);
+      }
+    }
+  }
+  return check_result(al, e, "gsl_sf_ellint_E");
 }
 
 void funcadd_ASL(AmplExports *ae) {
@@ -1523,9 +1549,9 @@ void funcadd_ASL(AmplExports *ae) {
       FUNCADD_REAL_VALUED, 2, 0);
 
   /* Legendre Form of Incomplete Elliptic Integrals */
-  addfunc("gsl_sf_ellint_F", amplgsl_sf_ellint_F,
-      FUNCADD_REAL_VALUED, 2, 0);
-  // TODO: gsl_sf_ellint_E, gsl_sf_ellint_P, gsl_sf_ellint_D
+  addfunc("gsl_sf_ellint_F", amplgsl_sf_ellint_F, FUNCADD_REAL_VALUED, 2, 0);
+  addfunc("gsl_sf_ellint_E", amplgsl_sf_ellint_E, FUNCADD_REAL_VALUED, 2, 0);
+  // TODO: gsl_sf_ellint_P, gsl_sf_ellint_D
 
   /* Carlson Forms */
   // TODO: gsl_sf_ellint_RC, gsl_sf_ellint_RD, gsl_sf_ellint_RF, gsl_sf_ellint_RJ

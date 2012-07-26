@@ -70,7 +70,7 @@ class Result {
 
   void CheckError() const {
     if (error_)
-      throw std::runtime_error("Accessing invalid result");
+      throw std::runtime_error(error_);
   }
 
  public:
@@ -201,7 +201,7 @@ class Differentiator {
 
   // Statistics.
   static unsigned num_calls_;
-  static unsigned num_infs_;
+  static unsigned num_nans_;
   static double min_error_;
   static double max_error_;
 
@@ -214,8 +214,8 @@ class Differentiator {
   struct StatsPrinter {
     ~StatsPrinter() {
       std::cout << "Called numerical differentiation "
-          << num_calls_ << " times with " << num_infs_ << " "
-          << (num_infs_ == 1 ? "infinity" : "infinities")
+          << num_calls_ << " times with " << num_nans_ << " "
+          << (num_nans_ == 1 ? "NaN" : "NaNs")
           << " detected" << std::endl;
       std::cout << "Error min=" << min_error_;
       std::cout << "  max=" << max_error_ << std::endl;
@@ -256,7 +256,7 @@ class Differentiator {
 };
 
 unsigned Differentiator::num_calls_;
-unsigned Differentiator::num_infs_;
+unsigned Differentiator::num_nans_;
 double Differentiator::min_error_ = std::numeric_limits<double>::max();
 double Differentiator::max_error_ = std::numeric_limits<double>::min();
 Differentiator::StatsPrinter Differentiator::stats_printer_;
@@ -265,7 +265,7 @@ template <typename F, typename D>
 double Differentiator::operator()(
     F f, double x, D d, double *error, double *h) {
   const double CON = 1.4, CON2 = CON * CON;
-  const double SAFE = 2;
+  const double SAFE = 3;
   double hh = 0.125, ans = GSL_NAN;
   at(0, 0) = d(f, x, hh);
   double err = std::numeric_limits<double>::max();
@@ -290,7 +290,8 @@ double Differentiator::operator()(
       }
     }
     // If higher order is worse by a significant factor SAFE, then quit early.
-    if (fabs(at(i, i) - at(i - 1, i - 1)) >= SAFE * err)
+    double diff = fabs(at(i, i) - at(i - 1, i - 1));
+    if (diff >= SAFE * err || gsl_isnan(diff))
       break;
   }
 
@@ -320,8 +321,10 @@ double Differentiator::Diff(F f, double x, double *error) {
     return right_deriv;
   }
   double left_deriv = diff(f, x, LeftDifference<F>);
-  if (!(fabs(left_deriv - right_deriv) <= 1e-2))
+  if (!(fabs(left_deriv - right_deriv) <= 1e-2)) {
+    ++num_nans_;
     return GSL_NAN;
+  }
   AddStats(deriv, *error);
   return deriv;
 }
@@ -406,6 +409,8 @@ bool CheckDerivative(F f, const Function &af,
   SCOPED_TRACE(os.str());
   if (var_index != 0 && !af.DerivativeError(0, args).empty())
     skip_var = 0;
+  else if (var_index != 1 && !af.DerivativeError(1, args).empty())
+    skip_var = 1;
   Dig dig(args, skip_var);
   double error = 0;
   double x = args[var_index];
@@ -911,6 +916,10 @@ TEST_F(GSLTest, FunctionReturnsHes) {
   EXPECT_TRUE(data.error == nullptr);
 }
 
+double ellint_E(double x) {
+  return gsl_sf_ellint_E(-1.23, x, GSL_PREC_DOUBLE);
+}
+
 TEST_F(GSLTest, Diff) {
   double error = GSL_NAN;
   EXPECT_NEAR(1, Diff(sin, 0, &error), 1e-7);
@@ -918,6 +927,7 @@ TEST_F(GSLTest, Diff) {
   EXPECT_NEAR(0.25, Diff(sqrt, 4), 1e-7);
   EXPECT_NEAR(0, Diff(std::bind2nd(std::ptr_fun(gsl_hypot), -5), 0), 1e-7);
   EXPECT_NEAR(1, Diff(gsl_log1p, 0), 1e-7);
+  EXPECT_NEAR(-0.817384, Diff(ellint_E, -1), 1e-6);
 }
 
 TEST_F(GSLTest, DiffPropagatesNaN) {
@@ -1226,10 +1236,24 @@ TEST_F(GSLTest, Dilog) {
   TEST_FUNC(sf_dilog);
 }
 
+struct EllIntFFunctionInfo : FunctionInfo {
+  string DerivativeError(const Function &f,
+      unsigned var_index, const Tuple &args) {
+    if (var_index == 1 && fabs(args[1]) == 1)
+      return EvalError(f, args, "'").c_str();
+    return "";
+  }
+};
+
 TEST_F(GSLTest, EllInt) {
-  // TODO
   TEST_FUNC(sf_ellint_Kcomp);
   TEST_FUNC(sf_ellint_Ecomp);
   TEST_FUNC(sf_ellint_Pcomp);
+  {
+    EllIntFFunctionInfo info;
+    TEST_FUNC(sf_ellint_F);
+  }
+  //TEST_FUNC(sf_ellint_E);
+  // TODO
 }
 }
