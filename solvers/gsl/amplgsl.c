@@ -1324,7 +1324,10 @@ static real amplgsl_sf_ellint_F(arglist *al) {
       if (k == 0) {
         al->derivs[1] = 0;
       } else if (fabs(k) == 1) {
-        al->derivs[1] = GSL_NAN;
+        real sec_phi = 1 / cos(phi);
+        al->derivs[1] = 0.5 * k * (atanh(sin(phi)) -
+           sec_phi * sec_phi * ((1 + cos(2 * phi)) * log(sec_phi + tan(phi)) -
+               sin(phi)));
       } else {
         al->derivs[1] = (e + (k * k - 1) * f -
             (k * k * cos(phi) * sin(phi)) / sqrt(1 - gsl_pow_2(k * sin(phi)))) /
@@ -1337,15 +1340,22 @@ static real amplgsl_sf_ellint_F(arglist *al) {
           pow(1 - gsl_pow_2(k * sin(phi)), 1.5);
       al->hes[1] = k * gsl_pow_2(sin(phi)) /
           pow(1 - gsl_pow_2(k * sin(phi)), 1.5);
-      if (k != 0) {
+      if (k == 0) {
+        al->hes[2] = 0.5 * (phi - cos(phi) * sin(phi));
+      } else if (fabs(k) == 1) {
+        real sec_phi = 1 / cos(phi);
+        al->hes[2] = sec_phi * sec_phi *
+            (atanh(sin(phi)) * (2 - 46 * cos(2 * phi)) +
+                8 * (1 + 7 * cos(2 * phi)) * log(sec_phi + tan(phi)) +
+                sec_phi * (-11 * sec_phi * sin(3 * phi) + 13 * tan(phi))) / 32;
+      } else {
         /* sub1 and sub2 are just common subexpressions */
         real sub1 = 1 - 3 * k2;
         real sub2 = M_SQRT2 * pow(2 - k2 + k2 * cos(2 * phi), 1.5);
         al->hes[2] = -(sub1 * sub2 * e - (sub1 + 2 * gsl_pow_4(k)) * sub2 * f +
           4 * gsl_pow_4(k) * (sub1 * cos(phi) * gsl_pow_3(sin(phi)) +
               sin(2 * phi))) / (gsl_pow_2(k * (k2 - 1)) * sub2);
-      } else
-        al->hes[2] = 0.5 * (phi - cos(phi) * sin(phi));
+      }
     }
   }
   return check_result(al, f, "gsl_sf_ellint_F");
@@ -1365,7 +1375,9 @@ static real amplgsl_sf_ellint_E(arglist *al) {
       if (k == 0) {
         al->hes[2] = -0.5 * phi + 0.25 * sin(2 * phi);
       } else if (fabs(k) == 1) {
-        al->hes[2] = GSL_NAN;
+        real sec_phi = 1 / cos(phi), tan_phi = tan(phi);
+        al->hes[2] = -0.5 * atanh(sin(phi)) + log(sec_phi + tan_phi) -
+            0.5 * sec_phi * tan_phi;
       } else {
         al->hes[2] = ((k2 - 1) * sqrt(4 - 2 * k2 + 2 * k2 * cos(2 * phi)) * f +
           2 * e * d_phi - k2 * sin(2 * phi)) / (2 * k2 * (k2 - 1) * d_phi);
