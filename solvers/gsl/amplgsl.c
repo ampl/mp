@@ -12,6 +12,8 @@
 
 enum { MAX_ERROR_MESSAGE_SIZE = 100 };
 
+static const char *const DERIVS_NOT_PROVIDED = "derivatives are not provided";
+
 /* Computes (x / fabs(x)) * y. Returns 0 if y is 0. */
 static double mul_by_sign(double x, double y) {
   return y != 0 ? (x / fabs(x)) * y : 0;
@@ -1099,7 +1101,7 @@ static real amplgsl_sf_hydrogenicR(arglist *al) {
   if (!check_int_arg(al, 0, "n") || !check_int_arg(al, 1, "l"))
     return 0;
   if (al->derivs) {
-    error(al, "derivative is not provided");
+    error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   return check_result(al, gsl_sf_hydrogenicR(
@@ -1109,7 +1111,7 @@ static real amplgsl_sf_hydrogenicR(arglist *al) {
 static real amplgsl_sf_coulomb_CL(arglist *al) {
   gsl_sf_result result = {0};
   if (al->derivs) {
-    error(al, "derivative is not provided");
+    error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
   if (gsl_sf_coulomb_CL_e(al->ra[0], al->ra[1], &result)) {
@@ -1387,6 +1389,66 @@ static real amplgsl_sf_ellint_E(arglist *al) {
   return check_result(al, e, "gsl_sf_ellint_E");
 }
 
+static real amplgsl_sf_ellint_P(arglist *al) {
+  real phi = al->ra[0], k = al->ra[1], n = al->ra[2];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_ellint_P(phi, k, n, GSL_PREC_DOUBLE),
+      "gsl_sf_ellint_P");
+}
+
+static real amplgsl_sf_ellint_D(arglist *al) {
+  real phi = al->ra[0], k = al->ra[1], n = al->ra[2];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_ellint_D(phi, k, n, GSL_PREC_DOUBLE),
+      "gsl_sf_ellint_D");
+}
+
+static real amplgsl_sf_ellint_RC(arglist *al) {
+  real x = al->ra[0], y = al->ra[1];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_ellint_RC(x, y, GSL_PREC_DOUBLE),
+      "gsl_sf_ellint_RC");
+}
+
+static real amplgsl_sf_ellint_RD(arglist *al) {
+  real x = al->ra[0], y = al->ra[1], z = al->ra[2];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_ellint_RD(x, y, z, GSL_PREC_DOUBLE),
+      "gsl_sf_ellint_RD");
+}
+
+static real amplgsl_sf_ellint_RF(arglist *al) {
+  real x = al->ra[0], y = al->ra[1], z = al->ra[2];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_ellint_RF(x, y, z, GSL_PREC_DOUBLE),
+      "gsl_sf_ellint_RF");
+}
+
+static real amplgsl_sf_ellint_RJ(arglist *al) {
+  real x = al->ra[0], y = al->ra[1], z = al->ra[2], p = al->ra[3];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_ellint_RJ(x, y, z, p, GSL_PREC_DOUBLE),
+      "gsl_sf_ellint_RJ");
+}
+
 void funcadd_ASL(AmplExports *ae) {
   /* Don't call abort on error. */
   gsl_set_error_handler_off();
@@ -1563,10 +1625,14 @@ void funcadd_ASL(AmplExports *ae) {
   /* Legendre Form of Incomplete Elliptic Integrals */
   addfunc("gsl_sf_ellint_F", amplgsl_sf_ellint_F, FUNCADD_REAL_VALUED, 2, 0);
   addfunc("gsl_sf_ellint_E", amplgsl_sf_ellint_E, FUNCADD_REAL_VALUED, 2, 0);
-  // TODO: gsl_sf_ellint_P, gsl_sf_ellint_D
+  addfunc("gsl_sf_ellint_P", amplgsl_sf_ellint_P, FUNCADD_REAL_VALUED, 3, 0);
+  addfunc("gsl_sf_ellint_D", amplgsl_sf_ellint_D, FUNCADD_REAL_VALUED, 3, 0);
 
   /* Carlson Forms */
-  // TODO: gsl_sf_ellint_RC, gsl_sf_ellint_RD, gsl_sf_ellint_RF, gsl_sf_ellint_RJ
+  addfunc("gsl_sf_ellint_RC", amplgsl_sf_ellint_RC, FUNCADD_REAL_VALUED, 2, 0);
+  addfunc("gsl_sf_ellint_RD", amplgsl_sf_ellint_RD, FUNCADD_REAL_VALUED, 3, 0);
+  addfunc("gsl_sf_ellint_RF", amplgsl_sf_ellint_RF, FUNCADD_REAL_VALUED, 3, 0);
+  addfunc("gsl_sf_ellint_RJ", amplgsl_sf_ellint_RJ, FUNCADD_REAL_VALUED, 4, 0);
 
   /* Elliptic Functions (Jacobi) */
   // TODO

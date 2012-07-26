@@ -517,10 +517,12 @@ void CheckSecondDerivatives(const Function &af,
       SCOPED_TRACE(os.str());
       if (gsl_isnan(d)) {
         Result r = af(args, HES, dig);
-        if (!af(args, DERIVS, dig).error())
-          EXPECT_ERROR(EvalError(af, args, "''"), r);
-        else
+        if (af(args, DERIVS, dig).error())
           EXPECT_TRUE(r.error() != nullptr);
+        else if (!error_message.empty())
+          EXPECT_ERROR(error_message.c_str(), r);
+        else
+          EXPECT_ERROR(EvalError(af, args, "''"), r);
         continue;
       }
       unsigned ii = i, jj = j;
@@ -1179,7 +1181,7 @@ TEST_F(GSLTest, Hydrogenic) {
           double z = POINTS[iz], r = POINTS[ir];
           Tuple args(n, el, z, r);
           CheckFunction(gsl_sf_hydrogenicR(n, el, z, r), f, args);
-          const char *error = "derivative is not provided";
+          const char *error = "derivatives are not provided";
           EXPECT_ERROR(error, f(args, DERIVS));
           EXPECT_ERROR(error, f(args, HES));
         }
@@ -1197,7 +1199,7 @@ TEST_F(GSLTest, Coulomb) {
       gsl_sf_result result = {};
       double value = gsl_sf_coulomb_CL_e(x, y, &result) ? GSL_NAN : result.val;
       CheckFunction(value, f, args);
-      const char *error = "derivative is not provided";
+      const char *error = "derivatives are not provided";
       EXPECT_ERROR(error, f(args, DERIVS));
       EXPECT_ERROR(error, f(args, HES));
     }
@@ -1282,13 +1284,41 @@ TEST_F(GSLTest, Dilog) {
   TEST_FUNC(sf_dilog);
 }
 
+struct NoDerivativeInfo : FunctionInfo {
+  virtual string DerivativeError(const Function &, unsigned, const Tuple &) {
+    return "derivatives are not provided";
+  }
+};
+
 TEST_F(GSLTest, EllInt) {
   TEST_FUNC(sf_ellint_Kcomp);
   TEST_FUNC(sf_ellint_Ecomp);
   TEST_FUNC(sf_ellint_Pcomp);
   TEST_FUNC(sf_ellint_F);
   TEST_FUNC(sf_ellint_E);
-  //TEST_FUNC(sf_ellint_P);
-  // TODO
+  {
+    NoDerivativeInfo info;
+    TEST_FUNC(sf_ellint_P);
+    TEST_FUNC(sf_ellint_D);
+    TEST_FUNC(sf_ellint_RC);
+    TEST_FUNC(sf_ellint_RD);
+    TEST_FUNC(sf_ellint_RF);
+  }
+  Function f = GetFunction("gsl_sf_ellint_RJ");
+  for (size_t ix = 0; ix != NUM_POINTS; ++ix) {
+    for (size_t iy = 0; iy != NUM_POINTS; ++iy) {
+      for (size_t iz = 0; iz != NUM_POINTS; ++iz) {
+        for (size_t ip = 0; ip != NUM_POINTS; ++ip) {
+          double x = POINTS[ix], y = POINTS[iy];
+          double z = POINTS[iz], p = POINTS[ip];
+          Tuple args(x, y, z, p);
+          CheckFunction(gsl_sf_ellint_RJ(x, y, z, p, GSL_PREC_DOUBLE), f, args);
+          const char *error = "derivatives are not provided";
+          EXPECT_ERROR(error, f(args, DERIVS));
+          EXPECT_ERROR(error, f(args, HES));
+        }
+      }
+    }
+  }
 }
 }
