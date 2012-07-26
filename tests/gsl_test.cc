@@ -534,6 +534,7 @@ void CheckSecondDerivatives(const Function &af,
 
 typedef double (*FuncU)(unsigned);
 typedef double (*Func3)(double, double, double);
+typedef double (*Func3Mode)(double, double, double, gsl_mode_t);
 typedef double (*FuncBesselN)(int, double);
 
 const double POINTS[] = {-5, -1.23, -1, 0, 1, 1.23, 5};
@@ -619,7 +620,28 @@ class GSLTest : public ::testing::Test {
     TestBinaryFunc(af, Func2DoubleMode(f));
   }
 
-  void TestFunc(const Function &af, Func3 f);
+  // Binds the mode argument of Func2Mode to GSL_PREC_DOUBLE.
+  class Func3DoubleMode {
+   private:
+    Func3Mode f_;
+
+   public:
+    Func3DoubleMode(Func3Mode f) : f_(f) {}
+
+    double operator()(double x, double y, double z) const {
+      return f_(x, y, z, GSL_PREC_DOUBLE);
+    }
+  };
+
+  template <typename F>
+  void TestTernaryFunc(const Function &af, F f);
+
+  void TestFunc(const Function &af, Func3 f) {
+    TestTernaryFunc(af, f);
+  }
+  void TestFunc(const Function &af, Func3Mode f) {
+    TestTernaryFunc(af, Func3DoubleMode(f));
+  }
 };
 
 template <typename F>
@@ -719,15 +741,16 @@ void GSLTest::TestBinaryFunc(const Function &af, F f) {
 }
 
 // Binds 2 arguments out of 3.
-class Bind2Of3 {
+template <typename F>
+class Binder2Of3 {
  private:
-  Func3 f_;
+  F f_;
   unsigned unbound_arg_index_;
   double arg1_;
   double arg2_;
 
  public:
-  Bind2Of3(Func3 f, unsigned unbound_arg_index, double arg1, double arg2)
+  Binder2Of3(F f, unsigned unbound_arg_index, double arg1, double arg2)
   : f_(f), unbound_arg_index_(unbound_arg_index), arg1_(arg1), arg2_(arg2) {
     if (unbound_arg_index > 2)
       throw std::out_of_range("argument index is out of range");
@@ -746,7 +769,14 @@ class Bind2Of3 {
   }
 };
 
-void GSLTest::TestFunc(const Function &af, Func3 f) {
+template <typename F>
+Binder2Of3<F> Bind2Of3(F f,
+    unsigned unbound_arg_index, double arg1, double arg2) {
+  return Binder2Of3<F>(f, unbound_arg_index, arg1, arg2);
+}
+
+template <typename F>
+void GSLTest::TestTernaryFunc(const Function &af, F f) {
   for (size_t i = 0; i != NUM_POINTS; ++i) {
     for (size_t j = 0; j != NUM_POINTS; ++j) {
       for (size_t k = 0; k != NUM_POINTS; ++k) {
@@ -1258,6 +1288,7 @@ TEST_F(GSLTest, EllInt) {
   TEST_FUNC(sf_ellint_Pcomp);
   TEST_FUNC(sf_ellint_F);
   TEST_FUNC(sf_ellint_E);
+  //TEST_FUNC(sf_ellint_P);
   // TODO
 }
 }
