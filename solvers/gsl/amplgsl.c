@@ -1449,6 +1449,71 @@ static real amplgsl_sf_ellint_RJ(arglist *al) {
       "gsl_sf_ellint_RJ");
 }
 
+static real amplgsl_sf_erf(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = 2 * exp(-x * x) / sqrt(M_PI);
+    if (al->hes)
+      *al->hes = -2 * x * *al->derivs;
+  }
+  return check_result(al, gsl_sf_erf(x), "gsl_sf_erf");
+}
+
+static real amplgsl_sf_erfc(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = -2 * exp(-x * x) / sqrt(M_PI);
+    if (al->hes)
+      *al->hes = -2 * x * *al->derivs;
+  }
+  return check_result(al, gsl_sf_erfc(x), "gsl_sf_erfc");
+}
+
+static real amplgsl_sf_log_erfc(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    real erfc = gsl_sf_erfc(x);
+    *al->derivs = -2 * exp(-x * x) / (sqrt(M_PI) * erfc);
+    if (al->hes) {
+      *al->hes = -2 * x * *al->derivs -
+          ((4 * exp(-2 * x * x)) / (M_PI * erfc * erfc));
+    }
+  }
+  return check_result(al, gsl_sf_log_erfc(x), "gsl_sf_log_erfc");
+}
+
+static real amplgsl_sf_erf_Z(arglist *al) {
+  real x = al->ra[0];
+  real z = gsl_sf_erf_Z(x);
+  if (al->derivs) {
+    *al->derivs = -x * z;
+    if (al->hes)
+      *al->hes = -(z + x * *al->derivs);
+  }
+  return check_result(al, z, "gsl_sf_erf_Z");
+}
+
+static real amplgsl_sf_erf_Q(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    real deriv = *al->derivs = -gsl_sf_erf_Z(x);
+    if (al->hes)
+      *al->hes = -x * deriv;
+  }
+  return check_result(al, gsl_sf_erf_Q(x), "gsl_sf_erf_Q");
+}
+
+static real amplgsl_sf_hazard(arglist *al) {
+  real x = al->ra[0];
+  real hazard = gsl_sf_hazard(x);
+  if (al->derivs) {
+    *al->derivs = (hazard - x) * hazard;
+    if (al->hes)
+      *al->hes = hazard * (hazard * (2 * hazard - 3 * x) + (x * x - 1));
+  }
+  return check_result(al, hazard, "gsl_sf_hazard");
+}
+
 void funcadd_ASL(AmplExports *ae) {
   /* Don't call abort on error. */
   gsl_set_error_handler_off();
@@ -1635,14 +1700,16 @@ void funcadd_ASL(AmplExports *ae) {
   addfunc("gsl_sf_ellint_RJ", amplgsl_sf_ellint_RJ, FUNCADD_REAL_VALUED, 4, 0);
 
   /* Elliptic Functions (Jacobi) */
-  // TODO
+  /* Wrapper for gsl_sf_elljac_e is not provided since the latter produces
+     multiple values (through output parameters). */
 
   /* Error Functions */
-  // TODO
+  addfunc("gsl_sf_erf", amplgsl_sf_erf, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_erfc", amplgsl_sf_erfc, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_log_erfc", amplgsl_sf_log_erfc, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_erf_Z", amplgsl_sf_erf_Z, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_erf_Q", amplgsl_sf_erf_Q, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_hazard", amplgsl_sf_hazard, FUNCADD_REAL_VALUED, 1, 0);
 
-  /* Complementary Error Function */
-  // TODO
-
-  /* Log Complementary Error Function */
   // TODO
 }

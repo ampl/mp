@@ -1321,4 +1321,13 @@ TEST_F(GSLTest, EllInt) {
     }
   }
 }
+
+TEST_F(GSLTest, Erf) {
+  TEST_FUNC(sf_erf);
+  TEST_FUNC(sf_erfc);
+  TEST_FUNC(sf_log_erfc);
+  TEST_FUNC(sf_erf_Z);
+  TEST_FUNC(sf_erf_Q);
+  TEST_FUNC(sf_hazard);
+}
 }
