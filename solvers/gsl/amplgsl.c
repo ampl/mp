@@ -1514,6 +1514,48 @@ static real amplgsl_sf_hazard(arglist *al) {
   return check_result(al, hazard, "gsl_sf_hazard");
 }
 
+static real amplgsl_sf_expint_E1(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = -exp(-x) / x;
+    if (al->hes)
+      *al->hes = -*al->derivs * (1 / x + 1);
+  }
+  return check_result(al, gsl_sf_expint_E1(x), "gsl_sf_expint_E1");
+}
+
+static real amplgsl_sf_expint_E2(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = -gsl_sf_expint_E1(x);
+    if (al->hes)
+      *al->hes = exp(-x) / x;
+  }
+  return check_result(al, gsl_sf_expint_E2(x), "gsl_sf_expint_E2");
+}
+
+static real amplgsl_sf_expint_En(arglist *al) {
+  int n = (int)al->ra[0];
+  real x = al->ra[1];
+  if (!check_int_arg(al, 0, "n"))
+    return 0;
+  if (al->derivs) {
+    if (!check_const_arg(al, "n"))
+      return 0;
+    al->derivs[1] = n != 0 ?
+        -gsl_sf_expint_En(n - 1, x) : -exp(-x) * (1 / x + 1) / x;
+    if (al->hes) {
+      if (n == 0)
+        al->hes[2] = exp(-x) * (1 + 2 * (1 + 1 / x) / x) / x;
+      else if (n == 1)
+        al->hes[2] = exp(-x) * (1 / x + 1) / x;
+      else
+        al->hes[2] = gsl_sf_expint_En(n - 2, x);
+    }
+  }
+  return check_result(al, gsl_sf_expint_En(n, x), "gsl_sf_expint_En");
+}
+
 void funcadd_ASL(AmplExports *ae) {
   /* Don't call abort on error. */
   gsl_set_error_handler_off();
@@ -1711,5 +1753,12 @@ void funcadd_ASL(AmplExports *ae) {
   addfunc("gsl_sf_erf_Q", amplgsl_sf_erf_Q, FUNCADD_REAL_VALUED, 1, 0);
   addfunc("gsl_sf_hazard", amplgsl_sf_hazard, FUNCADD_REAL_VALUED, 1, 0);
 
+  /* Exponential Integrals */
+  addfunc("gsl_sf_expint_E1", amplgsl_sf_expint_E1, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_expint_E2", amplgsl_sf_expint_E2, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_expint_En", amplgsl_sf_expint_En, FUNCADD_REAL_VALUED, 2, 0);
+  // TODO
+
+  /* Fermi-Dirac Function */
   // TODO
 }

@@ -537,7 +537,7 @@ void CheckSecondDerivatives(const Function &af,
 typedef double (*FuncU)(unsigned);
 typedef double (*Func3)(double, double, double);
 typedef double (*Func3Mode)(double, double, double, gsl_mode_t);
-typedef double (*FuncBesselN)(int, double);
+typedef double (*FuncND)(int, double);
 
 const double POINTS[] = {-5, -1.23, -1, 0, 1, 1.23, 5};
 const size_t NUM_POINTS = sizeof(POINTS) / sizeof(*POINTS);
@@ -589,11 +589,11 @@ class GSLTest : public ::testing::Test {
     }
   }
 
-  // Tests a Bessel function.
+  // Tests a function taking an integer and a double parameter.
   // test_x is a value of x where the function can be computed for very large
   // and very small n. If there is no such x or it is not known, then test_x
   // should be GSL_NAN.
-  void TestBesselN(const Function &af, FuncBesselN f,
+  void TestFuncND(const Function &af, FuncND f,
       double test_x, const string &arg_name);
 
   template <typename F>
@@ -678,7 +678,7 @@ void GSLTest::TestZeroFunc(const Function &af,
   }
 }
 
-void GSLTest::TestBesselN(const Function &af, FuncBesselN f,
+void GSLTest::TestFuncND(const Function &af, FuncND f,
     double test_x, const string &arg_name) {
   for (size_t i = 0; i != NUM_POINTS_FOR_N; ++i) {
     int n = POINTS_FOR_N[i];
@@ -796,8 +796,8 @@ void GSLTest::TestTernaryFunc(const Function &af, F f) {
 
 #define TEST_FUNC(name) TestFunc(GetFunction("gsl_" #name, &info), gsl_##name)
 
-#define TEST_BESSEL_N(name, test_x, arg) \
-  TestBesselN(GetFunction("gsl_" #name, &info), gsl_##name, test_x, #arg)
+#define TEST_FUNC_ND(name, test_x, arg) \
+  TestFuncND(GetFunction("gsl_" #name, &info), gsl_##name, test_x, #arg)
 
 TEST_F(GSLTest, Tuple) {
   static const real ARGS[] = {5, 7, 11, 13, 17, 19, 23, 29, 31};
@@ -1050,59 +1050,59 @@ TEST_F(GSLTest, AiryZero) {
 TEST_F(GSLTest, BesselJ) {
   TEST_FUNC(sf_bessel_J0);
   TEST_FUNC(sf_bessel_J1);
-  TEST_BESSEL_N(sf_bessel_Jn, 0, n);
+  TEST_FUNC_ND(sf_bessel_Jn, 0, n);
 }
 
 TEST_F(GSLTest, BesselY) {
   TEST_FUNC(sf_bessel_Y0);
   TEST_FUNC(sf_bessel_Y1);
-  TEST_BESSEL_N(sf_bessel_Yn, 1, n);
+  TEST_FUNC_ND(sf_bessel_Yn, 1, n);
 }
 
 TEST_F(GSLTest, BesselI) {
   TEST_FUNC(sf_bessel_I0);
   TEST_FUNC(sf_bessel_I1);
-  TEST_BESSEL_N(sf_bessel_In, 0, n);
+  TEST_FUNC_ND(sf_bessel_In, 0, n);
   TEST_FUNC(sf_bessel_I0_scaled);
   TEST_FUNC(sf_bessel_I1_scaled);
-  TEST_BESSEL_N(sf_bessel_In_scaled, 0, n);
+  TEST_FUNC_ND(sf_bessel_In_scaled, 0, n);
 }
 
 TEST_F(GSLTest, BesselK) {
   TEST_FUNC(sf_bessel_K0);
   TEST_FUNC(sf_bessel_K1);
-  TEST_BESSEL_N(sf_bessel_Kn, 1, n);
+  TEST_FUNC_ND(sf_bessel_Kn, 1, n);
   TEST_FUNC(sf_bessel_K0_scaled);
   TEST_FUNC(sf_bessel_K1_scaled);
-  TEST_BESSEL_N(sf_bessel_Kn_scaled, 1, n);
+  TEST_FUNC_ND(sf_bessel_Kn_scaled, 1, n);
 }
 
 TEST_F(GSLTest, Besselj) {
   TEST_FUNC(sf_bessel_j0);
   TEST_FUNC(sf_bessel_j1);
   TEST_FUNC(sf_bessel_j2);
-  TEST_BESSEL_N(sf_bessel_jl, GSL_NAN, l);
+  TEST_FUNC_ND(sf_bessel_jl, GSL_NAN, l);
 }
 
 TEST_F(GSLTest, Bessely) {
   TEST_FUNC(sf_bessel_y0);
   TEST_FUNC(sf_bessel_y1);
   TEST_FUNC(sf_bessel_y2);
-  TEST_BESSEL_N(sf_bessel_yl, GSL_NAN, l);
+  TEST_FUNC_ND(sf_bessel_yl, GSL_NAN, l);
 }
 
 TEST_F(GSLTest, Besseli) {
   TEST_FUNC(sf_bessel_i0_scaled);
   TEST_FUNC(sf_bessel_i1_scaled);
   TEST_FUNC(sf_bessel_i2_scaled);
-  TEST_BESSEL_N(sf_bessel_il_scaled, GSL_NAN, l);
+  TEST_FUNC_ND(sf_bessel_il_scaled, GSL_NAN, l);
 }
 
 TEST_F(GSLTest, Besselk) {
   TEST_FUNC(sf_bessel_k0_scaled);
   TEST_FUNC(sf_bessel_k1_scaled);
   TEST_FUNC(sf_bessel_k2_scaled);
-  TEST_BESSEL_N(sf_bessel_kl_scaled, GSL_NAN, l);
+  TEST_FUNC_ND(sf_bessel_kl_scaled, GSL_NAN, l);
 }
 
 struct BesselFractionalOrderInfo : FunctionInfo {
@@ -1329,5 +1329,12 @@ TEST_F(GSLTest, Erf) {
   TEST_FUNC(sf_erf_Z);
   TEST_FUNC(sf_erf_Q);
   TEST_FUNC(sf_hazard);
+}
+
+TEST_F(GSLTest, ExpInt) {
+  TEST_FUNC(sf_expint_E1);
+  TEST_FUNC(sf_expint_E2);
+  TEST_FUNC_ND(sf_expint_En, GSL_NAN, n);
+  // TODO
 }
 }
