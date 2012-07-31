@@ -1335,6 +1335,12 @@ TEST_F(GSLTest, ExpInt) {
   TEST_FUNC(sf_expint_E1);
   TEST_FUNC(sf_expint_E2);
   TEST_FUNC_ND(sf_expint_En, GSL_NAN, n);
-  // TODO
+  TEST_FUNC(sf_expint_Ei);
+  TEST_FUNC(sf_Shi);
+  TEST_FUNC(sf_Chi);
+  TEST_FUNC(sf_expint_3);
+  TEST_FUNC(sf_Si);
+  TEST_FUNC(sf_Ci);
+  TEST_FUNC(sf_atanint);
 }
 }

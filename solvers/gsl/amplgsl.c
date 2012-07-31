@@ -1556,6 +1556,76 @@ static real amplgsl_sf_expint_En(arglist *al) {
   return check_result(al, gsl_sf_expint_En(n, x), "gsl_sf_expint_En");
 }
 
+static real amplgsl_sf_expint_Ei(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = exp(x) / x;
+    if (al->hes)
+      *al->hes = *al->derivs * (1 - 1 / x);
+  }
+  return check_result(al, gsl_sf_expint_Ei(x), "gsl_sf_expint_Ei");
+}
+
+static real amplgsl_sf_Shi(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = x != 0 ? sinh(x) / x : 1;
+    if (al->hes)
+      *al->hes = x != 0 ? (cosh(x) - *al->derivs) / x : 0;
+  }
+  return check_result(al, gsl_sf_Shi(x), "gsl_sf_Shi");
+}
+
+static real amplgsl_sf_Chi(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = cosh(x) / x;
+    if (al->hes)
+      *al->hes = (sinh(x) - *al->derivs) / x;
+  }
+  return check_result(al, gsl_sf_Chi(x), "gsl_sf_Chi");
+}
+
+static real amplgsl_sf_expint_3(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = exp(-gsl_pow_3(x));
+    if (al->hes)
+      *al->hes = -3 * x * x * *al->derivs;
+  }
+  return check_result(al, gsl_sf_expint_3(x), "gsl_sf_expint_3");
+}
+
+static real amplgsl_sf_Si(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = x != 0 ? sin(x) / x : 1;
+    if (al->hes)
+      *al->hes = x != 0 ? (cos(x) - *al->derivs) / x : 0;
+  }
+  return check_result(al, gsl_sf_Si(x), "gsl_sf_Si");
+}
+
+static real amplgsl_sf_Ci(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = cos(x) / x;
+    if (al->hes)
+      *al->hes = -(sin(x) + *al->derivs) / x;
+  }
+  return check_result(al, gsl_sf_Ci(x), "gsl_sf_Ci");
+}
+
+static real amplgsl_sf_atanint(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = x != 0 ? atan(x) / x : 1;
+    if (al->hes)
+      *al->hes = x != 0 ? (1 / (x * x + 1) - *al->derivs) / x : 0;
+  }
+  return check_result(al, gsl_sf_atanint(x), "gsl_sf_atanint");
+}
+
 void funcadd_ASL(AmplExports *ae) {
   /* Don't call abort on error. */
   gsl_set_error_handler_off();
@@ -1757,7 +1827,13 @@ void funcadd_ASL(AmplExports *ae) {
   addfunc("gsl_sf_expint_E1", amplgsl_sf_expint_E1, FUNCADD_REAL_VALUED, 1, 0);
   addfunc("gsl_sf_expint_E2", amplgsl_sf_expint_E2, FUNCADD_REAL_VALUED, 1, 0);
   addfunc("gsl_sf_expint_En", amplgsl_sf_expint_En, FUNCADD_REAL_VALUED, 2, 0);
-  // TODO
+  addfunc("gsl_sf_expint_Ei", amplgsl_sf_expint_Ei, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_Shi", amplgsl_sf_Shi, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_Chi", amplgsl_sf_Chi, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_expint_3", amplgsl_sf_expint_3, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_Si", amplgsl_sf_Si, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_Ci", amplgsl_sf_Ci, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_atanint", amplgsl_sf_atanint, FUNCADD_REAL_VALUED, 1, 0);
 
   /* Fermi-Dirac Function */
   // TODO
