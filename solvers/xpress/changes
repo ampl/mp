@@ -43,3 +43,8 @@ to XPRESS.  Hitherto a starting guess was ignored; now the
 default is to use it, but specifying mipstartvalue=0 will cause
 it not to be used.  Also arrange for "xpress -v" to report the
 version of XPRESS being used.
+
+20120731
+ xpress.c: updates for XPRESS 23:  new keywords cpuplatform,
+preduprow, presolvemaxgrow, symmetry.  The updated driver still
+works with XPRESS 22.
