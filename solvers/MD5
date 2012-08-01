@@ -145,9 +145,9 @@ NfE/nd+ZeGE=
 -----END PGP SIGNATURE-----
 -----BEGIN PGP SIGNED MESSAGE-----
 
-# netlib-utk master Tue Jun 26 03:10:02 EDT 2012
-URQEggZsdZxej8m0CLEgyw	00lastchange
-E990S8JArV+yhIJ7us6tVg	README
+# netlib-utk master Sat Jul 14 03:10:02 EDT 2012
+Nzy0vPw31vQPJwqy4tcFMQ	00lastchange
+liuYYMQudXHqZpEKRGHQSg	README
 qOEvOeNxr+tkYXE2CClZWw	README.SGI
 hP/T3OfgkqAwrLqbG8BqQw	README.f77
 Z9kYUmh3xzstIZTm4JICEg	README.suf
@@ -167,7 +167,7 @@ TiTwOwAKkrb9rFuWZPf82A	avltree.h
 Lg714wh1GAnDfWqStFsPbQ	b_search.c
 JX+T6A1nVtQxlH2/gHjQ7w	basename.c
 B9aysZxnc2iCJEcny28lrA	bscanf.c
-8YzAKRfxuGU1rKQ6uTAJjA	changes
+RSduhnY3iBQemOPhO/ETSA	changes
 iaV5+h9JhXta8i63eG8/QA	com2eval.c
 ViDtWeMTFSx1mxx/G621+Q	comeval.c
 f3BjU/9mf3+4mq1Q2h6CAw	comptry.bat
@@ -228,7 +228,7 @@ nbK9H54MJOD72gdeZw/yTg	mainexit.c
 5qYaGDdbn7nPg5Sm80vBpg	makefile.lc
 kdr3yt+cFLFsn+LY/zUZYA	makefile.sy
 xtdIcVe+mp8CaxVJ7cgpEA	makefile.u
-6JWpTc3EQEzJliux5G5yqQ	makefile.vc
+1RwT+aNF+h9HAY0ew4RkKA	makefile.vc
 KP+uMSpRR1zJMzNVEO9oFw	makefile.wat
 hry2XHmn5STIb8L7RESQTQ	mip_pri.c
 H4FRsZrNh+mI+nDSO56L+w	misc.c
@@ -290,14 +290,14 @@ fKP4V5GxuMz8ZZhUUZbTxw	x2check.c
 iOcxB/spcU8eiXLk2O9qkA	xectim.c
 j5NdrTSBkS5pnfDyKD0Ezg	xp1known.c
 FAbm67iDBwtMlNOTy8jXHw	xp2known.c
-/vhktWQeShFt8DF5xig/5A	xsum0.out
+0bu0nkYhziN+pmmHguujQg	xsum0.out
 
 -----BEGIN PGP SIGNATURE-----
 Version: 2.6.2
 
-iQCVAwUBT+lgaeFlxDEfrjtlAQEMpQQAlJULPx4RImTrEBXOLTrLfRhv7ZUx8g6I
-wx+2kbz4tUp7fr7sTIsm0UKuufNM6uEF/WyDURCBm/vtcAtXIQ4Vd3R44Pv7zv3F
-h6oniZRYXDPq/fjg6rQ2uNH6At74xOxW8pHdfNBVTFegQPUvJVHzjnlSgypH3gBV
-tUgjFZ5Jjdw=
-=kyyG
+iQCVAwUBUAEbZuFlxDEfrjtlAQH7tQP9E1QRR1oBrMbViaDWgCEmTQ0jT/+ZCwis
+cEVFAIQmk3yT9OdkPlKSz1ybtyzROxKAcPtGSVggDX+iwcNsBh0+JzUri4+CQuKb
+LZqYlbIlGouBexTAe+ykrposYSzVwZqRb4MQlpgpFF/Zp1BhV2DfK0u+LmT3vq9q
+s/UJQ5H2VpQ=
+=ST9n
 -----END PGP SIGNATURE-----

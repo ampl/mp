@@ -27,7 +27,8 @@
 # Invoke with "nmake -f makefile.vc" .
 
 CC = cl
-CFLAGS = -nologo -Ot1 -MT
+RUNTIME = -MT
+CFLAGS = -nologo -Ot1 $(RUNTIME)
 # For DEC Alpha processors, use
 # CFLAGS = -nologo -QAieee -Ot1 -DNo_Control87
 # The math libraries associated with some (older?) versions of VC++
