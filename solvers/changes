@@ -2046,3 +2046,20 @@ binary) variables.
 usage information is written) that does not exit.  This alternate
 routine may be withdrawn if it we do not see convincing examples of
 its utility.
+
+20120703
+  README:  adjust to reflect that the tar service of netlib.sandia.gov
+is no longer available by clicking on "(tar").  URLs of the form
+
+	ftp://www.netlib.org/ampl/solvers.tar.gz
+
+still work (to get ampl/solvers and all its subdirectories at once),
+as do suitable "send all" requests to netlib@netlib.org.
+
+20120712
+  README:  adjust to reflect that URL
+http://netlib.sandia.gov/cgi-bin/netlib/netlibfiles.tar?filename=netlib/ampl/solvers
+still works.
+  makefile.vc:  tweak to allow invocations of the form
+	nmake RUNTIME=...
+(with makefile copied from makefile.vc) to replace "-MT" with ... .
