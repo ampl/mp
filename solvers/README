@@ -51,27 +51,32 @@ to compile amplsolver.a
 
 
 To get all the source files for amplsolver.a by E-mail, send netlib
-(e.g., netlib@netlib.org) the request
+(e.g., netlib@netlib.org) the one-line message
 
 	send all from ampl/solvers
 
-You can also get a tar file of ampl/solvers and all its subdirectories
-with a web browser, by clicking on "tar" in the line "lib: models (tar)" in
+(This one line, not indented, should be the entire body of the
+message; do not provide a "Subject:" line.)
 
-	http://netlib.sandia.gov/ampl/
+You can also get a gzipped tar file of ampl/solvers and all its
+subdirectories from URL
 
-The file you download will be called netlibfiles.tar; executing
+	ftp://www.netlib.org/ampl/solvers.tar.gz
+
+Executing
+
+	gzip -dc solvers.tar.gz | tar xf -
+
+will give you directory solvers and various subdirectories.
+Alternatively, you can get a tar file (called netlibfiles.tar) from URL
+
+	http://netlib.sandia.gov/cgi-bin/netlib/netlibfiles.tar?filename=netlib/ampl/solvers
+
+Executing
 
 	tar xf netlibfiles.tar
 
-will give you directory ampl/solvers containing gzipped files and
-subdirectories; the next step will be
-
-	cd ampl/solvers
-	gzip -dN *.gz
-
-to uncompress the .gz files.  (Do this also in any subdirectories
-of interest.)
+will likewise give you directory solvers and various subdirectories.
 
 Beware that some older versions of Netscape and Internet Explorer
 mishandle "http:" URLs that end in ".gz".

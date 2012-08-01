@@ -1,6 +1,8 @@
 F README
-F changes
-F lpsolve.c
+F lpsolve4.c
+F lpsolve5.c
+F lpsolve5_date.h
 F makefile.u
 F makefile.vc
-F xsum0.out
+F makefile4.u
+F makefile4.vc
