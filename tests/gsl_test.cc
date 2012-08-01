@@ -1372,10 +1372,17 @@ TEST_F(GSLTest, FermiDirac) {
   TEST_FUNC(sf_fermi_dirac_inc_0);
 }
 
-TEST_F(GSLTest, GammaBeta) {
+TEST_F(GSLTest, Gamma) {
   TEST_FUNC(sf_gamma);
   TEST_FUNC(sf_lngamma);
   TEST_FUNC(sf_gammastar);
   TEST_FUNC(sf_gammainv);
+}
+
+TEST_F(GSLTest, Poch) {
+  NoDerivativeInfo info;
+  TEST_FUNC(sf_poch);
+  TEST_FUNC(sf_lnpoch);
+  TEST_FUNC(sf_pochrel);
 }
 }

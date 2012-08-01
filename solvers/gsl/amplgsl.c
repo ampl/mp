@@ -1776,6 +1776,33 @@ static real amplgsl_sf_gammainv(arglist *al) {
   return check_result(al, gammainv, "gsl_sf_gammainv");
 }
 
+static real amplgsl_sf_poch(arglist *al) {
+  real a = al->ra[0], x = al->ra[1];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_poch(a, x), "gsl_sf_poch");
+}
+
+static real amplgsl_sf_lnpoch(arglist *al) {
+  real a = al->ra[0], x = al->ra[1];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_lnpoch(a, x), "gsl_sf_lnpoch");
+}
+
+static real amplgsl_sf_pochrel(arglist *al) {
+  real a = al->ra[0], x = al->ra[1];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_pochrel(a, x), "gsl_sf_pochrel");
+}
+
 void funcadd_ASL(AmplExports *ae) {
   /* Don't call abort on error. */
   gsl_set_error_handler_off();
@@ -2005,10 +2032,20 @@ void funcadd_ASL(AmplExports *ae) {
   addfunc("gsl_sf_fermi_dirac_inc_0", amplgsl_sf_fermi_dirac_inc_0,
       FUNCADD_REAL_VALUED, 2, 0);
 
-  /* Gamma and Beta Functions */
+  /* Gamma Functions */
   addfunc("gsl_sf_gamma", amplgsl_sf_gamma, FUNCADD_REAL_VALUED, 1, 0);
   addfunc("gsl_sf_lngamma", amplgsl_sf_lngamma, FUNCADD_REAL_VALUED, 1, 0);
   addfunc("gsl_sf_gammastar", amplgsl_sf_gammastar, FUNCADD_REAL_VALUED, 1, 0);
   addfunc("gsl_sf_gammainv", amplgsl_sf_gammainv, FUNCADD_REAL_VALUED, 1, 0);
+
+  /* Wrapper for factorials are not provided since these are easily
+     implemented using built-in AMPL features like the prod operator. */
+
+  /* Pochhammer Symbol */
+  addfunc("gsl_sf_poch", amplgsl_sf_poch, FUNCADD_REAL_VALUED, 2, 0);
+  addfunc("gsl_sf_lnpoch", amplgsl_sf_lnpoch, FUNCADD_REAL_VALUED, 2, 0);
+  addfunc("gsl_sf_pochrel", amplgsl_sf_pochrel, FUNCADD_REAL_VALUED, 2, 0);
+
+  /* Incomplete Gamma Functions */
   // TODO
 }
