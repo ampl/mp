@@ -287,6 +287,14 @@ static char
 	covercuts_desc[]	=
 		"for MIPS, the number of rounds of lifted-cover inequalities\n\
 			at the top node (default = -1 = automatic choice)",
+#ifdef XPRS_CPUPLATFORM
+	cpuplatform_desc[] = "whether the Newton Barrier method should use AVX or\n\
+			SSE2 instructions on platforms that offer both:\n\
+			-1 = automatic choice (default)\n\
+			 0 = use generic code: neither AVX nor SSE2\n\
+			 1 = use SSE2\n\
+			 2 = use AVX",
+#endif
 	cputime_desc[]		= "which times to report when logfile is speccified:\n\
 			0 = elapsed time\n\
 			1 = CPU time (default)",
@@ -614,6 +622,15 @@ static char
 			 1 = yes, cautiously\n\
 			 2 = yes, medium strategy\n\
 			 3 = yes, check all candidates",
+#ifdef XPRS_PREDUPROW
+	preduprow_desc[] = "how XPRESS's presolve should deal with duplicate rows\n\
+			in MIP problems:\n\
+			-1 = automatic choice (default),\n\
+			 0 = do not remove duplicate rows (constraints)\n\
+			 1 = remove duplicate rows identical in all variables\n\
+			 2 = like 1 but allowing simple penalty variables\n\
+			 3 = like 1 but allowing more complex penalty variables",
+#endif
 	preprobing_desc[]	= "how much probing on binary variables to do during\n\
 			XPRESSMP's presolve:\n\
 			-1 = automatic choice (default)\n\
@@ -625,6 +642,10 @@ static char
 			0 = no\n\
 			1 = yes, removing redundant bounds (default)\n\
 			2 = yes, retaining redundant bounds",
+#ifdef XPRS_PRESOLVEMAXGROW
+	presolvemaxgrow_desc[] = "factor by which the number of nonzero coefficients\n\
+			may grow during XPRESS's presolve (default 0.1)",
+#endif
 	presolveops_desc[]	= "reductions to use in XPRESSMP's presolve:\n\
 			sum of\n\
 			    1 = 2^0  = remove singleton columns\n\
@@ -736,7 +757,13 @@ static char
 					when calculating scaling factors\n\
 			 512 = 2^9 = scale before presolve\n\
 			1024 = 2^10 = do not scale constraints (rows) up\n\
-			2048 = 2^11 = do not scale variables up\n\
+			2048 = 2^11 = do not scale variables up"
+#if XPVERSION >= 23
+				"\n\
+			4096 = 2^12 = do global objective function scaling\n\
+			8192 = 2^13 = do right-hand side scaling"
+#endif
+				"\n\
 			default = 163",
 #ifdef XPRS_SLEEPONTHREADWAIT
 	sleeponthreadwait_desc[]	=
@@ -748,6 +775,12 @@ static char
 	sos2_desc[]		= "whether to use implicit SOS information (default 1 = yes)",
 	sosreftol_desc[]	= "minimum relative gap between reference row entries\n\
 			default = 1e-6",
+#ifdef XPRS_SYMMETRY
+	symmetry_desc[]		= "amount of effort to detect symmetry in MIP problems:\n\
+			0 = none: do not attempt symmetry detection\n\
+			1 = modest effort (default)\n\
+			2 = agressive effort",
+#endif
 	tempbounds_desc[]	= "whether dual simplex should put temporary bounds on\n\
 		unbounded variables:\n\
 			-1 = automatic choice (default)\n\
@@ -839,6 +872,9 @@ static keyword keywds[]={
   KW("corespercpu",	set_int, XPRS_CORESPERCPU,	corespercpu_desc),
 #endif
   KW("covercuts",	set_int, XPRS_COVERCUTS,	covercuts_desc),
+#ifdef XPRS_CPUPLATFORM
+  KW("cpuplatform",	set_int, XPRS_CPUPLATFORM,	cpuplatform_desc),
+#endif
   KW("cputime",		set_int, XPRS_CPUTIME,		cputime_desc),
   KW("crash",		set_int, XPRS_CRASH,		crash_desc),
   KW("crossover",	set_int, XPRS_CROSSOVER,	crossover_desc),
@@ -943,8 +979,14 @@ static keyword keywds[]={
   KW("precoefelim",	set_int, XPRS_PRECOEFELIM,	precoefelim_desc),
   KW("predomcol",	set_int, XPRS_PREDOMCOL,	predomcol_desc),
   KW("predomrow",	set_int, XPRS_PREDOMROW,	predomrow_desc),
+#ifdef XPRS_PREDUPROW
+  KW("preduprow",	set_int, XPRS_PREDUPROW,	preduprow_desc),
+#endif
   KW("preprobing",	set_int, XPRS_PREPROBING,	preprobing_desc),
   KW("presolve",	set_int, XPRS_PRESOLVE,		presolve_desc),
+#ifdef XPRS_PRESOLVEMAXGROW
+  KW("presolvemaxgrow",	set_dbl, XPRS_PRESOLVEMAXGROW,	presolvemaxgrow_desc),
+#endif
   KW("presolveops",	set_int, XPRS_PRESOLVEOPS,	presolveops_desc),
   KW("pricingalg",	set_int, XPRS_PRICINGALG,	pricingalg_desc),
   KW("primal",		set_known, set_primal,		primal_desc),
@@ -974,6 +1016,9 @@ static keyword keywds[]={
   KW("sos",		I_val, &sos,			sos_desc),
   KW("sos2",		I_val, &sos2,			sos2_desc),
   KW("sosreftol",	set_dbl, XPRS_SOSREFTOL,	sosreftol_desc),
+#ifdef XPRS_SYMMETRY
+  KW("symmetry",	set_int, XPRS_SYMMETRY,		symmetry_desc),
+#endif
   KW("tempbounds",	set_int, XPRS_TEMPBOUNDS,	tempbounds_desc),
   KW("threads",		set_int, XPRS_THREADS,		threads_desc),
   KW("timing",		set_known, set_timing,		"[no assignment] give timing statistics"),
@@ -990,7 +1035,7 @@ static keyword keywds[]={
      };
 
 static Option_Info Oinfo = { "xpress", NULL, "xpress_options",
-           keywds,nkeywds,0,"XPRESS", 0,0,0,0,0, 20120605 };
+           keywds,nkeywds,0,"XPRESS", 0,0,0,0,0, 20120731 };
 
  static char *
 strcpy1(char *t, const char *s)
@@ -1004,13 +1049,11 @@ strcpy1(char *t, const char *s)
 adjust_version(void)
 {
 	char *t;
-	const char *s;
-	int n;
 	static char vbuf[40];
 
 	t = strcpy1(Oinfo.bsname = vbuf, "XPRESS ");
-	n = XPRSgetversion(t);
-	t += strlen(t);
+	if (!XPRSgetversion(t))
+		t += strlen(t);
 	Oinfo.version = ++t;
 	t = strcpy1(t, "AMPL/");
 	t = strcpy1(t, Oinfo.bsname);
@@ -1065,6 +1108,7 @@ static void xperror(const char *fmt, ...)
   exit(1);
 }
 
+#ifndef LICERROR
  static void
 licerror(int iret)
 {
@@ -1075,6 +1119,7 @@ licerror(int iret)
 	xperror("initializing Xpress-MP (return code %d):\n%s\n",
 		iret, buf);
 	}
+#endif
 
 /******************************/
 /* Delete .sol and .glb files */
@@ -1176,7 +1221,7 @@ int main(int argc, char *argv[])
 	signal(SIGINT, oic);
 	--iret;
 	Times[2] = xectim_();
-	if (amplflag | Oinfo.wantsol & 1) {
+	if (amplflag | (Oinfo.wantsol & 1)) {
 		if (solve_result_num <= 0)
 			solve_result_num = 520;
 		iret = 0;
@@ -2309,7 +2354,7 @@ static void amplout(dims *d)
  char hbuf[640], buf[32], *wb;
  double objvalue, w;
  int *cstatus, *rstatus;
- int didbarrier, i, ipstat, len, lpstat=-1, m, n;
+ int didbarrier, i, ipstat, len, lpstat=-1, n;
  int nbit = 0, nbs, ncol, nint, nround, nrow, nsit = 0;
  real *x, *x1, *y;
  typedef struct { char *msg; int code; } Sol_info;
@@ -2335,7 +2380,6 @@ static void amplout(dims *d)
   { "Unbounded problem with some integer variables", 301}
   };
 
- m = n_con;
  n = n_var;
  x = d->x;
  y = d->y;
