@@ -1,4 +1,8 @@
-README	ed184dc4	1566
-lpsolve.c	e6fb4ff	9809
-makefile.u	fb2d716	2428
-makefile.vc	e33b9628	2428
+README	e8a163a5	1681
+lpsolve4.c	e6fb4ff	9809
+lpsolve5.c	e5698d96	15558
+lpsolve5_date.h	999bef3	55
+makefile.u	f0161ce1	2683
+makefile.vc	16140630	1996
+makefile4.u	1402f2c5	2050
+makefile4.vc	7b83bb0	2175

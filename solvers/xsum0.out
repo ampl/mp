@@ -1,4 +1,4 @@
-README	19301cd3	9940
+README	1f1dbca8	10073
 README.f77	f243657a	1891
 amplsolv.lbc	f309a0c2	1023
 amplsolv.sy	f35a1599	1229
@@ -74,7 +74,7 @@ mainexit.c	e4761b9b	1713
 makefile.lc	e643ce87	5696
 makefile.sy	e049f50a	5241
 makefile.u	791d1fe	10652
-makefile.vc	e8ac18c2	7242
+makefile.vc	eae0c796	7263
 makefile.wat	1b02332b	5535
 mip_pri.c	f1dd1d47	7887
 misc.c	14f42622	21447

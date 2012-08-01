@@ -1,5 +1,3 @@
-# This file was derived from a file that starts with the following copyright notice.
-
 # /****************************************************************
 # Copyright (C) 1999, 2000 Lucent Technologies
 # All Rights Reserved
@@ -24,28 +22,38 @@
 # THIS SOFTWARE.
 # ****************************************************************/
 
-# For making lpsolve.exe with Microsoft Visual C++ on Intel machines.
+# For making lpsolve4.exe with Microsoft Visual C++ on Intel machines.
 
-# Invoke with "nmake -f makefile5.vc" .
+# Invoke with "nmake -f makefile.vc" .
 
 CC = cl
 S = ..
 # "S = .." assumes this directory is solvers/lpsolve .
-L = y:/Downloads/lp_solve_5.5
-# $L is derived from
-# http://iweb.dl.sourceforge.net/project/lpsolve/lpsolve/5.5.2.0/lp_solve_5.5.2.0_source.tar.gz
-# where the directory is called, e.g., lp_solve_3.2.
-CFLAGS = -nologo -DWIN32 -Ot1 -I$S -I$L
+L = lp_solve_4.0
+# $L is from ftp://ftp.es.ele.tue.nl/pub/lp_solve/lp_solve.tar.gz,
+# downloaded 20030117 to /netlib/ampl/solvers/lpsolve/lp_solve_4.0.tar.gz
+
+# where the directory is called, e.g., lp_solve_4.0.
+CFLAGS = -nologo -Ot1 -I$S -I$L
 Lmt = libcmt.lib /link /NODEFAULTLIB:libc.lib
 
 .c.obj:
 	$(CC) -c $(CFLAGS) $*.c
 
-lpsolve = lpsolve5.obj $S/amplsolv.lib $L/lpsolv55.lib
+lpsolve = lpsolve4.obj $S/funcadd0.obj debug.obj hash.obj lpkit.obj presolve.obj solve.obj $S/amplsolv.lib
 
-lpsolve.exe: $(lpsolve)
-	$(CC) -Felpsolve.exe $(lpsolve) $(Lmt)
-	del lpsolve.exp
-	del lpsolve.lib
+lpsolve4.exe: $(lpsolve)
+	$(CC) -Felpsolve4.exe $(lpsolve) $(Lmt)
+	del lpsolve4.exp
+	del lpsolve4.lib
 
-lpsolve5.obj: lpsolve5.c lpsolve5_date.h $S/asl.h
+lpsolve4.obj: lpsolve4.c $S/asl.h
+
+debug.obj hash.obj lpkit.obj presolve.obj solve.obj:
+	$(CC) -c $(CFLAGS) $L/debug.c $L/hash.c $L/lpkit.c $L/presolve.c $L/solve.c
+
+$S/amplsolv.lib:
+	cd $S; nmake amplsolv.lib
+
+$S/funcadd0.obj:
+	cd $S; nmake funcadd0.obj

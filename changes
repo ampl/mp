@@ -3020,3 +3020,11 @@ beyond the next power of two, a fault was sometimes possible.
 20120619
   Fix a glitch that gave rise to "bug: corrupted del_mblk arg"
 after a very large number of commands.
+
+20120629
+  Fix another bug that could only bite after a very large number of
+commands.  Note that using iterated commands, such as iterated "let",
+"printf", "drop", etc.  commands, rather than "for" loops, where
+appropriate can greatly reduce the number of commands executed and
+give much faster executions.  Using slices suitably sometimes also
+greatly speeds up execution.

@@ -1,2 +1,5 @@
-Thu Jun 12 23:33:02 EDT 2003
-  Adjust so "lpsolve" (no arguments) shows usage rather than faulting.
+20120719
+  Change name of lpsolve.c to lpsolve4.c, of makefile.u to makefile4.u,
+and makefile.vc to makefile4.c.  New lpsolve.c, makefile.u, and makefile.vc
+that work with LP_SOLVE 5.5.2.  Updates to README.  Rule for xsum.out
+is now just in makefile.u.
