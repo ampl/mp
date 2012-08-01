@@ -112,8 +112,8 @@ enum {
  * Checks whether the first argument is constant and reports error if not.
  * Returns 1 iff the first argument is constant.
  */
-static int check_const_arg(arglist *al, const char *name) {
-  if (al->dig && al->dig[0])
+static int check_const_arg(arglist *al, unsigned index, const char *name) {
+  if (al->dig && al->dig[index])
     return 1;
   /* Derivative information is requested, so the argument is not constant. */
   error(al, "argument '%s' is not constant", name);
@@ -128,7 +128,7 @@ static int check_int_arg(arglist *al, unsigned index, const char *name) {
         name, name, arg);
     return 0;
   }
-  return 1;
+  return al->derivs ? check_const_arg(al, index, name) : 1;
 }
 
 /* Checks the arguments of a Bessel function. */
@@ -923,7 +923,7 @@ static real amplgsl_sf_bessel_Jnu(arglist *al) {
   real x = al->ra[1];
   real jn = gsl_sf_bessel_Jnu(n, x);
   if (al->derivs) {
-    if (!check_const_arg(al, "nu"))
+    if (!check_const_arg(al, 0, "nu"))
       return 0;
     al->derivs[1] = 0.5 *
         (gsl_sf_bessel_Jnu(n - 1, x) - gsl_sf_bessel_Jnu(n + 1, x));
@@ -940,7 +940,7 @@ static real amplgsl_sf_bessel_Ynu(arglist *al) {
   real x = al->ra[1];
   real yn = gsl_sf_bessel_Ynu(n, x);
   if (al->derivs) {
-    if (!check_const_arg(al, "nu"))
+    if (!check_const_arg(al, 0, "nu"))
       return 0;
     al->derivs[1] = 0.5 *
         (gsl_sf_bessel_Ynu(n - 1, x) - gsl_sf_bessel_Ynu(n + 1, x));
@@ -957,7 +957,7 @@ static real amplgsl_sf_bessel_Inu(arglist *al) {
   real x = al->ra[1];
   real in = gsl_sf_bessel_Inu(n, x);
   if (al->derivs) {
-    if (!check_const_arg(al, "nu"))
+    if (!check_const_arg(al, 0, "nu"))
       return 0;
     al->derivs[1] = 0.5 *
         (gsl_sf_bessel_Inu(n - 1, x) + gsl_sf_bessel_Inu(n + 1, x));
@@ -975,7 +975,7 @@ static real amplgsl_sf_bessel_Inu_scaled(arglist *al) {
   real in = gsl_sf_bessel_Inu_scaled(n, x);
   if (al->derivs) {
     real in_minus_1 = 0, in_plus_1 = 0;
-    if (!check_const_arg(al, "nu"))
+    if (!check_const_arg(al, 0, "nu"))
       return 0;
     in_minus_1 = gsl_sf_bessel_Inu_scaled(n - 1, x);
     in_plus_1 = gsl_sf_bessel_Inu_scaled(n + 1, x);
@@ -995,7 +995,7 @@ static real amplgsl_sf_bessel_Knu(arglist *al) {
   real x = al->ra[1];
   real kn = gsl_sf_bessel_Knu(n, x);
   if (al->derivs) {
-    if (!check_const_arg(al, "nu"))
+    if (!check_const_arg(al, 0, "nu"))
       return 0;
     al->derivs[1] = -0.5 *
         (gsl_sf_bessel_Knu(n - 1, x) + gsl_sf_bessel_Knu(n + 1, x));
@@ -1012,7 +1012,7 @@ static real amplgsl_sf_bessel_lnKnu(arglist *al) {
   real x = al->ra[1];
   if (al->derivs) {
     real kn = 0, kn_minus_1_plus_1 = 0;
-    if (!check_const_arg(al, "nu"))
+    if (!check_const_arg(al, 0, "nu"))
       return 0;
     kn = gsl_sf_bessel_Knu(n, x);
     kn_minus_1_plus_1 =
@@ -1034,7 +1034,7 @@ static real amplgsl_sf_bessel_Knu_scaled(arglist *al) {
   real kn = gsl_sf_bessel_Knu_scaled(n, x);
   if (al->derivs) {
     real kn_minus_1 = 0, kn_plus_1 = 0;
-    if (!check_const_arg(al, "nu"))
+    if (!check_const_arg(al, 0, "nu"))
       return 0;
     kn_minus_1 = gsl_sf_bessel_Knu_scaled(n - 1, x);
     kn_plus_1 = gsl_sf_bessel_Knu_scaled(n + 1, x);
@@ -1127,8 +1127,6 @@ static int check_coupling_args(arglist *al, const char *const* arg_names) {
     if (!check_int_arg(al, i, arg_names[i]))
       return 0;
   }
-  if (al->derivs)
-    *al->derivs = GSL_NAN;
   return 1;
 }
 
@@ -1540,8 +1538,6 @@ static real amplgsl_sf_expint_En(arglist *al) {
   if (!check_int_arg(al, 0, "n"))
     return 0;
   if (al->derivs) {
-    if (!check_const_arg(al, "n"))
-      return 0;
     al->derivs[1] = n != 0 ?
         -gsl_sf_expint_En(n - 1, x) : -exp(-x) * (1 / x + 1) / x;
     if (al->hes) {
@@ -1624,6 +1620,106 @@ static real amplgsl_sf_atanint(arglist *al) {
       *al->hes = x != 0 ? (1 / (x * x + 1) - *al->derivs) / x : 0;
   }
   return check_result(al, gsl_sf_atanint(x), "gsl_sf_atanint");
+}
+
+static real amplgsl_sf_fermi_dirac_m1(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = exp(x) / gsl_pow_2(exp(x) + 1);
+    if (al->hes)
+      *al->hes = -(exp(x) * (exp(x) - 1)) / gsl_pow_3(exp(x) + 1);
+  }
+  return check_result(al, gsl_sf_fermi_dirac_m1(x), "gsl_sf_fermi_dirac_m1");
+}
+
+static real amplgsl_sf_fermi_dirac_0(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = gsl_sf_fermi_dirac_m1(x);
+    if (al->hes)
+      *al->hes = exp(x) / gsl_pow_2(exp(x) + 1);
+  }
+  return check_result(al, gsl_sf_fermi_dirac_0(x), "gsl_sf_fermi_dirac_0");
+}
+
+static real amplgsl_sf_fermi_dirac_1(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = gsl_sf_fermi_dirac_0(x);
+    if (al->hes)
+      *al->hes = gsl_sf_fermi_dirac_m1(x);
+  }
+  return check_result(al, gsl_sf_fermi_dirac_1(x), "gsl_sf_fermi_dirac_1");
+}
+
+static real amplgsl_sf_fermi_dirac_2(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = gsl_sf_fermi_dirac_1(x);
+    if (al->hes)
+      *al->hes = gsl_sf_fermi_dirac_0(x);
+  }
+  return check_result(al, gsl_sf_fermi_dirac_2(x), "gsl_sf_fermi_dirac_2");
+}
+
+static real amplgsl_sf_fermi_dirac_int(arglist *al) {
+  int j = al->ra[0];
+  real x = al->ra[1];
+  if (!check_int_arg(al, 0, "j"))
+    return 0;
+  if (al->derivs) {
+    al->derivs[1] = gsl_sf_fermi_dirac_int(j - 1, x);
+    if (al->hes)
+      al->hes[2] = gsl_sf_fermi_dirac_int(j - 2, x);
+  }
+  return check_result(al, gsl_sf_fermi_dirac_int(j, x),
+      "gsl_sf_fermi_dirac_int");
+}
+
+static real amplgsl_sf_fermi_dirac_mhalf(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_fermi_dirac_mhalf(x),
+      "gsl_sf_fermi_dirac_mhalf");
+}
+
+static real amplgsl_sf_fermi_dirac_half(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_fermi_dirac_half(x),
+      "gsl_sf_fermi_dirac_half");
+}
+
+static real amplgsl_sf_fermi_dirac_3half(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = gsl_sf_fermi_dirac_half(x);
+    if (al->hes)
+      *al->hes = gsl_sf_fermi_dirac_mhalf(x);
+  }
+  return check_result(al, gsl_sf_fermi_dirac_3half(x),
+      "gsl_sf_fermi_dirac_3half");
+}
+
+static real amplgsl_sf_fermi_dirac_inc_0(arglist *al) {
+  real x = al->ra[0], b = al->ra[1];
+  if (al->derivs) {
+    real exp_x = exp(x), exp_b = exp(b);
+    al->derivs[0] = exp_x / (exp_b + exp_x);
+    al->derivs[1] = -al->derivs[0];
+    if (al->hes) {
+      al->hes[0] = al->hes[2] = al->derivs[0] * exp_b / (exp_b + exp_x);
+      al->hes[1] = -al->hes[0];
+    }
+  }
+  return check_result(al, gsl_sf_fermi_dirac_inc_0(x, b),
+      "gsl_sf_fermi_dirac_inc_0");
 }
 
 void funcadd_ASL(AmplExports *ae) {
@@ -1836,5 +1932,25 @@ void funcadd_ASL(AmplExports *ae) {
   addfunc("gsl_sf_atanint", amplgsl_sf_atanint, FUNCADD_REAL_VALUED, 1, 0);
 
   /* Fermi-Dirac Function */
+  addfunc("gsl_sf_fermi_dirac_m1", amplgsl_sf_fermi_dirac_m1,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_fermi_dirac_0", amplgsl_sf_fermi_dirac_0,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_fermi_dirac_1", amplgsl_sf_fermi_dirac_1,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_fermi_dirac_2", amplgsl_sf_fermi_dirac_2,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_fermi_dirac_int", amplgsl_sf_fermi_dirac_int,
+      FUNCADD_REAL_VALUED, 2, 0);
+  addfunc("gsl_sf_fermi_dirac_mhalf", amplgsl_sf_fermi_dirac_mhalf,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_fermi_dirac_half", amplgsl_sf_fermi_dirac_half,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_fermi_dirac_3half", amplgsl_sf_fermi_dirac_3half,
+      FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_fermi_dirac_inc_0", amplgsl_sf_fermi_dirac_inc_0,
+      FUNCADD_REAL_VALUED, 2, 0);
+
+  /* Gamma and Beta Functions */
   // TODO
 }
