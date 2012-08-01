@@ -1371,4 +1371,11 @@ TEST_F(GSLTest, FermiDirac) {
   TEST_FUNC(sf_fermi_dirac_3half);
   TEST_FUNC(sf_fermi_dirac_inc_0);
 }
+
+TEST_F(GSLTest, GammaBeta) {
+  TEST_FUNC(sf_gamma);
+  TEST_FUNC(sf_lngamma);
+  TEST_FUNC(sf_gammastar);
+  TEST_FUNC(sf_gammainv);
+}
 }

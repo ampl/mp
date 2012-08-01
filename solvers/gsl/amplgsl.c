@@ -1722,6 +1722,60 @@ static real amplgsl_sf_fermi_dirac_inc_0(arglist *al) {
       "gsl_sf_fermi_dirac_inc_0");
 }
 
+static real amplgsl_sf_gamma(arglist *al) {
+  real x = al->ra[0];
+  real gamma = gsl_sf_gamma(x);
+  if (al->derivs) {
+    real psi0 = gsl_sf_psi(x);
+    *al->derivs = gamma * psi0;
+    if (al->hes)
+      *al->hes = *al->derivs * psi0 + gamma * gsl_sf_psi_1(x);
+  }
+  return check_result(al, gamma, "gsl_sf_gamma");
+}
+
+static real amplgsl_sf_lngamma(arglist *al) {
+  real x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = x >= 0 || round(x) != x ? gsl_sf_psi(x) : GSL_NAN;
+    if (al->hes)
+      *al->hes = gsl_sf_psi_1(x);
+  }
+  return check_result(al, gsl_sf_lngamma(x), "gsl_sf_lngamma");
+}
+
+static real amplgsl_sf_gammastar(arglist *al) {
+  real x = al->ra[0];
+  real gammastar = gsl_sf_gammastar(x);
+  if (al->derivs) {
+    real coef = (0.5 / x - log(x) + gsl_sf_psi(x));
+    *al->derivs = coef * gammastar;
+    if (al->hes) {
+      *al->hes = coef * *al->derivs +
+          (gsl_sf_psi_1(x) - (1 + 0.5 / x) / x ) * gammastar;
+    }
+  }
+  return check_result(al, gammastar, "gsl_sf_gammastar");
+}
+
+static real amplgsl_sf_gammainv(arglist *al) {
+  real x = al->ra[0];
+  real gammainv = gsl_sf_gammainv(x);
+  if (al->derivs) {
+    if (x > 0 || round(x) != x) {
+      real psi0 = gsl_sf_psi(x);
+      *al->derivs = -gammainv * psi0;
+      if (al->hes)
+        *al->hes = -*al->derivs * psi0 - gammainv * gsl_sf_psi_1(x);
+    } else {
+      *al->derivs = pow(-1, -x) * gsl_sf_gamma(1 - x);
+      if (al->hes)
+        *al->hes = -2 * *al->derivs * gsl_sf_psi(1 - x);
+    }
+  }
+  return check_result(al, gammainv, "gsl_sf_gammainv");
+}
+
 void funcadd_ASL(AmplExports *ae) {
   /* Don't call abort on error. */
   gsl_set_error_handler_off();
@@ -1952,5 +2006,9 @@ void funcadd_ASL(AmplExports *ae) {
       FUNCADD_REAL_VALUED, 2, 0);
 
   /* Gamma and Beta Functions */
+  addfunc("gsl_sf_gamma", amplgsl_sf_gamma, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_lngamma", amplgsl_sf_lngamma, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_gammastar", amplgsl_sf_gammastar, FUNCADD_REAL_VALUED, 1, 0);
+  addfunc("gsl_sf_gammainv", amplgsl_sf_gammainv, FUNCADD_REAL_VALUED, 1, 0);
   // TODO
 }
