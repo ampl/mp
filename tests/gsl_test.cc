@@ -423,10 +423,12 @@ bool CheckDerivative(F f, const Function &af,
   std::ostringstream os;
   os << "Checking d/dx" << var_index << " " << af.name() << " at " << args;
   SCOPED_TRACE(os.str());
-  if (var_index != 0 && !af.DerivativeError(0, args).empty())
+  if (var_index != 0 && !af.DerivativeError(0, args).empty()) {
     skip_var = 0;
-  else if (var_index != 1 && !af.DerivativeError(1, args).empty())
+  } else if (var_index != 1 && args.size() > 1 &&
+      !af.DerivativeError(1, args).empty()) {
     skip_var = 1;
+  }
   Dig dig(args, skip_var);
   double error = 0;
   double x = args[var_index];
@@ -1181,9 +1183,17 @@ TEST_F(GSLTest, Hydrogenic) {
           double z = POINTS[iz], r = POINTS[ir];
           Tuple args(n, el, z, r);
           CheckFunction(gsl_sf_hydrogenicR(n, el, z, r), f, args);
-          const char *error = "derivatives are not provided";
+          const char *error = "argument 'n' is not constant";
           EXPECT_ERROR(error, f(args, DERIVS));
           EXPECT_ERROR(error, f(args, HES));
+          char dig1[] = {1, 0, 0, 0};
+          error = "argument 'l' is not constant";
+          EXPECT_ERROR(error, f(args, DERIVS, dig1));
+          EXPECT_ERROR(error, f(args, HES, dig1));
+          error = "derivatives are not provided";
+          char dig2[] = {1, 1, 0, 0};
+          EXPECT_ERROR(error, f(args, DERIVS, dig2));
+          EXPECT_ERROR(error, f(args, HES, dig2));
         }
       }
     }
@@ -1219,8 +1229,9 @@ TEST_F(GSLTest, Coupling3j) {
   EXPECT_ERROR(NotIntError("two_ma"), f(Tuple(0, 0, 0, 0.5, 0, 0)));
   EXPECT_ERROR(NotIntError("two_mb"), f(Tuple(0, 0, 0, 0, 0.5, 0)));
   EXPECT_ERROR(NotIntError("two_mc"), f(Tuple(0, 0, 0, 0, 0, 0.5)));
-  EXPECT_ERROR(EvalError(f, args, "'"), f(args, DERIVS));
-  EXPECT_ERROR(EvalError(f, args, "'"), f(args, HES));
+  const char *error = "argument 'two_ja' is not constant";
+  EXPECT_ERROR(error, f(args, DERIVS));
+  EXPECT_ERROR(error, f(args, HES));
 }
 
 TEST_F(GSLTest, Coupling6j) {
@@ -1236,8 +1247,9 @@ TEST_F(GSLTest, Coupling6j) {
   EXPECT_ERROR(NotIntError("two_jd"), f(Tuple(0, 0, 0, 0.5, 0, 0)));
   EXPECT_ERROR(NotIntError("two_je"), f(Tuple(0, 0, 0, 0, 0.5, 0)));
   EXPECT_ERROR(NotIntError("two_jf"), f(Tuple(0, 0, 0, 0, 0, 0.5)));
-  EXPECT_ERROR(EvalError(f, args, "'"), f(args, DERIVS));
-  EXPECT_ERROR(EvalError(f, args, "'"), f(args, HES));
+  const char *error = "argument 'two_ja' is not constant";
+  EXPECT_ERROR(error, f(args, DERIVS));
+  EXPECT_ERROR(error, f(args, HES));
 }
 
 TEST_F(GSLTest, Coupling9j) {
@@ -1256,8 +1268,9 @@ TEST_F(GSLTest, Coupling9j) {
   EXPECT_ERROR(NotIntError("two_jg"), f(Tuple(0, 0, 0, 0, 0, 0, 0.5, 0, 0)));
   EXPECT_ERROR(NotIntError("two_jh"), f(Tuple(0, 0, 0, 0, 0, 0, 0, 0.5, 0)));
   EXPECT_ERROR(NotIntError("two_ji"), f(Tuple(0, 0, 0, 0, 0, 0, 0, 0, 0.5)));
-  EXPECT_ERROR(EvalError(f, args, "'"), f(args, DERIVS));
-  EXPECT_ERROR(EvalError(f, args, "'"), f(args, HES));
+  const char *error = "argument 'two_ja' is not constant";
+  EXPECT_ERROR(error, f(args, DERIVS));
+  EXPECT_ERROR(error, f(args, HES));
 }
 
 TEST_F(GSLTest, Dawson) {
@@ -1342,5 +1355,20 @@ TEST_F(GSLTest, ExpInt) {
   TEST_FUNC(sf_Si);
   TEST_FUNC(sf_Ci);
   TEST_FUNC(sf_atanint);
+}
+
+TEST_F(GSLTest, FermiDirac) {
+  TEST_FUNC(sf_fermi_dirac_m1);
+  TEST_FUNC(sf_fermi_dirac_0);
+  TEST_FUNC(sf_fermi_dirac_1);
+  TEST_FUNC(sf_fermi_dirac_2);
+  TEST_FUNC_ND(sf_fermi_dirac_int, GSL_NAN, j);
+  {
+    NoDerivativeInfo info;
+    TEST_FUNC(sf_fermi_dirac_mhalf);
+    TEST_FUNC(sf_fermi_dirac_half);
+  }
+  TEST_FUNC(sf_fermi_dirac_3half);
+  TEST_FUNC(sf_fermi_dirac_inc_0);
 }
 }
