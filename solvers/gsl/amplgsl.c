@@ -1803,6 +1803,99 @@ static real amplgsl_sf_pochrel(arglist *al) {
   return check_result(al, gsl_sf_pochrel(a, x), "gsl_sf_pochrel");
 }
 
+static real amplgsl_sf_gamma_inc(arglist *al) {
+  real a = al->ra[0], x = al->ra[1];
+  if (al->derivs) {
+    if (!check_const_arg(al, 0, "a"))
+      return 0;
+    al->derivs[1] = x != 0 ? -exp(-x) * pow(x, a - 1) : GSL_NAN;
+    if (al->hes)
+      al->hes[2] = al->derivs[1] * (a - x - 1) / x;
+  }
+  return check_result(al, gsl_sf_gamma_inc(a, x), "gsl_sf_gamma_inc");
+}
+
+static real amplgsl_sf_gamma_inc_Q(arglist *al) {
+  real a = al->ra[0], x = al->ra[1];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_gamma_inc_Q(a, x), "gsl_sf_gamma_inc_Q");
+}
+
+static real amplgsl_sf_gamma_inc_P(arglist *al) {
+  real a = al->ra[0], x = al->ra[1];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_gamma_inc_P(a, x), "gsl_sf_gamma_inc_P");
+}
+
+static real amplgsl_sf_beta(arglist *al) {
+  real a = al->ra[0], b = al->ra[1];
+  real beta = gsl_sf_beta(a, b);
+  if (al->derivs) {
+    real psi_a_plus_b = gsl_sf_psi(a + b);
+    real da_coef = 0, db_coef = 0;
+    int need_da = 1, need_db = 1;
+    if (al->dig) {
+      need_da = !al->dig[0];
+      need_db = !al->dig[1];
+    }
+    if (need_da) {
+      da_coef = gsl_sf_psi(a) - psi_a_plus_b;
+      al->derivs[0] = beta * da_coef;
+    }
+    if (need_db) {
+      db_coef = gsl_sf_psi(b) - psi_a_plus_b;
+      al->derivs[1] = beta * db_coef;
+    }
+    if (al->hes) {
+      real psi1_a_plus_b = gsl_sf_psi_1(a + b);
+      if (need_da) {
+        al->hes[0] = al->derivs[0] * da_coef +
+            beta * (gsl_sf_psi_1(a) - psi1_a_plus_b);
+        if (need_db)
+          al->hes[1] = al->derivs[0] * db_coef - beta * psi1_a_plus_b;
+      }
+      if (need_db) {
+       al->hes[2] = al->derivs[1] * db_coef +
+           beta * (gsl_sf_psi_1(b) - psi1_a_plus_b);
+      }
+    }
+  }
+  return check_result(al, beta, "gsl_sf_beta");
+}
+
+static real amplgsl_sf_lnbeta(arglist *al) {
+  real a = al->ra[0], b = al->ra[1];
+  if (al->derivs) {
+    real psi_a_plus_b = gsl_sf_psi(a + b);
+    int need_da = 1, need_db = 1;
+    if (al->dig) {
+      need_da = !al->dig[0];
+      need_db = !al->dig[1];
+    }
+    if (need_da)
+      al->derivs[0] = gsl_sf_psi(a) - psi_a_plus_b;
+    if (need_db)
+      al->derivs[1] = gsl_sf_psi(b) - psi_a_plus_b;
+    if (al->hes) {
+      real psi1_a_plus_b = gsl_sf_psi_1(a + b);
+      if (need_da) {
+        al->hes[0] = gsl_sf_psi_1(a) - psi1_a_plus_b;
+        if (need_db)
+          al->hes[1] = -psi1_a_plus_b;
+      }
+      if (need_db)
+       al->hes[2] = gsl_sf_psi_1(b) - psi1_a_plus_b;
+    }
+  }
+  return check_result(al, gsl_sf_lnbeta(a, b), "gsl_sf_lnbeta");
+}
+
 void funcadd_ASL(AmplExports *ae) {
   /* Don't call abort on error. */
   gsl_set_error_handler_off();
@@ -2047,5 +2140,15 @@ void funcadd_ASL(AmplExports *ae) {
   addfunc("gsl_sf_pochrel", amplgsl_sf_pochrel, FUNCADD_REAL_VALUED, 2, 0);
 
   /* Incomplete Gamma Functions */
+  addfunc("gsl_sf_gamma_inc", amplgsl_sf_gamma_inc, FUNCADD_REAL_VALUED, 2, 0);
+  addfunc("gsl_sf_gamma_inc_Q", amplgsl_sf_gamma_inc_Q,
+      FUNCADD_REAL_VALUED, 2, 0);
+  addfunc("gsl_sf_gamma_inc_P", amplgsl_sf_gamma_inc_P,
+      FUNCADD_REAL_VALUED, 2, 0);
+
+  /* Beta Functions */
+  addfunc("gsl_sf_beta", amplgsl_sf_beta, FUNCADD_REAL_VALUED, 2, 0);
+  addfunc("gsl_sf_lnbeta", amplgsl_sf_lnbeta, FUNCADD_REAL_VALUED, 2, 0);
+
   // TODO
 }
