@@ -23,6 +23,7 @@
 git stash
 git checkout netlib
 rsync -avz --delete --exclude=.git --exclude=student netlib.org::netlib/ampl/ .
+chmod +x solvers/configurehere
 git add .
 git commit -m 'Upstream changes'
 git checkout master
