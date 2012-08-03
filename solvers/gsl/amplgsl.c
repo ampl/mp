@@ -1896,6 +1896,85 @@ static real amplgsl_sf_lnbeta(arglist *al) {
   return check_result(al, gsl_sf_lnbeta(a, b), "gsl_sf_lnbeta");
 }
 
+static real amplgsl_sf_beta_inc(arglist *al) {
+  real a = al->ra[0], b = al->ra[1], x = al->ra[2];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_beta_inc(a, b, x), "gsl_sf_beta_inc");
+}
+
+static real amplgsl_sf_gegenpoly_1(arglist *al) {
+  real lambda = al->ra[0], x = al->ra[1];
+  if (al->derivs) {
+    al->derivs[0] = 2 * x;
+    /* For unclear reason gsl_sf_gegenpoly_1(0, x) returns 2 * x. */
+    al->derivs[1] = lambda != 0 ? 2 * lambda : 2;
+    if (al->hes) {
+      al->hes[0] = al->hes[2] = 0;
+      al->hes[1] = 2;
+    }
+  }
+  return check_result(al, gsl_sf_gegenpoly_1(lambda, x),
+      "gsl_sf_gegenpoly_1");
+}
+
+static real amplgsl_sf_gegenpoly_2(arglist *al) {
+  real lambda = al->ra[0], x = al->ra[1];
+  if (al->derivs) {
+    real coef1 = (1 + 2 * lambda) * x;
+    real coef2 = 4 * lambda * (lambda + 1);
+    al->derivs[0] = 2 * coef1 * x - 1;
+    /* For unclear reason gsl_sf_gegenpoly_2(0, x) returns 2 * x^2 - 1. */
+    al->derivs[1] = lambda != 0 ? coef2 * x : 4 * x;
+    if (al->hes) {
+      al->hes[0] = 4 * x * x;
+      al->hes[1] = 4 * coef1;
+      al->hes[2] = lambda != 0 ? coef2 : 4;
+    }
+  }
+  return check_result(al, gsl_sf_gegenpoly_2(lambda, x),
+      "gsl_sf_gegenpoly_2");
+}
+
+static real amplgsl_sf_gegenpoly_3(arglist *al) {
+  real lambda = al->ra[0], x = al->ra[1];
+  if (al->derivs) {
+    real x2 = x * x;
+    al->derivs[0] =
+        x * (4 * (2.0 / 3.0 + lambda * (lambda + 2)) * x2 -
+        2 * (2 * lambda + 1));
+    /* For unclear reason gsl_sf_gegenpoly_3(0, x) returns
+       x * (-2.0 + 4.0 / 3.0 * x * x). */
+    al->derivs[1] = lambda != 0 ?
+        2 * lambda * (lambda + 1) * (2 * (2 + lambda) * x2 - 1) :
+        4 * x2 - 2;
+    if (al->hes) {
+      al->hes[0] = 4 * x * (2 * (lambda + 1) * x2 - 1);
+      al->hes[1] = 2 * (x2 * (6 * lambda * lambda + 4) +
+          2 * lambda * (6 * x2 - 1) - 1);
+      al->hes[2] = lambda != 0 ?
+          8 * lambda * (lambda + 1) * (lambda + 2) * x : 8 * x;
+    }
+  }
+  return check_result(al, gsl_sf_gegenpoly_3(lambda, x),
+      "gsl_sf_gegenpoly_3");
+}
+
+static real amplgsl_sf_gegenpoly_n(arglist *al) {
+  int n = (int)al->ra[0];
+  real lambda = al->ra[1], x = al->ra[2];
+  if (!check_int_arg(al, 0, "n"))
+    return 0;
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_gegenpoly_n(n, lambda, x),
+      "gsl_sf_gegenpoly_n");
+}
+
 void funcadd_ASL(AmplExports *ae) {
   /* Don't call abort on error. */
   gsl_set_error_handler_off();
@@ -2150,5 +2229,17 @@ void funcadd_ASL(AmplExports *ae) {
   addfunc("gsl_sf_beta", amplgsl_sf_beta, FUNCADD_REAL_VALUED, 2, 0);
   addfunc("gsl_sf_lnbeta", amplgsl_sf_lnbeta, FUNCADD_REAL_VALUED, 2, 0);
 
+  /* Incomplete Beta Function */
+  addfunc("gsl_sf_beta_inc", amplgsl_sf_beta_inc, FUNCADD_REAL_VALUED, 3, 0);
+
+  /* Gegenbauer Functions */
+  addfunc("gsl_sf_gegenpoly_1", amplgsl_sf_gegenpoly_1,
+      FUNCADD_REAL_VALUED, 2, 0);
+  addfunc("gsl_sf_gegenpoly_2", amplgsl_sf_gegenpoly_2,
+      FUNCADD_REAL_VALUED, 2, 0);
+  addfunc("gsl_sf_gegenpoly_3", amplgsl_sf_gegenpoly_3,
+      FUNCADD_REAL_VALUED, 2, 0);
+  addfunc("gsl_sf_gegenpoly_n", amplgsl_sf_gegenpoly_n,
+      FUNCADD_REAL_VALUED, 3, 0);
   // TODO
 }

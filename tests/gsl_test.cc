@@ -14,7 +14,7 @@
 using std::string;
 using std::vector;
 
-#undef DEBUG_DIFFERENTIATOR
+//#define DEBUG_DIFFERENTIATOR
 
 namespace {
 
@@ -248,7 +248,7 @@ class Differentiator {
   // Returns the derivative of a function f at a point x by Ridders'
   // method of polynomial extrapolation.
   template <typename F, typename D>
-  double operator()(F f, double x, D d, double *error = 0, double *h = 0);
+  double operator()(F f, double x, D d, double *error = 0);
 
  public:
   // Returns the derivative of a function f at a point x by Ridders'
@@ -264,8 +264,7 @@ double Differentiator::max_error_ = std::numeric_limits<double>::min();
 Differentiator::StatsPrinter Differentiator::stats_printer_;
 
 template <typename F, typename D>
-double Differentiator::operator()(
-    F f, double x, D d, double *error, double *h) {
+double Differentiator::operator()(F f, double x, D d, double *error) {
   const double CON = 1.4, CON2 = CON * CON;
   double safe = 20;
   double hh = 0.125, ans = GSL_NAN, diff = 0;
@@ -312,8 +311,6 @@ double Differentiator::operator()(
 
   if (error)
     *error = err;
-  if (h)
-    *h = hh;
   return ans;
 }
 
@@ -322,12 +319,11 @@ double Differentiator::Diff(F f, double x, double *error) {
   ++num_calls_;
   if (gsl_isnan(f(x)))
     return GSL_NAN;
-  double h = 0;
   double dummy_error = 0;
   if (!error)
     error = &dummy_error;
   Differentiator diff;
-  double deriv = diff(f, x, SymmetricDifference<F>, error, &h);
+  double deriv = diff(f, x, SymmetricDifference<F>, error);
   double right_error = 0;
   double right_deriv = diff(f, x, RightDifference<F>, &right_error);
   if (gsl_isnan(deriv)) {
@@ -337,7 +333,9 @@ double Differentiator::Diff(F f, double x, double *error) {
   }
   double left_error = GSL_NAN;
   double left_deriv = diff(f, x, LeftDifference<F>, &left_error);
-  if (!(fabs(left_deriv - right_deriv) <= 1e-2)) {
+  if ((!(fabs(left_deriv - right_deriv) <= 1e-2) &&
+      left_error / (fabs(left_deriv) + 1) < 0.05) ||
+          (gsl_isnan(left_deriv) && gsl_isnan(right_deriv))) {
     ++num_nans_;
     return GSL_NAN;
   }
@@ -1378,9 +1376,25 @@ TEST_F(GSLTest, FermiDirac) {
   TEST_FUNC(sf_fermi_dirac_inc_0);
 }
 
+struct LnGammaInfo : FunctionInfo {
+  string DerivativeError(const Function &af,
+        unsigned , const Tuple &args) {
+    double x = args[0];
+    return x == -1 || x == -2 ? EvalError(af, args, "'") : "";
+  }
+};
+
 TEST_F(GSLTest, Gamma) {
+  Function gamma = GetFunction("gsl_sf_gamma", &info);
+  EXPECT_NEAR(-0.129354, gamma(-0.5, DERIVS).deriv(), 1e-6);
+  EXPECT_NEAR(-31.6778, gamma(-0.5, HES).hes(), 1e-4);
+  EXPECT_NEAR(1.19786e100, gamma(71), 1e95);
+  EXPECT_TRUE(gsl_isinf(gamma(1000)));
   TEST_FUNC(sf_gamma);
-  TEST_FUNC(sf_lngamma);
+  {
+    LnGammaInfo info;
+    TEST_FUNC(sf_lngamma);
+  }
   TEST_FUNC(sf_gammastar);
   TEST_FUNC(sf_gammainv);
 }
@@ -1431,5 +1445,37 @@ TEST_F(GSLTest, Beta) {
     TEST_FUNC(sf_beta);
   }
   TEST_FUNC(sf_lnbeta);
+  {
+    NoDerivativeInfo info;
+    TEST_FUNC(sf_beta_inc);
+  }
+}
+
+TEST_F(GSLTest, GegenPoly) {
+  TEST_FUNC(sf_gegenpoly_1);
+  TEST_FUNC(sf_gegenpoly_2);
+  TEST_FUNC(sf_gegenpoly_3);
+
+  Function f = GetFunction("gsl_sf_gegenpoly_n");
+  EXPECT_EQ(2, f(Tuple(1, 1, 1)));
+  EXPECT_ERROR("argument 'n' can't be represented as int, n = 1.1",
+      f(Tuple(1.1, 1, 1)));
+  for (size_t in = 0; in != NUM_POINTS_FOR_N; ++in) {
+    int n = POINTS_FOR_N[in];
+    for (size_t ilambda = 0; ilambda != NUM_POINTS; ++ilambda) {
+     for (size_t ix = 0; ix != NUM_POINTS; ++ix) {
+       double lambda = POINTS[ilambda], x = POINTS[ix];
+       Tuple args(n, lambda, x);
+       CheckFunction(gsl_sf_gegenpoly_n(n, lambda, x), f, args);
+       const char *error = "argument 'n' is not constant";
+       EXPECT_ERROR(error, f(args, DERIVS));
+       EXPECT_ERROR(error, f(args, HES));
+       char dig[] = {1, 0, 0};
+       error = "derivatives are not provided";
+       EXPECT_ERROR(error, f(args, DERIVS, dig));
+       EXPECT_ERROR(error, f(args, HES, dig));
+     }
+    }
+  }
 }
 }
