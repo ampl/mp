@@ -1,22 +1,7 @@
 #!/bin/sh
-# This script merges changes from the AMPL Solver Library on
-# Netlib http://www.netlib.org/ampl into Github repository
-# https://github.com/vitaut/ampl/
-
-# Workflow:
-#
-#  change   change   change
-#     |        |        |
-#     v        v        v
-# ---------------------------- netlib.org/ampl
-#       |        |        |
-#       | rsync  |        |
-#       v        v        v
-# ---------------------------- github.com/vitaut/ampl [netlib]
-#         |        |        |
-#         | merge  |        |
-#         v        v        v
-# ---------------------------- github.com/vitaut/ampl [master]
+# This script copies changes from the AMPL Solver Library on Netlib
+# http://www.netlib.org/ampl into the "netlib" branch of the GitHub
+# repository https://github.com/vitaut/ampl/
 
 git stash -u
 git checkout netlib
