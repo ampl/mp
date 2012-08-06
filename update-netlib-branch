@@ -2,6 +2,7 @@
 # This script updates the "netlib" branch from the AMPL Solver Library
 # repository on Netlib http://www.netlib.org/ampl
 
+set -e
 git fetch git@github.com:vitaut/ampl.git netlib:netlib
 git stash -u
 git checkout netlib
@@ -10,4 +11,4 @@ chmod +x solvers/configurehere
 git add .
 git commit -m 'Upstream changes'
 git checkout master
-git stash pop
+git stash pop | true
