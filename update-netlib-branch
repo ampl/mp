@@ -13,3 +13,4 @@ git commit -m 'Upstream changes'
 git checkout master
 set +e
 git stash pop
+true
