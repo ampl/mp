@@ -2,7 +2,7 @@
 # This script updates the "netlib" branch from the AMPL Solver Library
 # repository on Netlib http://www.netlib.org/ampl
 
-git fetch origin netlib:netlib
+git fetch git@github.com:vitaut/ampl.git netlib:netlib
 git stash -u
 git checkout netlib
 rsync -avz --delete --exclude=.git --exclude=student netlib.org::netlib/ampl/ .
