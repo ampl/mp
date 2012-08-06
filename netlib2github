@@ -1,7 +1,6 @@
 #!/bin/sh
-# This script copies changes from the AMPL Solver Library on Netlib
-# http://www.netlib.org/ampl into the "netlib" branch of the GitHub
-# repository https://github.com/vitaut/ampl/
+# This script updates the "netlib" branch from the AMPL Solver Library
+# repository on Netlib http://www.netlib.org/ampl
 
 git stash -u
 git checkout netlib
