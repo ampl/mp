@@ -9,7 +9,9 @@ git checkout netlib
 rsync -avz --delete --exclude=.git --exclude=student netlib.org::netlib/ampl/ .
 chmod +x solvers/configurehere
 git add .
-git commit -m 'Upstream changes'
+if ! git diff-index --quiet HEAD --; then
+  git commit -m 'Upstream changes'
+fi
 git checkout master
 set +e
 git stash pop
