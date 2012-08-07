@@ -6,12 +6,20 @@ set -e
 git fetch git@github.com:vitaut/ampl.git +netlib:netlib
 git stash -u
 git checkout netlib
+
+# Get changes from Netlib.
 rsync -avz --delete --exclude=.git --exclude=student netlib.org::netlib/ampl/ .
+
+# Fix permissions.
 chmod +x solvers/configurehere
+
 git add .
+
+# Commit changes if there are any.
 if ! git diff-index --quiet HEAD --; then
   git commit -m 'Upstream changes'
 fi
+
 git checkout master
 set +e
 git stash pop
