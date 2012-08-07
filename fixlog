@@ -8865,3 +8865,7 @@ commands.  Note that using iterated commands, such as iterated "let",
 appropriate can greatly reduce the number of commands executed and
 give much faster executions.  Using slices suitably sometimes also
 greatly speeds up execution.
+
+20120804
+  Fix a glitch that gave error message "opnumber 243 in opgen"
+under complicated conditions.
