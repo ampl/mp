@@ -1,7 +1,3 @@
-20120629
-  Fix another bug that could only bite after a very large number of
-commands.  Note that using iterated commands, such as iterated "let",
-"printf", "drop", etc.  commands, rather than "for" loops, where
-appropriate can greatly reduce the number of commands executed and
-give much faster executions.  Using slices suitably sometimes also
-greatly speeds up execution.
+20120804
+  Fix a glitch that gave error message "opnumber 243 in opgen"
+under complicated conditions.
