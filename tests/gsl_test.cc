@@ -364,9 +364,9 @@ class Error {
   const char* c_str() const { return str.c_str(); }
 };
 
-Error EvalError(const Function &af, const Tuple &args, const char *suffix = "") {
+Error EvalError(const Function &f, const Tuple &args, const char *suffix = "") {
   std::ostringstream os;
-  os << "can't evaluate " << af.name() << suffix << args;
+  os << "can't evaluate " << f.name() << suffix << args;
   return os.str();
 }
 
@@ -494,13 +494,13 @@ double Derivative::operator()(double x) {
 // partial derivatives.
 // args: point at which the derivatives are computed
 // skip_var: index of the variable with respect to which not to differentiate
-void CheckSecondDerivatives(const Function &af,
+void CheckSecondDerivatives(const Function &f,
     const Tuple &args, unsigned skip_var = Dig::NO_VAR) {
   const vector<real> &ra = args.get();
   unsigned num_args = ra.size();
   if (skip_var == Dig::NO_VAR) {
     for (unsigned i = 0; i < num_args; ++i) {
-      if (!af.DerivativeError(i, args).empty()) {
+      if (!f.DerivativeError(i, args).empty()) {
         skip_var = i;
         break;
       }
@@ -514,34 +514,33 @@ void CheckSecondDerivatives(const Function &af,
       dig[i] = 0;
       dig[j] = 0;
       double error = 0;
-      string error_message = af.Derivative2Error(args);
+      string error_message = f.Derivative2Error(args);
       double d = error_message.empty() ?
-          Diff(Derivative(af, j, i, args), ra[i], &error) : GSL_NAN;
+          Diff(Derivative(f, j, i, args), ra[i], &error) : GSL_NAN;
       std::ostringstream os;
       os << "Checking if d/dx" << i << " d/dx" << j
-          << " " << af.name() << " at " << args << " is " << d;
+          << " " << f.name() << " at " << args << " is " << d;
       SCOPED_TRACE(os.str());
       if (gsl_isnan(d)) {
-        Result r = af(args, HES, &dig[0]);
-        if (af(args, DERIVS, &dig[0]).error())
+        Result r = f(args, HES, &dig[0]);
+        if (f(args, DERIVS, &dig[0]).error())
           EXPECT_TRUE(r.error() != nullptr);
         else if (!error_message.empty())
           EXPECT_ERROR(error_message.c_str(), r);
         else
-          EXPECT_ERROR(EvalError(af, args, "''"), r);
+          EXPECT_ERROR(EvalError(f, args, "''"), r);
         continue;
       }
       unsigned ii = i, jj = j;
       if (ii > jj) std::swap(ii, jj);
       unsigned hes_index = ii * (2 * num_args - ii - 1) / 2 + jj;
-      EXPECT_NEAR(d, af(args, HES, &dig[0]).hes(hes_index),
+      EXPECT_NEAR(d, f(args, HES, &dig[0]).hes(hes_index),
           ConvertErrorToTolerance(error));
     }
   }
 }
 
 typedef double (*FuncU)(unsigned);
-typedef double (*Func3)(double, double, double);
 typedef double (*Func3Mode)(double, double, double, gsl_mode_t);
 typedef double (*FuncND)(int, double);
 
@@ -644,7 +643,7 @@ class GSLTest : public ::testing::Test {
   template <typename F>
   void TestTernaryFunc(const Function &af, F f);
 
-  void TestFunc(const Function &af, Func3 f) {
+  void TestFunc(const Function &af, double (*f)(double, double, double)) {
     TestTernaryFunc(af, f);
   }
   void TestFunc(const Function &af, Func3Mode f) {
