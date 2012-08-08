@@ -108,8 +108,8 @@ class FunctionInfo {
  public:
   virtual ~FunctionInfo() {}
 
-  std::string arg_name(unsigned index) const {
-    return index < arg_names_.size() ? arg_names_[index] : std::string();
+  string arg_name(unsigned index) const {
+    return index < arg_names_.size() ? arg_names_[index] : string();
   }
 
   void set_arg_names(const char *arg_names) {
@@ -574,7 +574,7 @@ template <typename Arg1, typename Arg2, typename Arg3, typename Result>
 struct ternary_function {
   typedef Arg1 first_argument_type;
   typedef Arg2 second_argument_type;
-  typedef Arg2 third_argument_type;
+  typedef Arg3 third_argument_type;
   typedef Result result_type;
 };
 
@@ -836,6 +836,27 @@ Binder2Of3<F> Bind2Of3(F f,
   return Binder2Of3<F>(f, unbound_arg_index, arg1, arg2);
 }
 
+// Checks that the error is returned when trying to get a derivative
+// with respect to an integer argument.
+// Returns true if the argument is integer, false otherwise.
+template <typename Arg>
+bool CheckArg(const Function &, const Tuple &, unsigned);
+
+template <>
+bool CheckArg<double>(const Function &, const Tuple &, unsigned) {
+  return false;
+}
+
+template <>
+bool CheckArg<int>(const Function &f, const Tuple &args, unsigned arg_index) {
+  std::ostringstream os;
+  vector<char> dig(args.size(), 1);
+  dig.at(arg_index) = 0;
+  os << "argument '" << f.arg_name(arg_index) << "' is not constant";
+  EXPECT_STREQ(os.str().c_str(), f(args, DERIVS, &dig[0]).error());
+  return true;
+}
+
 template <typename F>
 void GSLTest::TestTernaryFunc(const Function &af, F f) {
   for (size_t i = 0; i != NUM_POINTS; ++i) {
@@ -847,14 +868,17 @@ void GSLTest::TestTernaryFunc(const Function &af, F f) {
           EXPECT_STREQ(NotIntError(af.arg_name(0), x), af(args).error());
           continue;
         }
-        if (static_cast<typename F::first_argument_type>(y) != y) {
+        if (static_cast<typename F::second_argument_type>(y) != y) {
           EXPECT_STREQ(NotIntError(af.arg_name(1), y), af(args).error());
           continue;
         }
         CheckFunction(f(x, y, z), af, args);
-        CheckDerivative(Bind2Of3(f, 0, y, z), af, 0, args);
-        CheckDerivative(Bind2Of3(f, 1, x, z), af, 1, args);
-        CheckDerivative(Bind2Of3(f, 2, x, y), af, 2, args);
+        if (!CheckArg<typename F::first_argument_type>(af, args, 0))
+          CheckDerivative(Bind2Of3(f, 0, y, z), af, 0, args);
+        if (!CheckArg<typename F::second_argument_type>(af, args, 1))
+          CheckDerivative(Bind2Of3(f, 1, x, z), af, 1, args);
+        if (!CheckArg<typename F::third_argument_type>(af, args, 2))
+          CheckDerivative(Bind2Of3(f, 2, x, y), af, 2, args);
         CheckSecondDerivatives(af, args);
       }
     }
@@ -1363,7 +1387,7 @@ TEST_F(GSLTest, Dilog) {
 }
 
 struct NoDerivativeInfo : FunctionInfo {
-  virtual string DerivativeError(const Function &, unsigned, const Tuple &) {
+  string DerivativeError(const Function &, unsigned, const Tuple &) {
     return "derivatives are not provided";
   }
 };
@@ -1517,27 +1541,9 @@ TEST_F(GSLTest, GegenPoly) {
   TEST_FUNC(sf_gegenpoly_2);
   TEST_FUNC(sf_gegenpoly_3);
 
-  Function f = GetFunction("gsl_sf_gegenpoly_n");
-  EXPECT_EQ(2, f(Tuple(1, 1, 1)));
-  EXPECT_ERROR("argument 'n' can't be represented as int, n = 1.1",
-      f(Tuple(1.1, 1, 1)));
-  for (size_t in = 0; in != NUM_POINTS_FOR_N; ++in) {
-    int n = POINTS_FOR_N[in];
-    for (size_t ilambda = 0; ilambda != NUM_POINTS; ++ilambda) {
-     for (size_t ix = 0; ix != NUM_POINTS; ++ix) {
-       double lambda = POINTS[ilambda], x = POINTS[ix];
-       Tuple args(n, lambda, x);
-       CheckFunction(gsl_sf_gegenpoly_n(n, lambda, x), f, args);
-       const char *error = "argument 'n' is not constant";
-       EXPECT_ERROR(error, f(args, DERIVS));
-       EXPECT_ERROR(error, f(args, HES));
-       char dig[] = {1, 0, 0};
-       error = "derivatives are not provided";
-       EXPECT_ERROR(error, f(args, DERIVS, dig));
-       EXPECT_ERROR(error, f(args, HES, dig));
-     }
-    }
-  }
+  NoDerivativeInfo info;
+  info.set_arg_names("n");
+  TEST_FUNC(sf_gegenpoly_n);
 }
 
 struct Hyperg0F1Info : FunctionInfo {
@@ -1549,17 +1555,7 @@ struct Hyperg0F1Info : FunctionInfo {
 };
 
 struct Hyperg1F1Info : FunctionInfo {
-  string DerivativeError(const Function &f,
-      unsigned var_index, const Tuple &args) {
-    // Partial derivatives with respect to m and n are not provided.
-    if (var_index == 0) return "argument 'm' is not constant";
-    if (var_index == 1) return "argument 'n' is not constant";
-    if (args[1] <= 0)
-      return EvalError(f, args, "'").c_str();
-    return "";
-  }
-
-  string Derivative2Error(const Function &f, const Tuple &args) {
+  string DerivativeError(const Function &f, unsigned, const Tuple &args) {
     return args[1] <= 0 ? EvalError(f, args, "'").c_str() : "";
   }
 };
@@ -1571,7 +1567,7 @@ TEST_F(GSLTest, Hyperg) {
   }
   {
     Hyperg1F1Info info;
-    info.set_arg_names("m n");
+    info.set_arg_names("m n x");
     TEST_FUNC(sf_hyperg_1F1_int);
   }
 }
