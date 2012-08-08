@@ -1975,6 +1975,38 @@ static double amplgsl_sf_gegenpoly_n(arglist *al) {
       "gsl_sf_gegenpoly_n");
 }
 
+static double amplgsl_sf_hyperg_0F1(arglist *al) {
+  double c = al->ra[0], x = al->ra[1];
+  if (al->derivs) {
+    if (!check_const_arg(al, 0, "c"))
+      return 0;
+    al->derivs[1] = gsl_sf_hyperg_0F1(c + 1, x) / c;
+    if (al->hes)
+      al->hes[2] = gsl_sf_hyperg_0F1(c + 2, x) / (c * (c + 1));
+  }
+  return check_result(al, gsl_sf_hyperg_0F1(c, x), "gsl_sf_hyperg_0F1");
+}
+
+static double amplgsl_sf_hyperg_1F1_int(arglist *al) {
+  int m = (int)al->ra[0], n = (int)al->ra[1];
+  double x = al->ra[2];
+  if (!check_int_arg(al, 0, "m") || !check_int_arg(al, 1, "n"))
+    return 0;
+  if (al->derivs) {
+    /* If n is an integer <= 0, then 1F1(m; n; x) is undefined.
+       See http://mathworld.wolfram.com/
+       ConfluentHypergeometricFunctionoftheFirstKind.html */
+    al->derivs[2] = n > 0 ?
+        m * gsl_sf_hyperg_1F1_int(m + 1, n + 1, x) / n : GSL_NAN;
+    if (al->hes) {
+      al->hes[5] =
+          m * (m + 1) * gsl_sf_hyperg_1F1_int(m + 2, n + 2, x) / (n * (n + 1));
+    }
+  }
+  return check_result(al, gsl_sf_hyperg_1F1_int(m, n, x),
+      "gsl_sf_hyperg_1F1_int");
+}
+
 void funcadd_ASL(AmplExports *ae) {
   /* Don't call abort on error. */
   gsl_set_error_handler_off();
@@ -2240,6 +2272,12 @@ void funcadd_ASL(AmplExports *ae) {
   addfunc("gsl_sf_gegenpoly_3", amplgsl_sf_gegenpoly_3,
       FUNCADD_REAL_VALUED, 2, 0);
   addfunc("gsl_sf_gegenpoly_n", amplgsl_sf_gegenpoly_n,
+      FUNCADD_REAL_VALUED, 3, 0);
+
+  /* Hypergeometric Functions */
+  addfunc("gsl_sf_hyperg_0F1", amplgsl_sf_hyperg_0F1,
+      FUNCADD_REAL_VALUED, 2, 0);
+  addfunc("gsl_sf_hyperg_1F1_int", amplgsl_sf_hyperg_1F1_int,
       FUNCADD_REAL_VALUED, 3, 0);
   // TODO
 }
