@@ -1,19 +1,52 @@
 // Function adapters, binders, numerical differentiator and other
-// function-related functionality.
+// function-related stuff.
 
 #ifndef TESTS_FUNCTIONAL_H
 #define TESTS_FUNCTIONAL_H
 
 #include <algorithm>
+#include <iostream>
 #include <limits>
+#include <stdexcept>
 #include <vector>
 #include <cmath>
 
-#ifdef DEBUG_DIFFERENTIATOR
-# include <iostream>
-#endif
-
 namespace fun {
+
+// A tuple of doubles.
+class Tuple {
+ private:
+  std::vector<double> items_;
+
+  Tuple &operator<<(double arg) {
+    items_.push_back(arg);
+    return *this;
+  }
+
+ public:
+  Tuple(double a0) { *this << a0; }
+  Tuple(double a0, double a1) { *this << a0 << a1; }
+  Tuple(double a0, double a1, double a2) { *this << a0 << a1 << a2; }
+  Tuple(double a0, double a1, double a2, double a3) {
+    *this << a0 << a1 << a2 << a3;
+  }
+  Tuple(double a0, double a1, double a2, double a3, double a4) {
+    *this << a0 << a1 << a2 << a3 << a4;
+  }
+  Tuple(double a0, double a1, double a2, double a3, double a4, double a5) {
+    *this << a0 << a1 << a2 << a3 << a4 << a5;
+  }
+  Tuple(double a0, double a1, double a2, double a3,
+      double a4, double a5, double a6, double a7, double a8) {
+    *this << a0 << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8;
+  }
+
+  unsigned size() const { return items_.size(); }
+  double &operator[](unsigned index) { return items_.at(index); }
+  double operator[](unsigned index) const { return items_.at(index); }
+};
+
+std::ostream &operator<<(std::ostream &os, const Tuple &t);
 
 // A base class for ternary function objects.
 template <typename Arg1, typename Arg2, typename Arg3, typename Result>
@@ -37,6 +70,35 @@ public:
     f_(f) {}
   Result operator()(Arg1 x, Arg2 y, Arg3 z) const { return f_(x, y, z); }
 };
+
+// A functor class with 2 out of 3 arguments bound.
+template <typename F>
+class Binder2Of3 {
+ private:
+  F f_;
+  mutable Tuple args_;
+  unsigned unbound_arg_index_;
+
+ public:
+  Binder2Of3(F f, const Tuple &args, unsigned unbound_arg_index)
+  : f_(f), args_(args), unbound_arg_index_(unbound_arg_index) {
+    if (args.size() != 3)
+      throw std::out_of_range("invalid number of arguments");
+    if (unbound_arg_index > args.size())
+      throw std::out_of_range("argument index is out of range");
+  }
+
+  double operator()(double x) const {
+    args_[unbound_arg_index_] = x;
+    return f_(args_[0], args_[1], args_[2]);
+  }
+};
+
+// Binds 2 out of 3 arguments.
+template <typename F>
+Binder2Of3<F> Bind2Of3(F f, const Tuple &args, unsigned unbound_arg_index) {
+  return Binder2Of3<F>(f, args, unbound_arg_index);
+}
 
 // A utility class for computing the derivative by Ridders' method
 // of polynomial extrapolation. The implementation is taken from
@@ -80,7 +142,7 @@ class Differentiator {
   // Returns the derivative of a function f at a point x by Ridders'
   // method of polynomial extrapolation trying to detect indeterminate case.
   template <typename F>
-  double operator()(F f, double x, double *error, bool *detected_nan);
+  double operator()(F f, double x, double *error = 0, bool *detected_nan = 0);
 };
 
 template <typename F, typename D>
