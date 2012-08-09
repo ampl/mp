@@ -227,9 +227,9 @@ class Dig {
 
 // A helper class that wraps a Function's derivative and binds
 // all but one argument to the given values.
-class Derivative {
+class DerivativeBinder {
  private:
-  Function af_;
+  Function f_;
   unsigned deriv_var_;
   unsigned eval_var_;
   Tuple args_;
@@ -237,18 +237,18 @@ class Derivative {
 
  public:
   // Creates a Derivative object.
-  // eval_var:  index of a variable which is not bound
   // deriv_var: index of a variable with respect to which
   //            the derivative is taken
-  Derivative(Function af, unsigned deriv_var,
+  // eval_var:  index of a variable which is not bound
+  DerivativeBinder(Function f, unsigned deriv_var,
       unsigned eval_var, const Tuple &args);
 
   double operator()(double x);
 };
 
-Derivative::Derivative(Function af, unsigned deriv_var,
+DerivativeBinder::DerivativeBinder(Function f, unsigned deriv_var,
     unsigned eval_var, const Tuple &args)
-: af_(af), deriv_var_(deriv_var), eval_var_(eval_var),
+: f_(f), deriv_var_(deriv_var), eval_var_(eval_var),
   args_(args), dig_(args.size(), 1) {
   unsigned num_vars = args_.size();
   if (deriv_var >= num_vars || eval_var >= num_vars)
@@ -256,9 +256,9 @@ Derivative::Derivative(Function af, unsigned deriv_var,
   dig_[deriv_var] = 0;
 }
 
-double Derivative::operator()(double x) {
+double DerivativeBinder::operator()(double x) {
   args_[eval_var_] = x;
-  Result r = af_(args_, DERIVS, &dig_[0]);
+  Result r = f_(args_, DERIVS, &dig_[0]);
   return r.error() ? GSL_NAN : r.deriv(deriv_var_);
 }
 
@@ -494,7 +494,7 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
       double error = 0;
       string error_message = f.Derivative2Error(args);
       if (error_message.empty()) {
-        double d = Diff(Derivative(f, j, i, args), args[i], &error);
+        double d = Diff(DerivativeBinder(f, j, i, args), args[i], &error);
         double overridden_deriv = f.info()->GetSecondDerivative(j, i, args);
         if (!gsl_isnan(overridden_deriv) && overridden_deriv != d) {
           std::cout << "Overriding d/dx" << i << " d/dx" << j << " "
@@ -828,18 +828,18 @@ double ellint_E(double x) {
   return gsl_sf_ellint_E(-1.23, x, GSL_PREC_DOUBLE);
 }
 
-TEST_F(GSLTest, Derivative) {
-  Derivative d(GetFunction("gsl_hypot"), 0, 1, Tuple(1, 0));
+TEST_F(GSLTest, DerivativeBinder) {
+  DerivativeBinder d(GetFunction("gsl_hypot"), 0, 1, Tuple(1, 0));
   ASSERT_EQ(1, d(0));
   ASSERT_EQ(1 / sqrt(2), d(1));
-  d = Derivative(GetFunction("gsl_hypot"), 1, 1, Tuple(1, 0));
+  d = DerivativeBinder(GetFunction("gsl_hypot"), 1, 1, Tuple(1, 0));
   ASSERT_EQ(0, d(0));
   ASSERT_EQ(1 / sqrt(2), d(1));
   EXPECT_THROW(
-      Derivative(GetFunction("gsl_hypot"), 2, 0, Tuple(0, 0)),
+      DerivativeBinder(GetFunction("gsl_hypot"), 2, 0, Tuple(0, 0)),
       std::out_of_range);
   EXPECT_THROW(
-      Derivative(GetFunction("gsl_hypot"), 0, 2, Tuple(0, 0)),
+      DerivativeBinder(GetFunction("gsl_hypot"), 0, 2, Tuple(0, 0)),
       std::out_of_range);
 }
 
