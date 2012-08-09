@@ -97,6 +97,16 @@ TEST(FunctionalTest, Bind2Of3) {
   fun::Binder2Of3<Fun> f3(TestFun2, Tuple(5, 7, 0), 2);
   EXPECT_EQ(573, Bind2Of3(TestFun2, Tuple(5, 7, 0), 2)(3));
   EXPECT_EQ(573, f3(3));
+
+  EXPECT_THROW(fun::Binder2Of3<Fun>(TestFun2, Tuple(1), 0),
+      std::out_of_range);
+  EXPECT_THROW(fun::Binder2Of3<Fun>(TestFun2, Tuple(1, 2), 0),
+      std::out_of_range);
+  fun::Binder2Of3<Fun>(TestFun2, Tuple(1, 2, 3), 0);
+  EXPECT_THROW(fun::Binder2Of3<Fun>(TestFun2, Tuple(1, 2, 3, 4), 0),
+      std::out_of_range);
+  EXPECT_THROW(fun::Binder2Of3<Fun>(TestFun2, Tuple(1, 2, 3), 3),
+      std::out_of_range);
 }
 
 double Hypot(double x, double y) {
