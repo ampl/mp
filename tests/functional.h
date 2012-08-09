@@ -93,7 +93,7 @@ Binder2Of3<F>::Binder2Of3(F f, const Tuple &args, unsigned unbound_arg_index)
 : f_(f), args_(args), unbound_arg_index_(unbound_arg_index) {
   if (args.size() != 3)
     throw std::out_of_range("invalid number of arguments");
-  if (unbound_arg_index > args.size())
+  if (unbound_arg_index >= args.size())
     throw std::out_of_range("argument index is out of range");
 }
 
