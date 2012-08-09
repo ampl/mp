@@ -1,6 +1,7 @@
 /student
 /*Subprojects*
 /*Targets*
+/tests/data/*.sol
 *~
 *.o
 *.a
