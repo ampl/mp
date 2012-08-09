@@ -15,14 +15,14 @@ using fun::Differentiator;
 
 namespace {
 
-const double ARGS[] = {5, 7, 11, 13, 17, 19, 23, 29, 31};
+const double ITEMS[] = {5, 7, 11, 13, 17, 19, 23, 29, 31};
 
 void CheckTuple(unsigned size, const Tuple &t) {
   EXPECT_EQ(size, t.size());
   Tuple copy(t);
   for (unsigned i = 0; i < size; ++i) {
-    EXPECT_EQ(ARGS[i], t[i]);
-    EXPECT_EQ(ARGS[i], copy[i]);
+    EXPECT_EQ(ITEMS[i], t[i]);
+    EXPECT_EQ(ITEMS[i], copy[i]);
     copy[i] = 42;
     EXPECT_EQ(42, copy[i]);
   }
@@ -58,7 +58,12 @@ TEST(FunctionalTest, TernaryFunction) {
   EXPECT_TYPE(double, Fun::result_type);
 }
 
-double Ternary(bool b, char c, int i) { return b + c + i; }
+double TestFun1(bool b, char c, int i) {
+  EXPECT_EQ(true, b);
+  EXPECT_EQ('a', c);
+  EXPECT_EQ(42, i);
+  return 777;
+}
 
 TEST(FunctionalTest, PointerToTernaryFunction) {
   typedef fun::pointer_to_ternary_function<bool, char, int, double> Fun;
@@ -66,8 +71,8 @@ TEST(FunctionalTest, PointerToTernaryFunction) {
   EXPECT_TYPE(char, Fun::second_argument_type);
   EXPECT_TYPE(int, Fun::third_argument_type);
   EXPECT_TYPE(double, Fun::result_type);
-  Fun f(Ternary);
-  EXPECT_EQ(true + 'a' + 42, f(true, 'a', 42));
+  Fun f(TestFun1);
+  EXPECT_EQ(777, f(true, 'a', 42));
 }
 
 TEST(FunctionalTest, Fun) {
@@ -77,9 +82,24 @@ TEST(FunctionalTest, Fun) {
       1e-5);
 }
 
-// TODO: test binders
+double TestFun2(double x, double y, double z) {
+  return x * 100 + y * 10 + z;
+}
 
-double hypot(double x, double y) {
+TEST(FunctionalTest, Bind2Of3) {
+  typedef double (*Fun)(double, double, double);
+  fun::Binder2Of3<Fun> f1(TestFun2, Tuple(0, 5, 7), 0);
+  EXPECT_EQ(357, Bind2Of3(TestFun2, Tuple(0, 5, 7), 0)(3));
+  EXPECT_EQ(357, f1(3));
+  fun::Binder2Of3<Fun> f2(TestFun2, Tuple(5, 0, 7), 1);
+  EXPECT_EQ(537, Bind2Of3(TestFun2, Tuple(5, 0, 7), 1)(3));
+  EXPECT_EQ(537, f2(3));
+  fun::Binder2Of3<Fun> f3(TestFun2, Tuple(5, 7, 0), 2);
+  EXPECT_EQ(573, Bind2Of3(TestFun2, Tuple(5, 7, 0), 2)(3));
+  EXPECT_EQ(573, f3(3));
+}
+
+double Hypot(double x, double y) {
   return sqrt(x * x + y * y);
 }
 
@@ -92,7 +112,7 @@ TEST(FunctionalTest, Differentiator) {
   EXPECT_NEAR(1, diff(GetDoubleFun(std::sin), 0, &error), 1e-7);
   EXPECT_NEAR(0, error, 1e-10);
   EXPECT_NEAR(0.25, diff(GetDoubleFun(sqrt), 4), 1e-7);
-  EXPECT_NEAR(0, diff(std::bind2nd(ptr_fun(hypot), -5), 0), 1e-7);
+  EXPECT_NEAR(0, diff(std::bind2nd(ptr_fun(Hypot), -5), 0), 1e-7);
 }
 
 TEST(FunctionalTest, DifferentiatorPropagatesNaN) {
@@ -103,8 +123,8 @@ TEST(FunctionalTest, DifferentiatorPropagatesNaN) {
 
 TEST(FunctionalTest, DifferentiatorDetectsNaN) {
   Differentiator diff;
-  EXPECT_EQ(0, std::bind2nd(ptr_fun(hypot), 0)(0));
-  EXPECT_TRUE(std::isnan(diff(std::bind2nd(ptr_fun(hypot), 0), 0)));
+  EXPECT_EQ(0, std::bind2nd(ptr_fun(Hypot), 0)(0));
+  EXPECT_TRUE(std::isnan(diff(std::bind2nd(ptr_fun(Hypot), 0), 0)));
   EXPECT_EQ(-std::numeric_limits<double>::infinity(), std::log(0));
   EXPECT_TRUE(std::isnan(diff(GetDoubleFun(std::log), 0)));
 }

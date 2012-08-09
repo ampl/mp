@@ -80,19 +80,22 @@ class Binder2Of3 {
   unsigned unbound_arg_index_;
 
  public:
-  Binder2Of3(F f, const Tuple &args, unsigned unbound_arg_index)
-  : f_(f), args_(args), unbound_arg_index_(unbound_arg_index) {
-    if (args.size() != 3)
-      throw std::out_of_range("invalid number of arguments");
-    if (unbound_arg_index > args.size())
-      throw std::out_of_range("argument index is out of range");
-  }
+  Binder2Of3(F f, const Tuple &args, unsigned unbound_arg_index);
 
   double operator()(double x) const {
     args_[unbound_arg_index_] = x;
     return f_(args_[0], args_[1], args_[2]);
   }
 };
+
+template <typename F>
+Binder2Of3<F>::Binder2Of3(F f, const Tuple &args, unsigned unbound_arg_index)
+: f_(f), args_(args), unbound_arg_index_(unbound_arg_index) {
+  if (args.size() != 3)
+    throw std::out_of_range("invalid number of arguments");
+  if (unbound_arg_index > args.size())
+    throw std::out_of_range("argument index is out of range");
+}
 
 // Binds 2 out of 3 arguments.
 template <typename F>
