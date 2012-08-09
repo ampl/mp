@@ -1,7 +1,13 @@
 /student
 /*Subprojects*
 /*Targets*
+/solvers/concert/Makefile
+/solvers/gsl/Makefile
+/solvers/makefile
+/tests/Makefile
+/tests/gtest/Makefile
 /tests/data/*.sol
+/Makefile
 *~
 *.o
 *.a
