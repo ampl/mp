@@ -1,4 +1,24 @@
-// Tests for the functional stuff.
+/*
+ Tests of the AMPL function testing infrastructure.
+
+ Copyright (C) 2012 AMPL Optimization LLC
+
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose and without fee is hereby granted,
+ provided that the above copyright notice appear in all copies and that
+ both that the copyright notice and this permission notice and warranty
+ disclaimer appear in supporting documentation.
+
+ The author and AMPL Optimization LLC disclaim all warranties with
+ regard to this software, including all implied warranties of
+ merchantability and fitness.  In no event shall the author be liable
+ for any special, indirect or consequential damages or any damages
+ whatsoever resulting from loss of use, data or profits, whether in an
+ action of contract, negligence or other tortious action, arising out
+ of or in connection with the use or performance of this software.
+
+ Author: Victor Zverovich
+ */
 
 #include <limits>
 #include <sstream>
@@ -73,8 +93,10 @@ TEST(FunctionTest, BitSet) {
   CheckBitSet("1010", BitSet("1010"));
 }
 
-#define EXPECT_TYPE(expected, actual) \
-  { expected *e = static_cast<actual*>(0); e = e; }
+#define EXPECT_TYPE(expected, actual) { \
+    expected *e = static_cast<actual*>(0); \
+    e = e; \
+  }
 
 TEST(FunctionTest, TernaryFunction) {
   typedef fun::ternary_function<bool, char, int, double> Fun;
@@ -139,7 +161,7 @@ double Hypot(double x, double y) {
   return sqrt(x * x + y * y);
 }
 
-typedef double (*DoubleFun)(double);
+typedef double (*DoubleFun)(double x);
 DoubleFun GetDoubleFun(DoubleFun f) { return f; }
 
 TEST(FunctionTest, Differentiator) {
@@ -199,7 +221,7 @@ TEST(FunctionTest, ErrorResult) {
   const char *error = "brain overflow";
   Function::Result r(42, vector<real>(ARGS, ARGS + 2),
       vector<real>(ARGS + 2, ARGS + 5), error);
-  EXPECT_THROW((double)r, std::runtime_error);
+  EXPECT_THROW(static_cast<double>(r), std::runtime_error);
   EXPECT_THROW(r.deriv(), std::runtime_error);
   EXPECT_THROW(r.deriv(0), std::runtime_error);
   EXPECT_THROW(r.hes(), std::runtime_error);
@@ -252,7 +274,7 @@ class TestFunction {
   Function f_;
 
  public:
-  TestFunction(int nargs)
+  explicit TestFunction(int nargs)
   : testASL_(), ae_(), fi_(), f_(&testASL_, &fi_, 0) {
     testASL_.i.ae = &ae_;
     fi_.nargs = nargs;
@@ -266,7 +288,7 @@ class TestFunction {
 TEST(FunctionTest, FunctionCall) {
   TestFunction f(1);
   CallData data = {};
-  EXPECT_EQ(42, f.get()(777, 0, BitSet(), &data));
+  EXPECT_EQ(42, f.get()(Tuple(777), 0, BitSet(), &data));
   EXPECT_EQ(f.ae(), data.ae);
   ASSERT_EQ(1, data.n);
   EXPECT_EQ(1, data.nr);
@@ -280,7 +302,7 @@ TEST(FunctionTest, FunctionCall) {
 TEST(FunctionTest, FunctionReturnsError) {
   TestFunction f(1);
   CallData data = {};
-  EXPECT_STREQ("oops", f.get()(-1, 0, BitSet(), &data).error());
+  EXPECT_STREQ("oops", f.get()(Tuple(-1), 0, BitSet(), &data).error());
 }
 
 TEST(FunctionTest, FunctionReturnsDerivs) {
@@ -324,5 +346,4 @@ TEST(FunctionTest, FunctionReturnsHes) {
   EXPECT_TRUE(data.dig == nullptr);
   EXPECT_TRUE(data.error == nullptr);
 }
-
 }
