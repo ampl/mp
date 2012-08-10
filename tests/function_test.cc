@@ -5,7 +5,7 @@
 #include <cmath>
 
 #include "gtest/gtest.h"
-#include "tests/functional.h"
+#include "tests/function.h"
 
 using std::ptr_fun;
 using std::sqrt;

@@ -1,15 +1,19 @@
 // Function adapters, binders, numerical differentiator and other
 // function-related stuff.
 
-#ifndef TESTS_FUNCTIONAL_H
-#define TESTS_FUNCTIONAL_H
+#ifndef TESTS_FUNCTION_H
+#define TESTS_FUNCTION_H
 
 #include <algorithm>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
+#include <string>
 #include <vector>
 #include <cmath>
+
+struct ASL;
+struct func_info;
 
 namespace fun {
 
@@ -47,6 +51,26 @@ class Tuple {
 };
 
 std::ostream &operator<<(std::ostream &os, const Tuple &t);
+
+// A dynamic bit set.
+class BitSet {
+ private:
+  std::vector<bool> store_;
+
+ public:
+  typedef std::vector<bool>::reference reference;
+  typedef std::vector<bool>::const_reference const_reference;
+
+  BitSet() {}
+
+  BitSet(unsigned size, bool value) : store_(size, value) {}
+
+  explicit BitSet(const char *s);
+
+  unsigned size() const { return store_.size(); }
+  reference operator[](unsigned index) { return store_.at(index); }
+  const_reference operator[](unsigned index) const { return store_.at(index); }
+};
 
 // A base class for ternary function objects.
 template <typename Arg1, typename Arg2, typename Arg3, typename Result>
@@ -230,6 +254,106 @@ double Differentiator::operator()(
   return deriv;
 }
 
+// An immutable result of an AMPL function call.
+class Result {
+ private:
+  double value_;
+  std::vector<double> derivs_;
+  std::vector<double> hes_;
+  const char *error_;
+
+  void CheckError() const {
+    if (error_)
+      throw std::runtime_error(error_);
+  }
+
+ public:
+  Result(double value, const std::vector<double> &derivs,
+      const std::vector<double> &hes, const char *error) :
+    value_(value), derivs_(derivs), hes_(hes), error_(error) {}
+
+  operator double() const {
+    CheckError();
+    return value_;
+  }
+
+  double deriv(size_t index = 0) const {
+    CheckError();
+    return derivs_.at(index);
+  }
+  double hes(size_t index = 0) const {
+    CheckError();
+    return hes_.at(index);
+  }
+
+  const char *error() const { return error_; }
+};
+
+class Function;
+
+// Function information that can't be obtained automatically, in particular
+// due to limitations of numerical differentiation.
+class FunctionInfo {
+ private:
+  std::vector<std::string> arg_names_;
+
+ public:
+  virtual ~FunctionInfo();
+
+  std::string GetArgName(unsigned index) const {
+    return arg_names_.at(index);
+  }
+
+  void SetArgNames(const char *arg_names);
+
+  virtual double GetDerivative(unsigned arg_index, const Tuple &args) ;
+  virtual double GetSecondDerivative(
+      unsigned arg1_index, unsigned arg2_index, const Tuple &args);
+
+  virtual std::string DerivativeError(
+      const Function &f, unsigned arg_index, const Tuple &args);
+  virtual std::string Derivative2Error(const Function &f, const Tuple &args) ;
+};
+
+// Flags for an AMPL function call.
+enum {
+  DERIVS = 1, // Get first partial derivatives.
+  HES    = 3  // Get both first and second partial derivatives.
+};
+
+// An AMPL function.
+class Function {
+ private:
+  ASL *asl_;
+  func_info *fi_;
+  FunctionInfo *info_;
+
+ public:
+  Function(ASL *asl, func_info *fi, FunctionInfo *info) :
+    asl_(asl), fi_(fi), info_(info) {}
+
+  const char *name() const;
+
+  FunctionInfo *info() const { return info_; }
+
+  // Calls a function.
+  // Argument vector is passed by value intentionally to avoid
+  // rogue functions accidentally overwriting arguments.
+  Result operator()(const Tuple &args, int flags = 0,
+      const BitSet &use_deriv = BitSet(), void *info = 0) const;
+
+  std::string DerivativeError(unsigned var_index, const Tuple &args) const {
+    return info_->DerivativeError(*this, var_index, args);
+  }
+  std::string Derivative2Error(const Tuple &args) const {
+    return info_->Derivative2Error(*this, args);
+  }
+
+  std::string GetArgName(unsigned index) const {
+    return info_->GetArgName(index);
+  }
+};
+
 }
 
-#endif // TESTS_FUNCTIONAL_H
+#endif // TESTS_FUNCTION_H
