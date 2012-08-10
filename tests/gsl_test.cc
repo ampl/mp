@@ -4,6 +4,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <vector>
+#include <cstring>
 
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf.h>
@@ -89,6 +90,41 @@ class FunctionInfo {
   }
 };
 
+// A dynamic bit set.
+class BitSet {
+ private:
+  vector<bool> store_;
+
+ public:
+  typedef vector<bool>::reference reference;
+  typedef vector<bool>::const_reference const_reference;
+
+  BitSet() {}
+
+  BitSet(unsigned size, bool value) : store_(size, value) {}
+
+  explicit BitSet(const char *s);
+
+  unsigned size() const { return store_.size(); }
+  reference operator[](unsigned index) { return store_.at(index); }
+  const_reference operator[](unsigned index) const { return store_.at(index); }
+};
+
+BitSet::BitSet(const char *s) {
+  if (!s) return;
+  unsigned num_args = std::strlen(s);
+  store_.resize(num_args);
+  for (unsigned i = 0; i < num_args; ++i) {
+    char c = s[i];
+    if (c == '0')
+      store_[i] = false;
+    else if (c == '1')
+      store_[i] = true;
+    else
+      throw std::invalid_argument("invalid argument to BitSet");
+  }
+}
+
 // Flags for an AMPL function call.
 enum {
   DERIVS = 1, // Get first partial derivatives.
@@ -113,8 +149,8 @@ class Function {
   // Calls a function.
   // Argument vector is passed by value intentionally to avoid
   // rogue functions accidentally overwriting arguments.
-  Result operator()(const Tuple &args,
-      int flags = 0, char *dig = 0, void *info = 0) const;
+  Result operator()(const Tuple &args, int flags = 0,
+      const BitSet &use_deriv = BitSet(), void *info = 0) const;
 
   string DerivativeError(unsigned var_index, const Tuple &args) const {
     return info_->DerivativeError(*this, var_index, args);
@@ -128,22 +164,30 @@ class Function {
   }
 };
 
-Result Function::operator()(
-    const Tuple &args, int flags, char *dig, void *info) const {
-  if (fi_->nargs != static_cast<int>(args.size()))
-    throw std::runtime_error("Invalid number of arguments in function call");
+Result Function::operator()(const Tuple &args,
+    int flags, const BitSet &use_deriv, void *info) const {
+  unsigned num_args = args.size();
+  if (fi_->nargs != static_cast<int>(num_args))
+    throw std::runtime_error("invalid number of arguments in function call");
 
   // Initialize the argument list.
-  vector<real> ra(args.size());
-  for (unsigned i = 0; i < args.size(); ++i)
+  vector<real> ra(num_args);
+  for (unsigned i = 0; i < num_args; ++i)
     ra[i] = args[i];
+  vector<char> dig(use_deriv.size());
+  if (!dig.empty()) {
+    if (dig.size() != num_args)
+      throw std::runtime_error("invalid size of ignore_vars");
+    for (unsigned i = 0; i < num_args; ++i)
+      dig[i] = !use_deriv[i];
+  }
   arglist al = {};
   TMInfo tmi = {};
   al.ra = &ra[0];
-  al.nr = al.n = args.size();
+  al.nr = al.n = num_args;
   al.TMI = &tmi;
   al.AE = asl_->i.ae;
-  al.dig = dig;
+  al.dig = !dig.empty() ? &dig[0] : nullptr;
   al.funcinfo = info;
 
   // Allocate storage for the derivatives if needed.
@@ -205,26 +249,6 @@ void CheckFunction(double value, const Function &f, const Tuple &args) {
     EXPECT_EQ(value, f(args)) << f.name() << args;
 }
 
-// A helper class that converts a variable index into the dig array.
-// See the dig member of the arglist struct for details.
-class Dig {
- private:
-  char *dig_;
-  vector<char> store_;
-
- public:
-  static const unsigned NO_VAR = ~0u;
-
-  Dig(const Tuple &args, unsigned skip_var) : dig_(0) {
-    if (skip_var == NO_VAR) return;
-    store_.resize(args.size());
-    store_.at(skip_var) = 1;
-    dig_ = &store_[0];
-  }
-
-  operator char*() { return dig_; }
-};
-
 // A helper class that wraps a Function's derivative and binds
 // all but one argument to the given values.
 class DerivativeBinder {
@@ -233,7 +257,7 @@ class DerivativeBinder {
   unsigned deriv_var_;
   unsigned eval_var_;
   Tuple args_;
-  vector<char> dig_;
+  BitSet use_deriv_;
 
  public:
   // Creates a Derivative object.
@@ -249,16 +273,16 @@ class DerivativeBinder {
 DerivativeBinder::DerivativeBinder(Function f, unsigned deriv_var,
     unsigned eval_var, const Tuple &args)
 : f_(f), deriv_var_(deriv_var), eval_var_(eval_var),
-  args_(args), dig_(args.size(), 1) {
+  args_(args), use_deriv_(args.size(), false) {
   unsigned num_vars = args_.size();
   if (deriv_var >= num_vars || eval_var >= num_vars)
     throw std::out_of_range("variable index is out of range");
-  dig_[deriv_var] = 0;
+  use_deriv_[deriv_var] = true;
 }
 
 double DerivativeBinder::operator()(double x) {
   args_[eval_var_] = x;
-  Result r = f_(args_, DERIVS, &dig_[0]);
+  Result r = f_(args_, DERIVS, use_deriv_);
   return r.error() ? GSL_NAN : r.deriv(deriv_var_);
 }
 
@@ -333,7 +357,7 @@ class GSLTest : public ::testing::Test {
   Function GetFunction(const char *name, FunctionInfo *info = 0) const {
     func_info *fi = func_lookup(asl, name, 0);
     if (!fi)
-      throw std::runtime_error(string("Function not found: ") + name);
+      throw std::runtime_error(string("function not found: ") + name);
     return Function(asl, fi, info);
   }
 
@@ -341,8 +365,10 @@ class GSLTest : public ::testing::Test {
   bool CheckDerivative(F f, const Function &af,
       unsigned var_index, const Tuple &args);
 
+  static const unsigned NO_VAR = ~0u;
+
   void CheckSecondDerivatives(const Function &f,
-      const Tuple &args, unsigned skip_var = Dig::NO_VAR);
+      const Tuple &args, unsigned skip_var = NO_VAR);
 
   // Tests a function taking a single argument.
   template <typename F>
@@ -437,8 +463,10 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
   std::ostringstream os;
   os << "Checking d/dx" << var_index << " " << af.name() << " at " << args;
   SCOPED_TRACE(os.str());
-  vector<char> dig(args.size(), 1);
-  dig[var_index] = 0;
+
+  BitSet use_deriv(args.size(), false);
+  use_deriv[var_index] = true;
+
   double error = 0;
   double x = args[var_index];
   string error_message = af.DerivativeError(var_index, args);
@@ -452,13 +480,14 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
       numerical_deriv = overridden_deriv;
     }
     if (!gsl_isnan(numerical_deriv)) {
-      double deriv = af(args, DERIVS, &dig[0]).deriv(var_index);
+      double deriv = af(args, DERIVS, use_deriv).deriv(var_index);
       if (numerical_deriv != deriv)
         EXPECT_NEAR(numerical_deriv, deriv, ConvertErrorToTolerance(error));
       return true;
     }
   }
-  Result r = af(args, DERIVS, &dig[0]);
+
+  Result r = af(args, DERIVS, use_deriv);
   if (!gsl_isnan(f(x))){
     if (error_message.empty())
       error_message = EvalError(af, args, "'");
@@ -476,7 +505,7 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
 void GSLTest::CheckSecondDerivatives(const Function &f,
     const Tuple &args, unsigned skip_var) {
   unsigned num_args = args.size();
-  if (skip_var == Dig::NO_VAR) {
+  if (skip_var == NO_VAR) {
     for (unsigned i = 0; i < num_args; ++i) {
       if (!f.DerivativeError(i, args).empty()) {
         skip_var = i;
@@ -488,9 +517,9 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
     if (i == skip_var) continue;
     for (unsigned j = 0; j < num_args; ++j) {
       if (j == skip_var) continue;
-      vector<char> dig(num_args, 1);
-      dig[i] = 0;
-      dig[j] = 0;
+      BitSet use_deriv(num_args, false);
+      use_deriv[i] = true;
+      use_deriv[j] = true;
       double error = 0;
       string error_message = f.Derivative2Error(args);
       if (error_message.empty()) {
@@ -510,14 +539,14 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
           unsigned ii = i, jj = j;
           if (ii > jj) std::swap(ii, jj);
           unsigned hes_index = ii * (2 * num_args - ii - 1) / 2 + jj;
-          double actual_deriv = f(args, HES, &dig[0]).hes(hes_index);
+          double actual_deriv = f(args, HES, use_deriv).hes(hes_index);
           if (d != actual_deriv)
             EXPECT_NEAR(d, actual_deriv, ConvertErrorToTolerance(error));
           continue;
         }
       }
-      Result r = f(args, HES, &dig[0]);
-      if (f(args, DERIVS, &dig[0]).error())
+      Result r = f(args, HES, use_deriv);
+      if (f(args, DERIVS, use_deriv).error())
         EXPECT_TRUE(r.error() != nullptr);
       else if (!error_message.empty())
         EXPECT_ERROR(error_message.c_str(), r);
@@ -585,28 +614,28 @@ void GSLTest::TestFuncND(const Function &af, FuncND f,
   // (hang?) for n = INT_MIN and gsl_sf_bessel_Yn(n, x) returns different
   // values close to 0 when called different times for n = INT_MIN.
 
-  char dig[2] = {1, 0};
+  BitSet use_deriv("01");
   EXPECT_ERROR(
       ("can't compute derivative: argument '" + arg_name + "' too small, " +
       arg_name + " = -2147483648").c_str(),
-      af(Tuple(INT_MIN, test_x), DERIVS, dig));
+      af(Tuple(INT_MIN, test_x), DERIVS, use_deriv));
   EXPECT_ERROR(
       ("can't compute derivative: argument '" + arg_name + "' too large, " +
       arg_name + " = 2147483647").c_str(),
-      af(Tuple(INT_MAX, test_x), DERIVS, dig));
-  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MIN + 1, test_x), DERIVS, dig).deriv(1)));
-  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MAX - 1, test_x), DERIVS, dig).deriv(1)));
+      af(Tuple(INT_MAX, test_x), DERIVS, use_deriv));
+  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MIN + 1, test_x), DERIVS, use_deriv).deriv(1)));
+  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MAX - 1, test_x), DERIVS, use_deriv).deriv(1)));
 
   EXPECT_ERROR(
       ("can't compute derivative: argument '" + arg_name + "' too small, " +
       arg_name + " = -2147483647").c_str(),
-      af(Tuple(INT_MIN + 1, test_x), HES, dig));
+      af(Tuple(INT_MIN + 1, test_x), HES, use_deriv));
   EXPECT_ERROR(
       ("can't compute derivative: argument '" + arg_name + "' too large, " +
       arg_name + " = 2147483646").c_str(),
-      af(Tuple(INT_MAX - 1, test_x), HES, dig));
-  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MIN + 2, test_x), HES, dig).hes(2)));
-  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MAX - 2, test_x), HES, dig).hes(2)));
+      af(Tuple(INT_MAX - 1, test_x), HES, use_deriv));
+  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MIN + 2, test_x), HES, use_deriv).hes(2)));
+  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MAX - 2, test_x), HES, use_deriv).hes(2)));
 }
 
 template <typename F>
@@ -637,10 +666,10 @@ bool CheckArg<double>(const Function &, const Tuple &, unsigned) {
 template <>
 bool CheckArg<int>(const Function &f, const Tuple &args, unsigned arg_index) {
   std::ostringstream os;
-  vector<char> dig(args.size(), 1);
-  dig.at(arg_index) = 0;
+  BitSet use_deriv(args.size(), false);
+  use_deriv[arg_index] = true;
   os << "argument '" << f.arg_name(arg_index) << "' is not constant";
-  EXPECT_STREQ(os.str().c_str(), f(args, DERIVS, &dig[0]).error());
+  EXPECT_STREQ(os.str().c_str(), f(args, DERIVS, use_deriv).error());
   return true;
 }
 
@@ -766,7 +795,7 @@ class TestFunction {
 TEST_F(GSLTest, FunctionCall) {
   TestFunction f(1);
   CallData data = {};
-  EXPECT_EQ(42, f.get()(777, 0, 0, &data));
+  EXPECT_EQ(42, f.get()(777, 0, BitSet(), &data));
   EXPECT_EQ(f.ae(), data.ae);
   ASSERT_EQ(1, data.n);
   EXPECT_EQ(1, data.nr);
@@ -780,13 +809,13 @@ TEST_F(GSLTest, FunctionCall) {
 TEST_F(GSLTest, FunctionReturnsError) {
   TestFunction f(1);
   CallData data = {};
-  EXPECT_ERROR("oops", f.get()(-1, 0, 0, &data));
+  EXPECT_ERROR("oops", f.get()(-1, 0, BitSet(), &data));
 }
 
 TEST_F(GSLTest, FunctionReturnsDerivs) {
   TestFunction f(3);
   CallData data = {};
-  Result res = f.get()(Tuple(11, 22, 33), DERIVS, 0, &data);
+  Result res = f.get()(Tuple(11, 22, 33), DERIVS, BitSet(), &data);
   EXPECT_EQ(42, res);
   EXPECT_EQ(f.ae(), data.ae);
   ASSERT_EQ(3, data.n);
@@ -806,7 +835,7 @@ TEST_F(GSLTest, FunctionReturnsDerivs) {
 TEST_F(GSLTest, FunctionReturnsHes) {
   TestFunction f(2);
   CallData data = {};
-  Result res = f.get()(Tuple(111, 222), HES, 0, &data);
+  Result res = f.get()(Tuple(111, 222), HES, BitSet(), &data);
   EXPECT_EQ(42, res);
   EXPECT_EQ(f.ae(), data.ae);
   ASSERT_EQ(2, data.n);
@@ -843,14 +872,24 @@ TEST_F(GSLTest, DerivativeBinder) {
       std::out_of_range);
 }
 
-TEST_F(GSLTest, Dig) {
-  EXPECT_TRUE(Dig(0, Dig::NO_VAR) == nullptr);
-  EXPECT_EQ(1, Dig(0, 0)[0]);
-  EXPECT_THROW(Dig(0, 1), std::out_of_range);
-  EXPECT_TRUE(Dig(Tuple(0, 0, 0), Dig::NO_VAR) == nullptr);
-  EXPECT_EQ(string("\1\0\0", 3), string(Dig(Tuple(0, 0, 0), 0), 3));
-  EXPECT_EQ(string("\0\1\0", 3), string(Dig(Tuple(0, 0, 0), 1), 3));
-  EXPECT_EQ(string("\0\0\1", 3), string(Dig(Tuple(0, 0, 0), 2), 3));
+void CheckBitSet(const char *expected, const BitSet &bs) {
+  size_t size = std::strlen(expected);
+  EXPECT_EQ(size, bs.size());
+  BitSet copy(bs);
+  for (size_t i = 0; i < size; ++i) {
+    bool value = expected[i] - '0';
+    EXPECT_EQ(value, bs[i]);
+    EXPECT_EQ(value, copy[i]);
+    copy[i] = !value;
+    EXPECT_EQ(!value, copy[i]);
+  }
+}
+
+TEST_F(GSLTest, BitSet) {
+  EXPECT_EQ(0u, BitSet().size());
+  CheckBitSet("0", BitSet(1, false));
+  CheckBitSet("11", BitSet(2, true));
+  CheckBitSet("000", BitSet(3, false));
 }
 
 TEST_F(GSLTest, Elementary) {
@@ -1014,14 +1053,12 @@ TEST_F(GSLTest, Hydrogenic) {
           const char *error = "argument 'n' is not constant";
           EXPECT_ERROR(error, f(args, DERIVS));
           EXPECT_ERROR(error, f(args, HES));
-          char dig1[] = {1, 0, 0, 0};
           error = "argument 'l' is not constant";
-          EXPECT_ERROR(error, f(args, DERIVS, dig1));
-          EXPECT_ERROR(error, f(args, HES, dig1));
+          EXPECT_ERROR(error, f(args, DERIVS, BitSet("0111")));
+          EXPECT_ERROR(error, f(args, HES, BitSet("0111")));
           error = "derivatives are not provided";
-          char dig2[] = {1, 1, 0, 0};
-          EXPECT_ERROR(error, f(args, DERIVS, dig2));
-          EXPECT_ERROR(error, f(args, HES, dig2));
+          EXPECT_ERROR(error, f(args, DERIVS, BitSet("0011")));
+          EXPECT_ERROR(error, f(args, HES, BitSet("0011")));
         }
       }
     }
