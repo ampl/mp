@@ -38,5 +38,5 @@ find_package(GSL)
 if (GSL_FOUND)
   cxx_test_with_flags(gsl_test ""
     "gtest;gtest_main;${SOLVER_LIBS};${GSL_LIBRARIES}"
-    gsl_test.cc functional.cc functional.h functional_test.cc)
+    gsl_test.cc function.cc function.h function_test.cc)
 endif ()

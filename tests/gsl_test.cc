@@ -13,198 +13,14 @@
 #include "solvers/asl.h"
 #include "tests/config.h"
 //#define DEBUG_DIFFERENTIATOR
-#include "tests/functional.h"
+#include "tests/function.h"
 
 using std::string;
 using std::vector;
-using fun::Tuple;
+
+using namespace fun;
 
 namespace {
-
-// An immutable result of an AMPL function call.
-class Result {
- private:
-  real value_;
-  vector<real> derivs_;
-  vector<real> hes_;
-  const char *error_;
-
-  void CheckError() const {
-    if (error_)
-      throw std::runtime_error(error_);
-  }
-
- public:
-  Result(real value, const vector<real> &derivs,
-      const vector<real> &hes, const char *error) :
-    value_(value), derivs_(derivs), hes_(hes), error_(error) {}
-
-  operator real() const {
-    CheckError();
-    return value_;
-  }
-
-  real deriv(size_t index = 0) const {
-    CheckError();
-    return derivs_.at(index);
-  }
-  real hes(size_t index = 0) const {
-    CheckError();
-    return hes_.at(index);
-  }
-
-  const char *error() const { return error_; }
-};
-
-class Function;
-
-// Function information that can't be obtained automatically, in particular
-// due to limitations of numerical differentiation.
-class FunctionInfo {
- private:
-  vector<string> arg_names_;
-
- public:
-  virtual ~FunctionInfo() {}
-
-  string arg_name(unsigned index) const {
-    return index < arg_names_.size() ? arg_names_[index] : string();
-  }
-
-  void set_arg_names(const char *arg_names) {
-    std::istringstream is(arg_names);
-    copy(std::istream_iterator<string>(is), std::istream_iterator<string>(),
-        std::back_inserter<vector<string>>(arg_names_));
-  }
-
-  virtual double GetDerivative(unsigned, const Tuple &) { return GSL_NAN; }
-  virtual double GetSecondDerivative(unsigned, unsigned, const Tuple &) {
-    return GSL_NAN;
-  }
-
-  virtual string DerivativeError(const Function &, unsigned, const Tuple &) {
-    return "";
-  }
-  virtual string Derivative2Error(const Function &, const Tuple &) {
-    return "";
-  }
-};
-
-// A dynamic bit set.
-class BitSet {
- private:
-  vector<bool> store_;
-
- public:
-  typedef vector<bool>::reference reference;
-  typedef vector<bool>::const_reference const_reference;
-
-  BitSet() {}
-
-  BitSet(unsigned size, bool value) : store_(size, value) {}
-
-  explicit BitSet(const char *s);
-
-  unsigned size() const { return store_.size(); }
-  reference operator[](unsigned index) { return store_.at(index); }
-  const_reference operator[](unsigned index) const { return store_.at(index); }
-};
-
-BitSet::BitSet(const char *s) {
-  if (!s) return;
-  unsigned num_args = std::strlen(s);
-  store_.resize(num_args);
-  for (unsigned i = 0; i < num_args; ++i) {
-    char c = s[i];
-    if (c == '0')
-      store_[i] = false;
-    else if (c == '1')
-      store_[i] = true;
-    else
-      throw std::invalid_argument("invalid argument to BitSet");
-  }
-}
-
-// Flags for an AMPL function call.
-enum {
-  DERIVS = 1, // Get first partial derivatives.
-  HES    = 3  // Get both first and second partial derivatives.
-};
-
-// An AMPL function.
-class Function {
- private:
-  ASL *asl_;
-  func_info *fi_;
-  FunctionInfo *info_;
-
- public:
-  Function(ASL *asl, func_info *fi, FunctionInfo *info) :
-    asl_(asl), fi_(fi), info_(info) {}
-
-  const char *name() const { return fi_->name; }
-
-  FunctionInfo *info() const { return info_; }
-
-  // Calls a function.
-  // Argument vector is passed by value intentionally to avoid
-  // rogue functions accidentally overwriting arguments.
-  Result operator()(const Tuple &args, int flags = 0,
-      const BitSet &use_deriv = BitSet(), void *info = 0) const;
-
-  string DerivativeError(unsigned var_index, const Tuple &args) const {
-    return info_->DerivativeError(*this, var_index, args);
-  }
-  string Derivative2Error(const Tuple &args) const {
-    return info_->Derivative2Error(*this, args);
-  }
-
-  string arg_name(unsigned index) const {
-    return info_->arg_name(index);
-  }
-};
-
-Result Function::operator()(const Tuple &args,
-    int flags, const BitSet &use_deriv, void *info) const {
-  unsigned num_args = args.size();
-  if (fi_->nargs != static_cast<int>(num_args))
-    throw std::runtime_error("invalid number of arguments in function call");
-
-  // Initialize the argument list.
-  vector<real> ra(num_args);
-  for (unsigned i = 0; i < num_args; ++i)
-    ra[i] = args[i];
-  vector<char> dig(use_deriv.size());
-  if (!dig.empty()) {
-    if (dig.size() != num_args)
-      throw std::runtime_error("invalid size of ignore_vars");
-    for (unsigned i = 0; i < num_args; ++i)
-      dig[i] = !use_deriv[i];
-  }
-  arglist al = {};
-  TMInfo tmi = {};
-  al.ra = &ra[0];
-  al.nr = al.n = num_args;
-  al.TMI = &tmi;
-  al.AE = asl_->i.ae;
-  al.dig = !dig.empty() ? &dig[0] : nullptr;
-  al.funcinfo = info;
-
-  // Allocate storage for the derivatives if needed.
-  vector<real> derivs, hes;
-  if ((flags & DERIVS) != 0) {
-    derivs.resize(al.n);
-    al.derivs = &derivs[0];
-  }
-  if ((flags & HES) == HES) {
-    hes.resize(al.n * (al.n + 1) / 2);
-    al.hes = &hes[0];
-  }
-
-  // Call the function and return the result.
-  real value = fi_->funcp(&al);
-  return Result(value, derivs, hes, al.Errmsg);
-}
 
 // Converts error estimate returned by Diff into an absolute tolerance to
 // be used in EXPECT_NEAR.
@@ -301,7 +117,7 @@ class GSLTest : public ::testing::Test {
   ASL *asl;
   FunctionInfo info; // Default function info.
 
-  fun::Differentiator diff;
+  Differentiator diff;
 
   // Differentiator statistics.
   struct Stats {
@@ -426,7 +242,7 @@ class GSLTest : public ::testing::Test {
 
   // Binds the mode argument of Func2Mode to GSL_PREC_DOUBLE.
   class Func3DoubleMode :
-    public fun::ternary_function<double, double, double, double> {
+    public ternary_function<double, double, double, double> {
    private:
     Func3Mode f_;
 
@@ -444,7 +260,7 @@ class GSLTest : public ::testing::Test {
   template <typename Arg1, typename Arg2, typename Arg3, typename Result>
   void TestFunc(const Function &af, Result (*f)(Arg1, Arg2, Arg3)) {
     TestTernaryFunc(af,
-        fun::pointer_to_ternary_function<Arg1, Arg2, Arg3, Result>(f));
+        pointer_to_ternary_function<Arg1, Arg2, Arg3, Result>(f));
   }
   void TestFunc(const Function &af, Func3Mode f) {
     TestTernaryFunc(af, Func3DoubleMode(f));
@@ -668,7 +484,7 @@ bool CheckArg<int>(const Function &f, const Tuple &args, unsigned arg_index) {
   std::ostringstream os;
   BitSet use_deriv(args.size(), false);
   use_deriv[arg_index] = true;
-  os << "argument '" << f.arg_name(arg_index) << "' is not constant";
+  os << "argument '" << f.GetArgName(arg_index) << "' is not constant";
   EXPECT_STREQ(os.str().c_str(), f(args, DERIVS, use_deriv).error());
   return true;
 }
@@ -681,20 +497,20 @@ void GSLTest::TestTernaryFunc(const Function &af, F f) {
         double x = POINTS[i], y = POINTS[j], z = POINTS[k];
         Tuple args(x, y, z);
         if (static_cast<typename F::first_argument_type>(x) != x) {
-          EXPECT_STREQ(NotIntError(af.arg_name(0), x), af(args).error());
+          EXPECT_STREQ(NotIntError(af.GetArgName(0), x), af(args).error());
           continue;
         }
         if (static_cast<typename F::second_argument_type>(y) != y) {
-          EXPECT_STREQ(NotIntError(af.arg_name(1), y), af(args).error());
+          EXPECT_STREQ(NotIntError(af.GetArgName(1), y), af(args).error());
           continue;
         }
         CheckFunction(f(x, y, z), af, args);
         if (!CheckArg<typename F::first_argument_type>(af, args, 0))
-          CheckDerivative(fun::Bind2Of3(f, args, 0), af, 0, args);
+          CheckDerivative(Bind2Of3(f, args, 0), af, 0, args);
         if (!CheckArg<typename F::second_argument_type>(af, args, 1))
-          CheckDerivative(fun::Bind2Of3(f, args, 1), af, 1, args);
+          CheckDerivative(Bind2Of3(f, args, 1), af, 1, args);
         if (!CheckArg<typename F::third_argument_type>(af, args, 2))
-          CheckDerivative(fun::Bind2Of3(f, args, 2), af, 2, args);
+          CheckDerivative(Bind2Of3(f, args, 2), af, 2, args);
         CheckSecondDerivatives(af, args);
       }
     }
@@ -1318,7 +1134,7 @@ TEST_F(GSLTest, GegenPoly) {
   TEST_FUNC(sf_gegenpoly_3);
 
   NoDerivativeInfo info;
-  info.set_arg_names("n");
+  info.SetArgNames("n");
   TEST_FUNC(sf_gegenpoly_n);
 }
 
@@ -1343,7 +1159,7 @@ TEST_F(GSLTest, Hyperg) {
   }
   {
     Hyperg1F1Info info;
-    info.set_arg_names("m n x");
+    info.SetArgNames("m n x");
     TEST_FUNC(sf_hyperg_1F1_int);
   }
 }
