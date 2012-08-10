@@ -287,7 +287,7 @@ class FunctionInfo {
     return arg_names_.at(index);
   }
 
-  // Sets argument names. Names should be separated by spaces.
+  // Sets argument names separated by spaces.
   void SetArgNames(const char *arg_names);
 
   class Result {
@@ -374,8 +374,6 @@ class Function {
   };
 
   // Calls a function.
-  // Argument vector is passed by value intentionally to avoid
-  // rogue functions accidentally overwriting arguments.
   Result operator()(const Tuple &args, int flags = 0,
       const BitSet &use_deriv = BitSet(), void *info = 0) const;
 

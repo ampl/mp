@@ -36,6 +36,7 @@ using std::vector;
 using fun::BitSet;
 using fun::Differentiator;
 using fun::Function;
+using fun::FunctionInfo;
 using fun::Tuple;
 
 namespace {
@@ -199,7 +200,28 @@ TEST(FunctionTest, DifferentiatorRightDeriv) {
   EXPECT_NEAR(1, diff(ptr_fun(PositiveOrNaN), 0), 1e-7);
 }
 
-TEST(FunctionTest, Result) {
+TEST(FunctionTest, FunctionInfoArgNames) {
+  FunctionInfo fi;
+  EXPECT_THROW(fi.GetArgName(0), std::out_of_range);
+  fi.SetArgNames("x y z");
+  EXPECT_EQ("x", fi.GetArgName(0));
+  EXPECT_EQ("y", fi.GetArgName(1));
+  EXPECT_EQ("z", fi.GetArgName(2));
+  EXPECT_THROW(fi.GetArgName(3), std::out_of_range);
+  Function f(0, 0, 0);
+  EXPECT_TRUE(std::isnan(fi.GetDerivative(f, 0, Tuple(0)).value()));
+  EXPECT_TRUE(std::isnan(fi.GetSecondDerivative(f, 0, 0, Tuple(0)).value()));
+}
+
+TEST(FunctionTest, FunctionInfoResult) {
+  EXPECT_EQ(42, FunctionInfo::Result(42).value());
+  EXPECT_TRUE(FunctionInfo::Result().error() == nullptr);
+  EXPECT_TRUE(std::isnan(FunctionInfo::Result().value()));
+  EXPECT_TRUE(std::isnan(FunctionInfo::Result("oops").value()));
+  EXPECT_STREQ("oops", FunctionInfo::Result("oops").error());
+}
+
+TEST(FunctionTest, FunctionResult) {
   static const real ARGS[] = {5, 7, 11, 13, 17};
   Function::Result r(42, vector<real>(ARGS, ARGS + 2),
       vector<real>(ARGS + 2, ARGS + 5), nullptr);
@@ -216,7 +238,7 @@ TEST(FunctionTest, Result) {
   EXPECT_TRUE(r.error() == nullptr);
 }
 
-TEST(FunctionTest, ErrorResult) {
+TEST(FunctionTest, FunctionResultError) {
   static const real ARGS[] = {5, 7, 11, 13, 17};
   const char *error = "brain overflow";
   Function::Result r(42, vector<real>(ARGS, ARGS + 2),

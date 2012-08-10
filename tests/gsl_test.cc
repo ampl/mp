@@ -58,14 +58,14 @@ double ConvertErrorToTolerance(double error) {
 
 class Error {
  private:
-  string str;
+  string str_;
 
  public:
-  explicit Error(const string &s) : str(s) {}
-  operator const char*() const { return str.c_str(); }
-  const char* c_str() const { return str.c_str(); }
+  explicit Error(const string &s) : str_(s) {}
+  operator const char*() const { return str_.c_str(); }
+  const char* c_str() const { return str_.c_str(); }
   operator FunctionInfo::Result() const {
-    return FunctionInfo::Result(str.c_str());
+    return FunctionInfo::Result(str_.c_str());
   }
 };
 
