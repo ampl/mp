@@ -1,4 +1,27 @@
-// GSL wrapper test.
+/*
+ Tests of the AMPL bindings for GNU Scientific Library.
+
+ Copyright (C) 2012 AMPL Optimization LLC
+
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose and without fee is hereby granted,
+ provided that the above copyright notice appear in all copies and that
+ both that the copyright notice and this permission notice and warranty
+ disclaimer appear in supporting documentation.
+
+ The author and AMPL Optimization LLC disclaim all warranties with
+ regard to this software, including all implied warranties of
+ merchantability and fitness.  In no event shall the author be liable
+ for any special, indirect or consequential damages or any damages
+ whatsoever resulting from loss of use, data or profits, whether in an
+ action of contract, negligence or other tortious action, arising out
+ of or in connection with the use or performance of this software.
+
+ Author: Victor Zverovich
+ */
+
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_sf.h>
 
 #include <functional>
 #include <sstream>
@@ -6,19 +29,24 @@
 #include <vector>
 #include <cstring>
 
-#include <gsl/gsl_math.h>
-#include <gsl/gsl_sf.h>
-
 #include "gtest/gtest.h"
-#include "solvers/asl.h"
 #include "tests/config.h"
-//#define DEBUG_DIFFERENTIATOR
+// #define DEBUG_DIFFERENTIATOR
 #include "tests/function.h"
+#include "solvers/asl.h"
 
 using std::string;
 using std::vector;
 
-using namespace fun;
+using fun::BitSet;
+using fun::DERIVS;
+using fun::Differentiator;
+using fun::Function;
+using fun::FunctionInfo;
+using fun::HES;
+using fun::Tuple;
+using fun::pointer_to_ternary_function;
+using fun::ternary_function;
 
 namespace {
 
@@ -33,7 +61,7 @@ class Error {
   string str;
 
  public:
-  Error(const string &s) : str(s) {}
+  explicit Error(const string &s) : str(s) {}
   operator const char*() const { return str.c_str(); }
   const char* c_str() const { return str.c_str(); }
   operator FunctionInfo::Result() const {
@@ -44,14 +72,14 @@ class Error {
 Error EvalError(const Function &f, const Tuple &args, const char *suffix = "") {
   std::ostringstream os;
   os << "can't evaluate " << f.name() << suffix << args;
-  return os.str();
+  return Error(os.str());
 }
 
 Error NotIntError(const string &arg_name, double value = 0.5) {
   std::ostringstream os;
   os << "argument '" << arg_name
       << "' can't be represented as int, " << arg_name << " = " << value;
-  return os.str();
+  return Error(os.str());
 }
 
 #define EXPECT_ERROR(expected_message, result) \
@@ -118,7 +146,7 @@ const size_t NUM_POINTS_FOR_N = sizeof(POINTS_FOR_N) / sizeof(*POINTS_FOR_N);
 class GSLTest : public ::testing::Test {
  protected:
   ASL *asl;
-  FunctionInfo info; // Default function info.
+  FunctionInfo info;  // Default function info.
 
   Differentiator diff;
 
@@ -192,7 +220,7 @@ class GSLTest : public ::testing::Test {
   // Tests a function taking a single argument.
   template <typename F>
   void TestUnaryFunc(const Function &af, F f);
-  void TestFunc(const Function &af, double (*f)(double)) {
+  void TestFunc(const Function &af, double (*f)(double x)) {
     TestUnaryFunc(af, f);
   }
   void TestFunc(const Function &af, double (*f)(double, gsl_mode_t)) {
@@ -232,7 +260,7 @@ class GSLTest : public ::testing::Test {
     Func2Mode f_;
 
    public:
-    Func2DoubleMode(Func2Mode f) : f_(f) {}
+    explicit Func2DoubleMode(Func2Mode f) : f_(f) {}
 
     double operator()(double x, double y) const {
       return f_(x, y, GSL_PREC_DOUBLE);
@@ -250,7 +278,7 @@ class GSLTest : public ::testing::Test {
     Func3Mode f_;
 
    public:
-    Func3DoubleMode(Func3Mode f) : f_(f) {}
+    explicit Func3DoubleMode(Func3Mode f) : f_(f) {}
 
     double operator()(double x, double y, double z) const {
       return f_(x, y, z, GSL_PREC_DOUBLE);
@@ -307,13 +335,14 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
   }
 
   Function::Result r = af(args, DERIVS, use_deriv);
-  if (!gsl_isnan(f(x))){
+  if (!gsl_isnan(f(x))) {
     if (deriv_result.error())
       EXPECT_ERROR(deriv_result.error(), r);
     else
       EXPECT_ERROR(EvalError(af, args, "'"), r);
-  } else
+  } else {
     EXPECT_TRUE(r.error() != nullptr);
+  }
   return false;
 }
 
@@ -444,8 +473,10 @@ void GSLTest::TestFuncND(const Function &af, FuncND f,
       ("can't compute derivative: argument '" + arg_name + "' too large, " +
       arg_name + " = 2147483647").c_str(),
       af(Tuple(INT_MAX, test_x), DERIVS, use_deriv));
-  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MIN + 1, test_x), DERIVS, use_deriv).deriv(1)));
-  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MAX - 1, test_x), DERIVS, use_deriv).deriv(1)));
+  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MIN + 1, test_x), DERIVS,
+      use_deriv).deriv(1)));
+  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MAX - 1, test_x), DERIVS,
+      use_deriv).deriv(1)));
 
   EXPECT_ERROR(
       ("can't compute derivative: argument '" + arg_name + "' too small, " +
@@ -455,8 +486,10 @@ void GSLTest::TestFuncND(const Function &af, FuncND f,
       ("can't compute derivative: argument '" + arg_name + "' too large, " +
       arg_name + " = 2147483646").c_str(),
       af(Tuple(INT_MAX - 1, test_x), HES, use_deriv));
-  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MIN + 2, test_x), HES, use_deriv).hes(2)));
-  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MAX - 2, test_x), HES, use_deriv).hes(2)));
+  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MIN + 2, test_x), HES,
+      use_deriv).hes(2)));
+  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MAX - 2, test_x), HES,
+      use_deriv).hes(2)));
 }
 
 template <typename F>

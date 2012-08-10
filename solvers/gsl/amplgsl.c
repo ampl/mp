@@ -1,4 +1,24 @@
-/* AMPL bindings for the GNU Scientific Library. */
+/*
+ AMPL bindings for GNU Scientific Library.
+
+ Copyright (C) 2012 AMPL Optimization LLC
+
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose and without fee is hereby granted,
+ provided that the above copyright notice appear in all copies and that
+ both that the copyright notice and this permission notice and warranty
+ disclaimer appear in supporting documentation.
+
+ The author and AMPL Optimization LLC disclaim all warranties with
+ regard to this software, including all implied warranties of
+ merchantability and fitness.  In no event shall the author be liable
+ for any special, indirect or consequential damages or any damages
+ whatsoever resulting from loss of use, data or profits, whether in an
+ action of contract, negligence or other tortious action, arising out
+ of or in connection with the use or performance of this software.
+
+ Author: Victor Zverovich
+ */
 
 #include <math.h>
 #include <stdarg.h>
@@ -816,7 +836,9 @@ static double amplgsl_sf_bessel_il_scaled(arglist *al) {
         deriv = 1.0 / 3.0;
       else if (el > 1)
         deriv = 0;
-    } else deriv = 0.5 * (il_minus_1 + coef * il + il_plus_1);
+    } else {
+      deriv = 0.5 * (il_minus_1 + coef * il + il_plus_1);
+    }
     al->derivs[1] = deriv;
     if (al->hes) {
       double hes = GSL_NAN;
@@ -894,7 +916,8 @@ static double amplgsl_sf_bessel_kl_scaled(arglist *al) {
     return 0;
   kl = gsl_sf_bessel_kl_scaled(el, x);
   if (al->derivs) {
-    double kl_minus_1 = el != 0 ? gsl_sf_bessel_kl_scaled(el - 1, x) : M_PI_2 / x;
+    double kl_minus_1 = el != 0 ?
+        gsl_sf_bessel_kl_scaled(el - 1, x) : M_PI_2 / x;
     double kl_plus_1 = gsl_sf_bessel_kl_scaled(el + 1, x);
     double coef = (1 - 2 * x) / x;
     al->derivs[1] = -0.5 * (kl_minus_1 + coef * kl + kl_plus_1);
@@ -1752,7 +1775,7 @@ static double amplgsl_sf_gammastar(arglist *al) {
     *al->derivs = coef * gammastar;
     if (al->hes) {
       *al->hes = coef * *al->derivs +
-          (gsl_sf_psi_1(x) - (1 + 0.5 / x) / x ) * gammastar;
+          (gsl_sf_psi_1(x) - (1 + 0.5 / x) / x) * gammastar;
     }
   }
   return check_result(al, gammastar, "gsl_sf_gammastar");
