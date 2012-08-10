@@ -1,11 +1,30 @@
-// Function adapters, binders, numerical differentiator and other
-// function-related stuff.
+/*
+ AMPL function testing infrastructure.
 
-#ifndef TESTS_FUNCTION_H
-#define TESTS_FUNCTION_H
+ Copyright (C) 2012 AMPL Optimization LLC
+
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose and without fee is hereby granted,
+ provided that the above copyright notice appear in all copies and that
+ both that the copyright notice and this permission notice and warranty
+ disclaimer appear in supporting documentation.
+
+ The author and AMPL Optimization LLC disclaim all warranties with
+ regard to this software, including all implied warranties of
+ merchantability and fitness.  In no event shall the author be liable
+ for any special, indirect or consequential damages or any damages
+ whatsoever resulting from loss of use, data or profits, whether in an
+ action of contract, negligence or other tortious action, arising out
+ of or in connection with the use or performance of this software.
+
+ Author: Victor Zverovich
+ */
+
+#ifndef TESTS_FUNCTION_H_
+#define TESTS_FUNCTION_H_
 
 #include <algorithm>
-#include <iostream>
+#include <iosfwd>
 #include <limits>
 #include <stdexcept>
 #include <string>
@@ -28,7 +47,7 @@ class Tuple {
   }
 
  public:
-  Tuple(double a0) { *this << a0; }
+  explicit Tuple(double a0) { *this << a0; }
   Tuple(double a0, double a1) { *this << a0 << a1; }
   Tuple(double a0, double a1, double a2) { *this << a0 << a1 << a2; }
   Tuple(double a0, double a1, double a2, double a3) {
@@ -83,13 +102,12 @@ struct ternary_function {
 
 // Adapter of a ternary function pointer to the ternary_function interface.
 template <typename Arg1, typename Arg2, typename Arg3, typename Result>
-class pointer_to_ternary_function :
-  public ternary_function<Arg1, Arg2, Arg3, Result>
-{
-private:
+class pointer_to_ternary_function
+  : public ternary_function<Arg1, Arg2, Arg3, Result> {
+ private:
   Result (*f_)(Arg1, Arg2, Arg3);
 
-public:
+ public:
   explicit pointer_to_ternary_function(Result (*f)(Arg1, Arg2, Arg3)) :
     f_(f) {}
   Result operator()(Arg1 x, Arg2 y, Arg3 z) const { return f_(x, y, z); }
@@ -278,8 +296,8 @@ class FunctionInfo {
     std::string error_;
 
    public:
-    Result(double value) : value_(value) {}
-    Result(const char *error = "") :
+    explicit Result(double value) : value_(value) {}
+    explicit Result(const char *error = "") :
       value_(std::numeric_limits<double>::quiet_NaN()), error_(error) {}
 
     double value() const { return value_; }
@@ -301,8 +319,8 @@ class FunctionInfo {
 
 // Flags for an AMPL function call.
 enum {
-  DERIVS = 1, // Get first partial derivatives.
-  HES    = 3  // Get both first and second partial derivatives.
+  DERIVS = 1,  // Get first partial derivatives.
+  HES    = 3   // Get both first and second partial derivatives.
 };
 
 // An AMPL function.
@@ -375,7 +393,6 @@ class Function {
     return info_->GetSecondDerivative(*this, arg1_index, arg2_index, args);
   }
 };
-
 }
 
-#endif // TESTS_FUNCTION_H
+#endif  // TESTS_FUNCTION_H_
