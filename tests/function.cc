@@ -46,26 +46,19 @@ void FunctionInfo::SetArgNames(const char *arg_names) {
       std::back_inserter<std::vector<std::string>>(arg_names_));
 }
 
-double FunctionInfo::GetDerivative(unsigned, const Tuple &) {
-  return std::numeric_limits<double>::quiet_NaN();
-}
-
-double FunctionInfo::GetSecondDerivative(unsigned, unsigned, const Tuple &) {
-  return std::numeric_limits<double>::quiet_NaN();
-}
-
-std::string FunctionInfo::DerivativeError(
+FunctionInfo::Result FunctionInfo::GetDerivative(
     const Function &, unsigned, const Tuple &) {
-  return "";
+  return Result();
 }
 
-std::string FunctionInfo::Derivative2Error(const Function &, const Tuple &) {
-  return "";
+FunctionInfo::Result FunctionInfo::GetSecondDerivative(
+    const Function &, unsigned, unsigned, const Tuple &) {
+  return Result();
 }
 
 const char *Function::name() const { return fi_->name; }
 
-Result Function::operator()(const Tuple &args,
+Function::Result Function::operator()(const Tuple &args,
     int flags, const BitSet &use_deriv, void *info) const {
   unsigned num_args = args.size();
   if (fi_->nargs != static_cast<int>(num_args))

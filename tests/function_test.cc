@@ -16,7 +16,6 @@ using std::vector;
 using fun::BitSet;
 using fun::Differentiator;
 using fun::Function;
-using fun::Result;
 using fun::Tuple;
 
 namespace {
@@ -71,6 +70,7 @@ TEST(FunctionTest, BitSet) {
   CheckBitSet("0", BitSet(1, false));
   CheckBitSet("11", BitSet(2, true));
   CheckBitSet("000", BitSet(3, false));
+  CheckBitSet("1010", BitSet("1010"));
 }
 
 #define EXPECT_TYPE(expected, actual) \
@@ -179,7 +179,7 @@ TEST(FunctionTest, DifferentiatorRightDeriv) {
 
 TEST(FunctionTest, Result) {
   static const real ARGS[] = {5, 7, 11, 13, 17};
-  Result r(42, vector<real>(ARGS, ARGS + 2),
+  Function::Result r(42, vector<real>(ARGS, ARGS + 2),
       vector<real>(ARGS + 2, ARGS + 5), nullptr);
   EXPECT_EQ(42, r);
   EXPECT_EQ(5, r.deriv());
@@ -197,7 +197,7 @@ TEST(FunctionTest, Result) {
 TEST(FunctionTest, ErrorResult) {
   static const real ARGS[] = {5, 7, 11, 13, 17};
   const char *error = "brain overflow";
-  Result r(42, vector<real>(ARGS, ARGS + 2),
+  Function::Result r(42, vector<real>(ARGS, ARGS + 2),
       vector<real>(ARGS + 2, ARGS + 5), error);
   EXPECT_THROW((double)r, std::runtime_error);
   EXPECT_THROW(r.deriv(), std::runtime_error);
@@ -286,7 +286,8 @@ TEST(FunctionTest, FunctionReturnsError) {
 TEST(FunctionTest, FunctionReturnsDerivs) {
   TestFunction f(3);
   CallData data = {};
-  Result res = f.get()(Tuple(11, 22, 33), fun::DERIVS, BitSet(), &data);
+  Function::Result res =
+      f.get()(Tuple(11, 22, 33), fun::DERIVS, BitSet(), &data);
   EXPECT_EQ(42, res);
   EXPECT_EQ(f.ae(), data.ae);
   ASSERT_EQ(3, data.n);
@@ -306,7 +307,7 @@ TEST(FunctionTest, FunctionReturnsDerivs) {
 TEST(FunctionTest, FunctionReturnsHes) {
   TestFunction f(2);
   CallData data = {};
-  Result res = f.get()(Tuple(111, 222), fun::HES, BitSet(), &data);
+  Function::Result res = f.get()(Tuple(111, 222), fun::HES, BitSet(), &data);
   EXPECT_EQ(42, res);
   EXPECT_EQ(f.ae(), data.ae);
   ASSERT_EQ(2, data.n);

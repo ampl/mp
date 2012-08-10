@@ -254,41 +254,6 @@ double Differentiator::operator()(
   return deriv;
 }
 
-// An immutable result of an AMPL function call.
-class Result {
- private:
-  double value_;
-  std::vector<double> derivs_;
-  std::vector<double> hes_;
-  const char *error_;
-
-  void CheckError() const {
-    if (error_)
-      throw std::runtime_error(error_);
-  }
-
- public:
-  Result(double value, const std::vector<double> &derivs,
-      const std::vector<double> &hes, const char *error) :
-    value_(value), derivs_(derivs), hes_(hes), error_(error) {}
-
-  operator double() const {
-    CheckError();
-    return value_;
-  }
-
-  double deriv(size_t index = 0) const {
-    CheckError();
-    return derivs_.at(index);
-  }
-  double hes(size_t index = 0) const {
-    CheckError();
-    return hes_.at(index);
-  }
-
-  const char *error() const { return error_; }
-};
-
 class Function;
 
 // Function information that can't be obtained automatically, in particular
@@ -304,15 +269,34 @@ class FunctionInfo {
     return arg_names_.at(index);
   }
 
+  // Sets argument names. Names should be separated by spaces.
   void SetArgNames(const char *arg_names);
 
-  virtual double GetDerivative(unsigned arg_index, const Tuple &args) ;
-  virtual double GetSecondDerivative(
-      unsigned arg1_index, unsigned arg2_index, const Tuple &args);
+  class Result {
+   private:
+    double value_;
+    std::string error_;
 
-  virtual std::string DerivativeError(
+   public:
+    Result(double value) : value_(value) {}
+    Result(const char *error = "") :
+      value_(std::numeric_limits<double>::quiet_NaN()), error_(error) {}
+
+    double value() const { return value_; }
+    const char *error() const { return error_.empty() ? 0 : error_.c_str(); }
+  };
+
+  // Returns the value of the derivative at the point specified by args.
+  // In most cases this is not needed as the derivative is computed using
+  // numerical differentiation. This function can also return an error message.
+  virtual Result GetDerivative(
       const Function &f, unsigned arg_index, const Tuple &args);
-  virtual std::string Derivative2Error(const Function &f, const Tuple &args) ;
+
+  // Returns the value of the second derivative at the point specified by args.
+  // In most cases this is not needed as the derivative is computed using
+  // numerical differentiation. This function can also return an error message.
+  virtual Result GetSecondDerivative(const Function &f,
+      unsigned arg1_index, unsigned arg2_index, const Tuple &args);
 };
 
 // Flags for an AMPL function call.
@@ -336,21 +320,59 @@ class Function {
 
   FunctionInfo *info() const { return info_; }
 
+  // A result of an AMPL function call.
+  class Result {
+   private:
+    double value_;
+    std::vector<double> derivs_;
+    std::vector<double> hes_;
+    const char *error_;
+
+    void CheckError() const {
+      if (error_)
+        throw std::runtime_error(error_);
+    }
+
+   public:
+    Result(double value, const std::vector<double> &derivs,
+        const std::vector<double> &hes, const char *error) :
+      value_(value), derivs_(derivs), hes_(hes), error_(error) {}
+
+    operator double() const {
+      CheckError();
+      return value_;
+    }
+
+    double deriv(size_t index = 0) const {
+      CheckError();
+      return derivs_.at(index);
+    }
+    double hes(size_t index = 0) const {
+      CheckError();
+      return hes_.at(index);
+    }
+
+    const char *error() const { return error_; }
+  };
+
   // Calls a function.
   // Argument vector is passed by value intentionally to avoid
   // rogue functions accidentally overwriting arguments.
   Result operator()(const Tuple &args, int flags = 0,
       const BitSet &use_deriv = BitSet(), void *info = 0) const;
 
-  std::string DerivativeError(unsigned var_index, const Tuple &args) const {
-    return info_->DerivativeError(*this, var_index, args);
-  }
-  std::string Derivative2Error(const Tuple &args) const {
-    return info_->Derivative2Error(*this, args);
-  }
-
   std::string GetArgName(unsigned index) const {
     return info_->GetArgName(index);
+  }
+
+  FunctionInfo::Result GetDerivative(
+      unsigned arg_index, const Tuple &args) const {
+    return info_->GetDerivative(*this, arg_index, args);
+  }
+
+  FunctionInfo::Result GetSecondDerivative(
+      unsigned arg1_index, unsigned arg2_index, const Tuple &args) const {
+    return info_->GetSecondDerivative(*this, arg1_index, arg2_index, args);
   }
 };
 

@@ -98,7 +98,7 @@ DerivativeBinder::DerivativeBinder(Function f, unsigned deriv_var,
 
 double DerivativeBinder::operator()(double x) {
   args_[eval_var_] = x;
-  Result r = f_(args_, DERIVS, use_deriv_);
+  Function::Result r = f_(args_, DERIVS, use_deriv_);
   return r.error() ? GSL_NAN : r.deriv(deriv_var_);
 }
 
@@ -285,10 +285,10 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
 
   double error = 0;
   double x = args[var_index];
-  string error_message = af.DerivativeError(var_index, args);
-  if (error_message.empty()) {
+  FunctionInfo::Result deriv_result = af.GetDerivative(var_index, args);
+  if (!deriv_result.error()) {
     double numerical_deriv = Diff(f, x, &error);
-    double overridden_deriv = af.info()->GetDerivative(var_index, args);
+    double overridden_deriv = deriv_result.value();
     if (!gsl_isnan(overridden_deriv) && overridden_deriv != numerical_deriv) {
       std::cout << "Overriding d/dx" << var_index << " " << af.name()
         << " at " << args << ", computed = " << numerical_deriv
@@ -303,11 +303,12 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
     }
   }
 
-  Result r = af(args, DERIVS, use_deriv);
+  Function::Result r = af(args, DERIVS, use_deriv);
   if (!gsl_isnan(f(x))){
-    if (error_message.empty())
-      error_message = EvalError(af, args, "'");
-    EXPECT_ERROR(error_message.c_str(), r);
+    if (deriv_result.error())
+      EXPECT_ERROR(deriv_result.error(), r);
+    else
+      EXPECT_ERROR(EvalError(af, args, "'"), r);
   } else
     EXPECT_TRUE(r.error() != nullptr);
   return false;
@@ -323,7 +324,7 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
   unsigned num_args = args.size();
   if (skip_var == NO_VAR) {
     for (unsigned i = 0; i < num_args; ++i) {
-      if (!f.DerivativeError(i, args).empty()) {
+      if (f.GetDerivative(i, args).error()) {
         skip_var = i;
         break;
       }
@@ -337,10 +338,10 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
       use_deriv[i] = true;
       use_deriv[j] = true;
       double error = 0;
-      string error_message = f.Derivative2Error(args);
-      if (error_message.empty()) {
+      FunctionInfo::Result deriv_result = f.GetSecondDerivative(i, j, args);
+      if (!deriv_result.error()) {
         double d = Diff(DerivativeBinder(f, j, i, args), args[i], &error);
-        double overridden_deriv = f.info()->GetSecondDerivative(j, i, args);
+        double overridden_deriv = deriv_result.value();
         if (!gsl_isnan(overridden_deriv) && overridden_deriv != d) {
           std::cout << "Overriding d/dx" << i << " d/dx" << j << " "
             << f.name() << " at " << args << ", computed = " << d
@@ -361,11 +362,11 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
           continue;
         }
       }
-      Result r = f(args, HES, use_deriv);
+      Function::Result r = f(args, HES, use_deriv);
       if (f(args, DERIVS, use_deriv).error())
         EXPECT_TRUE(r.error() != nullptr);
-      else if (!error_message.empty())
-        EXPECT_ERROR(error_message.c_str(), r);
+      else if (deriv_result.error())
+        EXPECT_ERROR(deriv_result.error(), r);
       else
         EXPECT_ERROR(EvalError(f, args, "''"), r);
     }
@@ -624,7 +625,7 @@ TEST_F(GSLTest, Besselk) {
 }
 
 struct BesselFractionalOrderInfo : FunctionInfo {
-  string DerivativeError(const Function &f,
+  Result GetDerivative(const Function &f,
       unsigned var_index, const Tuple &args) {
     // Partial derivative with respect to nu is not provided.
     if (var_index == 0)
@@ -637,7 +638,8 @@ struct BesselFractionalOrderInfo : FunctionInfo {
     return "";
   }
 
-  string Derivative2Error(const Function &f, const Tuple &args) {
+  Result GetSecondDerivative(
+      const Function &f, unsigned, unsigned, const Tuple &args) {
     // Computing gsl_sf_bessel_*nu''(nu, x) requires
     // gsl_sf_bessel_*nu(nu - 2, x) which doesn't work when the
     // first argument is non-negative, so nu should be >= 2.
@@ -671,7 +673,7 @@ TEST_F(GSLTest, BesselZero) {
 }
 
 struct ClausenFunctionInfo : FunctionInfo {
-  double GetDerivative(unsigned, const Tuple &args) {
+  Result GetDerivative(const Function &, unsigned, const Tuple &args) {
     return args[0] == 0 ? GSL_POSINF : GSL_NAN;
   }
 };
@@ -801,7 +803,7 @@ TEST_F(GSLTest, Debye) {
 }
 
 struct DilogFunctionInfo : FunctionInfo {
-  double GetDerivative(unsigned, const Tuple &args) {
+  Result GetDerivative(const Function &, unsigned, const Tuple &args) {
     return args[0] == 1 ? GSL_POSINF : GSL_NAN;
   }
 };
@@ -812,7 +814,7 @@ TEST_F(GSLTest, Dilog) {
 }
 
 struct NoDerivativeInfo : FunctionInfo {
-  string DerivativeError(const Function &, unsigned, const Tuple &) {
+  Result GetDerivative(const Function &, unsigned, const Tuple &) {
     return "derivatives are not provided";
   }
 };
@@ -887,8 +889,7 @@ TEST_F(GSLTest, FermiDirac) {
 }
 
 struct LnGammaInfo : FunctionInfo {
-  string DerivativeError(const Function &af,
-        unsigned , const Tuple &args) {
+  Result GetDerivative(const Function &af, unsigned , const Tuple &args) {
     double x = args[0];
     return x == -1 || x == -2 ? EvalError(af, args, "'") : "";
   }
@@ -917,8 +918,8 @@ TEST_F(GSLTest, Poch) {
 }
 
 struct GammaIncInfo : FunctionInfo {
-  string DerivativeError(const Function &af,
-      unsigned var_index, const Tuple &args) {
+  Result GetDerivative(
+      const Function &af, unsigned var_index, const Tuple &args) {
     // Partial derivative with respect to a is not provided.
     if (var_index == 0)
       return "argument 'a' is not constant";
@@ -941,8 +942,8 @@ TEST_F(GSLTest, GammaInc) {
 }
 
 struct BetaInfo : FunctionInfo {
-  string DerivativeError(const Function &af,
-      unsigned var_index, const Tuple &args) {
+  Result GetDerivative(
+      const Function &af, unsigned var_index, const Tuple &args) {
     if (gsl_isnan(gsl_sf_psi(args[0] + args[1])) || args[var_index] == 0)
       return EvalError(af, args, "'").c_str();
     return "";
@@ -972,15 +973,14 @@ TEST_F(GSLTest, GegenPoly) {
 }
 
 struct Hyperg0F1Info : FunctionInfo {
-  string DerivativeError(const Function &,
-      unsigned var_index, const Tuple &) {
+  Result GetDerivative(const Function &, unsigned var_index, const Tuple &) {
     // Partial derivative with respect to c is not provided.
     return var_index == 0 ? "argument 'c' is not constant" : "";
   }
 };
 
 struct Hyperg1F1Info : FunctionInfo {
-  string DerivativeError(const Function &f, unsigned, const Tuple &args) {
+  Result GetDerivative(const Function &f, unsigned, const Tuple &args) {
     return args[1] <= 0 ? EvalError(f, args, "'").c_str() : "";
   }
 };
