@@ -47,6 +47,12 @@ class Tuple {
   }
 
  public:
+  static Tuple GetTupleWithSize(unsigned size) {
+    Tuple t(0);
+    t.items_.resize(size);
+    return t;
+  }
+
   explicit Tuple(double a0) { *this << a0; }
   Tuple(double a0, double a1) { *this << a0 << a1; }
   Tuple(double a0, double a1, double a2) { *this << a0 << a1 << a2; }
@@ -91,58 +97,74 @@ class BitSet {
   const_reference operator[](unsigned index) const { return store_.at(index); }
 };
 
-// A base class for ternary function objects.
-template <typename Arg1, typename Arg2, typename Arg3, typename Result>
-struct ternary_function {
-  typedef Arg1 first_argument_type;
-  typedef Arg2 second_argument_type;
-  typedef Arg3 third_argument_type;
-  typedef Result result_type;
+enum Type { INT, DOUBLE };
+
+template <typename T>
+struct GetType;
+
+template <>
+struct GetType<int> {
+  static const Type Value = INT;
 };
 
-// Adapter of a ternary function pointer to the ternary_function interface.
+template <>
+struct GetType<double> {
+  static const Type Value = DOUBLE;
+};
+
+template <unsigned N, typename Arg1, typename Arg2, typename Arg3>
+struct FunctionWithTypes {
+  static const unsigned NUM_ARGS = N;
+  static const Type ARG_TYPES[N];
+};
+
+template <unsigned N, typename Arg1, typename Arg2, typename Arg3>
+const Type FunctionWithTypes<N, Arg1, Arg2, Arg3>::ARG_TYPES[] = {
+    GetType<Arg1>::Value, GetType<Arg2>::Value, GetType<Arg3>::Value
+};
+
 template <typename Arg1, typename Arg2, typename Arg3, typename Result>
-class pointer_to_ternary_function
-  : public ternary_function<Arg1, Arg2, Arg3, Result> {
+class FunctionPointer3 : public FunctionWithTypes<3, Arg1, Arg2, Arg3> {
  private:
   Result (*f_)(Arg1, Arg2, Arg3);
 
  public:
-  explicit pointer_to_ternary_function(Result (*f)(Arg1, Arg2, Arg3)) :
-    f_(f) {}
-  Result operator()(Arg1 x, Arg2 y, Arg3 z) const { return f_(x, y, z); }
+  explicit FunctionPointer3(Result (*f)(Arg1, Arg2, Arg3)) : f_(f) {}
+  Result operator()(const Tuple &args) const {
+    return f_(args[0], args[1], args[2]);
+  }
 };
 
-// A functor class with 2 out of 3 arguments bound.
+// A functor class with all but one arguments bound.
 template <typename F>
-class Binder2Of3 {
+class BinderAllButOne {
  private:
   F f_;
   mutable Tuple args_;
   unsigned unbound_arg_index_;
 
  public:
-  Binder2Of3(F f, const Tuple &args, unsigned unbound_arg_index);
+  BinderAllButOne(F f, const Tuple &args, unsigned unbound_arg_index);
 
   double operator()(double x) const {
     args_[unbound_arg_index_] = x;
-    return f_(args_[0], args_[1], args_[2]);
+    return f_(args_);
   }
 };
 
 template <typename F>
-Binder2Of3<F>::Binder2Of3(F f, const Tuple &args, unsigned unbound_arg_index)
+BinderAllButOne<F>::BinderAllButOne(
+    F f, const Tuple &args, unsigned unbound_arg_index)
 : f_(f), args_(args), unbound_arg_index_(unbound_arg_index) {
-  if (args.size() != 3)
-    throw std::out_of_range("invalid number of arguments");
   if (unbound_arg_index >= args.size())
     throw std::out_of_range("argument index is out of range");
 }
 
-// Binds 2 out of 3 arguments.
+// Binds all but one arguments.
 template <typename F>
-Binder2Of3<F> Bind2Of3(F f, const Tuple &args, unsigned unbound_arg_index) {
-  return Binder2Of3<F>(f, args, unbound_arg_index);
+BinderAllButOne<F> BindAllButOne(
+    F f, const Tuple &args, unsigned unbound_arg_index) {
+  return BinderAllButOne<F>(f, args, unbound_arg_index);
 }
 
 // A utility class for computing the derivative by Ridders' method
