@@ -40,6 +40,7 @@ using std::vector;
 
 using fun::BitSet;
 using fun::DERIVS;
+using fun::DerivativeBinder;
 using fun::Differentiator;
 using fun::Function;
 using fun::FunctionInfo;
@@ -94,43 +95,6 @@ void CheckFunction(double value, const Function &f, const Tuple &args) {
     EXPECT_ERROR(EvalError(f, args), f(args));
   else
     EXPECT_EQ(value, f(args)) << f.name() << args;
-}
-
-// A helper class that wraps a Function's derivative and binds
-// all but one argument to the given values.
-class DerivativeBinder {
- private:
-  Function f_;
-  unsigned deriv_var_;
-  unsigned eval_var_;
-  Tuple args_;
-  BitSet use_deriv_;
-
- public:
-  // Creates a Derivative object.
-  // deriv_var: index of a variable with respect to which
-  //            the derivative is taken
-  // eval_var:  index of a variable which is not bound
-  DerivativeBinder(Function f, unsigned deriv_var,
-      unsigned eval_var, const Tuple &args);
-
-  double operator()(double x);
-};
-
-DerivativeBinder::DerivativeBinder(Function f, unsigned deriv_var,
-    unsigned eval_var, const Tuple &args)
-: f_(f), deriv_var_(deriv_var), eval_var_(eval_var),
-  args_(args), use_deriv_(args.size(), false) {
-  unsigned num_vars = args_.size();
-  if (deriv_var >= num_vars || eval_var >= num_vars)
-    throw std::out_of_range("variable index is out of range");
-  use_deriv_[deriv_var] = true;
-}
-
-double DerivativeBinder::operator()(double x) {
-  args_[eval_var_] = x;
-  Function::Result r = f_(args_, DERIVS, use_deriv_);
-  return r.error() ? GSL_NAN : r.deriv(deriv_var_);
 }
 
 typedef double (*FuncU)(unsigned);
@@ -559,25 +523,6 @@ void GSLTest::TestTernaryFunc(const Function &af, F f) {
 
 #define TEST_FUNC_ND(name, test_x, arg) \
   TestFuncND(GetFunction("gsl_" #name, &info), gsl_##name, test_x, #arg)
-
-double ellint_E(double x) {
-  return gsl_sf_ellint_E(-1.23, x, GSL_PREC_DOUBLE);
-}
-
-TEST_F(GSLTest, DerivativeBinder) {
-  DerivativeBinder d(GetFunction("gsl_hypot"), 0, 1, Tuple(1, 0));
-  ASSERT_EQ(1, d(0));
-  ASSERT_EQ(1 / sqrt(2), d(1));
-  d = DerivativeBinder(GetFunction("gsl_hypot"), 1, 1, Tuple(1, 0));
-  ASSERT_EQ(0, d(0));
-  ASSERT_EQ(1 / sqrt(2), d(1));
-  EXPECT_THROW(
-      DerivativeBinder(GetFunction("gsl_hypot"), 2, 0, Tuple(0, 0)),
-      std::out_of_range);
-  EXPECT_THROW(
-      DerivativeBinder(GetFunction("gsl_hypot"), 0, 2, Tuple(0, 0)),
-      std::out_of_range);
-}
 
 TEST_F(GSLTest, Elementary) {
   TEST_FUNC(log1p);

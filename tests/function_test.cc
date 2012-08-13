@@ -28,12 +28,14 @@
 #include "gtest/gtest.h"
 #include "tests/function.h"
 #include "solvers/asl.h"
+#include "solvers/funcadd.h"
 
 using std::ptr_fun;
 using std::sqrt;
 using std::vector;
 
 using fun::BitSet;
+using fun::DerivativeBinder;
 using fun::Differentiator;
 using fun::Function;
 using fun::FunctionInfo;
@@ -407,5 +409,33 @@ TEST(FunctionTest, FunctionGetDerivative) {
   Function f2(0, 0, &fi2);
   EXPECT_EQ(42, f2.GetDerivative(0, Tuple(0)).value());
   EXPECT_EQ(11, f2.GetSecondDerivative(0, 0, Tuple(0)).value());
+}
+
+real ASLHypot(arglist *al) {
+  double x = al->ra[0];
+  double y = al->ra[1];
+  real result = sqrt(x * x + y * y);
+  if (al->derivs) {
+    real *derivs = al->derivs;
+    derivs[0] = x / result;
+    derivs[1] = y / result;
+  }
+  return result;
+}
+
+TEST(FunctionTest, DerivativeBinder) {
+  ASL asl;
+  func_info fi = {};
+  fi.nargs = 2;
+  fi.funcp = ASLHypot;
+  Function f(&asl, &fi, 0);
+  DerivativeBinder d(f, 0, 1, Tuple(1, 0));
+  ASSERT_EQ(1, d(0));
+  ASSERT_EQ(1 / sqrt(2), d(1));
+  d = DerivativeBinder(f, 1, 1, Tuple(1, 0));
+  ASSERT_EQ(0, d(0));
+  ASSERT_EQ(1 / sqrt(2), d(1));
+  EXPECT_THROW(DerivativeBinder(f, 2, 0, Tuple(0, 0)), std::out_of_range);
+  EXPECT_THROW(DerivativeBinder(f, 0, 2, Tuple(0, 0)), std::out_of_range);
 }
 }

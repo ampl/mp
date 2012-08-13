@@ -391,6 +391,27 @@ class Function {
     return info_->GetSecondDerivative(*this, arg1_index, arg2_index, args);
   }
 };
+
+// A helper class that wraps a Function's derivative and binds
+// all but one argument to the given values.
+class DerivativeBinder {
+ private:
+  Function f_;
+  unsigned deriv_var_;
+  unsigned eval_var_;
+  Tuple args_;
+  BitSet use_deriv_;
+
+ public:
+  // Creates a Derivative object.
+  // deriv_var: index of a variable with respect to which
+  //            the derivative is taken
+  // eval_var:  index of a variable which is not bound
+  DerivativeBinder(Function f, unsigned deriv_var,
+      unsigned eval_var, const Tuple &args);
+
+  double operator()(double x);
+};
 }
 
 #endif  // TESTS_FUNCTION_H_
