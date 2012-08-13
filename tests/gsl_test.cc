@@ -46,8 +46,8 @@ using fun::Function;
 using fun::FunctionInfo;
 using fun::HES;
 using fun::Tuple;
-using fun::pointer_to_ternary_function;
-using fun::ternary_function;
+using fun::Type;
+using fun::FunctionPointer3;
 
 namespace {
 
@@ -237,28 +237,33 @@ class GSLTest : public ::testing::Test {
 
   // Binds the mode argument of Func2Mode to GSL_PREC_DOUBLE.
   class Func3DoubleMode :
-    public ternary_function<double, double, double, double> {
+    public fun::FunctionWithTypes<3, double, double, double> {
    private:
     Func3Mode f_;
 
    public:
     explicit Func3DoubleMode(Func3Mode f) : f_(f) {}
 
-    double operator()(double x, double y, double z) const {
-      return f_(x, y, z, GSL_PREC_DOUBLE);
+    double operator()(const Tuple &args) const {
+      return f_(args[0], args[1], args[2], GSL_PREC_DOUBLE);
     }
   };
 
   template <typename F>
-  void TestTernaryFunc(const Function &af, F f);
+  void TestFunc(const Function &af, F f, Tuple &args, unsigned arg_index);
+
+  template <typename F>
+  void TestNaryFunc(const Function &af, F f) {
+    Tuple args(Tuple::GetTupleWithSize(F::NUM_ARGS));
+    TestFunc(af, f, args, 0);
+  }
 
   template <typename Arg1, typename Arg2, typename Arg3, typename Result>
   void TestFunc(const Function &af, Result (*f)(Arg1, Arg2, Arg3)) {
-    TestTernaryFunc(af,
-        pointer_to_ternary_function<Arg1, Arg2, Arg3, Result>(f));
+    TestNaryFunc(af, FunctionPointer3<Arg1, Arg2, Arg3, Result>(f));
   }
   void TestFunc(const Function &af, Func3Mode f) {
-    TestTernaryFunc(af, Func3DoubleMode(f));
+    TestNaryFunc(af, Func3DoubleMode(f));
   }
 };
 
@@ -473,16 +478,10 @@ void GSLTest::TestBinaryFunc(const Function &af, F f) {
 // Checks that the error is returned when trying to get a derivative
 // with respect to an integer argument.
 // Returns true if the argument is integer, false otherwise.
-template <typename Arg>
-bool CheckArg(const Function &, const Tuple &, unsigned);
-
-template <>
-bool CheckArg<double>(const Function &, const Tuple &, unsigned) {
-  return false;
-}
-
-template <>
-bool CheckArg<int>(const Function &f, const Tuple &args, unsigned arg_index) {
+bool CheckArg(const Function &f,
+    const Tuple &args, Type arg_type, unsigned arg_index) {
+  if (arg_type == fun::DOUBLE)
+    return false;
   std::ostringstream os;
   BitSet use_deriv(args.size(), false);
   use_deriv[arg_index] = true;
@@ -492,31 +491,29 @@ bool CheckArg<int>(const Function &f, const Tuple &args, unsigned arg_index) {
 }
 
 template <typename F>
-void GSLTest::TestTernaryFunc(const Function &af, F f) {
-  for (size_t i = 0; i != NUM_POINTS; ++i) {
-    for (size_t j = 0; j != NUM_POINTS; ++j) {
-      for (size_t k = 0; k != NUM_POINTS; ++k) {
-        double x = POINTS[i], y = POINTS[j], z = POINTS[k];
-        Tuple args(x, y, z);
-        if (static_cast<typename F::first_argument_type>(x) != x) {
-          EXPECT_STREQ(NotIntError(af.GetArgName(0), x), af(args).error());
-          continue;
-        }
-        if (static_cast<typename F::second_argument_type>(y) != y) {
-          EXPECT_STREQ(NotIntError(af.GetArgName(1), y), af(args).error());
-          continue;
-        }
-        CheckFunction(f(x, y, z), af, args);
-        if (!CheckArg<typename F::first_argument_type>(af, args, 0))
-          CheckDerivative(Bind2Of3(f, args, 0), af, 0, args);
-        if (!CheckArg<typename F::second_argument_type>(af, args, 1))
-          CheckDerivative(Bind2Of3(f, args, 1), af, 1, args);
-        if (!CheckArg<typename F::third_argument_type>(af, args, 2))
-          CheckDerivative(Bind2Of3(f, args, 2), af, 2, args);
-        CheckSecondDerivatives(af, args);
-      }
+void GSLTest::TestFunc(
+    const Function &af, F f, Tuple &args, unsigned arg_index) {
+  unsigned num_args = args.size();
+  if (arg_index < num_args) {
+    for (size_t i = 0; i != NUM_POINTS; ++i) {
+      args[arg_index] = POINTS[i];
+      TestFunc(af, f, args, arg_index + 1);
+    }
+    return;
+  }
+  for (unsigned i = 0; i < num_args; ++i) {
+    if (F::ARG_TYPES[i] != fun::DOUBLE &&
+        static_cast<int>(args[i]) != args[i]) {
+      EXPECT_STREQ(NotIntError(af.GetArgName(i), args[i]), af(args).error());
+      return;
     }
   }
+  CheckFunction(f(args), af, args);
+  for (unsigned i = 0; i < num_args; ++i) {
+    if (!CheckArg(af, args, F::ARG_TYPES[i], i))
+      CheckDerivative(BindAllButOne(f, args, i), af, i, args);
+  }
+  CheckSecondDerivatives(af, args);
 }
 
 #define TEST_FUNC(name) TestFunc(GetFunction("gsl_" #name, &info), gsl_##name)

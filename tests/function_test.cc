@@ -96,34 +96,17 @@ TEST(FunctionTest, BitSet) {
   CheckBitSet("1010", BitSet("1010"));
 }
 
-#define EXPECT_TYPE(expected, actual) { \
-    expected *e = static_cast<actual*>(0); \
-    e = e; \
-  }
-
-TEST(FunctionTest, TernaryFunction) {
-  typedef fun::ternary_function<bool, char, int, double> Fun;
-  EXPECT_TYPE(bool, Fun::first_argument_type);
-  EXPECT_TYPE(char, Fun::second_argument_type);
-  EXPECT_TYPE(int, Fun::third_argument_type);
-  EXPECT_TYPE(double, Fun::result_type);
+double TestFun1(int x, double y, int z) {
+  return x * 100 + y * 10 + z;
 }
 
-double TestFun1(bool b, char c, int i) {
-  EXPECT_EQ(true, b);
-  EXPECT_EQ('a', c);
-  EXPECT_EQ(42, i);
-  return 777;
-}
-
-TEST(FunctionTest, PointerToTernaryFunction) {
-  typedef fun::pointer_to_ternary_function<bool, char, int, double> Fun;
-  EXPECT_TYPE(bool, Fun::first_argument_type);
-  EXPECT_TYPE(char, Fun::second_argument_type);
-  EXPECT_TYPE(int, Fun::third_argument_type);
-  EXPECT_TYPE(double, Fun::result_type);
+TEST(FunctionTest, FunctionPointer3) {
+  typedef fun::FunctionPointer3<int, double, int, double> Fun;
+  EXPECT_EQ(fun::INT, Fun::ARG_TYPES[0]);
+  EXPECT_EQ(fun::DOUBLE, Fun::ARG_TYPES[1]);
+  EXPECT_EQ(fun::INT, Fun::ARG_TYPES[2]);
   Fun f(TestFun1);
-  EXPECT_EQ(777, f(true, 'a', 42));
+  EXPECT_EQ(357, f(Tuple(3, 5, 7)));
 }
 
 TEST(FunctionTest, Fun) {
@@ -133,30 +116,35 @@ TEST(FunctionTest, Fun) {
       1e-5);
 }
 
-double TestFun2(double x, double y, double z) {
-  return x * 100 + y * 10 + z;
+double TestFun2(const Tuple &args) {
+  return args[0] * 10 + args[1];
 }
 
-TEST(FunctionTest, Bind2Of3) {
-  typedef double (*Fun)(double, double, double);
-  fun::Binder2Of3<Fun> f1(TestFun2, Tuple(0, 5, 7), 0);
-  EXPECT_EQ(357, Bind2Of3(TestFun2, Tuple(0, 5, 7), 0)(3));
-  EXPECT_EQ(357, f1(3));
-  fun::Binder2Of3<Fun> f2(TestFun2, Tuple(5, 0, 7), 1);
-  EXPECT_EQ(537, Bind2Of3(TestFun2, Tuple(5, 0, 7), 1)(3));
-  EXPECT_EQ(537, f2(3));
-  fun::Binder2Of3<Fun> f3(TestFun2, Tuple(5, 7, 0), 2);
-  EXPECT_EQ(573, Bind2Of3(TestFun2, Tuple(5, 7, 0), 2)(3));
-  EXPECT_EQ(573, f3(3));
+double TestFun3(const Tuple &args) {
+  return args[0] * 100 + args[1] * 10 + args[2];
+}
 
-  EXPECT_THROW(fun::Binder2Of3<Fun>(TestFun2, Tuple(1), 0),
+TEST(FunctionTest, BindAllButOne) {
+  typedef double (*Fun)(const Tuple &);
+
+  EXPECT_EQ(35, BindAllButOne(TestFun2, Tuple(0, 5), 0)(3));
+  EXPECT_EQ(35, fun::BinderAllButOne<Fun>(TestFun2, Tuple(0, 5), 0)(3));
+  EXPECT_EQ(53, BindAllButOne(TestFun2, Tuple(5, 0), 1)(3));
+  EXPECT_EQ(53, fun::BinderAllButOne<Fun>(TestFun2, Tuple(5, 0), 1)(3));
+
+  EXPECT_THROW(
+      fun::BinderAllButOne<Fun>(TestFun2, Tuple(0, 5), 2),
       std::out_of_range);
-  EXPECT_THROW(fun::Binder2Of3<Fun>(TestFun2, Tuple(1, 2), 0),
-      std::out_of_range);
-  fun::Binder2Of3<Fun>(TestFun2, Tuple(1, 2, 3), 0);
-  EXPECT_THROW(fun::Binder2Of3<Fun>(TestFun2, Tuple(1, 2, 3, 4), 0),
-      std::out_of_range);
-  EXPECT_THROW(fun::Binder2Of3<Fun>(TestFun2, Tuple(1, 2, 3), 3),
+
+  EXPECT_EQ(357, BindAllButOne(TestFun3, Tuple(0, 5, 7), 0)(3));
+  EXPECT_EQ(357, fun::BinderAllButOne<Fun>(TestFun3, Tuple(0, 5, 7), 0)(3));
+  EXPECT_EQ(537, BindAllButOne(TestFun3, Tuple(5, 0, 7), 1)(3));
+  EXPECT_EQ(537, fun::BinderAllButOne<Fun>(TestFun3, Tuple(5, 0, 7), 1)(3));
+  EXPECT_EQ(573, BindAllButOne(TestFun3, Tuple(5, 7, 0), 2)(3));
+  EXPECT_EQ(573, fun::BinderAllButOne<Fun>(TestFun3, Tuple(5, 7, 0), 2)(3));
+
+  EXPECT_THROW(
+      fun::BinderAllButOne<Fun>(TestFun3, Tuple(0, 5, 7), 3),
       std::out_of_range);
 }
 
