@@ -64,15 +64,13 @@ class Error {
   explicit Error(const string &s) : str_(s) {}
   operator const char*() const { return str_.c_str(); }
   const char* c_str() const { return str_.c_str(); }
-  operator FunctionInfo::Result() const {
-    return FunctionInfo::Result(str_.c_str());
-  }
 };
 
-Error EvalError(const Function &f, const Tuple &args, const char *suffix = "") {
+FunctionInfo::Result EvalError(
+    const Function &f, const Tuple &args, const char *suffix = "") {
   std::ostringstream os;
   os << "can't evaluate " << f.name() << suffix << args;
-  return Error(os.str());
+  return FunctionInfo::Result(os.str().c_str());
 }
 
 Error NotIntError(const string &arg_name, double value = 0.5) {
@@ -106,7 +104,7 @@ void CheckFunction(double value, const Function &f, const Tuple &args) {
   os << "Checking if " << f.name() << args << " = " << value;
   SCOPED_TRACE(os.str());
   if (gsl_isnan(value))
-    EXPECT_ERROR(EvalError(f, args), f(args));
+    EXPECT_ERROR(EvalError(f, args).error(), f(args));
   else
     EXPECT_EQ(value, f(args)) << f.name() << args;
 }
@@ -255,7 +253,7 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
     if (deriv_result.error())
       EXPECT_ERROR(deriv_result.error(), r);
     else
-      EXPECT_ERROR(EvalError(af, args, "'"), r);
+      EXPECT_ERROR(EvalError(af, args, "'").error(), r);
   } else {
     EXPECT_TRUE(r.error() != nullptr);
   }
@@ -287,8 +285,9 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
       use_deriv[j] = true;
       double error = 0;
       FunctionInfo::Result deriv_result = f.GetSecondDerivative(i, j, args);
+      double d = GSL_NAN;
       if (!deriv_result.error()) {
-        double d = Diff(DerivativeBinder(f, j, i, args), args[i], &error);
+        d = Diff(DerivativeBinder(f, j, i, args), args[i], &error);
         double overridden_deriv = deriv_result.value();
         if (!gsl_isnan(overridden_deriv) && overridden_deriv != d) {
           std::cout << "Overriding d/dx" << i << " d/dx" << j << " "
@@ -312,7 +311,7 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
       else if (deriv_result.error())
         EXPECT_ERROR(deriv_result.error(), r);
       else
-        EXPECT_ERROR(EvalError(f, args, "''"), r);
+        EXPECT_ERROR(EvalError(f, args, "''").error(), r);
     }
   }
 }
@@ -497,28 +496,28 @@ TEST_F(GSLTest, Besselj) {
   TEST_FUNC(gsl_sf_bessel_j0);
   TEST_FUNC(gsl_sf_bessel_j1);
   TEST_FUNC(gsl_sf_bessel_j2);
-  TEST_FUNC_ND(sf_bessel_jl, GSL_NAN, l);
+  TEST_FUNC2(gsl_sf_bessel_jl, FunctionInfo("l x"));
 }
 
 TEST_F(GSLTest, Bessely) {
   TEST_FUNC(gsl_sf_bessel_y0);
   TEST_FUNC(gsl_sf_bessel_y1);
   TEST_FUNC(gsl_sf_bessel_y2);
-  TEST_FUNC_ND(sf_bessel_yl, GSL_NAN, l);
+  TEST_FUNC2(gsl_sf_bessel_yl, FunctionInfo("l x"));
 }
 
 TEST_F(GSLTest, Besseli) {
   TEST_FUNC(gsl_sf_bessel_i0_scaled);
   TEST_FUNC(gsl_sf_bessel_i1_scaled);
   TEST_FUNC(gsl_sf_bessel_i2_scaled);
-  TEST_FUNC_ND(sf_bessel_il_scaled, GSL_NAN, l);
+  TEST_FUNC2(gsl_sf_bessel_il_scaled, FunctionInfo("l x"));
 }
 
 TEST_F(GSLTest, Besselk) {
   TEST_FUNC(gsl_sf_bessel_k0_scaled);
   TEST_FUNC(gsl_sf_bessel_k1_scaled);
   TEST_FUNC(gsl_sf_bessel_k2_scaled);
-  TEST_FUNC_ND(sf_bessel_kl_scaled, GSL_NAN, l);
+  TEST_FUNC2(gsl_sf_bessel_kl_scaled, FunctionInfo("l x"));
 }
 
 struct BesselFractionalOrderInfo : FunctionInfo {
@@ -691,7 +690,7 @@ TEST_F(GSLTest, Erf) {
 TEST_F(GSLTest, ExpInt) {
   TEST_FUNC(gsl_sf_expint_E1);
   TEST_FUNC(gsl_sf_expint_E2);
-  TEST_FUNC_ND(sf_expint_En, GSL_NAN, n);
+  TEST_FUNC2(gsl_sf_expint_En, FunctionInfo("n x"));
   TEST_FUNC(gsl_sf_expint_Ei);
   TEST_FUNC(gsl_sf_Shi);
   TEST_FUNC(gsl_sf_Chi);
