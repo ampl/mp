@@ -296,10 +296,6 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
             << ", overridden = " << overridden_deriv << std::endl;
           d = overridden_deriv;
         }
-        std::ostringstream os;
-        os << "Checking if d/dx" << i << " d/dx" << j
-          << " " << f.name() << " at " << args << " is " << d;
-        SCOPED_TRACE(os.str());
         if (!gsl_isnan(d)) {
           unsigned ii = i, jj = j;
           if (ii > jj) std::swap(ii, jj);
@@ -680,22 +676,7 @@ TEST_F(GSLTest, EllInt) {
   TEST_FUNC2(gsl_sf_ellint_RC, NoDeriv());
   TEST_FUNC2(gsl_sf_ellint_RD, NoDeriv());
   TEST_FUNC2(gsl_sf_ellint_RF, NoDeriv());
-  Function f = GetFunction("gsl_sf_ellint_RJ");
-  for (size_t ix = 0; ix != NUM_POINTS; ++ix) {
-    for (size_t iy = 0; iy != NUM_POINTS; ++iy) {
-      for (size_t iz = 0; iz != NUM_POINTS; ++iz) {
-        for (size_t ip = 0; ip != NUM_POINTS; ++ip) {
-          double x = POINTS[ix], y = POINTS[iy];
-          double z = POINTS[iz], p = POINTS[ip];
-          Tuple args(x, y, z, p);
-          CheckFunction(gsl_sf_ellint_RJ(x, y, z, p, GSL_PREC_DOUBLE), f, args);
-          const char *error = "derivatives are not provided";
-          EXPECT_ERROR(error, f(args, DERIVS));
-          EXPECT_ERROR(error, f(args, HES));
-        }
-      }
-    }
-  }
+  TEST_FUNC2(gsl_sf_ellint_RJ, NoDeriv());
 }
 
 TEST_F(GSLTest, Erf) {

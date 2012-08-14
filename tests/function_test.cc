@@ -168,17 +168,17 @@ TEST(FunctionTest, FunctionPointer2) {
   f = FunctionPointer(Poly2);
 }
 
-double Poly3(int a, double b, int c) {
+double Poly3(int a, double b, unsigned c) {
   return a * 100 + b * 10 + c;
 }
 
 TEST(FunctionTest, FunctionPointer3) {
-  typedef fun::FunctionPointer3<int, double, int, double> Fun;
+  typedef fun::FunctionPointer3<int, double, unsigned, double> Fun;
   Fun f(Poly3);
   EXPECT_EQ(3u, f.GetNumArgs());
   EXPECT_EQ(fun::INT, f.GetArgType(0));
   EXPECT_EQ(fun::DOUBLE, f.GetArgType(1));
-  EXPECT_EQ(fun::INT, f.GetArgType(2));
+  EXPECT_EQ(fun::UINT, f.GetArgType(2));
   EXPECT_THROW(f.GetArgType(3), std::out_of_range);
   EXPECT_THROW(f(Tuple(3, 5)), std::invalid_argument);
   EXPECT_EQ(357, f(Tuple(3, 5, 7)));
@@ -186,18 +186,18 @@ TEST(FunctionTest, FunctionPointer3) {
   f = FunctionPointer(Poly3);
 }
 
-double Poly4(double a, int b, double c, int d) {
+double Poly4(double a, int b, double c, unsigned d) {
   return a * 1000 + b * 100 + c * 10 + d;
 }
 
 TEST(FunctionTest, FunctionPointer4) {
-  typedef fun::FunctionPointer4<double, int, double, int, double> Fun;
+  typedef fun::FunctionPointer4<double, int, double, unsigned, double> Fun;
   Fun f(Poly4);
   EXPECT_EQ(4u, f.GetNumArgs());
   EXPECT_EQ(fun::DOUBLE, f.GetArgType(0));
   EXPECT_EQ(fun::INT, f.GetArgType(1));
   EXPECT_EQ(fun::DOUBLE, f.GetArgType(2));
-  EXPECT_EQ(fun::INT, f.GetArgType(3));
+  EXPECT_EQ(fun::UINT, f.GetArgType(3));
   EXPECT_THROW(f.GetArgType(4), std::out_of_range);
   EXPECT_THROW(f(Tuple(2, 3, 5)), std::invalid_argument);
   EXPECT_EQ(2357, f(Tuple(2, 3, 5, 7)));
@@ -205,12 +205,32 @@ TEST(FunctionTest, FunctionPointer4) {
   f = FunctionPointer(Poly4);
 }
 
+double Poly5(double a, int b, unsigned c, double d, int e) {
+  return a * 10000 + b * 1000 + c * 100 + d * 10 + e;
+}
+TEST(FunctionTest, FunctionPointer5) {
+  typedef fun::FunctionPointer5<
+      double, int, unsigned, double, int, double> Fun;
+  Fun f(Poly5);
+  EXPECT_EQ(5u, f.GetNumArgs());
+  EXPECT_EQ(fun::DOUBLE, f.GetArgType(0));
+  EXPECT_EQ(fun::INT, f.GetArgType(1));
+  EXPECT_EQ(fun::UINT, f.GetArgType(2));
+  EXPECT_EQ(fun::DOUBLE, f.GetArgType(3));
+  EXPECT_EQ(fun::INT, f.GetArgType(4));
+  EXPECT_THROW(f.GetArgType(5), std::out_of_range);
+  EXPECT_THROW(f(Tuple(1, 2, 3, 5)), std::invalid_argument);
+  EXPECT_EQ(12357, f(Tuple(1, 2, 3, 5, 7)));
+  EXPECT_THROW(f(Tuple(1, 2, 3, 5, 7, 11)), std::invalid_argument);
+  f = FunctionPointer(Poly5);
+}
+
 TEST(FunctionTest, BindOne) {
-  typedef fun::FunctionPointer3<int, double, int, double> Fun;
+  typedef fun::FunctionPointer3<int, double, unsigned, double> Fun;
   fun::OneBinder<Fun, double> f(Fun(Poly3), 5, 1);
   EXPECT_EQ(2u, f.GetNumArgs());
   EXPECT_EQ(fun::INT, f.GetArgType(0));
-  EXPECT_EQ(fun::INT, f.GetArgType(1));
+  EXPECT_EQ(fun::UINT, f.GetArgType(1));
   EXPECT_THROW(f.GetArgType(2), std::out_of_range);
   EXPECT_EQ(357, f(Tuple(3, 7)));
   f = fun::BindOne(Fun(Poly3), 5.0, 1);
@@ -495,7 +515,7 @@ TEST(FunctionTest, FunctionArgNames) {
   EXPECT_THROW(f.GetArgName(3), std::out_of_range);
 }
 
-TEST(FunctionTest, FunctionGetDerivative) {
+TEST(FunctionTest, FunctifonGetDerivative) {
   FunctionInfo fi1;
   Function f1(0, 0, &fi1);
   EXPECT_TRUE(std::isnan(f1.GetDerivative(0, Tuple(0)).value()));
