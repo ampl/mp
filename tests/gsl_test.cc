@@ -176,12 +176,12 @@ class GSLTest : public ::testing::Test {
 
   template <typename F>
   bool CheckDerivative(F f, const Function &af,
-      unsigned var_index, const Tuple &args);
+      unsigned arg_index, const Tuple &args);
 
-  static const unsigned NO_VAR = ~0u;
+  static const unsigned NO_ARG = ~0u;
 
   void CheckSecondDerivatives(const Function &f,
-      const Tuple &args, unsigned skip_var = NO_VAR);
+      const Tuple &args, unsigned skip_arg = NO_ARG);
 
   // Tests a function taking an integer and a double parameter.
   // test_x is a value of x where the function can be computed for very large
@@ -218,32 +218,32 @@ double GSLTest::Diff(F f, double x, double *error) {
 
 // Checks if the value of the derivative returned by af agrees with the
 // value returned by numerical differentiation of function f.
-// var_index: index of the variable with respect to which to differentiate
+// arg_index: index of an argument with respect to which to differentiate
 // args: point at which the derivative is computed
 template <typename F>
 bool GSLTest::CheckDerivative(F f, const Function &af,
-    unsigned var_index, const Tuple &args) {
+    unsigned arg_index, const Tuple &args) {
   std::ostringstream os;
-  os << "Checking d/dx" << var_index << " " << af.name() << " at " << args;
+  os << "Checking d/dx" << arg_index << " " << af.name() << " at " << args;
   SCOPED_TRACE(os.str());
 
   BitSet use_deriv(args.size(), false);
-  use_deriv[var_index] = true;
+  use_deriv[arg_index] = true;
 
   double error = 0;
-  double x = args[var_index];
-  FunctionInfo::Result deriv_result = af.GetDerivative(var_index, args);
+  double x = args[arg_index];
+  FunctionInfo::Result deriv_result = af.GetDerivative(arg_index, args);
   if (!deriv_result.error()) {
     double numerical_deriv = Diff(f, x, &error);
     double overridden_deriv = deriv_result.value();
     if (!gsl_isnan(overridden_deriv) && overridden_deriv != numerical_deriv) {
-      std::cout << "Overriding d/dx" << var_index << " " << af.name()
+      std::cout << "Overriding d/dx" << arg_index << " " << af.name()
         << " at " << args << ", computed = " << numerical_deriv
         << ", overridden = " << overridden_deriv << std::endl;
       numerical_deriv = overridden_deriv;
     }
     if (!gsl_isnan(numerical_deriv)) {
-      double deriv = af(args, DERIVS, use_deriv).deriv(var_index);
+      double deriv = af(args, DERIVS, use_deriv).deriv(arg_index);
       if (numerical_deriv != deriv)
         EXPECT_NEAR(numerical_deriv, deriv, ConvertErrorToTolerance(error));
       return true;
@@ -266,22 +266,22 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
 // agree with the values returned by numerical differentiation of the first
 // partial derivatives.
 // args: point at which the derivatives are computed
-// skip_var: index of the variable with respect to which not to differentiate
+// skip_arg: index of an argument with respect to which not to differentiate
 void GSLTest::CheckSecondDerivatives(const Function &f,
-    const Tuple &args, unsigned skip_var) {
+    const Tuple &args, unsigned skip_arg) {
   unsigned num_args = args.size();
-  if (skip_var == NO_VAR) {
+  if (skip_arg == NO_ARG) {
     for (unsigned i = 0; i < num_args; ++i) {
       if (f.GetDerivative(i, args).error()) {
-        skip_var = i;
+        skip_arg = i;
         break;
       }
     }
   }
   for (unsigned i = 0; i < num_args; ++i) {
-    if (i == skip_var) continue;
+    if (i == skip_arg) continue;
     for (unsigned j = 0; j < num_args; ++j) {
-      if (j == skip_var) continue;
+      if (j == skip_arg) continue;
       BitSet use_deriv(num_args, false);
       use_deriv[i] = true;
       use_deriv[j] = true;
@@ -527,9 +527,9 @@ TEST_F(GSLTest, Besselk) {
 
 struct BesselFractionalOrderInfo : FunctionInfo {
   Result GetDerivative(const Function &f,
-      unsigned var_index, const Tuple &args) const {
+      unsigned arg_index, const Tuple &args) const {
     // Partial derivative with respect to nu is not provided.
-    if (var_index == 0)
+    if (arg_index == 0)
       return Result("argument 'nu' is not constant");
     // Computing gsl_sf_bessel_*nu'(nu, x) requires
     // gsl_sf_bessel_*nu(nu - 1, x) which doesn't work when the
@@ -759,9 +759,9 @@ TEST_F(GSLTest, Poch) {
 
 struct GammaIncInfo : FunctionInfo {
   Result GetDerivative(
-      const Function &af, unsigned var_index, const Tuple &args) const {
+      const Function &af, unsigned arg_index, const Tuple &args) const {
     // Partial derivative with respect to a is not provided.
-    if (var_index == 0)
+    if (arg_index == 0)
       return Result("argument 'a' is not constant");
     if (args[1] == 0)
       return EvalError(af, args, "'");
@@ -777,8 +777,8 @@ TEST_F(GSLTest, GammaInc) {
 
 struct BetaInfo : FunctionInfo {
   Result GetDerivative(
-      const Function &af, unsigned var_index, const Tuple &args) const {
-    if (gsl_isnan(gsl_sf_psi(args[0] + args[1])) || args[var_index] == 0)
+      const Function &af, unsigned arg_index, const Tuple &args) const {
+    if (gsl_isnan(gsl_sf_psi(args[0] + args[1])) || args[arg_index] == 0)
       return EvalError(af, args, "'");
     return Result();
   }
@@ -799,9 +799,9 @@ TEST_F(GSLTest, GegenPoly) {
 
 struct Hyperg0F1Info : FunctionInfo {
   Result GetDerivative(
-      const Function &, unsigned var_index, const Tuple &) const {
+      const Function &, unsigned arg_index, const Tuple &) const {
     // Partial derivative with respect to c is not provided.
-    return Result(var_index == 0 ? "argument 'c' is not constant" : "");
+    return Result(arg_index == 0 ? "argument 'c' is not constant" : "");
   }
 };
 

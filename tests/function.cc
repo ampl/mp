@@ -129,19 +129,19 @@ Function::Result Function::operator()(const Tuple &args,
 }
 
 DerivativeBinder::DerivativeBinder(
-    Function f, unsigned deriv_var, unsigned eval_var, const Tuple &args)
-: f_(f), deriv_var_(deriv_var), eval_var_(eval_var),
+    Function f, unsigned deriv_arg, unsigned eval_arg, const Tuple &args)
+: f_(f), deriv_arg_(deriv_arg), eval_arg_(eval_arg),
   args_(args), use_deriv_(args.size(), false) {
-  unsigned num_vars = args_.size();
-  if (deriv_var >= num_vars || eval_var >= num_vars)
-    throw std::out_of_range("variable index is out of range");
-  use_deriv_[deriv_var] = true;
+  unsigned num_args = args_.size();
+  if (deriv_arg >= num_args || eval_arg >= num_args)
+    throw std::out_of_range("argument index is out of range");
+  use_deriv_[deriv_arg] = true;
 }
 
 double DerivativeBinder::operator()(double x) {
-  args_[eval_var_] = x;
+  args_[eval_arg_] = x;
   Function::Result r = f_(args_, DERIVS, use_deriv_);
   return r.error() ?
-      std::numeric_limits<double>::quiet_NaN() : r.deriv(deriv_var_);
+      std::numeric_limits<double>::quiet_NaN() : r.deriv(deriv_arg_);
 }
 }
