@@ -63,21 +63,22 @@ BitSet::BitSet(const char *s) {
 
 FunctionInfo::~FunctionInfo() {}
 
-void FunctionInfo::SetArgNames(const char *arg_names) {
+FunctionInfo &FunctionInfo::SetArgNames(const char *arg_names) {
   arg_names_.clear();
   std::istringstream is(arg_names);
   copy(std::istream_iterator<std::string>(is),
       std::istream_iterator<std::string>(),
       std::back_inserter< std::vector<std::string> >(arg_names_));
+  return *this;
 }
 
 FunctionInfo::Result FunctionInfo::GetDerivative(
-    const Function &, unsigned, const Tuple &) {
+    const Function &, unsigned, const Tuple &) const {
   return Result();
 }
 
 FunctionInfo::Result FunctionInfo::GetSecondDerivative(
-    const Function &, unsigned, unsigned, const Tuple &) {
+    const Function &, unsigned, unsigned, const Tuple &) const {
   return Result();
 }
 
