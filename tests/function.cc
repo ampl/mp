@@ -30,6 +30,10 @@
 
 namespace fun {
 
+const Type GetType<void>::VALUE;
+const Type GetType<int>::VALUE;
+const Type GetType<double>::VALUE;
+
 std::ostream &operator<<(std::ostream &os, const Tuple &t) {
   os << "(";
   if (unsigned size = t.size()) {

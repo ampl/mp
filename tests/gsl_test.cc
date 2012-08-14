@@ -47,7 +47,13 @@ using fun::FunctionInfo;
 using fun::HES;
 using fun::Tuple;
 using fun::Type;
-using fun::FunctionPointer3;
+
+namespace fun {
+template <>
+struct GetType<gsl_mode_t> {
+  static const Type VALUE = MODE;
+};
+}
 
 namespace {
 
@@ -98,7 +104,6 @@ void CheckFunction(double value, const Function &f, const Tuple &args) {
 }
 
 typedef double (*FuncU)(unsigned);
-typedef double (*Func3Mode)(double, double, double, gsl_mode_t);
 typedef double (*FuncND)(int, double);
 
 const double POINTS[] = {-5, -2, -1.23, -1, 0, 1, 1.23, 2, 5};
@@ -181,16 +186,6 @@ class GSLTest : public ::testing::Test {
   void CheckSecondDerivatives(const Function &f,
       const Tuple &args, unsigned skip_var = NO_VAR);
 
-  // Tests a function taking a single argument.
-  template <typename F>
-  void TestUnaryFunc(const Function &af, F f);
-  void TestFunc(const Function &af, double (*f)(double x)) {
-    TestUnaryFunc(af, f);
-  }
-  void TestFunc(const Function &af, double (*f)(double, gsl_mode_t)) {
-    TestUnaryFunc(af, std::bind2nd(std::ptr_fun(f), GSL_PREC_DOUBLE));
-  }
-
   void TestZeroFunc(const Function &af,
       double value, const Tuple &args, unsigned s_index);
 
@@ -210,60 +205,20 @@ class GSLTest : public ::testing::Test {
       double test_x, const string &arg_name);
 
   template <typename F>
-  void TestBinaryFunc(const Function &af, F f);
-
-  void TestFunc(const Function &af, double (*f)(double, double)) {
-    TestBinaryFunc(af, std::ptr_fun(f));
-  }
-
-  typedef double (*Func2Mode)(double, double, gsl_mode_t);
-
-  // Binds the mode argument of Func2Mode to GSL_PREC_DOUBLE.
-  class Func2DoubleMode : public std::binary_function<double, double, double> {
-   private:
-    Func2Mode f_;
-
-   public:
-    explicit Func2DoubleMode(Func2Mode f) : f_(f) {}
-
-    double operator()(double x, double y) const {
-      return f_(x, y, GSL_PREC_DOUBLE);
-    }
-  };
-
-  void TestFunc(const Function &af, Func2Mode f) {
-    TestBinaryFunc(af, Func2DoubleMode(f));
-  }
-
-  // Binds the mode argument of Func2Mode to GSL_PREC_DOUBLE.
-  class Func3DoubleMode :
-    public fun::FunctionWithTypes<3, double, double, double> {
-   private:
-    Func3Mode f_;
-
-   public:
-    explicit Func3DoubleMode(Func3Mode f) : f_(f) {}
-
-    double operator()(const Tuple &args) const {
-      return f_(args[0], args[1], args[2], GSL_PREC_DOUBLE);
-    }
-  };
-
-  template <typename F>
   void TestFunc(const Function &af, F f, Tuple &args, unsigned arg_index);
 
   template <typename F>
-  void TestNaryFunc(const Function &af, F f) {
-    Tuple args(Tuple::GetTupleWithSize(F::NUM_ARGS));
-    TestFunc(af, f, args, 0);
-  }
-
-  template <typename Arg1, typename Arg2, typename Arg3, typename Result>
-  void TestFunc(const Function &af, Result (*f)(Arg1, Arg2, Arg3)) {
-    TestNaryFunc(af, FunctionPointer3<Arg1, Arg2, Arg3, Result>(f));
-  }
-  void TestFunc(const Function &af, Func3Mode f) {
-    TestNaryFunc(af, Func3DoubleMode(f));
+  void TestFunc(const Function &af, F f) {
+    unsigned num_args = fun::FunctionPointer(f).GetNumArgs();
+    if (fun::FunctionPointer(f).GetArgType(num_args - 1) == fun::MODE) {
+      // If the last argument is a mode bind it to GSL_PREC_DOUBLE.
+      Tuple args(Tuple::GetTupleWithSize(num_args - 1));
+      TestFunc(af, BindOne(fun::FunctionPointer(f),
+          GSL_PREC_DOUBLE, num_args - 1), args, 0);
+    } else {
+      Tuple args(Tuple::GetTupleWithSize(num_args));
+      TestFunc(af, fun::FunctionPointer(f), args, 0);
+    }
   }
 };
 
@@ -374,17 +329,6 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
   }
 }
 
-template <typename F>
-void GSLTest::TestUnaryFunc(const Function &af, F f) {
-  for (size_t i = 0; i != NUM_POINTS; ++i) {
-    double x = POINTS[i];
-    Tuple arg(x);
-    CheckFunction(f(x), af, arg);
-    CheckDerivative(f, af, 0, arg);
-    CheckSecondDerivatives(af, arg);
-  }
-}
-
 void GSLTest::TestZeroFunc(const Function &af,
     double value, const Tuple &args, unsigned s_index) {
   double s = args[s_index];
@@ -461,20 +405,6 @@ void GSLTest::TestFuncND(const Function &af, FuncND f,
       use_deriv).hes(2)));
 }
 
-template <typename F>
-void GSLTest::TestBinaryFunc(const Function &af, F f) {
-  for (size_t i = 0; i != NUM_POINTS; ++i) {
-    for (size_t j = 0; j != NUM_POINTS; ++j) {
-      double x = POINTS[i], y = POINTS[j];
-      Tuple args(x, y);
-      CheckFunction(f(x, y), af, args);
-      CheckDerivative(std::bind2nd(f, y), af, 0, args);
-      CheckDerivative(std::bind1st(f, x), af, 1, args);
-      CheckSecondDerivatives(af, args);
-    }
-  }
-}
-
 // Checks that the error is returned when trying to get a derivative
 // with respect to an integer argument.
 // Returns true if the argument is integer, false otherwise.
@@ -502,7 +432,7 @@ void GSLTest::TestFunc(
     return;
   }
   for (unsigned i = 0; i < num_args; ++i) {
-    if (F::ARG_TYPES[i] != fun::DOUBLE &&
+    if (f.GetArgType(i) != fun::DOUBLE &&
         static_cast<int>(args[i]) != args[i]) {
       EXPECT_STREQ(NotIntError(af.GetArgName(i), args[i]), af(args).error());
       return;
@@ -510,7 +440,7 @@ void GSLTest::TestFunc(
   }
   CheckFunction(f(args), af, args);
   for (unsigned i = 0; i < num_args; ++i) {
-    if (!CheckArg(af, args, F::ARG_TYPES[i], i))
+    if (!CheckArg(af, args, f.GetArgType(i), i))
       CheckDerivative(BindAllButOne(f, args, i), af, i, args);
   }
   CheckSecondDerivatives(af, args);
