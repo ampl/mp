@@ -430,92 +430,92 @@ void GSLTest::TestFunc(const Function &af, F f) {
   }
 }
 
-#define TEST_FUNC(name) TestFunc(GetFunction("gsl_" #name, &info), gsl_##name)
+#define TEST_FUNC(name) TestFunc(GetFunction(#name, &info), name)
 
 #define TEST_FUNC_ND(name, test_x, arg) \
   TestFuncND(GetFunction("gsl_" #name, &info), gsl_##name, test_x, #arg)
 
 TEST_F(GSLTest, Elementary) {
-  TEST_FUNC(log1p);
-  TEST_FUNC(expm1);
-  TEST_FUNC(hypot);
-  TEST_FUNC(hypot3);
+  TEST_FUNC(gsl_log1p);
+  TEST_FUNC(gsl_expm1);
+  TEST_FUNC(gsl_hypot);
+  TEST_FUNC(gsl_hypot3);
 }
 
 TEST_F(GSLTest, AiryA) {
-  TEST_FUNC(sf_airy_Ai);
-  TEST_FUNC(sf_airy_Ai_scaled);
+  TEST_FUNC(gsl_sf_airy_Ai);
+  TEST_FUNC(gsl_sf_airy_Ai_scaled);
 }
 
 TEST_F(GSLTest, AiryB) {
-  TEST_FUNC(sf_airy_Bi);
-  TEST_FUNC(sf_airy_Bi_scaled);
+  TEST_FUNC(gsl_sf_airy_Bi);
+  TEST_FUNC(gsl_sf_airy_Bi_scaled);
 }
 
 TEST_F(GSLTest, AiryZero) {
   FunctionInfo info;
   info.SetArgNames("s");
-  TEST_FUNC(sf_airy_zero_Ai);
-  TEST_FUNC(sf_airy_zero_Bi);
-  TEST_FUNC(sf_airy_zero_Ai_deriv);
-  TEST_FUNC(sf_airy_zero_Bi_deriv);
+  TEST_FUNC(gsl_sf_airy_zero_Ai);
+  TEST_FUNC(gsl_sf_airy_zero_Bi);
+  TEST_FUNC(gsl_sf_airy_zero_Ai_deriv);
+  TEST_FUNC(gsl_sf_airy_zero_Bi_deriv);
 }
 
 TEST_F(GSLTest, BesselJ) {
-  TEST_FUNC(sf_bessel_J0);
-  TEST_FUNC(sf_bessel_J1);
+  TEST_FUNC(gsl_sf_bessel_J0);
+  TEST_FUNC(gsl_sf_bessel_J1);
   TEST_FUNC_ND(sf_bessel_Jn, 0, n);
 }
 
 TEST_F(GSLTest, BesselY) {
-  TEST_FUNC(sf_bessel_Y0);
-  TEST_FUNC(sf_bessel_Y1);
+  TEST_FUNC(gsl_sf_bessel_Y0);
+  TEST_FUNC(gsl_sf_bessel_Y1);
   TEST_FUNC_ND(sf_bessel_Yn, 1, n);
 }
 
 TEST_F(GSLTest, BesselI) {
-  TEST_FUNC(sf_bessel_I0);
-  TEST_FUNC(sf_bessel_I1);
+  TEST_FUNC(gsl_sf_bessel_I0);
+  TEST_FUNC(gsl_sf_bessel_I1);
   TEST_FUNC_ND(sf_bessel_In, 0, n);
-  TEST_FUNC(sf_bessel_I0_scaled);
-  TEST_FUNC(sf_bessel_I1_scaled);
+  TEST_FUNC(gsl_sf_bessel_I0_scaled);
+  TEST_FUNC(gsl_sf_bessel_I1_scaled);
   TEST_FUNC_ND(sf_bessel_In_scaled, 0, n);
 }
 
 TEST_F(GSLTest, BesselK) {
-  TEST_FUNC(sf_bessel_K0);
-  TEST_FUNC(sf_bessel_K1);
+  TEST_FUNC(gsl_sf_bessel_K0);
+  TEST_FUNC(gsl_sf_bessel_K1);
   TEST_FUNC_ND(sf_bessel_Kn, 1, n);
-  TEST_FUNC(sf_bessel_K0_scaled);
-  TEST_FUNC(sf_bessel_K1_scaled);
+  TEST_FUNC(gsl_sf_bessel_K0_scaled);
+  TEST_FUNC(gsl_sf_bessel_K1_scaled);
   TEST_FUNC_ND(sf_bessel_Kn_scaled, 1, n);
 }
 
 TEST_F(GSLTest, Besselj) {
-  TEST_FUNC(sf_bessel_j0);
-  TEST_FUNC(sf_bessel_j1);
-  TEST_FUNC(sf_bessel_j2);
+  TEST_FUNC(gsl_sf_bessel_j0);
+  TEST_FUNC(gsl_sf_bessel_j1);
+  TEST_FUNC(gsl_sf_bessel_j2);
   TEST_FUNC_ND(sf_bessel_jl, GSL_NAN, l);
 }
 
 TEST_F(GSLTest, Bessely) {
-  TEST_FUNC(sf_bessel_y0);
-  TEST_FUNC(sf_bessel_y1);
-  TEST_FUNC(sf_bessel_y2);
+  TEST_FUNC(gsl_sf_bessel_y0);
+  TEST_FUNC(gsl_sf_bessel_y1);
+  TEST_FUNC(gsl_sf_bessel_y2);
   TEST_FUNC_ND(sf_bessel_yl, GSL_NAN, l);
 }
 
 TEST_F(GSLTest, Besseli) {
-  TEST_FUNC(sf_bessel_i0_scaled);
-  TEST_FUNC(sf_bessel_i1_scaled);
-  TEST_FUNC(sf_bessel_i2_scaled);
+  TEST_FUNC(gsl_sf_bessel_i0_scaled);
+  TEST_FUNC(gsl_sf_bessel_i1_scaled);
+  TEST_FUNC(gsl_sf_bessel_i2_scaled);
   TEST_FUNC_ND(sf_bessel_il_scaled, GSL_NAN, l);
 }
 
 TEST_F(GSLTest, Besselk) {
-  TEST_FUNC(sf_bessel_k0_scaled);
-  TEST_FUNC(sf_bessel_k1_scaled);
-  TEST_FUNC(sf_bessel_k2_scaled);
+  TEST_FUNC(gsl_sf_bessel_k0_scaled);
+  TEST_FUNC(gsl_sf_bessel_k1_scaled);
+  TEST_FUNC(gsl_sf_bessel_k2_scaled);
   TEST_FUNC_ND(sf_bessel_kl_scaled, GSL_NAN, l);
 }
 
@@ -544,22 +544,22 @@ struct BesselFractionalOrderInfo : FunctionInfo {
 
 TEST_F(GSLTest, BesselFractionalOrder) {
   BesselFractionalOrderInfo info;
-  TEST_FUNC(sf_bessel_Jnu);
-  TEST_FUNC(sf_bessel_Ynu);
-  TEST_FUNC(sf_bessel_Inu);
-  TEST_FUNC(sf_bessel_Inu_scaled);
-  TEST_FUNC(sf_bessel_Knu);
-  TEST_FUNC(sf_bessel_lnKnu);
-  TEST_FUNC(sf_bessel_Knu_scaled);
+  TEST_FUNC(gsl_sf_bessel_Jnu);
+  TEST_FUNC(gsl_sf_bessel_Ynu);
+  TEST_FUNC(gsl_sf_bessel_Inu);
+  TEST_FUNC(gsl_sf_bessel_Inu_scaled);
+  TEST_FUNC(gsl_sf_bessel_Knu);
+  TEST_FUNC(gsl_sf_bessel_lnKnu);
+  TEST_FUNC(gsl_sf_bessel_Knu_scaled);
 }
 
 TEST_F(GSLTest, BesselZero) {
   NoDerivativeInfo info;
   info.SetArgNames("s");
-  TEST_FUNC(sf_bessel_zero_J0);
-  TEST_FUNC(sf_bessel_zero_J1);
+  TEST_FUNC(gsl_sf_bessel_zero_J0);
+  TEST_FUNC(gsl_sf_bessel_zero_J1);
   info.SetArgNames("nu s");
-  TEST_FUNC(sf_bessel_zero_Jnu);
+  TEST_FUNC(gsl_sf_bessel_zero_Jnu);
 }
 
 struct ClausenFunctionInfo : FunctionInfo {
@@ -570,14 +570,14 @@ struct ClausenFunctionInfo : FunctionInfo {
 
 TEST_F(GSLTest, Clausen) {
   ClausenFunctionInfo info;
-  TEST_FUNC(sf_clausen);
+  TEST_FUNC(gsl_sf_clausen);
 }
 
 TEST_F(GSLTest, Hydrogenic) {
-  TEST_FUNC(sf_hydrogenicR_1);
+  TEST_FUNC(gsl_sf_hydrogenicR_1);
   NoDerivativeInfo info;
   info.SetArgNames("n l z r");
-  TEST_FUNC(sf_hydrogenicR);
+  TEST_FUNC(gsl_sf_hydrogenicR);
 }
 
 double gsl_sf_coulomb_CL(double L, double eta) {
@@ -587,7 +587,7 @@ double gsl_sf_coulomb_CL(double L, double eta) {
 
 TEST_F(GSLTest, Coulomb) {
   NoDerivativeInfo info;
-  TEST_FUNC(sf_coulomb_CL);
+  TEST_FUNC(gsl_sf_coulomb_CL);
 }
 
 TEST_F(GSLTest, Coupling3j) {
@@ -648,16 +648,16 @@ TEST_F(GSLTest, Coupling9j) {
 }
 
 TEST_F(GSLTest, Dawson) {
-  TEST_FUNC(sf_dawson);
+  TEST_FUNC(gsl_sf_dawson);
 }
 
 TEST_F(GSLTest, Debye) {
-  TEST_FUNC(sf_debye_1);
-  TEST_FUNC(sf_debye_2);
-  TEST_FUNC(sf_debye_3);
-  TEST_FUNC(sf_debye_4);
-  TEST_FUNC(sf_debye_5);
-  TEST_FUNC(sf_debye_6);
+  TEST_FUNC(gsl_sf_debye_1);
+  TEST_FUNC(gsl_sf_debye_2);
+  TEST_FUNC(gsl_sf_debye_3);
+  TEST_FUNC(gsl_sf_debye_4);
+  TEST_FUNC(gsl_sf_debye_5);
+  TEST_FUNC(gsl_sf_debye_6);
 }
 
 struct DilogFunctionInfo : FunctionInfo {
@@ -668,22 +668,22 @@ struct DilogFunctionInfo : FunctionInfo {
 
 TEST_F(GSLTest, Dilog) {
   DilogFunctionInfo info;
-  TEST_FUNC(sf_dilog);
+  TEST_FUNC(gsl_sf_dilog);
 }
 
 TEST_F(GSLTest, EllInt) {
-  TEST_FUNC(sf_ellint_Kcomp);
-  TEST_FUNC(sf_ellint_Ecomp);
-  TEST_FUNC(sf_ellint_Pcomp);
-  TEST_FUNC(sf_ellint_F);
-  TEST_FUNC(sf_ellint_E);
+  TEST_FUNC(gsl_sf_ellint_Kcomp);
+  TEST_FUNC(gsl_sf_ellint_Ecomp);
+  TEST_FUNC(gsl_sf_ellint_Pcomp);
+  TEST_FUNC(gsl_sf_ellint_F);
+  TEST_FUNC(gsl_sf_ellint_E);
   {
     NoDerivativeInfo info;
-    TEST_FUNC(sf_ellint_P);
-    TEST_FUNC(sf_ellint_D);
-    TEST_FUNC(sf_ellint_RC);
-    TEST_FUNC(sf_ellint_RD);
-    TEST_FUNC(sf_ellint_RF);
+    TEST_FUNC(gsl_sf_ellint_P);
+    TEST_FUNC(gsl_sf_ellint_D);
+    TEST_FUNC(gsl_sf_ellint_RC);
+    TEST_FUNC(gsl_sf_ellint_RD);
+    TEST_FUNC(gsl_sf_ellint_RF);
   }
   Function f = GetFunction("gsl_sf_ellint_RJ");
   for (size_t ix = 0; ix != NUM_POINTS; ++ix) {
@@ -704,40 +704,40 @@ TEST_F(GSLTest, EllInt) {
 }
 
 TEST_F(GSLTest, Erf) {
-  TEST_FUNC(sf_erf);
-  TEST_FUNC(sf_erfc);
-  TEST_FUNC(sf_log_erfc);
-  TEST_FUNC(sf_erf_Z);
-  TEST_FUNC(sf_erf_Q);
-  TEST_FUNC(sf_hazard);
+  TEST_FUNC(gsl_sf_erf);
+  TEST_FUNC(gsl_sf_erfc);
+  TEST_FUNC(gsl_sf_log_erfc);
+  TEST_FUNC(gsl_sf_erf_Z);
+  TEST_FUNC(gsl_sf_erf_Q);
+  TEST_FUNC(gsl_sf_hazard);
 }
 
 TEST_F(GSLTest, ExpInt) {
-  TEST_FUNC(sf_expint_E1);
-  TEST_FUNC(sf_expint_E2);
+  TEST_FUNC(gsl_sf_expint_E1);
+  TEST_FUNC(gsl_sf_expint_E2);
   TEST_FUNC_ND(sf_expint_En, GSL_NAN, n);
-  TEST_FUNC(sf_expint_Ei);
-  TEST_FUNC(sf_Shi);
-  TEST_FUNC(sf_Chi);
-  TEST_FUNC(sf_expint_3);
-  TEST_FUNC(sf_Si);
-  TEST_FUNC(sf_Ci);
-  TEST_FUNC(sf_atanint);
+  TEST_FUNC(gsl_sf_expint_Ei);
+  TEST_FUNC(gsl_sf_Shi);
+  TEST_FUNC(gsl_sf_Chi);
+  TEST_FUNC(gsl_sf_expint_3);
+  TEST_FUNC(gsl_sf_Si);
+  TEST_FUNC(gsl_sf_Ci);
+  TEST_FUNC(gsl_sf_atanint);
 }
 
 TEST_F(GSLTest, FermiDirac) {
-  TEST_FUNC(sf_fermi_dirac_m1);
-  TEST_FUNC(sf_fermi_dirac_0);
-  TEST_FUNC(sf_fermi_dirac_1);
-  TEST_FUNC(sf_fermi_dirac_2);
+  TEST_FUNC(gsl_sf_fermi_dirac_m1);
+  TEST_FUNC(gsl_sf_fermi_dirac_0);
+  TEST_FUNC(gsl_sf_fermi_dirac_1);
+  TEST_FUNC(gsl_sf_fermi_dirac_2);
   TEST_FUNC_ND(sf_fermi_dirac_int, GSL_NAN, j);
   {
     NoDerivativeInfo info;
-    TEST_FUNC(sf_fermi_dirac_mhalf);
-    TEST_FUNC(sf_fermi_dirac_half);
+    TEST_FUNC(gsl_sf_fermi_dirac_mhalf);
+    TEST_FUNC(gsl_sf_fermi_dirac_half);
   }
-  TEST_FUNC(sf_fermi_dirac_3half);
-  TEST_FUNC(sf_fermi_dirac_inc_0);
+  TEST_FUNC(gsl_sf_fermi_dirac_3half);
+  TEST_FUNC(gsl_sf_fermi_dirac_inc_0);
 }
 
 struct LnGammaInfo : FunctionInfo {
@@ -753,20 +753,20 @@ TEST_F(GSLTest, Gamma) {
   EXPECT_NEAR(-31.6778, gamma(Tuple(-0.5), HES).hes(), 1e-4);
   EXPECT_NEAR(1.19786e100, gamma(Tuple(71)), 1e95);
   EXPECT_TRUE(gsl_isinf(gamma(Tuple(1000))));
-  TEST_FUNC(sf_gamma);
+  TEST_FUNC(gsl_sf_gamma);
   {
     LnGammaInfo info;
-    TEST_FUNC(sf_lngamma);
+    TEST_FUNC(gsl_sf_lngamma);
   }
-  TEST_FUNC(sf_gammastar);
-  TEST_FUNC(sf_gammainv);
+  TEST_FUNC(gsl_sf_gammastar);
+  TEST_FUNC(gsl_sf_gammainv);
 }
 
 TEST_F(GSLTest, Poch) {
   NoDerivativeInfo info;
-  TEST_FUNC(sf_poch);
-  TEST_FUNC(sf_lnpoch);
-  TEST_FUNC(sf_pochrel);
+  TEST_FUNC(gsl_sf_poch);
+  TEST_FUNC(gsl_sf_lnpoch);
+  TEST_FUNC(gsl_sf_pochrel);
 }
 
 struct GammaIncInfo : FunctionInfo {
@@ -784,12 +784,12 @@ struct GammaIncInfo : FunctionInfo {
 TEST_F(GSLTest, GammaInc) {
   {
     GammaIncInfo info;
-    TEST_FUNC(sf_gamma_inc);
+    TEST_FUNC(gsl_sf_gamma_inc);
   }
   {
     NoDerivativeInfo info;
-    TEST_FUNC(sf_gamma_inc_Q);
-    TEST_FUNC(sf_gamma_inc_P);
+    TEST_FUNC(gsl_sf_gamma_inc_Q);
+    TEST_FUNC(gsl_sf_gamma_inc_P);
   }
 }
 
@@ -805,23 +805,23 @@ struct BetaInfo : FunctionInfo {
 TEST_F(GSLTest, Beta) {
   {
     BetaInfo info;
-    TEST_FUNC(sf_beta);
+    TEST_FUNC(gsl_sf_beta);
   }
-  TEST_FUNC(sf_lnbeta);
+  TEST_FUNC(gsl_sf_lnbeta);
   {
     NoDerivativeInfo info;
-    TEST_FUNC(sf_beta_inc);
+    TEST_FUNC(gsl_sf_beta_inc);
   }
 }
 
 TEST_F(GSLTest, GegenPoly) {
-  TEST_FUNC(sf_gegenpoly_1);
-  TEST_FUNC(sf_gegenpoly_2);
-  TEST_FUNC(sf_gegenpoly_3);
+  TEST_FUNC(gsl_sf_gegenpoly_1);
+  TEST_FUNC(gsl_sf_gegenpoly_2);
+  TEST_FUNC(gsl_sf_gegenpoly_3);
 
   NoDerivativeInfo info;
   info.SetArgNames("n");
-  TEST_FUNC(sf_gegenpoly_n);
+  TEST_FUNC(gsl_sf_gegenpoly_n);
 }
 
 struct Hyperg0F1Info : FunctionInfo {
@@ -840,12 +840,12 @@ struct Hyperg1F1Info : FunctionInfo {
 TEST_F(GSLTest, Hyperg) {
   {
     Hyperg0F1Info info;
-    TEST_FUNC(sf_hyperg_0F1);
+    TEST_FUNC(gsl_sf_hyperg_0F1);
   }
   {
     Hyperg1F1Info info;
     info.SetArgNames("m n x");
-    TEST_FUNC(sf_hyperg_1F1_int);
+    TEST_FUNC(gsl_sf_hyperg_1F1_int);
   }
 }
 }
