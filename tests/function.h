@@ -576,18 +576,18 @@ class Function {
 class DerivativeBinder {
  private:
   Function f_;
-  unsigned deriv_var_;
-  unsigned eval_var_;
+  unsigned deriv_arg_;
+  unsigned eval_arg_;
   Tuple args_;
   BitSet use_deriv_;
 
  public:
   // Creates a Derivative object.
-  // deriv_var: index of a variable with respect to which
+  // deriv_arg: index of an argument with respect to which
   //            the derivative is taken
-  // eval_var:  index of a variable which is not bound
-  DerivativeBinder(Function f, unsigned deriv_var,
-      unsigned eval_var, const Tuple &args);
+  // eval_arg:  index of an argument which is not bound
+  DerivativeBinder(Function f, unsigned deriv_arg,
+      unsigned eval_arg, const Tuple &args);
 
   double operator()(double x);
 };
