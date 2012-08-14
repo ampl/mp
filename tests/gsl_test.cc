@@ -89,6 +89,12 @@ Error NotUIntError(const string &arg_name, double value) {
   return Error(os.str());
 }
 
+struct NoDerivativeInfo : FunctionInfo {
+  Result GetDerivative(const Function &, unsigned, const Tuple &) {
+    return Result("derivatives are not provided");
+  }
+};
+
 #define EXPECT_ERROR(expected_message, result) \
   EXPECT_STREQ(expected_message, (result).error())
 
@@ -184,9 +190,6 @@ class GSLTest : public ::testing::Test {
 
   void CheckSecondDerivatives(const Function &f,
       const Tuple &args, unsigned skip_var = NO_VAR);
-
-  void TestZeroFunc(const Function &af,
-      double value, const Tuple &args, unsigned s_index);
 
   // Tests a function taking an integer and a double parameter.
   // test_x is a value of x where the function can be computed for very large
@@ -318,28 +321,6 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
       else
         EXPECT_ERROR(EvalError(f, args, "''"), r);
     }
-  }
-}
-
-void GSLTest::TestZeroFunc(const Function &af,
-    double value, const Tuple &args, unsigned s_index) {
-  double s = args[s_index];
-  if (static_cast<unsigned>(s) == s) {
-    if (gsl_isnan(value)) {
-      EXPECT_ERROR(EvalError(af, args), af(args));
-      EXPECT_ERROR(EvalError(af, args), af(args, DERIVS));
-      EXPECT_ERROR(EvalError(af, args), af(args, HES));
-    } else {
-      EXPECT_EQ(value, af(args)) << af.name() << " at " << args;
-      EXPECT_ERROR(EvalError(af, args, "'"), af(args, DERIVS));
-      EXPECT_ERROR(EvalError(af, args, "'"), af(args, HES));
-    }
-  } else {
-    std::ostringstream os;
-    os << "argument 's' can't be represented as unsigned int, s = " << s;
-    EXPECT_ERROR(os.str().c_str(), af(args));
-    EXPECT_ERROR(os.str().c_str(), af(args, DERIVS));
-    EXPECT_ERROR(os.str().c_str(), af(args, HES));
   }
 }
 
@@ -567,17 +548,12 @@ TEST_F(GSLTest, BesselFractionalOrder) {
 }
 
 TEST_F(GSLTest, BesselZero) {
+  NoDerivativeInfo info;
+  info.SetArgNames("s");
   TEST_FUNC(sf_bessel_zero_J0);
   TEST_FUNC(sf_bessel_zero_J1);
-
-  const char *name = "gsl_sf_bessel_zero_Jnu";
-  Function af = GetFunction(name);
-  for (size_t i = 0; i != NUM_POINTS; ++i) {
-    for (size_t j = 0; j != NUM_POINTS; ++j) {
-      double nu = POINTS[i], s = POINTS[j];
-      TestZeroFunc(af, gsl_sf_bessel_zero_Jnu(nu, s), Tuple(nu, s), 1);
-    }
-  }
+  info.SetArgNames("nu s");
+  TEST_FUNC(sf_bessel_zero_Jnu);
 }
 
 struct ClausenFunctionInfo : FunctionInfo {
@@ -720,12 +696,6 @@ TEST_F(GSLTest, Dilog) {
   DilogFunctionInfo info;
   TEST_FUNC(sf_dilog);
 }
-
-struct NoDerivativeInfo : FunctionInfo {
-  Result GetDerivative(const Function &, unsigned, const Tuple &) {
-    return Result("derivatives are not provided");
-  }
-};
 
 TEST_F(GSLTest, EllInt) {
   TEST_FUNC(sf_ellint_Kcomp);
