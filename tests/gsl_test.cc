@@ -148,21 +148,7 @@ class GSLTest : public ::testing::Test {
   static Stats stats_;
 
   template <typename F>
-  double Diff(F f, double x, double *error = 0) {
-    ++stats_.num_calls_;
-    double err = GSL_NAN;
-    bool detected_nan = false;
-    double deriv = diff(f, x, &err, &detected_nan);
-    if (!gsl_isnan(deriv)) {
-      stats_.min_error_ = std::min(stats_.min_error_, err);
-      stats_.max_error_ = std::max(stats_.max_error_, err);
-    }
-    if (detected_nan)
-      ++stats_.num_nans_;
-    if (error)
-      *error = err;
-    return deriv;
-  }
+  double Diff(F f, double x, double *error = 0);
 
   void SetUp() {
     asl = ASL_alloc(ASL_read_f);
@@ -202,22 +188,27 @@ class GSLTest : public ::testing::Test {
   void TestFunc(const Function &af, F f, Tuple &args, unsigned arg_index);
 
   template <typename F>
-  void TestFunc(const Function &af, F f) {
-    unsigned num_args = fun::FunctionPointer(f).GetNumArgs();
-    if (af.nargs() == static_cast<int>(num_args) - 1 &&
-        fun::FunctionPointer(f).GetArgType(num_args - 1) == fun::UINT) {
-      // If the last argument is a mode bind it to GSL_PREC_DOUBLE.
-      Tuple args(Tuple::GetTupleWithSize(num_args - 1));
-      TestFunc(af, BindOne(fun::FunctionPointer(f),
-          GSL_PREC_DOUBLE, num_args - 1), args, 0);
-    } else {
-      Tuple args(Tuple::GetTupleWithSize(num_args));
-      TestFunc(af, fun::FunctionPointer(f), args, 0);
-    }
-  }
+  void TestFunc(const Function &af, F f);
 };
 
 GSLTest::Stats GSLTest::stats_;
+
+template <typename F>
+double GSLTest::Diff(F f, double x, double *error) {
+  ++stats_.num_calls_;
+  double err = GSL_NAN;
+  bool detected_nan = false;
+  double deriv = diff(f, x, &err, &detected_nan);
+  if (!gsl_isnan(deriv)) {
+    stats_.min_error_ = std::min(stats_.min_error_, err);
+    stats_.max_error_ = std::max(stats_.max_error_, err);
+  }
+  if (detected_nan)
+    ++stats_.num_nans_;
+  if (error)
+    *error = err;
+  return deriv;
+}
 
 // Checks if the value of the derivative returned by af agrees with the
 // value returned by numerical differentiation of function f.
@@ -424,6 +415,21 @@ void GSLTest::TestFunc(
   CheckSecondDerivatives(af, args);
 }
 
+template <typename F>
+void GSLTest::TestFunc(const Function &af, F f) {
+  unsigned num_args = fun::FunctionPointer(f).GetNumArgs();
+  if (af.nargs() == static_cast<int>(num_args) - 1 &&
+      fun::FunctionPointer(f).GetArgType(num_args - 1) == fun::UINT) {
+    // If the last argument is a mode bind it to GSL_PREC_DOUBLE.
+    Tuple args(Tuple::GetTupleWithSize(num_args - 1));
+    TestFunc(af, BindOne(fun::FunctionPointer(f),
+        GSL_PREC_DOUBLE, num_args - 1), args, 0);
+  } else {
+    Tuple args(Tuple::GetTupleWithSize(num_args));
+    TestFunc(af, fun::FunctionPointer(f), args, 0);
+  }
+}
+
 #define TEST_FUNC(name) TestFunc(GetFunction("gsl_" #name, &info), gsl_##name)
 
 #define TEST_FUNC_ND(name, test_x, arg) \
@@ -569,51 +575,19 @@ TEST_F(GSLTest, Clausen) {
 
 TEST_F(GSLTest, Hydrogenic) {
   TEST_FUNC(sf_hydrogenicR_1);
+  NoDerivativeInfo info;
+  info.SetArgNames("n l z r");
+  TEST_FUNC(sf_hydrogenicR);
+}
 
-  Function f = GetFunction("gsl_sf_hydrogenicR");
-  EXPECT_EQ(2, f(Tuple(1, 0, 1, 0)));
-  EXPECT_ERROR("argument 'n' can't be represented as int, n = 1.1",
-      f(Tuple(1.1, 0, 1, 0)));
-  EXPECT_ERROR("argument 'l' can't be represented as int, l = 0.1",
-      f(Tuple(1, 0.1, 1, 0)));
-  for (size_t in = 0; in != NUM_POINTS_FOR_N; ++in) {
-    int n = POINTS_FOR_N[in];
-    for (size_t il = 0; il != NUM_POINTS_FOR_N; ++il) {
-      int el = POINTS_FOR_N[il];
-      for (size_t iz = 0; iz != NUM_POINTS; ++iz) {
-        for (size_t ir = 0; ir != NUM_POINTS; ++ir) {
-          double z = POINTS[iz], r = POINTS[ir];
-          Tuple args(n, el, z, r);
-          CheckFunction(gsl_sf_hydrogenicR(n, el, z, r), f, args);
-          const char *error = "argument 'n' is not constant";
-          EXPECT_ERROR(error, f(args, DERIVS));
-          EXPECT_ERROR(error, f(args, HES));
-          error = "argument 'l' is not constant";
-          EXPECT_ERROR(error, f(args, DERIVS, BitSet("0111")));
-          EXPECT_ERROR(error, f(args, HES, BitSet("0111")));
-          error = "derivatives are not provided";
-          EXPECT_ERROR(error, f(args, DERIVS, BitSet("0011")));
-          EXPECT_ERROR(error, f(args, HES, BitSet("0011")));
-        }
-      }
-    }
-  }
+double gsl_sf_coulomb_CL(double L, double eta) {
+  gsl_sf_result result = {};
+  return gsl_sf_coulomb_CL_e(L, eta, &result) ? GSL_NAN : result.val;
 }
 
 TEST_F(GSLTest, Coulomb) {
-  Function f = GetFunction("gsl_sf_coulomb_CL");
-  for (size_t i = 0; i != NUM_POINTS; ++i) {
-    for (size_t j = 0; j != NUM_POINTS; ++j) {
-      double x = POINTS[i], y = POINTS[j];
-      Tuple args(x, y);
-      gsl_sf_result result = {};
-      double value = gsl_sf_coulomb_CL_e(x, y, &result) ? GSL_NAN : result.val;
-      CheckFunction(value, f, args);
-      const char *error = "derivatives are not provided";
-      EXPECT_ERROR(error, f(args, DERIVS));
-      EXPECT_ERROR(error, f(args, HES));
-    }
-  }
+  NoDerivativeInfo info;
+  TEST_FUNC(sf_coulomb_CL);
 }
 
 TEST_F(GSLTest, Coupling3j) {
