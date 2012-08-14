@@ -456,6 +456,9 @@ class FunctionInfo {
   std::vector<std::string> arg_names_;
 
  public:
+  explicit FunctionInfo(const char *arg_names = "") {
+    SetArgNames(arg_names);
+  }
   virtual ~FunctionInfo();
 
   std::string GetArgName(unsigned index) const {
