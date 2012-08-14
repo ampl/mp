@@ -123,7 +123,7 @@ struct GetType<double> {
 };
 
 template <typename Arg1, typename Arg2 = void,
-    typename Arg3 = void, typename Arg4 = void>
+    typename Arg3 = void, typename Arg4 = void, typename Arg5 = void>
 class FunctionWithTypes {
  private:
   static const Type ARG_TYPES[];
@@ -144,21 +144,26 @@ class FunctionWithTypes {
   }
 };
 
-template <typename Arg1, typename Arg2, typename Arg3, typename Arg4>
-unsigned FunctionWithTypes<Arg1, Arg2, Arg3, Arg4>::GetNumArgs() const {
+template <typename Arg1, typename Arg2,
+  typename Arg3, typename Arg4, typename Arg5>
+unsigned FunctionWithTypes<Arg1, Arg2, Arg3, Arg4, Arg5>::GetNumArgs() const {
   if (GetType<Arg2>::VALUE == VOID)
     return 1;
   if (GetType<Arg3>::VALUE == VOID)
     return 2;
   if (GetType<Arg4>::VALUE == VOID)
     return 3;
-  return 4;
+  if (GetType<Arg5>::VALUE == VOID)
+    return 4;
+  return 5;
 }
 
-template <typename Arg1, typename Arg2, typename Arg3, typename Arg4>
-const Type FunctionWithTypes<Arg1, Arg2, Arg3, Arg4>::ARG_TYPES[] = {
+template <typename Arg1, typename Arg2,
+  typename Arg3, typename Arg4, typename Arg5>
+const Type FunctionWithTypes<Arg1, Arg2, Arg3, Arg4, Arg5>::ARG_TYPES[] = {
     GetType<Arg1>::VALUE, GetType<Arg2>::VALUE,
-    GetType<Arg3>::VALUE, GetType<Arg4>::VALUE
+    GetType<Arg3>::VALUE, GetType<Arg4>::VALUE,
+    GetType<Arg5>::VALUE
 };
 
 template <typename Arg1, typename Result>
@@ -239,6 +244,30 @@ template <typename Arg1, typename Arg2,
 FunctionPointer4<Arg1, Arg2, Arg3, Arg4, Result>
   FunctionPointer(Result (*f)(Arg1, Arg2, Arg3, Arg4)) {
   return FunctionPointer4<Arg1, Arg2, Arg3, Arg4, Result>(f);
+}
+
+template <typename Arg1, typename Arg2,
+  typename Arg3, typename Arg4, typename Arg5, typename Result>
+class FunctionPointer5 :
+  public FunctionWithTypes<Arg1, Arg2, Arg3, Arg4, Arg5> {
+ private:
+  Result (*f_)(Arg1, Arg2, Arg3, Arg4, Arg5);
+
+ public:
+  explicit FunctionPointer5(Result (*f)(Arg1, Arg2, Arg3, Arg4, Arg5)) :
+    f_(f) {}
+
+  Result operator()(const Tuple &args) const {
+    this->CheckArgs(args);
+    return f_(args[0], args[1], args[2], args[3], args[4]);
+  }
+};
+
+template <typename Arg1, typename Arg2,
+  typename Arg3, typename Arg4, typename Arg5, typename Result>
+FunctionPointer5<Arg1, Arg2, Arg3, Arg4, Arg5, Result>
+  FunctionPointer(Result (*f)(Arg1, Arg2, Arg3, Arg4, Arg5)) {
+  return FunctionPointer5<Arg1, Arg2, Arg3, Arg4, Arg5, Result>(f);
 }
 
 // A functor class with one argument bound.
