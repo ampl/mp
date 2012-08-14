@@ -90,17 +90,10 @@ Error NotUIntError(const string &arg_name, double value) {
 }
 
 struct NoDeriv : FunctionInfo {
-  explicit NoDeriv(const char *arg_names = "") {
-    SetArgNames(arg_names);
-  }
+  explicit NoDeriv(const char *arg_names = "") : FunctionInfo(arg_names) {}
+
   Result GetDerivative(const Function &, unsigned, const Tuple &) const {
     return Result("derivatives are not provided");
-  }
-};
-
-struct ArgNames : FunctionInfo {
-  explicit ArgNames(const char *names) {
-    SetArgNames(names);
   }
 };
 
@@ -467,11 +460,11 @@ TEST_F(GSLTest, AiryB) {
 }
 
 TEST_F(GSLTest, AiryZero) {
-  ArgNames names("s");
-  TEST_FUNC2(gsl_sf_airy_zero_Ai, names);
-  TEST_FUNC2(gsl_sf_airy_zero_Bi, names);
-  TEST_FUNC2(gsl_sf_airy_zero_Ai_deriv, names);
-  TEST_FUNC2(gsl_sf_airy_zero_Bi_deriv, names);
+  FunctionInfo info("s");
+  TEST_FUNC2(gsl_sf_airy_zero_Ai, info);
+  TEST_FUNC2(gsl_sf_airy_zero_Bi, info);
+  TEST_FUNC2(gsl_sf_airy_zero_Ai_deriv, info);
+  TEST_FUNC2(gsl_sf_airy_zero_Bi_deriv, info);
 }
 
 TEST_F(GSLTest, BesselJ) {
@@ -732,7 +725,7 @@ TEST_F(GSLTest, FermiDirac) {
   TEST_FUNC(gsl_sf_fermi_dirac_0);
   TEST_FUNC(gsl_sf_fermi_dirac_1);
   TEST_FUNC(gsl_sf_fermi_dirac_2);
-  TEST_FUNC2(gsl_sf_fermi_dirac_int, ArgNames("j x"));
+  TEST_FUNC2(gsl_sf_fermi_dirac_int, FunctionInfo("j x"));
   TEST_FUNC2(gsl_sf_fermi_dirac_mhalf, NoDeriv());
   TEST_FUNC2(gsl_sf_fermi_dirac_half, NoDeriv());
   TEST_FUNC(gsl_sf_fermi_dirac_3half);
