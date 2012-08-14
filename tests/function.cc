@@ -64,6 +64,7 @@ BitSet::BitSet(const char *s) {
 FunctionInfo::~FunctionInfo() {}
 
 void FunctionInfo::SetArgNames(const char *arg_names) {
+  arg_names_.clear();
   std::istringstream is(arg_names);
   copy(std::istream_iterator<std::string>(is),
       std::istream_iterator<std::string>(),

@@ -147,9 +147,9 @@ static int check_zero_func_args(arglist *al, unsigned s_index) {
     return 0;
   }
   if (al->derivs) {
-    if (!check_const_arg(al, s_index, "s"))
-      return 0;
-    *al->derivs = GSL_NAN;
+    if (check_const_arg(al, s_index, "s"))
+      error(al, DERIVS_NOT_PROVIDED);
+    return 0;
   }
   return 1;
 }
