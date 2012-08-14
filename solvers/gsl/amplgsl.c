@@ -48,22 +48,6 @@ static void error(arglist *al, const char *format, ...) {
   va_end(args);
 }
 
-/*
- * Checks the arguments of a zero function such as gsl_sf_airy_Ai_scaled:
- * - argument with the specified index should be representable as unsigned int
- * - al->derivs should be null
- */
-static int check_zero_func_args(arglist *al, unsigned s_index) {
-  double arg = al->ra[s_index];
-  if ((unsigned)arg != arg) {
-    error(al, "argument 's' can't be represented as unsigned int, s = %g", arg);
-    return 0;
-  }
-  if (al->derivs)
-    *al->derivs = GSL_NAN;
-  return 1;
-}
-
 /* Checks if the argument is within the bounds for derivative computation. */
 static int check_deriv_arg(arglist *al, int arg, int min, int max) {
   if (arg < min) {
@@ -149,6 +133,25 @@ static int check_int_arg(arglist *al, unsigned index, const char *name) {
     return 0;
   }
   return al->derivs ? check_const_arg(al, index, name) : 1;
+}
+
+/*
+ * Checks the arguments of a zero function such as gsl_sf_airy_Ai_scaled:
+ * - argument with the specified index should be representable as unsigned int
+ * - al->derivs should be null
+ */
+static int check_zero_func_args(arglist *al, unsigned s_index) {
+  double arg = al->ra[s_index];
+  if ((unsigned)arg != arg) {
+    error(al, "argument 's' can't be represented as unsigned int, s = %g", arg);
+    return 0;
+  }
+  if (al->derivs) {
+    if (!check_const_arg(al, s_index, "s"))
+      return 0;
+    *al->derivs = GSL_NAN;
+  }
+  return 1;
 }
 
 /* Checks the arguments of a Bessel function. */

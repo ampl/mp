@@ -97,7 +97,7 @@ class BitSet {
   const_reference operator[](unsigned index) const { return store_.at(index); }
 };
 
-enum Type { VOID, INT, DOUBLE, MODE };
+enum Type { VOID, INT, UINT, DOUBLE };
 
 template <typename T>
 struct GetType;
@@ -110,6 +110,11 @@ struct GetType<void> {
 template <>
 struct GetType<int> {
   static const Type VALUE = INT;
+};
+
+template <>
+struct GetType<unsigned> {
+  static const Type VALUE = UINT;
 };
 
 template <>
@@ -505,6 +510,7 @@ class Function {
     asl_(asl), fi_(fi), info_(info) {}
 
   const char *name() const;
+  int nargs() const;
 
   FunctionInfo *info() const { return info_; }
 

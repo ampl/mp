@@ -48,13 +48,6 @@ using fun::HES;
 using fun::Tuple;
 using fun::Type;
 
-namespace fun {
-template <>
-struct GetType<gsl_mode_t> {
-  static const Type VALUE = MODE;
-};
-}
-
 namespace {
 
 // Converts error estimate returned by Diff into an absolute tolerance to
@@ -89,6 +82,13 @@ Error NotIntError(const string &arg_name, double value = 0.5) {
   return Error(os.str());
 }
 
+Error NotUIntError(const string &arg_name, double value) {
+  std::ostringstream os;
+  os << "argument '" << arg_name
+      << "' can't be represented as unsigned int, " << arg_name << " = " << value;
+  return Error(os.str());
+}
+
 #define EXPECT_ERROR(expected_message, result) \
   EXPECT_STREQ(expected_message, (result).error())
 
@@ -103,7 +103,6 @@ void CheckFunction(double value, const Function &f, const Tuple &args) {
     EXPECT_EQ(value, f(args)) << f.name() << args;
 }
 
-typedef double (*FuncU)(unsigned);
 typedef double (*FuncND)(int, double);
 
 const double POINTS[] = {-5, -2, -1.23, -1, 0, 1, 1.23, 2, 5};
@@ -189,14 +188,6 @@ class GSLTest : public ::testing::Test {
   void TestZeroFunc(const Function &af,
       double value, const Tuple &args, unsigned s_index);
 
-  // Tests a zero function.
-  void TestFunc(const Function &af, FuncU f) {
-    for (size_t i = 0; i != NUM_POINTS; ++i) {
-      double s = POINTS[i];
-      TestZeroFunc(af, f(s), Tuple(s), 0);
-    }
-  }
-
   // Tests a function taking an integer and a double parameter.
   // test_x is a value of x where the function can be computed for very large
   // and very small n. If there is no such x or it is not known, then test_x
@@ -210,7 +201,8 @@ class GSLTest : public ::testing::Test {
   template <typename F>
   void TestFunc(const Function &af, F f) {
     unsigned num_args = fun::FunctionPointer(f).GetNumArgs();
-    if (fun::FunctionPointer(f).GetArgType(num_args - 1) == fun::MODE) {
+    if (af.nargs() == static_cast<int>(num_args) - 1 &&
+        fun::FunctionPointer(f).GetArgType(num_args - 1) == fun::UINT) {
       // If the last argument is a mode bind it to GSL_PREC_DOUBLE.
       Tuple args(Tuple::GetTupleWithSize(num_args - 1));
       TestFunc(af, BindOne(fun::FunctionPointer(f),
@@ -432,9 +424,14 @@ void GSLTest::TestFunc(
     return;
   }
   for (unsigned i = 0; i < num_args; ++i) {
-    if (f.GetArgType(i) != fun::DOUBLE &&
+    if (f.GetArgType(i) == fun::INT &&
         static_cast<int>(args[i]) != args[i]) {
       EXPECT_STREQ(NotIntError(af.GetArgName(i), args[i]), af(args).error());
+      return;
+    }
+    if (f.GetArgType(i) == fun::UINT &&
+        static_cast<unsigned>(args[i]) != args[i]) {
+      EXPECT_STREQ(NotUIntError(af.GetArgName(i), args[i]), af(args).error());
       return;
     }
   }
@@ -469,6 +466,8 @@ TEST_F(GSLTest, AiryB) {
 }
 
 TEST_F(GSLTest, AiryZero) {
+  FunctionInfo info;
+  info.SetArgNames("s");
   TEST_FUNC(sf_airy_zero_Ai);
   TEST_FUNC(sf_airy_zero_Bi);
   TEST_FUNC(sf_airy_zero_Ai_deriv);
