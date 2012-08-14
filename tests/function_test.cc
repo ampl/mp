@@ -308,12 +308,12 @@ TEST(FunctionTest, FunctionInfoArgNames) {
 }
 
 struct TestFunctionInfo : FunctionInfo {
-  Result GetDerivative(const Function &, unsigned, const Tuple &) {
+  Result GetDerivative(const Function &, unsigned, const Tuple &) const {
     return Result(42);
   }
 
   Result GetSecondDerivative(
-      const Function &, unsigned, unsigned, const Tuple &) {
+      const Function &, unsigned, unsigned, const Tuple &) const {
     return Result(11);
   }
 };
@@ -488,7 +488,7 @@ TEST(FunctionTest, FunctionArgNames) {
   FunctionInfo fi;
   Function f(0, 0, &fi);
   EXPECT_THROW(f.GetArgName(0), std::out_of_range);
-  f.info()->SetArgNames("x y z");
+  fi.SetArgNames("x y z");
   EXPECT_EQ("x", f.GetArgName(0));
   EXPECT_EQ("y", f.GetArgName(1));
   EXPECT_EQ("z", f.GetArgName(2));

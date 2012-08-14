@@ -463,7 +463,7 @@ class FunctionInfo {
   }
 
   // Sets argument names separated by spaces.
-  void SetArgNames(const char *arg_names);
+  FunctionInfo &SetArgNames(const char *arg_names);
 
   class Result {
    private:
@@ -483,13 +483,13 @@ class FunctionInfo {
   // In most cases this is not needed as the derivative is computed using
   // numerical differentiation. This function can also return an error message.
   virtual Result GetDerivative(
-      const Function &f, unsigned arg_index, const Tuple &args);
+      const Function &f, unsigned arg_index, const Tuple &args) const;
 
   // Returns the value of the second derivative at the point specified by args.
   // In most cases this is not needed as the derivative is computed using
   // numerical differentiation. This function can also return an error message.
   virtual Result GetSecondDerivative(const Function &f,
-      unsigned arg1_index, unsigned arg2_index, const Tuple &args);
+      unsigned arg1_index, unsigned arg2_index, const Tuple &args) const;
 };
 
 // Flags for an AMPL function call.
@@ -503,16 +503,16 @@ class Function {
  private:
   ASL *asl_;
   func_info *fi_;
-  FunctionInfo *info_;
+  const FunctionInfo *info_;
 
  public:
-  Function(ASL *asl, func_info *fi, FunctionInfo *info) :
+  Function(ASL *asl, func_info *fi, const FunctionInfo *info) :
     asl_(asl), fi_(fi), info_(info) {}
 
   const char *name() const;
   int nargs() const;
 
-  FunctionInfo *info() const { return info_; }
+  const FunctionInfo *info() const { return info_; }
 
   // A result of an AMPL function call.
   class Result {

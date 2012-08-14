@@ -89,9 +89,18 @@ Error NotUIntError(const string &arg_name, double value) {
   return Error(os.str());
 }
 
-struct NoDerivativeInfo : FunctionInfo {
-  Result GetDerivative(const Function &, unsigned, const Tuple &) {
+struct NoDeriv : FunctionInfo {
+  explicit NoDeriv(const char *arg_names = "") {
+    SetArgNames(arg_names);
+  }
+  Result GetDerivative(const Function &, unsigned, const Tuple &) const {
     return Result("derivatives are not provided");
+  }
+};
+
+struct ArgNames : FunctionInfo {
+  explicit ArgNames(const char *names) {
+    SetArgNames(names);
   }
 };
 
@@ -120,7 +129,7 @@ const size_t NUM_POINTS_FOR_N = sizeof(POINTS_FOR_N) / sizeof(*POINTS_FOR_N);
 class GSLTest : public ::testing::Test {
  protected:
   ASL *asl;
-  FunctionInfo info;  // Default function info.
+  const FunctionInfo info;  // Default function info.
 
   Differentiator diff;
 
@@ -161,11 +170,15 @@ class GSLTest : public ::testing::Test {
   }
 
   // Returns an AMPL function by name.
-  Function GetFunction(const char *name, FunctionInfo *info = 0) const {
+  Function GetFunction(const char *name, const FunctionInfo &info) const {
     func_info *fi = func_lookup(asl, name, 0);
     if (!fi)
       throw std::runtime_error(string("function not found: ") + name);
-    return Function(asl, fi, info);
+    return Function(asl, fi, &info);
+  }
+
+  Function GetFunction(const char *name) const {
+    return GetFunction(name, info);
   }
 
   template <typename F>
@@ -430,10 +443,11 @@ void GSLTest::TestFunc(const Function &af, F f) {
   }
 }
 
-#define TEST_FUNC(name) TestFunc(GetFunction(#name, &info), name)
+#define TEST_FUNC(name) TestFunc(GetFunction(#name, this->info), name)
+#define TEST_FUNC2(name, info) TestFunc(GetFunction(#name, info), name)
 
 #define TEST_FUNC_ND(name, test_x, arg) \
-  TestFuncND(GetFunction("gsl_" #name, &info), gsl_##name, test_x, #arg)
+  TestFuncND(GetFunction("gsl_" #name, info), gsl_##name, test_x, #arg)
 
 TEST_F(GSLTest, Elementary) {
   TEST_FUNC(gsl_log1p);
@@ -453,12 +467,11 @@ TEST_F(GSLTest, AiryB) {
 }
 
 TEST_F(GSLTest, AiryZero) {
-  FunctionInfo info;
-  info.SetArgNames("s");
-  TEST_FUNC(gsl_sf_airy_zero_Ai);
-  TEST_FUNC(gsl_sf_airy_zero_Bi);
-  TEST_FUNC(gsl_sf_airy_zero_Ai_deriv);
-  TEST_FUNC(gsl_sf_airy_zero_Bi_deriv);
+  ArgNames names("s");
+  TEST_FUNC2(gsl_sf_airy_zero_Ai, names);
+  TEST_FUNC2(gsl_sf_airy_zero_Bi, names);
+  TEST_FUNC2(gsl_sf_airy_zero_Ai_deriv, names);
+  TEST_FUNC2(gsl_sf_airy_zero_Bi_deriv, names);
 }
 
 TEST_F(GSLTest, BesselJ) {
@@ -521,7 +534,7 @@ TEST_F(GSLTest, Besselk) {
 
 struct BesselFractionalOrderInfo : FunctionInfo {
   Result GetDerivative(const Function &f,
-      unsigned var_index, const Tuple &args) {
+      unsigned var_index, const Tuple &args) const {
     // Partial derivative with respect to nu is not provided.
     if (var_index == 0)
       return Result("argument 'nu' is not constant");
@@ -534,7 +547,7 @@ struct BesselFractionalOrderInfo : FunctionInfo {
   }
 
   Result GetSecondDerivative(
-      const Function &f, unsigned, unsigned, const Tuple &args) {
+      const Function &f, unsigned, unsigned, const Tuple &args) const {
     // Computing gsl_sf_bessel_*nu''(nu, x) requires
     // gsl_sf_bessel_*nu(nu - 2, x) which doesn't work when the
     // first argument is non-negative, so nu should be >= 2.
@@ -544,40 +557,34 @@ struct BesselFractionalOrderInfo : FunctionInfo {
 
 TEST_F(GSLTest, BesselFractionalOrder) {
   BesselFractionalOrderInfo info;
-  TEST_FUNC(gsl_sf_bessel_Jnu);
-  TEST_FUNC(gsl_sf_bessel_Ynu);
-  TEST_FUNC(gsl_sf_bessel_Inu);
-  TEST_FUNC(gsl_sf_bessel_Inu_scaled);
-  TEST_FUNC(gsl_sf_bessel_Knu);
-  TEST_FUNC(gsl_sf_bessel_lnKnu);
-  TEST_FUNC(gsl_sf_bessel_Knu_scaled);
+  TEST_FUNC2(gsl_sf_bessel_Jnu, info);
+  TEST_FUNC2(gsl_sf_bessel_Ynu, info);
+  TEST_FUNC2(gsl_sf_bessel_Inu, info);
+  TEST_FUNC2(gsl_sf_bessel_Inu_scaled, info);
+  TEST_FUNC2(gsl_sf_bessel_Knu, info);
+  TEST_FUNC2(gsl_sf_bessel_lnKnu, info);
+  TEST_FUNC2(gsl_sf_bessel_Knu_scaled, info);
 }
 
 TEST_F(GSLTest, BesselZero) {
-  NoDerivativeInfo info;
-  info.SetArgNames("s");
-  TEST_FUNC(gsl_sf_bessel_zero_J0);
-  TEST_FUNC(gsl_sf_bessel_zero_J1);
-  info.SetArgNames("nu s");
-  TEST_FUNC(gsl_sf_bessel_zero_Jnu);
+  TEST_FUNC2(gsl_sf_bessel_zero_J0, NoDeriv("s"));
+  TEST_FUNC2(gsl_sf_bessel_zero_J1, NoDeriv("s"));
+  TEST_FUNC2(gsl_sf_bessel_zero_Jnu, NoDeriv("nu s"));
 }
 
 struct ClausenFunctionInfo : FunctionInfo {
-  Result GetDerivative(const Function &, unsigned, const Tuple &args) {
+  Result GetDerivative(const Function &, unsigned, const Tuple &args) const {
     return Result(args[0] == 0 ? GSL_POSINF : GSL_NAN);
   }
 };
 
 TEST_F(GSLTest, Clausen) {
-  ClausenFunctionInfo info;
-  TEST_FUNC(gsl_sf_clausen);
+  TEST_FUNC2(gsl_sf_clausen, ClausenFunctionInfo());
 }
 
 TEST_F(GSLTest, Hydrogenic) {
   TEST_FUNC(gsl_sf_hydrogenicR_1);
-  NoDerivativeInfo info;
-  info.SetArgNames("n l z r");
-  TEST_FUNC(gsl_sf_hydrogenicR);
+  TEST_FUNC2(gsl_sf_hydrogenicR, NoDeriv("n l z r"));
 }
 
 double gsl_sf_coulomb_CL(double L, double eta) {
@@ -586,8 +593,7 @@ double gsl_sf_coulomb_CL(double L, double eta) {
 }
 
 TEST_F(GSLTest, Coulomb) {
-  NoDerivativeInfo info;
-  TEST_FUNC(gsl_sf_coulomb_CL);
+  TEST_FUNC2(gsl_sf_coulomb_CL, NoDeriv());
 }
 
 TEST_F(GSLTest, Coupling3j) {
@@ -661,14 +667,13 @@ TEST_F(GSLTest, Debye) {
 }
 
 struct DilogFunctionInfo : FunctionInfo {
-  Result GetDerivative(const Function &, unsigned, const Tuple &args) {
+  Result GetDerivative(const Function &, unsigned, const Tuple &args) const {
     return Result(args[0] == 1 ? GSL_POSINF : GSL_NAN);
   }
 };
 
 TEST_F(GSLTest, Dilog) {
-  DilogFunctionInfo info;
-  TEST_FUNC(gsl_sf_dilog);
+  TEST_FUNC2(gsl_sf_dilog, DilogFunctionInfo());
 }
 
 TEST_F(GSLTest, EllInt) {
@@ -677,14 +682,11 @@ TEST_F(GSLTest, EllInt) {
   TEST_FUNC(gsl_sf_ellint_Pcomp);
   TEST_FUNC(gsl_sf_ellint_F);
   TEST_FUNC(gsl_sf_ellint_E);
-  {
-    NoDerivativeInfo info;
-    TEST_FUNC(gsl_sf_ellint_P);
-    TEST_FUNC(gsl_sf_ellint_D);
-    TEST_FUNC(gsl_sf_ellint_RC);
-    TEST_FUNC(gsl_sf_ellint_RD);
-    TEST_FUNC(gsl_sf_ellint_RF);
-  }
+  TEST_FUNC2(gsl_sf_ellint_P, NoDeriv());
+  TEST_FUNC2(gsl_sf_ellint_D, NoDeriv());
+  TEST_FUNC2(gsl_sf_ellint_RC, NoDeriv());
+  TEST_FUNC2(gsl_sf_ellint_RD, NoDeriv());
+  TEST_FUNC2(gsl_sf_ellint_RF, NoDeriv());
   Function f = GetFunction("gsl_sf_ellint_RJ");
   for (size_t ix = 0; ix != NUM_POINTS; ++ix) {
     for (size_t iy = 0; iy != NUM_POINTS; ++iy) {
@@ -730,48 +732,41 @@ TEST_F(GSLTest, FermiDirac) {
   TEST_FUNC(gsl_sf_fermi_dirac_0);
   TEST_FUNC(gsl_sf_fermi_dirac_1);
   TEST_FUNC(gsl_sf_fermi_dirac_2);
-  TEST_FUNC_ND(sf_fermi_dirac_int, GSL_NAN, j);
-  {
-    NoDerivativeInfo info;
-    TEST_FUNC(gsl_sf_fermi_dirac_mhalf);
-    TEST_FUNC(gsl_sf_fermi_dirac_half);
-  }
+  TEST_FUNC2(gsl_sf_fermi_dirac_int, ArgNames("j x"));
+  TEST_FUNC2(gsl_sf_fermi_dirac_mhalf, NoDeriv());
+  TEST_FUNC2(gsl_sf_fermi_dirac_half, NoDeriv());
   TEST_FUNC(gsl_sf_fermi_dirac_3half);
   TEST_FUNC(gsl_sf_fermi_dirac_inc_0);
 }
 
 struct LnGammaInfo : FunctionInfo {
-  Result GetDerivative(const Function &af, unsigned , const Tuple &args) {
+  Result GetDerivative(const Function &af, unsigned , const Tuple &args) const {
     double x = args[0];
     return x == -1 || x == -2 ? EvalError(af, args, "'") : Result();
   }
 };
 
 TEST_F(GSLTest, Gamma) {
-  Function gamma = GetFunction("gsl_sf_gamma", &info);
+  Function gamma = GetFunction("gsl_sf_gamma");
   EXPECT_NEAR(-0.129354, gamma(Tuple(-0.5), DERIVS).deriv(), 1e-6);
   EXPECT_NEAR(-31.6778, gamma(Tuple(-0.5), HES).hes(), 1e-4);
   EXPECT_NEAR(1.19786e100, gamma(Tuple(71)), 1e95);
   EXPECT_TRUE(gsl_isinf(gamma(Tuple(1000))));
   TEST_FUNC(gsl_sf_gamma);
-  {
-    LnGammaInfo info;
-    TEST_FUNC(gsl_sf_lngamma);
-  }
+  TEST_FUNC2(gsl_sf_lngamma, LnGammaInfo());
   TEST_FUNC(gsl_sf_gammastar);
   TEST_FUNC(gsl_sf_gammainv);
 }
 
 TEST_F(GSLTest, Poch) {
-  NoDerivativeInfo info;
-  TEST_FUNC(gsl_sf_poch);
-  TEST_FUNC(gsl_sf_lnpoch);
-  TEST_FUNC(gsl_sf_pochrel);
+  TEST_FUNC2(gsl_sf_poch, NoDeriv());
+  TEST_FUNC2(gsl_sf_lnpoch, NoDeriv());
+  TEST_FUNC2(gsl_sf_pochrel, NoDeriv());
 }
 
 struct GammaIncInfo : FunctionInfo {
   Result GetDerivative(
-      const Function &af, unsigned var_index, const Tuple &args) {
+      const Function &af, unsigned var_index, const Tuple &args) const {
     // Partial derivative with respect to a is not provided.
     if (var_index == 0)
       return Result("argument 'a' is not constant");
@@ -782,20 +777,14 @@ struct GammaIncInfo : FunctionInfo {
 };
 
 TEST_F(GSLTest, GammaInc) {
-  {
-    GammaIncInfo info;
-    TEST_FUNC(gsl_sf_gamma_inc);
-  }
-  {
-    NoDerivativeInfo info;
-    TEST_FUNC(gsl_sf_gamma_inc_Q);
-    TEST_FUNC(gsl_sf_gamma_inc_P);
-  }
+  TEST_FUNC2(gsl_sf_gamma_inc, GammaIncInfo());
+  TEST_FUNC2(gsl_sf_gamma_inc_Q, NoDeriv());
+  TEST_FUNC2(gsl_sf_gamma_inc_P, NoDeriv());
 }
 
 struct BetaInfo : FunctionInfo {
   Result GetDerivative(
-      const Function &af, unsigned var_index, const Tuple &args) {
+      const Function &af, unsigned var_index, const Tuple &args) const {
     if (gsl_isnan(gsl_sf_psi(args[0] + args[1])) || args[var_index] == 0)
       return EvalError(af, args, "'");
     return Result();
@@ -803,49 +792,34 @@ struct BetaInfo : FunctionInfo {
 };
 
 TEST_F(GSLTest, Beta) {
-  {
-    BetaInfo info;
-    TEST_FUNC(gsl_sf_beta);
-  }
+  TEST_FUNC2(gsl_sf_beta, BetaInfo());
   TEST_FUNC(gsl_sf_lnbeta);
-  {
-    NoDerivativeInfo info;
-    TEST_FUNC(gsl_sf_beta_inc);
-  }
+  TEST_FUNC2(gsl_sf_beta_inc, NoDeriv());
 }
 
 TEST_F(GSLTest, GegenPoly) {
   TEST_FUNC(gsl_sf_gegenpoly_1);
   TEST_FUNC(gsl_sf_gegenpoly_2);
   TEST_FUNC(gsl_sf_gegenpoly_3);
-
-  NoDerivativeInfo info;
-  info.SetArgNames("n");
-  TEST_FUNC(gsl_sf_gegenpoly_n);
+  TEST_FUNC2(gsl_sf_gegenpoly_n, NoDeriv("n"));
 }
 
 struct Hyperg0F1Info : FunctionInfo {
-  Result GetDerivative(const Function &, unsigned var_index, const Tuple &) {
+  Result GetDerivative(
+      const Function &, unsigned var_index, const Tuple &) const {
     // Partial derivative with respect to c is not provided.
     return Result(var_index == 0 ? "argument 'c' is not constant" : "");
   }
 };
 
 struct Hyperg1F1Info : FunctionInfo {
-  Result GetDerivative(const Function &f, unsigned, const Tuple &args) {
+  Result GetDerivative(const Function &f, unsigned, const Tuple &args) const {
     return args[1] <= 0 ? EvalError(f, args, "'") : Result();
   }
 };
 
 TEST_F(GSLTest, Hyperg) {
-  {
-    Hyperg0F1Info info;
-    TEST_FUNC(gsl_sf_hyperg_0F1);
-  }
-  {
-    Hyperg1F1Info info;
-    info.SetArgNames("m n x");
-    TEST_FUNC(gsl_sf_hyperg_1F1_int);
-  }
+  TEST_FUNC2(gsl_sf_hyperg_0F1, Hyperg0F1Info());
+  TEST_FUNC2(gsl_sf_hyperg_1F1_int, Hyperg1F1Info().SetArgNames("m n x"));
 }
 }
