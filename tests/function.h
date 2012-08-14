@@ -97,54 +97,202 @@ class BitSet {
   const_reference operator[](unsigned index) const { return store_.at(index); }
 };
 
-enum Type { INT, DOUBLE };
+enum Type { VOID, INT, DOUBLE, MODE };
 
 template <typename T>
 struct GetType;
 
 template <>
+struct GetType<void> {
+  static const Type VALUE = VOID;
+};
+
+template <>
 struct GetType<int> {
-  static const Type Value = INT;
+  static const Type VALUE = INT;
 };
 
 template <>
 struct GetType<double> {
-  static const Type Value = DOUBLE;
+  static const Type VALUE = DOUBLE;
 };
 
-template <unsigned N, typename Arg1, typename Arg2, typename Arg3>
-struct FunctionWithTypes {
-  static const unsigned NUM_ARGS = N;
-  static const Type ARG_TYPES[N];
+template <typename Arg1, typename Arg2 = void,
+    typename Arg3 = void, typename Arg4 = void>
+class FunctionWithTypes {
+ private:
+  static const Type ARG_TYPES[];
+
+ protected:
+  void CheckArgs(const Tuple &args) const {
+    if (args.size() != GetNumArgs())
+      throw std::invalid_argument("invalid number of arguments");
+  }
+
+ public:
+  unsigned GetNumArgs() const;
+
+  Type GetArgType(unsigned arg_index) const {
+    if (arg_index >= GetNumArgs())
+      throw std::out_of_range("argument index is out of range");
+    return ARG_TYPES[arg_index];
+  }
 };
 
-template <unsigned N, typename Arg1, typename Arg2, typename Arg3>
-const Type FunctionWithTypes<N, Arg1, Arg2, Arg3>::ARG_TYPES[] = {
-    GetType<Arg1>::Value, GetType<Arg2>::Value, GetType<Arg3>::Value
+template <typename Arg1, typename Arg2, typename Arg3, typename Arg4>
+unsigned FunctionWithTypes<Arg1, Arg2, Arg3, Arg4>::GetNumArgs() const {
+  if (GetType<Arg2>::VALUE == VOID)
+    return 1;
+  if (GetType<Arg3>::VALUE == VOID)
+    return 2;
+  if (GetType<Arg4>::VALUE == VOID)
+    return 3;
+  return 4;
+}
+
+template <typename Arg1, typename Arg2, typename Arg3, typename Arg4>
+const Type FunctionWithTypes<Arg1, Arg2, Arg3, Arg4>::ARG_TYPES[] = {
+    GetType<Arg1>::VALUE, GetType<Arg2>::VALUE,
+    GetType<Arg3>::VALUE, GetType<Arg4>::VALUE
 };
+
+template <typename Arg1, typename Result>
+class FunctionPointer1 : public FunctionWithTypes<Arg1> {
+ private:
+  Result (*f_)(Arg1);
+
+ public:
+  explicit FunctionPointer1(Result (*f)(Arg1)) : f_(f) {}
+
+  Result operator()(const Tuple &args) const {
+    this->CheckArgs(args);
+    return f_(args[0]);
+  }
+};
+
+template <typename Arg1, typename Result>
+FunctionPointer1<Arg1, Result> FunctionPointer(Result (*f)(Arg1)) {
+  return FunctionPointer1<Arg1, Result>(f);
+}
+
+template <typename Arg1, typename Arg2, typename Result>
+class FunctionPointer2 : public FunctionWithTypes<Arg1, Arg2> {
+ private:
+  Result (*f_)(Arg1, Arg2);
+
+ public:
+  explicit FunctionPointer2(Result (*f)(Arg1, Arg2)) : f_(f) {}
+
+  Result operator()(const Tuple &args) const {
+    this->CheckArgs(args);
+    return f_(args[0], args[1]);
+  }
+};
+
+template <typename Arg1, typename Arg2, typename Result>
+FunctionPointer2<Arg1, Arg2, Result> FunctionPointer(Result (*f)(Arg1, Arg2)) {
+  return FunctionPointer2<Arg1, Arg2, Result>(f);
+}
 
 template <typename Arg1, typename Arg2, typename Arg3, typename Result>
-class FunctionPointer3 : public FunctionWithTypes<3, Arg1, Arg2, Arg3> {
+class FunctionPointer3 : public FunctionWithTypes<Arg1, Arg2, Arg3> {
  private:
   Result (*f_)(Arg1, Arg2, Arg3);
 
  public:
   explicit FunctionPointer3(Result (*f)(Arg1, Arg2, Arg3)) : f_(f) {}
+
   Result operator()(const Tuple &args) const {
+    this->CheckArgs(args);
     return f_(args[0], args[1], args[2]);
   }
 };
 
+template <typename Arg1, typename Arg2, typename Arg3, typename Result>
+FunctionPointer3<Arg1, Arg2, Arg3, Result>
+  FunctionPointer(Result (*f)(Arg1, Arg2, Arg3)) {
+  return FunctionPointer3<Arg1, Arg2, Arg3, Result>(f);
+}
+
+template <typename Arg1, typename Arg2,
+  typename Arg3, typename Arg4, typename Result>
+class FunctionPointer4 : public FunctionWithTypes<Arg1, Arg2, Arg3, Arg4> {
+ private:
+  Result (*f_)(Arg1, Arg2, Arg3, Arg4);
+
+ public:
+  explicit FunctionPointer4(Result (*f)(Arg1, Arg2, Arg3, Arg4)) : f_(f) {}
+
+  Result operator()(const Tuple &args) const {
+    this->CheckArgs(args);
+    return f_(args[0], args[1], args[2], args[3]);
+  }
+};
+
+template <typename Arg1, typename Arg2,
+  typename Arg3, typename Arg4, typename Result>
+FunctionPointer4<Arg1, Arg2, Arg3, Arg4, Result>
+  FunctionPointer(Result (*f)(Arg1, Arg2, Arg3, Arg4)) {
+  return FunctionPointer4<Arg1, Arg2, Arg3, Arg4, Result>(f);
+}
+
+// A functor class with one argument bound.
+template <typename F, typename Arg>
+class OneBinder {
+ private:
+  F f_;
+  Arg value_;
+  unsigned bound_arg_index_;
+
+ public:
+  OneBinder(F f, Arg value, unsigned bound_arg_index);
+
+  unsigned GetNumArgs() const { return f_.GetNumArgs() - 1; }
+
+  Type GetArgType(unsigned arg_index) const {
+    if (arg_index >= bound_arg_index_)
+      ++arg_index;
+    return f_.GetArgType(arg_index);
+  }
+
+  double operator()(const Tuple &args) const;
+};
+
+template <typename F, typename Arg>
+OneBinder<F, Arg>::OneBinder(F f, Arg value, unsigned bound_arg_index)
+: f_(f), value_(value), bound_arg_index_(bound_arg_index) {
+  if (bound_arg_index >= f.GetNumArgs())
+    throw std::out_of_range("argument index is out of range");
+}
+
+template <typename F, typename Arg>
+double OneBinder<F, Arg>::operator()(const Tuple &args) const {
+  unsigned num_args = args.size();
+  Tuple part_args(Tuple::GetTupleWithSize(num_args + 1));
+  for (unsigned i = 0; i < bound_arg_index_; ++i)
+    part_args[i] = args[i];
+  for (unsigned i = bound_arg_index_; i < num_args; ++i)
+    part_args[i + 1] = args[i];
+  part_args[bound_arg_index_] = value_;
+  return f_(part_args);
+}
+
+// Binds one arguments.
+template <typename F, typename Arg>
+OneBinder<F, Arg> BindOne(F f, Arg value, unsigned bound_arg_index) {
+  return OneBinder<F, Arg>(f, value, bound_arg_index);
+}
+
 // A functor class with all but one arguments bound.
 template <typename F>
-class BinderAllButOne {
+class AllButOneBinder {
  private:
   F f_;
   mutable Tuple args_;
   unsigned unbound_arg_index_;
 
  public:
-  BinderAllButOne(F f, const Tuple &args, unsigned unbound_arg_index);
+  AllButOneBinder(F f, const Tuple &args, unsigned unbound_arg_index);
 
   double operator()(double x) const {
     args_[unbound_arg_index_] = x;
@@ -153,7 +301,7 @@ class BinderAllButOne {
 };
 
 template <typename F>
-BinderAllButOne<F>::BinderAllButOne(
+AllButOneBinder<F>::AllButOneBinder(
     F f, const Tuple &args, unsigned unbound_arg_index)
 : f_(f), args_(args), unbound_arg_index_(unbound_arg_index) {
   if (unbound_arg_index >= args.size())
@@ -162,9 +310,9 @@ BinderAllButOne<F>::BinderAllButOne(
 
 // Binds all but one arguments.
 template <typename F>
-BinderAllButOne<F> BindAllButOne(
+AllButOneBinder<F> BindAllButOne(
     F f, const Tuple &args, unsigned unbound_arg_index) {
-  return BinderAllButOne<F>(f, args, unbound_arg_index);
+  return AllButOneBinder<F>(f, args, unbound_arg_index);
 }
 
 // A utility class for computing the derivative by Ridders' method

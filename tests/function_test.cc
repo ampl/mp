@@ -39,6 +39,9 @@ using fun::DerivativeBinder;
 using fun::Differentiator;
 using fun::Function;
 using fun::FunctionInfo;
+using fun::FunctionPointer;
+using fun::FunctionWithTypes;
+using fun::GetType;
 using fun::Tuple;
 
 namespace {
@@ -96,17 +99,120 @@ TEST(FunctionTest, BitSet) {
   CheckBitSet("1010", BitSet("1010"));
 }
 
-double TestFun1(int x, double y, int z) {
-  return x * 100 + y * 10 + z;
+#undef VOID
+
+TEST(FunctionTest, Type) {
+  EXPECT_EQ(fun::VOID, GetType<void>::VALUE);
+  EXPECT_EQ(fun::INT, GetType<int>::VALUE);
+  EXPECT_EQ(fun::DOUBLE, GetType<double>::VALUE);
+}
+
+TEST(FunctionTest, FunctionWithTypes) {
+  FunctionWithTypes<double> f1;
+  EXPECT_EQ(1u, f1.GetNumArgs());
+  EXPECT_EQ(fun::DOUBLE, f1.GetArgType(0));
+  EXPECT_THROW(f1.GetArgType(1), std::out_of_range);
+
+  FunctionWithTypes<int, double> f2;
+  EXPECT_EQ(2u, f2.GetNumArgs());
+  EXPECT_EQ(fun::INT, f2.GetArgType(0));
+  EXPECT_EQ(fun::DOUBLE, f2.GetArgType(1));
+  EXPECT_THROW(f2.GetArgType(2), std::out_of_range);
+
+  FunctionWithTypes<double, int, double> f3;
+  EXPECT_EQ(3u, f3.GetNumArgs());
+  EXPECT_EQ(fun::DOUBLE, f3.GetArgType(0));
+  EXPECT_EQ(fun::INT, f3.GetArgType(1));
+  EXPECT_EQ(fun::DOUBLE, f3.GetArgType(2));
+  EXPECT_THROW(f3.GetArgType(3), std::out_of_range);
+
+  FunctionWithTypes<int, double, int, double> f4;
+  EXPECT_EQ(4u, f4.GetNumArgs());
+  EXPECT_EQ(fun::INT, f4.GetArgType(0));
+  EXPECT_EQ(fun::DOUBLE, f4.GetArgType(1));
+  EXPECT_EQ(fun::INT, f4.GetArgType(2));
+  EXPECT_EQ(fun::DOUBLE, f4.GetArgType(3));
+  EXPECT_THROW(f4.GetArgType(4), std::out_of_range);
+}
+
+double Poly1(int a) {
+  return a;
+}
+
+TEST(FunctionTest, FunctionPointer1) {
+  typedef fun::FunctionPointer1<int, double> Fun;
+  Fun f(Poly1);
+  EXPECT_EQ(1u, f.GetNumArgs());
+  EXPECT_EQ(fun::INT, f.GetArgType(0));
+  EXPECT_THROW(f.GetArgType(1), std::out_of_range);
+  EXPECT_EQ(3, f(Tuple(3)));
+  EXPECT_THROW(f(Tuple(3, 5)), std::invalid_argument);
+  f = FunctionPointer(Poly1);
+}
+
+double Poly2(double a, int b) {
+  return a * 10 + b;
+}
+
+TEST(FunctionTest, FunctionPointer2) {
+  typedef fun::FunctionPointer2<double, int, double> Fun;
+  Fun f(Poly2);
+  EXPECT_EQ(2u, f.GetNumArgs());
+  EXPECT_EQ(fun::DOUBLE, f.GetArgType(0));
+  EXPECT_EQ(fun::INT, f.GetArgType(1));
+  EXPECT_THROW(f.GetArgType(2), std::out_of_range);
+  EXPECT_THROW(f(Tuple(3)), std::invalid_argument);
+  EXPECT_EQ(35, f(Tuple(3, 5)));
+  EXPECT_THROW(f(Tuple(3, 5, 7)), std::invalid_argument);
+  f = FunctionPointer(Poly2);
+}
+
+double Poly3(int a, double b, int c) {
+  return a * 100 + b * 10 + c;
 }
 
 TEST(FunctionTest, FunctionPointer3) {
   typedef fun::FunctionPointer3<int, double, int, double> Fun;
-  EXPECT_EQ(fun::INT, Fun::ARG_TYPES[0]);
-  EXPECT_EQ(fun::DOUBLE, Fun::ARG_TYPES[1]);
-  EXPECT_EQ(fun::INT, Fun::ARG_TYPES[2]);
-  Fun f(TestFun1);
+  Fun f(Poly3);
+  EXPECT_EQ(3u, f.GetNumArgs());
+  EXPECT_EQ(fun::INT, f.GetArgType(0));
+  EXPECT_EQ(fun::DOUBLE, f.GetArgType(1));
+  EXPECT_EQ(fun::INT, f.GetArgType(2));
+  EXPECT_THROW(f.GetArgType(3), std::out_of_range);
+  EXPECT_THROW(f(Tuple(3, 5)), std::invalid_argument);
   EXPECT_EQ(357, f(Tuple(3, 5, 7)));
+  EXPECT_THROW(f(Tuple(3, 5, 7, 11)), std::invalid_argument);
+  f = FunctionPointer(Poly3);
+}
+
+double Poly4(double a, int b, double c, int d) {
+  return a * 1000 + b * 100 + c * 10 + d;
+}
+
+TEST(FunctionTest, FunctionPointer4) {
+  typedef fun::FunctionPointer4<double, int, double, int, double> Fun;
+  Fun f(Poly4);
+  EXPECT_EQ(4u, f.GetNumArgs());
+  EXPECT_EQ(fun::DOUBLE, f.GetArgType(0));
+  EXPECT_EQ(fun::INT, f.GetArgType(1));
+  EXPECT_EQ(fun::DOUBLE, f.GetArgType(2));
+  EXPECT_EQ(fun::INT, f.GetArgType(3));
+  EXPECT_THROW(f.GetArgType(4), std::out_of_range);
+  EXPECT_THROW(f(Tuple(2, 3, 5)), std::invalid_argument);
+  EXPECT_EQ(2357, f(Tuple(2, 3, 5, 7)));
+  EXPECT_THROW(f(Tuple(2, 3, 5, 7, 11)), std::invalid_argument);
+  f = FunctionPointer(Poly4);
+}
+
+TEST(FunctionTest, BindOne) {
+  typedef fun::FunctionPointer3<int, double, int, double> Fun;
+  fun::OneBinder<Fun, double> f(Fun(Poly3), 5, 1);
+  EXPECT_EQ(2u, f.GetNumArgs());
+  EXPECT_EQ(fun::INT, f.GetArgType(0));
+  EXPECT_EQ(fun::INT, f.GetArgType(1));
+  EXPECT_THROW(f.GetArgType(2), std::out_of_range);
+  EXPECT_EQ(357, f(Tuple(3, 7)));
+  f = fun::BindOne(Fun(Poly3), 5.0, 1);
 }
 
 TEST(FunctionTest, Fun) {
@@ -128,23 +234,23 @@ TEST(FunctionTest, BindAllButOne) {
   typedef double (*Fun)(const Tuple &);
 
   EXPECT_EQ(35, BindAllButOne(TestFun2, Tuple(0, 5), 0)(3));
-  EXPECT_EQ(35, fun::BinderAllButOne<Fun>(TestFun2, Tuple(0, 5), 0)(3));
+  EXPECT_EQ(35, fun::AllButOneBinder<Fun>(TestFun2, Tuple(0, 5), 0)(3));
   EXPECT_EQ(53, BindAllButOne(TestFun2, Tuple(5, 0), 1)(3));
-  EXPECT_EQ(53, fun::BinderAllButOne<Fun>(TestFun2, Tuple(5, 0), 1)(3));
+  EXPECT_EQ(53, fun::AllButOneBinder<Fun>(TestFun2, Tuple(5, 0), 1)(3));
 
   EXPECT_THROW(
-      fun::BinderAllButOne<Fun>(TestFun2, Tuple(0, 5), 2),
+      fun::AllButOneBinder<Fun>(TestFun2, Tuple(0, 5), 2),
       std::out_of_range);
 
   EXPECT_EQ(357, BindAllButOne(TestFun3, Tuple(0, 5, 7), 0)(3));
-  EXPECT_EQ(357, fun::BinderAllButOne<Fun>(TestFun3, Tuple(0, 5, 7), 0)(3));
+  EXPECT_EQ(357, fun::AllButOneBinder<Fun>(TestFun3, Tuple(0, 5, 7), 0)(3));
   EXPECT_EQ(537, BindAllButOne(TestFun3, Tuple(5, 0, 7), 1)(3));
-  EXPECT_EQ(537, fun::BinderAllButOne<Fun>(TestFun3, Tuple(5, 0, 7), 1)(3));
+  EXPECT_EQ(537, fun::AllButOneBinder<Fun>(TestFun3, Tuple(5, 0, 7), 1)(3));
   EXPECT_EQ(573, BindAllButOne(TestFun3, Tuple(5, 7, 0), 2)(3));
-  EXPECT_EQ(573, fun::BinderAllButOne<Fun>(TestFun3, Tuple(5, 7, 0), 2)(3));
+  EXPECT_EQ(573, fun::AllButOneBinder<Fun>(TestFun3, Tuple(5, 7, 0), 2)(3));
 
   EXPECT_THROW(
-      fun::BinderAllButOne<Fun>(TestFun3, Tuple(0, 5, 7), 3),
+      fun::AllButOneBinder<Fun>(TestFun3, Tuple(0, 5, 7), 3),
       std::out_of_range);
 }
 
