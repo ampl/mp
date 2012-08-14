@@ -466,7 +466,7 @@ double Differentiator::operator()(
   }
   double left_error = nan;
   double left_deriv = Differentiate(f, x, LeftDifference<F>, &left_error);
-  if ((!(std::fabs(left_deriv - right_deriv) <= 1e-2) &&
+  if ((!(std::fabs(left_deriv - right_deriv) / (std::fabs(left_deriv) + 1) <= 1e-2) &&
       left_error / (std::fabs(left_deriv) + 1) < 0.05) ||
           (std::isnan(left_deriv) && std::isnan(right_deriv))) {
     if (detected_nan)
