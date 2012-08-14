@@ -32,6 +32,7 @@ namespace fun {
 
 const Type GetType<void>::VALUE;
 const Type GetType<int>::VALUE;
+const Type GetType<unsigned>::VALUE;
 const Type GetType<double>::VALUE;
 
 std::ostream &operator<<(std::ostream &os, const Tuple &t) {
@@ -80,6 +81,8 @@ FunctionInfo::Result FunctionInfo::GetSecondDerivative(
 }
 
 const char *Function::name() const { return fi_->name; }
+
+int Function::nargs() const { return fi_->nargs; }
 
 Function::Result Function::operator()(const Tuple &args,
     int flags, const BitSet &use_deriv, void *info) const {
