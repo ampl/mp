@@ -776,5 +776,12 @@ struct Hyperg1F1Info : FunctionInfo {
 TEST_F(GSLTest, Hyperg) {
   TEST_FUNC2(gsl_sf_hyperg_0F1, Hyperg0F1Info());
   TEST_FUNC2(gsl_sf_hyperg_1F1_int, Hyperg1F1Info().SetArgNames("m n x"));
+  TEST_FUNC2(gsl_sf_hyperg_1F1, NoDeriv());
+  TEST_FUNC2(gsl_sf_hyperg_U_int, NoDeriv("m n x"));
+  TEST_FUNC2(gsl_sf_hyperg_U, NoDeriv());
+  TEST_FUNC2(gsl_sf_hyperg_2F1, NoDeriv());
+  TEST_FUNC2(gsl_sf_hyperg_2F1_conj, NoDeriv());
+  TEST_FUNC2(gsl_sf_hyperg_2F1_renorm, NoDeriv());
+  TEST_FUNC2(gsl_sf_hyperg_2F0, NoDeriv());
 }
 }
