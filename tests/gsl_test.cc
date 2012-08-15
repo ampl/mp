@@ -185,8 +185,7 @@ class GSLTest : public ::testing::Test {
   // test_x is a value of x where the function can be computed for very large
   // and very small n. If there is no such x or it is not known, then test_x
   // should be GSL_NAN.
-  void TestFuncND(const Function &af, FuncND f,
-      double test_x, const string &arg_name);
+  void TestFuncND(const Function &af, FuncND f, double test_x);
 
   template <typename F>
   void TestFunc(const Function &af, F f, Tuple &args, unsigned arg_index);
@@ -316,33 +315,16 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
   }
 }
 
-void GSLTest::TestFuncND(const Function &af, FuncND f,
-    double test_x, const string &arg_name) {
-  for (size_t i = 0; i != NUM_POINTS_FOR_N; ++i) {
-    int n = POINTS_FOR_N[i];
-    for (size_t j = 0; j != NUM_POINTS; ++j) {
-      double x = POINTS[j];
-      Tuple args(n, x);
-      CheckFunction(f(n, x), af, args);
-      string error("argument '" + arg_name + "' is not constant");
-      EXPECT_ERROR(error.c_str(), af(args, DERIVS));
-      EXPECT_ERROR(error.c_str(), af(args, HES));
-      CheckDerivative(std::bind1st(std::ptr_fun(f), n), af, 1, args);
-      CheckSecondDerivatives(af, args, 0);
-    }
-  }
-  EXPECT_ERROR(("argument '" + arg_name + "' can't be represented as int, " +
-      arg_name + " = 0.5").c_str(), af(Tuple(0.5, 0)));
-
-  if (gsl_isnan(test_x))
-    return;
+void GSLTest::TestFuncND(const Function &af, FuncND f, double test_x) {
+  TestFunc(af, f);
 
   // These points are tested separately because of various problems, e.g.
   // gsl_sf_bessel_Jn(n, x) and gsl_sf_bessel_In(n, x) take too much time
   // (hang?) for n = INT_MIN and gsl_sf_bessel_Yn(n, x) returns different
-  // values close to 0 when called different times for n = INT_MIN.
+  // values close to x = 0 when called different times for n = INT_MIN.
 
   BitSet use_deriv("01");
+  string arg_name(af.GetArgName(0));
   EXPECT_ERROR(
       ("can't compute derivative: argument '" + arg_name + "' too small, " +
       arg_name + " = -2147483648").c_str(),
@@ -434,8 +416,8 @@ void GSLTest::TestFunc(const Function &af, F f) {
 #define TEST_FUNC(name) TestFunc(GetFunction(#name, this->info), name)
 #define TEST_FUNC2(name, info) TestFunc(GetFunction(#name, info), name)
 
-#define TEST_FUNC_ND(name, test_x, arg) \
-  TestFuncND(GetFunction("gsl_" #name, info), gsl_##name, test_x, #arg)
+#define TEST_FUNC_ND(name, test_x) \
+  TestFuncND(GetFunction(#name, FunctionInfo("n")), name, test_x)
 
 TEST_F(GSLTest, Elementary) {
   TEST_FUNC(gsl_log1p);
@@ -465,31 +447,31 @@ TEST_F(GSLTest, AiryZero) {
 TEST_F(GSLTest, BesselJ) {
   TEST_FUNC(gsl_sf_bessel_J0);
   TEST_FUNC(gsl_sf_bessel_J1);
-  TEST_FUNC_ND(sf_bessel_Jn, 0, n);
+  TEST_FUNC_ND(gsl_sf_bessel_Jn, 0);
 }
 
 TEST_F(GSLTest, BesselY) {
   TEST_FUNC(gsl_sf_bessel_Y0);
   TEST_FUNC(gsl_sf_bessel_Y1);
-  TEST_FUNC_ND(sf_bessel_Yn, 1, n);
+  TEST_FUNC_ND(gsl_sf_bessel_Yn, 1);
 }
 
 TEST_F(GSLTest, BesselI) {
   TEST_FUNC(gsl_sf_bessel_I0);
   TEST_FUNC(gsl_sf_bessel_I1);
-  TEST_FUNC_ND(sf_bessel_In, 0, n);
+  TEST_FUNC_ND(gsl_sf_bessel_In, 0);
   TEST_FUNC(gsl_sf_bessel_I0_scaled);
   TEST_FUNC(gsl_sf_bessel_I1_scaled);
-  TEST_FUNC_ND(sf_bessel_In_scaled, 0, n);
+  TEST_FUNC_ND(gsl_sf_bessel_In_scaled, 0);
 }
 
 TEST_F(GSLTest, BesselK) {
   TEST_FUNC(gsl_sf_bessel_K0);
   TEST_FUNC(gsl_sf_bessel_K1);
-  TEST_FUNC_ND(sf_bessel_Kn, 1, n);
+  TEST_FUNC_ND(gsl_sf_bessel_Kn, 1);
   TEST_FUNC(gsl_sf_bessel_K0_scaled);
   TEST_FUNC(gsl_sf_bessel_K1_scaled);
-  TEST_FUNC_ND(sf_bessel_Kn_scaled, 1, n);
+  TEST_FUNC_ND(gsl_sf_bessel_Kn_scaled, 1);
 }
 
 TEST_F(GSLTest, Besselj) {
