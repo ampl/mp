@@ -2099,6 +2099,71 @@ static double amplgsl_sf_hyperg_2F0(arglist *al) {
   return check_result(al, gsl_sf_hyperg_2F0(al->ra[0], al->ra[1], al->ra[2]));
 }
 
+static double amplgsl_sf_laguerre_1(arglist *al) {
+  double a = 0, x = 0;
+  if (!check_args(al))
+    return 0;
+  a = al->ra[0];
+  x = al->ra[1];
+  if (al->derivs) {
+    al->derivs[0] =  1;
+    al->derivs[1] = -1;
+    if (al->hes)
+      al->hes[0] = al->hes[1] = al->hes[2] = 0;
+  }
+  return check_result(al, gsl_sf_laguerre_1(a, x));
+}
+
+static double amplgsl_sf_laguerre_2(arglist *al) {
+  double a = 0, x = 0;
+  if (!check_args(al))
+    return 0;
+  a = al->ra[0];
+  x = al->ra[1];
+  if (al->derivs) {
+    al->derivs[0] =  a - x + 1.5;
+    al->derivs[1] = -a + x - 2;
+    if (al->hes) {
+      al->hes[0] = al->hes[2] = 1;
+      al->hes[1] = -1;
+    }
+  }
+  return check_result(al, gsl_sf_laguerre_2(a, x));
+}
+
+static double amplgsl_sf_laguerre_3(arglist *al) {
+  double a = 0, x = 0;
+  if (!check_args(al))
+    return 0;
+  a = al->ra[0];
+  x = al->ra[1];
+  if (al->derivs) {
+    al->derivs[0] = (11 + 3 * a * (a - 2 * (x - 2)) + 3 * x * (x - 5)) / 6;
+    al->derivs[1] = (-0.5 * (a + 2) + x) * (a + 3) - 0.5 * x * x;
+    if (al->hes) {
+      al->hes[0] =  a - x + 2;
+      al->hes[1] = -a + x - 2.5;
+      al->hes[2] =  a - x + 3;
+    }
+  }
+  return check_result(al, gsl_sf_laguerre_3(a, x));
+}
+
+static double amplgsl_sf_laguerre_n(arglist *al) {
+  int n = 0;
+  double a = 0, x = 0;
+  if (!check_args(al) || !check_int_arg(al, 0, "n"))
+    return 0;
+  n = (int)al->ra[0];
+  a = al->ra[1];
+  x = al->ra[2];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_laguerre_n(n, a, x));
+}
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
@@ -2325,5 +2390,12 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_hyperg_2F1_conj, 4);
   ADDFUNC(gsl_sf_hyperg_2F1_renorm, 4);
   ADDFUNC(gsl_sf_hyperg_2F0, 3);
+
+  /* Laguerre Functions */
+  ADDFUNC(gsl_sf_laguerre_1, 2);
+  ADDFUNC(gsl_sf_laguerre_2, 2);
+  ADDFUNC(gsl_sf_laguerre_3, 2);
+  ADDFUNC(gsl_sf_laguerre_n, 3);
+
   // TODO
 }

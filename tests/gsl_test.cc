@@ -773,11 +773,20 @@ TEST_F(GSLTest, GegenPoly) {
   TEST_FUNC2(gsl_sf_gegenpoly_n, NoDeriv("n"));
 }
 
-struct Hyperg0F1Info : FunctionInfo {
+class NoDerivArg : public FunctionInfo {
+ private:
+  unsigned arg_index_;
+
+ public:
+  NoDerivArg(const char *arg_names, unsigned arg_index = 0)
+  : FunctionInfo(arg_names), arg_index_(arg_index) {}
+
   Result GetDerivative(
-      const Function &, unsigned arg_index, const Tuple &) const {
-    // Partial derivative with respect to c is not provided.
-    return Result(arg_index == 0 ? "argument 'c' is not constant" : "");
+      const Function &f, unsigned arg_index, const Tuple &) const {
+    // Partial derivative with respect to the first argument is not provided.
+    string error(string("argument '") + f.GetArgName(arg_index_) +
+        "' is not constant");
+    return Result(arg_index == arg_index_ ? error.c_str() : "");
   }
 };
 
@@ -788,7 +797,7 @@ struct Hyperg1F1Info : FunctionInfo {
 };
 
 TEST_F(GSLTest, Hyperg) {
-  TEST_FUNC2(gsl_sf_hyperg_0F1, Hyperg0F1Info());
+  TEST_FUNC2(gsl_sf_hyperg_0F1, NoDerivArg("c"));
   TEST_FUNC2(gsl_sf_hyperg_1F1_int, Hyperg1F1Info().SetArgNames("m n x"));
   TEST_FUNC2(gsl_sf_hyperg_1F1, NoDeriv());
   TEST_FUNC2(gsl_sf_hyperg_U_int, NoDeriv("m n x"));
@@ -797,5 +806,12 @@ TEST_F(GSLTest, Hyperg) {
   TEST_FUNC2(gsl_sf_hyperg_2F1_conj, NoDeriv());
   TEST_FUNC2(gsl_sf_hyperg_2F1_renorm, NoDeriv());
   TEST_FUNC2(gsl_sf_hyperg_2F0, NoDeriv());
+}
+
+TEST_F(GSLTest, Laguerre) {
+  TEST_FUNC(gsl_sf_laguerre_1);
+  TEST_FUNC(gsl_sf_laguerre_2);
+  TEST_FUNC(gsl_sf_laguerre_3);
+  TEST_FUNC2(gsl_sf_laguerre_n, NoDeriv("n"));
 }
 }
