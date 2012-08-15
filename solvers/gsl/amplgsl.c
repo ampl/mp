@@ -1982,7 +1982,11 @@ static double amplgsl_sf_gegenpoly_n(arglist *al) {
 }
 
 static double amplgsl_sf_hyperg_0F1(arglist *al) {
-  double c = al->ra[0], x = al->ra[1];
+  double c = 0, x = 0;
+  if (!check_args(al))
+    return 0;
+  c = al->ra[0];
+  x = al->ra[1];
   if (al->derivs) {
     if (!check_const_arg(al, 0, "c"))
       return 0;
@@ -1994,10 +1998,15 @@ static double amplgsl_sf_hyperg_0F1(arglist *al) {
 }
 
 static double amplgsl_sf_hyperg_1F1_int(arglist *al) {
-  int m = (int)al->ra[0], n = (int)al->ra[1];
-  double x = al->ra[2];
-  if (!check_int_arg(al, 0, "m") || !check_int_arg(al, 1, "n"))
+  int m = 0, n = 0;
+  double x = 0;
+  if (!check_args(al) || !check_int_arg(al, 0, "m") ||
+      !check_int_arg(al, 1, "n")) {
     return 0;
+  }
+  m = (int)al->ra[0];
+  n = (int)al->ra[1];
+  x = al->ra[2];
   if (al->derivs) {
     /* If n is an integer <= 0, then 1F1(m; n; x) is undefined.
        See http://mathworld.wolfram.com/
@@ -2013,26 +2022,28 @@ static double amplgsl_sf_hyperg_1F1_int(arglist *al) {
 }
 
 static double amplgsl_sf_hyperg_1F1(arglist *al) {
+  if (!check_args(al))
+    return 0;
   /* gsl_sf_hyperg_1F1 seems to be broken, in particular,
      gsl_sf_hyperg_1F1(-2, -0.23, -5) returns 183.641 instead of -183.641. */
-  double a = al->ra[0], b = al->ra[1], x = al->ra[2];
   if (al->derivs) {
     error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
-  return check_result(al, gsl_sf_hyperg_1F1(a, b, x));
+  return check_result(al, gsl_sf_hyperg_1F1(al->ra[0], al->ra[1], al->ra[2]));
 }
 
 static double amplgsl_sf_hyperg_U_int(arglist *al) {
-  int m = (int)al->ra[0], n = (int)al->ra[1];
-  double x = al->ra[2];
-  if (!check_int_arg(al, 0, "m") || !check_int_arg(al, 1, "n"))
+  if (!check_args(al) || !check_int_arg(al, 0, "m") ||
+      !check_int_arg(al, 1, "n")) {
     return 0;
+  }
   if (al->derivs) {
     error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
-  return check_result(al, gsl_sf_hyperg_U_int(m, n, x));
+  return check_result(al,
+      gsl_sf_hyperg_U_int((int)al->ra[0], (int)al->ra[1], al->ra[2]));
 }
 
 static double amplgsl_sf_hyperg_U(arglist *al) {
@@ -2046,39 +2057,46 @@ static double amplgsl_sf_hyperg_U(arglist *al) {
 }
 
 static double amplgsl_sf_hyperg_2F1(arglist *al) {
-  double a = al->ra[0], b = al->ra[1], c = al->ra[2], x = al->ra[3];
+  if (!check_args(al))
+    return 0;
   if (al->derivs) {
     error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
-  return check_result(al, gsl_sf_hyperg_2F1(a, b, c, x));
+  return check_result(al,
+      gsl_sf_hyperg_2F1(al->ra[0], al->ra[1], al->ra[2], al->ra[3]));
 }
 
 static double amplgsl_sf_hyperg_2F1_conj(arglist *al) {
-  double a = al->ra[0], b = al->ra[1], c = al->ra[2], x = al->ra[3];
+  if (!check_args(al))
+    return 0;
   if (al->derivs) {
     error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
-  return check_result(al, gsl_sf_hyperg_2F1_conj(a, b, c, x));
+  return check_result(al,
+      gsl_sf_hyperg_2F1_conj(al->ra[0], al->ra[1], al->ra[2], al->ra[3]));
 }
 
 static double amplgsl_sf_hyperg_2F1_renorm(arglist *al) {
-  double a = al->ra[0], b = al->ra[1], c = al->ra[2], x = al->ra[3];
+  if (!check_args(al))
+    return 0;
   if (al->derivs) {
     error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
-  return check_result(al, gsl_sf_hyperg_2F1_renorm(a, b, c, x));
+  return check_result(al,
+      gsl_sf_hyperg_2F1_renorm(al->ra[0], al->ra[1], al->ra[2], al->ra[3]));
 }
 
 static double amplgsl_sf_hyperg_2F0(arglist *al) {
-  double a = al->ra[0], b = al->ra[1], x = al->ra[2];
+  if (!check_args(al))
+    return 0;
   if (al->derivs) {
     error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
-  return check_result(al, gsl_sf_hyperg_2F0(a, b, x));
+  return check_result(al, gsl_sf_hyperg_2F0(al->ra[0], al->ra[1], al->ra[2]));
 }
 
 #define ADDFUNC(name, num_args) \
