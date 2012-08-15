@@ -28,6 +28,12 @@
 
 #include "solvers/asl.h"
 
+static void Print(std::ostream &os, double value) {
+  if (!std::isnan(value))
+    os << value;
+  else os << "NaN";
+}
+
 namespace fun {
 
 const Type GetType<void>::VALUE;
@@ -38,9 +44,11 @@ const Type GetType<double>::VALUE;
 std::ostream &operator<<(std::ostream &os, const Tuple &t) {
   os << "(";
   if (unsigned size = t.size()) {
-    os << t[0];
-    for (size_t i = 1; i < size; ++i)
-      os << ", " << t[i];
+    Print(os, t[0]);
+    for (size_t i = 1; i < size; ++i) {
+      os << ", ";
+      Print(os, t[i]);
+    }
   }
   os << ")";
   return os;
@@ -110,7 +118,7 @@ Function::Result Function::operator()(const Tuple &args,
   al.TMI = &tmi;
   al.AE = asl_->i.ae;
   al.dig = !dig.empty() ? &dig[0] : nullptr;
-  al.funcinfo = info;
+  al.funcinfo = info ? info : fi_->funcinfo;
 
   // Allocate storage for the derivatives if needed.
   std::vector<double> derivs, hes;

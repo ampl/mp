@@ -371,6 +371,19 @@ template <typename F>
 void GSLTest::TestFunc(
     const Function &af, F f, Tuple &args, unsigned arg_index) {
   unsigned num_args = args.size();
+  if (arg_index == 0) {
+    bool has_double_arg = false;
+    for (unsigned i = 0; i < num_args; ++i) {
+      if (f.GetArgType(i) == fun::DOUBLE) {
+        has_double_arg = true;
+        args[i] = GSL_NAN;
+      } else {
+        args[i] = 0;
+      }
+    }
+    if (has_double_arg)
+      EXPECT_ERROR(EvalError(af, args).error(), af(args));
+  }
   if (arg_index < num_args) {
     for (size_t i = 0; i != NUM_POINTS; ++i) {
       args[arg_index] = POINTS[i];
