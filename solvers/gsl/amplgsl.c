@@ -2033,15 +2033,89 @@ static double amplgsl_sf_hyperg_1F1_int(arglist *al) {
       "gsl_sf_hyperg_1F1_int");
 }
 
+static double amplgsl_sf_hyperg_1F1(arglist *al) {
+  /* gsl_sf_hyperg_1F1 seems to be broken, in particular,
+     gsl_sf_hyperg_1F1(-2, -0.23, -5) returns 183.641 instead of -183.641. */
+  double a = al->ra[0], b = al->ra[1], x = al->ra[2];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_hyperg_1F1(a, b, x), "gsl_sf_hyperg_1F1");
+}
+
+static double amplgsl_sf_hyperg_U_int(arglist *al) {
+  int m = (int)al->ra[0], n = (int)al->ra[1];
+  double x = al->ra[2];
+  if (!check_int_arg(al, 0, "m") || !check_int_arg(al, 1, "n"))
+    return 0;
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_hyperg_U_int(m, n, x),
+      "gsl_sf_hyperg_U_int");
+}
+
+static double amplgsl_sf_hyperg_U(arglist *al) {
+  double a = al->ra[0], b = al->ra[1], x = al->ra[2];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_hyperg_U(a, b, x), "gsl_sf_hyperg_U");
+}
+
+static double amplgsl_sf_hyperg_2F1(arglist *al) {
+  double a = al->ra[0], b = al->ra[1], c = al->ra[2], x = al->ra[3];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_hyperg_2F1(a, b, c, x), "gsl_sf_hyperg_2F1");
+}
+
+static double amplgsl_sf_hyperg_2F1_conj(arglist *al) {
+  double a = al->ra[0], b = al->ra[1], c = al->ra[2], x = al->ra[3];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_hyperg_2F1_conj(a, b, c, x),
+      "gsl_sf_hyperg_2F1_conj");
+}
+
+static double amplgsl_sf_hyperg_2F1_renorm(arglist *al) {
+  double a = al->ra[0], b = al->ra[1], c = al->ra[2], x = al->ra[3];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_hyperg_2F1_renorm(a, b, c, x),
+      "gsl_sf_hyperg_2F1_renorm");
+}
+
+static double amplgsl_sf_hyperg_2F0(arglist *al) {
+  double a = al->ra[0], b = al->ra[1], x = al->ra[2];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_sf_hyperg_2F0(a, b, x), "gsl_sf_hyperg_2F0");
+}
+
+#define ADDFUNC(name, num_args) \
+    addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, 0);
+
 void funcadd_ASL(AmplExports *ae) {
   /* Don't call abort on error. */
   gsl_set_error_handler_off();
 
   /* Elementary Functions */
-  addfunc("gsl_log1p", amplgsl_log1p, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_expm1", amplgsl_expm1, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_hypot", amplgsl_hypot, FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_hypot3", amplgsl_hypot3, FUNCADD_REAL_VALUED, 3, 0);
+  ADDFUNC(gsl_log1p, 1);
+  ADDFUNC(gsl_expm1, 1);
+  ADDFUNC(gsl_hypot, 2);
+  ADDFUNC(gsl_hypot3, 3);
 
   /* AMPL has built-in functions acosh, asinh and atanh so wrappers
      are not provided for their GSL equivalents. */
@@ -2050,260 +2124,211 @@ void funcadd_ASL(AmplExports *ae) {
      since this requires support for structures/tuples as function arguments. */
 
   /* Airy Functions */
-  addfunc("gsl_sf_airy_Ai", amplgsl_sf_airy_Ai, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_airy_Bi", amplgsl_sf_airy_Bi, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_airy_Ai_scaled", amplgsl_sf_airy_Ai_scaled,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_airy_Bi_scaled", amplgsl_sf_airy_Bi_scaled,
-      FUNCADD_REAL_VALUED, 1, 0);
+  ADDFUNC(gsl_sf_airy_Ai, 1);;
+  ADDFUNC(gsl_sf_airy_Bi, 1);
+  ADDFUNC(gsl_sf_airy_Ai_scaled, 1);
+  ADDFUNC(gsl_sf_airy_Bi_scaled, 1);
 
   /* Zeros of Airy Functions */
-  addfunc("gsl_sf_airy_zero_Ai", amplgsl_sf_airy_zero_Ai,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_airy_zero_Bi", amplgsl_sf_airy_zero_Bi,
-      FUNCADD_REAL_VALUED, 1, 0);
+  ADDFUNC(gsl_sf_airy_zero_Ai, 1);
+  ADDFUNC(gsl_sf_airy_zero_Bi, 1);
 
   /* Zeros of Derivatives of Airy Functions */
-  addfunc("gsl_sf_airy_zero_Ai_deriv", amplgsl_sf_airy_zero_Ai_deriv,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_airy_zero_Bi_deriv", amplgsl_sf_airy_zero_Bi_deriv,
-      FUNCADD_REAL_VALUED, 1, 0);
+  ADDFUNC(gsl_sf_airy_zero_Ai_deriv, 1);
+  ADDFUNC(gsl_sf_airy_zero_Bi_deriv, 1);
 
   /* Bessel Functions */
-  addfunc("gsl_sf_bessel_J0", amplgsl_sf_bessel_J0, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_J1", amplgsl_sf_bessel_J1, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_Jn", amplgsl_sf_bessel_Jn, FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_bessel_J0, 1);
+  ADDFUNC(gsl_sf_bessel_J1, 1);
+  ADDFUNC(gsl_sf_bessel_Jn, 2);
 
   /* Irregular Cylindrical Bessel Functions */
-  addfunc("gsl_sf_bessel_Y0", amplgsl_sf_bessel_Y0, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_Y1", amplgsl_sf_bessel_Y1, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_Yn", amplgsl_sf_bessel_Yn, FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_bessel_Y0, 1);
+  ADDFUNC(gsl_sf_bessel_Y1, 1);
+  ADDFUNC(gsl_sf_bessel_Yn, 2);
 
   /* Regular Modified Cylindrical Bessel Functions */
-  addfunc("gsl_sf_bessel_I0", amplgsl_sf_bessel_I0, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_I1", amplgsl_sf_bessel_I1, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_In", amplgsl_sf_bessel_In, FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_bessel_I0_scaled", amplgsl_sf_bessel_I0_scaled,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_I1_scaled", amplgsl_sf_bessel_I1_scaled,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_In_scaled", amplgsl_sf_bessel_In_scaled,
-      FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_bessel_I0, 1);
+  ADDFUNC(gsl_sf_bessel_I1, 1);
+  ADDFUNC(gsl_sf_bessel_In, 2);
+  ADDFUNC(gsl_sf_bessel_I0_scaled, 1);
+  ADDFUNC(gsl_sf_bessel_I1_scaled, 1);
+  ADDFUNC(gsl_sf_bessel_In_scaled, 2);
 
   /* Irregular Modified Cylindrical Bessel Functions */
-  addfunc("gsl_sf_bessel_K0", amplgsl_sf_bessel_K0, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_K1", amplgsl_sf_bessel_K1, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_Kn", amplgsl_sf_bessel_Kn, FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_bessel_K0_scaled", amplgsl_sf_bessel_K0_scaled,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_K1_scaled", amplgsl_sf_bessel_K1_scaled,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_Kn_scaled", amplgsl_sf_bessel_Kn_scaled,
-      FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_bessel_K0, 1);
+  ADDFUNC(gsl_sf_bessel_K1, 1);
+  ADDFUNC(gsl_sf_bessel_Kn, 2);
+  ADDFUNC(gsl_sf_bessel_K0_scaled, 1);
+  ADDFUNC(gsl_sf_bessel_K1_scaled, 1);
+  ADDFUNC(gsl_sf_bessel_Kn_scaled, 2);
 
   /* Regular Spherical Bessel Functions */
-  addfunc("gsl_sf_bessel_j0", amplgsl_sf_bessel_j0, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_j1", amplgsl_sf_bessel_j1, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_j2", amplgsl_sf_bessel_j2, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_jl", amplgsl_sf_bessel_jl, FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_bessel_j0, 1);
+  ADDFUNC(gsl_sf_bessel_j1, 1);
+  ADDFUNC(gsl_sf_bessel_j2, 1);
+  ADDFUNC(gsl_sf_bessel_jl, 2);
 
   /* Irregular Spherical Bessel Functions */
-  addfunc("gsl_sf_bessel_y0", amplgsl_sf_bessel_y0, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_y1", amplgsl_sf_bessel_y1, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_y2", amplgsl_sf_bessel_y2, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_yl", amplgsl_sf_bessel_yl, FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_bessel_y0, 1);
+  ADDFUNC(gsl_sf_bessel_y1, 1);
+  ADDFUNC(gsl_sf_bessel_y2, 1);
+  ADDFUNC(gsl_sf_bessel_yl, 2);
 
   /* Regular Modified Spherical Bessel Functions */
-  addfunc("gsl_sf_bessel_i0_scaled", amplgsl_sf_bessel_i0_scaled,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_i1_scaled", amplgsl_sf_bessel_i1_scaled,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_i2_scaled", amplgsl_sf_bessel_i2_scaled,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_il_scaled", amplgsl_sf_bessel_il_scaled,
-      FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_bessel_i0_scaled, 1);
+  ADDFUNC(gsl_sf_bessel_i1_scaled, 1);
+  ADDFUNC(gsl_sf_bessel_i2_scaled, 1);
+  ADDFUNC(gsl_sf_bessel_il_scaled, 2);
 
   /* Irregular Modified Spherical Bessel Functions */
-  addfunc("gsl_sf_bessel_k0_scaled", amplgsl_sf_bessel_k0_scaled,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_k1_scaled", amplgsl_sf_bessel_k1_scaled,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_k2_scaled", amplgsl_sf_bessel_k2_scaled,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_kl_scaled", amplgsl_sf_bessel_kl_scaled,
-      FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_bessel_k0_scaled, 1);
+  ADDFUNC(gsl_sf_bessel_k1_scaled, 1);
+  ADDFUNC(gsl_sf_bessel_k2_scaled, 1);
+  ADDFUNC(gsl_sf_bessel_kl_scaled, 2);
 
   /* Regular Bessel Function - Fractional Order */
-  addfunc("gsl_sf_bessel_Jnu", amplgsl_sf_bessel_Jnu,
-      FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_bessel_Jnu, 2);
 
   /* Irregular Bessel Functions - Fractional Order */
-  addfunc("gsl_sf_bessel_Ynu", amplgsl_sf_bessel_Ynu,
-      FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_bessel_Ynu, 2);
 
   /* Regular Modified Bessel Functions - Fractional Order */
-  addfunc("gsl_sf_bessel_Inu", amplgsl_sf_bessel_Inu,
-      FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_bessel_Inu_scaled", amplgsl_sf_bessel_Inu_scaled,
-      FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_bessel_Inu, 2);
+  ADDFUNC(gsl_sf_bessel_Inu_scaled, 2);
 
   /* Irregular Modified Bessel Functions - Fractional Order */
-  addfunc("gsl_sf_bessel_Knu", amplgsl_sf_bessel_Knu,
-      FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_bessel_lnKnu", amplgsl_sf_bessel_lnKnu,
-      FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_bessel_Knu_scaled", amplgsl_sf_bessel_Knu_scaled,
-      FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_bessel_Knu, 2);
+  ADDFUNC(gsl_sf_bessel_lnKnu, 2);
+  ADDFUNC(gsl_sf_bessel_Knu_scaled, 2);
 
   /* Zeros of Regular Bessel Functions */
-  addfunc("gsl_sf_bessel_zero_J0", amplgsl_sf_bessel_zero_J0,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_zero_J1", amplgsl_sf_bessel_zero_J1,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_bessel_zero_Jnu", amplgsl_sf_bessel_zero_Jnu,
-      FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_bessel_zero_J0, 1);
+  ADDFUNC(gsl_sf_bessel_zero_J1, 1);
+  ADDFUNC(gsl_sf_bessel_zero_Jnu, 2);
 
   /* Clausen Function */
-  addfunc("gsl_sf_clausen", amplgsl_sf_clausen, FUNCADD_REAL_VALUED, 1, 0);
+  ADDFUNC(gsl_sf_clausen, 1);
 
   /* Normalized Hydrogenic Bound States */
-  addfunc("gsl_sf_hydrogenicR_1", amplgsl_sf_hydrogenicR_1,
-      FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_hydrogenicR", amplgsl_sf_hydrogenicR,
-      FUNCADD_REAL_VALUED, 4, 0);
+  ADDFUNC(gsl_sf_hydrogenicR_1, 2);
+  ADDFUNC(gsl_sf_hydrogenicR, 4);
 
   /* Coulomb Wave Function Normalization Constant */
-  addfunc("gsl_sf_coulomb_CL", amplgsl_sf_coulomb_CL,
-      FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_coulomb_CL, 2);
 
   /* Coupling Coefficients */
-  addfunc("gsl_sf_coupling_3j", amplgsl_sf_coupling_3j,
-      FUNCADD_REAL_VALUED, 6, 0);
-  addfunc("gsl_sf_coupling_6j", amplgsl_sf_coupling_6j,
-      FUNCADD_REAL_VALUED, 6, 0);
-  addfunc("gsl_sf_coupling_9j", amplgsl_sf_coupling_9j,
-      FUNCADD_REAL_VALUED, 9, 0);
+  ADDFUNC(gsl_sf_coupling_3j, 6);
+  ADDFUNC(gsl_sf_coupling_6j, 6);
+  ADDFUNC(gsl_sf_coupling_9j, 9);
 
   /* Dawson Function */
-  addfunc("gsl_sf_dawson", amplgsl_sf_dawson, FUNCADD_REAL_VALUED, 1, 0);
+  ADDFUNC(gsl_sf_dawson, 1);
 
   /* Debye Functions */
-  addfunc("gsl_sf_debye_1", amplgsl_sf_debye_1, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_debye_2", amplgsl_sf_debye_2, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_debye_3", amplgsl_sf_debye_3, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_debye_4", amplgsl_sf_debye_4, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_debye_5", amplgsl_sf_debye_5, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_debye_6", amplgsl_sf_debye_6, FUNCADD_REAL_VALUED, 1, 0);
+  ADDFUNC(gsl_sf_debye_1, 1);
+  ADDFUNC(gsl_sf_debye_2, 1);
+  ADDFUNC(gsl_sf_debye_3, 1);
+  ADDFUNC(gsl_sf_debye_4, 1);
+  ADDFUNC(gsl_sf_debye_5, 1);
+  ADDFUNC(gsl_sf_debye_6, 1);
 
   /* Dilogarithm */
-  addfunc("gsl_sf_dilog", amplgsl_sf_dilog, FUNCADD_REAL_VALUED, 1, 0);
+  ADDFUNC(gsl_sf_dilog, 1);
 
   /* Legendre Form of Complete Elliptic Integrals */
-  addfunc("gsl_sf_ellint_Kcomp", amplgsl_sf_ellint_Kcomp,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_ellint_Ecomp", amplgsl_sf_ellint_Ecomp,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_ellint_Pcomp", amplgsl_sf_ellint_Pcomp,
-      FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_ellint_Kcomp, 1);
+  ADDFUNC(gsl_sf_ellint_Ecomp, 1);
+  ADDFUNC(gsl_sf_ellint_Pcomp, 2);
 
   /* Legendre Form of Incomplete Elliptic Integrals */
-  addfunc("gsl_sf_ellint_F", amplgsl_sf_ellint_F, FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_ellint_E", amplgsl_sf_ellint_E, FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_ellint_P", amplgsl_sf_ellint_P, FUNCADD_REAL_VALUED, 3, 0);
-  addfunc("gsl_sf_ellint_D", amplgsl_sf_ellint_D, FUNCADD_REAL_VALUED, 3, 0);
+  ADDFUNC(gsl_sf_ellint_F, 2);
+  ADDFUNC(gsl_sf_ellint_E, 2);
+  ADDFUNC(gsl_sf_ellint_P, 3);
+  ADDFUNC(gsl_sf_ellint_D, 3);
 
   /* Carlson Forms */
-  addfunc("gsl_sf_ellint_RC", amplgsl_sf_ellint_RC, FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_ellint_RD", amplgsl_sf_ellint_RD, FUNCADD_REAL_VALUED, 3, 0);
-  addfunc("gsl_sf_ellint_RF", amplgsl_sf_ellint_RF, FUNCADD_REAL_VALUED, 3, 0);
-  addfunc("gsl_sf_ellint_RJ", amplgsl_sf_ellint_RJ, FUNCADD_REAL_VALUED, 4, 0);
+  ADDFUNC(gsl_sf_ellint_RC, 2);
+  ADDFUNC(gsl_sf_ellint_RD, 3);
+  ADDFUNC(gsl_sf_ellint_RF, 3);
+  ADDFUNC(gsl_sf_ellint_RJ, 4);
 
   /* Elliptic Functions (Jacobi) */
   /* Wrapper for gsl_sf_elljac_e is not provided since the latter produces
      multiple values (through output parameters). */
 
   /* Error Functions */
-  addfunc("gsl_sf_erf", amplgsl_sf_erf, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_erfc", amplgsl_sf_erfc, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_log_erfc", amplgsl_sf_log_erfc, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_erf_Z", amplgsl_sf_erf_Z, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_erf_Q", amplgsl_sf_erf_Q, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_hazard", amplgsl_sf_hazard, FUNCADD_REAL_VALUED, 1, 0);
+  ADDFUNC(gsl_sf_erf, 1);
+  ADDFUNC(gsl_sf_erfc, 1);
+  ADDFUNC(gsl_sf_log_erfc, 1);
+  ADDFUNC(gsl_sf_erf_Z, 1);
+  ADDFUNC(gsl_sf_erf_Q, 1);
+  ADDFUNC(gsl_sf_hazard, 1);
 
   /* Exponential Integrals */
-  addfunc("gsl_sf_expint_E1", amplgsl_sf_expint_E1, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_expint_E2", amplgsl_sf_expint_E2, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_expint_En", amplgsl_sf_expint_En, FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_expint_Ei", amplgsl_sf_expint_Ei, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_Shi", amplgsl_sf_Shi, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_Chi", amplgsl_sf_Chi, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_expint_3", amplgsl_sf_expint_3, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_Si", amplgsl_sf_Si, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_Ci", amplgsl_sf_Ci, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_atanint", amplgsl_sf_atanint, FUNCADD_REAL_VALUED, 1, 0);
+  ADDFUNC(gsl_sf_expint_E1, 1);
+  ADDFUNC(gsl_sf_expint_E2, 1);
+  ADDFUNC(gsl_sf_expint_En, 2);
+  ADDFUNC(gsl_sf_expint_Ei, 1);
+  ADDFUNC(gsl_sf_Shi, 1);
+  ADDFUNC(gsl_sf_Chi, 1);
+  ADDFUNC(gsl_sf_expint_3, 1);
+  ADDFUNC(gsl_sf_Si, 1);
+  ADDFUNC(gsl_sf_Ci, 1);
+  ADDFUNC(gsl_sf_atanint, 1);
 
   /* Fermi-Dirac Function */
-  addfunc("gsl_sf_fermi_dirac_m1", amplgsl_sf_fermi_dirac_m1,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_fermi_dirac_0", amplgsl_sf_fermi_dirac_0,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_fermi_dirac_1", amplgsl_sf_fermi_dirac_1,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_fermi_dirac_2", amplgsl_sf_fermi_dirac_2,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_fermi_dirac_int", amplgsl_sf_fermi_dirac_int,
-      FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_fermi_dirac_mhalf", amplgsl_sf_fermi_dirac_mhalf,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_fermi_dirac_half", amplgsl_sf_fermi_dirac_half,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_fermi_dirac_3half", amplgsl_sf_fermi_dirac_3half,
-      FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_fermi_dirac_inc_0", amplgsl_sf_fermi_dirac_inc_0,
-      FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_fermi_dirac_m1, 1);
+  ADDFUNC(gsl_sf_fermi_dirac_0, 1);
+  ADDFUNC(gsl_sf_fermi_dirac_1, 1);
+  ADDFUNC(gsl_sf_fermi_dirac_2, 1);
+  ADDFUNC(gsl_sf_fermi_dirac_int, 2);
+  ADDFUNC(gsl_sf_fermi_dirac_mhalf, 1);
+  ADDFUNC(gsl_sf_fermi_dirac_half, 1);
+  ADDFUNC(gsl_sf_fermi_dirac_3half, 1);
+  ADDFUNC(gsl_sf_fermi_dirac_inc_0, 2);
 
   /* Gamma Functions */
-  addfunc("gsl_sf_gamma", amplgsl_sf_gamma, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_lngamma", amplgsl_sf_lngamma, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_gammastar", amplgsl_sf_gammastar, FUNCADD_REAL_VALUED, 1, 0);
-  addfunc("gsl_sf_gammainv", amplgsl_sf_gammainv, FUNCADD_REAL_VALUED, 1, 0);
+  ADDFUNC(gsl_sf_gamma, 1);
+  ADDFUNC(gsl_sf_lngamma, 1);
+  ADDFUNC(gsl_sf_gammastar, 1);
+  ADDFUNC(gsl_sf_gammainv, 1);
 
   /* Wrapper for factorials are not provided since these are easily
      implemented using built-in AMPL features like the prod operator. */
 
   /* Pochhammer Symbol */
-  addfunc("gsl_sf_poch", amplgsl_sf_poch, FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_lnpoch", amplgsl_sf_lnpoch, FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_pochrel", amplgsl_sf_pochrel, FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_poch, 2);
+  ADDFUNC(gsl_sf_lnpoch, 2);
+  ADDFUNC(gsl_sf_pochrel, 2);
 
   /* Incomplete Gamma Functions */
-  addfunc("gsl_sf_gamma_inc", amplgsl_sf_gamma_inc, FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_gamma_inc_Q", amplgsl_sf_gamma_inc_Q,
-      FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_gamma_inc_P", amplgsl_sf_gamma_inc_P,
-      FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_gamma_inc, 2);
+  ADDFUNC(gsl_sf_gamma_inc_Q, 2);
+  ADDFUNC(gsl_sf_gamma_inc_P, 2);
 
   /* Beta Functions */
-  addfunc("gsl_sf_beta", amplgsl_sf_beta, FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_lnbeta", amplgsl_sf_lnbeta, FUNCADD_REAL_VALUED, 2, 0);
+  ADDFUNC(gsl_sf_beta, 2);
+  ADDFUNC(gsl_sf_lnbeta, 2);
 
   /* Incomplete Beta Function */
-  addfunc("gsl_sf_beta_inc", amplgsl_sf_beta_inc, FUNCADD_REAL_VALUED, 3, 0);
+  ADDFUNC(gsl_sf_beta_inc, 3);
 
   /* Gegenbauer Functions */
-  addfunc("gsl_sf_gegenpoly_1", amplgsl_sf_gegenpoly_1,
-      FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_gegenpoly_2", amplgsl_sf_gegenpoly_2,
-      FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_gegenpoly_3", amplgsl_sf_gegenpoly_3,
-      FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_gegenpoly_n", amplgsl_sf_gegenpoly_n,
-      FUNCADD_REAL_VALUED, 3, 0);
+  ADDFUNC(gsl_sf_gegenpoly_1, 2);
+  ADDFUNC(gsl_sf_gegenpoly_2, 2);
+  ADDFUNC(gsl_sf_gegenpoly_3, 2);
+  ADDFUNC(gsl_sf_gegenpoly_n, 3);
 
   /* Hypergeometric Functions */
-  addfunc("gsl_sf_hyperg_0F1", amplgsl_sf_hyperg_0F1,
-      FUNCADD_REAL_VALUED, 2, 0);
-  addfunc("gsl_sf_hyperg_1F1_int", amplgsl_sf_hyperg_1F1_int,
-      FUNCADD_REAL_VALUED, 3, 0);
+  ADDFUNC(gsl_sf_hyperg_0F1, 2);
+  ADDFUNC(gsl_sf_hyperg_1F1_int, 3);
+  ADDFUNC(gsl_sf_hyperg_1F1, 3);
+  ADDFUNC(gsl_sf_hyperg_U_int, 3);
+  ADDFUNC(gsl_sf_hyperg_U, 3);
+  ADDFUNC(gsl_sf_hyperg_2F1, 4);
+  ADDFUNC(gsl_sf_hyperg_2F1_conj, 4);
+  ADDFUNC(gsl_sf_hyperg_2F1_renorm, 4);
+  ADDFUNC(gsl_sf_hyperg_2F0, 3);
   // TODO
 }
