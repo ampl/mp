@@ -189,6 +189,23 @@ static int check_bessel_args(arglist *al, int flags, const char *arg_name) {
   return 1;
 }
 
+#define ARGS1 al->ra[0]
+#define ARGS2 ARGS1, al->ra[1]
+#define ARGS3 ARGS2, al->ra[2]
+#define ARGS4 ARGS3, al->ra[3]
+#define ARGS2_PREC ARGS2, GSL_PREC_DOUBLE
+#define ARGS3_PREC ARGS3, GSL_PREC_DOUBLE
+#define ARGS4_PREC ARGS4, GSL_PREC_DOUBLE
+
+#define WRAP(func, args) \
+  static double ampl##func(arglist *al) { \
+    if (al->derivs) { \
+      error(al, DERIVS_NOT_PROVIDED); \
+      return 0; \
+    } \
+    return check_result(al, func(args)); \
+  }
+
 static double amplgsl_log1p(arglist *al) {
   double x = al->ra[0];
   if (al->derivs) {
@@ -1408,59 +1425,12 @@ static double amplgsl_sf_ellint_E(arglist *al) {
   return check_result(al, e);
 }
 
-static double amplgsl_sf_ellint_P(arglist *al) {
-  double phi = al->ra[0], k = al->ra[1], n = al->ra[2];
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_ellint_P(phi, k, n, GSL_PREC_DOUBLE));
-}
-
-static double amplgsl_sf_ellint_D(arglist *al) {
-  double phi = al->ra[0], k = al->ra[1], n = al->ra[2];
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_ellint_D(phi, k, n, GSL_PREC_DOUBLE));
-}
-
-static double amplgsl_sf_ellint_RC(arglist *al) {
-  double x = al->ra[0], y = al->ra[1];
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_ellint_RC(x, y, GSL_PREC_DOUBLE));
-}
-
-static double amplgsl_sf_ellint_RD(arglist *al) {
-  double x = al->ra[0], y = al->ra[1], z = al->ra[2];
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_ellint_RD(x, y, z, GSL_PREC_DOUBLE));
-}
-
-static double amplgsl_sf_ellint_RF(arglist *al) {
-  double x = al->ra[0], y = al->ra[1], z = al->ra[2];
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_ellint_RF(x, y, z, GSL_PREC_DOUBLE));
-}
-
-static double amplgsl_sf_ellint_RJ(arglist *al) {
-  double x = al->ra[0], y = al->ra[1], z = al->ra[2], p = al->ra[3];
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_ellint_RJ(x, y, z, p, GSL_PREC_DOUBLE));
-}
+WRAP(gsl_sf_ellint_P, ARGS3_PREC)
+WRAP(gsl_sf_ellint_D, ARGS3_PREC)
+WRAP(gsl_sf_ellint_RC, ARGS2_PREC)
+WRAP(gsl_sf_ellint_RD, ARGS3_PREC)
+WRAP(gsl_sf_ellint_RF, ARGS3_PREC)
+WRAP(gsl_sf_ellint_RJ, ARGS4_PREC)
 
 static double amplgsl_sf_erf(arglist *al) {
   double x = al->ra[0];
@@ -1690,23 +1660,8 @@ static double amplgsl_sf_fermi_dirac_int(arglist *al) {
   return check_result(al, gsl_sf_fermi_dirac_int(j, x));
 }
 
-static double amplgsl_sf_fermi_dirac_mhalf(arglist *al) {
-  double x = al->ra[0];
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_fermi_dirac_mhalf(x));
-}
-
-static double amplgsl_sf_fermi_dirac_half(arglist *al) {
-  double x = al->ra[0];
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_fermi_dirac_half(x));
-}
+WRAP(gsl_sf_fermi_dirac_mhalf, ARGS1)
+WRAP(gsl_sf_fermi_dirac_half, ARGS1)
 
 static double amplgsl_sf_fermi_dirac_3half(arglist *al) {
   double x = al->ra[0];
@@ -1786,32 +1741,9 @@ static double amplgsl_sf_gammainv(arglist *al) {
   return check_result(al, gammainv);
 }
 
-static double amplgsl_sf_poch(arglist *al) {
-  double a = al->ra[0], x = al->ra[1];
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_poch(a, x));
-}
-
-static double amplgsl_sf_lnpoch(arglist *al) {
-  double a = al->ra[0], x = al->ra[1];
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_lnpoch(a, x));
-}
-
-static double amplgsl_sf_pochrel(arglist *al) {
-  double a = al->ra[0], x = al->ra[1];
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_pochrel(a, x));
-}
+WRAP(gsl_sf_poch, ARGS2)
+WRAP(gsl_sf_lnpoch, ARGS2)
+WRAP(gsl_sf_pochrel, ARGS2)
 
 static double amplgsl_sf_gamma_inc(arglist *al) {
   double a = al->ra[0], x = al->ra[1];
@@ -1825,23 +1757,8 @@ static double amplgsl_sf_gamma_inc(arglist *al) {
   return check_result(al, gsl_sf_gamma_inc(a, x));
 }
 
-static double amplgsl_sf_gamma_inc_Q(arglist *al) {
-  double a = al->ra[0], x = al->ra[1];
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_gamma_inc_Q(a, x));
-}
-
-static double amplgsl_sf_gamma_inc_P(arglist *al) {
-  double a = al->ra[0], x = al->ra[1];
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_gamma_inc_P(a, x));
-}
+WRAP(gsl_sf_gamma_inc_Q, ARGS2)
+WRAP(gsl_sf_gamma_inc_P, ARGS2)
 
 static double amplgsl_sf_beta(arglist *al) {
   double a = al->ra[0], b = al->ra[1];
@@ -1906,14 +1823,7 @@ static double amplgsl_sf_lnbeta(arglist *al) {
   return check_result(al, gsl_sf_lnbeta(a, b));
 }
 
-static double amplgsl_sf_beta_inc(arglist *al) {
-  double a = al->ra[0], b = al->ra[1], x = al->ra[2];
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_beta_inc(a, b, x));
-}
+WRAP(gsl_sf_beta_inc, ARGS3)
 
 static double amplgsl_sf_gegenpoly_1(arglist *al) {
   double lambda = al->ra[0], x = al->ra[1];
@@ -2021,17 +1931,7 @@ static double amplgsl_sf_hyperg_1F1_int(arglist *al) {
   return check_result(al, gsl_sf_hyperg_1F1_int(m, n, x));
 }
 
-static double amplgsl_sf_hyperg_1F1(arglist *al) {
-  if (!check_args(al))
-    return 0;
-  /* gsl_sf_hyperg_1F1 seems to be broken, in particular,
-     gsl_sf_hyperg_1F1(-2, -0.23, -5) returns 183.641 instead of -183.641. */
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_hyperg_1F1(al->ra[0], al->ra[1], al->ra[2]));
-}
+WRAP(gsl_sf_hyperg_1F1, ARGS3)
 
 static double amplgsl_sf_hyperg_U_int(arglist *al) {
   if (!check_args(al) || !check_int_arg(al, 0, "m") ||
@@ -2046,58 +1946,11 @@ static double amplgsl_sf_hyperg_U_int(arglist *al) {
       gsl_sf_hyperg_U_int((int)al->ra[0], (int)al->ra[1], al->ra[2]));
 }
 
-static double amplgsl_sf_hyperg_U(arglist *al) {
-  if (!check_args(al))
-    return 0;
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_hyperg_U(al->ra[0], al->ra[1], al->ra[2]));
-}
-
-static double amplgsl_sf_hyperg_2F1(arglist *al) {
-  if (!check_args(al))
-    return 0;
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al,
-      gsl_sf_hyperg_2F1(al->ra[0], al->ra[1], al->ra[2], al->ra[3]));
-}
-
-static double amplgsl_sf_hyperg_2F1_conj(arglist *al) {
-  if (!check_args(al))
-    return 0;
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al,
-      gsl_sf_hyperg_2F1_conj(al->ra[0], al->ra[1], al->ra[2], al->ra[3]));
-}
-
-static double amplgsl_sf_hyperg_2F1_renorm(arglist *al) {
-  if (!check_args(al))
-    return 0;
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al,
-      gsl_sf_hyperg_2F1_renorm(al->ra[0], al->ra[1], al->ra[2], al->ra[3]));
-}
-
-static double amplgsl_sf_hyperg_2F0(arglist *al) {
-  if (!check_args(al))
-    return 0;
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_hyperg_2F0(al->ra[0], al->ra[1], al->ra[2]));
-}
+WRAP(gsl_sf_hyperg_U, ARGS3)
+WRAP(gsl_sf_hyperg_2F1, ARGS4)
+WRAP(gsl_sf_hyperg_2F1_conj, ARGS4)
+WRAP(gsl_sf_hyperg_2F1_renorm, ARGS4)
+WRAP(gsl_sf_hyperg_2F0, ARGS3)
 
 static double amplgsl_sf_laguerre_1(arglist *al) {
   double a = 0, x = 0;
@@ -2150,18 +2003,14 @@ static double amplgsl_sf_laguerre_3(arglist *al) {
 }
 
 static double amplgsl_sf_laguerre_n(arglist *al) {
-  int n = 0;
-  double a = 0, x = 0;
   if (!check_args(al) || !check_int_arg(al, 0, "n"))
     return 0;
-  n = (int)al->ra[0];
-  a = al->ra[1];
-  x = al->ra[2];
   if (al->derivs) {
     error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
-  return check_result(al, gsl_sf_laguerre_n(n, a, x));
+  return check_result(al,
+      gsl_sf_laguerre_n((int)al->ra[0], al->ra[1], al->ra[2]));
 }
 
 static double amplgsl_sf_lambert_W0(arglist *al) {
@@ -2312,6 +2161,11 @@ static double amplgsl_sf_legendre_sphPlm(arglist *al) {
   return check_result(al,
       gsl_sf_legendre_sphPlm((int)al->ra[0], (int)al->ra[1], al->ra[2]));
 }
+
+WRAP(gsl_sf_conicalP_half, ARGS2)
+WRAP(gsl_sf_conicalP_mhalf, ARGS2)
+WRAP(gsl_sf_conicalP_0, ARGS2)
+WRAP(gsl_sf_conicalP_1, ARGS2)
 
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
@@ -2564,5 +2418,9 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_legendre_sphPlm, 3);
 
   /* Conical Functions */
+  ADDFUNC(gsl_sf_conicalP_half, 2);
+  ADDFUNC(gsl_sf_conicalP_mhalf, 2);
+  ADDFUNC(gsl_sf_conicalP_0, 2);
+  ADDFUNC(gsl_sf_conicalP_1, 2);
   // TODO
 }
