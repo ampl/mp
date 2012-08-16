@@ -844,6 +844,8 @@ TEST_F(GSLTest, Legendre) {
   TEST_FUNC(gsl_sf_legendre_Q0);
   TEST_FUNC(gsl_sf_legendre_Q1);
   TEST_FUNC2(gsl_sf_legendre_Ql, FunctionInfo("l"));
-  // TODO
+  TEST_FUNC2(gsl_sf_legendre_Plm, NoDeriv("l m"));
+  TEST_FUNC2(gsl_sf_legendre_sphPlm, NoDeriv("l m"));
 }
+
 }
