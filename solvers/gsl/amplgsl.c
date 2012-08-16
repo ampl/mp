@@ -2192,6 +2192,105 @@ static double amplgsl_sf_lambert_Wm1(arglist *al) {
   return check_result(al, value);
 }
 
+static double amplgsl_sf_legendre_P1(arglist *al) {
+  if (al->derivs) {
+    *al->derivs = 1;
+    if (al->hes)
+      *al->hes = 0;
+  }
+  return check_result(al, gsl_sf_legendre_P1(al->ra[0]));
+}
+
+static double amplgsl_sf_legendre_P2(arglist *al) {
+  double x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = 3 * x;
+    if (al->hes)
+      *al->hes = 3;
+  }
+  return check_result(al, gsl_sf_legendre_P2(x));
+}
+
+static double amplgsl_sf_legendre_P3(arglist *al) {
+  double x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = 7.5 * x * x - 1.5;
+    if (al->hes)
+      *al->hes = 15 * x;
+  }
+  return check_result(al, gsl_sf_legendre_P3(x));
+}
+
+static double amplgsl_sf_legendre_Pl(arglist *al) {
+  int el = 0;
+  double x = 0, pl = 0;
+  if (!check_int_arg(al, 0, "l"))
+    return 0;
+  el = al->ra[0];
+  x = al->ra[1];
+  pl = gsl_sf_legendre_Pl(el, x);
+  if (al->derivs) {
+    if (fabs(x) != 1) {
+      double pl_plus_1 = gsl_sf_legendre_Pl(el + 1, x);
+      double coef = (el + 1) / (x * x - 1);
+      al->derivs[1] = -coef * (x * pl - pl_plus_1);
+      if (al->hes) {
+        al->hes[2] =
+            coef * ((x * x * (el + 2) + 1) * pl - (2 * el + 5) * x * pl_plus_1 +
+            (el + 2) * gsl_sf_legendre_Pl(el + 2, x)) / (x * x - 1);
+      }
+    } else {
+      double coef = 0.5 * el * (el + 1);
+      al->derivs[1] = pow(x, el + 1) * coef;
+      if (al->hes)
+        al->hes[2] = pow(x, el) * 0.25 * coef * (el * el + el - 2);
+    }
+  }
+  return check_result(al, pl);
+}
+
+static double amplgsl_sf_legendre_Q0(arglist *al) {
+  double x = al->ra[0];
+  if (al->derivs) {
+    *al->derivs = 1 / (1 - x * x);
+    if (al->hes)
+      *al->hes = 2 * x * *al->derivs * *al->derivs;
+  }
+  return check_result(al, gsl_sf_legendre_Q0(x));
+}
+
+static double amplgsl_sf_legendre_Q1(arglist *al) {
+  double x = al->ra[0];
+  if (al->derivs) {
+    double coef = 1 / (1 - x * x);
+    *al->derivs = coef * x + 0.5 * (log(1 + x) - log(fabs(1 - x)));
+    if (al->hes)
+      *al->hes = 2 * coef * coef;
+  }
+  return check_result(al, gsl_sf_legendre_Q1(x));
+}
+
+static double amplgsl_sf_legendre_Ql(arglist *al) {
+  int el = 0;
+  double x = 0, ql = 0;
+  if (!check_int_arg(al, 0, "l"))
+    return 0;
+  el = al->ra[0];
+  x = al->ra[1];
+  ql = gsl_sf_legendre_Ql(el, x);
+  if (al->derivs) {
+    double coef = (el + 1) / (x * x - 1);
+    double ql_plus_1 = gsl_sf_legendre_Ql(el + 1, x);
+    al->derivs[1] = coef * (ql_plus_1 - x * ql);
+    if (al->hes) {
+      al->hes[2] =
+          coef * ((x * x * (el + 2) + 1) * ql - (2 * el + 5) * x * ql_plus_1 +
+          (el + 2) * gsl_sf_legendre_Ql(el + 2, x)) / (x * x - 1);
+    }
+  }
+  return check_result(al, ql);
+}
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
@@ -2428,5 +2527,14 @@ void funcadd_ASL(AmplExports *ae) {
   /* Lambert W Functions */
   ADDFUNC(gsl_sf_lambert_W0, 1);
   ADDFUNC(gsl_sf_lambert_Wm1, 1);
+
+  /* Legendre Polynomials */
+  ADDFUNC(gsl_sf_legendre_P1, 1);
+  ADDFUNC(gsl_sf_legendre_P2, 1);
+  ADDFUNC(gsl_sf_legendre_P3, 1);
+  ADDFUNC(gsl_sf_legendre_Pl, 2);
+  ADDFUNC(gsl_sf_legendre_Q0, 1);
+  ADDFUNC(gsl_sf_legendre_Q1, 1);
+  ADDFUNC(gsl_sf_legendre_Ql, 2);
   // TODO
 }
