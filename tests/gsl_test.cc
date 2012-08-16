@@ -848,4 +848,11 @@ TEST_F(GSLTest, Legendre) {
   TEST_FUNC2(gsl_sf_legendre_sphPlm, NoDeriv("l m"));
 }
 
+TEST_F(GSLTest, Conical) {
+  TEST_FUNC2(gsl_sf_conicalP_half, NoDeriv());
+  TEST_FUNC2(gsl_sf_conicalP_mhalf, NoDeriv());
+  TEST_FUNC2(gsl_sf_conicalP_0, NoDeriv());
+  TEST_FUNC2(gsl_sf_conicalP_1, NoDeriv());
+  // TODO
+}
 }
