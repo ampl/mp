@@ -2167,6 +2167,42 @@ WRAP(gsl_sf_conicalP_mhalf, ARGS2)
 WRAP(gsl_sf_conicalP_0, ARGS2)
 WRAP(gsl_sf_conicalP_1, ARGS2)
 
+static double amplgsl_sf_conicalP_sph_reg(arglist *al) {
+  if (!check_int_arg(al, 0, "m"))
+    return 0;
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al,
+      gsl_sf_conicalP_sph_reg((int)al->ra[0], al->ra[1], al->ra[2]));
+}
+
+static double amplgsl_sf_conicalP_cyl_reg(arglist *al) {
+  if (!check_int_arg(al, 0, "m"))
+    return 0;
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al,
+      gsl_sf_conicalP_cyl_reg((int)al->ra[0], al->ra[1], al->ra[2]));
+}
+
+WRAP(gsl_sf_legendre_H3d_0, ARGS2)
+WRAP(gsl_sf_legendre_H3d_1, ARGS2)
+
+static double amplgsl_sf_legendre_H3d(arglist *al) {
+  if (!check_int_arg(al, 0, "l"))
+    return 0;
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al,
+      gsl_sf_legendre_H3d((int)al->ra[0], al->ra[1], al->ra[2]));
+}
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
@@ -2422,5 +2458,12 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_conicalP_mhalf, 2);
   ADDFUNC(gsl_sf_conicalP_0, 2);
   ADDFUNC(gsl_sf_conicalP_1, 2);
+  ADDFUNC(gsl_sf_conicalP_sph_reg, 3);
+  ADDFUNC(gsl_sf_conicalP_cyl_reg, 3);
+
+  /* Radial Functions for Hyperbolic Space */
+  ADDFUNC(gsl_sf_legendre_H3d_0, 2);
+  ADDFUNC(gsl_sf_legendre_H3d_1, 2);
+  ADDFUNC(gsl_sf_legendre_H3d, 3);
   // TODO
 }

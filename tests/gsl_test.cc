@@ -853,6 +853,13 @@ TEST_F(GSLTest, Conical) {
   TEST_FUNC2(gsl_sf_conicalP_mhalf, NoDeriv());
   TEST_FUNC2(gsl_sf_conicalP_0, NoDeriv());
   TEST_FUNC2(gsl_sf_conicalP_1, NoDeriv());
-  // TODO
+  TEST_FUNC2(gsl_sf_conicalP_sph_reg, NoDeriv("m"));
+  TEST_FUNC2(gsl_sf_conicalP_cyl_reg, NoDeriv("m"));
+}
+
+TEST_F(GSLTest, Radial) {
+  TEST_FUNC2(gsl_sf_legendre_H3d_0, NoDeriv());
+  TEST_FUNC2(gsl_sf_legendre_H3d_1, NoDeriv());
+  TEST_FUNC2(gsl_sf_legendre_H3d, NoDeriv("l"));
 }
 }
