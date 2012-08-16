@@ -460,12 +460,16 @@ double Differentiator::operator()(
   double deriv = Differentiate(f, x, SymmetricDifference<F>, error);
   double right_error = 0;
   double right_deriv = Differentiate(f, x, RightDifference<F>, &right_error);
-  if (std::isnan(deriv)) {
+  if (std::isnan(deriv) && !std::isnan(right_deriv)) {
     *error = right_error;
     return right_deriv;
   }
   double left_error = nan;
   double left_deriv = Differentiate(f, x, LeftDifference<F>, &left_error);
+  if (std::isnan(deriv)) {
+    *error = left_error;
+    return left_deriv;
+  }
   if ((!(std::fabs(left_deriv - right_deriv) / (std::fabs(left_deriv) + 1) <= 1e-2) &&
       left_error / (std::fabs(left_deriv) + 1) < 0.05) ||
           (std::isnan(left_deriv) && std::isnan(right_deriv))) {

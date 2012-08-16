@@ -230,8 +230,9 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
   double error = 0;
   double x = args[arg_index];
   FunctionInfo::Result deriv_result = af.GetDerivative(arg_index, args);
+  double numerical_deriv = 0;
   if (!deriv_result.error()) {
-    double numerical_deriv = Diff(f, x, &error);
+    numerical_deriv = Diff(f, x, &error);
     double overridden_deriv = deriv_result.value();
     if (!gsl_isnan(overridden_deriv) && overridden_deriv != numerical_deriv) {
       std::cout << "Overriding d/dx" << arg_index << " " << af.name()
@@ -831,5 +832,18 @@ struct LambertWm1Info : FunctionInfo {
 TEST_F(GSLTest, Lambert) {
   TEST_FUNC2(gsl_sf_lambert_W0, LambertW0Info());
   TEST_FUNC2(gsl_sf_lambert_Wm1, LambertWm1Info());
+  EXPECT_NEAR(-13.8803,
+      GetFunction("gsl_sf_lambert_Wm1")(Tuple(-0.1), DERIVS).deriv(0), 1e-4);
+}
+
+TEST_F(GSLTest, Legendre) {
+  TEST_FUNC(gsl_sf_legendre_P1);
+  TEST_FUNC(gsl_sf_legendre_P2);
+  TEST_FUNC(gsl_sf_legendre_P3);
+  TEST_FUNC2(gsl_sf_legendre_Pl, FunctionInfo("l"));
+  TEST_FUNC(gsl_sf_legendre_Q0);
+  TEST_FUNC(gsl_sf_legendre_Q1);
+  TEST_FUNC2(gsl_sf_legendre_Ql, FunctionInfo("l"));
+  // TODO
 }
 }
