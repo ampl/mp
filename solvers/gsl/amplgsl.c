@@ -2291,6 +2291,28 @@ static double amplgsl_sf_legendre_Ql(arglist *al) {
   return check_result(al, ql);
 }
 
+static double amplgsl_sf_legendre_Plm(arglist *al) {
+  if (!check_int_arg(al, 0, "l") || !check_int_arg(al, 1, "m"))
+    return 0;
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al,
+      gsl_sf_legendre_Plm((int)al->ra[0], (int)al->ra[1], al->ra[2]));
+}
+
+static double amplgsl_sf_legendre_sphPlm(arglist *al) {
+  if (!check_int_arg(al, 0, "l") || !check_int_arg(al, 1, "m"))
+    return 0;
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al,
+      gsl_sf_legendre_sphPlm((int)al->ra[0], (int)al->ra[1], al->ra[2]));
+}
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
@@ -2536,5 +2558,11 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_legendre_Q0, 1);
   ADDFUNC(gsl_sf_legendre_Q1, 1);
   ADDFUNC(gsl_sf_legendre_Ql, 2);
+
+  /* Associated Legendre Polynomials and Spherical Harmonics */
+  ADDFUNC(gsl_sf_legendre_Plm, 3);
+  ADDFUNC(gsl_sf_legendre_sphPlm, 3);
+
+  /* Conical Functions */
   // TODO
 }
