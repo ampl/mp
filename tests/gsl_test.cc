@@ -814,4 +814,22 @@ TEST_F(GSLTest, Laguerre) {
   TEST_FUNC(gsl_sf_laguerre_3);
   TEST_FUNC2(gsl_sf_laguerre_n, NoDeriv("n"));
 }
+
+struct LambertW0Info : FunctionInfo {
+  Result GetDerivative(const Function &f, unsigned, const Tuple &args) const {
+    return args[0] < -1 / M_E ? EvalError(f, args, "'") : Result();
+  }
+};
+
+struct LambertWm1Info : FunctionInfo {
+  Result GetDerivative(const Function &f, unsigned, const Tuple &args) const {
+    double x = args[0];
+    return x < -1 / M_E || x == 0 ? EvalError(f, args, "'") : Result();
+  }
+};
+
+TEST_F(GSLTest, Lambert) {
+  TEST_FUNC2(gsl_sf_lambert_W0, LambertW0Info());
+  TEST_FUNC2(gsl_sf_lambert_Wm1, LambertWm1Info());
+}
 }

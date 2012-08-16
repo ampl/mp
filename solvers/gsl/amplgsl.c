@@ -2164,6 +2164,34 @@ static double amplgsl_sf_laguerre_n(arglist *al) {
   return check_result(al, gsl_sf_laguerre_n(n, a, x));
 }
 
+static double amplgsl_sf_lambert_W0(arglist *al) {
+  double x = al->ra[0];
+  double value = gsl_sf_lambert_W0(x);
+  if (al->derivs) {
+    if (x < -1 / M_E)
+      *al->derivs = GSL_NAN;
+    else
+      *al->derivs = x != 0 ? value / (x * (value + 1)) : 1;
+    if (al->hes)
+      *al->hes = -*al->derivs * *al->derivs * (value + 2) / (value + 1);
+  }
+  return check_result(al, value);
+}
+
+static double amplgsl_sf_lambert_Wm1(arglist *al) {
+  double x = al->ra[0];
+  double value = gsl_sf_lambert_Wm1(x);
+  if (al->derivs) {
+    if (x < -1 / M_E)
+      *al->derivs = GSL_NAN;
+    else
+      *al->derivs = value / (x * (value + 1));
+    if (al->hes)
+      *al->hes = -*al->derivs * *al->derivs * (value + 2) / (value + 1);
+  }
+  return check_result(al, value);
+}
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
@@ -2397,5 +2425,8 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_laguerre_3, 2);
   ADDFUNC(gsl_sf_laguerre_n, 3);
 
+  /* Lambert W Functions */
+  ADDFUNC(gsl_sf_lambert_W0, 1);
+  ADDFUNC(gsl_sf_lambert_Wm1, 1);
   // TODO
 }
