@@ -2203,6 +2203,47 @@ static double amplgsl_sf_legendre_H3d(arglist *al) {
       gsl_sf_legendre_H3d((int)al->ra[0], al->ra[1], al->ra[2]));
 }
 
+static double amplgsl_sf_log(arglist *al) {
+  double x = al->ra[0];
+  if (al->derivs) {
+    double deriv = *al->derivs = 1 / x;
+    if (al->hes)
+      *al->hes = -deriv * deriv;
+  }
+  return check_result(al, gsl_sf_log(x));
+}
+
+static double amplgsl_sf_log_abs(arglist *al) {
+  double x = al->ra[0];
+  if (al->derivs) {
+    double deriv = *al->derivs = 1 / x;
+    if (al->hes)
+      *al->hes = -deriv * deriv;
+  }
+  return check_result(al, gsl_sf_log_abs(x));
+}
+
+static double amplgsl_sf_log_1plusx(arglist *al) {
+  double x = al->ra[0];
+  if (al->derivs) {
+    double deriv = *al->derivs = 1 / (1 + x);
+    if (al->hes)
+      *al->hes = -deriv * deriv;
+  }
+  return check_result(al, gsl_sf_log_1plusx(x));
+}
+
+static double amplgsl_sf_log_1plusx_mx(arglist *al) {
+  double x = al->ra[0];
+  if (al->derivs) {
+    double sub = 1 / (1 + x);
+    *al->derivs = sub - 1;
+    if (al->hes)
+      *al->hes = -sub * sub;
+  }
+  return check_result(al, gsl_sf_log_1plusx_mx(x));
+}
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
@@ -2465,5 +2506,11 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_legendre_H3d_0, 2);
   ADDFUNC(gsl_sf_legendre_H3d_1, 2);
   ADDFUNC(gsl_sf_legendre_H3d, 3);
+
+  /* Logarithm and Related Functions */
+  ADDFUNC(gsl_sf_log, 1);
+  ADDFUNC(gsl_sf_log_abs, 1);
+  ADDFUNC(gsl_sf_log_1plusx, 1);
+  ADDFUNC(gsl_sf_log_1plusx_mx, 1);
   // TODO
 }
