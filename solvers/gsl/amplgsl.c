@@ -2377,14 +2377,7 @@ static double amplgsl_sf_psi(arglist *al) {
   return check_result(al, gsl_sf_psi(x));
 }
 
-static double amplgsl_sf_psi_1piy(arglist *al) {
-  double y = al->ra[0];
-  if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
-  }
-  return check_result(al, gsl_sf_psi_1piy(y));
-}
+WRAP(gsl_sf_psi_1piy, ARGS1)
 
 static double amplgsl_sf_psi_1_int(arglist *al) {
   if (!check_int_arg(al, 0, "n"))
@@ -2415,6 +2408,82 @@ static double amplgsl_sf_psi_n(arglist *al) {
       al->hes[2] = gsl_sf_psi_n(n + 2, x);
   }
   return check_result(al, gsl_sf_psi_n(n, x));
+}
+
+WRAP(gsl_sf_synchrotron_1, ARGS1)
+WRAP(gsl_sf_synchrotron_2, ARGS1)
+
+static double amplgsl_sf_transport_2(arglist *al) {
+  double x = al->ra[0];
+  if (al->derivs) {
+    if (x != 0) {
+      double exp_x = exp(x);
+      double coef = exp_x * x / gsl_pow_2(exp_x - 1);
+      *al->derivs = coef * x;
+      if (al->hes)
+        *al->hes = -coef * (exp_x * (x - 2) + x + 2) / (exp_x - 1);
+    } else {
+      *al->derivs = 1;
+      if (al->hes)
+        *al->hes = 0;
+    }
+  }
+  return check_result(al, gsl_sf_transport_2(x));
+}
+
+static double amplgsl_sf_transport_3(arglist *al) {
+  double x = al->ra[0];
+  if (al->derivs) {
+    if (x != 0) {
+      double exp_x = exp(x);
+      double coef = exp_x * x * x / gsl_pow_2(exp_x - 1);
+      *al->derivs = coef * x;
+      if (al->hes)
+        *al->hes = -coef * (exp_x * (x - 3) + x + 3) / (exp_x - 1);
+    } else {
+      *al->derivs = 0;
+      if (al->hes)
+        *al->hes = 1;
+    }
+  }
+  return check_result(al, gsl_sf_transport_3(x));
+}
+
+static double amplgsl_sf_transport_4(arglist *al) {
+  double x = al->ra[0];
+  if (al->derivs) {
+    if (x != 0) {
+      double exp_x = exp(x);
+      double coef = exp_x * x * x * x / gsl_pow_2(exp_x - 1);
+      *al->derivs = coef * x;
+      if (al->hes)
+        *al->hes = -coef * (exp_x * (x - 4) + x + 4) / (exp_x - 1);
+    } else {
+      *al->derivs = 0;
+      if (al->hes)
+        *al->hes = 0;
+    }
+  }
+  return check_result(al, gsl_sf_transport_4(x));
+}
+
+static double amplgsl_sf_transport_5(arglist *al) {
+  double x = al->ra[0];
+  if (al->derivs) {
+    if (x != 0) {
+      double exp_x = exp(x);
+      double x2 = x * x;
+      double coef = exp_x * x2 * x2 / gsl_pow_2(exp_x - 1);
+      *al->derivs = coef * x;
+      if (al->hes)
+        *al->hes = -coef * (exp_x * (x - 5) + x + 5) / (exp_x - 1);
+    } else {
+      *al->derivs = 0;
+      if (al->hes)
+        *al->hes = 0;
+    }
+  }
+  return check_result(al, gsl_sf_transport_5(x));
 }
 
 #define ADDFUNC(name, num_args) \
@@ -2712,5 +2781,15 @@ void funcadd_ASL(AmplExports *ae) {
 
   /* Polygamma Function */
   ADDFUNC(gsl_sf_psi_n, 2);
+
+  /* Synchrotron Functions */
+  ADDFUNC(gsl_sf_synchrotron_1, 1);
+  ADDFUNC(gsl_sf_synchrotron_2, 1);
+
+  /* Transport Functions */
+  ADDFUNC(gsl_sf_transport_2, 1);
+  ADDFUNC(gsl_sf_transport_3, 1);
+  ADDFUNC(gsl_sf_transport_4, 1);
+  ADDFUNC(gsl_sf_transport_5, 1);
   // TODO
 }
