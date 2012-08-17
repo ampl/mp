@@ -869,4 +869,19 @@ TEST_F(GSLTest, Log) {
   TEST_FUNC(gsl_sf_log_1plusx);
   TEST_FUNC(gsl_sf_log_1plusx_mx);
 }
+
+double gsl_sf_mathieu_a(int n, double q) {
+  gsl_sf_result result = {};
+  return ::gsl_sf_mathieu_a(n, q, &result) ? GSL_NAN : result.val;
+}
+
+double gsl_sf_mathieu_b(int n, double q) {
+  gsl_sf_result result = {};
+  return ::gsl_sf_mathieu_b(n, q, &result) ? GSL_NAN : result.val;
+}
+
+TEST_F(GSLTest, Mathieu) {
+  TEST_FUNC2(gsl_sf_mathieu_a, NoDeriv("n"));
+  TEST_FUNC2(gsl_sf_mathieu_b, NoDeriv("n"));
+}
 }

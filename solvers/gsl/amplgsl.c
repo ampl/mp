@@ -2244,6 +2244,38 @@ static double amplgsl_sf_log_1plusx_mx(arglist *al) {
   return check_result(al, gsl_sf_log_1plusx_mx(x));
 }
 
+static double amplgsl_sf_mathieu_a(arglist *al) {
+  int n = 0;
+  double q = 0;
+  gsl_sf_result result = {0};
+  if (!check_int_arg(al, 0, "n"))
+    return 0;
+  n = (int)al->ra[0];
+  q = al->ra[1];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al,
+      gsl_sf_mathieu_a(n, q, &result) ? GSL_NAN : result.val);
+}
+
+static double amplgsl_sf_mathieu_b(arglist *al) {
+  int n = 0;
+  double q = 0;
+  gsl_sf_result result = {0};
+  if (!check_int_arg(al, 0, "n"))
+    return 0;
+  n = (int)al->ra[0];
+  q = al->ra[1];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al,
+      gsl_sf_mathieu_b(n, q, &result) ? GSL_NAN : result.val);
+}
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
@@ -2512,5 +2544,9 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_log_abs, 1);
   ADDFUNC(gsl_sf_log_1plusx, 1);
   ADDFUNC(gsl_sf_log_1plusx_mx, 1);
+
+  /* Mathieu Function Characteristic Values */
+  ADDFUNC(gsl_sf_mathieu_a, 2);
+  ADDFUNC(gsl_sf_mathieu_b, 2);
   // TODO
 }
