@@ -2346,6 +2346,21 @@ static double amplgsl_sf_mathieu_Ms(arglist *al) {
       gsl_sf_mathieu_Ms(j, n, q, x, &result) ? GSL_NAN : result.val);
 }
 
+static double amplgsl_sf_pow_int(arglist *al) {
+  double x = 0;
+  int n = 0;
+  if (!check_int_arg(al, 1, "n"))
+    return 0;
+  x = al->ra[0];
+  n = (int)al->ra[1];
+  if (al->derivs) {
+    *al->derivs = n != 0 ? n * gsl_sf_pow_int(x, n - 1) : 0;
+    if (al->hes)
+      *al->hes = n != 0 && n != 1 ? n * (n - 1) * gsl_sf_pow_int(x, n - 2) : 0;
+  }
+  return check_result(al, gsl_sf_pow_int(x, n));
+}
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
@@ -2626,5 +2641,8 @@ void funcadd_ASL(AmplExports *ae) {
   /* Radial Mathieu Functions */
   ADDFUNC(gsl_sf_mathieu_Mc, 4);
   ADDFUNC(gsl_sf_mathieu_Ms, 4);
+
+  /* Power Function */
+  ADDFUNC(gsl_sf_pow_int, 2);
   // TODO
 }
