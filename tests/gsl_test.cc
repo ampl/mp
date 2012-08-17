@@ -935,4 +935,47 @@ struct PowInfo : FunctionInfo {
 TEST_F(GSLTest, Power) {
   TEST_FUNC2(gsl_sf_pow_int, PowInfo().SetArgNames("x n"));
 }
+
+struct DigammaInfo : FunctionInfo {
+  Result GetDerivative(const Function &f, unsigned , const Tuple &args) const {
+    double x = args[0];
+    return x < 0 && round(x) == x ? EvalError(f, args, "'") : Result();
+  }
+  Result GetSecondDerivative(
+      const Function &f, unsigned , unsigned , const Tuple &args) const {
+    // gsl_sf_psi_n doesn't support negative x.
+    return args[0] < 0 ? EvalError(f, args, "''") : Result();
+  }
+};
+
+struct TrigammaInfo : FunctionInfo {
+  Result GetDerivative(const Function &f, unsigned , const Tuple &args) const {
+    // gsl_sf_psi_n doesn't support negative x.
+    return args[0] < 0 ? EvalError(f, args, "'") : Result();
+  }
+};
+
+struct PolygammaInfo : FunctionInfo {
+  Result GetDerivative(
+      const Function &f, unsigned , const Tuple &args) const {
+    double x = args[1];
+    if (args[0] == 0)
+      return x < 0 && round(x) == x ? EvalError(f, args, "'") : Result();
+    return x < 0 ? EvalError(f, args, "'") : Result();
+  }
+  Result GetSecondDerivative(const Function &f,
+      unsigned , unsigned , const Tuple &args) const {
+    // gsl_sf_psi_n doesn't support negative x.
+    return args[1] < 0 ? EvalError(f, args, "''") : Result();
+  }
+};
+
+TEST_F(GSLTest, Digamma) {
+  TEST_FUNC2(gsl_sf_psi_int, FunctionInfo("n"));
+  TEST_FUNC2(gsl_sf_psi, DigammaInfo());
+  TEST_FUNC2(gsl_sf_psi_1piy, NoDeriv());
+  TEST_FUNC2(gsl_sf_psi_1_int, FunctionInfo("n"));
+  TEST_FUNC2(gsl_sf_psi_1, TrigammaInfo());
+  TEST_FUNC2(gsl_sf_psi_n, PolygammaInfo().SetArgNames("n"));
+}
 }
