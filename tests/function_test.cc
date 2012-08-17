@@ -106,6 +106,7 @@ TEST(FunctionTest, Type) {
   EXPECT_EQ(fun::INT, GetType<int>::VALUE);
   EXPECT_EQ(fun::UINT, GetType<unsigned>::VALUE);
   EXPECT_EQ(fun::DOUBLE, GetType<double>::VALUE);
+  EXPECT_EQ(fun::POINTER, GetType<int*>::VALUE);
 }
 
 TEST(FunctionTest, FunctionWithTypes) {

@@ -2276,6 +2276,76 @@ static double amplgsl_sf_mathieu_b(arglist *al) {
       gsl_sf_mathieu_b(n, q, &result) ? GSL_NAN : result.val);
 }
 
+static double amplgsl_sf_mathieu_ce(arglist *al) {
+  int n = 0;
+  double q = 0, x = 0;
+  gsl_sf_result result = {0};
+  if (!check_int_arg(al, 0, "n"))
+    return 0;
+  n = (int)al->ra[0];
+  q = al->ra[1];
+  x = al->ra[2];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al,
+      gsl_sf_mathieu_ce(n, q, x, &result) ? GSL_NAN : result.val);
+}
+
+static double amplgsl_sf_mathieu_se(arglist *al) {
+  int n = 0;
+  double q = 0, x = 0;
+  gsl_sf_result result = {0};
+  if (!check_int_arg(al, 0, "n"))
+    return 0;
+  n = (int)al->ra[0];
+  q = al->ra[1];
+  x = al->ra[2];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al,
+      gsl_sf_mathieu_se(n, q, x, &result) ? GSL_NAN : result.val);
+}
+
+static double amplgsl_sf_mathieu_Mc(arglist *al) {
+  int j = 0, n = 0;
+  double q = 0, x = 0;
+  gsl_sf_result result = {0};
+  if (!check_int_arg(al, 0, "j") || !check_int_arg(al, 1, "n"))
+    return 0;
+  j = (int)al->ra[0];
+  n = (int)al->ra[1];
+  q = al->ra[2];
+  x = al->ra[3];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al,
+      gsl_sf_mathieu_Mc(j, n, q, x, &result) ? GSL_NAN : result.val);
+}
+
+static double amplgsl_sf_mathieu_Ms(arglist *al) {
+  int j = 0, n = 0;
+  double q = 0, x = 0;
+  gsl_sf_result result = {0};
+  if (!check_int_arg(al, 0, "j") || !check_int_arg(al, 1, "n"))
+    return 0;
+  j = (int)al->ra[0];
+  n = (int)al->ra[1];
+  q = al->ra[2];
+  x = al->ra[3];
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al,
+      gsl_sf_mathieu_Ms(j, n, q, x, &result) ? GSL_NAN : result.val);
+}
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
@@ -2548,5 +2618,13 @@ void funcadd_ASL(AmplExports *ae) {
   /* Mathieu Function Characteristic Values */
   ADDFUNC(gsl_sf_mathieu_a, 2);
   ADDFUNC(gsl_sf_mathieu_b, 2);
+
+  /* Angular Mathieu Functions */
+  ADDFUNC(gsl_sf_mathieu_ce, 3);
+  ADDFUNC(gsl_sf_mathieu_se, 3);
+
+  /* Radial Mathieu Functions */
+  ADDFUNC(gsl_sf_mathieu_Mc, 4);
+  ADDFUNC(gsl_sf_mathieu_Ms, 4);
   // TODO
 }

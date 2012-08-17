@@ -36,19 +36,45 @@ struct func_info;
 
 namespace fun {
 
-// A tuple of doubles.
+class Variant {
+ private:
+  union {
+    double dval_;
+    void *pval_;
+  };
+
+ public:
+  explicit Variant(double value = 0) : dval_(value) {}
+
+  operator double() const { return dval_; }
+  void *pointer() const { return pval_; }
+
+  Variant &operator=(double value) {
+    dval_ = value;
+    return *this;
+  }
+  Variant &operator=(void *value) {
+    pval_ = value;
+    return *this;
+  }
+};
+
+template <typename T>
+T Convert(const Variant &v) { return v; }
+
+// A tuple of variants.
 class Tuple {
  private:
-  std::vector<double> items_;
+  std::vector<Variant> items_;
 
   Tuple &operator<<(double arg) {
-    items_.push_back(arg);
+    items_.push_back(Variant(arg));
     return *this;
   }
 
  public:
   static Tuple GetTupleWithSize(unsigned size) {
-    Tuple t(0);
+    Tuple t(Variant(0));
     t.items_.resize(size);
     return t;
   }
@@ -71,8 +97,8 @@ class Tuple {
   }
 
   unsigned size() const { return items_.size(); }
-  double &operator[](unsigned index) { return items_.at(index); }
-  double operator[](unsigned index) const { return items_.at(index); }
+  Variant &operator[](unsigned index) { return items_.at(index); }
+  Variant operator[](unsigned index) const { return items_.at(index); }
 };
 
 std::ostream &operator<<(std::ostream &os, const Tuple &t);
@@ -97,7 +123,7 @@ class BitSet {
   const_reference operator[](unsigned index) const { return store_.at(index); }
 };
 
-enum Type { VOID, INT, UINT, DOUBLE };
+enum Type { VOID, INT, UINT, DOUBLE, POINTER };
 
 template <typename T>
 struct GetType;
@@ -121,6 +147,14 @@ template <>
 struct GetType<double> {
   static const Type VALUE = DOUBLE;
 };
+
+template <typename T>
+struct GetType<T*> {
+  static const Type VALUE = POINTER;
+};
+
+template <typename T>
+const Type GetType<T*>::VALUE;
 
 template <typename Arg1, typename Arg2 = void,
     typename Arg3 = void, typename Arg4 = void, typename Arg5 = void>
@@ -214,7 +248,7 @@ class FunctionPointer3 : public FunctionWithTypes<Arg1, Arg2, Arg3> {
 
   Result operator()(const Tuple &args) const {
     this->CheckArgs(args);
-    return f_(args[0], args[1], args[2]);
+    return f_(args[0], args[1], Convert<Arg3>(args[2]));
   }
 };
 
@@ -235,7 +269,7 @@ class FunctionPointer4 : public FunctionWithTypes<Arg1, Arg2, Arg3, Arg4> {
 
   Result operator()(const Tuple &args) const {
     this->CheckArgs(args);
-    return f_(args[0], args[1], args[2], args[3]);
+    return f_(args[0], args[1], args[2], Convert<Arg4>(args[3]));
   }
 };
 
@@ -259,7 +293,7 @@ class FunctionPointer5 :
 
   Result operator()(const Tuple &args) const {
     this->CheckArgs(args);
-    return f_(args[0], args[1], args[2], args[3], args[4]);
+    return f_(args[0], args[1], args[2], args[3], Convert<Arg5>(args[4]));
   }
 };
 
@@ -271,7 +305,7 @@ FunctionPointer5<Arg1, Arg2, Arg3, Arg4, Arg5, Result>
 }
 
 // A functor class with one argument bound.
-template <typename F, typename Arg>
+template <typename F, typename Arg, typename Result = double>
 class OneBinder {
  private:
   F f_;
@@ -289,18 +323,18 @@ class OneBinder {
     return f_.GetArgType(arg_index);
   }
 
-  double operator()(const Tuple &args) const;
+  Result operator()(const Tuple &args) const;
 };
 
-template <typename F, typename Arg>
-OneBinder<F, Arg>::OneBinder(F f, Arg value, unsigned bound_arg_index)
+template <typename F, typename Arg, typename Result>
+OneBinder<F, Arg, Result>::OneBinder(F f, Arg value, unsigned bound_arg_index)
 : f_(f), value_(value), bound_arg_index_(bound_arg_index) {
   if (bound_arg_index >= f.GetNumArgs())
     throw std::out_of_range("argument index is out of range");
 }
 
-template <typename F, typename Arg>
-double OneBinder<F, Arg>::operator()(const Tuple &args) const {
+template <typename F, typename Arg, typename Result>
+Result OneBinder<F, Arg, Result>::operator()(const Tuple &args) const {
   unsigned num_args = args.size();
   Tuple part_args(Tuple::GetTupleWithSize(num_args + 1));
   for (unsigned i = 0; i < bound_arg_index_; ++i)
