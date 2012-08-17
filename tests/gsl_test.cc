@@ -48,6 +48,13 @@ using fun::HES;
 using fun::Tuple;
 using fun::Type;
 
+namespace fun {
+template <>
+gsl_sf_result *Convert<gsl_sf_result*>(const Variant &v) {
+  return static_cast<gsl_sf_result*>(v.pointer());
+}
+}
+
 namespace {
 
 // Converts error estimate returned by Diff into an absolute tolerance to
@@ -113,9 +120,6 @@ typedef double (*FuncND)(int, double);
 
 const double POINTS[] = {-5, -2, -1.23, -1, 0, 1, 1.23, 2, 5};
 const size_t NUM_POINTS = sizeof(POINTS) / sizeof(*POINTS);
-
-const double POINTS_FOR_N[] = {-2, -1, 0, 1, 2};
-const size_t NUM_POINTS_FOR_N = sizeof(POINTS_FOR_N) / sizeof(*POINTS_FOR_N);
 
 class GSLTest : public ::testing::Test {
  protected:
@@ -380,7 +384,7 @@ void GSLTest::TestFunc(
         has_double_arg = true;
         args[i] = GSL_NAN;
       } else {
-        args[i] = 0;
+        args[i] = 0.0;
       }
     }
     if (has_double_arg)
@@ -414,18 +418,54 @@ void GSLTest::TestFunc(
 }
 
 template <typename F>
+class ResultBinder {
+ private:
+  F f_;
+
+ public:
+  ResultBinder(F f) : f_(f){}
+
+  unsigned GetNumArgs() const { return f_.GetNumArgs() - 1; }
+
+  Type GetArgType(unsigned arg_index) const {
+    if (arg_index >= GetNumArgs())
+      throw std::out_of_range("argument index is out of range");
+    return f_.GetArgType(arg_index);
+  }
+
+  double operator()(const Tuple &args) const {
+    gsl_sf_result result = {};
+    return fun::OneBinder<F, gsl_sf_result*, int>(
+        f_, &result, GetNumArgs())(args) ? GSL_NAN : result.val;
+  }
+};
+
+template <typename F>
+ResultBinder<F> BindResult(F f) {
+  return ResultBinder<F>(f);
+}
+
+template <typename F>
 void GSLTest::TestFunc(const Function &af, F f) {
   unsigned num_args = fun::FunctionPointer(f).GetNumArgs();
-  if (af.nargs() == static_cast<int>(num_args) - 1 &&
-      fun::FunctionPointer(f).GetArgType(num_args - 1) == fun::UINT) {
-    // If the last argument is a mode bind it to GSL_PREC_DOUBLE.
-    Tuple args(Tuple::GetTupleWithSize(num_args - 1));
-    TestFunc(af, BindOne(fun::FunctionPointer(f),
-        GSL_PREC_DOUBLE, num_args - 1), args, 0);
-  } else {
-    Tuple args(Tuple::GetTupleWithSize(num_args));
-    TestFunc(af, fun::FunctionPointer(f), args, 0);
+  if (af.nargs() == static_cast<int>(num_args) - 1) {
+    fun::Type last_type = fun::FunctionPointer(f).GetArgType(num_args - 1);
+    if (last_type == fun::UINT) {
+      // If the last argument is a mode bind it to GSL_PREC_DOUBLE.
+      Tuple args(Tuple::GetTupleWithSize(num_args - 1));
+      TestFunc(af, BindOne(fun::FunctionPointer(f),
+          GSL_PREC_DOUBLE, num_args - 1), args, 0);
+      return;
+    }
+    if (last_type == fun::POINTER) {
+      // If the last argument is a result bind it.
+      Tuple args(Tuple::GetTupleWithSize(num_args - 1));
+      TestFunc(af, BindResult(fun::FunctionPointer(f)), args, 0);
+      return;
+    }
   }
+  Tuple args(Tuple::GetTupleWithSize(num_args));
+  TestFunc(af, fun::FunctionPointer(f), args, 0);
 }
 
 #define TEST_FUNC(name) TestFunc(GetFunction(#name, this->info), name)
@@ -857,7 +897,7 @@ TEST_F(GSLTest, Conical) {
   TEST_FUNC2(gsl_sf_conicalP_cyl_reg, NoDeriv("m"));
 }
 
-TEST_F(GSLTest, Radial) {
+TEST_F(GSLTest, RadialLegendre) {
   TEST_FUNC2(gsl_sf_legendre_H3d_0, NoDeriv());
   TEST_FUNC2(gsl_sf_legendre_H3d_1, NoDeriv());
   TEST_FUNC2(gsl_sf_legendre_H3d, NoDeriv("l"));
@@ -870,18 +910,12 @@ TEST_F(GSLTest, Log) {
   TEST_FUNC(gsl_sf_log_1plusx_mx);
 }
 
-double gsl_sf_mathieu_a(int n, double q) {
-  gsl_sf_result result = {};
-  return ::gsl_sf_mathieu_a(n, q, &result) ? GSL_NAN : result.val;
-}
-
-double gsl_sf_mathieu_b(int n, double q) {
-  gsl_sf_result result = {};
-  return ::gsl_sf_mathieu_b(n, q, &result) ? GSL_NAN : result.val;
-}
-
 TEST_F(GSLTest, Mathieu) {
   TEST_FUNC2(gsl_sf_mathieu_a, NoDeriv("n"));
   TEST_FUNC2(gsl_sf_mathieu_b, NoDeriv("n"));
+  TEST_FUNC2(gsl_sf_mathieu_ce, NoDeriv("n"));
+  TEST_FUNC2(gsl_sf_mathieu_se, NoDeriv("n"));
+  TEST_FUNC2(gsl_sf_mathieu_Mc, NoDeriv("j n"));
+  TEST_FUNC2(gsl_sf_mathieu_Ms, NoDeriv("j n"));
 }
 }
