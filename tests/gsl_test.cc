@@ -918,4 +918,21 @@ TEST_F(GSLTest, Mathieu) {
   TEST_FUNC2(gsl_sf_mathieu_Mc, NoDeriv("j n"));
   TEST_FUNC2(gsl_sf_mathieu_Ms, NoDeriv("j n"));
 }
+
+struct PowInfo : FunctionInfo {
+  Result GetDerivative(
+      const Function &, unsigned arg_index, const Tuple &args) const {
+    return arg_index == 0 && args[0] == 0 && args[1] < 0 ?
+        Result(GSL_NEGINF) : Result();
+  }
+  Result GetSecondDerivative(const Function &,
+      unsigned arg_index1, unsigned arg_index2, const Tuple &args) const {
+    return arg_index1 == 0 && arg_index2 == 0 && args[0] == 0 && args[1] < 0 ?
+            Result(GSL_POSINF) : Result();
+  }
+};
+
+TEST_F(GSLTest, Power) {
+  TEST_FUNC2(gsl_sf_pow_int, PowInfo().SetArgNames("x n"));
+}
 }
