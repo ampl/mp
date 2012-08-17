@@ -978,4 +978,16 @@ TEST_F(GSLTest, Digamma) {
   TEST_FUNC2(gsl_sf_psi_1, TrigammaInfo());
   TEST_FUNC2(gsl_sf_psi_n, PolygammaInfo().SetArgNames("n"));
 }
+
+TEST_F(GSLTest, Synchrotron) {
+  TEST_FUNC2(gsl_sf_synchrotron_1, NoDeriv());
+  TEST_FUNC2(gsl_sf_synchrotron_2, NoDeriv());
+}
+
+TEST_F(GSLTest, Transport) {
+  TEST_FUNC(gsl_sf_transport_2);
+  TEST_FUNC(gsl_sf_transport_3);
+  TEST_FUNC(gsl_sf_transport_4);
+  TEST_FUNC(gsl_sf_transport_5);
+}
 }
