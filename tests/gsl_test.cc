@@ -862,4 +862,11 @@ TEST_F(GSLTest, Radial) {
   TEST_FUNC2(gsl_sf_legendre_H3d_1, NoDeriv());
   TEST_FUNC2(gsl_sf_legendre_H3d, NoDeriv("l"));
 }
+
+TEST_F(GSLTest, Log) {
+  TEST_FUNC(gsl_sf_log);
+  TEST_FUNC(gsl_sf_log_abs);
+  TEST_FUNC(gsl_sf_log_1plusx);
+  TEST_FUNC(gsl_sf_log_1plusx_mx);
+}
 }
