@@ -20,6 +20,21 @@
  Author: Victor Zverovich
  */
 
+/**
+ * AMPL bindings for GNU Scientific Library
+ * ========================================
+ *
+ * Accuracy
+ * --------
+ *
+ * AMPL wrappers of the GSL functions always use the highest accuracy
+ * available. A GSL function may take a ``mode`` argument that allows
+ * the accuracy of the function to be reduced in order to improve
+ * performance. Currently the ``mode`` argument is always bound to
+ * ``GSL_PREC_DOUBLE`` denoting double-precision, a relative accuracy
+ * of approximately :math:`2 \times 10^{-16}`.
+ */
+
 #include <math.h>
 #include <stdarg.h>
 
@@ -2518,11 +2533,50 @@ void funcadd_ASL(AmplExports *ae) {
   /* Don't call abort on error. */
   gsl_set_error_handler_off();
 
-  /* Elementary Functions */
+  /**
+   * Elementary Functions
+   * --------------------
+   */
+
+  /**
+   * **gsl_log1p(x)**
+   *
+   *  This function computes the value of :math:`\log(1+x)` in a way that is
+   *  accurate for small :math:`x`. It provides an alternative to the BSD math
+   *  function ``log1p(x)``.
+   */
   ADDFUNC(gsl_log1p, 1);
+
+  /**
+   * **gsl_expm1(x)**
+   *
+   *  This function computes the value of :math:`\exp(x)-1` in a way that is
+   *  accurate for small :math:`x`. It provides an alternative to the BSD math
+   *  function ``expm1(x)``.
+   */
   ADDFUNC(gsl_expm1, 1);
+
+  /**
+   * **gsl_hypot(x, y)**
+   *
+   *  This function computes the value of :math:`\sqrt{x^2 + y^2}` in a way
+   *  that avoids overflow. It provides an alternative to the BSD math function
+   *  ``hypot(x,y)``.
+   */
   ADDFUNC(gsl_hypot, 2);
+
+  /**
+   * **gsl_hypot3(x, y, z)**
+   *
+   *  This function computes the value of :math:`\sqrt{x^2 + y^2 + z^2}` in a
+   *  way that avoids overflow.
+   */
   ADDFUNC(gsl_hypot3, 3);
+
+  /**
+   * Special Functions
+   * -----------------
+   */
 
   /* AMPL has built-in functions acosh, asinh and atanh so wrappers
      are not provided for their GSL equivalents. */
@@ -2530,9 +2584,33 @@ void funcadd_ASL(AmplExports *ae) {
   /* Wrappers for functions operating on complex numbers are not provided
      since this requires support for structures/tuples as function arguments. */
 
-  /* Airy Functions */
-  ADDFUNC(gsl_sf_airy_Ai, 1);;
+  /**
+   * Airy Functions
+   * ~~~~~~~~~~~~~~
+   */
+
+  /**
+   * **gsl_sf_airy_Ai(x)**
+   *
+   *  This function computes the Airy function :math:`\mathrm{Ai}(x)`.
+   */
+  ADDFUNC(gsl_sf_airy_Ai, 1);
+
+  /**
+   * **gsl_sf_airy_Bi(x)**
+   *
+   *  This function computes the Airy function :math:`\mathrm{Bi}(x)`.
+   */
   ADDFUNC(gsl_sf_airy_Bi, 1);
+
+  /**
+   * **gsl_sf_airy_Ai_scaled(x)**
+   *
+   *  This function computes a scaled version of the Airy function
+   *  :math:`\mathrm{S_A}(x) \mathrm{Ai}(x)`. For :math:`x > 0` the scaling
+   *  factor :math:`\mathrm{S_A}(x)` is :math:`\exp(+(2/3) x^{3/2})`, and
+   *  is :math:`1` for :math:`x < 0`.
+   */
   ADDFUNC(gsl_sf_airy_Ai_scaled, 1);
   ADDFUNC(gsl_sf_airy_Bi_scaled, 1);
 
@@ -2544,7 +2622,10 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_airy_zero_Ai_deriv, 1);
   ADDFUNC(gsl_sf_airy_zero_Bi_deriv, 1);
 
-  /* Bessel Functions */
+  /**
+   * Bessel Functions
+   * ~~~~~~~~~~~~~~~~
+   */
   ADDFUNC(gsl_sf_bessel_J0, 1);
   ADDFUNC(gsl_sf_bessel_J1, 1);
   ADDFUNC(gsl_sf_bessel_Jn, 2);
@@ -2835,3 +2916,11 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_eta_int, 1);
   ADDFUNC(gsl_sf_eta, 1);
 }
+
+/**
+ * Indices and tables
+ * ------------------
+ *
+ * * :ref:`genindex`
+ * * :ref:`search`
+ */
