@@ -13,7 +13,10 @@ if (GSL_FOUND)
   add_executable(gen-decls gen-decls.c)
   target_link_libraries(gen-decls amplgsl)
 
+  add_custom_command(OUTPUT html/index.html
+    COMMAND python extract-docs.py
+    COMMAND sphinx-build -b html . html DEPENDS amplgsl)
   add_custom_command(OUTPUT gsl.ampl
-    COMMAND ./gen-decls > gsl.ampl DEPENDS gen-decls)
-  add_custom_target(gsl_ampl ALL DEPENDS gsl.ampl)
+    COMMAND ./gen-decls > gsl.ampl DEPENDS amplgsl gen-decls)
+  add_custom_target(gsl-all ALL DEPENDS gsl.ampl html/index.html)
 endif ()
