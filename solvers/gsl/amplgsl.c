@@ -2486,6 +2486,31 @@ static double amplgsl_sf_transport_5(arglist *al) {
   return check_result(al, gsl_sf_transport_5(x));
 }
 
+static double amplgsl_sf_zeta_int(arglist *al) {
+  if (!check_int_arg(al, 0, "n"))
+    return 0;
+  return check_result(al, gsl_sf_zeta_int((int)al->ra[0]));
+}
+
+WRAP(gsl_sf_zeta, ARGS1)
+
+static double amplgsl_sf_zetam1_int(arglist *al) {
+  if (!check_int_arg(al, 0, "n"))
+    return 0;
+  return check_result(al, gsl_sf_zetam1_int((int)al->ra[0]));
+}
+
+WRAP(gsl_sf_zetam1, ARGS1)
+WRAP(gsl_sf_hzeta, ARGS2)
+
+static double amplgsl_sf_eta_int(arglist *al) {
+  if (!check_int_arg(al, 0, "n"))
+    return 0;
+  return check_result(al, gsl_sf_eta_int((int)al->ra[0]));
+}
+
+WRAP(gsl_sf_eta, ARGS1)
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
@@ -2791,5 +2816,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_transport_3, 1);
   ADDFUNC(gsl_sf_transport_4, 1);
   ADDFUNC(gsl_sf_transport_5, 1);
-  // TODO
+
+  /* AMPL has built-in trigonometric functions so wrappers
+     are not provided for their GSL equivalents. */
+
+  /* Riemann Zeta Function */
+  ADDFUNC(gsl_sf_zeta_int, 1);
+  ADDFUNC(gsl_sf_zeta, 1);
+
+  /* Riemann Zeta Function Minus One */
+  ADDFUNC(gsl_sf_zetam1_int, 1);
+  ADDFUNC(gsl_sf_zetam1, 1);
+
+  /* Hurwitz Zeta Function */
+  ADDFUNC(gsl_sf_hzeta, 2);
+
+  /* Eta Function */
+  ADDFUNC(gsl_sf_eta_int, 1);
+  ADDFUNC(gsl_sf_eta, 1);
 }
