@@ -990,4 +990,14 @@ TEST_F(GSLTest, Transport) {
   TEST_FUNC(gsl_sf_transport_4);
   TEST_FUNC(gsl_sf_transport_5);
 }
+
+TEST_F(GSLTest, Zeta) {
+  TEST_FUNC2(gsl_sf_zeta_int, FunctionInfo("n"));
+  TEST_FUNC2(gsl_sf_zeta, NoDeriv());
+  TEST_FUNC2(gsl_sf_zetam1_int, FunctionInfo("n"));
+  TEST_FUNC2(gsl_sf_zetam1, NoDeriv());
+  TEST_FUNC2(gsl_sf_hzeta, NoDeriv());
+  TEST_FUNC2(gsl_sf_eta_int, FunctionInfo("n"));
+  TEST_FUNC2(gsl_sf_eta, NoDeriv());
+}
 }
