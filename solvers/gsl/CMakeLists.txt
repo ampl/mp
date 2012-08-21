@@ -15,7 +15,7 @@ if (GSL_FOUND)
 
   add_custom_command(OUTPUT html/index.html
     COMMAND python extract-docs.py
-    COMMAND sphinx-build -b html . html DEPENDS amplgsl)
+    COMMAND sphinx-build -b html . html DEPENDS amplgsl extract-docs.py)
   add_custom_command(OUTPUT gsl.ampl
     COMMAND ./gen-decls > gsl.ampl DEPENDS amplgsl gen-decls)
   add_custom_target(gsl-all ALL DEPENDS gsl.ampl html/index.html)

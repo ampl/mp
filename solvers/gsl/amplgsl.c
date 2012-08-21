@@ -32,7 +32,7 @@
  * the accuracy of the function to be reduced in order to improve
  * performance. Currently the ``mode`` argument is always bound to
  * ``GSL_PREC_DOUBLE`` denoting double-precision, a relative accuracy
- * of approximately :math:`2 \times 10^{-16}`.
+ * of approximately $2 \times 10^{-16}$.
  */
 
 #include <math.h>
@@ -2541,8 +2541,8 @@ void funcadd_ASL(AmplExports *ae) {
   /**
    * **gsl_log1p(x)**
    *
-   *  This function computes the value of :math:`\log(1+x)` in a way that is
-   *  accurate for small :math:`x`. It provides an alternative to the BSD math
+   *  This function computes the value of $\log(1+x)$ in a way that is
+   *  accurate for small $x$. It provides an alternative to the BSD math
    *  function ``log1p(x)``.
    */
   ADDFUNC(gsl_log1p, 1);
@@ -2550,8 +2550,8 @@ void funcadd_ASL(AmplExports *ae) {
   /**
    * **gsl_expm1(x)**
    *
-   *  This function computes the value of :math:`\exp(x)-1` in a way that is
-   *  accurate for small :math:`x`. It provides an alternative to the BSD math
+   *  This function computes the value of $\exp(x)-1$ in a way that is
+   *  accurate for small $x$. It provides an alternative to the BSD math
    *  function ``expm1(x)``.
    */
   ADDFUNC(gsl_expm1, 1);
@@ -2559,8 +2559,8 @@ void funcadd_ASL(AmplExports *ae) {
   /**
    * **gsl_hypot(x, y)**
    *
-   *  This function computes the value of :math:`\sqrt{x^2 + y^2}` in a way
-   *  that avoids overflow. It provides an alternative to the BSD math function
+   *  This function computes the value of $\sqrt{x^2 + y^2}$ in a way that
+   *  avoids overflow. It provides an alternative to the BSD math function
    *  ``hypot(x,y)``.
    */
   ADDFUNC(gsl_hypot, 2);
@@ -2568,8 +2568,8 @@ void funcadd_ASL(AmplExports *ae) {
   /**
    * **gsl_hypot3(x, y, z)**
    *
-   *  This function computes the value of :math:`\sqrt{x^2 + y^2 + z^2}` in a
-   *  way that avoids overflow.
+   *  This function computes the value of $\sqrt{x^2 + y^2 + z^2}$ in a way
+   *  that avoids overflow.
    */
   ADDFUNC(gsl_hypot3, 3);
 
@@ -2585,117 +2585,544 @@ void funcadd_ASL(AmplExports *ae) {
      since this requires support for structures/tuples as function arguments. */
 
   /**
+   * Airy Functions and Derivatives
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   *
+   * The Airy functions $\mathrm{Ai}(x)$ and $\mathrm{Bi}(x)$ are defined by
+   * the integral representations,
+   *
+   * .. math::
+   *   \mathrm{Ai}(x) = \frac{1}{\pi} \int_0^\infty
+   *     \cos(\frac{1}{3} t^3 + xt) dt \\
+   *   \mathrm{Bi}(x) = \frac{1}{\pi} \int_0^\infty
+   *     (e^{-\frac{1}{3} t^3 + xt} + \sin(\frac{1}{3} t^3 + xt)) dt
+   *
+   * For further information see Abramowitz & Stegun, Section 10.4.
+   */
+
+  /**
    * Airy Functions
-   * ~~~~~~~~~~~~~~
+   * ``````````````
    */
 
   /**
    * **gsl_sf_airy_Ai(x)**
    *
-   *  This function computes the Airy function :math:`\mathrm{Ai}(x)`.
+   *  This routine computes the Airy function $\mathrm{Ai}(x)$.
    */
   ADDFUNC(gsl_sf_airy_Ai, 1);
 
   /**
    * **gsl_sf_airy_Bi(x)**
    *
-   *  This function computes the Airy function :math:`\mathrm{Bi}(x)`.
+   *  This routine computes the Airy function $\mathrm{Bi}(x)$.
    */
   ADDFUNC(gsl_sf_airy_Bi, 1);
 
   /**
    * **gsl_sf_airy_Ai_scaled(x)**
    *
-   *  This function computes a scaled version of the Airy function
-   *  :math:`\mathrm{S_A}(x) \mathrm{Ai}(x)`. For :math:`x > 0` the scaling
-   *  factor :math:`\mathrm{S_A}(x)` is :math:`\exp(+(2/3) x^{3/2})`, and
-   *  is :math:`1` for :math:`x < 0`.
+   *  This routine computes a scaled version of the Airy function
+   *  $\mathrm{S_A}(x) \mathrm{Ai}(x)$. For $x > 0$ the scaling factor
+   *  $\mathrm{S_A}(x)$ is $\exp(+(2/3) x^{3/2})$, and is $1$ for $x < 0$.
    */
   ADDFUNC(gsl_sf_airy_Ai_scaled, 1);
+
+  /**
+   * **gsl_sf_airy_Bi_scaled(x)**
+   *
+   *  This routine computes a scaled version of the Airy function
+   *  $\mathrm{S_B}(x) \mathrm{Bi}(x)$. For $x > 0$ the scaling factor
+   *  $\mathrm{S_B}(x)$ is $\exp(-(2/3) x^{3/2})$, and is $1$ for $x < 0$.
+   */
   ADDFUNC(gsl_sf_airy_Bi_scaled, 1);
 
-  /* Zeros of Airy Functions */
+  /**
+   * Zeros of Airy Functions
+   * ```````````````````````
+   */
+
+  /**
+   * **gsl_sf_airy_zero_Ai(s)**
+   *
+   *  This routine computes the location of the $s$-th zero of the Airy
+   *  function $\mathrm{Ai}(x)$.
+   */
   ADDFUNC(gsl_sf_airy_zero_Ai, 1);
+
+  /**
+   * **gsl_sf_airy_zero_Bi(s)**
+   *
+   *  This routine computes the location of the $s$-th zero of the Airy
+   *  function $\mathrm{Bi}(x)$.
+   */
   ADDFUNC(gsl_sf_airy_zero_Bi, 1);
 
-  /* Zeros of Derivatives of Airy Functions */
+  /**
+   * Zeros of Derivatives of Airy Functions
+   * ``````````````````````````````````````
+   */
+
+  /**
+   * **gsl_sf_airy_zero_Ai_deriv(s)**
+   *
+   *  This routine computes the location of the $s$-th zero of the Airy
+   *  function derivative $\mathrm{Ai}'(x)$.
+   */
   ADDFUNC(gsl_sf_airy_zero_Ai_deriv, 1);
+
+  /**
+   * **gsl_sf_airy_zero_Bi_deriv(s)**
+   *
+   *  This routine computes the location of the $s$-th zero of the Airy
+   *  function derivative $\mathrm{Bi}'(x)$.
+   */
   ADDFUNC(gsl_sf_airy_zero_Bi_deriv, 1);
 
   /**
    * Bessel Functions
    * ~~~~~~~~~~~~~~~~
    */
+
+  /**
+   * Regular Cylindrical Bessel Functions
+   * ````````````````````````````````````
+   */
+
+  /**
+   * **gsl_sf_bessel_J0(x)**
+   *
+   *  This routine computes the regular cylindrical Bessel function of
+   *  zeroth order, $\mathrm{J_0}(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_J0, 1);
+
+  /**
+   * **gsl_sf_bessel_J1(x)**
+   *
+   *  This routine computes the regular cylindrical Bessel function of
+   *  first order, $\mathrm{J_1}(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_J1, 1);
+
+  /**
+   * **gsl_sf_bessel_Jn(n, x)**
+   *
+   *  This routine computes the regular cylindrical Bessel function of
+   *  integer order $n$, $\mathrm{J_n}(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_Jn, 2);
 
-  /* Irregular Cylindrical Bessel Functions */
+  /**
+   * Irregular Cylindrical Bessel Functions
+   * ``````````````````````````````````````
+   */
+
+  /**
+   * **gsl_sf_bessel_Y0(x)**
+   *
+   *  This routine computes the irregular cylindrical Bessel function of
+   *  zeroth order, $\mathrm{Y_0}(x)$, for $x > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_Y0, 1);
+
+  /**
+   * **gsl_sf_bessel_Y1(x)**
+   *
+   *  This routine computes the irregular cylindrical Bessel function of
+   *  first order, $\mathrm{Y_1}(x)$, for $x > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_Y1, 1);
+
+  /**
+   * **gsl_sf_bessel_Yn(n, x)**
+   *
+   *  This routine computes the irregular cylindrical Bessel function of
+   *  integer order $n$, $\mathrm{Y_n}(x)$, for $x > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_Yn, 2);
 
-  /* Regular Modified Cylindrical Bessel Functions */
+  /**
+   * Regular Modified Cylindrical Bessel Functions
+   * `````````````````````````````````````````````
+   */
+
+  /**
+   * **gsl_sf_bessel_I0(x)**
+   *
+   *  This routine computes the regular modified cylindrical Bessel function
+   *  of zeroth order, $\mathrm{I_0}(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_I0, 1);
+
+  /**
+   * **gsl_sf_bessel_I1(x)**
+   *
+   *  This routine computes the regular modified cylindrical Bessel function
+   *  of first order, $\mathrm{I_1}(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_I1, 1);
+
+  /**
+   * **gsl_sf_bessel_In(n, x)**
+   *
+   *  This routine computes the regular modified cylindrical Bessel function
+   *  of integer order $n$, $\mathrm{I_n}(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_In, 2);
+
+  /**
+   * **gsl_sf_bessel_I0_scaled(x)**
+   *
+   *  This routine computes the scaled regular modified cylindrical
+   *  Bessel function of zeroth order $\exp(-|x|) \mathrm{I_0}(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_I0_scaled, 1);
+
+  /**
+   * **gsl_sf_bessel_I1_scaled(x)**
+   *
+   *  This routine computes the scaled regular modified cylindrical
+   *  Bessel function of first order $\exp(-|x|) \mathrm{I_1}(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_I1_scaled, 1);
+
+  /**
+   * **gsl_sf_bessel_In_scaled(n, x)**
+   *
+   *  This routine computes the scaled regular modified cylindrical
+   *  Bessel function of integer order $n$, $\exp(-|x|) \mathrm{I_n}(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_In_scaled, 2);
 
-  /* Irregular Modified Cylindrical Bessel Functions */
+  /**
+   * Irregular Modified Cylindrical Bessel Functions
+   * ```````````````````````````````````````````````
+   */
+
+  /**
+   * **gsl_sf_bessel_K0(x)**
+   *
+   *  This routine computes the irregular modified cylindrical Bessel
+   *  function of zeroth order, $\mathrm{K_0}(x)$, for $x > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_K0, 1);
+
+  /**
+   * **gsl_sf_bessel_K1(x)**
+   *
+   *  This routine computes the irregular modified cylindrical Bessel
+   *  function of first order, $\mathrm{K_1}(x)$, for $x > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_K1, 1);
+
+  /**
+   * **gsl_sf_bessel_Kn(n, x)**
+   *
+   *  This routine computes the irregular modified cylindrical Bessel
+   *  function of integer order $n$, $\mathrm{K_n}(x)$, for $x > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_Kn, 2);
+
+  /**
+   * **gsl_sf_bessel_K0_scaled(x)**
+   *
+   *  This routine computes the scaled irregular modified cylindrical Bessel
+   *  function of zeroth order, $\exp(x) \mathrm{K_0}(x)$, for $x > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_K0_scaled, 1);
+
+  /**
+   * **gsl_sf_bessel_K1_scaled(x)**
+   *
+   *  This routine computes the scaled irregular modified cylindrical Bessel
+   *  function of first order, $\exp(x) \mathrm{K_1}(x)$, for $x > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_K1_scaled, 1);
+
+  /**
+   * **gsl_sf_bessel_Kn_scaled(n, x)**
+   *
+   *  This routine computes the scaled irregular modified cylindrical Bessel
+   *  function of integer order $n$, $\exp(x) \mathrm{K_n}(x)$, for $x > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_Kn_scaled, 2);
 
-  /* Regular Spherical Bessel Functions */
+  /**
+   * Regular Spherical Bessel Functions
+   * ``````````````````````````````````
+   */
+
+  /**
+   * **gsl_sf_bessel_j0(x)**
+   *
+   *  This routine computes the regular spherical Bessel function of zeroth
+   *  order, $\mathrm{j}_0(x) = \sin(x)/x$.
+   */
   ADDFUNC(gsl_sf_bessel_j0, 1);
+
+  /**
+   * **gsl_sf_bessel_j1(x)**
+   *
+   *  This routine computes the regular spherical Bessel function of first
+   *  order, $\mathrm{j}_1(x) = (\sin(x)/x - \cos(x))/x$.
+   */
   ADDFUNC(gsl_sf_bessel_j1, 1);
+
+  /**
+   * **gsl_sf_bessel_j2(x)**
+   *
+   *  This routine computes the regular spherical Bessel function of second
+   *  order, $\mathrm{j}_2(x) = ((3/x^2 - 1)\sin(x) - 3\cos(x)/x)/x$.
+   */
   ADDFUNC(gsl_sf_bessel_j2, 1);
+
+  /**
+   * **gsl_sf_bessel_jl(l, x)**
+   *
+   *  This routine computes the regular spherical Bessel function of integer
+   *  order $l$, $\mathrm{j}_l(x)$, for $l \geq 0$ and $x \geq 0$.
+   */
   ADDFUNC(gsl_sf_bessel_jl, 2);
 
-  /* Irregular Spherical Bessel Functions */
+  /**
+   * Irregular Spherical Bessel Functions
+   * ````````````````````````````````````
+   */
+
+  /**
+   * **gsl_sf_bessel_y0(x)**
+   *
+   *  This routine computes the irregular spherical Bessel function of
+   *  zeroth order, $\mathrm{y}_0(x) = -\cos(x)/x$.
+   */
   ADDFUNC(gsl_sf_bessel_y0, 1);
+
+  /**
+   * **gsl_sf_bessel_y1(x)**
+   *
+   *  This routine computes the irregular spherical Bessel function of
+   *  first order, $\mathrm{y}_1(x) = -(\cos(x)/x + \sin(x))/x$.
+   */
   ADDFUNC(gsl_sf_bessel_y1, 1);
+
+  /**
+   * **gsl_sf_bessel_y2(x)**
+   *
+   *  This routine computes the irregular spherical Bessel function of
+   *  second order, $\mathrm{y}_2(x) = (-3/x^3 + 1/x)\cos(x) - (3/x^2)\sin(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_y2, 1);
+
+  /**
+   * **gsl_sf_bessel_yl(l, x)**
+   *
+   *  This routine computes the irregular spherical Bessel function of
+   *  integer order $l$, $\mathrm{y}_l(x)$, for $l \geq 0$.
+   */
   ADDFUNC(gsl_sf_bessel_yl, 2);
 
-  /* Regular Modified Spherical Bessel Functions */
+  /**
+   * Regular Modified Spherical Bessel Functions
+   * ```````````````````````````````````````````
+   */
+
+  /**
+   * **gsl_sf_bessel_i0_scaled(x)**
+   *
+   *  This routine computes the regular modified spherical Bessel function
+   *  of zeroth order, $\exp(-|x|) \mathrm{i}_0(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_i0_scaled, 1);
+
+  /**
+   * **gsl_sf_bessel_i1_scaled(x)**
+   *
+   *  This routine computes the regular modified spherical Bessel function
+   *  of first order, $\exp(-|x|) \mathrm{i}_1(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_i1_scaled, 1);
+
+  /**
+   * **gsl_sf_bessel_i2_scaled(x)**
+   *
+   *  This routine computes the regular modified spherical Bessel function
+   *  of second order, $\exp(-|x|) \mathrm{i}_2(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_i2_scaled, 1);
+
+  /**
+   * **gsl_sf_bessel_il_scaled(l, x)**
+   *
+   *  This routine computes the regular modified spherical Bessel function
+   *  of integer order $l$, $\exp(-|x|) \mathrm{i}_l(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_il_scaled, 2);
 
-  /* Irregular Modified Spherical Bessel Functions */
+  /**
+   * Irregular Modified Spherical Bessel Functions
+   * `````````````````````````````````````````````
+   */
+
+  /**
+   * **gsl_sf_bessel_k0_scaled(x)**
+   *
+   *  This routine computes the scaled irregular modified spherical Bessel
+   *  function of zeroth order, $\exp(x) \mathrm{k}_0(x)$, for $x > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_k0_scaled, 1);
+
+  /**
+   * **gsl_sf_bessel_k1_scaled(x)**
+   *
+   *  This routine computes the scaled irregular modified spherical Bessel
+   *  function of first order, $\exp(x) \mathrm{k}_1(x)$, for $x > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_k1_scaled, 1);
+
+  /**
+   * **gsl_sf_bessel_k2_scaled(x)**
+   *
+   *  This routine computes the scaled irregular modified spherical Bessel
+   *  function of second order, $\exp(x) \mathrm{k}_2(x)$, for $x > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_k2_scaled, 1);
+
+  /**
+   * **gsl_sf_bessel_kl_scaled(l, x)**
+   *
+   *  This routine computes the scaled irregular modified spherical Bessel
+   *  function of integer order $l$, $\exp(x) \mathrm{k}_l(x)$, for $x > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_kl_scaled, 2);
 
-  /* Regular Bessel Function - Fractional Order */
+  /**
+   * Regular Bessel Function - Fractional Order
+   * ``````````````````````````````````````````
+   */
+
+  /**
+   * **gsl_sf_bessel_Jnu(nu, x)**
+   *
+   *  This routine computes the regular cylindrical Bessel function of
+   *  fractional order $\nu$, $\mathrm{J}_\nu(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_Jnu, 2);
 
-  /* Irregular Bessel Functions - Fractional Order */
+  /**
+   * Irregular Bessel Function - Fractional Order
+   * `````````````````````````````````````````````
+   */
+
+  /**
+   * **gsl_sf_bessel_Ynu(nu, x)**
+   *
+   *  This routine computes the irregular cylindrical Bessel function of
+   *  fractional order $\nu$, $\mathrm{Y}_\nu(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_Ynu, 2);
 
-  /* Regular Modified Bessel Functions - Fractional Order */
+  /**
+   * Regular Modified Bessel Functions - Fractional Order
+   * ````````````````````````````````````````````````````
+   */
+
+  /**
+   * **gsl_sf_bessel_Inu(nu, x)**
+   *
+   *  This routine computes the regular modified Bessel function of
+   *  fractional order $\nu$, $\mathrm{I}_\nu(x)$ for $x > 0$, $\nu > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_Inu, 2);
+
+  /**
+   * **gsl_sf_bessel_Inu_scaled(nu, x)**
+   *
+   *  This routine computes the scaled regular modified Bessel function of
+   *  fractional order $\nu$, $\exp(-|x|) \mathrm{I}_\nu(x)$ for $x > 0$,
+   *  $\nu > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_Inu_scaled, 2);
 
-  /* Irregular Modified Bessel Functions - Fractional Order */
+  /**
+   * Irregular Modified Bessel Functions - Fractional Order
+   * ``````````````````````````````````````````````````````
+   */
+
+  /**
+   * **gsl_sf_bessel_Knu(nu, x)**
+   *
+   *  This routine computes the irregular modified Bessel function of
+   *  fractional order $\nu$, $\mathrm{K}_\nu(x)$ for $x > 0$, $\nu > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_Knu, 2);
+
+  /**
+   * **gsl_sf_bessel_lnKnu(nu, x)**
+   *
+   *  This routine computes the logarithm of the irregular modified Bessel
+   *  function of fractional order $\nu$, $\ln(\mathrm{K}_\nu(x))$ for
+   *  $x > 0$, $\nu > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_lnKnu, 2);
+
+  /**
+   * **gsl_sf_bessel_Knu_scaled(nu, x)**
+   *
+   *  This routine computes the scaled irregular modified Bessel function of
+   *  fractional order $\nu$, $\exp(|x|) \mathrm{K}_\nu(x)$ for $x > 0$,
+   *  $\nu > 0$.
+   */
   ADDFUNC(gsl_sf_bessel_Knu_scaled, 2);
 
-  /* Zeros of Regular Bessel Functions */
+  /**
+   * Zeros of Regular Bessel Functions
+   * `````````````````````````````````
+   */
+
+  /**
+   * **gsl_sf_bessel_zero_J0(s)**
+   *
+   *  This routine computes the location of the $s$-th positive zero of the
+   *  Bessel function $\mathrm{J_0}(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_zero_J0, 1);
+
+  /**
+   * **gsl_sf_bessel_zero_J1(s)**
+   *
+   *  This routine computes the location of the $s$-th positive zero of the
+   *  Bessel function $\mathrm{J_1}(x)$.
+   */
   ADDFUNC(gsl_sf_bessel_zero_J1, 1);
+
+  /**
+   * **gsl_sf_bessel_zero_Jnu(nu, s)**
+   *
+   *  This routine computes the location of the $s$-th positive zero of the
+   *  Bessel function $\mathrm{J_\nu}(x)$. The current implementation does
+   *  not support negative values of ``nu``.
+   */
   ADDFUNC(gsl_sf_bessel_zero_Jnu, 2);
 
-  /* Clausen Function */
+  /**
+   * Clausen Function
+   * ~~~~~~~~~~~~~~~~
+   *
+   * The Clausen function is defined by the following integral,
+   *
+   * .. math::
+   *  \mathrm{Cl_2}(x) = -\int_0^x \log(2 \sin(t/2)) dt
+   *
+   * It is related to the dilogarithm by
+   * $\mathrm{Cl_2}(\theta) = \operatorname{Im} \mathrm{Li_2}(\exp(i\theta))$.
+   */
+
+  /**
+   * **gsl_sf_clausen(x)**
+   *
+   *  This routine computes the Clausen integral $\mathrm{Cl_2}(x)$.
+   */
   ADDFUNC(gsl_sf_clausen, 1);
 
   /* Normalized Hydrogenic Bound States */
