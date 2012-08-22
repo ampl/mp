@@ -2588,13 +2588,13 @@ void funcadd_ASL(AmplExports *ae) {
    * Airy Functions and Derivatives
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    *
-   * The Airy functions $\mathrm{Ai}(x)$ and $\mathrm{Bi}(x)$ are defined by
-   * the integral representations,
+   * The Airy functions $\operatorname{Ai}(x)$ and $\operatorname{Bi}(x)$ are
+   * defined by the integral representations,
    *
    * .. math::
-   *   \mathrm{Ai}(x) = \frac{1}{\pi} \int_0^\infty
+   *   \operatorname{Ai}(x) = \frac{1}{\pi} \int_0^\infty
    *     \cos(\frac{1}{3} t^3 + xt) dt \\
-   *   \mathrm{Bi}(x) = \frac{1}{\pi} \int_0^\infty
+   *   \operatorname{Bi}(x) = \frac{1}{\pi} \int_0^\infty
    *     (e^{-\frac{1}{3} t^3 + xt} + \sin(\frac{1}{3} t^3 + xt)) dt
    *
    * For further information see Abramowitz & Stegun, Section 10.4.
@@ -2608,14 +2608,14 @@ void funcadd_ASL(AmplExports *ae) {
   /**
    * **gsl_sf_airy_Ai(x)**
    *
-   *  This routine computes the Airy function $\mathrm{Ai}(x)$.
+   *  This routine computes the Airy function $\operatorname{Ai}(x)$.
    */
   ADDFUNC(gsl_sf_airy_Ai, 1);
 
   /**
    * **gsl_sf_airy_Bi(x)**
    *
-   *  This routine computes the Airy function $\mathrm{Bi}(x)$.
+   *  This routine computes the Airy function $\operatorname{Bi}(x)$.
    */
   ADDFUNC(gsl_sf_airy_Bi, 1);
 
@@ -2623,8 +2623,9 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_airy_Ai_scaled(x)**
    *
    *  This routine computes a scaled version of the Airy function
-   *  $\mathrm{S_A}(x) \mathrm{Ai}(x)$. For $x > 0$ the scaling factor
-   *  $\mathrm{S_A}(x)$ is $\exp(+(2/3) x^{3/2})$, and is $1$ for $x < 0$.
+   *  $\operatorname{S_A}(x) \operatorname{Ai}(x)$. For $x > 0$ the scaling
+   *  factor $\operatorname{S_A}(x)$ is $\exp(+(2/3) x^{3/2})$, and is $1$
+   *  for $x < 0$.
    */
   ADDFUNC(gsl_sf_airy_Ai_scaled, 1);
 
@@ -2632,8 +2633,9 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_airy_Bi_scaled(x)**
    *
    *  This routine computes a scaled version of the Airy function
-   *  $\mathrm{S_B}(x) \mathrm{Bi}(x)$. For $x > 0$ the scaling factor
-   *  $\mathrm{S_B}(x)$ is $\exp(-(2/3) x^{3/2})$, and is $1$ for $x < 0$.
+   *  $\operatorname{S_B}(x) \operatorname{Bi}(x)$. For $x > 0$ the scaling
+   *  factor $\operatorname{S_B}(x)$ is $\exp(-(2/3) x^{3/2})$, and is $1$
+   *  for $x < 0$.
    */
   ADDFUNC(gsl_sf_airy_Bi_scaled, 1);
 
@@ -2646,7 +2648,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_airy_zero_Ai(s)**
    *
    *  This routine computes the location of the $s$-th zero of the Airy
-   *  function $\mathrm{Ai}(x)$.
+   *  function $\operatorname{Ai}(x)$.
    */
   ADDFUNC(gsl_sf_airy_zero_Ai, 1);
 
@@ -2654,7 +2656,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_airy_zero_Bi(s)**
    *
    *  This routine computes the location of the $s$-th zero of the Airy
-   *  function $\mathrm{Bi}(x)$.
+   *  function $\operatorname{Bi}(x)$.
    */
   ADDFUNC(gsl_sf_airy_zero_Bi, 1);
 
@@ -2667,7 +2669,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_airy_zero_Ai_deriv(s)**
    *
    *  This routine computes the location of the $s$-th zero of the Airy
-   *  function derivative $\mathrm{Ai}'(x)$.
+   *  function derivative $\operatorname{Ai}'(x)$.
    */
   ADDFUNC(gsl_sf_airy_zero_Ai_deriv, 1);
 
@@ -2675,13 +2677,19 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_airy_zero_Bi_deriv(s)**
    *
    *  This routine computes the location of the $s$-th zero of the Airy
-   *  function derivative $\mathrm{Bi}'(x)$.
+   *  function derivative $\operatorname{Bi}'(x)$.
    */
   ADDFUNC(gsl_sf_airy_zero_Bi_deriv, 1);
 
   /**
    * Bessel Functions
    * ~~~~~~~~~~~~~~~~
+   *
+   * The routines described in this section compute the Cylindrical Bessel
+   * functions $J_n(x)$, $Y_n(x)$, Modified cylindrical Bessel functions
+   * $I_n(x)$, $K_n(x)$, Spherical Bessel functions $j_l(x)$, $y_l(x)$,
+   * and Modified Spherical Bessel functions $i_l(x)$, $k_l(x)$.
+   * For more information see Abramowitz & Stegun, Chapters 9 and 10.
    */
 
   /**
@@ -2693,7 +2701,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_J0(x)**
    *
    *  This routine computes the regular cylindrical Bessel function of
-   *  zeroth order, $\mathrm{J_0}(x)$.
+   *  zeroth order, $J_0(x)$.
    */
   ADDFUNC(gsl_sf_bessel_J0, 1);
 
@@ -2701,7 +2709,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_J1(x)**
    *
    *  This routine computes the regular cylindrical Bessel function of
-   *  first order, $\mathrm{J_1}(x)$.
+   *  first order, $J_1(x)$.
    */
   ADDFUNC(gsl_sf_bessel_J1, 1);
 
@@ -2709,7 +2717,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_Jn(n, x)**
    *
    *  This routine computes the regular cylindrical Bessel function of
-   *  integer order $n$, $\mathrm{J_n}(x)$.
+   *  integer order $n$, $J_n(x)$.
    */
   ADDFUNC(gsl_sf_bessel_Jn, 2);
 
@@ -2722,7 +2730,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_Y0(x)**
    *
    *  This routine computes the irregular cylindrical Bessel function of
-   *  zeroth order, $\mathrm{Y_0}(x)$, for $x > 0$.
+   *  zeroth order, $Y_0(x)$, for $x > 0$.
    */
   ADDFUNC(gsl_sf_bessel_Y0, 1);
 
@@ -2730,7 +2738,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_Y1(x)**
    *
    *  This routine computes the irregular cylindrical Bessel function of
-   *  first order, $\mathrm{Y_1}(x)$, for $x > 0$.
+   *  first order, $Y_1(x)$, for $x > 0$.
    */
   ADDFUNC(gsl_sf_bessel_Y1, 1);
 
@@ -2738,7 +2746,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_Yn(n, x)**
    *
    *  This routine computes the irregular cylindrical Bessel function of
-   *  integer order $n$, $\mathrm{Y_n}(x)$, for $x > 0$.
+   *  integer order $n$, $Y_n(x)$, for $x > 0$.
    */
   ADDFUNC(gsl_sf_bessel_Yn, 2);
 
@@ -2751,7 +2759,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_I0(x)**
    *
    *  This routine computes the regular modified cylindrical Bessel function
-   *  of zeroth order, $\mathrm{I_0}(x)$.
+   *  of zeroth order, $I_0(x)$.
    */
   ADDFUNC(gsl_sf_bessel_I0, 1);
 
@@ -2759,7 +2767,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_I1(x)**
    *
    *  This routine computes the regular modified cylindrical Bessel function
-   *  of first order, $\mathrm{I_1}(x)$.
+   *  of first order, $I_1(x)$.
    */
   ADDFUNC(gsl_sf_bessel_I1, 1);
 
@@ -2767,7 +2775,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_In(n, x)**
    *
    *  This routine computes the regular modified cylindrical Bessel function
-   *  of integer order $n$, $\mathrm{I_n}(x)$.
+   *  of integer order $n$, $I_n(x)$.
    */
   ADDFUNC(gsl_sf_bessel_In, 2);
 
@@ -2775,7 +2783,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_I0_scaled(x)**
    *
    *  This routine computes the scaled regular modified cylindrical
-   *  Bessel function of zeroth order $\exp(-|x|) \mathrm{I_0}(x)$.
+   *  Bessel function of zeroth order $\exp(-|x|) I_0(x)$.
    */
   ADDFUNC(gsl_sf_bessel_I0_scaled, 1);
 
@@ -2783,7 +2791,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_I1_scaled(x)**
    *
    *  This routine computes the scaled regular modified cylindrical
-   *  Bessel function of first order $\exp(-|x|) \mathrm{I_1}(x)$.
+   *  Bessel function of first order $\exp(-|x|) I_1(x)$.
    */
   ADDFUNC(gsl_sf_bessel_I1_scaled, 1);
 
@@ -2791,7 +2799,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_In_scaled(n, x)**
    *
    *  This routine computes the scaled regular modified cylindrical
-   *  Bessel function of integer order $n$, $\exp(-|x|) \mathrm{I_n}(x)$.
+   *  Bessel function of integer order $n$, $\exp(-|x|) I_n(x)$.
    */
   ADDFUNC(gsl_sf_bessel_In_scaled, 2);
 
@@ -2804,7 +2812,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_K0(x)**
    *
    *  This routine computes the irregular modified cylindrical Bessel
-   *  function of zeroth order, $\mathrm{K_0}(x)$, for $x > 0$.
+   *  function of zeroth order, $K_0(x)$, for $x > 0$.
    */
   ADDFUNC(gsl_sf_bessel_K0, 1);
 
@@ -2812,7 +2820,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_K1(x)**
    *
    *  This routine computes the irregular modified cylindrical Bessel
-   *  function of first order, $\mathrm{K_1}(x)$, for $x > 0$.
+   *  function of first order, $K_1(x)$, for $x > 0$.
    */
   ADDFUNC(gsl_sf_bessel_K1, 1);
 
@@ -2820,7 +2828,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_Kn(n, x)**
    *
    *  This routine computes the irregular modified cylindrical Bessel
-   *  function of integer order $n$, $\mathrm{K_n}(x)$, for $x > 0$.
+   *  function of integer order $n$, $K_n(x)$, for $x > 0$.
    */
   ADDFUNC(gsl_sf_bessel_Kn, 2);
 
@@ -2828,7 +2836,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_K0_scaled(x)**
    *
    *  This routine computes the scaled irregular modified cylindrical Bessel
-   *  function of zeroth order, $\exp(x) \mathrm{K_0}(x)$, for $x > 0$.
+   *  function of zeroth order, $\exp(x) K_0(x)$, for $x > 0$.
    */
   ADDFUNC(gsl_sf_bessel_K0_scaled, 1);
 
@@ -2836,7 +2844,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_K1_scaled(x)**
    *
    *  This routine computes the scaled irregular modified cylindrical Bessel
-   *  function of first order, $\exp(x) \mathrm{K_1}(x)$, for $x > 0$.
+   *  function of first order, $\exp(x) K_1(x)$, for $x > 0$.
    */
   ADDFUNC(gsl_sf_bessel_K1_scaled, 1);
 
@@ -2844,7 +2852,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_Kn_scaled(n, x)**
    *
    *  This routine computes the scaled irregular modified cylindrical Bessel
-   *  function of integer order $n$, $\exp(x) \mathrm{K_n}(x)$, for $x > 0$.
+   *  function of integer order $n$, $\exp(x) K_n(x)$, for $x > 0$.
    */
   ADDFUNC(gsl_sf_bessel_Kn_scaled, 2);
 
@@ -2857,7 +2865,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_j0(x)**
    *
    *  This routine computes the regular spherical Bessel function of zeroth
-   *  order, $\mathrm{j}_0(x) = \sin(x)/x$.
+   *  order, $j_0(x) = \sin(x)/x$.
    */
   ADDFUNC(gsl_sf_bessel_j0, 1);
 
@@ -2865,7 +2873,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_j1(x)**
    *
    *  This routine computes the regular spherical Bessel function of first
-   *  order, $\mathrm{j}_1(x) = (\sin(x)/x - \cos(x))/x$.
+   *  order, $j_1(x) = (\sin(x)/x - \cos(x))/x$.
    */
   ADDFUNC(gsl_sf_bessel_j1, 1);
 
@@ -2873,7 +2881,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_j2(x)**
    *
    *  This routine computes the regular spherical Bessel function of second
-   *  order, $\mathrm{j}_2(x) = ((3/x^2 - 1)\sin(x) - 3\cos(x)/x)/x$.
+   *  order, $j_2(x) = ((3/x^2 - 1)\sin(x) - 3\cos(x)/x)/x$.
    */
   ADDFUNC(gsl_sf_bessel_j2, 1);
 
@@ -2881,7 +2889,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_jl(l, x)**
    *
    *  This routine computes the regular spherical Bessel function of integer
-   *  order $l$, $\mathrm{j}_l(x)$, for $l \geq 0$ and $x \geq 0$.
+   *  order $l$, $j_l(x)$, for $l \geq 0$ and $x \geq 0$.
    */
   ADDFUNC(gsl_sf_bessel_jl, 2);
 
@@ -2894,7 +2902,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_y0(x)**
    *
    *  This routine computes the irregular spherical Bessel function of
-   *  zeroth order, $\mathrm{y}_0(x) = -\cos(x)/x$.
+   *  zeroth order, $y_0(x) = -\cos(x)/x$.
    */
   ADDFUNC(gsl_sf_bessel_y0, 1);
 
@@ -2902,7 +2910,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_y1(x)**
    *
    *  This routine computes the irregular spherical Bessel function of
-   *  first order, $\mathrm{y}_1(x) = -(\cos(x)/x + \sin(x))/x$.
+   *  first order, $y_1(x) = -(\cos(x)/x + \sin(x))/x$.
    */
   ADDFUNC(gsl_sf_bessel_y1, 1);
 
@@ -2910,7 +2918,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_y2(x)**
    *
    *  This routine computes the irregular spherical Bessel function of
-   *  second order, $\mathrm{y}_2(x) = (-3/x^3 + 1/x)\cos(x) - (3/x^2)\sin(x)$.
+   *  second order, $y_2(x) = (-3/x^3 + 1/x)\cos(x) - (3/x^2)\sin(x)$.
    */
   ADDFUNC(gsl_sf_bessel_y2, 1);
 
@@ -2918,7 +2926,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_yl(l, x)**
    *
    *  This routine computes the irregular spherical Bessel function of
-   *  integer order $l$, $\mathrm{y}_l(x)$, for $l \geq 0$.
+   *  integer order $l$, $y_l(x)$, for $l \geq 0$.
    */
   ADDFUNC(gsl_sf_bessel_yl, 2);
 
@@ -2931,7 +2939,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_i0_scaled(x)**
    *
    *  This routine computes the regular modified spherical Bessel function
-   *  of zeroth order, $\exp(-|x|) \mathrm{i}_0(x)$.
+   *  of zeroth order, $\exp(-|x|) i_0(x)$.
    */
   ADDFUNC(gsl_sf_bessel_i0_scaled, 1);
 
@@ -2939,7 +2947,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_i1_scaled(x)**
    *
    *  This routine computes the regular modified spherical Bessel function
-   *  of first order, $\exp(-|x|) \mathrm{i}_1(x)$.
+   *  of first order, $\exp(-|x|) i_1(x)$.
    */
   ADDFUNC(gsl_sf_bessel_i1_scaled, 1);
 
@@ -2947,7 +2955,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_i2_scaled(x)**
    *
    *  This routine computes the regular modified spherical Bessel function
-   *  of second order, $\exp(-|x|) \mathrm{i}_2(x)$.
+   *  of second order, $\exp(-|x|) i_2(x)$.
    */
   ADDFUNC(gsl_sf_bessel_i2_scaled, 1);
 
@@ -2955,7 +2963,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_il_scaled(l, x)**
    *
    *  This routine computes the regular modified spherical Bessel function
-   *  of integer order $l$, $\exp(-|x|) \mathrm{i}_l(x)$.
+   *  of integer order $l$, $\exp(-|x|) i_l(x)$.
    */
   ADDFUNC(gsl_sf_bessel_il_scaled, 2);
 
@@ -2968,7 +2976,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_k0_scaled(x)**
    *
    *  This routine computes the scaled irregular modified spherical Bessel
-   *  function of zeroth order, $\exp(x) \mathrm{k}_0(x)$, for $x > 0$.
+   *  function of zeroth order, $\exp(x) k_0(x)$, for $x > 0$.
    */
   ADDFUNC(gsl_sf_bessel_k0_scaled, 1);
 
@@ -2976,7 +2984,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_k1_scaled(x)**
    *
    *  This routine computes the scaled irregular modified spherical Bessel
-   *  function of first order, $\exp(x) \mathrm{k}_1(x)$, for $x > 0$.
+   *  function of first order, $\exp(x) k_1(x)$, for $x > 0$.
    */
   ADDFUNC(gsl_sf_bessel_k1_scaled, 1);
 
@@ -2984,7 +2992,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_k2_scaled(x)**
    *
    *  This routine computes the scaled irregular modified spherical Bessel
-   *  function of second order, $\exp(x) \mathrm{k}_2(x)$, for $x > 0$.
+   *  function of second order, $\exp(x) k_2(x)$, for $x > 0$.
    */
   ADDFUNC(gsl_sf_bessel_k2_scaled, 1);
 
@@ -2992,7 +3000,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_kl_scaled(l, x)**
    *
    *  This routine computes the scaled irregular modified spherical Bessel
-   *  function of integer order $l$, $\exp(x) \mathrm{k}_l(x)$, for $x > 0$.
+   *  function of integer order $l$, $\exp(x) k_l(x)$, for $x > 0$.
    */
   ADDFUNC(gsl_sf_bessel_kl_scaled, 2);
 
@@ -3005,7 +3013,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_Jnu(nu, x)**
    *
    *  This routine computes the regular cylindrical Bessel function of
-   *  fractional order $\nu$, $\mathrm{J}_\nu(x)$.
+   *  fractional order $\nu$, $J_\nu(x)$.
    */
   ADDFUNC(gsl_sf_bessel_Jnu, 2);
 
@@ -3018,7 +3026,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_Ynu(nu, x)**
    *
    *  This routine computes the irregular cylindrical Bessel function of
-   *  fractional order $\nu$, $\mathrm{Y}_\nu(x)$.
+   *  fractional order $\nu$, $Y_\nu(x)$.
    */
   ADDFUNC(gsl_sf_bessel_Ynu, 2);
 
@@ -3031,7 +3039,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_Inu(nu, x)**
    *
    *  This routine computes the regular modified Bessel function of
-   *  fractional order $\nu$, $\mathrm{I}_\nu(x)$ for $x > 0$, $\nu > 0$.
+   *  fractional order $\nu$, $I_\nu(x)$ for $x > 0$, $\nu > 0$.
    */
   ADDFUNC(gsl_sf_bessel_Inu, 2);
 
@@ -3039,7 +3047,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_Inu_scaled(nu, x)**
    *
    *  This routine computes the scaled regular modified Bessel function of
-   *  fractional order $\nu$, $\exp(-|x|) \mathrm{I}_\nu(x)$ for $x > 0$,
+   *  fractional order $\nu$, $\exp(-|x|) I_\nu(x)$ for $x > 0$,
    *  $\nu > 0$.
    */
   ADDFUNC(gsl_sf_bessel_Inu_scaled, 2);
@@ -3053,7 +3061,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_Knu(nu, x)**
    *
    *  This routine computes the irregular modified Bessel function of
-   *  fractional order $\nu$, $\mathrm{K}_\nu(x)$ for $x > 0$, $\nu > 0$.
+   *  fractional order $\nu$, $K_\nu(x)$ for $x > 0$, $\nu > 0$.
    */
   ADDFUNC(gsl_sf_bessel_Knu, 2);
 
@@ -3061,8 +3069,8 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_lnKnu(nu, x)**
    *
    *  This routine computes the logarithm of the irregular modified Bessel
-   *  function of fractional order $\nu$, $\ln(\mathrm{K}_\nu(x))$ for
-   *  $x > 0$, $\nu > 0$.
+   *  function of fractional order $\nu$, $\ln(K_\nu(x))$ for $x > 0$,
+   *  $\nu > 0$.
    */
   ADDFUNC(gsl_sf_bessel_lnKnu, 2);
 
@@ -3070,8 +3078,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_Knu_scaled(nu, x)**
    *
    *  This routine computes the scaled irregular modified Bessel function of
-   *  fractional order $\nu$, $\exp(|x|) \mathrm{K}_\nu(x)$ for $x > 0$,
-   *  $\nu > 0$.
+   *  fractional order $\nu$, $\exp(|x|) K_\nu(x)$ for $x > 0$, $\nu > 0$.
    */
   ADDFUNC(gsl_sf_bessel_Knu_scaled, 2);
 
@@ -3084,7 +3091,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_zero_J0(s)**
    *
    *  This routine computes the location of the $s$-th positive zero of the
-   *  Bessel function $\mathrm{J_0}(x)$.
+   *  Bessel function $J_0(x)$.
    */
   ADDFUNC(gsl_sf_bessel_zero_J0, 1);
 
@@ -3092,7 +3099,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_zero_J1(s)**
    *
    *  This routine computes the location of the $s$-th positive zero of the
-   *  Bessel function $\mathrm{J_1}(x)$.
+   *  Bessel function $J_1(x)$.
    */
   ADDFUNC(gsl_sf_bessel_zero_J1, 1);
 
@@ -3100,8 +3107,8 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_bessel_zero_Jnu(nu, s)**
    *
    *  This routine computes the location of the $s$-th positive zero of the
-   *  Bessel function $\mathrm{J_\nu}(x)$. The current implementation does
-   *  not support negative values of ``nu``.
+   *  Bessel function $J_\nu(x)$. The current implementation does not support
+   *  negative values of ``nu``.
    */
   ADDFUNC(gsl_sf_bessel_zero_Jnu, 2);
 
@@ -3112,54 +3119,353 @@ void funcadd_ASL(AmplExports *ae) {
    * The Clausen function is defined by the following integral,
    *
    * .. math::
-   *  \mathrm{Cl_2}(x) = -\int_0^x \log(2 \sin(t/2)) dt
+   *  \operatorname{Cl_2}(x) = -\int_0^x \log(2 \sin(t/2)) dt
    *
    * It is related to the dilogarithm by
-   * $\mathrm{Cl_2}(\theta) = \operatorname{Im} \mathrm{Li_2}(\exp(i\theta))$.
+   *
+   * .. math::
+   *   \operatorname{Cl_2}(\theta) =
+   *     \operatorname{Im} \operatorname{Li_2}(\exp(i\theta)).
    */
 
   /**
    * **gsl_sf_clausen(x)**
    *
-   *  This routine computes the Clausen integral $\mathrm{Cl_2}(x)$.
+   *  This routine computes the Clausen integral $\operatorname{Cl_2}(x)$.
    */
   ADDFUNC(gsl_sf_clausen, 1);
 
-  /* Normalized Hydrogenic Bound States */
+  /**
+   * Coulomb Functions
+   * ~~~~~~~~~~~~~~~~~
+   */
+
+  /**
+   * Normalized Hydrogenic Bound States
+   * ``````````````````````````````````
+   */
+
+  /**
+   * **gsl_sf_hydrogenicR_1(Z, r)**
+   *
+   *  This routine computes the lowest-order normalized hydrogenic bound
+   *  state radial wavefunction $R_1 := 2 Z \sqrt{Z} \exp(-Z r)$.
+   */
   ADDFUNC(gsl_sf_hydrogenicR_1, 2);
+
+  /**
+   * **gsl_sf_hydrogenicR(n, l, Z, r)**
+   *
+   *  This routine computes the $n$-th normalized hydrogenic bound state
+   *  radial wavefunction,
+   *
+   *  .. math::
+   *    R_n := 2 (Z^{3/2}/n^2) \sqrt{(n-l-1)!/(n+l)!} \exp(-Z r/n) (2Zr/n)^l
+   *              L^{2l+1}_{n-l-1}(2Zr/n).
+   *
+   *  where $L^a_b(x)$ is the generalized Laguerre polynomial
+   *  (see :ref:`laguerre-functions`). The normalization is chosen such that
+   *  the wavefunction $\psi$ is given by $\psi(n,l,r) = R_n Y_{lm}$.
+   */
   ADDFUNC(gsl_sf_hydrogenicR, 4);
 
-  /* Coulomb Wave Function Normalization Constant */
+  /**
+   * Coulomb Wave Function Normalization Constant
+   * ````````````````````````````````````````````
+   *
+   * The Coulomb wave function normalization constant is defined in
+   * Abramowitz 14.1.7.
+   */
+
+  /**
+   * **gsl_sf_coulomb_CL(L, eta)**
+   *
+   *  This function computes the Coulomb wave function normalization
+   *  constant $C_L(\eta)$ for $L > -1$.
+   */
   ADDFUNC(gsl_sf_coulomb_CL, 2);
 
-  /* Coupling Coefficients */
+  /**
+   * Coupling Coefficients
+   * ~~~~~~~~~~~~~~~~~~~~~
+   *
+   * The Wigner 3-j, 6-j and 9-j symbols give the coupling coefficients
+   * for combined angular momentum vectors. Since the arguments of the
+   * standard coupling coefficient functions are integer or half-integer,
+   * the arguments of the following functions are, by convention,
+   * integers equal to twice the actual spin value. For information on
+   * the 3-j coefficients see Abramowitz & Stegun, Section 27.9.
+   */
+
+  /**
+   * **gsl_sf_coupling_3j(two_ja, two_jb, two_jc, two_ma, two_mb, two_mc)**
+   *
+   *  These routines compute the Wigner 3-j coefficient,
+   *
+   *  .. math::
+   *    \left( \begin{array}{ccc}
+   *           ja & jb & jc \\
+   *           ma & mb & mc
+   *           \end{array} \right)
+   *
+   *  where the arguments are given in half-integer units, ja = two_ja / 2,
+   *  ma = two_ma / 2, etc.
+   */
   ADDFUNC(gsl_sf_coupling_3j, 6);
+
+  /**
+   * **gsl_sf_coupling_6j(two_ja, two_jb, two_jc, two_jd, two_je, two_jf)**
+   *
+   *  These routines compute the Wigner 6-j coefficient,
+   *
+   *  .. math::
+   *    \left( \begin{array}{ccc}
+   *           ja & jb & jc \\
+   *           jd & je & jf
+   *           \end{array} \right)
+   *
+   *  where the arguments are given in half-integer units, ja = two_ja / 2,
+   *  jb = two_jb / 2, etc.
+   */
   ADDFUNC(gsl_sf_coupling_6j, 6);
+
+  /**
+   * **gsl_sf_coupling_9j(two_ja, two_jb, two_jc, two_jd, two_je, two_jf,
+   * two_jg, two_jh, two_ji)**
+   *
+   *  These routines compute the Wigner 9-j coefficient,
+   *
+   *  .. math::
+   *    \left( \begin{array}{ccc}
+   *           ja & jb & jc \\
+   *           jd & je & jf \\
+   *           jg & jh & ji
+   *           \end{array} \right)
+   *
+   *  where the arguments are given in half-integer units, ja = two_ja / 2,
+   *  jb = two_jb / 2, etc.
+   */
   ADDFUNC(gsl_sf_coupling_9j, 9);
 
-  /* Dawson Function */
+  /**
+   * Dawson Function
+   * ~~~~~~~~~~~~~~~
+   *
+   * The Dawson integral is defined by $\exp(-x^2) \int_0^x \exp(t^2) dt$.
+   * A table of Dawson's integral can be found in Abramowitz & Stegun,
+   * Table 7.5.
+   */
+
+  /**
+   * **gsl_sf_dawson(x)**
+   *
+   *  This routine computes the value of Dawson's integral for $x$.
+   */
   ADDFUNC(gsl_sf_dawson, 1);
 
-  /* Debye Functions */
+  /**
+   * Debye Functions
+   * ~~~~~~~~~~~~~~~
+   *
+   * The Debye functions $D_n(x)$ are defined by the following integral,
+   *
+   * .. math::
+   *   D_n(x) = n/x^n \int_0^x (t^n/(e^t - 1)) dt
+   *
+   * For further information see Abramowitz & Stegun, Section 27.1.
+   */
+
+  /**
+   * **gsl_sf_debye_1(x)**
+   *
+   *  This routine computes the first-order Debye function
+   *  $D_1(x) = (1/x) \int_0^x (t/(e^t - 1)) dt$.
+   */
   ADDFUNC(gsl_sf_debye_1, 1);
+
+  /**
+   * **gsl_sf_debye_2(x)**
+   *
+   *  This routine computes the second-order Debye function
+   *  $D_2(x) = (2/x^2) \int_0^x (t^2/(e^t - 1)) dt$.
+   */
   ADDFUNC(gsl_sf_debye_2, 1);
+
+  /**
+   * **gsl_sf_debye_3(x)**
+   *
+   *  This routine computes the third-order Debye function
+   *  $D_3(x) = (3/x^3) \int_0^x (t^3/(e^t - 1)) dt$.
+   */
   ADDFUNC(gsl_sf_debye_3, 1);
+
+  /**
+   * **gsl_sf_debye_4(x)**
+   *
+   *  This routine computes the fourth-order Debye function
+   *  $D_4(x) = (4/x^4) \int_0^x (t^4/(e^t - 1)) dt$.
+   */
   ADDFUNC(gsl_sf_debye_4, 1);
+
+  /**
+   * **gsl_sf_debye_5(x)**
+   *
+   *  This routine computes the fifth-order Debye function
+   *  $D_5(x) = (5/x^5) \int_0^x (t^5/(e^t - 1)) dt$.
+   */
   ADDFUNC(gsl_sf_debye_5, 1);
+
+  /**
+   * **gsl_sf_debye_6(x)**
+   *
+   *  This routine computes the sixth-order Debye function
+   *  $D_6(x) = (6/x^6) \int_0^x (t^6/(e^t - 1)) dt$.
+   */
   ADDFUNC(gsl_sf_debye_6, 1);
 
-  /* Dilogarithm */
+  /**
+   * Dilogarithm
+   * ~~~~~~~~~~~
+   */
+
+  /**
+   * **gsl_sf_dilog(x)**
+   *
+   *  This routine computes the dilogarithm for a real argument. In Lewin's
+   *  notation this is $\operatorname{Li}_2(x)$, the real part of the
+   *  dilogarithm of a real $x$. It is defined by the integral representation
+   *  $\operatorname{Li}_2(x) = -\operatorname{Re}\int_0^x (\log(1-s) / s) ds$.
+   *  Note that $\operatorname{Im}(\operatorname{Li}_2(x)) = 0$ for $x <= 1$,
+   *  and $-\pi\log(x)$ for $x > 1$.
+   *
+   *  Note that Abramowitz & Stegun refer to the Spence integral
+   *  $S(x)=\operatorname{Li}_2(1-x)$ as the dilogarithm rather than
+   *  $\operatorname{Li}_2(x)$.
+   */
   ADDFUNC(gsl_sf_dilog, 1);
 
-  /* Legendre Form of Complete Elliptic Integrals */
+  /**
+   * Elliptic Integrals
+   * ~~~~~~~~~~~~~~~~~~
+   *
+   * Information about the elliptic integrals can be found in
+   * Abramowitz & Stegun, Chapter 17.
+   *
+   * Definition of Legendre Forms
+   * ````````````````````````````
+   *
+   * The Legendre forms of elliptic integrals $F(\phi,k)$, $E(\phi,k)$ and
+   * $\Pi(\phi,k,n)$ are defined by,
+   *
+   * .. math::
+   *   F(\phi,k) = \int_0^\phi 1/\sqrt{1 - k^2 \sin^2(t)} dt \\
+   *   E(\phi,k) = \int_0^\phi \sqrt{1 - k^2 \sin^2(t)} dt \\
+   *   \Pi(\phi,k,n) =
+   *     \int_0^\phi 1/((1 + n \sin^2(t))\sqrt{1 - k^2 \sin^2(t)}) dt
+   *
+   * The complete Legendre forms are denoted by $K(k) = F(\pi/2, k)$ and
+   * $E(k) = E(\pi/2, k)$.
+   *
+   * The notation used here is based on Carlson, Numerische Mathematik 33
+   * (1979) 1 and differs slightly from that used by Abramowitz & Stegun,
+   * where the functions are given in terms of the parameter $m = k^2$ and
+   * $n$ is replaced by $-n$.
+   *
+   * Definition of Carlson Forms
+   * ```````````````````````````
+   *
+   * The Carlson symmetric forms of elliptical integrals $RC(x,y)$,
+   * $RD(x,y,z)$, $RF(x,y,z)$ and $RJ(x,y,z,p)$ are defined by,
+   *
+   * .. math::
+   *   RC(x,y) = 1/2 \int_0^\infty (t+x)^{-1/2} (t+y)^{-1} dt \\
+   *   RD(x,y,z) = 3/2 \int_0^\infty
+   *     (t+x)^{-1/2} (t+y)^{-1/2} (t+z)^{-3/2} dt \\
+   *   RF(x,y,z) = 1/2 \int_0^\infty
+   *     (t+x)^{-1/2} (t+y)^{-1/2} (t+z)^{-1/2} dt \\
+   *   RJ(x,y,z,p) = 3/2 \int_0^\infty
+   *     (t+x)^{-1/2} (t+y)^{-1/2} (t+z)^{-1/2} (t+p)^{-1} dt
+   */
+
+  /**
+   * Legendre Form of Complete Elliptic Integrals
+   * ````````````````````````````````````````````
+   */
+
+  /**
+   * **gsl_sf_ellint_Kcomp(k)**
+   *
+   *  This routine computes the complete elliptic integral $K(k)$.
+   *  Note that Abramowitz & Stegun define this function in terms
+   *  of the parameter $m = k^2$.
+   */
   ADDFUNC(gsl_sf_ellint_Kcomp, 1);
+
+  /**
+   * **gsl_sf_ellint_Ecomp(k)**
+   *
+   *  This routine computes the complete elliptic integral $E(k)$.
+   *  Note that Abramowitz & Stegun define this function in terms
+   *  of the parameter $m = k^2$.
+   */
   ADDFUNC(gsl_sf_ellint_Ecomp, 1);
+
+  /**
+   * **gsl_sf_ellint_Pcomp(k, n)**
+   *
+   *  This routine computes the complete elliptic integral $\Pi(k,n)$.
+   *  Note that Abramowitz & Stegun define this function in terms
+   *  of the parameters $m = k^2$ and $\sin^2(\alpha) = k^2$, with the
+   *  change of sign $n \to -n$.
+   */
   ADDFUNC(gsl_sf_ellint_Pcomp, 2);
 
-  /* Legendre Form of Incomplete Elliptic Integrals */
+  /**
+   * Legendre Form of Incomplete Elliptic Integrals
+   * ``````````````````````````````````````````````
+   */
+
+  /**
+   * **gsl_sf_ellint_F(phi, k)**
+   *
+   *  This routine computes the incomplete elliptic integral $F(\phi,k)$.
+   *  Note that Abramowitz & Stegun define this function in terms of the
+   *  parameter $m = k^2$.
+   */
   ADDFUNC(gsl_sf_ellint_F, 2);
+
+  /**
+   * **gsl_sf_ellint_E(phi, k)**
+   *
+   *  This routine computes the incomplete elliptic integral $E(\phi,k)$.
+   *  Note that Abramowitz & Stegun define this function in terms of the
+   *  parameter $m = k^2$.
+   */
   ADDFUNC(gsl_sf_ellint_E, 2);
+
+  /**
+   * **gsl_sf_ellint_P(phi, k, n)**
+   *
+   *  This routine computes the incomplete elliptic integral $\Pi(\phi,k,n)$.
+   *  Note that Abramowitz & Stegun define this function in terms of the
+   *  parameters $m = k^2$ and $\sin^2(\alpha) = k^2$, with the change of
+   *  sign $n \to -n$.
+   */
   ADDFUNC(gsl_sf_ellint_P, 3);
+
+  /**
+   * **gsl_sf_ellint_D(phi, k, n)**
+   *
+   *  This routine computes the incomplete elliptic integral $D(\phi,k,n)$
+   *  which is defined through the Carlson form $RD(x,y,z)$ by the following
+   *  relation,
+   *
+   *  .. math::
+   *    D(\phi,k,n) = (1/3)(\sin(\phi))^3
+   *      RD (1-\sin^2(\phi), 1-k^2 \sin^2(\phi), 1).
+   *
+   * The argument $n$ is not used and will be removed in a future release.
+   */
   ADDFUNC(gsl_sf_ellint_D, 3);
 
   /* Carlson Forms */
@@ -3246,7 +3552,13 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_hyperg_2F1_renorm, 4);
   ADDFUNC(gsl_sf_hyperg_2F0, 3);
 
-  /* Laguerre Functions */
+  /**
+   * .. _laguerre-functions:
+   *
+   * Laguerre Functions
+   * ~~~~~~~~~~~~~~~~~~
+   */
+
   ADDFUNC(gsl_sf_laguerre_1, 2);
   ADDFUNC(gsl_sf_laguerre_2, 2);
   ADDFUNC(gsl_sf_laguerre_3, 2);
