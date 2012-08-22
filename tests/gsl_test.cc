@@ -846,6 +846,7 @@ TEST_F(GSLTest, Hyperg) {
   TEST_FUNC2(gsl_sf_hyperg_2F1, NoDeriv());
   TEST_FUNC2(gsl_sf_hyperg_2F1_conj, NoDeriv());
   TEST_FUNC2(gsl_sf_hyperg_2F1_renorm, NoDeriv());
+  TEST_FUNC2(gsl_sf_hyperg_2F1_conj_renorm, NoDeriv());
   TEST_FUNC2(gsl_sf_hyperg_2F0, NoDeriv());
 }
 
