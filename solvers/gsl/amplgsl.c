@@ -20,21 +20,6 @@
  Author: Victor Zverovich
  */
 
-/**
- * AMPL bindings for GNU Scientific Library
- * ========================================
- *
- * Accuracy
- * --------
- *
- * AMPL wrappers of the GSL functions always use the highest accuracy
- * available. A GSL function may take a ``mode`` argument that allows
- * the accuracy of the function to be reduced in order to improve
- * performance. Currently the ``mode`` argument is always bound to
- * ``GSL_PREC_DOUBLE`` denoting double-precision, a relative accuracy
- * of approximately $2 \times 10^{-16}$.
- */
-
 #include <math.h>
 #include <stdarg.h>
 
@@ -2530,11 +2515,42 @@ WRAP(gsl_sf_eta, ARGS1)
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
+/**
+ * AMPL bindings for GNU Scientific Library
+ * ========================================
+ *
+ * .. toctree::
+ *    :maxdepth: 2
+ *
+ *    accuracy
+ *    elementary
+ *    special
+ *
+ * * :ref:`genindex`
+ * * :ref:`search`
+ */
+
+/**
+ * @file accuracy
+ *
+ * Accuracy
+ * --------
+ *
+ * AMPL wrappers of the GSL functions always use the highest accuracy
+ * available. A GSL function may take a ``mode`` argument that allows
+ * the accuracy of the function to be reduced in order to improve
+ * performance. Currently the ``mode`` argument is always bound to
+ * ``GSL_PREC_DOUBLE`` denoting double-precision, a relative accuracy
+ * of approximately $2 \times 10^{-16}$.
+ */
+
 void funcadd_ASL(AmplExports *ae) {
   /* Don't call abort on error. */
   gsl_set_error_handler_off();
 
   /**
+   * @file elementary
+   *
    * Elementary Functions
    * --------------------
    */
@@ -2575,8 +2591,44 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_hypot3, 3);
 
   /**
+   * @file special
+   *
    * Special Functions
    * -----------------
+   *
+   * This chapter describes the AMPL bindings for the GSL special function
+   * library. The library includes routines for calculating the values of
+   * Airy functions, Bessel functions, Clausen functions, Coulomb wave
+   * functions, Coupling coefficients, the Dawson function, Debye functions,
+   * Dilogarithms, Elliptic integrals, Jacobi elliptic functions, Error
+   * functions, Exponential integrals, Fermi-Dirac functions, Gamma functions,
+   * Gegenbauer functions, Hypergeometric functions, Laguerre functions,
+   * Legendre functions and Spherical Harmonics, the Psi (Digamma) Function,
+   * Synchrotron functions, Transport functions, Trigonometric functions and
+   * Zeta functions.
+   *
+   * .. toctree::
+   *    :maxdepth: 2
+   *
+   *    airy
+   *    bessel
+   *    clausen
+   *    coulomb
+   *    coupling
+   *    dawson
+   *    debye
+   *    dilog
+   *    ellint
+   *    erf
+   *    expint
+   *    fermi-dirac
+   *    gamma-beta
+   *    gegenpoly
+   *    hyperg
+   *    laguerre
+   *    lambert
+   *    legendre
+   *    log
    */
 
   /* AMPL has built-in functions acosh, asinh and atanh so wrappers
@@ -2586,6 +2638,8 @@ void funcadd_ASL(AmplExports *ae) {
      since this requires support for structures/tuples as function arguments. */
 
   /**
+   * @file airy
+   *
    * Airy Functions and Derivatives
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    *
@@ -2683,6 +2737,8 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_airy_zero_Bi_deriv, 1);
 
   /**
+   * @file bessel
+   *
    * Bessel Functions
    * ~~~~~~~~~~~~~~~~
    *
@@ -3114,6 +3170,8 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_zero_Jnu, 2);
 
   /**
+   * @file clausen
+   *
    * Clausen Function
    * ~~~~~~~~~~~~~~~~
    *
@@ -3137,6 +3195,8 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_clausen, 1);
 
   /**
+   * @file coulomb
+   *
    * Coulomb Functions
    * ~~~~~~~~~~~~~~~~~
    */
@@ -3187,6 +3247,8 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_coulomb_CL, 2);
 
   /**
+   * @file coupling
+   *
    * Coupling Coefficients
    * ~~~~~~~~~~~~~~~~~~~~~
    *
@@ -3249,6 +3311,8 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_coupling_9j, 9);
 
   /**
+   * @file dawson
+   *
    * Dawson Function
    * ~~~~~~~~~~~~~~~
    *
@@ -3265,6 +3329,8 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_dawson, 1);
 
   /**
+   * @file debye
+   *
    * Debye Functions
    * ~~~~~~~~~~~~~~~
    *
@@ -3325,6 +3391,8 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_debye_6, 1);
 
   /**
+   * @file dilog
+   *
    * Dilogarithm
    * ~~~~~~~~~~~
    */
@@ -3346,6 +3414,8 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_dilog, 1);
 
   /**
+   * @file ellint
+   *
    * Elliptic Integrals
    * ~~~~~~~~~~~~~~~~~~
    *
@@ -3507,6 +3577,8 @@ void funcadd_ASL(AmplExports *ae) {
      multiple values (through output parameters). */
 
   /**
+   * @file erf
+   *
    * Error Functions
    * ~~~~~~~~~~~~~~~
    *
@@ -3586,6 +3658,8 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_hazard, 1);
 
   /**
+   * @file expint
+   *
    * Exponential Integrals
    * ~~~~~~~~~~~~~~~~~~~~~
    */
@@ -3723,6 +3797,8 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_atanint, 1);
 
   /**
+   * @file fermi-dirac
+   *
    * Fermi-Dirac Function
    * ~~~~~~~~~~~~~~~~~~~~
    */
@@ -3822,6 +3898,8 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_fermi_dirac_inc_0, 2);
 
   /**
+   * @file gamma-beta
+   *
    * Gamma and Beta Functions
    * ~~~~~~~~~~~~~~~~~~~~~~~~
    *
@@ -4003,6 +4081,8 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_beta_inc, 3);
 
   /**
+   * @file gegenpoly
+   *
    * Gegenbauer Functions
    * ~~~~~~~~~~~~~~~~~~~~
    *
@@ -4038,6 +4118,8 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_gegenpoly_n, 3);
 
   /**
+   * @file hyperg
+   *
    * Hypergeometric Functions
    * ~~~~~~~~~~~~~~~~~~~~~~~~
    *
@@ -4125,42 +4207,161 @@ void funcadd_ASL(AmplExports *ae) {
   /**
    * **gsl_sf_hyperg_2F0(a, b, x)**
    *
-   *  These routines compute the hypergeometric function ${}_2F_0(a,b,x)$.
+   *  This routine computes the hypergeometric function ${}_2F_0(a,b,x)$.
    *  The series representation is a divergent hypergeometric series.
    *  However, for $x < 0$ we have ${}_2F_0(a,b,x) = (-1/x)^a U(a,1+a-b,-1/x)$
    */
   ADDFUNC(gsl_sf_hyperg_2F0, 3);
 
   /**
+   * @file laguerre
    * .. _laguerre-functions:
    *
    * Laguerre Functions
    * ~~~~~~~~~~~~~~~~~~
+   *
+   * The generalized Laguerre polynomials are defined in terms of confluent
+   * hypergeometric functions as $L^a_n(x) = ((a+1)_n / n!) {}_1F_1(-n,a+1,x)$,
+   * and are sometimes referred to as the associated Laguerre polynomials.
+   * They are related to the plain Laguerre polynomials $L_n(x)$ by
+   * $L^0_n(x) = L_n(x)$ and $L^k_n(x) = (-1)^k (d^k/dx^k) L_{n+k}(x)$.
+   * For more information see Abramowitz & Stegun, Chapter 22.
    */
 
+  /**
+   * **gsl_sf_laguerre_1(a, x)**
+   */
   ADDFUNC(gsl_sf_laguerre_1, 2);
+
+  /**
+   * **gsl_sf_laguerre_2(a, x)**
+   */
   ADDFUNC(gsl_sf_laguerre_2, 2);
+
+  /**
+   * **gsl_sf_laguerre_3(a, x)**
+   *
+   *  These routines evaluate the generalized Laguerre polynomials
+   *  $L^a_1(x), L^a_2(x), L^a_3(x)$ using explicit representations.
+   */
   ADDFUNC(gsl_sf_laguerre_3, 2);
+
+  /**
+   * **gsl_sf_laguerre_n(n, a, x)**
+   *
+   *  This routine evaluates the generalized Laguerre polynomials
+   *  $L^a_n(x)$ for $a > -1, n >= 0$.
+   */
   ADDFUNC(gsl_sf_laguerre_n, 3);
 
-  /* Lambert W Functions */
+  /**
+   * @file lambert
+   *
+   * Lambert W Functions
+   * ~~~~~~~~~~~~~~~~~~~
+   *
+   * Lambert's $W$ functions, $W(x)$, are defined to be solutions of the
+   * equation $W(x) \exp(W(x)) = x$. This function has multiple branches
+   * for $x < 0$; however, it has only two real-valued branches. We define
+   * $W_0(x)$ to be the principal branch, where $W > -1$ for $x < 0$, and
+   * $W_{-1}(x)$ to be the other real branch, where $W < -1$ for $x < 0$.
+   */
+
+  /**
+   * **gsl_sf_lambert_W0(x)**
+   *
+   *  This routine computes the principal branch of the Lambert $W$ function,
+   *  $W_0(x)$.
+   */
   ADDFUNC(gsl_sf_lambert_W0, 1);
+
+  /**
+   * **gsl_sf_lambert_Wm1(x)**
+   *
+   *  This routine computes the secondary real-valued branch of the Lambert
+   *  $W$ function, $W_{-1}(x)$.
+   */
   ADDFUNC(gsl_sf_lambert_Wm1, 1);
 
-  /* Legendre Polynomials */
+  /**
+   * @file legendre
+   *
+   * Legendre Functions and Spherical Harmonics
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   *
+   * The Legendre Functions and Legendre Polynomials are described in
+   * Abramowitz & Stegun, Chapter 8.
+   */
+
+  /**
+   * Legendre Polynomials
+   * ````````````````````
+   */
+
+  /**
+   * **gsl_sf_legendre_P1(x)**
+   */
   ADDFUNC(gsl_sf_legendre_P1, 1);
+
+  /**
+   * **gsl_sf_legendre_P2(x)**
+   */
   ADDFUNC(gsl_sf_legendre_P2, 1);
+
+  /**
+   * **gsl_sf_legendre_P3(x)**
+   *
+   *  These functions evaluate the Legendre polynomials $P_l(x)$ using
+   *  explicit representations for $l=1, 2, 3$.
+   */
   ADDFUNC(gsl_sf_legendre_P3, 1);
+
+  /**
+   * **gsl_sf_legendre_Pl(l, x)**
+   *
+   *  This function evaluates the Legendre polynomial $P_l(x)$ for a
+   *  specific value of integer parameter $l$, $x$ subject to
+   *  $l \geq 0, |x| \leq 1$.
+   */
   ADDFUNC(gsl_sf_legendre_Pl, 2);
+
+  /**
+   * **gsl_sf_legendre_Q0(x)**
+   *
+   *  This routine computes the Legendre function $Q_0(x)$ for
+   *  $x > -1, x \not= 1$.
+   */
   ADDFUNC(gsl_sf_legendre_Q0, 1);
+
+  /**
+   * **gsl_sf_legendre_Q1(x)**
+   *
+   *  This routine computes the Legendre function $Q_1(x)$ for
+   *  $x > -1, x \not= 1$.
+   */
   ADDFUNC(gsl_sf_legendre_Q1, 1);
+
+  /**
+   * **gsl_sf_legendre_Ql(l, x)**
+   *
+   *  This routine computes the Legendre function $Q_l(x)$ for
+   *  $x > -1, x \not= 1$ and $l \geq 0$.
+   */
   ADDFUNC(gsl_sf_legendre_Ql, 2);
 
-  /* Associated Legendre Polynomials and Spherical Harmonics */
+  /**
+   * Associated Legendre Polynomials and Spherical Harmonics
+   * ```````````````````````````````````````````````````````
+   */
+
   ADDFUNC(gsl_sf_legendre_Plm, 3);
   ADDFUNC(gsl_sf_legendre_sphPlm, 3);
 
-  /* Conical Functions */
+  /**
+   * Conical Functions
+   * `````````````````
+   */
+
   ADDFUNC(gsl_sf_conicalP_half, 2);
   ADDFUNC(gsl_sf_conicalP_mhalf, 2);
   ADDFUNC(gsl_sf_conicalP_0, 2);
@@ -4168,12 +4369,20 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_conicalP_sph_reg, 3);
   ADDFUNC(gsl_sf_conicalP_cyl_reg, 3);
 
-  /* Radial Functions for Hyperbolic Space */
+  /**
+   * Radial Functions for Hyperbolic Space
+   * `````````````````````````````````````
+   */
   ADDFUNC(gsl_sf_legendre_H3d_0, 2);
   ADDFUNC(gsl_sf_legendre_H3d_1, 2);
   ADDFUNC(gsl_sf_legendre_H3d, 3);
 
-  /* Logarithm and Related Functions */
+  /**
+   * @file log
+   *
+   * Logarithm and Related Functions
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   */
   ADDFUNC(gsl_sf_log, 1);
   ADDFUNC(gsl_sf_log_abs, 1);
   ADDFUNC(gsl_sf_log_1plusx, 1);
@@ -4234,11 +4443,3 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_eta_int, 1);
   ADDFUNC(gsl_sf_eta, 1);
 }
-
-/**
- * Indices and tables
- * ------------------
- *
- * * :ref:`genindex`
- * * :ref:`search`
- */
