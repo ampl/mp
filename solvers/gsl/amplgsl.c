@@ -1965,6 +1965,7 @@ WRAP(gsl_sf_hyperg_U, ARGS3)
 WRAP(gsl_sf_hyperg_2F1, ARGS4)
 WRAP(gsl_sf_hyperg_2F1_conj, ARGS4)
 WRAP(gsl_sf_hyperg_2F1_renorm, ARGS4)
+WRAP(gsl_sf_hyperg_2F1_conj_renorm, ARGS4)
 WRAP(gsl_sf_hyperg_2F0, ARGS3)
 
 static double amplgsl_sf_laguerre_1(arglist *al) {
@@ -3468,88 +3469,666 @@ void funcadd_ASL(AmplExports *ae) {
    */
   ADDFUNC(gsl_sf_ellint_D, 3);
 
-  /* Carlson Forms */
+  /**
+   * Carlson Forms
+   * `````````````
+   */
+
+  /**
+   * **gsl_sf_ellint_RC(x, y)**
+   *
+   *  This routine computes the incomplete elliptic integral $RC(x,y)$.
+   */
   ADDFUNC(gsl_sf_ellint_RC, 2);
+
+  /**
+   * **gsl_sf_ellint_RD(x, y, z)**
+   *
+   *  This routine computes the incomplete elliptic integral $RD(x,y,z)$.
+   */
   ADDFUNC(gsl_sf_ellint_RD, 3);
+
+  /**
+   * **gsl_sf_ellint_RF(x, y, z)**
+   *
+   *  This routine computes the incomplete elliptic integral $RF(x,y,z)$.
+   */
   ADDFUNC(gsl_sf_ellint_RF, 3);
+
+  /**
+   * **gsl_sf_ellint_RJ(x, y, z, p)**
+   *
+   *  This routine computes the incomplete elliptic integral $RJ(x,y,z,p)$.
+   */
   ADDFUNC(gsl_sf_ellint_RJ, 4);
 
   /* Elliptic Functions (Jacobi) */
   /* Wrapper for gsl_sf_elljac_e is not provided since the latter produces
      multiple values (through output parameters). */
 
-  /* Error Functions */
+  /**
+   * Error Functions
+   * ~~~~~~~~~~~~~~~
+   *
+   * The error function is described in Abramowitz & Stegun, Chapter 7.
+   */
+
+  /**
+   * **gsl_sf_erf(x)**
+   *
+   *  This routine computes the error function $\operatorname{erf}(x)$, where
+   *
+   *  .. math::
+   *    \operatorname{erf}(x) = (2/\sqrt{\pi}) \int_0^x \exp(-t^2) dt.
+   */
   ADDFUNC(gsl_sf_erf, 1);
+
+  /**
+   * **gsl_sf_erfc(x)**
+   *
+   *  This routine computes the complementary error function
+   *
+   *  .. math::
+   *    \operatorname{erfc}(x) = 1 - \operatorname{erf}(x) =
+   *      (2/\sqrt{\pi}) \int_x^\infty \exp(-t^2) dt.
+   */
   ADDFUNC(gsl_sf_erfc, 1);
+
+  /**
+   * **gsl_sf_log_erfc(x)**
+   *
+   *  This routine computes the logarithm of the complementary error function
+   *  $\log(\operatorname{erfc}(x))$.
+   */
   ADDFUNC(gsl_sf_log_erfc, 1);
+
+  /**
+   * Probability functions
+   * `````````````````````
+   *
+   * The probability functions for the Normal or Gaussian distribution are
+   * described in Abramowitz & Stegun, Section 26.2.
+   */
+
+  /**
+   * **gsl_sf_erf_Z(x)**
+   *
+   *  This routine computes the Gaussian probability density function
+   *  $Z(x) = (1/\sqrt{2\pi}) \exp(-x^2/2)$.
+   */
   ADDFUNC(gsl_sf_erf_Z, 1);
+
+  /**
+   * **gsl_sf_erf_Q(x)**
+   *
+   *  This routine computes the upper tail of the Gaussian probability
+   *  function $Q(x) = (1/\sqrt{2\pi}) \int_x^\infty \exp(-t^2/2) dt$.
+   */
   ADDFUNC(gsl_sf_erf_Q, 1);
+
+  /**
+   * The hazard function for the normal distribution, also known as the
+   * inverse Mills' ratio, is defined as,
+   *
+   * .. math::
+   *   h(x) = Z(x)/Q(x) =
+   *     \sqrt{2/\pi} \exp(-x^2 / 2) / \operatorname{erfc}(x/\sqrt 2)
+   *
+   * It decreases rapidly as $x$ approaches $-\infty$ and asymptotes
+   * to $h(x) \sim x$ as $x$ approaches $+\infty$.
+   */
+
+  /**
+   * **gsl_sf_hazard(x)**
+   *
+   *  This routine computes the hazard function for the normal distribution.
+   */
   ADDFUNC(gsl_sf_hazard, 1);
 
-  /* Exponential Integrals */
+  /**
+   * Exponential Integrals
+   * ~~~~~~~~~~~~~~~~~~~~~
+   */
+
+  /**
+   * Exponential Integral
+   * ````````````````````
+   */
+
+  /**
+   * **gsl_sf_expint_E1(x)**
+   *
+   *  This routine computes the exponential integral $\operatorname{E_1}(x)$,
+   *
+   *  .. math::
+   *    \operatorname{E_1}(x) :=
+   *      \operatorname{Re} \int_1^\infty \exp(-xt)/t dt.
+   */
   ADDFUNC(gsl_sf_expint_E1, 1);
+
+  /**
+   * **gsl_sf_expint_E2(x)**
+   *
+   *  This routine computes the second-order exponential integral
+   *  $\operatorname{E_2}(x)$,
+   *
+   *  .. math::
+   *    \operatorname{E_2(x)} :=
+   *      \operatorname{Re} \int_1^\infty \exp(-xt)/t^2 dt.
+   */
   ADDFUNC(gsl_sf_expint_E2, 1);
+
+  /**
+   * **gsl_sf_expint_En(n, x)**
+   *
+   *  This routine computes the exponential integral $\operatorname{E_n}(x)$
+   *  of order $n$,
+   *
+   *  .. math::
+   *    \operatorname{E_n}(x) :=
+   *      \operatorname{Re} \int_1^\infty \exp(-xt)/t^n dt.
+   */
   ADDFUNC(gsl_sf_expint_En, 2);
+
+  /**
+   * Ei(x)
+   * `````
+   */
+
+  /**
+   * **gsl_sf_expint_Ei(x)**
+   *
+   *  These routines compute the exponential integral $\operatorname{Ei}(x)$,
+   *
+   *  .. math::
+   *    \operatorname{Ei}(x) := - PV(\int_{-x}^\infty \exp(-t)/t dt)
+   *
+   *  where $PV$ denotes the principal value of the integral.
+   */
   ADDFUNC(gsl_sf_expint_Ei, 1);
+
+  /**
+   * Hyperbolic Integrals
+   * ````````````````````
+   */
+
+  /**
+   * **gsl_sf_Shi(x)**
+   *
+   *  This routine computes the integral
+   *
+   *  .. math::
+   *    \operatorname{Shi}(x) = \int_0^x \sinh(t)/t dt.
+   */
   ADDFUNC(gsl_sf_Shi, 1);
+
+  /**
+   * **gsl_sf_Chi(x)**
+   *
+   *  This routine computes the integral
+   *
+   *  .. math::
+   *    \operatorname{Chi}(x) := \operatorname{Re}[
+   *      \gamma_E + \log(x) + \int_0^x (\cosh(t)-1)/t dt],
+   *
+   *  where $\gamma_E$ is the Euler constant.
+   */
   ADDFUNC(gsl_sf_Chi, 1);
+
+  /**
+   * Ei_3(x)
+   * ```````
+   */
+
+  /**
+   * **gsl_sf_expint_3(x)**
+   *
+   *  This routine computes the third-order exponential integral
+   *  $\operatorname{Ei_3}(x) = \int_0^x \exp(-t^3) dt$ for $x \geq 0$.
+   */
   ADDFUNC(gsl_sf_expint_3, 1);
+
+  /**
+   * Trigonometric Integrals
+   * ```````````````````````
+   */
+
+  /**
+   * **gsl_sf_Si(x)**
+   *
+   *  This routine computes the Sine integral
+   *  $\operatorname{Si}(x) = \int_0^x \sin(t)/t dt$.
+   */
   ADDFUNC(gsl_sf_Si, 1);
+
+  /**
+   * **gsl_sf_Ci(x)**
+   *
+   *  This routine computes the Cosine integral
+   *  $\operatorname{Ci}(x) = -\int_x^\infty \cos(t)/t dt$ for $x > 0$.
+   */
   ADDFUNC(gsl_sf_Ci, 1);
+
+  /**
+   * Arctangent Integral
+   * ```````````````````
+   */
+
+  /**
+   * **gsl_sf_atanint(x)**
+   *
+   *  This routine computes the Arctangent integral, which is defined as
+   *  $\operatorname{AtanInt}(x) = \int_0^x \arctan(t)/t dt$.
+   */
   ADDFUNC(gsl_sf_atanint, 1);
 
-  /* Fermi-Dirac Function */
+  /**
+   * Fermi-Dirac Function
+   * ~~~~~~~~~~~~~~~~~~~~
+   */
+
+  /**
+   * Complete Fermi-Dirac Integrals
+   * ``````````````````````````````
+   *
+   * The complete Fermi-Dirac integral $F_j(x)$ is given by,
+   *
+   * .. math::
+   *   F_j(x) := (1/\Gamma(j+1)) \int_0^\infty (t^j / (\exp(t-x) + 1)) dt
+   *
+   * Note that the Fermi-Dirac integral is sometimes defined without the
+   * normalisation factor in other texts.
+   */
+
+  /**
+   * **gsl_sf_fermi_dirac_m1(x)**
+   *
+   *  This routine computes the complete Fermi-Dirac integral with an index
+   *  of -1. This integral is given by $F_{-1}(x) = e^x / (1 + e^x)$.
+   */
   ADDFUNC(gsl_sf_fermi_dirac_m1, 1);
+
+  /**
+   * **gsl_sf_fermi_dirac_0(x)**
+   *
+   *  This routine computes the complete Fermi-Dirac integral with an index
+   *  of 0. This integral is given by $F_0(x) = \ln(1 + e^x)$.
+   */
   ADDFUNC(gsl_sf_fermi_dirac_0, 1);
+
+
+  /**
+   * **gsl_sf_fermi_dirac_1(x)**
+   *
+   *  This routine computes the complete Fermi-Dirac integral with an index
+   *  of 1, $F_1(x) = \int_0^\infty (t /(\exp(t-x)+1)) dt$.
+   */
   ADDFUNC(gsl_sf_fermi_dirac_1, 1);
+
+  /**
+   * **gsl_sf_fermi_dirac_2(x)**
+   *
+   *  This routine computes the complete Fermi-Dirac integral with an index
+   *  of 2, $F_2(x) = (1/2) \int_0^\infty (t^2 /(\exp(t-x)+1)) dt$.
+   */
   ADDFUNC(gsl_sf_fermi_dirac_2, 1);
+
+  /**
+   * **gsl_sf_fermi_dirac_int(j, x)**
+   *
+   *  This routine computes the complete Fermi-Dirac integral with an
+   *  integer index of $j$,
+   *  $F_j(x) = (1/\Gamma(j+1)) \int_0^\infty (t^j /(\exp(t-x)+1)) dt$.
+   */
   ADDFUNC(gsl_sf_fermi_dirac_int, 2);
+
+  /**
+   * **gsl_sf_fermi_dirac_mhalf(x)**
+   *
+   *  This routine computes the complete Fermi-Dirac integral $F_{-1/2}(x)$.
+   */
   ADDFUNC(gsl_sf_fermi_dirac_mhalf, 1);
+
+  /**
+   * **gsl_sf_fermi_dirac_half(x)**
+   *
+   *  This routine computes the complete Fermi-Dirac integral $F_{1/2}(x)$.
+   */
   ADDFUNC(gsl_sf_fermi_dirac_half, 1);
+
+  /**
+   * **gsl_sf_fermi_dirac_3half(x)**
+   *
+   *  This routine computes the complete Fermi-Dirac integral $F_{3/2}(x)$.
+   */
   ADDFUNC(gsl_sf_fermi_dirac_3half, 1);
+
+  /**
+   * Incomplete Fermi-Dirac Integrals
+   * ````````````````````````````````
+   *
+   * The incomplete Fermi-Dirac integral F_j(x,b) is given by,
+   *
+   * .. math::
+   *   F_j(x,b) := (1/\Gamma(j+1)) \int_b^\infty (t^j / (\exp(t-x) + 1)) dt
+   */
+
+  /**
+   * **gsl_sf_fermi_dirac_inc_0(x, b)**
+   *
+   *  This routine computes the incomplete Fermi-Dirac integral with an index
+   *  of zero, $F_0(x,b) = \ln(1 + e^{b-x}) - (b-x)$.
+   */
   ADDFUNC(gsl_sf_fermi_dirac_inc_0, 2);
 
-  /* Gamma Functions */
+  /**
+   * Gamma and Beta Functions
+   * ~~~~~~~~~~~~~~~~~~~~~~~~
+   *
+   * This following routines compute the gamma and beta functions in their
+   * full and incomplete forms.
+   */
+
+  /**
+   * Gamma Functions
+   * ```````````````
+   *
+   * The Gamma function is defined by the following integral,
+   *
+   * .. math::
+   *   \Gamma(x) = \int_0^\infty t^{x-1} \exp(-t) dt
+   *
+   * It is related to the factorial function by $\Gamma(n)=(n-1)!$ for
+   * positive integer $n$. Further information on the Gamma function can
+   * be found in Abramowitz & Stegun, Chapter 6.
+   */
+
+  /**
+   * **gsl_sf_gamma(x)**
+   *
+   *  This routine computes the Gamma function $\Gamma(x)$, subject to $x$
+   *  not being a negative integer or zero. The function is computed using
+   *  the real Lanczos method. The maximum value of $x$ such that $\Gamma(x)$
+   *  is not considered an overflow is 171.0.
+   */
   ADDFUNC(gsl_sf_gamma, 1);
+
+  /**
+   * **gsl_sf_lngamma(x)**
+   *
+   *  This routine computes the logarithm of the Gamma function,
+   *  $\log(\Gamma(x))$, subject to $x$ not being a negative integer or zero.
+   *  For $x<0$ the real part of $\log(\Gamma(x))$ is returned, which is
+   *  equivalent to $\log(|\Gamma(x)|)$. The function is computed using the
+   *  real Lanczos method.
+   */
   ADDFUNC(gsl_sf_lngamma, 1);
+
+  /**
+   * **gsl_sf_gammastar(x)**
+   *
+   *  This routine computes the regulated Gamma Function $\Gamma^*(x)$ for
+   *  $x > 0$. The regulated gamma function is given by,
+   *
+   *  .. math::
+   *    \Gamma^*(x) = \Gamma(x)/(\sqrt{2\pi} x^{(x-1/2)} \exp(-x))
+   *                = (1 + (1/12x) + ...)  \text{ for } x \to \infty
+   *
+   *  and is a useful suggestion of Temme.
+   */
   ADDFUNC(gsl_sf_gammastar, 1);
+
+  /**
+   * **gsl_sf_gammainv(x)**
+   *
+   *  This routine computes the reciprocal of the gamma function,
+   *  $1/\Gamma(x)$ using the real Lanczos method.
+   */
   ADDFUNC(gsl_sf_gammainv, 1);
 
   /* Wrapper for factorials are not provided since these are easily
      implemented using built-in AMPL features like the prod operator. */
 
-  /* Pochhammer Symbol */
+  /**
+   * Pochhammer Symbol
+   * `````````````````
+   */
+
+  /**
+   * **gsl_sf_poch(a, x)**
+   *
+   *  This routine computes the Pochhammer symbol
+   *  $(a)_x = \Gamma(a + x)/\Gamma(a)$. The Pochhammer symbol is also
+   *  known as the Apell symbol and sometimes written as $(a,x)$.
+   *  When $a$ and $a+x$ are negative integers or zero, the limiting
+   *  value of the ratio is returned.
+   */
   ADDFUNC(gsl_sf_poch, 2);
+
+  /**
+   * **gsl_sf_lnpoch(a, x)**
+   *
+   *  This routine computes the logarithm of the Pochhammer symbol,
+   *  $\log((a)_x) = \log(\Gamma(a + x)/\Gamma(a))$.
+   */
   ADDFUNC(gsl_sf_lnpoch, 2);
+
+  /**
+   * **gsl_sf_pochrel(a, x)**
+   *
+   *  This routine computes the relative Pochhammer symbol
+   *  $((a)_x - 1)/x$ where $(a)_x = \Gamma(a + x)/\Gamma(a)$.
+   */
   ADDFUNC(gsl_sf_pochrel, 2);
 
-  /* Incomplete Gamma Functions */
+  /**
+   * Incomplete Gamma Functions
+   * ``````````````````````````
+   */
+
+  /**
+   * **gsl_sf_gamma_inc(a, x)**
+   *
+   *  This routine computes the unnormalized incomplete Gamma Function
+   *  $\Gamma(a,x) = \int_x^\infty t^{a-1} \exp(-t) dt$ for a real and
+   *  $x \geq 0$.
+   */
   ADDFUNC(gsl_sf_gamma_inc, 2);
+
+  /**
+   * **gsl_sf_gamma_inc_Q(a, x)**
+   *
+   *  This routine computes the normalized incomplete Gamma Function
+   *  $Q(a,x) = 1/\Gamma(a) \int_x^\infty t^{a-1} \exp(-t) dt$ for
+   *  $a > 0$, $x \geq 0$.
+   */
   ADDFUNC(gsl_sf_gamma_inc_Q, 2);
+
+  /**
+   * **gsl_sf_gamma_inc_P(a, x)**
+   *
+   *  This routine computes the complementary normalized incomplete
+   *  Gamma Function
+   *
+   *  .. math::
+   *    P(a,x) = 1 - Q(a,x) = 1/\Gamma(a) \int_0^x t^{a-1} \exp(-t) dt
+   *    \text{ for } a > 0, x \geq 0.
+   *
+   *  Note that Abramowitz & Stegun call $P(a,x)$ the incomplete gamma
+   *  function (section 6.5).
+   */
   ADDFUNC(gsl_sf_gamma_inc_P, 2);
 
-  /* Beta Functions */
+  /**
+   * Beta Functions
+   * ``````````````
+   */
+
+  /**
+   * **gsl_sf_beta(a, b)**
+   *
+   *  This routine computes the Beta Function,
+   *  $\operatorname{B}(a,b) = \Gamma(a)\Gamma(b)/\Gamma(a+b)$
+   *  subject to $a$ and $b$ not being negative integers.
+   */
   ADDFUNC(gsl_sf_beta, 2);
+
+  /**
+   * **gsl_sf_lnbeta(a, b)**
+   *
+   *  This routine computes the logarithm of the Beta Function,
+   *  $\log(\operatorname{B}(a,b))$ subject to $a$ and $b$ not being
+   *  negative integers.
+   */
   ADDFUNC(gsl_sf_lnbeta, 2);
 
-  /* Incomplete Beta Function */
+  /**
+   * Incomplete Beta Function
+   * ````````````````````````
+   */
+
+  /**
+   * **gsl_sf_beta_inc(a, b, x)**
+   *
+   *  This routine computes the normalized incomplete Beta function
+   *  $I_x(a,b) = \operatorname{B}_x(a,b)/\operatorname{B}(a,b)$ where
+   *  $\operatorname{B}_x(a,b) = \int_0^x t^{a-1} (1-t)^{b-1} dt$ for
+   *  $0 \leq x \leq 1$. For $a > 0$, $b > 0$ the value is computed using
+   *  a continued fraction expansion. For all other values it is computed
+   *  using the relation
+   *
+   *  .. math::
+   *    I_x(a,b) = (1/a) x^a {}_2F_1(a,1-b,a+1,x)/\operatorname{B}(a,b).
+   */
   ADDFUNC(gsl_sf_beta_inc, 3);
 
-  /* Gegenbauer Functions */
+  /**
+   * Gegenbauer Functions
+   * ~~~~~~~~~~~~~~~~~~~~
+   *
+   * The Gegenbauer polynomials are defined in Abramowitz & Stegun,
+   * Chapter 22, where they are known as Ultraspherical polynomials.
+   */
+
+  /**
+   * **gsl_sf_gegenpoly_1(lambda, x)**
+   */
   ADDFUNC(gsl_sf_gegenpoly_1, 2);
+
+  /**
+   * **gsl_sf_gegenpoly_2(lambda, x)**
+   */
   ADDFUNC(gsl_sf_gegenpoly_2, 2);
+
+  /**
+   * **gsl_sf_gegenpoly_3(lambda, x)**
+   *
+   *  These functions evaluate the Gegenbauer polynomials $C^{(\lambda)}_n(x)$
+   *  using explicit representations for $n = 1, 2, 3$.
+   */
   ADDFUNC(gsl_sf_gegenpoly_3, 2);
+
+  /**
+   * **gsl_sf_gegenpoly_n(n, lambda, x)**
+   *
+   *  This function evaluates the Gegenbauer polynomial $C^{(\lambda)}_n(x)$
+   *  for a specific value of $n$, $\lambda$, $x$ subject to $\lambda > -1/2$,
+   *  $n \geq 0$.
+   */
   ADDFUNC(gsl_sf_gegenpoly_n, 3);
 
-  /* Hypergeometric Functions */
+  /**
+   * Hypergeometric Functions
+   * ~~~~~~~~~~~~~~~~~~~~~~~~
+   *
+   * Hypergeometric functions are described in Abramowitz & Stegun,
+   * Chapters 13 and 15.
+   */
+
+  /**
+   * **gsl_sf_hyperg_0F1(c, x)**
+   *
+   *  This routine computes the hypergeometric function ${}_0F_1(c,x)$.
+   */
   ADDFUNC(gsl_sf_hyperg_0F1, 2);
+
+  /**
+   * **gsl_sf_hyperg_1F1_int(m, n, x)**
+   *
+   *  This routine computes the confluent hypergeometric function
+   *  ${}_1F_1(m,n,x) = M(m,n,x)$ for integer parameters $m$, $n$.
+   */
   ADDFUNC(gsl_sf_hyperg_1F1_int, 3);
+
+  /**
+   * **gsl_sf_hyperg_1F1(a, b, x)**
+   *
+   *  This routine computes the confluent hypergeometric function
+   *  ${}_1F_1(a,b,x) = M(a,b,x)$ for general parameters $a$, $b$.
+   */
   ADDFUNC(gsl_sf_hyperg_1F1, 3);
+
+  /**
+   * **gsl_sf_hyperg_U_int(m, n, x)**
+   *
+   *  This routine computes the confluent hypergeometric function
+   *  $U(m,n,x)$ for integer parameters $m$, $n$.
+   */
   ADDFUNC(gsl_sf_hyperg_U_int, 3);
+
+  /**
+   * **gsl_sf_hyperg_U(a, b, x)**
+   *
+   *  This routine computes the confluent hypergeometric function $U(a,b,x)$.
+   */
   ADDFUNC(gsl_sf_hyperg_U, 3);
+
+  /**
+   * **gsl_sf_hyperg_2F1(a, b, c, x)**
+   *
+   *  This routine computes the Gauss hypergeometric function
+   *  ${}_2F_1(a,b,c,x) = F(a,b,c,x)$ for $|x| < 1$.
+   *
+   *  If the arguments $(a,b,c,x)$ are too close to a singularity then
+   *  the function can return an error when the series approximation
+   *  converges too slowly. This occurs in the region of
+   *  $x=1, c - a - b = m$ for integer $m$.
+   */
   ADDFUNC(gsl_sf_hyperg_2F1, 4);
+
+  /**
+   * **gsl_sf_hyperg_2F1_conj(aR, aI, c, x)**
+   *
+   *  This routine computes the Gauss hypergeometric function
+   *  ${}_2F_1(a_R + i a_I, a_R - i a_I, c, x)$ with complex parameters
+   *  for $|x| < 1$.
+   */
   ADDFUNC(gsl_sf_hyperg_2F1_conj, 4);
+
+  /**
+   * **gsl_sf_hyperg_2F1_renorm(a, b, c, x)**
+   *
+   *  This routine computes the renormalized Gauss hypergeometric
+   *  function ${}_2F_1(a,b,c,x) / \Gamma(c)$ for $|x| < 1$.
+   */
   ADDFUNC(gsl_sf_hyperg_2F1_renorm, 4);
+
+  /**
+   * **gsl_sf_hyperg_2F1_conj_renorm(aR, aI, c, x)**
+   *
+   *  This routine computes the renormalized Gauss hypergeometric
+   *  function ${}_2F_1(a_R + i a_I, a_R - i a_I, c, x) / \Gamma(c)$
+   *  for $|x| < 1$.
+   */
+  ADDFUNC(gsl_sf_hyperg_2F1_conj_renorm, 4);
+
+  /**
+   * **gsl_sf_hyperg_2F0(a, b, x)**
+   *
+   *  These routines compute the hypergeometric function ${}_2F_0(a,b,x)$.
+   *  The series representation is a divergent hypergeometric series.
+   *  However, for $x < 0$ we have ${}_2F_0(a,b,x) = (-1/x)^a U(a,1+a-b,-1/x)$
+   */
   ADDFUNC(gsl_sf_hyperg_2F0, 3);
 
   /**
