@@ -36,12 +36,20 @@ static void declare_func(const char *name, rfunc f,
   UNUSED(nargs);
   UNUSED(funcinfo);
   UNUSED(ae);
-  printf("function %s;\n", name);
+  printf("function %s%s;\n", name,
+      (type & FUNCADD_RANDOM_VALUED) != 0 ? " random" : "");
+}
+
+static void dummy_at_exit(AmplExports *ae, Exitfunc *f, void *data) {
+  UNUSED(ae);
+  UNUSED(f);
+  UNUSED(data);
 }
 
 int main() {
   AmplExports ae = {0};
   ae.Addfunc = declare_func;
+  ae.AtExit = dummy_at_exit;
   printf(
       "# Automatically generated AMPL declarations for the GSL functions.\n"
       "load libamplgsl.so;\n");
