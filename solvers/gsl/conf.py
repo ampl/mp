@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# AMPL-GSL documentation build configuration file, created by
+# AMPLGSL documentation build configuration file, created by
 # sphinx-quickstart on Mon Aug 20 11:27:29 2012.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -40,7 +40,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'AMPL-GSL'
+project = u'AMPLGSL'
 copyright = u'2012, Victor Zverovich'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -164,7 +164,7 @@ html_show_sourcelink = False
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'AMPL-GSLdoc'
+htmlhelp_basename = 'AMPLGSLdoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -183,7 +183,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'AMPL-GSL.tex', u'AMPL-GSL Documentation',
+  ('index', 'AMPLGSL.tex', u'AMPLGSL Documentation',
    u'Victor Zverovich', 'manual'),
 ]
 
@@ -213,7 +213,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'ampl-gsl', u'AMPL-GSL Documentation',
+    ('index', 'amplgsl', u'AMPLGSL Documentation',
      [u'Victor Zverovich'], 1)
 ]
 
@@ -227,8 +227,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'AMPL-GSL', u'AMPL-GSL Documentation',
-   u'Victor Zverovich', 'AMPL-GSL', 'One line description of project.',
+  ('index', 'AMPLGSL', u'AMPLGSL Documentation',
+   u'Victor Zverovich', 'AMPLGSL', 'One line description of project.',
    'Miscellaneous'),
 ]
 
