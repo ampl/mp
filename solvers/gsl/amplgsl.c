@@ -2526,6 +2526,9 @@ WRAP(gsl_sf_eta, ARGS1)
  *    elementary
  *    special
  *
+ * Indices and tables
+ * ==================
+ *
  * * :ref:`genindex`
  * * :ref:`search`
  */
@@ -2604,8 +2607,7 @@ void funcadd_ASL(AmplExports *ae) {
    * functions, Exponential integrals, Fermi-Dirac functions, Gamma functions,
    * Gegenbauer functions, Hypergeometric functions, Laguerre functions,
    * Legendre functions and Spherical Harmonics, the Psi (Digamma) Function,
-   * Synchrotron functions, Transport functions, Trigonometric functions and
-   * Zeta functions.
+   * Synchrotron functions, Transport functions and Zeta functions.
    *
    * .. toctree::
    *    :maxdepth: 2
@@ -2629,6 +2631,12 @@ void funcadd_ASL(AmplExports *ae) {
    *    lambert
    *    legendre
    *    log
+   *    mathieu
+   *    pow
+   *    psi
+   *    synchrotron
+   *    transport
+   *    zeta
    */
 
   /* AMPL has built-in functions acosh, asinh and atanh so wrappers
@@ -2641,7 +2649,7 @@ void funcadd_ASL(AmplExports *ae) {
    * @file airy
    *
    * Airy Functions and Derivatives
-   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * ==============================
    *
    * The Airy functions $\operatorname{Ai}(x)$ and $\operatorname{Bi}(x)$ are
    * defined by the integral representations,
@@ -2657,7 +2665,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Airy Functions
-   * ``````````````
+   * --------------
    */
 
   /**
@@ -2696,7 +2704,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Zeros of Airy Functions
-   * ```````````````````````
+   * -----------------------
    */
 
   /**
@@ -2717,7 +2725,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Zeros of Derivatives of Airy Functions
-   * ``````````````````````````````````````
+   * --------------------------------------
    */
 
   /**
@@ -2740,7 +2748,7 @@ void funcadd_ASL(AmplExports *ae) {
    * @file bessel
    *
    * Bessel Functions
-   * ~~~~~~~~~~~~~~~~
+   * ================
    *
    * The routines described in this section compute the Cylindrical Bessel
    * functions $J_n(x)$, $Y_n(x)$, Modified cylindrical Bessel functions
@@ -2751,7 +2759,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Regular Cylindrical Bessel Functions
-   * ````````````````````````````````````
+   * ------------------------------------
    */
 
   /**
@@ -2780,7 +2788,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Irregular Cylindrical Bessel Functions
-   * ``````````````````````````````````````
+   * --------------------------------------
    */
 
   /**
@@ -2809,7 +2817,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Regular Modified Cylindrical Bessel Functions
-   * `````````````````````````````````````````````
+   * ---------------------------------------------
    */
 
   /**
@@ -2862,7 +2870,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Irregular Modified Cylindrical Bessel Functions
-   * ```````````````````````````````````````````````
+   * -----------------------------------------------
    */
 
   /**
@@ -2915,7 +2923,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Regular Spherical Bessel Functions
-   * ``````````````````````````````````
+   * ----------------------------------
    */
 
   /**
@@ -2952,7 +2960,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Irregular Spherical Bessel Functions
-   * ````````````````````````````````````
+   * ------------------------------------
    */
 
   /**
@@ -2989,7 +2997,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Regular Modified Spherical Bessel Functions
-   * ```````````````````````````````````````````
+   * -------------------------------------------
    */
 
   /**
@@ -3026,7 +3034,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Irregular Modified Spherical Bessel Functions
-   * `````````````````````````````````````````````
+   * ---------------------------------------------
    */
 
   /**
@@ -3063,7 +3071,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Regular Bessel Function - Fractional Order
-   * ``````````````````````````````````````````
+   * ------------------------------------------
    */
 
   /**
@@ -3076,7 +3084,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Irregular Bessel Function - Fractional Order
-   * `````````````````````````````````````````````
+   * ---------------------------------------------
    */
 
   /**
@@ -3089,7 +3097,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Regular Modified Bessel Functions - Fractional Order
-   * ````````````````````````````````````````````````````
+   * ----------------------------------------------------
    */
 
   /**
@@ -3111,7 +3119,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Irregular Modified Bessel Functions - Fractional Order
-   * ``````````````````````````````````````````````````````
+   * ------------------------------------------------------
    */
 
   /**
@@ -3141,7 +3149,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Zeros of Regular Bessel Functions
-   * `````````````````````````````````
+   * ---------------------------------
    */
 
   /**
@@ -3173,7 +3181,7 @@ void funcadd_ASL(AmplExports *ae) {
    * @file clausen
    *
    * Clausen Function
-   * ~~~~~~~~~~~~~~~~
+   * ================
    *
    * The Clausen function is defined by the following integral,
    *
@@ -3198,12 +3206,12 @@ void funcadd_ASL(AmplExports *ae) {
    * @file coulomb
    *
    * Coulomb Functions
-   * ~~~~~~~~~~~~~~~~~
+   * =================
    */
 
   /**
    * Normalized Hydrogenic Bound States
-   * ``````````````````````````````````
+   * ----------------------------------
    */
 
   /**
@@ -3232,7 +3240,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Coulomb Wave Function Normalization Constant
-   * ````````````````````````````````````````````
+   * --------------------------------------------
    *
    * The Coulomb wave function normalization constant is defined in
    * Abramowitz 14.1.7.
@@ -3250,7 +3258,7 @@ void funcadd_ASL(AmplExports *ae) {
    * @file coupling
    *
    * Coupling Coefficients
-   * ~~~~~~~~~~~~~~~~~~~~~
+   * =====================
    *
    * The Wigner 3-j, 6-j and 9-j symbols give the coupling coefficients
    * for combined angular momentum vectors. Since the arguments of the
@@ -3314,7 +3322,7 @@ void funcadd_ASL(AmplExports *ae) {
    * @file dawson
    *
    * Dawson Function
-   * ~~~~~~~~~~~~~~~
+   * ===============
    *
    * The Dawson integral is defined by $\exp(-x^2) \int_0^x \exp(t^2) dt$.
    * A table of Dawson's integral can be found in Abramowitz & Stegun,
@@ -3332,7 +3340,7 @@ void funcadd_ASL(AmplExports *ae) {
    * @file debye
    *
    * Debye Functions
-   * ~~~~~~~~~~~~~~~
+   * ===============
    *
    * The Debye functions $D_n(x)$ are defined by the following integral,
    *
@@ -3394,7 +3402,7 @@ void funcadd_ASL(AmplExports *ae) {
    * @file dilog
    *
    * Dilogarithm
-   * ~~~~~~~~~~~
+   * ===========
    */
 
   /**
@@ -3417,13 +3425,13 @@ void funcadd_ASL(AmplExports *ae) {
    * @file ellint
    *
    * Elliptic Integrals
-   * ~~~~~~~~~~~~~~~~~~
+   * ==================
    *
    * Information about the elliptic integrals can be found in
    * Abramowitz & Stegun, Chapter 17.
    *
    * Definition of Legendre Forms
-   * ````````````````````````````
+   * ----------------------------
    *
    * The Legendre forms of elliptic integrals $F(\phi,k)$, $E(\phi,k)$ and
    * $\Pi(\phi,k,n)$ are defined by,
@@ -3443,7 +3451,7 @@ void funcadd_ASL(AmplExports *ae) {
    * $n$ is replaced by $-n$.
    *
    * Definition of Carlson Forms
-   * ```````````````````````````
+   * ---------------------------
    *
    * The Carlson symmetric forms of elliptical integrals $RC(x,y)$,
    * $RD(x,y,z)$, $RF(x,y,z)$ and $RJ(x,y,z,p)$ are defined by,
@@ -3460,7 +3468,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Legendre Form of Complete Elliptic Integrals
-   * ````````````````````````````````````````````
+   * --------------------------------------------
    */
 
   /**
@@ -3493,7 +3501,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Legendre Form of Incomplete Elliptic Integrals
-   * ``````````````````````````````````````````````
+   * ----------------------------------------------
    */
 
   /**
@@ -3541,7 +3549,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Carlson Forms
-   * `````````````
+   * -------------
    */
 
   /**
@@ -3580,7 +3588,7 @@ void funcadd_ASL(AmplExports *ae) {
    * @file erf
    *
    * Error Functions
-   * ~~~~~~~~~~~~~~~
+   * ===============
    *
    * The error function is described in Abramowitz & Stegun, Chapter 7.
    */
@@ -3616,7 +3624,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Probability functions
-   * `````````````````````
+   * ---------------------
    *
    * The probability functions for the Normal or Gaussian distribution are
    * described in Abramowitz & Stegun, Section 26.2.
@@ -3661,12 +3669,12 @@ void funcadd_ASL(AmplExports *ae) {
    * @file expint
    *
    * Exponential Integrals
-   * ~~~~~~~~~~~~~~~~~~~~~
+   * =====================
    */
 
   /**
    * Exponential Integral
-   * ````````````````````
+   * --------------------
    */
 
   /**
@@ -3706,7 +3714,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Ei(x)
-   * `````
+   * -----
    */
 
   /**
@@ -3723,7 +3731,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Hyperbolic Integrals
-   * ````````````````````
+   * --------------------
    */
 
   /**
@@ -3751,27 +3759,31 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Ei_3(x)
-   * ```````
+   * -------
    */
 
   /**
    * **gsl_sf_expint_3(x)**
    *
    *  This routine computes the third-order exponential integral
-   *  $\operatorname{Ei_3}(x) = \int_0^x \exp(-t^3) dt$ for $x \geq 0$.
+   *
+   *  .. math::
+   *    \operatorname{Ei_3}(x) = \int_0^x \exp(-t^3) dt \text{ for } x \geq 0.
    */
   ADDFUNC(gsl_sf_expint_3, 1);
 
   /**
    * Trigonometric Integrals
-   * ```````````````````````
+   * -----------------------
    */
 
   /**
    * **gsl_sf_Si(x)**
    *
    *  This routine computes the Sine integral
-   *  $\operatorname{Si}(x) = \int_0^x \sin(t)/t dt$.
+   *
+   *  .. math::
+   *    \operatorname{Si}(x) = \int_0^x \sin(t)/t dt.
    */
   ADDFUNC(gsl_sf_Si, 1);
 
@@ -3779,20 +3791,24 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_Ci(x)**
    *
    *  This routine computes the Cosine integral
-   *  $\operatorname{Ci}(x) = -\int_x^\infty \cos(t)/t dt$ for $x > 0$.
+   *
+   *  .. math::
+   *    \operatorname{Ci}(x) = -\int_x^\infty \cos(t)/t dt \text{ for } x > 0.
    */
   ADDFUNC(gsl_sf_Ci, 1);
 
   /**
    * Arctangent Integral
-   * ```````````````````
+   * -------------------
    */
 
   /**
    * **gsl_sf_atanint(x)**
    *
    *  This routine computes the Arctangent integral, which is defined as
-   *  $\operatorname{AtanInt}(x) = \int_0^x \arctan(t)/t dt$.
+   *
+   *  .. math::
+   *    \operatorname{AtanInt}(x) = \int_0^x \arctan(t)/t dt.
    */
   ADDFUNC(gsl_sf_atanint, 1);
 
@@ -3800,12 +3816,12 @@ void funcadd_ASL(AmplExports *ae) {
    * @file fermi-dirac
    *
    * Fermi-Dirac Function
-   * ~~~~~~~~~~~~~~~~~~~~
+   * ====================
    */
 
   /**
    * Complete Fermi-Dirac Integrals
-   * ``````````````````````````````
+   * ------------------------------
    *
    * The complete Fermi-Dirac integral $F_j(x)$ is given by,
    *
@@ -3881,7 +3897,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Incomplete Fermi-Dirac Integrals
-   * ````````````````````````````````
+   * --------------------------------
    *
    * The incomplete Fermi-Dirac integral F_j(x,b) is given by,
    *
@@ -3901,7 +3917,7 @@ void funcadd_ASL(AmplExports *ae) {
    * @file gamma-beta
    *
    * Gamma and Beta Functions
-   * ~~~~~~~~~~~~~~~~~~~~~~~~
+   * ========================
    *
    * This following routines compute the gamma and beta functions in their
    * full and incomplete forms.
@@ -3909,7 +3925,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Gamma Functions
-   * ```````````````
+   * ---------------
    *
    * The Gamma function is defined by the following integral,
    *
@@ -3969,7 +3985,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Pochhammer Symbol
-   * `````````````````
+   * -----------------
    */
 
   /**
@@ -4001,7 +4017,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Incomplete Gamma Functions
-   * ``````````````````````````
+   * --------------------------
    */
 
   /**
@@ -4039,7 +4055,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Beta Functions
-   * ``````````````
+   * --------------
    */
 
   /**
@@ -4062,7 +4078,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Incomplete Beta Function
-   * ````````````````````````
+   * ------------------------
    */
 
   /**
@@ -4084,7 +4100,7 @@ void funcadd_ASL(AmplExports *ae) {
    * @file gegenpoly
    *
    * Gegenbauer Functions
-   * ~~~~~~~~~~~~~~~~~~~~
+   * ====================
    *
    * The Gegenbauer polynomials are defined in Abramowitz & Stegun,
    * Chapter 22, where they are known as Ultraspherical polynomials.
@@ -4121,7 +4137,7 @@ void funcadd_ASL(AmplExports *ae) {
    * @file hyperg
    *
    * Hypergeometric Functions
-   * ~~~~~~~~~~~~~~~~~~~~~~~~
+   * ========================
    *
    * Hypergeometric functions are described in Abramowitz & Stegun,
    * Chapters 13 and 15.
@@ -4218,7 +4234,7 @@ void funcadd_ASL(AmplExports *ae) {
    * .. _laguerre-functions:
    *
    * Laguerre Functions
-   * ~~~~~~~~~~~~~~~~~~
+   * ==================
    *
    * The generalized Laguerre polynomials are defined in terms of confluent
    * hypergeometric functions as $L^a_n(x) = ((a+1)_n / n!) {}_1F_1(-n,a+1,x)$,
@@ -4258,7 +4274,7 @@ void funcadd_ASL(AmplExports *ae) {
    * @file lambert
    *
    * Lambert W Functions
-   * ~~~~~~~~~~~~~~~~~~~
+   * ===================
    *
    * Lambert's $W$ functions, $W(x)$, are defined to be solutions of the
    * equation $W(x) \exp(W(x)) = x$. This function has multiple branches
@@ -4287,7 +4303,7 @@ void funcadd_ASL(AmplExports *ae) {
    * @file legendre
    *
    * Legendre Functions and Spherical Harmonics
-   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * ==========================================
    *
    * The Legendre Functions and Legendre Polynomials are described in
    * Abramowitz & Stegun, Chapter 8.
@@ -4295,7 +4311,7 @@ void funcadd_ASL(AmplExports *ae) {
 
   /**
    * Legendre Polynomials
-   * ````````````````````
+   * --------------------
    */
 
   /**
@@ -4329,7 +4345,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_legendre_Q0(x)**
    *
    *  This routine computes the Legendre function $Q_0(x)$ for
-   *  $x > -1, x \not= 1$.
+   *  $x > -1, x \ne 1$.
    */
   ADDFUNC(gsl_sf_legendre_Q0, 1);
 
@@ -4337,7 +4353,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_legendre_Q1(x)**
    *
    *  This routine computes the Legendre function $Q_1(x)$ for
-   *  $x > -1, x \not= 1$.
+   *  $x > -1, x \ne 1$.
    */
   ADDFUNC(gsl_sf_legendre_Q1, 1);
 
@@ -4345,101 +4361,539 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_sf_legendre_Ql(l, x)**
    *
    *  This routine computes the Legendre function $Q_l(x)$ for
-   *  $x > -1, x \not= 1$ and $l \geq 0$.
+   *  $x > -1, x \ne 1$ and $l \geq 0$.
    */
   ADDFUNC(gsl_sf_legendre_Ql, 2);
 
   /**
    * Associated Legendre Polynomials and Spherical Harmonics
-   * ```````````````````````````````````````````````````````
+   * -------------------------------------------------------
+   *
+   * The following functions compute the associated Legendre Polynomials
+   * $P_l^m(x)$. Note that this function grows combinatorially with $l$ and
+   * can overflow for $l$ larger than about 150. There is no trouble for
+   * small $m$, but overflow occurs when $m$ and $l$ are both large.
+   * Rather than allow overflows, these functions refuse to calculate
+   * $P_l^m(x)$ and return an error when they can sense that $l$ and $m$
+   * are too big.
+   *
+   * If you want to calculate a spherical harmonic, then do not use these
+   * functions. Instead use ``gsl_sf_legendre_sphPlm`` below, which uses a
+   * similar recursion, but with the normalized functions.
    */
 
+  /**
+   * **gsl_sf_legendre_Plm(l, m, x)**
+   *
+   *  This routine computes the associated Legendre polynomial
+   *  $P_l^m(x)$ for $m \geq 0, l \geq m, |x| \leq 1$.
+   */
   ADDFUNC(gsl_sf_legendre_Plm, 3);
+
+  /**
+   * **gsl_sf_legendre_sphPlm(l, m, x)**
+   *
+   *  This routine computes the normalized associated Legendre polynomial
+   *  $\sqrt{(2l+1)/(4\pi)} \sqrt{(l-m)!/(l+m)!} P_l^m(x)$ suitable for use
+   *  in spherical harmonics. The parameters must satisfy
+   *  $m \geq 0, l \geq m, |x| \leq 1$. Theses routines avoid the overflows
+   *  that occur for the standard normalization of $P_l^m(x)$.
+   */
   ADDFUNC(gsl_sf_legendre_sphPlm, 3);
 
   /**
    * Conical Functions
-   * `````````````````
+   * -----------------
+   *
+   * The Conical Functions $P^\mu_{-(1/2)+i\lambda}(x)$ and
+   * $Q^\mu_{-(1/2)+i\lambda}$ are described in Abramowitz & Stegun,
+   * Section 8.12.
    */
 
+  /**
+   * **gsl_sf_conicalP_half(lambda, x)**
+   *
+   *  This routine computes the irregular Spherical Conical Function
+   *  $P^{1/2}_{-1/2 + i \lambda}(x)$ for $x > -1$.
+   */
   ADDFUNC(gsl_sf_conicalP_half, 2);
+
+  /**
+   * **gsl_sf_conicalP_mhalf(lambda, x)**
+   *
+   *  This routine computes the regular Spherical Conical Function
+   *  $P^{-1/2}_{-1/2 + i \lambda}(x)$ for $x > -1$.
+   */
   ADDFUNC(gsl_sf_conicalP_mhalf, 2);
+
+  /**
+   * **gsl_sf_conicalP_0(lambda, x)**
+   *
+   *  This routine computes the conical function
+   *  $P^0_{-1/2 + i \lambda}(x)$ for $x > -1$.
+   */
   ADDFUNC(gsl_sf_conicalP_0, 2);
+
+  /**
+   * **gsl_sf_conicalP_1(lambda, x)**
+   *
+   *  This routine computes the conical function
+   *  $P^1_{-1/2 + i \lambda}(x)$ for $x > -1$.
+   */
   ADDFUNC(gsl_sf_conicalP_1, 2);
+
+  /**
+   * **gsl_sf_conicalP_sph_reg(l, lambda, x)**
+   *
+   *  This routine computes the Regular Spherical Conical Function
+   *  $P^{-1/2-l}_{-1/2 + i \lambda}(x)$ for $x > -1, l \geq -1$.
+   */
   ADDFUNC(gsl_sf_conicalP_sph_reg, 3);
+
+  /**
+   * **gsl_sf_conicalP_cyl_reg(m, lambda, x)**
+   *
+   *  This routine computes the Regular Cylindrical Conical Function
+   *  $P^{-m}_{-1/2 + i \lambda}(x)$ for $x > -1, m \geq -1$.
+   */
   ADDFUNC(gsl_sf_conicalP_cyl_reg, 3);
 
   /**
    * Radial Functions for Hyperbolic Space
-   * `````````````````````````````````````
+   * -------------------------------------
+   *
+   * The following spherical functions are specializations of Legendre
+   * functions which give the regular eigenfunctions of the Laplacian
+   * on a 3-dimensional hyperbolic space H3d. Of particular interest is
+   * the flat limit, $\lambda \to \infty, \eta \to 0, \lambda\eta$ fixed.
+   */
+
+  /**
+   * **gsl_sf_legendre_H3d_0(lambda, eta)**
+   *
+   *  This routine computes the zeroth radial eigenfunction of the
+   *  Laplacian on the 3-dimensional hyperbolic space,
+   *
+   *  .. math::
+   *    L^{H3d}_0(\lambda,\eta) :=
+   *      \sin(\lambda\eta)/(\lambda\sinh(\eta)) \text{ for } \eta \geq 0.
+   *
+   *  In the flat limit this takes the form
+   *  $L^{H3d}_0(\lambda,\eta) = j_0(\lambda\eta)$.
    */
   ADDFUNC(gsl_sf_legendre_H3d_0, 2);
+
+  /**
+   * **gsl_sf_legendre_H3d_1(lambda, eta)**
+   *
+   *  This routine computes the first radial eigenfunction of the
+   *  Laplacian on the 3-dimensional hyperbolic space,
+   *
+   *  .. math::
+   *    L^{H3d}_1(\lambda,\eta) := 1/\sqrt{\lambda^2 + 1} \sin(\lambda \eta)/
+   *      (\lambda \sinh(\eta)) (\coth(\eta) - \lambda \cot(\lambda\eta))
+   *      \text{ for } \eta \geq 0.
+   *
+   *  In the flat limit this takes the form
+   *  $L^{H3d}_1(\lambda,\eta) = j_1(\lambda\eta)$.
+   */
   ADDFUNC(gsl_sf_legendre_H3d_1, 2);
+
+  /**
+   * **gsl_sf_legendre_H3d(l, lambda, eta)**
+   *
+   *  This routine computes the $l$-th radial eigenfunction of the
+   *  Laplacian on the 3-dimensional hyperbolic space $\eta \geq 0, l \geq 0$.
+   *  In the flat limit this takes the form
+   *  $L^{H3d}_l(\lambda,\eta) = j_l(\lambda\eta)$.
+   */
   ADDFUNC(gsl_sf_legendre_H3d, 3);
 
   /**
    * @file log
    *
    * Logarithm and Related Functions
-   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * ===============================
+   *
+   * Information on the properties of the Logarithm function can be found
+   * in Abramowitz & Stegun, Chapter 4.
+   */
+
+  /**
+   * **gsl_sf_log(x)**
+   *
+   *  This routine computes the logarithm of $x$, $\log(x)$, for $x > 0$.
    */
   ADDFUNC(gsl_sf_log, 1);
+
+  /**
+   * **gsl_sf_log_abs(x)**
+   *
+   *  This routine computes the logarithm of the magnitude of $x$,
+   *  $\log(|x|)$, for $x \ne 0$.
+   */
   ADDFUNC(gsl_sf_log_abs, 1);
+
+  /**
+   * **gsl_sf_log_1plusx(x)**
+   *
+   *  This routine computes $\log(1 + x)$ for $x > -1$ using an algorithm
+   *  that is accurate for small $x$.
+   */
   ADDFUNC(gsl_sf_log_1plusx, 1);
+
+  /**
+   * **gsl_sf_log_1plusx_mx(x)**
+   *
+   *  This routine computes $\log(1 + x) - x$ for $x > -1$ using an
+   *  algorithm that is accurate for small $x$.
+   */
   ADDFUNC(gsl_sf_log_1plusx_mx, 1);
 
-  /* Mathieu Function Characteristic Values */
+  /**
+   * @file mathieu
+   *
+   * Mathieu Functions
+   * =================
+   *
+   * The routines described in this section compute the angular and radial
+   * Mathieu functions, and their characteristic values. Mathieu functions
+   * are the solutions of the following two differential equations:
+   *
+   * .. math::
+   *   d^2y/dv^2 + (a - 2q\cos 2v)y = 0 \\
+   *   d^2f/du^2 - (a - 2q\cosh 2u)f = 0
+   *
+   * The angular Mathieu functions $ce_r(x,q), se_r(x,q)$ are the even
+   * and odd periodic solutions of the first equation, which is known as
+   * Mathieu's equation. These exist only for the discrete sequence of
+   * characteristic values $a=a_r(q)$ (even-periodic) and $a=b_r(q)$
+   * (odd-periodic).
+   *
+   * The radial Mathieu functions $Mc^{(j)}_{r}(z,q), Ms^{(j)}_{r}(z,q)$
+   * are the solutions of the second equation, which is referred to as
+   * Mathieu's modified equation. The radial Mathieu functions of the
+   * first, second, third and fourth kind are denoted by the parameter
+   * $j$, which takes the value 1, 2, 3 or 4.
+   *
+   * For more information on the Mathieu functions, see Abramowitz and
+   * Stegun, Chapter 20.
+   */
+
+  /*
+   * Mathieu Function Characteristic Values
+   * --------------------------------------
+   */
+
+  /**
+   * **gsl_sf_mathieu_a(n, q)**
+   */
   ADDFUNC(gsl_sf_mathieu_a, 2);
+
+  /**
+   * **gsl_sf_mathieu_b(n, q)**
+   *
+   *  These routines compute the characteristic values $a_n(q), b_n(q)$
+   *  of the Mathieu functions $ce_n(q,x)$ and $se_n(q,x)$, respectively.
+   */
   ADDFUNC(gsl_sf_mathieu_b, 2);
 
-  /* Angular Mathieu Functions */
+  /**
+   * Angular Mathieu Functions
+   * -------------------------
+   */
+
+  /**
+   * **gsl_sf_mathieu_ce(n, q, x)**
+   */
   ADDFUNC(gsl_sf_mathieu_ce, 3);
+
+  /**
+   * **gsl_sf_mathieu_se(n, q, x)**
+   *
+   *  These routines compute the angular Mathieu functions $ce_n(q,x)$ and
+   *  $se_n(q,x)$, respectively.
+   */
   ADDFUNC(gsl_sf_mathieu_se, 3);
 
-  /* Radial Mathieu Functions */
+  /**
+   * Radial Mathieu Functions
+   * ------------------------
+   */
+
+  /**
+   * **gsl_sf_mathieu_Mc(j, n, q, x)**
+   */
   ADDFUNC(gsl_sf_mathieu_Mc, 4);
+
+  /**
+   * **gsl_sf_mathieu_Ms(j, n, q, x)**
+   *
+   *  These routines compute the radial $j$-th kind Mathieu functions
+   *  $Mc_n^{(j)}(q,x)$ and $Ms_n^{(j)}(q,x)$ of order $n$.
+   *
+   *  The allowed values of $j$ are $1$ and $2$. The functions for
+   *  $j = 3, 4$ can be computed as $M_n^{(3)} = M_n^{(1)} + iM_n^{(2)}$
+   *  and $M_n^{(4)} = M_n^{(1)} - iM_n^{(2)}$, where
+   *  $M_n^{(j)} = Mc_n^{(j)}$ or $Ms_n^{(j)}$.
+   */
   ADDFUNC(gsl_sf_mathieu_Ms, 4);
 
-  /* Power Function */
+  /**
+   * @file pow
+   *
+   * Power Function
+   * ==============
+   */
+
+  /**
+   * **gsl_sf_pow_int(x, n)**
+   *
+   *  This routine computes the power $x^n$ for integer $n$. The power is
+   *  computed using the minimum number of multiplications. For example,
+   *  $x^8$ is computed as $((x^2)^2)^2$, requiring only 3 multiplications.
+   *  For reasons of efficiency, these functions do not check for overflow
+   *  or underflow conditions.
+   *
+   *  .. code-block:: none
+   *
+   *    include gsl.ampl;
+   *    # compute and print 3**12
+   *    print gsl_sf_pow_int(3, 12);
+   */
   ADDFUNC(gsl_sf_pow_int, 2);
 
-  /* Digamma Function */
+  /**
+   * @file psi
+   *
+   * Psi (Digamma) Function
+   * ======================
+   *
+   * The polygamma functions of order $n$ are defined by
+   *
+   * .. math::
+   *   \psi^{(n)}(x) = (d/dx)^n \psi(x) = (d/dx)^{n+1} \log(\Gamma(x))
+   *
+   * where $\psi(x) = \Gamma'(x)/\Gamma(x)$ is known as the digamma function.
+   */
+
+  /**
+   * Digamma Function
+   * ----------------
+   */
+
+  /**
+   * **gsl_sf_psi_int(n)**
+   *
+   *  This routine computes the digamma function $\psi(n)$ for positive
+   *  integer $n$. The digamma function is also called the Psi function.
+   */
   ADDFUNC(gsl_sf_psi_int, 1);
+
+  /**
+   * **gsl_sf_psi(x)**
+   *
+   *  This routine computes the digamma function $\psi(x)$ for general
+   *  $x, x \ne 0$.
+   */
   ADDFUNC(gsl_sf_psi, 1);
+
+  /**
+   * **gsl_sf_psi_1piy(x)**
+   *
+   *  This routine computes the real part of the digamma function on
+   *  the line $1+i y, \operatorname{Re}[\psi(1 + i y)]$.
+   */
   ADDFUNC(gsl_sf_psi_1piy, 1);
 
-  /* Trigamma Function */
+  /**
+   * Trigamma Function
+   * -----------------
+   */
+
+  /**
+   * **gsl_sf_psi_1_int(n)**
+   *
+   *  This routine computes the Trigamma function $\psi'(n)$ for positive
+   *  integer $n$.
+   */
   ADDFUNC(gsl_sf_psi_1_int, 1);
+
+  /**
+   * **gsl_sf_psi_1(x)**
+   *
+   *  This routine computes the Trigamma function $\psi'(x)$ for general $x$.
+   */
   ADDFUNC(gsl_sf_psi_1, 1);
 
-  /* Polygamma Function */
+  /**
+   * Polygamma Function
+   * ------------------
+   */
+
+  /**
+   * **gsl_sf_psi_n(n, x)**
+   *
+   *  This routine computes the polygamma function $\psi^{(n)}(x)$ for
+   *  $n \geq 0, x > 0$.
+   */
   ADDFUNC(gsl_sf_psi_n, 2);
 
-  /* Synchrotron Functions */
+  /**
+   * @file synchrotron
+   *
+   * Synchrotron Functions
+   * =====================
+   */
+
+  /**
+   * **gsl_sf_synchrotron_1(x)**
+   *
+   *  This routine computes the first synchrotron function
+   *  $x \int_x^\infty K_{5/3}(t) dt$ for $x \geq 0$.
+   */
   ADDFUNC(gsl_sf_synchrotron_1, 1);
+
+  /**
+   * **gsl_sf_synchrotron_2(x)**
+   *
+   *  This routine computes the second synchrotron function
+   *  $x K_{2/3}(x)$ for $x \geq 0$.
+   */
   ADDFUNC(gsl_sf_synchrotron_2, 1);
 
-  /* Transport Functions */
+  /**
+   * @file transport
+   *
+   * Transport Functions
+   * ===================
+   *
+   * The transport functions $J(n,x)$ are defined by the integral
+   * representations $J(n,x) := \int_0^x t^n e^t /(e^t - 1)^2 dt$.
+   */
+
+  /**
+   * **gsl_sf_transport_2(x)**
+   *
+   *  This routine computes the transport function $J(2,x)$.
+   */
   ADDFUNC(gsl_sf_transport_2, 1);
+
+  /**
+   * **gsl_sf_transport_3(x)**
+   *
+   *  This routine computes the transport function $J(3,x)$.
+   */
   ADDFUNC(gsl_sf_transport_3, 1);
+
+  /**
+   * **gsl_sf_transport_4(x)**
+   *
+   *  This routine computes the transport function $J(4,x)$.
+   */
   ADDFUNC(gsl_sf_transport_4, 1);
+
+  /**
+   * **gsl_sf_transport_5(x)**
+   *
+   *  This routine computes the transport function $J(5,x)$.
+   */
   ADDFUNC(gsl_sf_transport_5, 1);
 
   /* AMPL has built-in trigonometric functions so wrappers
      are not provided for their GSL equivalents. */
 
-  /* Riemann Zeta Function */
+  /**
+   * @file zeta
+   *
+   * Zeta Functions
+   * ==============
+   *
+   * The Riemann zeta function is defined in Abramowitz & Stegun,
+   * Section 23.2.
+   */
+
+  /**
+   * Riemann Zeta Function
+   * ---------------------
+   *
+   * The Riemann zeta function is defined by the infinite sum
+   * $\zeta(s) = \sum_{k=1}^\infty k^{-s}$.
+   */
+
+  /**
+   * **gsl_sf_zeta_int(n)**
+   *
+   *  This routine computes the Riemann zeta function $\zeta(n)$ for integer
+   *  $n, n \ne 1$.
+   */
   ADDFUNC(gsl_sf_zeta_int, 1);
+
+  /**
+   * **gsl_sf_zeta(s)**
+   *
+   *  This routine computes the Riemann zeta function $\zeta(s)$ for arbitrary
+   *  $s, s \ne 1$.
+   */
   ADDFUNC(gsl_sf_zeta, 1);
 
-  /* Riemann Zeta Function Minus One */
+  /**
+   * Riemann Zeta Function Minus One
+   * -------------------------------
+   *
+   * For large positive argument, the Riemann zeta function approaches one.
+   * In this region the fractional part is interesting, and therefore we need
+   * a function to evaluate it explicitly.
+   */
+
+  /**
+   * **gsl_sf_zetam1_int(n)**
+   *
+   *  This routine computes $\zeta(n) - 1$ for integer $n, n \ne 1$.
+   */
   ADDFUNC(gsl_sf_zetam1_int, 1);
+
+  /**
+   * **gsl_sf_zetam1(s)**
+   *
+   *  This routine computes $\zeta(s) - 1$ for arbitrary $s, s \ne 1.$.
+   */
   ADDFUNC(gsl_sf_zetam1, 1);
 
-  /* Hurwitz Zeta Function */
+  /**
+   * Hurwitz Zeta Function
+   * ---------------------
+   *
+   * The Hurwitz zeta function is defined by
+   * $\zeta(s,q) = \sum_0^\infty (k+q)^{-s}$.
+   */
+
+  /**
+   * **gsl_sf_hzeta(s, q)**
+   *
+   *  This routine computes the Hurwitz zeta function $\zeta(s,q)$ for
+   *  $s > 1, q > 0$.
+   */
   ADDFUNC(gsl_sf_hzeta, 2);
 
-  /* Eta Function */
+  /**
+   * Eta Function
+   * ------------
+   *
+   * The eta function is defined by $\eta(s) = (1-2^{1-s}) \zeta(s)$.
+   */
+
+  /**
+   * **gsl_sf_eta_int(n)**
+   *
+   *  This routine computes the eta function $\eta(n)$ for integer $n$.
+   */
   ADDFUNC(gsl_sf_eta_int, 1);
+
+  /**
+   * **gsl_sf_eta(s)**
+   *
+   *  This routine computes the eta function $\eta(s)$ for arbitrary $s$.
+   */
   ADDFUNC(gsl_sf_eta, 1);
 }
