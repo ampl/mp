@@ -47,8 +47,10 @@ using fun::Differentiator;
 using fun::Function;
 using fun::FunctionInfo;
 using fun::HES;
+using fun::MakeArgs;
 using fun::Tuple;
 using fun::Type;
+using fun::Variant;
 
 namespace fun {
 template <>
@@ -237,7 +239,7 @@ class GSLTest : public ::testing::Test {
 
   template <typename F>
   void DoTestFunc(const Function &af, F f) {
-    Tuple args(Tuple::GetTupleWithSize(f.GetNumArgs()));
+    Tuple args(f.GetNumArgs());
     TestFunc(af, f, args, 0);
   }
 
@@ -385,27 +387,27 @@ void GSLTest::TestFuncND(const Function &af, FuncND f, double test_x) {
   EXPECT_ERROR(
       ("can't compute derivative: argument '" + arg_name + "' too small, " +
       arg_name + " = -2147483648").c_str(),
-      af(Tuple(INT_MIN, test_x), DERIVS, use_deriv));
+      af(MakeArgs(INT_MIN, test_x), DERIVS, use_deriv));
   EXPECT_ERROR(
       ("can't compute derivative: argument '" + arg_name + "' too large, " +
       arg_name + " = 2147483647").c_str(),
-      af(Tuple(INT_MAX, test_x), DERIVS, use_deriv));
-  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MIN + 1, test_x), DERIVS,
+      af(MakeArgs(INT_MAX, test_x), DERIVS, use_deriv));
+  EXPECT_TRUE(!gsl_isnan(af(MakeArgs(INT_MIN + 1, test_x), DERIVS,
       use_deriv).deriv(1)));
-  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MAX - 1, test_x), DERIVS,
+  EXPECT_TRUE(!gsl_isnan(af(MakeArgs(INT_MAX - 1, test_x), DERIVS,
       use_deriv).deriv(1)));
 
   EXPECT_ERROR(
       ("can't compute derivative: argument '" + arg_name + "' too small, " +
       arg_name + " = -2147483647").c_str(),
-      af(Tuple(INT_MIN + 1, test_x), HES, use_deriv));
+      af(MakeArgs(INT_MIN + 1, test_x), HES, use_deriv));
   EXPECT_ERROR(
       ("can't compute derivative: argument '" + arg_name + "' too large, " +
       arg_name + " = 2147483646").c_str(),
-      af(Tuple(INT_MAX - 1, test_x), HES, use_deriv));
-  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MIN + 2, test_x), HES,
+      af(MakeArgs(INT_MAX - 1, test_x), HES, use_deriv));
+  EXPECT_TRUE(!gsl_isnan(af(MakeArgs(INT_MIN + 2, test_x), HES,
       use_deriv).hes(2)));
-  EXPECT_TRUE(!gsl_isnan(af(Tuple(INT_MAX - 2, test_x), HES,
+  EXPECT_TRUE(!gsl_isnan(af(MakeArgs(INT_MAX - 2, test_x), HES,
       use_deriv).hes(2)));
 }
 
@@ -701,15 +703,15 @@ TEST_F(GSLTest, Coupling3j) {
   double value = gsl_sf_coupling_3j(8, 20, 12, -2, 12, -10);
   EXPECT_NEAR(0.0812695955, value, 1e-5);
   Function f = GetFunction("gsl_sf_coupling_3j");
-  Tuple args(8, 20, 12, -2, 12, -10);
+  Tuple args(MakeArgs(8, 20, 12, -2, 12, -10));
   EXPECT_EQ(value, f(args));
-  f(Tuple(0, 0, 0, 0, 0, 0));
-  EXPECT_ERROR(NotIntError("two_ja"), f(Tuple(0.5, 0, 0, 0, 0, 0)));
-  EXPECT_ERROR(NotIntError("two_jb"), f(Tuple(0, 0.5, 0, 0, 0, 0)));
-  EXPECT_ERROR(NotIntError("two_jc"), f(Tuple(0, 0, 0.5, 0, 0, 0)));
-  EXPECT_ERROR(NotIntError("two_ma"), f(Tuple(0, 0, 0, 0.5, 0, 0)));
-  EXPECT_ERROR(NotIntError("two_mb"), f(Tuple(0, 0, 0, 0, 0.5, 0)));
-  EXPECT_ERROR(NotIntError("two_mc"), f(Tuple(0, 0, 0, 0, 0, 0.5)));
+  f(MakeArgs(0, 0, 0, 0, 0, 0));
+  EXPECT_ERROR(NotIntError("two_ja"), f(MakeArgs(0.5, 0, 0, 0, 0, 0)));
+  EXPECT_ERROR(NotIntError("two_jb"), f(MakeArgs(0, 0.5, 0, 0, 0, 0)));
+  EXPECT_ERROR(NotIntError("two_jc"), f(MakeArgs(0, 0, 0.5, 0, 0, 0)));
+  EXPECT_ERROR(NotIntError("two_ma"), f(MakeArgs(0, 0, 0, 0.5, 0, 0)));
+  EXPECT_ERROR(NotIntError("two_mb"), f(MakeArgs(0, 0, 0, 0, 0.5, 0)));
+  EXPECT_ERROR(NotIntError("two_mc"), f(MakeArgs(0, 0, 0, 0, 0, 0.5)));
   const char *error = "argument 'two_ja' is not constant";
   EXPECT_ERROR(error, f(args, DERIVS));
   EXPECT_ERROR(error, f(args, HES));
@@ -719,15 +721,15 @@ TEST_F(GSLTest, Coupling6j) {
   double value = gsl_sf_coupling_6j(2, 4, 6, 8, 10, 12);
   EXPECT_NEAR(0.0176295295, value, 1e-7);
   Function f = GetFunction("gsl_sf_coupling_6j");
-  Tuple args(2, 4, 6, 8, 10, 12);
+  Tuple args(MakeArgs(2, 4, 6, 8, 10, 12));
   EXPECT_EQ(value, f(args));
-  EXPECT_TRUE(f(Tuple(0, 0, 0, 0, 0, 0)).error() == nullptr);
-  EXPECT_ERROR(NotIntError("two_ja"), f(Tuple(0.5, 0, 0, 0, 0, 0)));
-  EXPECT_ERROR(NotIntError("two_jb"), f(Tuple(0, 0.5, 0, 0, 0, 0)));
-  EXPECT_ERROR(NotIntError("two_jc"), f(Tuple(0, 0, 0.5, 0, 0, 0)));
-  EXPECT_ERROR(NotIntError("two_jd"), f(Tuple(0, 0, 0, 0.5, 0, 0)));
-  EXPECT_ERROR(NotIntError("two_je"), f(Tuple(0, 0, 0, 0, 0.5, 0)));
-  EXPECT_ERROR(NotIntError("two_jf"), f(Tuple(0, 0, 0, 0, 0, 0.5)));
+  EXPECT_TRUE(f(MakeArgs(0, 0, 0, 0, 0, 0)).error() == nullptr);
+  EXPECT_ERROR(NotIntError("two_ja"), f(MakeArgs(0.5, 0, 0, 0, 0, 0)));
+  EXPECT_ERROR(NotIntError("two_jb"), f(MakeArgs(0, 0.5, 0, 0, 0, 0)));
+  EXPECT_ERROR(NotIntError("two_jc"), f(MakeArgs(0, 0, 0.5, 0, 0, 0)));
+  EXPECT_ERROR(NotIntError("two_jd"), f(MakeArgs(0, 0, 0, 0.5, 0, 0)));
+  EXPECT_ERROR(NotIntError("two_je"), f(MakeArgs(0, 0, 0, 0, 0.5, 0)));
+  EXPECT_ERROR(NotIntError("two_jf"), f(MakeArgs(0, 0, 0, 0, 0, 0.5)));
   const char *error = "argument 'two_ja' is not constant";
   EXPECT_ERROR(error, f(args, DERIVS));
   EXPECT_ERROR(error, f(args, HES));
@@ -737,18 +739,18 @@ TEST_F(GSLTest, Coupling9j) {
   double value = gsl_sf_coupling_9j(6, 16, 18, 8, 20, 14, 12, 10, 4);
   EXPECT_NEAR(-0.000775648399, value, 1e-9);
   Function f = GetFunction("gsl_sf_coupling_9j");
-  Tuple args(6, 16, 18, 8, 20, 14, 12, 10, 4);
+  Tuple args(MakeArgs(6, 16, 18, 8, 20, 14, 12, 10, 4));
   EXPECT_EQ(value, f(args));
-  EXPECT_TRUE(f(Tuple(0, 0, 0, 0, 0, 0, 0, 0, 0)).error() == nullptr);
-  EXPECT_ERROR(NotIntError("two_ja"), f(Tuple(0.5, 0, 0, 0, 0, 0, 0, 0, 0)));
-  EXPECT_ERROR(NotIntError("two_jb"), f(Tuple(0, 0.5, 0, 0, 0, 0, 0, 0, 0)));
-  EXPECT_ERROR(NotIntError("two_jc"), f(Tuple(0, 0, 0.5, 0, 0, 0, 0, 0, 0)));
-  EXPECT_ERROR(NotIntError("two_jd"), f(Tuple(0, 0, 0, 0.5, 0, 0, 0, 0, 0)));
-  EXPECT_ERROR(NotIntError("two_je"), f(Tuple(0, 0, 0, 0, 0.5, 0, 0, 0, 0)));
-  EXPECT_ERROR(NotIntError("two_jf"), f(Tuple(0, 0, 0, 0, 0, 0.5, 0, 0, 0)));
-  EXPECT_ERROR(NotIntError("two_jg"), f(Tuple(0, 0, 0, 0, 0, 0, 0.5, 0, 0)));
-  EXPECT_ERROR(NotIntError("two_jh"), f(Tuple(0, 0, 0, 0, 0, 0, 0, 0.5, 0)));
-  EXPECT_ERROR(NotIntError("two_ji"), f(Tuple(0, 0, 0, 0, 0, 0, 0, 0, 0.5)));
+  EXPECT_TRUE(f(MakeArgs(0, 0, 0, 0, 0, 0, 0, 0, 0)).error() == nullptr);
+  EXPECT_ERROR(NotIntError("two_ja"), f(MakeArgs(0.5, 0, 0, 0, 0, 0, 0, 0, 0)));
+  EXPECT_ERROR(NotIntError("two_jb"), f(MakeArgs(0, 0.5, 0, 0, 0, 0, 0, 0, 0)));
+  EXPECT_ERROR(NotIntError("two_jc"), f(MakeArgs(0, 0, 0.5, 0, 0, 0, 0, 0, 0)));
+  EXPECT_ERROR(NotIntError("two_jd"), f(MakeArgs(0, 0, 0, 0.5, 0, 0, 0, 0, 0)));
+  EXPECT_ERROR(NotIntError("two_je"), f(MakeArgs(0, 0, 0, 0, 0.5, 0, 0, 0, 0)));
+  EXPECT_ERROR(NotIntError("two_jf"), f(MakeArgs(0, 0, 0, 0, 0, 0.5, 0, 0, 0)));
+  EXPECT_ERROR(NotIntError("two_jg"), f(MakeArgs(0, 0, 0, 0, 0, 0, 0.5, 0, 0)));
+  EXPECT_ERROR(NotIntError("two_jh"), f(MakeArgs(0, 0, 0, 0, 0, 0, 0, 0.5, 0)));
+  EXPECT_ERROR(NotIntError("two_ji"), f(MakeArgs(0, 0, 0, 0, 0, 0, 0, 0, 0.5)));
   const char *error = "argument 'two_ja' is not constant";
   EXPECT_ERROR(error, f(args, DERIVS));
   EXPECT_ERROR(error, f(args, HES));
@@ -834,10 +836,10 @@ struct LnGammaInfo : FunctionInfo {
 
 TEST_F(GSLTest, Gamma) {
   Function gamma = GetFunction("gsl_sf_gamma");
-  EXPECT_NEAR(-0.129354, gamma(Tuple(-0.5), DERIVS).deriv(), 1e-6);
-  EXPECT_NEAR(-31.6778, gamma(Tuple(-0.5), HES).hes(), 1e-4);
-  EXPECT_NEAR(1.19786e100, gamma(Tuple(71)), 1e95);
-  EXPECT_TRUE(gsl_isinf(gamma(Tuple(1000))));
+  EXPECT_NEAR(-0.129354, gamma(-0.5, DERIVS).deriv(), 1e-6);
+  EXPECT_NEAR(-31.6778, gamma(-0.5, HES).hes(), 1e-4);
+  EXPECT_NEAR(1.19786e100, gamma(71), 1e95);
+  EXPECT_TRUE(gsl_isinf(gamma(1000)));
   TEST_FUNC(gsl_sf_gamma);
   TEST_FUNC2(gsl_sf_lngamma, LnGammaInfo());
   TEST_FUNC(gsl_sf_gammastar);
@@ -950,7 +952,7 @@ TEST_F(GSLTest, Lambert) {
   TEST_FUNC2(gsl_sf_lambert_W0, LambertW0Info());
   TEST_FUNC2(gsl_sf_lambert_Wm1, LambertWm1Info());
   EXPECT_NEAR(-13.8803,
-      GetFunction("gsl_sf_lambert_Wm1")(Tuple(-0.1), DERIVS).deriv(0), 1e-4);
+      GetFunction("gsl_sf_lambert_Wm1")(-0.1, DERIVS).deriv(0), 1e-4);
 }
 
 TEST_F(GSLTest, Legendre) {
