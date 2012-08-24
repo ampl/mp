@@ -27,6 +27,7 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_complex_math.h>
 #include <gsl/gsl_sf.h>
+#include <gsl/gsl_randist.h>
 
 #include "solvers/funcadd.h"
 
@@ -2512,8 +2513,24 @@ static double amplgsl_sf_eta_int(arglist *al) {
 
 WRAP(gsl_sf_eta, ARGS1)
 
+static gsl_rng *rng;
+
+#define UNUSED(x) (void)(x)
+
+static void free_rng(void *data) {
+  UNUSED(data);
+  gsl_rng_free(rng);
+}
+
+static double amplgsl_ran_gaussian(arglist *al) {
+  return check_result(al, gsl_ran_gaussian(rng, *al->ra));
+}
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
+
+#define ADDFUNC_RANDOM(name, num_args) \
+    addfunc(#name, ampl##name, FUNCADD_RANDOM_VALUED, num_args, #name);
 
 /**
  * AMPL bindings for GNU Scientific Library
@@ -2525,6 +2542,7 @@ WRAP(gsl_sf_eta, ARGS1)
  *    accuracy
  *    elementary
  *    special
+ *    randist
  *
  * Indices and tables
  * ==================
@@ -2637,6 +2655,7 @@ void funcadd_ASL(AmplExports *ae) {
    *    synchrotron
    *    transport
    *    zeta
+   *    sf-refs
    */
 
   /* AMPL has built-in functions acosh, asinh and atanh so wrappers
@@ -4896,4 +4915,157 @@ void funcadd_ASL(AmplExports *ae) {
    *  This routine computes the eta function $\eta(s)$ for arbitrary $s$.
    */
   ADDFUNC(gsl_sf_eta, 1);
+
+  /**
+   * @file sf-refs
+   *
+   * References and Further Reading
+   * ------------------------------
+   *
+   * The library follows the conventions of Abramowitz & Stegun where
+   * possible,
+   *
+   * * Abramowitz & Stegun (eds.), *Handbook of Mathematical Functions*
+   *
+   * The following papers contain information on the algorithms used to
+   * compute the special functions,
+   *
+   * * Allan J. MacLeod, MISCFUN: A software package to compute uncommon
+   *   special functions. *ACM Trans. Math. Soft.*, vol. 22, 1996, 288–301
+   * * G.N. Watson, A Treatise on the Theory of Bessel Functions,
+   *   2nd Edition (Cambridge University Press, 1944).
+   * * G. Nemeth, Mathematical Approximations of Special Functions,
+   *   Nova Science Publishers, ISBN 1-56072-052-2
+   * * B.C. Carlson, Special Functions of Applied Mathematics (1977)
+   * * N. M. Temme, Special Functions: An Introduction to the Classical
+   *   Functions of Mathematical Physics (1996), ISBN 978-0471113133.
+   * * W.J. Thompson, Atlas for Computing Mathematical Functions, John Wiley
+   *   & Sons, New York (1997).
+   * * Y.Y. Luke, Algorithms for the Computation of Mathematical Functions,
+   *   Academic Press, New York (1977).
+   */
+
+  /**
+   * @file randist
+   *
+   * Random Number Distributions
+   * ===========================
+   *
+   * This chapter describes functions for generating random variates and
+   * computing their probability distributions. Samples from the distributions
+   * described in this chapter can be obtained using any of the random number
+   * generators in the library as an underlying source of randomness.
+   *
+   * In the simplest cases a non-uniform distribution can be obtained
+   * analytically from the uniform distribution of a random number generator
+   * by applying an appropriate transformation. This method uses one call
+   * to the random number generator. More complicated distributions are
+   * created by the acceptance-rejection method, which compares the desired
+   * distribution against a distribution which is similar and known
+   * analytically. This usually requires several samples from the generator.
+   *
+   * The library also provides cumulative distribution functions and inverse
+   * cumulative distribution functions, sometimes referred to as quantile
+   * functions. The cumulative distribution functions and their inverses are
+   * computed separately for the upper and lower tails of the distribution,
+   * allowing full accuracy to be retained for small results.
+   *
+   * Note that the discrete random variate functions always return a value
+   * of type unsigned int, and on most platforms this has a maximum value of
+   * $2^{32}-1 \approx 4.29e9$. They should only be called with a safe range of
+   * parameters (where there is a negligible probability of a variate
+   * exceeding this limit) to prevent incorrect results due to overflow.
+   *
+   * .. toctree::
+   *    :maxdepth: 2
+   *
+   *    ran-intro
+   *    ran-gaussian
+   */
+
+  /**
+   * @file ran-intro
+   *
+   * Introduction
+   * ------------
+   *
+   * Continuous random number distributions are defined by a probability
+   * density function, $p(x)$, such that the probability of $x$ occurring
+   * in the infinitesimal range $x$ to $x+dx$ is $p dx$.
+   *
+   * The cumulative distribution function for the lower tail $P(x)$ is defined
+   * by the integral,
+   *
+   * .. math::
+   *   P(x) = \int_{-\infty}^{x} dx' p(x')
+   *
+   * and gives the probability of a variate taking a value less than $x$.
+   *
+   * The cumulative distribution function for the upper tail $Q(x)$ is defined
+   * by the integral,
+   *
+   * .. math::
+   *   Q(x) = \int_{x}^{+\infty} dx' p(x')
+   *
+   * and gives the probability of a variate taking a value greater than $x$.
+   *
+   * The upper and lower cumulative distribution functions are related by
+   * $P(x) + Q(x) = 1$ and satisfy $0 \leq P(x) \leq 1, 0 \leq Q(x) \leq 1$.
+   *
+   * The inverse cumulative distributions, $x=P^{-1}(P)$ and $x=Q^{-1}(Q)$
+   * give the values of $x$ which correspond to a specific value of $P$ or $Q$.
+   * They can be used to find confidence limits from probability values.
+   *
+   * For discrete distributions the probability of sampling the integer
+   * value $k$ is given by $p(k)$, where $\sum_k p(k) = 1$. The cumulative
+   * distribution for the lower tail $P(k)$ of a discrete distribution is
+   * defined as,
+   *
+   * .. math::
+   *   P(k) = \sum_{i <= k} p(i)
+   *
+   * where the sum is over the allowed range of the distribution less than
+   * or equal to $k$.
+   *
+   * The cumulative distribution for the upper tail of a discrete distribution
+   * $Q(k)$ is defined as
+   *
+   * .. math::
+   *   Q(k) = \sum_{i > k} p(i)
+   *
+   * giving the sum of probabilities for all values greater than $k$.
+   * These two definitions satisfy the identity $P(k)+Q(k)=1$.
+   *
+   * If the range of the distribution is $1$ to $n$ inclusive then
+   * $P(n)=1, Q(n)=0$ while $P(1) = p(1), Q(1)=1-p(1)$.
+   */
+
+  /**
+   * @file ran-gaussian
+   *
+   * The Gaussian Distribution
+   * -------------------------
+   */
+
+  /* Initialize the random number generator. */
+  rng = gsl_rng_alloc(gsl_rng_default);
+  at_exit(free_rng, 0);
+
+  /**
+   * **gsl_ran_gaussian(sigma)**
+   *
+   *  This function returns a Gaussian random variate, with mean zero and
+   *  standard deviation sigma. The probability distribution for Gaussian
+   *  random variates is,
+   *
+   *  .. math::
+   *    p(x) dx = {1 \over \sqrt{2 \pi \sigma^2}} \exp (-x^2 / 2\sigma^2) dx
+   *
+   *  for $x$ in the range $-\infty$ to $+\infty$. Use the transformation
+   *  $z = \mu + x$ on the numbers returned by ``gsl_ran_gaussian`` to obtain
+   *  a Gaussian distribution with mean $\mu$. This function uses the
+   *  Box-Muller algorithm which requires two calls to the random number
+   *  generator.
+   */
+  ADDFUNC_RANDOM(gsl_ran_gaussian, 1);
 }
