@@ -28,7 +28,6 @@
 #include "gtest/gtest.h"
 #include "tests/function.h"
 #include "solvers/asl.h"
-#include "solvers/funcadd.h"
 
 using std::ptr_fun;
 using std::sqrt;
@@ -426,15 +425,13 @@ real Test(arglist *args) {
 
 class TestFunction {
  private:
-  ASL testASL_;
   AmplExports ae_;
   func_info fi_;
   Function f_;
 
  public:
   explicit TestFunction(int nargs)
-  : testASL_(), ae_(), fi_(), f_(&testASL_, &fi_, 0) {
-    testASL_.i.ae = &ae_;
+  : ae_(), fi_(), f_(&ae_, &fi_, 0) {
     fi_.nargs = nargs;
     fi_.funcp = Test;
   }
@@ -540,11 +537,11 @@ real ASLHypot(arglist *al) {
 }
 
 TEST(FunctionTest, DerivativeBinder) {
-  ASL asl;
+  AmplExports ae;
   func_info fi = {};
   fi.nargs = 2;
   fi.funcp = ASLHypot;
-  Function f(&asl, &fi, 0);
+  Function f(&ae, &fi, 0);
   DerivativeBinder d(f, 0, 1, Tuple(1, 0));
   ASSERT_EQ(1, d(0));
   ASSERT_EQ(1 / sqrt(2), d(1));

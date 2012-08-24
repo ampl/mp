@@ -116,7 +116,7 @@ Function::Result Function::operator()(const Tuple &args,
   al.ra = &ra[0];
   al.nr = al.n = num_args;
   al.TMI = &tmi;
-  al.AE = asl_->i.ae;
+  al.AE = ae_;
   al.dig = !dig.empty() ? &dig[0] : nullptr;
   al.funcinfo = info ? info : fi_->funcinfo;
 
