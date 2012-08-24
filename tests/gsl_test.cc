@@ -165,8 +165,7 @@ class GSLTest : public ::testing::Test {
   typedef std::map<std::string, func_info> FunctionMap;
 
   static FunctionMap funcs_;
-  static ASL *asl;
-  static AmplExports ae;
+  static AmplExports ae_;
 
   static void AddFunc(const char *name, rfunc f,
       int type, int nargs, void *funcinfo, AmplExports *) {
@@ -189,22 +188,15 @@ class GSLTest : public ::testing::Test {
   }
 
   static void SetUpTestCase() {
-    asl = ASL_alloc(ASL_read_f);
     i_option_ASL = "../solvers/gsl/libamplgsl.so";
-    ae = AmplExports();
     // Use funcadd(AmplExports*) instead of func_add(ASL*) because
     // the latter doesn't load random functions.
-    ae.Addfunc = AddFunc;
-    ae.AtExit = AtExit;
-    ae.Tempmem = Tempmem;
-    ae.SnprintF = snprintf;
-    ae.VsnprintF = vsnprintf;
-    asl->i.ae = &ae;
-    funcadd(&ae);
-  }
-
-  static void TearDownTestCase() {
-    ASL_free(&asl);
+    ae_.Addfunc = AddFunc;
+    ae_.AtExit = AtExit;
+    ae_.Tempmem = Tempmem;
+    ae_.SnprintF = snprintf;
+    ae_.VsnprintF = vsnprintf;
+    funcadd(&ae_);
   }
 
   // Returns an AMPL function by name.
@@ -212,7 +204,7 @@ class GSLTest : public ::testing::Test {
     FunctionMap::const_iterator i = funcs_.find(name);
     if (i == funcs_.end())
       throw std::runtime_error(string("function not found: ") + name);
-    return Function(asl, &(i->second), &info);
+    return Function(&ae_, &(i->second), &info);
   }
 
   Function GetFunction(const char *name) const {
@@ -244,8 +236,7 @@ class GSLTest : public ::testing::Test {
 GSLTest::Stats GSLTest::stats_;
 
 GSLTest::FunctionMap GSLTest::funcs_;
-ASL *GSLTest::asl;
-AmplExports GSLTest::ae = {};
+AmplExports GSLTest::ae_ = {};
 
 template <typename F>
 double GSLTest::Diff(F f, double x, double *error) {

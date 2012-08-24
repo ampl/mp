@@ -31,7 +31,7 @@
 #include <vector>
 #include <cmath>
 
-struct ASL;
+struct AmplExports;
 struct func_info;
 
 namespace fun {
@@ -586,13 +586,13 @@ enum {
 // An AMPL function.
 class Function {
  private:
-  ASL *asl_;
+  AmplExports *ae_;
   const func_info *fi_;
   const FunctionInfo *info_;
 
  public:
-  Function(ASL *asl, const func_info *fi, const FunctionInfo *info) :
-    asl_(asl), fi_(fi), info_(info) {}
+  Function(AmplExports *ae, const func_info *fi, const FunctionInfo *info) :
+    ae_(ae), fi_(fi), info_(info) {}
 
   const char *name() const;
   int nargs() const;
