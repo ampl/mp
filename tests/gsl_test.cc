@@ -22,8 +22,10 @@
 
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf.h>
+#include <gsl/gsl_randist.h>
 
 #include <functional>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
@@ -53,7 +55,14 @@ template <>
 gsl_sf_result *Convert<gsl_sf_result*>(const Variant &v) {
   return static_cast<gsl_sf_result*>(v.pointer());
 }
+
+template <>
+const gsl_rng *Convert<const gsl_rng*>(const Variant &v) {
+  return static_cast<const gsl_rng*>(v.pointer());
 }
+}
+
+extern "C" void funcadd(AmplExports *ae);
 
 namespace {
 
@@ -123,7 +132,6 @@ const size_t NUM_POINTS = sizeof(POINTS) / sizeof(*POINTS);
 
 class GSLTest : public ::testing::Test {
  protected:
-  ASL *asl;
   const FunctionInfo info;  // Default function info.
 
   Differentiator diff;
@@ -154,22 +162,57 @@ class GSLTest : public ::testing::Test {
   template <typename F>
   double Diff(F f, double x, double *error = 0);
 
-  void SetUp() {
-    asl = ASL_alloc(ASL_read_f);
-    i_option_ASL = "../solvers/gsl/libamplgsl.so";
-    func_add(asl);
+  typedef std::map<std::string, func_info> FunctionMap;
+
+  static FunctionMap funcs_;
+  static ASL *asl;
+  static AmplExports ae;
+
+  static void AddFunc(const char *name, rfunc f,
+      int type, int nargs, void *funcinfo, AmplExports *) {
+    func_info fi = {};
+    fi.name = name;
+    fi.funcp = f;
+    fi.ftype = type;
+    fi.nargs = nargs;
+    fi.funcinfo = funcinfo;
+    funcs_[name] = fi;
+    note_libuse_ASL();
   }
 
-  void TearDown() {
+  static void AtExit(AmplExports *, Exitfunc *, void *) {
+    // Do nothing.
+  }
+
+  static void *Tempmem(TMInfo *, size_t size) {
+    return malloc(size);
+  }
+
+  static void SetUpTestCase() {
+    asl = ASL_alloc(ASL_read_f);
+    i_option_ASL = "../solvers/gsl/libamplgsl.so";
+    ae = AmplExports();
+    // Use funcadd(AmplExports*) instead of func_add(ASL*) because
+    // the latter doesn't load random functions.
+    ae.Addfunc = AddFunc;
+    ae.AtExit = AtExit;
+    ae.Tempmem = Tempmem;
+    ae.SnprintF = snprintf;
+    ae.VsnprintF = vsnprintf;
+    asl->i.ae = &ae;
+    funcadd(&ae);
+  }
+
+  static void TearDownTestCase() {
     ASL_free(&asl);
   }
 
   // Returns an AMPL function by name.
   Function GetFunction(const char *name, const FunctionInfo &info) const {
-    func_info *fi = func_lookup(asl, name, 0);
-    if (!fi)
+    FunctionMap::const_iterator i = funcs_.find(name);
+    if (i == funcs_.end())
       throw std::runtime_error(string("function not found: ") + name);
-    return Function(asl, fi, &info);
+    return Function(asl, &(i->second), &info);
   }
 
   Function GetFunction(const char *name) const {
@@ -199,6 +242,10 @@ class GSLTest : public ::testing::Test {
 };
 
 GSLTest::Stats GSLTest::stats_;
+
+GSLTest::FunctionMap GSLTest::funcs_;
+ASL *GSLTest::asl;
+AmplExports GSLTest::ae = {};
 
 template <typename F>
 double GSLTest::Diff(F f, double x, double *error) {
@@ -1000,5 +1047,10 @@ TEST_F(GSLTest, Zeta) {
   TEST_FUNC2(gsl_sf_hzeta, NoDeriv());
   TEST_FUNC2(gsl_sf_eta_int, FunctionInfo("n"));
   TEST_FUNC2(gsl_sf_eta, NoDeriv());
+}
+
+TEST_F(GSLTest, Gaussian) {
+  TEST_FUNC2(gsl_ran_gaussian, NoDeriv());
+  // TODO
 }
 }

@@ -36,24 +36,72 @@ struct func_info;
 
 namespace fun {
 
+enum Type { VOID, INT, UINT, DOUBLE, POINTER };
+
+template <typename T>
+struct GetType;
+
+template <>
+struct GetType<void> {
+  static const Type VALUE = VOID;
+};
+
+template <>
+struct GetType<int> {
+  static const Type VALUE = INT;
+};
+
+template <>
+struct GetType<unsigned> {
+  static const Type VALUE = UINT;
+};
+
+template <>
+struct GetType<double> {
+  static const Type VALUE = DOUBLE;
+};
+
+template <typename T>
+struct GetType<T*> {
+  static const Type VALUE = POINTER;
+};
+
+template <typename T>
+const Type GetType<T*>::VALUE;
+
 class Variant {
  private:
+  Type type_;
+
   union {
     double dval_;
     void *pval_;
   };
 
- public:
-  explicit Variant(double value = 0) : dval_(value) {}
+  void RequireType(Type t) const {
+    if (type_ != t)
+      throw std::runtime_error("type_mismatch");
+  }
 
-  operator double() const { return dval_; }
-  void *pointer() const { return pval_; }
+ public:
+  explicit Variant(double value = 0) : type_(DOUBLE), dval_(value) {}
+
+  operator double() const {
+    RequireType(DOUBLE);
+    return dval_;
+  }
+  void *pointer() const {
+    RequireType(POINTER);
+    return pval_;
+  }
 
   Variant &operator=(double value) {
+    type_ = DOUBLE;
     dval_ = value;
     return *this;
   }
   Variant &operator=(void *value) {
+    type_ = POINTER;
     pval_ = value;
     return *this;
   }
@@ -122,39 +170,6 @@ class BitSet {
   reference operator[](unsigned index) { return store_.at(index); }
   const_reference operator[](unsigned index) const { return store_.at(index); }
 };
-
-enum Type { VOID, INT, UINT, DOUBLE, POINTER };
-
-template <typename T>
-struct GetType;
-
-template <>
-struct GetType<void> {
-  static const Type VALUE = VOID;
-};
-
-template <>
-struct GetType<int> {
-  static const Type VALUE = INT;
-};
-
-template <>
-struct GetType<unsigned> {
-  static const Type VALUE = UINT;
-};
-
-template <>
-struct GetType<double> {
-  static const Type VALUE = DOUBLE;
-};
-
-template <typename T>
-struct GetType<T*> {
-  static const Type VALUE = POINTER;
-};
-
-template <typename T>
-const Type GetType<T*>::VALUE;
 
 template <typename Arg1, typename Arg2 = void,
     typename Arg3 = void, typename Arg4 = void, typename Arg5 = void>
@@ -229,7 +244,7 @@ class FunctionPointer2 : public FunctionWithTypes<Arg1, Arg2> {
 
   Result operator()(const Tuple &args) const {
     this->CheckArgs(args);
-    return f_(args[0], args[1]);
+    return f_(Convert<Arg1>(args[0]), Convert<Arg2>(args[1]));
   }
 };
 
@@ -572,11 +587,11 @@ enum {
 class Function {
  private:
   ASL *asl_;
-  func_info *fi_;
+  const func_info *fi_;
   const FunctionInfo *info_;
 
  public:
-  Function(ASL *asl, func_info *fi, const FunctionInfo *info) :
+  Function(ASL *asl, const func_info *fi, const FunctionInfo *info) :
     asl_(asl), fi_(fi), info_(info) {}
 
   const char *name() const;
