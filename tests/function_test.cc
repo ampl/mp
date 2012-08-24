@@ -41,6 +41,7 @@ using fun::FunctionInfo;
 using fun::FunctionPointer;
 using fun::FunctionWithTypes;
 using fun::GetType;
+using fun::MakeArgs;
 using fun::Tuple;
 using fun::Variant;
 
@@ -76,22 +77,22 @@ void CheckTuple(unsigned size, const Tuple &t) {
   }
 }
 
-TEST(FunctionTest, Tuple) {
-  CheckTuple(1, Tuple(5));
-  CheckTuple(2, Tuple(5, 7));
-  CheckTuple(3, Tuple(5, 7, 11));
-  CheckTuple(4, Tuple(5, 7, 11, 13));
-  CheckTuple(5, Tuple(5, 7, 11, 13, 17));
-  CheckTuple(6, Tuple(5, 7, 11, 13, 17, 19));
-  CheckTuple(9, Tuple(5, 7, 11, 13, 17, 19, 23, 29, 31));
+TEST(FunctionTest, MakeArgs) {
+  CheckTuple(1, MakeArgs(5));
+  CheckTuple(2, MakeArgs(5, 7));
+  CheckTuple(3, MakeArgs(5, 7, 11));
+  CheckTuple(4, MakeArgs(5, 7, 11, 13));
+  CheckTuple(5, MakeArgs(5, 7, 11, 13, 17));
+  CheckTuple(6, MakeArgs(5, 7, 11, 13, 17, 19));
+  CheckTuple(9, MakeArgs(5, 7, 11, 13, 17, 19, 23, 29, 31));
 }
 
 TEST(FunctionTest, TupleOutput) {
   std::ostringstream os;
-  os << Tuple(42);
+  os << Tuple(1, Variant(42));
   EXPECT_EQ("(42)", os.str());
   os.str("");
-  os << Tuple(3, 5, 7);
+  os << MakeArgs(3, 5, 7);
   EXPECT_EQ("(3, 5, 7)", os.str());
 }
 
@@ -164,8 +165,8 @@ TEST(FunctionTest, FunctionPointer1) {
   EXPECT_EQ(1u, f.GetNumArgs());
   EXPECT_EQ(fun::INT, f.GetArgType(0));
   EXPECT_THROW(f.GetArgType(1), std::out_of_range);
-  EXPECT_EQ(3, f(Tuple(3)));
-  EXPECT_THROW(f(Tuple(3, 5)), std::invalid_argument);
+  EXPECT_EQ(3, f(MakeArgs(3)));
+  EXPECT_THROW(f(MakeArgs(3, 5)), std::invalid_argument);
   f = FunctionPointer(Poly1);
 }
 
@@ -180,9 +181,9 @@ TEST(FunctionTest, FunctionPointer2) {
   EXPECT_EQ(fun::DOUBLE, f.GetArgType(0));
   EXPECT_EQ(fun::INT, f.GetArgType(1));
   EXPECT_THROW(f.GetArgType(2), std::out_of_range);
-  EXPECT_THROW(f(Tuple(3)), std::invalid_argument);
-  EXPECT_EQ(35, f(Tuple(3, 5)));
-  EXPECT_THROW(f(Tuple(3, 5, 7)), std::invalid_argument);
+  EXPECT_THROW(f(MakeArgs(3)), std::invalid_argument);
+  EXPECT_EQ(35, f(MakeArgs(3, 5)));
+  EXPECT_THROW(f(MakeArgs(3, 5, 7)), std::invalid_argument);
   f = FunctionPointer(Poly2);
 }
 
@@ -198,9 +199,9 @@ TEST(FunctionTest, FunctionPointer3) {
   EXPECT_EQ(fun::DOUBLE, f.GetArgType(1));
   EXPECT_EQ(fun::UINT, f.GetArgType(2));
   EXPECT_THROW(f.GetArgType(3), std::out_of_range);
-  EXPECT_THROW(f(Tuple(3, 5)), std::invalid_argument);
-  EXPECT_EQ(357, f(Tuple(3, 5, 7)));
-  EXPECT_THROW(f(Tuple(3, 5, 7, 11)), std::invalid_argument);
+  EXPECT_THROW(f(MakeArgs(3, 5)), std::invalid_argument);
+  EXPECT_EQ(357, f(MakeArgs(3, 5, 7)));
+  EXPECT_THROW(f(MakeArgs(3, 5, 7, 11)), std::invalid_argument);
   f = FunctionPointer(Poly3);
 }
 
@@ -217,9 +218,9 @@ TEST(FunctionTest, FunctionPointer4) {
   EXPECT_EQ(fun::DOUBLE, f.GetArgType(2));
   EXPECT_EQ(fun::UINT, f.GetArgType(3));
   EXPECT_THROW(f.GetArgType(4), std::out_of_range);
-  EXPECT_THROW(f(Tuple(2, 3, 5)), std::invalid_argument);
-  EXPECT_EQ(2357, f(Tuple(2, 3, 5, 7)));
-  EXPECT_THROW(f(Tuple(2, 3, 5, 7, 11)), std::invalid_argument);
+  EXPECT_THROW(f(MakeArgs(2, 3, 5)), std::invalid_argument);
+  EXPECT_EQ(2357, f(MakeArgs(2, 3, 5, 7)));
+  EXPECT_THROW(f(MakeArgs(2, 3, 5, 7, 11)), std::invalid_argument);
   f = FunctionPointer(Poly4);
 }
 
@@ -237,9 +238,9 @@ TEST(FunctionTest, FunctionPointer5) {
   EXPECT_EQ(fun::DOUBLE, f.GetArgType(3));
   EXPECT_EQ(fun::INT, f.GetArgType(4));
   EXPECT_THROW(f.GetArgType(5), std::out_of_range);
-  EXPECT_THROW(f(Tuple(1, 2, 3, 5)), std::invalid_argument);
-  EXPECT_EQ(12357, f(Tuple(1, 2, 3, 5, 7)));
-  EXPECT_THROW(f(Tuple(1, 2, 3, 5, 7, 11)), std::invalid_argument);
+  EXPECT_THROW(f(MakeArgs(1, 2, 3, 5)), std::invalid_argument);
+  EXPECT_EQ(12357, f(MakeArgs(1, 2, 3, 5, 7)));
+  EXPECT_THROW(f(MakeArgs(1, 2, 3, 5, 7, 11)), std::invalid_argument);
   f = FunctionPointer(Poly5);
 }
 
@@ -250,7 +251,7 @@ TEST(FunctionTest, BindOne) {
   EXPECT_EQ(fun::INT, f.GetArgType(0));
   EXPECT_EQ(fun::UINT, f.GetArgType(1));
   EXPECT_THROW(f.GetArgType(2), std::out_of_range);
-  EXPECT_EQ(357, f(Tuple(3, 7)));
+  EXPECT_EQ(357, f(MakeArgs(3, 7)));
   f = fun::BindOne(Fun(Poly3), 5.0, 1);
 }
 
@@ -272,24 +273,24 @@ double TestFun3(const Tuple &args) {
 TEST(FunctionTest, BindAllButOne) {
   typedef double (*Fun)(const Tuple &);
 
-  EXPECT_EQ(35, BindAllButOne(TestFun2, Tuple(0, 5), 0)(3));
-  EXPECT_EQ(35, fun::AllButOneBinder<Fun>(TestFun2, Tuple(0, 5), 0)(3));
-  EXPECT_EQ(53, BindAllButOne(TestFun2, Tuple(5, 0), 1)(3));
-  EXPECT_EQ(53, fun::AllButOneBinder<Fun>(TestFun2, Tuple(5, 0), 1)(3));
+  EXPECT_EQ(35, BindAllButOne(TestFun2, MakeArgs(0, 5), 0)(3));
+  EXPECT_EQ(35, fun::AllButOneBinder<Fun>(TestFun2, MakeArgs(0, 5), 0)(3));
+  EXPECT_EQ(53, BindAllButOne(TestFun2, MakeArgs(5, 0), 1)(3));
+  EXPECT_EQ(53, fun::AllButOneBinder<Fun>(TestFun2, MakeArgs(5, 0), 1)(3));
 
   EXPECT_THROW(
-      fun::AllButOneBinder<Fun>(TestFun2, Tuple(0, 5), 2),
+      fun::AllButOneBinder<Fun>(TestFun2, MakeArgs(0, 5), 2),
       std::out_of_range);
 
-  EXPECT_EQ(357, BindAllButOne(TestFun3, Tuple(0, 5, 7), 0)(3));
-  EXPECT_EQ(357, fun::AllButOneBinder<Fun>(TestFun3, Tuple(0, 5, 7), 0)(3));
-  EXPECT_EQ(537, BindAllButOne(TestFun3, Tuple(5, 0, 7), 1)(3));
-  EXPECT_EQ(537, fun::AllButOneBinder<Fun>(TestFun3, Tuple(5, 0, 7), 1)(3));
-  EXPECT_EQ(573, BindAllButOne(TestFun3, Tuple(5, 7, 0), 2)(3));
-  EXPECT_EQ(573, fun::AllButOneBinder<Fun>(TestFun3, Tuple(5, 7, 0), 2)(3));
+  EXPECT_EQ(357, BindAllButOne(TestFun3, MakeArgs(0, 5, 7), 0)(3));
+  EXPECT_EQ(357, fun::AllButOneBinder<Fun>(TestFun3, MakeArgs(0, 5, 7), 0)(3));
+  EXPECT_EQ(537, BindAllButOne(TestFun3, MakeArgs(5, 0, 7), 1)(3));
+  EXPECT_EQ(537, fun::AllButOneBinder<Fun>(TestFun3, MakeArgs(5, 0, 7), 1)(3));
+  EXPECT_EQ(573, BindAllButOne(TestFun3, MakeArgs(5, 7, 0), 2)(3));
+  EXPECT_EQ(573, fun::AllButOneBinder<Fun>(TestFun3, MakeArgs(5, 7, 0), 2)(3));
 
   EXPECT_THROW(
-      fun::AllButOneBinder<Fun>(TestFun3, Tuple(0, 5, 7), 3),
+      fun::AllButOneBinder<Fun>(TestFun3, MakeArgs(0, 5, 7), 3),
       std::out_of_range);
 }
 
@@ -359,11 +360,11 @@ struct TestFunctionInfo : FunctionInfo {
 TEST(FunctionTest, FunctionInfoGetDerivative) {
   FunctionInfo fi1;
   Function f(0, 0, 0);
-  EXPECT_TRUE(std::isnan(fi1.GetDerivative(f, 0, Tuple(0)).value()));
-  EXPECT_TRUE(std::isnan(fi1.GetSecondDerivative(f, 0, 0, Tuple(0)).value()));
+  EXPECT_TRUE(std::isnan(fi1.GetDerivative(f, 0, MakeArgs(0)).value()));
+  EXPECT_TRUE(std::isnan(fi1.GetSecondDerivative(f, 0, 0, MakeArgs(0)).value()));
   TestFunctionInfo fi2;
-  EXPECT_EQ(42, fi2.GetDerivative(f, 0, Tuple(0)).value());
-  EXPECT_EQ(11, fi2.GetSecondDerivative(f, 0, 0, Tuple(0)).value());
+  EXPECT_EQ(42, fi2.GetDerivative(f, 0, MakeArgs(0)).value());
+  EXPECT_EQ(11, fi2.GetSecondDerivative(f, 0, 0, MakeArgs(0)).value());
 }
 
 TEST(FunctionTest, FunctionInfoResult) {
@@ -461,7 +462,7 @@ class TestFunction {
 TEST(FunctionTest, FunctionCall) {
   TestFunction f(1);
   CallData data = {};
-  EXPECT_EQ(42, f.get()(Tuple(777), 0, BitSet(), &data));
+  EXPECT_EQ(42, f.get()(777, 0, BitSet(), &data));
   EXPECT_EQ(f.ae(), data.ae);
   ASSERT_EQ(1, data.n);
   EXPECT_EQ(1, data.nr);
@@ -475,14 +476,14 @@ TEST(FunctionTest, FunctionCall) {
 TEST(FunctionTest, FunctionReturnsError) {
   TestFunction f(1);
   CallData data = {};
-  EXPECT_STREQ("oops", f.get()(Tuple(-1), 0, BitSet(), &data).error());
+  EXPECT_STREQ("oops", f.get()(-1, 0, BitSet(), &data).error());
 }
 
 TEST(FunctionTest, FunctionReturnsDerivs) {
   TestFunction f(3);
   CallData data = {};
   Function::Result res =
-      f.get()(Tuple(11, 22, 33), fun::DERIVS, BitSet(), &data);
+      f.get()(MakeArgs(11, 22, 33), fun::DERIVS, BitSet(), &data);
   EXPECT_EQ(42, res);
   EXPECT_EQ(f.ae(), data.ae);
   ASSERT_EQ(3, data.n);
@@ -502,7 +503,7 @@ TEST(FunctionTest, FunctionReturnsDerivs) {
 TEST(FunctionTest, FunctionReturnsHes) {
   TestFunction f(2);
   CallData data = {};
-  Function::Result res = f.get()(Tuple(111, 222), fun::HES, BitSet(), &data);
+  Function::Result res = f.get()(MakeArgs(111, 222), fun::HES, BitSet(), &data);
   EXPECT_EQ(42, res);
   EXPECT_EQ(f.ae(), data.ae);
   ASSERT_EQ(2, data.n);
@@ -534,12 +535,12 @@ TEST(FunctionTest, FunctionArgNames) {
 TEST(FunctionTest, FunctifonGetDerivative) {
   FunctionInfo fi1;
   Function f1(0, 0, &fi1);
-  EXPECT_TRUE(std::isnan(f1.GetDerivative(0, Tuple(0)).value()));
-  EXPECT_TRUE(std::isnan(f1.GetSecondDerivative(0, 0, Tuple(0)).value()));
+  EXPECT_TRUE(std::isnan(f1.GetDerivative(0, MakeArgs(0)).value()));
+  EXPECT_TRUE(std::isnan(f1.GetSecondDerivative(0, 0, MakeArgs(0)).value()));
   TestFunctionInfo fi2;
   Function f2(0, 0, &fi2);
-  EXPECT_EQ(42, f2.GetDerivative(0, Tuple(0)).value());
-  EXPECT_EQ(11, f2.GetSecondDerivative(0, 0, Tuple(0)).value());
+  EXPECT_EQ(42, f2.GetDerivative(0, MakeArgs(0)).value());
+  EXPECT_EQ(11, f2.GetSecondDerivative(0, 0, MakeArgs(0)).value());
 }
 
 real ASLHypot(arglist *al) {
@@ -560,13 +561,13 @@ TEST(FunctionTest, DerivativeBinder) {
   fi.nargs = 2;
   fi.funcp = ASLHypot;
   Function f(&ae, &fi, 0);
-  DerivativeBinder d(f, 0, 1, Tuple(1, 0));
+  DerivativeBinder d(f, 0, 1, MakeArgs(1, 0));
   ASSERT_EQ(1, d(0));
   ASSERT_EQ(1 / sqrt(2), d(1));
-  d = DerivativeBinder(f, 1, 1, Tuple(1, 0));
+  d = DerivativeBinder(f, 1, 1, MakeArgs(1, 0));
   ASSERT_EQ(0, d(0));
   ASSERT_EQ(1 / sqrt(2), d(1));
-  EXPECT_THROW(DerivativeBinder(f, 2, 0, Tuple(0, 0)), std::out_of_range);
-  EXPECT_THROW(DerivativeBinder(f, 0, 2, Tuple(0, 0)), std::out_of_range);
+  EXPECT_THROW(DerivativeBinder(f, 2, 0, MakeArgs(0, 0)), std::out_of_range);
+  EXPECT_THROW(DerivativeBinder(f, 0, 2, MakeArgs(0, 0)), std::out_of_range);
 }
 }

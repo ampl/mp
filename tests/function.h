@@ -112,44 +112,52 @@ class Variant {
 template <typename T>
 T Convert(const Variant &v) { return v; }
 
-// A tuple of variants.
-class Tuple {
- private:
-  std::vector<Variant> items_;
+typedef std::vector<Variant> Tuple;
 
-  Tuple &operator<<(double arg) {
-    items_.push_back(Variant(arg));
-    return *this;
-  }
+inline Tuple MakeArgs(double a0) {
+  return Tuple(1, Variant(a0));
+}
 
- public:
-  static Tuple GetTupleWithSize(unsigned size) {
-    Tuple t(Variant(0));
-    t.items_.resize(size);
-    return t;
-  }
+inline Tuple MakeArgs(double a0, double a1) {
+  Variant args[] = {Variant(a0), Variant(a1)};
+  return Tuple(args, args + sizeof(args) / sizeof(*args));
+}
 
-  explicit Tuple(double a0) { *this << a0; }
-  Tuple(double a0, double a1) { *this << a0 << a1; }
-  Tuple(double a0, double a1, double a2) { *this << a0 << a1 << a2; }
-  Tuple(double a0, double a1, double a2, double a3) {
-    *this << a0 << a1 << a2 << a3;
-  }
-  Tuple(double a0, double a1, double a2, double a3, double a4) {
-    *this << a0 << a1 << a2 << a3 << a4;
-  }
-  Tuple(double a0, double a1, double a2, double a3, double a4, double a5) {
-    *this << a0 << a1 << a2 << a3 << a4 << a5;
-  }
-  Tuple(double a0, double a1, double a2, double a3,
-      double a4, double a5, double a6, double a7, double a8) {
-    *this << a0 << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8;
-  }
+inline Tuple MakeArgs(double a0, double a1, double a2) {
+  Variant args[] = {Variant(a0), Variant(a1), Variant(a2)};
+  return Tuple(args, args + sizeof(args) / sizeof(*args));
+}
 
-  unsigned size() const { return items_.size(); }
-  Variant &operator[](unsigned index) { return items_.at(index); }
-  Variant operator[](unsigned index) const { return items_.at(index); }
-};
+inline Tuple MakeArgs(double a0, double a1, double a2, double a3) {
+  Variant args[] = {Variant(a0), Variant(a1), Variant(a2), Variant(a3)};
+  return Tuple(args, args + sizeof(args) / sizeof(*args));
+}
+
+inline Tuple MakeArgs(double a0, double a1, double a2, double a3, double a4) {
+  Variant args[] = {
+    Variant(a0), Variant(a1), Variant(a2), Variant(a3), Variant(a4)
+  };
+  return Tuple(args, args + sizeof(args) / sizeof(*args));
+}
+
+inline Tuple MakeArgs(double a0, double a1, double a2,
+    double a3, double a4, double a5) {
+  Variant args[] = {
+    Variant(a0), Variant(a1), Variant(a2),
+    Variant(a3), Variant(a4), Variant(a5)
+  };
+  return Tuple(args, args + sizeof(args) / sizeof(*args));
+}
+
+inline Tuple MakeArgs(double a0, double a1, double a2, double a3,
+    double a4, double a5, double a6, double a7, double a8) {
+  Variant args[] = {
+    Variant(a0), Variant(a1), Variant(a2),
+    Variant(a3), Variant(a4), Variant(a5),
+    Variant(a6), Variant(a7), Variant(a8)
+  };
+  return Tuple(args, args + sizeof(args) / sizeof(*args));
+}
 
 std::ostream &operator<<(std::ostream &os, const Tuple &t);
 
@@ -353,7 +361,7 @@ OneBinder<F, Arg, Result>::OneBinder(F f, Arg value, unsigned bound_arg_index)
 template <typename F, typename Arg, typename Result>
 Result OneBinder<F, Arg, Result>::operator()(const Tuple &args) const {
   unsigned num_args = args.size();
-  Tuple part_args(Tuple::GetTupleWithSize(num_args + 1));
+  Tuple part_args(num_args + 1);
   for (unsigned i = 0; i < bound_arg_index_; ++i)
     part_args[i] = args[i];
   for (unsigned i = bound_arg_index_; i < num_args; ++i)
@@ -640,6 +648,11 @@ class Function {
   // Calls a function.
   Result operator()(const Tuple &args, int flags = 0,
       const BitSet &use_deriv = BitSet(), void *info = 0) const;
+
+  Result operator()(double arg, int flags = 0,
+      const BitSet &use_deriv = BitSet(), void *info = 0) const {
+    return (*this)(MakeArgs(arg), flags, use_deriv, info);
+  }
 
   std::string GetArgName(unsigned index) const {
     return info_->GetArgName(index);
