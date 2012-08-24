@@ -166,6 +166,7 @@ class GSLTest : public ::testing::Test {
 
   static FunctionMap funcs_;
   static AmplExports ae_;
+  static vector<void*> tempmem_;
 
   static void AddFunc(const char *name, rfunc f,
       int type, int nargs, void *funcinfo, AmplExports *) {
@@ -184,7 +185,8 @@ class GSLTest : public ::testing::Test {
   }
 
   static void *Tempmem(TMInfo *, size_t size) {
-    return malloc(size); // TODO: free
+    tempmem_.push_back(0);
+    return tempmem_.back() = malloc(size);
   }
 
   static void SetUpTestCase() {
@@ -197,6 +199,10 @@ class GSLTest : public ::testing::Test {
     ae_.SnprintF = snprintf;
     ae_.VsnprintF = vsnprintf;
     funcadd(&ae_);
+  }
+
+  static void TearDownTestCase() {
+    std::for_each(tempmem_.begin(), tempmem_.end(), std::ptr_fun(free));
   }
 
   // Returns an AMPL function by name.
@@ -243,6 +249,7 @@ GSLTest::Stats GSLTest::stats_;
 
 GSLTest::FunctionMap GSLTest::funcs_;
 AmplExports GSLTest::ae_ = {};
+vector<void*> GSLTest::tempmem_;
 
 template <typename F>
 double GSLTest::Diff(F f, double x, double *error) {
