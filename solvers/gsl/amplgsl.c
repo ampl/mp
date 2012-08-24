@@ -27,6 +27,7 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_complex_math.h>
 #include <gsl/gsl_sf.h>
+#include <gsl/gsl_cdf.h>
 #include <gsl/gsl_randist.h>
 
 #include "solvers/funcadd.h"
@@ -197,6 +198,7 @@ static int check_bessel_args(arglist *al, int flags, const char *arg_name) {
 #define ARGS2_PREC ARGS2, GSL_PREC_DOUBLE
 #define ARGS3_PREC ARGS3, GSL_PREC_DOUBLE
 #define ARGS4_PREC ARGS4, GSL_PREC_DOUBLE
+#define RNG_ARGS1 rng, ARGS1
 
 #define WRAP(func, args) \
   static double ampl##func(arglist *al) { \
@@ -2524,14 +2526,87 @@ static void free_rng(void *data) {
   gsl_rng_free(rng);
 }
 
-static double amplgsl_ran_gaussian(arglist *al) {
+WRAP(gsl_ran_gaussian, RNG_ARGS1)
+
+static double amplgsl_ran_gaussian_pdf(arglist *al) {
+  double x = al->ra[0], sigma = al->ra[1];
+  double pdf = gsl_ran_gaussian_pdf(x, sigma);
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
+    double sigma2 = sigma * sigma, sigma3 = sigma2 * sigma, x2 = x * x;
+    al->derivs[0] = -x * pdf / sigma2;
+    al->derivs[1] = (x2 - sigma2) * pdf / sigma3;
+    if (al->hes) {
+      al->hes[0] = al->derivs[1] / sigma;
+      al->hes[1] = (x2 - 3 * sigma2) * al->derivs[0] / sigma3;
+      al->hes[2] = (x2 * (x2 / sigma2 - 5) / sigma2 + 2) * pdf / sigma2;
+    }
   }
-  double result = gsl_ran_gaussian(rng, *al->ra);
-  return check_result(al, result);
+  return check_result(al, pdf);
 }
+
+WRAP(gsl_ran_gaussian_ziggurat, RNG_ARGS1)
+WRAP(gsl_ran_gaussian_ratio_method, RNG_ARGS1)
+WRAP(gsl_ran_ugaussian, rng)
+
+static double amplgsl_ran_ugaussian_pdf(arglist *al) {
+  double x = al->ra[0];
+  double pdf = gsl_ran_ugaussian_pdf(x);
+  if (al->derivs) {
+    double x2 = x * x;
+    al->derivs[0] = -x * pdf;
+    al->derivs[1] = (x2 - 1) * pdf;
+    if (al->hes) {
+      al->hes[0] = al->derivs[1];
+      al->hes[1] = (x2 - 3) * al->derivs[0];
+      al->hes[2] = (x2 * (x2 - 5) + 2) * pdf;
+    }
+  }
+  return check_result(al, pdf);
+}
+
+WRAP(gsl_ran_ugaussian_ratio_method, rng)
+
+static double amplgsl_cdf_gaussian_P(arglist *al) {
+  double x = al->ra[0], sigma = al->ra[1];
+  if (al->derivs) {
+    double pdf = gsl_ran_gaussian_pdf(x, sigma);
+    double sign = sigma >= 0 ? 1 : -1;
+    al->derivs[0] = sign * pdf;
+    al->derivs[1] = sign * -x * pdf / sigma;
+    if (al->hes) {
+      double x2 = x * x;
+      double sigma2 = sigma * sigma, sigma3 = sigma2 * sigma;
+      al->hes[0] = al->derivs[1] / sigma;
+      al->hes[1] = (x2 - sigma2) * al->derivs[0] / sigma3;
+      al->hes[2] = (x2 - 2 * sigma2) * al->derivs[1] / sigma3;
+    }
+  }
+  return check_result(al, gsl_cdf_gaussian_P(x, sigma));
+}
+
+WRAP(gsl_cdf_gaussian_Q, ARGS2)
+WRAP(gsl_cdf_gaussian_Pinv, ARGS2)
+WRAP(gsl_cdf_gaussian_Qinv, ARGS2)
+
+static double amplgsl_cdf_ugaussian_P(arglist *al) {
+  double x = al->ra[0];
+  if (al->derivs) {
+    double pdf = gsl_ran_ugaussian_pdf(x);
+    al->derivs[0] = pdf;
+    al->derivs[1] = -x * pdf;
+    if (al->hes) {
+      double x2 = x * x;
+      al->hes[0] = al->derivs[1];
+      al->hes[1] = (x2 - 1) * al->derivs[0];
+      al->hes[2] = (x2 - 2) * al->derivs[1];
+    }
+  }
+  return check_result(al, gsl_cdf_ugaussian_P(x));
+}
+
+WRAP(gsl_cdf_ugaussian_Q, ARGS1)
+WRAP(gsl_cdf_ugaussian_Pinv, ARGS1)
+WRAP(gsl_cdf_ugaussian_Qinv, ARGS1)
 
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
@@ -5062,7 +5137,7 @@ void funcadd_ASL(AmplExports *ae) {
    * **gsl_ran_gaussian(sigma)**
    *
    *  This function returns a Gaussian random variate, with mean zero and
-   *  standard deviation sigma. The probability distribution for Gaussian
+   *  standard deviation ``sigma``. The probability distribution for Gaussian
    *  random variates is,
    *
    *  .. math::
@@ -5075,4 +5150,93 @@ void funcadd_ASL(AmplExports *ae) {
    *  generator.
    */
   ADDFUNC_RANDOM(gsl_ran_gaussian, 1);
+
+  /**
+   * **gsl_ran_gaussian_pdf(x, sigma)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for a
+   *  Gaussian distribution with standard deviation ``sigma``, using the formula
+   *  given above.
+   */
+  ADDFUNC(gsl_ran_gaussian_pdf, 2);
+
+  /**
+   * **gsl_ran_gaussian_ziggurat(sigma)**
+   */
+  ADDFUNC_RANDOM(gsl_ran_gaussian_ziggurat, 1);
+
+  /**
+   * **gsl_ran_gaussian_ratio_method(sigma)**
+   *
+   *  These functions compute a Gaussian random variate using the alternative
+   *  Marsaglia-Tsang ziggurat and Kinderman-Monahan-Leva ratio methods.
+   *  The Ziggurat algorithm is the fastest available algorithm in most cases.
+   */
+  ADDFUNC_RANDOM(gsl_ran_gaussian_ratio_method, 1);
+
+  /**
+   * **gsl_ran_ugaussian()**
+   */
+  ADDFUNC_RANDOM(gsl_ran_ugaussian, 0);
+
+  /**
+   * **gsl_ran_ugaussian_pdf(x)**
+   */
+  ADDFUNC(gsl_ran_ugaussian_pdf, 1);
+
+  /**
+   * **gsl_ran_ugaussian_ratio_method()**
+   *
+   *  These functions compute results for the unit Gaussian distribution.
+   *  They are equivalent to the functions above with a standard deviation
+   *  of one, ``sigma`` = 1.
+   */
+  ADDFUNC_RANDOM(gsl_ran_ugaussian_ratio_method, 0);
+
+  /**
+   * **gsl_cdf_gaussian_P(x, sigma)**
+   */
+  ADDFUNC(gsl_cdf_gaussian_P, 2);
+
+  /**
+   * **gsl_cdf_gaussian_Q(x, sigma)**
+   */
+  ADDFUNC(gsl_cdf_gaussian_Q, 2);
+
+  /**
+   * **gsl_cdf_gaussian_Pinv(P, sigma)**
+   */
+  ADDFUNC(gsl_cdf_gaussian_Pinv, 2);
+
+  /**
+   * **gsl_cdf_gaussian_Qinv(Q, sigma)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for the Gaussian distribution with
+   *  standard deviation ``sigma``.
+   */
+  ADDFUNC(gsl_cdf_gaussian_Qinv, 2);
+
+  /**
+   * **gsl_cdf_ugaussian_P(x)**
+   */
+  ADDFUNC(gsl_cdf_ugaussian_P, 1);
+
+  /**
+   * **gsl_cdf_ugaussian_Q(x)**
+   */
+  ADDFUNC(gsl_cdf_ugaussian_Q, 1);
+
+  /**
+   * **gsl_cdf_ugaussian_Pinv(P)**
+   */
+  ADDFUNC(gsl_cdf_ugaussian_Pinv, 1);
+
+  /**
+   * **gsl_cdf_ugaussian_Qinv(Q)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for the unit Gaussian distribution.
+   */
+  ADDFUNC(gsl_cdf_ugaussian_Qinv, 1);
 }

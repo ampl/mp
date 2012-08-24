@@ -22,6 +22,7 @@
 
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf.h>
+#include <gsl/gsl_cdf.h>
 #include <gsl/gsl_randist.h>
 
 #include <functional>
@@ -169,6 +170,7 @@ class GSLTest : public ::testing::Test {
   static FunctionMap funcs_;
   static AmplExports ae_;
   static vector<void*> tempmem_;
+  static gsl_rng *rng_;
 
   static void AddFunc(const char *name, rfunc f,
       int type, int nargs, void *funcinfo, AmplExports *) {
@@ -201,10 +203,13 @@ class GSLTest : public ::testing::Test {
     ae_.SnprintF = snprintf;
     ae_.VsnprintF = vsnprintf;
     funcadd(&ae_);
+
+    rng_ = gsl_rng_alloc(gsl_rng_default);
   }
 
   static void TearDownTestCase() {
     std::for_each(tempmem_.begin(), tempmem_.end(), std::ptr_fun(free));
+    gsl_rng_free(rng_);
   }
 
   // Returns an AMPL function by name.
@@ -252,6 +257,7 @@ GSLTest::Stats GSLTest::stats_;
 GSLTest::FunctionMap GSLTest::funcs_;
 AmplExports GSLTest::ae_ = {};
 vector<void*> GSLTest::tempmem_;
+gsl_rng *GSLTest::rng_;
 
 template <typename F>
 double GSLTest::Diff(F f, double x, double *error) {
@@ -440,14 +446,8 @@ void GSLTest::TestFunc(
         args[i] = 0.0;
       }
     }
-    if (has_double_arg) {
-      if (af.ftype() == FUNCADD_RANDOM_VALUED) {
-        // Balance the number of calls to a random function to keep RNG
-        // states in sync.
-        f(args);
-      }
+    if (has_double_arg)
       EXPECT_ERROR(EvalError(af, args).error(), af(args));
-    }
   }
   if (arg_index < num_args) {
     for (size_t i = 0; i != NUM_POINTS; ++i) {
@@ -505,25 +505,16 @@ ResultBinder<F> BindResult(F f) {
   return ResultBinder<F>(f);
 }
 
-class RNG {
- private:
-  gsl_rng *rng;
-
-  // Do not implement!
-  RNG(const RNG &);
-  void operator=(const RNG &);
-
- public:
-  RNG() : rng(gsl_rng_alloc(gsl_rng_default)) {}
-  ~RNG() { gsl_rng_free(rng); }
-
-  gsl_rng *get() const { return rng; }
-};
-
 template <typename F>
 void GSLTest::TestFunc(const Function &af, F f) {
   unsigned num_args = fun::FunctionPointer(f).GetNumArgs();
   if (af.nargs() == static_cast<int>(num_args) - 1) {
+    fun::Type first_type = fun::FunctionPointer(f).GetArgType(0);
+    if (af.ftype() == FUNCADD_RANDOM_VALUED && first_type == fun::POINTER) {
+      // If the first argument is a random number generator, bind it.
+      DoTestFunc(af, BindOne(fun::FunctionPointer(f), rng_, 0));
+      return;
+    }
     fun::Type last_type = fun::FunctionPointer(f).GetArgType(num_args - 1);
     if (last_type == fun::UINT) {
       // If the last argument is a mode, bind it to GSL_PREC_DOUBLE.
@@ -534,12 +525,6 @@ void GSLTest::TestFunc(const Function &af, F f) {
     if (last_type == fun::POINTER) {
       // If the last argument is a result, bind it.
       DoTestFunc(af, BindResult(fun::FunctionPointer(f)));
-      return;
-    }
-    fun::Type first_type = fun::FunctionPointer(f).GetArgType(0);
-    if (af.ftype() == FUNCADD_RANDOM_VALUED && first_type == fun::POINTER) {
-      // If the first argument is a random number generator, bind it.
-      DoTestFunc(af, BindOne(fun::FunctionPointer(f), RNG().get(), 0));
       return;
     }
   }
@@ -1080,8 +1065,27 @@ TEST_F(GSLTest, Zeta) {
   TEST_FUNC2(gsl_sf_eta, NoDeriv());
 }
 
+struct GaussianPInfo : FunctionInfo {
+  Result GetDerivative(const Function &f, unsigned , const Tuple &args) const {
+    return args[1] == 0 ? EvalError(f, args, "'") : Result();
+  }
+};
+
 TEST_F(GSLTest, Gaussian) {
   TEST_FUNC2(gsl_ran_gaussian, NoDeriv());
-  // TODO
+  TEST_FUNC(gsl_ran_gaussian_pdf);
+  TEST_FUNC2(gsl_ran_gaussian_ziggurat, NoDeriv());
+  TEST_FUNC2(gsl_ran_gaussian_ratio_method, NoDeriv());
+  TEST_FUNC2(gsl_ran_ugaussian, NoDeriv());
+  TEST_FUNC(gsl_ran_ugaussian_pdf);
+  TEST_FUNC2(gsl_ran_ugaussian_ratio_method, NoDeriv());
+  TEST_FUNC2(gsl_cdf_gaussian_P, GaussianPInfo());
+  TEST_FUNC2(gsl_cdf_gaussian_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_gaussian_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_gaussian_Qinv, NoDeriv());
+  TEST_FUNC(gsl_cdf_ugaussian_P);
+  TEST_FUNC2(gsl_cdf_ugaussian_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_ugaussian_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_ugaussian_Qinv, NoDeriv());
 }
 }
