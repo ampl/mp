@@ -184,7 +184,7 @@ class GSLTest : public ::testing::Test {
   }
 
   static void *Tempmem(TMInfo *, size_t size) {
-    return malloc(size);
+    return malloc(size); // TODO: free
   }
 
   static void SetUpTestCase() {
@@ -213,7 +213,7 @@ class GSLTest : public ::testing::Test {
 
   template <typename F>
   bool CheckDerivative(F f, const Function &af,
-      unsigned arg_index, const Tuple &args);
+      unsigned arg_index, const Tuple &args, double value);
 
   static const unsigned NO_ARG = ~0u;
 
@@ -228,6 +228,12 @@ class GSLTest : public ::testing::Test {
 
   template <typename F>
   void TestFunc(const Function &af, F f, Tuple &args, unsigned arg_index);
+
+  template <typename F>
+  void DoTestFunc(const Function &af, F f) {
+    Tuple args(Tuple::GetTupleWithSize(f.GetNumArgs()));
+    TestFunc(af, f, args, 0);
+  }
 
   template <typename F>
   void TestFunc(const Function &af, F f);
@@ -261,7 +267,7 @@ double GSLTest::Diff(F f, double x, double *error) {
 // args: point at which the derivative is computed
 template <typename F>
 bool GSLTest::CheckDerivative(F f, const Function &af,
-    unsigned arg_index, const Tuple &args) {
+    unsigned arg_index, const Tuple &args, double value) {
   std::ostringstream os;
   os << "Checking d/dx" << arg_index << " " << af.name() << " at " << args;
   SCOPED_TRACE(os.str());
@@ -291,7 +297,7 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
   }
 
   Function::Result r = af(args, DERIVS, use_deriv);
-  if (!gsl_isnan(f(x))) {
+  if (!gsl_isnan(value)) {
     if (deriv_result.error())
       EXPECT_ERROR(deriv_result.error(), r);
     else
@@ -415,7 +421,7 @@ template <typename F>
 void GSLTest::TestFunc(
     const Function &af, F f, Tuple &args, unsigned arg_index) {
   unsigned num_args = args.size();
-  if (false && arg_index == 0) {
+  if (false && arg_index == 0) { // TODO: enable
     bool has_double_arg = false;
     for (unsigned i = 0; i < num_args; ++i) {
       if (f.GetArgType(i) == fun::DOUBLE) {
@@ -447,10 +453,11 @@ void GSLTest::TestFunc(
       return;
     }
   }
-  CheckFunction(f(args), af, args);
+  double value = f(args);
+  CheckFunction(value, af, args);
   for (unsigned i = 0; i < num_args; ++i) {
     if (!CheckArg(af, args, f.GetArgType(i), i))
-      CheckDerivative(BindAllButOne(f, args, i), af, i, args);
+      CheckDerivative(BindAllButOne(f, args, i), af, i, args, value);
   }
   CheckSecondDerivatives(af, args);
 }
@@ -483,27 +490,45 @@ ResultBinder<F> BindResult(F f) {
   return ResultBinder<F>(f);
 }
 
+class RNG {
+ private:
+  gsl_rng *rng;
+
+  // Do not implement!
+  RNG(const RNG &);
+  void operator=(const RNG &);
+
+ public:
+  RNG() : rng(gsl_rng_alloc(gsl_rng_default)) {}
+  ~RNG() { gsl_rng_free(rng); }
+
+  gsl_rng *get() const { return rng; }
+};
+
 template <typename F>
 void GSLTest::TestFunc(const Function &af, F f) {
   unsigned num_args = fun::FunctionPointer(f).GetNumArgs();
   if (af.nargs() == static_cast<int>(num_args) - 1) {
     fun::Type last_type = fun::FunctionPointer(f).GetArgType(num_args - 1);
     if (last_type == fun::UINT) {
-      // If the last argument is a mode bind it to GSL_PREC_DOUBLE.
-      Tuple args(Tuple::GetTupleWithSize(num_args - 1));
-      TestFunc(af, BindOne(fun::FunctionPointer(f),
-          GSL_PREC_DOUBLE, num_args - 1), args, 0);
+      // If the last argument is a mode, bind it to GSL_PREC_DOUBLE.
+      DoTestFunc(af, BindOne(fun::FunctionPointer(f),
+          GSL_PREC_DOUBLE, num_args - 1));
       return;
     }
     if (last_type == fun::POINTER) {
-      // If the last argument is a result bind it.
-      Tuple args(Tuple::GetTupleWithSize(num_args - 1));
-      TestFunc(af, BindResult(fun::FunctionPointer(f)), args, 0);
+      // If the last argument is a result, bind it.
+      DoTestFunc(af, BindResult(fun::FunctionPointer(f)));
+      return;
+    }
+    fun::Type first_type = fun::FunctionPointer(f).GetArgType(0);
+    if (af.ftype() == FUNCADD_RANDOM_VALUED && first_type == fun::POINTER) {
+      // If the first argument is a random number generator, bind it.
+      DoTestFunc(af, BindOne(fun::FunctionPointer(f), RNG().get(), 0));
       return;
     }
   }
-  Tuple args(Tuple::GetTupleWithSize(num_args));
-  TestFunc(af, fun::FunctionPointer(f), args, 0);
+  DoTestFunc(af, fun::FunctionPointer(f));
 }
 
 #define TEST_FUNC(name) TestFunc(GetFunction(#name, this->info), name)

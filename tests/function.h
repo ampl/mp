@@ -596,6 +596,7 @@ class Function {
 
   const char *name() const;
   int nargs() const;
+  int ftype() const;
 
   const FunctionInfo *info() const { return info_; }
 

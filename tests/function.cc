@@ -94,6 +94,8 @@ const char *Function::name() const { return fi_->name; }
 
 int Function::nargs() const { return fi_->nargs; }
 
+int Function::ftype() const { return fi_->ftype; }
+
 Function::Result Function::operator()(const Tuple &args,
     int flags, const BitSet &use_deriv, void *info) const {
   unsigned num_args = args.size();

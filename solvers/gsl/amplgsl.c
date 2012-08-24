@@ -2523,7 +2523,12 @@ static void free_rng(void *data) {
 }
 
 static double amplgsl_ran_gaussian(arglist *al) {
-  return check_result(al, gsl_ran_gaussian(rng, *al->ra));
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  double result = gsl_ran_gaussian(rng, *al->ra);
+  return check_result(al, result);
 }
 
 #define ADDFUNC(name, num_args) \
