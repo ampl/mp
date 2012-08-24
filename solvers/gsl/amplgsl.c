@@ -200,6 +200,8 @@ static int check_bessel_args(arglist *al, int flags, const char *arg_name) {
 
 #define WRAP(func, args) \
   static double ampl##func(arglist *al) { \
+    if (!check_args(al)) \
+      return 0; \
     if (al->derivs) { \
       error(al, DERIVS_NOT_PROVIDED); \
       return 0; \
@@ -2282,7 +2284,7 @@ static double amplgsl_sf_mathieu_ce(arglist *al) {
   int n = 0;
   double q = 0, x = 0;
   gsl_sf_result result = {0};
-  if (!check_int_arg(al, 0, "n"))
+  if (!check_int_arg(al, 0, "n") || !check_args(al))
     return 0;
   n = (int)al->ra[0];
   q = al->ra[1];

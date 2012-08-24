@@ -428,7 +428,7 @@ template <typename F>
 void GSLTest::TestFunc(
     const Function &af, F f, Tuple &args, unsigned arg_index) {
   unsigned num_args = args.size();
-  if (false && arg_index == 0) { // TODO: enable
+  if (arg_index == 0) {
     bool has_double_arg = false;
     for (unsigned i = 0; i < num_args; ++i) {
       if (f.GetArgType(i) == fun::DOUBLE) {
@@ -438,8 +438,14 @@ void GSLTest::TestFunc(
         args[i] = 0.0;
       }
     }
-    if (has_double_arg)
+    if (has_double_arg) {
+      if (af.ftype() == FUNCADD_RANDOM_VALUED) {
+        // Balance the number of calls to a random function to keep RNG
+        // states in sync.
+        f(args);
+      }
       EXPECT_ERROR(EvalError(af, args).error(), af(args));
+    }
   }
   if (arg_index < num_args) {
     for (size_t i = 0; i != NUM_POINTS; ++i) {
