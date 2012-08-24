@@ -86,6 +86,8 @@ class Variant {
  public:
   explicit Variant(double value = 0) : type_(DOUBLE), dval_(value) {}
 
+  Type type() const { return type_; }
+
   operator double() const {
     RequireType(DOUBLE);
     return dval_;

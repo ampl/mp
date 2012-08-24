@@ -42,8 +42,26 @@ using fun::FunctionPointer;
 using fun::FunctionWithTypes;
 using fun::GetType;
 using fun::Tuple;
+using fun::Variant;
 
 namespace {
+
+TEST(FunctionTest, Variant) {
+  Variant v1;
+  EXPECT_EQ(fun::DOUBLE, v1.type());
+  EXPECT_EQ(0, static_cast<double>(v1));
+  EXPECT_THROW(v1.pointer(), std::runtime_error);
+  Variant v2(42);
+  EXPECT_EQ(fun::DOUBLE, v2.type());
+  EXPECT_EQ(42, static_cast<double>(v2));
+  v1 = &v2;
+  EXPECT_EQ(fun::POINTER, v1.type());
+  EXPECT_EQ(&v2, v1.pointer());
+  EXPECT_THROW(static_cast<double>(v1), std::runtime_error);
+  v1 = 777;
+  EXPECT_EQ(fun::DOUBLE, v1.type());
+  EXPECT_EQ(777, static_cast<double>(v1));
+}
 
 const double ITEMS[] = {5, 7, 11, 13, 17, 19, 23, 29, 31};
 
