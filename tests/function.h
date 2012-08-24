@@ -235,7 +235,7 @@ class FunctionPointer1 : public FunctionWithTypes<Arg1> {
 
   Result operator()(const Tuple &args) const {
     this->CheckArgs(args);
-    return f_(args[0]);
+    return f_(Convert<Arg1>(args[0]));
   }
 };
 
