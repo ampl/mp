@@ -2612,6 +2612,7 @@ WRAP(gsl_ran_gaussian_tail, RNG_ARGS2)
 WRAP(gsl_ran_gaussian_tail_pdf, ARGS3)
 WRAP(gsl_ran_ugaussian_tail, RNG_ARGS1)
 WRAP(gsl_ran_ugaussian_tail_pdf, ARGS2)
+
 WRAP(gsl_ran_exponential, RNG_ARGS1)
 
 static double amplgsl_ran_exponential_pdf(arglist *al) {
@@ -2660,6 +2661,31 @@ WRAP(gsl_cdf_laplace_P, ARGS2)
 WRAP(gsl_cdf_laplace_Q, ARGS2)
 WRAP(gsl_cdf_laplace_Pinv, ARGS2)
 WRAP(gsl_cdf_laplace_Qinv, ARGS2)
+
+WRAP(gsl_ran_exppow, RNG_ARGS2)
+WRAP(gsl_ran_exppow_pdf, ARGS3)
+WRAP(gsl_cdf_exppow_P, ARGS3)
+WRAP(gsl_cdf_exppow_Q, ARGS3)
+
+WRAP(gsl_ran_cauchy, RNG_ARGS1)
+WRAP(gsl_ran_cauchy_pdf, ARGS2)
+WRAP(gsl_cdf_cauchy_P, ARGS2)
+WRAP(gsl_cdf_cauchy_Q, ARGS2)
+WRAP(gsl_cdf_cauchy_Pinv, ARGS2)
+WRAP(gsl_cdf_cauchy_Qinv, ARGS2)
+
+WRAP(gsl_ran_rayleigh, RNG_ARGS1)
+WRAP(gsl_ran_rayleigh_pdf, ARGS2)
+WRAP(gsl_cdf_rayleigh_P, ARGS2)
+WRAP(gsl_cdf_rayleigh_Q, ARGS2)
+WRAP(gsl_cdf_rayleigh_Pinv, ARGS2)
+WRAP(gsl_cdf_rayleigh_Qinv, ARGS2)
+
+WRAP(gsl_ran_rayleigh_tail, RNG_ARGS2)
+WRAP(gsl_ran_rayleigh_tail_pdf, ARGS3)
+
+WRAP(gsl_ran_landau, rng)
+WRAP(gsl_ran_landau_pdf, ARGS1)
 
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
@@ -5118,6 +5144,12 @@ void funcadd_ASL(AmplExports *ae) {
    *    ran-gaussian
    *    ran-gaussian-tail
    *    ran-exponential
+   *    ran-laplace
+   *    ran-exppow
+   *    ran-cauchy
+   *    ran-rayleigh
+   *    ran-rayleigh-tail
+   *    ran-landau
    */
 
   /**
@@ -5454,4 +5486,222 @@ void funcadd_ASL(AmplExports *ae) {
    *  with width ``a``.
    */
   ADDFUNC(gsl_cdf_laplace_Qinv, 2);
+
+  /**
+   * @file ran-exppow
+   *
+   * The Exponential Power Distribution
+   * ==================================
+   */
+
+  /**
+   * **gsl_ran_exppow(a, b)**
+   *
+   *  This function returns a random variate from exponential power
+   *  distribution with scale parameter ``a`` and exponent ``b``.
+   *  The distribution is,
+   *
+   *  .. math::
+   *    p(x) dx = {1 \over 2 a \Gamma(1+1/b)} \exp(-|x/a|^b) dx
+   *
+   *  for $x \geq 0$. For $b = 1$ this reduces to the Laplace distribution.
+   *  For $b = 2$ it has the same form as a Gaussian distribution, but with
+   *  $a = \sqrt{2} \sigma$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_exppow, 2);
+
+  /**
+   * **gsl_ran_exppow_pdf(x, a, b)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for an
+   *  exponential power distribution with scale parameter ``a`` and exponent
+   *  ``b``, using the formula given above.
+   */
+  ADDFUNC(gsl_ran_exppow_pdf, 3);
+
+  /**
+   * **gsl_ran_exppow_P(x, a, b)**
+   */
+  ADDFUNC(gsl_cdf_exppow_P, 3);
+
+  /**
+   * **gsl_ran_exppow_Q(x, a, b)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ for the exponential power distribution with parameters
+   *  ``a`` and ``b``.
+   */
+  ADDFUNC(gsl_cdf_exppow_Q, 3);
+
+  /**
+   * @file ran-cauchy
+   *
+   * The Cauchy Distribution
+   * ========================
+   */
+
+  /**
+   * **gsl_ran_cauchy(a)**
+   *
+   *  This function returns a random variate from the Cauchy distribution
+   *  with scale parameter ``a``. The probability distribution for Cauchy
+   *  random variates is,
+   *
+   *  .. math::
+   *    p(x) dx = {1 \over a\pi (1 + (x/a)^2) } dx
+   *
+   *  for $x$ in the range $-\infty$ to $+\infty$. The Cauchy distribution
+   *  is also known as the Lorentz distribution.
+   */
+  ADDFUNC_RANDOM(gsl_ran_cauchy, 1);
+
+  /**
+   * **gsl_ran_cauchy_pdf(x, a)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for a
+   *  Cauchy distribution with scale parameter ``a``, using the formula
+   *  given above.
+   */
+  ADDFUNC(gsl_ran_cauchy_pdf, 2);
+
+  /**
+   * **gsl_ran_cauchy_P(x, a)**
+   */
+  ADDFUNC(gsl_cdf_cauchy_P, 2);
+
+  /**
+   * **gsl_ran_cauchy_Q(x, a)**
+   */
+  ADDFUNC(gsl_cdf_cauchy_Q, 2);
+
+  /**
+   * **gsl_ran_cauchy_Pinv(P, a)**
+   */
+  ADDFUNC(gsl_cdf_cauchy_Pinv, 2);
+
+  /**
+   * **gsl_ran_cauchy_Qinv(Q, a)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for the Cauchy distribution with
+   *  scale parameter ``a``.
+   */
+  ADDFUNC(gsl_cdf_cauchy_Qinv, 2);
+
+  /**
+   * @file ran-rayleigh
+   *
+   * The Rayleigh Distribution
+   * =========================
+   */
+
+  /**
+   * **gsl_ran_rayleigh(sigma)**
+   *
+   *  This function returns a random variate from the Rayleigh distribution
+   *  with scale parameter ``sigma``. The distribution is,
+   *
+   *  .. math::
+   *    p(x) dx = {x \over \sigma^2} \exp(- x^2/(2 \sigma^2)) dx
+   *
+   *  for $x > 0$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_rayleigh, 1);
+
+  /**
+   * **gsl_ran_rayleigh_pdf(x, sigma)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for a
+   *  Rayleigh distribution with scale parameter ``sigma``, using the formula
+   *  given above.
+   */
+  ADDFUNC(gsl_ran_rayleigh_pdf, 2);
+
+  /**
+   * **gsl_ran_rayleigh_P(x, sigma)**
+   */
+  ADDFUNC(gsl_cdf_rayleigh_P, 2);
+
+  /**
+   * **gsl_ran_rayleigh_Q(x, sigma)**
+   */
+  ADDFUNC(gsl_cdf_rayleigh_Q, 2);
+
+  /**
+   * **gsl_ran_rayleigh_Pinv(P, sigma)**
+   */
+  ADDFUNC(gsl_cdf_rayleigh_Pinv, 2);
+
+  /**
+   * **gsl_ran_rayleigh_Qinv(Q, sigma)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for the Rayleigh distribution with
+   *  scale parameter ``sigma``.
+   */
+  ADDFUNC(gsl_cdf_rayleigh_Qinv, 2);
+
+  /**
+   * @file ran-rayleigh-tail
+   *
+   * The Rayleigh Tail Distribution
+   * ==============================
+   */
+
+  /**
+   * **gsl_ran_rayleigh_tail(a, sigma)**
+   *
+   *  This function returns a random variate from the tail of the Rayleigh
+   *  distribution with scale parameter ``sigma`` and a lower limit of ``a``.
+   *  The distribution is,
+   *
+   *  .. math::
+   *    p(x) dx = {x \over \sigma^2} \exp ((a^2 - x^2) /(2 \sigma^2)) dx
+   *
+   *  for $x > a$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_rayleigh_tail, 2);
+
+  /**
+   * **gsl_ran_rayleigh_tail_pdf(x, a, sigma)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for a
+   *  Rayleigh tail distribution with scale parameter ``sigma`` and lower
+   *  limit ``a``, using the formula given above.
+   */
+  ADDFUNC(gsl_ran_rayleigh_tail_pdf, 3);
+
+  /**
+   * @file ran-landau
+   *
+   * The Landau Distribution
+   * =======================
+   */
+
+  /**
+   * **gsl_ran_landau()**
+   *
+   *  This function returns a random variate from the Landau distribution.
+   *  The probability distribution for Landau random variates is defined
+   *  analytically by the complex integral,
+   *
+   *  .. math::
+   *    p(x) = (1/(2 \pi i))
+   *      \int_{c-i\infty}^{c+i\infty} \exp(s \log(s) + x s) ds
+   *
+   *  For numerical purposes it is more convenient to use the following
+   *  equivalent form of the integral,
+   *
+   *  .. math::
+   *    p(x) = (1/\pi) \int_0^\infty \exp(-t \log(t) - x t) \sin(\pi t) dt.
+   */
+  ADDFUNC_RANDOM(gsl_ran_landau, 0);
+
+  /**
+   * **gsl_ran_landau_pdf(x)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for the
+   *  Landau distribution using an approximation to the formula given above.
+   */
+  ADDFUNC(gsl_ran_landau_pdf, 1);
 }
