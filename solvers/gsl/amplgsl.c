@@ -2635,6 +2635,32 @@ WRAP(gsl_cdf_exponential_Q, ARGS2)
 WRAP(gsl_cdf_exponential_Pinv, ARGS2)
 WRAP(gsl_cdf_exponential_Qinv, ARGS2)
 
+WRAP(gsl_ran_laplace, RNG_ARGS1)
+
+static double amplgsl_ran_laplace_pdf(arglist *al) {
+  double x = al->ra[0], a = al->ra[1];
+  double pdf = gsl_ran_laplace_pdf(x, a);
+  if (al->derivs) {
+    double dx = pdf / a;
+    if (!al->dig || !al->dig[0]) {
+      al->derivs[0] = -x * dx / fabs(x);
+      if (al->hes) {
+        al->hes[0] = dx / a;
+        al->hes[1] = mul_by_sign(x, 2 - fabs(x) / a) * al->hes[0];
+      }
+    }
+    al->derivs[1] = (fabs(x) - a) * dx / a;
+    if (al->hes)
+      al->hes[2] = ((x * x / a - 4 * fabs(x)) / a + 2) * dx / a;
+  }
+  return check_result(al, pdf);
+}
+
+WRAP(gsl_cdf_laplace_P, ARGS2)
+WRAP(gsl_cdf_laplace_Q, ARGS2)
+WRAP(gsl_cdf_laplace_Pinv, ARGS2)
+WRAP(gsl_cdf_laplace_Qinv, ARGS2)
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
@@ -5376,4 +5402,56 @@ void funcadd_ASL(AmplExports *ae) {
    *  with mean ``mu``.
    */
   ADDFUNC(gsl_cdf_exponential_Qinv, 2);
+
+  /**
+   * @file ran-laplace
+   *
+   * The Laplace Distribution
+   * ========================
+   */
+
+  /**
+   * **gsl_ran_laplace(a)**
+   *
+   *  This function returns a random variate from the Laplace distribution
+   *  with width ``a``. The distribution is,
+   *
+   *  .. math::
+   *    p(x) dx = {1 \over 2 a}  \exp(-|x/a|) dx
+   *
+   *  for $-\infty < x < \infty$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_laplace, 1);
+
+  /**
+   * **gsl_ran_laplace_pdf(x, a)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for a
+   *  Laplace distribution with width ``a``, using the formula given above.
+   */
+  ADDFUNC(gsl_ran_laplace_pdf, 2);
+
+  /**
+   * **gsl_ran_laplace_P(x, a)**
+   */
+  ADDFUNC(gsl_cdf_laplace_P, 2);
+
+  /**
+   * **gsl_ran_laplace_Q(x, a)**
+   */
+  ADDFUNC(gsl_cdf_laplace_Q, 2);
+
+  /**
+   * **gsl_ran_laplace_Pinv(P, a)**
+   */
+  ADDFUNC(gsl_cdf_laplace_Pinv, 2);
+
+  /**
+   * **gsl_ran_laplace_Qinv(Q, a)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for the Laplace distribution
+   *  with width ``a``.
+   */
+  ADDFUNC(gsl_cdf_laplace_Qinv, 2);
 }

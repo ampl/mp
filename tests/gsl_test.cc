@@ -1110,4 +1110,13 @@ TEST_F(GSLTest, Exponential) {
   TEST_FUNC2(gsl_cdf_exponential_Pinv, NoDeriv());
   TEST_FUNC2(gsl_cdf_exponential_Qinv, NoDeriv());
 }
+
+TEST_F(GSLTest, Laplace) {
+  TEST_FUNC2(gsl_ran_laplace, NoDeriv());
+  TEST_FUNC(gsl_ran_laplace_pdf);
+  TEST_FUNC2(gsl_cdf_laplace_P, NoDeriv());
+  TEST_FUNC2(gsl_cdf_laplace_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_laplace_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_laplace_Qinv, NoDeriv());
+}
 }
