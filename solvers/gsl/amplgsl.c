@@ -199,6 +199,7 @@ static int check_bessel_args(arglist *al, int flags, const char *arg_name) {
 #define ARGS3_PREC ARGS3, GSL_PREC_DOUBLE
 #define ARGS4_PREC ARGS4, GSL_PREC_DOUBLE
 #define RNG_ARGS1 rng, ARGS1
+#define RNG_ARGS2 rng, ARGS2
 
 #define WRAP(func, args) \
   static double ampl##func(arglist *al) { \
@@ -2607,6 +2608,32 @@ static double amplgsl_cdf_ugaussian_P(arglist *al) {
 WRAP(gsl_cdf_ugaussian_Q, ARGS1)
 WRAP(gsl_cdf_ugaussian_Pinv, ARGS1)
 WRAP(gsl_cdf_ugaussian_Qinv, ARGS1)
+WRAP(gsl_ran_gaussian_tail, RNG_ARGS2)
+WRAP(gsl_ran_gaussian_tail_pdf, ARGS3)
+WRAP(gsl_ran_ugaussian_tail, RNG_ARGS1)
+WRAP(gsl_ran_ugaussian_tail_pdf, ARGS2)
+WRAP(gsl_ran_exponential, RNG_ARGS1)
+
+static double amplgsl_ran_exponential_pdf(arglist *al) {
+  double x = al->ra[0], mu = al->ra[1];
+  double pdf = gsl_ran_exponential_pdf(x, mu);
+  if (al->derivs) {
+    double mu2 = mu * mu;
+    al->derivs[0] = x < 0 ? 0 : -pdf / mu;
+    al->derivs[1] = x < 0 ? 0 : (x - mu) * pdf / mu2;
+    if (al->hes) {
+      al->hes[0] = x < 0 ? 0 : -al->derivs[0] / mu;
+      al->hes[1] = x < 0 ? 0 : (2 * mu - x) * al->hes[0] / mu;
+      al->hes[2] = x < 0 ? 0 : ((x * x / mu - 4 * x) / mu + 2) * al->hes[0];
+    }
+  }
+  return check_result(al, pdf);
+}
+
+WRAP(gsl_cdf_exponential_P, ARGS2)
+WRAP(gsl_cdf_exponential_Q, ARGS2)
+WRAP(gsl_cdf_exponential_Pinv, ARGS2)
+WRAP(gsl_cdf_exponential_Qinv, ARGS2)
 
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
@@ -5063,13 +5090,15 @@ void funcadd_ASL(AmplExports *ae) {
    *
    *    ran-intro
    *    ran-gaussian
+   *    ran-gaussian-tail
+   *    ran-exponential
    */
 
   /**
    * @file ran-intro
    *
    * Introduction
-   * ------------
+   * ============
    *
    * Continuous random number distributions are defined by a probability
    * density function, $p(x)$, such that the probability of $x$ occurring
@@ -5126,7 +5155,7 @@ void funcadd_ASL(AmplExports *ae) {
    * @file ran-gaussian
    *
    * The Gaussian Distribution
-   * -------------------------
+   * =========================
    */
 
   /* Initialize the random number generator. */
@@ -5239,4 +5268,112 @@ void funcadd_ASL(AmplExports *ae) {
    *  $P(x), Q(x)$ and their inverses for the unit Gaussian distribution.
    */
   ADDFUNC(gsl_cdf_ugaussian_Qinv, 1);
+
+  /**
+   * @file ran-gaussian-tail
+   *
+   * The Gaussian Tail Distribution
+   * ==============================
+   */
+
+  /**
+   * **gsl_ran_gaussian_tail(a, sigma)**
+   *
+   *  This function provides random variates from the upper tail of a
+   *  Gaussian distribution with standard deviation ``sigma``. The values
+   *  returned are larger than the lower limit ``a``, which must be positive.
+   *  The method is based on Marsaglia's famous rectangle-wedge-tail
+   *  algorithm (Ann. Math. Stat. 32, 894–899 (1961)), with this aspect
+   *  explained in Knuth, v2, 3rd ed, p139,586 (exercise 11).
+   *
+   *  The probability distribution for Gaussian tail random variates is,
+   *
+   *  .. math::
+   *    p(x) dx = {1 \over N(a;\sigma) \sqrt{2 \pi \sigma^2}}
+   *      \exp (- x^2/(2 \sigma^2)) dx
+   *
+   *  for $x > a$ where $N(a;\sigma)$ is the normalization constant,
+   *
+   *  .. math::
+   *    N(a;\sigma) = (1/2) \operatorname{erfc}(a / \sqrt{2 \sigma^2}).
+   */
+  ADDFUNC_RANDOM(gsl_ran_gaussian_tail, 2);
+
+  /**
+   * **gsl_ran_gaussian_tail_pdf(x, a, sigma)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for a
+   *  Gaussian tail distribution with standard deviation ``sigma`` and lower
+   *  limit ``a``, using the formula given above.
+   */
+  ADDFUNC(gsl_ran_gaussian_tail_pdf, 3);
+
+  /**
+   * **gsl_ran_ugaussian_tail(a)**
+   */
+  ADDFUNC_RANDOM(gsl_ran_ugaussian_tail, 1);
+
+  /**
+   * **gsl_ran_ugaussian_tail_pdf(x, a)**
+   *
+   *  These functions compute results for the tail of a unit Gaussian
+   *  distribution. They are equivalent to the functions above with a
+   *  standard deviation of one, ``sigma`` = 1.
+   */
+  ADDFUNC(gsl_ran_ugaussian_tail_pdf, 2);
+
+  /* The bivariate Gaussian distribution is not wrapped because it returns
+     more than one value. */
+
+  /**
+   * @file ran-exponential
+   *
+   * The Exponential Distribution
+   * ============================
+   */
+
+  /**
+   * **gsl_ran_exponential(mu)**
+   *
+   *  This function returns a random variate from the exponential distribution
+   *  with mean ``mu``. The distribution is,
+   *
+   *  .. math::
+   *    p(x) dx = {1 \over \mu} \exp(-x/\mu) dx
+   *
+   *  for $x \geq 0$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_exponential, 1);
+
+  /**
+   * **gsl_ran_exponential_pdf(x, a)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for an
+   *  exponential distribution with mean ``mu``, using the formula given above.
+   */
+  ADDFUNC(gsl_ran_exponential_pdf, 2);
+
+  /**
+   * **gsl_cdf_exponential_P(x, mu)**
+   */
+  ADDFUNC(gsl_cdf_exponential_P, 2);
+
+  /**
+   * **gsl_cdf_exponential_Q(x, mu)**
+   */
+  ADDFUNC(gsl_cdf_exponential_Q, 2);
+
+  /**
+   * **gsl_cdf_exponential_Pinv(P, mu)**
+   */
+  ADDFUNC(gsl_cdf_exponential_Pinv, 2);
+
+  /**
+   * **gsl_cdf_exponential_Qinv(Q, mu)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for the exponential distribution
+   *  with mean ``mu``.
+   */
+  ADDFUNC(gsl_cdf_exponential_Qinv, 2);
 }

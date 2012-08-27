@@ -273,7 +273,8 @@ class FunctionPointer3 : public FunctionWithTypes<Arg1, Arg2, Arg3> {
 
   Result operator()(const Tuple &args) const {
     this->CheckArgs(args);
-    return f_(args[0], args[1], Convert<Arg3>(args[2]));
+    return f_(Convert<Arg1>(args[0]),
+        Convert<Arg2>(args[1]), Convert<Arg3>(args[2]));
   }
 };
 
