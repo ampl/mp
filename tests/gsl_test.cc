@@ -1232,4 +1232,22 @@ TEST_F(GSLTest, RanBeta) {
   TEST_FUNC2(gsl_cdf_beta_Pinv, NoDeriv());
   TEST_FUNC2(gsl_cdf_beta_Qinv, NoDeriv());
 }
+
+TEST_F(GSLTest, Logistic) {
+  TEST_FUNC2(gsl_ran_logistic, NoDeriv());
+  TEST_FUNC2(gsl_ran_logistic_pdf, NoDeriv());
+  TEST_FUNC2(gsl_cdf_logistic_P, NoDeriv());
+  TEST_FUNC2(gsl_cdf_logistic_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_logistic_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_logistic_Qinv, NoDeriv());
+}
+
+TEST_F(GSLTest, Pareto) {
+  TEST_FUNC2(gsl_ran_pareto, NoDeriv());
+  TEST_FUNC2(gsl_ran_pareto_pdf, NoDeriv());
+  TEST_FUNC2(gsl_cdf_pareto_P, NoDeriv());
+  TEST_FUNC2(gsl_cdf_pareto_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_pareto_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_pareto_Qinv, NoDeriv());
+}
 }
