@@ -2713,6 +2713,34 @@ WRAP(gsl_cdf_lognormal_Q, ARGS3)
 WRAP(gsl_cdf_lognormal_Pinv, ARGS3)
 WRAP(gsl_cdf_lognormal_Qinv, ARGS3)
 
+WRAP(gsl_ran_chisq, RNG_ARGS1)
+WRAP(gsl_ran_chisq_pdf, ARGS2)
+WRAP(gsl_cdf_chisq_P, ARGS2)
+WRAP(gsl_cdf_chisq_Q, ARGS2)
+WRAP(gsl_cdf_chisq_Pinv, ARGS2)
+WRAP(gsl_cdf_chisq_Qinv, ARGS2)
+
+WRAP(gsl_ran_fdist, RNG_ARGS2)
+WRAP(gsl_ran_fdist_pdf, ARGS3)
+WRAP(gsl_cdf_fdist_P, ARGS3)
+WRAP(gsl_cdf_fdist_Q, ARGS3)
+WRAP(gsl_cdf_fdist_Pinv, ARGS3)
+WRAP(gsl_cdf_fdist_Qinv, ARGS3)
+
+WRAP(gsl_ran_tdist, RNG_ARGS1)
+WRAP(gsl_ran_tdist_pdf, ARGS2)
+WRAP(gsl_cdf_tdist_P, ARGS2)
+WRAP(gsl_cdf_tdist_Q, ARGS2)
+WRAP(gsl_cdf_tdist_Pinv, ARGS2)
+WRAP(gsl_cdf_tdist_Qinv, ARGS2)
+
+WRAP(gsl_ran_beta, RNG_ARGS2)
+WRAP(gsl_ran_beta_pdf, ARGS3)
+WRAP(gsl_cdf_beta_P, ARGS3)
+WRAP(gsl_cdf_beta_Q, ARGS3)
+WRAP(gsl_cdf_beta_Pinv, ARGS3)
+WRAP(gsl_cdf_beta_Qinv, ARGS3)
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
@@ -5181,6 +5209,10 @@ void funcadd_ASL(AmplExports *ae) {
    *    ran-gamma
    *    ran-flat
    *    ran-lognormal
+   *    ran-chisq
+   *    ran-fdist
+   *    ran-tdist
+   *    ran-beta
    */
 
   /**
@@ -5974,4 +6006,249 @@ void funcadd_ASL(AmplExports *ae) {
    *  with parameters ``zeta`` and ``sigma``.
    */
   ADDFUNC(gsl_cdf_lognormal_Qinv, 3);
+
+  /**
+   * @file ran-chisq
+   *
+   * The Chi-squared Distribution
+   * ============================
+   *
+   * The chi-squared distribution arises in statistics. If $Y_i$ are $n$
+   * independent Gaussian random variates with unit variance then the
+   * sum-of-squares,
+   *
+   * .. math::
+   *   X_i = \sum_i Y_i^2
+   *
+   * has a chi-squared distribution with $n$ degrees of freedom.
+   */
+
+  /**
+   * **gsl_ran_chisq(nu)**
+   *
+   *  This function returns a random variate from chi-squared distribution
+   *  with ``nu`` degrees of freedom. The distribution function is,
+   *
+   *  .. math::
+   *    p(x) dx = {1 \over 2 \Gamma(\nu/2) } (x/2)^{\nu/2 - 1} \exp(-x/2) dx
+   *
+   *  for $x \geq 0$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_chisq, 1);
+
+  /**
+   * **gsl_ran_chisq_pdf(x, nu)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for a
+   *  chi-squared distribution with ``nu`` degrees of freedom, using the
+   *  formula given above.
+   */
+  ADDFUNC(gsl_ran_chisq_pdf, 2);
+
+  /**
+   * **gsl_ran_chisq_P(x, nu)**
+   */
+  ADDFUNC(gsl_cdf_chisq_P, 2);
+
+  /**
+   * **gsl_ran_chisq_Q(x, nu)**
+   */
+  ADDFUNC(gsl_cdf_chisq_Q, 2);
+
+  /**
+   * **gsl_ran_chisq_Pinv(P, nu)**
+   */
+  ADDFUNC(gsl_cdf_chisq_Pinv, 2);
+
+  /**
+   * **gsl_ran_chisq_Qinv(Q, nu)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for the chi-squared distribution
+   *  with ``nu`` degrees of freedom.
+   */
+  ADDFUNC(gsl_cdf_chisq_Qinv, 2);
+
+  /**
+   * @file ran-fdist
+   *
+   * The F-distribution
+   * ==================
+   *
+   * The F-distribution arises in statistics. If $Y_1$ and $Y_2$ are
+   * chi-squared deviates with $\nu_1$ and $\nu_2$ degrees of freedom
+   * then the ratio,
+   *
+   * .. math::
+   *   X = { (Y_1 / \nu_1) \over (Y_2 / \nu_2) }
+   *
+   * has an F-distribution $F(x;\nu_1,\nu_2)$.
+   */
+
+  /**
+   * **gsl_ran_fdist(nu1, nu2)**
+   *
+   *  This function returns a random variate from the F-distribution with
+   *  degrees of freedom ``nu1`` and ``nu2``. The distribution function is,
+   *
+   *  .. math::
+   *    p(x) dx =
+   *         { \Gamma((\nu_1 + \nu_2)/2)
+   *              \over \Gamma(\nu_1/2) \Gamma(\nu_2/2) }
+   *         \nu_1^{\nu_1/2} \nu_2^{\nu_2/2}
+   *         x^{\nu_1/2 - 1} (\nu_2 + \nu_1 x)^{-\nu_1/2 -\nu_2/2}
+   *
+   * for $x \geq 0$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_fdist, 2);
+
+  /**
+   * **gsl_ran_fdist_pdf(x, nu1, nu2)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for an
+   *  F-distribution with ``nu1`` and ``nu2`` degrees of freedom, using
+   *  the formula given above.
+   */
+  ADDFUNC(gsl_ran_fdist_pdf, 3);
+
+  /**
+   * **gsl_cdf_fdist_P(x, nu1, nu2)**
+   */
+  ADDFUNC(gsl_cdf_fdist_P, 3);
+
+  /**
+   * **gsl_cdf_fdist_Q(x, nu1, nu2)**
+   */
+  ADDFUNC(gsl_cdf_fdist_Q, 3);
+
+  /**
+   * **gsl_cdf_fdist_Pinv(P, nu1, nu2)**
+   */
+  ADDFUNC(gsl_cdf_fdist_Pinv, 3);
+
+  /**
+   * **gsl_cdf_fdist_Qinv(Q, nu1, nu2)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for the F-distribution with
+   *  ``nu1`` and ``nu2`` degrees of freedom.
+   */
+  ADDFUNC(gsl_cdf_fdist_Qinv, 3);
+
+  /**
+   * @file ran-tdist
+   *
+   * The t-distribution
+   * ============================
+   *
+   * The t-distribution arises in statistics. If $Y_1$ has a normal
+   * distribution and $Y_2$ has a chi-squared distribution with $\nu$
+   * degrees of freedom then the ratio,
+   *
+   * .. math::
+   *   X = { Y_1 \over \sqrt{Y_2 / \nu} }
+   *
+   * has a t-distribution $t(x;\nu)$ with $\nu$ degrees of freedom.
+   */
+
+  /**
+   * **gsl_ran_tdist(nu)**
+   *
+   *  This function returns a random variate from the t-distribution.
+   *  The distribution function is,
+   *
+   *  .. math::
+   *    p(x) dx = {\Gamma((\nu + 1)/2) \over \sqrt{\pi \nu} \Gamma(\nu/2)}
+   *         (1 + x^2/\nu)^{-(\nu + 1)/2} dx
+   *
+   *  for $-\infty < x < +\infty$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_tdist, 1);
+
+  /**
+   * **gsl_ran_tdist_pdf(x, nu)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for a
+   *  t-distribution with ``nu`` degrees of freedom, using the formula
+   *  given above.
+   */
+  ADDFUNC(gsl_ran_tdist_pdf, 2);
+
+  /**
+   * **gsl_ran_tdist_P(x, nu)**
+   */
+  ADDFUNC(gsl_cdf_tdist_P, 2);
+
+  /**
+   * **gsl_ran_tdist_Q(x, nu)**
+   */
+  ADDFUNC(gsl_cdf_tdist_Q, 2);
+
+  /**
+   * **gsl_ran_tdist_Pinv(P, nu)**
+   */
+  ADDFUNC(gsl_cdf_tdist_Pinv, 2);
+
+  /**
+   * **gsl_ran_tdist_Qinv(Q, nu)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for the t-distribution with ``nu``
+   *  degrees of freedom.
+   */
+  ADDFUNC(gsl_cdf_tdist_Qinv, 2);
+
+  /**
+   * @file ran-beta
+   *
+   * The Beta Distribution
+   * =====================
+   */
+
+  /**
+   * **gsl_ran_beta(a, b)**
+   *
+   *  This function returns a random variate from the beta distribution.
+   *  The distribution function is,
+   *
+   *  .. math::
+   *    p(x) dx = {\Gamma(a+b) \over \Gamma(a) \Gamma(b)}
+   *      x^{a-1} (1-x)^{b-1} dx
+   *
+   *  for $0 \leq x \leq 1$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_beta, 2);
+
+  /**
+   * **gsl_ran_beta_pdf(x, a, b)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for a
+   *  beta distribution with parameters ``a`` and ``b``, using the formula
+   *  given above.
+   */
+  ADDFUNC(gsl_ran_beta_pdf, 3);
+
+  /**
+   * **gsl_cdf_beta_P(x, a, b)**
+   */
+  ADDFUNC(gsl_cdf_beta_P, 3);
+
+  /**
+   * **gsl_cdf_beta_Q(x, a, b)**
+   */
+  ADDFUNC(gsl_cdf_beta_Q, 3);
+
+  /**
+   * **gsl_cdf_beta_Pinv(P, a, b)**
+   */
+  ADDFUNC(gsl_cdf_beta_Pinv, 3);
+
+  /**
+   * **gsl_cdf_beta_Qinv(Q, a, b)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for the beta distribution with
+   *  parameters ``a`` and ``b``.
+   */
+  ADDFUNC(gsl_cdf_beta_Qinv, 3);
 }
