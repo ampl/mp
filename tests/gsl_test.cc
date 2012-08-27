@@ -1119,4 +1119,39 @@ TEST_F(GSLTest, Laplace) {
   TEST_FUNC2(gsl_cdf_laplace_Pinv, NoDeriv());
   TEST_FUNC2(gsl_cdf_laplace_Qinv, NoDeriv());
 }
+
+TEST_F(GSLTest, ExpPow) {
+  TEST_FUNC2(gsl_ran_exppow, NoDeriv());
+  TEST_FUNC2(gsl_ran_exppow_pdf, NoDeriv());
+  TEST_FUNC2(gsl_cdf_exppow_P, NoDeriv());
+  TEST_FUNC2(gsl_cdf_exppow_Q, NoDeriv());
+}
+
+TEST_F(GSLTest, Cauchy) {
+  TEST_FUNC2(gsl_ran_cauchy, NoDeriv());
+  TEST_FUNC2(gsl_ran_cauchy_pdf, NoDeriv());
+  TEST_FUNC2(gsl_cdf_cauchy_P, NoDeriv());
+  TEST_FUNC2(gsl_cdf_cauchy_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_cauchy_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_cauchy_Qinv, NoDeriv());
+}
+
+TEST_F(GSLTest, Rayleigh) {
+  TEST_FUNC2(gsl_ran_rayleigh, NoDeriv());
+  TEST_FUNC2(gsl_ran_rayleigh_pdf, NoDeriv());
+  TEST_FUNC2(gsl_cdf_rayleigh_P, NoDeriv());
+  TEST_FUNC2(gsl_cdf_rayleigh_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_rayleigh_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_rayleigh_Qinv, NoDeriv());
+}
+
+TEST_F(GSLTest, RayleighTail) {
+  TEST_FUNC2(gsl_ran_rayleigh_tail, NoDeriv());
+  TEST_FUNC2(gsl_ran_rayleigh_tail_pdf, NoDeriv());
+}
+
+TEST_F(GSLTest, Landau) {
+  TEST_FUNC2(gsl_ran_landau, NoDeriv());
+  TEST_FUNC2(gsl_ran_landau_pdf, NoDeriv());
+}
 }
