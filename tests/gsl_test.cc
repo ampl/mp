@@ -1088,4 +1088,26 @@ TEST_F(GSLTest, Gaussian) {
   TEST_FUNC2(gsl_cdf_ugaussian_Pinv, NoDeriv());
   TEST_FUNC2(gsl_cdf_ugaussian_Qinv, NoDeriv());
 }
+
+TEST_F(GSLTest, GaussianTail) {
+  TEST_FUNC2(gsl_ran_gaussian_tail, NoDeriv());
+  TEST_FUNC2(gsl_ran_gaussian_tail_pdf, NoDeriv());
+  TEST_FUNC2(gsl_ran_ugaussian_tail, NoDeriv());
+  TEST_FUNC2(gsl_ran_ugaussian_tail_pdf, NoDeriv());
+}
+
+struct ExponentialInfo : FunctionInfo {
+  Result GetDerivative(const Function &f, unsigned , const Tuple &args) const {
+    return args[0] >= 0 && args[1] == 0 ? EvalError(f, args, "'") : Result();
+  }
+};
+
+TEST_F(GSLTest, Exponential) {
+  TEST_FUNC2(gsl_ran_exponential, NoDeriv());
+  TEST_FUNC(gsl_ran_exponential_pdf);
+  TEST_FUNC2(gsl_cdf_exponential_P, NoDeriv());
+  TEST_FUNC2(gsl_cdf_exponential_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_exponential_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_exponential_Qinv, NoDeriv());
+}
 }
