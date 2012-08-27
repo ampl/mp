@@ -2741,6 +2741,20 @@ WRAP(gsl_cdf_beta_Q, ARGS3)
 WRAP(gsl_cdf_beta_Pinv, ARGS3)
 WRAP(gsl_cdf_beta_Qinv, ARGS3)
 
+WRAP(gsl_ran_logistic, RNG_ARGS1)
+WRAP(gsl_ran_logistic_pdf, ARGS2)
+WRAP(gsl_cdf_logistic_P, ARGS2)
+WRAP(gsl_cdf_logistic_Q, ARGS2)
+WRAP(gsl_cdf_logistic_Pinv, ARGS2)
+WRAP(gsl_cdf_logistic_Qinv, ARGS2)
+
+WRAP(gsl_ran_pareto, RNG_ARGS2)
+WRAP(gsl_ran_pareto_pdf, ARGS3)
+WRAP(gsl_cdf_pareto_P, ARGS3)
+WRAP(gsl_cdf_pareto_Q, ARGS3)
+WRAP(gsl_cdf_pareto_Pinv, ARGS3)
+WRAP(gsl_cdf_pareto_Qinv, ARGS3)
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
@@ -5213,6 +5227,8 @@ void funcadd_ASL(AmplExports *ae) {
    *    ran-fdist
    *    ran-tdist
    *    ran-beta
+   *    ran-logistic
+   *    ran-pareto
    */
 
   /**
@@ -5467,7 +5483,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_exponential, 1);
 
   /**
-   * **gsl_ran_exponential_pdf(x, a)**
+   * **gsl_ran_exponential_pdf(x, mu)**
    *
    *  This function computes the probability density $p(x)$ at $x$ for an
    *  exponential distribution with mean ``mu``, using the formula given above.
@@ -6251,4 +6267,113 @@ void funcadd_ASL(AmplExports *ae) {
    *  parameters ``a`` and ``b``.
    */
   ADDFUNC(gsl_cdf_beta_Qinv, 3);
+
+  /**
+   * @file ran-logistic
+   *
+   * The Logistic Distribution
+   * =========================
+   */
+
+  /**
+   * **gsl_ran_logistic(a)**
+   *
+   *  This function returns a random variate from the logistic distribution.
+   *  The distribution is,
+   *
+   *  .. math::
+   *    p(x) dx = { \exp(-x/a) \over a (1 + \exp(-x/a))^2 } dx
+   *
+   *  for $-\infty < x < \infty$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_logistic, 1);
+
+  /**
+   * **gsl_ran_logistic_pdf(x, a)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for a
+   *  logistic distribution with scale parameter a, using the formula given
+   *  above.
+   */
+  ADDFUNC(gsl_ran_logistic_pdf, 2);
+
+  /**
+   * **gsl_ran_logistic_P(x, a)**
+   */
+  ADDFUNC(gsl_cdf_logistic_P, 2);
+
+  /**
+   * **gsl_ran_logistic_Q(x, a)**
+   */
+  ADDFUNC(gsl_cdf_logistic_Q, 2);
+
+  /**
+   * **gsl_ran_logistic_Pinv(P, a)**
+   */
+  ADDFUNC(gsl_cdf_logistic_Pinv, 2);
+
+  /**
+   * **gsl_ran_logistic_Qinv(Q, a)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for the logistic distribution
+   *  with scale parameter ``a``.
+   */
+  ADDFUNC(gsl_cdf_logistic_Qinv, 2);
+
+  /**
+   * @file ran-pareto
+   *
+   * The Pareto Distribution
+   * =======================
+   */
+
+  /**
+   * **gsl_ran_pareto(a, b)**
+   *
+   *  This function returns a random variate from the Pareto distribution
+   *  of order ``a``. The distribution function is,
+   *
+   *  .. math::
+   *    p(x) dx = (a/b) / (x/b)^{a+1} dx
+   *
+   *  for $x \geq b$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_pareto, 2);
+
+  /**
+   * **gsl_ran_pareto_pdf(x, a, b)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for a
+   *  Pareto distribution with exponent ``a`` and scale ``b``, using the
+   *  formula given above.
+   */
+  ADDFUNC(gsl_ran_pareto_pdf, 3);
+
+  /**
+   * **gsl_cdf_pareto_P(x, a, b)**
+   */
+  ADDFUNC(gsl_cdf_pareto_P, 3);
+
+  /**
+   * **gsl_cdf_pareto_Q(x, a, b)**
+   */
+  ADDFUNC(gsl_cdf_pareto_Q, 3);
+
+  /**
+   * **gsl_cdf_pareto_Pinv(P, a, b)**
+   */
+  ADDFUNC(gsl_cdf_pareto_Pinv, 3);
+
+  /**
+   * **gsl_cdf_pareto_Qinv(Q, a, b)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for the Pareto distribution
+   *  with exponent ``a`` and scale ``b``.
+   */
+  ADDFUNC(gsl_cdf_pareto_Qinv, 3);
+
+  /* The spherical vector distributions are not wrapped because they returns
+     more than one value. */
 }
