@@ -295,7 +295,8 @@ class FunctionPointer4 : public FunctionWithTypes<Arg1, Arg2, Arg3, Arg4> {
 
   Result operator()(const Tuple &args) const {
     this->CheckArgs(args);
-    return f_(args[0], args[1], args[2], Convert<Arg4>(args[3]));
+    return f_(Convert<Arg1>(args[0]), Convert<Arg2>(args[1]),
+        Convert<Arg3>(args[2]), Convert<Arg4>(args[3]));
   }
 };
 
@@ -586,6 +587,10 @@ class FunctionInfo {
   // numerical differentiation. This function can also return an error message.
   virtual Result GetSecondDerivative(const Function &f,
       unsigned arg1_index, unsigned arg2_index, const Tuple &args) const;
+
+  virtual bool SkipPoint(const Tuple &) const {
+    return false;
+  }
 };
 
 // Flags for an AMPL function call.
@@ -667,6 +672,10 @@ class Function {
   FunctionInfo::Result GetSecondDerivative(
       unsigned arg1_index, unsigned arg2_index, const Tuple &args) const {
     return info_->GetSecondDerivative(*this, arg1_index, arg2_index, args);
+  }
+
+  bool SkipPoint(const Tuple &args) const {
+    return info_->SkipPoint(args);
   }
 };
 
