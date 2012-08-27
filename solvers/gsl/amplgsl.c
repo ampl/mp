@@ -200,6 +200,7 @@ static int check_bessel_args(arglist *al, int flags, const char *arg_name) {
 #define ARGS4_PREC ARGS4, GSL_PREC_DOUBLE
 #define RNG_ARGS1 rng, ARGS1
 #define RNG_ARGS2 rng, ARGS2
+#define RNG_ARGS3 rng, ARGS3
 
 #define WRAP(func, args) \
   static double ampl##func(arglist *al) { \
@@ -2687,6 +2688,31 @@ WRAP(gsl_ran_rayleigh_tail_pdf, ARGS3)
 WRAP(gsl_ran_landau, rng)
 WRAP(gsl_ran_landau_pdf, ARGS1)
 
+WRAP(gsl_ran_levy, RNG_ARGS2)
+WRAP(gsl_ran_levy_skew, RNG_ARGS3)
+
+WRAP(gsl_ran_gamma, RNG_ARGS2)
+WRAP(gsl_ran_gamma_knuth, RNG_ARGS2)
+WRAP(gsl_ran_gamma_pdf, ARGS3)
+WRAP(gsl_cdf_gamma_P, ARGS3)
+WRAP(gsl_cdf_gamma_Q, ARGS3)
+WRAP(gsl_cdf_gamma_Pinv, ARGS3)
+WRAP(gsl_cdf_gamma_Qinv, ARGS3)
+
+WRAP(gsl_ran_flat, RNG_ARGS2)
+WRAP(gsl_ran_flat_pdf, ARGS3)
+WRAP(gsl_cdf_flat_P, ARGS3)
+WRAP(gsl_cdf_flat_Q, ARGS3)
+WRAP(gsl_cdf_flat_Pinv, ARGS3)
+WRAP(gsl_cdf_flat_Qinv, ARGS3)
+
+WRAP(gsl_ran_lognormal, RNG_ARGS2)
+WRAP(gsl_ran_lognormal_pdf, ARGS3)
+WRAP(gsl_cdf_lognormal_P, ARGS3)
+WRAP(gsl_cdf_lognormal_Q, ARGS3)
+WRAP(gsl_cdf_lognormal_Pinv, ARGS3)
+WRAP(gsl_cdf_lognormal_Qinv, ARGS3)
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
@@ -5150,6 +5176,11 @@ void funcadd_ASL(AmplExports *ae) {
    *    ran-rayleigh
    *    ran-rayleigh-tail
    *    ran-landau
+   *    ran-levy
+   *    ran-levy-skew
+   *    ran-gamma
+   *    ran-flat
+   *    ran-lognormal
    */
 
   /**
@@ -5704,4 +5735,243 @@ void funcadd_ASL(AmplExports *ae) {
    *  Landau distribution using an approximation to the formula given above.
    */
   ADDFUNC(gsl_ran_landau_pdf, 1);
+
+  /**
+   * @file ran-levy
+   *
+   * The Levy alpha-Stable Distribution
+   * ==================================
+   */
+
+  /**
+   * **gsl_ran_levy(c, alpha)**
+   *
+   *  This function returns a random variate from the Levy symmetric stable
+   *  distribution with scale ``c`` and exponent ``alpha``. The symmetric
+   *  stable probability distribution is defined by a Fourier transform,
+   *
+   *  .. math::
+   *    p(x) = {1 \over 2 \pi}
+   *      \int_{-\infty}^{+\infty} \exp(-it x - |c t|^\alpha) dt
+   *
+   *  There is no explicit solution for the form of $p(x)$ and the library
+   *  does not define a corresponding pdf function. For $\alpha = 1$ the
+   *  distribution reduces to the Cauchy distribution. For $\alpha = 2$ it
+   *  is a Gaussian distribution with $\sigma = \sqrt{2} c$. For $\alpha < 1$
+   *  the tails of the distribution become extremely wide.
+   *
+   *  The algorithm only works for $0 < \alpha \leq 2$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_levy, 2);
+
+  /**
+   * @file ran-levy-skew
+   *
+   * The Levy skew alpha-Stable Distribution
+   * =======================================
+   */
+
+  /**
+   * **gsl_ran_levy_skew(c, alpha, beta)**
+   *
+   *  This function returns a random variate from the Levy skew stable
+   *  distribution with scale ``c``, exponent ``alpha`` and skewness
+   *  parameter ``beta``. The skewness parameter must lie in the range
+   *  [-1,1]. The Levy skew stable probability distribution is defined
+   *  by a Fourier transform,
+   *
+   *  .. math::
+   *    p(x) = {1 \over 2 \pi} \int_{-\infty}^{+\infty}
+   *      \exp(-it x - |c t|^\alpha (1-i \beta \operatorname{sign}(t)
+   *      \tan(\pi \alpha/2))) dt
+   *
+   *  When $\alpha = 1$ the term $\tan(\pi \alpha/2)$ is replaced by
+   *  $-(2/\pi)\log|t|$. There is no explicit solution for the form of
+   *  $p(x)$ and the library does not define a corresponding pdf function.
+   *  For $\alpha = 2$ the distribution reduces to a Gaussian distribution
+   *  with $\sigma = \sqrt{2} c$ and the skewness parameter has no effect.
+   *  For $\alpha < 1$ the tails of the distribution become extremely wide.
+   *  The symmetric distribution corresponds to $\beta = 0$.
+   *
+   *  The algorithm only works for $0 < \alpha \leq 2$.
+   *
+   * The Levy alpha-stable distributions have the property that if
+   * $N$ alpha-stable variates are drawn from the distribution
+   * $p(c, \alpha, \beta)$ then the sum $Y = X_1 + X_2 + \dots + X_N$
+   * will also be distributed as an alpha-stable variate,
+   * $p(N^{1/\alpha} c, \alpha, \beta)$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_levy_skew, 3);
+
+  /**
+   * @file ran-gamma
+   *
+   * The Gamma Distribution
+   * ======================
+   */
+
+  /**
+   * **gsl_ran_gamma(a, b)**
+   *
+   *  This function returns a random variate from the gamma distribution.
+   *  The distribution function is,
+   *
+   *  .. math::
+   *    p(x) dx = {1 \over \Gamma(a) b^a} x^{a-1} e^{-x/b} dx
+   *
+   *  for $x > 0$.
+   *
+   *  The gamma distribution with an integer parameter ``a`` is known as
+   *  the Erlang distribution.
+   *
+   *  The variates are computed using the Marsaglia-Tsang fast gamma method.
+   */
+  ADDFUNC_RANDOM(gsl_ran_gamma, 2);
+
+  /**
+   * **gsl_ran_gamma_knuth(a, b)**
+   *
+   *  This function returns a gamma variate using the algorithms from Knuth
+   *  (vol 2).
+   */
+  ADDFUNC_RANDOM(gsl_ran_gamma_knuth, 2);
+
+  /**
+   * **gsl_ran_gamma_pdf(x, a, b)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for a
+   *  gamma distribution with parameters ``a`` and ``b``, using the formula
+   *  given above.
+   */
+  ADDFUNC(gsl_ran_gamma_pdf, 3);
+
+  /**
+   * **gsl_cdf_gamma_P(x, a, b)**
+   */
+  ADDFUNC(gsl_cdf_gamma_P, 3);
+
+  /**
+   * **gsl_cdf_gamma_Q(x, a, b)**
+   */
+  ADDFUNC(gsl_cdf_gamma_Q, 3);
+
+  /**
+   * **gsl_cdf_gamma_Pinv(P, a, b)**
+   */
+  ADDFUNC(gsl_cdf_gamma_Pinv, 3);
+
+  /**
+   * **gsl_cdf_gamma_Qinv(Q, a, b)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for the gamma distribution with
+   *  parameters ``a`` and ``b``.
+   */
+  ADDFUNC(gsl_cdf_gamma_Qinv, 3);
+
+  /**
+   * @file ran-flat
+   *
+   * The Flat (Uniform) Distribution
+   * ===============================
+   */
+
+  /**
+   * **gsl_ran_flat(a, b)**
+   *
+   *  This function returns a random variate from the flat (uniform)
+   *  distribution from ``a`` to ``b``. The distribution is,
+   *
+   *  .. math::
+   *    p(x) dx = {1 \over (b-a)} dx
+   *
+   *  if $a \leq x < b$ and $0$ otherwise.
+   */
+  ADDFUNC_RANDOM(gsl_ran_flat, 2);
+
+  /**
+   * **gsl_ran_flat_pdf(x, a, b)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for a
+   *  uniform distribution from ``a`` to ``b``, using the formula given above.
+   */
+  ADDFUNC(gsl_ran_flat_pdf, 3);
+
+  /**
+   * **gsl_cdf_flat_P(x, a, b)**
+   */
+  ADDFUNC(gsl_cdf_flat_P, 3);
+
+  /**
+   * **gsl_cdf_flat_Q(x, a, b)**
+   */
+  ADDFUNC(gsl_cdf_flat_Q, 3);
+
+  /**
+   * **gsl_cdf_flat_Pinv(P, a, b)**
+   */
+  ADDFUNC(gsl_cdf_flat_Pinv, 3);
+
+  /**
+   * **gsl_cdf_flat_Qinv(Q, a, b)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for a uniform distribution from
+   *  ``a`` to ``b``.
+   */
+  ADDFUNC(gsl_cdf_flat_Qinv, 3);
+
+  /**
+   * @file ran-lognormal
+   *
+   * The Lognormal Distribution
+   * ==========================
+   */
+
+  /**
+   * **gsl_ran_lognormal(zeta, sigma)**
+   *
+   *  This function returns a random variate from the lognormal distribution.
+   *  The distribution function is,
+   *
+   *  .. math::
+   *    p(x) dx = {1 \over x \sqrt{2 \pi \sigma^2} }
+   *      \exp(-(\ln(x) - \zeta)^2/2 \sigma^2) dx
+   *
+   *  for $x > 0$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_lognormal, 2);
+
+  /**
+   * **gsl_ran_lognormal_pdf(x, zeta, sigma)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for a
+   *  lognormal distribution with parameters ``zeta`` and ``sigma``, using
+   *  the formula given above.
+   */
+  ADDFUNC(gsl_ran_lognormal_pdf, 3);
+
+  /**
+   * **gsl_cdf_lognormal_P(x, zeta, sigma)**
+   */
+  ADDFUNC(gsl_cdf_lognormal_P, 3);
+
+  /**
+   * **gsl_cdf_lognormal_Q(x, zeta, sigma)**
+   */
+  ADDFUNC(gsl_cdf_lognormal_Q, 3);
+
+  /**
+   * **gsl_cdf_lognormal_Pinv(P, zeta, sigma)**
+   */
+  ADDFUNC(gsl_cdf_lognormal_Pinv, 3);
+
+  /**
+   * **gsl_cdf_lognormal_Qinv(Q, zeta, sigma)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for the lognormal distribution
+   *  with parameters ``zeta`` and ``sigma``.
+   */
+  ADDFUNC(gsl_cdf_lognormal_Qinv, 3);
 }

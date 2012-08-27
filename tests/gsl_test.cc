@@ -468,6 +468,8 @@ void GSLTest::TestFunc(
       return;
     }
   }
+  if (af.SkipPoint(args))
+    return;
   double value = f(args);
   CheckFunction(value, af, args);
   for (unsigned i = 0; i < num_args; ++i) {
@@ -1153,5 +1155,45 @@ TEST_F(GSLTest, RayleighTail) {
 TEST_F(GSLTest, Landau) {
   TEST_FUNC2(gsl_ran_landau, NoDeriv());
   TEST_FUNC2(gsl_ran_landau_pdf, NoDeriv());
+}
+
+TEST_F(GSLTest, Levy) {
+  TEST_FUNC2(gsl_ran_levy, NoDeriv());
+  TEST_FUNC2(gsl_ran_levy_skew, NoDeriv());
+}
+
+struct GammaKnuthInfo : NoDeriv {
+  bool SkipPoint(const Tuple &args) const {
+    // gsl_ran_gamma_knuth doesn't work with nonpositive a.
+    return args[0] <= 0;
+  }
+};
+
+TEST_F(GSLTest, RanGamma) {
+  TEST_FUNC2(gsl_ran_gamma, NoDeriv());
+  TEST_FUNC2(gsl_ran_gamma_knuth, GammaKnuthInfo());
+  TEST_FUNC2(gsl_ran_gamma_pdf, NoDeriv());
+  TEST_FUNC2(gsl_cdf_gamma_P, NoDeriv());
+  TEST_FUNC2(gsl_cdf_gamma_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_gamma_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_gamma_Qinv, NoDeriv());
+}
+
+TEST_F(GSLTest, Flat) {
+  TEST_FUNC2(gsl_ran_flat, NoDeriv());
+  TEST_FUNC2(gsl_ran_flat_pdf, NoDeriv());
+  TEST_FUNC2(gsl_cdf_flat_P, NoDeriv());
+  TEST_FUNC2(gsl_cdf_flat_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_flat_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_flat_Qinv, NoDeriv());
+}
+
+TEST_F(GSLTest, Lognormal) {
+  TEST_FUNC2(gsl_ran_lognormal, NoDeriv());
+  TEST_FUNC2(gsl_ran_lognormal_pdf, NoDeriv());
+  TEST_FUNC2(gsl_cdf_lognormal_P, NoDeriv());
+  TEST_FUNC2(gsl_cdf_lognormal_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_lognormal_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_lognormal_Qinv, NoDeriv());
 }
 }
