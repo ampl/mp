@@ -1196,4 +1196,40 @@ TEST_F(GSLTest, Lognormal) {
   TEST_FUNC2(gsl_cdf_lognormal_Pinv, NoDeriv());
   TEST_FUNC2(gsl_cdf_lognormal_Qinv, NoDeriv());
 }
+
+TEST_F(GSLTest, ChiSq) {
+  TEST_FUNC2(gsl_ran_chisq, NoDeriv());
+  TEST_FUNC2(gsl_ran_chisq_pdf, NoDeriv());
+  TEST_FUNC2(gsl_cdf_chisq_P, NoDeriv());
+  TEST_FUNC2(gsl_cdf_chisq_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_chisq_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_chisq_Qinv, NoDeriv());
+}
+
+TEST_F(GSLTest, FDist) {
+  TEST_FUNC2(gsl_ran_fdist, NoDeriv());
+  TEST_FUNC2(gsl_ran_fdist_pdf, NoDeriv());
+  TEST_FUNC2(gsl_cdf_fdist_P, NoDeriv());
+  TEST_FUNC2(gsl_cdf_fdist_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_fdist_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_fdist_Qinv, NoDeriv());
+}
+
+TEST_F(GSLTest, TDist) {
+  TEST_FUNC2(gsl_ran_tdist, NoDeriv());
+  TEST_FUNC2(gsl_ran_tdist_pdf, NoDeriv());
+  TEST_FUNC2(gsl_cdf_tdist_P, NoDeriv());
+  TEST_FUNC2(gsl_cdf_tdist_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_tdist_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_tdist_Qinv, NoDeriv());
+}
+
+TEST_F(GSLTest, RanBeta) {
+  TEST_FUNC2(gsl_ran_beta, NoDeriv());
+  TEST_FUNC2(gsl_ran_beta_pdf, NoDeriv());
+  TEST_FUNC2(gsl_cdf_beta_P, NoDeriv());
+  TEST_FUNC2(gsl_cdf_beta_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_beta_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_beta_Qinv, NoDeriv());
+}
 }
