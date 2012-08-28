@@ -2896,6 +2896,7 @@ WRAP_DISCRETE(gsl_ran_logarithmic_pdf, ARGS2, DEFAULT_ARGS)
  *    intro
  *    elementary
  *    special
+ *    rng
  *    randist
  *    freedoc
  *    gpl
@@ -5474,7 +5475,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /* Initialize the random number generator. */
-  rng = gsl_rng_alloc(gsl_rng_default);
+  rng = gsl_rng_alloc(gsl_rng_env_setup());
   at_exit(free_rng, 0);
 
   /**
