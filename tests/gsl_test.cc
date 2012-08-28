@@ -1250,4 +1250,31 @@ TEST_F(GSLTest, Pareto) {
   TEST_FUNC2(gsl_cdf_pareto_Pinv, NoDeriv());
   TEST_FUNC2(gsl_cdf_pareto_Qinv, NoDeriv());
 }
+
+TEST_F(GSLTest, Weibull) {
+  TEST_FUNC2(gsl_ran_weibull, NoDeriv());
+  TEST_FUNC2(gsl_ran_weibull_pdf, NoDeriv());
+  TEST_FUNC2(gsl_cdf_weibull_P, NoDeriv());
+  TEST_FUNC2(gsl_cdf_weibull_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_weibull_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_weibull_Qinv, NoDeriv());
+}
+
+TEST_F(GSLTest, Gumbel1) {
+  TEST_FUNC2(gsl_ran_gumbel1, NoDeriv());
+  TEST_FUNC2(gsl_ran_gumbel1_pdf, NoDeriv());
+  TEST_FUNC2(gsl_cdf_gumbel1_P, NoDeriv());
+  TEST_FUNC2(gsl_cdf_gumbel1_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_gumbel1_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_gumbel1_Qinv, NoDeriv());
+}
+
+TEST_F(GSLTest, Gumbel2) {
+  TEST_FUNC2(gsl_ran_gumbel2, NoDeriv());
+  TEST_FUNC2(gsl_ran_gumbel2_pdf, NoDeriv());
+  TEST_FUNC2(gsl_cdf_gumbel2_P, NoDeriv());
+  TEST_FUNC2(gsl_cdf_gumbel2_Q, NoDeriv());
+  TEST_FUNC2(gsl_cdf_gumbel2_Pinv, NoDeriv());
+  TEST_FUNC2(gsl_cdf_gumbel2_Qinv, NoDeriv());
+}
 }
