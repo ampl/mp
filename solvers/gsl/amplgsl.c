@@ -2788,36 +2788,34 @@ WRAP(gsl_cdf_gumbel2_Q, ARGS3)
 WRAP(gsl_cdf_gumbel2_Pinv, ARGS3)
 WRAP(gsl_cdf_gumbel2_Qinv, ARGS3)
 
-#define WRAP_DISCRETE(func, args) \
+#define WRAP_DISCRETE(func, args, uint_arg_names) \
   static double ampl##func(arglist *al) { \
+    const void *has_names = uint_arg_names; \
     if (!check_args(al) || !check_uint_arg(al, 0, "k")) \
       return 0; \
+    if (has_names) { \
+      int i = 1; \
+      for ( ; i < al->n; ++i) { \
+        if (uint_arg_names[i] && !check_uint_arg(al, i, uint_arg_names[i])) \
+          return 0; \
+      } \
+    } \
     if (al->derivs) { \
       error(al, DERIVS_NOT_PROVIDED); \
       return 0; \
     } \
     return check_result(al, func(args)); \
   }
+
+const char *const *const DEFAULT_ARGS;
 
 WRAP(gsl_ran_poisson, RNG_ARGS1)
-WRAP_DISCRETE(gsl_ran_poisson_pdf, ARGS2)
-WRAP_DISCRETE(gsl_cdf_poisson_P, ARGS2)
-WRAP_DISCRETE(gsl_cdf_poisson_Q, ARGS2)
+WRAP_DISCRETE(gsl_ran_poisson_pdf, ARGS2, DEFAULT_ARGS)
+WRAP_DISCRETE(gsl_cdf_poisson_P, ARGS2, DEFAULT_ARGS)
+WRAP_DISCRETE(gsl_cdf_poisson_Q, ARGS2, DEFAULT_ARGS)
 
 WRAP(gsl_ran_bernoulli, RNG_ARGS1)
-WRAP_DISCRETE(gsl_ran_bernoulli_pdf, ARGS2)
-
-#define WRAP_BINOMIAL(func, args) \
-  static double ampl##func(arglist *al) { \
-    if (!check_args(al) || !check_uint_arg(al, 0, "k") || \
-        !check_uint_arg(al, 2, "n")) \
-      return 0; \
-    if (al->derivs) { \
-      error(al, DERIVS_NOT_PROVIDED); \
-      return 0; \
-    } \
-    return check_result(al, func(args)); \
-  }
+WRAP_DISCRETE(gsl_ran_bernoulli_pdf, ARGS2, DEFAULT_ARGS)
 
 static double amplgsl_ran_binomial(arglist *al) {
   if (!check_args(al) || !check_uint_arg(al, 1, "n"))
@@ -2829,14 +2827,16 @@ static double amplgsl_ran_binomial(arglist *al) {
   return check_result(al, gsl_ran_binomial(rng, al->ra[0], al->ra[1]));
 }
 
-WRAP_BINOMIAL(gsl_ran_binomial_pdf, ARGS3)
-WRAP_BINOMIAL(gsl_cdf_binomial_P, ARGS3)
-WRAP_BINOMIAL(gsl_cdf_binomial_Q, ARGS3)
+const char *const BINOMIAL_ARGS[] = {0, 0, "n"};
+
+WRAP_DISCRETE(gsl_ran_binomial_pdf, ARGS3, BINOMIAL_ARGS)
+WRAP_DISCRETE(gsl_cdf_binomial_P, ARGS3, BINOMIAL_ARGS)
+WRAP_DISCRETE(gsl_cdf_binomial_Q, ARGS3, BINOMIAL_ARGS)
 
 WRAP(gsl_ran_negative_binomial, RNG_ARGS2)
-WRAP_DISCRETE(gsl_ran_negative_binomial_pdf, ARGS3)
-WRAP_DISCRETE(gsl_cdf_negative_binomial_P, ARGS3)
-WRAP_DISCRETE(gsl_cdf_negative_binomial_Q, ARGS3)
+WRAP_DISCRETE(gsl_ran_negative_binomial_pdf, ARGS3, DEFAULT_ARGS)
+WRAP_DISCRETE(gsl_cdf_negative_binomial_P, ARGS3, DEFAULT_ARGS)
+WRAP_DISCRETE(gsl_cdf_negative_binomial_Q, ARGS3, DEFAULT_ARGS)
 
 static double amplgsl_ran_pascal(arglist *al) {
   if (!check_args(al) || !check_uint_arg(al, 1, "n"))
@@ -2848,9 +2848,36 @@ static double amplgsl_ran_pascal(arglist *al) {
   return check_result(al, gsl_ran_pascal(rng, al->ra[0], al->ra[1]));
 }
 
-WRAP_BINOMIAL(gsl_ran_pascal_pdf, ARGS3)
-WRAP_BINOMIAL(gsl_cdf_pascal_P, ARGS3)
-WRAP_BINOMIAL(gsl_cdf_pascal_Q, ARGS3)
+WRAP_DISCRETE(gsl_ran_pascal_pdf, ARGS3, BINOMIAL_ARGS)
+WRAP_DISCRETE(gsl_cdf_pascal_P, ARGS3, BINOMIAL_ARGS)
+WRAP_DISCRETE(gsl_cdf_pascal_Q, ARGS3, BINOMIAL_ARGS)
+
+WRAP(gsl_ran_geometric, RNG_ARGS1)
+WRAP_DISCRETE(gsl_ran_geometric_pdf, ARGS2, DEFAULT_ARGS)
+WRAP_DISCRETE(gsl_cdf_geometric_P, ARGS2, DEFAULT_ARGS)
+WRAP_DISCRETE(gsl_cdf_geometric_Q, ARGS2, DEFAULT_ARGS)
+
+static double amplgsl_ran_hypergeometric(arglist *al) {
+  if (!check_args(al) || !check_uint_arg(al, 1, "n1") ||
+      !check_uint_arg(al, 2, "n2") || !check_uint_arg(al, 3, "t")) {
+    return 0;
+  }
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al,
+      gsl_ran_hypergeometric(rng, al->ra[0], al->ra[1], al->ra[2]));
+}
+
+const char *const HYPERGEOMETRIC_ARGS[] = {0, "n1", "n2", "t"};
+
+WRAP_DISCRETE(gsl_ran_hypergeometric_pdf, ARGS4, HYPERGEOMETRIC_ARGS)
+WRAP_DISCRETE(gsl_cdf_hypergeometric_P, ARGS4, HYPERGEOMETRIC_ARGS)
+WRAP_DISCRETE(gsl_cdf_hypergeometric_Q, ARGS4, HYPERGEOMETRIC_ARGS)
+
+WRAP(gsl_ran_logarithmic, RNG_ARGS1)
+WRAP_DISCRETE(gsl_ran_logarithmic_pdf, ARGS2, DEFAULT_ARGS)
 
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
@@ -5334,6 +5361,9 @@ void funcadd_ASL(AmplExports *ae) {
    *    ran-binomial
    *    ran-negative-binomial
    *    ran-pascal
+   *    ran-geometric
+   *    ran-hypergeometric
+   *    ran-logarithmic
    */
 
   /**
@@ -6852,4 +6882,128 @@ void funcadd_ASL(AmplExports *ae) {
    *  and ``n``.
    */
   ADDFUNC(gsl_cdf_pascal_Q, 3);
+
+  /**
+   * @file ran-geometric
+   *
+   * The Geometric Distribution
+   * ==========================
+   */
+
+  /**
+   * **gsl_ran_geometric(p)**
+   *
+   *  This function returns a random integer from the geometric distribution,
+   *  the number of independent trials with probability ``p`` until the first
+   *  success. The probability distribution for geometric variates is,
+   *
+   *  .. math::
+   *    p(k) =  p (1-p)^(k-1)
+   *
+   *  for $k \geq 1$. Note that the distribution begins with $k=1$ with this
+   *  definition. There is another convention in which the exponent $k-1$ is
+   *  replaced by $k$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_geometric, 1);
+
+  /**
+   * **gsl_ran_geometric_pdf(k, p)**
+   *
+   *  This function computes the probability $p(k)$ of obtaining $k$ from
+   *  a geometric distribution with probability parameter ``p``, using the
+   *  formula given above.
+   */
+  ADDFUNC(gsl_ran_geometric_pdf, 2);
+
+  /**
+   * **gsl_cdf_geometric_P(k, p)**
+   */
+  ADDFUNC(gsl_cdf_geometric_P, 2);
+
+  /**
+   * **gsl_cdf_geometric_Q(k, p)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(k), Q(k)$ for the geometric distribution with parameter ``p``.
+   */
+  ADDFUNC(gsl_cdf_geometric_Q, 2);
+
+  /**
+   * @file ran-hypergeometric
+   *
+   * The Hypergeometric Distribution
+   * ===============================
+   */
+
+  /**
+   * **gsl_ran_hypergeometric(p, n1, n2, t)**
+   *
+   *  This function returns a random integer from the hypergeometric
+   *  distribution. The probability distribution for hypergeometric
+   *  random variates is,
+   *
+   *  .. math::
+   *    p(k) =  C(n_1, k) C(n_2, t - k) / C(n_1 + n_2, t)
+   *
+   *  where $C(a,b) = a!/(b!(a-b)!)$ and $t \leq n_1 + n_2$. The domain
+   *  of $k$ is $\max(0,t-n_2), ..., \min(t,n_1)$.
+   *
+   *  If a population contains $n_1$ elements of “type 1” and $n_2$
+   *  elements of “type 2” then the hypergeometric distribution gives
+   *  the probability of obtaining $k$ elements of “type 1” in $t$
+   *  samples from the population without replacement.
+   */
+  ADDFUNC_RANDOM(gsl_ran_hypergeometric, 3);
+
+  /**
+   * **gsl_ran_hypergeometric_pdf(k, n1, n2, t)**
+   *
+   *  This function computes the probability $p(k)$ of obtaining $k$ from
+   *  a hypergeometric distribution with parameters ``n1``, ``n2``, ``t``,
+   *  using the formula given above.
+   */
+  ADDFUNC(gsl_ran_hypergeometric_pdf, 4);
+
+  /**
+   * **gsl_cdf_hypergeometric_P(k, n1, n2, t)**
+   */
+  ADDFUNC(gsl_cdf_hypergeometric_P, 4);
+
+  /**
+   * **gsl_cdf_hypergeometric_Q(k, n1, n2, t)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(k), Q(k)$ for the hypergeometric distribution with parameters
+   *  ``n1``, ``n2`` and ``t``.
+   */
+  ADDFUNC(gsl_cdf_hypergeometric_Q, 4);
+
+  /**
+   * @file ran-logarithmic
+   *
+   * The Logarithmic Distribution
+   * ============================
+   */
+
+  /**
+   * **gsl_ran_logarithmic(p)**
+   *
+   *  This function returns a random integer from the logarithmic distribution.
+   *  The probability distribution for logarithmic random variates is,
+   *
+   *  .. math::
+   *    p(k) = {-1 \over \log(1-p)} {(p^k \over k)}
+   *
+   *  for $k \geq 1$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_logarithmic, 1);
+
+  /**
+   * **gsl_ran_logarithmic_pdf(k, p)**
+   *
+   *  This function computes the probability $p(k)$ of obtaining $k$ from
+   *  a logarithmic distribution with probability parameter ``p``, using the
+   *  formula given above.
+   */
+  ADDFUNC(gsl_ran_logarithmic_pdf, 2);
 }
