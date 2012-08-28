@@ -2833,6 +2833,25 @@ WRAP_BINOMIAL(gsl_ran_binomial_pdf, ARGS3)
 WRAP_BINOMIAL(gsl_cdf_binomial_P, ARGS3)
 WRAP_BINOMIAL(gsl_cdf_binomial_Q, ARGS3)
 
+WRAP(gsl_ran_negative_binomial, RNG_ARGS2)
+WRAP_DISCRETE(gsl_ran_negative_binomial_pdf, ARGS3)
+WRAP_DISCRETE(gsl_cdf_negative_binomial_P, ARGS3)
+WRAP_DISCRETE(gsl_cdf_negative_binomial_Q, ARGS3)
+
+static double amplgsl_ran_pascal(arglist *al) {
+  if (!check_args(al) || !check_uint_arg(al, 1, "n"))
+    return 0;
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_ran_pascal(rng, al->ra[0], al->ra[1]));
+}
+
+WRAP_BINOMIAL(gsl_ran_pascal_pdf, ARGS3)
+WRAP_BINOMIAL(gsl_cdf_pascal_P, ARGS3)
+WRAP_BINOMIAL(gsl_cdf_pascal_Q, ARGS3)
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
@@ -5313,6 +5332,8 @@ void funcadd_ASL(AmplExports *ae) {
    *    ran-poisson
    *    ran-bernoulli
    *    ran-binomial
+   *    ran-negative-binomial
+   *    ran-pascal
    */
 
   /**
@@ -6741,5 +6762,94 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_cdf_binomial_Q, 3);
 
   /* The multinomial distributions is not wrapped because it returns more
-       than one value. */
+     than one value. */
+
+  /**
+   * @file ran-negative-binomial
+   *
+   * The Negative Binomial Distribution
+   * ==================================
+   */
+
+  /**
+   * **gsl_ran_negative_binomial(p, n)**
+   *
+   *  This function returns a random integer from the negative binomial
+   *  distribution, the number of failures occurring before ``n`` successes
+   *  in independent trials with probability ``p`` of success. The
+   *  probability distribution for negative binomial variates is,
+   *
+   *  .. math::
+   *    p(k) = {\Gamma(n + k) \over \Gamma(k+1) \Gamma(n) } p^n (1-p)^k
+   *
+   *  Note that ``n`` is not required to be an integer.
+   */
+  ADDFUNC_RANDOM(gsl_ran_negative_binomial, 2);
+
+  /**
+   * **gsl_ran_negative_binomial_pdf(k, p, n)**
+   *
+   *  This function computes the probability $p(k)$ of obtaining $k$ from
+   *  a negative binomial distribution with parameters ``p`` and ``n``,
+   *  using the formula given above.
+   */
+  ADDFUNC(gsl_ran_negative_binomial_pdf, 3);
+
+  /**
+   * **gsl_cdf_negative_binomial_P(k, p, n)**
+   */
+  ADDFUNC(gsl_cdf_negative_binomial_P, 3);
+
+  /**
+   * **gsl_cdf_negative_binomial_Q(k, p, n)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(k), Q(k)$ for the negative binomial distribution with parameters
+   *  ``p`` and ``n``.
+   */
+  ADDFUNC(gsl_cdf_negative_binomial_Q, 3);
+
+  /**
+   * @file ran-pascal
+   *
+   * The Pascal Distribution
+   * =======================
+   */
+
+  /**
+   * **gsl_ran_pascal(p, n)**
+   *
+   *  This function returns a random integer from the Pascal distribution.
+   *  The Pascal distribution is simply a negative binomial distribution
+   *  with an integer value of ``n``.
+   *
+   *  .. math::
+   *    p(k) = {(n + k - 1)! \over k! (n - 1)! } p^n (1-p)^k
+   *
+   *  for $k \geq 0$
+   */
+  ADDFUNC_RANDOM(gsl_ran_pascal, 2);
+
+  /**
+   * **gsl_ran_pascal_pdf(k, p, n)**
+   *
+   *  This function computes the probability $p(k)$ of obtaining $k$ from
+   *  a Pascal distribution with parameters ``p`` and ``n``, using the
+   *  formula given above.
+   */
+  ADDFUNC(gsl_ran_pascal_pdf, 3);
+
+  /**
+   * **gsl_cdf_pascal_P(k, p, n)**
+   */
+  ADDFUNC(gsl_cdf_pascal_P, 3);
+
+  /**
+   * **gsl_cdf_pascal_Q(k, p, n)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(k), Q(k)$ for the Pascal distribution with parameters ``p``
+   *  and ``n``.
+   */
+  ADDFUNC(gsl_cdf_pascal_Q, 3);
 }

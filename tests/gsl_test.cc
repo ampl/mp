@@ -1296,4 +1296,33 @@ TEST_F(GSLTest, Binomial) {
   TEST_FUNC2(gsl_cdf_binomial_P, NoDeriv("k p n"));
   TEST_FUNC2(gsl_cdf_binomial_Q, NoDeriv("k p n"));
 }
+
+struct NegativeBinomialInfo : NoDeriv {
+  bool SkipPoint(const Tuple &args) const {
+    // gsl_ran_negative_binomial hangs when p == 0.
+    return args[0] == 0;
+  }
+};
+
+TEST_F(GSLTest, NegativeBinomial) {
+  TEST_FUNC2(gsl_ran_negative_binomial, NegativeBinomialInfo());
+  TEST_FUNC2(gsl_ran_negative_binomial_pdf, NoDeriv("k"));
+  TEST_FUNC2(gsl_cdf_negative_binomial_P, NoDeriv("k"));
+  TEST_FUNC2(gsl_cdf_negative_binomial_Q, NoDeriv("k"));
+}
+
+struct PascalInfo : NoDeriv {
+  PascalInfo() : NoDeriv("p n") {}
+  bool SkipPoint(const Tuple &args) const {
+    // gsl_ran_negative_binomial hangs when p == 0 and n > 0.
+    return args[0] == 0 && args[1] > 0;
+  }
+};
+
+TEST_F(GSLTest, Pascal) {
+  TEST_FUNC2(gsl_ran_pascal, PascalInfo());
+  TEST_FUNC2(gsl_ran_pascal_pdf, NoDeriv("k p n"));
+  TEST_FUNC2(gsl_cdf_pascal_P, NoDeriv("k p n"));
+  TEST_FUNC2(gsl_cdf_pascal_Q, NoDeriv("k p n"));
+}
 }
