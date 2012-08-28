@@ -153,6 +153,18 @@ static int check_int_arg(arglist *al, unsigned index, const char *name) {
   return al->derivs ? check_const_arg(al, index, name) : 1;
 }
 
+/* Checks if the argument with the specified index is representable as
+   unsigned int. */
+static int check_uint_arg(arglist *al, unsigned index, const char *name) {
+  double arg = al->ra[index];
+  if ((unsigned)arg != arg) {
+    error(al, "argument '%s' can't be represented as unsigned int, %s = %g",
+        name, name, arg);
+    return 0;
+  }
+  return al->derivs ? check_const_arg(al, index, name) : 1;
+}
+
 /*
  * Checks the arguments of a zero function such as gsl_sf_airy_Ai_scaled:
  * - argument with the specified index should be representable as unsigned int
@@ -2776,6 +2788,51 @@ WRAP(gsl_cdf_gumbel2_Q, ARGS3)
 WRAP(gsl_cdf_gumbel2_Pinv, ARGS3)
 WRAP(gsl_cdf_gumbel2_Qinv, ARGS3)
 
+#define WRAP_DISCRETE(func, args) \
+  static double ampl##func(arglist *al) { \
+    if (!check_args(al) || !check_uint_arg(al, 0, "k")) \
+      return 0; \
+    if (al->derivs) { \
+      error(al, DERIVS_NOT_PROVIDED); \
+      return 0; \
+    } \
+    return check_result(al, func(args)); \
+  }
+
+WRAP(gsl_ran_poisson, RNG_ARGS1)
+WRAP_DISCRETE(gsl_ran_poisson_pdf, ARGS2)
+WRAP_DISCRETE(gsl_cdf_poisson_P, ARGS2)
+WRAP_DISCRETE(gsl_cdf_poisson_Q, ARGS2)
+
+WRAP(gsl_ran_bernoulli, RNG_ARGS1)
+WRAP_DISCRETE(gsl_ran_bernoulli_pdf, ARGS2)
+
+#define WRAP_BINOMIAL(func, args) \
+  static double ampl##func(arglist *al) { \
+    if (!check_args(al) || !check_uint_arg(al, 0, "k") || \
+        !check_uint_arg(al, 2, "n")) \
+      return 0; \
+    if (al->derivs) { \
+      error(al, DERIVS_NOT_PROVIDED); \
+      return 0; \
+    } \
+    return check_result(al, func(args)); \
+  }
+
+static double amplgsl_ran_binomial(arglist *al) {
+  if (!check_args(al) || !check_uint_arg(al, 1, "n"))
+    return 0;
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
+  return check_result(al, gsl_ran_binomial(rng, al->ra[0], al->ra[1]));
+}
+
+WRAP_BINOMIAL(gsl_ran_binomial_pdf, ARGS3)
+WRAP_BINOMIAL(gsl_cdf_binomial_P, ARGS3)
+WRAP_BINOMIAL(gsl_cdf_binomial_Q, ARGS3)
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
@@ -5253,6 +5310,9 @@ void funcadd_ASL(AmplExports *ae) {
    *    ran-weibull
    *    ran-gumbel1
    *    ran-gumbel2
+   *    ran-poisson
+   *    ran-bernoulli
+   *    ran-binomial
    */
 
   /**
@@ -6565,4 +6625,121 @@ void funcadd_ASL(AmplExports *ae) {
 
   /* The general discrete distributions are not wrapped because they use
      C structures. */
+
+  /**
+   * @file ran-poisson
+   *
+   * The Poisson Distribution
+   * ========================
+   */
+
+  /**
+   * **gsl_ran_poisson(mu)**
+   *
+   *  This function returns a random variate from the Poisson distribution
+   *  with mean ``mu``. The probability distribution for Poisson variates is,
+   *
+   *  .. math::
+   *    p(k) = {\mu^k \over k!} \exp(-\mu)
+   *
+   *  for $k \geq 0$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_poisson, 1);
+
+  /**
+   * **gsl_ran_poisson_pdf(k, mu)**
+   *
+   *  This function computes the probability $p(k)$ of obtaining $k$ from a
+   *  Poisson distribution with mean ``mu``, using the formula given above.
+   */
+  ADDFUNC(gsl_ran_poisson_pdf, 2);
+
+  /**
+   * **gsl_cdf_poisson_P(k, mu)**
+   */
+  ADDFUNC(gsl_cdf_poisson_P, 2);
+
+  /**
+   * **gsl_cdf_poisson_Q(k, mu)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(k), Q(k)$ for the Poisson distribution with parameter ``mu``.
+   */
+  ADDFUNC(gsl_cdf_poisson_Q, 2);
+
+  /**
+   * @file ran-bernoulli
+   *
+   * The Bernoulli Distribution
+   * ==========================
+   */
+
+  /**
+   * **gsl_ran_bernoulli(p)**
+   *
+   *  This function returns either 0 or 1, the result of a Bernoulli trial
+   *  with probability ``p``. The probability distribution for a Bernoulli
+   *  trial is,
+   *
+   *  .. math::
+   *    p(0) = 1 - p \\
+   *    p(1) = p
+   */
+  ADDFUNC_RANDOM(gsl_ran_bernoulli, 1);
+
+  /**
+   * **gsl_ran_bernoulli_pdf(k, p)**
+   *
+   *  This function computes the probability $p(k)$ of obtaining $k$ from a
+   *  Bernoulli distribution with probability parameter ``p``, using the
+   *  formula given above.
+   */
+  ADDFUNC(gsl_ran_bernoulli_pdf, 2);
+
+  /**
+   * @file ran-binomial
+   *
+   * The Binomial Distribution
+   * =========================
+   */
+
+  /**
+   * **gsl_ran_binomial(p, n)**
+   *
+   *  This function returns a random integer from the binomial distribution,
+   *  the number of successes in ``n`` independent trials with probability
+   *  ``p``. The probability distribution for binomial variates is,
+   *
+   *  .. math::
+   *    p(k) = {n! \over k! (n-k)! } p^k (1-p)^{n-k}
+   *
+   *  for $0 \leq k \leq n$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_binomial, 2);
+
+  /**
+   * **gsl_ran_binomial_pdf(k, p, n)**
+   *
+   *  This function computes the probability $p(k)$ of obtaining $k$ from
+   *  a binomial distribution with parameters ``p`` and ``n``, using the
+   *  formula given above.
+   */
+  ADDFUNC(gsl_ran_binomial_pdf, 3);
+
+  /**
+   * **gsl_cdf_binomial_P(k, p, n)**
+   */
+  ADDFUNC(gsl_cdf_binomial_P, 3);
+
+  /**
+   * **gsl_cdf_binomial_Q(k, p, n)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(k), Q(k)$ for the binomial distribution with parameters
+   *  ``p`` and ``n``.
+   */
+  ADDFUNC(gsl_cdf_binomial_Q, 3);
+
+  /* The multinomial distributions is not wrapped because it returns more
+       than one value. */
 }

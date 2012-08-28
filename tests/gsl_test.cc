@@ -1277,4 +1277,23 @@ TEST_F(GSLTest, Gumbel2) {
   TEST_FUNC2(gsl_cdf_gumbel2_Pinv, NoDeriv());
   TEST_FUNC2(gsl_cdf_gumbel2_Qinv, NoDeriv());
 }
+
+TEST_F(GSLTest, Poisson) {
+  TEST_FUNC2(gsl_ran_poisson, NoDeriv());
+  TEST_FUNC2(gsl_ran_poisson_pdf, NoDeriv("k"));
+  TEST_FUNC2(gsl_cdf_poisson_P, NoDeriv("k"));
+  TEST_FUNC2(gsl_cdf_poisson_Q, NoDeriv("k"));
+}
+
+TEST_F(GSLTest, Bernoulli) {
+  TEST_FUNC2(gsl_ran_bernoulli, NoDeriv());
+  TEST_FUNC2(gsl_ran_bernoulli_pdf, NoDeriv("k"));
+}
+
+TEST_F(GSLTest, Binomial) {
+  TEST_FUNC2(gsl_ran_binomial, NoDeriv("p n"));
+  TEST_FUNC2(gsl_ran_binomial_pdf, NoDeriv("k p n"));
+  TEST_FUNC2(gsl_cdf_binomial_P, NoDeriv("k p n"));
+  TEST_FUNC2(gsl_cdf_binomial_Q, NoDeriv("k p n"));
+}
 }
