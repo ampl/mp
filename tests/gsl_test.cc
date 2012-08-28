@@ -1325,4 +1325,16 @@ TEST_F(GSLTest, Pascal) {
   TEST_FUNC2(gsl_cdf_pascal_P, NoDeriv("k p n"));
   TEST_FUNC2(gsl_cdf_pascal_Q, NoDeriv("k p n"));
 }
+
+TEST_F(GSLTest, Geometric) {
+  TEST_FUNC2(gsl_ran_geometric, NoDeriv());
+  TEST_FUNC2(gsl_ran_geometric_pdf, NoDeriv("k"));
+  TEST_FUNC2(gsl_cdf_geometric_P, NoDeriv("k"));
+  TEST_FUNC2(gsl_cdf_geometric_Q, NoDeriv("k"));
+}
+
+TEST_F(GSLTest, Logarithmic) {
+  TEST_FUNC2(gsl_ran_logarithmic, NoDeriv());
+  TEST_FUNC2(gsl_ran_logarithmic_pdf, NoDeriv("k"));
+}
 }
