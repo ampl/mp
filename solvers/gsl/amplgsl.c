@@ -2886,16 +2886,21 @@ WRAP_DISCRETE(gsl_ran_logarithmic_pdf, ARGS2, DEFAULT_ARGS)
     addfunc(#name, ampl##name, FUNCADD_RANDOM_VALUED, num_args, #name);
 
 /**
- * AMPL bindings for GNU Scientific Library
- * ========================================
+ * AMPL bindings for the GNU Scientific Library
+ * ============================================
  *
  * .. toctree::
  *    :maxdepth: 2
  *
- *    accuracy
+ *    front-matter
+ *    intro
  *    elementary
  *    special
  *    randist
+ *    freedoc
+ *    gpl
+ *    fdl
+ *    history
  *
  * Indices and tables
  * ==================
@@ -2905,10 +2910,47 @@ WRAP_DISCRETE(gsl_ran_logarithmic_pdf, ARGS2, DEFAULT_ARGS)
  */
 
 /**
+ * @file intro
+ *
+ * Introduction
+ * ============
+ *
+ * The GNU Scientific Library (GSL) is a collection of routines for numerical
+ * computing. The routines have been written from scratch in C, and present
+ * a modern Applications Programming Interface (API) for C programmers,
+ * allowing wrappers to be written for very high level languages. The source
+ * code is distributed under the GNU General Public License.
+ *
+ * The AMPLGSL library provides AMPL
+ * `bindings <http://en.wikipedia.org/wiki/Language_binding>`_ for the
+ * GNU Scientific Library and is distributed under the same license.
+ *
+ * .. toctree::
+ *    :maxdepth: 2
+ *
+ *    no-warranty
+ *    accuracy
+ */
+
+/**
+ * @file no-warranty
+ *
+ * No Warranty
+ * ===========
+ *
+ * The software described in this manual has no warranty, it is provided
+ * "as is". It is your responsibility to validate the behavior of the
+ * routines and their accuracy using the source code provided, or to
+ * purchase support and warranties from commercial redistributors.
+ * Consult the GNU General Public license for further details
+ * (see :ref:`gpl`).
+ */
+
+/**
  * @file accuracy
  *
  * Accuracy
- * --------
+ * ========
  *
  * AMPL wrappers of the GSL functions always use the highest accuracy
  * available. A GSL function may take a ``mode`` argument that allows
@@ -5364,6 +5406,7 @@ void funcadd_ASL(AmplExports *ae) {
    *    ran-geometric
    *    ran-hypergeometric
    *    ran-logarithmic
+   *    ran-refs
    */
 
   /**
@@ -6992,7 +7035,7 @@ void funcadd_ASL(AmplExports *ae) {
    *  The probability distribution for logarithmic random variates is,
    *
    *  .. math::
-   *    p(k) = {-1 \over \log(1-p)} {(p^k \over k)}
+   *    p(k) = {-1 \over \log(1-p)} {\left(p^k \over k\right)}
    *
    *  for $k \geq 1$.
    */
@@ -7006,4 +7049,56 @@ void funcadd_ASL(AmplExports *ae) {
    *  formula given above.
    */
   ADDFUNC(gsl_ran_logarithmic_pdf, 2);
+
+  /* Shuffling and Sampling functions are not wrapped. */
+
+  /**
+   * @file ran-refs
+   *
+   * References and Further Reading
+   * ==============================
+   *
+   * For an encyclopaedic coverage of the subject readers are advised to
+   * consult the book *Non-Uniform Random Variate Generation* by Luc Devroye.
+   * It covers every imaginable distribution and provides hundreds of
+   * algorithms.
+   *
+   * * Luc Devroye, *Non-Uniform Random Variate Generation*, Springer-Verlag,
+   *   ISBN 0-387-96305-7.
+   *   Available online at http://luc.devroye.org/rnbookindex.html.
+   *
+   * The subject of random variate generation is also reviewed by Knuth,
+   * who describes algorithms for all the major distributions.
+   *
+   * * Donald E. Knuth, *The Art of Computer Programming: Seminumerical
+   *   Algorithms* (Vol 2, 3rd Ed, 1997), Addison-Wesley, ISBN 0201896842.
+   *
+   * The Particle Data Group provides a short review of techniques for
+   * generating distributions of random numbers in the “Monte Carlo”
+   * section of its Annual Review of Particle Physics.
+   *
+   * * *Review of Particle Properties* R.M. Barnett et al., Physical Review
+   *   D54, 1 (1996) http://pdg.lbl.gov/.
+   *
+   * The Review of Particle Physics is available online in postscript and pdf
+   * format.
+   *
+   * An overview of methods used to compute cumulative distribution functions
+   * can be found in *Statistical Computing* by W.J. Kennedy and J.E. Gentle.
+   * Another general reference is *Elements of Statistical Computing* by
+   * R.A. Thisted.
+   *
+   * * William E. Kennedy and James E. Gentle, *Statistical Computing* (1980),
+   *   Marcel Dekker, ISBN 0-8247-6898-1.
+   * * Ronald A. Thisted, *Elements of Statistical Computing* (1988),
+   *   Chapman & Hall, ISBN 0-412-01371-1.
+   *
+   * The cumulative distribution functions for the Gaussian distribution
+   * are based on the following papers,
+   *
+   * * *Rational Chebyshev Approximations Using Linear Equations*, W.J. Cody,
+   *   W. Fraser, J.F. Hart. Numerische Mathematik 12, 242–251 (1968).
+   * * *Rational Chebyshev Approximations for the Error Function*, W.J. Cody.
+   *   Mathematics of Computation 23, n107, 631–637 (July 1969).
+   */
 }
