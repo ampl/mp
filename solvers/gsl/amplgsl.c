@@ -2755,6 +2755,27 @@ WRAP(gsl_cdf_pareto_Q, ARGS3)
 WRAP(gsl_cdf_pareto_Pinv, ARGS3)
 WRAP(gsl_cdf_pareto_Qinv, ARGS3)
 
+WRAP(gsl_ran_weibull, RNG_ARGS2)
+WRAP(gsl_ran_weibull_pdf, ARGS3)
+WRAP(gsl_cdf_weibull_P, ARGS3)
+WRAP(gsl_cdf_weibull_Q, ARGS3)
+WRAP(gsl_cdf_weibull_Pinv, ARGS3)
+WRAP(gsl_cdf_weibull_Qinv, ARGS3)
+
+WRAP(gsl_ran_gumbel1, RNG_ARGS2)
+WRAP(gsl_ran_gumbel1_pdf, ARGS3)
+WRAP(gsl_cdf_gumbel1_P, ARGS3)
+WRAP(gsl_cdf_gumbel1_Q, ARGS3)
+WRAP(gsl_cdf_gumbel1_Pinv, ARGS3)
+WRAP(gsl_cdf_gumbel1_Qinv, ARGS3)
+
+WRAP(gsl_ran_gumbel2, RNG_ARGS2)
+WRAP(gsl_ran_gumbel2_pdf, ARGS3)
+WRAP(gsl_cdf_gumbel2_P, ARGS3)
+WRAP(gsl_cdf_gumbel2_Q, ARGS3)
+WRAP(gsl_cdf_gumbel2_Pinv, ARGS3)
+WRAP(gsl_cdf_gumbel2_Qinv, ARGS3)
+
 #define ADDFUNC(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_REAL_VALUED, num_args, #name);
 
@@ -5229,6 +5250,9 @@ void funcadd_ASL(AmplExports *ae) {
    *    ran-beta
    *    ran-logistic
    *    ran-pareto
+   *    ran-weibull
+   *    ran-gumbel1
+   *    ran-gumbel2
    */
 
   /**
@@ -6374,6 +6398,171 @@ void funcadd_ASL(AmplExports *ae) {
    */
   ADDFUNC(gsl_cdf_pareto_Qinv, 3);
 
-  /* The spherical vector distributions are not wrapped because they returns
+  /* The spherical vector distributions are not wrapped because they return
      more than one value. */
+
+  /**
+   * @file ran-weibull
+   *
+   * The Weibull Distribution
+   * ========================
+   */
+
+  /**
+   * **gsl_ran_weibull(a, b)**
+   *
+   *  This function returns a random variate from the Weibull distribution.
+   *  The distribution function is,
+   *
+   *  .. math::
+   *    p(x) dx = {b \over a^b} x^{b-1} \exp(-(x/a)^b) dx
+   *
+   *  for $x \geq 0$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_weibull, 2);
+
+  /**
+   * **gsl_ran_weibull_pdf(x, a, b)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for a
+   *  Weibull distribution with scale ``a`` and exponent ``b``, using the
+   *  formula given above.
+   */
+  ADDFUNC(gsl_ran_weibull_pdf, 3);
+
+  /**
+   * **gsl_cdf_weibull_P(x, a, b)**
+   */
+  ADDFUNC(gsl_cdf_weibull_P, 3);
+
+  /**
+   * **gsl_cdf_weibull_Q(x, a, b)**
+   */
+  ADDFUNC(gsl_cdf_weibull_Q, 3);
+
+  /**
+   * **gsl_cdf_weibull_Pinv(P, a, b)**
+   */
+  ADDFUNC(gsl_cdf_weibull_Pinv, 3);
+
+  /**
+   * **gsl_cdf_weibull_Qinv(Q, a, b)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for the Weibull distribution
+   *  with scale ``a`` and exponent ``b``.
+   */
+  ADDFUNC(gsl_cdf_weibull_Qinv, 3);
+
+  /**
+   * @file ran-gumbel1
+   *
+   * The Type-1 Gumbel Distribution
+   * ==============================
+   */
+
+  /**
+   * **gsl_ran_gumbel1(a, b)**
+   *
+   *  This function returns a random variate from the Type-1 Gumbel
+   *  distribution. The Type-1 Gumbel distribution function is,
+   *
+   *  .. math::
+   *    p(x) dx = a b \exp(-(b \exp(-ax) + ax)) dx
+   *
+   *  for $-\infty < x < \infty$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_gumbel1, 2);
+
+  /**
+   * **gsl_ran_gumbel1_pdf(x, a, b)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for a
+   *  Type-1 Gumbel distribution with parameters ``a`` and ``b``, using the
+   *  formula given above.
+   */
+  ADDFUNC(gsl_ran_gumbel1_pdf, 3);
+
+  /**
+   * **gsl_cdf_gumbel1_P(x, a, b)**
+   */
+  ADDFUNC(gsl_cdf_gumbel1_P, 3);
+
+  /**
+   * **gsl_cdf_gumbel1_Q(x, a, b)**
+   */
+  ADDFUNC(gsl_cdf_gumbel1_Q, 3);
+
+  /**
+   * **gsl_cdf_gumbel1_Pinv(P, a, b)**
+   */
+  ADDFUNC(gsl_cdf_gumbel1_Pinv, 3);
+
+  /**
+   * **gsl_cdf_gumbel1_Qinv(Q, a, b)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for the Type-1 Gumbel distribution
+   *  with parameters ``a`` and ``b``.
+   */
+  ADDFUNC(gsl_cdf_gumbel1_Qinv, 3);
+
+  /**
+   * @file ran-gumbel2
+   *
+   * The Type-2 Gumbel Distribution
+   * ==============================
+   */
+
+  /**
+   * **gsl_ran_gumbel2(a, b)**
+   *
+   *  This function returns a random variate from the Type-1 Gumbel
+   *  distribution. The Type-1 Gumbel distribution function is,
+   *
+   *  .. math::
+   *    p(x) dx = a b x^{-a-1} \exp(-b x^{-a}) dx
+   *
+   *  for $-\infty < x < \infty$.
+   */
+  ADDFUNC_RANDOM(gsl_ran_gumbel2, 2);
+
+  /**
+   * **gsl_ran_gumbel2_pdf(x, a, b)**
+   *
+   *  This function computes the probability density $p(x)$ at $x$ for a
+   *  Type-2 Gumbel distribution with parameters ``a`` and ``b``, using the
+   *  formula given above.
+   */
+  ADDFUNC(gsl_ran_gumbel2_pdf, 3);
+
+  /**
+   * **gsl_cdf_gumbel2_P(x, a, b)**
+   */
+  ADDFUNC(gsl_cdf_gumbel2_P, 3);
+
+  /**
+   * **gsl_cdf_gumbel2_Q(x, a, b)**
+   */
+  ADDFUNC(gsl_cdf_gumbel2_Q, 3);
+
+  /**
+   * **gsl_cdf_gumbel2_Pinv(P, a, b)**
+   */
+  ADDFUNC(gsl_cdf_gumbel2_Pinv, 3);
+
+  /**
+   * **gsl_cdf_gumbel2_Qinv(Q, a, b)**
+   *
+   *  These functions compute the cumulative distribution functions
+   *  $P(x), Q(x)$ and their inverses for the Type-2 Gumbel distribution
+   *  with parameters ``a`` and ``b``.
+   */
+  ADDFUNC(gsl_cdf_gumbel2_Qinv, 3);
+
+  /* The Dirichlet distributions is not wrapped because it returns more
+     than one value. */
+
+  /* The general discrete distributions are not wrapped because they use
+     C structures. */
 }
