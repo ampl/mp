@@ -39,7 +39,10 @@ workflow starts with:
   cmake ${AMPL_DIR}  # Generate native build scripts.
 
 If you are on a *nix system, you should now see a Makefile in the
-current directory.  Just type 'make concert' to build concert.
+current directory.  Now you can build concert as follows:
+
+  cd solvers/concert
+  make concert
 
 If you use Windows and have Vistual Studio installed, a concert.sln file
 and several .vcproj files will be created.  You can then build them
