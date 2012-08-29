@@ -1,0 +1,16 @@
+# For Linux
+
+.SUFFIXES: .c .o
+
+# $S = ampl/solvers directory
+S = ../..
+CC = cc
+CFLAGS = -I$S -O2
+
+.c.o:
+	$(CC) -c $(CFLAGS) $*.c
+
+libamplgsl.so: amplgsl.c
+	$(CC) -c $(CFLAGS) -fPIC amplgsl.c
+	$(CC) -shared -o libamplgsl.so amplgsl.o -lgsl -lgslcblas
+
