@@ -50,7 +50,7 @@ using Visual Studio.
 
 On Mac OS X with Xcode installed, a .xcodeproj file will be generated.
 
-Build without CMake 
+Build without CMake
 -------------------
 
 Alternatively you can build the concert driver with make using the
