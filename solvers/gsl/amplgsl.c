@@ -2926,6 +2926,8 @@ WRAP_DISCRETE(gsl_ran_logarithmic_pdf, ARGS2, DEFAULT_ARGS)
  * `bindings <http://en.wikipedia.org/wiki/Language_binding>`_ for the
  * GNU Scientific Library and is distributed under the same license.
  *
+ * .. index:: binding
+ *
  * .. toctree::
  *    :maxdepth: 2
  *
@@ -2939,9 +2941,9 @@ WRAP_DISCRETE(gsl_ran_logarithmic_pdf, ARGS2, DEFAULT_ARGS)
  * No Warranty
  * ===========
  *
- * The software described in this manual has no warranty, it is provided
- * "as is". It is your responsibility to validate the behavior of the
- * routines and their accuracy using the source code provided, or to
+ * The software described in this manual has no `warranty`:index:, it is
+ * provided "as is". It is your responsibility to validate the behavior of
+ * the routines and their accuracy using the source code provided, or to
  * purchase support and warranties from commercial redistributors.
  * Consult the GNU General Public license for further details
  * (see :ref:`gpl`).
@@ -2959,6 +2961,10 @@ WRAP_DISCRETE(gsl_ran_logarithmic_pdf, ARGS2, DEFAULT_ARGS)
  * performance. Currently the ``mode`` argument is always bound to
  * ``GSL_PREC_DOUBLE`` denoting double-precision, a relative accuracy
  * of approximately $2 \times 10^{-16}$.
+ *
+ * .. index::
+ *   accuracy
+ *   GSL_PREC_DOUBLE
  */
 
 void funcadd_ASL(AmplExports *ae) {
@@ -2973,7 +2979,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_log1p(x)**
+   * .. function:: gsl_log1p(x)
    *
    *  This function computes the value of $\log(1+x)$ in a way that is
    *  accurate for small $x$. It provides an alternative to the BSD math
@@ -2982,7 +2988,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_log1p, 1);
 
   /**
-   * **gsl_expm1(x)**
+   * .. function:: gsl_expm1(x)
    *
    *  This function computes the value of $\exp(x)-1$ in a way that is
    *  accurate for small $x$. It provides an alternative to the BSD math
@@ -2991,7 +2997,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_expm1, 1);
 
   /**
-   * **gsl_hypot(x, y)**
+   * .. function:: gsl_hypot(x, y)
    *
    *  This function computes the value of $\sqrt{x^2 + y^2}$ in a way that
    *  avoids overflow. It provides an alternative to the BSD math function
@@ -3000,7 +3006,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_hypot, 2);
 
   /**
-   * **gsl_hypot3(x, y, z)**
+   * .. function:: gsl_hypot3(x, y, z)
    *
    *  This function computes the value of $\sqrt{x^2 + y^2 + z^2}$ in a way
    *  that avoids overflow.
@@ -3075,6 +3081,8 @@ void funcadd_ASL(AmplExports *ae) {
    *   \operatorname{Bi}(x) = \frac{1}{\pi} \int_0^\infty
    *     (e^{-\frac{1}{3} t^3 + xt} + \sin(\frac{1}{3} t^3 + xt)) dt
    *
+   * .. index:: Airy function
+   *
    * For further information see Abramowitz & Stegun, Section 10.4.
    */
 
@@ -3084,21 +3092,21 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_airy_Ai(x)**
+   * .. function:: gsl_sf_airy_Ai(x)
    *
    *  This routine computes the Airy function $\operatorname{Ai}(x)$.
    */
   ADDFUNC(gsl_sf_airy_Ai, 1);
 
   /**
-   * **gsl_sf_airy_Bi(x)**
+   * .. function:: gsl_sf_airy_Bi(x)
    *
    *  This routine computes the Airy function $\operatorname{Bi}(x)$.
    */
   ADDFUNC(gsl_sf_airy_Bi, 1);
 
   /**
-   * **gsl_sf_airy_Ai_scaled(x)**
+   * .. function:: gsl_sf_airy_Ai_scaled(x)
    *
    *  This routine computes a scaled version of the Airy function
    *  $\operatorname{S_A}(x) \operatorname{Ai}(x)$. For $x > 0$ the scaling
@@ -3108,7 +3116,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_airy_Ai_scaled, 1);
 
   /**
-   * **gsl_sf_airy_Bi_scaled(x)**
+   * .. function:: gsl_sf_airy_Bi_scaled(x)
    *
    *  This routine computes a scaled version of the Airy function
    *  $\operatorname{S_B}(x) \operatorname{Bi}(x)$. For $x > 0$ the scaling
@@ -3123,7 +3131,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_airy_zero_Ai(s)**
+   * .. function:: gsl_sf_airy_zero_Ai(s)
    *
    *  This routine computes the location of the $s$-th zero of the Airy
    *  function $\operatorname{Ai}(x)$.
@@ -3131,7 +3139,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_airy_zero_Ai, 1);
 
   /**
-   * **gsl_sf_airy_zero_Bi(s)**
+   * .. function:: gsl_sf_airy_zero_Bi(s)
    *
    *  This routine computes the location of the $s$-th zero of the Airy
    *  function $\operatorname{Bi}(x)$.
@@ -3144,7 +3152,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_airy_zero_Ai_deriv(s)**
+   * .. function:: gsl_sf_airy_zero_Ai_deriv(s)
    *
    *  This routine computes the location of the $s$-th zero of the Airy
    *  function derivative $\operatorname{Ai}'(x)$.
@@ -3152,7 +3160,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_airy_zero_Ai_deriv, 1);
 
   /**
-   * **gsl_sf_airy_zero_Bi_deriv(s)**
+   * .. function:: gsl_sf_airy_zero_Bi_deriv(s)
    *
    *  This routine computes the location of the $s$-th zero of the Airy
    *  function derivative $\operatorname{Bi}'(x)$.
@@ -3170,6 +3178,8 @@ void funcadd_ASL(AmplExports *ae) {
    * $I_n(x)$, $K_n(x)$, Spherical Bessel functions $j_l(x)$, $y_l(x)$,
    * and Modified Spherical Bessel functions $i_l(x)$, $k_l(x)$.
    * For more information see Abramowitz & Stegun, Chapters 9 and 10.
+   *
+   * .. index:: Bessel function
    */
 
   /**
@@ -3178,7 +3188,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_bessel_J0(x)**
+   * .. function:: gsl_sf_bessel_J0(x)
    *
    *  This routine computes the regular cylindrical Bessel function of
    *  zeroth order, $J_0(x)$.
@@ -3186,7 +3196,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_J0, 1);
 
   /**
-   * **gsl_sf_bessel_J1(x)**
+   * .. function:: gsl_sf_bessel_J1(x)
    *
    *  This routine computes the regular cylindrical Bessel function of
    *  first order, $J_1(x)$.
@@ -3194,7 +3204,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_J1, 1);
 
   /**
-   * **gsl_sf_bessel_Jn(n, x)**
+   * .. function:: gsl_sf_bessel_Jn(n, x)
    *
    *  This routine computes the regular cylindrical Bessel function of
    *  integer order $n$, $J_n(x)$.
@@ -3207,7 +3217,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_bessel_Y0(x)**
+   * .. function:: gsl_sf_bessel_Y0(x)
    *
    *  This routine computes the irregular cylindrical Bessel function of
    *  zeroth order, $Y_0(x)$, for $x > 0$.
@@ -3215,7 +3225,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_Y0, 1);
 
   /**
-   * **gsl_sf_bessel_Y1(x)**
+   * .. function:: gsl_sf_bessel_Y1(x)
    *
    *  This routine computes the irregular cylindrical Bessel function of
    *  first order, $Y_1(x)$, for $x > 0$.
@@ -3223,7 +3233,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_Y1, 1);
 
   /**
-   * **gsl_sf_bessel_Yn(n, x)**
+   * .. function:: gsl_sf_bessel_Yn(n, x)
    *
    *  This routine computes the irregular cylindrical Bessel function of
    *  integer order $n$, $Y_n(x)$, for $x > 0$.
@@ -3236,7 +3246,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_bessel_I0(x)**
+   * .. function:: gsl_sf_bessel_I0(x)
    *
    *  This routine computes the regular modified cylindrical Bessel function
    *  of zeroth order, $I_0(x)$.
@@ -3244,7 +3254,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_I0, 1);
 
   /**
-   * **gsl_sf_bessel_I1(x)**
+   * .. function:: gsl_sf_bessel_I1(x)
    *
    *  This routine computes the regular modified cylindrical Bessel function
    *  of first order, $I_1(x)$.
@@ -3252,7 +3262,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_I1, 1);
 
   /**
-   * **gsl_sf_bessel_In(n, x)**
+   * .. function:: gsl_sf_bessel_In(n, x)
    *
    *  This routine computes the regular modified cylindrical Bessel function
    *  of integer order $n$, $I_n(x)$.
@@ -3260,7 +3270,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_In, 2);
 
   /**
-   * **gsl_sf_bessel_I0_scaled(x)**
+   * .. function:: gsl_sf_bessel_I0_scaled(x)
    *
    *  This routine computes the scaled regular modified cylindrical
    *  Bessel function of zeroth order $\exp(-|x|) I_0(x)$.
@@ -3268,7 +3278,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_I0_scaled, 1);
 
   /**
-   * **gsl_sf_bessel_I1_scaled(x)**
+   * .. function:: gsl_sf_bessel_I1_scaled(x)
    *
    *  This routine computes the scaled regular modified cylindrical
    *  Bessel function of first order $\exp(-|x|) I_1(x)$.
@@ -3276,7 +3286,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_I1_scaled, 1);
 
   /**
-   * **gsl_sf_bessel_In_scaled(n, x)**
+   * .. function:: gsl_sf_bessel_In_scaled(n, x)
    *
    *  This routine computes the scaled regular modified cylindrical
    *  Bessel function of integer order $n$, $\exp(-|x|) I_n(x)$.
@@ -3289,7 +3299,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_bessel_K0(x)**
+   * .. function:: gsl_sf_bessel_K0(x)
    *
    *  This routine computes the irregular modified cylindrical Bessel
    *  function of zeroth order, $K_0(x)$, for $x > 0$.
@@ -3297,7 +3307,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_K0, 1);
 
   /**
-   * **gsl_sf_bessel_K1(x)**
+   * .. function:: gsl_sf_bessel_K1(x)
    *
    *  This routine computes the irregular modified cylindrical Bessel
    *  function of first order, $K_1(x)$, for $x > 0$.
@@ -3305,7 +3315,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_K1, 1);
 
   /**
-   * **gsl_sf_bessel_Kn(n, x)**
+   * .. function:: gsl_sf_bessel_Kn(n, x)
    *
    *  This routine computes the irregular modified cylindrical Bessel
    *  function of integer order $n$, $K_n(x)$, for $x > 0$.
@@ -3313,7 +3323,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_Kn, 2);
 
   /**
-   * **gsl_sf_bessel_K0_scaled(x)**
+   * .. function:: gsl_sf_bessel_K0_scaled(x)
    *
    *  This routine computes the scaled irregular modified cylindrical Bessel
    *  function of zeroth order, $\exp(x) K_0(x)$, for $x > 0$.
@@ -3321,7 +3331,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_K0_scaled, 1);
 
   /**
-   * **gsl_sf_bessel_K1_scaled(x)**
+   * .. function:: gsl_sf_bessel_K1_scaled(x)
    *
    *  This routine computes the scaled irregular modified cylindrical Bessel
    *  function of first order, $\exp(x) K_1(x)$, for $x > 0$.
@@ -3329,7 +3339,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_K1_scaled, 1);
 
   /**
-   * **gsl_sf_bessel_Kn_scaled(n, x)**
+   * .. function:: gsl_sf_bessel_Kn_scaled(n, x)
    *
    *  This routine computes the scaled irregular modified cylindrical Bessel
    *  function of integer order $n$, $\exp(x) K_n(x)$, for $x > 0$.
@@ -3342,7 +3352,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_bessel_j0(x)**
+   * .. function:: gsl_sf_bessel_j0(x)
    *
    *  This routine computes the regular spherical Bessel function of zeroth
    *  order, $j_0(x) = \sin(x)/x$.
@@ -3350,7 +3360,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_j0, 1);
 
   /**
-   * **gsl_sf_bessel_j1(x)**
+   * .. function:: gsl_sf_bessel_j1(x)
    *
    *  This routine computes the regular spherical Bessel function of first
    *  order, $j_1(x) = (\sin(x)/x - \cos(x))/x$.
@@ -3358,7 +3368,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_j1, 1);
 
   /**
-   * **gsl_sf_bessel_j2(x)**
+   * .. function:: gsl_sf_bessel_j2(x)
    *
    *  This routine computes the regular spherical Bessel function of second
    *  order, $j_2(x) = ((3/x^2 - 1)\sin(x) - 3\cos(x)/x)/x$.
@@ -3366,7 +3376,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_j2, 1);
 
   /**
-   * **gsl_sf_bessel_jl(l, x)**
+   * .. function:: gsl_sf_bessel_jl(l, x)
    *
    *  This routine computes the regular spherical Bessel function of integer
    *  order $l$, $j_l(x)$, for $l \geq 0$ and $x \geq 0$.
@@ -3379,7 +3389,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_bessel_y0(x)**
+   * .. function:: gsl_sf_bessel_y0(x)
    *
    *  This routine computes the irregular spherical Bessel function of
    *  zeroth order, $y_0(x) = -\cos(x)/x$.
@@ -3387,7 +3397,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_y0, 1);
 
   /**
-   * **gsl_sf_bessel_y1(x)**
+   * .. function:: gsl_sf_bessel_y1(x)
    *
    *  This routine computes the irregular spherical Bessel function of
    *  first order, $y_1(x) = -(\cos(x)/x + \sin(x))/x$.
@@ -3395,7 +3405,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_y1, 1);
 
   /**
-   * **gsl_sf_bessel_y2(x)**
+   * .. function:: gsl_sf_bessel_y2(x)
    *
    *  This routine computes the irregular spherical Bessel function of
    *  second order, $y_2(x) = (-3/x^3 + 1/x)\cos(x) - (3/x^2)\sin(x)$.
@@ -3403,7 +3413,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_y2, 1);
 
   /**
-   * **gsl_sf_bessel_yl(l, x)**
+   * .. function:: gsl_sf_bessel_yl(l, x)
    *
    *  This routine computes the irregular spherical Bessel function of
    *  integer order $l$, $y_l(x)$, for $l \geq 0$.
@@ -3416,7 +3426,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_bessel_i0_scaled(x)**
+   * .. function:: gsl_sf_bessel_i0_scaled(x)
    *
    *  This routine computes the regular modified spherical Bessel function
    *  of zeroth order, $\exp(-|x|) i_0(x)$.
@@ -3424,7 +3434,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_i0_scaled, 1);
 
   /**
-   * **gsl_sf_bessel_i1_scaled(x)**
+   * .. function:: gsl_sf_bessel_i1_scaled(x)
    *
    *  This routine computes the regular modified spherical Bessel function
    *  of first order, $\exp(-|x|) i_1(x)$.
@@ -3432,7 +3442,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_i1_scaled, 1);
 
   /**
-   * **gsl_sf_bessel_i2_scaled(x)**
+   * .. function:: gsl_sf_bessel_i2_scaled(x)
    *
    *  This routine computes the regular modified spherical Bessel function
    *  of second order, $\exp(-|x|) i_2(x)$.
@@ -3440,7 +3450,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_i2_scaled, 1);
 
   /**
-   * **gsl_sf_bessel_il_scaled(l, x)**
+   * .. function:: gsl_sf_bessel_il_scaled(l, x)
    *
    *  This routine computes the regular modified spherical Bessel function
    *  of integer order $l$, $\exp(-|x|) i_l(x)$.
@@ -3453,7 +3463,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_bessel_k0_scaled(x)**
+   * .. function:: gsl_sf_bessel_k0_scaled(x)
    *
    *  This routine computes the scaled irregular modified spherical Bessel
    *  function of zeroth order, $\exp(x) k_0(x)$, for $x > 0$.
@@ -3461,7 +3471,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_k0_scaled, 1);
 
   /**
-   * **gsl_sf_bessel_k1_scaled(x)**
+   * .. function:: gsl_sf_bessel_k1_scaled(x)
    *
    *  This routine computes the scaled irregular modified spherical Bessel
    *  function of first order, $\exp(x) k_1(x)$, for $x > 0$.
@@ -3469,7 +3479,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_k1_scaled, 1);
 
   /**
-   * **gsl_sf_bessel_k2_scaled(x)**
+   * .. function:: gsl_sf_bessel_k2_scaled(x)
    *
    *  This routine computes the scaled irregular modified spherical Bessel
    *  function of second order, $\exp(x) k_2(x)$, for $x > 0$.
@@ -3477,7 +3487,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_k2_scaled, 1);
 
   /**
-   * **gsl_sf_bessel_kl_scaled(l, x)**
+   * .. function:: gsl_sf_bessel_kl_scaled(l, x)
    *
    *  This routine computes the scaled irregular modified spherical Bessel
    *  function of integer order $l$, $\exp(x) k_l(x)$, for $x > 0$.
@@ -3490,7 +3500,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_bessel_Jnu(nu, x)**
+   * .. function:: gsl_sf_bessel_Jnu(nu, x)
    *
    *  This routine computes the regular cylindrical Bessel function of
    *  fractional order $\nu$, $J_\nu(x)$.
@@ -3503,7 +3513,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_bessel_Ynu(nu, x)**
+   * .. function:: gsl_sf_bessel_Ynu(nu, x)
    *
    *  This routine computes the irregular cylindrical Bessel function of
    *  fractional order $\nu$, $Y_\nu(x)$.
@@ -3516,7 +3526,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_bessel_Inu(nu, x)**
+   * .. function:: gsl_sf_bessel_Inu(nu, x)
    *
    *  This routine computes the regular modified Bessel function of
    *  fractional order $\nu$, $I_\nu(x)$ for $x > 0$, $\nu > 0$.
@@ -3524,7 +3534,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_Inu, 2);
 
   /**
-   * **gsl_sf_bessel_Inu_scaled(nu, x)**
+   * .. function:: gsl_sf_bessel_Inu_scaled(nu, x)
    *
    *  This routine computes the scaled regular modified Bessel function of
    *  fractional order $\nu$, $\exp(-|x|) I_\nu(x)$ for $x > 0$,
@@ -3538,7 +3548,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_bessel_Knu(nu, x)**
+   * .. function:: gsl_sf_bessel_Knu(nu, x)
    *
    *  This routine computes the irregular modified Bessel function of
    *  fractional order $\nu$, $K_\nu(x)$ for $x > 0$, $\nu > 0$.
@@ -3546,7 +3556,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_Knu, 2);
 
   /**
-   * **gsl_sf_bessel_lnKnu(nu, x)**
+   * .. function:: gsl_sf_bessel_lnKnu(nu, x)
    *
    *  This routine computes the logarithm of the irregular modified Bessel
    *  function of fractional order $\nu$, $\ln(K_\nu(x))$ for $x > 0$,
@@ -3555,7 +3565,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_lnKnu, 2);
 
   /**
-   * **gsl_sf_bessel_Knu_scaled(nu, x)**
+   * .. function:: gsl_sf_bessel_Knu_scaled(nu, x)
    *
    *  This routine computes the scaled irregular modified Bessel function of
    *  fractional order $\nu$, $\exp(|x|) K_\nu(x)$ for $x > 0$, $\nu > 0$.
@@ -3568,7 +3578,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_bessel_zero_J0(s)**
+   * .. function:: gsl_sf_bessel_zero_J0(s)
    *
    *  This routine computes the location of the $s$-th positive zero of the
    *  Bessel function $J_0(x)$.
@@ -3576,7 +3586,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_zero_J0, 1);
 
   /**
-   * **gsl_sf_bessel_zero_J1(s)**
+   * .. function:: gsl_sf_bessel_zero_J1(s)
    *
    *  This routine computes the location of the $s$-th positive zero of the
    *  Bessel function $J_1(x)$.
@@ -3584,7 +3594,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_bessel_zero_J1, 1);
 
   /**
-   * **gsl_sf_bessel_zero_Jnu(nu, s)**
+   * .. function:: gsl_sf_bessel_zero_Jnu(nu, s)
    *
    *  This routine computes the location of the $s$-th positive zero of the
    *  Bessel function $J_\nu(x)$. The current implementation does not support
@@ -3603,6 +3613,8 @@ void funcadd_ASL(AmplExports *ae) {
    * .. math::
    *  \operatorname{Cl_2}(x) = -\int_0^x \log(2 \sin(t/2)) dt
    *
+   * .. index:: Clausen function
+   *
    * It is related to the dilogarithm by
    *
    * .. math::
@@ -3611,9 +3623,10 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_clausen(x)**
+   * .. function:: gsl_sf_clausen(x)
    *
-   *  This routine computes the Clausen integral $\operatorname{Cl_2}(x)$.
+   *  This routine computes the `Clausen integral`:index:
+   *  $\operatorname{Cl_2}(x)$.
    */
   ADDFUNC(gsl_sf_clausen, 1);
 
@@ -3622,6 +3635,8 @@ void funcadd_ASL(AmplExports *ae) {
    *
    * Coulomb Functions
    * =================
+   *
+   * .. index:: Coulomb function
    */
 
   /**
@@ -3630,7 +3645,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_hydrogenicR_1(Z, r)**
+   * .. function:: gsl_sf_hydrogenicR_1(Z, r)
    *
    *  This routine computes the lowest-order normalized hydrogenic bound
    *  state radial wavefunction $R_1 := 2 Z \sqrt{Z} \exp(-Z r)$.
@@ -3638,7 +3653,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_hydrogenicR_1, 2);
 
   /**
-   * **gsl_sf_hydrogenicR(n, l, Z, r)**
+   * .. function:: gsl_sf_hydrogenicR(n, l, Z, r)
    *
    *  This routine computes the $n$-th normalized hydrogenic bound state
    *  radial wavefunction,
@@ -3662,7 +3677,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_coulomb_CL(L, eta)**
+   * .. function:: gsl_sf_coulomb_CL(L, eta)
    *
    *  This function computes the Coulomb wave function normalization
    *  constant $C_L(\eta)$ for $L > -1$.
@@ -3681,10 +3696,12 @@ void funcadd_ASL(AmplExports *ae) {
    * the arguments of the following functions are, by convention,
    * integers equal to twice the actual spin value. For information on
    * the 3-j coefficients see Abramowitz & Stegun, Section 27.9.
+   *
+   * .. index:: coupling coefficient
    */
 
   /**
-   * **gsl_sf_coupling_3j(two_ja, two_jb, two_jc, two_ma, two_mb, two_mc)**
+   * .. function:: gsl_sf_coupling_3j(two_ja, two_jb, two_jc, two_ma, two_mb, two_mc)
    *
    *  These routines compute the Wigner 3-j coefficient,
    *
@@ -3696,11 +3713,14 @@ void funcadd_ASL(AmplExports *ae) {
    *
    *  where the arguments are given in half-integer units, ja = two_ja / 2,
    *  ma = two_ma / 2, etc.
+   *
+   * .. index:: Wigner 3-j coefficient
    */
   ADDFUNC(gsl_sf_coupling_3j, 6);
 
   /**
-   * **gsl_sf_coupling_6j(two_ja, two_jb, two_jc, two_jd, two_je, two_jf)**
+   * .. function::
+   *   gsl_sf_coupling_6j(two_ja, two_jb, two_jc, two_jd, two_je, two_jf)
    *
    *  These routines compute the Wigner 6-j coefficient,
    *
@@ -3712,12 +3732,14 @@ void funcadd_ASL(AmplExports *ae) {
    *
    *  where the arguments are given in half-integer units, ja = two_ja / 2,
    *  jb = two_jb / 2, etc.
+   *
+   * .. index:: Wigner 6-j coefficient
    */
   ADDFUNC(gsl_sf_coupling_6j, 6);
 
   /**
-   * **gsl_sf_coupling_9j(two_ja, two_jb, two_jc, two_jd, two_je, two_jf,
-   * two_jg, two_jh, two_ji)**
+   * .. function::
+   *   gsl_sf_coupling_9j(two_ja, two_jb, two_jc, two_jd, two_je, two_jf, two_jg, two_jh, two_ji)
    *
    *  These routines compute the Wigner 9-j coefficient,
    *
@@ -3730,6 +3752,8 @@ void funcadd_ASL(AmplExports *ae) {
    *
    *  where the arguments are given in half-integer units, ja = two_ja / 2,
    *  jb = two_jb / 2, etc.
+   *
+   * .. index:: Wigner 9-j coefficient
    */
   ADDFUNC(gsl_sf_coupling_9j, 9);
 
@@ -3739,13 +3763,16 @@ void funcadd_ASL(AmplExports *ae) {
    * Dawson Function
    * ===============
    *
-   * The Dawson integral is defined by $\exp(-x^2) \int_0^x \exp(t^2) dt$.
+   * .. index:: Dawson function
+   *
+   * The `Dawson integral`:index: is defined by
+   * $\exp(-x^2) \int_0^x \exp(t^2) dt$.
    * A table of Dawson's integral can be found in Abramowitz & Stegun,
    * Table 7.5.
    */
 
   /**
-   * **gsl_sf_dawson(x)**
+   * .. function:: gsl_sf_dawson(x)
    *
    *  This routine computes the value of Dawson's integral for $x$.
    */
@@ -3762,11 +3789,13 @@ void funcadd_ASL(AmplExports *ae) {
    * .. math::
    *   D_n(x) = n/x^n \int_0^x (t^n/(e^t - 1)) dt
    *
+   * .. index:: Debye function
+   *
    * For further information see Abramowitz & Stegun, Section 27.1.
    */
 
   /**
-   * **gsl_sf_debye_1(x)**
+   * .. function:: gsl_sf_debye_1(x)
    *
    *  This routine computes the first-order Debye function
    *  $D_1(x) = (1/x) \int_0^x (t/(e^t - 1)) dt$.
@@ -3774,7 +3803,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_debye_1, 1);
 
   /**
-   * **gsl_sf_debye_2(x)**
+   * .. function:: gsl_sf_debye_2(x)
    *
    *  This routine computes the second-order Debye function
    *  $D_2(x) = (2/x^2) \int_0^x (t^2/(e^t - 1)) dt$.
@@ -3782,7 +3811,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_debye_2, 1);
 
   /**
-   * **gsl_sf_debye_3(x)**
+   * .. function:: gsl_sf_debye_3(x)
    *
    *  This routine computes the third-order Debye function
    *  $D_3(x) = (3/x^3) \int_0^x (t^3/(e^t - 1)) dt$.
@@ -3790,7 +3819,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_debye_3, 1);
 
   /**
-   * **gsl_sf_debye_4(x)**
+   * .. function:: gsl_sf_debye_4(x)
    *
    *  This routine computes the fourth-order Debye function
    *  $D_4(x) = (4/x^4) \int_0^x (t^4/(e^t - 1)) dt$.
@@ -3798,7 +3827,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_debye_4, 1);
 
   /**
-   * **gsl_sf_debye_5(x)**
+   * .. function:: gsl_sf_debye_5(x)
    *
    *  This routine computes the fifth-order Debye function
    *  $D_5(x) = (5/x^5) \int_0^x (t^5/(e^t - 1)) dt$.
@@ -3806,7 +3835,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_debye_5, 1);
 
   /**
-   * **gsl_sf_debye_6(x)**
+   * .. function:: gsl_sf_debye_6(x)
    *
    *  This routine computes the sixth-order Debye function
    *  $D_6(x) = (6/x^6) \int_0^x (t^6/(e^t - 1)) dt$.
@@ -3818,10 +3847,12 @@ void funcadd_ASL(AmplExports *ae) {
    *
    * Dilogarithm
    * ===========
+   *
+   * .. index:: dilogarithm
    */
 
   /**
-   * **gsl_sf_dilog(x)**
+   * .. function:: gsl_sf_dilog(x)
    *
    *  This routine computes the dilogarithm for a real argument. In Lewin's
    *  notation this is $\operatorname{Li}_2(x)$, the real part of the
@@ -3844,6 +3875,8 @@ void funcadd_ASL(AmplExports *ae) {
    *
    * Information about the elliptic integrals can be found in
    * Abramowitz & Stegun, Chapter 17.
+   *
+   * .. index:: elliptic integral
    *
    * Definition of Legendre Forms
    * ----------------------------
@@ -3887,7 +3920,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_ellint_Kcomp(k)**
+   * .. function:: gsl_sf_ellint_Kcomp(k)
    *
    *  This routine computes the complete elliptic integral $K(k)$.
    *  Note that Abramowitz & Stegun define this function in terms
@@ -3896,7 +3929,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_ellint_Kcomp, 1);
 
   /**
-   * **gsl_sf_ellint_Ecomp(k)**
+   * .. function:: gsl_sf_ellint_Ecomp(k)
    *
    *  This routine computes the complete elliptic integral $E(k)$.
    *  Note that Abramowitz & Stegun define this function in terms
@@ -3905,7 +3938,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_ellint_Ecomp, 1);
 
   /**
-   * **gsl_sf_ellint_Pcomp(k, n)**
+   * .. function:: gsl_sf_ellint_Pcomp(k, n)
    *
    *  This routine computes the complete elliptic integral $\Pi(k,n)$.
    *  Note that Abramowitz & Stegun define this function in terms
@@ -3920,7 +3953,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_ellint_F(phi, k)**
+   * .. function:: gsl_sf_ellint_F(phi, k)
    *
    *  This routine computes the incomplete elliptic integral $F(\phi,k)$.
    *  Note that Abramowitz & Stegun define this function in terms of the
@@ -3929,7 +3962,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_ellint_F, 2);
 
   /**
-   * **gsl_sf_ellint_E(phi, k)**
+   * .. function:: gsl_sf_ellint_E(phi, k)
    *
    *  This routine computes the incomplete elliptic integral $E(\phi,k)$.
    *  Note that Abramowitz & Stegun define this function in terms of the
@@ -3938,7 +3971,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_ellint_E, 2);
 
   /**
-   * **gsl_sf_ellint_P(phi, k, n)**
+   * .. function:: gsl_sf_ellint_P(phi, k, n)
    *
    *  This routine computes the incomplete elliptic integral $\Pi(\phi,k,n)$.
    *  Note that Abramowitz & Stegun define this function in terms of the
@@ -3948,7 +3981,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_ellint_P, 3);
 
   /**
-   * **gsl_sf_ellint_D(phi, k, n)**
+   * .. function:: gsl_sf_ellint_D(phi, k, n)
    *
    *  This routine computes the incomplete elliptic integral $D(\phi,k,n)$
    *  which is defined through the Carlson form $RD(x,y,z)$ by the following
@@ -3968,28 +4001,28 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_ellint_RC(x, y)**
+   * .. function:: gsl_sf_ellint_RC(x, y)
    *
    *  This routine computes the incomplete elliptic integral $RC(x,y)$.
    */
   ADDFUNC(gsl_sf_ellint_RC, 2);
 
   /**
-   * **gsl_sf_ellint_RD(x, y, z)**
+   * .. function:: gsl_sf_ellint_RD(x, y, z)
    *
    *  This routine computes the incomplete elliptic integral $RD(x,y,z)$.
    */
   ADDFUNC(gsl_sf_ellint_RD, 3);
 
   /**
-   * **gsl_sf_ellint_RF(x, y, z)**
+   * .. function:: gsl_sf_ellint_RF(x, y, z)
    *
    *  This routine computes the incomplete elliptic integral $RF(x,y,z)$.
    */
   ADDFUNC(gsl_sf_ellint_RF, 3);
 
   /**
-   * **gsl_sf_ellint_RJ(x, y, z, p)**
+   * .. function:: gsl_sf_ellint_RJ(x, y, z, p)
    *
    *  This routine computes the incomplete elliptic integral $RJ(x,y,z,p)$.
    */
@@ -4005,11 +4038,12 @@ void funcadd_ASL(AmplExports *ae) {
    * Error Functions
    * ===============
    *
-   * The error function is described in Abramowitz & Stegun, Chapter 7.
+   * The `error function`:index: is described in Abramowitz & Stegun,
+   * Chapter 7.
    */
 
   /**
-   * **gsl_sf_erf(x)**
+   * .. function:: gsl_sf_erf(x)
    *
    *  This routine computes the error function $\operatorname{erf}(x)$, where
    *
@@ -4019,7 +4053,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_erf, 1);
 
   /**
-   * **gsl_sf_erfc(x)**
+   * .. function:: gsl_sf_erfc(x)
    *
    *  This routine computes the complementary error function
    *
@@ -4030,7 +4064,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_erfc, 1);
 
   /**
-   * **gsl_sf_log_erfc(x)**
+   * .. function:: gsl_sf_log_erfc(x)
    *
    *  This routine computes the logarithm of the complementary error function
    *  $\log(\operatorname{erfc}(x))$.
@@ -4046,7 +4080,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_erf_Z(x)**
+   * .. function:: gsl_sf_erf_Z(x)
    *
    *  This routine computes the Gaussian probability density function
    *  $Z(x) = (1/\sqrt{2\pi}) \exp(-x^2/2)$.
@@ -4054,7 +4088,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_erf_Z, 1);
 
   /**
-   * **gsl_sf_erf_Q(x)**
+   * .. function:: gsl_sf_erf_Q(x)
    *
    *  This routine computes the upper tail of the Gaussian probability
    *  function $Q(x) = (1/\sqrt{2\pi}) \int_x^\infty \exp(-t^2/2) dt$.
@@ -4074,7 +4108,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_hazard(x)**
+   * .. function:: gsl_sf_hazard(x)
    *
    *  This routine computes the hazard function for the normal distribution.
    */
@@ -4085,6 +4119,8 @@ void funcadd_ASL(AmplExports *ae) {
    *
    * Exponential Integrals
    * =====================
+   *
+   * .. index:: exponential integral
    */
 
   /**
@@ -4093,7 +4129,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_expint_E1(x)**
+   * .. function:: gsl_sf_expint_E1(x)
    *
    *  This routine computes the exponential integral $\operatorname{E_1}(x)$,
    *
@@ -4104,7 +4140,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_expint_E1, 1);
 
   /**
-   * **gsl_sf_expint_E2(x)**
+   * .. function:: gsl_sf_expint_E2(x)
    *
    *  This routine computes the second-order exponential integral
    *  $\operatorname{E_2}(x)$,
@@ -4116,7 +4152,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_expint_E2, 1);
 
   /**
-   * **gsl_sf_expint_En(n, x)**
+   * .. function:: gsl_sf_expint_En(n, x)
    *
    *  This routine computes the exponential integral $\operatorname{E_n}(x)$
    *  of order $n$,
@@ -4133,7 +4169,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_expint_Ei(x)**
+   * .. function:: gsl_sf_expint_Ei(x)
    *
    *  These routines compute the exponential integral $\operatorname{Ei}(x)$,
    *
@@ -4150,7 +4186,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_Shi(x)**
+   * .. function:: gsl_sf_Shi(x)
    *
    *  This routine computes the integral
    *
@@ -4160,7 +4196,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_Shi, 1);
 
   /**
-   * **gsl_sf_Chi(x)**
+   * .. function:: gsl_sf_Chi(x)
    *
    *  This routine computes the integral
    *
@@ -4178,7 +4214,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_expint_3(x)**
+   * .. function:: gsl_sf_expint_3(x)
    *
    *  This routine computes the third-order exponential integral
    *
@@ -4193,9 +4229,9 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_Si(x)**
+   * .. function:: gsl_sf_Si(x)
    *
-   *  This routine computes the Sine integral
+   *  This routine computes the `Sine integral`:index:
    *
    *  .. math::
    *    \operatorname{Si}(x) = \int_0^x \sin(t)/t dt.
@@ -4203,9 +4239,9 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_Si, 1);
 
   /**
-   * **gsl_sf_Ci(x)**
+   * .. function:: gsl_sf_Ci(x)
    *
-   *  This routine computes the Cosine integral
+   *  This routine computes the `Cosine integral`:index:
    *
    *  .. math::
    *    \operatorname{Ci}(x) = -\int_x^\infty \cos(t)/t dt \text{ for } x > 0.
@@ -4218,9 +4254,10 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_atanint(x)**
+   * .. function:: gsl_sf_atanint(x)
    *
-   *  This routine computes the Arctangent integral, which is defined as
+   *  This routine computes the `Arctangent integral`:index:, which is
+   *  defined as
    *
    *  .. math::
    *    \operatorname{AtanInt}(x) = \int_0^x \arctan(t)/t dt.
@@ -4232,13 +4269,15 @@ void funcadd_ASL(AmplExports *ae) {
    *
    * Fermi-Dirac Function
    * ====================
+   *
+   * .. index:: Fermi-Dirac function
    */
 
   /**
    * Complete Fermi-Dirac Integrals
    * ------------------------------
    *
-   * The complete Fermi-Dirac integral $F_j(x)$ is given by,
+   * The complete `Fermi-Dirac integral`:index: $F_j(x)$ is given by,
    *
    * .. math::
    *   F_j(x) := (1/\Gamma(j+1)) \int_0^\infty (t^j / (\exp(t-x) + 1)) dt
@@ -4248,7 +4287,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_fermi_dirac_m1(x)**
+   * .. function:: gsl_sf_fermi_dirac_m1(x)
    *
    *  This routine computes the complete Fermi-Dirac integral with an index
    *  of -1. This integral is given by $F_{-1}(x) = e^x / (1 + e^x)$.
@@ -4256,7 +4295,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_fermi_dirac_m1, 1);
 
   /**
-   * **gsl_sf_fermi_dirac_0(x)**
+   * .. function:: gsl_sf_fermi_dirac_0(x)
    *
    *  This routine computes the complete Fermi-Dirac integral with an index
    *  of 0. This integral is given by $F_0(x) = \ln(1 + e^x)$.
@@ -4265,7 +4304,7 @@ void funcadd_ASL(AmplExports *ae) {
 
 
   /**
-   * **gsl_sf_fermi_dirac_1(x)**
+   * .. function:: gsl_sf_fermi_dirac_1(x)
    *
    *  This routine computes the complete Fermi-Dirac integral with an index
    *  of 1, $F_1(x) = \int_0^\infty (t /(\exp(t-x)+1)) dt$.
@@ -4273,7 +4312,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_fermi_dirac_1, 1);
 
   /**
-   * **gsl_sf_fermi_dirac_2(x)**
+   * .. function:: gsl_sf_fermi_dirac_2(x)
    *
    *  This routine computes the complete Fermi-Dirac integral with an index
    *  of 2, $F_2(x) = (1/2) \int_0^\infty (t^2 /(\exp(t-x)+1)) dt$.
@@ -4281,7 +4320,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_fermi_dirac_2, 1);
 
   /**
-   * **gsl_sf_fermi_dirac_int(j, x)**
+   * .. function:: gsl_sf_fermi_dirac_int(j, x)
    *
    *  This routine computes the complete Fermi-Dirac integral with an
    *  integer index of $j$,
@@ -4290,21 +4329,21 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_fermi_dirac_int, 2);
 
   /**
-   * **gsl_sf_fermi_dirac_mhalf(x)**
+   * .. function:: gsl_sf_fermi_dirac_mhalf(x)
    *
    *  This routine computes the complete Fermi-Dirac integral $F_{-1/2}(x)$.
    */
   ADDFUNC(gsl_sf_fermi_dirac_mhalf, 1);
 
   /**
-   * **gsl_sf_fermi_dirac_half(x)**
+   * .. function:: gsl_sf_fermi_dirac_half(x)
    *
    *  This routine computes the complete Fermi-Dirac integral $F_{1/2}(x)$.
    */
   ADDFUNC(gsl_sf_fermi_dirac_half, 1);
 
   /**
-   * **gsl_sf_fermi_dirac_3half(x)**
+   * .. function:: gsl_sf_fermi_dirac_3half(x)
    *
    *  This routine computes the complete Fermi-Dirac integral $F_{3/2}(x)$.
    */
@@ -4321,7 +4360,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_fermi_dirac_inc_0(x, b)**
+   * .. function:: gsl_sf_fermi_dirac_inc_0(x, b)
    *
    *  This routine computes the incomplete Fermi-Dirac integral with an index
    *  of zero, $F_0(x,b) = \ln(1 + e^{b-x}) - (b-x)$.
@@ -4336,13 +4375,17 @@ void funcadd_ASL(AmplExports *ae) {
    *
    * This following routines compute the gamma and beta functions in their
    * full and incomplete forms.
+   *
+   * .. index:
+   *   Gamma function
+   *   Beta function
    */
 
   /**
    * Gamma Functions
    * ---------------
    *
-   * The Gamma function is defined by the following integral,
+   * The `Gamma function`:index: is defined by the following integral,
    *
    * .. math::
    *   \Gamma(x) = \int_0^\infty t^{x-1} \exp(-t) dt
@@ -4353,7 +4396,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_gamma(x)**
+   * .. function:: gsl_sf_gamma(x)
    *
    *  This routine computes the Gamma function $\Gamma(x)$, subject to $x$
    *  not being a negative integer or zero. The function is computed using
@@ -4363,7 +4406,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_gamma, 1);
 
   /**
-   * **gsl_sf_lngamma(x)**
+   * .. function:: gsl_sf_lngamma(x)
    *
    *  This routine computes the logarithm of the Gamma function,
    *  $\log(\Gamma(x))$, subject to $x$ not being a negative integer or zero.
@@ -4374,7 +4417,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_lngamma, 1);
 
   /**
-   * **gsl_sf_gammastar(x)**
+   * .. function:: gsl_sf_gammastar(x)
    *
    *  This routine computes the regulated Gamma Function $\Gamma^*(x)$ for
    *  $x > 0$. The regulated gamma function is given by,
@@ -4388,7 +4431,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_gammastar, 1);
 
   /**
-   * **gsl_sf_gammainv(x)**
+   * .. function:: gsl_sf_gammainv(x)
    *
    *  This routine computes the reciprocal of the gamma function,
    *  $1/\Gamma(x)$ using the real Lanczos method.
@@ -4404,9 +4447,9 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_poch(a, x)**
+   * .. function:: gsl_sf_poch(a, x)
    *
-   *  This routine computes the Pochhammer symbol
+   *  This routine computes the `Pochhammer symbol`:index:
    *  $(a)_x = \Gamma(a + x)/\Gamma(a)$. The Pochhammer symbol is also
    *  known as the Apell symbol and sometimes written as $(a,x)$.
    *  When $a$ and $a+x$ are negative integers or zero, the limiting
@@ -4415,7 +4458,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_poch, 2);
 
   /**
-   * **gsl_sf_lnpoch(a, x)**
+   * .. function:: gsl_sf_lnpoch(a, x)
    *
    *  This routine computes the logarithm of the Pochhammer symbol,
    *  $\log((a)_x) = \log(\Gamma(a + x)/\Gamma(a))$.
@@ -4423,7 +4466,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_lnpoch, 2);
 
   /**
-   * **gsl_sf_pochrel(a, x)**
+   * .. function:: gsl_sf_pochrel(a, x)
    *
    *  This routine computes the relative Pochhammer symbol
    *  $((a)_x - 1)/x$ where $(a)_x = \Gamma(a + x)/\Gamma(a)$.
@@ -4436,16 +4479,16 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_gamma_inc(a, x)**
+   * .. function:: gsl_sf_gamma_inc(a, x)
    *
-   *  This routine computes the unnormalized incomplete Gamma Function
+   *  This routine computes the unnormalized incomplete `Gamma Function`:index:
    *  $\Gamma(a,x) = \int_x^\infty t^{a-1} \exp(-t) dt$ for a real and
    *  $x \geq 0$.
    */
   ADDFUNC(gsl_sf_gamma_inc, 2);
 
   /**
-   * **gsl_sf_gamma_inc_Q(a, x)**
+   * .. function:: gsl_sf_gamma_inc_Q(a, x)
    *
    *  This routine computes the normalized incomplete Gamma Function
    *  $Q(a,x) = 1/\Gamma(a) \int_x^\infty t^{a-1} \exp(-t) dt$ for
@@ -4454,7 +4497,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_gamma_inc_Q, 2);
 
   /**
-   * **gsl_sf_gamma_inc_P(a, x)**
+   * .. function:: gsl_sf_gamma_inc_P(a, x)
    *
    *  This routine computes the complementary normalized incomplete
    *  Gamma Function
@@ -4474,16 +4517,16 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_beta(a, b)**
+   * .. function:: gsl_sf_beta(a, b)
    *
-   *  This routine computes the Beta Function,
+   *  This routine computes the `Beta Function`:index:,
    *  $\operatorname{B}(a,b) = \Gamma(a)\Gamma(b)/\Gamma(a+b)$
    *  subject to $a$ and $b$ not being negative integers.
    */
   ADDFUNC(gsl_sf_beta, 2);
 
   /**
-   * **gsl_sf_lnbeta(a, b)**
+   * .. function:: gsl_sf_lnbeta(a, b)
    *
    *  This routine computes the logarithm of the Beta Function,
    *  $\log(\operatorname{B}(a,b))$ subject to $a$ and $b$ not being
@@ -4497,7 +4540,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_beta_inc(a, b, x)**
+   * .. function:: gsl_sf_beta_inc(a, b, x)
    *
    *  This routine computes the normalized incomplete Beta function
    *  $I_x(a,b) = \operatorname{B}_x(a,b)/\operatorname{B}(a,b)$ where
@@ -4519,20 +4562,24 @@ void funcadd_ASL(AmplExports *ae) {
    *
    * The Gegenbauer polynomials are defined in Abramowitz & Stegun,
    * Chapter 22, where they are known as Ultraspherical polynomials.
+   *
+   * .. index::
+   *   Gegenbauer function
+   *   Gegenbauer polynomial
    */
 
   /**
-   * **gsl_sf_gegenpoly_1(lambda, x)**
+   * .. function:: gsl_sf_gegenpoly_1(lambda, x)
    */
   ADDFUNC(gsl_sf_gegenpoly_1, 2);
 
   /**
-   * **gsl_sf_gegenpoly_2(lambda, x)**
+   * .. function:: gsl_sf_gegenpoly_2(lambda, x)
    */
   ADDFUNC(gsl_sf_gegenpoly_2, 2);
 
   /**
-   * **gsl_sf_gegenpoly_3(lambda, x)**
+   * .. function:: gsl_sf_gegenpoly_3(lambda, x)
    *
    *  These functions evaluate the Gegenbauer polynomials $C^{(\lambda)}_n(x)$
    *  using explicit representations for $n = 1, 2, 3$.
@@ -4540,7 +4587,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_gegenpoly_3, 2);
 
   /**
-   * **gsl_sf_gegenpoly_n(n, lambda, x)**
+   * .. function:: gsl_sf_gegenpoly_n(n, lambda, x)
    *
    *  This function evaluates the Gegenbauer polynomial $C^{(\lambda)}_n(x)$
    *  for a specific value of $n$, $\lambda$, $x$ subject to $\lambda > -1/2$,
@@ -4556,17 +4603,19 @@ void funcadd_ASL(AmplExports *ae) {
    *
    * Hypergeometric functions are described in Abramowitz & Stegun,
    * Chapters 13 and 15.
+   *
+   * .. index:: Hypergeometric function
    */
 
   /**
-   * **gsl_sf_hyperg_0F1(c, x)**
+   * .. function:: gsl_sf_hyperg_0F1(c, x)
    *
    *  This routine computes the hypergeometric function ${}_0F_1(c,x)$.
    */
   ADDFUNC(gsl_sf_hyperg_0F1, 2);
 
   /**
-   * **gsl_sf_hyperg_1F1_int(m, n, x)**
+   * .. function:: gsl_sf_hyperg_1F1_int(m, n, x)
    *
    *  This routine computes the confluent hypergeometric function
    *  ${}_1F_1(m,n,x) = M(m,n,x)$ for integer parameters $m$, $n$.
@@ -4574,7 +4623,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_hyperg_1F1_int, 3);
 
   /**
-   * **gsl_sf_hyperg_1F1(a, b, x)**
+   * .. function:: gsl_sf_hyperg_1F1(a, b, x)
    *
    *  This routine computes the confluent hypergeometric function
    *  ${}_1F_1(a,b,x) = M(a,b,x)$ for general parameters $a$, $b$.
@@ -4582,7 +4631,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_hyperg_1F1, 3);
 
   /**
-   * **gsl_sf_hyperg_U_int(m, n, x)**
+   * .. function:: gsl_sf_hyperg_U_int(m, n, x)
    *
    *  This routine computes the confluent hypergeometric function
    *  $U(m,n,x)$ for integer parameters $m$, $n$.
@@ -4590,14 +4639,14 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_hyperg_U_int, 3);
 
   /**
-   * **gsl_sf_hyperg_U(a, b, x)**
+   * .. function:: gsl_sf_hyperg_U(a, b, x)
    *
    *  This routine computes the confluent hypergeometric function $U(a,b,x)$.
    */
   ADDFUNC(gsl_sf_hyperg_U, 3);
 
   /**
-   * **gsl_sf_hyperg_2F1(a, b, c, x)**
+   * .. function:: gsl_sf_hyperg_2F1(a, b, c, x)
    *
    *  This routine computes the Gauss hypergeometric function
    *  ${}_2F_1(a,b,c,x) = F(a,b,c,x)$ for $|x| < 1$.
@@ -4610,7 +4659,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_hyperg_2F1, 4);
 
   /**
-   * **gsl_sf_hyperg_2F1_conj(aR, aI, c, x)**
+   * .. function:: gsl_sf_hyperg_2F1_conj(aR, aI, c, x)
    *
    *  This routine computes the Gauss hypergeometric function
    *  ${}_2F_1(a_R + i a_I, a_R - i a_I, c, x)$ with complex parameters
@@ -4619,7 +4668,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_hyperg_2F1_conj, 4);
 
   /**
-   * **gsl_sf_hyperg_2F1_renorm(a, b, c, x)**
+   * .. function:: gsl_sf_hyperg_2F1_renorm(a, b, c, x)
    *
    *  This routine computes the renormalized Gauss hypergeometric
    *  function ${}_2F_1(a,b,c,x) / \Gamma(c)$ for $|x| < 1$.
@@ -4627,7 +4676,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_hyperg_2F1_renorm, 4);
 
   /**
-   * **gsl_sf_hyperg_2F1_conj_renorm(aR, aI, c, x)**
+   * .. function:: gsl_sf_hyperg_2F1_conj_renorm(aR, aI, c, x)
    *
    *  This routine computes the renormalized Gauss hypergeometric
    *  function ${}_2F_1(a_R + i a_I, a_R - i a_I, c, x) / \Gamma(c)$
@@ -4636,7 +4685,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_hyperg_2F1_conj_renorm, 4);
 
   /**
-   * **gsl_sf_hyperg_2F0(a, b, x)**
+   * .. function:: gsl_sf_hyperg_2F0(a, b, x)
    *
    *  This routine computes the hypergeometric function ${}_2F_0(a,b,x)$.
    *  The series representation is a divergent hypergeometric series.
@@ -4657,20 +4706,24 @@ void funcadd_ASL(AmplExports *ae) {
    * They are related to the plain Laguerre polynomials $L_n(x)$ by
    * $L^0_n(x) = L_n(x)$ and $L^k_n(x) = (-1)^k (d^k/dx^k) L_{n+k}(x)$.
    * For more information see Abramowitz & Stegun, Chapter 22.
+   *
+   * .. index::
+   *   Laguerre function
+   *   Laguerre polynomial
    */
 
   /**
-   * **gsl_sf_laguerre_1(a, x)**
+   * .. function:: gsl_sf_laguerre_1(a, x)
    */
   ADDFUNC(gsl_sf_laguerre_1, 2);
 
   /**
-   * **gsl_sf_laguerre_2(a, x)**
+   * .. function:: gsl_sf_laguerre_2(a, x)
    */
   ADDFUNC(gsl_sf_laguerre_2, 2);
 
   /**
-   * **gsl_sf_laguerre_3(a, x)**
+   * .. function:: gsl_sf_laguerre_3(a, x)
    *
    *  These routines evaluate the generalized Laguerre polynomials
    *  $L^a_1(x), L^a_2(x), L^a_3(x)$ using explicit representations.
@@ -4678,7 +4731,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_laguerre_3, 2);
 
   /**
-   * **gsl_sf_laguerre_n(n, a, x)**
+   * .. function:: gsl_sf_laguerre_n(n, a, x)
    *
    *  This routine evaluates the generalized Laguerre polynomials
    *  $L^a_n(x)$ for $a > -1, n >= 0$.
@@ -4696,10 +4749,12 @@ void funcadd_ASL(AmplExports *ae) {
    * for $x < 0$; however, it has only two real-valued branches. We define
    * $W_0(x)$ to be the principal branch, where $W > -1$ for $x < 0$, and
    * $W_{-1}(x)$ to be the other real branch, where $W < -1$ for $x < 0$.
+   *
+   * .. index:: Lambert W function
    */
 
   /**
-   * **gsl_sf_lambert_W0(x)**
+   * .. function:: gsl_sf_lambert_W0(x)
    *
    *  This routine computes the principal branch of the Lambert $W$ function,
    *  $W_0(x)$.
@@ -4707,7 +4762,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_lambert_W0, 1);
 
   /**
-   * **gsl_sf_lambert_Wm1(x)**
+   * .. function:: gsl_sf_lambert_Wm1(x)
    *
    *  This routine computes the secondary real-valued branch of the Lambert
    *  $W$ function, $W_{-1}(x)$.
@@ -4722,6 +4777,10 @@ void funcadd_ASL(AmplExports *ae) {
    *
    * The Legendre Functions and Legendre Polynomials are described in
    * Abramowitz & Stegun, Chapter 8.
+   *
+   * .. index::
+   *   Legendre function
+   *   Legendre polynomial
    */
 
   /**
@@ -4730,17 +4789,17 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_legendre_P1(x)**
+   * .. function:: gsl_sf_legendre_P1(x)
    */
   ADDFUNC(gsl_sf_legendre_P1, 1);
 
   /**
-   * **gsl_sf_legendre_P2(x)**
+   * .. function:: gsl_sf_legendre_P2(x)
    */
   ADDFUNC(gsl_sf_legendre_P2, 1);
 
   /**
-   * **gsl_sf_legendre_P3(x)**
+   * .. function:: gsl_sf_legendre_P3(x)
    *
    *  These functions evaluate the Legendre polynomials $P_l(x)$ using
    *  explicit representations for $l=1, 2, 3$.
@@ -4748,7 +4807,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_legendre_P3, 1);
 
   /**
-   * **gsl_sf_legendre_Pl(l, x)**
+   * .. function:: gsl_sf_legendre_Pl(l, x)
    *
    *  This function evaluates the Legendre polynomial $P_l(x)$ for a
    *  specific value of integer parameter $l$, $x$ subject to
@@ -4757,7 +4816,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_legendre_Pl, 2);
 
   /**
-   * **gsl_sf_legendre_Q0(x)**
+   * .. function:: gsl_sf_legendre_Q0(x)
    *
    *  This routine computes the Legendre function $Q_0(x)$ for
    *  $x > -1, x \ne 1$.
@@ -4765,7 +4824,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_legendre_Q0, 1);
 
   /**
-   * **gsl_sf_legendre_Q1(x)**
+   * .. function:: gsl_sf_legendre_Q1(x)
    *
    *  This routine computes the Legendre function $Q_1(x)$ for
    *  $x > -1, x \ne 1$.
@@ -4773,7 +4832,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_legendre_Q1, 1);
 
   /**
-   * **gsl_sf_legendre_Ql(l, x)**
+   * .. function:: gsl_sf_legendre_Ql(l, x)
    *
    *  This routine computes the Legendre function $Q_l(x)$ for
    *  $x > -1, x \ne 1$ and $l \geq 0$.
@@ -4798,7 +4857,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_legendre_Plm(l, m, x)**
+   * .. function:: gsl_sf_legendre_Plm(l, m, x)
    *
    *  This routine computes the associated Legendre polynomial
    *  $P_l^m(x)$ for $m \geq 0, l \geq m, |x| \leq 1$.
@@ -4806,7 +4865,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_legendre_Plm, 3);
 
   /**
-   * **gsl_sf_legendre_sphPlm(l, m, x)**
+   * .. function:: gsl_sf_legendre_sphPlm(l, m, x)
    *
    *  This routine computes the normalized associated Legendre polynomial
    *  $\sqrt{(2l+1)/(4\pi)} \sqrt{(l-m)!/(l+m)!} P_l^m(x)$ suitable for use
@@ -4826,7 +4885,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_conicalP_half(lambda, x)**
+   * .. function:: gsl_sf_conicalP_half(lambda, x)
    *
    *  This routine computes the irregular Spherical Conical Function
    *  $P^{1/2}_{-1/2 + i \lambda}(x)$ for $x > -1$.
@@ -4834,7 +4893,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_conicalP_half, 2);
 
   /**
-   * **gsl_sf_conicalP_mhalf(lambda, x)**
+   * .. function:: gsl_sf_conicalP_mhalf(lambda, x)
    *
    *  This routine computes the regular Spherical Conical Function
    *  $P^{-1/2}_{-1/2 + i \lambda}(x)$ for $x > -1$.
@@ -4842,7 +4901,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_conicalP_mhalf, 2);
 
   /**
-   * **gsl_sf_conicalP_0(lambda, x)**
+   * .. function:: gsl_sf_conicalP_0(lambda, x)
    *
    *  This routine computes the conical function
    *  $P^0_{-1/2 + i \lambda}(x)$ for $x > -1$.
@@ -4850,7 +4909,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_conicalP_0, 2);
 
   /**
-   * **gsl_sf_conicalP_1(lambda, x)**
+   * .. function:: gsl_sf_conicalP_1(lambda, x)
    *
    *  This routine computes the conical function
    *  $P^1_{-1/2 + i \lambda}(x)$ for $x > -1$.
@@ -4858,7 +4917,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_conicalP_1, 2);
 
   /**
-   * **gsl_sf_conicalP_sph_reg(l, lambda, x)**
+   * .. function:: gsl_sf_conicalP_sph_reg(l, lambda, x)
    *
    *  This routine computes the Regular Spherical Conical Function
    *  $P^{-1/2-l}_{-1/2 + i \lambda}(x)$ for $x > -1, l \geq -1$.
@@ -4866,7 +4925,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_conicalP_sph_reg, 3);
 
   /**
-   * **gsl_sf_conicalP_cyl_reg(m, lambda, x)**
+   * .. function:: gsl_sf_conicalP_cyl_reg(m, lambda, x)
    *
    *  This routine computes the Regular Cylindrical Conical Function
    *  $P^{-m}_{-1/2 + i \lambda}(x)$ for $x > -1, m \geq -1$.
@@ -4884,7 +4943,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_legendre_H3d_0(lambda, eta)**
+   * .. function:: gsl_sf_legendre_H3d_0(lambda, eta)
    *
    *  This routine computes the zeroth radial eigenfunction of the
    *  Laplacian on the 3-dimensional hyperbolic space,
@@ -4899,7 +4958,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_legendre_H3d_0, 2);
 
   /**
-   * **gsl_sf_legendre_H3d_1(lambda, eta)**
+   * .. function:: gsl_sf_legendre_H3d_1(lambda, eta)
    *
    *  This routine computes the first radial eigenfunction of the
    *  Laplacian on the 3-dimensional hyperbolic space,
@@ -4915,7 +4974,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_legendre_H3d_1, 2);
 
   /**
-   * **gsl_sf_legendre_H3d(l, lambda, eta)**
+   * .. function:: gsl_sf_legendre_H3d(l, lambda, eta)
    *
    *  This routine computes the $l$-th radial eigenfunction of the
    *  Laplacian on the 3-dimensional hyperbolic space $\eta \geq 0, l \geq 0$.
@@ -4932,17 +4991,19 @@ void funcadd_ASL(AmplExports *ae) {
    *
    * Information on the properties of the Logarithm function can be found
    * in Abramowitz & Stegun, Chapter 4.
+   *
+   * .. index:: logarithm
    */
 
   /**
-   * **gsl_sf_log(x)**
+   * .. function:: gsl_sf_log(x)
    *
    *  This routine computes the logarithm of $x$, $\log(x)$, for $x > 0$.
    */
   ADDFUNC(gsl_sf_log, 1);
 
   /**
-   * **gsl_sf_log_abs(x)**
+   * .. function:: gsl_sf_log_abs(x)
    *
    *  This routine computes the logarithm of the magnitude of $x$,
    *  $\log(|x|)$, for $x \ne 0$.
@@ -4950,7 +5011,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_log_abs, 1);
 
   /**
-   * **gsl_sf_log_1plusx(x)**
+   * .. function:: gsl_sf_log_1plusx(x)
    *
    *  This routine computes $\log(1 + x)$ for $x > -1$ using an algorithm
    *  that is accurate for small $x$.
@@ -4958,7 +5019,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_log_1plusx, 1);
 
   /**
-   * **gsl_sf_log_1plusx_mx(x)**
+   * .. function:: gsl_sf_log_1plusx_mx(x)
    *
    *  This routine computes $\log(1 + x) - x$ for $x > -1$ using an
    *  algorithm that is accurate for small $x$.
@@ -4978,6 +5039,8 @@ void funcadd_ASL(AmplExports *ae) {
    * .. math::
    *   d^2y/dv^2 + (a - 2q\cos 2v)y = 0 \\
    *   d^2f/du^2 - (a - 2q\cosh 2u)f = 0
+   *
+   * .. index:: Mathieu function
    *
    * The angular Mathieu functions $ce_r(x,q), se_r(x,q)$ are the even
    * and odd periodic solutions of the first equation, which is known as
@@ -5001,12 +5064,12 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_mathieu_a(n, q)**
+   * .. function:: gsl_sf_mathieu_a(n, q)
    */
   ADDFUNC(gsl_sf_mathieu_a, 2);
 
   /**
-   * **gsl_sf_mathieu_b(n, q)**
+   * .. function:: gsl_sf_mathieu_b(n, q)
    *
    *  These routines compute the characteristic values $a_n(q), b_n(q)$
    *  of the Mathieu functions $ce_n(q,x)$ and $se_n(q,x)$, respectively.
@@ -5019,12 +5082,12 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_mathieu_ce(n, q, x)**
+   * .. function:: gsl_sf_mathieu_ce(n, q, x)
    */
   ADDFUNC(gsl_sf_mathieu_ce, 3);
 
   /**
-   * **gsl_sf_mathieu_se(n, q, x)**
+   * .. function:: gsl_sf_mathieu_se(n, q, x)
    *
    *  These routines compute the angular Mathieu functions $ce_n(q,x)$ and
    *  $se_n(q,x)$, respectively.
@@ -5037,12 +5100,12 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_mathieu_Mc(j, n, q, x)**
+   * .. function:: gsl_sf_mathieu_Mc(j, n, q, x)
    */
   ADDFUNC(gsl_sf_mathieu_Mc, 4);
 
   /**
-   * **gsl_sf_mathieu_Ms(j, n, q, x)**
+   * .. function:: gsl_sf_mathieu_Ms(j, n, q, x)
    *
    *  These routines compute the radial $j$-th kind Mathieu functions
    *  $Mc_n^{(j)}(q,x)$ and $Ms_n^{(j)}(q,x)$ of order $n$.
@@ -5059,10 +5122,12 @@ void funcadd_ASL(AmplExports *ae) {
    *
    * Power Function
    * ==============
+   *
+   * .. index:: power function
    */
 
   /**
-   * **gsl_sf_pow_int(x, n)**
+   * .. function:: gsl_sf_pow_int(x, n)
    *
    *  This routine computes the power $x^n$ for integer $n$. The power is
    *  computed using the minimum number of multiplications. For example,
@@ -5090,6 +5155,10 @@ void funcadd_ASL(AmplExports *ae) {
    *   \psi^{(n)}(x) = (d/dx)^n \psi(x) = (d/dx)^{n+1} \log(\Gamma(x))
    *
    * where $\psi(x) = \Gamma'(x)/\Gamma(x)$ is known as the digamma function.
+   *
+   * .. index::
+   *   psi function
+   *   polygamma function
    */
 
   /**
@@ -5098,15 +5167,15 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_psi_int(n)**
+   * .. function:: gsl_sf_psi_int(n)
    *
-   *  This routine computes the digamma function $\psi(n)$ for positive
+   *  This routine computes the `digamma function`:index: $\psi(n)$ for positive
    *  integer $n$. The digamma function is also called the Psi function.
    */
   ADDFUNC(gsl_sf_psi_int, 1);
 
   /**
-   * **gsl_sf_psi(x)**
+   * .. function:: gsl_sf_psi(x)
    *
    *  This routine computes the digamma function $\psi(x)$ for general
    *  $x, x \ne 0$.
@@ -5114,7 +5183,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_psi, 1);
 
   /**
-   * **gsl_sf_psi_1piy(x)**
+   * .. function:: gsl_sf_psi_1piy(x)
    *
    *  This routine computes the real part of the digamma function on
    *  the line $1+i y, \operatorname{Re}[\psi(1 + i y)]$.
@@ -5127,15 +5196,15 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_psi_1_int(n)**
+   * .. function:: gsl_sf_psi_1_int(n)
    *
-   *  This routine computes the Trigamma function $\psi'(n)$ for positive
-   *  integer $n$.
+   *  This routine computes the `Trigamma function`:index: $\psi'(n)$ for
+   *  positive integer $n$.
    */
   ADDFUNC(gsl_sf_psi_1_int, 1);
 
   /**
-   * **gsl_sf_psi_1(x)**
+   * .. function:: gsl_sf_psi_1(x)
    *
    *  This routine computes the Trigamma function $\psi'(x)$ for general $x$.
    */
@@ -5147,7 +5216,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_psi_n(n, x)**
+   * .. function:: gsl_sf_psi_n(n, x)
    *
    *  This routine computes the polygamma function $\psi^{(n)}(x)$ for
    *  $n \geq 0, x > 0$.
@@ -5162,15 +5231,15 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_synchrotron_1(x)**
+   * .. function:: gsl_sf_synchrotron_1(x)
    *
-   *  This routine computes the first synchrotron function
+   *  This routine computes the first `synchrotron function`:index:
    *  $x \int_x^\infty K_{5/3}(t) dt$ for $x \geq 0$.
    */
   ADDFUNC(gsl_sf_synchrotron_1, 1);
 
   /**
-   * **gsl_sf_synchrotron_2(x)**
+   * .. function:: gsl_sf_synchrotron_2(x)
    *
    *  This routine computes the second synchrotron function
    *  $x K_{2/3}(x)$ for $x \geq 0$.
@@ -5185,31 +5254,33 @@ void funcadd_ASL(AmplExports *ae) {
    *
    * The transport functions $J(n,x)$ are defined by the integral
    * representations $J(n,x) := \int_0^x t^n e^t /(e^t - 1)^2 dt$.
+   *
+   * .. index:: transport function
    */
 
   /**
-   * **gsl_sf_transport_2(x)**
+   * .. function:: gsl_sf_transport_2(x)
    *
    *  This routine computes the transport function $J(2,x)$.
    */
   ADDFUNC(gsl_sf_transport_2, 1);
 
   /**
-   * **gsl_sf_transport_3(x)**
+   * .. function:: gsl_sf_transport_3(x)
    *
    *  This routine computes the transport function $J(3,x)$.
    */
   ADDFUNC(gsl_sf_transport_3, 1);
 
   /**
-   * **gsl_sf_transport_4(x)**
+   * .. function:: gsl_sf_transport_4(x)
    *
    *  This routine computes the transport function $J(4,x)$.
    */
   ADDFUNC(gsl_sf_transport_4, 1);
 
   /**
-   * **gsl_sf_transport_5(x)**
+   * .. function:: gsl_sf_transport_5(x)
    *
    *  This routine computes the transport function $J(5,x)$.
    */
@@ -5224,8 +5295,10 @@ void funcadd_ASL(AmplExports *ae) {
    * Zeta Functions
    * ==============
    *
-   * The Riemann zeta function is defined in Abramowitz & Stegun,
+   * The `Riemann zeta function`:index: is defined in Abramowitz & Stegun,
    * Section 23.2.
+   *
+   * .. index:: zeta function
    */
 
   /**
@@ -5237,7 +5310,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_zeta_int(n)**
+   * .. function:: gsl_sf_zeta_int(n)
    *
    *  This routine computes the Riemann zeta function $\zeta(n)$ for integer
    *  $n, n \ne 1$.
@@ -5245,7 +5318,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_sf_zeta_int, 1);
 
   /**
-   * **gsl_sf_zeta(s)**
+   * .. function:: gsl_sf_zeta(s)
    *
    *  This routine computes the Riemann zeta function $\zeta(s)$ for arbitrary
    *  $s, s \ne 1$.
@@ -5262,14 +5335,14 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_sf_zetam1_int(n)**
+   * .. function:: gsl_sf_zetam1_int(n)
    *
    *  This routine computes $\zeta(n) - 1$ for integer $n, n \ne 1$.
    */
   ADDFUNC(gsl_sf_zetam1_int, 1);
 
   /**
-   * **gsl_sf_zetam1(s)**
+   * .. function:: gsl_sf_zetam1(s)
    *
    *  This routine computes $\zeta(s) - 1$ for arbitrary $s, s \ne 1.$.
    */
@@ -5279,12 +5352,12 @@ void funcadd_ASL(AmplExports *ae) {
    * Hurwitz Zeta Function
    * ---------------------
    *
-   * The Hurwitz zeta function is defined by
+   * The `Hurwitz zeta function`:index: is defined by
    * $\zeta(s,q) = \sum_0^\infty (k+q)^{-s}$.
    */
 
   /**
-   * **gsl_sf_hzeta(s, q)**
+   * .. function:: gsl_sf_hzeta(s, q)
    *
    *  This routine computes the Hurwitz zeta function $\zeta(s,q)$ for
    *  $s > 1, q > 0$.
@@ -5295,18 +5368,18 @@ void funcadd_ASL(AmplExports *ae) {
    * Eta Function
    * ------------
    *
-   * The eta function is defined by $\eta(s) = (1-2^{1-s}) \zeta(s)$.
+   * The `eta function`:index: is defined by $\eta(s) = (1-2^{1-s}) \zeta(s)$.
    */
 
   /**
-   * **gsl_sf_eta_int(n)**
+   * .. function:: gsl_sf_eta_int(n)
    *
    *  This routine computes the eta function $\eta(n)$ for integer $n$.
    */
   ADDFUNC(gsl_sf_eta_int, 1);
 
   /**
-   * **gsl_sf_eta(s)**
+   * .. function:: gsl_sf_eta(s)
    *
    *  This routine computes the eta function $\eta(s)$ for arbitrary $s$.
    */
@@ -5352,6 +5425,11 @@ void funcadd_ASL(AmplExports *ae) {
    * described in this chapter can be obtained using any of the random number
    * generators in the library as an underlying source of randomness.
    *
+   * .. index::
+   *   probability distribution
+   *   random number distribution
+   *   random number generator
+   *
    * In the simplest cases a non-uniform distribution can be obtained
    * analytically from the uniform distribution of a random number generator
    * by applying an appropriate transformation. This method uses one call
@@ -5365,6 +5443,8 @@ void funcadd_ASL(AmplExports *ae) {
    * functions. The cumulative distribution functions and their inverses are
    * computed separately for the upper and lower tails of the distribution,
    * allowing full accuracy to be retained for small results.
+   *
+   * .. index:: cumulative distribution function
    *
    * Note that the discrete random variate functions always return a value
    * of type unsigned int, and on most platforms this has a maximum value of
@@ -5467,23 +5547,25 @@ void funcadd_ASL(AmplExports *ae) {
    * $P(n)=1, Q(n)=0$ while $P(1) = p(1), Q(1)=1-p(1)$.
    */
 
-  /**
-   * @file ran-gaussian
-   *
-   * The Gaussian Distribution
-   * =========================
-   */
-
   /* Initialize the random number generator. */
   rng = gsl_rng_alloc(gsl_rng_env_setup());
   at_exit(free_rng, 0);
 
   /**
-   * **gsl_ran_gaussian(sigma)**
+   * @file ran-gaussian
    *
-   *  This function returns a Gaussian random variate, with mean zero and
-   *  standard deviation ``sigma``. The probability distribution for Gaussian
-   *  random variates is,
+   * The Gaussian Distribution
+   * =========================
+   *
+   * .. index:: Gaussian distribution
+   */
+
+  /**
+   * .. function:: gsl_ran_gaussian(sigma)
+   *
+   *  This function returns a `Gaussian random variate`:index:, with mean
+   *  zero and standard deviation ``sigma``. The probability distribution
+   *  for Gaussian random variates is,
    *
    *  .. math::
    *    p(x) dx = {1 \over \sqrt{2 \pi \sigma^2}} \exp (-x^2 / 2\sigma^2) dx
@@ -5497,7 +5579,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_gaussian, 1);
 
   /**
-   * **gsl_ran_gaussian_pdf(x, sigma)**
+   * .. function:: gsl_ran_gaussian_pdf(x, sigma)
    *
    *  This function computes the probability density $p(x)$ at $x$ for a
    *  Gaussian distribution with standard deviation ``sigma``, using the formula
@@ -5506,12 +5588,12 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_gaussian_pdf, 2);
 
   /**
-   * **gsl_ran_gaussian_ziggurat(sigma)**
+   * .. function:: gsl_ran_gaussian_ziggurat(sigma)
    */
   ADDFUNC_RANDOM(gsl_ran_gaussian_ziggurat, 1);
 
   /**
-   * **gsl_ran_gaussian_ratio_method(sigma)**
+   * .. function:: gsl_ran_gaussian_ratio_method(sigma)
    *
    *  These functions compute a Gaussian random variate using the alternative
    *  Marsaglia-Tsang ziggurat and Kinderman-Monahan-Leva ratio methods.
@@ -5520,17 +5602,17 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_gaussian_ratio_method, 1);
 
   /**
-   * **gsl_ran_ugaussian()**
+   * .. function:: gsl_ran_ugaussian()
    */
   ADDFUNC_RANDOM(gsl_ran_ugaussian, 0);
 
   /**
-   * **gsl_ran_ugaussian_pdf(x)**
+   * .. function:: gsl_ran_ugaussian_pdf(x)
    */
   ADDFUNC(gsl_ran_ugaussian_pdf, 1);
 
   /**
-   * **gsl_ran_ugaussian_ratio_method()**
+   * .. function:: gsl_ran_ugaussian_ratio_method()
    *
    *  These functions compute results for the unit Gaussian distribution.
    *  They are equivalent to the functions above with a standard deviation
@@ -5539,22 +5621,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_ugaussian_ratio_method, 0);
 
   /**
-   * **gsl_cdf_gaussian_P(x, sigma)**
+   * .. function:: gsl_cdf_gaussian_P(x, sigma)
    */
   ADDFUNC(gsl_cdf_gaussian_P, 2);
 
   /**
-   * **gsl_cdf_gaussian_Q(x, sigma)**
+   * .. function:: gsl_cdf_gaussian_Q(x, sigma)
    */
   ADDFUNC(gsl_cdf_gaussian_Q, 2);
 
   /**
-   * **gsl_cdf_gaussian_Pinv(P, sigma)**
+   * .. function:: gsl_cdf_gaussian_Pinv(P, sigma)
    */
   ADDFUNC(gsl_cdf_gaussian_Pinv, 2);
 
   /**
-   * **gsl_cdf_gaussian_Qinv(Q, sigma)**
+   * .. function:: gsl_cdf_gaussian_Qinv(Q, sigma)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the Gaussian distribution with
@@ -5563,22 +5645,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_cdf_gaussian_Qinv, 2);
 
   /**
-   * **gsl_cdf_ugaussian_P(x)**
+   * .. function:: gsl_cdf_ugaussian_P(x)
    */
   ADDFUNC(gsl_cdf_ugaussian_P, 1);
 
   /**
-   * **gsl_cdf_ugaussian_Q(x)**
+   * .. function:: gsl_cdf_ugaussian_Q(x)
    */
   ADDFUNC(gsl_cdf_ugaussian_Q, 1);
 
   /**
-   * **gsl_cdf_ugaussian_Pinv(P)**
+   * .. function:: gsl_cdf_ugaussian_Pinv(P)
    */
   ADDFUNC(gsl_cdf_ugaussian_Pinv, 1);
 
   /**
-   * **gsl_cdf_ugaussian_Qinv(Q)**
+   * .. function:: gsl_cdf_ugaussian_Qinv(Q)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the unit Gaussian distribution.
@@ -5593,7 +5675,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_gaussian_tail(a, sigma)**
+   * .. function:: gsl_ran_gaussian_tail(a, sigma)
    *
    *  This function provides random variates from the upper tail of a
    *  Gaussian distribution with standard deviation ``sigma``. The values
@@ -5616,7 +5698,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_gaussian_tail, 2);
 
   /**
-   * **gsl_ran_gaussian_tail_pdf(x, a, sigma)**
+   * .. function:: gsl_ran_gaussian_tail_pdf(x, a, sigma)
    *
    *  This function computes the probability density $p(x)$ at $x$ for a
    *  Gaussian tail distribution with standard deviation ``sigma`` and lower
@@ -5625,12 +5707,12 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_gaussian_tail_pdf, 3);
 
   /**
-   * **gsl_ran_ugaussian_tail(a)**
+   * .. function:: gsl_ran_ugaussian_tail(a)
    */
   ADDFUNC_RANDOM(gsl_ran_ugaussian_tail, 1);
 
   /**
-   * **gsl_ran_ugaussian_tail_pdf(x, a)**
+   * .. function:: gsl_ran_ugaussian_tail_pdf(x, a)
    *
    *  These functions compute results for the tail of a unit Gaussian
    *  distribution. They are equivalent to the functions above with a
@@ -5649,10 +5731,10 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_exponential(mu)**
+   * .. function:: gsl_ran_exponential(mu)
    *
-   *  This function returns a random variate from the exponential distribution
-   *  with mean ``mu``. The distribution is,
+   *  This function returns a random variate from the `exponential
+   *  distribution`:index: with mean ``mu``. The distribution is,
    *
    *  .. math::
    *    p(x) dx = {1 \over \mu} \exp(-x/\mu) dx
@@ -5662,7 +5744,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_exponential, 1);
 
   /**
-   * **gsl_ran_exponential_pdf(x, mu)**
+   * .. function:: gsl_ran_exponential_pdf(x, mu)
    *
    *  This function computes the probability density $p(x)$ at $x$ for an
    *  exponential distribution with mean ``mu``, using the formula given above.
@@ -5670,22 +5752,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_exponential_pdf, 2);
 
   /**
-   * **gsl_cdf_exponential_P(x, mu)**
+   * .. function:: gsl_cdf_exponential_P(x, mu)
    */
   ADDFUNC(gsl_cdf_exponential_P, 2);
 
   /**
-   * **gsl_cdf_exponential_Q(x, mu)**
+   * .. function:: gsl_cdf_exponential_Q(x, mu)
    */
   ADDFUNC(gsl_cdf_exponential_Q, 2);
 
   /**
-   * **gsl_cdf_exponential_Pinv(P, mu)**
+   * .. function:: gsl_cdf_exponential_Pinv(P, mu)
    */
   ADDFUNC(gsl_cdf_exponential_Pinv, 2);
 
   /**
-   * **gsl_cdf_exponential_Qinv(Q, mu)**
+   * .. function:: gsl_cdf_exponential_Qinv(Q, mu)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the exponential distribution
@@ -5701,10 +5783,10 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_laplace(a)**
+   * .. function:: gsl_ran_laplace(a)
    *
-   *  This function returns a random variate from the Laplace distribution
-   *  with width ``a``. The distribution is,
+   *  This function returns a random variate from the `Laplace
+   *  distribution`:index: with width ``a``. The distribution is,
    *
    *  .. math::
    *    p(x) dx = {1 \over 2 a}  \exp(-|x/a|) dx
@@ -5714,7 +5796,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_laplace, 1);
 
   /**
-   * **gsl_ran_laplace_pdf(x, a)**
+   * .. function:: gsl_ran_laplace_pdf(x, a)
    *
    *  This function computes the probability density $p(x)$ at $x$ for a
    *  Laplace distribution with width ``a``, using the formula given above.
@@ -5722,22 +5804,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_laplace_pdf, 2);
 
   /**
-   * **gsl_ran_laplace_P(x, a)**
+   * .. function:: gsl_ran_laplace_P(x, a)
    */
   ADDFUNC(gsl_cdf_laplace_P, 2);
 
   /**
-   * **gsl_ran_laplace_Q(x, a)**
+   * .. function:: gsl_ran_laplace_Q(x, a)
    */
   ADDFUNC(gsl_cdf_laplace_Q, 2);
 
   /**
-   * **gsl_ran_laplace_Pinv(P, a)**
+   * .. function:: gsl_ran_laplace_Pinv(P, a)
    */
   ADDFUNC(gsl_cdf_laplace_Pinv, 2);
 
   /**
-   * **gsl_ran_laplace_Qinv(Q, a)**
+   * .. function:: gsl_ran_laplace_Qinv(Q, a)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the Laplace distribution
@@ -5753,10 +5835,10 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_exppow(a, b)**
+   * .. function:: gsl_ran_exppow(a, b)
    *
-   *  This function returns a random variate from exponential power
-   *  distribution with scale parameter ``a`` and exponent ``b``.
+   *  This function returns a random variate from `exponential power
+   *  distribution`:index: with scale parameter ``a`` and exponent ``b``.
    *  The distribution is,
    *
    *  .. math::
@@ -5769,7 +5851,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_exppow, 2);
 
   /**
-   * **gsl_ran_exppow_pdf(x, a, b)**
+   * .. function:: gsl_ran_exppow_pdf(x, a, b)
    *
    *  This function computes the probability density $p(x)$ at $x$ for an
    *  exponential power distribution with scale parameter ``a`` and exponent
@@ -5778,12 +5860,12 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_exppow_pdf, 3);
 
   /**
-   * **gsl_ran_exppow_P(x, a, b)**
+   * .. function:: gsl_ran_exppow_P(x, a, b)
    */
   ADDFUNC(gsl_cdf_exppow_P, 3);
 
   /**
-   * **gsl_ran_exppow_Q(x, a, b)**
+   * .. function:: gsl_ran_exppow_Q(x, a, b)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ for the exponential power distribution with parameters
@@ -5799,11 +5881,11 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_cauchy(a)**
+   * .. function:: gsl_ran_cauchy(a)
    *
-   *  This function returns a random variate from the Cauchy distribution
-   *  with scale parameter ``a``. The probability distribution for Cauchy
-   *  random variates is,
+   *  This function returns a random variate from the `Cauchy
+   *  distribution`:index: with scale parameter ``a``. The probability
+   *  distribution for Cauchy random variates is,
    *
    *  .. math::
    *    p(x) dx = {1 \over a\pi (1 + (x/a)^2) } dx
@@ -5814,7 +5896,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_cauchy, 1);
 
   /**
-   * **gsl_ran_cauchy_pdf(x, a)**
+   * .. function:: gsl_ran_cauchy_pdf(x, a)
    *
    *  This function computes the probability density $p(x)$ at $x$ for a
    *  Cauchy distribution with scale parameter ``a``, using the formula
@@ -5823,22 +5905,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_cauchy_pdf, 2);
 
   /**
-   * **gsl_ran_cauchy_P(x, a)**
+   * .. function:: gsl_ran_cauchy_P(x, a)
    */
   ADDFUNC(gsl_cdf_cauchy_P, 2);
 
   /**
-   * **gsl_ran_cauchy_Q(x, a)**
+   * .. function:: gsl_ran_cauchy_Q(x, a)
    */
   ADDFUNC(gsl_cdf_cauchy_Q, 2);
 
   /**
-   * **gsl_ran_cauchy_Pinv(P, a)**
+   * .. function:: gsl_ran_cauchy_Pinv(P, a)
    */
   ADDFUNC(gsl_cdf_cauchy_Pinv, 2);
 
   /**
-   * **gsl_ran_cauchy_Qinv(Q, a)**
+   * .. function:: gsl_ran_cauchy_Qinv(Q, a)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the Cauchy distribution with
@@ -5854,10 +5936,11 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_rayleigh(sigma)**
+   * .. function:: gsl_ran_rayleigh(sigma)
    *
-   *  This function returns a random variate from the Rayleigh distribution
-   *  with scale parameter ``sigma``. The distribution is,
+   *  This function returns a random variate from the `Rayleigh
+   *  distribution`:index: with scale parameter ``sigma``.
+   *  The distribution is,
    *
    *  .. math::
    *    p(x) dx = {x \over \sigma^2} \exp(- x^2/(2 \sigma^2)) dx
@@ -5867,7 +5950,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_rayleigh, 1);
 
   /**
-   * **gsl_ran_rayleigh_pdf(x, sigma)**
+   * .. function:: gsl_ran_rayleigh_pdf(x, sigma)
    *
    *  This function computes the probability density $p(x)$ at $x$ for a
    *  Rayleigh distribution with scale parameter ``sigma``, using the formula
@@ -5876,22 +5959,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_rayleigh_pdf, 2);
 
   /**
-   * **gsl_ran_rayleigh_P(x, sigma)**
+   * .. function:: gsl_ran_rayleigh_P(x, sigma)
    */
   ADDFUNC(gsl_cdf_rayleigh_P, 2);
 
   /**
-   * **gsl_ran_rayleigh_Q(x, sigma)**
+   * .. function:: gsl_ran_rayleigh_Q(x, sigma)
    */
   ADDFUNC(gsl_cdf_rayleigh_Q, 2);
 
   /**
-   * **gsl_ran_rayleigh_Pinv(P, sigma)**
+   * .. function:: gsl_ran_rayleigh_Pinv(P, sigma)
    */
   ADDFUNC(gsl_cdf_rayleigh_Pinv, 2);
 
   /**
-   * **gsl_ran_rayleigh_Qinv(Q, sigma)**
+   * .. function:: gsl_ran_rayleigh_Qinv(Q, sigma)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the Rayleigh distribution with
@@ -5907,11 +5990,11 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_rayleigh_tail(a, sigma)**
+   * .. function:: gsl_ran_rayleigh_tail(a, sigma)
    *
-   *  This function returns a random variate from the tail of the Rayleigh
-   *  distribution with scale parameter ``sigma`` and a lower limit of ``a``.
-   *  The distribution is,
+   *  This function returns a random variate from the tail of the `Rayleigh
+   *  distribution`:index: with scale parameter ``sigma`` and a lower limit
+   *  of ``a``. The distribution is,
    *
    *  .. math::
    *    p(x) dx = {x \over \sigma^2} \exp ((a^2 - x^2) /(2 \sigma^2)) dx
@@ -5921,7 +6004,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_rayleigh_tail, 2);
 
   /**
-   * **gsl_ran_rayleigh_tail_pdf(x, a, sigma)**
+   * .. function:: gsl_ran_rayleigh_tail_pdf(x, a, sigma)
    *
    *  This function computes the probability density $p(x)$ at $x$ for a
    *  Rayleigh tail distribution with scale parameter ``sigma`` and lower
@@ -5937,11 +6020,11 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_landau()**
+   * .. function:: gsl_ran_landau()
    *
-   *  This function returns a random variate from the Landau distribution.
-   *  The probability distribution for Landau random variates is defined
-   *  analytically by the complex integral,
+   *  This function returns a random variate from the `Landau
+   *  distribution`:index:. The probability distribution for Landau random
+   *  variates is defined analytically by the complex integral,
    *
    *  .. math::
    *    p(x) = (1/(2 \pi i))
@@ -5956,7 +6039,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_landau, 0);
 
   /**
-   * **gsl_ran_landau_pdf(x)**
+   * .. function:: gsl_ran_landau_pdf(x)
    *
    *  This function computes the probability density $p(x)$ at $x$ for the
    *  Landau distribution using an approximation to the formula given above.
@@ -5971,11 +6054,12 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_levy(c, alpha)**
+   * .. function:: gsl_ran_levy(c, alpha)
    *
-   *  This function returns a random variate from the Levy symmetric stable
-   *  distribution with scale ``c`` and exponent ``alpha``. The symmetric
-   *  stable probability distribution is defined by a Fourier transform,
+   *  This function returns a random variate from the `Levy symmetric
+   *  stable distribution`:index: with scale ``c`` and exponent ``alpha``.
+   *  The symmetric stable probability distribution is defined by a
+   *  Fourier transform,
    *
    *  .. math::
    *    p(x) = {1 \over 2 \pi}
@@ -5999,10 +6083,10 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_levy_skew(c, alpha, beta)**
+   * .. function:: gsl_ran_levy_skew(c, alpha, beta)
    *
-   *  This function returns a random variate from the Levy skew stable
-   *  distribution with scale ``c``, exponent ``alpha`` and skewness
+   *  This function returns a random variate from the `Levy skew stable
+   *  distribution`:index: with scale ``c``, exponent ``alpha`` and skewness
    *  parameter ``beta``. The skewness parameter must lie in the range
    *  [-1,1]. The Levy skew stable probability distribution is defined
    *  by a Fourier transform,
@@ -6038,10 +6122,10 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_gamma(a, b)**
+   * .. function:: gsl_ran_gamma(a, b)
    *
-   *  This function returns a random variate from the gamma distribution.
-   *  The distribution function is,
+   *  This function returns a random variate from the `gamma
+   *  distribution`:index:. The distribution function is,
    *
    *  .. math::
    *    p(x) dx = {1 \over \Gamma(a) b^a} x^{a-1} e^{-x/b} dx
@@ -6056,7 +6140,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_gamma, 2);
 
   /**
-   * **gsl_ran_gamma_knuth(a, b)**
+   * .. function:: gsl_ran_gamma_knuth(a, b)
    *
    *  This function returns a gamma variate using the algorithms from Knuth
    *  (vol 2).
@@ -6064,7 +6148,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_gamma_knuth, 2);
 
   /**
-   * **gsl_ran_gamma_pdf(x, a, b)**
+   * .. function:: gsl_ran_gamma_pdf(x, a, b)
    *
    *  This function computes the probability density $p(x)$ at $x$ for a
    *  gamma distribution with parameters ``a`` and ``b``, using the formula
@@ -6073,22 +6157,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_gamma_pdf, 3);
 
   /**
-   * **gsl_cdf_gamma_P(x, a, b)**
+   * .. function:: gsl_cdf_gamma_P(x, a, b)
    */
   ADDFUNC(gsl_cdf_gamma_P, 3);
 
   /**
-   * **gsl_cdf_gamma_Q(x, a, b)**
+   * .. function:: gsl_cdf_gamma_Q(x, a, b)
    */
   ADDFUNC(gsl_cdf_gamma_Q, 3);
 
   /**
-   * **gsl_cdf_gamma_Pinv(P, a, b)**
+   * .. function:: gsl_cdf_gamma_Pinv(P, a, b)
    */
   ADDFUNC(gsl_cdf_gamma_Pinv, 3);
 
   /**
-   * **gsl_cdf_gamma_Qinv(Q, a, b)**
+   * .. function:: gsl_cdf_gamma_Qinv(Q, a, b)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the gamma distribution with
@@ -6104,7 +6188,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_flat(a, b)**
+   * .. function:: gsl_ran_flat(a, b)
    *
    *  This function returns a random variate from the flat (uniform)
    *  distribution from ``a`` to ``b``. The distribution is,
@@ -6113,11 +6197,15 @@ void funcadd_ASL(AmplExports *ae) {
    *    p(x) dx = {1 \over (b-a)} dx
    *
    *  if $a \leq x < b$ and $0$ otherwise.
+   *
+   *  .. index::
+   *    flat distribution
+   *    uniform distribution
    */
   ADDFUNC_RANDOM(gsl_ran_flat, 2);
 
   /**
-   * **gsl_ran_flat_pdf(x, a, b)**
+   * .. function:: gsl_ran_flat_pdf(x, a, b)
    *
    *  This function computes the probability density $p(x)$ at $x$ for a
    *  uniform distribution from ``a`` to ``b``, using the formula given above.
@@ -6125,22 +6213,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_flat_pdf, 3);
 
   /**
-   * **gsl_cdf_flat_P(x, a, b)**
+   * .. function:: gsl_cdf_flat_P(x, a, b)
    */
   ADDFUNC(gsl_cdf_flat_P, 3);
 
   /**
-   * **gsl_cdf_flat_Q(x, a, b)**
+   * .. function:: gsl_cdf_flat_Q(x, a, b)
    */
   ADDFUNC(gsl_cdf_flat_Q, 3);
 
   /**
-   * **gsl_cdf_flat_Pinv(P, a, b)**
+   * .. function:: gsl_cdf_flat_Pinv(P, a, b)
    */
   ADDFUNC(gsl_cdf_flat_Pinv, 3);
 
   /**
-   * **gsl_cdf_flat_Qinv(Q, a, b)**
+   * .. function:: gsl_cdf_flat_Qinv(Q, a, b)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for a uniform distribution from
@@ -6156,10 +6244,10 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_lognormal(zeta, sigma)**
+   * .. function:: gsl_ran_lognormal(zeta, sigma)
    *
-   *  This function returns a random variate from the lognormal distribution.
-   *  The distribution function is,
+   *  This function returns a random variate from the `lognormal
+   *  distribution`:index:. The distribution function is,
    *
    *  .. math::
    *    p(x) dx = {1 \over x \sqrt{2 \pi \sigma^2} }
@@ -6170,7 +6258,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_lognormal, 2);
 
   /**
-   * **gsl_ran_lognormal_pdf(x, zeta, sigma)**
+   * .. function:: gsl_ran_lognormal_pdf(x, zeta, sigma)
    *
    *  This function computes the probability density $p(x)$ at $x$ for a
    *  lognormal distribution with parameters ``zeta`` and ``sigma``, using
@@ -6179,22 +6267,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_lognormal_pdf, 3);
 
   /**
-   * **gsl_cdf_lognormal_P(x, zeta, sigma)**
+   * .. function:: gsl_cdf_lognormal_P(x, zeta, sigma)
    */
   ADDFUNC(gsl_cdf_lognormal_P, 3);
 
   /**
-   * **gsl_cdf_lognormal_Q(x, zeta, sigma)**
+   * .. function:: gsl_cdf_lognormal_Q(x, zeta, sigma)
    */
   ADDFUNC(gsl_cdf_lognormal_Q, 3);
 
   /**
-   * **gsl_cdf_lognormal_Pinv(P, zeta, sigma)**
+   * .. function:: gsl_cdf_lognormal_Pinv(P, zeta, sigma)
    */
   ADDFUNC(gsl_cdf_lognormal_Pinv, 3);
 
   /**
-   * **gsl_cdf_lognormal_Qinv(Q, zeta, sigma)**
+   * .. function:: gsl_cdf_lognormal_Qinv(Q, zeta, sigma)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the lognormal distribution
@@ -6208,8 +6296,8 @@ void funcadd_ASL(AmplExports *ae) {
    * The Chi-squared Distribution
    * ============================
    *
-   * The chi-squared distribution arises in statistics. If $Y_i$ are $n$
-   * independent Gaussian random variates with unit variance then the
+   * The `chi-squared distribution`:index: arises in statistics. If $Y_i$
+   * are $n$ independent Gaussian random variates with unit variance then the
    * sum-of-squares,
    *
    * .. math::
@@ -6219,7 +6307,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_chisq(nu)**
+   * .. function:: gsl_ran_chisq(nu)
    *
    *  This function returns a random variate from chi-squared distribution
    *  with ``nu`` degrees of freedom. The distribution function is,
@@ -6232,7 +6320,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_chisq, 1);
 
   /**
-   * **gsl_ran_chisq_pdf(x, nu)**
+   * .. function:: gsl_ran_chisq_pdf(x, nu)
    *
    *  This function computes the probability density $p(x)$ at $x$ for a
    *  chi-squared distribution with ``nu`` degrees of freedom, using the
@@ -6241,22 +6329,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_chisq_pdf, 2);
 
   /**
-   * **gsl_ran_chisq_P(x, nu)**
+   * .. function:: gsl_ran_chisq_P(x, nu)
    */
   ADDFUNC(gsl_cdf_chisq_P, 2);
 
   /**
-   * **gsl_ran_chisq_Q(x, nu)**
+   * .. function:: gsl_ran_chisq_Q(x, nu)
    */
   ADDFUNC(gsl_cdf_chisq_Q, 2);
 
   /**
-   * **gsl_ran_chisq_Pinv(P, nu)**
+   * .. function:: gsl_ran_chisq_Pinv(P, nu)
    */
   ADDFUNC(gsl_cdf_chisq_Pinv, 2);
 
   /**
-   * **gsl_ran_chisq_Qinv(Q, nu)**
+   * .. function:: gsl_ran_chisq_Qinv(Q, nu)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the chi-squared distribution
@@ -6270,8 +6358,8 @@ void funcadd_ASL(AmplExports *ae) {
    * The F-distribution
    * ==================
    *
-   * The F-distribution arises in statistics. If $Y_1$ and $Y_2$ are
-   * chi-squared deviates with $\nu_1$ and $\nu_2$ degrees of freedom
+   * The `F-distribution`:index: arises in statistics. If $Y_1$ and $Y_2$
+   * are chi-squared deviates with $\nu_1$ and $\nu_2$ degrees of freedom
    * then the ratio,
    *
    * .. math::
@@ -6281,7 +6369,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_fdist(nu1, nu2)**
+   * .. function:: gsl_ran_fdist(nu1, nu2)
    *
    *  This function returns a random variate from the F-distribution with
    *  degrees of freedom ``nu1`` and ``nu2``. The distribution function is,
@@ -6298,7 +6386,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_fdist, 2);
 
   /**
-   * **gsl_ran_fdist_pdf(x, nu1, nu2)**
+   * .. function:: gsl_ran_fdist_pdf(x, nu1, nu2)
    *
    *  This function computes the probability density $p(x)$ at $x$ for an
    *  F-distribution with ``nu1`` and ``nu2`` degrees of freedom, using
@@ -6307,22 +6395,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_fdist_pdf, 3);
 
   /**
-   * **gsl_cdf_fdist_P(x, nu1, nu2)**
+   * .. function:: gsl_cdf_fdist_P(x, nu1, nu2)
    */
   ADDFUNC(gsl_cdf_fdist_P, 3);
 
   /**
-   * **gsl_cdf_fdist_Q(x, nu1, nu2)**
+   * .. function:: gsl_cdf_fdist_Q(x, nu1, nu2)
    */
   ADDFUNC(gsl_cdf_fdist_Q, 3);
 
   /**
-   * **gsl_cdf_fdist_Pinv(P, nu1, nu2)**
+   * .. function:: gsl_cdf_fdist_Pinv(P, nu1, nu2)
    */
   ADDFUNC(gsl_cdf_fdist_Pinv, 3);
 
   /**
-   * **gsl_cdf_fdist_Qinv(Q, nu1, nu2)**
+   * .. function:: gsl_cdf_fdist_Qinv(Q, nu1, nu2)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the F-distribution with
@@ -6336,7 +6424,7 @@ void funcadd_ASL(AmplExports *ae) {
    * The t-distribution
    * ============================
    *
-   * The t-distribution arises in statistics. If $Y_1$ has a normal
+   * The `t-distribution`:index: arises in statistics. If $Y_1$ has a normal
    * distribution and $Y_2$ has a chi-squared distribution with $\nu$
    * degrees of freedom then the ratio,
    *
@@ -6347,7 +6435,7 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_tdist(nu)**
+   * .. function:: gsl_ran_tdist(nu)
    *
    *  This function returns a random variate from the t-distribution.
    *  The distribution function is,
@@ -6361,7 +6449,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_tdist, 1);
 
   /**
-   * **gsl_ran_tdist_pdf(x, nu)**
+   * .. function:: gsl_ran_tdist_pdf(x, nu)
    *
    *  This function computes the probability density $p(x)$ at $x$ for a
    *  t-distribution with ``nu`` degrees of freedom, using the formula
@@ -6370,22 +6458,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_tdist_pdf, 2);
 
   /**
-   * **gsl_ran_tdist_P(x, nu)**
+   * .. function:: gsl_ran_tdist_P(x, nu)
    */
   ADDFUNC(gsl_cdf_tdist_P, 2);
 
   /**
-   * **gsl_ran_tdist_Q(x, nu)**
+   * .. function:: gsl_ran_tdist_Q(x, nu)
    */
   ADDFUNC(gsl_cdf_tdist_Q, 2);
 
   /**
-   * **gsl_ran_tdist_Pinv(P, nu)**
+   * .. function:: gsl_ran_tdist_Pinv(P, nu)
    */
   ADDFUNC(gsl_cdf_tdist_Pinv, 2);
 
   /**
-   * **gsl_ran_tdist_Qinv(Q, nu)**
+   * .. function:: gsl_ran_tdist_Qinv(Q, nu)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the t-distribution with ``nu``
@@ -6401,10 +6489,10 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_beta(a, b)**
+   * .. function:: gsl_ran_beta(a, b)
    *
-   *  This function returns a random variate from the beta distribution.
-   *  The distribution function is,
+   *  This function returns a random variate from the `beta
+   *  distribution`:index:. The distribution function is,
    *
    *  .. math::
    *    p(x) dx = {\Gamma(a+b) \over \Gamma(a) \Gamma(b)}
@@ -6415,7 +6503,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_beta, 2);
 
   /**
-   * **gsl_ran_beta_pdf(x, a, b)**
+   * .. function:: gsl_ran_beta_pdf(x, a, b)
    *
    *  This function computes the probability density $p(x)$ at $x$ for a
    *  beta distribution with parameters ``a`` and ``b``, using the formula
@@ -6424,22 +6512,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_beta_pdf, 3);
 
   /**
-   * **gsl_cdf_beta_P(x, a, b)**
+   * .. function:: gsl_cdf_beta_P(x, a, b)
    */
   ADDFUNC(gsl_cdf_beta_P, 3);
 
   /**
-   * **gsl_cdf_beta_Q(x, a, b)**
+   * .. function:: gsl_cdf_beta_Q(x, a, b)
    */
   ADDFUNC(gsl_cdf_beta_Q, 3);
 
   /**
-   * **gsl_cdf_beta_Pinv(P, a, b)**
+   * .. function:: gsl_cdf_beta_Pinv(P, a, b)
    */
   ADDFUNC(gsl_cdf_beta_Pinv, 3);
 
   /**
-   * **gsl_cdf_beta_Qinv(Q, a, b)**
+   * .. function:: gsl_cdf_beta_Qinv(Q, a, b)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the beta distribution with
@@ -6455,10 +6543,10 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_logistic(a)**
+   * .. function:: gsl_ran_logistic(a)
    *
-   *  This function returns a random variate from the logistic distribution.
-   *  The distribution is,
+   *  This function returns a random variate from the `logistic
+   *  distribution`:index:. The distribution is,
    *
    *  .. math::
    *    p(x) dx = { \exp(-x/a) \over a (1 + \exp(-x/a))^2 } dx
@@ -6468,7 +6556,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_logistic, 1);
 
   /**
-   * **gsl_ran_logistic_pdf(x, a)**
+   * .. function:: gsl_ran_logistic_pdf(x, a)
    *
    *  This function computes the probability density $p(x)$ at $x$ for a
    *  logistic distribution with scale parameter a, using the formula given
@@ -6477,22 +6565,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_logistic_pdf, 2);
 
   /**
-   * **gsl_ran_logistic_P(x, a)**
+   * .. function:: gsl_ran_logistic_P(x, a)
    */
   ADDFUNC(gsl_cdf_logistic_P, 2);
 
   /**
-   * **gsl_ran_logistic_Q(x, a)**
+   * .. function:: gsl_ran_logistic_Q(x, a)
    */
   ADDFUNC(gsl_cdf_logistic_Q, 2);
 
   /**
-   * **gsl_ran_logistic_Pinv(P, a)**
+   * .. function:: gsl_ran_logistic_Pinv(P, a)
    */
   ADDFUNC(gsl_cdf_logistic_Pinv, 2);
 
   /**
-   * **gsl_ran_logistic_Qinv(Q, a)**
+   * .. function:: gsl_ran_logistic_Qinv(Q, a)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the logistic distribution
@@ -6508,10 +6596,10 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_pareto(a, b)**
+   * .. function:: gsl_ran_pareto(a, b)
    *
-   *  This function returns a random variate from the Pareto distribution
-   *  of order ``a``. The distribution function is,
+   *  This function returns a random variate from the `Pareto
+   *  distribution`:index: of order ``a``. The distribution function is,
    *
    *  .. math::
    *    p(x) dx = (a/b) / (x/b)^{a+1} dx
@@ -6521,7 +6609,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_pareto, 2);
 
   /**
-   * **gsl_ran_pareto_pdf(x, a, b)**
+   * .. function:: gsl_ran_pareto_pdf(x, a, b)
    *
    *  This function computes the probability density $p(x)$ at $x$ for a
    *  Pareto distribution with exponent ``a`` and scale ``b``, using the
@@ -6530,22 +6618,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_pareto_pdf, 3);
 
   /**
-   * **gsl_cdf_pareto_P(x, a, b)**
+   * .. function:: gsl_cdf_pareto_P(x, a, b)
    */
   ADDFUNC(gsl_cdf_pareto_P, 3);
 
   /**
-   * **gsl_cdf_pareto_Q(x, a, b)**
+   * .. function:: gsl_cdf_pareto_Q(x, a, b)
    */
   ADDFUNC(gsl_cdf_pareto_Q, 3);
 
   /**
-   * **gsl_cdf_pareto_Pinv(P, a, b)**
+   * .. function:: gsl_cdf_pareto_Pinv(P, a, b)
    */
   ADDFUNC(gsl_cdf_pareto_Pinv, 3);
 
   /**
-   * **gsl_cdf_pareto_Qinv(Q, a, b)**
+   * .. function:: gsl_cdf_pareto_Qinv(Q, a, b)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the Pareto distribution
@@ -6564,10 +6652,10 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_weibull(a, b)**
+   * .. function:: gsl_ran_weibull(a, b)
    *
-   *  This function returns a random variate from the Weibull distribution.
-   *  The distribution function is,
+   *  This function returns a random variate from the `Weibull
+   *  distribution`:index:. The distribution function is,
    *
    *  .. math::
    *    p(x) dx = {b \over a^b} x^{b-1} \exp(-(x/a)^b) dx
@@ -6577,7 +6665,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_weibull, 2);
 
   /**
-   * **gsl_ran_weibull_pdf(x, a, b)**
+   * .. function:: gsl_ran_weibull_pdf(x, a, b)
    *
    *  This function computes the probability density $p(x)$ at $x$ for a
    *  Weibull distribution with scale ``a`` and exponent ``b``, using the
@@ -6586,22 +6674,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_weibull_pdf, 3);
 
   /**
-   * **gsl_cdf_weibull_P(x, a, b)**
+   * .. function:: gsl_cdf_weibull_P(x, a, b)
    */
   ADDFUNC(gsl_cdf_weibull_P, 3);
 
   /**
-   * **gsl_cdf_weibull_Q(x, a, b)**
+   * .. function:: gsl_cdf_weibull_Q(x, a, b)
    */
   ADDFUNC(gsl_cdf_weibull_Q, 3);
 
   /**
-   * **gsl_cdf_weibull_Pinv(P, a, b)**
+   * .. function:: gsl_cdf_weibull_Pinv(P, a, b)
    */
   ADDFUNC(gsl_cdf_weibull_Pinv, 3);
 
   /**
-   * **gsl_cdf_weibull_Qinv(Q, a, b)**
+   * .. function:: gsl_cdf_weibull_Qinv(Q, a, b)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the Weibull distribution
@@ -6617,10 +6705,10 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_gumbel1(a, b)**
+   * .. function:: gsl_ran_gumbel1(a, b)
    *
-   *  This function returns a random variate from the Type-1 Gumbel
-   *  distribution. The Type-1 Gumbel distribution function is,
+   *  This function returns a random variate from the `Type-1 Gumbel
+   *  distribution`:index:. The Type-1 Gumbel distribution function is,
    *
    *  .. math::
    *    p(x) dx = a b \exp(-(b \exp(-ax) + ax)) dx
@@ -6630,7 +6718,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_gumbel1, 2);
 
   /**
-   * **gsl_ran_gumbel1_pdf(x, a, b)**
+   * .. function:: gsl_ran_gumbel1_pdf(x, a, b)
    *
    *  This function computes the probability density $p(x)$ at $x$ for a
    *  Type-1 Gumbel distribution with parameters ``a`` and ``b``, using the
@@ -6639,22 +6727,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_gumbel1_pdf, 3);
 
   /**
-   * **gsl_cdf_gumbel1_P(x, a, b)**
+   * .. function:: gsl_cdf_gumbel1_P(x, a, b)
    */
   ADDFUNC(gsl_cdf_gumbel1_P, 3);
 
   /**
-   * **gsl_cdf_gumbel1_Q(x, a, b)**
+   * .. function:: gsl_cdf_gumbel1_Q(x, a, b)
    */
   ADDFUNC(gsl_cdf_gumbel1_Q, 3);
 
   /**
-   * **gsl_cdf_gumbel1_Pinv(P, a, b)**
+   * .. function:: gsl_cdf_gumbel1_Pinv(P, a, b)
    */
   ADDFUNC(gsl_cdf_gumbel1_Pinv, 3);
 
   /**
-   * **gsl_cdf_gumbel1_Qinv(Q, a, b)**
+   * .. function:: gsl_cdf_gumbel1_Qinv(Q, a, b)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the Type-1 Gumbel distribution
@@ -6670,10 +6758,10 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_gumbel2(a, b)**
+   * .. function:: gsl_ran_gumbel2(a, b)
    *
-   *  This function returns a random variate from the Type-1 Gumbel
-   *  distribution. The Type-1 Gumbel distribution function is,
+   *  This function returns a random variate from the `Type-2 Gumbel
+   *  distribution`:index:. The Type-2 Gumbel distribution function is,
    *
    *  .. math::
    *    p(x) dx = a b x^{-a-1} \exp(-b x^{-a}) dx
@@ -6683,7 +6771,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_gumbel2, 2);
 
   /**
-   * **gsl_ran_gumbel2_pdf(x, a, b)**
+   * .. function:: gsl_ran_gumbel2_pdf(x, a, b)
    *
    *  This function computes the probability density $p(x)$ at $x$ for a
    *  Type-2 Gumbel distribution with parameters ``a`` and ``b``, using the
@@ -6692,22 +6780,22 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_gumbel2_pdf, 3);
 
   /**
-   * **gsl_cdf_gumbel2_P(x, a, b)**
+   * .. function:: gsl_cdf_gumbel2_P(x, a, b)
    */
   ADDFUNC(gsl_cdf_gumbel2_P, 3);
 
   /**
-   * **gsl_cdf_gumbel2_Q(x, a, b)**
+   * .. function:: gsl_cdf_gumbel2_Q(x, a, b)
    */
   ADDFUNC(gsl_cdf_gumbel2_Q, 3);
 
   /**
-   * **gsl_cdf_gumbel2_Pinv(P, a, b)**
+   * .. function:: gsl_cdf_gumbel2_Pinv(P, a, b)
    */
   ADDFUNC(gsl_cdf_gumbel2_Pinv, 3);
 
   /**
-   * **gsl_cdf_gumbel2_Qinv(Q, a, b)**
+   * .. function:: gsl_cdf_gumbel2_Qinv(Q, a, b)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(x), Q(x)$ and their inverses for the Type-2 Gumbel distribution
@@ -6729,10 +6817,11 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_poisson(mu)**
+   * .. function:: gsl_ran_poisson(mu)
    *
-   *  This function returns a random variate from the Poisson distribution
-   *  with mean ``mu``. The probability distribution for Poisson variates is,
+   *  This function returns a random variate from the `Poisson
+   *  distribution`:index: with mean ``mu``. The probability distribution
+   *  for Poisson variates is,
    *
    *  .. math::
    *    p(k) = {\mu^k \over k!} \exp(-\mu)
@@ -6742,7 +6831,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_poisson, 1);
 
   /**
-   * **gsl_ran_poisson_pdf(k, mu)**
+   * .. function:: gsl_ran_poisson_pdf(k, mu)
    *
    *  This function computes the probability $p(k)$ of obtaining $k$ from a
    *  Poisson distribution with mean ``mu``, using the formula given above.
@@ -6750,12 +6839,12 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_poisson_pdf, 2);
 
   /**
-   * **gsl_cdf_poisson_P(k, mu)**
+   * .. function:: gsl_cdf_poisson_P(k, mu)
    */
   ADDFUNC(gsl_cdf_poisson_P, 2);
 
   /**
-   * **gsl_cdf_poisson_Q(k, mu)**
+   * .. function:: gsl_cdf_poisson_Q(k, mu)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(k), Q(k)$ for the Poisson distribution with parameter ``mu``.
@@ -6767,10 +6856,12 @@ void funcadd_ASL(AmplExports *ae) {
    *
    * The Bernoulli Distribution
    * ==========================
+   *
+   * .. index:: Bernoulli distribution
    */
 
   /**
-   * **gsl_ran_bernoulli(p)**
+   * .. function:: gsl_ran_bernoulli(p)
    *
    *  This function returns either 0 or 1, the result of a Bernoulli trial
    *  with probability ``p``. The probability distribution for a Bernoulli
@@ -6783,7 +6874,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_bernoulli, 1);
 
   /**
-   * **gsl_ran_bernoulli_pdf(k, p)**
+   * .. function:: gsl_ran_bernoulli_pdf(k, p)
    *
    *  This function computes the probability $p(k)$ of obtaining $k$ from a
    *  Bernoulli distribution with probability parameter ``p``, using the
@@ -6799,11 +6890,12 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_binomial(p, n)**
+   * .. function:: gsl_ran_binomial(p, n)
    *
-   *  This function returns a random integer from the binomial distribution,
-   *  the number of successes in ``n`` independent trials with probability
-   *  ``p``. The probability distribution for binomial variates is,
+   *  This function returns a random integer from the `binomial
+   *  distribution`:index:, the number of successes in ``n`` independent
+   *  trials with probability ``p``. The probability distribution for
+   *  binomial variates is,
    *
    *  .. math::
    *    p(k) = {n! \over k! (n-k)! } p^k (1-p)^{n-k}
@@ -6813,21 +6905,21 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_binomial, 2);
 
   /**
-   * **gsl_ran_binomial_pdf(k, p, n)**
+   * .. function:: gsl_ran_binomial_pdf(k, p, n)
    *
    *  This function computes the probability $p(k)$ of obtaining $k$ from
-   *  a binomial distribution with parameters ``p`` and ``n``, using the
-   *  formula given above.
+   *  a `binomial distribution`:index: with parameters ``p`` and ``n``, using
+   *  the formula given above.
    */
   ADDFUNC(gsl_ran_binomial_pdf, 3);
 
   /**
-   * **gsl_cdf_binomial_P(k, p, n)**
+   * .. function:: gsl_cdf_binomial_P(k, p, n)
    */
   ADDFUNC(gsl_cdf_binomial_P, 3);
 
   /**
-   * **gsl_cdf_binomial_Q(k, p, n)**
+   * .. function:: gsl_cdf_binomial_Q(k, p, n)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(k), Q(k)$ for the binomial distribution with parameters
@@ -6846,12 +6938,12 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_negative_binomial(p, n)**
+   * .. function:: gsl_ran_negative_binomial(p, n)
    *
-   *  This function returns a random integer from the negative binomial
-   *  distribution, the number of failures occurring before ``n`` successes
-   *  in independent trials with probability ``p`` of success. The
-   *  probability distribution for negative binomial variates is,
+   *  This function returns a random integer from the `negative binomial
+   *  distribution`:index:, the number of failures occurring before ``n``
+   *  successes in independent trials with probability ``p`` of success.
+   *  The probability distribution for negative binomial variates is,
    *
    *  .. math::
    *    p(k) = {\Gamma(n + k) \over \Gamma(k+1) \Gamma(n) } p^n (1-p)^k
@@ -6861,7 +6953,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_negative_binomial, 2);
 
   /**
-   * **gsl_ran_negative_binomial_pdf(k, p, n)**
+   * .. function:: gsl_ran_negative_binomial_pdf(k, p, n)
    *
    *  This function computes the probability $p(k)$ of obtaining $k$ from
    *  a negative binomial distribution with parameters ``p`` and ``n``,
@@ -6870,12 +6962,12 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_negative_binomial_pdf, 3);
 
   /**
-   * **gsl_cdf_negative_binomial_P(k, p, n)**
+   * .. function:: gsl_cdf_negative_binomial_P(k, p, n)
    */
   ADDFUNC(gsl_cdf_negative_binomial_P, 3);
 
   /**
-   * **gsl_cdf_negative_binomial_Q(k, p, n)**
+   * .. function:: gsl_cdf_negative_binomial_Q(k, p, n)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(k), Q(k)$ for the negative binomial distribution with parameters
@@ -6891,11 +6983,11 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_pascal(p, n)**
+   * .. function:: gsl_ran_pascal(p, n)
    *
-   *  This function returns a random integer from the Pascal distribution.
-   *  The Pascal distribution is simply a negative binomial distribution
-   *  with an integer value of ``n``.
+   *  This function returns a random integer from the `Pascal
+   *  distribution`:index:. The Pascal distribution is simply a negative
+   *  binomial distribution with an integer value of ``n``.
    *
    *  .. math::
    *    p(k) = {(n + k - 1)! \over k! (n - 1)! } p^n (1-p)^k
@@ -6905,7 +6997,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_pascal, 2);
 
   /**
-   * **gsl_ran_pascal_pdf(k, p, n)**
+   * .. function:: gsl_ran_pascal_pdf(k, p, n)
    *
    *  This function computes the probability $p(k)$ of obtaining $k$ from
    *  a Pascal distribution with parameters ``p`` and ``n``, using the
@@ -6914,12 +7006,12 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_pascal_pdf, 3);
 
   /**
-   * **gsl_cdf_pascal_P(k, p, n)**
+   * .. function:: gsl_cdf_pascal_P(k, p, n)
    */
   ADDFUNC(gsl_cdf_pascal_P, 3);
 
   /**
-   * **gsl_cdf_pascal_Q(k, p, n)**
+   * .. function:: gsl_cdf_pascal_Q(k, p, n)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(k), Q(k)$ for the Pascal distribution with parameters ``p``
@@ -6935,11 +7027,12 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_geometric(p)**
+   * .. function:: gsl_ran_geometric(p)
    *
-   *  This function returns a random integer from the geometric distribution,
-   *  the number of independent trials with probability ``p`` until the first
-   *  success. The probability distribution for geometric variates is,
+   *  This function returns a random integer from the `geometric
+   *  distribution`:index:, the number of independent trials with
+   *  probability ``p`` until the first success. The probability
+   *  distribution for geometric variates is,
    *
    *  .. math::
    *    p(k) =  p (1-p)^(k-1)
@@ -6951,7 +7044,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_geometric, 1);
 
   /**
-   * **gsl_ran_geometric_pdf(k, p)**
+   * .. function:: gsl_ran_geometric_pdf(k, p)
    *
    *  This function computes the probability $p(k)$ of obtaining $k$ from
    *  a geometric distribution with probability parameter ``p``, using the
@@ -6960,12 +7053,12 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_geometric_pdf, 2);
 
   /**
-   * **gsl_cdf_geometric_P(k, p)**
+   * .. function:: gsl_cdf_geometric_P(k, p)
    */
   ADDFUNC(gsl_cdf_geometric_P, 2);
 
   /**
-   * **gsl_cdf_geometric_Q(k, p)**
+   * .. function:: gsl_cdf_geometric_Q(k, p)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(k), Q(k)$ for the geometric distribution with parameter ``p``.
@@ -6980,10 +7073,10 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_hypergeometric(p, n1, n2, t)**
+   * .. function:: gsl_ran_hypergeometric(p, n1, n2, t)
    *
-   *  This function returns a random integer from the hypergeometric
-   *  distribution. The probability distribution for hypergeometric
+   *  This function returns a random integer from the `hypergeometric
+   *  distribution`:index:. The probability distribution for hypergeometric
    *  random variates is,
    *
    *  .. math::
@@ -7000,7 +7093,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_hypergeometric, 3);
 
   /**
-   * **gsl_ran_hypergeometric_pdf(k, n1, n2, t)**
+   * .. function:: gsl_ran_hypergeometric_pdf(k, n1, n2, t)
    *
    *  This function computes the probability $p(k)$ of obtaining $k$ from
    *  a hypergeometric distribution with parameters ``n1``, ``n2``, ``t``,
@@ -7009,12 +7102,12 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC(gsl_ran_hypergeometric_pdf, 4);
 
   /**
-   * **gsl_cdf_hypergeometric_P(k, n1, n2, t)**
+   * .. function:: gsl_cdf_hypergeometric_P(k, n1, n2, t)
    */
   ADDFUNC(gsl_cdf_hypergeometric_P, 4);
 
   /**
-   * **gsl_cdf_hypergeometric_Q(k, n1, n2, t)**
+   * .. function:: gsl_cdf_hypergeometric_Q(k, n1, n2, t)
    *
    *  These functions compute the cumulative distribution functions
    *  $P(k), Q(k)$ for the hypergeometric distribution with parameters
@@ -7030,10 +7123,11 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /**
-   * **gsl_ran_logarithmic(p)**
+   * .. function:: gsl_ran_logarithmic(p)
    *
-   *  This function returns a random integer from the logarithmic distribution.
-   *  The probability distribution for logarithmic random variates is,
+   *  This function returns a random integer from the `logarithmic
+   *  distribution`:index. The probability distribution for logarithmic
+   *  random variates is,
    *
    *  .. math::
    *    p(k) = {-1 \over \log(1-p)} {\left(p^k \over k\right)}
@@ -7043,7 +7137,7 @@ void funcadd_ASL(AmplExports *ae) {
   ADDFUNC_RANDOM(gsl_ran_logarithmic, 1);
 
   /**
-   * **gsl_ran_logarithmic_pdf(k, p)**
+   * .. function:: gsl_ran_logarithmic_pdf(k, p)
    *
    *  This function computes the probability $p(k)$ of obtaining $k$ from
    *  a logarithmic distribution with probability parameter ``p``, using the
