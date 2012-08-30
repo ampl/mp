@@ -5992,9 +5992,9 @@ void funcadd_ASL(AmplExports *ae) {
   /**
    * .. function:: gsl_ran_rayleigh_tail(a, sigma)
    *
-   *  This function returns a random variate from the tail of the `Rayleigh
-   *  distribution`:index: with scale parameter ``sigma`` and a lower limit
-   *  of ``a``. The distribution is,
+   *  This function returns a random variate from the tail of the Rayleigh
+   *  distribution with scale parameter ``sigma`` and a lower limit of
+   *  ``a``. The distribution is,
    *
    *  .. math::
    *    p(x) dx = {x \over \sigma^2} \exp ((a^2 - x^2) /(2 \sigma^2)) dx
