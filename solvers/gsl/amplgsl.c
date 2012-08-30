@@ -2886,8 +2886,8 @@ WRAP_DISCRETE(gsl_ran_logarithmic_pdf, ARGS2, DEFAULT_ARGS)
     addfunc(#name, ampl##name, FUNCADD_RANDOM_VALUED, num_args, #name);
 
 /**
- * AMPL bindings for the GNU Scientific Library
- * ============================================
+ * Contents
+ * ========
  *
  * .. toctree::
  *    :maxdepth: 2
