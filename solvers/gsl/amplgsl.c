@@ -7035,7 +7035,7 @@ void funcadd_ASL(AmplExports *ae) {
    *  distribution for geometric variates is,
    *
    *  .. math::
-   *    p(k) =  p (1-p)^(k-1)
+   *    p(k) =  p (1-p)^{k-1}
    *
    *  for $k \geq 1$. Note that the distribution begins with $k=1$ with this
    *  definition. There is another convention in which the exponent $k-1$ is
