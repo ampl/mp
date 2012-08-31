@@ -3,14 +3,17 @@
 .SUFFIXES: .c .o
 
 # $S = ampl/solvers directory
-S = ../..
+S = ..
 CC = cc
-CFLAGS = -I$S -O2
+GSLinclude = gsl-1.15/include
+GSLlibdir = gsl-1.15/lib
+CFLAGS = -fPIC -I$S -I$(GSLinclude) -O2
 
 .c.o:
 	$(CC) -c $(CFLAGS) $*.c
 
-libamplgsl.so: amplgsl.c
-	$(CC) -c $(CFLAGS) -fPIC amplgsl.c
-	$(CC) -shared -o libamplgsl.so amplgsl.o -lgsl -lgslcblas
+amplgsl.dll: amplgsl.o default.o
+	$(CC) -shared -o amplgsl.dll amplgsl.o $(GSLlibdir)/libgsl.a $(GSLlibdir)/libgslcblas.a
 
+# variant for using shared GSL libs:
+#	$(CC) -shared -o amplgsl.dll amplgsl.o -L$(GSLlibdir) -lgsl -lgslcblas

@@ -30,7 +30,7 @@
 #include <gsl/gsl_cdf.h>
 #include <gsl/gsl_randist.h>
 
-#include "solvers/funcadd.h"
+#include "funcadd.h"
 
 enum { MAX_ERROR_MESSAGE_SIZE = 100 };
 
@@ -2537,8 +2537,22 @@ static gsl_rng *rng;
 
 static void free_rng(void *data) {
   UNUSED(data);
-  gsl_rng_free(rng);
+  if (rng) {
+	gsl_rng_free(rng);
+	rng = 0;
+	}
 }
+
+#ifdef addrandinit
+ static void
+rng_init(void *v, unsigned long x)
+{
+	gsl_rng_default_seed = x;
+	if (rng)
+		gsl_rng_free(rng);
+	rng = gsl_rng_alloc(gsl_rng_env_setup());
+	}
+#endif
 
 WRAP(gsl_ran_gaussian, RNG_ARGS1)
 
@@ -2967,7 +2981,8 @@ WRAP_DISCRETE(gsl_ran_logarithmic_pdf, ARGS2, DEFAULT_ARGS)
  *   GSL_PREC_DOUBLE
  */
 
-void funcadd_ASL(AmplExports *ae) {
+void funcadd_ASL(AmplExports *ae)
+{
   /* Don't call abort on error. */
   gsl_set_error_handler_off();
 
@@ -5400,7 +5415,7 @@ void funcadd_ASL(AmplExports *ae) {
    * compute the special functions,
    *
    * * Allan J. MacLeod, MISCFUN: A software package to compute uncommon
-   *   special functions. *ACM Trans. Math. Soft.*, vol. 22, 1996, 288–301
+   *   special functions. *ACM Trans. Math. Soft.*, vol. 22, 1996, 288-301
    * * G.N. Watson, A Treatise on the Theory of Bessel Functions,
    *   2nd Edition (Cambridge University Press, 1944).
    * * G. Nemeth, Mathematical Approximations of Special Functions,
@@ -5548,8 +5563,13 @@ void funcadd_ASL(AmplExports *ae) {
    */
 
   /* Initialize the random number generator. */
+#ifdef addrandinit
+  if (ae->ASLdate >= 20120830)
+  	addrandinit(rng_init, ae);
+  else
+#endif
   rng = gsl_rng_alloc(gsl_rng_env_setup());
-  at_exit(free_rng, 0);
+  at_reset(free_rng, &rng);
 
   /**
    * @file ran-gaussian
@@ -5681,7 +5701,7 @@ void funcadd_ASL(AmplExports *ae) {
    *  Gaussian distribution with standard deviation ``sigma``. The values
    *  returned are larger than the lower limit ``a``, which must be positive.
    *  The method is based on Marsaglia's famous rectangle-wedge-tail
-   *  algorithm (Ann. Math. Stat. 32, 894–899 (1961)), with this aspect
+   *  algorithm (Ann. Math. Stat. 32, 894-899 (1961)), with this aspect
    *  explained in Knuth, v2, 3rd ed, p139,586 (exercise 11).
    *
    *  The probability distribution for Gaussian tail random variates is,
@@ -7085,9 +7105,9 @@ void funcadd_ASL(AmplExports *ae) {
    *  where $C(a,b) = a!/(b!(a-b)!)$ and $t \leq n_1 + n_2$. The domain
    *  of $k$ is $\max(0,t-n_2), ..., \min(t,n_1)$.
    *
-   *  If a population contains $n_1$ elements of “type 1” and $n_2$
-   *  elements of “type 2” then the hypergeometric distribution gives
-   *  the probability of obtaining $k$ elements of “type 1” in $t$
+   *  If a population contains $n_1$ elements of "type 1" and $n_2$
+   *  elements of "type 2" then the hypergeometric distribution gives
+   *  the probability of obtaining $k$ elements of "type 1" in $t$
    *  samples from the population without replacement.
    */
   ADDFUNC_RANDOM(gsl_ran_hypergeometric, 3);
@@ -7169,7 +7189,7 @@ void funcadd_ASL(AmplExports *ae) {
    *   Algorithms* (Vol 2, 3rd Ed, 1997), Addison-Wesley, ISBN 0201896842.
    *
    * The Particle Data Group provides a short review of techniques for
-   * generating distributions of random numbers in the “Monte Carlo”
+   * generating distributions of random numbers in the "Monte Carlo"
    * section of its Annual Review of Particle Physics.
    *
    * * *Review of Particle Properties* R.M. Barnett et al., Physical Review
@@ -7192,8 +7212,8 @@ void funcadd_ASL(AmplExports *ae) {
    * are based on the following papers,
    *
    * * *Rational Chebyshev Approximations Using Linear Equations*, W.J. Cody,
-   *   W. Fraser, J.F. Hart. Numerische Mathematik 12, 242–251 (1968).
+   *   W. Fraser, J.F. Hart. Numerische Mathematik 12, 242-251 (1968).
    * * *Rational Chebyshev Approximations for the Error Function*, W.J. Cody.
-   *   Mathematics of Computation 23, n107, 631–637 (July 1969).
+   *   Mathematics of Computation 23, n107, 631-637 (July 1969).
    */
 }
