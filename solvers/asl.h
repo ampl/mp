@@ -1005,6 +1005,8 @@ enum ASL_writer_error_codes {
  extern void report_where(ASL*);
  extern void scream(EdRead*, int rc, const char *fmt, ...);
  extern ASL *set_cur_ASL(ASL*);	/* returns previous value */
+ extern real set_randseed_ASL(real nseed);	/* returns new seed, usually nseed, but */
+						/* automaticaally chosen if nseed == 0. */
  extern void show_funcs_ASL(ASL*);
  extern void sigcatch_ASL(VOID);
  extern void* sos_add_ASL(ASL*, FILE*, int);
