@@ -2547,6 +2547,7 @@ static void free_rng(void *data) {
  static void
 rng_init(void *v, unsigned long x)
 {
+	UNUSED(v);
 	gsl_rng_default_seed = x;
 	if (rng)
 		gsl_rng_free(rng);
