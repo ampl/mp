@@ -22,7 +22,7 @@
  */
 
 #include <stdio.h>
-#include "solvers/funcadd.h"
+#include "funcadd.h"
 
 #undef printf
 
@@ -40,7 +40,7 @@ static void declare_func(const char *name, rfunc f,
       (type & FUNCADD_RANDOM_VALUED) != 0 ? " random" : "");
 }
 
-static void dummy_at_exit(AmplExports *ae, Exitfunc *f, void *data) {
+static void dummy_at_reset(AmplExports *ae, Exitfunc *f, void *data) {
   UNUSED(ae);
   UNUSED(f);
   UNUSED(data);
@@ -49,10 +49,10 @@ static void dummy_at_exit(AmplExports *ae, Exitfunc *f, void *data) {
 int main() {
   AmplExports ae = {0};
   ae.Addfunc = declare_func;
-  ae.AtExit = dummy_at_exit;
+  ae.AtReset = dummy_at_reset;
   printf(
       "# Automatically generated AMPL declarations for the GSL functions.\n"
-      "load libamplgsl.so;\n");
+      "load amplgsl.dll;\n");
   funcadd_ASL(&ae);
   return 0;
 }
