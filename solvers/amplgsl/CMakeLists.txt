@@ -7,8 +7,12 @@ if (GSL_FOUND)
     set(CMAKE_BUILD_TYPE Release)
   endif ()
 
+  include_directories(..)
+
   add_library(amplgsl SHARED amplgsl.c)
   target_link_libraries(amplgsl ${SOLVER_LIBS} ${GSL_LIBRARIES})
+  set_target_properties(amplgsl PROPERTIES PREFIX "")
+  set_target_properties(amplgsl PROPERTIES SUFFIX ".dll")
 
   add_executable(gen-decls gen-decls.c)
   target_link_libraries(gen-decls amplgsl)
