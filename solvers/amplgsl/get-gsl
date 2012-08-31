@@ -1,0 +1,10 @@
+#!/bin/sh
+# This script downloads and builds GSL.
+
+set -e
+wget http://ftpmirror.gnu.org/gsl/gsl-1.15.tar.gz
+tar xzf gsl-1.15.tar.gz
+cd gsl-1.15
+./configure CFLAGS=-fPIC --prefix=`pwd`
+make
+make install

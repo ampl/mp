@@ -7,6 +7,8 @@ Requirements
 To build the amplgsl library you should have GSL installed.  The code has
 been tested with GSL version 1.15.
 
+You can download and build GSL using the "get-gsl" script.
+
 You should also build AMPL Solver Library (ASL) prior to building
 amplgsl.  Suppose you have AMPL repository containing ASL, example
 models, etc in directory ${AMPL_DIR}.  The repository can be obtained
@@ -34,7 +36,7 @@ workflow starts with:
 If you are on a *nix system, you should now see a Makefile in the
 current directory.  Now you can build amplgsl as follows:
 
-  cd solvers/gsl
+  cd solvers/amplgsl
   make amplgsl
 
 If you use Windows and have Vistual Studio installed, an AMPL.sln file

@@ -1,8 +1,9 @@
 /student
 /*Subprojects*
 /*Targets*
+/solvers/amplgsl/Makefile
+/solvers/amplgsl/gsl-1.15
 /solvers/concert/Makefile
-/solvers/gsl/Makefile
 /solvers/makefile
 /tests/Makefile
 /tests/gtest/Makefile
