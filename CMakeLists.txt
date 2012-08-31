@@ -23,8 +23,8 @@ if (NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Woverloaded-virtual")
 endif ()
 
+add_subdirectory(solvers/amplgsl)
 add_subdirectory(solvers/concert)
-add_subdirectory(solvers/gsl)
 
 enable_testing()
 add_subdirectory(tests)
