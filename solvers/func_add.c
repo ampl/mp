@@ -30,7 +30,26 @@ extern "C" {
 extern ASLhead ASLhead_ASL;
 
 const char *i_option_ASL;
+unsigned long randseed_ASL;
 static int n_added;
+
+ void
+addrandinit_ASL(AmplExports *ae, RandSeedSetter rss, void *v)
+{
+	char *s, *se;
+	unsigned long x;
+
+	/* Something more elaborate will be needed if we add a "reset" facility to ASL. */
+
+	if (!randseed_ASL) {
+		randseed_ASL = 1;
+		if ((s = getenv("randseed"))
+		 && (x = (unsigned long)strtol(s,&se,10))
+		 && !se)
+			randseed_ASL = x;
+		}
+	(*rss)(v, randseed_ASL);
+	}
 
  func_info *
 func_lookup(ASL *asl, register const char *s, int add)
@@ -434,6 +453,7 @@ func_add(ASL *asl)
 			AE.Getenv = getenv_ASL;
 			AE.Breakfunc = breakfunc_ASL;
 			AE.Breakarg = breakarg_ASL;
+			AE.Addrandinit = addrandinit_ASL;
 			}
 		if (AE.asl)
 			memcpy(ae = (AmplExports*)M1alloc(sizeof(AmplExports)),
