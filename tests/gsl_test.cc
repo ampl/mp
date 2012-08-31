@@ -184,7 +184,7 @@ class GSLTest : public ::testing::Test {
     note_libuse_ASL();
   }
 
-  static void AtExit(AmplExports *, Exitfunc *, void *) {
+  static void AtReset(AmplExports *, Exitfunc *, void *) {
     // Do nothing.
   }
 
@@ -194,14 +194,16 @@ class GSLTest : public ::testing::Test {
   }
 
   static void SetUpTestCase() {
-    i_option_ASL = "../solvers/gsl/libamplgsl.so";
+    i_option_ASL = "../solvers/amplgsl/amplgsl.dll";
     // Use funcadd(AmplExports*) instead of func_add(ASL*) because
     // the latter doesn't load random functions.
     ae_.Addfunc = AddFunc;
-    ae_.AtExit = AtExit;
+    ae_.AtReset = AtReset;
     ae_.Tempmem = Tempmem;
     ae_.SnprintF = snprintf;
     ae_.VsnprintF = vsnprintf;
+    ae_.FprintF = fprintf;
+    ae_.StdErr = stderr;
     funcadd(&ae_);
 
     rng_ = gsl_rng_alloc(gsl_rng_default);
