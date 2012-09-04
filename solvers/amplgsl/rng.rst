@@ -7,6 +7,10 @@ can be changed by using the environment variable ``GSL_RNG_SEED``
 before the library is loaded. Similarly, the random number generator
 can be changed by setting the environment variable ``GSL_RNG_TYPE``.
 
+In AMPL version 20120830 and later the standard ``randseed`` option
+can be used instead of ``GSL_RNG_SEED`` to specify the random number
+generator seed.
+
 Random number generator algorithms
 ----------------------------------
 
