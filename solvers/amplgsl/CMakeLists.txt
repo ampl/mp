@@ -7,15 +7,23 @@ endif ()
 
 set(GSL_DIR gsl-1.15)
 
+# Build GSL ourselves with -fPIC to make possible linking of static GSL
+# libraries into a dynamic AMPLGSL library.
 add_custom_command(OUTPUT ${GSL_DIR} COMMAND ./get-gsl)
-add_custom_target(gsl ALL DEPENDS ${GSL_DIR})
+
+add_library(gsl STATIC IMPORTED GLOBAL DEPENDS ${GSL_DIR})
+set_property(TARGET gsl PROPERTY IMPORTED_LOCATION
+  "${CMAKE_CURRENT_BINARY_DIR}/${GSL_DIR}/lib/libgsl.a")
+
+add_library(gslcblas STATIC IMPORTED GLOBAL)
+set_property(TARGET gslcblas PROPERTY IMPORTED_LOCATION
+  "${CMAKE_CURRENT_BINARY_DIR}/${GSL_DIR}/lib/libgslcblas.a")
 
 include_directories(.. ${GSL_DIR} ${GSL_DIR}/include)
 
 add_library(amplgsl SHARED amplgsl.c)
-add_dependencies(amplgsl gsl)
-target_link_libraries(amplgsl
-  ${SOLVER_LIBS} -L${GSL_DIR}/lib -lgsl -lgslcblas -lm)
+add_dependencies(amplgsl gsl gslcblas)
+target_link_libraries(amplgsl ${SOLVER_LIBS} gsl gslcblas -lm)
 set_target_properties(amplgsl PROPERTIES PREFIX "")
 set_target_properties(amplgsl PROPERTIES SUFFIX ".dll")
 
