@@ -5,10 +5,6 @@ if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif ()
 
-# Build GSL ourselves with -fPIC to make possible linking of static GSL
-# libraries into a dynamic AMPLGSL library.
-add_custom_command(OUTPUT ${GSL_DIR} COMMAND ./get-gsl)
-
 include_directories(.. ${GSL_DIR} ${GSL_DIR}/include)
 
 add_library(amplgsl SHARED amplgsl.c)

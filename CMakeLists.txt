@@ -27,6 +27,11 @@ set(GSL_DIR gsl-1.15)
 set(GSL_LIBRARY_DIR
   "${CMAKE_CURRENT_BINARY_DIR}/solvers/amplgsl/${GSL_DIR}/lib")
 
+# Build GSL ourselves with -fPIC to make possible linking of static GSL
+# libraries into a dynamic AMPLGSL library.
+add_custom_command(OUTPUT solvers/amplgsl/${GSL_DIR}
+  COMMAND ./get-gsl WORKING_DIRECTORY solvers/amplgsl)
+
 add_custom_target(gsl-libs ALL DEPENDS solvers/amplgsl/${GSL_DIR})
 
 add_library(gsl STATIC IMPORTED)
