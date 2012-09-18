@@ -5,22 +5,9 @@ if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif ()
 
-set(GSL_DIR gsl-1.15)
-
 # Build GSL ourselves with -fPIC to make possible linking of static GSL
 # libraries into a dynamic AMPLGSL library.
 add_custom_command(OUTPUT ${GSL_DIR} COMMAND ./get-gsl)
-
-add_custom_target(gsl-libs ALL DEPENDS ${GSL_DIR})
-
-add_library(gsl STATIC IMPORTED GLOBAL)
-set_property(TARGET gsl PROPERTY IMPORTED_LOCATION
-  "${CMAKE_CURRENT_BINARY_DIR}/${GSL_DIR}/lib/libgsl.a")
-add_dependencies(gsl gsl-libs)
-
-add_library(gslcblas STATIC IMPORTED GLOBAL)
-set_property(TARGET gslcblas PROPERTY IMPORTED_LOCATION
-  "${CMAKE_CURRENT_BINARY_DIR}/${GSL_DIR}/lib/libgslcblas.a")
 
 include_directories(.. ${GSL_DIR} ${GSL_DIR}/include)
 
