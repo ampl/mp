@@ -28,7 +28,9 @@ include(FindPackageHandleStandardArgs)
 if (NOT WIN32)
   set(CPLEX_ILOG_DIRS
       /opt/ibm/ILOG /opt/IBM/ILOG $ENV{HOME}/ILOG $ENV{HOME}/ilog)
-  set(CPLEX_LIB_PATH_SUFFIXES lib/x86-64_sles10_4.1/static_pic)
+  set(CPLEX_LIB_PATH_SUFFIXES
+    lib/x86_sles10_4.1/static_pic
+    lib/x86-64_sles10_4.1/static_pic)
 else ()
   set(CPLEX_ILOG_DIRS C:/ILOG "C:/Program Files/IBM/ILOG")
   set(CPLEX_LIB_PATH_SUFFIXES
