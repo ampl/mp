@@ -15,4 +15,3 @@ Modules:
 
   FindCPLEX.cmake - finds the CPLEX, Concert, IloCplex and CP Optimizer
                     libraries
-  FindGSL.cmake   - finds GNU Scientific Library
