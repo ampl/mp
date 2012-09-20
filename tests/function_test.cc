@@ -255,12 +255,14 @@ TEST(FunctionTest, BindOne) {
   f = fun::BindOne(Fun(Poly3), 5.0, 1);
 }
 
+#ifdef HAVE_LAMBDAS
 TEST(FunctionTest, Fun) {
   Differentiator dx, dy;
   EXPECT_NEAR(4.77259,
       dx([&](double x) { return dy(bind1st(ptr_fun(pow), x), 2); }, 2),
       1e-5);
 }
+#endif
 
 double TestFun2(const Tuple &args) {
   return args[0] * 10 + args[1];
