@@ -9,6 +9,7 @@
 #  CPLEX_ILOCPLEX_FOUND - System has IloCplex
 #  CPLEX_ILOCPLEX_INCLUDE_DIRS - The IloCplex include directories
 #  CPLEX_ILOCPLEX_LIBRARIES - The libraries needed to use IloCplex
+#  CPLEX_ILOCPLEX_DEFINITIONS - Compiler switches required for using IloCplex
 #
 #  CPLEX_CONCERT_FOUND - System has Concert
 #  CPLEX_CONCERT_INCLUDE_DIRS - The Concert include directories
@@ -119,6 +120,13 @@ mark_as_advanced(CPLEX_CONCERT_INCLUDE_DIR CPLEX_CONCERT_LIBRARY)
 
 # ----------------------------------------------------------------------------
 # IloCplex - depends on CPLEX and Concert
+
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-Wno-long-long HAS_WNO_LONG_LONG_FLAG)
+if (HAS_WNO_LONG_LONG_FLAG)
+  # Required if -pedantic is used.
+  set(CPLEX_ILOCPLEX_DEFINITIONS -Wno-long-long)
+endif ()
 
 # Find the IloCplex include directory - normally the same as the one for CPLEX
 # but check if ilocplex.h is there anyway.
