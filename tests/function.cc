@@ -27,6 +27,7 @@
 #include <cstring>
 
 #include "solvers/asl.h"
+#include "tests/config.h"
 
 static void Print(std::ostream &os, double value) {
   if (!std::isnan(value))
