@@ -15,18 +15,24 @@ elseif (NOT SOLVER_LIBS)
   set(SOLVER_LIBS "${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplsolv.lib")
 endif ()
 
-include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag(-std=c++0x HAS_STD_CPP0X_FLAG)
-if (HAS_STD_CPP0X_FLAG)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-endif ()
-
 if (NOT MSVC)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-missing-field-initializers")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-field-initializers")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Woverloaded-virtual")
+endif ()
+
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-std=c++0x HAS_STD_CPP0X_FLAG)
+if (HAS_STD_CPP0X_FLAG)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+else ()
+  # Allow "long long" even without c++0x because it is used by CPLEX.
+  check_cxx_compiler_flag(-Wno-long-long HAS_WNO_LONG_LONG_FLAG)
+  if (HAS_WNO_LONG_LONG_FLAG)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-long-long")
+  endif ()
 endif ()
 
 # IMPORTED GSL libraries are listed here to be accessible both from
