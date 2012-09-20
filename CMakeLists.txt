@@ -33,7 +33,7 @@ else ()
   endif ()
 endif ()
 
-if (EXISTS solvers/amplgsl/gsl)
+if (EXISTS solvers/amplgsl/gsl/configure)
   set(HAVE_GSL 1)
 
   # IMPORTED GSL libraries are listed here to be accessible both from
