@@ -31,7 +31,7 @@ set(GSL_LIBRARY_DIR
   "${CMAKE_CURRENT_BINARY_DIR}/solvers/amplgsl/gsl/lib")
 
 add_custom_command(OUTPUT "${GSL_LIBRARY_DIR}/libgsl.a"
-  COMMAND ./get-gsl WORKING_DIRECTORY solvers/amplgsl)
+  COMMAND ./build-gsl WORKING_DIRECTORY solvers/amplgsl)
 
 add_custom_target(gsl-libs ALL DEPENDS "${GSL_LIBRARY_DIR}/libgsl.a")
 

@@ -4,10 +4,11 @@ library providing bindings for the GNU Scientific Library (GSL).
 Requirements
 ------------
 
-To build the amplgsl library you should have GSL installed.  The code has
-been tested with GSL version 1.15.
+To build the amplgsl library you should have GSL source code available
+in ${AMPL_DIR}/solvers/amplgsl/gsl.  The code has been tested with GSL
+version 1.15.
 
-You can download and build GSL using the "get-gsl" script.
+You can build GSL using the "build-gsl" script.
 
 You should also build AMPL Solver Library (ASL) prior to building
 amplgsl.  Suppose you have AMPL repository containing ASL, example
