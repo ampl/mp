@@ -11,9 +11,16 @@ file(WRITE details.c "${DETAILS}")
 
 configure_file(stdio1.h0 stdio1.h COPYONLY)
 
-add_executable(arithchk arithchk.c fpinit.c)
-target_link_libraries(arithchk m)
-set_target_properties(arithchk PROPERTIES COMPILE_DEFINITIONS NO_FPINIT)
+# Generate arith.h
+if (NOT WIN32)
+  set(FPINIT fpinit.c)
+endif ()
+add_executable(arithchk arithchk.c ${FPINIT})
+if (WIN32)
+  set_target_properties(arithchk PROPERTIES COMPILE_DEFINITIONS NO_FPINIT)
+else ()
+  target_link_libraries(arithchk m)
+endif ()
 add_custom_command(OUTPUT arith.h DEPENDS arithchk
   COMMAND ./arithchk > arith.h)
 
