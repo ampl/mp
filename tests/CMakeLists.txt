@@ -10,8 +10,6 @@ add_subdirectory(gtest)
 include_directories(gtest/include)
 link_directories(${CMAKE_CURRENT_BINARY_DIR}/gtest)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-
 # Check C++ compiler capabilities.
 include(CheckCXXSourceCompiles)
 CHECK_CXX_SOURCE_COMPILES(
