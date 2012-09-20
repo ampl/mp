@@ -5,7 +5,7 @@ if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif ()
 
-include_directories(.. ${GSL_DIR} ${GSL_DIR}/include)
+include_directories(.. gsl gsl/include)
 
 add_library(amplgsl SHARED amplgsl.c)
 add_dependencies(amplgsl gsl gslcblas)

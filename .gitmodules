@@ -1,0 +1,3 @@
+[submodule "solvers/amplgsl/gsl"]
+	path = solvers/amplgsl/gsl
+	url = git://github.com/vitaut/gsl.git

@@ -23,16 +23,17 @@ if (NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Woverloaded-virtual")
 endif ()
 
-set(GSL_DIR gsl-1.15)
-set(GSL_LIBRARY_DIR
-  "${CMAKE_CURRENT_BINARY_DIR}/solvers/amplgsl/${GSL_DIR}/lib")
+# IMPORTED GSL libraries are listed here to be accessible both from
+# amplgsl and tests. We build GSL ourselves with -fPIC to make possible
+# linking of static GSL libraries into a dynamic amplgsl library.
 
-# Build GSL ourselves with -fPIC to make possible linking of static GSL
-# libraries into a dynamic AMPLGSL library.
-add_custom_command(OUTPUT solvers/amplgsl/${GSL_DIR}
+set(GSL_LIBRARY_DIR
+  "${CMAKE_CURRENT_BINARY_DIR}/solvers/amplgsl/gsl/lib")
+
+add_custom_command(OUTPUT "${GSL_LIBRARY_DIR}/libgsl.a"
   COMMAND ./get-gsl WORKING_DIRECTORY solvers/amplgsl)
 
-add_custom_target(gsl-libs ALL DEPENDS solvers/amplgsl/${GSL_DIR})
+add_custom_target(gsl-libs ALL DEPENDS "${GSL_LIBRARY_DIR}/libgsl.a")
 
 add_library(gsl STATIC IMPORTED)
 set_property(TARGET gsl PROPERTY IMPORTED_LOCATION

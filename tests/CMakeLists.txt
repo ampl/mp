@@ -34,7 +34,7 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
     ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_CP_LIBRARIES} ${CPLEX_LIBRARIES})
 endif ()
 
-include_directories(../solvers/amplgsl/gsl-1.15/include)
+include_directories(../solvers/amplgsl/gsl/include)
 cxx_test_with_flags(gsl_test ""
   "gtest;gtest_main;${SOLVER_LIBS}"
   gsl_test.cc function.cc function.h function_test.cc)
