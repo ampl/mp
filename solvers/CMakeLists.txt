@@ -19,6 +19,7 @@ add_executable(arithchk arithchk.c ${FPINIT})
 if (WIN32)
   set_target_properties(arithchk PROPERTIES COMPILE_DEFINITIONS NO_FPINIT)
 else ()
+  set_target_properties(arithchk PROPERTIES COMPILE_DEFINITIONS ASL_NO_FPINITMT)
   target_link_libraries(arithchk m)
 endif ()
 add_custom_command(OUTPUT arith.h DEPENDS arithchk
