@@ -13,6 +13,7 @@ configure_file(stdio1.h0 stdio1.h COPYONLY)
 
 add_executable(arithchk arithchk.c fpinit.c)
 target_link_libraries(arithchk m)
+set_target_properties(arithchk PROPERTIES COMPILE_DEFINITIONS NO_FPINIT)
 add_custom_command(OUTPUT arith.h DEPENDS arithchk
   COMMAND ./arithchk > arith.h)
 
