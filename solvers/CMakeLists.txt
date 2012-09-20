@@ -97,5 +97,7 @@ add_library(amplsolver
 	xp1known.c
 	xp2known.c)
 
-add_subdirectory(amplgsl)
+if (HAVE_GSL)
+  add_subdirectory(amplgsl)
+endif ()
 add_subdirectory(concert)

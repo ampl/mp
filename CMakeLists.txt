@@ -33,26 +33,30 @@ else ()
   endif ()
 endif ()
 
-# IMPORTED GSL libraries are listed here to be accessible both from
-# amplgsl and tests. We build GSL ourselves with -fPIC to make possible
-# linking of static GSL libraries into a dynamic amplgsl library.
+if (EXISTS solvers/amplgsl/gsl)
+  set(HAVE_GSL 1)
 
-set(GSL_LIBRARY_DIR
-  "${CMAKE_CURRENT_BINARY_DIR}/solvers/amplgsl/gsl/lib")
+  # IMPORTED GSL libraries are listed here to be accessible both from
+  # amplgsl and tests. We build GSL ourselves with -fPIC to make possible
+  # linking of static GSL libraries into a dynamic amplgsl library.
 
-add_custom_command(OUTPUT "${GSL_LIBRARY_DIR}/libgsl.a"
-  COMMAND ./build-gsl WORKING_DIRECTORY solvers/amplgsl)
+  set(GSL_LIBRARY_DIR
+    "${CMAKE_CURRENT_BINARY_DIR}/solvers/amplgsl/gsl/lib")
 
-add_custom_target(gsl-libs ALL DEPENDS "${GSL_LIBRARY_DIR}/libgsl.a")
+  add_custom_command(OUTPUT "${GSL_LIBRARY_DIR}/libgsl.a"
+    COMMAND ./build-gsl WORKING_DIRECTORY solvers/amplgsl)
 
-add_library(gsl STATIC IMPORTED)
-set_property(TARGET gsl PROPERTY IMPORTED_LOCATION
-  "${GSL_LIBRARY_DIR}/libgsl.a")
-add_dependencies(gsl gsl-libs)
+  add_custom_target(gsl-libs ALL DEPENDS "${GSL_LIBRARY_DIR}/libgsl.a")
 
-add_library(gslcblas STATIC IMPORTED)
-set_property(TARGET gslcblas PROPERTY IMPORTED_LOCATION
-  "${GSL_LIBRARY_DIR}/libgslcblas.a")
+  add_library(gsl STATIC IMPORTED)
+  set_property(TARGET gsl PROPERTY IMPORTED_LOCATION
+    "${GSL_LIBRARY_DIR}/libgsl.a")
+  add_dependencies(gsl gsl-libs)
+
+  add_library(gslcblas STATIC IMPORTED)
+  set_property(TARGET gslcblas PROPERTY IMPORTED_LOCATION
+    "${GSL_LIBRARY_DIR}/libgslcblas.a")
+endif ()
 
 add_subdirectory(solvers)
 
