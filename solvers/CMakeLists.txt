@@ -1,3 +1,14 @@
+include(CheckFunctionExists)
+check_function_exists(getrusage HAVE_GETRUSAGE)
+if (NOT HAVE_GETRUSAGE)
+ add_definitions(-DNO_RUSAGE)
+endif ()
+
+file(READ details.c0 DETAILS)
+string(REPLACE "System_details"
+  "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}" DETAILS ${DETAILS})
+file(WRITE details.c ${DETAILS})
+
 add_library(amplsolver
 	asldate.c
 	atof.c
