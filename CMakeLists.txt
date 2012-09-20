@@ -27,6 +27,7 @@ if (HAS_STD_CPP0X_FLAG)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 else ()
   # Allow "long long" even without c++0x because it is used by CPLEX.
+  # -Wno-long-long should go after -pedantic.
   check_cxx_compiler_flag(-Wno-long-long HAS_WNO_LONG_LONG_FLAG)
   if (HAS_WNO_LONG_LONG_FLAG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-long-long")
