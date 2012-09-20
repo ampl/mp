@@ -6,13 +6,11 @@ project(AMPL)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# Find the AMPL solver library.
+# Set SOLVER_LIBS to point to the AMPL solver library and its dependencies.
 include_directories(.)
+set(SOLVER_LIBS amplsolver)
 if (NOT WIN32)
-  find_path(SOLVER_LIB_DIR amplsolver.a solvers)
-  set(SOLVER_LIBS "${SOLVER_LIB_DIR}/amplsolver.a" dl)
-elseif (NOT SOLVER_LIBS)
-  set(SOLVER_LIBS "${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplsolv.lib")
+  set(SOLVER_LIBS ${SOLVER_LIBS} dl)
 endif ()
 
 if (NOT MSVC)
@@ -56,8 +54,7 @@ add_library(gslcblas STATIC IMPORTED)
 set_property(TARGET gslcblas PROPERTY IMPORTED_LOCATION
   "${GSL_LIBRARY_DIR}/libgslcblas.a")
 
-add_subdirectory(solvers/amplgsl)
-add_subdirectory(solvers/concert)
+add_subdirectory(solvers)
 
 enable_testing()
 add_subdirectory(tests)
