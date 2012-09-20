@@ -53,7 +53,7 @@ class SameExpr {
 
 SameExpr::SameExpr(const expr *e) : e(e), elen(0)
 {
-   for (expr **ep = e->L.ep + 1; ep < e->R.ep; ep++, elen++);
+   for (expr **ep = e->L.ep + 1; ep < e->R.ep; ep++, elen++) ;
 }
 
 bool SameExpr::operator()(const NumberOf& nof) const
