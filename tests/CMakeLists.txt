@@ -5,6 +5,13 @@ if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug)
 endif ()
 
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-Wno-long-long HAS_WNO_LONG_LONG_FLAG)
+if (HAS_WNO_LONG_LONG_FLAG)
+  # Required if -pedantic is used. The long long type is used by GTest.
+  add_definitions(-Wno-long-long)
+endif ()
+
 # Setup testing.
 add_subdirectory(gtest)
 include_directories(gtest/include)
