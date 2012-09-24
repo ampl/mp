@@ -118,4 +118,4 @@ add_library(amplsolver
 if (HAVE_GSL)
   add_subdirectory(amplgsl)
 endif ()
-add_subdirectory(concert)
+add_subdirectory(ilogcp)
