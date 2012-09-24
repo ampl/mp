@@ -1,8 +1,8 @@
 #include <iostream>
 #include <memory>
-#include "concert.h"
+#include "ilogcp.h"
 #include "util.h"
-#include "solvers/asl.h"
+#include "asl.h"
 
 using std::cerr;
 using std::endl;

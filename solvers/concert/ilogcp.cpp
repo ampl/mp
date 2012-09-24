@@ -1,8 +1,8 @@
 /*-------------------------------------------------------------------------*/
-/* AMPL/Concert driver                                       Robert Fourer */
+/* AMPL/IBM ILOG CP Optimizer driver                         Robert Fourer */
 /*                                                                         */
-/* Name           : concert.cpp                                            */
-/* Title          : AMPL/ILOG Concert driver                               */
+/* Name           : ilogcp.cpp                                             */
+/* Title          : AMPL/IBM ILOG CP Optimizer driver                      */
 /* By             : Robert Fourer                                          */
 /* Date           : October 2000                                           */
 /*                                                                         */
@@ -18,7 +18,8 @@
 // INFORMS Journal on Computing, Fall 2002, vol. 14, no. 4, 322-344
 // (http://joc.journal.informs.org/content/14/4/322).
 
-#include "concert.h"
+#include "ilogcp.h"
+#include "ilogcp_date.h"
 
 #include <cctype>
 #include <algorithm>
@@ -27,12 +28,14 @@
 #include <ilcplex/ilocplex.h>
 #include <ilcp/cp.h>
 
-#include "solvers/asl.h"
-#include "solvers/nlp.h"
-#include "solvers/getstub.h"
-#include "solvers/opcode.hd"
+#include "getstub.h"
+#include "nlp.h"
+#include "opcode.hd"
 
 using namespace std;
+
+static char xxxvers[] = "ilogcp_options\0\n"
+	"AMPL/IBM ILOG CP Optimizer Driver Version " qYYYYMMDD "\n";
 
 // for suppressing "String literal to char*" warnings
 #define CSTR(s) const_cast<char*>(s)
@@ -279,7 +282,7 @@ keyword Driver::keywords_[] = {
 
   KW(CSTR("ilogsolver"), Driver::use_cpoptimizer, Driver::ILOGOPTTYPE,
       CSTR("Single-word phrase:  use IBM ILOG Constraint\n"
-          SPACE "Programming optimizer.\n")),
+          SPACE "Programming optimizer (default).\n")),
 
   KW(CSTR("logperiod"),
       Driver::set_cp_int_option, &LogPeriod,
@@ -391,27 +394,35 @@ keyword Driver::keywords_[] = {
 Driver::Driver() :
    mod_(env_), asl(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))),
    gotopttype(false), n_badvals(0) {
-   options_[DEBUGEXPR] = 0;
-   options_[ILOGOPTTYPE] = DEFAULT_OPT;
-   options_[TIMING] = 0;
-   options_[USENUMBEROF] = 1;
+	char *s;
+	int n;
+	size_t L;
 
-   version_.resize(strlen(IloConcertVersion::_ILO_NAME) + 100);
-   snprintf(&version_[0], version_.size() - 1,
-       "%s %d.%d.%d", IloConcertVersion::_ILO_NAME,
-       IloConcertVersion::_ILO_MAJOR_VERSION,
-       IloConcertVersion::_ILO_MINOR_VERSION,
-       IloConcertVersion::_ILO_TECH_VERSION);
-   DriverOptionInfo *doi = 0;
-   oinfo_.reset(doi = new DriverOptionInfo());
-   oinfo_->sname = CSTR("concert");
-   oinfo_->bsname = &version_[0];
-   oinfo_->opname = CSTR("concert_options");
-   oinfo_->keywds = keywords_;
-   oinfo_->n_keywds = sizeof(keywords_) / sizeof(*keywords_);
-   oinfo_->version = &version_[0];
-   oinfo_->driver_date = 20120723;
-   doi->driver = this;
+	options_[DEBUGEXPR] = 0;
+	options_[ILOGOPTTYPE] = DEFAULT_OPT;
+	options_[TIMING] = 0;
+	options_[USENUMBEROF] = 1;
+
+	version_.resize(L = strlen(IloConcertVersion::_ILO_NAME) + 100);
+	n = snprintf(s = &version_[0], L,
+		"AMPL/IBM ILOG CP Optimizer [%s %d.%d.%d]",
+		IloConcertVersion::_ILO_NAME,
+		IloConcertVersion::_ILO_MAJOR_VERSION,
+		IloConcertVersion::_ILO_MINOR_VERSION,
+		IloConcertVersion::_ILO_TECH_VERSION);
+	DriverOptionInfo *doi = 0;
+	oinfo_.reset(doi = new DriverOptionInfo());
+	oinfo_->sname = CSTR("ilogcp");
+	snprintf(oinfo_->bsname = s + n + 1, L-n, "ilogcp %d.%d.%d",
+		IloConcertVersion::_ILO_MAJOR_VERSION,
+		IloConcertVersion::_ILO_MINOR_VERSION,
+		IloConcertVersion::_ILO_TECH_VERSION);
+	oinfo_->opname = CSTR("ilogcp_options");
+	oinfo_->keywds = keywords_;
+	oinfo_->n_keywds = sizeof(keywords_) / sizeof(*keywords_);
+	oinfo_->version = &version_[0];
+	oinfo_->driver_date = YYYYMMDD;
+	doi->driver = this;
 }
 
 Driver::~Driver() {
@@ -635,7 +646,7 @@ int Driver::run(char **argv) {
       IloExpr conExpr(env_);
       for (cgrad *cg = Cgrad[i]; cg; cg = cg->next)
          conExpr += (cg -> coef) * vars_[cg -> varno];
-      if (i < nlc) 
+      if (i < nlc)
          conExpr += build_expr (con_de[i].e);
       Con[i] = (LUrhs[i] <= conExpr <= Urhsx[i]);
    }
@@ -666,8 +677,8 @@ int Driver::run(char **argv) {
    default:
       // Fall through.
    case IloAlgorithm::Unknown:
-      solve_result_num = -1;
-      message = "unknown";
+      solve_result_num = 501;
+      message = "unknown solution status";
       break;
    case IloAlgorithm::Feasible:
       solve_result_num = 100;
@@ -696,7 +707,7 @@ int Driver::run(char **argv) {
    }
 
    char sMsg[256];
-   int sSoFar = Sprintf(sMsg, "\n%s: %s\n", oinfo_->bsname, message);
+   int sSoFar = Sprintf(sMsg, "%s: %s\n", oinfo_->bsname, message);
    vector<real> primal, dual;
    if (successful)
      optimizer_->get_solution(asl, sMsg + sSoFar, primal, dual);
