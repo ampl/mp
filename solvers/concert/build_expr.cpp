@@ -10,16 +10,15 @@
 /* October 2000: Linear/Nonlinear version                                  */
 /*-------------------------------------------------------------------------*/
 
-#include "concert.h"
+#include "ilogcp.h"
 
 #include <cstddef>
 #include <cmath>
 #include <algorithm>
 
 #include "util.h"
-#include "solvers/asl.h"
-#include "solvers/nlp.h"
-#include "solvers/opcode.hd"
+#include "nlp.h"
+#include "opcode.hd"
 
 #define PR if (get_option(DEBUGEXPR)) Printf
 

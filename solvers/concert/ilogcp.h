@@ -1,6 +1,10 @@
 #ifndef AMPL_SOLVERS_CONCERT_H
 #define AMPL_SOLVERS_CONCERT_H
 
+#include <string.h>	/* This and -fpermissive seem to be needed for MacOSX, */
+			/* at least with g++ 4.6.  Otherwise there are errors */
+			/* with iloconcert/iloenv.h . */
+#include <limits.h>	/* Needed for g++ -m32 on MacOSX. */
 #include <memory>
 #include <vector>
 #include <ilconcert/ilomodel.h>
@@ -196,7 +200,7 @@ class Driver {
   // 'alldiff'.
   IloConstraint build_constr(const expr *e);
 
-  // Combines 'numberof' operators into IloDistribute constraints 
+  // Combines 'numberof' operators into IloDistribute constraints
   // which are much more useful to the solution procedure.
   void finish_building_numberof();
 

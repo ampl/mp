@@ -16,9 +16,9 @@
 #include <algorithm>
 #include <sstream>
 
-#include "solvers/asl.h"
-#include "solvers/nlp.h"
-#include "solvers/opcode.hd"
+#include "asl.h"
+#include "nlp.h"
+#include "opcode.hd"
 
 using std::size_t;
 
