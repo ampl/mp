@@ -1,10 +1,10 @@
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-<title>Constraint Logic Programming Extensions Recognized by the Concert Driver</title>
+<title>Constraint Logic Programming Extensions Recognized by the Ilogcp Driver</title>
 
 <style type="text/css"></style></head>
 <body>
 <h1>
-Constraint Logic Programming Extensions Recognized by the Concert Driver
+Constraint Logic Programming Extensions Recognized by the Ilogcp Driver
 </h1>
 
         For combinatorial or discrete optimization, AMPL currently
@@ -50,7 +50,7 @@ constraint logical programming models:</p>
 </ul>
 
 In this document we give the syntax and usage summary of the extended
-operators that are recognized in the AMPL Concert driver.
+operators that are recognized in the AMPL Ilogcp driver.
 This driver provides connection to IBM ILOG
 <a href="http://www.ibm.com/software/integration/optimization/cplex-optimizer/">
 CPLEX</a> and 
@@ -461,7 +461,7 @@ Although it would still be possible to implement this operator
 inefficiently, the presence of <tt>countof</tt> could alert the
 AMPL translator to the possibility of a more efficient evaluation.<p>
 
-In the Concert driver, the <tt>count</tt> operator is translated
+In the Ilogcp driver, the <tt>count</tt> operator is translated
 into a sum of constraint expressions that represent its arguments.
 This approach uses the fact that a constraint expression in Concert
 is evaluated to 1 if satisfied and 0 otherwise and the <tt>+</tt>

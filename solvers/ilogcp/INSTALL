@@ -1,16 +1,16 @@
-This file describes how to build and install "concert", the AMPL driver
+This file describes how to build and install "ilogcp", the AMPL driver
 for IBM ILOG CP Optimizer and CPLEX.
 
 Requirements
 ------------
 
-To build the concert driver you should have IBM ILOG CP Optimizer,
+To build the ilogcp driver you should have IBM ILOG CP Optimizer,
 CPLEX and Concert installed.  Normally these are installed as parts of
 IBM ILOG CPLEX Optimization Studio.  The code has been tested with
 Optimization Studio version 12.
 
 You should also build AMPL Solver Library (ASL) prior to building
-concert.  Suppose you have AMPL repository containing ASL, example
+ilogcp.  Suppose you have AMPL repository containing ASL, example
 models, etc in directory ${AMPL_DIR}.  The repository can be obtained
 from https://github.com/vitaut/ampl/.  ASL can be built as follows:
 
@@ -27,7 +27,7 @@ Build using CMake
 -----------------
 
 An included CMake build script (CMakeLists.txt) can be used to build
-the concert driver on a wide range of platforms.  You can download CMake
+the ilogcp driver on a wide range of platforms.  You can download CMake
 for free from http://www.cmake.org/.
 
 CMake works by generating native makefiles or build projects that can
@@ -39,12 +39,12 @@ workflow starts with:
   cmake ${AMPL_DIR}  # Generate native build scripts.
 
 If you are on a *nix system, you should now see a Makefile in the
-current directory.  Now you can build concert as follows:
+current directory.  Now you can build ilogcp as follows:
 
-  cd solvers/concert
-  make concert
+  cd solvers/ilogcp
+  make ilogcp
 
-If you use Windows and have Vistual Studio installed, a concert.sln file
+If you use Windows and have Vistual Studio installed, a ilogcp.sln file
 and several .vcproj files will be created.  You can then build them
 using Visual Studio.
 
@@ -53,7 +53,7 @@ On Mac OS X with Xcode installed, a .xcodeproj file will be generated.
 Build without CMake
 -------------------
 
-Alternatively you can build the concert driver with make using the
+Alternatively you can build the ilogcp driver with make using the
 provided makefile (makefile.u).  First edit the makefile to specify
 the path to CPLEX Optimization Studio.  Then type "make -f makefile.u"
-to build concert.
+to build ilogcp.
