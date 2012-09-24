@@ -1,4 +1,4 @@
-// Concert driver tests.
+// Ilogcp driver tests.
 
 #include <ilconcert/ilodiffi.h>
 #include <ilconcert/ilopathi.h>
@@ -15,8 +15,8 @@
 
 #include "gtest/gtest.h"
 
-#include "solvers/concert/ilogcp.h"
-#include "solvers/concert/util.h"
+#include "solvers/ilogcp/ilogcp.h"
+#include "solvers/ilogcp/util.h"
 #include "solvers/asl.h"
 #include "solvers/nlp.h"
 #include "solvers/opcode.hd"
