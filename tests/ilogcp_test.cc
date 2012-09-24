@@ -15,7 +15,7 @@
 
 #include "gtest/gtest.h"
 
-#include "solvers/concert/concert.h"
+#include "solvers/concert/ilogcp.h"
 #include "solvers/concert/util.h"
 #include "solvers/asl.h"
 #include "solvers/nlp.h"
@@ -226,7 +226,7 @@ class ConcertTest : public ::testing::Test {
 
   int RunDriver(const char *stub = nullptr, const char *opt = nullptr) {
     try {
-      return d.run((Args() + "concert" + "-s" + stub + opt).get());
+      return d.run((Args() + "ilogcp" + "-s" + stub + opt).get());
     } catch (const IloException &e) {
       throw std::runtime_error(e.getMessage());
     }
@@ -309,7 +309,6 @@ SolveResult ConcertTest::Solve(const char *stub) {
   RunDriver(stub);
   ifstream ifs((string(stub) + ".sol").c_str());
   string line;
-  getline(ifs, line);
   getline(ifs, line);
   bool solved = line.find("optimal solution") != string::npos;
   if (!solved) solved = line.find("feasible solution") != string::npos;

@@ -13,7 +13,7 @@ CPLEX_INC=$(CPLEXDIR)/include
 CPLEX_LIB=$(CPLEXDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
 CPOPTIMIZER_INC=$(CPOPTIMIZERDIR)/include
 CPOPTIMIZER_LIB=$(CPOPTIMIZERDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
-AMPL_INC=$(AMPLDIR)
+AMPL_INC=$(AMPLDIR)/solvers
 AMPL_LIB=$(AMPLDIR)/solvers/amplsolver.a
 LIBS=-lnsl -lm -ldl -lpthread
 
@@ -27,9 +27,9 @@ CXX_FLAGS = $(DEBUG) -I$(CONCERT_INC) -I$(CPLEX_INC) -I$(CPOPTIMIZER_INC) \
 LD_FLAGS  = -L$(CPOPTIMIZER_LIB) -lcp -L$(CPLEX_LIB) -lilocplex -lcplex \
             -L$(CONCERT_LIB) -lconcert $(LDMTFLAGS) $(AMPL_LIB) $(LIBS)
 
-BINARIES = concert.o build_expr.o main.o util.o
+BINARIES = ilogcp.o build_expr.o main.o util.o
 
-concert: $(BINARIES)
+ilogcp: $(BINARIES)
 	$(CXX) -o $@ $(BINARIES) $(LD_FLAGS)
 
 %.o: %.cpp
