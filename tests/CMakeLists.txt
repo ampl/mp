@@ -42,7 +42,7 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
 endif ()
 
 if (HAVE_GSL)
-  include_directories(../solvers/amplgsl/gsl/include)
+  include_directories(../solvers/amplgsl/gsl)
   cxx_test_with_flags(gsl_test ""
     "gtest;gtest_main;${SOLVER_LIBS}"
     gsl_test.cc function.cc function.h function_test.cc)

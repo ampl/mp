@@ -5,9 +5,12 @@ if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif ()
 
-include_directories(.. gsl gsl/include)
+include_directories(.. gsl)
 
+set(SAVED_FLAGS ${CMAKE_C_FLAGS})
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 add_subdirectory(gsl)
+set(CMAKE_C_FLAGS ${SAVED_FLAGS})
 
 add_library(amplgsl SHARED amplgsl.c)
 add_dependencies(amplgsl gsl gslcblas)
