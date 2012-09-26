@@ -27,28 +27,8 @@ if (HAS_STD_CPP0X_FLAG)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif ()
 
-if (EXISTS solvers/amplgsl/gsl/configure)
+if (EXISTS solvers/amplgsl/gsl/CMakeLists.txt)
   set(HAVE_GSL 1)
-
-  # IMPORTED GSL libraries are listed here to be accessible both from
-  # amplgsl and tests. We build GSL ourselves with -fPIC to make possible
-  # linking of static GSL libraries into a dynamic amplgsl library.
-
-  set(GSL_LIBRARY_DIR
-    "${CMAKE_CURRENT_BINARY_DIR}/solvers/amplgsl/gsl/lib")
-
-  add_custom_target(build-gsl DEPENDS "${GSL_LIBRARY_DIR}/libgsl.a")
-  add_custom_command(OUTPUT "${GSL_LIBRARY_DIR}/libgsl.a"
-    COMMAND ./build-gsl WORKING_DIRECTORY solvers/amplgsl)
-
-  add_library(gsl STATIC IMPORTED)
-  set_property(TARGET gsl PROPERTY IMPORTED_LOCATION
-    "${GSL_LIBRARY_DIR}/libgsl.a")
-  add_dependencies(gsl build-gsl)
-
-  add_library(gslcblas STATIC IMPORTED)
-  set_property(TARGET gslcblas PROPERTY IMPORTED_LOCATION
-    "${GSL_LIBRARY_DIR}/libgslcblas.a")
 endif ()
 
 add_subdirectory(solvers)
