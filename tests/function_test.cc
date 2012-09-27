@@ -569,7 +569,7 @@ TEST(FunctionTest, DerivativeBinder) {
   ASSERT_EQ(1 / sqrt(2.0), d(1));
   d = DerivativeBinder(f, 1, 1, MakeArgs(1, 0));
   ASSERT_EQ(0, d(0));
-  ASSERT_EQ(1 / sqrt(2), d(1));
+  ASSERT_EQ(1 / sqrt(2.0), d(1));
   EXPECT_THROW(DerivativeBinder(f, 2, 0, MakeArgs(0, 0)), std::out_of_range);
   EXPECT_THROW(DerivativeBinder(f, 0, 2, MakeArgs(0, 0)), std::out_of_range);
 }
