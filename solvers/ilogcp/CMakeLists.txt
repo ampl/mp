@@ -1,10 +1,5 @@
 # CMake build script for the IBM ILOG Concert/CP driver for AMPL.
 
-if (NOT CMAKE_BUILD_TYPE)
-  message(STATUS "No build type selected, default to Release")
-  set(CMAKE_BUILD_TYPE Release)
-endif ()
-
 find_package(CPLEX)
 if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
   add_definitions(${CPLEX_CONCERT_DEFINITIONS} ${CPLEX_ILOCPLEX_DEFINITIONS})

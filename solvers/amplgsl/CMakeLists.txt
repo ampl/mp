@@ -1,10 +1,5 @@
 # CMake build script for the GSL wrapper for AMPL.
 
-if (NOT CMAKE_BUILD_TYPE)
-  message(STATUS "No build type selected, default to Release")
-  set(CMAKE_BUILD_TYPE Release)
-endif ()
-
 include_directories(.. gsl)
 
 include(CheckCCompilerFlag)

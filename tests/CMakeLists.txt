@@ -1,10 +1,5 @@
 # CMake build script for the AMPL solver tests.
 
-if (NOT CMAKE_BUILD_TYPE)
-  message(STATUS "No build type selected, default to Debug")
-  set(CMAKE_BUILD_TYPE Debug)
-endif ()
-
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag(-Wno-long-long HAS_WNO_LONG_LONG_FLAG)
 if (HAS_WNO_LONG_LONG_FLAG)
