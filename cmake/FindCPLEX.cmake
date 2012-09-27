@@ -134,6 +134,12 @@ if (HAS_WNO_LONG_LONG_FLAG)
   # Required if -pedantic is used.
   set(CPLEX_ILOCPLEX_DEFINITIONS -Wno-long-long)
 endif ()
+if (MSVC)
+  # Required for VC2010 because CPLEX libraries are compiled with
+  # _ITERATOR_DEBUG_LEVEL=0.
+  set(CPLEX_ILOCPLEX_DEFINITIONS
+    "${CPLEX_ILOCPLEX_DEFINITIONS} -D_ITERATOR_DEBUG_LEVEL=0")
+endif ()
 
 # Find the IloCplex include directory - normally the same as the one for CPLEX
 # but check if ilocplex.h is there anyway.
