@@ -30,7 +30,7 @@
 #include "tests/config.h"
 
 static void Print(std::ostream &os, double value) {
-  if (!std::isnan(value))
+  if (!isnan(value))
     os << value;
   else os << "NaN";
 }
