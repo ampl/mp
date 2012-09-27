@@ -31,6 +31,10 @@
 #include <vector>
 #include <cmath>
 
+#if defined(_MSC_VER)
+# define isnan _isnan
+#endif
+
 struct AmplExports;
 struct func_info;
 
