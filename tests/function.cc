@@ -28,6 +28,7 @@
 
 #include "solvers/asl.h"
 #include "tests/config.h"
+#undef VOID
 
 static void Print(std::ostream &os, double value) {
   if (!isnan(value))
@@ -37,10 +38,10 @@ static void Print(std::ostream &os, double value) {
 
 namespace fun {
 
-const Type GetType<void>::VALUE;
-const Type GetType<int>::VALUE;
-const Type GetType<unsigned>::VALUE;
-const Type GetType<double>::VALUE;
+const Type GetType<void>::VALUE = VOID;
+const Type GetType<int>::VALUE = INT;
+const Type GetType<unsigned>::VALUE = UINT;
+const Type GetType<double>::VALUE = DOUBLE;
 
 std::ostream &operator<<(std::ostream &os, const Tuple &t) {
   os << "(";

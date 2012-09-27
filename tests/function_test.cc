@@ -315,16 +315,16 @@ TEST(FunctionTest, Differentiator) {
 
 TEST(FunctionTest, DifferentiatorPropagatesNaN) {
   Differentiator diff;
-  EXPECT_TRUE(std::isnan(sqrt(-1)));
-  EXPECT_TRUE(std::isnan(diff(GetDoubleFun(sqrt), -1)));
+  EXPECT_TRUE(isnan(sqrt(-1.0)));
+  EXPECT_TRUE(isnan(diff(GetDoubleFun(sqrt), -1)));
 }
 
 TEST(FunctionTest, DifferentiatorDetectsNaN) {
   Differentiator diff;
   EXPECT_EQ(0, std::bind2nd(ptr_fun(Hypot), 0)(0));
-  EXPECT_TRUE(std::isnan(diff(std::bind2nd(ptr_fun(Hypot), 0), 0)));
-  EXPECT_EQ(-std::numeric_limits<double>::infinity(), std::log(0));
-  EXPECT_TRUE(std::isnan(diff(GetDoubleFun(std::log), 0)));
+  EXPECT_TRUE(isnan(diff(std::bind2nd(ptr_fun(Hypot), 0), 0)));
+  EXPECT_EQ(-std::numeric_limits<double>::infinity(), std::log(0.0));
+  EXPECT_TRUE(isnan(diff(GetDoubleFun(std::log), 0)));
 }
 
 double PositiveOrNaN(double x) {
@@ -335,7 +335,7 @@ TEST(FunctionTest, DifferentiatorRightDeriv) {
   // Differentiator should use the right derivative if the function is not
   // defined for a negative argument.
   Differentiator diff;
-  EXPECT_TRUE(std::isnan(PositiveOrNaN(-1e-7)));
+  EXPECT_TRUE(isnan(PositiveOrNaN(-1e-7)));
   EXPECT_NEAR(1, diff(ptr_fun(PositiveOrNaN), 0), 1e-7);
 }
 
@@ -363,8 +363,8 @@ struct TestFunctionInfo : FunctionInfo {
 TEST(FunctionTest, FunctionInfoGetDerivative) {
   FunctionInfo fi1;
   Function f(0, 0, 0);
-  EXPECT_TRUE(std::isnan(fi1.GetDerivative(f, 0, MakeArgs(0)).value()));
-  EXPECT_TRUE(std::isnan(fi1.GetSecondDerivative(f, 0, 0, MakeArgs(0)).value()));
+  EXPECT_TRUE(isnan(fi1.GetDerivative(f, 0, MakeArgs(0)).value()));
+  EXPECT_TRUE(isnan(fi1.GetSecondDerivative(f, 0, 0, MakeArgs(0)).value()));
   TestFunctionInfo fi2;
   EXPECT_EQ(42, fi2.GetDerivative(f, 0, MakeArgs(0)).value());
   EXPECT_EQ(11, fi2.GetSecondDerivative(f, 0, 0, MakeArgs(0)).value());
@@ -373,8 +373,8 @@ TEST(FunctionTest, FunctionInfoGetDerivative) {
 TEST(FunctionTest, FunctionInfoResult) {
   EXPECT_EQ(42, FunctionInfo::Result(42).value());
   EXPECT_TRUE(FunctionInfo::Result().error() == nullptr);
-  EXPECT_TRUE(std::isnan(FunctionInfo::Result().value()));
-  EXPECT_TRUE(std::isnan(FunctionInfo::Result("oops").value()));
+  EXPECT_TRUE(isnan(FunctionInfo::Result().value()));
+  EXPECT_TRUE(isnan(FunctionInfo::Result("oops").value()));
   EXPECT_STREQ("oops", FunctionInfo::Result("oops").error());
 }
 
@@ -538,8 +538,8 @@ TEST(FunctionTest, FunctionArgNames) {
 TEST(FunctionTest, FunctifonGetDerivative) {
   FunctionInfo fi1;
   Function f1(0, 0, &fi1);
-  EXPECT_TRUE(std::isnan(f1.GetDerivative(0, MakeArgs(0)).value()));
-  EXPECT_TRUE(std::isnan(f1.GetSecondDerivative(0, 0, MakeArgs(0)).value()));
+  EXPECT_TRUE(isnan(f1.GetDerivative(0, MakeArgs(0)).value()));
+  EXPECT_TRUE(isnan(f1.GetSecondDerivative(0, 0, MakeArgs(0)).value()));
   TestFunctionInfo fi2;
   Function f2(0, 0, &fi2);
   EXPECT_EQ(42, f2.GetDerivative(0, MakeArgs(0)).value());
@@ -566,7 +566,7 @@ TEST(FunctionTest, DerivativeBinder) {
   Function f(&ae, &fi, 0);
   DerivativeBinder d(f, 0, 1, MakeArgs(1, 0));
   ASSERT_EQ(1, d(0));
-  ASSERT_EQ(1 / sqrt(2), d(1));
+  ASSERT_EQ(1 / sqrt(2.0), d(1));
   d = DerivativeBinder(f, 1, 1, MakeArgs(1, 0));
   ASSERT_EQ(0, d(0));
   ASSERT_EQ(1 / sqrt(2), d(1));
