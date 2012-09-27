@@ -5,9 +5,9 @@
 # $S = ampl/solvers directory
 S = ..
 CC = cc
-GSLdir = gsl-1.15
-GSLinclude = $(GSLdir)/include
-GSLlibdir = $(GSLdir)/lib
+GSLdir = gsl
+GSLinclude = $(GSLdir)/gsl
+GSLlibdir = $(GSLdir)
 CFLAGS = -fPIC -I$S -I$(GSLdir) -I$(GSLinclude) -O2
 
 .c.o:
