@@ -134,6 +134,9 @@ const double POINTS[] = {-5, -2, -1.23, -1, 0, 1, 1.23, 2, 5};
 const size_t NUM_POINTS = sizeof(POINTS) / sizeof(*POINTS);
 
 class GSLTest : public ::testing::Test {
+ public:
+  GSLTest() {}
+
  protected:
   const FunctionInfo info;  // Default function info.
 
@@ -1007,7 +1010,7 @@ TEST_F(GSLTest, Power) {
 struct DigammaInfo : FunctionInfo {
   Result GetDerivative(const Function &f, unsigned , const Tuple &args) const {
     double x = args[0];
-    return x < 0 && round(x) == x ? EvalError(f, args, "'") : Result();
+    return x < 0 && ceil(x) == x ? EvalError(f, args, "'") : Result();
   }
   Result GetSecondDerivative(
       const Function &f, unsigned , unsigned , const Tuple &args) const {
@@ -1028,7 +1031,7 @@ struct PolygammaInfo : FunctionInfo {
       const Function &f, unsigned , const Tuple &args) const {
     double x = args[1];
     if (args[0] == 0)
-      return x < 0 && round(x) == x ? EvalError(f, args, "'") : Result();
+      return x < 0 && ceil(x) == x ? EvalError(f, args, "'") : Result();
     return x < 0 ? EvalError(f, args, "'") : Result();
   }
   Result GetSecondDerivative(const Function &f,
