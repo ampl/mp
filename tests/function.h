@@ -47,31 +47,31 @@ struct GetType;
 
 template <>
 struct GetType<void> {
-  static const Type VALUE = VOID;
+  static const Type VALUE;
 };
 
 template <>
 struct GetType<int> {
-  static const Type VALUE = INT;
+  static const Type VALUE;
 };
 
 template <>
 struct GetType<unsigned> {
-  static const Type VALUE = UINT;
+  static const Type VALUE;
 };
 
 template <>
 struct GetType<double> {
-  static const Type VALUE = DOUBLE;
+  static const Type VALUE;
 };
 
 template <typename T>
 struct GetType<T*> {
-  static const Type VALUE = POINTER;
+  static const Type VALUE;
 };
 
 template <typename T>
-const Type GetType<T*>::VALUE;
+const Type GetType<T*>::VALUE = POINTER;
 
 class Variant {
  private:
