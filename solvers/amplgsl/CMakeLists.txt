@@ -7,8 +7,12 @@ endif ()
 
 include_directories(.. gsl)
 
+include(CheckCCompilerFlag)
+check_c_compiler_flag(-fPIC HAS_FPIC_FLAG)
 set(SAVED_FLAGS ${CMAKE_C_FLAGS})
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+if (HAS_FPIC_FLAG)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+endif ()
 add_subdirectory(gsl)
 set(CMAKE_C_FLAGS ${SAVED_FLAGS})
 
