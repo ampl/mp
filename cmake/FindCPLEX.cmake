@@ -26,20 +26,27 @@ include(FindPackageHandleStandardArgs)
 #   /opt/ibm/ILOG/CPLEX_Studio<version> - Linux (checked version 12.4)
 #   C:\ILOG\CPLEX_Studio<version> - Windows (checked version 12.2)
 #   C:\Program Files\IBM\ILOG\CPLEX_Studio<version> - Windows (README)
-if (NOT WIN32)
+if (UNIX)
   set(CPLEX_ILOG_DIRS
       /opt/ibm/ILOG /opt/IBM/ILOG $ENV{HOME}/ILOG $ENV{HOME}/ilog)
-  set(CPLEX_LIB_PATH_SUFFIXES
-    lib/x86_sles10_4.1/static_pic
-    lib/x86-64_sles10_4.1/static_pic
-    lib/x86_darwin9_gcc4.0/static_pic)
+  if (APPLE)
+    set(CPLEX_LIB_PATH_SUFFIXES lib/x86_darwin9_gcc4.0/static_pic)
+  else ()
+    set(CPLEX_LIB_PATH_SUFFIXES
+      lib/x86_sles10_4.1/static_pic
+      lib/x86-64_sles10_4.1/static_pic)
+  endif ()
 else ()
   set(CPLEX_ILOG_DIRS C:/ILOG "C:/Program Files/IBM/ILOG")
-  set(CPLEX_LIB_PATH_SUFFIXES
-    lib/x86_windows_vs2008/stat_mda
-    lib/x86_windows_vs2008/stat_mta
-    lib/x86_.net2005_8.0/stat_mda
-    lib/x86_.net2005_8.0/stat_mta)
+  if (MSVC10)
+    set(CPLEX_LIB_PATH_SUFFIXES
+      lib/x86_windows_vs2010/stat_mda
+      lib/x86_windows_vs2010/stat_mta)
+  elseif (MSVC9)
+    set(CPLEX_LIB_PATH_SUFFIXES
+      lib/x86_windows_vs2008/stat_mda
+      lib/x86_windows_vs2008/stat_mta)
+  endif ()
 endif ()
 foreach (d ${CPLEX_ILOG_DIRS})
   if (EXISTS ${d})
