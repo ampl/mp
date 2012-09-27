@@ -258,6 +258,7 @@ TEST(FunctionTest, BindOne) {
 
 #ifdef HAVE_LAMBDAS
 TEST(FunctionTest, Fun) {
+  double (*pow)(double, double) = &std::pow;
   Differentiator dx, dy;
   EXPECT_NEAR(4.77259,
       dx([&](double x) { return dy(bind1st(ptr_fun(pow), x), 2); }, 2),
