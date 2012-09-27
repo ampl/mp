@@ -1382,7 +1382,7 @@ static double amplgsl_sf_ellint_F(arglist *al) {
         al->derivs[1] = 0;
       } else if (fabs(k) == 1) {
         double sec_phi = 1 / cos(phi);
-        al->derivs[1] = 0.5 * k * (atanh(sin(phi)) -
+        al->derivs[1] = 0.5 * k * (gsl_atanh(sin(phi)) -
            sec_phi * sec_phi * ((1 + cos(2 * phi)) * log(sec_phi + tan(phi)) -
                sin(phi)));
       } else {
@@ -1402,7 +1402,7 @@ static double amplgsl_sf_ellint_F(arglist *al) {
       } else if (fabs(k) == 1) {
         double sec_phi = 1 / cos(phi);
         al->hes[2] = sec_phi * sec_phi *
-            (atanh(sin(phi)) * (2 - 46 * cos(2 * phi)) +
+            (gsl_atanh(sin(phi)) * (2 - 46 * cos(2 * phi)) +
                 8 * (1 + 7 * cos(2 * phi)) * log(sec_phi + tan(phi)) +
                 sec_phi * (-11 * sec_phi * sin(3 * phi) + 13 * tan(phi))) / 32;
       } else {
@@ -1433,7 +1433,7 @@ static double amplgsl_sf_ellint_E(arglist *al) {
         al->hes[2] = -0.5 * phi + 0.25 * sin(2 * phi);
       } else if (fabs(k) == 1) {
         double sec_phi = 1 / cos(phi), tan_phi = tan(phi);
-        al->hes[2] = -0.5 * atanh(sin(phi)) + log(sec_phi + tan_phi) -
+        al->hes[2] = -0.5 * gsl_atanh(sin(phi)) + log(sec_phi + tan_phi) -
             0.5 * sec_phi * tan_phi;
       } else {
         al->hes[2] = ((k2 - 1) * sqrt(4 - 2 * k2 + 2 * k2 * cos(2 * phi)) * f +
@@ -1721,7 +1721,7 @@ static double amplgsl_sf_gamma(arglist *al) {
 static double amplgsl_sf_lngamma(arglist *al) {
   double x = al->ra[0];
   if (al->derivs) {
-    *al->derivs = x >= 0 || round(x) != x ? gsl_sf_psi(x) : GSL_NAN;
+    *al->derivs = x >= 0 || ceil(x) != x ? gsl_sf_psi(x) : GSL_NAN;
     if (al->hes)
       *al->hes = gsl_sf_psi_1(x);
   }
@@ -1746,7 +1746,7 @@ static double amplgsl_sf_gammainv(arglist *al) {
   double x = al->ra[0];
   double gammainv = gsl_sf_gammainv(x);
   if (al->derivs) {
-    if (x > 0 || round(x) != x) {
+    if (x > 0 || ceil(x) != x) {
       double psi0 = gsl_sf_psi(x);
       *al->derivs = -gammainv * psi0;
       if (al->hes)
@@ -2390,7 +2390,7 @@ static double amplgsl_sf_psi_int(arglist *al) {
 static double amplgsl_sf_psi(arglist *al) {
   double x = al->ra[0];
   if (al->derivs) {
-    *al->derivs = x >= 0 || round(x) != x ? gsl_sf_psi_1(x) : GSL_NAN;
+    *al->derivs = x >= 0 || ceil(x) != x ? gsl_sf_psi_1(x) : GSL_NAN;
     if (al->hes)
       *al->hes = gsl_sf_psi_n(2, x);
   }
@@ -2423,7 +2423,7 @@ static double amplgsl_sf_psi_n(arglist *al) {
   n = (int)al->ra[0];
   x = al->ra[1];
   if (al->derivs) {
-    al->derivs[1] = x >= 0 || round(x) != x ? gsl_sf_psi_n(n + 1, x) : GSL_NAN;
+    al->derivs[1] = x >= 0 || ceil(x) != x ? gsl_sf_psi_n(n + 1, x) : GSL_NAN;
     if (al->hes)
       al->hes[2] = gsl_sf_psi_n(n + 2, x);
   }
