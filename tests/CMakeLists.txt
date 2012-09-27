@@ -31,7 +31,7 @@ configure_file(
 
 find_package(CPLEX)
 if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
-  add_definitions(${CPLEX_CONCERT_DEFINITIONS})
+  add_definitions(${CPLEX_CONCERT_DEFINITIONS} ${CPLEX_ILOCPLEX_DEFINITIONS})
   include_directories(${CPLEX_ILOCPLEX_INCLUDE_DIRS} ${CPLEX_CP_INCLUDE_DIRS})
 
   cxx_test_with_flags(ilogcp_test ""
