@@ -33,6 +33,8 @@
 
 #if defined(_MSC_VER)
 # define isnan _isnan
+#else
+# define isnan std::isnan
 #endif
 
 struct AmplExports;
