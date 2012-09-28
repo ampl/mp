@@ -186,7 +186,7 @@ mark_as_advanced(CPLEX_ILOCPLEX_INCLUDE_DIR CPLEX_ILOCPLEX_LIBRARY)
 # ----------------------------------------------------------------------------
 # CP Optimizer - depends on Concert
 
-file(GLOB CPLEX_CP_DIR ${CPLEX_STUDIO_DIR}/cpoptimizer)
+set(CPLEX_CP_DIR ${CPLEX_STUDIO_DIR}/cpoptimizer)
 
 # Find the CP Optimizer include directory.
 find_path(CPLEX_CP_INCLUDE_DIR ilcp/cp.h PATHS ${CPLEX_CP_DIR}/include)
