@@ -12,6 +12,7 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
     ilogcp_date.h
     util.cpp
     util.h)
+  add_dependencies(amplilogcp arith_h)
 
   add_executable(ilogcp main.cpp)
 

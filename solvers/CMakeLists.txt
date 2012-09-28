@@ -24,9 +24,10 @@ else ()
 endif ()
 add_custom_command(OUTPUT arith.h DEPENDS arithchk
   COMMAND ./arithchk > arith.h)
+add_custom_target(arith_h SOURCES ${CMAKE_CURRENT_BINARY_DIR}/arith.h)
 
 add_library(amplsolver
-  arith.h
+  ${CMAKE_CURRENT_BINARY_DIR}/arith.h
   stdio1.h
   asldate.c
   atof.c
