@@ -86,7 +86,7 @@ macro(find_cplex_library var path_suffixes)
           break ()
         endif ()
       endforeach ()
-      if (CPLEX_LIBRARY)
+      if (${var})
         break ()
       endif ()
     endforeach ()
@@ -106,8 +106,8 @@ find_package_handle_standard_args(
   CPLEX DEFAULT_MSG CPLEX_LIBRARY CPLEX_LIBRARY_DEBUG CPLEX_INCLUDE_DIR)
 
 set(CPLEX_INCLUDE_DIRS ${CPLEX_INCLUDE_DIR})
-set(CPLEX_LIBRARIES ${CPLEX_LIBRARY} ${CPLEX_LIBRARY_DEBUG}
-  ${CMAKE_THREAD_LIBS_INIT})
+set(CPLEX_LIBRARIES ${CPLEX_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+set(CPLEX_LIBRARIES_DEBUG ${CPLEX_LIBRARY_DEBUG} ${CMAKE_THREAD_LIBS_INIT})
 
 mark_as_advanced(CPLEX_INCLUDE_DIR CPLEX_LIBRARY CPLEX_LIBRARY_DEBUG)
 
