@@ -26,12 +26,12 @@ configure_file(
 
 find_package(CPLEX)
 if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
-  add_definitions(${CPLEX_CONCERT_DEFINITIONS} ${CPLEX_ILOCPLEX_DEFINITIONS})
   include_directories(${CPLEX_ILOCPLEX_INCLUDE_DIRS} ${CPLEX_CP_INCLUDE_DIRS})
 
   cxx_test_with_flags(ilogcp_test ""
     "amplilogcp;gtest;gtest_main;${SOLVER_LIBS}" ilogcp_test.cc)
-
+  set_target_properties(ilogcp_test PROPERTIES
+    ${CPLEX_CONCERT_DEFINITIONS} ${CPLEX_ILOCPLEX_DEFINITIONS})
   target_link_libraries(ilogcp_test
     ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_CP_LIBRARIES} ${CPLEX_LIBRARIES})
 endif ()
