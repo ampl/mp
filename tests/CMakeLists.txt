@@ -24,18 +24,6 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
   ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
-find_package(CPLEX)
-if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
-  include_directories(${CPLEX_ILOCPLEX_INCLUDE_DIRS} ${CPLEX_CP_INCLUDE_DIRS})
-
-  cxx_test_with_flags(ilogcp_test ""
-    "amplilogcp;gtest;gtest_main;${SOLVER_LIBS}" ilogcp_test.cc)
-  set_target_properties(ilogcp_test PROPERTIES COMPILE_FLAGS
-    "${CPLEX_CONCERT_DEFINITIONS} ${CPLEX_ILOCPLEX_DEFINITIONS}")
-  target_link_libraries(ilogcp_test
-    ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_CP_LIBRARIES} ${CPLEX_LIBRARIES})
-endif ()
-
 if (HAVE_GSL)
   include_directories(../solvers/amplgsl/gsl)
   cxx_test_with_flags(gsl_test ""
@@ -43,3 +31,16 @@ if (HAVE_GSL)
     gsl_test.cc function.cc function.h function_test.cc)
   target_link_libraries(gsl_test gsl gslcblas)
 endif ()
+
+find_package(CPLEX)
+if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
+  include_directories(${CPLEX_ILOCPLEX_INCLUDE_DIRS} ${CPLEX_CP_INCLUDE_DIRS})
+  add_definitions(${CPLEX_CONCERT_DEFINITIONS} ${CPLEX_ILOCPLEX_DEFINITIONS})
+
+  cxx_test_with_flags(ilogcp_test ""
+    "amplilogcp;gtest;gtest_main;${SOLVER_LIBS}" ilogcp_test.cc)
+
+  target_link_libraries(ilogcp_test
+    ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_CP_LIBRARIES} ${CPLEX_LIBRARIES})
+endif ()
+
