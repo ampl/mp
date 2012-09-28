@@ -17,9 +17,13 @@
 
 #include "solvers/ilogcp/ilogcp.h"
 #include "solvers/ilogcp/util.h"
+
+extern "C" {
 #include "solvers/asl.h"
 #include "solvers/nlp.h"
 #include "solvers/opcode.hd"
+}
+
 #include "tests/config.h"
 
 using std::ifstream;

@@ -40,8 +40,8 @@ else ()
   set(CPLEX_ILOG_DIRS C:/ILOG "C:/Program Files/IBM/ILOG")
   if (MSVC10)
     set(CPLEX_LIB_PATH_SUFFIXES
-      lib/x86_windows_vs2010/stat_mda
-      lib/x86_windows_vs2010/stat_mta)
+      lib/x86_windows_vs2010/stat_mdd
+      lib/x86_windows_vs2010/stat_mda)
   elseif (MSVC9)
     set(CPLEX_LIB_PATH_SUFFIXES
       lib/x86_windows_vs2008/stat_mda
@@ -133,12 +133,6 @@ check_cxx_compiler_flag(-Wno-long-long HAS_WNO_LONG_LONG_FLAG)
 if (HAS_WNO_LONG_LONG_FLAG)
   # Required if -pedantic is used.
   set(CPLEX_ILOCPLEX_DEFINITIONS -Wno-long-long)
-endif ()
-if (MSVC)
-  # Required for VC2010 because CPLEX libraries are compiled with
-  # _ITERATOR_DEBUG_LEVEL=0.
-  set(CPLEX_ILOCPLEX_DEFINITIONS
-    "${CPLEX_ILOCPLEX_DEFINITIONS} -D_ITERATOR_DEBUG_LEVEL=0")
 endif ()
 
 # Find the IloCplex include directory - normally the same as the one for CPLEX
