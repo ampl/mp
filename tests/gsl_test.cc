@@ -254,7 +254,15 @@ class GSLTest : public ::testing::Test {
   }
 
   template <typename F>
-  void TestFunc(const Function &af, F f);
+  void TestFuncBindPrec(const Function &af, F f);
+
+  template <typename F>
+  void TestFuncBindPointers(const Function &af, F f);
+
+  template <typename F>
+  void TestFunc(const Function &af, F f) {
+    TestFuncBindPointers(af, fun::FunctionPointer(f));
+  }
 };
 
 GSLTest::Stats GSLTest::stats_;
@@ -403,10 +411,14 @@ void GSLTest::TestFuncND(const Function &af, FuncND f, double test_x) {
       ("can't compute derivative: argument '" + arg_name + "' too large, " +
       arg_name + " = 2147483647").c_str(),
       af(MakeArgs(INT_MAX, test_x), DERIVS, use_deriv));
-  EXPECT_TRUE(!gsl_isnan(af(MakeArgs(INT_MIN + 1, test_x), DERIVS,
-      use_deriv).deriv(1)));
-  EXPECT_TRUE(!gsl_isnan(af(MakeArgs(INT_MAX - 1, test_x), DERIVS,
-      use_deriv).deriv(1)));
+  if (!af(MakeArgs(INT_MIN + 1, test_x)).error()) {
+    EXPECT_TRUE(!gsl_isnan(af(MakeArgs(INT_MIN + 1, test_x), DERIVS,
+        use_deriv).deriv(1)));
+  }
+  if (!af(MakeArgs(INT_MAX - 1, test_x)).error()) {
+    EXPECT_TRUE(!gsl_isnan(af(MakeArgs(INT_MAX - 1, test_x), DERIVS,
+        use_deriv).deriv(1)));
+  }
 
   EXPECT_ERROR(
       ("can't compute derivative: argument '" + arg_name + "' too small, " +
@@ -416,10 +428,14 @@ void GSLTest::TestFuncND(const Function &af, FuncND f, double test_x) {
       ("can't compute derivative: argument '" + arg_name + "' too large, " +
       arg_name + " = 2147483646").c_str(),
       af(MakeArgs(INT_MAX - 1, test_x), HES, use_deriv));
-  EXPECT_TRUE(!gsl_isnan(af(MakeArgs(INT_MIN + 2, test_x), HES,
-      use_deriv).hes(2)));
-  EXPECT_TRUE(!gsl_isnan(af(MakeArgs(INT_MAX - 2, test_x), HES,
-      use_deriv).hes(2)));
+  if (!af(MakeArgs(INT_MIN + 2, test_x)).error()) {
+    EXPECT_TRUE(!gsl_isnan(af(MakeArgs(INT_MIN + 2, test_x), HES,
+        use_deriv).hes(2)));
+  }
+  if (!af(MakeArgs(INT_MAX - 2, test_x)).error()) {
+    EXPECT_TRUE(!gsl_isnan(af(MakeArgs(INT_MAX - 2, test_x), HES,
+        use_deriv).hes(2)));
+  }
 }
 
 // Checks that the error is returned when trying to get a derivative
@@ -513,33 +529,41 @@ ResultBinder<F> BindResult(F f) {
 }
 
 template <typename F>
-void GSLTest::TestFunc(const Function &af, F f) {
-  unsigned num_args = fun::FunctionPointer(f).GetNumArgs();
-  if (af.nargs() == static_cast<int>(num_args) - 1) {
-    fun::Type first_type = fun::FunctionPointer(f).GetArgType(0);
+void GSLTest::TestFuncBindPrec(const Function &af, F f) {
+  unsigned num_args = f.GetNumArgs();
+  if (af.nargs() == static_cast<int>(num_args) - 1 &&
+      f.GetArgType(num_args - 1) == fun::UINT) {
+    // If the last argument is a mode, bind it to GSL_PREC_DOUBLE.
+    DoTestFunc(af, BindOne(f, GSL_PREC_DOUBLE, num_args - 1));
+    return;
+  }
+  DoTestFunc(af, f);
+}
+
+template <typename F>
+void GSLTest::TestFuncBindPointers(const Function &af, F f) {
+  unsigned num_args = f.GetNumArgs();
+  if (af.nargs() < static_cast<int>(num_args)) {
+    fun::Type first_type = f.GetArgType(0);
     if (af.ftype() == FUNCADD_RANDOM_VALUED && first_type == fun::POINTER) {
       // If the first argument is a random number generator, bind it.
-      DoTestFunc(af, BindOne(fun::FunctionPointer(f), rng_, 0));
+      TestFuncBindPrec(af, BindOne(f, rng_, 0));
       return;
     }
-    fun::Type last_type = fun::FunctionPointer(f).GetArgType(num_args - 1);
-    if (last_type == fun::UINT) {
-      // If the last argument is a mode, bind it to GSL_PREC_DOUBLE.
-      DoTestFunc(af, BindOne(fun::FunctionPointer(f),
-          GSL_PREC_DOUBLE, num_args - 1));
-      return;
-    }
-    if (last_type == fun::POINTER) {
+    if (f.GetArgType(num_args - 1) == fun::POINTER) {
       // If the last argument is a result, bind it.
-      DoTestFunc(af, BindResult(fun::FunctionPointer(f)));
+      TestFuncBindPrec(af, BindResult(f));
       return;
     }
   }
-  DoTestFunc(af, fun::FunctionPointer(f));
+  TestFuncBindPrec(af, f);
 }
 
 #define TEST_FUNC(name) TestFunc(GetFunction(#name, this->info), name)
 #define TEST_FUNC2(name, info) TestFunc(GetFunction(#name, info), name)
+
+#define TEST_EFUNC(name) TestFunc(GetFunction(#name, this->info), name##_e)
+#define TEST_EFUNC2(name, info) TestFunc(GetFunction(#name, info), name##_e)
 
 #define TEST_FUNC_ND(name, test_x) \
   TestFuncND(GetFunction(#name, FunctionInfo("n")), name, test_x)
@@ -552,79 +576,79 @@ TEST_F(GSLTest, Elementary) {
 }
 
 TEST_F(GSLTest, AiryA) {
-  TEST_FUNC(gsl_sf_airy_Ai);
-  TEST_FUNC(gsl_sf_airy_Ai_scaled);
+  TEST_EFUNC(gsl_sf_airy_Ai);
+  TEST_EFUNC(gsl_sf_airy_Ai_scaled);
 }
 
 TEST_F(GSLTest, AiryB) {
-  TEST_FUNC(gsl_sf_airy_Bi);
-  TEST_FUNC(gsl_sf_airy_Bi_scaled);
+  TEST_EFUNC(gsl_sf_airy_Bi);
+  TEST_EFUNC(gsl_sf_airy_Bi_scaled);
 }
 
 TEST_F(GSLTest, AiryZero) {
   FunctionInfo info("s");
-  TEST_FUNC2(gsl_sf_airy_zero_Ai, info);
-  TEST_FUNC2(gsl_sf_airy_zero_Bi, info);
-  TEST_FUNC2(gsl_sf_airy_zero_Ai_deriv, info);
-  TEST_FUNC2(gsl_sf_airy_zero_Bi_deriv, info);
+  TEST_EFUNC2(gsl_sf_airy_zero_Ai, info);
+  TEST_EFUNC2(gsl_sf_airy_zero_Bi, info);
+  TEST_EFUNC2(gsl_sf_airy_zero_Ai_deriv, info);
+  TEST_EFUNC2(gsl_sf_airy_zero_Bi_deriv, info);
 }
 
 TEST_F(GSLTest, BesselJ) {
-  TEST_FUNC(gsl_sf_bessel_J0);
-  TEST_FUNC(gsl_sf_bessel_J1);
+  TEST_EFUNC(gsl_sf_bessel_J0);
+  TEST_EFUNC(gsl_sf_bessel_J1);
   TEST_FUNC_ND(gsl_sf_bessel_Jn, 0);
 }
 
 TEST_F(GSLTest, BesselY) {
-  TEST_FUNC(gsl_sf_bessel_Y0);
-  TEST_FUNC(gsl_sf_bessel_Y1);
+  TEST_EFUNC(gsl_sf_bessel_Y0);
+  TEST_EFUNC(gsl_sf_bessel_Y1);
   TEST_FUNC_ND(gsl_sf_bessel_Yn, 1);
 }
 
 TEST_F(GSLTest, BesselI) {
-  TEST_FUNC(gsl_sf_bessel_I0);
-  TEST_FUNC(gsl_sf_bessel_I1);
+  TEST_EFUNC(gsl_sf_bessel_I0);
+  TEST_EFUNC(gsl_sf_bessel_I1);
   TEST_FUNC_ND(gsl_sf_bessel_In, 0);
-  TEST_FUNC(gsl_sf_bessel_I0_scaled);
-  TEST_FUNC(gsl_sf_bessel_I1_scaled);
+  TEST_EFUNC(gsl_sf_bessel_I0_scaled);
+  TEST_EFUNC(gsl_sf_bessel_I1_scaled);
   TEST_FUNC_ND(gsl_sf_bessel_In_scaled, 0);
 }
 
 TEST_F(GSLTest, BesselK) {
-  TEST_FUNC(gsl_sf_bessel_K0);
-  TEST_FUNC(gsl_sf_bessel_K1);
+  TEST_EFUNC(gsl_sf_bessel_K0);
+  TEST_EFUNC(gsl_sf_bessel_K1);
   TEST_FUNC_ND(gsl_sf_bessel_Kn, 1);
-  TEST_FUNC(gsl_sf_bessel_K0_scaled);
-  TEST_FUNC(gsl_sf_bessel_K1_scaled);
+  TEST_EFUNC(gsl_sf_bessel_K0_scaled);
+  TEST_EFUNC(gsl_sf_bessel_K1_scaled);
   TEST_FUNC_ND(gsl_sf_bessel_Kn_scaled, 1);
 }
 
 TEST_F(GSLTest, Besselj) {
-  TEST_FUNC(gsl_sf_bessel_j0);
-  TEST_FUNC(gsl_sf_bessel_j1);
-  TEST_FUNC(gsl_sf_bessel_j2);
-  TEST_FUNC2(gsl_sf_bessel_jl, FunctionInfo("l x"));
+  TEST_EFUNC(gsl_sf_bessel_j0);
+  TEST_EFUNC(gsl_sf_bessel_j1);
+  TEST_EFUNC(gsl_sf_bessel_j2);
+  TEST_EFUNC2(gsl_sf_bessel_jl, FunctionInfo("l x"));
 }
 
 TEST_F(GSLTest, Bessely) {
-  TEST_FUNC(gsl_sf_bessel_y0);
-  TEST_FUNC(gsl_sf_bessel_y1);
-  TEST_FUNC(gsl_sf_bessel_y2);
-  TEST_FUNC2(gsl_sf_bessel_yl, FunctionInfo("l x"));
+  TEST_EFUNC(gsl_sf_bessel_y0);
+  TEST_EFUNC(gsl_sf_bessel_y1);
+  TEST_EFUNC(gsl_sf_bessel_y2);
+  TEST_EFUNC2(gsl_sf_bessel_yl, FunctionInfo("l x"));
 }
 
 TEST_F(GSLTest, Besseli) {
-  TEST_FUNC(gsl_sf_bessel_i0_scaled);
-  TEST_FUNC(gsl_sf_bessel_i1_scaled);
-  TEST_FUNC(gsl_sf_bessel_i2_scaled);
-  TEST_FUNC2(gsl_sf_bessel_il_scaled, FunctionInfo("l x"));
+  TEST_EFUNC(gsl_sf_bessel_i0_scaled);
+  TEST_EFUNC(gsl_sf_bessel_i1_scaled);
+  TEST_EFUNC(gsl_sf_bessel_i2_scaled);
+  TEST_EFUNC2(gsl_sf_bessel_il_scaled, FunctionInfo("l x"));
 }
 
 TEST_F(GSLTest, Besselk) {
-  TEST_FUNC(gsl_sf_bessel_k0_scaled);
-  TEST_FUNC(gsl_sf_bessel_k1_scaled);
-  TEST_FUNC(gsl_sf_bessel_k2_scaled);
-  TEST_FUNC2(gsl_sf_bessel_kl_scaled, FunctionInfo("l x"));
+  TEST_EFUNC(gsl_sf_bessel_k0_scaled);
+  TEST_EFUNC(gsl_sf_bessel_k1_scaled);
+  TEST_EFUNC(gsl_sf_bessel_k2_scaled);
+  TEST_EFUNC2(gsl_sf_bessel_kl_scaled, FunctionInfo("l x"));
 }
 
 struct BesselFractionalOrderInfo : FunctionInfo {
@@ -652,19 +676,19 @@ struct BesselFractionalOrderInfo : FunctionInfo {
 
 TEST_F(GSLTest, BesselFractionalOrder) {
   BesselFractionalOrderInfo info;
-  TEST_FUNC2(gsl_sf_bessel_Jnu, info);
-  TEST_FUNC2(gsl_sf_bessel_Ynu, info);
-  TEST_FUNC2(gsl_sf_bessel_Inu, info);
-  TEST_FUNC2(gsl_sf_bessel_Inu_scaled, info);
-  TEST_FUNC2(gsl_sf_bessel_Knu, info);
-  TEST_FUNC2(gsl_sf_bessel_lnKnu, info);
-  TEST_FUNC2(gsl_sf_bessel_Knu_scaled, info);
+  TEST_EFUNC2(gsl_sf_bessel_Jnu, info);
+  TEST_EFUNC2(gsl_sf_bessel_Ynu, info);
+  TEST_EFUNC2(gsl_sf_bessel_Inu, info);
+  TEST_EFUNC2(gsl_sf_bessel_Inu_scaled, info);
+  TEST_EFUNC2(gsl_sf_bessel_Knu, info);
+  TEST_EFUNC2(gsl_sf_bessel_lnKnu, info);
+  TEST_EFUNC2(gsl_sf_bessel_Knu_scaled, info);
 }
 
 TEST_F(GSLTest, BesselZero) {
-  TEST_FUNC2(gsl_sf_bessel_zero_J0, NoDeriv("s"));
-  TEST_FUNC2(gsl_sf_bessel_zero_J1, NoDeriv("s"));
-  TEST_FUNC2(gsl_sf_bessel_zero_Jnu, NoDeriv("nu s"));
+  TEST_EFUNC2(gsl_sf_bessel_zero_J0, NoDeriv("s"));
+  TEST_EFUNC2(gsl_sf_bessel_zero_J1, NoDeriv("s"));
+  TEST_EFUNC2(gsl_sf_bessel_zero_Jnu, NoDeriv("nu s"));
 }
 
 struct ClausenFunctionInfo : FunctionInfo {
@@ -674,21 +698,16 @@ struct ClausenFunctionInfo : FunctionInfo {
 };
 
 TEST_F(GSLTest, Clausen) {
-  TEST_FUNC2(gsl_sf_clausen, ClausenFunctionInfo());
+  TEST_EFUNC2(gsl_sf_clausen, ClausenFunctionInfo());
 }
 
 TEST_F(GSLTest, Hydrogenic) {
-  TEST_FUNC(gsl_sf_hydrogenicR_1);
-  TEST_FUNC2(gsl_sf_hydrogenicR, NoDeriv("n l z r"));
-}
-
-double gsl_sf_coulomb_CL(double L, double eta) {
-  gsl_sf_result result = {};
-  return gsl_sf_coulomb_CL_e(L, eta, &result) ? GSL_NAN : result.val;
+  TEST_EFUNC(gsl_sf_hydrogenicR_1);
+  TEST_EFUNC2(gsl_sf_hydrogenicR, NoDeriv("n l z r"));
 }
 
 TEST_F(GSLTest, Coulomb) {
-  TEST_FUNC2(gsl_sf_coulomb_CL, NoDeriv());
+  TEST_EFUNC2(gsl_sf_coulomb_CL, NoDeriv());
 }
 
 TEST_F(GSLTest, Coupling3j) {
@@ -749,16 +768,16 @@ TEST_F(GSLTest, Coupling9j) {
 }
 
 TEST_F(GSLTest, Dawson) {
-  TEST_FUNC(gsl_sf_dawson);
+  TEST_EFUNC(gsl_sf_dawson);
 }
 
 TEST_F(GSLTest, Debye) {
-  TEST_FUNC(gsl_sf_debye_1);
-  TEST_FUNC(gsl_sf_debye_2);
-  TEST_FUNC(gsl_sf_debye_3);
-  TEST_FUNC(gsl_sf_debye_4);
-  TEST_FUNC(gsl_sf_debye_5);
-  TEST_FUNC(gsl_sf_debye_6);
+  TEST_EFUNC(gsl_sf_debye_1);
+  TEST_EFUNC(gsl_sf_debye_2);
+  TEST_EFUNC(gsl_sf_debye_3);
+  TEST_EFUNC(gsl_sf_debye_4);
+  TEST_EFUNC(gsl_sf_debye_5);
+  TEST_EFUNC(gsl_sf_debye_6);
 }
 
 struct DilogFunctionInfo : FunctionInfo {
@@ -768,55 +787,55 @@ struct DilogFunctionInfo : FunctionInfo {
 };
 
 TEST_F(GSLTest, Dilog) {
-  TEST_FUNC2(gsl_sf_dilog, DilogFunctionInfo());
+  TEST_EFUNC2(gsl_sf_dilog, DilogFunctionInfo());
 }
 
 TEST_F(GSLTest, EllInt) {
-  TEST_FUNC(gsl_sf_ellint_Kcomp);
-  TEST_FUNC(gsl_sf_ellint_Ecomp);
-  TEST_FUNC(gsl_sf_ellint_Pcomp);
-  TEST_FUNC(gsl_sf_ellint_F);
-  TEST_FUNC(gsl_sf_ellint_E);
-  TEST_FUNC2(gsl_sf_ellint_P, NoDeriv());
-  TEST_FUNC2(gsl_sf_ellint_D, NoDeriv());
-  TEST_FUNC2(gsl_sf_ellint_RC, NoDeriv());
-  TEST_FUNC2(gsl_sf_ellint_RD, NoDeriv());
-  TEST_FUNC2(gsl_sf_ellint_RF, NoDeriv());
-  TEST_FUNC2(gsl_sf_ellint_RJ, NoDeriv());
+  TEST_EFUNC(gsl_sf_ellint_Kcomp);
+  TEST_EFUNC(gsl_sf_ellint_Ecomp);
+  TEST_EFUNC(gsl_sf_ellint_Pcomp);
+  TEST_EFUNC(gsl_sf_ellint_F);
+  TEST_EFUNC(gsl_sf_ellint_E);
+  TEST_EFUNC2(gsl_sf_ellint_P, NoDeriv());
+  TEST_EFUNC2(gsl_sf_ellint_D, NoDeriv());
+  TEST_EFUNC2(gsl_sf_ellint_RC, NoDeriv());
+  TEST_EFUNC2(gsl_sf_ellint_RD, NoDeriv());
+  TEST_EFUNC2(gsl_sf_ellint_RF, NoDeriv());
+  TEST_EFUNC2(gsl_sf_ellint_RJ, NoDeriv());
 }
 
 TEST_F(GSLTest, Erf) {
-  TEST_FUNC(gsl_sf_erf);
-  TEST_FUNC(gsl_sf_erfc);
-  TEST_FUNC(gsl_sf_log_erfc);
-  TEST_FUNC(gsl_sf_erf_Z);
-  TEST_FUNC(gsl_sf_erf_Q);
-  TEST_FUNC(gsl_sf_hazard);
+  TEST_EFUNC(gsl_sf_erf);
+  TEST_EFUNC(gsl_sf_erfc);
+  TEST_EFUNC(gsl_sf_log_erfc);
+  TEST_EFUNC(gsl_sf_erf_Z);
+  TEST_EFUNC(gsl_sf_erf_Q);
+  TEST_EFUNC(gsl_sf_hazard);
 }
 
 TEST_F(GSLTest, ExpInt) {
-  TEST_FUNC(gsl_sf_expint_E1);
-  TEST_FUNC(gsl_sf_expint_E2);
-  TEST_FUNC2(gsl_sf_expint_En, FunctionInfo("n x"));
-  TEST_FUNC(gsl_sf_expint_Ei);
-  TEST_FUNC(gsl_sf_Shi);
-  TEST_FUNC(gsl_sf_Chi);
-  TEST_FUNC(gsl_sf_expint_3);
-  TEST_FUNC(gsl_sf_Si);
-  TEST_FUNC(gsl_sf_Ci);
-  TEST_FUNC(gsl_sf_atanint);
+  TEST_EFUNC(gsl_sf_expint_E1);
+  TEST_EFUNC(gsl_sf_expint_E2);
+  TEST_EFUNC2(gsl_sf_expint_En, FunctionInfo("n x"));
+  TEST_EFUNC(gsl_sf_expint_Ei);
+  TEST_EFUNC(gsl_sf_Shi);
+  TEST_EFUNC(gsl_sf_Chi);
+  TEST_EFUNC(gsl_sf_expint_3);
+  TEST_EFUNC(gsl_sf_Si);
+  TEST_EFUNC(gsl_sf_Ci);
+  TEST_EFUNC(gsl_sf_atanint);
 }
 
 TEST_F(GSLTest, FermiDirac) {
-  TEST_FUNC(gsl_sf_fermi_dirac_m1);
-  TEST_FUNC(gsl_sf_fermi_dirac_0);
-  TEST_FUNC(gsl_sf_fermi_dirac_1);
-  TEST_FUNC(gsl_sf_fermi_dirac_2);
-  TEST_FUNC2(gsl_sf_fermi_dirac_int, FunctionInfo("j x"));
-  TEST_FUNC2(gsl_sf_fermi_dirac_mhalf, NoDeriv());
-  TEST_FUNC2(gsl_sf_fermi_dirac_half, NoDeriv());
-  TEST_FUNC(gsl_sf_fermi_dirac_3half);
-  TEST_FUNC(gsl_sf_fermi_dirac_inc_0);
+  TEST_EFUNC(gsl_sf_fermi_dirac_m1);
+  TEST_EFUNC(gsl_sf_fermi_dirac_0);
+  TEST_EFUNC(gsl_sf_fermi_dirac_1);
+  TEST_EFUNC(gsl_sf_fermi_dirac_2);
+  TEST_EFUNC2(gsl_sf_fermi_dirac_int, FunctionInfo("j x"));
+  TEST_EFUNC2(gsl_sf_fermi_dirac_mhalf, NoDeriv());
+  TEST_EFUNC2(gsl_sf_fermi_dirac_half, NoDeriv());
+  TEST_EFUNC(gsl_sf_fermi_dirac_3half);
+  TEST_EFUNC(gsl_sf_fermi_dirac_inc_0);
 }
 
 struct LnGammaInfo : FunctionInfo {
@@ -832,16 +851,16 @@ TEST_F(GSLTest, Gamma) {
   EXPECT_NEAR(-31.6778, gamma(-0.5, HES).hes(), 1e-4);
   EXPECT_NEAR(1.19786e100, gamma(71), 1e95);
   EXPECT_TRUE(gsl_isinf(gamma(1000)));
-  TEST_FUNC(gsl_sf_gamma);
-  TEST_FUNC2(gsl_sf_lngamma, LnGammaInfo());
-  TEST_FUNC(gsl_sf_gammastar);
-  TEST_FUNC(gsl_sf_gammainv);
+  TEST_EFUNC(gsl_sf_gamma);
+  TEST_EFUNC2(gsl_sf_lngamma, LnGammaInfo());
+  TEST_EFUNC(gsl_sf_gammastar);
+  TEST_EFUNC(gsl_sf_gammainv);
 }
 
 TEST_F(GSLTest, Poch) {
-  TEST_FUNC2(gsl_sf_poch, NoDeriv());
-  TEST_FUNC2(gsl_sf_lnpoch, NoDeriv());
-  TEST_FUNC2(gsl_sf_pochrel, NoDeriv());
+  TEST_EFUNC2(gsl_sf_poch, NoDeriv());
+  TEST_EFUNC2(gsl_sf_lnpoch, NoDeriv());
+  TEST_EFUNC2(gsl_sf_pochrel, NoDeriv());
 }
 
 struct GammaIncInfo : FunctionInfo {
@@ -857,9 +876,9 @@ struct GammaIncInfo : FunctionInfo {
 };
 
 TEST_F(GSLTest, GammaInc) {
-  TEST_FUNC2(gsl_sf_gamma_inc, GammaIncInfo());
-  TEST_FUNC2(gsl_sf_gamma_inc_Q, NoDeriv());
-  TEST_FUNC2(gsl_sf_gamma_inc_P, NoDeriv());
+  TEST_EFUNC2(gsl_sf_gamma_inc, GammaIncInfo());
+  TEST_EFUNC2(gsl_sf_gamma_inc_Q, NoDeriv());
+  TEST_EFUNC2(gsl_sf_gamma_inc_P, NoDeriv());
 }
 
 struct BetaInfo : FunctionInfo {
@@ -872,16 +891,16 @@ struct BetaInfo : FunctionInfo {
 };
 
 TEST_F(GSLTest, Beta) {
-  TEST_FUNC2(gsl_sf_beta, BetaInfo());
-  TEST_FUNC(gsl_sf_lnbeta);
-  TEST_FUNC2(gsl_sf_beta_inc, NoDeriv());
+  TEST_EFUNC2(gsl_sf_beta, BetaInfo());
+  TEST_EFUNC(gsl_sf_lnbeta);
+  TEST_EFUNC2(gsl_sf_beta_inc, NoDeriv());
 }
 
 TEST_F(GSLTest, GegenPoly) {
-  TEST_FUNC(gsl_sf_gegenpoly_1);
-  TEST_FUNC(gsl_sf_gegenpoly_2);
-  TEST_FUNC(gsl_sf_gegenpoly_3);
-  TEST_FUNC2(gsl_sf_gegenpoly_n, NoDeriv("n"));
+  TEST_EFUNC(gsl_sf_gegenpoly_1);
+  TEST_EFUNC(gsl_sf_gegenpoly_2);
+  TEST_EFUNC(gsl_sf_gegenpoly_3);
+  TEST_EFUNC2(gsl_sf_gegenpoly_n, NoDeriv("n"));
 }
 
 class NoDerivArg : public FunctionInfo {
@@ -908,23 +927,23 @@ struct Hyperg1F1Info : FunctionInfo {
 };
 
 TEST_F(GSLTest, Hyperg) {
-  TEST_FUNC2(gsl_sf_hyperg_0F1, NoDerivArg("c"));
-  TEST_FUNC2(gsl_sf_hyperg_1F1_int, Hyperg1F1Info().SetArgNames("m n x"));
-  TEST_FUNC2(gsl_sf_hyperg_1F1, NoDeriv());
-  TEST_FUNC2(gsl_sf_hyperg_U_int, NoDeriv("m n x"));
-  TEST_FUNC2(gsl_sf_hyperg_U, NoDeriv());
-  TEST_FUNC2(gsl_sf_hyperg_2F1, NoDeriv());
-  TEST_FUNC2(gsl_sf_hyperg_2F1_conj, NoDeriv());
-  TEST_FUNC2(gsl_sf_hyperg_2F1_renorm, NoDeriv());
-  TEST_FUNC2(gsl_sf_hyperg_2F1_conj_renorm, NoDeriv());
-  TEST_FUNC2(gsl_sf_hyperg_2F0, NoDeriv());
+  TEST_EFUNC2(gsl_sf_hyperg_0F1, NoDerivArg("c"));
+  TEST_EFUNC2(gsl_sf_hyperg_1F1_int, Hyperg1F1Info().SetArgNames("m n x"));
+  TEST_EFUNC2(gsl_sf_hyperg_1F1, NoDeriv());
+  TEST_EFUNC2(gsl_sf_hyperg_U_int, NoDeriv("m n x"));
+  TEST_EFUNC2(gsl_sf_hyperg_U, NoDeriv());
+  TEST_EFUNC2(gsl_sf_hyperg_2F1, NoDeriv());
+  TEST_EFUNC2(gsl_sf_hyperg_2F1_conj, NoDeriv());
+  TEST_EFUNC2(gsl_sf_hyperg_2F1_renorm, NoDeriv());
+  TEST_EFUNC2(gsl_sf_hyperg_2F1_conj_renorm, NoDeriv());
+  TEST_EFUNC2(gsl_sf_hyperg_2F0, NoDeriv());
 }
 
 TEST_F(GSLTest, Laguerre) {
-  TEST_FUNC(gsl_sf_laguerre_1);
-  TEST_FUNC(gsl_sf_laguerre_2);
-  TEST_FUNC(gsl_sf_laguerre_3);
-  TEST_FUNC2(gsl_sf_laguerre_n, NoDeriv("n"));
+  TEST_EFUNC(gsl_sf_laguerre_1);
+  TEST_EFUNC(gsl_sf_laguerre_2);
+  TEST_EFUNC(gsl_sf_laguerre_3);
+  TEST_EFUNC2(gsl_sf_laguerre_n, NoDeriv("n"));
 }
 
 struct LambertW0Info : FunctionInfo {
@@ -941,44 +960,44 @@ struct LambertWm1Info : FunctionInfo {
 };
 
 TEST_F(GSLTest, Lambert) {
-  TEST_FUNC2(gsl_sf_lambert_W0, LambertW0Info());
-  TEST_FUNC2(gsl_sf_lambert_Wm1, LambertWm1Info());
+  TEST_EFUNC2(gsl_sf_lambert_W0, LambertW0Info());
+  TEST_EFUNC2(gsl_sf_lambert_Wm1, LambertWm1Info());
   EXPECT_NEAR(-13.8803,
       GetFunction("gsl_sf_lambert_Wm1")(-0.1, DERIVS).deriv(0), 1e-4);
 }
 
 TEST_F(GSLTest, Legendre) {
-  TEST_FUNC(gsl_sf_legendre_P1);
-  TEST_FUNC(gsl_sf_legendre_P2);
-  TEST_FUNC(gsl_sf_legendre_P3);
-  TEST_FUNC2(gsl_sf_legendre_Pl, FunctionInfo("l"));
-  TEST_FUNC(gsl_sf_legendre_Q0);
-  TEST_FUNC(gsl_sf_legendre_Q1);
-  TEST_FUNC2(gsl_sf_legendre_Ql, FunctionInfo("l"));
-  TEST_FUNC2(gsl_sf_legendre_Plm, NoDeriv("l m"));
-  TEST_FUNC2(gsl_sf_legendre_sphPlm, NoDeriv("l m"));
+  TEST_EFUNC(gsl_sf_legendre_P1);
+  TEST_EFUNC(gsl_sf_legendre_P2);
+  TEST_EFUNC(gsl_sf_legendre_P3);
+  TEST_EFUNC2(gsl_sf_legendre_Pl, FunctionInfo("l"));
+  TEST_EFUNC(gsl_sf_legendre_Q0);
+  TEST_EFUNC(gsl_sf_legendre_Q1);
+  TEST_EFUNC2(gsl_sf_legendre_Ql, FunctionInfo("l"));
+  TEST_EFUNC2(gsl_sf_legendre_Plm, NoDeriv("l m"));
+  TEST_EFUNC2(gsl_sf_legendre_sphPlm, NoDeriv("l m"));
 }
 
 TEST_F(GSLTest, Conical) {
-  TEST_FUNC2(gsl_sf_conicalP_half, NoDeriv());
-  TEST_FUNC2(gsl_sf_conicalP_mhalf, NoDeriv());
-  TEST_FUNC2(gsl_sf_conicalP_0, NoDeriv());
-  TEST_FUNC2(gsl_sf_conicalP_1, NoDeriv());
-  TEST_FUNC2(gsl_sf_conicalP_sph_reg, NoDeriv("m"));
-  TEST_FUNC2(gsl_sf_conicalP_cyl_reg, NoDeriv("m"));
+  TEST_EFUNC2(gsl_sf_conicalP_half, NoDeriv());
+  TEST_EFUNC2(gsl_sf_conicalP_mhalf, NoDeriv());
+  TEST_EFUNC2(gsl_sf_conicalP_0, NoDeriv());
+  TEST_EFUNC2(gsl_sf_conicalP_1, NoDeriv());
+  TEST_EFUNC2(gsl_sf_conicalP_sph_reg, NoDeriv("m"));
+  TEST_EFUNC2(gsl_sf_conicalP_cyl_reg, NoDeriv("m"));
 }
 
 TEST_F(GSLTest, RadialLegendre) {
-  TEST_FUNC2(gsl_sf_legendre_H3d_0, NoDeriv());
-  TEST_FUNC2(gsl_sf_legendre_H3d_1, NoDeriv());
-  TEST_FUNC2(gsl_sf_legendre_H3d, NoDeriv("l"));
+  TEST_EFUNC2(gsl_sf_legendre_H3d_0, NoDeriv());
+  TEST_EFUNC2(gsl_sf_legendre_H3d_1, NoDeriv());
+  TEST_EFUNC2(gsl_sf_legendre_H3d, NoDeriv("l"));
 }
 
 TEST_F(GSLTest, Log) {
-  TEST_FUNC(gsl_sf_log);
-  TEST_FUNC(gsl_sf_log_abs);
-  TEST_FUNC(gsl_sf_log_1plusx);
-  TEST_FUNC(gsl_sf_log_1plusx_mx);
+  TEST_EFUNC(gsl_sf_log);
+  TEST_EFUNC(gsl_sf_log_abs);
+  TEST_EFUNC(gsl_sf_log_1plusx);
+  TEST_EFUNC(gsl_sf_log_1plusx_mx);
 }
 
 TEST_F(GSLTest, Mathieu) {
@@ -990,21 +1009,8 @@ TEST_F(GSLTest, Mathieu) {
   TEST_FUNC2(gsl_sf_mathieu_Ms, NoDeriv("j n"));
 }
 
-struct PowInfo : FunctionInfo {
-  Result GetDerivative(
-      const Function &, unsigned arg_index, const Tuple &args) const {
-    return arg_index == 0 && args[0] == 0 && args[1] < 0 ?
-        Result(GSL_NEGINF) : Result();
-  }
-  Result GetSecondDerivative(const Function &,
-      unsigned arg_index1, unsigned arg_index2, const Tuple &args) const {
-    return arg_index1 == 0 && arg_index2 == 0 && args[0] == 0 && args[1] < 0 ?
-            Result(GSL_POSINF) : Result();
-  }
-};
-
 TEST_F(GSLTest, Power) {
-  TEST_FUNC2(gsl_sf_pow_int, PowInfo().SetArgNames("x n"));
+  TEST_EFUNC2(gsl_sf_pow_int, FunctionInfo("x n"));
 }
 
 struct DigammaInfo : FunctionInfo {
@@ -1042,34 +1048,34 @@ struct PolygammaInfo : FunctionInfo {
 };
 
 TEST_F(GSLTest, Digamma) {
-  TEST_FUNC2(gsl_sf_psi_int, FunctionInfo("n"));
-  TEST_FUNC2(gsl_sf_psi, DigammaInfo());
-  TEST_FUNC2(gsl_sf_psi_1piy, NoDeriv());
-  TEST_FUNC2(gsl_sf_psi_1_int, FunctionInfo("n"));
-  TEST_FUNC2(gsl_sf_psi_1, TrigammaInfo());
-  TEST_FUNC2(gsl_sf_psi_n, PolygammaInfo().SetArgNames("n"));
+  TEST_EFUNC2(gsl_sf_psi_int, FunctionInfo("n"));
+  TEST_EFUNC2(gsl_sf_psi, DigammaInfo());
+  TEST_EFUNC2(gsl_sf_psi_1piy, NoDeriv());
+  TEST_EFUNC2(gsl_sf_psi_1_int, FunctionInfo("n"));
+  TEST_EFUNC2(gsl_sf_psi_1, TrigammaInfo());
+  TEST_EFUNC2(gsl_sf_psi_n, PolygammaInfo().SetArgNames("n"));
 }
 
 TEST_F(GSLTest, Synchrotron) {
-  TEST_FUNC2(gsl_sf_synchrotron_1, NoDeriv());
-  TEST_FUNC2(gsl_sf_synchrotron_2, NoDeriv());
+  TEST_EFUNC2(gsl_sf_synchrotron_1, NoDeriv());
+  TEST_EFUNC2(gsl_sf_synchrotron_2, NoDeriv());
 }
 
 TEST_F(GSLTest, Transport) {
-  TEST_FUNC(gsl_sf_transport_2);
-  TEST_FUNC(gsl_sf_transport_3);
-  TEST_FUNC(gsl_sf_transport_4);
-  TEST_FUNC(gsl_sf_transport_5);
+  TEST_EFUNC(gsl_sf_transport_2);
+  TEST_EFUNC(gsl_sf_transport_3);
+  TEST_EFUNC(gsl_sf_transport_4);
+  TEST_EFUNC(gsl_sf_transport_5);
 }
 
 TEST_F(GSLTest, Zeta) {
-  TEST_FUNC2(gsl_sf_zeta_int, FunctionInfo("n"));
-  TEST_FUNC2(gsl_sf_zeta, NoDeriv());
-  TEST_FUNC2(gsl_sf_zetam1_int, FunctionInfo("n"));
-  TEST_FUNC2(gsl_sf_zetam1, NoDeriv());
-  TEST_FUNC2(gsl_sf_hzeta, NoDeriv());
-  TEST_FUNC2(gsl_sf_eta_int, FunctionInfo("n"));
-  TEST_FUNC2(gsl_sf_eta, NoDeriv());
+  TEST_EFUNC2(gsl_sf_zeta_int, FunctionInfo("n"));
+  TEST_EFUNC2(gsl_sf_zeta, NoDeriv());
+  TEST_EFUNC2(gsl_sf_zetam1_int, FunctionInfo("n"));
+  TEST_EFUNC2(gsl_sf_zetam1, NoDeriv());
+  TEST_EFUNC2(gsl_sf_hzeta, NoDeriv());
+  TEST_EFUNC2(gsl_sf_eta_int, FunctionInfo("n"));
+  TEST_EFUNC2(gsl_sf_eta, NoDeriv());
 }
 
 struct GaussianPInfo : FunctionInfo {
