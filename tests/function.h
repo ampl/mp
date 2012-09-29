@@ -187,8 +187,8 @@ class BitSet {
   const_reference operator[](unsigned index) const { return store_.at(index); }
 };
 
-template <typename Arg1, typename Arg2 = void,
-    typename Arg3 = void, typename Arg4 = void, typename Arg5 = void>
+template <typename Arg1, typename Arg2 = void, typename Arg3 = void,
+  typename Arg4 = void, typename Arg5 = void, typename Arg6 = void>
 class FunctionWithTypes {
  private:
   static const Type ARG_TYPES[];
@@ -209,9 +209,10 @@ class FunctionWithTypes {
   }
 };
 
-template <typename Arg1, typename Arg2,
-  typename Arg3, typename Arg4, typename Arg5>
-unsigned FunctionWithTypes<Arg1, Arg2, Arg3, Arg4, Arg5>::GetNumArgs() const {
+template <typename Arg1, typename Arg2, typename Arg3,
+  typename Arg4, typename Arg5, typename Arg6>
+unsigned FunctionWithTypes<
+    Arg1, Arg2, Arg3, Arg4, Arg5, Arg6>::GetNumArgs() const {
   if (GetType<Arg2>::VALUE == VOID)
     return 1;
   if (GetType<Arg3>::VALUE == VOID)
@@ -220,15 +221,18 @@ unsigned FunctionWithTypes<Arg1, Arg2, Arg3, Arg4, Arg5>::GetNumArgs() const {
     return 3;
   if (GetType<Arg5>::VALUE == VOID)
     return 4;
-  return 5;
+  if (GetType<Arg6>::VALUE == VOID)
+    return 5;
+  return 6;
 }
 
-template <typename Arg1, typename Arg2,
-  typename Arg3, typename Arg4, typename Arg5>
-const Type FunctionWithTypes<Arg1, Arg2, Arg3, Arg4, Arg5>::ARG_TYPES[] = {
+template <typename Arg1, typename Arg2, typename Arg3,
+  typename Arg4, typename Arg5, typename Arg6>
+const Type FunctionWithTypes<
+  Arg1, Arg2, Arg3, Arg4, Arg5, Arg6>::ARG_TYPES[] = {
     GetType<Arg1>::VALUE, GetType<Arg2>::VALUE,
     GetType<Arg3>::VALUE, GetType<Arg4>::VALUE,
-    GetType<Arg5>::VALUE
+    GetType<Arg5>::VALUE, GetType<Arg6>::VALUE
 };
 
 template <typename Arg1, typename Result>
@@ -335,6 +339,31 @@ template <typename Arg1, typename Arg2,
 FunctionPointer5<Arg1, Arg2, Arg3, Arg4, Arg5, Result>
   FunctionPointer(Result (*f)(Arg1, Arg2, Arg3, Arg4, Arg5)) {
   return FunctionPointer5<Arg1, Arg2, Arg3, Arg4, Arg5, Result>(f);
+}
+
+template <typename Arg1, typename Arg2, typename Arg3,
+  typename Arg4, typename Arg5, typename Arg6, typename Result>
+class FunctionPointer6 :
+  public FunctionWithTypes<Arg1, Arg2, Arg3, Arg4, Arg5, Arg6> {
+ private:
+  Result (*f_)(Arg1, Arg2, Arg3, Arg4, Arg5, Arg6);
+
+ public:
+  explicit FunctionPointer6(Result (*f)(Arg1, Arg2, Arg3, Arg4, Arg5, Arg6)) :
+    f_(f) {}
+
+  Result operator()(const Tuple &args) const {
+    this->CheckArgs(args);
+    return f_(args[0], args[1], args[2], args[3], args[4],
+      Convert<Arg6>(args[5]));
+  }
+};
+
+template <typename Arg1, typename Arg2, typename Arg3,
+  typename Arg4, typename Arg5, typename Arg6, typename Result>
+FunctionPointer6<Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Result>
+  FunctionPointer(Result (*f)(Arg1, Arg2, Arg3, Arg4, Arg5, Arg6)) {
+  return FunctionPointer6<Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Result>(f);
 }
 
 // A functor class with one argument bound.
