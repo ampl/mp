@@ -2581,14 +2581,9 @@ static double amplgsl_ran_ugaussian_pdf(arglist *al) {
   double x = al->ra[0];
   double pdf = gsl_ran_ugaussian_pdf(x);
   if (al->derivs) {
-    double x2 = x * x;
-    al->derivs[0] = -x * pdf;
-    al->derivs[1] = (x2 - 1) * pdf;
-    if (al->hes) {
-      al->hes[0] = al->derivs[1];
-      al->hes[1] = (x2 - 3) * al->derivs[0];
-      al->hes[2] = (x2 * (x2 - 5) + 2) * pdf;
-    }
+    *al->derivs = -x * pdf;
+    if (al->hes)
+      *al->hes = (x * x - 1) * pdf;
   }
   return check_result(al, pdf);
 }
