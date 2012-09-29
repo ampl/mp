@@ -2616,14 +2616,9 @@ static double amplgsl_cdf_ugaussian_P(arglist *al) {
   double x = al->ra[0];
   if (al->derivs) {
     double pdf = gsl_ran_ugaussian_pdf(x);
-    al->derivs[0] = pdf;
-    al->derivs[1] = -x * pdf;
-    if (al->hes) {
-      double x2 = x * x;
-      al->hes[0] = al->derivs[1];
-      al->hes[1] = (x2 - 1) * al->derivs[0];
-      al->hes[2] = (x2 - 2) * al->derivs[1];
-    }
+    *al->derivs = pdf;
+    if (al->hes)
+      *al->hes = -x * pdf;
   }
   return check_result(al, gsl_cdf_ugaussian_P(x));
 }
