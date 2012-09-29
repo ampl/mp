@@ -128,7 +128,7 @@ macro(find_cplex_library var name paths)
   find_library(${var} NAMES ${name}
     PATHS ${paths} PATH_SUFFIXES ${CPLEX_LIB_PATH_SUFFIXES})
   if (UNIX)
-    set(${var}_DEBUG ${var})
+    set(${var}_DEBUG ${${var}})
   else ()
     find_library(${var}_DEBUG NAMES ${name}
       PATHS ${paths} PATH_SUFFIXES ${CPLEX_LIB_PATH_SUFFIXES_DEBUG})
