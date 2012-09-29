@@ -38,11 +38,15 @@ if (UNIX)
 else ()
   set(CPLEX_ILOG_DIRS "C:/Program Files/IBM/ILOG")
   if (MSVC10)
-    set(CPLEX_LIB_PATH_SUFFIXES lib/x86_windows_vs2010/stat_mda)
-    set(CPLEX_LIB_PATH_SUFFIXES_DEBUG lib/x86_windows_vs2010/stat_mdd)
+    set(CPLEX_LIB_PATH_SUFFIXES
+      lib/x86_windows_vs2010/stat_mda lib/x64_windows_vs2010/stat_mda)
+    set(CPLEX_LIB_PATH_SUFFIXES_DEBUG
+      lib/x86_windows_vs2010/stat_mdd lib/x64_windows_vs2010/stat_mdd)
   elseif (MSVC9)
-    set(CPLEX_LIB_PATH_SUFFIXES lib/x86_windows_vs2008/stat_mda)
-    set(CPLEX_LIB_PATH_SUFFIXES_DEBUGfcrbht lib/x86_windows_vs2008/stat_mdd)
+    set(CPLEX_LIB_PATH_SUFFIXES
+      lib/x86_windows_vs2008/stat_mda lib/x64_windows_vs2008/stat_mda)
+    set(CPLEX_LIB_PATH_SUFFIXES_DEBUG
+      lib/x86_windows_vs2008/stat_mdd lib/x64_windows_vs2008/stat_mdd)
   endif ()
 endif ()
 if (NOT CPLEX_STUDIO_DIR)
