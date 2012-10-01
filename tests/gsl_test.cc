@@ -1365,10 +1365,4 @@ TEST_F(GSLTest, Logarithmic) {
   TEST_FUNC2(gsl_ran_logarithmic, NoDeriv());
   TEST_FUNC2(gsl_ran_logarithmic_pdf, NoDeriv("k"));
 }
-
-double mygsl_sf_expint_En(int n, double x) {
-  double value = gsl_sf_expint_En(n, x);
-  printf("gsl_sf_expint_En(%d, %.16g) = %.16g", n, x, value);
-  return value;
-}
 }
