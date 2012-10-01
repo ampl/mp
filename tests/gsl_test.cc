@@ -299,6 +299,24 @@ double GSLTest::Diff(F f, double x, double *error) {
   return deriv;
 }
 
+bool CheckDerivative(double deriv, double numerical_deriv, double error) {
+  if (deriv == numerical_deriv)
+    return true;
+  double abs_tolerance = ConvertErrorToTolerance(error);
+  double diff = fabs(deriv - numerical_deriv);
+  if (diff <= abs_tolerance)
+    return true;
+  if (fabs(numerical_deriv) > 0.1) {
+    // If the derivative is not too close to zero, compare using a
+    // relative tolerance.
+    double relative_error = fabs(diff / numerical_deriv);
+    if (relative_error < 1e-6)
+      return false;
+  }
+  EXPECT_NEAR(numerical_deriv, deriv, abs_tolerance);
+  return true;
+}
+
 // Checks if the value of the derivative returned by af agrees with the
 // value returned by numerical differentiation of function f.
 // arg_index: index of an argument with respect to which to differentiate
@@ -328,25 +346,12 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
     }
     if (!gsl_isnan(numerical_deriv)) {
       double deriv = af(args, DERIVS, use_deriv).deriv(arg_index);
-      if (deriv == numerical_deriv)
-        return true;
-      double abs_tolerance = ConvertErrorToTolerance(error);
-      double diff = fabs(deriv - numerical_deriv);
-      if (diff <= abs_tolerance)
-        return true;
-      if (fabs(numerical_deriv) > 0.1) {
-        // If the derivative is not too close to zero, compare using a
-        // relative tolerance.
-        double relative_error = fabs(diff / numerical_deriv);
-        if (relative_error < 1e-6) {
-          std::cout << "Absolute tolerance of " << abs_tolerance
-            << " not reached for d/dx" << arg_index << " " << af.name()
-            << " at " << args << ", computed = " << numerical_deriv
-            << ", actual = " << deriv << std::endl;
-          return true;
-        }
+      if (!::CheckDerivative(deriv, numerical_deriv, error)) {
+        std::cout << "Absolute tolerance of " << ConvertErrorToTolerance(error)
+          << " not reached for d/dx" << arg_index << " " << af.name()
+          << " at " << args << ", computed = " << numerical_deriv
+          << ", actual = " << deriv << std::endl;
       }
-      EXPECT_NEAR(numerical_deriv, deriv, abs_tolerance);
       return true;
     }
   }
@@ -404,8 +409,13 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
           if (ii > jj) std::swap(ii, jj);
           unsigned hes_index = ii * (2 * num_args - ii - 1) / 2 + jj;
           double actual_deriv = f(args, HES, use_deriv).hes(hes_index);
-          if (d != actual_deriv)
-            EXPECT_NEAR(d, actual_deriv, ConvertErrorToTolerance(error));
+          if (!::CheckDerivative(actual_deriv, d, error)) {
+            std::cout << "Absolute tolerance of "
+              << ConvertErrorToTolerance(error)
+              << " not reached for d/dx" << i << " d/dx" << j << " "
+              << f.name() << " at " << args << ", computed = " << d
+              << ", actual = " << actual_deriv << std::endl;
+          }
           continue;
         }
       }
