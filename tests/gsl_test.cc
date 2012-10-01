@@ -238,6 +238,9 @@ class GSLTest : public ::testing::Test {
     return GetFunction(name, info);
   }
 
+  static bool CheckDerivative(
+      double deriv, double numerical_deriv, double error);
+
   template <typename F>
   bool CheckDerivative(F f, const Function &af,
       unsigned arg_index, const Tuple &args, double value);
@@ -299,7 +302,8 @@ double GSLTest::Diff(F f, double x, double *error) {
   return deriv;
 }
 
-bool CheckDerivative(double deriv, double numerical_deriv, double error) {
+bool GSLTest::CheckDerivative(
+    double deriv, double numerical_deriv, double error) {
   if (deriv == numerical_deriv)
     return true;
   double abs_tolerance = ConvertErrorToTolerance(error);
@@ -346,7 +350,7 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
     }
     if (!gsl_isnan(numerical_deriv)) {
       double deriv = af(args, DERIVS, use_deriv).deriv(arg_index);
-      if (!::CheckDerivative(deriv, numerical_deriv, error)) {
+      if (!CheckDerivative(deriv, numerical_deriv, error)) {
         std::cout << "Absolute tolerance of " << ConvertErrorToTolerance(error)
           << " not reached for d/dx" << arg_index << " " << af.name()
           << " at " << args << ", computed = " << numerical_deriv
@@ -409,7 +413,7 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
           if (ii > jj) std::swap(ii, jj);
           unsigned hes_index = ii * (2 * num_args - ii - 1) / 2 + jj;
           double actual_deriv = f(args, HES, use_deriv).hes(hes_index);
-          if (!::CheckDerivative(actual_deriv, d, error)) {
+          if (!CheckDerivative(actual_deriv, d, error)) {
             std::cout << "Absolute tolerance of "
               << ConvertErrorToTolerance(error)
               << " not reached for d/dx" << i << " d/dx" << j << " "
