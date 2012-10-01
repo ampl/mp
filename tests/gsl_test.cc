@@ -318,8 +318,25 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
     }
     if (!gsl_isnan(numerical_deriv)) {
       double deriv = af(args, DERIVS, use_deriv).deriv(arg_index);
-      if (numerical_deriv != deriv)
-        EXPECT_NEAR(numerical_deriv, deriv, ConvertErrorToTolerance(error));
+      if (deriv == numerical_deriv)
+        return true;
+      double abs_tolerance = ConvertErrorToTolerance(error);
+      double diff = fabs(deriv - numerical_deriv);
+      if (diff <= abs_tolerance)
+        return true;
+      if (fabs(numerical_deriv) > 0.1) {
+        // If the derivative is not too close to zero, compare using a
+        // relative tolerance.
+        double relative_error = fabs(diff / numerical_deriv);
+        if (relative_error < 1e-6) {
+          std::cout << "Absolute tolerance of " << abs_tolerance
+            << " not reached for d/dx" << arg_index << " " << af.name()
+            << " at " << args << ", computed = " << numerical_deriv
+            << ", actual = " << deriv << std::endl;
+          return true;
+        }
+      }
+      EXPECT_NEAR(numerical_deriv, deriv, abs_tolerance);
       return true;
     }
   }
@@ -1347,5 +1364,11 @@ TEST_F(GSLTest, Geometric) {
 TEST_F(GSLTest, Logarithmic) {
   TEST_FUNC2(gsl_ran_logarithmic, NoDeriv());
   TEST_FUNC2(gsl_ran_logarithmic_pdf, NoDeriv("k"));
+}
+
+double mygsl_sf_expint_En(int n, double x) {
+  double value = gsl_sf_expint_En(n, x);
+  printf("gsl_sf_expint_En(%d, %.16g) = %.16g", n, x, value);
+  return value;
 }
 }
