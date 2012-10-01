@@ -306,7 +306,7 @@ bool CheckDerivative(double deriv, double numerical_deriv, double error) {
   double diff = fabs(deriv - numerical_deriv);
   if (diff <= abs_tolerance)
     return true;
-  if (fabs(numerical_deriv) > 0.1) {
+  if (fabs(numerical_deriv) > 0.01) {
     // If the derivative is not too close to zero, compare using a
     // relative tolerance.
     double relative_error = fabs(diff / numerical_deriv);
