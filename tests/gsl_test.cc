@@ -138,7 +138,7 @@ class GSLTest : public ::testing::Test {
   GSLTest() {}
 
  protected:
-  const FunctionInfo info;  // Default function info.
+  static const FunctionInfo info;  // Default function info.
 
   Differentiator diff;
 
@@ -210,6 +210,15 @@ class GSLTest : public ::testing::Test {
     funcadd(&ae_);
 
     rng_ = gsl_rng_alloc(gsl_rng_default);
+
+    // Check that the error handler is off.
+    Function f(GetFunction("gsl_sf_airy_zero_Ai"));
+    if (!f(-1).error())
+      throw std::runtime_error("expected error");
+
+    // Turn off the handler in the test in case it is not linked to the same
+    // GSL library instance.
+    gsl_set_error_handler_off();
   }
 
   static void TearDownTestCase() {
@@ -218,14 +227,14 @@ class GSLTest : public ::testing::Test {
   }
 
   // Returns an AMPL function by name.
-  Function GetFunction(const char *name, const FunctionInfo &info) const {
+  static Function GetFunction(const char *name, const FunctionInfo &info) {
     FunctionMap::const_iterator i = funcs_.find(name);
     if (i == funcs_.end())
       throw std::runtime_error(string("function not found: ") + name);
     return Function(&ae_, &(i->second), &info);
   }
 
-  Function GetFunction(const char *name) const {
+  static Function GetFunction(const char *name) {
     return GetFunction(name, info);
   }
 
@@ -267,6 +276,7 @@ class GSLTest : public ::testing::Test {
 
 GSLTest::Stats GSLTest::stats_;
 
+const FunctionInfo GSLTest::info;
 GSLTest::FunctionMap GSLTest::funcs_;
 AmplExports GSLTest::ae_ = {};
 vector<void*> GSLTest::tempmem_;
