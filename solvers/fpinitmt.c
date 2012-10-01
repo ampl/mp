@@ -162,11 +162,7 @@ siglisten(void)
 	char *s;
 
 #ifdef LONG_LONG_POINTERS
-# ifdef _MSC_VER
-# define STRTOUL _strtoui64
-# else
-# define STRTOUL strtoull
-# endif
+#define STRTOUL strtoull
 #else
 #define STRTOUL strtoul
 #endif
