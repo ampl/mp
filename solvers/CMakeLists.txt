@@ -26,6 +26,15 @@ add_custom_command(OUTPUT arith.h DEPENDS arithchk
   COMMAND ./arithchk > arith.h)
 add_custom_target(arith_h SOURCES ${CMAKE_CURRENT_BINARY_DIR}/arith.h)
 
+include(CheckSymbolExists)
+check_symbol_exists(strtoull stdlib.h HAVE_STRTOULL)
+if (NOT HAVE_STRTOULL)
+  check_symbol_exists(_strtoui64 stdlib.h HAVE_STRTOUI64)
+  if (HAVE_STRTOUI64)
+    add_definitions(-Dstrtoull=_strtoui64)
+  endif ()
+endif ()
+
 add_library(amplsolver
   ${CMAKE_CURRENT_BINARY_DIR}/arith.h
   stdio1.h
