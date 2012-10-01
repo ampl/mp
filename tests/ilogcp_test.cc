@@ -281,7 +281,7 @@ ExprPtr ConcertTest::NewPLTerm(int size, const double *args, int var_index) {
   ExprPtr pl(new expr(e));
   pl->L.p = static_cast<plterm*>(
       std::calloc(1, sizeof(plterm) + sizeof(real) * (size - 1)));
-  pl->L.p->n = 3;
+  pl->L.p->n = (size + 1) / 2;
   real *bs = pl->L.p->bs;
   for (int i = 0; i < size; i++)
     bs[i] = args[i];
