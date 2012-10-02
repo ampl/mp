@@ -1,6 +1,6 @@
 # CMake build script for the GSL wrapper for AMPL.
 
-include_directories(.. gsl)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/gsl)
 
 include(CheckCCompilerFlag)
 check_c_compiler_flag(-fPIC HAS_FPIC_FLAG)

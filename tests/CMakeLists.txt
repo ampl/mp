@@ -25,7 +25,7 @@ configure_file(
   ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 if (HAVE_GSL)
-  include_directories(../solvers/amplgsl/gsl)
+  include_directories(${GSL_BINARY_DIR})
   cxx_test_with_flags(gsl_test ""
     "gtest;gtest_main;${SOLVER_LIBS}"
     gsl_test.cc function.cc function.h function_test.cc)
