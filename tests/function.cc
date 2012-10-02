@@ -117,7 +117,7 @@ Function::Result Function::operator()(const Tuple &args,
   }
   arglist al = {};
   TMInfo tmi = {};
-  al.ra = &ra[0];
+  al.ra = !ra.empty() ? &ra[0] : nullptr;
   al.nr = al.n = num_args;
   al.TMI = &tmi;
   al.AE = ae_;
