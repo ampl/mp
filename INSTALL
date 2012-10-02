@@ -28,11 +28,11 @@ Build using CMake
 -----------------
 
 An included CMake build script (CMakeLists.txt) can be used to build
-AMPL Solver Library on a wide range of platforms.  You can download
-CMake for free from http://www.cmake.org/.
+AMPL Solver Library on a wide range of platforms. You can download
+CMake for free from http://www.cmake.org/cmake/resources/software.html.
 
 CMake works by generating native makefiles or build projects that can
-be used in the compiler environment of your choice.  The typical
+be used in the compiler environment of your choice. The typical
 workflow starts with:
 
   mkdir mybuild      # Create a directory to hold the build output.
@@ -40,10 +40,12 @@ workflow starts with:
   cmake ${AMPL_DIR}  # Generate native build scripts.
 
 If you are on a *nix system, you should now see a Makefile in the
-current directory.  Now you can build amplgsl by running "make".
+current directory. Now you can build ASL by running "make".
+
+Once ASL has been built you can invoke "make test" to run the tests.
 
 If you use Windows and have Vistual Studio installed, an AMPL.sln file
-and several .vcproj files will be created.  You can then build them
+and several .vcproj files will be created. You can then build them
 using Visual Studio.
 
 On Mac OS X with Xcode installed, a .xcodeproj file will be generated.
