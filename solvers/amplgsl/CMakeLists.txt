@@ -26,5 +26,6 @@ add_custom_target(gsl-ampl ALL DEPENDS gsl.ampl)
 
 add_custom_command(OUTPUT doc/index.html
   COMMAND python extract-docs.py
-  COMMAND sphinx-build -b html . doc DEPENDS amplgsl.c conf.py extract-docs.py)
+  COMMAND sphinx-build -b html doc html
+  DEPENDS amplgsl.c doc/conf.py extract-docs.py)
 add_custom_target(doc DEPENDS doc/index.html)
