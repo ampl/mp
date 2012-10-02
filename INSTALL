@@ -1,0 +1,70 @@
+This file describes how to build and install AMPL Solver Library (ASL),
+function libraries and solver drivers.
+
+In the following instructions ${AMPL_DIR} denotes a local copy of the
+AMPL repository, which is simply a directory on your computer with ASL
+source code, example models, etc. The repository can be obtained from
+https://github.com/vitaut/ampl/ or using Git:
+
+  git clone --recursive git://github.com/vitaut/ampl.git
+
+Requirements
+------------
+
+* To build ilogcp, the AMPL driver for IBM ILOG Constraint Programming
+  (CP) Optimizer, you should have IBM ILOG CP Optimizer, CPLEX and Concert
+  installed. Normally these are installed as parts of IBM ILOG CPLEX
+  Optimization Studio. The code has been tested with Optimization Studio
+  version 12.4.
+
+* To build the amplgsl library you should have GSL source code available
+  in ${AMPL_DIR}/solvers/amplgsl/gsl. It is highly recommened to use
+  a patched version of GSL 1.15 from https://github.com/vitaut/gsl.
+  You can retrieve ASL and GSL sources at the same time using the command
+
+    git clone --recursive git://github.com/vitaut/ampl.git
+
+Build using CMake
+-----------------
+
+An included CMake build script (CMakeLists.txt) can be used to build
+AMPL Solver Library on a wide range of platforms.  You can download
+CMake for free from http://www.cmake.org/.
+
+CMake works by generating native makefiles or build projects that can
+be used in the compiler environment of your choice.  The typical
+workflow starts with:
+
+  mkdir mybuild      # Create a directory to hold the build output.
+  cd mybuild
+  cmake ${AMPL_DIR}  # Generate native build scripts.
+
+If you are on a *nix system, you should now see a Makefile in the
+current directory.  Now you can build amplgsl by running "make".
+
+If you use Windows and have Vistual Studio installed, an AMPL.sln file
+and several .vcproj files will be created.  You can then build them
+using Visual Studio.
+
+On Mac OS X with Xcode installed, a .xcodeproj file will be generated.
+
+Build without CMake
+-------------------
+
+Alternatively you can build AMPL Solver Library with make using the
+provided makefiles. In this case you might need to edit the makefiles
+to specify the paths to CPLEX Optimization Studio and GSL.
+
+First build ASL:
+
+  cd ${AMPL_DIR}/solvers
+  ./configurehere
+  make
+
+Then run "make -f makefile.u" in the subdirectories of solver drivers
+you want to build.
+
+On Windows the AMPL solver library should be built with the shared (DLL)
+runtime using the command "nmake RUNTIME=-MD -f makefile.vc". This is
+necessary to avoid linkage errors with IBM ILOG CP Optimizer which doesn't
+provide libraries linked with static runtime.
