@@ -7,7 +7,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Set SOLVER_LIBS to point to the AMPL solver library and its dependencies.
-include_directories(.)
+include_directories(. ${CMAKE_CURRENT_BINARY_DIR}
+  solvers ${CMAKE_CURRENT_BINARY_DIR}/solvers)
 set(SOLVER_LIBS amplsolver)
 if (NOT WIN32)
   set(SOLVER_LIBS ${SOLVER_LIBS} dl)
@@ -27,7 +28,7 @@ if (HAS_STD_CPP0X_FLAG)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif ()
 
-if (EXISTS solvers/amplgsl/gsl/CMakeLists.txt)
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)
   set(HAVE_GSL 1)
 endif ()
 

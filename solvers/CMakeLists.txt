@@ -7,7 +7,7 @@ endif ()
 file(READ details.c0 DETAILS)
 string(REPLACE "System_details"
   "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}" DETAILS "${DETAILS}")
-file(WRITE details.c "${DETAILS}")
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/details.c "${DETAILS}")
 
 configure_file(stdio1.h0 stdio1.h COPYONLY)
 
@@ -60,7 +60,7 @@ add_library(amplsolver
   conscale.c
   conval.c
   derprop.c
-  details.c
+  ${CMAKE_CURRENT_BINARY_DIR}/details.c
   dtoa1.c
   duthes.c
   dynlink.c
