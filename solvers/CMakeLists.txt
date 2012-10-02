@@ -35,6 +35,11 @@ if (NOT HAVE_STRTOULL)
   endif ()
 endif ()
 
+if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+  # Changing the floating point precision is not supported on x64.
+  add_definitions(-DNo_Control87)
+endif ()
+
 add_library(amplsolver
   ${CMAKE_CURRENT_BINARY_DIR}/arith.h
   stdio1.h
