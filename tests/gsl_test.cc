@@ -205,6 +205,10 @@ class GSLTest : public ::testing::Test {
     ae_.Tempmem = Tempmem;
     ae_.SnprintF = snprintf;
     ae_.VsnprintF = vsnprintf;
+    ae_.Fopen = fopen;
+    ae_.Fclose = fclose;
+    ae_.Fread = fread;
+    ae_.Fseek = fseek;
     ae_.FprintF = fprintf;
     ae_.StdErr = stderr;
     funcadd(&ae_);
