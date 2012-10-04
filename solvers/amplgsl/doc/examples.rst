@@ -33,3 +33,23 @@ and
 models demonstrate the use of :func:`gsl_cdf_ugaussian_P`. They are taken
 form the Robert Vanderbei's `collection of nonlinear models
 <http://orfe.princeton.edu/~rvdb/ampl/nlmodels/>`_ and adapted for AMPLGSL.
+These models can be solved with a nonlinear AMPL solver such as MINOS:
+
+.. code-block:: none
+
+  $ ampl hs068.mod
+  obj = -0.261841
+
+  MINOS 5.51: optimal solution found.
+  29 iterations, objective -0.9204250037
+  Nonlin evals: obj = 57, grad = 56, constrs = 57, Jac = 56.
+  x [*] :=
+  1  0.0678586
+  2  3.64621
+  3  0.000266135
+  4  0.894855
+  ;
+
+  obj = -0.920425
+
+  Best known objective value: -0.920425026
