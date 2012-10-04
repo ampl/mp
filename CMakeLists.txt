@@ -33,6 +33,7 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)
 endif ()
 
 add_subdirectory(solvers)
+add_subdirectory(tables)
 
 enable_testing()
 add_subdirectory(tests)
