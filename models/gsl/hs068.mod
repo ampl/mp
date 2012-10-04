@@ -1,23 +1,23 @@
-function myerf;
+include gsl.ampl;
 
 param l {1..4};
 param u {1..4};
 
-var x {j in 1..4} >= l[j], <= u[j];
+var x {j in 1..4} >= l[j], <= u[j] := 1;
 
 param a := 0.0001;
 param b := 1;
 param d := 1;
 param n := 24;
 
-minimize obj: 
-  ( a*n - (b*(exp(x[1])-1) - x[3])*x[4]/(exp(x[1]) - 1 + x[4]) )/x[1]
-  ;
+minimize obj:
+  ( a*n - (b*(exp(x[1])-1) - x[3])*x[4]/(exp(x[1]) - 1 + x[4]) )/x[1];
 
-subject to constr1: 
-    x[3] - 2*myerf(-x[2]) = 0;
-subject to constr2: 
-    x[4] = myerf(-x[2] + d*sqrt(n)) + myerf(-x[2] - d*sqrt(n));
+subject to constr1:
+    x[3] - 2*gsl_cdf_ugaussian_P(-x[2]) = 0;
+subject to constr2:
+    x[4] = gsl_cdf_ugaussian_P(-x[2] + d*sqrt(n)) +
+           gsl_cdf_ugaussian_P(-x[2] - d*sqrt(n));
 
 data;
 
@@ -35,11 +35,6 @@ param u :=
   4    2
   ;
 
-let x[1] := 1;
-let x[2] := 1;
-let x[3] := 1;
-let x[4] := 1;
-
 #printf "optimal solution as starting point \n";
 #let x[1] := 0.06785874;
 #let x[2] := 3.6461717;
@@ -48,12 +43,8 @@ let x[4] := 1;
 
 display obj;
 
-option pl_linearize 0;
-
 solve;
 
-display x;
+display x, obj;
 
-display obj;
-
-display obj + 0.920425026;
+print 'Best known objective value:', -0.920425026;
