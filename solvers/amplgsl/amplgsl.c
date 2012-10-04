@@ -2962,63 +2962,6 @@ WRAP_DISCRETE(gsl_ran_logarithmic_pdf, ARGS2, DEFAULT_ARGS)
  * * :ref:`search`
  */
 
-/**
- * @file intro
- *
- * Introduction
- * ============
- *
- * The GNU Scientific Library (GSL) is a collection of routines for numerical
- * computing. The routines have been written from scratch in C, and present
- * a modern Applications Programming Interface (API) for C programmers,
- * allowing wrappers to be written for very high level languages. The source
- * code is distributed under the GNU General Public License.
- *
- * The AMPLGSL library provides AMPL
- * `bindings <http://en.wikipedia.org/wiki/Language_binding>`_ for the
- * GNU Scientific Library and is distributed under the same license.
- *
- * .. index:: binding
- *
- * .. toctree::
- *    :maxdepth: 2
- *
- *    no-warranty
- *    accuracy
- */
-
-/**
- * @file no-warranty
- *
- * No Warranty
- * ===========
- *
- * The software described in this manual has no `warranty`:index:, it is
- * provided "as is". It is your responsibility to validate the behavior of
- * the routines and their accuracy using the source code provided, or to
- * purchase support and warranties from commercial redistributors.
- * Consult the GNU General Public license for further details
- * (see :ref:`gpl`).
- */
-
-/**
- * @file accuracy
- *
- * Accuracy
- * ========
- *
- * AMPL wrappers of the GSL functions always use the highest accuracy
- * available. A GSL function may take a ``mode`` argument that allows
- * the accuracy of the function to be reduced in order to improve
- * performance. Currently the ``mode`` argument is always bound to
- * ``GSL_PREC_DOUBLE`` denoting double-precision, a relative accuracy
- * of approximately $2 \times 10^{-16}$.
- *
- * .. index::
- *   accuracy
- *   GSL_PREC_DOUBLE
- */
-
 void funcadd_ASL(AmplExports *ae)
 {
   /* Don't call abort on error. */
@@ -4435,6 +4378,8 @@ void funcadd_ASL(AmplExports *ae)
    */
 
   /**
+   * .. _gamma-functions:
+   *
    * Gamma Functions
    * ---------------
    *
@@ -5582,7 +5527,7 @@ void funcadd_ASL(AmplExports *ae)
    * defined as,
    *
    * .. math::
-   *   P(k) = \sum_{i <= k} p(i)
+   *   P(k) = \sum_{i \leq k} p(i)
    *
    * where the sum is over the allowed range of the distribution less than
    * or equal to $k$.
