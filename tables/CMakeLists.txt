@@ -1,12 +1,17 @@
 add_ampl_library(simpbit SHARED simpbit.c)
 add_ampl_library(fullbit SHARED fullbit.c)
 
+find_package(ODBC)
+if (ODBC_FOUND)
+  set(AMPLODBC amplodbc.c)
+endif ()
+
 if (WIN32)
   set(TABLEPROXY_LIBS wsock32)
   add_definitions(-DNO_sockaddr_in6)
 endif ()
 
-add_ampl_library(ampltabl SHARED tableproxy.c tableproxyver.h)
+add_ampl_library(ampltabl SHARED tableproxy.c tableproxyver.h ${AMPLODBC})
 target_link_libraries(ampltabl ${TABLEPROXY_LIBS})
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)

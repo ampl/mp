@@ -15,3 +15,4 @@ Modules:
 
   FindCPLEX.cmake - finds the CPLEX, Concert, IloCplex and CP Optimizer
                     libraries
+  FindODBC.cmake  - finds the ODBC libraries
