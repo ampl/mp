@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <iosfwd>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -733,6 +734,24 @@ class DerivativeBinder {
       unsigned eval_arg, const Tuple &args);
 
   double operator()(double x);
+};
+
+class LibraryImpl;
+
+// An AMPL function library.
+class Library {
+ private:
+  // Do not implement.
+  Library(const Library &);
+  Library &operator=(const Library &);
+
+  std::auto_ptr<LibraryImpl> impl_;
+
+ public:
+  Library(const char *name);
+
+  void Load();
+  const func_info *GetFunction(const char *name) const;
 };
 }
 
