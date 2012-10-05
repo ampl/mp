@@ -750,6 +750,8 @@ class Library {
  public:
   Library(const char *name);
 
+  AmplExports *exports();
+
   void Load();
   const func_info *GetFunction(const char *name) const;
 };

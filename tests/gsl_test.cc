@@ -168,7 +168,7 @@ class GSLTest : public ::testing::Test {
   template <typename F>
   double Diff(F f, double x, double *error = 0);
 
-  static Library lib_;
+  static fun::Library lib_;
   static gsl_rng *rng_;
 
   static void SetUpTestCase() {
@@ -191,10 +191,10 @@ class GSLTest : public ::testing::Test {
 
   // Returns an AMPL function by name.
   static Function GetFunction(const char *name, const FunctionInfo &info) {
-    const func_info *fi = GetFunction(name);
+    const func_info *fi = lib_.GetFunction(name);
     if (!fi)
       throw std::runtime_error(string("function not found: ") + name);
-    return Function(&ae_, fi, &info);
+    return Function(lib_.exports(), fi, &info);
   }
 
   static Function GetFunction(const char *name) {
@@ -243,7 +243,7 @@ class GSLTest : public ::testing::Test {
 GSLTest::Stats GSLTest::stats_;
 
 const FunctionInfo GSLTest::info;
-Library GSLTest::lib_("../solvers/amplgsl/amplgsl.dll");
+fun::Library GSLTest::lib_("../solvers/amplgsl/amplgsl.dll");
 gsl_rng *GSLTest::rng_;
 
 template <typename F>

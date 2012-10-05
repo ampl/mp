@@ -158,7 +158,7 @@ double DerivativeBinder::operator()(double x) {
       std::numeric_limits<double>::quiet_NaN() : r.deriv(deriv_arg_);
 }
 
-class LibraryImpl : AmplExports {
+class LibraryImpl : public AmplExports {
  private:
   std::string name_;
   std::vector<void*> tempmem_;
@@ -239,9 +239,9 @@ LibraryImpl::LibraryImpl(const char *name) : AmplExports(), name_(name) {
 
 Library::Library(const char *name) : impl_(new LibraryImpl(name)) {}
 
-void Library::Load() {
-  impl_->Load();
-}
+AmplExports *Library::exports() { return impl_.get(); }
+
+void Library::Load() { impl_->Load(); }
 
 const func_info *Library::GetFunction(const char *name) const {
   return impl_->GetFunction(name);
