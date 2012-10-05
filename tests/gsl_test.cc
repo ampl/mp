@@ -194,7 +194,7 @@ class GSLTest : public ::testing::Test {
     const func_info *fi = lib_.GetFunction(name);
     if (!fi)
       throw std::runtime_error(string("function not found: ") + name);
-    return Function(lib_.exports(), fi, &info);
+    return Function(lib_, fi, &info);
   }
 
   static Function GetFunction(const char *name) {
