@@ -168,51 +168,11 @@ class GSLTest : public ::testing::Test {
   template <typename F>
   double Diff(F f, double x, double *error = 0);
 
-  typedef std::map<std::string, func_info> FunctionMap;
-
-  static FunctionMap funcs_;
-  static AmplExports ae_;
-  static vector<void*> tempmem_;
+  static Library lib_;
   static gsl_rng *rng_;
 
-  static void AddFunc(const char *name, rfunc f,
-      int type, int nargs, void *funcinfo, AmplExports *) {
-    func_info fi = {};
-    fi.name = name;
-    fi.funcp = f;
-    fi.ftype = type;
-    fi.nargs = nargs;
-    fi.funcinfo = funcinfo;
-    funcs_[name] = fi;
-    note_libuse_ASL();
-  }
-
-  static void AtReset(AmplExports *, Exitfunc *, void *) {
-    // Do nothing.
-  }
-
-  static void *Tempmem(TMInfo *, size_t size) {
-    tempmem_.push_back(0);
-    return tempmem_.back() = malloc(size);
-  }
-
   static void SetUpTestCase() {
-    i_option_ASL = "../solvers/amplgsl/amplgsl.dll";
-    // Use funcadd(AmplExports*) instead of func_add(ASL*) because
-    // the latter doesn't load random functions.
-    ae_.Addfunc = AddFunc;
-    ae_.AtReset = AtReset;
-    ae_.Tempmem = Tempmem;
-    ae_.SnprintF = snprintf;
-    ae_.VsnprintF = vsnprintf;
-    ae_.Fopen = fopen;
-    ae_.Fclose = fclose;
-    ae_.Fread = fread;
-    ae_.Fseek = fseek;
-    ae_.FprintF = fprintf;
-    ae_.StdErr = stderr;
-    funcadd(&ae_);
-
+    lib_.Load();
     rng_ = gsl_rng_alloc(gsl_rng_default);
 
     // Check that the error handler is off.
@@ -226,16 +186,15 @@ class GSLTest : public ::testing::Test {
   }
 
   static void TearDownTestCase() {
-    std::for_each(tempmem_.begin(), tempmem_.end(), std::ptr_fun(free));
     gsl_rng_free(rng_);
   }
 
   // Returns an AMPL function by name.
   static Function GetFunction(const char *name, const FunctionInfo &info) {
-    FunctionMap::const_iterator i = funcs_.find(name);
-    if (i == funcs_.end())
+    const func_info *fi = GetFunction(name);
+    if (!fi)
       throw std::runtime_error(string("function not found: ") + name);
-    return Function(&ae_, &(i->second), &info);
+    return Function(&ae_, fi, &info);
   }
 
   static Function GetFunction(const char *name) {
@@ -284,9 +243,7 @@ class GSLTest : public ::testing::Test {
 GSLTest::Stats GSLTest::stats_;
 
 const FunctionInfo GSLTest::info;
-GSLTest::FunctionMap GSLTest::funcs_;
-AmplExports GSLTest::ae_ = {};
-vector<void*> GSLTest::tempmem_;
+Library GSLTest::lib_("../solvers/amplgsl/amplgsl.dll");
 gsl_rng *GSLTest::rng_;
 
 template <typename F>

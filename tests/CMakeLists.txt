@@ -24,11 +24,22 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
   ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
+add_library(function function.cc function.h)
+
+cxx_test_with_flags(function_test "" "gtest;function;${SOLVER_LIBS}"
+  test_main.cc function_test.cc)
+
 if (HAVE_GSL)
   include_directories(${GSL_BINARY_DIR})
-  cxx_test_with_flags(gsl_test "" "gtest;${SOLVER_LIBS}"
-    test_main.cc gsl_test.cc function.cc function.h function_test.cc)
+  cxx_test_with_flags(gsl_test "" "gtest;function;${SOLVER_LIBS}"
+    test_main.cc gsl_test.cc)
   target_link_libraries(gsl_test gsl gslcblas)
+endif ()
+
+find_package(ODBC)
+if (ODBC_FOUND)
+  cxx_test_with_flags(odbc_test "" "gtest;function;${SOLVER_LIBS}"
+    test_main.cc odbc_test.cc)
 endif ()
 
 find_package(CPLEX)
@@ -42,4 +53,3 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
   target_link_libraries(ilogcp_test
     ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_CP_LIBRARIES} ${CPLEX_LIBRARIES})
 endif ()
-
