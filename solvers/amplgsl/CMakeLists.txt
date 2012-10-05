@@ -11,7 +11,7 @@ endif ()
 add_subdirectory(gsl)
 set(CMAKE_C_FLAGS ${SAVED_FLAGS})
 
-add_ampl_library(amplgsl SHARED amplgsl.c)
+add_ampl_library(amplgsl amplgsl.c)
 add_dependencies(amplgsl gsl gslcblas)
 target_link_libraries(amplgsl ${SOLVER_LIBS} gsl gslcblas -lm)
 

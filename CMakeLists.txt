@@ -32,10 +32,10 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)
   set(HAVE_GSL 1)
 endif ()
 
-# Adds an AMPL library which by convention doesn't have any prefix and has a
-# suffix ".dll".
+# Adds a shared AMPL library which by convention doesn't have any prefix
+# and has a suffix ".dll".
 macro(add_ampl_library name)
-  add_library(${name} ${ARGN})
+  add_library(${name} SHARED ${ARGN})
   set_target_properties(${name} PROPERTIES PREFIX "")
   set_target_properties(${name} PROPERTIES SUFFIX ".dll")
 endmacro()

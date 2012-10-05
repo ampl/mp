@@ -1,9 +1,12 @@
-add_ampl_library(simpbit SHARED simpbit.c)
-add_ampl_library(fullbit SHARED fullbit.c)
+add_ampl_library(simpbit simpbit.c)
+add_ampl_library(fullbit fullbit.c)
 
 find_package(ODBC)
 if (ODBC_FOUND)
-  set(AMPLODBC amplodbc.c)
+  add_library(amplodbc amplodbc.c)
+  set(AMPLODBC amplodbc)
+  set_target_properties(amplodbc
+    PROPERTIES COMPILE_DEFINITIONS funcadd_ASL=funcaddodbc_ASL)
 endif ()
 
 if (WIN32)
@@ -11,8 +14,8 @@ if (WIN32)
   add_definitions(-DNO_sockaddr_in6)
 endif ()
 
-add_ampl_library(ampltabl SHARED tableproxy.c tableproxyver.h ${AMPLODBC})
-target_link_libraries(ampltabl ${TABLEPROXY_LIBS})
+add_ampl_library(ampltabl tableproxy.c tableproxyver.h)
+target_link_libraries(ampltabl ${TABLEPROXY_LIBS} ${AMPLODBC})
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
   set(TABLEPROXY_SUFFIX 64)
