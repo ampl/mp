@@ -39,6 +39,89 @@ static void Print(std::ostream &os, double value) {
 
 namespace fun {
 
+class LibraryImpl : public AmplExports, public TMInfo {
+ private:
+  std::string name_;
+  std::vector<void*> tempmem_;
+
+  typedef std::map<std::string, func_info> FunctionMap;
+  FunctionMap funcs_;
+
+  static void AddFunc_(const char *name, rfunc f,
+      int type, int nargs, void *funcinfo, AmplExports *ae);
+
+  static void AddTableHandler(
+      int (*DbRead)(AmplExports *ae, TableInfo *TI),
+      int (*DbWrite)(AmplExports *ae, TableInfo *TI),
+      char *handler_info, int flags, void *Vinfo) {
+    // Do nothing.
+  }
+
+  static void AtExit_(AmplExports *, Exitfunc *, void *) {
+    // Do nothing.
+  }
+
+  static void *Tempmem_(TMInfo *tmi, size_t size) {
+    LibraryImpl *impl = static_cast<LibraryImpl*>(tmi);
+    impl->tempmem_.push_back(0);
+    return impl->tempmem_.back() = malloc(size);
+  }
+
+ public:
+  LibraryImpl(const char *name);
+  ~LibraryImpl() {
+    std::for_each(tempmem_.begin(), tempmem_.end(), std::ptr_fun(free));
+  }
+
+  void Load() {
+    i_option_ASL = name_.c_str();
+    // Use funcadd(AmplExports*) instead of func_add(ASL*) because
+    // the latter doesn't load random functions.
+    funcadd(this);
+  }
+
+  const func_info *GetFunction(const char *name) const {
+    FunctionMap::const_iterator i = funcs_.find(name);
+    return i != funcs_.end() ? &i->second : 0;
+  }
+};
+
+void LibraryImpl::AddFunc_(const char *name, rfunc f,
+    int type, int nargs, void *funcinfo, AmplExports *ae) {
+  func_info fi = {};
+  fi.name = name;
+  fi.funcp = f;
+  fi.ftype = type;
+  fi.nargs = nargs;
+  fi.funcinfo = funcinfo;
+  static_cast<LibraryImpl*>(ae)->funcs_[name] = fi;
+  note_libuse_ASL();
+}
+
+LibraryImpl::LibraryImpl(const char *name) : AmplExports(), name_(name) {
+  Addfunc = AddFunc_;
+  Add_table_handler = AddTableHandler;
+  AtExit = AtExit_;
+  AtReset = AtExit_;
+  Tempmem = Tempmem_;
+  SnprintF = snprintf;
+  VsnprintF = vsnprintf;
+  Fopen = fopen;
+  Fclose = fclose;
+  Fread = fread;
+  Fseek = fseek;
+  FprintF = fprintf;
+  StdErr = stderr;
+}
+
+Library::Library(const char *name) : impl_(new LibraryImpl(name)) {}
+
+void Library::Load() { impl_->Load(); }
+
+const func_info *Library::GetFunction(const char *name) const {
+  return impl_->GetFunction(name);
+}
+
 const Type GetType<void>::VALUE = VOID;
 const Type GetType<int>::VALUE = INT;
 const Type GetType<unsigned>::VALUE = UINT;
@@ -117,11 +200,10 @@ Function::Result Function::operator()(const Tuple &args,
       dig[i] = !use_deriv[i];
   }
   arglist al = {};
-  TMInfo tmi = {};
   al.ra = !ra.empty() ? &ra[0] : nullptr;
   al.nr = al.n = num_args;
-  al.TMI = &tmi;
-  al.AE = ae_;
+  al.TMI = lib_->impl();
+  al.AE = lib_->impl();
   al.dig = !dig.empty() ? &dig[0] : nullptr;
   al.funcinfo = info ? info : fi_->funcinfo;
 
@@ -156,94 +238,5 @@ double DerivativeBinder::operator()(double x) {
   Function::Result r = f_(args_, DERIVS, use_deriv_);
   return r.error() ?
       std::numeric_limits<double>::quiet_NaN() : r.deriv(deriv_arg_);
-}
-
-class LibraryImpl : public AmplExports {
- private:
-  std::string name_;
-  std::vector<void*> tempmem_;
-
-  typedef std::map<std::string, func_info> FunctionMap;
-  FunctionMap funcs_;
-
-  static void AddFunc_(const char *name, rfunc f,
-      int type, int nargs, void *funcinfo, AmplExports *ae);
-
-  static void AddTableHandler(
-      int (*DbRead)(AmplExports *ae, TableInfo *TI),
-      int (*DbWrite)(AmplExports *ae, TableInfo *TI),
-      char *handler_info, int flags, void *Vinfo) {
-    // Do nothing.
-  }
-
-  static void AtExit_(AmplExports *, Exitfunc *, void *) {
-    // Do nothing.
-  }
-
-  struct CustomTMInfo : TMInfo {
-    LibraryImpl *impl;
-  };
-
-  static void *Tempmem_(TMInfo *tmi, size_t size) {
-    LibraryImpl *impl = static_cast<CustomTMInfo*>(tmi)->impl;
-    impl->tempmem_.push_back(0);
-    return impl->tempmem_.back() = malloc(size);
-  }
-
- public:
-  LibraryImpl(const char *name);
-  ~LibraryImpl() {
-    std::for_each(tempmem_.begin(), tempmem_.end(), std::ptr_fun(free));
-  }
-
-  void Load() {
-    i_option_ASL = name_.c_str();
-    // Use funcadd(AmplExports*) instead of func_add(ASL*) because
-    // the latter doesn't load random functions.
-    funcadd(this);
-  }
-
-  const func_info *GetFunction(const char *name) const {
-    FunctionMap::const_iterator i = funcs_.find(name);
-    return i != funcs_.end() ? &i->second : 0;
-  }
-};
-
-void LibraryImpl::AddFunc_(const char *name, rfunc f,
-    int type, int nargs, void *funcinfo, AmplExports *ae) {
-  func_info fi = {};
-  fi.name = name;
-  fi.funcp = f;
-  fi.ftype = type;
-  fi.nargs = nargs;
-  fi.funcinfo = funcinfo;
-  static_cast<LibraryImpl*>(ae)->funcs_[name] = fi;
-  note_libuse_ASL();
-}
-
-LibraryImpl::LibraryImpl(const char *name) : AmplExports(), name_(name) {
-  Addfunc = AddFunc_;
-  Add_table_handler = AddTableHandler;
-  AtExit = AtExit_;
-  AtReset = AtExit_;
-  Tempmem = Tempmem_;
-  SnprintF = snprintf;
-  VsnprintF = vsnprintf;
-  Fopen = fopen;
-  Fclose = fclose;
-  Fread = fread;
-  Fseek = fseek;
-  FprintF = fprintf;
-  StdErr = stderr;
-}
-
-Library::Library(const char *name) : impl_(new LibraryImpl(name)) {}
-
-AmplExports *Library::exports() { return impl_.get(); }
-
-void Library::Load() { impl_->Load(); }
-
-const func_info *Library::GetFunction(const char *name) const {
-  return impl_->GetFunction(name);
 }
 }

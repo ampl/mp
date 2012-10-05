@@ -38,10 +38,29 @@
 # define isnan std::isnan
 #endif
 
-struct AmplExports;
 struct func_info;
 
 namespace fun {
+
+class LibraryImpl;
+
+// An AMPL function library.
+class Library {
+ private:
+  // Do not implement.
+  Library(const Library &);
+  Library &operator=(const Library &);
+
+  std::auto_ptr<LibraryImpl> impl_;
+
+ public:
+  Library(const char *name);
+
+  LibraryImpl *impl() { return impl_.get(); }
+
+  void Load();
+  const func_info *GetFunction(const char *name) const;
+};
 
 enum Type { VOID, INT, UINT, DOUBLE, POINTER };
 
@@ -638,13 +657,13 @@ enum {
 // An AMPL function.
 class Function {
  private:
-  AmplExports *ae_;
+  Library *lib_;
   const func_info *fi_;
   const FunctionInfo *info_;
 
  public:
-  Function(AmplExports *ae, const func_info *fi, const FunctionInfo *info) :
-    ae_(ae), fi_(fi), info_(info) {}
+  Function(Library &lib, const func_info *fi, const FunctionInfo *info) :
+    lib_(&lib), fi_(fi), info_(info) {}
 
   const char *name() const;
   int nargs() const;
@@ -734,26 +753,6 @@ class DerivativeBinder {
       unsigned eval_arg, const Tuple &args);
 
   double operator()(double x);
-};
-
-class LibraryImpl;
-
-// An AMPL function library.
-class Library {
- private:
-  // Do not implement.
-  Library(const Library &);
-  Library &operator=(const Library &);
-
-  std::auto_ptr<LibraryImpl> impl_;
-
- public:
-  Library(const char *name);
-
-  AmplExports *exports();
-
-  void Load();
-  const func_info *GetFunction(const char *name) const;
 };
 }
 

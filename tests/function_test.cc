@@ -42,6 +42,7 @@ using fun::FunctionInfo;
 using fun::FunctionPointer;
 using fun::FunctionWithTypes;
 using fun::GetType;
+using fun::Library;
 using fun::MakeArgs;
 using fun::Tuple;
 using fun::Variant;
@@ -362,8 +363,9 @@ struct TestFunctionInfo : FunctionInfo {
 };
 
 TEST(FunctionTest, FunctionInfoGetDerivative) {
+  Library lib("");
   FunctionInfo fi1;
-  Function f(0, 0, 0);
+  Function f(lib, 0, 0);
   EXPECT_TRUE(isnan(fi1.GetDerivative(f, 0, MakeArgs(0)).value()));
   EXPECT_TRUE(isnan(fi1.GetSecondDerivative(f, 0, 0, MakeArgs(0)).value()));
   TestFunctionInfo fi2;
@@ -411,6 +413,7 @@ TEST(FunctionTest, FunctionResultError) {
 
 struct CallData {
   AmplExports *ae;
+  TMInfo *tmi;
   int n;
   int nr;
   vector<real> ra;
@@ -423,6 +426,7 @@ struct CallData {
 real Test(arglist *args) {
   CallData *data = reinterpret_cast<CallData*>(args->funcinfo);
   data->ae = args->AE;
+  data->tmi = args->TMI;
   data->n = args->n;
   data->nr = args->nr;
   data->ra = vector<real>(args->ra, args->ra + args->n);
@@ -448,26 +452,24 @@ real Test(arglist *args) {
 
 class TestFunction {
  private:
-  AmplExports ae_;
+  Library lib_;
   func_info fi_;
   Function f_;
 
  public:
   explicit TestFunction(int nargs)
-  : ae_(), fi_(), f_(&ae_, &fi_, 0) {
+  : lib_(""), fi_(), f_(lib_, &fi_, 0) {
     fi_.nargs = nargs;
     fi_.funcp = Test;
   }
 
-  const AmplExports* ae() const { return &ae_; }
-  const Function& get() const { return f_; }
+  const Function &get() const { return f_; }
 };
 
 TEST(FunctionTest, FunctionCall) {
   TestFunction f(1);
   CallData data = {};
   EXPECT_EQ(42, f.get()(777, 0, BitSet(), &data));
-  EXPECT_EQ(f.ae(), data.ae);
   ASSERT_EQ(1, data.n);
   EXPECT_EQ(1, data.nr);
   EXPECT_EQ(777, data.ra[0]);
@@ -489,7 +491,6 @@ TEST(FunctionTest, FunctionReturnsDerivs) {
   Function::Result res =
       f.get()(MakeArgs(11, 22, 33), fun::DERIVS, BitSet(), &data);
   EXPECT_EQ(42, res);
-  EXPECT_EQ(f.ae(), data.ae);
   ASSERT_EQ(3, data.n);
   EXPECT_EQ(3, data.nr);
   EXPECT_EQ(11, data.ra[0]);
@@ -509,7 +510,6 @@ TEST(FunctionTest, FunctionReturnsHes) {
   CallData data = {};
   Function::Result res = f.get()(MakeArgs(111, 222), fun::HES, BitSet(), &data);
   EXPECT_EQ(42, res);
-  EXPECT_EQ(f.ae(), data.ae);
   ASSERT_EQ(2, data.n);
   EXPECT_EQ(2, data.nr);
   EXPECT_EQ(111, data.ra[0]);
@@ -526,8 +526,9 @@ TEST(FunctionTest, FunctionReturnsHes) {
 }
 
 TEST(FunctionTest, FunctionArgNames) {
+  Library lib("");
   FunctionInfo fi;
-  Function f(0, 0, &fi);
+  Function f(lib, 0, &fi);
   EXPECT_THROW(f.GetArgName(0), std::out_of_range);
   fi.SetArgNames("x y z");
   EXPECT_EQ("x", f.GetArgName(0));
@@ -537,12 +538,13 @@ TEST(FunctionTest, FunctionArgNames) {
 }
 
 TEST(FunctionTest, FunctifonGetDerivative) {
+  Library lib("");
   FunctionInfo fi1;
-  Function f1(0, 0, &fi1);
+  Function f1(lib, 0, &fi1);
   EXPECT_TRUE(isnan(f1.GetDerivative(0, MakeArgs(0)).value()));
   EXPECT_TRUE(isnan(f1.GetSecondDerivative(0, 0, MakeArgs(0)).value()));
   TestFunctionInfo fi2;
-  Function f2(0, 0, &fi2);
+  Function f2(lib, 0, &fi2);
   EXPECT_EQ(42, f2.GetDerivative(0, MakeArgs(0)).value());
   EXPECT_EQ(11, f2.GetSecondDerivative(0, 0, MakeArgs(0)).value());
 }
@@ -560,11 +562,11 @@ real ASLHypot(arglist *al) {
 }
 
 TEST(FunctionTest, DerivativeBinder) {
-  AmplExports ae;
+  Library lib("");
   func_info fi = {};
   fi.nargs = 2;
   fi.funcp = ASLHypot;
-  Function f(&ae, &fi, 0);
+  Function f(lib, &fi, 0);
   DerivativeBinder d(f, 0, 1, MakeArgs(1, 0));
   ASSERT_EQ(1, d(0));
   ASSERT_EQ(1 / sqrt(2.0), d(1));
