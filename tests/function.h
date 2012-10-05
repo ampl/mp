@@ -43,6 +43,7 @@ struct func_info;
 namespace fun {
 
 class LibraryImpl;
+class Handler {};
 
 // An AMPL function library.
 class Library {
@@ -59,7 +60,12 @@ class Library {
   LibraryImpl *impl() { return impl_.get(); }
 
   void Load();
+  std::string error() const;
+
+  unsigned GetNumFunctions() const;
   const func_info *GetFunction(const char *name) const;
+
+  const Handler *GetHandler(const char *name) const;
 };
 
 enum Type { VOID, INT, UINT, DOUBLE, POINTER };

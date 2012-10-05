@@ -31,6 +31,8 @@
 #include "tests/config.h"
 #undef VOID
 
+using std::string;
+
 static void Print(std::ostream &os, double value) {
   if (!isnan(value))
     os << value;
@@ -41,11 +43,19 @@ namespace fun {
 
 class LibraryImpl : public AmplExports, public TMInfo {
  private:
-  std::string name_;
+  string name_;
   std::vector<void*> tempmem_;
+  static string error_;
 
-  typedef std::map<std::string, func_info> FunctionMap;
+  typedef std::map<string, func_info> FunctionMap;
   FunctionMap funcs_;
+
+  typedef std::map<string, Handler> HandlerMap;
+  static HandlerMap handlers_;
+
+  static void ReportDuplicateFunction(const string &name) {
+    error_ = "duplicate function '" + name + "'";
+  }
 
   static void AddFunc_(const char *name, rfunc f,
       int type, int nargs, void *funcinfo, AmplExports *ae);
@@ -54,7 +64,10 @@ class LibraryImpl : public AmplExports, public TMInfo {
       int (*DbRead)(AmplExports *ae, TableInfo *TI),
       int (*DbWrite)(AmplExports *ae, TableInfo *TI),
       char *handler_info, int flags, void *Vinfo) {
-    // Do nothing.
+    string info(handler_info);
+    string name(info.substr(0, info.find('\n')));
+    if (!handlers_.insert(std::make_pair(name, Handler())).second)
+      ReportDuplicateFunction(name);
   }
 
   static void AtExit_(AmplExports *, Exitfunc *, void *) {
@@ -74,17 +87,31 @@ class LibraryImpl : public AmplExports, public TMInfo {
   }
 
   void Load() {
+    error_ = string();
+    handlers_.clear();
     i_option_ASL = name_.c_str();
     // Use funcadd(AmplExports*) instead of func_add(ASL*) because
     // the latter doesn't load random functions.
     funcadd(this);
   }
 
+  string error() const { return error_; }
+
+  unsigned GetNumFunctions() const { return funcs_.size(); }
+
   const func_info *GetFunction(const char *name) const {
     FunctionMap::const_iterator i = funcs_.find(name);
     return i != funcs_.end() ? &i->second : 0;
   }
+
+  const Handler *GetHandler(const char *name) const {
+    HandlerMap::const_iterator i = handlers_.find(name);
+    return i != handlers_.end() ? &i->second : 0;
+  }
 };
+
+string LibraryImpl::error_;
+LibraryImpl::HandlerMap LibraryImpl::handlers_;
 
 void LibraryImpl::AddFunc_(const char *name, rfunc f,
     int type, int nargs, void *funcinfo, AmplExports *ae) {
@@ -94,7 +121,9 @@ void LibraryImpl::AddFunc_(const char *name, rfunc f,
   fi.ftype = type;
   fi.nargs = nargs;
   fi.funcinfo = funcinfo;
-  static_cast<LibraryImpl*>(ae)->funcs_[name] = fi;
+  LibraryImpl *impl = static_cast<LibraryImpl*>(ae);
+  if (!impl->funcs_.insert(std::make_pair(name, fi)).second)
+    ReportDuplicateFunction(name);
   note_libuse_ASL();
 }
 
@@ -118,8 +147,18 @@ Library::Library(const char *name) : impl_(new LibraryImpl(name)) {}
 
 void Library::Load() { impl_->Load(); }
 
+string Library::error() const { return impl_->error(); }
+
+unsigned Library::GetNumFunctions() const {
+  return impl_->GetNumFunctions();
+}
+
 const func_info *Library::GetFunction(const char *name) const {
   return impl_->GetFunction(name);
+}
+
+const Handler *Library::GetHandler(const char *name) const {
+  return impl_->GetHandler(name);
 }
 
 const Type GetType<void>::VALUE = VOID;
@@ -160,9 +199,9 @@ FunctionInfo::~FunctionInfo() {}
 FunctionInfo &FunctionInfo::SetArgNames(const char *arg_names) {
   arg_names_.clear();
   std::istringstream is(arg_names);
-  copy(std::istream_iterator<std::string>(is),
-      std::istream_iterator<std::string>(),
-      std::back_inserter< std::vector<std::string> >(arg_names_));
+  copy(std::istream_iterator<string>(is),
+      std::istream_iterator<string>(),
+      std::back_inserter< std::vector<string> >(arg_names_));
   return *this;
 }
 

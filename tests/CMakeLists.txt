@@ -24,6 +24,7 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
   ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
+add_ampl_library(testlib testlib.cc)
 add_library(function function.cc function.h)
 
 cxx_test_with_flags(function_test "" "gtest;function;${SOLVER_LIBS}"
