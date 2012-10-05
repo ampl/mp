@@ -74,7 +74,8 @@ struct ExprDeleter {
 void ExprDeleter::operator()(expr *e) const {
   if (!e) return;
   size_t op = reinterpret_cast<size_t>(e->op);
-  unsigned type = op != OPVARSUBVAR ? optype[op] : OPTYPE_UNARY;
+  OpType type = op != OPVARSUBVAR ?
+      static_cast<OpType>(optype[op]) : OPTYPE_UNARY;
   switch (type) {
   case OPTYPE_UNARY:
     (*this)(e->L.e);
