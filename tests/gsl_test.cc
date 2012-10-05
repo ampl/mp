@@ -570,6 +570,10 @@ void GSLTest::TestFuncBindPointers(const Function &af, F f) {
 #define TEST_FUNC_ND(name, test_x) \
   TestFuncND(GetFunction(#name, FunctionInfo("n")), name, test_x)
 
+TEST_F(GSLTest, NoLibErrors) {
+  EXPECT_EQ("", lib_.error());
+}
+
 TEST_F(GSLTest, Elementary) {
   TEST_FUNC(gsl_log1p);
   TEST_FUNC(gsl_expm1);

@@ -49,6 +49,20 @@ using fun::Variant;
 
 namespace {
 
+TEST(FunctionTest, Library) {
+  Library lib("testlib.dll");
+  EXPECT_EQ(0, lib.GetNumFunctions());
+  EXPECT_TRUE(lib.GetFunction("foo") == nullptr);
+  lib.Load();
+  EXPECT_EQ(2, lib.GetNumFunctions());
+  EXPECT_TRUE(lib.GetFunction("nonexistent") == nullptr);
+  const func_info *fi = lib.GetFunction("foo");
+  EXPECT_TRUE(fi != nullptr);
+  EXPECT_STREQ(fi->name, "foo");
+  EXPECT_EQ(42, fi->funcp(nullptr));
+  EXPECT_EQ("duplicate function 'bar'", lib.error());
+}
+
 TEST(FunctionTest, Variant) {
   Variant v1;
   EXPECT_EQ(fun::DOUBLE, v1.type());
