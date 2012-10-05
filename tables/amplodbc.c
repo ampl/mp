@@ -24,16 +24,18 @@ THIS SOFTWARE.
 
  static char Version[] = "\n@(#) AMPL ODBC driver, version 20120315.\n";
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
 #include <sql.h>
 #include <sqlext.h>
 #include <stdlib.h>
 #include <string.h>
 #include "arith.h"	/* for LONG_LONG_POINTERS */
 #include "funcadd.h"
-
-#ifndef _WIN32
-#include "unistd.h"
-#endif
 
 #ifndef _WIN64
 #ifndef SQLLEN
