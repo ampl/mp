@@ -24,7 +24,6 @@ THIS SOFTWARE.
 
  static char Version[] = "\n@(#) AMPL ODBC driver, version 20120315.\n";
 
-#include <windows.h>
 #include <sql.h>
 #include <sqlext.h>
 #include <stdlib.h>
