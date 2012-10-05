@@ -17,7 +17,7 @@
 #include <string>
 
 // Operation types
-enum {
+typedef enum {
   // Unary operation
   OPTYPE_UNARY = 1,
 
@@ -50,7 +50,7 @@ enum {
 
   // The count expression
   OPTYPE_COUNT = 11
-};
+} OpType;
 
 struct expr;
 
