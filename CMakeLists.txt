@@ -32,6 +32,9 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)
   set(HAVE_GSL 1)
 endif ()
 
+include(CheckCCompilerFlag)
+check_c_compiler_flag(-fPIC HAVE_FPIC_FLAG)
+
 # Adds a shared AMPL library which by convention doesn't have any prefix
 # and has a suffix ".dll".
 macro(add_ampl_library name)
