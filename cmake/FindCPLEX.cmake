@@ -109,17 +109,17 @@ elseif (NOT CPLEX_LIBRARY)
     FILEPATH "Path to the debug CPLEX library")
 endif ()
 
-# Handle the QUIETLY and REQUIRED arguments and set CPLEX_FOUND to TRUE
-# if all listed variables are TRUE.
-find_package_handle_standard_args(
-  CPLEX DEFAULT_MSG CPLEX_LIBRARY CPLEX_LIBRARY_DEBUG CPLEX_INCLUDE_DIR)
-
 set(CPLEX_INCLUDE_DIRS ${CPLEX_INCLUDE_DIR})
 set(CPLEX_LIBRARIES
   optimized ${CPLEX_LIBRARY} debug ${CPLEX_LIBRARY_DEBUG}
   ${CMAKE_THREAD_LIBS_INIT})
 
-mark_as_advanced(CPLEX_INCLUDE_DIR CPLEX_LIBRARY)
+# Handle the QUIETLY and REQUIRED arguments and set CPLEX_FOUND to TRUE
+# if all listed variables are TRUE.
+find_package_handle_standard_args(
+  CPLEX DEFAULT_MSG CPLEX_INCLUDE_DIR CPLEX_LIBRARY CPLEX_LIBRARY_DEBUG)
+
+mark_as_advanced(CPLEX_INCLUDE_DIR CPLEX_LIBRARY CPLEX_LIBRARY_DEBUG)
 
 # ----------------------------------------------------------------------------
 # Concert
@@ -147,18 +147,19 @@ find_path(CPLEX_CONCERT_INCLUDE_DIR ilconcert/ilosys.h
 # Find the Concert library.
 find_cplex_library(CPLEX_CONCERT_LIBRARY concert ${CPLEX_CONCERT_DIR})
 
-# Handle the QUIETLY and REQUIRED arguments and set CPLEX_CONCERT_FOUND to
-# TRUE if all listed variables are TRUE.
-find_package_handle_standard_args(
-  CPLEX_CONCERT DEFAULT_MSG CPLEX_CONCERT_LIBRARY CPLEX_CONCERT_LIBRARY_DEBUG
-  CPLEX_CONCERT_INCLUDE_DIR)
-
 set(CPLEX_CONCERT_INCLUDE_DIRS ${CPLEX_CONCERT_INCLUDE_DIR})
 set(CPLEX_CONCERT_LIBRARIES
   optimized ${CPLEX_CONCERT_LIBRARY} debug ${CPLEX_CONCERT_LIBRARY_DEBUG}
   ${CMAKE_THREAD_LIBS_INIT})
 
-mark_as_advanced(CPLEX_CONCERT_INCLUDE_DIR CPLEX_CONCERT_LIBRARY)
+# Handle the QUIETLY and REQUIRED arguments and set CPLEX_CONCERT_FOUND to
+# TRUE if all listed variables are TRUE.
+find_package_handle_standard_args(
+  CPLEX_CONCERT DEFAULT_MSG CPLEX_CONCERT_INCLUDE_DIR
+  CPLEX_CONCERT_LIBRARY CPLEX_CONCERT_LIBRARY_DEBUG)
+
+mark_as_advanced(CPLEX_CONCERT_INCLUDE_DIR
+  CPLEX_CONCERT_LIBRARY CPLEX_CONCERT_LIBRARY_DEBUG)
 
 # ----------------------------------------------------------------------------
 # IloCplex - depends on CPLEX and Concert
@@ -178,20 +179,21 @@ find_path(CPLEX_ILOCPLEX_INCLUDE_DIR ilcplex/ilocplex.h
 # Find the IloCplex library.
 find_cplex_library(CPLEX_ILOCPLEX_LIBRARY ilocplex ${CPLEX_DIR})
 
-# Handle the QUIETLY and REQUIRED arguments and set CPLEX_ILOCPLEX_FOUND to
-# TRUE if all listed variables are TRUE.
-find_package_handle_standard_args(
-  CPLEX_ILOCPLEX DEFAULT_MSG
-  CPLEX_ILOCPLEX_LIBRARY CPLEX_ILOCPLEX_LIBRARY_DEBUG
-  CPLEX_ILOCPLEX_INCLUDE_DIR CPLEX_FOUND CPLEX_CONCERT_FOUND)
-
 set(CPLEX_ILOCPLEX_INCLUDE_DIRS
   ${CPLEX_ILOCPLEX_INCLUDE_DIR} ${CPLEX_CONCERT_INCLUDE_DIRS})
 set(CPLEX_ILOCPLEX_LIBRARIES
   optimized ${CPLEX_ILOCPLEX_LIBRARY} debug ${CPLEX_ILOCPLEX_LIBRARY_DEBUG}
   ${CPLEX_CONCERT_LIBRARIES} ${CPLEX_LIBRARIES})
 
-mark_as_advanced(CPLEX_ILOCPLEX_INCLUDE_DIR CPLEX_ILOCPLEX_LIBRARY)
+# Handle the QUIETLY and REQUIRED arguments and set CPLEX_ILOCPLEX_FOUND to
+# TRUE if all listed variables are TRUE.
+find_package_handle_standard_args(
+  CPLEX_ILOCPLEX DEFAULT_MSG CPLEX_ILOCPLEX_INCLUDE_DIR
+  CPLEX_ILOCPLEX_LIBRARY CPLEX_ILOCPLEX_LIBRARY_DEBUG
+  CPLEX_FOUND CPLEX_CONCERT_FOUND)
+
+mark_as_advanced(CPLEX_ILOCPLEX_INCLUDE_DIR
+  CPLEX_ILOCPLEX_LIBRARY CPLEX_ILOCPLEX_LIBRARY_DEBUG)
 
 # ----------------------------------------------------------------------------
 # CP Optimizer - depends on Concert
@@ -204,12 +206,6 @@ find_path(CPLEX_CP_INCLUDE_DIR ilcp/cp.h PATHS ${CPLEX_CP_DIR}/include)
 # Find the CP Optimizer library.
 find_cplex_library(CPLEX_CP_LIBRARY cp ${CPLEX_CP_DIR})
 
-# Handle the QUIETLY and REQUIRED arguments and set CPLEX_CP_FOUND to TRUE
-# if all listed variables are TRUE.
-find_package_handle_standard_args(
-  CPLEX_CP DEFAULT_MSG CPLEX_CP_LIBRARY CPLEX_CP_LIBRARY_DEBUG
-  CPLEX_CP_INCLUDE_DIR CPLEX_CONCERT_FOUND)
-
 if (WIN32)
   set(CPLEX_CP_EXTRA_LIBRARIES Ws2_32.lib)
 endif ()
@@ -220,4 +216,10 @@ set(CPLEX_CP_LIBRARIES
   optimized ${CPLEX_CP_LIBRARY} debug ${CPLEX_CP_LIBRARY_DEBUG}
   ${CPLEX_CONCERT_LIBRARIES} ${CPLEX_CP_EXTRA_LIBRARIES})
 
-mark_as_advanced(CPLEX_CP_INCLUDE_DIR CPLEX_CP_LIBRARY)
+# Handle the QUIETLY and REQUIRED arguments and set CPLEX_CP_FOUND to TRUE
+# if all listed variables are TRUE.
+find_package_handle_standard_args(
+  CPLEX_CP DEFAULT_MSG CPLEX_CP_INCLUDE_DIR
+  CPLEX_CP_LIBRARY CPLEX_CP_LIBRARY_DEBUG CPLEX_CONCERT_FOUND)
+
+mark_as_advanced(CPLEX_CP_INCLUDE_DIR CPLEX_CP_LIBRARY CPLEX_CP_LIBRARY_DEBUG)
