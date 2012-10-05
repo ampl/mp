@@ -31,6 +31,10 @@ THIS SOFTWARE.
 #include "arith.h"	/* for LONG_LONG_POINTERS */
 #include "funcadd.h"
 
+#ifndef _WIN32
+#include "unistd.h"
+#endif
+
 #ifndef _WIN64
 #ifndef SQLLEN
 #define SQLLEN SQLINTEGER
@@ -985,7 +989,10 @@ fully_qualify(char *dsname, char *buf, size_t len)
 	if (((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) && dsname[1] == ':')
 		return dsname;
 	Ldsn = strlen(dsname);
-	if (!(n = GetCurrentDirectory(len, buf)) || n + Ldsn + 1 >= len)
+	if (!getcwd(buf, len))
+          return dsname;
+	n = strlen(buf);
+	if (n + Ldsn + 1 >= len)
 		return dsname;
 	buf[n++] = '\\';
 	strcpy(buf+n, dsname);
@@ -1006,7 +1013,7 @@ fully_qualify(char *dsname, char *buf, size_t len)
 	int score;
 	} winfo;
 
-#ifdef WIN32
+#ifdef _WIN32
 
  static int
 match1(char *s, char *t)
@@ -1082,7 +1089,7 @@ hw_get(AmplExports *ae)
 		}
 	}
 
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
  static void
 colname_adjust(AmplExports *ae, HInfo *h, TableInfo *TI)
@@ -1284,8 +1291,10 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 	wantretry = 1;
 	h->sqldb = verbose & 2;
 	h->verbose = verbose &= 1;
+#ifdef _WIN32
 	if (!winfo.score)
 		hw_get(ae);
+#endif
 	if (match("DSN=", UC dsname, UC dsname+4)
 	 || match("DRIVER=",UC dsname, UC dsname+7)) {
  try_dsname:

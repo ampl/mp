@@ -4,9 +4,12 @@ add_ampl_library(fullbit fullbit.c)
 find_package(ODBC)
 if (ODBC_FOUND)
   add_library(amplodbc amplodbc.c)
-  set(AMPLODBC amplodbc)
+  set(AMPLODBC amplodbc ${ODBC_LIBRARIES})
   set_target_properties(amplodbc
     PROPERTIES COMPILE_DEFINITIONS funcadd_ASL=funcaddodbc_ASL)
+  if (HAVE_FPIC_FLAG)
+    set_target_properties(amplodbc PROPERTIES COMPILE_FLAGS -fPIC)
+  endif ()
 endif ()
 
 if (WIN32)
@@ -16,6 +19,8 @@ endif ()
 
 add_ampl_library(ampltabl tableproxy.c tableproxyver.h)
 target_link_libraries(ampltabl ${TABLEPROXY_LIBS} ${AMPLODBC})
+set_target_properties(ampltabl
+  PROPERTIES COMPILE_DEFINITIONS OTHER_FUNCADD=funcaddodbc_ASL)
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
   set(TABLEPROXY_SUFFIX 64)
