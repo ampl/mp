@@ -1006,6 +1006,8 @@ fully_qualify(char *dsname, char *buf, size_t len)
 	int score;
 	} winfo;
 
+#ifdef WIN32
+
  static int
 match1(char *s, char *t)
 {
@@ -1079,6 +1081,8 @@ hw_get(AmplExports *ae)
 		EnumWindows(mywproc, 0);
 		}
 	}
+
+#endif /* WIN32 */
 
  static void
 colname_adjust(AmplExports *ae, HInfo *h, TableInfo *TI)
