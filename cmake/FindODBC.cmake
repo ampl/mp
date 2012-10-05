@@ -7,7 +7,7 @@
 #  ODBC_LIBRARIES - The libraries needed to use ODBC
 
 find_path(ODBC_INCLUDE_DIR sql.h)
-find_library(ODBC_LIBRARY odbc)
+find_library(ODBC_LIBRARY NAMES odbc odbc32)
 
 include(FindPackageHandleStandardArgs)
 # Handle the QUIETLY and REQUIRED arguments and set ODBC_FOUND to TRUE
