@@ -3,8 +3,8 @@
 set Letters;
 var d{Letters} >= 0 <= 9 integer;
 
-s.t. nonzeroS: d['S'] >= 1;
-s.t. nonzeroM: d['M'] >= 1;
+s.t. nonzeroS: d['S'] != 0;
+s.t. nonzeroM: d['M'] != 0;
 
 s.t. equation:     1000 * d['S'] + 100 * d['E'] + 10 * d['N'] + d['D'] +
                    1000 * d['M'] + 100 * d['O'] + 10 * d['R'] + d['E'] =
