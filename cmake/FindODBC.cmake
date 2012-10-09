@@ -21,6 +21,6 @@ include(FindPackageHandleStandardArgs)
 # Handle the QUIETLY and REQUIRED arguments and set ODBC_FOUND to TRUE
 # if all listed variables are TRUE.
 find_package_handle_standard_args(
-  ODBC DEFAULT_MSG ODBC_INCLUDE_DIR ODBC_LIBRARY ${ODBC_EXTRA_LIBS_VAR})
+  ODBC DEFAULT_MSG ODBC_LIBRARY ${ODBC_EXTRA_LIBS_VAR} ODBC_INCLUDE_DIR)
 
-mark_as_advanced(ODBC_INCLUDE_DIR ODBC_LIBRARY ${ODBC_EXTRA_LIBS_VAR})
+mark_as_advanced(ODBC_LIBRARY ${ODBC_EXTRA_LIBS_VAR} ODBC_INCLUDE_DIR)
