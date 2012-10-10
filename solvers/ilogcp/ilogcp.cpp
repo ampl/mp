@@ -276,14 +276,6 @@ keyword Driver::keywords_[] = {
       CSTR("Limit on the number of failures allowed before\n"
           SPACE "terminating a search.  Default = no limit.\n")),
 
-  KW(CSTR("ilogcplex"), Driver::use_cplex, Driver::ILOGOPTTYPE,
-      CSTR("Single-word phrase:  use IBM ILOG CPLEX\n"
-          SPACE "optimizer.\n")),
-
-  KW(CSTR("ilogsolver"), Driver::use_cpoptimizer, Driver::ILOGOPTTYPE,
-      CSTR("Single-word phrase:  use IBM ILOG Constraint\n"
-          SPACE "Programming optimizer (default).\n")),
-
   KW(CSTR("logperiod"),
       Driver::set_cp_int_option, &LogPeriod,
       CSTR("Specifies how often the information in the\n"
@@ -305,6 +297,16 @@ keyword Driver::keywords_[] = {
       Driver::set_cp_dbl_option, IloCP::OptimalityTolerance,
       CSTR("Absolute tolerance on the objective value.\n"
           SPACE "Default = 0.\n")),
+
+  KW(CSTR("optimizer"), Driver::set_optimizer, 0,
+      CSTR("Specifies which optimizer to use.\n"
+          SPACE "Possible values:\n"
+          SPACE "      auto  = CP Optimizer if the problem has\n"
+          SPACE "              nonlinear objective/constraints\n"
+          SPACE "              or logical constraints, CPLEX\n"
+          SPACE "              otherwise (default)\n"
+          SPACE "      cp    = CP Optimizer\n"
+          SPACE "      cplex = CPLEX Optimizer\n")),
 
   KW(CSTR("outlev"), Driver::set_cp_int_option,
       &LogVerbosity, CSTR("Synonym for \"logverbosity\".\n")),
@@ -403,7 +405,7 @@ Driver::Driver() :
   size_t L;
 
   options_[DEBUGEXPR] = 0;
-  options_[ILOGOPTTYPE] = DEFAULT_OPT;
+  options_[OPTIMIZER] = AUTO;
   options_[TIMING] = 0;
   options_[USENUMBEROF] = 1;
 
@@ -432,18 +434,25 @@ Driver::~Driver() {
    ASL_free(reinterpret_cast<ASL**>(&asl));
 }
 
-char *Driver::use_cplex(Option_Info *oi, keyword *, char *value) {
+char *Driver::set_optimizer(Option_Info *oi, keyword *kw, char *value) {
    Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
+   int opt = 0;
+   char *end = skip_nonspace(value);
+   size_t length = end - value;
+   if (strncmp(value, "auto", length) == 0) {
+     opt = AUTO;
+   } else if (strncmp(value, "cp", length) == 0) {
+     opt = CP;
+   } else if (strncmp(value, "cplex", length) == 0) {
+     opt = CPLEX;
+   } else {
+     ++d->n_badvals;
+     cerr << "Invalid value " << string(value, end)
+         << " for option " << kw->name << endl;
+   }
    if (!d->gotopttype)
-      d->options_[ILOGOPTTYPE] = CPLEX;
-   return value;
-}
-
-char *Driver::use_cpoptimizer(Option_Info *oi, keyword *, char *value) {
-   Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
-   if (!d->gotopttype)
-      d->options_[ILOGOPTTYPE] = CPOPTIMIZER;
-   return value;
+      d->options_[OPTIMIZER] = opt;
+   return end;
 }
 
 char *Driver::set_int_option(Option_Info *oi, keyword *kw, char *value) {
@@ -484,7 +493,7 @@ char *Driver::set_cp_int_option(Option_Info *oi, keyword *kw, char *value) {
    Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
    if (!d->gotopttype)
       return skip_nonspace(value);
-   if (d->get_option(ILOGOPTTYPE) != CPOPTIMIZER) {
+   if (d->get_option(OPTIMIZER) != CP) {
       ++d->n_badvals;
       cerr << "Invalid option " << kw->name << " for CPLEX optimizer" << endl;
       return skip_nonspace(value);
@@ -525,7 +534,7 @@ char *Driver::set_cp_dbl_option(Option_Info *oi, keyword *kw, char *value) {
    Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
    if (!d->gotopttype)
       return skip_nonspace(value);
-   if (d->get_option(ILOGOPTTYPE) != CPOPTIMIZER) {
+   if (d->get_option(OPTIMIZER) != CP) {
       ++d->n_badvals;
       cerr << "Invalid option " << kw->name << " for CPLEX optimizer" << endl;
       return skip_nonspace(value);
@@ -550,10 +559,10 @@ bool Driver::parse_options(char **argv) {
    if (getopts(argv, oinfo_.get()))
       return false;
 
-   int &ilogopttype = options_[ILOGOPTTYPE];
-   if (ilogopttype == DEFAULT_OPT)
-      ilogopttype = nlo + nlc + n_lcon == 0 ? CPLEX : CPOPTIMIZER;
-   if (ilogopttype == CPLEX)
+   int &opt = options_[OPTIMIZER];
+   if (opt == AUTO)
+     opt = nlo + nlc + n_lcon == 0 ? CPLEX : CP;
+   if (opt == CPLEX)
       optimizer_.reset(new CPLEXOptimizer(env_, asl));
    else optimizer_.reset(new CPOptimizer(env_, asl));
 
@@ -624,7 +633,7 @@ int Driver::run(char **argv) {
 
    int n_var_int = nbv + niv + nlvbi + nlvci + nlvoi;
    int n_var_cont = n_var - n_var_int;
-   if (n_var_cont != 0 && get_option(ILOGOPTTYPE) == CPOPTIMIZER) {
+   if (n_var_cont != 0 && get_option(OPTIMIZER) == CP) {
       cerr << "CP Optimizer doesn't support continuous variables" << endl;
       return 1;
    }

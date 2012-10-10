@@ -143,24 +143,23 @@ class Driver {
   // Options accessible from AMPL.
   enum Option {
     DEBUGEXPR,
-    ILOGOPTTYPE,
+    OPTIMIZER,
     TIMING,
     USENUMBEROF,
     NUM_OPTIONS
   };
 
-  // Values for the ILOGOPTTYPE option.
+  // Values for the OPTIMIZER option.
   enum {
-    DEFAULT_OPT = -1,
-    CPOPTIMIZER = 0,
-    CPLEX       = 1
+    AUTO  = -1,
+    CP    =  0,
+    CPLEX =  1
   };
 
  private:
   int options_[NUM_OPTIONS];
 
-  static char *use_cplex(Option_Info *oi, keyword *kw, char *value);
-  static char *use_cpoptimizer(Option_Info *oi, keyword *kw, char *value);
+  static char *set_optimizer(Option_Info *oi, keyword *kw, char *value);
   static char *set_int_option(Option_Info *oi, keyword *kw, char *value);
   static char *set_bool_option(Option_Info *oi, keyword *kw, char *value);
 
