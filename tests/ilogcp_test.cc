@@ -166,7 +166,7 @@ struct EnumValue {
   IloCP::ParameterValues value;
 };
 
-class ConcertTest : public ::testing::Test {
+class IlogCPTest : public ::testing::Test {
  protected:
   Driver d;
   IloEnv env;
@@ -266,7 +266,7 @@ class ConcertTest : public ::testing::Test {
       double good, double bad);
 };
 
-ExprPtr ConcertTest::NewVarArg(int opcode, ExprPtr e1, ExprPtr e2, ExprPtr e3) {
+ExprPtr IlogCPTest::NewVarArg(int opcode, ExprPtr e1, ExprPtr e2, ExprPtr e3) {
   expr_va e = {reinterpret_cast<efunc*>(opcode), 0, {0}, {0}, 0, 0, 0};
   expr_va *copy = new expr_va(e);
   ExprPtr result(reinterpret_cast<expr*>(copy));
@@ -279,7 +279,7 @@ ExprPtr ConcertTest::NewVarArg(int opcode, ExprPtr e1, ExprPtr e2, ExprPtr e3) {
   return result;
 }
 
-ExprPtr ConcertTest::NewPLTerm(int size, const double *args, int var_index) {
+ExprPtr IlogCPTest::NewPLTerm(int size, const double *args, int var_index) {
   expr e = {reinterpret_cast<efunc*>(OPPLTERM), 0, 0, {0}, {0}, 0};
   ExprPtr pl(new expr(e));
   pl->L.p = static_cast<plterm*>(
@@ -292,7 +292,7 @@ ExprPtr ConcertTest::NewPLTerm(int size, const double *args, int var_index) {
   return pl;
 }
 
-ExprPtr ConcertTest::NewIf(int opcode, ExprPtr condition,
+ExprPtr IlogCPTest::NewIf(int opcode, ExprPtr condition,
     ExprPtr true_expr, ExprPtr false_expr) {
   expr_if e = {reinterpret_cast<efunc*>(opcode), 0, condition.release(),
                true_expr.release(), false_expr.release(),
@@ -300,7 +300,7 @@ ExprPtr ConcertTest::NewIf(int opcode, ExprPtr condition,
   return ExprPtr(reinterpret_cast<expr*>(new expr_if(e)));
 }
 
-ExprPtr ConcertTest::NewSum(int opcode,
+ExprPtr IlogCPTest::NewSum(int opcode,
     ExprPtr arg1, ExprPtr arg2, ExprPtr arg3) {
   expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {0}, {0}, 0};
   ExprPtr sum(new expr(e));
@@ -312,7 +312,7 @@ ExprPtr ConcertTest::NewSum(int opcode,
   return sum;
 }
 
-SolveResult ConcertTest::Solve(const char *stub) {
+SolveResult IlogCPTest::Solve(const char *stub) {
   RunDriver(stub);
   ifstream ifs((string(stub) + ".sol").c_str());
   string line;
@@ -327,7 +327,7 @@ SolveResult ConcertTest::Solve(const char *stub) {
       atof(line.c_str() + pos + sizeof(obj) - 1) : zero / zero);
 }
 
-void ConcertTest::CheckIntCPOption(const char *option,
+void IlogCPTest::CheckIntCPOption(const char *option,
     IloCP::IntParam param, int start, int end, int offset, bool accepts_auto,
     const EnumValue *values) {
   for (int i = start; i <= std::min(end, 9); ++i) {
@@ -368,7 +368,7 @@ void ConcertTest::CheckIntCPOption(const char *option,
   }
 }
 
-void ConcertTest::CheckDblCPOption(const char *option,
+void IlogCPTest::CheckDblCPOption(const char *option,
     IloCP::NumParam param, double good, double bad) {
   EXPECT_TRUE(ParseOptions("ilogsolver", Option(option, good).c_str()));
   CPOptimizer *opt = dynamic_cast<CPOptimizer*>(d.optimizer());
@@ -380,43 +380,43 @@ void ConcertTest::CheckDblCPOption(const char *option,
   EXPECT_FALSE(ParseOptions("ilogcplex", Option(option, good).c_str()));
 }
 
-TEST_F(ConcertTest, ConvertNum) {
+TEST_F(IlogCPTest, ConvertNum) {
   EXPECT_EQ("0.42", str(d.build_expr(NewNum(0.42).get())));
 }
 
-TEST_F(ConcertTest, ConvertVar) {
+TEST_F(IlogCPTest, ConvertVar) {
   EXPECT_EQ("theta", str(d.build_expr(NewVar(2).get())));
 }
 
-TEST_F(ConcertTest, ConvertPlus) {
+TEST_F(IlogCPTest, ConvertPlus) {
   EXPECT_EQ("x + 42", str(d.build_expr(
     NewBinary(OPPLUS, NewVar(0), NewNum(42)).get())));
   EXPECT_EQ("x + y", str(d.build_expr(
     NewBinary(OPPLUS, NewVar(0), NewVar(1)).get())));
 }
 
-TEST_F(ConcertTest, ConvertMinus) {
+TEST_F(IlogCPTest, ConvertMinus) {
   EXPECT_EQ("x + -42", str(d.build_expr(
     NewBinary(OPMINUS, NewVar(0), NewNum(42)).get())));
   EXPECT_EQ("x + -1 * y", str(d.build_expr(
     NewBinary(OPMINUS, NewVar(0), NewVar(1)).get())));
 }
 
-TEST_F(ConcertTest, ConvertMult) {
+TEST_F(IlogCPTest, ConvertMult) {
   EXPECT_EQ("42 * x", str(d.build_expr(
     NewBinary(OPMULT, NewVar(0), NewNum(42)).get())));
   EXPECT_EQ("x * y", str(d.build_expr(
     NewBinary(OPMULT, NewVar(0), NewVar(1)).get())));
 }
 
-TEST_F(ConcertTest, ConvertDiv) {
+TEST_F(IlogCPTest, ConvertDiv) {
   EXPECT_EQ("x / 42", str(d.build_expr(
     NewBinary(OPDIV, NewVar(0), NewNum(42)).get())));
   EXPECT_EQ("x / y", str(d.build_expr(
     NewBinary(OPDIV, NewVar(0), NewVar(1)).get())));
 }
 
-TEST_F(ConcertTest, ConvertRem) {
+TEST_F(IlogCPTest, ConvertRem) {
   EXPECT_EQ("x + trunc(x / y ) * y * -1", str(d.build_expr(
     NewBinary(OPREM, NewVar(0), NewVar(1)).get())));
   EXPECT_EQ(0, EvalRem(9, 3));
@@ -427,47 +427,47 @@ TEST_F(ConcertTest, ConvertRem) {
   EXPECT_EQ(1.5, EvalRem(7.5, 3));
 }
 
-TEST_F(ConcertTest, ConvertPow) {
+TEST_F(IlogCPTest, ConvertPow) {
   EXPECT_EQ("x ^ 42", str(d.build_expr(
     NewBinary(OPPOW, NewVar(0), NewNum(42)).get())));
   EXPECT_EQ("x ^ y", str(d.build_expr(
     NewBinary(OPPOW, NewVar(0), NewVar(1)).get())));
 }
 
-TEST_F(ConcertTest, ConvertLess) {
+TEST_F(IlogCPTest, ConvertLess) {
   EXPECT_EQ("max(x + -42 , 0)", str(d.build_expr(
     NewBinary(OPLESS, NewVar(0), NewNum(42)).get())));
   EXPECT_EQ("max(x + -1 * y , 0)", str(d.build_expr(
     NewBinary(OPLESS, NewVar(0), NewVar(1)).get())));
 }
 
-TEST_F(ConcertTest, ConvertMin) {
+TEST_F(IlogCPTest, ConvertMin) {
   EXPECT_EQ("min( [x , y , 42 ])", str(d.build_expr(
     NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get())));
 }
 
-TEST_F(ConcertTest, ConvertMax) {
+TEST_F(IlogCPTest, ConvertMax) {
   EXPECT_EQ("max([x , y , 42 ])", str(d.build_expr(
     NewVarArg(MAXLIST, NewVar(0), NewVar(1), NewNum(42)).get())));
 }
 
-TEST_F(ConcertTest, ConvertFloor) {
+TEST_F(IlogCPTest, ConvertFloor) {
   EXPECT_EQ("floor(x )", str(d.build_expr(NewUnary(FLOOR, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertCeil) {
+TEST_F(IlogCPTest, ConvertCeil) {
   EXPECT_EQ("ceil(x )", str(d.build_expr(NewUnary(CEIL, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertAbs) {
+TEST_F(IlogCPTest, ConvertAbs) {
   EXPECT_EQ("abs(x )", str(d.build_expr(NewUnary(ABS, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertUMinus) {
+TEST_F(IlogCPTest, ConvertUMinus) {
   EXPECT_EQ("-1 * x", str(d.build_expr(NewUnary(OPUMINUS, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertUnsupportedExprThrows) {
+TEST_F(IlogCPTest, ConvertUnsupportedExprThrows) {
   int ops[] = {
       OPOR, OPAND, LT, LE, EQ, GE, GT, NE, OPNOT,
       OPprecision, OPFUNCALL, OPIFSYM, OPHOL,
@@ -493,7 +493,7 @@ TEST_F(ConcertTest, ConvertUnsupportedExprThrows) {
     NewSum(ORLIST, NewVar(0), NewVar(1)).get()), UnsupportedExprError);
 }
 
-TEST_F(ConcertTest, ConvertIf) {
+TEST_F(IlogCPTest, ConvertIf) {
   EXPECT_EQ("IloNumVar(7)[-inf..inf]", str(d.build_expr(NewIf(OPIFnl,
       NewBinary(EQ, NewVar(0), NewNum(0)), NewVar(1), NewNum(42)).get())));
 
@@ -516,7 +516,7 @@ TEST_F(ConcertTest, ConvertIf) {
   EXPECT_FALSE(iter.ok());
 }
 
-TEST_F(ConcertTest, ConvertTanh) {
+TEST_F(IlogCPTest, ConvertTanh) {
   EXPECT_EQ("exp(2 * x ) + -1 / exp(2 * x ) + 1",
             str(d.build_expr(NewUnary(OP_tanh, NewVar(0)).get())));
   // Concert incorrectly omits brackets around the dividend and divisor
@@ -529,52 +529,52 @@ TEST_F(ConcertTest, ConvertTanh) {
   EXPECT_NEAR(-0.964027, eval(e), 1e-5);
 }
 
-TEST_F(ConcertTest, ConvertTan) {
+TEST_F(IlogCPTest, ConvertTan) {
   EXPECT_EQ("tan(x )", str(d.build_expr(NewUnary(OP_tan, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertSqrt) {
+TEST_F(IlogCPTest, ConvertSqrt) {
   EXPECT_EQ("x ^ 0.5",
             str(d.build_expr(NewUnary(OP_sqrt, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertSinh) {
+TEST_F(IlogCPTest, ConvertSinh) {
   EXPECT_EQ("exp(x ) * 0.5 + exp(-1 * x ) * -0.5",
             str(d.build_expr(NewUnary(OP_sinh, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertSin) {
+TEST_F(IlogCPTest, ConvertSin) {
   EXPECT_EQ("sin(x )", str(d.build_expr(NewUnary(OP_sin, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertLog10) {
+TEST_F(IlogCPTest, ConvertLog10) {
   EXPECT_EQ("log(x )/ 2.30259",
             str(d.build_expr(NewUnary(OP_log10, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertLog) {
+TEST_F(IlogCPTest, ConvertLog) {
   EXPECT_EQ("log(x )", str(d.build_expr(NewUnary(OP_log, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertExp) {
+TEST_F(IlogCPTest, ConvertExp) {
   EXPECT_EQ("exp(x )", str(d.build_expr(NewUnary(OP_exp, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertCosh) {
+TEST_F(IlogCPTest, ConvertCosh) {
   EXPECT_EQ("exp(x ) * 0.5 + exp(-1 * x ) * 0.5",
             str(d.build_expr(NewUnary(OP_cosh, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertCos) {
+TEST_F(IlogCPTest, ConvertCos) {
   EXPECT_EQ("cos(x )", str(d.build_expr(NewUnary(OP_cos, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertAtanh) {
+TEST_F(IlogCPTest, ConvertAtanh) {
   EXPECT_EQ("log(x + 1 ) * 0.5 + log(-1 * x + 1 ) * -0.5",
             str(d.build_expr(NewUnary(OP_atanh, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertAtan2) {
+TEST_F(IlogCPTest, ConvertAtan2) {
   EXPECT_EQ("IloNumVar(8)[-inf..inf]",
             str(d.build_expr(NewBinary(OP_atan2, NewVar(1), NewVar(0)).get())));
 
@@ -612,12 +612,12 @@ TEST_F(ConcertTest, ConvertAtan2) {
   EXPECT_TRUE(d1 != d1);
 }
 
-TEST_F(ConcertTest, ConvertAtan) {
+TEST_F(IlogCPTest, ConvertAtan) {
   EXPECT_EQ("arc-tan(x )",
             str(d.build_expr(NewUnary(OP_atan, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertAsinh) {
+TEST_F(IlogCPTest, ConvertAsinh) {
   EXPECT_EQ("log(x + square(x ) + 1 ^ 0.5)",
             str(d.build_expr(NewUnary(OP_asinh, NewVar(0)).get())));
   // Concert incorrectly omits brackets around square(x) + 1
@@ -630,12 +630,12 @@ TEST_F(ConcertTest, ConvertAsinh) {
   EXPECT_NEAR(-1.443635, eval(e), 1e-5);
 }
 
-TEST_F(ConcertTest, ConvertAsin) {
+TEST_F(IlogCPTest, ConvertAsin) {
   EXPECT_EQ("arc-sin(x )",
             str(d.build_expr(NewUnary(OP_asin, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertAcosh) {
+TEST_F(IlogCPTest, ConvertAcosh) {
   EXPECT_EQ("log(x + x + 1 ^ 0.5 * x + -1 ^ 0.5)",
             str(d.build_expr(NewUnary(OP_acosh, NewVar(0)).get())));
   // Concert incorrectly omits brackets around x + 1 and x + -1
@@ -649,22 +649,22 @@ TEST_F(ConcertTest, ConvertAcosh) {
   EXPECT_TRUE(n != n);
 }
 
-TEST_F(ConcertTest, ConvertAcos) {
+TEST_F(IlogCPTest, ConvertAcos) {
   EXPECT_EQ("arc-cos(x )",
             str(d.build_expr(NewUnary(OP_acos, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertSum) {
+TEST_F(IlogCPTest, ConvertSum) {
   EXPECT_EQ("x + y + 42", str(d.build_expr(
       NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get())));
 }
 
-TEST_F(ConcertTest, ConvertIntDiv) {
+TEST_F(IlogCPTest, ConvertIntDiv) {
   EXPECT_EQ("trunc(x / y )", str(d.build_expr(
     NewBinary(OPintDIV, NewVar(0), NewVar(1)).get())));
 }
 
-TEST_F(ConcertTest, ConvertRound) {
+TEST_F(IlogCPTest, ConvertRound) {
   EXPECT_EQ("round(x )", str(d.build_expr(
     NewBinary(OPround, NewVar(0), NewNum(0)).get())));
 
@@ -679,7 +679,7 @@ TEST_F(ConcertTest, ConvertRound) {
     NewBinary(OPround, NewVar(0), NewVar(1)).get()), UnsupportedExprError);
 }
 
-TEST_F(ConcertTest, ConvertTrunc) {
+TEST_F(IlogCPTest, ConvertTrunc) {
   EXPECT_EQ("trunc(x )", str(d.build_expr(
     NewBinary(OPtrunc, NewVar(0), NewNum(0)).get())));
   EXPECT_EQ(1234, eval(d.build_expr(
@@ -688,28 +688,28 @@ TEST_F(ConcertTest, ConvertTrunc) {
     NewBinary(OPtrunc, NewVar(0), NewVar(1)).get()), UnsupportedExprError);
 }
 
-TEST_F(ConcertTest, Convert1Pow) {
+TEST_F(IlogCPTest, Convert1Pow) {
   EXPECT_EQ("x ^ 42", str(d.build_expr(
     NewBinary(OP1POW, NewVar(0), NewNum(42)).get())));
 }
 
-TEST_F(ConcertTest, Convert2Pow) {
+TEST_F(IlogCPTest, Convert2Pow) {
   EXPECT_EQ("square(x )", str(d.build_expr(
     NewUnary(OP2POW, NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertCPow) {
+TEST_F(IlogCPTest, ConvertCPow) {
   EXPECT_EQ("42 ^ x", str(d.build_expr(
     NewBinary(OPCPOW, NewNum(42), NewVar(0)).get())));
 }
 
-TEST_F(ConcertTest, ConvertPLTerm) {
+TEST_F(IlogCPTest, ConvertPLTerm) {
   double args[] = {-1, 5, 0, 10, 1};
   EXPECT_EQ("piecewiselinear(x[0..1] , [5, 10], [-1, 0, 1], 0, 0)",
             str(d.build_expr(NewPLTerm(5, args, 0).get())));
 }
 
-TEST_F(ConcertTest, ConvertCount) {
+TEST_F(IlogCPTest, ConvertCount) {
   ExprPtr a(NewBinary(EQ, NewVar(0), NewNum(0)));
   ExprPtr b(NewBinary(LE, NewVar(1), NewNum(42)));
   ExprPtr c(NewBinary(GE, NewVar(2), NewNum(0)));
@@ -717,7 +717,7 @@ TEST_F(ConcertTest, ConvertCount) {
       NewSum(OPCOUNT, move(a), move(b), move(c)).get())));
 }
 
-TEST_F(ConcertTest, ConvertNumberOf) {
+TEST_F(IlogCPTest, ConvertNumberOf) {
   d.use_numberof();
   EXPECT_EQ("x == theta + y == theta", str(d.build_expr(
       NewSum(OPNUMBEROF, NewVar(2), NewVar(0), NewVar(1)).get())));
@@ -726,14 +726,14 @@ TEST_F(ConcertTest, ConvertNumberOf) {
       NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)).get())));
 }
 
-TEST_F(ConcertTest, IloArrayCopyingIsCheap) {
+TEST_F(IlogCPTest, IloArrayCopyingIsCheap) {
   IloIntArray array(env);
   array.add(42);
   EXPECT_TRUE(array.getImpl() != nullptr);
   EXPECT_EQ(array.getImpl(), IloIntArray(array).getImpl());
 }
 
-TEST_F(ConcertTest, ConvertSingleNumberOfToIloDistribute) {
+TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
   d.use_numberof();
   std::ostringstream os;
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
@@ -759,7 +759,7 @@ TEST_F(ConcertTest, ConvertSingleNumberOfToIloDistribute) {
   EXPECT_FALSE(iter.ok());
 }
 
-TEST_F(ConcertTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
+TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
   d.use_numberof();
   std::ostringstream os;
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
@@ -787,7 +787,7 @@ TEST_F(ConcertTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
   EXPECT_FALSE(iter.ok());
 }
 
-TEST_F(ConcertTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
+TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
   d.use_numberof();
   std::ostringstream os;
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
@@ -816,7 +816,7 @@ TEST_F(ConcertTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
   EXPECT_FALSE(iter.ok());
 }
 
-TEST_F(ConcertTest, ConvertTwoNumberOfsWithDiffExprs) {
+TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
   d.use_numberof();
   std::ostringstream os;
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
@@ -855,7 +855,7 @@ TEST_F(ConcertTest, ConvertTwoNumberOfsWithDiffExprs) {
   EXPECT_FALSE(iter.ok());
 }
 
-TEST_F(ConcertTest, ConvertVarSubVar) {
+TEST_F(IlogCPTest, ConvertVarSubVar) {
   EXPECT_EQ("num-exprs[IloIntVar(4)[0..2] ]", str(d.build_expr(
       NewUnary(OPVARSUBVAR, NewVar(0)).get())));
 
@@ -867,7 +867,7 @@ TEST_F(ConcertTest, ConvertVarSubVar) {
   EXPECT_FALSE(iter.ok());
 }
 
-TEST_F(ConcertTest, ConvertIncompleteConstraintExprThrows) {
+TEST_F(IlogCPTest, ConvertIncompleteConstraintExprThrows) {
   int ops[] = {
       OPPLUS, OPMINUS, OPMULT, OPDIV, OPREM,
       OPPOW, OPLESS, FLOOR, CEIL, ABS, OPUMINUS,
@@ -915,54 +915,54 @@ TEST_F(ConcertTest, ConvertIncompleteConstraintExprThrows) {
     NewPLTerm(0, 0, 0).get()), IncompleteConstraintExprError);
 }
 
-TEST_F(ConcertTest, ConvertFalse) {
+TEST_F(IlogCPTest, ConvertFalse) {
   EXPECT_EQ("IloNumVar(4)[1..1] == 0", str(d.build_constr(NewNum(0).get())));
 }
 
-TEST_F(ConcertTest, ConvertTrue) {
+TEST_F(IlogCPTest, ConvertTrue) {
   EXPECT_EQ("IloNumVar(4)[1..1] == 1", str(d.build_constr(NewNum(1).get())));
 }
 
-TEST_F(ConcertTest, ThrowsOnNumInConstraint) {
+TEST_F(IlogCPTest, ThrowsOnNumInConstraint) {
   EXPECT_THROW(d.build_constr(NewNum(42).get()), Error);
 }
 
-TEST_F(ConcertTest, ConvertLT) {
+TEST_F(IlogCPTest, ConvertLT) {
   EXPECT_EQ("x <= 41", str(d.build_constr(
       NewBinary(LT, NewVar(0), NewNum(42)).get())));
 }
 
-TEST_F(ConcertTest, ConvertLE) {
+TEST_F(IlogCPTest, ConvertLE) {
   EXPECT_EQ("x <= 42", str(d.build_constr(
       NewBinary(LE, NewVar(0), NewNum(42)).get())));
 }
 
-TEST_F(ConcertTest, ConvertEQ) {
+TEST_F(IlogCPTest, ConvertEQ) {
   EXPECT_EQ("x == 42", str(d.build_constr(
       NewBinary(EQ, NewVar(0), NewNum(42)).get())));
 }
 
-TEST_F(ConcertTest, ConvertGE) {
+TEST_F(IlogCPTest, ConvertGE) {
   EXPECT_EQ("42 <= x", str(d.build_constr(
       NewBinary(GE, NewVar(0), NewNum(42)).get())));
 }
 
-TEST_F(ConcertTest, ConvertGT) {
+TEST_F(IlogCPTest, ConvertGT) {
   EXPECT_EQ("43 <= x", str(d.build_constr(
       NewBinary(GT, NewVar(0), NewNum(42)).get())));
 }
 
-TEST_F(ConcertTest, ConvertNE) {
+TEST_F(IlogCPTest, ConvertNE) {
   EXPECT_EQ("x != 42", str(d.build_constr(
       NewBinary(NE, NewVar(0), NewNum(42)).get())));
 }
 
-TEST_F(ConcertTest, ConvertAtMost) {
+TEST_F(IlogCPTest, ConvertAtMost) {
   EXPECT_EQ("42 <= x", str(d.build_constr(
       NewBinary(OPATMOST, NewVar(0), NewNum(42)).get())));
 }
 
-TEST_F(ConcertTest, ConvertNotAtMost) {
+TEST_F(IlogCPTest, ConvertNotAtMost) {
   IloConstraint c(d.build_constr(
       NewBinary(OPNOTATMOST, NewVar(0), NewNum(42)).get()));
   IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
@@ -970,12 +970,12 @@ TEST_F(ConcertTest, ConvertNotAtMost) {
   EXPECT_EQ("42 <= x", str(n->getConstraint()));
 }
 
-TEST_F(ConcertTest, ConvertAtLeast) {
+TEST_F(IlogCPTest, ConvertAtLeast) {
   EXPECT_EQ("x <= 42", str(d.build_constr(
       NewBinary(OPATLEAST, NewVar(0), NewNum(42)).get())));
 }
 
-TEST_F(ConcertTest, ConvertNotAtLeast) {
+TEST_F(IlogCPTest, ConvertNotAtLeast) {
   IloConstraint c(d.build_constr(
       NewBinary(OPNOTATLEAST, NewVar(0), NewNum(42)).get()));
   IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
@@ -983,17 +983,17 @@ TEST_F(ConcertTest, ConvertNotAtLeast) {
   EXPECT_EQ("x <= 42", str(n->getConstraint()));
 }
 
-TEST_F(ConcertTest, ConvertExactly) {
+TEST_F(IlogCPTest, ConvertExactly) {
   EXPECT_EQ("x == 42", str(d.build_constr(
       NewBinary(OPEXACTLY, NewVar(0), NewNum(42)).get())));
 }
 
-TEST_F(ConcertTest, ConvertNotExactly) {
+TEST_F(IlogCPTest, ConvertNotExactly) {
   EXPECT_EQ("x != 42", str(d.build_constr(
       NewBinary(OPNOTEXACTLY, NewVar(0), NewNum(42)).get())));
 }
 
-TEST_F(ConcertTest, ConvertOr) {
+TEST_F(IlogCPTest, ConvertOr) {
   IloConstraint c(d.build_constr(NewBinary(OPOR,
       NewBinary(EQ, NewVar(0), NewNum(1)),
       NewBinary(EQ, NewVar(0), NewNum(2))).get()));
@@ -1005,7 +1005,7 @@ TEST_F(ConcertTest, ConvertOr) {
   EXPECT_EQ("x == 2", str(ifThen->getRight()));
 }
 
-TEST_F(ConcertTest, CheckOrTruthTable) {
+TEST_F(IlogCPTest, CheckOrTruthTable) {
   IloNumVarArray vars = d.vars();
   vars[0].setBounds(0, 0);
   vars[1].setBounds(0, 0);
@@ -1025,7 +1025,7 @@ TEST_F(ConcertTest, CheckOrTruthTable) {
   EXPECT_TRUE(cp.solve());
 }
 
-TEST_F(ConcertTest, ConvertExists) {
+TEST_F(IlogCPTest, ConvertExists) {
   EXPECT_EQ("(x == 1 ) || (x == 2 ) || (x == 3 )",
       str(d.build_constr(NewSum(ORLIST,
       NewBinary(EQ, NewVar(0), NewNum(1)),
@@ -1033,13 +1033,13 @@ TEST_F(ConcertTest, ConvertExists) {
       NewBinary(EQ, NewVar(0), NewNum(3))).get())));
 }
 
-TEST_F(ConcertTest, ConvertAnd) {
+TEST_F(IlogCPTest, ConvertAnd) {
   EXPECT_EQ("(x == 1 ) && (x == 2 )", str(d.build_constr(NewBinary(OPAND,
       NewBinary(EQ, NewVar(0), NewNum(1)),
       NewBinary(EQ, NewVar(0), NewNum(2))).get())));
 }
 
-TEST_F(ConcertTest, ConvertForAll) {
+TEST_F(IlogCPTest, ConvertForAll) {
   EXPECT_EQ("(x == 1 ) && (x == 2 ) && (x == 3 )",
       str(d.build_constr(NewSum(ANDLIST,
       NewBinary(EQ, NewVar(0), NewNum(1)),
@@ -1047,7 +1047,7 @@ TEST_F(ConcertTest, ConvertForAll) {
       NewBinary(EQ, NewVar(0), NewNum(3))).get())));
 }
 
-TEST_F(ConcertTest, ConvertNot) {
+TEST_F(IlogCPTest, ConvertNot) {
   IloConstraint c(d.build_constr(
       NewUnary(OPNOT, NewBinary(LE, NewVar(0), NewNum(42))).get()));
   IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
@@ -1055,13 +1055,13 @@ TEST_F(ConcertTest, ConvertNot) {
   EXPECT_EQ("x <= 42", str(n->getConstraint()));
 }
 
-TEST_F(ConcertTest, ConvertIff) {
+TEST_F(IlogCPTest, ConvertIff) {
   EXPECT_EQ("x == 1 == x == 2", str(d.build_constr(NewBinary(OP_IFF,
       NewBinary(EQ, NewVar(0), NewNum(1)),
       NewBinary(EQ, NewVar(0), NewNum(2))).get())));
 }
 
-TEST_F(ConcertTest, ConvertImpElse) {
+TEST_F(IlogCPTest, ConvertImpElse) {
   IloConstraint con(d.build_constr(NewIf(OPIMPELSE,
       NewBinary(EQ, NewVar(0), NewNum(0)),
       NewBinary(EQ, NewVar(0), NewNum(1)),
@@ -1088,7 +1088,7 @@ TEST_F(ConcertTest, ConvertImpElse) {
   EXPECT_FALSE(iter.ok());
 }
 
-TEST_F(ConcertTest, ConvertAllDiff) {
+TEST_F(IlogCPTest, ConvertAllDiff) {
   IloConstraint con(d.build_constr(
       NewSum(OPALLDIFF, NewVar(0), NewNum(42)).get()));
   IloAllDiffI* diff = dynamic_cast<IloAllDiffI*>(con.getImpl());
@@ -1109,7 +1109,7 @@ TEST_F(ConcertTest, ConvertAllDiff) {
 // ----------------------------------------------------------------------------
 // Util tests
 
-TEST_F(ConcertTest, GetOpName) {
+TEST_F(IlogCPTest, GetOpName) {
   EXPECT_STREQ("+", get_opname(OPPLUS));
   EXPECT_STREQ("-", get_opname(OPMINUS));
   EXPECT_STREQ("*", get_opname(OPMULT));
@@ -1183,18 +1183,18 @@ TEST_F(ConcertTest, GetOpName) {
   EXPECT_STREQ("unknown", get_opname(500));
 }
 
-TEST_F(ConcertTest, SameNum) {
+TEST_F(IlogCPTest, SameNum) {
   EXPECT_TRUE(same_expr(NewNum(0.42).get(), NewNum(0.42).get()));
   EXPECT_FALSE(same_expr(NewNum(0.42).get(), NewNum(42).get()));
 }
 
-TEST_F(ConcertTest, SameVar) {
+TEST_F(IlogCPTest, SameVar) {
   EXPECT_TRUE(same_expr(NewVar(0).get(), NewVar(0).get()));
   EXPECT_FALSE(same_expr(NewVar(0).get(), NewVar(1).get()));
   EXPECT_FALSE(same_expr(NewVar(0).get(), NewNum(0).get()));
 }
 
-TEST_F(ConcertTest, SameUnary) {
+TEST_F(IlogCPTest, SameUnary) {
   EXPECT_TRUE(same_expr(NewUnary(OPUMINUS, NewVar(0)).get(),
                         NewUnary(OPUMINUS, NewVar(0)).get()));
   EXPECT_FALSE(same_expr(NewUnary(OPUMINUS, NewVar(0)).get(),
@@ -1205,7 +1205,7 @@ TEST_F(ConcertTest, SameUnary) {
                          NewUnary(OPUMINUS, NewVar(1)).get()));
 }
 
-TEST_F(ConcertTest, SameBinary) {
+TEST_F(IlogCPTest, SameBinary) {
   EXPECT_TRUE(same_expr(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
                         NewBinary(OPPLUS, NewVar(0), NewNum(42)).get()));
   EXPECT_FALSE(same_expr(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
@@ -1218,7 +1218,7 @@ TEST_F(ConcertTest, SameBinary) {
                          NewBinary(OPPLUS, NewVar(0), NewNum(42)).get()));
 }
 
-TEST_F(ConcertTest, SameVarArg) {
+TEST_F(IlogCPTest, SameVarArg) {
   EXPECT_TRUE(same_expr(
       NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
       NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
@@ -1239,7 +1239,7 @@ TEST_F(ConcertTest, SameVarArg) {
       NewNum(42).get()));
 }
 
-TEST_F(ConcertTest, SamePLTerm) {
+TEST_F(IlogCPTest, SamePLTerm) {
   double args[] = {-1, 5, 0, 10, 1};
   EXPECT_TRUE(same_expr(
       NewPLTerm(5, args, 0).get(),
@@ -1259,7 +1259,7 @@ TEST_F(ConcertTest, SamePLTerm) {
       NewNum(42).get()));
 }
 
-TEST_F(ConcertTest, SameIf) {
+TEST_F(IlogCPTest, SameIf) {
   EXPECT_TRUE(same_expr(
       NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get(),
       NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get()));
@@ -1274,7 +1274,7 @@ TEST_F(ConcertTest, SameIf) {
       NewNum(42).get()));
 }
 
-TEST_F(ConcertTest, SameSum) {
+TEST_F(IlogCPTest, SameSum) {
   EXPECT_TRUE(same_expr(
       NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
       NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
@@ -1295,7 +1295,7 @@ TEST_F(ConcertTest, SameSum) {
       NewNum(42).get()));
 }
 
-TEST_F(ConcertTest, SameCount) {
+TEST_F(IlogCPTest, SameCount) {
   EXPECT_TRUE(same_expr(
       NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
       NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get()));
@@ -1316,7 +1316,7 @@ TEST_F(ConcertTest, SameCount) {
       NewNum(42).get()));
 }
 
-TEST_F(ConcertTest, SameExprThrowsOnUnsupportedOp) {
+TEST_F(IlogCPTest, SameExprThrowsOnUnsupportedOp) {
   EXPECT_THROW(same_expr(
       NewUnary(OPFUNCALL, ExprPtr()).get(),
       NewUnary(OPFUNCALL, ExprPtr()).get()),
@@ -1330,10 +1330,10 @@ TEST_F(ConcertTest, SameExprThrowsOnUnsupportedOp) {
 // ----------------------------------------------------------------------------
 // Driver tests
 
-TEST_F(ConcertTest, Usage) {
+TEST_F(IlogCPTest, Usage) {
   FILE *saved_stderr = Stderr;
   Stderr = fopen("out", "w");
-  d.run((Args() + "concert").get());
+  d.run((Args() + "ilogcp").get());
   fclose(Stderr);
   Stderr = saved_stderr;
 
@@ -1348,7 +1348,7 @@ TEST_F(ConcertTest, Usage) {
   EXPECT_TRUE(text.find("usage: ") != string::npos);
 }
 
-TEST_F(ConcertTest, ObjConst) {
+TEST_F(IlogCPTest, ObjConst) {
   EXPECT_EQ(0, RunDriver("data/objconst"));
   IloModel::Iterator iter(mod);
   ASSERT_TRUE(iter.ok());
@@ -1356,116 +1356,126 @@ TEST_F(ConcertTest, ObjConst) {
   EXPECT_EQ(42, obj.getConstant());
 }
 
-TEST_F(ConcertTest, CPOptimizerDoesntSupportContinuousVars) {
+TEST_F(IlogCPTest, CPOptimizerDoesntSupportContinuousVars) {
   EXPECT_EQ(1, RunDriver("data/objconst", "ilogsolver"));
 }
 
-TEST_F(ConcertTest, SolveNumberOfCplex) {
+TEST_F(IlogCPTest, SolveNumberOfCplex) {
   d.use_numberof(false);
   RunDriver("data/numberof", "ilogcplex");
 }
 
-TEST_F(ConcertTest, SolveAssign0) {
+TEST_F(IlogCPTest, SolveAssign0) {
   EXPECT_EQ(6, Solve("data/assign0").obj);
 }
 
-TEST_F(ConcertTest, SolveAssign1) {
+TEST_F(IlogCPTest, SolveAssign1) {
   EXPECT_EQ(6, Solve("data/assign1").obj);
 }
 
-TEST_F(ConcertTest, SolveBalassign0) {
+TEST_F(IlogCPTest, SolveBalassign0) {
   EXPECT_EQ(14, Solve("data/balassign0").obj);
 }
 
-TEST_F(ConcertTest, SolveBalassign1) {
+TEST_F(IlogCPTest, SolveBalassign1) {
   EXPECT_EQ(14, Solve("data/balassign1").obj);
 }
 
-TEST_F(ConcertTest, SolveFlowshp0) {
+TEST_F(IlogCPTest, SolveFlowshp0) {
   EXPECT_NEAR(22, Solve("data/flowshp0").obj, 1e-5);
 }
 
-TEST_F(ConcertTest, SolveFlowshp1) {
+TEST_F(IlogCPTest, SolveFlowshp1) {
   EXPECT_EQ(22, Solve("data/flowshp1").obj);
 }
 
 // Disabled because it's too difficult to solve.
-TEST_F(ConcertTest, DISABLED_SolveFlowshp2) {
+TEST_F(IlogCPTest, DISABLED_SolveFlowshp2) {
   EXPECT_EQ(22, Solve("data/flowshp2").obj);
 }
 
-TEST_F(ConcertTest, SolveGrpassign0) {
+TEST_F(IlogCPTest, SolveGrpassign0) {
   EXPECT_EQ(61, Solve("data/grpassign0").obj);
 }
 
 // Disabled because variables in subscripts are not yet allowed.
-TEST_F(ConcertTest, DISABLED_SolveGrpassign1) {
+TEST_F(IlogCPTest, DISABLED_SolveGrpassign1) {
   EXPECT_EQ(61, Solve("data/grpassign1").obj);
 }
 
 // Disabled because object-valued variables are not yet allowed.
-TEST_F(ConcertTest, DISABLED_SolveGrpassign1a) {
+TEST_F(IlogCPTest, DISABLED_SolveGrpassign1a) {
   EXPECT_EQ(61, Solve("data/grpassign1a").obj);
 }
 
-TEST_F(ConcertTest, SolveMagic) {
+TEST_F(IlogCPTest, SolveMagic) {
   EXPECT_TRUE(Solve("data/magic").solved);
 }
 
-TEST_F(ConcertTest, SolveMapcoloring) {
+TEST_F(IlogCPTest, SolveMapcoloring) {
   EXPECT_TRUE(Solve("data/mapcoloring").solved);
 }
 
-TEST_F(ConcertTest, SolveNQueens) {
+TEST_F(IlogCPTest, SolveMoney) {
+  EXPECT_TRUE(Solve("data/money").solved);
+}
+
+TEST_F(IlogCPTest, SolveNQueens) {
   EXPECT_TRUE(Solve("data/nqueens").solved);
 }
 
-TEST_F(ConcertTest, SolveNQueens0) {
+TEST_F(IlogCPTest, SolveNQueens0) {
   EXPECT_EQ(0, Solve("data/nqueens0").obj);
 }
 
 // Disabled because it's too difficult to solve.
-TEST_F(ConcertTest, DISABLED_SolveParty1) {
+TEST_F(IlogCPTest, DISABLED_SolveParty1) {
   EXPECT_EQ(61, Solve("data/party1").obj);
 }
 
 // Disabled because it's too difficult to solve.
-TEST_F(ConcertTest, DISABLED_SolveParty2) {
+TEST_F(IlogCPTest, DISABLED_SolveParty2) {
   EXPECT_EQ(3, Solve("data/party2").obj);
 }
 
-TEST_F(ConcertTest, SolveSched0) {
+TEST_F(IlogCPTest, SolveSched0) {
   EXPECT_EQ(5, Solve("data/sched0").obj);
 }
 
-TEST_F(ConcertTest, SolveSched1) {
+TEST_F(IlogCPTest, SolveSched1) {
   EXPECT_EQ(5, Solve("data/sched1").obj);
 }
 
-TEST_F(ConcertTest, SolveSched2) {
+TEST_F(IlogCPTest, SolveSched2) {
   EXPECT_EQ(5, Solve("data/sched2").obj);
 }
 
-TEST_F(ConcertTest, SolveSeq0) {
+TEST_F(IlogCPTest, SolveSeq0) {
   EXPECT_NEAR(332, Solve("data/seq0").obj, 1e-5);
 }
 
-TEST_F(ConcertTest, SolveSeq0a) {
+TEST_F(IlogCPTest, SolveSeq0a) {
   EXPECT_NEAR(332, Solve("data/seq0a").obj, 1e-5);
 }
 
-TEST_F(ConcertTest, SolveSudokuHard) {
+TEST_F(IlogCPTest, SolveSudokuHard) {
   EXPECT_TRUE(Solve("data/sudokuHard").solved);
 }
 
-TEST_F(ConcertTest, SolveSudokuVeryEasy) {
+TEST_F(IlogCPTest, SolveSudokuVeryEasy) {
   EXPECT_TRUE(Solve("data/sudokuVeryEasy").solved);
 }
 
 // ----------------------------------------------------------------------------
 // Option tests
 
-TEST_F(ConcertTest, WantsolOption) {
+TEST_F(IlogCPTest, VersionOption) {
+  EXPECT_EQ(0, d.show_version());
+  EXPECT_TRUE(ParseOptions("version"));
+  EXPECT_EQ(1, d.show_version());
+}
+
+TEST_F(IlogCPTest, WantsolOption) {
   EXPECT_EQ(0, d.wantsol());
   EXPECT_TRUE(ParseOptions("wantsol=1"));
   EXPECT_EQ(1, d.wantsol());
@@ -1473,7 +1483,7 @@ TEST_F(ConcertTest, WantsolOption) {
   EXPECT_EQ(5, d.wantsol());
 }
 
-TEST_F(ConcertTest, DebugExprOption) {
+TEST_F(IlogCPTest, DebugExprOption) {
   EXPECT_TRUE(ParseOptions("debugexpr=0"));
   EXPECT_EQ(0, d.get_option(Driver::DEBUGEXPR));
   EXPECT_TRUE(ParseOptions("debugexpr=1"));
@@ -1483,19 +1493,19 @@ TEST_F(ConcertTest, DebugExprOption) {
   EXPECT_FALSE(ParseOptions("debugexpr=oops"));
 }
 
-TEST_F(ConcertTest, IlogCplexOption) {
+TEST_F(IlogCPTest, IlogCplexOption) {
   EXPECT_TRUE(ParseOptions("ilogcplex"));
   EXPECT_EQ(Driver::CPLEX, d.get_option(Driver::ILOGOPTTYPE));
   EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) != nullptr);
 }
 
-TEST_F(ConcertTest, IlogSolverOption) {
+TEST_F(IlogCPTest, IlogSolverOption) {
   EXPECT_TRUE(ParseOptions("ilogsolver"));
   EXPECT_EQ(Driver::CPOPTIMIZER, d.get_option(Driver::ILOGOPTTYPE));
   EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) == nullptr);
 }
 
-TEST_F(ConcertTest, TimingOption) {
+TEST_F(IlogCPTest, TimingOption) {
   EXPECT_TRUE(ParseOptions("timing=0"));
   EXPECT_EQ(0, d.get_option(Driver::TIMING));
   EXPECT_TRUE(ParseOptions("timing=1"));
@@ -1504,7 +1514,7 @@ TEST_F(ConcertTest, TimingOption) {
   EXPECT_FALSE(ParseOptions("timing=oops"));
 }
 
-TEST_F(ConcertTest, UseNumberOfOption) {
+TEST_F(IlogCPTest, UseNumberOfOption) {
   EXPECT_TRUE(ParseOptions("usenumberof=0"));
   EXPECT_EQ(0, d.get_option(Driver::USENUMBEROF));
   EXPECT_TRUE(ParseOptions("usenumberof=1"));
@@ -1513,7 +1523,7 @@ TEST_F(ConcertTest, UseNumberOfOption) {
   EXPECT_FALSE(ParseOptions("timing=oops"));
 }
 
-TEST_F(ConcertTest, CPFlagOptions) {
+TEST_F(IlogCPTest, CPFlagOptions) {
   const EnumValue flags[] = {
       {"off", IloCP::Off},
       {"on",  IloCP::On},
@@ -1527,7 +1537,7 @@ TEST_F(ConcertTest, CPFlagOptions) {
       0, 1, IloCP::Off, false, flags);
 }
 
-TEST_F(ConcertTest, CPInferenceLevelOptions) {
+TEST_F(IlogCPTest, CPInferenceLevelOptions) {
   const EnumValue inf_levels[] = {
       {"default",  IloCP::Default},
       {"low",      IloCP::Low},
@@ -1544,7 +1554,14 @@ TEST_F(ConcertTest, CPInferenceLevelOptions) {
       0, 4, IloCP::Default, false, inf_levels);
 }
 
-TEST_F(ConcertTest, CPVerbosityOptions) {
+TEST_F(IlogCPTest, CPDefaultVerbosityQuiet) {
+  EXPECT_TRUE(ParseOptions("ilogsolver"));
+  CPOptimizer *opt = dynamic_cast<CPOptimizer*>(d.optimizer());
+  ASSERT_TRUE(opt != nullptr);
+  EXPECT_EQ(IloCP::Quiet, opt->solver().getParameter(IloCP::LogVerbosity));
+}
+
+TEST_F(IlogCPTest, CPVerbosityOptions) {
   const EnumValue verbosities[] = {
       {"quiet",   IloCP::Quiet},
       {"terse",   IloCP::Terse},
@@ -1560,7 +1577,7 @@ TEST_F(ConcertTest, CPVerbosityOptions) {
       0, 3, IloCP::Quiet, false, verbosities);
 }
 
-TEST_F(ConcertTest, CPSearchTypeOption) {
+TEST_F(IlogCPTest, CPSearchTypeOption) {
   const EnumValue types[] = {
       {"depthfirst", IloCP::DepthFirst},
       {"restart",    IloCP::Restart},
@@ -1571,7 +1588,7 @@ TEST_F(ConcertTest, CPSearchTypeOption) {
       0, 2, IloCP::DepthFirst, CPX_VERSION > 1220, types);
 }
 
-TEST_F(ConcertTest, CPTimeModeOption) {
+TEST_F(IlogCPTest, CPTimeModeOption) {
   const EnumValue modes[] = {
       {"cputime",     IloCP::CPUTime},
       {"elapsedtime", IloCP::ElapsedTime},
@@ -1581,7 +1598,7 @@ TEST_F(ConcertTest, CPTimeModeOption) {
       0, 1, IloCP::CPUTime, false, modes);
 }
 
-TEST_F(ConcertTest, CPOptions) {
+TEST_F(IlogCPTest, CPOptions) {
   CheckIntCPOption("branchlimit", IloCP::BranchLimit, 0, INT_MAX);
   CheckIntCPOption("choicepointlimit", IloCP::ChoicePointLimit, 0, INT_MAX);
   CheckDblCPOption("dynamicprobingstrength",
@@ -1603,25 +1620,32 @@ TEST_F(ConcertTest, CPOptions) {
   else CheckIntCPOption("workers", IloCP::Workers, 1, 4, 0, false);
 }
 
+TEST_F(IlogCPTest, CPLEXDefaultMIPDisplayZero) {
+  EXPECT_TRUE(ParseOptions("ilogcplex"));
+  CPLEXOptimizer *opt = dynamic_cast<CPLEXOptimizer*>(d.optimizer());
+  ASSERT_TRUE(opt != nullptr);
+  EXPECT_EQ(0, opt->cplex().getParam(IloCplex::MIPDisplay));
+}
+
 // ----------------------------------------------------------------------------
 // Solve code tests
 
-TEST_F(ConcertTest, OptimalSolveCode) {
+TEST_F(IlogCPTest, OptimalSolveCode) {
   Solve("data/objconst");
   EXPECT_EQ(0, d.get_asl()->p.solve_code_);
 }
 
-TEST_F(ConcertTest, FeasibleSolveCode) {
+TEST_F(IlogCPTest, FeasibleSolveCode) {
   Solve("data/feasible");
   EXPECT_EQ(100, d.get_asl()->p.solve_code_);
 }
 
-TEST_F(ConcertTest, InfeasibleSolveCode) {
+TEST_F(IlogCPTest, InfeasibleSolveCode) {
   Solve("data/infeasible");
   EXPECT_EQ(200, d.get_asl()->p.solve_code_);
 }
 
-TEST_F(ConcertTest, InfeasibleOrUnboundedSolveCode) {
+TEST_F(IlogCPTest, InfeasibleOrUnboundedSolveCode) {
   Solve("data/unbounded");
   EXPECT_EQ(201, d.get_asl()->p.solve_code_);
 }

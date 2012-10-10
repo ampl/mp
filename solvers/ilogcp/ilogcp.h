@@ -79,7 +79,9 @@ class CPLEXOptimizer : public Optimizer {
   IloCplex cplex_;
 
  public:
-  CPLEXOptimizer(IloEnv env, ASL_fg *asl) : Optimizer(env, asl), cplex_(env) {}
+  CPLEXOptimizer(IloEnv env, ASL_fg *asl) : Optimizer(env, asl), cplex_(env) {
+    cplex_.setParam(IloCplex::MIPDisplay, 0);
+  }
 
   IloCplex cplex() const { return cplex_; }
   IloAlgorithm algorithm() const { return cplex_; }
@@ -96,7 +98,9 @@ class CPOptimizer : public Optimizer {
   IloSolver solver_;
 
  public:
-  CPOptimizer(IloEnv env, ASL_fg *asl) : Optimizer(env, asl), solver_(env) {}
+  CPOptimizer(IloEnv env, ASL_fg *asl) : Optimizer(env, asl), solver_(env) {
+    solver_.setIntParameter(IloCP::LogVerbosity, IloCP::Quiet);
+  }
 
   IloSolver solver() const { return solver_; }
   IloAlgorithm algorithm() const { return solver_; }
@@ -189,6 +193,7 @@ class Driver {
 
   int get_option(Option opt) const { return options_[opt]; }
   void use_numberof(bool use = true) { options_[USENUMBEROF] = use; }
+  bool show_version() const;
   int wantsol() const;
 
   // Converts the specified ASL expression into an equivalent Concert

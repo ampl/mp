@@ -35,7 +35,7 @@
 using namespace std;
 
 static char xxxvers[] = "ilogcp_options\0\n"
-	"AMPL/IBM ILOG CP Optimizer Driver Version " qYYYYMMDD "\n";
+  "AMPL/IBM ILOG CP Optimizer Driver Version " qYYYYMMDD "\n";
 
 // for suppressing "String literal to char*" warnings
 #define CSTR(s) const_cast<char*>(s)
@@ -291,9 +291,9 @@ keyword Driver::keywords_[] = {
 
   KW(CSTR("logverbosity"), Driver::set_cp_int_option, &LogVerbosity,
       CSTR("Verbosity of the search log.  Possible values:\n"
-          SPACE "      0 = quiet\n"
+          SPACE "      0 = quiet (default)\n"
           SPACE "      1 = terse\n"
-          SPACE "      2 = normal (default)\n"
+          SPACE "      2 = normal\n"
           SPACE "      3 = verbose\n")),
 
   KW(CSTR("multipointnumberofsearchpoints"),
@@ -375,8 +375,8 @@ keyword Driver::keywords_[] = {
           SPACE "constraints.\n")),
 
   KW(CSTR("version"), Ver_val, 0,
-	CSTR("Single-word phrase:  report version details\n"
-	SPACE "before solving the problem.\n")),
+      CSTR("Single-word phrase:  report version details\n"
+          SPACE "before solving the problem.\n")),
 
   KW(CSTR("wantsol"), WS_val, 0,
       CSTR("In a stand-alone invocation (no -AMPL on the\n"
@@ -398,35 +398,33 @@ keyword Driver::keywords_[] = {
 Driver::Driver() :
    mod_(env_), asl(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))),
    gotopttype(false), n_badvals(0) {
-	char *s;
-	int n;
-	size_t L;
+  char *s;
+  int n;
+  size_t L;
 
-	options_[DEBUGEXPR] = 0;
-	options_[ILOGOPTTYPE] = DEFAULT_OPT;
-	options_[TIMING] = 0;
-	options_[USENUMBEROF] = 1;
+  options_[DEBUGEXPR] = 0;
+  options_[ILOGOPTTYPE] = DEFAULT_OPT;
+  options_[TIMING] = 0;
+  options_[USENUMBEROF] = 1;
 
-	version_.resize(L = strlen(IloConcertVersion::_ILO_NAME) + 100);
-	n = snprintf(s = &version_[0], L,
-		"AMPL/IBM ILOG CP Optimizer [%s %d.%d.%d]",
-		IloConcertVersion::_ILO_NAME,
-		IloConcertVersion::_ILO_MAJOR_VERSION,
-		IloConcertVersion::_ILO_MINOR_VERSION,
-		IloConcertVersion::_ILO_TECH_VERSION);
-	DriverOptionInfo *doi = 0;
-	oinfo_.reset(doi = new DriverOptionInfo());
-	oinfo_->sname = CSTR("ilogcp");
-	snprintf(oinfo_->bsname = s + n + 1, L-n, "ilogcp %d.%d.%d",
-		IloConcertVersion::_ILO_MAJOR_VERSION,
-		IloConcertVersion::_ILO_MINOR_VERSION,
-		IloConcertVersion::_ILO_TECH_VERSION);
-	oinfo_->opname = CSTR("ilogcp_options");
-	oinfo_->keywds = keywords_;
-	oinfo_->n_keywds = sizeof(keywords_) / sizeof(*keywords_);
-	oinfo_->version = &version_[0];
-	oinfo_->driver_date = YYYYMMDD;
-	doi->driver = this;
+  version_.resize(L = strlen(IloConcertVersion::_ILO_NAME) + 100);
+  n = snprintf(s = &version_[0], L, "AMPL/IBM ILOG CP Optimizer [%s %d.%d.%d]",
+      IloConcertVersion::_ILO_NAME, IloConcertVersion::_ILO_MAJOR_VERSION,
+      IloConcertVersion::_ILO_MINOR_VERSION,
+      IloConcertVersion::_ILO_TECH_VERSION);
+  DriverOptionInfo *doi = 0;
+  oinfo_.reset(doi = new DriverOptionInfo());
+  oinfo_->sname = CSTR("ilogcp");
+  snprintf(oinfo_->bsname = s + n + 1, L - n, "ilogcp %d.%d.%d",
+      IloConcertVersion::_ILO_MAJOR_VERSION,
+      IloConcertVersion::_ILO_MINOR_VERSION,
+      IloConcertVersion::_ILO_TECH_VERSION);
+  oinfo_->opname = CSTR("ilogcp_options");
+  oinfo_->keywds = keywords_;
+  oinfo_->n_keywds = sizeof(keywords_) / sizeof(*keywords_);
+  oinfo_->version = &version_[0];
+  oinfo_->driver_date = YYYYMMDD;
+  doi->driver = this;
 }
 
 Driver::~Driver() {
@@ -568,8 +566,11 @@ bool Driver::parse_options(char **argv) {
    return true;
 }
 
-int Driver::wantsol() const
-{
+bool Driver::show_version() const {
+   return (oinfo_->flags & ASL_OI_show_version) != 0;
+}
+
+int Driver::wantsol() const {
    return oinfo_->wantsol;
 }
 
