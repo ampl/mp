@@ -262,6 +262,28 @@ class IlogCPTest : public ::testing::Test {
       int start, int end, int offset = 0, bool accepts_auto = false,
       const EnumValue *values = 0);
 
+  template <typename ParamT>
+  void CheckIntCPLEXOption(const char *option,
+      ParamT param, int start, int end) {
+    for (int i = std::max(start, -9); i <= std::min(end, 9); ++i) {
+      EXPECT_TRUE(ParseOptions("optimizer=cplex", Option(option, i).c_str()));
+      CPLEXOptimizer *opt = dynamic_cast<CPLEXOptimizer*>(d.optimizer());
+      ASSERT_TRUE(opt != nullptr);
+      EXPECT_EQ(i, opt->cplex().getParam(param))
+        << "Failed option: " << option;
+    }
+    if (end != INT_MAX) {
+      EXPECT_FALSE(ParseOptions("optimizer=cplex",
+          Option(option, end + 1).c_str()));
+    }
+    if (start != INT_MIN) {
+      int small = start - 1;
+      EXPECT_FALSE(ParseOptions("optimizer=cplex",
+          Option(option, small).c_str()));
+      EXPECT_FALSE(ParseOptions("optimizer=cp", Option(option, start).c_str()));
+    }
+  }
+
   void CheckDblCPOption(const char *option, IloCP::NumParam param,
       double good, double bad);
 };
@@ -1625,6 +1647,12 @@ TEST_F(IlogCPTest, CPLEXDefaultMIPDisplayZero) {
   CPLEXOptimizer *opt = dynamic_cast<CPLEXOptimizer*>(d.optimizer());
   ASSERT_TRUE(opt != nullptr);
   EXPECT_EQ(0, opt->cplex().getParam(IloCplex::MIPDisplay));
+}
+
+TEST_F(IlogCPTest, CPLEXOptions) {
+  CheckIntCPLEXOption("mipdisplay", IloCplex::MIPDisplay, 0, 5);
+  CheckIntCPLEXOption("mipinterval",
+      IloCplex::MIPInterval, INT_MIN, INT_MAX);
 }
 
 // ----------------------------------------------------------------------------

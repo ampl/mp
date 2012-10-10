@@ -163,12 +163,16 @@ class Driver {
   static char *set_int_option(Option_Info *oi, keyword *kw, char *value);
   static char *set_bool_option(Option_Info *oi, keyword *kw, char *value);
 
+  void set_option(keyword *kw, int value);
+
   // Sets an integer option of the constraint programming optimizer.
-  void set_cp_option(keyword *kw, int value);
   static char *set_cp_int_option(Option_Info *oi, keyword *kw, char *value);
 
   // Sets a double option of the constraint programming optimizer.
   static char *set_cp_dbl_option(Option_Info *oi, keyword *kw, char *value);
+
+  // Sets an integer option of the CPLEX optimizer.
+  static char *set_cplex_int_option(Option_Info *oi, keyword *kw, char *value);
 
  public:
   Driver();

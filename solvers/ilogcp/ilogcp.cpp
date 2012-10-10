@@ -135,8 +135,12 @@ Optimizer::Optimizer(IloEnv env, ASL_fg *asl) :
 Optimizer::~Optimizer() {}
 
 void CPLEXOptimizer::set_option(const void *key, int value) {
-  cplex_.setParam(
-      static_cast<IloCplex::IntParam>(reinterpret_cast<size_t>(key)), value);
+  // Use CPXsetintparam instead of IloCplex::setParam to avoid dealing with
+  // two overloads, one for the type int and one for the type long.
+  if (CPXsetintparam(cplex_.getImpl()->getCplexEnv(),
+      reinterpret_cast<size_t>(key), value) != 0) {
+    throw IloWrongUsage();
+  }
 }
 
 void CPLEXOptimizer::set_option(const void *key, double value) {
@@ -287,6 +291,22 @@ keyword Driver::keywords_[] = {
           SPACE "      1 = terse\n"
           SPACE "      2 = normal\n"
           SPACE "      3 = verbose\n")),
+
+  KW(CSTR("mipdisplay"), Driver::set_cplex_int_option, IloCplex::MIPDisplay,
+      CSTR("Frequency of displaying branch-and-bound\n"
+          SPACE "information (for optimizing integer variables):\n"
+          SPACE "      0 (default) = never\n"
+          SPACE "      1 = each integer feasible solution\n"
+          SPACE "      2 = every \"mipinterval\" nodes\n"
+          SPACE "      3 = every \"mipinterval\" nodes plus\n"
+          SPACE "          information on LP relaxations\n"
+          SPACE "          (as controlled by \"display\")\n"
+          SPACE "      4 = same as 2, plus LP relaxation info.\n"
+          SPACE "      5 = same as 2, plus LP subproblem info.\n")),
+
+  KW(CSTR("mipinterval"), Driver::set_cplex_int_option, IloCplex::MIPInterval,
+      CSTR("Frequency of node logging for mipdisplay 2 or 3.\n"
+          SPACE "Default = 1.\n")),
 
   KW(CSTR("multipointnumberofsearchpoints"),
       Driver::set_cp_int_option, &MultiPointNumberOfSearchPoints,
@@ -480,7 +500,7 @@ char *Driver::set_bool_option(Option_Info *oi, keyword *kw, char *value) {
    return result;
 }
 
-void Driver::set_cp_option(keyword *kw, int value) {
+void Driver::set_option(keyword *kw, int value) {
   try {
      optimizer_->set_option(kw->info, value);
   } catch (const IloException &) {
@@ -508,13 +528,13 @@ char *Driver::set_cp_int_option(Option_Info *oi, keyword *kw, char *value) {
        // Use linear search since the number of values is small.
        for (int i = 0; info->values[i]; ++i) {
          if (strncmp(value, info->values[i], end - value) == 0) {
-           d->set_cp_option(kw, i);
+           d->set_option(kw, i);
            return end;
          }
        }
      }
      if (info->accepts_auto && strncmp(value, "auto", end - value) == 0) {
-       d->set_cp_option(kw, IloCP::Auto);
+       d->set_option(kw, IloCP::Auto);
        return end;
      }
      cerr << "Invalid value " << string(value, end)
@@ -526,7 +546,7 @@ char *Driver::set_cp_int_option(Option_Info *oi, keyword *kw, char *value) {
    int intval = 0;
    thiskw.info = &intval;
    char *result = I_val(oi, &thiskw, value);
-   d->set_cp_option(kw, intval);
+   d->set_option(kw, intval);
    return result;
 }
 
@@ -549,6 +569,23 @@ char *Driver::set_cp_dbl_option(Option_Info *oi, keyword *kw, char *value) {
       cerr << "Invalid value " << dblval << " for option " << kw->name << endl;
       ++d->n_badvals;
    }
+   return result;
+}
+
+char *Driver::set_cplex_int_option(Option_Info *oi, keyword *kw, char *value) {
+   Driver *d = static_cast<DriverOptionInfo*>(oi)->driver;
+   if (!d->gotopttype)
+      return skip_nonspace(value);
+   if (d->get_option(OPTIMIZER) != CPLEX) {
+      ++d->n_badvals;
+      cerr << "Invalid option " << kw->name << " for CP optimizer" << endl;
+      return skip_nonspace(value);
+   }
+   keyword thiskw(*kw);
+   int intval = 0;
+   thiskw.info = &intval;
+   char *result = I_val(oi, &thiskw, value);
+   d->set_option(kw, intval);
    return result;
 }
 
