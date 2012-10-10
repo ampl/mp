@@ -374,6 +374,10 @@ keyword Driver::keywords_[] = {
           SPACE "'numberof' expressions by use of IloDistribute\n"
           SPACE "constraints.\n")),
 
+  KW(CSTR("version"), Ver_val, 0,
+	CSTR("Single-word phrase:  report version details\n"
+	SPACE "before solving the problem.\n")),
+
   KW(CSTR("wantsol"), WS_val, 0,
       CSTR("In a stand-alone invocation (no -AMPL on the\n"
           SPACE "command line), what solution information to\n"
