@@ -331,21 +331,21 @@ void IlogCPTest::CheckIntCPOption(const char *option,
     IloCP::IntParam param, int start, int end, int offset, bool accepts_auto,
     const EnumValue *values) {
   for (int i = start; i <= std::min(end, 9); ++i) {
-    EXPECT_TRUE(ParseOptions("ilogsolver", Option(option, i).c_str()));
+    EXPECT_TRUE(ParseOptions("optimizer=cp", Option(option, i).c_str()));
     CPOptimizer *opt = dynamic_cast<CPOptimizer*>(d.optimizer());
     ASSERT_TRUE(opt != nullptr);
     EXPECT_EQ(offset + i, opt->solver().getParameter(param))
       << "Failed option: " << option;
   }
   if (end != INT_MAX)
-    EXPECT_FALSE(ParseOptions("ilogsolver", Option(option, end + 1).c_str()));
+    EXPECT_FALSE(ParseOptions("optimizer=cp", Option(option, end + 1).c_str()));
   if (accepts_auto) {
-    EXPECT_TRUE(ParseOptions("ilogsolver", Option(option, -1).c_str()));
+    EXPECT_TRUE(ParseOptions("optimizer=cp", Option(option, -1).c_str()));
     CPOptimizer *opt = dynamic_cast<CPOptimizer*>(d.optimizer());
     ASSERT_TRUE(opt != nullptr);
     EXPECT_EQ(IloCP::Auto, opt->solver().getParameter(param));
 
-    EXPECT_TRUE(ParseOptions("ilogsolver", Option(option, "auto").c_str()));
+    EXPECT_TRUE(ParseOptions("optimizer=cp", Option(option, "auto").c_str()));
     opt = dynamic_cast<CPOptimizer*>(d.optimizer());
     ASSERT_TRUE(opt != nullptr);
     EXPECT_EQ(IloCP::Auto, opt->solver().getParameter(param));
@@ -353,12 +353,12 @@ void IlogCPTest::CheckIntCPOption(const char *option,
   int small = start - 1;
   if (accepts_auto && small == -1)
     --small;
-  EXPECT_FALSE(ParseOptions("ilogsolver", Option(option, small).c_str()));
-  EXPECT_FALSE(ParseOptions("ilogcplex", Option(option, start).c_str()));
+  EXPECT_FALSE(ParseOptions("optimizer=cp", Option(option, small).c_str()));
+  EXPECT_FALSE(ParseOptions("optimizer=cplex", Option(option, start).c_str()));
   if (values) {
     int count = 0;
     for (const EnumValue *v = values; v->name; ++v, ++count) {
-      EXPECT_TRUE(ParseOptions("ilogsolver", Option(option, v->name).c_str()));
+      EXPECT_TRUE(ParseOptions("optimizer=cp", Option(option, v->name).c_str()));
       CPOptimizer *opt = dynamic_cast<CPOptimizer*>(d.optimizer());
       ASSERT_TRUE(opt != nullptr);
       EXPECT_EQ(v->value, opt->solver().getParameter(param))
@@ -370,14 +370,14 @@ void IlogCPTest::CheckIntCPOption(const char *option,
 
 void IlogCPTest::CheckDblCPOption(const char *option,
     IloCP::NumParam param, double good, double bad) {
-  EXPECT_TRUE(ParseOptions("ilogsolver", Option(option, good).c_str()));
+  EXPECT_TRUE(ParseOptions("optimizer=cp", Option(option, good).c_str()));
   CPOptimizer *opt = dynamic_cast<CPOptimizer*>(d.optimizer());
   ASSERT_TRUE(opt != nullptr);
   EXPECT_EQ(good, opt->solver().getParameter(param))
     << "Failed option: " << option;
 
-  EXPECT_FALSE(ParseOptions("ilogsolver", Option(option, bad).c_str()));
-  EXPECT_FALSE(ParseOptions("ilogcplex", Option(option, good).c_str()));
+  EXPECT_FALSE(ParseOptions("optimizer=cp", Option(option, bad).c_str()));
+  EXPECT_FALSE(ParseOptions("optimizer=cplex", Option(option, good).c_str()));
 }
 
 TEST_F(IlogCPTest, ConvertNum) {
@@ -1357,12 +1357,12 @@ TEST_F(IlogCPTest, ObjConst) {
 }
 
 TEST_F(IlogCPTest, CPOptimizerDoesntSupportContinuousVars) {
-  EXPECT_EQ(1, RunDriver("data/objconst", "ilogsolver"));
+  EXPECT_EQ(1, RunDriver("data/objconst", "optimizer=cp"));
 }
 
 TEST_F(IlogCPTest, SolveNumberOfCplex) {
   d.use_numberof(false);
-  RunDriver("data/numberof", "ilogcplex");
+  RunDriver("data/numberof", "optimizer=cplex");
 }
 
 TEST_F(IlogCPTest, SolveAssign0) {
@@ -1493,15 +1493,15 @@ TEST_F(IlogCPTest, DebugExprOption) {
   EXPECT_FALSE(ParseOptions("debugexpr=oops"));
 }
 
-TEST_F(IlogCPTest, IlogCplexOption) {
-  EXPECT_TRUE(ParseOptions("ilogcplex"));
-  EXPECT_EQ(Driver::CPLEX, d.get_option(Driver::ILOGOPTTYPE));
-  EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) != nullptr);
-}
+TEST_F(IlogCPTest, OptimizerOption) {
+  EXPECT_EQ(Driver::AUTO, d.get_option(Driver::OPTIMIZER));
 
-TEST_F(IlogCPTest, IlogSolverOption) {
-  EXPECT_TRUE(ParseOptions("ilogsolver"));
-  EXPECT_EQ(Driver::CPOPTIMIZER, d.get_option(Driver::ILOGOPTTYPE));
+  EXPECT_TRUE(ParseOptions("optimizer=cplex"));
+  EXPECT_EQ(Driver::CPLEX, d.get_option(Driver::OPTIMIZER));
+  EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) != nullptr);
+
+  EXPECT_TRUE(ParseOptions("optimizer=cp"));
+  EXPECT_EQ(Driver::CP, d.get_option(Driver::OPTIMIZER));
   EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) == nullptr);
 }
 
@@ -1555,7 +1555,7 @@ TEST_F(IlogCPTest, CPInferenceLevelOptions) {
 }
 
 TEST_F(IlogCPTest, CPDefaultVerbosityQuiet) {
-  EXPECT_TRUE(ParseOptions("ilogsolver"));
+  EXPECT_TRUE(ParseOptions("optimizer=cp"));
   CPOptimizer *opt = dynamic_cast<CPOptimizer*>(d.optimizer());
   ASSERT_TRUE(opt != nullptr);
   EXPECT_EQ(IloCP::Quiet, opt->solver().getParameter(IloCP::LogVerbosity));
@@ -1621,7 +1621,7 @@ TEST_F(IlogCPTest, CPOptions) {
 }
 
 TEST_F(IlogCPTest, CPLEXDefaultMIPDisplayZero) {
-  EXPECT_TRUE(ParseOptions("ilogcplex"));
+  EXPECT_TRUE(ParseOptions("optimizer=cplex"));
   CPLEXOptimizer *opt = dynamic_cast<CPLEXOptimizer*>(d.optimizer());
   ASSERT_TRUE(opt != nullptr);
   EXPECT_EQ(0, opt->cplex().getParam(IloCplex::MIPDisplay));
