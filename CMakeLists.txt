@@ -1,11 +1,18 @@
 # CMake build script for the AMPL solver library.
 
 cmake_minimum_required(VERSION 2.6)
+
+# Set the default CMAKE_BUILD_TYPE to Release.
+# This should be done before the project command since the latter can set
+# CMAKE_BUILD_TYPE itself (it does so for nmake).
+if (NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING
+    "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
+endif ()
+
 project(AMPL)
 
-if (NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
-endif ()
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
