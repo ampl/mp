@@ -135,7 +135,7 @@ add_library(amplsolver ${ASL_SOURCES})
 if (HAVE_GSL)
   add_subdirectory(amplgsl)
 endif ()
-add_subdirectory(gecode)
+#add_subdirectory(gecode)
 
 macro(replace_flags match replace)
   foreach (flag_var
