@@ -583,10 +583,10 @@ TEST(FunctionTest, DerivativeBinder) {
   Function f(lib, &fi, 0);
   DerivativeBinder d(f, 0, 1, MakeArgs(1, 0));
   ASSERT_EQ(1, d(0));
-  ASSERT_EQ(1 / sqrt(2.0), d(1));
+  ASSERT_NEAR(1 / sqrt(2.0), d(1), 1e-10);
   d = DerivativeBinder(f, 1, 1, MakeArgs(1, 0));
   ASSERT_EQ(0, d(0));
-  ASSERT_EQ(1 / sqrt(2.0), d(1));
+  ASSERT_NEAR(1 / sqrt(2.0), d(1), 1e-10);
   EXPECT_THROW(DerivativeBinder(f, 2, 0, MakeArgs(0, 0)), std::out_of_range);
   EXPECT_THROW(DerivativeBinder(f, 0, 2, MakeArgs(0, 0)), std::out_of_range);
 }
