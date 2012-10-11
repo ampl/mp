@@ -154,13 +154,12 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
     # so build a compatible version of the amplsolver library specifically
     # for ilogcp.
     replace_flags("/MT" "/MD")
-    add_library(amplsolver-dyncrt ${ASL_SOURCES})
-    set(SOLVER_LIBS amplsolver-dyncrt)
+    add_library(amplsolver-dynrt ${ASL_SOURCES})
+    replace_flags("/MD" "/MT")
+    set(SOLVER_LIBS amplsolver-dynrt)
   endif ()
   add_subdirectory(ilogcp)
   if (MSVC)
-    # Restore compiler flags.
-    replace_flags("/MD" "/MT")
     set(SOLVER_LIBS amplsolver)
   endif ()
 endif ()
