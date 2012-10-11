@@ -271,7 +271,7 @@ bool GSLTest::CheckDerivative(
   double diff = fabs(deriv - numerical_deriv);
   if (diff <= abs_tolerance)
     return true;
-  if (fabs(numerical_deriv) > 0.01) {
+  if (fabs(numerical_deriv) > 0.001) {
     // If the derivative is not too close to zero, compare using a
     // relative tolerance.
     double relative_error = fabs(diff / numerical_deriv);
