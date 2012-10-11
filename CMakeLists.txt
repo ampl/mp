@@ -10,13 +10,11 @@ if (NOT CMAKE_BUILD_TYPE)
     "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
 endif ()
 
-if (MSVC)
-  # Use static MSVC runtime.
-  set(CMAKE_USER_MAKE_RULES_OVERRIDE
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/c_flag_overrides.cmake)
-  set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cxx_flag_overrides.cmake)
-endif ()
+# Use static MSVC runtime.
+set(CMAKE_USER_MAKE_RULES_OVERRIDE
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/c_flag_overrides.cmake)
+set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cxx_flag_overrides.cmake)
 
 project(AMPL)
 
