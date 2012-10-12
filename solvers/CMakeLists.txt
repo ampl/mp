@@ -136,30 +136,4 @@ if (HAVE_GSL)
   add_subdirectory(amplgsl)
 endif ()
 #add_subdirectory(gecode)
-
-macro(replace_flags match replace)
-  foreach (flag_var
-      CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-      CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
-    if (${flag_var} MATCHES "${match}")
-      string(REPLACE "${match}" "${replace}" ${flag_var} "${${flag_var}}")
-    endif ()
-  endforeach ()
-endmacro()
-
-find_package(CPLEX)
-if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
-  if (MSVC)
-    # CP Optimizer only provides libraries built with DLL MSVC runtime
-    # so build a compatible version of the amplsolver library specifically
-    # for ilogcp.
-    replace_flags("/MT" "/MD")
-    add_library(amplsolver-dynrt ${ASL_SOURCES})
-    replace_flags("/MD" "/MT")
-    set(SOLVER_LIBS amplsolver-dynrt)
-  endif ()
-  add_subdirectory(ilogcp)
-  if (MSVC)
-    set(SOLVER_LIBS amplsolver)
-  endif ()
-endif ()
+add_subdirectory(ilogcp)
