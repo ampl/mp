@@ -41,7 +41,6 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 endif ()
 
 set(ASL_SOURCES
-  ${CMAKE_CURRENT_BINARY_DIR}/arith.h
   stdio1.h
   asldate.c
   atof.c
@@ -130,7 +129,7 @@ set(ASL_SOURCES
   xp1known.c
   xp2known.c)
 
-add_library(amplsolver ${ASL_SOURCES})
+add_library(amplsolver ${CMAKE_CURRENT_BINARY_DIR}/arith.h ${ASL_SOURCES})
 
 if (HAVE_GSL)
   add_subdirectory(amplgsl)

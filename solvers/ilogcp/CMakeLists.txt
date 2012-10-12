@@ -27,6 +27,7 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
       set(SOURCES ${SOURCES} ${src})
     endforeach ()
     add_library(amplsolver-dynrt ${SOURCES})
+    add_dependencies(amplsolver-dynrt arith_h)
     set(SOLVER_LIBS amplsolver-dynrt)
   endif ()
 
