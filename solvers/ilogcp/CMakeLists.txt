@@ -10,15 +10,7 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
     # CP Optimizer only provides libraries built with DLL MSVC runtime
     # so change the compiler flags and build a compatible version of the
     # amplsolver library specifically for ilogcp.
-    foreach (var
-        CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-        CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
-        CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-        CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
-      if (${var} MATCHES "${match}")
-        string(REPLACE "/MT" "/MD" ${var} "${${var}}")
-      endif ()
-    endforeach ()
+    use_dll_runtime()
     foreach (src ${ASL_SOURCES})
       get_filename_component(path ${src} PATH)
       if (path STREQUAL "")
@@ -39,9 +31,9 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
     util.cpp
     util.h)
   add_dependencies(amplilogcp arith_h)
+  target_link_libraries(amplilogcp ${SOLVER_LIBS})
 
   add_executable(ilogcp main.cpp)
-
-  target_link_libraries(ilogcp amplilogcp ${SOLVER_LIBS}
+  target_link_libraries(ilogcp amplilogcp
     ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_CP_LIBRARIES} ${CPLEX_LIBRARIES})
 endif ()

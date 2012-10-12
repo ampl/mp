@@ -31,6 +31,8 @@ using std::size_t;
 using std::string;
 using std::vector;
 
+#define DATA_DIR "../data/"
+
 namespace {
 
 bool AreBothSpaces(char lhs, char rhs) { return lhs == ' ' && rhs == ' '; }
@@ -1371,7 +1373,7 @@ TEST_F(IlogCPTest, Usage) {
 }
 
 TEST_F(IlogCPTest, ObjConst) {
-  EXPECT_EQ(0, RunDriver("data/objconst"));
+  EXPECT_EQ(0, RunDriver(DATA_DIR "objconst"));
   IloModel::Iterator iter(mod);
   ASSERT_TRUE(iter.ok());
   IloObjective obj = (*iter).asObjective();
@@ -1379,113 +1381,113 @@ TEST_F(IlogCPTest, ObjConst) {
 }
 
 TEST_F(IlogCPTest, CPOptimizerDoesntSupportContinuousVars) {
-  EXPECT_EQ(1, RunDriver("data/objconst", "optimizer=cp"));
+  EXPECT_EQ(1, RunDriver(DATA_DIR "objconst", "optimizer=cp"));
 }
 
 TEST_F(IlogCPTest, SolveNumberOfCplex) {
   d.use_numberof(false);
-  RunDriver("data/numberof", "optimizer=cplex");
+  RunDriver(DATA_DIR "numberof", "optimizer=cplex");
 }
 
 TEST_F(IlogCPTest, SolveAssign0) {
-  EXPECT_EQ(6, Solve("data/assign0").obj);
+  EXPECT_EQ(6, Solve(DATA_DIR "assign0").obj);
 }
 
 TEST_F(IlogCPTest, SolveAssign1) {
-  EXPECT_EQ(6, Solve("data/assign1").obj);
+  EXPECT_EQ(6, Solve(DATA_DIR "assign1").obj);
 }
 
 TEST_F(IlogCPTest, SolveBalassign0) {
-  EXPECT_EQ(14, Solve("data/balassign0").obj);
+  EXPECT_EQ(14, Solve(DATA_DIR "balassign0").obj);
 }
 
 TEST_F(IlogCPTest, SolveBalassign1) {
-  EXPECT_EQ(14, Solve("data/balassign1").obj);
+  EXPECT_EQ(14, Solve(DATA_DIR "balassign1").obj);
 }
 
 TEST_F(IlogCPTest, SolveFlowshp0) {
-  EXPECT_NEAR(22, Solve("data/flowshp0").obj, 1e-5);
+  EXPECT_NEAR(22, Solve(DATA_DIR "flowshp0").obj, 1e-5);
 }
 
 TEST_F(IlogCPTest, SolveFlowshp1) {
-  EXPECT_EQ(22, Solve("data/flowshp1").obj);
+  EXPECT_EQ(22, Solve(DATA_DIR "flowshp1").obj);
 }
 
 // Disabled because it's too difficult to solve.
 TEST_F(IlogCPTest, DISABLED_SolveFlowshp2) {
-  EXPECT_EQ(22, Solve("data/flowshp2").obj);
+  EXPECT_EQ(22, Solve(DATA_DIR "flowshp2").obj);
 }
 
 TEST_F(IlogCPTest, SolveGrpassign0) {
-  EXPECT_EQ(61, Solve("data/grpassign0").obj);
+  EXPECT_EQ(61, Solve(DATA_DIR "grpassign0").obj);
 }
 
 // Disabled because variables in subscripts are not yet allowed.
 TEST_F(IlogCPTest, DISABLED_SolveGrpassign1) {
-  EXPECT_EQ(61, Solve("data/grpassign1").obj);
+  EXPECT_EQ(61, Solve(DATA_DIR "grpassign1").obj);
 }
 
 // Disabled because object-valued variables are not yet allowed.
 TEST_F(IlogCPTest, DISABLED_SolveGrpassign1a) {
-  EXPECT_EQ(61, Solve("data/grpassign1a").obj);
+  EXPECT_EQ(61, Solve(DATA_DIR "grpassign1a").obj);
 }
 
 TEST_F(IlogCPTest, SolveMagic) {
-  EXPECT_TRUE(Solve("data/magic").solved);
+  EXPECT_TRUE(Solve(DATA_DIR "magic").solved);
 }
 
 TEST_F(IlogCPTest, SolveMapcoloring) {
-  EXPECT_TRUE(Solve("data/mapcoloring").solved);
+  EXPECT_TRUE(Solve(DATA_DIR "mapcoloring").solved);
 }
 
 TEST_F(IlogCPTest, SolveMoney) {
-  EXPECT_TRUE(Solve("data/money").solved);
+  EXPECT_TRUE(Solve(DATA_DIR "money").solved);
 }
 
 TEST_F(IlogCPTest, SolveNQueens) {
-  EXPECT_TRUE(Solve("data/nqueens").solved);
+  EXPECT_TRUE(Solve(DATA_DIR "nqueens").solved);
 }
 
 TEST_F(IlogCPTest, SolveNQueens0) {
-  EXPECT_EQ(0, Solve("data/nqueens0").obj);
+  EXPECT_EQ(0, Solve(DATA_DIR "nqueens0").obj);
 }
 
 // Disabled because it's too difficult to solve.
 TEST_F(IlogCPTest, DISABLED_SolveParty1) {
-  EXPECT_EQ(61, Solve("data/party1").obj);
+  EXPECT_EQ(61, Solve(DATA_DIR "party1").obj);
 }
 
 // Disabled because it's too difficult to solve.
 TEST_F(IlogCPTest, DISABLED_SolveParty2) {
-  EXPECT_EQ(3, Solve("data/party2").obj);
+  EXPECT_EQ(3, Solve(DATA_DIR "party2").obj);
 }
 
 TEST_F(IlogCPTest, SolveSched0) {
-  EXPECT_EQ(5, Solve("data/sched0").obj);
+  EXPECT_EQ(5, Solve(DATA_DIR "sched0").obj);
 }
 
 TEST_F(IlogCPTest, SolveSched1) {
-  EXPECT_EQ(5, Solve("data/sched1").obj);
+  EXPECT_EQ(5, Solve(DATA_DIR "sched1").obj);
 }
 
 TEST_F(IlogCPTest, SolveSched2) {
-  EXPECT_EQ(5, Solve("data/sched2").obj);
+  EXPECT_EQ(5, Solve(DATA_DIR "sched2").obj);
 }
 
 TEST_F(IlogCPTest, SolveSeq0) {
-  EXPECT_NEAR(332, Solve("data/seq0").obj, 1e-5);
+  EXPECT_NEAR(332, Solve(DATA_DIR "seq0").obj, 1e-5);
 }
 
 TEST_F(IlogCPTest, SolveSeq0a) {
-  EXPECT_NEAR(332, Solve("data/seq0a").obj, 1e-5);
+  EXPECT_NEAR(332, Solve(DATA_DIR "seq0a").obj, 1e-5);
 }
 
 TEST_F(IlogCPTest, SolveSudokuHard) {
-  EXPECT_TRUE(Solve("data/sudokuHard").solved);
+  EXPECT_TRUE(Solve(DATA_DIR "sudokuHard").solved);
 }
 
 TEST_F(IlogCPTest, SolveSudokuVeryEasy) {
-  EXPECT_TRUE(Solve("data/sudokuVeryEasy").solved);
+  EXPECT_TRUE(Solve(DATA_DIR "sudokuVeryEasy").solved);
 }
 
 // ----------------------------------------------------------------------------
@@ -1659,22 +1661,22 @@ TEST_F(IlogCPTest, CPLEXOptions) {
 // Solve code tests
 
 TEST_F(IlogCPTest, OptimalSolveCode) {
-  Solve("data/objconst");
+  Solve(DATA_DIR "objconst");
   EXPECT_EQ(0, d.get_asl()->p.solve_code_);
 }
 
 TEST_F(IlogCPTest, FeasibleSolveCode) {
-  Solve("data/feasible");
+  Solve(DATA_DIR "feasible");
   EXPECT_EQ(100, d.get_asl()->p.solve_code_);
 }
 
 TEST_F(IlogCPTest, InfeasibleSolveCode) {
-  Solve("data/infeasible");
+  Solve(DATA_DIR "infeasible");
   EXPECT_EQ(200, d.get_asl()->p.solve_code_);
 }
 
 TEST_F(IlogCPTest, InfeasibleOrUnboundedSolveCode) {
-  Solve("data/unbounded");
+  Solve(DATA_DIR "unbounded");
   EXPECT_EQ(201, d.get_asl()->p.solve_code_);
 }
 }
