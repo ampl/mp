@@ -112,7 +112,7 @@ class CPOptimizer : public Optimizer {
       std::vector<double> &primal, std::vector<double> &dual) const;
 };
 
-// The Concert driver for AMPL.
+// The Ilogcp driver for AMPL.
 class Driver {
  private:
   IloEnv env_;
