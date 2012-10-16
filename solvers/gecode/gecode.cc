@@ -1,48 +1,132 @@
 #include "gecode.h"
 
 #include <gecode/int.hh>
+#include <gecode/minimodel.hh>
 #include <gecode/search.hh>
 #include <gecode/gist.hh>
 
 #include <iostream>
 #include <memory>
+#include <ctime>
 
-#include "getstub.h"
-#include "nlp.h"
-#include "opcode.hd"
+#include "solvers/ilogcp/util.h"
+#include "solvers/getstub.h"
+#include "solvers/nlp.h"
+#include "solvers/opcode.hd"
 
-using namespace Gecode;
-using namespace std;
+using std::cerr;
+using std::endl;
+using std::vector;
 
-class GecodeModel: public Space {
+using Gecode::BoolExpr;
+using Gecode::DFS;
+using Gecode::IntArgs;
+using Gecode::IntVarArgs;
+using Gecode::IntVar;
+using Gecode::IntVarArray;
+using Gecode::IntRelType;
+using Gecode::IRT_NQ;
+using Gecode::linear;
+using Gecode::Space;
+
+class GecodeProblem: public Space {
 private:
   IntVarArray vars_;
+  IntVar obj_;
+  IntRelType obj_irt_; // IRT_NQ - no objective,
+                       // IRT_LE - minimization, IRT_GQ - maximization
+  static const BoolExpr DUMMY_EXPR;
 
 public:
-  GecodeModel(int num_vars) :
-      vars_(*this, num_vars) {
-    // no leading zeros
-    /*rel(*this, s, IRT_NQ, 0);
-    rel(*this, m, IRT_NQ, 0);
-    // all letters distinct
-    distinct(*this, vars_);
-    // post branching
-    branch(*this, vars_, INT_VAR_SIZE_MIN, INT_VAL_MIN);*/
-  }
+  GecodeProblem(int num_vars) :
+      vars_(*this, num_vars), obj_irt_(IRT_NQ) {}
 
-  GecodeModel(bool share, GecodeModel &s) : Space(share, s) {
+  GecodeProblem(bool share, GecodeProblem &s) :
+    Space(share, s), obj_irt_(s.obj_irt_) {
     vars_.update(*this, share, s.vars_);
+    if (obj_irt_ != IRT_NQ)
+      obj_.update(*this, share, s.obj_);
   }
 
   Space *copy(bool share);
 
-  IntVarArray& vars() {
-    return vars_;
+  IntVarArray &vars() { return vars_; }
+  IntVar &obj() { return obj_; }
+
+  void SetObjective(bool max) {
+    obj_irt_ = max ? Gecode::IRT_GQ : Gecode::IRT_LE;
   }
+
+  virtual void constrain(const Space& best);
+
+  // Converts the specified logical ASL expression such as 'or', '<=', or
+  // 'alldiff' into an equivalent Gecode expression.
+  BoolExpr ConvertLogicalExpr(const expr *e);
+
+  // Converts the specified arithmetic ASL expression into an equivalent
+  // Concert expression.
+  IntVar ConvertArithmeticExpr(const expr *e);
 };
 
-Space *GecodeModel::copy(bool share) {
-  return new GecodeModel(share,*this);
+const BoolExpr GecodeProblem::DUMMY_EXPR((Gecode::BoolVar()));
+
+Space *GecodeProblem::copy(bool share) {
+  return new GecodeProblem(share, *this);
+}
+
+void GecodeProblem::constrain(const Space& best) {
+  if (obj_irt_ != IRT_NQ)
+    rel(*this, obj_, obj_irt_, static_cast<const GecodeProblem&>(best).obj_);
+}
+
+#define PR if (0) Printf
+
+BoolExpr GecodeProblem::ConvertLogicalExpr(const expr *e) {
+  size_t opnum = reinterpret_cast<size_t>(e->op);
+  PR("op %d  optype %d  ", opnum, optype[opnum]);
+
+  switch(opnum) {
+  case NE:
+    PR("!=\n");
+    return ConvertArithmeticExpr(e->L.e) != ConvertArithmeticExpr(e->R.e);
+
+  case OPALLDIFF: {
+    PR("all different\n");
+    expr **ep = e->L.ep, **end = e->R.ep;
+    IntVarArgs x(end - ep);
+    for (unsigned i = 0; ep != end; ++ep, ++i) {
+      x[i] = reinterpret_cast<size_t>((*ep)->op) == OPVARVAL ?
+          vars_[(*ep)->a] : ConvertArithmeticExpr(*ep);
+    }
+    distinct(*this, vars_);
+    return DUMMY_EXPR;
+  }
+
+  default:
+    throw IncompleteConstraintExprError(get_opname(opnum));
+  }
+}
+
+IntVar GecodeProblem::ConvertArithmeticExpr(const expr *e) {
+  size_t opnum = reinterpret_cast<size_t>(e->op);
+  PR ("op %d  optype %2d  ", opnum, optype[opnum]);
+
+  switch(opnum) {
+  case OPNUM: {
+    real n = reinterpret_cast<const expr_n*>(e)->v;
+    PR("%e\n", n);
+    IntVar var(*this, n, n);
+    rel(*this, var == n);
+    return var;
+  }
+
+  case OPVARVAL:
+    PR("X[%d]\n", e->a + 1);
+    return vars_[e->a];
+
+  default:
+    throw UnsupportedExprError(get_opname(opnum));
+  }
 }
 
 Driver::Driver() :
@@ -54,14 +138,7 @@ Driver::~Driver() {
 }
 
 int Driver::run(char **argv) {
-  // Initialize timers.
-  /*IloTimer timer(env_);
-  timer.start();
-
-  IloNum Times[5];
-  Times[0] = timer.getTime();*/
-
-  // Get name of .nl file and read problem sizes.
+  // Get the name of the .nl file and read problem sizes.
   char *stub = getstub(&argv, oinfo_.get());
   if (!stub) {
     usage_noexit_ASL(oinfo_.get(), 1);
@@ -69,12 +146,12 @@ int Driver::run(char **argv) {
   }
   FILE *nl = jac0dim(stub, strlen(stub));
 
-  // Read coefficients, bounds & expression tree from .nl file.
+  // Read coefficients, bounds & expression tree from the .nl file.
   Uvx = static_cast<real*>(Malloc(n_var * sizeof(real)));
   Urhsx = static_cast<real*>(Malloc(n_con * sizeof(real)));
 
   efunc *r_ops_int[N_OPS];
-  for (int i = 0; i < N_OPS; i++)
+  for (int i = 0; i < N_OPS; ++i)
     r_ops_int[i] = reinterpret_cast<efunc*>(i);
   asl->I.r_ops_ = r_ops_int;
   want_derivs = 0;
@@ -92,26 +169,30 @@ int Driver::run(char **argv) {
     cerr << "Gecode doesn't support continuous variables" << endl;
     return 1;
   }
-  std::auto_ptr<GecodeModel> model(new GecodeModel(n_var));
-  IntVarArray &vars = model->vars();
+  std::auto_ptr<GecodeProblem> problem(new GecodeProblem(n_var));
+  IntVarArray &vars = problem->vars();
   for (int j = 0; j < n_var; ++j)
-    vars[j] = IntVar(*model, LUv[j], Uvx[j]);
+    vars[j] = IntVar(*problem, LUv[j], Uvx[j]);
 
-  // TODO: objective
-  /*if (n_obj > 0) {
-   IloExpr objExpr(env_, objconst0(asl));
-   if (0 < nlo)
-   objExpr += build_expr (obj_de[0].e);
-   for (ograd *og = Ograd[0]; og; og = og->next)
-   objExpr += (og -> coef) * vars_[og -> varno];
-   IloObjective MinOrMax(env_, objExpr,
-   objtype[0] == 0 ? IloObjective::Minimize : IloObjective::Maximize);
-   optimizer_->set_obj(MinOrMax);
-   IloAdd (mod_, MinOrMax);
-   }*/
+  // Post branching.
+  branch(*problem, vars, Gecode::INT_VAR_SIZE_MIN, Gecode::INT_VAL_MIN);
 
-  // TODO: constraints
-  for (int i = 0; i < n_con; i++) {
+  if (n_obj > 0) {
+    // TODO: convert the objective expr
+    problem->SetObjective(objtype[0] == 0);
+    /*IloExpr objExpr(env_, objconst0(asl));
+    if (0 < nlo)
+    objExpr += build_expr (obj_de[0].e);
+    for (ograd *og = Ograd[0]; og; og = og->next)
+    objExpr += (og -> coef) * vars_[og -> varno];
+    IloObjective MinOrMax(env_, objExpr,
+    objtype[0] == 0 ? IloObjective::Minimize : IloObjective::Maximize);
+    optimizer_->set_obj(MinOrMax);
+    IloAdd (mod_, MinOrMax);*/
+  }
+
+  // Convert constraints.
+  for (int i = 0; i < n_con; ++i) {
     int num_terms = 0;
     for (cgrad *cg = Cgrad[i]; cg; cg = cg->next)
       ++num_terms;
@@ -123,38 +204,36 @@ int Driver::run(char **argv) {
       x[index] = vars[cg->varno];
       ++index;
     }
-    // TODO: ranges
-    if (LUrhs[i] == Urhsx[i])
-      linear(*model, c, x, IRT_EQ, LUrhs[i]);
+    double lb = LUrhs[i];
+    double ub = Urhsx[i];
+    if (lb <= negInfinity) {
+      linear(*problem, c, x, Gecode::IRT_LE, ub);
+    } else if (ub >= Infinity) {
+      linear(*problem, c, x, Gecode::IRT_GQ, lb);
+    } else if (lb == ub) {
+      linear(*problem, c, x, Gecode::IRT_EQ, lb);
+    } else {
+      linear(*problem, c, x, Gecode::IRT_GQ, lb);
+      linear(*problem, c, x, Gecode::IRT_LE, ub);
+    }
     // TODO: nonlinear part
     //if (i < nlc)
     //   conExpr += model->ConvertExpr(con_de[i].e);
     //Con[i] = (LUrhs[i] <= conExpr <= Urhsx[i]);
   }
 
-  /*IloConstraintArray LCon(env_,n_lcon);
+  // Convert logical constraints.
+  for (int i = 0; i < n_lcon; ++i)
+    problem->ConvertLogicalExpr(lcon_de[i].e);
 
-   for (int i = 0; i < n_lcon; i++)
-   LCon[i] = build_constr (lcon_de[i].e);
+  // TODO
+  // finish_building_numberof();
 
-   if (n_con > 0) mod_.add (Con);
-   if (n_lcon > 0) mod_.add (LCon);
-
-   finish_building_numberof ();
-
-   int timing = get_option(TIMING);
-   Times[1] = timing ? timer.getTime() : 0;*/
+  DFS<GecodeProblem> e(problem.get());
+  problem.reset();
 
   // Solve the problem.
-  // TODO
-  DFS<GecodeModel> e(model.get());
-  model.reset();
-
-  // TODO
-  /*Times[2] = timing ? timer.getTime() : 0;*/
-  std::auto_ptr<GecodeModel> solution(e.next());
-  // TODO
-  /* Times[3] = timing ? timer.getTime() : 0;*/
+  std::auto_ptr<GecodeProblem> solution(e.next());
 
   // Convert solution status.
   const char *status = 0;
@@ -167,27 +246,12 @@ int Driver::run(char **argv) {
     for (int j = 0; j < n_var; ++j)
       primal[j] = vars[j].val();
   } else {
-    solve_result_num = 501;
-    status = "unknown solution status";
+    solve_result_num = 200;
+    status = "infeasible problem";
   }
 
   char message[256];
-  int end = Sprintf(message, "%s: %s\n", oinfo_->bsname, status);
-  // TODO
-  //optimizer_->get_solution(asl, sMsg + sSoFar, primal, dual);
+  Sprintf(message, "%s: %s\n", oinfo_->bsname, status);
   write_sol(message, primal.empty() ? 0 : &primal[0], 0, oinfo_.get());
-
-  // TODO
-  /*if (timing) {
-   Times[4] = timer.getTime();
-   cerr << endl
-   << "Define = " << Times[1] - Times[0] << endl
-   << "Setup =  " << Times[2] - Times[1] << endl
-   << "Solve =  " << Times[3] - Times[2] << endl
-   << "Output = " << Times[4] - Times[3] << endl;
-   }*/
-
-  // TODO
-  // search and print all solutions
   return 0;
 }
