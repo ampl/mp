@@ -9,7 +9,8 @@
 #include <memory>
 #include <ctime>
 
-#include "solvers/ilogcp/util.h"
+#include "solvers/util/util.h"
+#include "solvers/util/expr.h"
 #include "solvers/getstub.h"
 #include "solvers/nlp.h"
 #include "solvers/opcode.hd"
@@ -17,6 +18,9 @@
 using std::cerr;
 using std::endl;
 using std::vector;
+
+using ampl::Expr;
+using ampl::GetOpName;
 
 using Gecode::BoolExpr;
 using Gecode::DFS;
@@ -29,7 +33,9 @@ using Gecode::IRT_NQ;
 using Gecode::linear;
 using Gecode::Space;
 
-class GecodeProblem: public Space {
+namespace {
+
+class GecodeProblem: public Space, public ampl::ExprVisitor<GecodeProblem, IntVar> {
 private:
   IntVarArray vars_;
   IntVar obj_;
@@ -63,6 +69,17 @@ public:
   // 'alldiff' into an equivalent Gecode expression.
   BoolExpr ConvertLogicalExpr(const expr *e);
 
+  IntVar VisitNumber(ampl::Number n) {
+    double value = n.value();
+    IntVar var(*this, value, value);
+    rel(*this, var == value);
+    return var;
+  }
+
+  IntVar VisitVariable(ampl::Variable v) {
+    return vars_[v.index()];
+  }
+
   // Converts the specified arithmetic ASL expression into an equivalent
   // Concert expression.
   IntVar ConvertArithmeticExpr(const expr *e);
@@ -88,7 +105,7 @@ BoolExpr GecodeProblem::ConvertLogicalExpr(const expr *e) {
   switch(opnum) {
   case NE:
     PR("!=\n");
-    return ConvertArithmeticExpr(e->L.e) != ConvertArithmeticExpr(e->R.e);
+    return Visit(Expr(e->L.e)) != Visit(Expr(e->R.e));
 
   case OPALLDIFF: {
     PR("all different\n");
@@ -96,38 +113,19 @@ BoolExpr GecodeProblem::ConvertLogicalExpr(const expr *e) {
     IntVarArgs x(end - ep);
     for (unsigned i = 0; ep != end; ++ep, ++i) {
       x[i] = reinterpret_cast<size_t>((*ep)->op) == OPVARVAL ?
-          vars_[(*ep)->a] : ConvertArithmeticExpr(*ep);
+          vars_[(*ep)->a] : Visit(Expr(*ep));
     }
     distinct(*this, vars_);
     return DUMMY_EXPR;
   }
 
   default:
-    throw IncompleteConstraintExprError(get_opname(opnum));
+    throw ampl::IncompleteConstraintExprError(GetOpName(opnum));
   }
 }
-
-IntVar GecodeProblem::ConvertArithmeticExpr(const expr *e) {
-  size_t opnum = reinterpret_cast<size_t>(e->op);
-  PR ("op %d  optype %2d  ", opnum, optype[opnum]);
-
-  switch(opnum) {
-  case OPNUM: {
-    real n = reinterpret_cast<const expr_n*>(e)->v;
-    PR("%e\n", n);
-    IntVar var(*this, n, n);
-    rel(*this, var == n);
-    return var;
-  }
-
-  case OPVARVAL:
-    PR("X[%d]\n", e->a + 1);
-    return vars_[e->a];
-
-  default:
-    throw UnsupportedExprError(get_opname(opnum));
-  }
 }
+
+namespace ampl {
 
 Driver::Driver() :
     asl(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))) {
@@ -223,8 +221,12 @@ int Driver::run(char **argv) {
   }
 
   // Convert logical constraints.
-  for (int i = 0; i < n_lcon; ++i)
-    problem->ConvertLogicalExpr(lcon_de[i].e);
+  for (int i = 0; i < n_lcon; ++i) {
+    const expr *asl_expr = lcon_de[i].e;
+    BoolExpr gecode_expr(problem->ConvertLogicalExpr(asl_expr));
+    if (reinterpret_cast<size_t>(asl_expr->op) != OPALLDIFF)
+      rel(*problem, gecode_expr);
+  }
 
   // TODO
   // finish_building_numberof();
@@ -254,4 +256,5 @@ int Driver::run(char **argv) {
   Sprintf(message, "%s: %s\n", oinfo_->bsname, status);
   write_sol(message, primal.empty() ? 0 : &primal[0], 0, oinfo_.get());
   return 0;
+}
 }

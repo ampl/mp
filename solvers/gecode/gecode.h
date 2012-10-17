@@ -6,6 +6,8 @@
 struct Option_Info;
 struct ASL_fg;
 
+namespace ampl {
+
 // The Gecode driver for AMPL.
 class Driver {
  private:
@@ -23,5 +25,7 @@ class Driver {
   // Run the driver.
   int run(char **argv);
 };
+
+}
 
 #endif // AMPL_SOLVERS_GECODE_H

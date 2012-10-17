@@ -42,7 +42,7 @@ static char xxxvers[] = "ilogcp_options\0\n"
 
 namespace {
 struct DriverOptionInfo : Option_Info {
-  Driver *driver;
+  ampl::Driver *driver;
 };
 
 // Returns the constant term in the first objective.
@@ -128,6 +128,8 @@ CP_ENUM_OPTION(TemporalRelaxation, IloCP::Off, Flags)
 CP_ENUM_OPTION(TimeMode, IloCP::CPUTime, TimeModes)
 CP_INT_OPTION_FULL(Workers, 0, true, 0)
 }
+
+namespace ampl {
 
 Optimizer::Optimizer(IloEnv env, ASL_fg *asl) :
   vars_(env, n_var), cons_(env, n_con) {}
@@ -774,4 +776,5 @@ int Driver::run(char **argv) {
            << "Output = " << Times[4] - Times[3] << endl;
    }
    return 0;
+}
 }
