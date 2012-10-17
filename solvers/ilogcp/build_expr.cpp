@@ -16,7 +16,7 @@
 #include <cmath>
 #include <algorithm>
 
-#include "util.h"
+#include "solvers/util/util.h"
 #include "nlp.h"
 #include "opcode.hd"
 
@@ -47,7 +47,7 @@ class SameExpr {
 
   // Returns true if the stored expression is the same as the argument's
   // expression.
-  bool operator()(const NumberOf& nof) const;
+  bool operator()(const ampl::NumberOf& nof) const;
 };
 
 SameExpr::SameExpr(const expr *e) : e(e), elen(0)
@@ -55,19 +55,21 @@ SameExpr::SameExpr(const expr *e) : e(e), elen(0)
    for (expr **ep = e->L.ep + 1; ep < e->R.ep; ep++, elen++) ;
 }
 
-bool SameExpr::operator()(const NumberOf& nof) const
+bool SameExpr::operator()(const ampl::NumberOf& nof) const
 {
    if (nof.num_vars() != elen)
       return false;
 
    for (expr **ep = e->L.ep + 1, **enp = nof.numberofexpr()->L.ep + 1;
         ep != e->R.ep; ep++, enp++) {
-      if (!same_expr(*ep, *enp))
+      if (!ampl::Equal(*ep, *enp))
          return false;
    }
    return true;
 }
 }
+
+namespace ampl {
 
 IloIntVar NumberOf::add(real value, IloEnv env) {
   for (int i = 0, n = values_.getSize(); i < n; i++)
@@ -348,7 +350,7 @@ IloExpr Driver::build_expr (const expr *e)
       }
 
       default:
-         throw UnsupportedExprError(get_opname(opnum));
+         throw ampl::UnsupportedExprError(ampl::GetOpName(opnum));
    }
 }
 
@@ -475,7 +477,7 @@ IloConstraint Driver::build_constr (const expr *e)
       }
 
       default:
-         throw IncompleteConstraintExprError(get_opname(opnum));
+         throw ampl::IncompleteConstraintExprError(ampl::GetOpName(opnum));
    }
 }
 
@@ -524,4 +526,5 @@ void Driver::finish_building_numberof()
       mod_.add (i->to_distribute(env_));
    }
    numberofs_.clear();
+}
 }

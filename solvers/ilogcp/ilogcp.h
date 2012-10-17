@@ -16,8 +16,7 @@ struct keyword;
 struct Option_Info;
 struct ASL_fg;
 
-extern int usenumberof;
-extern int debugexpr;
+namespace ampl {
 
 // Variable subscripted by a variable - not implemented in AMPL yet.
 enum { OPVARSUBVAR = 99 };
@@ -215,5 +214,6 @@ class Driver {
   // Runs the driver.
   int run(char **argv);
 };
+}
 
 #endif // AMPL_SOLVERS_CONCERT_H
