@@ -27,9 +27,10 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
     build_expr.cpp
     ilogcp.cpp
     ilogcp.h
-    ilogcp_date.h)
+    ilogcp_date.h
+    ../util/util-all.cc)
   add_dependencies(amplilogcp arith_h)
-  target_link_libraries(amplilogcp util ${SOLVER_LIBS})
+  target_link_libraries(amplilogcp ${SOLVER_LIBS})
 
   add_executable(ilogcp main.cpp)
   target_link_libraries(ilogcp amplilogcp
