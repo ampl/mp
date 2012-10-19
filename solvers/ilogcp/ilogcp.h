@@ -44,7 +44,7 @@ class NumberOf {
   }
 
   IloDistribute to_distribute(IloEnv env) const {
-    return IloDistribute (env, cards_, values_, vars_);
+    return IloDistribute(env, cards_, values_, vars_);
   }
 
   IloIntVar add(double value, IloEnv env);
@@ -114,7 +114,7 @@ class CPOptimizer : public Optimizer {
 };
 
 // The Ilogcp driver for AMPL.
-class Driver : public ExprVisitor<Driver, IloExpr> {
+class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
  private:
   IloEnv env_;
   IloModel mod_;
@@ -265,7 +265,7 @@ class Driver : public ExprVisitor<Driver, IloExpr> {
   }
 
   IloExpr VisitIf(IfExpr e) {
-    IloConstraint condition(build_constr(e.condition().get()));
+    IloConstraint condition(Visit(e.condition()));
     IloNumVar var(env_, -IloInfinity, IloInfinity);
     mod_.add(IloIfThen(env_, condition, var == Visit(e.true_expr())));
     mod_.add(IloIfThen(env_, !condition, var == Visit(e.false_expr())));
@@ -356,7 +356,7 @@ class Driver : public ExprVisitor<Driver, IloExpr> {
   }
 
   IloExpr VisitRound(BinaryExpr e) {
-    Number num = Cast<Number>(e.rhs());
+    NumericConstant num = Cast<NumericConstant>(e.rhs());
     if (num && num.value() != 0)
        throw UnsupportedExprError("round with nonzero second parameter");
     // Note that IloOplRound rounds half up.
@@ -364,33 +364,33 @@ class Driver : public ExprVisitor<Driver, IloExpr> {
   }
 
   IloExpr VisitTrunc(BinaryExpr e) {
-    Number num = Cast<Number>(e.rhs());
+    NumericConstant num = Cast<NumericConstant>(e.rhs());
     if (num && num.value() != 0)
        throw UnsupportedExprError("trunc with nonzero second parameter");
     return IloTrunc(Visit(e.lhs()));
   }
 
-  IloExpr VisitCount(SumExpr e) {
+  IloExpr VisitCount(CountExpr e) {
     IloExpr sum(env_);
-    for (SumExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-       sum += build_constr((*i).get());
+    for (CountExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+       sum += Visit(*i);
     return sum;
   }
 
   IloExpr VisitNumberOf(NumberOfExpr e) {
     Expr target = e.target();
-    Number num = Cast<Number>(target);
+    NumericConstant num = Cast<NumericConstant>(target);
     if (num && get_option(USENUMBEROF))
        return build_numberof(e.get());
     IloExpr sum(env_);
     IloExpr concert_target(Visit(target));
-    for (SumExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+    for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
        sum += (Visit(*i) == concert_target);
     return sum;
   }
 
   IloExpr VisitConstExpPow(BinaryExpr e) {
-    return IloPower(Visit(e.lhs()), Cast<Number>(e.rhs()).value());
+    return IloPower(Visit(e.lhs()), Cast<NumericConstant>(e.rhs()).value());
   }
 
   IloExpr VisitPow2(UnaryExpr e) {
@@ -398,7 +398,7 @@ class Driver : public ExprVisitor<Driver, IloExpr> {
   }
 
   IloExpr VisitConstBasePow(BinaryExpr e) {
-    return IloPower(Cast<Number>(e.lhs()).value(), Visit(e.rhs()));
+    return IloPower(Cast<NumericConstant>(e.lhs()).value(), Visit(e.rhs()));
   }
 
   IloExpr VisitPLTerm(PiecewiseLinearTerm t) {
@@ -412,12 +412,119 @@ class Driver : public ExprVisitor<Driver, IloExpr> {
     return IloPiecewiseLinear(vars_[t.var_index()], breakpoints, slopes, 0, 0);
   }
 
-  IloExpr VisitNumber(Number n) {
+  IloExpr VisitNumber(NumericConstant n) {
     return IloExpr(env_, n.value());
   }
 
   IloExpr VisitVariable(Variable v) {
     return vars_[v.index()];
+  }
+
+  IloConstraint VisitConstant(LogicalConstant c) {
+    IloNumVar dummy(env_, 1, 1);
+    return dummy == c.value();
+  }
+
+  IloConstraint VisitLess(RelationalExpr e) {
+    return Visit(e.lhs()) < Visit(e.rhs());
+  }
+
+  IloConstraint VisitLessEqual(RelationalExpr e) {
+    return Visit(e.lhs()) <= Visit(e.rhs());
+  }
+
+  IloConstraint VisitEqual(RelationalExpr e) {
+    return Visit(e.lhs()) == Visit(e.rhs());
+  }
+
+  IloConstraint VisitGreaterEqual(RelationalExpr e) {
+    return Visit(e.lhs()) >= Visit(e.rhs());
+  }
+
+  IloConstraint VisitGreater(RelationalExpr e) {
+    return Visit(e.lhs()) > Visit(e.rhs());
+  }
+
+  IloConstraint VisitNotEqual(RelationalExpr e) {
+    return Visit(e.lhs()) != Visit(e.rhs());
+  }
+
+  IloConstraint VisitAtMost(RelationalExpr e) {
+    return Visit(e.lhs()) >= Visit(e.rhs());
+  }
+
+  IloConstraint VisitNotAtMost(RelationalExpr e) {
+    return !(Visit(e.lhs()) >= Visit(e.rhs()));
+  }
+
+  IloConstraint VisitAtLeast(RelationalExpr e) {
+    return Visit(e.lhs()) <= Visit(e.rhs());
+  }
+
+  IloConstraint VisitNotAtLeast(RelationalExpr e) {
+    return !(Visit(e.lhs()) <= Visit(e.rhs()));
+  }
+
+  IloConstraint VisitExactly(RelationalExpr e) {
+    return Visit(e.lhs()) == Visit(e.rhs());
+  }
+
+  IloConstraint VisitNotExactly(RelationalExpr e) {
+    return Visit(e.lhs()) != Visit(e.rhs());
+  }
+
+  IloConstraint VisitOr(BinaryLogicalExpr e) {
+    return IloIfThen(env_, !Visit(e.lhs()), Visit(e.rhs()));
+  }
+
+  IloConstraint VisitExists(IteratedLogicalExpr e) {
+    IloOr disjunction(env_);
+    for (IteratedLogicalExpr::iterator
+        i = e.begin(), end = e.end(); i != end; ++i) {
+      disjunction.add(Visit(*i));
+    }
+    return disjunction;
+  }
+
+  IloConstraint VisitAnd(BinaryLogicalExpr e) {
+    return Visit(e.lhs()) && Visit(e.rhs());
+  }
+
+  IloConstraint VisitForAll(IteratedLogicalExpr e) {
+    IloAnd conjunction(env_);
+    for (IteratedLogicalExpr::iterator
+        i = e.begin(), end = e.end(); i != end; ++i) {
+      conjunction.add(Visit(*i));
+    }
+    return conjunction;
+  }
+
+  IloConstraint VisitNot(NotExpr e) {
+    return !Visit(e.arg());
+  }
+
+  IloConstraint VisitIff(BinaryLogicalExpr e) {
+    return Visit(e.lhs()) == Visit(e.rhs());
+  }
+
+  IloConstraint VisitImplication(ImplicationExpr e) {
+    IloConstraint condition(Visit(e.condition()));
+    return IloIfThen(env_,  condition, Visit(e.true_expr()))
+        && IloIfThen(env_, !condition, Visit(e.false_expr()));
+  }
+
+  IloConstraint VisitAllDiff(AllDiffExpr e) {
+    IloIntVarArray vars(env_);
+    for (AllDiffExpr::iterator i = e.begin(), end = e.end(); i != end; ++i) {
+      if (Variable var = Cast<Variable>(*i)) {
+        vars.add(vars_[var.index()]);
+        continue;
+      }
+      IloIntVar var(env_, IloIntMin, IloIntMax);
+      mod_.add(var == Visit(*i));
+      vars.add(var);
+    }
+    return IloAllDiff(env_, vars);
   }
 
   // Converts the specified ASL expression into an equivalent Concert
