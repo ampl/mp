@@ -35,15 +35,16 @@ using Gecode::Space;
 
 namespace {
 
-class GecodeProblem: public Space, public ampl::ExprVisitor<GecodeProblem, IntVar> {
-private:
+class GecodeProblem: public Space,
+  public ampl::ExprVisitor<GecodeProblem, IntVar, BoolExpr> {
+ private:
   IntVarArray vars_;
   IntVar obj_;
   IntRelType obj_irt_; // IRT_NQ - no objective,
                        // IRT_LE - minimization, IRT_GQ - maximization
   static const BoolExpr DUMMY_EXPR;
 
-public:
+ public:
   GecodeProblem(int num_vars) :
       vars_(*this, num_vars), obj_irt_(IRT_NQ) {}
 
@@ -69,7 +70,7 @@ public:
   // 'alldiff' into an equivalent Gecode expression.
   BoolExpr ConvertLogicalExpr(const expr *e);
 
-  IntVar VisitNumber(ampl::Number n) {
+  IntVar VisitNumber(ampl::NumericConstant n) {
     double value = n.value();
     IntVar var(*this, value, value);
     rel(*this, var == value);
