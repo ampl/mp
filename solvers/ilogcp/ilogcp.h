@@ -320,15 +320,7 @@ class Driver : public ExprVisitor<Driver, IloExpr> {
     return (IloLog(1 + arg) - IloLog(1 - arg)) * 0.5;
   }
 
-  IloExpr VisitAtan2(BinaryExpr e) {
-    IloNumExpr y(Visit(e.lhs())), x(Visit(e.rhs()));
-    IloNumExpr atan(IloArcTan(y / x));
-    IloNumVar result(env_, -IloInfinity, IloInfinity);
-    mod_.add(IloIfThen(env_, x >= 0, result == atan));
-    mod_.add(IloIfThen(env_, x <= 0 && y >= 0, result == atan + M_PI));
-    mod_.add(IloIfThen(env_, x <= 0 && y <= 0, result == atan - M_PI));
-    return result;
-  }
+  IloExpr VisitAtan2(BinaryExpr e);
 
   IloExpr VisitAtan(UnaryExpr e) {
     return IloArcTan(Visit(e.arg()));

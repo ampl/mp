@@ -527,4 +527,14 @@ void Driver::finish_building_numberof()
    }
    numberofs_.clear();
 }
+
+IloExpr Driver::VisitAtan2(BinaryExpr e) {
+  IloNumExpr y(Visit(e.lhs())), x(Visit(e.rhs()));
+  IloNumExpr atan(IloArcTan(y / x));
+  IloNumVar result(env_, -IloInfinity, IloInfinity);
+  mod_.add(IloIfThen(env_, x >= 0, result == atan));
+  mod_.add(IloIfThen(env_, x <= 0 && y >= 0, result == atan + M_PI));
+  mod_.add(IloIfThen(env_, x <= 0 && y <= 0, result == atan - M_PI));
+  return result;
+}
 }
