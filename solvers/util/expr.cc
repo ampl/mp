@@ -21,3 +21,7 @@
  */
 
 #include "solvers/util/expr.h"
+
+namespace ampl {
+const de VarArgExpr::END = {0};
+}

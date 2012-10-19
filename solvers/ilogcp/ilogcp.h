@@ -11,6 +11,8 @@
 #include <ilcplex/ilocplex.h>
 #include <ilcp/cp.h>
 
+#include "solvers/util/expr.h"
+
 struct expr;
 struct keyword;
 struct Option_Info;
@@ -112,7 +114,7 @@ class CPOptimizer : public Optimizer {
 };
 
 // The Ilogcp driver for AMPL.
-class Driver {
+class Driver : public ExprVisitor<Driver, IloExpr> {
  private:
   IloEnv env_;
   IloModel mod_;
@@ -145,6 +147,7 @@ class Driver {
     OPTIMIZER,
     TIMING,
     USENUMBEROF,
+    USEVISITORS,
     NUM_OPTIONS
   };
 
@@ -201,6 +204,229 @@ class Driver {
   // Converts the specified ASL expression into an equivalent Concert
   // expression. 'e' must be a numerical expression.
   IloExpr build_expr(const expr *e);
+
+  IloExpr VisitPlus(BinaryExpr e) {
+    return Visit(e.lhs()) + Visit(e.rhs());
+  }
+
+  IloExpr VisitMinus(BinaryExpr e) {
+    return Visit(e.lhs()) - Visit(e.rhs());
+  }
+
+  IloExpr VisitMult(BinaryExpr e) {
+    return Visit(e.lhs()) * Visit(e.rhs());
+  }
+
+  IloExpr VisitDiv(BinaryExpr e) {
+    return Visit(e.lhs()) / Visit(e.rhs());
+  }
+
+  IloExpr VisitRem(BinaryExpr e) {
+    IloNumExpr lhs(Visit(e.lhs())), rhs(Visit(e.rhs()));
+    return lhs - IloTrunc(lhs / rhs) * rhs;
+  }
+
+  IloExpr VisitPow(BinaryExpr e) {
+    return IloPower(Visit(e.lhs()), Visit(e.rhs()));
+  }
+
+  IloExpr VisitLess(BinaryExpr e) {
+    return IloMax(Visit(e.lhs()) - Visit(e.rhs()), 0.0);
+  }
+
+  IloExpr VisitMin(VarArgExpr e) {
+    IloNumExprArray args(env_);
+    for (VarArgExpr::iterator i = e.begin(); Expr arg = *i; ++i)
+      args.add(Visit(arg));
+    return IloMin(args);
+  }
+
+  IloExpr VisitMax(VarArgExpr e) {
+    IloNumExprArray args(env_);
+    for (VarArgExpr::iterator i = e.begin(); Expr arg = *i; ++i)
+      args.add(Visit(arg));
+    return IloMax(args);
+  }
+
+  IloExpr VisitFloor(UnaryExpr e) {
+    return IloFloor(Visit(e.arg()));
+  }
+
+  IloExpr VisitCeil(UnaryExpr e) {
+    return IloCeil(Visit(e.arg()));
+  }
+
+  IloExpr VisitAbs(UnaryExpr e) {
+    return IloAbs(Visit(e.arg()));
+  }
+
+  IloExpr VisitMinus(UnaryExpr e) {
+    return -Visit(e.arg());
+  }
+
+  IloExpr VisitIf(IfExpr e) {
+    IloConstraint condition(build_constr(e.condition().get()));
+    IloNumVar var(env_, -IloInfinity, IloInfinity);
+    mod_.add(IloIfThen(env_, condition, var == Visit(e.true_expr())));
+    mod_.add(IloIfThen(env_, !condition, var == Visit(e.false_expr())));
+    return var;
+  }
+
+  IloExpr VisitTanh(UnaryExpr e) {
+    IloNumExpr exp(IloExponent(2 * Visit(e.arg())));
+    return (exp - 1) / (exp + 1);
+  }
+
+  IloExpr VisitTan(UnaryExpr e) {
+    return IloTan(Visit(e.arg()));
+  }
+
+  IloExpr VisitSqrt(UnaryExpr e) {
+    return IloPower(Visit(e.arg()), 0.5);
+  }
+
+  IloExpr VisitSinh(UnaryExpr e) {
+    IloNumExpr arg(Visit(e.arg()));
+    return (IloExponent(arg) - IloExponent(-arg)) * 0.5;
+  }
+
+  IloExpr VisitSin(UnaryExpr e) {
+    return IloSin(Visit(e.arg()));
+  }
+
+  IloExpr VisitLog10(UnaryExpr e) {
+    return IloLog10(Visit(e.arg()));
+  }
+
+  IloExpr VisitLog(UnaryExpr e) {
+    return IloLog(Visit(e.arg()));
+  }
+
+  IloExpr VisitExp(UnaryExpr e) {
+    return IloExponent(Visit(e.arg()));
+  }
+
+  IloExpr VisitCosh(UnaryExpr e) {
+    IloNumExpr arg(Visit(e.arg()));
+    return (IloExponent(arg) + IloExponent(-arg)) * 0.5;
+  }
+
+  IloExpr VisitCos(UnaryExpr e) {
+    return IloCos(Visit(e.arg()));
+  }
+
+  IloExpr VisitAtanh(UnaryExpr e) {
+    IloNumExpr arg(Visit(e.arg()));
+    return (IloLog(1 + arg) - IloLog(1 - arg)) * 0.5;
+  }
+
+  IloExpr VisitAtan2(BinaryExpr e) {
+    IloNumExpr y(Visit(e.lhs())), x(Visit(e.rhs()));
+    IloNumExpr atan(IloArcTan(y / x));
+    IloNumVar result(env_, -IloInfinity, IloInfinity);
+    mod_.add(IloIfThen(env_, x >= 0, result == atan));
+    mod_.add(IloIfThen(env_, x <= 0 && y >= 0, result == atan + M_PI));
+    mod_.add(IloIfThen(env_, x <= 0 && y <= 0, result == atan - M_PI));
+    return result;
+  }
+
+  IloExpr VisitAtan(UnaryExpr e) {
+    return IloArcTan(Visit(e.arg()));
+  }
+
+  IloExpr VisitAsinh(UnaryExpr e) {
+    IloNumExpr arg(Visit(e.arg()));
+    return IloLog(arg + IloPower(IloSquare(arg) + 1, 0.5));
+  }
+
+  IloExpr VisitAsin(UnaryExpr e) {
+    return IloArcSin(Visit(e.arg()));
+  }
+
+  IloExpr VisitAcosh(UnaryExpr e) {
+    IloNumExpr arg(Visit(e.arg()));
+    return IloLog(arg + IloPower(arg + 1, 0.5) * IloPower(arg - 1, 0.5));
+  }
+
+  IloExpr VisitAcos(UnaryExpr e) {
+    return IloArcCos(Visit(e.arg()));
+  }
+
+  IloExpr VisitSum(SumExpr e) {
+    IloExpr sum(env_);
+    for (SumExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+      sum += Visit(*i);
+    return sum;
+  }
+
+  IloExpr VisitIntDiv(BinaryExpr e) {
+    return IloTrunc(Visit(e.lhs()) / Visit(e.rhs()));
+  }
+
+  IloExpr VisitRound(BinaryExpr e) {
+    Number num = Cast<Number>(e.rhs());
+    if (num && num.value() != 0)
+       throw UnsupportedExprError("round with nonzero second parameter");
+    // Note that IloOplRound rounds half up.
+    return IloOplRound(Visit(e.lhs()));
+  }
+
+  IloExpr VisitTrunc(BinaryExpr e) {
+    Number num = Cast<Number>(e.rhs());
+    if (num && num.value() != 0)
+       throw UnsupportedExprError("trunc with nonzero second parameter");
+    return IloTrunc(Visit(e.lhs()));
+  }
+
+  IloExpr VisitCount(SumExpr e) {
+    IloExpr sum(env_);
+    for (SumExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+       sum += build_constr((*i).get());
+    return sum;
+  }
+
+  IloExpr VisitNumberOf(NumberOfExpr e) {
+    Expr target = e.target();
+    Number num = Cast<Number>(target);
+    if (num && get_option(USENUMBEROF))
+       return build_numberof(e.get());
+    IloExpr sum(env_);
+    IloExpr concert_target(Visit(target));
+    for (SumExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+       sum += (Visit(*i) == concert_target);
+    return sum;
+  }
+
+  IloExpr VisitConstExpPow(BinaryExpr e) {
+    return IloPower(Visit(e.lhs()), Cast<Number>(e.rhs()).value());
+  }
+
+  IloExpr VisitPow2(UnaryExpr e) {
+    return IloSquare(Visit(e.arg()));
+  }
+
+  IloExpr VisitConstBasePow(BinaryExpr e) {
+    return IloPower(Cast<Number>(e.lhs()).value(), Visit(e.rhs()));
+  }
+
+  IloExpr VisitPLTerm(PiecewiseLinearTerm t) {
+    IloNumArray slopes(env_), breakpoints(env_);
+    int num_breakpoints = t.num_breakpoints();
+    for (int i = 0; i < num_breakpoints; ++i) {
+       slopes.add(t.slope(i));
+       breakpoints.add(t.breakpoint(i));
+    }
+    slopes.add(t.slope(num_breakpoints));
+    return IloPiecewiseLinear(vars_[t.var_index()], breakpoints, slopes, 0, 0);
+  }
+
+  IloExpr VisitNumber(Number n) {
+    return IloExpr(env_, n.value());
+  }
+
+  IloExpr VisitVariable(Variable v) {
+    return vars_[v.index()];
+  }
 
   // Converts the specified ASL expression into an equivalent Concert
   // constraint. 'e' must be a logical expression such as 'or', '<=', or
