@@ -28,8 +28,11 @@
 #include <iterator>
 
 #include "solvers/util/util.h"
+
+extern "C" {
 #include "solvers/nlp.h"
 #include "solvers/opcode.hd"
+}
 
 namespace ampl {
 
