@@ -433,7 +433,7 @@ Driver::Driver() :
   options_[OPTIMIZER] = AUTO;
   options_[TIMING] = 0;
   options_[USENUMBEROF] = 1;
-  options_[USEVISITORS] = 0;
+  options_[USEVISITORS] = 1;
 
   version_.resize(L = strlen(IloConcertVersion::_ILO_NAME) + 100);
   n = snprintf(s = &version_[0], L, "AMPL/IBM ILOG CP Optimizer [%s %d.%d.%d]",
@@ -635,11 +635,8 @@ int Driver::wantsol() const {
 int Driver::run(char **argv) {
    /*** Initialize timers ***/
 
-   IloTimer timer(env_);
-   timer.start();
-
-   IloNum Times[5];
-   Times[0] = timer.getTime();
+   double Times[5];
+   Times[0] = xectim_();
 
    /*** Get name of .nl file; read problem sizes ***/
 
@@ -729,14 +726,14 @@ int Driver::run(char **argv) {
    finish_building_numberof ();
 
    int timing = get_option(TIMING);
-   Times[1] = timing ? timer.getTime() : 0;
+   Times[1] = timing ? xectim_() : 0;
 
    // Solve the problem.
    IloAlgorithm alg(optimizer_->algorithm());
    alg.extract (mod_);
-   Times[2] = timing ? timer.getTime() : 0;
+   Times[2] = timing ? xectim_() : 0;
    IloBool successful = alg.solve();
-   Times[3] = timing ? timer.getTime() : 0;
+   Times[3] = timing ? xectim_() : 0;
 
    // Convert solution status.
    const char *message;
@@ -782,7 +779,7 @@ int Driver::run(char **argv) {
        dual.empty() ? 0 : &dual[0], oinfo_.get());
 
    if (timing) {
-      Times[4] = timer.getTime();
+      Times[4] = xectim_();
       cerr << endl
            << "Define = " << Times[1] - Times[0] << endl
            << "Setup =  " << Times[2] - Times[1] << endl
