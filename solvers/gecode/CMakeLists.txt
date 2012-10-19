@@ -6,6 +6,6 @@ if (GECODE_FOUND)
   add_library(amplgecode gecode.cc)
   add_dependencies(amplgecode arith_h)
   add_executable(gecode main.cc)
-  target_link_libraries(gecode amplgecode driver ${SOLVER_LIBS}
+  target_link_libraries(gecode amplgecode util ${SOLVER_LIBS}
     ${GECODE_LIBRARIES})
 endif ()
