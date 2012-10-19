@@ -1682,4 +1682,89 @@ TEST_F(IlogCPTest, InfeasibleOrUnboundedSolveCode) {
   Solve(DATA_DIR "unbounded");
   EXPECT_EQ(201, d.get_asl()->p.solve_code_);
 }
+
+// Runs the code 5 times measuring the CPU time each time and
+// returns the median.
+template <typename F>
+double MeasureTime(F f) {
+  vector<double> times;
+  for (int i = 0; i < 5; ++i) {
+    double start = xectim_();
+    f();
+    double end = xectim_();
+    times.push_back(end - start);
+  }
+  std::sort(times.begin(), times.end());
+  std::cout << times[0] << " "<< times[1] << " " << times[2] << " " << times[3] << " " << times[4] << std::endl;
+  return times[2];
+}
+
+enum {NUM_RUNS = 10000};
+
+class ConvertExprNoVisitors {
+ private:
+  Driver *d_;
+
+ public:
+  ConvertExprNoVisitors(Driver &d) : d_(&d) {}
+
+  void operator()() const {
+    ASL_fg *asl = d_->get_asl();
+    for (int i = 0; i < NUM_RUNS; ++i) {
+      if (n_obj > 0)
+        d_->build_expr(obj_de[0].e);
+      for (int i = 0; i < n_con; i++)
+        d_->build_expr(con_de[i].e);
+    }
+  }
+};
+
+class ConvertExprWithVisitors {
+ private:
+  Driver *d_;
+
+ public:
+  ConvertExprWithVisitors(Driver &d) : d_(&d) {}
+
+  void operator()() const {
+    ASL_fg *asl = d_->get_asl();
+    for (int i = 0; i < NUM_RUNS; ++i) {
+      if (n_obj > 0)
+        d_->Visit(Expr(obj_de[0].e));
+      for (int i = 0; i < n_con; i++)
+        d_->Visit(Expr(con_de[i].e));
+    }
+  }
+};
+
+void TestPerformance(const char *stub) {
+  Driver d;
+  d.run((Args() + "ilogcp" + "-s" + stub).get());
+  std::cout << "Time without visitors: "
+      << MeasureTime(ConvertExprNoVisitors(d)) << std::endl;
+  std::cout << "Time with visitors: "
+      << MeasureTime(ConvertExprWithVisitors(d)) << std::endl;
+}
+
+TEST_F(IlogCPTest, DISABLED_VisitorPerformanceTest) {
+  TestPerformance(DATA_DIR "assign0");
+  TestPerformance(DATA_DIR "assign1");
+  TestPerformance(DATA_DIR "balassign0");
+  TestPerformance(DATA_DIR "balassign1");
+  TestPerformance(DATA_DIR "flowshp0");
+  TestPerformance(DATA_DIR "flowshp1");
+  TestPerformance(DATA_DIR "grpassign0");
+  TestPerformance(DATA_DIR "magic");
+  TestPerformance(DATA_DIR "mapcoloring");
+  TestPerformance(DATA_DIR "money");
+  TestPerformance(DATA_DIR "nqueens");
+  TestPerformance(DATA_DIR "nqueens0");
+  TestPerformance(DATA_DIR "sched0");
+  TestPerformance(DATA_DIR "sched1");
+  TestPerformance(DATA_DIR "sched2");
+  TestPerformance(DATA_DIR "seq0");
+  TestPerformance(DATA_DIR "seq0a");
+  TestPerformance(DATA_DIR "sudokuHard");
+  TestPerformance(DATA_DIR "sudokuVeryEasy");
+}
 }
