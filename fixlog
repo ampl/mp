@@ -8869,3 +8869,55 @@ greatly speeds up execution.
 20120804
   Fix a glitch that gave error message "opnumber 243 in opgen"
 under complicated conditions.
+
+20120831
+  Fix a glitch that gave rise to error message "sysset_en_IN called"
+in the following command:
+
+	print if 'foo' in _AVAILFUNCS then 'yes' else 'no';
+
+  Add Addrandinit to struct AmplExports, which is available to
+imported functions in al->AE.  An imported function or, more likely
+the funcadd_ASL function that makes known the imported functions in
+an imported-function library, can invoke addrandinit(rsi,v)
+(i.e., ae->Addrandinit(ae,rsi,v)) with apparent signature
+
+	typedef void (*RandSeedSetter)(void*, unsigned long);
+	void addrandinit(RandSeedSetter rsi, void*);
+
+to have rsi(v,$randseed) called initially with the current value
+of $randseed (as an unsigned long) and again whenever option randseed
+is assigned a value.  This is meant to supply a new seed for random
+functions provided by the containing imported-function library.
+Like calls on at_reset() and unlike calls on at_exit, calls on
+addrandinit() are forgotten after a "reset;".  Note that a "reset;"
+causes the funcadd_ASL() routines in all currently loaded imported
+function libraries to be called again.
+
+20120911
+  Fix a bug in simplifying "and", "or", and comparison expressions
+when the result is constant (true or false).  The example revealing
+the bug was of the form
+	s.t. foo: x == 1 ==> 0 == 0;
+(with one of the zeros being an empty sum).
+
+20121005
+  Use execve (on Unix-like systems) rather than execv when an invoked
+program appears to require interpretation by /bin/sh because the initial
+attempt to execute the program directly with execve failed.  The idea is
+to supply the same environment in both cases.  This change should mostly
+be invisible.
+
+20121012
+  Fix a fault in simplifying logical expressions under complicated
+conditions.  Example:
+
+	var x{1..4} >= 1;
+	s.t. fa: forall {i in 1..4} x[i] == 1 or x[4]^2 >= 1;
+	s.t. b1: x[2] + x[3] <= 2;
+	write 0; # fault
+
+20121017
+  Fix a bug with a "solve" involving no logical constraints after a
+solve with one or more logical constraints.  The bug could cause a
+fault or other surprising behavior.
