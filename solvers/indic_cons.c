@@ -54,7 +54,6 @@ LCADJ_Info {
 	int n1og;	/* numbers of reals in one ograd */
 	int zerodiv;
 	int vk, vnb;
-	void **M1state1, **M1state2;
 	void *v;
 	int *errinfo;
 	Add_Indicator add_indic;
@@ -110,7 +109,7 @@ new_tchunk(LCADJ_Info *lci, int tneed)
 	if (tneed < Gulp)
 		tneed = Gulp;
 	asl = lci->asl;
-	tc = (Tchunk*)M1alloc((tneed+1)*sizeof(real));
+	tc = (Tchunk*)Malloc((tneed+1)*sizeof(real));
 	tc->prev = lci->tchunks;
 	lci->tchunks = tc;
 	lci->tfree = &tc[1].r;
@@ -127,21 +126,24 @@ tmem(LCADJ_Info *lci, size_t L)
 		new_tchunk(lci, n);
 	r = lci->tfree;
 	lci->tfree = r + n;
+	lci->ntfree -= n;
 	return r;
 	}
 
  static ograd *
 new_og(LCADJ_Info *lci, int varno, real coef)
 {
+	int n1;
 	ograd *og;
 
 	if ((og = lci->freeog))
 		lci->freeog = og->next;
 	else {
-		if (lci->ntfree < lci->n1og)
-			new_tchunk(lci, lci->n1og);
+		if (lci->ntfree < (n1 = lci->n1og))
+			new_tchunk(lci, n1);
 		og = (ograd*)lci->tfree;
-		lci->tfree += lci->n1og;
+		lci->tfree += n1;
+		lci->ntfree -= n1;
 		}
 	og->next = 0;
 	og->varno = varno;
@@ -614,11 +616,9 @@ indicator_constrs_ASL(ASL *asl, void *v, Add_Indicator add_indic, int errinfo[2]
 		return 0;
 	memset(&lci, 0, sizeof(lci));
 	lci.v = v;
-	lci.M1state1 = asl->i.Mbnext;
-	lci.M1state2 = asl->i.Mblast;
 	lci.tfree0 = chunk1;
 	n = n_var;
-	lci.s = (ograd**)M1alloc(n*(sizeof(int) + sizeof(ograd*)));
+	lci.s = (ograd**)Malloc(n*(sizeof(int) + sizeof(ograd*)));
 	lci.z = (int*)(lci.s + n);
 	memset(lci.s, 0, n*sizeof(ograd*));
 	lci.n1lc = (sizeof(Lconstr) + sizeof(real) - 1) / sizeof(real);
@@ -640,6 +640,6 @@ indicator_constrs_ASL(ASL *asl, void *v, Add_Indicator add_indic, int errinfo[2]
 			break;
 	if (lci.tchunks)
 		chunkfree(&lci);
-	M1free_ASL(&asl->i, lci.M1state1, lci.M1state2);
+	free(lci.s);
 	return rc;
 	}
