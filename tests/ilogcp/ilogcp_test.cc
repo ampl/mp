@@ -1695,22 +1695,23 @@ double MeasureTime(F f) {
     times.push_back(end - start);
   }
   std::sort(times.begin(), times.end());
-  std::cout << times[0] << " "<< times[1] << " " << times[2] << " " << times[3] << " " << times[4] << std::endl;
+  std::cout << times[0] << " "<< times[1] << " " << times[2]
+    << " " << times[3] << " " << times[4] << std::endl;
   return times[2];
 }
-
-enum {NUM_RUNS = 10000};
 
 class ConvertExprNoVisitors {
  private:
   Driver *d_;
+  int num_runs_;
 
  public:
-  ConvertExprNoVisitors(Driver &d) : d_(&d) {}
+  ConvertExprNoVisitors(Driver &d, int num_runs) :
+    d_(&d), num_runs_(num_runs) {}
 
   void operator()() const {
     ASL_fg *asl = d_->get_asl();
-    for (int i = 0; i < NUM_RUNS; ++i) {
+    for (int i = 0; i < num_runs_; ++i) {
       if (n_obj > 0)
         d_->build_expr(obj_de[0].e);
       for (int i = 0; i < n_con; i++)
@@ -1719,16 +1720,18 @@ class ConvertExprNoVisitors {
   }
 };
 
-class ConvertExprWithVisitors {
+class ConvertExprVisitors {
  private:
   Driver *d_;
+  int num_runs_;
 
  public:
-  ConvertExprWithVisitors(Driver &d) : d_(&d) {}
+  ConvertExprVisitors(Driver &d, int num_runs) :
+    d_(&d), num_runs_(num_runs) {}
 
   void operator()() const {
     ASL_fg *asl = d_->get_asl();
-    for (int i = 0; i < NUM_RUNS; ++i) {
+    for (int i = 0; i < num_runs_; ++i) {
       if (n_obj > 0)
         d_->Visit(Expr(obj_de[0].e));
       for (int i = 0; i < n_con; i++)
@@ -1737,34 +1740,39 @@ class ConvertExprWithVisitors {
   }
 };
 
-void TestPerformance(const char *stub) {
+template <typename F>
+void TestPerformance(const char *stub, int num_runs = 100000000) {
+  double start = xectim_();
   Driver d;
   d.run((Args() + "ilogcp" + "-s" + stub).get());
-  std::cout << "Time without visitors: "
-      << MeasureTime(ConvertExprNoVisitors(d)) << std::endl;
-  std::cout << "Time with visitors: "
-      << MeasureTime(ConvertExprWithVisitors(d)) << std::endl;
+  double end = xectim_();
+  std::cout << "Time: " << stub << "\t" << MeasureTime(F(d, num_runs))
+    << "\t" << num_runs << "\t" << (end - start) << std::endl;
 }
 
-TEST_F(IlogCPTest, DISABLED_VisitorPerformanceTest) {
-  TestPerformance(DATA_DIR "assign0");
-  TestPerformance(DATA_DIR "assign1");
-  TestPerformance(DATA_DIR "balassign0");
-  TestPerformance(DATA_DIR "balassign1");
-  TestPerformance(DATA_DIR "flowshp0");
-  TestPerformance(DATA_DIR "flowshp1");
-  TestPerformance(DATA_DIR "grpassign0");
-  TestPerformance(DATA_DIR "magic");
-  TestPerformance(DATA_DIR "mapcoloring");
-  TestPerformance(DATA_DIR "money");
-  TestPerformance(DATA_DIR "nqueens");
-  TestPerformance(DATA_DIR "nqueens0");
-  TestPerformance(DATA_DIR "sched0");
-  TestPerformance(DATA_DIR "sched1");
-  TestPerformance(DATA_DIR "sched2");
-  TestPerformance(DATA_DIR "seq0");
-  TestPerformance(DATA_DIR "seq0a");
-  TestPerformance(DATA_DIR "sudokuHard");
-  TestPerformance(DATA_DIR "sudokuVeryEasy");
+template <typename F>
+void TestPerformance() {
+  TestPerformance<F>(DATA_DIR "assign1", 10000);
+  TestPerformance<F>(DATA_DIR "balassign1", 1000);
+  TestPerformance<F>(DATA_DIR "flowshp1", 1000000);
+  TestPerformance<F>(DATA_DIR "flowshp2", 1000000);
+  TestPerformance<F>(DATA_DIR "magic", 100000);
+  TestPerformance<F>(DATA_DIR "mapcoloring");
+  TestPerformance<F>(DATA_DIR "money", 1000000);
+  TestPerformance<F>(DATA_DIR "nqueens");
+  TestPerformance<F>(DATA_DIR "sched1", 10000);
+  TestPerformance<F>(DATA_DIR "sched2", 10000);
+  TestPerformance<F>(DATA_DIR "party1", 100);
+  TestPerformance<F>(DATA_DIR "party2", 100);
+  TestPerformance<F>(DATA_DIR "sudokuHard");
+  TestPerformance<F>(DATA_DIR "sudokuVeryEasy");
+}
+
+TEST_F(IlogCPTest, DISABLED_VisitorsPerformanceTest) {
+  TestPerformance<ConvertExprVisitors>();
+}
+
+TEST_F(IlogCPTest, DISABLED_NoVisitorsPerformanceTest) {
+  TestPerformance<ConvertExprNoVisitors>();
 }
 }
