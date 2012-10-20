@@ -1,3 +1,4 @@
-20120804
-  Fix a glitch that gave error message "opnumber 243 in opgen"
-under complicated conditions.
+20121017
+  Fix a bug with a "solve" involving no logical constraints after a
+solve with one or more logical constraints.  The bug could cause a
+fault or other surprising behavior.

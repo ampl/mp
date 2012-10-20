@@ -117,3 +117,19 @@ updated gurobi.c should still work with earlier versions of Gurobi.
   gurobi.c: fix a glitch in providing a dual initial guess (when
 available from a previous solve) in problems with quadratic constraints,
 leading to the message "Index out of range for attribute 'DStart'."
+
+20120828
+  gurobi.c: on MIP problems, when basis >= 2 and method >= 2, change
+method to 1 before trying to get the requested output basis.  Also
+adjust the description of "method" and remove "rootmethod", which
+went away in Gurobi 4.0.
+
+20120927
+  gurobi.c: adjust to return dual variables on quadratically constrained
+problems with integer variables when qcpdual=1 is specified.
+Also, for debugging, add ".fix_lp" and ".fix_mps" to the suffixes
+accepted by the "writeprob" keyword.
+
+20121006
+  Add keyword "version", to report version details before solving
+the problem.

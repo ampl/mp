@@ -4,4 +4,6 @@ F changes
 F makefile.u
 F makefile.vc
 F xpress.c
+F xpress.linux
+F xpress.macosx
 F xsum0.out

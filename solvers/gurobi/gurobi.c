@@ -135,7 +135,7 @@ mint_val[17] = {
 #define feasrelax	mint_val[15].val
 #define warmstart	mint_val[16].val
 
- static Filename *Wflist, *Wflist1;
+ static Filename *Wflist[3];
  static GRBmodel *grbmodel;
  static char *logfile, verbuf[64];
  static double Times[5];
@@ -427,9 +427,11 @@ sf_wfile(Option_Info *oi, keyword *kw, char *v)
 	Ext_info *e;
 	Filename *f, **pf;
 	char *dot, *t;
-	int q;
+	int i, q;
 	static Ext_info W_ext[] = {
 		{"bas",1},
+		{"fix_lp",2},
+		{"fix_mps",2},
 		{"lp",0},
 		{"mps",0},
 		{"prm",0},
@@ -438,8 +440,9 @@ sf_wfile(Option_Info *oi, keyword *kw, char *v)
 
 	q = *v;
 	if (q == '?' && v[1] <= ' ') {
-		for(f = Wflist; f; f = f->next)
-			printf("%s=\"%s\"\n", kw->name, f->name);
+		for(i = 0; i < 3; ++i)
+			for(f = Wflist[i]; f; f = f->next)
+				printf("%s=\"%s\"\n", kw->name, f->name);
 		oi->option_echo &= ~ASL_OI_echothis;
 		return v + 1;
 		}
@@ -462,9 +465,11 @@ sf_wfile(Option_Info *oi, keyword *kw, char *v)
 	badopt_ASL(oi);
 	goto ret;
  good_ext:
-	pf = e->aftersol ? &Wflist1 : &Wflist;
+	pf = &Wflist[e->aftersol];
 	f->next = *pf;
 	*pf = f;
+	if (e->aftersol == 2)	/* replace _ by . */
+		dot[3] = '.';
  ret:
 	return v;
 	}
@@ -599,7 +604,7 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 #if GRB_VERSION_MAJOR >= 5
 			"\n\
 		For problems with integer variables and quadratic constraints,\n\
-		basis = 0 is assumed quietly."
+		basis = 0 is assumed quietly unless qcpdual=1 is specified."
 #endif
 ;
 
@@ -887,7 +892,13 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 			0 = no\n\
 			1 = yes (default)";
 
- static char simplex_desc[] = "which algorithm to use:"
+ static char simplex_desc[] =
+#if GRB_VERSION_MAJOR < 4
+			"which algorithm to use:"
+#else
+			"which algorithm to use for non-MIP problems or for the root\n\
+		node of MIP problems:"
+#endif
 #if (GRB_VERSION_MAJOR == 4 && GRB_VERSION_MINOR >= 5) || GRB_VERSION_MAJOR >= 5 /*{*/
 			"\n\
 			-1 automatic (default): 3 for LP, 2 for QP, 1 for MIP\n\
@@ -958,9 +969,16 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 			2 = maximum infeasibility branching\n\
 			3 = strong branching";
 
+ static char version_desc[] = "Report version details before solving the problem.  This is a\n\
+		single-word \"phrase\" that does not accept a value assignment.";
+
  static char writeprob_desc[] = "name of a GUROBI-format file to be written (for debugging);\n\
-		must end in one of \".bas\", \".lp\", \".mps\", \".prm\", or \".sol\";\n\
-		can appear more than once (with different filenames).";
+		must end in one of \".bas\", \".lp\", \".mps\", \".prm\", \".sol\", or\n\
+		for the \"fixed\" model used to recover a basis or dual values\n\
+		for problems with integer variables or quadratic constraints,\n\
+		\".fix_lp\" or \".fix_mps\"; the '_' will be replaced by '.' in\n\
+		the name of the file written for \".fix_lp\" or \".fix_mps\".\n\
+		Can appear more than once (with different filenames).";
 
  /* WS_desc_ASL = modified solvers/ws_desc.c: extra initial tab; must not be static. */
  char WS_desc_ASL[] = "=... solution report without -AMPL: sum of\n\
@@ -1036,6 +1054,7 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 			n > 0: every n-th node";
 #endif /*}*/
 
+#if GRB_VERSION_MAJOR < 4 /*{*/
  static char rootmethod_desc[] = "algorithm for MIP root relaxation:\n\
 			0 = primal simplex\n\
 			1 = dual simplex (default)"
@@ -1044,6 +1063,7 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 			2 = barrier"
 #endif
 			;
+#endif /*}*/
 #endif /*}*/
 
 #if GRB_VERSION_MAJOR >= 3 /*{*/
@@ -1239,7 +1259,7 @@ keywds[] = {	/* must be in alphabetical order */
 #if GRB_VERSION_MAJOR >= 3
 	{ "rins", sf_ipar, "RINS", rins_desc },
 #endif
-#if GRB_VERSION_MAJOR > 1 /*{*/
+#if GRB_VERSION_MAJOR > 1 && GRB_VERSION_MAJOR < 4 /*{*/
 	{"rootmethod", sf_ipar, "RootMethod", rootmethod_desc},
 #endif /*}*/
 	{ "scale", sf_ipar, "ScaleFlag", scale_desc },
@@ -1263,6 +1283,7 @@ keywds[] = {	/* must be in alphabetical order */
 	{ "ubpen", D_val, &ubpen, "See feasrelax." },
 #endif
 	{ "varbranch", sf_ipar, "VarBranch", varbranch_desc },
+	{ "version", Ver_val, 0, version_desc },
 	{ "wantsol", WS_val, 0, WS_desc_ASL+5 },
 #if GRB_VERSION_MAJOR >= 5
 	{ "warmstart", sf_mint, VP set_warmstart, warmstart_desc },
@@ -1275,11 +1296,10 @@ keywds[] = {	/* must be in alphabetical order */
 	,{"zeroobjnodes", sf_ipar, GRB_INT_PAR_ZEROOBJNODES, zeroobjnodes_desc }
 #endif
 	};
-#undef Method
 
  static Option_Info
 Oinfo = { "gurobi", verbuf, "gurobi_options", keywds, nkeywds, 0, verbuf,
-	   0,0,0,0,0, 20120606 };
+	   0,0,0,0,0, 20121006 };
 
  static void
 enamefailed(GRBenv *env, const char *what, const char *name)
@@ -1965,10 +1985,14 @@ intbasis_fail(Dims *d, const char *call)
  static GRBmodel*
 fixed_model(ASL *asl, GRBmodel *mdl0, Dims *d)
 {
+	Filename *fn;
 	GRBenv *env;
 	GRBmodel *mdl;
 	double f, *y;
-	int i;
+	int i, k;
+#if GRB_VERSION_MAJOR >= 5
+	int m, m1, nqc;
+#endif
 	static char *statusname[] = {
 		"infeasible",
 		"infeasible or unbounded",
@@ -1995,6 +2019,15 @@ fixed_model(ASL *asl, GRBmodel *mdl0, Dims *d)
 		intbasis_fail(d, "setintparam(\"Presolve\")");
 		goto badret;
 		}
+	if (!GRBgetintparam(env, Method, &k) && k >= 2)
+		GRBsetintparam(env, Method, 1);
+	if ((fn = Wflist[2])) {
+		GRBupdatemodel(mdl);
+		do {
+			if (GRBwrite(mdl, fn->name))
+				enamefailed(env, "GRBwrite", fn->name);
+			} while((fn = fn->next));
+		}
 	if (GRBoptimize(mdl)) {
 		intbasis_fail(d, "optimize()");
 		goto badret;
@@ -2012,10 +2045,23 @@ fixed_model(ASL *asl, GRBmodel *mdl0, Dims *d)
 				i);
 		goto badret;
 		}
-	if (d->missing & 2 && (y = d->y0)
-	 && !GRBgetdblattrarray(mdl, GRB_DBL_ATTR_PI, 0, n_con, y)) {
-		d->y = y;
-		d->missing &= ~2;
+	if (d->missing & 2 && (y = d->y0)) {
+#if GRB_VERSION_MAJOR < 5
+		if (!GRBgetdblattrarray(mdl, GRB_DBL_ATTR_PI, 0, n_con, y))
+#else
+		m = n_con;
+		nqc = nlc;
+		k = 0;
+		if (nqc > 0)
+			k = GRBgetdblattrarray(mdl, GRB_DBL_ATTR_QCPI, 0, nqc, y);
+		if ((m1 = m - nqc) > 0 && !k)
+			k = GRBgetdblattrarray(mdl, GRB_DBL_ATTR_PI, 0, m1, y+nqc);
+		if (!k)
+#endif
+			{
+			d->y = y;
+			d->missing &= ~2;
+			}
 		}
 	if (!GRBgetdblattr(mdl, GRB_DBL_ATTR_ITERCOUNT, &f)) {
 		if (f > 0.)
@@ -2024,6 +2070,7 @@ fixed_model(ASL *asl, GRBmodel *mdl0, Dims *d)
 		}
 	return mdl;
 	}
+#undef Method
 
  static void
 get_output_statuses(ASL *asl, GRBmodel *mdl, Dims *d)
@@ -2505,7 +2552,7 @@ main(int argc, char **argv)
 		}
 #if GRB_VERSION_MAJOR >= 5
 	if (nqc) {
-		if (dims.kiv)
+		if (dims.kiv && (GRBgetintparam(env0, "QCPDual", &i) || i == 0))
 			basis = solnsens = 0;
 		ia = A_rownos;
 		j = nzc;
@@ -2729,7 +2776,7 @@ main(int argc, char **argv)
 		}
 	else if (outlev && GRBsetintparam(env, "OutputFlag", 1))
 		namefailed("GRBsetintparam", "OutputFlag");
-	if ((fn = Wflist)) {
+	if ((fn = Wflist[0])) {
 		GRBupdatemodel(mdl);
 		do {
 			if (GRBwrite(mdl, fn->name))
@@ -2838,7 +2885,7 @@ main(int argc, char **argv)
 		}
 #endif
 	write_sol(mbuf, dims.x, dims.y, &Oinfo);
-	for(fn = Wflist1; fn; fn = fn->next)
+	for(fn = Wflist[1]; fn; fn = fn->next)
 		if (GRBwrite(mdl, fn->name))
 			enamefailed(env, "GRBwrite", fn->name);
  done:

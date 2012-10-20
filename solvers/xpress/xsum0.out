@@ -1,5 +1,7 @@
 README.1st	feafc16e	742
-README.xpress	ef411320	39750
-xpress.c	1c5bcf2	82387
-makefile.u	513a7ea	623
-makefile.vc	6b08c8f	568
+README.xpress	9fb32db	46580
+xpress.c	ff597930	82594
+xpress.linux	f312b956	97
+xpress.macosx	f5df9111	108
+makefile.u	f3082f06	732
+makefile.vc	14c6018a	527

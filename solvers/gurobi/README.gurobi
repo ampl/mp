@@ -57,17 +57,17 @@ in the associated solve_message.
         Value   Message
 
           0     optimal solution
-	100	suboptimal: could not satisfy optimaliter tolerances
+        100     suboptimal: could not satisfy optimaliter tolerances
         200     infeasible [IIS computation not attempted]
         201     infeasible [IIS returned]
         202     infeasible [IIS finder failed]
-	203	infeasible; .dunbdd returned [IIS computation not attempted]
-	204	infeasible; .dunbdd returned [IIS also returned]
-	205	infeasible; .dunbdd returned [IIS finder failed]
+        203     infeasible; .dunbdd returned [IIS computation not attempted]
+        204     infeasible; .dunbdd returned [IIS also returned]
+        205     infeasible; .dunbdd returned [IIS finder failed]
         300     unbounded
         301     unbounded [unbounded or infeasible; IIS finder failed]
-	302	unbounded; .unbdd returned
-	303	unbounded; .unbdd returned [IIS finder failed]
+        302     unbounded; .unbdd returned
+        303     unbounded; .unbdd returned [IIS finder failed]
         400     cutoff reached
         401     iteration limit
         402     node limit
@@ -81,17 +81,17 @@ in the associated solve_message.
         505     Surprise CBasis[...] = ...
         506     Gurobi set/get parameter failed [message gives more details]
         510     cannot open logfile (specified in $gurobi_options or command line)
-	511	cannot open paramfile (specified in $gurobi_options or command line)
-	512	missing value in paramfile
-	513	extra text in paramfile
-	514	invalid parameter name in paramfile
+        511     cannot open paramfile (specified in $gurobi_options or command line)
+        512     missing value in paramfile
+        513     extra text in paramfile
+        514     invalid parameter name in paramfile
         520     numeric error
-	521	nonlinear objective
-	522	nonlinear constraint
-	523	quadratic objective involving division by 0
-	524	indefinite quadratic objective or constraint
-	525	quadratic constraint involving division by 0
-	567	complementarity constraint
+        521     nonlinear objective
+        522     nonlinear constraint
+        523     quadratic objective involving division by 0
+        524     indefinite quadratic objective or constraint
+        525     quadratic constraint involving division by 0
+        567     complementarity constraint
         600     interrupted
 
 Values 521-524 only arise in Gurobi versions >= 4.0.

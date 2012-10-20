@@ -10,4 +10,8 @@ file	ampl/solvers/xpress/makefile.vc
 
 file	ampl/solvers/xpress/xpress.c
 
+file	ampl/solvers/xpress/xpress.linux
+
+file	ampl/solvers/xpress/xpress.macosx
+
 file	ampl/solvers/xpress/xsum0.out

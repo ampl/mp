@@ -1,4 +1,3 @@
-20120606
-  gurobi.c: fix a glitch in providing a dual initial guess (when
-available from a previous solve) in problems with quadratic constraints,
-leading to the message "Index out of range for attribute 'DStart'."
+20121006
+  Add keyword "version", to report version details before solving
+the problem.

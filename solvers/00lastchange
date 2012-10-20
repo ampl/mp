@@ -1,7 +1,4 @@
-20120712
-  README:  adjust to reflect that URL
-http://netlib.sandia.gov/cgi-bin/netlib/netlibfiles.tar?filename=netlib/ampl/solvers
-still works.
-  makefile.vc:  tweak to allow invocations of the form
-	nmake RUNTIME=...
-(with makefile copied from makefile.vc) to replace "-MT" with ... .
+20121016
+  indic_cons.c:  fix some bugs (likely faults) that bit on problems
+with many logical constraints (more than 6000 in the example behind
+this bug fix).
