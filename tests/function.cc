@@ -61,9 +61,9 @@ class LibraryImpl : public AmplExports, public TMInfo {
       int type, int nargs, void *funcinfo, AmplExports *ae);
 
   static void AddTableHandler(
-      int (*DbRead)(AmplExports *ae, TableInfo *TI),
-      int (*DbWrite)(AmplExports *ae, TableInfo *TI),
-      char *handler_info, int flags, void *Vinfo) {
+      int (*)(AmplExports *ae, TableInfo *TI),
+      int (*)(AmplExports *ae, TableInfo *TI),
+      char *handler_info, int , void *) {
     string info(handler_info);
     string name(info.substr(0, info.find('\n')));
     if (!handlers_.insert(std::make_pair(name, Handler())).second)
