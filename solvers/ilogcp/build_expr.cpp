@@ -504,7 +504,10 @@ IloNumVar Driver::build_numberof (const expr *e)
       for (ep++; ep < e->R.ep; ep++) {
          IloIntVar listVar(env_, IloIntMin, IloIntMax);
          vars.add (listVar);
-         mod_.add (listVar == build_expr (*ep));
+         if (get_option(USEVISITORS) == 0)
+           mod_.add (listVar == build_expr (*ep));
+         else
+           mod_.add (listVar == Visit(Expr(*ep)));
       }
 
       IloIntVar cardVar(env_, IloIntMin, IloIntMax);
