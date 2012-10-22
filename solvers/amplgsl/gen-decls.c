@@ -24,9 +24,11 @@
 #include <stdio.h>
 #include "funcadd.h"
 
-#undef printf
+#undef fprintf
 
 #define UNUSED(x) (void)(x)
+
+FILE *out;
 
 /* See AddFunc in funcadd.h */
 static void declare_func(const char *name, rfunc f,
@@ -36,7 +38,7 @@ static void declare_func(const char *name, rfunc f,
   UNUSED(nargs);
   UNUSED(funcinfo);
   UNUSED(ae);
-  printf("function %s%s;\n", name,
+  fprintf(out, "function %s%s;\n", name,
       (type & FUNCADD_RANDOM_VALUED) != 0 ? " random" : "");
 }
 
@@ -50,9 +52,20 @@ int main() {
   AmplExports ae = {0};
   ae.Addfunc = declare_func;
   ae.AtReset = dummy_at_reset;
-  printf(
+  out = fopen("gsl.ampl.tmp", "w");
+  if (!out) {
+    fprintf(stderr, "Can't open gsl.ampl.tmp");
+    return 1;
+  }
+  fprintf(out,
       "# Automatically generated AMPL declarations for the GSL functions.\n"
       "load amplgsl.dll;\n");
   funcadd_ASL(&ae);
+  fclose(out);
+  remove("gsl.ampl");
+  if (rename("gsl.ampl.tmp", "gsl.ampl")) {
+    fprintf(stderr, "Can't rename gsl.ampl.tmp to gsl.ampl");
+    return 1;
+  }
   return 0;
 }

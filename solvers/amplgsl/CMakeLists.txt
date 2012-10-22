@@ -16,8 +16,7 @@ target_link_libraries(amplgsl ${SOLVER_LIBS} gsl gslcblas -lm)
 add_executable(gen-decls gen-decls.c)
 target_link_libraries(gen-decls amplgsl)
 
-add_custom_command(OUTPUT gsl.ampl
-  COMMAND ./gen-decls > gsl.ampl DEPENDS amplgsl gen-decls)
+add_custom_command(OUTPUT gsl.ampl COMMAND gen-decls DEPENDS amplgsl gen-decls)
 add_custom_target(gsl-ampl ALL DEPENDS gsl.ampl)
 
 add_custom_command(OUTPUT doc/index.html
