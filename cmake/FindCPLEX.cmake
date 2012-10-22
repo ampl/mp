@@ -26,10 +26,12 @@ include(FindPackageHandleStandardArgs)
 # CPLEX Studio 12.4 can be installed in the following default locations:
 #   /opt/ibm/ILOG/CPLEX_Studio<edition>124 - Linux
 #   /opt/IBM/ILOG/CPLEX_Studio<edition>124 - UNIX
+#   ~/Applications/IBM/ILOG/CPLEX_Studio<edition>124 - Mac OS X
 #   C:\Program Files\IBM\ILOG\CPLEX_Studio<edition>124 - Windows
 if (UNIX)
   set(CPLEX_ILOG_DIRS /opt/ibm/ILOG /opt/IBM/ILOG)
   if (APPLE)
+    set(CPLEX_ILOG_DIRS ${CPLEX_ILOG_DIRS} /Users/$ENV{USER}/Applications/IBM/ILOG)
     set(CPLEX_LIB_PATH_SUFFIXES lib/x86_darwin9_gcc4.0/static_pic)
   elseif (CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(CPLEX_LIB_PATH_SUFFIXES lib/x86-64_sles10_4.1/static_pic)
