@@ -717,8 +717,12 @@ int Driver::run(char **argv) {
 
    IloConstraintArray LCon(env_, n_lcon);
 
-   for (int i = 0; i < n_lcon; i++)
-      LCon[i] = build_constr (lcon_de[i].e);
+   for (int i = 0; i < n_lcon; i++) {
+     if (!use_visitors)
+       LCon[i] = build_constr(lcon_de[i].e);
+     else
+       LCon[i] = Visit(LogicalExpr(lcon_de[i].e));
+   }
 
    if (n_con > 0) mod_.add (Con);
    if (n_lcon > 0) mod_.add (LCon);
