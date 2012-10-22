@@ -22,13 +22,11 @@
  */
 
 #include <stdio.h>
-
-#define err stderr
-
 #include "funcadd.h"
 
 #undef fopen
 #undef fprintf
+#undef printf
 
 FILE *out;
 
@@ -58,7 +56,7 @@ int main() {
   ae.AtReset = dummy_at_reset;
   out = fopen("gsl.ampl.tmp", "w");
   if (!out) {
-    fprintf(err, "Can't open gsl.ampl.tmp");
+    printf("Can't open gsl.ampl.tmp");
     return 1;
   }
   fprintf(out,
@@ -68,7 +66,7 @@ int main() {
   fclose(out);
   remove("gsl.ampl");
   if (rename("gsl.ampl.tmp", "gsl.ampl")) {
-    fprintf(err, "Can't rename gsl.ampl.tmp to gsl.ampl");
+    printf("Can't rename gsl.ampl.tmp to gsl.ampl");
     return 1;
   }
   return 0;
