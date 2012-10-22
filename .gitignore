@@ -6,6 +6,9 @@
 /solvers/amplgsl/html
 /solvers/concert/Makefile
 /solvers/makefile
+/solvers/arith.h
+/solvers/details.c
+/solvers/stdio1.h
 /tests/Makefile
 /tests/gtest/Makefile
 /tests/data/*.sol
