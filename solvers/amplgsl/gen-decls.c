@@ -22,13 +22,17 @@
  */
 
 #include <stdio.h>
+
+#define err stderr
+
 #include "funcadd.h"
 
+#undef fopen
 #undef fprintf
 
-#define UNUSED(x) (void)(x)
-
 FILE *out;
+
+#define UNUSED(x) (void)(x)
 
 /* See AddFunc in funcadd.h */
 static void declare_func(const char *name, rfunc f,
@@ -54,7 +58,7 @@ int main() {
   ae.AtReset = dummy_at_reset;
   out = fopen("gsl.ampl.tmp", "w");
   if (!out) {
-    fprintf(stderr, "Can't open gsl.ampl.tmp");
+    fprintf(err, "Can't open gsl.ampl.tmp");
     return 1;
   }
   fprintf(out,
@@ -64,7 +68,7 @@ int main() {
   fclose(out);
   remove("gsl.ampl");
   if (rename("gsl.ampl.tmp", "gsl.ampl")) {
-    fprintf(stderr, "Can't rename gsl.ampl.tmp to gsl.ampl");
+    fprintf(err, "Can't rename gsl.ampl.tmp to gsl.ampl");
     return 1;
   }
   return 0;
