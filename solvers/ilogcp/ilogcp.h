@@ -20,9 +20,6 @@ struct ASL_fg;
 
 namespace ampl {
 
-// Variable subscripted by a variable - not implemented in AMPL yet.
-enum { OPVARSUBVAR = 99 };
-
 class NumberOf {
  private:
   IloIntVarArray cards_;
