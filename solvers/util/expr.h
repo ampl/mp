@@ -132,7 +132,8 @@ class UnaryExpr : public Expr {
 class BinaryExpr : public Expr {
  private:
   explicit BinaryExpr(Expr e) : Expr(e) {
-    assert(HasTypeOrNull(OPTYPE_BINARY));
+    assert(!expr_ || opcode() == OP1POW || opcode() == OPCPOW ||
+           HasTypeOrNull(OPTYPE_BINARY));
   }
 
   template <typename Impl, typename Result, typename LResult>
