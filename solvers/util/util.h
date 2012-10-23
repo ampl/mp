@@ -50,12 +50,20 @@ class UnsupportedExprError : public Error {
     Error(std::string("unsupported expression: ") + expr) {}
 };
 
-/// An exception that is thrown when an incomplete constraint expression
+/// An exception that is thrown when an invalid arithmetic expression
 /// is encountered.
-class IncompleteConstraintExprError : public Error {
+class InvalidExprError : public Error {
+public:
+  explicit InvalidExprError(const char *expr) :
+    Error(std::string("invalid arithmetic expression: ") + expr) {}
+};
+
+/// An exception that is thrown when an invalid logical or constraint
+/// expression is encountered.
+class InvalidLogicalExprError : public Error {
  public:
-  explicit IncompleteConstraintExprError(const char *expr) :
-    Error(std::string("incomplete constraint expression using ") + expr) {}
+  explicit InvalidLogicalExprError(const char *expr) :
+    Error(std::string("invalid logical expression: ") + expr) {}
 };
 }
 
