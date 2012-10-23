@@ -59,7 +59,7 @@ class ExprBase {
 
   // Returns true iff this expression is null or has type t.
   bool HasTypeOrNull(OpType t) const {
-    return !expr_ || optype[opcode()] == t;
+    return !expr_ || type() == t;
   }
 
   void True() const {}
@@ -72,7 +72,7 @@ class ExprBase {
  public:
   // TODO(viz): remove
   expr *get() const { return expr_; }
-
+  
   operator SafeBool() const { return expr_ != 0 ? &ExprBase::True : 0; }
 
   // Returns the operation code (opcode) of this expression.
@@ -80,6 +80,8 @@ class ExprBase {
   unsigned opcode() const {
     return reinterpret_cast<std::size_t>(expr_->op);
   }
+
+  unsigned type() const { return optype[opcode()]; }
 };
 
 // An arithmetic expression.
