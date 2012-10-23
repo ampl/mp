@@ -26,8 +26,7 @@
 #include <cassert>
 #include <cstddef>
 #include <iterator>
-
-#include "solvers/util/util.h"
+#include <stdexcept>
 
 extern "C" {
 #include "solvers/nlp.h"
@@ -80,7 +79,11 @@ class ExprBase {
   unsigned opcode() const {
     return reinterpret_cast<std::size_t>(expr_->op);
   }
+  
+  // Returns the operation name of this expression.
+  const char *opname() const;
 
+  // Returns the type of this expression.
   unsigned type() const { return optype[opcode()]; }
 };
 
@@ -94,6 +97,9 @@ class Expr : public ExprBase {
   // expression e.
   explicit Expr(expr *e = 0) : ExprBase(e) {}
 };
+
+// Returns true if the expressions e1 and e2 are structurally equal.
+bool Equal(Expr e1, Expr e2);
 
 // A logical or constraint expression.
 class LogicalExpr : public ExprBase {
@@ -332,7 +338,6 @@ class PiecewiseLinearTerm : public Expr {
 };
 
 // A numeric constant.
-// TODO: rename to NumericConstant
 class NumericConstant : public Expr {
  private:
   explicit NumericConstant(Expr e) : Expr(e) {
@@ -533,6 +538,36 @@ class AllDiffExpr : public LogicalExpr {
   }
 };
 
+/// A general solver error.
+class Error : public std::runtime_error {
+public:
+  explicit Error(const std::string &message) : std::runtime_error(message) {}
+};
+
+/// An exception that is thrown when an ASL expression not supported
+/// by the solver is encountered.
+class UnsupportedExprError : public Error {
+public:
+  explicit UnsupportedExprError(const char *expr) :
+  Error(std::string("unsupported expression: ") + expr) {}
+};
+
+/// An exception that is thrown when an invalid arithmetic expression
+/// is encountered.
+class InvalidExprError : public Error {
+public:
+  explicit InvalidExprError(const char *expr) :
+  Error(std::string("invalid arithmetic expression: ") + expr) {}
+};
+
+/// An exception that is thrown when an invalid logical or constraint
+/// expression is encountered.
+class InvalidLogicalExprError : public Error {
+public:
+  explicit InvalidLogicalExprError(const char *expr) :
+  Error(std::string("invalid logical expression: ") + expr) {}
+};
+
 // An expression visitor.
 // To use ExprVisitor define a subclass that implements some or all of the
 // Visit* methods with the same signatures as the methods in ExprVisitor,
@@ -560,11 +595,11 @@ class ExprVisitor {
   LResult Visit(LogicalExpr e);
 
   Result VisitUnhandledExpr(Expr e) {
-    throw UnsupportedExprError(GetOpName(e.opcode()));
+    throw UnsupportedExprError(e.opname());
   }
 
   LResult VisitUnhandledExpr(LogicalExpr e) {
-    throw UnsupportedExprError(GetOpName(e.opcode()));
+    throw UnsupportedExprError(e.opname());
   }
 
   Result VisitPlus(BinaryExpr e) { return VisitUnhandledExpr(e); }
@@ -730,7 +765,7 @@ Result ExprVisitor<Impl, Result, LResult>::Visit(Expr e) {
   case OPNUMBEROF:
     return AMPL_DISPATCH(VisitNumberOf(NumberOfExpr(e)));
   default:
-    throw InvalidExprError(GetOpName(e.opcode()));
+    throw InvalidExprError(e.opname());
   }
 }
 
@@ -781,7 +816,7 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
   case OPALLDIFF:
     return AMPL_DISPATCH(VisitAllDiff(AllDiffExpr(e)));
   default:
-    throw InvalidLogicalExprError(GetOpName(e.opcode()));
+    throw InvalidLogicalExprError(e.opname());
   }
 }
 

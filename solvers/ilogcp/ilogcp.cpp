@@ -34,11 +34,18 @@
 
 using namespace std;
 
+using ampl::NumberOfExpr;
+using ampl::NumericConstant;
+
 static char xxxvers[] = "ilogcp_options\0\n"
   "AMPL/IBM ILOG CP Optimizer Driver Version " qYYYYMMDD "\n";
 
 // for suppressing "String literal to char*" warnings
 #define CSTR(s) const_cast<char*>(s)
+
+#ifndef M_PI
+# define M_PI 3.14159265358979323846
+#endif
 
 namespace {
 struct DriverOptionInfo : Option_Info {
@@ -47,9 +54,8 @@ struct DriverOptionInfo : Option_Info {
 
 // Returns the constant term in the first objective.
 real objconst0(ASL_fg *a) {
-  expr *e = a->I.obj_de_->e;
-  return reinterpret_cast<size_t>(e->op) == OPNUM ?
-      reinterpret_cast<expr_n*>(e)->v : 0;
+  NumericConstant num(ampl::Cast<NumericConstant>(ampl::Expr(a->I.obj_de_->e)));
+  return num ? num.value() : 0;
 }
 
 char *skip_nonspace(char *s) {
@@ -127,9 +133,45 @@ CP_INT_OPTION(SolutionLimit)
 CP_ENUM_OPTION(TemporalRelaxation, IloCP::Off, Flags)
 CP_ENUM_OPTION(TimeMode, IloCP::CPUTime, TimeModes)
 CP_INT_OPTION_FULL(Workers, 0, true, 0)
+
+class SameExpr {
+private:
+  NumberOfExpr expr_;
+  unsigned num_args_;
+  
+public:
+  SameExpr(NumberOfExpr e) :
+  expr_(e), num_args_(std::distance(e.begin(), e.end())) {}
+  
+  // Returns true if the stored expression is the same as the argument's
+  // expression.
+  bool operator()(const ampl::NumberOf &nof) const;
+};
+
+bool SameExpr::operator()(const ampl::NumberOf &nof) const {
+  if (nof.num_vars() != num_args_)
+    return false;
+  
+  for (NumberOfExpr::iterator i = expr_.begin(), end = expr_.end(),
+       j = nof.expr().begin(); i != end; ++i, ++j) {
+    if (!Equal(*i, *j))
+      return false;
+  }
+  return true;
+}
 }
 
 namespace ampl {
+  
+IloIntVar NumberOf::Add(real value, IloEnv env) {
+  for (int i = 0, n = values_.getSize(); i < n; ++i)
+    if (values_[i] == value)
+      return cards_[i];
+  values_.add(value);
+  IloIntVar cardVar(env, IloIntMin, IloIntMax);
+  cards_.add(cardVar);
+  return cardVar;
+}
 
 Optimizer::Optimizer(IloEnv env, ASL_fg *asl) :
   vars_(env, n_var), cons_(env, n_con) {}
@@ -622,6 +664,161 @@ int Driver::wantsol() const {
    return oinfo_->wantsol;
 }
 
+IloNumExprArray Driver::ConvertArgs(VarArgExpr e) {
+  IloNumExprArray args(env_);
+  for (VarArgExpr::iterator i = e.begin(); Expr arg = *i; ++i)
+    args.add(Visit(arg));
+  return args;
+}
+  
+IloExpr Driver::VisitIf(IfExpr e) {
+  IloConstraint condition(Visit(e.condition()));
+  IloNumVar var(env_, -IloInfinity, IloInfinity);
+  mod_.add(IloIfThen(env_, condition, var == Visit(e.true_expr())));
+  mod_.add(IloIfThen(env_, !condition, var == Visit(e.false_expr())));
+  return var;
+}
+
+IloExpr Driver::VisitAtan2(BinaryExpr e) {
+  IloNumExpr y(Visit(e.lhs())), x(Visit(e.rhs()));
+  IloNumExpr atan(IloArcTan(y / x));
+  IloNumVar result(env_, -IloInfinity, IloInfinity);
+  mod_.add(IloIfThen(env_, x >= 0, result == atan));
+  mod_.add(IloIfThen(env_, x <= 0 && y >= 0, result == atan + M_PI));
+  mod_.add(IloIfThen(env_, x <= 0 && y <= 0, result == atan - M_PI));
+  return result;
+}
+  
+IloExpr Driver::VisitSum(SumExpr e) {
+  IloExpr sum(env_);
+  for (SumExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+    sum += Visit(*i);
+  return sum;
+}
+
+IloExpr Driver::VisitRound(BinaryExpr e) {
+  NumericConstant num = Cast<NumericConstant>(e.rhs());
+  if (!num || num.value() != 0)
+    throw UnsupportedExprError("round with nonzero second parameter");
+  // Note that IloOplRound rounds half up.
+  return IloOplRound(Visit(e.lhs()));
+}
+
+IloExpr Driver::VisitTrunc(BinaryExpr e) {
+  NumericConstant num = Cast<NumericConstant>(e.rhs());
+  if (!num || num.value() != 0)
+    throw UnsupportedExprError("trunc with nonzero second parameter");
+  return IloTrunc(Visit(e.lhs()));
+}
+
+IloExpr Driver::VisitCount(CountExpr e) {
+  IloExpr sum(env_);
+  for (CountExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+    sum += Visit(*i);
+  return sum;
+}
+
+IloExpr Driver::VisitNumberOf(NumberOfExpr e) {
+  Expr target = e.target();
+  NumericConstant num = Cast<NumericConstant>(target);
+  if (!num || !get_option(USENUMBEROF)) {
+    IloExpr sum(env_);
+    IloExpr concert_target(Visit(target));
+    for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+      sum += (Visit(*i) == concert_target);
+    return sum;
+  }
+  
+  // If the first operand is constant, add it to the driver's data structure
+  // that collects these operators.
+
+  // Did we previously see a number-of operator
+  // having the same expression-list?
+  vector<NumberOf>::reverse_iterator np =
+  find_if(numberofs_.rbegin(), numberofs_.rend(), SameExpr(e));
+  
+  // New expression-list:
+  // Build a new numberof structure.
+  if (np == numberofs_.rend()) {
+    IloIntArray values(env_);
+    values.add(num.value());
+    
+    IloIntVarArray vars(env_);
+    for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i) {
+      IloIntVar var(env_, IloIntMin, IloIntMax);
+      vars.add(var);
+      mod_.add(var == Visit(*i));
+    }
+    
+    IloIntVar cardVar(env_, IloIntMin, IloIntMax);
+    IloIntVarArray cards(env_);
+    cards.add(cardVar);
+    numberofs_.push_back(NumberOf(cards, values, vars, e));
+    return cardVar;
+  }
+  
+  // Previously seen expression-list:
+  // Add to its numberof structure.
+  return np->Add(num.value(), env_);
+}
+
+IloExpr Driver::VisitPLTerm(PiecewiseLinearTerm t) {
+  IloNumArray slopes(env_), breakpoints(env_);
+  int num_breakpoints = t.num_breakpoints();
+  for (int i = 0; i < num_breakpoints; ++i) {
+    slopes.add(t.slope(i));
+    breakpoints.add(t.breakpoint(i));
+  }
+  slopes.add(t.slope(num_breakpoints));
+  return IloPiecewiseLinear(vars_[t.var_index()], breakpoints, slopes, 0, 0);
+}
+
+IloConstraint Driver::VisitExists(IteratedLogicalExpr e) {
+  IloOr disjunction(env_);
+  for (IteratedLogicalExpr::iterator
+       i = e.begin(), end = e.end(); i != end; ++i) {
+    disjunction.add(Visit(*i));
+  }
+  return disjunction;
+}
+
+IloConstraint Driver::VisitForAll(IteratedLogicalExpr e) {
+  IloAnd conjunction(env_);
+  for (IteratedLogicalExpr::iterator
+       i = e.begin(), end = e.end(); i != end; ++i) {
+    conjunction.add(Visit(*i));
+  }
+  return conjunction;
+}
+
+IloConstraint Driver::VisitImplication(ImplicationExpr e) {
+  IloConstraint condition(Visit(e.condition()));
+  return IloIfThen(env_,  condition, Visit(e.true_expr())) &&
+         IloIfThen(env_, !condition, Visit(e.false_expr()));
+}
+
+IloConstraint Driver::VisitAllDiff(AllDiffExpr e) {
+  IloIntVarArray vars(env_);
+  for (AllDiffExpr::iterator i = e.begin(), end = e.end(); i != end; ++i) {
+    if (Variable var = Cast<Variable>(*i)) {
+      vars.add(vars_[var.index()]);
+      continue;
+    }
+    IloIntVar var(env_, IloIntMin, IloIntMax);
+    mod_.add(var == Visit(*i));
+    vars.add(var);
+  }
+  return IloAllDiff(env_, vars);
+}
+
+void Driver::FinishBuildingNumberOf() {
+  for (vector<NumberOf>::const_iterator
+       i = numberofs_.begin(), end = numberofs_.end(); i != end; ++i) {
+    mod_.add(i->Convert(env_));
+  }
+  numberofs_.clear();
+}
+
 /*----------------------------------------------------------------------
 
   Main Program
@@ -687,7 +884,7 @@ int Driver::run(char **argv) {
       IloObjective MinOrMax(env_, objExpr,
          objtype[0] == 0 ? IloObjective::Minimize : IloObjective::Maximize);
       optimizer_->set_obj(MinOrMax);
-      IloAdd (mod_, MinOrMax);
+      IloAdd(mod_, MinOrMax);
    }
 
    IloRangeArray Con(optimizer_->cons());
@@ -706,10 +903,10 @@ int Driver::run(char **argv) {
    for (int i = 0; i < n_lcon; i++)
      LCon[i] = Visit(LogicalExpr(lcon_de[i].e));
 
-   if (n_con > 0) mod_.add (Con);
-   if (n_lcon > 0) mod_.add (LCon);
+   if (n_con > 0) mod_.add(Con);
+   if (n_lcon > 0) mod_.add(LCon);
 
-   finish_building_numberof ();
+   FinishBuildingNumberOf();
 
    int timing = get_option(TIMING);
    Times[1] = timing ? xectim_() : 0;
