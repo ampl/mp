@@ -55,7 +55,7 @@ enum OpType {
 // A base class for all expression classes.
 class ExprBase {
  protected:
-  const expr *expr_;
+  expr *expr_;
 
   // Returns true iff this expression is null or has type t.
   bool HasTypeOrNull(OpType t) const {
@@ -67,11 +67,11 @@ class ExprBase {
 
   // Constructs a ExprBase object representing a reference to the AMPL
   // expression e.
-  explicit ExprBase(const expr *e = 0) : expr_(e) {}
+  explicit ExprBase(expr *e = 0) : expr_(e) {}
 
  public:
   // TODO(viz): remove
-  const expr *get() const { return expr_; }
+  expr *get() const { return expr_; }
 
   operator SafeBool() const { return expr_ != 0 ? &ExprBase::True : 0; }
 
@@ -90,13 +90,13 @@ class Expr : public ExprBase {
  public:
   // Constructs a Expr object representing a reference to the AMPL
   // expression e.
-  explicit Expr(const expr *e = 0) : ExprBase(e) {}
+  explicit Expr(expr *e = 0) : ExprBase(e) {}
 };
 
 // A logical or constraint expression.
 class LogicalExpr : public ExprBase {
  public:
-  explicit LogicalExpr(const expr *e = 0) : ExprBase(e) {}
+  explicit LogicalExpr(expr *e = 0) : ExprBase(e) {}
 };
 
 template <typename T>
@@ -108,9 +108,9 @@ class ExprProxy {
   ExprT expr_;
 
  public:
-  explicit ExprProxy(const expr *e) : expr_(e) {}
+  explicit ExprProxy(expr *e) : expr_(e) {}
 
-  const ExprT *operator->() const { return &expr_; }
+  ExprT *operator->() const { return &expr_; }
 };
 
 // An unary expression.
@@ -191,7 +191,7 @@ class VarArgExpr : public Expr {
   };
 
   iterator begin() const {
-    return iterator(reinterpret_cast<const expr_va*>(expr_)->L.d);
+    return iterator(reinterpret_cast<expr_va*>(expr_)->L.d);
   }
 
   iterator end() const {
@@ -203,10 +203,10 @@ class VarArgExpr : public Expr {
 template <typename ExprT>
 class ArgIterator : public std::iterator<std::forward_iterator_tag, ExprT> {
  private:
-  const expr *const *ptr_;
+  expr *const *ptr_;
 
  public:
-  explicit ArgIterator(const expr *const *p = 0) : ptr_(p) {}
+  explicit ArgIterator(expr *const *p = 0) : ptr_(p) {}
 
   ExprT operator*() const { return ExprT(*ptr_); }
   ExprProxy<ExprT> operator->() const { return ExprProxy<ExprT>(*ptr_); }
@@ -282,15 +282,15 @@ class IfExpr : public Expr {
 
  public:
   LogicalExpr condition() const {
-    return LogicalExpr(reinterpret_cast<const expr_if*>(expr_)->e);
+    return LogicalExpr(reinterpret_cast<expr_if*>(expr_)->e);
   }
 
   Expr true_expr() const {
-    return Expr(reinterpret_cast<const expr_if*>(expr_)->T);
+    return Expr(reinterpret_cast<expr_if*>(expr_)->T);
   }
 
   Expr false_expr() const {
-    return Expr(reinterpret_cast<const expr_if*>(expr_)->F);
+    return Expr(reinterpret_cast<expr_if*>(expr_)->F);
   }
 };
 
@@ -344,7 +344,7 @@ class NumericConstant : public Expr {
 
  public:
   // Returns the value of this number.
-  double value() const { return reinterpret_cast<const expr_n*>(expr_)->v; }
+  double value() const { return reinterpret_cast<expr_n*>(expr_)->v; }
 };
 
 template <>
@@ -409,7 +409,7 @@ class LogicalConstant : public LogicalExpr {
 
  public:
   // Returns the value of this constant.
-  bool value() const { return reinterpret_cast<const expr_n*>(expr_)->v != 0; }
+  bool value() const { return reinterpret_cast<expr_n*>(expr_)->v != 0; }
 };
 
 // A relational expression such as "less than".
@@ -475,15 +475,15 @@ class ImplicationExpr : public LogicalExpr {
 
  public:
   LogicalExpr condition() const {
-    return LogicalExpr(reinterpret_cast<const expr_if*>(expr_)->e);
+    return LogicalExpr(reinterpret_cast<expr_if*>(expr_)->e);
   }
 
   LogicalExpr true_expr() const {
-    return LogicalExpr(reinterpret_cast<const expr_if*>(expr_)->T);
+    return LogicalExpr(reinterpret_cast<expr_if*>(expr_)->T);
   }
 
   LogicalExpr false_expr() const {
-    return LogicalExpr(reinterpret_cast<const expr_if*>(expr_)->F);
+    return LogicalExpr(reinterpret_cast<expr_if*>(expr_)->F);
   }
 };
 
@@ -728,7 +728,7 @@ Result ExprVisitor<Impl, Result, LResult>::Visit(Expr e) {
   case OPNUMBEROF:
     return AMPL_DISPATCH(VisitNumberOf(NumberOfExpr(e)));
   default:
-    return VisitUnhandledExpr(e);
+    throw InvalidExprError(GetOpName(e.opcode()));
   }
 }
 
@@ -779,7 +779,7 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
   case OPALLDIFF:
     return AMPL_DISPATCH(VisitAllDiff(AllDiffExpr(e)));
   default:
-    return VisitUnhandledExpr(e);
+    throw InvalidLogicalExprError(GetOpName(e.opcode()));
   }
 }
 
