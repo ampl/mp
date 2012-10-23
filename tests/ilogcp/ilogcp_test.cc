@@ -1746,7 +1746,8 @@ void TestPerformance(const char *stub, int num_runs = 100000000) {
   Driver d;
   d.run((Args() + "ilogcp" + "-s" + stub).get());
   double end = xectim_();
-  std::cout << "Time: " << stub << "\t" << MeasureTime(F(d, num_runs))
+  double time = MeasureTime(F(d, num_runs));
+  std::cout << "Time: " << stub << "\t" << time
     << "\t" << num_runs << "\t" << (end - start) << std::endl;
 }
 
@@ -1755,7 +1756,7 @@ void TestPerformance() {
   TestPerformance<F>(DATA_DIR "assign1", 10000);
   TestPerformance<F>(DATA_DIR "balassign1", 1000);
   TestPerformance<F>(DATA_DIR "flowshp1", 1000000);
-  TestPerformance<F>(DATA_DIR "flowshp2", 1000000);
+  TestPerformance<F>(DATA_DIR "flowshp2", 100000);
   TestPerformance<F>(DATA_DIR "magic", 100000);
   TestPerformance<F>(DATA_DIR "mapcoloring");
   TestPerformance<F>(DATA_DIR "money", 1000000);
