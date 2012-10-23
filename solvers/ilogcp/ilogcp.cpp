@@ -398,9 +398,6 @@ keyword Driver::keywords_[] = {
           SPACE "'numberof' expressions by use of IloDistribute\n"
           SPACE "constraints.\n")),
 
-  KW(CSTR("usevisitors"), Driver::set_bool_option, Driver::USEVISITORS,
-      CSTR("0 or 1 (default 0):  Whether to use visitors.\n")),
-
   KW(CSTR("version"), Ver_val, 0,
       CSTR("Single-word phrase:  report version details\n"
           SPACE "before solving the problem.\n")),
@@ -433,7 +430,6 @@ Driver::Driver() :
   options_[OPTIMIZER] = AUTO;
   options_[TIMING] = 0;
   options_[USENUMBEROF] = 1;
-  options_[USEVISITORS] = 1;
 
   version_.resize(L = strlen(IloConcertVersion::_ILO_NAME) + 100);
   n = snprintf(s = &version_[0], L, "AMPL/IBM ILOG CP Optimizer [%s %d.%d.%d]",
@@ -682,16 +678,10 @@ int Driver::run(char **argv) {
    for (int j = n_var_cont; j < n_var; j++)
       vars_[j] = IloNumVar(env_, LUv[j], Uvx[j], ILOINT);
 
-   bool use_visitors = get_option(USEVISITORS) != 0;
-
    if (n_obj > 0) {
       IloExpr objExpr(env_, objconst0(asl));
-      if (0 < nlo) {
-         if (!use_visitors)
-           objExpr += build_expr (obj_de[0].e);
-         else
-           objExpr += Visit (Expr(obj_de[0].e));
-      }
+      if (0 < nlo)
+         objExpr += Visit(Expr(obj_de[0].e));
       for (ograd *og = Ograd[0]; og; og = og->next)
          objExpr += (og -> coef) * vars_[og -> varno];
       IloObjective MinOrMax(env_, objExpr,
@@ -706,23 +696,15 @@ int Driver::run(char **argv) {
       IloExpr conExpr(env_);
       for (cgrad *cg = Cgrad[i]; cg; cg = cg->next)
          conExpr += (cg -> coef) * vars_[cg -> varno];
-      if (i < nlc) {
-         if (!use_visitors)
-           conExpr += build_expr(con_de[i].e);
-         else
-           conExpr += Visit(Expr(con_de[i].e));
-      }
+      if (i < nlc)
+         conExpr += Visit(Expr(con_de[i].e));
       Con[i] = (LUrhs[i] <= conExpr <= Urhsx[i]);
    }
 
    IloConstraintArray LCon(env_, n_lcon);
 
-   for (int i = 0; i < n_lcon; i++) {
-     if (!use_visitors)
-       LCon[i] = build_constr(lcon_de[i].e);
-     else
-       LCon[i] = Visit(LogicalExpr(lcon_de[i].e));
-   }
+   for (int i = 0; i < n_lcon; i++)
+     LCon[i] = Visit(LogicalExpr(lcon_de[i].e));
 
    if (n_con > 0) mod_.add (Con);
    if (n_lcon > 0) mod_.add (LCon);

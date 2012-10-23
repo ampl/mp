@@ -147,7 +147,6 @@ class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
     OPTIMIZER,
     TIMING,
     USENUMBEROF,
-    USEVISITORS,
     NUM_OPTIONS
   };
 
@@ -200,10 +199,6 @@ class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
   void use_numberof(bool use = true) { options_[USENUMBEROF] = use; }
   bool show_version() const;
   int wantsol() const;
-
-  // Converts the specified ASL expression into an equivalent Concert
-  // expression. 'e' must be a numerical expression.
-  IloExpr build_expr(const expr *e);
 
   IloExpr VisitPlus(BinaryExpr e) {
     return Visit(e.lhs()) + Visit(e.rhs());
@@ -357,7 +352,7 @@ class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
 
   IloExpr VisitRound(BinaryExpr e) {
     NumericConstant num = Cast<NumericConstant>(e.rhs());
-    if (num && num.value() != 0)
+    if (!num || num.value() != 0)
        throw UnsupportedExprError("round with nonzero second parameter");
     // Note that IloOplRound rounds half up.
     return IloOplRound(Visit(e.lhs()));
@@ -365,7 +360,7 @@ class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
 
   IloExpr VisitTrunc(BinaryExpr e) {
     NumericConstant num = Cast<NumericConstant>(e.rhs());
-    if (num && num.value() != 0)
+    if (!num || num.value() != 0)
        throw UnsupportedExprError("trunc with nonzero second parameter");
     return IloTrunc(Visit(e.lhs()));
   }
@@ -526,11 +521,6 @@ class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
     }
     return IloAllDiff(env_, vars);
   }
-
-  // Converts the specified ASL expression into an equivalent Concert
-  // constraint. 'e' must be a logical expression such as 'or', '<=', or
-  // 'alldiff'.
-  IloConstraint build_constr(const expr *e);
 
   // Combines 'numberof' operators into IloDistribute constraints
   // which are much more useful to the solution procedure.
