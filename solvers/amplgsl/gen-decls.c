@@ -25,6 +25,7 @@
 #include "funcadd.h"
 
 #undef fopen
+#undef fclose
 #undef fprintf
 #undef printf
 
