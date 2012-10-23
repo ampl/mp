@@ -24,7 +24,6 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
   endif ()
 
   add_library(amplilogcp
-    build_expr.cpp
     ilogcp.cpp
     ilogcp.h
     ilogcp_date.h

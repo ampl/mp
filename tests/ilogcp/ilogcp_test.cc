@@ -17,7 +17,6 @@
 
 #include "solvers/ilogcp/ilogcp.h"
 #include "solvers/util/expr.h"
-#include "solvers/util/util.h"
 
 extern "C" {
 #include "solvers/asl.h"
@@ -180,6 +179,11 @@ class IlogCPTest : public ::testing::Test {
 
   double EvalRem(double lhs, double rhs) {
     return eval(d.Visit(NewBinary(OPREM, NewNum(lhs), NewNum(rhs))));
+  }
+  
+  const char *GetOpName(int opcode) {
+    expr e = {reinterpret_cast<efunc*>(opcode)};
+    return Expr(&e).opname();
   }
 
   int RunDriver(const char *stub = nullptr, const char *opt = nullptr) {
@@ -738,7 +742,7 @@ TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
   string bounds = os.str();
   EXPECT_EQ("IloIntVar(10)" + bounds, str(d.Visit(
       NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)))));
-  d.finish_building_numberof();
+  d.FinishBuildingNumberOf();
   IloModel::Iterator iter(mod_);
   ASSERT_TRUE(iter.ok());
   EXPECT_EQ("IloIntVar(4)" + bounds + " == x", str(*iter));
@@ -766,7 +770,7 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
   EXPECT_EQ("IloIntVar(10)" + bounds, str(d.Visit(Expr(expr.get()))));
   EXPECT_EQ("IloIntVar(10)" + bounds, str(d.Visit(
       NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)))));
-  d.finish_building_numberof();
+  d.FinishBuildingNumberOf();
   IloModel::Iterator iter(mod_);
   ASSERT_TRUE(iter.ok());
   EXPECT_EQ("IloIntVar(4)" + bounds + " == x", str(*iter));
@@ -794,7 +798,7 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
       str(d.Visit(NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)))));
   EXPECT_EQ("IloIntVar(12)" + bounds,
       str(d.Visit(NewSum(OPNUMBEROF, NewNum(43), NewVar(0), NewVar(1)))));
-  d.finish_building_numberof();
+  d.FinishBuildingNumberOf();
   IloModel::Iterator iter(mod_);
   ASSERT_TRUE(iter.ok());
   EXPECT_EQ("IloIntVar(4)" + bounds + " == x", str(*iter));
@@ -823,7 +827,7 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
       str(d.Visit(NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)))));
   EXPECT_EQ("IloIntVar(15)" + bounds,
       str(d.Visit(NewSum(OPNUMBEROF, NewNum(42), NewVar(2)))));
-  d.finish_building_numberof();
+  d.FinishBuildingNumberOf();
   IloModel::Iterator iter(mod_);
   ASSERT_TRUE(iter.ok());
   EXPECT_EQ("IloIntVar(4)" + bounds + " == x", str(*iter));
@@ -1091,8 +1095,8 @@ TEST_F(IlogCPTest, ConvertAllDiff) {
 
 // ----------------------------------------------------------------------------
 // Util tests
-
-TEST_F(IlogCPTest, GetOpName) {
+  
+TEST_F(IlogCPTest, OpName) {
   EXPECT_STREQ("+", GetOpName(OPPLUS));
   EXPECT_STREQ("-", GetOpName(OPMINUS));
   EXPECT_STREQ("*", GetOpName(OPMULT));
@@ -1166,147 +1170,147 @@ TEST_F(IlogCPTest, GetOpName) {
   EXPECT_STREQ("unknown", GetOpName(500));
 }
 
-TEST_F(IlogCPTest, SameNum) {
-  EXPECT_TRUE(Equal(NewNum(0.42).get(), NewNum(0.42).get()));
-  EXPECT_FALSE(Equal(NewNum(0.42).get(), NewNum(42).get()));
+TEST_F(IlogCPTest, EqualNum) {
+  EXPECT_TRUE(Equal(NewNum(0.42), NewNum(0.42)));
+  EXPECT_FALSE(Equal(NewNum(0.42), NewNum(42)));
 }
 
-TEST_F(IlogCPTest, SameVar) {
-  EXPECT_TRUE(Equal(NewVar(0).get(), NewVar(0).get()));
-  EXPECT_FALSE(Equal(NewVar(0).get(), NewVar(1).get()));
-  EXPECT_FALSE(Equal(NewVar(0).get(), NewNum(0).get()));
+TEST_F(IlogCPTest, EqualVar) {
+  EXPECT_TRUE(Equal(NewVar(0), NewVar(0)));
+  EXPECT_FALSE(Equal(NewVar(0), NewVar(1)));
+  EXPECT_FALSE(Equal(NewVar(0), NewNum(0)));
 }
 
-TEST_F(IlogCPTest, SameUnary) {
-  EXPECT_TRUE(Equal(NewUnary(OPUMINUS, NewVar(0)).get(),
-                        NewUnary(OPUMINUS, NewVar(0)).get()));
-  EXPECT_FALSE(Equal(NewUnary(OPUMINUS, NewVar(0)).get(),
-                         NewVar(0).get()));
-  EXPECT_FALSE(Equal(NewUnary(OPUMINUS, NewVar(0)).get(),
-                         NewUnary(FLOOR, NewVar(0)).get()));
-  EXPECT_FALSE(Equal(NewUnary(OPUMINUS, NewVar(0)).get(),
-                         NewUnary(OPUMINUS, NewVar(1)).get()));
+TEST_F(IlogCPTest, EqualUnary) {
+  EXPECT_TRUE(Equal(NewUnary(OPUMINUS, NewVar(0)),
+                    NewUnary(OPUMINUS, NewVar(0))));
+  EXPECT_FALSE(Equal(NewUnary(OPUMINUS, NewVar(0)),
+                     NewVar(0)));
+  EXPECT_FALSE(Equal(NewUnary(OPUMINUS, NewVar(0)),
+                     NewUnary(FLOOR, NewVar(0))));
+  EXPECT_FALSE(Equal(NewUnary(OPUMINUS, NewVar(0)),
+                     NewUnary(OPUMINUS, NewVar(1))));
 }
 
-TEST_F(IlogCPTest, SameBinary) {
-  EXPECT_TRUE(Equal(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
-                        NewBinary(OPPLUS, NewVar(0), NewNum(42)).get()));
-  EXPECT_FALSE(Equal(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
-                         NewBinary(OPMINUS, NewVar(0), NewNum(42)).get()));
-  EXPECT_FALSE(Equal(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
-                         NewBinary(OPPLUS, NewNum(42), NewVar(0)).get()));
-  EXPECT_FALSE(Equal(NewBinary(OPPLUS, NewVar(0), NewNum(42)).get(),
-                         NewBinary(OPPLUS, NewVar(0), NewNum(0)).get()));
-  EXPECT_FALSE(Equal(NewNum(42).get(),
-                         NewBinary(OPPLUS, NewVar(0), NewNum(42)).get()));
+TEST_F(IlogCPTest, EqualBinary) {
+  EXPECT_TRUE(Equal(NewBinary(OPPLUS, NewVar(0), NewNum(42)),
+                        NewBinary(OPPLUS, NewVar(0), NewNum(42))));
+  EXPECT_FALSE(Equal(NewBinary(OPPLUS, NewVar(0), NewNum(42)),
+                         NewBinary(OPMINUS, NewVar(0), NewNum(42))));
+  EXPECT_FALSE(Equal(NewBinary(OPPLUS, NewVar(0), NewNum(42)),
+                         NewBinary(OPPLUS, NewNum(42), NewVar(0))));
+  EXPECT_FALSE(Equal(NewBinary(OPPLUS, NewVar(0), NewNum(42)),
+                         NewBinary(OPPLUS, NewVar(0), NewNum(0))));
+  EXPECT_FALSE(Equal(NewNum(42),
+                         NewBinary(OPPLUS, NewVar(0), NewNum(42))));
 }
 
-TEST_F(IlogCPTest, SameVarArg) {
+TEST_F(IlogCPTest, EqualVarArg) {
   EXPECT_TRUE(Equal(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42))));
   EXPECT_FALSE(Equal(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewVarArg(MINLIST, NewVar(0), NewVar(1)).get()));
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewVarArg(MINLIST, NewVar(0), NewVar(1))));
   EXPECT_FALSE(Equal(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1)).get(),
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+      NewVarArg(MINLIST, NewVar(0), NewVar(1)),
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42))));
   EXPECT_FALSE(Equal(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewVarArg(MAXLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewVarArg(MAXLIST, NewVar(0), NewVar(1), NewNum(42))));
   EXPECT_FALSE(Equal(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(0)).get()));
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(0))));
   EXPECT_FALSE(Equal(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewNum(42).get()));
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewNum(42)));
 }
 
-TEST_F(IlogCPTest, SamePLTerm) {
+TEST_F(IlogCPTest, EqualPLTerm) {
   double args[] = {-1, 5, 0, 10, 1};
   EXPECT_TRUE(Equal(
-      NewPLTerm(5, args, 0).get(),
-      NewPLTerm(5, args, 0).get()));
+      NewPLTerm(5, args, 0),
+      NewPLTerm(5, args, 0)));
   EXPECT_FALSE(Equal(
-      NewPLTerm(5, args, 0).get(),
-      NewPLTerm(3, args, 0).get()));
+      NewPLTerm(5, args, 0),
+      NewPLTerm(3, args, 0)));
   EXPECT_FALSE(Equal(
-      NewPLTerm(5, args, 0).get(),
-      NewPLTerm(5, args, 1).get()));
+      NewPLTerm(5, args, 0),
+      NewPLTerm(5, args, 1)));
   double args2[] = {-1, 5, 0, 11, 1};
   EXPECT_FALSE(Equal(
-      NewPLTerm(5, args, 0).get(),
-      NewPLTerm(5, args2, 0).get()));
+      NewPLTerm(5, args, 0),
+      NewPLTerm(5, args2, 0)));
   EXPECT_FALSE(Equal(
-      NewPLTerm(5, args, 0).get(),
-      NewNum(42).get()));
+      NewPLTerm(5, args, 0),
+      NewNum(42)));
 }
 
-TEST_F(IlogCPTest, SameIf) {
+TEST_F(IlogCPTest, EqualIf) {
   EXPECT_TRUE(Equal(
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get()));
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)),
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42))));
   EXPECT_FALSE(Equal(
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewIf(OPIFSYM, NewVar(0), NewVar(1), NewNum(42)).get()));
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)),
+      NewIf(OPIFSYM, NewVar(0), NewVar(1), NewNum(42))));
   EXPECT_FALSE(Equal(
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(0)).get()));
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)),
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(0))));
   EXPECT_FALSE(Equal(
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewNum(42).get()));
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)),
+      NewNum(42)));
 }
 
-TEST_F(IlogCPTest, SameSum) {
+TEST_F(IlogCPTest, EqualSum) {
   EXPECT_TRUE(Equal(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42))));
   EXPECT_FALSE(Equal(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1)).get()));
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1))));
   EXPECT_FALSE(Equal(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1)).get(),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1)),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42))));
   EXPECT_FALSE(Equal(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get()));
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42))));
   EXPECT_FALSE(Equal(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(0)).get()));
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(0))));
   EXPECT_FALSE(Equal(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewNum(42).get()));
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewNum(42)));
 }
 
-TEST_F(IlogCPTest, SameCount) {
+TEST_F(IlogCPTest, EqualCount) {
   EXPECT_TRUE(Equal(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get()));
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42))));
   EXPECT_FALSE(Equal(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1)).get()));
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1))));
   EXPECT_FALSE(Equal(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1)).get(),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get()));
+      NewSum(OPCOUNT, NewVar(0), NewVar(1)),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42))));
   EXPECT_FALSE(Equal(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)).get()));
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42))));
   EXPECT_FALSE(Equal(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(0)).get()));
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(0))));
   EXPECT_FALSE(Equal(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)).get(),
-      NewNum(42).get()));
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)),
+      NewNum(42)));
 }
 
-TEST_F(IlogCPTest, SameExprThrowsOnUnsupportedOp) {
+TEST_F(IlogCPTest, EqualExprThrowsOnUnsupportedOp) {
   EXPECT_THROW(Equal(
-      NewUnary(OPFUNCALL, Expr()).get(),
-      NewUnary(OPFUNCALL, Expr()).get()),
+      NewUnary(OPFUNCALL, Expr()),
+      NewUnary(OPFUNCALL, Expr())),
       UnsupportedExprError);
   EXPECT_THROW(Equal(
-      NewUnary(OPHOL, Expr()).get(),
-      NewUnary(OPHOL, Expr()).get()),
+      NewUnary(OPHOL, Expr()),
+      NewUnary(OPHOL, Expr())),
       UnsupportedExprError);
 }
 

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <memory>
-#include "solvers/util/util.h"
 #include "ilogcp.h"
+#include "solvers/util/expr.h"
 #include "asl.h"
 
 using std::cerr;

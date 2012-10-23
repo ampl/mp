@@ -2,8 +2,8 @@
 #define AMPL_SOLVERS_CONCERT_H
 
 #include <string.h>	/* This and -fpermissive seem to be needed for MacOSX, */
-			/* at least with g++ 4.6.  Otherwise there are errors */
-			/* with iloconcert/iloenv.h . */
+                    /* at least with g++ 4.6.  Otherwise there are errors */
+                    /* with iloconcert/iloenv.h . */
 #include <limits.h>	/* Needed for g++ -m32 on MacOSX. */
 #include <memory>
 #include <vector>
@@ -13,7 +13,6 @@
 
 #include "solvers/util/expr.h"
 
-struct expr;
 struct keyword;
 struct Option_Info;
 struct ASL_fg;
@@ -25,26 +24,21 @@ class NumberOf {
   IloIntVarArray cards_;
   IloIntArray values_;
   IloIntVarArray vars_;
-  const expr *numberofexpr_;
+  NumberOfExpr expr_;
 
  public:
   NumberOf(IloIntVarArray cards, IloIntArray values,
-      IloIntVarArray vars, const expr *e) :
-    cards_(cards), values_(values), vars_(vars), numberofexpr_(e) {}
+      IloIntVarArray vars, NumberOfExpr e) :
+    cards_(cards), values_(values), vars_(vars), expr_(e) {}
 
-  IloInt num_vars() const {
-    return vars_.getSize();
-  }
+  IloInt num_vars() const { return vars_.getSize(); }
+  NumberOfExpr expr() const { return expr_; }
 
-  const expr *numberofexpr() const {
-    return numberofexpr_;
-  }
-
-  IloDistribute to_distribute(IloEnv env) const {
+  IloDistribute Convert(IloEnv env) const {
     return IloDistribute(env, cards_, values_, vars_);
   }
 
-  IloIntVar add(double value, IloEnv env);
+  IloIntVar Add(double value, IloEnv env);
 };
 
 class Optimizer {
@@ -127,15 +121,7 @@ class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
 
   // Do not implement.
   Driver(const Driver&);
-  Driver& operator=(const Driver&);
-
-  // Builds an array of expressions from the argument list of e.
-  IloNumExprArray build_minmax_array(const expr *e);
-
-  // Given a node for a number-of operator that has a constant as its first
-  // operand, adds it to the driver's data structure that collects these
-  // operators.
-  IloNumVar build_numberof(const expr *e);
+  Driver &operator=(const Driver&);
 
  public:
   // Options accessible from AMPL.
@@ -172,6 +158,8 @@ class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
   // Sets an integer option of the CPLEX optimizer.
   static char *set_cplex_int_option(Option_Info *oi, keyword *kw, char *value);
 
+  IloNumExprArray ConvertArgs(VarArgExpr e);
+  
  public:
   Driver();
   virtual ~Driver();
@@ -227,17 +215,11 @@ class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
   }
 
   IloExpr VisitMin(VarArgExpr e) {
-    IloNumExprArray args(env_);
-    for (VarArgExpr::iterator i = e.begin(); Expr arg = *i; ++i)
-      args.add(Visit(arg));
-    return IloMin(args);
+    return IloMin(ConvertArgs(e));
   }
 
   IloExpr VisitMax(VarArgExpr e) {
-    IloNumExprArray args(env_);
-    for (VarArgExpr::iterator i = e.begin(); Expr arg = *i; ++i)
-      args.add(Visit(arg));
-    return IloMax(args);
+    return IloMax(ConvertArgs(e));
   }
 
   IloExpr VisitFloor(UnaryExpr e) {
@@ -256,13 +238,7 @@ class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
     return -Visit(e.arg());
   }
 
-  IloExpr VisitIf(IfExpr e) {
-    IloConstraint condition(Visit(e.condition()));
-    IloNumVar var(env_, -IloInfinity, IloInfinity);
-    mod_.add(IloIfThen(env_, condition, var == Visit(e.true_expr())));
-    mod_.add(IloIfThen(env_, !condition, var == Visit(e.false_expr())));
-    return var;
-  }
+  IloExpr VisitIf(IfExpr e);
 
   IloExpr VisitTanh(UnaryExpr e) {
     IloNumExpr exp(IloExponent(2 * Visit(e.arg())));
@@ -336,50 +312,19 @@ class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
     return IloArcCos(Visit(e.arg()));
   }
 
-  IloExpr VisitSum(SumExpr e) {
-    IloExpr sum(env_);
-    for (SumExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-      sum += Visit(*i);
-    return sum;
-  }
+  IloExpr VisitSum(SumExpr e);
 
   IloExpr VisitIntDiv(BinaryExpr e) {
     return IloTrunc(Visit(e.lhs()) / Visit(e.rhs()));
   }
 
-  IloExpr VisitRound(BinaryExpr e) {
-    NumericConstant num = Cast<NumericConstant>(e.rhs());
-    if (!num || num.value() != 0)
-       throw UnsupportedExprError("round with nonzero second parameter");
-    // Note that IloOplRound rounds half up.
-    return IloOplRound(Visit(e.lhs()));
-  }
-
-  IloExpr VisitTrunc(BinaryExpr e) {
-    NumericConstant num = Cast<NumericConstant>(e.rhs());
-    if (!num || num.value() != 0)
-       throw UnsupportedExprError("trunc with nonzero second parameter");
-    return IloTrunc(Visit(e.lhs()));
-  }
-
-  IloExpr VisitCount(CountExpr e) {
-    IloExpr sum(env_);
-    for (CountExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-       sum += Visit(*i);
-    return sum;
-  }
-
-  IloExpr VisitNumberOf(NumberOfExpr e) {
-    Expr target = e.target();
-    NumericConstant num = Cast<NumericConstant>(target);
-    if (num && get_option(USENUMBEROF))
-       return build_numberof(e.get());
-    IloExpr sum(env_);
-    IloExpr concert_target(Visit(target));
-    for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-       sum += (Visit(*i) == concert_target);
-    return sum;
-  }
+  IloExpr VisitRound(BinaryExpr e);
+  
+  IloExpr VisitTrunc(BinaryExpr e);
+  
+  IloExpr VisitCount(CountExpr e);
+  
+  IloExpr VisitNumberOf(NumberOfExpr e);
 
   IloExpr VisitConstExpPow(BinaryExpr e) {
     return IloPower(Visit(e.lhs()), Cast<NumericConstant>(e.rhs()).value());
@@ -393,16 +338,7 @@ class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
     return IloPower(Cast<NumericConstant>(e.lhs()).value(), Visit(e.rhs()));
   }
 
-  IloExpr VisitPLTerm(PiecewiseLinearTerm t) {
-    IloNumArray slopes(env_), breakpoints(env_);
-    int num_breakpoints = t.num_breakpoints();
-    for (int i = 0; i < num_breakpoints; ++i) {
-       slopes.add(t.slope(i));
-       breakpoints.add(t.breakpoint(i));
-    }
-    slopes.add(t.slope(num_breakpoints));
-    return IloPiecewiseLinear(vars_[t.var_index()], breakpoints, slopes, 0, 0);
-  }
+  IloExpr VisitPLTerm(PiecewiseLinearTerm t);
 
   IloExpr VisitNumber(NumericConstant n) {
     return IloExpr(env_, n.value());
@@ -413,8 +349,7 @@ class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
   }
 
   IloConstraint VisitConstant(LogicalConstant c) {
-    IloNumVar dummy(env_, 1, 1);
-    return dummy == c.value();
+    return IloNumVar(env_, 1, 1) == c.value();
   }
 
   IloConstraint VisitLess(RelationalExpr e) {
@@ -469,27 +404,13 @@ class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
     return IloIfThen(env_, !Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  IloConstraint VisitExists(IteratedLogicalExpr e) {
-    IloOr disjunction(env_);
-    for (IteratedLogicalExpr::iterator
-        i = e.begin(), end = e.end(); i != end; ++i) {
-      disjunction.add(Visit(*i));
-    }
-    return disjunction;
-  }
+  IloConstraint VisitExists(IteratedLogicalExpr e);
 
   IloConstraint VisitAnd(BinaryLogicalExpr e) {
     return Visit(e.lhs()) && Visit(e.rhs());
   }
 
-  IloConstraint VisitForAll(IteratedLogicalExpr e) {
-    IloAnd conjunction(env_);
-    for (IteratedLogicalExpr::iterator
-        i = e.begin(), end = e.end(); i != end; ++i) {
-      conjunction.add(Visit(*i));
-    }
-    return conjunction;
-  }
+  IloConstraint VisitForAll(IteratedLogicalExpr e);
 
   IloConstraint VisitNot(NotExpr e) {
     return !Visit(e.arg());
@@ -499,29 +420,13 @@ class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
     return Visit(e.lhs()) == Visit(e.rhs());
   }
 
-  IloConstraint VisitImplication(ImplicationExpr e) {
-    IloConstraint condition(Visit(e.condition()));
-    return IloIfThen(env_,  condition, Visit(e.true_expr()))
-        && IloIfThen(env_, !condition, Visit(e.false_expr()));
-  }
+  IloConstraint VisitImplication(ImplicationExpr e);
 
-  IloConstraint VisitAllDiff(AllDiffExpr e) {
-    IloIntVarArray vars(env_);
-    for (AllDiffExpr::iterator i = e.begin(), end = e.end(); i != end; ++i) {
-      if (Variable var = Cast<Variable>(*i)) {
-        vars.add(vars_[var.index()]);
-        continue;
-      }
-      IloIntVar var(env_, IloIntMin, IloIntMax);
-      mod_.add(var == Visit(*i));
-      vars.add(var);
-    }
-    return IloAllDiff(env_, vars);
-  }
+  IloConstraint VisitAllDiff(AllDiffExpr e);
 
   // Combines 'numberof' operators into IloDistribute constraints
   // which are much more useful to the solution procedure.
-  void finish_building_numberof();
+  void FinishBuildingNumberOf();
 
   // Runs the driver.
   int run(char **argv);
