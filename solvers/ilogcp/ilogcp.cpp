@@ -634,34 +634,36 @@ char *Driver::set_cplex_int_option(Option_Info *oi, keyword *kw, char *value) {
 }
 
 bool Driver::parse_options(char **argv) {
-   // Get optimizer type.
-   gotopttype = false;
-   oinfo_->option_echo &= ~ASL_OI_echo;
-   if (getopts(argv, oinfo_.get()))
-      return false;
+  // Get optimizer type.
+  gotopttype = false;
+  oinfo_->option_echo &= ~ASL_OI_echo;
+  if (getopts(argv, oinfo_.get()))
+    return false;
+  
+  int &opt = options_[OPTIMIZER];
+  if (opt == AUTO)
+    opt = nlo + nlc + n_lcon == 0 ? CPLEX : CP;
+  if (opt == CPLEX)
+    optimizer_.reset(new CPLEXOptimizer(env_, asl));
+  else optimizer_.reset(new CPOptimizer(env_, asl));
+  
+  // Parse remaining options.
+  gotopttype = true;
+  n_badvals = 0;
+  oinfo_->option_echo |= ASL_OI_echo;
+  if (getopts(argv, oinfo_.get()) || n_badvals != 0)
+    return false;
 
-   int &opt = options_[OPTIMIZER];
-   if (opt == AUTO)
-     opt = nlo + nlc + n_lcon == 0 ? CPLEX : CP;
-   if (opt == CPLEX)
-      optimizer_.reset(new CPLEXOptimizer(env_, asl));
-   else optimizer_.reset(new CPOptimizer(env_, asl));
-
-   // Parse remaining options.
-   gotopttype = true;
-   n_badvals = 0;
-   oinfo_->option_echo |= ASL_OI_echo;
-   if (getopts(argv, oinfo_.get()) || n_badvals != 0)
-      return false;
-   return true;
+  debug_ = get_option(DEBUGEXPR);
+  return true;
 }
 
 bool Driver::show_version() const {
-   return (oinfo_->flags & ASL_OI_show_version) != 0;
+  return (oinfo_->flags & ASL_OI_show_version) != 0;
 }
 
 int Driver::wantsol() const {
-   return oinfo_->wantsol;
+  return oinfo_->wantsol;
 }
 
 IloNumExprArray Driver::ConvertArgs(VarArgExpr e) {
