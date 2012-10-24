@@ -208,7 +208,7 @@ class VarArgExpr : public NumericExpr {
 
     iterator operator++(int) {
       iterator it(*this);
-      ++it.de_;
+      ++de_;
       return it;
     }
 
@@ -244,7 +244,7 @@ class ArgIterator : public std::iterator<std::forward_iterator_tag, ExprT> {
 
   ArgIterator operator++(int) {
     ArgIterator it(*this);
-    ++it.ptr_;
+    ++ptr_;
     return it;
   }
 
