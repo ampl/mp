@@ -104,8 +104,12 @@ class CPOptimizer : public Optimizer {
       std::vector<double> &primal, std::vector<double> &dual) const;
 };
 
+class Driver;
+  
+typedef ExprVisitor<Driver, IloExpr, IloConstraint> Visitor;
+  
 // The Ilogcp driver for AMPL.
-class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
+class Driver : public Visitor {
  private:
   IloEnv env_;
   IloModel mod_;
@@ -116,6 +120,7 @@ class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
   std::vector<char> version_;
   std::auto_ptr<Option_Info> oinfo_;
   bool gotopttype;
+  bool debug_;
   int n_badvals;
   static keyword keywords_[];
 
@@ -185,6 +190,18 @@ class Driver : public ExprVisitor<Driver, IloExpr, IloConstraint> {
   bool show_version() const;
   int wantsol() const;
 
+  IloExpr Visit(Expr e) {
+    if (debug_)
+      printf("%s\n", e.opname());
+    return Visitor::Visit(e);
+  }
+
+  IloConstraint Visit(LogicalExpr e) {
+    if (debug_)
+      printf("%s\n", e.opname());
+    return Visitor::Visit(e);
+  }
+  
   IloExpr VisitPlus(BinaryExpr e) {
     return Visit(e.lhs()) + Visit(e.rhs());
   }
