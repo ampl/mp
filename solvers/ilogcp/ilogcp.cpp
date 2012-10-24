@@ -54,7 +54,8 @@ struct DriverOptionInfo : Option_Info {
 
 // Returns the constant term in the first objective.
 real objconst0(ASL_fg *a) {
-  NumericConstant num(ampl::Cast<NumericConstant>(ampl::Expr(a->I.obj_de_->e)));
+  NumericConstant num(ampl::Cast<NumericConstant>(
+		  ampl::NumericExpr(a->I.obj_de_->e)));
   return num ? num.value() : 0;
 }
 
@@ -668,7 +669,7 @@ int Driver::wantsol() const {
 
 IloNumExprArray Driver::ConvertArgs(VarArgExpr e) {
   IloNumExprArray args(env_);
-  for (VarArgExpr::iterator i = e.begin(); Expr arg = *i; ++i)
+  for (VarArgExpr::iterator i = e.begin(); NumericExpr arg = *i; ++i)
     args.add(Visit(arg));
   return args;
 }
@@ -721,7 +722,7 @@ IloExpr Driver::VisitCount(CountExpr e) {
 }
 
 IloExpr Driver::VisitNumberOf(NumberOfExpr e) {
-  Expr target = e.target();
+  NumericExpr target = e.target();
   NumericConstant num = Cast<NumericConstant>(target);
   if (!num || !get_option(USENUMBEROF)) {
     IloExpr sum(env_);
@@ -880,7 +881,7 @@ int Driver::run(char **argv) {
    if (n_obj > 0) {
       IloExpr objExpr(env_, objconst0(asl));
       if (0 < nlo)
-         objExpr += Visit(Expr(obj_de[0].e));
+         objExpr += Visit(NumericExpr(obj_de[0].e));
       for (ograd *og = Ograd[0]; og; og = og->next)
          objExpr += (og -> coef) * vars_[og -> varno];
       IloObjective MinOrMax(env_, objExpr,
@@ -896,7 +897,7 @@ int Driver::run(char **argv) {
       for (cgrad *cg = Cgrad[i]; cg; cg = cg->next)
          conExpr += (cg -> coef) * vars_[cg -> varno];
       if (i < nlc)
-         conExpr += Visit(Expr(con_de[i].e));
+         conExpr += Visit(NumericExpr(con_de[i].e));
       Con[i] = (LUrhs[i] <= conExpr <= Urhsx[i]);
    }
 

@@ -65,11 +65,11 @@ class ExprBase {
   void True() const {}
   typedef void (ExprBase::*SafeBool)() const;
 
+ public:
   // Constructs a ExprBase object representing a reference to the AMPL
   // expression e.
   explicit ExprBase(expr *e = 0) : expr_(e) {}
 
- public:
   // TODO(viz): remove
   expr *get() const { return expr_; }
   
@@ -88,19 +88,22 @@ class ExprBase {
   unsigned type() const { return optype[opcode()]; }
 };
 
-// An arithmetic expression.
+// A numeric expression.
 // An Expr object represents a handle (reference) to an expression so
 // it is cheap to construct and pass by value. A type safe way to
 // process expressions of different types is by using ExprVisitor.
-class Expr : public ExprBase {
+class NumericExpr : public ExprBase {
+ protected:
+  NumericExpr(ExprBase e) : ExprBase(e) {}
+
  public:
   // Constructs a Expr object representing a reference to the AMPL
   // expression e.
-  explicit Expr(expr *e = 0) : ExprBase(e) {}
+  explicit NumericExpr(expr *e = 0) : ExprBase(e) {}
 };
 
 // Returns true if the expressions e1 and e2 are structurally equal.
-bool Equal(Expr e1, Expr e2);
+bool Equal(ExprBase e1, ExprBase e2);
 
 // A logical or constraint expression.
 class LogicalExpr : public ExprBase {
@@ -109,7 +112,7 @@ class LogicalExpr : public ExprBase {
 };
 
 template <typename T>
-T Cast(Expr e);
+T Cast(ExprBase e);
 
 template <typename ExprT>
 class ExprProxy {
@@ -123,9 +126,9 @@ class ExprProxy {
 };
 
 // An unary expression.
-class UnaryExpr : public Expr {
+class UnaryExpr : public NumericExpr {
  private:
-  explicit UnaryExpr(Expr e) : Expr(e) {
+  explicit UnaryExpr(NumericExpr e) : NumericExpr(e) {
     assert(HasTypeOrNull(OPTYPE_UNARY));
   }
 
@@ -134,13 +137,13 @@ class UnaryExpr : public Expr {
 
  public:
   // Returns the argument of this expression.
-  Expr arg() const { return Expr(expr_->L.e); }
+  NumericExpr arg() const { return NumericExpr(expr_->L.e); }
 };
 
 // A binary expression.
-class BinaryExpr : public Expr {
+class BinaryExpr : public NumericExpr {
  private:
-  explicit BinaryExpr(Expr e) : Expr(e) {
+  explicit BinaryExpr(NumericExpr e) : NumericExpr(e) {
     assert(!expr_ || opcode() == OP1POW || opcode() == OPCPOW ||
            HasTypeOrNull(OPTYPE_BINARY));
   }
@@ -150,16 +153,16 @@ class BinaryExpr : public Expr {
 
  public:
   // Returns the left-hand side (the first argument) of this expression.
-  Expr lhs() const { return Expr(expr_->L.e); }
+  NumericExpr lhs() const { return NumericExpr(expr_->L.e); }
 
   // Returns the right-hand side (the second argument) of this expression.
-  Expr rhs() const { return Expr(expr_->R.e); }
+  NumericExpr rhs() const { return NumericExpr(expr_->R.e); }
 };
 
 // A variable argument expression.
-class VarArgExpr : public Expr {
+class VarArgExpr : public NumericExpr {
  private:
-  explicit VarArgExpr(Expr e) : Expr(e) {
+  explicit VarArgExpr(NumericExpr e) : NumericExpr(e) {
     assert(HasTypeOrNull(OPTYPE_VARARG));
   }
 
@@ -170,7 +173,8 @@ class VarArgExpr : public Expr {
 
  public:
   // An argument iterator.
-  class iterator : public std::iterator<std::forward_iterator_tag, Expr> {
+  class iterator :
+    public std::iterator<std::forward_iterator_tag, NumericExpr> {
    private:
     const de *de_;
 
@@ -181,8 +185,8 @@ class VarArgExpr : public Expr {
    public:
     iterator() : de_(&END) {}
 
-    Expr operator*() const { return Expr(de_->e); }
-    ExprProxy<Expr> operator->() const { return ExprProxy<Expr>(de_->e); }
+    NumericExpr operator*() const { return NumericExpr(de_->e); }
+    ExprProxy<NumericExpr> operator->() const { return ExprProxy<NumericExpr>(de_->e); }
 
     iterator &operator++() {
       ++de_;
@@ -236,9 +240,9 @@ class ArgIterator : public std::iterator<std::forward_iterator_tag, ExprT> {
 };
 
 // An sum expression.
-class SumExpr : public Expr {
+class SumExpr : public NumericExpr {
  private:
-  explicit SumExpr(Expr e) : Expr(e) {
+  explicit SumExpr(NumericExpr e) : NumericExpr(e) {
     assert(HasTypeOrNull(OPTYPE_SUM));
   }
 
@@ -246,7 +250,7 @@ class SumExpr : public Expr {
   friend class ExprVisitor;
 
  public:
-  typedef ArgIterator<Expr> iterator;
+  typedef ArgIterator<NumericExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep);
@@ -258,9 +262,9 @@ class SumExpr : public Expr {
 };
 
 // A count expression.
-class CountExpr : public Expr {
+class CountExpr : public NumericExpr {
  private:
-  explicit CountExpr(Expr e) : Expr(e) {
+  explicit CountExpr(NumericExpr e) : NumericExpr(e) {
     assert(HasTypeOrNull(OPTYPE_COUNT));
   }
 
@@ -280,9 +284,9 @@ class CountExpr : public Expr {
 };
 
 // An if-then-else expression.
-class IfExpr : public Expr {
+class IfExpr : public NumericExpr {
  private:
-  explicit IfExpr(Expr e) : Expr(e) {
+  explicit IfExpr(NumericExpr e) : NumericExpr(e) {
     assert(HasTypeOrNull(OPTYPE_IF));
   }
 
@@ -294,19 +298,19 @@ class IfExpr : public Expr {
     return LogicalExpr(reinterpret_cast<expr_if*>(expr_)->e);
   }
 
-  Expr true_expr() const {
-    return Expr(reinterpret_cast<expr_if*>(expr_)->T);
+  NumericExpr true_expr() const {
+    return NumericExpr(reinterpret_cast<expr_if*>(expr_)->T);
   }
 
-  Expr false_expr() const {
-    return Expr(reinterpret_cast<expr_if*>(expr_)->F);
+  NumericExpr false_expr() const {
+    return NumericExpr(reinterpret_cast<expr_if*>(expr_)->F);
   }
 };
 
 // A piecewise-linear term.
-class PiecewiseLinearTerm : public Expr {
+class PiecewiseLinearTerm : public NumericExpr {
  private:
-  explicit PiecewiseLinearTerm(Expr e) : Expr(e) {
+  explicit PiecewiseLinearTerm(NumericExpr e) : NumericExpr(e) {
     assert(HasTypeOrNull(OPTYPE_PLTERM));
   }
 
@@ -339,16 +343,16 @@ class PiecewiseLinearTerm : public Expr {
 };
 
 // A numeric constant.
-class NumericConstant : public Expr {
+class NumericConstant : public NumericExpr {
  private:
-  explicit NumericConstant(Expr e) : Expr(e) {
+  explicit NumericConstant(ExprBase e) : NumericExpr(e) {
     assert(HasTypeOrNull(OPTYPE_NUMBER));
   }
 
   template <typename Impl, typename Result, typename LResult>
   friend class ExprVisitor;
 
-  friend NumericConstant Cast<NumericConstant>(Expr);
+  friend NumericConstant Cast<NumericConstant>(ExprBase);
 
  public:
   // Returns the value of this number.
@@ -356,21 +360,21 @@ class NumericConstant : public Expr {
 };
 
 template <>
-inline NumericConstant Cast<NumericConstant>(Expr e) {
-  return NumericConstant(e.opcode() == OPNUM ? e : Expr());
+inline NumericConstant Cast<NumericConstant>(ExprBase e) {
+  return NumericConstant(e.opcode() == OPNUM ? e : ExprBase());
 }
 
 // A variable.
-class Variable : public Expr {
+class Variable : public NumericExpr {
  private:
-  explicit Variable(Expr e) : Expr(e) {
+  explicit Variable(ExprBase e) : NumericExpr(e) {
     assert(HasTypeOrNull(OPTYPE_VARIABLE));
   }
 
   template <typename Impl, typename Result, typename LResult>
   friend class ExprVisitor;
 
-  friend Variable Cast<Variable>(Expr);
+  friend Variable Cast<Variable>(ExprBase);
 
  public:
   // Returns the index of this variable.
@@ -378,14 +382,14 @@ class Variable : public Expr {
 };
 
 template <>
-inline Variable Cast<Variable>(Expr e) {
-  return Variable(e.opcode() == OPVARVAL ? e : Expr());
+inline Variable Cast<Variable>(ExprBase e) {
+  return Variable(e.opcode() == OPVARVAL ? e : ExprBase());
 }
 
 // A numberof expression.
-class NumberOfExpr : public Expr {
+class NumberOfExpr : public NumericExpr {
  private:
-  explicit NumberOfExpr(Expr e) : Expr(e) {
+  explicit NumberOfExpr(NumericExpr e) : NumericExpr(e) {
     assert(opcode() == OPNUMBEROF);
   }
 
@@ -393,9 +397,9 @@ class NumberOfExpr : public Expr {
   friend class ExprVisitor;
 
  public:
-  Expr target() const { return Expr(*expr_->L.ep); }
+  NumericExpr target() const { return NumericExpr(*expr_->L.ep); }
 
-  typedef ArgIterator<Expr> iterator;
+  typedef ArgIterator<NumericExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep + 1);
@@ -432,10 +436,10 @@ class RelationalExpr : public LogicalExpr {
 
  public:
   // Returns the left-hand side (the first argument) of this expression.
-  Expr lhs() const { return Expr(expr_->L.e); }
+  NumericExpr lhs() const { return NumericExpr(expr_->L.e); }
 
   // Returns the right-hand side (the second argument) of this expression.
-  Expr rhs() const { return Expr(expr_->R.e); }
+  NumericExpr rhs() const { return NumericExpr(expr_->R.e); }
 };
 
 // A logical NOT expression.
@@ -528,7 +532,7 @@ class AllDiffExpr : public LogicalExpr {
   friend class ExprVisitor;
 
  public:
-  typedef ArgIterator<Expr> iterator;
+  typedef ArgIterator<NumericExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep);
@@ -592,10 +596,10 @@ public:
 template <typename Impl, typename Result, typename LResult>
 class ExprVisitor {
  public:
-  Result Visit(Expr e);
+  Result Visit(NumericExpr e);
   LResult Visit(LogicalExpr e);
 
-  Result VisitUnhandledExpr(Expr e) {
+  Result VisitUnhandledExpr(NumericExpr e) {
     throw UnsupportedExprError(e.opname());
   }
 
@@ -674,7 +678,7 @@ class ExprVisitor {
 #define AMPL_DISPATCH(call) static_cast<Impl*>(this)->call
 
 template <typename Impl, typename Result, typename LResult>
-Result ExprVisitor<Impl, Result, LResult>::Visit(Expr e) {
+Result ExprVisitor<Impl, Result, LResult>::Visit(NumericExpr e) {
   // TODO(viz): check that all opcodes are handled
   switch (e.opcode()) {
   case OPPLUS:

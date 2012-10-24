@@ -190,7 +190,7 @@ class Driver : public Visitor {
   bool show_version() const;
   int wantsol() const;
 
-  IloExpr Visit(Expr e) {
+  IloExpr Visit(NumericExpr e) {
     if (debug_)
       printf("%s\n", e.opname());
     return Visitor::Visit(e);
