@@ -85,8 +85,8 @@ struct SolveResult {
   SolveResult(bool solved, double obj) : solved(solved), obj(obj) {}
 };
 
-// Helper class that copies arguments to comply with the IlogCPDriver::run function
-// signature and avoid unwanted modification.
+// Helper class that copies arguments to comply with the IlogCPDriver::run
+// function signature and avoid unwanted modification.
 class Args {
  private:
   int argc_;
@@ -176,15 +176,18 @@ class IlogCPTest : public ::testing::Test {
   }
 
   // Creates a variable-argument ASL expression with up to 3 arguments.
-  NumericExpr NewVarArg(int opcode, NumericExpr e1, NumericExpr e2, NumericExpr e3 = NumericExpr());
+  NumericExpr NewVarArg(int opcode, NumericExpr e1,
+      NumericExpr e2, NumericExpr e3 = NumericExpr());
 
   NumericExpr NewPLTerm(int size, const double *args, int var_index);
 
   // Creates an ASL expression representing if-then-else.
-  NumericExpr NewIf(int opcode, NumericExpr condition, NumericExpr true_expr, NumericExpr false_expr);
+  NumericExpr NewIf(int opcode, NumericExpr condition,
+      NumericExpr true_expr, NumericExpr false_expr);
 
   // Creates an ASL expression representing a sum with up to 3 arguments.
-  NumericExpr NewSum(int opcode, NumericExpr arg1, NumericExpr arg2, NumericExpr arg3 = NumericExpr());
+  NumericExpr NewSum(int opcode, NumericExpr arg1,
+      NumericExpr arg2, NumericExpr arg3 = NumericExpr());
 
   IloConstraint ConvertLogical(NumericExpr e) {
     return d.Visit(LogicalExpr(ptr(e)));
@@ -284,7 +287,8 @@ void IlogCPTest::TearDown() {
   exprs_.clear();
 }
 
-NumericExpr IlogCPTest::NewVarArg(int opcode, NumericExpr e1, NumericExpr e2, NumericExpr e3) {
+NumericExpr IlogCPTest::NewVarArg(int opcode,
+    NumericExpr e1, NumericExpr e2, NumericExpr e3) {
   expr_va e = {reinterpret_cast<efunc*>(opcode), 0, {0}, {0}, 0, 0, 0};
   expr_va *copy = new expr_va(e);
   expr *result(reinterpret_cast<expr*>(copy));
