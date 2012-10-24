@@ -88,7 +88,7 @@ class Expr {
 
   // Returns the operation code (opcode) of this expression.
   // The opcodes are defined in opcode.hd.
-  unsigned opcode() const {
+  int opcode() const {
     return reinterpret_cast<std::size_t>(expr_->op);
   }
 
@@ -96,7 +96,7 @@ class Expr {
   const char *opname() const;
 
   // Returns the type of this expression.
-  unsigned type() const { return optype[opcode()]; }
+  int type() const { return optype[opcode()]; }
 
   // Recursively compares two expressions and returns true if they are equal.
   friend bool Equal(Expr e1, Expr e2);
@@ -122,17 +122,6 @@ class LogicalExpr : public Expr {
  public:
   // Constructs a NumericExpr object.
   explicit LogicalExpr(expr *e = 0) : Expr(e) {}
-};
-
-template <typename ExprT>
-class ExprProxy {
- private:
-  ExprT expr_;
-
- public:
-  explicit ExprProxy(expr *e) : expr_(e) {}
-
-  ExprT *operator->() const { return &expr_; }
 };
 
 // A unary expression.
@@ -169,7 +158,18 @@ class BinaryExpr : public NumericExpr {
   NumericExpr rhs() const { return NumericExpr(expr_->R.e); }
 };
 
-// A variable argument expression.
+template <typename ExprT>
+class ExprProxy {
+ private:
+  ExprT expr_;
+
+ public:
+  explicit ExprProxy(expr *e) : expr_(e) {}
+
+  ExprT *operator->() const { return &expr_; }
+};
+
+// A variable argument expression such as min.
 class VarArgExpr : public NumericExpr {
  private:
   explicit VarArgExpr(NumericExpr e) : NumericExpr(e) {
@@ -331,15 +331,18 @@ class PiecewiseLinearTerm : public NumericExpr {
   friend class ExprVisitor;
 
  public:
+  // Returns the number of slopes in this term.
   int num_slopes() const {
     assert(expr_->L.p->n >= 1);
     return expr_->L.p->n;
   }
 
+  // Returns the number of breakpoints in this term.
   int num_breakpoints() const {
     return num_slopes() - 1;
   }
 
+  // Returns the number of slopes in this term.
   double slope(int index) const {
     assert(index >= 0 && index < num_slopes());
     return expr_->L.p->bs[2 * index];
@@ -852,20 +855,20 @@ class Driver {
   ASL_fg *asl() const { return asl_; }
 
   // Returns the nonlinear part of an objective expression.
-  NumericExpr GetNonlinearObjExpr(unsigned obj_index) const {
-    assert(obj_index < static_cast<unsigned>(asl_->i.n_obj_));
+  NumericExpr GetNonlinearObjExpr(int obj_index) const {
+    assert(obj_index >= 0 && obj_index < asl_->i.n_obj_);
     return NumericExpr(asl_->I.obj_de_[obj_index].e);
   }
 
   // Returns the nonlinear part of a constraint expression.
-  NumericExpr GetNonlinearConExpr(unsigned con_index) const {
-    assert(con_index < static_cast<unsigned>(asl_->i.n_con_));
+  NumericExpr GetNonlinearConExpr(int con_index) const {
+    assert(con_index >= 0 && con_index < asl_->i.n_con_);
     return NumericExpr(asl_->I.con_de_[con_index].e);
   }
 
   // Returns a logical constraint expression.
-  LogicalExpr GetLogicalConExpr(unsigned lcon_index) const {
-    assert(lcon_index < static_cast<unsigned>(asl_->i.n_lcon_));
+  LogicalExpr GetLogicalConExpr(int lcon_index) const {
+    assert(lcon_index >= 0 && lcon_index < asl_->i.n_lcon_);
     return LogicalExpr(asl_->I.lcon_de_[lcon_index].e);
   }
 };
