@@ -69,28 +69,41 @@ class Expr {
   void True() const {}
   typedef void (Expr::*SafeBool)() const;
 
+  friend class ExprBuilder;
+
  public:
   // Constructs an Expr object representing a reference to the AMPL
   // expression e.
   explicit Expr(expr *e = 0) : expr_(e) {}
 
-  // TODO(viz): remove
-  expr *get() const { return expr_; }
-  
-  operator SafeBool() const { return expr_ != 0 ? &Expr::True : 0; }
+  // Returns a bool-like value that can only be used in conditions and
+  // evaluates to "true" if this expression is not null and "false" otherwise.
+  // Example:
+  //   void foo(Expr e) {
+  //     if (e) {
+  //       // Do something if e is not null.
+  //     }
+  //   }
+  operator SafeBool() const { return expr_ ? &Expr::True : 0; }
 
   // Returns the operation code (opcode) of this expression.
   // The opcodes are defined in opcode.hd.
   unsigned opcode() const {
     return reinterpret_cast<std::size_t>(expr_->op);
   }
-  
+
   // Returns the operation name of this expression.
   const char *opname() const;
 
   // Returns the type of this expression.
   unsigned type() const { return optype[opcode()]; }
+
+  // Recursively compares two expressions and returns true if they are equal.
+  friend bool Equal(Expr e1, Expr e2);
 };
+
+template <typename T>
+T Cast(Expr e);
 
 // A numeric expression.
 class NumericExpr : public Expr {
@@ -98,22 +111,16 @@ class NumericExpr : public Expr {
   NumericExpr(Expr e) : Expr(e) {}
 
  public:
-  // Constructs a Expr object representing a reference to the AMPL
-  // expression e.
+  // Constructs a NumericExpr object.
   explicit NumericExpr(expr *e = 0) : Expr(e) {}
 };
-
-// Returns true if the expressions e1 and e2 are structurally equal.
-bool Equal(Expr e1, Expr e2);
 
 // A logical or constraint expression.
 class LogicalExpr : public Expr {
  public:
+  // Constructs a NumericExpr object.
   explicit LogicalExpr(expr *e = 0) : Expr(e) {}
 };
-
-template <typename T>
-T Cast(Expr e);
 
 template <typename ExprT>
 class ExprProxy {

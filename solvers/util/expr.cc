@@ -129,8 +129,8 @@ bool Equal(Expr expr1, Expr expr2) {
   if (expr1.opcode() != expr2.opcode())
     return false;
   
-  expr *e1 = expr1.get();
-  expr *e2 = expr2.get();
+  expr *e1 = expr1.expr_;
+  expr *e2 = expr2.expr_;
   unsigned type = expr1.type();
   switch (type) {
     case OPTYPE_UNARY:
