@@ -494,19 +494,19 @@ TEST_F(IlogCPTest, ConvertInvalidExprThrows) {
   size_t i = 0;
   for (size_t num_ops = sizeof(ops) / sizeof(*ops); i < num_ops; ++i) {
     EXPECT_THROW(d.Visit(
-      NewBinary(ops[i], NewVar(0), NewVar(1))), InvalidExprError);
+      NewBinary(ops[i], NewVar(0), NewVar(1))), InvalidNumericExprError);
   }
   // Paranoid: make sure that the loop body has been executed enough times.
   EXPECT_EQ(23u, i);
 
   EXPECT_THROW(d.Visit(
-    NewSum(OPNUMBEROFs, NewVar(0), NewVar(1))), InvalidExprError);
+    NewSum(OPNUMBEROFs, NewVar(0), NewVar(1))), InvalidNumericExprError);
   EXPECT_THROW(d.Visit(
-    NewSum(OPALLDIFF, NewVar(0), NewVar(1))), InvalidExprError);
+    NewSum(OPALLDIFF, NewVar(0), NewVar(1))), InvalidNumericExprError);
   EXPECT_THROW(d.Visit(
-    NewSum(ANDLIST, NewVar(0), NewVar(1))), InvalidExprError);
+    NewSum(ANDLIST, NewVar(0), NewVar(1))), InvalidNumericExprError);
   EXPECT_THROW(d.Visit(
-    NewSum(ORLIST, NewVar(0), NewVar(1))), InvalidExprError);
+    NewSum(ORLIST, NewVar(0), NewVar(1))), InvalidNumericExprError);
   
   EXPECT_THROW(d.Visit(
     NewBinary(OPprecision, NewVar(0), NewVar(1))), UnsupportedExprError);
