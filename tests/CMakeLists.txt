@@ -26,6 +26,7 @@ configure_file(
 
 add_ampl_library(testlib testlib.cc)
 add_library(function function.cc function.h)
+add_dependencies(function arith_h)
 
 cxx_test_with_flags(function_test "" "gtest;function;${SOLVER_LIBS}"
   test_main.cc function_test.cc)
