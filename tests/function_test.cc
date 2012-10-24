@@ -51,10 +51,10 @@ namespace {
 
 TEST(FunctionTest, Library) {
   Library lib("testlib.dll");
-  EXPECT_EQ(0, lib.GetNumFunctions());
+  EXPECT_EQ(0u, lib.GetNumFunctions());
   EXPECT_TRUE(lib.GetFunction("foo") == nullptr);
   lib.Load();
-  EXPECT_EQ(2, lib.GetNumFunctions());
+  EXPECT_EQ(2u, lib.GetNumFunctions());
   EXPECT_TRUE(lib.GetFunction("nonexistent") == nullptr);
   const func_info *fi = lib.GetFunction("foo");
   EXPECT_TRUE(fi != nullptr);
