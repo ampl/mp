@@ -56,6 +56,7 @@ check_c_compiler_flag(-fPIC HAVE_FPIC_FLAG)
 # and has a suffix ".dll".
 macro(add_ampl_library name)
   add_library(${name} SHARED ${ARGN})
+  add_dependencies(${name} arith_h)
   set_target_properties(${name} PROPERTIES PREFIX "")
   set_target_properties(${name} PROPERTIES SUFFIX ".dll")
 endmacro()
