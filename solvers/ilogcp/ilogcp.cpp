@@ -455,7 +455,8 @@ keyword IlogCPDriver::keywords_[] = {
 };
 
 IlogCPDriver::IlogCPDriver() :
-   mod_(env_), asl(Driver::asl()), gotopttype(false), n_badvals(0) {
+   mod_(env_), asl(Driver::asl()), gotopttype(false), n_badvals(0),
+   debug_(false) {
   char *s;
   int n;
   size_t L;
@@ -659,8 +660,8 @@ int IlogCPDriver::wantsol() const {
 
 IloNumExprArray IlogCPDriver::ConvertArgs(VarArgExpr e) {
   IloNumExprArray args(env_);
-  for (VarArgExpr::iterator i = e.begin(); NumericExpr arg = *i; ++i)
-    args.add(Visit(arg));
+  for (VarArgExpr::iterator i = e.begin(); *i; ++i)
+    args.add(Visit(*i));
   return args;
 }
 
