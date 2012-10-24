@@ -27,6 +27,7 @@
 #include <cstddef>
 #include <iterator>
 #include <stdexcept>
+#include <string>
 
 extern "C" {
 #include "solvers/nlp.h"
