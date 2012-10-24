@@ -406,7 +406,7 @@ inline Variable Cast<Variable>(Expr e) {
 class NumberOfExpr : public NumericExpr {
  private:
   explicit NumberOfExpr(NumericExpr e) : NumericExpr(e) {
-    assert(opcode() == OPNUMBEROF);
+    assert(!expr_ || opcode() == OPNUMBEROF);
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -463,7 +463,7 @@ class RelationalExpr : public LogicalExpr {
 class NotExpr : public LogicalExpr {
  private:
   explicit NotExpr(LogicalExpr e) : LogicalExpr(e) {
-    assert(opcode() == OPNOT);
+    assert(!expr_ || opcode() == OPNOT);
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -576,9 +576,9 @@ public:
 
 // An exception that is thrown when an invalid numeric expression
 // is encountered.
-class InvalidExprError : public Error {
+class InvalidNumericExprError : public Error {
 public:
-  explicit InvalidExprError(const char *expr) :
+  explicit InvalidNumericExprError(const char *expr) :
     Error(std::string("invalid numeric expression: ") + expr) {}
 };
 
@@ -662,41 +662,42 @@ class ExprVisitor {
   Result VisitTrunc(BinaryExpr e) { return VisitUnhandledExpr(e); }
   Result VisitCount(CountExpr e) { return VisitUnhandledExpr(e); }
   Result VisitNumberOf(NumberOfExpr e) { return VisitUnhandledExpr(e); }
+  Result VisitPLTerm(PiecewiseLinearTerm t) { return VisitUnhandledExpr(t); }
   Result VisitConstExpPow(BinaryExpr e) { return VisitUnhandledExpr(e); }
   Result VisitPow2(UnaryExpr e) { return VisitUnhandledExpr(e); }
   Result VisitConstBasePow(BinaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitPLTerm(PiecewiseLinearTerm t) { return VisitUnhandledExpr(t); }
   Result VisitConstant(NumericConstant c) { return VisitUnhandledExpr(c); }
   Result VisitVariable(Variable v) { return VisitUnhandledExpr(v); }
 
-  LResult VisitConstant(LogicalConstant c) { return VisitUnhandledExpr(c); }
+  LResult VisitOr(BinaryLogicalExpr e) { return VisitUnhandledExpr(e); }
+  LResult VisitAnd(BinaryLogicalExpr e) { return VisitUnhandledExpr(e); }
   LResult VisitLess(RelationalExpr e) { return VisitUnhandledExpr(e); }
   LResult VisitLessEqual(RelationalExpr e) { return VisitUnhandledExpr(e); }
   LResult VisitEqual(RelationalExpr e) { return VisitUnhandledExpr(e); }
   LResult VisitGreaterEqual(RelationalExpr e) { return VisitUnhandledExpr(e); }
   LResult VisitGreater(RelationalExpr e) { return VisitUnhandledExpr(e); }
   LResult VisitNotEqual(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitAtMost(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitNotAtMost(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitAtLeast(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitNotAtLeast(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitExactly(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitNotExactly(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitOr(BinaryLogicalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitExists(IteratedLogicalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitAnd(BinaryLogicalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitForAll(IteratedLogicalExpr e) { return VisitUnhandledExpr(e); }
   LResult VisitNot(NotExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitIff(BinaryLogicalExpr e) { return VisitUnhandledExpr(e); }
+  LResult VisitAtLeast(RelationalExpr e) { return VisitUnhandledExpr(e); }
+  LResult VisitAtMost(RelationalExpr e) { return VisitUnhandledExpr(e); }
+  LResult VisitExactly(RelationalExpr e) { return VisitUnhandledExpr(e); }
+  LResult VisitNotAtLeast(RelationalExpr e) { return VisitUnhandledExpr(e); }
+  LResult VisitNotAtMost(RelationalExpr e) { return VisitUnhandledExpr(e); }
+  LResult VisitNotExactly(RelationalExpr e) { return VisitUnhandledExpr(e); }
+  LResult VisitForAll(IteratedLogicalExpr e) { return VisitUnhandledExpr(e); }
+  LResult VisitExists(IteratedLogicalExpr e) { return VisitUnhandledExpr(e); }
   LResult VisitImplication(ImplicationExpr e) { return VisitUnhandledExpr(e); }
+  LResult VisitIff(BinaryLogicalExpr e) { return VisitUnhandledExpr(e); }
   LResult VisitAllDiff(AllDiffExpr e) { return VisitUnhandledExpr(e); }
+  LResult VisitConstant(LogicalConstant c) { return VisitUnhandledExpr(c); }
 };
 
 #define AMPL_DISPATCH(call) static_cast<Impl*>(this)->call
 
 template <typename Impl, typename Result, typename LResult>
 Result ExprVisitor<Impl, Result, LResult>::Visit(NumericExpr e) {
-  // TODO(viz): check that all opcodes are handled
+  // All expressions except OPNUMBEROFs, OPIFSYM, OPFUNCALL and OPHOL
+  // are supported.
   switch (e.opcode()) {
   case OPPLUS:
     return AMPL_DISPATCH(VisitPlus(BinaryExpr(e)));
@@ -770,33 +771,34 @@ Result ExprVisitor<Impl, Result, LResult>::Visit(NumericExpr e) {
     return AMPL_DISPATCH(VisitRound(BinaryExpr(e)));
   case OPtrunc:
     return AMPL_DISPATCH(VisitTrunc(BinaryExpr(e)));
+  case OPCOUNT:
+    return AMPL_DISPATCH(VisitCount(CountExpr(e)));
+  case OPNUMBEROF:
+    return AMPL_DISPATCH(VisitNumberOf(NumberOfExpr(e)));
+  case OPPLTERM:
+    return AMPL_DISPATCH(VisitPLTerm(PiecewiseLinearTerm(e)));
   case OP1POW:
     return AMPL_DISPATCH(VisitConstExpPow(BinaryExpr(e)));
   case OP2POW:
     return AMPL_DISPATCH(VisitPow2(UnaryExpr(e)));
   case OPCPOW:
     return AMPL_DISPATCH(VisitConstBasePow(BinaryExpr(e)));
-  case OPPLTERM:
-    return AMPL_DISPATCH(VisitPLTerm(PiecewiseLinearTerm(e)));
   case OPNUM:
     return AMPL_DISPATCH(VisitNumber(NumericConstant(e)));
   case OPVARVAL:
     return AMPL_DISPATCH(VisitVariable(Variable(e)));
-  case OPCOUNT:
-    return AMPL_DISPATCH(VisitCount(CountExpr(e)));
-  case OPNUMBEROF:
-    return AMPL_DISPATCH(VisitNumberOf(NumberOfExpr(e)));
   default:
-    throw InvalidExprError(e.opname());
+    throw InvalidNumericExprError(e.opname());
   }
 }
 
 template <typename Impl, typename Result, typename LResult>
 LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
-  // TODO(viz): check that all opcodes are handled
   switch (e.opcode()) {
-  case OPNUM:
-    return AMPL_DISPATCH(VisitConstant(LogicalConstant(e)));
+  case OPOR:
+    return AMPL_DISPATCH(VisitOr(BinaryLogicalExpr(e)));
+  case OPAND:
+    return AMPL_DISPATCH(VisitAnd(BinaryLogicalExpr(e)));
   case LT:
     return AMPL_DISPATCH(VisitLess(RelationalExpr(e)));
   case LE:
@@ -809,34 +811,32 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
     return AMPL_DISPATCH(VisitGreater(RelationalExpr(e)));
   case NE:
     return AMPL_DISPATCH(VisitNotEqual(RelationalExpr(e)));
-  case OPATMOST:
-    return AMPL_DISPATCH(VisitAtMost(RelationalExpr(e)));
-  case OPNOTATMOST:
-    return AMPL_DISPATCH(VisitNotAtMost(RelationalExpr(e)));
-  case OPATLEAST:
-    return AMPL_DISPATCH(VisitAtLeast(RelationalExpr(e)));
-  case OPNOTATLEAST:
-    return AMPL_DISPATCH(VisitNotAtLeast(RelationalExpr(e)));
-  case OPEXACTLY:
-    return AMPL_DISPATCH(VisitExactly(RelationalExpr(e)));
-  case OPNOTEXACTLY:
-    return AMPL_DISPATCH(VisitNotExactly(RelationalExpr(e)));
-  case OPOR:
-    return AMPL_DISPATCH(VisitOr(BinaryLogicalExpr(e)));
-  case ORLIST:
-    return AMPL_DISPATCH(VisitExists(IteratedLogicalExpr(e)));
-  case OPAND:
-    return AMPL_DISPATCH(VisitAnd(BinaryLogicalExpr(e)));
-  case ANDLIST:
-    return AMPL_DISPATCH(VisitForAll(IteratedLogicalExpr(e)));
   case OPNOT:
     return AMPL_DISPATCH(VisitNot(NotExpr(e)));
-  case OP_IFF:
-    return AMPL_DISPATCH(VisitIff(BinaryLogicalExpr(e)));
+  case OPATLEAST:
+    return AMPL_DISPATCH(VisitAtLeast(RelationalExpr(e)));
+  case OPATMOST:
+    return AMPL_DISPATCH(VisitAtMost(RelationalExpr(e)));
+  case OPEXACTLY:
+    return AMPL_DISPATCH(VisitExactly(RelationalExpr(e)));
+  case OPNOTATLEAST:
+    return AMPL_DISPATCH(VisitNotAtLeast(RelationalExpr(e)));
+  case OPNOTATMOST:
+    return AMPL_DISPATCH(VisitNotAtMost(RelationalExpr(e)));
+  case OPNOTEXACTLY:
+    return AMPL_DISPATCH(VisitNotExactly(RelationalExpr(e)));
+  case ANDLIST:
+    return AMPL_DISPATCH(VisitForAll(IteratedLogicalExpr(e)));
+  case ORLIST:
+    return AMPL_DISPATCH(VisitExists(IteratedLogicalExpr(e)));
   case OPIMPELSE:
     return AMPL_DISPATCH(VisitImplication(ImplicationExpr(e)));
+  case OP_IFF:
+    return AMPL_DISPATCH(VisitIff(BinaryLogicalExpr(e)));
   case OPALLDIFF:
     return AMPL_DISPATCH(VisitAllDiff(AllDiffExpr(e)));
+  case OPNUM:
+    return AMPL_DISPATCH(VisitConstant(LogicalConstant(e)));
   default:
     throw InvalidLogicalExprError(e.opname());
   }
