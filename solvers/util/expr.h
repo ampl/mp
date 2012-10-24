@@ -843,35 +843,6 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
 }
 
 #undef AMPL_DISPATCH
-
-class Driver {
- private:
-  ASL_fg *asl_;
-
- public:
-  Driver() : asl_(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))) {}
-  virtual ~Driver() { ASL_free(reinterpret_cast<ASL**>(&asl_)); }
-
-  ASL_fg *asl() const { return asl_; }
-
-  // Returns the nonlinear part of an objective expression.
-  NumericExpr GetNonlinearObjExpr(int obj_index) const {
-    assert(obj_index >= 0 && obj_index < asl_->i.n_obj_);
-    return NumericExpr(asl_->I.obj_de_[obj_index].e);
-  }
-
-  // Returns the nonlinear part of a constraint expression.
-  NumericExpr GetNonlinearConExpr(int con_index) const {
-    assert(con_index >= 0 && con_index < asl_->i.n_con_);
-    return NumericExpr(asl_->I.con_de_[con_index].e);
-  }
-
-  // Returns a logical constraint expression.
-  LogicalExpr GetLogicalConExpr(int lcon_index) const {
-    assert(lcon_index >= 0 && lcon_index < asl_->i.n_lcon_);
-    return LogicalExpr(asl_->I.lcon_de_[lcon_index].e);
-  }
-};
 }
 
 #endif  // SOLVERS_UTIL_EXPR_H_
