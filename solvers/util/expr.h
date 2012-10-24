@@ -102,6 +102,8 @@ class Expr {
   friend bool Equal(Expr e1, Expr e2);
 };
 
+// Casts an expression to type T. Returns a null expression if the cast
+// is not possible.
 template <typename T>
 T Cast(Expr e);
 
@@ -133,7 +135,7 @@ class ExprProxy {
   ExprT *operator->() const { return &expr_; }
 };
 
-// An unary expression.
+// A unary expression.
 class UnaryExpr : public NumericExpr {
  private:
   explicit UnaryExpr(NumericExpr e) : NumericExpr(e) {
@@ -194,7 +196,10 @@ class VarArgExpr : public NumericExpr {
     iterator() : de_(&END) {}
 
     NumericExpr operator*() const { return NumericExpr(de_->e); }
-    ExprProxy<NumericExpr> operator->() const { return ExprProxy<NumericExpr>(de_->e); }
+
+    ExprProxy<NumericExpr> operator->() const {
+      return ExprProxy<NumericExpr>(de_->e);
+    }
 
     iterator &operator++() {
       ++de_;
@@ -418,6 +423,7 @@ class NumberOfExpr : public NumericExpr {
   }
 };
 
+// A logical constant.
 class LogicalConstant : public LogicalExpr {
  private:
   explicit LogicalConstant(LogicalExpr e) : LogicalExpr(e) {
@@ -551,34 +557,34 @@ class AllDiffExpr : public LogicalExpr {
   }
 };
 
-/// A general solver error.
+// A general error.
 class Error : public std::runtime_error {
 public:
   explicit Error(const std::string &message) : std::runtime_error(message) {}
 };
 
-/// An exception that is thrown when an ASL expression not supported
-/// by the solver is encountered.
+// An exception that is thrown when an ASL expression not supported
+// by the solver is encountered.
 class UnsupportedExprError : public Error {
 public:
   explicit UnsupportedExprError(const char *expr) :
-  Error(std::string("unsupported expression: ") + expr) {}
+    Error(std::string("unsupported expression: ") + expr) {}
 };
 
-/// An exception that is thrown when an invalid arithmetic expression
-/// is encountered.
+// An exception that is thrown when an invalid numeric expression
+// is encountered.
 class InvalidExprError : public Error {
 public:
   explicit InvalidExprError(const char *expr) :
-  Error(std::string("invalid arithmetic expression: ") + expr) {}
+    Error(std::string("invalid numeric expression: ") + expr) {}
 };
 
-/// An exception that is thrown when an invalid logical or constraint
-/// expression is encountered.
+// An exception that is thrown when an invalid logical or constraint
+// expression is encountered.
 class InvalidLogicalExprError : public Error {
 public:
   explicit InvalidLogicalExprError(const char *expr) :
-  Error(std::string("invalid logical expression: ") + expr) {}
+    Error(std::string("invalid logical expression: ") + expr) {}
 };
 
 // An expression visitor.
@@ -596,7 +602,7 @@ public:
 //  class MyExprVisitor : public ExprVisitor<MyExprVisitor, double> {
 //   public:
 //    double VisitPlus(BinaryExpr e) { return Visit(e.lhs()) + Visit(e.rhs()); }
-//    double VisitNumber(Number n) { return n.value(); }
+//    double VisitConstant(NumericConstant n) { return n.value(); }
 //  };
 //
 // ExprVisitor uses the curiously recurring template pattern:
@@ -834,6 +840,35 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
 }
 
 #undef AMPL_DISPATCH
+
+class Driver {
+ private:
+  ASL_fg *asl_;
+
+ public:
+  Driver() : asl_(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))) {}
+  virtual ~Driver() { ASL_free(reinterpret_cast<ASL**>(&asl_)); }
+
+  ASL_fg *asl() const { return asl_; }
+
+  // Returns the nonlinear part of an objective expression.
+  NumericExpr GetNonlinearObjExpr(unsigned obj_index) const {
+    assert(obj_index < static_cast<unsigned>(asl_->i.n_obj_));
+    return NumericExpr(asl_->I.obj_de_[obj_index].e);
+  }
+
+  // Returns the nonlinear part of a constraint expression.
+  NumericExpr GetNonlinearConExpr(unsigned con_index) const {
+    assert(con_index < static_cast<unsigned>(asl_->i.n_con_));
+    return NumericExpr(asl_->I.con_de_[con_index].e);
+  }
+
+  // Returns a logical constraint expression.
+  LogicalExpr GetLogicalConExpr(unsigned lcon_index) const {
+    assert(lcon_index < static_cast<unsigned>(asl_->i.n_lcon_));
+    return LogicalExpr(asl_->I.lcon_de_[lcon_index].e);
+  }
+};
 }
 
 #endif  // SOLVERS_UTIL_EXPR_H_

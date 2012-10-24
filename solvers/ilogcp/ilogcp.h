@@ -1,10 +1,10 @@
 #ifndef AMPL_SOLVERS_CONCERT_H
 #define AMPL_SOLVERS_CONCERT_H
 
-#include <string.h>	/* This and -fpermissive seem to be needed for MacOSX, */
+#include <string.h> /* This and -fpermissive seem to be needed for MacOSX, */
                     /* at least with g++ 4.6.  Otherwise there are errors */
                     /* with iloconcert/iloenv.h . */
-#include <limits.h>	/* Needed for g++ -m32 on MacOSX. */
+#include <limits.h> /* Needed for g++ -m32 on MacOSX. */
 #include <memory>
 #include <vector>
 #include <ilconcert/ilomodel.h>
@@ -104,12 +104,12 @@ class CPOptimizer : public Optimizer {
       std::vector<double> &primal, std::vector<double> &dual) const;
 };
 
-class Driver;
+class IlogCPDriver;
   
-typedef ExprVisitor<Driver, IloExpr, IloConstraint> Visitor;
+typedef ExprVisitor<IlogCPDriver, IloExpr, IloConstraint> Visitor;
   
-// The Ilogcp driver for AMPL.
-class Driver : public Visitor {
+// The IlogCP driver for AMPL.
+class IlogCPDriver : public Driver, public Visitor {
  private:
   IloEnv env_;
   IloModel mod_;
@@ -125,8 +125,8 @@ class Driver : public Visitor {
   static keyword keywords_[];
 
   // Do not implement.
-  Driver(const Driver&);
-  Driver &operator=(const Driver&);
+  IlogCPDriver(const IlogCPDriver&);
+  IlogCPDriver &operator=(const IlogCPDriver&);
 
  public:
   // Options accessible from AMPL.
@@ -166,8 +166,8 @@ class Driver : public Visitor {
   IloNumExprArray ConvertArgs(VarArgExpr e);
   
  public:
-  Driver();
-  virtual ~Driver();
+  IlogCPDriver();
+  virtual ~IlogCPDriver();
 
   IloEnv env() const { return env_; }
   IloModel mod() const { return mod_; }
