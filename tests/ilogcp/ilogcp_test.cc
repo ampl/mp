@@ -35,6 +35,15 @@ using namespace ampl;
 
 #define DATA_DIR "../data/"
 
+namespace ampl {
+class ExprBuilder {
+ public:
+  static expr *GetExprPtr(Expr e) {
+    return e.expr_;
+  }
+};
+}
+
 namespace {
 
 bool AreBothSpaces(char lhs, char rhs) { return lhs == ' ' && rhs == ' '; }
@@ -108,6 +117,10 @@ struct EnumValue {
   IloCP::ParameterValues value;
 };
 
+expr *ptr(Expr e) {
+  return ampl::ExprBuilder::GetExprPtr(e);
+}
+
 class IlogCPTest : public ::testing::Test {
  protected:
   Driver d;
@@ -146,19 +159,19 @@ class IlogCPTest : public ::testing::Test {
 
   // Creates an unary ASL expression.
   NumericExpr NewUnary(int opcode, NumericExpr arg) {
-    expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {arg.get()}, {0}, 0};
+    expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {ptr(arg)}, {0}, 0};
     return NewExpr(new expr(e));
   }
 
   // Creates a binary ASL expression.
   NumericExpr NewBinary(int opcode, NumericExpr lhs, NumericExpr rhs) {
     expr e = {reinterpret_cast<efunc*>(opcode), 0, 0,
-              {lhs.get()}, {rhs.get()}, 0};
+              {ptr(lhs)}, {ptr(rhs)}, 0};
     return NewExpr(new expr(e));
   }
 
   static de MakeDE(NumericExpr e) {
-    de result = {e.get(), 0, {0}};
+    de result = {ptr(e), 0, {0}};
     return result;
   }
 
@@ -174,7 +187,7 @@ class IlogCPTest : public ::testing::Test {
   NumericExpr NewSum(int opcode, NumericExpr arg1, NumericExpr arg2, NumericExpr arg3 = NumericExpr());
 
   IloConstraint ConvertLogical(NumericExpr e) {
-    return d.Visit(LogicalExpr(e.get()));
+    return d.Visit(LogicalExpr(ptr(e)));
   }
 
   double EvalRem(double lhs, double rhs) {
@@ -287,32 +300,33 @@ NumericExpr IlogCPTest::NewVarArg(int opcode, NumericExpr e1, NumericExpr e2, Nu
 NumericExpr IlogCPTest::NewPLTerm(int size, const double *args, int var_index) {
   expr e = {reinterpret_cast<efunc*>(OPPLTERM), 0, 0, {0}, {0}, 0};
   NumericExpr pl(NewExpr(new expr(e)));
-  pl.get()->L.p = static_cast<plterm*>(
+  ptr(pl)->L.p = static_cast<plterm*>(
       std::calloc(1, sizeof(plterm) + sizeof(real) * (size - 1)));
-  pl.get()->L.p->n = (size + 1) / 2;
-  real *bs = pl.get()->L.p->bs;
+  ptr(pl)->L.p->n = (size + 1) / 2;
+  real *bs = ptr(pl)->L.p->bs;
   for (int i = 0; i < size; i++)
     bs[i] = args[i];
-  pl.get()->R.e = NewVar(var_index).get();
+  ptr(pl)->R.e = ptr(NewVar(var_index));
   return pl;
 }
 
 NumericExpr IlogCPTest::NewIf(int opcode, NumericExpr condition,
     NumericExpr true_expr, NumericExpr false_expr) {
-  expr_if e = {reinterpret_cast<efunc*>(opcode), 0, condition.get(),
-               true_expr.get(), false_expr.get(),
+  expr_if e = {reinterpret_cast<efunc*>(opcode), 0, ptr(condition),
+               ptr(true_expr), ptr(false_expr),
                0, 0, 0, 0, {0}, {0}, 0, 0};
   return NewExpr(reinterpret_cast<expr*>(new expr_if(e)));
 }
 
-NumericExpr IlogCPTest::NewSum(int opcode, NumericExpr arg1, NumericExpr arg2, NumericExpr arg3) {
+NumericExpr IlogCPTest::NewSum(int opcode,
+    NumericExpr arg1, NumericExpr arg2, NumericExpr arg3) {
   expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {0}, {0}, 0};
   NumericExpr sum(NewExpr(new expr(e)));
-  expr** args = sum.get()->L.ep = new expr*[3];
-  sum.get()->R.ep = args + (arg3.get() ? 3 : 2);
-  args[0] = arg1.get();
-  args[1] = arg2.get();
-  args[2] = arg3.get();
+  expr** args = ptr(sum)->L.ep = new expr*[3];
+  ptr(sum)->R.ep = args + (ptr(arg3) ? 3 : 2);
+  args[0] = ptr(arg1);
+  args[1] = ptr(arg2);
+  args[2] = ptr(arg3);
   return sum;
 }
 
@@ -767,7 +781,7 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
   string bounds = os.str();
   NumericExpr expr(NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)));
-  EXPECT_EQ("IloIntVar(10)" + bounds, str(d.Visit(NumericExpr(expr.get()))));
+  EXPECT_EQ("IloIntVar(10)" + bounds, str(d.Visit(NumericExpr(ptr(expr)))));
   EXPECT_EQ("IloIntVar(10)" + bounds, str(d.Visit(
       NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)))));
   d.FinishBuildingNumberOf();
