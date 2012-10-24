@@ -22,6 +22,7 @@
 
 #include "solvers/util/expr.h"
 
+#include <algorithm>
 #include <sstream>
 
 namespace {
@@ -124,14 +125,13 @@ const char *ExprBase::opname() const {
 
 const de VarArgExpr::END = {0};
 
-bool Equal(Expr ee1, Expr ee2) {
-  expr *e1 = ee1.get();
-  expr *e2 = ee2.get();
-  size_t opnum = reinterpret_cast<size_t>(e1->op);
-  if (opnum != reinterpret_cast<size_t>(e2->op))
+bool Equal(Expr expr1, Expr expr2) {
+  if (expr1.opcode() != expr2.opcode())
     return false;
   
-  int type = optype[opnum];
+  expr *e1 = expr1.get();
+  expr *e2 = expr2.get();
+  unsigned type = expr1.type();
   switch (type) {
     case OPTYPE_UNARY:
       return Equal(Expr(e1->L.e), Expr(e2->L.e));
@@ -181,11 +181,11 @@ bool Equal(Expr ee1, Expr ee2) {
       
     case OPTYPE_FUNCALL:
     case OPTYPE_STRING:
-      throw UnsupportedExprError(ee1.opname());
+      throw UnsupportedExprError(expr1.opname());
       
     case OPTYPE_NUMBER:
-      return reinterpret_cast<const expr_n*>(e1)->v
-      == reinterpret_cast<const expr_n*>(e2)->v;
+      return reinterpret_cast<const expr_n*>(e1)->v ==
+             reinterpret_cast<const expr_n*>(e2)->v;
       
     case OPTYPE_VARIABLE:
       return e1->a == e2->a;
