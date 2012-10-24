@@ -9,9 +9,9 @@ using std::endl;
 
 int main(int, char **argv) {
   // Driver should be destroyed after any IloException is handled.
-  std::auto_ptr<ampl::Driver> d;
+  std::auto_ptr<ampl::IlogCPDriver> d;
   try {
-    d.reset(new ampl::Driver());
+    d.reset(new ampl::IlogCPDriver());
     return d->run(argv);
   } catch (const IloException &e) {
     cerr << "Error: " << e << endl;
