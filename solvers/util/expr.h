@@ -37,7 +37,8 @@ extern "C" {
 namespace ampl {
 
 // An operation type.
-// Operation types should be in sync with the codes in op_type.hd.
+// Numeric values for the operation types should be in sync with the ones in
+// op_type.hd.
 enum OpType {
   OPTYPE_UNARY    =  1, // Unary operation
   OPTYPE_BINARY   =  2, // Binary operation
@@ -52,8 +53,11 @@ enum OpType {
   OPTYPE_COUNT    = 11  // The count expression
 };
 
-// A base class for all expression classes.
-class ExprBase {
+// An expression.
+// An Expr object represents a handle (reference) to an expression so
+// it is cheap to construct and pass by value. A type safe way to
+// process expressions of different types is by using ExprVisitor.
+class Expr {
  protected:
   expr *expr_;
 
@@ -63,17 +67,17 @@ class ExprBase {
   }
 
   void True() const {}
-  typedef void (ExprBase::*SafeBool)() const;
+  typedef void (Expr::*SafeBool)() const;
 
  public:
-  // Constructs a ExprBase object representing a reference to the AMPL
+  // Constructs an Expr object representing a reference to the AMPL
   // expression e.
-  explicit ExprBase(expr *e = 0) : expr_(e) {}
+  explicit Expr(expr *e = 0) : expr_(e) {}
 
   // TODO(viz): remove
   expr *get() const { return expr_; }
   
-  operator SafeBool() const { return expr_ != 0 ? &ExprBase::True : 0; }
+  operator SafeBool() const { return expr_ != 0 ? &Expr::True : 0; }
 
   // Returns the operation code (opcode) of this expression.
   // The opcodes are defined in opcode.hd.
@@ -89,30 +93,27 @@ class ExprBase {
 };
 
 // A numeric expression.
-// An Expr object represents a handle (reference) to an expression so
-// it is cheap to construct and pass by value. A type safe way to
-// process expressions of different types is by using ExprVisitor.
-class NumericExpr : public ExprBase {
+class NumericExpr : public Expr {
  protected:
-  NumericExpr(ExprBase e) : ExprBase(e) {}
+  NumericExpr(Expr e) : Expr(e) {}
 
  public:
   // Constructs a Expr object representing a reference to the AMPL
   // expression e.
-  explicit NumericExpr(expr *e = 0) : ExprBase(e) {}
+  explicit NumericExpr(expr *e = 0) : Expr(e) {}
 };
 
 // Returns true if the expressions e1 and e2 are structurally equal.
-bool Equal(ExprBase e1, ExprBase e2);
+bool Equal(Expr e1, Expr e2);
 
 // A logical or constraint expression.
-class LogicalExpr : public ExprBase {
+class LogicalExpr : public Expr {
  public:
-  explicit LogicalExpr(expr *e = 0) : ExprBase(e) {}
+  explicit LogicalExpr(expr *e = 0) : Expr(e) {}
 };
 
 template <typename T>
-T Cast(ExprBase e);
+T Cast(Expr e);
 
 template <typename ExprT>
 class ExprProxy {
@@ -345,14 +346,14 @@ class PiecewiseLinearTerm : public NumericExpr {
 // A numeric constant.
 class NumericConstant : public NumericExpr {
  private:
-  explicit NumericConstant(ExprBase e) : NumericExpr(e) {
+  explicit NumericConstant(Expr e) : NumericExpr(e) {
     assert(HasTypeOrNull(OPTYPE_NUMBER));
   }
 
   template <typename Impl, typename Result, typename LResult>
   friend class ExprVisitor;
 
-  friend NumericConstant Cast<NumericConstant>(ExprBase);
+  friend NumericConstant Cast<NumericConstant>(Expr);
 
  public:
   // Returns the value of this number.
@@ -360,21 +361,21 @@ class NumericConstant : public NumericExpr {
 };
 
 template <>
-inline NumericConstant Cast<NumericConstant>(ExprBase e) {
-  return NumericConstant(e.opcode() == OPNUM ? e : ExprBase());
+inline NumericConstant Cast<NumericConstant>(Expr e) {
+  return NumericConstant(e.opcode() == OPNUM ? e : Expr());
 }
 
 // A variable.
 class Variable : public NumericExpr {
  private:
-  explicit Variable(ExprBase e) : NumericExpr(e) {
+  explicit Variable(Expr e) : NumericExpr(e) {
     assert(HasTypeOrNull(OPTYPE_VARIABLE));
   }
 
   template <typename Impl, typename Result, typename LResult>
   friend class ExprVisitor;
 
-  friend Variable Cast<Variable>(ExprBase);
+  friend Variable Cast<Variable>(Expr);
 
  public:
   // Returns the index of this variable.
@@ -382,8 +383,8 @@ class Variable : public NumericExpr {
 };
 
 template <>
-inline Variable Cast<Variable>(ExprBase e) {
-  return Variable(e.opcode() == OPVARVAL ? e : ExprBase());
+inline Variable Cast<Variable>(Expr e) {
+  return Variable(e.opcode() == OPVARVAL ? e : Expr());
 }
 
 // A numberof expression.
