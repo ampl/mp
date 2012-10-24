@@ -127,53 +127,53 @@ class IlogCPTest : public ::testing::Test {
   
   void TearDown();
 
-  Expr NewExpr(expr *e) {
+  NumericExpr NewExpr(expr *e) {
     exprs_.push_back(e);
-    return Expr(e);
+    return NumericExpr(e);
   }
   
   // Creates an ASL expression representing a number.
-  Expr NewNum(double n) {
+  NumericExpr NewNum(double n) {
     expr_n e = {reinterpret_cast<efunc_n*>(OPNUM), n};
     return NewExpr(reinterpret_cast<expr*>(new expr_n(e)));
   }
 
   // Creates an ASL expression representing a variable.
-  Expr NewVar(int var_index) {
+  NumericExpr NewVar(int var_index) {
     expr e = {reinterpret_cast<efunc*>(OPVARVAL), var_index, 0, {0}, {0}, 0};
     return NewExpr(new expr(e));
   }
 
   // Creates an unary ASL expression.
-  Expr NewUnary(int opcode, Expr arg) {
+  NumericExpr NewUnary(int opcode, NumericExpr arg) {
     expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {arg.get()}, {0}, 0};
     return NewExpr(new expr(e));
   }
 
   // Creates a binary ASL expression.
-  Expr NewBinary(int opcode, Expr lhs, Expr rhs) {
+  NumericExpr NewBinary(int opcode, NumericExpr lhs, NumericExpr rhs) {
     expr e = {reinterpret_cast<efunc*>(opcode), 0, 0,
               {lhs.get()}, {rhs.get()}, 0};
     return NewExpr(new expr(e));
   }
 
-  static de MakeDE(Expr e) {
+  static de MakeDE(NumericExpr e) {
     de result = {e.get(), 0, {0}};
     return result;
   }
 
   // Creates a variable-argument ASL expression with up to 3 arguments.
-  Expr NewVarArg(int opcode, Expr e1, Expr e2, Expr e3 = Expr());
+  NumericExpr NewVarArg(int opcode, NumericExpr e1, NumericExpr e2, NumericExpr e3 = NumericExpr());
 
-  Expr NewPLTerm(int size, const double *args, int var_index);
+  NumericExpr NewPLTerm(int size, const double *args, int var_index);
 
   // Creates an ASL expression representing if-then-else.
-  Expr NewIf(int opcode, Expr condition, Expr true_expr, Expr false_expr);
+  NumericExpr NewIf(int opcode, NumericExpr condition, NumericExpr true_expr, NumericExpr false_expr);
 
   // Creates an ASL expression representing a sum with up to 3 arguments.
-  Expr NewSum(int opcode, Expr arg1, Expr arg2, Expr arg3 = Expr());
+  NumericExpr NewSum(int opcode, NumericExpr arg1, NumericExpr arg2, NumericExpr arg3 = NumericExpr());
 
-  IloConstraint ConvertLogical(Expr e) {
+  IloConstraint ConvertLogical(NumericExpr e) {
     return d.Visit(LogicalExpr(e.get()));
   }
 
@@ -183,7 +183,7 @@ class IlogCPTest : public ::testing::Test {
   
   const char *GetOpName(int opcode) {
     expr e = {reinterpret_cast<efunc*>(opcode)};
-    return Expr(&e).opname();
+    return NumericExpr(&e).opname();
   }
 
   int RunDriver(const char *stub = nullptr, const char *opt = nullptr) {
@@ -247,9 +247,9 @@ void IlogCPTest::TearDown() {
   for (vector<expr*>::const_iterator
        i = exprs_.begin(), end = exprs_.end(); i != end; ++i) {
     expr *e = *i;
-    if (Expr(e).opcode() >= N_OPS)
+    if (NumericExpr(e).opcode() >= N_OPS)
       continue;
-    switch (Expr(e).type()) {
+    switch (NumericExpr(e).type()) {
       case OPTYPE_VARARG:
         delete reinterpret_cast<expr_va*>(e);
         break;
@@ -271,7 +271,7 @@ void IlogCPTest::TearDown() {
   exprs_.clear();
 }
 
-Expr IlogCPTest::NewVarArg(int opcode, Expr e1, Expr e2, Expr e3) {
+NumericExpr IlogCPTest::NewVarArg(int opcode, NumericExpr e1, NumericExpr e2, NumericExpr e3) {
   expr_va e = {reinterpret_cast<efunc*>(opcode), 0, {0}, {0}, 0, 0, 0};
   expr_va *copy = new expr_va(e);
   expr *result(reinterpret_cast<expr*>(copy));
@@ -279,14 +279,14 @@ Expr IlogCPTest::NewVarArg(int opcode, Expr e1, Expr e2, Expr e3) {
   args[0] = MakeDE(e1);
   args[1] = MakeDE(e2);
   args[2] = MakeDE(e3);
-  args[3] = MakeDE(Expr());
+  args[3] = MakeDE(NumericExpr());
   copy->L.d = args;
   return NewExpr(result);
 }
 
-Expr IlogCPTest::NewPLTerm(int size, const double *args, int var_index) {
+NumericExpr IlogCPTest::NewPLTerm(int size, const double *args, int var_index) {
   expr e = {reinterpret_cast<efunc*>(OPPLTERM), 0, 0, {0}, {0}, 0};
-  Expr pl(NewExpr(new expr(e)));
+  NumericExpr pl(NewExpr(new expr(e)));
   pl.get()->L.p = static_cast<plterm*>(
       std::calloc(1, sizeof(plterm) + sizeof(real) * (size - 1)));
   pl.get()->L.p->n = (size + 1) / 2;
@@ -297,17 +297,17 @@ Expr IlogCPTest::NewPLTerm(int size, const double *args, int var_index) {
   return pl;
 }
 
-Expr IlogCPTest::NewIf(int opcode, Expr condition,
-    Expr true_expr, Expr false_expr) {
+NumericExpr IlogCPTest::NewIf(int opcode, NumericExpr condition,
+    NumericExpr true_expr, NumericExpr false_expr) {
   expr_if e = {reinterpret_cast<efunc*>(opcode), 0, condition.get(),
                true_expr.get(), false_expr.get(),
                0, 0, 0, 0, {0}, {0}, 0, 0};
   return NewExpr(reinterpret_cast<expr*>(new expr_if(e)));
 }
 
-Expr IlogCPTest::NewSum(int opcode, Expr arg1, Expr arg2, Expr arg3) {
+NumericExpr IlogCPTest::NewSum(int opcode, NumericExpr arg1, NumericExpr arg2, NumericExpr arg3) {
   expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {0}, {0}, 0};
-  Expr sum(NewExpr(new expr(e)));
+  NumericExpr sum(NewExpr(new expr(e)));
   expr** args = sum.get()->L.ep = new expr*[3];
   sum.get()->R.ep = args + (arg3.get() ? 3 : 2);
   args[0] = arg1.get();
@@ -712,9 +712,9 @@ TEST_F(IlogCPTest, ConvertPLTerm) {
 }
 
 TEST_F(IlogCPTest, ConvertCount) {
-  Expr a(NewBinary(EQ, NewVar(0), NewNum(0)));
-  Expr b(NewBinary(LE, NewVar(1), NewNum(42)));
-  Expr c(NewBinary(GE, NewVar(2), NewNum(0)));
+  NumericExpr a(NewBinary(EQ, NewVar(0), NewNum(0)));
+  NumericExpr b(NewBinary(LE, NewVar(1), NewNum(42)));
+  NumericExpr c(NewBinary(GE, NewVar(2), NewNum(0)));
   EXPECT_EQ("x == 0 + y <= 42 + 0 <= theta",
       str(d.Visit(NewSum(OPCOUNT, a, b, c))));
 }
@@ -766,8 +766,8 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
   std::ostringstream os;
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
   string bounds = os.str();
-  Expr expr(NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)));
-  EXPECT_EQ("IloIntVar(10)" + bounds, str(d.Visit(Expr(expr.get()))));
+  NumericExpr expr(NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)));
+  EXPECT_EQ("IloIntVar(10)" + bounds, str(d.Visit(NumericExpr(expr.get()))));
   EXPECT_EQ("IloIntVar(10)" + bounds, str(d.Visit(
       NewSum(OPNUMBEROF, NewNum(42), NewVar(0), NewVar(1)))));
   d.FinishBuildingNumberOf();
@@ -1305,12 +1305,12 @@ TEST_F(IlogCPTest, EqualCount) {
 
 TEST_F(IlogCPTest, EqualExprThrowsOnUnsupportedOp) {
   EXPECT_THROW(Equal(
-      NewUnary(OPFUNCALL, Expr()),
-      NewUnary(OPFUNCALL, Expr())),
+      NewUnary(OPFUNCALL, NumericExpr()),
+      NewUnary(OPFUNCALL, NumericExpr())),
       UnsupportedExprError);
   EXPECT_THROW(Equal(
-      NewUnary(OPHOL, Expr()),
-      NewUnary(OPHOL, Expr())),
+      NewUnary(OPHOL, NumericExpr()),
+      NewUnary(OPHOL, NumericExpr())),
       UnsupportedExprError);
 }
 

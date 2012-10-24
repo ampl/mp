@@ -125,7 +125,7 @@ const char *ExprBase::opname() const {
 
 const de VarArgExpr::END = {0};
 
-bool Equal(Expr expr1, Expr expr2) {
+bool Equal(ExprBase expr1, ExprBase expr2) {
   if (expr1.opcode() != expr2.opcode())
     return false;
   
@@ -134,17 +134,17 @@ bool Equal(Expr expr1, Expr expr2) {
   unsigned type = expr1.type();
   switch (type) {
     case OPTYPE_UNARY:
-      return Equal(Expr(e1->L.e), Expr(e2->L.e));
+      return Equal(ExprBase(e1->L.e), ExprBase(e2->L.e));
       
     case OPTYPE_BINARY:
-      return Equal(Expr(e1->L.e), Expr(e2->L.e)) &&
-             Equal(Expr(e1->R.e), Expr(e2->R.e));
+      return Equal(ExprBase(e1->L.e), ExprBase(e2->L.e)) &&
+             Equal(ExprBase(e1->R.e), ExprBase(e2->R.e));
       
     case OPTYPE_VARARG: {
       de *d1 = reinterpret_cast<const expr_va*>(e1)->L.d;
       de *d2 = reinterpret_cast<const expr_va*>(e2)->L.d;
       for (; d1->e && d2->e; d1++, d2++)
-        if (!Equal(Expr(d1->e), Expr(d2->e)))
+        if (!Equal(ExprBase(d1->e), ExprBase(d2->e)))
           return false;
       return !d1->e && !d2->e;
     }
@@ -158,15 +158,15 @@ bool Equal(Expr expr1, Expr expr2) {
         if (pce1[i] != pce2[i])
           return false;
       }
-      return Equal(Expr(e1->R.e), Expr(e2->R.e));
+      return Equal(ExprBase(e1->R.e), ExprBase(e2->R.e));
     }
       
     case OPTYPE_IF: {
       const expr_if *eif1 = reinterpret_cast<const expr_if*>(e1);
       const expr_if *eif2 = reinterpret_cast<const expr_if*>(e2);
-      return Equal(Expr(eif1->e), Expr(eif2->e)) &&
-             Equal(Expr(eif1->T), Expr(eif2->T)) &&
-             Equal(Expr(eif1->F), Expr(eif2->F));
+      return Equal(ExprBase(eif1->e), ExprBase(eif2->e)) &&
+             Equal(ExprBase(eif1->T), ExprBase(eif2->T)) &&
+             Equal(ExprBase(eif1->F), ExprBase(eif2->F));
     }
       
     case OPTYPE_SUM:
@@ -174,7 +174,7 @@ bool Equal(Expr expr1, Expr expr2) {
       expr **ep1 = e1->L.ep;
       expr **ep2 = e2->L.ep;
       for (; ep1 < e1->R.ep && ep2 < e2->R.ep; ep1++, ep2++)
-        if (!Equal(Expr(*ep1), Expr(*ep2)))
+        if (!Equal(ExprBase(*ep1), ExprBase(*ep2)))
           return false;
       return ep1 == e1->R.ep && ep2 == e2->R.ep;
     }
