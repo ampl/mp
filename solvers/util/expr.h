@@ -59,7 +59,7 @@ enum OpType {
 // process expressions of different types is by using ExprVisitor.
 class Expr {
  private:
-  static const char *const OP_NAMES[];
+  static const char *const OP_NAMES[N_OPS];
 
  protected:
   expr *expr_;
@@ -77,7 +77,9 @@ class Expr {
  public:
   // Constructs an Expr object representing a reference to the AMPL
   // expression e.
-  explicit Expr(expr *e = 0) : expr_(e) {}
+  explicit Expr(expr *e = 0) : expr_(e) {
+    assert(!expr_ || (opcode() >= 0 && opcode() < N_OPS));
+  }
 
   // Returns a value convertible to bool that can be used in conditions but not
   // in comparisons and evaluates to "true" if this expression is not null
@@ -98,8 +100,7 @@ class Expr {
 
   // Returns the operation name of this expression.
   const char *opname() const {
-    int code = opcode();
-    return code >= 0 && code < N_OPS ? OP_NAMES[opcode()] : "unknown";
+    return OP_NAMES[opcode()];
   }
 
   // Returns the type of this expression.
@@ -127,7 +128,7 @@ class NumericExpr : public Expr {
 // A logical or constraint expression.
 class LogicalExpr : public Expr {
  public:
-  // Constructs a NumericExpr object.
+  // Constructs a LogicalExpr object.
   explicit LogicalExpr(expr *e = 0) : Expr(e) {}
 };
 
