@@ -488,7 +488,7 @@ TEST_F(IlogCPTest, ConvertInvalidExprThrows) {
       OPFUNCALL, OPIFSYM, OPHOL,
       OPATLEAST, OPATMOST, OPEXACTLY,
       OPNOTATLEAST, OPNOTATMOST, OPNOTEXACTLY,
-      OPIMPELSE, OP_IFF, N_OPS, -1, 500
+      OPIMPELSE, OP_IFF
   };
   size_t i = 0;
   for (size_t num_ops = sizeof(ops) / sizeof(*ops); i < num_ops; ++i) {
@@ -496,7 +496,7 @@ TEST_F(IlogCPTest, ConvertInvalidExprThrows) {
       NewBinary(ops[i], NewVar(0), NewVar(1))), InvalidNumericExprError);
   }
   // Paranoid: make sure that the loop body has been executed enough times.
-  EXPECT_EQ(23u, i);
+  EXPECT_EQ(20u, i);
 
   EXPECT_THROW(d.Visit(
     NewSum(OPNUMBEROFs, NewVar(0), NewVar(1))), InvalidNumericExprError);
@@ -878,8 +878,7 @@ TEST_F(IlogCPTest, ConvertInvalidLogicalExprThrows) {
       OP_log, OP_exp, OP_cosh, OP_cos, OP_atanh, OP_atan2,
       OP_atan, OP_asinh, OP_asin, OP_acosh, OP_acos,
       OPintDIV, OPprecision, OPround, OPtrunc,
-      OP1POW, OP2POW, OPCPOW, OPFUNCALL, OPHOL, OPVARVAL,
-      N_OPS, -1, 500
+      OP1POW, OP2POW, OPCPOW, OPFUNCALL, OPHOL, OPVARVAL
   };
   size_t i = 0;
   for (size_t num_ops = sizeof(ops) / sizeof(*ops); i < num_ops; ++i) {
@@ -888,7 +887,7 @@ TEST_F(IlogCPTest, ConvertInvalidLogicalExprThrows) {
       InvalidLogicalExprError);
   }
   // Paranoid: make sure that the loop body has been executed enough times.
-  EXPECT_EQ(41u, i);
+  EXPECT_EQ(38u, i);
 
   EXPECT_THROW(ConvertLogical(
     NewVarArg(MINLIST, NewVar(0), NewVar(1))),
