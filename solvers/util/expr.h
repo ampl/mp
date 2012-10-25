@@ -107,7 +107,7 @@ class Expr {
   int type() const { return optype[opcode()]; }
 
   // Recursively compares two expressions and returns true if they are equal.
-  friend bool Equal(Expr e1, Expr e2);
+  friend bool AreEqual(Expr e1, Expr e2);
 };
 
 // Casts an expression to type T. Returns a null expression if the cast
@@ -586,16 +586,16 @@ public:
 // is encountered.
 class InvalidNumericExprError : public Error {
 public:
-  explicit InvalidNumericExprError(const char *expr) :
-    Error(std::string("invalid numeric expression: ") + expr) {}
+  explicit InvalidNumericExprError(NumericExpr e) :
+    Error(std::string("invalid numeric expression: ") + e.opname()) {}
 };
 
 // An exception that is thrown when an invalid logical or constraint
 // expression is encountered.
 class InvalidLogicalExprError : public Error {
 public:
-  explicit InvalidLogicalExprError(const char *expr) :
-    Error(std::string("invalid logical expression: ") + expr) {}
+  explicit InvalidLogicalExprError(LogicalExpr e) :
+    Error(std::string("invalid logical expression: ") + e.opname()) {}
 };
 
 // An expression visitor.
@@ -796,7 +796,7 @@ Result ExprVisitor<Impl, Result, LResult>::Visit(NumericExpr e) {
   case OPVARVAL:
     return AMPL_DISPATCH(VisitVariable(Variable(e)));
   default:
-    throw InvalidNumericExprError(e.opname());
+    throw InvalidNumericExprError(e);
   }
 }
 
@@ -846,7 +846,7 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
   case OPNUM:
     return AMPL_DISPATCH(VisitConstant(LogicalConstant(e)));
   default:
-    throw InvalidLogicalExprError(e.opname());
+    throw InvalidLogicalExprError(e);
   }
 }
 

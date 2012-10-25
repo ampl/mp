@@ -114,30 +114,30 @@ const char *const Expr::OP_NAMES[] = {
 
 const de VarArgExpr::END = {0};
 
-bool Equal(Expr expr1, Expr expr2) {
+bool AreEqual(Expr expr1, Expr expr2) {
   if (expr1.opcode() != expr2.opcode())
     return false;
-  
+
   expr *e1 = expr1.expr_;
   expr *e2 = expr2.expr_;
   unsigned type = expr1.type();
   switch (type) {
     case OPTYPE_UNARY:
-      return Equal(Expr(e1->L.e), Expr(e2->L.e));
-      
+      return AreEqual(Expr(e1->L.e), Expr(e2->L.e));
+
     case OPTYPE_BINARY:
-      return Equal(Expr(e1->L.e), Expr(e2->L.e)) &&
-             Equal(Expr(e1->R.e), Expr(e2->R.e));
-      
+      return AreEqual(Expr(e1->L.e), Expr(e2->L.e)) &&
+             AreEqual(Expr(e1->R.e), Expr(e2->R.e));
+
     case OPTYPE_VARARG: {
       de *d1 = reinterpret_cast<const expr_va*>(e1)->L.d;
       de *d2 = reinterpret_cast<const expr_va*>(e2)->L.d;
       for (; d1->e && d2->e; d1++, d2++)
-        if (!Equal(Expr(d1->e), Expr(d2->e)))
+        if (!AreEqual(Expr(d1->e), Expr(d2->e)))
           return false;
       return !d1->e && !d2->e;
     }
-      
+
     case OPTYPE_PLTERM: {
       plterm *p1 = e1->L.p, *p2 = e2->L.p;
       if (p1->n != p2->n)
@@ -147,43 +147,36 @@ bool Equal(Expr expr1, Expr expr2) {
         if (pce1[i] != pce2[i])
           return false;
       }
-      return Equal(Expr(e1->R.e), Expr(e2->R.e));
+      return AreEqual(Expr(e1->R.e), Expr(e2->R.e));
     }
-      
+
     case OPTYPE_IF: {
       const expr_if *eif1 = reinterpret_cast<const expr_if*>(e1);
       const expr_if *eif2 = reinterpret_cast<const expr_if*>(e2);
-      return Equal(Expr(eif1->e), Expr(eif2->e)) &&
-             Equal(Expr(eif1->T), Expr(eif2->T)) &&
-             Equal(Expr(eif1->F), Expr(eif2->F));
+      return AreEqual(Expr(eif1->e), Expr(eif2->e)) &&
+             AreEqual(Expr(eif1->T), Expr(eif2->T)) &&
+             AreEqual(Expr(eif1->F), Expr(eif2->F));
     }
-      
+
     case OPTYPE_SUM:
     case OPTYPE_COUNT: {
       expr **ep1 = e1->L.ep;
       expr **ep2 = e2->L.ep;
       for (; ep1 < e1->R.ep && ep2 < e2->R.ep; ep1++, ep2++)
-        if (!Equal(Expr(*ep1), Expr(*ep2)))
+        if (!AreEqual(Expr(*ep1), Expr(*ep2)))
           return false;
       return ep1 == e1->R.ep && ep2 == e2->R.ep;
     }
-      
-    case OPTYPE_FUNCALL:
-    case OPTYPE_STRING:
-      throw UnsupportedExprError(expr1.opname());
-      
+
     case OPTYPE_NUMBER:
       return reinterpret_cast<const expr_n*>(e1)->v ==
              reinterpret_cast<const expr_n*>(e2)->v;
-      
+
     case OPTYPE_VARIABLE:
       return e1->a == e2->a;
-      
-    default: {
-      std::ostringstream oss;
-      oss << "unknown operator type " << type;
-      throw Error(oss.str());
-    }
+
+    default:
+      throw UnsupportedExprError(expr1.opname());
   }
 }
 }
