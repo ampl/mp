@@ -3,3 +3,4 @@
 
 add_library(util expr.cc expr.h driver.h)
 add_dependencies(util arith_h)
+target_link_libraries(util ${SOLVER_LIBS})

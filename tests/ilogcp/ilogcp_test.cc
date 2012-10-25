@@ -196,11 +196,6 @@ class IlogCPTest : public ::testing::Test {
   double EvalRem(double lhs, double rhs) {
     return eval(d.Visit(NewBinary(OPREM, NewNum(lhs), NewNum(rhs))));
   }
-  
-  const char *GetOpName(int opcode) {
-    expr e = {reinterpret_cast<efunc*>(opcode)};
-    return NumericExpr(&e).opname();
-  }
 
   int RunDriver(const char *stub = nullptr, const char *opt = nullptr) {
     try {
@@ -1113,80 +1108,6 @@ TEST_F(IlogCPTest, ConvertAllDiff) {
 
 // ----------------------------------------------------------------------------
 // Util tests
-  
-TEST_F(IlogCPTest, OpName) {
-  EXPECT_STREQ("+", GetOpName(OPPLUS));
-  EXPECT_STREQ("-", GetOpName(OPMINUS));
-  EXPECT_STREQ("*", GetOpName(OPMULT));
-  EXPECT_STREQ("/", GetOpName(OPDIV));
-  EXPECT_STREQ("mod", GetOpName(OPREM));
-  EXPECT_STREQ("^", GetOpName(OPPOW));
-  EXPECT_STREQ("less", GetOpName(OPLESS));
-  EXPECT_STREQ("min", GetOpName(MINLIST));
-  EXPECT_STREQ("max", GetOpName(MAXLIST));
-  EXPECT_STREQ("floor", GetOpName(FLOOR));
-  EXPECT_STREQ("ceil", GetOpName(CEIL));
-  EXPECT_STREQ("abs", GetOpName(ABS));
-  EXPECT_STREQ("unary -", GetOpName(OPUMINUS));
-  EXPECT_STREQ("||", GetOpName(OPOR));
-  EXPECT_STREQ("&&", GetOpName(OPAND));
-  EXPECT_STREQ("<", GetOpName(LT));
-  EXPECT_STREQ("<=", GetOpName(LE));
-  EXPECT_STREQ("=", GetOpName(EQ));
-  EXPECT_STREQ(">=", GetOpName(GE));
-  EXPECT_STREQ(">", GetOpName(GT));
-  EXPECT_STREQ("!=", GetOpName(NE));
-  EXPECT_STREQ("!", GetOpName(OPNOT));
-  EXPECT_STREQ("if-then-else", GetOpName(OPIFnl));
-  EXPECT_STREQ("tanh", GetOpName(OP_tanh));
-  EXPECT_STREQ("tan", GetOpName(OP_tan));
-  EXPECT_STREQ("sqrt", GetOpName(OP_sqrt));
-  EXPECT_STREQ("sinh", GetOpName(OP_sinh));
-  EXPECT_STREQ("sin", GetOpName(OP_sin));
-  EXPECT_STREQ("log10", GetOpName(OP_log10));
-  EXPECT_STREQ("log", GetOpName(OP_log));
-  EXPECT_STREQ("exp", GetOpName(OP_exp));
-  EXPECT_STREQ("cosh", GetOpName(OP_cosh));
-  EXPECT_STREQ("cos", GetOpName(OP_cos));
-  EXPECT_STREQ("atanh", GetOpName(OP_atanh));
-  EXPECT_STREQ("atan2", GetOpName(OP_atan2));
-  EXPECT_STREQ("atan", GetOpName(OP_atan));
-  EXPECT_STREQ("asinh", GetOpName(OP_asinh));
-  EXPECT_STREQ("asin", GetOpName(OP_asin));
-  EXPECT_STREQ("acosh", GetOpName(OP_acosh));
-  EXPECT_STREQ("acos", GetOpName(OP_acos));
-  EXPECT_STREQ("sum", GetOpName(OPSUMLIST));
-  EXPECT_STREQ("div", GetOpName(OPintDIV));
-  EXPECT_STREQ("precision", GetOpName(OPprecision));
-  EXPECT_STREQ("round", GetOpName(OPround));
-  EXPECT_STREQ("trunc", GetOpName(OPtrunc));
-  EXPECT_STREQ("count", GetOpName(OPCOUNT));
-  EXPECT_STREQ("numberof", GetOpName(OPNUMBEROF));
-  EXPECT_STREQ("string numberof", GetOpName(OPNUMBEROFs));
-  EXPECT_STREQ("atleast", GetOpName(OPATLEAST));
-  EXPECT_STREQ("atmost", GetOpName(OPATMOST));
-  EXPECT_STREQ("pl term", GetOpName(OPPLTERM));
-  EXPECT_STREQ("string if-then-else", GetOpName(OPIFSYM));
-  EXPECT_STREQ("exactly", GetOpName(OPEXACTLY));
-  EXPECT_STREQ("not atleast", GetOpName(OPNOTATLEAST));
-  EXPECT_STREQ("not atmost", GetOpName(OPNOTATMOST));
-  EXPECT_STREQ("not exactly", GetOpName(OPNOTEXACTLY));
-  EXPECT_STREQ("forall", GetOpName(ANDLIST));
-  EXPECT_STREQ("exists", GetOpName(ORLIST));
-  EXPECT_STREQ("implies else", GetOpName(OPIMPELSE));
-  EXPECT_STREQ("iff", GetOpName(OP_IFF));
-  EXPECT_STREQ("alldiff", GetOpName(OPALLDIFF));
-  EXPECT_STREQ("1pow", GetOpName(OP1POW));
-  EXPECT_STREQ("^2", GetOpName(OP2POW));
-  EXPECT_STREQ("cpow", GetOpName(OPCPOW));
-  EXPECT_STREQ("function call", GetOpName(OPFUNCALL));
-  EXPECT_STREQ("number", GetOpName(OPNUM));
-  EXPECT_STREQ("string", GetOpName(OPHOL));
-  EXPECT_STREQ("variable", GetOpName(OPVARVAL));
-  EXPECT_STREQ("unknown", GetOpName(N_OPS));
-  EXPECT_STREQ("unknown", GetOpName(-1));
-  EXPECT_STREQ("unknown", GetOpName(500));
-}
 
 TEST_F(IlogCPTest, EqualNum) {
   EXPECT_TRUE(Equal(NewNum(0.42), NewNum(0.42)));

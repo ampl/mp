@@ -24,24 +24,25 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
   ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
+cxx_test_with_flags(expr_test "" "gtest;util" test_main.cc expr_test.cc)
+
 add_ampl_library(testlib testlib.cc)
 add_library(function function.cc function.h)
 add_dependencies(function arith_h)
+target_link_libraries(function ${SOLVER_LIBS})
 
-cxx_test_with_flags(function_test "" "gtest;function;${SOLVER_LIBS}"
+cxx_test_with_flags(function_test "" "gtest;function"
   test_main.cc function_test.cc)
 
 if (HAVE_GSL)
   include_directories(${GSL_BINARY_DIR})
-  cxx_test_with_flags(gsl_test "" "gtest;function;${SOLVER_LIBS}"
-    test_main.cc gsl_test.cc)
+  cxx_test_with_flags(gsl_test "" "gtest;function" test_main.cc gsl_test.cc)
   target_link_libraries(gsl_test gsl gslcblas)
 endif ()
 
 find_package(ODBC)
 if (ODBC_FOUND)
-  cxx_test_with_flags(odbc_test "" "gtest;function;${SOLVER_LIBS}"
-    test_main.cc odbc_test.cc)
+  cxx_test_with_flags(odbc_test "" "gtest;function" test_main.cc odbc_test.cc)
 endif ()
 
 add_subdirectory(ilogcp)
