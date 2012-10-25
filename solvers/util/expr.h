@@ -58,6 +58,9 @@ enum OpType {
 // it is cheap to construct and pass by value. A type safe way to
 // process expressions of different types is by using ExprVisitor.
 class Expr {
+ private:
+  static const char *const OP_NAMES[];
+
  protected:
   expr *expr_;
 
@@ -76,8 +79,9 @@ class Expr {
   // expression e.
   explicit Expr(expr *e = 0) : expr_(e) {}
 
-  // Returns a bool-like value that can only be used in conditions and
-  // evaluates to "true" if this expression is not null and "false" otherwise.
+  // Returns a value convertible to bool that can be used in conditions but not
+  // in comparisons and evaluates to "true" if this expression is not null
+  // and "false" otherwise.
   // Example:
   //   void foo(Expr e) {
   //     if (e) {
@@ -93,7 +97,10 @@ class Expr {
   }
 
   // Returns the operation name of this expression.
-  const char *opname() const;
+  const char *opname() const {
+    int code = opcode();
+    return code >= 0 && code < N_OPS ? OP_NAMES[opcode()] : "unknown";
+  }
 
   // Returns the type of this expression.
   int type() const { return optype[opcode()]; }

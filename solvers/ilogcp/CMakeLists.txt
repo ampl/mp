@@ -23,15 +23,12 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
     set(SOLVER_LIBS amplsolver-dynrt)
   endif ()
 
-  add_library(amplilogcp
-    ilogcp.cpp
-    ilogcp.h
-    ilogcp_date.h
-    ../util/util-all.cc)
-  add_dependencies(amplilogcp arith_h)
-  target_link_libraries(amplilogcp ${SOLVER_LIBS})
+  add_library(ilogcpdriver
+    ilogcp.cpp ilogcp.h ilogcp_date.h ../util/util-all.cc)
+  add_dependencies(ilogcpdriver arith_h)
+  target_link_libraries(ilogcpdriver ${SOLVER_LIBS})
 
   add_executable(ilogcp main.cpp)
-  target_link_libraries(ilogcp amplilogcp
+  target_link_libraries(ilogcp ilogcpdriver
     ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_CP_LIBRARIES} ${CPLEX_LIBRARIES})
 endif ()
