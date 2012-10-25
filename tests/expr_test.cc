@@ -21,9 +21,8 @@
  */
 
 #include "gtest/gtest.h"
-#include "solvers/util/expr.h"
+#include "tests/expr_builder.h"
 
-using ampl::Expr;
 using ampl::OPTYPE_UNARY;
 using ampl::OPTYPE_BINARY;
 using ampl::OPTYPE_VARARG;
@@ -36,9 +35,15 @@ using ampl::OPTYPE_NUMBER;
 using ampl::OPTYPE_VARIABLE;
 using ampl::OPTYPE_COUNT;
 
+using ampl::Expr;
+using ampl::NumericExpr;
+using ampl::UnsupportedExprError;
+
 namespace {
 
-TEST(ExprTest, ExprCtor) {
+class ExprTest : public ::testing::Test, public ampl::ExprBuilder {};
+
+TEST_F(ExprTest, ExprCtor) {
   Expr e1;
   EXPECT_FALSE(e1);
   expr raw2 = {reinterpret_cast<efunc*>(42)};
@@ -49,7 +54,7 @@ TEST(ExprTest, ExprCtor) {
   EXPECT_EQ(77, e3.opcode());
 }
 
-TEST(ExprTest, SafeBool) {
+TEST_F(ExprTest, SafeBool) {
   Expr e1;
   EXPECT_FALSE(e1);
   expr raw2 = {reinterpret_cast<efunc*>(42)};
@@ -148,7 +153,7 @@ const OpInfo OP_INFO[] = {
   {OPVARVAL, "variable", OPTYPE_VARIABLE}
 };
 
-TEST(ExprTest, Operators) {
+TEST_F(ExprTest, Operators) {
   int known_ops = 0;
   int size = sizeof(OP_INFO) / sizeof(*OP_INFO);
   EXPECT_EQ(N_OPS, size);
@@ -164,6 +169,150 @@ TEST(ExprTest, Operators) {
       ++known_ops;
   }
   EXPECT_EQ(68, known_ops);
+}
+
+TEST_F(ExprTest, EqualNum) {
+  EXPECT_TRUE(AreEqual(NewNum(0.42), NewNum(0.42)));
+  EXPECT_FALSE(AreEqual(NewNum(0.42), NewNum(42)));
+}
+
+TEST_F(ExprTest, EqualVar) {
+  EXPECT_TRUE(AreEqual(NewVar(0), NewVar(0)));
+  EXPECT_FALSE(AreEqual(NewVar(0), NewVar(1)));
+  EXPECT_FALSE(AreEqual(NewVar(0), NewNum(0)));
+}
+
+TEST_F(ExprTest, EqualUnary) {
+  EXPECT_TRUE(AreEqual(NewUnary(OPUMINUS, NewVar(0)),
+                       NewUnary(OPUMINUS, NewVar(0))));
+  EXPECT_FALSE(AreEqual(NewUnary(OPUMINUS, NewVar(0)),
+                        NewVar(0)));
+  EXPECT_FALSE(AreEqual(NewUnary(OPUMINUS, NewVar(0)),
+                        NewUnary(FLOOR, NewVar(0))));
+  EXPECT_FALSE(AreEqual(NewUnary(OPUMINUS, NewVar(0)),
+                        NewUnary(OPUMINUS, NewVar(1))));
+}
+
+TEST_F(ExprTest, EqualBinary) {
+  EXPECT_TRUE(AreEqual(NewBinary(OPPLUS, NewVar(0), NewNum(42)),
+                       NewBinary(OPPLUS, NewVar(0), NewNum(42))));
+  EXPECT_FALSE(AreEqual(NewBinary(OPPLUS, NewVar(0), NewNum(42)),
+                        NewBinary(OPMINUS, NewVar(0), NewNum(42))));
+  EXPECT_FALSE(AreEqual(NewBinary(OPPLUS, NewVar(0), NewNum(42)),
+                        NewBinary(OPPLUS, NewNum(42), NewVar(0))));
+  EXPECT_FALSE(AreEqual(NewBinary(OPPLUS, NewVar(0), NewNum(42)),
+                        NewBinary(OPPLUS, NewVar(0), NewNum(0))));
+  EXPECT_FALSE(AreEqual(NewNum(42),
+                        NewBinary(OPPLUS, NewVar(0), NewNum(42))));
+}
+
+TEST_F(ExprTest, EqualVarArg) {
+  EXPECT_TRUE(AreEqual(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42))));
+  EXPECT_FALSE(AreEqual(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewVarArg(MINLIST, NewVar(0), NewVar(1))));
+  EXPECT_FALSE(AreEqual(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1)),
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42))));
+  EXPECT_FALSE(AreEqual(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewVarArg(MAXLIST, NewVar(0), NewVar(1), NewNum(42))));
+  EXPECT_FALSE(AreEqual(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(0))));
+  EXPECT_FALSE(AreEqual(
+      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewNum(42)));
+}
+
+TEST_F(ExprTest, EqualPLTerm) {
+  double args[] = {-1, 5, 0, 10, 1};
+  EXPECT_TRUE(AreEqual(
+      NewPLTerm(5, args, 0),
+      NewPLTerm(5, args, 0)));
+  EXPECT_FALSE(AreEqual(
+      NewPLTerm(5, args, 0),
+      NewPLTerm(3, args, 0)));
+  EXPECT_FALSE(AreEqual(
+      NewPLTerm(5, args, 0),
+      NewPLTerm(5, args, 1)));
+  double args2[] = {-1, 5, 0, 11, 1};
+  EXPECT_FALSE(AreEqual(
+      NewPLTerm(5, args, 0),
+      NewPLTerm(5, args2, 0)));
+  EXPECT_FALSE(AreEqual(
+      NewPLTerm(5, args, 0),
+      NewNum(42)));
+}
+
+TEST_F(ExprTest, EqualIf) {
+  EXPECT_TRUE(AreEqual(
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)),
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42))));
+  EXPECT_FALSE(AreEqual(
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)),
+      NewIf(OPIFSYM, NewVar(0), NewVar(1), NewNum(42))));
+  EXPECT_FALSE(AreEqual(
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)),
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(0))));
+  EXPECT_FALSE(AreEqual(
+      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)),
+      NewNum(42)));
+}
+
+TEST_F(ExprTest, EqualSum) {
+  EXPECT_TRUE(AreEqual(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42))));
+  EXPECT_FALSE(AreEqual(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1))));
+  EXPECT_FALSE(AreEqual(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1)),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42))));
+  EXPECT_FALSE(AreEqual(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42))));
+  EXPECT_FALSE(AreEqual(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(0))));
+  EXPECT_FALSE(AreEqual(
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)),
+      NewNum(42)));
+}
+
+TEST_F(ExprTest, EqualCount) {
+  EXPECT_TRUE(AreEqual(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42))));
+  EXPECT_FALSE(AreEqual(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1))));
+  EXPECT_FALSE(AreEqual(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1)),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42))));
+  EXPECT_FALSE(AreEqual(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42))));
+  EXPECT_FALSE(AreEqual(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)),
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(0))));
+  EXPECT_FALSE(AreEqual(
+      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)),
+      NewNum(42)));
+}
+
+TEST_F(ExprTest, EqualExprThrowsOnUnsupportedOp) {
+  EXPECT_THROW(AreEqual(
+      NewUnary(OPFUNCALL, NumericExpr()),
+      NewUnary(OPFUNCALL, NumericExpr())),
+      UnsupportedExprError);
+  EXPECT_THROW(AreEqual(
+      NewUnary(OPHOL, NumericExpr()),
+      NewUnary(OPHOL, NumericExpr())),
+      UnsupportedExprError);
 }
 
 // TODO

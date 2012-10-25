@@ -147,7 +147,7 @@ bool SameExpr::operator()(const ampl::NumberOf &nof) const {
   
   for (NumberOfExpr::iterator i = expr_.begin(), end = expr_.end(),
        j = nof.expr().begin(); i != end; ++i, ++j) {
-    if (!Equal(*i, *j))
+    if (!AreEqual(*i, *j))
       return false;
   }
   return true;

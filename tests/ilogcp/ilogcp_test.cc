@@ -24,6 +24,7 @@ extern "C" {
 #include "solvers/opcode.hd"
 }
 
+#include "tests/expr_builder.h"
 #include "tests/config.h"
 
 using std::ifstream;
@@ -34,15 +35,6 @@ using std::vector;
 using namespace ampl;
 
 #define DATA_DIR "../data/"
-
-namespace ampl {
-class ExprBuilder {
- public:
-  static expr *GetExprPtr(Expr e) {
-    return e.expr_;
-  }
-};
-}
 
 namespace {
 
@@ -121,12 +113,11 @@ expr *ptr(Expr e) {
   return ampl::ExprBuilder::GetExprPtr(e);
 }
 
-class IlogCPTest : public ::testing::Test {
+class IlogCPTest : public ::testing::Test, public ExprBuilder {
  protected:
   IlogCPDriver d;
   IloEnv env_;
   IloModel mod_;
-  std::vector<expr*> exprs_;
   
   void SetUp() {
     env_ = d.env();
@@ -137,57 +128,6 @@ class IlogCPTest : public ::testing::Test {
     vars[2] = IloNumVar(env_, 0, 1, "theta");
     d.set_vars(vars);
   }
-  
-  void TearDown();
-
-  NumericExpr NewExpr(expr *e) {
-    exprs_.push_back(e);
-    return NumericExpr(e);
-  }
-  
-  // Creates an ASL expression representing a number.
-  NumericExpr NewNum(double n) {
-    expr_n e = {reinterpret_cast<efunc_n*>(OPNUM), n};
-    return NewExpr(reinterpret_cast<expr*>(new expr_n(e)));
-  }
-
-  // Creates an ASL expression representing a variable.
-  NumericExpr NewVar(int var_index) {
-    expr e = {reinterpret_cast<efunc*>(OPVARVAL), var_index, 0, {0}, {0}, 0};
-    return NewExpr(new expr(e));
-  }
-
-  // Creates an unary ASL expression.
-  NumericExpr NewUnary(int opcode, NumericExpr arg) {
-    expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {ptr(arg)}, {0}, 0};
-    return NewExpr(new expr(e));
-  }
-
-  // Creates a binary ASL expression.
-  NumericExpr NewBinary(int opcode, NumericExpr lhs, NumericExpr rhs) {
-    expr e = {reinterpret_cast<efunc*>(opcode), 0, 0,
-              {ptr(lhs)}, {ptr(rhs)}, 0};
-    return NewExpr(new expr(e));
-  }
-
-  static de MakeDE(NumericExpr e) {
-    de result = {ptr(e), 0, {0}};
-    return result;
-  }
-
-  // Creates a variable-argument ASL expression with up to 3 arguments.
-  NumericExpr NewVarArg(int opcode, NumericExpr e1,
-      NumericExpr e2, NumericExpr e3 = NumericExpr());
-
-  NumericExpr NewPLTerm(int size, const double *args, int var_index);
-
-  // Creates an ASL expression representing if-then-else.
-  NumericExpr NewIf(int opcode, NumericExpr condition,
-      NumericExpr true_expr, NumericExpr false_expr);
-
-  // Creates an ASL expression representing a sum with up to 3 arguments.
-  NumericExpr NewSum(int opcode, NumericExpr arg1,
-      NumericExpr arg2, NumericExpr arg3 = NumericExpr());
 
   IloConstraint ConvertLogical(NumericExpr e) {
     return d.Visit(LogicalExpr(ptr(e)));
@@ -253,81 +193,6 @@ class IlogCPTest : public ::testing::Test {
   void CheckDblCPOption(const char *option, IloCP::NumParam param,
       double good, double bad);
 };
-  
-void IlogCPTest::TearDown() {
-  for (vector<expr*>::const_iterator
-       i = exprs_.begin(), end = exprs_.end(); i != end; ++i) {
-    expr *e = *i;
-    if (NumericExpr(e).opcode() >= N_OPS)
-      continue;
-    switch (NumericExpr(e).type()) {
-      case OPTYPE_VARARG:
-        delete reinterpret_cast<expr_va*>(e);
-        break;
-      case OPTYPE_PLTERM:
-        std::free(e->L.p);
-        delete e;
-        break;
-      case OPTYPE_IF:
-        delete reinterpret_cast<expr_if*>(e);
-        break;
-      case OPTYPE_NUMBER:
-        delete reinterpret_cast<expr_n*>(e);
-        break;
-      default:
-        delete e;
-        break;
-    }
-  }
-  exprs_.clear();
-}
-
-NumericExpr IlogCPTest::NewVarArg(int opcode,
-    NumericExpr e1, NumericExpr e2, NumericExpr e3) {
-  expr_va e = {reinterpret_cast<efunc*>(opcode), 0, {0}, {0}, 0, 0, 0};
-  expr_va *copy = new expr_va(e);
-  expr *result(reinterpret_cast<expr*>(copy));
-  de *args = new de[4];
-  args[0] = MakeDE(e1);
-  args[1] = MakeDE(e2);
-  args[2] = MakeDE(e3);
-  args[3] = MakeDE(NumericExpr());
-  copy->L.d = args;
-  return NewExpr(result);
-}
-
-NumericExpr IlogCPTest::NewPLTerm(int size, const double *args, int var_index) {
-  expr e = {reinterpret_cast<efunc*>(OPPLTERM), 0, 0, {0}, {0}, 0};
-  NumericExpr pl(NewExpr(new expr(e)));
-  ptr(pl)->L.p = static_cast<plterm*>(
-      std::calloc(1, sizeof(plterm) + sizeof(real) * (size - 1)));
-  ptr(pl)->L.p->n = (size + 1) / 2;
-  real *bs = ptr(pl)->L.p->bs;
-  for (int i = 0; i < size; i++)
-    bs[i] = args[i];
-  ptr(pl)->R.e = ptr(NewVar(var_index));
-  return pl;
-}
-
-NumericExpr IlogCPTest::NewIf(int opcode, NumericExpr condition,
-    NumericExpr true_expr, NumericExpr false_expr) {
-  expr_if e = {reinterpret_cast<efunc*>(opcode), 0, ptr(condition),
-               ptr(true_expr), ptr(false_expr),
-               0, 0, 0, 0, {0}, {0}, 0, 0};
-  return NewExpr(reinterpret_cast<expr*>(new expr_if(e)));
-}
-
-NumericExpr IlogCPTest::NewSum(int opcode,
-    NumericExpr arg1, NumericExpr arg2, NumericExpr arg3) {
-  expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {0}, {0}, 0};
-  NumericExpr sum(NewExpr(new expr(e)));
-  expr** args = ptr(sum)->L.ep = new expr*[3];
-  ptr(sum)->R.ep = args + (ptr(arg3) ? 3 : 2);
-  args[0] = ptr(arg1);
-  args[1] = ptr(arg2);
-  args[2] = ptr(arg3);
-  return sum;
-}
 
 SolveResult IlogCPTest::Solve(const char *stub) {
   RunDriver(stub);
@@ -1103,153 +968,6 @@ TEST_F(IlogCPTest, ConvertAllDiff) {
   EXPECT_EQ("IloIntVar(4)" + bounds +" == 42", str(*iter));
   ++iter;
   EXPECT_FALSE(iter.ok());
-}
-
-// ----------------------------------------------------------------------------
-// Util tests
-
-TEST_F(IlogCPTest, EqualNum) {
-  EXPECT_TRUE(Equal(NewNum(0.42), NewNum(0.42)));
-  EXPECT_FALSE(Equal(NewNum(0.42), NewNum(42)));
-}
-
-TEST_F(IlogCPTest, EqualVar) {
-  EXPECT_TRUE(Equal(NewVar(0), NewVar(0)));
-  EXPECT_FALSE(Equal(NewVar(0), NewVar(1)));
-  EXPECT_FALSE(Equal(NewVar(0), NewNum(0)));
-}
-
-TEST_F(IlogCPTest, EqualUnary) {
-  EXPECT_TRUE(Equal(NewUnary(OPUMINUS, NewVar(0)),
-                    NewUnary(OPUMINUS, NewVar(0))));
-  EXPECT_FALSE(Equal(NewUnary(OPUMINUS, NewVar(0)),
-                     NewVar(0)));
-  EXPECT_FALSE(Equal(NewUnary(OPUMINUS, NewVar(0)),
-                     NewUnary(FLOOR, NewVar(0))));
-  EXPECT_FALSE(Equal(NewUnary(OPUMINUS, NewVar(0)),
-                     NewUnary(OPUMINUS, NewVar(1))));
-}
-
-TEST_F(IlogCPTest, EqualBinary) {
-  EXPECT_TRUE(Equal(NewBinary(OPPLUS, NewVar(0), NewNum(42)),
-                        NewBinary(OPPLUS, NewVar(0), NewNum(42))));
-  EXPECT_FALSE(Equal(NewBinary(OPPLUS, NewVar(0), NewNum(42)),
-                         NewBinary(OPMINUS, NewVar(0), NewNum(42))));
-  EXPECT_FALSE(Equal(NewBinary(OPPLUS, NewVar(0), NewNum(42)),
-                         NewBinary(OPPLUS, NewNum(42), NewVar(0))));
-  EXPECT_FALSE(Equal(NewBinary(OPPLUS, NewVar(0), NewNum(42)),
-                         NewBinary(OPPLUS, NewVar(0), NewNum(0))));
-  EXPECT_FALSE(Equal(NewNum(42),
-                         NewBinary(OPPLUS, NewVar(0), NewNum(42))));
-}
-
-TEST_F(IlogCPTest, EqualVarArg) {
-  EXPECT_TRUE(Equal(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)),
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42))));
-  EXPECT_FALSE(Equal(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)),
-      NewVarArg(MINLIST, NewVar(0), NewVar(1))));
-  EXPECT_FALSE(Equal(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1)),
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42))));
-  EXPECT_FALSE(Equal(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)),
-      NewVarArg(MAXLIST, NewVar(0), NewVar(1), NewNum(42))));
-  EXPECT_FALSE(Equal(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)),
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(0))));
-  EXPECT_FALSE(Equal(
-      NewVarArg(MINLIST, NewVar(0), NewVar(1), NewNum(42)),
-      NewNum(42)));
-}
-
-TEST_F(IlogCPTest, EqualPLTerm) {
-  double args[] = {-1, 5, 0, 10, 1};
-  EXPECT_TRUE(Equal(
-      NewPLTerm(5, args, 0),
-      NewPLTerm(5, args, 0)));
-  EXPECT_FALSE(Equal(
-      NewPLTerm(5, args, 0),
-      NewPLTerm(3, args, 0)));
-  EXPECT_FALSE(Equal(
-      NewPLTerm(5, args, 0),
-      NewPLTerm(5, args, 1)));
-  double args2[] = {-1, 5, 0, 11, 1};
-  EXPECT_FALSE(Equal(
-      NewPLTerm(5, args, 0),
-      NewPLTerm(5, args2, 0)));
-  EXPECT_FALSE(Equal(
-      NewPLTerm(5, args, 0),
-      NewNum(42)));
-}
-
-TEST_F(IlogCPTest, EqualIf) {
-  EXPECT_TRUE(Equal(
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)),
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42))));
-  EXPECT_FALSE(Equal(
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)),
-      NewIf(OPIFSYM, NewVar(0), NewVar(1), NewNum(42))));
-  EXPECT_FALSE(Equal(
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)),
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(0))));
-  EXPECT_FALSE(Equal(
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)),
-      NewNum(42)));
-}
-
-TEST_F(IlogCPTest, EqualSum) {
-  EXPECT_TRUE(Equal(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42))));
-  EXPECT_FALSE(Equal(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1))));
-  EXPECT_FALSE(Equal(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1)),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42))));
-  EXPECT_FALSE(Equal(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42))));
-  EXPECT_FALSE(Equal(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(0))));
-  EXPECT_FALSE(Equal(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42)),
-      NewNum(42)));
-}
-
-TEST_F(IlogCPTest, EqualCount) {
-  EXPECT_TRUE(Equal(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42))));
-  EXPECT_FALSE(Equal(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1))));
-  EXPECT_FALSE(Equal(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1)),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42))));
-  EXPECT_FALSE(Equal(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42))));
-  EXPECT_FALSE(Equal(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(0))));
-  EXPECT_FALSE(Equal(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), NewNum(42)),
-      NewNum(42)));
-}
-
-TEST_F(IlogCPTest, EqualExprThrowsOnUnsupportedOp) {
-  EXPECT_THROW(Equal(
-      NewUnary(OPFUNCALL, NumericExpr()),
-      NewUnary(OPFUNCALL, NumericExpr())),
-      UnsupportedExprError);
-  EXPECT_THROW(Equal(
-      NewUnary(OPHOL, NumericExpr()),
-      NewUnary(OPHOL, NumericExpr())),
-      UnsupportedExprError);
 }
 
 // ----------------------------------------------------------------------------
