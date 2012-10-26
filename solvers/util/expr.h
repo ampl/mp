@@ -51,36 +51,37 @@ class ExprProxy {
  public:
   explicit ExprProxy(expr *e) : expr_(e) {}
 
-  ExprT *operator->() const { return &expr_; }
+  const ExprT *operator->() const { return &expr_; }
 };
 
-// An argument iterator.
+// An expression array iterator.
 template <typename ExprT>
-class ArgIterator : public std::iterator<std::forward_iterator_tag, ExprT> {
+class ExprArrayIterator :
+  public std::iterator<std::forward_iterator_tag, ExprT> {
  private:
   expr *const *ptr_;
 
  public:
-  explicit ArgIterator(expr *const *p = 0) : ptr_(p) {}
+  explicit ExprArrayIterator(expr *const *p = 0) : ptr_(p) {}
 
   ExprT operator*() const { return ExprT(*ptr_); }
   internal::ExprProxy<ExprT> operator->() const {
     return internal::ExprProxy<ExprT>(*ptr_);
   }
 
-  ArgIterator &operator++() {
+  ExprArrayIterator &operator++() {
     ++ptr_;
     return *this;
   }
 
-  ArgIterator operator++(int) {
-    ArgIterator it(*this);
+  ExprArrayIterator operator++(int) {
+    ExprArrayIterator it(*this);
     ++ptr_;
     return it;
   }
 
-  bool operator==(ArgIterator other) const { return ptr_ == other.ptr_; }
-  bool operator!=(ArgIterator other) const { return ptr_ != other.ptr_; }
+  bool operator==(ExprArrayIterator other) const { return ptr_ == other.ptr_; }
+  bool operator!=(ExprArrayIterator other) const { return ptr_ != other.ptr_; }
 };
 }
 
@@ -311,7 +312,7 @@ class SumExpr : public NumericExpr {
   friend class ExprVisitor;
 
  public:
-  typedef internal::ArgIterator<NumericExpr> iterator;
+  typedef internal::ExprArrayIterator<NumericExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep);
@@ -333,7 +334,7 @@ class CountExpr : public NumericExpr {
   friend class ExprVisitor;
 
  public:
-  typedef internal::ArgIterator<LogicalExpr> iterator;
+  typedef internal::ExprArrayIterator<LogicalExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep);
@@ -463,7 +464,7 @@ class NumberOfExpr : public NumericExpr {
  public:
   NumericExpr target() const { return NumericExpr(*expr_->L.ep); }
 
-  typedef internal::ArgIterator<NumericExpr> iterator;
+  typedef internal::ExprArrayIterator<NumericExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep + 1);
@@ -575,7 +576,7 @@ class IteratedLogicalExpr : public LogicalExpr {
   friend class ExprVisitor;
 
  public:
-  typedef internal::ArgIterator<LogicalExpr> iterator;
+  typedef internal::ExprArrayIterator<LogicalExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep);
@@ -597,7 +598,7 @@ class AllDiffExpr : public LogicalExpr {
   friend class ExprVisitor;
 
  public:
-  typedef internal::ArgIterator<NumericExpr> iterator;
+  typedef internal::ExprArrayIterator<NumericExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep);
