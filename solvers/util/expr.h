@@ -36,6 +36,54 @@ extern "C" {
 
 namespace ampl {
 
+class Expr;
+
+// Anything in namespace internal is AMPL's INTERNAL IMPLEMENTATION DETAIL
+// and MUST NOT BE USED DIRECTLY in user code.
+namespace internal {
+
+// An expression proxy used for implementing operator-> in iterators.
+template <typename ExprT>
+class ExprProxy {
+ private:
+  ExprT expr_;
+
+ public:
+  explicit ExprProxy(expr *e) : expr_(e) {}
+
+  ExprT *operator->() const { return &expr_; }
+};
+
+// An argument iterator.
+template <typename ExprT>
+class ArgIterator : public std::iterator<std::forward_iterator_tag, ExprT> {
+ private:
+  expr *const *ptr_;
+
+ public:
+  explicit ArgIterator(expr *const *p = 0) : ptr_(p) {}
+
+  ExprT operator*() const { return ExprT(*ptr_); }
+  internal::ExprProxy<ExprT> operator->() const {
+    return internal::ExprProxy<ExprT>(*ptr_);
+  }
+
+  ArgIterator &operator++() {
+    ++ptr_;
+    return *this;
+  }
+
+  ArgIterator operator++(int) {
+    ArgIterator it(*this);
+    ++ptr_;
+    return it;
+  }
+
+  bool operator==(ArgIterator other) const { return ptr_ == other.ptr_; }
+  bool operator!=(ArgIterator other) const { return ptr_ != other.ptr_; }
+};
+}
+
 // An operation type.
 // Numeric values for the operation types should be in sync with the ones in
 // op_type.hd.
@@ -73,18 +121,23 @@ class Expr {
  protected:
   expr *expr_;
 
+  // Constructs an Expr object representing a reference to an AMPL
+  // expression e. Only a minimal check is performed when assertions are
+  // enabled to make sure that the opcode is within the valid range.
+  explicit Expr(expr *e) : expr_(e) {
+    assert(!expr_ || IsOpCodeInRange());
+  }
+
   // Returns true iff this expression is null or has type t.
   bool HasTypeOrNull(OpType t) const {
     return !expr_ || optype() == t;
   }
 
  public:
-  // Constructs an Expr object representing a reference to an AMPL
-  // expression e. Only a minimal check is performed when assertions are
-  // enabled to make sure that the opcode is within the valid range.
-  explicit Expr(expr *e = 0) : expr_(e) {
-    assert(!expr_ || IsOpCodeInRange());
-  }
+  // Constructs an Expr object representing a null reference to an AMPL
+  // expression. The only operation permitted for such expression is
+  // copying, assignment and check whether it is null using operator SafeBool.
+  Expr() : expr_() {}
 
   // Returns a value convertible to bool that can be used in conditions but not
   // in comparisons and evaluates to "true" if this expression is not null
@@ -97,13 +150,13 @@ class Expr {
   //   }
   operator SafeBool() const { return expr_ ? &Expr::True : 0; }
 
-  // Returns the operation code (opcode) of this expression.
-  // The opcodes are defined in opcode.hd.
+  // Returns the operation code (opcode) of this expression which should be
+  // non-null. The opcodes are defined in opcode.hd.
   int opcode() const {
     return reinterpret_cast<std::size_t>(expr_->op);
   }
 
-  // Returns the operation name of this expression.
+  // Returns the operation name of this expression which should be non-null.
   const char *opname() const {
     assert(IsOpCodeInRange());
     return OP_NAMES[opcode()];
@@ -111,7 +164,8 @@ class Expr {
 
   // Returns the operation type of this expression which can be unary, binary,
   // etc. It is called "optype" rather than simply "type" to avoid confusion
-  // with expression types such as logical or numeric.
+  // with expression types such as logical or numeric. This expression should
+  // be non-null.
   OpType optype() const {
     assert(IsOpCodeInRange());
     return static_cast<OpType>(::optype[opcode()]);
@@ -155,7 +209,7 @@ class LogicalExpr : public Expr {
   }
 };
 
-// A unary expression.
+// A unary numeric expression.
 class UnaryExpr : public NumericExpr {
  private:
   explicit UnaryExpr(NumericExpr e) : NumericExpr(e) {
@@ -189,18 +243,8 @@ class BinaryExpr : public NumericExpr {
   NumericExpr rhs() const { return NumericExpr(expr_->R.e); }
 };
 
-template <typename ExprT>
-class ExprProxy {
- private:
-  ExprT expr_;
-
- public:
-  explicit ExprProxy(expr *e) : expr_(e) {}
-
-  ExprT *operator->() const { return &expr_; }
-};
-
-// A variable argument expression such as min.
+// A numeric expression which takes a variable number of arguments.
+// Examples: min, max.
 class VarArgExpr : public NumericExpr {
  private:
   explicit VarArgExpr(NumericExpr e) : NumericExpr(e) {
@@ -228,8 +272,8 @@ class VarArgExpr : public NumericExpr {
 
     NumericExpr operator*() const { return NumericExpr(de_->e); }
 
-    ExprProxy<NumericExpr> operator->() const {
-      return ExprProxy<NumericExpr>(de_->e);
+    internal::ExprProxy<NumericExpr> operator->() const {
+      return internal::ExprProxy<NumericExpr>(de_->e);
     }
 
     iterator &operator++() {
@@ -256,33 +300,6 @@ class VarArgExpr : public NumericExpr {
   }
 };
 
-// An argument iterator.
-template <typename ExprT>
-class ArgIterator : public std::iterator<std::forward_iterator_tag, ExprT> {
- private:
-  expr *const *ptr_;
-
- public:
-  explicit ArgIterator(expr *const *p = 0) : ptr_(p) {}
-
-  ExprT operator*() const { return ExprT(*ptr_); }
-  ExprProxy<ExprT> operator->() const { return ExprProxy<ExprT>(*ptr_); }
-
-  ArgIterator &operator++() {
-    ++ptr_;
-    return *this;
-  }
-
-  ArgIterator operator++(int) {
-    ArgIterator it(*this);
-    ++ptr_;
-    return it;
-  }
-
-  bool operator==(ArgIterator other) const { return ptr_ == other.ptr_; }
-  bool operator!=(ArgIterator other) const { return ptr_ != other.ptr_; }
-};
-
 // An sum expression.
 class SumExpr : public NumericExpr {
  private:
@@ -294,7 +311,7 @@ class SumExpr : public NumericExpr {
   friend class ExprVisitor;
 
  public:
-  typedef ArgIterator<NumericExpr> iterator;
+  typedef internal::ArgIterator<NumericExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep);
@@ -316,7 +333,7 @@ class CountExpr : public NumericExpr {
   friend class ExprVisitor;
 
  public:
-  typedef ArgIterator<LogicalExpr> iterator;
+  typedef internal::ArgIterator<LogicalExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep);
@@ -446,7 +463,7 @@ class NumberOfExpr : public NumericExpr {
  public:
   NumericExpr target() const { return NumericExpr(*expr_->L.ep); }
 
-  typedef ArgIterator<NumericExpr> iterator;
+  typedef internal::ArgIterator<NumericExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep + 1);
@@ -558,7 +575,7 @@ class IteratedLogicalExpr : public LogicalExpr {
   friend class ExprVisitor;
 
  public:
-  typedef ArgIterator<LogicalExpr> iterator;
+  typedef internal::ArgIterator<LogicalExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep);
@@ -580,7 +597,7 @@ class AllDiffExpr : public LogicalExpr {
   friend class ExprVisitor;
 
  public:
-  typedef ArgIterator<NumericExpr> iterator;
+  typedef internal::ArgIterator<NumericExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep);
