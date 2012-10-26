@@ -97,8 +97,13 @@ public:
   T NewIf(int opcode, LogicalExpr condition, T true_expr, T false_expr);
 
   // Creates an expression representing a sum with up to 3 arguments.
-  template <typename T, typename Result = NumericExpr>
+  template <typename Result, typename T>
   Result NewSum(int opcode, T arg1, T arg2, T arg3 = T());
+
+  template <typename T>
+  NumericExpr NewSum(int opcode, T arg1, T arg2, T arg3 = T()) {
+    return NewSum<NumericExpr, T>(opcode, arg1, arg2, arg3);
+  }
 
   LogicalExpr NewIterated(int opcode, LogicalExpr arg1,
       LogicalExpr arg2, LogicalExpr arg3 = LogicalExpr()) {
@@ -115,7 +120,7 @@ T ExprBuilder::NewIf(int opcode,
   return NewExpr<T>(reinterpret_cast<expr*>(new expr_if(e)));
 }
 
-template <typename T, typename Result>
+template <typename Result, typename T>
 Result ExprBuilder::NewSum(int opcode, T arg1, T arg2, T arg3) {
   expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {0}, {0}, 0};
   Result sum(NewExpr<Result>(new expr(e)));

@@ -876,7 +876,7 @@ TEST_F(IlogCPTest, ConvertImpElse) {
 
 TEST_F(IlogCPTest, ConvertAllDiff) {
   IloConstraint con(d.Visit(
-      NewSum<NumericExpr, LogicalExpr>(OPALLDIFF, NewVar(0), NewNum(42))));
+      NewSum<LogicalExpr>(OPALLDIFF, NewVar(0), NewNum(42))));
   IloAllDiffI* diff = dynamic_cast<IloAllDiffI*>(con.getImpl());
   ASSERT_TRUE(diff != nullptr);
   std::ostringstream os;
