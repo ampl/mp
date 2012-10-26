@@ -43,6 +43,13 @@ using ampl::UnsupportedExprError;
 
 namespace {
 
+class TestExpr : public Expr {
+public:
+  TestExpr(expr *e) : Expr(e) {}
+};
+
+Expr MakeExpr(expr *e) { return TestExpr(e); }
+
 class ExprTest : public ::testing::Test, public ampl::ExprBuilder {};
 
 TEST_F(ExprTest, ExprCtor) {
@@ -52,12 +59,12 @@ TEST_F(ExprTest, ExprCtor) {
   }
   {
     expr raw = {reinterpret_cast<efunc*>(42)};
-    Expr e(&raw);
+    Expr e(MakeExpr(&raw));
     EXPECT_EQ(42, e.opcode());
   }
   {
     expr raw = {reinterpret_cast<efunc*>(N_OPS - 1)};
-    Expr e(&raw);
+    Expr e(MakeExpr(&raw));
     EXPECT_EQ(N_OPS - 1, e.opcode());
   }
 }
@@ -67,15 +74,15 @@ TEST_F(ExprTest, ExprOpCodeOutOfRangeInCtor) {
       "Assertion `!expr_ \\|\\| IsOpCodeInRange\\(\\)' failed";
   {
     expr raw = {reinterpret_cast<efunc*>(-1)};
-    EXPECT_DEBUG_DEATH(Expr e(&raw);, message);
+    EXPECT_DEBUG_DEATH(Expr e(MakeExpr(&raw));, message);
   }
   {
     expr raw = {reinterpret_cast<efunc*>(N_OPS)};
-    EXPECT_DEBUG_DEATH(Expr e(&raw);, message);
+    EXPECT_DEBUG_DEATH(Expr e(MakeExpr(&raw));, message);
   }
   {
     expr raw = {reinterpret_cast<efunc*>(777)};
-    EXPECT_DEBUG_DEATH(Expr e(&raw);, message);
+    EXPECT_DEBUG_DEATH(Expr e(MakeExpr(&raw));, message);
   }
 }
 
@@ -83,7 +90,7 @@ TEST_F(ExprTest, SafeBool) {
   Expr e1;
   EXPECT_FALSE(e1);
   expr raw2 = {reinterpret_cast<efunc*>(42)};
-  Expr e2(&raw2);
+  Expr e2(MakeExpr(&raw2));
   EXPECT_TRUE(e2);
 }
 
@@ -189,7 +196,7 @@ TEST_F(ExprTest, Operators) {
     int opcode = OP_INFO[i].code;
     const char *opname = OP_INFO[i].name;
     expr raw = {reinterpret_cast<efunc*>(opcode)};
-    Expr e(&raw);
+    Expr e(MakeExpr(&raw));
     EXPECT_EQ(opcode, e.opcode());
     EXPECT_STREQ(opname, e.opname());
     EXPECT_EQ(OP_INFO[i].optype, e.optype()) << opname;
@@ -204,21 +211,21 @@ TEST_F(ExprTest, ExprOpCodeOutOfRangeInAccessors) {
       "Assertion `IsOpCodeInRange\\(\\)' failed";
   {
     expr raw = {};
-    Expr e(&raw);
+    Expr e(MakeExpr(&raw));
     raw.op = reinterpret_cast<efunc*>(-1);
     EXPECT_DEBUG_DEATH(e.opname();, message);
     EXPECT_DEBUG_DEATH(e.optype();, message);
   }
   {
     expr raw = {};
-    Expr e(&raw);
+    Expr e(MakeExpr(&raw));
     raw.op = reinterpret_cast<efunc*>(N_OPS);
     EXPECT_DEBUG_DEATH(e.opname();, message);
     EXPECT_DEBUG_DEATH(e.optype();, message);
   }
   {
     expr raw = {};
-    Expr e(&raw);
+    Expr e(MakeExpr(&raw));
     raw.op = reinterpret_cast<efunc*>(777);
     EXPECT_DEBUG_DEATH(e.opname();, message);
     EXPECT_DEBUG_DEATH(e.optype();, message);
