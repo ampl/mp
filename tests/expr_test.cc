@@ -20,6 +20,8 @@
  Author: Victor Zverovich
  */
 
+#include <algorithm>
+
 #include "gtest/gtest.h"
 #include "tests/expr_builder.h"
 
@@ -42,6 +44,7 @@ using ampl::LogicalExpr;
 using ampl::UnsupportedExprError;
 
 using ampl::internal::ExprProxy;
+using ampl::internal::ExprArrayIterator;
 
 namespace {
 
@@ -54,10 +57,53 @@ Expr MakeExpr(expr *e) { return TestExpr(e); }
 
 class ExprTest : public ::testing::Test, public ampl::ExprBuilder {};
 
-TEST_F(ExprTest, ProxyTest) {
+TEST_F(ExprTest, ExprProxy) {
   expr e = {reinterpret_cast<efunc*>(OPDIV)};
   ExprProxy<NumericExpr> p(&e);
   EXPECT_EQ(OPDIV, p->opcode());
+}
+
+TEST_F(ExprTest, ExprArrayIterator) {
+  {
+    ExprArrayIterator<NumericExpr> i;
+    EXPECT_EQ(ExprArrayIterator<NumericExpr>(), i);
+  }
+  expr exprs[] = {
+      {reinterpret_cast<efunc*>(OPDIV)},
+      {reinterpret_cast<efunc*>(OPPLUS)},
+      {reinterpret_cast<efunc*>(OP_atan)},
+  };
+  expr *const ptrs[] = {exprs, exprs + 1, exprs + 2};
+  ExprArrayIterator<NumericExpr> i(ptrs);
+  EXPECT_EQ(ExprArrayIterator<NumericExpr>(ptrs), i);
+  EXPECT_NE(ExprArrayIterator<NumericExpr>(), i);
+  EXPECT_EQ(OPDIV, (*i).opcode());
+  EXPECT_EQ(OPDIV, i->opcode());
+
+  ExprArrayIterator<NumericExpr> i2(++i);
+  EXPECT_EQ(i2, i);
+  EXPECT_NE(ExprArrayIterator<NumericExpr>(ptrs), i);
+  EXPECT_EQ(ExprArrayIterator<NumericExpr>(ptrs + 1), i);
+  EXPECT_EQ(OPPLUS, i->opcode());
+
+  ExprArrayIterator<NumericExpr> i3(i++);
+  EXPECT_NE(i3, i);
+  EXPECT_NE(ExprArrayIterator<NumericExpr>(ptrs + 1), i);
+  EXPECT_EQ(ExprArrayIterator<NumericExpr>(ptrs + 2), i);
+  EXPECT_EQ(OPPLUS, i3->opcode());
+  EXPECT_EQ(OP_atan, i->opcode());
+
+  int index = 0;
+  for (ExprArrayIterator<NumericExpr>
+      i(ptrs), e(ptrs + 3); i != e; ++i, ++index) {
+    int code = reinterpret_cast<size_t>(ptrs[index]->op);
+    EXPECT_EQ(code, i->opcode());
+  }
+  EXPECT_EQ(3, index);
+  std::vector<NumericExpr> vec;
+  std::copy(ExprArrayIterator<NumericExpr>(ptrs),
+      ExprArrayIterator<NumericExpr>(ptrs + 3), std::back_inserter(vec));
+  EXPECT_EQ(OPPLUS, vec[1].opcode());
 }
 
 TEST_F(ExprTest, ExprCtor) {
