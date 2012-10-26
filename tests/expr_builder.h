@@ -32,7 +32,7 @@ class ExprBuilder {
 private:
   std::vector<expr*> exprs_;
 
-  template <typename T = NumericExpr>
+  template <typename T>
   T NewExpr(expr *e) {
     exprs_.push_back(e);
     return T(e);
@@ -44,7 +44,7 @@ public:
   // Creates an expression representing a number.
   NumericExpr NewNum(double n) {
     expr_n e = {reinterpret_cast<efunc_n*>(OPNUM), n};
-    return NewExpr(reinterpret_cast<expr*>(new expr_n(e)));
+    return NewExpr<NumericExpr>(reinterpret_cast<expr*>(new expr_n(e)));
   }
 
   // Creates a logical constant.
@@ -56,7 +56,7 @@ public:
   // Creates an expression representing a variable reference.
   NumericExpr NewVar(int var_index) {
     expr e = {reinterpret_cast<efunc*>(OPVARVAL), var_index, 0, {0}, {0}, 0};
-    return NewExpr(new expr(e));
+    return NewExpr<NumericExpr>(new expr(e));
   }
 
   // Creates a unary expression.

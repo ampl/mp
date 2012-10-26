@@ -67,15 +67,15 @@ TEST_F(ExprTest, ExprOpCodeOutOfRangeInCtor) {
       "Assertion `!expr_ \\|\\| IsOpCodeInRange\\(\\)' failed";
   {
     expr raw = {reinterpret_cast<efunc*>(-1)};
-    EXPECT_DEATH(Expr e(&raw);, message);
+    EXPECT_DEBUG_DEATH(Expr e(&raw);, message);
   }
   {
     expr raw = {reinterpret_cast<efunc*>(N_OPS)};
-    EXPECT_DEATH(Expr e(&raw);, message);
+    EXPECT_DEBUG_DEATH(Expr e(&raw);, message);
   }
   {
     expr raw = {reinterpret_cast<efunc*>(777)};
-    EXPECT_DEATH(Expr e(&raw);, message);
+    EXPECT_DEBUG_DEATH(Expr e(&raw);, message);
   }
 }
 
@@ -206,22 +206,22 @@ TEST_F(ExprTest, ExprOpCodeOutOfRangeInAccessors) {
     expr raw = {};
     Expr e(&raw);
     raw.op = reinterpret_cast<efunc*>(-1);
-    EXPECT_DEATH(e.opname();, message);
-    EXPECT_DEATH(e.optype();, message);
+    EXPECT_DEBUG_DEATH(e.opname();, message);
+    EXPECT_DEBUG_DEATH(e.optype();, message);
   }
   {
     expr raw = {};
     Expr e(&raw);
     raw.op = reinterpret_cast<efunc*>(N_OPS);
-    EXPECT_DEATH(e.opname();, message);
-    EXPECT_DEATH(e.optype();, message);
+    EXPECT_DEBUG_DEATH(e.opname();, message);
+    EXPECT_DEBUG_DEATH(e.optype();, message);
   }
   {
     expr raw = {};
     Expr e(&raw);
     raw.op = reinterpret_cast<efunc*>(777);
-    EXPECT_DEATH(e.opname();, message);
-    EXPECT_DEATH(e.optype();, message);
+    EXPECT_DEBUG_DEATH(e.opname();, message);
+    EXPECT_DEBUG_DEATH(e.optype();, message);
   }
 }
 
@@ -372,7 +372,7 @@ TEST_F(ExprTest, InvalidNumericExpr) {
       MakeNumericExpr(info.code);
       ++numeric_count;
     } else {
-      EXPECT_DEATH(MakeNumericExpr(info.code);, message) << info.code;
+      EXPECT_DEBUG_DEATH(MakeNumericExpr(info.code);, message) << info.code;
     }
   }
   // Paranoid: make sure that the loop body has been executed enough times.
@@ -394,7 +394,7 @@ TEST_F(ExprTest, InvalidLogicalExpr) {
       MakeLogicalExpr(info.code);
       ++logical_count;
     } else {
-      EXPECT_DEATH(MakeLogicalExpr(info.code);, message) << info.code;
+      EXPECT_DEBUG_DEATH(MakeLogicalExpr(info.code);, message) << info.code;
     }
   }
   // Paranoid: make sure that the loop body has been executed enough times.
