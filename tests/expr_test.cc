@@ -41,6 +41,8 @@ using ampl::LogicalExpr;
 
 using ampl::UnsupportedExprError;
 
+using ampl::internal::ExprProxy;
+
 namespace {
 
 class TestExpr : public Expr {
@@ -51,6 +53,12 @@ public:
 Expr MakeExpr(expr *e) { return TestExpr(e); }
 
 class ExprTest : public ::testing::Test, public ampl::ExprBuilder {};
+
+TEST_F(ExprTest, ProxyTest) {
+  expr e = {reinterpret_cast<efunc*>(OPDIV)};
+  ExprProxy<NumericExpr> p(&e);
+  EXPECT_EQ(OPDIV, p->opcode());
+}
 
 TEST_F(ExprTest, ExprCtor) {
   {
@@ -71,7 +79,7 @@ TEST_F(ExprTest, ExprCtor) {
 
 TEST_F(ExprTest, ExprOpCodeOutOfRangeInCtor) {
   const char *message =
-      "Assertion `!expr_ \\|\\| IsOpCodeInRange\\(\\)' failed";
+      "Assertion .*!expr_ \\|\\| IsOpCodeInRange\\(\\)";
   {
     expr raw = {reinterpret_cast<efunc*>(-1)};
     EXPECT_DEBUG_DEATH(Expr e(MakeExpr(&raw));, message);
@@ -208,7 +216,7 @@ TEST_F(ExprTest, Operators) {
 
 TEST_F(ExprTest, ExprOpCodeOutOfRangeInAccessors) {
   const char *message =
-      "Assertion `IsOpCodeInRange\\(\\)' failed";
+      "Assertion .*IsOpCodeInRange\\(\\)";
   {
     expr raw = {};
     Expr e(MakeExpr(&raw));
@@ -372,7 +380,7 @@ void MakeNumericExpr(int opcode) {
 
 TEST_F(ExprTest, InvalidNumericExpr) {
   int i = 0, numeric_count = 0;
-  const char *message = "Assertion `IsValid\\(\\)' failed";
+  const char *message = "Assertion .*IsValid\\(\\)";
   for (; i < N_OPS; ++i) {
     const OpInfo &info = OP_INFO[i];
     if (info.optype != 0 && (info.type == 0 || info.code == OPNUM)) {
@@ -394,7 +402,7 @@ void MakeLogicalExpr(int opcode) {
 
 TEST_F(ExprTest, InvalidLogicalExpr) {
   int i = 0, logical_count = 0;
-  const char *message = "Assertion `IsValid\\(\\)' failed";
+  const char *message = "Assertion .*IsValid\\(\\)";
   for (; i < N_OPS; ++i) {
     const OpInfo &info = OP_INFO[i];
     if ((info.type & LOGICAL) != 0) {
