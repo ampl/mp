@@ -33,52 +33,9 @@ private:
   std::vector<expr*> exprs_;
 
   template <typename T>
-  T NewExpr(expr *e) {
+  T AddExpr(expr *e) {
     exprs_.push_back(e);
     return T(e);
-  }
-
-public:
-  ~ExprBuilder();
-
-  // Creates an expression representing a number.
-  NumericExpr NewNum(double n) {
-    expr_n e = {reinterpret_cast<efunc_n*>(OPNUM), n};
-    return NewExpr<NumericExpr>(reinterpret_cast<expr*>(new expr_n(e)));
-  }
-
-  // Creates a logical constant.
-  LogicalExpr NewLogicalConstant(bool value) {
-    expr_n e = {reinterpret_cast<efunc_n*>(OPNUM), value ? 1. : 0.};
-    return NewExpr<LogicalExpr>(reinterpret_cast<expr*>(new expr_n(e)));
-  }
-
-  // Creates an expression representing a variable reference.
-  NumericExpr NewVar(int var_index) {
-    expr e = {reinterpret_cast<efunc*>(OPVARVAL), var_index, 0, {0}, {0}, 0};
-    return NewExpr<NumericExpr>(new expr(e));
-  }
-
-  // Creates a unary expression.
-  template <typename T>
-  T NewUnary(int opcode, T arg) {
-    expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {arg.expr_}, {0}, 0};
-    return NewExpr<T>(new expr(e));
-  }
-
-  // Creates a binary expression.
-  template <typename T>
-  T NewBinary(int opcode, T lhs, T rhs) {
-    expr e = {reinterpret_cast<efunc*>(opcode), 0, 0,
-              {lhs.expr_}, {rhs.expr_}, 0};
-    return NewExpr<T>(new expr(e));
-  }
-
-  // Creates a relational expression.
-  LogicalExpr NewRelational(int opcode, NumericExpr lhs, NumericExpr rhs) {
-    expr e = {reinterpret_cast<efunc*>(opcode), 0, 0,
-              {lhs.expr_}, {rhs.expr_}, 0};
-    return NewExpr<LogicalExpr>(new expr(e));
   }
 
   static de MakeDE(NumericExpr e) {
@@ -86,11 +43,58 @@ public:
     return result;
   }
 
-  // Creates a variable-argument expression with up to 3 arguments.
-  NumericExpr NewVarArg(int opcode, NumericExpr e1,
+public:
+  ~ExprBuilder();
+
+  // Adds a new unary numeric expression.
+  UnaryExpr AddUnary(int opcode, NumericExpr arg) {
+    expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {arg.expr_}, {0}, 0};
+    return UnaryExpr(AddExpr<NumericExpr>(new expr(e)));
+  }
+
+  // Adds a new binary numeric expression.
+  BinaryExpr AddBinary(int opcode, NumericExpr lhs, NumericExpr rhs) {
+    expr e = {reinterpret_cast<efunc*>(opcode), 0, 0,
+              {lhs.expr_}, {rhs.expr_}, 0};
+    return BinaryExpr(AddExpr<NumericExpr>(new expr(e)));
+  }
+
+  // Adds a new variable-argument expression with up to 3 arguments.
+  VarArgExpr AddVarArg(int opcode, NumericExpr e1,
       NumericExpr e2, NumericExpr e3 = NumericExpr());
 
   NumericExpr NewPLTerm(int size, const double *args, int var_index);
+
+  // Adds a new numeric constant and returns it.
+  NumericExpr AddNum(double n) {
+    expr_n e = {reinterpret_cast<efunc_n*>(OPNUM), n};
+    return AddExpr<NumericExpr>(reinterpret_cast<expr*>(new expr_n(e)));
+  }
+
+  // Creates an expression representing a variable reference.
+  NumericExpr NewVar(int var_index) {
+    expr e = {reinterpret_cast<efunc*>(OPVARVAL), var_index, 0, {0}, {0}, 0};
+    return AddExpr<NumericExpr>(new expr(e));
+  }
+
+  LogicalExpr AddBinaryLogical(int opcode, LogicalExpr lhs, LogicalExpr rhs) {
+    expr e = {reinterpret_cast<efunc*>(opcode), 0, 0,
+              {lhs.expr_}, {rhs.expr_}, 0};
+    return LogicalExpr(AddExpr<LogicalExpr>(new expr(e)));
+  }
+
+  // Creates a logical constant.
+  LogicalExpr NewLogicalConstant(bool value) {
+    expr_n e = {reinterpret_cast<efunc_n*>(OPNUM), value ? 1. : 0.};
+    return AddExpr<LogicalExpr>(reinterpret_cast<expr*>(new expr_n(e)));
+  }
+
+  // Creates a relational expression.
+  LogicalExpr NewRelational(int opcode, NumericExpr lhs, NumericExpr rhs) {
+    expr e = {reinterpret_cast<efunc*>(opcode), 0, 0,
+              {lhs.expr_}, {rhs.expr_}, 0};
+    return AddExpr<LogicalExpr>(new expr(e));
+  }
 
   // Creates an expression representing if-then-else.
   template <typename T>
@@ -109,6 +113,12 @@ public:
       LogicalExpr arg2, LogicalExpr arg3 = LogicalExpr()) {
     return NewSum<LogicalExpr, LogicalExpr>(opcode, arg1, arg2, arg3);
   }
+
+  // Creates a logical NOT expression adding it to this builder.
+  LogicalExpr NewNot(LogicalExpr arg) {
+    expr e = {reinterpret_cast<efunc*>(OPNOT), 0, 0, {arg.expr_}, {0}, 0};
+    return AddExpr<LogicalExpr>(new expr(e));
+  }
 };
 
 template <typename T>
@@ -117,13 +127,13 @@ T ExprBuilder::NewIf(int opcode,
   expr_if e = {reinterpret_cast<efunc*>(opcode), 0, condition.expr_,
                true_expr.expr_, false_expr.expr_,
                0, 0, 0, 0, {0}, {0}, 0, 0};
-  return NewExpr<T>(reinterpret_cast<expr*>(new expr_if(e)));
+  return AddExpr<T>(reinterpret_cast<expr*>(new expr_if(e)));
 }
 
 template <typename Result, typename T>
 Result ExprBuilder::NewSum(int opcode, T arg1, T arg2, T arg3) {
   expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {0}, {0}, 0};
-  Result sum(NewExpr<Result>(new expr(e)));
+  Result sum(AddExpr<Result>(new expr(e)));
   expr** args = sum.expr_->L.ep = new expr*[3];
   sum.expr_->R.ep = args + (arg3.expr_ ? 3 : 2);
   args[0] = arg1.expr_;

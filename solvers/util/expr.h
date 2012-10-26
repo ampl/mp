@@ -173,6 +173,9 @@ class Expr {
     return static_cast<OpType>(::optype[opcode()]);
   }
 
+  bool operator==(Expr other) const { return expr_ == other.expr_; }
+  bool operator!=(Expr other) const { return expr_ != other.expr_; }
+
   // Recursively compares two expressions and returns true if they are equal.
   friend bool AreEqual(Expr e1, Expr e2);
 };
@@ -212,6 +215,7 @@ class LogicalExpr : public Expr {
 };
 
 // A unary numeric expression.
+// Examples: -x, sin(x), where x is a variable.
 class UnaryExpr : public NumericExpr {
  private:
   explicit UnaryExpr(NumericExpr e) : NumericExpr(e) {
@@ -220,13 +224,17 @@ class UnaryExpr : public NumericExpr {
 
   template <typename Impl, typename Result, typename LResult>
   friend class ExprVisitor;
+  friend class ExprBuilder;
 
  public:
+  UnaryExpr() {}
+
   // Returns the argument of this expression.
   NumericExpr arg() const { return NumericExpr(expr_->L.e); }
 };
 
 // A binary numeric expression.
+// Examples: x / y, atan2(x, y), where x and y are variables.
 class BinaryExpr : public NumericExpr {
  private:
   explicit BinaryExpr(NumericExpr e) : NumericExpr(e) {
@@ -236,8 +244,11 @@ class BinaryExpr : public NumericExpr {
 
   template <typename Impl, typename Result, typename LResult>
   friend class ExprVisitor;
+  friend class ExprBuilder;
 
  public:
+  BinaryExpr() {}
+
   // Returns the left-hand side (the first argument) of this expression.
   NumericExpr lhs() const { return NumericExpr(expr_->L.e); }
 
@@ -245,8 +256,8 @@ class BinaryExpr : public NumericExpr {
   NumericExpr rhs() const { return NumericExpr(expr_->R.e); }
 };
 
-// A numeric expression which takes a variable number of arguments.
-// Examples: min, max.
+// A numeric expression with a variable number of arguments.
+// Example: min{i in I} x[i], where I is a set and x is a variable.
 class VarArgExpr : public NumericExpr {
  private:
   explicit VarArgExpr(NumericExpr e) : NumericExpr(e) {
@@ -255,10 +266,13 @@ class VarArgExpr : public NumericExpr {
 
   template <typename Impl, typename Result, typename LResult>
   friend class ExprVisitor;
+  friend class ExprBuilder;
 
   static const de END;
 
  public:
+  VarArgExpr() {}
+
   // An argument iterator.
   class iterator :
     public std::iterator<std::forward_iterator_tag, NumericExpr> {
@@ -302,7 +316,8 @@ class VarArgExpr : public NumericExpr {
   }
 };
 
-// An sum expression.
+// A sum expression.
+// Example: sum{i in I} x[i], where I is a set and x is a variable.
 class SumExpr : public NumericExpr {
  private:
   explicit SumExpr(NumericExpr e) : NumericExpr(e) {
@@ -313,6 +328,8 @@ class SumExpr : public NumericExpr {
   friend class ExprVisitor;
 
  public:
+  SumExpr() {}
+
   typedef internal::ExprArrayIterator<NumericExpr> iterator;
 
   iterator begin() const {
@@ -325,6 +342,7 @@ class SumExpr : public NumericExpr {
 };
 
 // A count expression.
+// Example: count{i in I} (x[i] >= 0), where I is a set and x is a variable.
 class CountExpr : public NumericExpr {
  private:
   explicit CountExpr(NumericExpr e) : NumericExpr(e) {
@@ -335,6 +353,8 @@ class CountExpr : public NumericExpr {
   friend class ExprVisitor;
 
  public:
+  CountExpr() {}
+
   typedef internal::ExprArrayIterator<LogicalExpr> iterator;
 
   iterator begin() const {
@@ -347,6 +367,7 @@ class CountExpr : public NumericExpr {
 };
 
 // An if-then-else expression.
+// Example: if x != 0 then y else z, where x, y and z are variables.
 class IfExpr : public NumericExpr {
  private:
   explicit IfExpr(NumericExpr e) : NumericExpr(e) {
@@ -357,6 +378,8 @@ class IfExpr : public NumericExpr {
   friend class ExprVisitor;
 
  public:
+  IfExpr() {}
+
   LogicalExpr condition() const {
     return LogicalExpr(reinterpret_cast<expr_if*>(expr_)->e);
   }
@@ -371,6 +394,7 @@ class IfExpr : public NumericExpr {
 };
 
 // A piecewise-linear term.
+// Example: <<0; -1, 1>> x, where x is a variable.
 class PiecewiseLinearTerm : public NumericExpr {
  private:
   explicit PiecewiseLinearTerm(NumericExpr e) : NumericExpr(e) {
@@ -381,6 +405,8 @@ class PiecewiseLinearTerm : public NumericExpr {
   friend class ExprVisitor;
 
  public:
+  PiecewiseLinearTerm() {}
+
   // Returns the number of slopes in this term.
   int num_slopes() const {
     assert(expr_->L.p->n >= 1);
@@ -409,6 +435,7 @@ class PiecewiseLinearTerm : public NumericExpr {
 };
 
 // A numeric constant.
+// Examples: 42, -1.23e-4
 class NumericConstant : public NumericExpr {
  private:
   explicit NumericConstant(Expr e) : NumericExpr(e) {
@@ -421,6 +448,8 @@ class NumericConstant : public NumericExpr {
   friend NumericConstant Cast<NumericConstant>(Expr);
 
  public:
+  NumericConstant() {}
+
   // Returns the value of this number.
   double value() const { return reinterpret_cast<expr_n*>(expr_)->v; }
 };
@@ -430,7 +459,8 @@ inline NumericConstant Cast<NumericConstant>(Expr e) {
   return NumericConstant(e.opcode() == OPNUM ? e : Expr());
 }
 
-// A variable.
+// A reference to a variable.
+// Example: x
 class Variable : public NumericExpr {
  private:
   explicit Variable(Expr e) : NumericExpr(e) {
@@ -443,7 +473,9 @@ class Variable : public NumericExpr {
   friend Variable Cast<Variable>(Expr);
 
  public:
-  // Returns the index of this variable.
+  Variable() {}
+
+  // Returns the index of the referenced variable.
   int index() const { return expr_->a; }
 };
 
@@ -453,6 +485,8 @@ inline Variable Cast<Variable>(Expr e) {
 }
 
 // A numberof expression.
+// Example: numberof 42 in ({i in I} x[i]),
+// where I is a set and x is a variable.
 class NumberOfExpr : public NumericExpr {
  private:
   explicit NumberOfExpr(NumericExpr e) : NumericExpr(e) {
@@ -463,6 +497,8 @@ class NumberOfExpr : public NumericExpr {
   friend class ExprVisitor;
 
  public:
+  NumberOfExpr() {}
+
   NumericExpr target() const { return NumericExpr(*expr_->L.ep); }
 
   typedef internal::ExprArrayIterator<NumericExpr> iterator;
@@ -477,6 +513,7 @@ class NumberOfExpr : public NumericExpr {
 };
 
 // A logical constant.
+// Examples: 0, 1
 class LogicalConstant : public LogicalExpr {
  private:
   explicit LogicalConstant(LogicalExpr e) : LogicalExpr(e) {
@@ -487,11 +524,14 @@ class LogicalConstant : public LogicalExpr {
   friend class ExprVisitor;
 
  public:
+  LogicalConstant() {}
+
   // Returns the value of this constant.
   bool value() const { return reinterpret_cast<expr_n*>(expr_)->v != 0; }
 };
 
-// A relational expression such as "less than".
+// A relational expression.
+// Examples: x < y, x != y, where x and y are variables.
 class RelationalExpr : public LogicalExpr {
  private:
   explicit RelationalExpr(LogicalExpr e) : LogicalExpr(e) {
@@ -502,6 +542,8 @@ class RelationalExpr : public LogicalExpr {
   friend class ExprVisitor;
 
  public:
+  RelationalExpr() {}
+
   // Returns the left-hand side (the first argument) of this expression.
   NumericExpr lhs() const { return NumericExpr(expr_->L.e); }
 
@@ -510,6 +552,7 @@ class RelationalExpr : public LogicalExpr {
 };
 
 // A logical NOT expression.
+// Example: not a, where a is a logical expression.
 class NotExpr : public LogicalExpr {
  private:
   explicit NotExpr(LogicalExpr e) : LogicalExpr(e) {
@@ -520,11 +563,14 @@ class NotExpr : public LogicalExpr {
   friend class ExprVisitor;
 
  public:
+  NotExpr() {}
+
   // Returns the argument of this expression.
   LogicalExpr arg() const { return LogicalExpr(expr_->L.e); }
 };
 
-// A binary logical expression such as logical OR.
+// A binary logical expression.
+// Examples: a || b, a && b, where a and b are logical expressions.
 class BinaryLogicalExpr : public LogicalExpr {
  private:
   explicit BinaryLogicalExpr(LogicalExpr e) : LogicalExpr(e) {
@@ -535,6 +581,8 @@ class BinaryLogicalExpr : public LogicalExpr {
   friend class ExprVisitor;
 
  public:
+  BinaryLogicalExpr() {}
+
   // Returns the left-hand side (the first argument) of this expression.
   LogicalExpr lhs() const { return LogicalExpr(expr_->L.e); }
 
@@ -543,16 +591,19 @@ class BinaryLogicalExpr : public LogicalExpr {
 };
 
 // An implication expression.
+// Example: a ==> b else c, where a, b and c are logical expressions.
 class ImplicationExpr : public LogicalExpr {
  private:
   explicit ImplicationExpr(LogicalExpr e) : LogicalExpr(e) {
-    assert(HasTypeOrNull(OPTYPE_IF));
+    assert(!expr_ || opcode() == OPIMPELSE);
   }
 
   template <typename Impl, typename Result, typename LResult>
   friend class ExprVisitor;
 
  public:
+  ImplicationExpr() {}
+
   LogicalExpr condition() const {
     return LogicalExpr(reinterpret_cast<expr_if*>(expr_)->e);
   }
@@ -566,7 +617,8 @@ class ImplicationExpr : public LogicalExpr {
   }
 };
 
-// An iterated logical expression such as exists or forall.
+// An iterated logical expression.
+// Example: exists{i in I} x[i] >= 0, where I is a set and x is a variable.
 class IteratedLogicalExpr : public LogicalExpr {
  private:
   explicit IteratedLogicalExpr(LogicalExpr e) : LogicalExpr(e) {
@@ -577,6 +629,8 @@ class IteratedLogicalExpr : public LogicalExpr {
   friend class ExprVisitor;
 
  public:
+  IteratedLogicalExpr() {}
+
   typedef internal::ExprArrayIterator<LogicalExpr> iterator;
 
   iterator begin() const {
@@ -589,6 +643,7 @@ class IteratedLogicalExpr : public LogicalExpr {
 };
 
 // An alldiff expression.
+// Example: alldiff{i in I} x[i], where I is a set and x is a variable.
 class AllDiffExpr : public LogicalExpr {
  private:
   explicit AllDiffExpr(LogicalExpr e) : LogicalExpr(e) {
@@ -599,6 +654,8 @@ class AllDiffExpr : public LogicalExpr {
   friend class ExprVisitor;
 
  public:
+  AllDiffExpr() {}
+
   typedef internal::ExprArrayIterator<NumericExpr> iterator;
 
   iterator begin() const {
