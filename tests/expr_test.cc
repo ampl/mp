@@ -37,6 +37,8 @@ using ampl::OPTYPE_COUNT;
 
 using ampl::Expr;
 using ampl::NumericExpr;
+using ampl::LogicalExpr;
+
 using ampl::UnsupportedExprError;
 
 namespace {
@@ -44,14 +46,37 @@ namespace {
 class ExprTest : public ::testing::Test, public ampl::ExprBuilder {};
 
 TEST_F(ExprTest, ExprCtor) {
-  Expr e1;
-  EXPECT_FALSE(e1);
-  expr raw2 = {reinterpret_cast<efunc*>(42)};
-  Expr e2(&raw2);
-  EXPECT_EQ(42, e2.opcode());
-  expr raw3 = {reinterpret_cast<efunc*>(77)};
-  Expr e3(&raw3);
-  EXPECT_EQ(77, e3.opcode());
+  {
+    Expr e;
+    EXPECT_FALSE(e);
+  }
+  {
+    expr raw = {reinterpret_cast<efunc*>(42)};
+    Expr e(&raw);
+    EXPECT_EQ(42, e.opcode());
+  }
+  {
+    expr raw = {reinterpret_cast<efunc*>(N_OPS - 1)};
+    Expr e(&raw);
+    EXPECT_EQ(N_OPS - 1, e.opcode());
+  }
+}
+
+TEST_F(ExprTest, ExprOpCodeOutOfRangeInCtor) {
+  const char *message =
+      "Assertion `!expr_ \\|\\| IsOpCodeInRange\\(\\)' failed";
+  {
+    expr raw = {reinterpret_cast<efunc*>(-1)};
+    EXPECT_DEATH(Expr e(&raw);, message);
+  }
+  {
+    expr raw = {reinterpret_cast<efunc*>(N_OPS)};
+    EXPECT_DEATH(Expr e(&raw);, message);
+  }
+  {
+    expr raw = {reinterpret_cast<efunc*>(777)};
+    EXPECT_DEATH(Expr e(&raw);, message);
+  }
 }
 
 TEST_F(ExprTest, SafeBool) {
@@ -62,9 +87,12 @@ TEST_F(ExprTest, SafeBool) {
   EXPECT_TRUE(e2);
 }
 
+enum {LOGICAL = 1, UNSUPPORTED = 2};
+
 struct OpInfo {
   int code;
   const char *name;
+  int optype;
   int type;
 };
 
@@ -89,21 +117,21 @@ const OpInfo OP_INFO[] = {
   {17, "unknown"},
   {18, "unknown"},
   {19, "unknown"},
-  {OPOR,  "||", OPTYPE_BINARY},
-  {OPAND, "&&", OPTYPE_BINARY},
-  {LT,    "<",  OPTYPE_BINARY},
-  {LE,    "<=", OPTYPE_BINARY},
-  {EQ,    "=",  OPTYPE_BINARY},
+  {OPOR,  "||", OPTYPE_BINARY, LOGICAL},
+  {OPAND, "&&", OPTYPE_BINARY, LOGICAL},
+  {LT,    "<",  OPTYPE_BINARY, LOGICAL},
+  {LE,    "<=", OPTYPE_BINARY, LOGICAL},
+  {EQ,    "=",  OPTYPE_BINARY, LOGICAL},
   {25, "unknown"},
   {26, "unknown"},
   {27, "unknown"},
-  {GE, ">=", OPTYPE_BINARY},
-  {GT, ">",  OPTYPE_BINARY},
-  {NE, "!=", OPTYPE_BINARY},
+  {GE, ">=", OPTYPE_BINARY, LOGICAL},
+  {GT, ">",  OPTYPE_BINARY, LOGICAL},
+  {NE, "!=", OPTYPE_BINARY, LOGICAL},
   {31, "unknown"},
   {32, "unknown"},
   {33, "unknown"},
-  {OPNOT, "!", OPTYPE_UNARY},
+  {OPNOT, "!", OPTYPE_UNARY, LOGICAL},
   {OPIFnl, "if-then-else", OPTYPE_IF},
   {36, "unknown"},
   {OP_tanh,  "tanh",  OPTYPE_UNARY},
@@ -130,26 +158,26 @@ const OpInfo OP_INFO[] = {
   {OPtrunc,     "trunc",     OPTYPE_BINARY},
   {OPCOUNT,     "count",           OPTYPE_COUNT},
   {OPNUMBEROF,  "numberof",        OPTYPE_COUNT},
-  {OPNUMBEROFs, "string numberof", OPTYPE_COUNT},
-  {OPATLEAST, "atleast", OPTYPE_BINARY},
-  {OPATMOST,  "atmost",  OPTYPE_BINARY},
+  {OPNUMBEROFs, "string numberof", OPTYPE_COUNT, UNSUPPORTED},
+  {OPATLEAST, "atleast", OPTYPE_BINARY, LOGICAL},
+  {OPATMOST,  "atmost",  OPTYPE_BINARY, LOGICAL},
   {OPPLTERM, "pl term", OPTYPE_PLTERM},
-  {OPIFSYM,  "string if-then-else", OPTYPE_IF},
-  {OPEXACTLY,    "exactly",     OPTYPE_BINARY},
-  {OPNOTATLEAST, "not atleast", OPTYPE_BINARY},
-  {OPNOTATMOST,  "not atmost",  OPTYPE_BINARY},
-  {OPNOTEXACTLY, "not exactly", OPTYPE_BINARY},
-  {ANDLIST, "forall", OPTYPE_SUM},
-  {ORLIST,  "exists", OPTYPE_SUM},
-  {OPIMPELSE, "implies else", OPTYPE_IF},
-  {OP_IFF, "iff", OPTYPE_BINARY},
-  {OPALLDIFF, "alldiff", OPTYPE_COUNT},
+  {OPIFSYM,  "string if-then-else", OPTYPE_IF, UNSUPPORTED},
+  {OPEXACTLY,    "exactly",     OPTYPE_BINARY, LOGICAL},
+  {OPNOTATLEAST, "not atleast", OPTYPE_BINARY, LOGICAL},
+  {OPNOTATMOST,  "not atmost",  OPTYPE_BINARY, LOGICAL},
+  {OPNOTEXACTLY, "not exactly", OPTYPE_BINARY, LOGICAL},
+  {ANDLIST, "forall", OPTYPE_SUM, LOGICAL},
+  {ORLIST,  "exists", OPTYPE_SUM, LOGICAL},
+  {OPIMPELSE, "implies else", OPTYPE_IF, LOGICAL},
+  {OP_IFF, "iff", OPTYPE_BINARY, LOGICAL},
+  {OPALLDIFF, "alldiff", OPTYPE_COUNT, LOGICAL},
   {OP1POW, "1pow", OPTYPE_UNARY},
   {OP2POW, "^2",   OPTYPE_UNARY},
   {OPCPOW, "cpow", OPTYPE_UNARY},
-  {OPFUNCALL, "function call", OPTYPE_FUNCALL},
-  {OPNUM, "number", OPTYPE_NUMBER},
-  {OPHOL, "string", OPTYPE_STRING},
+  {OPFUNCALL, "function call", OPTYPE_FUNCALL, UNSUPPORTED},
+  {OPNUM, "number", OPTYPE_NUMBER, LOGICAL},
+  {OPHOL, "string", OPTYPE_STRING, UNSUPPORTED},
   {OPVARVAL, "variable", OPTYPE_VARIABLE}
 };
 
@@ -164,11 +192,37 @@ TEST_F(ExprTest, Operators) {
     Expr e(&raw);
     EXPECT_EQ(opcode, e.opcode());
     EXPECT_STREQ(opname, e.opname());
-    EXPECT_EQ(OP_INFO[i].type, e.type()) << opname;
+    EXPECT_EQ(OP_INFO[i].optype, e.optype()) << opname;
     if (strcmp(opname, "unknown"))
       ++known_ops;
   }
   EXPECT_EQ(68, known_ops);
+}
+
+TEST_F(ExprTest, ExprOpCodeOutOfRangeInAccessors) {
+  const char *message =
+      "Assertion `IsOpCodeInRange\\(\\)' failed";
+  {
+    expr raw = {};
+    Expr e(&raw);
+    raw.op = reinterpret_cast<efunc*>(-1);
+    EXPECT_DEATH(e.opname();, message);
+    EXPECT_DEATH(e.optype();, message);
+  }
+  {
+    expr raw = {};
+    Expr e(&raw);
+    raw.op = reinterpret_cast<efunc*>(N_OPS);
+    EXPECT_DEATH(e.opname();, message);
+    EXPECT_DEATH(e.optype();, message);
+  }
+  {
+    expr raw = {};
+    Expr e(&raw);
+    raw.op = reinterpret_cast<efunc*>(777);
+    EXPECT_DEATH(e.opname();, message);
+    EXPECT_DEATH(e.optype();, message);
+  }
 }
 
 TEST_F(ExprTest, EqualNum) {
@@ -249,16 +303,16 @@ TEST_F(ExprTest, EqualPLTerm) {
 
 TEST_F(ExprTest, EqualIf) {
   EXPECT_TRUE(AreEqual(
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)),
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42))));
+      NewIf(OPIFnl, NewLogicalConstant(0), NewVar(1), NewNum(42)),
+      NewIf(OPIFnl, NewLogicalConstant(0), NewVar(1), NewNum(42))));
   EXPECT_FALSE(AreEqual(
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)),
-      NewIf(OPIFSYM, NewVar(0), NewVar(1), NewNum(42))));
+      NewIf(OPIFnl,  NewLogicalConstant(0), NewVar(1), NewNum(42)),
+      NewSum(OPSUMLIST, NewVar(0), NewVar(1), NewNum(42))));
   EXPECT_FALSE(AreEqual(
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)),
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(0))));
+      NewIf(OPIFnl, NewLogicalConstant(0), NewVar(1), NewNum(42)),
+      NewIf(OPIFnl, NewLogicalConstant(0), NewVar(1), NewNum(0))));
   EXPECT_FALSE(AreEqual(
-      NewIf(OPIFnl, NewVar(0), NewVar(1), NewNum(42)),
+      NewIf(OPIFnl, NewLogicalConstant(0), NewVar(1), NewNum(42)),
       NewNum(42)));
 }
 
@@ -304,16 +358,49 @@ TEST_F(ExprTest, EqualCount) {
       NewNum(42)));
 }
 
-TEST_F(ExprTest, EqualExprThrowsOnUnsupportedOp) {
-  EXPECT_THROW(AreEqual(
-      NewUnary(OPFUNCALL, NumericExpr()),
-      NewUnary(OPFUNCALL, NumericExpr())),
-      UnsupportedExprError);
-  EXPECT_THROW(AreEqual(
-      NewUnary(OPHOL, NumericExpr()),
-      NewUnary(OPHOL, NumericExpr())),
-      UnsupportedExprError);
+void MakeNumericExpr(int opcode) {
+  expr e = {reinterpret_cast<efunc*>(opcode)};
+  NumericExpr ne(&e);
 }
 
-// TODO
+TEST_F(ExprTest, InvalidNumericExpr) {
+  int i = 0, numeric_count = 0;
+  const char *message = "Assertion `IsValid\\(\\)' failed";
+  for (; i < N_OPS; ++i) {
+    const OpInfo &info = OP_INFO[i];
+    if (info.optype != 0 && (info.type == 0 || info.code == OPNUM)) {
+      MakeNumericExpr(info.code);
+      ++numeric_count;
+    } else {
+      EXPECT_DEATH(MakeNumericExpr(info.code);, message) << info.code;
+    }
+  }
+  // Paranoid: make sure that the loop body has been executed enough times.
+  EXPECT_EQ(N_OPS, i);
+  EXPECT_EQ(44, numeric_count);
+}
+
+void MakeLogicalExpr(int opcode) {
+  expr e = {reinterpret_cast<efunc*>(opcode)};
+  LogicalExpr le(&e);
+}
+
+TEST_F(ExprTest, InvalidLogicalExpr) {
+  int i = 0, logical_count = 0;
+  const char *message = "Assertion `IsValid\\(\\)' failed";
+  for (; i < N_OPS; ++i) {
+    const OpInfo &info = OP_INFO[i];
+    if ((info.type & LOGICAL) != 0) {
+      MakeLogicalExpr(info.code);
+      ++logical_count;
+    } else {
+      EXPECT_DEATH(MakeLogicalExpr(info.code);, message) << info.code;
+    }
+  }
+  // Paranoid: make sure that the loop body has been executed enough times.
+  EXPECT_EQ(N_OPS, i);
+  EXPECT_EQ(21, logical_count);
+}
+
+// TODO: more tests
 }

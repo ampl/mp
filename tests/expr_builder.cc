@@ -28,9 +28,9 @@ ExprBuilder::~ExprBuilder() {
   for (std::vector<expr*>::const_iterator
        i = exprs_.begin(), end = exprs_.end(); i != end; ++i) {
     expr *e = *i;
-    if (NumericExpr(e).opcode() >= N_OPS)
+    if (Expr(e).opcode() >= N_OPS)
       continue;
-    switch (NumericExpr(e).type()) {
+    switch (Expr(e).optype()) {
       case OPTYPE_VARARG:
         delete reinterpret_cast<expr_va*>(e);
         break;
@@ -78,25 +78,5 @@ NumericExpr ExprBuilder::NewPLTerm(
     bs[i] = args[i];
   pl.expr_->R.e = NewVar(var_index).expr_;
   return pl;
-}
-
-NumericExpr ExprBuilder::NewIf(int opcode, NumericExpr condition,
-    NumericExpr true_expr, NumericExpr false_expr) {
-  expr_if e = {reinterpret_cast<efunc*>(opcode), 0, condition.expr_,
-               true_expr.expr_, false_expr.expr_,
-               0, 0, 0, 0, {0}, {0}, 0, 0};
-  return NewExpr(reinterpret_cast<expr*>(new expr_if(e)));
-}
-
-NumericExpr ExprBuilder::NewSum(int opcode,
-    NumericExpr arg1, NumericExpr arg2, NumericExpr arg3) {
-  expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {0}, {0}, 0};
-  NumericExpr sum(NewExpr(new expr(e)));
-  expr** args = sum.expr_->L.ep = new expr*[3];
-  sum.expr_->R.ep = args + (arg3.expr_ ? 3 : 2);
-  args[0] = arg1.expr_;
-  args[1] = arg2.expr_;
-  args[2] = arg3.expr_;
-  return sum;
 }
 }

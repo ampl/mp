@@ -61,12 +61,8 @@ class Expr {
  private:
   static const char *const OP_NAMES[N_OPS];
 
- protected:
-  expr *expr_;
-
-  // Returns true iff this expression is null or has type t.
-  bool HasTypeOrNull(OpType t) const {
-    return !expr_ || type() == t;
+  bool IsOpCodeInRange() const {
+    return opcode() >= 0 && opcode() < N_OPS;
   }
 
   void True() const {}
@@ -74,11 +70,20 @@ class Expr {
 
   friend class ExprBuilder;
 
+ protected:
+  expr *expr_;
+
+  // Returns true iff this expression is null or has type t.
+  bool HasTypeOrNull(OpType t) const {
+    return !expr_ || optype() == t;
+  }
+
  public:
-  // Constructs an Expr object representing a reference to the AMPL
-  // expression e.
+  // Constructs an Expr object representing a reference to an AMPL
+  // expression e. Only a minimal check is performed when assertions are
+  // enabled to make sure that the opcode is within the valid range.
   explicit Expr(expr *e = 0) : expr_(e) {
-    assert(!expr_ || (opcode() >= 0 && opcode() < N_OPS));
+    assert(!expr_ || IsOpCodeInRange());
   }
 
   // Returns a value convertible to bool that can be used in conditions but not
@@ -100,11 +105,17 @@ class Expr {
 
   // Returns the operation name of this expression.
   const char *opname() const {
+    assert(IsOpCodeInRange());
     return OP_NAMES[opcode()];
   }
 
-  // Returns the type of this expression.
-  int type() const { return optype[opcode()]; }
+  // Returns the operation type of this expression which can be unary, binary,
+  // etc. It is called "optype" rather than simply "type" to avoid confusion
+  // with expression types such as logical or numeric.
+  OpType optype() const {
+    assert(IsOpCodeInRange());
+    return static_cast<OpType>(::optype[opcode()]);
+  }
 
   // Recursively compares two expressions and returns true if they are equal.
   friend bool AreEqual(Expr e1, Expr e2);
@@ -117,19 +128,31 @@ T Cast(Expr e);
 
 // A numeric expression.
 class NumericExpr : public Expr {
+ private:
+  // Returns true if this is a valid numeric expressions.
+  bool IsValid() const;
+
  protected:
   NumericExpr(Expr e) : Expr(e) {}
 
  public:
   // Constructs a NumericExpr object.
-  explicit NumericExpr(expr *e = 0) : Expr(e) {}
+  explicit NumericExpr(expr *e = 0) : Expr(e) {
+    assert(IsValid());
+  }
 };
 
 // A logical or constraint expression.
 class LogicalExpr : public Expr {
+ private:
+  // Returns true if this is a valid logical expressions.
+  bool IsValid() const;
+
  public:
   // Constructs a LogicalExpr object.
-  explicit LogicalExpr(expr *e = 0) : Expr(e) {}
+  explicit LogicalExpr(expr *e = 0) : Expr(e) {
+    assert(IsValid());
+  }
 };
 
 // A unary expression.
@@ -147,7 +170,7 @@ class UnaryExpr : public NumericExpr {
   NumericExpr arg() const { return NumericExpr(expr_->L.e); }
 };
 
-// A binary expression.
+// A binary numeric expression.
 class BinaryExpr : public NumericExpr {
  private:
   explicit BinaryExpr(NumericExpr e) : NumericExpr(e) {
@@ -598,6 +621,8 @@ public:
     Error(std::string("invalid logical expression: ") + e.opname()) {}
 };
 
+#define AMPL_DISPATCH(call) static_cast<Impl*>(this)->call
+
 // An expression visitor.
 // To use ExprVisitor define a subclass that implements some or all of the
 // Visit* methods with the same signatures as the methods in ExprVisitor,
@@ -624,83 +649,282 @@ class ExprVisitor {
   Result Visit(NumericExpr e);
   LResult Visit(LogicalExpr e);
 
-  Result VisitUnhandledExpr(NumericExpr e) {
+  Result VisitInvalidNumericExpr(NumericExpr e) {
+    throw InvalidNumericExprError(e);
+  }
+
+  LResult VisitInvalidLogicalExpr(LogicalExpr e) {
+    throw InvalidLogicalExprError(e);
+  }
+
+  Result VisitUnhandledNumericExpr(NumericExpr e) {
     throw UnsupportedExprError(e.opname());
   }
 
-  LResult VisitUnhandledExpr(LogicalExpr e) {
+  LResult VisitUnhandledLogicalExpr(LogicalExpr e) {
     throw UnsupportedExprError(e.opname());
   }
 
-  Result VisitPlus(BinaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitMinus(BinaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitMult(BinaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitDiv(BinaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitRem(BinaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitPow(BinaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitLess(BinaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitMin(VarArgExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitMax(VarArgExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitFloor(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitCeil(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitAbs(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitMinus(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitIf(IfExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitTanh(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitTan(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitSqrt(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitSinh(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitSin(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitLog10(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitLog(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitExp(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitCosh(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitCos(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitAtanh(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitAtan2(BinaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitAtan(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitAsinh(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitAsin(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitAcosh(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitAcos(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitSum(SumExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitIntDiv(BinaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitPrecision(BinaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitRound(BinaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitTrunc(BinaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitCount(CountExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitNumberOf(NumberOfExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitPLTerm(PiecewiseLinearTerm t) { return VisitUnhandledExpr(t); }
-  Result VisitConstExpPow(BinaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitPow2(UnaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitConstBasePow(BinaryExpr e) { return VisitUnhandledExpr(e); }
-  Result VisitConstant(NumericConstant c) { return VisitUnhandledExpr(c); }
-  Result VisitVariable(Variable v) { return VisitUnhandledExpr(v); }
+  Result VisitPlus(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
 
-  LResult VisitOr(BinaryLogicalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitAnd(BinaryLogicalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitLess(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitLessEqual(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitEqual(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitGreaterEqual(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitGreater(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitNotEqual(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitNot(NotExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitAtLeast(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitAtMost(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitExactly(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitNotAtLeast(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitNotAtMost(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitNotExactly(RelationalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitForAll(IteratedLogicalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitExists(IteratedLogicalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitImplication(ImplicationExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitIff(BinaryLogicalExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitAllDiff(AllDiffExpr e) { return VisitUnhandledExpr(e); }
-  LResult VisitConstant(LogicalConstant c) { return VisitUnhandledExpr(c); }
+  Result VisitMinus(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitMult(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitDiv(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitRem(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitPow(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitNumericLess(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitMin(VarArgExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitMax(VarArgExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitFloor(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitCeil(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitAbs(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitUnaryMinus(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitIf(IfExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitTanh(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitTan(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitSqrt(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitSinh(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitSin(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitLog10(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitLog(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitExp(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitCosh(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitCos(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitAtanh(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitAtan2(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitAtan(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitAsinh(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitAsin(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitAcosh(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitAcos(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitSum(SumExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitIntDiv(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitPrecision(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitRound(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitTrunc(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitCount(CountExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitNumberOf(NumberOfExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitPLTerm(PiecewiseLinearTerm t) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(t));
+  }
+
+  Result VisitConstExpPow(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitPow2(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitConstBasePow(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitNumericConstant(NumericConstant c) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(c));
+  }
+
+  Result VisitVariable(Variable v) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(v));
+  }
+
+  LResult VisitOr(BinaryLogicalExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitAnd(BinaryLogicalExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitLess(RelationalExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitLessEqual(RelationalExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitEqual(RelationalExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitGreaterEqual(RelationalExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitGreater(RelationalExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitNotEqual(RelationalExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitNot(NotExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitAtLeast(RelationalExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitAtMost(RelationalExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitExactly(RelationalExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitNotAtLeast(RelationalExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitNotAtMost(RelationalExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitNotExactly(RelationalExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitForAll(IteratedLogicalExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitExists(IteratedLogicalExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitImplication(ImplicationExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitIff(BinaryLogicalExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitAllDiff(AllDiffExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitLogicalConstant(LogicalConstant c) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(c));
+  }
 };
-
-#define AMPL_DISPATCH(call) static_cast<Impl*>(this)->call
 
 template <typename Impl, typename Result, typename LResult>
 Result ExprVisitor<Impl, Result, LResult>::Visit(NumericExpr e) {
@@ -720,7 +944,7 @@ Result ExprVisitor<Impl, Result, LResult>::Visit(NumericExpr e) {
   case OPPOW:
     return AMPL_DISPATCH(VisitPow(BinaryExpr(e)));
   case OPLESS:
-    return AMPL_DISPATCH(VisitLess(BinaryExpr(e)));
+    return AMPL_DISPATCH(VisitNumericLess(BinaryExpr(e)));
   case MINLIST:
     return AMPL_DISPATCH(VisitMin(VarArgExpr(e)));
   case MAXLIST:
@@ -732,7 +956,7 @@ Result ExprVisitor<Impl, Result, LResult>::Visit(NumericExpr e) {
   case ABS:
     return AMPL_DISPATCH(VisitAbs(UnaryExpr(e)));
   case OPUMINUS:
-    return AMPL_DISPATCH(VisitMinus(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitUnaryMinus(UnaryExpr(e)));
   case OPIFnl:
     return AMPL_DISPATCH(VisitIf(IfExpr(e)));
   case OP_tanh:
@@ -792,11 +1016,11 @@ Result ExprVisitor<Impl, Result, LResult>::Visit(NumericExpr e) {
   case OPCPOW:
     return AMPL_DISPATCH(VisitConstBasePow(BinaryExpr(e)));
   case OPNUM:
-    return AMPL_DISPATCH(VisitNumber(NumericConstant(e)));
+    return AMPL_DISPATCH(VisitNumericConstant(NumericConstant(e)));
   case OPVARVAL:
     return AMPL_DISPATCH(VisitVariable(Variable(e)));
   default:
-    throw InvalidNumericExprError(e);
+    return AMPL_DISPATCH(VisitInvalidNumericExpr(e));
   }
 }
 
@@ -844,13 +1068,30 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
   case OPALLDIFF:
     return AMPL_DISPATCH(VisitAllDiff(AllDiffExpr(e)));
   case OPNUM:
-    return AMPL_DISPATCH(VisitConstant(LogicalConstant(e)));
+    return AMPL_DISPATCH(VisitLogicalConstant(LogicalConstant(e)));
   default:
-    throw InvalidLogicalExprError(e);
+    return AMPL_DISPATCH(VisitInvalidLogicalExpr(e));
   }
 }
 
 #undef AMPL_DISPATCH
+
+class ExprChecker : public ExprVisitor<ExprChecker, bool, bool> {
+ public:
+  bool VisitInvalidNumericExpr(NumericExpr) { return false; }
+  bool VisitInvalidLogicalExpr(LogicalExpr) { return false; }
+
+  bool VisitUnhandledNumericExpr(NumericExpr) { return true; }
+  bool VisitUnhandledLogicalExpr(LogicalExpr) { return true; }
+};
+
+inline bool NumericExpr::IsValid() const {
+  return !expr_ || ExprChecker().Visit(*this);
+}
+
+inline bool LogicalExpr::IsValid() const {
+  return !expr_ || ExprChecker().Visit(*this);
+}
 }
 
 #endif  // SOLVERS_UTIL_EXPR_H_
