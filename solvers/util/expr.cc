@@ -120,7 +120,7 @@ bool AreEqual(Expr expr1, Expr expr2) {
 
   expr *e1 = expr1.expr_;
   expr *e2 = expr2.expr_;
-  unsigned type = expr1.type();
+  unsigned type = expr1.optype();
   switch (type) {
     case OPTYPE_UNARY:
       return AreEqual(Expr(e1->L.e), Expr(e2->L.e));

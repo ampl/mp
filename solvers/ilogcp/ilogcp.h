@@ -227,7 +227,7 @@ class IlogCPDriver : public Driver, public Visitor {
     return IloPower(Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  IloExpr VisitLess(BinaryExpr e) {
+  IloExpr VisitNumericLess(BinaryExpr e) {
     return IloMax(Visit(e.lhs()) - Visit(e.rhs()), 0.0);
   }
 
@@ -251,7 +251,7 @@ class IlogCPDriver : public Driver, public Visitor {
     return IloAbs(Visit(e.arg()));
   }
 
-  IloExpr VisitMinus(UnaryExpr e) {
+  IloExpr VisitUnaryMinus(UnaryExpr e) {
     return -Visit(e.arg());
   }
 
@@ -357,7 +357,7 @@ class IlogCPDriver : public Driver, public Visitor {
 
   IloExpr VisitPLTerm(PiecewiseLinearTerm t);
 
-  IloExpr VisitNumber(NumericConstant n) {
+  IloExpr VisitNumericConstant(NumericConstant n) {
     return IloExpr(env_, n.value());
   }
 
@@ -365,7 +365,7 @@ class IlogCPDriver : public Driver, public Visitor {
     return vars_[v.index()];
   }
 
-  IloConstraint VisitConstant(LogicalConstant c) {
+  IloConstraint VisitLogicalConstant(LogicalConstant c) {
     return IloNumVar(env_, 1, 1) == c.value();
   }
 

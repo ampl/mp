@@ -32,41 +32,53 @@ class ExprBuilder {
 private:
   std::vector<expr*> exprs_;
 
-  NumericExpr NewExpr(expr *e) {
+  template <typename T = NumericExpr>
+  T NewExpr(expr *e) {
     exprs_.push_back(e);
-    return NumericExpr(e);
+    return T(e);
   }
 
 public:
   ~ExprBuilder();
 
-  static expr *GetExprPtr(Expr e) {
-    return e.expr_;
-  }
-
-  // Creates an ASL expression representing a number.
+  // Creates an expression representing a number.
   NumericExpr NewNum(double n) {
     expr_n e = {reinterpret_cast<efunc_n*>(OPNUM), n};
     return NewExpr(reinterpret_cast<expr*>(new expr_n(e)));
   }
 
-  // Creates an ASL expression representing a variable.
+  // Creates a logical constant.
+  LogicalExpr NewLogicalConstant(bool value) {
+    expr_n e = {reinterpret_cast<efunc_n*>(OPNUM), value ? 1. : 0.};
+    return NewExpr<LogicalExpr>(reinterpret_cast<expr*>(new expr_n(e)));
+  }
+
+  // Creates an expression representing a variable reference.
   NumericExpr NewVar(int var_index) {
     expr e = {reinterpret_cast<efunc*>(OPVARVAL), var_index, 0, {0}, {0}, 0};
     return NewExpr(new expr(e));
   }
 
-  // Creates an unary ASL expression.
-  NumericExpr NewUnary(int opcode, NumericExpr arg) {
+  // Creates a unary expression.
+  template <typename T>
+  T NewUnary(int opcode, T arg) {
     expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {arg.expr_}, {0}, 0};
-    return NewExpr(new expr(e));
+    return NewExpr<T>(new expr(e));
   }
 
-  // Creates a binary ASL expression.
-  NumericExpr NewBinary(int opcode, NumericExpr lhs, NumericExpr rhs) {
+  // Creates a binary expression.
+  template <typename T>
+  T NewBinary(int opcode, T lhs, T rhs) {
     expr e = {reinterpret_cast<efunc*>(opcode), 0, 0,
               {lhs.expr_}, {rhs.expr_}, 0};
-    return NewExpr(new expr(e));
+    return NewExpr<T>(new expr(e));
+  }
+
+  // Creates a relational expression.
+  LogicalExpr NewRelational(int opcode, NumericExpr lhs, NumericExpr rhs) {
+    expr e = {reinterpret_cast<efunc*>(opcode), 0, 0,
+              {lhs.expr_}, {rhs.expr_}, 0};
+    return NewExpr<LogicalExpr>(new expr(e));
   }
 
   static de MakeDE(NumericExpr e) {
@@ -74,20 +86,46 @@ public:
     return result;
   }
 
-  // Creates a variable-argument ASL expression with up to 3 arguments.
+  // Creates a variable-argument expression with up to 3 arguments.
   NumericExpr NewVarArg(int opcode, NumericExpr e1,
       NumericExpr e2, NumericExpr e3 = NumericExpr());
 
   NumericExpr NewPLTerm(int size, const double *args, int var_index);
 
-  // Creates an ASL expression representing if-then-else.
-  NumericExpr NewIf(int opcode, NumericExpr condition,
-      NumericExpr true_expr, NumericExpr false_expr);
+  // Creates an expression representing if-then-else.
+  template <typename T>
+  T NewIf(int opcode, LogicalExpr condition, T true_expr, T false_expr);
 
-  // Creates an ASL expression representing a sum with up to 3 arguments.
-  NumericExpr NewSum(int opcode, NumericExpr arg1,
-      NumericExpr arg2, NumericExpr arg3 = NumericExpr());
+  // Creates an expression representing a sum with up to 3 arguments.
+  template <typename T, typename Result = NumericExpr>
+  Result NewSum(int opcode, T arg1, T arg2, T arg3 = T());
+
+  LogicalExpr NewIterated(int opcode, LogicalExpr arg1,
+      LogicalExpr arg2, LogicalExpr arg3 = LogicalExpr()) {
+    return NewSum<LogicalExpr, LogicalExpr>(opcode, arg1, arg2, arg3);
+  }
 };
+
+template <typename T>
+T ExprBuilder::NewIf(int opcode,
+    LogicalExpr condition, T true_expr, T false_expr) {
+  expr_if e = {reinterpret_cast<efunc*>(opcode), 0, condition.expr_,
+               true_expr.expr_, false_expr.expr_,
+               0, 0, 0, 0, {0}, {0}, 0, 0};
+  return NewExpr<T>(reinterpret_cast<expr*>(new expr_if(e)));
+}
+
+template <typename T, typename Result>
+Result ExprBuilder::NewSum(int opcode, T arg1, T arg2, T arg3) {
+  expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {0}, {0}, 0};
+  Result sum(NewExpr<Result>(new expr(e)));
+  expr** args = sum.expr_->L.ep = new expr*[3];
+  sum.expr_->R.ep = args + (arg3.expr_ ? 3 : 2);
+  args[0] = arg1.expr_;
+  args[1] = arg2.expr_;
+  args[2] = arg3.expr_;
+  return sum;
+}
 }
 
 #endif  // TESTS_EXPR_BUILDER_H_
