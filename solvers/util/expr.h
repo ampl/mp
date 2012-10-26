@@ -65,6 +65,7 @@ class ExprArrayIterator :
   explicit ExprArrayIterator(expr *const *p = 0) : ptr_(p) {}
 
   ExprT operator*() const { return ExprT(*ptr_); }
+
   internal::ExprProxy<ExprT> operator->() const {
     return internal::ExprProxy<ExprT>(*ptr_);
   }
