@@ -372,7 +372,7 @@ TEST_F(ExprTest, InvalidNumericExpr) {
       MakeNumericExpr(info.code);
       ++numeric_count;
     } else {
-      EXPECT_DEBUG_DEATH(MakeNumericExpr(info.code);, message) << info.code;
+      EXPECT_DEBUG_DEATH(MakeNumericExpr(info.code);, message);
     }
   }
   // Paranoid: make sure that the loop body has been executed enough times.
@@ -394,7 +394,7 @@ TEST_F(ExprTest, InvalidLogicalExpr) {
       MakeLogicalExpr(info.code);
       ++logical_count;
     } else {
-      EXPECT_DEBUG_DEATH(MakeLogicalExpr(info.code);, message) << info.code;
+      EXPECT_DEBUG_DEATH(MakeLogicalExpr(info.code);, message);
     }
   }
   // Paranoid: make sure that the loop body has been executed enough times.
