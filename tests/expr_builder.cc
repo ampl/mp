@@ -52,7 +52,7 @@ ExprBuilder::~ExprBuilder() {
   exprs_.clear();
 }
 
-NumericExpr ExprBuilder::NewVarArg(int opcode,
+VarArgExpr ExprBuilder::AddVarArg(int opcode,
     NumericExpr e1, NumericExpr e2, NumericExpr e3) {
   expr_va e = {reinterpret_cast<efunc*>(opcode), 0, {0}, {0}, 0, 0, 0};
   expr_va *copy = new expr_va(e);
@@ -63,13 +63,13 @@ NumericExpr ExprBuilder::NewVarArg(int opcode,
   args[2] = MakeDE(e3);
   args[3] = MakeDE(NumericExpr());
   copy->L.d = args;
-  return NewExpr<NumericExpr>(result);
+  return VarArgExpr(AddExpr<NumericExpr>(result));
 }
 
 NumericExpr ExprBuilder::NewPLTerm(
     int size, const double *args, int var_index) {
   expr e = {reinterpret_cast<efunc*>(OPPLTERM), 0, 0, {0}, {0}, 0};
-  NumericExpr pl(NewExpr<NumericExpr>(new expr(e)));
+  NumericExpr pl(AddExpr<NumericExpr>(new expr(e)));
   pl.expr_->L.p = static_cast<plterm*>(
       std::calloc(1, sizeof(plterm) + sizeof(real) * (size - 1)));
   pl.expr_->L.p->n = (size + 1) / 2;
