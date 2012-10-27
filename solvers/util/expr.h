@@ -86,30 +86,51 @@ class ExprArrayIterator :
 };
 }
 
-// An operation type.
-// Numeric values for the operation types should be in sync with the ones in
-// op_type.hd.
-enum OpType {
-  OPTYPE_UNARY    =  1, // Unary operation
-  OPTYPE_BINARY   =  2, // Binary operation
-  OPTYPE_VARARG   =  3, // Variable-argument function such as min or max
-  OPTYPE_PLTERM   =  4, // Piecewise-linear term
-  OPTYPE_IF       =  5, // The if-then-else expression
-  OPTYPE_SUM      =  6, // The sum expression
-  OPTYPE_FUNCALL  =  7, // Function call
-  OPTYPE_STRING   =  8, // String
-  OPTYPE_NUMBER   =  9, // Number
-  OPTYPE_VARIABLE = 10, // Variable
-  OPTYPE_COUNT    = 11  // The count expression
-};
-
 // An expression.
 // An Expr object represents a handle (reference) to an expression so
 // it is cheap to construct and pass by value. A type safe way to
 // process expressions of different types is by using ExprVisitor.
 class Expr {
+ public:
+  // Expression kinds - one per each concrete expression class.
+  enum Kind {
+    // An unknown expression.
+    UNKNOWN = 0,
+
+    // To simplify checks numeric expression kinds are in a consecutive range
+    // [NUMERIC_START, NUMERIC_END].
+    NUMERIC_START,
+    UNARY = NUMERIC_START,
+    BINARY,
+    VARARG,
+    SUM,
+    COUNT,
+    IF,
+    PLTERM,
+    VARIABLE,
+    NUMBEROF,
+    NUMERIC_END,
+
+    // CONSTANT belongs both to numeric and logical expressions therefore
+    // the [NUMERIC_START, NUMERIC_END] and [LOGICAL_START, LOGICAL_END]
+    // ranges overlap at CONSTANT = NUMERIC_END = LOGICAL_START.
+    CONSTANT = NUMERIC_END,
+
+    // To simplify checks logical expression kinds are in a consecutive range
+    // [LOGICAL_START, LOGICAL_END].
+    LOGICAL_START = CONSTANT,
+    RELATIONAL,
+    NOT,
+    BINARY_LOGICAL,
+    IMPLICATION,
+    ITERATED_LOGICAL,
+    ALLDIFF,
+    LOGICAL_END = ALLDIFF
+  };
+
  private:
   static const char *const OP_NAMES[N_OPS];
+  static const Kind KINDS[N_OPS];
 
   bool IsOpCodeInRange() const {
     return opcode() >= 0 && opcode() < N_OPS;
@@ -131,8 +152,14 @@ class Expr {
   }
 
   // Returns true iff this expression is null or has type t.
-  bool HasTypeOrNull(OpType t) const {
-    return !expr_ || optype() == t;
+  bool HasKind(Kind k) const {
+    return !expr_ || kind() == k;
+  }
+
+  // Returns the kind of this expression.
+  Kind kind() const {
+    assert(IsOpCodeInRange());
+    return KINDS[opcode()];
   }
 
  public:
@@ -164,15 +191,6 @@ class Expr {
     return OP_NAMES[opcode()];
   }
 
-  // Returns the operation type of this expression which can be unary, binary,
-  // etc. It is called "optype" rather than simply "type" to avoid confusion
-  // with expression types such as logical or numeric. This expression should
-  // be non-null.
-  OpType optype() const {
-    assert(IsOpCodeInRange());
-    return static_cast<OpType>(::optype[opcode()]);
-  }
-
   bool operator==(Expr other) const { return expr_ == other.expr_; }
   bool operator!=(Expr other) const { return expr_ != other.expr_; }
 
@@ -189,7 +207,11 @@ T Cast(Expr e);
 class NumericExpr : public Expr {
  private:
   // Returns true if this is a valid numeric expressions.
-  bool IsValid() const;
+  bool IsValid() const {
+    if (!expr_) return true;
+    Kind k = kind();
+    return k >= NUMERIC_START && k <= NUMERIC_END;
+  }
 
  protected:
   NumericExpr(Expr e) : Expr(e) {}
@@ -205,7 +227,11 @@ class NumericExpr : public Expr {
 class LogicalExpr : public Expr {
  private:
   // Returns true if this is a valid logical expressions.
-  bool IsValid() const;
+  bool IsValid() const {
+    if (!expr_) return true;
+    Kind k = kind();
+    return k >= LOGICAL_START && k <= LOGICAL_END;
+  }
 
  public:
   // Constructs a LogicalExpr object.
@@ -219,7 +245,7 @@ class LogicalExpr : public Expr {
 class UnaryExpr : public NumericExpr {
  private:
   explicit UnaryExpr(NumericExpr e) : NumericExpr(e) {
-    assert(HasTypeOrNull(OPTYPE_UNARY));
+    assert(HasKind(UNARY));
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -238,8 +264,7 @@ class UnaryExpr : public NumericExpr {
 class BinaryExpr : public NumericExpr {
  private:
   explicit BinaryExpr(NumericExpr e) : NumericExpr(e) {
-    assert(!expr_ || opcode() == OP1POW || opcode() == OPCPOW ||
-           HasTypeOrNull(OPTYPE_BINARY));
+    assert(HasKind(BINARY));
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -261,7 +286,7 @@ class BinaryExpr : public NumericExpr {
 class VarArgExpr : public NumericExpr {
  private:
   explicit VarArgExpr(NumericExpr e) : NumericExpr(e) {
-    assert(HasTypeOrNull(OPTYPE_VARARG));
+    assert(HasKind(VARARG));
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -321,7 +346,7 @@ class VarArgExpr : public NumericExpr {
 class SumExpr : public NumericExpr {
  private:
   explicit SumExpr(NumericExpr e) : NumericExpr(e) {
-    assert(HasTypeOrNull(OPTYPE_SUM));
+    assert(HasKind(SUM));
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -346,7 +371,7 @@ class SumExpr : public NumericExpr {
 class CountExpr : public NumericExpr {
  private:
   explicit CountExpr(NumericExpr e) : NumericExpr(e) {
-    assert(HasTypeOrNull(OPTYPE_COUNT));
+    assert(HasKind(COUNT));
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -371,7 +396,7 @@ class CountExpr : public NumericExpr {
 class IfExpr : public NumericExpr {
  private:
   explicit IfExpr(NumericExpr e) : NumericExpr(e) {
-    assert(HasTypeOrNull(OPTYPE_IF));
+    assert(HasKind(IF));
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -398,7 +423,7 @@ class IfExpr : public NumericExpr {
 class PiecewiseLinearTerm : public NumericExpr {
  private:
   explicit PiecewiseLinearTerm(NumericExpr e) : NumericExpr(e) {
-    assert(HasTypeOrNull(OPTYPE_PLTERM));
+    assert(HasKind(PLTERM));
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -439,7 +464,7 @@ class PiecewiseLinearTerm : public NumericExpr {
 class NumericConstant : public NumericExpr {
  private:
   explicit NumericConstant(Expr e) : NumericExpr(e) {
-    assert(HasTypeOrNull(OPTYPE_NUMBER));
+    assert(HasKind(CONSTANT));
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -464,7 +489,7 @@ inline NumericConstant Cast<NumericConstant>(Expr e) {
 class Variable : public NumericExpr {
  private:
   explicit Variable(Expr e) : NumericExpr(e) {
-    assert(HasTypeOrNull(OPTYPE_VARIABLE));
+    assert(HasKind(VARIABLE));
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -490,7 +515,7 @@ inline Variable Cast<Variable>(Expr e) {
 class NumberOfExpr : public NumericExpr {
  private:
   explicit NumberOfExpr(NumericExpr e) : NumericExpr(e) {
-    assert(!expr_ || opcode() == OPNUMBEROF);
+    assert(HasKind(NUMBEROF));
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -517,7 +542,7 @@ class NumberOfExpr : public NumericExpr {
 class LogicalConstant : public LogicalExpr {
  private:
   explicit LogicalConstant(LogicalExpr e) : LogicalExpr(e) {
-    assert(HasTypeOrNull(OPTYPE_NUMBER));
+    assert(HasKind(CONSTANT));
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -535,7 +560,7 @@ class LogicalConstant : public LogicalExpr {
 class RelationalExpr : public LogicalExpr {
  private:
   explicit RelationalExpr(LogicalExpr e) : LogicalExpr(e) {
-    assert(HasTypeOrNull(OPTYPE_BINARY));
+    assert(HasKind(RELATIONAL));
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -556,7 +581,7 @@ class RelationalExpr : public LogicalExpr {
 class NotExpr : public LogicalExpr {
  private:
   explicit NotExpr(LogicalExpr e) : LogicalExpr(e) {
-    assert(!expr_ || opcode() == OPNOT);
+    assert(HasKind(NOT));
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -574,7 +599,7 @@ class NotExpr : public LogicalExpr {
 class BinaryLogicalExpr : public LogicalExpr {
  private:
   explicit BinaryLogicalExpr(LogicalExpr e) : LogicalExpr(e) {
-    assert(HasTypeOrNull(OPTYPE_BINARY));
+    assert(HasKind(BINARY_LOGICAL));
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -595,7 +620,7 @@ class BinaryLogicalExpr : public LogicalExpr {
 class ImplicationExpr : public LogicalExpr {
  private:
   explicit ImplicationExpr(LogicalExpr e) : LogicalExpr(e) {
-    assert(!expr_ || opcode() == OPIMPELSE);
+    assert(HasKind(IMPLICATION));
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -622,7 +647,7 @@ class ImplicationExpr : public LogicalExpr {
 class IteratedLogicalExpr : public LogicalExpr {
  private:
   explicit IteratedLogicalExpr(LogicalExpr e) : LogicalExpr(e) {
-    assert(HasTypeOrNull(OPTYPE_SUM) || HasTypeOrNull(OPTYPE_COUNT));
+    assert(HasKind(ITERATED_LOGICAL));
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -647,7 +672,7 @@ class IteratedLogicalExpr : public LogicalExpr {
 class AllDiffExpr : public LogicalExpr {
  private:
   explicit AllDiffExpr(LogicalExpr e) : LogicalExpr(e) {
-    assert(HasTypeOrNull(OPTYPE_COUNT));
+    assert(HasKind(ALLDIFF));
   }
 
   template <typename Impl, typename Result, typename LResult>
@@ -1151,23 +1176,6 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
 }
 
 #undef AMPL_DISPATCH
-
-class ExprChecker : public ExprVisitor<ExprChecker, bool, bool> {
- public:
-  bool VisitInvalidNumericExpr(NumericExpr) { return false; }
-  bool VisitInvalidLogicalExpr(LogicalExpr) { return false; }
-
-  bool VisitUnhandledNumericExpr(NumericExpr) { return true; }
-  bool VisitUnhandledLogicalExpr(LogicalExpr) { return true; }
-};
-
-inline bool NumericExpr::IsValid() const {
-  return !expr_ || ExprChecker().Visit(*this);
-}
-
-inline bool LogicalExpr::IsValid() const {
-  return !expr_ || ExprChecker().Visit(*this);
-}
 }
 
 #endif  // SOLVERS_UTIL_EXPR_H_
