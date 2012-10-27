@@ -115,19 +115,17 @@ TEST_F(ExprTest, ExprCtor) {
 }
 
 TEST_F(ExprTest, ExprOpCodeOutOfRangeInCtor) {
-  const char *message =
-      "Assertion .*!expr_ \\|\\| IsOpCodeInRange\\(\\)";
   {
     expr raw = {reinterpret_cast<efunc*>(-1)};
-    EXPECT_DEBUG_DEATH(Expr e(MakeExpr(&raw));, message);
+    EXPECT_DEBUG_DEATH(Expr e(MakeExpr(&raw));, "Assertion");
   }
   {
     expr raw = {reinterpret_cast<efunc*>(N_OPS)};
-    EXPECT_DEBUG_DEATH(Expr e(MakeExpr(&raw));, message);
+    EXPECT_DEBUG_DEATH(Expr e(MakeExpr(&raw));, "Assertion");
   }
   {
     expr raw = {reinterpret_cast<efunc*>(777)};
-    EXPECT_DEBUG_DEATH(Expr e(MakeExpr(&raw));, message);
+    EXPECT_DEBUG_DEATH(Expr e(MakeExpr(&raw));, "Assertion");
   }
 }
 
@@ -139,13 +137,10 @@ TEST_F(ExprTest, SafeBool) {
   EXPECT_TRUE(e2);
 }
 
-enum {LOGICAL = 1, UNSUPPORTED = 2};
-
 struct OpInfo {
   int code;
   const char *name;
-  int optype;
-  int type;
+  Expr::Kind kind;
 };
 
 const OpInfo OP_INFO[] = {
@@ -169,21 +164,21 @@ const OpInfo OP_INFO[] = {
   {17, "unknown"},
   {18, "unknown"},
   {19, "unknown"},
-  {OPOR,  "||", Expr::BINARY_LOGICAL, LOGICAL},
-  {OPAND, "&&", Expr::BINARY_LOGICAL, LOGICAL},
-  {LT,    "<",  Expr::RELATIONAL, LOGICAL},
-  {LE,    "<=", Expr::RELATIONAL, LOGICAL},
-  {EQ,    "=",  Expr::RELATIONAL, LOGICAL},
+  {OPOR,  "||", Expr::BINARY_LOGICAL},
+  {OPAND, "&&", Expr::BINARY_LOGICAL},
+  {LT,    "<",  Expr::RELATIONAL},
+  {LE,    "<=", Expr::RELATIONAL},
+  {EQ,    "=",  Expr::RELATIONAL},
   {25, "unknown"},
   {26, "unknown"},
   {27, "unknown"},
-  {GE, ">=", Expr::RELATIONAL, LOGICAL},
-  {GT, ">",  Expr::RELATIONAL, LOGICAL},
-  {NE, "!=", Expr::RELATIONAL, LOGICAL},
+  {GE, ">=", Expr::RELATIONAL},
+  {GT, ">",  Expr::RELATIONAL},
+  {NE, "!=", Expr::RELATIONAL},
   {31, "unknown"},
   {32, "unknown"},
   {33, "unknown"},
-  {OPNOT, "!", Expr::UNARY, LOGICAL},
+  {OPNOT, "!", Expr::NOT},
   {OPIFnl, "if-then-else", Expr::IF},
   {36, "unknown"},
   {OP_tanh,  "tanh",  Expr::UNARY},
@@ -210,26 +205,26 @@ const OpInfo OP_INFO[] = {
   {OPtrunc,     "trunc",     Expr::BINARY},
   {OPCOUNT,     "count",           Expr::COUNT},
   {OPNUMBEROF,  "numberof",        Expr::COUNT},
-  {OPNUMBEROFs, "string numberof", Expr::UNKNOWN, UNSUPPORTED},
-  {OPATLEAST, "atleast", Expr::RELATIONAL, LOGICAL},
-  {OPATMOST,  "atmost",  Expr::RELATIONAL, LOGICAL},
+  {OPNUMBEROFs, "string numberof", Expr::UNKNOWN},
+  {OPATLEAST, "atleast", Expr::RELATIONAL},
+  {OPATMOST,  "atmost",  Expr::RELATIONAL},
   {OPPLTERM, "pl term", Expr::PLTERM},
-  {OPIFSYM,  "string if-then-else", Expr::UNKNOWN, UNSUPPORTED},
-  {OPEXACTLY,    "exactly",     Expr::RELATIONAL, LOGICAL},
-  {OPNOTATLEAST, "not atleast", Expr::RELATIONAL, LOGICAL},
-  {OPNOTATMOST,  "not atmost",  Expr::RELATIONAL, LOGICAL},
-  {OPNOTEXACTLY, "not exactly", Expr::RELATIONAL, LOGICAL},
-  {ANDLIST, "forall", Expr::SUM, LOGICAL},
-  {ORLIST,  "exists", Expr::SUM, LOGICAL},
-  {OPIMPELSE, "implies else", Expr::IMPLICATION, LOGICAL},
-  {OP_IFF, "iff", Expr::BINARY_LOGICAL, LOGICAL},
-  {OPALLDIFF, "alldiff", Expr::COUNT, LOGICAL},
+  {OPIFSYM,  "string if-then-else", Expr::UNKNOWN},
+  {OPEXACTLY,    "exactly",     Expr::RELATIONAL},
+  {OPNOTATLEAST, "not atleast", Expr::RELATIONAL},
+  {OPNOTATMOST,  "not atmost",  Expr::RELATIONAL},
+  {OPNOTEXACTLY, "not exactly", Expr::RELATIONAL},
+  {ANDLIST, "forall", Expr::ITERATED_LOGICAL},
+  {ORLIST,  "exists", Expr::ITERATED_LOGICAL},
+  {OPIMPELSE, "implies else", Expr::IMPLICATION},
+  {OP_IFF, "iff", Expr::BINARY_LOGICAL},
+  {OPALLDIFF, "alldiff", Expr::ALLDIFF},
   {OP1POW, "1pow", Expr::BINARY},
   {OP2POW, "^2",   Expr::UNARY},
   {OPCPOW, "cpow", Expr::BINARY},
-  {OPFUNCALL, "function call", Expr::UNKNOWN, UNSUPPORTED},
-  {OPNUM, "number", Expr::CONSTANT, LOGICAL},
-  {OPHOL, "string", Expr::UNKNOWN, UNSUPPORTED},
+  {OPFUNCALL, "function call", Expr::UNKNOWN},
+  {OPNUM, "number", Expr::CONSTANT},
+  {OPHOL, "string", Expr::UNKNOWN},
   {OPVARVAL, "variable", Expr::VARIABLE}
 };
 
@@ -238,17 +233,20 @@ TEST_F(ExprTest, Operators) {
   int size = sizeof(OP_INFO) / sizeof(*OP_INFO);
   EXPECT_EQ(N_OPS, size);
   for (int i = 0; i < N_OPS; ++i) {
-    int opcode = OP_INFO[i].code;
-    const char *opname = OP_INFO[i].name;
+    const OpInfo &info = OP_INFO[i];
+    int opcode = info.code;
+    const char *opname = info.name;
     expr raw = {reinterpret_cast<efunc*>(opcode)};
+    if (info.kind == Expr::UNKNOWN) {
+      EXPECT_DEBUG_DEATH(MakeExpr(&raw);, "Assertion");
+      continue;
+    }
     Expr e(MakeExpr(&raw));
     EXPECT_EQ(opcode, e.opcode());
     EXPECT_STREQ(opname, e.opname());
-    //EXPECT_EQ(OP_INFO[i].optype, e.optype()) << opname;
-    if (strcmp(opname, "unknown"))
-      ++known_ops;
+    ++known_ops;
   }
-  EXPECT_EQ(68, known_ops);
+  EXPECT_EQ(64, known_ops);
 }
 
 TEST_F(ExprTest, ExprOpCodeOutOfRangeInAccessors) {
@@ -423,14 +421,13 @@ void MakeNumericExpr(int opcode) {
 
 TEST_F(ExprTest, InvalidNumericExpr) {
   int i = 0, numeric_count = 0;
-  const char *message = "Assertion .*IsValid\\(\\)";
   for (; i < N_OPS; ++i) {
     const OpInfo &info = OP_INFO[i];
-    if (info.optype != 0 && (info.type == 0 || info.code == OPNUM)) {
+    if (info.kind >= Expr::NUMERIC_START && info.kind <= Expr::NUMERIC_END) {
       MakeNumericExpr(info.code);
       ++numeric_count;
     } else {
-      EXPECT_DEBUG_DEATH(MakeNumericExpr(info.code);, message);
+      EXPECT_DEBUG_DEATH(MakeNumericExpr(info.code);, "Assertion");
     }
   }
   // Paranoid: make sure that the loop body has been executed enough times.
@@ -445,14 +442,13 @@ void MakeLogicalExpr(int opcode) {
 
 TEST_F(ExprTest, InvalidLogicalExpr) {
   int i = 0, logical_count = 0;
-  const char *message = "Assertion .*IsValid\\(\\)";
   for (; i < N_OPS; ++i) {
     const OpInfo &info = OP_INFO[i];
-    if ((info.type & LOGICAL) != 0) {
+    if (info.kind >= Expr::LOGICAL_START && info.kind <= Expr::LOGICAL_END) {
       MakeLogicalExpr(info.code);
       ++logical_count;
     } else {
-      EXPECT_DEBUG_DEATH(MakeLogicalExpr(info.code);, message);
+      EXPECT_DEBUG_DEATH(MakeLogicalExpr(info.code);, "Assertion");
     }
   }
   // Paranoid: make sure that the loop body has been executed enough times.
