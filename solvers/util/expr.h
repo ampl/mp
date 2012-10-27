@@ -36,8 +36,6 @@ extern "C" {
 
 namespace ampl {
 
-class Expr;
-
 // Anything in namespace internal is AMPL's INTERNAL IMPLEMENTATION DETAIL
 // and MUST NOT BE USED DIRECTLY in user code.
 namespace internal {
@@ -97,9 +95,11 @@ class Expr {
     // An unknown expression.
     UNKNOWN = 0,
 
+    EXPR_START,
+
     // To simplify checks numeric expression kinds are in a consecutive range
     // [NUMERIC_START, NUMERIC_END].
-    NUMERIC_START,
+    NUMERIC_START = EXPR_START,
     UNARY = NUMERIC_START,
     BINARY,
     VARARG,
@@ -125,7 +125,8 @@ class Expr {
     IMPLICATION,
     ITERATED_LOGICAL,
     ALLDIFF,
-    LOGICAL_END = ALLDIFF
+    LOGICAL_END = ALLDIFF,
+    EXPR_END = LOGICAL_END
   };
 
  private:
@@ -148,7 +149,7 @@ class Expr {
   // expression e. Only a minimal check is performed when assertions are
   // enabled to make sure that the opcode is within the valid range.
   explicit Expr(expr *e) : expr_(e) {
-    assert(!expr_ || IsOpCodeInRange());
+    assert(!expr_ || (kind() >= EXPR_START && kind() <= EXPR_END));
   }
 
   // Returns true iff this expression is null or has type t.
