@@ -25,18 +25,6 @@
 #include "gtest/gtest.h"
 #include "tests/expr_builder.h"
 
-using ampl::OPTYPE_UNARY;
-using ampl::OPTYPE_BINARY;
-using ampl::OPTYPE_VARARG;
-using ampl::OPTYPE_PLTERM;
-using ampl::OPTYPE_IF;
-using ampl::OPTYPE_SUM;
-using ampl::OPTYPE_FUNCALL;
-using ampl::OPTYPE_STRING;
-using ampl::OPTYPE_NUMBER;
-using ampl::OPTYPE_VARIABLE;
-using ampl::OPTYPE_COUNT;
-
 using ampl::Expr;
 using ampl::NumericExpr;
 using ampl::LogicalExpr;
@@ -161,88 +149,88 @@ struct OpInfo {
 };
 
 const OpInfo OP_INFO[] = {
-  {OPPLUS,  "+",    OPTYPE_BINARY},
-  {OPMINUS, "-",    OPTYPE_BINARY},
-  {OPMULT,  "*",    OPTYPE_BINARY},
-  {OPDIV,   "/",    OPTYPE_BINARY},
-  {OPREM,   "mod",  OPTYPE_BINARY},
-  {OPPOW,   "^",    OPTYPE_BINARY},
-  {OPLESS,  "less", OPTYPE_BINARY},
+  {OPPLUS,  "+",    Expr::BINARY},
+  {OPMINUS, "-",    Expr::BINARY},
+  {OPMULT,  "*",    Expr::BINARY},
+  {OPDIV,   "/",    Expr::BINARY},
+  {OPREM,   "mod",  Expr::BINARY},
+  {OPPOW,   "^",    Expr::BINARY},
+  {OPLESS,  "less", Expr::BINARY},
   { 7, "unknown"},
   { 8, "unknown"},
   { 9, "unknown"},
   {10, "unknown"},
-  {MINLIST,  "min",     OPTYPE_VARARG},
-  {MAXLIST,  "max",     OPTYPE_VARARG},
-  {FLOOR,    "floor",   OPTYPE_UNARY},
-  {CEIL,     "ceil",    OPTYPE_UNARY},
-  {ABS,      "abs",     OPTYPE_UNARY},
-  {OPUMINUS, "unary -", OPTYPE_UNARY},
+  {MINLIST,  "min",     Expr::VARARG},
+  {MAXLIST,  "max",     Expr::VARARG},
+  {FLOOR,    "floor",   Expr::UNARY},
+  {CEIL,     "ceil",    Expr::UNARY},
+  {ABS,      "abs",     Expr::UNARY},
+  {OPUMINUS, "unary -", Expr::UNARY},
   {17, "unknown"},
   {18, "unknown"},
   {19, "unknown"},
-  {OPOR,  "||", OPTYPE_BINARY, LOGICAL},
-  {OPAND, "&&", OPTYPE_BINARY, LOGICAL},
-  {LT,    "<",  OPTYPE_BINARY, LOGICAL},
-  {LE,    "<=", OPTYPE_BINARY, LOGICAL},
-  {EQ,    "=",  OPTYPE_BINARY, LOGICAL},
+  {OPOR,  "||", Expr::BINARY_LOGICAL, LOGICAL},
+  {OPAND, "&&", Expr::BINARY_LOGICAL, LOGICAL},
+  {LT,    "<",  Expr::RELATIONAL, LOGICAL},
+  {LE,    "<=", Expr::RELATIONAL, LOGICAL},
+  {EQ,    "=",  Expr::RELATIONAL, LOGICAL},
   {25, "unknown"},
   {26, "unknown"},
   {27, "unknown"},
-  {GE, ">=", OPTYPE_BINARY, LOGICAL},
-  {GT, ">",  OPTYPE_BINARY, LOGICAL},
-  {NE, "!=", OPTYPE_BINARY, LOGICAL},
+  {GE, ">=", Expr::RELATIONAL, LOGICAL},
+  {GT, ">",  Expr::RELATIONAL, LOGICAL},
+  {NE, "!=", Expr::RELATIONAL, LOGICAL},
   {31, "unknown"},
   {32, "unknown"},
   {33, "unknown"},
-  {OPNOT, "!", OPTYPE_UNARY, LOGICAL},
-  {OPIFnl, "if-then-else", OPTYPE_IF},
+  {OPNOT, "!", Expr::UNARY, LOGICAL},
+  {OPIFnl, "if-then-else", Expr::IF},
   {36, "unknown"},
-  {OP_tanh,  "tanh",  OPTYPE_UNARY},
-  {OP_tan,   "tan",   OPTYPE_UNARY},
-  {OP_sqrt,  "sqrt",  OPTYPE_UNARY},
-  {OP_sinh,  "sinh",  OPTYPE_UNARY},
-  {OP_sin,   "sin",   OPTYPE_UNARY},
-  {OP_log10, "log10", OPTYPE_UNARY},
-  {OP_log,   "log",   OPTYPE_UNARY},
-  {OP_exp,   "exp",   OPTYPE_UNARY},
-  {OP_cosh,  "cosh",  OPTYPE_UNARY},
-  {OP_cos,   "cos",   OPTYPE_UNARY},
-  {OP_atanh, "atanh", OPTYPE_UNARY},
-  {OP_atan2, "atan2", OPTYPE_BINARY},
-  {OP_atan,  "atan",  OPTYPE_UNARY},
-  {OP_asinh, "asinh", OPTYPE_UNARY},
-  {OP_asin,  "asin",  OPTYPE_UNARY},
-  {OP_acosh, "acosh", OPTYPE_UNARY},
-  {OP_acos,  "acos",  OPTYPE_UNARY},
-  {OPSUMLIST, "sum",  OPTYPE_SUM},
-  {OPintDIV,  "div",  OPTYPE_BINARY},
-  {OPprecision, "precision", OPTYPE_BINARY},
-  {OPround,     "round",     OPTYPE_BINARY},
-  {OPtrunc,     "trunc",     OPTYPE_BINARY},
-  {OPCOUNT,     "count",           OPTYPE_COUNT},
-  {OPNUMBEROF,  "numberof",        OPTYPE_COUNT},
-  {OPNUMBEROFs, "string numberof", OPTYPE_COUNT, UNSUPPORTED},
-  {OPATLEAST, "atleast", OPTYPE_BINARY, LOGICAL},
-  {OPATMOST,  "atmost",  OPTYPE_BINARY, LOGICAL},
-  {OPPLTERM, "pl term", OPTYPE_PLTERM},
-  {OPIFSYM,  "string if-then-else", OPTYPE_IF, UNSUPPORTED},
-  {OPEXACTLY,    "exactly",     OPTYPE_BINARY, LOGICAL},
-  {OPNOTATLEAST, "not atleast", OPTYPE_BINARY, LOGICAL},
-  {OPNOTATMOST,  "not atmost",  OPTYPE_BINARY, LOGICAL},
-  {OPNOTEXACTLY, "not exactly", OPTYPE_BINARY, LOGICAL},
-  {ANDLIST, "forall", OPTYPE_SUM, LOGICAL},
-  {ORLIST,  "exists", OPTYPE_SUM, LOGICAL},
-  {OPIMPELSE, "implies else", OPTYPE_IF, LOGICAL},
-  {OP_IFF, "iff", OPTYPE_BINARY, LOGICAL},
-  {OPALLDIFF, "alldiff", OPTYPE_COUNT, LOGICAL},
-  {OP1POW, "1pow", OPTYPE_UNARY},
-  {OP2POW, "^2",   OPTYPE_UNARY},
-  {OPCPOW, "cpow", OPTYPE_UNARY},
-  {OPFUNCALL, "function call", OPTYPE_FUNCALL, UNSUPPORTED},
-  {OPNUM, "number", OPTYPE_NUMBER, LOGICAL},
-  {OPHOL, "string", OPTYPE_STRING, UNSUPPORTED},
-  {OPVARVAL, "variable", OPTYPE_VARIABLE}
+  {OP_tanh,  "tanh",  Expr::UNARY},
+  {OP_tan,   "tan",   Expr::UNARY},
+  {OP_sqrt,  "sqrt",  Expr::UNARY},
+  {OP_sinh,  "sinh",  Expr::UNARY},
+  {OP_sin,   "sin",   Expr::UNARY},
+  {OP_log10, "log10", Expr::UNARY},
+  {OP_log,   "log",   Expr::UNARY},
+  {OP_exp,   "exp",   Expr::UNARY},
+  {OP_cosh,  "cosh",  Expr::UNARY},
+  {OP_cos,   "cos",   Expr::UNARY},
+  {OP_atanh, "atanh", Expr::UNARY},
+  {OP_atan2, "atan2", Expr::BINARY},
+  {OP_atan,  "atan",  Expr::UNARY},
+  {OP_asinh, "asinh", Expr::UNARY},
+  {OP_asin,  "asin",  Expr::UNARY},
+  {OP_acosh, "acosh", Expr::UNARY},
+  {OP_acos,  "acos",  Expr::UNARY},
+  {OPSUMLIST, "sum",  Expr::SUM},
+  {OPintDIV,  "div",  Expr::BINARY},
+  {OPprecision, "precision", Expr::BINARY},
+  {OPround,     "round",     Expr::BINARY},
+  {OPtrunc,     "trunc",     Expr::BINARY},
+  {OPCOUNT,     "count",           Expr::COUNT},
+  {OPNUMBEROF,  "numberof",        Expr::COUNT},
+  {OPNUMBEROFs, "string numberof", Expr::UNKNOWN, UNSUPPORTED},
+  {OPATLEAST, "atleast", Expr::RELATIONAL, LOGICAL},
+  {OPATMOST,  "atmost",  Expr::RELATIONAL, LOGICAL},
+  {OPPLTERM, "pl term", Expr::PLTERM},
+  {OPIFSYM,  "string if-then-else", Expr::UNKNOWN, UNSUPPORTED},
+  {OPEXACTLY,    "exactly",     Expr::RELATIONAL, LOGICAL},
+  {OPNOTATLEAST, "not atleast", Expr::RELATIONAL, LOGICAL},
+  {OPNOTATMOST,  "not atmost",  Expr::RELATIONAL, LOGICAL},
+  {OPNOTEXACTLY, "not exactly", Expr::RELATIONAL, LOGICAL},
+  {ANDLIST, "forall", Expr::SUM, LOGICAL},
+  {ORLIST,  "exists", Expr::SUM, LOGICAL},
+  {OPIMPELSE, "implies else", Expr::IMPLICATION, LOGICAL},
+  {OP_IFF, "iff", Expr::BINARY_LOGICAL, LOGICAL},
+  {OPALLDIFF, "alldiff", Expr::COUNT, LOGICAL},
+  {OP1POW, "1pow", Expr::BINARY},
+  {OP2POW, "^2",   Expr::UNARY},
+  {OPCPOW, "cpow", Expr::BINARY},
+  {OPFUNCALL, "function call", Expr::UNKNOWN, UNSUPPORTED},
+  {OPNUM, "number", Expr::CONSTANT, LOGICAL},
+  {OPHOL, "string", Expr::UNKNOWN, UNSUPPORTED},
+  {OPVARVAL, "variable", Expr::VARIABLE}
 };
 
 TEST_F(ExprTest, Operators) {
@@ -256,7 +244,7 @@ TEST_F(ExprTest, Operators) {
     Expr e(MakeExpr(&raw));
     EXPECT_EQ(opcode, e.opcode());
     EXPECT_STREQ(opname, e.opname());
-    EXPECT_EQ(OP_INFO[i].optype, e.optype()) << opname;
+    //EXPECT_EQ(OP_INFO[i].optype, e.optype()) << opname;
     if (strcmp(opname, "unknown"))
       ++known_ops;
   }
@@ -271,21 +259,18 @@ TEST_F(ExprTest, ExprOpCodeOutOfRangeInAccessors) {
     Expr e(MakeExpr(&raw));
     raw.op = reinterpret_cast<efunc*>(-1);
     EXPECT_DEBUG_DEATH(e.opname();, message);
-    EXPECT_DEBUG_DEATH(e.optype();, message);
   }
   {
     expr raw = {};
     Expr e(MakeExpr(&raw));
     raw.op = reinterpret_cast<efunc*>(N_OPS);
     EXPECT_DEBUG_DEATH(e.opname();, message);
-    EXPECT_DEBUG_DEATH(e.optype();, message);
   }
   {
     expr raw = {};
     Expr e(MakeExpr(&raw));
     raw.op = reinterpret_cast<efunc*>(777);
     EXPECT_DEBUG_DEATH(e.opname();, message);
-    EXPECT_DEBUG_DEATH(e.optype();, message);
   }
 }
 
@@ -482,7 +467,7 @@ TEST_F(ExprTest, UnaryExpr) {
   UnaryExpr e(AddUnary(OPUMINUS, arg));
   EXPECT_EQ(arg, e.arg());
   EXPECT_DEBUG_DEATH(AddUnary(OPPLUS, arg);,
-    "Assertion .*HasTypeOrNull\\(OPTYPE_UNARY\\)");
+    "Assertion .*HasKind\\(UNARY\\)");
 }
 
 TEST_F(ExprTest, BinaryExpr) {
@@ -493,7 +478,7 @@ TEST_F(ExprTest, BinaryExpr) {
   EXPECT_EQ(lhs, e.lhs());
   EXPECT_EQ(rhs, e.rhs());
   EXPECT_DEBUG_DEATH(AddBinary(OPUMINUS, lhs, rhs);,
-    "Assertion .*HasTypeOrNull\\(OPTYPE_BINARY\\)");
+    "Assertion .*HasKind\\(BINARY\\)");
 }
 
 TEST_F(ExprTest, VarArgExpr) {
@@ -515,7 +500,7 @@ TEST_F(ExprTest, VarArgExpr) {
   EXPECT_EQ(args[0], *i2);
   EXPECT_EQ(args[1], *i);
   EXPECT_DEBUG_DEATH(AddVarArg(OPUMINUS, args[0], args[1], args[2]);,
-    "Assertion .*HasTypeOrNull\\(OPTYPE_VARARG\\)");
+    "Assertion .*HasKind\\(VARARG\\)");
 }
 
 // TODO: more tests

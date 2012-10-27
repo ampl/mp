@@ -30,18 +30,18 @@ ExprBuilder::~ExprBuilder() {
     expr *e = *i;
     if (Expr(e).opcode() >= N_OPS)
       continue;
-    switch (Expr(e).optype()) {
-      case OPTYPE_VARARG:
+    switch (Expr(e).kind()) {
+      case Expr::VARARG:
         delete reinterpret_cast<expr_va*>(e);
         break;
-      case OPTYPE_PLTERM:
+      case Expr::PLTERM:
         std::free(e->L.p);
         delete e;
         break;
-      case OPTYPE_IF:
+      case Expr::IF:
         delete reinterpret_cast<expr_if*>(e);
         break;
-      case OPTYPE_NUMBER:
+      case Expr::CONSTANT:
         delete reinterpret_cast<expr_n*>(e);
         break;
       default:
