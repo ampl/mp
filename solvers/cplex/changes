@@ -833,3 +833,18 @@ value of the solution returned.
   cplex.c: call CPXwriteparam instead of CPXEwriteparam.  The change
 should be invisible for now but may be required with future versions
 of CPLEX.
+
+20121022
+  cplex.c, README.cplex:  add keyword "incompat" with description
+	How to treat parameter settings that CPLEX finds
+	incompatible:
+		0 = quietly ignore incompatibilities
+		1 = report and ignore them (default)
+		2 = reject them, refusing to solve.
+	For example, CPLEX regards the polishafter_* parameters
+	introduced in CPLEX 11.2 as incompatible with the older
+	polishtime parameter.
+  cplex.c:  modify adjustment to SOS reference-row values by
+arranging to look at them in sorted order when modifying them if
+necessary to make them distinct.  (CPLEX requires them to be
+distinct.)

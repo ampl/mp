@@ -3084,3 +3084,10 @@ conditions.  Example:
   Fix a bug with a "solve" involving no logical constraints after a
 solve with one or more logical constraints.  The bug could cause a
 fault or other surprising behavior.
+
+20121021
+  Fix a bug (sometimes leading to a surprising "solve_out:..." error
+message and/or an invalid .nl file) with problems containing both
+logical constraints and "var ... in ..."  declarations, such as
+
+	var x{S} in {0, 4, 6};

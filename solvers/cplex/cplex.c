@@ -154,7 +154,8 @@ mdbl_values {
 	set_populate	= 23,
 	set_pooldual	= 24,
 	set_resolve	= 25,
-	set_cutstats	= 26
+	set_cutstats	= 26,
+	set_incompat	= 27
 	};
 #ifdef CPX_PARAM_FEASOPTMODE /* >= 9.2b */
 #define Uselazy
@@ -165,7 +166,7 @@ mdbl_values {
 	};
 
  static mint_values
-mint_val[27] = {
+mint_val[28] = {
 	/* set_crossover */	{0, 2, 1},
 	/* set_dualthresh */	{-0x7fffffff, 0x7fffffff, 0},
 	/* set_netopt */	{0, 2, 1},
@@ -192,7 +193,8 @@ mint_val[27] = {
 	/* set_populate */	{0, 2, 0},
 	/* set_pooldual */	{0, 1, 0},
 	/* set_resolve */	{0, 1, 1},
-	/* set_cutstats */	{0, 1, 0}
+	/* set_cutstats */	{0, 1, 0},
+	/* set_incompat */	{0, 2, 1}
 	};
 
  static mdbl_values
@@ -227,12 +229,13 @@ mdbl_val[] = {
 #define pooldual	mint_val[24].val
 #define Resolve		mint_val[25].val
 #define cutstats	mint_val[26].val
+#define Incompat	mint_val[27].val
 #define dual_ratio	mdbl_val[0].val
 
  static int hybmethod = CPX_ALG_PRIMAL;
  static int netiters = -1;
  static CPXFILEptr Logf;
- static char cplex_version[] = "AMPL/CPLEX with bad license\0\nAMPL/CPLEX Driver Version 20120423\n";
+ static char cplex_version[] = "AMPL/CPLEX with bad license\0\nAMPL/CPLEX Driver Version 20121022\n";
  static char *baralgname, *endbas, *endsol, *endtree, *endvec, *logfname;
  static char *paramfile, *poolstub, *pretunefile, *pretunefileprm;
  static char *startbas, *startsol, *starttree, *startvec, *tunefile, *tunefileprm;
@@ -979,10 +982,27 @@ sf_mint(Option_Info *oi, keyword *kw, char *v)
 	return rv;
 	}
 
+#ifdef CPXERR_PARAM_INCOMPATIBLE /*{*/
+ static char *
+incompatible(Option_Info *oi, keyword *kw, char *rv, char *v)
+{
+	oi->option_echo &= ~ASL_OI_echothis;
+	if (Incompat) {
+		printf("%s \"%s%s%.*s\" as incompatible "
+			"with earlier parameter settings.\n",
+			Incompat == 1 ? "Ignoring" : "Rejecting",
+			kw->name, oi->eqsign, (int)(rv-v), v);
+		if (Incompat == 2)
+			badopt_ASL(oi);
+		}
+	return rv;
+	}
+#endif /*}*/
+
  static char *
 sf_int(Option_Info *oi, keyword *kw, char *v)
 {
-	int f, t, z[3];
+	int f, k, t, z[3];
 	char *rv;
 	const char *what = kw->name;
 
@@ -999,7 +1019,11 @@ sf_int(Option_Info *oi, keyword *kw, char *v)
 			what, v);
 		badopt_ASL(oi);
 		}
-	else if (CPXsetintparam(Env, f, t)) {
+	else if ((k = CPXsetintparam(Env, f, t))) {
+#ifdef CPXERR_PARAM_INCOMPATIBLE
+		if (k == CPXERR_PARAM_INCOMPATIBLE)
+			return incompatible(oi, kw, rv, v);
+#endif
 		z[2] = 0;
 		z[1] = 1;
 		CPXinfointparam(Env, f, z, z+1, z+2);
@@ -1069,8 +1093,9 @@ sf_dbl(Option_Info *oi, keyword *kw, char *v)
 	double t, z[3];
 	char *rv;
 	const char *what = kw->name;
-	int f = Intcast kw->info;
+	int f, k;
 
+	f = Intcast kw->info;
 	if (*v == '?' && v[1] <= ' ') {
 		CPXgetdblparam(Env, f, &t);
 		printf("%s=%g\n", what, t);
@@ -1083,7 +1108,11 @@ sf_dbl(Option_Info *oi, keyword *kw, char *v)
 			what, v);
 		badopt_ASL(oi);
 		}
-	else if (CPXsetdblparam(Env, f, t)) {
+	else if ((k = CPXsetdblparam(Env, f, t))) {
+#ifdef CPXERR_PARAM_INCOMPATIBLE
+		if (k == CPXERR_PARAM_INCOMPATIBLE)
+			return incompatible(oi, kw, rv, v);
+#endif
 		z[2] = 0;
 		z[1] = 1;
 		CPXinfodblparam(Env, f, z, z+1, z+2);
@@ -1493,6 +1522,11 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 	{ "iisfind",	sf_mint,	VP set_iis },
 #ifdef CPLEX_MIP
 	{ "impliedcuts", sf_int,	VP CPX_PARAM_IMPLBD },
+#endif
+#ifdef CPXERR_PARAM_INCOMPATIBLE
+	{ "incompat", sf_mint,		VP set_incompat },
+#endif
+#ifdef CPLEX_MIP
 	{ "integrality", sf_dbl,	VP CPX_PARAM_EPINT },
 	{ "intwarntol", D_val,		VP &intwarn_tol },
 #endif
@@ -1793,7 +1827,7 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 
  static Option_Info Oinfo = { "cplex", 0, "cplex_options",
 				keywds, nkeywds, 0, cplex_version,
-				0,0,0,0,0, 20120423 };
+				0,0,0,0,0, 20121022 };
 
  static void
 badlic(int rc, int status)
@@ -2389,25 +2423,71 @@ qmatadj(int k, int nr, int os, int *colq, int *colqcnt, double **qmatp)
 	return 1;
 	}
 
+ static int
+refcomp(const void *a, const void *b, void *c)
+{
+	double d, *x;
+
+	x = (double*)c;
+	d = x[*(int*)a] - x[*(int*)b];
+	if (d < 0.)
+		return -1;
+	if (d > 0.)
+		return 1.;
+	return 0;
+	}
+
  static void
 sos_kludge(int nsos, int *sosbeg, double *sosref)
 {
 	/* Adjust sosref if necessary to accommodate CPLEX's */
 	/* undocumented requirement that sosref values differ */
 	/* by at least 1e-10. */
-	int i, j, k;
+	int i, i0, i1, j, k, m, m1, *z, z0[16];
 	double t, t1;
+
 	for(i = j = 0; i++ < nsos; ) {
 		k = sosbeg[i];
 		t = sosref[j];
 		while(++j < k) {
 			t1 = sosref[j];
 			t += 1e-10;
-			if (t1 <= t)
+			if (t1 <= t) {
+				if (t1 < t)
+					goto trysort;
 				sosref[j] = t1 = t + 1e-10;
+				}
 			t = t1;
 			}
 		}
+	return;
+ trysort:
+	j = sosbeg[i0 = i - 1];
+	m = 0;
+	for(i = i0; i++ < nsos; j = k) {
+		k = sosbeg[i];
+		if ((m1 = k - j) > m)
+			m = m1;
+		}
+	z = z0;
+	if (m > sizeof(z0)/sizeof(z0[0]))
+		z = (int *)Malloc(m*sizeof(int));
+	for(j = sosbeg[i = i0]; i++ < nsos; j = k) {
+		k = sosbeg[i];
+		m1 = k - j;
+		for(i1 = 0; i1 < m1; ++i1)
+			z[i1] = i1 + j;
+		qsortv(z, m1, sizeof(int), refcomp, sosref);
+		t = sosref[z[0] + j];
+		for(i1 = 1; i1 < m1; ++i1, t = t1) {
+			t1 = sosref[z[i1]];
+			t += 1e-10;
+			if (t1 <= t)
+				sosref[z[i1]] = t1 = t + 1e-10;
+			}
+		}
+	if (z != z0)
+		free(z);
 	}
 
 #ifdef CPXERR_QCP_SENSE

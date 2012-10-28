@@ -460,10 +460,19 @@ above single-word phrases, denoting them with "Single-word phrase".
                         in the IIS; and "fix" for equality constraints that
                         are in the IIS.
 
-     impliedcuts                Whether to use implied cuts in solving MIPs:
+     impliedcuts        Whether to use implied cuts in solving MIPs:
                                 -1 = never
                                  0 = automatic choice (default)
                                  1, 2 = ever more aggressive use
+
+     incompat           How to treat parameter settings that CPLEX finds
+                        incompatible:
+                                0 = quietly ignore incompatibilities
+                                1 = report and ignore them (default)
+                                2 = reject them, refusing to solve.
+                        For example, CPLEX regards the polishafter_* parameters
+                        introduced in CPLEX 11.2 as incompatible with the older
+                        polishtime parameter.
 
      integrality        Amount by which an integer variable can differ
                         from the nearest integer and still be considered
