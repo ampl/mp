@@ -34,6 +34,8 @@ using ampl::VarArgExpr;
 using ampl::SumExpr;
 using ampl::CountExpr;
 using ampl::IfExpr;
+using ampl::PiecewiseLinearTerm;
+using ampl::Variable;
 
 using ampl::UnsupportedExprError;
 
@@ -59,8 +61,11 @@ bool Is<TestExpr>(Expr e) {
 }
 
 namespace {
-template <typename ExprT = Expr>
+
+template <typename ExprT>
 ExprT MakeExpr(expr *e) { return TestExpr::MakeExpr<ExprT>(e); }
+
+Expr MakeExpr(expr *e) { return TestExpr::MakeExpr<Expr>(e); }
 
 void TestExpr::TestProxy() {
   expr e = {reinterpret_cast<efunc*>(OPDIV)};
@@ -369,109 +374,109 @@ TEST_F(ExprTest, EqualNum) {
 }
 
 TEST_F(ExprTest, EqualVar) {
-  EXPECT_TRUE(AreEqual(NewVar(0), NewVar(0)));
-  EXPECT_FALSE(AreEqual(NewVar(0), NewVar(1)));
-  EXPECT_FALSE(AreEqual(NewVar(0), AddNum(0)));
+  EXPECT_TRUE(AreEqual(AddVar(0), AddVar(0)));
+  EXPECT_FALSE(AreEqual(AddVar(0), AddVar(1)));
+  EXPECT_FALSE(AreEqual(AddVar(0), AddNum(0)));
 }
 
 TEST_F(ExprTest, EqualUnary) {
-  EXPECT_TRUE(AreEqual(AddUnary(OPUMINUS, NewVar(0)),
-                       AddUnary(OPUMINUS, NewVar(0))));
-  EXPECT_FALSE(AreEqual(AddUnary(OPUMINUS, NewVar(0)),
-                        NewVar(0)));
-  EXPECT_FALSE(AreEqual(AddUnary(OPUMINUS, NewVar(0)),
-                        AddUnary(FLOOR, NewVar(0))));
-  EXPECT_FALSE(AreEqual(AddUnary(OPUMINUS, NewVar(0)),
-                        AddUnary(OPUMINUS, NewVar(1))));
+  EXPECT_TRUE(AreEqual(AddUnary(OPUMINUS, AddVar(0)),
+                       AddUnary(OPUMINUS, AddVar(0))));
+  EXPECT_FALSE(AreEqual(AddUnary(OPUMINUS, AddVar(0)),
+                        AddVar(0)));
+  EXPECT_FALSE(AreEqual(AddUnary(OPUMINUS, AddVar(0)),
+                        AddUnary(FLOOR, AddVar(0))));
+  EXPECT_FALSE(AreEqual(AddUnary(OPUMINUS, AddVar(0)),
+                        AddUnary(OPUMINUS, AddVar(1))));
 }
 
 TEST_F(ExprTest, EqualBinary) {
-  EXPECT_TRUE(AreEqual(AddBinary(OPPLUS, NewVar(0), AddNum(42)),
-                       AddBinary(OPPLUS, NewVar(0), AddNum(42))));
-  EXPECT_FALSE(AreEqual(AddBinary(OPPLUS, NewVar(0), AddNum(42)),
-                        AddBinary(OPMINUS, NewVar(0), AddNum(42))));
-  EXPECT_FALSE(AreEqual(AddBinary(OPPLUS, NewVar(0), AddNum(42)),
-                        AddBinary(OPPLUS, AddNum(42), NewVar(0))));
-  EXPECT_FALSE(AreEqual(AddBinary(OPPLUS, NewVar(0), AddNum(42)),
-                        AddBinary(OPPLUS, NewVar(0), AddNum(0))));
+  EXPECT_TRUE(AreEqual(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
+                       AddBinary(OPPLUS, AddVar(0), AddNum(42))));
+  EXPECT_FALSE(AreEqual(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
+                        AddBinary(OPMINUS, AddVar(0), AddNum(42))));
+  EXPECT_FALSE(AreEqual(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
+                        AddBinary(OPPLUS, AddNum(42), AddVar(0))));
+  EXPECT_FALSE(AreEqual(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
+                        AddBinary(OPPLUS, AddVar(0), AddNum(0))));
   EXPECT_FALSE(AreEqual(AddNum(42),
-                        AddBinary(OPPLUS, NewVar(0), AddNum(42))));
+                        AddBinary(OPPLUS, AddVar(0), AddNum(42))));
 }
 
 TEST_F(ExprTest, EqualVarArg) {
   EXPECT_TRUE(AreEqual(
-      AddVarArg(MINLIST, NewVar(0), NewVar(1), AddNum(42)),
-      AddVarArg(MINLIST, NewVar(0), NewVar(1), AddNum(42))));
+      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)),
+      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42))));
   EXPECT_FALSE(AreEqual(
-      AddVarArg(MINLIST, NewVar(0), NewVar(1), AddNum(42)),
-      AddVarArg(MINLIST, NewVar(0), NewVar(1))));
+      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)),
+      AddVarArg(MINLIST, AddVar(0), AddVar(1))));
   EXPECT_FALSE(AreEqual(
-      AddVarArg(MINLIST, NewVar(0), NewVar(1)),
-      AddVarArg(MINLIST, NewVar(0), NewVar(1), AddNum(42))));
+      AddVarArg(MINLIST, AddVar(0), AddVar(1)),
+      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42))));
   EXPECT_FALSE(AreEqual(
-      AddVarArg(MINLIST, NewVar(0), NewVar(1), AddNum(42)),
-      AddVarArg(MAXLIST, NewVar(0), NewVar(1), AddNum(42))));
+      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)),
+      AddVarArg(MAXLIST, AddVar(0), AddVar(1), AddNum(42))));
   EXPECT_FALSE(AreEqual(
-      AddVarArg(MINLIST, NewVar(0), NewVar(1), AddNum(42)),
-      AddVarArg(MINLIST, NewVar(0), NewVar(1), AddNum(0))));
+      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)),
+      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(0))));
   EXPECT_FALSE(AreEqual(
-      AddVarArg(MINLIST, NewVar(0), NewVar(1), AddNum(42)),
+      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)),
       AddNum(42)));
 }
 
 TEST_F(ExprTest, EqualPLTerm) {
   double args[] = {-1, 5, 0, 10, 1};
   EXPECT_TRUE(AreEqual(
-      NewPLTerm(5, args, 0),
-      NewPLTerm(5, args, 0)));
+      AddPLTerm(5, args, 0),
+      AddPLTerm(5, args, 0)));
   EXPECT_FALSE(AreEqual(
-      NewPLTerm(5, args, 0),
-      NewPLTerm(3, args, 0)));
+      AddPLTerm(5, args, 0),
+      AddPLTerm(3, args, 0)));
   EXPECT_FALSE(AreEqual(
-      NewPLTerm(5, args, 0),
-      NewPLTerm(5, args, 1)));
+      AddPLTerm(5, args, 0),
+      AddPLTerm(5, args, 1)));
   double args2[] = {-1, 5, 0, 11, 1};
   EXPECT_FALSE(AreEqual(
-      NewPLTerm(5, args, 0),
-      NewPLTerm(5, args2, 0)));
+      AddPLTerm(5, args, 0),
+      AddPLTerm(5, args2, 0)));
   EXPECT_FALSE(AreEqual(
-      NewPLTerm(5, args, 0),
+      AddPLTerm(5, args, 0),
       AddNum(42)));
 }
 
 TEST_F(ExprTest, EqualIf) {
   EXPECT_TRUE(AreEqual(
-      AddIf(AddLogicalConstant(0), NewVar(1), AddNum(42)),
-      AddIf(AddLogicalConstant(0), NewVar(1), AddNum(42))));
+      AddIf(AddLogicalConstant(0), AddVar(1), AddNum(42)),
+      AddIf(AddLogicalConstant(0), AddVar(1), AddNum(42))));
   EXPECT_FALSE(AreEqual(
-      AddIf(AddLogicalConstant(0), NewVar(1), AddNum(42)),
-      AddSum(NewVar(0), NewVar(1), AddNum(42))));
+      AddIf(AddLogicalConstant(0), AddVar(1), AddNum(42)),
+      AddSum(AddVar(0), AddVar(1), AddNum(42))));
   EXPECT_FALSE(AreEqual(
-      AddIf(AddLogicalConstant(0), NewVar(1), AddNum(42)),
-      AddIf(AddLogicalConstant(0), NewVar(1), AddNum(0))));
+      AddIf(AddLogicalConstant(0), AddVar(1), AddNum(42)),
+      AddIf(AddLogicalConstant(0), AddVar(1), AddNum(0))));
   EXPECT_FALSE(AreEqual(
-      AddIf(AddLogicalConstant(0), NewVar(1), AddNum(42)),
+      AddIf(AddLogicalConstant(0), AddVar(1), AddNum(42)),
       AddNum(42)));
 }
 
 TEST_F(ExprTest, EqualSum) {
   EXPECT_TRUE(AreEqual(
-      AddSum(NewVar(0), NewVar(1), AddNum(42)),
-      AddSum(NewVar(0), NewVar(1), AddNum(42))));
+      AddSum(AddVar(0), AddVar(1), AddNum(42)),
+      AddSum(AddVar(0), AddVar(1), AddNum(42))));
   EXPECT_FALSE(AreEqual(
-      AddSum(NewVar(0), NewVar(1), AddNum(42)),
-      AddSum(NewVar(0), NewVar(1))));
+      AddSum(AddVar(0), AddVar(1), AddNum(42)),
+      AddSum(AddVar(0), AddVar(1))));
   EXPECT_FALSE(AreEqual(
-      AddSum(NewVar(0), NewVar(1)),
-      AddSum(NewVar(0), NewVar(1), AddNum(42))));
+      AddSum(AddVar(0), AddVar(1)),
+      AddSum(AddVar(0), AddVar(1), AddNum(42))));
   EXPECT_FALSE(AreEqual(
-      AddSum(NewVar(0), NewVar(1), AddNum(42)),
+      AddSum(AddVar(0), AddVar(1), AddNum(42)),
       AddCount(AddBool(false), AddBool(true), AddBool(true))));
   EXPECT_FALSE(AreEqual(
-      AddSum(NewVar(0), NewVar(1), AddNum(42)),
-      AddSum(NewVar(0), NewVar(1), AddNum(0))));
+      AddSum(AddVar(0), AddVar(1), AddNum(42)),
+      AddSum(AddVar(0), AddVar(1), AddNum(0))));
   EXPECT_FALSE(AreEqual(
-      AddSum(NewVar(0), NewVar(1), AddNum(42)),
+      AddSum(AddVar(0), AddVar(1), AddNum(42)),
       AddNum(42)));
 }
 
@@ -585,6 +590,31 @@ TEST_F(ExprTest, IfExpr) {
   EXPECT_EQ(condition, e.condition());
   EXPECT_EQ(true_expr, e.true_expr());
   EXPECT_EQ(false_expr, e.false_expr());
+}
+
+TEST_F(ExprTest, PiecewiseLinearTerm) {
+  EXPECT_EQ(1,
+      CheckExpr<PiecewiseLinearTerm>(Expr::PLTERM, Expr::PLTERM, OPPLUS));
+  double args[] = {-1, 5, 0, 10, 1};
+  PiecewiseLinearTerm e(AddPLTerm(5, args, 42));
+  EXPECT_EQ(2, e.num_breakpoints());
+  EXPECT_EQ( 5, e.breakpoint(0));
+  EXPECT_EQ(10, e.breakpoint(1));
+  EXPECT_DEBUG_DEATH(e.breakpoint(-1);, "Assertion");
+  EXPECT_DEBUG_DEATH(e.breakpoint(2);, "Assertion");
+  EXPECT_EQ(3, e.num_slopes());
+  EXPECT_EQ(-1, e.slope(0));
+  EXPECT_EQ( 0, e.slope(1));
+  EXPECT_EQ( 1, e.slope(2));
+  EXPECT_DEBUG_DEATH(e.slope(-1);, "Assertion");
+  EXPECT_DEBUG_DEATH(e.slope(3);, "Assertion");
+  EXPECT_EQ(42, e.var_index());
+}
+
+TEST_F(ExprTest, Variable) {
+  EXPECT_EQ(1, CheckExpr<Variable>(Expr::VARIABLE));
+  Variable e(AddVar(42));
+  EXPECT_EQ(42, e.index());
 }
 
 // TODO: more tests

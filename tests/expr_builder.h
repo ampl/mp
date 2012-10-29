@@ -90,18 +90,19 @@ public:
     return AddIf<IfExpr, NumericExpr>(OPIFnl, condition, true_expr, false_expr);
   }
 
-  NumericExpr NewPLTerm(int size, const double *args, int var_index);
+  // Adds a new piecewise-linear term.
+  PiecewiseLinearTerm AddPLTerm(int size, const double *args, int var_index);
 
-  // Adds a new numeric constant and returns it.
-  NumericExpr AddNum(double n) {
+  // Adds a new numeric constant.
+  NumericConstant AddNum(double n) {
     expr_n e = {reinterpret_cast<efunc_n*>(OPNUM), n};
-    return AddExpr<NumericExpr>(reinterpret_cast<expr*>(new expr_n(e)));
+    return AddExpr<NumericConstant>(reinterpret_cast<expr*>(new expr_n(e)));
   }
 
   // Adds a new variable reference.
-  NumericExpr NewVar(int var_index) {
+  Variable AddVar(int var_index) {
     expr e = {reinterpret_cast<efunc*>(OPVARVAL), var_index, 0, {0}, {0}, 0};
-    return AddExpr<NumericExpr>(new expr(e));
+    return AddExpr<Variable>(new expr(e));
   }
 
   // Adds a new numberof expression with up to 3 arguments.
