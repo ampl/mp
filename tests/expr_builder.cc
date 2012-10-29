@@ -63,7 +63,7 @@ VarArgExpr ExprBuilder::AddVarArg(int opcode,
   args[2] = MakeDE(e3);
   args[3] = MakeDE(NumericExpr());
   copy->L.d = args;
-  return VarArgExpr(AddExpr<NumericExpr>(result));
+  return Expr::Create<VarArgExpr>(AddExpr<NumericExpr>(result));
 }
 
 NumericExpr ExprBuilder::NewPLTerm(

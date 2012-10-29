@@ -140,7 +140,22 @@ class Expr {
   void True() const {}
   typedef void (Expr::*SafeBool)() const;
 
+  template <typename Impl, typename Result, typename LResult>
+  friend class ExprVisitor;
   friend class ExprBuilder;
+
+  // Casts an expression to type T. Returns a null expression if the cast
+  // is not possible.
+  template <typename T>
+  friend T Cast(Expr e);
+
+  template <typename ExprT>
+  static ExprT Create(Expr e) {
+    ExprT expr;
+    expr.expr_ = e.expr_;
+    assert(expr.kind() == ExprT::KIND);
+    return expr;
+  }
 
  protected:
   expr *expr_;
@@ -199,11 +214,6 @@ class Expr {
   friend bool AreEqual(Expr e1, Expr e2);
 };
 
-// Casts an expression to type T. Returns a null expression if the cast
-// is not possible.
-template <typename T>
-T Cast(Expr e);
-
 // A numeric expression.
 class NumericExpr : public Expr {
  private:
@@ -214,14 +224,25 @@ class NumericExpr : public Expr {
     return k >= NUMERIC_START && k <= NUMERIC_END;
   }
 
+  friend class internal::ExprProxy<NumericExpr>;
+  friend class internal::ExprArrayIterator<NumericExpr>;
+  friend class RelationalExpr;
+  friend class ExprBuilder;
+  friend class Driver;
+
  protected:
   NumericExpr(Expr e) : Expr(e) {}
 
- public:
+// public:
   // Constructs a NumericExpr object.
-  explicit NumericExpr(expr *e = 0) : Expr(e) {
+  explicit NumericExpr(expr *e) : Expr(e) {
     assert(IsValid());
   }
+
+  static NumericExpr Create(expr *e) { return NumericExpr(e); }
+
+ public:
+  NumericExpr() {}
 };
 
 // A logical or constraint expression.
@@ -244,59 +265,39 @@ class LogicalExpr : public Expr {
 // A unary numeric expression.
 // Examples: -x, sin(x), where x is a variable.
 class UnaryExpr : public NumericExpr {
- private:
-  explicit UnaryExpr(NumericExpr e) : NumericExpr(e) {
-    assert(HasKind(UNARY));
-  }
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprVisitor;
-  friend class ExprBuilder;
-
  public:
+  static const Kind KIND = UNARY;
+
   UnaryExpr() {}
 
   // Returns the argument of this expression.
-  NumericExpr arg() const { return NumericExpr(expr_->L.e); }
+  NumericExpr arg() const { return Create(expr_->L.e); }
 };
 
 // A binary numeric expression.
 // Examples: x / y, atan2(x, y), where x and y are variables.
 class BinaryExpr : public NumericExpr {
- private:
-  explicit BinaryExpr(NumericExpr e) : NumericExpr(e) {
-    assert(HasKind(BINARY));
-  }
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprVisitor;
-  friend class ExprBuilder;
-
  public:
+  static const Kind KIND = BINARY;
+
   BinaryExpr() {}
 
   // Returns the left-hand side (the first argument) of this expression.
-  NumericExpr lhs() const { return NumericExpr(expr_->L.e); }
+  NumericExpr lhs() const { return Create(expr_->L.e); }
 
   // Returns the right-hand side (the second argument) of this expression.
-  NumericExpr rhs() const { return NumericExpr(expr_->R.e); }
+  NumericExpr rhs() const { return Create(expr_->R.e); }
 };
 
 // A numeric expression with a variable number of arguments.
 // Example: min{i in I} x[i], where I is a set and x is a variable.
 class VarArgExpr : public NumericExpr {
  private:
-  explicit VarArgExpr(NumericExpr e) : NumericExpr(e) {
-    assert(HasKind(VARARG));
-  }
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprVisitor;
-  friend class ExprBuilder;
-
   static const de END;
 
  public:
+  static const Kind KIND = VARARG;
+
   VarArgExpr() {}
 
   // An argument iterator.
@@ -312,7 +313,7 @@ class VarArgExpr : public NumericExpr {
    public:
     iterator() : de_(&END) {}
 
-    NumericExpr operator*() const { return NumericExpr(de_->e); }
+    NumericExpr operator*() const { return NumericExpr::Create(de_->e); }
 
     internal::ExprProxy<NumericExpr> operator->() const {
       return internal::ExprProxy<NumericExpr>(de_->e);
@@ -345,15 +346,9 @@ class VarArgExpr : public NumericExpr {
 // A sum expression.
 // Example: sum{i in I} x[i], where I is a set and x is a variable.
 class SumExpr : public NumericExpr {
- private:
-  explicit SumExpr(NumericExpr e) : NumericExpr(e) {
-    assert(HasKind(SUM));
-  }
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprVisitor;
-
  public:
+  static const Kind KIND = SUM;
+
   SumExpr() {}
 
   typedef internal::ExprArrayIterator<NumericExpr> iterator;
@@ -370,15 +365,9 @@ class SumExpr : public NumericExpr {
 // A count expression.
 // Example: count{i in I} (x[i] >= 0), where I is a set and x is a variable.
 class CountExpr : public NumericExpr {
- private:
-  explicit CountExpr(NumericExpr e) : NumericExpr(e) {
-    assert(HasKind(COUNT));
-  }
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprVisitor;
-
  public:
+  static const Kind KIND = COUNT;
+
   CountExpr() {}
 
   typedef internal::ExprArrayIterator<LogicalExpr> iterator;
@@ -395,15 +384,9 @@ class CountExpr : public NumericExpr {
 // An if-then-else expression.
 // Example: if x != 0 then y else z, where x, y and z are variables.
 class IfExpr : public NumericExpr {
- private:
-  explicit IfExpr(NumericExpr e) : NumericExpr(e) {
-    assert(HasKind(IF));
-  }
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprVisitor;
-
  public:
+  static const Kind KIND = IF;
+
   IfExpr() {}
 
   LogicalExpr condition() const {
@@ -411,26 +394,20 @@ class IfExpr : public NumericExpr {
   }
 
   NumericExpr true_expr() const {
-    return NumericExpr(reinterpret_cast<expr_if*>(expr_)->T);
+    return Create(reinterpret_cast<expr_if*>(expr_)->T);
   }
 
   NumericExpr false_expr() const {
-    return NumericExpr(reinterpret_cast<expr_if*>(expr_)->F);
+    return Create(reinterpret_cast<expr_if*>(expr_)->F);
   }
 };
 
 // A piecewise-linear term.
 // Example: <<0; -1, 1>> x, where x is a variable.
 class PiecewiseLinearTerm : public NumericExpr {
- private:
-  explicit PiecewiseLinearTerm(NumericExpr e) : NumericExpr(e) {
-    assert(HasKind(PLTERM));
-  }
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprVisitor;
-
  public:
+  static const Kind KIND = PLTERM;
+
   PiecewiseLinearTerm() {}
 
   // Returns the number of slopes in this term.
@@ -463,17 +440,9 @@ class PiecewiseLinearTerm : public NumericExpr {
 // A numeric constant.
 // Examples: 42, -1.23e-4
 class NumericConstant : public NumericExpr {
- private:
-  explicit NumericConstant(Expr e) : NumericExpr(e) {
-    assert(HasKind(CONSTANT));
-  }
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprVisitor;
-
-  friend NumericConstant Cast<NumericConstant>(Expr);
-
  public:
+  static const Kind KIND = CONSTANT;
+
   NumericConstant() {}
 
   // Returns the value of this number.
@@ -482,23 +451,16 @@ class NumericConstant : public NumericExpr {
 
 template <>
 inline NumericConstant Cast<NumericConstant>(Expr e) {
-  return NumericConstant(e.opcode() == OPNUM ? e : Expr());
+  return e.opcode() == OPNUM ?
+      Expr::Create<NumericConstant>(e) : NumericConstant();
 }
 
 // A reference to a variable.
 // Example: x
 class Variable : public NumericExpr {
- private:
-  explicit Variable(Expr e) : NumericExpr(e) {
-    assert(HasKind(VARIABLE));
-  }
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprVisitor;
-
-  friend Variable Cast<Variable>(Expr);
-
  public:
+  static const Kind KIND = VARIABLE;
+
   Variable() {}
 
   // Returns the index of the referenced variable.
@@ -507,25 +469,19 @@ class Variable : public NumericExpr {
 
 template <>
 inline Variable Cast<Variable>(Expr e) {
-  return Variable(e.opcode() == OPVARVAL ? e : Expr());
+  return e.opcode() == OPVARVAL ? Expr::Create<Variable>(e) : Variable();
 }
 
 // A numberof expression.
 // Example: numberof 42 in ({i in I} x[i]),
 // where I is a set and x is a variable.
 class NumberOfExpr : public NumericExpr {
- private:
-  explicit NumberOfExpr(NumericExpr e) : NumericExpr(e) {
-    assert(HasKind(NUMBEROF));
-  }
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprVisitor;
-
  public:
+  static const Kind KIND = NUMBEROF;
+
   NumberOfExpr() {}
 
-  NumericExpr target() const { return NumericExpr(*expr_->L.ep); }
+  NumericExpr target() const { return Create(*expr_->L.ep); }
 
   typedef internal::ExprArrayIterator<NumericExpr> iterator;
 
@@ -541,15 +497,9 @@ class NumberOfExpr : public NumericExpr {
 // A logical constant.
 // Examples: 0, 1
 class LogicalConstant : public LogicalExpr {
- private:
-  explicit LogicalConstant(LogicalExpr e) : LogicalExpr(e) {
-    assert(HasKind(CONSTANT));
-  }
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprVisitor;
-
  public:
+  static const Kind KIND = CONSTANT;
+
   LogicalConstant() {}
 
   // Returns the value of this constant.
@@ -559,15 +509,9 @@ class LogicalConstant : public LogicalExpr {
 // A relational expression.
 // Examples: x < y, x != y, where x and y are variables.
 class RelationalExpr : public LogicalExpr {
- private:
-  explicit RelationalExpr(LogicalExpr e) : LogicalExpr(e) {
-    assert(HasKind(RELATIONAL));
-  }
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprVisitor;
-
  public:
+  static const Kind KIND = RELATIONAL;
+
   RelationalExpr() {}
 
   // Returns the left-hand side (the first argument) of this expression.
@@ -580,15 +524,9 @@ class RelationalExpr : public LogicalExpr {
 // A logical NOT expression.
 // Example: not a, where a is a logical expression.
 class NotExpr : public LogicalExpr {
- private:
-  explicit NotExpr(LogicalExpr e) : LogicalExpr(e) {
-    assert(HasKind(NOT));
-  }
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprVisitor;
-
  public:
+  static const Kind KIND = NOT;
+
   NotExpr() {}
 
   // Returns the argument of this expression.
@@ -598,15 +536,9 @@ class NotExpr : public LogicalExpr {
 // A binary logical expression.
 // Examples: a || b, a && b, where a and b are logical expressions.
 class BinaryLogicalExpr : public LogicalExpr {
- private:
-  explicit BinaryLogicalExpr(LogicalExpr e) : LogicalExpr(e) {
-    assert(HasKind(BINARY_LOGICAL));
-  }
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprVisitor;
-
  public:
+  static const Kind KIND = BINARY_LOGICAL;
+
   BinaryLogicalExpr() {}
 
   // Returns the left-hand side (the first argument) of this expression.
@@ -619,15 +551,9 @@ class BinaryLogicalExpr : public LogicalExpr {
 // An implication expression.
 // Example: a ==> b else c, where a, b and c are logical expressions.
 class ImplicationExpr : public LogicalExpr {
- private:
-  explicit ImplicationExpr(LogicalExpr e) : LogicalExpr(e) {
-    assert(HasKind(IMPLICATION));
-  }
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprVisitor;
-
  public:
+  static const Kind KIND = IMPLICATION;
+
   ImplicationExpr() {}
 
   LogicalExpr condition() const {
@@ -646,15 +572,9 @@ class ImplicationExpr : public LogicalExpr {
 // An iterated logical expression.
 // Example: exists{i in I} x[i] >= 0, where I is a set and x is a variable.
 class IteratedLogicalExpr : public LogicalExpr {
- private:
-  explicit IteratedLogicalExpr(LogicalExpr e) : LogicalExpr(e) {
-    assert(HasKind(ITERATED_LOGICAL));
-  }
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprVisitor;
-
  public:
+  static const Kind KIND = ITERATED_LOGICAL;
+
   IteratedLogicalExpr() {}
 
   typedef internal::ExprArrayIterator<LogicalExpr> iterator;
@@ -671,15 +591,9 @@ class IteratedLogicalExpr : public LogicalExpr {
 // An alldiff expression.
 // Example: alldiff{i in I} x[i], where I is a set and x is a variable.
 class AllDiffExpr : public LogicalExpr {
- private:
-  explicit AllDiffExpr(LogicalExpr e) : LogicalExpr(e) {
-    assert(HasKind(ALLDIFF));
-  }
-
-  template <typename Impl, typename Result, typename LResult>
-  friend class ExprVisitor;
-
  public:
+  static const Kind KIND = ALLDIFF;
+
   AllDiffExpr() {}
 
   typedef internal::ExprArrayIterator<NumericExpr> iterator;
@@ -1034,93 +948,94 @@ Result ExprVisitor<Impl, Result, LResult>::Visit(NumericExpr e) {
   // are supported.
   switch (e.opcode()) {
   case OPPLUS:
-    return AMPL_DISPATCH(VisitPlus(BinaryExpr(e)));
+    return AMPL_DISPATCH(VisitPlus(Expr::Create<BinaryExpr>(e)));
   case OPMINUS:
-    return AMPL_DISPATCH(VisitMinus(BinaryExpr(e)));
+    return AMPL_DISPATCH(VisitMinus(Expr::Create<BinaryExpr>(e)));
   case OPMULT:
-    return AMPL_DISPATCH(VisitMult(BinaryExpr(e)));
+    return AMPL_DISPATCH(VisitMult(Expr::Create<BinaryExpr>(e)));
   case OPDIV:
-    return AMPL_DISPATCH(VisitDiv(BinaryExpr(e)));
+    return AMPL_DISPATCH(VisitDiv(Expr::Create<BinaryExpr>(e)));
   case OPREM:
-    return AMPL_DISPATCH(VisitRem(BinaryExpr(e)));
+    return AMPL_DISPATCH(VisitRem(Expr::Create<BinaryExpr>(e)));
   case OPPOW:
-    return AMPL_DISPATCH(VisitPow(BinaryExpr(e)));
+    return AMPL_DISPATCH(VisitPow(Expr::Create<BinaryExpr>(e)));
   case OPLESS:
-    return AMPL_DISPATCH(VisitNumericLess(BinaryExpr(e)));
+    return AMPL_DISPATCH(VisitNumericLess(Expr::Create<BinaryExpr>(e)));
   case MINLIST:
-    return AMPL_DISPATCH(VisitMin(VarArgExpr(e)));
+    return AMPL_DISPATCH(VisitMin(Expr::Create<VarArgExpr>(e)));
   case MAXLIST:
-    return AMPL_DISPATCH(VisitMax(VarArgExpr(e)));
+    return AMPL_DISPATCH(VisitMax(Expr::Create<VarArgExpr>(e)));
   case FLOOR:
-    return AMPL_DISPATCH(VisitFloor(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitFloor(Expr::Create<UnaryExpr>(e)));
   case CEIL:
-    return AMPL_DISPATCH(VisitCeil(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitCeil(Expr::Create<UnaryExpr>(e)));
   case ABS:
-    return AMPL_DISPATCH(VisitAbs(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitAbs(Expr::Create<UnaryExpr>(e)));
   case OPUMINUS:
-    return AMPL_DISPATCH(VisitUnaryMinus(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitUnaryMinus(Expr::Create<UnaryExpr>(e)));
   case OPIFnl:
-    return AMPL_DISPATCH(VisitIf(IfExpr(e)));
+    return AMPL_DISPATCH(VisitIf(Expr::Create<IfExpr>(e)));
   case OP_tanh:
-    return AMPL_DISPATCH(VisitTanh(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitTanh(Expr::Create<UnaryExpr>(e)));
   case OP_tan:
-    return AMPL_DISPATCH(VisitTan(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitTan(Expr::Create<UnaryExpr>(e)));
   case OP_sqrt:
-    return AMPL_DISPATCH(VisitSqrt(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitSqrt(Expr::Create<UnaryExpr>(e)));
   case OP_sinh:
-    return AMPL_DISPATCH(VisitSinh(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitSinh(Expr::Create<UnaryExpr>(e)));
   case OP_sin:
-    return AMPL_DISPATCH(VisitSin(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitSin(Expr::Create<UnaryExpr>(e)));
   case OP_log10:
-    return AMPL_DISPATCH(VisitLog10(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitLog10(Expr::Create<UnaryExpr>(e)));
   case OP_log:
-    return AMPL_DISPATCH(VisitLog(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitLog(Expr::Create<UnaryExpr>(e)));
   case OP_exp:
-    return AMPL_DISPATCH(VisitExp(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitExp(Expr::Create<UnaryExpr>(e)));
   case OP_cosh:
-    return AMPL_DISPATCH(VisitCosh(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitCosh(Expr::Create<UnaryExpr>(e)));
   case OP_cos:
-    return AMPL_DISPATCH(VisitCos(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitCos(Expr::Create<UnaryExpr>(e)));
   case OP_atanh:
-    return AMPL_DISPATCH(VisitAtanh(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitAtanh(Expr::Create<UnaryExpr>(e)));
   case OP_atan2:
-    return AMPL_DISPATCH(VisitAtan2(BinaryExpr(e)));
+    return AMPL_DISPATCH(VisitAtan2(Expr::Create<BinaryExpr>(e)));
   case OP_atan:
-    return AMPL_DISPATCH(VisitAtan(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitAtan(Expr::Create<UnaryExpr>(e)));
   case OP_asinh:
-    return AMPL_DISPATCH(VisitAsinh(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitAsinh(Expr::Create<UnaryExpr>(e)));
   case OP_asin:
-    return AMPL_DISPATCH(VisitAsin(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitAsin(Expr::Create<UnaryExpr>(e)));
   case OP_acosh:
-    return AMPL_DISPATCH(VisitAcosh(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitAcosh(Expr::Create<UnaryExpr>(e)));
   case OP_acos:
-    return AMPL_DISPATCH(VisitAcos(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitAcos(Expr::Create<UnaryExpr>(e)));
   case OPSUMLIST:
-    return AMPL_DISPATCH(VisitSum(SumExpr(e)));
+    return AMPL_DISPATCH(VisitSum(Expr::Create<SumExpr>(e)));
   case OPintDIV:
-    return AMPL_DISPATCH(VisitIntDiv(BinaryExpr(e)));
+    return AMPL_DISPATCH(VisitIntDiv(Expr::Create<BinaryExpr>(e)));
   case OPprecision:
-    return AMPL_DISPATCH(VisitPrecision(BinaryExpr(e)));
+    return AMPL_DISPATCH(VisitPrecision(Expr::Create<BinaryExpr>(e)));
   case OPround:
-    return AMPL_DISPATCH(VisitRound(BinaryExpr(e)));
+    return AMPL_DISPATCH(VisitRound(Expr::Create<BinaryExpr>(e)));
   case OPtrunc:
-    return AMPL_DISPATCH(VisitTrunc(BinaryExpr(e)));
+    return AMPL_DISPATCH(VisitTrunc(Expr::Create<BinaryExpr>(e)));
   case OPCOUNT:
-    return AMPL_DISPATCH(VisitCount(CountExpr(e)));
+    return AMPL_DISPATCH(VisitCount(Expr::Create<CountExpr>(e)));
   case OPNUMBEROF:
-    return AMPL_DISPATCH(VisitNumberOf(NumberOfExpr(e)));
+    return AMPL_DISPATCH(VisitNumberOf(Expr::Create<NumberOfExpr>(e)));
   case OPPLTERM:
-    return AMPL_DISPATCH(VisitPLTerm(PiecewiseLinearTerm(e)));
+    return AMPL_DISPATCH(VisitPLTerm(Expr::Create<PiecewiseLinearTerm>(e)));
   case OP1POW:
-    return AMPL_DISPATCH(VisitConstExpPow(BinaryExpr(e)));
+    return AMPL_DISPATCH(VisitConstExpPow(Expr::Create<BinaryExpr>(e)));
   case OP2POW:
-    return AMPL_DISPATCH(VisitPow2(UnaryExpr(e)));
+    return AMPL_DISPATCH(VisitPow2(Expr::Create<UnaryExpr>(e)));
   case OPCPOW:
-    return AMPL_DISPATCH(VisitConstBasePow(BinaryExpr(e)));
+    return AMPL_DISPATCH(VisitConstBasePow(Expr::Create<BinaryExpr>(e)));
   case OPNUM:
-    return AMPL_DISPATCH(VisitNumericConstant(NumericConstant(e)));
+    return AMPL_DISPATCH(VisitNumericConstant(
+        Expr::Create<NumericConstant>(e)));
   case OPVARVAL:
-    return AMPL_DISPATCH(VisitVariable(Variable(e)));
+    return AMPL_DISPATCH(VisitVariable(Expr::Create<Variable>(e)));
   default:
     return AMPL_DISPATCH(VisitInvalidNumericExpr(e));
   }
@@ -1130,47 +1045,48 @@ template <typename Impl, typename Result, typename LResult>
 LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
   switch (e.opcode()) {
   case OPOR:
-    return AMPL_DISPATCH(VisitOr(BinaryLogicalExpr(e)));
+    return AMPL_DISPATCH(VisitOr(Expr::Create<BinaryLogicalExpr>(e)));
   case OPAND:
-    return AMPL_DISPATCH(VisitAnd(BinaryLogicalExpr(e)));
+    return AMPL_DISPATCH(VisitAnd(Expr::Create<BinaryLogicalExpr>(e)));
   case LT:
-    return AMPL_DISPATCH(VisitLess(RelationalExpr(e)));
+    return AMPL_DISPATCH(VisitLess(Expr::Create<RelationalExpr>(e)));
   case LE:
-    return AMPL_DISPATCH(VisitLessEqual(RelationalExpr(e)));
+    return AMPL_DISPATCH(VisitLessEqual(Expr::Create<RelationalExpr>(e)));
   case EQ:
-    return AMPL_DISPATCH(VisitEqual(RelationalExpr(e)));
+    return AMPL_DISPATCH(VisitEqual(Expr::Create<RelationalExpr>(e)));
   case GE:
-    return AMPL_DISPATCH(VisitGreaterEqual(RelationalExpr(e)));
+    return AMPL_DISPATCH(VisitGreaterEqual(Expr::Create<RelationalExpr>(e)));
   case GT:
-    return AMPL_DISPATCH(VisitGreater(RelationalExpr(e)));
+    return AMPL_DISPATCH(VisitGreater(Expr::Create<RelationalExpr>(e)));
   case NE:
-    return AMPL_DISPATCH(VisitNotEqual(RelationalExpr(e)));
+    return AMPL_DISPATCH(VisitNotEqual(Expr::Create<RelationalExpr>(e)));
   case OPNOT:
-    return AMPL_DISPATCH(VisitNot(NotExpr(e)));
+    return AMPL_DISPATCH(VisitNot(Expr::Create<NotExpr>(e)));
   case OPATLEAST:
-    return AMPL_DISPATCH(VisitAtLeast(RelationalExpr(e)));
+    return AMPL_DISPATCH(VisitAtLeast(Expr::Create<RelationalExpr>(e)));
   case OPATMOST:
-    return AMPL_DISPATCH(VisitAtMost(RelationalExpr(e)));
+    return AMPL_DISPATCH(VisitAtMost(Expr::Create<RelationalExpr>(e)));
   case OPEXACTLY:
-    return AMPL_DISPATCH(VisitExactly(RelationalExpr(e)));
+    return AMPL_DISPATCH(VisitExactly(Expr::Create<RelationalExpr>(e)));
   case OPNOTATLEAST:
-    return AMPL_DISPATCH(VisitNotAtLeast(RelationalExpr(e)));
+    return AMPL_DISPATCH(VisitNotAtLeast(Expr::Create<RelationalExpr>(e)));
   case OPNOTATMOST:
-    return AMPL_DISPATCH(VisitNotAtMost(RelationalExpr(e)));
+    return AMPL_DISPATCH(VisitNotAtMost(Expr::Create<RelationalExpr>(e)));
   case OPNOTEXACTLY:
-    return AMPL_DISPATCH(VisitNotExactly(RelationalExpr(e)));
+    return AMPL_DISPATCH(VisitNotExactly(Expr::Create<RelationalExpr>(e)));
   case ANDLIST:
-    return AMPL_DISPATCH(VisitForAll(IteratedLogicalExpr(e)));
+    return AMPL_DISPATCH(VisitForAll(Expr::Create<IteratedLogicalExpr>(e)));
   case ORLIST:
-    return AMPL_DISPATCH(VisitExists(IteratedLogicalExpr(e)));
+    return AMPL_DISPATCH(VisitExists(Expr::Create<IteratedLogicalExpr>(e)));
   case OPIMPELSE:
-    return AMPL_DISPATCH(VisitImplication(ImplicationExpr(e)));
+    return AMPL_DISPATCH(VisitImplication(Expr::Create<ImplicationExpr>(e)));
   case OP_IFF:
-    return AMPL_DISPATCH(VisitIff(BinaryLogicalExpr(e)));
+    return AMPL_DISPATCH(VisitIff(Expr::Create<BinaryLogicalExpr>(e)));
   case OPALLDIFF:
-    return AMPL_DISPATCH(VisitAllDiff(AllDiffExpr(e)));
+    return AMPL_DISPATCH(VisitAllDiff(Expr::Create<AllDiffExpr>(e)));
   case OPNUM:
-    return AMPL_DISPATCH(VisitLogicalConstant(LogicalConstant(e)));
+    return AMPL_DISPATCH(VisitLogicalConstant(
+        Expr::Create<LogicalConstant>(e)));
   default:
     return AMPL_DISPATCH(VisitInvalidLogicalExpr(e));
   }
