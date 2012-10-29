@@ -34,30 +34,41 @@ using ampl::VarArgExpr;
 
 using ampl::UnsupportedExprError;
 
-using ampl::internal::ExprProxy;
-using ampl::internal::ExprArrayIterator;
-
 namespace {
 
 class TestExpr : public Expr {
 public:
-  TestExpr(expr *e) : Expr(e) {}
+  static void TestProxy();
+  static void TestArrayIterator();
+
+  template <typename ExprT>
+  static ExprT MakeExpr(expr *e) { return Expr::Create<ExprT>(e); }
 };
+}
 
-Expr MakeExpr(expr *e) { return TestExpr(e); }
+namespace ampl {
+namespace internal {
+template <>
+bool Is<TestExpr>(Expr e) {
+  return e.kind() == Expr::BINARY || e.kind() == Expr::UNARY;
+}
+}
+}
 
-class ExprTest : public ::testing::Test, public ampl::ExprBuilder {};
+namespace {
+template <typename ExprT = Expr>
+ExprT MakeExpr(expr *e) { return TestExpr::MakeExpr<ExprT>(e); }
 
-TEST_F(ExprTest, ExprProxy) {
+void TestExpr::TestProxy() {
   expr e = {reinterpret_cast<efunc*>(OPDIV)};
-  ExprProxy<NumericExpr> p(&e);
+  Proxy<NumericExpr> p(&e);
   EXPECT_EQ(OPDIV, p->opcode());
 }
 
-TEST_F(ExprTest, ExprArrayIterator) {
+void TestExpr::TestArrayIterator() {
   {
-    ExprArrayIterator<NumericExpr> i;
-    EXPECT_EQ(ExprArrayIterator<NumericExpr>(), i);
+    ArrayIterator<NumericExpr> i;
+    EXPECT_EQ(ArrayIterator<NumericExpr>(), i);
   }
   expr exprs[] = {
       {reinterpret_cast<efunc*>(OPDIV)},
@@ -65,36 +76,99 @@ TEST_F(ExprTest, ExprArrayIterator) {
       {reinterpret_cast<efunc*>(OP_atan)},
   };
   expr *const ptrs[] = {exprs, exprs + 1, exprs + 2};
-  ExprArrayIterator<NumericExpr> i(ptrs);
-  EXPECT_EQ(ExprArrayIterator<NumericExpr>(ptrs), i);
-  EXPECT_NE(ExprArrayIterator<NumericExpr>(), i);
+  ArrayIterator<NumericExpr> i(ptrs);
+  EXPECT_EQ(ArrayIterator<NumericExpr>(ptrs), i);
+  EXPECT_NE(ArrayIterator<NumericExpr>(), i);
   EXPECT_EQ(OPDIV, (*i).opcode());
   EXPECT_EQ(OPDIV, i->opcode());
 
-  ExprArrayIterator<NumericExpr> i2(++i);
+  ArrayIterator<NumericExpr> i2(++i);
   EXPECT_EQ(i2, i);
-  EXPECT_NE(ExprArrayIterator<NumericExpr>(ptrs), i);
-  EXPECT_EQ(ExprArrayIterator<NumericExpr>(ptrs + 1), i);
+  EXPECT_NE(ArrayIterator<NumericExpr>(ptrs), i);
+  EXPECT_EQ(ArrayIterator<NumericExpr>(ptrs + 1), i);
   EXPECT_EQ(OPPLUS, i->opcode());
 
-  ExprArrayIterator<NumericExpr> i3(i++);
+  ArrayIterator<NumericExpr> i3(i++);
   EXPECT_NE(i3, i);
-  EXPECT_NE(ExprArrayIterator<NumericExpr>(ptrs + 1), i);
-  EXPECT_EQ(ExprArrayIterator<NumericExpr>(ptrs + 2), i);
+  EXPECT_NE(ArrayIterator<NumericExpr>(ptrs + 1), i);
+  EXPECT_EQ(ArrayIterator<NumericExpr>(ptrs + 2), i);
   EXPECT_EQ(OPPLUS, i3->opcode());
   EXPECT_EQ(OP_atan, i->opcode());
 
   int index = 0;
-  for (ExprArrayIterator<NumericExpr>
+  for (ArrayIterator<NumericExpr>
       i(ptrs), e(ptrs + 3); i != e; ++i, ++index) {
     int code = reinterpret_cast<size_t>(ptrs[index]->op);
     EXPECT_EQ(code, i->opcode());
   }
   EXPECT_EQ(3, index);
   std::vector<NumericExpr> vec;
-  std::copy(ExprArrayIterator<NumericExpr>(ptrs),
-      ExprArrayIterator<NumericExpr>(ptrs + 3), std::back_inserter(vec));
+  std::copy(ArrayIterator<NumericExpr>(ptrs),
+      ArrayIterator<NumericExpr>(ptrs + 3), std::back_inserter(vec));
   EXPECT_EQ(OPPLUS, vec[1].opcode());
+}
+
+class ExprTest : public ::testing::Test, public ampl::ExprBuilder {};
+
+TEST_F(ExprTest, NumericKinds) {
+  const Expr::Kind kinds[] = {
+      Expr::UNARY,
+      Expr::BINARY,
+      Expr::VARARG,
+      Expr::SUM,
+      Expr::COUNT,
+      Expr::IF,
+      Expr::PLTERM,
+      Expr::VARIABLE,
+      Expr::NUMBEROF,
+      Expr::CONSTANT
+  };
+  int i = 0, n = sizeof(kinds) / sizeof(*kinds);
+  EXPECT_GT(n, 0);
+  EXPECT_EQ(Expr::NUMERIC_START, Expr::EXPR_START);
+  for (; i < n; ++i) {
+    Expr::Kind kind = kinds[i];
+    EXPECT_GE(kind, Expr::NUMERIC_START);
+    EXPECT_LE(kind, Expr::NUMERIC_END);
+    for (int j = i + 1; j < n; ++j)
+      EXPECT_NE(kind, kinds[j]); // Check if all different.
+    if (kind != Expr::CONSTANT)
+      EXPECT_LT(kind, Expr::LOGICAL_START);
+  }
+  EXPECT_EQ(i, n);
+}
+
+TEST_F(ExprTest, LogicalKinds) {
+  const Expr::Kind kinds[] = {
+      Expr::CONSTANT,
+      Expr::RELATIONAL,
+      Expr::NOT,
+      Expr::BINARY_LOGICAL,
+      Expr::IMPLICATION,
+      Expr::ITERATED_LOGICAL,
+      Expr::ALLDIFF
+  };
+  int i = 0, n = sizeof(kinds) / sizeof(*kinds);
+  EXPECT_GT(n, 0);
+  EXPECT_EQ(Expr::LOGICAL_END, Expr::EXPR_END);
+  for (; i < n; ++i) {
+    Expr::Kind kind = kinds[i];
+    EXPECT_GE(kind, Expr::LOGICAL_START);
+    EXPECT_LE(kind, Expr::LOGICAL_END);
+    for (int j = i + 1; j < n; ++j)
+      EXPECT_NE(kind, kinds[j]); // Check if all different.
+    if (kind != Expr::CONSTANT)
+      EXPECT_GT(kind, Expr::NUMERIC_END);
+  }
+  EXPECT_EQ(i, n);
+}
+
+TEST_F(ExprTest, Proxy) {
+  TestExpr::TestProxy();
+}
+
+TEST_F(ExprTest, ArrayIterator) {
+  TestExpr::TestArrayIterator();
 }
 
 TEST_F(ExprTest, ExprCtor) {
@@ -103,29 +177,14 @@ TEST_F(ExprTest, ExprCtor) {
     EXPECT_FALSE(e);
   }
   {
-    expr raw = {reinterpret_cast<efunc*>(42)};
+    expr raw = {reinterpret_cast<efunc*>(OPMINUS)};
     Expr e(MakeExpr(&raw));
-    EXPECT_EQ(42, e.opcode());
+    EXPECT_EQ(OPMINUS, e.opcode());
   }
   {
-    expr raw = {reinterpret_cast<efunc*>(N_OPS - 1)};
+    expr raw = {reinterpret_cast<efunc*>(OPOR)};
     Expr e(MakeExpr(&raw));
-    EXPECT_EQ(N_OPS - 1, e.opcode());
-  }
-}
-
-TEST_F(ExprTest, ExprOpCodeOutOfRangeInCtor) {
-  {
-    expr raw = {reinterpret_cast<efunc*>(-1)};
-    EXPECT_DEBUG_DEATH(Expr e(MakeExpr(&raw));, "Assertion");
-  }
-  {
-    expr raw = {reinterpret_cast<efunc*>(N_OPS)};
-    EXPECT_DEBUG_DEATH(Expr e(MakeExpr(&raw));, "Assertion");
-  }
-  {
-    expr raw = {reinterpret_cast<efunc*>(777)};
-    EXPECT_DEBUG_DEATH(Expr e(MakeExpr(&raw));, "Assertion");
+    EXPECT_EQ(OPOR, e.opcode());
   }
 }
 
@@ -144,6 +203,7 @@ struct OpInfo {
 };
 
 const OpInfo OP_INFO[] = {
+  {-1, "unknown"},
   {OPPLUS,  "+",    Expr::BINARY},
   {OPMINUS, "-",    Expr::BINARY},
   {OPMULT,  "*",    Expr::BINARY},
@@ -225,51 +285,70 @@ const OpInfo OP_INFO[] = {
   {OPFUNCALL, "function call", Expr::UNKNOWN},
   {OPNUM, "number", Expr::CONSTANT},
   {OPHOL, "string", Expr::UNKNOWN},
-  {OPVARVAL, "variable", Expr::VARIABLE}
+  {OPVARVAL, "variable", Expr::VARIABLE},
+  {N_OPS, "unknown"},
+  {777,   "unknown"}
 };
 
-TEST_F(ExprTest, Operators) {
-  int known_ops = 0;
+template <typename ExprT>
+void TestAssertInCreate(int opcode) {
+  expr raw = {reinterpret_cast<efunc*>(opcode)};
+  EXPECT_DEBUG_DEATH(MakeExpr<ExprT>(&raw);, "Assertion");
+}
+
+template <typename ExprT>
+int CheckExpr(Expr::Kind start, Expr::Kind end = Expr::UNKNOWN,
+    int bad_opcode = OPPLTERM) {
+  if (end == Expr::UNKNOWN)
+    end = start;
+  {
+    // Check default ctor.
+    ExprT e;
+    EXPECT_FALSE(e);
+  }
+  TestAssertInCreate<ExprT>(bad_opcode);
+  int expr_count = 0;
   int size = sizeof(OP_INFO) / sizeof(*OP_INFO);
-  EXPECT_EQ(N_OPS, size);
-  for (int i = 0; i < N_OPS; ++i) {
+  EXPECT_EQ(N_OPS + 3, size);
+  for (int i = 0; i < size; ++i) {
     const OpInfo &info = OP_INFO[i];
     int opcode = info.code;
     const char *opname = info.name;
     expr raw = {reinterpret_cast<efunc*>(opcode)};
-    if (info.kind == Expr::UNKNOWN) {
-      EXPECT_DEBUG_DEATH(MakeExpr(&raw);, "Assertion");
-      continue;
+    bool is_this_kind = info.kind >= start && info.kind <= end;
+    if (info.kind != Expr::UNKNOWN) {
+      Expr e(MakeExpr(&raw));
+      EXPECT_EQ(is_this_kind, ampl::internal::Is<ExprT>(e));
+      bool cast_result = ampl::Cast<ExprT>(e);
+      EXPECT_EQ(is_this_kind, cast_result);
     }
-    Expr e(MakeExpr(&raw));
+    if (!is_this_kind) continue;
+    ExprT e(MakeExpr<ExprT>(&raw));
     EXPECT_EQ(opcode, e.opcode());
     EXPECT_STREQ(opname, e.opname());
-    ++known_ops;
+    ++expr_count;
   }
-  EXPECT_EQ(64, known_ops);
+  EXPECT_GT(expr_count, 0);
+  return expr_count;
 }
 
-TEST_F(ExprTest, ExprOpCodeOutOfRangeInAccessors) {
-  const char *message =
-      "Assertion .*IsOpCodeInRange\\(\\)";
-  {
-    expr raw = {};
-    Expr e(MakeExpr(&raw));
-    raw.op = reinterpret_cast<efunc*>(-1);
-    EXPECT_DEBUG_DEATH(e.opname();, message);
-  }
-  {
-    expr raw = {};
-    Expr e(MakeExpr(&raw));
-    raw.op = reinterpret_cast<efunc*>(N_OPS);
-    EXPECT_DEBUG_DEATH(e.opname();, message);
-  }
-  {
-    expr raw = {};
-    Expr e(MakeExpr(&raw));
-    raw.op = reinterpret_cast<efunc*>(777);
-    EXPECT_DEBUG_DEATH(e.opname();, message);
-  }
+TEST_F(ExprTest, Expr) {
+  EXPECT_EQ(64, CheckExpr<Expr>(Expr::EXPR_START, Expr::EXPR_END, -1));
+  TestAssertInCreate<Expr>(7);
+  TestAssertInCreate<Expr>(N_OPS);
+  TestAssertInCreate<Expr>(777);
+}
+
+// Test if Expr::Create() uses internal::Is() to check whether expression
+// is of specified type. This allows testing Is() functions instead of doing
+// expensive death tests. Is() is specialized for TestExpr to accept unary
+// and binary but not other expression kinds.
+TEST_F(ExprTest, CreateUsesIs) {
+  expr raw1 = {reinterpret_cast<efunc*>(OPPLUS)}; // binary
+  MakeExpr<TestExpr>(&raw1);
+  expr raw2 = {reinterpret_cast<efunc*>(OPUMINUS)}; // unary
+  MakeExpr<TestExpr>(&raw2);
+  TestAssertInCreate<TestExpr>(OPPLTERM); // neither
 }
 
 TEST_F(ExprTest, EqualityOperator) {
@@ -414,73 +493,34 @@ TEST_F(ExprTest, EqualCount) {
       AddNum(42)));
 }
 
-void MakeNumericExpr(int opcode) {
-  expr e = {reinterpret_cast<efunc*>(opcode)};
-  // TODO
-  //NumericExpr ne(&e);
+TEST_F(ExprTest, NumericExpr) {
+  EXPECT_EQ(44,
+      CheckExpr<NumericExpr>(Expr::NUMERIC_START, Expr::NUMERIC_END, OPNOT));
 }
 
-TEST_F(ExprTest, InvalidNumericExpr) {
-  int i = 0, numeric_count = 0;
-  for (; i < N_OPS; ++i) {
-    const OpInfo &info = OP_INFO[i];
-    if (info.kind >= Expr::NUMERIC_START && info.kind <= Expr::NUMERIC_END) {
-      // TODO
-      //MakeNumericExpr(info.code);
-      ++numeric_count;
-    } else {
-      // TODO
-      //EXPECT_DEBUG_DEATH(MakeNumericExpr(info.code);, "Assertion");
-    }
-  }
-  // Paranoid: make sure that the loop body has been executed enough times.
-  EXPECT_EQ(N_OPS, i);
-  EXPECT_EQ(44, numeric_count);
-}
-
-void MakeLogicalExpr(int opcode) {
-  expr e = {reinterpret_cast<efunc*>(opcode)};
-  LogicalExpr le(&e);
-}
-
-TEST_F(ExprTest, InvalidLogicalExpr) {
-  int i = 0, logical_count = 0;
-  for (; i < N_OPS; ++i) {
-    const OpInfo &info = OP_INFO[i];
-    if (info.kind >= Expr::LOGICAL_START && info.kind <= Expr::LOGICAL_END) {
-      MakeLogicalExpr(info.code);
-      ++logical_count;
-    } else {
-      EXPECT_DEBUG_DEATH(MakeLogicalExpr(info.code);, "Assertion");
-    }
-  }
-  // Paranoid: make sure that the loop body has been executed enough times.
-  EXPECT_EQ(N_OPS, i);
-  EXPECT_EQ(21, logical_count);
+TEST_F(ExprTest, LogicalExpr) {
+  EXPECT_EQ(21,
+      CheckExpr<LogicalExpr>(Expr::LOGICAL_START, Expr::LOGICAL_END));
 }
 
 TEST_F(ExprTest, UnaryExpr) {
-  UnaryExpr null_expr;
-  EXPECT_FALSE(null_expr);
+  EXPECT_EQ(21, CheckExpr<UnaryExpr>(Expr::UNARY));
   NumericExpr arg(AddNum(42));
   UnaryExpr e(AddUnary(OPUMINUS, arg));
   EXPECT_EQ(arg, e.arg());
-  EXPECT_DEBUG_DEATH(AddUnary(OPPLUS, arg);, "Assertion");
 }
 
 TEST_F(ExprTest, BinaryExpr) {
-  BinaryExpr null_expr;
-  EXPECT_FALSE(null_expr);
+  EXPECT_EQ(14, CheckExpr<BinaryExpr>(Expr::BINARY));
+  TestAssertInCreate<BinaryExpr>(OPUMINUS);
   NumericExpr lhs(AddNum(42)), rhs(AddNum(43));
   BinaryExpr e(AddBinary(OPDIV, lhs, rhs));
   EXPECT_EQ(lhs, e.lhs());
   EXPECT_EQ(rhs, e.rhs());
-  EXPECT_DEBUG_DEATH(AddBinary(OPUMINUS, lhs, rhs);, "Assertion");
 }
 
 TEST_F(ExprTest, VarArgExpr) {
-  VarArgExpr null_expr;
-  EXPECT_FALSE(null_expr);
+  EXPECT_EQ(2, CheckExpr<VarArgExpr>(Expr::VARARG));
   NumericExpr args[] = {AddNum(42), AddNum(43), AddNum(44)};
   VarArgExpr e(AddVarArg(MINLIST, args[0], args[1], args[2]));
   int index = 0;
@@ -496,8 +536,6 @@ TEST_F(ExprTest, VarArgExpr) {
   VarArgExpr::iterator i2 = i++;
   EXPECT_EQ(args[0], *i2);
   EXPECT_EQ(args[1], *i);
-  EXPECT_DEBUG_DEATH(AddVarArg(OPUMINUS, args[0], args[1], args[2]);,
-    "Assertion");
 }
 
 // TODO: more tests

@@ -36,56 +36,17 @@ extern "C" {
 
 namespace ampl {
 
-// Anything in namespace internal is AMPL's INTERNAL IMPLEMENTATION DETAIL
-// and MUST NOT BE USED DIRECTLY in user code.
+class Expr;
+
 namespace internal {
 
-// An expression proxy used for implementing operator-> in iterators.
+// Returns true if the non-null expression e is of type ExprT.
 template <typename ExprT>
-class ExprProxy {
- private:
-  ExprT expr_;
-
- public:
-  explicit ExprProxy(expr *e) : expr_(e) {}
-
-  const ExprT *operator->() const { return &expr_; }
-};
-
-// An expression array iterator.
-template <typename ExprT>
-class ExprArrayIterator :
-  public std::iterator<std::forward_iterator_tag, ExprT> {
- private:
-  expr *const *ptr_;
-
- public:
-  explicit ExprArrayIterator(expr *const *p = 0) : ptr_(p) {}
-
-  ExprT operator*() const { return ExprT(*ptr_); }
-
-  internal::ExprProxy<ExprT> operator->() const {
-    return internal::ExprProxy<ExprT>(*ptr_);
-  }
-
-  ExprArrayIterator &operator++() {
-    ++ptr_;
-    return *this;
-  }
-
-  ExprArrayIterator operator++(int) {
-    ExprArrayIterator it(*this);
-    ++ptr_;
-    return it;
-  }
-
-  bool operator==(ExprArrayIterator other) const { return ptr_ == other.ptr_; }
-  bool operator!=(ExprArrayIterator other) const { return ptr_ != other.ptr_; }
-};
+bool Is(Expr e);
 }
 
 // An expression.
-// An Expr object represents a handle (reference) to an expression so
+// An Expr object represents a reference to an expression so
 // it is cheap to construct and pass by value. A type safe way to
 // process expressions of different types is by using ExprVisitor.
 class Expr {
@@ -133,8 +94,10 @@ class Expr {
   static const char *const OP_NAMES[N_OPS];
   static const Kind KINDS[N_OPS];
 
-  bool IsOpCodeInRange() const {
-    return opcode() >= 0 && opcode() < N_OPS;
+  // Returns the kind of this expression.
+  Kind kind() const {
+    assert(opcode() >= 0 && opcode() < N_OPS);
+    return KINDS[opcode()];
   }
 
   void True() const {}
@@ -143,22 +106,15 @@ class Expr {
   template <typename Impl, typename Result, typename LResult>
   friend class ExprVisitor;
   friend class ExprBuilder;
-
-  // Casts an expression to type T. Returns a null expression if the cast
-  // is not possible.
-  template <typename T>
-  friend T Cast(Expr e);
+  friend class Driver;
 
   template <typename ExprT>
   static ExprT Create(Expr e) {
+    assert(!e || internal::Is<ExprT>(e));
     ExprT expr;
     expr.expr_ = e.expr_;
-    assert(expr.kind() == ExprT::KIND);
     return expr;
   }
-
- protected:
-  expr *expr_;
 
   // Constructs an Expr object representing a reference to an AMPL
   // expression e. Only a minimal check is performed when assertions are
@@ -167,16 +123,54 @@ class Expr {
     assert(!expr_ || (kind() >= EXPR_START && kind() <= EXPR_END));
   }
 
-  // Returns true iff this expression is null or has type t.
-  bool HasKind(Kind k) const {
-    return !expr_ || kind() == k;
-  }
+ protected:
+  expr *expr_;
 
-  // Returns the kind of this expression.
-  Kind kind() const {
-    assert(IsOpCodeInRange());
-    return KINDS[opcode()];
-  }
+  template <typename ExprT>
+  static ExprT Create(expr *e) { return Create<ExprT>(Expr(e)); }
+
+  // An expression proxy used for implementing operator-> in iterators.
+  template <typename ExprT>
+  class Proxy {
+   private:
+    ExprT expr_;
+
+   public:
+    explicit Proxy(expr *e) : expr_(Create<ExprT>(e)) {}
+
+    const ExprT *operator->() const { return &expr_; }
+  };
+
+  // An expression array iterator.
+  template <typename ExprT>
+  class ArrayIterator :
+    public std::iterator<std::forward_iterator_tag, ExprT> {
+   private:
+    expr *const *ptr_;
+
+   public:
+    explicit ArrayIterator(expr *const *p = 0) : ptr_(p) {}
+
+    ExprT operator*() const { return Create<ExprT>(*ptr_); }
+
+    Proxy<ExprT> operator->() const {
+      return Proxy<ExprT>(*ptr_);
+    }
+
+    ArrayIterator &operator++() {
+      ++ptr_;
+      return *this;
+    }
+
+    ArrayIterator operator++(int) {
+      ArrayIterator it(*this);
+      ++ptr_;
+      return it;
+    }
+
+    bool operator==(ArrayIterator other) const { return ptr_ == other.ptr_; }
+    bool operator!=(ArrayIterator other) const { return ptr_ != other.ptr_; }
+  };
 
  public:
   // Constructs an Expr object representing a null reference to an AMPL
@@ -203,64 +197,63 @@ class Expr {
 
   // Returns the operation name of this expression which should be non-null.
   const char *opname() const {
-    assert(IsOpCodeInRange());
+    assert(opcode() >= 0 && opcode() < N_OPS);
     return OP_NAMES[opcode()];
   }
 
   bool operator==(Expr other) const { return expr_ == other.expr_; }
   bool operator!=(Expr other) const { return expr_ != other.expr_; }
 
+  template <typename ExprT>
+  friend bool internal::Is(Expr e) {
+    return e.kind() == ExprT::KIND;
+  }
+
+  // Casts an expression to type T. Returns a null expression if the cast
+  // is not possible.
+  template <typename ExprT>
+  friend ExprT Cast(Expr e) {
+    return internal::Is<ExprT>(e) ? Create<ExprT>(e) : ExprT();
+  }
+
   // Recursively compares two expressions and returns true if they are equal.
   friend bool AreEqual(Expr e1, Expr e2);
 };
 
+namespace internal {
+template <>
+inline bool Is<Expr>(Expr e) {
+  return e.kind() >= Expr::EXPR_START && e.kind() <= Expr::EXPR_END;
+}
+}
+
 // A numeric expression.
 class NumericExpr : public Expr {
- private:
-  // Returns true if this is a valid numeric expressions.
-  bool IsValid() const {
-    if (!expr_) return true;
-    Kind k = kind();
-    return k >= NUMERIC_START && k <= NUMERIC_END;
-  }
-
-  friend class internal::ExprProxy<NumericExpr>;
-  friend class internal::ExprArrayIterator<NumericExpr>;
-  friend class RelationalExpr;
-  friend class ExprBuilder;
-  friend class Driver;
-
- protected:
-  NumericExpr(Expr e) : Expr(e) {}
-
-// public:
-  // Constructs a NumericExpr object.
-  explicit NumericExpr(expr *e) : Expr(e) {
-    assert(IsValid());
-  }
-
-  static NumericExpr Create(expr *e) { return NumericExpr(e); }
-
  public:
   NumericExpr() {}
 };
 
+namespace internal {
+template <>
+inline bool Is<NumericExpr>(Expr e) {
+  Expr::Kind k = e.kind();
+  return k >= Expr::NUMERIC_START && k <= Expr::NUMERIC_END;
+}
+}
+
 // A logical or constraint expression.
 class LogicalExpr : public Expr {
- private:
-  // Returns true if this is a valid logical expressions.
-  bool IsValid() const {
-    if (!expr_) return true;
-    Kind k = kind();
-    return k >= LOGICAL_START && k <= LOGICAL_END;
-  }
-
  public:
-  // Constructs a LogicalExpr object.
-  explicit LogicalExpr(expr *e = 0) : Expr(e) {
-    assert(IsValid());
-  }
+  LogicalExpr() {}
 };
+
+namespace internal {
+template <>
+inline bool Is<LogicalExpr>(Expr e) {
+  Expr::Kind k = e.kind();
+  return k >= Expr::LOGICAL_START && k <= Expr::LOGICAL_END;
+}
+}
 
 // A unary numeric expression.
 // Examples: -x, sin(x), where x is a variable.
@@ -271,7 +264,7 @@ class UnaryExpr : public NumericExpr {
   UnaryExpr() {}
 
   // Returns the argument of this expression.
-  NumericExpr arg() const { return Create(expr_->L.e); }
+  NumericExpr arg() const { return Create<NumericExpr>(expr_->L.e); }
 };
 
 // A binary numeric expression.
@@ -283,10 +276,10 @@ class BinaryExpr : public NumericExpr {
   BinaryExpr() {}
 
   // Returns the left-hand side (the first argument) of this expression.
-  NumericExpr lhs() const { return Create(expr_->L.e); }
+  NumericExpr lhs() const { return Create<NumericExpr>(expr_->L.e); }
 
   // Returns the right-hand side (the second argument) of this expression.
-  NumericExpr rhs() const { return Create(expr_->R.e); }
+  NumericExpr rhs() const { return Create<NumericExpr>(expr_->R.e); }
 };
 
 // A numeric expression with a variable number of arguments.
@@ -313,10 +306,10 @@ class VarArgExpr : public NumericExpr {
    public:
     iterator() : de_(&END) {}
 
-    NumericExpr operator*() const { return NumericExpr::Create(de_->e); }
+    NumericExpr operator*() const { return Create<NumericExpr>(de_->e); }
 
-    internal::ExprProxy<NumericExpr> operator->() const {
-      return internal::ExprProxy<NumericExpr>(de_->e);
+    Proxy<NumericExpr> operator->() const {
+      return Proxy<NumericExpr>(de_->e);
     }
 
     iterator &operator++() {
@@ -351,7 +344,7 @@ class SumExpr : public NumericExpr {
 
   SumExpr() {}
 
-  typedef internal::ExprArrayIterator<NumericExpr> iterator;
+  typedef ArrayIterator<NumericExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep);
@@ -370,7 +363,7 @@ class CountExpr : public NumericExpr {
 
   CountExpr() {}
 
-  typedef internal::ExprArrayIterator<LogicalExpr> iterator;
+  typedef ArrayIterator<LogicalExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep);
@@ -390,15 +383,15 @@ class IfExpr : public NumericExpr {
   IfExpr() {}
 
   LogicalExpr condition() const {
-    return LogicalExpr(reinterpret_cast<expr_if*>(expr_)->e);
+    return Create<LogicalExpr>(reinterpret_cast<expr_if*>(expr_)->e);
   }
 
   NumericExpr true_expr() const {
-    return Create(reinterpret_cast<expr_if*>(expr_)->T);
+    return Create<NumericExpr>(reinterpret_cast<expr_if*>(expr_)->T);
   }
 
   NumericExpr false_expr() const {
-    return Create(reinterpret_cast<expr_if*>(expr_)->F);
+    return Create<NumericExpr>(reinterpret_cast<expr_if*>(expr_)->F);
   }
 };
 
@@ -449,10 +442,11 @@ class NumericConstant : public NumericExpr {
   double value() const { return reinterpret_cast<expr_n*>(expr_)->v; }
 };
 
+namespace internal {
 template <>
-inline NumericConstant Cast<NumericConstant>(Expr e) {
-  return e.opcode() == OPNUM ?
-      Expr::Create<NumericConstant>(e) : NumericConstant();
+inline bool Is<NumericConstant>(Expr e) {
+  return e.opcode() == OPNUM;
+}
 }
 
 // A reference to a variable.
@@ -467,9 +461,11 @@ class Variable : public NumericExpr {
   int index() const { return expr_->a; }
 };
 
+namespace internal {
 template <>
-inline Variable Cast<Variable>(Expr e) {
-  return e.opcode() == OPVARVAL ? Expr::Create<Variable>(e) : Variable();
+inline bool Is<Variable>(Expr e) {
+  return e.opcode() == OPVARVAL;
+}
 }
 
 // A numberof expression.
@@ -481,9 +477,9 @@ class NumberOfExpr : public NumericExpr {
 
   NumberOfExpr() {}
 
-  NumericExpr target() const { return Create(*expr_->L.ep); }
+  NumericExpr target() const { return Create<NumericExpr>(*expr_->L.ep); }
 
-  typedef internal::ExprArrayIterator<NumericExpr> iterator;
+  typedef ArrayIterator<NumericExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep + 1);
@@ -515,10 +511,10 @@ class RelationalExpr : public LogicalExpr {
   RelationalExpr() {}
 
   // Returns the left-hand side (the first argument) of this expression.
-  NumericExpr lhs() const { return NumericExpr(expr_->L.e); }
+  NumericExpr lhs() const { return Create<NumericExpr>(expr_->L.e); }
 
   // Returns the right-hand side (the second argument) of this expression.
-  NumericExpr rhs() const { return NumericExpr(expr_->R.e); }
+  NumericExpr rhs() const { return Create<NumericExpr>(expr_->R.e); }
 };
 
 // A logical NOT expression.
@@ -530,7 +526,7 @@ class NotExpr : public LogicalExpr {
   NotExpr() {}
 
   // Returns the argument of this expression.
-  LogicalExpr arg() const { return LogicalExpr(expr_->L.e); }
+  LogicalExpr arg() const { return Create<LogicalExpr>(expr_->L.e); }
 };
 
 // A binary logical expression.
@@ -542,10 +538,10 @@ class BinaryLogicalExpr : public LogicalExpr {
   BinaryLogicalExpr() {}
 
   // Returns the left-hand side (the first argument) of this expression.
-  LogicalExpr lhs() const { return LogicalExpr(expr_->L.e); }
+  LogicalExpr lhs() const { return Create<LogicalExpr>(expr_->L.e); }
 
   // Returns the right-hand side (the second argument) of this expression.
-  LogicalExpr rhs() const { return LogicalExpr(expr_->R.e); }
+  LogicalExpr rhs() const { return Create<LogicalExpr>(expr_->R.e); }
 };
 
 // An implication expression.
@@ -557,15 +553,15 @@ class ImplicationExpr : public LogicalExpr {
   ImplicationExpr() {}
 
   LogicalExpr condition() const {
-    return LogicalExpr(reinterpret_cast<expr_if*>(expr_)->e);
+    return Create<LogicalExpr>(reinterpret_cast<expr_if*>(expr_)->e);
   }
 
   LogicalExpr true_expr() const {
-    return LogicalExpr(reinterpret_cast<expr_if*>(expr_)->T);
+    return Create<LogicalExpr>(reinterpret_cast<expr_if*>(expr_)->T);
   }
 
   LogicalExpr false_expr() const {
-    return LogicalExpr(reinterpret_cast<expr_if*>(expr_)->F);
+    return Create<LogicalExpr>(reinterpret_cast<expr_if*>(expr_)->F);
   }
 };
 
@@ -577,7 +573,7 @@ class IteratedLogicalExpr : public LogicalExpr {
 
   IteratedLogicalExpr() {}
 
-  typedef internal::ExprArrayIterator<LogicalExpr> iterator;
+  typedef ArrayIterator<LogicalExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep);
@@ -596,7 +592,7 @@ class AllDiffExpr : public LogicalExpr {
 
   AllDiffExpr() {}
 
-  typedef internal::ExprArrayIterator<NumericExpr> iterator;
+  typedef ArrayIterator<NumericExpr> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep);
