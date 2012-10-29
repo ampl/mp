@@ -568,10 +568,10 @@ TEST_F(IlogCPTest, ConvertCount) {
 TEST_F(IlogCPTest, ConvertNumberOf) {
   d.use_numberof();
   EXPECT_EQ("x == theta + y == theta",
-      str(d.Visit(AddIterated(OPNUMBEROF, NewVar(2), NewVar(0), NewVar(1)))));
+      str(d.Visit(AddNumberOf(NewVar(2), NewVar(0), NewVar(1)))));
   d.use_numberof(false);
   EXPECT_EQ("x == 42 + y == 42",
-      str(d.Visit(AddIterated(OPNUMBEROF, AddNum(42), NewVar(0), NewVar(1)))));
+      str(d.Visit(AddNumberOf(AddNum(42), NewVar(0), NewVar(1)))));
 }
 
 TEST_F(IlogCPTest, IloArrayCopyingIsCheap) {
@@ -587,7 +587,7 @@ TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
   string bounds = os.str();
   EXPECT_EQ("IloIntVar(10)" + bounds, str(d.Visit(
-      AddIterated(OPNUMBEROF, AddNum(42), NewVar(0), NewVar(1)))));
+      AddNumberOf(AddNum(42), NewVar(0), NewVar(1)))));
   d.FinishBuildingNumberOf();
   IloModel::Iterator iter(mod_);
   ASSERT_TRUE(iter.ok());
@@ -612,10 +612,10 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
   std::ostringstream os;
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
   string bounds = os.str();
-  NumericExpr expr(AddIterated(OPNUMBEROF, AddNum(42), NewVar(0), NewVar(1)));
+  NumericExpr expr(AddNumberOf(AddNum(42), NewVar(0), NewVar(1)));
   EXPECT_EQ("IloIntVar(10)" + bounds, str(d.Visit(expr)));
   EXPECT_EQ("IloIntVar(10)" + bounds, str(d.Visit(
-      AddIterated(OPNUMBEROF, AddNum(42), NewVar(0), NewVar(1)))));
+      AddNumberOf(AddNum(42), NewVar(0), NewVar(1)))));
   d.FinishBuildingNumberOf();
   IloModel::Iterator iter(mod_);
   ASSERT_TRUE(iter.ok());
@@ -641,9 +641,9 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
   string bounds = os.str();
   EXPECT_EQ("IloIntVar(10)" + bounds,
-      str(d.Visit(AddIterated(OPNUMBEROF, AddNum(42), NewVar(0), NewVar(1)))));
+      str(d.Visit(AddNumberOf(AddNum(42), NewVar(0), NewVar(1)))));
   EXPECT_EQ("IloIntVar(12)" + bounds,
-      str(d.Visit(AddIterated(OPNUMBEROF, AddNum(43), NewVar(0), NewVar(1)))));
+      str(d.Visit(AddNumberOf(AddNum(43), NewVar(0), NewVar(1)))));
   d.FinishBuildingNumberOf();
   IloModel::Iterator iter(mod_);
   ASSERT_TRUE(iter.ok());
@@ -670,9 +670,9 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
   string bounds = os.str();
   EXPECT_EQ("IloIntVar(10)" + bounds,
-      str(d.Visit(AddIterated(OPNUMBEROF, AddNum(42), NewVar(0), NewVar(1)))));
+      str(d.Visit(AddNumberOf(AddNum(42), NewVar(0), NewVar(1)))));
   EXPECT_EQ("IloIntVar(15)" + bounds,
-      str(d.Visit(AddIterated(OPNUMBEROF, AddNum(42), NewVar(2)))));
+      str(d.Visit(AddNumberOf(AddNum(42), NewVar(2)))));
   d.FinishBuildingNumberOf();
   IloModel::Iterator iter(mod_);
   ASSERT_TRUE(iter.ok());
@@ -874,8 +874,7 @@ TEST_F(IlogCPTest, ConvertImpElse) {
 }
 
 TEST_F(IlogCPTest, ConvertAllDiff) {
-  IloConstraint con(d.Visit(
-      AddIterated<NumericExpr, LogicalExpr>(OPALLDIFF, NewVar(0), AddNum(42))));
+  IloConstraint con(d.Visit(AddAllDiff(NewVar(0), AddNum(42))));
   IloAllDiffI* diff = dynamic_cast<IloAllDiffI*>(con.getImpl());
   ASSERT_TRUE(diff != nullptr);
   std::ostringstream os;

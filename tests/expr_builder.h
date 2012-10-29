@@ -48,6 +48,10 @@ private:
   Result AddIf(int opcode, LogicalExpr condition,
       Arg true_expr, Arg false_expr);
 
+  // Adds a new iterated expression with up to 3 arguments.
+  template <typename Result, typename Arg>
+  Result AddIterated(int opcode, Arg arg1, Arg arg2, Arg arg3 = Arg());
+
 public:
   ~ExprBuilder();
 
@@ -71,13 +75,13 @@ public:
   // Adds a new sum expression with up to 3 arguments.
   SumExpr AddSum(NumericExpr arg1, NumericExpr arg2,
       NumericExpr arg3 = NumericExpr()) {
-    return AddIterated<NumericExpr, SumExpr>(OPSUMLIST, arg1, arg2, arg3);
+    return AddIterated<SumExpr, NumericExpr>(OPSUMLIST, arg1, arg2, arg3);
   }
 
   // Adds a new count expression with up to 3 arguments.
   CountExpr AddCount(LogicalExpr arg1, LogicalExpr arg2,
       LogicalExpr arg3 = LogicalExpr()) {
-    return AddIterated<LogicalExpr, CountExpr>(OPCOUNT, arg1, arg2, arg3);
+    return AddIterated<CountExpr, LogicalExpr>(OPCOUNT, arg1, arg2, arg3);
   }
 
   // Adds a new if-then-else expression.
@@ -98,6 +102,19 @@ public:
   NumericExpr NewVar(int var_index) {
     expr e = {reinterpret_cast<efunc*>(OPVARVAL), var_index, 0, {0}, {0}, 0};
     return AddExpr<NumericExpr>(new expr(e));
+  }
+
+  // Adds a new numberof expression with up to 3 arguments.
+  NumberOfExpr AddNumberOf(NumericExpr target, NumericExpr arg1,
+      NumericExpr arg2 = NumericExpr()) {
+    return AddIterated<NumberOfExpr, NumericExpr>(
+        OPNUMBEROF, target, arg1, arg2);
+  }
+
+  // Adds a new alldiff expression with up to 3 arguments.
+  AllDiffExpr AddAllDiff(NumericExpr arg1, NumericExpr arg2,
+      NumericExpr arg3 = NumericExpr()) {
+    return AddIterated<AllDiffExpr, NumericExpr>(OPALLDIFF, arg1, arg2, arg3);
   }
 
   LogicalExpr AddBinaryLogical(int opcode, LogicalExpr lhs, LogicalExpr rhs) {
@@ -139,23 +156,10 @@ public:
     expr e = {reinterpret_cast<efunc*>(OPNOT), 0, 0, {arg.expr_}, {0}, 0};
     return AddExpr<LogicalExpr>(new expr(e));
   }
-
-  // Adds a new iterated expression with up to 3 arguments.
-  template <typename T, typename Result = NumericExpr>
-  Result AddIterated(int opcode, T arg1, T arg2, T arg3 = T());
 };
 
 template <typename Result, typename Arg>
-Result ExprBuilder::AddIf(int opcode,
-    LogicalExpr condition, Arg true_expr, Arg false_expr) {
-  expr_if e = {reinterpret_cast<efunc*>(opcode), 0, condition.expr_,
-               true_expr.expr_, false_expr.expr_,
-               0, 0, 0, 0, {0}, {0}, 0, 0};
-  return AddExpr<Result>(reinterpret_cast<expr*>(new expr_if(e)));
-}
-
-template <typename T, typename Result>
-Result ExprBuilder::AddIterated(int opcode, T arg1, T arg2, T arg3) {
+Result ExprBuilder::AddIterated(int opcode, Arg arg1, Arg arg2, Arg arg3) {
   expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {0}, {0}, 0};
   Result sum(AddExpr<Result>(new expr(e)));
   expr** args = sum.expr_->L.ep = new expr*[3];
@@ -164,6 +168,15 @@ Result ExprBuilder::AddIterated(int opcode, T arg1, T arg2, T arg3) {
   args[1] = arg2.expr_;
   args[2] = arg3.expr_;
   return sum;
+}
+
+template <typename Result, typename Arg>
+Result ExprBuilder::AddIf(int opcode,
+    LogicalExpr condition, Arg true_expr, Arg false_expr) {
+  expr_if e = {reinterpret_cast<efunc*>(opcode), 0, condition.expr_,
+               true_expr.expr_, false_expr.expr_,
+               0, 0, 0, 0, {0}, {0}, 0, 0};
+  return AddExpr<Result>(reinterpret_cast<expr*>(new expr_if(e)));
 }
 }
 
