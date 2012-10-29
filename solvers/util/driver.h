@@ -41,19 +41,19 @@ class Driver {
   // Returns the nonlinear part of an objective expression.
   NumericExpr GetNonlinearObjExpr(int obj_index) const {
     assert(obj_index >= 0 && obj_index < asl_->i.n_obj_);
-    return NumericExpr(asl_->I.obj_de_[obj_index].e);
+    return Expr::Create<NumericExpr>(asl_->I.obj_de_[obj_index].e);
   }
 
   // Returns the nonlinear part of a constraint expression.
   NumericExpr GetNonlinearConExpr(int con_index) const {
     assert(con_index >= 0 && con_index < asl_->i.n_con_);
-    return NumericExpr(asl_->I.con_de_[con_index].e);
+    return Expr::Create<NumericExpr>(asl_->I.con_de_[con_index].e);
   }
 
   // Returns a logical constraint expression.
   LogicalExpr GetLogicalConExpr(int lcon_index) const {
     assert(lcon_index >= 0 && lcon_index < asl_->i.n_lcon_);
-    return LogicalExpr(asl_->I.lcon_de_[lcon_index].e);
+    return Expr::Create<LogicalExpr>(asl_->I.lcon_de_[lcon_index].e);
   }
 };
 }
