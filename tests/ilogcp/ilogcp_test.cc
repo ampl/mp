@@ -834,7 +834,7 @@ TEST_F(IlogCPTest, ConvertForAll) {
 }
 
 TEST_F(IlogCPTest, ConvertNot) {
-  IloConstraint c(d.Visit(NewNot(AddRelational(LE, AddVar(0), AddNum(42)))));
+  IloConstraint c(d.Visit(AddNot(AddRelational(LE, AddVar(0), AddNum(42)))));
   IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
   ASSERT_TRUE(n != nullptr);
   EXPECT_EQ("x <= 42", str(n->getConstraint()));
