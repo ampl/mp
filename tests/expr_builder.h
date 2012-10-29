@@ -144,15 +144,15 @@ public:
     return AddExpr<RelationalExpr>(new expr(e));
   }
 
+  // Adds a new logical NOT expression.
+  NotExpr AddNot(LogicalExpr arg) {
+    expr e = {reinterpret_cast<efunc*>(OPNOT), 0, 0, {arg.expr_}, {0}, 0};
+    return AddExpr<NotExpr>(new expr(e));
+  }
+
   LogicalExpr NewIterated(int opcode, LogicalExpr arg1,
       LogicalExpr arg2, LogicalExpr arg3 = LogicalExpr()) {
     return AddIterated<LogicalExpr, LogicalExpr>(opcode, arg1, arg2, arg3);
-  }
-
-  // Creates a logical NOT expression adding it to this builder.
-  LogicalExpr NewNot(LogicalExpr arg) {
-    expr e = {reinterpret_cast<efunc*>(OPNOT), 0, 0, {arg.expr_}, {0}, 0};
-    return AddExpr<LogicalExpr>(new expr(e));
   }
 };
 

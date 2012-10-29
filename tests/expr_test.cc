@@ -25,6 +25,7 @@
 #include "gtest/gtest.h"
 #include "tests/expr_builder.h"
 
+using ampl::Cast;
 using ampl::Expr;
 using ampl::NumericExpr;
 using ampl::LogicalExpr;
@@ -40,6 +41,7 @@ using ampl::Variable;
 using ampl::NumberOfExpr;
 using ampl::LogicalConstant;
 using ampl::RelationalExpr;
+using ampl::NotExpr;
 
 using ampl::UnsupportedExprError;
 
@@ -331,7 +333,7 @@ int CheckExpr(Expr::Kind start, Expr::Kind end = Expr::UNKNOWN,
     if (info.kind != Expr::UNKNOWN) {
       Expr e(MakeExpr(&raw));
       EXPECT_EQ(is_this_kind, ampl::internal::Is<ExprT>(e));
-      bool cast_result = ampl::Cast<ExprT>(e);
+      bool cast_result = Cast<ExprT>(e);
       EXPECT_EQ(is_this_kind, cast_result);
     }
     if (!is_this_kind) continue;
@@ -660,6 +662,13 @@ TEST_F(ExprTest, RelationalExpr) {
   RelationalExpr e(AddRelational(EQ, lhs, rhs));
   EXPECT_EQ(lhs, e.lhs());
   EXPECT_EQ(rhs, e.rhs());
+}
+
+TEST_F(ExprTest, NotExpr) {
+  EXPECT_EQ(1, CheckExpr<UnaryExpr>(Expr::NOT));
+  LogicalExpr arg(AddBool(true));
+  NotExpr e(AddNot(arg));
+  EXPECT_EQ(arg, e.arg());
 }
 
 // TODO: more tests
