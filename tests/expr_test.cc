@@ -31,6 +31,9 @@ using ampl::LogicalExpr;
 using ampl::UnaryExpr;
 using ampl::BinaryExpr;
 using ampl::VarArgExpr;
+using ampl::SumExpr;
+using ampl::CountExpr;
+using ampl::IfExpr;
 
 using ampl::UnsupportedExprError;
 
@@ -264,7 +267,7 @@ const OpInfo OP_INFO[] = {
   {OPround,     "round",     Expr::BINARY},
   {OPtrunc,     "trunc",     Expr::BINARY},
   {OPCOUNT,     "count",           Expr::COUNT},
-  {OPNUMBEROF,  "numberof",        Expr::COUNT},
+  {OPNUMBEROF,  "numberof",        Expr::NUMBEROF},
   {OPNUMBEROFs, "string numberof", Expr::UNKNOWN},
   {OPATLEAST, "atleast", Expr::RELATIONAL},
   {OPATMOST,  "atmost",  Expr::RELATIONAL},
@@ -438,59 +441,59 @@ TEST_F(ExprTest, EqualPLTerm) {
 
 TEST_F(ExprTest, EqualIf) {
   EXPECT_TRUE(AreEqual(
-      NewIf(OPIFnl, NewLogicalConstant(0), NewVar(1), AddNum(42)),
-      NewIf(OPIFnl, NewLogicalConstant(0), NewVar(1), AddNum(42))));
+      AddIf(AddLogicalConstant(0), NewVar(1), AddNum(42)),
+      AddIf(AddLogicalConstant(0), NewVar(1), AddNum(42))));
   EXPECT_FALSE(AreEqual(
-      NewIf(OPIFnl,  NewLogicalConstant(0), NewVar(1), AddNum(42)),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), AddNum(42))));
+      AddIf(AddLogicalConstant(0), NewVar(1), AddNum(42)),
+      AddSum(NewVar(0), NewVar(1), AddNum(42))));
   EXPECT_FALSE(AreEqual(
-      NewIf(OPIFnl, NewLogicalConstant(0), NewVar(1), AddNum(42)),
-      NewIf(OPIFnl, NewLogicalConstant(0), NewVar(1), AddNum(0))));
+      AddIf(AddLogicalConstant(0), NewVar(1), AddNum(42)),
+      AddIf(AddLogicalConstant(0), NewVar(1), AddNum(0))));
   EXPECT_FALSE(AreEqual(
-      NewIf(OPIFnl, NewLogicalConstant(0), NewVar(1), AddNum(42)),
+      AddIf(AddLogicalConstant(0), NewVar(1), AddNum(42)),
       AddNum(42)));
 }
 
 TEST_F(ExprTest, EqualSum) {
   EXPECT_TRUE(AreEqual(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), AddNum(42)),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), AddNum(42))));
+      AddSum(NewVar(0), NewVar(1), AddNum(42)),
+      AddSum(NewVar(0), NewVar(1), AddNum(42))));
   EXPECT_FALSE(AreEqual(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), AddNum(42)),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1))));
+      AddSum(NewVar(0), NewVar(1), AddNum(42)),
+      AddSum(NewVar(0), NewVar(1))));
   EXPECT_FALSE(AreEqual(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1)),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), AddNum(42))));
+      AddSum(NewVar(0), NewVar(1)),
+      AddSum(NewVar(0), NewVar(1), AddNum(42))));
   EXPECT_FALSE(AreEqual(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), AddNum(42)),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), AddNum(42))));
+      AddSum(NewVar(0), NewVar(1), AddNum(42)),
+      AddCount(AddBool(false), AddBool(true), AddBool(true))));
   EXPECT_FALSE(AreEqual(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), AddNum(42)),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), AddNum(0))));
+      AddSum(NewVar(0), NewVar(1), AddNum(42)),
+      AddSum(NewVar(0), NewVar(1), AddNum(0))));
   EXPECT_FALSE(AreEqual(
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), AddNum(42)),
+      AddSum(NewVar(0), NewVar(1), AddNum(42)),
       AddNum(42)));
 }
 
 TEST_F(ExprTest, EqualCount) {
   EXPECT_TRUE(AreEqual(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), AddNum(42)),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), AddNum(42))));
+      AddCount(AddBool(false), AddBool(true), AddBool(true)),
+      AddCount(AddBool(false), AddBool(true), AddBool(true))));
   EXPECT_FALSE(AreEqual(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), AddNum(42)),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1))));
+      AddCount(AddBool(false), AddBool(true), AddBool(true)),
+      AddCount(AddBool(false), AddBool(true))));
   EXPECT_FALSE(AreEqual(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1)),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), AddNum(42))));
+      AddCount(AddBool(false), AddBool(true)),
+      AddCount(AddBool(false), AddBool(true), AddBool(true))));
   EXPECT_FALSE(AreEqual(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), AddNum(42)),
-      NewSum(OPSUMLIST, NewVar(0), NewVar(1), AddNum(42))));
+      AddCount(AddBool(false), AddBool(true), AddBool(true)),
+      AddSum(AddNum(0), AddNum(1), AddNum(1))));
   EXPECT_FALSE(AreEqual(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), AddNum(42)),
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), AddNum(0))));
+      AddCount(AddBool(false), AddBool(true), AddBool(true)),
+      AddCount(AddBool(false), AddBool(true), AddBool(false))));
   EXPECT_FALSE(AreEqual(
-      NewSum(OPCOUNT, NewVar(0), NewVar(1), AddNum(42)),
-      AddNum(42)));
+      AddCount(AddBool(false), AddBool(true), AddBool(true)),
+      AddBool(true)));
 }
 
 TEST_F(ExprTest, NumericExpr) {
@@ -512,7 +515,6 @@ TEST_F(ExprTest, UnaryExpr) {
 
 TEST_F(ExprTest, BinaryExpr) {
   EXPECT_EQ(14, CheckExpr<BinaryExpr>(Expr::BINARY));
-  TestAssertInCreate<BinaryExpr>(OPUMINUS);
   NumericExpr lhs(AddNum(42)), rhs(AddNum(43));
   BinaryExpr e(AddBinary(OPDIV, lhs, rhs));
   EXPECT_EQ(lhs, e.lhs());
@@ -536,6 +538,53 @@ TEST_F(ExprTest, VarArgExpr) {
   VarArgExpr::iterator i2 = i++;
   EXPECT_EQ(args[0], *i2);
   EXPECT_EQ(args[1], *i);
+}
+
+TEST_F(ExprTest, SumExpr) {
+  EXPECT_EQ(1, CheckExpr<SumExpr>(Expr::SUM));
+  NumericExpr args[] = {AddNum(42), AddNum(43), AddNum(44)};
+  SumExpr e(AddSum(args[0], args[1], args[2]));
+  int index = 0;
+  SumExpr::iterator i = e.begin();
+  for (SumExpr::iterator end = e.end(); i != end; ++i, ++index) {
+    EXPECT_TRUE(*i);
+    EXPECT_EQ(args[index], *i);
+    EXPECT_EQ(args[index].opcode(), i->opcode());
+  }
+  EXPECT_EQ(3, index);
+  i = e.begin();
+  SumExpr::iterator i2 = i++;
+  EXPECT_EQ(args[0], *i2);
+  EXPECT_EQ(args[1], *i);
+}
+
+TEST_F(ExprTest, CountExpr) {
+  EXPECT_EQ(1, CheckExpr<CountExpr>(Expr::COUNT));
+  LogicalExpr args[] = {
+      AddLogicalConstant(0), AddLogicalConstant(1), AddLogicalConstant(0)};
+  CountExpr e(AddCount(args[0], args[1], args[2]));
+  int index = 0;
+  CountExpr::iterator i = e.begin();
+  for (CountExpr::iterator end = e.end(); i != end; ++i, ++index) {
+    EXPECT_TRUE(*i);
+    EXPECT_EQ(args[index], *i);
+    EXPECT_EQ(args[index].opcode(), i->opcode());
+  }
+  EXPECT_EQ(3, index);
+  i = e.begin();
+  CountExpr::iterator i2 = i++;
+  EXPECT_EQ(args[0], *i2);
+  EXPECT_EQ(args[1], *i);
+}
+
+TEST_F(ExprTest, IfExpr) {
+  EXPECT_EQ(1, CheckExpr<IfExpr>(Expr::IF));
+  LogicalExpr condition(AddBool(true));
+  NumericExpr true_expr(AddNum(42)), false_expr(AddNum(43));
+  IfExpr e(AddIf(condition, true_expr, false_expr));
+  EXPECT_EQ(condition, e.condition());
+  EXPECT_EQ(true_expr, e.true_expr());
+  EXPECT_EQ(false_expr, e.false_expr());
 }
 
 // TODO: more tests

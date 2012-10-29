@@ -43,6 +43,16 @@ namespace internal {
 // Returns true if the non-null expression e is of type ExprT.
 template <typename ExprT>
 bool Is(Expr e);
+
+// Specialize Is<ExprT> for the class ExprClass corresponding to a single
+// expression kind with the specified operation code.
+#define AMPL_SPECIALIZE_IS(ExprClass, code) \
+namespace internal { \
+template <> \
+inline bool Is<ExprClass>(Expr e) { \
+  return e.opcode() == code; \
+} \
+}
 }
 
 // An expression.
@@ -340,8 +350,6 @@ class VarArgExpr : public NumericExpr {
 // Example: sum{i in I} x[i], where I is a set and x is a variable.
 class SumExpr : public NumericExpr {
  public:
-  static const Kind KIND = SUM;
-
   SumExpr() {}
 
   typedef ArrayIterator<NumericExpr> iterator;
@@ -355,12 +363,12 @@ class SumExpr : public NumericExpr {
   }
 };
 
+AMPL_SPECIALIZE_IS(SumExpr, OPSUMLIST)
+
 // A count expression.
 // Example: count{i in I} (x[i] >= 0), where I is a set and x is a variable.
 class CountExpr : public NumericExpr {
  public:
-  static const Kind KIND = COUNT;
-
   CountExpr() {}
 
   typedef ArrayIterator<LogicalExpr> iterator;
@@ -374,12 +382,12 @@ class CountExpr : public NumericExpr {
   }
 };
 
+AMPL_SPECIALIZE_IS(CountExpr, OPCOUNT)
+
 // An if-then-else expression.
 // Example: if x != 0 then y else z, where x, y and z are variables.
 class IfExpr : public NumericExpr {
  public:
-  static const Kind KIND = IF;
-
   IfExpr() {}
 
   LogicalExpr condition() const {
@@ -395,12 +403,12 @@ class IfExpr : public NumericExpr {
   }
 };
 
+AMPL_SPECIALIZE_IS(IfExpr, OPIFnl)
+
 // A piecewise-linear term.
 // Example: <<0; -1, 1>> x, where x is a variable.
 class PiecewiseLinearTerm : public NumericExpr {
  public:
-  static const Kind KIND = PLTERM;
-
   PiecewiseLinearTerm() {}
 
   // Returns the number of slopes in this term.
@@ -430,51 +438,37 @@ class PiecewiseLinearTerm : public NumericExpr {
   }
 };
 
+AMPL_SPECIALIZE_IS(PiecewiseLinearTerm, OPPLTERM)
+
 // A numeric constant.
 // Examples: 42, -1.23e-4
 class NumericConstant : public NumericExpr {
  public:
-  static const Kind KIND = CONSTANT;
-
   NumericConstant() {}
 
   // Returns the value of this number.
   double value() const { return reinterpret_cast<expr_n*>(expr_)->v; }
 };
 
-namespace internal {
-template <>
-inline bool Is<NumericConstant>(Expr e) {
-  return e.opcode() == OPNUM;
-}
-}
+AMPL_SPECIALIZE_IS(NumericConstant, OPNUM)
 
 // A reference to a variable.
 // Example: x
 class Variable : public NumericExpr {
  public:
-  static const Kind KIND = VARIABLE;
-
   Variable() {}
 
   // Returns the index of the referenced variable.
   int index() const { return expr_->a; }
 };
 
-namespace internal {
-template <>
-inline bool Is<Variable>(Expr e) {
-  return e.opcode() == OPVARVAL;
-}
-}
+AMPL_SPECIALIZE_IS(Variable, OPVARVAL)
 
 // A numberof expression.
 // Example: numberof 42 in ({i in I} x[i]),
 // where I is a set and x is a variable.
 class NumberOfExpr : public NumericExpr {
  public:
-  static const Kind KIND = NUMBEROF;
-
   NumberOfExpr() {}
 
   NumericExpr target() const { return Create<NumericExpr>(*expr_->L.ep); }
@@ -489,6 +483,8 @@ class NumberOfExpr : public NumericExpr {
     return iterator(expr_->R.ep);
   }
 };
+
+AMPL_SPECIALIZE_IS(NumberOfExpr, OPNUMBEROF)
 
 // A logical constant.
 // Examples: 0, 1
