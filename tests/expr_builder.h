@@ -49,14 +49,14 @@ public:
   // Adds a new unary numeric expression.
   UnaryExpr AddUnary(int opcode, NumericExpr arg) {
     expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {arg.expr_}, {0}, 0};
-    return UnaryExpr(AddExpr<NumericExpr>(new expr(e)));
+    return Expr::Create<UnaryExpr>(AddExpr<NumericExpr>(new expr(e))); // TODO: move create to addexpr
   }
 
   // Adds a new binary numeric expression.
   BinaryExpr AddBinary(int opcode, NumericExpr lhs, NumericExpr rhs) {
     expr e = {reinterpret_cast<efunc*>(opcode), 0, 0,
               {lhs.expr_}, {rhs.expr_}, 0};
-    return BinaryExpr(AddExpr<NumericExpr>(new expr(e)));
+    return Expr::Create<BinaryExpr>(AddExpr<NumericExpr>(new expr(e))); // TODO: move create to addexpr
   }
 
   // Adds a new variable-argument expression with up to 3 arguments.
