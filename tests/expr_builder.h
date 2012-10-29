@@ -152,6 +152,7 @@ public:
         OPIMPELSE, condition, true_expr, false_expr);
   }
 
+  // Adds a new iterated logical expression.
   IteratedLogicalExpr AddIteratedLogical(int opcode,
       LogicalExpr arg1, LogicalExpr arg2, LogicalExpr arg3 = LogicalExpr()) {
     return AddIterated<IteratedLogicalExpr, LogicalExpr>(
