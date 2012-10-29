@@ -490,13 +490,13 @@ AMPL_SPECIALIZE_IS(NumberOfExpr, OPNUMBEROF)
 // Examples: 0, 1
 class LogicalConstant : public LogicalExpr {
  public:
-  static const Kind KIND = CONSTANT;
-
   LogicalConstant() {}
 
   // Returns the value of this constant.
   bool value() const { return reinterpret_cast<expr_n*>(expr_)->v != 0; }
 };
+
+AMPL_SPECIALIZE_IS(LogicalConstant, OPNUM)
 
 // A relational expression.
 // Examples: x < y, x != y, where x and y are variables.
@@ -517,13 +517,13 @@ class RelationalExpr : public LogicalExpr {
 // Example: not a, where a is a logical expression.
 class NotExpr : public LogicalExpr {
  public:
-  static const Kind KIND = NOT;
-
   NotExpr() {}
 
   // Returns the argument of this expression.
   LogicalExpr arg() const { return Create<LogicalExpr>(expr_->L.e); }
 };
+
+AMPL_SPECIALIZE_IS(NotExpr, OPNOT)
 
 // A binary logical expression.
 // Examples: a || b, a && b, where a and b are logical expressions.
@@ -544,8 +544,6 @@ class BinaryLogicalExpr : public LogicalExpr {
 // Example: a ==> b else c, where a, b and c are logical expressions.
 class ImplicationExpr : public LogicalExpr {
  public:
-  static const Kind KIND = IMPLICATION;
-
   ImplicationExpr() {}
 
   LogicalExpr condition() const {
@@ -560,6 +558,8 @@ class ImplicationExpr : public LogicalExpr {
     return Create<LogicalExpr>(reinterpret_cast<expr_if*>(expr_)->F);
   }
 };
+
+AMPL_SPECIALIZE_IS(ImplicationExpr, OPIMPELSE)
 
 // An iterated logical expression.
 // Example: exists{i in I} x[i] >= 0, where I is a set and x is a variable.
@@ -584,8 +584,6 @@ class IteratedLogicalExpr : public LogicalExpr {
 // Example: alldiff{i in I} x[i], where I is a set and x is a variable.
 class AllDiffExpr : public LogicalExpr {
  public:
-  static const Kind KIND = ALLDIFF;
-
   AllDiffExpr() {}
 
   typedef ArrayIterator<NumericExpr> iterator;
@@ -598,6 +596,8 @@ class AllDiffExpr : public LogicalExpr {
     return iterator(expr_->R.ep);
   }
 };
+
+AMPL_SPECIALIZE_IS(AllDiffExpr, OPALLDIFF)
 
 // A general error.
 class Error : public std::runtime_error {

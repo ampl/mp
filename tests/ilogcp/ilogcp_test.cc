@@ -812,7 +812,7 @@ TEST_F(IlogCPTest, CheckOrTruthTable) {
 
 TEST_F(IlogCPTest, ConvertExists) {
   EXPECT_EQ("(x == 1 ) || (x == 2 ) || (x == 3 )",
-      str(d.Visit(NewIterated(ORLIST,
+      str(d.Visit(AddIteratedLogical(ORLIST,
           AddRelational(EQ, AddVar(0), AddNum(1)),
           AddRelational(EQ, AddVar(0), AddNum(2)),
           AddRelational(EQ, AddVar(0), AddNum(3))))));
@@ -827,7 +827,7 @@ TEST_F(IlogCPTest, ConvertAnd) {
 
 TEST_F(IlogCPTest, ConvertForAll) {
   EXPECT_EQ("(x == 1 ) && (x == 2 ) && (x == 3 )",
-      str(d.Visit(NewIterated(ANDLIST,
+      str(d.Visit(AddIteratedLogical(ANDLIST,
           AddRelational(EQ, AddVar(0), AddNum(1)),
           AddRelational(EQ, AddVar(0), AddNum(2)),
           AddRelational(EQ, AddVar(0), AddNum(3))))));

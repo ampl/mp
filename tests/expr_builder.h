@@ -118,19 +118,6 @@ public:
     return AddIterated<AllDiffExpr, NumericExpr>(OPALLDIFF, arg1, arg2, arg3);
   }
 
-  LogicalExpr AddBinaryLogical(int opcode, LogicalExpr lhs, LogicalExpr rhs) {
-    expr e = {reinterpret_cast<efunc*>(opcode), 0, 0,
-              {lhs.expr_}, {rhs.expr_}, 0};
-    return LogicalExpr(AddExpr<LogicalExpr>(new expr(e)));
-  }
-
-  // Adds a new implication expression.
-  ImplicationExpr AddImplication(LogicalExpr condition,
-      LogicalExpr true_expr, LogicalExpr false_expr) {
-    return AddIf<ImplicationExpr, LogicalExpr>(
-        OPIMPELSE, condition, true_expr, false_expr);
-  }
-
   // Adds a new logical constant.
   LogicalConstant AddBool(bool value) {
     expr_n e = {reinterpret_cast<efunc_n*>(OPNUM), value ? 1. : 0.};
@@ -150,9 +137,25 @@ public:
     return AddExpr<NotExpr>(new expr(e));
   }
 
-  LogicalExpr NewIterated(int opcode, LogicalExpr arg1,
-      LogicalExpr arg2, LogicalExpr arg3 = LogicalExpr()) {
-    return AddIterated<LogicalExpr, LogicalExpr>(opcode, arg1, arg2, arg3);
+  // Adds a new binary logical expression.
+  BinaryLogicalExpr AddBinaryLogical(
+      int opcode, LogicalExpr lhs, LogicalExpr rhs) {
+    expr e = {reinterpret_cast<efunc*>(opcode), 0, 0,
+              {lhs.expr_}, {rhs.expr_}, 0};
+    return AddExpr<BinaryLogicalExpr>(new expr(e));
+  }
+
+  // Adds a new implication expression.
+  ImplicationExpr AddImplication(LogicalExpr condition,
+      LogicalExpr true_expr, LogicalExpr false_expr) {
+    return AddIf<ImplicationExpr, LogicalExpr>(
+        OPIMPELSE, condition, true_expr, false_expr);
+  }
+
+  IteratedLogicalExpr AddIteratedLogical(int opcode,
+      LogicalExpr arg1, LogicalExpr arg2, LogicalExpr arg3 = LogicalExpr()) {
+    return AddIterated<IteratedLogicalExpr, LogicalExpr>(
+        opcode, arg1, arg2, arg3);
   }
 };
 
