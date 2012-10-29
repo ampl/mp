@@ -66,17 +66,17 @@ VarArgExpr ExprBuilder::AddVarArg(int opcode,
   return Expr::Create<VarArgExpr>(AddExpr<NumericExpr>(result));
 }
 
-NumericExpr ExprBuilder::NewPLTerm(
+PiecewiseLinearTerm ExprBuilder::AddPLTerm(
     int size, const double *args, int var_index) {
   expr e = {reinterpret_cast<efunc*>(OPPLTERM), 0, 0, {0}, {0}, 0};
-  NumericExpr pl(AddExpr<NumericExpr>(new expr(e)));
+  PiecewiseLinearTerm pl(AddExpr<PiecewiseLinearTerm>(new expr(e)));
   pl.expr_->L.p = static_cast<plterm*>(
       std::calloc(1, sizeof(plterm) + sizeof(real) * (size - 1)));
   pl.expr_->L.p->n = (size + 1) / 2;
   real *bs = pl.expr_->L.p->bs;
   for (int i = 0; i < size; i++)
     bs[i] = args[i];
-  pl.expr_->R.e = NewVar(var_index).expr_;
+  pl.expr_->R.e = AddVar(var_index).expr_;
   return pl;
 }
 }
