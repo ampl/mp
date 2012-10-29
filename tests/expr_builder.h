@@ -132,19 +132,16 @@ public:
   }
 
   // Adds a new logical constant.
-  LogicalConstant AddLogicalConstant(bool value) {
+  LogicalConstant AddBool(bool value) {
     expr_n e = {reinterpret_cast<efunc_n*>(OPNUM), value ? 1. : 0.};
     return AddExpr<LogicalConstant>(reinterpret_cast<expr*>(new expr_n(e)));
   }
-  LogicalConstant AddBool(bool value) {
-    return AddLogicalConstant(value);
-  }
 
-  // Creates a relational expression.
-  LogicalExpr NewRelational(int opcode, NumericExpr lhs, NumericExpr rhs) {
+  // Adds a new relational expression.
+  RelationalExpr AddRelational(int opcode, NumericExpr lhs, NumericExpr rhs) {
     expr e = {reinterpret_cast<efunc*>(opcode), 0, 0,
               {lhs.expr_}, {rhs.expr_}, 0};
-    return AddExpr<LogicalExpr>(new expr(e));
+    return AddExpr<RelationalExpr>(new expr(e));
   }
 
   LogicalExpr NewIterated(int opcode, LogicalExpr arg1,

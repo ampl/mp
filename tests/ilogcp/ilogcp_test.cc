@@ -346,7 +346,7 @@ TEST_F(IlogCPTest, ConvertInvalidExpr) {
 
 TEST_F(IlogCPTest, ConvertIf) {
   EXPECT_EQ("IloNumVar(7)[-inf..inf]", str(d.Visit(AddIf(
-      NewRelational(EQ, AddVar(0), AddNum(0)), AddVar(1), AddNum(42)))));
+      AddRelational(EQ, AddVar(0), AddNum(0)), AddVar(1), AddNum(42)))));
 
   IloModel::Iterator iter(mod_);
   ASSERT_TRUE(iter.ok());
@@ -558,9 +558,9 @@ TEST_F(IlogCPTest, ConvertPLTerm) {
 }
 
 TEST_F(IlogCPTest, ConvertCount) {
-  LogicalExpr a(NewRelational(EQ, AddVar(0), AddNum(0)));
-  LogicalExpr b(NewRelational(LE, AddVar(1), AddNum(42)));
-  LogicalExpr c(NewRelational(GE, AddVar(2), AddNum(0)));
+  LogicalExpr a(AddRelational(EQ, AddVar(0), AddNum(0)));
+  LogicalExpr b(AddRelational(LE, AddVar(1), AddNum(42)));
+  LogicalExpr c(AddRelational(GE, AddVar(2), AddNum(0)));
   EXPECT_EQ("x == 0 + y <= 42 + 0 <= theta",
       str(d.Visit(AddCount(a, b, c))));
 }
@@ -704,52 +704,52 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
 }
 
 TEST_F(IlogCPTest, ConvertFalse) {
-  EXPECT_EQ("IloNumVar(4)[1..1] == 0", str(d.Visit(AddLogicalConstant(false))));
+  EXPECT_EQ("IloNumVar(4)[1..1] == 0", str(d.Visit(AddBool(false))));
 }
 
 TEST_F(IlogCPTest, ConvertTrue) {
-  EXPECT_EQ("IloNumVar(4)[1..1] == 1", str(d.Visit(AddLogicalConstant(1))));
-  EXPECT_EQ("IloNumVar(7)[1..1] == 1", str(d.Visit(AddLogicalConstant(42))));
+  EXPECT_EQ("IloNumVar(4)[1..1] == 1", str(d.Visit(AddBool(1))));
+  EXPECT_EQ("IloNumVar(7)[1..1] == 1", str(d.Visit(AddBool(42))));
 }
 
 TEST_F(IlogCPTest, ConvertLT) {
   EXPECT_EQ("x <= 41",
-      str(d.Visit(NewRelational(LT, AddVar(0), AddNum(42)))));
+      str(d.Visit(AddRelational(LT, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertLE) {
   EXPECT_EQ("x <= 42",
-      str(d.Visit(NewRelational(LE, AddVar(0), AddNum(42)))));
+      str(d.Visit(AddRelational(LE, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertEQ) {
   EXPECT_EQ("x == 42",
-      str(d.Visit(NewRelational(EQ, AddVar(0), AddNum(42)))));
+      str(d.Visit(AddRelational(EQ, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertGE) {
   EXPECT_EQ("42 <= x",
-      str(d.Visit(NewRelational(GE, AddVar(0), AddNum(42)))));
+      str(d.Visit(AddRelational(GE, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertGT) {
   EXPECT_EQ("43 <= x",
-      str(d.Visit(NewRelational(GT, AddVar(0), AddNum(42)))));
+      str(d.Visit(AddRelational(GT, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertNE) {
   EXPECT_EQ("x != 42",
-      str(d.Visit(NewRelational(NE, AddVar(0), AddNum(42)))));
+      str(d.Visit(AddRelational(NE, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertAtMost) {
   EXPECT_EQ("42 <= x", str(d.Visit(
-      NewRelational(OPATMOST, AddVar(0), AddNum(42)))));
+      AddRelational(OPATMOST, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertNotAtMost) {
   IloConstraint c(d.Visit(
-      NewRelational(OPNOTATMOST, AddVar(0), AddNum(42))));
+      AddRelational(OPNOTATMOST, AddVar(0), AddNum(42))));
   IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
   ASSERT_TRUE(n != nullptr);
   EXPECT_EQ("42 <= x", str(n->getConstraint()));
@@ -757,12 +757,12 @@ TEST_F(IlogCPTest, ConvertNotAtMost) {
 
 TEST_F(IlogCPTest, ConvertAtLeast) {
   EXPECT_EQ("x <= 42", str(d.Visit(
-      NewRelational(OPATLEAST, AddVar(0), AddNum(42)))));
+      AddRelational(OPATLEAST, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertNotAtLeast) {
   IloConstraint c(d.Visit(
-      NewRelational(OPNOTATLEAST, AddVar(0), AddNum(42))));
+      AddRelational(OPNOTATLEAST, AddVar(0), AddNum(42))));
   IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
   ASSERT_TRUE(n != nullptr);
   EXPECT_EQ("x <= 42", str(n->getConstraint()));
@@ -770,18 +770,18 @@ TEST_F(IlogCPTest, ConvertNotAtLeast) {
 
 TEST_F(IlogCPTest, ConvertExactly) {
   EXPECT_EQ("x == 42", str(d.Visit(
-      NewRelational(OPEXACTLY, AddVar(0), AddNum(42)))));
+      AddRelational(OPEXACTLY, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertNotExactly) {
   EXPECT_EQ("x != 42", str(d.Visit(
-      NewRelational(OPNOTEXACTLY, AddVar(0), AddNum(42)))));
+      AddRelational(OPNOTEXACTLY, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertOr) {
   IloConstraint c(d.Visit(AddBinaryLogical(OPOR,
-      NewRelational(EQ, AddVar(0), AddNum(1)),
-      NewRelational(EQ, AddVar(0), AddNum(2)))));
+      AddRelational(EQ, AddVar(0), AddNum(1)),
+      AddRelational(EQ, AddVar(0), AddNum(2)))));
   IloIfThenI *ifThen = dynamic_cast<IloIfThenI*>(c.getImpl());
   ASSERT_TRUE(ifThen != nullptr);
   IloNotI *n = dynamic_cast<IloNotI*>(ifThen->getLeft().getImpl());
@@ -795,8 +795,8 @@ TEST_F(IlogCPTest, CheckOrTruthTable) {
   vars[0].setBounds(0, 0);
   vars[1].setBounds(0, 0);
   mod_.add(d.Visit(AddBinaryLogical(OPOR,
-      NewRelational(EQ, AddVar(0), AddNum(1)),
-      NewRelational(EQ, AddVar(1), AddNum(1)))));
+      AddRelational(EQ, AddVar(0), AddNum(1)),
+      AddRelational(EQ, AddVar(1), AddNum(1)))));
   IloCP cp(mod_);
   EXPECT_FALSE(cp.solve());
   vars[0].setBounds(0, 0);
@@ -813,28 +813,28 @@ TEST_F(IlogCPTest, CheckOrTruthTable) {
 TEST_F(IlogCPTest, ConvertExists) {
   EXPECT_EQ("(x == 1 ) || (x == 2 ) || (x == 3 )",
       str(d.Visit(NewIterated(ORLIST,
-          NewRelational(EQ, AddVar(0), AddNum(1)),
-          NewRelational(EQ, AddVar(0), AddNum(2)),
-          NewRelational(EQ, AddVar(0), AddNum(3))))));
+          AddRelational(EQ, AddVar(0), AddNum(1)),
+          AddRelational(EQ, AddVar(0), AddNum(2)),
+          AddRelational(EQ, AddVar(0), AddNum(3))))));
 }
 
 TEST_F(IlogCPTest, ConvertAnd) {
   EXPECT_EQ("(x == 1 ) && (x == 2 )",
       str(d.Visit(AddBinaryLogical(OPAND,
-          NewRelational(EQ, AddVar(0), AddNum(1)),
-          NewRelational(EQ, AddVar(0), AddNum(2))))));
+          AddRelational(EQ, AddVar(0), AddNum(1)),
+          AddRelational(EQ, AddVar(0), AddNum(2))))));
 }
 
 TEST_F(IlogCPTest, ConvertForAll) {
   EXPECT_EQ("(x == 1 ) && (x == 2 ) && (x == 3 )",
       str(d.Visit(NewIterated(ANDLIST,
-          NewRelational(EQ, AddVar(0), AddNum(1)),
-          NewRelational(EQ, AddVar(0), AddNum(2)),
-          NewRelational(EQ, AddVar(0), AddNum(3))))));
+          AddRelational(EQ, AddVar(0), AddNum(1)),
+          AddRelational(EQ, AddVar(0), AddNum(2)),
+          AddRelational(EQ, AddVar(0), AddNum(3))))));
 }
 
 TEST_F(IlogCPTest, ConvertNot) {
-  IloConstraint c(d.Visit(NewNot(NewRelational(LE, AddVar(0), AddNum(42)))));
+  IloConstraint c(d.Visit(NewNot(AddRelational(LE, AddVar(0), AddNum(42)))));
   IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
   ASSERT_TRUE(n != nullptr);
   EXPECT_EQ("x <= 42", str(n->getConstraint()));
@@ -842,15 +842,15 @@ TEST_F(IlogCPTest, ConvertNot) {
 
 TEST_F(IlogCPTest, ConvertIff) {
   EXPECT_EQ("x == 1 == x == 2", str(d.Visit(AddBinaryLogical(OP_IFF,
-      NewRelational(EQ, AddVar(0), AddNum(1)),
-      NewRelational(EQ, AddVar(0), AddNum(2))))));
+      AddRelational(EQ, AddVar(0), AddNum(1)),
+      AddRelational(EQ, AddVar(0), AddNum(2))))));
 }
 
 TEST_F(IlogCPTest, ConvertImpElse) {
   IloConstraint con(d.Visit(AddImplication(
-      NewRelational(EQ, AddVar(0), AddNum(0)),
-      NewRelational(EQ, AddVar(0), AddNum(1)),
-      NewRelational(EQ, AddVar(0), AddNum(2)))));
+      AddRelational(EQ, AddVar(0), AddNum(0)),
+      AddRelational(EQ, AddVar(0), AddNum(1)),
+      AddRelational(EQ, AddVar(0), AddNum(2)))));
   IloAndI* conjunction = dynamic_cast<IloAndI*>(con.getImpl());
   ASSERT_TRUE(conjunction != nullptr);
 
