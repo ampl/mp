@@ -35,7 +35,11 @@ using ampl::SumExpr;
 using ampl::CountExpr;
 using ampl::IfExpr;
 using ampl::PiecewiseLinearTerm;
+using ampl::NumericConstant;
 using ampl::Variable;
+using ampl::NumberOfExpr;
+using ampl::LogicalConstant;
+using ampl::RelationalExpr;
 
 using ampl::UnsupportedExprError;
 
@@ -446,16 +450,16 @@ TEST_F(ExprTest, EqualPLTerm) {
 
 TEST_F(ExprTest, EqualIf) {
   EXPECT_TRUE(AreEqual(
-      AddIf(AddLogicalConstant(0), AddVar(1), AddNum(42)),
-      AddIf(AddLogicalConstant(0), AddVar(1), AddNum(42))));
+      AddIf(AddBool(0), AddVar(1), AddNum(42)),
+      AddIf(AddBool(0), AddVar(1), AddNum(42))));
   EXPECT_FALSE(AreEqual(
-      AddIf(AddLogicalConstant(0), AddVar(1), AddNum(42)),
+      AddIf(AddBool(0), AddVar(1), AddNum(42)),
       AddSum(AddVar(0), AddVar(1), AddNum(42))));
   EXPECT_FALSE(AreEqual(
-      AddIf(AddLogicalConstant(0), AddVar(1), AddNum(42)),
-      AddIf(AddLogicalConstant(0), AddVar(1), AddNum(0))));
+      AddIf(AddBool(0), AddVar(1), AddNum(42)),
+      AddIf(AddBool(0), AddVar(1), AddNum(0))));
   EXPECT_FALSE(AreEqual(
-      AddIf(AddLogicalConstant(0), AddVar(1), AddNum(42)),
+      AddIf(AddBool(0), AddVar(1), AddNum(42)),
       AddNum(42)));
 }
 
@@ -565,8 +569,7 @@ TEST_F(ExprTest, SumExpr) {
 
 TEST_F(ExprTest, CountExpr) {
   EXPECT_EQ(1, CheckExpr<CountExpr>(Expr::COUNT));
-  LogicalExpr args[] = {
-      AddLogicalConstant(0), AddLogicalConstant(1), AddLogicalConstant(0)};
+  LogicalExpr args[] = {AddBool(0), AddBool(1), AddBool(0)};
   CountExpr e(AddCount(args[0], args[1], args[2]));
   int index = 0;
   CountExpr::iterator i = e.begin();
@@ -611,10 +614,52 @@ TEST_F(ExprTest, PiecewiseLinearTerm) {
   EXPECT_EQ(42, e.var_index());
 }
 
+TEST_F(ExprTest, NumericConstant) {
+  EXPECT_EQ(1, CheckExpr<NumericConstant>(Expr::CONSTANT));
+  NumericConstant e(AddNum(42));
+  EXPECT_EQ(42, e.value());
+}
+
 TEST_F(ExprTest, Variable) {
   EXPECT_EQ(1, CheckExpr<Variable>(Expr::VARIABLE));
   Variable e(AddVar(42));
   EXPECT_EQ(42, e.index());
+}
+
+TEST_F(ExprTest, NumberOfExpr) {
+  EXPECT_EQ(1, CheckExpr<NumberOfExpr>(Expr::NUMBEROF));
+  NumericExpr target = AddNum(42);
+  NumericExpr args[] = {AddNum(43), AddNum(44)};
+  NumberOfExpr e(AddNumberOf(target, args[0], args[1]));
+  EXPECT_EQ(target, e.target());
+  int index = 0;
+  NumberOfExpr::iterator i = e.begin();
+  for (NumberOfExpr::iterator end = e.end(); i != end; ++i, ++index) {
+    EXPECT_TRUE(*i);
+    EXPECT_EQ(args[index], *i);
+    EXPECT_EQ(args[index].opcode(), i->opcode());
+  }
+  EXPECT_EQ(2, index);
+  i = e.begin();
+  NumberOfExpr::iterator i2 = i++;
+  EXPECT_EQ(args[0], *i2);
+  EXPECT_EQ(args[1], *i);
+}
+
+TEST_F(ExprTest, LogicalConstant) {
+  EXPECT_EQ(1, CheckExpr<LogicalConstant>(Expr::CONSTANT));
+  LogicalConstant e(AddBool(true));
+  EXPECT_TRUE(e.value());
+  e = AddBool(false);
+  EXPECT_FALSE(e.value());
+}
+
+TEST_F(ExprTest, RelationalExpr) {
+  EXPECT_EQ(12, CheckExpr<RelationalExpr>(Expr::RELATIONAL));
+  NumericExpr lhs(AddNum(42)), rhs(AddNum(43));
+  RelationalExpr e(AddRelational(EQ, lhs, rhs));
+  EXPECT_EQ(lhs, e.lhs());
+  EXPECT_EQ(rhs, e.rhs());
 }
 
 // TODO: more tests
