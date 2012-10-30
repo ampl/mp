@@ -172,7 +172,7 @@ class Expr {
       return *this;
     }
 
-    ArrayIterator operator++(int) {
+    ArrayIterator operator++(int ) {
       ArrayIterator it(*this);
       ++ptr_;
       return it;
@@ -327,7 +327,7 @@ class VarArgExpr : public NumericExpr {
       return *this;
     }
 
-    iterator operator++(int) {
+    iterator operator++(int ) {
       iterator it(*this);
       ++de_;
       return it;
@@ -601,14 +601,14 @@ AMPL_SPECIALIZE_IS(AllDiffExpr, OPALLDIFF)
 
 // A general error.
 class Error : public std::runtime_error {
-public:
+ public:
   explicit Error(const std::string &message) : std::runtime_error(message) {}
 };
 
 // An exception that is thrown when an ASL expression not supported
 // by the solver is encountered.
 class UnsupportedExprError : public Error {
-public:
+ public:
   explicit UnsupportedExprError(const char *expr) :
     Error(std::string("unsupported expression: ") + expr) {}
 };
@@ -620,7 +620,7 @@ std::string FormatOpCode(Expr e);
 // An exception that is thrown when an invalid numeric expression
 // is encountered.
 class InvalidNumericExprError : public Error {
-public:
+ public:
   explicit InvalidNumericExprError(NumericExpr e) :
     Error("invalid numeric expression: " + internal::FormatOpCode(e)) {}
 };
@@ -628,7 +628,7 @@ public:
 // An exception that is thrown when an invalid logical or constraint
 // expression is encountered.
 class InvalidLogicalExprError : public Error {
-public:
+ public:
   explicit InvalidLogicalExprError(LogicalExpr e) :
     Error("invalid logical expression: " + internal::FormatOpCode(e)) {}
 };
