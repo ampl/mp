@@ -1,5 +1,31 @@
-#ifndef AMPL_SOLVERS_CONCERT_H
-#define AMPL_SOLVERS_CONCERT_H
+/*
+ IBM/ILOG CP solver driver for AMPL.
+
+ Copyright (C) 2012 AMPL Optimization LLC
+
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose and without fee is hereby granted,
+ provided that the above copyright notice appear in all copies and that
+ both that the copyright notice and this permission notice and warranty
+ disclaimer appear in supporting documentation.
+
+ The author and AMPL Optimization LLC disclaim all warranties with
+ regard to this software, including all implied warranties of
+ merchantability and fitness.  In no event shall the author be liable
+ for any special, indirect or consequential damages or any damages
+ whatsoever resulting from loss of use, data or profits, whether in an
+ action of contract, negligence or other tortious action, arising out
+ of or in connection with the use or performance of this software.
+
+ Author: Victor Zverovich
+ */
+
+#ifndef SOLVERS_ILOGCP_ILOGCP_H_
+#define SOLVERS_ILOGCP_ILOGCP_H_
+
+#include <ilconcert/ilomodel.h>
+#include <ilcplex/ilocplex.h>
+#include <ilcp/cp.h>
 
 #include <string.h> /* This and -fpermissive seem to be needed for MacOSX, */
                     /* at least with g++ 4.6.  Otherwise there are errors */
@@ -7,9 +33,6 @@
 #include <limits.h> /* Needed for g++ -m32 on MacOSX. */
 #include <memory>
 #include <vector>
-#include <ilconcert/ilomodel.h>
-#include <ilcplex/ilocplex.h>
-#include <ilcp/cp.h>
 
 #include "solvers/util/driver.h"
 
@@ -48,7 +71,7 @@ class Optimizer {
   IloRangeArray cons_;
 
  public:
-  Optimizer(IloEnv env, ASL_fg *asl);
+  Optimizer(IloEnv env, Driver &d);
   virtual ~Optimizer();
 
   IloObjective obj() const { return obj_; }
@@ -62,7 +85,7 @@ class Optimizer {
   virtual void set_option(const void *key, int value) = 0;
   virtual void set_option(const void *key, double value) = 0;
 
-  virtual void get_solution(ASL_fg *asl, char *message,
+  virtual void get_solution(Driver &d, char *message,
       std::vector<double> &primal, std::vector<double> &dual) const = 0;
 };
 
@@ -71,7 +94,7 @@ class CPLEXOptimizer : public Optimizer {
   IloCplex cplex_;
 
  public:
-  CPLEXOptimizer(IloEnv env, ASL_fg *asl) : Optimizer(env, asl), cplex_(env) {
+  CPLEXOptimizer(IloEnv env, Driver &d) : Optimizer(env, d), cplex_(env) {
     cplex_.setParam(IloCplex::MIPDisplay, 0);
   }
 
@@ -81,7 +104,7 @@ class CPLEXOptimizer : public Optimizer {
   void set_option(const void *key, int value);
   void set_option(const void *key, double value);
 
-  void get_solution(ASL_fg *asl, char *message,
+  void get_solution(Driver &d, char *message,
       std::vector<double> &primal, std::vector<double> &dual) const;
 };
 
@@ -90,7 +113,7 @@ class CPOptimizer : public Optimizer {
   IloSolver solver_;
 
  public:
-  CPOptimizer(IloEnv env, ASL_fg *asl) : Optimizer(env, asl), solver_(env) {
+  CPOptimizer(IloEnv env, Driver &d) : Optimizer(env, d), solver_(env) {
     solver_.setIntParameter(IloCP::LogVerbosity, IloCP::Quiet);
   }
 
@@ -100,14 +123,14 @@ class CPOptimizer : public Optimizer {
   void set_option(const void *key, int value);
   void set_option(const void *key, double value);
 
-  void get_solution(ASL_fg *asl, char *message,
+  void get_solution(Driver &d, char *message,
       std::vector<double> &primal, std::vector<double> &dual) const;
 };
 
 class IlogCPDriver;
-  
+
 typedef ExprVisitor<IlogCPDriver, IloExpr, IloConstraint> Visitor;
-  
+
 // The IlogCP driver for AMPL.
 class IlogCPDriver : public Driver, public Visitor {
  private:
@@ -164,14 +187,13 @@ class IlogCPDriver : public Driver, public Visitor {
   static char *set_cplex_int_option(Option_Info *oi, keyword *kw, char *value);
 
   IloNumExprArray ConvertArgs(VarArgExpr e);
-  
+
  public:
   IlogCPDriver();
   virtual ~IlogCPDriver();
 
   IloEnv env() const { return env_; }
   IloModel mod() const { return mod_; }
-  ASL_fg *get_asl() const { return asl; }
 
   IloAlgorithm alg() const {
     return optimizer_.get() ? optimizer_->algorithm() : IloAlgorithm();
@@ -201,7 +223,7 @@ class IlogCPDriver : public Driver, public Visitor {
       printf("%s\n", e.opname());
     return Visitor::Visit(e);
   }
-  
+
   IloExpr VisitPlus(BinaryExpr e) {
     return Visit(e.lhs()) + Visit(e.rhs());
   }
@@ -336,11 +358,11 @@ class IlogCPDriver : public Driver, public Visitor {
   }
 
   IloExpr VisitRound(BinaryExpr e);
-  
+
   IloExpr VisitTrunc(BinaryExpr e);
-  
+
   IloExpr VisitCount(CountExpr e);
-  
+
   IloExpr VisitNumberOf(NumberOfExpr e);
 
   IloExpr VisitConstExpPow(BinaryExpr e) {
@@ -450,4 +472,4 @@ class IlogCPDriver : public Driver, public Visitor {
 };
 }
 
-#endif // AMPL_SOLVERS_CONCERT_H
+#endif  // SOLVERS_ILOGCP_ILOGCP_H_

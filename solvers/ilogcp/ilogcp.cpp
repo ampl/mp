@@ -128,11 +128,11 @@ CP_ENUM_OPTION(TimeMode, IloCP::CPUTime, TimeModes)
 CP_INT_OPTION_FULL(Workers, 0, true, 0)
 
 class SameExpr {
-private:
+ private:
   NumberOfExpr expr_;
   unsigned num_args_;
   
-public:
+ public:
   SameExpr(NumberOfExpr e) :
   expr_(e), num_args_(std::distance(e.begin(), e.end())) {}
   
@@ -166,8 +166,8 @@ IloIntVar NumberOf::Add(real value, IloEnv env) {
   return cardVar;
 }
 
-Optimizer::Optimizer(IloEnv env, ASL_fg *asl) :
-  vars_(env, n_var), cons_(env, n_con) {}
+Optimizer::Optimizer(IloEnv env, Driver &d) :
+  vars_(env, d.num_vars()), cons_(env, d.num_cons()) {}
 
 Optimizer::~Optimizer() {}
 
@@ -185,12 +185,13 @@ void CPLEXOptimizer::set_option(const void *key, double value) {
       static_cast<IloCplex::NumParam>(reinterpret_cast<size_t>(key)), value);
 }
 
-void CPLEXOptimizer::get_solution(ASL_fg *asl, char *message,
+void CPLEXOptimizer::get_solution(Driver &d, char *message,
     std::vector<double> &primal, std::vector<double> &dual) const {
   IloNum objValue = cplex_.getObjValue();
-  primal.resize(n_var);
+  primal.resize(d.num_vars());
   IloNumVarArray vars = Optimizer::vars();
-  for (int j = 0; j < n_var; j++) primal[j] = cplex_.getValue(vars[j]);
+  for (int j = 0, n = d.num_vars(); j < n; ++j)
+    primal[j] = cplex_.getValue(vars[j]);
   if (cplex_.isMIP()) {
     message += g_fmtop(message, cplex_.getNnodes());
     message += Sprintf(message, " nodes, ");
@@ -201,9 +202,9 @@ void CPLEXOptimizer::get_solution(ASL_fg *asl, char *message,
     message += g_fmtop(message, cplex_.getNiterations());
     message += Sprintf(message, " iterations, objective ");
     g_fmtop(message, objValue);
-    dual.resize(n_con);
+    dual.resize(d.num_cons());
     IloRangeArray cons = Optimizer::cons();
-    for (int i = 0; i < n_con; i++)
+    for (int i = 0, n = d.num_cons(); i < n; ++i)
       dual[i] = cplex_.getDual(cons[i]);
   }
 }
@@ -220,19 +221,19 @@ void CPOptimizer::set_option(const void *key, double value) {
       static_cast<IloCP::NumParam>(reinterpret_cast<size_t>(key)), value);
 }
 
-void CPOptimizer::get_solution(ASL_fg *asl, char *message,
+void CPOptimizer::get_solution(Driver &d, char *message,
     std::vector<double> &primal, std::vector<double> &) const {
   message += g_fmtop(message, solver_.getNumberOfChoicePoints());
   message += Sprintf(message, " choice points, ");
   message += g_fmtop(message, solver_.getNumberOfFails());
   message += Sprintf(message, " fails");
-  if (n_obj > 0) {
+  if (d.num_objs() > 0) {
     message += Sprintf(message, ", objective ");
     g_fmtop(message, solver_.getValue(obj()));
   }
-  primal.resize(n_var);
+  primal.resize(d.num_vars());
   IloNumVarArray vars = Optimizer::vars();
-  for (int j = 0; j < n_var; j++)
+  for (int j = 0, n = d.num_vars(); j < n; ++j)
     primal[j] = solver_.getValue(vars[j]);
 }
 
@@ -329,7 +330,8 @@ keyword IlogCPDriver::keywords_[] = {
           SPACE "      2 = normal\n"
           SPACE "      3 = verbose\n")),
 
-  KW(CSTR("mipdisplay"), IlogCPDriver::set_cplex_int_option, IloCplex::MIPDisplay,
+  KW(CSTR("mipdisplay"), IlogCPDriver::set_cplex_int_option,
+      IloCplex::MIPDisplay,
       CSTR("Frequency of displaying branch-and-bound\n"
           SPACE "information (for optimizing integer variables):\n"
           SPACE "      0 (default) = never\n"
@@ -341,7 +343,8 @@ keyword IlogCPDriver::keywords_[] = {
           SPACE "      4 = same as 2, plus LP relaxation info.\n"
           SPACE "      5 = same as 2, plus LP subproblem info.\n")),
 
-  KW(CSTR("mipinterval"), IlogCPDriver::set_cplex_int_option, IloCplex::MIPInterval,
+  KW(CSTR("mipinterval"), IlogCPDriver::set_cplex_int_option,
+      IloCplex::MIPInterval,
       CSTR("Frequency of node logging for mipdisplay 2 or 3.\n"
           SPACE "Default = 1.\n")),
 
@@ -428,7 +431,8 @@ keyword IlogCPDriver::keywords_[] = {
       CSTR("0 or 1 (default 0):  Whether to display timings\n"
           SPACE "for the run.\n")),
 
-  KW(CSTR("usenumberof"), IlogCPDriver::set_bool_option, IlogCPDriver::USENUMBEROF,
+  KW(CSTR("usenumberof"), IlogCPDriver::set_bool_option,
+      IlogCPDriver::USENUMBEROF,
       CSTR("0 or 1 (default 1):  Whether to consolidate\n"
           SPACE "'numberof' expressions by use of IloDistribute\n"
           SPACE "constraints.\n")),
@@ -455,8 +459,8 @@ keyword IlogCPDriver::keywords_[] = {
 };
 
 IlogCPDriver::IlogCPDriver() :
-   mod_(env_), asl(Driver::asl()), gotopttype(false), n_badvals(0),
-   debug_(false) {
+   mod_(env_), asl(Driver::asl()), gotopttype(false), debug_(false),
+   n_badvals(0) {
   char *s;
   int n;
   size_t L;
@@ -545,7 +549,8 @@ void IlogCPDriver::set_option(keyword *kw, int value) {
   }
 }
 
-char *IlogCPDriver::set_cp_int_option(Option_Info *oi, keyword *kw, char *value) {
+char *IlogCPDriver::set_cp_int_option(
+    Option_Info *oi, keyword *kw, char *value) {
   IlogCPDriver *d = static_cast<DriverOptionInfo*>(oi)->driver;
   if (!d->gotopttype)
     return skip_nonspace(value);
@@ -633,11 +638,14 @@ bool IlogCPDriver::parse_options(char **argv) {
     return false;
 
   int &opt = options_[OPTIMIZER];
-  if (opt == AUTO)
-    opt = nlo + nlc + n_lcon == 0 ? CPLEX : CP;
+  if (opt == AUTO) {
+    opt = CPLEX;
+    if (num_nonlinear_objs() + num_nonlinear_cons() + num_logical_cons() != 0)
+      opt = CP;
+  }
   if (opt == CPLEX)
-    optimizer_.reset(new CPLEXOptimizer(env_, asl));
-  else optimizer_.reset(new CPOptimizer(env_, asl));
+    optimizer_.reset(new CPLEXOptimizer(env_, *this));
+  else optimizer_.reset(new CPOptimizer(env_, *this));
 
   // Parse remaining options.
   gotopttype = true;
@@ -760,10 +768,10 @@ IloExpr IlogCPDriver::VisitPLTerm(PiecewiseLinearTerm t) {
   IloNumArray slopes(env_), breakpoints(env_);
   int num_breakpoints = t.num_breakpoints();
   for (int i = 0; i < num_breakpoints; ++i) {
-    slopes.add(t.slope(i));
-    breakpoints.add(t.breakpoint(i));
+    slopes.add(t.GetSlope(i));
+    breakpoints.add(t.GetBreakpoint(i));
   }
-  slopes.add(t.slope(num_breakpoints));
+  slopes.add(t.GetSlope(num_breakpoints));
   return IloPiecewiseLinear(vars_[t.var_index()], breakpoints, slopes, 0, 0);
 }
 
@@ -820,87 +828,60 @@ void IlogCPDriver::FinishBuildingNumberOf() {
 ----------------------------------------------------------------------*/
 
 int IlogCPDriver::run(char **argv) {
-  /*** Initialize timers ***/
-
+  // Initialize timers.
   double Times[5];
   Times[0] = xectim_();
 
-  /*** Get name of .nl file; read problem sizes ***/
-
-  char *stub = getstub(&argv, oinfo_.get());
-  if (!stub) {
-    usage_noexit_ASL(oinfo_.get(), 1);
-    return 1;
-  }
-  FILE *nl = jac0dim(stub, strlen(stub));
-
-  /*** Read coefficients & bounds & expression tree from .nl file ***/
-
-  Uvx = static_cast<real*>(Malloc(n_var * sizeof(real)));
-  Urhsx = static_cast<real*>(Malloc(n_con * sizeof(real)));
-
-  efunc *r_ops_int[N_OPS];
-  for (int i = 0; i < N_OPS; i++)
-    r_ops_int[i] = reinterpret_cast<efunc*>(i);
-  asl->I.r_ops_ = r_ops_int;
-  want_derivs = 0;
-  fg_read(nl, ASL_allow_CLP);
-  asl->I.r_ops_ = 0;
-
-  if (!parse_options(argv))
+  if (!Read(argv, oinfo_.get()) || !parse_options(argv))
     return 1;
 
-  /*-------------------------------------------------------------------
-
-     Set up optimization problem in ILOG Concert
-
-   -------------------------------------------------------------------*/
+  // Set up optimization problem in ILOG Concert.
 
   vars_ = optimizer_->vars();
 
-  int n_var_int = nbv + niv + nlvbi + nlvci + nlvoi;
-  int n_var_cont = n_var - n_var_int;
+  int n_var_cont = num_continuous_vars();
   if (n_var_cont != 0 && get_option(OPTIMIZER) == CP) {
     cerr << "CP Optimizer doesn't support continuous variables" << endl;
     return 1;
   }
   for (int j = 0; j < n_var_cont; j++)
-    vars_[j] = IloNumVar(env_, LUv[j], Uvx[j], ILOFLOAT);
-  for (int j = n_var_cont; j < n_var; j++)
-    vars_[j] = IloNumVar(env_, LUv[j], Uvx[j], ILOINT);
+    vars_[j] = IloNumVar(env_, GetVarLB(j), GetVarUB(j), ILOFLOAT);
+  for (int j = n_var_cont; j < num_vars(); j++)
+    vars_[j] = IloNumVar(env_, GetVarLB(j), GetVarUB(j), ILOINT);
 
-  if (n_obj > 0) {
+  if (num_objs() > 0) {
     NumericExpr expr(GetNonlinearObjExpr(0));
     NumericConstant constant(Cast<NumericConstant>(expr));
     IloExpr ilo_expr(env_, constant ? constant.value() : 0);
-    if (0 < nlo)
+    if (num_nonlinear_objs() > 0)
       ilo_expr += Visit(expr);
-    for (ograd *og = Ograd[0]; og; og = og->next)
+    for (ograd *og = GetObjGradient(0); og; og = og->next)
       ilo_expr += og->coef * vars_[og->varno];
     IloObjective MinOrMax(env_, ilo_expr,
-        objtype[0] == 0 ? IloObjective::Minimize : IloObjective::Maximize);
+        GetObjType(0) == MIN ? IloObjective::Minimize : IloObjective::Maximize);
     optimizer_->set_obj(MinOrMax);
     IloAdd(mod_, MinOrMax);
   }
 
-  IloRangeArray Con(optimizer_->cons());
-
-  for (int i = 0; i < n_con; i++) {
-    IloExpr conExpr(env_);
-    for (cgrad *cg = Cgrad[i]; cg; cg = cg->next)
-      conExpr += (cg -> coef) * vars_[cg -> varno];
-    if (i < nlc)
-      conExpr += Visit(GetNonlinearConExpr(i));
-    Con[i] = (LUrhs[i] <= conExpr <= Urhsx[i]);
+  if (int n_cons = num_cons()) {
+    IloRangeArray cons(optimizer_->cons());
+    for (int i = 0; i < n_cons; ++i) {
+      IloExpr conExpr(env_);
+      for (cgrad *cg = GetConGradient(i); cg; cg = cg->next)
+        conExpr += cg->coef * vars_[cg->varno];
+      if (num_nonlinear_cons() > i)
+        conExpr += Visit(GetNonlinearConExpr(i));
+      cons[i] = (GetConLB(i) <= conExpr <= GetConUB(i));
+    }
+    mod_.add(cons);
   }
 
-  IloConstraintArray LCon(env_, n_lcon);
-
-  for (int i = 0; i < n_lcon; i++)
-    LCon[i] = Visit(GetLogicalConExpr(i));
-
-  if (n_con > 0) mod_.add(Con);
-  if (n_lcon > 0) mod_.add(LCon);
+  if (int n_lcons = num_logical_cons()) {
+    IloConstraintArray lcons(env_, n_lcons);
+    for (int i = 0; i < n_lcons; ++i)
+      lcons[i] = Visit(GetLogicalConExpr(i));
+    mod_.add(lcons);
+  }
 
   FinishBuildingNumberOf();
 
@@ -948,12 +929,13 @@ int IlogCPDriver::run(char **argv) {
     message = "error";
     break;
   }
+  SetSolveCode(solve_result_num);
 
   char sMsg[256];
   int sSoFar = Sprintf(sMsg, "%s: %s\n", oinfo_->bsname, message);
   vector<real> primal, dual;
   if (successful)
-    optimizer_->get_solution(asl, sMsg + sSoFar, primal, dual);
+    optimizer_->get_solution(*this, sMsg + sSoFar, primal, dual);
   write_sol(sMsg, primal.empty() ? 0 : &primal[0],
       dual.empty() ? 0 : &dual[0], oinfo_.get());
 

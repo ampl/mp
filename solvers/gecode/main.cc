@@ -2,7 +2,7 @@
 
 int main(int, char **argv) {
   // TODO: catch exceptions
-  ampl::Driver d;
+  ampl::GecodeDriver d;
   d.run(argv);
   return 0;
 }

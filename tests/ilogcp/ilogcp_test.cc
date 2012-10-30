@@ -1201,21 +1201,21 @@ TEST_F(IlogCPTest, CPLEXOptions) {
 
 TEST_F(IlogCPTest, OptimalSolveCode) {
   Solve(DATA_DIR "objconst");
-  EXPECT_EQ(0, d.get_asl()->p.solve_code_);
+  EXPECT_EQ(0, d.solve_code());
 }
 
 TEST_F(IlogCPTest, FeasibleSolveCode) {
   Solve(DATA_DIR "feasible");
-  EXPECT_EQ(100, d.get_asl()->p.solve_code_);
+  EXPECT_EQ(100, d.solve_code());
 }
 
 TEST_F(IlogCPTest, InfeasibleSolveCode) {
   Solve(DATA_DIR "infeasible");
-  EXPECT_EQ(200, d.get_asl()->p.solve_code_);
+  EXPECT_EQ(200, d.solve_code());
 }
 
 TEST_F(IlogCPTest, InfeasibleOrUnboundedSolveCode) {
   Solve(DATA_DIR "unbounded");
-  EXPECT_EQ(201, d.get_asl()->p.solve_code_);
+  EXPECT_EQ(201, d.solve_code());
 }
 }
