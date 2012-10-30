@@ -22,23 +22,26 @@
 
 #include "solvers/util/expr.h"
 
+#undef snprintf
+
 #include <sstream>
+#include <cstdio>
 
 namespace {
 // An operation type.
 // Numeric values for the operation types should be in sync with the ones in
 // op_type.hd.
 enum OpType {
-  OPTYPE_UNARY    =  1, // Unary operation
-  OPTYPE_BINARY   =  2, // Binary operation
-  OPTYPE_VARARG   =  3, // Variable-argument function such as min or max
-  OPTYPE_PLTERM   =  4, // Piecewise-linear term
-  OPTYPE_IF       =  5, // The if-then-else expression
-  OPTYPE_SUM      =  6, // The sum expression
-  OPTYPE_FUNCALL  =  7, // Function call
-  OPTYPE_STRING   =  8, // String
-  OPTYPE_NUMBER   =  9, // Number
-  OPTYPE_VARIABLE = 10, // Variable
+  OPTYPE_UNARY    =  1,  // Unary operation
+  OPTYPE_BINARY   =  2,  // Binary operation
+  OPTYPE_VARARG   =  3,  // Variable-argument function such as min or max
+  OPTYPE_PLTERM   =  4,  // Piecewise-linear term
+  OPTYPE_IF       =  5,  // The if-then-else expression
+  OPTYPE_SUM      =  6,  // The sum expression
+  OPTYPE_FUNCALL  =  7,  // Function call
+  OPTYPE_STRING   =  8,  // String
+  OPTYPE_NUMBER   =  9,  // Number
+  OPTYPE_VARIABLE = 10,  // Variable
   OPTYPE_COUNT    = 11  // The count expression
 };
 }
@@ -46,88 +49,88 @@ enum OpType {
 namespace ampl {
 
 const Expr::Kind Expr::KINDS[N_OPS] = {
-    Expr::BINARY, // OPPLUS
-    Expr::BINARY, // OPMINUS
-    Expr::BINARY, // OPMULT
-    Expr::BINARY, // OPDIV
-    Expr::BINARY, // OPREM
-    Expr::BINARY, // OPPOW
-    Expr::BINARY, // OPLESS
+    Expr::BINARY,  // OPPLUS
+    Expr::BINARY,  // OPMINUS
+    Expr::BINARY,  // OPMULT
+    Expr::BINARY,  // OPDIV
+    Expr::BINARY,  // OPREM
+    Expr::BINARY,  // OPPOW
+    Expr::BINARY,  // OPLESS
     Expr::UNKNOWN,
     Expr::UNKNOWN,
     Expr::UNKNOWN,
     Expr::UNKNOWN,
-    Expr::VARARG, // MINLIST
-    Expr::VARARG, // MAXLIST
-    Expr::UNARY, // FLOOR
-    Expr::UNARY, // CEIL
-    Expr::UNARY, // ABS
-    Expr::UNARY, // OPUMINUS
+    Expr::VARARG,  // MINLIST
+    Expr::VARARG,  // MAXLIST
+    Expr::UNARY,  // FLOOR
+    Expr::UNARY,  // CEIL
+    Expr::UNARY,  // ABS
+    Expr::UNARY,  // OPUMINUS
     Expr::UNKNOWN,
     Expr::UNKNOWN,
     Expr::UNKNOWN,
-    Expr::BINARY_LOGICAL, // OPOR
-    Expr::BINARY_LOGICAL, // OPAND
-    Expr::RELATIONAL, // LT
-    Expr::RELATIONAL, // LE
-    Expr::RELATIONAL, // EQ
+    Expr::BINARY_LOGICAL,  // OPOR
+    Expr::BINARY_LOGICAL,  // OPAND
+    Expr::RELATIONAL,  // LT
+    Expr::RELATIONAL,  // LE
+    Expr::RELATIONAL,  // EQ
     Expr::UNKNOWN,
     Expr::UNKNOWN,
     Expr::UNKNOWN,
-    Expr::RELATIONAL, // GE
-    Expr::RELATIONAL, // GT
-    Expr::RELATIONAL, // NE
+    Expr::RELATIONAL,  // GE
+    Expr::RELATIONAL,  // GT
+    Expr::RELATIONAL,  // NE
     Expr::UNKNOWN,
     Expr::UNKNOWN,
     Expr::UNKNOWN,
-    Expr::NOT, // OPNOT
-    Expr::IF, // OPIFnl
+    Expr::NOT,  // OPNOT
+    Expr::IF,  // OPIFnl
     Expr::UNKNOWN,
-    Expr::UNARY, // OP_tanh
-    Expr::UNARY, // OP_tan
-    Expr::UNARY, // OP_sqrt
-    Expr::UNARY, // OP_sinh
-    Expr::UNARY, // OP_sin
-    Expr::UNARY, // OP_log10
-    Expr::UNARY, // OP_log
-    Expr::UNARY, // OP_exp
-    Expr::UNARY, // OP_cosh
-    Expr::UNARY, // OP_cos
-    Expr::UNARY, // OP_atanh
-    Expr::BINARY, // OP_atan2
-    Expr::UNARY, // OP_atan
-    Expr::UNARY, // OP_asinh
-    Expr::UNARY, // OP_asin
-    Expr::UNARY, // OP_acosh
-    Expr::UNARY, // OP_acos
-    Expr::SUM, // OPSUMLIST
-    Expr::BINARY, // OPintDIV
-    Expr::BINARY, // OPprecision
-    Expr::BINARY, // OPround
-    Expr::BINARY, // OPtrunc
-    Expr::COUNT, // OPCOUNT
-    Expr::NUMBEROF, // OPNUMBEROF
-    Expr::UNKNOWN, // OPNUMBEROFs - not supported yet
-    Expr::RELATIONAL, // OPATLEAST
-    Expr::RELATIONAL, // OPATMOST
-    Expr::PLTERM, // OPPLTERM
-    Expr::UNKNOWN, // OPIFSYM - not supported yet
-    Expr::RELATIONAL, // OPEXACTLY
-    Expr::RELATIONAL, // OPNOTATLEAST
-    Expr::RELATIONAL, // OPNOTATMOST
-    Expr::RELATIONAL, // OPNOTEXACTLY
-    Expr::ITERATED_LOGICAL, // ANDLIST
-    Expr::ITERATED_LOGICAL, // ORLIST
-    Expr::IMPLICATION, // OPIMPELSE
-    Expr::BINARY_LOGICAL, // OP_IFF
-    Expr::ALLDIFF, // OPALLDIFF
-    Expr::BINARY, // OP1POW
-    Expr::UNARY, // f_OP2POW
-    Expr::BINARY, // f_OPCPOW
-    Expr::UNKNOWN, // OPFUNCALL - not supported yet
-    Expr::CONSTANT, // OPNUM
-    Expr::UNKNOWN, // OPHOL - not supported yet
-    Expr::VARIABLE // OPVARVAL
+    Expr::UNARY,  // OP_tanh
+    Expr::UNARY,  // OP_tan
+    Expr::UNARY,  // OP_sqrt
+    Expr::UNARY,  // OP_sinh
+    Expr::UNARY,  // OP_sin
+    Expr::UNARY,  // OP_log10
+    Expr::UNARY,  // OP_log
+    Expr::UNARY,  // OP_exp
+    Expr::UNARY,  // OP_cosh
+    Expr::UNARY,  // OP_cos
+    Expr::UNARY,  // OP_atanh
+    Expr::BINARY,  // OP_atan2
+    Expr::UNARY,  // OP_atan
+    Expr::UNARY,  // OP_asinh
+    Expr::UNARY,  // OP_asin
+    Expr::UNARY,  // OP_acosh
+    Expr::UNARY,  // OP_acos
+    Expr::SUM,  // OPSUMLIST
+    Expr::BINARY,  // OPintDIV
+    Expr::BINARY,  // OPprecision
+    Expr::BINARY,  // OPround
+    Expr::BINARY,  // OPtrunc
+    Expr::COUNT,  // OPCOUNT
+    Expr::NUMBEROF,  // OPNUMBEROF
+    Expr::UNKNOWN,  // OPNUMBEROFs - not supported yet
+    Expr::RELATIONAL,  // OPATLEAST
+    Expr::RELATIONAL,  // OPATMOST
+    Expr::PLTERM,  // OPPLTERM
+    Expr::UNKNOWN,  // OPIFSYM - not supported yet
+    Expr::RELATIONAL,  // OPEXACTLY
+    Expr::RELATIONAL,  // OPNOTATLEAST
+    Expr::RELATIONAL,  // OPNOTATMOST
+    Expr::RELATIONAL,  // OPNOTEXACTLY
+    Expr::ITERATED_LOGICAL,  // ANDLIST
+    Expr::ITERATED_LOGICAL,  // ORLIST
+    Expr::IMPLICATION,  // OPIMPELSE
+    Expr::BINARY_LOGICAL,  // OP_IFF
+    Expr::ALLDIFF,  // OPALLDIFF
+    Expr::BINARY,  // OP1POW
+    Expr::UNARY,  // f_OP2POW
+    Expr::BINARY,  // f_OPCPOW
+    Expr::UNKNOWN,  // OPFUNCALL - not supported yet
+    Expr::CONSTANT,  // OPNUM
+    Expr::UNKNOWN,  // OPHOL - not supported yet
+    Expr::VARIABLE  // OPVARVAL
 };
 
 // Operator names indexed by opcodes which are defined in opcode.hd.
@@ -285,7 +288,7 @@ bool AreEqual(Expr expr1, Expr expr2) {
 
 std::string internal::FormatOpCode(Expr e) {
   char buffer[64];
-  sprintf(buffer, "%d", e.opcode());
+  std::snprintf(buffer, sizeof(buffer), "%d", e.opcode());
   return buffer;
 }
 }
