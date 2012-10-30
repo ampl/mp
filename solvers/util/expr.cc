@@ -288,7 +288,7 @@ bool AreEqual(Expr expr1, Expr expr2) {
 
 std::string internal::FormatOpCode(Expr e) {
   char buffer[64];
-  std::snprintf(buffer, sizeof(buffer), "%d", e.opcode());
+  snprintf(buffer, sizeof(buffer), "%d", e.opcode());
   return buffer;
 }
 }
