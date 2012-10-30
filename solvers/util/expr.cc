@@ -22,8 +22,6 @@
 
 #include "solvers/util/expr.h"
 
-#undef snprintf
-
 #include <sstream>
 #include <cstdio>
 
