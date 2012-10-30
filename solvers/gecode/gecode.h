@@ -3,24 +3,20 @@
 
 #include <memory>
 
+#include "solvers/util/driver.h"
+
 struct Option_Info;
 struct ASL_fg;
 
 namespace ampl {
 
 // The Gecode driver for AMPL.
-class Driver {
+class GecodeDriver : public Driver {
  private:
-  ASL_fg *asl;
   std::auto_ptr<Option_Info> oinfo_;
 
-  // Do not implement.
-  Driver(const Driver&);
-  Driver& operator=(const Driver&);
-
  public:
-  Driver();
-  virtual ~Driver();
+  GecodeDriver();
 
   // Run the driver.
   int run(char **argv);
