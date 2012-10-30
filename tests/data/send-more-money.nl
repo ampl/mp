@@ -1,4 +1,4 @@
-g3 0 1 0	# problem money
+g3 0 1 0	# problem send-more-money
  8 3 0 0 1 1	# vars, constraints, objectives, ranges, eqns, lcons
  0 0	# nonlinear constraints, objectives
  0 0	# network constraints: nonlinear, linear
