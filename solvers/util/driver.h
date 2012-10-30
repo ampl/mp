@@ -40,9 +40,11 @@ class Driver {
   Driver();
   virtual ~Driver();
 
-  bool Read(char **&argv, Option_Info *oi);
+  // Gets the options.
+  int GetOptions(char **argv, Option_Info *oi);
 
-  ASL_fg *asl() const { return asl_; }
+  // Reads the problem form a .nl file.
+  bool Read(char **&argv, Option_Info *oi);
 
   // Returns the number of variables.
   int num_vars() const { return asl_->i.n_var_; }

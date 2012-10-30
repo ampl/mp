@@ -459,7 +459,7 @@ keyword IlogCPDriver::keywords_[] = {
 };
 
 IlogCPDriver::IlogCPDriver() :
-   mod_(env_), asl(Driver::asl()), gotopttype(false), debug_(false),
+   mod_(env_), gotopttype(false), debug_(false),
    n_badvals(0) {
   char *s;
   int n;
@@ -634,7 +634,7 @@ bool IlogCPDriver::parse_options(char **argv) {
   // Get optimizer type.
   gotopttype = false;
   oinfo_->option_echo &= ~ASL_OI_echo;
-  if (getopts(argv, oinfo_.get()))
+  if (GetOptions(argv, oinfo_.get()))
     return false;
 
   int &opt = options_[OPTIMIZER];
@@ -651,7 +651,7 @@ bool IlogCPDriver::parse_options(char **argv) {
   gotopttype = true;
   n_badvals = 0;
   oinfo_->option_echo |= ASL_OI_echo;
-  if (getopts(argv, oinfo_.get()) || n_badvals != 0)
+  if (GetOptions(argv, oinfo_.get()) || n_badvals != 0)
     return false;
 
   debug_ = get_option(DEBUGEXPR);
@@ -896,47 +896,48 @@ int IlogCPDriver::run(char **argv) {
   Times[3] = timing ? xectim_() : 0;
 
   // Convert solution status.
+  int solve_code = 0;
   const char *message;
   switch (alg.getStatus()) {
   default:
     // Fall through.
   case IloAlgorithm::Unknown:
-    solve_result_num = 501;
+    solve_code = 501;
     message = "unknown solution status";
     break;
   case IloAlgorithm::Feasible:
-    solve_result_num = 100;
+    solve_code = 100;
     message = "feasible solution";
     break;
   case IloAlgorithm::Optimal:
-    solve_result_num = 0;
+    solve_code = 0;
     message = "optimal solution";
     break;
   case IloAlgorithm::Infeasible:
-    solve_result_num = 200;
+    solve_code = 200;
     message = "infeasible problem";
     break;
   case IloAlgorithm::Unbounded:
-    solve_result_num = 300;
+    solve_code = 300;
     message = "unbounded problem";
     break;
   case IloAlgorithm::InfeasibleOrUnbounded:
-    solve_result_num = 201;
+    solve_code = 201;
     message = "infeasible or unbounded problem";
     break;
   case IloAlgorithm::Error:
-    solve_result_num = 500;
+    solve_code = 500;
     message = "error";
     break;
   }
-  SetSolveCode(solve_result_num);
+  SetSolveCode(solve_code);
 
   char sMsg[256];
   int sSoFar = Sprintf(sMsg, "%s: %s\n", oinfo_->bsname, message);
   vector<real> primal, dual;
   if (successful)
     optimizer_->get_solution(*this, sMsg + sSoFar, primal, dual);
-  write_sol(sMsg, primal.empty() ? 0 : &primal[0],
+  WriteSolution(sMsg, primal.empty() ? 0 : &primal[0],
       dual.empty() ? 0 : &dual[0], oinfo_.get());
 
   if (timing) {

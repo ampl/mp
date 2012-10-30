@@ -30,7 +30,13 @@ namespace ampl {
 
 Driver::Driver() : asl_(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))) {}
 
-Driver::~Driver() { ASL_free(reinterpret_cast<ASL**>(&asl_)); }
+Driver::~Driver() {
+  ASL_free(reinterpret_cast<ASL**>(&asl_));
+}
+
+int Driver::GetOptions(char **argv, Option_Info *oi) {
+  return getopts_ASL(reinterpret_cast<ASL*>(asl_), argv, oi);
+}
 
 bool Driver::Read(char **&argv, Option_Info *oi) {
   ASL *asl = reinterpret_cast<ASL*>(asl_);
