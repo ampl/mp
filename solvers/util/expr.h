@@ -613,12 +613,16 @@ public:
     Error(std::string("unsupported expression: ") + expr) {}
 };
 
+namespace internal {
+std::string FormatOpCode(Expr e);
+}
+
 // An exception that is thrown when an invalid numeric expression
 // is encountered.
 class InvalidNumericExprError : public Error {
 public:
   explicit InvalidNumericExprError(NumericExpr e) :
-    Error(std::string("invalid numeric expression: ") + e.opname()) {}
+    Error("invalid numeric expression: " + internal::FormatOpCode(e)) {}
 };
 
 // An exception that is thrown when an invalid logical or constraint
@@ -626,7 +630,7 @@ public:
 class InvalidLogicalExprError : public Error {
 public:
   explicit InvalidLogicalExprError(LogicalExpr e) :
-    Error(std::string("invalid logical expression: ") + e.opname()) {}
+    Error("invalid logical expression: " + internal::FormatOpCode(e)) {}
 };
 
 #define AMPL_DISPATCH(call) static_cast<Impl*>(this)->call
@@ -657,20 +661,20 @@ class ExprVisitor {
   Result Visit(NumericExpr e);
   LResult Visit(LogicalExpr e);
 
-  Result VisitInvalidNumericExpr(NumericExpr e) {
-    throw InvalidNumericExprError(e);
-  }
-
-  LResult VisitInvalidLogicalExpr(LogicalExpr e) {
-    throw InvalidLogicalExprError(e);
-  }
-
   Result VisitUnhandledNumericExpr(NumericExpr e) {
     throw UnsupportedExprError(e.opname());
   }
 
   LResult VisitUnhandledLogicalExpr(LogicalExpr e) {
     throw UnsupportedExprError(e.opname());
+  }
+
+  Result VisitInvalidNumericExpr(NumericExpr e) {
+    throw InvalidNumericExprError(e);
+  }
+
+  LResult VisitInvalidLogicalExpr(LogicalExpr e) {
+    throw InvalidLogicalExprError(e);
   }
 
   Result VisitPlus(BinaryExpr e) {
@@ -1029,6 +1033,7 @@ Result ExprVisitor<Impl, Result, LResult>::Visit(NumericExpr e) {
   case OPVARVAL:
     return AMPL_DISPATCH(VisitVariable(Expr::Create<Variable>(e)));
   default:
+    // Normally this branch shouldn't be executed.
     return AMPL_DISPATCH(VisitInvalidNumericExpr(e));
   }
 }
@@ -1080,6 +1085,7 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
     return AMPL_DISPATCH(VisitLogicalConstant(
         Expr::Create<LogicalConstant>(e)));
   default:
+    // Normally this branch shouldn't be executed.
     return AMPL_DISPATCH(VisitInvalidLogicalExpr(e));
   }
 }
