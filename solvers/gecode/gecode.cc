@@ -25,6 +25,7 @@ using ampl::Driver;
 
 using Gecode::BoolExpr;
 using Gecode::BAB;
+using Gecode::DFS;
 using Gecode::IntArgs;
 using Gecode::IntVarArgs;
 using Gecode::IntVar;
@@ -134,7 +135,8 @@ int GecodeDriver::run(char **argv) {
   // Post branching.
   branch(*problem, vars, Gecode::INT_VAR_SIZE_MIN, Gecode::INT_VAL_MIN);
 
-  if (num_objs() > 0) {
+  bool has_obj = num_objs() != 0;
+  if (has_obj) {
     NumericExpr expr(GetNonlinearObjExpr(0));
     NumericConstant constant(Cast<NumericConstant>(expr));
     int num_terms = 0;
@@ -197,15 +199,17 @@ int GecodeDriver::run(char **argv) {
   // TODO
   // finish_building_numberof();
 
-  BAB<GecodeProblem> e(problem.get());
-  problem.reset();
-
   // Solve the problem.
   std::auto_ptr<GecodeProblem> solution;
-  for (;;) {
-    std::auto_ptr<GecodeProblem> next(e.next());
-    if (!next.get()) break;
-    solution = next;
+  if (has_obj) {
+    BAB<GecodeProblem> e(problem.get());
+    problem.reset();
+    while (GecodeProblem *next = e.next())
+      solution.reset(next);
+  } else {
+    DFS<GecodeProblem> e(problem.get());
+    problem.reset();
+    solution.reset(e.next());
   }
 
   // Convert solution status.
@@ -213,7 +217,7 @@ int GecodeDriver::run(char **argv) {
   vector<real> primal;
   int solve_code = 0;
   if (solution.get()) {
-    if (num_objs() > 0) {
+    if (has_obj) {
       solve_code = 0;
       status = "optimal solution";
     } else {
