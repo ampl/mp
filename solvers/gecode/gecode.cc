@@ -24,7 +24,7 @@ using ampl::Variable;
 using ampl::Driver;
 
 using Gecode::BoolExpr;
-using Gecode::DFS;
+using Gecode::BAB;
 using Gecode::IntArgs;
 using Gecode::IntVarArgs;
 using Gecode::IntVar;
@@ -42,12 +42,11 @@ class GecodeProblem: public Space,
   IntVarArray vars_;
   IntVar obj_;
   IntRelType obj_irt_; // IRT_NQ - no objective,
-                       // IRT_LE - minimization, IRT_GQ - maximization
+                       // IRT_LE - minimization, IRT_GR - maximization
   static const BoolExpr DUMMY_EXPR;
 
  public:
-  GecodeProblem(int num_vars) :
-      vars_(*this, num_vars), obj_irt_(IRT_NQ) {}
+  GecodeProblem(int num_vars) : vars_(*this, num_vars), obj_irt_(IRT_NQ) {}
 
   GecodeProblem(bool share, GecodeProblem &s) :
     Space(share, s), obj_irt_(s.obj_irt_) {
@@ -61,11 +60,14 @@ class GecodeProblem: public Space,
   IntVarArray &vars() { return vars_; }
   IntVar &obj() { return obj_; }
 
-  void SetObjType(Driver::ObjType obj_type) {
-    obj_irt_ = obj_type == Driver::MAX ? Gecode::IRT_GQ : Gecode::IRT_LE;
+  void SetObjType(Driver::ObjType obj_type,
+      const IntArgs &c, const IntVarArgs &x) {
+    obj_irt_ = obj_type == Driver::MAX ? Gecode::IRT_GR : Gecode::IRT_LE;
+    obj_ = IntVar(*this, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
+    linear(*this, c, x, Gecode::IRT_EQ, obj_);
   }
 
-  virtual void constrain(const Space& best);
+  virtual void constrain(const Space &best);
 
   IntVar VisitNumber(ampl::NumericConstant n) {
     double value = n.value();
@@ -101,7 +103,7 @@ Space *GecodeProblem::copy(bool share) {
   return new GecodeProblem(share, *this);
 }
 
-void GecodeProblem::constrain(const Space& best) {
+void GecodeProblem::constrain(const Space &best) {
   if (obj_irt_ != IRT_NQ)
     rel(*this, obj_, obj_irt_, static_cast<const GecodeProblem&>(best).obj_);
 }
@@ -130,21 +132,27 @@ int GecodeDriver::run(char **argv) {
     vars[j] = IntVar(*problem, GetVarLB(j), GetVarUB(j));
 
   // Post branching.
-  branch(Gecode::Home(*problem), Gecode::IntVarArgs(vars),
-      Gecode::INT_VAR_SIZE_MIN, Gecode::INT_VAL_MIN);
+  branch(*problem, vars, Gecode::INT_VAR_SIZE_MIN, Gecode::INT_VAL_MIN);
 
   if (num_objs() > 0) {
-    // TODO: convert the objective expr
-    problem->SetObjType(GetObjType(0));
-    /*IloExpr objExpr(env_, objconst0(asl));
-    if (0 < nlo)
-    objExpr += build_expr (obj_de[0].e);
-    for (ograd *og = Ograd[0]; og; og = og->next)
-    objExpr += (og -> coef) * vars_[og -> varno];
-    IloObjective MinOrMax(env_, objExpr,
-    objtype[0] == 0 ? IloObjective::Minimize : IloObjective::Maximize);
-    optimizer_->set_obj(MinOrMax);
-    IloAdd (mod_, MinOrMax);*/
+    NumericExpr expr(GetNonlinearObjExpr(0));
+    NumericConstant constant(Cast<NumericConstant>(expr));
+    int num_terms = 0;
+    for (ograd *cg = GetObjGradient(0); cg; cg = cg->next)
+      ++num_terms;
+    IntArgs c(num_terms);
+    IntVarArgs x(num_terms);
+    int index = 0;
+    for (ograd *cg = GetObjGradient(0); cg; cg = cg->next) {
+      c[index] = cg->coef;
+      x[index] = vars[cg->varno];
+      ++index;
+    }
+    // TODO: constant and nonlinear part
+    /*IloExpr ilo_expr(env_, constant ? constant.value() : 0);
+    if (num_nonlinear_objs() > 0)
+      ilo_expr += Visit(expr);*/
+    problem->SetObjType(GetObjType(0), c, x);
   }
 
   // Convert constraints.
@@ -189,19 +197,29 @@ int GecodeDriver::run(char **argv) {
   // TODO
   // finish_building_numberof();
 
-  DFS<GecodeProblem> e(problem.get());
+  BAB<GecodeProblem> e(problem.get());
   problem.reset();
 
   // Solve the problem.
-  std::auto_ptr<GecodeProblem> solution(e.next());
+  std::auto_ptr<GecodeProblem> solution;
+  for (;;) {
+    std::auto_ptr<GecodeProblem> next(e.next());
+    if (!next.get()) break;
+    solution = next;
+  }
 
   // Convert solution status.
   const char *status = 0;
   vector<real> primal;
   int solve_code = 0;
   if (solution.get()) {
-    solve_code = 100;
-    status = "feasible solution";
+    if (num_objs() > 0) {
+      solve_code = 0;
+      status = "optimal solution";
+    } else {
+      solve_code = 100;
+      status = "feasible solution";
+    }
     IntVarArray &vars = solution->vars();
     primal.resize(num_vars());
     for (int j = 0, n = num_vars(); j < n; ++j)
