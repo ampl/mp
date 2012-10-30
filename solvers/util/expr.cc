@@ -282,4 +282,10 @@ bool AreEqual(Expr expr1, Expr expr2) {
       throw UnsupportedExprError(expr1.opname());
   }
 }
+
+std::string internal::FormatOpCode(Expr e) {
+  char buffer[64];
+  sprintf(buffer, "%d", e.opcode());
+  return buffer;
+}
 }
