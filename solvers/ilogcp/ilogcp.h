@@ -38,7 +38,6 @@
 
 struct keyword;
 struct Option_Info;
-struct ASL_fg;
 
 namespace ampl {
 
@@ -139,7 +138,6 @@ class IlogCPDriver : public Driver, public Visitor {
   IloNumVarArray vars_;
   std::auto_ptr<Optimizer> optimizer_;
   std::vector<NumberOf> numberofs_;
-  ASL_fg *asl;
   std::vector<char> version_;
   std::auto_ptr<Option_Info> oinfo_;
   bool gotopttype;
