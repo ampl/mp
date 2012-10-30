@@ -979,10 +979,6 @@ TEST_F(IlogCPTest, SolveMapcoloring) {
   EXPECT_TRUE(Solve(DATA_DIR "mapcoloring").solved);
 }
 
-TEST_F(IlogCPTest, SolveMoney) {
-  EXPECT_TRUE(Solve(DATA_DIR "money").solved);
-}
-
 TEST_F(IlogCPTest, SolveNQueens) {
   EXPECT_TRUE(Solve(DATA_DIR "nqueens").solved);
 }
@@ -1011,6 +1007,10 @@ TEST_F(IlogCPTest, SolveSched1) {
 
 TEST_F(IlogCPTest, SolveSched2) {
   EXPECT_EQ(5, Solve(DATA_DIR "sched2").obj);
+}
+
+TEST_F(IlogCPTest, SolveSendMoreMoney) {
+  EXPECT_TRUE(Solve(DATA_DIR "send-more-money").solved);
 }
 
 TEST_F(IlogCPTest, SolveSeq0) {
