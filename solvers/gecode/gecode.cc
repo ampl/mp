@@ -18,9 +18,27 @@ using std::cerr;
 using std::endl;
 using std::vector;
 
+
 using ampl::Expr;
 using ampl::NumericExpr;
+using ampl::LogicalExpr;
+using ampl::UnaryExpr;
+using ampl::BinaryExpr;
+using ampl::VarArgExpr;
+using ampl::SumExpr;
+using ampl::CountExpr;
+using ampl::IfExpr;
+using ampl::PiecewiseLinearTerm;
+using ampl::NumericConstant;
 using ampl::Variable;
+using ampl::NumberOfExpr;
+using ampl::LogicalConstant;
+using ampl::RelationalExpr;
+using ampl::NotExpr;
+using ampl::BinaryLogicalExpr;
+using ampl::ImplicationExpr;
+using ampl::IteratedLogicalExpr;
+using ampl::AllDiffExpr;
 using ampl::Driver;
 
 using Gecode::BoolExpr;
@@ -70,8 +88,176 @@ class GecodeProblem: public Space,
 
   virtual void constrain(const Space &best);
 
-  IntVar VisitNumber(ampl::NumericConstant n) {
-    double value = n.value();
+  IntVar VisitPlus(BinaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO;
+  }
+
+  IntVar VisitMinus(BinaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitMult(BinaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitDiv(BinaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitRem(BinaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitPow(BinaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitNumericLess(BinaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitMin(VarArgExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitMax(VarArgExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitFloor(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitCeil(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitAbs(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitUnaryMinus(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitIf(IfExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitTanh(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitTan(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitSqrt(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitSinh(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitSin(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitLog10(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitLog(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitExp(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitCosh(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitCos(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitAtanh(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitAtan2(BinaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitAtan(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitAsinh(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitAsin(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitAcosh(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitAcos(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitSum(SumExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitIntDiv(BinaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitPrecision(BinaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitRound(BinaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitTrunc(BinaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitCount(CountExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitNumberOf(NumberOfExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitPLTerm(PiecewiseLinearTerm t) {
+    return VisitUnhandledNumericExpr(t); // TODO
+  }
+
+  IntVar VisitConstExpPow(BinaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitPow2(UnaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitConstBasePow(BinaryExpr e) {
+    return VisitUnhandledNumericExpr(e); // TODO
+  }
+
+  IntVar VisitNumericConstant(NumericConstant c) {
+    double value = c.value();
     IntVar var(*this, value, value);
     rel(*this, var == value);
     return var;
@@ -81,11 +267,83 @@ class GecodeProblem: public Space,
     return vars_[v.index()];
   }
 
-  BoolExpr VisitNotEqual(ampl::RelationalExpr e) {
-      return Visit(e.lhs()) != Visit(e.rhs());
+  BoolExpr VisitOr(BinaryLogicalExpr e) {
+    return VisitUnhandledLogicalExpr(e); // TODO
   }
 
-  BoolExpr VisitAllDiff(ampl::AllDiffExpr e) {
+  BoolExpr VisitAnd(BinaryLogicalExpr e) {
+    return VisitUnhandledLogicalExpr(e); // TODO
+  }
+
+  BoolExpr VisitLess(RelationalExpr e) {
+    return Visit(e.lhs()) < Visit(e.rhs());
+  }
+
+  BoolExpr VisitLessEqual(RelationalExpr e) {
+    return Visit(e.lhs()) <= Visit(e.rhs());
+  }
+
+  BoolExpr VisitEqual(RelationalExpr e) {
+    return Visit(e.lhs()) == Visit(e.rhs());
+  }
+
+  BoolExpr VisitGreaterEqual(RelationalExpr e) {
+    return Visit(e.lhs()) >= Visit(e.rhs());
+  }
+
+  BoolExpr VisitGreater(RelationalExpr e) {
+    return Visit(e.lhs()) > Visit(e.rhs());
+  }
+
+  BoolExpr VisitNotEqual(RelationalExpr e) {
+    return Visit(e.lhs()) != Visit(e.rhs());
+  }
+
+  BoolExpr VisitNot(NotExpr e) {
+    return VisitUnhandledLogicalExpr(e); // TODO
+  }
+
+  BoolExpr VisitAtLeast(RelationalExpr e) {
+    return VisitUnhandledLogicalExpr(e); // TODO
+  }
+
+  BoolExpr VisitAtMost(RelationalExpr e) {
+    return VisitUnhandledLogicalExpr(e); // TODO
+  }
+
+  BoolExpr VisitExactly(RelationalExpr e) {
+    return VisitUnhandledLogicalExpr(e); // TODO
+  }
+
+  BoolExpr VisitNotAtLeast(RelationalExpr e) {
+    return VisitUnhandledLogicalExpr(e); // TODO
+  }
+
+  BoolExpr VisitNotAtMost(RelationalExpr e) {
+    return VisitUnhandledLogicalExpr(e); // TODO
+  }
+
+  BoolExpr VisitNotExactly(RelationalExpr e) {
+    return VisitUnhandledLogicalExpr(e); // TODO
+  }
+
+  BoolExpr VisitForAll(IteratedLogicalExpr e) {
+    return VisitUnhandledLogicalExpr(e); // TODO
+  }
+
+  BoolExpr VisitExists(IteratedLogicalExpr e) {
+    return VisitUnhandledLogicalExpr(e); // TODO
+  }
+
+  BoolExpr VisitImplication(ImplicationExpr e) {
+    return VisitUnhandledLogicalExpr(e); // TODO
+  }
+
+  BoolExpr VisitIff(BinaryLogicalExpr e) {
+    return VisitUnhandledLogicalExpr(e); // TODO
+  }
+
+  BoolExpr VisitAllDiff(AllDiffExpr e) {
     int num_args = e.num_args();
     IntVarArgs x(num_args);
     for (int i = 0; i < num_args; ++i) {
@@ -95,6 +353,10 @@ class GecodeProblem: public Space,
     }
     distinct(*this, x);
     return DUMMY_EXPR;
+  }
+
+  BoolExpr VisitLogicalConstant(LogicalConstant c) {
+    return VisitUnhandledLogicalExpr(c); // TODO
   }
 };
 
