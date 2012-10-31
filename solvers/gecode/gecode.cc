@@ -92,8 +92,10 @@ class GecodeProblem: public Space, public Visitor {
   // The methods below perform conversion of AMPL expressions into
   // equivalent Gecode expressions. Gecode doesn't support the following
   // expressions/functions:
-  // * trigonometric
+  // * division
+  // * trigonometric functions
   //   http://www.gecode.org/pipermail/users/2011-March/003177.html
+  // * log, log10, exp, pow
 
   LinExpr VisitPlus(BinaryExpr e) {
     return Visit(e.lhs()) + Visit(e.rhs());
@@ -107,20 +109,12 @@ class GecodeProblem: public Space, public Visitor {
     return Visit(e.lhs()) * Visit(e.rhs());
   }
 
-  LinExpr VisitDiv(BinaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
   LinExpr VisitRem(BinaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  LinExpr VisitPow(BinaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
+    return Visit(e.lhs()) % Visit(e.rhs());
   }
 
   LinExpr VisitNumericLess(BinaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
+    return max(Visit(e.lhs()) - Visit(e.rhs()), 0);
   }
 
   LinExpr VisitMin(VarArgExpr e) {
@@ -159,24 +153,12 @@ class GecodeProblem: public Space, public Visitor {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  LinExpr VisitLog10(UnaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  LinExpr VisitLog(UnaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  LinExpr VisitExp(UnaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
   LinExpr VisitSum(SumExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
   LinExpr VisitIntDiv(BinaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
+    return Visit(e.lhs()) / Visit(e.rhs());
   }
 
   LinExpr VisitPrecision(BinaryExpr e) {
