@@ -18,7 +18,6 @@ using std::cerr;
 using std::endl;
 using std::vector;
 
-
 using ampl::Expr;
 using ampl::NumericExpr;
 using ampl::LogicalExpr;
@@ -50,13 +49,16 @@ using Gecode::IntVar;
 using Gecode::IntVarArray;
 using Gecode::IntRelType;
 using Gecode::IRT_NQ;
+using Gecode::LinExpr;
 using Gecode::linear;
 using Gecode::Space;
 
 namespace {
 
-class GecodeProblem: public Space,
-  public ampl::ExprVisitor<GecodeProblem, IntVar, BoolExpr> {
+class GecodeProblem;
+typedef ampl::ExprVisitor<GecodeProblem, LinExpr, BoolExpr> Visitor;
+
+class GecodeProblem: public Space, public Visitor {
  private:
   IntVarArray vars_;
   IntVar obj_;
@@ -79,200 +81,154 @@ class GecodeProblem: public Space,
   IntVarArray &vars() { return vars_; }
   IntVar &obj() { return obj_; }
 
-  void SetObjType(Driver::ObjType obj_type,
-      const IntArgs &c, const IntVarArgs &x) {
+  void SetObj(Driver::ObjType obj_type, const Gecode::LinExpr &expr) {
     obj_irt_ = obj_type == Driver::MAX ? Gecode::IRT_GR : Gecode::IRT_LE;
     obj_ = IntVar(*this, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-    linear(*this, c, x, Gecode::IRT_EQ, obj_);
+    rel(*this, obj_ == expr);
   }
 
   virtual void constrain(const Space &best);
 
-  IntVar VisitPlus(BinaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO;
+  // The methods below perform conversion of AMPL expressions into
+  // equivalent Gecode expressions. Gecode doesn't support the following
+  // expressions/functions:
+  // * trigonometric
+  //   http://www.gecode.org/pipermail/users/2011-March/003177.html
+
+  LinExpr VisitPlus(BinaryExpr e) {
+    return Visit(e.lhs()) + Visit(e.rhs());
   }
 
-  IntVar VisitMinus(BinaryExpr e) {
+  LinExpr VisitMinus(BinaryExpr e) {
+    return Visit(e.lhs()) - Visit(e.rhs());
+  }
+
+  LinExpr VisitMult(BinaryExpr e) {
+    return Visit(e.lhs()) * Visit(e.rhs());
+  }
+
+  LinExpr VisitDiv(BinaryExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitMult(BinaryExpr e) {
+  LinExpr VisitRem(BinaryExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitDiv(BinaryExpr e) {
+  LinExpr VisitPow(BinaryExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitRem(BinaryExpr e) {
+  LinExpr VisitNumericLess(BinaryExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitPow(BinaryExpr e) {
+  LinExpr VisitMin(VarArgExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitNumericLess(BinaryExpr e) {
+  LinExpr VisitMax(VarArgExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitMin(VarArgExpr e) {
+  LinExpr VisitFloor(UnaryExpr e) {
+    // floor does nothing because Gecode supports only integer expressions
+    // currently.
+    return Visit(e.arg());
+  }
+
+  LinExpr VisitCeil(UnaryExpr e) {
+    // ceil does nothing because Gecode supports only integer expressions
+    // currently.
+    return Visit(e.arg());
+  }
+
+  LinExpr VisitAbs(UnaryExpr e) {
+    return abs(Visit(e.arg()));
+  }
+
+  LinExpr VisitUnaryMinus(UnaryExpr e) {
+    return -Visit(e.arg());
+  }
+
+  LinExpr VisitIf(IfExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitMax(VarArgExpr e) {
+  LinExpr VisitSqrt(UnaryExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitFloor(UnaryExpr e) {
+  LinExpr VisitLog10(UnaryExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitCeil(UnaryExpr e) {
+  LinExpr VisitLog(UnaryExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitAbs(UnaryExpr e) {
+  LinExpr VisitExp(UnaryExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitUnaryMinus(UnaryExpr e) {
+  LinExpr VisitSum(SumExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitIf(IfExpr e) {
+  LinExpr VisitIntDiv(BinaryExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitTanh(UnaryExpr e) {
+  LinExpr VisitPrecision(BinaryExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitTan(UnaryExpr e) {
+  LinExpr VisitRound(BinaryExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitSqrt(UnaryExpr e) {
+  LinExpr VisitTrunc(BinaryExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitSinh(UnaryExpr e) {
+  LinExpr VisitCount(CountExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitSin(UnaryExpr e) {
+  LinExpr VisitNumberOf(NumberOfExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitLog10(UnaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitLog(UnaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitExp(UnaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitCosh(UnaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitCos(UnaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitAtanh(UnaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitAtan2(BinaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitAtan(UnaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitAsinh(UnaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitAsin(UnaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitAcosh(UnaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitAcos(UnaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitSum(SumExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitIntDiv(BinaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitPrecision(BinaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitRound(BinaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitTrunc(BinaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitCount(CountExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitNumberOf(NumberOfExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
-  IntVar VisitPLTerm(PiecewiseLinearTerm t) {
+  LinExpr VisitPLTerm(PiecewiseLinearTerm t) {
     return VisitUnhandledNumericExpr(t); // TODO
   }
 
-  IntVar VisitConstExpPow(BinaryExpr e) {
+  LinExpr VisitConstExpPow(BinaryExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitPow2(UnaryExpr e) {
+  LinExpr VisitPow2(UnaryExpr e) {
+    return sqr(Visit(e.arg()));
+  }
+
+  LinExpr VisitConstBasePow(BinaryExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
   }
 
-  IntVar VisitConstBasePow(BinaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
+  LinExpr VisitNumericConstant(NumericConstant c) {
+    return c.value();
   }
 
-  IntVar VisitNumericConstant(NumericConstant c) {
-    double value = c.value();
-    IntVar var(*this, value, value);
-    rel(*this, var == value);
-    return var;
-  }
-
-  IntVar VisitVariable(Variable v) {
+  LinExpr VisitVariable(Variable v) {
     return vars_[v.index()];
   }
 
   BoolExpr VisitOr(BinaryLogicalExpr e) {
-    return VisitUnhandledLogicalExpr(e); // TODO
+    return Visit(e.lhs()) || Visit(e.rhs());
   }
 
   BoolExpr VisitAnd(BinaryLogicalExpr e) {
-    return VisitUnhandledLogicalExpr(e); // TODO
+    return Visit(e.lhs()) && Visit(e.rhs());
   }
 
   BoolExpr VisitLess(RelationalExpr e) {
@@ -300,7 +256,7 @@ class GecodeProblem: public Space,
   }
 
   BoolExpr VisitNot(NotExpr e) {
-    return VisitUnhandledLogicalExpr(e); // TODO
+    return !Visit(e.arg());
   }
 
   BoolExpr VisitAtLeast(RelationalExpr e) {
@@ -349,7 +305,14 @@ class GecodeProblem: public Space,
     for (int i = 0; i < num_args; ++i) {
       NumericExpr arg(e[i]);
       Variable var(ampl::Cast<Variable>(arg));
-      x[i] = var ? vars_[var.index()] : Visit(arg);
+      if (var) {
+        x[i] = vars_[var.index()];
+      } else {
+        IntVar gecode_var(*this,
+            Gecode::Int::Limits::min, Gecode::Int::Limits::max);
+        rel(*this, gecode_var == Visit(arg));
+        x[i] = gecode_var;
+      }
     }
     distinct(*this, x);
     return DUMMY_EXPR;
@@ -391,63 +354,45 @@ int GecodeDriver::run(char **argv) {
   }
   std::auto_ptr<GecodeProblem> problem(new GecodeProblem(num_vars()));
   IntVarArray &vars = problem->vars();
-  for (int j = 0, n = num_vars(); j < n; ++j)
-    vars[j] = IntVar(*problem, GetVarLB(j), GetVarUB(j));
+  for (int j = 0, n = num_vars(); j < n; ++j) {
+    double lb = GetVarLB(j), ub = GetVarUB(j);
+    vars[j] = IntVar(*problem,
+        lb <= negInfinity ? Gecode::Int::Limits::min : lb,
+        ub >= Infinity ? Gecode::Int::Limits::max : ub);
+  }
 
   // Post branching.
   branch(*problem, vars, Gecode::INT_VAR_SIZE_MIN, Gecode::INT_VAL_MIN);
 
   bool has_obj = num_objs() != 0;
   if (has_obj) {
-    NumericExpr expr(GetNonlinearObjExpr(0));
-    NumericConstant constant(Cast<NumericConstant>(expr));
-    int num_terms = 0;
+    Gecode::LinExpr obj_expr(0);
     for (ograd *cg = GetObjGradient(0); cg; cg = cg->next)
-      ++num_terms;
-    IntArgs c(num_terms);
-    IntVarArgs x(num_terms);
-    int index = 0;
-    for (ograd *cg = GetObjGradient(0); cg; cg = cg->next) {
-      c[index] = cg->coef;
-      x[index] = vars[cg->varno];
-      ++index;
-    }
-    // TODO: constant and nonlinear part
-    /*IloExpr ilo_expr(env_, constant ? constant.value() : 0);
-    if (num_nonlinear_objs() > 0)
-      ilo_expr += Visit(expr);*/
-    problem->SetObjType(GetObjType(0), c, x);
+      obj_expr = obj_expr + cg->coef * vars[cg->varno];
+    if (NumericExpr expr = GetNonlinearObjExpr(0))
+      obj_expr = obj_expr + problem->Visit(expr);
+    problem->SetObj(GetObjType(0), obj_expr);
   }
 
   // Convert constraints.
   for (int i = 0, n = num_cons(); i < n; ++i) {
-    int num_terms = 0;
+    Gecode::LinExpr con_expr(0);
     for (cgrad *cg = GetConGradient(i); cg; cg = cg->next)
-      ++num_terms;
-    IntArgs c(num_terms);
-    IntVarArgs x(num_terms);
-    int index = 0;
-    for (cgrad *cg = GetConGradient(i); cg; cg = cg->next) {
-      c[index] = cg->coef;
-      x[index] = vars[cg->varno];
-      ++index;
-    }
+      con_expr = con_expr + cg->coef * vars[cg->varno];
     double lb = GetConLB(i);
     double ub = GetConUB(i);
+    if (i < num_nonlinear_cons())
+      con_expr = con_expr + problem->Visit(GetNonlinearConExpr(i));
     if (lb <= negInfinity) {
-      linear(*problem, c, x, Gecode::IRT_LE, ub);
+      rel(*problem, con_expr <= ub);
     } else if (ub >= Infinity) {
-      linear(*problem, c, x, Gecode::IRT_GQ, lb);
+      rel(*problem, con_expr >= lb);
     } else if (lb == ub) {
-      linear(*problem, c, x, Gecode::IRT_EQ, lb);
+      rel(*problem, con_expr == lb);
     } else {
-      linear(*problem, c, x, Gecode::IRT_GQ, lb);
-      linear(*problem, c, x, Gecode::IRT_LE, ub);
+      rel(*problem, con_expr >= lb);
+      rel(*problem, con_expr <= ub);
     }
-    // TODO: nonlinear part
-    //if (i < nlc)
-    //   conExpr += model->ConvertExpr(con_de[i].e);
-    //Con[i] = (LUrhs[i] <= conExpr <= Urhsx[i]);
   }
 
   // Convert logical constraints.
