@@ -147,7 +147,7 @@ class IlogCPTest : public ::testing::Test, public ExprBuilder {
     return false;
   }
 
-  SolveResult Solve(const char *stub);
+  SolveResult Solve(const char *stub, const char *opt = nullptr);
 
   template <typename T>
   static string Option(const char *name, T value) {
@@ -186,8 +186,8 @@ class IlogCPTest : public ::testing::Test, public ExprBuilder {
       double good, double bad);
 };
 
-SolveResult IlogCPTest::Solve(const char *stub) {
-  RunDriver(stub);
+SolveResult IlogCPTest::Solve(const char *stub, const char *opt) {
+  RunDriver(stub, opt);
   ifstream ifs((string(stub) + ".sol").c_str());
   string line;
   getline(ifs, line);
@@ -1011,6 +1011,11 @@ TEST_F(IlogCPTest, SolveSched2) {
 
 TEST_F(IlogCPTest, SolveSendMoreMoney) {
   EXPECT_TRUE(Solve(DATA_DIR "send-more-money").solved);
+}
+
+TEST_F(IlogCPTest, SolveSendMostMoney) {
+  EXPECT_NEAR(10876, Solve(DATA_DIR "send-most-money",
+      "relativeoptimalitytolerance=1e-5").obj, 1e-5);
 }
 
 TEST_F(IlogCPTest, SolveSeq0) {
