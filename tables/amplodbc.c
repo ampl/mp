@@ -332,7 +332,7 @@ mfree(void *v) { free(v); }
  static DRV_desc*
 get_ds0(HInfo *h)
 {
-	/* Return pointer to first DRV_desc -- geneate list first time. */
+	/* Return pointer to first DRV_desc -- generate list first time. */
 
 	AmplExports *ae = h->AE;
 	DRV_desc *ds, **ds1, **dsp, *dsx;
@@ -1143,6 +1143,7 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 	int i, j, nstr, verbose, wantretry;
 	real t;
 	unsigned int ui;
+	int dsn = 0;
 
 	*dsp = 0;
 	h->env = SQL_NULL_HENV;
@@ -1298,11 +1299,18 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 	if (!winfo.score)
 		hw_get(ae);
 #endif
-	if (match("DSN=", UC dsname, UC dsname+4)
+	if ((dsn = match("DSN=", UC dsname, UC dsname+4))
 	 || match("DRIVER=",UC dsname, UC dsname+7)) {
+		SQLUSMALLINT completion = 0;
  try_dsname:
-		i = SQLDriverConnect(h->hc, winfo.hw, UC dsname, SQL_NTS, cs, sizeof(cs),
-			&cs_len, SQL_DRIVER_COMPLETE);
+		completion = SQL_DRIVER_COMPLETE;
+#ifndef _WIN32
+		/* Only try to show the dialog on Windows. */
+		if (!dsn)
+			completion = SQL_DRIVER_NOPROMPT;
+#endif
+		i = SQLDriverConnect(h->hc, winfo.hw, UC dsname, SQL_NTS, cs,
+				sizeof(cs), &cs_len, completion);
 		if ((i == SQL_SUCCESS
 		 ||  i == SQL_SUCCESS_WITH_INFO) && !(*dsp = conn_ds(h, cs))) {
 			sprintf(TI->Errmsg = (char*)TM(strlen(CC cs) + 64),
