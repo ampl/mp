@@ -1,4 +1,24 @@
-// Ilogcp driver tests.
+/*
+ Ilogcp driver tests.
+
+ Copyright (C) 2012 AMPL Optimization LLC
+
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose and without fee is hereby granted,
+ provided that the above copyright notice appear in all copies and that
+ both that the copyright notice and this permission notice and warranty
+ disclaimer appear in supporting documentation.
+
+ The author and AMPL Optimization LLC disclaim all warranties with
+ regard to this software, including all implied warranties of
+ merchantability and fitness.  In no event shall the author be liable
+ for any special, indirect or consequential damages or any damages
+ whatsoever resulting from loss of use, data or profits, whether in an
+ action of contract, negligence or other tortious action, arising out
+ of or in connection with the use or performance of this software.
+
+ Author: Victor Zverovich
+ */
 
 #include <ilconcert/ilodiffi.h>
 #include <ilconcert/ilopathi.h>
@@ -114,7 +134,7 @@ class IlogCPTest : public ::testing::Test, public ExprBuilder {
   IlogCPDriver d;
   IloEnv env_;
   IloModel mod_;
-  
+
   void SetUp() {
     env_ = d.env();
     mod_ = d.mod();
@@ -232,7 +252,8 @@ void IlogCPTest::CheckIntCPOption(const char *option,
   if (values) {
     int count = 0;
     for (const EnumValue *v = values; v->name; ++v, ++count) {
-      EXPECT_TRUE(ParseOptions("optimizer=cp", Option(option, v->name).c_str()));
+      EXPECT_TRUE(ParseOptions(
+          "optimizer=cp", Option(option, v->name).c_str()));
       CPOptimizer *opt = dynamic_cast<CPOptimizer*>(d.optimizer());
       ASSERT_TRUE(opt != nullptr);
       EXPECT_EQ(v->value, opt->solver().getParameter(param))
@@ -1185,7 +1206,8 @@ TEST_F(IlogCPTest, CPOptions) {
   CheckDblCPOption("timelimit", IloCP::TimeLimit, 42, -1);
   if (CPX_VERSION > 1220)
     CheckIntCPOption("workers", IloCP::Workers, 0, INT_MAX, 0, true);
-  else CheckIntCPOption("workers", IloCP::Workers, 1, 4, 0, false);
+  else
+    CheckIntCPOption("workers", IloCP::Workers, 1, 4, 0, false);
 }
 
 TEST_F(IlogCPTest, CPLEXDefaultMIPDisplayZero) {
