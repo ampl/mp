@@ -55,10 +55,8 @@ using Gecode::Space;
 
 namespace {
 
-class GecodeProblem;
-typedef ampl::ExprVisitor<GecodeProblem, LinExpr, BoolExpr> Visitor;
-
-class GecodeProblem: public Space, public Visitor {
+class GecodeProblem: public Space,
+  public ampl::ExprVisitor<GecodeProblem, LinExpr, BoolExpr> {
  private:
   IntVarArray vars_;
   IntVar obj_;
@@ -69,23 +67,14 @@ class GecodeProblem: public Space, public Visitor {
  public:
   GecodeProblem(int num_vars) : vars_(*this, num_vars), obj_irt_(IRT_NQ) {}
 
-  GecodeProblem(bool share, GecodeProblem &s) :
-    Space(share, s), obj_irt_(s.obj_irt_) {
-    vars_.update(*this, share, s.vars_);
-    if (obj_irt_ != IRT_NQ)
-      obj_.update(*this, share, s.obj_);
-  }
+  GecodeProblem(bool share, GecodeProblem &s);
 
   Space *copy(bool share);
 
   IntVarArray &vars() { return vars_; }
   IntVar &obj() { return obj_; }
 
-  void SetObj(Driver::ObjType obj_type, const Gecode::LinExpr &expr) {
-    obj_irt_ = obj_type == Driver::MAX ? Gecode::IRT_GR : Gecode::IRT_LE;
-    obj_ = IntVar(*this, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-    rel(*this, obj_ == expr);
-  }
+  void SetObj(Driver::ObjType obj_type, const Gecode::LinExpr &expr);
 
   virtual void constrain(const Space &best);
 
@@ -96,6 +85,9 @@ class GecodeProblem: public Space, public Visitor {
   // * trigonometric functions
   //   http://www.gecode.org/pipermail/users/2011-March/003177.html
   // * log, log10, exp, pow
+
+  template <typename Grad>
+  Gecode::LinExpr ConvertExpr(Grad *grad, NumericExpr nonlinear);
 
   LinExpr VisitPlus(BinaryExpr e) {
     return Visit(e.lhs()) + Visit(e.rhs());
@@ -242,27 +234,27 @@ class GecodeProblem: public Space, public Visitor {
   }
 
   BoolExpr VisitAtLeast(RelationalExpr e) {
-    return VisitUnhandledLogicalExpr(e); // TODO
+    return Visit(e.lhs()) <= Visit(e.rhs());
   }
 
   BoolExpr VisitAtMost(RelationalExpr e) {
-    return VisitUnhandledLogicalExpr(e); // TODO
+    return Visit(e.lhs()) >= Visit(e.rhs());
   }
 
   BoolExpr VisitExactly(RelationalExpr e) {
-    return VisitUnhandledLogicalExpr(e); // TODO
+    return Visit(e.lhs()) == Visit(e.rhs());
   }
 
   BoolExpr VisitNotAtLeast(RelationalExpr e) {
-    return VisitUnhandledLogicalExpr(e); // TODO
+    return Visit(e.lhs()) > Visit(e.rhs());
   }
 
   BoolExpr VisitNotAtMost(RelationalExpr e) {
-    return VisitUnhandledLogicalExpr(e); // TODO
+    return Visit(e.lhs()) < Visit(e.rhs());
   }
 
   BoolExpr VisitNotExactly(RelationalExpr e) {
-    return VisitUnhandledLogicalExpr(e); // TODO
+    return Visit(e.lhs()) != Visit(e.rhs());
   }
 
   BoolExpr VisitForAll(IteratedLogicalExpr e) {
@@ -281,24 +273,7 @@ class GecodeProblem: public Space, public Visitor {
     return VisitUnhandledLogicalExpr(e); // TODO
   }
 
-  BoolExpr VisitAllDiff(AllDiffExpr e) {
-    int num_args = e.num_args();
-    IntVarArgs x(num_args);
-    for (int i = 0; i < num_args; ++i) {
-      NumericExpr arg(e[i]);
-      Variable var(ampl::Cast<Variable>(arg));
-      if (var) {
-        x[i] = vars_[var.index()];
-      } else {
-        IntVar gecode_var(*this,
-            Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-        rel(*this, gecode_var == Visit(arg));
-        x[i] = gecode_var;
-      }
-    }
-    distinct(*this, x);
-    return DUMMY_EXPR;
-  }
+  BoolExpr VisitAllDiff(AllDiffExpr e);
 
   BoolExpr VisitLogicalConstant(LogicalConstant c) {
     return VisitUnhandledLogicalExpr(c); // TODO
@@ -307,13 +282,62 @@ class GecodeProblem: public Space, public Visitor {
 
 const BoolExpr GecodeProblem::DUMMY_EXPR((Gecode::BoolVar()));
 
+GecodeProblem::GecodeProblem(bool share, GecodeProblem &s) :
+  Space(share, s), obj_irt_(s.obj_irt_) {
+  vars_.update(*this, share, s.vars_);
+  if (obj_irt_ != IRT_NQ)
+    obj_.update(*this, share, s.obj_);
+}
+
 Space *GecodeProblem::copy(bool share) {
   return new GecodeProblem(share, *this);
+}
+
+void GecodeProblem::SetObj(
+    Driver::ObjType obj_type, const Gecode::LinExpr &expr) {
+  obj_irt_ = obj_type == Driver::MAX ? Gecode::IRT_GR : Gecode::IRT_LE;
+  obj_ = IntVar(*this, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
+  rel(*this, obj_ == expr);
 }
 
 void GecodeProblem::constrain(const Space &best) {
   if (obj_irt_ != IRT_NQ)
     rel(*this, obj_, obj_irt_, static_cast<const GecodeProblem&>(best).obj_);
+}
+
+template <typename Grad>
+Gecode::LinExpr GecodeProblem::ConvertExpr(Grad *grad, NumericExpr nonlinear) {
+  Gecode::LinExpr expr;
+  bool has_linear_part = grad != 0;
+  if (has_linear_part)
+    expr = grad->coef * vars_[grad->varno];
+  for (grad = grad->next; grad; grad = grad->next)
+    expr = expr + grad->coef * vars_[grad->varno];
+  if (!nonlinear)
+    return expr;
+  if (has_linear_part)
+    expr = expr + Visit(nonlinear);
+  else
+    expr = Visit(nonlinear);
+  return expr;
+}
+
+BoolExpr GecodeProblem::VisitAllDiff(AllDiffExpr e) {
+  int num_args = e.num_args();
+  IntVarArgs x(num_args);
+  for (int i = 0; i < num_args; ++i) {
+    NumericExpr arg(e[i]);
+    if (Variable var = ampl::Cast<Variable>(arg)) {
+      x[i] = vars_[var.index()];
+    } else {
+      IntVar gecode_var(*this,
+          Gecode::Int::Limits::min, Gecode::Int::Limits::max);
+      rel(*this, gecode_var == Visit(arg));
+      x[i] = gecode_var;
+    }
+  }
+  distinct(*this, x);
+  return DUMMY_EXPR;
 }
 }
 
@@ -348,23 +372,16 @@ int GecodeDriver::run(char **argv) {
 
   bool has_obj = num_objs() != 0;
   if (has_obj) {
-    Gecode::LinExpr obj_expr(0);
-    for (ograd *cg = GetObjGradient(0); cg; cg = cg->next)
-      obj_expr = obj_expr + cg->coef * vars[cg->varno];
-    if (NumericExpr expr = GetNonlinearObjExpr(0))
-      obj_expr = obj_expr + problem->Visit(expr);
-    problem->SetObj(GetObjType(0), obj_expr);
+    problem->SetObj(GetObjType(0),
+        problem->ConvertExpr(GetObjGradient(0), GetNonlinearObjExpr(0)));
   }
 
   // Convert constraints.
   for (int i = 0, n = num_cons(); i < n; ++i) {
-    Gecode::LinExpr con_expr(0);
-    for (cgrad *cg = GetConGradient(i); cg; cg = cg->next)
-      con_expr = con_expr + cg->coef * vars[cg->varno];
+    Gecode::LinExpr con_expr(
+        problem->ConvertExpr(GetConGradient(i), GetNonlinearConExpr(i)));
     double lb = GetConLB(i);
     double ub = GetConUB(i);
-    if (i < num_nonlinear_cons())
-      con_expr = con_expr + problem->Visit(GetNonlinearConExpr(i));
     if (lb <= negInfinity) {
       rel(*problem, con_expr <= ub);
     } else if (ub >= Infinity) {
