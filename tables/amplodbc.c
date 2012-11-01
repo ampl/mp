@@ -190,8 +190,9 @@ prc(HInfo *h, char *who, int i)
 	goto done;
  use_SQLError:
 #endif
-	if ((i = SQLError(h->env, h->hc, h->hs, sqlstate, &native_errno,
-			errmsg, sizeof(errmsg), &emlen)) != SQL_SUCCESS)
+	i = SQLError(h->env, h->hc, h->hs, sqlstate, &native_errno,
+	    errmsg, sizeof(errmsg0), &emlen);
+	if (i != SQL_SUCCESS && i != SQL_SUCCESS_WITH_INFO)
 		printf("SQLError returned %d\n", i);
 	else {
 		printf("sqlstate = \"%s\"\n", sqlstate);
