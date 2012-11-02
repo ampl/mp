@@ -126,7 +126,7 @@ bool Env::FindDriver(const char *name) const {
     return std::search(desc, desc_end, name, name + std::strlen(name)) !=
         desc_end;
   }
-  return true;
+  return false;
 }
 
 class ODBCTest : public ::testing::Test {
