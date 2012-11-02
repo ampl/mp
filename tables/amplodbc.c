@@ -37,12 +37,6 @@ THIS SOFTWARE.
 #include "arith.h"	/* for LONG_LONG_POINTERS */
 #include "funcadd.h"
 
-#ifndef _WIN64
-#ifndef SQLLEN
-#define SQLLEN SQLINTEGER
-#endif
-#endif
-
 #ifndef SQL_NO_DATA
 #define SQL_NO_DATA SQL_NO_DATA_FOUND	/* VC++ 4 */
 #endif
@@ -1305,7 +1299,8 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
  try_dsname:
 		completion = SQL_DRIVER_COMPLETE;
 #ifndef _WIN32
-		/* Only try to show the dialog on Windows. */
+		/* Don't try to show prompt on systems other than Windows because it
+		 * will fail anyway because of invalid hwnd. */
 		if (!dsn)
 			completion = SQL_DRIVER_NOPROMPT;
 #endif
@@ -1923,7 +1918,7 @@ permute(int nf, int nt, int *p, char **namf, int *zf, DBColinfo *dbc, int *zt)
 	}
 
  static int
-needprec(HInfo *h, DBColinfo *dbc)
+needprec(HInfo *h, DBColinfo *dbc, int col_index)
 {
 	AmplExports *ae;
 	HSTMT hs;
@@ -1963,26 +1958,42 @@ needprec(HInfo *h, DBColinfo *dbc)
 	sbuf[0] = 0;
 	i = prc(h, "SQLGetTypeInfo in needprec", SQLGetTypeInfo(hs, (SQLSMALLINT)t))
 	 || prc(h, "SQLBindCol_3",
-			SQLBindCol(hs, (UWORD)5, SQL_C_CHAR, sbuf, sizeof(sbuf), &len))
-	 || prc(h, "SQLFetch in needprec()", SQLFetch(hs));
+			SQLBindCol(hs, (UWORD)5, SQL_C_CHAR, sbuf, sizeof(sbuf), &len));
+	if (!i) {
+		i = SQLFetch(hs);
+		/* SQLFetch after SQLGetTypeInfo returns no data for some MySQL
+		   types. */
+		if (i != SQL_SUCCESS && i != SQL_NO_DATA)
+			prc(h, "SQLFetch in needprec()", i);
+	}
 	prc(h, "SQLFreeStmt", SQLFreeStmt(hs, SQL_DROP));
-	if (i)
+	if (i == SQL_NO_DATA) {
+		/* Fall back to checking column type name if there is no type info. */
+		if (prc(hs, "SQLColAttributes(SQL_COLUMN_TYPE_NAME)",
+				SQLColAttributes(h->hs, col_index, SQL_COLUMN_TYPE_NAME, sbuf,
+						(SWORD)sizeof(sbuf), &len, 0))) {
+			return 0;
+		}
+		if (strcmp(sbuf, "varchar") == 0)
+			i = 1;
+	} else if (!i) {
+		switch(sbuf[0]) {
+			case 0:
+				i = 0;
+				break;
+			case '#':
+				i = 2;
+				break;
+			default:
+				i = 1;
+			}
+	} else
 		return 0;
 	ae = h->AE;
 	TI = h->TI;
 	ut = *utp = (UnknownType*)TM(sizeof(UnknownType));
 	ut->next = 0;
 	ut->type = t;
-	switch(sbuf[0]) {
-		case 0:
-			i = 0;
-			break;
-		case '#':
-			i = 2;
-			break;
-		default:
-			i = 1;
-		}
 	ut->mytype = i;
  found:
 	return (dbc->mytype = ut->mytype) == 1;
@@ -2206,7 +2217,7 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 		if (prc(&h, "SQLColAttributes(TYPE)",
 		 SQLColAttributes(hs, u, SQL_COLUMN_TYPE, 0, 0, 0, &dbc->type)))
 			goto badret;
-		if (needprec(&h,dbc)) {
+		if (needprec(&h, dbc, u)) {
 			if (prc(&h, "SQLColAttributes(DISPLAY_SIZE)",
 			 SQLColAttributes(hs, u, SQL_COLUMN_DISPLAY_SIZE,
 				0,0,0, &dbc->prec)))
@@ -2594,7 +2605,7 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 		if (prc(h, "SQLColAttributes(TYPE)",
 		 SQLColAttributes(hs, (UWORD)i, SQL_COLUMN_TYPE, 0, 0, 0, &dbc->type)))
 			goto badret;
-		if (needprec(h,dbc)) {
+		if (needprec(h, dbc, i)) {
 			if (prc(h, "SQLColAttributes(DISPLAY_SIZE)",
 			 SQLColAttributes(hs, (UWORD)i, SQL_COLUMN_DISPLAY_SIZE,
 				0,0,0, &dbc->prec)))
