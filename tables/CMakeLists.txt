@@ -19,8 +19,10 @@ endif ()
 
 add_ampl_library(ampltabl tableproxy.c tableproxyver.h)
 target_link_libraries(ampltabl ${TABLEPROXY_LIBS} ${AMPLODBC})
-set_target_properties(ampltabl
-  PROPERTIES COMPILE_DEFINITIONS OTHER_FUNCADD=funcaddodbc_ASL)
+if (ODBC_FOUND)
+  set_target_properties(ampltabl
+    PROPERTIES COMPILE_DEFINITIONS OTHER_FUNCADD=funcaddodbc_ASL)
+endif ()
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
   set(TABLEPROXY_SUFFIX 64)

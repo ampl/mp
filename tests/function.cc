@@ -62,27 +62,18 @@ class LibraryImpl : public AmplExports, public TMInfo {
     error_ = "duplicate function '" + name + "'";
   }
 
-  static void AddFunc_(const char *name, rfunc f,
+  static void AddFunc(const char *name, rfunc f,
       int type, int nargs, void *funcinfo, AmplExports *ae);
 
   static void AddTableHandler(
       TableHandlerFunc read, TableHandlerFunc write,
-      char *handler_info, int , void *) {
-    string info(handler_info);
-    string name(info.substr(0, info.find('\n')));
-    Handler handler(*library, read, write);
-    if (!library->impl()->handlers_.insert(
-        std::make_pair(name, handler)).second) {
-      ReportDuplicateFunction(name);
-    }
-    note_libuse_ASL(); // Make sure the library is not unloaded.
-  }
+      char *handler_info, int , void *);
 
-  static void AtExit_(AmplExports *, Exitfunc *, void *) {
+  static void AtExit(AmplExports *, Exitfunc *, void *) {
     // Do nothing.
   }
 
-  static void *Tempmem_(TMInfo *tmi, size_t size) {
+  static void *Tempmem(TMInfo *tmi, size_t size) {
     LibraryImpl *impl = static_cast<LibraryImpl*>(tmi);
     impl->tempmem_.push_back(0);
     return impl->tempmem_.back() = malloc(size);
@@ -119,7 +110,7 @@ class LibraryImpl : public AmplExports, public TMInfo {
 
 string LibraryImpl::error_;
 
-void LibraryImpl::AddFunc_(const char *name, rfunc f,
+void LibraryImpl::AddFunc(const char *name, rfunc f,
     int type, int nargs, void *funcinfo, AmplExports *ae) {
   func_info fi = {};
   fi.name = name;
@@ -133,12 +124,25 @@ void LibraryImpl::AddFunc_(const char *name, rfunc f,
   note_libuse_ASL(); // Make sure the library is not unloaded.
 }
 
+void LibraryImpl::AddTableHandler(
+    TableHandlerFunc read, TableHandlerFunc write,
+    char *handler_info, int , void *) {
+  string info(handler_info);
+  string name(info.substr(0, info.find('\n')));
+  Handler handler(*library, read, write);
+  if (!library->impl()->handlers_.insert(
+      std::make_pair(name, handler)).second) {
+    ReportDuplicateFunction(name);
+  }
+  note_libuse_ASL(); // Make sure the library is not unloaded.
+}
+
 LibraryImpl::LibraryImpl(const char *name) : AmplExports(), name_(name) {
-  Addfunc = AddFunc_;
+  Addfunc = AddFunc;
   Add_table_handler = AddTableHandler;
-  AtExit = AtExit_;
-  AtReset = AtExit_;
-  Tempmem = Tempmem_;
+  AmplExports::AtExit = AtExit;
+  AmplExports::AtReset = AtExit;
+  AmplExports::Tempmem = Tempmem;
   SprintF = sprintf;
   SnprintF = snprintf;
   VsnprintF = vsnprintf;
