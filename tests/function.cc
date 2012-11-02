@@ -33,10 +33,15 @@
 
 using std::string;
 
-static void Print(std::ostream &os, double value) {
+namespace {
+
+void Print(std::ostream &os, double value) {
   if (!isnan(value))
     os << value;
   else os << "NaN";
+}
+
+fun::Library *library;
 }
 
 namespace fun {
@@ -51,7 +56,7 @@ class LibraryImpl : public AmplExports, public TMInfo {
   FunctionMap funcs_;
 
   typedef std::map<string, Handler> HandlerMap;
-  static HandlerMap handlers_;
+  HandlerMap handlers_;
 
   static void ReportDuplicateFunction(const string &name) {
     error_ = "duplicate function '" + name + "'";
@@ -61,13 +66,16 @@ class LibraryImpl : public AmplExports, public TMInfo {
       int type, int nargs, void *funcinfo, AmplExports *ae);
 
   static void AddTableHandler(
-      int (*)(AmplExports *ae, TableInfo *TI),
-      int (*)(AmplExports *ae, TableInfo *TI),
+      TableHandlerFunc read, TableHandlerFunc write,
       char *handler_info, int , void *) {
     string info(handler_info);
     string name(info.substr(0, info.find('\n')));
-    if (!handlers_.insert(std::make_pair(name, Handler())).second)
+    Handler handler(*library, read, write);
+    if (!library->impl()->handlers_.insert(
+        std::make_pair(name, handler)).second) {
       ReportDuplicateFunction(name);
+    }
+    note_libuse_ASL(); // Make sure the library is not unloaded.
   }
 
   static void AtExit_(AmplExports *, Exitfunc *, void *) {
@@ -88,7 +96,6 @@ class LibraryImpl : public AmplExports, public TMInfo {
 
   void Load() {
     error_ = string();
-    handlers_.clear();
     i_option_ASL = name_.c_str();
     // Use funcadd(AmplExports*) instead of func_add(ASL*) because
     // the latter doesn't load random functions.
@@ -111,7 +118,6 @@ class LibraryImpl : public AmplExports, public TMInfo {
 };
 
 string LibraryImpl::error_;
-LibraryImpl::HandlerMap LibraryImpl::handlers_;
 
 void LibraryImpl::AddFunc_(const char *name, rfunc f,
     int type, int nargs, void *funcinfo, AmplExports *ae) {
@@ -124,7 +130,7 @@ void LibraryImpl::AddFunc_(const char *name, rfunc f,
   LibraryImpl *impl = static_cast<LibraryImpl*>(ae);
   if (!impl->funcs_.insert(std::make_pair(name, fi)).second)
     ReportDuplicateFunction(name);
-  note_libuse_ASL();
+  note_libuse_ASL(); // Make sure the library is not unloaded.
 }
 
 LibraryImpl::LibraryImpl(const char *name) : AmplExports(), name_(name) {
@@ -133,17 +139,26 @@ LibraryImpl::LibraryImpl(const char *name) : AmplExports(), name_(name) {
   AtExit = AtExit_;
   AtReset = AtExit_;
   Tempmem = Tempmem_;
+  SprintF = sprintf;
   SnprintF = snprintf;
   VsnprintF = vsnprintf;
   Fopen = fopen;
   Fclose = fclose;
   Fread = fread;
   Fseek = fseek;
+  PrintF = printf;
   FprintF = fprintf;
   StdErr = stderr;
+  Qsortv = qsortv;
 }
 
-Library::Library(const char *name) : impl_(new LibraryImpl(name)) {}
+Library::Library(const char *name) : impl_(new LibraryImpl(name)) {
+  library = this;
+}
+
+Library::~Library() {
+  library = 0;
+}
 
 void Library::Load() { impl_->Load(); }
 
@@ -159,6 +174,96 @@ const func_info *Library::GetFunction(const char *name) const {
 
 const Handler *Library::GetHandler(const char *name) const {
   return impl_->GetHandler(name);
+}
+
+class TableImpl : public TableInfo {
+ private:
+  int num_rows_;
+  std::vector<char*> strings_;
+  std::vector<char*> colnames_;
+  std::vector<DbCol> cols_;
+  std::deque<double> dvals_;
+  std::deque<char*> svals_;
+
+  void AddString(std::vector<char*>& strings, const char *str);
+
+  int AddRows(DbCol *, long nrows) {
+    num_rows_ += nrows;
+    return 0;
+  }
+
+  static int AddRows(TableInfo *ti, DbCol *cols, long nrows) {
+    return static_cast<TableImpl*>(ti)->AddRows(cols, nrows);
+  }
+
+  struct Deleter {
+    void operator()(char *ptr) { delete [] ptr; }
+  };
+
+ public:
+  TableImpl(const char *table_name, const char *str1,
+      const char *str2, const char *str3);
+
+  ~TableImpl();
+
+  void AddCol(const char *name);
+
+  int num_rows() const { return num_rows_; }
+
+  const char *GetString(int col) const {
+    return svals_[col];
+  }
+};
+
+void TableImpl::AddString(std::vector<char*>& strings, const char *str) {
+  char *copy = new char[std::strlen(str) + 1];
+  std::strcpy(copy, str);
+  strings.push_back(copy);
+}
+
+TableImpl::TableImpl(const char *table_name, const char *str1,
+    const char *str2, const char *str3) : TableInfo(), num_rows_(0) {
+  TableInfo::AddRows = AddRows;
+  tname = const_cast<char*>(table_name);
+  AddString(strings_, str1);
+  AddString(strings_, str2);
+  AddString(strings_, str3);
+  nstrings = strings_.size();
+  strings = &strings_[0];
+}
+
+TableImpl::~TableImpl() {
+  for_each(strings_.begin(), strings_.end(), Deleter());
+  for_each(colnames_.begin(), colnames_.end(), Deleter());
+}
+
+void TableImpl::AddCol(const char *name) {
+  DbCol col = {};
+  svals_.push_back(0);
+  dvals_.push_back(0);
+  col.dval = &dvals_.back();
+  col.sval = &svals_.back();
+  cols_.push_back(col);
+  AddString(colnames_, name);
+  ++ncols;
+  colnames = &colnames_[0];
+  cols = &cols_[0];
+}
+
+Table::Table(const char *table_name, const char *str1,
+    const char *str2, const char *str3) :
+  impl_(new TableImpl(table_name, str1, str2, str3)) {
+}
+
+int Table::num_rows() const { return impl_->num_rows(); }
+
+void Table::AddCol(const char *name) { return impl_->AddCol(name); }
+
+const char *Table::GetString(int col) const { return impl_->GetString(col); }
+
+int Handler::Read(Table &t) const {
+  t.impl_->TMI = lib_->impl();
+  return read_(lib_->impl(), t.impl_.get());
 }
 
 const Type GetType<void>::VALUE = VOID;

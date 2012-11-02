@@ -42,10 +42,12 @@ using fun::FunctionInfo;
 using fun::FunctionPointer;
 using fun::FunctionWithTypes;
 using fun::GetType;
+using fun::Handler;
 using fun::Library;
 using fun::MakeArgs;
 using fun::Tuple;
 using fun::Variant;
+using fun::Table;
 
 namespace {
 
@@ -61,6 +63,11 @@ TEST(FunctionTest, Library) {
   EXPECT_STREQ(fi->name, "foo");
   EXPECT_EQ(42, fi->funcp(nullptr));
   EXPECT_EQ("duplicate function 'bar'", lib.error());
+  EXPECT_TRUE(lib.GetHandler("nonexistent") == nullptr);
+  const Handler *handler = lib.GetHandler("testhandler");
+  EXPECT_TRUE(handler != nullptr);
+  Table t("", "", "", "");
+  handler->Read(t);
 }
 
 TEST(FunctionTest, Variant) {

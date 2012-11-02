@@ -22,12 +22,18 @@
 
 #include "solvers/funcadd.h"
 
-static double testfunc(arglist *) {
+static double TestFunc(arglist *) {
   return 42;
 }
 
+static int TestHandler(AmplExports *, TableInfo *) {
+  return 0;
+}
+
 extern "C" void funcadd_ASL(AmplExports *ae) {
-  addfunc("foo", testfunc, FUNCADD_REAL_VALUED, 0, 0);
-  addfunc("bar", testfunc, FUNCADD_REAL_VALUED, 0, 0);
-  addfunc("bar", testfunc, FUNCADD_REAL_VALUED, 0, 0);
+  addfunc("foo", TestFunc, FUNCADD_REAL_VALUED, 0, 0);
+  addfunc("bar", TestFunc, FUNCADD_REAL_VALUED, 0, 0);
+  addfunc("bar", TestFunc, FUNCADD_REAL_VALUED, 0, 0);
+  add_table_handler(TestHandler, TestHandler,
+      const_cast<char*>("testhandler\n"), 0, 0);
 }

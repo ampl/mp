@@ -24,6 +24,7 @@
 #define TESTS_FUNCTION_H_
 
 #include <algorithm>
+#include <deque>
 #include <iosfwd>
 #include <limits>
 #include <memory>
@@ -39,11 +40,14 @@
 #endif
 
 struct func_info;
+struct AmplExports;
+struct TableInfo;
 
 namespace fun {
 
+class Handler;
 class LibraryImpl;
-class Handler {};
+class TableImpl;
 
 // An AMPL function library.
 class Library {
@@ -56,6 +60,7 @@ class Library {
 
  public:
   Library(const char *name);
+  ~Library();
 
   LibraryImpl *impl() { return impl_.get(); }
 
@@ -66,6 +71,42 @@ class Library {
   const func_info *GetFunction(const char *name) const;
 
   const Handler *GetHandler(const char *name) const;
+};
+
+class Table {
+ private:
+  std::auto_ptr<TableImpl> impl_;
+
+  friend class Handler;
+
+  // Do not implement.
+  Table(const Table &);
+  Table &operator=(const Table &);
+
+ public:
+  Table(const char *table_name, const char *str1,
+      const char *str2, const char *str3);
+
+  int num_rows() const;
+
+  void AddCol(const char *name);
+
+  const char *GetString(int col) const;
+};
+
+typedef int (*TableHandlerFunc)(AmplExports *ae, TableInfo *ti);
+
+class Handler {
+ private:
+  Library *lib_;
+  TableHandlerFunc read_;
+  TableHandlerFunc write_;
+
+ public:
+  Handler(Library &lib, TableHandlerFunc read, TableHandlerFunc write) :
+    lib_(&lib), read_(read), write_(write) {}
+
+  int Read(Table &t) const;
 };
 
 enum Type { VOID, INT, UINT, DOUBLE, POINTER };
@@ -592,7 +633,8 @@ double Differentiator::operator()(
     *error = left_error;
     return left_deriv;
   }
-  if ((!(std::fabs(left_deriv - right_deriv) / (std::fabs(left_deriv) + 1) <= 1e-2) &&
+  if ((!(std::fabs(left_deriv - right_deriv) /
+      (std::fabs(left_deriv) + 1) <= 1e-2) &&
       left_error / (std::fabs(left_deriv) + 1) < 0.05) ||
           (isnan(left_deriv) && isnan(right_deriv))) {
     if (detected_nan)

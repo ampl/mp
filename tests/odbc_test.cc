@@ -20,17 +20,46 @@
  Author: Victor Zverovich
  */
 
+#include <cstring>
+#include <algorithm>
+#include <deque>
+#include <vector>
+
 #include "gtest/gtest.h"
 #include "tests/function.h"
 #include "solvers/asl.h"
 #include "tests/config.h"
 
+using fun::Table;
+
 namespace {
 
-TEST(ODBCTest, Load) {
-  fun::Library lib("../tables/ampltabl.dll");
-  lib.Load();
-  EXPECT_EQ("", lib.error());
-  EXPECT_TRUE(lib.GetHandler("odbc") != nullptr);
+class ODBCTest : public ::testing::Test {
+ protected:
+  static fun::Library lib_;
+
+  static void SetUpTestCase() {
+    lib_.Load();
+  }
+};
+
+fun::Library ODBCTest::lib_("../tables/ampltabl.dll");
+
+TEST_F(ODBCTest, Loaded) {
+  EXPECT_EQ("", lib_.error());
+  EXPECT_TRUE(lib_.GetHandler("odbc"));
 }
+
+TEST_F(ODBCTest, ReadMySQL) {
+  const fun::Handler *handler = lib_.GetHandler("odbc");
+  Table t("", "ODBC",
+      "DRIVER={MySQL ODBC 5.2 Driver}; SOCKET={/var/run/mysqld/mysqld.sock};",
+      "SQL=SELECT VERSION();");
+  t.AddCol("VERSION()");
+  handler->Read(t);
+  EXPECT_EQ(1, t.num_rows());
+  EXPECT_TRUE(t.GetString(0) != nullptr);
+}
+
+// TODO: more tests
 }
