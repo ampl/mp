@@ -37,13 +37,14 @@ cxx_test_with_flags(function_test "" "gtest;function"
 
 if (HAVE_GSL)
   include_directories(${GSL_BINARY_DIR})
-  cxx_test_with_flags(gsl_test "" "gtest;function" test_main.cc gsl_test.cc)
-  target_link_libraries(gsl_test gsl gslcblas)
+  cxx_test_with_flags(gsl_test ""
+    "gtest;function;gsl;gslcblas" test_main.cc gsl_test.cc)
 endif ()
 
 find_package(ODBC)
 if (ODBC_FOUND)
-  cxx_test_with_flags(odbc_test "" "gtest;function" test_main.cc odbc_test.cc)
+  cxx_test_with_flags(odbc_test ""
+    "gtest;function;${ODBC_LIBRARIES}" test_main.cc odbc_test.cc)
 endif ()
 
 add_subdirectory(ilogcp)
