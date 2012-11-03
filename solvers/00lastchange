@@ -1,4 +1,3 @@
-20121016
-  indic_cons.c:  fix some bugs (likely faults) that bit on problems
-with many logical constraints (more than 6000 in the example behind
-this bug fix).
+20121101
+  npqcheck.c: call get_vminv_ASL() if necessary to prevent vminv
+from being inappropriately freed in the subsequent free_block(S).
