@@ -25,6 +25,11 @@
 #include <deque>
 #include <vector>
 
+#ifdef _WIN32
+// sql.h needs HWND on Windows.
+# include <windows.h>
+#endif
+
 #include <sql.h>
 #include <sqlext.h>
 
