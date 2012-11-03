@@ -28,6 +28,8 @@
 #include <sql.h>
 #include <sqlext.h>
 
+#undef VOID
+
 #include "gtest/gtest.h"
 #include "tests/function.h"
 #include "solvers/asl.h"
