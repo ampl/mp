@@ -620,6 +620,9 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, fint **colqp, real **delsqp)
 
 	memset(S = &SS, 0, sizeof(Static));
 	SS.asl = asl;
+	if (asl->i.vmap && !asl->i.vminv)
+		/* keep vminv from being lost in free_blocks(S) below */
+		get_vminv_ASL(a);
 	M1state1 = asl->i.Mbnext;
 	M1state2 = asl->i.Mblast;
 	s_x = x = (double *)Malloc(n_var*(sizeof(double)+2*sizeof(fint)));

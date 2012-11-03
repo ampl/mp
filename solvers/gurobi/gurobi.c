@@ -1299,7 +1299,7 @@ keywds[] = {	/* must be in alphabetical order */
 
  static Option_Info
 Oinfo = { "gurobi", verbuf, "gurobi_options", keywds, nkeywds, 0, verbuf,
-	   0,0,0,0,0, 20121006 };
+	   0,0,0,0,0, 20121101 };
 
  static void
 enamefailed(GRBenv *env, const char *what, const char *name)
@@ -2467,8 +2467,15 @@ main(int argc, char **argv)
 				&sosbeg, &sosind, &sosref))) {
 			nv = n_var;
 			nc = n_con;
+			nz = nzc;
 			nvr = nv + nrange;
+			nzcr = nz + nrange;
 			lvi = nbv + niv;
+			Ar = A + nz;
+			rnr = A_rownos + nz;
+			lxr = LUv + nv;
+			uxr = Uvx + nv;
+			rsta = dims.cstat + nv;
 			}
 		}
 #if GRB_VERSION_MAJOR >= 5 /*{*/

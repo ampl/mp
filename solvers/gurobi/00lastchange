@@ -1,3 +1,4 @@
-20121006
-  Add keyword "version", to report version details before solving
-the problem.
+20121101
+  Fix a bug with problems involving both nonconvex piecewise-linear
+terms and range constraints.  The adjustments for ranges were wrong,
+resulting in the error message "Index is out of range" or other trouble.
