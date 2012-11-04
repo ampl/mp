@@ -145,8 +145,8 @@ NfE/nd+ZeGE=
 -----END PGP SIGNATURE-----
 -----BEGIN PGP SIGNED MESSAGE-----
 
-# netlib-utk master Sat Oct 20 03:10:09 EDT 2012
-pvpsZLwbmTOYoHrF+AGC+Q	00lastchange
+# netlib-utk master Sat Nov 3 03:10:06 EST 2012
+dYNBF2mO8VeBj/KiUuo6fw	00lastchange
 liuYYMQudXHqZpEKRGHQSg	README
 qOEvOeNxr+tkYXE2CClZWw	README.SGI
 hP/T3OfgkqAwrLqbG8BqQw	README.f77
@@ -159,7 +159,7 @@ G6vjFVw1aR9lWi5Yl/OtiQ	arithchk.c
 NF4XEmz4YnKXVSKvXsC0bA	asl.h
 cWsQSHLhURv8mvXbE/g9DQ	asl_pfg.h
 p057f6BlUh9XCGR26M/IUA	asl_pfgh.h
-hxIW7WRkF75Aa1z0CiWT2g	asldate.c
+am9lBeCb522dxUT8hW22KQ	asldate.c
 MwUvqn7mXvmkvc1afriAnQ	atof.c
 VPgRhBjxjjSUuv9+aVsibA	auxinfo.c
 HcQd+byMFVyPt/z7Djmj+w	avltree.c
@@ -167,7 +167,7 @@ TiTwOwAKkrb9rFuWZPf82A	avltree.h
 Lg714wh1GAnDfWqStFsPbQ	b_search.c
 JX+T6A1nVtQxlH2/gHjQ7w	basename.c
 B9aysZxnc2iCJEcny28lrA	bscanf.c
-ZqiQ0OrxdeCE/R0W/+rppw	changes
+Vx0S/SSet3EiYlQ5AmDIhg	changes
 iaV5+h9JhXta8i63eG8/QA	com2eval.c
 ViDtWeMTFSx1mxx/G621+Q	comeval.c
 f3BjU/9mf3+4mq1Q2h6CAw	comptry.bat
@@ -239,7 +239,7 @@ QNI8Q0nKAksFmlXWQj+tUw	names.c
 0jtewnOHKvucq60VO6iz8Q	nl_obj.c
 wFuhidyjMzQy5Q/+7VRABA	nlp.h
 uRfCI6ZJoV9SY5qWrTh3Jg	nlp2.h
-vgAf3YTDoQgPWNlgBav+Rw	nqpcheck.c
+AtpH7Jik5kkjb5Z5LbvWXg	nqpcheck.c
 TFJvGZNM0BoRuC4LbIoNXw	obj2val.c
 JxTiIn1Brj24RyEzCSbmFg	obj_adj.c
 twVC7rSMvKwxkdHDLv4i0w	obj_adj0.c
@@ -290,14 +290,14 @@ fKP4V5GxuMz8ZZhUUZbTxw	x2check.c
 iOcxB/spcU8eiXLk2O9qkA	xectim.c
 j5NdrTSBkS5pnfDyKD0Ezg	xp1known.c
 FAbm67iDBwtMlNOTy8jXHw	xp2known.c
-Y/65E22qX4wItxFExNYSBg	xsum0.out
+dwblwlTmYNRNe/+uUbXyCA	xsum0.out
 
 -----BEGIN PGP SIGNATURE-----
 Version: 2.6.2
 
-iQCVAwUBUIJObuFlxDEfrjtlAQF1FQQAowXNDQgUx67ZnZZvR4STeNLEPylJkV3T
-/dBv7hTVm9/gobIQ7N7TXongT31cbwnDw/v2+imOGZQdnqZJyDZjc+C7FmOLFzGB
-uoPiTieiWXvq5z4OJH0SvzcezuCboWezzmGSHBZoqjV0jHNjfLWdOztBYRRVm+DN
-gUwjvVb/tMM=
-=BouH
+iQCVAwUBUJTRfeFlxDEfrjtlAQEKJAP6AkLaCUSuu4HybTDEAnIMl4lwMqtkf1SV
+ng50hoZAfZKmNs91zX2c+Xyp/03Bk/AB1+CO/dIwW2sYIXeSghovy+gE8K9UqTkQ
+szV5rktNZvDy5cSCF2ZWpImtOHhA01hGG/u7ikL3OtR+btNnuBmZofzSRvES5SmK
+QwL+TGe8F0k=
+=3Rw5
 -----END PGP SIGNATURE-----
