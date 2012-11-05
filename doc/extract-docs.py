@@ -3,8 +3,8 @@
 
 import mmap, re
 
-with open('../solvers/amplgsl/amplgsl.c', 'r+b') as input,
-     open('amplgsl/index.rst', 'w') as output:
+output = None
+with open('../solvers/amplgsl/amplgsl.c', 'r+b') as input:
   map = mmap.mmap(input.fileno(), 0)
   for i in re.finditer(r'/\*\*(.*?)\*/', map, re.DOTALL):
     s = re.sub(r'\n +\* ?', r'\n', i.group(1))
@@ -12,8 +12,9 @@ with open('../solvers/amplgsl/amplgsl.c', 'r+b') as input,
     m = re.search(r'@file (.*)', s)
     if m:
       filename = m.group(1)
-      output.close()
-      output = open('doc/' + filename + '.rst', 'w')
+      if output:
+        output.close()
+      output = open('amplgsl/' + filename + '.rst', 'w')
       s = s[:m.start()] + s[m.end():]
     output.write(s)
   map.close()
