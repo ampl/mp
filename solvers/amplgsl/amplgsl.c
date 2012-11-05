@@ -2937,31 +2937,6 @@ WRAP_DISCRETE(gsl_ran_logarithmic_pdf, ARGS2, DEFAULT_ARGS)
 #define ADDFUNC_RANDOM(name, num_args) \
     addfunc(#name, ampl##name, FUNCADD_RANDOM_VALUED, num_args, #name);
 
-/**
- * Contents
- * ========
- *
- * .. toctree::
- *    :maxdepth: 2
- *
- *    front-matter
- *    intro
- *    elementary
- *    special
- *    rng
- *    randist
- *    freedoc
- *    gpl
- *    fdl
- *    history
- *
- * Indices and tables
- * ==================
- *
- * * :ref:`genindex`
- * * :ref:`search`
- */
-
 void funcadd_ASL(AmplExports *ae)
 {
   /* Don't call abort on error. */
