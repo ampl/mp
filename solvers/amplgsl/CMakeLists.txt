@@ -18,9 +18,3 @@ target_link_libraries(gen-decls amplgsl)
 
 add_custom_command(OUTPUT gsl.ampl COMMAND gen-decls DEPENDS amplgsl gen-decls)
 add_custom_target(gsl-ampl ALL DEPENDS gsl.ampl)
-
-add_custom_command(OUTPUT html/index.html
-  COMMAND python extract-docs.py
-  COMMAND sphinx-build -b html doc html
-  DEPENDS amplgsl.c doc/conf.py extract-docs.py)
-add_custom_target(doc DEPENDS html/index.html)

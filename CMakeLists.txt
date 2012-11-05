@@ -77,6 +77,7 @@ macro(use_dll_runtime)
   endif ()
 endmacro ()
 
+add_subdirectory(doc)
 add_subdirectory(solvers)
 add_subdirectory(tables)
 

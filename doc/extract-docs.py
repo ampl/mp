@@ -3,7 +3,8 @@
 
 import mmap, re
 
-with open('amplgsl.c', 'r+b') as input, open('doc/index.rst', 'w') as output:
+with open('../solvers/amplgsl/amplgsl.c', 'r+b') as input,
+     open('amplgsl/index.rst', 'w') as output:
   map = mmap.mmap(input.fileno(), 0)
   for i in re.finditer(r'/\*\*(.*?)\*/', map, re.DOTALL):
     s = re.sub(r'\n +\* ?', r'\n', i.group(1))
