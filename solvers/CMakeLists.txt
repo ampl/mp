@@ -134,6 +134,7 @@ add_library(amplsolver ${CMAKE_CURRENT_BINARY_DIR}/arith.h ${ASL_SOURCES})
 if (HAVE_GSL)
   add_subdirectory(amplgsl)
 endif ()
+
 add_subdirectory(gecode)
 add_subdirectory(ilogcp)
 add_subdirectory(util)
