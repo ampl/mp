@@ -3,7 +3,7 @@
 /*Targets*
 /solvers/amplgsl/Makefile
 /solvers/amplgsl/gsl-1.15
-/solvers/amplgsl/html
+/html
 /solvers/concert/Makefile
 /solvers/makefile
 /solvers/arith.h
