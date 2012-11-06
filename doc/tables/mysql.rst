@@ -46,7 +46,8 @@ MacOS X
 
    .. code-block:: bash
 
-      myodbc-installer -d -a -n "MySQL" -t "DRIVER=/usr/local/bin/libmyodbc5w.so"
+      $ sudo myodbc-installer -d -a -n "MySQL" \
+          -t "DRIVER=/usr/local/bin/libmyodbc5w.so"
 
    ``libmyodbc5w.so`` is the name of the driver library that you installed
    in the previous step. You might need to change it if you are installing a
