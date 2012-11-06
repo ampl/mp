@@ -1,0 +1,12 @@
+#!/bin/sh
+# This script builds the HTML documentation and commits it to the
+# gh-pages branch.
+
+set -e
+cmake .
+make doc
+git checkout gh-pages
+rm -rf doc
+mv html doc
+git add -a doc
+git commit -m 'Update documentation'
