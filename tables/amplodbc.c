@@ -2150,7 +2150,8 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 		 ||  i == SQL_SUCCESS_WITH_INFO)
 			goto select_worked;
 #endif
-		sprintf(sbuf = (char*)TM(L + 32), "SELECT ALL * FROM \"%s\"", tname);
+		sprintf(sbuf = (char*)TM(L + 32), "SELECT ALL * FROM %c%s%c",
+				h.quote, tname, h.quote);
 		}
 	if (prc(&h, "SQLPrepare", SQLPrepare(hs = h.hs, UC sbuf, SQL_NTS))) {
 		if (s) {
