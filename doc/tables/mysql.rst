@@ -38,8 +38,19 @@ Other distributions
 MacOS X
 ~~~~~~~
 
-#. Install and register the MySQL Connector/ODBC as described `here
-   <http://dev.mysql.com/doc/refman/5.1/en/connector-odbc-installation.html#connector-odbc-installation-binary-macosx>`__.
+#. Install the MySQL Connector/ODBC as described `here
+   <http://dev.mysql.com/doc/refman/5.1/en/connector-odbc-installation.html#connector-odbc-installation-binary-macosx>`__
+   skipping the outdated last part (driver registration).
+
+#. Register the driver:
+
+   .. code-block:: bash
+
+      myodbc-installer -d -a -n "MySQL" -t "DRIVER=/usr/local/bin/libmyodbc5w.so"
+
+   ``libmyodbc5w.so`` is the name of the driver library that you installed
+   in the previous step. You might need to change it if you are installing a
+   different version of the driver.
 
 Windows
 ~~~~~~~
