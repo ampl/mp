@@ -8,5 +8,5 @@ make doc
 git checkout gh-pages
 rm -rf doc
 mv html doc
-git add -a doc
+git add --all doc
 git commit -m 'Update documentation'
