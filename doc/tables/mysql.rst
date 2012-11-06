@@ -121,6 +121,22 @@ and writes the solution back to the database:
 
 Note that the same table ``dietFoods`` is used both for input and output.
 
+Running the ``diet-mysql.run`` script with ampl shows that data connection
+is working properly and the problem is easily solved:
+
+   .. code-block:: bash
+
+      $ ampl diet-mysql.run
+      MINOS 5.51: optimal solution found.
+      13 iterations, objective 118.0594032
+
+You can use various database tools such as `MySQL workbench
+<https://www.mysql.com/products/workbench/>`__ or `MySQL command-line tool
+<http://dev.mysql.com/doc/refman/5.5/en/mysql.html>`__ to view the data
+exported to the database from the AMPL script:
+
+.. image:: ../img/mysql-workbench.png
+
 TODO: DSN example
 
 SQL statements
