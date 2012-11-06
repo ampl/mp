@@ -5,7 +5,6 @@
 set -e
 cmake .
 make doc
-git fetch -t git@github.com:vitaut/ampl.git +gh-pages
 git checkout gh-pages
 rm -rf doc
 mv html doc
