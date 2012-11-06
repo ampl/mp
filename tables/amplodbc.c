@@ -85,6 +85,7 @@ HInfo {
 	char	*Missing;
 	real	*dd;
 	UnknownType *ut;
+	SQLCHAR quote; /* A quote character for identifiers. */
 	} HInfo;
 
  enum { /* for wrmode */ wr_drop=0, wr_append=1 };
@@ -1149,7 +1150,7 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 		*rc = DB_Error;
 		return 0;
 		}
-	if (prc(h, "SQLAllocConnect", SQLAllocConnect(h->env,&h->hc))) {
+	if (prc(h, "SQLAllocConnect", SQLAllocConnect(h->env, &h->hc))) {
  unexpected:
 		TI->Errmsg = "Unexpected ODBC failure.";
 		goto eret;
@@ -1394,6 +1395,13 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 		goto eret;
 		}
  connected:
+	{
+		SQLCHAR quote[2] = "\"";
+		SQLSMALLINT length = 0;
+		prc(h, "SQLGetInfo", SQLGetInfo(h->hc, SQL_IDENTIFIER_QUOTE_CHAR,
+				quote, sizeof(quote) / sizeof(*quote), &length));
+		h->quote = quote[0];
+	}
 	if (prc(h, "SQLAllocStmt", SQLAllocStmt(h->hc,&h->hs)))
 		goto unexpected;
 	if (verbose && cs[0])
@@ -1749,7 +1757,8 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	for(i1 = 0; i1 < nc; i1++) {
 		i = p(i1);
 		db = db0 + i;
-		j += sprintf(ct+j, "%s\"%s\" ", i1 ? ", " : "", cn[i]);
+		j += sprintf(ct+j, "%s%c%s%c ", i1 ? ", " : "",
+				h.quote, cn[i], h.quote);
 		if (tsq && tsq[i])
 			j += sprintf(ct+j, "%s", ds->ttype);
 		else if (db->sval)
