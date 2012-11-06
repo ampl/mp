@@ -1,5 +1,5 @@
-Connecting AMPL to a MySQL database
-===================================
+Connecting AMPL to MySQL
+========================
 
 Installation
 ------------
@@ -53,7 +53,7 @@ Usage
 We'll demonstrate usage of MySQL with AMPL on a small example.
 For this example we use the diet problem which finds a combination of foods
 that satisfies certain nutritional requirements. It is described in
-`Chapter 2 of the AMPL book <http://www.ampl.com/BOOK/CHAPTERS/05-tut2.pdf>`__
+`Chapter 2 of the AMPL book <http://www.ampl.com/BOOK/CHAPTERS/05-tut2.pdf>`__.
 
 We assume that you've installed the MySQL ODBC driver using
 the instructions above and have access to the MySQL ``test`` database.
@@ -67,9 +67,9 @@ and import it to MySQL:
       $ mysql < diet-mysql.sql
 
 Then download the model file `diet.mod
-<https://raw.github.com/vitaut/ampl/master/models/tables/diet-mysql.mod>`__
-and the script file `diet.run
-<https://raw.github.com/vitaut/ampl/master/models/tables/diet-mysql.sql>`__.
+<https://raw.github.com/vitaut/ampl/master/models/tables/diet.mod>`__
+and the script file `diet-mysql.run
+<https://raw.github.com/vitaut/ampl/master/models/tables/diet-mysql.run>`__.
 
 The script file first reads the model:
 
