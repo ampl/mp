@@ -137,8 +137,6 @@ exported to the database from the AMPL script:
 
 .. image:: ../img/mysql-workbench.png
 
-TODO: DSN example
-
 SQL statements
 --------------
 
@@ -152,3 +150,9 @@ the ANSI standard quote character (``"``) in MySQL by setting the SQL mode to
 `ANSI_QUOTES
 <http://dev.mysql.com/doc/refman/5.1/en/server-sql-mode.html#sqlmode_ansi_quotes>`__.
 
+Example:
+
+   .. code-block:: none
+
+      table Foods "ODBC" "DRIVER=MySQL; DATABASE=test;"
+         "SQL=SELECT `FOOD`, `cost` FROM `Foods`;": [FOOD], cost;
