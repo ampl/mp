@@ -64,7 +64,7 @@ and import it to MySQL:
 
    .. code-block:: bash
 
-      $ mysql < diet-mysql.sql
+      $ mysql test < diet-mysql.sql
 
 Then download the model file `diet.mod
 <https://raw.github.com/vitaut/ampl/master/models/tables/diet.mod>`__
