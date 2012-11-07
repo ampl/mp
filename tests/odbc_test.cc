@@ -62,7 +62,7 @@ class Env {
   Env();
   ~Env();
 
-  bool FindDriver(const char *name) const;
+  std::string FindDriver(const char *name) const;
 };
 
 bool Env::GetDiag(SQLSMALLINT rec_number, SQLCHAR *sql_state,
@@ -122,7 +122,7 @@ Env::~Env() {
   }
 }
 
-bool Env::FindDriver(const char *name) const {
+std::string Env::FindDriver(const char *name) const {
   for (SQLUSMALLINT direction = SQL_FETCH_FIRST;; direction = SQL_FETCH_NEXT) {
     const int BUFFER_SIZE = 256;
     SQLCHAR desc[BUFFER_SIZE] = "", attr[BUFFER_SIZE] = "";
@@ -131,12 +131,13 @@ bool Env::FindDriver(const char *name) const {
         desc, BUFFER_SIZE, &desc_length, attr, BUFFER_SIZE, &attr_length);
     if (ret == SQL_NO_DATA) break;
     Check("SQLDrivers", ret);
+    std::string driver_name(reinterpret_cast<char*>(desc));
     SQLCHAR *desc_end = desc + std::min<int>(BUFFER_SIZE, desc_length);
     std::transform(desc, desc_end, desc, std::ptr_fun<int, int>(std::tolower));
-    return std::search(desc, desc_end, name, name + std::strlen(name)) !=
-        desc_end;
+    if (std::search(desc, desc_end, name, name + std::strlen(name)) != desc_end)
+        return driver_name;
   }
-  return false;
+  return std::string();
 }
 
 class ODBCTest : public ::testing::Test {
@@ -160,14 +161,14 @@ TEST_F(ODBCTest, Loaded) {
 }
 
 TEST_F(ODBCTest, ReadMySQL) {
-  if (!Env().FindDriver("mysql")) {
+  std::string driver_name(Env().FindDriver("mysql"));
+  if (driver_name.empty()) {
     std::cerr << "Skipping MySQL test." << std::endl;
     return;
   }
-  // TODO: detect driver name
-  Table t("", "ODBC",
-      "DRIVER=MySQL; SERVER=" SERVER "; DATABASE=test;",
-      "SQL=SELECT VERSION();");
+  std::string connection(
+		  "DRIVER={" + driver_name + "}; SERVER=" SERVER "; DATABASE=test;");
+  Table t("", "ODBC", connection.c_str(), "SQL=SELECT VERSION();");
   t.AddCol("VERSION()");
   Read(t);
   EXPECT_EQ(1, t.num_rows());
