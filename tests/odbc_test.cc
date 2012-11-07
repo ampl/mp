@@ -41,6 +41,8 @@
 #include "solvers/asl.h"
 #include "tests/config.h"
 
+#define SERVER "callisto.local"
+
 using fun::Table;
 
 namespace {
@@ -162,8 +164,9 @@ TEST_F(ODBCTest, ReadMySQL) {
     std::cerr << "Skipping MySQL test." << std::endl;
     return;
   }
+  // TODO: detect driver name
   Table t("", "ODBC",
-      "DRIVER={MySQL ODBC 5.2 Driver}; SOCKET={/var/run/mysqld/mysqld.sock};",
+      "DRIVER=MySQL; SERVER=" SERVER "; DATABASE=test;",
       "SQL=SELECT VERSION();");
   t.AddCol("VERSION()");
   Read(t);
