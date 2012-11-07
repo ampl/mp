@@ -101,7 +101,7 @@ connection string.
       param ConnectionStr symbolic = "DRIVER=MySQL; DATABASE=test;";
 
 The driver name is chosen automatically during installation on Windows,
-so if you are using this OS or have chosen a driver name other that ``MySQL``
+so if you are using this OS or have chosen a driver name other than ``MySQL``
 you'll have to specify it instead of ``MySQL`` in the connection string.
 To find the driver name on Windows run ``odbcad32.exe``, ODBC Data Source
 Administrator, go to the ``Drivers`` tab where all the installed drivers are
