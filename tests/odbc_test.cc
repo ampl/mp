@@ -167,7 +167,7 @@ TEST_F(ODBCTest, ReadMySQL) {
     return;
   }
   std::string connection(
-		  "DRIVER={" + driver_name + "}; SERVER=" SERVER "; DATABASE=test;");
+      "DRIVER={" + driver_name + "}; SERVER=" SERVER "; DATABASE=test;");
   Table t("", "ODBC", connection.c_str(), "SQL=SELECT VERSION();");
   t.AddCol("VERSION()");
   Read(t);
