@@ -68,7 +68,7 @@ For this example we use the diet problem which finds a combination of foods
 that satisfies certain nutritional requirements. It is described in
 `Chapter 2 of the AMPL book <http://www.ampl.com/BOOK/CHAPTERS/05-tut2.pdf>`__.
 
-We assume that you've installed the MySQL ODBC driver using
+We assume that you've already installed the MySQL ODBC driver using
 the instructions above and have access to the MySQL ``test`` database.
 
 First download the data for the diet problem `diet-mysql.sql
@@ -93,12 +93,29 @@ The script file first reads the model:
 Then it defines a parameter to hold a connection string. Since the connection
 parameters are the same for all table declarations in our example this avoids
 unnecessary duplication. In this case we specify all the connection parameters
-explicitly, instead you can use a DSN file name or ``"DSN=<dsn-name>"``
-as a connection string.
+explicitly, instead you can use a DSN file name or ``"DSN=<dsn-name>"`` as a
+connection string.
 
    .. code-block:: none
 
       param ConnectionStr symbolic = "DRIVER=MySQL; DATABASE=test;";
+
+The driver name is chosen automatically during installation on Windows,
+so if you are using this OS or have chosen a driver name other that ``MySQL``
+you'll have to specify it instead of ``MySQL`` in the connection string.
+To find the driver name on Windows run ``odbcad32.exe``, ODBC Data Source
+Administrator, go to the ``Drivers`` tab where all the installed drivers are
+listed and find the one containing ``MySQL``:
+
+.. image:: ../img/odbcad32.png
+
+A driver name containing spaces should be surrounded with ``{`` and ``}``
+in a connection string, for example:
+
+   .. code-block:: none
+
+      param ConnectionStr symbolic =
+        "DRIVER={MySQL ODBC 5.2w Driver}; DATABASE=test;";
 
 Next there are several table declarations that use the ``ConnectionStr``
 parameter defined previously:
