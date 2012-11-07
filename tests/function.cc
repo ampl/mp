@@ -154,6 +154,7 @@ LibraryImpl::LibraryImpl(const char *name) : AmplExports(), name_(name) {
   FprintF = fprintf;
   StdErr = stderr;
   Qsortv = qsortv;
+  Getenv = getenv;
 }
 
 Library::Library(const char *name) : impl_(new LibraryImpl(name)) {
