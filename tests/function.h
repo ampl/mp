@@ -59,7 +59,7 @@ class Library {
   std::auto_ptr<LibraryImpl> impl_;
 
  public:
-  Library(const char *name);
+  explicit Library(const char *name);
   ~Library();
 
   LibraryImpl *impl() { return impl_.get(); }
@@ -103,10 +103,10 @@ class Handler {
   TableHandlerFunc write_;
 
  public:
-  Handler(Library &lib, TableHandlerFunc read, TableHandlerFunc write) :
-    lib_(&lib), read_(read), write_(write) {}
+  Handler(Library *lib, TableHandlerFunc read, TableHandlerFunc write) :
+    lib_(lib), read_(read), write_(write) {}
 
-  int Read(Table &t) const;
+  int Read(Table *t) const;
 };
 
 enum Type { VOID, INT, UINT, DOUBLE, POINTER };
@@ -386,8 +386,8 @@ FunctionPointer4<Arg1, Arg2, Arg3, Arg4, Result>
 
 template <typename Arg1, typename Arg2,
   typename Arg3, typename Arg4, typename Arg5, typename Result>
-class FunctionPointer5 :
-  public FunctionWithTypes<Arg1, Arg2, Arg3, Arg4, Arg5> {
+class FunctionPointer5
+  : public FunctionWithTypes<Arg1, Arg2, Arg3, Arg4, Arg5> {
  private:
   Result (*f_)(Arg1, Arg2, Arg3, Arg4, Arg5);
 
@@ -410,8 +410,8 @@ FunctionPointer5<Arg1, Arg2, Arg3, Arg4, Arg5, Result>
 
 template <typename Arg1, typename Arg2, typename Arg3,
   typename Arg4, typename Arg5, typename Arg6, typename Result>
-class FunctionPointer6 :
-  public FunctionWithTypes<Arg1, Arg2, Arg3, Arg4, Arg5, Arg6> {
+class FunctionPointer6
+  : public FunctionWithTypes<Arg1, Arg2, Arg3, Arg4, Arg5, Arg6> {
  private:
   Result (*f_)(Arg1, Arg2, Arg3, Arg4, Arg5, Arg6);
 
@@ -710,8 +710,8 @@ class Function {
   const FunctionInfo *info_;
 
  public:
-  Function(Library &lib, const func_info *fi, const FunctionInfo *info) :
-    lib_(&lib), fi_(fi), info_(info) {}
+  Function(Library *lib, const func_info *fi, const FunctionInfo *info) :
+    lib_(lib), fi_(fi), info_(info) {}
 
   const char *name() const;
   int nargs() const;

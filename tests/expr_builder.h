@@ -29,7 +29,7 @@
 namespace ampl {
 
 class ExprBuilder {
-private:
+ private:
   std::vector<expr*> exprs_;
 
   template <typename T>
@@ -52,7 +52,7 @@ private:
   template <typename Result, typename Arg>
   Result AddIterated(int opcode, Arg arg1, Arg arg2, Arg arg3 = Arg());
 
-public:
+ public:
   ~ExprBuilder();
 
   // Adds a new unary numeric expression.

@@ -26,18 +26,11 @@
 #include <deque>
 #include <vector>
 
-#ifdef _WIN32
-// sql.h needs HWND on Windows.
-# include <windows.h>
-#endif
-
-#include <sql.h>
-#include <sqlext.h>
-
 #undef VOID
 
 #include "gtest/gtest.h"
 #include "tests/function.h"
+#include "tests/odbc.h"
 #include "solvers/asl.h"
 #include "tests/config.h"
 
@@ -47,99 +40,6 @@ using fun::Table;
 
 namespace {
 
-// An ODBC environment.
-class Env {
- private:
-  SQLHENV env_;
-
-  bool GetDiag(SQLSMALLINT rec_number, SQLCHAR *sql_state,
-      SQLINTEGER &native_error, std::vector<SQLCHAR> &message,
-      std::ostream &os) const;
-
-  bool Check(const char *func_name, SQLRETURN ret) const;
-
- public:
-  Env();
-  ~Env();
-
-  std::string FindDriver(const char *name) const;
-};
-
-bool Env::GetDiag(SQLSMALLINT rec_number, SQLCHAR *sql_state,
-    SQLINTEGER &native_error, std::vector<SQLCHAR> &message,
-    std::ostream &os) const {
-  SQLSMALLINT length = 0;
-  SQLRETURN ret = SQLGetDiagRec(SQL_HANDLE_ENV,
-          env_, rec_number, sql_state, &native_error, 0, 0, &length);
-  if (ret == SQL_NO_DATA)
-    return false;
-  if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
-    os << "SQLGetDiagRec returned error code " << ret << "\n";
-    return false;
-  }
-  message.resize(length + 1);
-  ret = SQLGetDiagRec(SQL_HANDLE_ENV, env_, rec_number,
-          sql_state, &native_error, &message[0], length + 1, &length);
-  if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
-    os << "SQLGetDiagRec returned error code " << ret << "\n";
-    return false;
-  }
-  return true;
-}
-
-bool Env::Check(const char *func_name, SQLRETURN ret) const {
-  if (ret == SQL_SUCCESS)
-    return true;
-  std::ostringstream os;
-  os << func_name << " returned error code " << ret << "\n";
-  SQLCHAR sql_state[6] = "";
-  SQLINTEGER native_error = 0;
-  std::vector<SQLCHAR> message;
-  for (SQLSMALLINT i = 1;
-      GetDiag(i, sql_state, native_error, message, os); ++i) {
-    os << "SQLState: " << sql_state << "\n";
-    os << "Native Error: " << native_error << "\n";
-    os << "Message: " << &message[0] << "\n";
-  }
-  if (ret != SQL_SUCCESS_WITH_INFO)
-    throw std::runtime_error(os.str());
-  std::cout << os.str();
-  return true;
-}
-
-Env::Env() : env_(SQL_NULL_HANDLE) {
-  Check("SQLAllocHandle", SQLAllocHandle(
-      SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env_));
-  Check("SQLSetEnvAttr", SQLSetEnvAttr(env_, SQL_ATTR_ODBC_VERSION,
-      reinterpret_cast<SQLPOINTER>(SQL_OV_ODBC3), 0));
-}
-
-Env::~Env() {
-  try {
-    Check("SQLFreeHandle", SQLFreeHandle(SQL_HANDLE_ENV, env_));
-  } catch (const std::exception &e) {
-    std::cout << e.what();
-  }
-}
-
-std::string Env::FindDriver(const char *name) const {
-  for (SQLUSMALLINT direction = SQL_FETCH_FIRST;; direction = SQL_FETCH_NEXT) {
-    const int BUFFER_SIZE = 256;
-    SQLCHAR desc[BUFFER_SIZE] = "", attr[BUFFER_SIZE] = "";
-    SQLSMALLINT desc_length = 0, attr_length = 0;
-    SQLRETURN ret = SQLDrivers(env_, direction,
-        desc, BUFFER_SIZE, &desc_length, attr, BUFFER_SIZE, &attr_length);
-    if (ret == SQL_NO_DATA) break;
-    Check("SQLDrivers", ret);
-    std::string driver_name(reinterpret_cast<char*>(desc));
-    SQLCHAR *desc_end = desc + std::min<int>(BUFFER_SIZE, desc_length);
-    std::transform(desc, desc_end, desc, std::ptr_fun<int, int>(std::tolower));
-    if (std::search(desc, desc_end, name, name + std::strlen(name)) != desc_end)
-        return driver_name;
-  }
-  return std::string();
-}
-
 class ODBCTest : public ::testing::Test {
  protected:
   static fun::Library lib_;
@@ -148,7 +48,7 @@ class ODBCTest : public ::testing::Test {
     lib_.Load();
   }
 
-  void Read(Table &t) {
+  void Read(Table *t) {
     lib_.GetHandler("odbc")->Read(t);
   }
 };
@@ -161,7 +61,7 @@ TEST_F(ODBCTest, Loaded) {
 }
 
 TEST_F(ODBCTest, ReadMySQL) {
-  std::string driver_name(Env().FindDriver("mysql"));
+  std::string driver_name(odbc::Env().FindDriver("mysql"));
   if (driver_name.empty()) {
     std::cerr << "Skipping MySQL test." << std::endl;
     return;
@@ -170,10 +70,10 @@ TEST_F(ODBCTest, ReadMySQL) {
       "DRIVER={" + driver_name + "}; SERVER=" SERVER "; DATABASE=test;");
   Table t("", "ODBC", connection.c_str(), "SQL=SELECT VERSION();");
   t.AddCol("VERSION()");
-  Read(t);
+  Read(&t);
   EXPECT_EQ(1, t.num_rows());
   EXPECT_TRUE(t.GetString(0) != nullptr);
 }
 
-// TODO: more tests
+// TODO(viz): more tests
 }

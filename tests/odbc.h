@@ -1,5 +1,5 @@
 /*
- A test AMPL function library.
+ A simple C++ interface to ODBC.
 
  Copyright (C) 2012 AMPL Optimization LLC
 
@@ -20,25 +20,34 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/funcadd.h"
+#ifndef TESTS_ODBC_H_
+#define TESTS_ODBC_H_
 
-#define UNUSED(x) (void)(x)
+#include <sqltypes.h>
 
-static double TestFunc(arglist *al) {
-  UNUSED(al);
-  return 42;
+#include <ostream>
+#include <string>
+#include <vector>
+
+namespace odbc {
+
+// An ODBC environment.
+class Env {
+ private:
+  SQLHENV env_;
+
+  bool GetDiag(SQLSMALLINT rec_number, SQLCHAR *sql_state,
+      SQLINTEGER &native_error, std::vector<SQLCHAR> &message,
+      std::ostream &os) const;
+
+  bool Check(const char *func_name, SQLRETURN ret) const;
+
+ public:
+  Env();
+  ~Env();
+
+  std::string FindDriver(const char *name) const;
+};
 }
 
-static int TestHandler(AmplExports *ae, TableInfo *ti) {
-  UNUSED(ae);
-  UNUSED(ti);
-  return 0;
-}
-
-extern "C" void funcadd_ASL(AmplExports *ae) {
-  addfunc("foo", TestFunc, FUNCADD_REAL_VALUED, 0, 0);
-  addfunc("bar", TestFunc, FUNCADD_REAL_VALUED, 0, 0);
-  addfunc("bar", TestFunc, FUNCADD_REAL_VALUED, 0, 0);
-  add_table_handler(TestHandler, TestHandler,
-      const_cast<char*>("testhandler\n"), 0, 0);
-}
+#endif  // TESTS_ODBC_H_
