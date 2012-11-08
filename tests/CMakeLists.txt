@@ -14,9 +14,9 @@ link_directories(${CMAKE_CURRENT_BINARY_DIR}/gtest)
 
 # Check C++ compiler capabilities.
 include(CheckCXXSourceCompiles)
-CHECK_CXX_SOURCE_COMPILES(
+check_cxx_source_compiles(
   "int main() { int *p = nullptr; }" HAVE_NULLPTR)
-CHECK_CXX_SOURCE_COMPILES(
+check_cxx_source_compiles(
   "int main() { [](int x) { return x; }; }" HAVE_LAMBDAS)
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
@@ -41,8 +41,22 @@ endif ()
 
 find_package(ODBC)
 if (ODBC_FOUND)
+  include(CheckCXXSourceRuns)
+  set(CMAKE_REQUIRED_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/..)
+  set(CMAKE_REQUIRED_LIBRARIES ${ODBC_LIBRARIES})
+  check_cxx_source_runs(
+    "#include \"tests/odbc.cc\"
+     int main(int argc, char **argv) {
+       return odbc::Env().FindDriver(\"mysql\").empty() ? 1 : 0;
+     }" HAVE_MYSQL)
+
   cxx_test_with_flags(odbc_test ""
     "gtest;function;${ODBC_LIBRARIES}" test_main.cc odbc_test.cc odbc.cc)
+    
+  if (HAVE_MYSQL)
+    cxx_test_with_flags(mysql_test ""
+      "gtest;function;${ODBC_LIBRARIES}" test_main.cc mysql_test.cc odbc.cc)
+  endif ()
 endif ()
 
 add_subdirectory(ilogcp)

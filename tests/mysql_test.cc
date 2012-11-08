@@ -1,5 +1,5 @@
 /*
- Tests of the AMPL ODBC table handler.
+ Tests of the MySQL ODBC connection.
 
  Copyright (C) 2012 AMPL Optimization LLC
 
@@ -24,11 +24,37 @@
 #include "tests/function.h"
 #include "tests/odbc.h"
 
+using fun::Table;
+
+#define SERVER "callisto.local"
+
 namespace {
 
-TEST(ODBCTest, Loaded) {
-  fun::Library lib("../tables/ampltabl.dll");
-  EXPECT_EQ("", lib.error());
-  EXPECT_TRUE(lib.GetHandler("odbc"));
+class MySQLTest : public ::testing::Test {
+ protected:
+  static fun::Library lib_;
+
+  static void SetUpTestCase() {
+    lib_.Load();
+  }
+
+  void Read(Table *t) {
+    lib_.GetHandler("odbc")->Read(t);
+  }
+};
+
+fun::Library MySQLTest::lib_("../tables/ampltabl.dll");
+
+TEST_F(MySQLTest, Read) {
+  std::string driver_name(odbc::Env().FindDriver("mysql"));
+  std::string connection(
+      "DRIVER={" + driver_name + "}; SERVER=" SERVER "; DATABASE=test;");
+  Table t("", "ODBC", connection.c_str(), "SQL=SELECT VERSION();");
+  t.AddCol("VERSION()");
+  Read(&t);
+  EXPECT_EQ(1, t.num_rows());
+  EXPECT_TRUE(t.GetString(0) != nullptr);
 }
+
+// TODO(viz): more tests
 }
