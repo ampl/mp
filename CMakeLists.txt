@@ -37,6 +37,9 @@ if (NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-field-initializers")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Woverloaded-virtual")
+else ()
+  # Disable useless MSVC warnings suggesting nonportable "secure" alternatives.
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif ()
 
 include(CheckCXXCompilerFlag)
