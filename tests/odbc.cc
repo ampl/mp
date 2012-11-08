@@ -34,14 +34,14 @@
 #include <sstream>
 #include <stdexcept>
 
-namespace odbc {
+namespace {
 
-bool Env::GetDiag(SQLSMALLINT rec_number, SQLCHAR *sql_state,
-    SQLINTEGER &native_error, std::vector<SQLCHAR> &message,
-    std::ostream &os) const {
+bool GetDiag(SQLSMALLINT handle_type, SQLHANDLE handle,
+    SQLSMALLINT rec_number, SQLCHAR *sql_state, SQLINTEGER &native_error,
+    std::vector<SQLCHAR> &message, std::ostream &os) {
   SQLSMALLINT length = 0;
-  SQLRETURN ret = SQLGetDiagRec(SQL_HANDLE_ENV,
-          env_, rec_number, sql_state, &native_error, 0, 0, &length);
+  SQLRETURN ret = SQLGetDiagRec(handle_type,
+          handle, rec_number, sql_state, &native_error, 0, 0, &length);
   if (ret == SQL_NO_DATA)
     return false;
   if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
@@ -49,7 +49,7 @@ bool Env::GetDiag(SQLSMALLINT rec_number, SQLCHAR *sql_state,
     return false;
   }
   message.resize(length + 1);
-  ret = SQLGetDiagRec(SQL_HANDLE_ENV, env_, rec_number,
+  ret = SQLGetDiagRec(handle_type, handle, rec_number,
           sql_state, &native_error, &message[0], length + 1, &length);
   if (ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
     os << "SQLGetDiagRec returned error code " << ret << "\n";
@@ -58,24 +58,41 @@ bool Env::GetDiag(SQLSMALLINT rec_number, SQLCHAR *sql_state,
   return true;
 }
 
-bool Env::Check(const char *func_name, SQLRETURN ret) const {
+void Check(SQLSMALLINT handle_type, SQLHANDLE handle,
+    const char *func_name, SQLRETURN ret, bool nothrow = false) {
   if (ret == SQL_SUCCESS)
-    return true;
+    return;
   std::ostringstream os;
   os << func_name << " returned error code " << ret << "\n";
   SQLCHAR sql_state[6] = "";
   SQLINTEGER native_error = 0;
   std::vector<SQLCHAR> message;
   for (SQLSMALLINT i = 1;
-      GetDiag(i, sql_state, native_error, message, os); ++i) {
+      GetDiag(handle_type, handle, i, sql_state, native_error, message, os);
+      ++i) {
     os << "SQLState: " << sql_state << "\n";
     os << "Native Error: " << native_error << "\n";
     os << "Message: " << &message[0] << "\n";
   }
-  if (ret != SQL_SUCCESS_WITH_INFO)
+  if (ret != SQL_SUCCESS_WITH_INFO && !nothrow)
     throw std::runtime_error(os.str());
   std::cout << os.str();
-  return true;
+}
+
+void FreeHandle(SQLSMALLINT handle_type, SQLHANDLE handle) {  // throw()
+  Check(handle_type, handle, "SQLFreeHandle",
+      SQLFreeHandle(handle_type, handle), true);
+}
+
+SQLCHAR *ConvertString(const char *s) {
+  return reinterpret_cast<SQLCHAR*>(const_cast<char*>(s));
+}
+}
+
+namespace odbc {
+
+void Env::Check(const char *func_name, SQLRETURN ret) const {
+  ::Check(SQL_HANDLE_ENV, env_, func_name, ret);
 }
 
 Env::Env() : env_(SQL_NULL_HANDLE) {
@@ -86,11 +103,7 @@ Env::Env() : env_(SQL_NULL_HANDLE) {
 }
 
 Env::~Env() {
-  try {
-    Check("SQLFreeHandle", SQLFreeHandle(SQL_HANDLE_ENV, env_));
-  } catch (const std::exception &e) {  // NOLINT(whitespace/parens)
-    std::cout << e.what();
-  }
+  FreeHandle(SQL_HANDLE_ENV, env_);
 }
 
 std::string Env::FindDriver(const char *name) const {
@@ -109,5 +122,46 @@ std::string Env::FindDriver(const char *name) const {
         return driver_name;
   }
   return std::string();
+}
+
+void Connection::Check(
+    const char *func_name, SQLRETURN ret, bool nothrow) const {
+  ::Check(SQL_HANDLE_DBC, dbc_, func_name, ret, nothrow);
+}
+
+Connection::Connection(const Env &env) : dbc_(SQL_NULL_HANDLE) {
+  env.Check("SQLAllocHandle", SQLAllocHandle(
+      SQL_HANDLE_DBC, env.env_, &dbc_));
+}
+
+Connection::~Connection() {
+  Check("SQLDisconnect", SQLDisconnect(dbc_), true);
+  FreeHandle(SQL_HANDLE_DBC, dbc_);
+}
+
+void Connection::Connect(const char *connection_string) {
+  SQLSMALLINT length = 0;
+  Check("SQLDriverConnect", SQLDriverConnect(dbc_, 0,
+      ConvertString(connection_string), SQL_NTS,
+      0, 0, &length, SQL_DRIVER_NOPROMPT));
+}
+
+void Statement::Check(
+    const char *func_name, SQLRETURN ret, bool nothrow) const {
+  ::Check(SQL_HANDLE_STMT, stmt_, func_name, ret, nothrow);
+}
+
+Statement::Statement(const Connection &c) : stmt_(SQL_NULL_HANDLE) {
+  c.Check("SQLAllocHandle", SQLAllocHandle(
+      SQL_HANDLE_STMT, c.dbc_, &stmt_));
+}
+
+Statement::~Statement() {
+  FreeHandle(SQL_HANDLE_STMT, stmt_);
+}
+
+void Statement::Execute(const char *sql_statement) {
+  Check("SQLExecDirect", SQLExecDirect(
+      stmt_, ConvertString(sql_statement), SQL_NTS));
 }
 }

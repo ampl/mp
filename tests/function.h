@@ -85,9 +85,10 @@ class Table {
 
  public:
   Table(const char *table_name, const char *str1,
-      const char *str2, const char *str3);
+      const char *str2, const char *str3 = 0);
 
   int num_rows() const;
+  const char *error_message() const;
 
   void AddCol(const char *name);
 
@@ -107,6 +108,7 @@ class Handler {
     lib_(lib), read_(read), write_(write) {}
 
   int Read(Table *t) const;
+  int Write(Table *t) const;
 };
 
 enum Type { VOID, INT, UINT, DOUBLE, POINTER };

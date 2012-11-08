@@ -30,7 +30,7 @@
 
 #include <sqltypes.h>
 
-#include <ostream>
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -41,17 +41,55 @@ class Env {
  private:
   SQLHENV env_;
 
-  bool GetDiag(SQLSMALLINT rec_number, SQLCHAR *sql_state,
-      SQLINTEGER &native_error, std::vector<SQLCHAR> &message,
-      std::ostream &os) const;
+  // Do not implement.
+  Env(const Env &);
+  Env &operator=(const Env &);
 
-  bool Check(const char *func_name, SQLRETURN ret) const;
+  friend class Connection;
+
+  void Check(const char *func_name, SQLRETURN ret) const;
 
  public:
   Env();
   ~Env();
 
   std::string FindDriver(const char *name) const;
+};
+
+class Connection {
+ private:
+  SQLHDBC dbc_;
+
+  // Do not implement.
+  Connection(const Connection &);
+  Connection &operator=(const Connection &);
+
+  friend class Statement;
+
+  void Check(const char *func_name, SQLRETURN ret, bool nothrow = false) const;
+
+ public:
+  Connection(const Env &env);
+  ~Connection();
+
+  void Connect(const char *connection_string);
+};
+
+class Statement {
+ private:
+  SQLHSTMT stmt_;
+
+  // Do not implement.
+  Statement(const Statement &);
+  Statement &operator=(const Statement &);
+
+  void Check(const char *func_name, SQLRETURN ret, bool nothrow = false) const;
+
+ public:
+  Statement(const Connection &c);
+  ~Statement();
+
+  void Execute(const char *sql_statement);
 };
 }
 

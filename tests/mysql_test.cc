@@ -21,8 +21,22 @@
  */
 
 #include "gtest/gtest.h"
+#include "tests/config.h"
 #include "tests/function.h"
 #include "tests/odbc.h"
+
+#ifdef _WIN32
+# include <winsock2.h>
+# include <process.h>
+#define getpid _getpid
+#else
+# include <sys/types.h>
+# include <unistd.h>
+#endif
+
+#include "solvers/funcadd.h"
+
+#undef snprintf
 
 using fun::Table;
 
@@ -33,27 +47,54 @@ namespace {
 class MySQLTest : public ::testing::Test {
  protected:
   static fun::Library lib_;
+  odbc::Env env_;
+  std::string connection_;
 
   static void SetUpTestCase() {
     lib_.Load();
   }
 
-  void Read(Table *t) {
-    lib_.GetHandler("odbc")->Read(t);
+  void SetUp() {
+    connection_ = "DRIVER={" + env_.FindDriver("mysql") +
+        "}; SERVER=" SERVER "; DATABASE=test;";
   }
 };
 
 fun::Library MySQLTest::lib_("../tables/ampltabl.dll");
 
 TEST_F(MySQLTest, Read) {
-  std::string driver_name(odbc::Env().FindDriver("mysql"));
-  std::string connection(
-      "DRIVER={" + driver_name + "}; SERVER=" SERVER "; DATABASE=test;");
-  Table t("", "ODBC", connection.c_str(), "SQL=SELECT VERSION();");
+  Table t("", "ODBC", connection_.c_str(), "SQL=SELECT VERSION();");
   t.AddCol("VERSION()");
-  Read(&t);
+  EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Read(&t));
+  EXPECT_EQ(nullptr, t.error_message());
   EXPECT_EQ(1, t.num_rows());
   EXPECT_TRUE(t.GetString(0) != nullptr);
+}
+
+TEST_F(MySQLTest, Write) {
+  // Create a unique table name from the hostname and pid. This is necessary
+  // to avoid clashes between tests running in parallel on different machines
+  // and accessing the same database server.
+  const int BUFFER_SIZE = 256;
+  char hostname[BUFFER_SIZE] = "";
+  ASSERT_EQ(0, gethostname(hostname, BUFFER_SIZE));
+  int pid = getpid();
+  char table_name[BUFFER_SIZE] = "";
+  // The table name contains space to check quotation.
+  snprintf(table_name, BUFFER_SIZE, "%s %d", hostname, pid);
+
+  Table t(table_name, "ODBC", connection_.c_str(), "verbose");
+  t.AddCol("Test");
+  EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Write(&t));
+  EXPECT_STREQ(nullptr, t.error_message());
+
+  // Drop the table.
+  odbc::Connection con(env_);
+  con.Connect(connection_.c_str());
+  char sql[BUFFER_SIZE];
+  snprintf(sql, BUFFER_SIZE, "DROP TABLE `%s`", table_name);
+  odbc::Statement stmt(con);
+  stmt.Execute(sql);
 }
 
 // TODO(viz): more tests
