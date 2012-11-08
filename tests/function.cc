@@ -223,6 +223,7 @@ class TableImpl : public TableInfo {
 };
 
 void TableImpl::AddString(std::vector<char*> *strings, const char *str) {
+  if (!str) return;
   char *copy = new char[std::strlen(str) + 1];
   std::strcpy(copy, str);  // NOLINT(runtime/printf)
   strings->push_back(copy);
@@ -264,6 +265,8 @@ Table::Table(const char *table_name, const char *str1,
 
 int Table::num_rows() const { return impl_->num_rows(); }
 
+const char *Table::error_message() const { return impl_->Errmsg; }
+
 void Table::AddCol(const char *name) { return impl_->AddCol(name); }
 
 const char *Table::GetString(int col) const { return impl_->GetString(col); }
@@ -271,6 +274,11 @@ const char *Table::GetString(int col) const { return impl_->GetString(col); }
 int Handler::Read(Table *t) const {
   t->impl_->TMI = lib_->impl();
   return read_(lib_->impl(), t->impl_.get());
+}
+
+int Handler::Write(Table *t) const {
+  t->impl_->TMI = lib_->impl();
+  return write_(lib_->impl(), t->impl_.get());
 }
 
 const Type GetType<void>::VALUE = VOID;
