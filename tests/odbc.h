@@ -23,6 +23,11 @@
 #ifndef TESTS_ODBC_H_
 #define TESTS_ODBC_H_
 
+#ifdef _WIN32
+// sqltypes.h needs HWND on Windows.
+# include <windows.h>
+#endif
+
 #include <sqltypes.h>
 
 #include <ostream>
