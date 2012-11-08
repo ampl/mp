@@ -52,7 +52,13 @@ using std::size_t;
 using std::string;
 using std::vector;
 
-using namespace ampl;
+using ampl::CPLEXOptimizer;
+using ampl::CPOptimizer;
+using ampl::ExprBuilder;
+using ampl::IlogCPDriver;
+using ampl::LogicalExpr;
+using ampl::NumericExpr;
+using ampl::UnsupportedExprError;
 
 #define DATA_DIR "../data/"
 
@@ -152,7 +158,7 @@ class IlogCPTest : public ::testing::Test, public ExprBuilder {
   int RunDriver(const char *stub = nullptr, const char *opt = nullptr) {
     try {
       return d.run((Args() + "ilogcp" + "-s" + stub + opt).get());
-    } catch (const IloException &e) {
+    } catch (const IloException &e) {  // NOLINT(whitespace/parens)
       throw std::runtime_error(e.getMessage());
     }
     return 0;
@@ -161,7 +167,7 @@ class IlogCPTest : public ::testing::Test, public ExprBuilder {
   bool ParseOptions(const char *opt1, const char *opt2 = nullptr) {
     try {
       return d.parse_options((Args() + opt1 + opt2).get());
-    } catch (const IloException &e) {
+    } catch (const IloException &e) {  // NOLINT(whitespace/parens)
       throw std::runtime_error(e.getMessage());
     }
     return false;
