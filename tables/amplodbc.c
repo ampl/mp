@@ -1555,7 +1555,7 @@ askusing(AmplExports *ae, TableInfo *TI, char *what, char *tname)
 {
 	char *s = TI->strings[1];
 	sprintf(TI->Errmsg = (char*)TM(strlen(s) + strlen(tname) + 64),
-		"%s %s failed.\n\tIs another application using %s?",
+		"%s %s failed.\n\tIs another application using \"%s\"?",
 		what, tname, s);
 	}
 
@@ -1753,7 +1753,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 		j += /*(*/ sprintf(it+j, ") VALUES (?"); /*)*/
 		goto finish_insprep;
 		}
-	j = sprintf(ct, "CREATE TABLE %s ("/*)*/, tname);
+	j = sprintf(ct, "CREATE TABLE %c%s%c ("/*)*/, h.quote, tname, h.quote);
 	for(i1 = 0; i1 < nc; i1++) {
 		i = p(i1);
 		db = db0 + i;
@@ -1787,7 +1787,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 		if (nodrop)
 			goto done;
  droptry:
-		sprintf(dt, "DROP TABLE %s", tname);
+		sprintf(dt, "DROP TABLE %c%s%c", h.quote, tname, h.quote);
 		if ((i = SQLExecDirect(hs, UC dt, SQL_NTS)) == SQL_SUCCESS
 		  || i == SQL_SUCCESS_WITH_INFO) {
 			if (h.verbose)
