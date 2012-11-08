@@ -44,7 +44,7 @@ endif ()
 find_package(ODBC)
 if (ODBC_FOUND)
   cxx_test_with_flags(odbc_test ""
-    "gtest;function;${ODBC_LIBRARIES}" test_main.cc odbc_test.cc)
+    "gtest;function;${ODBC_LIBRARIES}" test_main.cc odbc_test.cc odbc.cc)
 endif ()
 
 add_subdirectory(ilogcp)

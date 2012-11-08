@@ -102,7 +102,7 @@ Error NotIntError(const string &arg_name, double value = 0.5) {
 Error NotUIntError(const string &arg_name, double value) {
   std::ostringstream os;
   os << "argument '" << arg_name
-      << "' can't be represented as unsigned int, " << arg_name << " = " << value;
+    << "' can't be represented as unsigned int, " << arg_name << " = " << value;
   return Error(os.str());
 }
 
@@ -508,7 +508,7 @@ class ResultBinder {
   F f_;
 
  public:
-  ResultBinder(F f) : f_(f){}
+  explicit ResultBinder(F f) : f_(f) {}
 
   unsigned GetNumArgs() const { return f_.GetNumArgs() - 1; }
 

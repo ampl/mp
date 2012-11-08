@@ -55,7 +55,7 @@ using ampl::InvalidLogicalExprError;
 namespace {
 
 class TestExpr : public Expr {
-public:
+ public:
   static void TestProxy();
   static void TestArrayIterator();
 
@@ -152,7 +152,7 @@ TEST_F(ExprTest, NumericKinds) {
     EXPECT_GE(kind, Expr::NUMERIC_START);
     EXPECT_LE(kind, Expr::NUMERIC_END);
     for (int j = i + 1; j < n; ++j)
-      EXPECT_NE(kind, kinds[j]); // Check if all different.
+      EXPECT_NE(kind, kinds[j]);  // Check if all different.
     if (kind != Expr::CONSTANT)
       EXPECT_LT(kind, Expr::LOGICAL_START);
   }
@@ -177,7 +177,7 @@ TEST_F(ExprTest, LogicalKinds) {
     EXPECT_GE(kind, Expr::LOGICAL_START);
     EXPECT_LE(kind, Expr::LOGICAL_END);
     for (int j = i + 1; j < n; ++j)
-      EXPECT_NE(kind, kinds[j]); // Check if all different.
+      EXPECT_NE(kind, kinds[j]);  // Check if all different.
     if (kind != Expr::CONSTANT)
       EXPECT_GT(kind, Expr::NUMERIC_END);
   }
@@ -314,7 +314,7 @@ const OpInfo OP_INFO[] = {
 template <typename ExprT>
 void TestAssertInCreate(int opcode) {
   expr raw = {reinterpret_cast<efunc*>(opcode)};
-  EXPECT_DEBUG_DEATH(MakeExpr<ExprT>(&raw);, "Assertion");
+  EXPECT_DEBUG_DEATH(MakeExpr<ExprT>(&raw);, "Assertion");  // NOLINT(*)
 }
 
 template <typename ExprT>
@@ -365,11 +365,11 @@ TEST_F(ExprTest, Expr) {
 // expensive death tests. Is() is specialized for TestExpr to accept unary
 // and binary but not other expression kinds.
 TEST_F(ExprTest, CreateUsesIs) {
-  expr raw1 = {reinterpret_cast<efunc*>(OPPLUS)}; // binary
+  expr raw1 = {reinterpret_cast<efunc*>(OPPLUS)};  // binary
   MakeExpr<TestExpr>(&raw1);
-  expr raw2 = {reinterpret_cast<efunc*>(OPUMINUS)}; // unary
+  expr raw2 = {reinterpret_cast<efunc*>(OPUMINUS)};  // unary
   MakeExpr<TestExpr>(&raw2);
-  TestAssertInCreate<TestExpr>(OPPLTERM); // neither
+  TestAssertInCreate<TestExpr>(OPPLTERM);  // neither
 }
 
 TEST_F(ExprTest, EqualityOperator) {
@@ -610,16 +610,16 @@ TEST_F(ExprTest, PiecewiseLinearTerm) {
   double args[] = {-1, 5, 0, 10, 1};
   PiecewiseLinearTerm e(AddPLTerm(5, args, 42));
   EXPECT_EQ(2, e.num_breakpoints());
-  EXPECT_EQ( 5, e.GetBreakpoint(0));
+  EXPECT_EQ(5, e.GetBreakpoint(0));
   EXPECT_EQ(10, e.GetBreakpoint(1));
-  EXPECT_DEBUG_DEATH(e.GetBreakpoint(-1);, "Assertion");
-  EXPECT_DEBUG_DEATH(e.GetBreakpoint(2);, "Assertion");
+  EXPECT_DEBUG_DEATH(e.GetBreakpoint(-1);, "Assertion");  // NOLINT(*)
+  EXPECT_DEBUG_DEATH(e.GetBreakpoint(2);, "Assertion");  // NOLINT(*)
   EXPECT_EQ(3, e.num_slopes());
   EXPECT_EQ(-1, e.GetSlope(0));
-  EXPECT_EQ( 0, e.GetSlope(1));
-  EXPECT_EQ( 1, e.GetSlope(2));
-  EXPECT_DEBUG_DEATH(e.GetSlope(-1);, "Assertion");
-  EXPECT_DEBUG_DEATH(e.GetSlope(3);, "Assertion");
+  EXPECT_EQ(0, e.GetSlope(1));
+  EXPECT_EQ(1, e.GetSlope(2));
+  EXPECT_DEBUG_DEATH(e.GetSlope(-1);, "Assertion");  // NOLINT(*)
+  EXPECT_DEBUG_DEATH(e.GetSlope(3);, "Assertion");  // NOLINT(*)
   EXPECT_EQ(42, e.var_index());
 }
 

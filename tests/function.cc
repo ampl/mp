@@ -38,7 +38,8 @@ namespace {
 void Print(std::ostream &os, double value) {
   if (!isnan(value))
     os << value;
-  else os << "NaN";
+  else
+    os << "NaN";
 }
 
 fun::Library *library;
@@ -80,7 +81,7 @@ class LibraryImpl : public AmplExports, public TMInfo {
   }
 
  public:
-  LibraryImpl(const char *name);
+  explicit LibraryImpl(const char *name);
   ~LibraryImpl() {
     std::for_each(tempmem_.begin(), tempmem_.end(), std::ptr_fun(free));
   }
@@ -121,7 +122,7 @@ void LibraryImpl::AddFunc(const char *name, rfunc f,
   LibraryImpl *impl = static_cast<LibraryImpl*>(ae);
   if (!impl->funcs_.insert(std::make_pair(name, fi)).second)
     ReportDuplicateFunction(name);
-  note_libuse_ASL(); // Make sure the library is not unloaded.
+  note_libuse_ASL();  // Make sure the library is not unloaded.
 }
 
 void LibraryImpl::AddTableHandler(
@@ -129,12 +130,12 @@ void LibraryImpl::AddTableHandler(
     char *handler_info, int , void *) {
   string info(handler_info);
   string name(info.substr(0, info.find('\n')));
-  Handler handler(*library, read, write);
+  Handler handler(library, read, write);
   if (!library->impl()->handlers_.insert(
       std::make_pair(name, handler)).second) {
     ReportDuplicateFunction(name);
   }
-  note_libuse_ASL(); // Make sure the library is not unloaded.
+  note_libuse_ASL();  // Make sure the library is not unloaded.
 }
 
 LibraryImpl::LibraryImpl(const char *name) : AmplExports(), name_(name) {
@@ -143,7 +144,7 @@ LibraryImpl::LibraryImpl(const char *name) : AmplExports(), name_(name) {
   AmplExports::AtExit = AtExit;
   AmplExports::AtReset = AtExit;
   AmplExports::Tempmem = Tempmem;
-  SprintF = sprintf;
+  SprintF = sprintf;  // NOLINT(runtime/printf)
   SnprintF = snprintf;
   VsnprintF = vsnprintf;
   Fopen = fopen;
@@ -190,14 +191,15 @@ class TableImpl : public TableInfo {
   std::deque<double> dvals_;
   std::deque<char*> svals_;
 
-  void AddString(std::vector<char*>& strings, const char *str);
+  void AddString(std::vector<char*> *strings, const char *str);
 
-  int AddRows(DbCol *, long nrows) {
+  int AddRows(DbCol *, long nrows) {  // NOLINT(runtime/int)
     num_rows_ += nrows;
     return 0;
   }
 
-  static int AddRows(TableInfo *ti, DbCol *cols, long nrows) {
+  static int AddRows(
+      TableInfo *ti, DbCol *cols, long nrows) {  // NOLINT(runtime/int)
     return static_cast<TableImpl*>(ti)->AddRows(cols, nrows);
   }
 
@@ -220,19 +222,19 @@ class TableImpl : public TableInfo {
   }
 };
 
-void TableImpl::AddString(std::vector<char*>& strings, const char *str) {
+void TableImpl::AddString(std::vector<char*> *strings, const char *str) {
   char *copy = new char[std::strlen(str) + 1];
-  std::strcpy(copy, str);
-  strings.push_back(copy);
+  std::strcpy(copy, str);  // NOLINT(runtime/printf)
+  strings->push_back(copy);
 }
 
 TableImpl::TableImpl(const char *table_name, const char *str1,
     const char *str2, const char *str3) : TableInfo(), num_rows_(0) {
   TableInfo::AddRows = AddRows;
   tname = const_cast<char*>(table_name);
-  AddString(strings_, str1);
-  AddString(strings_, str2);
-  AddString(strings_, str3);
+  AddString(&strings_, str1);
+  AddString(&strings_, str2);
+  AddString(&strings_, str3);
   nstrings = strings_.size();
   strings = &strings_[0];
 }
@@ -249,7 +251,7 @@ void TableImpl::AddCol(const char *name) {
   col.dval = &dvals_.back();
   col.sval = &svals_.back();
   cols_.push_back(col);
-  AddString(colnames_, name);
+  AddString(&colnames_, name);
   ++ncols;
   colnames = &colnames_[0];
   cols = &cols_[0];
@@ -266,9 +268,9 @@ void Table::AddCol(const char *name) { return impl_->AddCol(name); }
 
 const char *Table::GetString(int col) const { return impl_->GetString(col); }
 
-int Handler::Read(Table &t) const {
-  t.impl_->TMI = lib_->impl();
-  return read_(lib_->impl(), t.impl_.get());
+int Handler::Read(Table *t) const {
+  t->impl_->TMI = lib_->impl();
+  return read_(lib_->impl(), t->impl_.get());
 }
 
 const Type GetType<void>::VALUE = VOID;

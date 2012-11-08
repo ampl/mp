@@ -67,7 +67,7 @@ TEST(FunctionTest, Library) {
   const Handler *handler = lib.GetHandler("testhandler");
   EXPECT_TRUE(handler != nullptr);
   Table t("", "", "", "");
-  handler->Read(t);
+  handler->Read(&t);
 }
 
 TEST(FunctionTest, Variant) {
@@ -386,7 +386,7 @@ struct TestFunctionInfo : FunctionInfo {
 TEST(FunctionTest, FunctionInfoGetDerivative) {
   Library lib("");
   FunctionInfo fi1;
-  Function f(lib, 0, 0);
+  Function f(&lib, 0, 0);
   EXPECT_TRUE(isnan(fi1.GetDerivative(f, 0, MakeArgs(0)).value()));
   EXPECT_TRUE(isnan(fi1.GetSecondDerivative(f, 0, 0, MakeArgs(0)).value()));
   TestFunctionInfo fi2;
@@ -479,7 +479,7 @@ class TestFunction {
 
  public:
   explicit TestFunction(int nargs)
-  : lib_(""), fi_(), f_(lib_, &fi_, 0) {
+  : lib_(""), fi_(), f_(&lib_, &fi_, 0) {
     fi_.nargs = nargs;
     fi_.funcp = Test;
   }
@@ -549,7 +549,7 @@ TEST(FunctionTest, FunctionReturnsHes) {
 TEST(FunctionTest, FunctionArgNames) {
   Library lib("");
   FunctionInfo fi;
-  Function f(lib, 0, &fi);
+  Function f(&lib, 0, &fi);
   EXPECT_THROW(f.GetArgName(0), std::out_of_range);
   fi.SetArgNames("x y z");
   EXPECT_EQ("x", f.GetArgName(0));
@@ -561,11 +561,11 @@ TEST(FunctionTest, FunctionArgNames) {
 TEST(FunctionTest, FunctifonGetDerivative) {
   Library lib("");
   FunctionInfo fi1;
-  Function f1(lib, 0, &fi1);
+  Function f1(&lib, 0, &fi1);
   EXPECT_TRUE(isnan(f1.GetDerivative(0, MakeArgs(0)).value()));
   EXPECT_TRUE(isnan(f1.GetSecondDerivative(0, 0, MakeArgs(0)).value()));
   TestFunctionInfo fi2;
-  Function f2(lib, 0, &fi2);
+  Function f2(&lib, 0, &fi2);
   EXPECT_EQ(42, f2.GetDerivative(0, MakeArgs(0)).value());
   EXPECT_EQ(11, f2.GetSecondDerivative(0, 0, MakeArgs(0)).value());
 }
@@ -587,7 +587,7 @@ TEST(FunctionTest, DerivativeBinder) {
   func_info fi = {};
   fi.nargs = 2;
   fi.funcp = ASLHypot;
-  Function f(lib, &fi, 0);
+  Function f(&lib, &fi, 0);
   DerivativeBinder d(f, 0, 1, MakeArgs(1, 0));
   ASSERT_EQ(1, d(0));
   ASSERT_NEAR(1 / sqrt(2.0), d(1), 1e-10);
