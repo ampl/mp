@@ -25,6 +25,7 @@
 #include <sql.h>
 #include <sqlext.h>
 
+#include <cctype>
 #include <cstring>
 
 #include <algorithm>
