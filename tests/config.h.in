@@ -24,7 +24,6 @@
 #define TESTS_CONFIG_H_
 
 #cmakedefine HAVE_NULLPTR 1
-#cmakedefine HAVE_UNIQUE_PTR 1
 #cmakedefine HAVE_LAMBDAS 1
 
 #ifndef HAVE_NULLPTR
