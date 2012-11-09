@@ -45,72 +45,6 @@ struct TableInfo;
 
 namespace fun {
 
-class Handler;
-class LibraryImpl;
-class TableImpl;
-
-// An AMPL function library.
-class Library {
- private:
-  // Do not implement.
-  Library(const Library &);
-  Library &operator=(const Library &);
-
-  std::auto_ptr<LibraryImpl> impl_;
-
- public:
-  explicit Library(const char *name);
-  ~Library();
-
-  LibraryImpl *impl() { return impl_.get(); }
-
-  void Load();
-  std::string error() const;
-
-  unsigned GetNumFunctions() const;
-  const func_info *GetFunction(const char *name) const;
-
-  const Handler *GetHandler(const char *name) const;
-};
-
-class Table {
- private:
-  std::auto_ptr<TableImpl> impl_;
-
-  friend class Handler;
-
-  // Do not implement.
-  Table(const Table &);
-  Table &operator=(const Table &);
-
- public:
-  Table(const char *table_name, const char *str1,
-      const char *str2, const char *str3 = 0);
-
-  int num_rows() const;
-  const char *error_message() const;
-
-  void AddCol(const char *name);
-
-  const char *GetString(int col) const;
-};
-
-typedef int (*TableHandlerFunc)(AmplExports *ae, TableInfo *ti);
-
-class Handler {
- private:
-  Library *lib_;
-  TableHandlerFunc read_;
-  TableHandlerFunc write_;
-
- public:
-  Handler(Library *lib, TableHandlerFunc read, TableHandlerFunc write) :
-    lib_(lib), read_(read), write_(write) {}
-
-  int Read(Table *t) const;
-  int Write(Table *t) const;
-};
-
 enum Type { VOID, INT, UINT, DOUBLE, POINTER };
 
 template <typename T>
@@ -182,6 +116,73 @@ class Variant {
     pval_ = value;
     return *this;
   }
+};
+
+class Handler;
+class LibraryImpl;
+class TableImpl;
+
+// An AMPL function library.
+class Library {
+ private:
+  // Do not implement.
+  Library(const Library &);
+  Library &operator=(const Library &);
+
+  std::auto_ptr<LibraryImpl> impl_;
+
+ public:
+  explicit Library(const char *name);
+  ~Library();
+
+  LibraryImpl *impl() { return impl_.get(); }
+
+  void Load();
+  std::string error() const;
+
+  unsigned GetNumFunctions() const;
+  const func_info *GetFunction(const char *name) const;
+
+  const Handler *GetHandler(const char *name) const;
+};
+
+class Table {
+ private:
+  std::auto_ptr<TableImpl> impl_;
+
+  friend class Handler;
+
+  // Do not implement.
+  Table(const Table &);
+  Table &operator=(const Table &);
+
+ public:
+  Table(const char *table_name, int num_rows, int num_cols,
+      const char *str1, const char *str2, const char *str3 = 0);
+
+  int num_rows() const;
+  const char *error_message() const;
+
+  void SetColName(int col, const char *name);
+
+  const char *GetString(int row, int col) const;
+  void SetString(int row, const char *str);
+};
+
+typedef int (*TableHandlerFunc)(AmplExports *ae, TableInfo *ti);
+
+class Handler {
+ private:
+  Library *lib_;
+  TableHandlerFunc read_;
+  TableHandlerFunc write_;
+
+ public:
+  Handler(Library *lib, TableHandlerFunc read, TableHandlerFunc write) :
+    lib_(lib), read_(read), write_(write) {}
+
+  int Read(Table *t) const;
+  int Write(Table *t) const;
 };
 
 template <typename T>

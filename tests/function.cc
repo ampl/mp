@@ -25,6 +25,7 @@
 #include <iterator>
 #include <map>
 #include <sstream>
+#include <cassert>
 #include <cstring>
 
 #include "solvers/asl.h"
@@ -188,13 +189,29 @@ class TableImpl : public TableInfo {
   std::vector<char*> strings_;
   std::vector<char*> colnames_;
   std::vector<DbCol> cols_;
-  std::deque<double> dvals_;
-  std::deque<char*> svals_;
+  std::vector<double> dvals_;
+  std::vector<char*> svals_;
+  std::vector<Variant> values_;
+  std::deque<std::string> read_strings_;
 
+  void SetString(std::vector<char*> *strings, int index, const char *str);
   void AddString(std::vector<char*> *strings, const char *str);
 
-  int AddRows(DbCol *, long nrows) {  // NOLINT(runtime/int)
+  int AddRows(DbCol *cols, long nrows) {  // NOLINT(runtime/int)
     num_rows_ += nrows;
+    for (int i = 0; i < nrows; ++i) {
+      for (int j = 0; j < num_cols(); ++j) {
+        DbCol &value = cols[j];
+        Variant v;
+        if (value.sval[i]) {
+          read_strings_.push_back(value.sval[i]);
+          v = const_cast<char*>(read_strings_.back().c_str());
+        } else {
+          v = value.dval[i];
+        }
+        values_.push_back(v);
+      }
+    }
     return 0;
   }
 
@@ -208,29 +225,47 @@ class TableImpl : public TableInfo {
   };
 
  public:
-  TableImpl(const char *table_name, const char *str1,
-      const char *str2, const char *str3);
+  TableImpl(const char *table_name, int num_rows, int num_cols,
+      const char *str1, const char *str2, const char *str3);
 
   ~TableImpl();
 
-  void AddCol(const char *name);
+  void SetColName(int col, const char *name) {
+    assert(col >= 0 && col < num_cols());
+    SetString(&colnames_, col, name);
+  }
 
   int num_rows() const { return num_rows_; }
+  int num_cols() const { return arity + ncols; }
 
-  const char *GetString(int col) const {
-    return svals_[col];
+  const char *GetString(int row, int col) const {
+    const Variant &value = values_[row * num_cols() + col];
+    return value.type() == POINTER ?
+        static_cast<const char*>(value.pointer()) : 0;
+  }
+
+  void SetString(int row, const char *str) {
+    cols_[0].sval[row] = const_cast<char*>(str);
   }
 };
 
-void TableImpl::AddString(std::vector<char*> *strings, const char *str) {
-  if (!str) return;
-  char *copy = new char[std::strlen(str) + 1];
-  std::strcpy(copy, str);  // NOLINT(runtime/printf)
-  strings->push_back(copy);
+void TableImpl::SetString(
+    std::vector<char*> *strings, int index, const char *str) {
+  char *&oldstr = (*strings)[index];
+  if (oldstr) delete [] oldstr;
+  oldstr = new char[std::strlen(str) + 1];
+  std::strcpy(oldstr, str);  // NOLINT(runtime/printf)
 }
 
-TableImpl::TableImpl(const char *table_name, const char *str1,
-    const char *str2, const char *str3) : TableInfo(), num_rows_(0) {
+void TableImpl::AddString(std::vector<char*> *strings, const char *str) {
+  if (!str) return;
+  strings->push_back(0);
+  SetString(strings, strings->size() - 1, str);
+}
+
+TableImpl::TableImpl(const char *table_name, int num_rows, int num_cols,
+    const char *str1, const char *str2, const char *str3) :
+        TableInfo(), num_rows_(0) {
   TableInfo::AddRows = AddRows;
   tname = const_cast<char*>(table_name);
   AddString(&strings_, str1);
@@ -238,6 +273,23 @@ TableImpl::TableImpl(const char *table_name, const char *str1,
   AddString(&strings_, str3);
   nstrings = strings_.size();
   strings = &strings_[0];
+
+  arity = 1;
+  ncols = num_cols - 1;
+  nrows = maxrows = num_rows;
+  cols_.reserve(num_cols);
+  int num_values = num_rows * num_cols;
+  svals_.resize(num_values);
+  dvals_.resize(num_values);
+  for (int i = 0; i < num_cols; ++i) {
+    DbCol col = {};
+    col.dval = &dvals_[i * num_rows];
+    col.sval = &svals_[i * num_rows];
+    cols_.push_back(col);
+  }
+  cols = &cols_[0];
+  colnames_.resize(num_cols);
+  colnames = &colnames_[0];
 }
 
 TableImpl::~TableImpl() {
@@ -245,31 +297,26 @@ TableImpl::~TableImpl() {
   for_each(colnames_.begin(), colnames_.end(), Deleter());
 }
 
-void TableImpl::AddCol(const char *name) {
-  DbCol col = {};
-  svals_.push_back(0);
-  dvals_.push_back(0);
-  col.dval = &dvals_.back();
-  col.sval = &svals_.back();
-  cols_.push_back(col);
-  AddString(&colnames_, name);
-  ++ncols;
-  colnames = &colnames_[0];
-  cols = &cols_[0];
-}
-
-Table::Table(const char *table_name, const char *str1,
-    const char *str2, const char *str3) :
-  impl_(new TableImpl(table_name, str1, str2, str3)) {
+Table::Table(const char *table_name, int num_rows, int num_cols,
+    const char *str1, const char *str2, const char *str3) :
+  impl_(new TableImpl(table_name, num_rows, num_cols, str1, str2, str3)) {
 }
 
 int Table::num_rows() const { return impl_->num_rows(); }
 
 const char *Table::error_message() const { return impl_->Errmsg; }
 
-void Table::AddCol(const char *name) { return impl_->AddCol(name); }
+void Table::SetColName(int col, const char *name) {
+  impl_->SetColName(col, name);
+}
 
-const char *Table::GetString(int col) const { return impl_->GetString(col); }
+const char *Table::GetString(int row, int col) const {
+  return impl_->GetString(row, col);
+}
+
+void Table::SetString(int row, const char *str) {
+  return impl_->SetString(row, str);
+}
 
 int Handler::Read(Table *t) const {
   t->impl_->TMI = lib_->impl();

@@ -24,18 +24,17 @@
 #include "tests/config.h"
 #include "tests/function.h"
 #include "tests/odbc.h"
+#include "solvers/funcadd.h"
+#undef snprintf
 
 #ifdef _WIN32
 # include <process.h>
-#define getpid _getpid
+# define getpid _getpid
+# define snprintf _snprintf
 #else
 # include <sys/types.h>
 # include <unistd.h>
 #endif
-
-#include "solvers/funcadd.h"
-
-#undef snprintf
 
 using fun::Table;
 
@@ -55,63 +54,102 @@ class MySQLTest : public ::testing::Test {
     lib_.Load();
   }
 
-  void SetUp() {
-    connection_ = "DRIVER={" + env_.FindDriver("mysql") +
-        "}; SERVER=" SERVER "; DATABASE=test;";
-
-    // Create a unique table name from the hostname and pid. This is necessary
-    // to avoid clashes between tests running in parallel on different machines
-    // and accessing the same database server.
-    char hostname[BUFFER_SIZE] = "";
-    ASSERT_EQ(0, gethostname(hostname, BUFFER_SIZE));
-    int pid = getpid();
-    char table_name[BUFFER_SIZE] = "";
-    // The table name contains space to check quotation.
-    snprintf(table_name, BUFFER_SIZE, "%s %d", hostname, pid);
-    table_name_ = table_name;
-  }
-
-  void TearDown() {
-    // Drop the table.
-    odbc::Connection con(env_);
-    con.Connect(connection_.c_str());
-    char sql[BUFFER_SIZE];
-    snprintf(sql, BUFFER_SIZE, "DROP TABLE `%s`", table_name_.c_str());
-    odbc::Statement stmt(con);
-    try {
-      stmt.Execute(sql);
-    } catch (const std::exception &) {}  // Ignore errors.
-  }
+  void SetUp();
+  void TearDown();
 };
+
+void MySQLTest::SetUp() {
+  connection_ = "DRIVER={" + env_.FindDriver("mysql") +
+      "}; SERVER=" SERVER "; DATABASE=test;";
+
+  // Create a unique table name from the hostname and pid. This is necessary
+  // to avoid clashes between tests running in parallel on different machines
+  // and accessing the same database server.
+  char hostname[BUFFER_SIZE] = "";
+  ASSERT_EQ(0, gethostname(hostname, BUFFER_SIZE));
+  int pid = getpid();
+  char table_name[BUFFER_SIZE] = "";
+  // The table name contains space to check quotation.
+  snprintf(table_name, BUFFER_SIZE, "%s %d", hostname, pid);
+  table_name_ = table_name;
+}
+
+void MySQLTest::TearDown() {
+  // Drop the table.
+  odbc::Connection con(env_);
+  con.Connect(connection_.c_str());
+  char sql[BUFFER_SIZE];
+  snprintf(sql, BUFFER_SIZE, "DROP TABLE `%s`", table_name_.c_str());
+  odbc::Statement stmt(con);
+  try {
+    stmt.Execute(sql);
+  } catch (const std::exception &) {}  // Ignore errors.
+}
 
 fun::Library MySQLTest::lib_("../tables/ampltabl.dll");
 
 TEST_F(MySQLTest, Read) {
-  Table t("", "ODBC", connection_.c_str(), "SQL=SELECT VERSION();");
-  t.AddCol("VERSION()");
+  Table t("", 1, 1, "ODBC", connection_.c_str(), "SQL=SELECT VERSION();");
+  t.SetColName(0, "VERSION()");
   EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Read(&t));
   EXPECT_EQ(nullptr, t.error_message());
   EXPECT_EQ(1, t.num_rows());
-  EXPECT_TRUE(t.GetString(0) != nullptr);
+  EXPECT_TRUE(t.GetString(0, 0) != nullptr);
 }
 
 TEST_F(MySQLTest, Write) {
-  Table t(table_name_.c_str(), "ODBC", connection_.c_str());
-  t.AddCol("Test");
-  // TODO: prepare several rows
-  EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Write(&t));
-  EXPECT_STREQ(nullptr, t.error_message());
+  {
+    Table t(table_name_.c_str(), 2, 1, "ODBC", connection_.c_str());
+    t.SetColName(0, "Character Name");
+    t.SetString(0, "Arthur Dent");
+    t.SetString(1, "Ford Prefect");
+    EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Write(&t));
+    EXPECT_STREQ(nullptr, t.error_message());
+  }
+  {
+    Table t(table_name_.c_str(), 2, 1, "ODBC", connection_.c_str());
+    t.SetColName(0, "Character Name");
+    EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Read(&t));
+    EXPECT_STREQ(nullptr, t.error_message());
+    ASSERT_EQ(2, t.num_rows());
+    EXPECT_STREQ("Arthur Dent", t.GetString(0, 0));
+    EXPECT_STREQ("Ford Prefect", t.GetString(1, 0));
+  }
 }
 
 TEST_F(MySQLTest, Rewrite) {
-  Table t(table_name_.c_str(), "ODBC", connection_.c_str());
-  t.AddCol("Test");
-  // The first write creates a table.
-  EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Write(&t));
-  EXPECT_STREQ(nullptr, t.error_message());
-  // The second write should drop the table and create a new one.
-  EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Write(&t));
-  EXPECT_STREQ(nullptr, t.error_message());
+  {
+    // The first write creates a table.
+    Table t(table_name_.c_str(), 1, 1, "ODBC", connection_.c_str());
+    t.SetColName(0, "Test");
+    t.SetString(0, "foo");
+    EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Write(&t));
+    EXPECT_STREQ(nullptr, t.error_message());
+  }
+  {
+    Table t(table_name_.c_str(), 1, 1, "ODBC", connection_.c_str());
+    t.SetColName(0, "Test");
+    EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Read(&t));
+    EXPECT_STREQ(nullptr, t.error_message());
+    ASSERT_EQ(1, t.num_rows());
+    EXPECT_STREQ("foo", t.GetString(0, 0));
+  }
+  {
+    // The second write should drop the table and create a new one.
+    Table t(table_name_.c_str(), 1, 1, "ODBC", connection_.c_str());
+    t.SetColName(0, "Character");
+    t.SetString(0, "Zaphod");
+    EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Write(&t));
+    EXPECT_STREQ(nullptr, t.error_message());
+  }
+  {
+    Table t(table_name_.c_str(), 1, 1, "ODBC", connection_.c_str());
+    t.SetColName(0, "Character");
+    EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Read(&t));
+    EXPECT_STREQ(nullptr, t.error_message());
+    ASSERT_EQ(1, t.num_rows());
+    EXPECT_STREQ("Zaphod", t.GetString(0, 0));
+  }
 }
 
 // TODO(viz): more tests
