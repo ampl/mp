@@ -52,10 +52,14 @@ if (ODBC_FOUND)
 
   cxx_test_with_flags(odbc_test ""
     "gtest;function;${ODBC_LIBRARIES}" test_main.cc odbc_test.cc odbc.cc)
-    
+
   if (HAVE_MYSQL)
+    if (WIN32)
+      set(MYSQL_TEST_LIBRARIES Ws2_32.lib)
+    endif ()
     cxx_test_with_flags(mysql_test ""
-      "gtest;function;${ODBC_LIBRARIES}" test_main.cc mysql_test.cc odbc.cc)
+      "gtest;function;${ODBC_LIBRARIES}${MYSQL_TEST_LIBRARIES}"
+      test_main.cc mysql_test.cc odbc.cc)
   endif ()
 endif ()
 
