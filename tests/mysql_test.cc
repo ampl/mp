@@ -26,7 +26,6 @@
 #include "tests/odbc.h"
 
 #ifdef _WIN32
-# include <winsock2.h>
 # include <process.h>
 #define getpid _getpid
 #else
@@ -49,6 +48,8 @@ class MySQLTest : public ::testing::Test {
   static fun::Library lib_;
   odbc::Env env_;
   std::string connection_;
+  std::string table_name_;
+  enum {BUFFER_SIZE = 256};
 
   static void SetUpTestCase() {
     lib_.Load();
@@ -57,6 +58,29 @@ class MySQLTest : public ::testing::Test {
   void SetUp() {
     connection_ = "DRIVER={" + env_.FindDriver("mysql") +
         "}; SERVER=" SERVER "; DATABASE=test;";
+
+    // Create a unique table name from the hostname and pid. This is necessary
+    // to avoid clashes between tests running in parallel on different machines
+    // and accessing the same database server.
+    char hostname[BUFFER_SIZE] = "";
+    ASSERT_EQ(0, gethostname(hostname, BUFFER_SIZE));
+    int pid = getpid();
+    char table_name[BUFFER_SIZE] = "";
+    // The table name contains space to check quotation.
+    snprintf(table_name, BUFFER_SIZE, "%s %d", hostname, pid);
+    table_name_ = table_name;
+  }
+
+  void TearDown() {
+    // Drop the table.
+    odbc::Connection con(env_);
+    con.Connect(connection_.c_str());
+    char sql[BUFFER_SIZE];
+    snprintf(sql, BUFFER_SIZE, "DROP TABLE `%s`", table_name_.c_str());
+    odbc::Statement stmt(con);
+    try {
+      stmt.Execute(sql);
+    } catch (const std::exception &) {}  // Ignore errors.
   }
 };
 
@@ -72,29 +96,22 @@ TEST_F(MySQLTest, Read) {
 }
 
 TEST_F(MySQLTest, Write) {
-  // Create a unique table name from the hostname and pid. This is necessary
-  // to avoid clashes between tests running in parallel on different machines
-  // and accessing the same database server.
-  const int BUFFER_SIZE = 256;
-  char hostname[BUFFER_SIZE] = "";
-  ASSERT_EQ(0, gethostname(hostname, BUFFER_SIZE));
-  int pid = getpid();
-  char table_name[BUFFER_SIZE] = "";
-  // The table name contains space to check quotation.
-  snprintf(table_name, BUFFER_SIZE, "%s %d", hostname, pid);
-
-  Table t(table_name, "ODBC", connection_.c_str(), "verbose");
+  Table t(table_name_.c_str(), "ODBC", connection_.c_str());
   t.AddCol("Test");
+  // TODO: prepare several rows
   EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Write(&t));
   EXPECT_STREQ(nullptr, t.error_message());
+}
 
-  // Drop the table.
-  odbc::Connection con(env_);
-  con.Connect(connection_.c_str());
-  char sql[BUFFER_SIZE];
-  snprintf(sql, BUFFER_SIZE, "DROP TABLE `%s`", table_name);
-  odbc::Statement stmt(con);
-  stmt.Execute(sql);
+TEST_F(MySQLTest, Rewrite) {
+  Table t(table_name_.c_str(), "ODBC", connection_.c_str());
+  t.AddCol("Test");
+  // The first write creates a table.
+  EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Write(&t));
+  EXPECT_STREQ(nullptr, t.error_message());
+  // The second write should drop the table and create a new one.
+  EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Write(&t));
+  EXPECT_STREQ(nullptr, t.error_message());
 }
 
 // TODO(viz): more tests
