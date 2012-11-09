@@ -42,6 +42,29 @@ using fun::Table;
 
 namespace {
 
+// A socket environment.
+class SocketEnv {
+ public:
+  SocketEnv() {
+#ifdef WIN32
+    WSADATA data = {};
+    if (WSAStartup(MAKEWORD(2, 2), &data))
+      throw std::runtime_error("WSAStartup failed");
+#endif
+  }
+
+  ~SocketEnv() {
+#ifdef WIN32
+    WSACleanup();
+#endif
+  }
+
+  void GetHostname(char *name, int len) const {
+    if (gethostname(name, len))
+      throw std::runtime_error("gethostname failed");
+  }
+};
+
 class MySQLTest : public ::testing::Test {
  protected:
   static fun::Library lib_;
@@ -66,7 +89,7 @@ void MySQLTest::SetUp() {
   // to avoid clashes between tests running in parallel on different machines
   // and accessing the same database server.
   char hostname[BUFFER_SIZE] = "";
-  ASSERT_EQ(0, gethostname(hostname, BUFFER_SIZE));
+  SocketEnv().GetHostname(hostname, BUFFER_SIZE);
   int pid = getpid();
   char table_name[BUFFER_SIZE] = "";
   // The table name contains space to check quotation.
