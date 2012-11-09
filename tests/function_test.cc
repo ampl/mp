@@ -66,7 +66,7 @@ TEST(FunctionTest, Library) {
   EXPECT_TRUE(lib.GetHandler("nonexistent") == nullptr);
   const Handler *handler = lib.GetHandler("testhandler");
   EXPECT_TRUE(handler != nullptr);
-  Table t("", "", "", "");
+  Table t("", 0, 0, "", "", "");
   handler->Read(&t);
 }
 
