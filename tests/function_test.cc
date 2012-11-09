@@ -66,8 +66,8 @@ TEST(FunctionTest, Library) {
   EXPECT_TRUE(lib.GetHandler("nonexistent") == nullptr);
   const Handler *handler = lib.GetHandler("testhandler");
   EXPECT_TRUE(handler != nullptr);
-  Table t("", 0, 0, "", "", "");
-  handler->Read(&t);
+  Table t("", 0);
+  handler->Read("", &t);
 }
 
 TEST(FunctionTest, Variant) {
@@ -85,6 +85,21 @@ TEST(FunctionTest, Variant) {
   v1 = 777;
   EXPECT_EQ(fun::DOUBLE, v1.type());
   EXPECT_EQ(777, static_cast<double>(v1));
+}
+
+TEST(FunctionTest, VariantFromDouble) {
+  Variant v(Variant::FromDouble(42));
+  EXPECT_EQ(fun::DOUBLE, v.type());
+  EXPECT_EQ(42, static_cast<double>(v));
+  EXPECT_THROW(v.pointer(), std::runtime_error);
+}
+
+TEST(FunctionTest, VariantFromPointer) {
+  int dummy;
+  Variant v(Variant::FromPointer(&dummy));
+  EXPECT_EQ(fun::POINTER, v.type());
+  EXPECT_EQ(&dummy, v.pointer());
+  EXPECT_THROW(static_cast<double>(v), std::runtime_error);
 }
 
 const double ITEMS[] = {5, 7, 11, 13, 17, 19, 23, 29, 31};

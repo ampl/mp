@@ -23,6 +23,8 @@
 #ifndef TESTS_FUNCTION_H_
 #define TESTS_FUNCTION_H_
 
+#include <cassert>
+#include <cmath>
 #include <algorithm>
 #include <deque>
 #include <iosfwd>
@@ -31,7 +33,6 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <cmath>
 
 #if defined(_MSC_VER)
 # define isnan _isnan
@@ -42,6 +43,7 @@
 struct func_info;
 struct AmplExports;
 struct TableInfo;
+struct DbCol;
 
 namespace fun {
 
@@ -95,6 +97,16 @@ class Variant {
  public:
   explicit Variant(double value = 0) : type_(DOUBLE), dval_(value) {}
 
+  static Variant FromDouble(double d) {
+    return Variant(d);
+  }
+
+  static Variant FromPointer(void *p) {
+    Variant v;
+    v = p;
+    return v;
+  }
+
   Type type() const { return type_; }
 
   operator double() const {
@@ -118,9 +130,88 @@ class Variant {
   }
 };
 
+class Table {
+ private:
+  std::string name_;
+  int num_cols_;
+  std::deque<std::string> strings_;
+  std::vector<fun::Variant> values_;
+
+  friend class Handler;
+
+  void Clear() {
+    strings_.clear();
+    values_.clear();
+  }
+
+  void Add(const char *s) {
+    strings_.push_back(s);
+    values_.push_back(Variant::FromPointer(
+        const_cast<char*>(strings_.back().c_str())));
+  }
+
+  void Add(double d) {
+    values_.push_back(Variant(d));
+  }
+
+  int AddRows(DbCol *cols, long nrows);
+
+  static int AddRows(TableInfo *ti, DbCol *cols, long nrows);
+
+  class Inserter {
+   private:
+    Table *table_;
+
+   public:
+    explicit Inserter(Table *t) : table_(t) {}
+
+    Inserter operator,(double d) {
+      table_->Add(d);
+      return *this;
+    }
+
+    Inserter operator,(const char* s) {
+      table_->Add(s);
+      return *this;
+    }
+  };
+
+ public:
+  Table(const std::string &name, int num_cols)
+  : name_(name), num_cols_(num_cols) {}
+
+  const char *name() const { return name_.c_str(); }
+
+  int num_rows() const { return values_.size() / num_cols_ - 1; }
+  int num_cols() const { return num_cols_; }
+
+  const char *GetColName(int col_index) const {
+    assert(col_index >= 0 && col_index < num_cols_);
+    return static_cast<const char*>(values_[col_index].pointer());
+  }
+
+  const char *GetString(int row_index, int col_index) const {
+    assert(col_index >= 0 && col_index < num_cols_);
+    assert(row_index >= 0 && row_index < num_rows());
+    return static_cast<const char*>(
+        values_[(row_index + 1) * num_cols_ + col_index].pointer());
+  }
+
+  Inserter operator=(const char *s) {
+    Clear();
+    Add(s);
+    return Inserter(this);
+  }
+
+  Inserter operator=(double d) {
+    Clear();
+    Add(d);
+    return Inserter(this);
+  }
+};
+
 class Handler;
 class LibraryImpl;
-class TableImpl;
 
 // An AMPL function library.
 class Library {
@@ -146,29 +237,6 @@ class Library {
   const Handler *GetHandler(const char *name) const;
 };
 
-class Table {
- private:
-  std::auto_ptr<TableImpl> impl_;
-
-  friend class Handler;
-
-  // Do not implement.
-  Table(const Table &);
-  Table &operator=(const Table &);
-
- public:
-  Table(const char *table_name, int num_rows, int num_cols,
-      const char *str1, const char *str2, const char *str3 = 0);
-
-  int num_rows() const;
-  const char *error_message() const;
-
-  void SetColName(int col, const char *name);
-
-  const char *GetString(int row, int col) const;
-  void SetString(int row, const char *str);
-};
-
 typedef int (*TableHandlerFunc)(AmplExports *ae, TableInfo *ti);
 
 class Handler {
@@ -181,8 +249,9 @@ class Handler {
   Handler(Library *lib, TableHandlerFunc read, TableHandlerFunc write) :
     lib_(lib), read_(read), write_(write) {}
 
-  int Read(Table *t) const;
-  int Write(Table *t) const;
+  void Read(const std::string &connection_str, Table *t,
+      const std::string &sql_statement = std::string()) const;
+  void Write(const std::string &connection_str, const Table &t) const;
 };
 
 template <typename T>
