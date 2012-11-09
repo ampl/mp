@@ -182,7 +182,10 @@ class Table {
 
   const char *name() const { return name_.c_str(); }
 
-  int num_rows() const { return values_.size() / num_cols_ - 1; }
+  int num_rows() const {
+    return num_cols_ == 0 ? 0 : values_.size() / num_cols_ - 1;
+  }
+
   int num_cols() const { return num_cols_; }
 
   const char *GetColName(int col_index) const {
