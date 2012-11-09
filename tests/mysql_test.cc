@@ -89,64 +89,49 @@ void MySQLTest::TearDown() {
 fun::Library MySQLTest::lib_("../tables/ampltabl.dll");
 
 TEST_F(MySQLTest, Read) {
-  Table t("", 1, 1, "ODBC", connection_.c_str(), "SQL=SELECT VERSION();");
-  t.SetColName(0, "VERSION()");
-  EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Read(&t));
-  EXPECT_EQ(nullptr, t.error_message());
+  Table t("", 1);
+  t = "VERSION()";
+  lib_.GetHandler("odbc")->Read(connection_, &t, "SQL=SELECT VERSION();");
   EXPECT_EQ(1, t.num_rows());
   EXPECT_TRUE(t.GetString(0, 0) != nullptr);
 }
 
 TEST_F(MySQLTest, Write) {
-  {
-    Table t(table_name_.c_str(), 2, 1, "ODBC", connection_.c_str());
-    t.SetColName(0, "Character Name");
-    t.SetString(0, "Arthur Dent");
-    t.SetString(1, "Ford Prefect");
-    EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Write(&t));
-    EXPECT_STREQ(nullptr, t.error_message());
-  }
-  {
-    Table t(table_name_.c_str(), 2, 1, "ODBC", connection_.c_str());
-    t.SetColName(0, "Character Name");
-    EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Read(&t));
-    EXPECT_STREQ(nullptr, t.error_message());
-    ASSERT_EQ(2, t.num_rows());
-    EXPECT_STREQ("Arthur Dent", t.GetString(0, 0));
-    EXPECT_STREQ("Ford Prefect", t.GetString(1, 0));
-  }
+  Table t1(table_name_, 1);
+  t1 = "Character Name",
+       "Arthur Dent",
+       "Ford Prefect";
+  lib_.GetHandler("odbc")->Write(connection_, t1);
+  Table t2(table_name_, 1);
+  t2 = "Character Name";
+  lib_.GetHandler("odbc")->Read(connection_, &t2);
+  ASSERT_EQ(2, t2.num_rows());
+  EXPECT_STREQ("Arthur Dent", t2.GetString(0, 0));
+  EXPECT_STREQ("Ford Prefect", t2.GetString(1, 0));
 }
 
 TEST_F(MySQLTest, Rewrite) {
+  Table t1(table_name_, 1);
+  t1 = "Test",
+       "foo";
+  // The first write creates a table.
+  lib_.GetHandler("odbc")->Write(connection_, t1);
   {
-    // The first write creates a table.
-    Table t(table_name_.c_str(), 1, 1, "ODBC", connection_.c_str());
-    t.SetColName(0, "Test");
-    t.SetString(0, "foo");
-    EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Write(&t));
-    EXPECT_STREQ(nullptr, t.error_message());
-  }
-  {
-    Table t(table_name_.c_str(), 1, 1, "ODBC", connection_.c_str());
-    t.SetColName(0, "Test");
-    EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Read(&t));
-    EXPECT_STREQ(nullptr, t.error_message());
+    Table t(table_name_, 1);
+    t = "Test";
+    lib_.GetHandler("odbc")->Read(connection_, &t);
     ASSERT_EQ(1, t.num_rows());
     EXPECT_STREQ("foo", t.GetString(0, 0));
   }
+  // The second write should drop the table and create a new one.
+  Table t2(table_name_, 1);
+  t2 = "Character",
+       "Zaphod";
+  lib_.GetHandler("odbc")->Write(connection_, t2);
   {
-    // The second write should drop the table and create a new one.
-    Table t(table_name_.c_str(), 1, 1, "ODBC", connection_.c_str());
-    t.SetColName(0, "Character");
-    t.SetString(0, "Zaphod");
-    EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Write(&t));
-    EXPECT_STREQ(nullptr, t.error_message());
-  }
-  {
-    Table t(table_name_.c_str(), 1, 1, "ODBC", connection_.c_str());
-    t.SetColName(0, "Character");
-    EXPECT_EQ(DB_Done, lib_.GetHandler("odbc")->Read(&t));
-    EXPECT_STREQ(nullptr, t.error_message());
+    Table t(table_name_, 1);
+    t = "Character";
+    lib_.GetHandler("odbc")->Read(connection_, &t);
     ASSERT_EQ(1, t.num_rows());
     EXPECT_STREQ("Zaphod", t.GetString(0, 0));
   }

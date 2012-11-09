@@ -33,8 +33,94 @@
 #undef VOID
 
 using std::string;
+using fun::Table;
 
 namespace {
+
+class ScopedTableInfo : public TableInfo {
+ private:
+  std::vector<char*> strings_;
+  std::vector<char*> colnames_;
+  std::vector<DbCol> cols_;
+  std::vector<double> dvals_;
+  std::vector<char*> svals_;
+  Table *table_;
+
+  void SetString(std::vector<char*> *strings, int index, const char *str);
+  void AddString(std::vector<char*> *strings, const char *str);
+
+  struct Deleter {
+    void operator()(char *ptr) { delete [] ptr; }
+  };
+
+ public:
+  ScopedTableInfo(const Table &t, const std::string &connection_str,
+      const std::string &sql = std::string());
+  ~ScopedTableInfo();
+
+  Table *GetTable() { return table_; }
+  void SetTable(Table *t) { table_ = t; }
+
+  void SetString(int row, const char *str) {
+    cols_[0].sval[row] = const_cast<char*>(str);
+  }
+};
+
+void ScopedTableInfo::SetString(
+    std::vector<char*> *strings, int index, const char *str) {
+  char *&oldstr = (*strings)[index];
+  if (oldstr) delete [] oldstr;
+  oldstr = new char[std::strlen(str) + 1];
+  std::strcpy(oldstr, str);  // NOLINT(runtime/printf)
+}
+
+void ScopedTableInfo::AddString(std::vector<char*> *strings, const char *str) {
+  if (!str) return;
+  strings->push_back(0);
+  SetString(strings, strings->size() - 1, str);
+}
+
+ScopedTableInfo::ScopedTableInfo(const Table &t,
+    const std::string &connection_str, const std::string &sql) : TableInfo() {
+  tname = const_cast<char*>(t.name());
+  AddString(&strings_, "ODBC");
+  AddString(&strings_, connection_str.c_str());
+  if (!sql.empty())
+    AddString(&strings_, sql.c_str());
+  nstrings = strings_.size();
+  strings = &strings_[0];
+
+  nrows = maxrows = t.num_rows();
+  arity = 1;
+  ncols = t.num_cols() - arity;
+  colnames_.resize(t.num_cols());
+  colnames = &colnames_[0];
+  cols_.reserve(t.num_cols());
+  int num_rows = std::max(t.num_rows(), 1);
+  int num_values = num_rows * t.num_cols();
+  svals_.resize(num_values);
+  dvals_.resize(num_values);
+  for (int i = 0; i < t.num_cols(); ++i) {
+    SetString(&colnames_, i, t.GetColName(i));
+    DbCol col = {};
+    col.dval = &dvals_[i * num_rows];
+    col.sval = &svals_[i * num_rows];
+    cols_.push_back(col);
+  }
+  cols = &cols_[0];
+}
+
+ScopedTableInfo::~ScopedTableInfo() {
+  for_each(strings_.begin(), strings_.end(), Deleter());
+  for_each(colnames_.begin(), colnames_.end(), Deleter());
+}
+
+void CheckResult(int result, const ScopedTableInfo &ti) {
+  if (ti.Errmsg)
+    throw std::runtime_error(ti.Errmsg);
+  if (result != DB_Done)
+    throw std::runtime_error("DbRead failed");
+}
 
 void Print(std::ostream &os, double value) {
   if (!isnan(value))
@@ -183,149 +269,40 @@ const Handler *Library::GetHandler(const char *name) const {
   return impl_->GetHandler(name);
 }
 
-class TableImpl : public TableInfo {
- private:
-  int num_rows_;
-  std::vector<char*> strings_;
-  std::vector<char*> colnames_;
-  std::vector<DbCol> cols_;
-  std::vector<double> dvals_;
-  std::vector<char*> svals_;
-  std::vector<Variant> values_;
-  std::deque<std::string> read_strings_;
-
-  void SetString(std::vector<char*> *strings, int index, const char *str);
-  void AddString(std::vector<char*> *strings, const char *str);
-
-  int AddRows(DbCol *cols, long nrows) {  // NOLINT(runtime/int)
-    num_rows_ += nrows;
-    for (int i = 0; i < nrows; ++i) {
-      for (int j = 0; j < num_cols(); ++j) {
-        DbCol &value = cols[j];
-        Variant v;
-        if (value.sval[i]) {
-          read_strings_.push_back(value.sval[i]);
-          v = const_cast<char*>(read_strings_.back().c_str());
-        } else {
-          v = value.dval[i];
-        }
-        values_.push_back(v);
-      }
+int Table::AddRows(DbCol *cols, long nrows) {  // NOLINT(runtime/int)
+  for (int i = 0; i < nrows; ++i) {
+    for (int j = 0; j < num_cols(); ++j) {
+      DbCol &value = cols[j];
+      if (value.sval[i])
+        Add(value.sval[i]);
+      else
+        Add(value.dval[i]);
     }
-    return 0;
   }
-
-  static int AddRows(
-      TableInfo *ti, DbCol *cols, long nrows) {  // NOLINT(runtime/int)
-    return static_cast<TableImpl*>(ti)->AddRows(cols, nrows);
-  }
-
-  struct Deleter {
-    void operator()(char *ptr) { delete [] ptr; }
-  };
-
- public:
-  TableImpl(const char *table_name, int num_rows, int num_cols,
-      const char *str1, const char *str2, const char *str3);
-
-  ~TableImpl();
-
-  void SetColName(int col, const char *name) {
-    assert(col >= 0 && col < num_cols());
-    SetString(&colnames_, col, name);
-  }
-
-  int num_rows() const { return num_rows_; }
-  int num_cols() const { return arity + ncols; }
-
-  const char *GetString(int row, int col) const {
-    const Variant &value = values_[row * num_cols() + col];
-    return value.type() == POINTER ?
-        static_cast<const char*>(value.pointer()) : 0;
-  }
-
-  void SetString(int row, const char *str) {
-    cols_[0].sval[row] = const_cast<char*>(str);
-  }
-};
-
-void TableImpl::SetString(
-    std::vector<char*> *strings, int index, const char *str) {
-  char *&oldstr = (*strings)[index];
-  if (oldstr) delete [] oldstr;
-  oldstr = new char[std::strlen(str) + 1];
-  std::strcpy(oldstr, str);  // NOLINT(runtime/printf)
+  return 0;
 }
 
-void TableImpl::AddString(std::vector<char*> *strings, const char *str) {
-  if (!str) return;
-  strings->push_back(0);
-  SetString(strings, strings->size() - 1, str);
+int Table::AddRows(
+    TableInfo *ti, DbCol *cols, long nrows) {  // NOLINT(runtime/int)
+  return static_cast<ScopedTableInfo*>(ti)->GetTable()->AddRows(cols, nrows);
 }
 
-TableImpl::TableImpl(const char *table_name, int num_rows, int num_cols,
-    const char *str1, const char *str2, const char *str3) :
-        TableInfo(), num_rows_(0) {
-  TableInfo::AddRows = AddRows;
-  tname = const_cast<char*>(table_name);
-  AddString(&strings_, str1);
-  AddString(&strings_, str2);
-  AddString(&strings_, str3);
-  nstrings = strings_.size();
-  strings = &strings_[0];
-
-  arity = 1;
-  ncols = num_cols - 1;
-  nrows = maxrows = num_rows;
-  cols_.reserve(num_cols);
-  int num_values = num_rows * num_cols;
-  svals_.resize(num_values);
-  dvals_.resize(num_values);
-  for (int i = 0; i < num_cols; ++i) {
-    DbCol col = {};
-    col.dval = &dvals_[i * num_rows];
-    col.sval = &svals_[i * num_rows];
-    cols_.push_back(col);
-  }
-  cols = &cols_[0];
-  colnames_.resize(num_cols);
-  colnames = &colnames_[0];
+void Handler::Read(const std::string &connection_str,
+    Table *t, const std::string &sql_statement) const {
+  ScopedTableInfo table(*t, connection_str, sql_statement);
+  table.TMI = lib_->impl();
+  table.SetTable(t);
+  table.AddRows = Table::AddRows;
+  CheckResult(read_(lib_->impl(), &table), table);
 }
 
-TableImpl::~TableImpl() {
-  for_each(strings_.begin(), strings_.end(), Deleter());
-  for_each(colnames_.begin(), colnames_.end(), Deleter());
-}
-
-Table::Table(const char *table_name, int num_rows, int num_cols,
-    const char *str1, const char *str2, const char *str3) :
-  impl_(new TableImpl(table_name, num_rows, num_cols, str1, str2, str3)) {
-}
-
-int Table::num_rows() const { return impl_->num_rows(); }
-
-const char *Table::error_message() const { return impl_->Errmsg; }
-
-void Table::SetColName(int col, const char *name) {
-  impl_->SetColName(col, name);
-}
-
-const char *Table::GetString(int row, int col) const {
-  return impl_->GetString(row, col);
-}
-
-void Table::SetString(int row, const char *str) {
-  return impl_->SetString(row, str);
-}
-
-int Handler::Read(Table *t) const {
-  t->impl_->TMI = lib_->impl();
-  return read_(lib_->impl(), t->impl_.get());
-}
-
-int Handler::Write(Table *t) const {
-  t->impl_->TMI = lib_->impl();
-  return write_(lib_->impl(), t->impl_.get());
+void Handler::Write(
+    const std::string &connection_str, const Table &t) const {
+  ScopedTableInfo table(t, connection_str);
+  for (int i = 0, m = t.num_rows(); i < m; ++i)
+    table.SetString(i, t.GetString(i, 0));
+  table.TMI = lib_->impl();
+  CheckResult(write_(lib_->impl(), &table), table);
 }
 
 const Type GetType<void>::VALUE = VOID;
