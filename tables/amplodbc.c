@@ -22,7 +22,7 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
- static char Version[] = "\n@(#) AMPL ODBC driver, version 20120315.\n";
+ static char Version[] = "\n@(#) AMPL ODBC driver, version 20121108.\n";
 
 #ifdef _WIN32
 #include <windows.h>
@@ -1401,6 +1401,16 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 		prc(h, "SQLGetInfo", SQLGetInfo(h->hc, SQL_IDENTIFIER_QUOTE_CHAR,
 				quote, sizeof(quote) / sizeof(*quote), &length));
 		h->quote = quote[0];
+		if (h->quote != ' ') {
+			/* Quote the table name. */
+			size_t tname_length = strlen(tname);
+			char *quoted_tname = TM(tname_length + 3);
+			quoted_tname[0] = h->quote;
+			strcpy(quoted_tname + 1, tname);
+			quoted_tname[tname_length + 1] = h->quote;
+			quoted_tname[tname_length + 2] = '\0';
+			tname = quoted_tname;
+		}
 	}
 	if (prc(h, "SQLAllocStmt", SQLAllocStmt(h->hc,&h->hs)))
 		goto unexpected;
@@ -1648,7 +1658,6 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 #define p(x) p_[x]
 #define pi(x) pi_[x]
 #endif
-	static char anum[256];
 
 	if ((i = ODBC_check(ae, TI, &h)))
 		return i;
@@ -1659,23 +1668,11 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	/* check validity of column names */
 
 	colname_adjust(ae, &h, TI);
-	if (!anum['a']) {
-		s = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
-		do anum[(int)*s++] = 1; while(*s);
-		}
 	for(i = 0; i++ < nc; cn++) {
 		s = *cn;
 		if (!*s) {
 			sprintf(TI->Errmsg = (char*)TM(strlen(*cn) + 60),
 				"Column %d's name is the empty string.", i);
-			return rc;
-			}
-		while(anum[(int)*s])
-			s++;
-		if (*s) {
-			sprintf(TI->Errmsg = (char*)TM(strlen(*cn) + 80),
-	"Column %d's name \"%s\" contains non-alphanumeric character '%c'.",
-				i, *cn, *s);
 			return rc;
 			}
 		}
@@ -1753,7 +1750,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 		j += /*(*/ sprintf(it+j, ") VALUES (?"); /*)*/
 		goto finish_insprep;
 		}
-	j = sprintf(ct, "CREATE TABLE %c%s%c ("/*)*/, h.quote, tname, h.quote);
+	j = sprintf(ct, "CREATE TABLE %s ("/*)*/, tname);
 	for(i1 = 0; i1 < nc; i1++) {
 		i = p(i1);
 		db = db0 + i;
@@ -1787,7 +1784,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 		if (nodrop)
 			goto done;
  droptry:
-		sprintf(dt, "DROP TABLE %c%s%c", h.quote, tname, h.quote);
+		sprintf(dt, "DROP TABLE %s", tname);
 		if ((i = SQLExecDirect(hs, UC dt, SQL_NTS)) == SQL_SUCCESS
 		  || i == SQL_SUCCESS_WITH_INFO) {
 			if (h.verbose)
@@ -2079,7 +2076,7 @@ select_stmt(AmplExports *ae, TableInfo *TI, char *tname, size_t L)
 	s += sprintf(s, "SELECT \"%s\"", *cn);
 	while(++cn < cne)
 		s += sprintf(s, ", \"%s\"", *cn);
-	sprintf(s, " FROM \"%s\"", tname);
+	sprintf(s, " FROM %s", tname);
 	return rv;
 	}
 #endif /* SELECT_JUST_DESIRED_COLUMNS */
@@ -2150,13 +2147,12 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 		 ||  i == SQL_SUCCESS_WITH_INFO)
 			goto select_worked;
 #endif
-		sprintf(sbuf = (char*)TM(L + 32), "SELECT ALL * FROM %c%s%c",
-				h.quote, tname, h.quote);
+		sprintf(sbuf = (char*)TM(L + 32), "SELECT ALL * FROM %s", tname);
 		}
 	if (prc(&h, "SQLPrepare", SQLPrepare(hs = h.hs, UC sbuf, SQL_NTS))) {
 		if (s) {
 			sprintf(TI->Errmsg = (char*)TM(L + 32),
-				"\"%s\" did not work.", tname);
+				"%s did not work.", tname);
 			goto bailout;
 			}
  badret:
