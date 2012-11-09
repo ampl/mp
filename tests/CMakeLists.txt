@@ -58,7 +58,7 @@ if (ODBC_FOUND)
       set(MYSQL_TEST_LIBRARIES Ws2_32.lib)
     endif ()
     cxx_test_with_flags(mysql_test ""
-      "gtest;function;${ODBC_LIBRARIES}${MYSQL_TEST_LIBRARIES}"
+      "gtest;function;${ODBC_LIBRARIES};${MYSQL_TEST_LIBRARIES}"
       test_main.cc mysql_test.cc odbc.cc)
   endif ()
 endif ()
