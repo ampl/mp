@@ -176,28 +176,43 @@ class Table {
     }
   };
 
+  bool CheckIndices(int row_index, int col_index) const {
+    return col_index >= 0 && col_index < num_cols_ &&
+           row_index >= 0 && row_index < num_rows() &&
+           (row_index + 1) * num_cols_ + col_index <
+             static_cast<int>(values_.size());
+  }
+
  public:
   Table(const std::string &name, int num_cols)
-  : name_(name), num_cols_(num_cols) {}
+  : name_(name), num_cols_(num_cols) {
+    assert(num_cols_ >= 0);
+  }
 
   const char *name() const { return name_.c_str(); }
 
   int num_rows() const {
-    return num_cols_ == 0 ? 0 : values_.size() / num_cols_ - 1;
+    int num_values = values_.size();
+    return num_values <= num_cols_ ? 0 : num_values / num_cols_ - 1;
   }
 
   int num_cols() const { return num_cols_; }
 
   const char *GetColName(int col_index) const {
-    assert(col_index >= 0 && col_index < num_cols_);
+    assert(col_index >= 0 &&
+        col_index < std::min<int>(num_cols_, values_.size()));
     return static_cast<const char*>(values_[col_index].pointer());
   }
 
   const char *GetString(int row_index, int col_index) const {
-    assert(col_index >= 0 && col_index < num_cols_);
-    assert(row_index >= 0 && row_index < num_rows());
+    assert(CheckIndices(row_index, col_index));
     return static_cast<const char*>(
         values_[(row_index + 1) * num_cols_ + col_index].pointer());
+  }
+
+  double GetDouble(int row_index, int col_index) const {
+    assert(CheckIndices(row_index, col_index));
+    return values_[(row_index + 1) * num_cols_ + col_index];
   }
 
   Inserter operator=(const char *s) {

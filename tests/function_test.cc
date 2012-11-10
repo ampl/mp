@@ -51,23 +51,14 @@ using fun::Table;
 
 namespace {
 
-TEST(FunctionTest, Library) {
-  Library lib("testlib.dll");
-  EXPECT_EQ(0u, lib.GetNumFunctions());
-  EXPECT_TRUE(lib.GetFunction("foo") == nullptr);
-  lib.Load();
-  EXPECT_EQ(2u, lib.GetNumFunctions());
-  EXPECT_TRUE(lib.GetFunction("nonexistent") == nullptr);
-  const func_info *fi = lib.GetFunction("foo");
-  EXPECT_TRUE(fi != nullptr);
-  EXPECT_STREQ(fi->name, "foo");
-  EXPECT_EQ(42, fi->funcp(nullptr));
-  EXPECT_EQ("duplicate function 'bar'", lib.error());
-  EXPECT_TRUE(lib.GetHandler("nonexistent") == nullptr);
-  const Handler *handler = lib.GetHandler("testhandler");
-  EXPECT_TRUE(handler != nullptr);
-  Table t("", 0);
-  handler->Read("", &t);
+#undef VOID
+
+TEST(FunctionTest, Type) {
+  EXPECT_EQ(fun::VOID, GetType<void>::VALUE);
+  EXPECT_EQ(fun::INT, GetType<int>::VALUE);
+  EXPECT_EQ(fun::UINT, GetType<unsigned>::VALUE);
+  EXPECT_EQ(fun::DOUBLE, GetType<double>::VALUE);
+  EXPECT_EQ(fun::POINTER, GetType<int*>::VALUE);
 }
 
 TEST(FunctionTest, Variant) {
@@ -100,6 +91,59 @@ TEST(FunctionTest, VariantFromPointer) {
   EXPECT_EQ(fun::POINTER, v.type());
   EXPECT_EQ(&dummy, v.pointer());
   EXPECT_THROW(static_cast<double>(v), std::runtime_error);
+}
+
+TEST(FunctionTest, EmptyTable) {
+  Table t("", 0);
+  EXPECT_STREQ("", t.name());
+  EXPECT_EQ(0, t.num_rows());
+  EXPECT_EQ(0, t.num_cols());
+  EXPECT_DEBUG_DEATH(t.GetColName(0);, "Assertion");  // NOLINT(*)
+  EXPECT_DEBUG_DEATH(t.GetString(0, 0);, "Assertion");  // NOLINT(*)
+}
+
+TEST(FunctionTest, TableWithNegativeNumCols) {
+  EXPECT_DEBUG_DEATH(Table t("", -1);, "Assertion");  // NOLINT(*)
+}
+
+TEST(FunctionTest, Table) {
+  Table t("Test", 3);
+  EXPECT_STREQ("Test", t.name());
+  EXPECT_EQ(0, t.num_rows());
+  EXPECT_EQ(3, t.num_cols());
+  EXPECT_DEBUG_DEATH(t.GetColName(0);, "Assertion");  // NOLINT(*)
+  EXPECT_DEBUG_DEATH(t.GetString(0, 0);, "Assertion");  // NOLINT(*)
+  t = "c1", "c2", "c3",
+       11,  "v12", 13,
+      "v21", 22,  "v23";
+  EXPECT_STREQ("c1", t.GetColName(0));
+  EXPECT_STREQ("c2", t.GetColName(1));
+  EXPECT_STREQ("c3", t.GetColName(2));
+  EXPECT_EQ(11, t.GetDouble(0, 0));
+  EXPECT_STREQ("v12", t.GetString(0, 1));
+  EXPECT_EQ(13, t.GetDouble(0, 2));
+  EXPECT_STREQ("v21", t.GetString(1, 0));
+  EXPECT_EQ(22, t.GetDouble(1, 1));
+  EXPECT_STREQ("v23", t.GetString(1, 2));
+}
+
+TEST(FunctionTest, Library) {
+  Library lib("testlib.dll");
+  EXPECT_EQ(0u, lib.GetNumFunctions());
+  EXPECT_TRUE(lib.GetFunction("foo") == nullptr);
+  lib.Load();
+  EXPECT_EQ(2u, lib.GetNumFunctions());
+  EXPECT_TRUE(lib.GetFunction("nonexistent") == nullptr);
+  const func_info *fi = lib.GetFunction("foo");
+  EXPECT_TRUE(fi != nullptr);
+  EXPECT_STREQ(fi->name, "foo");
+  EXPECT_EQ(42, fi->funcp(nullptr));
+  EXPECT_EQ("duplicate function 'bar'", lib.error());
+  EXPECT_TRUE(lib.GetHandler("nonexistent") == nullptr);
+  const Handler *handler = lib.GetHandler("testhandler");
+  EXPECT_TRUE(handler != nullptr);
+  Table t("", 0);
+  handler->Read("", &t);
 }
 
 const double ITEMS[] = {5, 7, 11, 13, 17, 19, 23, 29, 31};
@@ -153,16 +197,6 @@ TEST(FunctionTest, BitSet) {
   CheckBitSet("11", BitSet(2, true));
   CheckBitSet("000", BitSet(3, false));
   CheckBitSet("1010", BitSet("1010"));
-}
-
-#undef VOID
-
-TEST(FunctionTest, Type) {
-  EXPECT_EQ(fun::VOID, GetType<void>::VALUE);
-  EXPECT_EQ(fun::INT, GetType<int>::VALUE);
-  EXPECT_EQ(fun::UINT, GetType<unsigned>::VALUE);
-  EXPECT_EQ(fun::DOUBLE, GetType<double>::VALUE);
-  EXPECT_EQ(fun::POINTER, GetType<int*>::VALUE);
 }
 
 TEST(FunctionTest, FunctionWithTypes) {
