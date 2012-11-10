@@ -91,8 +91,8 @@ ScopedTableInfo::ScopedTableInfo(const Table &t,
   nstrings = strings_.size();
   strings = &strings_[0];
 
-  int num_rows = std::max(t.num_rows(), 1);
-  int num_values = num_rows * t.num_cols();
+  unsigned num_rows = std::max(t.num_rows(), 1u);
+  unsigned num_values = num_rows * t.num_cols();
   svals_.resize(num_values);
   dvals_.resize(num_values);
 
