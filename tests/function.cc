@@ -103,7 +103,6 @@ ScopedTableInfo::ScopedTableInfo(const Table &t,
     colnames_.resize(t.num_cols());
     colnames = &colnames_[0];
     cols_.reserve(t.num_cols());
-    cols = &cols_[0];
     for (int i = 0; i < t.num_cols(); ++i) {
       SetString(&colnames_, i, t.GetColName(i));
       DbCol col = {};
@@ -111,6 +110,7 @@ ScopedTableInfo::ScopedTableInfo(const Table &t,
       col.sval = &svals_[i * num_rows];
       cols_.push_back(col);
     }
+    cols = &cols_[0];
   }
 }
 
