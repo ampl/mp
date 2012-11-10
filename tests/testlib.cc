@@ -32,7 +32,7 @@ static double TestFunc(arglist *al) {
 static int TestHandler(AmplExports *ae, TableInfo *ti) {
   UNUSED(ae);
   UNUSED(ti);
-  return 0;
+  return DB_Done;
 }
 
 extern "C" void funcadd_ASL(AmplExports *ae) {
