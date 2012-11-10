@@ -23,7 +23,6 @@
 #ifndef TESTS_FUNCTION_H_
 #define TESTS_FUNCTION_H_
 
-#include <cassert>
 #include <cmath>
 #include <algorithm>
 #include <deque>
@@ -80,6 +79,7 @@ struct GetType<T*> {
 template <typename T>
 const Type GetType<T*>::VALUE = POINTER;
 
+// A variant type that can hold doubles and pointers.
 class Variant {
  private:
   Type type_;
@@ -130,14 +130,19 @@ class Variant {
   }
 };
 
+// A named two-dimensional table.
 class Table {
  private:
   std::string name_;
-  int num_cols_;
+  unsigned num_cols_;
   std::deque<std::string> strings_;
   std::vector<fun::Variant> values_;
 
   friend class Handler;
+
+  // Do not implement.
+  Table(const Table &);
+  Table &operator=(const Table &);
 
   void Clear() {
     strings_.clear();
@@ -176,43 +181,41 @@ class Table {
     }
   };
 
-  bool CheckIndices(int row_index, int col_index) const {
-    return col_index >= 0 && col_index < num_cols_ &&
-           row_index >= 0 && row_index < num_rows() &&
-           (row_index + 1) * num_cols_ + col_index <
-             static_cast<int>(values_.size());
+  const Variant &GetValue(unsigned row_index, unsigned col_index) const {
+    if (col_index >= num_cols_)
+      throw std::invalid_argument("invalid column index");
+    if (row_index >= num_rows())
+      throw std::invalid_argument("invalid row index");
+    return values_[(row_index + 1) * num_cols_ + col_index];
   }
 
  public:
-  Table(const std::string &name, int num_cols)
+  Table(const std::string &name, unsigned num_cols)
   : name_(name), num_cols_(num_cols) {
-    assert(num_cols_ >= 0);
   }
 
   const char *name() const { return name_.c_str(); }
 
-  int num_rows() const {
-    int num_values = values_.size();
+  unsigned num_rows() const {
+    unsigned num_values = values_.size();
     return num_values <= num_cols_ ? 0 : num_values / num_cols_ - 1;
   }
 
-  int num_cols() const { return num_cols_; }
+  unsigned num_cols() const { return num_cols_; }
 
-  const char *GetColName(int col_index) const {
-    assert(col_index >= 0 &&
-        col_index < std::min<int>(num_cols_, values_.size()));
+  const char *GetColName(unsigned col_index) const {
+    if (col_index >= std::min<unsigned>(num_cols_, values_.size()))
+      throw std::invalid_argument("invalid column index");
     return static_cast<const char*>(values_[col_index].pointer());
   }
 
-  const char *GetString(int row_index, int col_index) const {
-    assert(CheckIndices(row_index, col_index));
+  const char *GetString(unsigned row_index, unsigned col_index) const {
     return static_cast<const char*>(
-        values_[(row_index + 1) * num_cols_ + col_index].pointer());
+        GetValue(row_index, col_index).pointer());
   }
 
-  double GetDouble(int row_index, int col_index) const {
-    assert(CheckIndices(row_index, col_index));
-    return values_[(row_index + 1) * num_cols_ + col_index];
+  double GetDouble(unsigned row_index, unsigned col_index) const {
+    return GetValue(row_index, col_index);
   }
 
   Inserter operator=(const char *s) {
