@@ -82,6 +82,7 @@ void ScopedTableInfo::AddString(std::vector<char*> *strings, const char *str) {
 
 ScopedTableInfo::ScopedTableInfo(const Table &t,
     const std::string &connection_str, const std::string &sql) : TableInfo() {
+  Errmsg = 0;
   tname = const_cast<char*>(t.name());
   AddString(&strings_, "ODBC");
   AddString(&strings_, connection_str.c_str());
@@ -90,24 +91,27 @@ ScopedTableInfo::ScopedTableInfo(const Table &t,
   nstrings = strings_.size();
   strings = &strings_[0];
 
-  nrows = maxrows = t.num_rows();
-  arity = 1;
-  ncols = t.num_cols() - arity;
-  colnames_.resize(t.num_cols());
-  colnames = &colnames_[0];
-  cols_.reserve(t.num_cols());
   int num_rows = std::max(t.num_rows(), 1);
   int num_values = num_rows * t.num_cols();
   svals_.resize(num_values);
   dvals_.resize(num_values);
-  for (int i = 0; i < t.num_cols(); ++i) {
-    SetString(&colnames_, i, t.GetColName(i));
-    DbCol col = {};
-    col.dval = &dvals_[i * num_rows];
-    col.sval = &svals_[i * num_rows];
-    cols_.push_back(col);
+
+  nrows = maxrows = t.num_rows();
+  arity = 1;
+  ncols = t.num_cols() - arity;
+  if (t.num_cols() != 0) {
+    colnames_.resize(t.num_cols());
+    colnames = &colnames_[0];
+    cols_.reserve(t.num_cols());
+    cols = &cols_[0];
+    for (int i = 0; i < t.num_cols(); ++i) {
+      SetString(&colnames_, i, t.GetColName(i));
+      DbCol col = {};
+      col.dval = &dvals_[i * num_rows];
+      col.sval = &svals_[i * num_rows];
+      cols_.push_back(col);
+    }
   }
-  cols = &cols_[0];
 }
 
 ScopedTableInfo::~ScopedTableInfo() {
