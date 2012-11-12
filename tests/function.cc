@@ -81,8 +81,12 @@ void ScopedTableInfo::AddString(std::vector<char*> *strings, const char *str) {
 }
 
 ScopedTableInfo::ScopedTableInfo(const Table &t,
-    const std::string &connection_str, const std::string &sql) : TableInfo() {
-  Errmsg = 0;
+    const std::string &connection_str, const std::string &sql) {
+  // Workaround for GCC bug 30111 that prevents value-initialization of
+  // the base POD class.
+  TableInfo ti = {};
+  static_cast<TableInfo&>(*this) = ti;
+
   tname = const_cast<char*>(t.name());
   AddString(&strings_, "ODBC");
   AddString(&strings_, connection_str.c_str());
