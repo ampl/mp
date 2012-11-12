@@ -4,6 +4,7 @@ add_ampl_library(fullbit fullbit.c)
 find_package(ODBC)
 if (ODBC_FOUND)
   add_library(amplodbc amplodbc.c)
+  add_dependencies(amplodbc arith_h)
   set(AMPLODBC amplodbc ${ODBC_LIBRARIES})
   set_target_properties(amplodbc
     PROPERTIES COMPILE_DEFINITIONS funcadd_ASL=funcaddodbc_ASL)
