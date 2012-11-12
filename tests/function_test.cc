@@ -125,6 +125,38 @@ TEST(FunctionTest, Table) {
   EXPECT_STREQ("v23", t.GetString(1, 2));
 }
 
+TEST(FunctionTest, TableComparison) {
+  Table t1("t1", 0), t2("t2", 0);
+  EXPECT_TRUE(t1 == t2);
+  Table t3("", 2);
+  EXPECT_FALSE(t1 == t3);
+  Table t4("", 2);
+  EXPECT_TRUE(t3 == t4);
+  t3 = "a", "b",
+       "c", "d";
+  EXPECT_FALSE(t3 == t4);
+  t4 = "a", "b",
+       "c", "d";
+  EXPECT_TRUE(t3 == t4);
+  Table t5("", 1);
+  t5 = "a", "b", "c", "d";
+  EXPECT_FALSE(t3 == t5);
+  Table t6("", 2);
+  t6 = "a", "b";
+  EXPECT_FALSE(t3 == t6);
+  Table t7("", 2);
+  EXPECT_FALSE(t7 == t6);
+}
+
+TEST(FunctionTest, TableOutput) {
+  std::stringstream ss;
+  Table t("", 2);
+  t = "a", "b",
+      "c", "d";
+  ss << t;
+  EXPECT_EQ("a b \nc d \n", ss.str());
+}
+
 TEST(FunctionTest, Library) {
   Library lib("testlib.dll");
   EXPECT_EQ(0u, lib.GetNumFunctions());

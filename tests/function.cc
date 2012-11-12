@@ -295,6 +295,44 @@ int Table::AddRows(
   return static_cast<ScopedTableInfo*>(ti)->GetTable()->AddRows(cols, nrows);
 }
 
+bool operator==(const Table &lhs, const Table &rhs) {
+  unsigned num_rows = lhs.num_rows();
+  if (num_rows != rhs.num_rows())
+    return false;
+  unsigned num_cols = lhs.num_cols();
+  if (num_cols != rhs.num_cols())
+    return false;
+  if (lhs.HasColNames() != rhs.HasColNames())
+    return false;
+  if (!lhs.HasColNames())
+    return true;
+  for (unsigned j = 0; j != num_cols; ++j) {
+    if (std::strcmp(lhs.GetColName(j), rhs.GetColName(j)) != 0)
+      return false;
+  }
+  for (unsigned i = 0; i != num_rows; ++i) {
+    for (unsigned j = 0; j != num_cols; ++j) {
+      if (std::strcmp(lhs.GetString(i, j), rhs.GetString(i, j)) != 0)
+        return false;
+    }
+  }
+  return true;
+}
+
+std::ostream &operator<<(std::ostream &os, const Table &t) {
+  unsigned num_rows = t.num_rows();
+  unsigned num_cols = t.num_cols();
+  for (unsigned j = 0; j != num_cols; ++j)
+    os << t.GetColName(j) << " ";
+  os << "\n";
+  for (unsigned i = 0; i != num_rows; ++i) {
+    for (unsigned j = 0; j != num_cols; ++j)
+      os << t.GetString(i, j) << " ";
+    os << "\n";
+  }
+  return os;
+}
+
 void Handler::Read(const std::string &connection_str,
     Table *t, const std::string &sql_statement) const {
   ScopedTableInfo table(*t, connection_str, sql_statement);

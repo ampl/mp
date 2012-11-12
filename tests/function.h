@@ -194,6 +194,8 @@ class Table {
   : name_(name), num_cols_(num_cols) {
   }
 
+  bool HasColNames() const { return values_.size() >= num_cols_; }
+
   const char *name() const { return name_.c_str(); }
 
   unsigned num_rows() const {
@@ -230,6 +232,10 @@ class Table {
     return Inserter(this);
   }
 };
+
+bool operator==(const Table &lhs, const Table &rhs);
+
+std::ostream &operator<<(std::ostream &os, const Table &t);
 
 class Handler;
 class LibraryImpl;
