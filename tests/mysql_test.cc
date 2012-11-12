@@ -68,6 +68,7 @@ class SocketEnv {
 class MySQLTest : public ::testing::Test {
  protected:
   static fun::Library lib_;
+  const fun::Handler *handler_;
   odbc::Env env_;
   std::string connection_;
   std::string table_name_;
@@ -82,6 +83,7 @@ class MySQLTest : public ::testing::Test {
 };
 
 void MySQLTest::SetUp() {
+  handler_ = lib_.GetHandler("odbc");
   connection_ = "DRIVER={" + env_.FindDriver("mysql") +
       "}; SERVER=" SERVER "; DATABASE=test;";
 
@@ -114,8 +116,8 @@ fun::Library MySQLTest::lib_("../tables/ampltabl.dll");
 TEST_F(MySQLTest, Read) {
   Table t("", 1);
   t = "VERSION()";
-  lib_.GetHandler("odbc")->Read(connection_, &t, "SQL=SELECT VERSION();");
-  EXPECT_EQ(1, t.num_rows());
+  handler_->Read(connection_, &t, "SQL=SELECT VERSION();");
+  EXPECT_EQ(1u, t.num_rows());
   EXPECT_TRUE(t.GetString(0, 0) != nullptr);
 }
 
@@ -124,13 +126,11 @@ TEST_F(MySQLTest, Write) {
   t1 = "Character Name",
        "Arthur Dent",
        "Ford Prefect";
-  lib_.GetHandler("odbc")->Write(connection_, t1);
+  handler_->Write(connection_, t1);
   Table t2(table_name_, 1);
   t2 = "Character Name";
-  lib_.GetHandler("odbc")->Read(connection_, &t2);
-  ASSERT_EQ(2, t2.num_rows());
-  EXPECT_STREQ("Arthur Dent", t2.GetString(0, 0));
-  EXPECT_STREQ("Ford Prefect", t2.GetString(1, 0));
+  handler_->Read(connection_, &t2);
+  EXPECT_EQ(t2, t1);
 }
 
 TEST_F(MySQLTest, Rewrite) {
@@ -138,26 +138,20 @@ TEST_F(MySQLTest, Rewrite) {
   t1 = "Test",
        "foo";
   // The first write creates a table.
-  lib_.GetHandler("odbc")->Write(connection_, t1);
-  {
-    Table t(table_name_, 1);
-    t = "Test";
-    lib_.GetHandler("odbc")->Read(connection_, &t);
-    ASSERT_EQ(1, t.num_rows());
-    EXPECT_STREQ("foo", t.GetString(0, 0));
-  }
-  // The second write should drop the table and create a new one.
+  handler_->Write(connection_, t1);
   Table t2(table_name_, 1);
-  t2 = "Character",
+  t2 = "Test";
+  handler_->Read(connection_, &t2);
+  ASSERT_EQ(t2, t1);
+  // The second write should drop the table and create a new one.
+  Table t3(table_name_, 1);
+  t3 = "Character",
        "Zaphod";
-  lib_.GetHandler("odbc")->Write(connection_, t2);
-  {
-    Table t(table_name_, 1);
-    t = "Character";
-    lib_.GetHandler("odbc")->Read(connection_, &t);
-    ASSERT_EQ(1, t.num_rows());
-    EXPECT_STREQ("Zaphod", t.GetString(0, 0));
-  }
+  handler_->Write(connection_, t3);
+  Table t4(table_name_, 1);
+  t4 = "Character";
+  handler_->Read(connection_, &t4);
+  ASSERT_EQ(t4, t3);
 }
 
 // TODO(viz): more tests
