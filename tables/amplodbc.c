@@ -527,7 +527,7 @@ copy(char *a, char *b)
  static int
 dsncompar(const void *a, const void *b, void *v)
 {
-	v = v; /* not used */
+	(void)v; /* not used */
 	return strcmp((char*)(*(DRV_desc**)a)->ext,
 		(char*)(*(DRV_desc**)b)->ext);
 	}
