@@ -41,6 +41,8 @@ THIS SOFTWARE.
 #define SQL_NO_DATA SQL_NO_DATA_FOUND	/* VC++ 4 */
 #endif
 
+#define UNUSED(x) ((void)(1 ? 0 : (x)))
+
 static unsigned char tolc[256];	/* for converting to lower case */
 
 #ifndef DEFAULT_MAXLEN
@@ -419,6 +421,7 @@ get_ds0(HInfo *h)
  static int
 dr_cmp(const void *a, const void *b, void *v)
 {
+	UNUSED(v);
 	return strcmp((char*)(*(DRV_desc**)a)->driver, (char*)(*(DRV_desc**)b)->driver);
 	}
 
@@ -527,7 +530,7 @@ copy(char *a, char *b)
  static int
 dsncompar(const void *a, const void *b, void *v)
 {
-	(void)v; /* not used */
+	UNUSED(v);
 	return strcmp((char*)(*(DRV_desc**)a)->ext,
 		(char*)(*(DRV_desc**)b)->ext);
 	}
@@ -683,6 +686,7 @@ strcmpv(const void *a, const void *b, void *v)
 {
 	int i, j;
 	const char *s, *t;
+	UNUSED(v);
 	s = (const char*)a;
 	t = (const char*)b;
 	for(;;) {
@@ -997,6 +1001,13 @@ fully_qualify(char *dsname, char *buf, size_t len)
 	return buf;
 	}
 
+ static struct {
+	HWND hw;
+	int score;
+	} winfo;
+
+#ifdef _WIN32
+
  static char *wprocnames[] = {
 	"start menu",
 	"program manager",
@@ -1005,13 +1016,6 @@ fully_qualify(char *dsname, char *buf, size_t len)
 	"command prompt",
 	"sw:",
 	0};
-
- static struct {
-	HWND hw;
-	int score;
-	} winfo;
-
-#ifdef _WIN32
 
  static int
 match1(char *s, char *t)
@@ -1099,6 +1103,7 @@ colname_adjust(AmplExports *ae, HInfo *h, TableInfo *TI)
 	char **cn;
 	int *ct, i, k, nc, nt;
 
+	UNUSED(ae);
 	cn = TI->colnames;
 	nc = TI->arity + TI->ncols;
 	h->coltypes = h->colperm = ct = 0;
@@ -1974,10 +1979,11 @@ needprec(HInfo *h, DBColinfo *dbc, int col_index)
 	}
 	prc(h, "SQLFreeStmt", SQLFreeStmt(hs, SQL_DROP));
 	if (i == SQL_NO_DATA) {
+		SQLSMALLINT length = 0;
 		/* Fall back to checking column type name if there is no type info. */
 		if (prc(hs, "SQLColAttributes(SQL_COLUMN_TYPE_NAME)",
 				SQLColAttributes(h->hs, col_index, SQL_COLUMN_TYPE_NAME, sbuf,
-						(SWORD)sizeof(sbuf), &len, 0))) {
+						(SWORD)sizeof(sbuf), &length, 0))) {
 			return 0;
 		}
 		if (strcmp(sbuf, "varchar") == 0)
@@ -2029,7 +2035,7 @@ Mem(HInfo *h, size_t L)
 scrunch(HInfo *h, char *s, real *d, int mix)
 {
 	AmplExports *ae;
-	char buf[32], *t;
+	char *t;
 
 	for(t = s; *t; t++);
 	while(t > s && *--t == ' ');
