@@ -2571,7 +2571,7 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 	int a = TI->arity, i, i1, j, k, kfn, mix, n, nc, *nfn, nk[4], nn;
 	int nf = a + TI->ncols;
 	int nnt, nt, nt0, nt1, ntimes, nts, rc, wantsv;
-	int *cc, *ct, *p, *p_, *pi, *sw, *zf, *zt;
+	int *cc, *ct = h->coltypes, *p, *p_, *pi, *sw, *zf, *zt;
 	long m, maxrows, nrows, nrows0, nseen;
 	real *ra, *ra0;
 	size_t L, Lt;
@@ -2753,7 +2753,6 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 	nrows = nrows0 = TI->nrows;
 	Missing = TI->Missing;
 	nc = nf + nn;
-	ct = h->coltypes;
 	if (ntimes) {
 		tsx = (TIMESTAMP_STRUCT **)TM(nc*sizeof(TIMESTAMP_STRUCT*));
 		memset(tsx, 0, nc*sizeof(TIMESTAMP_STRUCT**));
