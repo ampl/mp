@@ -1094,7 +1094,7 @@ hw_get(AmplExports *ae)
 #endif /* _WIN32 */
 
  static void
-colname_adjust(AmplExports *ae, HInfo *h, TableInfo *TI)
+colname_adjust(HInfo *h, TableInfo *TI)
 {
 	/* adjust names in TI->colnames of the form */
 	/* Time:xyz, Mixed:xyz, or Strcol:xyz to xyz . */
@@ -1103,7 +1103,6 @@ colname_adjust(AmplExports *ae, HInfo *h, TableInfo *TI)
 	char **cn;
 	int *ct, i, k, nc, nt;
 
-	UNUSED(ae);
 	cn = TI->colnames;
 	nc = TI->arity + TI->ncols;
 	h->coltypes = h->colperm = ct = 0;
@@ -1672,7 +1671,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 
 	/* check validity of column names */
 
-	colname_adjust(ae, &h, TI);
+	colname_adjust(&h, TI);
 	for(i = 0; i++ < nc; cn++) {
 		s = *cn;
 		if (!*s) {
@@ -2137,7 +2136,7 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 		return DB_Error;
 
 	sbuf = 0;
-	colname_adjust(ae, &h, TI);
+	colname_adjust(&h, TI);
 	if (!(tname = Connect(&h, &ds, &i, &sbuf))) {
 		cleanup(&h);
 		return i;
@@ -2565,11 +2564,12 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 	PTR ptr;
 	SWORD len, ncols;
 	TIMESTAMP_STRUCT *td, *ts, **tsp, ***tsq, **tsx;
-	TableInfo *TI;
+	TableInfo *TI = h->TI;
 	UWORD u;
 	char *Missing, buf[512], **cd, *cs, dbuf[32], *s, *seen, **sa, **sp;
 	double *dd, t;
-	int a, i, i1, j, k, kfn, mix, n, nc, nf, *nfn, nk[4], nn;
+	int a = TI->arity, i, i1, j, k, kfn, mix, n, nc, *nfn, nk[4], nn;
+	int nf = a + TI->ncols;
 	int nnt, nt, nt0, nt1, ntimes, nts, rc, wantsv;
 	int *cc, *ct, *p, *p_, *pi, *sw, *zf, *zt;
 	long m, maxrows, nrows, nrows0, nseen;
@@ -2577,7 +2577,6 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 	size_t L, Lt;
 
 	ae = h->AE;
-	TI = h->TI;
 	*deltry = 0;
 	ntimes = h->ntimes;
 	h->totbadtimes = nn = rc = 0;
@@ -2634,8 +2633,6 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 			}
 		}
 	dbce = dbc;
-	a = TI->arity;
-	nf = a + TI->ncols;
 	zf = (int*)TM((nf+2*nt+nk[1])*sizeof(int));
 	zt = zf + nf;
 	p = zt + nt;
