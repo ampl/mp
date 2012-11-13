@@ -118,7 +118,7 @@ TEST_F(MySQLTest, Read) {
   t = "VERSION()";
   handler_->Read(connection_, &t, "SQL=SELECT VERSION();");
   EXPECT_EQ(1u, t.num_rows());
-  EXPECT_TRUE(t.GetString(0, 0) != nullptr);
+  EXPECT_TRUE(t(0, 0).string() != nullptr);
 }
 
 TEST_F(MySQLTest, Write) {
@@ -152,6 +152,22 @@ TEST_F(MySQLTest, Rewrite) {
   t4 = "Character";
   handler_->Read(connection_, &t4);
   ASSERT_EQ(t4, t3);
+}
+
+TEST_F(MySQLTest, AdjustColNames) {
+  Table t(table_name_, 3);
+  t = "Time:a",       "Strcol:b", "Mixed:c",
+      20121112143000, "e",        "f",
+      20121112150000, 111,        222;
+  handler_->Write(connection_, t);
+  Table t2(table_name_, 3);
+  t2 = "a", "b", "c";
+  handler_->Read(connection_, &t2);
+  Table t3(table_name_, 3);
+  t3 = "a",           "b", "c",
+      20121112143000, "e", "f",
+      20121112150000, 111, 222;
+  EXPECT_EQ(t3, t2);
 }
 
 // TODO(viz): more tests

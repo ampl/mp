@@ -46,7 +46,7 @@ struct DbCol;
 
 namespace fun {
 
-enum Type { VOID, INT, UINT, DOUBLE, POINTER };
+enum Type { VOID, INT, UINT, DOUBLE, STRING, POINTER };
 
 template <typename T>
 struct GetType;
@@ -71,6 +71,11 @@ struct GetType<double> {
   static const Type VALUE;
 };
 
+template <>
+struct GetType<const char*> {
+  static const Type VALUE;
+};
+
 template <typename T>
 struct GetType<T*> {
   static const Type VALUE;
@@ -86,6 +91,7 @@ class Variant {
 
   union {
     double dval_;
+    const char *sval_;
     void *pval_;
   };
 
@@ -95,40 +101,58 @@ class Variant {
   }
 
  public:
-  explicit Variant(double value = 0) : type_(DOUBLE), dval_(value) {}
+  explicit Variant() : type_(VOID) {}
 
   static Variant FromDouble(double d) {
-    return Variant(d);
+    Variant v;
+    v.type_ = DOUBLE;
+    v.dval_ = d;
+    return v;
+  }
+
+  static Variant FromString(const char *s) {
+    Variant v;
+    v.type_ = STRING;
+    v.sval_ = s;
+    return v;
   }
 
   static Variant FromPointer(void *p) {
     Variant v;
-    v = p;
+    v.type_ = POINTER;
+    v.pval_ = p;
     return v;
   }
 
   Type type() const { return type_; }
 
-  operator double() const {
+  double number() const {
     RequireType(DOUBLE);
     return dval_;
   }
+
+  const char *string() const {
+    RequireType(STRING);
+    return sval_;
+  }
+
   void *pointer() const {
     RequireType(POINTER);
     return pval_;
   }
-
-  Variant &operator=(double value) {
-    type_ = DOUBLE;
-    dval_ = value;
-    return *this;
-  }
-  Variant &operator=(void *value) {
-    type_ = POINTER;
-    pval_ = value;
-    return *this;
-  }
 };
+
+inline Variant MakeVariant(double d) { return Variant::FromDouble(d); }
+inline Variant MakeVariant(const char *s) { return Variant::FromString(s); }
+inline Variant MakeVariant(void *p) { return Variant::FromPointer(p); }
+
+bool operator==(const Variant &lhs, const Variant &rhs);
+
+inline bool operator!=(const Variant &lhs, const Variant &rhs) {
+  return !(lhs == rhs);
+}
+
+std::ostream &operator<<(std::ostream &os, const Variant &v);
 
 // A named two-dimensional table.
 class Table {
@@ -151,12 +175,11 @@ class Table {
 
   void Add(const char *s) {
     strings_.push_back(s);
-    values_.push_back(Variant::FromPointer(
-        const_cast<char*>(strings_.back().c_str())));
+    values_.push_back(Variant::FromString(strings_.back().c_str()));
   }
 
   void Add(double d) {
-    values_.push_back(Variant(d));
+    values_.push_back(Variant::FromDouble(d));
   }
 
   int AddRows(DbCol *cols, long nrows);
@@ -181,14 +204,6 @@ class Table {
     }
   };
 
-  const Variant &GetValue(unsigned row_index, unsigned col_index) const {
-    if (col_index >= num_cols_)
-      throw std::invalid_argument("invalid column index");
-    if (row_index >= num_rows())
-      throw std::invalid_argument("invalid row index");
-    return values_[(row_index + 1) * num_cols_ + col_index];
-  }
-
  public:
   Table(const std::string &name, unsigned num_cols)
   : name_(name), num_cols_(num_cols) {
@@ -208,16 +223,15 @@ class Table {
   const char *GetColName(unsigned col_index) const {
     if (col_index >= std::min<unsigned>(num_cols_, values_.size()))
       throw std::invalid_argument("invalid column index");
-    return static_cast<const char*>(values_[col_index].pointer());
+    return values_[col_index].string();
   }
 
-  const char *GetString(unsigned row_index, unsigned col_index) const {
-    return static_cast<const char*>(
-        GetValue(row_index, col_index).pointer());
-  }
-
-  double GetDouble(unsigned row_index, unsigned col_index) const {
-    return GetValue(row_index, col_index);
+  const Variant &operator()(unsigned row_index, unsigned col_index) const {
+    if (col_index >= num_cols_)
+      throw std::invalid_argument("invalid column index");
+    if (row_index >= num_rows())
+      throw std::invalid_argument("invalid row index");
+    return values_[(row_index + 1) * num_cols_ + col_index];
   }
 
   Inserter operator=(const char *s) {
@@ -234,6 +248,10 @@ class Table {
 };
 
 bool operator==(const Table &lhs, const Table &rhs);
+
+inline bool operator!=(const Table &lhs, const Table &rhs) {
+  return !(lhs == rhs);
+}
 
 std::ostream &operator<<(std::ostream &os, const Table &t);
 
@@ -282,32 +300,38 @@ class Handler {
 };
 
 template <typename T>
-T Convert(const Variant &v) { return v; }
+T Convert(const Variant &v) { return v.number(); }
 
 typedef std::vector<Variant> Tuple;
 
 inline Tuple MakeArgs(double a0) {
-  return Tuple(1, Variant(a0));
+  return Tuple(1, Variant::FromDouble(a0));
 }
 
 inline Tuple MakeArgs(double a0, double a1) {
-  Variant args[] = {Variant(a0), Variant(a1)};
+  Variant args[] = {Variant::FromDouble(a0), Variant::FromDouble(a1)};
   return Tuple(args, args + sizeof(args) / sizeof(*args));
 }
 
 inline Tuple MakeArgs(double a0, double a1, double a2) {
-  Variant args[] = {Variant(a0), Variant(a1), Variant(a2)};
+  Variant args[] = {
+    Variant::FromDouble(a0), Variant::FromDouble(a1), Variant::FromDouble(a2)
+  };
   return Tuple(args, args + sizeof(args) / sizeof(*args));
 }
 
 inline Tuple MakeArgs(double a0, double a1, double a2, double a3) {
-  Variant args[] = {Variant(a0), Variant(a1), Variant(a2), Variant(a3)};
+  Variant args[] = {
+    Variant::FromDouble(a0), Variant::FromDouble(a1),
+    Variant::FromDouble(a2), Variant::FromDouble(a3)
+  };
   return Tuple(args, args + sizeof(args) / sizeof(*args));
 }
 
 inline Tuple MakeArgs(double a0, double a1, double a2, double a3, double a4) {
   Variant args[] = {
-    Variant(a0), Variant(a1), Variant(a2), Variant(a3), Variant(a4)
+    Variant::FromDouble(a0), Variant::FromDouble(a1), Variant::FromDouble(a2),
+    Variant::FromDouble(a3), Variant::FromDouble(a4)
   };
   return Tuple(args, args + sizeof(args) / sizeof(*args));
 }
@@ -315,8 +339,8 @@ inline Tuple MakeArgs(double a0, double a1, double a2, double a3, double a4) {
 inline Tuple MakeArgs(double a0, double a1, double a2,
     double a3, double a4, double a5) {
   Variant args[] = {
-    Variant(a0), Variant(a1), Variant(a2),
-    Variant(a3), Variant(a4), Variant(a5)
+    Variant::FromDouble(a0), Variant::FromDouble(a1), Variant::FromDouble(a2),
+    Variant::FromDouble(a3), Variant::FromDouble(a4), Variant::FromDouble(a5)
   };
   return Tuple(args, args + sizeof(args) / sizeof(*args));
 }
@@ -324,9 +348,9 @@ inline Tuple MakeArgs(double a0, double a1, double a2,
 inline Tuple MakeArgs(double a0, double a1, double a2, double a3,
     double a4, double a5, double a6, double a7, double a8) {
   Variant args[] = {
-    Variant(a0), Variant(a1), Variant(a2),
-    Variant(a3), Variant(a4), Variant(a5),
-    Variant(a6), Variant(a7), Variant(a8)
+    Variant::FromDouble(a0), Variant::FromDouble(a1), Variant::FromDouble(a2),
+    Variant::FromDouble(a3), Variant::FromDouble(a4), Variant::FromDouble(a5),
+    Variant::FromDouble(a6), Variant::FromDouble(a7), Variant::FromDouble(a8)
   };
   return Tuple(args, args + sizeof(args) / sizeof(*args));
 }
@@ -496,7 +520,8 @@ class FunctionPointer5
 
   Result operator()(const Tuple &args) const {
     this->CheckArgs(args);
-    return f_(args[0], args[1], args[2], args[3], Convert<Arg5>(args[4]));
+    return f_(Convert<Arg1>(args[0]), Convert<Arg2>(args[1]),
+        Convert<Arg3>(args[2]), Convert<Arg4>(args[3]), Convert<Arg5>(args[4]));
   }
 };
 
@@ -520,8 +545,9 @@ class FunctionPointer6
 
   Result operator()(const Tuple &args) const {
     this->CheckArgs(args);
-    return f_(args[0], args[1], args[2], args[3], args[4],
-      Convert<Arg6>(args[5]));
+    return f_(Convert<Arg1>(args[0]), Convert<Arg2>(args[1]),
+        Convert<Arg3>(args[2]), Convert<Arg4>(args[3]),
+        Convert<Arg5>(args[4]), Convert<Arg6>(args[5]));
   }
 };
 
@@ -569,7 +595,7 @@ Result OneBinder<F, Arg, Result>::operator()(const Tuple &args) const {
     part_args[i] = args[i];
   for (unsigned i = bound_arg_index_; i < num_args; ++i)
     part_args[i + 1] = args[i];
-  part_args[bound_arg_index_] = value_;
+  part_args[bound_arg_index_] = MakeVariant(value_);
   return f_(part_args);
 }
 
@@ -591,7 +617,7 @@ class AllButOneBinder {
   AllButOneBinder(F f, const Tuple &args, unsigned unbound_arg_index);
 
   double operator()(double x) const {
-    args_[unbound_arg_index_] = x;
+    args_[unbound_arg_index_] = Variant::FromDouble(x);
     return f_(args_);
   }
 };
