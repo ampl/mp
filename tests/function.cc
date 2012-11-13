@@ -51,6 +51,14 @@ class ScopedTableInfo : public TableInfo {
   void SetString(std::vector<char*> *strings, unsigned index, const char *str);
   void AddString(std::vector<char*> *strings, const char *str);
 
+  static int Lookup(real *dv, char **sv, TableInfo *ti);
+
+  long AdjustMaxrows(long new_maxrows);
+
+  static long AdjustMaxrows(TableInfo *ti, long new_maxrows) {
+    return static_cast<ScopedTableInfo*>(ti)->AdjustMaxrows(new_maxrows);
+  }
+
   struct Deleter {
     void operator()(char *ptr) { delete [] ptr; }
   };
@@ -87,6 +95,40 @@ void ScopedTableInfo::AddString(std::vector<char*> *strings, const char *str) {
   SetString(strings, strings->size() - 1, str);
 }
 
+int ScopedTableInfo::Lookup(real *dv, char **sv, TableInfo *ti) {
+  long nrows = ti->nrows, arity = ti->arity;
+  for (long i = 0; i < nrows; ++i) {
+    long j = 0;
+    for (; j < arity; ++j) {
+      if (sv && sv[j]) {
+        if (std::strcmp(sv[j], ti->cols[i].sval[j]) != 0)
+          break;
+      } else if (dv[j] != ti->cols[i].dval[j])
+        break;
+    }
+    if (j == arity)
+      return i;
+  }
+  return -1;
+}
+
+long ScopedTableInfo::AdjustMaxrows(long new_maxrows) {
+  int total_cols = arity + ncols;
+  std::vector<double> dvals(new_maxrows * total_cols);
+  std::vector<char*> svals(new_maxrows * total_cols);
+  dvals_.swap(dvals);
+  svals_.swap(svals);
+  for (int j = 0; j < total_cols; ++j) {
+    DbCol &col = cols[j];
+    col.dval = &dvals_[j * nrows];
+    col.sval = &svals_[j * nrows];
+    std::copy(dvals.begin(), dvals.end(), col.dval);
+    std::copy(svals.begin(), svals.end(), col.sval);
+  }
+  maxrows = new_maxrows;
+  return new_maxrows;
+}
+
 ScopedTableInfo::ScopedTableInfo(const Table &t,
     const std::string &connection_str, const std::string &sql) {
   // Workaround for GCC bug 30111 that prevents value-initialization of
@@ -102,6 +144,9 @@ ScopedTableInfo::ScopedTableInfo(const Table &t,
   nstrings = strings_.size();
   strings = &strings_[0];
   Missing = &MISSING;
+
+  TableInfo::Lookup = Lookup;
+  TableInfo::AdjustMaxrows = AdjustMaxrows;
 
   unsigned num_rows = std::max(t.num_rows(), 1u);
   unsigned num_values = num_rows * t.num_cols();
@@ -381,22 +426,25 @@ std::ostream &operator<<(std::ostream &os, const Table &t) {
 
 void Handler::Read(const std::string &connection_str,
     Table *t, const std::string &sql_statement) const {
-  ScopedTableInfo table(*t, connection_str, sql_statement);
-  table.TMI = lib_->impl();
-  table.SetTable(t);
-  table.AddRows = Table::AddRows;
-  CheckResult(read_(lib_->impl(), &table), table);
+  ScopedTableInfo ti(*t, connection_str, sql_statement);
+  ti.TMI = lib_->impl();
+  ti.SetTable(t);
+  ti.AddRows = Table::AddRows;
+  CheckResult(read_(lib_->impl(), &ti), ti);
 }
 
 void Handler::Write(
-    const std::string &connection_str, const Table &t) const {
-  ScopedTableInfo table(t, connection_str);
+    const std::string &connection_str, const Table &t, bool inout) const {
+  ScopedTableInfo ti(t, connection_str);
   for (unsigned i = 0, m = t.num_rows(); i < m; ++i) {
     for (unsigned j = 0, n = t.num_cols(); j < n; ++j)
-      table.SetValue(i, j, t(i, j));
+      ti.SetValue(i, j, t(i, j));
   }
-  table.TMI = lib_->impl();
-  CheckResult(write_(lib_->impl(), &table), table);
+  ti.flags = DBTI_flags_OUT;
+  if (inout)
+    ti.flags |= DBTI_flags_IN;
+  ti.TMI = lib_->impl();
+  CheckResult(write_(lib_->impl(), &ti), ti);
 }
 
 const Type GetType<void>::VALUE = VOID;

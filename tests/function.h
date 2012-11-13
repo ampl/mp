@@ -296,7 +296,8 @@ class Handler {
 
   void Read(const std::string &connection_str, Table *t,
       const std::string &sql_statement = std::string()) const;
-  void Write(const std::string &connection_str, const Table &t) const;
+  void Write(const std::string &connection_str, const Table &t,
+      bool inout = false) const;
 };
 
 template <typename T>
