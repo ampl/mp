@@ -46,6 +46,7 @@ class ScopedTableInfo : public TableInfo {
   std::vector<double> dvals_;
   std::vector<char*> svals_;
   Table *table_;
+  static char MISSING;
 
   void SetString(std::vector<char*> *strings, unsigned index, const char *str);
   void AddString(std::vector<char*> *strings, const char *str);
@@ -69,6 +70,8 @@ class ScopedTableInfo : public TableInfo {
       cols_[col].dval[row] = v.number();
   }
 };
+
+char ScopedTableInfo::MISSING;
 
 void ScopedTableInfo::SetString(
     std::vector<char*> *strings, unsigned index, const char *str) {
@@ -98,6 +101,7 @@ ScopedTableInfo::ScopedTableInfo(const Table &t,
     AddString(&strings_, sql.c_str());
   nstrings = strings_.size();
   strings = &strings_[0];
+  Missing = &MISSING;
 
   unsigned num_rows = std::max(t.num_rows(), 1u);
   unsigned num_values = num_rows * t.num_cols();
