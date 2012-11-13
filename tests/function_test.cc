@@ -45,6 +45,7 @@ using fun::GetType;
 using fun::Handler;
 using fun::Library;
 using fun::MakeArgs;
+using fun::MakeVariant;
 using fun::Tuple;
 using fun::Variant;
 using fun::Table;
@@ -58,30 +59,31 @@ TEST(FunctionTest, Type) {
   EXPECT_EQ(fun::INT, GetType<int>::VALUE);
   EXPECT_EQ(fun::UINT, GetType<unsigned>::VALUE);
   EXPECT_EQ(fun::DOUBLE, GetType<double>::VALUE);
+  EXPECT_EQ(fun::STRING, GetType<const char*>::VALUE);
   EXPECT_EQ(fun::POINTER, GetType<int*>::VALUE);
 }
 
-TEST(FunctionTest, Variant) {
-  Variant v1;
-  EXPECT_EQ(fun::DOUBLE, v1.type());
-  EXPECT_EQ(0, static_cast<double>(v1));
-  EXPECT_THROW(v1.pointer(), std::runtime_error);
-  Variant v2(42);
-  EXPECT_EQ(fun::DOUBLE, v2.type());
-  EXPECT_EQ(42, static_cast<double>(v2));
-  v1 = &v2;
-  EXPECT_EQ(fun::POINTER, v1.type());
-  EXPECT_EQ(&v2, v1.pointer());
-  EXPECT_THROW(static_cast<double>(v1), std::runtime_error);
-  v1 = 777;
-  EXPECT_EQ(fun::DOUBLE, v1.type());
-  EXPECT_EQ(777, static_cast<double>(v1));
+TEST(FunctionTest, VariantCtor) {
+  Variant v;
+  EXPECT_EQ(fun::VOID, v.type());
+  EXPECT_THROW(v.number(), std::runtime_error);
+  EXPECT_THROW(v.string(), std::runtime_error);
+  EXPECT_THROW(v.pointer(), std::runtime_error);
 }
 
 TEST(FunctionTest, VariantFromDouble) {
   Variant v(Variant::FromDouble(42));
   EXPECT_EQ(fun::DOUBLE, v.type());
-  EXPECT_EQ(42, static_cast<double>(v));
+  EXPECT_EQ(42, v.number());
+  EXPECT_THROW(v.string(), std::runtime_error);
+  EXPECT_THROW(v.pointer(), std::runtime_error);
+}
+
+TEST(FunctionTest, VariantFromString) {
+  Variant v(Variant::FromString("test"));
+  EXPECT_EQ(fun::STRING, v.type());
+  EXPECT_STREQ("test", v.string());
+  EXPECT_THROW(v.number(), std::runtime_error);
   EXPECT_THROW(v.pointer(), std::runtime_error);
 }
 
@@ -90,7 +92,46 @@ TEST(FunctionTest, VariantFromPointer) {
   Variant v(Variant::FromPointer(&dummy));
   EXPECT_EQ(fun::POINTER, v.type());
   EXPECT_EQ(&dummy, v.pointer());
-  EXPECT_THROW(static_cast<double>(v), std::runtime_error);
+  EXPECT_THROW(v.number(), std::runtime_error);
+  EXPECT_THROW(v.string(), std::runtime_error);
+}
+
+TEST(FunctionTest, MakeVariant) {
+  EXPECT_EQ(42, MakeVariant(42).number());
+  EXPECT_STREQ("test", MakeVariant("test").string());
+  int dummy = 0;
+  EXPECT_EQ(&dummy, MakeVariant(&dummy).pointer());
+}
+
+TEST(FunctionTest, CompareVariants) {
+  EXPECT_TRUE(Variant() == Variant());
+  EXPECT_FALSE(Variant() != Variant());
+  EXPECT_TRUE(Variant::FromDouble(42) == Variant::FromDouble(42));
+  EXPECT_FALSE(Variant::FromDouble(42) != Variant::FromDouble(42));
+
+  char s1[] = "abc", s2[] = "abc", s3[] = "def";
+  EXPECT_TRUE(Variant::FromString(s1) == Variant::FromString(s2));
+  EXPECT_FALSE(Variant::FromString(s1) != Variant::FromString(s2));
+  EXPECT_FALSE(Variant::FromString(s1) == Variant::FromString(s3));
+  EXPECT_TRUE(Variant::FromString(s1) != Variant::FromString(s3));
+  EXPECT_FALSE(Variant::FromString(s1) == Variant());
+  EXPECT_FALSE(Variant::FromString("42") == Variant::FromDouble(42));
+
+  EXPECT_TRUE(Variant::FromPointer(s1) == Variant::FromPointer(s1));
+  EXPECT_FALSE(Variant::FromPointer(s1) != Variant::FromPointer(s1));
+  EXPECT_FALSE(Variant::FromPointer(s1) == Variant::FromPointer(s2));
+  EXPECT_TRUE(Variant::FromPointer(s1) != Variant::FromPointer(s2));
+  EXPECT_FALSE(Variant::FromPointer(s1) == Variant());
+  EXPECT_FALSE(Variant::FromString(s1) == Variant::FromPointer(s1));
+}
+
+TEST(FunctionTest, VariantOutput) {
+  std::stringstream ss;
+  ss << Variant::FromDouble(42);
+  EXPECT_EQ("42", ss.str());
+  ss.str("");
+  ss << Variant::FromString("test");
+  EXPECT_EQ("\"test\"", ss.str());
 }
 
 TEST(FunctionTest, EmptyTable) {
@@ -99,7 +140,7 @@ TEST(FunctionTest, EmptyTable) {
   EXPECT_EQ(0u, t.num_rows());
   EXPECT_EQ(0u, t.num_cols());
   EXPECT_THROW(t.GetColName(0), std::invalid_argument);
-  EXPECT_THROW(t.GetString(0, 0), std::invalid_argument);
+  EXPECT_THROW(t(0, 0), std::invalid_argument);
 }
 
 TEST(FunctionTest, Table) {
@@ -108,7 +149,7 @@ TEST(FunctionTest, Table) {
   EXPECT_EQ(0u, t.num_rows());
   EXPECT_EQ(3u, t.num_cols());
   EXPECT_THROW(t.GetColName(0), std::invalid_argument);
-  EXPECT_THROW(t.GetString(0, 0), std::invalid_argument);
+  EXPECT_THROW(t(0, 0), std::invalid_argument);
   t = "c1", "c2", "c3",
        11,  "v12", 13,
       "v21", 22,  "v23";
@@ -117,12 +158,12 @@ TEST(FunctionTest, Table) {
   EXPECT_STREQ("c2", t.GetColName(1));
   EXPECT_STREQ("c3", t.GetColName(2));
   EXPECT_THROW(t.GetColName(3), std::invalid_argument);
-  EXPECT_EQ(11, t.GetDouble(0, 0));
-  EXPECT_STREQ("v12", t.GetString(0, 1));
-  EXPECT_EQ(13, t.GetDouble(0, 2));
-  EXPECT_STREQ("v21", t.GetString(1, 0));
-  EXPECT_EQ(22, t.GetDouble(1, 1));
-  EXPECT_STREQ("v23", t.GetString(1, 2));
+  EXPECT_EQ(11, t(0, 0).number());
+  EXPECT_STREQ("v12", t(0, 1).string());
+  EXPECT_EQ(13, t(0, 2).number());
+  EXPECT_STREQ("v21", t(1, 0).string());
+  EXPECT_EQ(22, t(1, 1).number());
+  EXPECT_STREQ("v23", t(1, 2).string());
 }
 
 TEST(FunctionTest, TableComparison) {
@@ -154,7 +195,7 @@ TEST(FunctionTest, TableOutput) {
   t = "a", "b",
       "c", "d";
   ss << t;
-  EXPECT_EQ("a b \nc d \n", ss.str());
+  EXPECT_EQ("a b \n\"c\" \"d\" \n", ss.str());
 }
 
 TEST(FunctionTest, Library) {
@@ -182,10 +223,10 @@ void CheckTuple(unsigned size, const Tuple &t) {
   EXPECT_EQ(size, t.size());
   Tuple copy(t);
   for (unsigned i = 0; i < size; ++i) {
-    EXPECT_EQ(ITEMS[i], t[i]);
-    EXPECT_EQ(ITEMS[i], copy[i]);
-    copy[i] = 42;
-    EXPECT_EQ(42, copy[i]);
+    EXPECT_EQ(ITEMS[i], t[i].number());
+    EXPECT_EQ(ITEMS[i], copy[i].number());
+    copy[i] = Variant::FromDouble(42);
+    EXPECT_EQ(42, copy[i].number());
   }
 }
 
@@ -201,7 +242,7 @@ TEST(FunctionTest, MakeArgs) {
 
 TEST(FunctionTest, TupleOutput) {
   std::ostringstream os;
-  os << Tuple(1, Variant(42));
+  os << Tuple(1, Variant::FromDouble(42));
   EXPECT_EQ("(42)", os.str());
   os.str("");
   os << MakeArgs(3, 5, 7);
@@ -368,11 +409,11 @@ TEST(FunctionTest, Fun) {
 #endif
 
 double TestFun2(const Tuple &args) {
-  return args[0] * 10 + args[1];
+  return args[0].number() * 10 + args[1].number();
 }
 
 double TestFun3(const Tuple &args) {
-  return args[0] * 100 + args[1] * 10 + args[2];
+  return args[0].number() * 100 + args[1].number() * 10 + args[2].number();
 }
 
 TEST(FunctionTest, BindAllButOne) {

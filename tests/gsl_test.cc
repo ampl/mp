@@ -297,7 +297,7 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
   use_deriv[arg_index] = true;
 
   double error = 0;
-  double x = args[arg_index];
+  double x = args[arg_index].number();
   FunctionInfo::Result deriv_result = af.GetDerivative(arg_index, args);
   double numerical_deriv = 0;
   if (!deriv_result.error()) {
@@ -361,7 +361,7 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
       double d = GSL_NAN;
       bool no_first_deriv = f(args, DERIVS, use_deriv).error() != nullptr;
       if (!deriv_result.error() && !no_first_deriv) {
-        d = Diff(DerivativeBinder(f, j, i, args), args[i], &error);
+        d = Diff(DerivativeBinder(f, j, i, args), args[i].number(), &error);
         double overridden_deriv = deriv_result.value();
         if (!gsl_isnan(overridden_deriv) && overridden_deriv != d) {
           std::cout << "Overriding d/dx" << i << " d/dx" << j << " "
@@ -464,9 +464,9 @@ void GSLTest::TestFunc(
     for (unsigned i = 0; i < num_args; ++i) {
       if (f.GetArgType(i) == fun::DOUBLE) {
         has_double_arg = true;
-        args[i] = GSL_NAN;
+        args[i] = Variant::FromDouble(GSL_NAN);
       } else {
-        args[i] = 0.0;
+        args[i] = Variant::FromDouble(0);
       }
     }
     if (has_double_arg)
@@ -474,20 +474,20 @@ void GSLTest::TestFunc(
   }
   if (arg_index < num_args) {
     for (size_t i = 0; i != NUM_POINTS; ++i) {
-      args[arg_index] = POINTS[i];
+      args[arg_index] = Variant::FromDouble(POINTS[i]);
       TestFunc(af, f, args, arg_index + 1);
     }
     return;
   }
   for (unsigned i = 0; i < num_args; ++i) {
-    if (f.GetArgType(i) == fun::INT &&
-        static_cast<int>(args[i]) != args[i]) {
-      EXPECT_STREQ(NotIntError(af.GetArgName(i), args[i]), af(args).error());
+    double arg = args[i].number();
+    if (f.GetArgType(i) == fun::INT && static_cast<int>(arg) != arg) {
+      EXPECT_STREQ(NotIntError(af.GetArgName(i), arg), af(args).error());
       return;
     }
     if (f.GetArgType(i) == fun::UINT &&
-        static_cast<unsigned>(args[i]) != args[i]) {
-      EXPECT_STREQ(NotUIntError(af.GetArgName(i), args[i]), af(args).error());
+        static_cast<unsigned>(arg) != arg) {
+      EXPECT_STREQ(NotUIntError(af.GetArgName(i), arg), af(args).error());
       return;
     }
   }
@@ -666,7 +666,7 @@ struct BesselFractionalOrderInfo : FunctionInfo {
     // Computing gsl_sf_bessel_*nu'(nu, x) requires
     // gsl_sf_bessel_*nu(nu - 1, x) which doesn't work when the
     // first argument is non-negative, so nu should be >= 1.
-    if (args[0] < 1)
+    if (args[0].number() < 1)
       return EvalError(f, args, "'");
     return Result();
   }
@@ -676,7 +676,7 @@ struct BesselFractionalOrderInfo : FunctionInfo {
     // Computing gsl_sf_bessel_*nu''(nu, x) requires
     // gsl_sf_bessel_*nu(nu - 2, x) which doesn't work when the
     // first argument is non-negative, so nu should be >= 2.
-    return args[0] < 2 ? EvalError(f, args, "''") : Result();
+    return args[0].number() < 2 ? EvalError(f, args, "''") : Result();
   }
 };
 
@@ -699,7 +699,7 @@ TEST_F(GSLTest, BesselZero) {
 
 struct ClausenFunctionInfo : FunctionInfo {
   Result GetDerivative(const Function &, unsigned, const Tuple &args) const {
-    return Result(args[0] == 0 ? GSL_POSINF : GSL_NAN);
+    return Result(args[0].number() == 0 ? GSL_POSINF : GSL_NAN);
   }
 };
 
@@ -788,7 +788,7 @@ TEST_F(GSLTest, Debye) {
 
 struct DilogFunctionInfo : FunctionInfo {
   Result GetDerivative(const Function &, unsigned, const Tuple &args) const {
-    return Result(args[0] == 1 ? GSL_POSINF : GSL_NAN);
+    return Result(args[0].number() == 1 ? GSL_POSINF : GSL_NAN);
   }
 };
 
@@ -846,7 +846,7 @@ TEST_F(GSLTest, FermiDirac) {
 
 struct LnGammaInfo : FunctionInfo {
   Result GetDerivative(const Function &af, unsigned , const Tuple &args) const {
-    double x = args[0];
+    double x = args[0].number();
     return x == -1 || x == -2 ? EvalError(af, args, "'") : Result();
   }
 };
@@ -875,7 +875,7 @@ struct GammaIncInfo : FunctionInfo {
     // Partial derivative with respect to a is not provided.
     if (arg_index == 0)
       return Result("argument 'a' is not constant");
-    if (args[1] == 0)
+    if (args[1].number() == 0)
       return EvalError(af, args, "'");
     return Result();
   }
@@ -890,8 +890,10 @@ TEST_F(GSLTest, GammaInc) {
 struct BetaInfo : FunctionInfo {
   Result GetDerivative(
       const Function &af, unsigned arg_index, const Tuple &args) const {
-    if (gsl_isnan(gsl_sf_psi(args[0] + args[1])) || args[arg_index] == 0)
+    if (gsl_isnan(gsl_sf_psi(args[0].number() + args[1].number())) ||
+        args[arg_index].number() == 0) {
       return EvalError(af, args, "'");
+    }
     return Result();
   }
 };
@@ -928,7 +930,7 @@ class NoDerivArg : public FunctionInfo {
 
 struct Hyperg1F1Info : FunctionInfo {
   Result GetDerivative(const Function &f, unsigned, const Tuple &args) const {
-    return args[1] <= 0 ? EvalError(f, args, "'") : Result();
+    return args[1].number() <= 0 ? EvalError(f, args, "'") : Result();
   }
 };
 
@@ -954,13 +956,13 @@ TEST_F(GSLTest, Laguerre) {
 
 struct LambertW0Info : FunctionInfo {
   Result GetDerivative(const Function &f, unsigned, const Tuple &args) const {
-    return args[0] < -1 / M_E ? EvalError(f, args, "'") : Result();
+    return args[0].number() < -1 / M_E ? EvalError(f, args, "'") : Result();
   }
 };
 
 struct LambertWm1Info : FunctionInfo {
   Result GetDerivative(const Function &f, unsigned, const Tuple &args) const {
-    double x = args[0];
+    double x = args[0].number();
     return x < -1 / M_E || x == 0 ? EvalError(f, args, "'") : Result();
   }
 };
@@ -1021,35 +1023,35 @@ TEST_F(GSLTest, Power) {
 
 struct DigammaInfo : FunctionInfo {
   Result GetDerivative(const Function &f, unsigned , const Tuple &args) const {
-    double x = args[0];
+    double x = args[0].number();
     return x < 0 && ceil(x) == x ? EvalError(f, args, "'") : Result();
   }
   Result GetSecondDerivative(
       const Function &f, unsigned , unsigned , const Tuple &args) const {
     // gsl_sf_psi_n doesn't support negative x.
-    return args[0] < 0 ? EvalError(f, args, "''") : Result();
+    return args[0].number() < 0 ? EvalError(f, args, "''") : Result();
   }
 };
 
 struct TrigammaInfo : FunctionInfo {
   Result GetDerivative(const Function &f, unsigned , const Tuple &args) const {
     // gsl_sf_psi_n doesn't support negative x.
-    return args[0] < 0 ? EvalError(f, args, "'") : Result();
+    return args[0].number() < 0 ? EvalError(f, args, "'") : Result();
   }
 };
 
 struct PolygammaInfo : FunctionInfo {
   Result GetDerivative(
       const Function &f, unsigned , const Tuple &args) const {
-    double x = args[1];
-    if (args[0] == 0)
+    double x = args[1].number();
+    if (args[0].number() == 0)
       return x < 0 && ceil(x) == x ? EvalError(f, args, "'") : Result();
     return x < 0 ? EvalError(f, args, "'") : Result();
   }
   Result GetSecondDerivative(const Function &f,
       unsigned , unsigned , const Tuple &args) const {
     // gsl_sf_psi_n doesn't support negative x.
-    return args[1] < 0 ? EvalError(f, args, "''") : Result();
+    return args[1].number() < 0 ? EvalError(f, args, "''") : Result();
   }
 };
 
@@ -1086,7 +1088,7 @@ TEST_F(GSLTest, Zeta) {
 
 struct GaussianPInfo : FunctionInfo {
   Result GetDerivative(const Function &f, unsigned , const Tuple &args) const {
-    return args[1] == 0 ? EvalError(f, args, "'") : Result();
+    return args[1].number() == 0 ? EvalError(f, args, "'") : Result();
   }
 };
 
@@ -1117,7 +1119,8 @@ TEST_F(GSLTest, GaussianTail) {
 
 struct ExponentialInfo : FunctionInfo {
   Result GetDerivative(const Function &f, unsigned , const Tuple &args) const {
-    return args[0] >= 0 && args[1] == 0 ? EvalError(f, args, "'") : Result();
+    return args[0].number() >= 0 && args[1].number() == 0 ?
+        EvalError(f, args, "'") : Result();
   }
 };
 
@@ -1182,7 +1185,7 @@ TEST_F(GSLTest, Levy) {
 struct GammaKnuthInfo : NoDeriv {
   bool SkipPoint(const Tuple &args) const {
     // gsl_ran_gamma_knuth doesn't work with nonpositive a.
-    return args[0] <= 0;
+    return args[0].number() <= 0;
   }
 };
 
@@ -1317,7 +1320,7 @@ TEST_F(GSLTest, Binomial) {
 struct NegativeBinomialInfo : NoDeriv {
   bool SkipPoint(const Tuple &args) const {
     // gsl_ran_negative_binomial hangs when p == 0.
-    return args[0] == 0;
+    return args[0].number() == 0;
   }
 };
 
@@ -1332,7 +1335,7 @@ struct PascalInfo : NoDeriv {
   PascalInfo() : NoDeriv("p n") {}
   bool SkipPoint(const Tuple &args) const {
     // gsl_ran_negative_binomial hangs when p == 0 and n > 0.
-    return args[0] == 0 && args[1] > 0;
+    return args[0].number() == 0 && args[1].number() > 0;
   }
 };
 

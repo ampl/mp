@@ -40,13 +40,14 @@ namespace {
 class ScopedTableInfo : public TableInfo {
  private:
   std::vector<char*> strings_;
-  std::vector<char*> colnames_;
+  std::vector<std::string> colnames_;
+  std::vector<char*> colnameptrs_;
   std::vector<DbCol> cols_;
   std::vector<double> dvals_;
   std::vector<char*> svals_;
   Table *table_;
 
-  void SetString(std::vector<char*> *strings, int index, const char *str);
+  void SetString(std::vector<char*> *strings, unsigned index, const char *str);
   void AddString(std::vector<char*> *strings, const char *str);
 
   struct Deleter {
@@ -61,13 +62,16 @@ class ScopedTableInfo : public TableInfo {
   Table *GetTable() { return table_; }
   void SetTable(Table *t) { table_ = t; }
 
-  void SetString(int row, const char *str) {
-    cols_[0].sval[row] = const_cast<char*>(str);
+  void SetValue(unsigned row, unsigned col, const fun::Variant &v) {
+    if (v.type() == fun::Type::STRING)
+      cols_[col].sval[row] = const_cast<char*>(v.string());
+    else
+      cols_[col].dval[row] = v.number();
   }
 };
 
 void ScopedTableInfo::SetString(
-    std::vector<char*> *strings, int index, const char *str) {
+    std::vector<char*> *strings, unsigned index, const char *str) {
   char *&oldstr = (*strings)[index];
   if (oldstr) delete [] oldstr;
   oldstr = new char[std::strlen(str) + 1];
@@ -105,10 +109,12 @@ ScopedTableInfo::ScopedTableInfo(const Table &t,
   ncols = t.num_cols() - arity;
   if (t.num_cols() != 0) {
     colnames_.resize(t.num_cols());
-    colnames = &colnames_[0];
+    colnameptrs_.resize(t.num_cols());
+    colnames = &colnameptrs_[0];
     cols_.reserve(t.num_cols());
-    for (int i = 0; i < t.num_cols(); ++i) {
-      SetString(&colnames_, i, t.GetColName(i));
+    for (unsigned i = 0; i < t.num_cols(); ++i) {
+      colnames_[i] = t.GetColName(i);
+      colnameptrs_[i] = const_cast<char*>(colnames_[i].c_str());
       DbCol col = {};
       col.dval = &dvals_[i * num_rows];
       col.sval = &svals_[i * num_rows];
@@ -120,7 +126,6 @@ ScopedTableInfo::ScopedTableInfo(const Table &t,
 
 ScopedTableInfo::~ScopedTableInfo() {
   for_each(strings_.begin(), strings_.end(), Deleter());
-  for_each(colnames_.begin(), colnames_.end(), Deleter());
 }
 
 void CheckResult(int result, const ScopedTableInfo &ti) {
@@ -141,6 +146,42 @@ fun::Library *library;
 }
 
 namespace fun {
+
+bool operator==(const Variant &lhs, const Variant &rhs) {
+  Type type = lhs.type();
+  if (type != rhs.type())
+    return false;
+  switch (type) {
+  case VOID:
+    return true;
+  case DOUBLE:
+    return lhs.number() == rhs.number();
+  case STRING:
+    return std::strcmp(lhs.string(), rhs.string()) == 0;
+  case POINTER:
+    return lhs.pointer() == rhs.pointer();
+  case INT:
+  case UINT:
+    // Not supported.
+    break;
+  }
+  throw std::runtime_error("unknown type");
+}
+
+std::ostream &operator<<(std::ostream &os, const Variant &v) {
+  switch (v.type()) {
+  case POINTER:
+    os << v.pointer();
+    break;
+  case STRING:
+    os << '"' << v.string() << '"';
+    break;
+  default:
+    os << v.number();
+    break;
+  }
+  return os;
+}
 
 class LibraryImpl : public AmplExports, public TMInfo {
  private:
@@ -251,6 +292,7 @@ LibraryImpl::LibraryImpl(const char *name) : AmplExports(), name_(name) {
   StdErr = stderr;
   Qsortv = qsortv;
   Getenv = getenv;
+  Strtod = strtod;
 }
 
 Library::Library(const char *name) : impl_(new LibraryImpl(name)) {
@@ -278,8 +320,8 @@ const Handler *Library::GetHandler(const char *name) const {
 }
 
 int Table::AddRows(DbCol *cols, long nrows) {  // NOLINT(runtime/int)
-  for (int i = 0; i < nrows; ++i) {
-    for (int j = 0; j < num_cols(); ++j) {
+  for (unsigned i = 0; i < nrows; ++i) {
+    for (unsigned j = 0; j < num_cols(); ++j) {
       DbCol &value = cols[j];
       if (value.sval[i])
         Add(value.sval[i]);
@@ -312,7 +354,7 @@ bool operator==(const Table &lhs, const Table &rhs) {
   }
   for (unsigned i = 0; i != num_rows; ++i) {
     for (unsigned j = 0; j != num_cols; ++j) {
-      if (std::strcmp(lhs.GetString(i, j), rhs.GetString(i, j)) != 0)
+      if (lhs(i, j) != rhs(i, j))
         return false;
     }
   }
@@ -327,7 +369,7 @@ std::ostream &operator<<(std::ostream &os, const Table &t) {
   os << "\n";
   for (unsigned i = 0; i != num_rows; ++i) {
     for (unsigned j = 0; j != num_cols; ++j)
-      os << t.GetString(i, j) << " ";
+      os << t(i, j) << " ";
     os << "\n";
   }
   return os;
@@ -345,8 +387,10 @@ void Handler::Read(const std::string &connection_str,
 void Handler::Write(
     const std::string &connection_str, const Table &t) const {
   ScopedTableInfo table(t, connection_str);
-  for (int i = 0, m = t.num_rows(); i < m; ++i)
-    table.SetString(i, t.GetString(i, 0));
+  for (unsigned i = 0, m = t.num_rows(); i < m; ++i) {
+    for (unsigned j = 0, n = t.num_cols(); j < n; ++j)
+      table.SetValue(i, j, t(i, j));
+  }
   table.TMI = lib_->impl();
   CheckResult(write_(lib_->impl(), &table), table);
 }
@@ -355,14 +399,15 @@ const Type GetType<void>::VALUE = VOID;
 const Type GetType<int>::VALUE = INT;
 const Type GetType<unsigned>::VALUE = UINT;
 const Type GetType<double>::VALUE = DOUBLE;
+const Type GetType<const char*>::VALUE = STRING;
 
 std::ostream &operator<<(std::ostream &os, const Tuple &t) {
   os << "(";
   if (unsigned size = t.size()) {
-    Print(os, t[0]);
+    Print(os, t[0].number());
     for (size_t i = 1; i < size; ++i) {
       os << ", ";
-      Print(os, t[i]);
+      Print(os, t[i].number());
     }
   }
   os << ")";
@@ -420,7 +465,7 @@ Function::Result Function::operator()(const Tuple &args,
   // Initialize the argument list.
   std::vector<double> ra(num_args);
   for (unsigned i = 0; i < num_args; ++i)
-    ra[i] = args[i];
+    ra[i] = args[i].number();
   std::vector<char> dig(use_deriv.size());
   if (!dig.empty()) {
     if (dig.size() != num_args)
@@ -463,7 +508,7 @@ DerivativeBinder::DerivativeBinder(
 }
 
 double DerivativeBinder::operator()(double x) {
-  args_[eval_arg_] = x;
+  args_[eval_arg_] = Variant::FromDouble(x);
   Function::Result r = f_(args_, DERIVS, use_deriv_);
   return r.error() ?
       std::numeric_limits<double>::quiet_NaN() : r.deriv(deriv_arg_);
