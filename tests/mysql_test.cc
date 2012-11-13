@@ -142,7 +142,7 @@ TEST_F(MySQLTest, Rewrite) {
   Table t2(table_name_, 1);
   t2 = "Test";
   handler_->Read(connection_, &t2);
-  ASSERT_EQ(t2, t1);
+  ASSERT_EQ(t1, t2);
   // The second write should drop the table and create a new one.
   Table t3(table_name_, 1);
   t3 = "Character",
@@ -151,7 +151,32 @@ TEST_F(MySQLTest, Rewrite) {
   Table t4(table_name_, 1);
   t4 = "Character";
   handler_->Read(connection_, &t4);
-  ASSERT_EQ(t4, t3);
+  ASSERT_EQ(t3, t4);
+}
+
+TEST_F(MySQLTest, Append) {
+  Table t1(table_name_, 1);
+  t1 = "Test",
+       "Beeblebrox";
+  // The first write creates a table.
+  handler_->Write(connection_, t1);
+  Table t2(table_name_, 1);
+  t2 = "Test";
+  handler_->Read(connection_, &t2);
+  ASSERT_EQ(t2, t1);
+  // The second write appends to the table.
+  Table t3(table_name_, 1);
+  t3 = "Test",
+       "Zaphod";
+  handler_->Write(connection_, t3, true);
+  Table t4(table_name_, 1);
+  t4 = "Test";
+  handler_->Read(connection_, &t4);
+  Table t5(table_name_, 1);
+  t5= "Test",
+      "Zaphod",
+      "Beeblebrox";
+  ASSERT_EQ(t5, t4);
 }
 
 TEST_F(MySQLTest, AdjustColNames) {
