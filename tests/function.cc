@@ -63,7 +63,7 @@ class ScopedTableInfo : public TableInfo {
   void SetTable(Table *t) { table_ = t; }
 
   void SetValue(unsigned row, unsigned col, const fun::Variant &v) {
-    if (v.type() == fun::Type::STRING)
+    if (v.type() == fun::STRING)
       cols_[col].sval[row] = const_cast<char*>(v.string());
     else
       cols_[col].dval[row] = v.number();
