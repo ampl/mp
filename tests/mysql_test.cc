@@ -156,18 +156,37 @@ TEST_F(MySQLTest, Rewrite) {
 
 TEST_F(MySQLTest, AdjustColNames) {
   Table t(table_name_, 3);
-  t = "Time:a",       "Strcol:b", "Mixed:c",
-      20121112143000, "e",        "f",
-      20121112150000, 111,        222;
+  t = "Time:a",         "Strcol:b", "Mixed:c",
+      20121112143000.0, "e",        "f",
+      20121112150000.0, "111",      "222";
   handler_->Write(connection_, t);
   Table t2(table_name_, 3);
   t2 = "a", "b", "c";
   handler_->Read(connection_, &t2);
   Table t3(table_name_, 3);
-  t3 = "a",           "b", "c",
-      20121112143000, "e", "f",
-      20121112150000, 111, 222;
+  t3 = "a",             "b", "c",
+      20121112143000.0, "e", "f",
+      20121112150000.0, 111, 222;
   EXPECT_EQ(t3, t2);
+}
+
+#define EXPECT_ERROR(statement, message) \
+do { \
+  bool catched = false; \
+  try { \
+    statement; \
+  } catch (const std::runtime_error &e) { \
+    EXPECT_STREQ(message, e.what()); \
+    catched = true; \
+  } \
+  EXPECT_TRUE(catched); \
+} while (false)
+
+TEST_F(MySQLTest, EmptyColName) {
+  Table t(table_name_, 2);
+  t = "a", "";
+  EXPECT_ERROR(handler_->Write(connection_, t),
+      "Column 2's name is the empty string.");
 }
 
 // TODO(viz): more tests
