@@ -214,5 +214,12 @@ TEST_F(MySQLTest, EmptyColName) {
       "Column 2's name is the empty string.");
 }
 
+TEST_F(MySQLTest, QuoteInTableName) {
+  table_name_ += '`';
+  Table t(table_name_, 1);
+  t = "c", "v";
+  handler_->Write(connection_, t);
+}
+
 // TODO(viz): more tests
 }

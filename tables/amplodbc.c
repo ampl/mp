@@ -1407,12 +1407,24 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 		h->quote = quote[0];
 		if (h->quote != ' ') {
 			/* Quote the table name. */
-			size_t tname_length = strlen(tname);
-			char *quoted_tname = TM(tname_length + 3);
+			size_t quoted_name_length = 0;
+			int num_quotes = 0;
+			char *quoted_tname = 0;
+			char *s = 0;
+			for (s = tname; *s; ++s) {
+				if (*s == h->quote)
+					++num_quotes;
+			}
+			quoted_name_length = strlen(tname) + num_quotes + 2;
+			quoted_tname = TM(quoted_name_length + 1);
 			quoted_tname[0] = h->quote;
-			strcpy(quoted_tname + 1, tname);
-			quoted_tname[tname_length + 1] = h->quote;
-			quoted_tname[tname_length + 2] = '\0';
+			for (s = quoted_tname + 1; *tname; ++tname, ++s) {
+				*s = *tname;
+				if (*tname == h->quote)
+					*++s = *tname;
+			}
+			quoted_tname[quoted_name_length - 1] = h->quote;
+			quoted_tname[quoted_name_length] = '\0';
 			tname = quoted_tname;
 		}
 	}
