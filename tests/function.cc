@@ -320,7 +320,7 @@ const Handler *Library::GetHandler(const char *name) const {
 }
 
 int Table::AddRows(DbCol *cols, long nrows) {  // NOLINT(runtime/int)
-  for (unsigned i = 0; i < nrows; ++i) {
+  for (long i = 0; i < nrows; ++i) {
     for (unsigned j = 0; j < num_cols(); ++j) {
       DbCol &value = cols[j];
       if (value.sval[i])
