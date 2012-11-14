@@ -141,6 +141,8 @@ ScopedTableInfo::ScopedTableInfo(const Table &t,
   AddString(&strings_, connection_str.c_str());
   if (!sql.empty())
     AddString(&strings_, sql.c_str());
+  // Uncomment the following line to get verbose output.
+  //AddString(&strings_, "verbose");
   nstrings = strings_.size();
   strings = &strings_[0];
   Missing = &MISSING;

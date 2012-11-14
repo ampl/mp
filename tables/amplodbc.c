@@ -1133,40 +1133,11 @@ colname_adjust(HInfo *h, TableInfo *TI)
 	h->ntimes = nt;
 	}
 
-/* Escapes nonprintable characters in s. */
- static char*
-escape(HInfo *h, const char *s) {
-	AmplExports *ae = h->AE;
-	TableInfo *TI = h->TI;
-	const char *from = 0;
-	char *to = 0;
-	char *escaped = 0;
-	int num_nonprint_chars = 0;
-	size_t escaped_length = 0;
-	for (from = s; *from; ++from) {
-		if (!isprint(*from))
-			++num_nonprint_chars;
-	}
-	escaped_length = strlen(s) + 3 * num_nonprint_chars + 1;
-	to = escaped = TM(escaped_length);
-	for (from = s; *from; ++from) {
-		char c = *from;
-		assert(to - escaped < (ptrdiff_t)escaped_length);
-		if (!isprint(c)) {
-			snprintf(to, 5, "\\x%02x", (unsigned char)c);
-			to += 4;
-		} else {
-			*to++ = c;
-		}
-	}
-	*to = '\0';
-	return escaped;
-}
-
 /* Checks an SQL identifier and returns the number of quotes if the identifier
- * is valid, -1 otherwise. */
+ * is valid, -1 otherwise.
+ * col_index: column index if id is a column name, -1 if it is a table name */
  static int
-check_sql_identifier(HInfo *h, const char *id) {
+check_sql_identifier(HInfo *h, const char *id, int col_index) {
 	AmplExports *ae = h->AE;
 	TableInfo *TI = h->TI;
 	char quote = h->quote;
@@ -1175,12 +1146,16 @@ check_sql_identifier(HInfo *h, const char *id) {
 	for (; *s; ++s) {
 		char c = *s;
 		if (!isprint(c)) {
-			const char *escaped_id = escape(h, id);
-			size_t length = strlen(escaped_id) + 200;
-			snprintf(TI->Errmsg = TM(length), length,
-					"Name \"%s\" contains invalid character with code %d "
-					"('\\x%02x')", escaped_id, (unsigned char)c,
+			int length = 200;
+			if (col_index >= 0) {
+				snprintf(TI->Errmsg = TM(length), length,
+					"Column %d's name contains invalid character with code %d",
+					col_index + 1, (unsigned char)c);
+			} else {
+				snprintf(TI->Errmsg = TM(length), length,
+					"Table name contains invalid character with code %d",
 					(unsigned char)c);
+			}
 			return -1;
 		}
 		if (c == quote)
@@ -1192,17 +1167,23 @@ check_sql_identifier(HInfo *h, const char *id) {
 /* Quotes an SQL identifier returning null and setting h->TI->Errmsg if
  * the identifier contains invalid characters. */
  static char*
-quote_sql_identifier(HInfo *h, const char *id)
+quote_sql_identifier(HInfo *h, const char *id, int col_index)
 {
 	AmplExports *ae = h->AE;
 	TableInfo *TI = h->TI;
 	char quote = h->quote;
-	int num_quotes = check_sql_identifier(h, id);
-	size_t quoted_length = strlen(id) + num_quotes + 2;
-	char *quoted_id = TM(quoted_length + 1);
-	char *to = quoted_id;
+	int num_quotes = 0;
+	size_t quoted_length = 0;
+	char *quoted_id = 0;
+	char *to = 0;
+
+	num_quotes = check_sql_identifier(h, id, col_index);
+	if (num_quotes == -1)
+		return NULL;
 
 	/* Quote the identifier. */
+	quoted_length = strlen(id) + num_quotes + 2;
+	to = quoted_id = TM(quoted_length + 1);
 	*to++ = quote;
 	for (; *id; ++id) {
 		char c = *id;
@@ -1494,7 +1475,7 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 		prc(h, "SQLGetInfo", SQLGetInfo(h->hc, SQL_IDENTIFIER_QUOTE_CHAR,
 				quote, sizeof(quote) / sizeof(*quote), &length));
 		h->quote = quote[0];
-		tname = quote_sql_identifier(h, tname);
+		tname = quote_sql_identifier(h, tname, -1);
 		if (!tname)
 			goto eret;
 	}
@@ -1770,9 +1751,11 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 
 	quoted_colnames = TM(nc * sizeof(*quoted_colnames));
 	for (i = 0; i < nc; ++i) {
-		quoted_colnames[i] = quote_sql_identifier(&h, TI->colnames[i]);
-		if (!quoted_colnames[i])
-			return rc;
+		quoted_colnames[i] = quote_sql_identifier(&h, TI->colnames[i], i);
+		if (!quoted_colnames[i]) {
+			cleanup(&h);
+			return DB_Error;
+		}
 	}
 
 	sw = 0;
@@ -1847,7 +1830,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	for(i1 = 0; i1 < nc; i1++) {
 		i = p(i1);
 		db = db0 + i;
-		j += sprintf(ct+j, "%s%s ", i1 ? ", " : "", h.quoted_colnames[i]);
+		j += sprintf(ct+j, "%s%s ", i1 ? ", " : "", quoted_colnames[i]);
 		if (tsq && tsq[i])
 			j += sprintf(ct+j, "%s", ds->ttype);
 		else if (db->sval)
@@ -2195,7 +2178,10 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 	UWORD u;
 	char **cd, *dsn, nbuf[512], *s, *sbuf, *tname;
 	double *dd, t;
-	int a, *ct, dbq, i, j, k, mix, nc, nf, nk[4], nt, *p, *z, *zt;
+	int *ct, dbq, i, j, k, mix, nk[4], nt, *p, *z, *zt;
+	int a = TI->arity;	/* number of indexing columns */
+	int nc = TI->ncols;	/* number of data columns desired */
+	int nf = a + nc;	/* total number of columns of interest */
 	size_t L;
 	typedef struct NameType { const char *name; int type; } NameType;
 	NameType *ntp;
@@ -2230,9 +2216,11 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 		return i;
 		}
 
-	for (i = 0; i < nc; ++i) {
-		if (check_sql_identifier(&h, TI->colnames[i]) == -1)
+	for (i = 0; i < nf; ++i) {
+		if (check_sql_identifier(&h, TI->colnames[i], i) == -1) {
+			cleanup(&h);
 			return DB_Error;
+		}
 	}
 
 	L = strlen(tname);
@@ -2267,9 +2255,6 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 		goto bailout;
 		}
 	dbc0 = dbc = (DBColinfo *)TM(ncols*sizeof(DBColinfo));
-	a = TI->arity;	/* number of indexing columns */
-	nc = TI->ncols;	/* number of data columns desired */
-	nf = a + nc;	/* total number of columns of interest */
 	i = nt = ncols;	/* columns in the database table */
 	if (i < nf)
 		i = nf;	/* we'll complain about a specific missing column */
