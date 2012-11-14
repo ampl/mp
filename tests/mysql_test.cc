@@ -243,9 +243,23 @@ TEST_F(MySQLTest, InvalidCharInTableName) {
   EXPECT_ERROR(handler_->Read(connection_, &t), error);
 }
 
-TEST_F(MySQLTest, LettersInTableName) {
-  for (unsigned c = 1; c <= UCHAR_MAX; ++c) {
-    if (std::isalpha(c))
+TEST_F(MySQLTest, LowerCaseLettersInTableName) {
+  for (int c = 1; c <= UCHAR_MAX; ++c) {
+    if (std::isalpha(c) && std::tolower(c) == c)
+      table_name_ += static_cast<char>(c);
+  }
+  Table t(table_name_, 1);
+  t = "c", "v";
+  handler_->Write(connection_, t);
+  Table in(table_name_, 1);
+  in = "c";
+  handler_->Read(connection_, &in);
+  EXPECT_EQ(t, in);
+}
+
+TEST_F(MySQLTest, UpperCaseLettersInTableName) {
+  for (int c = 1; c <= UCHAR_MAX; ++c) {
+    if (std::isalpha(c) && std::tolower(c) != c)
       table_name_ += static_cast<char>(c);
   }
   Table t(table_name_, 1);
@@ -258,7 +272,7 @@ TEST_F(MySQLTest, LettersInTableName) {
 }
 
 TEST_F(MySQLTest, DigitsInTableName) {
-  for (unsigned c = 1; c <= UCHAR_MAX; ++c) {
+  for (int c = 1; c <= UCHAR_MAX; ++c) {
     if (std::isdigit(c))
       table_name_ += static_cast<char>(c);
   }
@@ -272,7 +286,7 @@ TEST_F(MySQLTest, DigitsInTableName) {
 }
 
 TEST_F(MySQLTest, SpecialCharsInTableName) {
-  for (unsigned c = 1; c <= UCHAR_MAX; ++c) {
+  for (int c = 1; c <= UCHAR_MAX; ++c) {
     if (std::isprint(c) && !std::isalnum(c))
       table_name_ += static_cast<char>(c);
   }
@@ -286,7 +300,7 @@ TEST_F(MySQLTest, SpecialCharsInTableName) {
 }
 
 TEST_F(MySQLTest, InvalidCharsInColumnName) {
-  for (unsigned c = 1; c <= UCHAR_MAX; ++c) {
+  for (int c = 1; c <= UCHAR_MAX; ++c) {
     if (std::isprint(c))
       continue;
     char col_name[2] = {static_cast<char>(c)};
@@ -302,7 +316,7 @@ TEST_F(MySQLTest, InvalidCharsInColumnName) {
 
 TEST_F(MySQLTest, AlphaNumericColumnName) {
   std::string col_name;
-  for (unsigned c = 1; c <= UCHAR_MAX; ++c) {
+  for (int c = 1; c <= UCHAR_MAX; ++c) {
     if (std::isalnum(c))
       col_name += static_cast<char>(c);
   }
@@ -317,7 +331,7 @@ TEST_F(MySQLTest, AlphaNumericColumnName) {
 
 TEST_F(MySQLTest, SpecialCharsInColumnName) {
   std::string col_name;
-  for (unsigned c = 1; c <= UCHAR_MAX; ++c) {
+  for (int c = 1; c <= UCHAR_MAX; ++c) {
     if (std::isprint(c) && !std::isalnum(c))
       col_name += static_cast<char>(c);
   }
