@@ -230,7 +230,7 @@ TEST_F(MySQLTest, QuoteInColumnName) {
   handler_->Write(connection_, t);
 }
 
-TEST_F(MySQLTest, SpecialCharInTableName) {
+TEST_F(MySQLTest, InvalidCharInTableName) {
   table_name_ += '\t';
   Table t(table_name_, 1);
   t = "c", "v";
@@ -238,33 +238,94 @@ TEST_F(MySQLTest, SpecialCharInTableName) {
   snprintf(error, BUFFER_SIZE, "Table name contains invalid "
     "character with code %d", '\t');
   EXPECT_ERROR(handler_->Write(connection_, t), error);
+  EXPECT_ERROR(handler_->Read(connection_, &t), error);
 }
 
-TEST_F(MySQLTest, SpecialCharInColumnName) {
+TEST_F(MySQLTest, LettersInTableName) {
   for (unsigned c = 1; c <= UCHAR_MAX; ++c) {
-    if (c == ' ')
-      continue; // MySQL doesn't allow trailing spaces in column names.
+    if (std::isalpha(c))
+      table_name_ += static_cast<char>(c);
+  }
+  Table t(table_name_, 1);
+  t = "c", "v";
+  handler_->Write(connection_, t);
+  Table in(table_name_, 1);
+  in = "c";
+  handler_->Read(connection_, &in);
+  EXPECT_EQ(t, in);
+}
+
+TEST_F(MySQLTest, DigitsInTableName) {
+  for (unsigned c = 1; c <= UCHAR_MAX; ++c) {
+    if (std::isdigit(c))
+      table_name_ += static_cast<char>(c);
+  }
+  Table t(table_name_, 1);
+  t = "c", "v";
+  handler_->Write(connection_, t);
+  Table in(table_name_, 1);
+  in = "c";
+  handler_->Read(connection_, &in);
+  EXPECT_EQ(t, in);
+}
+
+TEST_F(MySQLTest, SpecialCharsInTableName) {
+  for (unsigned c = 1; c <= UCHAR_MAX; ++c) {
+    if (std::isprint(c) && !std::isalnum(c))
+      table_name_ += static_cast<char>(c);
+  }
+  Table t(table_name_, 1);
+  t = "c", "v";
+  handler_->Write(connection_, t);
+  Table in(table_name_, 1);
+  in = "c";
+  handler_->Read(connection_, &in);
+  EXPECT_EQ(t, in);
+}
+
+TEST_F(MySQLTest, InvalidCharsInColumnName) {
+  for (unsigned c = 1; c <= UCHAR_MAX; ++c) {
+    if (std::isprint(c))
+      continue;
     char col_name[2] = {static_cast<char>(c)};
     Table t(table_name_, 1);
     t = col_name, "v";
-    if (!std::isprint(c)) {
-      char error[BUFFER_SIZE] = "";
-      snprintf(error, BUFFER_SIZE, "Column 1's name contains invalid "
-          "character with code %d", c);
-      EXPECT_ERROR(handler_->Write(connection_, t), error);
-      continue;
-    }
-    try {
-      handler_->Write(connection_, t);
-    } catch (...) {
-      std::cout << "Failed on character " << c << std::endl;
-      throw;
-    }
-    Table in(table_name_, 1);
-    in = col_name;
-    handler_->Read(connection_, &in);
-    EXPECT_EQ(t, in);
+    char error[BUFFER_SIZE] = "";
+    snprintf(error, BUFFER_SIZE, "Column 1's name contains invalid "
+        "character with code %d", c);
+    EXPECT_ERROR(handler_->Write(connection_, t), error);
+    EXPECT_ERROR(handler_->Read(connection_, &t), error);
   }
+}
+
+TEST_F(MySQLTest, AlphaNumericColumnName) {
+  std::string col_name;
+  for (unsigned c = 1; c <= UCHAR_MAX; ++c) {
+    if (std::isalnum(c))
+      col_name += static_cast<char>(c);
+  }
+  Table t(table_name_, 1);
+  t = col_name.c_str(), "v";
+  handler_->Write(connection_, t);
+  Table in(table_name_, 1);
+  in = col_name.c_str();
+  handler_->Read(connection_, &in);
+  EXPECT_EQ(t, in);
+}
+
+TEST_F(MySQLTest, SpecialCharsInColumnName) {
+  std::string col_name;
+  for (unsigned c = 1; c <= UCHAR_MAX; ++c) {
+    if (std::isprint(c) && !std::isalnum(c))
+      col_name += static_cast<char>(c);
+  }
+  Table t(table_name_, 1);
+  t = col_name.c_str(), "v";
+  handler_->Write(connection_, t);
+  Table in(table_name_, 1);
+  in = col_name.c_str();
+  handler_->Read(connection_, &in);
+  EXPECT_EQ(t, in);
 }
 
 // TODO(viz): more tests

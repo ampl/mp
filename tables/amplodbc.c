@@ -1133,15 +1133,14 @@ colname_adjust(HInfo *h, TableInfo *TI)
 	h->ntimes = nt;
 	}
 
-/* Checks an SQL identifier and returns the number of quotes if the identifier
- * is valid, -1 otherwise.
+/* Checks an SQL identifier and returns 1 if the identifier is valid,
+ * 0 otherwise.
  * col_index: column index if id is a column name, -1 if it is a table name */
  static int
-check_sql_identifier(HInfo *h, const char *id, int col_index) {
+check_sql_identifier(HInfo *h, const char *id, int col_index)
+{
 	AmplExports *ae = h->AE;
 	TableInfo *TI = h->TI;
-	char quote = h->quote;
-	int num_quotes = 0;
 	const char *s = id;
 	for (; *s; ++s) {
 		char c = *s;
@@ -1156,18 +1155,16 @@ check_sql_identifier(HInfo *h, const char *id, int col_index) {
 					"Table name contains invalid character with code %d",
 					(unsigned char)c);
 			}
-			return -1;
+			return 0;
 		}
-		if (c == quote)
-			++num_quotes;
 	}
-	return num_quotes;
+	return 1;
 }
 
 /* Quotes an SQL identifier returning null and setting h->TI->Errmsg if
  * the identifier contains invalid characters. */
  static char*
-quote_sql_identifier(HInfo *h, const char *id, int col_index)
+quote_sql_identifier(HInfo *h, const char *id)
 {
 	AmplExports *ae = h->AE;
 	TableInfo *TI = h->TI;
@@ -1175,18 +1172,20 @@ quote_sql_identifier(HInfo *h, const char *id, int col_index)
 	int num_quotes = 0;
 	size_t quoted_length = 0;
 	char *quoted_id = 0;
+	const char *from = 0;
 	char *to = 0;
 
-	num_quotes = check_sql_identifier(h, id, col_index);
-	if (num_quotes == -1)
-		return NULL;
+	for (from = id; *from; ++from) {
+		if (*from == quote)
+			++num_quotes;
+	}
 
 	/* Quote the identifier. */
 	quoted_length = strlen(id) + num_quotes + 2;
 	to = quoted_id = TM(quoted_length + 1);
 	*to++ = quote;
-	for (; *id; ++id) {
-		char c = *id;
+	for (from = id; *from; ++from) {
+		char c = *from;
 		assert(to - quoted_id < (ptrdiff_t)(quoted_length - 1));
 		if (c == quote)
 			*to++ = c;
@@ -1217,17 +1216,7 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 	h->env = SQL_NULL_HENV;
 	h->hc = SQL_NULL_HDBC;
 	h->hs = SQL_NULL_HSTMT;
-	if (SQLAllocEnv(&h->env) != SQL_SUCCESS) {
-		TI->Errmsg = "SQLAllocEnv failed!";
- eret:
-		*rc = DB_Error;
-		return 0;
-		}
-	if (prc(h, "SQLAllocConnect", SQLAllocConnect(h->env, &h->hc))) {
- unexpected:
-		TI->Errmsg = "Unexpected ODBC failure.";
-		goto eret;
-		}
+
 	strs = TI->strings;
 	dsname = dsname0 = strs[1];
 	tname = 0;
@@ -1363,6 +1352,30 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 	wantretry = 1;
 	h->sqldb = verbose & 2;
 	h->verbose = verbose &= 1;
+
+	/* Check the table and column names. */
+	{
+		int num_cols = TI->arity + TI->ncols;
+		if (!check_sql_identifier(h, tname, -1))
+			goto eret;
+		for (i = 0; i < num_cols; ++i) {
+			if (!check_sql_identifier(h, TI->colnames[i], i))
+				goto eret;
+		}
+	}
+
+	if (SQLAllocEnv(&h->env) != SQL_SUCCESS) {
+		TI->Errmsg = "SQLAllocEnv failed!";
+ eret:
+		*rc = DB_Error;
+		return 0;
+		}
+	if (prc(h, "SQLAllocConnect", SQLAllocConnect(h->env, &h->hc))) {
+ unexpected:
+		TI->Errmsg = "Unexpected ODBC failure.";
+		goto eret;
+		}
+
 #ifdef _WIN32
 	if (!winfo.score)
 		hw_get(ae);
@@ -1469,15 +1482,13 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 		}
  connected:
 	{
-		/* Quote table and column names. */
+		/* Quote the table name. */
 		SQLCHAR quote[2] = "\"";
 		SQLSMALLINT length = 0;
 		prc(h, "SQLGetInfo", SQLGetInfo(h->hc, SQL_IDENTIFIER_QUOTE_CHAR,
 				quote, sizeof(quote) / sizeof(*quote), &length));
 		h->quote = quote[0];
-		tname = quote_sql_identifier(h, tname, -1);
-		if (!tname)
-			goto eret;
+		tname = quote_sql_identifier(h, tname);
 	}
 	if (prc(h, "SQLAllocStmt", SQLAllocStmt(h->hc,&h->hs)))
 		goto unexpected;
@@ -1750,13 +1761,8 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 		}
 
 	quoted_colnames = TM(nc * sizeof(*quoted_colnames));
-	for (i = 0; i < nc; ++i) {
-		quoted_colnames[i] = quote_sql_identifier(&h, TI->colnames[i], i);
-		if (!quoted_colnames[i]) {
-			cleanup(&h);
-			return DB_Error;
-		}
-	}
+	for (i = 0; i < nc; ++i)
+		quoted_colnames[i] = quote_sql_identifier(&h, TI->colnames[i]);
 
 	sw = 0;
 	tsq = 0;
@@ -2215,13 +2221,6 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 		cleanup(&h);
 		return i;
 		}
-
-	for (i = 0; i < nf; ++i) {
-		if (check_sql_identifier(&h, TI->colnames[i], i) == -1) {
-			cleanup(&h);
-			return DB_Error;
-		}
-	}
 
 	L = strlen(tname);
 	if (!(s = sbuf)) {
