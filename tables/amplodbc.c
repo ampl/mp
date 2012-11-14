@@ -1727,7 +1727,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	TIMESTAMP_STRUCT *ts, *ts0, *ts1, **tsp, ***tsq;
 	UWORD u;
 	char *Missing;
-	char buf[32], **cn, *ct, *dt, *it, *s, **sb, **sp, **spe, *tname;
+	char buf[32], *ct, *dt, *it, *s, **sb, **sp, **spe, *tname;
 	double *rb;
 	int deltry, i, i1, j, k, nc, nodrop, ntlen, nts, rc;
 	int *slen, *sw;
@@ -1746,8 +1746,6 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	if ((i = ODBC_check(ae, TI, &h)))
 		return i;
 	rc = DB_Error;
-	nc = TI->arity + TI->ncols;
-	cn = TI->colnames;
 
 	colname_adjust(&h, TI);
 
@@ -1756,10 +1754,6 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 		cleanup(&h);
 		return rc;
 		}
-
-	quoted_colnames = TM(nc * sizeof(*quoted_colnames));
-	for (i = 0; i < nc; ++i)
-		quoted_colnames[i] = quote_sql_identifier(&h, TI->colnames[i]);
 
 	sw = 0;
 	tsq = 0;
@@ -1770,8 +1764,12 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 			goto done;
 			}
 		}
-	nc = TI->arity + TI->ncols;
 #endif
+	nc = TI->arity + TI->ncols;
+	quoted_colnames = TM(nc * sizeof(*quoted_colnames));
+	for (i = 0; i < nc; ++i)
+		quoted_colnames[i] = quote_sql_identifier(&h, TI->colnames[i]);
+
 	Missing = TI->Missing;
 	hs = h.hs;
 	ntlen = strlen(ds->ntype);
@@ -1780,7 +1778,6 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	slen = (int*)TM(nc*sizeof(int));
 	db0 = TI->cols;
 	sblen = 0;
-	cn = TI->colnames;
 	nts = 0;
 	for(i1 = 0; i1 < nc; i1++) {
 		i = p(i1);
@@ -1810,7 +1807,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 		else
 			L += ntlen;
 		slen[i] = k;
-		L += strlen(*cn++) + 5;
+		L += strlen(quoted_colnames[i1]) + 5;
 		}
 	if (nts)
 		L += nts*strlen(ds->ttype);
@@ -1821,7 +1818,6 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 			+ nts*sizeof(TIMESTAMP_STRUCT) + sblen);
 	ts = ts0 = (TIMESTAMP_STRUCT*)(rb + nc);
 	sb = (char**)(ts + nts);
-	cn = TI->colnames;
 	if (nodrop) {
 		j = sprintf(it = ct, "INSERT INTO %s (%s" /*)*/,
 				tname, quoted_colnames[0]);
