@@ -294,10 +294,13 @@ class Handler {
   Handler(Library *lib, TableHandlerFunc read, TableHandlerFunc write) :
     lib_(lib), read_(read), write_(write) {}
 
+  // Flags for Write.
+  enum { INOUT = 1, APPEND = 2 };
+
   void Read(const std::string &connection_str, Table *t,
       const std::string &sql_statement = std::string()) const;
   void Write(const std::string &connection_str, const Table &t,
-      bool inout = false) const;
+      int flags = 0) const;
 };
 
 template <typename T>

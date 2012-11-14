@@ -1824,9 +1824,10 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	sb = (char**)(ts + nts);
 	cn = TI->colnames;
 	if (nodrop) {
-		j = sprintf(it = ct, "INSERT INTO %s (\"%s\"" /*)*/, tname, cn[0]);
+		j = sprintf(it = ct, "INSERT INTO %s (%s" /*)*/,
+				tname, quoted_colnames[0]);
 		for(i = 1; i < nc; ++i)
-			j += sprintf(it+j, ", \"%s\"", cn[i]);
+			j += sprintf(it+j, ", %s", quoted_colnames[i]);
 		j += /*(*/ sprintf(it+j, ") VALUES (?"); /*)*/
 		goto finish_insprep;
 		}
