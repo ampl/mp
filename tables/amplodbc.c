@@ -32,6 +32,10 @@ THIS SOFTWARE.
 
 #include <sql.h>
 #include <sqlext.h>
+
+#include <assert.h>
+#include <ctype.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include "arith.h"	/* for LONG_LONG_POINTERS */
@@ -88,7 +92,6 @@ HInfo {
 	real	*dd;
 	UnknownType *ut;
 	SQLCHAR quote; /* A quote character for identifiers. */
-	char **quoted_colnames; /* Quoted column names. */
 	} HInfo;
 
  enum { /* for wrmode */ wr_drop=0, wr_append=1 };
@@ -1130,31 +1133,88 @@ colname_adjust(HInfo *h, TableInfo *TI)
 	h->ntimes = nt;
 	}
 
-/* Quotes a table or column name. */
-static char *quote_name(HInfo *h, char *name)
-{
+/* Escapes nonprintable characters in s. */
+ static char*
+escape(HInfo *h, const char *s) {
+	AmplExports *ae = h->AE;
+	TableInfo *TI = h->TI;
+	const char *from = 0;
+	char *to = 0;
+	char *escaped = 0;
+	int num_nonprint_chars = 0;
+	size_t escaped_length = 0;
+	for (from = s; *from; ++from) {
+		if (!isprint(*from))
+			++num_nonprint_chars;
+	}
+	escaped_length = strlen(s) + 3 * num_nonprint_chars + 1;
+	to = escaped = TM(escaped_length);
+	for (from = s; *from; ++from) {
+		char c = *from;
+		assert(to - escaped < (ptrdiff_t)escaped_length);
+		if (!isprint(c)) {
+			snprintf(to, 5, "\\x%02x", (unsigned char)c);
+			to += 4;
+		} else {
+			*to++ = c;
+		}
+	}
+	*to = '\0';
+	return escaped;
+}
+
+/* Checks an SQL identifier and returns the number of quotes if the identifier
+ * is valid, -1 otherwise. */
+ static int
+check_sql_identifier(HInfo *h, const char *id) {
+	AmplExports *ae = h->AE;
+	TableInfo *TI = h->TI;
 	char quote = h->quote;
-	size_t quoted_name_length = 0;
 	int num_quotes = 0;
-	char *quoted_name = 0;
-	char *s = 0;
-	if (quote == ' ')
-		return name;
-	for (s = name; *s; ++s) {
-		if (*s == quote)
+	const char *s = id;
+	for (; *s; ++s) {
+		char c = *s;
+		if (!isprint(c)) {
+			const char *escaped_id = escape(h, id);
+			size_t length = strlen(escaped_id) + 200;
+			snprintf(TI->Errmsg = TM(length), length,
+					"Name \"%s\" contains invalid character with code %d "
+					"('\\x%02x')", escaped_id, (unsigned char)c,
+					(unsigned char)c);
+			return -1;
+		}
+		if (c == quote)
 			++num_quotes;
 	}
-	quoted_name_length = strlen(name) + num_quotes + 2;
-	quoted_name = (*h->AE->Tempmem)(h->TI->TMI, quoted_name_length + 1);
-	quoted_name[0] = quote;
-	for (s = quoted_name + 1; *name; ++name, ++s) {
-		*s = *name;
-		if (*name == quote)
-			*++s = *name;
+	return num_quotes;
+}
+
+/* Quotes an SQL identifier returning null and setting h->TI->Errmsg if
+ * the identifier contains invalid characters. */
+ static char*
+quote_sql_identifier(HInfo *h, const char *id)
+{
+	AmplExports *ae = h->AE;
+	TableInfo *TI = h->TI;
+	char quote = h->quote;
+	int num_quotes = check_sql_identifier(h, id);
+	size_t quoted_length = strlen(id) + num_quotes + 2;
+	char *quoted_id = TM(quoted_length + 1);
+	char *to = quoted_id;
+
+	/* Quote the identifier. */
+	*to++ = quote;
+	for (; *id; ++id) {
+		char c = *id;
+		assert(to - quoted_id < (ptrdiff_t)(quoted_length - 1));
+		if (c == quote)
+			*to++ = c;
+		*to++ = c;
 	}
-	quoted_name[quoted_name_length - 1] = quote;
-	quoted_name[quoted_name_length] = '\0';
-	return quoted_name;
+	assert(to - quoted_id == (ptrdiff_t)(quoted_length - 1));
+	*to++ = quote;
+	*to = '\0';
+	return quoted_id;
 }
 
  static char*
@@ -1431,15 +1491,12 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 		/* Quote table and column names. */
 		SQLCHAR quote[2] = "\"";
 		SQLSMALLINT length = 0;
-		int num_cols = TI->arity + TI->ncols;
-		int i = 0;
 		prc(h, "SQLGetInfo", SQLGetInfo(h->hc, SQL_IDENTIFIER_QUOTE_CHAR,
 				quote, sizeof(quote) / sizeof(*quote), &length));
 		h->quote = quote[0];
-		tname = quote_name(h, tname);
-		h->quoted_colnames = TM(num_cols);
-		for (i = 0; i < num_cols; ++i)
-			h->quoted_colnames[i] = quote_name(h, TI->colnames[i]);
+		tname = quote_sql_identifier(h, tname);
+		if (!tname)
+			goto eret;
 	}
 	if (prc(h, "SQLAllocStmt", SQLAllocStmt(h->hc,&h->hs)))
 		goto unexpected;
@@ -1687,14 +1744,13 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 #define p(x) p_[x]
 #define pi(x) pi_[x]
 #endif
+	char **quoted_colnames = 0;
 
 	if ((i = ODBC_check(ae, TI, &h)))
 		return i;
 	rc = DB_Error;
 	nc = TI->arity + TI->ncols;
 	cn = TI->colnames;
-
-	/* check validity of column names */
 
 	colname_adjust(&h, TI);
 	for(i = 0; i++ < nc; cn++) {
@@ -1711,6 +1767,14 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 		cleanup(&h);
 		return rc;
 		}
+
+	quoted_colnames = TM(nc * sizeof(*quoted_colnames));
+	for (i = 0; i < nc; ++i) {
+		quoted_colnames[i] = quote_sql_identifier(&h, TI->colnames[i]);
+		if (!quoted_colnames[i])
+			return rc;
+	}
+
 	sw = 0;
 	tsq = 0;
 #ifndef NO_Adjust_ampl_odbc
@@ -2165,6 +2229,11 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 		cleanup(&h);
 		return i;
 		}
+
+	for (i = 0; i < nc; ++i) {
+		if (check_sql_identifier(&h, TI->colnames[i]) == -1)
+			return DB_Error;
+	}
 
 	L = strlen(tname);
 	if (!(s = sbuf)) {

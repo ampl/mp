@@ -20,11 +20,14 @@
  Author: Victor Zverovich
  */
 
+#include <climits>
+
 #include "gtest/gtest.h"
 #include "tests/config.h"
 #include "tests/function.h"
 #include "tests/odbc.h"
 #include "solvers/funcadd.h"
+
 #undef snprintf
 
 #ifdef _WIN32
@@ -225,6 +228,33 @@ TEST_F(MySQLTest, QuoteInColumnName) {
   Table t(table_name_, 1);
   t = "c`", "v";
   handler_->Write(connection_, t);
+}
+
+TEST_F(MySQLTest, SpecialCharInColumnName) {
+  for (unsigned c = 1; c <= UCHAR_MAX; ++c) {
+    if (c == ' ')
+      continue; // MySQL doesn't allow trailing spaces in column names.
+    char col_name[2] = {static_cast<char>(c)};
+    Table t(table_name_, 1);
+    t = col_name, "v";
+    if (!std::isprint(c)) {
+      char buffer[BUFFER_SIZE] = "";
+      snprintf(buffer, BUFFER_SIZE, "Name \"\\x%02x\" contains invalid "
+          "character with code %d ('\\x%02x')", c, c, c);
+      EXPECT_ERROR(handler_->Write(connection_, t), buffer);
+      continue;
+    }
+    try {
+      handler_->Write(connection_, t);
+    } catch (...) {
+      std::cout << "Failed on character " << c << std::endl;
+      throw;
+    }
+    Table in(table_name_, 1);
+    in = col_name;
+    handler_->Read(connection_, &in);
+    EXPECT_EQ(t, in);
+  }
 }
 
 // TODO(viz): more tests
