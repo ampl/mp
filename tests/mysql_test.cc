@@ -221,5 +221,11 @@ TEST_F(MySQLTest, QuoteInTableName) {
   handler_->Write(connection_, t);
 }
 
+TEST_F(MySQLTest, QuoteInColumnName) {
+  Table t(table_name_, 1);
+  t = "c`", "v";
+  handler_->Write(connection_, t);
+}
+
 // TODO(viz): more tests
 }
