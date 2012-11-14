@@ -1133,8 +1133,8 @@ colname_adjust(HInfo *h, TableInfo *TI)
 	h->ntimes = nt;
 	}
 
-/* Checks an SQL identifier and returns 1 if the identifier is valid,
- * 0 otherwise.
+/* Checks an SQL identifier and returns 1 if the identifier is valid.
+ * If the identifier is invalid this function return 0 and sets h->TI->Errmsg.
  * col_index: column index if id is a column name, -1 if it is a table name */
  static int
 check_sql_identifier(HInfo *h, const char *id, int col_index)
@@ -1167,8 +1167,7 @@ check_sql_identifier(HInfo *h, const char *id, int col_index)
 	return 1;
 }
 
-/* Quotes an SQL identifier returning null and setting h->TI->Errmsg if
- * the identifier contains invalid characters. */
+/* Quotes an SQL identifier. */
  static char*
 quote_sql_identifier(HInfo *h, const char *id)
 {
