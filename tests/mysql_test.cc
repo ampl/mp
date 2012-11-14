@@ -230,6 +230,16 @@ TEST_F(MySQLTest, QuoteInColumnName) {
   handler_->Write(connection_, t);
 }
 
+TEST_F(MySQLTest, SpecialCharInTableName) {
+  table_name_ += '\t';
+  Table t(table_name_, 1);
+  t = "c", "v";
+  char error[BUFFER_SIZE] = "";
+  snprintf(error, BUFFER_SIZE, "Table name contains invalid "
+    "character with code %d", '\t');
+  EXPECT_ERROR(handler_->Write(connection_, t), error);
+}
+
 TEST_F(MySQLTest, SpecialCharInColumnName) {
   for (unsigned c = 1; c <= UCHAR_MAX; ++c) {
     if (c == ' ')
@@ -238,10 +248,10 @@ TEST_F(MySQLTest, SpecialCharInColumnName) {
     Table t(table_name_, 1);
     t = col_name, "v";
     if (!std::isprint(c)) {
-      char buffer[BUFFER_SIZE] = "";
-      snprintf(buffer, BUFFER_SIZE, "Name \"\\x%02x\" contains invalid "
-          "character with code %d ('\\x%02x')", c, c, c);
-      EXPECT_ERROR(handler_->Write(connection_, t), buffer);
+      char error[BUFFER_SIZE] = "";
+      snprintf(error, BUFFER_SIZE, "Column 1's name contains invalid "
+          "character with code %d", c);
+      EXPECT_ERROR(handler_->Write(connection_, t), error);
       continue;
     }
     try {
