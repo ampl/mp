@@ -88,6 +88,7 @@ HInfo {
 	real	*dd;
 	UnknownType *ut;
 	SQLCHAR quote; /* A quote character for identifiers. */
+	char **quoted_colnames; /* Quoted column names. */
 	} HInfo;
 
  enum { /* for wrmode */ wr_drop=0, wr_append=1 };
@@ -1129,6 +1130,33 @@ colname_adjust(HInfo *h, TableInfo *TI)
 	h->ntimes = nt;
 	}
 
+/* Quotes a table or column name. */
+static char *quote_name(HInfo *h, char *name)
+{
+	char quote = h->quote;
+	size_t quoted_name_length = 0;
+	int num_quotes = 0;
+	char *quoted_name = 0;
+	char *s = 0;
+	if (quote == ' ')
+		return name;
+	for (s = name; *s; ++s) {
+		if (*s == quote)
+			++num_quotes;
+	}
+	quoted_name_length = strlen(name) + num_quotes + 2;
+	quoted_name = (*h->AE->Tempmem)(h->TI->TMI, quoted_name_length + 1);
+	quoted_name[0] = quote;
+	for (s = quoted_name + 1; *name; ++name, ++s) {
+		*s = *name;
+		if (*name == quote)
+			*++s = *name;
+	}
+	quoted_name[quoted_name_length - 1] = quote;
+	quoted_name[quoted_name_length] = '\0';
+	return quoted_name;
+}
+
  static char*
 Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 {
@@ -1400,33 +1428,18 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 		}
  connected:
 	{
+		/* Quote table and column names. */
 		SQLCHAR quote[2] = "\"";
 		SQLSMALLINT length = 0;
+		int num_cols = TI->arity + TI->ncols;
+		int i = 0;
 		prc(h, "SQLGetInfo", SQLGetInfo(h->hc, SQL_IDENTIFIER_QUOTE_CHAR,
 				quote, sizeof(quote) / sizeof(*quote), &length));
 		h->quote = quote[0];
-		if (h->quote != ' ') {
-			/* Quote the table name. */
-			size_t quoted_name_length = 0;
-			int num_quotes = 0;
-			char *quoted_tname = 0;
-			char *s = 0;
-			for (s = tname; *s; ++s) {
-				if (*s == h->quote)
-					++num_quotes;
-			}
-			quoted_name_length = strlen(tname) + num_quotes + 2;
-			quoted_tname = TM(quoted_name_length + 1);
-			quoted_tname[0] = h->quote;
-			for (s = quoted_tname + 1; *tname; ++tname, ++s) {
-				*s = *tname;
-				if (*tname == h->quote)
-					*++s = *tname;
-			}
-			quoted_tname[quoted_name_length - 1] = h->quote;
-			quoted_tname[quoted_name_length] = '\0';
-			tname = quoted_tname;
-		}
+		tname = quote_name(h, tname);
+		h->quoted_colnames = TM(num_cols);
+		for (i = 0; i < num_cols; ++i)
+			h->quoted_colnames[i] = quote_name(h, TI->colnames[i]);
 	}
 	if (prc(h, "SQLAllocStmt", SQLAllocStmt(h->hc,&h->hs)))
 		goto unexpected;
@@ -1770,8 +1783,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	for(i1 = 0; i1 < nc; i1++) {
 		i = p(i1);
 		db = db0 + i;
-		j += sprintf(ct+j, "%s%c%s%c ", i1 ? ", " : "",
-				h.quote, cn[i], h.quote);
+		j += sprintf(ct+j, "%s%s ", i1 ? ", " : "", h.quoted_colnames[i]);
 		if (tsq && tsq[i])
 			j += sprintf(ct+j, "%s", ds->ttype);
 		else if (db->sval)
