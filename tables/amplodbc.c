@@ -1142,6 +1142,12 @@ check_sql_identifier(HInfo *h, const char *id, int col_index)
 	AmplExports *ae = h->AE;
 	TableInfo *TI = h->TI;
 	const char *s = id;
+	if (col_index >= 0 && !*s) {
+		int length = 100;
+		snprintf(TI->Errmsg = TM(length), length,
+			"Column %d's name is the empty string.", col_index + 1);
+		return 0;
+	}
 	for (; *s; ++s) {
 		char c = *s;
 		if (!isprint(c)) {
@@ -1745,14 +1751,6 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	cn = TI->colnames;
 
 	colname_adjust(&h, TI);
-	for(i = 0; i++ < nc; cn++) {
-		s = *cn;
-		if (!*s) {
-			sprintf(TI->Errmsg = (char*)TM(strlen(*cn) + 60),
-				"Column %d's name is the empty string.", i);
-			return rc;
-			}
-		}
 
 	if (!(tname = Connect(&h, &ds, &rc, 0))
 	 || (!ds->ntype && get_types(ds, &h))) {
