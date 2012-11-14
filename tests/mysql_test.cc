@@ -215,6 +215,8 @@ TEST_F(MySQLTest, EmptyColName) {
   t = "a", "";
   EXPECT_ERROR(handler_->Write(connection_, t),
       "Column 2's name is the empty string.");
+  EXPECT_ERROR(handler_->Read(connection_, &t),
+      "Column 2's name is the empty string.");
 }
 
 TEST_F(MySQLTest, QuoteInTableName) {
