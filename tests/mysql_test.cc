@@ -40,6 +40,7 @@
 # include <unistd.h>
 #endif
 
+using fun::Handler;
 using fun::Table;
 
 #define SERVER "callisto.local"
@@ -72,7 +73,7 @@ class SocketEnv {
 class MySQLTest : public ::testing::Test {
  protected:
   static fun::Library lib_;
-  const fun::Handler *handler_;
+  const Handler *handler_;
   odbc::Env env_;
   std::string connection_;
   std::string table_name_;
@@ -134,7 +135,7 @@ TEST_F(MySQLTest, Write) {
   Table t2(table_name_, 1);
   t2 = "Character Name";
   handler_->Read(connection_, &t2);
-  EXPECT_EQ(t2, t1);
+  EXPECT_EQ(t1, t2);
 }
 
 TEST_F(MySQLTest, Rewrite) {
@@ -158,26 +159,51 @@ TEST_F(MySQLTest, Rewrite) {
   ASSERT_EQ(t3, t4);
 }
 
-TEST_F(MySQLTest, Append) {
+TEST_F(MySQLTest, WriteInOut) {
   Table t1(table_name_, 1);
-  t1 = "Test",
+  t1 = "Name",
        "Beeblebrox";
   // The first write creates a table.
   handler_->Write(connection_, t1);
   Table t2(table_name_, 1);
-  t2 = "Test";
+  t2 = "Name";
   handler_->Read(connection_, &t2);
-  ASSERT_EQ(t2, t1);
-  // The second write appends to the table.
+  ASSERT_EQ(t1, t2);
+  // The second write appends data to the table.
   Table t3(table_name_, 1);
-  t3 = "Test",
+  t3 = "Name",
        "Zaphod";
-  handler_->Write(connection_, t3, true);
+  handler_->Write(connection_, t3, Handler::INOUT);
   Table t4(table_name_, 1);
-  t4 = "Test";
+  t4 = "Name";
   handler_->Read(connection_, &t4);
   Table t5(table_name_, 1);
-  t5= "Test",
+  t5= "Name",
+      "Zaphod",
+      "Beeblebrox";
+  ASSERT_EQ(t5, t4);
+}
+
+TEST_F(MySQLTest, Append) {
+  Table t1(table_name_, 1);
+  t1 = "Name",
+       "Zaphod";
+  // The first write creates a table.
+  handler_->Write(connection_, t1);
+  Table t2(table_name_, 1);
+  t2 = "Name";
+  handler_->Read(connection_, &t2);
+  ASSERT_EQ(t1, t2);
+  // The second write appends data to the table.
+  Table t3(table_name_, 1);
+  t3 = "Name",
+       "Beeblebrox";
+  handler_->Write(connection_, t3, Handler::INOUT | Handler::APPEND);
+  Table t4(table_name_, 1);
+  t4 = "Name";
+  handler_->Read(connection_, &t4);
+  Table t5(table_name_, 1);
+  t5= "Name",
       "Zaphod",
       "Beeblebrox";
   ASSERT_EQ(t5, t4);

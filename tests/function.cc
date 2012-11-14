@@ -436,14 +436,15 @@ void Handler::Read(const std::string &connection_str,
 }
 
 void Handler::Write(
-    const std::string &connection_str, const Table &t, bool inout) const {
-  ScopedTableInfo ti(t, connection_str);
+    const std::string &connection_str, const Table &t, int flags) const {
+  ScopedTableInfo ti(t, connection_str,
+		  (flags & APPEND) != 0 ? "write=append" : "");
   for (unsigned i = 0, m = t.num_rows(); i < m; ++i) {
     for (unsigned j = 0, n = t.num_cols(); j < n; ++j)
       ti.SetValue(i, j, t(i, j));
   }
   ti.flags = DBTI_flags_OUT;
-  if (inout)
+  if ((flags & INOUT) != 0)
     ti.flags |= DBTI_flags_IN;
   ti.TMI = lib_->impl();
   CheckResult(write_(lib_->impl(), &ti), ti);
