@@ -20,6 +20,7 @@
  Author: Victor Zverovich
  */
 
+#include <cctype>
 #include <climits>
 
 #include "gtest/gtest.h"
