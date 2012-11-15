@@ -27,7 +27,12 @@ simpbit.dll: simpbit.o
 fullbit.dll: fullbit.o
 	$(CC) -shared -o fullbit.dll fullbit.o
 
-ampltabl.dll: tableproxy.c tableproxyver.h
+ampltabl.dll: tableproxy.c amplodbc.c
+	$(CC) -c $(CFLAGS) -I$S -DOTHER_FUNCADD=funcaddodbc_ASL tableproxy.c
+	$(CC) -c $(CFLAGS) -Dfuncadd_ASL=funcaddodbc_ASL amplodbc.c
+	$(CC) $(CFLAGS) -I$S -shared -o ampltabl.dll tableproxy.o amplodbc.o -lodbc
+
+tableproxy_32.dll: tableproxy.c tableproxyver.h
 	$(CC) $(CFLAGS) -I$S -shared -o tableproxy_32.dll tableproxy.c
 
 tableproxy32: tableproxy.c $S/printf.o tableproxyver.h
