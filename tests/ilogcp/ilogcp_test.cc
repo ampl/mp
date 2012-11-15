@@ -376,14 +376,14 @@ TEST_F(IlogCPTest, ConvertIf) {
       AddRelational(EQ, AddVar(0), AddNum(0)), AddVar(1), AddNum(42)))));
 
   IloModel::Iterator iter(mod_);
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   IloIfThenI *ifTrue = dynamic_cast<IloIfThenI*>((*iter).getImpl());
   ASSERT_TRUE(ifTrue != nullptr);
   EXPECT_EQ("x == 0", str(ifTrue->getLeft()));
   EXPECT_EQ("IloNumVar(7)[-inf..inf] == y", str(ifTrue->getRight()));
 
   ++iter;
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   IloIfThenI *ifFalse = dynamic_cast<IloIfThenI*>((*iter).getImpl());
   ASSERT_TRUE(ifFalse != nullptr);
   IloNotI *ifNot = dynamic_cast<IloNotI*>(ifFalse->getLeft().getImpl());
@@ -457,7 +457,7 @@ TEST_F(IlogCPTest, ConvertAtan2) {
             str(d.Visit(AddBinary(OP_atan2, AddVar(1), AddVar(0)))));
 
   IloModel::Iterator iter(mod_);
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   IloIfThenI *ifXNonnegative = dynamic_cast<IloIfThenI*>((*iter).getImpl());
   ASSERT_TRUE(ifXNonnegative != nullptr);
   EXPECT_EQ("0 <= x", str(ifXNonnegative->getLeft()));
@@ -465,7 +465,7 @@ TEST_F(IlogCPTest, ConvertAtan2) {
             str(ifXNonnegative->getRight()));
 
   ++iter;
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   IloIfThenI *ifDiffSigns = dynamic_cast<IloIfThenI*>((*iter).getImpl());
   ASSERT_TRUE(ifDiffSigns != nullptr);
   EXPECT_EQ("(x <= 0 ) && (0 <= y )", str(ifDiffSigns->getLeft()));
@@ -473,7 +473,7 @@ TEST_F(IlogCPTest, ConvertAtan2) {
             str(ifDiffSigns->getRight()));
 
   ++iter;
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   IloIfThenI *ifSameSigns = dynamic_cast<IloIfThenI*>((*iter).getImpl());
   ASSERT_TRUE(ifSameSigns != nullptr);
   EXPECT_EQ("(x <= 0 ) && (y <= 0 )", str(ifSameSigns->getLeft()));
@@ -617,13 +617,13 @@ TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
       AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
   d.FinishBuildingNumberOf();
   IloModel::Iterator iter(mod_);
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(4)" + bounds + " == x", str(*iter));
   ++iter;
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(7)" + bounds + " == y", str(*iter));
   ++iter;
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   IloDistributeI *dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
   ASSERT_TRUE(dist != nullptr);
   EXPECT_EQ("[IloIntVar(10)" + bounds + " ]", str(dist->getCardVarArray()));
@@ -645,13 +645,13 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
       AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
   d.FinishBuildingNumberOf();
   IloModel::Iterator iter(mod_);
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(4)" + bounds + " == x", str(*iter));
   ++iter;
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(7)" + bounds + " == y", str(*iter));
   ++iter;
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   IloDistributeI *dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
   ASSERT_TRUE(dist != nullptr);
   EXPECT_EQ("[IloIntVar(10)" + bounds + " ]", str(dist->getCardVarArray()));
@@ -673,13 +673,13 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
       str(d.Visit(AddNumberOf(AddNum(43), AddVar(0), AddVar(1)))));
   d.FinishBuildingNumberOf();
   IloModel::Iterator iter(mod_);
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(4)" + bounds + " == x", str(*iter));
   ++iter;
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(7)" + bounds + " == y", str(*iter));
   ++iter;
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   IloDistributeI *dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
   ASSERT_TRUE(dist != nullptr);
   EXPECT_EQ("[IloIntVar(10)" + bounds + " , IloIntVar(12)" + bounds + " ]",
@@ -702,16 +702,16 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
       str(d.Visit(AddNumberOf(AddNum(42), AddVar(2)))));
   d.FinishBuildingNumberOf();
   IloModel::Iterator iter(mod_);
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(4)" + bounds + " == x", str(*iter));
   ++iter;
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(7)" + bounds + " == y", str(*iter));
   ++iter;
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(12)" + bounds + " == theta", str(*iter));
   ++iter;
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   IloDistributeI *dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
   ASSERT_TRUE(dist != nullptr);
   EXPECT_EQ("[IloIntVar(10)" + bounds + " ]", str(dist->getCardVarArray()));
@@ -719,7 +719,7 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
       str(dist->getVarArray()));
   EXPECT_EQ("[42]", str(dist->getValueArray()));
   ++iter;
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
   ASSERT_TRUE(dist != nullptr);
   EXPECT_EQ("[IloIntVar(15)" + bounds + " ]", str(dist->getCardVarArray()));
@@ -882,14 +882,14 @@ TEST_F(IlogCPTest, ConvertImpElse) {
   ASSERT_TRUE(conjunction != nullptr);
 
   IloAndI::Iterator iter(conjunction);
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   IloIfThenI *ifTrue = dynamic_cast<IloIfThenI*>(*iter);
   ASSERT_TRUE(ifTrue != nullptr);
   EXPECT_EQ("x == 0", str(ifTrue->getLeft()));
   EXPECT_EQ("x == 1", str(ifTrue->getRight()));
 
   ++iter;
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   IloIfThenI *ifFalse = dynamic_cast<IloIfThenI*>(*iter);
   ASSERT_TRUE(ifFalse != nullptr);
   IloNotI *ifNot = dynamic_cast<IloNotI*>(ifFalse->getLeft().getImpl());
@@ -911,7 +911,7 @@ TEST_F(IlogCPTest, ConvertAllDiff) {
       str(diff->getExprArray()));
 
   IloModel::Iterator iter(mod_);
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(4)" + bounds +" == 42", str(*iter));
   ++iter;
   EXPECT_FALSE(iter.ok());
@@ -941,7 +941,7 @@ TEST_F(IlogCPTest, Usage) {
 TEST_F(IlogCPTest, ObjConst) {
   EXPECT_EQ(0, RunDriver(DATA_DIR "objconst"));
   IloModel::Iterator iter(mod_);
-  ASSERT_TRUE(iter.ok());
+  ASSERT_NE(0, iter.ok());
   IloObjective obj = (*iter).asObjective();
   EXPECT_EQ(42, obj.getConstant());
 }
