@@ -359,11 +359,11 @@ get_ds0(HInfo *h)
 						attr, sizeof(attr)-2, &attr_len);
 			if (i != SQL_SUCCESS && i != SQL_SUCCESS_WITH_INFO)
 				break;
-			if (desc_len > sizeof(desc)) {
+			if ((size_t)desc_len > sizeof(desc)) {
 				printf("Surprise in get_ds0: desc_len = %d\n", desc_len);
 				desc_len = sizeof(desc);
 				}
-			if (attr_len > sizeof(attr) - 2) {
+			if ((size_t)attr_len > sizeof(attr) - 2) {
 				printf("Surprise in get_ds0: attr_len = %d\n", attr_len);
 				attr_len = sizeof(attr);
 				}
@@ -1572,7 +1572,7 @@ sql_type(HInfo *h, int odbctype, unsigned int *tprec)
 	SQLLEN len;
 	HSTMT hs = h->hs;
 	char nbuf[256], *rv;
-	int i;
+	size_t i;
 	unsigned long L;
 	static char *slast, *snext;
 

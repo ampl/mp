@@ -482,7 +482,7 @@ IlogCPDriver::IlogCPDriver() :
       IloConcertVersion::_ILO_MAJOR_VERSION,
       IloConcertVersion::_ILO_MINOR_VERSION,
       IloConcertVersion::_ILO_TECH_VERSION);
-  oinfo_->opname = CSTR("ilogcp_options");
+  oinfo_->opname = CSTR(xxxvers);
   oinfo_->keywds = keywords_;
   oinfo_->n_keywds = sizeof(keywords_) / sizeof(*keywords_);
   oinfo_->version = &version_[0];
