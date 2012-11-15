@@ -12,7 +12,7 @@ set(CMAKE_C_FLAGS ${SAVED_FLAGS})
 
 add_ampl_library(amplgsl amplgsl.c)
 add_dependencies(amplgsl gsl gslcblas)
-target_link_libraries(amplgsl ${SOLVER_LIBS} gsl gslcblas -lm)
+target_link_libraries(amplgsl ${SOLVER_LIBS} gsl gslcblas)
 
 add_executable(gen-decls gen-decls.c)
 target_link_libraries(gen-decls amplgsl)
