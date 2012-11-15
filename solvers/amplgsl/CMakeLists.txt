@@ -6,6 +6,7 @@ set(SAVED_FLAGS ${CMAKE_C_FLAGS})
 if (HAVE_FPIC_FLAG)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 endif ()
+set(GSL_DISABLE_WARNINGS 1)
 add_subdirectory(gsl)
 set(CMAKE_C_FLAGS ${SAVED_FLAGS})
 
