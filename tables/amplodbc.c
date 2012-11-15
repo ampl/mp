@@ -123,11 +123,11 @@ prc(HInfo *h, char *who, int i)
 		} HandleStuff;
 	AmplExports *ae;
 	SDWORD native_errno;
-	SQLSMALLINT errmsglen;
 	SWORD emlen;
 	UCHAR *errmsg, errmsg0[SQL_MAX_MESSAGE_LENGTH], sqlstate[64];
 	int rv;
 #if 0
+	SQLSMALLINT errmsglen;
 	HandleStuff *hs, *hse;
 	SQLINTEGER k, ne;
 	SQLPOINTER sptr;
@@ -147,10 +147,10 @@ prc(HInfo *h, char *who, int i)
 		rv = 0;
 		}
 	errmsg = errmsg0;
-	errmsglen = sizeof(errmsg0);
 	ae = h->AE;
 	printf("%s returned %d\n", who, i);
 #if 0
+	errmsglen = sizeof(errmsg0);
 	elen = 0;
 	k = 0;
 	for(hs = HS, hse = HS + 3; hs < hse; ++hs) {
@@ -2088,7 +2088,7 @@ Mem(HInfo *h, size_t L)
 	char *rv;
 	size_t L1;
 
-	if (h->se - h->s < L) {
+	if ((size_t)(h->se - h->s) < L) {
 		ae = h->AE;
 		TI = h->TI;
 		L1 = ((L+32) >> 12) + 1;
@@ -2303,7 +2303,7 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 			 SQLColAttributes(hs, u, SQL_COLUMN_DISPLAY_SIZE,
 				0,0,0, &dbc->prec)))
 				goto badret;
-			if (dbc->prec <= 0 || ++dbc->prec > h.maxlen)
+			if (dbc->prec <= 0 || (unsigned)++dbc->prec > h.maxlen)
 				dbc->prec = h.maxlen;
 			}
 		if (h.sqldb)
@@ -2691,7 +2691,7 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 			 SQLColAttributes(hs, (UWORD)i, SQL_COLUMN_DISPLAY_SIZE,
 				0,0,0, &dbc->prec)))
 				goto badret;
-			if (dbc->prec <= 0 || ++dbc->prec > h->maxlen)
+			if (dbc->prec <= 0 || (unsigned)++dbc->prec > h->maxlen)
 				dbc->prec = h->maxlen;
 			}
 		nk[dbc->mytype]++;
