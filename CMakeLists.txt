@@ -32,8 +32,12 @@ if (NOT WIN32)
 endif ()
 
 if (NOT MSVC)
-  add_definitions(-Wall -Wextra -Woverloaded-virtual -pedantic
-    -Wno-missing-field-initializers -Wno-overlength-strings)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-missing-field-initializers")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-overlength-strings")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-field-initializers")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Woverloaded-virtual")
 else ()
   # Disable useless MSVC warnings suggesting nonportable "secure" alternatives.
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
