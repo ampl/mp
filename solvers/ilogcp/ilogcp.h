@@ -53,7 +53,7 @@ class NumberOf {
       IloIntVarArray vars, NumberOfExpr e) :
     cards_(cards), values_(values), vars_(vars), expr_(e) {}
 
-  IloInt num_vars() const { return vars_.getSize(); }
+  unsigned num_vars() const { return vars_.getSize(); }
   NumberOfExpr expr() const { return expr_; }
 
   IloDistribute Convert(IloEnv env) const {
