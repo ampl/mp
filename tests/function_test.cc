@@ -143,6 +143,18 @@ TEST(FunctionTest, EmptyTable) {
   EXPECT_THROW(t(0, 0), std::invalid_argument);
 }
 
+TEST(FunctionTest, TableArity) {
+  Table t1("", 0);
+  EXPECT_EQ(0u, t1.arity());
+  Table t2("", 2);
+  EXPECT_EQ(1u, t2.arity());
+  Table t3("", 3);
+  EXPECT_EQ(1u, t3.arity());
+  t3.SetArity(3);
+  EXPECT_EQ(3u, t3.arity());
+  EXPECT_THROW(t3.SetArity(4), std::invalid_argument);
+}
+
 TEST(FunctionTest, Table) {
   Table t("Test", 3);
   EXPECT_STREQ("Test", t.name());
@@ -215,6 +227,31 @@ TEST(FunctionTest, Library) {
   EXPECT_TRUE(handler != nullptr);
   Table t("", 0);
   handler->Read("", &t);
+}
+
+int LookupTest(AmplExports *, TableInfo *ti) {
+  char s[] = "v2";
+  char *svals[] = {0, s, 0, 0};
+  double dvals[] = {42, 0, 4, 2};
+  return ti->Lookup(dvals, svals, ti);
+}
+
+TEST(FunctionTest, TableLookup) {
+  Library lib("");
+  Handler handler(&lib, 0, LookupTest);
+  Table t("", 4);
+  t = "c1", "c2", "c3", "c4",
+       42,  "v0",  1,    1,
+       11,  "v1",  2,    1,
+       42,  "v2",  3,    1,
+       42,  "v2",  4,    1;
+  EXPECT_EQ(0, handler.Write("", t, Handler::NOTHROW));
+  t.SetArity(2);
+  EXPECT_EQ(2, handler.Write("", t, Handler::NOTHROW));
+  t.SetArity(3);
+  EXPECT_EQ(3, handler.Write("", t, Handler::NOTHROW));
+  t.SetArity(4);
+  EXPECT_EQ(-1, handler.Write("", t, Handler::NOTHROW));
 }
 
 const double ITEMS[] = {5, 7, 11, 13, 17, 19, 23, 29, 31};

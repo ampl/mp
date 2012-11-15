@@ -101,9 +101,9 @@ int ScopedTableInfo::Lookup(real *dv, char **sv, TableInfo *ti) {
     long j = 0;
     for (; j < arity; ++j) {
       if (sv && sv[j]) {
-        if (std::strcmp(sv[j], ti->cols[i].sval[j]) != 0)
+        if (std::strcmp(sv[j], ti->cols[j].sval[i]) != 0)
           break;
-      } else if (dv[j] != ti->cols[i].dval[j])
+      } else if (dv[j] != ti->cols[j].dval[i])
         break;
     }
     if (j == arity)
@@ -435,7 +435,7 @@ void Handler::Read(const std::string &connection_str,
   CheckResult(read_(lib_->impl(), &ti), ti);
 }
 
-void Handler::Write(
+int Handler::Write(
     const std::string &connection_str, const Table &t, int flags) const {
   ScopedTableInfo ti(t, connection_str,
 		  (flags & APPEND) != 0 ? "write=append" : "");
@@ -443,11 +443,15 @@ void Handler::Write(
     for (unsigned j = 0, n = t.num_cols(); j < n; ++j)
       ti.SetValue(i, j, t(i, j));
   }
+  ti.arity = t.arity();
   ti.flags = DBTI_flags_OUT;
   if ((flags & INOUT) != 0)
     ti.flags |= DBTI_flags_IN;
   ti.TMI = lib_->impl();
-  CheckResult(write_(lib_->impl(), &ti), ti);
+  int result = write_(lib_->impl(), &ti);
+  if ((flags & NOTHROW) == 0)
+    CheckResult(result, ti);
+  return result;
 }
 
 const Type GetType<void>::VALUE = VOID;
