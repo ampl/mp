@@ -1149,17 +1149,16 @@ check_sql_identifier(HInfo *h, const char *id, int col_index)
 		return 0;
 	}
 	for (; *s; ++s) {
-		char c = *s;
+		int c = (unsigned char)*s;
 		if (!isprint(c)) {
 			int length = 200;
 			if (col_index >= 0) {
 				snprintf(TI->Errmsg = TM(length), length,
 					"Column %d's name contains invalid character with code %d",
-					col_index + 1, (unsigned char)c);
+					col_index + 1, c);
 			} else {
 				snprintf(TI->Errmsg = TM(length), length,
-					"Table name contains invalid character with code %d",
-					(unsigned char)c);
+					"Table name contains invalid character with code %d", c);
 			}
 			return 0;
 		}
