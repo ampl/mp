@@ -2631,13 +2631,13 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 	DBColinfo *dbc0, *dbc, *dbce;
 	DbCol *db, *db0, *db1, *dbe;
 	HSTMT hs;
-	PTR ptr;
+	PTR ptr = 0;
 	SWORD len, ncols;
-	TIMESTAMP_STRUCT *td, *ts, **tsp, ***tsq, **tsx;
+	TIMESTAMP_STRUCT *td = 0, *ts, **tsp, ***tsq, **tsx;
 	TableInfo *TI = h->TI;
 	UWORD u;
-	char *Missing, buf[512], **cd, *cs, dbuf[32], *s, *seen, **sa, **sp;
-	double *dd, t;
+	char *Missing, buf[512], **cd = 0, *cs, dbuf[32], *s, *seen, **sa, **sp;
+	double *dd = 0, t;
 	int a = TI->arity, i, i1, j, k, kfn, mix, n, nc, *nfn, nk[4], nn;
 	int nf = a + TI->ncols;
 	int nnt, nt, nt0, nt1, ntimes, nts, rc, wantsv;
