@@ -458,10 +458,10 @@ bool CheckArg(const Function &f,
 template <typename F>
 void GSLTest::TestFunc(
     const Function &af, F f, Tuple &args, unsigned arg_index) {
-  unsigned num_args = args.size();
+  Tuple::size_type num_args = args.size();
   if (arg_index == 0) {
     bool has_double_arg = false;
-    for (unsigned i = 0; i < num_args; ++i) {
+    for (Tuple::size_type i = 0; i < num_args; ++i) {
       if (f.GetArgType(i) == fun::DOUBLE) {
         has_double_arg = true;
         args[i] = Variant::FromDouble(GSL_NAN);
@@ -479,7 +479,7 @@ void GSLTest::TestFunc(
     }
     return;
   }
-  for (unsigned i = 0; i < num_args; ++i) {
+  for (Tuple::size_type i = 0; i < num_args; ++i) {
     double arg = args[i].number();
     if (f.GetArgType(i) == fun::INT && static_cast<int>(arg) != arg) {
       EXPECT_STREQ(NotIntError(af.GetArgName(i), arg), af(args).error());
@@ -495,7 +495,7 @@ void GSLTest::TestFunc(
     return;
   double value = f(args);
   CheckFunction(value, af, args);
-  for (unsigned i = 0; i < num_args; ++i) {
+  for (Tuple::size_type i = 0; i < num_args; ++i) {
     if (!CheckArg(af, args, f.GetArgType(i), i))
       CheckDerivative(BindAllButOne(f, args, i), af, i, args, value);
   }
