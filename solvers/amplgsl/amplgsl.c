@@ -186,7 +186,7 @@ static int check_zero_func_args(arglist *al, unsigned s_index) {
 
 /* Checks the arguments of a Bessel function. */
 static int check_bessel_args(arglist *al, int flags, const char *arg_name) {
-  int n = al->ra[0];
+  int n = (int)al->ra[0];
   if (!check_int_arg(al, 0, arg_name))
     return 0;
   if (al->derivs) {
@@ -382,25 +382,25 @@ static double amplgsl_sf_airy_Bi_scaled(arglist *al) {
 static double amplgsl_sf_airy_zero_Ai(arglist *al) {
   if (!check_zero_func_args(al, 0))
     return 0;
-  return check_result(al, gsl_sf_airy_zero_Ai(al->ra[0]));
+  return check_result(al, gsl_sf_airy_zero_Ai((unsigned)al->ra[0]));
 }
 
 static double amplgsl_sf_airy_zero_Bi(arglist *al) {
   if (!check_zero_func_args(al, 0))
     return 0;
-  return check_result(al, gsl_sf_airy_zero_Bi(al->ra[0]));
+  return check_result(al, gsl_sf_airy_zero_Bi((unsigned)al->ra[0]));
 }
 
 static double amplgsl_sf_airy_zero_Ai_deriv(arglist *al) {
   if (!check_zero_func_args(al, 0))
     return 0;
-  return check_result(al, gsl_sf_airy_zero_Ai_deriv(al->ra[0]));
+  return check_result(al, gsl_sf_airy_zero_Ai_deriv((unsigned)al->ra[0]));
 }
 
 static double amplgsl_sf_airy_zero_Bi_deriv(arglist *al) {
   if (!check_zero_func_args(al, 0))
     return 0;
-  return check_result(al, gsl_sf_airy_zero_Bi_deriv(al->ra[0]));
+  return check_result(al, gsl_sf_airy_zero_Bi_deriv((unsigned)al->ra[0]));
 }
 
 static double amplgsl_sf_bessel_J0(arglist *al) {
@@ -426,7 +426,7 @@ static double amplgsl_sf_bessel_J1(arglist *al) {
 }
 
 static double amplgsl_sf_bessel_Jn(arglist *al) {
-  int n = al->ra[0];
+  int n = (int)al->ra[0];
   double x = al->ra[1];
   double jn = 0;
   if (!check_bessel_args(al, 0, "n"))
@@ -466,7 +466,7 @@ static double amplgsl_sf_bessel_Y1(arglist *al) {
 }
 
 static double amplgsl_sf_bessel_Yn(arglist *al) {
-  int n = al->ra[0];
+  int n = (int)al->ra[0];
   double x = al->ra[1];
   double yn = 0;
   if (!check_bessel_args(al, 0, "n"))
@@ -506,7 +506,7 @@ static double amplgsl_sf_bessel_I1(arglist *al) {
 }
 
 static double amplgsl_sf_bessel_In(arglist *al) {
-  int n = al->ra[0];
+  int n = (int)al->ra[0];
   double x = al->ra[1];
   double in = 0;
   if (!check_bessel_args(al, 0, "n"))
@@ -552,7 +552,7 @@ static double amplgsl_sf_bessel_I1_scaled(arglist *al) {
 }
 
 static double amplgsl_sf_bessel_In_scaled(arglist *al) {
-  int n = al->ra[0];
+  int n = (int)al->ra[0];
   double x = al->ra[1];
   double in = 0;
   if (!check_bessel_args(al, 0, "n"))
@@ -595,7 +595,7 @@ static double amplgsl_sf_bessel_K1(arglist *al) {
 }
 
 static double amplgsl_sf_bessel_Kn(arglist *al) {
-  int n = al->ra[0];
+  int n = (int)al->ra[0];
   double x = al->ra[1];
   double kn = 0;
   if (!check_bessel_args(al, 0, "n"))
@@ -637,7 +637,7 @@ static double amplgsl_sf_bessel_K1_scaled(arglist *al) {
 }
 
 static double amplgsl_sf_bessel_Kn_scaled(arglist *al) {
-  int n = al->ra[0];
+  int n = (int)al->ra[0];
   double x = al->ra[1];
   double kn = 0;
   if (!check_bessel_args(al, 0, "n"))
@@ -696,7 +696,7 @@ static double amplgsl_sf_bessel_j2(arglist *al) {
 }
 
 static double amplgsl_sf_bessel_jl(arglist *al) {
-  int el = al->ra[0];
+  int el = (int)al->ra[0];
   double x = al->ra[1];
   double jl = 0;
   if (!check_bessel_args(al, DERIV_INT_MIN, "l"))
@@ -779,7 +779,7 @@ static double amplgsl_sf_bessel_y2(arglist *al) {
 }
 
 static double amplgsl_sf_bessel_yl(arglist *al) {
-  int el = al->ra[0];
+  int el = (int)al->ra[0];
   double x = al->ra[1];
   double yl = 0;
   if (!check_bessel_args(al, 0, "l"))
@@ -883,7 +883,7 @@ static double amplgsl_sf_bessel_i2_scaled(arglist *al) {
 }
 
 static double amplgsl_sf_bessel_il_scaled(arglist *al) {
-  int el = al->ra[0];
+  int el = (int)al->ra[0];
   double x = al->ra[1];
   double il = 0;
   if (!check_bessel_args(al, 0, "l"))
@@ -972,7 +972,7 @@ static double amplgsl_sf_bessel_k2_scaled(arglist *al) {
 }
 
 static double amplgsl_sf_bessel_kl_scaled(arglist *al) {
-  int el = al->ra[0];
+  int el = (int)al->ra[0];
   double x = al->ra[1];
   double kl = 0;
   if (!check_bessel_args(al, 0, "l"))
@@ -1138,7 +1138,7 @@ static double amplgsl_sf_bessel_zero_J0(arglist *al) {
   double value = 0;
   if (!check_zero_func_args(al, 0))
     return 0;
-  CHECK_CALL(value, gsl_sf_bessel_zero_J0_e(al->ra[0], &result));
+  CHECK_CALL(value, gsl_sf_bessel_zero_J0_e((unsigned)al->ra[0], &result));
   return check_result(al, value);
 }
 
@@ -1146,7 +1146,7 @@ static double amplgsl_sf_bessel_zero_J1(arglist *al) {
   double value = 0;
   if (!check_zero_func_args(al, 0))
     return 0;
-  CHECK_CALL(value, gsl_sf_bessel_zero_J1_e(al->ra[0], &result));
+  CHECK_CALL(value, gsl_sf_bessel_zero_J1_e((unsigned)al->ra[0], &result));
   return check_result(al, value);
 }
 
@@ -1155,7 +1155,7 @@ static double amplgsl_sf_bessel_zero_Jnu(arglist *al) {
   double nu = al->ra[0];
   if (!check_zero_func_args(al, 1))
     return 0;
-  CHECK_CALL(value, gsl_sf_bessel_zero_Jnu_e(nu, al->ra[1], &result));
+  CHECK_CALL(value, gsl_sf_bessel_zero_Jnu_e(nu, (unsigned)al->ra[1], &result));
   return check_result(al, value);
 }
 
@@ -1196,7 +1196,7 @@ static double amplgsl_sf_hydrogenicR(arglist *al) {
     return 0;
   }
   CHECK_CALL(value, gsl_sf_hydrogenicR_e(
-      al->ra[0], al->ra[1], al->ra[2], al->ra[3], &result))
+      (int)al->ra[0], (int)al->ra[1], al->ra[2], al->ra[3], &result))
   return check_result(al, value);
 }
 
@@ -1230,7 +1230,8 @@ static double amplgsl_sf_coupling_3j(arglist *al) {
   if (!check_coupling_args(al, ARG_NAMES))
     return 0;
   return check_result(al, gsl_sf_coupling_3j(
-      al->ra[0], al->ra[1], al->ra[2], al->ra[3], al->ra[4], al->ra[5]));
+      (int)al->ra[0], (int)al->ra[1], (int)al->ra[2],
+      (int)al->ra[3], (int)al->ra[4], (int)al->ra[5]));
 }
 
 static double amplgsl_sf_coupling_6j(arglist *al) {
@@ -1241,7 +1242,8 @@ static double amplgsl_sf_coupling_6j(arglist *al) {
   if (!check_coupling_args(al, ARG_NAMES))
     return 0;
   return check_result(al, gsl_sf_coupling_6j(
-      al->ra[0], al->ra[1], al->ra[2], al->ra[3], al->ra[4], al->ra[5]));
+      (int)al->ra[0], (int)al->ra[1], (int)al->ra[2],
+      (int)al->ra[3], (int)al->ra[4], (int)al->ra[5]));
 }
 
 static double amplgsl_sf_coupling_9j(arglist *al) {
@@ -1253,8 +1255,9 @@ static double amplgsl_sf_coupling_9j(arglist *al) {
   if (!check_coupling_args(al, ARG_NAMES))
     return 0;
   return check_result(al, gsl_sf_coupling_9j(
-      al->ra[0], al->ra[1], al->ra[2], al->ra[3], al->ra[4], al->ra[5],
-      al->ra[6], al->ra[7], al->ra[8]));
+      (int)al->ra[0], (int)al->ra[1], (int)al->ra[2],
+      (int)al->ra[3], (int)al->ra[4], (int)al->ra[5],
+      (int)al->ra[6], (int)al->ra[7], (int)al->ra[8]));
 }
 
 static double amplgsl_sf_dawson(arglist *al) {
