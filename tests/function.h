@@ -159,6 +159,7 @@ class Table {
  private:
   std::string name_;
   unsigned num_cols_;
+  unsigned arity_;
   std::deque<std::string> strings_;
   std::vector<fun::Variant> values_;
 
@@ -206,12 +207,22 @@ class Table {
 
  public:
   Table(const std::string &name, unsigned num_cols)
-  : name_(name), num_cols_(num_cols) {
+  : name_(name), num_cols_(num_cols), arity_(std::min(1u, num_cols)) {
   }
 
   bool HasColNames() const { return values_.size() >= num_cols_; }
 
   const char *name() const { return name_.c_str(); }
+
+  unsigned arity() const { return arity_; }
+
+  void SetArity(unsigned arity) {
+    if (arity > num_cols_) {
+      throw std::invalid_argument(
+          "arity is greater than the number of columns");
+    }
+    arity_ = arity;
+  }
 
   unsigned num_rows() const {
     unsigned num_values = values_.size();
@@ -295,11 +306,11 @@ class Handler {
     lib_(lib), read_(read), write_(write) {}
 
   // Flags for Write.
-  enum { INOUT = 1, APPEND = 2 };
+  enum { INOUT = 1, APPEND = 2, NOTHROW = 4 };
 
   void Read(const std::string &connection_str, Table *t,
       const std::string &sql_statement = std::string()) const;
-  void Write(const std::string &connection_str, const Table &t,
+  int Write(const std::string &connection_str, const Table &t,
       int flags = 0) const;
 };
 
