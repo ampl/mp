@@ -1353,6 +1353,13 @@ TEST_F(GSLTest, Geometric) {
   TEST_FUNC2(gsl_cdf_geometric_Q, NoDeriv("k"));
 }
 
+TEST_F(GSLTest, HyperGeometric) {
+  TEST_FUNC2(gsl_ran_hypergeometric, NoDeriv("n1 n2 t"));
+  TEST_FUNC2(gsl_ran_hypergeometric_pdf, NoDeriv("k n1 n2 t"));
+  TEST_FUNC2(gsl_cdf_hypergeometric_P, NoDeriv("k n1 n2 t"));
+  TEST_FUNC2(gsl_cdf_hypergeometric_Q, NoDeriv("k n1 n2 t"));
+}
+
 TEST_F(GSLTest, Logarithmic) {
   TEST_FUNC2(gsl_ran_logarithmic, NoDeriv());
   TEST_FUNC2(gsl_ran_logarithmic_pdf, NoDeriv("k"));
