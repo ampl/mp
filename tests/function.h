@@ -381,15 +381,19 @@ class BitSet {
   typedef std::vector<bool>::reference reference;
   typedef std::vector<bool>::const_reference const_reference;
 
+  typedef std::size_t Size;
+
   BitSet() {}
 
-  BitSet(unsigned size, bool value) : store_(size, value) {}
+  BitSet(Size size, bool value) : store_(size, value) {}
 
   explicit BitSet(const char *s);
 
   unsigned size() const { return store_.size(); }
-  reference operator[](unsigned index) { return store_.at(index); }
-  const_reference operator[](unsigned index) const { return store_.at(index); }
+  reference operator[](Size index) { return store_.at(index); }
+  const_reference operator[](Size index) const {
+    return store_.at(index);
+  }
 };
 
 template <typename Arg1, typename Arg2 = void, typename Arg3 = void,
@@ -604,11 +608,11 @@ OneBinder<F, Arg, Result>::OneBinder(F f, Arg value, unsigned bound_arg_index)
 
 template <typename F, typename Arg, typename Result>
 Result OneBinder<F, Arg, Result>::operator()(const Tuple &args) const {
-  unsigned num_args = args.size();
+  Tuple::size_type num_args = args.size();
   Tuple part_args(num_args + 1);
   for (unsigned i = 0; i < bound_arg_index_; ++i)
     part_args[i] = args[i];
-  for (unsigned i = bound_arg_index_; i < num_args; ++i)
+  for (Tuple::size_type i = bound_arg_index_; i < num_args; ++i)
     part_args[i + 1] = args[i];
   part_args[bound_arg_index_] = MakeVariant(value_);
   return static_cast<Result>(f_(part_args));

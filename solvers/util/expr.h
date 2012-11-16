@@ -302,7 +302,7 @@ class Expr {
   // Returns the operation code (opcode) of this expression which should be
   // non-null. The opcodes are defined in opcode.hd.
   int opcode() const {
-    return reinterpret_cast<std::size_t>(expr_->op);
+    return static_cast<int>(reinterpret_cast<std::size_t>(expr_->op));
   }
 
   // Returns the operation name of this expression which should be non-null.
@@ -688,7 +688,7 @@ class AllDiffExpr : public LogicalExpr {
 
   typedef ArrayIterator<NumericExpr> iterator;
 
-  int num_args() const { return expr_->R.ep - expr_->L.ep; }
+  int num_args() const { return static_cast<int>(expr_->R.ep - expr_->L.ep); }
 
   NumericExpr operator[](int index) {
     assert(index >= 0 && index < num_args());
