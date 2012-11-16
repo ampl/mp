@@ -1,0 +1,3 @@
+# Warning suppression file.
+
+.*warning LNK4099: PDB 'concert.pdb' was not found.*
