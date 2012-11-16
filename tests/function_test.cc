@@ -291,7 +291,7 @@ void CheckBitSet(const char *expected, const BitSet &bs) {
   EXPECT_EQ(size, bs.size());
   BitSet copy(bs);
   for (size_t i = 0; i < size; ++i) {
-    bool value = expected[i] - '0';
+    bool value = expected[i] != '0';
     EXPECT_EQ(value, bs[i]);
     EXPECT_EQ(value, copy[i]);
     copy[i] = !value;

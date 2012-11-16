@@ -315,7 +315,7 @@ class Handler {
 };
 
 template <typename T>
-T Convert(const Variant &v) { return v.number(); }
+T Convert(const Variant &v) { return static_cast<T>(v.number()); }
 
 typedef std::vector<Variant> Tuple;
 
@@ -611,7 +611,7 @@ Result OneBinder<F, Arg, Result>::operator()(const Tuple &args) const {
   for (unsigned i = bound_arg_index_; i < num_args; ++i)
     part_args[i + 1] = args[i];
   part_args[bound_arg_index_] = MakeVariant(value_);
-  return f_(part_args);
+  return static_cast<Result>(f_(part_args));
 }
 
 // Binds one arguments.
