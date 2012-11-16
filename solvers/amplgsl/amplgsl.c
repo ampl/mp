@@ -1702,7 +1702,7 @@ static double amplgsl_sf_fermi_dirac_2(arglist *al) {
 }
 
 static double amplgsl_sf_fermi_dirac_int(arglist *al) {
-  int j = al->ra[0];
+  int j = (int)al->ra[0];
   double x = al->ra[1];
   if (!check_int_arg(al, 0, "j"))
     return 0;
@@ -2137,7 +2137,7 @@ static double amplgsl_sf_legendre_Pl(arglist *al) {
   double x = 0, pl = 0;
   if (!check_int_arg(al, 0, "l"))
     return 0;
-  el = al->ra[0];
+  el = (int)al->ra[0];
   x = al->ra[1];
   pl = gsl_sf_legendre_Pl(el, x);
   if (al->derivs) {
@@ -2186,7 +2186,7 @@ static double amplgsl_sf_legendre_Ql(arglist *al) {
   double x = 0, ql = 0;
   if (!check_int_arg(al, 0, "l"))
     return 0;
-  el = al->ra[0];
+  el = (int)al->ra[0];
   x = al->ra[1];
   ql = gsl_sf_legendre_Ql(el, x);
   if (al->derivs) {
@@ -2859,7 +2859,7 @@ WRAP(gsl_cdf_gumbel2_Qinv, ARGS3)
       error(al, DERIVS_NOT_PROVIDED); \
       return 0; \
     } \
-    return check_result(al, func(args)); \
+    return check_result(al, func((unsigned)args)); \
   }
 
 const char *const *const DEFAULT_ARGS;
