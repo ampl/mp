@@ -160,7 +160,7 @@ IloIntVar NumberOf::Add(real value, IloEnv env) {
   for (int i = 0, n = values_.getSize(); i < n; ++i)
     if (values_[i] == value)
       return cards_[i];
-  values_.add(value);
+  values_.add(static_cast<IloInt>(value));
   IloIntVar cardVar(env, IloIntMin, IloIntMax);
   cards_.add(cardVar);
   return cardVar;
@@ -654,7 +654,7 @@ bool IlogCPDriver::parse_options(char **argv) {
   if (GetOptions(argv, oinfo_.get()) || n_badvals != 0)
     return false;
 
-  debug_ = get_option(DEBUGEXPR);
+  debug_ = get_option(DEBUGEXPR) != 0;
   return true;
 }
 
@@ -743,7 +743,7 @@ IloExpr IlogCPDriver::VisitNumberOf(NumberOfExpr e) {
   // Build a new numberof structure.
   if (np == numberofs_.rend()) {
     IloIntArray values(env_);
-    values.add(num.value());
+    values.add(static_cast<IloInt>(num.value()));
 
     IloIntVarArray vars(env_);
     for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i) {

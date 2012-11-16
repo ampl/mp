@@ -25,9 +25,10 @@ THIS SOFTWARE.
  static char Version[] = "\n@(#) AMPL ODBC driver, version 20121108.\n";
 
 #ifdef _WIN32
-#include <windows.h>
+# include <windows.h>
+# include <direct.h>
 #else
-#include <unistd.h>
+# include <unistd.h>
 #endif
 
 #include <sql.h>
@@ -1259,7 +1260,7 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 		}
 	if (match("maxlen=", UC s, UC s + 7)) {
 		s1 = s2 = "";
-		if ((ui = t = strtod(s+7,&s2)) > 0 && !*s2 && t == ui)
+		if ((ui = (unsigned)(t = strtod(s+7,&s2))) > 0 && !*s2 && t == ui)
 			h->maxlen = ui;
 		else {
 			sprintf(TI->Errmsg = TM(strlen(s) + 72),
