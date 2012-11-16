@@ -21,6 +21,7 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
     add_library(amplsolver-dynrt ${SOURCES})
     add_dependencies(amplsolver-dynrt arith_h)
     set(SOLVER_LIBS amplsolver-dynrt)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099")
   endif ()
 
   add_library(ilogcpdriver
