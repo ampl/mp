@@ -381,15 +381,19 @@ class BitSet {
   typedef std::vector<bool>::reference reference;
   typedef std::vector<bool>::const_reference const_reference;
 
+  typedef std::size_t Size;
+
   BitSet() {}
 
-  BitSet(unsigned size, bool value) : store_(size, value) {}
+  BitSet(Size size, bool value) : store_(size, value) {}
 
   explicit BitSet(const char *s);
 
   unsigned size() const { return store_.size(); }
-  reference operator[](unsigned index) { return store_.at(index); }
-  const_reference operator[](unsigned index) const { return store_.at(index); }
+  reference operator[](Size index) { return store_.at(index); }
+  const_reference operator[](Size index) const {
+    return store_.at(index);
+  }
 };
 
 template <typename Arg1, typename Arg2 = void, typename Arg3 = void,

@@ -125,7 +125,7 @@ void CheckFunction(double value, const Function &f, const Tuple &args) {
   if (gsl_isnan(value))
     EXPECT_ERROR(EvalError(f, args).error(), f(args));
   else
-    EXPECT_EQ(value, f(args)) << f.name() << args;
+    EXPECT_EQ(value, static_cast<double>(f(args))) << f.name() << args;
 }
 
 typedef double (*FuncND)(int, double);

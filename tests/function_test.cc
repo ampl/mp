@@ -563,7 +563,7 @@ TEST(FunctionTest, FunctionResult) {
   static const real ARGS[] = {5, 7, 11, 13, 17};
   Function::Result r(42, vector<real>(ARGS, ARGS + 2),
       vector<real>(ARGS + 2, ARGS + 5), nullptr);
-  EXPECT_EQ(42, r);
+  EXPECT_EQ(42, static_cast<double>(r));
   EXPECT_EQ(5, r.deriv());
   EXPECT_EQ(5, r.deriv(0));
   EXPECT_EQ(7, r.deriv(1));

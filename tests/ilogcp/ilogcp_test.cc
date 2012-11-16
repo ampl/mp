@@ -484,7 +484,8 @@ TEST_F(IlogCPTest, ConvertAtan2) {
   EXPECT_FALSE(iter.ok());
 
   // Check that (1) and (2) both yield NaN when x == 0 and y == 0.
-  double zero = 0, d = IloArcTan(zero / zero);
+  volatile double zero = 0;
+  double d = IloArcTan(zero / zero);
   EXPECT_TRUE(d != d);
   double d1 = d + 3.14;
   EXPECT_TRUE(d1 != d1);
@@ -932,7 +933,7 @@ TEST_F(IlogCPTest, Usage) {
   string text;
   while (ifs) {
     ifs.read(buffer, BUFFER_SIZE);
-    text += string(buffer, ifs.gcount());
+    text += string(buffer, static_cast<string::size_type>(ifs.gcount()));
   }
   EXPECT_TRUE(text.find("usage: ") != string::npos);
 }
@@ -1064,9 +1065,9 @@ TEST_F(IlogCPTest, SolveSudokuVeryEasy) {
 // Option tests
 
 TEST_F(IlogCPTest, VersionOption) {
-  EXPECT_EQ(0, d.show_version());
+  EXPECT_FALSE(d.show_version());
   EXPECT_TRUE(ParseOptions("version"));
-  EXPECT_EQ(1, d.show_version());
+  EXPECT_TRUE(d.show_version());
 }
 
 TEST_F(IlogCPTest, WantsolOption) {
