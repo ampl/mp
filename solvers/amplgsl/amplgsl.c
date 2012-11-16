@@ -2903,7 +2903,7 @@ static double amplgsl_ran_pascal(arglist *al) {
     error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
-  return check_result(al, gsl_ran_pascal(rng, al->ra[0], al->ra[1]));
+  return check_result(al, gsl_ran_pascal(rng, al->ra[0], (unsigned)al->ra[1]));
 }
 
 WRAP_DISCRETE(gsl_ran_pascal_pdf, BINOMIAL_ARGS, BINOMIAL_ARGNAMES)
@@ -2924,15 +2924,21 @@ static double amplgsl_ran_hypergeometric(arglist *al) {
     error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
-  return check_result(al,
-      gsl_ran_hypergeometric(rng, al->ra[0], al->ra[1], al->ra[2]));
+  return check_result(al, gsl_ran_hypergeometric(rng,
+      (unsigned)al->ra[0], (unsigned)al->ra[1], (unsigned)al->ra[2]));
 }
 
-const char *const HYPERGEOMETRIC_ARGS[] = {0, "n1", "n2", "t"};
+const char *const HYPERGEOMETRIC_ARGNAMES[] = {0, "n1", "n2", "t"};
 
-WRAP_DISCRETE(gsl_ran_hypergeometric_pdf, ARGS4, HYPERGEOMETRIC_ARGS)
-WRAP_DISCRETE(gsl_cdf_hypergeometric_P, ARGS4, HYPERGEOMETRIC_ARGS)
-WRAP_DISCRETE(gsl_cdf_hypergeometric_Q, ARGS4, HYPERGEOMETRIC_ARGS)
+#define HYPERGEOMETRIC_ARGS \
+  al->ra[0], (unsigned)al->ra[1], (unsigned)al->ra[2], (unsigned)al->ra[3]
+
+WRAP_DISCRETE(gsl_ran_hypergeometric_pdf,
+    HYPERGEOMETRIC_ARGS, HYPERGEOMETRIC_ARGNAMES)
+WRAP_DISCRETE(gsl_cdf_hypergeometric_P,
+    HYPERGEOMETRIC_ARGS, HYPERGEOMETRIC_ARGNAMES)
+WRAP_DISCRETE(gsl_cdf_hypergeometric_Q,
+    HYPERGEOMETRIC_ARGS, HYPERGEOMETRIC_ARGNAMES)
 
 WRAP(gsl_ran_logarithmic, RNG_ARGS1)
 WRAP_DISCRETE(gsl_ran_logarithmic_pdf, ARGS2, DEFAULT_ARGS)

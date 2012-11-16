@@ -222,9 +222,9 @@ SolveResult IlogCPTest::Solve(const char *stub, const char *opt) {
   getline(ifs, line);
   const char obj[] = "objective ";
   size_t pos = line.find(obj);
-  double zero = 0;
   return SolveResult(solved, pos != string::npos ?
-      atof(line.c_str() + pos + sizeof(obj) - 1) : zero / zero);
+      atof(line.c_str() + pos + sizeof(obj) - 1) :
+      std::numeric_limits<double>::quiet_NaN());
 }
 
 void IlogCPTest::CheckIntCPOption(const char *option,
@@ -735,8 +735,7 @@ TEST_F(IlogCPTest, ConvertFalse) {
 }
 
 TEST_F(IlogCPTest, ConvertTrue) {
-  EXPECT_EQ("IloNumVar(4)[1..1] == 1", str(d.Visit(AddBool(1))));
-  EXPECT_EQ("IloNumVar(7)[1..1] == 1", str(d.Visit(AddBool(42))));
+  EXPECT_EQ("IloNumVar(4)[1..1] == 1", str(d.Visit(AddBool(true))));
 }
 
 TEST_F(IlogCPTest, ConvertLT) {
@@ -828,13 +827,13 @@ TEST_F(IlogCPTest, CheckOrTruthTable) {
   EXPECT_FALSE(cp.solve());
   vars[0].setBounds(0, 0);
   vars[1].setBounds(1, 1);
-  EXPECT_TRUE(cp.solve());
+  EXPECT_NE(0, cp.solve());
   vars[0].setBounds(1, 1);
   vars[1].setBounds(0, 0);
-  EXPECT_TRUE(cp.solve());
+  EXPECT_NE(0, cp.solve());
   vars[0].setBounds(1, 1);
   vars[1].setBounds(1, 1);
-  EXPECT_TRUE(cp.solve());
+  EXPECT_NE(0, cp.solve());
 }
 
 TEST_F(IlogCPTest, ConvertExists) {
