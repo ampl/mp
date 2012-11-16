@@ -2879,14 +2879,17 @@ static double amplgsl_ran_binomial(arglist *al) {
     error(al, DERIVS_NOT_PROVIDED);
     return 0;
   }
-  return check_result(al, gsl_ran_binomial(rng, al->ra[0], al->ra[1]));
+  return check_result(al,
+      gsl_ran_binomial(rng, al->ra[0], (unsigned)al->ra[1]));
 }
 
-const char *const BINOMIAL_ARGS[] = {0, 0, "n"};
+const char *const BINOMIAL_ARGNAMES[] = {0, 0, "n"};
 
-WRAP_DISCRETE(gsl_ran_binomial_pdf, ARGS3, BINOMIAL_ARGS)
-WRAP_DISCRETE(gsl_cdf_binomial_P, ARGS3, BINOMIAL_ARGS)
-WRAP_DISCRETE(gsl_cdf_binomial_Q, ARGS3, BINOMIAL_ARGS)
+#define BINOMIAL_ARGS ARGS2, (unsigned)al->ra[2]
+
+WRAP_DISCRETE(gsl_ran_binomial_pdf, BINOMIAL_ARGS, BINOMIAL_ARGNAMES)
+WRAP_DISCRETE(gsl_cdf_binomial_P, BINOMIAL_ARGS, BINOMIAL_ARGNAMES)
+WRAP_DISCRETE(gsl_cdf_binomial_Q, BINOMIAL_ARGS, BINOMIAL_ARGNAMES)
 
 WRAP(gsl_ran_negative_binomial, RNG_ARGS2)
 WRAP_DISCRETE(gsl_ran_negative_binomial_pdf, ARGS3, DEFAULT_ARGS)
@@ -2903,9 +2906,9 @@ static double amplgsl_ran_pascal(arglist *al) {
   return check_result(al, gsl_ran_pascal(rng, al->ra[0], al->ra[1]));
 }
 
-WRAP_DISCRETE(gsl_ran_pascal_pdf, ARGS3, BINOMIAL_ARGS)
-WRAP_DISCRETE(gsl_cdf_pascal_P, ARGS3, BINOMIAL_ARGS)
-WRAP_DISCRETE(gsl_cdf_pascal_Q, ARGS3, BINOMIAL_ARGS)
+WRAP_DISCRETE(gsl_ran_pascal_pdf, BINOMIAL_ARGS, BINOMIAL_ARGNAMES)
+WRAP_DISCRETE(gsl_cdf_pascal_P, BINOMIAL_ARGS, BINOMIAL_ARGNAMES)
+WRAP_DISCRETE(gsl_cdf_pascal_Q, BINOMIAL_ARGS, BINOMIAL_ARGNAMES)
 
 WRAP(gsl_ran_geometric, RNG_ARGS1)
 WRAP_DISCRETE(gsl_ran_geometric_pdf, ARGS2, DEFAULT_ARGS)
@@ -2913,8 +2916,8 @@ WRAP_DISCRETE(gsl_cdf_geometric_P, ARGS2, DEFAULT_ARGS)
 WRAP_DISCRETE(gsl_cdf_geometric_Q, ARGS2, DEFAULT_ARGS)
 
 static double amplgsl_ran_hypergeometric(arglist *al) {
-  if (!check_args(al) || !check_uint_arg(al, 1, "n1") ||
-      !check_uint_arg(al, 2, "n2") || !check_uint_arg(al, 3, "t")) {
+  if (!check_args(al) || !check_uint_arg(al, 0, "n1") ||
+      !check_uint_arg(al, 1, "n2") || !check_uint_arg(al, 2, "t")) {
     return 0;
   }
   if (al->derivs) {
