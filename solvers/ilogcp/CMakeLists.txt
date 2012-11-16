@@ -6,6 +6,10 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
   include_directories(.. ${CPLEX_ILOCPLEX_INCLUDE_DIRS}
     ${CPLEX_CP_INCLUDE_DIRS})
 
+  add_library(ilogcpdriver
+    ilogcp.cpp ilogcp.h ilogcp_date.h ../util/util-all.cc)
+  add_dependencies(ilogcpdriver arith_h)
+
   if (MSVC)
     # CP Optimizer only provides libraries built with DLL MSVC runtime
     # so change the compiler flags and build a compatible version of the
@@ -20,14 +24,11 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
     endforeach ()
     add_library(amplsolver-dynrt ${SOURCES})
     add_dependencies(amplsolver-dynrt arith_h)
-    set(SOLVER_LIBS amplsolver-dynrt)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099")
+    target_link_libraries(ilogcpdriver amplsolver-dynrt)
+    set_target_properties(ilogcpdriver PROPERTIES LINK_FLAGS "/ignore:4099")
+  else ()
+    target_link_libraries(ilogcpdriver ${SOLVER_LIBS})
   endif ()
-
-  add_library(ilogcpdriver
-    ilogcp.cpp ilogcp.h ilogcp_date.h ../util/util-all.cc)
-  add_dependencies(ilogcpdriver arith_h)
-  target_link_libraries(ilogcpdriver ${SOLVER_LIBS})
 
   add_executable(ilogcp main.cpp)
   target_link_libraries(ilogcp ilogcpdriver

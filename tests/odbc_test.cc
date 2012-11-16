@@ -23,6 +23,7 @@
 #include "gtest/gtest.h"
 #include "tests/function.h"
 #include "tests/odbc.h"
+#include "tests/config.h"
 
 namespace {
 
@@ -30,6 +31,6 @@ TEST(ODBCTest, Load) {
   fun::Library lib("../tables/ampltabl.dll");
   lib.Load();
   EXPECT_EQ("", lib.error());
-  EXPECT_TRUE(lib.GetHandler("odbc"));
+  EXPECT_TRUE(lib.GetHandler("odbc") != nullptr);
 }
 }
