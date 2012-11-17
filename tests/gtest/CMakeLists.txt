@@ -59,6 +59,12 @@ include_directories(
 # Where Google Test's libraries can be found.
 link_directories(${gtest_BINARY_DIR}/src)
 
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-Wno-variadic-macros HAVE_WNO_VARIADIC_MACROS)
+if (HAVE_WNO_VARIADIC_MACROS)
+  add_definitions(-Wno-variadic-macros)
+endif ()
+
 ########################################################################
 #
 # Defines the gtest & gtest_main libraries.  User tests should link
