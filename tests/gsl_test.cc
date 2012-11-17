@@ -739,7 +739,7 @@ TEST_F(GSLTest, Coupling6j) {
   EXPECT_NEAR(0.0176295295, value, 1e-7);
   Function f = GetFunction("gsl_sf_coupling_6j");
   Tuple args(MakeArgs(2, 4, 6, 8, 10, 12));
-  EXPECT_EQ(value, f(args));
+  EXPECT_EQ(value, f(args).value());
   EXPECT_TRUE(f(MakeArgs(0, 0, 0, 0, 0, 0)).error() == nullptr);
   EXPECT_ERROR(NotIntError("two_ja"), f(MakeArgs(0.5, 0, 0, 0, 0, 0)));
   EXPECT_ERROR(NotIntError("two_jb"), f(MakeArgs(0, 0.5, 0, 0, 0, 0)));
@@ -757,7 +757,7 @@ TEST_F(GSLTest, Coupling9j) {
   EXPECT_NEAR(-0.000775648399, value, 1e-9);
   Function f = GetFunction("gsl_sf_coupling_9j");
   Tuple args(MakeArgs(6, 16, 18, 8, 20, 14, 12, 10, 4));
-  EXPECT_EQ(value, f(args));
+  EXPECT_EQ(value, f(args).value());
   EXPECT_TRUE(f(MakeArgs(0, 0, 0, 0, 0, 0, 0, 0, 0)).error() == nullptr);
   EXPECT_ERROR(NotIntError("two_ja"), f(MakeArgs(0.5, 0, 0, 0, 0, 0, 0, 0, 0)));
   EXPECT_ERROR(NotIntError("two_jb"), f(MakeArgs(0, 0.5, 0, 0, 0, 0, 0, 0, 0)));
