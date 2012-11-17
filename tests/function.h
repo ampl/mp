@@ -225,14 +225,14 @@ class Table {
   }
 
   unsigned num_rows() const {
-    unsigned num_values = values_.size();
+    unsigned num_values = static_cast<unsigned>(values_.size());
     return num_values <= num_cols_ ? 0 : num_values / num_cols_ - 1;
   }
 
   unsigned num_cols() const { return num_cols_; }
 
   const char *GetColName(unsigned col_index) const {
-    if (col_index >= std::min<unsigned>(num_cols_, values_.size()))
+    if (col_index >= std::min(num_cols_, static_cast<unsigned>(values_.size())))
       throw std::invalid_argument("invalid column index");
     return values_[col_index].string();
   }
@@ -389,7 +389,7 @@ class BitSet {
 
   explicit BitSet(const char *s);
 
-  unsigned size() const { return store_.size(); }
+  Size size() const { return store_.size(); }
   reference operator[](Size index) { return store_.at(index); }
   const_reference operator[](Size index) const {
     return store_.at(index);

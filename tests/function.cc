@@ -92,7 +92,7 @@ void ScopedTableInfo::SetString(
 void ScopedTableInfo::AddString(std::vector<char*> *strings, const char *str) {
   if (!str) return;
   strings->push_back(0);
-  SetString(strings, strings->size() - 1, str);
+  SetString(strings, static_cast<unsigned>(strings->size() - 1), str);
 }
 
 int ScopedTableInfo::Lookup(real *dv, char **sv, TableInfo *ti) {
@@ -145,7 +145,7 @@ ScopedTableInfo::ScopedTableInfo(const Table &t,
     AddString(&strings_, sql.c_str());
   // Uncomment the following line to get verbose output.
   //AddString(&strings_, "verbose");
-  nstrings = strings_.size();
+  nstrings = static_cast<int>(strings_.size());
   strings = &strings_[0];
   Missing = &MISSING;
 
@@ -285,7 +285,9 @@ class LibraryImpl : public AmplExports, public TMInfo {
 
   string error() const { return error_; }
 
-  unsigned GetNumFunctions() const { return funcs_.size(); }
+  unsigned GetNumFunctions() const {
+    return static_cast<unsigned>(funcs_.size());
+  }
 
   const func_info *GetFunction(const char *name) const {
     FunctionMap::const_iterator i = funcs_.find(name);
@@ -464,9 +466,9 @@ const Type GetType<const char*>::VALUE = STRING;
 
 std::ostream &operator<<(std::ostream &os, const Tuple &t) {
   os << "(";
-  if (unsigned size = t.size()) {
+  if (Tuple::size_type size = t.size()) {
     Print(os, t[0].number());
-    for (size_t i = 1; i < size; ++i) {
+    for (Tuple::size_type i = 1; i < size; ++i) {
       os << ", ";
       Print(os, t[i].number());
     }
@@ -562,7 +564,7 @@ DerivativeBinder::DerivativeBinder(
     Function f, unsigned deriv_arg, unsigned eval_arg, const Tuple &args)
 : f_(f), deriv_arg_(deriv_arg), eval_arg_(eval_arg),
   args_(args), use_deriv_(args.size(), false) {
-  unsigned num_args = args_.size();
+  unsigned num_args = static_cast<unsigned>(args_.size());
   if (deriv_arg >= num_args || eval_arg >= num_args)
     throw std::out_of_range("argument index is out of range");
   use_deriv_[deriv_arg] = true;
