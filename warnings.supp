@@ -2,4 +2,5 @@
 
 .*warning LNK4099: PDB 'concert.pdb' was not found.*
 
-pshvprod.c: .*
+.*dtoa.c: .*
+.*pshvprod.c: .*
