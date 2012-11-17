@@ -1,10 +1,16 @@
 # CMake build script for the AMPL solver tests.
 
 include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag(-Wno-long-long HAS_WNO_LONG_LONG_FLAG)
-if (HAS_WNO_LONG_LONG_FLAG)
+check_cxx_compiler_flag(-Wno-long-long HAVE_WNO_LONG_LONG_FLAG)
+if (HAVE_WNO_LONG_LONG_FLAG)
   # Required if -pedantic is used. The long long type is used by GTest.
   add_definitions(-Wno-long-long)
+endif ()
+
+check_cxx_compiler_flag(-Wno-variadic-macros HAVE_WNO_VARIADIC_MACROS_FLAG)
+if (HAVE_WNO_VARIADIC_MACROS_FLAG)
+  # Variadic macros are used by GTest.
+  add_definitions(-Wno-variadic-macros)
 endif ()
 
 # Setup testing.
