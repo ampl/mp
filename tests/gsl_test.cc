@@ -855,8 +855,8 @@ TEST_F(GSLTest, Gamma) {
   Function gamma = GetFunction("gsl_sf_gamma");
   EXPECT_NEAR(-0.129354, gamma(-0.5, DERIVS).deriv(), 1e-6);
   EXPECT_NEAR(-31.6778, gamma(-0.5, HES).hes(), 1e-4);
-  EXPECT_NEAR(1.19786e100, gamma(71), 1e95);
-  EXPECT_NE(0, gsl_isinf(gamma(1000)));
+  EXPECT_NEAR(1.19786e100, gamma(71).value(), 1e95);
+  EXPECT_NE(0, gsl_isinf(gamma(1000).value()));
   TEST_EFUNC(gsl_sf_gamma);
   TEST_EFUNC2(gsl_sf_lngamma, LnGammaInfo());
   TEST_EFUNC(gsl_sf_gammastar);
