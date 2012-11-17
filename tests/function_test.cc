@@ -563,7 +563,7 @@ TEST(FunctionTest, FunctionResult) {
   static const real ARGS[] = {5, 7, 11, 13, 17};
   Function::Result r(42, vector<real>(ARGS, ARGS + 2),
       vector<real>(ARGS + 2, ARGS + 5), nullptr);
-  EXPECT_EQ(42, static_cast<double>(r));
+  EXPECT_EQ(42, r.value());
   EXPECT_EQ(5, r.deriv());
   EXPECT_EQ(5, r.deriv(0));
   EXPECT_EQ(7, r.deriv(1));
@@ -581,7 +581,7 @@ TEST(FunctionTest, FunctionResultError) {
   const char *error = "brain overflow";
   Function::Result r(42, vector<real>(ARGS, ARGS + 2),
       vector<real>(ARGS + 2, ARGS + 5), error);
-  EXPECT_THROW(static_cast<double>(r), std::runtime_error);
+  EXPECT_THROW(r.value(), std::runtime_error);
   EXPECT_THROW(r.deriv(), std::runtime_error);
   EXPECT_THROW(r.deriv(0), std::runtime_error);
   EXPECT_THROW(r.hes(), std::runtime_error);
@@ -647,7 +647,7 @@ class TestFunction {
 TEST(FunctionTest, FunctionCall) {
   TestFunction f(1);
   CallData data = {};
-  EXPECT_EQ(42, f.get()(777, 0, BitSet(), &data));
+  EXPECT_EQ(42, f.get()(777, 0, BitSet(), &data).value());
   ASSERT_EQ(1, data.n);
   EXPECT_EQ(1, data.nr);
   EXPECT_EQ(777, data.ra[0]);
@@ -668,7 +668,7 @@ TEST(FunctionTest, FunctionReturnsDerivs) {
   CallData data = {};
   Function::Result res =
       f.get()(MakeArgs(11, 22, 33), fun::DERIVS, BitSet(), &data);
-  EXPECT_EQ(42, res);
+  EXPECT_EQ(42, res.value());
   ASSERT_EQ(3, data.n);
   EXPECT_EQ(3, data.nr);
   EXPECT_EQ(11, data.ra[0]);
@@ -687,7 +687,7 @@ TEST(FunctionTest, FunctionReturnsHes) {
   TestFunction f(2);
   CallData data = {};
   Function::Result res = f.get()(MakeArgs(111, 222), fun::HES, BitSet(), &data);
-  EXPECT_EQ(42, res);
+  EXPECT_EQ(42, res.value());
   ASSERT_EQ(2, data.n);
   EXPECT_EQ(2, data.nr);
   EXPECT_EQ(111, data.ra[0]);

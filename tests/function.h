@@ -881,7 +881,7 @@ class Function {
         const std::vector<double> &hes, const char *error) :
       value_(value), derivs_(derivs), hes_(hes), error_(error) {}
 
-    operator double() const {
+    double value() const {
       CheckError();
       return value_;
     }
