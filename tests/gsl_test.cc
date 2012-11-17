@@ -125,7 +125,7 @@ void CheckFunction(double value, const Function &f, const Tuple &args) {
   if (gsl_isnan(value))
     EXPECT_ERROR(EvalError(f, args).error(), f(args));
   else
-    EXPECT_EQ(value, static_cast<double>(f(args))) << f.name() << args;
+    EXPECT_EQ(value, f(args).value()) << f.name() << args;
 }
 
 typedef double (*FuncND)(int, double);
@@ -721,7 +721,7 @@ TEST_F(GSLTest, Coupling3j) {
   EXPECT_NEAR(0.0812695955, value, 1e-5);
   Function f = GetFunction("gsl_sf_coupling_3j");
   Tuple args(MakeArgs(8, 20, 12, -2, 12, -10));
-  EXPECT_EQ(value, f(args));
+  EXPECT_EQ(value, f(args).value());
   f(MakeArgs(0, 0, 0, 0, 0, 0));
   EXPECT_ERROR(NotIntError("two_ja"), f(MakeArgs(0.5, 0, 0, 0, 0, 0)));
   EXPECT_ERROR(NotIntError("two_jb"), f(MakeArgs(0, 0.5, 0, 0, 0, 0)));
