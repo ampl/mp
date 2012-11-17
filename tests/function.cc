@@ -120,10 +120,12 @@ long ScopedTableInfo::AdjustMaxrows(long new_maxrows) {
   svals_.swap(svals);
   for (int j = 0; j < total_cols; ++j) {
     DbCol &col = cols[j];
-    col.dval = &dvals_[j * nrows];
-    col.sval = &svals_[j * nrows];
-    std::copy(dvals.begin(), dvals.end(), col.dval);
-    std::copy(svals.begin(), svals.end(), col.sval);
+    std::vector<double>::iterator dval_start = dvals_.begin() + j * nrows;
+    std::vector<char*>::iterator sval_start = svals_.begin() + j * nrows;
+    col.dval = &*dval_start;
+    col.sval = &*sval_start;
+    std::copy(dvals.begin(), dvals.end(), dval_start);
+    std::copy(svals.begin(), svals.end(), sval_start);
   }
   maxrows = new_maxrows;
   return new_maxrows;
