@@ -987,7 +987,7 @@ get_ext(char *s)
  static char*
 fully_qualify(char *dsname, char *buf, size_t len)
 {
-	DWORD n;
+	size_t n;
 	int c;
 	size_t Ldsn;
 
@@ -1586,7 +1586,7 @@ sql_type(HInfo *h, int odbctype, unsigned int *tprec)
 	 || prc(h, "SQLBindCol_2",
 			SQLBindCol(hs, (UWORD)3, SQL_C_LONG, &L, sizeof(L), &len))
 	 || (i = SQLFetch(hs)) == SQL_NO_DATA
-	 || prc(h, "SQLFetch in sql_types", i))
+	 || prc(h, "SQLFetch in sql_types", (int)i))
 		goto done;
 	if (slast - snext < len + 1) {
 		i = (int)len + 1;
@@ -1730,10 +1730,10 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	char *Missing;
 	char buf[32], *ct, *dt, *it, *s, **sb, **sp, **spe, *tname;
 	double *rb;
-	int deltry, i, i1, j, k, nc, nodrop, ntlen, nts, rc;
+	int deltry, i, i1, j, k, nc, nodrop, nts, rc;
 	int *slen, *sw;
 	long ir, nr;
-	size_t L, sblen, tnlen;
+	size_t L, sblen, tnlen, ntlen;
 #ifdef NO_Adjust_ampl_odbc
 #define p(x) x
 #define pi(x) x

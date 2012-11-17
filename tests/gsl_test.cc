@@ -340,7 +340,7 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
 // skip_arg: index of an argument with respect to which not to differentiate
 void GSLTest::CheckSecondDerivatives(const Function &f,
     const Tuple &args, unsigned skip_arg) {
-  unsigned num_args = args.size();
+  unsigned num_args = static_cast<unsigned>(args.size());
   if (skip_arg == NO_ARG) {
     for (unsigned i = 0; i < num_args; ++i) {
       if (f.GetDerivative(i, args).error()) {
