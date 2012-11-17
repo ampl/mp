@@ -107,7 +107,7 @@ struct SolveResult {
 // function signature and avoid unwanted modification.
 class Args {
  private:
-  int argc_;
+  std::size_t argc_;
   vector<char> store_;
   vector<char*> argv_;
 
@@ -116,7 +116,7 @@ class Args {
 
   char **get() {
     argv_.resize(argc_ + 1);
-    for (int i = 0, j = 0; i < argc_; j += strlen(&store_[j]) + 1, ++i)
+    for (std::size_t i = 0, j = 0; i < argc_; j += strlen(&store_[j]) + 1, ++i)
       argv_[i] = &store_[j];
     return &argv_[0];
   }

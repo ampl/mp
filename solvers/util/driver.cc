@@ -45,7 +45,7 @@ bool Driver::Read(char **&argv, Option_Info *oi) {
     usage_noexit_ASL(oi, 1);
     return false;
   }
-  FILE *nl = jac0dim_ASL(asl, stub, std::strlen(stub));
+  FILE *nl = jac0dim_ASL(asl, stub, static_cast<ftnlen>(std::strlen(stub)));
   asl_->i.Uvx_ = static_cast<real*>(Malloc(num_vars() * sizeof(real)));
   asl_->i.Urhsx_ = static_cast<real*>(Malloc(num_cons() * sizeof(real)));
   efunc *r_ops_int[N_OPS];
