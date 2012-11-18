@@ -997,7 +997,7 @@ fully_qualify(char *dsname, char *buf, size_t len)
 		return dsname;
 	Ldsn = strlen(dsname);
 #ifdef _WIN32
-	buf = _getcwd(buf, (int)len)
+	buf = _getcwd(buf, (int)len);
 #else
 	buf = getcwd(buf, len);
 #endif
