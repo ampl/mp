@@ -34,23 +34,24 @@
 
 using std::size_t;
 using std::string;
+using std::vector;
 using fun::Table;
 
 namespace {
 
 class ScopedTableInfo : public TableInfo {
  private:
-  std::vector<char*> strings_;
-  std::vector<std::string> colnames_;
-  std::vector<char*> colnameptrs_;
-  std::vector<DbCol> cols_;
-  std::vector<double> dvals_;
-  std::vector<char*> svals_;
+  vector<char*> strings_;
+  vector<string> colnames_;
+  vector<char*> colnameptrs_;
+  vector<DbCol> cols_;
+  vector<double> dvals_;
+  vector<char*> svals_;
   Table *table_;
   static char MISSING;
 
-  void SetString(std::vector<char*> *strings, unsigned index, const char *str);
-  void AddString(std::vector<char*> *strings, const char *str);
+  void SetString(vector<char*> *strings, unsigned index, const char *str);
+  void AddString(vector<char*> *strings, const char *str);
 
   static int Lookup(real *dv, char **sv, TableInfo *ti);
 
@@ -65,8 +66,8 @@ class ScopedTableInfo : public TableInfo {
   };
 
  public:
-  ScopedTableInfo(const Table &t, const std::string &connection_str,
-      const std::string &sql = std::string());
+  ScopedTableInfo(const Table &t, const string &connection_str,
+      const string &sql = string());
   ~ScopedTableInfo();
 
   Table *GetTable() { return table_; }
@@ -83,14 +84,14 @@ class ScopedTableInfo : public TableInfo {
 char ScopedTableInfo::MISSING;
 
 void ScopedTableInfo::SetString(
-    std::vector<char*> *strings, unsigned index, const char *str) {
+    vector<char*> *strings, unsigned index, const char *str) {
   char *&oldstr = (*strings)[index];
   if (oldstr) delete [] oldstr;
   oldstr = new char[std::strlen(str) + 1];
   std::strcpy(oldstr, str);  // NOLINT(runtime/printf)
 }
 
-void ScopedTableInfo::AddString(std::vector<char*> *strings, const char *str) {
+void ScopedTableInfo::AddString(vector<char*> *strings, const char *str) {
   if (!str) return;
   strings->push_back(0);
   SetString(strings, static_cast<unsigned>(strings->size() - 1), str);
@@ -115,14 +116,14 @@ int ScopedTableInfo::Lookup(real *dv, char **sv, TableInfo *ti) {
 
 long ScopedTableInfo::AdjustMaxrows(long new_maxrows) {
   int total_cols = arity + ncols;
-  std::vector<double> dvals(new_maxrows * total_cols);
-  std::vector<char*> svals(new_maxrows * total_cols);
+  vector<double> dvals(new_maxrows * total_cols);
+  vector<char*> svals(new_maxrows * total_cols);
   dvals_.swap(dvals);
   svals_.swap(svals);
   for (int j = 0; j < total_cols; ++j) {
     DbCol &col = cols[j];
-    std::vector<double>::iterator dval_start = dvals_.begin() + j * nrows;
-    std::vector<char*>::iterator sval_start = svals_.begin() + j * nrows;
+    vector<double>::iterator dval_start = dvals_.begin() + j * nrows;
+    vector<char*>::iterator sval_start = svals_.begin() + j * nrows;
     col.dval = &*dval_start;
     col.sval = &*sval_start;
     std::copy(dvals.begin(), dvals.end(), dval_start);
@@ -133,7 +134,7 @@ long ScopedTableInfo::AdjustMaxrows(long new_maxrows) {
 }
 
 ScopedTableInfo::ScopedTableInfo(const Table &t,
-    const std::string &connection_str, const std::string &sql) {
+    const string &connection_str, const string &sql) {
   // Workaround for GCC bug 30111 that prevents value-initialization of
   // the base POD class.
   TableInfo ti = {};
@@ -240,7 +241,7 @@ std::ostream &operator<<(std::ostream &os, const Variant &v) {
 class LibraryImpl : public AmplExports, public TMInfo {
  private:
   string name_;
-  std::vector<void*> tempmem_;
+  vector<void*> tempmem_;
   static string error_;
 
   typedef std::map<string, func_info> FunctionMap;
@@ -431,8 +432,8 @@ std::ostream &operator<<(std::ostream &os, const Table &t) {
   return os;
 }
 
-void Handler::Read(const std::string &connection_str,
-    Table *t, const std::string &sql_statement) const {
+void Handler::Read(const string &connection_str,
+    Table *t, const string &sql_statement) const {
   ScopedTableInfo ti(*t, connection_str, sql_statement);
   ti.TMI = lib_->impl();
   ti.SetTable(t);
@@ -441,7 +442,7 @@ void Handler::Read(const std::string &connection_str,
 }
 
 int Handler::Write(
-    const std::string &connection_str, const Table &t, int flags) const {
+    const string &connection_str, const Table &t, int flags) const {
   ScopedTableInfo ti(t, connection_str,
 		  (flags & APPEND) != 0 ? "write=append" : "");
   for (unsigned i = 0, m = t.num_rows(); i < m; ++i) {
@@ -500,7 +501,7 @@ FunctionInfo &FunctionInfo::SetArgNames(const char *arg_names) {
   std::istringstream is(arg_names);
   copy(std::istream_iterator<string>(is),
       std::istream_iterator<string>(),
-      std::back_inserter< std::vector<string> >(arg_names_));
+      std::back_inserter< vector<string> >(arg_names_));
   return *this;
 }
 
@@ -527,12 +528,12 @@ Function::Result Function::operator()(const Tuple &args,
     throw std::invalid_argument("invalid number of arguments in function call");
 
   // Initialize the argument list.
-  std::vector<double> ra(num_args);
+  vector<double> ra(num_args);
   for (int i = 0; i < num_args; ++i)
     ra[i] = args[i].number();
-  std::vector<char> dig(use_deriv.size());
+  vector<char> dig(use_deriv.size());
   if (!dig.empty()) {
-    if (dig.size() != num_args)
+    if (dig.size() != static_cast<size_t>(num_args))
       throw std::invalid_argument("invalid size of use_deriv");
     for (int i = 0; i < num_args; ++i)
       dig[i] = !use_deriv[i];
@@ -546,7 +547,7 @@ Function::Result Function::operator()(const Tuple &args,
   al.funcinfo = info ? info : fi_->funcinfo;
 
   // Allocate storage for the derivatives if needed.
-  std::vector<double> derivs, hes;
+  vector<double> derivs, hes;
   if ((flags & DERIVS) != 0) {
     derivs.resize(al.n);
     al.derivs = &derivs[0];
