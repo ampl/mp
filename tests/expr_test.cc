@@ -119,7 +119,7 @@ void TestExpr::TestArrayIterator() {
   int index = 0;
   for (ArrayIterator<NumericExpr>
       i(ptrs), e(ptrs + 3); i != e; ++i, ++index) {
-    int code = reinterpret_cast<size_t>(ptrs[index]->op);
+    int code = static_cast<int>(reinterpret_cast<size_t>(ptrs[index]->op));
     EXPECT_EQ(code, i->opcode());
   }
   EXPECT_EQ(3, index);

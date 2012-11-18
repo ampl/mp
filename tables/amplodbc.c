@@ -27,7 +27,10 @@ THIS SOFTWARE.
 #ifdef _WIN32
 # include <windows.h>
 # include <direct.h>
-# define getcwd _getcwd
+
+__inline char *getcwd(char *buf, size_t size) {
+  return _getcwd(buf, (int)size);
+}
 #else
 # include <unistd.h>
 #endif
@@ -1795,7 +1798,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 				if ((s = *sp++)) {
 					if (s != Missing) {
 						if (!h.nsmix)
-							j = strlen(s);
+							j = (int)strlen(s);
 						else if (mustquote(s,&j))
 							j += 2;
 						if (k < j)
@@ -2031,7 +2034,7 @@ needprec(HInfo *h, DBColinfo *dbc, int col_index)
 		return 0;
 	 }
 	dbc->mytype = 3;
-	t = dbc->type;
+	t = (SDWORD)dbc->type;
 	for(utp = &h->ut; (ut = *utp); utp = &ut->next)
 		if (ut->type == t)
 			goto found;
@@ -3052,10 +3055,10 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 			}
 		for(dbc = dbc0; dbc < dbce; dbc++)
 			if (dbc->mytype == 1) {
-				i = dbc - dbc0;
+				i = (int)(dbc - dbc0);
 				db = db0 + (k = p[i]);
 				if (sw)
-					sw[k] = dbc->prec - 1;
+					sw[k] = (int)(dbc->prec - 1);
 				if (db->sval)
 					continue;
 				(*TI->ColAlloc)(TI, k, 1);
