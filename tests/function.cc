@@ -32,6 +32,7 @@
 #include "tests/config.h"
 #undef VOID
 
+using std::size_t;
 using std::string;
 using fun::Table;
 
@@ -479,9 +480,9 @@ std::ostream &operator<<(std::ostream &os, const Tuple &t) {
 
 BitSet::BitSet(const char *s) {
   if (!s) return;
-  unsigned num_args = std::strlen(s);
+  size_t num_args = std::strlen(s);
   store_.resize(num_args);
-  for (unsigned i = 0; i < num_args; ++i) {
+  for (size_t i = 0; i < num_args; ++i) {
     char c = s[i];
     if (c == '0')
       store_[i] = false;
@@ -521,19 +522,19 @@ int Function::ftype() const { return fi_->ftype; }
 
 Function::Result Function::operator()(const Tuple &args,
     int flags, const BitSet &use_deriv, void *info) const {
-  unsigned num_args = args.size();
-  if (fi_->nargs != static_cast<int>(num_args))
+  int num_args = static_cast<int>(args.size());
+  if (fi_->nargs != num_args)
     throw std::invalid_argument("invalid number of arguments in function call");
 
   // Initialize the argument list.
   std::vector<double> ra(num_args);
-  for (unsigned i = 0; i < num_args; ++i)
+  for (int i = 0; i < num_args; ++i)
     ra[i] = args[i].number();
   std::vector<char> dig(use_deriv.size());
   if (!dig.empty()) {
     if (dig.size() != num_args)
       throw std::invalid_argument("invalid size of use_deriv");
-    for (unsigned i = 0; i < num_args; ++i)
+    for (int i = 0; i < num_args; ++i)
       dig[i] = !use_deriv[i];
   }
   arglist al = {};
