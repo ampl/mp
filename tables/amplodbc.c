@@ -27,10 +27,6 @@ THIS SOFTWARE.
 #ifdef _WIN32
 # include <windows.h>
 # include <direct.h>
-
-__inline char *getcwd(char *buf, size_t size) {
-  return _getcwd(buf, (int)size);
-}
 #else
 # include <unistd.h>
 #endif
@@ -1000,8 +996,13 @@ fully_qualify(char *dsname, char *buf, size_t len)
 	if (((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) && dsname[1] == ':')
 		return dsname;
 	Ldsn = strlen(dsname);
-	if (!getcwd(buf, len))
-          return dsname;
+#ifdef _WIN32
+	buf = _getcwd(buf, (int)len)
+#else
+	buf = getcwd(buf, len);
+#endif
+	if (!buf)
+		return dsname;
 	n = strlen(buf);
 	if (n + Ldsn + 1 >= len)
 		return dsname;
