@@ -254,6 +254,37 @@ TEST(FunctionTest, TableLookup) {
   EXPECT_EQ(-1, handler.Write("", t, Handler::NOTHROW));
 }
 
+int AdjustMaxrowsTest(AmplExports *, TableInfo *ti) {
+  for (int i = 0; i < 2; ++i) {
+    EXPECT_EQ(ti->cols[i].sval + ti->maxrows, ti->cols[i + 1].sval);
+    EXPECT_EQ(ti->cols[i].dval + ti->maxrows, ti->cols[i + 1].dval);
+  }
+  int max_rows = ti->AdjustMaxrows(ti, std::atoi(ti->colnames[0]));
+  EXPECT_EQ(max_rows, ti->maxrows);
+  for (int i = 0; i < 2; ++i) {
+    EXPECT_EQ(ti->cols[i].sval + max_rows, ti->cols[i + 1].sval);
+    EXPECT_EQ(ti->cols[i].dval + max_rows, ti->cols[i + 1].dval);
+  }
+  EXPECT_STREQ("a", ti->cols[0].sval[0]);
+  EXPECT_EQ(11, ti->cols[1].dval[0]);
+  EXPECT_STREQ("b", ti->cols[2].sval[0]);
+  return max_rows;
+}
+
+TEST(FunctionTest, AdjustMaxrows) {
+  Library lib("");
+  Handler handler(&lib, 0, AdjustMaxrowsTest);
+  Table t("", 3);
+  t = "1", "c2", "c3", "a", 11, "b";
+  EXPECT_EQ(1, handler.Write("", t, Handler::NOTHROW));
+  t = "2", "c2", "c3", "a", 11, "b";
+  EXPECT_EQ(2, handler.Write("", t, Handler::NOTHROW));
+  t = "3", "c2", "c3", "a", 11, "b";
+  EXPECT_EQ(3, handler.Write("", t, Handler::NOTHROW));
+  t = "4", "c2", "c3", "a", 11, "b";
+  EXPECT_EQ(4, handler.Write("", t, Handler::NOTHROW));
+}
+
 const double ITEMS[] = {5, 7, 11, 13, 17, 19, 23, 29, 31};
 
 void CheckTuple(unsigned size, const Tuple &t) {

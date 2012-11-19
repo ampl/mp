@@ -115,6 +115,7 @@ int ScopedTableInfo::Lookup(real *dv, char **sv, TableInfo *ti) {
 }
 
 long ScopedTableInfo::AdjustMaxrows(long new_maxrows) {
+  assert(new_maxrows >= maxrows);
   int total_cols = arity + ncols;
   vector<double> dvals(new_maxrows * total_cols);
   vector<char*> svals(new_maxrows * total_cols);
@@ -122,12 +123,16 @@ long ScopedTableInfo::AdjustMaxrows(long new_maxrows) {
   svals_.swap(svals);
   for (int j = 0; j < total_cols; ++j) {
     DbCol &col = cols[j];
-    vector<double>::iterator dval_start = dvals_.begin() + j * nrows;
-    vector<char*>::iterator sval_start = svals_.begin() + j * nrows;
+    std::size_t new_offset = j * new_maxrows;
+    vector<double>::iterator dval_start = dvals_.begin() + new_offset;
+    vector<char*>::iterator sval_start = svals_.begin() + new_offset;
     col.dval = &*dval_start;
     col.sval = &*sval_start;
-    std::copy(dvals.begin(), dvals.end(), dval_start);
-    std::copy(svals.begin(), svals.end(), sval_start);
+    std::size_t old_offset = j * maxrows;
+    vector<double>::iterator old_dval_start = dvals.begin() + old_offset;
+    vector<char*>::iterator old_sval_start = svals.begin() + old_offset;
+    std::copy(old_dval_start, old_dval_start + maxrows, dval_start);
+    std::copy(old_sval_start, old_sval_start + maxrows, sval_start);
   }
   maxrows = new_maxrows;
   return new_maxrows;
