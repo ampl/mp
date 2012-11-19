@@ -1,4 +1,4 @@
-# Warning suppression file.
+# Warning suppression file for the buildbot.
 
 # Suppress CPLEX/Concert warnings:
 .*ilconcert/iloexpressioni.h: C4244.*
