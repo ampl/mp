@@ -110,6 +110,12 @@ typedef void sig_func_type ANSI((int));
 
 
 static ASL *asl;
+ static double Times[4];
+#if CPX_VERSION >= 12050000
+ static double DTimes[4];
+ static int DTimes_failed, num_cores;
+#endif
+
 
 typedef struct cpxlp cpxlp;
 
@@ -175,7 +181,11 @@ mint_val[28] = {
 	/* set_objpri */	{0, 0x7fffffff, 2},
 	/* set_prestats */	{0, 1, 0},
 	/* set_sos2 */		{0, 1, 1},
+#if CPX_VERSION >= 12050000
+	/* set_timing */	{0, 0x3f, 0},
+#else
 	/* set_timing */	{0, 3, 0},
+#endif
 	/* set_iis */		{0, 3, 0},
 	/* set_mipststat */	{0, 1, 1},
 	/* set_mipstval */	{0, 2, 1},
@@ -235,7 +245,7 @@ mdbl_val[] = {
  static int hybmethod = CPX_ALG_PRIMAL;
  static int netiters = -1;
  static CPXFILEptr Logf;
- static char cplex_version[] = "AMPL/CPLEX with bad license\0\nAMPL/CPLEX Driver Version 20121022\n";
+ static char cplex_version[] = "AMPL/CPLEX with bad license\0\nAMPL/CPLEX Driver Version 20121117\n";
  static char *baralgname, *endbas, *endsol, *endtree, *endvec, *logfname;
  static char *paramfile, *poolstub, *pretunefile, *pretunefileprm;
  static char *startbas, *startsol, *starttree, *startvec, *tunefile, *tunefileprm;
@@ -600,10 +610,11 @@ Optimize2(CPXCENVptr e, cpxlp *c)
  static int CPXPUBLIC
 Optimizebar(CPXCENVptr e, cpxlp *c)
 {
-	int rv, s;
+	int rv;
 
 	if (!(rv = CPXbaropt(e, c))) {
 #ifndef NO_DEPRECATED
+		int s;
 		if (endvec && (s = CPXvecwrite(e, c, endvec)))
 			printf("\n*** return %d from CPXvecwrite.\n", s);
 #endif
@@ -963,7 +974,7 @@ sf_mint(Option_Info *oi, keyword *kw, char *v)
 #endif
 #ifdef CPLEX_MIP
 	if (i == set_mipcuts) {
-		static int op[9] = {
+		static int op[] = {
 			CPX_PARAM_CLIQUES,
 			CPX_PARAM_COVERS,
 			CPX_PARAM_DISJCUTS,
@@ -973,9 +984,12 @@ sf_mint(Option_Info *oi, keyword *kw, char *v)
 			CPX_PARAM_GUBCOVERS,
 			CPX_PARAM_IMPLBD,
 			CPX_PARAM_MIRCUTS
+#ifdef CPX_PARAM_ZEROHALFCUTS
+			,CPX_PARAM_ZEROHALFCUTS
+#endif
 			};
 		int f;
-		for(f = 0; f < 9; f++)
+		for(f = 0; f < sizeof(op)/sizeof(int); f++)
 			CPXsetintparam(Env, op[f], t);
 		}
 #endif
@@ -1462,6 +1476,9 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 	{ "densecol",	sf_int,		VP CPX_PARAM_BARCOLNZ },
 #endif
 	{ "dependency",	sf_int1,	VP CPX_PARAM_DEPIND },
+#ifdef CPX_PARAM_DETTILIM
+	{ "dettimelim",	sf_dpar,	VP CPX_PARAM_DETTILIM },
+#endif
 	{ "dgradient",	sf_int,		VP CPX_PARAM_DPRIIND },
 #ifdef CPLEX_MIP
 	{ "disjcuts",	sf_int,		VP CPX_PARAM_DISJCUTS },
@@ -1654,6 +1671,9 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 	{ "polishafter_nodes",	sf_int, VP CPX_PARAM_POLISHAFTERNODE },
 	{ "polishafter_time",	sf_dbl, VP CPX_PARAM_POLISHAFTERTIME },
 #endif
+#ifdef  CPX_PARAM_POLISHAFTERDETTIME
+	{ "polishafter_timedet", sf_dbl, VP CPX_PARAM_POLISHAFTERDETTIME },
+#endif
 #ifdef CPX_PARAM_POLISHTIME
 	{ "polishtime",	sf_dbl,		VP CPX_PARAM_POLISHTIME },
 #endif
@@ -1700,6 +1720,9 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 #ifdef CPX_PARAM_PROBETIME
 	{ "probetime", sf_dbl,		VP CPX_PARAM_PROBETIME },
 #endif
+#ifdef CPX_PARAM_PROBEDETTIME
+	{ "probetimedet", sf_dbl,	VP CPX_PARAM_PROBEDETTIME },
+#endif
 #endif /*CPLEX_MIP*/
 #ifdef CPX_PARAM_BARQCPEPCOMP
 	{ "qcpconvergetol", sf_dbl,	VP CPX_PARAM_BARQCPEPCOMP },
@@ -1737,6 +1760,9 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 	{ "round",	sf_mint,	VP set_round },
 #endif /*CPLEX_MIP*/
 	{ "scale",	sf_int,		VP CPX_PARAM_SCAIND },
+#ifdef CPX_PARAM_RANDOMSEED
+	{ "seed", sf_int,		VP CPX_PARAM_RANDOMSEED },
+#endif
 	{ "sensitivity", sf_known,	VP set_sens },
 	{ "siftingopt",	sf_known,	VP set_siftopt },
 	{ "siftopt",	sf_known,	VP set_siftopt },
@@ -1797,6 +1823,9 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 	{ "tunefixfile",sf_char,	VP set_tunefixfile },
 	{ "tunerepeat",	sf_int,		VP CPX_PARAM_TUNINGREPEAT },
 	{ "tunetime",	sf_dbl,		VP CPX_PARAM_TUNINGTILIM },
+#ifdef CPX_PARAM_TUNINGDETTILIM
+	{ "tunetimedet", sf_dbl,	VP CPX_PARAM_TUNINGDETTILIM },
+#endif
 #endif
 #ifdef CPLEX_MIP
 	{ "uppercutoff", sf_dbl,	VP CPX_PARAM_CUTUP },
@@ -1827,7 +1856,7 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 
  static Option_Info Oinfo = { "cplex", 0, "cplex_options",
 				keywds, nkeywds, 0, cplex_version,
-				0,0,0,0,0, 20121022 };
+				0,0,0,0,0, 20121117 };
 
  static void
 badlic(int rc, int status)
@@ -2145,7 +2174,7 @@ mipinit_loop(ASL *asl, int **rp, int *np, real **xp, int j, int k)
  static void
 set_mipinit(ASL *asl, cpxlp *cpx, int nint)
 {
-	int i, k, m, m0, n1, *r, *r1;
+	int i, n1, *r, *r1;
 	real *x, *x1;
 #if CPX_VERSION_VERSION >= 12
 	int beg[2];
@@ -2172,6 +2201,7 @@ set_mipinit(ASL *asl, cpxlp *cpx, int nint)
 	else {
 #endif
 #ifndef NO_DEPRECATED
+	int k, m, m0;
 	if ((k = nlvbi))
 		mipinit_loop(asl, &r1, &n1, &x1, nlvb - k, k);
 	m0 = nlvb;
@@ -2959,6 +2989,10 @@ amplin(ASL *asl, cpxlp **pcpx, FILE **nl, dims *d, int *nelqp, int *nintp, char 
 		}
 	obj_no = objno - 1;
 
+#if CPX_VERSION >= 12050000
+	if (time_flag & 0x30)
+		CPXgetnumcores(Env, &num_cores);
+#endif
 #ifndef CPX_PARAM_FEASOPTMODE /* < 9.2b */
 	if (want_iis
 #ifdef CPXERR_QCP_SENSE /* if CPLEX version >= 9.0 */
@@ -5324,21 +5358,35 @@ QualityInfo {
 		}
 	}
 
- static double Times[4];
-
  static void
 show_times(void)
 {
 	int i;
 
 	Times[3] = xectim_();
-	for(i = 1; i <= 2; i++)
+	for(i = 1; i <= 2; ++i)
 	    if (time_flag & i) {
 		fprintf(i == 1 ? stdout : Stderr,
 		"\nTimes (seconds):\nInput =  %g\nSolve =  %g\nOutput = %g\n",
 			Times[1] - Times[0], Times[2] - Times[1],
 			Times[3] - Times[2]);
 		}
+#if CPX_VERSION >= 12050000
+	if (!DTimes_failed)
+		for(i = 4; i <= 8; i += 4)
+		    if (time_flag & i) {
+		fprintf(i == 4 ? stdout : Stderr,
+		"\nTimes (ticks):\nInput =  %g\nSolve =  %g\nOutput = %g\n",
+			DTimes[1] - DTimes[0], DTimes[2] - DTimes[1],
+			DTimes[3] - DTimes[2]);
+		}
+	if (time_flag & 0x30 && num_cores) {
+		for(i = 16; i <= 32; i += 16)
+			if (time_flag & i)
+				fprintf(i == 16 ? stdout : stderr,
+					"\n%d logical cores are available.\n", num_cores);
+		}
+#endif
 	}
 
  static void
@@ -5576,8 +5624,12 @@ main(int argc, char **argv)
 	if (!(stub = getenv("ILOG_LICENSE_FILE")) || !*stub)
 		putenv("ILOG_LICENSE_FILE=" LICENSE_FILE);
 #endif
-	if ((Env = CPXopenCPLEX(&z)))
+	if ((Env = CPXopenCPLEX(&z))) {
+#if CPX_VERSION >= 12050000
+		DTimes_failed = CPXgetdettime(Env, &DTimes[0]);
+#endif
 		adjust_version(asl);
+		}
 #ifndef KEEP_BANNER
 	if (nos >= 0) {
 		close(2);
@@ -5645,6 +5697,10 @@ main(int argc, char **argv)
 #endif
 	fflush(stdout);
 	Times[1] = xectim_();
+#if CPX_VERSION >= 12050000
+	if (!DTimes_failed)
+		DTimes_failed = CPXgetdettime(Env, &DTimes[1]);
+#endif
 	nosp = 0;
 
 	disconnectchannel(cpxresults);
@@ -5665,6 +5721,10 @@ main(int argc, char **argv)
 		}
 	status = Optimize1(Env,cpx);
 	Times[2] = xectim_();
+#if CPX_VERSION >= 12050000
+	if (!DTimes_failed)
+		DTimes_failed = CPXgetdettime(Env, &DTimes[2]);
+#endif
 	breaking = 1;	/* reset in case, e.g., amplout runs CPXprimopt */
 	if (endbas && !nint1)
 		write_basis(cpx);
@@ -5680,6 +5740,10 @@ main(int argc, char **argv)
  done:
 	if (oic)
 		signal(SIGINT, oic);
+#if CPX_VERSION >= 12050000
+	if (!DTimes_failed)
+		DTimes_failed = CPXgetdettime(Env, &DTimes[3]);
+#endif
 	if (cpx)
 		CPXfreeprob(Env, &cpx);
 	if (Env)

@@ -1299,7 +1299,7 @@ keywds[] = {	/* must be in alphabetical order */
 
  static Option_Info
 Oinfo = { "gurobi", verbuf, "gurobi_options", keywds, nkeywds, 0, verbuf,
-	   0,0,0,0,0, 20121101 };
+	   0,0,0,0,0, 20121116 };
 
  static void
 enamefailed(GRBenv *env, const char *what, const char *name)
@@ -2019,7 +2019,7 @@ fixed_model(ASL *asl, GRBmodel *mdl0, Dims *d)
 		intbasis_fail(d, "setintparam(\"Presolve\")");
 		goto badret;
 		}
-	if (!GRBgetintparam(env, Method, &k) && k >= 2)
+	if (!GRBgetintparam(env, Method, &k) && (k >= 2 || k < 0))
 		GRBsetintparam(env, Method, 1);
 	if ((fn = Wflist[2])) {
 		GRBupdatemodel(mdl);
@@ -2378,13 +2378,10 @@ main(int argc, char **argv)
 	Uvx = uxr = lxr + nvr;
 	y = uxr + nvr;
 	rhs = y + nc;
-	lxr += nv;
-	uxr += nv;
 	vlen = vlenr = (int*)(rhs + nc);
 	A_colstarts = cs = vlen + nvr;
 	A_rownos = rnr = cs + nvr + 1;
 	sense = (char*)(rnr + nzcr);
-	rnr += nz;
 	vtype = sense + nc;
 	havex0 = hx0 = vtype + nvr;
 	suf_declare(suftab, sizeof(suftab)/sizeof(SufDecl));
@@ -2438,11 +2435,11 @@ main(int argc, char **argv)
 		if (nelqf < 0) {
 			if (nelqf == -2) {
 				solve_result_num = 523;
-				asl->i.uinfo = "a quadratic objective involving division by 0";
+				asl->i.uinfo = "Cannot handle a quadratic objective involving division by 0";
 				}
 			else {
 				solve_result_num = 521;
-				asl->i.uinfo = "a nonlinear objective";
+				asl->i.uinfo = "Gurobi cannot handle general nonlinear objectives.";
 				}
 			rc = 1;
 			goto bailout;
@@ -2466,18 +2463,18 @@ main(int argc, char **argv)
 		if ((nsos = suf_sos(i, &nsosnz, &sostype, 0, 0,
 				&sosbeg, &sosind, &sosref))) {
 			nv = n_var;
+			nvr = nv + nrange;
 			nc = n_con;
 			nz = nzc;
-			nvr = nv + nrange;
 			nzcr = nz + nrange;
 			lvi = nbv + niv;
-			Ar = A + nz;
-			rnr = A_rownos + nz;
-			lxr = LUv + nv;
-			uxr = Uvx + nv;
-			rsta = dims.cstat + nv;
 			}
 		}
+	Ar = A + nz;
+	rnr = A_rownos + nz;
+	lxr = LUv + nv;
+	uxr = Uvx + nv;
+	rsta = dims.cstat + nv;
 #if GRB_VERSION_MAJOR >= 5 /*{*/
 	if (!pi0) {
 		if (nc) {

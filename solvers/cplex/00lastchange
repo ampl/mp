@@ -1,6 +1,6 @@
-20121022
-  cplex.c, README.cplex:  add keyword "incompat".
-  cplex.c:  modify adjustment to SOS reference-row values by
-arranging to look at them in sorted order when modifying them if
-necessary to make them distinct.  (CPLEX requires them to be
-distinct.)
+20121117
+  cplex.c: add zerohalfcuts to the cuts simultaneously controlled
+by mipcuts.  Update to CPLEX 12.5:  add keywords dettimelim,
+polishafter_timedet, probetimedet, seed, and tunetimedet, and extend
+timing keyword to allow requesting times in platform-specific "ticks",
+which CPLEX computes in an unspecified way.

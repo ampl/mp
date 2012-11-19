@@ -1,4 +1,2 @@
-20121101
-  Fix a bug with problems involving both nonconvex piecewise-linear
-terms and range constraints.  The adjustments for ranges were wrong,
-resulting in the error message "Index is out of range" or other trouble.
+20121116
+  Minor tweaks to two error messages and other minor cleanups.

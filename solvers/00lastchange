@@ -1,3 +1,4 @@
-20121101
-  npqcheck.c: call get_vminv_ASL() if necessary to prevent vminv
-from being inappropriately freed in the subsequent free_block(S).
+20121116
+  nqpcheck.c: take asl->i.nsufext[ASL_Sufkind_var] into account.
+(This value is set to a positive value, e.g., by the Gurobi driver
+on problems that have range constraints.)
