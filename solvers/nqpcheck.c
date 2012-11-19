@@ -50,7 +50,7 @@ Static {
 	dyad *_freedyad, *_dyad_block;
 	int _zerodiv;
 	term **_cterms;
-	int _dyad_ntogo, _ograd_ntogo, _term_ntogo;
+	int _dyad_ntogo, nvinc, _ograd_ntogo, _term_ntogo;
 	Char **_M1state1, **_M1state2;
 	} Static;
 
@@ -431,6 +431,7 @@ ewalk(Static *S, expr *e)
 		asl = S->asl;
 		if ((i = (expr_v *)e - var_e) < n_var)
 			return new_term(S, new_og(S, 0, i, 1.));
+		i -= S->nvinc;
 		if (!(L = cterms[i -= n_var])
 		 && !(L = cterms[i] = comterm(S, i)))
 			return 0;
@@ -579,7 +580,7 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, fint **colqp, real **delsqp)
 	term *T;
 	real *L, *U, *delsq, *delsq0, *delsq1, objadj, t, *x;
 	int arrays, *cm, pass, *vmi;
-	fint ftn, i, icol, j, ncom, nelq, nz;
+	fint ftn, i, icol, j, ncom, nelq, nv, nz;
 	fint *colq, *colq1, *rowq, *rowq0, *rowq1, *s, *z;
 	dyad *d, *d1, **q, **q1, **q2, **qe;
 	ograd *og, *og1, *og2, **ogp;
@@ -625,11 +626,13 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, fint **colqp, real **delsqp)
 		get_vminv_ASL(a);
 	M1state1 = asl->i.Mbnext;
 	M1state2 = asl->i.Mblast;
-	s_x = x = (double *)Malloc(n_var*(sizeof(double)+2*sizeof(fint)));
-	s_z = z = (fint *)(x + n_var);
-	s_s = s = z + n_var;
-	memset(s, 0, n_var*sizeof(fint));
+	nv = n_var;
+	s_x = x = (double *)Malloc(nv*(sizeof(double)+2*sizeof(fint)));
+	s_z = z = (fint *)(x + nv);
+	s_s = s = z + nv;
+	memset(s, 0, nv*sizeof(fint));
 	ftn = Fortran;
+	SS.nvinc = nv - asl->i.n_var0 + asl->i.nsufext[ASL_Sufkind_var];
 
 	delsq = delsq0 = delsq1 = 0; /* silence buggy "not-initialized" warning */
 	colq = colq1 = rowq = rowq0 = rowq1 = 0;	/* ditto */
@@ -665,8 +668,8 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, fint **colqp, real **delsqp)
 	if (cterms)
 		cterm_free(S, cterms + ncom);
 
-	q = (dyad **)Malloc(n_var*sizeof(dyad *));
-	qe = q + n_var;
+	q = (dyad **)Malloc(nv*sizeof(dyad *));
+	qe = q + nv;
 	objadj = dsort(S, T, (ograd **)q, cgp, ogp, arrays);
 
 	nelq = nz = 0;
@@ -677,20 +680,20 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, fint **colqp, real **delsqp)
 			free(q);
 			delsq1 = delsq = (double *)Malloc(nelq*sizeof(real));
 			rowq1 = rowq = (fint *)Malloc(nelq*sizeof(fint));
-			colq1 = colq = (fint *)Malloc((n_var+2)*sizeof(fint));
+			colq1 = colq = (fint *)Malloc((nv+2)*sizeof(fint));
 			nelq = ftn;
 			delsq0 = delsq - ftn;
 			rowq0 = rowq - ftn;
-			q = (dyad **)Malloc(n_var*(sizeof(dyad*)
+			q = (dyad **)Malloc(nv*(sizeof(dyad*)
 						+ sizeof(dispatch *)
 						+ sizeof(dispatch)));
-			qe = q + n_var;
+			qe = q + nv;
 			cdisp = (dispatch**) qe;
 			cdisp0 = cdisp - ftn;
-			memset(cdisp, 0, n_var*sizeof(dispatch*));
-			cd0 = (dispatch *)(cdisp + n_var);
+			memset(cdisp, 0, nv*sizeof(dispatch*));
+			cd0 = (dispatch *)(cdisp + nv);
 			}
-		memset(q, 0, n_var*sizeof(dyad *));
+		memset(q, 0, nv*sizeof(dyad *));
 
 		if (pass)
 			for(d = T->Q; d; d = d->next) {
