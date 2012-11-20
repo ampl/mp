@@ -205,8 +205,8 @@ SQL statements
 The default `identifier quote character in MySQL
 <http://dev.mysql.com/doc/refman/5.0/en/identifiers.html>`__
 is the backtick (`````). AMPL's ODBC table handler detects the quote
-character automatically and uses it when necessary. This, however, affects
-user-supplied SQL statements which are passed to the MySQL ODBC driver as is
+character automatically and uses it when necessary. However,
+user-supplied SQL statements are passed to the MySQL ODBC driver as is
 and should use the correct quotation. It is possible to enable support for
 the ANSI standard quote character (``"``) in MySQL by setting the SQL mode to
 `ANSI_QUOTES
