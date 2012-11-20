@@ -186,6 +186,9 @@ class IlogCPDriver : public Driver, public Visitor {
 
   IloNumExprArray ConvertArgs(VarArgExpr e);
 
+  static void RequireNonzeroConstRHS(
+      BinaryExpr e, const std::string &func_name);
+
  public:
   IlogCPDriver();
   virtual ~IlogCPDriver();
