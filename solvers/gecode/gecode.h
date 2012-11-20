@@ -39,6 +39,11 @@ class GecodeProblem: public Gecode::Space,
     return var;
   }
 
+  BoolExpr Convert(Gecode::BoolOpType op, IteratedLogicalExpr e);
+
+  static void RequireNonzeroConstRHS(
+      BinaryExpr e, const std::string &func_name);
+
  public:
   GecodeProblem(int num_vars) :
     vars_(*this, num_vars), obj_irt_(Gecode::IRT_NQ) {}
@@ -93,8 +98,7 @@ class GecodeProblem: public Gecode::Space,
   LinExpr VisitFloor(UnaryExpr e);
 
   LinExpr VisitCeil(UnaryExpr e) {
-    // ceil does nothing because Gecode supports only integer expressions
-    // currently.
+    // ceil does nothing because Gecode supports only integer expressions.
     return Visit(e.arg());
   }
 
@@ -108,29 +112,25 @@ class GecodeProblem: public Gecode::Space,
 
   LinExpr VisitIf(IfExpr e);
 
-  LinExpr VisitSum(SumExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
+  LinExpr VisitSum(SumExpr e);
 
   LinExpr VisitIntDiv(BinaryExpr e) {
     return Visit(e.lhs()) / Visit(e.rhs());
   }
 
-  LinExpr VisitPrecision(BinaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
   LinExpr VisitRound(BinaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
+    // round does nothing because Gecode supports only integer expressions.
+    RequireNonzeroConstRHS(e, "round");
+    return Visit(e.lhs());
   }
 
   LinExpr VisitTrunc(BinaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
+    // trunc does nothing because Gecode supports only integer expressions.
+    RequireNonzeroConstRHS(e, "trunc");
+    return Visit(e.lhs());
   }
 
-  LinExpr VisitCount(CountExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
+  LinExpr VisitCount(CountExpr e);
 
   LinExpr VisitNumberOf(NumberOfExpr e) {
     return VisitUnhandledNumericExpr(e); // TODO
@@ -224,19 +224,24 @@ class GecodeProblem: public Gecode::Space,
   }
 
   BoolExpr VisitForAll(IteratedLogicalExpr e) {
-    return VisitUnhandledLogicalExpr(e); // TODO
+    return Convert(Gecode::BOT_AND, e);
   }
 
   BoolExpr VisitExists(IteratedLogicalExpr e) {
-    return VisitUnhandledLogicalExpr(e); // TODO
+    return Convert(Gecode::BOT_OR, e);
   }
 
   BoolExpr VisitImplication(ImplicationExpr e) {
-    return VisitUnhandledLogicalExpr(e); // TODO
+    BoolExpr condition = Visit(e.condition());
+    BoolExpr expr = condition >> Visit(e.true_expr());
+    LogicalConstant c = Cast<LogicalConstant>(e.false_expr());
+    if (c && !c.value())
+      return expr;
+    return expr || (condition && Visit(e.false_expr()));
   }
 
   BoolExpr VisitIff(BinaryLogicalExpr e) {
-    return VisitUnhandledLogicalExpr(e); // TODO
+    return Visit(e.lhs()) == Visit(e.rhs());
   }
 
   BoolExpr VisitAllDiff(AllDiffExpr e);

@@ -33,6 +33,25 @@ namespace ampl {
 
 const BoolExpr GecodeProblem::DUMMY_EXPR((Gecode::BoolVar()));
 
+BoolExpr GecodeProblem::Convert(Gecode::BoolOpType op, IteratedLogicalExpr e) {
+  Gecode::BoolVarArgs args(e.num_args());
+  int index = 0;
+  for (IteratedLogicalExpr::iterator
+      i = e.begin(), end = e.end(); i != end; ++i, ++index) {
+    args[index] = CreateVar(Visit(*i));
+  }
+  Gecode::BoolVar var(*this, 0, 1);
+  rel(*this, op, args, var);
+  return var;
+}
+
+void GecodeProblem::RequireNonzeroConstRHS(
+    BinaryExpr e, const std::string &func_name) {
+  NumericConstant num = Cast<NumericConstant>(e.rhs());
+  if (!num || num.value() != 0)
+    throw UnsupportedExprError(func_name + " with nonzero second parameter");
+}
+
 GecodeProblem::GecodeProblem(bool share, GecodeProblem &s) :
   Space(share, s), obj_irt_(s.obj_irt_) {
   vars_.update(*this, share, s.vars_);
@@ -77,9 +96,12 @@ LinExpr GecodeProblem::VisitMin(VarArgExpr e) {
   VarArgExpr::iterator i = e.begin();
   if (!*i)
     throw UnsupportedExprError("min with empty argument list");
-  LinExpr result = Visit(*i);
-  for (++i; *i; ++i)
-    result = min(result, Visit(*i));
+  IntVarArgs args;
+  for (; *i; ++i)
+    args << CreateVar(Visit(*i));
+  Gecode::IntVar result(*this,
+      Gecode::Int::Limits::min, Gecode::Int::Limits::max);
+  min(*this, args, result);
   return result;
 }
 
@@ -87,9 +109,12 @@ LinExpr GecodeProblem::VisitMax(VarArgExpr e) {
   VarArgExpr::iterator i = e.begin();
   if (!*i)
     throw UnsupportedExprError("max with empty argument list");
-  LinExpr result = Visit(*i);
-  for (++i; *i; ++i)
-    result = max(result, Visit(*i));
+  IntVarArgs args;
+  for (; *i; ++i)
+    args << CreateVar(Visit(*i));
+  Gecode::IntVar result(*this,
+      Gecode::Int::Limits::min, Gecode::Int::Limits::max);
+  max(*this, args, result);
   return result;
 }
 
@@ -110,6 +135,29 @@ LinExpr GecodeProblem::VisitIf(IfExpr e) {
       CreateVar(Visit(e.true_expr())), CreateVar(condition));
   rel(*this, result, Gecode::IRT_EQ,
       CreateVar(Visit(e.false_expr())), CreateVar(!condition));
+  return result;
+}
+
+LinExpr GecodeProblem::VisitSum(SumExpr e) {
+  SumExpr::iterator i = e.begin(), end = e.end();
+  if (i == end)
+    return 0;
+  LinExpr sum = Visit(*i++);
+  for (; i != end; ++i)
+    sum = sum + Visit(*i);
+  return sum;
+}
+
+LinExpr GecodeProblem::VisitCount(CountExpr e) {
+  Gecode::BoolVarArgs args(e.num_args());
+  int index = 0;
+  for (CountExpr::iterator
+      i = e.begin(), end = e.end(); i != end; ++i, ++index) {
+    args[index] = CreateVar(Visit(*i));
+  }
+  Gecode::IntVar result(*this,
+      Gecode::Int::Limits::min, Gecode::Int::Limits::max);
+  linear(*this, args, Gecode::IRT_EQ, result);
   return result;
 }
 
