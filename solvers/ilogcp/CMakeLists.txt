@@ -8,6 +8,8 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
 
   add_library(ilogcpdriver
     ilogcp.cpp ilogcp.h ilogcp_date.h ../util/util-all.cc)
+  target_link_libraries(ilogcpdriver
+    ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_CP_LIBRARIES} ${CPLEX_LIBRARIES})
   add_dependencies(ilogcpdriver arith_h)
 
   if (MSVC)
@@ -30,6 +32,5 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
   endif ()
 
   add_executable(ilogcp main.cpp)
-  target_link_libraries(ilogcp ilogcpdriver
-    ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_CP_LIBRARIES} ${CPLEX_LIBRARIES})
+  target_link_libraries(ilogcp ilogcpdriver)
 endif ()

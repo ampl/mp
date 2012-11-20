@@ -10,6 +10,4 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
   # avoid a problem when gtest is built with a different runtime than ilogcp.
   cxx_test_with_flags(ilogcp_test "" ilogcpdriver
     ../test_main.cc ../expr_builder.cc ../gtest/src/gtest-all.cc ilogcp_test.cc)
-  target_link_libraries(ilogcp_test
-    ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_CP_LIBRARIES} ${CPLEX_LIBRARIES})
 endif ()
