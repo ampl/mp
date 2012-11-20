@@ -673,6 +673,13 @@ IloNumExprArray IlogCPDriver::ConvertArgs(VarArgExpr e) {
   return args;
 }
 
+void IlogCPDriver::RequireNonzeroConstRHS(
+    BinaryExpr e, const std::string &func_name) {
+  NumericConstant num = Cast<NumericConstant>(e.rhs());
+  if (!num || num.value() != 0)
+    throw UnsupportedExprError(func_name + " with nonzero second parameter");
+}
+
 IloExpr IlogCPDriver::VisitIf(IfExpr e) {
   IloConstraint condition(Visit(e.condition()));
   IloNumVar var(env_, -IloInfinity, IloInfinity);
@@ -699,17 +706,13 @@ IloExpr IlogCPDriver::VisitSum(SumExpr e) {
 }
 
 IloExpr IlogCPDriver::VisitRound(BinaryExpr e) {
-  NumericConstant num = Cast<NumericConstant>(e.rhs());
-  if (!num || num.value() != 0)
-    throw UnsupportedExprError("round with nonzero second parameter");
+  RequireNonzeroConstRHS(e, "round");
   // Note that IloOplRound rounds half up.
   return IloOplRound(Visit(e.lhs()));
 }
 
 IloExpr IlogCPDriver::VisitTrunc(BinaryExpr e) {
-  NumericConstant num = Cast<NumericConstant>(e.rhs());
-  if (!num || num.value() != 0)
-    throw UnsupportedExprError("trunc with nonzero second parameter");
+  RequireNonzeroConstRHS(e, "trunc");
   return IloTrunc(Visit(e.lhs()));
 }
 
