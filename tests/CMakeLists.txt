@@ -69,4 +69,10 @@ if (ODBC_FOUND)
   endif ()
 endif ()
 
+find_package(Gecode)
+if (GECODE_FOUND)
+  cxx_test_with_flags(gecode_test "" "gtest;gecodedriver"
+    test_main.cc expr_builder.cc gecode_test.cc)
+endif ()
+
 add_subdirectory(ilogcp)
