@@ -25,10 +25,9 @@ THIS SOFTWARE.
  static char Version[] = "\n@(#) AMPL ODBC driver, version 20121108.\n";
 
 #ifdef _WIN32
-# include <windows.h>
-# include <direct.h>
+#include <windows.h>
 #else
-# include <unistd.h>
+#include <unistd.h>
 #endif
 
 #include <sql.h>
@@ -41,6 +40,14 @@ THIS SOFTWARE.
 #include <string.h>
 #include "arith.h"	/* for LONG_LONG_POINTERS */
 #include "funcadd.h"
+
+#ifdef _WIN32
+#ifndef _WIN64
+#ifndef SQLLEN
+#define SQLLEN SQLINTEGER
+#endif
+#endif
+#endif
 
 #ifndef SQL_NO_DATA
 #define SQL_NO_DATA SQL_NO_DATA_FOUND	/* VC++ 4 */
@@ -123,12 +130,12 @@ prc(HInfo *h, char *who, int i)
 		size_t hoff;
 		} HandleStuff;
 	AmplExports *ae;
-	SDWORD native_errno;
+	SQLINTEGER native_errno;
+	SQLSMALLINT errmsglen;
 	SWORD emlen;
 	UCHAR *errmsg, errmsg0[SQL_MAX_MESSAGE_LENGTH], sqlstate[64];
 	int rv;
 #if 0
-	SQLSMALLINT errmsglen;
 	HandleStuff *hs, *hse;
 	SQLINTEGER k, ne;
 	SQLPOINTER sptr;
@@ -148,10 +155,10 @@ prc(HInfo *h, char *who, int i)
 		rv = 0;
 		}
 	errmsg = errmsg0;
+	errmsglen = sizeof(errmsg0);
 	ae = h->AE;
 	printf("%s returned %d\n", who, i);
 #if 0
-	errmsglen = sizeof(errmsg0);
 	elen = 0;
 	k = 0;
 	for(hs = HS, hse = HS + 3; hs < hse; ++hs) {
@@ -193,7 +200,7 @@ prc(HInfo *h, char *who, int i)
  use_SQLError:
 #endif
 	i = SQLError(h->env, h->hc, h->hs, sqlstate, &native_errno,
-	    errmsg, sizeof(errmsg0), &emlen);
+		errmsg, sizeof(errmsg0), &emlen);
 	if (i != SQL_SUCCESS && i != SQL_SUCCESS_WITH_INFO)
 		printf("SQLError returned %d\n", i);
 	else {
@@ -211,8 +218,8 @@ prc(HInfo *h, char *who, int i)
 prcnr(HInfo *h, char *who, int i)	/* variant for SQLGetNumResultCols */
 {
 	AmplExports *ae;
+	SQLINTEGER native_errno;
 	SWORD emlen;
-	SDWORD native_errno;
 	UCHAR errmsg[SQL_MAX_MESSAGE_LENGTH], sqlstate[64];
 	int j, rv;
 
@@ -360,11 +367,11 @@ get_ds0(HInfo *h)
 						attr, sizeof(attr)-2, &attr_len);
 			if (i != SQL_SUCCESS && i != SQL_SUCCESS_WITH_INFO)
 				break;
-			if ((size_t)desc_len > sizeof(desc)) {
+			if (desc_len > sizeof(desc)) {
 				printf("Surprise in get_ds0: desc_len = %d\n", desc_len);
 				desc_len = sizeof(desc);
 				}
-			if ((size_t)attr_len > sizeof(attr) - 2) {
+			if (attr_len > sizeof(attr) - 2) {
 				printf("Surprise in get_ds0: attr_len = %d\n", attr_len);
 				attr_len = sizeof(attr);
 				}
@@ -623,9 +630,10 @@ ODBC_check(AmplExports *AE, TableInfo *TI, HInfo *h)
 		return DB_Refuse;
 	if (i < 2 || i > 5) {
 		TI->Errmsg =
-		  "AMPL ODBC handler: expected 2-8 strings before \":[...]\":\n\
-  'ODBC', connection_spec [ext_name] [optional_strings]\n\n"
-	"For more details, use the AMPL command\n\n\tprint _handler_desc['odbc'];";
+			"AMPL ODBC handler: expected 2-8 strings before \":[...]\":\n"
+			"  'ODBC', connection_spec [ext_name] [optional_strings]\n\n"
+			"For more details, use the AMPL command\n\n"
+			"\tprint _handler_desc['odbc'];";
 		return DB_Error;
 		}
 	memset(h, 0, sizeof(HInfo));
@@ -986,7 +994,7 @@ get_ext(char *s)
  static char*
 fully_qualify(char *dsname, char *buf, size_t len)
 {
-	size_t n;
+	DWORD n;
 	int c;
 	size_t Ldsn;
 
@@ -996,12 +1004,7 @@ fully_qualify(char *dsname, char *buf, size_t len)
 	if (((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) && dsname[1] == ':')
 		return dsname;
 	Ldsn = strlen(dsname);
-#ifdef _WIN32
-	buf = _getcwd(buf, (int)len);
-#else
-	buf = getcwd(buf, len);
-#endif
-	if (!buf)
+	if (!getcwd(buf, len))
 		return dsname;
 	n = strlen(buf);
 	if (n + Ldsn + 1 >= len)
@@ -1265,7 +1268,7 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 		}
 	if (match("maxlen=", UC s, UC s + 7)) {
 		s1 = s2 = "";
-		if ((ui = (unsigned)(t = strtod(s+7,&s2))) > 0 && !*s2 && t == ui)
+		if ((ui = t = strtod(s+7,&s2)) > 0 && !*s2 && t == ui)
 			h->maxlen = ui;
 		else {
 			sprintf(TI->Errmsg = TM(strlen(s) + 72),
@@ -1578,7 +1581,7 @@ sql_type(HInfo *h, int odbctype, unsigned int *tprec)
 	SQLLEN len;
 	HSTMT hs = h->hs;
 	char nbuf[256], *rv;
-	size_t i;
+	int i;
 	unsigned long L;
 	static char *slast, *snext;
 
@@ -1590,7 +1593,7 @@ sql_type(HInfo *h, int odbctype, unsigned int *tprec)
 	 || prc(h, "SQLBindCol_2",
 			SQLBindCol(hs, (UWORD)3, SQL_C_LONG, &L, sizeof(L), &len))
 	 || (i = SQLFetch(hs)) == SQL_NO_DATA
-	 || prc(h, "SQLFetch in sql_types", (int)i))
+	 || prc(h, "SQLFetch in sql_types", i))
 		goto done;
 	if (slast - snext < len + 1) {
 		i = (int)len + 1;
@@ -1734,10 +1737,10 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	char *Missing;
 	char buf[32], *ct, *dt, *it, *s, **sb, **sp, **spe, *tname;
 	double *rb;
-	int deltry, i, i1, j, k, nc, nodrop, nts, rc;
+	int deltry, i, i1, j, k, nc, nodrop, ntlen, nts, rc;
 	int *slen, *sw;
 	long ir, nr;
-	size_t L, sblen, tnlen, ntlen;
+	size_t L, sblen, tnlen;
 #ifdef NO_Adjust_ampl_odbc
 #define p(x) x
 #define pi(x) x
@@ -1799,7 +1802,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 				if ((s = *sp++)) {
 					if (s != Missing) {
 						if (!h.nsmix)
-							j = (int)strlen(s);
+							j = strlen(s);
 						else if (mustquote(s,&j))
 							j += 2;
 						if (k < j)
@@ -1877,7 +1880,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 				goto done;
 				}
 			}
-		else  {
+		else {
 			if (h.verbose)
 				prc(&h, dt, i);
 			askusing(ae, TI, "DROP TABLE", tname);
@@ -2035,7 +2038,7 @@ needprec(HInfo *h, DBColinfo *dbc, int col_index)
 		return 0;
 	 }
 	dbc->mytype = 3;
-	t = (SDWORD)dbc->type;
+	t = dbc->type;
 	for(utp = &h->ut; (ut = *utp); utp = &ut->next)
 		if (ut->type == t)
 			goto found;
@@ -2057,7 +2060,8 @@ needprec(HInfo *h, DBColinfo *dbc, int col_index)
 		SQLSMALLINT length = 0;
 		/* Fall back to checking column type name if there is no type info. */
 		if (prc(hs, "SQLColAttributes(SQL_COLUMN_TYPE_NAME)",
-				SQLColAttributes(h->hs, col_index, SQL_COLUMN_TYPE_NAME, sbuf,
+				SQLColAttributes(h->hs, (SQLUSMALLINT)col_index,
+						SQL_COLUMN_TYPE_NAME, sbuf,
 						(SWORD)sizeof(sbuf), &length, 0))) {
 			return 0;
 		}
@@ -2094,7 +2098,7 @@ Mem(HInfo *h, size_t L)
 	char *rv;
 	size_t L1;
 
-	if ((size_t)(h->se - h->s) < L) {
+	if (h->se - h->s < L) {
 		ae = h->AE;
 		TI = h->TI;
 		L1 = ((L+32) >> 12) + 1;
@@ -2309,7 +2313,7 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 			 SQLColAttributes(hs, u, SQL_COLUMN_DISPLAY_SIZE,
 				0,0,0, &dbc->prec)))
 				goto badret;
-			if (dbc->prec <= 0 || (unsigned)++dbc->prec > h.maxlen)
+			if (dbc->prec <= 0 || ++dbc->prec > h.maxlen)
 				dbc->prec = h.maxlen;
 			}
 		if (h.sqldb)
@@ -2637,13 +2641,13 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 	DBColinfo *dbc0, *dbc, *dbce;
 	DbCol *db, *db0, *db1, *dbe;
 	HSTMT hs;
-	PTR ptr = 0;
+	PTR ptr;
 	SWORD len, ncols;
-	TIMESTAMP_STRUCT *td = 0, *ts, **tsp, ***tsq, **tsx;
+	TIMESTAMP_STRUCT *td, *ts, **tsp, ***tsq, **tsx;
 	TableInfo *TI = h->TI;
 	UWORD u;
-	char *Missing, buf[512], **cd = 0, *cs, dbuf[32], *s, *seen, **sa, **sp;
-	double *dd = 0, t;
+	char *Missing, buf[512], **cd, *cs, dbuf[32], *s, *seen, **sa, **sp;
+	double *dd, t;
 	int a = TI->arity, i, i1, j, k, kfn, mix, n, nc, *nfn, nk[4], nn;
 	int nf = a + TI->ncols;
 	int nnt, nt, nt0, nt1, ntimes, nts, rc, wantsv;
@@ -2697,7 +2701,7 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 			 SQLColAttributes(hs, (UWORD)i, SQL_COLUMN_DISPLAY_SIZE,
 				0,0,0, &dbc->prec)))
 				goto badret;
-			if (dbc->prec <= 0 || (unsigned)++dbc->prec > h->maxlen)
+			if (dbc->prec <= 0 || ++dbc->prec > h->maxlen)
 				dbc->prec = h->maxlen;
 			}
 		nk[dbc->mytype]++;
@@ -3056,10 +3060,10 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 			}
 		for(dbc = dbc0; dbc < dbce; dbc++)
 			if (dbc->mytype == 1) {
-				i = (int)(dbc - dbc0);
+				i = dbc - dbc0;
 				db = db0 + (k = p[i]);
 				if (sw)
-					sw[k] = (int)(dbc->prec - 1);
+					sw[k] = dbc->prec - 1;
 				if (db->sval)
 					continue;
 				(*TI->ColAlloc)(TI, k, 1);
