@@ -1,7 +1,7 @@
 Connecting AMPL to MySQL
 ========================
 
-In order to use AMPL with MySQL you need the MySQL ODBC driver, also known as
+In order to use MySQL with AMPL you need the MySQL ODBC driver, also known as
 `Connector/ODBC <http://dev.mysql.com/doc/refman/5.1/en/connector-odbc.html>`__,
 installed and have access to either local or remove database server.
 You can download the latest version of the MySQL ODBC driver for various
@@ -50,16 +50,16 @@ Other distributions
       $ sudo myodbc-installer -d -a -n "MySQL" \
           -t "DRIVER=/usr/local/lib/libmyodbc5a.so"
 
-   ``libmyodbc5a.so`` is the name of the driver library that you installed
-   in the previous step. You might need to change it if you have a different
-   version of the driver or installed it in a different location. See the
-   name of the ``.so`` file in the ``lib`` directory of the installation
-   package.
+   ``/usr/local/lib/libmyodbc5a.so`` is the path to the driver library
+   that you installed in the previous step. You might need to change it
+   if you have a different version of the driver or installed it in a
+   different location. See the name of the ``.so`` file in the ``lib``
+   directory of the installation package.
 
    Note that the MySQL ODBC/Connector distribution doesn't include the
    setup library so you have to omit the ``SETUP`` attribute during the
-   driver registration unless you have installed the library from some other
-   source.
+   driver registration unless you have installed this library from some
+   other source.
 
 MacOS X
 ~~~~~~~
@@ -75,10 +75,16 @@ MacOS X
       $ sudo myodbc-installer -d -a -n "MySQL" \
           -t "DRIVER=/usr/local/lib/libmyodbc5a.so"
 
-   ``libmyodbc5a.so`` is the name of the driver library that you installed
-   in the previous step. You might need to change it if you are installing a
-   different version of the driver. See the name of the ``.so`` file in the
-   ``lib`` directory of the installation package.
+   ``/usr/local/lib/libmyodbc5a.so`` is the path to the driver library
+   that you installed in the previous step. You might need to change it
+   if you have a different version of the driver or installed it in a
+   different location. See the name of the ``.so`` file in the ``lib``
+   directory of the installation package.
+
+   Note that the MySQL ODBC/Connector distribution doesn't include the
+   setup library so you have to omit the ``SETUP`` attribute during the
+   driver registration unless you have installed this library from some
+   other source.
 
 Windows
 ~~~~~~~
