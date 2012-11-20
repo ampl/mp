@@ -471,6 +471,8 @@ class CountExpr : public NumericExpr {
  public:
   CountExpr() {}
 
+  int num_args() const { return static_cast<int>(expr_->R.ep - expr_->L.ep); }
+
   typedef ArrayIterator<LogicalExpr> iterator;
 
   iterator begin() const {
@@ -669,6 +671,8 @@ class IteratedLogicalExpr : public LogicalExpr {
 
   IteratedLogicalExpr() {}
 
+  int num_args() const { return static_cast<int>(expr_->R.ep - expr_->L.ep); }
+
   typedef ArrayIterator<LogicalExpr> iterator;
 
   iterator begin() const {
@@ -716,7 +720,7 @@ class Error : public std::runtime_error {
 // by the solver is encountered.
 class UnsupportedExprError : public Error {
  public:
-  explicit UnsupportedExprError(const char *expr) :
+  explicit UnsupportedExprError(const std::string &expr) :
     Error(std::string("unsupported expression: ") + expr) {}
 };
 

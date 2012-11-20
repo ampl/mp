@@ -174,6 +174,10 @@ TEST_F(GecodeTest, ConvertMult) {
   EXPECT_NE(0, isnan(ConvertAndEval(e, Gecode::Int::Limits::max, 2)));
 }
 
+TEST_F(GecodeTest, ConvertDiv) {
+  EXPECT_THROW(ConvertAndEval(AddBinary(OPDIV, x, y)), UnsupportedExprError);
+}
+
 TEST_F(GecodeTest, ConvertRem) {
   NumericExpr e = AddBinary(OPREM, x, y);
   EXPECT_EQ(0, ConvertAndEval(e, 9, 3));
@@ -197,33 +201,39 @@ TEST_F(GecodeTest, ConvertMin) {
   NumericExpr e = AddVarArg(MINLIST, x, y, z);
   EXPECT_EQ(-7, ConvertAndEval(e, 3, -7, 5));
   EXPECT_EQ(10, ConvertAndEval(e, 10, 20, 30));
+  EXPECT_THROW(ConvertAndEval(AddVarArg(MINLIST)), UnsupportedExprError);
 }
 
 TEST_F(GecodeTest, ConvertMax) {
   NumericExpr e = AddVarArg(MAXLIST, x, y, z);
   EXPECT_EQ(5, ConvertAndEval(e, 3, -7, 5));
   EXPECT_EQ(30, ConvertAndEval(e, 30, 20, 10));
+  EXPECT_THROW(ConvertAndEval(AddVarArg(MAXLIST)), UnsupportedExprError);
 }
 
 TEST_F(GecodeTest, ConvertFloor) {
-  EXPECT_EQ(-42, ConvertAndEval(AddUnary(FLOOR, x), -42));
-  EXPECT_EQ(42, ConvertAndEval(AddUnary(FLOOR, x), 42));
+  NumericExpr e = AddUnary(FLOOR, x);
+  EXPECT_EQ(-42, ConvertAndEval(e, -42));
+  EXPECT_EQ(42, ConvertAndEval(e, 42));
   EXPECT_EQ(6, ConvertAndEval(AddUnary(FLOOR, AddUnary(OP_sqrt, x)), 42));
 }
 
 TEST_F(GecodeTest, ConvertCeil) {
-  EXPECT_EQ(-42, ConvertAndEval(AddUnary(CEIL, x), -42));
-  EXPECT_EQ(42, ConvertAndEval(AddUnary(CEIL, x), 42));
+  NumericExpr e = AddUnary(CEIL, x);
+  EXPECT_EQ(-42, ConvertAndEval(e, -42));
+  EXPECT_EQ(42, ConvertAndEval(e, 42));
 }
 
 TEST_F(GecodeTest, ConvertAbs) {
-  EXPECT_EQ(42, ConvertAndEval(AddUnary(ABS, x), -42));
-  EXPECT_EQ(42, ConvertAndEval(AddUnary(ABS, x), 42));
+  NumericExpr e = AddUnary(ABS, x);
+  EXPECT_EQ(42, ConvertAndEval(e, -42));
+  EXPECT_EQ(42, ConvertAndEval(e, 42));
 }
 
 TEST_F(GecodeTest, ConvertUnaryMinus) {
-  EXPECT_EQ(42, ConvertAndEval(AddUnary(OPUMINUS, x), -42));
-  EXPECT_EQ(-42, ConvertAndEval(AddUnary(OPUMINUS, x), 42));
+  NumericExpr e = AddUnary(OPUMINUS, x);
+  EXPECT_EQ(42, ConvertAndEval(e, -42));
+  EXPECT_EQ(-42, ConvertAndEval(e, 42));
 }
 
 TEST_F(GecodeTest, ConvertIf) {
@@ -300,42 +310,54 @@ TEST_F(GecodeTest, ConvertAcos) {
   EXPECT_THROW(ConvertAndEval(AddUnary(OP_acos, x)), UnsupportedExprError);
 }
 
-// TODO
-/*
 TEST_F(GecodeTest, ConvertSum) {
-  EXPECT_EQ("x + y + 42", str(p.Visit(
-      AddSum(AddVar(0), AddVar(1), AddNum(42)))));
+  EXPECT_EQ(0, ConvertAndEval(AddSum()));
+  EXPECT_EQ(42, ConvertAndEval(AddSum(x), 42));
+  EXPECT_EQ(123, ConvertAndEval(AddSum(x, y, z), 100, 20, 3));
 }
 
 TEST_F(GecodeTest, ConvertIntDiv) {
-  EXPECT_EQ("trunc(x / y )",
-    str(p.Visit(AddBinary(OPintDIV, AddVar(0), AddVar(1)))));
+  NumericExpr e = AddBinary(OPintDIV, x, y);
+  EXPECT_EQ(3, ConvertAndEval(e, 9, 3));
+  EXPECT_EQ(2, ConvertAndEval(e, 8, 3));
+  EXPECT_EQ(-2, ConvertAndEval(e, -8, 3));
+  EXPECT_EQ(-2, ConvertAndEval(e, 8, -3));
+  EXPECT_EQ(2, ConvertAndEval(e, -8, -3));
+}
+
+TEST_F(GecodeTest, ConvertPrecision) {
+  EXPECT_THROW(ConvertAndEval(AddBinary(OPprecision, x, y)),
+      UnsupportedExprError);
 }
 
 TEST_F(GecodeTest, ConvertRound) {
-  EXPECT_EQ("round(x )",
-    str(p.Visit(AddBinary(OPround, AddVar(0), AddNum(0)))));
-
-  EXPECT_EQ(1235, eval(p.Visit(
-    AddBinary(OPround, AddNum(1234.56), AddNum(0)))));
-  EXPECT_EQ(3, eval(p.Visit(
-    AddBinary(OPround, AddNum(2.5), AddNum(0)))));
-  EXPECT_EQ(-2, eval(p.Visit(
-    AddBinary(OPround, AddNum(-2.5), AddNum(0)))));
-
-  EXPECT_THROW(p.Visit(
-    AddBinary(OPround, AddVar(0), AddVar(1))), UnsupportedExprError);
+  EXPECT_EQ(42, ConvertAndEval(AddBinary(OPround, x, AddNum(0)), 42));
+  EXPECT_THROW(ConvertAndEval(AddBinary(OPround, x, AddNum(1))),
+      UnsupportedExprError);
+  EXPECT_THROW(ConvertAndEval(AddBinary(OPround, x, y)),
+        UnsupportedExprError);
 }
 
 TEST_F(GecodeTest, ConvertTrunc) {
-  EXPECT_EQ("trunc(x )", str(p.Visit(
-    AddBinary(OPtrunc, AddVar(0), AddNum(0)))));
-  EXPECT_EQ(1234, eval(p.Visit(
-    AddBinary(OPtrunc, AddNum(1234.56), AddNum(0)))));
-  EXPECT_THROW(p.Visit(
-    AddBinary(OPtrunc, AddVar(0), AddVar(1))), UnsupportedExprError);
+  EXPECT_EQ(42, ConvertAndEval(AddBinary(OPtrunc, x, AddNum(0)), 42));
+  EXPECT_THROW(ConvertAndEval(AddBinary(OPtrunc, x, AddNum(1))),
+      UnsupportedExprError);
+  EXPECT_THROW(ConvertAndEval(AddBinary(OPtrunc, x, y)),
+        UnsupportedExprError);
 }
 
+TEST_F(GecodeTest, ConvertCount) {
+  LogicalExpr a(AddRelational(NE, x, AddNum(0)));
+  LogicalExpr b(AddRelational(NE, y, AddNum(0)));
+  LogicalExpr c(AddRelational(NE, z, AddNum(0)));
+  EXPECT_EQ(0, ConvertAndEval(AddCount(a, b, c)));
+  EXPECT_EQ(1, ConvertAndEval(AddCount(a, b, c), 1));
+  EXPECT_EQ(2, ConvertAndEval(AddCount(a, b, c), 0, 1, 1));
+  EXPECT_EQ(3, ConvertAndEval(AddCount(a, b, c), 1, 1, 1));
+}
+
+// TODO
+/*
 TEST_F(GecodeTest, Convert1Pow) {
   EXPECT_EQ("x ^ 42", str(p.Visit(AddBinary(OP1POW, AddVar(0), AddNum(42)))));
 }
@@ -353,14 +375,6 @@ TEST_F(GecodeTest, ConvertPLTerm) {
   double args[] = {-1, 5, 0, 10, 1};
   EXPECT_EQ("piecewiselinear(x[0..1] , [5, 10], [-1, 0, 1], 0, 0)",
             str(p.Visit(AddPLTerm(5, args, 0))));
-}
-
-TEST_F(GecodeTest, ConvertCount) {
-  LogicalExpr a(AddRelational(EQ, AddVar(0), AddNum(0)));
-  LogicalExpr b(AddRelational(LE, AddVar(1), AddNum(42)));
-  LogicalExpr c(AddRelational(GE, AddVar(2), AddNum(0)));
-  EXPECT_EQ("x == 0 + y <= 42 + 0 <= theta",
-      str(p.Visit(AddCount(a, b, c))));
 }
 
 TEST_F(GecodeTest, ConvertNumberOf) {
@@ -501,10 +515,6 @@ TEST_F(GecodeTest, ConvertTwoNumberOfsWithDiffExprs) {
   EXPECT_FALSE(iter.ok());
 }
 */
-
-TEST_F(GecodeTest, ConvertDiv) {
-  EXPECT_THROW(ConvertAndEval(AddBinary(OPDIV, x, y)), UnsupportedExprError);
-}
 
 TEST_F(GecodeTest, ConvertNum) {
   EXPECT_EQ(42, ConvertAndEval(AddNum(42)));

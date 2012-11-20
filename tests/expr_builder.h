@@ -69,12 +69,12 @@ class ExprBuilder {
   }
 
   // Adds a new variable-argument expression with up to 3 arguments.
-  VarArgExpr AddVarArg(int opcode, NumericExpr e1,
-      NumericExpr e2, NumericExpr e3 = NumericExpr());
+  VarArgExpr AddVarArg(int opcode, NumericExpr e1 = NumericExpr(),
+      NumericExpr e2 = NumericExpr(), NumericExpr e3 = NumericExpr());
 
   // Adds a new sum expression with up to 3 arguments.
-  SumExpr AddSum(NumericExpr arg1, NumericExpr arg2,
-      NumericExpr arg3 = NumericExpr()) {
+  SumExpr AddSum(NumericExpr arg1 = NumericExpr(),
+      NumericExpr arg2 = NumericExpr(), NumericExpr arg3 = NumericExpr()) {
     return AddIterated<SumExpr, NumericExpr>(OPSUMLIST, arg1, arg2, arg3);
   }
 
@@ -165,10 +165,16 @@ Result ExprBuilder::AddIterated(int opcode, Arg arg1, Arg arg2, Arg arg3) {
   expr e = {reinterpret_cast<efunc*>(opcode), 0, 0, {0}, {0}, 0};
   Result sum(AddExpr<Result>(new expr(e)));
   expr** args = sum.expr_->L.ep = new expr*[3];
-  sum.expr_->R.ep = args + (arg3.expr_ ? 3 : 2);
   args[0] = arg1.expr_;
   args[1] = arg2.expr_;
   args[2] = arg3.expr_;
+  sum.expr_->R.ep = args;
+  for (int i = 2; i >= 0; --i) {
+    if (args[i]) {
+      sum.expr_->R.ep = args + i + 1;
+      break;
+    }
+  }
   return sum;
 }
 
