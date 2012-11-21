@@ -106,14 +106,14 @@ class Problem {
     return static_cast<ObjType>(asl_->i.objtype_[obj_index]);
   }
 
-  // Returns the linear part of the objective gradient.
-  ograd *GetObjGradient(int obj_index) const {
+  // Returns the linear part of an objective expression.
+  ograd *GetLinearObjExpr(int obj_index) const {
     assert(obj_index >= 0 && obj_index < num_objs());
     return asl_->i.Ograd_[obj_index];
   }
 
-  // Returns the linear part of the constraint gradient.
-  cgrad *GetConGradient(int con_index) const {
+  // Returns the linear part of a constraint expression.
+  cgrad *GetLinearConExpr(int con_index) const {
     assert(con_index >= 0 && con_index < num_cons());
     return asl_->i.Cgrad_[con_index];
   }
@@ -143,18 +143,23 @@ class Problem {
   void SetSolveCode(int value) {
     asl_->p.solve_code_ = value;
   }
-
-  // Writes the solution.
-  void WriteSolution(char *msg, double *x, double *y, Option_Info* oi) {
-    write_sol_ASL(reinterpret_cast<ASL*>(asl_), msg, x, y, oi);
-  }
 };
 
 // An AMPL solver driver.
-class Driver : public Problem {
+class Driver {
+ private:
+  Problem problem_;
+
  public:
+  Problem &problem() { return problem_; }
+
   // Gets the options.
   int GetOptions(char **argv, Option_Info *oi);
+
+  // Writes the solution.
+  void WriteSolution(char *msg, double *x, double *y, Option_Info* oi) {
+    write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_), msg, x, y, oi);
+  }
 };
 }
 

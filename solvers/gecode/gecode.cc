@@ -43,8 +43,8 @@ Space *GecodeProblem::copy(bool share) {
 }
 
 void GecodeProblem::SetObj(
-    Driver::ObjType obj_type, const Gecode::LinExpr &expr) {
-  obj_irt_ = obj_type == Driver::MAX ? Gecode::IRT_GR : Gecode::IRT_LE;
+    Problem::ObjType obj_type, const Gecode::LinExpr &expr) {
+  obj_irt_ = obj_type == Problem::MAX ? Gecode::IRT_GR : Gecode::IRT_LE;
   obj_ = IntVar(*this, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
   rel(*this, obj_ == expr);
 }
@@ -112,13 +112,13 @@ void NLToGecodeConverter::Convert(const Problem &p) {
 
   if (p.num_objs() != 0) {
     problem_.SetObj(p.GetObjType(0),
-        ConvertExpr(p.GetObjGradient(0), p.GetNonlinearObjExpr(0)));
+        ConvertExpr(p.GetLinearObjExpr(0), p.GetNonlinearObjExpr(0)));
   }
 
   // Convert constraints.
   for (int i = 0, n = p.num_cons(); i < n; ++i) {
     Gecode::LinExpr con_expr(
-        ConvertExpr(p.GetConGradient(i), p.GetNonlinearConExpr(i)));
+        ConvertExpr(p.GetLinearConExpr(i), p.GetNonlinearConExpr(i)));
     double lb = p.GetConLB(i);
     double ub = p.GetConUB(i);
     if (lb <= negInfinity) {
@@ -280,7 +280,8 @@ BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr e) {
 GecodeDriver::GecodeDriver() : oinfo_(new Option_Info()) {}
 
 int GecodeDriver::run(char **argv) {
-  if (!Read(argv, oinfo_.get()))
+  Problem &problem = Driver::problem();
+  if (!problem.Read(argv, oinfo_.get()))
     return 1;
 
   // TODO: parse options
@@ -289,11 +290,11 @@ int GecodeDriver::run(char **argv) {
 
   // Set up an optimization problem in Gecode.
   std::auto_ptr<NLToGecodeConverter>
-    converter(new NLToGecodeConverter(num_vars(), true)); // TODO: usenumberof option
+    converter(new NLToGecodeConverter(problem.num_vars(), true)); // TODO: usenumberof option
 
   // Solve the problem.
   std::auto_ptr<GecodeProblem> solution;
-  bool has_obj = num_objs() != 0;
+  bool has_obj = problem.num_objs() != 0;
   if (has_obj) {
     BAB<GecodeProblem> engine(&converter->problem());
     converter.reset();
@@ -318,14 +319,15 @@ int GecodeDriver::run(char **argv) {
       status = "feasible solution";
     }
     IntVarArray &vars = solution->vars();
-    primal.resize(num_vars());
-    for (int j = 0, n = num_vars(); j < n; ++j)
+    int num_vars = problem.num_vars();
+    primal.resize(num_vars);
+    for (int j = 0; j < num_vars; ++j)
       primal[j] = vars[j].val();
   } else {
     solve_code = 200;
     status = "infeasible problem";
   }
-  SetSolveCode(solve_code);
+  problem.SetSolveCode(solve_code);
 
   char message[256];
   Sprintf(message, "%s: %s\n", oinfo_->bsname, status);

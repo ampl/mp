@@ -28,7 +28,7 @@ class GecodeProblem: public Gecode::Space {
   Gecode::IntVarArray &vars() { return vars_; }
   Gecode::IntVar &obj() { return obj_; }
 
-  void SetObj(Driver::ObjType obj_type, const Gecode::LinExpr &expr);
+  void SetObj(Problem::ObjType obj_type, const Gecode::LinExpr &expr);
 
   virtual void constrain(const Gecode::Space &best);
 };

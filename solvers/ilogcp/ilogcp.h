@@ -84,7 +84,7 @@ class Optimizer {
   virtual void set_option(const void *key, int value) = 0;
   virtual void set_option(const void *key, double value) = 0;
 
-  virtual void get_solution(Driver &d, char *message,
+  virtual void get_solution(Problem &p, char *message,
       std::vector<double> &primal, std::vector<double> &dual) const = 0;
 };
 
@@ -103,7 +103,7 @@ class CPLEXOptimizer : public Optimizer {
   void set_option(const void *key, int value);
   void set_option(const void *key, double value);
 
-  void get_solution(Driver &d, char *message,
+  void get_solution(Problem &p, char *message,
       std::vector<double> &primal, std::vector<double> &dual) const;
 };
 
@@ -122,7 +122,7 @@ class CPOptimizer : public Optimizer {
   void set_option(const void *key, int value);
   void set_option(const void *key, double value);
 
-  void get_solution(Driver &d, char *message,
+  void get_solution(Problem &p, char *message,
       std::vector<double> &primal, std::vector<double> &dual) const;
 };
 

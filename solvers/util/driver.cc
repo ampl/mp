@@ -55,7 +55,7 @@ bool Problem::Read(char **&argv, Option_Info *oi) {
 }
 
 int Driver::GetOptions(char **argv, Option_Info *oi) {
-  return getopts_ASL(reinterpret_cast<ASL*>(asl_), argv, oi);
+  return getopts_ASL(reinterpret_cast<ASL*>(problem_.asl_), argv, oi);
 }
 }
 
