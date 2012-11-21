@@ -167,7 +167,7 @@ IloIntVar NumberOf::Add(real value, IloEnv env) {
 }
 
 Optimizer::Optimizer(IloEnv env, Driver &d) :
-  vars_(env, d.num_vars()), cons_(env, d.num_cons()) {}
+  vars_(env, d.problem().num_vars()), cons_(env, d.problem().num_cons()) {}
 
 Optimizer::~Optimizer() {}
 
@@ -185,12 +185,12 @@ void CPLEXOptimizer::set_option(const void *key, double value) {
       static_cast<IloCplex::NumParam>(reinterpret_cast<size_t>(key)), value);
 }
 
-void CPLEXOptimizer::get_solution(Driver &d, char *message,
+void CPLEXOptimizer::get_solution(Problem &p, char *message,
     std::vector<double> &primal, std::vector<double> &dual) const {
   IloNum objValue = cplex_.getObjValue();
-  primal.resize(d.num_vars());
+  primal.resize(p.num_vars());
   IloNumVarArray vars = Optimizer::vars();
-  for (int j = 0, n = d.num_vars(); j < n; ++j)
+  for (int j = 0, n = p.num_vars(); j < n; ++j)
     primal[j] = cplex_.getValue(vars[j]);
   if (cplex_.isMIP()) {
     message += g_fmtop(message, cplex_.getNnodes());
@@ -202,9 +202,9 @@ void CPLEXOptimizer::get_solution(Driver &d, char *message,
     message += g_fmtop(message, cplex_.getNiterations());
     message += Sprintf(message, " iterations, objective ");
     g_fmtop(message, objValue);
-    dual.resize(d.num_cons());
+    dual.resize(p.num_cons());
     IloRangeArray cons = Optimizer::cons();
-    for (int i = 0, n = d.num_cons(); i < n; ++i)
+    for (int i = 0, n = p.num_cons(); i < n; ++i)
       dual[i] = cplex_.getDual(cons[i]);
   }
 }
@@ -221,19 +221,19 @@ void CPOptimizer::set_option(const void *key, double value) {
       static_cast<IloCP::NumParam>(reinterpret_cast<size_t>(key)), value);
 }
 
-void CPOptimizer::get_solution(Driver &d, char *message,
+void CPOptimizer::get_solution(Problem &p, char *message,
     std::vector<double> &primal, std::vector<double> &) const {
   message += g_fmtop(message, solver_.getNumberOfChoicePoints());
   message += Sprintf(message, " choice points, ");
   message += g_fmtop(message, solver_.getNumberOfFails());
   message += Sprintf(message, " fails");
-  if (d.num_objs() > 0) {
+  if (p.num_objs() > 0) {
     message += Sprintf(message, ", objective ");
     g_fmtop(message, solver_.getValue(obj()));
   }
-  primal.resize(d.num_vars());
+  primal.resize(p.num_vars());
   IloNumVarArray vars = Optimizer::vars();
-  for (int j = 0, n = d.num_vars(); j < n; ++j)
+  for (int j = 0, n = p.num_vars(); j < n; ++j)
     primal[j] = solver_.getValue(vars[j]);
 }
 
@@ -640,8 +640,11 @@ bool IlogCPDriver::parse_options(char **argv) {
   int &opt = options_[OPTIMIZER];
   if (opt == AUTO) {
     opt = CPLEX;
-    if (num_nonlinear_objs() + num_nonlinear_cons() + num_logical_cons() != 0)
+    const Problem &p = problem();
+    if (p.num_nonlinear_objs() + p.num_nonlinear_cons() +
+        p.num_logical_cons() != 0) {
       opt = CP;
+    }
   }
   if (opt == CPLEX)
     optimizer_.reset(new CPLEXOptimizer(env_, *this));
@@ -835,54 +838,60 @@ int IlogCPDriver::run(char **argv) {
   double Times[5];
   Times[0] = xectim_();
 
-  if (!Read(argv, oinfo_.get()) || !parse_options(argv))
+  Problem &problem = Driver::problem();
+  if (!problem.Read(argv, oinfo_.get()) || !parse_options(argv))
     return 1;
 
   // Set up optimization problem in ILOG Concert.
 
   vars_ = optimizer_->vars();
 
-  int n_var_cont = num_continuous_vars();
+  int n_var_cont = problem.num_continuous_vars();
   if (n_var_cont != 0 && get_option(OPTIMIZER) == CP) {
     cerr << "CP Optimizer doesn't support continuous variables" << endl;
     return 1;
   }
-  for (int j = 0; j < n_var_cont; j++)
-    vars_[j] = IloNumVar(env_, GetVarLB(j), GetVarUB(j), ILOFLOAT);
-  for (int j = n_var_cont; j < num_vars(); j++)
-    vars_[j] = IloNumVar(env_, GetVarLB(j), GetVarUB(j), ILOINT);
+  for (int j = 0; j < n_var_cont; j++) {
+    vars_[j] = IloNumVar(env_,
+        problem.GetVarLB(j), problem.GetVarUB(j), ILOFLOAT);
+  }
+  for (int j = n_var_cont; j < problem.num_vars(); j++) {
+    vars_[j] = IloNumVar(env_,
+        problem.GetVarLB(j), problem.GetVarUB(j), ILOINT);
+  }
 
-  if (num_objs() > 0) {
-    NumericExpr expr(GetNonlinearObjExpr(0));
+  if (problem.num_objs() > 0) {
+    NumericExpr expr(problem.GetNonlinearObjExpr(0));
     NumericConstant constant(Cast<NumericConstant>(expr));
     IloExpr ilo_expr(env_, constant ? constant.value() : 0);
-    if (num_nonlinear_objs() > 0)
+    if (problem.num_nonlinear_objs() > 0)
       ilo_expr += Visit(expr);
-    for (ograd *og = GetObjGradient(0); og; og = og->next)
+    for (ograd *og = problem.GetLinearObjExpr(0); og; og = og->next)
       ilo_expr += og->coef * vars_[og->varno];
     IloObjective MinOrMax(env_, ilo_expr,
-        GetObjType(0) == MIN ? IloObjective::Minimize : IloObjective::Maximize);
+        problem.GetObjType(0) == Problem::MIN ?
+        IloObjective::Minimize : IloObjective::Maximize);
     optimizer_->set_obj(MinOrMax);
     IloAdd(mod_, MinOrMax);
   }
 
-  if (int n_cons = num_cons()) {
+  if (int n_cons = problem.num_cons()) {
     IloRangeArray cons(optimizer_->cons());
     for (int i = 0; i < n_cons; ++i) {
       IloExpr conExpr(env_);
-      for (cgrad *cg = GetConGradient(i); cg; cg = cg->next)
+      for (cgrad *cg = problem.GetLinearConExpr(i); cg; cg = cg->next)
         conExpr += cg->coef * vars_[cg->varno];
-      if (num_nonlinear_cons() > i)
-        conExpr += Visit(GetNonlinearConExpr(i));
-      cons[i] = (GetConLB(i) <= conExpr <= GetConUB(i));
+      if (problem.num_nonlinear_cons() > i)
+        conExpr += Visit(problem.GetNonlinearConExpr(i));
+      cons[i] = (problem.GetConLB(i) <= conExpr <= problem.GetConUB(i));
     }
     mod_.add(cons);
   }
 
-  if (int n_lcons = num_logical_cons()) {
+  if (int n_lcons = problem.num_logical_cons()) {
     IloConstraintArray lcons(env_, n_lcons);
     for (int i = 0; i < n_lcons; ++i)
-      lcons[i] = Visit(GetLogicalConExpr(i));
+      lcons[i] = Visit(problem.GetLogicalConExpr(i));
     mod_.add(lcons);
   }
 
@@ -933,13 +942,13 @@ int IlogCPDriver::run(char **argv) {
     message = "error";
     break;
   }
-  SetSolveCode(solve_code);
+  problem.SetSolveCode(solve_code);
 
   char sMsg[256];
   int sSoFar = Sprintf(sMsg, "%s: %s\n", oinfo_->bsname, message);
   vector<real> primal, dual;
   if (successful)
-    optimizer_->get_solution(*this, sMsg + sSoFar, primal, dual);
+    optimizer_->get_solution(problem, sMsg + sSoFar, primal, dual);
   WriteSolution(sMsg, primal.empty() ? 0 : &primal[0],
       dual.empty() ? 0 : &dual[0], oinfo_.get());
 
