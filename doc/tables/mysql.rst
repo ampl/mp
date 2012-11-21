@@ -32,6 +32,8 @@ and Debian-based Linux distributions such as `Ubuntu
 
       $ sudo odbcinst -i -d -f /usr/share/libmyodbc/odbcinst.ini
 
+Go to :ref:`usage`.
+
 Other distributions
 ```````````````````
 
@@ -61,6 +63,8 @@ Other distributions
    driver registration unless you have installed this library from some
    other source.
 
+Go to :ref:`usage`.
+
 MacOS X
 ~~~~~~~
 
@@ -86,11 +90,15 @@ MacOS X
    driver registration unless you have installed this library from some
    other source.
 
+Go to :ref:`usage`.
+
 Windows
 ~~~~~~~
 
 Install and register the MySQL Connector/ODBC following `these instructions
 <http://dev.mysql.com/doc/refman/5.1/en/connector-odbc-installation.html#connector-odbc-installation-binary-windows>`__.
+
+.. _usage:
 
 Usage
 -----
@@ -141,13 +149,13 @@ listed and find the one containing ``MySQL``:
 
 .. image:: ../img/odbcad32.png
 
-A driver name containing spaces should be surrounded with ``{`` and ``}``
-in a connection string, for example:
+A driver name containing a semicolon (``;``) should be surrounded with
+``{`` and ``}`` in a connection string, for example:
 
    .. code-block:: none
 
       param ConnectionStr symbolic =
-        "DRIVER={MySQL ODBC 5.2w Driver}; DATABASE=test;";
+        "DRIVER={MySQL ODBC Driver; version 5.2}; DATABASE=test;";
 
 Next there are several table declarations that use the ``ConnectionStr``
 parameter defined previously:
@@ -218,3 +226,58 @@ Example:
 
       table Foods "ODBC" "DRIVER=MySQL; DATABASE=test;"
          "SQL=SELECT `FOOD`, `cost` FROM `Foods`;": [FOOD], cost;
+
+Troubleshooting
+---------------
+
+This section lists frequent errors and possible solutions.
+
+A connection problem is usually indicated by the following error:
+
+.. code-block:: none
+
+   Error reading table <table-name> with table handler odbc:
+   Could not connect to <connection-string>.
+
+The first thing to do if you get this error is to get additional information.
+Add the option ``"verbose"`` to the table declaration that causes the error,
+for example:
+
+.. code-block:: none
+
+   table dietFoods "ODBC" (ConnectionStr) "Foods" "verbose":
+     ...
+
+Then rerun your code and you should get a more detailed error
+message such as
+
+.. code-block:: none
+
+   AMPL ODBC driver, version 20121108.
+   SQLDriverConnect returned -1
+   sqlstate = "IM002"
+   errmsg = "[unixODBC][Driver Manager]Data source name not found, and no default driver specified"
+   native_errno = 0
+
+If the data source name (DSN) was not found as in the example above check 
+if it is spelled correctly in the connection string. If you are not using a
+DSN, check the driver name instead. On a Unix-based system you can get the
+list of installed ODBC drivers using one of the following commands:
+
+.. code-block:: none
+
+   $ myodbc-installer -d -l
+
+.. code-block:: none
+
+   $ odbcinst -d -q
+
+On Windows use the ODBC Data Source Administrator (see :ref:`usage`).
+
+If the driver name contains a semicolon (``;``), check that the name is
+surrounded with ``{`` and ``}`` in the connection string, for example:
+
+   .. code-block:: none
+
+      table Foods "ODBC" "DRIVER={MySQL ODBC Driver; version 5.2}; DATABASE=test;":
+        ...
