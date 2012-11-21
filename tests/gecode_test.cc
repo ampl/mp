@@ -107,14 +107,15 @@ class Args {
 // Returns the value of the Gecode expression.
 static double ConvertAndEval(NumericExpr e,
     int var1 = 0, int var2 = 0, int var3 = 0) {
-  GecodeProblem p(4);
+  ampl::NLToGecodeConverter converter(4, false);
+  GecodeProblem &p = converter.problem();
   Gecode::IntVarArray &vars = p.vars();
   vars[0] = Gecode::IntVar(p,
               Gecode::Int::Limits::min, Gecode::Int::Limits::max);
   vars[1] = Gecode::IntVar(p, var1, var1);
   vars[2] = Gecode::IntVar(p, var2, var2);
   vars[3] = Gecode::IntVar(p, var3, var3);
-  Gecode::rel(p, vars[0] == p.Visit(e));
+  Gecode::rel(p, vars[0] == converter.Visit(e));
   Gecode::DFS<GecodeProblem> engine(&p);
   std::auto_ptr<GecodeProblem> solution(engine.next());
   return solution.get() ?

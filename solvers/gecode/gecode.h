@@ -11,39 +11,12 @@ struct ASL_fg;
 
 namespace ampl {
 
-class GecodeProblem: public Gecode::Space,
-  public ExprVisitor<GecodeProblem, Gecode::LinExpr, Gecode::BoolExpr> {
- public:
-  typedef Gecode::LinExpr LinExpr;
-  typedef Gecode::BoolExpr BoolExpr;
-
+class GecodeProblem: public Gecode::Space {
  private:
   Gecode::IntVarArray vars_;
   Gecode::IntVar obj_;
   Gecode::IntRelType obj_irt_; // IRT_NQ - no objective,
                                // IRT_LE - minimization, IRT_GR - maximization
-  static const Gecode::BoolExpr DUMMY_EXPR;
-
-  // Creates an integer variable to represent an expression.
-  Gecode::IntVar CreateVar(LinExpr e) {
-    Gecode::IntVar var(*this,
-        Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-    rel(*this, var == e);
-    return var;
-  }
-
-  // Creates a boolean variable to represent an expression.
-  Gecode::BoolVar CreateVar(BoolExpr e) {
-    Gecode::BoolVar var(*this, 0, 1);
-    rel(*this, var == e);
-    return var;
-  }
-
-  BoolExpr Convert(Gecode::BoolOpType op, IteratedLogicalExpr e);
-
-  static void RequireNonzeroConstRHS(
-      BinaryExpr e, const std::string &func_name);
-
  public:
   GecodeProblem(int num_vars) :
     vars_(*this, num_vars), obj_irt_(Gecode::IRT_NQ) {}
@@ -55,11 +28,55 @@ class GecodeProblem: public Gecode::Space,
   Gecode::IntVarArray &vars() { return vars_; }
   Gecode::IntVar &obj() { return obj_; }
 
-  void SetObj(Driver::ObjType obj_type, const LinExpr &expr);
+  void SetObj(Driver::ObjType obj_type, const Gecode::LinExpr &expr);
 
   virtual void constrain(const Gecode::Space &best);
+};
 
-  // The methods below perform conversion of AMPL expressions into
+class NLToGecodeConverter :
+  public ExprVisitor<NLToGecodeConverter, Gecode::LinExpr, Gecode::BoolExpr> {
+ public:
+   typedef Gecode::LinExpr LinExpr;
+   typedef Gecode::BoolExpr BoolExpr;
+
+ private:
+   GecodeProblem problem_;
+   bool usenumberof_;
+
+   static const Gecode::BoolExpr DUMMY_EXPR;
+
+   // Creates an integer variable to represent an expression.
+   Gecode::IntVar CreateVar(LinExpr e) {
+     Gecode::IntVar var(problem_,
+         Gecode::Int::Limits::min, Gecode::Int::Limits::max);
+     rel(problem_, var == e);
+     return var;
+   }
+
+   // Creates a boolean variable to represent an expression.
+   Gecode::BoolVar CreateVar(BoolExpr e) {
+     Gecode::BoolVar var(problem_, 0, 1);
+     rel(problem_, var == e);
+     return var;
+   }
+
+   BoolExpr Convert(Gecode::BoolOpType op, IteratedLogicalExpr e);
+
+   static void RequireNonzeroConstRHS(
+       BinaryExpr e, const std::string &func_name);
+
+   template <typename Grad>
+   LinExpr ConvertExpr(Grad *grad, NumericExpr nonlinear);
+
+ public:
+  NLToGecodeConverter(int num_vars, bool usenumberof):
+    problem_(num_vars), usenumberof_(usenumberof) {}
+
+  void Convert(const Problem &p);
+
+  GecodeProblem &problem() { return problem_; }
+
+  // The methods below perform conversion of AMPL NL expressions into
   // equivalent Gecode expressions. Gecode doesn't support the following
   // expressions/functions:
   // * division other than integer one
@@ -67,9 +84,6 @@ class GecodeProblem: public Gecode::Space,
   //   http://www.gecode.org/pipermail/users/2011-March/003177.html
   // * log, log10, exp, pow
   // * sqrt other than floor(sqrt())
-
-  template <typename Grad>
-  LinExpr ConvertExpr(Grad *grad, NumericExpr nonlinear);
 
   LinExpr VisitPlus(BinaryExpr e) {
     return Visit(e.lhs()) + Visit(e.rhs());
@@ -132,9 +146,7 @@ class GecodeProblem: public Gecode::Space,
 
   LinExpr VisitCount(CountExpr e);
 
-  LinExpr VisitNumberOf(NumberOfExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
+  LinExpr VisitNumberOf(NumberOfExpr e);
 
   LinExpr VisitPLTerm(PiecewiseLinearTerm t) {
     return VisitUnhandledNumericExpr(t); // TODO
@@ -160,7 +172,7 @@ class GecodeProblem: public Gecode::Space,
   }
 
   LinExpr VisitVariable(Variable v) {
-    return vars_[v.index()];
+    return problem_.vars()[v.index()];
   }
 
   BoolExpr VisitOr(BinaryLogicalExpr e) {

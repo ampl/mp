@@ -216,7 +216,7 @@ class Expr {
   template <typename Impl, typename Result, typename LResult>
   friend class ExprVisitor;
   friend class ExprBuilder;
-  friend class Driver;
+  friend class Problem;
 
   template <typename ExprT>
   static ExprT Create(Expr e) {
@@ -574,6 +574,10 @@ class NumberOfExpr : public NumericExpr {
   NumberOfExpr() {}
 
   NumericExpr target() const { return Create<NumericExpr>(*expr_->L.ep); }
+
+  int num_args() const {
+    return static_cast<int>(expr_->R.ep - expr_->L.ep - 1);
+  }
 
   typedef ArrayIterator<NumericExpr> iterator;
 
