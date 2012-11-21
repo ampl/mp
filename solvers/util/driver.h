@@ -27,21 +27,20 @@
 
 namespace ampl {
 
-// An AMPL solver driver.
-class Driver {
+// An AMPL problem.
+class Problem {
  private:
   ASL_fg *asl_;
 
   // Do not implement.
-  Driver(const Driver&);
-  Driver& operator=(const Driver&);
+  Problem(const Problem&);
+  Problem& operator=(const Problem&);
+
+  friend class Driver;
 
  public:
-  Driver();
-  virtual ~Driver();
-
-  // Gets the options.
-  int GetOptions(char **argv, Option_Info *oi);
+  Problem();
+  virtual ~Problem();
 
   // Reads the problem form a .nl file.
   bool Read(char **&argv, Option_Info *oi);
@@ -149,6 +148,13 @@ class Driver {
   void WriteSolution(char *msg, double *x, double *y, Option_Info* oi) {
     write_sol_ASL(reinterpret_cast<ASL*>(asl_), msg, x, y, oi);
   }
+};
+
+// An AMPL solver driver.
+class Driver : public Problem {
+ public:
+  // Gets the options.
+  int GetOptions(char **argv, Option_Info *oi);
 };
 }
 

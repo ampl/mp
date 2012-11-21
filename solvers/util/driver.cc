@@ -28,17 +28,13 @@
 
 namespace ampl {
 
-Driver::Driver() : asl_(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))) {}
+Problem::Problem() : asl_(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))) {}
 
-Driver::~Driver() {
+Problem::~Problem() {
   ASL_free(reinterpret_cast<ASL**>(&asl_));
 }
 
-int Driver::GetOptions(char **argv, Option_Info *oi) {
-  return getopts_ASL(reinterpret_cast<ASL*>(asl_), argv, oi);
-}
-
-bool Driver::Read(char **&argv, Option_Info *oi) {
+bool Problem::Read(char **&argv, Option_Info *oi) {
   ASL *asl = reinterpret_cast<ASL*>(asl_);
   char *stub = getstub_ASL(asl, &argv, oi);
   if (!stub) {
@@ -56,6 +52,10 @@ bool Driver::Read(char **&argv, Option_Info *oi) {
   fg_read_ASL(asl, nl, ASL_allow_CLP);
   asl_->I.r_ops_ = 0;
   return true;
+}
+
+int Driver::GetOptions(char **argv, Option_Info *oi) {
+  return getopts_ASL(reinterpret_cast<ASL*>(asl_), argv, oi);
 }
 }
 

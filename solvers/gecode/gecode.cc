@@ -31,27 +31,6 @@ using Gecode::Space;
 
 namespace ampl {
 
-const BoolExpr GecodeProblem::DUMMY_EXPR((Gecode::BoolVar()));
-
-BoolExpr GecodeProblem::Convert(Gecode::BoolOpType op, IteratedLogicalExpr e) {
-  Gecode::BoolVarArgs args(e.num_args());
-  int index = 0;
-  for (IteratedLogicalExpr::iterator
-      i = e.begin(), end = e.end(); i != end; ++i, ++index) {
-    args[index] = CreateVar(Visit(*i));
-  }
-  Gecode::BoolVar var(*this, 0, 1);
-  rel(*this, op, args, var);
-  return var;
-}
-
-void GecodeProblem::RequireNonzeroConstRHS(
-    BinaryExpr e, const std::string &func_name) {
-  NumericConstant num = Cast<NumericConstant>(e.rhs());
-  if (!num || num.value() != 0)
-    throw UnsupportedExprError(func_name + " with nonzero second parameter");
-}
-
 GecodeProblem::GecodeProblem(bool share, GecodeProblem &s) :
   Space(share, s), obj_irt_(s.obj_irt_) {
   vars_.update(*this, share, s.vars_);
@@ -75,14 +54,38 @@ void GecodeProblem::constrain(const Space &best) {
     rel(*this, obj_, obj_irt_, static_cast<const GecodeProblem&>(best).obj_);
 }
 
+const BoolExpr NLToGecodeConverter::DUMMY_EXPR((Gecode::BoolVar()));
+
+BoolExpr NLToGecodeConverter::Convert(
+    Gecode::BoolOpType op, IteratedLogicalExpr e) {
+  Gecode::BoolVarArgs args(e.num_args());
+  int index = 0;
+  for (IteratedLogicalExpr::iterator
+      i = e.begin(), end = e.end(); i != end; ++i, ++index) {
+    args[index] = CreateVar(Visit(*i));
+  }
+  Gecode::BoolVar var(problem_, 0, 1);
+  rel(problem_, op, args, var);
+  return var;
+}
+
+void NLToGecodeConverter::RequireNonzeroConstRHS(
+    BinaryExpr e, const std::string &func_name) {
+  NumericConstant num = Cast<NumericConstant>(e.rhs());
+  if (!num || num.value() != 0)
+    throw UnsupportedExprError(func_name + " with nonzero second parameter");
+}
+
 template <typename Grad>
-Gecode::LinExpr GecodeProblem::ConvertExpr(Grad *grad, NumericExpr nonlinear) {
+Gecode::LinExpr NLToGecodeConverter::ConvertExpr(
+    Grad *grad, NumericExpr nonlinear) {
+  IntVarArray &vars = problem_.vars();
   Gecode::LinExpr expr;
   bool has_linear_part = grad != 0;
   if (has_linear_part)
-    expr = grad->coef * vars_[grad->varno];
+    expr = grad->coef * vars[grad->varno];
   for (grad = grad->next; grad; grad = grad->next)
-    expr = expr + grad->coef * vars_[grad->varno];
+    expr = expr + grad->coef * vars[grad->varno];
   if (!nonlinear)
     return expr;
   if (has_linear_part)
@@ -92,33 +95,83 @@ Gecode::LinExpr GecodeProblem::ConvertExpr(Grad *grad, NumericExpr nonlinear) {
   return expr;
 }
 
-LinExpr GecodeProblem::VisitMin(VarArgExpr e) {
+void NLToGecodeConverter::Convert(const Problem &p) {
+  if (p.num_continuous_vars() != 0)
+    throw std::runtime_error("Gecode doesn't support continuous variables");
+
+  IntVarArray &vars = problem_.vars();
+  for (int j = 0, n = p.num_vars(); j < n; ++j) {
+    double lb = p.GetVarLB(j), ub = p.GetVarUB(j);
+    vars[j] = IntVar(problem_,
+        lb <= negInfinity ? Gecode::Int::Limits::min : lb,
+        ub >= Infinity ? Gecode::Int::Limits::max : ub);
+  }
+
+  // Post branching.
+  branch(problem_, vars, Gecode::INT_VAR_SIZE_MIN, Gecode::INT_VAL_MIN);
+
+  if (p.num_objs() != 0) {
+    problem_.SetObj(p.GetObjType(0),
+        ConvertExpr(p.GetObjGradient(0), p.GetNonlinearObjExpr(0)));
+  }
+
+  // Convert constraints.
+  for (int i = 0, n = p.num_cons(); i < n; ++i) {
+    Gecode::LinExpr con_expr(
+        ConvertExpr(p.GetConGradient(i), p.GetNonlinearConExpr(i)));
+    double lb = p.GetConLB(i);
+    double ub = p.GetConUB(i);
+    if (lb <= negInfinity) {
+      rel(problem_, con_expr <= ub);
+    } else if (ub >= Infinity) {
+      rel(problem_, con_expr >= lb);
+    } else if (lb == ub) {
+      rel(problem_, con_expr == lb);
+    } else {
+      rel(problem_, con_expr >= lb);
+      rel(problem_, con_expr <= ub);
+    }
+  }
+
+  // Convert logical constraints.
+  for (int i = 0, n = p.num_logical_cons(); i < n; ++i) {
+    LogicalExpr expr(p.GetLogicalConExpr(i));
+    BoolExpr gecode_expr(Visit(expr));
+    if (!Cast<AllDiffExpr>(expr))
+      rel(problem_, gecode_expr);
+  }
+
+  // TODO
+  // FinishBuildingNumberOf();
+}
+
+LinExpr NLToGecodeConverter::VisitMin(VarArgExpr e) {
   VarArgExpr::iterator i = e.begin();
   if (!*i)
     throw UnsupportedExprError("min with empty argument list");
   IntVarArgs args;
   for (; *i; ++i)
     args << CreateVar(Visit(*i));
-  Gecode::IntVar result(*this,
+  Gecode::IntVar result(problem_,
       Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-  min(*this, args, result);
+  min(problem_, args, result);
   return result;
 }
 
-LinExpr GecodeProblem::VisitMax(VarArgExpr e) {
+LinExpr NLToGecodeConverter::VisitMax(VarArgExpr e) {
   VarArgExpr::iterator i = e.begin();
   if (!*i)
     throw UnsupportedExprError("max with empty argument list");
   IntVarArgs args;
   for (; *i; ++i)
     args << CreateVar(Visit(*i));
-  Gecode::IntVar result(*this,
+  Gecode::IntVar result(problem_,
       Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-  max(*this, args, result);
+  max(problem_, args, result);
   return result;
 }
 
-LinExpr GecodeProblem::VisitFloor(UnaryExpr e) {
+LinExpr NLToGecodeConverter::VisitFloor(UnaryExpr e) {
   // floor does nothing because Gecode supports only integer expressions
   // currently.
   NumericExpr arg = e.arg();
@@ -127,18 +180,18 @@ LinExpr GecodeProblem::VisitFloor(UnaryExpr e) {
   return Visit(arg);
 }
 
-LinExpr GecodeProblem::VisitIf(IfExpr e) {
-  Gecode::IntVar result(*this,
+LinExpr NLToGecodeConverter::VisitIf(IfExpr e) {
+  Gecode::IntVar result(problem_,
       Gecode::Int::Limits::min, Gecode::Int::Limits::max);
   Gecode::BoolExpr condition = Visit(e.condition());
-  rel(*this, result, Gecode::IRT_EQ,
+  rel(problem_, result, Gecode::IRT_EQ,
       CreateVar(Visit(e.true_expr())), CreateVar(condition));
-  rel(*this, result, Gecode::IRT_EQ,
+  rel(problem_, result, Gecode::IRT_EQ,
       CreateVar(Visit(e.false_expr())), CreateVar(!condition));
   return result;
 }
 
-LinExpr GecodeProblem::VisitSum(SumExpr e) {
+LinExpr NLToGecodeConverter::VisitSum(SumExpr e) {
   SumExpr::iterator i = e.begin(), end = e.end();
   if (i == end)
     return 0;
@@ -148,34 +201,79 @@ LinExpr GecodeProblem::VisitSum(SumExpr e) {
   return sum;
 }
 
-LinExpr GecodeProblem::VisitCount(CountExpr e) {
+LinExpr NLToGecodeConverter::VisitCount(CountExpr e) {
   Gecode::BoolVarArgs args(e.num_args());
   int index = 0;
   for (CountExpr::iterator
       i = e.begin(), end = e.end(); i != end; ++i, ++index) {
     args[index] = CreateVar(Visit(*i));
   }
-  Gecode::IntVar result(*this,
+  Gecode::IntVar result(problem_,
       Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-  linear(*this, args, Gecode::IRT_EQ, result);
+  linear(problem_, args, Gecode::IRT_EQ, result);
   return result;
 }
 
-BoolExpr GecodeProblem::VisitAllDiff(AllDiffExpr e) {
+LinExpr NLToGecodeConverter::VisitNumberOf(NumberOfExpr e) {
+  NumericExpr target = e.target();
+  NumericConstant num = Cast<NumericConstant>(target);
+  if (!num || !usenumberof_) {
+    Gecode::IntVar result(problem_,
+        Gecode::Int::Limits::min, Gecode::Int::Limits::max);
+    Gecode::IntVarArgs args(e.num_args());
+    int index = 0;
+    for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+      args[index++] = CreateVar(Visit(*i));
+    count(problem_, args, CreateVar(Visit(target)), Gecode::IRT_EQ, result);
+    return result;
+  }
+
+  // If the first operand is constant, add it to the driver's data structure
+  // that collects these operators.
+  /*vector<NumberOf>::reverse_iterator np =
+      find_if(numberofs_.rbegin(), numberofs_.rend(), SameExpr(e));
+  if (np == numberofs_.rend()) {
+    // New expression list - build a new numberof structure.
+    // TODO
+    IloIntArray values(env_);
+    values.add(static_cast<IloInt>(num.value()));
+
+    IloIntVarArray vars(env_);
+    for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i) {
+      IloIntVar var(env_, IloIntMin, IloIntMax);
+      vars.add(var);
+      mod_.add(var == Visit(*i));
+    }
+
+    IloIntVar cardVar(env_, IloIntMin, IloIntMax);
+    IloIntVarArray cards(env_);
+    cards.add(cardVar);
+    numberofs_.push_back(NumberOf(cards, values, vars, e));
+    return cardVar;
+  }
+
+  // Previously seen expression-list:
+  // Add to its numberof structure.
+  return np->Add(num.value(), env_);*/
+  return LinExpr();
+}
+
+BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr e) {
+  IntVarArray &vars = problem_.vars();
   int num_args = e.num_args();
   IntVarArgs x(num_args);
   for (int i = 0; i < num_args; ++i) {
     NumericExpr arg(e[i]);
     if (Variable var = ampl::Cast<Variable>(arg)) {
-      x[i] = vars_[var.index()];
+      x[i] = vars[var.index()];
     } else {
-      IntVar gecode_var(*this,
+      IntVar gecode_var(problem_,
           Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-      rel(*this, gecode_var == Visit(arg));
+      rel(problem_, gecode_var == Visit(arg));
       x[i] = gecode_var;
     }
   }
-  distinct(*this, x);
+  distinct(problem_, x);
   return DUMMY_EXPR;
 }
 
@@ -190,67 +288,20 @@ int GecodeDriver::run(char **argv) {
    return 1;*/
 
   // Set up an optimization problem in Gecode.
-  if (num_continuous_vars() != 0) {
-    cerr << "Gecode doesn't support continuous variables" << endl;
-    return 1;
-  }
-  std::auto_ptr<GecodeProblem> problem(new GecodeProblem(num_vars()));
-  IntVarArray &vars = problem->vars();
-  for (int j = 0, n = num_vars(); j < n; ++j) {
-    double lb = GetVarLB(j), ub = GetVarUB(j);
-    vars[j] = IntVar(*problem,
-        lb <= negInfinity ? Gecode::Int::Limits::min : lb,
-        ub >= Infinity ? Gecode::Int::Limits::max : ub);
-  }
-
-  // Post branching.
-  branch(*problem, vars, Gecode::INT_VAR_SIZE_MIN, Gecode::INT_VAL_MIN);
-
-  bool has_obj = num_objs() != 0;
-  if (has_obj) {
-    problem->SetObj(GetObjType(0),
-        problem->ConvertExpr(GetObjGradient(0), GetNonlinearObjExpr(0)));
-  }
-
-  // Convert constraints.
-  for (int i = 0, n = num_cons(); i < n; ++i) {
-    Gecode::LinExpr con_expr(
-        problem->ConvertExpr(GetConGradient(i), GetNonlinearConExpr(i)));
-    double lb = GetConLB(i);
-    double ub = GetConUB(i);
-    if (lb <= negInfinity) {
-      rel(*problem, con_expr <= ub);
-    } else if (ub >= Infinity) {
-      rel(*problem, con_expr >= lb);
-    } else if (lb == ub) {
-      rel(*problem, con_expr == lb);
-    } else {
-      rel(*problem, con_expr >= lb);
-      rel(*problem, con_expr <= ub);
-    }
-  }
-
-  // Convert logical constraints.
-  for (int i = 0, n = num_logical_cons(); i < n; ++i) {
-    LogicalExpr expr(GetLogicalConExpr(i));
-    BoolExpr gecode_expr(problem->Visit(expr));
-    if (!Cast<AllDiffExpr>(expr))
-      rel(*problem, gecode_expr);
-  }
-
-  // TODO
-  // finish_building_numberof();
+  std::auto_ptr<NLToGecodeConverter>
+    converter(new NLToGecodeConverter(num_vars(), true)); // TODO: usenumberof option
 
   // Solve the problem.
   std::auto_ptr<GecodeProblem> solution;
+  bool has_obj = num_objs() != 0;
   if (has_obj) {
-    BAB<GecodeProblem> engine(problem.get());
-    problem.reset();
+    BAB<GecodeProblem> engine(&converter->problem());
+    converter.reset();
     while (GecodeProblem *next = engine.next())
       solution.reset(next);
   } else {
-    DFS<GecodeProblem> engine(problem.get());
-    problem.reset();
+    DFS<GecodeProblem> engine(&converter->problem());
+    converter.reset();
     solution.reset(engine.next());
   }
 
