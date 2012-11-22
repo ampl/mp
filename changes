@@ -3101,3 +3101,13 @@ logical constraints and "var ... in ..."  declarations, such as
 The integer interval was treated as a continuous interval.  Now,
 when appropriate, "var ... in integer [...,...] ..." will treat
 the variable as an integer variable.
+
+20121116
+  When a defined variable involves piecewise-linear terms but is
+otherwise linear and when convexity (or concavity) permits all
+appearances of the defined variable in constraints and objectives
+to be linearized, do so.
+
+20121120
+  Fix bugs (faults) with min() and max(), which now return Infinity
+and -Infinity, respectively.

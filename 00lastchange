@@ -1,9 +1,9 @@
-20121024
-  Fix a bug with "var ... in ... union integer [...,...];", as in
+20121116
+  When a defined variable involves piecewise-linear terms but is
+otherwise linear and when convexity (or concavity) permits all
+appearances of the defined variable in constraints and objectives
+to be linearized, do so.
 
-	var x in {2.5} union integer [3,5];
-	minimize zot: (x - 4.3)^2;
-
-The integer interval was treated as a continuous interval.  Now,
-when appropriate, "var ... in integer [...,...] ..." will treat
-the variable as an integer variable.
+20121120
+  Fix bugs (faults) with min() and max(), which now return Infinity
+and -Infinity, respectively.
