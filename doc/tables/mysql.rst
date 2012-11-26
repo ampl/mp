@@ -34,6 +34,35 @@ and Debian-based Linux distributions such as `Ubuntu
 
 Go to :ref:`usage`.
 
+SUSE Linux
+``````````
+
+#. Install the MySQL ODBC driver:
+
+   .. code-block:: bash
+
+      $ sudo zypper install MyODBC-unixODBC
+
+#. Register the ODBC driver. The easiest way to register the driver
+   is by using the ``myodbc-installer`` utility included in the
+   ``MyODBC-unixODBC`` package, for example:
+
+   .. code-block:: bash
+
+      $ sudo myodbc-installer -d -a -n "MySQL" \
+          -t "DRIVER=/usr/lib/libmyodbc5.so"
+
+   ``/usr/lib/libmyodbc5.so`` is the path to the driver library
+   that you installed in the previous step. You might need to change it
+   if you have a different version of the driver.
+
+   Note that the MySQL ODBC/Connector distribution doesn't include the
+   setup library so you have to omit the ``SETUP`` attribute during the
+   driver registration unless you have installed this library from some
+   other source.
+
+Go to :ref:`usage`.
+
 Other distributions
 ```````````````````
 
@@ -42,6 +71,9 @@ Other distributions
 
 #. Install the MySQL Connector/ODBC following `these instructions
    <http://dev.mysql.com/doc/refman/5.1/en/connector-odbc-installation.html#connector-odbc-installation-binary-unix>`__.
+   Make sure that you use compatible versions of the ODBC driver
+   (Connector/ODBC) and the MySQL client library, otherwise the driver
+   library will not load and any connection attempt will fail.
 
 #. Register the ODBC driver. The easiest way to register the driver is
    by using the ``myodbc-installer`` utility included in the distribution,
@@ -230,16 +262,9 @@ Example:
 Troubleshooting
 ---------------
 
-This section lists frequent errors and possible solutions.
+This section lists common problems with possible solutions.
 
-A connection problem is usually indicated by the following error:
-
-.. code-block:: none
-
-   Error reading table <table-name> with table handler odbc:
-   Could not connect to <connection-string>.
-
-The first thing to do if you get this error is to get additional information.
+The first thing to do in case of an error is to get additional information.
 Add the option ``"verbose"`` to the table declaration that causes the error,
 for example:
 
@@ -248,12 +273,15 @@ for example:
    table dietFoods "ODBC" (ConnectionStr) "Foods" "verbose":
      ...
 
-Then rerun your code and you should get a more detailed error
-message such as
+Then rerun your code and you should get a more detailed error message.
+
+Data source name not found
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Verbose error:
 
 .. code-block:: none
 
-   AMPL ODBC driver, version 20121108.
    SQLDriverConnect returned -1
    sqlstate = "IM002"
    errmsg = "[unixODBC][Driver Manager]Data source name not found, and no default driver specified"
@@ -281,3 +309,37 @@ surrounded with ``{`` and ``}`` in the connection string, for example:
 
       table Foods "ODBC" "DRIVER={MySQL ODBC Driver; version 5.2}; DATABASE=test;":
         ...
+
+Can't connect through socket
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Verbose error:
+
+.. code-block:: none
+
+   SQLDriverConnect returned -1
+   sqlstate = "08S01"
+   errmsg = "[unixODBC][MySQL][ODBC 5.2(a) Driver]Can't connect to local MySQL server through socket '/tmp/mysql.sock' (2)"
+   native_errno = 2002
+
+First check that the MySQL server is running. If it is running then
+it is likely that the Unix socket file that is used for communication
+between the server and the client is in a different location.
+To find the location of the socket file open ``/etc/mysql/my.cnf``
+and search for the lines
+
+.. code-block:: none
+
+   [mysqld]
+   ...
+   socket          = /var/run/mysqld/mysqld.sock
+
+The ``socket = <path>`` line specifies the path to the socket file.
+You can either create a link from ``/tmp/mysql.sock`` to the socket file
+or specify the socket explicitly in the connection string:
+
+   .. code-block:: none
+
+      table Foods "ODBC"
+        "DRIVER=MySQL; DATABASE=test; SOCKET=/var/run/mysqld/mysqld.sock;":
+         ...
