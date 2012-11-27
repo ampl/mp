@@ -691,14 +691,14 @@ IloExpr IlogCPDriver::VisitCount(CountExpr e) {
 }
 
 IloExpr IlogCPDriver::VisitNumberOf(NumberOfExpr e) {
-  NumericExpr target = e.target();
-  NumericConstant num = Cast<NumericConstant>(target);
+  NumericExpr value = e.value();
+  NumericConstant num = Cast<NumericConstant>(value);
   if (num && get_option(USENUMBEROF))
     return numberofs_.Add(num.value(), e);
   IloExpr sum(env_);
-  IloExpr concert_target(Visit(target));
+  IloExpr concert_value(Visit(value));
   for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-    sum += (Visit(*i) == concert_target);
+    sum += (Visit(*i) == concert_value);
   return sum;
 }
 
