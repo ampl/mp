@@ -8,6 +8,4 @@
 .*warning LNK4099: PDB 'concert.pdb' was not found.*
 
 .*solvers[/\\][a-z0-9_]+.c: .*
-.*tables[/\\]fullbit.c: .*
-.*tables[/\\]simpbit.c: .*
-.*tables[/\\]tableproxy.c: .*
+.*tables[/\\][a-z0-9_]+.c: .*
