@@ -116,6 +116,7 @@ static double ConvertAndEval(NumericExpr e,
   vars[2] = Gecode::IntVar(p, var2, var2);
   vars[3] = Gecode::IntVar(p, var3, var3);
   Gecode::rel(p, vars[0] == converter.Visit(e));
+  converter.ConvertNumberOfExprs();
   Gecode::DFS<GecodeProblem> engine(&p);
   std::auto_ptr<GecodeProblem> solution(engine.next());
   return solution.get() ?
@@ -357,6 +358,18 @@ TEST_F(GecodeTest, ConvertCount) {
   EXPECT_EQ(3, ConvertAndEval(AddCount(a, b, c), 1, 1, 1));
 }
 
+TEST_F(GecodeTest, ConvertNumberOf) {
+  ampl::NumericConstant val = AddNum(42);
+  EXPECT_EQ(0, ConvertAndEval(AddNumberOf(val, x)));
+  EXPECT_EQ(1, ConvertAndEval(AddNumberOf(val, x), 42));
+  EXPECT_EQ(0, ConvertAndEval(AddNumberOf(val, x, y)));
+  EXPECT_EQ(1, ConvertAndEval(AddNumberOf(val, x, y), 0, 42));
+  EXPECT_EQ(2, ConvertAndEval(AddNumberOf(val, x, y), 42, 42));
+  EXPECT_EQ(3, ConvertAndEval(AddBinary(OPPLUS,
+      AddNumberOf(val, x, y), AddNumberOf(AddNum(11), y, z)),
+      42, 42, 11));
+}
+
 // TODO
 /*
 TEST_F(GecodeTest, Convert1Pow) {
@@ -376,144 +389,6 @@ TEST_F(GecodeTest, ConvertPLTerm) {
   double args[] = {-1, 5, 0, 10, 1};
   EXPECT_EQ("piecewiselinear(x[0..1] , [5, 10], [-1, 0, 1], 0, 0)",
             str(p.Visit(AddPLTerm(5, args, 0))));
-}
-
-TEST_F(GecodeTest, ConvertNumberOf) {
-  p.use_numberof();
-  EXPECT_EQ("x == theta + y == theta",
-      str(p.Visit(AddNumberOf(AddVar(2), AddVar(0), AddVar(1)))));
-  p.use_numberof(false);
-  EXPECT_EQ("x == 42 + y == 42",
-      str(p.Visit(AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
-}
-
-TEST_F(GecodeTest, IloArrayCopyingIsCheap) {
-  IloIntArray array(env_);
-  array.add(42);
-  EXPECT_TRUE(array.getImpl() != nullptr);
-  EXPECT_EQ(array.getImpl(), IloIntArray(array).getImpl());
-}
-
-TEST_F(GecodeTest, ConvertSingleNumberOfToIloDistribute) {
-  p.use_numberof();
-  std::ostringstream os;
-  os << "[" << IloIntMin << ".." << IloIntMax << "]";
-  string bounds = os.str();
-  EXPECT_EQ("IloIntVar(10)" + bounds, str(p.Visit(
-      AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
-  p.FinishBuildingNumberOf();
-  IloModel::Iterator iter(mod_);
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(4)" + bounds + " == x", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(7)" + bounds + " == y", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  IloDistributeI *dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
-  ASSERT_TRUE(dist != nullptr);
-  EXPECT_EQ("[IloIntVar(10)" + bounds + " ]", str(dist->getCardVarArray()));
-  EXPECT_EQ("[IloIntVar(4)" + bounds + " , IloIntVar(7)" + bounds + " ]",
-      str(dist->getVarArray()));
-  EXPECT_EQ("[42]", str(dist->getValueArray()));
-  ++iter;
-  EXPECT_FALSE(iter.ok());
-}
-
-TEST_F(GecodeTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
-  p.use_numberof();
-  std::ostringstream os;
-  os << "[" << IloIntMin << ".." << IloIntMax << "]";
-  string bounds = os.str();
-  NumericExpr expr(AddNumberOf(AddNum(42), AddVar(0), AddVar(1)));
-  EXPECT_EQ("IloIntVar(10)" + bounds, str(p.Visit(expr)));
-  EXPECT_EQ("IloIntVar(10)" + bounds, str(p.Visit(
-      AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
-  p.FinishBuildingNumberOf();
-  IloModel::Iterator iter(mod_);
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(4)" + bounds + " == x", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(7)" + bounds + " == y", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  IloDistributeI *dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
-  ASSERT_TRUE(dist != nullptr);
-  EXPECT_EQ("[IloIntVar(10)" + bounds + " ]", str(dist->getCardVarArray()));
-  EXPECT_EQ("[IloIntVar(4)" + bounds + " , IloIntVar(7)" + bounds + " ]",
-      str(dist->getVarArray()));
-  EXPECT_EQ("[42]", str(dist->getValueArray()));
-  ++iter;
-  EXPECT_FALSE(iter.ok());
-}
-
-TEST_F(GecodeTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
-  p.use_numberof();
-  std::ostringstream os;
-  os << "[" << IloIntMin << ".." << IloIntMax << "]";
-  string bounds = os.str();
-  EXPECT_EQ("IloIntVar(10)" + bounds,
-      str(p.Visit(AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
-  EXPECT_EQ("IloIntVar(12)" + bounds,
-      str(p.Visit(AddNumberOf(AddNum(43), AddVar(0), AddVar(1)))));
-  p.FinishBuildingNumberOf();
-  IloModel::Iterator iter(mod_);
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(4)" + bounds + " == x", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(7)" + bounds + " == y", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  IloDistributeI *dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
-  ASSERT_TRUE(dist != nullptr);
-  EXPECT_EQ("[IloIntVar(10)" + bounds + " , IloIntVar(12)" + bounds + " ]",
-      str(dist->getCardVarArray()));
-  EXPECT_EQ("[IloIntVar(4)" + bounds + " , IloIntVar(7)" + bounds + " ]",
-      str(dist->getVarArray()));
-  EXPECT_EQ("[42, 43]", str(dist->getValueArray()));
-  ++iter;
-  EXPECT_FALSE(iter.ok());
-}
-
-TEST_F(GecodeTest, ConvertTwoNumberOfsWithDiffExprs) {
-  p.use_numberof();
-  std::ostringstream os;
-  os << "[" << IloIntMin << ".." << IloIntMax << "]";
-  string bounds = os.str();
-  EXPECT_EQ("IloIntVar(10)" + bounds,
-      str(p.Visit(AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
-  EXPECT_EQ("IloIntVar(15)" + bounds,
-      str(p.Visit(AddNumberOf(AddNum(42), AddVar(2)))));
-  p.FinishBuildingNumberOf();
-  IloModel::Iterator iter(mod_);
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(4)" + bounds + " == x", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(7)" + bounds + " == y", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(12)" + bounds + " == theta", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  IloDistributeI *dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
-  ASSERT_TRUE(dist != nullptr);
-  EXPECT_EQ("[IloIntVar(10)" + bounds + " ]", str(dist->getCardVarArray()));
-  EXPECT_EQ("[IloIntVar(4)" + bounds + " , IloIntVar(7)" + bounds + " ]",
-      str(dist->getVarArray()));
-  EXPECT_EQ("[42]", str(dist->getValueArray()));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
-  ASSERT_TRUE(dist != nullptr);
-  EXPECT_EQ("[IloIntVar(15)" + bounds + " ]", str(dist->getCardVarArray()));
-  EXPECT_EQ("[IloIntVar(12)" + bounds + " ]",
-      str(dist->getVarArray()));
-  EXPECT_EQ("[42]", str(dist->getValueArray()));
-  ++iter;
-  EXPECT_FALSE(iter.ok());
 }
 */
 

@@ -106,10 +106,10 @@ class ExprBuilder {
   }
 
   // Adds a new numberof expression with up to 3 arguments.
-  NumberOfExpr AddNumberOf(NumericExpr target, NumericExpr arg1,
+  NumberOfExpr AddNumberOf(NumericExpr value, NumericExpr arg1,
       NumericExpr arg2 = NumericExpr()) {
     return AddIterated<NumberOfExpr, NumericExpr>(
-        OPNUMBEROF, target, arg1, arg2);
+        OPNUMBEROF, value, arg1, arg2);
   }
 
   // Adds a new alldiff expression with up to 3 arguments.

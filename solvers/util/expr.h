@@ -576,7 +576,7 @@ class NumberOfExpr : public NumericExpr {
  public:
   NumberOfExpr() {}
 
-  NumericExpr target() const { return Create<NumericExpr>(*expr_->L.ep); }
+  NumericExpr value() const { return Create<NumericExpr>(*expr_->L.ep); }
 
   int num_args() const {
     return static_cast<int>(expr_->R.ep - expr_->L.ep - 1);
@@ -1210,7 +1210,7 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
 
 #undef AMPL_DISPATCH
 
-// A map from NumberOf expressions with the same argument lists to target
+// A map from NumberOf expressions with the same argument lists to
 // values and corresponding variables.
 template <typename Var, typename CreateVar>
 class NumberOfMap {
@@ -1271,7 +1271,7 @@ bool NumberOfMap<Var, CreateVar>::SameExpr::operator()(
 
 template <typename Var, typename CreateVar>
 Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
-  assert(Cast<NumericConstant>(e.target()).value() == value);
+  assert(Cast<NumericConstant>(e.value()).value() == value);
   typename std::vector<NumberOf>::reverse_iterator np =
       std::find_if(numberofs_.rbegin(), numberofs_.rend(), SameExpr(e));
   if (np == numberofs_.rend()) {

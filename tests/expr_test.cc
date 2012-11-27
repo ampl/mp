@@ -637,10 +637,10 @@ TEST_F(ExprTest, Variable) {
 
 TEST_F(ExprTest, NumberOfExpr) {
   EXPECT_EQ(1, CheckExpr<NumberOfExpr>(Expr::NUMBEROF));
-  NumericExpr target = AddNum(42);
+  NumericExpr value = AddNum(42);
   NumericExpr args[] = {AddNum(43), AddNum(44)};
-  NumberOfExpr e(AddNumberOf(target, args[0], args[1]));
-  EXPECT_EQ(target, e.target());
+  NumberOfExpr e(AddNumberOf(value, args[0], args[1]));
+  EXPECT_EQ(value, e.value());
   int index = 0;
   NumberOfExpr::iterator i = e.begin();
   for (NumberOfExpr::iterator end = e.end(); i != end; ++i, ++index) {
