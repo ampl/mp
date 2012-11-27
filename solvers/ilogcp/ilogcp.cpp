@@ -755,11 +755,11 @@ void IlogCPDriver::FinishBuildingNumberOf() {
   for (IlogNumberOfMap::iterator
       i = numberofs_.begin(), end = numberofs_.end(); i != end; ++i) {
     int index = 0;
-    const IlogNumberOfMap::VarMap &var_map = i->vars;
-    IloIntVarArray cards(env_, var_map.size());
-    IloIntArray values(env_, var_map.size());
-    for (IlogNumberOfMap::VarMap::const_iterator j = var_map.begin(),
-        var_end = var_map.end(); j != var_end; ++j, ++index) {
+    const IlogNumberOfMap::ValueMap &val_map = i->values;
+    IloIntVarArray cards(env_, val_map.size());
+    IloIntArray values(env_, val_map.size());
+    for (IlogNumberOfMap::ValueMap::const_iterator j = val_map.begin(),
+        val_end = val_map.end(); j != val_end; ++j, ++index) {
       values[index] = static_cast<IloInt>(j->first);
       cards[index] = j->second;
     }
