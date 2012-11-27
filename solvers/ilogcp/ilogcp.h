@@ -41,28 +41,6 @@ struct Option_Info;
 
 namespace ampl {
 
-class NumberOf {
- private:
-  IloIntVarArray cards_;
-  IloIntArray values_;
-  IloIntVarArray vars_;
-  NumberOfExpr expr_;
-
- public:
-  NumberOf(IloIntVarArray cards, IloIntArray values,
-      IloIntVarArray vars, NumberOfExpr e) :
-    cards_(cards), values_(values), vars_(vars), expr_(e) {}
-
-  unsigned num_vars() const { return vars_.getSize(); }
-  NumberOfExpr expr() const { return expr_; }
-
-  IloDistribute Convert(IloEnv env) const {
-    return IloDistribute(env, cards_, values_, vars_);
-  }
-
-  IloIntVar Add(double value, IloEnv env);
-};
-
 class Optimizer {
  private:
   IloObjective obj_;
@@ -137,13 +115,27 @@ class IlogCPDriver : public Driver, public Visitor {
   IloModel mod_;
   IloNumVarArray vars_;
   std::auto_ptr<Optimizer> optimizer_;
-  std::vector<NumberOf> numberofs_;
   std::vector<char> version_;
   std::auto_ptr<Option_Info> oinfo_;
   bool gotopttype;
   bool debug_;
   int n_badvals;
   static keyword keywords_[];
+
+  class CreateVar {
+   private:
+    IloEnv env_;
+
+   public:
+    CreateVar(IloEnv env) : env_(env) {}
+
+    IloIntVar operator()() const {
+      return IloIntVar(env_, IloIntMin, IloIntMax);
+    }
+  };
+
+  typedef NumberOfMap<IloIntVar, CreateVar> IlogNumberOfMap;
+  IlogNumberOfMap numberofs_;
 
   // Do not implement.
   IlogCPDriver(const IlogCPDriver&);
