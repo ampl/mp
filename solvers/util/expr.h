@@ -474,6 +474,7 @@ class CountExpr : public NumericExpr {
  public:
   CountExpr() {}
 
+  // Returns the number of arguments.
   int num_args() const { return static_cast<int>(expr_->R.ep - expr_->L.ep); }
 
   typedef ArrayIterator<LogicalExpr> iterator;
@@ -578,6 +579,7 @@ class NumberOfExpr : public NumericExpr {
 
   NumericExpr value() const { return Create<NumericExpr>(*expr_->L.ep); }
 
+  // Returns the number of arguments.
   int num_args() const {
     return static_cast<int>(expr_->R.ep - expr_->L.ep - 1);
   }
@@ -678,6 +680,7 @@ class IteratedLogicalExpr : public LogicalExpr {
 
   IteratedLogicalExpr() {}
 
+  // Returns the number of arguments.
   int num_args() const { return static_cast<int>(expr_->R.ep - expr_->L.ep); }
 
   typedef ArrayIterator<LogicalExpr> iterator;
@@ -699,6 +702,7 @@ class AllDiffExpr : public LogicalExpr {
 
   typedef ArrayIterator<NumericExpr> iterator;
 
+  // Returns the number of arguments.
   int num_args() const { return static_cast<int>(expr_->R.ep - expr_->L.ep); }
 
   NumericExpr operator[](int index) {
@@ -1210,7 +1214,7 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
 
 #undef AMPL_DISPATCH
 
-// A map from NumberOf expressions with the same argument lists to
+// A map from numberof expressions with the same argument lists to
 // values and corresponding variables.
 template <typename Var, typename CreateVar>
 class NumberOfMap {
@@ -1253,6 +1257,7 @@ class NumberOfMap {
     return numberofs_.end();
   }
 
+  // Adds a numberof expression with a constant value.
   Var Add(double value, NumberOfExpr e);
 };
 
