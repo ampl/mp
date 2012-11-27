@@ -579,7 +579,9 @@ TEST_F(ExprTest, SumExpr) {
 TEST_F(ExprTest, CountExpr) {
   EXPECT_EQ(1, CheckExpr<CountExpr>(Expr::COUNT));
   LogicalExpr args[] = {AddBool(false), AddBool(true), AddBool(false)};
+  EXPECT_EQ(2, AddCount(args[0], args[1]).num_args());
   CountExpr e(AddCount(args[0], args[1], args[2]));
+  EXPECT_EQ(3, e.num_args());
   int index = 0;
   CountExpr::iterator i = e.begin();
   for (CountExpr::iterator end = e.end(); i != end; ++i, ++index) {
@@ -639,7 +641,9 @@ TEST_F(ExprTest, NumberOfExpr) {
   EXPECT_EQ(1, CheckExpr<NumberOfExpr>(Expr::NUMBEROF));
   NumericExpr value = AddNum(42);
   NumericExpr args[] = {AddNum(43), AddNum(44)};
+  EXPECT_EQ(1, AddNumberOf(value, args[0]).num_args());
   NumberOfExpr e(AddNumberOf(value, args[0], args[1]));
+  EXPECT_EQ(2, e.num_args());
   EXPECT_EQ(value, e.value());
   int index = 0;
   NumberOfExpr::iterator i = e.begin();
@@ -700,6 +704,7 @@ TEST_F(ExprTest, IteratedLogicalExpr) {
   EXPECT_EQ(2, CheckExpr<IteratedLogicalExpr>(Expr::ITERATED_LOGICAL));
   LogicalExpr args[] = {AddBool(false), AddBool(true), AddBool(false)};
   IteratedLogicalExpr e(AddIteratedLogical(ORLIST, args[0], args[1], args[2]));
+  EXPECT_EQ(3, e.num_args());
   int index = 0;
   IteratedLogicalExpr::iterator i = e.begin();
   for (IteratedLogicalExpr::iterator end = e.end(); i != end; ++i, ++index) {
@@ -718,6 +723,7 @@ TEST_F(ExprTest, AllDiffExpr) {
   EXPECT_EQ(1, CheckExpr<AllDiffExpr>(Expr::ALLDIFF));
   NumericExpr args[] = {AddNum(42), AddNum(43), AddNum(44)};
   AllDiffExpr e(AddAllDiff(args[0], args[1], args[2]));
+  EXPECT_EQ(3, e.num_args());
   int index = 0;
   AllDiffExpr::iterator i = e.begin();
   for (AllDiffExpr::iterator end = e.end(); i != end; ++i, ++index) {
