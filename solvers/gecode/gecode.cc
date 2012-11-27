@@ -56,14 +56,6 @@ void GecodeProblem::constrain(const Space &best) {
 
 const BoolExpr NLToGecodeConverter::DUMMY_EXPR((Gecode::BoolVar()));
 
-Gecode::IntVarArgs NLToGecodeConverter::ConvertNumberOfArgs(NumberOfExpr e) {
-  int index = 0;
-  Gecode::IntVarArgs args(e.num_args());
-  for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-    args[index++] = CreateVar(Visit(*i));
-  return args;
-}
-
 BoolExpr NLToGecodeConverter::Convert(
     Gecode::BoolOpType op, IteratedLogicalExpr e) {
   Gecode::BoolVarArgs args(e.num_args());
@@ -148,27 +140,6 @@ void NLToGecodeConverter::Convert(const Problem &p) {
     if (!Cast<AllDiffExpr>(expr))
       rel(problem_, gecode_expr);
   }
-
-  ConvertNumberOfExprs();
-}
-
-void NLToGecodeConverter::ConvertNumberOfExprs() {
-  for (GecodeNumberOfMap::iterator
-      i = numberofs_.begin(), end = numberofs_.end(); i != end; ++i) {
-    int index = 0;
-    const GecodeNumberOfMap::VarMap &var_map = i->vars;
-    Gecode::IntVarArgs cards(var_map.size());
-    Gecode::IntArgs values(var_map.size());
-    for (GecodeNumberOfMap::VarMap::const_iterator j = var_map.begin(),
-        var_end = var_map.end(); j != var_end; ++j, ++index) {
-      int value = static_cast<int>(j->first);
-      if (value != j->first)
-        throw UnsupportedExprError("non-integer value in numberof");
-      values[index] = value;
-      cards[index] = j->second;
-    }
-    count(problem_, ConvertNumberOfArgs(i->expr), cards, values);
-  }
 }
 
 LinExpr NLToGecodeConverter::VisitMin(VarArgExpr e) {
@@ -241,16 +212,16 @@ LinExpr NLToGecodeConverter::VisitCount(CountExpr e) {
 }
 
 LinExpr NLToGecodeConverter::VisitNumberOf(NumberOfExpr e) {
-  NumericExpr value = e.value();
-  NumericConstant num = Cast<NumericConstant>(value);
-  //if (num && usenumberof_)
-  //  return numberofs_.Add(num.value(), e);
   // Gecode only supports global cardinality (count) constraint where no other
-  // values except those specified may occur, so we use local instead.
+  // values except those specified may occur, so we use only local count
+  // constraints.
   Gecode::IntVar result(problem_,
       Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-  count(problem_, ConvertNumberOfArgs(e),
-      CreateVar(Visit(value)), Gecode::IRT_EQ, result);
+  int index = 0;
+  Gecode::IntVarArgs args(e.num_args());
+  for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+    args[index++] = CreateVar(Visit(*i));
+  count(problem_, args, CreateVar(Visit(e.value())), Gecode::IRT_EQ, result);
   return result;
 }
 
@@ -286,7 +257,7 @@ int GecodeDriver::run(char **argv) {
 
   // Set up an optimization problem in Gecode.
   std::auto_ptr<NLToGecodeConverter>
-    converter(new NLToGecodeConverter(problem.num_vars(), true)); // TODO: usenumberof option
+    converter(new NLToGecodeConverter(problem.num_vars()));
 
   // Solve the problem.
   std::auto_ptr<GecodeProblem> solution;

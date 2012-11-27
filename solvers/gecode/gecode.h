@@ -41,23 +41,6 @@ class NLToGecodeConverter :
 
  private:
    GecodeProblem problem_;
-   bool usenumberof_;
-
-   class VarFactory {
-    private:
-     Gecode::Space &space_;
-
-    public:
-     explicit VarFactory(Gecode::Space &s) : space_(s) {}
-
-     Gecode::IntVar operator()() const {
-       return Gecode::IntVar(space_,
-           Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-     }
-   };
-
-   typedef NumberOfMap<Gecode::IntVar, VarFactory> GecodeNumberOfMap;
-   GecodeNumberOfMap numberofs_;
 
    static const Gecode::BoolExpr DUMMY_EXPR;
 
@@ -84,16 +67,10 @@ class NLToGecodeConverter :
    template <typename Grad>
    LinExpr ConvertExpr(Grad *grad, NumericExpr nonlinear);
 
-   Gecode::IntVarArgs ConvertNumberOfArgs(NumberOfExpr e);
-
  public:
-  NLToGecodeConverter(int num_vars, bool usenumberof):
-    problem_(num_vars), usenumberof_(usenumberof),
-    numberofs_(VarFactory(problem_)) {}
+  NLToGecodeConverter(int num_vars) : problem_(num_vars) {}
 
   void Convert(const Problem &p);
-
-  void ConvertNumberOfExprs();
 
   GecodeProblem &problem() { return problem_; }
 
