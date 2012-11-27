@@ -126,45 +126,9 @@ CP_INT_OPTION(SolutionLimit)
 CP_ENUM_OPTION(TemporalRelaxation, IloCP::Off, Flags)
 CP_ENUM_OPTION(TimeMode, IloCP::CPUTime, TimeModes)
 CP_INT_OPTION_FULL(Workers, 0, true, 0)
-
-class SameExpr {
- private:
-  NumberOfExpr expr_;
-  unsigned num_args_;
-  
- public:
-  SameExpr(NumberOfExpr e) :
-  expr_(e), num_args_(std::distance(e.begin(), e.end())) {}
-  
-  // Returns true if the stored expression is the same as the argument's
-  // expression.
-  bool operator()(const ampl::NumberOf &nof) const;
-};
-
-bool SameExpr::operator()(const ampl::NumberOf &nof) const {
-  if (nof.num_vars() != num_args_)
-    return false;
-  
-  for (NumberOfExpr::iterator i = expr_.begin(), end = expr_.end(),
-       j = nof.expr().begin(); i != end; ++i, ++j) {
-    if (!AreEqual(*i, *j))
-      return false;
-  }
-  return true;
-}
 }
 
 namespace ampl {
-  
-IloIntVar NumberOf::Add(real value, IloEnv env) {
-  for (int i = 0, n = values_.getSize(); i < n; ++i)
-    if (values_[i] == value)
-      return cards_[i];
-  values_.add(static_cast<IloInt>(value));
-  IloIntVar cardVar(env, IloIntMin, IloIntMax);
-  cards_.add(cardVar);
-  return cardVar;
-}
 
 Optimizer::Optimizer(IloEnv env, Driver &d) :
   vars_(env, d.problem().num_vars()), cons_(env, d.problem().num_cons()) {}
@@ -460,7 +424,7 @@ keyword IlogCPDriver::keywords_[] = {
 
 IlogCPDriver::IlogCPDriver() :
    mod_(env_), gotopttype(false), debug_(false),
-   n_badvals(0) {
+   n_badvals(0), numberofs_(CreateVar(env_)) {
   char *s;
   int n;
   size_t L;
@@ -729,45 +693,13 @@ IloExpr IlogCPDriver::VisitCount(CountExpr e) {
 IloExpr IlogCPDriver::VisitNumberOf(NumberOfExpr e) {
   NumericExpr target = e.target();
   NumericConstant num = Cast<NumericConstant>(target);
-  if (!num || !get_option(USENUMBEROF)) {
-    IloExpr sum(env_);
-    IloExpr concert_target(Visit(target));
-    for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-      sum += (Visit(*i) == concert_target);
-    return sum;
-  }
-
-  // If the first operand is constant, add it to the driver's data structure
-  // that collects these operators.
-
-  // Did we previously see a number-of operator
-  // having the same expression-list?
-  vector<NumberOf>::reverse_iterator np =
-      find_if(numberofs_.rbegin(), numberofs_.rend(), SameExpr(e));
-
-  // New expression-list:
-  // Build a new numberof structure.
-  if (np == numberofs_.rend()) {
-    IloIntArray values(env_);
-    values.add(static_cast<IloInt>(num.value()));
-
-    IloIntVarArray vars(env_);
-    for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i) {
-      IloIntVar var(env_, IloIntMin, IloIntMax);
-      vars.add(var);
-      mod_.add(var == Visit(*i));
-    }
-
-    IloIntVar cardVar(env_, IloIntMin, IloIntMax);
-    IloIntVarArray cards(env_);
-    cards.add(cardVar);
-    numberofs_.push_back(NumberOf(cards, values, vars, e));
-    return cardVar;
-  }
-
-  // Previously seen expression-list:
-  // Add to its numberof structure.
-  return np->Add(num.value(), env_);
+  if (num && get_option(USENUMBEROF))
+    return numberofs_.Add(num.value(), e);
+  IloExpr sum(env_);
+  IloExpr concert_target(Visit(target));
+  for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+    sum += (Visit(*i) == concert_target);
+  return sum;
 }
 
 IloExpr IlogCPDriver::VisitPLTerm(PiecewiseLinearTerm t) {
@@ -820,11 +752,30 @@ IloConstraint IlogCPDriver::VisitAllDiff(AllDiffExpr e) {
 }
 
 void IlogCPDriver::FinishBuildingNumberOf() {
-  for (vector<NumberOf>::const_iterator
+  for (IlogNumberOfMap::iterator
       i = numberofs_.begin(), end = numberofs_.end(); i != end; ++i) {
-    mod_.add(i->Convert(env_));
+    int index = 0;
+    const IlogNumberOfMap::VarMap &var_map = i->vars;
+    IloIntVarArray cards(env_, var_map.size());
+    IloIntArray values(env_, var_map.size());
+    for (IlogNumberOfMap::VarMap::const_iterator j = var_map.begin(),
+        var_end = var_map.end(); j != var_end; ++j, ++index) {
+      values[index] = static_cast<IloInt>(j->first);
+      cards[index] = j->second;
+    }
+
+    index = 0;
+    NumberOfExpr expr = i->expr;
+    IloIntVarArray vars(env_, expr.num_args());
+    for (NumberOfExpr::iterator
+        j = expr.begin(), expr_end = expr.end(); j != expr_end; ++j, ++index) {
+      IloIntVar var(env_, IloIntMin, IloIntMax);
+      vars[index] = var;
+      mod_.add(var == Visit(*j));
+    }
+
+    mod_.add(IloDistribute(env_, cards, values, vars));
   }
-  numberofs_.clear();
 }
 
 /*----------------------------------------------------------------------

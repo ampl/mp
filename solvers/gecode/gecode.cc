@@ -228,33 +228,7 @@ LinExpr NLToGecodeConverter::VisitNumberOf(NumberOfExpr e) {
     return result;
   }
 
-  // If the first operand is constant, add it to the driver's data structure
-  // that collects these operators.
-  /*vector<NumberOf>::reverse_iterator np =
-      find_if(numberofs_.rbegin(), numberofs_.rend(), SameExpr(e));
-  if (np == numberofs_.rend()) {
-    // New expression list - build a new numberof structure.
-    // TODO
-    IloIntArray values(env_);
-    values.add(static_cast<IloInt>(num.value()));
-
-    IloIntVarArray vars(env_);
-    for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i) {
-      IloIntVar var(env_, IloIntMin, IloIntMax);
-      vars.add(var);
-      mod_.add(var == Visit(*i));
-    }
-
-    IloIntVar cardVar(env_, IloIntMin, IloIntMax);
-    IloIntVarArray cards(env_);
-    cards.add(cardVar);
-    numberofs_.push_back(NumberOf(cards, values, vars, e));
-    return cardVar;
-  }
-
-  // Previously seen expression-list:
-  // Add to its numberof structure.
-  return np->Add(num.value(), env_);*/
+  // TODO
   return LinExpr();
 }
 

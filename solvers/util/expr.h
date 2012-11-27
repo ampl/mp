@@ -25,9 +25,12 @@
 
 #include <cassert>
 #include <cstddef>
+#include <algorithm>
 #include <iterator>
+#include <map>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 extern "C" {
 #include "solvers/nlp.h"
@@ -1206,6 +1209,83 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
 }
 
 #undef AMPL_DISPATCH
+
+// A map from NumberOf expressions with the same argument lists to target
+// values and corresponding variables.
+template <typename Var, typename CreateVar>
+class NumberOfMap {
+ public:
+  typedef std::map<double, Var> VarMap;
+
+  struct NumberOf {
+    NumberOfExpr expr;
+    VarMap vars;
+
+    NumberOf(NumberOfExpr e) : expr(e) {}
+  };
+
+ private:
+  CreateVar create_var_;
+  std::vector<NumberOf> numberofs_; // TODO: use map
+
+  class SameExpr {
+   private:
+    NumberOfExpr expr_;
+
+   public:
+    SameExpr(NumberOfExpr e) : expr_(e) {}
+
+    // Returns true if the stored expression is the same as the argument's
+    // expression.
+    bool operator()(const NumberOf &nof) const;
+  };
+
+ public:
+  NumberOfMap(CreateVar cv) : create_var_(cv) {}
+
+  typedef typename std::vector<NumberOf>::const_iterator iterator;
+
+  iterator begin() const {
+    return numberofs_.begin();
+  }
+
+  iterator end() const {
+    return numberofs_.end();
+  }
+
+  Var Add(double value, NumberOfExpr e);
+};
+
+template <typename Var, typename CreateVar>
+bool NumberOfMap<Var, CreateVar>::SameExpr::operator()(
+    const NumberOf &nof) const {
+  if (expr_.num_args() != nof.expr.num_args())
+    return false;
+  for (NumberOfExpr::iterator i = expr_.begin(), end = expr_.end(),
+       j = nof.expr.begin(); i != end; ++i, ++j) {
+    if (!AreEqual(*i, *j))
+      return false;
+  }
+  return true;
+}
+
+template <typename Var, typename CreateVar>
+Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
+  assert(Cast<NumericConstant>(e.target()).value() == value);
+  typename std::vector<NumberOf>::reverse_iterator np =
+      std::find_if(numberofs_.rbegin(), numberofs_.rend(), SameExpr(e));
+  if (np == numberofs_.rend()) {
+    numberofs_.push_back(NumberOf(e));
+    np = numberofs_.rbegin();
+  }
+  VarMap &vars = np->vars;
+  typename VarMap::iterator i = vars.lower_bound(value);
+  if (i != vars.end() && !vars.key_comp()(value, i->first))
+    return i->second;
+  Var var(create_var_());
+  vars.insert(i, typename VarMap::value_type(value, var));
+  return var;
+}
 }
 
 #endif  // SOLVERS_UTIL_EXPR_H_
