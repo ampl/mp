@@ -886,4 +886,42 @@ TEST_F(ExprTest, ExprVisitorInvalidThrows) {
   EXPECT_THROW(NullVisitor().Visit(ne), InvalidNumericExprError);
   EXPECT_THROW(NullVisitor().Visit(le), InvalidLogicalExprError);
 }
+
+struct Var {
+  int index;
+};
+
+struct CreateVar {
+ private:
+  int index_;
+
+ public:
+  CreateVar() : index_(0) {}
+
+  Var operator()() {
+    Var v = {++index_};
+    return v;
+  }
+};
+
+TEST_F(ExprTest, NumberOfMap) {
+  ampl::NumberOfMap<Var, CreateVar> map((CreateVar()));
+  EXPECT_TRUE(map.begin() == map.end());
+  NumberOfExpr e1 = AddNumberOf(AddNum(11), AddVar(0));
+  NumberOfExpr e2 = AddNumberOf(AddNum(22), AddVar(1));
+  map.Add(11, e1);
+  map.Add(22, e2);
+  map.Add(33, AddNumberOf(AddNum(33), AddVar(0)));
+  ampl::NumberOfMap<Var, CreateVar>::iterator i = map.begin();
+  EXPECT_EQ(e1, i->expr);
+  EXPECT_EQ(2u, i->values.size());
+  EXPECT_EQ(1, i->values.find(11)->second.index);
+  EXPECT_EQ(3, i->values.find(22)->second.index);
+  ++i;
+  EXPECT_EQ(e2, i->expr);
+  EXPECT_EQ(1u, i->values.size());
+  EXPECT_EQ(2, i->values.find(33)->second.index);
+  ++i;
+  EXPECT_TRUE(i == map.end());
+}
 }

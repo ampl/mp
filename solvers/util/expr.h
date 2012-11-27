@@ -1219,18 +1219,18 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
 template <typename Var, typename CreateVar>
 class NumberOfMap {
  public:
-  typedef std::map<double, Var> VarMap;
+  typedef std::map<double, Var> ValueMap;
 
   struct NumberOf {
     NumberOfExpr expr;
-    VarMap vars;
+    ValueMap values;
 
     NumberOf(NumberOfExpr e) : expr(e) {}
   };
 
  private:
   CreateVar create_var_;
-  std::vector<NumberOf> numberofs_; // TODO: use map
+  std::vector<NumberOf> numberofs_;
 
   class SameExpr {
    private:
@@ -1283,12 +1283,12 @@ Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
     numberofs_.push_back(NumberOf(e));
     np = numberofs_.rbegin();
   }
-  VarMap &vars = np->vars;
-  typename VarMap::iterator i = vars.lower_bound(value);
-  if (i != vars.end() && !vars.key_comp()(value, i->first))
+  ValueMap &values = np->values;
+  typename ValueMap::iterator i = values.lower_bound(value);
+  if (i != values.end() && !values.key_comp()(value, i->first))
     return i->second;
   Var var(create_var_());
-  vars.insert(i, typename VarMap::value_type(value, var));
+  values.insert(i, typename ValueMap::value_type(value, var));
   return var;
 }
 }
