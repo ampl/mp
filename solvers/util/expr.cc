@@ -26,6 +26,7 @@
 #include <cstdio>
 
 using ampl::Expr;
+using ampl::HashCombine;
 
 namespace {
 // An operation type.
@@ -44,12 +45,6 @@ enum OpType {
   OPTYPE_VARIABLE = 10,  // Variable
   OPTYPE_COUNT    = 11  // The count expression
 };
-
-template <class T>
-inline void HashCombine(std::size_t &seed, const T &v) {
-  std::hash<T> hasher;
-  seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-}
 }
 
 #ifdef HAVE_UNORDERED_MAP
@@ -368,7 +363,7 @@ std::size_t HashNumberOfArgs::operator()(const NumberOfExpr &e) const {
 }
 #endif
 
-bool SameNumberOfArgs::operator()(
+bool EqualNumberOfArgs::operator()(
     const NumberOfExpr &lhs, const NumberOfExpr &rhs) const {
   if (lhs.num_args() != rhs.num_args())
     return false;
