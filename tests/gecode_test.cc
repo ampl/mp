@@ -103,23 +103,42 @@ class Args {
   }
 };
 
-// Converts a numeric expression from AMPL to Gecode form and evaluates it.
-// Returns the value of the Gecode expression.
-static double ConvertAndEval(NumericExpr e,
-    int var1 = 0, int var2 = 0, int var3 = 0) {
-  ampl::NLToGecodeConverter converter(4);
-  GecodeProblem &p = converter.problem();
+static void InitVars(GecodeProblem &p, int var1, int var2, int var3) {
   Gecode::IntVarArray &vars = p.vars();
   vars[0] = Gecode::IntVar(p,
               Gecode::Int::Limits::min, Gecode::Int::Limits::max);
   vars[1] = Gecode::IntVar(p, var1, var1);
   vars[2] = Gecode::IntVar(p, var2, var2);
   vars[3] = Gecode::IntVar(p, var3, var3);
-  Gecode::rel(p, vars[0] == converter.Visit(e));
+}
+
+static double Solve(GecodeProblem &p) {
   Gecode::DFS<GecodeProblem> engine(&p);
   std::auto_ptr<GecodeProblem> solution(engine.next());
   return solution.get() ?
       solution->vars()[0].val() : std::numeric_limits<double>::quiet_NaN();
+}
+
+// Converts a numeric expression from AMPL to Gecode form and evaluates it.
+// Returns the value of the Gecode expression.
+static double ConvertAndEval(NumericExpr e,
+    int var1 = 0, int var2 = 0, int var3 = 0) {
+  ampl::NLToGecodeConverter converter(4);
+  GecodeProblem &p = converter.problem();
+  InitVars(p, var1, var2, var3);
+  Gecode::rel(p, converter.problem().vars()[0] == converter.Visit(e));
+  return Solve(p);
+}
+
+static double ConvertAndEval(LogicalExpr e,
+    int var1 = 0, int var2 = 0, int var3 = 0) {
+  ampl::NLToGecodeConverter converter(4);
+  GecodeProblem &p = converter.problem();
+  InitVars(p, var1, var2, var3);
+  Gecode::BoolVar result(p, 0, 1);
+  Gecode::rel(p, result == converter.Visit(e));
+  Gecode::channel(p, result, p.vars()[0]);
+  return Solve(p);
 }
 
 class GecodeTest : public ::testing::Test, public ExprBuilder {
@@ -406,15 +425,28 @@ TEST_F(GecodeTest, ConvertVar) {
   EXPECT_EQ(33, ConvertAndEval(x, 33));
 }
 
+TEST_F(GecodeTest, ConvertOr) {
+  ampl::NumericConstant one = AddNum(1);
+  ampl::BinaryLogicalExpr e = AddBinaryLogical(
+      OPOR, AddRelational(EQ, x, one), AddRelational(EQ, y, one));
+  EXPECT_EQ(0, ConvertAndEval(e, 0, 0));
+  EXPECT_EQ(1, ConvertAndEval(e, 0, 1));
+  EXPECT_EQ(1, ConvertAndEval(e, 1, 0));
+  EXPECT_EQ(1, ConvertAndEval(e, 1, 1));
+}
+
+TEST_F(GecodeTest, ConvertAnd) {
+  ampl::NumericConstant one = AddNum(1);
+  ampl::BinaryLogicalExpr e = AddBinaryLogical(
+      OPAND, AddRelational(EQ, x, one), AddRelational(EQ, y, one));
+  EXPECT_EQ(0, ConvertAndEval(e, 0, 0));
+  EXPECT_EQ(0, ConvertAndEval(e, 0, 1));
+  EXPECT_EQ(0, ConvertAndEval(e, 1, 0));
+  EXPECT_EQ(1, ConvertAndEval(e, 1, 1));
+}
+
 // TODO
-/*TEST_F(GecodeTest, ConvertFalse) {
-  EXPECT_EQ("IloNumVar(4)[1..1] == 0", str(p.Visit(AddBool(false))));
-}
-
-TEST_F(GecodeTest, ConvertTrue) {
-  EXPECT_EQ("IloNumVar(4)[1..1] == 1", str(p.Visit(AddBool(true))));
-}
-
+/*
 TEST_F(GecodeTest, ConvertLT) {
   EXPECT_EQ("x <= 41",
       str(p.Visit(AddRelational(LT, AddVar(0), AddNum(42)))));
@@ -481,51 +513,12 @@ TEST_F(GecodeTest, ConvertNotExactly) {
       AddRelational(OPNOTEXACTLY, AddVar(0), AddNum(42)))));
 }
 
-TEST_F(GecodeTest, ConvertOr) {
-  IloConstraint c(p.Visit(AddBinaryLogical(OPOR,
-      AddRelational(EQ, AddVar(0), AddNum(1)),
-      AddRelational(EQ, AddVar(0), AddNum(2)))));
-  IloIfThenI *ifThen = dynamic_cast<IloIfThenI*>(c.getImpl());
-  ASSERT_TRUE(ifThen != nullptr);
-  IloNotI *n = dynamic_cast<IloNotI*>(ifThen->getLeft().getImpl());
-  ASSERT_TRUE(n != nullptr);
-  EXPECT_EQ("x == 1", str(n->getConstraint()));
-  EXPECT_EQ("x == 2", str(ifThen->getRight()));
-}
-
-TEST_F(GecodeTest, CheckOrTruthTable) {
-  IloNumVarArray vars = p.vars();
-  vars[0].setBounds(0, 0);
-  vars[1].setBounds(0, 0);
-  mod_.add(p.Visit(AddBinaryLogical(OPOR,
-      AddRelational(EQ, AddVar(0), AddNum(1)),
-      AddRelational(EQ, AddVar(1), AddNum(1)))));
-  IloCP cp(mod_);
-  EXPECT_FALSE(cp.solve());
-  vars[0].setBounds(0, 0);
-  vars[1].setBounds(1, 1);
-  EXPECT_NE(0, cp.solve());
-  vars[0].setBounds(1, 1);
-  vars[1].setBounds(0, 0);
-  EXPECT_NE(0, cp.solve());
-  vars[0].setBounds(1, 1);
-  vars[1].setBounds(1, 1);
-  EXPECT_NE(0, cp.solve());
-}
-
 TEST_F(GecodeTest, ConvertExists) {
   EXPECT_EQ("(x == 1 ) || (x == 2 ) || (x == 3 )",
       str(p.Visit(AddIteratedLogical(ORLIST,
           AddRelational(EQ, AddVar(0), AddNum(1)),
           AddRelational(EQ, AddVar(0), AddNum(2)),
           AddRelational(EQ, AddVar(0), AddNum(3))))));
-}
-
-TEST_F(GecodeTest, ConvertAnd) {
-  EXPECT_EQ("(x == 1 ) && (x == 2 )",
-      str(p.Visit(AddBinaryLogical(OPAND,
-          AddRelational(EQ, AddVar(0), AddNum(1)),
-          AddRelational(EQ, AddVar(0), AddNum(2))))));
 }
 
 TEST_F(GecodeTest, ConvertForAll) {
@@ -591,7 +584,16 @@ TEST_F(GecodeTest, ConvertAllDiff) {
   EXPECT_EQ("IloIntVar(4)" + bounds +" == 42", str(*iter));
   ++iter;
   EXPECT_FALSE(iter.ok());
-}*/
+}
+
+TEST_F(GecodeTest, ConvertFalse) {
+  EXPECT_EQ("IloNumVar(4)[1..1] == 0", str(p.Visit(AddBool(false))));
+}
+
+TEST_F(GecodeTest, ConvertTrue) {
+  EXPECT_EQ("IloNumVar(4)[1..1] == 1", str(p.Visit(AddBool(true))));
+}
+*/
 
 // ----------------------------------------------------------------------------
 // Driver tests
