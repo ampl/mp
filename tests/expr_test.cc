@@ -916,12 +916,32 @@ TEST_F(ExprTest, NumberOfMap) {
   EXPECT_EQ(e1, i->expr);
   EXPECT_EQ(2u, i->values.size());
   EXPECT_EQ(1, i->values.find(11)->second.index);
-  EXPECT_EQ(3, i->values.find(22)->second.index);
+  EXPECT_EQ(3, i->values.find(33)->second.index);
   ++i;
   EXPECT_EQ(e2, i->expr);
   EXPECT_EQ(1u, i->values.size());
-  EXPECT_EQ(2, i->values.find(33)->second.index);
+  EXPECT_EQ(2, i->values.find(22)->second.index);
   ++i;
   EXPECT_TRUE(i == map.end());
+}
+
+TEST_F(ExprTest, NumberOfMapPerformance) {
+  // Results in the release mode when using linear search:
+  // num_exprs  time,s
+  //   10000     0.45
+  //   20000     2.04
+  //   40000    10.58
+  ampl::NumberOfMap<Var, CreateVar> map((CreateVar()));
+  NumericConstant n = AddNum(0);
+  int num_exprs = 10000;
+  std::vector<NumberOfExpr> exprs(num_exprs);
+  for (int i = 0; i < num_exprs; ++i)
+    exprs[i] = AddNumberOf(n, AddVar(i));
+  clock_t start = clock();
+  for (int i = 0; i < num_exprs; ++i)
+    map.Add(0, exprs[i]);
+  clock_t end = clock();
+  std::cout << "Executed NumberOfMap.Add " << num_exprs << " times in "
+      << static_cast<double>(end - start) / CLOCKS_PER_SEC << " s.\n";
 }
 }

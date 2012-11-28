@@ -44,8 +44,8 @@ else ()
 endif ()
 
 include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag(-std=c++0x HAS_STD_CPP0X_FLAG)
-if (HAS_STD_CPP0X_FLAG)
+check_cxx_compiler_flag(-std=c++0x HAVE_STD_CPP0X_FLAG)
+if (HAVE_STD_CPP0X_FLAG)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 endif ()
 
@@ -80,6 +80,17 @@ macro(use_dll_runtime)
     endforeach ()
   endif ()
 endmacro ()
+
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles("
+  #include <unordered_map>
+  int main() {
+    std::unordered_map<int, int> m;
+    return 0;
+  }" HAVE_UNORDERED_MAP)
+if (HAVE_UNORDERED_MAP)
+  add_definitions(-DHAVE_UNORDERED_MAP)
+endif ()
 
 add_subdirectory(doc)
 add_subdirectory(solvers)

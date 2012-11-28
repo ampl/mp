@@ -22,8 +22,11 @@ DEBUG = -g
 MTFLAGS = -DILCUSEMT
 LDMTFLAGS = -mt
 
+# Remove -DHAVE_UNORDERED_MAP if using an old C++ standard library
+# without std::unordered_map. Conversion of numberof expressions will
+# be slower.
 CXX_FLAGS = $(DEBUG) -I$(CONCERT_INC) -I$(CPLEX_INC) -I$(CPOPTIMIZER_INC) \
-            -I$(AMPL_INC) $(MTFLAGS) -DIL_STD
+            -I$(AMPL_INC) $(MTFLAGS) -DIL_STD -DHAVE_UNORDERED_MAP
 LD_FLAGS  = -L$(CPOPTIMIZER_LIB) -lcp -L$(CPLEX_LIB) -lilocplex -lcplex \
             -L$(CONCERT_LIB) -lconcert $(LDMTFLAGS) $(AMPL_LIB) $(LIBS)
 

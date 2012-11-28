@@ -25,6 +25,8 @@
 #include <sstream>
 #include <cstdio>
 
+using ampl::Expr;
+
 namespace {
 // An operation type.
 // Numeric values for the operation types should be in sync with the ones in
@@ -42,6 +44,71 @@ enum OpType {
   OPTYPE_VARIABLE = 10,  // Variable
   OPTYPE_COUNT    = 11  // The count expression
 };
+
+template <class T>
+inline void HashCombine(std::size_t &seed, const T &v) {
+  std::hash<T> hasher;
+  seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+}
+
+std::size_t std::hash<ampl::Expr>::operator()(Expr expr) const {
+  std::size_t hash = 0;
+  HashCombine(hash, expr.opcode());
+
+  struct expr *e = expr.expr_;
+  switch (optype[expr.opcode()]) {
+    case OPTYPE_UNARY:
+      HashCombine(hash, Expr(e->L.e));
+      break;
+
+    case OPTYPE_BINARY:
+      HashCombine(hash, Expr(e->L.e));
+      HashCombine(hash, Expr(e->R.e));
+      break;
+
+    case OPTYPE_VARARG:
+      for (de *d = reinterpret_cast<const expr_va*>(e)->L.d; d->e; d++)
+        HashCombine(hash, Expr(d->e));
+      break;
+
+    case OPTYPE_PLTERM: {
+      plterm *p = e->L.p;
+      real *pce = p->bs;
+      for (int i = 0, n = p->n * 2 - 1; i < n; i++)
+        HashCombine(hash, pce[i]);
+      HashCombine(hash, Expr(e->R.e));
+      break;
+    }
+
+    case OPTYPE_IF: {
+      const expr_if *eif = reinterpret_cast<const expr_if*>(e);
+      HashCombine(hash, Expr(eif->e));
+      HashCombine(hash, Expr(eif->T));
+      HashCombine(hash, Expr(eif->F));
+      break;
+    }
+
+    case OPTYPE_SUM:
+    case OPTYPE_COUNT: {
+      struct expr **ep = e->L.ep;
+      for (; ep < e->R.ep; ep++)
+        HashCombine(hash, Expr(*ep));
+      break;
+    }
+
+    case OPTYPE_NUMBER:
+      HashCombine(hash, reinterpret_cast<const expr_n*>(e)->v);
+      break;
+
+    case OPTYPE_VARIABLE:
+      HashCombine(hash, e->a);
+      break;
+
+    default:
+      throw ampl::UnsupportedExprError(expr.opname());
+  }
+  return hash;
 }
 
 namespace ampl {
@@ -288,5 +355,24 @@ std::string internal::FormatOpCode(Expr e) {
   char buffer[64];
   snprintf(buffer, sizeof(buffer), "%d", e.opcode());
   return buffer;
+}
+
+std::size_t HashNumberOfArgs::operator()(const NumberOfExpr &e) const {
+  std::size_t hash = 0;
+  for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+    HashCombine(hash, static_cast<Expr>(*i));
+  return hash;
+}
+
+bool SameNumberOfArgs::operator()(
+    const NumberOfExpr &lhs, const NumberOfExpr &rhs) const {
+  if (lhs.num_args() != rhs.num_args())
+    return false;
+  for (NumberOfExpr::iterator i = lhs.begin(), end = lhs.end(),
+       j = rhs.begin(); i != end; ++i, ++j) {
+    if (!AreEqual(*i, *j))
+      return false;
+  }
+  return true;
 }
 }

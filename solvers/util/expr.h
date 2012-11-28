@@ -32,6 +32,10 @@
 #include <string>
 #include <vector>
 
+#ifdef HAVE_UNORDERED_MAP
+# include <unordered_map>
+#endif
+
 extern "C" {
 #include "solvers/nlp.h"
 #include "solvers/opcode.hd"
@@ -138,8 +142,17 @@ extern "C" {
 #undef zerograds
 
 namespace ampl {
-
 class Expr;
+}
+
+namespace std {
+template <>
+struct hash<ampl::Expr> {
+  std::size_t operator()(ampl::Expr e) const;
+};
+}
+
+namespace ampl {
 
 namespace internal {
 
@@ -331,6 +344,8 @@ class Expr {
 
   // Recursively compares two expressions and returns true if they are equal.
   friend bool AreEqual(Expr e1, Expr e2);
+
+  friend struct std::hash<Expr>;
 };
 
 namespace internal {
@@ -1214,6 +1229,31 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
 
 #undef AMPL_DISPATCH
 
+class HashNumberOfArgs {
+ public:
+  std::size_t operator()(const NumberOfExpr &e) const;
+};
+
+class SameNumberOfArgs {
+ public:
+  bool operator()(const NumberOfExpr &lhs, const NumberOfExpr &rhs) const;
+};
+
+template <typename NumberOf>
+class MatchNumberOfArgs {
+ private:
+  NumberOfExpr expr_;
+
+ public:
+  MatchNumberOfArgs(NumberOfExpr e) : expr_(e) {}
+
+  // Returns true if the stored expression has the same arguments as the nof's
+  // expression.
+  bool operator()(const NumberOf &nof) const {
+    return SameNumberOfArgs()(expr_, nof.expr);
+  }
+};
+
 // A map from numberof expressions with the same argument lists to
 // values and corresponding variables.
 template <typename Var, typename CreateVar>
@@ -1230,19 +1270,15 @@ class NumberOfMap {
 
  private:
   CreateVar create_var_;
+
+#ifdef HAVE_UNORDERED_MAP
+  // Map from a numberof expression to an index in numberofs_.
+  typedef std::unordered_map<
+      NumberOfExpr, std::size_t, HashNumberOfArgs, SameNumberOfArgs> Map;
+  Map map_;
+#endif
+
   std::vector<NumberOf> numberofs_;
-
-  class SameExpr {
-   private:
-    NumberOfExpr expr_;
-
-   public:
-    SameExpr(NumberOfExpr e) : expr_(e) {}
-
-    // Returns true if the stored expression is the same as the argument's
-    // expression.
-    bool operator()(const NumberOf &nof) const;
-  };
 
  public:
   NumberOfMap(CreateVar cv) : create_var_(cv) {}
@@ -1262,28 +1298,29 @@ class NumberOfMap {
 };
 
 template <typename Var, typename CreateVar>
-bool NumberOfMap<Var, CreateVar>::SameExpr::operator()(
-    const NumberOf &nof) const {
-  if (expr_.num_args() != nof.expr.num_args())
-    return false;
-  for (NumberOfExpr::iterator i = expr_.begin(), end = expr_.end(),
-       j = nof.expr.begin(); i != end; ++i, ++j) {
-    if (!AreEqual(*i, *j))
-      return false;
-  }
-  return true;
-}
-
-template <typename Var, typename CreateVar>
 Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
   assert(Cast<NumericConstant>(e.value()).value() == value);
-  typename std::vector<NumberOf>::reverse_iterator np =
-      std::find_if(numberofs_.rbegin(), numberofs_.rend(), SameExpr(e));
+#ifdef HAVE_UNORDERED_MAP
+  std::pair<typename Map::iterator, bool> result =
+      map_.insert(typename Map::value_type(e, numberofs_.size()));
+  if (result.second)
+    numberofs_.push_back(NumberOf(e));
+  ValueMap &values = numberofs_[result.first->second].values;
+#else
+# ifdef _MSC_VER
+#  pragma message("warning: unordered_map not available, numberof may be slow")
+# else
+#  warning "warning: unordered_map not available, numberof may be slow"
+# endif
+
+  typename std::vector<NumberOf>::reverse_iterator np = std::find_if(
+      numberofs_.rbegin(), numberofs_.rend(), MatchNumberOfArgs<NumberOf>(e));
   if (np == numberofs_.rend()) {
     numberofs_.push_back(NumberOf(e));
     np = numberofs_.rbegin();
   }
   ValueMap &values = np->values;
+#endif
   typename ValueMap::iterator i = values.lower_bound(value);
   if (i != values.end() && !values.key_comp()(value, i->first))
     return i->second;
