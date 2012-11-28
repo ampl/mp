@@ -26,7 +26,6 @@
 #include <cstdio>
 
 using ampl::Expr;
-using ampl::HashCombine;
 
 namespace {
 // An operation type.
@@ -50,7 +49,7 @@ enum OpType {
 #ifdef HAVE_UNORDERED_MAP
 std::size_t std::hash<ampl::Expr>::operator()(Expr expr) const {
   std::size_t hash = 0;
-  HashCombine(hash, expr.opcode());
+  ampl::HashCombine(hash, expr.opcode());
 
   struct expr *e = expr.expr_;
   switch (optype[expr.opcode()]) {
@@ -72,7 +71,7 @@ std::size_t std::hash<ampl::Expr>::operator()(Expr expr) const {
       plterm *p = e->L.p;
       real *pce = p->bs;
       for (int i = 0, n = p->n * 2 - 1; i < n; i++)
-        HashCombine(hash, pce[i]);
+        ampl::HashCombine(hash, pce[i]);
       HashCombine(hash, Expr(e->R.e));
       break;
     }
@@ -94,11 +93,11 @@ std::size_t std::hash<ampl::Expr>::operator()(Expr expr) const {
     }
 
     case OPTYPE_NUMBER:
-      HashCombine(hash, reinterpret_cast<const expr_n*>(e)->v);
+      ampl::HashCombine(hash, reinterpret_cast<const expr_n*>(e)->v);
       break;
 
     case OPTYPE_VARIABLE:
-      HashCombine(hash, e->a);
+      ampl::HashCombine(hash, e->a);
       break;
 
     default:
