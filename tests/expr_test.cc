@@ -47,6 +47,7 @@ using ampl::ImplicationExpr;
 using ampl::IteratedLogicalExpr;
 using ampl::AllDiffExpr;
 using ampl::ExprVisitor;
+using ampl::HashCombine;
 
 using ampl::UnsupportedExprError;
 using ampl::InvalidNumericExprError;
@@ -394,26 +395,26 @@ TEST_F(ExprTest, EqualVar) {
 
 TEST_F(ExprTest, EqualUnary) {
   EXPECT_TRUE(Equal(AddUnary(OPUMINUS, AddVar(0)),
-                       AddUnary(OPUMINUS, AddVar(0))));
+                    AddUnary(OPUMINUS, AddVar(0))));
   EXPECT_FALSE(Equal(AddUnary(OPUMINUS, AddVar(0)),
-                        AddVar(0)));
+                     AddVar(0)));
   EXPECT_FALSE(Equal(AddUnary(OPUMINUS, AddVar(0)),
-                        AddUnary(FLOOR, AddVar(0))));
+                     AddUnary(FLOOR, AddVar(0))));
   EXPECT_FALSE(Equal(AddUnary(OPUMINUS, AddVar(0)),
-                        AddUnary(OPUMINUS, AddVar(1))));
+                     AddUnary(OPUMINUS, AddVar(1))));
 }
 
 TEST_F(ExprTest, EqualBinary) {
   EXPECT_TRUE(Equal(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
-                       AddBinary(OPPLUS, AddVar(0), AddNum(42))));
+                    AddBinary(OPPLUS, AddVar(0), AddNum(42))));
   EXPECT_FALSE(Equal(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
-                        AddBinary(OPMINUS, AddVar(0), AddNum(42))));
+                     AddBinary(OPMINUS, AddVar(0), AddNum(42))));
   EXPECT_FALSE(Equal(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
-                        AddBinary(OPPLUS, AddNum(42), AddVar(0))));
+                     AddBinary(OPPLUS, AddNum(42), AddVar(0))));
   EXPECT_FALSE(Equal(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
-                        AddBinary(OPPLUS, AddVar(0), AddNum(0))));
+                     AddBinary(OPPLUS, AddVar(0), AddNum(0))));
   EXPECT_FALSE(Equal(AddNum(42),
-                        AddBinary(OPPLUS, AddVar(0), AddNum(42))));
+                     AddBinary(OPPLUS, AddVar(0), AddNum(42))));
 }
 
 TEST_F(ExprTest, EqualVarArg) {
@@ -439,22 +440,12 @@ TEST_F(ExprTest, EqualVarArg) {
 
 TEST_F(ExprTest, EqualPLTerm) {
   double args[] = {-1, 5, 0, 10, 1};
-  EXPECT_TRUE(Equal(
-      AddPLTerm(5, args, 0),
-      AddPLTerm(5, args, 0)));
-  EXPECT_FALSE(Equal(
-      AddPLTerm(5, args, 0),
-      AddPLTerm(3, args, 0)));
-  EXPECT_FALSE(Equal(
-      AddPLTerm(5, args, 0),
-      AddPLTerm(5, args, 1)));
+  EXPECT_TRUE(Equal(AddPLTerm(5, args, 0), AddPLTerm(5, args, 0)));
+  EXPECT_FALSE(Equal(AddPLTerm(5, args, 0), AddPLTerm(3, args, 0)));
+  EXPECT_FALSE(Equal(AddPLTerm(5, args, 0), AddPLTerm(5, args, 1)));
   double args2[] = {-1, 5, 0, 11, 1};
-  EXPECT_FALSE(Equal(
-      AddPLTerm(5, args, 0),
-      AddPLTerm(5, args2, 0)));
-  EXPECT_FALSE(Equal(
-      AddPLTerm(5, args, 0),
-      AddNum(42)));
+  EXPECT_FALSE(Equal(AddPLTerm(5, args, 0), AddPLTerm(5, args2, 0)));
+  EXPECT_FALSE(Equal(AddPLTerm(5, args, 0), AddNum(42)));
 }
 
 TEST_F(ExprTest, EqualIf) {
@@ -925,7 +916,125 @@ TEST_F(ExprTest, NumberOfMap) {
   EXPECT_TRUE(i == map.end());
 }
 
-TEST_F(ExprTest, NumberOfMapPerformance) {
+#ifdef HAVE_UNORDERED_MAP
+
+TEST_F(ExprTest, HashNum) {
+  size_t hash = 0;
+  HashCombine(hash, OPNUM);
+  HashCombine(hash, 42.0);
+  EXPECT_EQ(hash, std::hash<Expr>()(AddNum(42)));
+}
+
+TEST_F(ExprTest, HashVar) {
+  size_t hash = 0;
+  HashCombine(hash, OPVARVAL);
+  HashCombine(hash, 42);
+  EXPECT_EQ(hash, std::hash<Expr>()(AddVar(42)));
+}
+
+TEST_F(ExprTest, HashUnary) {
+  size_t hash = 0;
+  HashCombine(hash, OPUMINUS);
+  HashCombine<Expr>(hash, AddVar(0));
+  EXPECT_EQ(hash, std::hash<Expr>()(AddUnary(OPUMINUS, AddVar(0))));
+}
+
+TEST_F(ExprTest, HashBinary) {
+  size_t hash = 0;
+  HashCombine(hash, OPPLUS);
+  HashCombine<Expr>(hash, AddVar(11));
+  HashCombine<Expr>(hash, AddNum(22));
+  EXPECT_EQ(hash, std::hash<Expr>()(AddBinary(OPPLUS, AddVar(11), AddNum(22))));
+}
+
+TEST_F(ExprTest, HashVarArg) {
+  size_t hash = 0;
+  HashCombine(hash, MINLIST);
+  HashCombine<Expr>(hash, AddVar(0));
+  HashCombine<Expr>(hash, AddVar(1));
+  HashCombine<Expr>(hash, AddNum(42));
+  EXPECT_EQ(hash, std::hash<Expr>()(
+      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42))));
+}
+
+TEST_F(ExprTest, HashPLTerm) {
+  size_t hash = 0;
+  HashCombine(hash, OPPLTERM);
+  double args[] = {-1, 5, 0, 10, 1};
+  for (size_t i = 0; i < sizeof(args) / sizeof(*args); ++i)
+    HashCombine(hash, args[i]);
+  HashCombine<Expr>(hash, AddVar(11));
+  EXPECT_EQ(hash, std::hash<Expr>()(AddPLTerm(5, args, 11)));
+}
+
+TEST_F(ExprTest, HashIf) {
+  size_t hash = 0;
+  HashCombine(hash, OPIFnl);
+  HashCombine<Expr>(hash, AddBool(0));
+  HashCombine<Expr>(hash, AddVar(1));
+  HashCombine<Expr>(hash, AddNum(42));
+  EXPECT_EQ(hash, std::hash<Expr>()(AddIf(AddBool(0), AddVar(1), AddNum(42))));
+}
+
+TEST_F(ExprTest, HashSum) {
+  size_t hash = 0;
+  HashCombine(hash, OPSUMLIST);
+  HashCombine<Expr>(hash, AddVar(0));
+  HashCombine<Expr>(hash, AddVar(1));
+  HashCombine<Expr>(hash, AddNum(42));
+  EXPECT_EQ(hash, std::hash<Expr>()(AddSum(AddVar(0), AddVar(1), AddNum(42))));
+}
+
+TEST_F(ExprTest, HashCount) {
+  size_t hash = 0;
+  HashCombine(hash, OPCOUNT);
+  HashCombine<Expr>(hash, AddBool(false));
+  HashCombine<Expr>(hash, AddBool(true));
+  HashCombine<Expr>(hash, AddBool(true));
+  EXPECT_EQ(hash, std::hash<Expr>()(
+      AddCount(AddBool(false), AddBool(true), AddBool(true))));
+}
+
+TEST_F(ExprTest, HashNumberOfArgs) {
+  size_t hash = 0;
+  HashCombine<Expr>(hash, AddVar(11));
+  HashCombine<Expr>(hash, AddNum(22));
+  EXPECT_EQ(hash, ampl::HashNumberOfArgs()(
+      AddNumberOf(AddNum(42), AddVar(11), AddNum(22))));
+}
+
+TEST_F(ExprTest, EqualNumberOfArgs) {
+  EXPECT_TRUE(ampl::EqualNumberOfArgs()(
+      AddNumberOf(AddNum(0), AddVar(11), AddNum(22)),
+      AddNumberOf(AddNum(1), AddVar(11), AddNum(22))));
+  EXPECT_FALSE(ampl::EqualNumberOfArgs()(
+      AddNumberOf(AddNum(0), AddVar(11), AddNum(22)),
+      AddNumberOf(AddNum(1), AddVar(11))));
+  EXPECT_FALSE(ampl::EqualNumberOfArgs()(
+      AddNumberOf(AddNum(0), AddVar(11), AddNum(22)),
+      AddNumberOf(AddNum(1), AddVar(11), AddNum(33))));
+}
+
+struct TestNumberOf {
+  NumberOfExpr expr;
+
+  TestNumberOf(NumberOfExpr e) : expr(e) {}
+};
+
+TEST_F(ExprTest, MatchNumberOfArgs) {
+  EXPECT_TRUE(ampl::MatchNumberOfArgs<TestNumberOf>(
+      AddNumberOf(AddNum(1), AddVar(11), AddNum(22)))(
+          TestNumberOf(AddNumberOf(AddNum(0), AddVar(11), AddNum(22)))));
+  EXPECT_FALSE(ampl::MatchNumberOfArgs<TestNumberOf>(
+      AddNumberOf(AddNum(1), AddVar(11)))(
+          TestNumberOf(AddNumberOf(AddNum(0), AddVar(11), AddNum(22)))));
+  EXPECT_FALSE(ampl::MatchNumberOfArgs<TestNumberOf>(
+      AddNumberOf(AddNum(1), AddVar(11), AddNum(33)))(
+          TestNumberOf(AddNumberOf(AddNum(0), AddVar(11), AddNum(22)))));
+}
+#endif
+
+TEST_F(ExprTest, DISABLED_NumberOfMapPerformance) {
   // Results in the release mode when using linear search:
   // num_exprs  time,s
   //   10000     0.45

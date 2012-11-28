@@ -1234,13 +1234,19 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
 #undef AMPL_DISPATCH
 
 #ifdef HAVE_UNORDERED_MAP
+template <class T>
+inline void HashCombine(std::size_t &seed, const T &v) {
+  std::hash<T> hasher;
+  seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
 class HashNumberOfArgs {
  public:
   std::size_t operator()(const NumberOfExpr &e) const;
 };
 #endif
 
-class SameNumberOfArgs {
+class EqualNumberOfArgs {
  public:
   bool operator()(const NumberOfExpr &lhs, const NumberOfExpr &rhs) const;
 };
@@ -1256,7 +1262,7 @@ class MatchNumberOfArgs {
   // Returns true if the stored expression has the same arguments as the nof's
   // expression.
   bool operator()(const NumberOf &nof) const {
-    return SameNumberOfArgs()(expr_, nof.expr);
+    return EqualNumberOfArgs()(expr_, nof.expr);
   }
 };
 
@@ -1280,7 +1286,7 @@ class NumberOfMap {
 #ifdef HAVE_UNORDERED_MAP
   // Map from a numberof expression to an index in numberofs_.
   typedef std::unordered_map<
-      NumberOfExpr, std::size_t, HashNumberOfArgs, SameNumberOfArgs> Map;
+      NumberOfExpr, std::size_t, HashNumberOfArgs, EqualNumberOfArgs> Map;
   Map map_;
 #endif
 
