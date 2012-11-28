@@ -145,12 +145,14 @@ namespace ampl {
 class Expr;
 }
 
+#ifdef HAVE_UNORDERED_MAP
 namespace std {
 template <>
 struct hash<ampl::Expr> {
   std::size_t operator()(ampl::Expr e) const;
 };
 }
+#endif
 
 namespace ampl {
 
@@ -343,9 +345,11 @@ class Expr {
   }
 
   // Recursively compares two expressions and returns true if they are equal.
-  friend bool AreEqual(Expr e1, Expr e2);
+  friend bool Equal(Expr e1, Expr e2);
 
+#ifdef HAVE_UNORDERED_MAP
   friend struct std::hash<Expr>;
+#endif
 };
 
 namespace internal {
@@ -1229,10 +1233,12 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
 
 #undef AMPL_DISPATCH
 
+#ifdef HAVE_UNORDERED_MAP
 class HashNumberOfArgs {
  public:
   std::size_t operator()(const NumberOfExpr &e) const;
 };
+#endif
 
 class SameNumberOfArgs {
  public:
@@ -1307,12 +1313,13 @@ Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
     numberofs_.push_back(NumberOf(e));
   ValueMap &values = numberofs_[result.first->second].values;
 #else
-# ifdef _MSC_VER
+# if defined(AMPL_NO_UNORDERED_MAP_WARNING)
+  // Do nothing.
+# elif defined(_MSC_VER)
 #  pragma message("warning: unordered_map not available, numberof may be slow")
 # else
-#  warning "warning: unordered_map not available, numberof may be slow"
+#  warning "unordered_map not available, numberof may be slow"
 # endif
-
   typename std::vector<NumberOf>::reverse_iterator np = std::find_if(
       numberofs_.rbegin(), numberofs_.rend(), MatchNumberOfArgs<NumberOf>(e));
   if (np == numberofs_.rend()) {

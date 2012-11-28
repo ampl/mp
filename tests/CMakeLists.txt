@@ -29,7 +29,7 @@ configure_file(
   ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 cxx_test_with_flags(expr_test "" "gtest;util"
-  test_main.cc expr_builder.cc expr_test.cc)
+  test_main.cc expr_builder.cc expr_test.cc no_unordered_map_test.cc)
 
 add_ampl_library(testlib testlib.cc)
 add_library(function function.cc function.h)

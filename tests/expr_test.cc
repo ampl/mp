@@ -382,134 +382,134 @@ TEST_F(ExprTest, EqualityOperator) {
 }
 
 TEST_F(ExprTest, EqualNum) {
-  EXPECT_TRUE(AreEqual(AddNum(0.42), AddNum(0.42)));
-  EXPECT_FALSE(AreEqual(AddNum(0.42), AddNum(42)));
+  EXPECT_TRUE(Equal(AddNum(0.42), AddNum(0.42)));
+  EXPECT_FALSE(Equal(AddNum(0.42), AddNum(42)));
 }
 
 TEST_F(ExprTest, EqualVar) {
-  EXPECT_TRUE(AreEqual(AddVar(0), AddVar(0)));
-  EXPECT_FALSE(AreEqual(AddVar(0), AddVar(1)));
-  EXPECT_FALSE(AreEqual(AddVar(0), AddNum(0)));
+  EXPECT_TRUE(Equal(AddVar(0), AddVar(0)));
+  EXPECT_FALSE(Equal(AddVar(0), AddVar(1)));
+  EXPECT_FALSE(Equal(AddVar(0), AddNum(0)));
 }
 
 TEST_F(ExprTest, EqualUnary) {
-  EXPECT_TRUE(AreEqual(AddUnary(OPUMINUS, AddVar(0)),
+  EXPECT_TRUE(Equal(AddUnary(OPUMINUS, AddVar(0)),
                        AddUnary(OPUMINUS, AddVar(0))));
-  EXPECT_FALSE(AreEqual(AddUnary(OPUMINUS, AddVar(0)),
+  EXPECT_FALSE(Equal(AddUnary(OPUMINUS, AddVar(0)),
                         AddVar(0)));
-  EXPECT_FALSE(AreEqual(AddUnary(OPUMINUS, AddVar(0)),
+  EXPECT_FALSE(Equal(AddUnary(OPUMINUS, AddVar(0)),
                         AddUnary(FLOOR, AddVar(0))));
-  EXPECT_FALSE(AreEqual(AddUnary(OPUMINUS, AddVar(0)),
+  EXPECT_FALSE(Equal(AddUnary(OPUMINUS, AddVar(0)),
                         AddUnary(OPUMINUS, AddVar(1))));
 }
 
 TEST_F(ExprTest, EqualBinary) {
-  EXPECT_TRUE(AreEqual(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
+  EXPECT_TRUE(Equal(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
                        AddBinary(OPPLUS, AddVar(0), AddNum(42))));
-  EXPECT_FALSE(AreEqual(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
+  EXPECT_FALSE(Equal(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
                         AddBinary(OPMINUS, AddVar(0), AddNum(42))));
-  EXPECT_FALSE(AreEqual(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
+  EXPECT_FALSE(Equal(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
                         AddBinary(OPPLUS, AddNum(42), AddVar(0))));
-  EXPECT_FALSE(AreEqual(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
+  EXPECT_FALSE(Equal(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
                         AddBinary(OPPLUS, AddVar(0), AddNum(0))));
-  EXPECT_FALSE(AreEqual(AddNum(42),
+  EXPECT_FALSE(Equal(AddNum(42),
                         AddBinary(OPPLUS, AddVar(0), AddNum(42))));
 }
 
 TEST_F(ExprTest, EqualVarArg) {
-  EXPECT_TRUE(AreEqual(
+  EXPECT_TRUE(Equal(
       AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)),
       AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)),
       AddVarArg(MINLIST, AddVar(0), AddVar(1))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddVarArg(MINLIST, AddVar(0), AddVar(1)),
       AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)),
       AddVarArg(MAXLIST, AddVar(0), AddVar(1), AddNum(42))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)),
       AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(0))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)),
       AddNum(42)));
 }
 
 TEST_F(ExprTest, EqualPLTerm) {
   double args[] = {-1, 5, 0, 10, 1};
-  EXPECT_TRUE(AreEqual(
+  EXPECT_TRUE(Equal(
       AddPLTerm(5, args, 0),
       AddPLTerm(5, args, 0)));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddPLTerm(5, args, 0),
       AddPLTerm(3, args, 0)));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddPLTerm(5, args, 0),
       AddPLTerm(5, args, 1)));
   double args2[] = {-1, 5, 0, 11, 1};
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddPLTerm(5, args, 0),
       AddPLTerm(5, args2, 0)));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddPLTerm(5, args, 0),
       AddNum(42)));
 }
 
 TEST_F(ExprTest, EqualIf) {
-  EXPECT_TRUE(AreEqual(
+  EXPECT_TRUE(Equal(
       AddIf(AddBool(0), AddVar(1), AddNum(42)),
       AddIf(AddBool(0), AddVar(1), AddNum(42))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddIf(AddBool(0), AddVar(1), AddNum(42)),
       AddSum(AddVar(0), AddVar(1), AddNum(42))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddIf(AddBool(0), AddVar(1), AddNum(42)),
       AddIf(AddBool(0), AddVar(1), AddNum(0))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddIf(AddBool(0), AddVar(1), AddNum(42)),
       AddNum(42)));
 }
 
 TEST_F(ExprTest, EqualSum) {
-  EXPECT_TRUE(AreEqual(
+  EXPECT_TRUE(Equal(
       AddSum(AddVar(0), AddVar(1), AddNum(42)),
       AddSum(AddVar(0), AddVar(1), AddNum(42))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddSum(AddVar(0), AddVar(1), AddNum(42)),
       AddSum(AddVar(0), AddVar(1))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddSum(AddVar(0), AddVar(1)),
       AddSum(AddVar(0), AddVar(1), AddNum(42))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddSum(AddVar(0), AddVar(1), AddNum(42)),
       AddCount(AddBool(false), AddBool(true), AddBool(true))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddSum(AddVar(0), AddVar(1), AddNum(42)),
       AddSum(AddVar(0), AddVar(1), AddNum(0))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddSum(AddVar(0), AddVar(1), AddNum(42)),
       AddNum(42)));
 }
 
 TEST_F(ExprTest, EqualCount) {
-  EXPECT_TRUE(AreEqual(
+  EXPECT_TRUE(Equal(
       AddCount(AddBool(false), AddBool(true), AddBool(true)),
       AddCount(AddBool(false), AddBool(true), AddBool(true))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddCount(AddBool(false), AddBool(true), AddBool(true)),
       AddCount(AddBool(false), AddBool(true))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddCount(AddBool(false), AddBool(true)),
       AddCount(AddBool(false), AddBool(true), AddBool(true))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddCount(AddBool(false), AddBool(true), AddBool(true)),
       AddSum(AddNum(0), AddNum(1), AddNum(1))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddCount(AddBool(false), AddBool(true), AddBool(true)),
       AddCount(AddBool(false), AddBool(true), AddBool(false))));
-  EXPECT_FALSE(AreEqual(
+  EXPECT_FALSE(Equal(
       AddCount(AddBool(false), AddBool(true), AddBool(true)),
       AddBool(true)));
 }
