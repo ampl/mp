@@ -146,20 +146,8 @@ class NLToGecodeConverter :
 
   LinExpr VisitNumberOf(NumberOfExpr e);
 
-  LinExpr VisitPLTerm(PiecewiseLinearTerm t) {
-    return VisitUnhandledNumericExpr(t); // TODO
-  }
-
-  LinExpr VisitConstExpPow(BinaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
-  }
-
   LinExpr VisitPow2(UnaryExpr e) {
     return sqr(Visit(e.arg()));
-  }
-
-  LinExpr VisitConstBasePow(BinaryExpr e) {
-    return VisitUnhandledNumericExpr(e); // TODO
   }
 
   LinExpr VisitNumericConstant(NumericConstant c) {

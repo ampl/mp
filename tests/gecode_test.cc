@@ -369,27 +369,25 @@ TEST_F(GecodeTest, ConvertNumberOf) {
       42, 42, 11));
 }
 
-// TODO
-/*
-TEST_F(GecodeTest, Convert1Pow) {
-  EXPECT_EQ("x ^ 42", str(p.Visit(AddBinary(OP1POW, AddVar(0), AddNum(42)))));
-}
-
-TEST_F(GecodeTest, Convert2Pow) {
-  EXPECT_EQ("square(x )", str(p.Visit(AddUnary(OP2POW, AddVar(0)))));
-}
-
-TEST_F(GecodeTest, ConvertCPow) {
-  EXPECT_EQ("42 ^ x", str(p.Visit(
-    AddBinary(OPCPOW, AddNum(42), AddVar(0)))));
-}
-
 TEST_F(GecodeTest, ConvertPLTerm) {
   double args[] = {-1, 5, 0, 10, 1};
-  EXPECT_EQ("piecewiselinear(x[0..1] , [5, 10], [-1, 0, 1], 0, 0)",
-            str(p.Visit(AddPLTerm(5, args, 0))));
+  EXPECT_THROW(ConvertAndEval(AddPLTerm(5, args, 0)),
+      UnsupportedExprError);
 }
-*/
+
+TEST_F(GecodeTest, ConvertPowConstExp) {
+  EXPECT_THROW(ConvertAndEval(AddBinary(OP1POW, x, AddNum(42))),
+      UnsupportedExprError);
+}
+
+TEST_F(GecodeTest, ConvertPow2) {
+  EXPECT_EQ(49, ConvertAndEval(AddUnary(OP2POW, x), 7));
+}
+
+TEST_F(GecodeTest, ConvertPowConstBase) {
+  EXPECT_THROW(ConvertAndEval(AddBinary(OPCPOW, AddNum(42), x)),
+      UnsupportedExprError);
+}
 
 TEST_F(GecodeTest, ConvertNum) {
   EXPECT_EQ(42, ConvertAndEval(AddNum(42)));
@@ -408,6 +406,7 @@ TEST_F(GecodeTest, ConvertVar) {
   EXPECT_EQ(33, ConvertAndEval(x, 33));
 }
 
+// TODO
 /*TEST_F(GecodeTest, ConvertFalse) {
   EXPECT_EQ("IloNumVar(4)[1..1] == 0", str(p.Visit(AddBool(false))));
 }

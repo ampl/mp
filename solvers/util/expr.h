@@ -974,7 +974,7 @@ class ExprVisitor {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(t));
   }
 
-  Result VisitConstExpPow(BinaryExpr e) {
+  Result VisitPowConstExp(BinaryExpr e) {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
@@ -982,7 +982,7 @@ class ExprVisitor {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
-  Result VisitConstBasePow(BinaryExpr e) {
+  Result VisitPowConstBase(BinaryExpr e) {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
@@ -1163,11 +1163,11 @@ Result ExprVisitor<Impl, Result, LResult>::Visit(NumericExpr e) {
   case OPPLTERM:
     return AMPL_DISPATCH(VisitPLTerm(Expr::Create<PiecewiseLinearTerm>(e)));
   case OP1POW:
-    return AMPL_DISPATCH(VisitConstExpPow(Expr::Create<BinaryExpr>(e)));
+    return AMPL_DISPATCH(VisitPowConstExp(Expr::Create<BinaryExpr>(e)));
   case OP2POW:
     return AMPL_DISPATCH(VisitPow2(Expr::Create<UnaryExpr>(e)));
   case OPCPOW:
-    return AMPL_DISPATCH(VisitConstBasePow(Expr::Create<BinaryExpr>(e)));
+    return AMPL_DISPATCH(VisitPowConstBase(Expr::Create<BinaryExpr>(e)));
   case OPNUM:
     return AMPL_DISPATCH(VisitNumericConstant(
         Expr::Create<NumericConstant>(e)));

@@ -47,7 +47,6 @@ using ampl::ImplicationExpr;
 using ampl::IteratedLogicalExpr;
 using ampl::AllDiffExpr;
 using ampl::ExprVisitor;
-using ampl::HashCombine;
 
 using ampl::UnsupportedExprError;
 using ampl::InvalidNumericExprError;
@@ -788,9 +787,9 @@ struct FullTestVisitor : ExprVisitor<FullTestVisitor, TestResult, TestLResult> {
   TestResult VisitCount(CountExpr e) { return Handle(e); }
   TestResult VisitNumberOf(NumberOfExpr e) { return Handle(e); }
   TestResult VisitPLTerm(PiecewiseLinearTerm e) { return Handle(e); }
-  TestResult VisitConstExpPow(BinaryExpr e) { return Handle(e); }
+  TestResult VisitPowConstExp(BinaryExpr e) { return Handle(e); }
   TestResult VisitPow2(UnaryExpr e) { return Handle(e); }
-  TestResult VisitConstBasePow(BinaryExpr e) { return Handle(e); }
+  TestResult VisitPowConstBase(BinaryExpr e) { return Handle(e); }
   TestResult VisitNumericConstant(NumericConstant e) { return Handle(e); }
   TestResult VisitVariable(Variable e) { return Handle(e); }
   TestLResult VisitOr(BinaryLogicalExpr e) { return Handle(e); }
@@ -917,6 +916,8 @@ TEST_F(ExprTest, NumberOfMap) {
 }
 
 #ifdef HAVE_UNORDERED_MAP
+
+using ampl::HashCombine;
 
 TEST_F(ExprTest, HashNum) {
   size_t hash = 0;
