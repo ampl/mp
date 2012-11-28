@@ -358,7 +358,7 @@ class IlogCPDriver : public Driver, public Visitor {
 
   IloExpr VisitNumberOf(NumberOfExpr e);
 
-  IloExpr VisitConstExpPow(BinaryExpr e) {
+  IloExpr VisitPowConstExp(BinaryExpr e) {
     return IloPower(Visit(e.lhs()), Cast<NumericConstant>(e.rhs()).value());
   }
 
@@ -366,7 +366,7 @@ class IlogCPDriver : public Driver, public Visitor {
     return IloSquare(Visit(e.arg()));
   }
 
-  IloExpr VisitConstBasePow(BinaryExpr e) {
+  IloExpr VisitPowConstBase(BinaryExpr e) {
     return IloPower(Cast<NumericConstant>(e.lhs()).value(), Visit(e.rhs()));
   }
 
