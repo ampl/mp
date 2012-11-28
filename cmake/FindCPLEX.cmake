@@ -170,8 +170,8 @@ mark_as_advanced(CPLEX_CONCERT_LIBRARY CPLEX_CONCERT_LIBRARY_DEBUG
 # IloCplex - depends on CPLEX and Concert
 
 include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag(-Wno-long-long HAS_WNO_LONG_LONG_FLAG)
-if (HAS_WNO_LONG_LONG_FLAG)
+check_cxx_compiler_flag(-Wno-long-long HAVE_WNO_LONG_LONG_FLAG)
+if (HAVE_WNO_LONG_LONG_FLAG)
   # Required if -pedantic is used.
   set(CPLEX_ILOCPLEX_DEFINITIONS -Wno-long-long)
 endif ()
