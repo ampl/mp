@@ -231,11 +231,11 @@ class NLToGecodeConverter :
 
   BoolExpr VisitImplication(ImplicationExpr e) {
     BoolExpr condition = Visit(e.condition());
-    BoolExpr expr = condition >> Visit(e.true_expr());
     LogicalConstant c = Cast<LogicalConstant>(e.false_expr());
     if (c && !c.value())
-      return expr;
-    return expr || (condition && Visit(e.false_expr()));
+      return condition >> Visit(e.true_expr());
+    return (condition && Visit(e.true_expr())) ||
+          (!condition && Visit(e.false_expr()));
   }
 
   BoolExpr VisitIff(BinaryLogicalExpr e) {
@@ -245,7 +245,8 @@ class NLToGecodeConverter :
   BoolExpr VisitAllDiff(AllDiffExpr e);
 
   BoolExpr VisitLogicalConstant(LogicalConstant c) {
-    return VisitUnhandledLogicalExpr(c); // TODO
+    bool value = c.value();
+    return Gecode::BoolVar(problem_, value, value);
   }
 };
 
