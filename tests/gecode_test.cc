@@ -103,7 +103,35 @@ class Args {
   }
 };
 
-static void InitVars(GecodeProblem &p, int var1, int var2, int var3) {
+class GecodeConverterTest : public ::testing::Test, public ExprBuilder {
+ protected:
+  Variable x;
+  Variable y;
+  Variable z;
+
+  static void InitVars(GecodeProblem &p, int var1, int var2, int var3);
+  static double Solve(GecodeProblem &p);
+
+  // Converts a numeric expression from AMPL to Gecode form and evaluates it.
+  // Returns the value of the Gecode expression.
+  static double ConvertAndEval(NumericExpr e,
+      int var1 = 0, int var2 = 0, int var3 = 0);
+  static double ConvertAndEval(LogicalExpr e,
+      int var1 = 0, int var2 = 0, int var3 = 0);
+
+  GecodeConverterTest() : x(AddVar(1)), y(AddVar(2)), z(AddVar(3)) {}
+
+  int RunDriver(const char *stub = nullptr, const char *opt = nullptr) {
+    //return p.run((Args() + "gecode" + "-s" + stub + opt).get());
+    // TODO
+    return 0;
+  }
+
+  SolveResult Solve(const char *stub, const char *opt = nullptr);
+};
+
+void GecodeConverterTest::InitVars(
+    GecodeProblem &p, int var1, int var2, int var3) {
   Gecode::IntVarArray &vars = p.vars();
   vars[0] = Gecode::IntVar(p,
               Gecode::Int::Limits::min, Gecode::Int::Limits::max);
@@ -112,7 +140,7 @@ static void InitVars(GecodeProblem &p, int var1, int var2, int var3) {
   vars[3] = Gecode::IntVar(p, var3, var3);
 }
 
-static double Solve(GecodeProblem &p) {
+double GecodeConverterTest::Solve(GecodeProblem &p) {
   Gecode::DFS<GecodeProblem> engine(&p);
   std::auto_ptr<GecodeProblem> solution(engine.next());
   return solution.get() ?
@@ -121,8 +149,8 @@ static double Solve(GecodeProblem &p) {
 
 // Converts a numeric expression from AMPL to Gecode form and evaluates it.
 // Returns the value of the Gecode expression.
-static double ConvertAndEval(NumericExpr e,
-    int var1 = 0, int var2 = 0, int var3 = 0) {
+double GecodeConverterTest::ConvertAndEval(
+    NumericExpr e, int var1, int var2, int var3) {
   ampl::NLToGecodeConverter converter(4);
   GecodeProblem &p = converter.problem();
   InitVars(p, var1, var2, var3);
@@ -130,8 +158,8 @@ static double ConvertAndEval(NumericExpr e,
   return Solve(p);
 }
 
-static double ConvertAndEval(LogicalExpr e,
-    int var1 = 0, int var2 = 0, int var3 = 0) {
+double GecodeConverterTest::ConvertAndEval(
+    LogicalExpr e, int var1, int var2, int var3) {
   ampl::NLToGecodeConverter converter(4);
   GecodeProblem &p = converter.problem();
   InitVars(p, var1, var2, var3);
@@ -148,64 +176,32 @@ static double ConvertAndEval(LogicalExpr e,
   return Solve(p);
 }
 
-class GecodeTest : public ::testing::Test, public ExprBuilder {
- protected:
-  Variable x;
-  Variable y;
-  Variable z;
-
-  GecodeTest() : x(AddVar(1)), y(AddVar(2)), z(AddVar(3)) {}
-
-  int RunDriver(const char *stub = nullptr, const char *opt = nullptr) {
-    //return p.run((Args() + "gecode" + "-s" + stub + opt).get());
-    // TODO
-    return 0;
-  }
-
-  SolveResult Solve(const char *stub, const char *opt = nullptr);
-};
-
-SolveResult GecodeTest::Solve(const char *stub, const char *opt) {
-  RunDriver(stub, opt);
-  ifstream ifs((string(stub) + ".sol").c_str());
-  string line;
-  getline(ifs, line);
-  bool solved = line.find("optimal solution") != string::npos;
-  if (!solved) solved = line.find("feasible solution") != string::npos;
-  getline(ifs, line);
-  const char obj[] = "objective ";
-  size_t pos = line.find(obj);
-  return SolveResult(solved, pos != string::npos ?
-      atof(line.c_str() + pos + sizeof(obj) - 1) :
-      std::numeric_limits<double>::quiet_NaN());
-}
-
-TEST_F(GecodeTest, ConvertPlus) {
+TEST_F(GecodeConverterTest, ConvertPlus) {
   NumericExpr e = AddBinary(OPPLUS, x, y);
   EXPECT_EQ(25, ConvertAndEval(e, 10, 15));
   EXPECT_EQ(12, ConvertAndEval(e, 19, -7));
   EXPECT_NE(0, isnan(ConvertAndEval(e, Gecode::Int::Limits::max, 1)));
 }
 
-TEST_F(GecodeTest, ConvertMinus) {
+TEST_F(GecodeConverterTest, ConvertMinus) {
   NumericExpr e = AddBinary(OPMINUS, x, y);
   EXPECT_EQ(-5, ConvertAndEval(e, 10, 15));
   EXPECT_EQ(26, ConvertAndEval(e, 19, -7));
   EXPECT_NE(0, isnan(ConvertAndEval(e, Gecode::Int::Limits::min, 1)));
 }
 
-TEST_F(GecodeTest, ConvertMult) {
+TEST_F(GecodeConverterTest, ConvertMult) {
   NumericExpr e = AddBinary(OPMULT, x, y);
   EXPECT_EQ(150, ConvertAndEval(e, 10, 15));
   EXPECT_EQ(-133, ConvertAndEval(e, 19, -7));
   EXPECT_NE(0, isnan(ConvertAndEval(e, Gecode::Int::Limits::max, 2)));
 }
 
-TEST_F(GecodeTest, ConvertDiv) {
+TEST_F(GecodeConverterTest, ConvertDiv) {
   EXPECT_THROW(ConvertAndEval(AddBinary(OPDIV, x, y)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertRem) {
+TEST_F(GecodeConverterTest, ConvertRem) {
   NumericExpr e = AddBinary(OPREM, x, y);
   EXPECT_EQ(0, ConvertAndEval(e, 9, 3));
   EXPECT_EQ(2, ConvertAndEval(e, 8, 3));
@@ -214,136 +210,136 @@ TEST_F(GecodeTest, ConvertRem) {
   EXPECT_EQ(-2, ConvertAndEval(e, -8, -3));
 }
 
-TEST_F(GecodeTest, ConvertPow) {
+TEST_F(GecodeConverterTest, ConvertPow) {
   EXPECT_THROW(ConvertAndEval(AddBinary(OPPOW, x, y)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertNumericLess) {
+TEST_F(GecodeConverterTest, ConvertNumericLess) {
   NumericExpr e = AddBinary(OPLESS, x, y);
   EXPECT_EQ(0, ConvertAndEval(e, 10, 15));
   EXPECT_EQ(26, ConvertAndEval(e, 19, -7));
 }
 
-TEST_F(GecodeTest, ConvertMin) {
+TEST_F(GecodeConverterTest, ConvertMin) {
   NumericExpr e = AddVarArg(MINLIST, x, y, z);
   EXPECT_EQ(-7, ConvertAndEval(e, 3, -7, 5));
   EXPECT_EQ(10, ConvertAndEval(e, 10, 20, 30));
   EXPECT_THROW(ConvertAndEval(AddVarArg(MINLIST)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertMax) {
+TEST_F(GecodeConverterTest, ConvertMax) {
   NumericExpr e = AddVarArg(MAXLIST, x, y, z);
   EXPECT_EQ(5, ConvertAndEval(e, 3, -7, 5));
   EXPECT_EQ(30, ConvertAndEval(e, 30, 20, 10));
   EXPECT_THROW(ConvertAndEval(AddVarArg(MAXLIST)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertFloor) {
+TEST_F(GecodeConverterTest, ConvertFloor) {
   NumericExpr e = AddUnary(FLOOR, x);
   EXPECT_EQ(-42, ConvertAndEval(e, -42));
   EXPECT_EQ(42, ConvertAndEval(e, 42));
   EXPECT_EQ(6, ConvertAndEval(AddUnary(FLOOR, AddUnary(OP_sqrt, x)), 42));
 }
 
-TEST_F(GecodeTest, ConvertCeil) {
+TEST_F(GecodeConverterTest, ConvertCeil) {
   NumericExpr e = AddUnary(CEIL, x);
   EXPECT_EQ(-42, ConvertAndEval(e, -42));
   EXPECT_EQ(42, ConvertAndEval(e, 42));
 }
 
-TEST_F(GecodeTest, ConvertAbs) {
+TEST_F(GecodeConverterTest, ConvertAbs) {
   NumericExpr e = AddUnary(ABS, x);
   EXPECT_EQ(42, ConvertAndEval(e, -42));
   EXPECT_EQ(42, ConvertAndEval(e, 42));
 }
 
-TEST_F(GecodeTest, ConvertUnaryMinus) {
+TEST_F(GecodeConverterTest, ConvertUnaryMinus) {
   NumericExpr e = AddUnary(OPUMINUS, x);
   EXPECT_EQ(42, ConvertAndEval(e, -42));
   EXPECT_EQ(-42, ConvertAndEval(e, 42));
 }
 
-TEST_F(GecodeTest, ConvertIf) {
+TEST_F(GecodeConverterTest, ConvertIf) {
   NumericExpr e = AddIf(AddRelational(EQ, x, AddNum(1)), y, z);
   EXPECT_EQ(42, ConvertAndEval(e, 1, 42, 10));
   EXPECT_EQ(10, ConvertAndEval(e, 0, 42, 10));
 }
 
-TEST_F(GecodeTest, ConvertTanh) {
+TEST_F(GecodeConverterTest, ConvertTanh) {
   EXPECT_THROW(ConvertAndEval(AddUnary(OP_tanh, x)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertTan) {
+TEST_F(GecodeConverterTest, ConvertTan) {
   EXPECT_THROW(ConvertAndEval(AddUnary(OP_tan, x)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertSqrt) {
+TEST_F(GecodeConverterTest, ConvertSqrt) {
   EXPECT_THROW(ConvertAndEval(AddUnary(OP_sqrt, x)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertSinh) {
+TEST_F(GecodeConverterTest, ConvertSinh) {
   EXPECT_THROW(ConvertAndEval(AddUnary(OP_sinh, x)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertSin) {
+TEST_F(GecodeConverterTest, ConvertSin) {
   EXPECT_THROW(ConvertAndEval(AddUnary(OP_sin, x)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertLog10) {
+TEST_F(GecodeConverterTest, ConvertLog10) {
   EXPECT_THROW(ConvertAndEval(AddUnary(OP_log10, x)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertLog) {
+TEST_F(GecodeConverterTest, ConvertLog) {
   EXPECT_THROW(ConvertAndEval(AddUnary(OP_log, x)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertExp) {
+TEST_F(GecodeConverterTest, ConvertExp) {
   EXPECT_THROW(ConvertAndEval(AddUnary(OP_exp, x)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertCosh) {
+TEST_F(GecodeConverterTest, ConvertCosh) {
   EXPECT_THROW(ConvertAndEval(AddUnary(OP_cosh, x)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertCos) {
+TEST_F(GecodeConverterTest, ConvertCos) {
   EXPECT_THROW(ConvertAndEval(AddUnary(OP_cos, x)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertAtanh) {
+TEST_F(GecodeConverterTest, ConvertAtanh) {
   EXPECT_THROW(ConvertAndEval(AddUnary(OP_atanh, x)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertAtan2) {
+TEST_F(GecodeConverterTest, ConvertAtan2) {
   EXPECT_THROW(ConvertAndEval(AddBinary(OP_atan2, x, y)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertAtan) {
+TEST_F(GecodeConverterTest, ConvertAtan) {
   EXPECT_THROW(ConvertAndEval(AddUnary(OP_atan, x)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertAsinh) {
+TEST_F(GecodeConverterTest, ConvertAsinh) {
   EXPECT_THROW(ConvertAndEval(AddUnary(OP_asinh, x)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertAsin) {
+TEST_F(GecodeConverterTest, ConvertAsin) {
   EXPECT_THROW(ConvertAndEval(AddUnary(OP_asin, x)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertAcosh) {
+TEST_F(GecodeConverterTest, ConvertAcosh) {
   EXPECT_THROW(ConvertAndEval(AddUnary(OP_acosh, x)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertAcos) {
+TEST_F(GecodeConverterTest, ConvertAcos) {
   EXPECT_THROW(ConvertAndEval(AddUnary(OP_acos, x)), UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertSum) {
+TEST_F(GecodeConverterTest, ConvertSum) {
   EXPECT_EQ(0, ConvertAndEval(AddSum()));
   EXPECT_EQ(42, ConvertAndEval(AddSum(x), 42));
   EXPECT_EQ(123, ConvertAndEval(AddSum(x, y, z), 100, 20, 3));
 }
 
-TEST_F(GecodeTest, ConvertIntDiv) {
+TEST_F(GecodeConverterTest, ConvertIntDiv) {
   NumericExpr e = AddBinary(OPintDIV, x, y);
   EXPECT_EQ(3, ConvertAndEval(e, 9, 3));
   EXPECT_EQ(2, ConvertAndEval(e, 8, 3));
@@ -352,12 +348,12 @@ TEST_F(GecodeTest, ConvertIntDiv) {
   EXPECT_EQ(2, ConvertAndEval(e, -8, -3));
 }
 
-TEST_F(GecodeTest, ConvertPrecision) {
+TEST_F(GecodeConverterTest, ConvertPrecision) {
   EXPECT_THROW(ConvertAndEval(AddBinary(OPprecision, x, y)),
       UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertRound) {
+TEST_F(GecodeConverterTest, ConvertRound) {
   EXPECT_EQ(42, ConvertAndEval(AddBinary(OPround, x, AddNum(0)), 42));
   EXPECT_THROW(ConvertAndEval(AddBinary(OPround, x, AddNum(1))),
       UnsupportedExprError);
@@ -365,7 +361,7 @@ TEST_F(GecodeTest, ConvertRound) {
         UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertTrunc) {
+TEST_F(GecodeConverterTest, ConvertTrunc) {
   EXPECT_EQ(42, ConvertAndEval(AddBinary(OPtrunc, x, AddNum(0)), 42));
   EXPECT_THROW(ConvertAndEval(AddBinary(OPtrunc, x, AddNum(1))),
       UnsupportedExprError);
@@ -373,7 +369,7 @@ TEST_F(GecodeTest, ConvertTrunc) {
         UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertCount) {
+TEST_F(GecodeConverterTest, ConvertCount) {
   LogicalExpr a(AddRelational(NE, x, AddNum(0)));
   LogicalExpr b(AddRelational(NE, y, AddNum(0)));
   LogicalExpr c(AddRelational(NE, z, AddNum(0)));
@@ -383,7 +379,7 @@ TEST_F(GecodeTest, ConvertCount) {
   EXPECT_EQ(3, ConvertAndEval(AddCount(a, b, c), 1, 1, 1));
 }
 
-TEST_F(GecodeTest, ConvertNumberOf) {
+TEST_F(GecodeConverterTest, ConvertNumberOf) {
   ampl::NumericConstant val = AddNum(42);
   EXPECT_EQ(0, ConvertAndEval(AddNumberOf(val, x)));
   EXPECT_EQ(1, ConvertAndEval(AddNumberOf(val, x), 42));
@@ -395,27 +391,27 @@ TEST_F(GecodeTest, ConvertNumberOf) {
       42, 42, 11));
 }
 
-TEST_F(GecodeTest, ConvertPLTerm) {
+TEST_F(GecodeConverterTest, ConvertPLTerm) {
   double args[] = {-1, 5, 0, 10, 1};
   EXPECT_THROW(ConvertAndEval(AddPLTerm(5, args, 0)),
       UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertPowConstExp) {
+TEST_F(GecodeConverterTest, ConvertPowConstExp) {
   EXPECT_THROW(ConvertAndEval(AddBinary(OP1POW, x, AddNum(42))),
       UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertPow2) {
+TEST_F(GecodeConverterTest, ConvertPow2) {
   EXPECT_EQ(49, ConvertAndEval(AddUnary(OP2POW, x), 7));
 }
 
-TEST_F(GecodeTest, ConvertPowConstBase) {
+TEST_F(GecodeConverterTest, ConvertPowConstBase) {
   EXPECT_THROW(ConvertAndEval(AddBinary(OPCPOW, AddNum(42), x)),
       UnsupportedExprError);
 }
 
-TEST_F(GecodeTest, ConvertNum) {
+TEST_F(GecodeConverterTest, ConvertNum) {
   EXPECT_EQ(42, ConvertAndEval(AddNum(42)));
   EXPECT_THROW(ConvertAndEval(AddNum(0.42)), UnsupportedExprError);
   int min = Gecode::Int::Limits::min;
@@ -426,13 +422,13 @@ TEST_F(GecodeTest, ConvertNum) {
   EXPECT_THROW(ConvertAndEval(AddNum(max + 1)), Gecode::Int::OutOfLimits);
 }
 
-TEST_F(GecodeTest, ConvertVar) {
+TEST_F(GecodeConverterTest, ConvertVar) {
   EXPECT_EQ(11, ConvertAndEval(x, 11, 22));
   EXPECT_EQ(22, ConvertAndEval(y, 11, 22));
   EXPECT_EQ(33, ConvertAndEval(x, 33));
 }
 
-TEST_F(GecodeTest, ConvertOr) {
+TEST_F(GecodeConverterTest, ConvertOr) {
   NumericExpr one = AddNum(1);
   LogicalExpr e = AddBinaryLogical(
       OPOR, AddRelational(EQ, x, one), AddRelational(EQ, y, one));
@@ -442,7 +438,7 @@ TEST_F(GecodeTest, ConvertOr) {
   EXPECT_EQ(1, ConvertAndEval(e, 1, 1));
 }
 
-TEST_F(GecodeTest, ConvertAnd) {
+TEST_F(GecodeConverterTest, ConvertAnd) {
   NumericExpr one = AddNum(1);
   LogicalExpr e = AddBinaryLogical(
       OPAND, AddRelational(EQ, x, one), AddRelational(EQ, y, one));
@@ -452,55 +448,55 @@ TEST_F(GecodeTest, ConvertAnd) {
   EXPECT_EQ(1, ConvertAndEval(e, 1, 1));
 }
 
-TEST_F(GecodeTest, ConvertLess) {
+TEST_F(GecodeConverterTest, ConvertLess) {
   LogicalExpr e = AddRelational(LT, x, y);
   EXPECT_EQ(0, ConvertAndEval(e, 3, 3));
   EXPECT_EQ(1, ConvertAndEval(e, 3, 5));
   EXPECT_EQ(0, ConvertAndEval(e, 5, 3));
 }
 
-TEST_F(GecodeTest, ConvertLessEqual) {
+TEST_F(GecodeConverterTest, ConvertLessEqual) {
   LogicalExpr e = AddRelational(LE, x, y);
   EXPECT_EQ(1, ConvertAndEval(e, 3, 3));
   EXPECT_EQ(1, ConvertAndEval(e, 3, 5));
   EXPECT_EQ(0, ConvertAndEval(e, 5, 3));
 }
 
-TEST_F(GecodeTest, ConvertEqual) {
+TEST_F(GecodeConverterTest, ConvertEqual) {
   LogicalExpr e = AddRelational(EQ, x, y);
   EXPECT_EQ(1, ConvertAndEval(e, 3, 3));
   EXPECT_EQ(0, ConvertAndEval(e, 3, 5));
   EXPECT_EQ(0, ConvertAndEval(e, 5, 3));
 }
 
-TEST_F(GecodeTest, ConvertGreaterEqual) {
+TEST_F(GecodeConverterTest, ConvertGreaterEqual) {
   LogicalExpr e = AddRelational(GE, x, y);
   EXPECT_EQ(1, ConvertAndEval(e, 3, 3));
   EXPECT_EQ(0, ConvertAndEval(e, 3, 5));
   EXPECT_EQ(1, ConvertAndEval(e, 5, 3));
 }
 
-TEST_F(GecodeTest, ConvertGreater) {
+TEST_F(GecodeConverterTest, ConvertGreater) {
   LogicalExpr e = AddRelational(GT, x, y);
   EXPECT_EQ(0, ConvertAndEval(e, 3, 3));
   EXPECT_EQ(0, ConvertAndEval(e, 3, 5));
   EXPECT_EQ(1, ConvertAndEval(e, 5, 3));
 }
 
-TEST_F(GecodeTest, ConvertNotEqual) {
+TEST_F(GecodeConverterTest, ConvertNotEqual) {
   LogicalExpr e = AddRelational(NE, x, y);
   EXPECT_EQ(0, ConvertAndEval(e, 3, 3));
   EXPECT_EQ(1, ConvertAndEval(e, 3, 5));
   EXPECT_EQ(1, ConvertAndEval(e, 5, 3));
 }
 
-TEST_F(GecodeTest, ConvertNot) {
+TEST_F(GecodeConverterTest, ConvertNot) {
   LogicalExpr e = AddNot(AddRelational(EQ, x, AddNum(1)));
   EXPECT_EQ(1, ConvertAndEval(e, 0));
   EXPECT_EQ(0, ConvertAndEval(e, 1));
 }
 
-TEST_F(GecodeTest, ConvertAtLeast) {
+TEST_F(GecodeConverterTest, ConvertAtLeast) {
   LogicalExpr a(AddRelational(NE, y, AddNum(0)));
   LogicalExpr b(AddRelational(NE, z, AddNum(0)));
   LogicalExpr e = AddLogicalCount(OPATLEAST, AddVar(1), AddCount(a, b));
@@ -513,7 +509,7 @@ TEST_F(GecodeTest, ConvertAtLeast) {
   EXPECT_EQ(1, ConvertAndEval(e, 2, 1, 1));
 }
 
-TEST_F(GecodeTest, ConvertAtMost) {
+TEST_F(GecodeConverterTest, ConvertAtMost) {
   LogicalExpr a(AddRelational(NE, y, AddNum(0)));
   LogicalExpr b(AddRelational(NE, z, AddNum(0)));
   LogicalExpr e = AddLogicalCount(OPATMOST, AddVar(1), AddCount(a, b));
@@ -526,7 +522,7 @@ TEST_F(GecodeTest, ConvertAtMost) {
   EXPECT_EQ(1, ConvertAndEval(e, 2, 1, 1));
 }
 
-TEST_F(GecodeTest, ConvertExactly) {
+TEST_F(GecodeConverterTest, ConvertExactly) {
   LogicalExpr a(AddRelational(NE, y, AddNum(0)));
   LogicalExpr b(AddRelational(NE, z, AddNum(0)));
   LogicalExpr e = AddLogicalCount(OPEXACTLY, AddVar(1), AddCount(a, b));
@@ -539,7 +535,7 @@ TEST_F(GecodeTest, ConvertExactly) {
   EXPECT_EQ(1, ConvertAndEval(e, 2, 1, 1));
 }
 
-TEST_F(GecodeTest, ConvertNotAtLeast) {
+TEST_F(GecodeConverterTest, ConvertNotAtLeast) {
   LogicalExpr a(AddRelational(NE, y, AddNum(0)));
   LogicalExpr b(AddRelational(NE, z, AddNum(0)));
   LogicalExpr e = AddLogicalCount(OPNOTATLEAST, AddVar(1), AddCount(a, b));
@@ -552,7 +548,7 @@ TEST_F(GecodeTest, ConvertNotAtLeast) {
   EXPECT_EQ(0, ConvertAndEval(e, 2, 1, 1));
 }
 
-TEST_F(GecodeTest, ConvertNotAtMost) {
+TEST_F(GecodeConverterTest, ConvertNotAtMost) {
   LogicalExpr a(AddRelational(NE, y, AddNum(0)));
   LogicalExpr b(AddRelational(NE, z, AddNum(0)));
   LogicalExpr e = AddLogicalCount(OPNOTATMOST, AddVar(1), AddCount(a, b));
@@ -565,7 +561,7 @@ TEST_F(GecodeTest, ConvertNotAtMost) {
   EXPECT_EQ(0, ConvertAndEval(e, 2, 1, 1));
 }
 
-TEST_F(GecodeTest, ConvertNotExactly) {
+TEST_F(GecodeConverterTest, ConvertNotExactly) {
   LogicalExpr a(AddRelational(NE, y, AddNum(0)));
   LogicalExpr b(AddRelational(NE, z, AddNum(0)));
   LogicalExpr e = AddLogicalCount(OPNOTEXACTLY, AddVar(1), AddCount(a, b));
@@ -578,7 +574,7 @@ TEST_F(GecodeTest, ConvertNotExactly) {
   EXPECT_EQ(0, ConvertAndEval(e, 2, 1, 1));
 }
 
-TEST_F(GecodeTest, ConvertForAll) {
+TEST_F(GecodeConverterTest, ConvertForAll) {
   LogicalExpr e = AddIteratedLogical(ANDLIST,
       AddRelational(EQ, x, AddNum(1)),
       AddRelational(EQ, y, AddNum(1)),
@@ -593,7 +589,7 @@ TEST_F(GecodeTest, ConvertForAll) {
   EXPECT_EQ(1, ConvertAndEval(e, 1, 1, 1));
 }
 
-TEST_F(GecodeTest, ConvertExists) {
+TEST_F(GecodeConverterTest, ConvertExists) {
   LogicalExpr e = AddIteratedLogical(ORLIST,
       AddRelational(EQ, x, AddNum(1)),
       AddRelational(EQ, y, AddNum(1)),
@@ -608,7 +604,7 @@ TEST_F(GecodeTest, ConvertExists) {
   EXPECT_EQ(1, ConvertAndEval(e, 1, 1, 1));
 }
 
-TEST_F(GecodeTest, ConvertImplication) {
+TEST_F(GecodeConverterTest, ConvertImplication) {
   LogicalExpr e = AddImplication(
       AddRelational(EQ, x, AddNum(1)),
       AddRelational(EQ, y, AddNum(1)),
@@ -631,7 +627,7 @@ TEST_F(GecodeTest, ConvertImplication) {
   EXPECT_EQ(1, ConvertAndEval(e, 1, 1));
 }
 
-TEST_F(GecodeTest, ConvertIff) {
+TEST_F(GecodeConverterTest, ConvertIff) {
   LogicalExpr e = AddBinaryLogical(OP_IFF,
       AddRelational(EQ, x, AddNum(1)),
       AddRelational(EQ, y, AddNum(1)));
@@ -641,20 +637,47 @@ TEST_F(GecodeTest, ConvertIff) {
   EXPECT_EQ(1, ConvertAndEval(e, 1, 1));
 }
 
-TEST_F(GecodeTest, ConvertAllDiff) {
+TEST_F(GecodeConverterTest, ConvertAllDiff) {
   LogicalExpr e = AddAllDiff(AddNum(1), x, y);
   EXPECT_EQ(1, ConvertAndEval(e, 2, 3));
   EXPECT_EQ(0, ConvertAndEval(e, 2, 1));
   EXPECT_EQ(0, ConvertAndEval(e, 1, 1));
 }
 
-TEST_F(GecodeTest, ConvertLogicalConstant) {
+TEST_F(GecodeConverterTest, ConvertLogicalConstant) {
   EXPECT_EQ(0, ConvertAndEval(AddBool(false)));
   EXPECT_EQ(1, ConvertAndEval(AddBool(1)));
 }
 
 // ----------------------------------------------------------------------------
 // Driver tests
+
+class GecodeDriverTest : public ::testing::Test, public ExprBuilder {
+ protected:
+  int RunDriver(const char *stub = nullptr, const char *opt = nullptr) {
+    //return p.run((Args() + "gecode" + "-s" + stub + opt).get());
+    // TODO
+    return 0;
+  }
+
+  SolveResult Solve(const char *stub, const char *opt = nullptr);
+};
+
+SolveResult GecodeDriverTest::Solve(const char *stub, const char *opt) {
+  RunDriver(stub, opt);
+  ifstream ifs((string(stub) + ".sol").c_str());
+  string line;
+  getline(ifs, line);
+  bool solved = line.find("optimal solution") != string::npos;
+  if (!solved) solved = line.find("feasible solution") != string::npos;
+  getline(ifs, line);
+  const char obj[] = "objective ";
+  size_t pos = line.find(obj);
+  return SolveResult(solved, pos != string::npos ?
+      atof(line.c_str() + pos + sizeof(obj) - 1) :
+      std::numeric_limits<double>::quiet_NaN());
+}
+
 // TODO
 /*
 TEST_F(GecodeTest, Usage) {
