@@ -771,39 +771,51 @@ TEST_F(IlogCPTest, ConvertNE) {
 }
 
 TEST_F(IlogCPTest, ConvertAtMost) {
-  EXPECT_EQ("42 <= x", str(d.Visit(
-      AddRelational(OPATMOST, AddVar(0), AddNum(42)))));
+  LogicalExpr a(AddRelational(EQ, AddVar(0), AddNum(0)));
+  LogicalExpr b(AddRelational(LE, AddVar(1), AddNum(42)));
+  EXPECT_EQ("x >= x == 0 + y <= 42", str(d.Visit(
+      AddLogicalCount(OPATMOST, AddVar(0), AddCount(a, b)))));
 }
 
 TEST_F(IlogCPTest, ConvertNotAtMost) {
+  LogicalExpr a(AddRelational(EQ, AddVar(0), AddNum(0)));
+  LogicalExpr b(AddRelational(LE, AddVar(1), AddNum(42)));
   IloConstraint c(d.Visit(
-      AddRelational(OPNOTATMOST, AddVar(0), AddNum(42))));
+      AddLogicalCount(OPNOTATMOST, AddVar(0), AddCount(a, b))));
   IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
   ASSERT_TRUE(n != nullptr);
-  EXPECT_EQ("42 <= x", str(n->getConstraint()));
+  EXPECT_EQ("x >= x == 0 + y <= 42", str(n->getConstraint()));
 }
 
 TEST_F(IlogCPTest, ConvertAtLeast) {
-  EXPECT_EQ("x <= 42", str(d.Visit(
-      AddRelational(OPATLEAST, AddVar(0), AddNum(42)))));
+  LogicalExpr a(AddRelational(EQ, AddVar(0), AddNum(0)));
+  LogicalExpr b(AddRelational(LE, AddVar(1), AddNum(42)));
+  EXPECT_EQ("x <= x == 0 + y <= 42", str(d.Visit(
+      AddLogicalCount(OPATLEAST, AddVar(0), AddCount(a, b)))));
 }
 
 TEST_F(IlogCPTest, ConvertNotAtLeast) {
+  LogicalExpr a(AddRelational(EQ, AddVar(0), AddNum(0)));
+  LogicalExpr b(AddRelational(LE, AddVar(1), AddNum(42)));
   IloConstraint c(d.Visit(
-      AddRelational(OPNOTATLEAST, AddVar(0), AddNum(42))));
+      AddLogicalCount(OPNOTATLEAST, AddVar(0), AddCount(a, b))));
   IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
   ASSERT_TRUE(n != nullptr);
-  EXPECT_EQ("x <= 42", str(n->getConstraint()));
+  EXPECT_EQ("x <= x == 0 + y <= 42", str(n->getConstraint()));
 }
 
 TEST_F(IlogCPTest, ConvertExactly) {
-  EXPECT_EQ("x == 42", str(d.Visit(
-      AddRelational(OPEXACTLY, AddVar(0), AddNum(42)))));
+  LogicalExpr a(AddRelational(EQ, AddVar(0), AddNum(0)));
+  LogicalExpr b(AddRelational(LE, AddVar(1), AddNum(42)));
+  EXPECT_EQ("x == x == 0 + y <= 42", str(d.Visit(
+      AddLogicalCount(OPEXACTLY, AddVar(0), AddCount(a, b)))));
 }
 
 TEST_F(IlogCPTest, ConvertNotExactly) {
-  EXPECT_EQ("x != 42", str(d.Visit(
-      AddRelational(OPNOTEXACTLY, AddVar(0), AddNum(42)))));
+  LogicalExpr a(AddRelational(EQ, AddVar(0), AddNum(0)));
+  LogicalExpr b(AddRelational(LE, AddVar(1), AddNum(42)));
+  EXPECT_EQ("x != x == 0 + y <= 42", str(d.Visit(
+      AddLogicalCount(OPNOTEXACTLY, AddVar(0), AddCount(a, b)))));
 }
 
 TEST_F(IlogCPTest, ConvertOr) {

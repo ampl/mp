@@ -408,28 +408,28 @@ class IlogCPDriver : public Driver, public Visitor {
     return Visit(e.lhs()) != Visit(e.rhs());
   }
 
-  IloConstraint VisitAtMost(RelationalExpr e) {
-    return Visit(e.lhs()) >= Visit(e.rhs());
+  IloConstraint VisitAtMost(LogicalCountExpr e) {
+    return Visit(e.value()) >= Visit(e.count());
   }
 
-  IloConstraint VisitNotAtMost(RelationalExpr e) {
-    return !(Visit(e.lhs()) >= Visit(e.rhs()));
+  IloConstraint VisitNotAtMost(LogicalCountExpr e) {
+    return !(Visit(e.value()) >= Visit(e.count()));
   }
 
-  IloConstraint VisitAtLeast(RelationalExpr e) {
-    return Visit(e.lhs()) <= Visit(e.rhs());
+  IloConstraint VisitAtLeast(LogicalCountExpr e) {
+    return Visit(e.value()) <= Visit(e.count());
   }
 
-  IloConstraint VisitNotAtLeast(RelationalExpr e) {
-    return !(Visit(e.lhs()) <= Visit(e.rhs()));
+  IloConstraint VisitNotAtLeast(LogicalCountExpr e) {
+    return !(Visit(e.value()) <= Visit(e.count()));
   }
 
-  IloConstraint VisitExactly(RelationalExpr e) {
-    return Visit(e.lhs()) == Visit(e.rhs());
+  IloConstraint VisitExactly(LogicalCountExpr e) {
+    return Visit(e.value()) == Visit(e.count());
   }
 
-  IloConstraint VisitNotExactly(RelationalExpr e) {
-    return Visit(e.lhs()) != Visit(e.rhs());
+  IloConstraint VisitNotExactly(LogicalCountExpr e) {
+    return Visit(e.value()) != Visit(e.count());
   }
 
   IloConstraint VisitOr(BinaryLogicalExpr e) {

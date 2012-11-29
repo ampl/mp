@@ -42,7 +42,7 @@ enum OpType {
   OPTYPE_STRING   =  8,  // String
   OPTYPE_NUMBER   =  9,  // Number
   OPTYPE_VARIABLE = 10,  // Variable
-  OPTYPE_COUNT    = 11  // The count expression
+  OPTYPE_COUNT    = 11   // The count expression
 };
 }
 
@@ -172,14 +172,14 @@ const Expr::Kind Expr::KINDS[N_OPS] = {
     Expr::COUNT,  // OPCOUNT
     Expr::NUMBEROF,  // OPNUMBEROF
     Expr::UNKNOWN,  // OPNUMBEROFs - not supported yet
-    Expr::RELATIONAL,  // OPATLEAST
-    Expr::RELATIONAL,  // OPATMOST
+    Expr::LOGICAL_COUNT,  // OPATLEAST
+    Expr::LOGICAL_COUNT,  // OPATMOST
     Expr::PLTERM,  // OPPLTERM
     Expr::UNKNOWN,  // OPIFSYM - not supported yet
-    Expr::RELATIONAL,  // OPEXACTLY
-    Expr::RELATIONAL,  // OPNOTATLEAST
-    Expr::RELATIONAL,  // OPNOTATMOST
-    Expr::RELATIONAL,  // OPNOTEXACTLY
+    Expr::LOGICAL_COUNT,  // OPEXACTLY
+    Expr::LOGICAL_COUNT,  // OPNOTATLEAST
+    Expr::LOGICAL_COUNT,  // OPNOTATMOST
+    Expr::LOGICAL_COUNT,  // OPNOTEXACTLY
     Expr::ITERATED_LOGICAL,  // ANDLIST
     Expr::ITERATED_LOGICAL,  // ORLIST
     Expr::IMPLICATION,  // OPIMPELSE

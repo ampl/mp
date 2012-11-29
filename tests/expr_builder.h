@@ -137,6 +137,14 @@ class ExprBuilder {
     return AddExpr<NotExpr>(new expr(e));
   }
 
+  // Adds a new logical count expression.
+  LogicalCountExpr AddLogicalCount(
+      int opcode, NumericExpr value, CountExpr count) {
+    expr e = {reinterpret_cast<efunc*>(opcode), 0, 0,
+              {value.expr_}, {count.expr_}, 0};
+    return AddExpr<LogicalCountExpr>(new expr(e));
+  }
+
   // Adds a new binary logical expression.
   BinaryLogicalExpr AddBinaryLogical(
       int opcode, LogicalExpr lhs, LogicalExpr rhs) {

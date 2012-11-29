@@ -197,28 +197,28 @@ class NLToGecodeConverter :
     return !Visit(e.arg());
   }
 
-  BoolExpr VisitAtLeast(RelationalExpr e) {
-    return Visit(e.lhs()) <= Visit(e.rhs());
+  BoolExpr VisitAtLeast(LogicalCountExpr e) {
+    return Visit(e.value()) <= Visit(e.count());
   }
 
-  BoolExpr VisitAtMost(RelationalExpr e) {
-    return Visit(e.lhs()) >= Visit(e.rhs());
+  BoolExpr VisitAtMost(LogicalCountExpr e) {
+    return Visit(e.value()) >= Visit(e.count());
   }
 
-  BoolExpr VisitExactly(RelationalExpr e) {
-    return Visit(e.lhs()) == Visit(e.rhs());
+  BoolExpr VisitExactly(LogicalCountExpr e) {
+    return Visit(e.value()) == Visit(e.count());
   }
 
-  BoolExpr VisitNotAtLeast(RelationalExpr e) {
-    return Visit(e.lhs()) > Visit(e.rhs());
+  BoolExpr VisitNotAtLeast(LogicalCountExpr e) {
+    return Visit(e.value()) > Visit(e.count());
   }
 
-  BoolExpr VisitNotAtMost(RelationalExpr e) {
-    return Visit(e.lhs()) < Visit(e.rhs());
+  BoolExpr VisitNotAtMost(LogicalCountExpr e) {
+    return Visit(e.value()) < Visit(e.count());
   }
 
-  BoolExpr VisitNotExactly(RelationalExpr e) {
-    return Visit(e.lhs()) != Visit(e.rhs());
+  BoolExpr VisitNotExactly(LogicalCountExpr e) {
+    return Visit(e.value()) != Visit(e.count());
   }
 
   BoolExpr VisitForAll(IteratedLogicalExpr e) {

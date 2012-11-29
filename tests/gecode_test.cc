@@ -496,7 +496,7 @@ TEST_F(GecodeTest, ConvertNot) {
 TEST_F(GecodeTest, ConvertAtLeast) {
   LogicalExpr a(AddRelational(NE, y, AddNum(0)));
   LogicalExpr b(AddRelational(NE, z, AddNum(0)));
-  LogicalExpr e = AddRelational(OPATLEAST, AddVar(1), AddCount(a, b));
+  LogicalExpr e = AddLogicalCount(OPATLEAST, AddVar(1), AddCount(a, b));
   EXPECT_EQ(1, ConvertAndEval(e, 0, 0, 0));
   EXPECT_EQ(0, ConvertAndEval(e, 1, 0, 0));
   EXPECT_EQ(1, ConvertAndEval(e, 1, 0, 1));
