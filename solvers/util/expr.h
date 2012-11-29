@@ -210,6 +210,7 @@ class Expr {
     LOGICAL_START = CONSTANT,
     RELATIONAL,
     NOT,
+    LOGICAL_COUNT,
     BINARY_LOGICAL,
     IMPLICATION,
     ITERATED_LOGICAL,
@@ -655,6 +656,21 @@ class NotExpr : public LogicalExpr {
 
 AMPL_SPECIALIZE_IS(NotExpr, OPNOT)
 
+// A logical count expression.
+// Examples: atleast 1 (x < y, x != y), where x and y are variables.
+class LogicalCountExpr : public LogicalExpr {
+ public:
+  static const Kind KIND = LOGICAL_COUNT;
+
+  LogicalCountExpr() {}
+
+  // Returns the value.
+  NumericExpr value() const { return Create<NumericExpr>(expr_->L.e); }
+
+  // Returns the count expression.
+  CountExpr count() const { return Create<CountExpr>(expr_->R.e); }
+};
+
 // A binary logical expression.
 // Examples: a || b, a && b, where a and b are logical expressions.
 class BinaryLogicalExpr : public LogicalExpr {
@@ -1030,27 +1046,27 @@ class ExprVisitor {
     return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
-  LResult VisitAtLeast(RelationalExpr e) {
+  LResult VisitAtLeast(LogicalCountExpr e) {
     return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
-  LResult VisitAtMost(RelationalExpr e) {
+  LResult VisitAtMost(LogicalCountExpr e) {
     return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
-  LResult VisitExactly(RelationalExpr e) {
+  LResult VisitExactly(LogicalCountExpr e) {
     return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
-  LResult VisitNotAtLeast(RelationalExpr e) {
+  LResult VisitNotAtLeast(LogicalCountExpr e) {
     return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
-  LResult VisitNotAtMost(RelationalExpr e) {
+  LResult VisitNotAtMost(LogicalCountExpr e) {
     return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
-  LResult VisitNotExactly(RelationalExpr e) {
+  LResult VisitNotExactly(LogicalCountExpr e) {
     return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
@@ -1201,17 +1217,17 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
   case OPNOT:
     return AMPL_DISPATCH(VisitNot(Expr::Create<NotExpr>(e)));
   case OPATLEAST:
-    return AMPL_DISPATCH(VisitAtLeast(Expr::Create<RelationalExpr>(e)));
+    return AMPL_DISPATCH(VisitAtLeast(Expr::Create<LogicalCountExpr>(e)));
   case OPATMOST:
-    return AMPL_DISPATCH(VisitAtMost(Expr::Create<RelationalExpr>(e)));
+    return AMPL_DISPATCH(VisitAtMost(Expr::Create<LogicalCountExpr>(e)));
   case OPEXACTLY:
-    return AMPL_DISPATCH(VisitExactly(Expr::Create<RelationalExpr>(e)));
+    return AMPL_DISPATCH(VisitExactly(Expr::Create<LogicalCountExpr>(e)));
   case OPNOTATLEAST:
-    return AMPL_DISPATCH(VisitNotAtLeast(Expr::Create<RelationalExpr>(e)));
+    return AMPL_DISPATCH(VisitNotAtLeast(Expr::Create<LogicalCountExpr>(e)));
   case OPNOTATMOST:
-    return AMPL_DISPATCH(VisitNotAtMost(Expr::Create<RelationalExpr>(e)));
+    return AMPL_DISPATCH(VisitNotAtMost(Expr::Create<LogicalCountExpr>(e)));
   case OPNOTEXACTLY:
-    return AMPL_DISPATCH(VisitNotExactly(Expr::Create<RelationalExpr>(e)));
+    return AMPL_DISPATCH(VisitNotExactly(Expr::Create<LogicalCountExpr>(e)));
   case ANDLIST:
     return AMPL_DISPATCH(VisitForAll(Expr::Create<IteratedLogicalExpr>(e)));
   case ORLIST:

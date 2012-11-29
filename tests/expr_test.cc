@@ -42,6 +42,7 @@ using ampl::NumberOfExpr;
 using ampl::LogicalConstant;
 using ampl::RelationalExpr;
 using ampl::NotExpr;
+using ampl::LogicalCountExpr;
 using ampl::BinaryLogicalExpr;
 using ampl::ImplicationExpr;
 using ampl::IteratedLogicalExpr;
@@ -287,14 +288,14 @@ const OpInfo OP_INFO[] = {
   {OPCOUNT,     "count",           Expr::COUNT},
   {OPNUMBEROF,  "numberof",        Expr::NUMBEROF},
   {OPNUMBEROFs, "string numberof", Expr::UNKNOWN},
-  {OPATLEAST, "atleast", Expr::RELATIONAL},
-  {OPATMOST,  "atmost",  Expr::RELATIONAL},
+  {OPATLEAST, "atleast", Expr::LOGICAL_COUNT},
+  {OPATMOST,  "atmost",  Expr::LOGICAL_COUNT},
   {OPPLTERM, "pl term", Expr::PLTERM},
   {OPIFSYM,  "string if-then-else", Expr::UNKNOWN},
-  {OPEXACTLY,    "exactly",     Expr::RELATIONAL},
-  {OPNOTATLEAST, "not atleast", Expr::RELATIONAL},
-  {OPNOTATMOST,  "not atmost",  Expr::RELATIONAL},
-  {OPNOTEXACTLY, "not exactly", Expr::RELATIONAL},
+  {OPEXACTLY,    "exactly",     Expr::LOGICAL_COUNT},
+  {OPNOTATLEAST, "not atleast", Expr::LOGICAL_COUNT},
+  {OPNOTATMOST,  "not atmost",  Expr::LOGICAL_COUNT},
+  {OPNOTEXACTLY, "not exactly", Expr::LOGICAL_COUNT},
   {ANDLIST, "forall", Expr::ITERATED_LOGICAL},
   {ORLIST,  "exists", Expr::ITERATED_LOGICAL},
   {OPIMPELSE, "implies else", Expr::IMPLICATION},
@@ -658,7 +659,7 @@ TEST_F(ExprTest, LogicalConstant) {
 }
 
 TEST_F(ExprTest, RelationalExpr) {
-  EXPECT_EQ(12, CheckExpr<RelationalExpr>(Expr::RELATIONAL));
+  EXPECT_EQ(6, CheckExpr<RelationalExpr>(Expr::RELATIONAL));
   NumericExpr lhs(AddNum(42)), rhs(AddNum(43));
   RelationalExpr e(AddRelational(EQ, lhs, rhs));
   EXPECT_EQ(lhs, e.lhs());
@@ -670,6 +671,16 @@ TEST_F(ExprTest, NotExpr) {
   LogicalExpr arg(AddBool(true));
   NotExpr e(AddNot(arg));
   EXPECT_EQ(arg, e.arg());
+}
+
+TEST_F(ExprTest, LogicalCountExpr) {
+  EXPECT_EQ(6, CheckExpr<LogicalCountExpr>(Expr::LOGICAL_COUNT));
+  NumericExpr value(AddNum(42));
+  NumericExpr n(AddNum(42));
+  CountExpr count(AddCount(AddRelational(EQ, n, n), AddRelational(EQ, n, n)));
+  LogicalCountExpr e(AddLogicalCount(OPATLEAST, value, count));
+  EXPECT_EQ(value, e.value());
+  EXPECT_EQ(count, e.count());
 }
 
 TEST_F(ExprTest, BinaryLogicalExpr) {
@@ -801,12 +812,12 @@ struct FullTestVisitor : ExprVisitor<FullTestVisitor, TestResult, TestLResult> {
   TestLResult VisitGreater(RelationalExpr e) { return Handle(e); }
   TestLResult VisitNotEqual(RelationalExpr e) { return Handle(e); }
   TestLResult VisitNot(NotExpr e) { return Handle(e); }
-  TestLResult VisitAtLeast(RelationalExpr e) { return Handle(e); }
-  TestLResult VisitAtMost(RelationalExpr e) { return Handle(e); }
-  TestLResult VisitExactly(RelationalExpr e) { return Handle(e); }
-  TestLResult VisitNotAtLeast(RelationalExpr e) { return Handle(e); }
-  TestLResult VisitNotAtMost(RelationalExpr e) { return Handle(e); }
-  TestLResult VisitNotExactly(RelationalExpr e) { return Handle(e); }
+  TestLResult VisitAtLeast(LogicalCountExpr e) { return Handle(e); }
+  TestLResult VisitAtMost(LogicalCountExpr e) { return Handle(e); }
+  TestLResult VisitExactly(LogicalCountExpr e) { return Handle(e); }
+  TestLResult VisitNotAtLeast(LogicalCountExpr e) { return Handle(e); }
+  TestLResult VisitNotAtMost(LogicalCountExpr e) { return Handle(e); }
+  TestLResult VisitNotExactly(LogicalCountExpr e) { return Handle(e); }
   TestLResult VisitForAll(IteratedLogicalExpr e) { return Handle(e); }
   TestLResult VisitExists(IteratedLogicalExpr e) { return Handle(e); }
   TestLResult VisitImplication(ImplicationExpr e) { return Handle(e); }
