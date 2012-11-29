@@ -426,8 +426,8 @@ TEST_F(GecodeTest, ConvertVar) {
 }
 
 TEST_F(GecodeTest, ConvertOr) {
-  ampl::NumericConstant one = AddNum(1);
-  ampl::BinaryLogicalExpr e = AddBinaryLogical(
+  NumericExpr one = AddNum(1);
+  LogicalExpr e = AddBinaryLogical(
       OPOR, AddRelational(EQ, x, one), AddRelational(EQ, y, one));
   EXPECT_EQ(0, ConvertAndEval(e, 0, 0));
   EXPECT_EQ(1, ConvertAndEval(e, 0, 1));
@@ -436,8 +436,8 @@ TEST_F(GecodeTest, ConvertOr) {
 }
 
 TEST_F(GecodeTest, ConvertAnd) {
-  ampl::NumericConstant one = AddNum(1);
-  ampl::BinaryLogicalExpr e = AddBinaryLogical(
+  NumericExpr one = AddNum(1);
+  LogicalExpr e = AddBinaryLogical(
       OPAND, AddRelational(EQ, x, one), AddRelational(EQ, y, one));
   EXPECT_EQ(0, ConvertAndEval(e, 0, 0));
   EXPECT_EQ(0, ConvertAndEval(e, 0, 1));
@@ -445,54 +445,76 @@ TEST_F(GecodeTest, ConvertAnd) {
   EXPECT_EQ(1, ConvertAndEval(e, 1, 1));
 }
 
+TEST_F(GecodeTest, ConvertLess) {
+  LogicalExpr e = AddRelational(LT, x, y);
+  EXPECT_EQ(0, ConvertAndEval(e, 3, 3));
+  EXPECT_EQ(1, ConvertAndEval(e, 3, 5));
+  EXPECT_EQ(0, ConvertAndEval(e, 5, 3));
+}
+
+TEST_F(GecodeTest, ConvertLessEqual) {
+  LogicalExpr e = AddRelational(LE, x, y);
+  EXPECT_EQ(1, ConvertAndEval(e, 3, 3));
+  EXPECT_EQ(1, ConvertAndEval(e, 3, 5));
+  EXPECT_EQ(0, ConvertAndEval(e, 5, 3));
+}
+
+TEST_F(GecodeTest, ConvertEqual) {
+  LogicalExpr e = AddRelational(EQ, x, y);
+  EXPECT_EQ(1, ConvertAndEval(e, 3, 3));
+  EXPECT_EQ(0, ConvertAndEval(e, 3, 5));
+  EXPECT_EQ(0, ConvertAndEval(e, 5, 3));
+}
+
+TEST_F(GecodeTest, ConvertGreaterEqual) {
+  LogicalExpr e = AddRelational(GE, x, y);
+  EXPECT_EQ(1, ConvertAndEval(e, 3, 3));
+  EXPECT_EQ(0, ConvertAndEval(e, 3, 5));
+  EXPECT_EQ(1, ConvertAndEval(e, 5, 3));
+}
+
+TEST_F(GecodeTest, ConvertGreater) {
+  LogicalExpr e = AddRelational(GT, x, y);
+  EXPECT_EQ(0, ConvertAndEval(e, 3, 3));
+  EXPECT_EQ(0, ConvertAndEval(e, 3, 5));
+  EXPECT_EQ(1, ConvertAndEval(e, 5, 3));
+}
+
+TEST_F(GecodeTest, ConvertNotEqual) {
+  LogicalExpr e = AddRelational(NE, x, y);
+  EXPECT_EQ(0, ConvertAndEval(e, 3, 3));
+  EXPECT_EQ(1, ConvertAndEval(e, 3, 5));
+  EXPECT_EQ(1, ConvertAndEval(e, 5, 3));
+}
+
+TEST_F(GecodeTest, ConvertNot) {
+  LogicalExpr e = AddNot(AddRelational(EQ, x, AddNum(1)));
+  EXPECT_EQ(1, ConvertAndEval(e, 0));
+  EXPECT_EQ(0, ConvertAndEval(e, 1));
+}
+
+TEST_F(GecodeTest, ConvertAtLeast) {
+  LogicalExpr a(AddRelational(NE, y, AddNum(0)));
+  LogicalExpr b(AddRelational(NE, z, AddNum(0)));
+  LogicalExpr e = AddRelational(OPATLEAST, AddVar(1), AddCount(a, b));
+  EXPECT_EQ(1, ConvertAndEval(e, 0, 0, 0));
+  EXPECT_EQ(0, ConvertAndEval(e, 1, 0, 0));
+  EXPECT_EQ(1, ConvertAndEval(e, 1, 0, 1));
+  EXPECT_EQ(1, ConvertAndEval(e, 1, 1, 1));
+  EXPECT_EQ(0, ConvertAndEval(e, 2, 0, 1));
+  EXPECT_EQ(1, ConvertAndEval(e, 2, 1, 1));
+}
+
 // TODO
 /*
-TEST_F(GecodeTest, ConvertLT) {
-  EXPECT_EQ("x <= 41",
-      str(p.Visit(AddRelational(LT, AddVar(0), AddNum(42)))));
-}
-
-TEST_F(GecodeTest, ConvertLE) {
-  EXPECT_EQ("x <= 42",
-      str(p.Visit(AddRelational(LE, AddVar(0), AddNum(42)))));
-}
-
-TEST_F(GecodeTest, ConvertEQ) {
-  EXPECT_EQ("x == 42",
-      str(p.Visit(AddRelational(EQ, AddVar(0), AddNum(42)))));
-}
-
-TEST_F(GecodeTest, ConvertGE) {
-  EXPECT_EQ("42 <= x",
-      str(p.Visit(AddRelational(GE, AddVar(0), AddNum(42)))));
-}
-
-TEST_F(GecodeTest, ConvertGT) {
-  EXPECT_EQ("43 <= x",
-      str(p.Visit(AddRelational(GT, AddVar(0), AddNum(42)))));
-}
-
-TEST_F(GecodeTest, ConvertNE) {
-  EXPECT_EQ("x != 42",
-      str(p.Visit(AddRelational(NE, AddVar(0), AddNum(42)))));
-}
-
 TEST_F(GecodeTest, ConvertAtMost) {
   EXPECT_EQ("42 <= x", str(p.Visit(
       AddRelational(OPATMOST, AddVar(0), AddNum(42)))));
 }
 
-TEST_F(GecodeTest, ConvertNotAtMost) {
-  IloConstraint c(p.Visit(
-      AddRelational(OPNOTATMOST, AddVar(0), AddNum(42))));
-  IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
-  ASSERT_TRUE(n != nullptr);
-  EXPECT_EQ("42 <= x", str(n->getConstraint()));
-}
-
-TEST_F(GecodeTest, ConvertAtLeast) {
-  EXPECT_EQ("x <= 42", str(p.Visit(
-      AddRelational(OPATLEAST, AddVar(0), AddNum(42)))));
+TEST_F(GecodeTest, ConvertExactly) {
+  EXPECT_EQ("x == 42", str(p.Visit(
+      AddRelational(OPEXACTLY, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(GecodeTest, ConvertNotAtLeast) {
@@ -503,9 +525,12 @@ TEST_F(GecodeTest, ConvertNotAtLeast) {
   EXPECT_EQ("x <= 42", str(n->getConstraint()));
 }
 
-TEST_F(GecodeTest, ConvertExactly) {
-  EXPECT_EQ("x == 42", str(p.Visit(
-      AddRelational(OPEXACTLY, AddVar(0), AddNum(42)))));
+TEST_F(GecodeTest, ConvertNotAtMost) {
+  IloConstraint c(p.Visit(
+      AddRelational(OPNOTATMOST, AddVar(0), AddNum(42))));
+  IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
+  ASSERT_TRUE(n != nullptr);
+  EXPECT_EQ("42 <= x", str(n->getConstraint()));
 }
 
 TEST_F(GecodeTest, ConvertNotExactly) {
@@ -527,13 +552,6 @@ TEST_F(GecodeTest, ConvertForAll) {
           AddRelational(EQ, AddVar(0), AddNum(1)),
           AddRelational(EQ, AddVar(0), AddNum(2)),
           AddRelational(EQ, AddVar(0), AddNum(3))))));
-}
-
-TEST_F(GecodeTest, ConvertNot) {
-  IloConstraint c(p.Visit(AddNot(AddRelational(LE, AddVar(0), AddNum(42)))));
-  IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
-  ASSERT_TRUE(n != nullptr);
-  EXPECT_EQ("x <= 42", str(n->getConstraint()));
 }
 
 TEST_F(GecodeTest, ConvertIff) {
