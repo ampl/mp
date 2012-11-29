@@ -228,19 +228,19 @@ LinExpr NLToGecodeConverter::VisitNumberOf(NumberOfExpr e) {
 BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr e) {
   IntVarArray &vars = problem_.vars();
   int num_args = e.num_args();
-  IntVarArgs x(num_args);
+  IntVarArgs args(num_args);
   for (int i = 0; i < num_args; ++i) {
     NumericExpr arg(e[i]);
     if (Variable var = ampl::Cast<Variable>(arg)) {
-      x[i] = vars[var.index()];
+      args[i] = vars[var.index()];
     } else {
       IntVar gecode_var(problem_,
           Gecode::Int::Limits::min, Gecode::Int::Limits::max);
       rel(problem_, gecode_var == Visit(arg));
-      x[i] = gecode_var;
+      args[i] = gecode_var;
     }
   }
-  distinct(problem_, x);
+  distinct(problem_, args);
   return DUMMY_EXPR;
 }
 
