@@ -58,4 +58,3 @@ int Driver::GetOptions(char **argv, Option_Info *oi) {
   return getopts_ASL(reinterpret_cast<ASL*>(problem_.asl_), argv, oi);
 }
 }
-

@@ -48,7 +48,7 @@ class Optimizer {
   IloRangeArray cons_;
 
  public:
-  Optimizer(IloEnv env, Driver &d);
+  Optimizer(IloEnv env, const Problem &p);
   virtual ~Optimizer();
 
   IloObjective obj() const { return obj_; }
@@ -71,7 +71,8 @@ class CPLEXOptimizer : public Optimizer {
   IloCplex cplex_;
 
  public:
-  CPLEXOptimizer(IloEnv env, Driver &d) : Optimizer(env, d), cplex_(env) {
+  CPLEXOptimizer(IloEnv env, const Problem &p)
+  : Optimizer(env, p), cplex_(env) {
     cplex_.setParam(IloCplex::MIPDisplay, 0);
   }
 
@@ -90,7 +91,7 @@ class CPOptimizer : public Optimizer {
   IloSolver solver_;
 
  public:
-  CPOptimizer(IloEnv env, Driver &d) : Optimizer(env, d), solver_(env) {
+  CPOptimizer(IloEnv env, const Problem &p) : Optimizer(env, p), solver_(env) {
     solver_.setIntParameter(IloCP::LogVerbosity, IloCP::Quiet);
   }
 
@@ -116,7 +117,7 @@ class IlogCPDriver : public Driver, public Visitor {
   IloNumVarArray vars_;
   std::auto_ptr<Optimizer> optimizer_;
   std::vector<char> version_;
-  std::auto_ptr<Option_Info> oinfo_;
+  OptionInfo<IlogCPDriver> oinfo_;
   bool gotopttype;
   bool debug_;
   int n_badvals;
@@ -161,20 +162,13 @@ class IlogCPDriver : public Driver, public Visitor {
  private:
   int options_[NUM_OPTIONS];
 
-  static char *set_optimizer(Option_Info *oi, keyword *kw, char *value);
-  static char *set_int_option(Option_Info *oi, keyword *kw, char *value);
-  static char *set_bool_option(Option_Info *oi, keyword *kw, char *value);
+  void AddOption(const char *name, const char *description,
+      char *(IlogCPDriver::*handler)(Option_Info *oi, keyword *kw, char *value),
+      const void *info) {
+    oinfo_.AddOption(name, description, handler, info);
+  }
 
   void set_option(keyword *kw, int value);
-
-  // Sets an integer option of the constraint programming optimizer.
-  static char *set_cp_int_option(Option_Info *oi, keyword *kw, char *value);
-
-  // Sets a double option of the constraint programming optimizer.
-  static char *set_cp_dbl_option(Option_Info *oi, keyword *kw, char *value);
-
-  // Sets an integer option of the CPLEX optimizer.
-  static char *set_cplex_int_option(Option_Info *oi, keyword *kw, char *value);
 
   IloNumExprArray ConvertArgs(VarArgExpr e);
 
@@ -184,6 +178,19 @@ class IlogCPDriver : public Driver, public Visitor {
  public:
   IlogCPDriver();
   virtual ~IlogCPDriver();
+
+  char *set_optimizer(Option_Info *oi, keyword *kw, char *value);
+  char *set_int_option(Option_Info *oi, keyword *kw, char *value);
+  char *set_bool_option(Option_Info *oi, keyword *kw, char *value);
+
+  // Sets an integer option of the constraint programming optimizer.
+  char *set_cp_int_option(Option_Info *oi, keyword *kw, char *value);
+
+  // Sets a double option of the constraint programming optimizer.
+  char *set_cp_dbl_option(Option_Info *oi, keyword *kw, char *value);
+
+  // Sets an integer option of the CPLEX optimizer.
+  char *set_cplex_int_option(Option_Info *oi, keyword *kw, char *value);
 
   IloEnv env() const { return env_; }
   IloModel mod() const { return mod_; }

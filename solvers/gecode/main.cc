@@ -4,7 +4,7 @@
 int main(int, char **argv) {
   try {
     ampl::GecodeDriver d;
-    return d.run(argv);
+    return d.Run(argv);
   } catch (const std::exception &e) {
     std::cerr << "Error: " << e.what() << std::endl;
   }

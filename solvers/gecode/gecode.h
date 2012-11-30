@@ -229,14 +229,7 @@ class NLToGecodeConverter :
     return Convert(Gecode::BOT_OR, e);
   }
 
-  BoolExpr VisitImplication(ImplicationExpr e) {
-    BoolExpr condition = Visit(e.condition());
-    LogicalConstant c = Cast<LogicalConstant>(e.false_expr());
-    if (c && !c.value())
-      return condition >> Visit(e.true_expr());
-    return (condition && Visit(e.true_expr())) ||
-          (!condition && Visit(e.false_expr()));
-  }
+  BoolExpr VisitImplication(ImplicationExpr e);
 
   BoolExpr VisitIff(BinaryLogicalExpr e) {
     return Visit(e.lhs()) == Visit(e.rhs());
@@ -253,13 +246,13 @@ class NLToGecodeConverter :
 // The Gecode driver for AMPL.
 class GecodeDriver : public Driver {
  private:
-  std::auto_ptr<Option_Info> oinfo_;
+  OptionInfo<GecodeDriver> oinfo_;
 
  public:
   GecodeDriver();
 
   // Run the driver.
-  int run(char **argv);
+  int Run(char **argv);
 };
 
 }

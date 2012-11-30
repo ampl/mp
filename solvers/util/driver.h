@@ -23,6 +23,9 @@
 #ifndef SOLVERS_UTIL_DRIVER_H_
 #define SOLVERS_UTIL_DRIVER_H_
 
+#include <cstring>
+
+#include "solvers/getstub.h"
 #include "solvers/util/expr.h"
 
 namespace ampl {
@@ -159,6 +162,74 @@ class Driver {
   // Writes the solution.
   void WriteSolution(char *msg, double *x, double *y, Option_Info* oi) {
     write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_), msg, x, y, oi);
+  }
+};
+
+template <typename Handler>
+class OptionInfo : public Option_Info {
+ public:
+  struct Option {
+    char *(Handler::*handler)(Option_Info *oi, keyword *kw, char *value);
+    const void *info;
+  };
+
+ private:
+  Handler &handler_;
+  std::vector<Option> options_;
+  std::vector<keyword> keywords_;
+
+  struct KeywordNameLess {
+    bool operator()(const keyword &lhs, const keyword &rhs) const {
+      return std::strcmp(lhs.name, rhs.name) < 0;
+    }
+  };
+
+  static char *HandleOption(Option_Info *oi, keyword *kw, char *value) {
+    OptionInfo *self = static_cast<OptionInfo*>(oi);
+    Option &opt = self->options_[reinterpret_cast<size_t>(kw->info)];
+    keyword thiskw(*kw);
+    thiskw.info = const_cast<void*>(opt.info);
+    return (self->handler_.*opt.handler)(oi, &thiskw, value);
+  }
+
+  void AddKeyword(const char *name,
+      const char *description, Kwfunc func, const void *info) {
+    keywords_.push_back(keyword());
+    keyword &kw = keywords_.back();
+    kw.name = const_cast<char*>(name);
+    kw.desc = const_cast<char*>(description);
+    kw.kf = func;
+    kw.info = const_cast<void*>(info);
+
+    // TODO: set once
+    std::sort(keywords_.begin(), keywords_.end(), KeywordNameLess());
+    keywds = &keywords_[0];
+    n_keywds = keywords_.size();
+  }
+
+ public:
+  OptionInfo(Handler &h): Option_Info(), handler_(h) {
+    // TODO: align text
+    AddKeyword("version",
+        "Single-word phrase:  report version details\n"
+        "before solving the problem.\n", Ver_val, 0);
+    AddKeyword("wantsol",
+        "In a stand-alone invocation (no -AMPL on the\n"
+        "command line), what solution information to\n"
+        "write.  Sum of\n"
+        "      1 = write .sol file\n"
+        "      2 = primal variables to stdout\n"
+        "      4 = dual variables to stdout\n"
+        "      8 = suppress solution message\n", WS_val, 0);
+  }
+
+  void AddOption(const char *name, const char *description,
+      char *(Handler::*handler)(Option_Info *oi, keyword *kw, char *value),
+      const void* info) {
+    AddKeyword(name, description, HandleOption,
+        reinterpret_cast<void*>(options_.size()));
+    Option opt = {handler, info};
+    options_.push_back(opt);
   }
 };
 }

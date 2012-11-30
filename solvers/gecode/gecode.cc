@@ -225,6 +225,15 @@ LinExpr NLToGecodeConverter::VisitNumberOf(NumberOfExpr e) {
   return result;
 }
 
+BoolExpr NLToGecodeConverter::VisitImplication(ImplicationExpr e) {
+  BoolExpr condition = Visit(e.condition());
+  LogicalConstant c = Cast<LogicalConstant>(e.false_expr());
+  if (c && !c.value())
+    return condition >> Visit(e.true_expr());
+  return (condition && Visit(e.true_expr())) ||
+        (!condition && Visit(e.false_expr()));
+}
+
 BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr e) {
   IntVarArray &vars = problem_.vars();
   int num_args = e.num_args();
@@ -244,20 +253,20 @@ BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr e) {
   return DUMMY_EXPR;
 }
 
-GecodeDriver::GecodeDriver() : oinfo_(new Option_Info()) {}
+GecodeDriver::GecodeDriver() : oinfo_(*this) {}
 
-int GecodeDriver::run(char **argv) {
+int GecodeDriver::Run(char **argv) {
   Problem &problem = Driver::problem();
-  if (!problem.Read(argv, oinfo_.get()))
+  if (!problem.Read(argv, &oinfo_))
     return 1;
 
-  // TODO: parse options
-  /*if (!parse_options(argv))
-   return 1;*/
+  if (GetOptions(argv, &oinfo_))
+    return 1;
 
   // Set up an optimization problem in Gecode.
   std::auto_ptr<NLToGecodeConverter>
     converter(new NLToGecodeConverter(problem.num_vars()));
+  converter->Convert(problem);
 
   // Solve the problem.
   std::auto_ptr<GecodeProblem> solution;
@@ -297,8 +306,8 @@ int GecodeDriver::run(char **argv) {
   problem.SetSolveCode(solve_code);
 
   char message[256];
-  Sprintf(message, "%s: %s\n", oinfo_->bsname, status);
-  WriteSolution(message, primal.empty() ? 0 : &primal[0], 0, oinfo_.get());
+  Sprintf(message, "%s: %s\n", oinfo_.bsname, status);
+  WriteSolution(message, primal.empty() ? 0 : &primal[0], 0, &oinfo_);
   return 0;
 }
 }
