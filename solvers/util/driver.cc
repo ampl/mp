@@ -38,32 +38,6 @@ struct KeywordNameLess {
 
 namespace ampl {
 
-Problem::Problem() : asl_(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))) {}
-
-Problem::~Problem() {
-  ASL_free(reinterpret_cast<ASL**>(&asl_));
-}
-
-bool Problem::Read(char **&argv, Option_Info *oi) {
-  ASL *asl = reinterpret_cast<ASL*>(asl_);
-  char *stub = getstub_ASL(asl, &argv, oi);
-  if (!stub) {
-    usage_noexit_ASL(oi, 1);
-    return false;
-  }
-  FILE *nl = jac0dim_ASL(asl, stub, static_cast<ftnlen>(std::strlen(stub)));
-  asl_->i.Uvx_ = static_cast<real*>(Malloc(num_vars() * sizeof(real)));
-  asl_->i.Urhsx_ = static_cast<real*>(Malloc(num_cons() * sizeof(real)));
-  efunc *r_ops_int[N_OPS];
-  for (int i = 0; i < N_OPS; ++i)
-    r_ops_int[i] = reinterpret_cast<efunc*>(i);
-  asl_->I.r_ops_ = r_ops_int;
-  asl_->p.want_derivs_ = 0;
-  fg_read_ASL(asl, nl, ASL_allow_CLP);
-  asl_->I.r_ops_ = 0;
-  return true;
-}
-
 int OptionParser<int>::operator()(Option_Info *oi, keyword *kw, char *&s) {
   keyword thiskw(*kw);
   int value = 0;
@@ -122,6 +96,33 @@ void BaseOptionInfo::AddKeyword(const char *name,
   kw.desc = const_cast<char*>(description);
   kw.kf = func;
   kw.info = const_cast<void*>(info);
+}
+
+Problem::Problem() : asl_(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))) {}
+
+Problem::~Problem() {
+  ASL_free(reinterpret_cast<ASL**>(&asl_));
+}
+
+bool Problem::Read(char **&argv, BaseOptionInfo &oi) {
+  oi.Sort();
+  ASL *asl = reinterpret_cast<ASL*>(asl_);
+  char *stub = getstub_ASL(asl, &argv, &oi);
+  if (!stub) {
+    usage_noexit_ASL(&oi, 1);
+    return false;
+  }
+  FILE *nl = jac0dim_ASL(asl, stub, static_cast<ftnlen>(std::strlen(stub)));
+  asl_->i.Uvx_ = static_cast<real*>(Malloc(num_vars() * sizeof(real)));
+  asl_->i.Urhsx_ = static_cast<real*>(Malloc(num_cons() * sizeof(real)));
+  efunc *r_ops_int[N_OPS];
+  for (int i = 0; i < N_OPS; ++i)
+    r_ops_int[i] = reinterpret_cast<efunc*>(i);
+  asl_->I.r_ops_ = r_ops_int;
+  asl_->p.want_derivs_ = 0;
+  fg_read_ASL(asl, nl, ASL_allow_CLP);
+  asl_->I.r_ops_ = 0;
+  return true;
 }
 
 void Driver::ReportError(const char *format, ...) {

@@ -661,7 +661,7 @@ int IlogCPDriver::Run(char **argv) {
   Times[0] = xectim_();
 
   Problem &problem = Driver::problem();
-  if (!problem.Read(argv, &oinfo_) || !ParseOptions(argv))
+  if (!problem.Read(argv, oinfo_) || !ParseOptions(argv))
     return 1;
 
   // Set up optimization problem in ILOG Concert.

@@ -30,124 +30,6 @@
 
 namespace ampl {
 
-// An AMPL problem.
-class Problem {
- private:
-  ASL_fg *asl_;
-
-  // Do not implement.
-  Problem(const Problem&);
-  Problem& operator=(const Problem&);
-
-  friend class Driver;
-
- public:
-  Problem();
-  virtual ~Problem();
-
-  // Reads the problem form a .nl file.
-  bool Read(char **&argv, Option_Info *oi);
-
-  // Returns the number of variables.
-  int num_vars() const { return asl_->i.n_var_; }
-
-  // Returns the number of objectives.
-  int num_objs() const { return asl_->i.n_obj_; }
-
-  // Returns the number of constraints.
-  int num_cons() const { return asl_->i.n_con_; }
-
-  // Returns the number of integer variables including binary.
-  int num_integer_vars() const {
-    return asl_->i.nbv_ + asl_->i.niv_ + asl_->i.nlvbi_ +
-        asl_->i.nlvci_ + asl_->i.nlvoi_;
-  }
-
-  // Returns the number of continuous variables.
-  int num_continuous_vars() const {
-    return num_vars() - num_integer_vars();
-  }
-
-  // Returns the number of nonlinear objectives.
-  int num_nonlinear_objs() const { return asl_->i.nlo_; }
-
-  // Returns the number of nonlinear constraints.
-  int num_nonlinear_cons() const { return asl_->i.nlc_; }
-
-  // Returns the number of logical constraints.
-  int num_logical_cons() const { return asl_->i.n_lcon_; }
-
-  // Returns the variable lower bound.
-  double GetVarLB(int var_index) const {
-    assert(var_index >= 0 && var_index < num_vars());
-    return asl_->i.LUv_[var_index];
-  }
-
-  // Returns the variable lower bound.
-  double GetVarUB(int var_index) const {
-    assert(var_index >= 0 && var_index < num_vars());
-    return asl_->i.Uvx_[var_index];
-  }
-
-  // Returns the constraint lower bound.
-  double GetConLB(int con_index) const {
-    assert(con_index >= 0 && con_index < num_cons());
-    return asl_->i.LUrhs_[con_index];
-  }
-
-  // Returns the constraint lower bound.
-  double GetConUB(int con_index) const {
-    assert(con_index >= 0 && con_index < num_cons());
-    return asl_->i.Urhsx_[con_index];
-  }
-
-  enum ObjType { MIN = 0, MAX = 1 };
-
-  // Returns the objective type.
-  ObjType GetObjType(int obj_index) const {
-    assert(obj_index >= 0 && obj_index < num_objs());
-    return static_cast<ObjType>(asl_->i.objtype_[obj_index]);
-  }
-
-  // Returns the linear part of an objective expression.
-  ograd *GetLinearObjExpr(int obj_index) const {
-    assert(obj_index >= 0 && obj_index < num_objs());
-    return asl_->i.Ograd_[obj_index];
-  }
-
-  // Returns the linear part of a constraint expression.
-  cgrad *GetLinearConExpr(int con_index) const {
-    assert(con_index >= 0 && con_index < num_cons());
-    return asl_->i.Cgrad_[con_index];
-  }
-
-  // Returns the nonlinear part of an objective expression.
-  NumericExpr GetNonlinearObjExpr(int obj_index) const {
-    assert(obj_index >= 0 && obj_index < num_objs());
-    return Expr::Create<NumericExpr>(asl_->I.obj_de_[obj_index].e);
-  }
-
-  // Returns the nonlinear part of a constraint expression.
-  NumericExpr GetNonlinearConExpr(int con_index) const {
-    assert(con_index >= 0 && con_index < num_cons());
-    return Expr::Create<NumericExpr>(asl_->I.con_de_[con_index].e);
-  }
-
-  // Returns a logical constraint expression.
-  LogicalExpr GetLogicalConExpr(int lcon_index) const {
-    assert(lcon_index >= 0 && lcon_index < num_logical_cons());
-    return Expr::Create<LogicalExpr>(asl_->I.lcon_de_[lcon_index].e);
-  }
-
-  // Returns the solve code.
-  int solve_code() const { return asl_->p.solve_code_; }
-
-  // Sets the solve code.
-  void SetSolveCode(int value) {
-    asl_->p.solve_code_ = value;
-  }
-};
-
 template <typename T>
 struct OptionParser;
 
@@ -178,6 +60,7 @@ class BaseOptionInfo : public Option_Info {
   void Sort();
 
   friend class Driver;
+  friend class Problem;
 
  protected:
   BaseOptionInfo();
@@ -295,7 +178,129 @@ class OptionInfo : public BaseOptionInfo {
   }
 };
 
+// An AMPL problem.
+class Problem {
+ private:
+  ASL_fg *asl_;
+
+  // Do not implement.
+  Problem(const Problem&);
+  Problem& operator=(const Problem&);
+
+  friend class Driver;
+
+ public:
+  Problem();
+  virtual ~Problem();
+
+  // Reads the problem form a .nl file.
+  bool Read(char **&argv, BaseOptionInfo &oi);
+
+  // Returns the number of variables.
+  int num_vars() const { return asl_->i.n_var_; }
+
+  // Returns the number of objectives.
+  int num_objs() const { return asl_->i.n_obj_; }
+
+  // Returns the number of constraints.
+  int num_cons() const { return asl_->i.n_con_; }
+
+  // Returns the number of integer variables including binary.
+  int num_integer_vars() const {
+    return asl_->i.nbv_ + asl_->i.niv_ + asl_->i.nlvbi_ +
+        asl_->i.nlvci_ + asl_->i.nlvoi_;
+  }
+
+  // Returns the number of continuous variables.
+  int num_continuous_vars() const {
+    return num_vars() - num_integer_vars();
+  }
+
+  // Returns the number of nonlinear objectives.
+  int num_nonlinear_objs() const { return asl_->i.nlo_; }
+
+  // Returns the number of nonlinear constraints.
+  int num_nonlinear_cons() const { return asl_->i.nlc_; }
+
+  // Returns the number of logical constraints.
+  int num_logical_cons() const { return asl_->i.n_lcon_; }
+
+  // Returns the variable lower bound.
+  double GetVarLB(int var_index) const {
+    assert(var_index >= 0 && var_index < num_vars());
+    return asl_->i.LUv_[var_index];
+  }
+
+  // Returns the variable lower bound.
+  double GetVarUB(int var_index) const {
+    assert(var_index >= 0 && var_index < num_vars());
+    return asl_->i.Uvx_[var_index];
+  }
+
+  // Returns the constraint lower bound.
+  double GetConLB(int con_index) const {
+    assert(con_index >= 0 && con_index < num_cons());
+    return asl_->i.LUrhs_[con_index];
+  }
+
+  // Returns the constraint lower bound.
+  double GetConUB(int con_index) const {
+    assert(con_index >= 0 && con_index < num_cons());
+    return asl_->i.Urhsx_[con_index];
+  }
+
+  enum ObjType { MIN = 0, MAX = 1 };
+
+  // Returns the objective type.
+  ObjType GetObjType(int obj_index) const {
+    assert(obj_index >= 0 && obj_index < num_objs());
+    return static_cast<ObjType>(asl_->i.objtype_[obj_index]);
+  }
+
+  // Returns the linear part of an objective expression.
+  ograd *GetLinearObjExpr(int obj_index) const {
+    assert(obj_index >= 0 && obj_index < num_objs());
+    return asl_->i.Ograd_[obj_index];
+  }
+
+  // Returns the linear part of a constraint expression.
+  cgrad *GetLinearConExpr(int con_index) const {
+    assert(con_index >= 0 && con_index < num_cons());
+    return asl_->i.Cgrad_[con_index];
+  }
+
+  // Returns the nonlinear part of an objective expression.
+  NumericExpr GetNonlinearObjExpr(int obj_index) const {
+    assert(obj_index >= 0 && obj_index < num_objs());
+    return Expr::Create<NumericExpr>(asl_->I.obj_de_[obj_index].e);
+  }
+
+  // Returns the nonlinear part of a constraint expression.
+  NumericExpr GetNonlinearConExpr(int con_index) const {
+    assert(con_index >= 0 && con_index < num_cons());
+    return Expr::Create<NumericExpr>(asl_->I.con_de_[con_index].e);
+  }
+
+  // Returns a logical constraint expression.
+  LogicalExpr GetLogicalConExpr(int lcon_index) const {
+    assert(lcon_index >= 0 && lcon_index < num_logical_cons());
+    return Expr::Create<LogicalExpr>(asl_->I.lcon_de_[lcon_index].e);
+  }
+
+  // Returns the solve code.
+  int solve_code() const { return asl_->p.solve_code_; }
+
+  // Sets the solve code.
+  void SetSolveCode(int value) {
+    asl_->p.solve_code_ = value;
+  }
+};
+
 #undef printf
+
+#ifndef __GNUC__
+# define __attribute__(x)  /* nothing */
+#endif
 
 // An AMPL solver driver.
 class Driver {
