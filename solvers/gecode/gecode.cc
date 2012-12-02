@@ -257,7 +257,7 @@ GecodeDriver::GecodeDriver() : oinfo_(*this) {}
 
 int GecodeDriver::Run(char **argv) {
   Problem &problem = Driver::problem();
-  if (!problem.Read(argv, &oinfo_))
+  if (!problem.Read(argv, oinfo_))
     return 1;
 
   if (GetOptions(argv, oinfo_))
