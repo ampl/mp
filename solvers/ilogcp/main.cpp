@@ -12,7 +12,7 @@ int main(int, char **argv) {
   std::auto_ptr<ampl::IlogCPDriver> d;
   try {
     d.reset(new ampl::IlogCPDriver());
-    return d->run(argv);
+    return d->Run(argv);
   } catch (const IloException &e) {
     cerr << "Error: " << e << endl;
   } catch (const ampl::Error &e) {

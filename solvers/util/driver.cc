@@ -22,9 +22,19 @@
 
 #include "solvers/util/driver.h"
 
+#include <cstdarg>
+#include <cstdio>
 #include <cstring>
 
 #include "solvers/getstub.h"
+
+namespace {
+struct KeywordNameLess {
+  bool operator()(const keyword &lhs, const keyword &rhs) const {
+    return std::strcmp(lhs.name, rhs.name) < 0;
+  }
+};
+}
 
 namespace ampl {
 
@@ -54,7 +64,86 @@ bool Problem::Read(char **&argv, Option_Info *oi) {
   return true;
 }
 
-int Driver::GetOptions(char **argv, Option_Info *oi) {
-  return getopts_ASL(reinterpret_cast<ASL*>(problem_.asl_), argv, oi);
+int OptionParser<int>::operator()(Option_Info *oi, keyword *kw, char *&s) {
+  keyword thiskw(*kw);
+  int value = 0;
+  thiskw.info = &value;
+  s = I_val(oi, &thiskw, s);
+  return value;
+}
+
+double OptionParser<double>::operator()(
+    Option_Info *oi, keyword *kw, char *&s) {
+  keyword thiskw(*kw);
+  double value = 0;
+  thiskw.info = &value;
+  s = D_val(oi, &thiskw, s);
+  return value;
+}
+
+const char* OptionParser<const char*>::operator()(
+    Option_Info *, keyword *, char *&s) {
+  char *end = s;
+  while (*end && !isspace(*end))
+    ++end;
+  value_.assign(s, end - s);
+  s = end;
+  return value_.c_str();
+}
+
+void BaseOptionInfo::Sort() {
+  if (sorted_) return;
+  std::sort(keywords_.begin(), keywords_.end(), KeywordNameLess());
+  keywds = &keywords_[0];
+  n_keywds = keywords_.size();
+  sorted_ = true;
+}
+
+BaseOptionInfo::BaseOptionInfo() : Option_Info(), sorted_(false) {
+  // TODO: align text
+  AddKeyword("version",
+      "Single-word phrase:  report version details\n"
+      "before solving the problem.\n", Ver_val, 0);
+  AddKeyword("wantsol",
+      "In a stand-alone invocation (no -AMPL on the\n"
+      "command line), what solution information to\n"
+      "write.  Sum of\n"
+      "      1 = write .sol file\n"
+      "      2 = primal variables to stdout\n"
+      "      4 = dual variables to stdout\n"
+      "      8 = suppress solution message\n", WS_val, 0);
+}
+
+void BaseOptionInfo::AddKeyword(const char *name,
+    const char *description, Kwfunc func, const void *info) {
+  keywords_.push_back(keyword());
+  keyword &kw = keywords_.back();
+  kw.name = const_cast<char*>(name);
+  kw.desc = const_cast<char*>(description);
+  kw.kf = func;
+  kw.info = const_cast<void*>(info);
+}
+
+void Driver::ReportError(const char *format, ...) {
+  has_errors_ = true;
+  std::vector<char> message(500);
+  std::va_list args;
+  for (;;) {
+    va_start(args, format);
+    int n = vsnprintf(&message[0], message.size(), format, args);
+    va_end(args);
+    if (n >= 0 && static_cast<unsigned>(n) < message.size())
+      break;
+    message.resize(n >= 0 ? n + 1 : 2 * message.size());
+  }
+  std::fputs(&message[0], stderr);
+  std::fputc('\n', stderr);
+}
+
+bool Driver::GetOptions(char **argv, BaseOptionInfo &oi) {
+  has_errors_ = false;
+  oi.Sort();
+  return getopts_ASL(reinterpret_cast<ASL*>(problem_.asl_), argv, &oi) == 0 &&
+      !has_errors_;
 }
 }

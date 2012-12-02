@@ -23,7 +23,7 @@
 #ifndef SOLVERS_UTIL_DRIVER_H_
 #define SOLVERS_UTIL_DRIVER_H_
 
-#include <cstring>
+#include <memory>
 
 #include "solvers/getstub.h"
 #include "solvers/util/expr.h"
@@ -148,88 +148,178 @@ class Problem {
   }
 };
 
+template <typename T>
+struct OptionParser;
+
+template <>
+struct OptionParser<int> {
+  int operator()(Option_Info *oi, keyword *kw, char *&s);
+};
+
+template <>
+struct OptionParser<double> {
+  double operator()(Option_Info *oi, keyword *kw, char *&s);
+};
+
+template <>
+class OptionParser<const char*> {
+ private:
+  std::string value_;
+
+ public:
+  const char* operator()(Option_Info *, keyword *, char *&s);
+};
+
+class BaseOptionInfo : public Option_Info {
+ private:
+  std::vector<keyword> keywords_;
+  bool sorted_;
+
+  void Sort();
+
+  friend class Driver;
+
+ protected:
+  BaseOptionInfo();
+
+  void AddKeyword(const char *name,
+      const char *description, Kwfunc func, const void *info);
+};
+
+template <typename Handler>
+class OptionInfo : public BaseOptionInfo {
+ private:
+  class Option {
+   public:
+    virtual ~Option() {}
+
+    virtual char *Handle(
+        Handler &h, Option_Info *oi, keyword *kw, char *value) = 0;
+  };
+
+  template <typename Func, typename Value>
+  class ConcreteOption : public Option {
+   private:
+    Func func_;
+
+   public:
+    ConcreteOption(Func func) : func_(func) {}
+
+    char *Handle(Handler &h, Option_Info *oi, keyword *kw, char *s) {
+      (h.*func_)(kw->name, OptionParser<Value>()(oi, kw, s));
+      return s;
+    }
+  };
+
+  template <typename Func, typename Info, typename Value>
+  class ConcreteOptionWithInfo : public Option {
+   private:
+    Func func_;
+    Info info_;
+
+   public:
+    ConcreteOptionWithInfo(Func func, const Info &info)
+    : func_(func), info_(info) {}
+
+    char *Handle(Handler &h, Option_Info *oi, keyword *kw, char *s) {
+      (h.*func_)(kw->name, OptionParser<Value>()(oi, kw, s), info_);
+      return s;
+    }
+  };
+
+  Handler &handler_;
+  std::vector<Option*> options_;
+
+  static char *HandleOption(Option_Info *oi, keyword *kw, char *value) {
+    OptionInfo *self = static_cast<OptionInfo*>(oi);
+    Option *opt = self->options_[reinterpret_cast<size_t>(kw->info)];
+    return opt->Handle(self->handler_, oi, kw, value);
+  }
+
+  void AddOption(const char *name,
+      const char *description, std::auto_ptr<Option> opt) {
+    AddKeyword(name, description, HandleOption,
+        reinterpret_cast<void*>(options_.size()));
+    options_.push_back(0);
+    options_.back() = opt.release();
+  }
+
+  struct Deleter {
+    void operator()(Option *opt) { delete opt; }
+  };
+
+ public:
+  OptionInfo(Handler &h): handler_(h) {}
+
+  ~OptionInfo() {
+    std::for_each(options_.begin(), options_.end(), Deleter());
+  }
+
+  template <typename Func>
+  void AddIntOption(const char *name, const char *description, Func f) {
+    AddOption(name, description, std::auto_ptr<Option>(
+        new ConcreteOption<Func, int>(f)));
+  }
+
+  template <typename Info, typename Func>
+  void AddIntOption(const char *name,
+      const char *description, Func f, const Info &info) {
+    AddOption(name, description, std::auto_ptr<Option>(
+        new ConcreteOptionWithInfo<Func, Info, int>(f, info)));
+  }
+
+  template <typename Func>
+  void AddDblOption(const char *name, const char *description, Func f) {
+    AddOption(name, description, std::auto_ptr<Option>(
+        new ConcreteOption<Func, double>(f)));
+  }
+
+  template <typename Info, typename Func>
+  void AddDblOption(const char *name,
+      const char *description, Func f, const Info &info) {
+    AddOption(name, description, std::auto_ptr<Option>(
+        new ConcreteOptionWithInfo<Func, Info, double>(f, info)));
+  }
+
+  template <typename Func>
+  void AddStrOption(const char *name, const char *description, Func f) {
+    AddOption(name, description, std::auto_ptr<Option>(
+        new ConcreteOption<Func, const char*>(f)));
+  }
+
+  template <typename Info, typename Func>
+  void AddStrOption(const char *name,
+      const char *description, Func f, const Info &info) {
+    AddOption(name, description, std::auto_ptr<Option>(
+        new ConcreteOptionWithInfo<Func, Info, const char*>(f, info)));
+  }
+};
+
+#undef printf
+
 // An AMPL solver driver.
 class Driver {
  private:
   Problem problem_;
+  bool has_errors_;
 
  public:
+  Driver() : has_errors_(false) {}
+
   Problem &problem() { return problem_; }
 
+  bool has_errors() const { return has_errors_; }
+
+  // Reports an error.
+  void ReportError(const char *format, ...)
+    __attribute__((format(printf, 2, 3)));
+
   // Gets the options.
-  int GetOptions(char **argv, Option_Info *oi);
+  bool GetOptions(char **argv, BaseOptionInfo &oi);
 
   // Writes the solution.
   void WriteSolution(char *msg, double *x, double *y, Option_Info* oi) {
     write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_), msg, x, y, oi);
-  }
-};
-
-template <typename Handler>
-class OptionInfo : public Option_Info {
- public:
-  struct Option {
-    char *(Handler::*handler)(Option_Info *oi, keyword *kw, char *value);
-    const void *info;
-  };
-
- private:
-  Handler &handler_;
-  std::vector<Option> options_;
-  std::vector<keyword> keywords_;
-
-  struct KeywordNameLess {
-    bool operator()(const keyword &lhs, const keyword &rhs) const {
-      return std::strcmp(lhs.name, rhs.name) < 0;
-    }
-  };
-
-  static char *HandleOption(Option_Info *oi, keyword *kw, char *value) {
-    OptionInfo *self = static_cast<OptionInfo*>(oi);
-    Option &opt = self->options_[reinterpret_cast<size_t>(kw->info)];
-    keyword thiskw(*kw);
-    thiskw.info = const_cast<void*>(opt.info);
-    return (self->handler_.*opt.handler)(oi, &thiskw, value);
-  }
-
-  void AddKeyword(const char *name,
-      const char *description, Kwfunc func, const void *info) {
-    keywords_.push_back(keyword());
-    keyword &kw = keywords_.back();
-    kw.name = const_cast<char*>(name);
-    kw.desc = const_cast<char*>(description);
-    kw.kf = func;
-    kw.info = const_cast<void*>(info);
-
-    // TODO: set once
-    std::sort(keywords_.begin(), keywords_.end(), KeywordNameLess());
-    keywds = &keywords_[0];
-    n_keywds = keywords_.size();
-  }
-
- public:
-  OptionInfo(Handler &h): Option_Info(), handler_(h) {
-    // TODO: align text
-    AddKeyword("version",
-        "Single-word phrase:  report version details\n"
-        "before solving the problem.\n", Ver_val, 0);
-    AddKeyword("wantsol",
-        "In a stand-alone invocation (no -AMPL on the\n"
-        "command line), what solution information to\n"
-        "write.  Sum of\n"
-        "      1 = write .sol file\n"
-        "      2 = primal variables to stdout\n"
-        "      4 = dual variables to stdout\n"
-        "      8 = suppress solution message\n", WS_val, 0);
-  }
-
-  void AddOption(const char *name, const char *description,
-      char *(Handler::*handler)(Option_Info *oi, keyword *kw, char *value),
-      const void* info) {
-    AddKeyword(name, description, HandleOption,
-        reinterpret_cast<void*>(options_.size()));
-    Option opt = {handler, info};
-    options_.push_back(opt);
   }
 };
 }
