@@ -157,7 +157,7 @@ class IlogCPTest : public ::testing::Test, public ExprBuilder {
 
   int RunDriver(const char *stub = nullptr, const char *opt = nullptr) {
     try {
-      return d.run((Args() + "ilogcp" + "-s" + stub + opt).get());
+      return d.Run((Args() + "ilogcp" + "-s" + stub + opt).get());
     } catch (const IloException &e) {  // NOLINT(whitespace/parens)
       throw std::runtime_error(e.getMessage());
     }
@@ -166,7 +166,7 @@ class IlogCPTest : public ::testing::Test, public ExprBuilder {
 
   bool ParseOptions(const char *opt1, const char *opt2 = nullptr) {
     try {
-      return d.parse_options((Args() + opt1 + opt2).get());
+      return d.ParseOptions((Args() + opt1 + opt2).get());
     } catch (const IloException &e) {  // NOLINT(whitespace/parens)
       throw std::runtime_error(e.getMessage());
     }
@@ -936,7 +936,7 @@ TEST_F(IlogCPTest, ConvertAllDiff) {
 TEST_F(IlogCPTest, Usage) {
   FILE *saved_stderr = Stderr;
   Stderr = fopen("out", "w");
-  d.run((Args() + "ilogcp").get());
+  d.Run((Args() + "ilogcp").get());
   fclose(Stderr);
   Stderr = saved_stderr;
 
@@ -1093,40 +1093,39 @@ TEST_F(IlogCPTest, WantsolOption) {
 
 TEST_F(IlogCPTest, DebugExprOption) {
   EXPECT_TRUE(ParseOptions("debugexpr=0"));
-  EXPECT_EQ(0, d.get_option(IlogCPDriver::DEBUGEXPR));
+  EXPECT_EQ(0, d.GetOption(IlogCPDriver::DEBUGEXPR));
   EXPECT_TRUE(ParseOptions("debugexpr=1"));
-  EXPECT_EQ(1, d.get_option(IlogCPDriver::DEBUGEXPR));
-  EXPECT_TRUE(ParseOptions("debugexpr=42"));
-  EXPECT_EQ(42, d.get_option(IlogCPDriver::DEBUGEXPR));
+  EXPECT_EQ(1, d.GetOption(IlogCPDriver::DEBUGEXPR));
+  EXPECT_FALSE(ParseOptions("debugexpr=42"));
   EXPECT_FALSE(ParseOptions("debugexpr=oops"));
 }
 
 TEST_F(IlogCPTest, OptimizerOption) {
-  EXPECT_EQ(IlogCPDriver::AUTO, d.get_option(IlogCPDriver::OPTIMIZER));
+  EXPECT_EQ(IlogCPDriver::AUTO, d.GetOption(IlogCPDriver::OPTIMIZER));
 
   EXPECT_TRUE(ParseOptions("optimizer=cplex"));
-  EXPECT_EQ(IlogCPDriver::CPLEX, d.get_option(IlogCPDriver::OPTIMIZER));
+  EXPECT_EQ(IlogCPDriver::CPLEX, d.GetOption(IlogCPDriver::OPTIMIZER));
   EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) != nullptr);
 
   EXPECT_TRUE(ParseOptions("optimizer=cp"));
-  EXPECT_EQ(IlogCPDriver::CP, d.get_option(IlogCPDriver::OPTIMIZER));
+  EXPECT_EQ(IlogCPDriver::CP, d.GetOption(IlogCPDriver::OPTIMIZER));
   EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) == nullptr);
 }
 
 TEST_F(IlogCPTest, TimingOption) {
   EXPECT_TRUE(ParseOptions("timing=0"));
-  EXPECT_EQ(0, d.get_option(IlogCPDriver::TIMING));
+  EXPECT_EQ(0, d.GetOption(IlogCPDriver::TIMING));
   EXPECT_TRUE(ParseOptions("timing=1"));
-  EXPECT_EQ(1, d.get_option(IlogCPDriver::TIMING));
+  EXPECT_EQ(1, d.GetOption(IlogCPDriver::TIMING));
   EXPECT_FALSE(ParseOptions("timing=42"));
   EXPECT_FALSE(ParseOptions("timing=oops"));
 }
 
 TEST_F(IlogCPTest, UseNumberOfOption) {
   EXPECT_TRUE(ParseOptions("usenumberof=0"));
-  EXPECT_EQ(0, d.get_option(IlogCPDriver::USENUMBEROF));
+  EXPECT_EQ(0, d.GetOption(IlogCPDriver::USENUMBEROF));
   EXPECT_TRUE(ParseOptions("usenumberof=1"));
-  EXPECT_EQ(1, d.get_option(IlogCPDriver::USENUMBEROF));
+  EXPECT_EQ(1, d.GetOption(IlogCPDriver::USENUMBEROF));
   EXPECT_FALSE(ParseOptions("usenumberof=42"));
   EXPECT_FALSE(ParseOptions("timing=oops"));
 }

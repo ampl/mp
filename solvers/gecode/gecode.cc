@@ -260,7 +260,7 @@ int GecodeDriver::Run(char **argv) {
   if (!problem.Read(argv, &oinfo_))
     return 1;
 
-  if (GetOptions(argv, &oinfo_))
+  if (GetOptions(argv, oinfo_))
     return 1;
 
   // Set up an optimization problem in Gecode.

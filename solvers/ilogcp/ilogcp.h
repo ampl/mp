@@ -36,9 +36,6 @@
 
 #include "solvers/util/driver.h"
 
-struct keyword;
-struct Option_Info;
-
 namespace ampl {
 
 class Optimizer {
@@ -59,9 +56,6 @@ class Optimizer {
 
   virtual IloAlgorithm algorithm() const = 0;
 
-  virtual void set_option(const void *key, int value) = 0;
-  virtual void set_option(const void *key, double value) = 0;
-
   virtual void get_solution(Problem &p, char *message,
       std::vector<double> &primal, std::vector<double> &dual) const = 0;
 };
@@ -79,9 +73,6 @@ class CPLEXOptimizer : public Optimizer {
   IloCplex cplex() const { return cplex_; }
   IloAlgorithm algorithm() const { return cplex_; }
 
-  void set_option(const void *key, int value);
-  void set_option(const void *key, double value);
-
   void get_solution(Problem &p, char *message,
       std::vector<double> &primal, std::vector<double> &dual) const;
 };
@@ -97,9 +88,6 @@ class CPOptimizer : public Optimizer {
 
   IloSolver solver() const { return solver_; }
   IloAlgorithm algorithm() const { return solver_; }
-
-  void set_option(const void *key, int value);
-  void set_option(const void *key, double value);
 
   void get_solution(Problem &p, char *message,
       std::vector<double> &primal, std::vector<double> &dual) const;
@@ -118,10 +106,8 @@ class IlogCPDriver : public Driver, public Visitor {
   std::auto_ptr<Optimizer> optimizer_;
   std::vector<char> version_;
   OptionInfo<IlogCPDriver> oinfo_;
-  bool gotopttype;
+  bool gotopttype_;
   bool debug_;
-  int n_badvals;
-  static keyword keywords_[];
 
   class CreateVar {
    private:
@@ -162,35 +148,36 @@ class IlogCPDriver : public Driver, public Visitor {
  private:
   int options_[NUM_OPTIONS];
 
-  void AddOption(const char *name, const char *description,
-      char *(IlogCPDriver::*handler)(Option_Info *oi, keyword *kw, char *value),
-      const void *info) {
-    oinfo_.AddOption(name, description, handler, info);
-  }
-
-  void set_option(keyword *kw, int value);
-
   IloNumExprArray ConvertArgs(VarArgExpr e);
 
-  static void RequireNonzeroConstRHS(
-      BinaryExpr e, const std::string &func_name);
+  void SetOptimizer(const char *name, const char *value);
+  void SetBoolOption(const char *name, int value, Option opt);
+
+  // Information about a constraint programming solver option.
+  struct CPOptionInfo {
+    IloCP::IntParam param;
+    int start;           // start value for the enumerated options
+    const char **values; // string values for enum options
+    bool accepts_auto;   // true if the option accepts IloCP::Auto value
+
+    CPOptionInfo(IloCP::IntParam p, int start = 0,
+        const char **values = 0, bool accepts_auto = false)
+    : param(p), start(start), values(values), accepts_auto(accepts_auto) {}
+  };
+
+  // Sets an integer option of the constraint programming optimizer.
+  void SetCPOption(
+      const char *name, const char *value, const CPOptionInfo &info);
+
+  // Sets a double option of the constraint programming optimizer.
+  void SetCPDblOption(const char *name, double value, IloCP::NumParam param);
+
+  // Sets an integer option of the CPLEX optimizer.
+  void SetCPLEXIntOption(const char *name, int value, int param);
 
  public:
   IlogCPDriver();
   virtual ~IlogCPDriver();
-
-  char *set_optimizer(Option_Info *oi, keyword *kw, char *value);
-  char *set_int_option(Option_Info *oi, keyword *kw, char *value);
-  char *set_bool_option(Option_Info *oi, keyword *kw, char *value);
-
-  // Sets an integer option of the constraint programming optimizer.
-  char *set_cp_int_option(Option_Info *oi, keyword *kw, char *value);
-
-  // Sets a double option of the constraint programming optimizer.
-  char *set_cp_dbl_option(Option_Info *oi, keyword *kw, char *value);
-
-  // Sets an integer option of the CPLEX optimizer.
-  char *set_cplex_int_option(Option_Info *oi, keyword *kw, char *value);
 
   IloEnv env() const { return env_; }
   IloModel mod() const { return mod_; }
@@ -205,9 +192,13 @@ class IlogCPDriver : public Driver, public Visitor {
   void set_vars(IloNumVarArray vars) { vars_ = vars; }
 
   // Get and process ILOG Concert and driver options.
-  bool parse_options(char **argv);
+  bool ParseOptions(char **argv);
 
-  int get_option(Option opt) const { return options_[opt]; }
+  int GetOption(Option opt) const {
+    assert(opt >= 0 && opt < NUM_OPTIONS);
+    return options_[opt];
+  }
+
   void use_numberof(bool use = true) { options_[USENUMBEROF] = use; }
   bool show_version() const;
   int wantsol() const;
@@ -468,7 +459,7 @@ class IlogCPDriver : public Driver, public Visitor {
   void FinishBuildingNumberOf();
 
   // Runs the driver.
-  int run(char **argv);
+  int Run(char **argv);
 };
 }
 

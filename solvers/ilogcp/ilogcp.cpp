@@ -22,40 +22,18 @@
 #include "ilogcp_date.h"
 
 #include <cctype>
-#include <algorithm>
-#include <iostream>
-
-#include <ilcplex/ilocplex.h>
-#include <ilcp/cp.h>
-
-#include "getstub.h"
-#include "nlp.h"
-#include "opcode.hd"
+#include <cstdlib>
 
 using namespace std;
 
-using ampl::NumberOfExpr;
-
 static char xxxvers[] = "ilogcp_options\0\n"
   "AMPL/IBM ILOG CP Optimizer Driver Version " qYYYYMMDD "\n";
-
-// for suppressing "String literal to char*" warnings
-#define CSTR(s) const_cast<char*>(s)
 
 #ifndef M_PI
 # define M_PI 3.14159265358979323846
 #endif
 
 namespace {
-struct DriverOptionInfo : Option_Info {
-  ampl::IlogCPDriver *driver;
-};
-
-char *skip_nonspace(char *s) {
-  while (*s && !isspace(*s))
-    ++s;
-  return s;
-}
 
 const char *InferenceLevels[] = {
   "default",
@@ -93,39 +71,13 @@ const char *TimeModes[] = {
   0
 };
 
-// Information about a constraint programming solver option.
-struct CPOptionInfo {
-  IloCP::IntParam param;
-  int start;           // start value for the enumerated options
-  bool accepts_auto;   // true if the option accepts IloCP::Auto value
-  const char **values; // string values for enum options
-};
-
-#define CP_INT_OPTION_FULL(name, start, accepts_auto, values) \
-  const CPOptionInfo name = {IloCP::name, start, accepts_auto, values};
-#define CP_INT_OPTION(name) CP_INT_OPTION_FULL(name, 0, false, 0)
-#define CP_ENUM_OPTION(name, start, values) \
-  CP_INT_OPTION_FULL(name, start, false, values)
-
-CP_ENUM_OPTION(AllDiffInferenceLevel, IloCP::Default, InferenceLevels)
-CP_INT_OPTION(BranchLimit)
-CP_INT_OPTION(ChoicePointLimit)
-CP_ENUM_OPTION(ConstraintAggregation, IloCP::Off, Flags)
-CP_ENUM_OPTION(DefaultInferenceLevel, IloCP::Default, InferenceLevels)
-CP_ENUM_OPTION(DistributeInferenceLevel, IloCP::Default, InferenceLevels)
-CP_INT_OPTION_FULL(DynamicProbing, IloCP::Off, true, Flags)
-CP_INT_OPTION(FailLimit)
-CP_INT_OPTION(LogPeriod)
-CP_ENUM_OPTION(LogVerbosity, IloCP::Quiet, Verbosities)
-CP_INT_OPTION(MultiPointNumberOfSearchPoints)
-CP_ENUM_OPTION(PropagationLog, IloCP::Quiet, Verbosities)
-CP_INT_OPTION(RandomSeed)
-CP_INT_OPTION(RestartFailLimit)
-CP_INT_OPTION_FULL(SearchType, IloCP::DepthFirst, true, SearchTypes)
-CP_INT_OPTION(SolutionLimit)
-CP_ENUM_OPTION(TemporalRelaxation, IloCP::Off, Flags)
-CP_ENUM_OPTION(TimeMode, IloCP::CPUTime, TimeModes)
-CP_INT_OPTION_FULL(Workers, 0, true, 0)
+void RequireNonzeroConstRHS(ampl::BinaryExpr e, const std::string &func_name) {
+  ampl::NumericConstant num = ampl::Cast<ampl::NumericConstant>(e.rhs());
+  if (!num || num.value() != 0) {
+    throw ampl::UnsupportedExprError(
+        func_name + " with nonzero second parameter");
+  }
+}
 }
 
 namespace ampl {
@@ -134,20 +86,6 @@ Optimizer::Optimizer(IloEnv env, const Problem &p) :
   vars_(env, p.num_vars()), cons_(env, p.num_cons()) {}
 
 Optimizer::~Optimizer() {}
-
-void CPLEXOptimizer::set_option(const void *key, int value) {
-  // Use CPXsetintparam instead of IloCplex::setParam to avoid dealing with
-  // two overloads, one for the type int and one for the type long.
-  if (CPXsetintparam(cplex_.getImpl()->getCplexEnv(),
-      reinterpret_cast<size_t>(key), value) != 0) {
-    throw IloWrongUsage();
-  }
-}
-
-void CPLEXOptimizer::set_option(const void *key, double value) {
-  cplex_.setParam(
-      static_cast<IloCplex::NumParam>(reinterpret_cast<size_t>(key)), value);
-}
 
 void CPLEXOptimizer::get_solution(Problem &p, char *message,
     std::vector<double> &primal, std::vector<double> &dual) const {
@@ -173,18 +111,6 @@ void CPLEXOptimizer::get_solution(Problem &p, char *message,
   }
 }
 
-void CPOptimizer::set_option(const void *key, int value) {
-  const CPOptionInfo *info = static_cast<const CPOptionInfo*>(key);
-  if (value != -1 || !info->accepts_auto)
-    value += info->start;
-  solver_.setParameter(info->param, value);
-}
-
-void CPOptimizer::set_option(const void *key, double value) {
-  solver_.setParameter(
-      static_cast<IloCP::NumParam>(reinterpret_cast<size_t>(key)), value);
-}
-
 void CPOptimizer::get_solution(Problem &p, char *message,
     std::vector<double> &primal, std::vector<double> &) const {
   message += g_fmtop(message, solver_.getNumberOfChoicePoints());
@@ -205,7 +131,7 @@ void CPOptimizer::get_solution(Problem &p, char *message,
 
 IlogCPDriver::IlogCPDriver() :
    mod_(env_), oinfo_(*this),
-   gotopttype(false), debug_(false), n_badvals(0), numberofs_(CreateVar(env_)) {
+   gotopttype_(false), debug_(false), numberofs_(CreateVar(env_)) {
   char *s;
   int n;
   size_t L;
@@ -220,12 +146,12 @@ IlogCPDriver::IlogCPDriver() :
       IloConcertVersion::_ILO_NAME, IloConcertVersion::_ILO_MAJOR_VERSION,
       IloConcertVersion::_ILO_MINOR_VERSION,
       IloConcertVersion::_ILO_TECH_VERSION);
-  oinfo_.sname = CSTR("ilogcp");
+  oinfo_.sname = const_cast<char*>("ilogcp");
   snprintf(oinfo_.bsname = s + n + 1, L - n, "ilogcp %d.%d.%d",
       IloConcertVersion::_ILO_MAJOR_VERSION,
       IloConcertVersion::_ILO_MINOR_VERSION,
       IloConcertVersion::_ILO_TECH_VERSION);
-  oinfo_.opname = CSTR(xxxvers);
+  oinfo_.opname = const_cast<char*>(xxxvers);
   oinfo_.version = &version_[0];
   oinfo_.driver_date = YYYYMMDD;
 
@@ -243,7 +169,7 @@ IlogCPDriver::IlogCPDriver() :
 
   // The options must be in alphabetical order.
 
-  AddOption("alldiffinferencelevel",
+  oinfo_.AddStrOption("alldiffinferencelevel",
       "Inference level for 'alldiff' constraints.\n"
       SPACE "Possible values:\n"
       SPACE "      0 = default\n"
@@ -251,39 +177,43 @@ IlogCPDriver::IlogCPDriver() :
       SPACE "      2 = basic\n"
       SPACE "      3 = medium\n"
       SPACE "      4 = extended\n",
-      &IlogCPDriver::set_cp_int_option, &AllDiffInferenceLevel);
+      &IlogCPDriver::SetCPOption,
+      CPOptionInfo(IloCP::AllDiffInferenceLevel,
+          IloCP::Default, InferenceLevels));
 
-  AddOption("branchlimit",
+  oinfo_.AddStrOption("branchlimit",
       "Limit on the number of branches made before\n"
       SPACE "terminating a search.  Default = no limit.\n",
-      &IlogCPDriver::set_cp_int_option, &BranchLimit);
+      &IlogCPDriver::SetCPOption, CPOptionInfo(IloCP::BranchLimit));
 
-  AddOption("choicepointlimit",
+  oinfo_.AddStrOption("choicepointlimit",
       "Limit on the number of choice points created\n"
       SPACE "before terminating a search. Default = no limit.\n",
-      &IlogCPDriver::set_cp_int_option, &ChoicePointLimit);
+      &IlogCPDriver::SetCPOption, CPOptionInfo(IloCP::ChoicePointLimit));
 
-  AddOption("constraintaggregation",
+  oinfo_.AddStrOption("constraintaggregation",
       "0 or 1 (default 1):  Whether to aggregate basic\n"
       SPACE "constraints.\n",
-      &IlogCPDriver::set_cp_int_option, &ConstraintAggregation);
+      &IlogCPDriver::SetCPOption,
+      CPOptionInfo(IloCP::ConstraintAggregation, IloCP::Off, Flags));
 
-  AddOption("debugexpr",
+  oinfo_.AddIntOption("debugexpr",
       "0 or 1 (default 0):  Whether to print debugging\n"
       SPACE "information for expression trees.\n",
-      &IlogCPDriver::set_int_option,
-      reinterpret_cast<void*>(IlogCPDriver::DEBUGEXPR));
+      &IlogCPDriver::SetBoolOption, DEBUGEXPR);
 
-  AddOption("defaultinferencelevel",
+  oinfo_.AddStrOption("defaultinferencelevel",
       "Default inference level for constraints.\n"
       SPACE "Possible values:\n"
       SPACE "      1 = low\n"
       SPACE "      2 = basic\n"
       SPACE "      3 = medium\n"
       SPACE "      4 = extended\n",
-      &IlogCPDriver::set_cp_int_option, &DefaultInferenceLevel);
+      &IlogCPDriver::SetCPOption,
+      CPOptionInfo(IloCP::DefaultInferenceLevel,
+          IloCP::Default, InferenceLevels));
 
-  AddOption("distributeinferencelevel",
+  oinfo_.AddStrOption("distributeinferencelevel",
       "Inference level for 'distribute' constraints.\n"
       SPACE "Possible values:\n"
       SPACE "      0 = default\n"
@@ -291,40 +221,43 @@ IlogCPDriver::IlogCPDriver() :
       SPACE "      2 = basic\n"
       SPACE "      3 = medium\n"
       SPACE "      4 = extended\n",
-      &IlogCPDriver::set_cp_int_option, &DistributeInferenceLevel);
+      &IlogCPDriver::SetCPOption,
+      CPOptionInfo(IloCP::DistributeInferenceLevel,
+          IloCP::Default, InferenceLevels));
 
-  AddOption("dynamicprobing",
+  oinfo_.AddStrOption("dynamicprobing",
       "Use probing during search.  Possible values:\n"
       SPACE "     -1 = auto (default)\n"
       SPACE "      0 = off\n"
       SPACE "      1 = on\n",
-      &IlogCPDriver::set_cp_int_option, &DynamicProbing);
+      &IlogCPDriver::SetCPOption,
+      CPOptionInfo(IloCP::DynamicProbing, IloCP::Off, Flags, true));
 
-  AddOption("dynamicprobingstrength",
+  oinfo_.AddDblOption("dynamicprobingstrength",
       "Effort dedicated to dynamic probing as a factor\n"
       SPACE "of the total search effort.  Default = 0.03.\n",
-      &IlogCPDriver::set_cp_dbl_option,
-      reinterpret_cast<void*>(IloCP::DynamicProbingStrength));
+      &IlogCPDriver::SetCPDblOption, IloCP::DynamicProbingStrength);
 
-  AddOption("faillimit",
+  oinfo_.AddStrOption("faillimit",
       "Limit on the number of failures allowed before\n"
       SPACE "terminating a search.  Default = no limit.\n",
-      &IlogCPDriver::set_cp_int_option, &FailLimit);
+      &IlogCPDriver::SetCPOption, CPOptionInfo(IloCP::FailLimit));
 
-  AddOption("logperiod",
+  oinfo_.AddStrOption("logperiod",
       "Specifies how often the information in the\n"
       SPACE "search log is displayed.\n",
-      &IlogCPDriver::set_cp_int_option, &LogPeriod);
+      &IlogCPDriver::SetCPOption, CPOptionInfo(IloCP::LogPeriod));
 
-  AddOption("logverbosity",
+  oinfo_.AddStrOption("logverbosity",
       "Verbosity of the search log.  Possible values:\n"
       SPACE "      0 = quiet (default)\n"
       SPACE "      1 = terse\n"
       SPACE "      2 = normal\n"
       SPACE "      3 = verbose\n",
-      &IlogCPDriver::set_cp_int_option, &LogVerbosity);
+      &IlogCPDriver::SetCPOption,
+      CPOptionInfo(IloCP::LogVerbosity, IloCP::Quiet, Verbosities));
 
-  AddOption("mipdisplay",
+  oinfo_.AddIntOption<int>("mipdisplay",
       "Frequency of displaying branch-and-bound\n"
       SPACE "information (for optimizing integer variables):\n"
       SPACE "      0 (default) = never\n"
@@ -335,27 +268,25 @@ IlogCPDriver::IlogCPDriver() :
       SPACE "          (as controlled by \"display\")\n"
       SPACE "      4 = same as 2, plus LP relaxation info.\n"
       SPACE "      5 = same as 2, plus LP subproblem info.\n",
-      &IlogCPDriver::set_cplex_int_option,
-      reinterpret_cast<void*>(IloCplex::MIPDisplay));
+      &IlogCPDriver::SetCPLEXIntOption, IloCplex::MIPDisplay);
 
-  AddOption("mipinterval",
+  oinfo_.AddIntOption<int>("mipinterval",
       "Frequency of node logging for mipdisplay 2 or 3.\n"
       SPACE "Default = 1.\n",
-      &IlogCPDriver::set_cplex_int_option,
-      reinterpret_cast<void*>(IloCplex::MIPInterval));
+      &IlogCPDriver::SetCPLEXIntOption, IloCplex::MIPInterval);
 
-  AddOption("multipointnumberofsearchpoints",
+  oinfo_.AddStrOption("multipointnumberofsearchpoints",
       "Number of solutions for the multi-point search\n"
       SPACE "algorithm.  Default = 30.\n",
-      &IlogCPDriver::set_cp_int_option, &MultiPointNumberOfSearchPoints);
+      &IlogCPDriver::SetCPOption,
+      CPOptionInfo(IloCP::MultiPointNumberOfSearchPoints));
 
-  AddOption("optimalitytolerance",
+  oinfo_.AddDblOption("optimalitytolerance",
       "Absolute tolerance on the objective value.\n"
       SPACE "Default = 0.\n",
-      &IlogCPDriver::set_cp_dbl_option,
-      reinterpret_cast<void*>(IloCP::OptimalityTolerance));
+      &IlogCPDriver::SetCPDblOption, IloCP::OptimalityTolerance);
 
-  AddOption("optimizer",
+  oinfo_.AddStrOption("optimizer",
       "Specifies which optimizer to use.\n"
       SPACE "Possible values:\n"
       SPACE "      auto  = CP Optimizer if the problem has\n"
@@ -364,238 +295,195 @@ IlogCPDriver::IlogCPDriver() :
       SPACE "              otherwise (default)\n"
       SPACE "      cp    = CP Optimizer\n"
       SPACE "      cplex = CPLEX Optimizer\n",
-      &IlogCPDriver::set_optimizer, 0);
+      &IlogCPDriver::SetOptimizer);
 
-  AddOption("outlev", "Synonym for \"logverbosity\".\n",
-      &IlogCPDriver::set_cp_int_option, &LogVerbosity);
+  oinfo_.AddStrOption("outlev", "Synonym for \"logverbosity\".\n",
+      &IlogCPDriver::SetCPOption,
+      CPOptionInfo(IloCP::LogVerbosity, IloCP::Quiet, Verbosities));
 
-  AddOption("propagationlog",
+  oinfo_.AddStrOption("propagationlog",
       "Level of propagation trace reporting.\n"
       SPACE "Possible values:\n"
       SPACE "      0 = quiet (default)\n"
       SPACE "      1 = terse\n"
       SPACE "      2 = normal\n"
       SPACE "      3 = verbose\n",
-      &IlogCPDriver::set_cp_int_option, &PropagationLog);
+      &IlogCPDriver::SetCPOption,
+      CPOptionInfo(IloCP::PropagationLog, IloCP::Quiet, Verbosities));
 
-  AddOption("randomseed",
+  oinfo_.AddStrOption("randomseed",
       "Seed for the random number generator.\n"
       SPACE "Default = 0.\n",
-      &IlogCPDriver::set_cp_int_option, &RandomSeed);
+      &IlogCPDriver::SetCPOption, CPOptionInfo(IloCP::RandomSeed));
 
-  AddOption("relativeoptimalitytolerance",
+  oinfo_.AddDblOption("relativeoptimalitytolerance",
       "Relative tolerance on the objective value.\n"
       SPACE "Default = 1e-4.\n",
-      &IlogCPDriver::set_cp_dbl_option,
-      reinterpret_cast<void*>(IloCP::RelativeOptimalityTolerance));
+      &IlogCPDriver::SetCPDblOption, IloCP::RelativeOptimalityTolerance);
 
-  AddOption("restartfaillimit",
+  oinfo_.AddStrOption("restartfaillimit",
       "Number of failures allowed before restarting\n"
       SPACE "search.  Default = 100.\n",
-      &IlogCPDriver::set_cp_int_option, &RestartFailLimit);
+      &IlogCPDriver::SetCPOption, CPOptionInfo(IloCP::RestartFailLimit));
 
-  AddOption("restartgrowthfactor",
+  oinfo_.AddDblOption("restartgrowthfactor",
       "Increase of the number of allowed failures\n"
       SPACE "before restarting search.  Default = 1.05.\n",
-      &IlogCPDriver::set_cp_dbl_option,
-      reinterpret_cast<void*>(IloCP::RestartGrowthFactor));
+      &IlogCPDriver::SetCPDblOption, IloCP::RestartGrowthFactor);
 
-  AddOption("searchtype",
+  oinfo_.AddStrOption("searchtype",
       "Type of search used for solving a problem.\n"
       SPACE "Possible values:\n"
       SPACE "      0 = depthfirst\n"
       SPACE "      1 = restart (default)\n"
       SPACE "      2 = multipoint\n",
-      &IlogCPDriver::set_cp_int_option, &SearchType);
+      &IlogCPDriver::SetCPOption,
+      CPOptionInfo(IloCP::SearchType, IloCP::DepthFirst, SearchTypes, true));
 
-  AddOption("solutionlimit",
+  oinfo_.AddStrOption("solutionlimit",
       "Limit on the number of feasible solutions found\n"
       SPACE "before terminating a search. Default = no limit.\n",
-      &IlogCPDriver::set_cp_int_option, &SolutionLimit);
+      &IlogCPDriver::SetCPOption, CPOptionInfo(IloCP::SolutionLimit));
 
-  AddOption("temporalrelaxation",
+  oinfo_.AddStrOption("temporalrelaxation",
       "0 or 1 (default 1):  Whether to use temporal\n"
       SPACE "relaxation.\n",
-      &IlogCPDriver::set_cp_int_option, &TemporalRelaxation);
+      &IlogCPDriver::SetCPOption,
+      CPOptionInfo(IloCP::TemporalRelaxation, IloCP::Off, Flags));
 
-  AddOption("timelimit",
+  oinfo_.AddDblOption("timelimit",
       "Limit on the CPU time spent solving before\n"
       SPACE "terminating a search.  Default = no limit.\n",
-      &IlogCPDriver::set_cp_dbl_option,
-      reinterpret_cast<void*>(IloCP::TimeLimit));
+      &IlogCPDriver::SetCPDblOption, IloCP::TimeLimit);
 
-  AddOption("timemode",
+  oinfo_.AddStrOption("timemode",
       "Specifies how the time is measured in CP\n"
       SPACE "Optimizer.  Possible values:\n"
       SPACE "      0 = cputime (default)\n"
       SPACE "      1 = elapsedtime\n",
-      &IlogCPDriver::set_cp_int_option, &TimeMode);
+      &IlogCPDriver::SetCPOption,
+      CPOptionInfo(IloCP::TimeMode, IloCP::CPUTime, TimeModes));
 
-  AddOption("timing",
+  oinfo_.AddIntOption("timing",
       "0 or 1 (default 0):  Whether to display timings\n"
-      SPACE "for the run.\n", &IlogCPDriver::set_bool_option,
-      reinterpret_cast<void*>(IlogCPDriver::TIMING));
+      SPACE "for the run.\n",
+      &IlogCPDriver::SetBoolOption, IlogCPDriver::TIMING);
 
-  AddOption("usenumberof",
+  oinfo_.AddIntOption("usenumberof",
       "0 or 1 (default 1):  Whether to consolidate\n"
       SPACE "'numberof' expressions by use of IloDistribute\n"
       SPACE "constraints.\n",
-      &IlogCPDriver::set_bool_option,
-      reinterpret_cast<void*>(IlogCPDriver::USENUMBEROF));
+      &IlogCPDriver::SetBoolOption, IlogCPDriver::USENUMBEROF);
 
-  AddOption("workers",
+  oinfo_.AddStrOption("workers",
       "Number of workers to run in parallel to solve a\n"
       SPACE "problem.  In addition to numeric values this\n"
       SPACE "option accepts the value \"auto\" since CP\n"
       SPACE "Optimizer version 12.3.  Default = 1.\n",
-      &IlogCPDriver::set_cp_int_option, &Workers);
+      &IlogCPDriver::SetCPOption, CPOptionInfo(IloCP::Workers, 0, 0, true));
 }
 
 IlogCPDriver::~IlogCPDriver() {
   env_.end();
 }
 
-char *IlogCPDriver::set_optimizer(Option_Info *oi, keyword *kw, char *value) {
-  IlogCPDriver *d = static_cast<DriverOptionInfo*>(oi)->driver;
+void IlogCPDriver::SetOptimizer(const char *name, const char *value) {
   int opt = 0;
-  char *end = skip_nonspace(value);
-  size_t length = end - value;
-  if (strncmp(value, "auto", length) == 0) {
+  if (strcmp(value, "auto") == 0) {
     opt = AUTO;
-  } else if (strncmp(value, "cp", length) == 0) {
+  } else if (strcmp(value, "cp") == 0) {
     opt = CP;
-  } else if (strncmp(value, "cplex", length) == 0) {
+  } else if (strcmp(value, "cplex") == 0) {
     opt = CPLEX;
   } else {
-    ++d->n_badvals;
-    cerr << "Invalid value " << string(value, end)
-             << " for option " << kw->name << endl;
+    ReportError("Invalid value %s for option %s", value, name);
+    return;
   }
-  if (!d->gotopttype)
-    d->options_[OPTIMIZER] = opt;
-  return end;
+  if (!gotopttype_)
+    options_[OPTIMIZER] = opt;
 }
 
-char *IlogCPDriver::set_int_option(Option_Info *oi, keyword *kw, char *value) {
-  IlogCPDriver *d = static_cast<DriverOptionInfo*>(oi)->driver;
-  if (!d->gotopttype)
-    return skip_nonspace(value);
-  keyword thiskw(*kw);
-  thiskw.info = d->options_ + reinterpret_cast<size_t>(kw->info);
-  return I_val(oi, &thiskw, value);
+void IlogCPDriver::SetBoolOption(const char *name, int value, Option opt) {
+  if (!gotopttype_)
+    return;
+  if (value != 0 && value != 1)
+    ReportError("Invalid value %d for option %s", value, name);
+  else
+    options_[opt] = value;
 }
 
-char *IlogCPDriver::set_bool_option(Option_Info *oi, keyword *kw, char *value) {
-  IlogCPDriver *d = static_cast<DriverOptionInfo*>(oi)->driver;
-  if (!d->gotopttype)
-    return skip_nonspace(value);
-  keyword thiskw(*kw);
-  int intval = 0;
-  thiskw.info = &intval;
-  char *result = I_val(oi, &thiskw, value);
-  if (intval != 0 && intval != 1) {
-    ++d->n_badvals;
-    cerr << "Invalid value " << value
-        << " for option " << kw->name << endl;
-  } else d->options_[reinterpret_cast<size_t>(kw->info)] = intval;
-  return result;
-}
-
-void IlogCPDriver::set_option(keyword *kw, int value) {
+void IlogCPDriver::SetCPOption(
+    const char *name, const char *value, const CPOptionInfo &info) {
+  if (!gotopttype_)
+    return;
+  CPOptimizer *cp_opt = dynamic_cast<CPOptimizer*>(optimizer_.get());
+  if (!cp_opt) {
+    ReportError("Invalid option %s for CPLEX optimizer", name);
+    return;
+  }
   try {
-    optimizer_->set_option(kw->info, value);
-  } catch (const IloException &) {
-    cerr << "Invalid value " << value << " for option " << kw->name << endl;
-    ++n_badvals;
-  }
-}
-
-char *IlogCPDriver::set_cp_int_option(
-    Option_Info *oi, keyword *kw, char *value) {
-  IlogCPDriver *d = static_cast<DriverOptionInfo*>(oi)->driver;
-  if (!d->gotopttype)
-    return skip_nonspace(value);
-  if (d->get_option(OPTIMIZER) != CP) {
-    ++d->n_badvals;
-    cerr << "Invalid option " << kw->name << " for CPLEX optimizer" << endl;
-    return skip_nonspace(value);
-  }
-  const CPOptionInfo *info = static_cast<const CPOptionInfo*>(kw->info);
-  char c = *value;
-  if ((info->values || info->accepts_auto) &&
-      !isdigit(c) && c != '+' && c != '-') {
-    char *end = skip_nonspace(value);
-    if (info->values) {
+    char *end = 0;
+    long intval = std::strtol(value, &end, 0);
+    if (!*end) {
+      if (intval != -1 || !info.accepts_auto)
+        intval += info.start;
+      cp_opt->solver().setParameter(info.param, intval);
+      return;
+    }
+    if (info.values) {
       // Search for a value in the list of known values.
       // Use linear search since the number of values is small.
-      for (int i = 0; info->values[i]; ++i) {
-        if (strncmp(value, info->values[i], end - value) == 0) {
-          d->set_option(kw, i);
-          return end;
+      for (int i = 0; info.values[i]; ++i) {
+        if (strcmp(value, info.values[i]) == 0) {
+          cp_opt->solver().setParameter(info.param, i + info.start);
+          return;
         }
       }
     }
-    if (info->accepts_auto && strncmp(value, "auto", end - value) == 0) {
-      d->set_option(kw, IloCP::Auto);
-      return end;
+    if (info.accepts_auto && strcmp(value, "auto") == 0) {
+      cp_opt->solver().setParameter(info.param, IloCP::Auto);
+      return;
     }
-    cerr << "Invalid value " << string(value, end)
-             << " for option " << kw->name << endl;
-    ++d->n_badvals;
-    return end;
-  }
-  keyword thiskw(*kw);
-  int intval = 0;
-  thiskw.info = &intval;
-  char *result = I_val(oi, &thiskw, value);
-  d->set_option(kw, intval);
-  return result;
+  } catch (const IloException &) {}
+  ReportError("Invalid value %s for option %s", value, name);
 }
 
-char *IlogCPDriver::set_cp_dbl_option(Option_Info *oi, keyword *kw, char *value) {
-  IlogCPDriver *d = static_cast<DriverOptionInfo*>(oi)->driver;
-  if (!d->gotopttype)
-    return skip_nonspace(value);
-  if (d->get_option(OPTIMIZER) != CP) {
-    ++d->n_badvals;
-    cerr << "Invalid option " << kw->name << " for CPLEX optimizer" << endl;
-    return skip_nonspace(value);
+void IlogCPDriver::SetCPDblOption(
+    const char *name, double value, IloCP::NumParam param) {
+  if (!gotopttype_)
+    return;
+  CPOptimizer *cp_opt = dynamic_cast<CPOptimizer*>(optimizer_.get());
+  if (!cp_opt) {
+    ReportError("Invalid option %s for CPLEX optimizer", name);
+    return;
   }
-  keyword thiskw(*kw);
-  double dblval = 0;
-  thiskw.info = &dblval;
-  char *result = D_val(oi, &thiskw, value);
   try {
-    d->optimizer_->set_option(kw->info, dblval);
+    cp_opt->solver().setParameter(param, value);
   } catch (const IloException &) {
-    cerr << "Invalid value " << dblval << " for option " << kw->name << endl;
-    ++d->n_badvals;
+    ReportError("Invalid value %g for option %s", value, name);
   }
-  return result;
 }
 
-char *IlogCPDriver::set_cplex_int_option(Option_Info *oi, keyword *kw, char *value) {
-  IlogCPDriver *d = static_cast<DriverOptionInfo*>(oi)->driver;
-  if (!d->gotopttype)
-    return skip_nonspace(value);
-  if (d->get_option(OPTIMIZER) != CPLEX) {
-    ++d->n_badvals;
-    cerr << "Invalid option " << kw->name << " for CP optimizer" << endl;
-    return skip_nonspace(value);
+void IlogCPDriver::SetCPLEXIntOption(const char *name, int value, int param) {
+  if (!gotopttype_)
+    return;
+  CPLEXOptimizer *cplex_opt = dynamic_cast<CPLEXOptimizer*>(optimizer_.get());
+  if (!cplex_opt) {
+    ReportError("Invalid option %s for CP optimizer", name);
+    return;
   }
-  keyword thiskw(*kw);
-  int intval = 0;
-  thiskw.info = &intval;
-  char *result = I_val(oi, &thiskw, value);
-  d->set_option(kw, intval);
-  return result;
+  // Use CPXsetintparam instead of IloCplex::setParam to avoid dealing with
+  // two overloads, one for the type int and one for the type long.
+  cpxenv *env = cplex_opt->cplex().getImpl()->getCplexEnv();
+  if (CPXsetintparam(env, param, value) != 0)
+    ReportError("Invalid value %d for option %s", value, name);
 }
 
-bool IlogCPDriver::parse_options(char **argv) {
+bool IlogCPDriver::ParseOptions(char **argv) {
   // Get optimizer type.
-  gotopttype = false;
+  gotopttype_ = false;
   oinfo_.option_echo &= ~ASL_OI_echo;
-  if (GetOptions(argv, &oinfo_))
+  if (!GetOptions(argv, oinfo_))
     return false;
 
   int &opt = options_[OPTIMIZER];
@@ -612,13 +500,12 @@ bool IlogCPDriver::parse_options(char **argv) {
   else optimizer_.reset(new CPOptimizer(env_, p));
 
   // Parse remaining options.
-  gotopttype = true;
-  n_badvals = 0;
+  gotopttype_ = true;
   oinfo_.option_echo |= ASL_OI_echo;
-  if (GetOptions(argv, &oinfo_) || n_badvals != 0)
+  if (!GetOptions(argv, oinfo_))
     return false;
 
-  debug_ = get_option(DEBUGEXPR) != 0;
+  debug_ = GetOption(DEBUGEXPR) != 0;
   return true;
 }
 
@@ -635,13 +522,6 @@ IloNumExprArray IlogCPDriver::ConvertArgs(VarArgExpr e) {
   for (VarArgExpr::iterator i = e.begin(); *i; ++i)
     args.add(Visit(*i));
   return args;
-}
-
-void IlogCPDriver::RequireNonzeroConstRHS(
-    BinaryExpr e, const std::string &func_name) {
-  NumericConstant num = Cast<NumericConstant>(e.rhs());
-  if (!num || num.value() != 0)
-    throw UnsupportedExprError(func_name + " with nonzero second parameter");
 }
 
 IloExpr IlogCPDriver::VisitIf(IfExpr e) {
@@ -690,7 +570,7 @@ IloExpr IlogCPDriver::VisitCount(CountExpr e) {
 IloExpr IlogCPDriver::VisitNumberOf(NumberOfExpr e) {
   NumericExpr value = e.value();
   NumericConstant num = Cast<NumericConstant>(value);
-  if (num && get_option(USENUMBEROF))
+  if (num && GetOption(USENUMBEROF))
     return numberofs_.Add(num.value(), e);
   IloExpr sum(env_);
   IloExpr concert_value(Visit(value));
@@ -775,19 +655,13 @@ void IlogCPDriver::FinishBuildingNumberOf() {
   }
 }
 
-/*----------------------------------------------------------------------
-
-  Main Program
-
-----------------------------------------------------------------------*/
-
-int IlogCPDriver::run(char **argv) {
+int IlogCPDriver::Run(char **argv) {
   // Initialize timers.
   double Times[5];
   Times[0] = xectim_();
 
   Problem &problem = Driver::problem();
-  if (!problem.Read(argv, &oinfo_) || !parse_options(argv))
+  if (!problem.Read(argv, &oinfo_) || !ParseOptions(argv))
     return 1;
 
   // Set up optimization problem in ILOG Concert.
@@ -795,7 +669,7 @@ int IlogCPDriver::run(char **argv) {
   vars_ = optimizer_->vars();
 
   int n_var_cont = problem.num_continuous_vars();
-  if (n_var_cont != 0 && get_option(OPTIMIZER) == CP) {
+  if (n_var_cont != 0 && GetOption(OPTIMIZER) == CP) {
     cerr << "CP Optimizer doesn't support continuous variables" << endl;
     return 1;
   }
@@ -845,7 +719,7 @@ int IlogCPDriver::run(char **argv) {
 
   FinishBuildingNumberOf();
 
-  int timing = get_option(TIMING);
+  int timing = GetOption(TIMING);
   Times[1] = timing ? xectim_() : 0;
 
   // Solve the problem.
