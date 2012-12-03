@@ -127,8 +127,6 @@ void CPOptimizer::get_solution(Problem &p, char *message,
     primal[j] = solver_.getValue(vars[j]);
 }
 
-#define SPACE "                                "
-
 IlogCPDriver::IlogCPDriver() :
    mod_(env_), oinfo_(*this),
    gotopttype_(false), debug_(false), numberofs_(CreateVar(env_)) {
@@ -170,216 +168,198 @@ IlogCPDriver::IlogCPDriver() :
   // The options must be in alphabetical order.
 
   oinfo_.AddStrOption("alldiffinferencelevel",
-      "Inference level for 'alldiff' constraints.\n"
-      SPACE "Possible values:\n"
-      SPACE "      0 = default\n"
-      SPACE "      1 = low\n"
-      SPACE "      2 = basic\n"
-      SPACE "      3 = medium\n"
-      SPACE "      4 = extended\n",
+      "Inference level for 'alldiff' constraints.  Possible values:\n"
+      "      0 = default\n"
+      "      1 = low\n"
+      "      2 = basic\n"
+      "      3 = medium\n"
+      "      4 = extended\n",
       &IlogCPDriver::SetCPOption,
       CPOptionInfo(IloCP::AllDiffInferenceLevel,
           IloCP::Default, InferenceLevels));
 
   oinfo_.AddStrOption("branchlimit",
-      "Limit on the number of branches made before\n"
-      SPACE "terminating a search.  Default = no limit.\n",
+      "Limit on the number of branches made before "
+      "terminating a search.  Default = no limit.",
       &IlogCPDriver::SetCPOption, CPOptionInfo(IloCP::BranchLimit));
 
   oinfo_.AddStrOption("choicepointlimit",
-      "Limit on the number of choice points created\n"
-      SPACE "before terminating a search. Default = no limit.\n",
+      "Limit on the number of choice points created"
+      "before terminating a search.  Default = no limit.",
       &IlogCPDriver::SetCPOption, CPOptionInfo(IloCP::ChoicePointLimit));
 
   oinfo_.AddStrOption("constraintaggregation",
-      "0 or 1 (default 1):  Whether to aggregate basic\n"
-      SPACE "constraints.\n",
+      "0 or 1 (default 1):  Whether to aggregate basic constraints.",
       &IlogCPDriver::SetCPOption,
       CPOptionInfo(IloCP::ConstraintAggregation, IloCP::Off, Flags));
 
   oinfo_.AddIntOption("debugexpr",
-      "0 or 1 (default 0):  Whether to print debugging\n"
-      SPACE "information for expression trees.\n",
+      "0 or 1 (default 0):  Whether to print debugging "
+      "information for expression trees.",
       &IlogCPDriver::SetBoolOption, DEBUGEXPR);
 
   oinfo_.AddStrOption("defaultinferencelevel",
-      "Default inference level for constraints.\n"
-      SPACE "Possible values:\n"
-      SPACE "      1 = low\n"
-      SPACE "      2 = basic\n"
-      SPACE "      3 = medium\n"
-      SPACE "      4 = extended\n",
+      "Default inference level for constraints.  Possible values:\n"
+      "      1 = low\n"
+      "      2 = basic\n"
+      "      3 = medium\n"
+      "      4 = extended\n",
       &IlogCPDriver::SetCPOption,
       CPOptionInfo(IloCP::DefaultInferenceLevel,
           IloCP::Default, InferenceLevels));
 
   oinfo_.AddStrOption("distributeinferencelevel",
-      "Inference level for 'distribute' constraints.\n"
-      SPACE "Possible values:\n"
-      SPACE "      0 = default\n"
-      SPACE "      1 = low\n"
-      SPACE "      2 = basic\n"
-      SPACE "      3 = medium\n"
-      SPACE "      4 = extended\n",
+      "Inference level for 'distribute' constraints.  Possible values:\n"
+      "      0 = default\n"
+      "      1 = low\n"
+      "      2 = basic\n"
+      "      3 = medium\n"
+      "      4 = extended\n",
       &IlogCPDriver::SetCPOption,
       CPOptionInfo(IloCP::DistributeInferenceLevel,
           IloCP::Default, InferenceLevels));
 
   oinfo_.AddStrOption("dynamicprobing",
       "Use probing during search.  Possible values:\n"
-      SPACE "     -1 = auto (default)\n"
-      SPACE "      0 = off\n"
-      SPACE "      1 = on\n",
+      "     -1 = auto (default)\n"
+      "      0 = off\n"
+      "      1 = on\n",
       &IlogCPDriver::SetCPOption,
       CPOptionInfo(IloCP::DynamicProbing, IloCP::Off, Flags, true));
 
   oinfo_.AddDblOption("dynamicprobingstrength",
-      "Effort dedicated to dynamic probing as a factor\n"
-      SPACE "of the total search effort.  Default = 0.03.\n",
+      "Effort dedicated to dynamic probing as a factor "
+      "of the total search effort.  Default = 0.03.",
       &IlogCPDriver::SetCPDblOption, IloCP::DynamicProbingStrength);
 
   oinfo_.AddStrOption("faillimit",
-      "Limit on the number of failures allowed before\n"
-      SPACE "terminating a search.  Default = no limit.\n",
+      "Limit on the number of failures allowed before terminating a search.  "
+      "Default = no limit",
       &IlogCPDriver::SetCPOption, CPOptionInfo(IloCP::FailLimit));
 
   oinfo_.AddStrOption("logperiod",
-      "Specifies how often the information in the\n"
-      SPACE "search log is displayed.\n",
+      "Specifies how often the information in the search log is displayed.",
       &IlogCPDriver::SetCPOption, CPOptionInfo(IloCP::LogPeriod));
 
   oinfo_.AddStrOption("logverbosity",
       "Verbosity of the search log.  Possible values:\n"
-      SPACE "      0 = quiet (default)\n"
-      SPACE "      1 = terse\n"
-      SPACE "      2 = normal\n"
-      SPACE "      3 = verbose\n",
+      "      0 = quiet (default)\n"
+      "      1 = terse\n"
+      "      2 = normal\n"
+      "      3 = verbose\n",
       &IlogCPDriver::SetCPOption,
       CPOptionInfo(IloCP::LogVerbosity, IloCP::Quiet, Verbosities));
 
   oinfo_.AddIntOption<int>("mipdisplay",
-      "Frequency of displaying branch-and-bound\n"
-      SPACE "information (for optimizing integer variables):\n"
-      SPACE "      0 (default) = never\n"
-      SPACE "      1 = each integer feasible solution\n"
-      SPACE "      2 = every \"mipinterval\" nodes\n"
-      SPACE "      3 = every \"mipinterval\" nodes plus\n"
-      SPACE "          information on LP relaxations\n"
-      SPACE "          (as controlled by \"display\")\n"
-      SPACE "      4 = same as 2, plus LP relaxation info.\n"
-      SPACE "      5 = same as 2, plus LP subproblem info.\n",
+      "Frequency of displaying branch-and-bound information "
+      "(for optimizing integer variables):\n"
+      "      0 (default) = never\n"
+      "      1 = each integer feasible solution\n"
+      "      2 = every \"mipinterval\" nodes\n"
+      "      3 = every \"mipinterval\" nodes plus\n"
+      "          information on LP relaxations\n"
+      "          (as controlled by \"display\")\n"
+      "      4 = same as 2, plus LP relaxation info.\n"
+      "      5 = same as 2, plus LP subproblem info.\n",
       &IlogCPDriver::SetCPLEXIntOption, IloCplex::MIPDisplay);
 
   oinfo_.AddIntOption<int>("mipinterval",
-      "Frequency of node logging for mipdisplay 2 or 3.\n"
-      SPACE "Default = 1.\n",
+      "Frequency of node logging for mipdisplay 2 or 3. Default = 1.",
       &IlogCPDriver::SetCPLEXIntOption, IloCplex::MIPInterval);
 
   oinfo_.AddStrOption("multipointnumberofsearchpoints",
-      "Number of solutions for the multi-point search\n"
-      SPACE "algorithm.  Default = 30.\n",
+      "Number of solutions for the multi-point search "
+      "algorithm.  Default = 30.",
       &IlogCPDriver::SetCPOption,
       CPOptionInfo(IloCP::MultiPointNumberOfSearchPoints));
 
   oinfo_.AddDblOption("optimalitytolerance",
-      "Absolute tolerance on the objective value.\n"
-      SPACE "Default = 0.\n",
+      "Absolute tolerance on the objective value.  Default = 0.",
       &IlogCPDriver::SetCPDblOption, IloCP::OptimalityTolerance);
 
   oinfo_.AddStrOption("optimizer",
-      "Specifies which optimizer to use.\n"
-      SPACE "Possible values:\n"
-      SPACE "      auto  = CP Optimizer if the problem has\n"
-      SPACE "              nonlinear objective/constraints\n"
-      SPACE "              or logical constraints, CPLEX\n"
-      SPACE "              otherwise (default)\n"
-      SPACE "      cp    = CP Optimizer\n"
-      SPACE "      cplex = CPLEX Optimizer\n",
+      "Specifies which optimizer to use.  Possible values:\n"
+      "      auto  = CP Optimizer if the problem has\n"
+      "              nonlinear objective/constraints\n"
+      "              or logical constraints, CPLEX\n"
+      "              otherwise (default)\n"
+      "      cp    = CP Optimizer\n"
+      "      cplex = CPLEX Optimizer\n",
       &IlogCPDriver::SetOptimizer);
 
-  oinfo_.AddStrOption("outlev", "Synonym for \"logverbosity\".\n",
+  oinfo_.AddStrOption("outlev", "Synonym for \"logverbosity\".",
       &IlogCPDriver::SetCPOption,
       CPOptionInfo(IloCP::LogVerbosity, IloCP::Quiet, Verbosities));
 
   oinfo_.AddStrOption("propagationlog",
-      "Level of propagation trace reporting.\n"
-      SPACE "Possible values:\n"
-      SPACE "      0 = quiet (default)\n"
-      SPACE "      1 = terse\n"
-      SPACE "      2 = normal\n"
-      SPACE "      3 = verbose\n",
+      "Level of propagation trace reporting.  Possible values:\n"
+      "      0 = quiet (default)\n"
+      "      1 = terse\n"
+      "      2 = normal\n"
+      "      3 = verbose\n",
       &IlogCPDriver::SetCPOption,
       CPOptionInfo(IloCP::PropagationLog, IloCP::Quiet, Verbosities));
 
   oinfo_.AddStrOption("randomseed",
-      "Seed for the random number generator.\n"
-      SPACE "Default = 0.\n",
+      "Seed for the random number generator.  Default = 0.",
       &IlogCPDriver::SetCPOption, CPOptionInfo(IloCP::RandomSeed));
 
   oinfo_.AddDblOption("relativeoptimalitytolerance",
-      "Relative tolerance on the objective value.\n"
-      SPACE "Default = 1e-4.\n",
+      "Relative tolerance on the objective value.  Default = 1e-4.",
       &IlogCPDriver::SetCPDblOption, IloCP::RelativeOptimalityTolerance);
 
   oinfo_.AddStrOption("restartfaillimit",
-      "Number of failures allowed before restarting\n"
-      SPACE "search.  Default = 100.\n",
+      "Number of failures allowed before restarting  search.  Default = 100.",
       &IlogCPDriver::SetCPOption, CPOptionInfo(IloCP::RestartFailLimit));
 
   oinfo_.AddDblOption("restartgrowthfactor",
-      "Increase of the number of allowed failures\n"
-      SPACE "before restarting search.  Default = 1.05.\n",
+      "Increase of the number of allowed failures "
+      "before restarting search.  Default = 1.05.",
       &IlogCPDriver::SetCPDblOption, IloCP::RestartGrowthFactor);
 
   oinfo_.AddStrOption("searchtype",
-      "Type of search used for solving a problem.\n"
-      SPACE "Possible values:\n"
-      SPACE "      0 = depthfirst\n"
-      SPACE "      1 = restart (default)\n"
-      SPACE "      2 = multipoint\n",
+      "Type of search used for solving a problem.  Possible values:\n"
+      "      0 = depthfirst\n"
+      "      1 = restart (default)\n"
+      "      2 = multipoint\n",
       &IlogCPDriver::SetCPOption,
       CPOptionInfo(IloCP::SearchType, IloCP::DepthFirst, SearchTypes, true));
 
   oinfo_.AddStrOption("solutionlimit",
-      "Limit on the number of feasible solutions found\n"
-      SPACE "before terminating a search. Default = no limit.\n",
+      "Limit on the number of feasible solutions found "
+      "before terminating a search.  Default = no limit.",
       &IlogCPDriver::SetCPOption, CPOptionInfo(IloCP::SolutionLimit));
 
   oinfo_.AddStrOption("temporalrelaxation",
-      "0 or 1 (default 1):  Whether to use temporal\n"
-      SPACE "relaxation.\n",
+      "0 or 1 (default 1):  Whether to use temporal relaxation.",
       &IlogCPDriver::SetCPOption,
       CPOptionInfo(IloCP::TemporalRelaxation, IloCP::Off, Flags));
 
   oinfo_.AddDblOption("timelimit",
-      "Limit on the CPU time spent solving before\n"
-      SPACE "terminating a search.  Default = no limit.\n",
+      "Limit on the CPU time spent solving before "
+      "terminating a search.  Default = no limit.",
       &IlogCPDriver::SetCPDblOption, IloCP::TimeLimit);
 
   oinfo_.AddStrOption("timemode",
-      "Specifies how the time is measured in CP\n"
-      SPACE "Optimizer.  Possible values:\n"
-      SPACE "      0 = cputime (default)\n"
-      SPACE "      1 = elapsedtime\n",
+      "Specifies how the time is measured in CP Optimizer.  Possible values:\n"
+      "      0 = cputime (default)\n"
+      "      1 = elapsedtime\n",
       &IlogCPDriver::SetCPOption,
       CPOptionInfo(IloCP::TimeMode, IloCP::CPUTime, TimeModes));
 
   oinfo_.AddIntOption("timing",
-      "0 or 1 (default 0):  Whether to display timings\n"
-      SPACE "for the run.\n",
+      "0 or 1 (default 0):  Whether to display timings for the run.\n",
       &IlogCPDriver::SetBoolOption, IlogCPDriver::TIMING);
 
   oinfo_.AddIntOption("usenumberof",
-      "0 or 1 (default 1):  Whether to consolidate\n"
-      SPACE "'numberof' expressions by use of IloDistribute\n"
-      SPACE "constraints.\n",
+      "0 or 1 (default 1):  Whether to consolidate 'numberof' expressions "
+      "by use of IloDistribute constraints.",
       &IlogCPDriver::SetBoolOption, IlogCPDriver::USENUMBEROF);
 
   oinfo_.AddStrOption("workers",
-      "Number of workers to run in parallel to solve a\n"
-      SPACE "problem.  In addition to numeric values this\n"
-      SPACE "option accepts the value \"auto\" since CP\n"
-      SPACE "Optimizer version 12.3.  Default = 1.\n",
+      "Number of workers to run in parallel to solve a problem.  "
+      "In addition to numeric values this option accepts the value "
+      "\"auto\" since CP Optimizer version 12.3.  Default = 1.",
       &IlogCPDriver::SetCPOption, CPOptionInfo(IloCP::Workers, 0, 0, true));
 }
 
