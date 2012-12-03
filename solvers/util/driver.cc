@@ -28,6 +28,8 @@
 
 #include "solvers/getstub.h"
 
+#undef stderr
+
 namespace {
 struct KeywordNameLess {
   bool operator()(const keyword &lhs, const keyword &rhs) const {
@@ -38,6 +40,7 @@ struct KeywordNameLess {
 
 namespace ampl {
 
+namespace internal {
 int OptionParser<int>::operator()(Option_Info *oi, keyword *kw, char *&s) {
   keyword thiskw(*kw);
   int value = 0;
@@ -63,6 +66,7 @@ const char* OptionParser<const char*>::operator()(
   value_.assign(s, end - s);
   s = end;
   return value_.c_str();
+}
 }
 
 void BaseOptionInfo::Sort() {

@@ -1078,17 +1078,17 @@ TEST_F(IlogCPTest, SolveSudokuVeryEasy) {
 // Option tests
 
 TEST_F(IlogCPTest, VersionOption) {
-  EXPECT_FALSE(d.show_version());
+  EXPECT_FALSE((d.options().flags() & ASL_OI_show_version) != 0);
   EXPECT_TRUE(ParseOptions("version"));
-  EXPECT_TRUE(d.show_version());
+  EXPECT_TRUE((d.options().flags() & ASL_OI_show_version) != 0);
 }
 
 TEST_F(IlogCPTest, WantsolOption) {
-  EXPECT_EQ(0, d.wantsol());
+  EXPECT_EQ(0, d.options().want_solution());
   EXPECT_TRUE(ParseOptions("wantsol=1"));
-  EXPECT_EQ(1, d.wantsol());
+  EXPECT_EQ(1, d.options().want_solution());
   EXPECT_TRUE(ParseOptions("wantsol=5"));
-  EXPECT_EQ(5, d.wantsol());
+  EXPECT_EQ(5, d.options().want_solution());
 }
 
 TEST_F(IlogCPTest, DebugExprOption) {

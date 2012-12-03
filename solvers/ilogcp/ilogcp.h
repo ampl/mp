@@ -181,6 +181,7 @@ class IlogCPDriver : public Driver, public Visitor {
 
   IloEnv env() const { return env_; }
   IloModel mod() const { return mod_; }
+  const BaseOptionInfo &options() const { return oinfo_; }
 
   IloAlgorithm alg() const {
     return optimizer_.get() ? optimizer_->algorithm() : IloAlgorithm();
@@ -200,8 +201,6 @@ class IlogCPDriver : public Driver, public Visitor {
   }
 
   void use_numberof(bool use = true) { options_[USENUMBEROF] = use; }
-  bool show_version() const;
-  int wantsol() const;
 
   IloExpr Visit(NumericExpr e) {
     if (debug_)
