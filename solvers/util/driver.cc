@@ -75,7 +75,13 @@ void BaseOptionInfo::Sort() {
   sorted_ = true;
 }
 
-BaseOptionInfo::BaseOptionInfo() : Option_Info(), sorted_(false) {
+BaseOptionInfo::BaseOptionInfo() : sorted_(false) {
+  // Workaround for GCC bug 30111 that prevents value-initialization of
+  // the base POD class.
+  Option_Info init = {};
+  Option_Info &self = *this;
+  self = init;
+
   version_desc_ = FormatDescription(
       "Single-word phrase:  report version details before solving the problem.");
   AddKeyword("version", version_desc_.c_str(), Ver_val, 0);
