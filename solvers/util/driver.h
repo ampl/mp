@@ -24,6 +24,7 @@
 #define SOLVERS_UTIL_DRIVER_H_
 
 #include <memory>
+#include <sstream>
 
 #include "solvers/getstub.h"
 #include "solvers/util/expr.h"
@@ -56,6 +57,8 @@ class BaseOptionInfo : public Option_Info {
  private:
   std::vector<keyword> keywords_;
   bool sorted_;
+  std::string version_desc_;
+  std::string wantsol_desc_;
 
   void Sort();
 
@@ -67,14 +70,25 @@ class BaseOptionInfo : public Option_Info {
 
   void AddKeyword(const char *name,
       const char *description, Kwfunc func, const void *info);
+
+  // Formats an option description by indenting it and performing word wrap.
+  static std::string FormatDescription(const char *description);
 };
 
 template <typename Handler>
 class OptionInfo : public BaseOptionInfo {
  private:
   class Option {
+   private:
+    std::string description_;
+
    public:
+    Option(const char *description)
+    : description_(FormatDescription(description)) {}
+
     virtual ~Option() {}
+
+    const char *description() const { return description_.c_str(); }
 
     virtual char *Handle(
         Handler &h, Option_Info *oi, keyword *kw, char *value) = 0;
@@ -86,7 +100,8 @@ class OptionInfo : public BaseOptionInfo {
     Func func_;
 
    public:
-    ConcreteOption(Func func) : func_(func) {}
+    ConcreteOption(const char *description, Func func)
+    : Option(description), func_(func) {}
 
     char *Handle(Handler &h, Option_Info *oi, keyword *kw, char *s) {
       (h.*func_)(kw->name, OptionParser<Value>()(oi, kw, s));
@@ -101,8 +116,8 @@ class OptionInfo : public BaseOptionInfo {
     Info info_;
 
    public:
-    ConcreteOptionWithInfo(Func func, const Info &info)
-    : func_(func), info_(info) {}
+    ConcreteOptionWithInfo(const char *description, Func func, const Info &info)
+    : Option(description), func_(func), info_(info) {}
 
     char *Handle(Handler &h, Option_Info *oi, keyword *kw, char *s) {
       (h.*func_)(kw->name, OptionParser<Value>()(oi, kw, s), info_);
@@ -119,9 +134,8 @@ class OptionInfo : public BaseOptionInfo {
     return opt->Handle(self->handler_, oi, kw, value);
   }
 
-  void AddOption(const char *name,
-      const char *description, std::auto_ptr<Option> opt) {
-    AddKeyword(name, description, HandleOption,
+  void AddOption(const char *name, std::auto_ptr<Option> opt) {
+    AddKeyword(name, opt->description(), HandleOption,
         reinterpret_cast<void*>(options_.size()));
     options_.push_back(0);
     options_.back() = opt.release();
@@ -140,41 +154,42 @@ class OptionInfo : public BaseOptionInfo {
 
   template <typename Func>
   void AddIntOption(const char *name, const char *description, Func f) {
-    AddOption(name, description, std::auto_ptr<Option>(
-        new ConcreteOption<Func, int>(f)));
+    AddOption(name, std::auto_ptr<Option>(
+        new ConcreteOption<Func, int>(description, f)));
   }
 
   template <typename Info, typename Func>
   void AddIntOption(const char *name,
       const char *description, Func f, const Info &info) {
-    AddOption(name, description, std::auto_ptr<Option>(
-        new ConcreteOptionWithInfo<Func, Info, int>(f, info)));
+    AddOption(name, std::auto_ptr<Option>(
+        new ConcreteOptionWithInfo<Func, Info, int>(description, f, info)));
   }
 
   template <typename Func>
   void AddDblOption(const char *name, const char *description, Func f) {
-    AddOption(name, description, std::auto_ptr<Option>(
-        new ConcreteOption<Func, double>(f)));
+    AddOption(name, std::auto_ptr<Option>(
+        new ConcreteOption<Func, double>(description, f)));
   }
 
   template <typename Info, typename Func>
   void AddDblOption(const char *name,
       const char *description, Func f, const Info &info) {
-    AddOption(name, description, std::auto_ptr<Option>(
-        new ConcreteOptionWithInfo<Func, Info, double>(f, info)));
+    AddOption(name, std::auto_ptr<Option>(
+        new ConcreteOptionWithInfo<Func, Info, double>(description, f, info)));
   }
 
   template <typename Func>
   void AddStrOption(const char *name, const char *description, Func f) {
-    AddOption(name, description, std::auto_ptr<Option>(
-        new ConcreteOption<Func, const char*>(f)));
+    AddOption(name, std::auto_ptr<Option>(
+        new ConcreteOption<Func, const char*>(description, f)));
   }
 
   template <typename Info, typename Func>
   void AddStrOption(const char *name,
       const char *description, Func f, const Info &info) {
-    AddOption(name, description, std::auto_ptr<Option>(
-        new ConcreteOptionWithInfo<Func, Info, const char*>(f, info)));
+    AddOption(name, std::auto_ptr<Option>(
+        new ConcreteOptionWithInfo<Func, Info, const char*>(
+            description, f, info)));
   }
 };
 

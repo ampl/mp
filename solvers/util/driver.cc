@@ -74,18 +74,17 @@ void BaseOptionInfo::Sort() {
 }
 
 BaseOptionInfo::BaseOptionInfo() : Option_Info(), sorted_(false) {
-  // TODO: align text
-  AddKeyword("version",
-      "Single-word phrase:  report version details\n"
-      "before solving the problem.\n", Ver_val, 0);
-  AddKeyword("wantsol",
-      "In a stand-alone invocation (no -AMPL on the\n"
-      "command line), what solution information to\n"
-      "write.  Sum of\n"
+  version_desc_ = FormatDescription(
+      "Single-word phrase:  report version details before solving the problem.");
+  AddKeyword("version", version_desc_.c_str(), Ver_val, 0);
+  wantsol_desc_ = FormatDescription(
+      "In a stand-alone invocation (no -AMPL on the command line), "
+      "what solution information towrite.  Sum of\n"
       "      1 = write .sol file\n"
       "      2 = primal variables to stdout\n"
       "      4 = dual variables to stdout\n"
-      "      8 = suppress solution message\n", WS_val, 0);
+      "      8 = suppress solution message\n");
+  AddKeyword("wantsol", wantsol_desc_.c_str(), WS_val, 0);
 }
 
 void BaseOptionInfo::AddKeyword(const char *name,
@@ -97,6 +96,52 @@ void BaseOptionInfo::AddKeyword(const char *name,
   kw.kf = func;
   kw.info = const_cast<void*>(info);
 }
+
+std::string BaseOptionInfo::FormatDescription(const char *description) {
+    std::ostringstream os;
+    os << '\n';
+    bool new_line = true;
+    int line_offset = 0;
+    int indent = 0;
+    const char *s = description;
+    const int MAX_LINE_LENGTH = 78;
+    for (;;) {
+      const char *start = s;
+      while (*s == ' ')
+        ++s;
+      const char *word_start = s;
+      while (*s != ' ' && *s != '\n' && *s)
+        ++s;
+      const char *word_end = s;
+      if (new_line) {
+        indent = 6 + word_start - start;
+        new_line = false;
+      }
+      if (line_offset + (word_end - start) > MAX_LINE_LENGTH) {
+        // The word doesn't fit, start a new line.
+        os << '\n';
+        line_offset = 0;
+      }
+      if (line_offset == 0) {
+        // Indent the line.
+        for (; line_offset < indent; ++line_offset)
+          os << ' ';
+        start = word_start;
+      }
+      os.write(start, word_end - start);
+      line_offset += word_end - start;
+      if (*s == '\n') {
+        os << '\n';
+        line_offset = 0;
+        new_line = true;
+        ++s;
+      }
+      if (!*s) break;
+    }
+    if (!new_line)
+      os << '\n';
+    return os.str();
+  }
 
 Problem::Problem() : asl_(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))) {}
 
