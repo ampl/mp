@@ -306,8 +306,8 @@ int GecodeDriver::Run(char **argv) {
   problem.SetSolveCode(solve_code);
 
   char message[256];
-  Sprintf(message, "%s: %s\n", oinfo_.bsname, status);
-  WriteSolution(message, primal.empty() ? 0 : &primal[0], 0, &oinfo_);
+  Sprintf(message, "%s: %s\n", oinfo_.solver_name_for_banner(), status);
+  WriteSolution(message, primal.empty() ? 0 : &primal[0], 0, oinfo_);
   return 0;
 }
 }

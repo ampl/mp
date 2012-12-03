@@ -31,6 +31,8 @@
 
 namespace ampl {
 
+namespace internal {
+
 template <typename T>
 struct OptionParser;
 
@@ -52,8 +54,9 @@ class OptionParser<const char*> {
  public:
   const char* operator()(Option_Info *, keyword *, char *&s);
 };
+}
 
-class BaseOptionInfo : public Option_Info {
+class BaseOptionInfo : protected Option_Info {
  private:
   std::vector<keyword> keywords_;
   bool sorted_;
@@ -73,6 +76,60 @@ class BaseOptionInfo : public Option_Info {
 
   // Formats an option description by indenting it and performing word wrap.
   static std::string FormatDescription(const char *description);
+
+ public:
+  // Returns the solver name.
+  const char *solver_name() const {
+    return sname;
+  }
+  void set_solver_name(const char *name) {
+    sname = const_cast<char*>(name);
+  }
+
+  // Returns the solver name used in startup "banner".
+  const char *solver_name_for_banner() const {
+    return bsname;
+  }
+  void set_solver_name_for_banner(const char *name) {
+    bsname = const_cast<char*>(name);
+  }
+
+  // Returns the name of solver_options environment variable.
+  const char *options_var_name() const {
+    return opname;
+  }
+  void set_options_var_name(const char *name) {
+    opname = const_cast<char*>(name);
+  }
+
+  const char *version() const {
+    return Option_Info::version;
+  }
+  void set_version(const char *version) {
+    Option_Info::version = const_cast<char*>(version);
+  }
+
+  long driver_date() const {
+    return Option_Info::driver_date;
+  }
+  void set_driver_date(long date) {
+    Option_Info::driver_date = date;
+  }
+
+  void EnableOptionEcho(int mask) {
+    option_echo |= mask;
+  }
+  void DisableOptionEcho(int mask) {
+    option_echo &= ~mask;
+  }
+
+  int flags() const {
+    return Option_Info::flags;
+  }
+
+  bool want_solution() const {
+    return wantsol;
+  }
 };
 
 template <typename Handler>
@@ -104,7 +161,7 @@ class OptionInfo : public BaseOptionInfo {
     : Option(description), func_(func) {}
 
     char *Handle(Handler &h, Option_Info *oi, keyword *kw, char *s) {
-      (h.*func_)(kw->name, OptionParser<Value>()(oi, kw, s));
+      (h.*func_)(kw->name, internal::OptionParser<Value>()(oi, kw, s));
       return s;
     }
   };
@@ -120,7 +177,7 @@ class OptionInfo : public BaseOptionInfo {
     : Option(description), func_(func), info_(info) {}
 
     char *Handle(Handler &h, Option_Info *oi, keyword *kw, char *s) {
-      (h.*func_)(kw->name, OptionParser<Value>()(oi, kw, s), info_);
+      (h.*func_)(kw->name, internal::OptionParser<Value>()(oi, kw, s), info_);
       return s;
     }
   };
@@ -338,8 +395,8 @@ class Driver {
   bool GetOptions(char **argv, BaseOptionInfo &oi);
 
   // Writes the solution.
-  void WriteSolution(char *msg, double *x, double *y, Option_Info* oi) {
-    write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_), msg, x, y, oi);
+  void WriteSolution(char *msg, double *x, double *y, BaseOptionInfo &oi) {
+    write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_), msg, x, y, &oi);
   }
 };
 }
