@@ -71,7 +71,7 @@ void BaseOptionInfo::Sort() {
   if (sorted_) return;
   std::sort(keywords_.begin(), keywords_.end(), KeywordNameLess());
   keywds = &keywords_[0];
-  n_keywds = keywords_.size();
+  n_keywds = static_cast<int>(keywords_.size());
   sorted_ = true;
 }
 
@@ -122,7 +122,7 @@ std::string BaseOptionInfo::FormatDescription(const char *description) {
         ++s;
       const char *word_end = s;
       if (new_line) {
-        indent = 6 + word_start - start;
+        indent = 6 + static_cast<int>(word_start - start);
         new_line = false;
       }
       if (line_offset + (word_end - start) > MAX_LINE_LENGTH) {
@@ -137,7 +137,7 @@ std::string BaseOptionInfo::FormatDescription(const char *description) {
         start = word_start;
       }
       os.write(start, word_end - start);
-      line_offset += word_end - start;
+      line_offset += static_cast<int>(word_end - start);
       if (*s == '\n') {
         os << '\n';
         line_offset = 0;

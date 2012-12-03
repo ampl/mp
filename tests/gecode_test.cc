@@ -120,14 +120,6 @@ class GecodeConverterTest : public ::testing::Test, public ExprBuilder {
       int var1 = 0, int var2 = 0, int var3 = 0);
 
   GecodeConverterTest() : x(AddVar(1)), y(AddVar(2)), z(AddVar(3)) {}
-
-  int RunDriver(const char *stub = nullptr, const char *opt = nullptr) {
-    //return p.run((Args() + "gecode" + "-s" + stub + opt).get());
-    // TODO
-    return 0;
-  }
-
-  SolveResult Solve(const char *stub, const char *opt = nullptr);
 };
 
 void GecodeConverterTest::InitVars(
