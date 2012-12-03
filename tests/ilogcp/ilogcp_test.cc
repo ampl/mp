@@ -693,7 +693,6 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
 }
 
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
-  // TODO: don't rely on variable names
   d.use_numberof();
   std::ostringstream os;
   os << "[" << IloIntMin << ".." << IloIntMax << "]";

@@ -464,7 +464,7 @@ bool IlogCPDriver::ParseOptions(char **argv) {
   // Get optimizer type.
   gotopttype_ = false;
   oinfo_.DisableOptionEcho(ASL_OI_echo);
-  if (!GetOptions(argv, oinfo_))
+  if (!Driver::ParseOptions(argv, oinfo_))
     return false;
 
   int &opt = options_[OPTIMIZER];
@@ -483,7 +483,7 @@ bool IlogCPDriver::ParseOptions(char **argv) {
   // Parse remaining options.
   gotopttype_ = true;
   oinfo_.EnableOptionEcho(ASL_OI_echo);
-  if (!GetOptions(argv, oinfo_))
+  if (!Driver::ParseOptions(argv, oinfo_))
     return false;
 
   debug_ = GetOption(DEBUGEXPR) != 0;
