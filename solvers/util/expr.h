@@ -1338,13 +1338,6 @@ Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
     numberofs_.push_back(NumberOf(e));
   ValueMap &values = numberofs_[result.first->second].values;
 #else
-# if defined(AMPL_NO_UNORDERED_MAP_WARNING)
-  // Do nothing.
-# elif defined(_MSC_VER)
-#  pragma message("warning: unordered_map not available, numberof may be slow")
-# else
-#  warning "unordered_map not available, numberof may be slow"
-# endif
   typename std::vector<NumberOf>::reverse_iterator np = std::find_if(
       numberofs_.rbegin(), numberofs_.rend(), MatchNumberOfArgs<NumberOf>(e));
   if (np == numberofs_.rend()) {

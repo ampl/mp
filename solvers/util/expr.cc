@@ -105,6 +105,14 @@ std::size_t std::hash<ampl::Expr>::operator()(Expr expr) const {
   }
   return hash;
 }
+#else
+# if defined(AMPL_NO_UNORDERED_MAP_WARNING)
+  // Do nothing.
+# elif defined(_MSC_VER)
+#  pragma message("warning: unordered_map not available, numberof may be slow")
+# else
+#  warning "unordered_map not available, numberof may be slow"
+# endif
 #endif
 
 namespace ampl {
