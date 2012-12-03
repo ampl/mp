@@ -26,7 +26,10 @@
 #include <memory>
 #include <sstream>
 
+extern "C" {
 #include "solvers/getstub.h"
+}
+
 #include "solvers/util/expr.h"
 
 namespace ampl {
