@@ -459,7 +459,10 @@ class Driver {
   void ReportError(const char *format, ...)
     __attribute__((format(printf, 2, 3)));
 
-  // Parses the options.
+  // Parses options and returns true if there were no errors, false otherwise.
+  // Note that handler functions can report errors with Driver::ReportError
+  // and ParseOptions will take them into account as well returning false if
+  // there was at least one such error.
   bool ParseOptions(char **argv, BaseOptionInfo &oi);
 
   // Writes the solution.
