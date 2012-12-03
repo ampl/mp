@@ -338,12 +338,8 @@ class Expr {
     return e.kind() == ExprT::KIND;
   }
 
-  // Casts an expression to type T. Returns a null expression if the cast
-  // is not possible.
   template <typename ExprT>
-  friend ExprT Cast(Expr e) {
-    return internal::Is<ExprT>(e) ? Create<ExprT>(e) : ExprT();
-  }
+  friend ExprT Cast(Expr e);
 
   // Recursively compares two expressions and returns true if they are equal.
   friend bool Equal(Expr e1, Expr e2);
@@ -352,6 +348,13 @@ class Expr {
   friend struct std::hash<Expr>;
 #endif
 };
+
+// Casts an expression to type ExprT. Returns a null expression if the cast
+// is not possible.
+template <typename ExprT>
+ExprT Cast(Expr e) {
+  return internal::Is<ExprT>(e) ? Expr::Create<ExprT>(e) : ExprT();
+}
 
 namespace internal {
 template <>
