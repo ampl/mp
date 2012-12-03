@@ -253,14 +253,14 @@ BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr e) {
   return DUMMY_EXPR;
 }
 
-GecodeDriver::GecodeDriver() : oinfo_(*this) {}
+GecodeDriver::GecodeDriver() : options_(*this) {}
 
 int GecodeDriver::Run(char **argv) {
   Problem &problem = Driver::problem();
-  if (!problem.Read(argv, oinfo_))
+  if (!problem.Read(argv, options_))
     return 1;
 
-  if (GetOptions(argv, oinfo_))
+  if (Driver::ParseOptions(argv, options_))
     return 1;
 
   // Set up an optimization problem in Gecode.
@@ -306,8 +306,8 @@ int GecodeDriver::Run(char **argv) {
   problem.SetSolveCode(solve_code);
 
   char message[256];
-  Sprintf(message, "%s: %s\n", oinfo_.solver_name_for_banner(), status);
-  WriteSolution(message, primal.empty() ? 0 : &primal[0], 0, oinfo_);
+  Sprintf(message, "%s: %s\n", options_.solver_name_for_banner(), status);
+  WriteSolution(message, primal.empty() ? 0 : &primal[0], 0, options_);
   return 0;
 }
 }

@@ -28,8 +28,6 @@
 
 #include "solvers/getstub.h"
 
-#undef stderr
-
 namespace {
 struct KeywordNameLess {
   bool operator()(const keyword &lhs, const keyword &rhs) const {
@@ -190,7 +188,7 @@ void Driver::ReportError(const char *format, ...) {
   std::fputc('\n', stderr);
 }
 
-bool Driver::GetOptions(char **argv, BaseOptionInfo &oi) {
+bool Driver::ParseOptions(char **argv, BaseOptionInfo &oi) {
   has_errors_ = false;
   oi.Sort();
   return getopts_ASL(reinterpret_cast<ASL*>(problem_.asl_), argv, &oi) == 0 &&

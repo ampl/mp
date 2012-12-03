@@ -56,6 +56,8 @@ class OptionParser<const char*> {
 };
 }
 
+// Base class for all OptionInfo<Handler> classes.
+// Don't use it directly, use the OptionInfo template instead.
 class BaseOptionInfo : protected Option_Info {
  private:
   std::vector<keyword> keywords_;
@@ -70,6 +72,7 @@ class BaseOptionInfo : protected Option_Info {
 
  protected:
   BaseOptionInfo();
+  ~BaseOptionInfo() {}
 
   void AddKeyword(const char *name,
       const char *description, Kwfunc func, const void *info);
@@ -127,11 +130,39 @@ class BaseOptionInfo : protected Option_Info {
     return Option_Info::flags;
   }
 
-  bool want_solution() const {
+  int want_solution() const {
     return wantsol;
   }
 };
 
+// This class contains information about solver options.
+// Handler is a class that will receive notification about parsed options.
+// Often Handler is a class derived from Driver, but this is not required.
+//
+// Example:
+//
+// class MyDriver : public Driver {
+//  private:
+//   OptionInfo<MyDriver> options_;
+//
+//  public:
+//   void SetTestOption(const char *name, int value, int info) {
+//     // Set option - called when the test option is parsed;
+//     // info is an arbitrary value passed as a third argument to
+//     // AddIntOption. It can be useful if the same function handles
+//     // multiple options.
+//     ...
+//   }
+//
+//   MyDriver() {
+//     options_.AddIntOption("test", "This is a test option",
+//                           &MyDriver::SetTestOption, 42);
+//   }
+//
+//   bool ParseOptions(char **argv) {
+//     return Driver::ParseOptions(argv, options_);
+//   }
+// };
 template <typename Handler>
 class OptionInfo : public BaseOptionInfo {
  private:
@@ -209,12 +240,25 @@ class OptionInfo : public BaseOptionInfo {
     std::for_each(options_.begin(), options_.end(), Deleter());
   }
 
+  // Adds an integer option. The argument f should be a pointer to a member
+  // function in the Handler class. This function is called after the option
+  // is parsed:
+  //   (handler.*f)(name, value);
+  // where handler is a reference to a Handler object, name is an option name
+  // of type "const char*" and value is an option value of type "int".
   template <typename Func>
   void AddIntOption(const char *name, const char *description, Func f) {
     AddOption(name, std::auto_ptr<Option>(
         new ConcreteOption<Func, int>(description, f)));
   }
 
+  // Adds an integer option with additional information. The argument f
+  // should be a pointer to a member function in the Handler class.
+  // This function is called after the option is parsed:
+  //   (handler.*f)(name, value, info);
+  // where handler is a reference to a Handler object, name is an option name
+  // of type "const char*", value is an option value of type "int" and info
+  // is a reference to the Info object passed to AddIntOption.
   template <typename Info, typename Func>
   void AddIntOption(const char *name,
       const char *description, Func f, const Info &info) {
@@ -222,12 +266,25 @@ class OptionInfo : public BaseOptionInfo {
         new ConcreteOptionWithInfo<Func, Info, int>(description, f, info)));
   }
 
+  // Adds a double option. The argument f should be a pointer to a member
+  // function in the Handler class. This function is called after the option
+  // is parsed:
+  //   (handler.*f)(name, value);
+  // where handler is a reference to a Handler object, name is an option name
+  // of type "const char*" and value is an option value of type "double".
   template <typename Func>
   void AddDblOption(const char *name, const char *description, Func f) {
     AddOption(name, std::auto_ptr<Option>(
         new ConcreteOption<Func, double>(description, f)));
   }
 
+  // Adds a double option with additional information. The argument f
+  // should be a pointer to a member function in the Handler class.
+  // This function is called after the option is parsed:
+  //   (handler.*f)(name, value, info);
+  // where handler is a reference to a Handler object, name is an option name
+  // of type "const char*", value is an option value of type "double" and info
+  // is a reference to the Info object passed to AddDblOption.
   template <typename Info, typename Func>
   void AddDblOption(const char *name,
       const char *description, Func f, const Info &info) {
@@ -235,12 +292,25 @@ class OptionInfo : public BaseOptionInfo {
         new ConcreteOptionWithInfo<Func, Info, double>(description, f, info)));
   }
 
+  // Adds a string option. The argument f should be a pointer to a member
+  // function in the Handler class. This function is called after the option
+  // is parsed:
+  //   (handler.*f)(name, value);
+  // where handler is a reference to a Handler object, name is an option name
+  // of type "const char*" and value is an option value of type "const char*".
   template <typename Func>
   void AddStrOption(const char *name, const char *description, Func f) {
     AddOption(name, std::auto_ptr<Option>(
         new ConcreteOption<Func, const char*>(description, f)));
   }
 
+  // Adds a string option with additional information. The argument f
+  // should be a pointer to a member function in the Handler class.
+  // This function is called after the option is parsed:
+  //   (handler.*f)(name, value, info);
+  // where handler is a reference to a Handler object, name is an option name
+  // of type "const char*", value is an option value of type "const char*"
+  // and info is a reference to the Info object passed to AddStrOption.
   template <typename Info, typename Func>
   void AddStrOption(const char *name,
       const char *description, Func f, const Info &info) {
@@ -385,14 +455,12 @@ class Driver {
 
   Problem &problem() { return problem_; }
 
-  bool has_errors() const { return has_errors_; }
-
   // Reports an error.
   void ReportError(const char *format, ...)
     __attribute__((format(printf, 2, 3)));
 
-  // Gets the options.
-  bool GetOptions(char **argv, BaseOptionInfo &oi);
+  // Parses the options.
+  bool ParseOptions(char **argv, BaseOptionInfo &oi);
 
   // Writes the solution.
   void WriteSolution(char *msg, double *x, double *y, BaseOptionInfo &oi) {
