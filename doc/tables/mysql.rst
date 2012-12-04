@@ -1,11 +1,11 @@
 Connecting AMPL to MySQL
 ========================
 
-In order to use MySQL with AMPL you need the MySQL ODBC driver, also known as
+To use MySQL with AMPL, you need to have the MySQL ODBC driver, also known as
 `Connector/ODBC <http://dev.mysql.com/doc/refman/5.1/en/connector-odbc.html>`__,
-installed and have access to either local or remove database server.
-You can download the latest version of the MySQL ODBC driver for various
-platforms from `<http://dev.mysql.com/downloads/connector/odbc/>`__.
+installed and to have access to a database server, which could be either
+local or remote. You can download the latest version of the MySQL ODBC driver
+for various platforms from `<http://dev.mysql.com/downloads/connector/odbc/>`__.
 
 Installation
 ------------
@@ -56,10 +56,11 @@ SUSE Linux
    that you installed in the previous step. You might need to change it
    if you have a different version of the driver.
 
-   Note that the MySQL ODBC/Connector distribution doesn't include the
-   setup library so you have to omit the ``SETUP`` attribute during the
-   driver registration unless you have installed this library from some
-   other source.
+   Note that the MySQL ODBC/Connector distribution does not include a
+   setup library. If you invoke ``myodbc-installer --help``, you may see an
+   outdated example with a ``SETUP`` attribute specifying a setup library.
+   Omit this attribute during the driver registration unless you have
+   installed a setup library from some other source.
 
 Go to :ref:`usage`.
 
@@ -90,10 +91,11 @@ Other distributions
    different location. See the name of the ``.so`` file in the ``lib``
    directory of the installation package.
 
-   Note that the MySQL ODBC/Connector distribution doesn't include the
-   setup library so you have to omit the ``SETUP`` attribute during the
-   driver registration unless you have installed this library from some
-   other source.
+   Note that the MySQL ODBC/Connector distribution does not include a
+   setup library. If you invoke ``myodbc-installer --help``, you may see an
+   outdated example with a ``SETUP`` attribute specifying a setup library.
+   Omit this attribute during the driver registration unless you have
+   installed a setup library from some other source.
 
 Go to :ref:`usage`.
 
@@ -101,7 +103,7 @@ MacOS X
 ~~~~~~~
 
 #. Install the MySQL Connector/ODBC as described `here
-   <http://dev.mysql.com/doc/refman/5.1/en/connector-odbc-installation.html#connector-odbc-installation-binary-macosx>`__
+   <http://dev.mysql.com/doc/refman/5.1/en/connector-odbc-installation.html#connector-odbc-installation-binary-macosx>`__,
    skipping the outdated last step (driver registration).
 
 #. Register the driver:
@@ -117,10 +119,11 @@ MacOS X
    different location. See the name of the ``.so`` file in the ``lib``
    directory of the installation package.
 
-   Note that the MySQL ODBC/Connector distribution doesn't include the
-   setup library so you have to omit the ``SETUP`` attribute during the
-   driver registration unless you have installed this library from some
-   other source.
+   Note that the MySQL ODBC/Connector distribution does not include a
+   setup library. If you invoke ``myodbc-installer --help``, you may see an
+   outdated example with a ``SETUP`` attribute specifying a setup library.
+   Omit this attribute during the driver registration unless you have
+   installed a setup library from some other source.
 
 Go to :ref:`usage`.
 
@@ -136,7 +139,7 @@ Usage
 -----
 
 We'll demonstrate usage of MySQL with AMPL on a small example.
-For this example we use the diet problem which finds a combination of foods
+For this example we use the diet problem, which finds a combination of foods
 that satisfies certain nutritional requirements. It is described in
 `Chapter 2 of the AMPL book <http://www.ampl.com/BOOK/CHAPTERS/05-tut2.pdf>`__.
 
@@ -163,21 +166,25 @@ The script file first reads the model:
       model diet.mod;
 
 Then it defines a parameter to hold a connection string. Since the connection
-parameters are the same for all table declarations in our example this avoids
-unnecessary duplication. In this case we specify all the connection parameters
-explicitly, instead you can use a DSN file name or ``"DSN=<dsn-name>"`` as a
-connection string.
+parameters are the same for all table declarations in our example this
+avoids unnecessary duplication. In this case we specify all the connection
+parameters explicitly. Alternatively, you could use a DSN file name or
+``"DSN=<dsn-name>"`` as a connection string.
 
    .. code-block:: none
 
       param ConnectionStr symbolic = "DRIVER=MySQL; DATABASE=test;";
 
-The driver name is chosen automatically during installation on Windows,
-so if you are using this OS or have chosen a driver name other than ``MySQL``
-you'll have to specify it instead of ``MySQL`` in the connection string.
-To find the driver name on Windows run ``odbcad32.exe``, ODBC Data Source
-Administrator, go to the ``Drivers`` tab where all the installed drivers are
-listed and find the one containing ``MySQL``:
+If you are using Linux or MacOS X and have chosen a driver name other
+than ``MySQL``, you will have to specify this name instead of ``MySQL``
+in the ``DRIVER=MySQL`` attribute in the connection string.
+
+A driver name is chosen automatically during installation on Windows,
+so if you are using this OS, you will have to find out the driver name and
+specify it instead of ``MySQL`` in the connection string.
+To find out the driver name on Windows run ``odbcad32.exe``, ODBC Data
+Source Administrator, go to the ``Drivers`` tab where all the installed
+drivers are listed and look for the one containing ``MySQL``:
 
 .. image:: ../img/odbcad32.png
 
@@ -244,7 +251,7 @@ SQL statements
 
 The default `identifier quote character in MySQL
 <http://dev.mysql.com/doc/refman/5.0/en/identifiers.html>`__
-is the backtick (`````). AMPL's ODBC table handler detects the quote
+is the backquote (`````). AMPL's ODBC table handler detects the quote
 character automatically and uses it when necessary. However,
 user-supplied SQL statements are passed to the MySQL ODBC driver as is
 and should use the correct quotation. It is possible to enable support for
@@ -325,8 +332,8 @@ Verbose error:
 First check that the MySQL server is running. If it is running then
 it is likely that the Unix socket file that is used for communication
 between the server and the client is in a different location.
-To find the location of the socket file open ``/etc/mysql/my.cnf``
-and search for the lines
+To find the location of the socket file open ``/etc/my.cnf`` or
+``/etc/mysql/my.cnf`` and search for lines of the form
 
 .. code-block:: none
 
