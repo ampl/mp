@@ -40,6 +40,7 @@ extern "C" {
 #include "solvers/opcode.hd"
 }
 
+#include "tests/args.h"
 #include "tests/expr_builder.h"
 #include "tests/config.h"
 
@@ -58,50 +59,6 @@ using ampl::UnsupportedExprError;
 #define DATA_DIR "../data/"
 
 namespace {
-
-bool AreBothSpaces(char lhs, char rhs) { return lhs == ' ' && rhs == ' '; }
-
-// Replace all occurrences of string old_s in s with new_s.
-void Replace(string &s, const string &old_s, const string &new_s) {
-  size_t pos = 0;
-  while ((pos = s.find(old_s, pos)) != string::npos) {
-    s.replace(pos, old_s.length(), new_s);
-    pos += new_s.length();
-  }
-}
-
-struct SolveResult {
-  bool solved;
-  double obj;
-  SolveResult(bool solved, double obj) : solved(solved), obj(obj) {}
-};
-
-// Helper class that copies arguments to comply with the IlogCPDriver::run
-// function signature and avoid unwanted modification.
-class Args {
- private:
-  std::size_t argc_;
-  vector<char> store_;
-  vector<char*> argv_;
-
- public:
-  Args() : argc_(0) {}
-
-  char **get() {
-    argv_.resize(argc_ + 1);
-    for (std::size_t i = 0, j = 0; i < argc_; j += strlen(&store_[j]) + 1, ++i)
-      argv_[i] = &store_[j];
-    return &argv_[0];
-  }
-
-  Args& operator+(const char *arg) {
-    if (arg) {
-      ++argc_;
-      store_.insert(store_.end(), arg, arg + strlen(arg) + 1);
-    }
-    return *this;
-  }
-};
 
 class GecodeConverterTest : public ::testing::Test, public ExprBuilder {
  protected:
@@ -644,12 +601,19 @@ TEST_F(GecodeConverterTest, ConvertLogicalConstant) {
 // ----------------------------------------------------------------------------
 // Driver tests
 
+struct SolveResult {
+  bool solved;
+  double obj;
+  SolveResult(bool solved, double obj) : solved(solved), obj(obj) {}
+};
+
 class GecodeDriverTest : public ::testing::Test, public ExprBuilder {
+ private:
+  ampl::GecodeDriver driver_;
+
  protected:
   int RunDriver(const char *stub = nullptr, const char *opt = nullptr) {
-    //return p.run((Args() + "gecode" + "-s" + stub + opt).get());
-    // TODO
-    return 0;
+    return driver_.Run(Args("gecode", "-s", stub, opt));
   }
 
   SolveResult Solve(const char *stub, const char *opt = nullptr);

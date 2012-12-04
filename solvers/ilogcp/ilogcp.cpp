@@ -128,7 +128,7 @@ void CPOptimizer::get_solution(Problem &p, char *message,
 }
 
 IlogCPDriver::IlogCPDriver() :
-   mod_(env_), oinfo_(*this),
+   Driver(oinfo_), mod_(env_), oinfo_(*this),
    gotopttype_(false), debug_(false), numberofs_(CreateVar(env_)) {
   char *s;
   int n;
@@ -464,7 +464,7 @@ bool IlogCPDriver::ParseOptions(char **argv) {
   // Get optimizer type.
   gotopttype_ = false;
   oinfo_.DisableOptionEcho(ASL_OI_echo);
-  if (!Driver::ParseOptions(argv, oinfo_))
+  if (!Driver::ParseOptions(argv))
     return false;
 
   int &opt = options_[OPTIMIZER];
@@ -483,7 +483,7 @@ bool IlogCPDriver::ParseOptions(char **argv) {
   // Parse remaining options.
   gotopttype_ = true;
   oinfo_.EnableOptionEcho(ASL_OI_echo);
-  if (!Driver::ParseOptions(argv, oinfo_))
+  if (!Driver::ParseOptions(argv))
     return false;
 
   debug_ = GetOption(DEBUGEXPR) != 0;
@@ -746,7 +746,7 @@ int IlogCPDriver::Run(char **argv) {
   if (successful)
     optimizer_->get_solution(problem, sMsg + sSoFar, primal, dual);
   WriteSolution(sMsg, primal.empty() ? 0 : &primal[0],
-      dual.empty() ? 0 : &dual[0], oinfo_);
+      dual.empty() ? 0 : &dual[0]);
 
   if (timing) {
     Times[4] = xectim_();

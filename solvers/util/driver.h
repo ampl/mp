@@ -157,13 +157,9 @@ class BaseOptionInfo : protected Option_Info {
 //     ...
 //   }
 //
-//   MyDriver() {
+//   MyDriver() : Driver(options_), options_(*this) {
 //     options_.AddIntOption("test", "This is a test option",
 //                           &MyDriver::SetTestOption, 42);
-//   }
-//
-//   bool ParseOptions(char **argv) {
-//     return Driver::ParseOptions(argv, options_);
 //   }
 // };
 template <typename Handler>
@@ -451,10 +447,12 @@ class Problem {
 class Driver {
  private:
   Problem problem_;
+  BaseOptionInfo &options_;
   bool has_errors_;
 
  public:
-  Driver() : has_errors_(false) {}
+  explicit Driver(BaseOptionInfo &options)
+  : options_(options), has_errors_(false) {}
 
   Problem &problem() { return problem_; }
 
@@ -466,11 +464,11 @@ class Driver {
   // Note that handler functions can report errors with Driver::ReportError
   // and ParseOptions will take them into account as well returning false if
   // there was at least one such error.
-  bool ParseOptions(char **argv, BaseOptionInfo &oi);
+  bool ParseOptions(char **argv);
 
-  // Writes the solution.
-  void WriteSolution(char *msg, double *x, double *y, BaseOptionInfo &oi) {
-    write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_), msg, x, y, &oi);
+  // Writes a solution.
+  void WriteSolution(char *msg, double *x, double *y) {
+    write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_), msg, x, y, &options_);
   }
 };
 }

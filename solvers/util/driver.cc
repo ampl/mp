@@ -194,10 +194,10 @@ void Driver::ReportError(const char *format, ...) {
   std::fputc('\n', stderr);
 }
 
-bool Driver::ParseOptions(char **argv, BaseOptionInfo &oi) {
+bool Driver::ParseOptions(char **argv) {
   has_errors_ = false;
-  oi.Sort();
-  return getopts_ASL(reinterpret_cast<ASL*>(problem_.asl_), argv, &oi) == 0 &&
-      !has_errors_;
+  options_.Sort();
+  ASL *asl = reinterpret_cast<ASL*>(problem_.asl_);
+  return getopts_ASL(asl, argv, &options_) == 0 && !has_errors_;
 }
 }
