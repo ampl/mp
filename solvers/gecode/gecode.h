@@ -254,7 +254,6 @@ class GecodeDriver : public Driver {
   // Run the driver.
   int Run(char **argv);
 };
-
 }
 
 #endif // AMPL_SOLVERS_GECODE_H

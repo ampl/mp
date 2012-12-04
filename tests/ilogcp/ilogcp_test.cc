@@ -44,6 +44,7 @@ extern "C" {
 #include "solvers/opcode.hd"
 }
 
+#include "tests/args.h"
 #include "tests/expr_builder.h"
 #include "tests/config.h"
 
@@ -103,33 +104,6 @@ struct SolveResult {
   SolveResult(bool solved, double obj) : solved(solved), obj(obj) {}
 };
 
-// Helper class that copies arguments to comply with the IlogCPDriver::run
-// function signature and avoid unwanted modification.
-class Args {
- private:
-  std::size_t argc_;
-  vector<char> store_;
-  vector<char*> argv_;
-
- public:
-  Args() : argc_(0) {}
-
-  char **get() {
-    argv_.resize(argc_ + 1);
-    for (std::size_t i = 0, j = 0; i < argc_; j += strlen(&store_[j]) + 1, ++i)
-      argv_[i] = &store_[j];
-    return &argv_[0];
-  }
-
-  Args& operator+(const char *arg) {
-    if (arg) {
-      ++argc_;
-      store_.insert(store_.end(), arg, arg + strlen(arg) + 1);
-    }
-    return *this;
-  }
-};
-
 struct EnumValue {
   const char *name;
   IloCP::ParameterValues value;
@@ -157,7 +131,7 @@ class IlogCPTest : public ::testing::Test, public ExprBuilder {
 
   int RunDriver(const char *stub = nullptr, const char *opt = nullptr) {
     try {
-      return d.Run((Args() + "ilogcp" + "-s" + stub + opt).get());
+      return d.Run(Args("ilogcp", "-s", stub, opt));
     } catch (const IloException &e) {  // NOLINT(whitespace/parens)
       throw std::runtime_error(e.getMessage());
     }
@@ -166,7 +140,7 @@ class IlogCPTest : public ::testing::Test, public ExprBuilder {
 
   bool ParseOptions(const char *opt1, const char *opt2 = nullptr) {
     try {
-      return d.ParseOptions((Args() + opt1 + opt2).get());
+      return d.ParseOptions(Args(opt1, opt2));
     } catch (const IloException &e) {  // NOLINT(whitespace/parens)
       throw std::runtime_error(e.getMessage());
     }
@@ -935,7 +909,7 @@ TEST_F(IlogCPTest, ConvertAllDiff) {
 TEST_F(IlogCPTest, Usage) {
   FILE *saved_stderr = Stderr;
   Stderr = fopen("out", "w");
-  d.Run((Args() + "ilogcp").get());
+  d.Run(Args("ilogcp"));
   fclose(Stderr);
   Stderr = saved_stderr;
 
