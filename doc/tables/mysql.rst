@@ -166,8 +166,8 @@ The script file first reads the model:
       model diet.mod;
 
 Then it defines a parameter to hold a connection string. Since the connection
-parameters are the same for all table declarations in our example this
-avoids unnecessary duplication. In this case we specify all the connection
+parameters are the same for all table declarations in our example, we
+avoid unnecessary duplication. In this case we specify all the connection
 parameters explicitly. Alternatively, you could use a DSN file name or
 ``"DSN=<dsn-name>"`` as a connection string.
 
@@ -180,11 +180,11 @@ than ``MySQL``, you will have to specify this name instead of ``MySQL``
 in the ``DRIVER=MySQL`` attribute in the connection string.
 
 A driver name is chosen automatically during installation on Windows,
-so if you are using this OS, you will have to find out the driver name and
+so if you are using this OS, you will have to find the driver name and
 specify it instead of ``MySQL`` in the connection string.
-To find out the driver name on Windows run ``odbcad32.exe``, ODBC Data
-Source Administrator, go to the ``Drivers`` tab where all the installed
-drivers are listed and look for the one containing ``MySQL``:
+To discover the driver name on Windows, run the ODBC Data Source
+Administrator, ``odbcad32.exe``.  Go to the ``Drivers`` tab where all the
+installed drivers are listed and look for the one containing ``MySQL``:
 
 .. image:: ../img/odbcad32.png
 
