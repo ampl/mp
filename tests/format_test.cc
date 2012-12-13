@@ -73,6 +73,32 @@ using fmt::FormatError;
   FORMAT_TEST_THROW_(statement, expected_exception, expected_message, \
       GTEST_NONFATAL_FAILURE_)
 
+// Increment a number in a string.
+void Increment(char *s) {
+  for (int i = static_cast<int>(std::strlen(s)) - 1; i >= 0; --i) {
+    if (s[i] != '9') {
+      ++s[i];
+      break;
+    }
+    s[i] = '0';
+  }
+}
+
+TEST(UtilTest, Increment) {
+  char s[10] = "123";
+  Increment(s);
+  EXPECT_STREQ("124", s);
+  s[2] = '8';
+  Increment(s);
+  EXPECT_STREQ("129", s);
+  Increment(s);
+  EXPECT_STREQ("130", s);
+  EXPECT_STREQ("130", s);
+  s[1] = s[2] = '9';
+  Increment(s);
+  EXPECT_STREQ("200", s);
+}
+
 class TestString {
  private:
   std::string value_;
@@ -205,25 +231,21 @@ TEST(FormatterTest, ArgErrors) {
   EXPECT_THROW_MSG(Format("{0"), FormatError, "unmatched '{' in format");
   EXPECT_THROW_MSG(Format("{0}"), FormatError,
       "argument index is out of range in format");
+
   char format[256];
   std::sprintf(format, "{%u", UINT_MAX);
   EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
   std::sprintf(format, "{%u}", UINT_MAX);
   EXPECT_THROW_MSG(Format(format), FormatError,
       "argument index is out of range in format");
-  if (ULONG_MAX > UINT_MAX) {
-    std::sprintf(format, "{%lu", UINT_MAX + 1l);
-    EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
-    std::sprintf(format, "{%lu}", UINT_MAX + 1l);
-    EXPECT_THROW_MSG(Format(format),
-        FormatError, "number is too big in format");
-  } else {
-    std::sprintf(format, "{%u0", UINT_MAX);
-    EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
-    std::sprintf(format, "{%u0}", UINT_MAX);
-    EXPECT_THROW_MSG(Format(format),
-        FormatError, "number is too big in format");
-  }
+
+  std::sprintf(format, "{%u", UINT_MAX);
+  Increment(format + 1);
+  EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
+  std::size_t size = std::strlen(format);
+  format[size] = '}';
+  format[size + 1] = 0;
+  EXPECT_THROW_MSG(Format(format), FormatError, "number is too big in format");
 }
 
 TEST(FormatterTest, EmptySpecs) {
@@ -275,19 +297,15 @@ TEST(FormatterTest, ZeroFlag) {
 
 TEST(FormatterTest, Width) {
   char format[256];
-  if (ULONG_MAX > UINT_MAX) {
-    std::sprintf(format, "{0:%lu", INT_MAX + 1l);
-    EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
-    std::sprintf(format, "{0:%lu}", UINT_MAX + 1l);
-    EXPECT_THROW_MSG(Format(format) << 0,
-        FormatError, "number is too big in format");
-  } else {
-    std::sprintf(format, "{0:%u0", UINT_MAX);
-    EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
-    std::sprintf(format, "{0:%u0}", UINT_MAX);
-    EXPECT_THROW_MSG(Format(format) << 0,
-        FormatError, "number is too big in format");
-  }
+  std::sprintf(format, "{0:%u", UINT_MAX);
+  Increment(format + 3);
+  EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
+  std::size_t size = std::strlen(format);
+  format[size] = '}';
+  format[size + 1] = 0;
+  EXPECT_THROW_MSG(Format(format) << 0,
+      FormatError, "number is too big in format");
+
   std::sprintf(format, "{0:%u", INT_MAX + 1u);
   EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
   std::sprintf(format, "{0:%u}", INT_MAX + 1u);
@@ -308,19 +326,14 @@ TEST(FormatterTest, Width) {
 
 TEST(FormatterTest, Precision) {
   char format[256];
-  if (ULONG_MAX > UINT_MAX) {
-    std::sprintf(format, "{0:.%lu", INT_MAX + 1l);
-    EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
-    std::sprintf(format, "{0:.%lu}", UINT_MAX + 1l);
-    EXPECT_THROW_MSG(Format(format) << 0,
-        FormatError, "number is too big in format");
-  } else {
-    std::sprintf(format, "{0:.%u0", UINT_MAX);
-    EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
-    std::sprintf(format, "{0:.%u0}", UINT_MAX);
-    EXPECT_THROW_MSG(Format(format) << 0,
-        FormatError, "number is too big in format");
-  }
+  std::sprintf(format, "{0:.%u", UINT_MAX);
+  Increment(format + 4);
+  EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
+  std::size_t size = std::strlen(format);
+  format[size] = '}';
+  format[size + 1] = 0;
+  EXPECT_THROW_MSG(Format(format) << 0,
+      FormatError, "number is too big in format");
 
   std::sprintf(format, "{0:.%u", INT_MAX + 1u);
   EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
@@ -377,27 +390,17 @@ TEST(FormatterTest, Precision) {
 
 TEST(FormatterTest, RuntimePrecision) {
   char format[256];
-  if (ULONG_MAX > UINT_MAX) {
-    std::sprintf(format, "{0:.{%lu", INT_MAX + 1l);
-    EXPECT_THROW_MSG(Format(format) << 0,
-        FormatError, "unmatched '{' in format");
-    std::sprintf(format, "{0:.{%lu}", INT_MAX + 1l);
-    EXPECT_THROW_MSG(Format(format) << 0,
-        FormatError, "unmatched '{' in format");
-    std::sprintf(format, "{0:.{%lu}}", UINT_MAX + 1l);
-    EXPECT_THROW_MSG(Format(format) << 0,
-        FormatError, "number is too big in format");
-  } else {
-    std::sprintf(format, "{0:.{%u0", UINT_MAX);
-    EXPECT_THROW_MSG(Format(format) << 0,
-        FormatError, "unmatched '{' in format");
-    std::sprintf(format, "{0:.{%u0}", UINT_MAX);
-    EXPECT_THROW_MSG(Format(format) << 0,
-        FormatError, "unmatched '{' in format");
-    std::sprintf(format, "{0:.{%u0}}", UINT_MAX);
-    EXPECT_THROW_MSG(Format(format) << 0,
-        FormatError, "number is too big in format");
-  }
+  std::sprintf(format, "{0:.{%u", UINT_MAX);
+  Increment(format + 4);
+  EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
+  std::size_t size = std::strlen(format);
+  format[size] = '}';
+  format[size + 1] = 0;
+  EXPECT_THROW_MSG(Format(format) << 0, FormatError, "unmatched '{' in format");
+  format[size + 1] = '}';
+  format[size + 2] = 0;
+  EXPECT_THROW_MSG(Format(format) << 0,
+      FormatError, "number is too big in format");
 
   EXPECT_THROW_MSG(Format("{0:.{") << 0,
       FormatError, "unmatched '{' in format");
@@ -665,11 +668,19 @@ TEST(FormatterTest, FormatterAppend) {
   EXPECT_EQ("part1part2", format.str());
 }
 
-TEST(FormatterTest, FormatterExample) {
+TEST(FormatterTest, FormatterExamples) {
   Formatter format;
   format("Current point:\n");
   format("({0:+f}, {1:+f})\n") << -3.14 << 3.14;
   EXPECT_EQ("Current point:\n(-3.140000, +3.140000)\n", format.str());
+
+  {
+    fmt::Formatter format;
+    for (int i = 0; i < 10; i++)
+      format("{0}") << i;
+    std::string s = format.str(); // s == 0123456789
+    EXPECT_EQ("0123456789", s);
+  }
 }
 
 TEST(FormatterTest, ArgInserter) {
