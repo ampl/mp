@@ -4,6 +4,7 @@
 #include <gecode/gist.hh>
 
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <ctime>
 
@@ -269,6 +270,7 @@ int GecodeDriver::Run(char **argv) {
   converter->Convert(problem);
 
   // Solve the problem.
+  double obj_val = std::numeric_limits<double>::quiet_NaN();
   std::auto_ptr<GecodeProblem> solution;
   bool has_obj = problem.num_objs() != 0;
   if (has_obj) {
@@ -276,6 +278,8 @@ int GecodeDriver::Run(char **argv) {
     converter.reset();
     while (GecodeProblem *next = engine.next())
       solution.reset(next);
+    if (solution.get())
+      obj_val = solution->obj().val();
   } else {
     DFS<GecodeProblem> engine(&converter->problem());
     converter.reset();
@@ -307,7 +311,7 @@ int GecodeDriver::Run(char **argv) {
 
   char message[256];
   Sprintf(message, "%s: %s\n", options_.solver_name_for_banner(), status);
-  WriteSolution(message, primal.empty() ? 0 : &primal[0], 0);
+  HandleSolution(message, primal.empty() ? 0 : &primal[0], 0, obj_val);
   return 0;
 }
 }

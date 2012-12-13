@@ -31,6 +31,7 @@ extern "C" {
 }
 
 #include "solvers/util/expr.h"
+#include "solvers/util/format.h"
 
 namespace ampl {
 
@@ -437,28 +438,56 @@ class Problem {
   }
 };
 
-#undef printf
+class Driver;
 
-#ifndef __GNUC__
-# define __attribute__(x)  /* nothing */
-#endif
+class SolutionHandler {
+ protected:
+  ~SolutionHandler() {}
+
+ public:
+  virtual void HandleSolution(Driver &d, const char *message,
+      const double *primal, const double *dual, double obj_value) = 0;
+};
 
 // An AMPL solver driver.
-class Driver {
+class Driver : private SolutionHandler {
  private:
   Problem problem_;
   BaseOptionInfo &options_;
+  SolutionHandler *sol_handler_;
+  fmt::Formatter error_formatter_;
   bool has_errors_;
+
+  void HandleSolution(Driver &, const char *message,
+        const double *primal, const double *dual, double) {
+    write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_),
+        const_cast<char*>(message), const_cast<double*>(primal),
+        const_cast<double*>(dual), &options_);
+  }
+
+  struct PrintError {
+    void operator()(const fmt::Formatter &f) const {
+      std::fputs(f.c_str(), stderr);
+      std::fputc('\n', stderr);
+    }
+  };
 
  public:
   explicit Driver(BaseOptionInfo &options)
-  : options_(options), has_errors_(false) {}
+  : options_(options), sol_handler_(this), has_errors_(false) {}
 
   Problem &problem() { return problem_; }
 
+  void set_solution_handler(SolutionHandler *sh) {
+    sol_handler_ = sh;
+  }
+
   // Reports an error.
-  void ReportError(const char *format, ...)
-    __attribute__((format(printf, 2, 3)));
+  fmt::ActiveFormatter<PrintError> ReportError(const char *format) {
+    has_errors_ = true;
+    fmt::ActiveFormatter<PrintError> af(format);
+    return af;
+  }
 
   // Parses options and returns true if there were no errors, false otherwise.
   // Note that handler functions can report errors with Driver::ReportError
@@ -466,9 +495,11 @@ class Driver {
   // there was at least one such error.
   bool ParseOptions(char **argv);
 
-  // Writes a solution.
-  void WriteSolution(char *msg, double *x, double *y) {
-    write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_), msg, x, y, &options_);
+  // Handle a solution.
+  void HandleSolution(const char *message,
+      const double *primal, const double *dual,
+      double obj_value = std::numeric_limits<double>::quiet_NaN()) {
+    sol_handler_->HandleSolution(*this, message, primal, dual, obj_value);
   }
 };
 }

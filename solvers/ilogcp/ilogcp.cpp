@@ -24,7 +24,7 @@
 #include <cctype>
 #include <cstdlib>
 
-using namespace std;
+using std::vector;
 
 static char xxxvers[] = "ilogcp_options\0\n"
   "AMPL/IBM ILOG CP Optimizer Driver Version " qYYYYMMDD "\n";
@@ -87,39 +87,32 @@ Optimizer::Optimizer(IloEnv env, const Problem &p) :
 
 Optimizer::~Optimizer() {}
 
-void CPLEXOptimizer::get_solution(Problem &p, char *message,
-    std::vector<double> &primal, std::vector<double> &dual) const {
-  IloNum objValue = cplex_.getObjValue();
+void CPLEXOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
+    vector<double> &primal, vector<double> &dual) const {
+  IloNum obj_value = cplex_.getObjValue();
   primal.resize(p.num_vars());
   IloNumVarArray vars = Optimizer::vars();
   for (int j = 0, n = p.num_vars(); j < n; ++j)
     primal[j] = cplex_.getValue(vars[j]);
   if (cplex_.isMIP()) {
-    message += g_fmtop(message, cplex_.getNnodes());
-    message += Sprintf(message, " nodes, ");
-    message += g_fmtop(message, cplex_.getNiterations());
-    message += Sprintf(message, " iterations, objective ");
-    g_fmtop(message, objValue);
+    format_message("{0} nodes, ") << cplex_.getNnodes();
   } else {
-    message += g_fmtop(message, cplex_.getNiterations());
-    message += Sprintf(message, " iterations, objective ");
-    g_fmtop(message, objValue);
     dual.resize(p.num_cons());
     IloRangeArray cons = Optimizer::cons();
     for (int i = 0, n = p.num_cons(); i < n; ++i)
       dual[i] = cplex_.getDual(cons[i]);
   }
+  format_message("{0} iterations, objective {1:.{2}}")
+    << cplex_.getNiterations() << obj_value << obj_prec();
 }
 
-void CPOptimizer::get_solution(Problem &p, char *message,
-    std::vector<double> &primal, std::vector<double> &) const {
-  message += g_fmtop(message, solver_.getNumberOfChoicePoints());
-  message += Sprintf(message, " choice points, ");
-  message += g_fmtop(message, solver_.getNumberOfFails());
-  message += Sprintf(message, " fails");
+void CPOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
+    vector<double> &primal, vector<double> &) const {
+  format_message("{0} choice points, {1} fails")
+      << solver_.getNumberOfChoicePoints() << solver_.getNumberOfFails();
   if (p.num_objs() > 0) {
-    message += Sprintf(message, ", objective ");
-    g_fmtop(message, solver_.getValue(obj()));
+    format_message(", objective {0:.{1}}")
+        << solver_.getValue(obj()) << obj_prec();
   }
   primal.resize(p.num_vars());
   IloNumVarArray vars = Optimizer::vars();
@@ -130,28 +123,23 @@ void CPOptimizer::get_solution(Problem &p, char *message,
 IlogCPDriver::IlogCPDriver() :
    Driver(oinfo_), mod_(env_), oinfo_(*this),
    gotopttype_(false), debug_(false), numberofs_(CreateVar(env_)) {
-  char *s;
-  int n;
-  size_t L;
-
   options_[DEBUGEXPR] = 0;
   options_[OPTIMIZER] = AUTO;
   options_[TIMING] = 0;
   options_[USENUMBEROF] = 1;
 
-  version_.resize(L = strlen(IloConcertVersion::_ILO_NAME) + 100);
-  n = snprintf(s = &version_[0], L, "AMPL/IBM ILOG CP Optimizer [%s %d.%d.%d]",
-      IloConcertVersion::_ILO_NAME, IloConcertVersion::_ILO_MAJOR_VERSION,
-      IloConcertVersion::_ILO_MINOR_VERSION,
-      IloConcertVersion::_ILO_TECH_VERSION);
+  version_ = str(fmt::Format("AMPL/IBM ILOG CP Optimizer [{0} {1}.{2}.{3}]")
+      << IloConcertVersion::_ILO_NAME << IloConcertVersion::_ILO_MAJOR_VERSION
+      << IloConcertVersion::_ILO_MINOR_VERSION
+      << IloConcertVersion::_ILO_TECH_VERSION);
   oinfo_.set_solver_name("ilogcp");
-  snprintf(s + n + 1, L - n, "ilogcp %d.%d.%d",
-      IloConcertVersion::_ILO_MAJOR_VERSION,
-      IloConcertVersion::_ILO_MINOR_VERSION,
-      IloConcertVersion::_ILO_TECH_VERSION);
-  oinfo_.set_solver_name_for_banner(s + n + 1);
+  solver_name_ = str(fmt::Format("ilogcp {0}.{1}.{2}")
+      << IloConcertVersion::_ILO_MAJOR_VERSION
+      << IloConcertVersion::_ILO_MINOR_VERSION
+      << IloConcertVersion::_ILO_TECH_VERSION);
+  oinfo_.set_solver_name_for_banner(solver_name_.c_str());
   oinfo_.set_options_var_name(xxxvers);
-  oinfo_.set_version(&version_[0]);
+  oinfo_.set_version(version_.c_str());
   oinfo_.set_driver_date(YYYYMMDD);
 
   // The following options are not implemented because corresponding
@@ -377,7 +365,7 @@ void IlogCPDriver::SetOptimizer(const char *name, const char *value) {
   } else if (strcmp(value, "cplex") == 0) {
     opt = CPLEX;
   } else {
-    ReportError("Invalid value %s for option %s", value, name);
+    ReportError("Invalid value {0} for option {1}") << value << name;
     return;
   }
   if (!gotopttype_)
@@ -388,7 +376,7 @@ void IlogCPDriver::SetBoolOption(const char *name, int value, Option opt) {
   if (!gotopttype_)
     return;
   if (value != 0 && value != 1)
-    ReportError("Invalid value %d for option %s", value, name);
+    ReportError("Invalid value {0} for option {1}") << value << name;
   else
     options_[opt] = value;
 }
@@ -399,7 +387,7 @@ void IlogCPDriver::SetCPOption(
     return;
   CPOptimizer *cp_opt = dynamic_cast<CPOptimizer*>(optimizer_.get());
   if (!cp_opt) {
-    ReportError("Invalid option %s for CPLEX optimizer", name);
+    ReportError("Invalid option {0} for CPLEX optimizer") << name;
     return;
   }
   try {
@@ -426,7 +414,7 @@ void IlogCPDriver::SetCPOption(
       return;
     }
   } catch (const IloException &) {}
-  ReportError("Invalid value %s for option %s", value, name);
+  ReportError("Invalid value {0} for option {1}") << value << name;
 }
 
 void IlogCPDriver::SetCPDblOption(
@@ -435,13 +423,13 @@ void IlogCPDriver::SetCPDblOption(
     return;
   CPOptimizer *cp_opt = dynamic_cast<CPOptimizer*>(optimizer_.get());
   if (!cp_opt) {
-    ReportError("Invalid option %s for CPLEX optimizer", name);
+    ReportError("Invalid option {0} for CPLEX optimizer") << name;
     return;
   }
   try {
     cp_opt->solver().setParameter(param, value);
   } catch (const IloException &) {
-    ReportError("Invalid value %g for option %s", value, name);
+    ReportError("Invalid value {0} for option {1}") << value << name;
   }
 }
 
@@ -450,14 +438,14 @@ void IlogCPDriver::SetCPLEXIntOption(const char *name, int value, int param) {
     return;
   CPLEXOptimizer *cplex_opt = dynamic_cast<CPLEXOptimizer*>(optimizer_.get());
   if (!cplex_opt) {
-    ReportError("Invalid option %s for CP optimizer", name);
+    ReportError("Invalid option {0} for CP optimizer") << name;
     return;
   }
   // Use CPXsetintparam instead of IloCplex::setParam to avoid dealing with
   // two overloads, one for the type int and one for the type long.
   cpxenv *env = cplex_opt->cplex().getImpl()->getCplexEnv();
   if (CPXsetintparam(env, param, value) != 0)
-    ReportError("Invalid value %d for option %s", value, name);
+    ReportError("Invalid value {0} for option {1}") << value << name;
 }
 
 bool IlogCPDriver::ParseOptions(char **argv) {
@@ -643,7 +631,7 @@ int IlogCPDriver::Run(char **argv) {
 
   int n_var_cont = problem.num_continuous_vars();
   if (n_var_cont != 0 && GetOption(OPTIMIZER) == CP) {
-    cerr << "CP Optimizer doesn't support continuous variables" << endl;
+    ReportError("CP Optimizer doesn't support continuous variables");
     return 1;
   }
   for (int j = 0; j < n_var_cont; j++) {
@@ -704,57 +692,56 @@ int IlogCPDriver::Run(char **argv) {
 
   // Convert solution status.
   int solve_code = 0;
-  const char *message;
+  const char *status;
   switch (alg.getStatus()) {
   default:
     // Fall through.
   case IloAlgorithm::Unknown:
     solve_code = 501;
-    message = "unknown solution status";
+    status = "unknown solution status";
     break;
   case IloAlgorithm::Feasible:
     solve_code = 100;
-    message = "feasible solution";
+    status = "feasible solution";
     break;
   case IloAlgorithm::Optimal:
     solve_code = 0;
-    message = "optimal solution";
+    status = "optimal solution";
     break;
   case IloAlgorithm::Infeasible:
     solve_code = 200;
-    message = "infeasible problem";
+    status = "infeasible problem";
     break;
   case IloAlgorithm::Unbounded:
     solve_code = 300;
-    message = "unbounded problem";
+    status = "unbounded problem";
     break;
   case IloAlgorithm::InfeasibleOrUnbounded:
     solve_code = 201;
-    message = "infeasible or unbounded problem";
+    status = "infeasible or unbounded problem";
     break;
   case IloAlgorithm::Error:
     solve_code = 500;
-    message = "error";
+    status = "error";
     break;
   }
   problem.SetSolveCode(solve_code);
 
-  char sMsg[256];
-  int sSoFar = Sprintf(sMsg, "%s: %s\n",
-      oinfo_.solver_name_for_banner(), message);
+  fmt::Formatter format_message;
+  format_message("{0}: {1}\n") << oinfo_.solver_name_for_banner() << status;
   vector<real> primal, dual;
   if (successful)
-    optimizer_->get_solution(problem, sMsg + sSoFar, primal, dual);
-  WriteSolution(sMsg, primal.empty() ? 0 : &primal[0],
+    optimizer_->GetSolution(problem, format_message, primal, dual);
+  HandleSolution(format_message.c_str(), primal.empty() ? 0 : &primal[0],
       dual.empty() ? 0 : &dual[0]);
 
   if (timing) {
     Times[4] = xectim_();
-    cerr << endl
-        << "Define = " << Times[1] - Times[0] << endl
-        << "Setup =  " << Times[2] - Times[1] << endl
-        << "Solve =  " << Times[3] - Times[2] << endl
-        << "Output = " << Times[4] - Times[3] << endl;
+    std::cerr << "\n"
+        << "Define = " << Times[1] - Times[0] << "\n"
+        << "Setup =  " << Times[2] - Times[1] << "\n"
+        << "Solve =  " << Times[3] - Times[2] << "\n"
+        << "Output = " << Times[4] - Times[3] << "\n";
   }
   return 0;
 }
