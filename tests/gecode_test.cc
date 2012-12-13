@@ -56,7 +56,7 @@ using ampl::LogicalExpr;
 using ampl::NumericExpr;
 using ampl::UnsupportedExprError;
 
-#define DATA_DIR "../data/"
+#define DATA_DIR "data/"
 
 namespace {
 
@@ -607,6 +607,29 @@ struct SolveResult {
   SolveResult(bool solved, double obj) : solved(solved), obj(obj) {}
 };
 
+class TestSolutionHandler : public ampl::SolutionHandler {
+ private:
+  std::string message_;
+  double obj_value_;
+  int solve_code_;
+
+ public:
+  TestSolutionHandler()
+  : obj_value_(std::numeric_limits<double>::quiet_NaN()) {}
+  virtual ~TestSolutionHandler() {}
+
+  int solve_code() const { return solve_code_; }
+  double obj_value() const { return obj_value_; }
+  const std::string &message() const { return message_; }
+
+  void HandleSolution(ampl::Driver &d, const char *message,
+        const double *, const double *, double obj_value) {
+    solve_code_ = d.problem().solve_code();
+    message_ = message;
+    obj_value_ = obj_value;
+  }
+};
+
 class GecodeDriverTest : public ::testing::Test, public ExprBuilder {
  private:
   ampl::GecodeDriver driver_;
@@ -620,21 +643,23 @@ class GecodeDriverTest : public ::testing::Test, public ExprBuilder {
 };
 
 SolveResult GecodeDriverTest::Solve(const char *stub, const char *opt) {
+  TestSolutionHandler sh;
+  driver_.set_solution_handler(&sh);
   RunDriver(stub, opt);
-  ifstream ifs((string(stub) + ".sol").c_str());
-  string line;
-  getline(ifs, line);
-  bool solved = line.find("optimal solution") != string::npos;
-  if (!solved) solved = line.find("feasible solution") != string::npos;
-  getline(ifs, line);
-  const char obj[] = "objective ";
-  size_t pos = line.find(obj);
-  return SolveResult(solved, pos != string::npos ?
-      atof(line.c_str() + pos + sizeof(obj) - 1) :
-      std::numeric_limits<double>::quiet_NaN());
+  const string &message = sh.message();
+  int solve_code = sh.solve_code();
+  EXPECT_GE(0, solve_code);
+  bool solved = true;
+  if (solve_code < 100)
+    EXPECT_TRUE(message.find("optimal solution") != string::npos);
+  else if (solve_code < 200)
+    EXPECT_TRUE(message.find("feasible solution") != string::npos);
+  else
+    solved = false;
+  return SolveResult(solved, sh.obj_value());
 }
 
-// TODO
+// TODO: move the usage test to driver_test
 /*
 TEST_F(GecodeTest, Usage) {
   FILE *saved_stderr = Stderr;
@@ -652,150 +677,142 @@ TEST_F(GecodeTest, Usage) {
     text += string(buffer, static_cast<string::size_type>(ifs.gcount()));
   }
   EXPECT_TRUE(text.find("usage: ") != string::npos);
+}*/
+
+// The following problems have continuous variables and are therefore not
+// supported by Gecode:
+// numberof, balassign0
+
+TEST_F(GecodeDriverTest, ObjConst) {
+  EXPECT_EQ(42, Solve(DATA_DIR "objconstint").obj);
 }
 
-TEST_F(GecodeTest, ObjConst) {
-  EXPECT_EQ(0, RunDriver(DATA_DIR "objconst"));
-  IloModel::Iterator iter(mod_);
-  ASSERT_NE(0, iter.ok());
-  IloObjective obj = (*iter).asObjective();
-  EXPECT_EQ(42, obj.getConstant());
+TEST_F(GecodeDriverTest, ContinuousVarsNotSupported) {
+  EXPECT_THROW(RunDriver(DATA_DIR "objconst"), std::runtime_error);
 }
 
-TEST_F(GecodeTest, CPOptimizerDoesntSupportContinuousVars) {
-  EXPECT_EQ(1, RunDriver(DATA_DIR "objconst", "optimizer=cp"));
-}
-
-TEST_F(GecodeTest, SolveNumberOfCplex) {
-  p.use_numberof(false);
-  RunDriver(DATA_DIR "numberof", "optimizer=cplex");
-}
-
-TEST_F(GecodeTest, SolveAssign0) {
+TEST_F(GecodeDriverTest, SolveAssign0) {
   EXPECT_EQ(6, Solve(DATA_DIR "assign0").obj);
 }
 
-TEST_F(GecodeTest, SolveAssign1) {
+TEST_F(GecodeDriverTest, SolveAssign1) {
   EXPECT_EQ(6, Solve(DATA_DIR "assign1").obj);
 }
 
-TEST_F(GecodeTest, SolveBalassign0) {
-  EXPECT_EQ(14, Solve(DATA_DIR "balassign0").obj);
-}
-
-TEST_F(GecodeTest, SolveBalassign1) {
+/*
+TEST_F(GecodeDriverTest, SolveBalassign1) {
   EXPECT_EQ(14, Solve(DATA_DIR "balassign1").obj);
 }
 
-TEST_F(GecodeTest, SolveFlowshp0) {
+TEST_F(GecodeDriverTest, SolveFlowshp0) {
   EXPECT_NEAR(22, Solve(DATA_DIR "flowshp0").obj, 1e-5);
 }
 
-TEST_F(GecodeTest, SolveFlowshp1) {
+TEST_F(GecodeDriverTest, SolveFlowshp1) {
   EXPECT_EQ(22, Solve(DATA_DIR "flowshp1").obj);
 }
 
 // Disabled because it's too difficult to solve.
-TEST_F(GecodeTest, DISABLED_SolveFlowshp2) {
+TEST_F(GecodeDriverTest, DISABLED_SolveFlowshp2) {
   EXPECT_EQ(22, Solve(DATA_DIR "flowshp2").obj);
 }
 
-TEST_F(GecodeTest, SolveGrpassign0) {
+TEST_F(GecodeDriverTest, SolveGrpassign0) {
   EXPECT_EQ(61, Solve(DATA_DIR "grpassign0").obj);
 }
 
 // Disabled because variables in subscripts are not yet allowed.
-TEST_F(GecodeTest, DISABLED_SolveGrpassign1) {
+TEST_F(GecodeDriverTest, DISABLED_SolveGrpassign1) {
   EXPECT_EQ(61, Solve(DATA_DIR "grpassign1").obj);
 }
 
 // Disabled because object-valued variables are not yet allowed.
-TEST_F(GecodeTest, DISABLED_SolveGrpassign1a) {
+TEST_F(GecodeDriverTest, DISABLED_SolveGrpassign1a) {
   EXPECT_EQ(61, Solve(DATA_DIR "grpassign1a").obj);
 }
 
-TEST_F(GecodeTest, SolveMagic) {
+TEST_F(GecodeDriverTest, SolveMagic) {
   EXPECT_TRUE(Solve(DATA_DIR "magic").solved);
 }
 
-TEST_F(GecodeTest, SolveMapcoloring) {
+TEST_F(GecodeDriverTest, SolveMapcoloring) {
   EXPECT_TRUE(Solve(DATA_DIR "mapcoloring").solved);
 }
 
-TEST_F(GecodeTest, SolveNQueens) {
+TEST_F(GecodeDriverTest, SolveNQueens) {
   EXPECT_TRUE(Solve(DATA_DIR "nqueens").solved);
 }
 
-TEST_F(GecodeTest, SolveNQueens0) {
+TEST_F(GecodeDriverTest, SolveNQueens0) {
   EXPECT_EQ(0, Solve(DATA_DIR "nqueens0").obj);
 }
 
 // Disabled because it's too difficult to solve.
-TEST_F(GecodeTest, DISABLED_SolveParty1) {
+TEST_F(GecodeDriverTest, DISABLED_SolveParty1) {
   EXPECT_EQ(61, Solve(DATA_DIR "party1").obj);
 }
 
 // Disabled because it's too difficult to solve.
-TEST_F(GecodeTest, DISABLED_SolveParty2) {
+TEST_F(GecodeDriverTest, DISABLED_SolveParty2) {
   EXPECT_EQ(3, Solve(DATA_DIR "party2").obj);
 }
 
-TEST_F(GecodeTest, SolveSched0) {
+TEST_F(GecodeDriverTest, SolveSched0) {
   EXPECT_EQ(5, Solve(DATA_DIR "sched0").obj);
 }
 
-TEST_F(GecodeTest, SolveSched1) {
+TEST_F(GecodeDriverTest, SolveSched1) {
   EXPECT_EQ(5, Solve(DATA_DIR "sched1").obj);
 }
 
-TEST_F(GecodeTest, SolveSched2) {
+TEST_F(GecodeDriverTest, SolveSched2) {
   EXPECT_EQ(5, Solve(DATA_DIR "sched2").obj);
 }
 
-TEST_F(GecodeTest, SolveSendMoreMoney) {
+TEST_F(GecodeDriverTest, SolveSendMoreMoney) {
   EXPECT_TRUE(Solve(DATA_DIR "send-more-money").solved);
 }
 
-TEST_F(GecodeTest, SolveSendMostMoney) {
+TEST_F(GecodeDriverTest, SolveSendMostMoney) {
   EXPECT_NEAR(10876, Solve(DATA_DIR "send-most-money",
       "relativeoptimalitytolerance=1e-5").obj, 1e-5);
 }
 
-TEST_F(GecodeTest, SolveSeq0) {
+TEST_F(GecodeDriverTest, SolveSeq0) {
   EXPECT_NEAR(332, Solve(DATA_DIR "seq0").obj, 1e-5);
 }
 
-TEST_F(GecodeTest, SolveSeq0a) {
+TEST_F(GecodeDriverTest, SolveSeq0a) {
   EXPECT_NEAR(332, Solve(DATA_DIR "seq0a").obj, 1e-5);
 }
 
-TEST_F(GecodeTest, SolveSudokuHard) {
+TEST_F(GecodeDriverTest, SolveSudokuHard) {
   EXPECT_TRUE(Solve(DATA_DIR "sudokuHard").solved);
 }
 
-TEST_F(GecodeTest, SolveSudokuVeryEasy) {
+TEST_F(GecodeDriverTest, SolveSudokuVeryEasy) {
   EXPECT_TRUE(Solve(DATA_DIR "sudokuVeryEasy").solved);
 }
 
 // ----------------------------------------------------------------------------
 // Solve code tests
 
-TEST_F(GecodeTest, OptimalSolveCode) {
+TEST_F(GecodeDriverTest, OptimalSolveCode) {
   Solve(DATA_DIR "objconst");
   EXPECT_EQ(0, p.solve_code());
 }
 
-TEST_F(GecodeTest, FeasibleSolveCode) {
+TEST_F(GecodeDriverTest, FeasibleSolveCode) {
   Solve(DATA_DIR "feasible");
   EXPECT_EQ(100, p.solve_code());
 }
 
-TEST_F(GecodeTest, InfeasibleSolveCode) {
+TEST_F(GecodeDriverTest, InfeasibleSolveCode) {
   Solve(DATA_DIR "infeasible");
   EXPECT_EQ(200, p.solve_code());
 }
 
-TEST_F(GecodeTest, InfeasibleOrUnboundedSolveCode) {
+TEST_F(GecodeDriverTest, InfeasibleOrUnboundedSolveCode) {
   Solve(DATA_DIR "unbounded");
   EXPECT_EQ(201, p.solve_code());
 }*/
