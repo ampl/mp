@@ -179,6 +179,8 @@ bool Problem::Read(char **&argv, BaseOptionInfo &oi) {
   return true;
 }
 
+Driver::~Driver() {}
+
 bool Driver::ParseOptions(char **argv) {
   has_errors_ = false;
   options_.Sort();
