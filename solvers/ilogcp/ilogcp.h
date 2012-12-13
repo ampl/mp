@@ -32,9 +32,11 @@
                     /* with iloconcert/iloenv.h . */
 #include <limits.h> /* Needed for g++ -m32 on MacOSX. */
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "solvers/util/driver.h"
+#include "solvers/util/format.h"
 
 namespace ampl {
 
@@ -56,7 +58,7 @@ class Optimizer {
 
   virtual IloAlgorithm algorithm() const = 0;
 
-  virtual void get_solution(Problem &p, char *message,
+  virtual void GetSolution(Problem &p, fmt::Formatter &format_message,
       std::vector<double> &primal, std::vector<double> &dual) const = 0;
 };
 
@@ -73,7 +75,7 @@ class CPLEXOptimizer : public Optimizer {
   IloCplex cplex() const { return cplex_; }
   IloAlgorithm algorithm() const { return cplex_; }
 
-  void get_solution(Problem &p, char *message,
+  void GetSolution(Problem &p, fmt::Formatter &format_message,
       std::vector<double> &primal, std::vector<double> &dual) const;
 };
 
@@ -89,7 +91,7 @@ class CPOptimizer : public Optimizer {
   IloSolver solver() const { return solver_; }
   IloAlgorithm algorithm() const { return solver_; }
 
-  void get_solution(Problem &p, char *message,
+  void GetSolution(Problem &p, fmt::Formatter &format_message,
       std::vector<double> &primal, std::vector<double> &dual) const;
 };
 
@@ -104,7 +106,8 @@ class IlogCPDriver : public Driver, public Visitor {
   IloModel mod_;
   IloNumVarArray vars_;
   std::auto_ptr<Optimizer> optimizer_;
-  std::vector<char> version_;
+  std::string version_;
+  std::string solver_name_;
   OptionInfo<IlogCPDriver> oinfo_;
   bool gotopttype_;
   bool debug_;

@@ -21,4 +21,5 @@
  */
 
 #include "expr.cc"
+#include "format.cc"
 #include "driver.cc"

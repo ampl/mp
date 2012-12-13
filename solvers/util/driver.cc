@@ -26,6 +26,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "solvers/util/format.h"
 #include "solvers/getstub.h"
 
 namespace {
@@ -176,22 +177,6 @@ bool Problem::Read(char **&argv, BaseOptionInfo &oi) {
   fg_read_ASL(asl, nl, ASL_allow_CLP);
   asl_->I.r_ops_ = 0;
   return true;
-}
-
-void Driver::ReportError(const char *format, ...) {
-  has_errors_ = true;
-  std::vector<char> message(500);
-  std::va_list args;
-  for (;;) {
-    va_start(args, format);
-    int n = vsnprintf(&message[0], message.size(), format, args);
-    va_end(args);
-    if (n >= 0 && static_cast<unsigned>(n) < message.size())
-      break;
-    message.resize(n >= 0 ? n + 1 : 2 * message.size());
-  }
-  std::fputs(&message[0], stderr);
-  std::fputc('\n', stderr);
 }
 
 bool Driver::ParseOptions(char **argv) {
