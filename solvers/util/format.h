@@ -318,15 +318,12 @@ class ArgInserter {
  protected:
   explicit ArgInserter(Formatter *f = 0) : formatter_(f) {}
 
-  ArgInserter(ArgInserter& other)
+  ArgInserter(const ArgInserter& other)
   : formatter_(other.formatter_) {
     other.formatter_ = 0;
   }
 
-  // Do not implement.
-  void operator=(const ArgInserter& other);
-
-  void TransferFormatter(const ArgInserter& other) {
+  void operator=(const ArgInserter& other) {
     formatter_ = other.formatter_;
     other.formatter_ = 0;
   }
@@ -408,8 +405,7 @@ class ActiveFormatter : public internal::ArgInserter {
   // for examples of action classes.
   explicit ActiveFormatter(const char *format, Action a = Action())
   : action_(a) {
-    const internal::ArgInserter &af = formatter_(format);
-    TransferFormatter(af);
+    ArgInserter::operator=(formatter_(format));
   }
 
   // Creates an active formatter with the same format string and action
@@ -419,8 +415,7 @@ class ActiveFormatter : public internal::ArgInserter {
   // are provided.
   ActiveFormatter(ActiveFormatter &other)
   : ArgInserter(0), action_(other.action_) {
-    const internal::ArgInserter &af = formatter_(other.format());
-    TransferFormatter(af);
+    ArgInserter::operator=(formatter_(other.format()));
     other.ResetFormatter();
   }
 
