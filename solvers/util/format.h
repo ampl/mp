@@ -303,6 +303,9 @@ class Formatter {
   std::string str() const { return std::string(&buffer_[0], buffer_.size()); }
 };
 
+template <typename Action>
+class ActiveFormatter;
+
 namespace internal {
 
 // This is a transient object that normally exists only as a temporary
@@ -314,6 +317,9 @@ class ArgInserter {
   mutable Formatter *formatter_;
 
   friend class format::Formatter;
+
+  template <typename Action>
+  friend class ActiveFormatter;
 
  protected:
   explicit ArgInserter(Formatter *f = 0) : formatter_(f) {}
