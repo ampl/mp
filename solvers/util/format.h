@@ -408,7 +408,8 @@ class ActiveFormatter : public internal::ArgInserter {
   // for examples of action classes.
   explicit ActiveFormatter(const char *format, Action a = Action())
   : action_(a) {
-    TransferFormatter(formatter_(format));
+    const internal::ArgInserter &af = formatter_(format);
+    TransferFormatter(af);
   }
 
   // Creates an active formatter with the same format string and action
@@ -418,7 +419,8 @@ class ActiveFormatter : public internal::ArgInserter {
   // are provided.
   ActiveFormatter(ActiveFormatter &other)
   : ArgInserter(0), action_(other.action_) {
-    TransferFormatter(formatter_(other.format()));
+    const internal::ArgInserter &af = formatter_(other.format());
+    TransferFormatter(af);
     other.ResetFormatter();
   }
 
