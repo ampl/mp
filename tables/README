@@ -102,16 +102,65 @@ functions: the first name wins.  With no libname arguments, "load;"
 loads all the libraries currently in $AMPLFUNC; "unload;" unloads
 all currently loaded libraries, and "reload;" reloads them (which
 might be useful if some have been recompiled).
+
+To simplify using 32- and 64-bit versions of AMPL and solvers on the
+same system, if the "load" does not find the specified library and its
+name contains at least one period ("."), a 64-bit AMPL will will
+change "_32" before the final period to "_64" or, if "_64" does not
+appear there, will insert "_64" before the final period and in either
+case will try to load the modified library name.  A 32-bit AMPL
+operates similarly, but with _32 and _64 interchanged.  Solvers make
+similar modifications.  This applies only to AMPL versions >= 20120126
+and to solvers linked with versions >= 20120126 of the solver-
+interface library.  A command-line invocation of a solver with just
+"-v" for an argument should show ASL(yyyymmdd), where yyyymmdd is the
+version of the solver-interface library.  For example, invoking
+
+	knitro -v
+
+might show
+
+	AMPL/KNITRO 8.1.0 (Linux x86_32), driver(20121124), ASL(20121116)
+
+which indicates use of version 20121116 of the solver-interface library.
+
   New and adjusted system sets:
-	_LIB = currently loaded libraries;
+
+	_LIBS = currently loaded libraries;
 	_AVAILFUNCS = currently available imported functions
-			(which still must be declared before use)
+			(which still must be declared before use);
 	_AVAILFUNC2 = (available function, library) pairs
 			(permits seeing which library is currently
-			supplying an available imported function)
+			supplying an available imported function);
+	_HANDLERS = currently available handlers;
 	_SFUNCS = imported functions that "solve;" currently uses.
+
+  New system symbolic parameter:
+
+	_handler_desc{_HANDLERS}
+		For each i in _HANDLERS, _handler_desc[i] is a description
+		of the handler.
   Command
 	remove [filename [, filename ...]];
 closes and removes the files mentioned.  "remove;" does nothing.
 Exception: "remove ($log_file);" just truncates (removes and
 then reopens) $log_file, much as "close ($log_file);" does.
+
+For example,
+
+	display _HANDLERS;
+
+might report
+
+	set _HANDLERS := tab bit odbc tableproxy simple-bit;
+
+
+in which case
+
+	print _handler_desc['odbc'];
+
+would tell about the odbc handler and
+
+	print _handler_desc['tableproxy'];
+
+would tell about the tableproxy handler.

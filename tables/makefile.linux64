@@ -1,4 +1,4 @@
-# Makefile for 32-bit binaries and shared libraries on Linux systems
+# Makefile for 64-bit binaries and shared libraries on Linux systems
 
 ## ampltabl.dll is for table handlers to be imported
 ## automatically at the start of AMPL's execution.
@@ -11,38 +11,38 @@
 # $S = ampl/solvers directory
 S = ../solvers
 
-CC = cc -m32
+CC = cc -m64
 CFLAGS = -I$S -O2 -fPIC
 .c.o:
 	$(CC) -c $(CFLAGS) $*.c
 
-all: simpbit.dll fullbit.dll ampltabl.dll tableproxy32
+all: simpbit_64.dll fullbit_64.dll ampltabl_64.dll tableproxy64
 
 
-simpbit.dll: simpbit.o
-	$(CC) -shared -o simpbit.dll simpbit.o
+simpbit_64.dll: simpbit.o
+	$(CC) -shared -o simpbit_64.dll simpbit.o
 
-fullbit.dll: fullbit.o
-	$(CC) -shared -o fullbit.dll fullbit.o
+fullbit_64.dll: fullbit.o
+	$(CC) -shared -o fullbit_64.dll fullbit.o
 
-ampltabl.dll: tableproxy.c tableproxyver.h amplodbc.c
+ampltabl_64.dll: tableproxy.c tableproxyver.h amplodbc.c
 	$(CC) -c $(CFLAGS) -I$S -DOTHER_FUNCADD=funcaddodbc_ASL tableproxy.c
 	$(CC) -c $(CFLAGS) -Dfuncadd_ASL=funcaddodbc_ASL amplodbc.c
-	$(CC) $(CFLAGS) -I$S -shared -o ampltabl.dll tableproxy.o amplodbc.o -lodbc
+	$(CC) $(CFLAGS) -I$S -shared -o ampltabl_64.dll tableproxy.o amplodbc.o -lodbc
 
-tableproxy.dll: tableproxy.c tableproxyver.h
-	$(CC) $(CFLAGS) -I$S -shared -o tableproxy.dll tableproxy.c
+tableproxy_64.dll: tableproxy.c tableproxyver.h
+	$(CC) $(CFLAGS) -I$S -shared -o tableproxy_64.dll tableproxy.c
 
-tableproxy32: tableproxy.c $S/printf.o tableproxyver.h
+tableproxy64: tableproxy.c $S/printf.o tableproxyver.h
 	$(CC) -c $(CFLAGS) -DQUOTIFY -o printf.o $S/printf.c
-	$(CC) $(CFLAGS) -I$S -DSTAND_ALONE -Dsoclen_t=int -o tableproxy32 tableproxy.c printf.o $S/amplsolver.a -ldl
+	$(CC) $(CFLAGS) -I$S -DSTAND_ALONE -Dsoclen_t=int -o tableproxy64 tableproxy.c printf.o $S/amplsolver.a -ldl
 	rm printf.o
 
 ## Under some versions of Linux, the search path
 ## for *.dll files is affected by $LD_LIBRARY_PATH.
 
 clean:
-	rm -f *.o *.dll tableproxy32
+	rm -f *.o *.dll tableproxy64
 
 # make xsum.out to check for transmission errors.
 # This assumes you have the xsum program, whose source

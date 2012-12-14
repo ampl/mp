@@ -1,4 +1,5 @@
-20121116
-  nqpcheck.c: take asl->i.nsufext[ASL_Sufkind_var] into account.
-(This value is set to a positive value, e.g., by the Gurobi driver
-on problems that have range constraints.)
+20121212
+  fpinit.c and comments in makefile.u:  make treatment of Solaris on
+Intel (i386 or x86_64) self-contained.  When Intel 8087
+extended-precision registers might be used, fpinit() tries to set the
+rounding precision to 53 bits, to remove a source of confusion.
