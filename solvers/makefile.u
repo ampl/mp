@@ -71,7 +71,8 @@ SHELL=/bin/sh
 # For Solaris on the i386 architecture, add fpsetprec.s to the "a ="
 # assignment below.  For compilation with Sun's cc and -xarch=generic64
 # or -xarch=amd64, add fpsetprec64.s rather than fpsetprec.s to the "a ="
-# assignment.
+# assignment.  If you use gcc (try "cc --version" to see if cc is really gcc),
+# no changes to the "a =" assignment are needed.
 
 # For cygwin, change a.out to a.exe in the rule below for arith.h, and use
 # CC = gcc

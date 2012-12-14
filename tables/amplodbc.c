@@ -22,25 +22,38 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
- static char Version[] = "\n@(#) AMPL ODBC driver, version 20120315.\n";
+ static char Version[] = "\n@(#) AMPL ODBC driver, version 20121212.\n";
 
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
 #include <sql.h>
 #include <sqlext.h>
+
+#include <assert.h>
+#include <ctype.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include "arith.h"	/* for LONG_LONG_POINTERS */
 #include "funcadd.h"
 
+#ifdef _WIN32
 #ifndef _WIN64
 #ifndef SQLLEN
 #define SQLLEN SQLINTEGER
+#endif
 #endif
 #endif
 
 #ifndef SQL_NO_DATA
 #define SQL_NO_DATA SQL_NO_DATA_FOUND	/* VC++ 4 */
 #endif
+
+#define UNUSED(x) ((void)(1 ? 0 : (x)))
 
 static unsigned char tolc[256];	/* for converting to lower case */
 
@@ -86,6 +99,7 @@ HInfo {
 	char	*Missing;
 	real	*dd;
 	UnknownType *ut;
+	SQLCHAR quote; /* A quote character for identifiers. */
 	} HInfo;
 
  enum { /* for wrmode */ wr_drop=0, wr_append=1 };
@@ -116,7 +130,7 @@ prc(HInfo *h, char *who, int i)
 		size_t hoff;
 		} HandleStuff;
 	AmplExports *ae;
-	SDWORD native_errno;
+	SQLINTEGER native_errno;
 	SQLSMALLINT errmsglen;
 	SWORD emlen;
 	UCHAR *errmsg, errmsg0[SQL_MAX_MESSAGE_LENGTH], sqlstate[64];
@@ -185,8 +199,9 @@ prc(HInfo *h, char *who, int i)
 	goto done;
  use_SQLError:
 #endif
-	if ((i = SQLError(h->env, h->hc, h->hs, sqlstate, &native_errno,
-			errmsg, sizeof(errmsg), &emlen)) != SQL_SUCCESS)
+	i = SQLError(h->env, h->hc, h->hs, sqlstate, &native_errno,
+		errmsg, sizeof(errmsg0), &emlen);
+	if (i != SQL_SUCCESS && i != SQL_SUCCESS_WITH_INFO)
 		printf("SQLError returned %d\n", i);
 	else {
 		printf("sqlstate = \"%s\"\n", sqlstate);
@@ -203,8 +218,8 @@ prc(HInfo *h, char *who, int i)
 prcnr(HInfo *h, char *who, int i)	/* variant for SQLGetNumResultCols */
 {
 	AmplExports *ae;
+	SQLINTEGER native_errno;
 	SWORD emlen;
-	SDWORD native_errno;
 	UCHAR errmsg[SQL_MAX_MESSAGE_LENGTH], sqlstate[64];
 	int j, rv;
 
@@ -326,7 +341,7 @@ mfree(void *v) { free(v); }
  static DRV_desc*
 get_ds0(HInfo *h)
 {
-	/* Return pointer to first DRV_desc -- geneate list first time. */
+	/* Return pointer to first DRV_desc -- generate list first time. */
 
 	AmplExports *ae = h->AE;
 	DRV_desc *ds, **ds1, **dsp, *dsx;
@@ -418,6 +433,7 @@ get_ds0(HInfo *h)
  static int
 dr_cmp(const void *a, const void *b, void *v)
 {
+	UNUSED(v);
 	return strcmp((char*)(*(DRV_desc**)a)->driver, (char*)(*(DRV_desc**)b)->driver);
 	}
 
@@ -526,7 +542,7 @@ copy(char *a, char *b)
  static int
 dsncompar(const void *a, const void *b, void *v)
 {
-	v = v; /* not used */
+	UNUSED(v);
 	return strcmp((char*)(*(DRV_desc**)a)->ext,
 		(char*)(*(DRV_desc**)b)->ext);
 	}
@@ -614,9 +630,10 @@ ODBC_check(AmplExports *AE, TableInfo *TI, HInfo *h)
 		return DB_Refuse;
 	if (i < 2 || i > 5) {
 		TI->Errmsg =
-		  "AMPL ODBC handler: expected 2-8 strings before \":[...]\":\n\
-  'ODBC', connection_spec [ext_name] [optional_strings]\n\n"
-	"For more details, use the AMPL command\n\n\tprint _handler_desc['odbc'];";
+			"AMPL ODBC handler: expected 2-8 strings before \":[...]\":\n"
+			"  'ODBC', connection_spec [ext_name] [optional_strings]\n\n"
+			"For more details, use the AMPL command\n\n"
+			"\tprint _handler_desc['odbc'];";
 		return DB_Error;
 		}
 	memset(h, 0, sizeof(HInfo));
@@ -682,6 +699,7 @@ strcmpv(const void *a, const void *b, void *v)
 {
 	int i, j;
 	const char *s, *t;
+	UNUSED(v);
 	s = (const char*)a;
 	t = (const char*)b;
 	for(;;) {
@@ -986,12 +1004,22 @@ fully_qualify(char *dsname, char *buf, size_t len)
 	if (((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) && dsname[1] == ':')
 		return dsname;
 	Ldsn = strlen(dsname);
-	if (!(n = GetCurrentDirectory(len, buf)) || n + Ldsn + 1 >= len)
+	if (!getcwd(buf, len))
+		return dsname;
+	n = strlen(buf);
+	if (n + Ldsn + 1 >= len)
 		return dsname;
 	buf[n++] = '\\';
 	strcpy(buf+n, dsname);
 	return buf;
 	}
+
+ static struct {
+	HWND hw;
+	int score;
+	} winfo;
+
+#ifdef _WIN32
 
  static char *wprocnames[] = {
 	"start menu",
@@ -1001,11 +1029,6 @@ fully_qualify(char *dsname, char *buf, size_t len)
 	"command prompt",
 	"sw:",
 	0};
-
- static struct {
-	HWND hw;
-	int score;
-	} winfo;
 
  static int
 match1(char *s, char *t)
@@ -1081,8 +1104,10 @@ hw_get(AmplExports *ae)
 		}
 	}
 
+#endif /* _WIN32 */
+
  static void
-colname_adjust(AmplExports *ae, HInfo *h, TableInfo *TI)
+colname_adjust(HInfo *h, TableInfo *TI)
 {
 	/* adjust names in TI->colnames of the form */
 	/* Time:xyz, Mixed:xyz, or Strcol:xyz to xyz . */
@@ -1117,6 +1142,74 @@ colname_adjust(AmplExports *ae, HInfo *h, TableInfo *TI)
 	h->ntimes = nt;
 	}
 
+/* Checks an SQL identifier and returns 1 if the identifier is valid.
+ * If the identifier is invalid this function return 0 and sets h->TI->Errmsg.
+ * col_index: column index if id is a column name, -1 if it is a table name */
+ static int
+check_sql_identifier(HInfo *h, const char *id, int col_index)
+{
+	AmplExports *ae = h->AE;
+	TableInfo *TI = h->TI;
+	const char *s = id;
+	if (col_index >= 0 && !*s) {
+		int length = 100;
+		snprintf(TI->Errmsg = TM(length), length,
+			"Column %d's name is the empty string.", col_index + 1);
+		return 0;
+	}
+	for (; *s; ++s) {
+		int c = (unsigned char)*s;
+		if (!isprint(c)) {
+			int length = 200;
+			if (col_index >= 0) {
+				snprintf(TI->Errmsg = TM(length), length,
+					"Column %d's name contains invalid character with code %d",
+					col_index + 1, c);
+			} else {
+				snprintf(TI->Errmsg = TM(length), length,
+					"Table name contains invalid character with code %d", c);
+			}
+			return 0;
+		}
+	}
+	return 1;
+}
+
+/* Quotes an SQL identifier. */
+ static char*
+quote_sql_identifier(HInfo *h, const char *id)
+{
+	AmplExports *ae = h->AE;
+	TableInfo *TI = h->TI;
+	char quote = h->quote;
+	int num_quotes = 0;
+	size_t quoted_length = 0;
+	char *quoted_id = 0;
+	const char *from = 0;
+	char *to = 0;
+
+	for (from = id; *from; ++from) {
+		if (*from == quote)
+			++num_quotes;
+	}
+
+	/* Quote the identifier. */
+	quoted_length = strlen(id) + num_quotes + 2;
+	to = quoted_id = TM(quoted_length + 1);
+	*to++ = quote;
+	for (from = id; *from; ++from) {
+		char c = *from;
+		assert(to - quoted_id < (ptrdiff_t)(quoted_length - 1));
+		if (c == quote)
+			*to++ = c;
+		*to++ = c;
+	}
+	assert(to - quoted_id == (ptrdiff_t)(quoted_length - 1));
+	*to++ = quote;
+	*to = '\0';
+	return quoted_id;
+}
+
  static char*
 Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 {
@@ -1130,22 +1223,13 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 	int i, j, nstr, verbose, wantretry;
 	real t;
 	unsigned int ui;
+	int dsn = 0;
 
 	*dsp = 0;
 	h->env = SQL_NULL_HENV;
 	h->hc = SQL_NULL_HDBC;
 	h->hs = SQL_NULL_HSTMT;
-	if (SQLAllocEnv(&h->env) != SQL_SUCCESS) {
-		TI->Errmsg = "SQLAllocEnv failed!";
- eret:
-		*rc = DB_Error;
-		return 0;
-		}
-	if (prc(h, "SQLAllocConnect", SQLAllocConnect(h->env,&h->hc))) {
- unexpected:
-		TI->Errmsg = "Unexpected ODBC failure.";
-		goto eret;
-		}
+
 	strs = TI->strings;
 	dsname = dsname0 = strs[1];
 	tname = 0;
@@ -1281,13 +1365,47 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 	wantretry = 1;
 	h->sqldb = verbose & 2;
 	h->verbose = verbose &= 1;
+
+	/* Check the table and column names. */
+	{
+		int num_cols = TI->arity + TI->ncols;
+		if (!check_sql_identifier(h, tname, -1))
+			goto eret;
+		for (i = 0; i < num_cols; ++i) {
+			if (!check_sql_identifier(h, TI->colnames[i], i))
+				goto eret;
+		}
+	}
+
+	if (SQLAllocEnv(&h->env) != SQL_SUCCESS) {
+		TI->Errmsg = "SQLAllocEnv failed!";
+ eret:
+		*rc = DB_Error;
+		return 0;
+		}
+	if (prc(h, "SQLAllocConnect", SQLAllocConnect(h->env, &h->hc))) {
+ unexpected:
+		TI->Errmsg = "Unexpected ODBC failure.";
+		goto eret;
+		}
+
+#ifdef _WIN32
 	if (!winfo.score)
 		hw_get(ae);
-	if (match("DSN=", UC dsname, UC dsname+4)
+#endif
+	if ((dsn = match("DSN=", UC dsname, UC dsname+4))
 	 || match("DRIVER=",UC dsname, UC dsname+7)) {
+		SQLUSMALLINT completion;
  try_dsname:
-		i = SQLDriverConnect(h->hc, winfo.hw, UC dsname, SQL_NTS, cs, sizeof(cs),
-			&cs_len, SQL_DRIVER_COMPLETE);
+		completion = SQL_DRIVER_COMPLETE;
+#ifndef _WIN32
+		/* Don't try to show prompt on systems other than Windows because it
+		 * will fail anyway because of invalid hwnd. */
+		if (!dsn)
+			completion = SQL_DRIVER_NOPROMPT;
+#endif
+		i = SQLDriverConnect(h->hc, winfo.hw, UC dsname, SQL_NTS, cs,
+				sizeof(cs), &cs_len, completion);
 		if ((i == SQL_SUCCESS
 		 ||  i == SQL_SUCCESS_WITH_INFO) && !(*dsp = conn_ds(h, cs))) {
 			sprintf(TI->Errmsg = (char*)TM(strlen(CC cs) + 64),
@@ -1376,6 +1494,15 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 		goto eret;
 		}
  connected:
+	{
+		/* Quote the table name. */
+		SQLCHAR quote[2] = "\"";
+		SQLSMALLINT length = 0;
+		prc(h, "SQLGetInfo", SQLGetInfo(h->hc, SQL_IDENTIFIER_QUOTE_CHAR,
+				quote, sizeof(quote) / sizeof(*quote), &length));
+		h->quote = quote[0];
+		tname = quote_sql_identifier(h, tname);
+	}
 	if (prc(h, "SQLAllocStmt", SQLAllocStmt(h->hc,&h->hs)))
 		goto unexpected;
 	if (verbose && cs[0])
@@ -1529,7 +1656,7 @@ askusing(AmplExports *ae, TableInfo *TI, char *what, char *tname)
 {
 	char *s = TI->strings[1];
 	sprintf(TI->Errmsg = (char*)TM(strlen(s) + strlen(tname) + 64),
-		"%s %s failed.\n\tIs another application using %s?",
+		"%s %s failed.\n\tIs another application using \"%s\"?",
 		what, tname, s);
 	}
 
@@ -1608,7 +1735,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	TIMESTAMP_STRUCT *ts, *ts0, *ts1, **tsp, ***tsq;
 	UWORD u;
 	char *Missing;
-	char buf[32], **cn, *ct, *dt, *it, *s, **sb, **sp, **spe, *tname;
+	char buf[32], *ct, *dt, *it, *s, **sb, **sp, **spe, *tname;
 	double *rb;
 	int deltry, i, i1, j, k, nc, nodrop, ntlen, nts, rc;
 	int *slen, *sw;
@@ -1622,43 +1749,20 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 #define p(x) p_[x]
 #define pi(x) pi_[x]
 #endif
-	static char anum[256];
+	char **quoted_colnames = 0;
 
 	if ((i = ODBC_check(ae, TI, &h)))
 		return i;
 	rc = DB_Error;
-	nc = TI->arity + TI->ncols;
-	cn = TI->colnames;
 
-	/* check validity of column names */
-
-	colname_adjust(ae, &h, TI);
-	if (!anum['a']) {
-		s = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
-		do anum[(int)*s++] = 1; while(*s);
-		}
-	for(i = 0; i++ < nc; cn++) {
-		s = *cn;
-		if (!*s) {
-			sprintf(TI->Errmsg = (char*)TM(strlen(*cn) + 60),
-				"Column %d's name is the empty string.", i);
-			return rc;
-			}
-		while(anum[(int)*s])
-			s++;
-		if (*s) {
-			sprintf(TI->Errmsg = (char*)TM(strlen(*cn) + 80),
-	"Column %d's name \"%s\" contains non-alphanumeric character '%c'.",
-				i, *cn, *s);
-			return rc;
-			}
-		}
+	colname_adjust(&h, TI);
 
 	if (!(tname = Connect(&h, &ds, &rc, 0))
 	 || (!ds->ntype && get_types(ds, &h))) {
 		cleanup(&h);
 		return rc;
 		}
+
 	sw = 0;
 	tsq = 0;
 #ifndef NO_Adjust_ampl_odbc
@@ -1668,8 +1772,12 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 			goto done;
 			}
 		}
-	nc = TI->arity + TI->ncols;
 #endif
+	nc = TI->arity + TI->ncols;
+	quoted_colnames = TM(nc * sizeof(*quoted_colnames));
+	for (i = 0; i < nc; ++i)
+		quoted_colnames[i] = quote_sql_identifier(&h, TI->colnames[i]);
+
 	Missing = TI->Missing;
 	hs = h.hs;
 	ntlen = strlen(ds->ntype);
@@ -1678,7 +1786,6 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	slen = (int*)TM(nc*sizeof(int));
 	db0 = TI->cols;
 	sblen = 0;
-	cn = TI->colnames;
 	nts = 0;
 	for(i1 = 0; i1 < nc; i1++) {
 		i = p(i1);
@@ -1708,7 +1815,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 		else
 			L += ntlen;
 		slen[i] = k;
-		L += strlen(*cn++) + 5;
+		L += strlen(quoted_colnames[i1]) + 5;
 		}
 	if (nts)
 		L += nts*strlen(ds->ttype);
@@ -1719,11 +1826,11 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 			+ nts*sizeof(TIMESTAMP_STRUCT) + sblen);
 	ts = ts0 = (TIMESTAMP_STRUCT*)(rb + nc);
 	sb = (char**)(ts + nts);
-	cn = TI->colnames;
 	if (nodrop) {
-		j = sprintf(it = ct, "INSERT INTO %s (\"%s\"" /*)*/, tname, cn[0]);
+		j = sprintf(it = ct, "INSERT INTO %s (%s" /*)*/,
+				tname, quoted_colnames[0]);
 		for(i = 1; i < nc; ++i)
-			j += sprintf(it+j, ", \"%s\"", cn[i]);
+			j += sprintf(it+j, ", %s", quoted_colnames[i]);
 		j += /*(*/ sprintf(it+j, ") VALUES (?"); /*)*/
 		goto finish_insprep;
 		}
@@ -1731,7 +1838,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	for(i1 = 0; i1 < nc; i1++) {
 		i = p(i1);
 		db = db0 + i;
-		j += sprintf(ct+j, "%s\"%s\" ", i1 ? ", " : "", cn[i]);
+		j += sprintf(ct+j, "%s%s ", i1 ? ", " : "", quoted_colnames[i]);
 		if (tsq && tsq[i])
 			j += sprintf(ct+j, "%s", ds->ttype);
 		else if (db->sval)
@@ -1773,7 +1880,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 				goto done;
 				}
 			}
-		else  {
+		else {
 			if (h.verbose)
 				prc(&h, dt, i);
 			askusing(ae, TI, "DROP TABLE", tname);
@@ -1900,7 +2007,7 @@ permute(int nf, int nt, int *p, char **namf, int *zf, DBColinfo *dbc, int *zt)
 	}
 
  static int
-needprec(HInfo *h, DBColinfo *dbc)
+needprec(HInfo *h, DBColinfo *dbc, int col_index)
 {
 	AmplExports *ae;
 	HSTMT hs;
@@ -1940,26 +2047,44 @@ needprec(HInfo *h, DBColinfo *dbc)
 	sbuf[0] = 0;
 	i = prc(h, "SQLGetTypeInfo in needprec", SQLGetTypeInfo(hs, (SQLSMALLINT)t))
 	 || prc(h, "SQLBindCol_3",
-			SQLBindCol(hs, (UWORD)5, SQL_C_CHAR, sbuf, sizeof(sbuf), &len))
-	 || prc(h, "SQLFetch in needprec()", SQLFetch(hs));
+			SQLBindCol(hs, (UWORD)5, SQL_C_CHAR, sbuf, sizeof(sbuf), &len));
+	if (!i) {
+		i = SQLFetch(hs);
+		/* SQLFetch after SQLGetTypeInfo returns no data for some MySQL
+		   types. */
+		if (i != SQL_SUCCESS && i != SQL_NO_DATA)
+			prc(h, "SQLFetch in needprec()", i);
+	}
 	prc(h, "SQLFreeStmt", SQLFreeStmt(hs, SQL_DROP));
-	if (i)
+	if (i == SQL_NO_DATA) {
+		SQLSMALLINT length = 0;
+		/* Fall back to checking column type name if there is no type info. */
+		if (prc(hs, "SQLColAttributes(SQL_COLUMN_TYPE_NAME)",
+				SQLColAttributes(h->hs, (SQLUSMALLINT)col_index,
+						SQL_COLUMN_TYPE_NAME, sbuf,
+						(SWORD)sizeof(sbuf), &length, 0))) {
+			return 0;
+		}
+		if (strcmp(sbuf, "varchar") == 0)
+			i = 1;
+	} else if (!i) {
+		switch(sbuf[0]) {
+			case 0:
+				i = 0;
+				break;
+			case '#':
+				i = 2;
+				break;
+			default:
+				i = 1;
+			}
+	} else
 		return 0;
 	ae = h->AE;
 	TI = h->TI;
 	ut = *utp = (UnknownType*)TM(sizeof(UnknownType));
 	ut->next = 0;
 	ut->type = t;
-	switch(sbuf[0]) {
-		case 0:
-			i = 0;
-			break;
-		case '#':
-			i = 2;
-			break;
-		default:
-			i = 1;
-		}
 	ut->mytype = i;
  found:
 	return (dbc->mytype = ut->mytype) == 1;
@@ -1989,7 +2114,7 @@ Mem(HInfo *h, size_t L)
 scrunch(HInfo *h, char *s, real *d, int mix)
 {
 	AmplExports *ae;
-	char buf[32], *t;
+	char *t;
 
 	for(t = s; *t; t++);
 	while(t > s && *--t == ' ');
@@ -2036,7 +2161,7 @@ select_stmt(AmplExports *ae, TableInfo *TI, char *tname, size_t L)
 	s += sprintf(s, "SELECT \"%s\"", *cn);
 	while(++cn < cne)
 		s += sprintf(s, ", \"%s\"", *cn);
-	sprintf(s, " FROM \"%s\"", tname);
+	sprintf(s, " FROM %s", tname);
 	return rv;
 	}
 #endif /* SELECT_JUST_DESIRED_COLUMNS */
@@ -2062,7 +2187,10 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 	UWORD u;
 	char **cd, *dsn, nbuf[512], *s, *sbuf, *tname;
 	double *dd, t;
-	int a, *ct, dbq, i, j, k, mix, nc, nf, nk[4], nt, *p, *z, *zt;
+	int *ct, dbq, i, j, k, mix, nk[4], nt, *p, *z, *zt;
+	int a = TI->arity;	/* number of indexing columns */
+	int nc = TI->ncols;	/* number of data columns desired */
+	int nf = a + nc;	/* total number of columns of interest */
 	size_t L;
 	typedef struct NameType { const char *name; int type; } NameType;
 	NameType *ntp;
@@ -2091,7 +2219,7 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 		return DB_Error;
 
 	sbuf = 0;
-	colname_adjust(ae, &h, TI);
+	colname_adjust(&h, TI);
 	if (!(tname = Connect(&h, &ds, &i, &sbuf))) {
 		cleanup(&h);
 		return i;
@@ -2107,12 +2235,12 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 		 ||  i == SQL_SUCCESS_WITH_INFO)
 			goto select_worked;
 #endif
-		sprintf(sbuf = (char*)TM(L + 32), "SELECT ALL * FROM \"%s\"", tname);
+		sprintf(sbuf = (char*)TM(L + 32), "SELECT ALL * FROM %s", tname);
 		}
 	if (prc(&h, "SQLPrepare", SQLPrepare(hs = h.hs, UC sbuf, SQL_NTS))) {
 		if (s) {
 			sprintf(TI->Errmsg = (char*)TM(L + 32),
-				"\"%s\" did not work.", tname);
+				"%s did not work.", tname);
 			goto bailout;
 			}
  badret:
@@ -2129,9 +2257,6 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 		goto bailout;
 		}
 	dbc0 = dbc = (DBColinfo *)TM(ncols*sizeof(DBColinfo));
-	a = TI->arity;	/* number of indexing columns */
-	nc = TI->ncols;	/* number of data columns desired */
-	nf = a + nc;	/* total number of columns of interest */
 	i = nt = ncols;	/* columns in the database table */
 	if (i < nf)
 		i = nf;	/* we'll complain about a specific missing column */
@@ -2183,7 +2308,7 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 		if (prc(&h, "SQLColAttributes(TYPE)",
 		 SQLColAttributes(hs, u, SQL_COLUMN_TYPE, 0, 0, 0, &dbc->type)))
 			goto badret;
-		if (needprec(&h,dbc)) {
+		if (needprec(&h, dbc, u)) {
 			if (prc(&h, "SQLColAttributes(DISPLAY_SIZE)",
 			 SQLColAttributes(hs, u, SQL_COLUMN_DISPLAY_SIZE,
 				0,0,0, &dbc->prec)))
@@ -2519,19 +2644,19 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 	PTR ptr;
 	SWORD len, ncols;
 	TIMESTAMP_STRUCT *td, *ts, **tsp, ***tsq, **tsx;
-	TableInfo *TI;
+	TableInfo *TI = h->TI;
 	UWORD u;
 	char *Missing, buf[512], **cd, *cs, dbuf[32], *s, *seen, **sa, **sp;
 	double *dd, t;
-	int a, i, i1, j, k, kfn, mix, n, nc, nf, *nfn, nk[4], nn;
+	int a = TI->arity, i, i1, j, k, kfn, mix, n, nc, *nfn, nk[4], nn;
+	int nf = a + TI->ncols;
 	int nnt, nt, nt0, nt1, ntimes, nts, rc, wantsv;
-	int *cc, *ct, *p, *p_, *pi, *sw, *zf, *zt;
+	int *cc, *ct = h->coltypes, *p, *p_, *pi, *sw, *zf, *zt;
 	long m, maxrows, nrows, nrows0, nseen;
 	real *ra, *ra0;
 	size_t L, Lt;
 
 	ae = h->AE;
-	TI = h->TI;
 	*deltry = 0;
 	ntimes = h->ntimes;
 	h->totbadtimes = nn = rc = 0;
@@ -2571,7 +2696,7 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 		if (prc(h, "SQLColAttributes(TYPE)",
 		 SQLColAttributes(hs, (UWORD)i, SQL_COLUMN_TYPE, 0, 0, 0, &dbc->type)))
 			goto badret;
-		if (needprec(h,dbc)) {
+		if (needprec(h, dbc, i)) {
 			if (prc(h, "SQLColAttributes(DISPLAY_SIZE)",
 			 SQLColAttributes(hs, (UWORD)i, SQL_COLUMN_DISPLAY_SIZE,
 				0,0,0, &dbc->prec)))
@@ -2588,8 +2713,6 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 			}
 		}
 	dbce = dbc;
-	a = TI->arity;
-	nf = a + TI->ncols;
 	zf = (int*)TM((nf+2*nt+nk[1])*sizeof(int));
 	zt = zf + nf;
 	p = zt + nt;
@@ -2710,7 +2833,6 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 	nrows = nrows0 = TI->nrows;
 	Missing = TI->Missing;
 	nc = nf + nn;
-	ct = h->coltypes;
 	if (ntimes) {
 		tsx = (TIMESTAMP_STRUCT **)TM(nc*sizeof(TIMESTAMP_STRUCT*));
 		memset(tsx, 0, nc*sizeof(TIMESTAMP_STRUCT**));
