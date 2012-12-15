@@ -1,4 +1,4 @@
-# Makefile for 64-bit binaries and shared libraries on Linux systems
+# Makefile for 64-bit binaries and shared libraries on Intel MacOSX systems
 
 ## ampltabl.dll is for table handlers to be imported
 ## automatically at the start of AMPL's execution.
@@ -28,7 +28,7 @@ fullbit_64.dll: fullbit.o
 ampltabl_64.dll: tableproxy.c tableproxyver.h amplodbc.c
 	$(CC) -c $(CFLAGS) -I$S -DOTHER_FUNCADD=funcaddodbc_ASL tableproxy.c
 	$(CC) -c $(CFLAGS) -Dfuncadd_ASL=funcaddodbc_ASL amplodbc.c
-	$(CC) $(CFLAGS) -I$S -shared -o ampltabl_64.dll tableproxy.o amplodbc.o -lodbc
+	$(CC) $(CFLAGS) -I$S -shared -o ampltabl_64.dll -framework CoreFoundation tableproxy.o amplodbc.o -lodbc
 
 tableproxy_64.dll: tableproxy.c tableproxyver.h
 	$(CC) $(CFLAGS) -I$S -shared -o tableproxy_64.dll tableproxy.c
