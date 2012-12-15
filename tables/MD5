@@ -36,15 +36,15 @@ SktRBTvUnwA=
 -----END PGP SIGNATURE-----
 -----BEGIN PGP SIGNED MESSAGE-----
 
-# netlib-utk master Fri Jun 1 03:10:09 EDT 2012
-IZMzBkPBGAZSZT+fDl5Fgw	00lastchange
-tH+7jjyuO1u+rd6pxS+8ng	README
+# netlib-utk master Fri Dec 14 03:10:32 EST 2012
+o0eGzijX+LqzgBVkHfWpHA	00lastchange
+V1k4vDYNZ12VWYjqs5Rmvg	README
 Eu4afIY6TQtei6/cLWquRg	TABLES.RME
-Fo0Dg8LGSJk6TZhoI9qEZg	amplodbc.c
+vYPgt39qNz3abqZcC2UlhQ	amplodbc.c
 Smzcl8ZnCuEWGn6lIhJbOw	ampltabl.def
-5ahv90x9QRUaqTL5OaiOmw	ampltabl.dll.gz
+1N5seBHeFI4IqmUKxg4bRw	ampltabl.dll.gz
 Axgth9KsnrCxHZvbRJWn3g	calories.tab
-dQY2EkhdbAwImDi8WHEY4w	changes
+xNZ6Z2FsOxWThr/XhR/qXw	changes
 nwierY6zzvVSFoPVWaRlYA	diet.mod
 v0mjbMirut9I8jbDUs338A	diet2a.dat
 94zSfSOHMb6d7PZQ95q5xA	diettab.x
@@ -52,22 +52,23 @@ v0mjbMirut9I8jbDUs338A	diet2a.dat
 GBjlY1p3go+ybehz5wB2IQ	dietwrit.x
 o2k7Yj61PxDQubaJf+ollg	foods.tab
 3SbHe+C0CM/PATIxJ4q2WQ	fullbit.c
-q144M4Z5J+CD3s8wc7S0Ng	index
-53RZjg14nsWRY9M4L7Ajgw	index.html
-yeYFphJYKVV/Jg+zj2Vb9w	makefile.linux
+GfqXLrZCG0SbOFSOziYduw	index
+LDfTUA2b96jBCeL3njUTjw	index.html
+3nRp2/ADbIDHk4p4AUSgoA	makefile.linux
+viW2KerpwGC2RTDI1x0j1g	makefile.linux64
 lLVTgBT5rQgIcqzwU8KP2g	makefile.vc
 uKJHPVcpp6uwzwtShT+9pQ	nutrients.tab
 UtdHMqhzeJVmicSthzgKHQ	simpbit.c
 cM91M3mCzFc01xKs1EwYPQ	tableproxy.c
 56TiSYBF2fhBZwEyuCeK/w	tableproxyver.h
-bxRymijBOjWkEn+bg3Q77g	xsum0.out
+wJxB6pTCKPb1ahgXQBvtMg	xsum0.out
 
 -----BEGIN PGP SIGNATURE-----
 Version: 2.6.2
 
-iQCVAwUBT8hq0+FlxDEfrjtlAQEKRQP/Svzo7x+GfCunmFpJjFXC6qbYht1WsEqJ
-Ck/UabhcsPjkcTn1CvDFTQRGgXrNHELrh7DITnWUekshhZyA9th2CVyRRcX6WMWI
-N3Fjryp6gnadX4OC+hA30wl0Uec8Yr6AHaSkVzwrSqYHZkamN5JvRBI86QVXJBQt
-r3tRwrONWqY=
-=L97m
+iQCVAwUBUMre/eFlxDEfrjtlAQEB+gP7BMlqjqftYL5rsDxbHRJs8JT4VVuo5g8T
++Rq1faBUhMfoI9cRO/zoQ4n7oakGGyfc0FoLAM0feqrD15w+KNpXhZxNQKodE0Ra
+NQ10n23Ui+uB0wu+8L92N/1tb59yQeqHf8WG6Gfw9jweraB6Htqt7jyMKm2+oY8v
+H9MflkQ47h0=
+=viEt
 -----END PGP SIGNATURE-----
