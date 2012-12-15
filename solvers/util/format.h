@@ -318,8 +318,8 @@ class ArgInserter {
 
   friend class format::Formatter;
 
-  template <typename Action>
-  friend class ActiveFormatter;
+  // Do not implement.
+  void operator=(const ArgInserter& other);
 
  protected:
   explicit ArgInserter(Formatter *f = 0) : formatter_(f) {}
@@ -335,9 +335,6 @@ class ArgInserter {
     other.formatter_ = 0;
   }
 
-  // Do not implement.
-  void operator=(const ArgInserter& other);
-
   const Formatter *Format() const {
     Formatter *f = formatter_;
     if (f) {
@@ -350,7 +347,7 @@ class ArgInserter {
   Formatter *formatter() const { return formatter_; }
   const char *format() const { return formatter_->format_; }
 
-  void ResetFormatter() { formatter_ = 0; }
+  void ResetFormatter() const { formatter_ = 0; }
 
  public:
   ~ArgInserter() {
@@ -423,7 +420,7 @@ class ActiveFormatter : public internal::ArgInserter {
   // destructor. Note that the buffer content is not copied because the
   // the buffer in ActiveFormatter is populated when all the arguments
   // are provided.
-  ActiveFormatter(ActiveFormatter &other)
+  ActiveFormatter(const ActiveFormatter &other)
   : ArgInserter(0), action_(other.action_) {
     Init(formatter_, other.format());
     other.ResetFormatter();
