@@ -97,3 +97,9 @@ extensions to simplify mixing 32- and 64-bit binaries.
 to include both the ODBC and tableproxy handlers in ampltabl.dll,
 with a new rule for tableproxy.dll that just has the tableproxy
 handler.
+
+20121213
+  README: add descriptions of _handler_lib, _table_errmsg, and
+_version; add reminder that $AMPLFUNC provides full pathnames.
+  Adding makefile.macosx32 and makefile.macosx64 for Intel MacOSX.
+  Renaming makefile.linux to makefile.linux32.

@@ -1,4 +1,4 @@
-README	e219de50	7085
+README	1e7ce361	7642
 TABLES.RME	e1af6e2b	20602
 amplodbc.c	304b3dc	70772
 ampltabl.def	1da9d5ac	95
@@ -10,8 +10,10 @@ diettabw.x	fcfebaab	277
 dietwrit.x	e79ea4c6	964
 foods.tab	f0d6899d	149
 fullbit.c	eac799ec	29059
-makefile.linux	17289ca7	1962
-makefile.linux64	104581de	1995
+makefile.linux32	ee29ea	2006
+makefile.linux64	fb61be0b	2039
+makefile.macosx32	fd95fa68	2039
+makefile.macosx64	ccde128	2072
 makefile.vc	1858c38d	1728
 nutrients.tab	1328f000	107
 simpbit.c	ee7ef53e	11755
