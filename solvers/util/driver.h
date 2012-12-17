@@ -484,9 +484,9 @@ class Driver : private SolutionHandler {
   }
 
   // Reports an error.
-  fmt::ActiveFormatter<PrintError> ReportError(const char *format) {
+  fmt::TempFormatter<PrintError> ReportError(const char *format) {
     has_errors_ = true;
-    return fmt::ActiveFormatter<PrintError>(format);
+    return fmt::TempFormatter<PrintError>(format);
   }
 
   // Parses options and returns true if there were no errors, false otherwise.

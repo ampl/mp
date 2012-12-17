@@ -25,6 +25,9 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+// Disable useless MSVC warnings.
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <cctype>
 #include <cfloat>
 #include <climits>
@@ -40,9 +43,6 @@ using fmt::internal::Array;
 using fmt::Formatter;
 using fmt::Format;
 using fmt::FormatError;
-
-// Disable useless MSVC warnings.
-#define _CRT_SECURE_NO_WARNINGS
 
 #define FORMAT_TEST_THROW_(statement, expected_exception, message, fail) \
   GTEST_AMBIGUOUS_ELSE_BLOCKER_ \
@@ -479,10 +479,11 @@ void CheckUnknownTypes(
     const T &value, const char *types, const char *type_name) {
   char format[256], message[256];
   const char *special = ".0123456789}";
-  for (int c = CHAR_MIN; c <= CHAR_MAX; ++c) {
+  for (int i = CHAR_MIN; i <= CHAR_MAX; ++i) {
+    char c = i;
     if (std::strchr(types, c) || std::strchr(special, c) || !c) continue;
     sprintf(format, "{0:1%c}", c);
-    if (std::isprint(c))
+    if (std::isprint(static_cast<unsigned char>(c)))
       sprintf(message, "unknown format code '%c' for %s", c, type_name);
     else
       sprintf(message, "unknown format code '\\x%02x' for %s", c, type_name);
@@ -702,35 +703,35 @@ struct CountCalls {
   }
 };
 
-TEST(ActiveFormatterTest, Action) {
+TEST(TempFormatterTest, Action) {
   int num_calls = 0;
   {
-    fmt::ActiveFormatter<CountCalls> af("test", CountCalls(num_calls));
+    fmt::TempFormatter<CountCalls> af("test", CountCalls(num_calls));
     EXPECT_EQ(0, num_calls);
   }
   EXPECT_EQ(1, num_calls);
 }
 
-TEST(ActiveFormatterTest, ActionNotCalledOnError) {
+TEST(TempFormatterTest, ActionNotCalledOnError) {
   int num_calls = 0;
   {
     EXPECT_THROW(
-        fmt::ActiveFormatter<CountCalls> af("{0", CountCalls(num_calls)),
+        fmt::TempFormatter<CountCalls> af("{0", CountCalls(num_calls)),
         FormatError);
   }
   EXPECT_EQ(0, num_calls);
 }
 
 // The test doesn't compile on older compilers which follow C++03 and
-// require an accessible copy ctor when binding a temporary to a const
-// reference.
+// require an accessible copy constructor when binding a temporary to
+// a const reference.
 #if __GNUC__ >= 4 && __GNUC_MINOR__ >= 7
-TEST(ActiveFormatterTest, ArgLifetime) {
+TEST(TempFormatterTest, ArgLifetime) {
   // The following code is for testing purposes only. It is a definite abuse
   // of the API and shouldn't be used in real applications.
-  const fmt::ActiveFormatter<fmt::Ignore> &af = fmt::Format("{0}");
-  const_cast<fmt::ActiveFormatter<fmt::Ignore>&>(af) << std::string("test");
-  // String object passed as an argument to ActiveFormatter has
+  const fmt::TempFormatter<fmt::Ignore> &af = fmt::Format("{0}");
+  const_cast<fmt::TempFormatter<fmt::Ignore>&>(af) << std::string("test");
+  // String object passed as an argument to TempFormatter has
   // been destroyed, but ArgInserter dtor hasn't been called yet.
   // But that's OK since the Arg's dtor takes care of this and
   // calls Format.
@@ -743,11 +744,23 @@ struct PrintError {
   }
 };
 
-fmt::ActiveFormatter<PrintError> ReportError(const char *format) {
-  return fmt::ActiveFormatter<PrintError>(format);
+fmt::TempFormatter<PrintError> ReportError(const char *format) {
+  return fmt::TempFormatter<PrintError>(format);
 }
 
-TEST(ActiveFormatterTest, Example) {
+TEST(TempFormatterTest, Example) {
   std::string path = "somefile";
   ReportError("File not found: {0}") << path;
+}
+
+int main(int argc, char **argv) {
+#ifdef _WIN32
+  // Disable message boxes on assertion failures.
+  _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE | _CRTDBG_MODE_DEBUG);
+  _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
+  _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE | _CRTDBG_MODE_DEBUG);
+  _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
+#endif
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
