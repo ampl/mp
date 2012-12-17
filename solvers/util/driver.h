@@ -438,6 +438,22 @@ class Problem {
   }
 };
 
+// Formats a double with objective precision.
+// Usage: fmt::Format("{0}") << ObjPrec(42.0);
+class ObjPrec {
+ private:
+  double value_;
+
+ public:
+  explicit ObjPrec(double value) : value_(value) {}
+
+  friend void Format(fmt::ArgFormatter &af, unsigned width, ObjPrec op) {
+    char buffer[32];
+    g_fmtop(buffer, op.value_);
+    af.Write(buffer, width);
+  }
+};
+
 class Driver;
 
 class SolutionHandler {

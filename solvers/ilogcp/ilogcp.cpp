@@ -102,18 +102,16 @@ void CPLEXOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
     for (int i = 0, n = p.num_cons(); i < n; ++i)
       dual[i] = cplex_.getDual(cons[i]);
   }
-  format_message("{0} iterations, objective {1:.{2}}")
-    << cplex_.getNiterations() << obj_value << obj_prec();
+  format_message("{0} iterations, objective {1}")
+    << cplex_.getNiterations() << ObjPrec(obj_value);
 }
 
 void CPOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
     vector<double> &primal, vector<double> &) const {
   format_message("{0} choice points, {1} fails")
       << solver_.getNumberOfChoicePoints() << solver_.getNumberOfFails();
-  if (p.num_objs() > 0) {
-    format_message(", objective {0:.{1}}")
-        << solver_.getValue(obj()) << obj_prec();
-  }
+  if (p.num_objs() > 0)
+    format_message(", objective {0}") << ObjPrec(solver_.getValue(obj()));
   primal.resize(p.num_vars());
   IloNumVarArray vars = Optimizer::vars();
   for (int j = 0, n = p.num_vars(); j < n; ++j)
