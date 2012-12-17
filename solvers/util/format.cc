@@ -25,6 +25,9 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+// Disable useless MSVC warnings.
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "format.h"
 
 #include <stdint.h>
@@ -48,7 +51,7 @@ namespace {
 enum { PLUS_FLAG = 1, ZERO_FLAG = 2, HEX_PREFIX_FLAG = 4 };
 
 void ReportUnknownType(char code, const char *type) {
-  if (std::isprint(code)) {
+  if (std::isprint(static_cast<unsigned char>(code))) {
     throw fmt::FormatError(
         str(fmt::Format("unknown format code '{0}' for {1}") << code << type));
   }
