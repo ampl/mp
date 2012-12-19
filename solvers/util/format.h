@@ -326,7 +326,7 @@ class StringRef {
   StringRef(const char *s, std::size_t size = 0) : data_(s), size_(size) {}
   StringRef(const std::string &s) : data_(s.c_str()), size_(s.size()) {}
 
-  operator std::string() const { return std::string(data_, size_); }
+  operator std::string() const { return std::string(data_, size()); }
 
   const char *c_str() const { return data_; }
 
