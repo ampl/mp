@@ -311,9 +311,9 @@ int GecodeDriver::Run(char **argv) {
   }
   problem.SetSolveCode(solve_code);
 
-  fmt::Formatter format;
-  format("{0}: {1}\n") << options_.long_solver_name() << status;
-  HandleSolution(format.c_str(), primal.empty() ? 0 : &primal[0], 0, obj_val);
+  HandleSolution(
+      fmt::Format("{0}: {1}\n") << options_.long_solver_name() << status,
+      primal.empty() ? 0 : &primal[0], 0, obj_val);
   return 0;
 }
 }
