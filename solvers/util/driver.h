@@ -23,6 +23,7 @@
 #ifndef SOLVERS_UTIL_DRIVER_H_
 #define SOLVERS_UTIL_DRIVER_H_
 
+#include <cstring>
 #include <memory>
 #include <sstream>
 
@@ -68,6 +69,7 @@ class BaseOptionInfo : protected Option_Info {
   bool sorted_;
   std::string version_desc_;
   std::string wantsol_desc_;
+  std::string long_solver_name_;
 
   void Sort();
 
@@ -93,12 +95,14 @@ class BaseOptionInfo : protected Option_Info {
     sname = const_cast<char*>(name);
   }
 
-  // Returns the solver name used in startup "banner".
-  const char *solver_name_for_banner() const {
+  // Returns the long solver name.
+  // This name is used in startup "banner".
+  const char *long_solver_name() const {
     return bsname;
   }
-  void set_solver_name_for_banner(const char *name) {
-    bsname = const_cast<char*>(name);
+  void set_long_solver_name(fmt::StringRef name) {
+    long_solver_name_ = name;
+    bsname = const_cast<char*>(long_solver_name_.c_str());
   }
 
   // Returns the name of solver_options environment variable.
