@@ -615,14 +615,14 @@ class TestSolutionHandler : public ampl::SolutionHandler {
 
  public:
   TestSolutionHandler()
-  : obj_value_(std::numeric_limits<double>::quiet_NaN()) {}
+  : obj_value_(std::numeric_limits<double>::quiet_NaN()), solve_code_(0) {}
   virtual ~TestSolutionHandler() {}
 
   int solve_code() const { return solve_code_; }
   double obj_value() const { return obj_value_; }
   const std::string &message() const { return message_; }
 
-  void HandleSolution(ampl::Driver &d, const char *message,
+  void HandleSolution(ampl::Driver &d, fmt::StringRef message,
         const double *, const double *, double obj_value) {
     solve_code_ = d.problem().solve_code();
     message_ = message;

@@ -465,7 +465,7 @@ class SolutionHandler {
   ~SolutionHandler() {}
 
  public:
-  virtual void HandleSolution(Driver &d, const char *message,
+  virtual void HandleSolution(Driver &d, fmt::StringRef message,
       const double *primal, const double *dual, double obj_value) = 0;
 };
 
@@ -478,10 +478,10 @@ class Driver : private SolutionHandler {
   fmt::Formatter error_formatter_;
   bool has_errors_;
 
-  void HandleSolution(Driver &, const char *message,
+  void HandleSolution(Driver &, fmt::StringRef message,
         const double *primal, const double *dual, double) {
     write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_),
-        const_cast<char*>(message), const_cast<double*>(primal),
+        const_cast<char*>(message.c_str()), const_cast<double*>(primal),
         const_cast<double*>(dual), &options_);
   }
 
@@ -516,7 +516,7 @@ class Driver : private SolutionHandler {
   bool ParseOptions(char **argv);
 
   // Handle a solution.
-  void HandleSolution(const char *message,
+  void HandleSolution(fmt::StringRef message,
       const double *primal, const double *dual,
       double obj_value = std::numeric_limits<double>::quiet_NaN()) {
     sol_handler_->HandleSolution(*this, message, primal, dual, obj_value);
