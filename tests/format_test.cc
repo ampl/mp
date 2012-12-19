@@ -26,6 +26,7 @@
  */
 
 // Disable useless MSVC warnings.
+#undef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <cctype>
@@ -43,6 +44,7 @@ using fmt::internal::Array;
 using fmt::Formatter;
 using fmt::Format;
 using fmt::FormatError;
+using fmt::StringRef;
 
 #define FORMAT_TEST_THROW_(statement, expected_exception, message, fail) \
   GTEST_AMBIGUOUS_ELSE_BLOCKER_ \
@@ -608,6 +610,10 @@ TEST(FormatterTest, FormatCString) {
   CheckUnknownTypes("test", "s", "string");
   EXPECT_EQ("test", str(Format("{0}") << "test"));
   EXPECT_EQ("test", str(Format("{0:s}") << "test"));
+  char nonconst[] = "nonconst";
+  EXPECT_EQ("nonconst", str(Format("{0}") << nonconst));
+  EXPECT_THROW_MSG(Format("{0}") << reinterpret_cast<const char*>(0),
+      FormatError, "string pointer is null");
 }
 
 TEST(FormatterTest, FormatPointer) {
@@ -724,6 +730,22 @@ TEST(FormatterTest, ArgInserter) {
   EXPECT_STREQ("12", c_str(format("{0}") << 2));
 }
 
+TEST(FormatterTest, StrNamespace) {
+  fmt::str(Format(""));
+  fmt::c_str(Format(""));
+}
+
+TEST(FormatterTest, StringRef) {
+  EXPECT_STREQ("abc", StringRef("abc").c_str());
+  EXPECT_EQ(3u, StringRef("abc").size());
+
+  EXPECT_STREQ("defg", StringRef(std::string("defg")).c_str());
+  EXPECT_EQ(4u, StringRef(std::string("defg")).size());
+
+  EXPECT_STREQ("hijkl", StringRef(Format("hi{0}kl") << 'j').c_str());
+  EXPECT_EQ(5u, StringRef(Format("hi{0}kl") << 'j').size());
+}
+
 struct CountCalls {
   int &num_calls;
 
@@ -782,6 +804,17 @@ fmt::TempFormatter<PrintError> ReportError(const char *format) {
 TEST(TempFormatterTest, Example) {
   std::string path = "somefile";
   ReportError("File not found: {0}") << path;
+}
+
+template <typename T>
+std::string str(const T &value) {
+  return fmt::str(fmt::Format("{0}") << value);
+}
+
+TEST(StrTest, Convert) {
+  EXPECT_EQ("42", str(42));
+  std::string s = str(Date(2012, 12, 9));
+  EXPECT_EQ("2012-12-9", s);
 }
 
 int main(int argc, char **argv) {
