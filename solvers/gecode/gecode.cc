@@ -254,7 +254,9 @@ BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr e) {
   return DUMMY_EXPR;
 }
 
-GecodeDriver::GecodeDriver() : Driver(options_), options_(*this) {}
+GecodeDriver::GecodeDriver() : Driver(options_), options_(*this) {
+  options_.set_long_solver_name(fmt::Format("Gecode {0}") << GECODE_VERSION);
+}
 
 int GecodeDriver::Run(char **argv) {
   Problem &problem = Driver::problem();
@@ -309,9 +311,9 @@ int GecodeDriver::Run(char **argv) {
   }
   problem.SetSolveCode(solve_code);
 
-  char message[256];
-  Sprintf(message, "%s: %s\n", options_.solver_name_for_banner(), status);
-  HandleSolution(message, primal.empty() ? 0 : &primal[0], 0, obj_val);
+  fmt::Formatter format;
+  format("{0}: {1}\n") << options_.long_solver_name() << status;
+  HandleSolution(format.c_str(), primal.empty() ? 0 : &primal[0], 0, obj_val);
   return 0;
 }
 }
