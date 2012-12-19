@@ -131,11 +131,10 @@ IlogCPDriver::IlogCPDriver() :
       << IloConcertVersion::_ILO_MINOR_VERSION
       << IloConcertVersion::_ILO_TECH_VERSION);
   oinfo_.set_solver_name("ilogcp");
-  solver_name_ = str(fmt::Format("ilogcp {0}.{1}.{2}")
+  oinfo_.set_long_solver_name(fmt::Format("ilogcp {0}.{1}.{2}")
       << IloConcertVersion::_ILO_MAJOR_VERSION
       << IloConcertVersion::_ILO_MINOR_VERSION
       << IloConcertVersion::_ILO_TECH_VERSION);
-  oinfo_.set_solver_name_for_banner(solver_name_.c_str());
   oinfo_.set_options_var_name(xxxvers);
   oinfo_.set_version(version_.c_str());
   oinfo_.set_driver_date(YYYYMMDD);
@@ -726,7 +725,7 @@ int IlogCPDriver::Run(char **argv) {
   problem.SetSolveCode(solve_code);
 
   fmt::Formatter format_message;
-  format_message("{0}: {1}\n") << oinfo_.solver_name_for_banner() << status;
+  format_message("{0}: {1}\n") << oinfo_.long_solver_name() << status;
   vector<real> primal, dual;
   if (successful)
     optimizer_->GetSolution(problem, format_message, primal, dual);
