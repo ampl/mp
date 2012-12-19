@@ -681,7 +681,7 @@ TEST_F(GecodeTest, Usage) {
 
 // The following problems have continuous variables and are therefore not
 // supported by Gecode:
-// numberof, balassign0
+// numberof, balassign0, flowshp0
 
 TEST_F(GecodeDriverTest, ObjConst) {
   EXPECT_EQ(42, Solve(DATA_DIR "objconstint").obj);
@@ -699,21 +699,16 @@ TEST_F(GecodeDriverTest, SolveAssign1) {
   EXPECT_EQ(6, Solve(DATA_DIR "assign1").obj);
 }
 
-/*
-TEST_F(GecodeDriverTest, SolveBalassign1) {
+// Disabled because it takes too long to solve.
+TEST_F(GecodeDriverTest, DISABLED_SolveBalassign1) {
   EXPECT_EQ(14, Solve(DATA_DIR "balassign1").obj);
-}
-
-TEST_F(GecodeDriverTest, SolveFlowshp0) {
-  EXPECT_NEAR(22, Solve(DATA_DIR "flowshp0").obj, 1e-5);
 }
 
 TEST_F(GecodeDriverTest, SolveFlowshp1) {
   EXPECT_EQ(22, Solve(DATA_DIR "flowshp1").obj);
 }
 
-// Disabled because it's too difficult to solve.
-TEST_F(GecodeDriverTest, DISABLED_SolveFlowshp2) {
+TEST_F(GecodeDriverTest, SolveFlowshp2) {
   EXPECT_EQ(22, Solve(DATA_DIR "flowshp2").obj);
 }
 
@@ -731,7 +726,8 @@ TEST_F(GecodeDriverTest, DISABLED_SolveGrpassign1a) {
   EXPECT_EQ(61, Solve(DATA_DIR "grpassign1a").obj);
 }
 
-TEST_F(GecodeDriverTest, SolveMagic) {
+// TODO
+/*TEST_F(GecodeDriverTest, SolveMagic) {
   EXPECT_TRUE(Solve(DATA_DIR "magic").solved);
 }
 
