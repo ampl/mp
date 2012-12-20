@@ -1,5 +1,4 @@
-20121213
-  README: add descriptions of _handler_lib, _table_errmsg, and
-_version; add reminder that $AMPLFUNC provides full pathnames.
-  Adding makefile.macosx32 and makefile.macosx64 for Intel MacOSX.
-  Renaming makefile.linux to makefile.linux32.
+20121219
+  amplodbc.c: tweaks for 64-bit Linux systems that use unixODBC
+but with a 32-bit type for SQLLEN (rather than the 64-bit type
+that unixODBC specifies).
