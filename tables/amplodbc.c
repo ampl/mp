@@ -22,10 +22,11 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
- static char Version[] = "\n@(#) AMPL ODBC driver, version 20121108.\n";
+ static char Version[] = "\n@(#) AMPL ODBC driver, version 20121219.\n";
 
 #ifdef _WIN32
 #include <windows.h>
+#define USE_SYSTEM_SQLLEN
 #else
 #include <unistd.h>
 #endif
@@ -51,6 +52,20 @@ THIS SOFTWARE.
 
 #ifndef SQL_NO_DATA
 #define SQL_NO_DATA SQL_NO_DATA_FOUND	/* VC++ 4 */
+#endif
+
+#ifdef ALT_SQLLEN_T
+typedef ALT_SQLLEN_T SQLLEN_t;
+#elif defined(__x86_64__) && !defined(_WIN32) && !defined(_WIN64)
+typedef long SQLLEN_t;
+/* Some 64-bit Linux systems that use unixODBC erroneously have SQLLEN as */
+/* a 32-bit type (contrary to http://www.unixodbc.org/doc/ODBC64.html), */
+/* while others correctly have it as a 64-bit type.  For Intel and other */
+/* little-endian systems, we can make an amplodbc.dll that works on both */
+/* kinds of Linux systems by pretending SQLLEN is a 64-bit type and */
+/* initializing SQLLEN variables to zero before ODBC assigns values to them. */
+#else
+typedef SQLLEN SQLLEN_t;
 #endif
 
 #define UNUSED(x) ((void)(1 ? 0 : (x)))
@@ -131,7 +146,6 @@ prc(HInfo *h, char *who, int i)
 		} HandleStuff;
 	AmplExports *ae;
 	SQLINTEGER native_errno;
-	SQLSMALLINT errmsglen;
 	SWORD emlen;
 	UCHAR *errmsg, errmsg0[SQL_MAX_MESSAGE_LENGTH], sqlstate[64];
 	int rv;
@@ -139,7 +153,7 @@ prc(HInfo *h, char *who, int i)
 	HandleStuff *hs, *hse;
 	SQLINTEGER k, ne;
 	SQLPOINTER sptr;
-	SQLSMALLINT elen, htype, j;
+	SQLSMALLINT elen, errmsglen, htype, j;
 	static HandleStuff HS[3] = {
 		{ "SQL_HANDLE_STMT", SQL_HANDLE_STMT, offset_of(HInfo, hs) },
 		{ "SQL_HANDLE_DBC",  SQL_HANDLE_DBC,  offset_of(HInfo, hc) },
@@ -155,10 +169,10 @@ prc(HInfo *h, char *who, int i)
 		rv = 0;
 		}
 	errmsg = errmsg0;
-	errmsglen = sizeof(errmsg0);
 	ae = h->AE;
 	printf("%s returned %d\n", who, i);
 #if 0
+	errmsglen = sizeof(errmsg0);
 	elen = 0;
 	k = 0;
 	for(hs = HS, hse = HS + 3; hs < hse; ++hs) {
@@ -1395,7 +1409,7 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 #endif
 	if ((dsn = match("DSN=", UC dsname, UC dsname+4))
 	 || match("DRIVER=",UC dsname, UC dsname+7)) {
-		SQLUSMALLINT completion = 0;
+		SQLUSMALLINT completion;
  try_dsname:
 		completion = SQL_DRIVER_COMPLETE;
 #ifndef _WIN32
@@ -1578,7 +1592,7 @@ getname(HInfo *h, int *dbq)
 sql_type(HInfo *h, int odbctype, unsigned int *tprec)
 {
 	AmplExports *ae;
-	SQLLEN len;
+	SQLLEN_t len;
 	HSTMT hs = h->hs;
 	char nbuf[256], *rv;
 	int i;
@@ -1588,10 +1602,11 @@ sql_type(HInfo *h, int odbctype, unsigned int *tprec)
 	if (prc(h, "SQLGetTypeInfo", SQLGetTypeInfo(hs, (SQLSMALLINT)odbctype)))
 		return 0;
 	rv = 0;
+	len = 0;
 	if (prc(h, "SQLBindCol_1",
-			SQLBindCol(hs, (UWORD)1, SQL_C_CHAR, nbuf, sizeof(nbuf), &len))
+			SQLBindCol(hs, (UWORD)1, SQL_C_CHAR, nbuf, sizeof(nbuf), (SQLLEN*)&len))
 	 || prc(h, "SQLBindCol_2",
-			SQLBindCol(hs, (UWORD)3, SQL_C_LONG, &L, sizeof(L), &len))
+			SQLBindCol(hs, (UWORD)3, SQL_C_LONG, &L, sizeof(L), (SQLLEN*)&len))
 	 || (i = SQLFetch(hs)) == SQL_NO_DATA
 	 || prc(h, "SQLFetch in sql_types", i))
 		goto done;
@@ -1965,9 +1980,9 @@ DBColinfo {
 	char *name;
 	char *val;
 	char *val0;
-	SQLLEN type;
-	SQLLEN prec;
-	SQLLEN len;
+	SQLLEN_t type;
+	SQLLEN_t prec;
+	SQLLEN_t len;
 	int mytype;
 	int myoffset;
 	} DBColinfo;
@@ -2012,7 +2027,7 @@ needprec(HInfo *h, DBColinfo *dbc, int col_index)
 	AmplExports *ae;
 	HSTMT hs;
 	SDWORD t;
-	SQLLEN len;
+	SQLLEN_t len;
 	TableInfo *TI;
 	UnknownType *ut, **utp;
 	char sbuf[256];
@@ -2045,9 +2060,10 @@ needprec(HInfo *h, DBColinfo *dbc, int col_index)
 	if (prc(h, "SQLAllocStmt", SQLAllocStmt(h->hc,&hs)))
 		return 0;
 	sbuf[0] = 0;
+	len = 0;
 	i = prc(h, "SQLGetTypeInfo in needprec", SQLGetTypeInfo(hs, (SQLSMALLINT)t))
 	 || prc(h, "SQLBindCol_3",
-			SQLBindCol(hs, (UWORD)5, SQL_C_CHAR, sbuf, sizeof(sbuf), &len));
+			SQLBindCol(hs, (UWORD)5, SQL_C_CHAR, sbuf, sizeof(sbuf), (SQLLEN*)&len));
 	if (!i) {
 		i = SQLFetch(hs);
 		/* SQLFetch after SQLGetTypeInfo returns no data for some MySQL
@@ -2305,13 +2321,15 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 		j = p[i];
 		dbc = dbc0 + j;
 		u = j + 1;
+		dbc->type = 0;
 		if (prc(&h, "SQLColAttributes(TYPE)",
-		 SQLColAttributes(hs, u, SQL_COLUMN_TYPE, 0, 0, 0, &dbc->type)))
+		 SQLColAttributes(hs, u, SQL_COLUMN_TYPE, 0, 0, 0, (SQLLEN*)&dbc->type)))
 			goto badret;
 		if (needprec(&h, dbc, u)) {
+			dbc->prec = 0;
 			if (prc(&h, "SQLColAttributes(DISPLAY_SIZE)",
 			 SQLColAttributes(hs, u, SQL_COLUMN_DISPLAY_SIZE,
-				0,0,0, &dbc->prec)))
+				0,0,0, (SQLLEN*)&dbc->prec)))
 				goto badret;
 			if (dbc->prec <= 0 || ++dbc->prec > h.maxlen)
 				dbc->prec = h.maxlen;
@@ -2364,8 +2382,9 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 			break;
 		 default: continue;
 		 }
+		dbc->len = 0;
 		if (prc(&h, "SQLBindCol_3",
-				SQLBindCol(hs, u, sqlc[k], ptr, dbc->prec, &dbc->len)))
+				SQLBindCol(hs, u, sqlc[k], ptr, dbc->prec, (SQLLEN*)&dbc->len)))
 			goto badret;
 		}
 	if (h.oldquotes)
@@ -2693,13 +2712,15 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 			}
 		memcpy(dbc->name = Mem(h,len+1), buf, len);
 		dbc->name[len] = 0;
+		dbc->type = 0;
 		if (prc(h, "SQLColAttributes(TYPE)",
-		 SQLColAttributes(hs, (UWORD)i, SQL_COLUMN_TYPE, 0, 0, 0, &dbc->type)))
+		 SQLColAttributes(hs, (UWORD)i, SQL_COLUMN_TYPE, 0, 0, 0, (SQLLEN*)&dbc->type)))
 			goto badret;
 		if (needprec(h, dbc, i)) {
+			dbc->prec = 0;
 			if (prc(h, "SQLColAttributes(DISPLAY_SIZE)",
 			 SQLColAttributes(hs, (UWORD)i, SQL_COLUMN_DISPLAY_SIZE,
-				0,0,0, &dbc->prec)))
+				0,0,0, (SQLLEN*)&dbc->prec)))
 				goto badret;
 			if (dbc->prec <= 0 || ++dbc->prec > h->maxlen)
 				dbc->prec = h->maxlen;
@@ -2793,6 +2814,7 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 				j++;
 			}
 		}
+	dd = 0; td = 0; /* silence bogus warnings */
 	if (nk[0]) {
 		dd = (double*)TM(n*sizeof(double));
 		if (j)
@@ -2865,6 +2887,7 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 		}
 
 	memset(nk, 0, sizeof(nk));
+	ptr = 0;
 	u = 0;
 	for(i = 0, dbc = dbc0; dbc < dbce; dbc++, i++) {
 		dbc->myoffset = j = nk[k = dbc->mytype]++;
@@ -2882,8 +2905,9 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 		 case 2:
 			ptr = (PTR)&td[j];
 		 }
+		dbc->len = 0;
 		if (prc(h, "SQLBindCol_4",
-				SQLBindCol(hs, ++u, sqlc[k], ptr, dbc->prec, &dbc->len)))
+				SQLBindCol(hs, ++u, sqlc[k], ptr, dbc->prec, (SQLLEN*)&dbc->len)))
 			goto badret;
 		}
 	if (prc(h, "SQLExecute", SQLExecute(hs)))
