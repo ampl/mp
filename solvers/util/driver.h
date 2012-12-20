@@ -494,7 +494,9 @@ class Driver : private SolutionHandler {
 
  public:
   explicit Driver(BaseOptionInfo &options)
-  : options_(options), sol_handler_(this), has_errors_(false) {}
+  : options_(options), has_errors_(false) {
+    sol_handler_ = this;
+  }
   virtual ~Driver();
 
   Problem &problem() { return problem_; }
