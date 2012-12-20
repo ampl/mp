@@ -648,7 +648,7 @@ SolveResult GecodeDriverTest::Solve(const char *stub, const char *opt) {
   RunDriver(stub, opt);
   const string &message = sh.message();
   int solve_code = sh.solve_code();
-  EXPECT_GE(0, solve_code);
+  EXPECT_GE(solve_code, 0);
   bool solved = true;
   if (solve_code < 100)
     EXPECT_TRUE(message.find("optimal solution") != string::npos);
@@ -726,8 +726,7 @@ TEST_F(GecodeDriverTest, DISABLED_SolveGrpassign1a) {
   EXPECT_EQ(61, Solve(DATA_DIR "grpassign1a").obj);
 }
 
-// TODO
-/*TEST_F(GecodeDriverTest, SolveMagic) {
+TEST_F(GecodeDriverTest, SolveMagic) {
   EXPECT_TRUE(Solve(DATA_DIR "magic").solved);
 }
 
@@ -740,7 +739,7 @@ TEST_F(GecodeDriverTest, SolveNQueens) {
 }
 
 TEST_F(GecodeDriverTest, SolveNQueens0) {
-  EXPECT_EQ(0, Solve(DATA_DIR "nqueens0").obj);
+  EXPECT_TRUE(Solve(DATA_DIR "nqueens0").solved);
 }
 
 // Disabled because it's too difficult to solve.
@@ -748,7 +747,8 @@ TEST_F(GecodeDriverTest, DISABLED_SolveParty1) {
   EXPECT_EQ(61, Solve(DATA_DIR "party1").obj);
 }
 
-// Disabled because it's too difficult to solve.
+// TODO
+/*// Disabled because it's too difficult to solve.
 TEST_F(GecodeDriverTest, DISABLED_SolveParty2) {
   EXPECT_EQ(3, Solve(DATA_DIR "party2").obj);
 }

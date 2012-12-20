@@ -206,8 +206,7 @@ LinExpr NLToGecodeConverter::VisitCount(CountExpr e) {
       i = e.begin(), end = e.end(); i != end; ++i, ++index) {
     args[index] = CreateVar(Visit(*i));
   }
-  Gecode::IntVar result(problem_,
-      Gecode::Int::Limits::min, Gecode::Int::Limits::max);
+  Gecode::IntVar result(problem_, 0, e.num_args());
   linear(problem_, args, Gecode::IRT_EQ, result);
   return result;
 }
