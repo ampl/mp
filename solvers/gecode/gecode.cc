@@ -275,6 +275,7 @@ int GecodeDriver::Run(char **argv) {
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   std::auto_ptr<GecodeProblem> solution;
   bool has_obj = problem.num_objs() != 0;
+  Gecode::Search::Statistics stats;
   if (has_obj) {
     BAB<GecodeProblem> engine(&converter->problem());
     converter.reset();
@@ -282,10 +283,12 @@ int GecodeDriver::Run(char **argv) {
       solution.reset(next);
     if (solution.get())
       obj_val = solution->obj().val();
+    stats = engine.statistics();
   } else {
     DFS<GecodeProblem> engine(&converter->problem());
     converter.reset();
     solution.reset(engine.next());
+    stats = engine.statistics();
   }
 
   // Convert solution status.
@@ -311,9 +314,12 @@ int GecodeDriver::Run(char **argv) {
   }
   problem.SetSolveCode(solve_code);
 
-  HandleSolution(
-      fmt::Format("{0}: {1}\n") << options_.long_solver_name() << status,
-      primal.empty() ? 0 : &primal[0], 0, obj_val);
+  fmt::Formatter format;
+  format("{0}: {1}\n") << options_.long_solver_name() << status;
+  format("{0} nodes, {1} fails") << stats.node << stats.fail;
+  if (has_obj)
+    format(", objective {0}") << ObjPrec(obj_val);
+  HandleSolution(format.c_str(), primal.empty() ? 0 : &primal[0], 0, obj_val);
   return 0;
 }
 }
