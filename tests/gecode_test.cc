@@ -636,10 +636,9 @@ class TestSolutionHandler : public ampl::SolutionHandler {
 };
 
 class GecodeDriverTest : public ::testing::Test, public ExprBuilder {
- private:
+ protected:
   ampl::GecodeDriver driver_;
 
- protected:
   int RunDriver(const char *stub = nullptr, const char *opt = nullptr) {
     return driver_.Run(Args("gecode", "-s", stub, opt));
   }
@@ -684,10 +683,6 @@ TEST_F(GecodeTest, Usage) {
   EXPECT_TRUE(text.find("usage: ") != string::npos);
 }*/
 
-// The following problems have continuous variables and are therefore not
-// supported by Gecode:
-// numberof, balassign0, flowshp0
-
 TEST_F(GecodeDriverTest, ObjConst) {
   EXPECT_EQ(42, Solve(DATA_DIR "objconstint").obj);
 }
@@ -705,8 +700,17 @@ TEST_F(GecodeDriverTest, SolveAssign1) {
 }
 
 // Disabled because it takes too long to solve.
+TEST_F(GecodeDriverTest, DISABLED_SolveBalassign0) {
+  EXPECT_EQ(14, Solve(DATA_DIR "balassign0").obj);
+}
+
+// Disabled because it takes too long to solve.
 TEST_F(GecodeDriverTest, DISABLED_SolveBalassign1) {
   EXPECT_EQ(14, Solve(DATA_DIR "balassign1").obj);
+}
+
+TEST_F(GecodeDriverTest, SolveFlowshp0) {
+  EXPECT_EQ(22, Solve(DATA_DIR "flowshp0").obj);
 }
 
 TEST_F(GecodeDriverTest, SolveFlowshp1) {
@@ -796,24 +800,18 @@ TEST_F(GecodeDriverTest, SolveSudokuVeryEasy) {
 // ----------------------------------------------------------------------------
 // Solve code tests
 
-// TODO
-/*TEST_F(GecodeDriverTest, OptimalSolveCode) {
-  Solve(DATA_DIR "objconst");
-  EXPECT_EQ(0, p.solve_code());
+TEST_F(GecodeDriverTest, OptimalSolveCode) {
+  Solve(DATA_DIR "objconstint");
+  EXPECT_EQ(0, driver_.problem().solve_code());
 }
 
 TEST_F(GecodeDriverTest, FeasibleSolveCode) {
   Solve(DATA_DIR "feasible");
-  EXPECT_EQ(100, p.solve_code());
+  EXPECT_EQ(100, driver_.problem().solve_code());
 }
 
 TEST_F(GecodeDriverTest, InfeasibleSolveCode) {
   Solve(DATA_DIR "infeasible");
-  EXPECT_EQ(200, p.solve_code());
+  EXPECT_EQ(200, driver_.problem().solve_code());
 }
-
-TEST_F(GecodeDriverTest, InfeasibleOrUnboundedSolveCode) {
-  Solve(DATA_DIR "unbounded");
-  EXPECT_EQ(201, p.solve_code());
-}*/
 }
