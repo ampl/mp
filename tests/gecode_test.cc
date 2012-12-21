@@ -757,8 +757,7 @@ TEST_F(GecodeDriverTest, DISABLED_SolveParty2) {
   EXPECT_EQ(3, Solve(DATA_DIR "party2").obj);
 }
 
-// TODO
-/*TEST_F(GecodeDriverTest, SolveSched0) {
+TEST_F(GecodeDriverTest, SolveSched0) {
   EXPECT_EQ(5, Solve(DATA_DIR "sched0").obj);
 }
 
@@ -766,7 +765,8 @@ TEST_F(GecodeDriverTest, SolveSched1) {
   EXPECT_EQ(5, Solve(DATA_DIR "sched1").obj);
 }
 
-TEST_F(GecodeDriverTest, SolveSched2) {
+// TODO
+/*TEST_F(GecodeDriverTest, SolveSched2) {
   EXPECT_EQ(5, Solve(DATA_DIR "sched2").obj);
 }
 
