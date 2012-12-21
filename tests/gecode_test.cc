@@ -103,7 +103,7 @@ double GecodeConverterTest::ConvertAndEval(
   ampl::NLToGecodeConverter converter(4);
   GecodeProblem &p = converter.problem();
   InitVars(p, var1, var2, var3);
-  Gecode::rel(p, converter.problem().vars()[0] == converter.Visit(e));
+  Gecode::rel(p, converter.problem().vars()[0] == converter.ConvertFullExpr(e));
   return Solve(p);
 }
 
@@ -113,7 +113,7 @@ double GecodeConverterTest::ConvertAndEval(
   GecodeProblem &p = converter.problem();
   InitVars(p, var1, var2, var3);
   Gecode::BoolVar result(p, 0, 1);
-  Gecode::BoolExpr expr = converter.Visit(e);
+  Gecode::BoolExpr expr = converter.ConvertFullExpr(e, false);
   if (!ampl::Cast<ampl::AllDiffExpr>(e)) {
     Gecode::rel(p, result == expr);
     Gecode::channel(p, result, p.vars()[0]);
@@ -593,6 +593,11 @@ TEST_F(GecodeConverterTest, ConvertAllDiff) {
   EXPECT_EQ(0, ConvertAndEval(e, 1, 1));
 }
 
+TEST_F(GecodeConverterTest, ConvertNestedAllDiff) {
+  EXPECT_THROW(ConvertAndEval(AddNot(AddAllDiff(AddNum(1), x, y)), 1, 2),
+      UnsupportedExprError);
+}
+
 TEST_F(GecodeConverterTest, ConvertLogicalConstant) {
   EXPECT_EQ(0, ConvertAndEval(AddBool(false)));
   EXPECT_EQ(1, ConvertAndEval(AddBool(1)));
@@ -747,13 +752,13 @@ TEST_F(GecodeDriverTest, DISABLED_SolveParty1) {
   EXPECT_EQ(61, Solve(DATA_DIR "party1").obj);
 }
 
-// TODO
-/*// Disabled because it's too difficult to solve.
+// Disabled because Gecode doesn't support 'alldiff' as a subexpression.
 TEST_F(GecodeDriverTest, DISABLED_SolveParty2) {
   EXPECT_EQ(3, Solve(DATA_DIR "party2").obj);
 }
 
-TEST_F(GecodeDriverTest, SolveSched0) {
+// TODO
+/*TEST_F(GecodeDriverTest, SolveSched0) {
   EXPECT_EQ(5, Solve(DATA_DIR "sched0").obj);
 }
 
