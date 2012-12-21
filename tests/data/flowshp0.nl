@@ -4,7 +4,7 @@ g3 0 1 0	# problem flowshp0
  0 0	# network constraints: nonlinear, linear
  0 0 0	# nonlinear vars in constraints, objectives, both
  0 0 0 1	# linear network variables; functions; arith, flags
- 6 0 0 0 0	# discrete variables: binary, integer, nonlinear (b,c,o)
+ 6 5 0 0 0	# discrete variables: binary, integer, nonlinear (b,c,o)
  44 1	# nonzeros in Jacobian, gradients
  0 0	# max name lengths: constraints, variables
  0 0 0 0 0	# common exprs: b,c,o,c1,o1
@@ -60,87 +60,87 @@ r
 2 5
 2 5
 b
+0 0 1
+0 0 1
+0 0 1
+0 0 1
+0 0 1
+0 0 1
+2 14
 2 0
 2 0
 2 0
 2 0
-2 0
-0 0 1
-0 0 1
-0 0 1
-0 0 1
-0 0 1
-0 0 1
 k10
+2
 4
-11
-18
-25
-32
-34
-36
-38
-40
-42
+6
+8
+10
+12
+16
+23
+30
+37
 J0 2
-0 1
-1 -1
+6 1
+7 -1
 J1 2
-0 1
-2 -1
+6 1
+8 -1
 J2 2
-0 1
-3 -1
+6 1
+9 -1
 J3 2
-0 1
-4 -1
+6 1
+10 -1
 J4 3
-1 -1
-2 1
-5 -10000
+0 -10000
+7 -1
+8 1
 J5 3
-1 -1
-3 1
-6 -10000
+1 -10000
+7 -1
+9 1
 J6 3
-1 -1
-4 1
-7 -10000
+2 -10000
+7 -1
+10 1
 J7 3
-2 -1
-3 1
-8 -10000
+3 -10000
+8 -1
+9 1
 J8 3
-2 -1
-4 1
-9 -10000
+4 -10000
+8 -1
+10 1
 J9 3
-3 -1
-4 1
-10 -10000
+5 -10000
+9 -1
+10 1
 J10 3
-1 1
-2 -1
-5 10000
+0 10000
+7 1
+8 -1
 J11 3
-1 1
-3 -1
-6 10000
+1 10000
+7 1
+9 -1
 J12 3
-1 1
-4 -1
-7 10000
+2 10000
+7 1
+10 -1
 J13 3
-2 1
-3 -1
-8 10000
+3 10000
+8 1
+9 -1
 J14 3
-2 1
-4 -1
-9 10000
+4 10000
+8 1
+10 -1
 J15 3
-3 1
-4 -1
-10 10000
+5 10000
+9 1
+10 -1
 G0 1
-0 1
+6 1
