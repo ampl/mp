@@ -88,7 +88,7 @@ BaseOptionInfo::BaseOptionInfo() : sorted_(false) {
   AddKeyword("version", version_desc_.c_str(), Ver_val, 0);
   wantsol_desc_ = FormatDescription(
       "In a stand-alone invocation (no -AMPL on the command line), "
-      "what solution information towrite.  Sum of\n"
+      "what solution information to write.  Sum of\n"
       "      1 = write .sol file\n"
       "      2 = primal variables to stdout\n"
       "      4 = dual variables to stdout\n"
