@@ -126,17 +126,16 @@ IlogCPDriver::IlogCPDriver() :
   options_[TIMING] = 0;
   options_[USENUMBEROF] = 1;
 
-  version_ = str(fmt::Format("AMPL/IBM ILOG CP Optimizer [{0} {1}.{2}.{3}]")
-      << IloConcertVersion::_ILO_NAME << IloConcertVersion::_ILO_MAJOR_VERSION
-      << IloConcertVersion::_ILO_MINOR_VERSION
-      << IloConcertVersion::_ILO_TECH_VERSION);
   oinfo_.set_solver_name("ilogcp");
   oinfo_.set_long_solver_name(fmt::Format("ilogcp {0}.{1}.{2}")
       << IloConcertVersion::_ILO_MAJOR_VERSION
       << IloConcertVersion::_ILO_MINOR_VERSION
       << IloConcertVersion::_ILO_TECH_VERSION);
+  oinfo_.set_version(fmt::Format("AMPL/IBM ILOG CP Optimizer [{0} {1}.{2}.{3}]")
+      << IloConcertVersion::_ILO_NAME << IloConcertVersion::_ILO_MAJOR_VERSION
+      << IloConcertVersion::_ILO_MINOR_VERSION
+      << IloConcertVersion::_ILO_TECH_VERSION);
   oinfo_.set_options_var_name(xxxvers);
-  oinfo_.set_version(version_.c_str());
   oinfo_.set_driver_date(YYYYMMDD);
 
   // The following options are not implemented because corresponding

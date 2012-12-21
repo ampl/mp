@@ -260,7 +260,10 @@ BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr) {
 }
 
 GecodeDriver::GecodeDriver() : Driver(options_), options_(*this) {
-  options_.set_long_solver_name(fmt::Format("Gecode {0}") << GECODE_VERSION);
+  std::string name = str(fmt::Format("Gecode {0}") << GECODE_VERSION);
+  options_.set_long_solver_name(name);
+  options_.set_options_var_name("gecode_options");
+  options_.set_version(name);
 }
 
 int GecodeDriver::Run(char **argv) {

@@ -69,6 +69,7 @@ class BaseOptionInfo : protected Option_Info {
   bool sorted_;
   std::string version_desc_;
   std::string wantsol_desc_;
+  std::string version_;
   std::string long_solver_name_;
 
   void Sort();
@@ -116,8 +117,9 @@ class BaseOptionInfo : protected Option_Info {
   const char *version() const {
     return Option_Info::version;
   }
-  void set_version(const char *version) {
-    Option_Info::version = const_cast<char*>(version);
+  void set_version(fmt::StringRef version) {
+    version_ = version;
+    Option_Info::version = const_cast<char*>(version_.c_str());
   }
 
   long driver_date() const {
