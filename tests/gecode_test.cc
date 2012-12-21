@@ -60,6 +60,12 @@ using ampl::UnsupportedExprError;
 
 namespace {
 
+#ifdef HAVE_UNIQUE_PTR
+typedef std::unique_ptr<GecodeProblem> ProblemPtr;
+#else
+typedef std::auto_ptr<GecodeProblem> ProblemPtr;
+#endif
+
 class GecodeConverterTest : public ::testing::Test, public ExprBuilder {
  protected:
   Variable x;
@@ -91,7 +97,7 @@ void GecodeConverterTest::InitVars(
 
 double GecodeConverterTest::Solve(GecodeProblem &p) {
   Gecode::DFS<GecodeProblem> engine(&p);
-  std::auto_ptr<GecodeProblem> solution(engine.next());
+  ProblemPtr solution(engine.next());
   return solution.get() ?
       solution->vars()[0].val() : std::numeric_limits<double>::quiet_NaN();
 }
@@ -119,7 +125,7 @@ double GecodeConverterTest::ConvertAndEval(
     Gecode::channel(p, result, p.vars()[0]);
   } else {
     Gecode::DFS<GecodeProblem> engine(&p);
-    std::auto_ptr<GecodeProblem> solution(engine.next());
+    ProblemPtr solution(engine.next());
     return solution.get() ? 1 : 0;
   }
   return Solve(p);
@@ -662,26 +668,6 @@ SolveResult GecodeDriverTest::Solve(const char *stub, const char *opt) {
     solved = false;
   return SolveResult(solved, sh.obj_value());
 }
-
-// TODO: move the usage test to driver_test
-/*
-TEST_F(GecodeTest, Usage) {
-  FILE *saved_stderr = Stderr;
-  Stderr = fopen("out", "w");
-  p.run((Args() + "ilogcp").get());
-  fclose(Stderr);
-  Stderr = saved_stderr;
-
-  ifstream ifs("out");
-  enum { BUFFER_SIZE = 4096 };
-  char buffer[BUFFER_SIZE];
-  string text;
-  while (ifs) {
-    ifs.read(buffer, BUFFER_SIZE);
-    text += string(buffer, static_cast<string::size_type>(ifs.gcount()));
-  }
-  EXPECT_TRUE(text.find("usage: ") != string::npos);
-}*/
 
 TEST_F(GecodeDriverTest, ObjConst) {
   EXPECT_EQ(42, Solve(DATA_DIR "objconstint").obj);
