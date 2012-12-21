@@ -106,7 +106,6 @@ class IlogCPDriver : public Driver, public Visitor {
   IloModel mod_;
   IloNumVarArray vars_;
   std::auto_ptr<Optimizer> optimizer_;
-  std::string version_;
   OptionInfo<IlogCPDriver> oinfo_;
   bool gotopttype_;
   bool debug_;
