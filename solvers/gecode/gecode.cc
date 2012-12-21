@@ -55,8 +55,6 @@ void GecodeProblem::constrain(const Space &best) {
     rel(*this, obj_, obj_irt_, static_cast<const GecodeProblem&>(best).obj_);
 }
 
-const BoolExpr NLToGecodeConverter::DUMMY_EXPR((Gecode::BoolVar()));
-
 BoolExpr NLToGecodeConverter::Convert(
     Gecode::BoolOpType op, IteratedLogicalExpr e) {
   Gecode::BoolVarArgs args(e.num_args());
@@ -94,6 +92,32 @@ Gecode::LinExpr NLToGecodeConverter::ConvertExpr(
   else
     expr = Visit(nonlinear);
   return expr;
+}
+
+BoolExpr NLToGecodeConverter::ConvertFullExpr(LogicalExpr e, bool post) {
+  AllDiffExpr alldiff = Cast<AllDiffExpr>(e);
+  if (!alldiff) {
+    BoolExpr result = ExprVisitor::Visit(e);
+    if (post)
+      rel(problem_, result);
+    return result;
+  }
+  IntVarArray &vars = problem_.vars();
+  int num_args = alldiff.num_args();
+  IntVarArgs args(num_args);
+  for (int i = 0; i < num_args; ++i) {
+    NumericExpr arg(alldiff[i]);
+    if (Variable var = ampl::Cast<Variable>(arg)) {
+      args[i] = vars[var.index()];
+    } else {
+      IntVar gecode_var(problem_,
+          Gecode::Int::Limits::min, Gecode::Int::Limits::max);
+      rel(problem_, gecode_var == Visit(arg));
+      args[i] = gecode_var;
+    }
+  }
+  distinct(problem_, args);
+  return BoolExpr();
 }
 
 void NLToGecodeConverter::Convert(const Problem &p) {
@@ -135,12 +159,8 @@ void NLToGecodeConverter::Convert(const Problem &p) {
   }
 
   // Convert logical constraints.
-  for (int i = 0, n = p.num_logical_cons(); i < n; ++i) {
-    LogicalExpr expr(p.GetLogicalConExpr(i));
-    BoolExpr gecode_expr(Visit(expr));
-    if (!Cast<AllDiffExpr>(expr))
-      rel(problem_, gecode_expr);
-  }
+  for (int i = 0, n = p.num_logical_cons(); i < n; ++i)
+    ConvertFullExpr(p.GetLogicalConExpr(i));
 }
 
 LinExpr NLToGecodeConverter::VisitMin(VarArgExpr e) {
@@ -234,23 +254,9 @@ BoolExpr NLToGecodeConverter::VisitImplication(ImplicationExpr e) {
         (!condition && Visit(e.false_expr()));
 }
 
-BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr e) {
-  IntVarArray &vars = problem_.vars();
-  int num_args = e.num_args();
-  IntVarArgs args(num_args);
-  for (int i = 0; i < num_args; ++i) {
-    NumericExpr arg(e[i]);
-    if (Variable var = ampl::Cast<Variable>(arg)) {
-      args[i] = vars[var.index()];
-    } else {
-      IntVar gecode_var(problem_,
-          Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-      rel(problem_, gecode_var == Visit(arg));
-      args[i] = gecode_var;
-    }
-  }
-  distinct(problem_, args);
-  return DUMMY_EXPR;
+BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr) {
+  throw UnsupportedExprError("nested 'alldiff'");
+  return BoolExpr();
 }
 
 GecodeDriver::GecodeDriver() : Driver(options_), options_(*this) {
