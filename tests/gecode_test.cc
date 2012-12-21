@@ -765,8 +765,7 @@ TEST_F(GecodeDriverTest, SolveSched1) {
   EXPECT_EQ(5, Solve(DATA_DIR "sched1").obj);
 }
 
-// TODO
-/*TEST_F(GecodeDriverTest, SolveSched2) {
+TEST_F(GecodeDriverTest, SolveSched2) {
   EXPECT_EQ(5, Solve(DATA_DIR "sched2").obj);
 }
 
@@ -775,8 +774,7 @@ TEST_F(GecodeDriverTest, SolveSendMoreMoney) {
 }
 
 TEST_F(GecodeDriverTest, SolveSendMostMoney) {
-  EXPECT_NEAR(10876, Solve(DATA_DIR "send-most-money",
-      "relativeoptimalitytolerance=1e-5").obj, 1e-5);
+  EXPECT_NEAR(10876, Solve(DATA_DIR "send-most-money").obj, 1e-5);
 }
 
 TEST_F(GecodeDriverTest, SolveSeq0) {
@@ -798,7 +796,8 @@ TEST_F(GecodeDriverTest, SolveSudokuVeryEasy) {
 // ----------------------------------------------------------------------------
 // Solve code tests
 
-TEST_F(GecodeDriverTest, OptimalSolveCode) {
+// TODO
+/*TEST_F(GecodeDriverTest, OptimalSolveCode) {
   Solve(DATA_DIR "objconst");
   EXPECT_EQ(0, p.solve_code());
 }
