@@ -117,7 +117,7 @@ BoolExpr NLToGecodeConverter::ConvertFullExpr(LogicalExpr e, bool post) {
     }
   }
   distinct(problem_, args);
-  return BoolExpr();
+  return Gecode::BoolVar();
 }
 
 void NLToGecodeConverter::Convert(const Problem &p) {
