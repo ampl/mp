@@ -20,7 +20,7 @@ param setupTime {JOBPAIRS} >= 0;
 param BIG := max {j in JOBS} dueTime[j];
 
 
-var FinishTime {JOBS} >= 0;
+var FinishTime {JOBS} >= 0 integer;
 
 var Seq {JOBPAIRS} binary;
 
