@@ -20,8 +20,8 @@ param t_offset {i1 in JOBS, i2 in JOBS: i1 <> i2} :=
 
 param M > 0 default 1e4;
 
-var End >= 0;
-var Start {JOBS} >= 0;
+var End >= 0 integer;
+var Start {JOBS} >= 0 integer;
 var Precedes {i1 in JOBS, i2 in JOBS: ord(i1) < ord(i2)} binary;
 
 minimize Makespan: End;
