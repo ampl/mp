@@ -24,6 +24,9 @@ check_cxx_source_compiles(
   "int main() { int *p = nullptr; }" HAVE_NULLPTR)
 check_cxx_source_compiles(
   "int main() { [](int x) { return x; }; }" HAVE_LAMBDAS)
+check_cxx_source_compiles(
+  "#include <memory>
+  int main() { std::unique_ptr<int> p; }" HAVE_UNIQUE_PTR)
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
   ${CMAKE_CURRENT_BINARY_DIR}/config.h)
