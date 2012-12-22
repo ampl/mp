@@ -453,10 +453,11 @@ class ObjPrec {
  public:
   explicit ObjPrec(double value) : value_(value) {}
 
-  friend void Format(fmt::ArgFormatter &af, unsigned width, ObjPrec op) {
+  friend void Format(
+      fmt::ArgFormatter &af, const fmt::FormatSpec &spec, ObjPrec op) {
     char buffer[32];
     g_fmtop(buffer, op.value_);
-    af.Write(buffer, width);
+    af.Write(buffer, spec);
   }
 };
 
