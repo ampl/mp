@@ -28,6 +28,8 @@
 // Disable useless MSVC warnings.
 #undef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
+#undef _SCL_SECURE_NO_WARNINGS
+#define _SCL_SECURE_NO_WARNINGS
 
 #include <cctype>
 #include <cfloat>
@@ -257,6 +259,37 @@ TEST(FormatterTest, EmptySpecs) {
   EXPECT_EQ("42", str(Format("{0:}") << 42));
 }
 
+TEST(FormatterTest, Align) {
+  // TODO
+  EXPECT_EQ("  42", str(Format("{0:>4}") << 42));
+  EXPECT_EQ("  -42", str(Format("{0:>5}") << -42));
+  EXPECT_EQ("   42", str(Format("{0:>5}") << 42u));
+  EXPECT_EQ("  -42", str(Format("{0:>5}") << -42l));
+  EXPECT_EQ("   42", str(Format("{0:>5}") << 42ul));
+  EXPECT_EQ("  -42", str(Format("{0:>5}") << -42.0));
+  EXPECT_EQ("  -42", str(Format("{0:>5}") << -42.0l));
+  EXPECT_EQ("c    ", str(Format("{0:<5}") << 'c'));
+  EXPECT_EQ("abc  ", str(Format("{0:<5}") << "abc"));
+  EXPECT_EQ("  0xface",
+      str(Format("{0:>8}") << reinterpret_cast<void*>(0xface)));
+  EXPECT_EQ("def  ", str(Format("{0:<5}") << TestString("def")));
+}
+
+TEST(FormatterTest, Fill) {
+  EXPECT_EQ("**42", str(Format("{0:*>4}") << 42));
+  EXPECT_EQ("**-42", str(Format("{0:*>5}") << -42));
+  EXPECT_EQ("***42", str(Format("{0:*>5}") << 42u));
+  EXPECT_EQ("**-42", str(Format("{0:*>5}") << -42l));
+  EXPECT_EQ("***42", str(Format("{0:*>5}") << 42ul));
+  EXPECT_EQ("**-42", str(Format("{0:*>5}") << -42.0));
+  EXPECT_EQ("**-42", str(Format("{0:*>5}") << -42.0l));
+  EXPECT_EQ("c****", str(Format("{0:*<5}") << 'c'));
+  EXPECT_EQ("abc**", str(Format("{0:*<5}") << "abc"));
+  EXPECT_EQ("**0xface", str(Format("{0:*>8}")
+      << reinterpret_cast<void*>(0xface)));
+  EXPECT_EQ("def**", str(Format("{0:*<5}") << TestString("def")));
+}
+
 TEST(FormatterTest, PlusFlag) {
   EXPECT_EQ("+42", str(Format("{0:+}") << 42));
   EXPECT_EQ("-42", str(Format("{0:+}") << -42));
@@ -425,7 +458,8 @@ TEST(FormatterTest, RuntimePrecision) {
   EXPECT_THROW_MSG(Format("{0:.{1}}") << 0 << -1l,
       FormatError, "negative precision in format");
   if (sizeof(long) > sizeof(int)) {
-    EXPECT_THROW_MSG(Format("{0:.{1}}") << 0 << (INT_MAX + 1l),
+    long value = INT_MAX;
+    EXPECT_THROW_MSG(Format("{0:.{1}}") << 0 << (value + 1),
         FormatError, "number is too big in format");
   }
   EXPECT_THROW_MSG(Format("{0:.{1}}") << 0 << (INT_MAX + 1ul),
@@ -484,7 +518,7 @@ void CheckUnknownTypes(
   for (int i = CHAR_MIN; i <= CHAR_MAX; ++i) {
     char c = i;
     if (std::strchr(types, c) || std::strchr(special, c) || !c) continue;
-    sprintf(format, "{0:1%c}", c);
+    sprintf(format, "{0:10%c}", c);
     if (std::isprint(static_cast<unsigned char>(c)))
       sprintf(message, "unknown format code '%c' for %s", c, type_name);
     else
@@ -515,7 +549,7 @@ TEST(FormatterTest, FormatDec) {
   EXPECT_EQ(buffer, str(Format("{0}") << INT_MAX));
   sprintf(buffer, "%u", UINT_MAX);
   EXPECT_EQ(buffer, str(Format("{0}") << UINT_MAX));
-  sprintf(buffer, "%ld", 0ul - LONG_MIN);
+  sprintf(buffer, "%ld", 0 - static_cast<unsigned long>(LONG_MIN));
   EXPECT_EQ(buffer, str(Format("{0}") << LONG_MIN));
   sprintf(buffer, "%ld", LONG_MAX);
   EXPECT_EQ(buffer, str(Format("{0}") << LONG_MAX));
@@ -533,13 +567,13 @@ TEST(FormatterTest, FormatHex) {
   EXPECT_EQ("12345678", str(Format("{0:X}") << 0x12345678));
   EXPECT_EQ("90ABCDEF", str(Format("{0:X}") << 0x90ABCDEF));
   char buffer[256];
-  sprintf(buffer, "-%x", 0u - INT_MIN);
+  sprintf(buffer, "-%x", 0 - static_cast<unsigned>(INT_MIN));
   EXPECT_EQ(buffer, str(Format("{0:x}") << INT_MIN));
   sprintf(buffer, "%x", INT_MAX);
   EXPECT_EQ(buffer, str(Format("{0:x}") << INT_MAX));
   sprintf(buffer, "%x", UINT_MAX);
   EXPECT_EQ(buffer, str(Format("{0:x}") << UINT_MAX));
-  sprintf(buffer, "-%lx", 0ul - LONG_MIN);
+  sprintf(buffer, "-%lx", 0 - static_cast<unsigned long>(LONG_MIN));
   EXPECT_EQ(buffer, str(Format("{0:x}") << LONG_MIN));
   sprintf(buffer, "%lx", LONG_MAX);
   EXPECT_EQ(buffer, str(Format("{0:x}") << LONG_MAX));
@@ -554,13 +588,13 @@ TEST(FormatterTest, FormatOct) {
   EXPECT_EQ("-42", str(Format("{0:o}") << -042));
   EXPECT_EQ("12345670", str(Format("{0:o}") << 012345670));
   char buffer[256];
-  sprintf(buffer, "-%o", 0u - INT_MIN);
+  sprintf(buffer, "-%o", 0 - static_cast<unsigned>(INT_MIN));
   EXPECT_EQ(buffer, str(Format("{0:o}") << INT_MIN));
   sprintf(buffer, "%o", INT_MAX);
   EXPECT_EQ(buffer, str(Format("{0:o}") << INT_MAX));
   sprintf(buffer, "%o", UINT_MAX);
   EXPECT_EQ(buffer, str(Format("{0:o}") << UINT_MAX));
-  sprintf(buffer, "-%lo", 0ul - LONG_MIN);
+  sprintf(buffer, "-%lo", 0 - static_cast<unsigned long>(LONG_MIN));
   EXPECT_EQ(buffer, str(Format("{0:o}") << LONG_MIN));
   sprintf(buffer, "%lo", LONG_MAX);
   EXPECT_EQ(buffer, str(Format("{0:o}") << LONG_MAX));
@@ -629,22 +663,30 @@ TEST(FormatterTest, FormatString) {
 
 TEST(FormatterTest, Write) {
   Formatter format;
-  format.Write("12", 2);
+  fmt::FormatSpec spec;
+  spec.width = 2;
+  format.Write("12", spec);
   EXPECT_EQ("12", format.str());
-  format.Write("34", 4);
+  spec.width = 4;
+  format.Write("34", spec);
   EXPECT_EQ("1234  ", format.str());
-  format.Write("56", 0);
+  spec.width = 0;
+  format.Write("56", spec);
   EXPECT_EQ("1234  56", format.str());
 }
 
 TEST(ArgFormatterTest, Write) {
   Formatter formatter;
   fmt::ArgFormatter format(formatter);
-  format.Write("12", 2);
+  fmt::FormatSpec spec;
+  spec.width = 2;
+  format.Write("12", spec);
   EXPECT_EQ("12", formatter.str());
-  format.Write("34", 4);
+  spec.width = 4;
+  format.Write("34", spec);
   EXPECT_EQ("1234  ", formatter.str());
-  format.Write("56", 0);
+  spec.width = 0;
+  format.Write("56", spec);
   EXPECT_EQ("1234  56", formatter.str());
 }
 
@@ -669,8 +711,8 @@ TEST(FormatterTest, FormatUsingIOStreams) {
 
 class Answer {};
 
-void Format(fmt::ArgFormatter &af, unsigned width, Answer) {
-  af.Write("42", width);
+void Format(fmt::ArgFormatter &af, const fmt::FormatSpec &spec, Answer) {
+  af.Write("42", spec);
 }
 
 TEST(FormatterTest, CustomFormat) {

@@ -123,6 +123,15 @@ class FormatError : public std::runtime_error {
   : std::runtime_error(message) {}
 };
 
+struct FormatSpec {
+  unsigned flags;
+  unsigned width;
+  char type;
+  char fill;
+
+  FormatSpec() : flags(0), width(0), type(0), fill(' ') {}
+};
+
 // Formatter provides string formatting functionality similar to Python's
 // str.format. The output is stored in a memory buffer that grows dynamically.
 // Usage:
@@ -149,7 +158,8 @@ class Formatter {
     CHAR, STRING, WSTRING, POINTER, CUSTOM
   };
 
-  typedef void (Formatter::*FormatFunc)(const void *arg, unsigned width);
+  typedef void (Formatter::*FormatFunc)(
+      const void *arg, const FormatSpec &spec);
 
   // A format argument.
   class Arg {
@@ -258,16 +268,15 @@ class Formatter {
 
   // Formats an integer.
   template <typename T>
-  void FormatInt(T value, unsigned flags, int width, char type);
+  void FormatInt(T value, FormatSpec spec);
 
   // Formats a floating point number (double or long double).
   template <typename T>
-  void FormatDouble(
-      T value, unsigned flags, int width, int precision, char type);
+  void FormatDouble(T value, const FormatSpec &spec, int precision);
 
   // Formats an argument of a custom type, such as a user-defined class.
   template <typename T>
-  void FormatCustomArg(const void *arg, unsigned width);
+  void FormatCustomArg(const void *arg, const FormatSpec &spec);
 
   unsigned ParseUInt(const char *&s) const;
 
@@ -297,6 +306,10 @@ class Formatter {
   // using inserter operator<<.
   internal::ArgInserter operator()(const char *format);
 
+  void operator<<(int value) {
+    FormatInt(value, FormatSpec());
+  }
+
   std::size_t size() const { return buffer_.size(); }
 
   const char *data() const { return &buffer_[0]; }
@@ -306,7 +319,7 @@ class Formatter {
 
   // Writes a string to the output buffer padding with spaces if
   // necessary to achieve the desired width.
-  void Write(const std::string &s, unsigned width);
+  void Write(const std::string &s, const FormatSpec &spec);
 };
 
 // A reference to a string. It can be constructed from a C string,
@@ -443,23 +456,23 @@ class ArgFormatter {
  public:
   explicit ArgFormatter(Formatter &f) : formatter_(f) {}
 
-  void Write(const std::string &s, unsigned width) {
-    formatter_.Write(s, width);
+  void Write(const std::string &s, const FormatSpec &spec) {
+    formatter_.Write(s, spec);
   }
 };
 
 // The default formatting function.
 template <typename T>
-void Format(ArgFormatter &af, unsigned width, const T &value) {
+void Format(ArgFormatter &af, const FormatSpec &spec, const T &value) {
   std::ostringstream os;
   os << value;
-  af.Write(os.str(), width);
+  af.Write(os.str(), spec);
 }
 
 template <typename T>
-void Formatter::FormatCustomArg(const void *arg, unsigned width) {
+void Formatter::FormatCustomArg(const void *arg, const FormatSpec &spec) {
   ArgFormatter af(*this);
-  Format(af, width, *static_cast<const T*>(arg));
+  Format(af, spec, *static_cast<const T*>(arg));
 }
 
 inline internal::ArgInserter Formatter::operator()(const char *format) {
