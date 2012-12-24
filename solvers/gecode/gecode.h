@@ -246,7 +246,7 @@ class NLToGecodeConverter :
 };
 
 // The Gecode driver for AMPL.
-class GecodeDriver : public Driver {
+class GecodeDriver : public Driver<GecodeDriver> {
  private:
   OptionInfo<GecodeDriver> options_;
 

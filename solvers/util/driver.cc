@@ -179,12 +179,5 @@ bool Problem::Read(char **&argv, BaseOptionInfo &oi) {
   return true;
 }
 
-Driver::~Driver() {}
-
-bool Driver::ParseOptions(char **argv) {
-  has_errors_ = false;
-  options_.Sort();
-  ASL *asl = reinterpret_cast<ASL*>(problem_.asl_);
-  return getopts_ASL(asl, argv, &options_) == 0 && !has_errors_;
-}
+DriverBase::~DriverBase() {}
 }
