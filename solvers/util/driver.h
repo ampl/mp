@@ -74,7 +74,7 @@ class BaseOptionInfo : protected Option_Info {
 
   void Sort();
 
-  friend class Driver;
+  friend class DriverBase;
   friend class Problem;
 
  protected:
@@ -219,13 +219,13 @@ class OptionInfo : public BaseOptionInfo {
     }
   };
 
-  Handler &handler_;
+  Handler *handler_;
   std::vector<Option*> options_;
 
   static char *HandleOption(Option_Info *oi, keyword *kw, char *value) {
     OptionInfo *self = static_cast<OptionInfo*>(oi);
     Option *opt = self->options_[reinterpret_cast<size_t>(kw->info)];
-    return opt->Handle(self->handler_, oi, kw, value);
+    return opt->Handle(*self->handler_, oi, kw, value);
   }
 
   void AddOption(const char *name, std::auto_ptr<Option> opt) {
@@ -240,11 +240,13 @@ class OptionInfo : public BaseOptionInfo {
   };
 
  public:
-  OptionInfo(Handler &h): handler_(h) {}
+  OptionInfo(): handler_(0) {}
 
   ~OptionInfo() {
     std::for_each(options_.begin(), options_.end(), Deleter());
   }
+
+  void SetHandler(Handler &h) { handler_ = &h; }
 
   // Adds an integer option. The argument f should be a pointer to a member
   // function in the Handler class. This function is called after the option
@@ -335,7 +337,7 @@ class Problem {
   Problem(const Problem&);
   Problem& operator=(const Problem&);
 
-  friend class Driver;
+  friend class DriverBase;
 
  public:
   Problem();
@@ -461,19 +463,18 @@ class ObjPrec {
   }
 };
 
-class Driver;
+class DriverBase;
 
 class SolutionHandler {
  protected:
   ~SolutionHandler() {}
 
  public:
-  virtual void HandleSolution(Driver &d, fmt::StringRef message,
+  virtual void HandleSolution(DriverBase &d, fmt::StringRef message,
       const double *primal, const double *dual, double obj_value) = 0;
 };
 
-// An AMPL solver driver.
-class Driver : private SolutionHandler {
+class DriverBase : private SolutionHandler {
  private:
   Problem problem_;
   BaseOptionInfo &options_;
@@ -481,7 +482,7 @@ class Driver : private SolutionHandler {
   fmt::Formatter error_formatter_;
   bool has_errors_;
 
-  void HandleSolution(Driver &, fmt::StringRef message,
+  void HandleSolution(DriverBase &, fmt::StringRef message,
         const double *primal, const double *dual, double) {
     write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_),
         const_cast<char*>(message.c_str()), const_cast<double*>(primal),
@@ -495,12 +496,20 @@ class Driver : private SolutionHandler {
     }
   };
 
+ protected:
+  bool ParseOptions(char **argv) {
+    has_errors_ = false;
+    options_.Sort();
+    ASL *asl = reinterpret_cast<ASL*>(problem_.asl_);
+    return getopts_ASL(asl, argv, &options_) == 0 && !has_errors_;
+  }
+
  public:
-  explicit Driver(BaseOptionInfo &options)
+  explicit DriverBase(BaseOptionInfo &options)
   : options_(options), has_errors_(false) {
     sol_handler_ = this;
   }
-  virtual ~Driver();
+  virtual ~DriverBase();
 
   Problem &problem() { return problem_; }
 
@@ -514,17 +523,32 @@ class Driver : private SolutionHandler {
     return fmt::TempFormatter<PrintError>(format);
   }
 
-  // Parses options and returns true if there were no errors, false otherwise.
-  // Note that handler functions can report errors with Driver::ReportError
-  // and ParseOptions will take them into account as well returning false if
-  // there was at least one such error.
-  bool ParseOptions(char **argv);
-
   // Handle a solution.
   void HandleSolution(fmt::StringRef message,
       const double *primal, const double *dual,
       double obj_value = std::numeric_limits<double>::quiet_NaN()) {
     sol_handler_->HandleSolution(*this, message, primal, dual, obj_value);
+  }
+};
+
+// An AMPL solver driver.
+template <typename OptionHandler>
+class Driver : public DriverBase {
+ private:
+  OptionInfo<OptionHandler> options_;
+
+ public:
+  Driver() : DriverBase(options_) {}
+
+  OptionInfo<OptionHandler> &options() { return options_; }
+
+  // Parses options and returns true if there were no errors, false otherwise.
+  // Note that handler functions can report errors with Driver::ReportError
+  // and ParseOptions will take them into account as well returning false if
+  // there was at least one such error.
+  bool ParseOptions(char **argv, OptionHandler &handler) {
+    options_.SetHandler(handler);
+    return DriverBase::ParseOptions(argv);
   }
 };
 }

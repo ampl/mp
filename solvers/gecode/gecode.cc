@@ -259,11 +259,11 @@ BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr) {
   return BoolExpr();
 }
 
-GecodeDriver::GecodeDriver() : Driver(options_), options_(*this) {
+GecodeDriver::GecodeDriver() {
   std::string name = str(fmt::Format("Gecode {0}") << GECODE_VERSION);
-  options_.set_long_solver_name(name);
-  options_.set_options_var_name("gecode_options");
-  options_.set_version(name);
+  options().set_long_solver_name(name);
+  options().set_options_var_name("gecode_options");
+  options().set_version(name);
 }
 
 int GecodeDriver::Run(char **argv) {
@@ -271,7 +271,7 @@ int GecodeDriver::Run(char **argv) {
   if (!problem.Read(argv, options_))
     return 1;
 
-  if (!ParseOptions(argv))
+  if (!ParseOptions(argv, *this))
     return 1;
 
   // Set up an optimization problem in Gecode.

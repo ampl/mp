@@ -633,7 +633,7 @@ class TestSolutionHandler : public ampl::SolutionHandler {
   double obj_value() const { return obj_value_; }
   const std::string &message() const { return message_; }
 
-  void HandleSolution(ampl::Driver &d, fmt::StringRef message,
+  void HandleSolution(ampl::DriverBase &d, fmt::StringRef message,
         const double *, const double *, double obj_value) {
     solve_code_ = d.problem().solve_code();
     message_ = message;

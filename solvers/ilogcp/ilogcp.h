@@ -100,13 +100,12 @@ class IlogCPDriver;
 typedef ExprVisitor<IlogCPDriver, IloExpr, IloConstraint> Visitor;
 
 // The IlogCP driver for AMPL.
-class IlogCPDriver : public Driver, public Visitor {
+class IlogCPDriver : public Driver<IlogCPDriver>, public Visitor {
  private:
   IloEnv env_;
   IloModel mod_;
   IloNumVarArray vars_;
   std::auto_ptr<Optimizer> optimizer_;
-  OptionInfo<IlogCPDriver> oinfo_;
   bool gotopttype_;
   bool debug_;
 
@@ -182,7 +181,6 @@ class IlogCPDriver : public Driver, public Visitor {
 
   IloEnv env() const { return env_; }
   IloModel mod() const { return mod_; }
-  const BaseOptionInfo &options() const { return oinfo_; }
 
   IloAlgorithm alg() const {
     return optimizer_.get() ? optimizer_->algorithm() : IloAlgorithm();
