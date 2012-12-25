@@ -207,6 +207,8 @@ class OptionParser<const char*> {
 };
 }
 
+class DummyOptionHandler {};
+
 // Base class for all Driver<OptionHandler> classes.
 class DriverBase : private SolutionHandler, private Option_Info {
  private:
@@ -240,6 +242,8 @@ class DriverBase : private SolutionHandler, private Option_Info {
   };
 
  protected:
+  static DummyOptionHandler dummy_option_handler;
+
   template <typename DriverT>
   static DriverT *GetDriver(Option_Info *oi) {
     return static_cast<DriverT*>(oi);
@@ -360,7 +364,7 @@ class DriverBase : private SolutionHandler, private Option_Info {
 //                  &MyDriver::SetTestOption, 42);
 //   }
 // };
-template <typename OptionHandler>
+template <typename OptionHandler = DummyOptionHandler>
 class Driver : public DriverBase {
  private:
   class Option {
@@ -520,7 +524,7 @@ class Driver : public DriverBase {
   // Note that handler functions can report errors with DriverBase::ReportError
   // and ParseOptions will take them into account as well, returning false if
   // there was at least one such error.
-  bool ParseOptions(char **argv, OptionHandler &h) {
+  bool ParseOptions(char **argv, OptionHandler &h = dummy_option_handler) {
     handler_ = &h;
     return DriverBase::ParseOptions(argv);
   }
