@@ -36,114 +36,7 @@ extern "C" {
 
 namespace ampl {
 
-namespace internal {
-
-template <typename T>
-struct OptionParser;
-
-template <>
-struct OptionParser<int> {
-  int operator()(Option_Info *oi, keyword *kw, char *&s);
-};
-
-template <>
-struct OptionParser<double> {
-  double operator()(Option_Info *oi, keyword *kw, char *&s);
-};
-
-template <>
-class OptionParser<const char*> {
- private:
-  std::string value_;
-
- public:
-  const char* operator()(Option_Info *, keyword *, char *&s);
-};
-}
-
-// Base class for all OptionInfo<Handler> classes.
-// Don't use it directly, use the OptionInfo template instead.
-class BaseOptionInfo : protected Option_Info {
- private:
-  std::vector<keyword> keywords_;
-  bool sorted_;
-  std::string version_desc_;
-  std::string wantsol_desc_;
-  std::string version_;
-  std::string long_solver_name_;
-
-  void Sort();
-
-  friend class DriverBase;
-  friend class Problem;
-
- protected:
-  BaseOptionInfo();
-  ~BaseOptionInfo() {}
-
-  void AddKeyword(const char *name,
-      const char *description, Kwfunc func, const void *info);
-
-  // Formats an option description by indenting it and performing word wrap.
-  static std::string FormatDescription(const char *description);
-
- public:
-  // Returns the solver name.
-  const char *solver_name() const {
-    return sname;
-  }
-  void set_solver_name(const char *name) {
-    sname = const_cast<char*>(name);
-  }
-
-  // Returns the long solver name.
-  // This name is used in startup "banner".
-  const char *long_solver_name() const {
-    return bsname;
-  }
-  void set_long_solver_name(fmt::StringRef name) {
-    long_solver_name_ = name;
-    bsname = const_cast<char*>(long_solver_name_.c_str());
-  }
-
-  // Returns the name of solver_options environment variable.
-  const char *options_var_name() const {
-    return opname;
-  }
-  void set_options_var_name(const char *name) {
-    opname = const_cast<char*>(name);
-  }
-
-  const char *version() const {
-    return Option_Info::version;
-  }
-  void set_version(fmt::StringRef version) {
-    version_ = version;
-    Option_Info::version = const_cast<char*>(version_.c_str());
-  }
-
-  long driver_date() const {
-    return Option_Info::driver_date;
-  }
-  void set_driver_date(long date) {
-    Option_Info::driver_date = date;
-  }
-
-  void EnableOptionEcho(int mask) {
-    option_echo |= mask;
-  }
-  void DisableOptionEcho(int mask) {
-    option_echo &= ~mask;
-  }
-
-  int flags() const {
-    return Option_Info::flags;
-  }
-
-  int want_solution() const {
-    return wantsol;
-  }
-};
+class DriverBase;
 
 // An AMPL problem.
 class Problem {
@@ -161,7 +54,7 @@ class Problem {
   virtual ~Problem();
 
   // Reads the problem form a .nl file.
-  bool Read(char **&argv, BaseOptionInfo &oi);
+  bool Read(char **&argv, DriverBase &d);
 
   // Returns the number of variables.
   int num_vars() const { return asl_->i.n_var_; }
@@ -280,8 +173,6 @@ class ObjPrec {
   }
 };
 
-class DriverBase;
-
 class SolutionHandler {
  protected:
   ~SolutionHandler() {}
@@ -291,19 +182,54 @@ class SolutionHandler {
       const double *primal, const double *dual, double obj_value) = 0;
 };
 
-class DriverBase : private SolutionHandler {
+namespace internal {
+
+template <typename T>
+struct OptionParser;
+
+template <>
+struct OptionParser<int> {
+  int operator()(Option_Info *oi, keyword *kw, char *&s);
+};
+
+template <>
+struct OptionParser<double> {
+  double operator()(Option_Info *oi, keyword *kw, char *&s);
+};
+
+template <>
+class OptionParser<const char*> {
+ private:
+  std::string value_;
+
+ public:
+  const char* operator()(Option_Info *, keyword *, char *&s);
+};
+}
+
+// Base class for all Driver<OptionHandler> classes.
+class DriverBase : private SolutionHandler, private Option_Info {
  private:
   Problem problem_;
-  BaseOptionInfo &options_;
   SolutionHandler *sol_handler_;
-  fmt::Formatter error_formatter_;
   bool has_errors_;
+
+  std::vector<keyword> keywords_;
+  bool options_sorted_;
+  std::string version_desc_;
+  std::string wantsol_desc_;
+  std::string version_;
+  std::string long_solver_name_;
+
+  friend class Problem;
+
+  void SortOptions();
 
   void HandleSolution(DriverBase &, fmt::StringRef message,
         const double *primal, const double *dual, double) {
     write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_),
         const_cast<char*>(message.c_str()), const_cast<double*>(primal),
-        const_cast<double*>(dual), &options_);
+        const_cast<double*>(dual), this);
   }
 
   struct PrintError {
@@ -314,21 +240,85 @@ class DriverBase : private SolutionHandler {
   };
 
  protected:
-  bool ParseOptions(char **argv) {
-    has_errors_ = false;
-    options_.Sort();
-    ASL *asl = reinterpret_cast<ASL*>(problem_.asl_);
-    return getopts_ASL(asl, argv, &options_) == 0 && !has_errors_;
+  template <typename DriverT>
+  static DriverT *GetDriver(Option_Info *oi) {
+    return static_cast<DriverT*>(oi);
   }
 
- public:
-  explicit DriverBase(BaseOptionInfo &options)
-  : options_(options), has_errors_(false) {
-    sol_handler_ = this;
+  bool ParseOptions(char **argv) {
+    has_errors_ = false;
+    SortOptions();
+    ASL *asl = reinterpret_cast<ASL*>(problem_.asl_);
+    return getopts_ASL(asl, argv, this) == 0 && !has_errors_;
   }
+
+  void AddKeyword(const char *name,
+      const char *description, Kwfunc func, const void *info);
+
+  // Formats an option description by indenting it and performing word wrap.
+  static std::string FormatDescription(const char *description);
+
+ public:
+  explicit DriverBase();
   virtual ~DriverBase();
 
   Problem &problem() { return problem_; }
+
+  // Returns the solver name.
+  const char *solver_name() const {
+    return sname;
+  }
+  void set_solver_name(const char *name) {
+    sname = const_cast<char*>(name);
+  }
+
+  // Returns the long solver name.
+  // This name is used in startup "banner".
+  const char *long_solver_name() const {
+    return bsname;
+  }
+  void set_long_solver_name(fmt::StringRef name) {
+    long_solver_name_ = name;
+    bsname = const_cast<char*>(long_solver_name_.c_str());
+  }
+
+  // Returns the name of solver_options environment variable.
+  const char *options_var_name() const {
+    return opname;
+  }
+  void set_options_var_name(const char *name) {
+    opname = const_cast<char*>(name);
+  }
+
+  const char *version() const {
+    return Option_Info::version;
+  }
+  void set_version(fmt::StringRef version) {
+    version_ = version;
+    Option_Info::version = const_cast<char*>(version_.c_str());
+  }
+
+  long driver_date() const {
+    return Option_Info::driver_date;
+  }
+  void set_driver_date(long date) {
+    Option_Info::driver_date = date;
+  }
+
+  void EnableOptionEcho(int mask) {
+    option_echo |= mask;
+  }
+  void DisableOptionEcho(int mask) {
+    option_echo &= ~mask;
+  }
+
+  int flags() const {
+    return Option_Info::flags;
+  }
+
+  int want_solution() const {
+    return wantsol;
+  }
 
   void set_solution_handler(SolutionHandler *sh) {
     sol_handler_ = sh;
@@ -371,7 +361,7 @@ class DriverBase : private SolutionHandler {
 //   }
 // };
 template <typename OptionHandler>
-class Driver : public DriverBase, public BaseOptionInfo {
+class Driver : public DriverBase {
  private:
   class Option {
    private:
@@ -424,7 +414,7 @@ class Driver : public DriverBase, public BaseOptionInfo {
   std::vector<Option*> options_;
 
   static char *HandleOption(Option_Info *oi, keyword *kw, char *value) {
-    Driver *self = static_cast<Driver*>(oi);
+    Driver *self = GetDriver<Driver>(oi);
     Option *opt = self->options_[reinterpret_cast<size_t>(kw->info)];
     return opt->Handle(*self->handler_, oi, kw, value);
   }
@@ -521,7 +511,7 @@ class Driver : public DriverBase, public BaseOptionInfo {
   }
 
  public:
-  Driver() : DriverBase(static_cast<BaseOptionInfo&>(*this)), handler_(0) {}
+  Driver() : handler_(0) {}
   ~Driver() {
     std::for_each(options_.begin(), options_.end(), Deleter());
   }

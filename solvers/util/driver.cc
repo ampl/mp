@@ -68,15 +68,44 @@ const char* OptionParser<const char*>::operator()(
 }
 }
 
-void BaseOptionInfo::Sort() {
-  if (sorted_) return;
+Problem::Problem() : asl_(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))) {}
+
+Problem::~Problem() {
+  ASL_free(reinterpret_cast<ASL**>(&asl_));
+}
+
+bool Problem::Read(char **&argv, DriverBase &d) {
+  d.SortOptions();
+  ASL *asl = reinterpret_cast<ASL*>(asl_);
+  char *stub = getstub_ASL(asl, &argv, &d);
+  if (!stub) {
+    usage_noexit_ASL(&d, 1);
+    return false;
+  }
+  FILE *nl = jac0dim_ASL(asl, stub, static_cast<ftnlen>(std::strlen(stub)));
+  asl_->i.Uvx_ = static_cast<real*>(Malloc(num_vars() * sizeof(real)));
+  asl_->i.Urhsx_ = static_cast<real*>(Malloc(num_cons() * sizeof(real)));
+  efunc *r_ops_int[N_OPS];
+  for (int i = 0; i < N_OPS; ++i)
+    r_ops_int[i] = reinterpret_cast<efunc*>(i);
+  asl_->I.r_ops_ = r_ops_int;
+  asl_->p.want_derivs_ = 0;
+  fg_read_ASL(asl, nl, ASL_allow_CLP);
+  asl_->I.r_ops_ = 0;
+  return true;
+}
+
+void DriverBase::SortOptions() {
+  if (options_sorted_) return;
   std::sort(keywords_.begin(), keywords_.end(), KeywordNameLess());
   keywds = &keywords_[0];
   n_keywds = static_cast<int>(keywords_.size());
-  sorted_ = true;
+  options_sorted_ = true;
 }
 
-BaseOptionInfo::BaseOptionInfo() : sorted_(false) {
+DriverBase::DriverBase() : has_errors_(false), options_sorted_(false) {
+  sol_handler_ = this;
+
   // Workaround for GCC bug 30111 that prevents value-initialization of
   // the base POD class.
   Option_Info init = {};
@@ -96,7 +125,7 @@ BaseOptionInfo::BaseOptionInfo() : sorted_(false) {
   AddKeyword("wantsol", wantsol_desc_.c_str(), WS_val, 0);
 }
 
-void BaseOptionInfo::AddKeyword(const char *name,
+void DriverBase::AddKeyword(const char *name,
     const char *description, Kwfunc func, const void *info) {
   keywords_.push_back(keyword());
   keyword &kw = keywords_.back();
@@ -106,77 +135,50 @@ void BaseOptionInfo::AddKeyword(const char *name,
   kw.info = const_cast<void*>(info);
 }
 
-std::string BaseOptionInfo::FormatDescription(const char *description) {
-    std::ostringstream os;
-    os << '\n';
-    bool new_line = true;
-    int line_offset = 0;
-    int indent = 0;
-    const char *s = description;
-    const int MAX_LINE_LENGTH = 78;
-    for (;;) {
-      const char *start = s;
-      while (*s == ' ')
-        ++s;
-      const char *word_start = s;
-      while (*s != ' ' && *s != '\n' && *s)
-        ++s;
-      const char *word_end = s;
-      if (new_line) {
-        indent = 6 + static_cast<int>(word_start - start);
-        new_line = false;
-      }
-      if (line_offset + (word_end - start) > MAX_LINE_LENGTH) {
-        // The word doesn't fit, start a new line.
-        os << '\n';
-        line_offset = 0;
-      }
-      if (line_offset == 0) {
-        // Indent the line.
-        for (; line_offset < indent; ++line_offset)
-          os << ' ';
-        start = word_start;
-      }
-      os.write(start, word_end - start);
-      line_offset += static_cast<int>(word_end - start);
-      if (*s == '\n') {
-        os << '\n';
-        line_offset = 0;
-        new_line = true;
-        ++s;
-      }
-      if (!*s) break;
+std::string DriverBase::FormatDescription(const char *description) {
+  std::ostringstream os;
+  os << '\n';
+  bool new_line = true;
+  int line_offset = 0;
+  int indent = 0;
+  const char *s = description;
+  const int MAX_LINE_LENGTH = 78;
+  for (;;) {
+    const char *start = s;
+    while (*s == ' ')
+      ++s;
+    const char *word_start = s;
+    while (*s != ' ' && *s != '\n' && *s)
+      ++s;
+    const char *word_end = s;
+    if (new_line) {
+      indent = 6 + static_cast<int>(word_start - start);
+      new_line = false;
     }
-    if (!new_line)
+    if (line_offset + (word_end - start) > MAX_LINE_LENGTH) {
+      // The word doesn't fit, start a new line.
       os << '\n';
-    return os.str();
+      line_offset = 0;
+    }
+    if (line_offset == 0) {
+      // Indent the line.
+      for (; line_offset < indent; ++line_offset)
+        os << ' ';
+      start = word_start;
+    }
+    os.write(start, word_end - start);
+    line_offset += static_cast<int>(word_end - start);
+    if (*s == '\n') {
+      os << '\n';
+      line_offset = 0;
+      new_line = true;
+      ++s;
+    }
+    if (!*s) break;
   }
-
-Problem::Problem() : asl_(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))) {}
-
-Problem::~Problem() {
-  ASL_free(reinterpret_cast<ASL**>(&asl_));
-}
-
-bool Problem::Read(char **&argv, BaseOptionInfo &oi) {
-  oi.Sort();
-  ASL *asl = reinterpret_cast<ASL*>(asl_);
-  char *stub = getstub_ASL(asl, &argv, &oi);
-  if (!stub) {
-    usage_noexit_ASL(&oi, 1);
-    return false;
-  }
-  FILE *nl = jac0dim_ASL(asl, stub, static_cast<ftnlen>(std::strlen(stub)));
-  asl_->i.Uvx_ = static_cast<real*>(Malloc(num_vars() * sizeof(real)));
-  asl_->i.Urhsx_ = static_cast<real*>(Malloc(num_cons() * sizeof(real)));
-  efunc *r_ops_int[N_OPS];
-  for (int i = 0; i < N_OPS; ++i)
-    r_ops_int[i] = reinterpret_cast<efunc*>(i);
-  asl_->I.r_ops_ = r_ops_int;
-  asl_->p.want_derivs_ = 0;
-  fg_read_ASL(asl, nl, ASL_allow_CLP);
-  asl_->I.r_ops_ = 0;
-  return true;
+  if (!new_line)
+    os << '\n';
+  return os.str();
 }
 
 DriverBase::~DriverBase() {}
