@@ -95,6 +95,8 @@ bool Problem::Read(char **&argv, DriverBase &d) {
   return true;
 }
 
+DummyOptionHandler DriverBase::dummy_option_handler;
+
 void DriverBase::SortOptions() {
   if (options_sorted_) return;
   std::sort(keywords_.begin(), keywords_.end(), KeywordNameLess());
