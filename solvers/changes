@@ -2110,3 +2110,7 @@ on problems that have range constraints.)
 Intel (i386 or x86_64) self-contained.  When Intel 8087
 extended-precision registers might be used, fpinit() tries to set the
 rounding precision to 53 bits, to remove a source of confusion.
+
+20121220
+  dtoa.c, dtoa1.c: fix a possible one-time race when multiple
+threads are used for input involving Infinity or NaN.
