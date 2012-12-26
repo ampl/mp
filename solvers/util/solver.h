@@ -1,5 +1,5 @@
 /*
- Utilities for writing AMPL solver drivers.
+ Utilities for writing AMPL solvers.
 
  Copyright (C) 2012 AMPL Optimization LLC
 
@@ -20,8 +20,8 @@
  Author: Victor Zverovich
  */
 
-#ifndef SOLVERS_UTIL_DRIVER_H_
-#define SOLVERS_UTIL_DRIVER_H_
+#ifndef SOLVERS_UTIL_SOLVER_H_
+#define SOLVERS_UTIL_SOLVER_H_
 
 #include <cstring>
 #include <memory>
@@ -45,7 +45,7 @@ class Problem {
   Problem(const Problem&);
   Problem& operator=(const Problem&);
 
-  friend class DriverBase;
+  friend class SolverBase;
 
  public:
   Problem();
@@ -168,14 +168,14 @@ class ObjPrec {
   }
 };
 
-class DriverBase;
+class SolverBase;
 
 class SolutionHandler {
  protected:
   ~SolutionHandler() {}
 
  public:
-  virtual void HandleSolution(DriverBase &d, fmt::StringRef message,
+  virtual void HandleSolution(SolverBase &d, fmt::StringRef message,
       const double *primal, const double *dual, double obj_value) = 0;
 };
 
@@ -206,13 +206,13 @@ class OptionParser<const char*> {
 
 class DummyOptionHandler {};
 
-// Base class for all driver classes.
-class DriverBase : private SolutionHandler, private Option_Info {
+// Base class for all solver classes.
+class SolverBase : private SolutionHandler, private Option_Info {
  private:
   Problem problem_;
 
-  std::string solver_name_;
-  std::string long_solver_name_;
+  std::string name_;
+  std::string long_name_;
   std::string options_var_name_;
   std::string version_;
   std::string version_desc_;
@@ -226,7 +226,7 @@ class DriverBase : private SolutionHandler, private Option_Info {
 
   void SortOptions();
 
-  void HandleSolution(DriverBase &, fmt::StringRef message,
+  void HandleSolution(SolverBase &, fmt::StringRef message,
         const double *primal, const double *dual, double) {
     write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_),
         const_cast<char*>(message.c_str()), const_cast<double*>(primal),
@@ -243,15 +243,15 @@ class DriverBase : private SolutionHandler, private Option_Info {
  protected:
   static DummyOptionHandler dummy_option_handler;
 
-  // Constructs a DriverBase object.
-  // date: The driver date in YYYYMMDD format.
-  explicit DriverBase(fmt::StringRef solver_name,
-      fmt::StringRef long_solver_name = 0, long date = 0);
-  virtual ~DriverBase();
+  // Constructs a SolverBase object.
+  // date: The solver date in YYYYMMDD format.
+  explicit SolverBase(fmt::StringRef name,
+      fmt::StringRef long_name = 0, long date = 0);
+  virtual ~SolverBase();
 
-  void set_long_solver_name(fmt::StringRef name) {
-    long_solver_name_ = name;
-    bsname = const_cast<char*>(long_solver_name_.c_str());
+  void set_long_name(fmt::StringRef name) {
+    long_name_ = name;
+    bsname = const_cast<char*>(long_name_.c_str());
   }
 
   void set_version(fmt::StringRef version) {
@@ -262,9 +262,9 @@ class DriverBase : private SolutionHandler, private Option_Info {
   void EnableOptionEcho(int mask) { option_echo |= mask; }
   void DisableOptionEcho(int mask) { option_echo &= ~mask; }
 
-  template <typename DriverT>
-  static DriverT *GetDriver(Option_Info *oi) {
-    return static_cast<DriverT*>(oi);
+  template <typename SolverT>
+  static SolverT *GetSolver(Option_Info *oi) {
+    return static_cast<SolverT*>(oi);
   }
 
   bool ParseOptions(char **argv) {
@@ -284,11 +284,11 @@ class DriverBase : private SolutionHandler, private Option_Info {
   Problem &problem() { return problem_; }
 
   // Returns the solver name.
-  const char *solver_name() const { return sname; }
+  const char *name() const { return sname; }
 
   // Returns the long solver name.
   // This name is used in startup "banner".
-  const char *long_solver_name() const { return bsname; }
+  const char *long_name() const { return bsname; }
 
   // Returns the name of <solver>_options environment variable.
   const char *options_var_name() const { return opname; }
@@ -296,10 +296,10 @@ class DriverBase : private SolutionHandler, private Option_Info {
   // Returns the solver version.
   const char *version() const { return Option_Info::version; }
 
-  // Returns the driver date in YYYYMMDD format.
+  // Returns the solver date in YYYYMMDD format.
   long date() const { return driver_date; }
 
-  // Returns the driver flags.
+  // Returns the solver flags.
   // Possible values that can be combined with bitwise OR:
   //   ASL_OI_want_funcadd
   //   ASL_OI_keep_underscores
@@ -338,14 +338,14 @@ class DriverBase : private SolutionHandler, private Option_Info {
   }
 };
 
-// An AMPL solver driver.
+// An AMPL solver.
 // OptionHandler is a class that will receive notification about
-// parsed options. Often OptionHandler is a class derived from Driver,
+// parsed options. Often OptionHandler is a class derived from Solver,
 // but this is not required.
 //
 // Example:
 //
-// class MyDriver : public Driver<MyDriver> {
+// class MySolver : public Solver<MySolver> {
 //  public:
 //   void SetTestOption(const char *name, int value, int info) {
 //     // Set option - called when the test option is parsed;
@@ -355,13 +355,13 @@ class DriverBase : private SolutionHandler, private Option_Info {
 //     ...
 //   }
 //
-//   MyDriver()  {
+//   MySolver()  {
 //     AddIntOption("test", "This is a test option",
-//                  &MyDriver::SetTestOption, 42);
+//                  &MySolver::SetTestOption, 42);
 //   }
 // };
 template <typename OptionHandler = DummyOptionHandler>
-class Driver : public DriverBase {
+class Solver : public SolverBase {
  private:
   class Option {
    private:
@@ -414,7 +414,7 @@ class Driver : public DriverBase {
   std::vector<Option*> options_;
 
   static char *HandleOption(Option_Info *oi, keyword *kw, char *value) {
-    Driver *self = GetDriver<Driver>(oi);
+    Solver *self = GetSolver<Solver>(oi);
     Option *opt = self->options_[reinterpret_cast<size_t>(kw->info)];
     return opt->Handle(*self->handler_, oi, kw, value);
   }
@@ -511,23 +511,22 @@ class Driver : public DriverBase {
   }
 
  public:
-  Driver(fmt::StringRef solver_name,
-      fmt::StringRef long_solver_name = 0, long date = 0)
-  : DriverBase(solver_name, long_solver_name, date), handler_(0) {}
-  ~Driver() {
+  Solver(fmt::StringRef name, fmt::StringRef long_name = 0, long date = 0)
+  : SolverBase(name, long_name, date), handler_(0) {}
+  ~Solver() {
     std::for_each(options_.begin(), options_.end(), Deleter());
   }
 
   // Parses options and returns true if there were no errors, false otherwise.
-  // Note that handler functions can report errors with DriverBase::ReportError
+  // Note that handler functions can report errors with SolverBase::ReportError
   // and ParseOptions will take them into account as well, returning false if
   // there was at least one such error.
   bool ParseOptions(char **argv, OptionHandler &h = dummy_option_handler) {
     handler_ = &h;
-    return DriverBase::ParseOptions(argv);
+    return SolverBase::ParseOptions(argv);
   }
 };
 }
 
-#endif  // SOLVERS_UTIL_DRIVER_H_
+#endif  // SOLVERS_UTIL_SOLVER_H_
 

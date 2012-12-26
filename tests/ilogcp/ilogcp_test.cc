@@ -1,5 +1,5 @@
 /*
- Ilogcp driver tests.
+ IlogCP solver tests.
 
  Copyright (C) 2012 AMPL Optimization LLC
 
@@ -56,7 +56,7 @@ using std::vector;
 using ampl::CPLEXOptimizer;
 using ampl::CPOptimizer;
 using ampl::ExprBuilder;
-using ampl::IlogCPDriver;
+using ampl::IlogCPSolver;
 using ampl::LogicalExpr;
 using ampl::NumericExpr;
 using ampl::UnsupportedExprError;
@@ -111,27 +111,27 @@ struct EnumValue {
 
 class IlogCPTest : public ::testing::Test, public ExprBuilder {
  protected:
-  IlogCPDriver d;
+  IlogCPSolver s;
   IloEnv env_;
   IloModel mod_;
 
   void SetUp() {
-    env_ = d.env();
-    mod_ = d.mod();
+    env_ = s.env();
+    mod_ = s.mod();
     IloNumVarArray vars = IloNumVarArray(env_, 3);
     vars[0] = IloIntVar(env_, 0, 1, "x");
     vars[1] = IloNumVar(env_, 0, 1, "y");
     vars[2] = IloNumVar(env_, 0, 1, "theta");
-    d.set_vars(vars);
+    s.set_vars(vars);
   }
 
   double EvalRem(double lhs, double rhs) {
-    return eval(d.Visit(AddBinary(OPREM, AddNum(lhs), AddNum(rhs))));
+    return eval(s.Visit(AddBinary(OPREM, AddNum(lhs), AddNum(rhs))));
   }
 
-  int RunDriver(const char *stub = nullptr, const char *opt = nullptr) {
+  int RunSolver(const char *stub = nullptr, const char *opt = nullptr) {
     try {
-      return d.Run(Args("ilogcp", "-s", stub, opt));
+      return s.Run(Args("ilogcp", "-s", stub, opt));
     } catch (const IloException &e) {  // NOLINT(whitespace/parens)
       throw std::runtime_error(e.getMessage());
     }
@@ -140,7 +140,7 @@ class IlogCPTest : public ::testing::Test, public ExprBuilder {
 
   bool ParseOptions(const char *opt1, const char *opt2 = nullptr) {
     try {
-      return d.ParseOptions(Args(opt1, opt2));
+      return s.ParseOptions(Args(opt1, opt2));
     } catch (const IloException &e) {  // NOLINT(whitespace/parens)
       throw std::runtime_error(e.getMessage());
     }
@@ -165,7 +165,7 @@ class IlogCPTest : public ::testing::Test, public ExprBuilder {
       ParamT param, int start, int end) {
     for (int i = std::max(start, -9); i <= std::min(end, 9); ++i) {
       EXPECT_TRUE(ParseOptions("optimizer=cplex", Option(option, i).c_str()));
-      CPLEXOptimizer *opt = dynamic_cast<CPLEXOptimizer*>(d.optimizer());
+      CPLEXOptimizer *opt = dynamic_cast<CPLEXOptimizer*>(s.optimizer());
       ASSERT_TRUE(opt != nullptr);
       EXPECT_EQ(i, opt->cplex().getParam(param))
         << "Failed option: " << option;
@@ -187,7 +187,7 @@ class IlogCPTest : public ::testing::Test, public ExprBuilder {
 };
 
 SolveResult IlogCPTest::Solve(const char *stub, const char *opt) {
-  RunDriver(stub, opt);
+  RunSolver(stub, opt);
   ifstream ifs((string(stub) + ".sol").c_str());
   string line;
   getline(ifs, line);
@@ -206,7 +206,7 @@ void IlogCPTest::CheckIntCPOption(const char *option,
     const EnumValue *values) {
   for (int i = start; i <= std::min(end, 9); ++i) {
     EXPECT_TRUE(ParseOptions("optimizer=cp", Option(option, i).c_str()));
-    CPOptimizer *opt = dynamic_cast<CPOptimizer*>(d.optimizer());
+    CPOptimizer *opt = dynamic_cast<CPOptimizer*>(s.optimizer());
     ASSERT_TRUE(opt != nullptr);
     EXPECT_EQ(offset + i, opt->solver().getParameter(param))
       << "Failed option: " << option;
@@ -215,12 +215,12 @@ void IlogCPTest::CheckIntCPOption(const char *option,
     EXPECT_FALSE(ParseOptions("optimizer=cp", Option(option, end + 1).c_str()));
   if (accepts_auto) {
     EXPECT_TRUE(ParseOptions("optimizer=cp", Option(option, -1).c_str()));
-    CPOptimizer *opt = dynamic_cast<CPOptimizer*>(d.optimizer());
+    CPOptimizer *opt = dynamic_cast<CPOptimizer*>(s.optimizer());
     ASSERT_TRUE(opt != nullptr);
     EXPECT_EQ(IloCP::Auto, opt->solver().getParameter(param));
 
     EXPECT_TRUE(ParseOptions("optimizer=cp", Option(option, "auto").c_str()));
-    opt = dynamic_cast<CPOptimizer*>(d.optimizer());
+    opt = dynamic_cast<CPOptimizer*>(s.optimizer());
     ASSERT_TRUE(opt != nullptr);
     EXPECT_EQ(IloCP::Auto, opt->solver().getParameter(param));
   }
@@ -234,7 +234,7 @@ void IlogCPTest::CheckIntCPOption(const char *option,
     for (const EnumValue *v = values; v->name; ++v, ++count) {
       EXPECT_TRUE(ParseOptions(
           "optimizer=cp", Option(option, v->name).c_str()));
-      CPOptimizer *opt = dynamic_cast<CPOptimizer*>(d.optimizer());
+      CPOptimizer *opt = dynamic_cast<CPOptimizer*>(s.optimizer());
       ASSERT_TRUE(opt != nullptr);
       EXPECT_EQ(v->value, opt->solver().getParameter(param))
         << "Failed option: " << option;
@@ -246,7 +246,7 @@ void IlogCPTest::CheckIntCPOption(const char *option,
 void IlogCPTest::CheckDblCPOption(const char *option,
     IloCP::NumParam param, double good, double bad) {
   EXPECT_TRUE(ParseOptions("optimizer=cp", Option(option, good).c_str()));
-  CPOptimizer *opt = dynamic_cast<CPOptimizer*>(d.optimizer());
+  CPOptimizer *opt = dynamic_cast<CPOptimizer*>(s.optimizer());
   ASSERT_TRUE(opt != nullptr);
   EXPECT_EQ(good, opt->solver().getParameter(param))
     << "Failed option: " << option;
@@ -256,42 +256,42 @@ void IlogCPTest::CheckDblCPOption(const char *option,
 }
 
 TEST_F(IlogCPTest, ConvertNum) {
-  EXPECT_EQ("0.42", str(d.Visit(AddNum(0.42))));
+  EXPECT_EQ("0.42", str(s.Visit(AddNum(0.42))));
 }
 
 TEST_F(IlogCPTest, ConvertVar) {
-  EXPECT_EQ("theta", str(d.Visit(AddVar(2))));
+  EXPECT_EQ("theta", str(s.Visit(AddVar(2))));
 }
 
 TEST_F(IlogCPTest, ConvertPlus) {
-  EXPECT_EQ("x + 42", str(d.Visit(AddBinary(OPPLUS, AddVar(0), AddNum(42)))));
-  EXPECT_EQ("x + y", str(d.Visit(AddBinary(OPPLUS, AddVar(0), AddVar(1)))));
+  EXPECT_EQ("x + 42", str(s.Visit(AddBinary(OPPLUS, AddVar(0), AddNum(42)))));
+  EXPECT_EQ("x + y", str(s.Visit(AddBinary(OPPLUS, AddVar(0), AddVar(1)))));
 }
 
 TEST_F(IlogCPTest, ConvertMinus) {
-  EXPECT_EQ("x + -42", str(d.Visit(
+  EXPECT_EQ("x + -42", str(s.Visit(
     AddBinary(OPMINUS, AddVar(0), AddNum(42)))));
-  EXPECT_EQ("x + -1 * y", str(d.Visit(
+  EXPECT_EQ("x + -1 * y", str(s.Visit(
     AddBinary(OPMINUS, AddVar(0), AddVar(1)))));
 }
 
 TEST_F(IlogCPTest, ConvertMult) {
-  EXPECT_EQ("42 * x", str(d.Visit(
+  EXPECT_EQ("42 * x", str(s.Visit(
     AddBinary(OPMULT, AddVar(0), AddNum(42)))));
-  EXPECT_EQ("x * y", str(d.Visit(
+  EXPECT_EQ("x * y", str(s.Visit(
     AddBinary(OPMULT, AddVar(0), AddVar(1)))));
 }
 
 TEST_F(IlogCPTest, ConvertDiv) {
-  EXPECT_EQ("x / 42", str(d.Visit(
+  EXPECT_EQ("x / 42", str(s.Visit(
     AddBinary(OPDIV, AddVar(0), AddNum(42)))));
-  EXPECT_EQ("x / y", str(d.Visit(
+  EXPECT_EQ("x / y", str(s.Visit(
     AddBinary(OPDIV, AddVar(0), AddVar(1)))));
 }
 
 TEST_F(IlogCPTest, ConvertRem) {
   EXPECT_EQ("x + trunc(x / y ) * y * -1",
-    str(d.Visit(AddBinary(OPREM, AddVar(0), AddVar(1)))));
+    str(s.Visit(AddBinary(OPREM, AddVar(0), AddVar(1)))));
   EXPECT_EQ(0, EvalRem(9, 3));
   EXPECT_EQ(2, EvalRem(8, 3));
   EXPECT_EQ(-2, EvalRem(-8, 3));
@@ -301,52 +301,52 @@ TEST_F(IlogCPTest, ConvertRem) {
 }
 
 TEST_F(IlogCPTest, ConvertPow) {
-  EXPECT_EQ("x ^ 42", str(d.Visit(
+  EXPECT_EQ("x ^ 42", str(s.Visit(
     AddBinary(OPPOW, AddVar(0), AddNum(42)))));
-  EXPECT_EQ("x ^ y", str(d.Visit(
+  EXPECT_EQ("x ^ y", str(s.Visit(
     AddBinary(OPPOW, AddVar(0), AddVar(1)))));
 }
 
 TEST_F(IlogCPTest, ConvertLess) {
-  EXPECT_EQ("max(x + -42 , 0)", str(d.Visit(
+  EXPECT_EQ("max(x + -42 , 0)", str(s.Visit(
     AddBinary(OPLESS, AddVar(0), AddNum(42)))));
-  EXPECT_EQ("max(x + -1 * y , 0)", str(d.Visit(
+  EXPECT_EQ("max(x + -1 * y , 0)", str(s.Visit(
     AddBinary(OPLESS, AddVar(0), AddVar(1)))));
 }
 
 TEST_F(IlogCPTest, ConvertMin) {
-  EXPECT_EQ("min( [x , y , 42 ])", str(d.Visit(
+  EXPECT_EQ("min( [x , y , 42 ])", str(s.Visit(
     AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertMax) {
-  EXPECT_EQ("max([x , y , 42 ])", str(d.Visit(
+  EXPECT_EQ("max([x , y , 42 ])", str(s.Visit(
     AddVarArg(MAXLIST, AddVar(0), AddVar(1), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertFloor) {
-  EXPECT_EQ("floor(x )", str(d.Visit(AddUnary(FLOOR, AddVar(0)))));
+  EXPECT_EQ("floor(x )", str(s.Visit(AddUnary(FLOOR, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertCeil) {
-  EXPECT_EQ("ceil(x )", str(d.Visit(AddUnary(CEIL, AddVar(0)))));
+  EXPECT_EQ("ceil(x )", str(s.Visit(AddUnary(CEIL, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertAbs) {
-  EXPECT_EQ("abs(x )", str(d.Visit(AddUnary(ABS, AddVar(0)))));
+  EXPECT_EQ("abs(x )", str(s.Visit(AddUnary(ABS, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertUMinus) {
-  EXPECT_EQ("-1 * x", str(d.Visit(AddUnary(OPUMINUS, AddVar(0)))));
+  EXPECT_EQ("-1 * x", str(s.Visit(AddUnary(OPUMINUS, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertInvalidExpr) {
-  EXPECT_THROW(d.Visit(
+  EXPECT_THROW(s.Visit(
     AddBinary(OPprecision, AddVar(0), AddVar(1))), UnsupportedExprError);
 }
 
 TEST_F(IlogCPTest, ConvertIf) {
-  EXPECT_EQ("IloNumVar(7)[-inf..inf]", str(d.Visit(AddIf(
+  EXPECT_EQ("IloNumVar(7)[-inf..inf]", str(s.Visit(AddIf(
       AddRelational(EQ, AddVar(0), AddNum(0)), AddVar(1), AddNum(42)))));
 
   IloModel::Iterator iter(mod_);
@@ -370,65 +370,65 @@ TEST_F(IlogCPTest, ConvertIf) {
 
 TEST_F(IlogCPTest, ConvertTanh) {
   EXPECT_EQ("exp(2 * x ) + -1 / exp(2 * x ) + 1",
-            str(d.Visit(AddUnary(OP_tanh, AddVar(0)))));
+            str(s.Visit(AddUnary(OP_tanh, AddVar(0)))));
   // Concert incorrectly omits brackets around the dividend and divisor
   // above, so test also by evaluating the expression at several points.
-  IloExpr e(d.Visit(AddUnary(OP_tanh, AddNum(1))));
+  IloExpr e(s.Visit(AddUnary(OP_tanh, AddNum(1))));
   EXPECT_NEAR(0.761594, eval(e), 1e-5);
-  e = d.Visit(AddUnary(OP_tanh, AddNum(0)));
+  e = s.Visit(AddUnary(OP_tanh, AddNum(0)));
   EXPECT_EQ(0, eval(e));
-  e = d.Visit(AddUnary(OP_tanh, AddNum(-2)));
+  e = s.Visit(AddUnary(OP_tanh, AddNum(-2)));
   EXPECT_NEAR(-0.964027, eval(e), 1e-5);
 }
 
 TEST_F(IlogCPTest, ConvertTan) {
-  EXPECT_EQ("tan(x )", str(d.Visit(AddUnary(OP_tan, AddVar(0)))));
+  EXPECT_EQ("tan(x )", str(s.Visit(AddUnary(OP_tan, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertSqrt) {
   EXPECT_EQ("x ^ 0.5",
-            str(d.Visit(AddUnary(OP_sqrt, AddVar(0)))));
+            str(s.Visit(AddUnary(OP_sqrt, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertSinh) {
   EXPECT_EQ("exp(x ) * 0.5 + exp(-1 * x ) * -0.5",
-            str(d.Visit(AddUnary(OP_sinh, AddVar(0)))));
+            str(s.Visit(AddUnary(OP_sinh, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertSin) {
-  EXPECT_EQ("sin(x )", str(d.Visit(AddUnary(OP_sin, AddVar(0)))));
+  EXPECT_EQ("sin(x )", str(s.Visit(AddUnary(OP_sin, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertLog10) {
   EXPECT_EQ("log(x )/ 2.30259",
-            str(d.Visit(AddUnary(OP_log10, AddVar(0)))));
+            str(s.Visit(AddUnary(OP_log10, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertLog) {
-  EXPECT_EQ("log(x )", str(d.Visit(AddUnary(OP_log, AddVar(0)))));
+  EXPECT_EQ("log(x )", str(s.Visit(AddUnary(OP_log, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertExp) {
-  EXPECT_EQ("exp(x )", str(d.Visit(AddUnary(OP_exp, AddVar(0)))));
+  EXPECT_EQ("exp(x )", str(s.Visit(AddUnary(OP_exp, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertCosh) {
   EXPECT_EQ("exp(x ) * 0.5 + exp(-1 * x ) * 0.5",
-            str(d.Visit(AddUnary(OP_cosh, AddVar(0)))));
+            str(s.Visit(AddUnary(OP_cosh, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertCos) {
-  EXPECT_EQ("cos(x )", str(d.Visit(AddUnary(OP_cos, AddVar(0)))));
+  EXPECT_EQ("cos(x )", str(s.Visit(AddUnary(OP_cos, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertAtanh) {
   EXPECT_EQ("log(x + 1 ) * 0.5 + log(-1 * x + 1 ) * -0.5",
-            str(d.Visit(AddUnary(OP_atanh, AddVar(0)))));
+            str(s.Visit(AddUnary(OP_atanh, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertAtan2) {
   EXPECT_EQ("IloNumVar(8)[-inf..inf]",
-            str(d.Visit(AddBinary(OP_atan2, AddVar(1), AddVar(0)))));
+            str(s.Visit(AddBinary(OP_atan2, AddVar(1), AddVar(0)))));
 
   IloModel::Iterator iter(mod_);
   ASSERT_NE(0, iter.ok());
@@ -459,104 +459,104 @@ TEST_F(IlogCPTest, ConvertAtan2) {
 
   // Check that (1) and (2) both yield NaN when x == 0 and y == 0.
   volatile double zero = 0;
-  double d = IloArcTan(zero / zero);
-  EXPECT_TRUE(d != d);
-  double d1 = d + 3.14;
+  double s = IloArcTan(zero / zero);
+  EXPECT_TRUE(s != s);
+  double d1 = s + 3.14;
   EXPECT_TRUE(d1 != d1);
 }
 
 TEST_F(IlogCPTest, ConvertAtan) {
   EXPECT_EQ("arc-tan(x )",
-            str(d.Visit(AddUnary(OP_atan, AddVar(0)))));
+            str(s.Visit(AddUnary(OP_atan, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertAsinh) {
   EXPECT_EQ("log(x + square(x ) + 1 ^ 0.5)",
-            str(d.Visit(AddUnary(OP_asinh, AddVar(0)))));
+            str(s.Visit(AddUnary(OP_asinh, AddVar(0)))));
   // Concert incorrectly omits brackets around square(x) + 1
   // above, so test also by evaluating the expression at several points.
-  IloExpr e(d.Visit(AddUnary(OP_asinh, AddNum(1))));
+  IloExpr e(s.Visit(AddUnary(OP_asinh, AddNum(1))));
   EXPECT_NEAR(0.881373, eval(e), 1e-5);
-  e = d.Visit(AddUnary(OP_asinh, AddNum(0)));
+  e = s.Visit(AddUnary(OP_asinh, AddNum(0)));
   EXPECT_EQ(0, eval(e));
-  e = d.Visit(AddUnary(OP_asinh, AddNum(-2)));
+  e = s.Visit(AddUnary(OP_asinh, AddNum(-2)));
   EXPECT_NEAR(-1.443635, eval(e), 1e-5);
 }
 
 TEST_F(IlogCPTest, ConvertAsin) {
   EXPECT_EQ("arc-sin(x )",
-            str(d.Visit(AddUnary(OP_asin, AddVar(0)))));
+            str(s.Visit(AddUnary(OP_asin, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertAcosh) {
   EXPECT_EQ("log(x + x + 1 ^ 0.5 * x + -1 ^ 0.5)",
-            str(d.Visit(AddUnary(OP_acosh, AddVar(0)))));
+            str(s.Visit(AddUnary(OP_acosh, AddVar(0)))));
   // Concert incorrectly omits brackets around x + 1 and x + -1
   // above, so test also by evaluating the expression at several points.
-  IloExpr e(d.Visit(AddUnary(OP_acosh, AddNum(1))));
+  IloExpr e(s.Visit(AddUnary(OP_acosh, AddNum(1))));
   EXPECT_NEAR(0, eval(e), 1e-5);
-  e = d.Visit(AddUnary(OP_acosh, AddNum(10)));
+  e = s.Visit(AddUnary(OP_acosh, AddNum(10)));
   EXPECT_NEAR(2.993222, eval(e), 1e-5);
-  e = d.Visit(AddUnary(OP_acosh, AddNum(0)));
+  e = s.Visit(AddUnary(OP_acosh, AddNum(0)));
   double n = eval(e);
   EXPECT_TRUE(n != n);
 }
 
 TEST_F(IlogCPTest, ConvertAcos) {
-  EXPECT_EQ("arc-cos(x )", str(d.Visit(AddUnary(OP_acos, AddVar(0)))));
+  EXPECT_EQ("arc-cos(x )", str(s.Visit(AddUnary(OP_acos, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertSum) {
-  EXPECT_EQ("x + y + 42", str(d.Visit(
+  EXPECT_EQ("x + y + 42", str(s.Visit(
       AddSum(AddVar(0), AddVar(1), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertIntDiv) {
   EXPECT_EQ("trunc(x / y )",
-    str(d.Visit(AddBinary(OPintDIV, AddVar(0), AddVar(1)))));
+    str(s.Visit(AddBinary(OPintDIV, AddVar(0), AddVar(1)))));
 }
 
 TEST_F(IlogCPTest, ConvertRound) {
   EXPECT_EQ("round(x )",
-    str(d.Visit(AddBinary(OPround, AddVar(0), AddNum(0)))));
+    str(s.Visit(AddBinary(OPround, AddVar(0), AddNum(0)))));
 
-  EXPECT_EQ(1235, eval(d.Visit(
+  EXPECT_EQ(1235, eval(s.Visit(
     AddBinary(OPround, AddNum(1234.56), AddNum(0)))));
-  EXPECT_EQ(3, eval(d.Visit(
+  EXPECT_EQ(3, eval(s.Visit(
     AddBinary(OPround, AddNum(2.5), AddNum(0)))));
-  EXPECT_EQ(-2, eval(d.Visit(
+  EXPECT_EQ(-2, eval(s.Visit(
     AddBinary(OPround, AddNum(-2.5), AddNum(0)))));
 
-  EXPECT_THROW(d.Visit(
+  EXPECT_THROW(s.Visit(
     AddBinary(OPround, AddVar(0), AddVar(1))), UnsupportedExprError);
 }
 
 TEST_F(IlogCPTest, ConvertTrunc) {
-  EXPECT_EQ("trunc(x )", str(d.Visit(
+  EXPECT_EQ("trunc(x )", str(s.Visit(
     AddBinary(OPtrunc, AddVar(0), AddNum(0)))));
-  EXPECT_EQ(1234, eval(d.Visit(
+  EXPECT_EQ(1234, eval(s.Visit(
     AddBinary(OPtrunc, AddNum(1234.56), AddNum(0)))));
-  EXPECT_THROW(d.Visit(
+  EXPECT_THROW(s.Visit(
     AddBinary(OPtrunc, AddVar(0), AddVar(1))), UnsupportedExprError);
 }
 
 TEST_F(IlogCPTest, Convert1Pow) {
-  EXPECT_EQ("x ^ 42", str(d.Visit(AddBinary(OP1POW, AddVar(0), AddNum(42)))));
+  EXPECT_EQ("x ^ 42", str(s.Visit(AddBinary(OP1POW, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, Convert2Pow) {
-  EXPECT_EQ("square(x )", str(d.Visit(AddUnary(OP2POW, AddVar(0)))));
+  EXPECT_EQ("square(x )", str(s.Visit(AddUnary(OP2POW, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertCPow) {
-  EXPECT_EQ("42 ^ x", str(d.Visit(
+  EXPECT_EQ("42 ^ x", str(s.Visit(
     AddBinary(OPCPOW, AddNum(42), AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertPLTerm) {
   double args[] = {-1, 5, 0, 10, 1};
   EXPECT_EQ("piecewiselinear(x[0..1] , [5, 10], [-1, 0, 1], 0, 0)",
-            str(d.Visit(AddPLTerm(5, args, 0))));
+            str(s.Visit(AddPLTerm(5, args, 0))));
 }
 
 TEST_F(IlogCPTest, ConvertCount) {
@@ -564,16 +564,16 @@ TEST_F(IlogCPTest, ConvertCount) {
   LogicalExpr b(AddRelational(LE, AddVar(1), AddNum(42)));
   LogicalExpr c(AddRelational(GE, AddVar(2), AddNum(0)));
   EXPECT_EQ("x == 0 + y <= 42 + 0 <= theta",
-      str(d.Visit(AddCount(a, b, c))));
+      str(s.Visit(AddCount(a, b, c))));
 }
 
 TEST_F(IlogCPTest, ConvertNumberOf) {
-  d.use_numberof();
+  s.use_numberof();
   EXPECT_EQ("x == theta + y == theta",
-      str(d.Visit(AddNumberOf(AddVar(2), AddVar(0), AddVar(1)))));
-  d.use_numberof(false);
+      str(s.Visit(AddNumberOf(AddVar(2), AddVar(0), AddVar(1)))));
+  s.use_numberof(false);
   EXPECT_EQ("x == 42 + y == 42",
-      str(d.Visit(AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
+      str(s.Visit(AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
 }
 
 TEST_F(IlogCPTest, IloArrayCopyingIsCheap) {
@@ -584,13 +584,13 @@ TEST_F(IlogCPTest, IloArrayCopyingIsCheap) {
 }
 
 TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
-  d.use_numberof();
+  s.use_numberof();
   std::ostringstream os;
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
   string bounds = os.str();
-  EXPECT_EQ("IloIntVar(4)" + bounds, str(d.Visit(
+  EXPECT_EQ("IloIntVar(4)" + bounds, str(s.Visit(
       AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
-  d.FinishBuildingNumberOf();
+  s.FinishBuildingNumberOf();
   IloModel::Iterator iter(mod_);
   ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(6)" + bounds + " == x", str(*iter));
@@ -610,15 +610,15 @@ TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
 }
 
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
-  d.use_numberof();
+  s.use_numberof();
   std::ostringstream os;
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
   string bounds = os.str();
   NumericExpr expr(AddNumberOf(AddNum(42), AddVar(0), AddVar(1)));
-  EXPECT_EQ("IloIntVar(4)" + bounds, str(d.Visit(expr)));
-  EXPECT_EQ("IloIntVar(4)" + bounds, str(d.Visit(
+  EXPECT_EQ("IloIntVar(4)" + bounds, str(s.Visit(expr)));
+  EXPECT_EQ("IloIntVar(4)" + bounds, str(s.Visit(
       AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
-  d.FinishBuildingNumberOf();
+  s.FinishBuildingNumberOf();
   IloModel::Iterator iter(mod_);
   ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(7)" + bounds + " == x", str(*iter));
@@ -638,15 +638,15 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
 }
 
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
-  d.use_numberof();
+  s.use_numberof();
   std::ostringstream os;
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
   string bounds = os.str();
   EXPECT_EQ("IloIntVar(4)" + bounds,
-      str(d.Visit(AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
+      str(s.Visit(AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
   EXPECT_EQ("IloIntVar(6)" + bounds,
-      str(d.Visit(AddNumberOf(AddNum(43), AddVar(0), AddVar(1)))));
-  d.FinishBuildingNumberOf();
+      str(s.Visit(AddNumberOf(AddNum(43), AddVar(0), AddVar(1)))));
+  s.FinishBuildingNumberOf();
   IloModel::Iterator iter(mod_);
   ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(8)" + bounds + " == x", str(*iter));
@@ -667,15 +667,15 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
 }
 
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
-  d.use_numberof();
+  s.use_numberof();
   std::ostringstream os;
   os << "[" << IloIntMin << ".." << IloIntMax << "]";
   string bounds = os.str();
   EXPECT_EQ("IloIntVar(4)" + bounds,
-      str(d.Visit(AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
+      str(s.Visit(AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
   EXPECT_EQ("IloIntVar(6)" + bounds,
-      str(d.Visit(AddNumberOf(AddNum(42), AddVar(2)))));
-  d.FinishBuildingNumberOf();
+      str(s.Visit(AddNumberOf(AddNum(42), AddVar(2)))));
+  s.FinishBuildingNumberOf();
   IloModel::Iterator iter(mod_);
   ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(8)" + bounds + " == x", str(*iter));
@@ -706,54 +706,54 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
 }
 
 TEST_F(IlogCPTest, ConvertFalse) {
-  EXPECT_EQ("IloNumVar(4)[1..1] == 0", str(d.Visit(AddBool(false))));
+  EXPECT_EQ("IloNumVar(4)[1..1] == 0", str(s.Visit(AddBool(false))));
 }
 
 TEST_F(IlogCPTest, ConvertTrue) {
-  EXPECT_EQ("IloNumVar(4)[1..1] == 1", str(d.Visit(AddBool(true))));
+  EXPECT_EQ("IloNumVar(4)[1..1] == 1", str(s.Visit(AddBool(true))));
 }
 
 TEST_F(IlogCPTest, ConvertLT) {
   EXPECT_EQ("x <= 41",
-      str(d.Visit(AddRelational(LT, AddVar(0), AddNum(42)))));
+      str(s.Visit(AddRelational(LT, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertLE) {
   EXPECT_EQ("x <= 42",
-      str(d.Visit(AddRelational(LE, AddVar(0), AddNum(42)))));
+      str(s.Visit(AddRelational(LE, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertEQ) {
   EXPECT_EQ("x == 42",
-      str(d.Visit(AddRelational(EQ, AddVar(0), AddNum(42)))));
+      str(s.Visit(AddRelational(EQ, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertGE) {
   EXPECT_EQ("42 <= x",
-      str(d.Visit(AddRelational(GE, AddVar(0), AddNum(42)))));
+      str(s.Visit(AddRelational(GE, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertGT) {
   EXPECT_EQ("43 <= x",
-      str(d.Visit(AddRelational(GT, AddVar(0), AddNum(42)))));
+      str(s.Visit(AddRelational(GT, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertNE) {
   EXPECT_EQ("x != 42",
-      str(d.Visit(AddRelational(NE, AddVar(0), AddNum(42)))));
+      str(s.Visit(AddRelational(NE, AddVar(0), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertAtMost) {
   LogicalExpr a(AddRelational(EQ, AddVar(0), AddNum(0)));
   LogicalExpr b(AddRelational(LE, AddVar(1), AddNum(42)));
-  EXPECT_EQ("x >= x == 0 + y <= 42", str(d.Visit(
+  EXPECT_EQ("x >= x == 0 + y <= 42", str(s.Visit(
       AddLogicalCount(OPATMOST, AddVar(0), AddCount(a, b)))));
 }
 
 TEST_F(IlogCPTest, ConvertNotAtMost) {
   LogicalExpr a(AddRelational(EQ, AddVar(0), AddNum(0)));
   LogicalExpr b(AddRelational(LE, AddVar(1), AddNum(42)));
-  IloConstraint c(d.Visit(
+  IloConstraint c(s.Visit(
       AddLogicalCount(OPNOTATMOST, AddVar(0), AddCount(a, b))));
   IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
   ASSERT_TRUE(n != nullptr);
@@ -763,14 +763,14 @@ TEST_F(IlogCPTest, ConvertNotAtMost) {
 TEST_F(IlogCPTest, ConvertAtLeast) {
   LogicalExpr a(AddRelational(EQ, AddVar(0), AddNum(0)));
   LogicalExpr b(AddRelational(LE, AddVar(1), AddNum(42)));
-  EXPECT_EQ("x <= x == 0 + y <= 42", str(d.Visit(
+  EXPECT_EQ("x <= x == 0 + y <= 42", str(s.Visit(
       AddLogicalCount(OPATLEAST, AddVar(0), AddCount(a, b)))));
 }
 
 TEST_F(IlogCPTest, ConvertNotAtLeast) {
   LogicalExpr a(AddRelational(EQ, AddVar(0), AddNum(0)));
   LogicalExpr b(AddRelational(LE, AddVar(1), AddNum(42)));
-  IloConstraint c(d.Visit(
+  IloConstraint c(s.Visit(
       AddLogicalCount(OPNOTATLEAST, AddVar(0), AddCount(a, b))));
   IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
   ASSERT_TRUE(n != nullptr);
@@ -780,19 +780,19 @@ TEST_F(IlogCPTest, ConvertNotAtLeast) {
 TEST_F(IlogCPTest, ConvertExactly) {
   LogicalExpr a(AddRelational(EQ, AddVar(0), AddNum(0)));
   LogicalExpr b(AddRelational(LE, AddVar(1), AddNum(42)));
-  EXPECT_EQ("x == x == 0 + y <= 42", str(d.Visit(
+  EXPECT_EQ("x == x == 0 + y <= 42", str(s.Visit(
       AddLogicalCount(OPEXACTLY, AddVar(0), AddCount(a, b)))));
 }
 
 TEST_F(IlogCPTest, ConvertNotExactly) {
   LogicalExpr a(AddRelational(EQ, AddVar(0), AddNum(0)));
   LogicalExpr b(AddRelational(LE, AddVar(1), AddNum(42)));
-  EXPECT_EQ("x != x == 0 + y <= 42", str(d.Visit(
+  EXPECT_EQ("x != x == 0 + y <= 42", str(s.Visit(
       AddLogicalCount(OPNOTEXACTLY, AddVar(0), AddCount(a, b)))));
 }
 
 TEST_F(IlogCPTest, ConvertOr) {
-  IloConstraint c(d.Visit(AddBinaryLogical(OPOR,
+  IloConstraint c(s.Visit(AddBinaryLogical(OPOR,
       AddRelational(EQ, AddVar(0), AddNum(1)),
       AddRelational(EQ, AddVar(0), AddNum(2)))));
   IloIfThenI *ifThen = dynamic_cast<IloIfThenI*>(c.getImpl());
@@ -804,10 +804,10 @@ TEST_F(IlogCPTest, ConvertOr) {
 }
 
 TEST_F(IlogCPTest, CheckOrTruthTable) {
-  IloNumVarArray vars = d.vars();
+  IloNumVarArray vars = s.vars();
   vars[0].setBounds(0, 0);
   vars[1].setBounds(0, 0);
-  mod_.add(d.Visit(AddBinaryLogical(OPOR,
+  mod_.add(s.Visit(AddBinaryLogical(OPOR,
       AddRelational(EQ, AddVar(0), AddNum(1)),
       AddRelational(EQ, AddVar(1), AddNum(1)))));
   IloCP cp(mod_);
@@ -825,7 +825,7 @@ TEST_F(IlogCPTest, CheckOrTruthTable) {
 
 TEST_F(IlogCPTest, ConvertExists) {
   EXPECT_EQ("(x == 1 ) || (x == 2 ) || (x == 3 )",
-      str(d.Visit(AddIteratedLogical(ORLIST,
+      str(s.Visit(AddIteratedLogical(ORLIST,
           AddRelational(EQ, AddVar(0), AddNum(1)),
           AddRelational(EQ, AddVar(0), AddNum(2)),
           AddRelational(EQ, AddVar(0), AddNum(3))))));
@@ -833,34 +833,34 @@ TEST_F(IlogCPTest, ConvertExists) {
 
 TEST_F(IlogCPTest, ConvertAnd) {
   EXPECT_EQ("(x == 1 ) && (x == 2 )",
-      str(d.Visit(AddBinaryLogical(OPAND,
+      str(s.Visit(AddBinaryLogical(OPAND,
           AddRelational(EQ, AddVar(0), AddNum(1)),
           AddRelational(EQ, AddVar(0), AddNum(2))))));
 }
 
 TEST_F(IlogCPTest, ConvertForAll) {
   EXPECT_EQ("(x == 1 ) && (x == 2 ) && (x == 3 )",
-      str(d.Visit(AddIteratedLogical(ANDLIST,
+      str(s.Visit(AddIteratedLogical(ANDLIST,
           AddRelational(EQ, AddVar(0), AddNum(1)),
           AddRelational(EQ, AddVar(0), AddNum(2)),
           AddRelational(EQ, AddVar(0), AddNum(3))))));
 }
 
 TEST_F(IlogCPTest, ConvertNot) {
-  IloConstraint c(d.Visit(AddNot(AddRelational(LE, AddVar(0), AddNum(42)))));
+  IloConstraint c(s.Visit(AddNot(AddRelational(LE, AddVar(0), AddNum(42)))));
   IloNotI *n = dynamic_cast<IloNotI*>(c.getImpl());
   ASSERT_TRUE(n != nullptr);
   EXPECT_EQ("x <= 42", str(n->getConstraint()));
 }
 
 TEST_F(IlogCPTest, ConvertIff) {
-  EXPECT_EQ("x == 1 == x == 2", str(d.Visit(AddBinaryLogical(OP_IFF,
+  EXPECT_EQ("x == 1 == x == 2", str(s.Visit(AddBinaryLogical(OP_IFF,
       AddRelational(EQ, AddVar(0), AddNum(1)),
       AddRelational(EQ, AddVar(0), AddNum(2))))));
 }
 
 TEST_F(IlogCPTest, ConvertImpElse) {
-  IloConstraint con(d.Visit(AddImplication(
+  IloConstraint con(s.Visit(AddImplication(
       AddRelational(EQ, AddVar(0), AddNum(0)),
       AddRelational(EQ, AddVar(0), AddNum(1)),
       AddRelational(EQ, AddVar(0), AddNum(2)))));
@@ -887,7 +887,7 @@ TEST_F(IlogCPTest, ConvertImpElse) {
 }
 
 TEST_F(IlogCPTest, ConvertAllDiff) {
-  IloConstraint con(d.Visit(AddAllDiff(AddVar(0), AddNum(42))));
+  IloConstraint con(s.Visit(AddAllDiff(AddVar(0), AddNum(42))));
   IloAllDiffI* diff = dynamic_cast<IloAllDiffI*>(con.getImpl());
   ASSERT_TRUE(diff != nullptr);
   std::ostringstream os;
@@ -904,10 +904,10 @@ TEST_F(IlogCPTest, ConvertAllDiff) {
 }
 
 // ----------------------------------------------------------------------------
-// Driver tests
+// Solver tests
 
 TEST_F(IlogCPTest, ObjConst) {
-  EXPECT_EQ(0, RunDriver(DATA_DIR "objconst"));
+  EXPECT_EQ(0, RunSolver(DATA_DIR "objconst"));
   IloModel::Iterator iter(mod_);
   ASSERT_NE(0, iter.ok());
   IloObjective obj = (*iter).asObjective();
@@ -915,12 +915,12 @@ TEST_F(IlogCPTest, ObjConst) {
 }
 
 TEST_F(IlogCPTest, CPOptimizerDoesntSupportContinuousVars) {
-  EXPECT_EQ(1, RunDriver(DATA_DIR "objconst", "optimizer=cp"));
+  EXPECT_EQ(1, RunSolver(DATA_DIR "objconst", "optimizer=cp"));
 }
 
 TEST_F(IlogCPTest, SolveNumberOfCplex) {
-  d.use_numberof(false);
-  RunDriver(DATA_DIR "numberof", "optimizer=cplex");
+  s.use_numberof(false);
+  RunSolver(DATA_DIR "numberof", "optimizer=cplex");
 }
 
 TEST_F(IlogCPTest, SolveAssign0) {
@@ -1033,54 +1033,54 @@ TEST_F(IlogCPTest, SolveSudokuVeryEasy) {
 // Option tests
 
 TEST_F(IlogCPTest, VersionOption) {
-  EXPECT_FALSE((d.flags() & ASL_OI_show_version) != 0);
+  EXPECT_FALSE((s.flags() & ASL_OI_show_version) != 0);
   EXPECT_TRUE(ParseOptions("version"));
-  EXPECT_TRUE((d.flags() & ASL_OI_show_version) != 0);
+  EXPECT_TRUE((s.flags() & ASL_OI_show_version) != 0);
 }
 
 TEST_F(IlogCPTest, WantsolOption) {
-  EXPECT_EQ(0, d.wantsol());
+  EXPECT_EQ(0, s.wantsol());
   EXPECT_TRUE(ParseOptions("wantsol=1"));
-  EXPECT_EQ(1, d.wantsol());
+  EXPECT_EQ(1, s.wantsol());
   EXPECT_TRUE(ParseOptions("wantsol=5"));
-  EXPECT_EQ(5, d.wantsol());
+  EXPECT_EQ(5, s.wantsol());
 }
 
 TEST_F(IlogCPTest, DebugExprOption) {
   EXPECT_TRUE(ParseOptions("debugexpr=0"));
-  EXPECT_EQ(0, d.GetOption(IlogCPDriver::DEBUGEXPR));
+  EXPECT_EQ(0, s.GetOption(IlogCPSolver::DEBUGEXPR));
   EXPECT_TRUE(ParseOptions("debugexpr=1"));
-  EXPECT_EQ(1, d.GetOption(IlogCPDriver::DEBUGEXPR));
+  EXPECT_EQ(1, s.GetOption(IlogCPSolver::DEBUGEXPR));
   EXPECT_FALSE(ParseOptions("debugexpr=42"));
   EXPECT_FALSE(ParseOptions("debugexpr=oops"));
 }
 
 TEST_F(IlogCPTest, OptimizerOption) {
-  EXPECT_EQ(IlogCPDriver::AUTO, d.GetOption(IlogCPDriver::OPTIMIZER));
+  EXPECT_EQ(IlogCPSolver::AUTO, s.GetOption(IlogCPSolver::OPTIMIZER));
 
   EXPECT_TRUE(ParseOptions("optimizer=cplex"));
-  EXPECT_EQ(IlogCPDriver::CPLEX, d.GetOption(IlogCPDriver::OPTIMIZER));
-  EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) != nullptr);
+  EXPECT_EQ(IlogCPSolver::CPLEX, s.GetOption(IlogCPSolver::OPTIMIZER));
+  EXPECT_TRUE(dynamic_cast<IloCplexI*>(s.alg().getImpl()) != nullptr);
 
   EXPECT_TRUE(ParseOptions("optimizer=cp"));
-  EXPECT_EQ(IlogCPDriver::CP, d.GetOption(IlogCPDriver::OPTIMIZER));
-  EXPECT_TRUE(dynamic_cast<IloCplexI*>(d.alg().getImpl()) == nullptr);
+  EXPECT_EQ(IlogCPSolver::CP, s.GetOption(IlogCPSolver::OPTIMIZER));
+  EXPECT_TRUE(dynamic_cast<IloCplexI*>(s.alg().getImpl()) == nullptr);
 }
 
 TEST_F(IlogCPTest, TimingOption) {
   EXPECT_TRUE(ParseOptions("timing=0"));
-  EXPECT_EQ(0, d.GetOption(IlogCPDriver::TIMING));
+  EXPECT_EQ(0, s.GetOption(IlogCPSolver::TIMING));
   EXPECT_TRUE(ParseOptions("timing=1"));
-  EXPECT_EQ(1, d.GetOption(IlogCPDriver::TIMING));
+  EXPECT_EQ(1, s.GetOption(IlogCPSolver::TIMING));
   EXPECT_FALSE(ParseOptions("timing=42"));
   EXPECT_FALSE(ParseOptions("timing=oops"));
 }
 
 TEST_F(IlogCPTest, UseNumberOfOption) {
   EXPECT_TRUE(ParseOptions("usenumberof=0"));
-  EXPECT_EQ(0, d.GetOption(IlogCPDriver::USENUMBEROF));
+  EXPECT_EQ(0, s.GetOption(IlogCPSolver::USENUMBEROF));
   EXPECT_TRUE(ParseOptions("usenumberof=1"));
-  EXPECT_EQ(1, d.GetOption(IlogCPDriver::USENUMBEROF));
+  EXPECT_EQ(1, s.GetOption(IlogCPSolver::USENUMBEROF));
   EXPECT_FALSE(ParseOptions("usenumberof=42"));
   EXPECT_FALSE(ParseOptions("timing=oops"));
 }
@@ -1118,7 +1118,7 @@ TEST_F(IlogCPTest, CPInferenceLevelOptions) {
 
 TEST_F(IlogCPTest, CPDefaultVerbosityQuiet) {
   EXPECT_TRUE(ParseOptions("optimizer=cp"));
-  CPOptimizer *opt = dynamic_cast<CPOptimizer*>(d.optimizer());
+  CPOptimizer *opt = dynamic_cast<CPOptimizer*>(s.optimizer());
   ASSERT_TRUE(opt != nullptr);
   EXPECT_EQ(IloCP::Quiet, opt->solver().getParameter(IloCP::LogVerbosity));
 }
@@ -1185,7 +1185,7 @@ TEST_F(IlogCPTest, CPOptions) {
 
 TEST_F(IlogCPTest, CPLEXDefaultMIPDisplayZero) {
   EXPECT_TRUE(ParseOptions("optimizer=cplex"));
-  CPLEXOptimizer *opt = dynamic_cast<CPLEXOptimizer*>(d.optimizer());
+  CPLEXOptimizer *opt = dynamic_cast<CPLEXOptimizer*>(s.optimizer());
   ASSERT_TRUE(opt != nullptr);
   EXPECT_EQ(0, opt->cplex().getParam(IloCplex::MIPDisplay));
 }
@@ -1201,21 +1201,21 @@ TEST_F(IlogCPTest, CPLEXOptions) {
 
 TEST_F(IlogCPTest, OptimalSolveCode) {
   Solve(DATA_DIR "objconst");
-  EXPECT_EQ(0, d.problem().solve_code());
+  EXPECT_EQ(0, s.problem().solve_code());
 }
 
 TEST_F(IlogCPTest, FeasibleSolveCode) {
   Solve(DATA_DIR "feasible");
-  EXPECT_EQ(100, d.problem().solve_code());
+  EXPECT_EQ(100, s.problem().solve_code());
 }
 
 TEST_F(IlogCPTest, InfeasibleSolveCode) {
   Solve(DATA_DIR "infeasible");
-  EXPECT_EQ(200, d.problem().solve_code());
+  EXPECT_EQ(200, s.problem().solve_code());
 }
 
 TEST_F(IlogCPTest, InfeasibleOrUnboundedSolveCode) {
   Solve(DATA_DIR "unbounded");
-  EXPECT_EQ(201, d.problem().solve_code());
+  EXPECT_EQ(201, s.problem().solve_code());
 }
 }
