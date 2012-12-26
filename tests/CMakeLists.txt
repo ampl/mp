@@ -35,6 +35,8 @@ cxx_test_with_flags(expr_test "" "gtest;util"
   test_main.cc expr_builder.cc expr_test.cc no_unordered_map_test.cc)
 
 cxx_test_with_flags(format_test "" "gtest;util" format_test.cc)
+cxx_test_with_flags(driver_test "" "gtest;util"
+  driver_test.cc args.cc test_main.cc)
 
 add_ampl_library(testlib testlib.cc)
 add_library(function function.cc function.h)

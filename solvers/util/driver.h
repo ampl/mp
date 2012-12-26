@@ -36,8 +36,6 @@ extern "C" {
 
 namespace ampl {
 
-class DriverBase;
-
 // An AMPL problem.
 class Problem {
  private:
@@ -52,9 +50,6 @@ class Problem {
  public:
   Problem();
   virtual ~Problem();
-
-  // Reads the problem form a .nl file.
-  bool Read(char **&argv, DriverBase &d);
 
   // Returns the number of variables.
   int num_vars() const { return asl_->i.n_var_; }
@@ -173,6 +168,8 @@ class ObjPrec {
   }
 };
 
+class DriverBase;
+
 class SolutionHandler {
  protected:
   ~SolutionHandler() {}
@@ -209,21 +206,23 @@ class OptionParser<const char*> {
 
 class DummyOptionHandler {};
 
-// Base class for all Driver<OptionHandler> classes.
+// Base class for all driver classes.
 class DriverBase : private SolutionHandler, private Option_Info {
  private:
   Problem problem_;
-  SolutionHandler *sol_handler_;
-  bool has_errors_;
+
+  std::string solver_name_;
+  std::string long_solver_name_;
+  std::string options_var_name_;
+  std::string version_;
+  std::string version_desc_;
+  std::string wantsol_desc_;
 
   std::vector<keyword> keywords_;
   bool options_sorted_;
-  std::string version_desc_;
-  std::string wantsol_desc_;
-  std::string version_;
-  std::string long_solver_name_;
 
-  friend class Problem;
+  SolutionHandler *sol_handler_;
+  bool has_errors_;
 
   void SortOptions();
 
@@ -244,6 +243,25 @@ class DriverBase : private SolutionHandler, private Option_Info {
  protected:
   static DummyOptionHandler dummy_option_handler;
 
+  // Constructs a DriverBase object.
+  // date: The driver date in YYYYMMDD format.
+  explicit DriverBase(fmt::StringRef solver_name,
+      fmt::StringRef long_solver_name = 0, long date = 0);
+  virtual ~DriverBase();
+
+  void set_long_solver_name(fmt::StringRef name) {
+    long_solver_name_ = name;
+    bsname = const_cast<char*>(long_solver_name_.c_str());
+  }
+
+  void set_version(fmt::StringRef version) {
+    version_ = version;
+    Option_Info::version = const_cast<char*>(version_.c_str());
+  }
+
+  void EnableOptionEcho(int mask) { option_echo |= mask; }
+  void DisableOptionEcho(int mask) { option_echo &= ~mask; }
+
   template <typename DriverT>
   static DriverT *GetDriver(Option_Info *oi) {
     return static_cast<DriverT*>(oi);
@@ -263,82 +281,60 @@ class DriverBase : private SolutionHandler, private Option_Info {
   static std::string FormatDescription(const char *description);
 
  public:
-  explicit DriverBase();
-  virtual ~DriverBase();
-
   Problem &problem() { return problem_; }
 
   // Returns the solver name.
-  const char *solver_name() const {
-    return sname;
-  }
-  void set_solver_name(const char *name) {
-    sname = const_cast<char*>(name);
-  }
+  const char *solver_name() const { return sname; }
 
   // Returns the long solver name.
   // This name is used in startup "banner".
-  const char *long_solver_name() const {
-    return bsname;
-  }
-  void set_long_solver_name(fmt::StringRef name) {
-    long_solver_name_ = name;
-    bsname = const_cast<char*>(long_solver_name_.c_str());
-  }
+  const char *long_solver_name() const { return bsname; }
 
-  // Returns the name of solver_options environment variable.
-  const char *options_var_name() const {
-    return opname;
-  }
-  void set_options_var_name(const char *name) {
-    opname = const_cast<char*>(name);
-  }
+  // Returns the name of <solver>_options environment variable.
+  const char *options_var_name() const { return opname; }
 
-  const char *version() const {
-    return Option_Info::version;
-  }
-  void set_version(fmt::StringRef version) {
-    version_ = version;
-    Option_Info::version = const_cast<char*>(version_.c_str());
-  }
+  // Returns the solver version.
+  const char *version() const { return Option_Info::version; }
 
-  long driver_date() const {
-    return Option_Info::driver_date;
-  }
-  void set_driver_date(long date) {
-    Option_Info::driver_date = date;
-  }
+  // Returns the driver date in YYYYMMDD format.
+  long date() const { return driver_date; }
 
-  void EnableOptionEcho(int mask) {
-    option_echo |= mask;
-  }
-  void DisableOptionEcho(int mask) {
-    option_echo &= ~mask;
-  }
+  // Returns the driver flags.
+  // Possible values that can be combined with bitwise OR:
+  //   ASL_OI_want_funcadd
+  //   ASL_OI_keep_underscores
+  //   ASL_OI_show_version
+  int flags() const { return Option_Info::flags; }
 
-  int flags() const {
-    return Option_Info::flags;
-  }
+  // Returns the value of the wantsol option which specifies what solution
+  // information to write in a stand-alone invocation (no -AMPL on the
+  // command line).  Possible values that can be combined with bitwise OR:
+  //   1 = write .sol file
+  //   2 = primal variables to stdout
+  //   4 = dual variables to stdout
+  //   8 = suppress solution message
+  int wantsol() const { return Option_Info::wantsol; }
 
-  int want_solution() const {
-    return wantsol;
-  }
+  // Returns the solution handler.
+  SolutionHandler *solution_handler() { return sol_handler_; }
 
-  void set_solution_handler(SolutionHandler *sh) {
-    sol_handler_ = sh;
+  // Sets the solution handler.
+  void set_solution_handler(SolutionHandler *sh) { sol_handler_ = sh; }
+
+  // Reads the problem from an .nl file.
+  bool ReadProblem(char **&argv);
+
+  // Passes a solution to the solution handler.
+  void HandleSolution(fmt::StringRef message,
+      const double *primal, const double *dual,
+      double obj_value = std::numeric_limits<double>::quiet_NaN()) {
+    sol_handler_->HandleSolution(*this, message, primal, dual, obj_value);
   }
 
   // Reports an error.
   fmt::TempFormatter<PrintError> ReportError(const char *format) {
     has_errors_ = true;
     return fmt::TempFormatter<PrintError>(format);
-  }
-
-  // Handle a solution.
-  void HandleSolution(fmt::StringRef message,
-      const double *primal, const double *dual,
-      double obj_value = std::numeric_limits<double>::quiet_NaN()) {
-    sol_handler_->HandleSolution(*this, message, primal, dual, obj_value);
   }
 };
 
@@ -515,7 +511,9 @@ class Driver : public DriverBase {
   }
 
  public:
-  Driver() : handler_(0) {}
+  Driver(fmt::StringRef solver_name,
+      fmt::StringRef long_solver_name = 0, long date = 0)
+  : DriverBase(solver_name, long_solver_name, date), handler_(0) {}
   ~Driver() {
     std::for_each(options_.begin(), options_.end(), Deleter());
   }

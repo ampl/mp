@@ -41,7 +41,9 @@ Args::Args(const char *arg1, const char *arg2,
 
 Args::operator char **() {
   argv_.resize(argc_ + 1);
-  for (std::size_t i = 0, j = 0; i < argc_; j += std::strlen(&store_[j]) + 1, ++i)
+  for (std::size_t i = 0, j = 0; i < argc_;
+      j += std::strlen(&store_[j]) + 1, ++i) {
     argv_[i] = &store_[j];
+  }
   return &argv_[0];
 }

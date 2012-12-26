@@ -906,24 +906,6 @@ TEST_F(IlogCPTest, ConvertAllDiff) {
 // ----------------------------------------------------------------------------
 // Driver tests
 
-TEST_F(IlogCPTest, Usage) {
-  FILE *saved_stderr = Stderr;
-  Stderr = fopen("out", "w");
-  d.Run(Args("ilogcp"));
-  fclose(Stderr);
-  Stderr = saved_stderr;
-
-  ifstream ifs("out");
-  enum { BUFFER_SIZE = 4096 };
-  char buffer[BUFFER_SIZE];
-  string text;
-  while (ifs) {
-    ifs.read(buffer, BUFFER_SIZE);
-    text += string(buffer, static_cast<string::size_type>(ifs.gcount()));
-  }
-  EXPECT_TRUE(text.find("usage: ") != string::npos);
-}
-
 TEST_F(IlogCPTest, ObjConst) {
   EXPECT_EQ(0, RunDriver(DATA_DIR "objconst"));
   IloModel::Iterator iter(mod_);
@@ -1057,11 +1039,11 @@ TEST_F(IlogCPTest, VersionOption) {
 }
 
 TEST_F(IlogCPTest, WantsolOption) {
-  EXPECT_EQ(0, d.want_solution());
+  EXPECT_EQ(0, d.wantsol());
   EXPECT_TRUE(ParseOptions("wantsol=1"));
-  EXPECT_EQ(1, d.want_solution());
+  EXPECT_EQ(1, d.wantsol());
   EXPECT_TRUE(ParseOptions("wantsol=5"));
-  EXPECT_EQ(5, d.want_solution());
+  EXPECT_EQ(5, d.wantsol());
 }
 
 TEST_F(IlogCPTest, DebugExprOption) {
