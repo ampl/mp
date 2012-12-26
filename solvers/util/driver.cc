@@ -74,27 +74,6 @@ Problem::~Problem() {
   ASL_free(reinterpret_cast<ASL**>(&asl_));
 }
 
-bool Problem::Read(char **&argv, DriverBase &d) {
-  d.SortOptions();
-  ASL *asl = reinterpret_cast<ASL*>(asl_);
-  char *stub = getstub_ASL(asl, &argv, &d);
-  if (!stub) {
-    usage_noexit_ASL(&d, 1);
-    return false;
-  }
-  FILE *nl = jac0dim_ASL(asl, stub, static_cast<ftnlen>(std::strlen(stub)));
-  asl_->i.Uvx_ = static_cast<real*>(Malloc(num_vars() * sizeof(real)));
-  asl_->i.Urhsx_ = static_cast<real*>(Malloc(num_cons() * sizeof(real)));
-  efunc *r_ops_int[N_OPS];
-  for (int i = 0; i < N_OPS; ++i)
-    r_ops_int[i] = reinterpret_cast<efunc*>(i);
-  asl_->I.r_ops_ = r_ops_int;
-  asl_->p.want_derivs_ = 0;
-  fg_read_ASL(asl, nl, ASL_allow_CLP);
-  asl_->I.r_ops_ = 0;
-  return true;
-}
-
 DummyOptionHandler DriverBase::dummy_option_handler;
 
 void DriverBase::SortOptions() {
@@ -105,7 +84,9 @@ void DriverBase::SortOptions() {
   options_sorted_ = true;
 }
 
-DriverBase::DriverBase() : has_errors_(false), options_sorted_(false) {
+DriverBase::DriverBase(
+    fmt::StringRef solver_name, fmt::StringRef long_solver_name, long date)
+: solver_name_(solver_name), options_sorted_(false), has_errors_(false) {
   sol_handler_ = this;
 
   // Workaround for GCC bug 30111 that prevents value-initialization of
@@ -114,8 +95,22 @@ DriverBase::DriverBase() : has_errors_(false), options_sorted_(false) {
   Option_Info &self = *this;
   self = init;
 
+  sname = const_cast<char*>(solver_name_.c_str());
+  if (long_solver_name.c_str()) {
+    long_solver_name_ = long_solver_name;
+    bsname = const_cast<char*>(long_solver_name_.c_str());
+  } else {
+    bsname = sname;
+  }
+  options_var_name_ = solver_name_;
+  options_var_name_ += "_options";
+  opname = const_cast<char*>(options_var_name_.c_str());
+  Option_Info::version = bsname;
+  driver_date = date;
+
   version_desc_ = FormatDescription(
-      "Single-word phrase:  report version details before solving the problem.");
+      "Single-word phrase:  report version details "
+      "before solving the problem.");
   AddKeyword("version", version_desc_.c_str(), Ver_val, 0);
   wantsol_desc_ = FormatDescription(
       "In a stand-alone invocation (no -AMPL on the command line), "
@@ -184,4 +179,27 @@ std::string DriverBase::FormatDescription(const char *description) {
 }
 
 DriverBase::~DriverBase() {}
+
+bool DriverBase::ReadProblem(char **&argv) {
+  SortOptions();
+  ASL_fg *aslfg = problem_.asl_;
+  ASL *asl = reinterpret_cast<ASL*>(aslfg);
+  char *stub = getstub_ASL(asl, &argv, this);
+  if (!stub) {
+    usage_noexit_ASL(this, 1);
+    return false;
+  }
+  FILE *nl = jac0dim_ASL(asl, stub, static_cast<ftnlen>(std::strlen(stub)));
+  aslfg->i.Uvx_ = static_cast<real*>(Malloc(problem_.num_vars() * sizeof(real)));
+  aslfg->i.Urhsx_ =
+      static_cast<real*>(Malloc(problem_.num_cons() * sizeof(real)));
+  efunc *r_ops_int[N_OPS];
+  for (int i = 0; i < N_OPS; ++i)
+    r_ops_int[i] = reinterpret_cast<efunc*>(i);
+  aslfg->I.r_ops_ = r_ops_int;
+  aslfg->p.want_derivs_ = 0;
+  fg_read_ASL(asl, nl, ASL_allow_CLP);
+  aslfg->I.r_ops_ = 0;
+  return true;
+}
 }
