@@ -1496,14 +1496,11 @@ static CONST double tinytens[] = { 1e-16, 1e-32 };
 #endif
 
 #ifdef Need_Hexdig /*{*/
+#if 0
 static unsigned char hexdig[256];
 
  static void
-#ifdef KR_headers
-htinit(h, s, inc) unsigned char *h; unsigned char *s; int inc;
-#else
 htinit(unsigned char *h, unsigned char *s, int inc)
-#endif
 {
 	int i, j;
 	for(i = 0; (j = s[i]) !=0; i++)
@@ -1511,17 +1508,34 @@ htinit(unsigned char *h, unsigned char *s, int inc)
 	}
 
  static void
-#ifdef KR_headers
-hexdig_init()
-#else
-hexdig_init(void)
-#endif
+hexdig_init(void)	/* Use of hexdig_init omitted 20121220 to avoid a */
+			/* race condition when multiple threads are used. */
 {
 #define USC (unsigned char *)
 	htinit(hexdig, USC "0123456789", 0x10);
 	htinit(hexdig, USC "abcdef", 0x10 + 10);
 	htinit(hexdig, USC "ABCDEF", 0x10 + 10);
 	}
+#else
+static unsigned char hexdig[256] = {
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	16,17,18,19,20,21,22,23,24,25,0,0,0,0,0,0,
+	0,26,27,28,29,30,31,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,26,27,28,29,30,31,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	};
+#endif
 #endif /* } Need_Hexdig */
 
 #ifdef INFNAN_CHECK
@@ -1568,8 +1582,7 @@ hexnan
 	CONST char *s;
 	int c1, havedig, udx0, xshift;
 
-	if (!hexdig['0'])
-		hexdig_init();
+	/**** if (!hexdig['0']) hexdig_init(); ****/
 	x[0] = x[1] = 0;
 	havedig = xshift = 0;
 	udx0 = 1;
@@ -1791,8 +1804,7 @@ gethex( CONST char **sp, U *rvp, int rounding, int sign)
 #endif
 #endif
 
-	if (!hexdig['0'])
-		hexdig_init();
+	/**** if (!hexdig['0']) hexdig_init(); ****/
 	havedig = 0;
 	s0 = *(CONST unsigned char **)sp + 2;
 	while(s0[havedig] == '0')

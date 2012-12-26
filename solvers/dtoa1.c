@@ -132,4 +132,4 @@ dtoa(double d, int mode, int ndigits, int *decpt, int *sign, char **rve)
 }
 #endif
 /* 20070913:  dtoa.c INFNAN_CHECK := default */
-/* 20120417:  sync with /netlib/fp */
+/* 20121220:  sync with /netlib/fp */
