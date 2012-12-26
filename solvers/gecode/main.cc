@@ -3,8 +3,7 @@
 
 int main(int, char **argv) {
   try {
-    ampl::GecodeDriver d;
-    return d.Run(argv);
+    return ampl::GecodeSolver().Run(argv);
   } catch (const std::exception &e) {
     std::cerr << "Error: " << e.what() << std::endl;
   }

@@ -8,11 +8,11 @@ using std::cerr;
 using std::endl;
 
 int main(int, char **argv) {
-  // Driver should be destroyed after any IloException is handled.
-  std::auto_ptr<ampl::IlogCPDriver> d;
+  // Solver should be destroyed after any IloException is handled.
+  std::auto_ptr<ampl::IlogCPSolver> s;
   try {
-    d.reset(new ampl::IlogCPDriver());
-    return d->Run(argv);
+    s.reset(new ampl::IlogCPSolver());
+    return s->Run(argv);
   } catch (const IloException &e) {
     cerr << "Error: " << e << endl;
   } catch (const ampl::Error &e) {

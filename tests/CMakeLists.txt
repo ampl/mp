@@ -35,8 +35,8 @@ cxx_test_with_flags(expr_test "" "gtest;util"
   test_main.cc expr_builder.cc expr_test.cc no_unordered_map_test.cc)
 
 cxx_test_with_flags(format_test "" "gtest;util" format_test.cc)
-cxx_test_with_flags(driver_test "" "gtest;util"
-  driver_test.cc args.cc test_main.cc)
+cxx_test_with_flags(solver_test "" "gtest;util"
+  solver_test.cc args.cc test_main.cc)
 
 add_ampl_library(testlib testlib.cc)
 add_library(function function.cc function.h)
@@ -78,7 +78,7 @@ endif ()
 
 find_package(Gecode)
 if (GECODE_FOUND)
-  cxx_test_with_flags(gecode_test "" "gtest;gecodedriver"
+  cxx_test_with_flags(gecode_test "" "gtest;amplgecode"
     test_main.cc args.cc expr_builder.cc gecode_test.cc)
 endif ()
 

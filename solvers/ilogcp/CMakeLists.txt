@@ -1,4 +1,4 @@
-# CMake build script for the IBM ILOG Concert/CP driver for AMPL.
+# CMake build script for the IBM ILOG Concert/CP solver for AMPL.
 
 find_package(CPLEX)
 if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
@@ -6,11 +6,11 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
   include_directories(.. ${CPLEX_ILOCPLEX_INCLUDE_DIRS}
     ${CPLEX_CP_INCLUDE_DIRS})
 
-  add_library(ilogcpdriver
+  add_library(amplilogcp
     ilogcp.cpp ilogcp.h ilogcp_date.h ../util/util-all.cc)
-  target_link_libraries(ilogcpdriver
+  target_link_libraries(amplilogcp
     ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_CP_LIBRARIES} ${CPLEX_LIBRARIES})
-  add_dependencies(ilogcpdriver arith_h)
+  add_dependencies(amplilogcp arith_h)
 
   if (MSVC)
     # CP Optimizer only provides libraries built with DLL MSVC runtime
@@ -26,11 +26,11 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
     endforeach ()
     add_library(amplsolver-dynrt ${SOURCES})
     add_dependencies(amplsolver-dynrt arith_h)
-    target_link_libraries(ilogcpdriver amplsolver-dynrt)
+    target_link_libraries(amplilogcp amplsolver-dynrt)
   else ()
-    target_link_libraries(ilogcpdriver ${SOLVER_LIBS})
+    target_link_libraries(amplilogcp ${SOLVER_LIBS})
   endif ()
 
   add_executable(ilogcp main.cpp)
-  target_link_libraries(ilogcp ilogcpdriver)
+  target_link_libraries(ilogcp amplilogcp)
 endif ()

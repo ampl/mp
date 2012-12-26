@@ -1,5 +1,5 @@
 /*
- IBM/ILOG CP solver driver for AMPL.
+ IBM/ILOG CP solver for AMPL.
 
  Copyright (C) 2012 AMPL Optimization LLC
 
@@ -35,7 +35,7 @@
 #include <string>
 #include <vector>
 
-#include "solvers/util/driver.h"
+#include "solvers/util/solver.h"
 #include "solvers/util/format.h"
 
 namespace ampl {
@@ -95,12 +95,12 @@ class CPOptimizer : public Optimizer {
       std::vector<double> &primal, std::vector<double> &dual) const;
 };
 
-class IlogCPDriver;
+class IlogCPSolver;
 
-typedef ExprVisitor<IlogCPDriver, IloExpr, IloConstraint> Visitor;
+typedef ExprVisitor<IlogCPSolver, IloExpr, IloConstraint> Visitor;
 
-// The IlogCP driver for AMPL.
-class IlogCPDriver : public Driver<IlogCPDriver>, public Visitor {
+// IlogCP solver.
+class IlogCPSolver : public Solver<IlogCPSolver>, public Visitor {
  private:
   IloEnv env_;
   IloModel mod_;
@@ -125,8 +125,8 @@ class IlogCPDriver : public Driver<IlogCPDriver>, public Visitor {
   IlogNumberOfMap numberofs_;
 
   // Do not implement.
-  IlogCPDriver(const IlogCPDriver&);
-  IlogCPDriver &operator=(const IlogCPDriver&);
+  IlogCPSolver(const IlogCPSolver&);
+  IlogCPSolver &operator=(const IlogCPSolver&);
 
  public:
   // Options accessible from AMPL.
@@ -176,8 +176,8 @@ class IlogCPDriver : public Driver<IlogCPDriver>, public Visitor {
   void SetCPLEXIntOption(const char *name, int value, int param);
 
  public:
-  IlogCPDriver();
-  virtual ~IlogCPDriver();
+  IlogCPSolver();
+  virtual ~IlogCPSolver();
 
   IloEnv env() const { return env_; }
   IloModel mod() const { return mod_; }
@@ -191,7 +191,6 @@ class IlogCPDriver : public Driver<IlogCPDriver>, public Visitor {
   IloNumVarArray vars() const { return vars_; }
   void set_vars(IloNumVarArray vars) { vars_ = vars; }
 
-  // Get and process ILOG Concert and driver options.
   bool ParseOptions(char **argv);
 
   int GetOption(Option opt) const {
@@ -456,7 +455,7 @@ class IlogCPDriver : public Driver<IlogCPDriver>, public Visitor {
   // which are much more useful to the solution procedure.
   void FinishBuildingNumberOf();
 
-  // Runs the driver.
+  // Runs the solver.
   int Run(char **argv);
 };
 }

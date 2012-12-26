@@ -1,5 +1,5 @@
 /*
- Utilities for writing AMPL solver drivers.
+ Utilities for writing AMPL solvers.
 
  Copyright (C) 2012 AMPL Optimization LLC
 
@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/util/driver.h"
+#include "solvers/util/solver.h"
 
 #include <cstdarg>
 #include <cstdio>
@@ -74,9 +74,9 @@ Problem::~Problem() {
   ASL_free(reinterpret_cast<ASL**>(&asl_));
 }
 
-DummyOptionHandler DriverBase::dummy_option_handler;
+DummyOptionHandler SolverBase::dummy_option_handler;
 
-void DriverBase::SortOptions() {
+void SolverBase::SortOptions() {
   if (options_sorted_) return;
   std::sort(keywords_.begin(), keywords_.end(), KeywordNameLess());
   keywds = &keywords_[0];
@@ -84,9 +84,8 @@ void DriverBase::SortOptions() {
   options_sorted_ = true;
 }
 
-DriverBase::DriverBase(
-    fmt::StringRef solver_name, fmt::StringRef long_solver_name, long date)
-: solver_name_(solver_name), options_sorted_(false), has_errors_(false) {
+SolverBase::SolverBase(fmt::StringRef name, fmt::StringRef long_name, long date)
+: name_(name), options_sorted_(false), has_errors_(false) {
   sol_handler_ = this;
 
   // Workaround for GCC bug 30111 that prevents value-initialization of
@@ -95,14 +94,14 @@ DriverBase::DriverBase(
   Option_Info &self = *this;
   self = init;
 
-  sname = const_cast<char*>(solver_name_.c_str());
-  if (long_solver_name.c_str()) {
-    long_solver_name_ = long_solver_name;
-    bsname = const_cast<char*>(long_solver_name_.c_str());
+  sname = const_cast<char*>(name_.c_str());
+  if (long_name.c_str()) {
+    long_name_ = long_name;
+    bsname = const_cast<char*>(long_name_.c_str());
   } else {
     bsname = sname;
   }
-  options_var_name_ = solver_name_;
+  options_var_name_ = name_;
   options_var_name_ += "_options";
   opname = const_cast<char*>(options_var_name_.c_str());
   Option_Info::version = bsname;
@@ -122,7 +121,7 @@ DriverBase::DriverBase(
   AddKeyword("wantsol", wantsol_desc_.c_str(), WS_val, 0);
 }
 
-void DriverBase::AddKeyword(const char *name,
+void SolverBase::AddKeyword(const char *name,
     const char *description, Kwfunc func, const void *info) {
   keywords_.push_back(keyword());
   keyword &kw = keywords_.back();
@@ -132,7 +131,7 @@ void DriverBase::AddKeyword(const char *name,
   kw.info = const_cast<void*>(info);
 }
 
-std::string DriverBase::FormatDescription(const char *description) {
+std::string SolverBase::FormatDescription(const char *description) {
   std::ostringstream os;
   os << '\n';
   bool new_line = true;
@@ -178,9 +177,9 @@ std::string DriverBase::FormatDescription(const char *description) {
   return os.str();
 }
 
-DriverBase::~DriverBase() {}
+SolverBase::~SolverBase() {}
 
-bool DriverBase::ReadProblem(char **&argv) {
+bool SolverBase::ReadProblem(char **&argv) {
   SortOptions();
   ASL_fg *aslfg = problem_.asl_;
   ASL *asl = reinterpret_cast<ASL*>(aslfg);

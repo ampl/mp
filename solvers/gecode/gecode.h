@@ -4,7 +4,7 @@
 #include <memory>
 #include <gecode/minimodel.hh>
 
-#include "solvers/util/driver.h"
+#include "solvers/util/solver.h"
 
 struct Option_Info;
 struct ASL_fg;
@@ -245,12 +245,12 @@ class NLToGecodeConverter :
   GecodeProblem &problem() { return problem_; }
 };
 
-// The Gecode driver for AMPL.
-class GecodeDriver : public Driver<GecodeDriver> {
+// Gecode solver.
+class GecodeSolver : public Solver<GecodeSolver> {
  public:
-  GecodeDriver();
+  GecodeSolver();
 
-  // Run the driver.
+  // Run the solver.
   int Run(char **argv);
 };
 }

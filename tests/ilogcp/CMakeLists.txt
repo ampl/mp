@@ -8,7 +8,7 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
 
   # Include the gtest source in test instead of linking with the library to
   # avoid a problem when gtest is built with a different runtime than ilogcp.
-  cxx_test_with_flags(ilogcp_test "" ilogcpdriver
+  cxx_test_with_flags(ilogcp_test "" amplilogcp
     ../test_main.cc ../args.cc ../expr_builder.cc
     ../gtest/src/gtest-all.cc ilogcp_test.cc)
 endif ()
