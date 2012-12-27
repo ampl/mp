@@ -413,7 +413,7 @@ class Solver : public SolverBase {
   OptionHandler *handler_;
   std::vector<Option*> options_;
 
-  static char *HandleOption(Option_Info *oi, keyword *kw, char *value) {
+  static char *HandleOption(::Option_Info *oi, keyword *kw, char *value) {
     Solver *self = GetSolver<Solver>(oi);
     Option *opt = self->options_[reinterpret_cast<size_t>(kw->info)];
     return opt->Handle(*self->handler_, oi, kw, value);
