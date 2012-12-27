@@ -243,6 +243,9 @@ class SolverBase : private SolutionHandler, private Option_Info {
  protected:
   static DummyOptionHandler dummy_option_handler;
 
+  // Make Option_Info accessible in subclasses despite private inheritance.
+  typedef Option_Info Option_Info;
+
   // Constructs a SolverBase object.
   // date: The solver date in YYYYMMDD format.
   explicit SolverBase(fmt::StringRef name,
@@ -413,7 +416,7 @@ class Solver : public SolverBase {
   OptionHandler *handler_;
   std::vector<Option*> options_;
 
-  static char *HandleOption(::Option_Info *oi, keyword *kw, char *value) {
+  static char *HandleOption(Option_Info *oi, keyword *kw, char *value) {
     Solver *self = GetSolver<Solver>(oi);
     Option *opt = self->options_[reinterpret_cast<size_t>(kw->info)];
     return opt->Handle(*self->handler_, oi, kw, value);
