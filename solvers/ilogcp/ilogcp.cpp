@@ -445,7 +445,7 @@ bool IlogCPSolver::ParseOptions(char **argv) {
   // Get optimizer type.
   gotopttype_ = false;
   DisableOptionEcho(ASL_OI_echo);
-  if (!Solver::ParseOptions(argv, *this))
+  if (!Solver<IlogCPSolver>::ParseOptions(argv, *this))
     return false;
 
   int &opt = options_[OPTIMIZER];
@@ -464,7 +464,7 @@ bool IlogCPSolver::ParseOptions(char **argv) {
   // Parse remaining options.
   gotopttype_ = true;
   EnableOptionEcho(ASL_OI_echo);
-  if (!Solver::ParseOptions(argv, *this))
+  if (!Solver<IlogCPSolver>::ParseOptions(argv, *this))
     return false;
 
   debug_ = GetOption(DEBUGEXPR) != 0;
@@ -614,7 +614,7 @@ int IlogCPSolver::Run(char **argv) {
   double Times[5];
   Times[0] = xectim_();
 
-  Problem &problem = Solver::problem();
+  Problem &problem = Solver<IlogCPSolver>::problem();
   if (!ReadProblem(argv) || !ParseOptions(argv))
     return 1;
 
