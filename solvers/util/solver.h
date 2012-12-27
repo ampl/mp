@@ -248,8 +248,7 @@ class SolverBase : private SolutionHandler, private Option_Info {
 
   // Constructs a SolverBase object.
   // date: The solver date in YYYYMMDD format.
-  explicit SolverBase(fmt::StringRef name,
-      fmt::StringRef long_name = 0, long date = 0);
+  SolverBase(fmt::StringRef name, fmt::StringRef long_name, long date);
   virtual ~SolverBase();
 
   void set_long_name(fmt::StringRef name) {
