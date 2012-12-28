@@ -152,7 +152,7 @@ class Problem {
 };
 
 // Formats a double with objective precision.
-// Usage: fmt::Format("{0}") << ObjPrec(42.0);
+// Usage: fmt::Format("{}") << ObjPrec(42.0);
 class ObjPrec {
  private:
   double value_;
@@ -261,14 +261,22 @@ class SolverBase : private SolutionHandler, private Option_Info {
     Option_Info::version = const_cast<char*>(version_.c_str());
   }
 
-  void EnableOptionEcho(int mask) { option_echo |= mask; }
-  void DisableOptionEcho(int mask) { option_echo &= ~mask; }
+  // Enables printing of each option during parsing.
+  void EnableOptionEcho() { option_echo |= ASL_OI_echo; }
+
+  // Disables printing of each option during parsing.
+  void DisableOptionEcho() {
+    option_echo |= ASL_OI_echothis;
+    option_echo &= ~ASL_OI_echo;
+  }
 
   template <typename SolverT>
   static SolverT *GetSolver(Option_Info *oi) {
     return static_cast<SolverT*>(oi);
   }
 
+  // Parses solver options.
+  // Returns true if there were no errors and false otherwise.
   bool ParseOptions(char **argv) {
     has_errors_ = false;
     SortOptions();
@@ -323,10 +331,12 @@ class SolverBase : private SolutionHandler, private Option_Info {
   // Sets the solution handler.
   void set_solution_handler(SolutionHandler *sh) { sol_handler_ = sh; }
 
-  // Reads the problem from an .nl file. Returns true if the arguments
-  // contain the file name (stub) and false otherwise. If there was an error
-  // parsing arguments or reading the problem ReadProblem will print an
-  // error message and call std::exit.
+  // Parses command-line options starting with '-' and reads the problem from
+  // an .nl file if the file name (stub) is specified. Returns true if the
+  // arguments contain the file name and false otherwise. If there was an
+  // error parsing arguments or reading the problem ReadProblem will print an
+  // error message and call std::exit (this is likely to change in the future
+  // version).
   bool ReadProblem(char **&argv);
 
   // Passes a solution to the solution handler.
@@ -336,10 +346,11 @@ class SolverBase : private SolutionHandler, private Option_Info {
     sol_handler_->HandleSolution(*this, message, primal, dual, obj_value);
   }
 
-  // Reports an error.
-  fmt::TempFormatter<PrintError> ReportError(const char *format) {
+  // Reports an error printing the formatted error message to stderr.
+  // Usage: ReportError("File not found: {}") << filename;
+  fmt::TempFormatter<PrintError> ReportError(fmt::StringRef format) {
     has_errors_ = true;
-    return fmt::TempFormatter<PrintError>(format);
+    return fmt::TempFormatter<PrintError>(format.c_str());
   }
 };
 

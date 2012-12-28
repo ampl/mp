@@ -45,6 +45,18 @@ std::string ReadFile(const char *name) {
   return data;
 }
 
+const void *const INFO = "";
+
+char *TestKeywordFunc(Option_Info *oi, keyword *kw, char *value) {
+  EXPECT_STREQ("testsolver", oi->sname);
+  EXPECT_TRUE(kw->info == INFO);
+  EXPECT_TRUE(kw->kf == TestKeywordFunc);
+  EXPECT_EQ("testopt", kw->name);
+  EXPECT_EQ("A Test Option", kw->desc);
+  EXPECT_EQ("42", std::string(value, 2));
+  return value + 2;
+}
+
 struct TestSolver : SolverBase {
   TestSolver(const char *name, const char *long_name = 0, long date = 0)
   : SolverBase(name, long_name, date) {}
@@ -59,6 +71,22 @@ struct TestSolver : SolverBase {
 
   bool ParseOptions(char **argv) {
     return SolverBase::ParseOptions(argv);
+  }
+
+  void EnableOptionEcho() {
+    SolverBase::EnableOptionEcho();
+  }
+
+  void DisableOptionEcho() {
+    SolverBase::DisableOptionEcho();
+  }
+
+  void AddKeyword() {
+    SolverBase::AddKeyword("testopt", "A Test Option", TestKeywordFunc, INFO);
+  }
+
+  std::string FormatDescription(const char *description) {
+    return SolverBase::FormatDescription(description);
   }
 };
 
@@ -178,6 +206,7 @@ TEST(SolverTest, OptionsVar) {
   TestSolver s("testsolver");
   char options[] = "testsolver_options=wantsol=9";
   putenv(options);
+  s.DisableOptionEcho();
   EXPECT_EQ(0, s.wantsol());
   EXPECT_TRUE(s.ParseOptions(Args(0)));
   EXPECT_EQ(9, s.wantsol());
@@ -245,5 +274,45 @@ TEST(SolverTest, ReadProblemError) {
   }, ::testing::ExitedWithCode(1), "testprogram: can't open nonexistent.nl");
 }
 
-// TODO: test ReportError, ParseOptions, EnableOptionEcho,
-//            AddKeyword, FormatDescription
+TEST(SolverTest, ReportError) {
+  TestSolver s("test");
+  EXPECT_EXIT({
+    s.ReportError("File not found: {0}") << "somefile";
+    exit(0);
+  }, ::testing::ExitedWithCode(0), "File not found: somefile");
+}
+
+TEST(SolverTest, OptionEcho) {
+  EXPECT_EXIT({
+    TestSolver s("test");
+    FILE *f = freopen("out", "w", stdout);
+    s.DisableOptionEcho();
+    s.ParseOptions(Args("wantsol=3"));
+    s.EnableOptionEcho();
+    s.ParseOptions(Args("wantsol=5"));
+    s.DisableOptionEcho();
+    s.ParseOptions(Args("wantsol=9"));
+    fclose(f);
+    exit(0);
+  }, ::testing::ExitedWithCode(0), "");
+  EXPECT_EQ("wantsol=5\n", ReadFile("out"));
+}
+
+TEST(SolverTest, ParseOptions) {
+  TestSolver s("testsolver");
+  s.DisableOptionEcho();
+  s.AddKeyword();
+  s.ParseOptions(Args("wantsol=5", "testopt=42"));
+  EXPECT_EQ(5, s.wantsol());
+}
+
+TEST(SolverTest, FormatDescription) {
+  TestSolver s("testsolver");
+  EXPECT_EQ(
+    "\n"
+    "      This is a very long option description that should be indented and\n"
+    "      wrapped.\n",
+    s.FormatDescription(
+          "This is a very long option description "
+          "that should be indented and wrapped."));
+}
