@@ -74,8 +74,6 @@ Problem::~Problem() {
   ASL_free(reinterpret_cast<ASL**>(&asl_));
 }
 
-DummyOptionHandler SolverBase::dummy_option_handler;
-
 void SolverBase::SortOptions() {
   if (options_sorted_) return;
   std::sort(keywords_.begin(), keywords_.end(), KeywordNameLess());
