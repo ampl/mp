@@ -444,7 +444,7 @@ void IlogCPSolver::SetCPLEXIntOption(const char *name, int value, int param) {
 bool IlogCPSolver::ParseOptions(char **argv) {
   // Get optimizer type.
   gotopttype_ = false;
-  DisableOptionEcho(ASL_OI_echo);
+  DisableOptionEcho();
   if (!Solver<IlogCPSolver>::ParseOptions(argv, *this))
     return false;
 
@@ -463,7 +463,7 @@ bool IlogCPSolver::ParseOptions(char **argv) {
 
   // Parse remaining options.
   gotopttype_ = true;
-  EnableOptionEcho(ASL_OI_echo);
+  EnableOptionEcho();
   if (!Solver<IlogCPSolver>::ParseOptions(argv, *this))
     return false;
 
