@@ -133,8 +133,9 @@ TEST(SolverTest, Version) {
   Args args("program-name", "-v");
   char **argv = args;
   EXPECT_EXIT({
-    freopen("out", "w", stdout);
+    FILE *f = freopen("out", "w", stdout);
     s.ReadProblem(argv);
+    fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Formatter format;
   format("Test Solver ({0}), ASL({1})\n") << sysdetails_ASL << ASLdate_ASL;
@@ -146,8 +147,9 @@ TEST(SolverTest, VersionWithDate) {
   Args args("program-name", "-v");
   char **argv = args;
   EXPECT_EXIT({
-    freopen("out", "w", stdout);
+    FILE *f = freopen("out", "w", stdout);
     s.ReadProblem(argv);
+    fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Formatter format;
   format("Test Solver ({0}), driver(20121227), ASL({1})\n")
@@ -163,8 +165,9 @@ TEST(SolverTest, SetVersion) {
   Args args("program-name", "-v");
   char **argv = args;
   EXPECT_EXIT({
-    freopen("out", "w", stdout);
+    FILE *f = freopen("out", "w", stdout);
     s.ReadProblem(argv);
+    fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Formatter format;
   format("{0} ({1}), ASL({2})\n") << VERSION << sysdetails_ASL << ASLdate_ASL;
