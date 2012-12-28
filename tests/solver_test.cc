@@ -26,6 +26,10 @@
 #include "solvers/util/solver.h"
 #include "tests/args.h"
 
+#ifdef WIN32
+# define putenv _putenv
+#endif
+
 using ampl::SolverBase;
 
 namespace {
@@ -39,7 +43,6 @@ std::string ReadFile(const char *name) {
     data.append(buffer, static_cast<std::string::size_type>(ifs.gcount()));
   } while (ifs);
   return data;
-}
 }
 
 struct TestSolver : SolverBase {
@@ -59,6 +62,23 @@ struct TestSolver : SolverBase {
   }
 };
 
+// Redirects Stderr to a file.
+class StderrRedirect {
+ private:
+  FILE *saved_stderr;
+
+ public:
+  StderrRedirect(const char *filename) : saved_stderr(Stderr) {
+    Stderr = fopen(filename, "w");
+  }
+
+  ~StderrRedirect() {
+    fclose(Stderr);
+    Stderr = saved_stderr;
+  }
+};
+}
+
 TEST(SolverTest, SolverBaseCtor) {
   TestSolver s("testsolver");
   EXPECT_EQ(0, s.problem().num_vars());
@@ -71,32 +91,30 @@ TEST(SolverTest, SolverBaseCtor) {
   EXPECT_EQ(0, s.wantsol());
 }
 
-class DtorTestSolver : public SolverBase {
- private:
-  bool &destroyed_;
-
- public:
-  DtorTestSolver(bool &destroyed)
-  : SolverBase("test", 0, 0), destroyed_(destroyed) {}
-  ~DtorTestSolver() { destroyed_ = true; }
-};
-
 TEST(SolverTest, SolverBaseVirtualDtor) {
   bool destroyed = false;
+  class DtorTestSolver : public SolverBase {
+   private:
+    bool &destroyed_;
+
+   public:
+    DtorTestSolver(bool &destroyed)
+    : SolverBase("test", 0, 0), destroyed_(destroyed) {}
+    ~DtorTestSolver() { destroyed_ = true; }
+  };
   (DtorTestSolver(destroyed));
   EXPECT_TRUE(destroyed);
 }
 
 TEST(SolverTest, NameInUsage) {
-  FILE *saved_stderr = Stderr;
-  Stderr = fopen("out", "w");
-  TestSolver s("solver-name", "long-solver-name");
-  s.set_version("solver-version");
-  Args args("program-name");
-  char **argv = args;
-  s.ReadProblem(argv);
-  fclose(Stderr);
-  Stderr = saved_stderr;
+  {
+    StderrRedirect redirect("out");
+    TestSolver s("solver-name", "long-solver-name");
+    s.set_version("solver-version");
+    Args args("program-name");
+    char **argv = args;
+    s.ReadProblem(argv);
+  }
   std::string usage = "usage: solver-name ";
   EXPECT_EQ(usage, ReadFile("out").substr(0, usage.size()));
 }
@@ -158,8 +176,69 @@ TEST(SolverTest, OptionsVar) {
   char options[] = "testsolver_options=wantsol=9";
   putenv(options);
   EXPECT_EQ(0, s.wantsol());
-  EXPECT_TRUE(s.ParseOptions(Args("program-name")));
+  EXPECT_TRUE(s.ParseOptions(Args(0)));
   EXPECT_EQ(9, s.wantsol());
 }
 
-// TODO: test setters, solution handler, etc.
+TEST(SolverTest, SolutionHandler) {
+  struct TestSolutionHandler : ampl::SolutionHandler {
+    SolverBase *solver;
+    std::string message;
+    const double *primal;
+    const double *dual;
+    double obj_value;
+
+    TestSolutionHandler() : solver(0), primal(0), dual(0), obj_value(0) {}
+
+    void HandleSolution(SolverBase &s, fmt::StringRef message,
+            const double *primal, const double *dual, double obj_value) {
+      solver = &s;
+      this->message = message;
+      this->primal = primal;
+      this->dual = dual;
+      this->obj_value = obj_value;
+    }
+  };
+
+  TestSolutionHandler sh;
+  TestSolver s("test");
+  s.set_solution_handler(&sh);
+  EXPECT_EQ(&sh, s.solution_handler());
+  double primal = 0, dual = 0, obj = 42;
+  s.HandleSolution("test message", &primal, &dual, obj);
+  EXPECT_EQ(&s, sh.solver);
+  EXPECT_EQ("test message", sh.message);
+  EXPECT_EQ(&primal, sh.primal);
+  EXPECT_EQ(&dual, sh.dual);
+  EXPECT_EQ(42.0, sh.obj_value);
+}
+
+TEST(SolverTest, ReadProblem) {
+  Args args("testprogram", "data/objconst.nl");
+  char **argv = args;
+  TestSolver s("test");
+  EXPECT_EQ(0, s.problem().num_vars());
+  EXPECT_TRUE(s.ReadProblem(argv));
+  EXPECT_EQ(1, s.problem().num_vars());
+}
+
+TEST(SolverTest, ReadProblemNoStub) {
+  StderrRedirect redirect("out");
+  Args args("testprogram");
+  char **argv = args;
+  TestSolver s("test");
+  EXPECT_EQ(0, s.problem().num_vars());
+  EXPECT_FALSE(s.ReadProblem(argv));
+  EXPECT_EQ(0, s.problem().num_vars());
+}
+
+TEST(SolverTest, ReadProblemError) {
+  Args args("testprogram", "nonexistent");
+  char **argv = args;
+  TestSolver s("test");
+  EXPECT_EXIT(s.ReadProblem(argv);, ::testing::ExitedWithCode(1),
+    "testprogram: can't open nonexistent.nl");
+}
+
+// TODO: test ReportError, ParseOptions, EnableOptionEcho,
+//            AddKeyword, FormatDescription

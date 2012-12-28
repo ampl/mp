@@ -323,7 +323,10 @@ class SolverBase : private SolutionHandler, private Option_Info {
   // Sets the solution handler.
   void set_solution_handler(SolutionHandler *sh) { sol_handler_ = sh; }
 
-  // Reads the problem from an .nl file.
+  // Reads the problem from an .nl file. Returns true if the arguments
+  // contain the file name (stub) and false otherwise. If there was an error
+  // parsing arguments or reading the problem ReadProblem will print an
+  // error message and call std::exit.
   bool ReadProblem(char **&argv);
 
   // Passes a solution to the solution handler.
@@ -519,10 +522,10 @@ class Solver : public SolverBase {
     std::for_each(options_.begin(), options_.end(), Deleter());
   }
 
-  // Parses options and returns true if there were no errors, false otherwise.
-  // Note that handler functions can report errors with SolverBase::ReportError
-  // and ParseOptions will take them into account as well, returning false if
-  // there was at least one such error.
+  // Parses solver options and returns true if there were no errors and
+  // false otherwise. Note that handler functions can report errors with
+  // SolverBase::ReportError and ParseOptions will take them into account
+  // as well, returning false if there was at least one such error.
   bool ParseOptions(char **argv, OptionHandler &h = dummy_option_handler) {
     handler_ = &h;
     return SolverBase::ParseOptions(argv);
