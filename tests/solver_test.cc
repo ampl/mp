@@ -206,7 +206,7 @@ TEST(SolverTest, SolutionHandler) {
   TestSolutionHandler sh;
   TestSolver s("test");
   s.set_solution_handler(&sh);
-  EXPECT_EQ(&sh, s.solution_handler());
+  EXPECT_TRUE(&sh == s.solution_handler());
   double primal = 0, dual = 0, obj = 42;
   s.HandleSolution("test message", &primal, &dual, obj);
   EXPECT_EQ(&s, sh.solver);
@@ -239,8 +239,10 @@ TEST(SolverTest, ReadProblemError) {
   Args args("testprogram", "nonexistent");
   char **argv = args;
   TestSolver s("test");
-  EXPECT_EXIT(s.ReadProblem(argv);, ::testing::ExitedWithCode(1),
-    "testprogram: can't open nonexistent.nl");
+  EXPECT_EXIT({
+    Stderr = stderr;
+    s.ReadProblem(argv);
+  }, ::testing::ExitedWithCode(1), "testprogram: can't open nonexistent.nl");
 }
 
 // TODO: test ReportError, ParseOptions, EnableOptionEcho,
