@@ -189,7 +189,8 @@ bool SolverBase::ReadProblem(char **&argv) {
     return false;
   }
   FILE *nl = jac0dim_ASL(asl, stub, static_cast<ftnlen>(std::strlen(stub)));
-  aslfg->i.Uvx_ = static_cast<real*>(Malloc(problem_.num_vars() * sizeof(real)));
+  aslfg->i.Uvx_ =
+      static_cast<real*>(Malloc(problem_.num_vars() * sizeof(real)));
   aslfg->i.Urhsx_ =
       static_cast<real*>(Malloc(problem_.num_cons() * sizeof(real)));
   efunc *r_ops_int[N_OPS];
