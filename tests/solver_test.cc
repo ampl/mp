@@ -31,6 +31,7 @@
 #endif
 
 using ampl::SolverBase;
+using ampl::Solver;
 
 namespace {
 std::string ReadFile(const char *name) {
@@ -51,8 +52,8 @@ char *TestKeywordFunc(Option_Info *oi, keyword *kw, char *value) {
   EXPECT_STREQ("testsolver", oi->sname);
   EXPECT_TRUE(kw->info == INFO);
   EXPECT_TRUE(kw->kf == TestKeywordFunc);
-  EXPECT_EQ("testopt", kw->name);
-  EXPECT_EQ("A Test Option", kw->desc);
+  EXPECT_STREQ("testopt", kw->name);
+  EXPECT_STREQ("A Test Option", kw->desc);
   EXPECT_EQ("42", std::string(value, 2));
   return value + 2;
 }
@@ -70,7 +71,7 @@ struct TestSolver : SolverBase {
   }
 
   bool ParseOptions(char **argv) {
-    return SolverBase::ParseOptions(argv);
+    return DoParseOptions(argv);
   }
 
   void EnableOptionEcho() {
@@ -316,3 +317,87 @@ TEST(SolverTest, FormatDescription) {
           "This is a very long option description "
           "that should be indented and wrapped."));
 }
+
+struct DummyOptionHandler {};
+
+TEST(SolverTest, SolverWithDefaultOptionHandler) {
+  Solver<DummyOptionHandler> s("testsolver");
+  EXPECT_STREQ("testsolver", s.name());
+  s.DisableOptionEcho();
+  DummyOptionHandler handler;
+  s.ParseOptions(Args("wantsol=3"), handler);
+  EXPECT_EQ(3, s.wantsol());
+}
+
+struct OptSolver : Solver<OptSolver> {
+  int intopt1;
+  int intopt2;
+  double dblopt1;
+  double dblopt2;
+  std::string stropt1;
+  std::string stropt2;
+
+  enum Tag { A, B, C, D };
+
+  void SetIntOption(const char *name, int value) {
+    EXPECT_STREQ("intopt1", name);
+    intopt1 = value;
+  }
+
+  void SetIntOptionWithTag(const char *name, int value, Tag tag) {
+    EXPECT_STREQ("intopt2", name);
+    intopt2 = value;
+    EXPECT_EQ(B, tag);
+  }
+
+  void SetDblOption(const char *name, double value) {
+    EXPECT_STREQ("dblopt1", name);
+    dblopt1 = value;
+  }
+
+  void SetDblOptionWithTag(const char *name, double value, Tag tag) {
+    EXPECT_STREQ("dblopt2", name);
+    dblopt2 = value;
+    EXPECT_EQ(C, tag);
+  }
+
+  void SetStrOption(const char *name, const char *value) {
+    EXPECT_STREQ("stropt1", name);
+    stropt1 = value;
+  }
+
+  void SetStrOptionWithTag(const char *name, const char *value, Tag tag) {
+    EXPECT_STREQ("stropt2", name);
+    stropt2 = value;
+    EXPECT_EQ(D, tag);
+  }
+
+  OptSolver()
+  : Solver<OptSolver>("test"), intopt1(0), intopt2(0), dblopt1(0), dblopt2(0) {
+    AddIntOption("intopt1", "Integer option 1", &OptSolver::SetIntOption);
+    AddIntOption("intopt2", "Integer option 2",
+        &OptSolver::SetIntOptionWithTag, B);
+    AddDblOption("dblopt1", "Double option 1", &OptSolver::SetDblOption);
+    AddDblOption("dblopt2", "Double option 2",
+        &OptSolver::SetDblOptionWithTag, C);
+    AddStrOption("stropt1", "Double option 1", &OptSolver::SetStrOption);
+    AddStrOption("stropt2", "Double option 2",
+        &OptSolver::SetStrOptionWithTag, D);
+  }
+};
+
+TEST(SolverTest, SolverOptions) {
+  OptSolver s;
+  s.DisableOptionEcho();
+  s.ParseOptions(Args("intopt1=3", "intopt2=7"), s);
+  EXPECT_EQ(3, s.intopt1);
+  EXPECT_EQ(7, s.intopt2);
+  s.ParseOptions(Args("dblopt2=1.3", "dblopt1=5.4"), s);
+  EXPECT_EQ(5.4, s.dblopt1);
+  EXPECT_EQ(1.3, s.dblopt2);
+  s.ParseOptions(Args("stropt1=abc", "stropt2=def"), s);
+  EXPECT_EQ("abc", s.stropt1);
+  EXPECT_EQ("def", s.stropt2);
+}
+
+// TODO: test parse errors and separate handler

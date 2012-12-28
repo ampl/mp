@@ -204,8 +204,6 @@ class OptionParser<const char*> {
 };
 }
 
-class DummyOptionHandler {};
-
 // Base class for all solver classes.
 class SolverBase : private SolutionHandler, private Option_Info {
  private:
@@ -241,8 +239,6 @@ class SolverBase : private SolutionHandler, private Option_Info {
   };
 
  protected:
-  static DummyOptionHandler dummy_option_handler;
-
   // Make Option_Info accessible in subclasses despite private inheritance.
   typedef Option_Info Option_Info;
 
@@ -277,7 +273,7 @@ class SolverBase : private SolutionHandler, private Option_Info {
 
   // Parses solver options.
   // Returns true if there were no errors and false otherwise.
-  bool ParseOptions(char **argv) {
+  bool DoParseOptions(char **argv) {
     has_errors_ = false;
     SortOptions();
     ASL *asl = reinterpret_cast<ASL*>(problem_.asl_);
@@ -376,7 +372,7 @@ class SolverBase : private SolutionHandler, private Option_Info {
 //                  &MySolver::SetTestOption, 42);
 //   }
 // };
-template <typename OptionHandler = DummyOptionHandler>
+template <typename OptionHandler>
 class Solver : public SolverBase {
  private:
   class Option {
@@ -533,13 +529,16 @@ class Solver : public SolverBase {
     std::for_each(options_.begin(), options_.end(), Deleter());
   }
 
+  using SolverBase::EnableOptionEcho;
+  using SolverBase::DisableOptionEcho;
+
   // Parses solver options and returns true if there were no errors and
   // false otherwise. Note that handler functions can report errors with
   // SolverBase::ReportError and ParseOptions will take them into account
   // as well, returning false if there was at least one such error.
-  bool ParseOptions(char **argv, OptionHandler &h = dummy_option_handler) {
+  bool ParseOptions(char **argv, OptionHandler &h) {
     handler_ = &h;
-    return SolverBase::ParseOptions(argv);
+    return DoParseOptions(argv);
   }
 };
 }
