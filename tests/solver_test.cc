@@ -30,7 +30,7 @@
 # define putenv _putenv
 #endif
 
-using ampl::SolverBase;
+using ampl::BasicSolver;
 using ampl::Solver;
 
 namespace {
@@ -58,36 +58,28 @@ char *TestKeywordFunc(Option_Info *oi, keyword *kw, char *value) {
   return value + 2;
 }
 
-struct TestSolver : SolverBase {
+struct TestSolver : BasicSolver {
   TestSolver(const char *name, const char *long_name = 0, long date = 0)
-  : SolverBase(name, long_name, date) {}
+  : BasicSolver(name, long_name, date) {}
 
   void set_long_name(const char *name) {
-    SolverBase::set_long_name(name);
+    BasicSolver::set_long_name(name);
   }
 
   void set_version(const char *version) {
-    SolverBase::set_version(version);
+    BasicSolver::set_version(version);
   }
 
-  bool ParseOptions(char **argv) {
-    return DoParseOptions(argv);
-  }
-
-  void EnableOptionEcho() {
-    SolverBase::EnableOptionEcho();
-  }
-
-  void DisableOptionEcho() {
-    SolverBase::DisableOptionEcho();
+  bool ParseOptions(char **argv, unsigned flags = BasicSolver::NO_OPTION_ECHO) {
+    return DoParseOptions(argv, flags);
   }
 
   void AddKeyword() {
-    SolverBase::AddKeyword("testopt", "A Test Option", TestKeywordFunc, INFO);
+    BasicSolver::AddKeyword("testopt", "A Test Option", TestKeywordFunc, INFO);
   }
 
   std::string FormatDescription(const char *description) {
-    return SolverBase::FormatDescription(description);
+    return BasicSolver::FormatDescription(description);
   }
 };
 
@@ -122,13 +114,13 @@ TEST(SolverTest, SolverBaseCtor) {
 
 TEST(SolverTest, SolverBaseVirtualDtor) {
   bool destroyed = false;
-  class DtorTestSolver : public SolverBase {
+  class DtorTestSolver : public BasicSolver {
    private:
     bool &destroyed_;
 
    public:
     DtorTestSolver(bool &destroyed)
-    : SolverBase("test", 0, 0), destroyed_(destroyed) {}
+    : BasicSolver("test", 0, 0), destroyed_(destroyed) {}
     ~DtorTestSolver() { destroyed_ = true; }
   };
   (DtorTestSolver(destroyed));
@@ -207,15 +199,31 @@ TEST(SolverTest, OptionsVar) {
   TestSolver s("testsolver");
   char options[] = "testsolver_options=wantsol=9";
   putenv(options);
-  s.DisableOptionEcho();
   EXPECT_EQ(0, s.wantsol());
   EXPECT_TRUE(s.ParseOptions(Args(0)));
   EXPECT_EQ(9, s.wantsol());
 }
 
+TEST(SolverTest, ErrorHandler) {
+  struct TestErrorHandler : ampl::ErrorHandler {
+    std::string message;
+
+    void HandleError(fmt::StringRef message) {
+      this->message = message;
+    }
+  };
+
+  TestErrorHandler eh;
+  TestSolver s("test");
+  s.set_error_handler(&eh);
+  EXPECT_TRUE(&eh == s.error_handler());
+  s.ReportError("test message");
+  EXPECT_EQ("test message", eh.message);
+}
+
 TEST(SolverTest, SolutionHandler) {
   struct TestSolutionHandler : ampl::SolutionHandler {
-    SolverBase *solver;
+    BasicSolver *solver;
     std::string message;
     const double *primal;
     const double *dual;
@@ -223,7 +231,7 @@ TEST(SolverTest, SolutionHandler) {
 
     TestSolutionHandler() : solver(0), primal(0), dual(0), obj_value(0) {}
 
-    void HandleSolution(SolverBase &s, fmt::StringRef message,
+    void HandleSolution(BasicSolver &s, fmt::StringRef message,
             const double *primal, const double *dual, double obj_value) {
       solver = &s;
       this->message = message;
@@ -287,11 +295,8 @@ TEST(SolverTest, OptionEcho) {
   EXPECT_EXIT({
     TestSolver s("test");
     FILE *f = freopen("out", "w", stdout);
-    s.DisableOptionEcho();
     s.ParseOptions(Args("wantsol=3"));
-    s.EnableOptionEcho();
-    s.ParseOptions(Args("wantsol=5"));
-    s.DisableOptionEcho();
+    s.ParseOptions(Args("wantsol=5"), 0);
     s.ParseOptions(Args("wantsol=9"));
     fclose(f);
     exit(0);
@@ -301,7 +306,6 @@ TEST(SolverTest, OptionEcho) {
 
 TEST(SolverTest, ParseOptions) {
   TestSolver s("testsolver");
-  s.DisableOptionEcho();
   s.AddKeyword();
   s.ParseOptions(Args("wantsol=5", "testopt=42"));
   EXPECT_EQ(5, s.wantsol());
@@ -323,9 +327,8 @@ struct DummyOptionHandler {};
 TEST(SolverTest, SolverWithDefaultOptionHandler) {
   Solver<DummyOptionHandler> s("testsolver");
   EXPECT_STREQ("testsolver", s.name());
-  s.DisableOptionEcho();
   DummyOptionHandler handler;
-  s.ParseOptions(Args("wantsol=3"), handler);
+  s.ParseOptions(Args("wantsol=3"), handler, BasicSolver::NO_OPTION_ECHO);
   EXPECT_EQ(3, s.wantsol());
 }
 
@@ -372,6 +375,12 @@ struct OptSolver : Solver<OptSolver> {
     EXPECT_EQ(D, tag);
   }
 
+  void Throw(const char *, int value) {
+    if (value == 1)
+      throw 1;
+    throw std::runtime_error("Test exception in handler");
+  }
+
   OptSolver()
   : Solver<OptSolver>("test"), intopt1(0), intopt2(0), dblopt1(0), dblopt2(0) {
     AddIntOption("intopt1", "Integer option 1", &OptSolver::SetIntOption);
@@ -383,21 +392,82 @@ struct OptSolver : Solver<OptSolver> {
     AddStrOption("stropt1", "Double option 1", &OptSolver::SetStrOption);
     AddStrOption("stropt2", "Double option 2",
         &OptSolver::SetStrOptionWithTag, D);
+    AddIntOption("throw", "", &OptSolver::Throw);
+  }
+
+  bool ParseOptions(char **argv) {
+    return Solver<OptSolver>::ParseOptions(
+        argv, *this, BasicSolver::NO_OPTION_ECHO);
   }
 };
 
 TEST(SolverTest, SolverOptions) {
   OptSolver s;
-  s.DisableOptionEcho();
-  s.ParseOptions(Args("intopt1=3", "intopt2=7"), s);
+  EXPECT_TRUE(s.ParseOptions(Args("intopt1=3", "intopt2=7")));
   EXPECT_EQ(3, s.intopt1);
   EXPECT_EQ(7, s.intopt2);
-  s.ParseOptions(Args("dblopt2=1.3", "dblopt1=5.4"), s);
+  EXPECT_TRUE(s.ParseOptions(Args("dblopt2=1.3", "dblopt1=5.4")));
   EXPECT_EQ(5.4, s.dblopt1);
   EXPECT_EQ(1.3, s.dblopt2);
-  s.ParseOptions(Args("stropt1=abc", "stropt2=def"), s);
+  EXPECT_TRUE(s.ParseOptions(Args("stropt1=abc", "stropt2=def")));
   EXPECT_EQ("abc", s.stropt1);
   EXPECT_EQ("def", s.stropt2);
 }
 
-// TODO: test parse errors and separate handler
+struct TestOptionHandler {
+  int answer;
+
+  void SetAnswer(const char *name, int value) {
+    EXPECT_STREQ("answer", name);
+    answer = value;
+  }
+};
+
+struct TestSolver2 : Solver<TestOptionHandler> {
+  TestSolver2() : Solver<TestOptionHandler>("test") {
+    AddIntOption("answer", "The answer to life the universe and everything",
+        &TestOptionHandler::SetAnswer);
+  }
+};
+
+TEST(SolverTest, SeparateOptionHandler) {
+  TestSolver2 s;
+  TestOptionHandler handler;
+  EXPECT_TRUE(s.ParseOptions(
+      Args("answer=42"), handler, BasicSolver::NO_OPTION_ECHO));
+  EXPECT_EQ(42, handler.answer);
+}
+
+TEST(SolverTest, OptionParseError) {
+  OptSolver s;
+  EXPECT_FALSE(s.ParseOptions(Args("badopt=3")));
+  EXPECT_EXIT({
+    FILE *f = freopen("out", "w", stdout);
+    s.ParseOptions(Args("badopt=3"));
+    fclose(f);
+    exit(0);
+  }, ::testing::ExitedWithCode(0), "");
+  EXPECT_EQ("Unknown keyword \"badopt\"\n", ReadFile("out"));
+}
+
+struct TestErrorHandler : ampl::ErrorHandler {
+  std::vector<std::string> errors_;
+
+  void HandleError(fmt::StringRef message) {
+    errors_.push_back(message);
+  }
+};
+
+TEST(SolverTest, ExceptionInOptionHandler) {
+  OptSolver s;
+  TestErrorHandler handler;
+  s.set_error_handler(&handler);
+  EXPECT_FALSE(s.ParseOptions(Args("throw=1")));
+  EXPECT_EQ(1u, handler.errors_.size());
+  EXPECT_EQ("Unknown exception in option handler", handler.errors_[0]);
+  EXPECT_FALSE(s.ParseOptions(Args("throw=2")));
+  EXPECT_EQ(2u, handler.errors_.size());
+  EXPECT_EQ("Test exception in handler", handler.errors_[1]);
+}
+
+// TODO: test ObjPrec and Problem

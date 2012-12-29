@@ -74,7 +74,7 @@ Problem::~Problem() {
   ASL_free(reinterpret_cast<ASL**>(&asl_));
 }
 
-void SolverBase::SortOptions() {
+void BasicSolver::SortOptions() {
   if (options_sorted_) return;
   std::sort(keywords_.begin(), keywords_.end(), KeywordNameLess());
   keywds = &keywords_[0];
@@ -82,8 +82,9 @@ void SolverBase::SortOptions() {
   options_sorted_ = true;
 }
 
-SolverBase::SolverBase(fmt::StringRef name, fmt::StringRef long_name, long date)
+BasicSolver::BasicSolver(fmt::StringRef name, fmt::StringRef long_name, long date)
 : name_(name), options_sorted_(false), has_errors_(false) {
+  error_handler_ = this;
   sol_handler_ = this;
 
   // Workaround for GCC bug 30111 that prevents value-initialization of
@@ -119,7 +120,7 @@ SolverBase::SolverBase(fmt::StringRef name, fmt::StringRef long_name, long date)
   AddKeyword("wantsol", wantsol_desc_.c_str(), WS_val, 0);
 }
 
-void SolverBase::AddKeyword(const char *name,
+void BasicSolver::AddKeyword(const char *name,
     const char *description, Kwfunc func, const void *info) {
   keywords_.push_back(keyword());
   keyword &kw = keywords_.back();
@@ -129,7 +130,7 @@ void SolverBase::AddKeyword(const char *name,
   kw.info = const_cast<void*>(info);
 }
 
-std::string SolverBase::FormatDescription(const char *description) {
+std::string BasicSolver::FormatDescription(const char *description) {
   std::ostringstream os;
   os << '\n';
   bool new_line = true;
@@ -175,9 +176,9 @@ std::string SolverBase::FormatDescription(const char *description) {
   return os.str();
 }
 
-SolverBase::~SolverBase() {}
+BasicSolver::~BasicSolver() {}
 
-bool SolverBase::ReadProblem(char **&argv) {
+bool BasicSolver::ReadProblem(char **&argv) {
   SortOptions();
   ASL_fg *aslfg = problem_.asl_;
   ASL *asl = reinterpret_cast<ASL*>(aslfg);

@@ -633,9 +633,9 @@ class TestSolutionHandler : public ampl::SolutionHandler {
   double obj_value() const { return obj_value_; }
   const std::string &message() const { return message_; }
 
-  void HandleSolution(ampl::SolverBase &d, fmt::StringRef message,
+  void HandleSolution(ampl::BasicSolver &s, fmt::StringRef message,
         const double *, const double *, double obj_value) {
-    solve_code_ = d.problem().solve_code();
+    solve_code_ = s.problem().solve_code();
     message_ = message;
     obj_value_ = obj_value;
   }
