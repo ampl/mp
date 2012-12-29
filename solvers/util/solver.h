@@ -45,7 +45,7 @@ class Problem {
   Problem(const Problem&);
   Problem& operator=(const Problem&);
 
-  friend class SolverBase;
+  friend class BasicSolver;
 
  public:
   Problem();
@@ -80,25 +80,25 @@ class Problem {
   // Returns the number of logical constraints.
   int num_logical_cons() const { return asl_->i.n_lcon_; }
 
-  // Returns the variable lower bound.
+  // Returns the lower bound for the variable.
   double GetVarLB(int var_index) const {
     assert(var_index >= 0 && var_index < num_vars());
     return asl_->i.LUv_[var_index];
   }
 
-  // Returns the variable lower bound.
+  // Returns the upper bound for the variable.
   double GetVarUB(int var_index) const {
     assert(var_index >= 0 && var_index < num_vars());
     return asl_->i.Uvx_[var_index];
   }
 
-  // Returns the constraint lower bound.
+  // Returns the lower bound for the constraint.
   double GetConLB(int con_index) const {
     assert(con_index >= 0 && con_index < num_cons());
     return asl_->i.LUrhs_[con_index];
   }
 
-  // Returns the constraint lower bound.
+  // Returns the upper bound for the constraint.
   double GetConUB(int con_index) const {
     assert(con_index >= 0 && con_index < num_cons());
     return asl_->i.Urhsx_[con_index];
@@ -168,14 +168,24 @@ class ObjPrec {
   }
 };
 
-class SolverBase;
+class BasicSolver;
 
+// An interface for receiving errors reported via BasicSolver::ReportError.
+class ErrorHandler {
+ protected:
+  ~ErrorHandler() {}
+
+ public:
+  virtual void HandleError(fmt::StringRef message) = 0;
+};
+
+// An interface for receiving solutions.
 class SolutionHandler {
  protected:
   ~SolutionHandler() {}
 
  public:
-  virtual void HandleSolution(SolverBase &d, fmt::StringRef message,
+  virtual void HandleSolution(BasicSolver &s, fmt::StringRef message,
       const double *primal, const double *dual, double obj_value) = 0;
 };
 
@@ -205,7 +215,8 @@ class OptionParser<const char*> {
 }
 
 // Base class for all solver classes.
-class SolverBase : private SolutionHandler, private Option_Info {
+class BasicSolver
+  : private ErrorHandler, private SolutionHandler, private Option_Info {
  private:
   Problem problem_;
 
@@ -219,22 +230,33 @@ class SolverBase : private SolutionHandler, private Option_Info {
   std::vector<keyword> keywords_;
   bool options_sorted_;
 
-  SolutionHandler *sol_handler_;
   bool has_errors_;
+  ErrorHandler *error_handler_;
+  SolutionHandler *sol_handler_;
 
   void SortOptions();
 
-  void HandleSolution(SolverBase &, fmt::StringRef message,
+  void HandleError(fmt::StringRef message) {
+    std::fputs(message.c_str(), stderr);
+    std::fputc('\n', stderr);
+  }
+
+  void HandleSolution(BasicSolver &, fmt::StringRef message,
         const double *primal, const double *dual, double) {
     write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_),
         const_cast<char*>(message.c_str()), const_cast<double*>(primal),
         const_cast<double*>(dual), this);
   }
 
-  struct PrintError {
+  class ErrorReporter {
+   private:
+    ErrorHandler *handler_;
+
+   public:
+    ErrorReporter(ErrorHandler *h) : handler_(h) {}
+
     void operator()(const fmt::Formatter &f) const {
-      std::fputs(f.c_str(), stderr);
-      std::fputc('\n', stderr);
+      handler_->HandleError(fmt::StringRef(f.c_str(), f.size()));
     }
   };
 
@@ -242,10 +264,10 @@ class SolverBase : private SolutionHandler, private Option_Info {
   // Make Option_Info accessible in subclasses despite private inheritance.
   typedef Option_Info Option_Info;
 
-  // Constructs a SolverBase object.
+  // Constructs a BasicSolver object.
   // date: The solver date in YYYYMMDD format.
-  SolverBase(fmt::StringRef name, fmt::StringRef long_name, long date);
-  virtual ~SolverBase();
+  BasicSolver(fmt::StringRef name, fmt::StringRef long_name, long date);
+  virtual ~BasicSolver();
 
   void set_long_name(fmt::StringRef name) {
     long_name_ = name;
@@ -257,26 +279,23 @@ class SolverBase : private SolutionHandler, private Option_Info {
     Option_Info::version = const_cast<char*>(version_.c_str());
   }
 
-  // Enables printing of each option during parsing.
-  void EnableOptionEcho() { option_echo |= ASL_OI_echo; }
-
-  // Disables printing of each option during parsing.
-  void DisableOptionEcho() {
-    option_echo |= ASL_OI_echothis;
-    option_echo &= ~ASL_OI_echo;
-  }
-
   template <typename SolverT>
-  static SolverT *GetSolver(Option_Info *oi) {
+  static SolverT *GetSolver(Option_Info *oi) {  // throw()
     return static_cast<SolverT*>(oi);
   }
 
   // Parses solver options.
   // Returns true if there were no errors and false otherwise.
-  bool DoParseOptions(char **argv) {
+  bool DoParseOptions(char **argv, unsigned flags) {
     has_errors_ = false;
     SortOptions();
     ASL *asl = reinterpret_cast<ASL*>(problem_.asl_);
+    if ((flags & NO_OPTION_ECHO) != 0) {
+      option_echo |= ASL_OI_echothis;
+      option_echo &= ~ASL_OI_echo;
+    } else {
+      option_echo |= ASL_OI_echo;
+    }
     return getopts_ASL(asl, argv, this) == 0 && !has_errors_;
   }
 
@@ -287,6 +306,12 @@ class SolverBase : private SolutionHandler, private Option_Info {
   static std::string FormatDescription(const char *description);
 
  public:
+  // Flags for DoParseOptions.
+  enum {
+    // Don't echo options during parsing.
+    NO_OPTION_ECHO = 1
+  };
+
   Problem &problem() { return problem_; }
 
   // Returns the solver name.
@@ -321,6 +346,12 @@ class SolverBase : private SolutionHandler, private Option_Info {
   //   8 = suppress solution message
   int wantsol() const { return Option_Info::wantsol; }
 
+  // Returns the error handler.
+  ErrorHandler *error_handler() { return error_handler_; }
+
+  // Sets the error handler.
+  void set_error_handler(ErrorHandler *eh) { error_handler_ = eh; }
+
   // Returns the solution handler.
   SolutionHandler *solution_handler() { return sol_handler_; }
 
@@ -344,9 +375,10 @@ class SolverBase : private SolutionHandler, private Option_Info {
 
   // Reports an error printing the formatted error message to stderr.
   // Usage: ReportError("File not found: {}") << filename;
-  fmt::TempFormatter<PrintError> ReportError(fmt::StringRef format) {
+  fmt::TempFormatter<ErrorReporter> ReportError(fmt::StringRef format) {
     has_errors_ = true;
-    return fmt::TempFormatter<PrintError>(format.c_str());
+    return fmt::TempFormatter<ErrorReporter>(
+        format.c_str(), ErrorReporter(error_handler_));
   }
 };
 
@@ -373,7 +405,7 @@ class SolverBase : private SolutionHandler, private Option_Info {
 //   }
 // };
 template <typename OptionHandler>
-class Solver : public SolverBase {
+class Solver : public BasicSolver {
  private:
   class Option {
    private:
@@ -387,8 +419,8 @@ class Solver : public SolverBase {
 
     const char *description() const { return description_.c_str(); }
 
-    virtual char *Handle(
-        OptionHandler &h, Option_Info *oi, keyword *kw, char *value) = 0;
+    virtual void Handle(
+        OptionHandler &h, Option_Info *oi, keyword *kw, char *&value) = 0;
   };
 
   template <typename Func, typename Value>
@@ -400,9 +432,8 @@ class Solver : public SolverBase {
     ConcreteOption(const char *description, Func func)
     : Option(description), func_(func) {}
 
-    char *Handle(OptionHandler &h, Option_Info *oi, keyword *kw, char *s) {
+    void Handle(OptionHandler &h, Option_Info *oi, keyword *kw, char *&s) {
       (h.*func_)(kw->name, internal::OptionParser<Value>()(oi, kw, s));
-      return s;
     }
   };
 
@@ -416,9 +447,8 @@ class Solver : public SolverBase {
     ConcreteOptionWithInfo(const char *description, Func func, const Info &info)
     : Option(description), func_(func), info_(info) {}
 
-    char *Handle(OptionHandler &h, Option_Info *oi, keyword *kw, char *s) {
+    void Handle(OptionHandler &h, Option_Info *oi, keyword *kw, char *&s) {
       (h.*func_)(kw->name, internal::OptionParser<Value>()(oi, kw, s), info_);
-      return s;
     }
   };
 
@@ -427,8 +457,15 @@ class Solver : public SolverBase {
 
   static char *HandleOption(Option_Info *oi, keyword *kw, char *value) {
     Solver *self = GetSolver<Solver>(oi);
-    Option *opt = self->options_[reinterpret_cast<size_t>(kw->info)];
-    return opt->Handle(*self->handler_, oi, kw, value);
+    try {
+      Option *opt = self->options_[reinterpret_cast<size_t>(kw->info)];
+      opt->Handle(*self->handler_, oi, kw, value);
+    } catch (const std::exception &e) {
+      self->ReportError(e.what());
+    } catch (...) {
+      self->ReportError("Unknown exception in option handler");
+    }
+    return value;
   }
 
   void AddOption(const char *name, std::auto_ptr<Option> opt) {
@@ -524,21 +561,18 @@ class Solver : public SolverBase {
 
  public:
   Solver(fmt::StringRef name, fmt::StringRef long_name = 0, long date = 0)
-  : SolverBase(name, long_name, date), handler_(0) {}
+  : BasicSolver(name, long_name, date), handler_(0) {}
   ~Solver() {
     std::for_each(options_.begin(), options_.end(), Deleter());
   }
 
-  using SolverBase::EnableOptionEcho;
-  using SolverBase::DisableOptionEcho;
-
   // Parses solver options and returns true if there were no errors and
   // false otherwise. Note that handler functions can report errors with
-  // SolverBase::ReportError and ParseOptions will take them into account
+  // BasicSolver::ReportError and ParseOptions will take them into account
   // as well, returning false if there was at least one such error.
-  bool ParseOptions(char **argv, OptionHandler &h) {
+  bool ParseOptions(char **argv, OptionHandler &h, unsigned flags = 0) {
     handler_ = &h;
-    return DoParseOptions(argv);
+    return DoParseOptions(argv, flags);
   }
 };
 }

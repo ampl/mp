@@ -444,9 +444,10 @@ void IlogCPSolver::SetCPLEXIntOption(const char *name, int value, int param) {
 bool IlogCPSolver::ParseOptions(char **argv) {
   // Get optimizer type.
   gotopttype_ = false;
-  DisableOptionEcho();
-  if (!Solver<IlogCPSolver>::ParseOptions(argv, *this))
+  if (!Solver<IlogCPSolver>::ParseOptions(
+      argv, *this, BasicSolver::NO_OPTION_ECHO)) {
     return false;
+  }
 
   int &opt = options_[OPTIMIZER];
   const Problem &p = problem();
@@ -463,7 +464,6 @@ bool IlogCPSolver::ParseOptions(char **argv) {
 
   // Parse remaining options.
   gotopttype_ = true;
-  EnableOptionEcho();
   if (!Solver<IlogCPSolver>::ParseOptions(argv, *this))
     return false;
 
