@@ -1,2 +1,2 @@
-20121116
-  Minor tweaks to two error messages and other minor cleanups.
+20130109
+  Update for Gurobi 5.1: add keywords impstartnodes and seed.

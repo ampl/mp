@@ -698,15 +698,23 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 			1 = can find a smaller IIS than method 0";
 #endif /*}*/
 
-#if GRB_VERSION_MAJOR >= 4 /*{*/
+#ifdef GRB_DBL_PAR_IMPROVESTARTGAP
  static char isg_desc[] = "optimality gap below which the MIP solver switches from\n\
 		trying to improve the best bound to trying to find better\n\
 		feasible solutions (default 0)";
+#endif
 
+#ifdef GRB_DBL_PAR_IMPROVESTARTNODES
+ static char isn_desc[] = "number of MIP nodes after which the solution strategy\n\
+		will change from improving the best bound to finding better\n\
+		feasible solutions (default 0)";
+#endif
+
+#ifdef GRB_DBL_PAR_IMPROVESTARTTIME
  static char ist_desc[] = "execution seconds after which the MIP solver switches from\n\
 		trying to improve the best bound to trying to find better\n\
 		feasible solutions (default Infinity)";
-#endif /*}*/
+#endif
 
  static char intfeastol_desc[] = "feasibility tolerance for integer variables (default 1e-05)";
 
@@ -869,9 +877,15 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 		solution has been found, in which case no mipgap values are\n\
 		reported in the solve_message.";
 
+#ifdef GRB_INT_PAR_SEED
+ static char seed_desc[] =
+		"random number seed (default 0), affecting perturbations that\n\
+		may influence the solution path.";
+#endif
+
 #ifdef GRB_INT_PAR_SIFTING /*{ new in 4.6 */
  static char sifting_desc[] =
-		"Whether to use sifting within the dual simplex algorithm,\n\
+		"whether to use sifting within the dual simplex algorithm,\n\
 		which can be useful when there are many more variables than\n\
 		constraints:\n\
 			-1 = automatic choice (default)\n\
@@ -1154,10 +1168,15 @@ keywds[] = {	/* must be in alphabetical order */
 	{ "iismethod", sf_ipar, "IISMethod", iismethod_desc },
 #endif /*}*/
 	{ "implied", sf_ipar, "ImpliedCuts", "implied cuts:  " Overrides_cuts },
-#if GRB_VERSION_MAJOR >= 4 /*{*/
-	{ "improvegap", sf_dpar, "ImproveStartGap", isg_desc },
-	{ "improvetime", sf_dpar, "ImproveStartTime", ist_desc },
-#endif /*}*/
+#ifdef GRB_DBL_PAR_IMPROVESTARTGAP
+	{ "improvegap", sf_dpar, GRB_DBL_PAR_IMPROVESTARTGAP, isg_desc },
+#endif
+#ifdef GRB_DBL_PAR_IMPROVESTARTTIME
+	{ "improvetime", sf_dpar, GRB_DBL_PAR_IMPROVESTARTTIME, ist_desc },
+#endif
+#ifdef GRB_DBL_PAR_IMPROVESTARTNODES
+	{ "impstartnodes", sf_dpar, GRB_DBL_PAR_IMPROVESTARTNODES, isn_desc },
+#endif
 	{ "intfeastol", sf_dpar, "IntFeasTol", intfeastol_desc },
 	{ "intstart", sf_mint, VP set_intstart, intstart_desc },
 	{ "iterlim", sf_dpar, "IterationLimit", "iteration limit (default: no limit)" },
@@ -1263,6 +1282,9 @@ keywds[] = {	/* must be in alphabetical order */
 	{"rootmethod", sf_ipar, "RootMethod", rootmethod_desc},
 #endif /*}*/
 	{ "scale", sf_ipar, "ScaleFlag", scale_desc },
+#ifdef GRB_INT_PAR_SEED
+	{ "seed", sf_ipar, GRB_INT_PAR_SEED, seed_desc },
+#endif
 #ifdef GRB_INT_PAR_SIFTING /* new in 4.6 */
 	{ "sifting", sf_ipar, GRB_INT_PAR_SIFTING, sifting_desc },
 	{ "siftmethod", sf_ipar, GRB_INT_PAR_SIFTMETHOD, siftmethod_desc },
@@ -1299,7 +1321,7 @@ keywds[] = {	/* must be in alphabetical order */
 
  static Option_Info
 Oinfo = { "gurobi", verbuf, "gurobi_options", keywds, nkeywds, 0, verbuf,
-	   0,0,0,0,0, 20121116 };
+	   0,0,0,0,0, 20130109 };
 
  static void
 enamefailed(GRBenv *env, const char *what, const char *name)

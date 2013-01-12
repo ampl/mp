@@ -1,9 +1,6 @@
-20121116
-  When a defined variable involves piecewise-linear terms but is
-otherwise linear and when convexity (or concavity) permits all
-appearances of the defined variable in constraints and objectives
-to be linearized, do so.
-
-20121120
-  Fix bugs (faults) with min() and max(), which now return Infinity
-and -Infinity, respectively.
+20130109
+  Add an error message about a constraint, objective, or defined
+variable declaration that has a piecewise-linear expression with
+a variable in the slope or breakpoint list.  In printing commands
+(display, print, printf), variables can appear in slope and
+breakpoint lists, but not in declarations.
