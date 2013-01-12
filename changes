@@ -3111,3 +3111,16 @@ to be linearized, do so.
 20121120
   Fix bugs (faults) with min() and max(), which now return Infinity
 and -Infinity, respectively.
+
+20121210
+  Fix a possible minor glitch (irrelevant "_32" or "_64") in an
+error message about the failure of a "load" command.
+  Fix potential trouble (not yet actually seen) with generic
+synonyms in 64-bit binaries.
+
+20130109
+  Add an error message about a constraint, objective, or defined
+variable declaration that has a piecewise-linear expression with
+a variable in the slope or breakpoint list.  In printing commands
+(display, print, printf), variables can appear in slope and
+breakpoint lists, but not in declarations.
