@@ -33,7 +33,7 @@
 
 #include "format.h"
 
-#include <stdint.h>
+#include <math.h>
 
 #include <cassert>
 #include <cctype>
@@ -42,185 +42,218 @@
 #include <algorithm>
 
 using std::size_t;
+using fmt::BasicFormatter;
+using fmt::IntFormatter;
 using fmt::Formatter;
+using fmt::AlignSpec;
 using fmt::FormatSpec;
+using fmt::WidthSpec;
+using fmt::StringRef;
 
 #if _MSC_VER
 # undef snprintf
 # define snprintf _snprintf
+# define isinf(x) (!_finite(x))
 #endif
 
 namespace {
-
-// Flags.
-enum { PLUS_FLAG = 1, ZERO_FLAG = 2, HEX_PREFIX_FLAG = 4 };
-
-// Alignment.
-enum Alignment {
-  ALIGN_DEFAULT, ALIGN_LEFT, ALIGN_RIGHT, ALIGN_CENTER, ALIGN_NUMERIC
-};
-
-void ReportUnknownType(char code, const char *type) {
-  if (std::isprint(static_cast<unsigned char>(code))) {
-    throw fmt::FormatError(
-        str(fmt::Format("unknown format code '{0}' for {1}") << code << type));
-  }
-  throw fmt::FormatError(
-      str(fmt::Format("unknown format code '\\x{0:02x}' for {1}")
-        << static_cast<unsigned>(code) << type));
-}
-
-// Information about an integer type.
-template <typename T>
-struct IntTraits {
-  typedef T UnsignedType;
-  static bool IsNegative(T) { return false; }
-};
-
-template <>
-struct IntTraits<int> {
-  typedef unsigned UnsignedType;
-  static bool IsNegative(int value) { return value < 0; }
-};
-
-template <>
-struct IntTraits<long> {
-  typedef unsigned long UnsignedType;
-  static bool IsNegative(long value) { return value < 0; }
-};
 
 template <typename T>
 struct IsLongDouble { enum {VALUE = 0}; };
 
 template <>
 struct IsLongDouble<long double> { enum {VALUE = 1}; };
+
+const char DIGITS[] =
+    "0001020304050607080910111213141516171819"
+    "2021222324252627282930313233343536373839"
+    "4041424344454647484950515253545556575859"
+    "6061626364656667686970717273747576777879"
+    "8081828384858687888990919293949596979899";
+
+// Fills the padding around the content and returns the pointer to the
+// content area.
+char *FillPadding(char *buffer,
+    unsigned total_size, std::size_t content_size, char fill) {
+  std::size_t padding = total_size - content_size;
+  std::size_t left_padding = padding / 2;
+  std::fill_n(buffer, left_padding, fill);
+  buffer += left_padding;
+  char *content = buffer;
+  std::fill_n(buffer + content_size, padding - left_padding, fill);
+  return content;
 }
 
-// Throws Exception(message) if format contains '}', otherwise throws
-// FormatError reporting unmatched '{'. The idea is that unmatched '{'
-// should override other errors.
-void Formatter::ReportError(const char *s, const std::string &message) const {
-  for (int num_open_braces = num_open_braces_; *s; ++s) {
-    if (*s == '{') {
-      ++num_open_braces;
-    } else if (*s == '}') {
-      if (--num_open_braces == 0)
-        throw fmt::FormatError(message);
-    }
+#ifdef _MSC_VER
+int signbit(double value) {
+  if (value < 0) return 1;
+  if (value == value) return 0;
+  int dec = 0, sign = 0;
+  _ecvt(value, 0, &dec, &sign);
+  return sign;
+}
+#else
+using std::signbit;
+#endif
+}
+
+void BasicFormatter::FormatDecimal(
+    char *buffer, uint64_t value, unsigned num_digits) {
+  --num_digits;
+  while (value >= 100) {
+    // Integer division is slow so do it for a group of two digits instead
+    // of for every digit. The idea comes from the talk by Alexandrescu
+    // "Three Optimization Tips for C++". See speed-test for a comparison.
+    unsigned index = (value % 100) * 2;
+    value /= 100;
+    buffer[num_digits] = DIGITS[index + 1];
+    buffer[num_digits - 1] = DIGITS[index];
+    num_digits -= 2;
   }
-  throw fmt::FormatError("unmatched '{' in format");
+  if (value < 10) {
+    *buffer = static_cast<char>('0' + value);
+    return;
+  }
+  unsigned index = static_cast<unsigned>(value * 2);
+  buffer[1] = DIGITS[index + 1];
+  buffer[0] = DIGITS[index];
+}
+
+void BasicFormatter::ReportUnknownType(char code, const char *type) {
+  if (std::isprint(static_cast<unsigned char>(code))) {
+    throw fmt::FormatError(fmt::str(
+        fmt::Format("unknown format code '{0}' for {1}") << code << type));
+  }
+  throw fmt::FormatError(
+      fmt::str(fmt::Format("unknown format code '\\x{0:02x}' for {1}")
+        << static_cast<unsigned>(code) << type));
+}
+
+char *BasicFormatter::PrepareFilledBuffer(
+    unsigned size, const AlignSpec &spec, char sign) {
+  unsigned width = spec.width();
+  if (width <= size) {
+    char *p = GrowBuffer(size);
+    *p = sign;
+    return p + size - 1;
+  }
+  char *p = GrowBuffer(width);
+  char *end = p + width;
+  Alignment align = spec.align();
+  if (align == ALIGN_LEFT) {
+    *p = sign;
+    p += size;
+    std::fill(p, end, spec.fill());
+  } else if (align == ALIGN_CENTER) {
+    p = FillPadding(p, width, size, spec.fill());
+    *p = sign;
+    p += size;
+  } else {
+    if (align == ALIGN_NUMERIC) {
+      if (sign) {
+        *p++ = sign;
+        --size;
+      }
+    } else {
+      *(end - size) = sign;
+    }
+    std::fill(p, end - size, spec.fill());
+    p = end;
+  }
+  return p - 1;
 }
 
 template <typename T>
-void Formatter::FormatInt(T value, FormatSpec spec) {
-  unsigned size = 0;
-  char sign = 0;
-  typedef typename IntTraits<T>::UnsignedType UnsignedType;
-  UnsignedType abs_value = value;
-  if (IntTraits<T>::IsNegative(value)) {
-    sign = '-';
-    ++size;
-    abs_value = 0 - abs_value;
-  } else if ((spec.flags & PLUS_FLAG) != 0) {
-    sign = '+';
-    ++size;
-  }
-  size_t start = buffer_.size();
-  char *p = 0;
-  switch (spec.type) {
-  case 0: case 'd': {
-    UnsignedType n = abs_value;
-    do {
-      ++size;
-    } while ((n /= 10) != 0);
-    unsigned width = std::max(spec.width, size);
-    p = GrowBuffer(width) + width - 1;
-    n = abs_value;
-    do {
-      *p-- = '0' + (n % 10);
-    } while ((n /= 10) != 0);
-    break;
-  }
-  case 'x': case 'X': {
-    UnsignedType n = abs_value;
-    bool print_prefix = (spec.flags & HEX_PREFIX_FLAG) != 0;
-    if (print_prefix) size += 2;
-    do {
-      ++size;
-    } while ((n >>= 4) != 0);
-    unsigned width = std::max(spec.width, size);
-    p = GrowBuffer(width) + width - 1;
-    n = abs_value;
-    const char *digits = spec.type == 'x' ?
-        "0123456789abcdef" : "0123456789ABCDEF";
-    do {
-      *p-- = digits[n & 0xf];
-    } while ((n >>= 4) != 0);
-    if (print_prefix) {
-      *p-- = spec.type;
-      *p-- = '0';
-    }
-    break;
-  }
-  case 'o': {
-    UnsignedType n = abs_value;
-    do {
-      ++size;
-    } while ((n >>= 3) != 0);
-    unsigned width = std::max(spec.width, size);
-    p = GrowBuffer(width) + width - 1;
-    n = abs_value;
-    do {
-      *p-- = '0' + (n & 7);
-    } while ((n >>= 3) != 0);
-    break;
-  }
-  default:
-    ReportUnknownType(spec.type, "integer");
-    break;
-  }
-  if (sign) {
-    if ((spec.flags & ZERO_FLAG) != 0)
-      buffer_[start++] = sign;
-    else
-      *p-- = sign;
-  }
-  std::fill(&buffer_[start], p + 1, spec.fill);
-}
-
-template <typename T>
-void Formatter::FormatDouble(T value, const FormatSpec &spec, int precision) {
+void BasicFormatter::FormatDouble(
+    T value, const FormatSpec &spec, int precision) {
   // Check type.
-  char type = spec.type;
+  char type = spec.type();
+  bool upper = false;
   switch (type) {
   case 0:
     type = 'g';
     break;
-  case 'e': case 'E': case 'f': case 'g': case 'G':
+  case 'e': case 'f': case 'g':
     break;
   case 'F':
 #ifdef _MSC_VER
     // MSVC's printf doesn't support 'F'.
     type = 'f';
 #endif
+    // Fall through.
+  case 'E': case 'G':
+    upper = true;
     break;
   default:
     ReportUnknownType(type, "double");
     break;
   }
 
+  char sign = 0;
+  // Use signbit instead of value < 0 because the latter is always
+  // false for NaN.
+  if (signbit(value)) {
+    sign = '-';
+    value = -value;
+  } else if (spec.sign_flag()) {
+    sign = spec.plus_flag() ? '+' : ' ';
+  }
+
+  if (value != value) {
+    // Format NaN ourselves because sprintf's output is not consistent
+    // across platforms.
+    std::size_t size = 4;
+    const char *nan = upper ? " NAN" : " nan";
+    if (!sign) {
+      --size;
+      ++nan;
+    }
+    char *out = FormatString(nan, size, spec);
+    if (sign)
+      *out = sign;
+    return;
+  }
+
+  if (isinf(value)) {
+    // Format infinity ourselves because sprintf's output is not consistent
+    // across platforms.
+    std::size_t size = 4;
+    const char *inf = upper ? " INF" : " inf";
+    if (!sign) {
+      --size;
+      ++inf;
+    }
+    char *out = FormatString(inf, size, spec);
+    if (sign)
+      *out = sign;
+    return;
+  }
+
+  size_t offset = buffer_.size();
+  unsigned width = spec.width();
+  if (sign) {
+    buffer_.reserve(buffer_.size() + std::max(width, 1u));
+    if (width > 0)
+      --width;
+    ++offset;
+  }
+
   // Build format string.
-  enum { MAX_FORMAT_SIZE = 9}; // longest format: %+0*.*Lg
+  enum { MAX_FORMAT_SIZE = 10}; // longest format: %#-*.*Lg
   char format[MAX_FORMAT_SIZE];
   char *format_ptr = format;
-  unsigned width = spec.width;
   *format_ptr++ = '%';
-  if ((spec.flags & PLUS_FLAG) != 0)
-    *format_ptr++ = '+';
-  if ((spec.flags & ZERO_FLAG) != 0)
-    *format_ptr++ = '0';
-  if (width != 0)
-    *format_ptr++ = '*';
+  unsigned width_for_sprintf = width;
+  if (spec.hash_flag())
+    *format_ptr++ = '#';
+  if (spec.align() == ALIGN_CENTER) {
+    width_for_sprintf = 0;
+  } else {
+    if (spec.align() == ALIGN_LEFT)
+      *format_ptr++ = '-';
+    if (width != 0)
+      *format_ptr++ = '*';
+  }
   if (precision >= 0) {
     *format_ptr++ = '.';
     *format_ptr++ = '*';
@@ -231,30 +264,83 @@ void Formatter::FormatDouble(T value, const FormatSpec &spec, int precision) {
   *format_ptr = '\0';
 
   // Format using snprintf.
-  size_t offset = buffer_.size();
   for (;;) {
     size_t size = buffer_.capacity() - offset;
     int n = 0;
     char *start = &buffer_[offset];
-    if (width == 0) {
+    if (width_for_sprintf == 0) {
       n = precision < 0 ?
           snprintf(start, size, format, value) :
           snprintf(start, size, format, precision, value);
     } else {
       n = precision < 0 ?
-          snprintf(start, size, format, width, value) :
-          snprintf(start, size, format, width, precision, value);
+          snprintf(start, size, format, width_for_sprintf, value) :
+          snprintf(start, size, format, width_for_sprintf, precision, value);
     }
     if (n >= 0 && offset + n < buffer_.capacity()) {
-      if (spec.fill != ' ') {
+      if (sign) {
+        if ((spec.align() != ALIGN_RIGHT && spec.align() != ALIGN_DEFAULT) ||
+            *start != ' ') {
+          *(start - 1) = sign;
+          sign = 0;
+        } else {
+          *(start - 1) = spec.fill();
+        }
+        ++n;
+      }
+      if (spec.align() == ALIGN_CENTER &&
+          spec.width() > static_cast<unsigned>(n)) {
+        char *p = GrowBuffer(spec.width());
+        std::copy(p, p + n, p + (spec.width() - n) / 2);
+        FillPadding(p, spec.width(), n, spec.fill());
+        return;
+      }
+      if (spec.fill() != ' ' || sign) {
         while (*start == ' ')
-          *start++ = spec.fill;
+          *start++ = spec.fill();
+        if (sign)
+          *(start - 1) = sign;
       }
       GrowBuffer(n);
       return;
     }
     buffer_.reserve(n >= 0 ? offset + n + 1 : 2 * buffer_.capacity());
   }
+}
+
+char *BasicFormatter::FormatString(
+    const char *s, std::size_t size, const FormatSpec &spec) {
+  char *out = 0;
+  if (spec.width() > size) {
+    out = GrowBuffer(spec.width());
+    if (spec.align() == ALIGN_RIGHT) {
+      std::fill_n(out, spec.width() - size, spec.fill());
+      out += spec.width() - size;
+    } else if (spec.align() == ALIGN_CENTER) {
+      out = FillPadding(out, spec.width(), size, spec.fill());
+    } else {
+      std::fill_n(out + size, spec.width() - size, spec.fill());
+    }
+  } else {
+    out = GrowBuffer(size);
+  }
+  std::copy(s, s + size, out);
+  return out;
+}
+
+// Throws Exception(message) if format contains '}', otherwise throws
+// FormatError reporting unmatched '{'. The idea is that unmatched '{'
+// should override other errors.
+void Formatter::ReportError(const char *s, StringRef message) const {
+  for (int num_open_braces = num_open_braces_; *s; ++s) {
+    if (*s == '{') {
+      ++num_open_braces;
+    } else if (*s == '}') {
+      if (--num_open_braces == 0)
+        throw fmt::FormatError(message);
+    }
+  }
+  throw fmt::FormatError("unmatched '{' in format");
 }
 
 // Parses an unsigned integer advancing s to the end of the parsed input.
@@ -271,18 +357,45 @@ unsigned Formatter::ParseUInt(const char *&s) const {
   return value;
 }
 
-const Formatter::Arg &Formatter::ParseArgIndex(const char *&s) const {
-  if (*s < '0' || *s > '9')
-    ReportError(s, "missing argument index in format string");
-  unsigned arg_index = ParseUInt(s);
-  if (arg_index >= args_.size())
-    ReportError(s, "argument index is out of range in format");
+inline const Formatter::Arg &Formatter::ParseArgIndex(const char *&s) {
+  unsigned arg_index = 0;
+  if (*s < '0' || *s > '9') {
+    if (*s != '}' && *s != ':')
+      ReportError(s, "invalid argument index in format string");
+    if (next_arg_index_ < 0) {
+      ReportError(s,
+          "cannot switch from manual to automatic argument indexing");
+    }
+    arg_index = next_arg_index_++;
+  } else {
+    if (next_arg_index_ > 0) {
+      ReportError(s,
+          "cannot switch from automatic to manual argument indexing");
+    }
+    next_arg_index_ = -1;
+    arg_index = ParseUInt(s);
+    if (arg_index >= args_.size())
+      ReportError(s, "argument index is out of range in format");
+  }
   return *args_[arg_index];
+}
+
+void Formatter::CheckSign(const char *&s, const Arg &arg) {
+  if (arg.type > LAST_NUMERIC_TYPE) {
+    ReportError(s,
+        Format("format specifier '{0}' requires numeric argument") << *s);
+  }
+  if (arg.type == UINT || arg.type == ULONG) {
+    ReportError(s,
+        Format("format specifier '{0}' requires signed argument") << *s);
+  }
+  ++s;
 }
 
 void Formatter::DoFormat() {
   const char *start = format_;
   format_ = 0;
+  next_arg_index_ = 0;
   const char *s = start;
   while (*s) {
     char c = *s++;
@@ -307,42 +420,57 @@ void Formatter::DoFormat() {
       // Parse fill and alignment.
       if (char c = *s) {
         const char *p = s + 1;
-        Alignment align = ALIGN_DEFAULT;
+        spec.align_ = ALIGN_DEFAULT;
         do {
           switch (*p) {
           case '<':
-            align = ALIGN_LEFT;
+            spec.align_ = ALIGN_LEFT;
             break;
           case '>':
-            align = ALIGN_RIGHT;
+            spec.align_ = ALIGN_RIGHT;
             break;
           case '=':
-            align = ALIGN_NUMERIC;
+            spec.align_ = ALIGN_NUMERIC;
             break;
           case '^':
-            align = ALIGN_CENTER;
+            spec.align_ = ALIGN_CENTER;
             break;
           }
-          if (align != ALIGN_DEFAULT) {
-            if (p != s && c != '{' && c != '}') {
+          if (spec.align_ != ALIGN_DEFAULT) {
+            if (p != s) {
+              if (c == '}') break;
+              if (c == '{')
+                ReportError(s, "invalid fill character '{'");
               s += 2;
-              spec.fill = c;
+              spec.fill_ = c;
             } else ++s;
+            if (spec.align_ == ALIGN_NUMERIC && arg.type > LAST_NUMERIC_TYPE)
+              ReportError(s, "format specifier '=' requires numeric argument");
             break;
           }
         } while (--p >= s);
       }
 
       // Parse sign.
-      if (*s == '+') {
-        ++s;
+      switch (*s) {
+      case '+':
+        CheckSign(s, arg);
+        spec.flags_ |= SIGN_FLAG | PLUS_FLAG;
+        break;
+      case '-':
+        CheckSign(s, arg);
+        break;
+      case ' ':
+        CheckSign(s, arg);
+        spec.flags_ |= SIGN_FLAG;
+        break;
+      }
+
+      if (*s == '#') {
         if (arg.type > LAST_NUMERIC_TYPE)
-          ReportError(s, "format specifier '+' requires numeric argument");
-        if (arg.type == UINT || arg.type == ULONG) {
-          ReportError(s,
-              "format specifier '+' requires signed argument");
-        }
-        spec.flags |= PLUS_FLAG;
+          ReportError(s, "format specifier '#' requires numeric argument");
+        spec.flags_ |= HASH_FLAG;
+        ++s;
       }
 
       // Parse width and zero flag.
@@ -350,15 +478,15 @@ void Formatter::DoFormat() {
         if (*s == '0') {
           if (arg.type > LAST_NUMERIC_TYPE)
             ReportError(s, "format specifier '0' requires numeric argument");
-          spec.flags |= ZERO_FLAG;
-          spec.fill = '0';
+          spec.align_ = ALIGN_NUMERIC;
+          spec.fill_ = '0';
         }
         // Zero may be parsed again as a part of the width, but it is simpler
         // and more efficient than checking if the next char is a digit.
         unsigned value = ParseUInt(s);
         if (value > INT_MAX)
           ReportError(s, "number is too big in format");
-        spec.width = value;
+        spec.width_ = value;
       }
 
       // Parse precision.
@@ -412,7 +540,7 @@ void Formatter::DoFormat() {
 
       // Parse type.
       if (*s != '}' && *s)
-        spec.type = *s++;
+        spec.type_ = *s++;
     }
 
     if (*s++ != '}')
@@ -440,17 +568,28 @@ void Formatter::DoFormat() {
       FormatDouble(arg.long_double_value, spec, precision);
       break;
     case CHAR: {
-      if (spec.type && spec.type != 'c')
-        ReportUnknownType(spec.type, "char");
-      char *out = GrowBuffer(std::max(spec.width, 1u));
-      *out++ = arg.int_value;
-      if (spec.width > 1)
-        std::fill_n(out, spec.width - 1, spec.fill);
+      if (spec.type_ && spec.type_ != 'c')
+        ReportUnknownType(spec.type_, "char");
+      char *out = 0;
+      if (spec.width_ > 1) {
+        out = GrowBuffer(spec.width_);
+        if (spec.align_ == ALIGN_RIGHT) {
+          std::fill_n(out, spec.width_ - 1, spec.fill_);
+          out += spec.width_ - 1;
+        } else if (spec.align_ == ALIGN_CENTER) {
+          out = FillPadding(out, spec.width_, 1, spec.fill_);
+        } else {
+          std::fill_n(out + 1, spec.width_ - 1, spec.fill_);
+        }
+      } else {
+        out = GrowBuffer(1);
+      }
+      *out = arg.int_value;
       break;
     }
     case STRING: {
-      if (spec.type && spec.type != 's')
-        ReportUnknownType(spec.type, "string");
+      if (spec.type_ && spec.type_ != 's')
+        ReportUnknownType(spec.type_, "string");
       const char *str = arg.string.value;
       size_t size = arg.string.size;
       if (size == 0) {
@@ -459,22 +598,19 @@ void Formatter::DoFormat() {
         if (*str)
           size = std::strlen(str);
       }
-      char *out = GrowBuffer(std::max<size_t>(spec.width, size));
-      out = std::copy(str, str + size, out);
-      if (spec.width > size)
-        std::fill_n(out, spec.width - size, spec.fill);
+      FormatString(str, size, spec);
       break;
     }
     case POINTER:
-      if (spec.type && spec.type != 'p')
-        ReportUnknownType(spec.type, "pointer");
-      spec.flags = HEX_PREFIX_FLAG;
-      spec.type = 'x';
+      if (spec.type_ && spec.type_ != 'p')
+        ReportUnknownType(spec.type_, "pointer");
+      spec.flags_= HASH_FLAG;
+      spec.type_ = 'x';
       FormatInt(reinterpret_cast<uintptr_t>(arg.pointer_value), spec);
       break;
     case CUSTOM:
-      if (spec.type)
-        ReportUnknownType(spec.type, "object");
+      if (spec.type_)
+        ReportUnknownType(spec.type_, "object");
       (this->*arg.custom.format)(arg.custom.value, spec);
       break;
     default:
@@ -482,13 +618,5 @@ void Formatter::DoFormat() {
       break;
     }
   }
-  buffer_.append(start, s + 1);
-  buffer_.resize(buffer_.size() - 1);  // Don't count the terminating zero.
-}
-
-void Formatter::Write(const std::string &s, const FormatSpec &spec) {
-  char *out = GrowBuffer(std::max<std::size_t>(spec.width, s.size()));
-  std::copy(s.begin(), s.end(), out);
-  if (spec.width > s.size())
-    std::fill_n(out + s.size(), spec.width - s.size(), spec.fill);
+  buffer_.append(start, s);
 }
