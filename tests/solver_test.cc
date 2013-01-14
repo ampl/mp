@@ -507,4 +507,11 @@ TEST(SolverTest, ProcessArgsParsesSolverOptions) {
   EXPECT_EQ(3, s.intopt1);
 }
 
-// TODO: test ObjPrec and Problem
+TEST(SolverTest, ObjPrec) {
+  double value = 12.3456789123456789;
+  char buffer[64];
+  sprintf(buffer, "%.*g", obj_prec(), value);
+  EXPECT_EQ(buffer, str(fmt::Format("{}") << ampl::ObjPrec(value)));
+}
+
+// TODO: test Problem
