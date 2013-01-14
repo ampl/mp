@@ -161,7 +161,7 @@ class ObjPrec {
   explicit ObjPrec(double value) : value_(value) {}
 
   friend void Format(
-      fmt::ArgFormatter &af, const fmt::FormatSpec &spec, ObjPrec op) {
+      fmt::BasicFormatter &af, const fmt::FormatSpec &spec, ObjPrec op) {
     char buffer[32];
     g_fmtop(buffer, op.value_);
     af.Write(buffer, spec);
@@ -358,7 +358,7 @@ class BasicSolver
   // Sets the solution handler.
   void set_solution_handler(SolutionHandler *sh) { sol_handler_ = sh; }
 
-  // Parses command-line options starting with '-' and reads the problem from
+  // Parses command-line options starting with '-' and reads a problem from
   // an .nl file if the file name (stub) is specified. Returns true if the
   // arguments contain the file name and false otherwise. If there was an
   // error parsing arguments or reading the problem ReadProblem will print an
@@ -573,6 +573,17 @@ class Solver : public BasicSolver {
   bool ParseOptions(char **argv, OptionHandler &h, unsigned flags = 0) {
     handler_ = &h;
     return DoParseOptions(argv, flags);
+  }
+
+  // Processes command-line arguments, reads a problem from an .nl file
+  // if the file name (stub) is specified and parses solver options.
+  // Returns true if the arguments contain the file name and options were
+  // parsed successfully; false otherwise.
+  // If there was an  error parsing arguments or reading the problem
+  // ProcessArgs will print an error message and call std::exit (this is
+  // likely to change in the future version).
+  bool ProcessArgs(char **&argv, OptionHandler &h, unsigned flags = 0) {
+    return ReadProblem(argv) && ParseOptions(argv, h, flags);
   }
 };
 }

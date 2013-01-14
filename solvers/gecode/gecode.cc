@@ -265,14 +265,11 @@ GecodeSolver::GecodeSolver()
 }
 
 int GecodeSolver::Run(char **argv) {
-  Problem &problem = Solver::problem();
-  if (!ReadProblem(argv))
-    return 1;
-
-  if (!ParseOptions(argv, *this))
+  if (!ProcessArgs(argv, *this))
     return 1;
 
   // Set up an optimization problem in Gecode.
+  Problem &problem = Solver::problem();
   std::auto_ptr<NLToGecodeConverter>
     converter(new NLToGecodeConverter(problem.num_vars()));
   converter->Convert(problem);
