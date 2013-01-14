@@ -20,6 +20,6 @@
  Author: Victor Zverovich
  */
 
-#include "expr.cc"
 #include "format.cc"
+#include "expr.cc"
 #include "solver.cc"
