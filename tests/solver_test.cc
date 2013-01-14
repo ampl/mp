@@ -470,4 +470,41 @@ TEST(SolverTest, ExceptionInOptionHandler) {
   EXPECT_EQ("Test exception in handler", handler.errors_[1]);
 }
 
+TEST(SolverTest, ProcessArgsReadsProblem) {
+  Args args("testprogram", "data/objconst.nl");
+  char **argv = args;
+  OptSolver s;
+  EXPECT_EQ(0, s.problem().num_vars());
+  EXPECT_TRUE(s.ProcessArgs(argv, s));
+  EXPECT_EQ(1, s.problem().num_vars());
+}
+
+TEST(SolverTest, ProcessArgsWithouStub) {
+  StderrRedirect redirect("out");
+  Args args("testprogram");
+  char **argv = args;
+  OptSolver s;
+  EXPECT_EQ(0, s.problem().num_vars());
+  EXPECT_FALSE(s.ProcessArgs(argv, s));
+  EXPECT_EQ(0, s.problem().num_vars());
+}
+
+TEST(SolverTest, ProcessArgsError) {
+  Args args("testprogram", "nonexistent");
+  char **argv = args;
+  OptSolver s;
+  EXPECT_EXIT({
+    Stderr = stderr;
+    s.ProcessArgs(argv, s);
+  }, ::testing::ExitedWithCode(1), "testprogram: can't open nonexistent.nl");
+}
+
+TEST(SolverTest, ProcessArgsParsesSolverOptions) {
+  OptSolver s;
+  Args args("testprogram", "data/objconst.nl", "intopt1=3");
+  char **argv = args;
+  EXPECT_TRUE(s.ProcessArgs(argv, s, BasicSolver::NO_OPTION_ECHO));
+  EXPECT_EQ(3, s.intopt1);
+}
+
 // TODO: test ObjPrec and Problem
