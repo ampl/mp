@@ -49,7 +49,7 @@ class Problem {
 
  public:
   Problem();
-  virtual ~Problem();
+  ~Problem();
 
   // Returns the number of variables.
   int num_vars() const { return asl_->i.n_var_; }
@@ -161,10 +161,10 @@ class ObjPrec {
   explicit ObjPrec(double value) : value_(value) {}
 
   friend void Format(
-      fmt::BasicFormatter &af, const fmt::FormatSpec &spec, ObjPrec op) {
+      fmt::BasicFormatter &f, const fmt::FormatSpec &spec, ObjPrec op) {
     char buffer[32];
     g_fmtop(buffer, op.value_);
-    af.Write(buffer, spec);
+    f.Write(buffer, spec);
   }
 };
 
@@ -562,6 +562,7 @@ class Solver : public BasicSolver {
  public:
   Solver(fmt::StringRef name, fmt::StringRef long_name = 0, long date = 0)
   : BasicSolver(name, long_name, date), handler_(0) {}
+
   ~Solver() {
     std::for_each(options_.begin(), options_.end(), Deleter());
   }
