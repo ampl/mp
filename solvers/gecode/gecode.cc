@@ -75,16 +75,17 @@ void NLToGecodeConverter::RequireNonzeroConstRHS(
     throw UnsupportedExprError(func_name + " with nonzero second parameter");
 }
 
-template <typename Grad>
+template <typename Term>
 Gecode::LinExpr NLToGecodeConverter::ConvertExpr(
-    Grad *grad, NumericExpr nonlinear) {
+    LinearExpr<Term> linear, NumericExpr nonlinear) {
   IntVarArray &vars = problem_.vars();
   Gecode::LinExpr expr;
-  bool has_linear_part = grad != 0;
+  typename LinearExpr<Term>::iterator i = linear.begin(), end = linear.end();
+  bool has_linear_part = i != end;
   if (has_linear_part)
-    expr = grad->coef * vars[grad->varno];
-  for (grad = grad->next; grad; grad = grad->next)
-    expr = expr + grad->coef * vars[grad->varno];
+    expr = i->coef() * vars[i->var_index()];
+  for (++i; i != end; ++i)
+    expr = expr + i->coef() * vars[i->var_index()];
   if (!nonlinear)
     return expr;
   if (has_linear_part)
@@ -315,7 +316,7 @@ int GecodeSolver::Run(char **argv) {
     solve_code = 200;
     status = "infeasible problem";
   }
-  problem.SetSolveCode(solve_code);
+  problem.set_solve_code(solve_code);
 
   fmt::Formatter format;
   format("{0}: {1}\n") << long_name() << status;

@@ -30,6 +30,8 @@
 # define putenv _putenv
 #endif
 
+using ampl::LinearObjExpr;
+using ampl::LinearConExpr;
 using ampl::Problem;
 using ampl::BasicSolver;
 using ampl::Solver;
@@ -556,10 +558,35 @@ TEST(SolverTest, ProblemAccessors) {
   EXPECT_EQ(Problem::MIN, p.GetObjType(0));
   EXPECT_EQ(Problem::MAX, p.GetObjType(p.num_objs() - 1));
 
-  // TODO: test objective and constraint expressions
+  {
+    LinearObjExpr expr = p.GetLinearObjExpr(0);
+    EXPECT_EQ(31, expr.begin()->coef());
+    EXPECT_EQ(0, expr.begin()->var_index());
+    expr = p.GetLinearObjExpr(p.num_objs() - 1);
+    EXPECT_EQ(52, expr.begin()->coef());
+    EXPECT_EQ(3, expr.begin()->var_index());
+  }
+
+  {
+    LinearConExpr expr = p.GetLinearConExpr(0);
+    EXPECT_EQ(61, expr.begin()->coef());
+    EXPECT_EQ(0, expr.begin()->var_index());
+    expr = p.GetLinearConExpr(p.num_cons() - 1);
+    EXPECT_EQ(82, expr.begin()->coef());
+    EXPECT_EQ(2, expr.begin()->var_index());
+  }
+
+  EXPECT_EQ(OP_sin, p.GetNonlinearObjExpr(0).opcode());
+  EXPECT_EQ(OP_cos, p.GetNonlinearObjExpr(p.num_nonlinear_objs() - 1).opcode());
+
+  EXPECT_EQ(OP_log, p.GetNonlinearConExpr(0).opcode());
+  EXPECT_EQ(OP_exp, p.GetNonlinearConExpr(p.num_nonlinear_cons() - 1).opcode());
+
+  EXPECT_EQ(NE, p.GetLogicalConExpr(0).opcode());
+  EXPECT_EQ(OPAND, p.GetLogicalConExpr(p.num_logical_cons() - 1).opcode());
 
   EXPECT_EQ(-1, p.solve_code());
-  p.SetSolveCode(42);
+  p.set_solve_code(42);
   EXPECT_EQ(42, p.solve_code());
 }
 
@@ -600,3 +627,5 @@ TEST(SolverTest, ProblemBoundChecks) {
   EXPECT_DEATH(p.GetLogicalConExpr(p.num_logical_cons()), "Assertion");
 #endif
 }
+
+// TODO: test LinearExpr and LinearTerm

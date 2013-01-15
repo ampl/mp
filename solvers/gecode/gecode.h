@@ -63,8 +63,8 @@ class NLToGecodeConverter :
    static void RequireNonzeroConstRHS(
        BinaryExpr e, const std::string &func_name);
 
-   template <typename Grad>
-   LinExpr ConvertExpr(Grad *grad, NumericExpr nonlinear);
+   template <typename Term>
+   LinExpr ConvertExpr(LinearExpr<Term> linear, NumericExpr nonlinear);
 
    // The methods below perform conversion of AMPL NL expressions into
    // equivalent Gecode expressions. Gecode doesn't support the following
