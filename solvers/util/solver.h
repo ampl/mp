@@ -57,7 +57,7 @@ class Problem {
   // Returns the number of objectives.
   int num_objs() const { return asl_->i.n_obj_; }
 
-  // Returns the number of constraints.
+  // Returns the number of constraints excluding logical constraints.
   int num_cons() const { return asl_->i.n_con_; }
 
   // Returns the number of integer variables including binary.

@@ -30,6 +30,7 @@
 # define putenv _putenv
 #endif
 
+using ampl::Problem;
 using ampl::BasicSolver;
 using ampl::Solver;
 
@@ -514,4 +515,88 @@ TEST(SolverTest, ObjPrec) {
   EXPECT_EQ(buffer, str(fmt::Format("{}") << ampl::ObjPrec(value)));
 }
 
-// TODO: test Problem
+TEST(SolverTest, EmptyProblem) {
+  Problem p;
+  EXPECT_EQ(0, p.num_vars());
+  EXPECT_EQ(0, p.num_objs());
+  EXPECT_EQ(0, p.num_cons());
+  EXPECT_EQ(0, p.num_integer_vars());
+  EXPECT_EQ(0, p.num_continuous_vars());
+  EXPECT_EQ(0, p.num_nonlinear_objs());
+  EXPECT_EQ(0, p.num_nonlinear_cons());
+  EXPECT_EQ(0, p.num_logical_cons());
+  EXPECT_EQ(-1, p.solve_code());
+}
+
+TEST(SolverTest, ProblemAccessors) {
+  Args args("", "data/test.nl");
+  char **argv = args;
+  TestSolver s("");
+  EXPECT_TRUE(s.ReadProblem(argv));
+  Problem &p = s.problem();
+  EXPECT_EQ(5, p.num_vars());
+  EXPECT_EQ(19, p.num_objs());
+  EXPECT_EQ(13, p.num_cons());
+  EXPECT_EQ(2, p.num_integer_vars());
+  EXPECT_EQ(3, p.num_continuous_vars());
+  EXPECT_EQ(17, p.num_nonlinear_objs());
+  EXPECT_EQ(11, p.num_nonlinear_cons());
+  EXPECT_EQ(7, p.num_logical_cons());
+
+  EXPECT_EQ(11, p.GetVarLB(0));
+  EXPECT_EQ(15, p.GetVarLB(p.num_vars() - 1));
+  EXPECT_EQ(21, p.GetVarUB(0));
+  EXPECT_EQ(25, p.GetVarUB(p.num_vars() - 1));
+
+  EXPECT_EQ(101, p.GetConLB(0));
+  EXPECT_EQ(113, p.GetConLB(p.num_cons() - 1));
+  EXPECT_EQ(201, p.GetConUB(0));
+  EXPECT_EQ(213, p.GetConUB(p.num_cons() - 1));
+
+  EXPECT_EQ(Problem::MIN, p.GetObjType(0));
+  EXPECT_EQ(Problem::MAX, p.GetObjType(p.num_objs() - 1));
+
+  // TODO: test objective and constraint expressions
+
+  EXPECT_EQ(-1, p.solve_code());
+  p.SetSolveCode(42);
+  EXPECT_EQ(42, p.solve_code());
+}
+
+TEST(SolverTest, ProblemBoundChecks) {
+#ifndef NDEBUG
+  Args args("", "data/test.nl");
+  char **argv = args;
+  TestSolver s("");
+  EXPECT_TRUE(s.ReadProblem(argv));
+  Problem &p = s.problem();
+
+  EXPECT_DEATH(p.GetVarLB(-1), "Assertion");
+  EXPECT_DEATH(p.GetVarLB(p.num_vars()), "Assertion");
+  EXPECT_DEATH(p.GetVarUB(-1), "Assertion");
+  EXPECT_DEATH(p.GetVarUB(p.num_vars()), "Assertion");
+
+  EXPECT_DEATH(p.GetConLB(-1), "Assertion");
+  EXPECT_DEATH(p.GetConLB(p.num_cons()), "Assertion");
+  EXPECT_DEATH(p.GetConUB(-1), "Assertion");
+  EXPECT_DEATH(p.GetConUB(p.num_cons()), "Assertion");
+
+  EXPECT_DEATH(p.GetObjType(-1), "Assertion");
+  EXPECT_DEATH(p.GetObjType(p.num_objs()), "Assertion");
+
+  EXPECT_DEATH(p.GetLinearObjExpr(-1), "Assertion");
+  EXPECT_DEATH(p.GetLinearObjExpr(p.num_objs()), "Assertion");
+
+  EXPECT_DEATH(p.GetLinearConExpr(-1), "Assertion");
+  EXPECT_DEATH(p.GetLinearConExpr(p.num_cons()), "Assertion");
+
+  EXPECT_DEATH(p.GetNonlinearObjExpr(-1), "Assertion");
+  EXPECT_DEATH(p.GetNonlinearObjExpr(p.num_objs()), "Assertion");
+
+  EXPECT_DEATH(p.GetNonlinearConExpr(-1), "Assertion");
+  EXPECT_DEATH(p.GetNonlinearConExpr(p.num_cons()), "Assertion");
+
+  EXPECT_DEATH(p.GetLogicalConExpr(-1), "Assertion");
+  EXPECT_DEATH(p.GetLogicalConExpr(p.num_logical_cons()), "Assertion");
+#endif
+}
