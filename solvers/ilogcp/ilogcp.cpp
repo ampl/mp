@@ -642,8 +642,11 @@ int IlogCPSolver::Run(char **argv) {
     IloExpr ilo_expr(env_, constant ? constant.value() : 0);
     if (problem.num_nonlinear_objs() > 0)
       ilo_expr += Visit(expr);
-    for (ograd *og = problem.GetLinearObjExpr(0); og; og = og->next)
-      ilo_expr += og->coef * vars_[og->varno];
+    LinearObjExpr linear = problem.GetLinearObjExpr(0);
+    for (LinearObjExpr::iterator
+        i = linear.begin(), end = linear.end(); i != end; ++i) {
+      ilo_expr += i->coef() * vars_[i->var_index()];
+    }
     IloObjective MinOrMax(env_, ilo_expr,
         problem.GetObjType(0) == Problem::MIN ?
         IloObjective::Minimize : IloObjective::Maximize);
@@ -655,9 +658,12 @@ int IlogCPSolver::Run(char **argv) {
     IloRangeArray cons(optimizer_->cons());
     for (int i = 0; i < n_cons; ++i) {
       IloExpr conExpr(env_);
-      for (cgrad *cg = problem.GetLinearConExpr(i); cg; cg = cg->next)
-        conExpr += cg->coef * vars_[cg->varno];
-      if (problem.num_nonlinear_cons() > i)
+      LinearConExpr linear = problem.GetLinearConExpr(i);
+      for (LinearConExpr::iterator
+          j = linear.begin(), end = linear.end(); j != end; ++j) {
+        conExpr += j->coef() * vars_[j->var_index()];
+      }
+      if (i < problem.num_nonlinear_cons())
         conExpr += Visit(problem.GetNonlinearConExpr(i));
       cons[i] = (problem.GetConLB(i) <= conExpr <= problem.GetConUB(i));
     }
@@ -718,7 +724,7 @@ int IlogCPSolver::Run(char **argv) {
     status = "error";
     break;
   }
-  problem.SetSolveCode(solve_code);
+  problem.set_solve_code(solve_code);
 
   fmt::Formatter format_message;
   format_message("{0}: {1}\n") << long_name() << status;

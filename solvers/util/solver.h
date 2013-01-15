@@ -36,6 +36,79 @@ extern "C" {
 
 namespace ampl {
 
+template <typename Grad>
+class LinearExpr;
+
+template <typename GradT>
+class LinearTerm {
+ private:
+  typedef GradT Grad;
+  Grad *grad_;
+
+  friend class LinearExpr< LinearTerm<Grad> >;
+
+  explicit LinearTerm(Grad *g) : grad_(g) {}
+
+ public:
+  // Returns the coefficient.
+  double coef() const { return grad_->coef; }
+
+  // Returns the variable index.
+  double var_index() const { return grad_->varno; }
+};
+
+typedef LinearTerm<ograd> LinearObjTerm;
+typedef LinearTerm<cgrad> LinearConTerm;
+
+class Problem;
+
+template <typename Term>
+class LinearExpr : public std::iterator<std::forward_iterator_tag, Term> {
+ private:
+  Term first_term_;
+
+  friend class Problem;
+
+  explicit LinearExpr(typename Term::Grad *first_term)
+  : first_term_(Term(first_term)) {}
+
+ public:
+  class iterator {
+   private:
+    Term term_;
+
+   public:
+    explicit iterator(Term t) : term_(t) {}
+
+    Term operator*() const { return term_; }
+    const Term *operator->() const { return &term_; }
+
+    iterator &operator++() {
+      term_ = Term(term_.grad_->next);
+      return *this;
+    }
+
+    iterator operator++(int ) {
+      iterator it(*this);
+      term_ = Term(term_.grad_->next);
+      return it;
+    }
+
+    bool operator==(iterator other) const {
+      return term_.grad_ == other.term_.grad_;
+    }
+    bool operator!=(iterator other) const {
+      return term_.grad_ != other.term_.grad_;
+    }
+  };
+
+  iterator begin() { return iterator(first_term_); }
+  iterator end() { return iterator(Term(0)); }
+};
+
+typedef LinearExpr<LinearObjTerm> LinearObjExpr;
+typedef LinearExpr<LinearConTerm> LinearConExpr;
+
 // An AMPL problem.
 class Problem {
  private:
@@ -113,15 +186,15 @@ class Problem {
   }
 
   // Returns the linear part of an objective expression.
-  ograd *GetLinearObjExpr(int obj_index) const {
+  LinearObjExpr GetLinearObjExpr(int obj_index) const {
     assert(obj_index >= 0 && obj_index < num_objs());
-    return asl_->i.Ograd_[obj_index];
+    return LinearObjExpr(asl_->i.Ograd_[obj_index]);
   }
 
   // Returns the linear part of a constraint expression.
-  cgrad *GetLinearConExpr(int con_index) const {
+  LinearConExpr GetLinearConExpr(int con_index) const {
     assert(con_index >= 0 && con_index < num_cons());
-    return asl_->i.Cgrad_[con_index];
+    return LinearConExpr(asl_->i.Cgrad_[con_index]);
   }
 
   // Returns the nonlinear part of an objective expression.
@@ -146,7 +219,7 @@ class Problem {
   int solve_code() const { return asl_->p.solve_code_; }
 
   // Sets the solve code.
-  void SetSolveCode(int value) {
+  void set_solve_code(int value) {
     asl_->p.solve_code_ = value;
   }
 };
