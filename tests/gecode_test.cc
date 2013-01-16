@@ -27,6 +27,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <csignal>
 #include <cstdlib>
 
 #include "gtest/gtest.h"
@@ -799,5 +800,13 @@ TEST_F(GecodeSolverTest, FeasibleSolveCode) {
 TEST_F(GecodeSolverTest, InfeasibleSolveCode) {
   Solve(DATA_DIR "infeasible");
   EXPECT_EQ(200, solver_.problem().solve_code());
+}
+
+// ----------------------------------------------------------------------------
+
+TEST_F(GecodeSolverTest, InterruptSolution) {
+  EXPECT_FALSE(ampl::BasicSolver::stop());
+  std::raise(SIGINT);
+  Solve(DATA_DIR "miplib/assign1");
 }
 }
