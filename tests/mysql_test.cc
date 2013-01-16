@@ -90,7 +90,7 @@ class MySQLTest : public ::testing::Test {
 void MySQLTest::SetUp() {
   handler_ = lib_.GetHandler("odbc");
   connection_ = "DRIVER={" + env_.FindDriver("mysql") +
-      "}; SERVER=" SERVER "; DATABASE=test;";
+      "}; SERVER=" SERVER "; DATABASE=test; USER=test;";
 
   // Create a unique table name from the hostname and pid. This is necessary
   // to avoid clashes between tests running in parallel on different machines
