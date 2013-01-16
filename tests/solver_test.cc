@@ -150,10 +150,10 @@ TEST(SolverTest, BasicSolverExitsOnTwoSIGINTs) {
   std::signal(SIGINT, SIG_DFL);
   TestSolver s("testsolver");
   EXPECT_EXIT({
-    freopen("out", "w", stdout);
-    std::fflush(stdout);
+    FILE *f = freopen("out", "w", stdout);
     std::raise(SIGINT);
     std::raise(SIGINT);
+    std::fclose(f); // Unreachable, but silences a warning.
   }, ::testing::ExitedWithCode(1), "");
   EXPECT_EQ("\n<BREAK> (testsolver)\n\n<BREAK> (testsolver)\n",
       ReadFile("out"));
