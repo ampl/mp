@@ -34,23 +34,7 @@ using Gecode::IntVarArgs;
 using Gecode::IntVar;
 using Gecode::IntVarArray;
 using Gecode::LinExpr;
-
-namespace {
-
-class Stop : public Gecode::Search::Stop {
- private:
-  ampl::SignalHandler handler_;
-
- public:
-  Stop() : handler_("gecode") {}
-
-  bool stop(
-      const Gecode::Search::Statistics &,
-      const Gecode::Search::Options &) {
-    return ampl::SignalHandler::stop();
-  }
-};
-}
+namespace Search = Gecode::Search;
 
 namespace ampl {
 
@@ -293,14 +277,19 @@ int GecodeSolver::Run(char **argv) {
     converter(new NLToGecodeConverter(problem.num_vars()));
   converter->Convert(problem);
 
+  struct Stop : Search::Stop {
+    bool stop(const Search::Statistics &, const Search::Options &) {
+      return BasicSolver::stop();
+    }
+  } stop;
+  Search::Options options;
+  options.stop = &stop;
+
   // Solve the problem.
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   std::auto_ptr<GecodeProblem> solution;
   bool has_obj = problem.num_objs() != 0;
-  Gecode::Search::Options options;
-  Stop stop;
-  options.stop = &stop;
-  Gecode::Search::Statistics stats;
+  Search::Statistics stats;
   bool stopped = false;
   if (has_obj) {
     Gecode::BAB<GecodeProblem> engine(&converter->problem(), options);
