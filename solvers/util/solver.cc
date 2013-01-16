@@ -26,6 +26,12 @@
 #include <cstdio>
 #include <cstring>
 
+#ifndef WIN32
+# include <unistd.h>
+#else
+# include <io.h>
+#endif
+
 #include "solvers/util/format.h"
 #include "solvers/getstub.h"
 
@@ -72,6 +78,29 @@ Problem::Problem() : asl_(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))) {}
 
 Problem::~Problem() {
   ASL_free(reinterpret_cast<ASL**>(&asl_));
+}
+
+SignalHandler *SignalHandler::self_;
+volatile std::sig_atomic_t SignalHandler::stop_;
+
+void SignalHandler::HandleSigInt(int sig) {
+  write(1, self_->message_ptr_, self_->message_size_);
+  if (stop_)
+    exit(1);
+  stop_ = 1;
+  std::signal(sig, HandleSigInt);
+}
+
+SignalHandler::SignalHandler(const char *info) {
+  message_("\n<BREAK> ({})\n") << info;
+  message_ptr_ = message_.c_str();
+  message_size_ = message_.size();
+  self_ = this;
+  saved_handler_ = std::signal(SIGINT, HandleSigInt);
+}
+
+SignalHandler::~SignalHandler() {
+  std::signal(SIGINT, saved_handler_);
 }
 
 void BasicSolver::SortOptions() {

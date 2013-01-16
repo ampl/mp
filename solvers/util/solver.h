@@ -23,6 +23,7 @@
 #ifndef SOLVERS_UTIL_SOLVER_H_
 #define SOLVERS_UTIL_SOLVER_H_
 
+#include <csignal>
 #include <cstring>
 #include <memory>
 #include <sstream>
@@ -39,6 +40,7 @@ namespace ampl {
 template <typename Grad>
 class LinearExpr;
 
+// A linear term.
 template <typename GradT>
 class LinearTerm {
  private:
@@ -62,6 +64,7 @@ typedef LinearTerm<cgrad> LinearConTerm;
 
 class Problem;
 
+// A linear expression.
 template <typename Term>
 class LinearExpr : public std::iterator<std::forward_iterator_tag, Term> {
  private:
@@ -286,6 +289,32 @@ class OptionParser<const char*> {
   const char* operator()(Option_Info *, keyword *, char *&s);
 };
 }
+
+class SignalHandler {
+ private:
+  fmt::Formatter message_;
+  const char *message_ptr_;
+  std::size_t message_size_;
+  void (*saved_handler_)(int);
+
+  static SignalHandler *self_;
+  static volatile std::sig_atomic_t stop_;
+
+  static void HandleSigInt(int sig);
+
+ public:
+  // Constructs a SignalHandler object and registers a handler for SIGINT.
+  // info: additional info (normally solver name) to print when handler is
+  //       called; the full message will be:
+  // <BREAK> (info)
+  explicit SignalHandler(const char *info);
+
+  // Unregisters the handler and destroys the object.
+  ~SignalHandler();
+
+  // Returns true if the execution should be stopped (handler called).
+  static bool stop() { return stop_ != 0; }
+};
 
 // Base class for all solver classes.
 class BasicSolver

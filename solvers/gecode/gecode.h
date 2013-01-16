@@ -247,6 +247,11 @@ class NLToGecodeConverter :
 
 // Gecode solver.
 class GecodeSolver : public Solver<GecodeSolver> {
+ private:
+  bool output_;
+
+  void EnableOutput(const char *, bool enable) { output_ = enable; }
+
  public:
   GecodeSolver();
 

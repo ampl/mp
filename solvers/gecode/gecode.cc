@@ -30,6 +30,20 @@ using Gecode::LinExpr;
 using Gecode::linear;
 using Gecode::Space;
 
+namespace {
+
+class Stop : public ampl::SignalHandler, public Gecode::Search::Stop {
+ public:
+  Stop() : ampl::SignalHandler("gecode") {}
+
+  bool stop(
+      const Gecode::Search::Statistics &,
+      const Gecode::Search::Options &) {
+    return ampl::SignalHandler::stop();
+  }
+};
+}
+
 namespace ampl {
 
 GecodeProblem::GecodeProblem(bool share, GecodeProblem &s) :
@@ -263,6 +277,9 @@ BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr) {
 GecodeSolver::GecodeSolver()
 : Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION) {
   set_version("Gecode " GECODE_VERSION);
+  AddIntOption("outlev",
+      "0 or 1 (default 0):  Whether to print solution log.",
+      &GecodeSolver::EnableOutput);
 }
 
 int GecodeSolver::Run(char **argv) {
@@ -279,44 +296,57 @@ int GecodeSolver::Run(char **argv) {
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   std::auto_ptr<GecodeProblem> solution;
   bool has_obj = problem.num_objs() != 0;
+  Gecode::Search::Options options;
+  Stop stop;
+  options.stop = &stop;
   Gecode::Search::Statistics stats;
+  bool stopped = false;
   if (has_obj) {
-    BAB<GecodeProblem> engine(&converter->problem());
+    BAB<GecodeProblem> engine(&converter->problem(), options);
     converter.reset();
-    while (GecodeProblem *next = engine.next())
+    while (GecodeProblem *next = engine.next()) {
+      if (output_)
+        fmt::Print("Best objective: {}\n") << next->obj().val();
       solution.reset(next);
+    }
     if (solution.get())
       obj_val = solution->obj().val();
+    stopped = engine.stopped();
     stats = engine.statistics();
   } else {
-    DFS<GecodeProblem> engine(&converter->problem());
+    DFS<GecodeProblem> engine(&converter->problem(), options);
     converter.reset();
     solution.reset(engine.next());
+    stopped = engine.stopped();
     stats = engine.statistics();
   }
 
   // Convert solution status.
   const char *status = 0;
-  vector<real> primal;
   int solve_code = 0;
+  if (stopped) {
+    solve_code = 600;
+    status = "interrupted";
+  } else if (!solution.get()) {
+    solve_code = 200;
+    status = "infeasible problem";
+  } else if (has_obj) {
+    solve_code = 0;
+    status = "optimal solution";
+  } else {
+    solve_code = 100;
+    status = "feasible solution";
+  }
+  problem.set_solve_code(solve_code);
+
+  vector<real> primal;
   if (solution.get()) {
-    if (has_obj) {
-      solve_code = 0;
-      status = "optimal solution";
-    } else {
-      solve_code = 100;
-      status = "feasible solution";
-    }
     IntVarArray &vars = solution->vars();
     int num_vars = problem.num_vars();
     primal.resize(num_vars);
     for (int j = 0; j < num_vars; ++j)
       primal[j] = vars[j].val();
-  } else {
-    solve_code = 200;
-    status = "infeasible problem";
   }
-  problem.set_solve_code(solve_code);
 
   fmt::Formatter format;
   format("{0}: {1}\n") << long_name() << status;

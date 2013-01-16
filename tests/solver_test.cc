@@ -627,5 +627,3 @@ TEST(SolverTest, ProblemBoundChecks) {
   EXPECT_DEATH(p.GetLogicalConExpr(p.num_logical_cons()), "Assertion");
 #endif
 }
-
-// TODO: test LinearExpr and LinearTerm
