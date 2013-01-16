@@ -30,6 +30,7 @@
 # include <unistd.h>
 #else
 # include <io.h>
+#define write _write
 #endif
 
 #include "solvers/util/format.h"
@@ -82,11 +83,11 @@ Problem::~Problem() {
 
 std::string BasicSolver::signal_message_;
 const char *BasicSolver::signal_message_ptr_;
-std::size_t BasicSolver::signal_message_size_;
+unsigned BasicSolver::signal_message_size_;
 volatile std::sig_atomic_t BasicSolver::stop_;
 
 void BasicSolver::HandleSigInt(int sig) {
-  std::size_t count = 0;
+  unsigned count = 0;
   do {
     // Use asynchronous-safe function write instead of printf!
     int result = write(1, signal_message_ptr_ + count,
