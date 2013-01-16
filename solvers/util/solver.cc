@@ -84,10 +84,21 @@ SignalHandler *SignalHandler::self_;
 volatile std::sig_atomic_t SignalHandler::stop_;
 
 void SignalHandler::HandleSigInt(int sig) {
-  write(1, self_->message_ptr_, self_->message_size_);
-  if (stop_)
-    exit(1);
+  std::size_t count = 0;
+  do {
+    // Use asynchronous-safe function write instead of printf!
+    ssize_t result = write(1, self_->message_ptr_ + count,
+        self_->message_size_ - count);
+    if (result < 0) break;
+    count += result;
+  } while (count < self_->message_size_);
+  if (stop_) {
+    // Use asynchronous-safe function _exit instead of exit!
+    _exit(1);
+  }
   stop_ = 1;
+  // Restore the handler since it might have been reset before the handler
+  // is called (this is implementation defined).
   std::signal(sig, HandleSigInt);
 }
 
