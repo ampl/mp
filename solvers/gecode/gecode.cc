@@ -339,10 +339,10 @@ int GecodeSolver::Run(char **argv) {
   }
 
   fmt::Formatter format;
-  format("{0}: {1}\n") << long_name() << status;
-  format("{0} nodes, {1} fails") << stats.node << stats.fail;
+  format("{}: {}\n") << long_name() << status;
+  format("{} nodes, {} fails") << stats.node << stats.fail;
   if (has_obj)
-    format(", objective {0}") << ObjPrec(obj_val);
+    format(", objective {}") << ObjPrec(obj_val);
   HandleSolution(format.c_str(), primal.empty() ? 0 : &primal[0], 0, obj_val);
   return 0;
 }
