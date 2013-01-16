@@ -370,6 +370,4 @@ TEST_F(MySQLTest, SpecialCharsInColumnName) {
   handler_->Read(connection_, &in);
   EXPECT_EQ(t, in);
 }
-
-// TODO(viz): more tests
 }
