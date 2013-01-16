@@ -20,6 +20,7 @@
  Author: Victor Zverovich
  */
 
+#include <csignal>
 #include <fstream>
 
 #include "gtest/gtest.h"
@@ -103,7 +104,7 @@ class StderrRedirect {
 };
 }
 
-TEST(SolverTest, SolverBaseCtor) {
+TEST(SolverTest, BasicSolverCtor) {
   TestSolver s("testsolver");
   EXPECT_EQ(0, s.problem().num_vars());
   EXPECT_STREQ("testsolver", s.name());
@@ -115,7 +116,7 @@ TEST(SolverTest, SolverBaseCtor) {
   EXPECT_EQ(0, s.wantsol());
 }
 
-TEST(SolverTest, SolverBaseVirtualDtor) {
+TEST(SolverTest, BasicSolverVirtualDtor) {
   bool destroyed = false;
   class DtorTestSolver : public BasicSolver {
    private:
@@ -128,6 +129,34 @@ TEST(SolverTest, SolverBaseVirtualDtor) {
   };
   (DtorTestSolver(destroyed));
   EXPECT_TRUE(destroyed);
+}
+
+TEST(SolverTest, BasicSolverHandlesSIGINT) {
+  std::signal(SIGINT, SIG_DFL);
+  TestSolver s("testsolver");
+  EXPECT_EXIT({
+    FILE *f = freopen("out", "w", stdout);
+    fmt::Print("{}") << BasicSolver::stop();
+    std::fflush(stdout);
+    std::raise(SIGINT);
+    fmt::Print("{}") << BasicSolver::stop();
+    fclose(f);
+    exit(0);
+  }, ::testing::ExitedWithCode(0), "");
+  EXPECT_EQ("0\n<BREAK> (testsolver)\n1", ReadFile("out"));
+}
+
+TEST(SolverTest, BasicSolverExitsOnTwoSIGINTs) {
+  std::signal(SIGINT, SIG_DFL);
+  TestSolver s("testsolver");
+  EXPECT_EXIT({
+    freopen("out", "w", stdout);
+    std::fflush(stdout);
+    std::raise(SIGINT);
+    std::raise(SIGINT);
+  }, ::testing::ExitedWithCode(1), "");
+  EXPECT_EQ("\n<BREAK> (testsolver)\n\n<BREAK> (testsolver)\n",
+      ReadFile("out"));
 }
 
 TEST(SolverTest, NameInUsage) {
