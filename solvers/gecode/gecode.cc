@@ -1,40 +1,48 @@
+/*
+ AMPL solver interface to Gecode.
+
+ Copyright (C) 2012 AMPL Optimization LLC
+
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose and without fee is hereby granted,
+ provided that the above copyright notice appear in all copies and that
+ both that the copyright notice and this permission notice and warranty
+ disclaimer appear in supporting documentation.
+
+ The author and AMPL Optimization LLC disclaim all warranties with
+ regard to this software, including all implied warranties of
+ merchantability and fitness.  In no event shall the author be liable
+ for any special, indirect or consequential damages or any damages
+ whatsoever resulting from loss of use, data or profits, whether in an
+ action of contract, negligence or other tortious action, arising out
+ of or in connection with the use or performance of this software.
+
+ Author: Victor Zverovich
+ */
+
 #include "gecode.h"
 
 #include <gecode/search.hh>
-#include <gecode/gist.hh>
 
-#include <iostream>
 #include <limits>
 #include <memory>
-#include <ctime>
-
-#include "solvers/util/expr.h"
-#include "solvers/getstub.h"
-#include "solvers/nlp.h"
-#include "solvers/opcode.hd"
-
-using std::cerr;
-using std::endl;
-using std::vector;
+#include <string>
+#include <vector>
 
 using Gecode::BoolExpr;
-using Gecode::BAB;
-using Gecode::DFS;
-using Gecode::IntArgs;
 using Gecode::IntVarArgs;
 using Gecode::IntVar;
 using Gecode::IntVarArray;
-using Gecode::IntRelType;
-using Gecode::IRT_NQ;
 using Gecode::LinExpr;
-using Gecode::linear;
-using Gecode::Space;
 
 namespace {
 
-class Stop : public ampl::SignalHandler, public Gecode::Search::Stop {
+class Stop : public Gecode::Search::Stop {
+ private:
+  ampl::SignalHandler handler_;
+
  public:
-  Stop() : ampl::SignalHandler("gecode") {}
+  Stop() : handler_("gecode") {}
 
   bool stop(
       const Gecode::Search::Statistics &,
@@ -47,25 +55,23 @@ class Stop : public ampl::SignalHandler, public Gecode::Search::Stop {
 namespace ampl {
 
 GecodeProblem::GecodeProblem(bool share, GecodeProblem &s) :
-  Space(share, s), obj_irt_(s.obj_irt_) {
+  Gecode::Space(share, s), obj_irt_(s.obj_irt_) {
   vars_.update(*this, share, s.vars_);
-  if (obj_irt_ != IRT_NQ)
+  if (obj_irt_ != Gecode::IRT_NQ)
     obj_.update(*this, share, s.obj_);
 }
 
-Space *GecodeProblem::copy(bool share) {
+Gecode::Space *GecodeProblem::copy(bool share) {
   return new GecodeProblem(share, *this);
 }
 
-void GecodeProblem::SetObj(
-    Problem::ObjType obj_type, const Gecode::LinExpr &expr) {
+void GecodeProblem::SetObj(Problem::ObjType obj_type, const LinExpr &expr) {
   obj_irt_ = obj_type == Problem::MAX ? Gecode::IRT_GR : Gecode::IRT_LE;
-  obj_ = IntVar(*this, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-  rel(*this, obj_ == expr);
+  obj_ = Gecode::expr(*this, expr);
 }
 
-void GecodeProblem::constrain(const Space &best) {
-  if (obj_irt_ != IRT_NQ)
+void GecodeProblem::constrain(const Gecode::Space &best) {
+  if (obj_irt_ != Gecode::IRT_NQ)
     rel(*this, obj_, obj_irt_, static_cast<const GecodeProblem&>(best).obj_);
 }
 
@@ -75,7 +81,7 @@ BoolExpr NLToGecodeConverter::Convert(
   int index = 0;
   for (IteratedLogicalExpr::iterator
       i = e.begin(), end = e.end(); i != end; ++i, ++index) {
-    args[index] = CreateVar(Visit(*i));
+    args[index] = Gecode::expr(problem_, Visit(*i));
   }
   Gecode::BoolVar var(problem_, 0, 1);
   rel(problem_, op, args, var);
@@ -90,10 +96,10 @@ void NLToGecodeConverter::RequireNonzeroConstRHS(
 }
 
 template <typename Term>
-Gecode::LinExpr NLToGecodeConverter::ConvertExpr(
+LinExpr NLToGecodeConverter::ConvertExpr(
     LinearExpr<Term> linear, NumericExpr nonlinear) {
   IntVarArray &vars = problem_.vars();
-  Gecode::LinExpr expr;
+  LinExpr expr;
   typename LinearExpr<Term>::iterator i = linear.begin(), end = linear.end();
   bool has_linear_part = i != end;
   if (has_linear_part)
@@ -122,14 +128,10 @@ BoolExpr NLToGecodeConverter::ConvertFullExpr(LogicalExpr e, bool post) {
   IntVarArgs args(num_args);
   for (int i = 0; i < num_args; ++i) {
     NumericExpr arg(alldiff[i]);
-    if (Variable var = ampl::Cast<Variable>(arg)) {
+    if (Variable var = ampl::Cast<Variable>(arg))
       args[i] = vars[var.index()];
-    } else {
-      IntVar gecode_var(problem_,
-          Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-      rel(problem_, gecode_var == Visit(arg));
-      args[i] = gecode_var;
-    }
+    else
+      args[i] = Gecode::expr(problem_, Visit(arg));
   }
   distinct(problem_, args);
   return Gecode::BoolVar();
@@ -157,7 +159,7 @@ void NLToGecodeConverter::Convert(const Problem &p) {
 
   // Convert constraints.
   for (int i = 0, n = p.num_cons(); i < n; ++i) {
-    Gecode::LinExpr con_expr(
+    LinExpr con_expr(
         ConvertExpr(p.GetLinearConExpr(i), p.GetNonlinearConExpr(i)));
     double lb = p.GetConLB(i);
     double ub = p.GetConUB(i);
@@ -184,9 +186,8 @@ LinExpr NLToGecodeConverter::VisitMin(VarArgExpr e) {
     throw UnsupportedExprError("min with empty argument list");
   IntVarArgs args;
   for (; *i; ++i)
-    args << CreateVar(Visit(*i));
-  Gecode::IntVar result(problem_,
-      Gecode::Int::Limits::min, Gecode::Int::Limits::max);
+    args << Gecode::expr(problem_, Visit(*i));
+  IntVar result(problem_, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
   min(problem_, args, result);
   return result;
 }
@@ -197,9 +198,8 @@ LinExpr NLToGecodeConverter::VisitMax(VarArgExpr e) {
     throw UnsupportedExprError("max with empty argument list");
   IntVarArgs args;
   for (; *i; ++i)
-    args << CreateVar(Visit(*i));
-  Gecode::IntVar result(problem_,
-      Gecode::Int::Limits::min, Gecode::Int::Limits::max);
+    args << Gecode::expr(problem_, Visit(*i));
+  IntVar result(problem_, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
   max(problem_, args, result);
   return result;
 }
@@ -214,13 +214,14 @@ LinExpr NLToGecodeConverter::VisitFloor(UnaryExpr e) {
 }
 
 LinExpr NLToGecodeConverter::VisitIf(IfExpr e) {
-  Gecode::IntVar result(problem_,
-      Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-  Gecode::BoolExpr condition = Visit(e.condition());
+  IntVar result(problem_, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
+  BoolExpr condition = Visit(e.condition());
   rel(problem_, result, Gecode::IRT_EQ,
-      CreateVar(Visit(e.true_expr())), CreateVar(condition));
+      Gecode::expr(problem_, Visit(e.true_expr())),
+      Gecode::expr(problem_, condition));
   rel(problem_, result, Gecode::IRT_EQ,
-      CreateVar(Visit(e.false_expr())), CreateVar(!condition));
+      Gecode::expr(problem_, Visit(e.false_expr())),
+      Gecode::expr(problem_, !condition));
   return result;
 }
 
@@ -239,10 +240,10 @@ LinExpr NLToGecodeConverter::VisitCount(CountExpr e) {
   int index = 0;
   for (CountExpr::iterator
       i = e.begin(), end = e.end(); i != end; ++i, ++index) {
-    args[index] = CreateVar(Visit(*i));
+    args[index] = Gecode::expr(problem_, Visit(*i));
   }
-  Gecode::IntVar result(problem_, 0, e.num_args());
-  linear(problem_, args, Gecode::IRT_EQ, result);
+  IntVar result(problem_, 0, e.num_args());
+  Gecode::linear(problem_, args, Gecode::IRT_EQ, result);
   return result;
 }
 
@@ -250,13 +251,13 @@ LinExpr NLToGecodeConverter::VisitNumberOf(NumberOfExpr e) {
   // Gecode only supports global cardinality (count) constraint where no other
   // values except those specified may occur, so we use only local count
   // constraints.
-  Gecode::IntVar result(problem_,
-      Gecode::Int::Limits::min, Gecode::Int::Limits::max);
+  IntVar result(problem_, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
   int index = 0;
-  Gecode::IntVarArgs args(e.num_args());
+  IntVarArgs args(e.num_args());
   for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-    args[index++] = CreateVar(Visit(*i));
-  count(problem_, args, CreateVar(Visit(e.value())), Gecode::IRT_EQ, result);
+    args[index++] = Gecode::expr(problem_, Visit(*i));
+  count(problem_, args, Gecode::expr(problem_, Visit(e.value())),
+      Gecode::IRT_EQ, result);
   return result;
 }
 
@@ -275,7 +276,7 @@ BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr) {
 }
 
 GecodeSolver::GecodeSolver()
-: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION) {
+: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION), output_(false) {
   set_version("Gecode " GECODE_VERSION);
   AddIntOption("outlev",
       "0 or 1 (default 0):  Whether to print solution log.",
@@ -302,7 +303,7 @@ int GecodeSolver::Run(char **argv) {
   Gecode::Search::Statistics stats;
   bool stopped = false;
   if (has_obj) {
-    BAB<GecodeProblem> engine(&converter->problem(), options);
+    Gecode::BAB<GecodeProblem> engine(&converter->problem(), options);
     converter.reset();
     while (GecodeProblem *next = engine.next()) {
       if (output_)
@@ -314,7 +315,7 @@ int GecodeSolver::Run(char **argv) {
     stopped = engine.stopped();
     stats = engine.statistics();
   } else {
-    DFS<GecodeProblem> engine(&converter->problem(), options);
+    Gecode::DFS<GecodeProblem> engine(&converter->problem(), options);
     converter.reset();
     solution.reset(engine.next());
     stopped = engine.stopped();
@@ -339,7 +340,7 @@ int GecodeSolver::Run(char **argv) {
   }
   problem.set_solve_code(solve_code);
 
-  vector<real> primal;
+  std::vector<real> primal;
   if (solution.get()) {
     IntVarArray &vars = solution->vars();
     int num_vars = problem.num_vars();
