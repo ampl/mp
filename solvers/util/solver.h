@@ -290,32 +290,6 @@ class OptionParser<const char*> {
 };
 }
 
-class SignalHandler {
- private:
-  fmt::Formatter message_;
-  const char *message_ptr_;
-  std::size_t message_size_;
-  void (*saved_handler_)(int);
-
-  static SignalHandler *self_;
-  static volatile std::sig_atomic_t stop_;
-
-  static void HandleSigInt(int sig);
-
- public:
-  // Constructs a SignalHandler object and registers a handler for SIGINT.
-  // info: additional info (normally solver name) to print when handler is
-  //       called; the full message will be:
-  // <BREAK> (info)
-  explicit SignalHandler(const char *info);
-
-  // Unregisters the handler and destroys the object.
-  ~SignalHandler();
-
-  // Returns true if the execution should be stopped (handler called).
-  static bool stop() { return stop_ != 0; }
-};
-
 // Base class for all solver classes.
 class BasicSolver
   : private ErrorHandler, private SolutionHandler, private Option_Info {
@@ -335,6 +309,13 @@ class BasicSolver
   bool has_errors_;
   ErrorHandler *error_handler_;
   SolutionHandler *sol_handler_;
+
+  static std::string signal_message_;
+  static const char *signal_message_ptr_;
+  static std::size_t signal_message_size_;
+  static volatile std::sig_atomic_t stop_;
+
+  static void HandleSigInt(int sig);
 
   void SortOptions();
 
@@ -482,6 +463,11 @@ class BasicSolver
     return fmt::TempFormatter<ErrorReporter>(
         format.c_str(), ErrorReporter(error_handler_));
   }
+
+  // Returns true if the execution should be stopped due to SIGINT.
+  // When a solver is run in a terminal it should respond to SIGINT (Ctrl-C)
+  // by interrupting its execution and returning the best solution found.
+  static bool stop() { return stop_ != 0; }
 };
 
 // An AMPL solver.

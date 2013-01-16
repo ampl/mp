@@ -80,18 +80,20 @@ Problem::~Problem() {
   ASL_free(reinterpret_cast<ASL**>(&asl_));
 }
 
-SignalHandler *SignalHandler::self_;
-volatile std::sig_atomic_t SignalHandler::stop_;
+std::string BasicSolver::signal_message_;
+const char *BasicSolver::signal_message_ptr_;
+std::size_t BasicSolver::signal_message_size_;
+volatile std::sig_atomic_t BasicSolver::stop_;
 
-void SignalHandler::HandleSigInt(int sig) {
+void BasicSolver::HandleSigInt(int sig) {
   std::size_t count = 0;
   do {
     // Use asynchronous-safe function write instead of printf!
-    ssize_t result = write(1, self_->message_ptr_ + count,
-        self_->message_size_ - count);
+    int result = write(1, signal_message_ptr_ + count,
+        signal_message_size_ - count);
     if (result < 0) break;
     count += result;
-  } while (count < self_->message_size_);
+  } while (count < signal_message_size_);
   if (stop_) {
     // Use asynchronous-safe function _exit instead of exit!
     _exit(1);
@@ -102,18 +104,6 @@ void SignalHandler::HandleSigInt(int sig) {
   std::signal(sig, HandleSigInt);
 }
 
-SignalHandler::SignalHandler(const char *info) {
-  message_("\n<BREAK> ({})\n") << info;
-  message_ptr_ = message_.c_str();
-  message_size_ = message_.size();
-  self_ = this;
-  saved_handler_ = std::signal(SIGINT, HandleSigInt);
-}
-
-SignalHandler::~SignalHandler() {
-  std::signal(SIGINT, saved_handler_);
-}
-
 void BasicSolver::SortOptions() {
   if (options_sorted_) return;
   std::sort(keywords_.begin(), keywords_.end(), KeywordNameLess());
@@ -122,7 +112,8 @@ void BasicSolver::SortOptions() {
   options_sorted_ = true;
 }
 
-BasicSolver::BasicSolver(fmt::StringRef name, fmt::StringRef long_name, long date)
+BasicSolver::BasicSolver(
+    fmt::StringRef name, fmt::StringRef long_name, long date)
 : name_(name), options_sorted_(false), has_errors_(false) {
   error_handler_ = this;
   sol_handler_ = this;
@@ -158,7 +149,15 @@ BasicSolver::BasicSolver(fmt::StringRef name, fmt::StringRef long_name, long dat
       "      4 = dual variables to stdout\n"
       "      8 = suppress solution message\n");
   AddKeyword("wantsol", wantsol_desc_.c_str(), WS_val, 0);
+
+  signal_message_ = str(fmt::Format("\n<BREAK> ({})\n") << name.c_str());
+  signal_message_ptr_ = signal_message_.c_str();
+  signal_message_size_ = signal_message_.size();
+  stop_ = 0;
+  std::signal(SIGINT, HandleSigInt);
 }
+
+BasicSolver::~BasicSolver() {}
 
 void BasicSolver::AddKeyword(const char *name,
     const char *description, Kwfunc func, const void *info) {
@@ -215,8 +214,6 @@ std::string BasicSolver::FormatDescription(const char *description) {
     os << '\n';
   return os.str();
 }
-
-BasicSolver::~BasicSolver() {}
 
 bool BasicSolver::ReadProblem(char **&argv) {
   SortOptions();
