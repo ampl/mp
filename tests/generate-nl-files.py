@@ -9,11 +9,12 @@ MODELS_DIR = '../models/logic/'
 def generate_nl_file(stub, *files, **kwargs):
   code = ''
   dir = MODELS_DIR
+  outdir = DATA_DIR
   for key, value in kwargs.iteritems():
     if key == 'code':
       code = value
     elif key == 'dir':
-      dir = value
+      outdir = dir = value
     else:
       raise Exception('Invalid parameter: ' + key)
   input = ''
@@ -25,7 +26,7 @@ def generate_nl_file(stub, *files, **kwargs):
       input += 'model ' + dir + f + ';\n';
   if 'code' in kwargs:
     input += kwargs['code']
-  input += 'write g' + DATA_DIR + stub + ';\n';
+  input += 'write g' + outdir + stub + ';\n';
   ampl = Popen(['ampl'], stdin=PIPE)
   ampl.communicate(input)
 
@@ -66,3 +67,4 @@ generate_nl_file('numberof', '$.ampl', dir='data/')
 generate_nl_file('feasible', '$.ampl', dir='data/')
 generate_nl_file('infeasible', '$.ampl', dir='data/')
 generate_nl_file('unbounded', '$.ampl', dir='data/')
+generate_nl_file('assign1', '$.mod', '$.dat', dir='data/miplib/')
