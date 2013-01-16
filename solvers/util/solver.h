@@ -312,7 +312,7 @@ class BasicSolver
 
   static std::string signal_message_;
   static const char *signal_message_ptr_;
-  static std::size_t signal_message_size_;
+  static unsigned signal_message_size_;
   static volatile std::sig_atomic_t stop_;
 
   static void HandleSigInt(int sig);
