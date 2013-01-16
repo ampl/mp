@@ -30,7 +30,9 @@
 # include <unistd.h>
 #else
 # include <io.h>
-#define write _write
+static inline int write(int fd, const void *buffer, unsigned count) {
+  return _write(fd, buffer, count);
+}
 #endif
 
 #include "solvers/util/format.h"
