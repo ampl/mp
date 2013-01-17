@@ -93,7 +93,7 @@ volatile std::sig_atomic_t SignalHandler::stop_ = 1;
 SignalHandler::SignalHandler(const BasicSolver &s, Interruptable *i) {
   signal_message_ = str(fmt::Format("\n<BREAK> ({})\n") << s.name());
   signal_message_ptr_ = signal_message_.c_str();
-  signal_message_size_ = signal_message_.size();
+  signal_message_size_ = static_cast<unsigned>(signal_message_.size());
   interruptable_ = i;
   stop_ = 0;
   std::signal(SIGINT, HandleSigInt);
