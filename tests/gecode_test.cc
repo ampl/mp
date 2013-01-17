@@ -44,6 +44,7 @@ extern "C" {
 
 #include "tests/args.h"
 #include "tests/expr_builder.h"
+#include "tests/solution_handler.h"
 #include "tests/config.h"
 
 #ifdef HAVE_THREADS
@@ -618,35 +619,6 @@ TEST_F(GecodeConverterTest, ConvertLogicalConstant) {
 // ----------------------------------------------------------------------------
 // Solver tests
 
-struct SolveResult {
-  bool solved;
-  double obj;
-  SolveResult(bool solved, double obj) : solved(solved), obj(obj) {}
-};
-
-class TestSolutionHandler : public ampl::SolutionHandler {
- private:
-  std::string message_;
-  double obj_value_;
-  int solve_code_;
-
- public:
-  TestSolutionHandler()
-  : obj_value_(std::numeric_limits<double>::quiet_NaN()), solve_code_(0) {}
-  virtual ~TestSolutionHandler() {}
-
-  int solve_code() const { return solve_code_; }
-  double obj_value() const { return obj_value_; }
-  const std::string &message() const { return message_; }
-
-  void HandleSolution(ampl::BasicSolver &s, fmt::StringRef message,
-        const double *, const double *, double obj_value) {
-    solve_code_ = s.problem().solve_code();
-    message_ = message;
-    obj_value_ = obj_value;
-  }
-};
-
 class GecodeSolverTest : public ::testing::Test, public ExprBuilder {
  protected:
   ampl::GecodeSolver solver_;
@@ -672,7 +644,7 @@ SolveResult GecodeSolverTest::Solve(const char *stub, const char *opt) {
     EXPECT_TRUE(message.find("feasible solution") != string::npos);
   else
     solved = false;
-  return SolveResult(solved, sh.obj_value());
+  return SolveResult(solved, sh.obj_value(), message);
 }
 
 TEST_F(GecodeSolverTest, ObjConst) {
@@ -819,8 +791,10 @@ void Interrupt() {
 
 TEST_F(GecodeSolverTest, InterruptSolution) {
   std::thread t(Interrupt);
-  Solve(DATA_DIR "miplib/assign1");
+  std::string message = Solve(DATA_DIR "miplib/assign1").message;
   t.join();
+  EXPECT_EQ(600, solver_.problem().solve_code());
+  EXPECT_TRUE(message.find("interrupted") != string::npos);
 }
 #endif
 }

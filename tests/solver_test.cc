@@ -26,6 +26,7 @@
 #include "gtest/gtest.h"
 #include "solvers/util/solver.h"
 #include "tests/args.h"
+#include "tests/solution_handler.h"
 
 #ifdef WIN32
 # define putenv _putenv
@@ -226,36 +227,17 @@ TEST(SolverTest, ErrorHandler) {
 }
 
 TEST(SolverTest, SolutionHandler) {
-  struct TestSolutionHandler : ampl::SolutionHandler {
-    BasicSolver *solver;
-    std::string message;
-    const double *primal;
-    const double *dual;
-    double obj_value;
-
-    TestSolutionHandler() : solver(0), primal(0), dual(0), obj_value(0) {}
-
-    void HandleSolution(BasicSolver &s, fmt::StringRef message,
-            const double *primal, const double *dual, double obj_value) {
-      solver = &s;
-      this->message = message;
-      this->primal = primal;
-      this->dual = dual;
-      this->obj_value = obj_value;
-    }
-  };
-
   TestSolutionHandler sh;
   TestSolver s("test");
   s.set_solution_handler(&sh);
   EXPECT_TRUE(&sh == s.solution_handler());
   double primal = 0, dual = 0, obj = 42;
   s.HandleSolution("test message", &primal, &dual, obj);
-  EXPECT_EQ(&s, sh.solver);
-  EXPECT_EQ("test message", sh.message);
-  EXPECT_EQ(&primal, sh.primal);
-  EXPECT_EQ(&dual, sh.dual);
-  EXPECT_EQ(42.0, sh.obj_value);
+  EXPECT_EQ(&s, sh.solver());
+  EXPECT_EQ("test message", sh.message());
+  EXPECT_EQ(&primal, sh.primal());
+  EXPECT_EQ(&dual, sh.dual());
+  EXPECT_EQ(42.0, sh.obj_value());
 }
 
 TEST(SolverTest, ReadProblem) {
