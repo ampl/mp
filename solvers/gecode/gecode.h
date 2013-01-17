@@ -249,12 +249,33 @@ class NLToGecodeConverter :
   GecodeProblem &problem() { return problem_; }
 };
 
+template <typename Value>
+struct OptionValue {
+  const char *name;
+  Value value;
+};
+
+template <typename T>
+struct OptionInfo {
+  const OptionValue<T> *values;
+  T &value;
+
+  OptionInfo(const OptionValue<T> *values, T &value)
+  : values(values), value(value) {}
+};
+
 // Gecode solver.
 class GecodeSolver : public Solver<GecodeSolver> {
  private:
   bool output_;
+  Gecode::IntVarBranch var_branching_;
+  Gecode::IntValBranch val_branching_;
 
   void EnableOutput(const char *, bool enable) { output_ = enable; }
+
+  template <typename T>
+  void SetStrOption(const char *name, const char *value,
+      const OptionInfo<T> &info);
 
  public:
   GecodeSolver();

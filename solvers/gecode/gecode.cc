@@ -36,6 +36,47 @@ using Gecode::IntVarArray;
 using Gecode::LinExpr;
 namespace Search = Gecode::Search;
 
+namespace {
+
+const ampl::OptionValue<Gecode::IntVarBranch> VAR_BRANCHINGS[] = {
+    {"none",            Gecode::INT_VAR_NONE},
+    {"rnd",             Gecode::INT_VAR_RND},
+    {"degree_min",      Gecode::INT_VAR_DEGREE_MIN},
+    {"degree_max",      Gecode::INT_VAR_DEGREE_MAX},
+    {"afc_min",         Gecode::INT_VAR_AFC_MIN},
+    {"afc_max",         Gecode::INT_VAR_AFC_MAX},
+    {"min_min",         Gecode::INT_VAR_MIN_MIN},
+    {"min_max",         Gecode::INT_VAR_MIN_MAX},
+    {"max_min",         Gecode::INT_VAR_MAX_MIN},
+    {"max_max",         Gecode::INT_VAR_MAX_MAX},
+    {"size_min",        Gecode::INT_VAR_SIZE_MIN},
+    {"size_max",        Gecode::INT_VAR_SIZE_MAX},
+    {"size_degree_min", Gecode::INT_VAR_SIZE_DEGREE_MIN},
+    {"size_degree_max", Gecode::INT_VAR_SIZE_DEGREE_MAX},
+    {"size_afc_min",    Gecode::INT_VAR_SIZE_AFC_MIN},
+    {"size_afc_max",    Gecode::INT_VAR_SIZE_AFC_MAX},
+    {"regret_min_min",  Gecode::INT_VAR_REGRET_MIN_MIN},
+    {"regret_min_max",  Gecode::INT_VAR_REGRET_MIN_MAX},
+    {"regret_max_min",  Gecode::INT_VAR_REGRET_MAX_MIN},
+    {"regret_max_max",  Gecode::INT_VAR_REGRET_MAX_MAX},
+    {}
+};
+
+const ampl::OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
+    {"min",        Gecode::INT_VAL_MIN},
+    {"med",        Gecode::INT_VAL_MED},
+    {"max",        Gecode::INT_VAL_MAX},
+    {"rnd",        Gecode::INT_VAL_RND},
+    {"split_min",  Gecode::INT_VAL_SPLIT_MIN},
+    {"split_max",  Gecode::INT_VAL_SPLIT_MAX},
+    {"range_min",  Gecode::INT_VAL_RANGE_MIN},
+    {"range_max",  Gecode::INT_VAL_RANGE_MAX},
+    {"values_min", Gecode::INT_VALUES_MIN},
+    {"values_max", Gecode::INT_VALUES_MAX},
+    {}
+};
+}
+
 namespace ampl {
 
 GecodeProblem::GecodeProblem(bool share, GecodeProblem &s) :
@@ -132,9 +173,6 @@ void NLToGecodeConverter::Convert(const Problem &p) {
         lb <= negInfinity ? Gecode::Int::Limits::min : lb,
         ub >= Infinity ? Gecode::Int::Limits::max : ub);
   }
-
-  // Post branching.
-  branch(problem_, vars, Gecode::INT_VAR_SIZE_MIN, Gecode::INT_VAL_MIN);
 
   if (p.num_objs() != 0) {
     problem_.SetObj(p.GetObjType(0),
@@ -259,12 +297,74 @@ BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr) {
   return BoolExpr();
 }
 
+template <typename T>
+void GecodeSolver::SetStrOption(const char *name, const char *value,
+    const OptionInfo<T> &info) {
+  for (const OptionValue<T> *p = info.values; p->name; ++p) {
+    if (std::strcmp(value, p->name) == 0) {
+      info.value = p->value;
+      return;
+    }
+  }
+  ReportError("Invalid value {} for option {}") << value << name;
+}
+
 GecodeSolver::GecodeSolver()
-: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION), output_(false) {
+: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION), output_(false),
+  var_branching_(Gecode::INT_VAR_SIZE_MIN),
+  val_branching_(Gecode::INT_VAL_MIN) {
+
   set_version("Gecode " GECODE_VERSION);
+
   AddIntOption("outlev",
       "0 or 1 (default 0):  Whether to print solution log.",
       &GecodeSolver::EnableOutput);
+
+  AddStrOption("var_branching",
+      "Variable branching.  Possible values:\n"
+      "      none            - first unassigned\n"
+      "      rnd             - random\n"
+      "      degree_min      - smallest degree\n"
+      "      degree_max      - largest degree\n"
+      "      afc_min         - smallest accumulated failure count (AFC)\n"
+      "      afc_max         - largest accumulated failure count (AFC)\n"
+      "      min_min         - smallest minimum value\n"
+      "      min_max         - largest minimum value\n"
+      "      max_min         - smallest maximum value\n"
+      "      max_max         - largest maximum value\n"
+      "      size_min        - smallest domain size (default)\n"
+      "      size_max        - largest domain size\n"
+      "      size_degree_min - smallest domain size divided by degree\n"
+      "      size_degree_max - largest domain size divided by degree\n"
+      "      size_afc_min    - smallest domain size divided by AFC\n"
+      "      size_afc_max    - largest domain size divided by AFC\n"
+      "      regret_min_min  - smallest minimum-regret\n"
+      "      regret_min_max  - largest minimum-regret\n"
+      "      regret_max_min  - smallest maximum-regret\n"
+      "      regret_max_max  - largest maximum-regret\n",
+      &GecodeSolver::SetStrOption<Gecode::IntVarBranch>,
+      OptionInfo<Gecode::IntVarBranch>(VAR_BRANCHINGS, var_branching_));
+
+  AddStrOption("val_branching",
+      "Value branching.  Possible values:\n"
+      "      min        - smallest value (default)\n"
+      "      med        - greatest value not greater than the median\n"
+      "      max        - largest value\n"
+      "      rnd        - random value\n"
+      "      split_min  - values not greater than mean of smallest and\n"
+      "                   largest value\n"
+      "      split_max  - values greater than mean of smallest and largest\n"
+      "                   value\n"
+      "      range_min  - values from smallest range, if domain has several\n"
+      "                   ranges; otherwise, values not greater than mean of\n"
+      "                   smallest and largest value\n"
+      "      range_max  - values from largest range, if domain has several\n"
+      "                   ranges; otherwise, values greater than mean of\n"
+      "                   smallest and largest value\n"
+      "      values_min - all values starting from smallest\n"
+      "      values_min - all values starting from largest\n",
+      &GecodeSolver::SetStrOption<Gecode::IntValBranch>,
+      OptionInfo<Gecode::IntValBranch>(VAL_BRANCHINGS, val_branching_));
 }
 
 int GecodeSolver::Run(char **argv) {
@@ -276,6 +376,11 @@ int GecodeSolver::Run(char **argv) {
   std::auto_ptr<NLToGecodeConverter>
     converter(new NLToGecodeConverter(problem.num_vars()));
   converter->Convert(problem);
+
+  // Post branching.
+  GecodeProblem &gecode_problem = converter->problem();
+  branch(gecode_problem, gecode_problem.vars(),
+      var_branching_, val_branching_);
 
   SignalHandler sh(*this);
   struct Stop : Search::Stop {
@@ -293,7 +398,7 @@ int GecodeSolver::Run(char **argv) {
   Search::Statistics stats;
   bool stopped = false;
   if (has_obj) {
-    Gecode::BAB<GecodeProblem> engine(&converter->problem(), options);
+    Gecode::BAB<GecodeProblem> engine(&gecode_problem, options);
     converter.reset();
     while (GecodeProblem *next = engine.next()) {
       if (output_)
@@ -305,7 +410,7 @@ int GecodeSolver::Run(char **argv) {
     stopped = engine.stopped();
     stats = engine.statistics();
   } else {
-    Gecode::DFS<GecodeProblem> engine(&converter->problem(), options);
+    Gecode::DFS<GecodeProblem> engine(&gecode_problem, options);
     converter.reset();
     solution.reset(engine.next());
     stopped = engine.stopped();
