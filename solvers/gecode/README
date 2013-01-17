@@ -51,6 +51,7 @@ solve_message.
           0     optimal solution
         100     feasible solution
         200     infeasible problem
+        600     interrupted
 
 -------------------
 
