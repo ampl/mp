@@ -28,11 +28,10 @@
 
 #ifndef WIN32
 # include <unistd.h>
+# define AMPL_WRITE write
 #else
 # include <io.h>
-static inline int write(int fd, const void *buffer, unsigned count) {
-  return _write(fd, buffer, count);
-}
+# define AMPL_WRITE _write
 #endif
 
 #include "solvers/util/format.h"
@@ -83,16 +82,28 @@ Problem::~Problem() {
   ASL_free(reinterpret_cast<ASL**>(&asl_));
 }
 
-std::string BasicSolver::signal_message_;
-const char *BasicSolver::signal_message_ptr_;
-unsigned BasicSolver::signal_message_size_;
-volatile std::sig_atomic_t BasicSolver::stop_;
+std::string SignalHandler::signal_message_;
+const char *SignalHandler::signal_message_ptr_;
+unsigned SignalHandler::signal_message_size_;
+Interruptable *SignalHandler::interruptable_;
 
-void BasicSolver::HandleSigInt(int sig) {
+// Set stop_ to 1 initially to avoid accessing handler_ which may not be atomic.
+volatile std::sig_atomic_t SignalHandler::stop_ = 1;
+
+SignalHandler::SignalHandler(const BasicSolver &s, Interruptable *i) {
+  signal_message_ = str(fmt::Format("\n<BREAK> ({})\n") << s.name());
+  signal_message_ptr_ = signal_message_.c_str();
+  signal_message_size_ = signal_message_.size();
+  interruptable_ = i;
+  stop_ = 0;
+  std::signal(SIGINT, HandleSigInt);
+}
+
+void SignalHandler::HandleSigInt(int sig) {
   unsigned count = 0;
   do {
     // Use asynchronous-safe function write instead of printf!
-    int result = write(1, signal_message_ptr_ + count,
+    int result = AMPL_WRITE(1, signal_message_ptr_ + count,
         signal_message_size_ - count);
     if (result < 0) break;
     count += result;
@@ -102,6 +113,8 @@ void BasicSolver::HandleSigInt(int sig) {
     _exit(1);
   }
   stop_ = 1;
+  if (interruptable_)
+    interruptable_->Interrupt();
   // Restore the handler since it might have been reset before the handler
   // is called (this is implementation defined).
   std::signal(sig, HandleSigInt);
@@ -152,12 +165,6 @@ BasicSolver::BasicSolver(
       "      4 = dual variables to stdout\n"
       "      8 = suppress solution message\n");
   AddKeyword("wantsol", wantsol_desc_.c_str(), WS_val, 0);
-
-  signal_message_ = str(fmt::Format("\n<BREAK> ({})\n") << name.c_str());
-  signal_message_ptr_ = signal_message_.c_str();
-  signal_message_size_ = signal_message_.size();
-  stop_ = 0;
-  std::signal(SIGINT, HandleSigInt);
 }
 
 BasicSolver::~BasicSolver() {}

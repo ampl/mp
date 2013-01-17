@@ -25,6 +25,7 @@
 
 #include <csignal>
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <sstream>
 
@@ -290,6 +291,43 @@ class OptionParser<const char*> {
 };
 }
 
+class Interruptable {
+ protected:
+  ~Interruptable() {}
+
+ public:
+  virtual void Interrupt() = 0;
+};
+
+// A signal handler.
+// When a solver is run in a terminal it should respond to SIGINT (Ctrl-C)
+// by interrupting its execution and returning the best solution found.
+// This can be done in two ways. The first one is to check the return value
+// of SignalHandler::stop() periodically. The second is to register an object
+// that implements the Interruptable interface. In both cases you should
+// create a SignalHandler object before solving.
+class SignalHandler {
+ private:
+  static std::string signal_message_;
+  static const char *signal_message_ptr_;
+  static unsigned signal_message_size_;
+  static volatile std::sig_atomic_t stop_;
+  static Interruptable *interruptable_;
+
+  static void HandleSigInt(int sig);
+
+ public:
+  explicit SignalHandler(const BasicSolver &s, Interruptable *i = 0);
+
+  ~SignalHandler() {
+    stop_ = 1;
+    interruptable_ = 0;
+  }
+
+  // Returns true if the execution should be stopped due to SIGINT.
+  static bool stop() { return stop_ != 0; }
+};
+
 // Base class for all solver classes.
 class BasicSolver
   : private ErrorHandler, private SolutionHandler, private Option_Info {
@@ -309,13 +347,6 @@ class BasicSolver
   bool has_errors_;
   ErrorHandler *error_handler_;
   SolutionHandler *sol_handler_;
-
-  static std::string signal_message_;
-  static const char *signal_message_ptr_;
-  static unsigned signal_message_size_;
-  static volatile std::sig_atomic_t stop_;
-
-  static void HandleSigInt(int sig);
 
   void SortOptions();
 
@@ -463,11 +494,6 @@ class BasicSolver
     return fmt::TempFormatter<ErrorReporter>(
         format.c_str(), ErrorReporter(error_handler_));
   }
-
-  // Returns true if the execution should be stopped due to SIGINT.
-  // When a solver is run in a terminal it should respond to SIGINT (Ctrl-C)
-  // by interrupting its execution and returning the best solution found.
-  static bool stop() { return stop_ != 0; }
 };
 
 // An AMPL solver.
