@@ -44,9 +44,9 @@ else ()
 endif ()
 
 include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag(-std=c++0x HAVE_STD_CPP0X_FLAG)
-if (HAVE_STD_CPP0X_FLAG)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+check_cxx_compiler_flag(-std=c++11 HAVE_STD_CPP11_FLAG)
+if (HAVE_STD_CPP11_FLAG)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif ()
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)

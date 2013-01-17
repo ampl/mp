@@ -25,6 +25,10 @@ check_cxx_source_compiles(
 check_cxx_source_compiles(
   "int main() { [](int x) { return x; }; }" HAVE_LAMBDAS)
 check_cxx_source_compiles(
+  "#include <thread>
+  void run() {}
+  int main() { std::thread t(run); }" HAVE_THREADS)
+check_cxx_source_compiles(
   "#include <memory>
   int main() { std::unique_ptr<int> p; }" HAVE_UNIQUE_PTR)
 configure_file(
