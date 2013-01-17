@@ -22,8 +22,6 @@
 
 #include "gecode.h"
 
-#include <gecode/search.hh>
-
 #include <limits>
 #include <memory>
 #include <string>
@@ -309,6 +307,13 @@ void GecodeSolver::SetStrOption(const char *name, const char *value,
   ReportError("Invalid value {} for option {}") << value << name;
 }
 
+void GecodeSolver::SetIntOption(const char *name, int value, unsigned *option) {
+  if (value < 0)
+    ReportError("Invalid value {} for option {}") << value << name;
+  else
+    *option = value;
+}
+
 GecodeSolver::GecodeSolver()
 : Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION), output_(false),
   var_branching_(Gecode::INT_VAR_SIZE_MIN),
@@ -365,6 +370,30 @@ GecodeSolver::GecodeSolver()
       "      values_min - all values starting from largest\n",
       &GecodeSolver::SetStrOption<Gecode::IntValBranch>,
       OptionInfo<Gecode::IntValBranch>(VAL_BRANCHINGS, val_branching_));
+
+  AddDblOption("threads",
+      "The number of parallel threads to use.  Assume that your computer\n"
+      "has m processing units and that the value for threads is n.\n"
+      "    * If n = 0, then m threads are used (as many as available\n"
+      "      processing units).\n"
+      "    * If n >= 1, then n threads are used (absolute number of\n"
+      "      threads to be used).\n"
+      "    * If n <= −1, then m + n threads are used (absolute number\n"
+      "      of processing units not to be used). For example, when\n"
+      "      n = −6 and m = 8, then 2 threads are used.\n"
+      "    * If 0 < n < 1, then n * m threads are used (relative number\n"
+      "      of processing units to be used). For example, when n = 0.5\n"
+      "      and m = 8, then 4 threads are used.\n"
+      "    * If −1 < n < 0, then (1 + n) * m threads are used (relative\n"
+      "      number of processing units not to be used). For example,\n"
+      "      when n = −0.25 and m = 8, then 6 threads are used.\n"
+      "All values are rounded and at least one thread is used.\n",
+      &GecodeSolver::SetNumThreads);
+
+  AddIntOption("c_d", "Commit recomputation distance.",
+      &GecodeSolver::SetIntOption, &options_.c_d);
+  AddIntOption("a_d", "Adaptive recomputation distance.",
+      &GecodeSolver::SetIntOption, &options_.a_d);
 }
 
 int GecodeSolver::Run(char **argv) {
@@ -388,8 +417,7 @@ int GecodeSolver::Run(char **argv) {
       return SignalHandler::stop();
     }
   } stop;
-  Search::Options options;
-  options.stop = &stop;
+  options_.stop = &stop;
 
   // Solve the problem.
   double obj_val = std::numeric_limits<double>::quiet_NaN();
@@ -398,7 +426,7 @@ int GecodeSolver::Run(char **argv) {
   Search::Statistics stats;
   bool stopped = false;
   if (has_obj) {
-    Gecode::BAB<GecodeProblem> engine(&gecode_problem, options);
+    Gecode::BAB<GecodeProblem> engine(&gecode_problem, options_);
     converter.reset();
     while (GecodeProblem *next = engine.next()) {
       if (output_)
@@ -410,7 +438,7 @@ int GecodeSolver::Run(char **argv) {
     stopped = engine.stopped();
     stats = engine.statistics();
   } else {
-    Gecode::DFS<GecodeProblem> engine(&gecode_problem, options);
+    Gecode::DFS<GecodeProblem> engine(&gecode_problem, options_);
     converter.reset();
     solution.reset(engine.next());
     stopped = engine.stopped();

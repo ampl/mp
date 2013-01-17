@@ -25,6 +25,7 @@
 
 #include <memory>
 #include <gecode/minimodel.hh>
+#include <gecode/search.hh>
 
 #include "solvers/util/solver.h"
 
@@ -270,12 +271,17 @@ class GecodeSolver : public Solver<GecodeSolver> {
   bool output_;
   Gecode::IntVarBranch var_branching_;
   Gecode::IntValBranch val_branching_;
+  Gecode::Search::Options options_;
 
   void EnableOutput(const char *, bool enable) { output_ = enable; }
 
   template <typename T>
   void SetStrOption(const char *name, const char *value,
       const OptionInfo<T> &info);
+
+  void SetIntOption(const char *name, int value, unsigned *option);
+
+  void SetNumThreads(const char *, double value) { options_.threads = value; }
 
  public:
   GecodeSolver();
