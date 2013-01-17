@@ -58,8 +58,10 @@ class Optimizer : public Interruptable {
 
   virtual IloAlgorithm algorithm() const = 0;
 
-  virtual void GetSolution(Problem &p, fmt::Formatter &format_message,
+  virtual double GetSolution(Problem &p, fmt::Formatter &format_message,
       std::vector<double> &primal, std::vector<double> &dual) const = 0;
+
+  virtual bool interrupted() const = 0;
 };
 
 class CPLEXOptimizer : public Optimizer {
@@ -77,10 +79,14 @@ class CPLEXOptimizer : public Optimizer {
   IloCplex cplex() const { return cplex_; }
   IloAlgorithm algorithm() const { return cplex_; }
 
+  double GetSolution(Problem &p, fmt::Formatter &format_message,
+      std::vector<double> &primal, std::vector<double> &dual) const;
+
   void Interrupt() { aborter_.abort(); }
 
-  void GetSolution(Problem &p, fmt::Formatter &format_message,
-      std::vector<double> &primal, std::vector<double> &dual) const;
+  bool interrupted() const {
+    return cplex_.getCplexStatus() == IloCplex::AbortUser;
+  }
 };
 
 class CPOptimizer : public Optimizer {
@@ -95,10 +101,14 @@ class CPOptimizer : public Optimizer {
   IloCP solver() const { return solver_; }
   IloAlgorithm algorithm() const { return solver_; }
 
+  double GetSolution(Problem &p, fmt::Formatter &format_message,
+      std::vector<double> &primal, std::vector<double> &dual) const;
+
   void Interrupt() { solver_.abortSearch(); }
 
-  void GetSolution(Problem &p, fmt::Formatter &format_message,
-      std::vector<double> &primal, std::vector<double> &dual) const;
+  bool interrupted() const {
+    return solver_.getInfo(IloCP::FailStatus) == IloCP::SearchStoppedByAbort;
+  }
 };
 
 class IlogCPSolver;

@@ -87,7 +87,7 @@ Optimizer::Optimizer(IloEnv env, const Problem &p) :
 
 Optimizer::~Optimizer() {}
 
-void CPLEXOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
+double CPLEXOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
     vector<double> &primal, vector<double> &dual) const {
   IloNum obj_value = cplex_.getObjValue();
   primal.resize(p.num_vars());
@@ -104,19 +104,24 @@ void CPLEXOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
   }
   format_message("{0} iterations, objective {1}")
     << cplex_.getNiterations() << ObjPrec(obj_value);
+  return obj_value;
 }
 
-void CPOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
+double CPOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
     vector<double> &primal, vector<double> &) const {
   format_message("{0} choice points, {1} fails")
       << solver_.getInfo(IloCP::NumberOfChoicePoints)
       << solver_.getInfo(IloCP::NumberOfFails);
-  if (p.num_objs() > 0)
-    format_message(", objective {0}") << ObjPrec(solver_.getValue(obj()));
+  double obj_value = 0;
+  if (p.num_objs() > 0) {
+    obj_value = solver_.getValue(obj());
+    format_message(", objective {0}") << ObjPrec(obj_value);
+  }
   primal.resize(p.num_vars());
   IloNumVarArray vars = Optimizer::vars();
   for (int j = 0, n = p.num_vars(); j < n; ++j)
     primal[j] = solver_.getValue(vars[j]);
+  return obj_value;
 }
 
 IlogCPSolver::IlogCPSolver() :
@@ -698,12 +703,22 @@ int IlogCPSolver::Run(char **argv) {
   default:
     // Fall through.
   case IloAlgorithm::Unknown:
-    solve_code = 501;
-    status = "unknown solution status";
+    if (optimizer_->interrupted()) {
+      solve_code = 600;
+      status = "interrupted";
+    } else {
+      solve_code = 501;
+      status = "unknown solution status";
+    }
     break;
   case IloAlgorithm::Feasible:
-    solve_code = 100;
-    status = "feasible solution";
+    if (optimizer_->interrupted()) {
+      solve_code = 600;
+      status = "interrupted";
+    } else {
+      solve_code = 100;
+      status = "feasible solution";
+    }
     break;
   case IloAlgorithm::Optimal:
     solve_code = 0;
@@ -731,10 +746,11 @@ int IlogCPSolver::Run(char **argv) {
   fmt::Formatter format_message;
   format_message("{0}: {1}\n") << long_name() << status;
   vector<real> primal, dual;
+  double obj_value = std::numeric_limits<double>::quiet_NaN();
   if (successful)
-    optimizer_->GetSolution(problem, format_message, primal, dual);
+    obj_value = optimizer_->GetSolution(problem, format_message, primal, dual);
   HandleSolution(format_message.c_str(), primal.empty() ? 0 : &primal[0],
-      dual.empty() ? 0 : &dual[0]);
+      dual.empty() ? 0 : &dual[0], obj_value);
 
   if (timing) {
     Times[4] = xectim_();
