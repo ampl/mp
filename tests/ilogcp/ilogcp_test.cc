@@ -46,7 +46,12 @@ extern "C" {
 
 #include "tests/args.h"
 #include "tests/expr_builder.h"
+#include "tests/solution_handler.h"
 #include "tests/config.h"
+
+#ifdef HAVE_THREADS
+# include <thread>
+#endif
 
 using std::ifstream;
 using std::size_t;
@@ -97,12 +102,6 @@ string str(T t) {
 double eval(IloExpr e) {
   return e.getImpl()->eval(IloAlgorithm());
 }
-
-struct SolveResult {
-  bool solved;
-  double obj;
-  SolveResult(bool solved, double obj) : solved(solved), obj(obj) {}
-};
 
 struct EnumValue {
   const char *name;
@@ -187,18 +186,20 @@ class IlogCPTest : public ::testing::Test, public ExprBuilder {
 };
 
 SolveResult IlogCPTest::Solve(const char *stub, const char *opt) {
+  TestSolutionHandler sh;
+  s.set_solution_handler(&sh);
   RunSolver(stub, opt);
-  ifstream ifs((string(stub) + ".sol").c_str());
-  string line;
-  getline(ifs, line);
-  bool solved = line.find("optimal solution") != string::npos;
-  if (!solved) solved = line.find("feasible solution") != string::npos;
-  getline(ifs, line);
-  const char obj[] = "objective ";
-  size_t pos = line.find(obj);
-  return SolveResult(solved, pos != string::npos ?
-      atof(line.c_str() + pos + sizeof(obj) - 1) :
-      std::numeric_limits<double>::quiet_NaN());
+  const string &message = sh.message();
+  int solve_code = sh.solve_code();
+  EXPECT_GE(solve_code, 0);
+  bool solved = true;
+  if (solve_code < 100)
+    EXPECT_TRUE(message.find("optimal solution") != string::npos);
+  else if (solve_code < 200)
+    EXPECT_TRUE(message.find("feasible solution") != string::npos);
+  else
+    solved = false;
+  return SolveResult(solved, sh.obj_value(), message);
 }
 
 void IlogCPTest::CheckIntCPOption(const char *option,
@@ -1218,4 +1219,33 @@ TEST_F(IlogCPTest, InfeasibleOrUnboundedSolveCode) {
   Solve(DATA_DIR "unbounded");
   EXPECT_EQ(201, s.problem().solve_code());
 }
+
+// ----------------------------------------------------------------------------
+
+#ifdef HAVE_THREADS
+void Interrupt() {
+  // Wait until started.
+  while (ampl::SignalHandler::stop())
+    std::this_thread::yield();
+  std::raise(SIGINT);
+}
+
+TEST_F(IlogCPTest, InterruptCPLEX) {
+  std::thread t(Interrupt);
+  std::string message =
+      Solve(DATA_DIR "miplib/assign1", "optimizer=cplex").message;
+  t.join();
+  EXPECT_EQ(600, s.problem().solve_code());
+  EXPECT_TRUE(message.find("interrupted") != string::npos);
+}
+
+TEST_F(IlogCPTest, InterruptCP) {
+  std::thread t(Interrupt);
+  std::string message =
+      Solve(DATA_DIR "miplib/assign1", "optimizer=cp").message;
+  t.join();
+  EXPECT_EQ(600, s.problem().solve_code());
+  EXPECT_TRUE(message.find("interrupted") != string::npos);
+}
+#endif
 }
