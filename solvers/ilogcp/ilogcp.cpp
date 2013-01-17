@@ -95,27 +95,27 @@ double CPLEXOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
   for (int j = 0, n = p.num_vars(); j < n; ++j)
     primal[j] = cplex_.getValue(vars[j]);
   if (cplex_.isMIP()) {
-    format_message("{0} nodes, ") << cplex_.getNnodes();
+    format_message("{} nodes, ") << cplex_.getNnodes();
   } else {
     dual.resize(p.num_cons());
     IloRangeArray cons = Optimizer::cons();
     for (int i = 0, n = p.num_cons(); i < n; ++i)
       dual[i] = cplex_.getDual(cons[i]);
   }
-  format_message("{0} iterations, objective {1}")
+  format_message("{} iterations, objective {}")
     << cplex_.getNiterations() << ObjPrec(obj_value);
   return obj_value;
 }
 
 double CPOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
     vector<double> &primal, vector<double> &) const {
-  format_message("{0} choice points, {1} fails")
+  format_message("{} choice points, {} fails")
       << solver_.getInfo(IloCP::NumberOfChoicePoints)
       << solver_.getInfo(IloCP::NumberOfFails);
   double obj_value = 0;
   if (p.num_objs() > 0) {
     obj_value = solver_.getValue(obj());
-    format_message(", objective {0}") << ObjPrec(obj_value);
+    format_message(", objective {}") << ObjPrec(obj_value);
   }
   primal.resize(p.num_vars());
   IloNumVarArray vars = Optimizer::vars();
@@ -132,11 +132,11 @@ IlogCPSolver::IlogCPSolver() :
   options_[TIMING] = 0;
   options_[USENUMBEROF] = 1;
 
-  set_long_name(fmt::Format("ilogcp {0}.{1}.{2}")
+  set_long_name(fmt::Format("ilogcp {}.{}.{}")
       << IloConcertVersion::_ILO_MAJOR_VERSION
       << IloConcertVersion::_ILO_MINOR_VERSION
       << IloConcertVersion::_ILO_TECH_VERSION);
-  set_version(fmt::Format("AMPL/IBM ILOG CP Optimizer [{0} {1}.{2}.{3}]")
+  set_version(fmt::Format("AMPL/IBM ILOG CP Optimizer [{} {}.{}.{}]")
       << IloConcertVersion::_ILO_NAME << IloConcertVersion::_ILO_MAJOR_VERSION
       << IloConcertVersion::_ILO_MINOR_VERSION
       << IloConcertVersion::_ILO_TECH_VERSION);
@@ -364,7 +364,7 @@ void IlogCPSolver::SetOptimizer(const char *name, const char *value) {
   } else if (strcmp(value, "cplex") == 0) {
     opt = CPLEX;
   } else {
-    ReportError("Invalid value {0} for option {1}") << value << name;
+    ReportError("Invalid value {} for option {}") << value << name;
     return;
   }
   if (!gotopttype_)
@@ -375,7 +375,7 @@ void IlogCPSolver::SetBoolOption(const char *name, int value, Option opt) {
   if (!gotopttype_)
     return;
   if (value != 0 && value != 1)
-    ReportError("Invalid value {0} for option {1}") << value << name;
+    ReportError("Invalid value {} for option {}") << value << name;
   else
     options_[opt] = value;
 }
@@ -386,7 +386,7 @@ void IlogCPSolver::SetCPOption(
     return;
   CPOptimizer *cp_opt = dynamic_cast<CPOptimizer*>(optimizer_.get());
   if (!cp_opt) {
-    ReportError("Invalid option {0} for CPLEX optimizer") << name;
+    ReportError("Invalid option {} for CPLEX optimizer") << name;
     return;
   }
   try {
@@ -413,7 +413,7 @@ void IlogCPSolver::SetCPOption(
       return;
     }
   } catch (const IloException &) {}
-  ReportError("Invalid value {0} for option {1}") << value << name;
+  ReportError("Invalid value {} for option {}") << value << name;
 }
 
 void IlogCPSolver::SetCPDblOption(
@@ -422,13 +422,13 @@ void IlogCPSolver::SetCPDblOption(
     return;
   CPOptimizer *cp_opt = dynamic_cast<CPOptimizer*>(optimizer_.get());
   if (!cp_opt) {
-    ReportError("Invalid option {0} for CPLEX optimizer") << name;
+    ReportError("Invalid option {} for CPLEX optimizer") << name;
     return;
   }
   try {
     cp_opt->solver().setParameter(param, value);
   } catch (const IloException &) {
-    ReportError("Invalid value {0} for option {1}") << value << name;
+    ReportError("Invalid value {} for option {}") << value << name;
   }
 }
 
@@ -437,14 +437,14 @@ void IlogCPSolver::SetCPLEXIntOption(const char *name, int value, int param) {
     return;
   CPLEXOptimizer *cplex_opt = dynamic_cast<CPLEXOptimizer*>(optimizer_.get());
   if (!cplex_opt) {
-    ReportError("Invalid option {0} for CP optimizer") << name;
+    ReportError("Invalid option {} for CP optimizer") << name;
     return;
   }
   // Use CPXsetintparam instead of IloCplex::setParam to avoid dealing with
   // two overloads, one for the type int and one for the type long.
   cpxenv *env = cplex_opt->cplex().getImpl()->getCplexEnv();
   if (CPXsetintparam(env, param, value) != 0)
-    ReportError("Invalid value {0} for option {1}") << value << name;
+    ReportError("Invalid value {} for option {}") << value << name;
 }
 
 bool IlogCPSolver::ParseOptions(char **argv) {
@@ -744,7 +744,7 @@ int IlogCPSolver::Run(char **argv) {
   problem.set_solve_code(solve_code);
 
   fmt::Formatter format_message;
-  format_message("{0}: {1}\n") << long_name() << status;
+  format_message("{}: {}\n") << long_name() << status;
   vector<real> primal, dual;
   double obj_value = std::numeric_limits<double>::quiet_NaN();
   if (successful)
