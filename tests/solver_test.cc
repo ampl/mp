@@ -131,34 +131,6 @@ TEST(SolverTest, BasicSolverVirtualDtor) {
   EXPECT_TRUE(destroyed);
 }
 
-TEST(SolverTest, BasicSolverHandlesSIGINT) {
-  std::signal(SIGINT, SIG_DFL);
-  TestSolver s("testsolver");
-  EXPECT_EXIT({
-    FILE *f = freopen("out", "w", stdout);
-    fmt::Print("{}") << BasicSolver::stop();
-    std::fflush(stdout);
-    std::raise(SIGINT);
-    fmt::Print("{}") << BasicSolver::stop();
-    fclose(f);
-    exit(0);
-  }, ::testing::ExitedWithCode(0), "");
-  EXPECT_EQ("0\n<BREAK> (testsolver)\n1", ReadFile("out"));
-}
-
-TEST(SolverTest, BasicSolverExitsOnTwoSIGINTs) {
-  std::signal(SIGINT, SIG_DFL);
-  TestSolver s("testsolver");
-  EXPECT_EXIT({
-    FILE *f = freopen("out", "w", stdout);
-    std::raise(SIGINT);
-    std::raise(SIGINT);
-    std::fclose(f); // Unreachable, but silences a warning.
-  }, ::testing::ExitedWithCode(1), "");
-  EXPECT_EQ("\n<BREAK> (testsolver)\n\n<BREAK> (testsolver)\n",
-      ReadFile("out"));
-}
-
 TEST(SolverTest, NameInUsage) {
   {
     StderrRedirect redirect("out");
@@ -655,4 +627,34 @@ TEST(SolverTest, ProblemBoundChecks) {
   EXPECT_DEATH(p.GetLogicalConExpr(-1), "Assertion");
   EXPECT_DEATH(p.GetLogicalConExpr(p.num_logical_cons()), "Assertion");
 #endif
+}
+
+TEST(SolverTest, SignalHandler) {
+  std::signal(SIGINT, SIG_DFL);
+  TestSolver s("testsolver");
+  EXPECT_EXIT({
+    FILE *f = freopen("out", "w", stdout);
+    ampl::SignalHandler sh(s);
+    fmt::Print("{}") << ampl::SignalHandler::stop();
+    std::fflush(stdout);
+    std::raise(SIGINT);
+    fmt::Print("{}") << ampl::SignalHandler::stop();
+    fclose(f);
+    exit(0);
+  }, ::testing::ExitedWithCode(0), "");
+  EXPECT_EQ("0\n<BREAK> (testsolver)\n1", ReadFile("out"));
+}
+
+TEST(SolverTest, SignalHandlerExitOnTwoSIGINTs) {
+  std::signal(SIGINT, SIG_DFL);
+  TestSolver s("testsolver");
+  EXPECT_EXIT({
+    ampl::SignalHandler sh(s);
+    FILE *f = freopen("out", "w", stdout);
+    std::raise(SIGINT);
+    std::raise(SIGINT);
+    std::fclose(f); // Unreachable, but silences a warning.
+  }, ::testing::ExitedWithCode(1), "");
+  EXPECT_EQ("\n<BREAK> (testsolver)\n\n<BREAK> (testsolver)\n",
+      ReadFile("out"));
 }

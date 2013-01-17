@@ -40,7 +40,7 @@
 
 namespace ampl {
 
-class Optimizer {
+class Optimizer : public Interruptable {
  private:
   IloObjective obj_;
   IloNumVarArray vars_;
@@ -65,15 +65,19 @@ class Optimizer {
 class CPLEXOptimizer : public Optimizer {
  private:
   IloCplex cplex_;
+  IloCplex::Aborter aborter_;
 
  public:
   CPLEXOptimizer(IloEnv env, const Problem &p)
-  : Optimizer(env, p), cplex_(env) {
+  : Optimizer(env, p), cplex_(env), aborter_(env) {
     cplex_.setParam(IloCplex::MIPDisplay, 0);
+    cplex_.use(aborter_);
   }
 
   IloCplex cplex() const { return cplex_; }
   IloAlgorithm algorithm() const { return cplex_; }
+
+  void Interrupt() { aborter_.abort(); }
 
   void GetSolution(Problem &p, fmt::Formatter &format_message,
       std::vector<double> &primal, std::vector<double> &dual) const;
@@ -81,15 +85,17 @@ class CPLEXOptimizer : public Optimizer {
 
 class CPOptimizer : public Optimizer {
  private:
-  IloSolver solver_;
+  IloCP solver_;
 
  public:
   CPOptimizer(IloEnv env, const Problem &p) : Optimizer(env, p), solver_(env) {
     solver_.setIntParameter(IloCP::LogVerbosity, IloCP::Quiet);
   }
 
-  IloSolver solver() const { return solver_; }
+  IloCP solver() const { return solver_; }
   IloAlgorithm algorithm() const { return solver_; }
+
+  void Interrupt() { solver_.abortSearch(); }
 
   void GetSolution(Problem &p, fmt::Formatter &format_message,
       std::vector<double> &primal, std::vector<double> &dual) const;

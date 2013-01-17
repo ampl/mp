@@ -27,6 +27,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+
 #include <csignal>
 #include <cstdlib>
 
@@ -44,6 +45,10 @@ extern "C" {
 #include "tests/args.h"
 #include "tests/expr_builder.h"
 #include "tests/config.h"
+
+#ifdef HAVE_THREADS
+# include <thread>
+#endif
 
 using std::ifstream;
 using std::size_t;
@@ -804,9 +809,18 @@ TEST_F(GecodeSolverTest, InfeasibleSolveCode) {
 
 // ----------------------------------------------------------------------------
 
-TEST_F(GecodeSolverTest, InterruptSolution) {
-  EXPECT_FALSE(ampl::BasicSolver::stop());
+#ifdef HAVE_THREADS
+void Interrupt() {
+  // Wait until started.
+  while (ampl::SignalHandler::stop())
+    std::this_thread::yield();
   std::raise(SIGINT);
-  Solve(DATA_DIR "miplib/assign1");
 }
+
+TEST_F(GecodeSolverTest, InterruptSolution) {
+  std::thread t(Interrupt);
+  Solve(DATA_DIR "miplib/assign1");
+  t.join();
+}
+#endif
 }

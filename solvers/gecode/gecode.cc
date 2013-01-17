@@ -277,9 +277,10 @@ int GecodeSolver::Run(char **argv) {
     converter(new NLToGecodeConverter(problem.num_vars()));
   converter->Convert(problem);
 
+  SignalHandler sh(*this);
   struct Stop : Search::Stop {
     bool stop(const Search::Statistics &, const Search::Options &) {
-      return BasicSolver::stop();
+      return SignalHandler::stop();
     }
   } stop;
   Search::Options options;

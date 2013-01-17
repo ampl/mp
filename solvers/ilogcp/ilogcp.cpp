@@ -109,7 +109,8 @@ void CPLEXOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
 void CPOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
     vector<double> &primal, vector<double> &) const {
   format_message("{0} choice points, {1} fails")
-      << solver_.getNumberOfChoicePoints() << solver_.getNumberOfFails();
+      << solver_.getInfo(IloCP::NumberOfChoicePoints)
+      << solver_.getInfo(IloCP::NumberOfFails);
   if (p.num_objs() > 0)
     format_message(", objective {0}") << ObjPrec(solver_.getValue(obj()));
   primal.resize(p.num_vars());
@@ -685,6 +686,7 @@ int IlogCPSolver::Run(char **argv) {
   // Solve the problem.
   IloAlgorithm alg(optimizer_->algorithm());
   alg.extract (mod_);
+  SignalHandler sh(*this, optimizer_.get());
   Times[2] = timing ? xectim_() : 0;
   IloBool successful = alg.solve();
   Times[3] = timing ? xectim_() : 0;
