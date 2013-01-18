@@ -96,17 +96,16 @@ fpinit_ASL(Void)
 #endif /*APPLE*/
 
 #ifndef ASL_NO_FP_INIT
-
-#ifdef __linux__
-#ifndef NO_fpu_control
+#ifdef __linux__ /*{*/
+#ifndef NO_fpu_control /*{*/
 #define FP_INIT_DONE
 #include "fpu_control.h"
 
-#ifdef __alpha__
+#ifdef __alpha__ /*{*/
 #ifndef USE_setfpucw
 #define __setfpucw(x) __fpu_control = (x)
 #endif
-#endif
+#endif /*}*/
 
 
 #ifndef _FPU_SETCW
@@ -136,10 +135,10 @@ fpinit_ASL(Void)
 	_FPU_SETCW(__fpu_control);
 #endif
 	}
-#endif /* NO_fpu_control */
-#endif /* __linux__ */
+#endif /*} NO_fpu_control */
+#endif /*} __linux__ */
 
-#ifdef sgi
+#ifdef sgi /*{*/
 #ifndef _ABIO32
 #define FP_INIT_DONE
 #include <sys/fpu.h>
@@ -153,10 +152,10 @@ fpinit_ASL(Void)
 	set_fpc_csr(f.fc_word);
 	}
 #endif
-#endif
+#endif /*}sgi*/
 
-#ifdef MSpc
-#ifndef No_Control87
+#ifdef MSpc /*{*/
+#ifndef No_Control87 /*{*/
 #include "float.h"
 #ifdef SYMANTEC
 extern int _8087;
@@ -189,16 +188,16 @@ fpinit_ASL(Void)
 #endif
 	_control87(MCW_EM | PC_53, MCW_EM | MCW_PC);
 	}
-#endif
-#endif
+#endif /*}No_Control87*/
+#endif /*}MSpc*/
 
-#ifdef __sun
-#ifdef __i386
-extern
+#ifdef __sun /*{*/
+#if defined(__i386) || defined(__x86_64) /*{*/
 #ifdef __cplusplus
-	"C"
+#define externC extern "C"
+#else
+#define externC extern
 #endif
-	int fpsetprec(int);
 
 #define PC_24	0
 #define PC_53	0x200
@@ -207,10 +206,20 @@ extern
 #define FP_INIT_DONE
  void
 fpinit_ASL(Void)
-{	fpsetprec(PC_53);
+{
+#ifdef USE_EXTERNAL_fpsetprec
+	externC int fpsetprec(int);
+	fpsetprec(PC_53);
+#else
+	unsigned int x;
+	__asm__ __volatile__ ("fnstcw %0" : "=m" (x));
+	x &= ~PC_64;
+	x |= PC_53;
+	__asm__ __volatile__ ("fldcw %0" : : "m" (x));
+#endif
 	}
 #endif
-#endif /* __i386 __sun */
+#endif /*} __i386 __sun */
 
 /* Currently, FP_PD is the default on FreeBSD, but enabled traps */
 /* can cause surprises, so we restore the default IEEE mask. */

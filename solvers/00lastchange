@@ -1,7 +1,3 @@
-20120712
-  README:  adjust to reflect that URL
-http://netlib.sandia.gov/cgi-bin/netlib/netlibfiles.tar?filename=netlib/ampl/solvers
-still works.
-  makefile.vc:  tweak to allow invocations of the form
-	nmake RUNTIME=...
-(with makefile copied from makefile.vc) to replace "-MT" with ... .
+20121220
+  dtoa.c, dtoa1.c: fix a possible one-time race when multiple
+threads are used for input involving Infinity or NaN.

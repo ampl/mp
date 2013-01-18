@@ -385,6 +385,8 @@ read_line(EdRead *R)
  static void
 memfailure(const char *who, const char *what, size_t len)
 {
+	if (progname)
+		fprintf(Stderr, "%s: ", progname);
 	fprintf(Stderr, "%s(%lu) failure: %s.\n", who, (long)len, what);
 	exit(1);
 	}
