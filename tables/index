@@ -28,7 +28,13 @@ file	ampl/tables/foods.tab
 
 file	ampl/tables/fullbit.c
 
-file	ampl/tables/makefile.linux
+file	ampl/tables/makefile.linux32
+
+file	ampl/tables/makefile.linux64
+
+file	ampl/tables/makefile.macosx32
+
+file	ampl/tables/makefile.macosx64
 
 file	ampl/tables/makefile.vc
 

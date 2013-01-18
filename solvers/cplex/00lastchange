@@ -1,4 +1,6 @@
-20120423
-  cplex.c: call CPXwriteparam instead of CPXEwriteparam.  The change
-should be invisible for now but may be required with future versions
-of CPLEX.
+20121117
+  cplex.c: add zerohalfcuts to the cuts simultaneously controlled
+by mipcuts.  Update to CPLEX 12.5:  add keywords dettimelim,
+polishafter_timedet, probetimedet, seed, and tunetimedet, and extend
+timing keyword to allow requesting times in platform-specific "ticks",
+which CPLEX computes in an unspecified way.

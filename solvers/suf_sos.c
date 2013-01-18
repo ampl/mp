@@ -169,7 +169,7 @@ suf_sos_ASL(ASL *asl, int flags, int *nsosnz_p, char **sostype_p,
 	char *s0, *sostype;
 	int *c, *cm, *col1, *cz, *ja, *ja1, *jae, *p, *pri, *rn, *rt;
 	int *sospri, *sosbeg, *sosind, *v, *v0, *ve, *vm, *vz, *zc, *zg, *zv, *zv0, *zz;
-	int f, i, i0, j, j0, jz, k, m, ms1, n, ndc, ndv, ng, np, ns1;
+	int f, i, j, j0, jz, k, m, ms1, n, ndc, ndv, ng, np, ns1;
 	int nsos, nsos1, nsos2, nsosnz, nsosnz1;
 	ograd *og, **ogp;
 	real *a, *g, *g0, *ge, *gn, *gnos, *sosref, *sufref, t, t1;
@@ -292,7 +292,6 @@ suf_sos_ASL(ASL *asl, int flags, int *nsosnz_p, char **sostype_p,
 		nsosnz += nsosnz1 = ng;
 		g = gnos;
 		j = (t = *g) < 0.;
-		i0 = 0;
 		for(i = 1;; i++)
 			if (i >= ng || gnos[i] != t) {
 				/* Ignore SOS1 sets of 1 element   */
@@ -300,7 +299,7 @@ suf_sos_ASL(ASL *asl, int flags, int *nsosnz_p, char **sostype_p,
 				if (i - j >= 2)
 					g++;
 				else {
-					nsosnz -= k = i - i0;
+					nsosnz -= k = i - j + 1;
 					if (t > 0)
 						nsosnz1 -= k;
 					}

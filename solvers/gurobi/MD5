@@ -1,23 +1,23 @@
 -----BEGIN PGP SIGNED MESSAGE-----
 
-# netlib-utk master Fri Jun 8 03:10:10 EDT 2012
-KdYV1WqF8yH5GrlWg8WuPQ	00lastchange
+# netlib-utk master Sat Jan 12 03:10:05 EST 2013
+SZ+uvmNf6fXuo8UIWBimFg	00lastchange
 sNicK99eOZEMUvRqbAmg3Q	README.1st
-/Cxwkyng6fHHLSzmEFJ0UA	README.gurobi
-kQyK6WvM7f5ip/SUzvDcBQ	changes
-Q7VuoXUyRtj9YPCo38P1Iw	gurobi.c
+qP3fVNHbd1xabFMtjt7+4Q	README.gurobi
+zmGpI/Z6/ftEbyknBEu4GQ	changes
+JZcW82w7zM+R+6wgmoSGIQ	gurobi.c
 +pdyyqyrkzHp3mpJmj0+Ag	index
 9w4QRmmJQEkSRLs8/3xLSg	index.html
 cCIErg755dSrFqNTscHJ7g	makefile.u
 QQUO8eKzdZT8IFVRu0xJfQ	makefile.vc
-DMdVdwrl+0Q/p6a8vOYmYQ	xsum0.out
+4Au3lng7z9Kg6Cw243Eifw	xsum0.out
 
 -----BEGIN PGP SIGNATURE-----
 Version: 2.6.2
 
-iQCVAwUBT9GlVeFlxDEfrjtlAQGSigP/R+C5Yrkhu1rmybagNfYBSejLNa4/cRPo
-qGuYiYPWSAV9sAtWqTPCc+IVSprxwm37fw+tjChGEB2cuW2D8klfPmd/WNjEetdH
-TDgzr62lpcrmKjyoBn+TlUabVQWvLphjFkMxRRmUO9lcMM/U4b3F+l3QbL0x1JU2
-4l6YhO46Vtg=
-=GQTr
+iQCVAwUBUPEaYOFlxDEfrjtlAQFyqAP+NhRyNlI9pyAcYOfYkEJ5B3/xtWNoyKLt
+1WI1Xl0vlRghL0eY5TgKl9xiJ8cIeQHzofl7iLEuO26HAqQO0bsVJo8YE1/5eXnO
+i9LzkbUySOXhrABqcIKoXogbjuSMMUKVwZrbk2hKh7VjcM31L0u/kxEH9pZFNhGs
+DqTkv/hMUn8=
+=pjkB
 -----END PGP SIGNATURE-----

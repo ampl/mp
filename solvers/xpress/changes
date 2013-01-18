@@ -48,3 +48,11 @@ version of XPRESS being used.
  xpress.c: updates for XPRESS 23:  new keywords cpuplatform,
 preduprow, presolvemaxgrow, symmetry.  The updated driver still
 works with XPRESS 22.
+
+20121006
+  Add keyword "version", to report version details before solving
+the problem.
+
+20121011
+  Updates to README.xpress, makefile.u, makefile.vc and addition
+of shell scripts xpress.linux and xpress.macosx.

@@ -110,6 +110,12 @@ typedef void sig_func_type ANSI((int));
 
 
 static ASL *asl;
+ static double Times[4];
+#if CPX_VERSION >= 12050000
+ static double DTimes[4];
+ static int DTimes_failed, num_cores;
+#endif
+
 
 typedef struct cpxlp cpxlp;
 
@@ -154,7 +160,8 @@ mdbl_values {
 	set_populate	= 23,
 	set_pooldual	= 24,
 	set_resolve	= 25,
-	set_cutstats	= 26
+	set_cutstats	= 26,
+	set_incompat	= 27
 	};
 #ifdef CPX_PARAM_FEASOPTMODE /* >= 9.2b */
 #define Uselazy
@@ -165,7 +172,7 @@ mdbl_values {
 	};
 
  static mint_values
-mint_val[27] = {
+mint_val[28] = {
 	/* set_crossover */	{0, 2, 1},
 	/* set_dualthresh */	{-0x7fffffff, 0x7fffffff, 0},
 	/* set_netopt */	{0, 2, 1},
@@ -174,7 +181,11 @@ mint_val[27] = {
 	/* set_objpri */	{0, 0x7fffffff, 2},
 	/* set_prestats */	{0, 1, 0},
 	/* set_sos2 */		{0, 1, 1},
+#if CPX_VERSION >= 12050000
+	/* set_timing */	{0, 0x3f, 0},
+#else
 	/* set_timing */	{0, 3, 0},
+#endif
 	/* set_iis */		{0, 3, 0},
 	/* set_mipststat */	{0, 1, 1},
 	/* set_mipstval */	{0, 2, 1},
@@ -192,7 +203,8 @@ mint_val[27] = {
 	/* set_populate */	{0, 2, 0},
 	/* set_pooldual */	{0, 1, 0},
 	/* set_resolve */	{0, 1, 1},
-	/* set_cutstats */	{0, 1, 0}
+	/* set_cutstats */	{0, 1, 0},
+	/* set_incompat */	{0, 2, 1}
 	};
 
  static mdbl_values
@@ -227,12 +239,13 @@ mdbl_val[] = {
 #define pooldual	mint_val[24].val
 #define Resolve		mint_val[25].val
 #define cutstats	mint_val[26].val
+#define Incompat	mint_val[27].val
 #define dual_ratio	mdbl_val[0].val
 
  static int hybmethod = CPX_ALG_PRIMAL;
  static int netiters = -1;
  static CPXFILEptr Logf;
- static char cplex_version[] = "AMPL/CPLEX with bad license\0\nAMPL/CPLEX Driver Version 20120423\n";
+ static char cplex_version[] = "AMPL/CPLEX with bad license\0\nAMPL/CPLEX Driver Version 20121117\n";
  static char *baralgname, *endbas, *endsol, *endtree, *endvec, *logfname;
  static char *paramfile, *poolstub, *pretunefile, *pretunefileprm;
  static char *startbas, *startsol, *starttree, *startvec, *tunefile, *tunefileprm;
@@ -597,10 +610,11 @@ Optimize2(CPXCENVptr e, cpxlp *c)
  static int CPXPUBLIC
 Optimizebar(CPXCENVptr e, cpxlp *c)
 {
-	int rv, s;
+	int rv;
 
 	if (!(rv = CPXbaropt(e, c))) {
 #ifndef NO_DEPRECATED
+		int s;
 		if (endvec && (s = CPXvecwrite(e, c, endvec)))
 			printf("\n*** return %d from CPXvecwrite.\n", s);
 #endif
@@ -960,7 +974,7 @@ sf_mint(Option_Info *oi, keyword *kw, char *v)
 #endif
 #ifdef CPLEX_MIP
 	if (i == set_mipcuts) {
-		static int op[9] = {
+		static int op[] = {
 			CPX_PARAM_CLIQUES,
 			CPX_PARAM_COVERS,
 			CPX_PARAM_DISJCUTS,
@@ -970,19 +984,39 @@ sf_mint(Option_Info *oi, keyword *kw, char *v)
 			CPX_PARAM_GUBCOVERS,
 			CPX_PARAM_IMPLBD,
 			CPX_PARAM_MIRCUTS
+#ifdef CPX_PARAM_ZEROHALFCUTS
+			,CPX_PARAM_ZEROHALFCUTS
+#endif
 			};
 		int f;
-		for(f = 0; f < 9; f++)
+		for(f = 0; f < sizeof(op)/sizeof(int); f++)
 			CPXsetintparam(Env, op[f], t);
 		}
 #endif
 	return rv;
 	}
 
+#ifdef CPXERR_PARAM_INCOMPATIBLE /*{*/
+ static char *
+incompatible(Option_Info *oi, keyword *kw, char *rv, char *v)
+{
+	oi->option_echo &= ~ASL_OI_echothis;
+	if (Incompat) {
+		printf("%s \"%s%s%.*s\" as incompatible "
+			"with earlier parameter settings.\n",
+			Incompat == 1 ? "Ignoring" : "Rejecting",
+			kw->name, oi->eqsign, (int)(rv-v), v);
+		if (Incompat == 2)
+			badopt_ASL(oi);
+		}
+	return rv;
+	}
+#endif /*}*/
+
  static char *
 sf_int(Option_Info *oi, keyword *kw, char *v)
 {
-	int f, t, z[3];
+	int f, k, t, z[3];
 	char *rv;
 	const char *what = kw->name;
 
@@ -999,7 +1033,11 @@ sf_int(Option_Info *oi, keyword *kw, char *v)
 			what, v);
 		badopt_ASL(oi);
 		}
-	else if (CPXsetintparam(Env, f, t)) {
+	else if ((k = CPXsetintparam(Env, f, t))) {
+#ifdef CPXERR_PARAM_INCOMPATIBLE
+		if (k == CPXERR_PARAM_INCOMPATIBLE)
+			return incompatible(oi, kw, rv, v);
+#endif
 		z[2] = 0;
 		z[1] = 1;
 		CPXinfointparam(Env, f, z, z+1, z+2);
@@ -1069,8 +1107,9 @@ sf_dbl(Option_Info *oi, keyword *kw, char *v)
 	double t, z[3];
 	char *rv;
 	const char *what = kw->name;
-	int f = Intcast kw->info;
+	int f, k;
 
+	f = Intcast kw->info;
 	if (*v == '?' && v[1] <= ' ') {
 		CPXgetdblparam(Env, f, &t);
 		printf("%s=%g\n", what, t);
@@ -1083,7 +1122,11 @@ sf_dbl(Option_Info *oi, keyword *kw, char *v)
 			what, v);
 		badopt_ASL(oi);
 		}
-	else if (CPXsetdblparam(Env, f, t)) {
+	else if ((k = CPXsetdblparam(Env, f, t))) {
+#ifdef CPXERR_PARAM_INCOMPATIBLE
+		if (k == CPXERR_PARAM_INCOMPATIBLE)
+			return incompatible(oi, kw, rv, v);
+#endif
 		z[2] = 0;
 		z[1] = 1;
 		CPXinfodblparam(Env, f, z, z+1, z+2);
@@ -1433,6 +1476,9 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 	{ "densecol",	sf_int,		VP CPX_PARAM_BARCOLNZ },
 #endif
 	{ "dependency",	sf_int1,	VP CPX_PARAM_DEPIND },
+#ifdef CPX_PARAM_DETTILIM
+	{ "dettimelim",	sf_dpar,	VP CPX_PARAM_DETTILIM },
+#endif
 	{ "dgradient",	sf_int,		VP CPX_PARAM_DPRIIND },
 #ifdef CPLEX_MIP
 	{ "disjcuts",	sf_int,		VP CPX_PARAM_DISJCUTS },
@@ -1493,6 +1539,11 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 	{ "iisfind",	sf_mint,	VP set_iis },
 #ifdef CPLEX_MIP
 	{ "impliedcuts", sf_int,	VP CPX_PARAM_IMPLBD },
+#endif
+#ifdef CPXERR_PARAM_INCOMPATIBLE
+	{ "incompat", sf_mint,		VP set_incompat },
+#endif
+#ifdef CPLEX_MIP
 	{ "integrality", sf_dbl,	VP CPX_PARAM_EPINT },
 	{ "intwarntol", D_val,		VP &intwarn_tol },
 #endif
@@ -1620,6 +1671,9 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 	{ "polishafter_nodes",	sf_int, VP CPX_PARAM_POLISHAFTERNODE },
 	{ "polishafter_time",	sf_dbl, VP CPX_PARAM_POLISHAFTERTIME },
 #endif
+#ifdef  CPX_PARAM_POLISHAFTERDETTIME
+	{ "polishafter_timedet", sf_dbl, VP CPX_PARAM_POLISHAFTERDETTIME },
+#endif
 #ifdef CPX_PARAM_POLISHTIME
 	{ "polishtime",	sf_dbl,		VP CPX_PARAM_POLISHTIME },
 #endif
@@ -1666,6 +1720,9 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 #ifdef CPX_PARAM_PROBETIME
 	{ "probetime", sf_dbl,		VP CPX_PARAM_PROBETIME },
 #endif
+#ifdef CPX_PARAM_PROBEDETTIME
+	{ "probetimedet", sf_dbl,	VP CPX_PARAM_PROBEDETTIME },
+#endif
 #endif /*CPLEX_MIP*/
 #ifdef CPX_PARAM_BARQCPEPCOMP
 	{ "qcpconvergetol", sf_dbl,	VP CPX_PARAM_BARQCPEPCOMP },
@@ -1703,6 +1760,9 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 	{ "round",	sf_mint,	VP set_round },
 #endif /*CPLEX_MIP*/
 	{ "scale",	sf_int,		VP CPX_PARAM_SCAIND },
+#ifdef CPX_PARAM_RANDOMSEED
+	{ "seed", sf_int,		VP CPX_PARAM_RANDOMSEED },
+#endif
 	{ "sensitivity", sf_known,	VP set_sens },
 	{ "siftingopt",	sf_known,	VP set_siftopt },
 	{ "siftopt",	sf_known,	VP set_siftopt },
@@ -1763,6 +1823,9 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 	{ "tunefixfile",sf_char,	VP set_tunefixfile },
 	{ "tunerepeat",	sf_int,		VP CPX_PARAM_TUNINGREPEAT },
 	{ "tunetime",	sf_dbl,		VP CPX_PARAM_TUNINGTILIM },
+#ifdef CPX_PARAM_TUNINGDETTILIM
+	{ "tunetimedet", sf_dbl,	VP CPX_PARAM_TUNINGDETTILIM },
+#endif
 #endif
 #ifdef CPLEX_MIP
 	{ "uppercutoff", sf_dbl,	VP CPX_PARAM_CUTUP },
@@ -1793,7 +1856,7 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 
  static Option_Info Oinfo = { "cplex", 0, "cplex_options",
 				keywds, nkeywds, 0, cplex_version,
-				0,0,0,0,0, 20120423 };
+				0,0,0,0,0, 20121117 };
 
  static void
 badlic(int rc, int status)
@@ -2111,7 +2174,7 @@ mipinit_loop(ASL *asl, int **rp, int *np, real **xp, int j, int k)
  static void
 set_mipinit(ASL *asl, cpxlp *cpx, int nint)
 {
-	int i, k, m, m0, n1, *r, *r1;
+	int i, n1, *r, *r1;
 	real *x, *x1;
 #if CPX_VERSION_VERSION >= 12
 	int beg[2];
@@ -2138,6 +2201,7 @@ set_mipinit(ASL *asl, cpxlp *cpx, int nint)
 	else {
 #endif
 #ifndef NO_DEPRECATED
+	int k, m, m0;
 	if ((k = nlvbi))
 		mipinit_loop(asl, &r1, &n1, &x1, nlvb - k, k);
 	m0 = nlvb;
@@ -2389,25 +2453,71 @@ qmatadj(int k, int nr, int os, int *colq, int *colqcnt, double **qmatp)
 	return 1;
 	}
 
+ static int
+refcomp(const void *a, const void *b, void *c)
+{
+	double d, *x;
+
+	x = (double*)c;
+	d = x[*(int*)a] - x[*(int*)b];
+	if (d < 0.)
+		return -1;
+	if (d > 0.)
+		return 1.;
+	return 0;
+	}
+
  static void
 sos_kludge(int nsos, int *sosbeg, double *sosref)
 {
 	/* Adjust sosref if necessary to accommodate CPLEX's */
 	/* undocumented requirement that sosref values differ */
 	/* by at least 1e-10. */
-	int i, j, k;
+	int i, i0, i1, j, k, m, m1, *z, z0[16];
 	double t, t1;
+
 	for(i = j = 0; i++ < nsos; ) {
 		k = sosbeg[i];
 		t = sosref[j];
 		while(++j < k) {
 			t1 = sosref[j];
 			t += 1e-10;
-			if (t1 <= t)
+			if (t1 <= t) {
+				if (t1 < t)
+					goto trysort;
 				sosref[j] = t1 = t + 1e-10;
+				}
 			t = t1;
 			}
 		}
+	return;
+ trysort:
+	j = sosbeg[i0 = i - 1];
+	m = 0;
+	for(i = i0; i++ < nsos; j = k) {
+		k = sosbeg[i];
+		if ((m1 = k - j) > m)
+			m = m1;
+		}
+	z = z0;
+	if (m > sizeof(z0)/sizeof(z0[0]))
+		z = (int *)Malloc(m*sizeof(int));
+	for(j = sosbeg[i = i0]; i++ < nsos; j = k) {
+		k = sosbeg[i];
+		m1 = k - j;
+		for(i1 = 0; i1 < m1; ++i1)
+			z[i1] = i1 + j;
+		qsortv(z, m1, sizeof(int), refcomp, sosref);
+		t = sosref[z[0] + j];
+		for(i1 = 1; i1 < m1; ++i1, t = t1) {
+			t1 = sosref[z[i1]];
+			t += 1e-10;
+			if (t1 <= t)
+				sosref[z[i1]] = t1 = t + 1e-10;
+			}
+		}
+	if (z != z0)
+		free(z);
 	}
 
 #ifdef CPXERR_QCP_SENSE
@@ -2879,6 +2989,10 @@ amplin(ASL *asl, cpxlp **pcpx, FILE **nl, dims *d, int *nelqp, int *nintp, char 
 		}
 	obj_no = objno - 1;
 
+#if CPX_VERSION >= 12050000
+	if (time_flag & 0x30)
+		CPXgetnumcores(Env, &num_cores);
+#endif
 #ifndef CPX_PARAM_FEASOPTMODE /* < 9.2b */
 	if (want_iis
 #ifdef CPXERR_QCP_SENSE /* if CPLEX version >= 9.0 */
@@ -5244,21 +5358,35 @@ QualityInfo {
 		}
 	}
 
- static double Times[4];
-
  static void
 show_times(void)
 {
 	int i;
 
 	Times[3] = xectim_();
-	for(i = 1; i <= 2; i++)
+	for(i = 1; i <= 2; ++i)
 	    if (time_flag & i) {
 		fprintf(i == 1 ? stdout : Stderr,
 		"\nTimes (seconds):\nInput =  %g\nSolve =  %g\nOutput = %g\n",
 			Times[1] - Times[0], Times[2] - Times[1],
 			Times[3] - Times[2]);
 		}
+#if CPX_VERSION >= 12050000
+	if (!DTimes_failed)
+		for(i = 4; i <= 8; i += 4)
+		    if (time_flag & i) {
+		fprintf(i == 4 ? stdout : Stderr,
+		"\nTimes (ticks):\nInput =  %g\nSolve =  %g\nOutput = %g\n",
+			DTimes[1] - DTimes[0], DTimes[2] - DTimes[1],
+			DTimes[3] - DTimes[2]);
+		}
+	if (time_flag & 0x30 && num_cores) {
+		for(i = 16; i <= 32; i += 16)
+			if (time_flag & i)
+				fprintf(i == 16 ? stdout : stderr,
+					"\n%d logical cores are available.\n", num_cores);
+		}
+#endif
 	}
 
  static void
@@ -5496,8 +5624,12 @@ main(int argc, char **argv)
 	if (!(stub = getenv("ILOG_LICENSE_FILE")) || !*stub)
 		putenv("ILOG_LICENSE_FILE=" LICENSE_FILE);
 #endif
-	if ((Env = CPXopenCPLEX(&z)))
+	if ((Env = CPXopenCPLEX(&z))) {
+#if CPX_VERSION >= 12050000
+		DTimes_failed = CPXgetdettime(Env, &DTimes[0]);
+#endif
 		adjust_version(asl);
+		}
 #ifndef KEEP_BANNER
 	if (nos >= 0) {
 		close(2);
@@ -5565,6 +5697,10 @@ main(int argc, char **argv)
 #endif
 	fflush(stdout);
 	Times[1] = xectim_();
+#if CPX_VERSION >= 12050000
+	if (!DTimes_failed)
+		DTimes_failed = CPXgetdettime(Env, &DTimes[1]);
+#endif
 	nosp = 0;
 
 	disconnectchannel(cpxresults);
@@ -5585,6 +5721,10 @@ main(int argc, char **argv)
 		}
 	status = Optimize1(Env,cpx);
 	Times[2] = xectim_();
+#if CPX_VERSION >= 12050000
+	if (!DTimes_failed)
+		DTimes_failed = CPXgetdettime(Env, &DTimes[2]);
+#endif
 	breaking = 1;	/* reset in case, e.g., amplout runs CPXprimopt */
 	if (endbas && !nint1)
 		write_basis(cpx);
@@ -5600,6 +5740,10 @@ main(int argc, char **argv)
  done:
 	if (oic)
 		signal(SIGINT, oic);
+#if CPX_VERSION >= 12050000
+	if (!DTimes_failed)
+		DTimes_failed = CPXgetdettime(Env, &DTimes[3]);
+#endif
 	if (cpx)
 		CPXfreeprob(Env, &cpx);
 	if (Env)

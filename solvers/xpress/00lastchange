@@ -1,4 +1,3 @@
-20120731
- xpress.c: updates for XPRESS 23:  new keywords cpuplatform,
-preduprow, presolvemaxgrow, symmetry.  The updated driver still
-works with XPRESS 22.
+20121011
+  Updates to README.xpress, makefile.u, makefile.vc and addition
+of shell scripts xpress.linux and xpress.macosx.

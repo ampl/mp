@@ -1,0 +1,3 @@
+#!/bin/sh
+DYLD_LIBRARY_PATH=/usr/local/lib/x86_64 export DYLD_LIBRARY_PATH
+exec /usr/local/bin/xpressx "$@"

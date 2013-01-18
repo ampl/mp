@@ -303,6 +303,9 @@ above single-word phrases, denoting them with "Single-word phrase".
                                 3 = turn on at both start and end of
                                     preprocessing
 
+     dettimelim         Time limit in platform-dependent "ticks".
+                        New in CPLEX 12.5; see timing.
+
      disjcuts           Whether to generate MIP disjunctive cuts:
                                 -1 = no
                                  0 = automatic choice (default)
@@ -460,10 +463,19 @@ above single-word phrases, denoting them with "Single-word phrase".
                         in the IIS; and "fix" for equality constraints that
                         are in the IIS.
 
-     impliedcuts                Whether to use implied cuts in solving MIPs:
+     impliedcuts        Whether to use implied cuts in solving MIPs:
                                 -1 = never
                                  0 = automatic choice (default)
                                  1, 2 = ever more aggressive use
+
+     incompat           How to treat parameter settings that CPLEX finds
+                        incompatible:
+                                0 = quietly ignore incompatibilities
+                                1 = report and ignore them (default)
+                                2 = reject them, refusing to solve.
+                        For example, CPLEX regards the polishafter_* parameters
+                        introduced in CPLEX 11.2 as incompatible with the older
+                        polishtime parameter.
 
      integrality        Amount by which an integer variable can differ
                         from the nearest integer and still be considered
@@ -576,9 +588,10 @@ above single-word phrases, denoting them with "Single-word phrase".
                                  1 = primal
                                  2 = dual
 
-     mipcuts            Sets all nine of cliques, covers, disjcuts,
+     mipcuts            Sets all ten of cliques, covers, disjcuts,
                         flowcuts, flowpathcuts, fraccuts, gubcuts,
-                        impliedcuts and mircuts to the specified value.
+                        impliedcuts, mircuts and zerohalfcuts to the
+                        specified value.
 
      mipdisplay         Frequency of displaying branch-and-bound
                         information (for optimizing integer variables):
@@ -876,6 +889,11 @@ above single-word phrases, denoting them with "Single-word phrase".
                         polishafter_time CPU seconds seeking integer
                         solutions.  Default 1e75.  New in CPLEX 11.2.
 
+     polishafter_timedet Start polishing integer solutions after finding
+                        at least one integer feasible solution and spending
+                        polishafter_time "ticks" seeking integer solutions.
+                        Default 1e75.  New in CPLEX 12.5.
+
      polishtime         New in CPLEX 10.0:  seconds to spend "polishing"
                         integer solutions.  Default 0.
                         Deprecated in CPLEX 11.2 (in favor of the polishafter
@@ -1020,6 +1038,9 @@ above single-word phrases, denoting them with "Single-word phrase".
      probetime          New in CPLEX 10.0.  Limit in seconds on time spent
                         probing.  Default = 1e75.
 
+     probetimedet       New in CPLEX 12.5.  Limit in "ticks" on time spent
+                        probing.  Default = 1e75.
+
      qcpconvergetol     Convergence tolerance on relative complementarity for
                         problems with quadratic constraints.  Default = 1e-7.
 
@@ -1132,6 +1153,10 @@ above single-word phrases, denoting them with "Single-word phrase".
                         0 (default) = equilibration
                         1 = a more aggressive scheme that sometimes helps.
 
+     seed               Seed for random number generator used internally
+                        by CPLEX.  Use "seed=?" to see the default, which
+                        depends on the CPLEX release.  New in CPLEX 12.5.
+
      sensitivity        Whether to return sensitivy information for the
                         objective (in suffixes .up for the largest value
                         of a variable's cost coefficient or constraint's
@@ -1221,9 +1246,15 @@ above single-word phrases, denoting them with "Single-word phrase".
 
      timelimit          Synonym for "time".
 
-     timing             1 means write time to stdout, 2 to stderr,
-                        3 to both stdout and stderr, 0 to neither.
-                        Default = 0.
+     timing             Whether to write times in seconds or "ticks" to
+                        stdout or stderr: sum of
+                                 1 = write time in seconds to stdout
+                                 2 = write time in seconds to stderr
+                                 4 = write time in "ticks" to stdout
+                                 8 = write time in "ticks" to stderr
+                                16 = write number of logical cores to stdout
+                                32 = write number of logical cores to stderr.
+                        Default = 0.  Values >= 3 are new in CPLEX 12.5.
 
      tranopt            Synonym for "dualopt".
 
@@ -1267,6 +1298,9 @@ above single-word phrases, denoting them with "Single-word phrase".
 
      tunetime           Limit (in seconds) on tuning time; meaningful
                         if < time.  Default = 10000.  New in CPLEX 11.
+
+     tunetimedet        Limit (in "ticks") on tuning time; meaningful
+                        if < time.  Default = 1e7.  New in CPLEX 12.5.
 
      uppercutoff        For minimization problems involving integer
                         variables, skip any branch whose LP relaxation's

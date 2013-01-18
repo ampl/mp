@@ -834,7 +834,11 @@ static char
 			     twice their minimum\n\
 			 4 = maximum of the 'up' and 'down' pseudo-costs\n\
 			 5 = the 'down' pseudo-cost\n\
-			 6 = the 'up' pseudo-cost";
+			 6 = the 'up' pseudo-cost",
+	version_desc[] =
+		"Report version details before solving the problem.  This is\n\
+			a single-word \"phrase\" that does not accept a value\n\
+			assignment.";
 
         /* The list of Xpress-MP options */
         /******MUST BE IN ALPHABETIC ORDER!****/
@@ -1031,11 +1035,12 @@ static keyword keywds[]={
   KW("treememtarget",	set_dbl, XPRS_TREEMEMORYSAVINGTARGET, treememtarget_desc),
   KW("treeoutlev",	set_int, XPRS_TREEDIAGNOSTICS,	treeoutlev_desc),
   KW("varselection",	set_int, XPRS_VARSELECTION,	varselection_desc),
+  KW("version",		Ver_val, 0,			version_desc),
   KW("wantsol",		WS_val, 0,			WS_desc_ASL),
      };
 
 static Option_Info Oinfo = { "xpress", NULL, "xpress_options",
-           keywds,nkeywds,0,"XPRESS", 0,0,0,0,0, 20120731 };
+           keywds,nkeywds,0,"XPRESS", 0,0,0,0,0, 20121006 };
 
  static char *
 strcpy1(char *t, const char *s)

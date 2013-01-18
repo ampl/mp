@@ -85,3 +85,26 @@ $ampl_libpath were set to the current directory.
 20120530
  amplodbc.c:  fix a bug with error messages that prevented some
 possibly helpful details from being reported.
+
+20121212
+  amplodbc.c:  adjustments by Victor Zverovich to make ODBC table
+handlers for Linux with unixODBC (http://www.unixodbc.org) or iODBC
+(http://www.iodbc.org) in adition to MS Windows (as heretofore).
+  README: update to mention _HANDLERS, _handler_desc, and recent
+extensions to simplify mixing 32- and 64-bit binaries.
+  Split makefile.linux into makefile.linux and makefile.linux64
+(for making 32- and 64-bit entities, respectively, and adjusting
+to include both the ODBC and tableproxy handlers in ampltabl.dll,
+with a new rule for tableproxy.dll that just has the tableproxy
+handler.
+
+20121213
+  README: add descriptions of _handler_lib, _table_errmsg, and
+_version; add reminder that $AMPLFUNC provides full pathnames.
+  Adding makefile.macosx32 and makefile.macosx64 for Intel MacOSX.
+  Renaming makefile.linux to makefile.linux32.
+
+20121219
+  amplodbc.c: tweaks for 64-bit Linux systems that use unixODBC
+but with a 32-bit type for SQLLEN (rather than the 64-bit type
+that unixODBC specifies).

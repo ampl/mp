@@ -1,3 +1,6 @@
-20120804
-  Fix a glitch that gave error message "opnumber 243 in opgen"
-under complicated conditions.
+20130109
+  Add an error message about a constraint, objective, or defined
+variable declaration that has a piecewise-linear expression with
+a variable in the slope or breakpoint list.  In printing commands
+(display, print, printf), variables can appear in slope and
+breakpoint lists, but not in declarations.

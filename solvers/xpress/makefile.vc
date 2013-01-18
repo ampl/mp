@@ -5,7 +5,7 @@
 S = ..
 # $S =  ampl/solvers directory
 CC = cl
-XPRESSDIR = z:/dmg-h/backup/solvers/xpressmp/20050817/win32
+XPRESSDIR = fico73
 CFLAGS = -Ot1
 L = $S/amplsolv.lib  $(XPRESSDIR)/lib/xprs.lib
 Lmt = libcmt.lib /link /NODEFAULTLIB:libc.lib

@@ -1,0 +1,77 @@
+# Makefile for 64-bit binaries and shared libraries on Linux systems
+
+## ampltabl.dll is for table handlers to be imported
+## automatically at the start of AMPL's execution.
+## It can also provide user-defined functions.
+## Table handlers can also appear in shared libraries
+## (DLLs) read with AMPL's "load" and "reload" commands.
+
+.SUFFIXES: .c .o
+
+# $S = ampl/solvers directory
+S = ../solvers
+
+CC = cc -m64
+CFLAGS = -I$S -O2 -fPIC
+.c.o:
+	$(CC) -c $(CFLAGS) $*.c
+
+all: simpbit_64.dll fullbit_64.dll ampltabl_64.dll tableproxy64
+
+
+simpbit_64.dll: simpbit.o
+	$(CC) -shared -o simpbit_64.dll simpbit.o
+
+fullbit_64.dll: fullbit.o
+	$(CC) -shared -o fullbit_64.dll fullbit.o
+
+ampltabl_64.dll: tableproxy.c tableproxyver.h amplodbc.c
+	$(CC) -c $(CFLAGS) -I$S -DOTHER_FUNCADD=funcaddodbc_ASL tableproxy.c
+	$(CC) -c $(CFLAGS) -Dfuncadd_ASL=funcaddodbc_ASL amplodbc.c
+	$(CC) $(CFLAGS) -I$S -shared -o ampltabl_64.dll tableproxy.o amplodbc.o -lodbc
+
+tableproxy_64.dll: tableproxy.c tableproxyver.h
+	$(CC) $(CFLAGS) -I$S -shared -o tableproxy_64.dll tableproxy.c
+
+tableproxy64: tableproxy.c $S/printf.o tableproxyver.h
+	$(CC) -c $(CFLAGS) -DQUOTIFY -o printf.o $S/printf.c
+	$(CC) $(CFLAGS) -I$S -DSTAND_ALONE -Dsoclen_t=int -o tableproxy64 tableproxy.c printf.o $S/amplsolver.a -ldl
+	rm printf.o
+
+## Under some versions of Linux, the search path
+## for *.dll files is affected by $LD_LIBRARY_PATH.
+
+clean:
+	rm -f *.o *.dll tableproxy64
+
+# make xsum.out to check for transmission errors.
+# This assumes you have the xsum program, whose source
+# you can get from netlib, e.g.,
+# http://www.netlib.org/f2c/src/xsum.c
+
+x = \
+	README \
+	TABLES.RME \
+	amplodbc.c \
+	ampltabl.def \
+	calories.tab \
+	diet.mod \
+	diet2a.dat \
+	diettab.x \
+	diettabw.x \
+	dietwrit.x \
+	foods.tab \
+	fullbit.c \
+	makefile.linux32 \
+	makefile.linux64 \
+	makefile.macosx32 \
+	makefile.macosx64 \
+	makefile.vc \
+	nutrients.tab \
+	simpbit.c \
+	tableproxy.c \
+	tableproxyver.h
+
+xsum.out: $x
+	xsum $x >xsum1.out
+	cmp xsum0.out xsum1.out && mv xsum1.out xsum.out || diff xsum[01].out

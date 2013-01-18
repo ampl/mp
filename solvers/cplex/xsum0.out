@@ -1,8 +1,8 @@
 README.1st	f820e01a	2441
-README.cplex	1e7d8069	81697
+README.cplex	fddb218c	83600
 configure	e9b12fad	1509
 configurehere	1846e6f9	1614
-cplex.c	8809ff0	138390
+cplex.c	e01428fe	141821
 makefile.mingw	f45aae56	3104
 makefile.u	ff7547a8	3589
 makefile.vc	f47b4f97	3146
