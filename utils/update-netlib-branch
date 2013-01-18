@@ -13,7 +13,7 @@ rsync -avz --delete --exclude=.git --exclude=student netlib.org::netlib/ampl/ .
 # Fix permissions.
 chmod +x solvers/configurehere
 
-git add .
+git add --all .
 
 # Commit changes if there are any.
 if ! git diff-index --quiet HEAD --; then
