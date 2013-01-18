@@ -272,6 +272,10 @@ class GecodeSolver : public Solver<GecodeSolver> {
   Gecode::IntVarBranch var_branching_;
   Gecode::IntValBranch val_branching_;
   Gecode::Search::Options options_;
+  double time_limit_; // Time limit in seconds.
+  unsigned long node_limit_;
+  unsigned long fail_limit_;
+  std::size_t memory_limit_;
 
   void EnableOutput(const char *, bool enable) { output_ = enable; }
 
@@ -279,9 +283,27 @@ class GecodeSolver : public Solver<GecodeSolver> {
   void SetStrOption(const char *name, const char *value,
       const OptionInfo<T> &info);
 
-  void SetIntOption(const char *name, int value, unsigned *option);
+  template <typename T>
+  void SetIntOption(const char *name, int value, T *option);
 
-  void SetNumThreads(const char *, double value) { options_.threads = value; }
+  void SetDblOption(const char *, double value, double *option) {
+    *option = value;
+  }
+
+  class Stop : public Gecode::Search::Stop {
+   private:
+    SignalHandler sh_;
+    Gecode::Support::Timer timer_;
+    const GecodeSolver &solver_;
+    double time_limit_in_milliseconds_;
+    bool has_limit_;
+
+   public:
+    explicit Stop(const GecodeSolver &s);
+
+    bool stop(const Gecode::Search::Statistics &s,
+              const Gecode::Search::Options &);
+  };
 
  public:
   GecodeSolver();

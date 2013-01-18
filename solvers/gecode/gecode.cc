@@ -295,6 +295,22 @@ BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr) {
   return BoolExpr();
 }
 
+GecodeSolver::Stop::Stop(const GecodeSolver &s)
+: sh_(s), solver_(s), time_limit_in_milliseconds_(s.time_limit_ * 1000) {
+  has_limit_ = time_limit_in_milliseconds_ < DBL_MAX ||
+      s.node_limit_ != ULONG_MAX || s.fail_limit_ != ULONG_MAX ||
+      s.memory_limit_ != std::numeric_limits<std::size_t>::max();
+  timer_.start();
+}
+
+bool GecodeSolver::Stop::stop(
+    const Search::Statistics &s, const Search::Options &) {
+  if (SignalHandler::stop()) return true;
+  return has_limit_ && (timer_.stop() > time_limit_in_milliseconds_ ||
+      s.node > solver_.node_limit_ || s.fail > solver_.fail_limit_ ||
+      s.memory > solver_.memory_limit_);
+}
+
 template <typename T>
 void GecodeSolver::SetStrOption(const char *name, const char *value,
     const OptionInfo<T> &info) {
@@ -307,7 +323,8 @@ void GecodeSolver::SetStrOption(const char *name, const char *value,
   ReportError("Invalid value {} for option {}") << value << name;
 }
 
-void GecodeSolver::SetIntOption(const char *name, int value, unsigned *option) {
+template <typename T>
+void GecodeSolver::SetIntOption(const char *name, int value, T *option) {
   if (value < 0)
     ReportError("Invalid value {} for option {}") << value << name;
   else
@@ -317,7 +334,9 @@ void GecodeSolver::SetIntOption(const char *name, int value, unsigned *option) {
 GecodeSolver::GecodeSolver()
 : Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION), output_(false),
   var_branching_(Gecode::INT_VAR_SIZE_MIN),
-  val_branching_(Gecode::INT_VAL_MIN) {
+  val_branching_(Gecode::INT_VAL_MIN),
+  time_limit_(DBL_MAX), node_limit_(ULONG_MAX), fail_limit_(ULONG_MAX),
+  memory_limit_(std::numeric_limits<std::size_t>::max()) {
 
   set_version("Gecode " GECODE_VERSION);
 
@@ -388,12 +407,21 @@ GecodeSolver::GecodeSolver()
       "      number of processing units not to be used). For example,\n"
       "      when n = −0.25 and m = 8, then 6 threads are used.\n"
       "All values are rounded and at least one thread is used.\n",
-      &GecodeSolver::SetNumThreads);
+      &GecodeSolver::SetDblOption, &options_.threads);
 
   AddIntOption("c_d", "Commit recomputation distance.",
-      &GecodeSolver::SetIntOption, &options_.c_d);
+      &GecodeSolver::SetIntOption<unsigned>, &options_.c_d);
   AddIntOption("a_d", "Adaptive recomputation distance.",
-      &GecodeSolver::SetIntOption, &options_.a_d);
+      &GecodeSolver::SetIntOption<unsigned>, &options_.a_d);
+
+  AddDblOption("timelimit", "Time limit.",
+      &GecodeSolver::SetDblOption, &time_limit_);
+  AddIntOption("nodelimit", "Node limit.",
+      &GecodeSolver::SetIntOption<unsigned long>, &node_limit_);
+  AddIntOption("faillimit", "Fail limit.",
+      &GecodeSolver::SetIntOption<unsigned long>, &fail_limit_);
+  AddIntOption("memorylimit", "Memory limit.",
+      &GecodeSolver::SetIntOption<std::size_t>, &memory_limit_);
 }
 
 int GecodeSolver::Run(char **argv) {
@@ -411,12 +439,7 @@ int GecodeSolver::Run(char **argv) {
   branch(gecode_problem, gecode_problem.vars(),
       var_branching_, val_branching_);
 
-  SignalHandler sh(*this);
-  struct Stop : Search::Stop {
-    bool stop(const Search::Statistics &, const Search::Options &) {
-      return SignalHandler::stop();
-    }
-  } stop;
+  Stop stop(*this);
   options_.stop = &stop;
 
   // Solve the problem.
