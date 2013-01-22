@@ -58,6 +58,10 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)
   set(HAVE_GSL 1)
 endif ()
 
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/gecode/gecode-src/CMakeLists.txt)
+  set(HAVE_GECODE 1)
+endif ()
+
 include(CheckCCompilerFlag)
 check_c_compiler_flag(-fPIC HAVE_FPIC_FLAG)
 

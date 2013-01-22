@@ -135,6 +135,9 @@ if (HAVE_GSL)
   add_subdirectory(amplgsl)
 endif ()
 
-add_subdirectory(gecode)
+if (HAVE_GECODE)
+  add_subdirectory(gecode)
+endif ()
+
 add_subdirectory(ilogcp)
 add_subdirectory(util)
