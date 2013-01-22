@@ -623,6 +623,43 @@ class GecodeSolverTest : public ::testing::Test, public ExprBuilder {
  protected:
   ampl::GecodeSolver solver_;
 
+  class ParseResult {
+   private:
+    bool result_;
+    std::string error_;
+
+    void True() const {}
+    typedef void (ParseResult::*SafeBool)() const;
+
+   public:
+    ParseResult(bool result, std::string error)
+    : result_(result), error_(error) {}
+
+    operator SafeBool() const { return result_ ? &ParseResult::True : 0; }
+
+    std::string error() const {
+      EXPECT_FALSE(result_);
+      return error_;
+    }
+  };
+
+  struct TestErrorHandler : ampl::ErrorHandler {
+    std::string error;
+    void HandleError(fmt::StringRef message) {
+      error += message.c_str();
+    }
+  };
+
+  ParseResult ParseOptions(const char *opt1, const char *opt2 = nullptr) {
+    TestErrorHandler eh;
+    solver_.set_error_handler(&eh);
+    bool result = solver_.ParseOptions(
+        Args(opt1, opt2), solver_, ampl::BasicSolver::NO_OPTION_ECHO);
+    if (result)
+      EXPECT_EQ("", eh.error);
+    return ParseResult(result, eh.error);
+  }
+
   int RunSolver(const char *stub = nullptr, const char *opt = nullptr) {
     return solver_.Run(Args("gecode", "-s", stub, opt));
   }
@@ -780,6 +817,7 @@ TEST_F(GecodeSolverTest, InfeasibleSolveCode) {
 }
 
 // ----------------------------------------------------------------------------
+// Interrupt tests
 
 #ifdef HAVE_THREADS
 void Interrupt() {
@@ -797,4 +835,63 @@ TEST_F(GecodeSolverTest, InterruptSolution) {
   EXPECT_TRUE(message.find("interrupted") != string::npos);
 }
 #endif
+
+// ----------------------------------------------------------------------------
+// Option tests
+
+TEST_F(GecodeSolverTest, VersionOption) {
+  EXPECT_FALSE((solver_.flags() & ASL_OI_show_version) != 0);
+  EXPECT_TRUE(ParseOptions("version"));
+  EXPECT_TRUE((solver_.flags() & ASL_OI_show_version) != 0);
+}
+
+TEST_F(GecodeSolverTest, WantsolOption) {
+  EXPECT_EQ(0, solver_.wantsol());
+  EXPECT_TRUE(ParseOptions("wantsol=1"));
+  EXPECT_EQ(1, solver_.wantsol());
+  EXPECT_TRUE(ParseOptions("wantsol=5"));
+  EXPECT_EQ(5, solver_.wantsol());
+}
+
+TEST_F(GecodeSolverTest, ADOption) {
+  EXPECT_EQ(Gecode::Search::Options().a_d, solver_.options().a_d);
+  EXPECT_TRUE(ParseOptions("a_d=42"));
+  EXPECT_EQ(42u, solver_.options().a_d);
+  EXPECT_EQ("Invalid value -1 for option a_d", ParseOptions("a_d=-1").error());
+}
+
+TEST_F(GecodeSolverTest, CDOption) {
+  EXPECT_EQ(Gecode::Search::Options().c_d, solver_.options().c_d);
+  EXPECT_TRUE(ParseOptions("c_d=42"));
+  EXPECT_EQ(42u, solver_.options().c_d);
+  EXPECT_EQ("Invalid value -1 for option c_d", ParseOptions("c_d=-1").error());
+}
+
+TEST_F(GecodeSolverTest, FailLimitOption) {
+  std::string message =
+      Solve(DATA_DIR "miplib/assign1", "faillimit=10").message;
+  EXPECT_EQ(600, solver_.problem().solve_code());
+  EXPECT_TRUE(message.find(" 11 fails") != string::npos);
+  EXPECT_EQ("Invalid value -1 for option faillimit",
+      ParseOptions("faillimit=-1").error());
+}
+
+TEST_F(GecodeSolverTest, MemoryLimitOption) {
+  std::string message =
+      Solve(DATA_DIR "miplib/assign1", "memorylimit=1000000").message;
+  EXPECT_EQ(600, solver_.problem().solve_code());
+  EXPECT_EQ("Invalid value -1 for option memorylimit",
+      ParseOptions("memorylimit=-1").error());
+}
+
+TEST_F(GecodeSolverTest, NodeLimitOption) {
+  std::string message =
+      Solve(DATA_DIR "miplib/assign1", "nodelimit=10").message;
+  EXPECT_EQ(600, solver_.problem().solve_code());
+  EXPECT_TRUE(message.find("11 nodes") != string::npos);
+  EXPECT_EQ("Invalid value -1 for option nodelimit",
+      ParseOptions("nodelimit=-1").error());
+}
+
+// TODO: test options: outlev, threads, timelimit, val_branching, var_branching
 }

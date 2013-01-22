@@ -310,6 +310,8 @@ class GecodeSolver : public Solver<GecodeSolver> {
 
   // Run the solver.
   int Run(char **argv);
+
+  const Gecode::Search::Options &options() const { return options_; }
 };
 }
 
