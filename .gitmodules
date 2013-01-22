@@ -1,3 +1,6 @@
 [submodule "solvers/amplgsl/gsl"]
 	path = solvers/amplgsl/gsl
 	url = git://github.com/vitaut/gsl.git
+[submodule "solvers/gecode/gecode-src"]
+	path = solvers/gecode/gecode-src
+	url = git://github.com/vitaut/gecode.git
