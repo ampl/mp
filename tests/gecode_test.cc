@@ -913,9 +913,75 @@ TEST_F(GecodeSolverTest, ThreadsOption) {
   EXPECT_EQ(-10.0, solver_.options().threads);
 }
 
+template <typename T>
+struct OptionValue {
+  const char *name;
+  T value;
+};
+
+const OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
+    {"min",        Gecode::INT_VAL_MIN},
+    {"med",        Gecode::INT_VAL_MED},
+    {"max",        Gecode::INT_VAL_MAX},
+    {"rnd",        Gecode::INT_VAL_RND},
+    {"split_min",  Gecode::INT_VAL_SPLIT_MIN},
+    {"split_max",  Gecode::INT_VAL_SPLIT_MAX},
+    {"range_min",  Gecode::INT_VAL_RANGE_MIN},
+    {"range_max",  Gecode::INT_VAL_RANGE_MAX},
+    {"values_min", Gecode::INT_VALUES_MIN},
+    {"values_max", Gecode::INT_VALUES_MAX},
+    {}
+};
+
 TEST_F(GecodeSolverTest, ValBranchingOption) {
-  // TODO
+  EXPECT_EQ(Gecode::INT_VAL_MIN, solver_.val_branching());
+  unsigned count = 0;
+  for (const OptionValue<Gecode::IntValBranch>
+      *p = VAL_BRANCHINGS; p->name; ++p, ++count) {
+    EXPECT_TRUE(ParseOptions(
+        c_str(fmt::Format("val_branching={}") << p->name)));
+    EXPECT_EQ(p->value, solver_.val_branching());
+  }
+  EXPECT_EQ(10u, count);
 }
 
-// TODO: test options: outlev, var_branching
+const OptionValue<Gecode::IntVarBranch> VAR_BRANCHINGS[] = {
+    {"none",            Gecode::INT_VAR_NONE},
+    {"rnd",             Gecode::INT_VAR_RND},
+    {"degree_min",      Gecode::INT_VAR_DEGREE_MIN},
+    {"degree_max",      Gecode::INT_VAR_DEGREE_MAX},
+    {"afc_min",         Gecode::INT_VAR_AFC_MIN},
+    {"afc_max",         Gecode::INT_VAR_AFC_MAX},
+    {"min_min",         Gecode::INT_VAR_MIN_MIN},
+    {"min_max",         Gecode::INT_VAR_MIN_MAX},
+    {"max_min",         Gecode::INT_VAR_MAX_MIN},
+    {"max_max",         Gecode::INT_VAR_MAX_MAX},
+    {"size_min",        Gecode::INT_VAR_SIZE_MIN},
+    {"size_max",        Gecode::INT_VAR_SIZE_MAX},
+    {"size_degree_min", Gecode::INT_VAR_SIZE_DEGREE_MIN},
+    {"size_degree_max", Gecode::INT_VAR_SIZE_DEGREE_MAX},
+    {"size_afc_min",    Gecode::INT_VAR_SIZE_AFC_MIN},
+    {"size_afc_max",    Gecode::INT_VAR_SIZE_AFC_MAX},
+    {"regret_min_min",  Gecode::INT_VAR_REGRET_MIN_MIN},
+    {"regret_min_max",  Gecode::INT_VAR_REGRET_MIN_MAX},
+    {"regret_max_min",  Gecode::INT_VAR_REGRET_MAX_MIN},
+    {"regret_max_max",  Gecode::INT_VAR_REGRET_MAX_MAX},
+    {}
+};
+
+TEST_F(GecodeSolverTest, VarBranchingOption) {
+  EXPECT_EQ(Gecode::INT_VAR_SIZE_MIN, solver_.var_branching());
+  unsigned count = 0;
+  for (const OptionValue<Gecode::IntVarBranch>
+      *p = VAR_BRANCHINGS; p->name; ++p, ++count) {
+    EXPECT_TRUE(ParseOptions(
+        c_str(fmt::Format("var_branching={}") << p->name)));
+    EXPECT_EQ(p->value, solver_.var_branching());
+  }
+  EXPECT_EQ(20u, count);
+}
+
+TEST_F(GecodeSolverTest, OutlevOption) {
+  // TODO: test
+}
 }

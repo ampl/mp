@@ -311,6 +311,13 @@ bool GecodeSolver::Stop::stop(
       s.memory > solver_.memory_limit_);
 }
 
+void GecodeSolver::EnableOutput(const char *name, int value) {
+  if (value != 0 && value != 1)
+    ReportError("Invalid value {} for option {}") << value << name;
+  else
+    output_ = value != 0;
+}
+
 template <typename T>
 void GecodeSolver::SetStrOption(const char *name, const char *value,
     const OptionInfo<T> &info) {
