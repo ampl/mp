@@ -80,8 +80,7 @@ if (ODBC_FOUND)
   endif ()
 endif ()
 
-find_package(Gecode)
-if (GECODE_FOUND)
+if (HAVE_GECODE)
   cxx_test_with_flags(gecode_test "" "gtest;amplgecode"
     test_main.cc args.cc expr_builder.cc gecode_test.cc)
 endif ()
