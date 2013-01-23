@@ -81,6 +81,7 @@ if (ODBC_FOUND)
 endif ()
 
 if (HAVE_GECODE)
+  include_directories(${GECODE_SOURCE_DIR})
   cxx_test_with_flags(gecode_test "" "gtest;amplgecode"
     test_main.cc args.cc expr_builder.cc gecode_test.cc)
 endif ()
