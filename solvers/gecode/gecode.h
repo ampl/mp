@@ -278,7 +278,7 @@ class GecodeSolver : public Solver<GecodeSolver> {
   unsigned long fail_limit_;
   std::size_t memory_limit_;
 
-  void EnableOutput(const char *, bool enable) { output_ = enable; }
+  void EnableOutput(const char *name, int value);
 
   template <typename T>
   void SetStrOption(const char *name, const char *value,
