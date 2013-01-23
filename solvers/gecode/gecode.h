@@ -58,7 +58,8 @@ class NLToGecodeConverter :
  private:
    GecodeProblem problem_;
 
-   friend class ExprVisitor;
+   friend class ExprVisitor<
+     NLToGecodeConverter, Gecode::LinExpr, Gecode::BoolExpr>;
 
    typedef Gecode::LinExpr LinExpr;
    typedef Gecode::BoolExpr BoolExpr;
