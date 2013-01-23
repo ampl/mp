@@ -51,6 +51,12 @@ extern "C" {
 # include <thread>
 #endif
 
+#if defined(_MSC_VER)
+# define isnan _isnan
+#else
+# define isnan std::isnan
+#endif
+
 using std::ifstream;
 using std::size_t;
 using std::string;
