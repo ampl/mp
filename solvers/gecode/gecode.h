@@ -284,8 +284,8 @@ class GecodeSolver : public Solver<GecodeSolver> {
   void SetStrOption(const char *name, const char *value,
       const OptionInfo<T> &info);
 
-  template <typename T>
-  void SetIntOption(const char *name, int value, T *option);
+  template <typename T, typename OptionT>
+  void SetOption(const char *name, T value, OptionT *option);
 
   void SetDblOption(const char *, double value, double *option) {
     *option = value;
@@ -312,6 +312,8 @@ class GecodeSolver : public Solver<GecodeSolver> {
   // Run the solver.
   int Run(char **argv);
 
+  Gecode::IntVarBranch var_branching() const { return var_branching_; }
+  Gecode::IntValBranch val_branching() const { return val_branching_; }
   const Gecode::Search::Options &options() const { return options_; }
 };
 }

@@ -877,8 +877,7 @@ TEST_F(GecodeSolverTest, FailLimitOption) {
 }
 
 TEST_F(GecodeSolverTest, MemoryLimitOption) {
-  std::string message =
-      Solve(DATA_DIR "miplib/assign1", "memorylimit=1000000").message;
+  Solve(DATA_DIR "miplib/assign1", "memorylimit=1000000");
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_EQ("Invalid value -1 for option memorylimit",
       ParseOptions("memorylimit=-1").error());
@@ -893,5 +892,24 @@ TEST_F(GecodeSolverTest, NodeLimitOption) {
       ParseOptions("nodelimit=-1").error());
 }
 
-// TODO: test options: outlev, threads, timelimit, val_branching, var_branching
+TEST_F(GecodeSolverTest, TimeLimitOption) {
+  Solve(DATA_DIR "miplib/assign1", "timelimit=0.1");
+  EXPECT_EQ(600, solver_.problem().solve_code());
+  EXPECT_EQ("Invalid value -1 for option timelimit",
+      ParseOptions("timelimit=-1").error());
+}
+
+TEST_F(GecodeSolverTest, ThreadsOption) {
+  EXPECT_EQ(Gecode::Search::Options().threads, solver_.options().threads);
+  EXPECT_TRUE(ParseOptions("threads=0.5"));
+  EXPECT_EQ(0.5, solver_.options().threads);
+  EXPECT_TRUE(ParseOptions("threads=-10"));
+  EXPECT_EQ(-10.0, solver_.options().threads);
+}
+
+TEST_F(GecodeSolverTest, ValBranchingOption) {
+  // TODO
+}
+
+// TODO: test options: outlev, var_branching
 }

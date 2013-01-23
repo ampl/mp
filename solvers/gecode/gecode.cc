@@ -323,8 +323,8 @@ void GecodeSolver::SetStrOption(const char *name, const char *value,
   ReportError("Invalid value {} for option {}") << value << name;
 }
 
-template <typename T>
-void GecodeSolver::SetIntOption(const char *name, int value, T *option) {
+template <typename T, typename OptionT>
+void GecodeSolver::SetOption(const char *name, T value, OptionT *option) {
   if (value < 0)
     ReportError("Invalid value {} for option {}") << value << name;
   else
@@ -410,18 +410,18 @@ GecodeSolver::GecodeSolver()
       &GecodeSolver::SetDblOption, &options_.threads);
 
   AddIntOption("c_d", "Commit recomputation distance.",
-      &GecodeSolver::SetIntOption<unsigned>, &options_.c_d);
+      &GecodeSolver::SetOption<int, unsigned>, &options_.c_d);
   AddIntOption("a_d", "Adaptive recomputation distance.",
-      &GecodeSolver::SetIntOption<unsigned>, &options_.a_d);
+      &GecodeSolver::SetOption<int, unsigned>, &options_.a_d);
 
   AddDblOption("timelimit", "Time limit.",
-      &GecodeSolver::SetDblOption, &time_limit_);
+      &GecodeSolver::SetOption<double, double>, &time_limit_);
   AddIntOption("nodelimit", "Node limit.",
-      &GecodeSolver::SetIntOption<unsigned long>, &node_limit_);
+      &GecodeSolver::SetOption<int, unsigned long>, &node_limit_);
   AddIntOption("faillimit", "Fail limit.",
-      &GecodeSolver::SetIntOption<unsigned long>, &fail_limit_);
+      &GecodeSolver::SetOption<int, unsigned long>, &fail_limit_);
   AddIntOption("memorylimit", "Memory limit.",
-      &GecodeSolver::SetIntOption<std::size_t>, &memory_limit_);
+      &GecodeSolver::SetOption<int, std::size_t>, &memory_limit_);
 }
 
 int GecodeSolver::Run(char **argv) {
