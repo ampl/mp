@@ -61,6 +61,9 @@ class NLToGecodeConverter :
    friend class ExprVisitor<
      NLToGecodeConverter, Gecode::LinExpr, Gecode::BoolExpr>;
 
+   typedef ExprVisitor<NLToGecodeConverter, Gecode::LinExpr, Gecode::BoolExpr>
+     ExprVisitor;
+
    typedef Gecode::LinExpr LinExpr;
    typedef Gecode::BoolExpr BoolExpr;
 
