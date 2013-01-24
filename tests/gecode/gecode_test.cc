@@ -70,7 +70,7 @@ using ampl::LogicalExpr;
 using ampl::NumericExpr;
 using ampl::UnsupportedExprError;
 
-#define DATA_DIR "data/"
+#define DATA_DIR "../data/"
 
 namespace {
 
