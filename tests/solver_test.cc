@@ -27,6 +27,7 @@
 #include "solvers/util/solver.h"
 #include "tests/args.h"
 #include "tests/solution_handler.h"
+#include "tests/util.h"
 
 #ifdef WIN32
 # define putenv _putenv
@@ -39,17 +40,6 @@ using ampl::BasicSolver;
 using ampl::Solver;
 
 namespace {
-std::string ReadFile(const char *name) {
-  std::string data;
-  std::ifstream ifs(name);
-  enum { BUFFER_SIZE = 4096 };
-  char buffer[BUFFER_SIZE];
-  do {
-    ifs.read(buffer, BUFFER_SIZE);
-    data.append(buffer, static_cast<std::string::size_type>(ifs.gcount()));
-  } while (ifs);
-  return data;
-}
 
 const void *const INFO = "";
 
