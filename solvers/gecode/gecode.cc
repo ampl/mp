@@ -436,7 +436,7 @@ int GecodeSolver::Run(char **argv) {
     return 1;
 
   // Set up an optimization problem in Gecode.
-  Problem &problem = Solver::problem();
+  Problem &problem = Solver<GecodeSolver>::problem();
   std::auto_ptr<NLToGecodeConverter>
     converter(new NLToGecodeConverter(problem.num_vars()));
   converter->Convert(problem);
