@@ -40,7 +40,7 @@ cxx_test_with_flags(expr_test "" "gtest;util"
 
 cxx_test_with_flags(format_test "" "gtest;util" format_test.cc)
 cxx_test_with_flags(solver_test "" "gtest;util"
-  solver_test.cc args.cc test_main.cc)
+  solver_test.cc args.cc test_main.cc util.cc)
 
 add_ampl_library(testlib testlib.cc)
 add_library(function function.cc function.h)
@@ -83,7 +83,7 @@ endif ()
 if (HAVE_GECODE)
   include_directories(${GECODE_SOURCE_DIR})
   cxx_test_with_flags(gecode_test "" "gtest;amplgecode"
-    test_main.cc args.cc expr_builder.cc gecode_test.cc)
+    test_main.cc args.cc expr_builder.cc gecode_test.cc util.cc)
 endif ()
 
 add_subdirectory(ilogcp)

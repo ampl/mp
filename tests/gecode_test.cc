@@ -45,6 +45,7 @@ extern "C" {
 #include "tests/args.h"
 #include "tests/expr_builder.h"
 #include "tests/solution_handler.h"
+#include "tests/util.h"
 #include "tests/config.h"
 
 #ifdef HAVE_THREADS
@@ -982,6 +983,27 @@ TEST_F(GecodeSolverTest, VarBranchingOption) {
 }
 
 TEST_F(GecodeSolverTest, OutlevOption) {
-  // TODO: test
+  EXPECT_EXIT({
+    FILE *f = freopen("out", "w", stdout);
+    Solve(DATA_DIR "objconstint");
+    fclose(f);
+    exit(0);
+  }, ::testing::ExitedWithCode(0), "");
+  EXPECT_EQ("", ReadFile("out"));
+
+  EXPECT_EXIT({
+    FILE *f = freopen("out", "w", stdout);
+    Solve(DATA_DIR "objconstint", "outlev=1");
+    fclose(f);
+    exit(0);
+  }, ::testing::ExitedWithCode(0), "");
+  EXPECT_EQ("outlev=1\nBest objective: 42\n", ReadFile("out"));
+
+  EXPECT_TRUE(ParseOptions("outlev=0"));
+  EXPECT_TRUE(ParseOptions("outlev=1"));
+  EXPECT_EQ("Invalid value -1 for option outlev",
+      ParseOptions("outlev=-1").error());
+  EXPECT_EQ("Invalid value 2 for option outlev",
+      ParseOptions("outlev=2").error());
 }
 }
