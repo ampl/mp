@@ -26,8 +26,10 @@
 
 using std::vector;
 
+#ifndef ILOGCP_NO_VERS
 static char xxxvers[] = "ilogcp_options\0\n"
   "AMPL/IBM ILOG CP Optimizer Driver Version " qYYYYMMDD "\n";
+#endif
 
 #ifndef M_PI
 # define M_PI 3.14159265358979323846
