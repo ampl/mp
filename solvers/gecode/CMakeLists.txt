@@ -4,6 +4,7 @@
 # when compiling on Mac with older GCC.
 string(REPLACE "-pedantic" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
+set(GECODE_DISABLE_WARNINGS True)
 add_subdirectory(gecode-src)
 include_directories(gecode-src)
 add_library(amplgecode gecode.cc)
