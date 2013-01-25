@@ -168,8 +168,8 @@ void NLToGecodeConverter::Convert(const Problem &p) {
   for (int j = 0, n = p.num_vars(); j < n; ++j) {
     double lb = p.GetVarLB(j), ub = p.GetVarUB(j);
     vars[j] = IntVar(problem_,
-        lb <= negInfinity ? Gecode::Int::Limits::min : lb,
-        ub >= Infinity ? Gecode::Int::Limits::max : ub);
+        lb <= negInfinity ? Gecode::Int::Limits::min : static_cast<int>(lb),
+        ub >= Infinity ? Gecode::Int::Limits::max : static_cast<int>(ub));
   }
 
   if (p.num_objs() != 0) {
@@ -181,17 +181,17 @@ void NLToGecodeConverter::Convert(const Problem &p) {
   for (int i = 0, n = p.num_cons(); i < n; ++i) {
     LinExpr con_expr(
         ConvertExpr(p.GetLinearConExpr(i), p.GetNonlinearConExpr(i)));
-    double lb = p.GetConLB(i);
-    double ub = p.GetConUB(i);
+    double lb = p.GetConLB(i), ub = p.GetConUB(i);
+    int int_lb = static_cast<int>(lb), int_ub = static_cast<int>(ub);
     if (lb <= negInfinity) {
-      rel(problem_, con_expr <= ub);
+      rel(problem_, con_expr <= int_ub);
     } else if (ub >= Infinity) {
-      rel(problem_, con_expr >= lb);
-    } else if (lb == ub) {
-      rel(problem_, con_expr == lb);
+      rel(problem_, con_expr >= int_lb);
+    } else if (int_lb == int_ub) {
+      rel(problem_, con_expr == int_lb);
     } else {
-      rel(problem_, con_expr >= lb);
-      rel(problem_, con_expr <= ub);
+      rel(problem_, con_expr >= int_lb);
+      rel(problem_, con_expr <= int_ub);
     }
   }
 
