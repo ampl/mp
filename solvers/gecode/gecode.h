@@ -153,9 +153,10 @@ class NLToGecodeConverter :
 
    LinExpr VisitNumericConstant(NumericConstant c) {
      double value = c.value();
-     if (static_cast<int>(value) != value)
+     int int_value = static_cast<int>(value);
+     if (int_value != value)
        throw UnsupportedExprError("non-integer constant");
-     return c.value();
+     return int_value;
    }
 
    LinExpr VisitVariable(Variable v) {
