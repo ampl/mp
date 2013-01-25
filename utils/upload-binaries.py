@@ -21,6 +21,7 @@ for platform in reversed(["linux32", "linux64", "macosx", "win32", "win64"]):
       for file in files:
         fn = os.path.join(base, file)
         zip.write(fn, fn[dirlen:])
+    zip.write("LICENSE", "LICENSE")
   print("Uploading {}".format(file_path))
   status, reason, url = upload_find_auth(
     file_path, project, summary, None, None, None)
