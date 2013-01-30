@@ -135,6 +135,12 @@ if (HAVE_GSL)
   add_subdirectory(amplgsl)
 endif ()
 
+if (HAVE_CBC)
+  set(COIN_HAS_ASL 1)
+  set(ASL_LIBRARIES ${SOLVER_LIBS})
+  add_subdirectory(cbc)
+endif ()
+
 if (HAVE_GECODE)
   add_subdirectory(gecode)
 endif ()
