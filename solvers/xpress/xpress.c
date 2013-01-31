@@ -772,7 +772,8 @@ static char
 			1 = yes (sleep; may add overhead)",
 #endif
 	sos_desc[]		= "whether to use explicit SOS information (default 1 = yes)",
-	sos2_desc[]		= "whether to use implicit SOS information (default 1 = yes)",
+	sos2_desc[]		= "whether to tell XPRESS about SOS2 constraints for\n\
+			nonconvex piecewise-linear terms (default 1 = yes)",
 	sosreftol_desc[]	= "minimum relative gap between reference row entries\n\
 			default = 1e-6",
 #ifdef XPRS_SYMMETRY
@@ -1040,7 +1041,7 @@ static keyword keywds[]={
      };
 
 static Option_Info Oinfo = { "xpress", NULL, "xpress_options",
-           keywds,nkeywds,0,"XPRESS", 0,0,0,0,0, 20121006 };
+           keywds,nkeywds,0,"XPRESS", 0,0,0,0,0, 20130129 };
 
  static char *
 strcpy1(char *t, const char *s)

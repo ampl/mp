@@ -56,3 +56,6 @@ the problem.
 20121011
   Updates to README.xpress, makefile.u, makefile.vc and addition
 of shell scripts xpress.linux and xpress.macosx.
+
+20130129
+  Correct the description of "sos2" in the "-=" output.
