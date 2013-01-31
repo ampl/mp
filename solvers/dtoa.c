@@ -1904,6 +1904,8 @@ gethex( CONST char **sp, U *rvp, int rounding, int sign)
 #endif
 			goto retz;
 #ifdef IEEE_Arith
+ ret_tinyf:
+			Bfree(b);
  ret_tiny:
 #ifndef NO_ERRNO
 			errno = ERANGE;
@@ -2004,15 +2006,15 @@ gethex( CONST char **sp, U *rvp, int rounding, int sign)
 			switch (rounding) {
 			  case Round_near:
 				if (n == nbits && (n < 2 || any_on(b,n-1)))
-					goto ret_tiny;
+					goto ret_tinyf;
 				break;
 			  case Round_up:
 				if (!sign)
-					goto ret_tiny;
+					goto ret_tinyf;
 				break;
 			  case Round_down:
 				if (sign)
-					goto ret_tiny;
+					goto ret_tinyf;
 			  }
 #endif /* } IEEE_Arith */
 			Bfree(b);

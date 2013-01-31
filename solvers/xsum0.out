@@ -8,7 +8,7 @@ arithchk.c	e460ec03	5299
 asl.h	f12f6fae	38402
 asl_pfg.h	6483336	1268
 asl_pfgh.h	49b5a53	1288
-asldate.c	fb90089d	29
+asldate.c	551e9e7	29
 atof.c	1fabc7d3	1747
 auxinfo.c	1a3c8690	1488
 avltree.c	10aeaa58	11346
@@ -30,8 +30,8 @@ conscale.c	9a0f9de	3482
 conval.c	29180c4	4333
 derprop.c	e1181b02	1359
 details.c0	fa7ec7b3	182
-dtoa.c	ef35266f	89123
-dtoa1.c	e787161a	3280
+dtoa.c	fa31aa7a	89151
+dtoa1.c	10bc1f6d	3280
 duthes.c	ea8758e9	3635
 dvalue.hd	fedc7579	1104
 dynlink.c	f185cc89	1375
