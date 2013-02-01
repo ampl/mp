@@ -138,6 +138,7 @@ endif ()
 if (HAVE_CBC)
   set(COIN_HAS_ASL 1)
   set(ASL_LIBRARIES ${SOLVER_LIBS})
+  set(COIN_DISABLE_WARNINGS 1)
   add_subdirectory(cbc)
 endif ()
 
