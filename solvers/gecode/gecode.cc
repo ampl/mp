@@ -339,7 +339,7 @@ void GecodeSolver::SetOption(const char *name, T value, OptionT *option) {
 }
 
 GecodeSolver::GecodeSolver()
-: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130124),
+: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130201),
   output_(false),
   var_branching_(Gecode::INT_VAR_SIZE_MIN),
   val_branching_(Gecode::INT_VAL_MIN),
