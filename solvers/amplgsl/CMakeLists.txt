@@ -2,7 +2,10 @@
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/gsl)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+if (HAVE_FPIC_FLAG)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+endif ()
+
 set(GSL_DISABLE_WARNINGS 1)
 add_subdirectory(gsl)
 
