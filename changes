@@ -2386,52 +2386,7 @@ in filename causes such output again to go to the standard output.
 piece-wise linear terms.  (Work-around:  leave option presolve at its
 default setting.)
 
-20100330
-  Fix a bug (fault) with "reset data;" when (e.g.) two params indexed
-by the same set were affected.  Example:
-
-	set S; param n_min{S}; param n_max{S};
-	table foo "nutrients.tab" IN: S <- [NUTR], n_min, n_max;
-	read table foo;
-	display n_min, n_max;
-	reset data;	# faulted
-
-20100402
-  Fix a bug (possible fault or worse) in handling nonconvex
-piecewise-linear terms.  Values for introduced variables that were
-then eliminated by substitution were mistakenly stored after
-"solve" with a possibly out-of-bounds subscript.  (Whether this
-caused trouble was problem-dependent.)  Work-around:
-"option pl_linearize 5;".
-  Fix a bug with applying piecewise-linear operators to defined
-variables.  Incorrect problem transforms sometimes resulted.
-
-20100429
-  Fix a bug (fault) in handling valid input followed (e.g.) by an
-empty line and "*/" without a newline at the end of file.
-
-20100705
-  Fix trouble that could arise in 32-bit binaries after they execute
-more than 2^31 commands.
-
-20100708
-  Fix a bug introduced 20100228 in the "commands" command:  when
-used inside a loop, a fault (or worse) was possible.
-
 20100715
-  Fix a glitch in the regular expression functions (sub and gsub):
-^ only matched the beginning of the string and not the beginnings of
-internal lines (i.e., the text following a \n character).  Now it
-also matches the character following each \n (just as $ matches the
-end of each internal line as well as the end of the string).
-
-Example: before the bug fix,
-    num0(sub(solve_message, '(.|\n)*\n([0-9]+) MIP(.|\n)*', '\2'))
-was the only way to extract the number of MIP simplex iterations
-from the solve_message returned by cplex.  The bug fix lets us replace
-the first \n with ^:
-    num0(sub(solve_message, '(.|\n)*^([0-9]+) MIP(.|\n)*', '\2'))
-
   Extension to the regular expressions processed by sub and gsub:
 @ is similar to ., but also matches \n, i.e., @ is a synonym
 for (.|\n).  The above example can now be written
@@ -2440,14 +2395,6 @@ Of course, a literal @ appearing in a regular expression must now
 be escaped, as in
     sub('x@y', '\@', ' at ')
 in which previously the \ was not required (but was allowed).
-
-20100915
-  Fix a bug (fault) with variables declared to be in a union of more
-than two intervals.
-  Fix bugs (e.g, possible fault) in cleaning up after a solve with
-piecewise-linear terms or variables in unions of intervals, and with
-models that had both piecewise-linear terms and variables in unions
-of intervals.
 
 20100928
   Adjust environment changes so if one declares two problems,
@@ -2474,140 +2421,14 @@ gives a different value (0.8653543517772044).  Best practice (least
 confusing) is to adjust option randseed before declaring problems or
 new environments, in which case the this change to environment
 processing makes no difference.
-  Fix a bug with _ampl_time and related quantities, such as
-_ampl_elapsed_time:  they were only computed once and appeared to
-be constant thereafter.
-  Fix a bug that could cause assignments to variable.relax not
-to take effect until completion of the outermost containing loop.
-(Insertion of "display somevariable.astatus;" after such assignments
-was a work-around; the choice of variable did not matter.)
   New builtin suffix "int" on variables is 0 for a continuous variable
 and 1 for an integer or binary variable (unless $relax_integrality is
 nonzero or the variable's .relax suffix is positive, in which case .int
 is 0 and solvers will see the variable as continuous).
 
-20101103
-  Work around getenv() trouble seen on a version of Linux.
-The bug would cause a solver not to be found after a change to
-option PATH.
-
-20101105
-  Fix a bug in converting decimal strings of more than 40 significant
-digits when the first appears after the decimal point.  Example:
-
-	print .010000000000000000057612911342378542997169;
-
-gave 4.008336720017946e-292 rather than 0.01.
-
-20101125:
-  Fix a bug (fault) with unsubscripted symbolic variables (a forthcoming
-feature, not yet described).
-
-20101203:
-  Fix a bug (fault, rarely seen) affecting 64-bit binaries.
-
-20101206
-  Fix a bug (fault) possible with some uses of random variables (a
-forthcoming feature).
-
-20110112
-  Fix a rarely seen bug (fault) that bit under the "right" conditions
-when making adjustments for new suffixes.
-
-20110121
-  Fix a rarely seen parse error on a command after an in-line data
-section.
-  Add warning that variables in subscripts are not yet allowed.
-
-20110219
-  Fix a rarely seen bug that caused a fault in a complicated example.
-  Fix a bug in "table write":  symbolic params with numeric values were
-sometimes treated as having the corresponding string value.
-  Add an error message for table declarations that involve row-index
-dummy variables in OUT or INOUT columns and do not specify "set -->"
-or "set <-->", as in the following example.
-
-	set S; set T = 1..4; param p{S,T};
-	table goo:
-	  S <-- [r ~ R], {t in T} < p[r,t] ~ ("col" & t) >;
-
-Previously "write table goo" faulted (but worked fine with "S <--"
-changed to "S <-->" or "S -->").
-
-20110222
-  Fix a bug with solexpand applied to a defining constraint:
-a spurious "complements" sometimes appeared and a constant term
-was possibly lost.
-
-20110306
-  Fix glitches with iterated columns in table declarations, i.e., with
-	indexing < colg_1 [, colg_2, ...] >
-The indexing set was treated as the empty set in some situations,
-which might have caused "read table" not to read the columns in
-question or have caused "write table" to fault.
-  Fix a glitch in the processing of "include filename" where filename
-is not quoted.  If a nonblank character immediately followed filename,
-as in "include foo;" (in which semicolon is the nonblank character),
-that character was sometimes seen at the wrong time.  For example,
-"if 1 < 0 then include f;" was treated as "if 1 < 0 then; include f".
-(Recall that an include phrase, such here as "include f", is processed
-before parsing; that is, "include" is unaware of the context in which
-it appears.)
-
-20110321
-  Fix "sd botch in ordered_genall" in the following example:
-	set S ordered by 1..10 default 1..10; display S;
-
-20110413
-  Fix a fault that could arise in a complicated example with fixing
-and unfixing a defined variable within a bigger loop.  Such fixing
-and unfixing is not allowed, but in the example, the bug bit before
-an error message about the inappropriate operation was issued.
-
-20110419
-  Fix a fault in the "objective" command that was possible with some
-forms of iterated objectives.  Example:
-
-	set A dimen 2; var x;
-	minimize Obj{(i,'N') in A}: x^i;
-	data; set A := 1 x  2 N;
-	objective;	# faulted
-
-20110524
-  Fix a bug (fault or worse) with some models having both defined
-variables and logical constraints.
-  Fix a bug in simplifying logical constraints with constant logical
-expressions; the wrong truth value sometimes appeared in a platform-
-dependent way.
-
 20110531
   Adjust processing for $substout=1 to allow mutually recursive
 variable definitions from several indexed defining constraints.
-
-20110614
-  Fix a glitch in computing Jacobian sparsity in some problems in
-which a nonlinear defined variable appears linearly in a nonlinear
-constraint and "option substout 1" is specified.  Example:
-
-	set I = 1..2; var x{I}; var y{I};
-	s.t. c1: y[1] = x[1] + 1;
-	s.t. ydef: y[2] = y[1] + x[2] - x[1];
-	minimize zot: y[2]^2;
-	s.t. bletch{i in I}: x[i]*y[i] >= 3;
-
-With $substout = 1, bletch[2] was incorrectly indicated to depend
-on x[1].  Aside from sparsity issues, this was harmless.
-
-20110630
-  Omit "Highest address used = ..." from "Too much memory" message;
-the "highest address" seems pointless when virtual memory is used.
-  Fix two bugs in handling complementarity constraints.  In a
-command-line invocation of the form
-	ampl -obfoo foo.mod foo.dat
-complementarities might sometimes have been misidentified, and
-"complementarities" of the form v complements expr1 == expr2 (which
-should just be simplified to expr1 == expr2) may have been conveyed as
-complementarities (which seemed not to bother the "path" solver).
 
 20110713
   Change the default computation of c.slack for a complementary
@@ -2652,31 +2473,7 @@ complementarity conditions to v1 >= 0 complements v2 >= 0.  (With
 older versions of AMPL, the facility uses upper bounds on nd and
 nzlb.)
 
-20110722
-  Fix some bugs with logical constraints.  Problem commands did not
-cause logical constraints to be dropped or restored when they should
-have been.  The "delete suffix ..."  command ignored logical
-constraints.  The "drop;" command did not show dropped logical
-constraints.  The "delete lcon;" command, for lcon a logical
-constraint, misbehaved.  For a logical constraint lcon, "expand lcon;"
-and "solexpand lcon;" sometimes printed an extraneous Infinity.
-
-20110725
-  Fix a bug with redeclarations involving variables.  Input of the
-form
-	# ...
-	write bfoo1;
-	var newvar;
-	redeclare minimize o: ... /* involving newvar */;
-	write bfoo2;
-could have resulted in an incorrect foo2.nl.
-
-20110726
-  Extend command-line option -Rw to forbid "write" commands.
-
 20110813
-  Fix glitches in "show f;" when f is a pipe function.
-  Fix a fault with empty slices that arose under rare conditions.
   In equality constraints in which one side involves numeric variables,
 assume the other side must also be numeric.  This matters when the
 other side involves an if-then-else expressions whose "then" or "else"
@@ -2690,22 +2487,6 @@ which previously was treated as a logical constraint.  (Changing
 "then i" to "then i + 0" was necessary to make constraint c into
 an algebraic constraint.)
 
-20110825
-  Fix a parsing bug: an include phrase following an "if" command that
-could be followed by an "else" command (which might be in the included
-file), but is followed by something else was mishandled.
-
-20110901
-  Fix a parsing bug ("syntax error") seen in the following example:
-
-	param p; var x{1..2};
-	minimize zot: sum{i in 1..2} (1-x[i])^2;
-	data goo.dat;
-	if p > 3 then commands goo1.mod;
-	expand;
-
-Changing "expand;" to "expand ;" or ";expand;" worked around the bug.
-
 20110906
   Extend "option show_stats 1" output to list the numbers (if
 nonzero) of equality, inequality, and range (i.e., double
@@ -2716,64 +2497,11 @@ process group.
 introduced to handle "in union_of_intervals" phrases in variable
 declarations.
 
-20110908
-  Fix a bug with complementarity constraints.  With certain (somewhat
-rare) problem dimensions, an incorrect .nl file was generated.  An
-example where this bug bit:
-
-	var x {1..2} >= 0; minimize obj: x[1] + x[2];
-	subj to con: x[1] <= 3 complements x[2] <= 5;
-
-20110909
-  Fix a memory leak seen in a script involving a number of solves of
-large problems.
-  Arrange for printing variables not to require instantiating
-constraints.  With some command sequences, "ampl -t ..." or
-"ampl -T ..." or the equivalent "option times 1;" or
-"option gentimes 1;" will produce less output than before.
-
-20110913
-  Fix a rarely seen bug that caused a fault in recent 32-bit Windows
-binaries.
-
 20111005
   Allow "ampl -R" (server mode) to use imported functions provided by
 "load"  commands (but not pipe functions).
 
-20111011
-  Fix a glibc bug that had crept in with the values of
-_solve_elapsed_time and _shell_elapsed_time under Linux.
-
-20111015
-  Fix a bug sometimes seen with "show" after a redeclaration:  wrong
-variable names were sometimes reported (depending on details of the
-redeclaration).  Example:
-
-	var x; var y;
-	minimize zap: x + y;
-	s.t. C: 2*y <= 5;
-	expand C;	# OK
-	param p default 2;
-	redeclare s.t. C: p*y <= 5;
-	expand C;	# mentioned x rather than y
-
-20111016
-  Fix more variable-reordering trouble with redeclare (not caught
-by yesterday's example).  Example:
-
-	var w; var x; var y; var z;
-	minimize foo: w + 2*x + 3*y + 4*z;
-	s.t. c1: x + 5*y <= 37;
-	s.t. c2: y + 6*z >= 43;
-	s.t. c3: 4 <= z + 7*x <= 19;
-	expand;
-	redeclare var y = x^2 + z; # "xrenumber bug" with version 20111015
-	expand;	# wrong constraint c3 prior to 20111015
-
 20111107
-  Supply missing initialization of SnprintF and VsnprintF in the
-AmplExports structure passed to imported functions and table handlers.
-(They have long been provided to imported functions used by solvers.)
   When imported functions or table handlers see ae->ASLdate >= 20111028
 and ae->asl == 0, ae->Getenv(0) returns a char** value for the complete
 current environment.
@@ -2781,32 +2509,6 @@ current environment.
 child processes (e.g., from "solve" or "shell" commands) from seeing
 irrelevant open file descriptors, a bit of tidiness seldom relevant in
 practice.
-  Fix the obscure glitch that prompts were preceded by # after reading
-a file that ended in an incomplete #comment line (one without a
-terminating newline character).  The # persisted until the next
-complete comment had been read.  Now the # should only appear if
-you manually enter an incomplete comment (e.g., under Unix or Linux,
-by typing control-D at the end of a # comment line).
-  Fix a bug (e.g., fault) that bit under complicated conditions, e.g.,
-with solving sequences of named problems.
-
-20111110
-  Fix bugs (giving a surprising error message or fault) with updating
-sets over which subscripted objectives and problems are indexed.
-
-20111121
-  Fix a bug with testing membership in "system sets", i.e., any of
-_CONS, _ENVS, _FUNCS, _LOGCONS, _OBJS, _PARS, _PROBS, _RANDVARS,
-_SETS, _SUFFIXES, _SYMVARS, _SYSTEM_SUFFIXES, _TABLES, _VARS or
-_VARSETS.  The test sometimes came out wrong.  Example:
-
-	reset; print if 'XX' in _SETS then 'yes' else 'no';
-	# printed yes rather than no
-
-  Add a warning about "data;" not being allowed in a compound command.
-Other error messages are likely to appear after the new warning.
-Note that "data filename;" and "data (filename_expr);" may appear in
-a compound statement.
 
 20111216
   For the -ix command-line option, in addition to allowing multiple
@@ -2814,30 +2516,8 @@ files on separate lines of a suitably quoted x, allow multiple files
 on the same line if each file name is enclosed in single or double
 quotes.  Add a brief explanation of multiple files to the "-i?"
 output.
-  Fix a bug (introduced 20110531) with "option substout 1":  an
-incorrect .nl file was sometimes generated when several constraints
-could be chosen to define a particular variable.  Here is an example
-in which the bug bit, giving a .nl file incorrectly containing
-"nonlinear" constraints:
-
-	option substout 1;
-	var x >= 3;
-	var y{i in 1..2} >= i;
-	var z;
-	var v = z + 3;
-	var w = v + x;
-	s.t. c{i in 1..2}: z = x + i*y[i];
-	minimize foo: x + z;
-
-20120104
-  Fix a bug that could lead to an error message of the form
-"presolve has k = 11, P.nfc = 17".
 
 20120117
-  Fix a glitch that caused the unload command not to fully
-unload the specified library.  It's not clear whether this
-ever caused any visible symptoms other perhaps than some
-memory not being reclaimed.
   New builtin suffix ".sense_num" on objectives is -1 for
 minimization and 1 for maximization.  New builtin suffix
 ".sense" is a symbolic version of ".sense_num" with default
@@ -3124,3 +2804,12 @@ variable declaration that has a piecewise-linear expression with
 a variable in the slope or breakpoint list.  In printing commands
 (display, print, printf), variables can appear in slope and
 breakpoint lists, but not in declarations.
+
+20130117
+  Diagnose attempts to add "delete" or "purge" commands to a compound
+command (e.g., a for or repeat loop) via a "commands" command.  Such
+attempts previously could lead to a fault.
+
+20130201
+  Fix a bug (e.g., fault) with read commands having nested indexings
+in which an inner indexing involves an outer dummy variable.
