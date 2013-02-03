@@ -1,6 +1,3 @@
-20130109
-  Add an error message about a constraint, objective, or defined
-variable declaration that has a piecewise-linear expression with
-a variable in the slope or breakpoint list.  In printing commands
-(display, print, printf), variables can appear in slope and
-breakpoint lists, but not in declarations.
+20130201
+  Fix a bug (e.g., fault) with read commands having nested indexings
+in which an inner indexing involves an outer dummy variable.
