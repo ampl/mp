@@ -382,7 +382,13 @@ TEST_F(GecodeConverterTest, ConvertPowConstBase) {
 
 TEST_F(GecodeConverterTest, ConvertNum) {
   EXPECT_EQ(42, ConvertAndEval(AddNum(42)));
-  EXPECT_THROW(ConvertAndEval(AddNum(0.42)), UnsupportedExprError);
+  std::string message;
+  try {
+    ConvertAndEval(AddNum(0.42));
+  } catch (const ampl::Error &e) {
+    message = e.what();
+  }
+  EXPECT_EQ("value 0.42 can't be represented as int", message);
   int min = Gecode::Int::Limits::min;
   EXPECT_EQ(min, ConvertAndEval(AddNum(min)));
   EXPECT_THROW(ConvertAndEval(AddNum(min - 1)), Gecode::Int::OutOfLimits);

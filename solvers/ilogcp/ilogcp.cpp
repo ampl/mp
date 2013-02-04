@@ -80,6 +80,15 @@ void RequireNonzeroConstRHS(ampl::BinaryExpr e, const std::string &func_name) {
         func_name + " with nonzero second parameter");
   }
 }
+
+inline IloInt CastToInt(double value) {
+  IloInt int_value = static_cast<int>(value);
+  if (int_value != value) {
+    throw ampl::Error(str(
+        fmt::Format("value {} can't be represented as int") << value));
+  }
+  return int_value;
+}
 }
 
 namespace ampl {
@@ -599,7 +608,7 @@ void IlogCPSolver::FinishBuildingNumberOf() {
     IloIntArray values(env_, val_map.size());
     for (IlogNumberOfMap::ValueMap::const_iterator j = val_map.begin(),
         val_end = val_map.end(); j != val_end; ++j, ++index) {
-      values[index] = static_cast<IloInt>(j->first);
+      values[index] = CastToInt(j->first);
       cards[index] = j->second;
     }
 
@@ -653,7 +662,7 @@ int IlogCPSolver::Run(char **argv) {
     LinearObjExpr linear = problem.GetLinearObjExpr(0);
     for (LinearObjExpr::iterator
         i = linear.begin(), end = linear.end(); i != end; ++i) {
-      ilo_expr += i->coef() * vars_[i->var_index()];
+      ilo_expr += CastToInt(i->coef()) * vars_[i->var_index()];
     }
     IloObjective MinOrMax(env_, ilo_expr,
         problem.GetObjType(0) == Problem::MIN ?
@@ -669,7 +678,7 @@ int IlogCPSolver::Run(char **argv) {
       LinearConExpr linear = problem.GetLinearConExpr(i);
       for (LinearConExpr::iterator
           j = linear.begin(), end = linear.end(); j != end; ++j) {
-        conExpr += j->coef() * vars_[j->var_index()];
+        conExpr += CastToInt(j->coef()) * vars_[j->var_index()];
       }
       if (i < problem.num_nonlinear_cons())
         conExpr += Visit(problem.GetNonlinearConExpr(i));
