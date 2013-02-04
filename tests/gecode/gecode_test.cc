@@ -20,8 +20,6 @@
  Author: Victor Zverovich
  */
 
-#include <gecode/search.hh>
-
 #include <algorithm>
 #include <fstream>
 #include <memory>
