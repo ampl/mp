@@ -126,9 +126,9 @@ LinExpr NLToGecodeConverter::ConvertExpr(
   typename LinearExpr<Term>::iterator i = linear.begin(), end = linear.end();
   bool has_linear_part = i != end;
   if (has_linear_part)
-    expr = i->coef() * vars[i->var_index()];
+    expr = CastToInt(i->coef()) * vars[i->var_index()];
   for (++i; i != end; ++i)
-    expr = expr + i->coef() * vars[i->var_index()];
+    expr = expr + CastToInt(i->coef()) * vars[i->var_index()];
   if (!nonlinear)
     return expr;
   if (has_linear_part)
