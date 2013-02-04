@@ -57,7 +57,7 @@ class LinearTerm {
   double coef() const { return grad_->coef; }
 
   // Returns the variable index.
-  double var_index() const { return grad_->varno; }
+  int var_index() const { return grad_->varno; }
 };
 
 typedef LinearTerm<ograd> LinearObjTerm;

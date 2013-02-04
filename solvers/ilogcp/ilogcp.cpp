@@ -662,7 +662,7 @@ int IlogCPSolver::Run(char **argv) {
     LinearObjExpr linear = problem.GetLinearObjExpr(0);
     for (LinearObjExpr::iterator
         i = linear.begin(), end = linear.end(); i != end; ++i) {
-      ilo_expr += CastToInt(i->coef()) * vars_[i->var_index()];
+      ilo_expr += i->coef() * vars_[i->var_index()];
     }
     IloObjective MinOrMax(env_, ilo_expr,
         problem.GetObjType(0) == Problem::MIN ?
@@ -678,7 +678,7 @@ int IlogCPSolver::Run(char **argv) {
       LinearConExpr linear = problem.GetLinearConExpr(i);
       for (LinearConExpr::iterator
           j = linear.begin(), end = linear.end(); j != end; ++j) {
-        conExpr += CastToInt(j->coef()) * vars_[j->var_index()];
+        conExpr += j->coef() * vars_[j->var_index()];
       }
       if (i < problem.num_nonlinear_cons())
         conExpr += Visit(problem.GetNonlinearConExpr(i));
