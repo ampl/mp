@@ -50,6 +50,10 @@ target_link_libraries(function ${SOLVER_LIBS})
 cxx_test_with_flags(function_test "" "gtest;function"
   test_main.cc function_test.cc)
 
+if (HAVE_CBC)
+  cxx_test_with_flags(cbc_test "" "gtest;" test_main.cc cbc_test.cc util.cc)
+endif ()
+
 if (HAVE_GSL)
   include_directories(${GSL_BINARY_DIR})
   cxx_test_with_flags(gsl_test ""
