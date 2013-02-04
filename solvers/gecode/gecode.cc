@@ -126,9 +126,9 @@ LinExpr NLToGecodeConverter::ConvertExpr(
   typename LinearExpr<Term>::iterator i = linear.begin(), end = linear.end();
   bool has_linear_part = i != end;
   if (has_linear_part)
-    expr = i->coef() * vars[i->var_index()];
+    expr = CastToInt(i->coef()) * vars[i->var_index()];
   for (++i; i != end; ++i)
-    expr = expr + i->coef() * vars[i->var_index()];
+    expr = expr + CastToInt(i->coef()) * vars[i->var_index()];
   if (!nonlinear)
     return expr;
   if (has_linear_part)
@@ -168,8 +168,8 @@ void NLToGecodeConverter::Convert(const Problem &p) {
   for (int j = 0, n = p.num_vars(); j < n; ++j) {
     double lb = p.GetVarLB(j), ub = p.GetVarUB(j);
     vars[j] = IntVar(problem_,
-        lb <= negInfinity ? Gecode::Int::Limits::min : static_cast<int>(lb),
-        ub >= Infinity ? Gecode::Int::Limits::max : static_cast<int>(ub));
+        lb <= negInfinity ? Gecode::Int::Limits::min : CastToInt(lb),
+        ub >= Infinity ? Gecode::Int::Limits::max : CastToInt(ub));
   }
 
   if (p.num_objs() != 0) {
@@ -182,12 +182,16 @@ void NLToGecodeConverter::Convert(const Problem &p) {
     LinExpr con_expr(
         ConvertExpr(p.GetLinearConExpr(i), p.GetNonlinearConExpr(i)));
     double lb = p.GetConLB(i), ub = p.GetConUB(i);
-    int int_lb = static_cast<int>(lb), int_ub = static_cast<int>(ub);
     if (lb <= negInfinity) {
-      rel(problem_, con_expr <= int_ub);
-    } else if (ub >= Infinity) {
-      rel(problem_, con_expr >= int_lb);
-    } else if (int_lb == int_ub) {
+      rel(problem_, con_expr <= CastToInt(ub));
+      continue;
+    }
+    if (ub >= Infinity) {
+      rel(problem_, con_expr >= CastToInt(lb));
+      continue;
+    }
+    int int_lb = CastToInt(lb), int_ub = CastToInt(ub);
+    if (int_lb == int_ub) {
       rel(problem_, con_expr == int_lb);
     } else {
       rel(problem_, con_expr >= int_lb);
@@ -339,7 +343,7 @@ void GecodeSolver::SetOption(const char *name, T value, OptionT *option) {
 }
 
 GecodeSolver::GecodeSolver()
-: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130201),
+: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130204),
   output_(false),
   var_branching_(Gecode::INT_VAR_SIZE_MIN),
   val_branching_(Gecode::INT_VAL_MIN),
