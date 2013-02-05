@@ -21,12 +21,15 @@
  */
 
 #include <cstdio>
+#include <algorithm>
+
 #include "gtest/gtest.h"
 #include "tests/util.h"
 
 TEST(CBCTest, RunSolver) {
   std::remove("data/assign0.sol");
   EXPECT_EQ(0, std::system("../solvers/cbc/bin/cbc data/assign0 -AMPL"));
-  EXPECT_TRUE(ReadFile("data/assign0.sol").find("objective 6\n") !=
-      std::string::npos);
+  std::string s = ReadFile("data/assign0.sol");
+  std::replace(s.begin(), s.end(), '\r', '\n');
+  EXPECT_TRUE(s.find("objective 6\n") != std::string::npos);
 }
