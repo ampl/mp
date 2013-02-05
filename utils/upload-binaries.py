@@ -6,18 +6,23 @@ from googlecode_upload import upload_find_auth
 project = "ampl"
 
 summaries = {
-  "amplgsl.dll": "AMPL bindings for the GNU Scientific Library",
-  "ampltabl.dll": "ODBC table handler",
+  "amplgsl": "AMPL bindings for the GNU Scientific Library",
+  "ampltabl": "ODBC table handler",
   "gecode": "Gecode solver",
-  "gecode.exe": "Gecode solver",
-  "cbc": "COIN-OR CBC solver",
-  "cbc.exe": "COIN-OR CBC solver"
+  "cbc": "COIN-OR CBC solver"
 }
 
-def upload(filename, summary):
+labels = {
+  "linux32": "OpSys-Linux",
+  "linux64": "OpSys-Linux",
+  "macosx": "OpSys-OSX",
+  "win32": "OpSys-Windows",
+  "win64": "OpSys-Windows"
+}
+
+def upload(filename, summary, labels):
   print("Uploading {}".format(filename))
-  status, reason, url = upload_find_auth(
-    filename, project, summary, None, None, None)
+  status, reason, url = upload_find_auth(filename, project, summary, labels)
   os.remove(filename)
   if not url:
     print('Google Code upload error: {} ({})'.format(reason, status))
@@ -38,10 +43,11 @@ for platform in reversed(["linux32", "linux64", "macosx", "win32", "win64"]):
     for file in files:
       path = os.path.join(base, file)
       name = path[dirlen:]
-      archive_name = "{}-{}-{}.zip".format(name, date, platform)
+      basename = os.path.splitext(name)[0]
+      archive_name = "{}-{}-{}.zip".format(basename, date, platform)
       with zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED) as zip:
         zip.write(path, name)
-      upload(archive_name, summaries[name])
+      upload(archive_name, summaries[basename], [labels[platform]])
       paths.append(path)
   # Upload all in one archive.
   archive_name = "ampl-open-{}-{}.zip".format(date, platform)
@@ -50,4 +56,4 @@ for platform in reversed(["linux32", "linux64", "macosx", "win32", "win64"]):
       path = os.path.join(base, file)
       zip.write(path, path[dirlen:])
     zip.write("LICENSE", "LICENSE")
-  upload(archive_name, "Open-source AMPL solvers and libraries")
+  upload(archive_name, "Open-source AMPL solvers and libraries", None)
