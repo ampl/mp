@@ -144,3 +144,6 @@ resulting in the error message "Index is out of range" or other trouble.
 
 20130109
   Update for Gurobi 5.1: add keywords impstartnodes and seed.
+
+20130204
+  Fix an off-by-one error in the description of sos2 in the -= output.
