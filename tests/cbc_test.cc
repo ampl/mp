@@ -30,7 +30,7 @@ TEST(CBCTest, RunSolver) {
   std::remove("data/assign0.sol");
   std::string command = "../solvers/cbc/bin/cbc data/assign0 -AMPL";
 #ifdef WIN32
-  std::replace(s.begin(), s.end(), '/', '\\');
+  std::replace(command.begin(), command.end(), '/', '\\');
 #endif
   EXPECT_EQ(0, std::system(command.c_str()));
   EXPECT_TRUE(ReadFile("data/assign0.sol").find("objective 6\n") !=
