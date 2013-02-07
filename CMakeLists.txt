@@ -56,14 +56,17 @@ endif ()
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)
   set(HAVE_GSL 1)
+  set(get_amplgsl_version solvers/amplgsl/gen-decls >> versions)
 endif ()
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/cbc/CMakeLists.txt)
   set(HAVE_CBC 1)
+  set(get_cbc_version solvers/cbc/bin/cbc -v -AMPL >> versions)
 endif ()
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/gecode/gecode-src/CMakeLists.txt)
   set(HAVE_GECODE 1)
+  set(get_gecode_version solvers/gecode/gecode -v >> versions)
 endif ()
 
 include(CheckCCompilerFlag)
@@ -108,6 +111,17 @@ endif ()
 add_subdirectory(doc)
 add_subdirectory(solvers)
 add_subdirectory(tables)
+
+# Add a target that generates versions file listing versions of solvers
+# and libraries.
+file(READ tables/amplodbc.c amplodbc)
+if (amplodbc MATCHES "version ([0-9]+)")
+  set(get_amplodbc_version echo amplodbc ${CMAKE_MATCH_1} >> versions)
+endif ()
+add_custom_target(versions cmake -E remove versions
+  COMMAND ${get_amplgsl_version} COMMAND ${get_amplodbc_version}
+  COMMAND ${get_cbc_version} COMMAND ${get_gecode_version}
+  DEPENDS tables/amplodbc.c)
 
 enable_testing()
 add_subdirectory(tests)
