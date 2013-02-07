@@ -29,6 +29,7 @@
 #include <gsl/gsl_sf.h>
 #include <gsl/gsl_cdf.h>
 #include <gsl/gsl_randist.h>
+#include <gsl/gsl_version.h>
 
 #include "funcadd.h"
 
@@ -248,6 +249,13 @@ static int check_bessel_args(arglist *al, int flags, const char *arg_name) {
     CHECK_CALL(value, func##_e(args, &result)); \
     return check_result(al, value); \
   }
+
+#define UNUSED(x) (void)(x)
+
+static const char *amplgsl_version(arglist *al) {
+  UNUSED(al);
+  return gsl_version;
+}
 
 static double amplgsl_log1p(arglist *al) {
   double x = al->ra[0];
@@ -2583,8 +2591,6 @@ WRAP_CHECKED(gsl_sf_eta, ARGS1)
 
 static gsl_rng *rng;
 
-#define UNUSED(x) (void)(x)
-
 static void free_rng(void *data) {
   UNUSED(data);
   if (rng) {
@@ -2953,6 +2959,9 @@ void funcadd_ASL(AmplExports *ae)
 {
   /* Don't call abort on error. */
   gsl_set_error_handler_off();
+
+  addfunc("gsl_version", (rfunc)amplgsl_version,
+      FUNCADD_STRING_VALUED, 0, "gsl_version");
 
   /**
    * @file elementary
