@@ -1,8 +1,10 @@
 #!/usr/bin/env python
+# This script uploads binaries from the build server to Google Code.
 
 import datetime, os, shutil, sys, zipfile
 from googlecode_upload import upload_find_auth
 
+server = "callisto.local"
 project = "ampl"
 
 summaries = {
@@ -33,7 +35,17 @@ for platform in reversed(["linux32", "linux64", "macosx", "win32", "win64"]):
   if os.path.exists(dir):
     shutil.rmtree(dir)
   print("Downloading binaries for {}:".format(platform))
-  os.system("scp -r callisto.local:/var/lib/buildbot/upload/{} {}".format(platform, dir))
+  os.system("scp -r {}:/var/lib/buildbot/upload/{} {}".format(server, platform, dir))
+  # Get versions.
+  versions_filename = dir + "/versions"
+  versions = {}
+  if os.path.exists(versions_filename):
+    with open(versions_filename) as f:
+      for line in f:
+        items = line.rstrip().split(' ')
+        if len(items) < 2:
+          continue
+        versions[items[0].lower()] = items[1]
   date = datetime.datetime.today()
   date = "{}{:02}{:02}".format(date.year, date.month, date.day)
   dirlen = len(dir) + 1
@@ -43,8 +55,11 @@ for platform in reversed(["linux32", "linux64", "macosx", "win32", "win64"]):
     for file in files:
       path = os.path.join(base, file)
       name = path[dirlen:]
+      if name == "versions":
+        continue
       basename = os.path.splitext(name)[0]
-      archive_name = "{}-{}-{}.zip".format(basename, date, platform)
+      suffix = versions.get(basename, date)
+      archive_name = "{}-{}-{}.zip".format(basename, suffix, platform)
       with zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED) as zip:
         zip.write(path, name)
       upload(archive_name, summaries[basename], [labels[platform]])
