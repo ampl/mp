@@ -116,10 +116,10 @@ add_subdirectory(tables)
 # and libraries.
 file(READ tables/amplodbc.c amplodbc)
 if (amplodbc MATCHES "version ([0-9]+)")
-  set(get_amplodbc_version echo amplodbc ${CMAKE_MATCH_1} >> versions)
+  set(get_ampltabl_version echo ampltabl ${CMAKE_MATCH_1} >> versions)
 endif ()
 add_custom_target(versions cmake -E remove versions
-  COMMAND ${get_amplgsl_version} COMMAND ${get_amplodbc_version}
+  COMMAND ${get_amplgsl_version} COMMAND ${get_ampltabl_version}
   COMMAND ${get_cbc_version} COMMAND ${get_gecode_version}
   DEPENDS tables/amplodbc.c)
 
