@@ -22,6 +22,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include "funcadd.h"
 
 #undef fopen
@@ -36,13 +37,22 @@ FILE *out;
 /* See AddFunc in funcadd.h */
 static void declare_func(const char *name, rfunc f,
     int type, int nargs, void *funcinfo, AmplExports *ae) {
+  const char *attr = "";
   UNUSED(f);
   UNUSED(type);
   UNUSED(nargs);
   UNUSED(funcinfo);
   UNUSED(ae);
-  fprintf(out, "function %s%s;\n", name,
-      (type & FUNCADD_RANDOM_VALUED) != 0 ? " random" : "");
+  if ((type & FUNCADD_RANDOM_VALUED) != 0)
+    attr = " random";
+  else if ((type & FUNCADD_STRING_VALUED) != 0)
+    attr = " symbolic";
+  if (strcmp(name, "gsl_version") == 0) {
+    typedef const char *(*Func)(arglist *al);
+    Func get_version = (Func)f;
+    printf("amplgsl %s\n", get_version(NULL));
+  }
+  fprintf(out, "function %s%s;\n", name, attr);
 }
 
 static void dummy_at_reset(AmplExports *ae, Exitfunc *f, void *data) {
