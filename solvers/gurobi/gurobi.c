@@ -1321,7 +1321,7 @@ keywds[] = {	/* must be in alphabetical order */
 
  static Option_Info
 Oinfo = { "gurobi", verbuf, "gurobi_options", keywds, nkeywds, 0, verbuf,
-	   0,0,0,0,0, 20130204 };
+	   0,0,0,0,0, 20130206 };
 
  static void
 enamefailed(GRBenv *env, const char *what, const char *name)
@@ -2711,7 +2711,6 @@ main(int argc, char **argv)
 				warmstart = 0;
 				}
 		}
-	free(A);
 
 	if (!(env = GRBgetenv(mdl)))
 		failed(env0, "GRBgetenv");
@@ -2784,6 +2783,7 @@ main(int argc, char **argv)
 	if (basis & 1)
 		get_input_statuses(asl, env, mdl, &dims);
 #endif /*}}*/
+	free(A);
 	if (x && GRBsetdblattrarray(mdl, GRB_DBL_ATTR_START, 0, nv, x))
 		failed(env, "GRBsetdblattrarray(START)");
 	if (logfile) {
