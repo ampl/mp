@@ -2813,3 +2813,11 @@ attempts previously could lead to a fault.
 20130201
   Fix a bug (e.g., fault) with read commands having nested indexings
 in which an inner indexing involves an outer dummy variable.
+
+20130207
+  Fix a bug with $ampl_libpath after a command sequence of the form
+
+	# nontrivial declarations and/or commands
+	reset;
+	reset options;
+	# option ampl_libpath might now have been bogus
