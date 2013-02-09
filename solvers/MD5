@@ -145,8 +145,8 @@ NfE/nd+ZeGE=
 -----END PGP SIGNATURE-----
 -----BEGIN PGP SIGNED MESSAGE-----
 
-# netlib-utk master Wed Dec 26 03:10:02 EST 2012
-Mm4uIxxBA0Ec+2tccVYF/g	00lastchange
+# netlib-utk master Thu Jan 31 03:10:02 EST 2013
+Wjtg8vnDE9YVAoopJ9tXjg	00lastchange
 liuYYMQudXHqZpEKRGHQSg	README
 qOEvOeNxr+tkYXE2CClZWw	README.SGI
 hP/T3OfgkqAwrLqbG8BqQw	README.f77
@@ -159,7 +159,7 @@ G6vjFVw1aR9lWi5Yl/OtiQ	arithchk.c
 NF4XEmz4YnKXVSKvXsC0bA	asl.h
 cWsQSHLhURv8mvXbE/g9DQ	asl_pfg.h
 p057f6BlUh9XCGR26M/IUA	asl_pfgh.h
-aSSi8g9cM4AZEhZTMw8jsA	asldate.c
+YrMB2JC+G6R+9rcfKaQ0Ag	asldate.c
 MwUvqn7mXvmkvc1afriAnQ	atof.c
 VPgRhBjxjjSUuv9+aVsibA	auxinfo.c
 HcQd+byMFVyPt/z7Djmj+w	avltree.c
@@ -167,7 +167,7 @@ TiTwOwAKkrb9rFuWZPf82A	avltree.h
 Lg714wh1GAnDfWqStFsPbQ	b_search.c
 JX+T6A1nVtQxlH2/gHjQ7w	basename.c
 B9aysZxnc2iCJEcny28lrA	bscanf.c
-VKf5X9UlBxQ7KXvVw0B8oQ	changes
+ml8JwGpJzwprGMAYsBAbgg	changes
 iaV5+h9JhXta8i63eG8/QA	com2eval.c
 ViDtWeMTFSx1mxx/G621+Q	comeval.c
 f3BjU/9mf3+4mq1Q2h6CAw	comptry.bat
@@ -182,8 +182,8 @@ ms5hXLWkEgczquUcnwPEQw	conscale.c
 K1PqDuVMre9j6YiJb+MNJw	conval.c
 FFi75YpWwzEc+Zk09yVyew	derprop.c
 6j3xZ0nEEou3XRDSXFF4cQ	details.c0
-1qsKgT0wegoJaU/Oqmp3Uw	dtoa.c
-3pBqW0NcZOvf96i7BM7/gg	dtoa1.c
+vU5aD/+Cwcb/fYrbs/uyRQ	dtoa.c
+A1iUFSdTjoSiHCLbp1K3ew	dtoa1.c
 tICd/37ZqZqBqIEk+GEfYQ	duthes.c
 QWyPBxRXvgG0v7Zi28e/Mg	dvalue.hd
 u5o5qgx9jlGyMsdmHifylg	dynlink.c
@@ -290,14 +290,14 @@ fKP4V5GxuMz8ZZhUUZbTxw	x2check.c
 iOcxB/spcU8eiXLk2O9qkA	xectim.c
 j5NdrTSBkS5pnfDyKD0Ezg	xp1known.c
 FAbm67iDBwtMlNOTy8jXHw	xp2known.c
-cXI1ujmU9j4ozl1TkOnR+w	xsum0.out
+lyVDXwxrNmTfig0HWa3DFw	xsum0.out
 
 -----BEGIN PGP SIGNATURE-----
 Version: 2.6.2
 
-iQCVAwUBUNqw4+FlxDEfrjtlAQEmQwP/eSceCijHpplBDXVatPzhp7JJgLCZFfej
-xlObaBQVC6hTIv7g5bJw09xC7e6g+bUI/SOI5rlDh+sHdFGgo5kTfW+HETn/9dBD
-a98RjN5vy+7AmzfcBxAOFifWEFVFxHYsQHMXDNan6H2Vb2jsEPXwjgWIMzm2eTvt
-/pWUMpZ1Ulk=
-=slIG
+iQCVAwUBUQom+uFlxDEfrjtlAQGkoAQAl918mtQ1oHOU3lx5yAHZW+atJk2Sqs7P
+90jhiY1d1Y7IHD4qY1Uqrtbl4Q5tinTyUN1opYTEV6YCY3blwtp2m3/b0X4n4MxK
+mIee1k0lMYTvZYCLcLKAcyNKVjA1hXGBjg34aHoSPo6vfBcLXFNRVGrneu0vdrea
+Ay712CU1iyw=
+=jBKB
 -----END PGP SIGNATURE-----

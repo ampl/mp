@@ -2114,3 +2114,8 @@ rounding precision to 53 bits, to remove a source of confusion.
 20121220
   dtoa.c, dtoa1.c: fix a possible one-time race when multiple
 threads are used for input involving Infinity or NaN.
+
+20130129
+  dtoa.c, dtoa1.c: fix an obscure memory leak in reading hexadecimal-
+format number (0x...).  This change does not affect any known solver
+interfaces.  See /netlib/fp/changes.

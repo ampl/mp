@@ -861,9 +861,9 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 			3 = both (default)";
 #endif /*}*/
 
- static char relax_desc[] = "whether to enforce integrality:\n\
-			0 = yes (default)\n\
-			1 = no: treat integer and binary variables\n\
+ static char relax_desc[] = "whether to relax integrality:\n\
+			0 = no (default)\n\
+			1 = yes: treat integer and binary variables\n\
 				as continuous";
 
  static char return_mipgap_desc[] =
@@ -964,8 +964,8 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 
  static char sos2_desc[] = "whether to tell GUROBI about SOS2 constraints for nonconvex\n\
 		piecewise-linear terms:\n\
-			1 = no\n\
-			2 = yes (default), using suffixes .sos and .sosref\n\
+			0 = no\n\
+			1 = yes (default), using suffixes .sos and .sosref\n\
 				provided by AMPL.";
 
  static char threads_desc[] = "maximum threads to use on MIP problems\n\
@@ -1321,7 +1321,7 @@ keywds[] = {	/* must be in alphabetical order */
 
  static Option_Info
 Oinfo = { "gurobi", verbuf, "gurobi_options", keywds, nkeywds, 0, verbuf,
-	   0,0,0,0,0, 20130109 };
+	   0,0,0,0,0, 20130206 };
 
  static void
 enamefailed(GRBenv *env, const char *what, const char *name)
@@ -2711,7 +2711,6 @@ main(int argc, char **argv)
 				warmstart = 0;
 				}
 		}
-	free(A);
 
 	if (!(env = GRBgetenv(mdl)))
 		failed(env0, "GRBgetenv");
@@ -2784,6 +2783,7 @@ main(int argc, char **argv)
 	if (basis & 1)
 		get_input_statuses(asl, env, mdl, &dims);
 #endif /*}}*/
+	free(A);
 	if (x && GRBsetdblattrarray(mdl, GRB_DBL_ATTR_START, 0, nv, x))
 		failed(env, "GRBsetdblattrarray(START)");
 	if (logfile) {
