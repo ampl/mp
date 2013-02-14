@@ -27,8 +27,8 @@
 #include "tests/config.h"
 #include "tests/function.h"
 #include "tests/odbc.h"
-#include "solvers/funcadd.h"
 #include "solvers/util/format.h"
+#include "solvers/funcadd.h"
 
 #ifdef _WIN32
 # include <process.h>
