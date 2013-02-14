@@ -53,7 +53,7 @@ TEST_F(ExcelTest, Read) {
   t = "S";
   handler_->Read("data/256-char-cell.xls", &t);
   EXPECT_EQ(1u, t.num_rows());
-  EXPECT_EQ(
+  EXPECT_STREQ(
       "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghij"
       "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghij"
       "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghij"

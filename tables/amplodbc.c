@@ -2081,7 +2081,9 @@ needprec(HInfo *h, DBColinfo *dbc, int col_index)
 						(SWORD)sizeof(sbuf), &length, 0))) {
 			return 0;
 		}
-		if (strcmp(sbuf, "varchar") == 0)
+		/* Excel ODBC driver return an empty name for columns with
+		   cells containing more than 255 characters. */
+		if (!*sbuf || strcmp(sbuf, "varchar") == 0)
 			i = 1;
 	} else if (!i) {
 		switch(sbuf[0]) {
