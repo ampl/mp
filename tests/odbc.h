@@ -26,6 +26,7 @@
 #ifdef _WIN32
 // sqltypes.h needs HWND on Windows.
 # include <windows.h>
+# undef max
 #endif
 
 #include <sqltypes.h>
