@@ -28,13 +28,11 @@
 #include "tests/function.h"
 #include "tests/odbc.h"
 #include "solvers/funcadd.h"
-
-#undef snprintf
+#include "solvers/util/format.h"
 
 #ifdef _WIN32
 # include <process.h>
 # define getpid _getpid
-# define snprintf _snprintf
 #else
 # include <sys/types.h>
 # include <unistd.h>
@@ -97,22 +95,17 @@ void MySQLTest::SetUp() {
   // and accessing the same database server.
   char hostname[BUFFER_SIZE] = "";
   SocketEnv().GetHostname(hostname, BUFFER_SIZE);
-  int pid = getpid();
-  char table_name[BUFFER_SIZE] = "";
   // The table name contains space to check quotation.
-  snprintf(table_name, BUFFER_SIZE, "%s %d", hostname, pid);
-  table_name_ = table_name;
+  table_name_ = str(fmt::Format("{} {}") << hostname << getpid());
 }
 
 void MySQLTest::TearDown() {
   // Drop the table.
   odbc::Connection con(env_);
   con.Connect(connection_.c_str());
-  char sql[BUFFER_SIZE];
-  snprintf(sql, BUFFER_SIZE, "DROP TABLE `%s`", table_name_.c_str());
   odbc::Statement stmt(con);
   try {
-    stmt.Execute(sql);
+    stmt.Execute(c_str(fmt::Format("DROP TABLE `{}`") << table_name_));
   } catch (const std::exception &) {}  // Ignore errors.
 }
 
@@ -263,11 +256,11 @@ TEST_F(MySQLTest, InvalidCharInTableName) {
   table_name_ += '\t';
   Table t(table_name_, 1);
   t = "c", "v";
-  char error[BUFFER_SIZE] = "";
-  snprintf(error, BUFFER_SIZE, "Table name contains invalid "
-    "character with code %d", '\t');
-  EXPECT_ERROR(handler_->Write(connection_, t), error);
-  EXPECT_ERROR(handler_->Read(connection_, &t), error);
+  std::string error = str(fmt::Format(
+      "Table name contains invalid character with code {}")
+      << static_cast<int>('\t'));
+  EXPECT_ERROR(handler_->Write(connection_, t), error.c_str());
+  EXPECT_ERROR(handler_->Read(connection_, &t), error.c_str());
 }
 
 TEST_F(MySQLTest, LowerCaseLettersInTableName) {
@@ -333,11 +326,11 @@ TEST_F(MySQLTest, InvalidCharsInColumnName) {
     char col_name[2] = {static_cast<char>(c)};
     Table t(table_name_, 1);
     t = col_name, "v";
-    char error[BUFFER_SIZE] = "";
-    snprintf(error, BUFFER_SIZE, "Column 1's name contains invalid "
-        "character with code %d", c);
-    EXPECT_ERROR(handler_->Write(connection_, t), error);
-    EXPECT_ERROR(handler_->Read(connection_, &t), error);
+    std::string error = str(fmt::Format(
+          "Column 1's name contains invalid character with code {}")
+          << static_cast<int>(c));
+    EXPECT_ERROR(handler_->Write(connection_, t), error.c_str());
+    EXPECT_ERROR(handler_->Read(connection_, &t), error.c_str());
   }
 }
 
