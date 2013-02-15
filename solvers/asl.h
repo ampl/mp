@@ -76,6 +76,9 @@ typedef Long ftnlen;
 #define Sizeof(x) sizeof(x)
 /* prior to 20110912, Sizeof(x) was (fint)sizeof(x) */
 
+ /* Place qsortv declaration ahead of funcadd.h in case Permit_AE_redefs is #defined. */
+ extern void qsortv(void*, size_t, size_t, int(*)(const void*,const void*,void*), void*);
+
 #ifndef FUNCADD_H_INCLUDED
 #ifndef Permit_AE_redefs
 #define No_AE_redefs
@@ -999,7 +1002,6 @@ enum ASL_writer_error_codes {
  extern void qp_opify_ASL(ASL*);
  extern int qp_read_ASL(ASL*, FILE*, int);
  extern fint qpcheck_ASL(ASL*, fint **rowqp, fint **colqp, real **delsqp);
- extern void qsortv(void*, size_t, size_t, int(*)(const void*,const void*,void*), void*);
  extern char *read_line(EdRead*);
  extern char *read_sol_ASL(ASL*, real**xp, real **yp);
  extern void report_where(ASL*);
