@@ -145,8 +145,8 @@ NfE/nd+ZeGE=
 -----END PGP SIGNATURE-----
 -----BEGIN PGP SIGNED MESSAGE-----
 
-# netlib-utk master Thu Jan 31 03:10:02 EST 2013
-Wjtg8vnDE9YVAoopJ9tXjg	00lastchange
+# netlib-utk master Fri Feb 15 03:10:02 EST 2013
+lhsaomZPHPzeHh6+DXbb4g	00lastchange
 liuYYMQudXHqZpEKRGHQSg	README
 qOEvOeNxr+tkYXE2CClZWw	README.SGI
 hP/T3OfgkqAwrLqbG8BqQw	README.f77
@@ -156,7 +156,7 @@ HdqA3IzapQAbY10JKtAWQQ	amplsolv.sy
 W/Hetls8127GluivncKZVw	arith.h0
 JLU7TMzPd3AjUmhDdgaGmQ	arith.ibm
 G6vjFVw1aR9lWi5Yl/OtiQ	arithchk.c
-NF4XEmz4YnKXVSKvXsC0bA	asl.h
+zG1dgBNoGQVB1m00Q86y4w	asl.h
 cWsQSHLhURv8mvXbE/g9DQ	asl_pfg.h
 p057f6BlUh9XCGR26M/IUA	asl_pfgh.h
 YrMB2JC+G6R+9rcfKaQ0Ag	asldate.c
@@ -167,7 +167,7 @@ TiTwOwAKkrb9rFuWZPf82A	avltree.h
 Lg714wh1GAnDfWqStFsPbQ	b_search.c
 JX+T6A1nVtQxlH2/gHjQ7w	basename.c
 B9aysZxnc2iCJEcny28lrA	bscanf.c
-ml8JwGpJzwprGMAYsBAbgg	changes
+CaxB0yLPHJornEb+yu0ImQ	changes
 iaV5+h9JhXta8i63eG8/QA	com2eval.c
 ViDtWeMTFSx1mxx/G621+Q	comeval.c
 f3BjU/9mf3+4mq1Q2h6CAw	comptry.bat
@@ -290,14 +290,14 @@ fKP4V5GxuMz8ZZhUUZbTxw	x2check.c
 iOcxB/spcU8eiXLk2O9qkA	xectim.c
 j5NdrTSBkS5pnfDyKD0Ezg	xp1known.c
 FAbm67iDBwtMlNOTy8jXHw	xp2known.c
-lyVDXwxrNmTfig0HWa3DFw	xsum0.out
+e7i1A4jYciUCNGR9QzoaDg	xsum0.out
 
 -----BEGIN PGP SIGNATURE-----
 Version: 2.6.2
 
-iQCVAwUBUQom+uFlxDEfrjtlAQGkoAQAl918mtQ1oHOU3lx5yAHZW+atJk2Sqs7P
-90jhiY1d1Y7IHD4qY1Uqrtbl4Q5tinTyUN1opYTEV6YCY3blwtp2m3/b0X4n4MxK
-mIee1k0lMYTvZYCLcLKAcyNKVjA1hXGBjg34aHoSPo6vfBcLXFNRVGrneu0vdrea
-Ay712CU1iyw=
-=jBKB
+iQCVAwUBUR3teOFlxDEfrjtlAQGSEgP+MxOPBpoEBpSWig8vN9xUF8P3eWuTAUV0
+n57rnVHCbJim3WtbNeYmfTWEmbp6LkHInZQ4Xr9Yu3zPCACOOiLcrDzuvFClpyoY
+idbaEIHgnp69vlZw+TNmMHo4PKhFG+LTgttLgnMkPkrWqEPl5mu/+5nlcuIY/+D7
+nTHZWqWatPQ=
+=VTOM
 -----END PGP SIGNATURE-----
