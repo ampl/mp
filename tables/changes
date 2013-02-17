@@ -108,3 +108,7 @@ _version; add reminder that $AMPLFUNC provides full pathnames.
   amplodbc.c: tweaks for 64-bit Linux systems that use unixODBC
 but with a 32-bit type for SQLLEN (rather than the 64-bit type
 that unixODBC specifies).
+
+20130214
+  amplodbc.c:  tweak to bypass a bug with long names in Microsoft's
+Excel ODBC driver -- thanks to Victor Zverovich.
