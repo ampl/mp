@@ -983,6 +983,10 @@ TEST_F(IlogCPTest, SolveNQueens0) {
   EXPECT_EQ(0, Solve(DATA_DIR "nqueens0").obj);
 }
 
+TEST_F(IlogCPTest, SolveOpenShop) {
+  EXPECT_EQ(1955, Solve(DATA_DIR "openshop", "optimizer=cplex").obj);
+}
+
 // Disabled because it's too difficult to solve.
 TEST_F(IlogCPTest, DISABLED_SolveParty1) {
   EXPECT_EQ(61, Solve(DATA_DIR "party1").obj);
@@ -991,6 +995,15 @@ TEST_F(IlogCPTest, DISABLED_SolveParty1) {
 // Disabled because it's too difficult to solve.
 TEST_F(IlogCPTest, DISABLED_SolveParty2) {
   EXPECT_EQ(3, Solve(DATA_DIR "party2").obj);
+}
+
+TEST_F(IlogCPTest, SolvePhoto9) {
+  EXPECT_EQ(10, Solve(DATA_DIR "photo9").obj);
+}
+
+// Disabled because it takes somewhat long (compared to other tests).
+TEST_F(IlogCPTest, DISABLED_SolvePhoto11) {
+  EXPECT_EQ(12, Solve(DATA_DIR "photo11").obj);
 }
 
 TEST_F(IlogCPTest, SolveSched0) {
