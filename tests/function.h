@@ -97,7 +97,7 @@ class Variant {
 
   void RequireType(Type t) const {
     if (type_ != t)
-      throw std::runtime_error("type_mismatch");
+      throw std::runtime_error("type mismatch");
   }
 
  public:
