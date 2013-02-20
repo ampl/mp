@@ -2821,3 +2821,39 @@ in which an inner indexing involves an outer dummy variable.
 	reset;
 	reset options;
 	# option ampl_libpath might now have been bogus
+
+20130218
+  Fix a bug in deducing reduced costs involving nonlinear if-then-else
+expressions whose "if" test has a "count" expression.  Such expressions
+are unlikely in practice, but here is an example:
+
+	var x := 3;
+	minimize f: if count(sin(x) > .1, cos(x)>.1, tan(x) < -.1) >= 2
+			then x^2 else x^3;
+	display x, f, x.rc;	# x.rc was wrong
+	let x := 3.1;
+	display x, f, x.rc;	# x.rc was accidentally right
+
+  Fix a bug with default expressions for scalar params:  if evaluation
+of the default expression failed, e.g., due to a missing value, the
+param subsequently appeared to have an unpredictable value.  This was
+only an issue in an interactive session, such as
+
+	ampl: param a;
+	ampl: param b default a + 1;
+	ampl: print b;
+	Error executing "print" command:
+	errror during evaluation of b:
+		no value for a
+	ampl: print b;
+	0	# a potentially random value
+
+  Add a complaint about integer variables declared with bounds that
+when rounded (up for the lower bound, down for the upper bound) to
+integer values are inconsistent.  Example:
+
+	var x integer >= 0.1, <= 0.9;
+	maximize obj: x;
+	solve; display x;
+	# Previously said "Solution determined by presolve;"
+	# now says "Infeasible constraints determined by presolve."

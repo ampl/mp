@@ -1,7 +1,11 @@
-20130207
-  Fix a bug with $ampl_libpath after a command sequence of the form
-
-	# nontrivial declarations and/or commands
-	reset;
-	reset options;
-	# option ampl_libpath might now have been bogus
+20130218
+  Fix a bug in deducing reduced costs involving nonlinear if-then-else
+expressions whose "if" test has a "count" expression.  Such expressions
+are unlikely in practice; /netlib/ampl/changes has an example.
+  Fix a bug with default expressions for scalar params:  if evaluation
+of the default expression failed, e.g., due to a missing value, the
+param subsequently appeared to have an unpredictable value.  This was
+only an issue in an interactive session.
+  Add a complaint about integer variables declared with bounds that
+when rounded (up for the lower bound, down for the upper bound) to
+integer values are inconsistent.
