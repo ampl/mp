@@ -984,7 +984,7 @@ TEST_F(IlogCPTest, SolveNQueens0) {
 }
 
 TEST_F(IlogCPTest, SolveOpenShop) {
-  EXPECT_EQ(1955, Solve(DATA_DIR "openshop", "optimizer=cplex").obj);
+  EXPECT_NEAR(1955, Solve(DATA_DIR "openshop", "optimizer=cplex").obj, 1e-5);
 }
 
 // Disabled because it's too difficult to solve.
