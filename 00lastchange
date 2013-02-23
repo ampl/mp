@@ -1,11 +1,9 @@
-20130218
-  Fix a bug in deducing reduced costs involving nonlinear if-then-else
-expressions whose "if" test has a "count" expression.  Such expressions
-are unlikely in practice; /netlib/ampl/changes has an example.
-  Fix a bug with default expressions for scalar params:  if evaluation
-of the default expression failed, e.g., due to a missing value, the
-param subsequently appeared to have an unpredictable value.  This was
-only an issue in an interactive session.
-  Add a complaint about integer variables declared with bounds that
-when rounded (up for the lower bound, down for the upper bound) to
-integer values are inconsistent.
+20130221
+  Fix a bug, leading to "unexpected type ... in lsimplify()", with <==>
+in logical constraints.
+  Fix bugs with logical expressions involving "not" (i.e., "!") and
+inequalities involving NaNs.
+  Similarly, in the (silly) model
+	var x; s.t. c: 1 < 2 ==> !(x > 4);
+render c as the logical constraint !(x > 4) rather than the arithmetic
+constraint x <= 4.
