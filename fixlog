@@ -9014,3 +9014,24 @@ integer values are inconsistent.  Example:
 	solve; display x;
 	# Previously said "Solution determined by presolve;"
 	# now says "Infeasible constraints determined by presolve."
+
+20130221
+  Fix a bug, leading to "unexpected type ... in lsimplify()", with <==>
+in logical constraints.  Example:
+
+	var x{1..2};
+	s.t. c: x[1] == 1 <==> x[2] == 2;
+
+  Fix bugs with logical expressions involving "not" (i.e., "!") and
+inequalities involving NaNs.  For example,
+
+	param p; data; param p := NaN;
+	print if !(p > 3) then "yes" else "no";
+	# incorrectly printed "no"
+
+  Similarly, in the (silly) model
+
+	var x; s.t. c: 1 < 2 ==> !(x > 4);
+
+render c as the logical constraint !(x > 4) rather than the arithmetic
+constraint x <= 4.
