@@ -2878,3 +2878,46 @@ inequalities involving NaNs.  For example,
 
 render c as the logical constraint !(x > 4) rather than the arithmetic
 constraint x <= 4.
+
+20130222
+  Fix a bug with multiple t-headers in data sections, leading to error
+message "irregular : ... : header".  Here is an example, previously
+rejected, of multiple t-headers for set and param data:
+
+	set ORIG; set DEST; set PROD;
+	set ROUTES within {ORIG,DEST,PROD};
+	param cost{ROUTES};
+
+	data;
+	set ROUTES
+		:  FRA   FRA   DET   DET   LAN   LAN   WIN
+		: bands coils bands coils bands coils bands :=
+	GARY	    -     -     -     -     -     +     -
+	CLEV	    +     +     +     +     +     +     -
+	PITT	    +     -     -     -     -     -     +
+
+		:  WIN   STL   STL   FRE   FRE   LAF   LAF
+		: coils bands coils bands coils bands coils :=
+	GARY	    -     -     +     -     -     -     +
+	CLEV	    +     +     +     -     -     +     -
+	PITT	    -     +     -     +     +     -     - ;
+
+	param cost:  FRA   DET	 LAN   WIN   STL   FRE	 LAF
+		  : bands bands bands bands bands bands bands :=
+	       CLEV   27     9	  12	 .    26     .	  17
+	       PITT   24     .	   .	13    28    99	   .
+
+		  :  FRA   DET	 LAN   WIN   STL   FRE	 LAF
+		  : coils coils coils coils coils coils coils :=
+	       GARY    .     .	  11	 .    16     .	   8
+	       CLEV   23     8	  10	 9    21     .	   .
+	       PITT    .     .	   .	 .     .    81	   . ;
+
+	set ORIG := GARY CLEV PITT ;
+	set DEST := FRA DET LAN WIN STL FRE LAF ;
+	set PROD := bands coils ;
+
+	display cost;
+
+Note that there is a mistake on line 4 of p. 476 of the AMPL book:
+the colon before the first "t-header" should be omitted.
