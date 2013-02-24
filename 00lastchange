@@ -1,9 +1,4 @@
-20130221
-  Fix a bug, leading to "unexpected type ... in lsimplify()", with <==>
-in logical constraints.
-  Fix bugs with logical expressions involving "not" (i.e., "!") and
-inequalities involving NaNs.
-  Similarly, in the (silly) model
-	var x; s.t. c: 1 < 2 ==> !(x > 4);
-render c as the logical constraint !(x > 4) rather than the arithmetic
-constraint x <= 4.
+20130222
+  Fix a bug with multiple t-headers in data sections, leading to error
+message "irregular : ... : header".  An example appears in
+/netlib/ampl/changes.
