@@ -118,6 +118,10 @@ set(CPLEX_INCLUDE_DIRS ${CPLEX_INCLUDE_DIR})
 set(CPLEX_LIBRARIES
   optimized ${CPLEX_LIBRARY} debug ${CPLEX_LIBRARY_DEBUG}
   ${CMAKE_THREAD_LIBS_INIT})
+check_library_exists(m floor "" HAVE_LIBM)
+if (HAVE_LIBM)
+  set(CPLEX_LIBRARIES ${CPLEX_LIBRARIES} m)
+endif ()
 
 # Handle the QUIETLY and REQUIRED arguments and set CPLEX_FOUND to TRUE
 # if all listed variables are TRUE.
