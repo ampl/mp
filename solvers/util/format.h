@@ -176,8 +176,12 @@ inline int SignBit(double value) {
 }
 
 inline int IsInf(double x) {
-  using namespace std;
+#ifdef isinf
   return isinf(x);
+#else
+  using namespace std;
+  return ::isinf(x);
+#endif
 }
 
 #else
@@ -480,6 +484,11 @@ class BasicWriter {
   }
   BasicWriter &operator<<(unsigned value) {
     return *this << IntFormatter<unsigned, TypeSpec<0> >(value, TypeSpec<0>());
+  }
+
+  BasicWriter &operator<<(double value) {
+    FormatDouble(value, FormatSpec(), -1);
+    return *this;
   }
 
   BasicWriter &operator<<(Char value) {
