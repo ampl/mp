@@ -25,16 +25,11 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// Disable useless MSVC warnings.
-#undef _CRT_SECURE_NO_WARNINGS
-#define _CRT_SECURE_NO_WARNINGS
-#undef _SCL_SECURE_NO_WARNINGS
-#define _SCL_SECURE_NO_WARNINGS
-
 #include <cctype>
 #include <cfloat>
 #include <climits>
 #include <cstring>
+#include <iomanip>
 #include <memory>
 #include <gtest/gtest.h>
 #include "solvers/util/format.h"
@@ -45,14 +40,12 @@ using std::size_t;
 using std::sprintf;
 
 using fmt::internal::Array;
-using fmt::BasicFormatter;
+using fmt::BasicWriter;
 using fmt::Formatter;
 using fmt::Format;
 using fmt::FormatError;
 using fmt::StringRef;
-using fmt::hex;
 using fmt::hexu;
-using fmt::oct;
 using fmt::pad;
 
 #define FORMAT_TEST_THROW_(statement, expected_exception, message, fail) \
@@ -863,7 +856,8 @@ class Date {
     return os;
   }
 
-  friend BasicFormatter &operator<<(BasicFormatter &f, const Date &d) {
+  template <typename Char>
+  friend BasicWriter<Char> &operator<<(BasicWriter<Char> &f, const Date &d) {
     return f << d.year_ << '-' << d.month_ << '-' << d.day_;
   }
 };
@@ -878,7 +872,8 @@ TEST(FormatterTest, FormatUsingIOStreams) {
 
 class Answer {};
 
-void Format(fmt::BasicFormatter &f, const fmt::FormatSpec &spec, Answer) {
+template <typename Char>
+void Format(BasicWriter<Char> &f, const fmt::FormatSpec &spec, Answer) {
   f.Write("42", spec);
 }
 
@@ -918,6 +913,9 @@ TEST(FormatterTest, FormatterAppend) {
 }
 
 TEST(FormatterTest, FormatterExamples) {
+  using fmt::hex;
+  EXPECT_EQ("0000cafe", str(BasicWriter<char>() << pad(hex(0xcafe), 8, '0')));
+
   std::string message = str(Format("The answer is {}") << 42);
   EXPECT_EQ("The answer is 42", message);
 
@@ -976,7 +974,7 @@ struct CountCalls {
 TEST(TempFormatterTest, Action) {
   int num_calls = 0;
   {
-    fmt::TempFormatter<CountCalls> af("test", CountCalls(num_calls));
+    fmt::TempFormatter<char, CountCalls> af("test", CountCalls(num_calls));
     EXPECT_EQ(0, num_calls);
   }
   EXPECT_EQ(1, num_calls);
@@ -985,9 +983,8 @@ TEST(TempFormatterTest, Action) {
 TEST(TempFormatterTest, ActionNotCalledOnError) {
   int num_calls = 0;
   {
-    EXPECT_THROW(
-        fmt::TempFormatter<CountCalls> af("{0", CountCalls(num_calls)),
-        FormatError);
+    typedef fmt::TempFormatter<char, CountCalls> TestFormatter;
+    EXPECT_THROW(TestFormatter af("{0", CountCalls(num_calls)), FormatError);
   }
   EXPECT_EQ(0, num_calls);
 }
@@ -999,8 +996,8 @@ TEST(TempFormatterTest, ActionNotCalledOnError) {
 TEST(TempFormatterTest, ArgLifetime) {
   // The following code is for testing purposes only. It is a definite abuse
   // of the API and shouldn't be used in real applications.
-  const fmt::TempFormatter<> &af = fmt::Format("{0}");
-  const_cast<fmt::TempFormatter<>&>(af) << std::string("test");
+  const fmt::TempFormatter<char> &af = fmt::Format("{0}");
+  const_cast<fmt::TempFormatter<char>&>(af) << std::string("test");
   // String object passed as an argument to TempFormatter has
   // been destroyed, but ArgInserter dtor hasn't been called yet.
   // But that's OK since the Arg's dtor takes care of this and
@@ -1019,8 +1016,8 @@ struct PrintError {
   }
 };
 
-fmt::TempFormatter<PrintError> ReportError(const char *format) {
-  return fmt::TempFormatter<PrintError>(format);
+fmt::TempFormatter<char, PrintError> ReportError(const char *format) {
+  return fmt::TempFormatter<char, PrintError>(format);
 }
 
 TEST(TempFormatterTest, Examples) {
@@ -1065,30 +1062,32 @@ TEST(TempFormatterTest, Examples) {
 }
 
 TEST(StrTest, oct) {
-  EXPECT_EQ("12", (BasicFormatter() << oct(static_cast<short>(012))).str());
-  EXPECT_EQ("12", (BasicFormatter() << oct(012)).str());
-  EXPECT_EQ("34", (BasicFormatter() << oct(034u)).str());
-  EXPECT_EQ("56", (BasicFormatter() << oct(056l)).str());
-  EXPECT_EQ("70", (BasicFormatter() << oct(070ul)).str());
+  using fmt::oct;
+  EXPECT_EQ("12", str(BasicWriter<char>() << oct(static_cast<short>(012))));
+  EXPECT_EQ("12", str(BasicWriter<char>() << oct(012)));
+  EXPECT_EQ("34", str(BasicWriter<char>() << oct(034u)));
+  EXPECT_EQ("56", str(BasicWriter<char>() << oct(056l)));
+  EXPECT_EQ("70", str(BasicWriter<char>() << oct(070ul)));
 }
 
 TEST(StrTest, hex) {
+  using fmt::hex;
   fmt::IntFormatter<int, fmt::TypeSpec<'x'> > (*phex)(int value) = hex;
   phex(42);
   // This shouldn't compile:
   //fmt::IntFormatter<short, fmt::TypeSpec<'x'> > (*phex2)(short value) = hex;
 
-  EXPECT_EQ("cafe", (BasicFormatter() << hex(0xcafe)).str());
-  EXPECT_EQ("babe", (BasicFormatter() << hex(0xbabeu)).str());
-  EXPECT_EQ("dead", (BasicFormatter() << hex(0xdeadl)).str());
-  EXPECT_EQ("beef", (BasicFormatter() << hex(0xbeeful)).str());
+  EXPECT_EQ("cafe", str(BasicWriter<char>() << hex(0xcafe)));
+  EXPECT_EQ("babe", str(BasicWriter<char>() << hex(0xbabeu)));
+  EXPECT_EQ("dead", str(BasicWriter<char>() << hex(0xdeadl)));
+  EXPECT_EQ("beef", str(BasicWriter<char>() << hex(0xbeeful)));
 }
 
 TEST(StrTest, hexu) {
-  EXPECT_EQ("CAFE", (BasicFormatter() << hexu(0xcafe)).str());
-  EXPECT_EQ("BABE", (BasicFormatter() << hexu(0xbabeu)).str());
-  EXPECT_EQ("DEAD", (BasicFormatter() << hexu(0xdeadl)).str());
-  EXPECT_EQ("BEEF", (BasicFormatter() << hexu(0xbeeful)).str());
+  EXPECT_EQ("CAFE", str(BasicWriter<char>() << hexu(0xcafe)));
+  EXPECT_EQ("BABE", str(BasicWriter<char>() << hexu(0xbabeu)));
+  EXPECT_EQ("DEAD", str(BasicWriter<char>() << hexu(0xdeadl)));
+  EXPECT_EQ("BEEF", str(BasicWriter<char>() << hexu(0xbeeful)));
 }
 
 class ISO8601DateFormatter {
@@ -1097,9 +1096,10 @@ class ISO8601DateFormatter {
 public:
   ISO8601DateFormatter(const Date &d) : date_(&d) {}
 
-  friend BasicFormatter &operator<<(
-      BasicFormatter &f, const ISO8601DateFormatter &d) {
-    return f << pad(d.date_->year(), 4, '0') << '-'
+  template <typename Char>
+  friend BasicWriter<Char> &operator<<(
+      BasicWriter<Char> &w, const ISO8601DateFormatter &d) {
+    return w << pad(d.date_->year(), 4, '0') << '-'
         << pad(d.date_->month(), 2, '0') << '-' << pad(d.date_->day(), 2, '0');
   }
 };
@@ -1107,17 +1107,18 @@ public:
 ISO8601DateFormatter iso8601(const Date &d) { return ISO8601DateFormatter(d); }
 
 TEST(StrTest, pad) {
-  EXPECT_EQ("    cafe", (BasicFormatter() << pad(hex(0xcafe), 8)).str());
-  EXPECT_EQ("    babe", (BasicFormatter() << pad(hex(0xbabeu), 8)).str());
-  EXPECT_EQ("    dead", (BasicFormatter() << pad(hex(0xdeadl), 8)).str());
-  EXPECT_EQ("    beef", (BasicFormatter() << pad(hex(0xbeeful), 8)).str());
+  using fmt::hex;
+  EXPECT_EQ("    cafe", str(BasicWriter<char>() << pad(hex(0xcafe), 8)));
+  EXPECT_EQ("    babe", str(BasicWriter<char>() << pad(hex(0xbabeu), 8)));
+  EXPECT_EQ("    dead", str(BasicWriter<char>() << pad(hex(0xdeadl), 8)));
+  EXPECT_EQ("    beef", str(BasicWriter<char>() << pad(hex(0xbeeful), 8)));
 
-  EXPECT_EQ("     11", (BasicFormatter() << pad(11, 7)).str());
-  EXPECT_EQ("     22", (BasicFormatter() << pad(22u, 7)).str());
-  EXPECT_EQ("     33", (BasicFormatter() << pad(33l, 7)).str());
-  EXPECT_EQ("     44", (BasicFormatter() << pad(44lu, 7)).str());
+  EXPECT_EQ("     11", str(BasicWriter<char>() << pad(11, 7)));
+  EXPECT_EQ("     22", str(BasicWriter<char>() << pad(22u, 7)));
+  EXPECT_EQ("     33", str(BasicWriter<char>() << pad(33l, 7)));
+  EXPECT_EQ("     44", str(BasicWriter<char>() << pad(44lu, 7)));
 
-  BasicFormatter f;
+  BasicWriter<char> f;
   f.Clear();
   f << pad(42, 5, '0');
   EXPECT_EQ("00042", f.str());
@@ -1127,6 +1128,17 @@ TEST(StrTest, pad) {
   f.Clear();
   f << iso8601(Date(2012, 1, 9));
   EXPECT_EQ("2012-01-09", f.str());
+}
+
+TEST(StrTest, NoConflictWithIOManip) {
+  using namespace std;
+  using namespace fmt;
+  EXPECT_EQ("cafe", str(BasicWriter<char>() << hex(0xcafe)));
+  EXPECT_EQ("12", str(BasicWriter<char>() << oct(012)));
+}
+
+TEST(StrTest, BasicWriterWChar) {
+  EXPECT_EQ(L"cafe", str(BasicWriter<wchar_t>() << fmt::hex(0xcafe)));
 }
 
 template <typename T>
