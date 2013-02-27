@@ -30,7 +30,6 @@
 #include <deque>
 #include <limits>
 #include <memory>
-#include <sstream>
 
 extern "C" {
 #include "solvers/getstub.h"
@@ -422,9 +421,9 @@ class OptionParser<const char*> {
 };
 }
 
-class Interruptable {
+class Interruptible {
  protected:
-  ~Interruptable() {}
+  ~Interruptible() {}
 
  public:
   virtual void Interrupt() = 0;
@@ -435,7 +434,7 @@ class Interruptable {
 // by interrupting its execution and returning the best solution found.
 // This can be done in two ways. The first one is to check the return value
 // of SignalHandler::stop() periodically. The second is to register an object
-// that implements the Interruptable interface. In both cases you should
+// that implements the Interruptible interface. In both cases you should
 // create a SignalHandler object before solving.
 class SignalHandler {
  private:
@@ -443,16 +442,16 @@ class SignalHandler {
   static const char *signal_message_ptr_;
   static unsigned signal_message_size_;
   static volatile std::sig_atomic_t stop_;
-  static Interruptable *interruptable_;
+  static Interruptible *interruptible_;
 
   static void HandleSigInt(int sig);
 
  public:
-  explicit SignalHandler(const BasicSolver &s, Interruptable *i = 0);
+  explicit SignalHandler(const BasicSolver &s, Interruptible *i = 0);
 
   ~SignalHandler() {
     stop_ = 1;
-    interruptable_ = 0;
+    interruptible_ = 0;
   }
 
   // Returns true if the execution should be stopped due to SIGINT.
@@ -835,4 +834,3 @@ class Solver : public BasicSolver {
 }
 
 #endif  // SOLVERS_UTIL_SOLVER_H_
-

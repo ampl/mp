@@ -253,16 +253,16 @@ void ProblemChanges::AddCon(const double *coefs, double lb, double ub) {
 std::string SignalHandler::signal_message_;
 const char *SignalHandler::signal_message_ptr_;
 unsigned SignalHandler::signal_message_size_;
-Interruptable *SignalHandler::interruptable_;
+Interruptible *SignalHandler::interruptible_;
 
 // Set stop_ to 1 initially to avoid accessing handler_ which may not be atomic.
 volatile std::sig_atomic_t SignalHandler::stop_ = 1;
 
-SignalHandler::SignalHandler(const BasicSolver &s, Interruptable *i) {
+SignalHandler::SignalHandler(const BasicSolver &s, Interruptible *i) {
   signal_message_ = str(fmt::Format("\n<BREAK> ({})\n") << s.name());
   signal_message_ptr_ = signal_message_.c_str();
   signal_message_size_ = static_cast<unsigned>(signal_message_.size());
-  interruptable_ = i;
+  interruptible_ = i;
   stop_ = 0;
   std::signal(SIGINT, HandleSigInt);
 }
@@ -281,8 +281,8 @@ void SignalHandler::HandleSigInt(int sig) {
     _exit(1);
   }
   stop_ = 1;
-  if (interruptable_)
-    interruptable_->Interrupt();
+  if (interruptible_)
+    interruptible_->Interrupt();
   // Restore the handler since it might have been reset before the handler
   // is called (this is implementation defined).
   std::signal(sig, HandleSigInt);
