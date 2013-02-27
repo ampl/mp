@@ -152,14 +152,14 @@ fmt::Writer &operator<<(fmt::Writer &w, const Problem &p) {
   for (int i = 0, n = p.num_cons(); i < n; ++i) {
     w << "s.t. c" << (i + 1) << ": ";
     double lb = p.con_lb(i), ub = p.con_ub(i);
-    if (lb != ub && !isinf(lb) && !isinf(ub))
+    if (lb != ub && lb != -Infinity && ub != Infinity)
       w << lb << " <= ";
     WriteExpr(w, p.GetLinearConExpr(i));
     if (lb == ub)
       w << " = " << lb;
-    else if (!isinf(ub))
+    else if (ub != Infinity)
       w << " <= " << ub;
-    else if (!isinf(lb))
+    else if (lb != -Infinity)
       w << " >= " << lb;
     w << ";\n";
   }
