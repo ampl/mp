@@ -80,7 +80,7 @@ class CPLEXOptimizer : public Optimizer {
   IloAlgorithm algorithm() const { return cplex_; }
 
   double GetSolution(Problem &p, fmt::Formatter &format_message,
-      std::vector<double> &primal, std::vector<double> &dual) const;
+      std::vector<double> &values, std::vector<double> &dual_values) const;
 
   void Interrupt() { aborter_.abort(); }
 
@@ -102,7 +102,7 @@ class CPOptimizer : public Optimizer {
   IloAlgorithm algorithm() const { return solver_; }
 
   double GetSolution(Problem &p, fmt::Formatter &format_message,
-      std::vector<double> &primal, std::vector<double> &dual) const;
+      std::vector<double> &values, std::vector<double> &dual_values) const;
 
   void Interrupt() { solver_.abortSearch(); }
 

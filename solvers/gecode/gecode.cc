@@ -88,8 +88,8 @@ Gecode::Space *GecodeProblem::copy(bool share) {
   return new GecodeProblem(share, *this);
 }
 
-void GecodeProblem::SetObj(Problem::ObjType obj_type, const LinExpr &expr) {
-  obj_irt_ = obj_type == Problem::MAX ? Gecode::IRT_GR : Gecode::IRT_LE;
+void GecodeProblem::SetObj(ObjType obj_type, const LinExpr &expr) {
+  obj_irt_ = obj_type == MAX ? Gecode::IRT_GR : Gecode::IRT_LE;
   obj_ = Gecode::expr(*this, expr);
 }
 
@@ -166,14 +166,14 @@ void NLToGecodeConverter::Convert(const Problem &p) {
 
   IntVarArray &vars = problem_.vars();
   for (int j = 0, n = p.num_vars(); j < n; ++j) {
-    double lb = p.GetVarLB(j), ub = p.GetVarUB(j);
+    double lb = p.var_lb(j), ub = p.var_ub(j);
     vars[j] = IntVar(problem_,
         lb <= negInfinity ? Gecode::Int::Limits::min : CastToInt(lb),
         ub >= Infinity ? Gecode::Int::Limits::max : CastToInt(ub));
   }
 
   if (p.num_objs() != 0) {
-    problem_.SetObj(p.GetObjType(0),
+    problem_.SetObj(p.obj_type(0),
         ConvertExpr(p.GetLinearObjExpr(0), p.GetNonlinearObjExpr(0)));
   }
 
@@ -181,7 +181,7 @@ void NLToGecodeConverter::Convert(const Problem &p) {
   for (int i = 0, n = p.num_cons(); i < n; ++i) {
     LinExpr con_expr(
         ConvertExpr(p.GetLinearConExpr(i), p.GetNonlinearConExpr(i)));
-    double lb = p.GetConLB(i), ub = p.GetConUB(i);
+    double lb = p.con_lb(i), ub = p.con_ub(i);
     if (lb <= negInfinity) {
       rel(problem_, con_expr <= CastToInt(ub));
       continue;
@@ -498,13 +498,13 @@ int GecodeSolver::Run(char **argv) {
   }
   problem.set_solve_code(solve_code);
 
-  std::vector<real> primal;
+  std::vector<double> final_solution;
   if (solution.get()) {
     IntVarArray &vars = solution->vars();
     int num_vars = problem.num_vars();
-    primal.resize(num_vars);
+    final_solution.resize(num_vars);
     for (int j = 0; j < num_vars; ++j)
-      primal[j] = vars[j].val();
+      final_solution[j] = vars[j].val();
   }
 
   fmt::Formatter format;
@@ -512,7 +512,8 @@ int GecodeSolver::Run(char **argv) {
   format("{} nodes, {} fails") << stats.node << stats.fail;
   if (has_obj && solution.get())
     format(", objective {}") << ObjPrec(obj_val);
-  HandleSolution(format.c_str(), primal.empty() ? 0 : &primal[0], 0, obj_val);
+  HandleSolution(format.c_str(),
+      final_solution.empty() ? 0 : &final_solution[0], 0, obj_val);
   return 0;
 }
 }
