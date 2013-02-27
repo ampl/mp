@@ -179,8 +179,7 @@ inline int IsInf(double x) {
 #ifdef isinf
   return isinf(x);
 #else
-  using namespace std;
-  return ::isinf(x);
+  return std::isinf(x);
 #endif
 }
 
@@ -825,10 +824,10 @@ typedef BasicWriter<wchar_t> WWriter;
 
 // The default formatting function.
 template <typename Char, typename T>
-void Format(BasicWriter<Char> &f, const FormatSpec &spec, const T &value) {
+void Format(BasicWriter<Char> &w, const FormatSpec &spec, const T &value) {
   std::basic_ostringstream<Char> os;
   os << value;
-  f.Write(os.str(), spec);
+  w.Write(os.str(), spec);
 }
 
 namespace internal {
