@@ -21,5 +21,5 @@
  */
 
 #include "format.cc"
-#include "expr.cc"
 #include "solver.cc"
+#include "expr.cc"
