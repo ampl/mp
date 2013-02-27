@@ -40,7 +40,7 @@
 
 namespace ampl {
 
-class Optimizer : public Interruptable {
+class Optimizer : public Interruptible {
  private:
   IloObjective obj_;
   IloNumVarArray vars_;
