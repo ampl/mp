@@ -142,9 +142,12 @@ if (HAVE_CBC)
   add_subdirectory(cbc)
 endif ()
 
+add_subdirectory(cplex)
+
 if (HAVE_GECODE)
   add_subdirectory(gecode)
 endif ()
 
 add_subdirectory(ilogcp)
+add_subdirectory(ssdsolver)
 add_subdirectory(util)
