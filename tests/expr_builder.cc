@@ -71,9 +71,9 @@ PiecewiseLinearTerm ExprBuilder::AddPLTerm(
   expr e = {reinterpret_cast<efunc*>(OPPLTERM), 0, 0, {0}, {0}, 0};
   PiecewiseLinearTerm pl(AddExpr<PiecewiseLinearTerm>(new expr(e)));
   pl.expr_->L.p = static_cast<plterm*>(
-      std::calloc(1, sizeof(plterm) + sizeof(real) * (size - 1)));
+      std::calloc(1, sizeof(plterm) + sizeof(double) * (size - 1)));
   pl.expr_->L.p->n = (size + 1) / 2;
-  real *bs = pl.expr_->L.p->bs;
+  double *bs = pl.expr_->L.p->bs;
   for (int i = 0; i < size; i++)
     bs[i] = args[i];
   pl.expr_->R.e = AddVar(var_index).expr_;

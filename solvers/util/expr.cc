@@ -69,7 +69,7 @@ std::size_t std::hash<ampl::Expr>::operator()(Expr expr) const {
 
     case OPTYPE_PLTERM: {
       plterm *p = e->L.p;
-      real *pce = p->bs;
+      double *pce = p->bs;
       for (int i = 0, n = p->n * 2 - 1; i < n; i++)
         ampl::HashCombine(hash, pce[i]);
       HashCombine(hash, Expr(e->R.e));
@@ -196,7 +196,7 @@ const Expr::Kind Expr::KINDS[N_OPS] = {
     Expr::BINARY,  // OP1POW
     Expr::UNARY,  // f_OP2POW
     Expr::BINARY,  // f_OPCPOW
-    Expr::UNKNOWN,  // OPFUNCALL - not supported yet
+    Expr::CALL,  // OPFUNCALL
     Expr::CONSTANT,  // OPNUM
     Expr::UNKNOWN,  // OPHOL - not supported yet
     Expr::VARIABLE  // OPVARVAL
@@ -317,7 +317,7 @@ bool Equal(Expr expr1, Expr expr2) {
       plterm *p1 = e1->L.p, *p2 = e2->L.p;
       if (p1->n != p2->n)
         return false;
-      real *pce1 = p1->bs, *pce2 = p2->bs;
+      double *pce1 = p1->bs, *pce2 = p2->bs;
       for (int i = 0, n = p1->n * 2 - 1; i < n; i++) {
         if (pce1[i] != pce2[i])
           return false;

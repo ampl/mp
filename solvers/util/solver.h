@@ -25,6 +25,9 @@
 
 #include <csignal>
 #include <cstring>
+
+#include <algorithm>
+#include <deque>
 #include <limits>
 #include <memory>
 #include <sstream>
@@ -113,14 +116,81 @@ class LinearExpr : public std::iterator<std::forward_iterator_tag, Term> {
 typedef LinearExpr<LinearObjTerm> LinearObjExpr;
 typedef LinearExpr<LinearConTerm> LinearConExpr;
 
-// An AMPL problem.
-class Problem {
+// An objective type.
+enum ObjType { MIN = 0, MAX = 1 };
+
+class Noncopyable {
+ private:
+  // Do not implement!
+  Noncopyable(const Noncopyable &);
+  void operator=(const Noncopyable &);
+
+ public:
+  Noncopyable() {}
+};
+
+// A solution of an optimization problem.
+class Solution : Noncopyable {
+ private:
+  int solve_code_;
+  double *values_;
+  double *dual_values_;
+
+ public:
+  enum Status {
+    UNKNOWN,
+    SOLVED,
+    SOLVED_MAYBE,
+    INFEASIBLE,
+    UNBOUNDED,
+    LIMIT,
+    FAILURE
+  };
+
+  Solution() : solve_code_(-1), values_(0), dual_values_(0) {}
+
+  ~Solution() {
+    free(values_);
+    free(dual_values_);
+  }
+
+  void Swap(Solution &other) {
+    std::swap(solve_code_, other.solve_code_);
+    std::swap(values_, other.values_);
+    std::swap(dual_values_, other.dual_values_);
+  }
+
+  // Returns the solution status.
+  Status status() const {
+    return solve_code_ < 0 || solve_code_ >= 600 ?
+        UNKNOWN : static_cast<Status>(solve_code_ / 100 + 1);
+  }
+
+  // Returns the solve code.
+  int solve_code() const { return solve_code_; }
+
+  // Returns the values of all variables.
+  const double *values() const { return values_; }
+
+  // Returns the values of all dual variables.
+  const double *dual_values() const { return dual_values_; }
+
+  // Returns the value of a variable.
+  double value(int var) const { return values_[var]; }
+
+  // Returns the value of a dual variable corresponding to constraint con.
+  double dual_value(int con) const { return dual_values_[con]; }
+
+  // Reads a solution from the file <stub>.sol.
+  void Read(const char *stub, int num_vars, int num_cons);
+};
+
+class ProblemChanges;
+
+// An optimization problem.
+class Problem : Noncopyable {
  private:
   ASL_fg *asl_;
-
-  // Do not implement.
-  Problem(const Problem&);
-  Problem& operator=(const Problem&);
 
   friend class BasicSolver;
 
@@ -157,34 +227,44 @@ class Problem {
   // Returns the number of logical constraints.
   int num_logical_cons() const { return asl_->i.n_lcon_; }
 
+  // Returns the lower bounds for the variables.
+  const double *var_lb() const { return asl_->i.LUv_; }
+
   // Returns the lower bound for the variable.
-  double GetVarLB(int var_index) const {
+  double var_lb(int var_index) const {
     assert(var_index >= 0 && var_index < num_vars());
     return asl_->i.LUv_[var_index];
   }
 
+  // Returns the upper bounds for the variables.
+  const double *var_ub() const { return asl_->i.Uvx_; }
+
   // Returns the upper bound for the variable.
-  double GetVarUB(int var_index) const {
+  double var_ub(int var_index) const {
     assert(var_index >= 0 && var_index < num_vars());
     return asl_->i.Uvx_[var_index];
   }
 
+  // Returns the lower bounds for the constraints.
+  const double *con_lb() const { return asl_->i.LUrhs_; }
+
   // Returns the lower bound for the constraint.
-  double GetConLB(int con_index) const {
+  double con_lb(int con_index) const {
     assert(con_index >= 0 && con_index < num_cons());
     return asl_->i.LUrhs_[con_index];
   }
 
+  // Returns the upper bounds for the constraints.
+  const double *con_ub() const { return asl_->i.Urhsx_; }
+
   // Returns the upper bound for the constraint.
-  double GetConUB(int con_index) const {
+  double con_ub(int con_index) const {
     assert(con_index >= 0 && con_index < num_cons());
     return asl_->i.Urhsx_[con_index];
   }
 
-  enum ObjType { MIN = 0, MAX = 1 };
-
   // Returns the objective type.
-  ObjType GetObjType(int obj_index) const {
+  ObjType obj_type(int obj_index) const {
     assert(obj_index >= 0 && obj_index < num_objs());
     return static_cast<ObjType>(asl_->i.objtype_[obj_index]);
   }
@@ -226,7 +306,16 @@ class Problem {
   void set_solve_code(int value) {
     asl_->p.solve_code_ = value;
   }
+
+  // Flags for Solve.
+  enum { IGNORE_FUNCTIONS = 1 };
+
+  // Solves the problem.
+  void Solve(Solution &sol, ProblemChanges *pc = 0, unsigned flags = 0);
 };
+
+// Writes a problem in the AMPL format.
+fmt::Writer &operator<<(fmt::Writer &w, const Problem &p);
 
 // Formats a double with objective precision.
 // Usage: fmt::Format("{}") << ObjPrec(42.0);
@@ -237,12 +326,54 @@ class ObjPrec {
  public:
   explicit ObjPrec(double value) : value_(value) {}
 
-  friend void Format(
-      fmt::BasicFormatter &f, const fmt::FormatSpec &spec, ObjPrec op) {
+  friend void Format(fmt::Writer &w, const fmt::FormatSpec &spec, ObjPrec op) {
     char buffer[32];
     g_fmtop(buffer, op.value_);
-    f.Write(buffer, spec);
+    w.Write(buffer, spec);
   }
+};
+
+// Changes (additions) to an optimization problem.
+class ProblemChanges {
+ private:
+  const Problem *problem_;
+  std::vector<double> var_lb_;
+  std::vector<double> var_ub_;
+  std::vector<double> con_lb_;
+  std::vector<double> con_ub_;
+  std::deque<ograd> con_terms_;
+  std::deque<ograd> obj_terms_;
+  std::vector<ograd*> cons_;
+  std::vector<ograd*> objs_;
+  std::vector<char> obj_types_;
+  NewVCO vco_;
+
+  friend class Problem;
+
+  NewVCO *vco();
+
+ public:
+  explicit ProblemChanges(const Problem &p) : problem_(&p), vco_() {}
+
+  // Returns the number of additional variables.
+  int num_vars() const { return var_lb_.size(); }
+
+  // Returns the number of additional constraints.
+  int num_cons() const { return cons_.size(); }
+
+  // Adds a variable.
+  int AddVar(double lb, double ub) {
+    var_lb_.push_back(lb);
+    var_ub_.push_back(ub);
+    return problem_->num_vars() + var_lb_.size() - 1;
+  }
+
+  // Adds an objective.
+  void AddObj(ObjType type,
+      unsigned size, const double *coefs, const int *vars);
+
+  // Adds a constraint.
+  void AddCon(const double *coefs, double lb, double ub);
 };
 
 class BasicSolver;
@@ -263,7 +394,7 @@ class SolutionHandler {
 
  public:
   virtual void HandleSolution(BasicSolver &s, fmt::StringRef message,
-      const double *primal, const double *dual, double obj_value) = 0;
+      const double *values, const double *dual_values, double obj_value) = 0;
 };
 
 namespace internal {
@@ -356,10 +487,10 @@ class BasicSolver
   }
 
   void HandleSolution(BasicSolver &, fmt::StringRef message,
-        const double *primal, const double *dual, double) {
+        const double *values, const double *dual_values, double) {
     write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_),
-        const_cast<char*>(message.c_str()), const_cast<double*>(primal),
-        const_cast<double*>(dual), this);
+        const_cast<char*>(message.c_str()), const_cast<double*>(values),
+        const_cast<double*>(dual_values), this);
   }
 
   class ErrorReporter {
@@ -482,16 +613,16 @@ class BasicSolver
 
   // Passes a solution to the solution handler.
   void HandleSolution(fmt::StringRef message,
-      const double *primal, const double *dual,
+      const double *values, const double *dual_values,
       double obj_value = std::numeric_limits<double>::quiet_NaN()) {
-    sol_handler_->HandleSolution(*this, message, primal, dual, obj_value);
+    sol_handler_->HandleSolution(*this, message, values, dual_values, obj_value);
   }
 
   // Reports an error printing the formatted error message to stderr.
   // Usage: ReportError("File not found: {}") << filename;
-  fmt::TempFormatter<ErrorReporter> ReportError(fmt::StringRef format) {
+  fmt::TempFormatter<char, ErrorReporter> ReportError(fmt::StringRef format) {
     has_errors_ = true;
-    return fmt::TempFormatter<ErrorReporter>(
+    return fmt::TempFormatter<char, ErrorReporter>(
         format.c_str(), ErrorReporter(error_handler_));
   }
 };

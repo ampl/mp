@@ -99,19 +99,19 @@ Optimizer::Optimizer(IloEnv env, const Problem &p) :
 Optimizer::~Optimizer() {}
 
 double CPLEXOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
-    vector<double> &primal, vector<double> &dual) const {
+    vector<double> &values, vector<double> &dual_values) const {
   IloNum obj_value = cplex_.getObjValue();
-  primal.resize(p.num_vars());
+  values.resize(p.num_vars());
   IloNumVarArray vars = Optimizer::vars();
   for (int j = 0, n = p.num_vars(); j < n; ++j)
-    primal[j] = cplex_.getValue(vars[j]);
+    values[j] = cplex_.getValue(vars[j]);
   if (cplex_.isMIP()) {
     format_message("{} nodes, ") << cplex_.getNnodes();
   } else {
-    dual.resize(p.num_cons());
+    dual_values.resize(p.num_cons());
     IloRangeArray cons = Optimizer::cons();
     for (int i = 0, n = p.num_cons(); i < n; ++i)
-      dual[i] = cplex_.getDual(cons[i]);
+      dual_values[i] = cplex_.getDual(cons[i]);
   }
   format_message("{} iterations, objective {}")
     << cplex_.getNiterations() << ObjPrec(obj_value);
@@ -119,7 +119,7 @@ double CPLEXOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
 }
 
 double CPOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
-    vector<double> &primal, vector<double> &) const {
+    vector<double> &values, vector<double> &) const {
   format_message("{} choice points, {} fails")
       << solver_.getInfo(IloCP::NumberOfChoicePoints)
       << solver_.getInfo(IloCP::NumberOfFails);
@@ -128,10 +128,10 @@ double CPOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
     obj_value = solver_.getValue(obj());
     format_message(", objective {}") << ObjPrec(obj_value);
   }
-  primal.resize(p.num_vars());
+  values.resize(p.num_vars());
   IloNumVarArray vars = Optimizer::vars();
   for (int j = 0, n = p.num_vars(); j < n; ++j)
-    primal[j] = solver_.getValue(vars[j]);
+    values[j] = solver_.getValue(vars[j]);
   return obj_value;
 }
 
@@ -646,11 +646,11 @@ int IlogCPSolver::Run(char **argv) {
   }
   for (int j = 0; j < n_var_cont; j++) {
     vars_[j] = IloNumVar(env_,
-        problem.GetVarLB(j), problem.GetVarUB(j), ILOFLOAT);
+        problem.var_lb(j), problem.var_ub(j), ILOFLOAT);
   }
   for (int j = n_var_cont; j < problem.num_vars(); j++) {
     vars_[j] = IloNumVar(env_,
-        problem.GetVarLB(j), problem.GetVarUB(j), ILOINT);
+        problem.var_lb(j), problem.var_ub(j), ILOINT);
   }
 
   if (problem.num_objs() > 0) {
@@ -665,7 +665,7 @@ int IlogCPSolver::Run(char **argv) {
       ilo_expr += i->coef() * vars_[i->var_index()];
     }
     IloObjective MinOrMax(env_, ilo_expr,
-        problem.GetObjType(0) == Problem::MIN ?
+        problem.obj_type(0) == MIN ?
         IloObjective::Minimize : IloObjective::Maximize);
     optimizer_->set_obj(MinOrMax);
     IloAdd(mod_, MinOrMax);
@@ -682,7 +682,7 @@ int IlogCPSolver::Run(char **argv) {
       }
       if (i < problem.num_nonlinear_cons())
         conExpr += Visit(problem.GetNonlinearConExpr(i));
-      cons[i] = (problem.GetConLB(i) <= conExpr <= problem.GetConUB(i));
+      cons[i] = (problem.con_lb(i) <= conExpr <= problem.con_ub(i));
     }
     mod_.add(cons);
   }
@@ -756,12 +756,14 @@ int IlogCPSolver::Run(char **argv) {
 
   fmt::Formatter format_message;
   format_message("{}: {}\n") << long_name() << status;
-  vector<real> primal, dual;
+  vector<double> solution, dual_solution;
   double obj_value = std::numeric_limits<double>::quiet_NaN();
-  if (successful)
-    obj_value = optimizer_->GetSolution(problem, format_message, primal, dual);
-  HandleSolution(format_message.c_str(), primal.empty() ? 0 : &primal[0],
-      dual.empty() ? 0 : &dual[0], obj_value);
+  if (successful) {
+    obj_value = optimizer_->GetSolution(
+        problem, format_message, solution, dual_solution);
+  }
+  HandleSolution(format_message.c_str(), solution.empty() ? 0 : &solution[0],
+      dual_solution.empty() ? 0 : &dual_solution[0], obj_value);
 
   if (timing) {
     Times[4] = xectim_();

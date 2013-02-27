@@ -38,11 +38,37 @@
 #include "solvers/getstub.h"
 
 namespace {
+
 struct KeywordNameLess {
   bool operator()(const keyword &lhs, const keyword &rhs) const {
     return std::strcmp(lhs.name, rhs.name) < 0;
   }
 };
+
+// Writes a linear term.
+void WriteTerm(fmt::Writer &w, double coef, unsigned var) {
+  if (coef != 1)
+    w << coef << " * ";
+  w << "x" << (var + 1);
+}
+
+template <typename LinearExpr>
+void WriteExpr(fmt::Writer &w, LinearExpr expr) {
+  bool has_terms = false;
+  typedef typename LinearExpr::iterator Iterator;
+  for (Iterator i = expr.begin(), e = expr.end(); i != e; ++i) {
+    double coef = i->coef();
+    if (coef != 0) {
+      if (has_terms)
+        w << " + ";
+      else
+        has_terms = true;
+      WriteTerm(w, coef, i->var_index());
+    }
+  }
+  if (!has_terms)
+    w << "0";
+}
 }
 
 namespace ampl {
@@ -76,10 +102,152 @@ const char* OptionParser<const char*>::operator()(
 }
 }
 
+void Solution::Read(const char *stub, int num_vars, int num_cons) {
+  // Allocate filename large enough to hold stub, ".nl" and terminating zero.
+  std::size_t stub_len = std::strlen(stub);
+  std::vector<char> filename(stub_len + 4);
+  std::strcpy(&filename[0], stub);
+  ASL asl = {};
+  asl.i.n_var_ = num_vars;
+  asl.i.n_con_ = num_cons;
+  asl.i.ASLtype = 1;
+  asl.i.filename_ = &filename[0];
+  asl.i.stub_end_ = asl.i.filename_ + stub_len;
+  Solution sol;
+  char *message = read_sol_ASL(&asl, &sol.values_, &sol.dual_values_);
+  if (!message)
+    throw Error("Error reading solution file");
+  free(message);
+  Swap(sol);
+  solve_code_ = asl.p.solve_code_;
+}
+
 Problem::Problem() : asl_(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))) {}
 
 Problem::~Problem() {
   ASL_free(reinterpret_cast<ASL**>(&asl_));
+}
+
+fmt::Writer &operator<<(fmt::Writer &w, const Problem &p) {
+  // Write variables.
+  int num_vars = p.num_vars();
+  for (int i = 0; i < num_vars; ++i) {
+    w << "var x" << (i + 1);
+    double lb = p.var_lb(i), ub = p.var_ub(i);
+    if (!isinf(lb))
+      w << " >= " << lb;
+    if (!isinf(ub))
+      w << " <= " << ub;
+    w << ";\n";
+  }
+
+  // Write objectives.
+  for (int i = 0, n = p.num_objs(); i < n; ++i) {
+    w << (p.obj_type(i) == MIN ? "minimize" : "maximize") << " o: ";
+    WriteExpr(w, p.GetLinearObjExpr(i));
+    w << ";\n";
+  }
+
+  // Write constraints.
+  for (int i = 0, n = p.num_cons(); i < n; ++i) {
+    w << "s.t. c" << (i + 1) << ": ";
+    double lb = p.con_lb(i), ub = p.con_ub(i);
+    if (lb != ub && !isinf(lb) && !isinf(ub))
+      w << lb << " <= ";
+    WriteExpr(w, p.GetLinearConExpr(i));
+    if (lb == ub)
+      w << " = " << lb;
+    else if (!isinf(ub))
+      w << " <= " << ub;
+    else if (!isinf(lb))
+      w << " >= " << lb;
+    w << ";\n";
+  }
+  return w;
+}
+
+// Temporary file manager.
+class TempFiles : Noncopyable {
+ private:
+  char *name_;
+
+ public:
+  explicit TempFiles(const AmplExports *ae) : name_(ae->Tempnam(0, 0)) {}
+  ~TempFiles() {
+    std::remove(c_str(fmt::Format("{}.nl") << name_));
+    std::remove(c_str(fmt::Format("{}.sol") << name_));
+    free(name_);
+  }
+
+  const char *stub() const { return name_; }
+};
+
+void Problem::Solve(Solution &sol, ProblemChanges *pc, unsigned flags) {
+  TempFiles temp(asl_->i.ae);
+
+  // Write an .nl file.
+  int nfunc = asl_->i.nfunc_;
+  if ((flags & IGNORE_FUNCTIONS) != 0)
+    asl_->i.nfunc_ = 0;
+  int result = fg_write_ASL(reinterpret_cast<ASL*>(asl_),
+      temp.stub(), pc ? pc->vco() : 0, ASL_write_ASCII);
+  asl_->i.nfunc_ = nfunc;
+  if (result)
+    throw Error("Error writing .nl file");
+
+  // Run the solver and read the solution file.
+  std::system(c_str(fmt::Format("cplex {} -AMPL") << temp.stub()));
+  sol.Read(temp.stub(), num_vars() + (pc ? pc->num_vars() : 0),
+      num_cons() + (pc ? pc->num_cons() : 0));
+}
+
+NewVCO *ProblemChanges::vco() {
+  vco_.nnv = var_lb_.size();
+  vco_.nnc = cons_.size();
+  vco_.nno = objs_.size();
+  vco_.LUnv = &var_lb_[0];
+  vco_.Unv = &var_ub_[0];
+  vco_.LUnc = &con_lb_[0];
+  vco_.Unc = &con_ub_[0];
+  vco_.newc = &cons_[0];
+  vco_.newo = &objs_[0];
+  vco_.ot = &obj_types_[0];
+  return &vco_;
+}
+
+void ProblemChanges::AddObj(
+    ObjType type, unsigned size, const double *coefs, const int *vars) {
+  unsigned start = obj_terms_.size();
+  obj_terms_.resize(start + size);
+  ograd dummy;
+  ograd *prev = &dummy;
+  for (unsigned i = 0; i < size; ++i) {
+    ograd &term = obj_terms_[start + i];
+    term.coef = coefs[i];
+    term.varno = vars[i];
+    prev->next = &term;
+    prev = &term;
+  }
+  objs_.push_back(&obj_terms_[start]);
+  obj_types_.push_back(type);
+}
+
+void ProblemChanges::AddCon(const double *coefs, double lb, double ub) {
+  con_lb_.push_back(lb);
+  con_ub_.push_back(ub);
+  unsigned start = con_terms_.size();
+  unsigned num_vars = problem_->num_vars() + var_lb_.size();
+  con_terms_.resize(start + num_vars);
+  ograd dummy;
+  ograd *prev = &dummy;
+  for (unsigned i = 0; i < num_vars; ++i) {
+    ograd &term = con_terms_[start + i];
+    term.coef = coefs[i];
+    term.varno = i;
+    prev->next = &term;
+    prev = &term;
+  }
+  cons_.push_back(&con_terms_[start]);
 }
 
 std::string SignalHandler::signal_message_;
@@ -236,9 +404,9 @@ bool BasicSolver::ReadProblem(char **&argv) {
   }
   FILE *nl = jac0dim_ASL(asl, stub, static_cast<ftnlen>(std::strlen(stub)));
   aslfg->i.Uvx_ =
-      static_cast<real*>(Malloc(problem_.num_vars() * sizeof(real)));
+      static_cast<double*>(Malloc(problem_.num_vars() * sizeof(double)));
   aslfg->i.Urhsx_ =
-      static_cast<real*>(Malloc(problem_.num_cons() * sizeof(real)));
+      static_cast<double*>(Malloc(problem_.num_cons() * sizeof(double)));
   efunc *r_ops_int[N_OPS];
   for (int i = 0; i < N_OPS; ++i)
     r_ops_int[i] = reinterpret_cast<efunc*>(i);

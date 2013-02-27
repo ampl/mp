@@ -126,6 +126,7 @@ extern "C" {
 #undef objtype
 #undef pi0
 #undef plterms
+#undef real
 #undef return_nofile
 #undef size_expr_n
 #undef skip_int_derivs
@@ -198,6 +199,7 @@ class Expr {
     PLTERM,
     VARIABLE,
     NUMBEROF,
+    CALL,
     NUMERIC_END,
 
     // CONSTANT belongs both to numeric and logical expressions therefore
@@ -619,6 +621,105 @@ class NumberOfExpr : public NumericExpr {
 };
 
 AMPL_SPECIALIZE_IS(NumberOfExpr, OPNUMBEROF)
+
+class Function {
+ private:
+  const func_info *fi_;
+
+  friend class CallExpr;
+
+  explicit Function(const func_info *fi) : fi_(fi) {}
+
+  void True() const {}
+  typedef void (Function::*SafeBool)() const;
+
+ public:
+  Function() : fi_(0) {}
+
+  const char *name() const { return fi_->name; }
+
+  int num_args() const { return fi_->nargs; }
+
+  // Returns a value convertible to bool that can be used in conditions but not
+  // in comparisons and evaluates to "true" if this function is not null
+  // and "false" otherwise.
+  // Example:
+  //   void foo(Function f) {
+  //     if (f) {
+  //       // Do something if e is not null.
+  //     }
+  //   }
+  operator SafeBool() const { return fi_ ? &Function::True : 0; }
+
+  bool operator==(const Function &other) { return fi_ == other.fi_; }
+  bool operator!=(const Function &other) { return fi_ != other.fi_; }
+};
+
+// A function call expression.
+// Example: f(x), where f is a function and x is a variable.
+class CallExpr : public NumericExpr {
+ public:
+  CallExpr() {}
+
+  Function function() const {
+    return Function(reinterpret_cast<expr_f*>(expr_)->fi);
+  }
+
+  double GetArg(unsigned index) const {
+    return reinterpret_cast<expr_f*>(expr_)->al->ra[index];
+  }
+
+  // An iterator over arguments that are expressions.
+  class expr_arg_iterator :
+    public std::iterator<std::forward_iterator_tag, NumericExpr> {
+   private:
+    const argpair *p_;
+
+    friend class CallExpr;
+
+    explicit expr_arg_iterator(const argpair *p) : p_(p) {}
+
+   public:
+    NumericExpr operator*() const { return Create<NumericExpr>(p_->e); }
+
+    Proxy<NumericExpr> operator->() const {
+      return Proxy<NumericExpr>(p_->e);
+    }
+
+    expr_arg_iterator &operator++() {
+      ++p_;
+      return *this;
+    }
+
+    expr_arg_iterator operator++(int ) {
+      expr_arg_iterator it(*this);
+      ++p_;
+      return it;
+    }
+
+    bool operator==(expr_arg_iterator other) const { return p_ == other.p_; }
+    bool operator!=(expr_arg_iterator other) const { return p_ != other.p_; }
+  };
+
+  int num_expr_args() const {
+    expr_f* ef = reinterpret_cast<expr_f*>(expr_);
+    return ef->ape - ef->ap;
+  }
+
+  expr_arg_iterator expr_arg_begin() const {
+    return expr_arg_iterator(reinterpret_cast<expr_f*>(expr_)->ap);
+  }
+
+  expr_arg_iterator expr_arg_end() const {
+    return expr_arg_iterator(reinterpret_cast<expr_f*>(expr_)->ape);
+  }
+
+  int GetArgIndex(expr_arg_iterator i) const {
+    return i.p_->u.v - reinterpret_cast<expr_f*>(expr_)->al->ra;
+  }
+};
+
+AMPL_SPECIALIZE_IS(CallExpr, OPFUNCALL)
 
 // A logical constant.
 // Examples: 0, 1

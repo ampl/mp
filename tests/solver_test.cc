@@ -518,18 +518,18 @@ TEST(SolverTest, ProblemAccessors) {
   EXPECT_EQ(11, p.num_nonlinear_cons());
   EXPECT_EQ(7, p.num_logical_cons());
 
-  EXPECT_EQ(11, p.GetVarLB(0));
-  EXPECT_EQ(15, p.GetVarLB(p.num_vars() - 1));
-  EXPECT_EQ(21, p.GetVarUB(0));
-  EXPECT_EQ(25, p.GetVarUB(p.num_vars() - 1));
+  EXPECT_EQ(11, p.var_lb(0));
+  EXPECT_EQ(15, p.var_lb(p.num_vars() - 1));
+  EXPECT_EQ(21, p.var_ub(0));
+  EXPECT_EQ(25, p.var_ub(p.num_vars() - 1));
 
-  EXPECT_EQ(101, p.GetConLB(0));
-  EXPECT_EQ(113, p.GetConLB(p.num_cons() - 1));
-  EXPECT_EQ(201, p.GetConUB(0));
-  EXPECT_EQ(213, p.GetConUB(p.num_cons() - 1));
+  EXPECT_EQ(101, p.con_lb(0));
+  EXPECT_EQ(113, p.con_lb(p.num_cons() - 1));
+  EXPECT_EQ(201, p.con_ub(0));
+  EXPECT_EQ(213, p.con_ub(p.num_cons() - 1));
 
-  EXPECT_EQ(Problem::MIN, p.GetObjType(0));
-  EXPECT_EQ(Problem::MAX, p.GetObjType(p.num_objs() - 1));
+  EXPECT_EQ(ampl::MIN, p.obj_type(0));
+  EXPECT_EQ(ampl::MAX, p.obj_type(p.num_objs() - 1));
 
   {
     LinearObjExpr expr = p.GetLinearObjExpr(0);
@@ -571,18 +571,18 @@ TEST(SolverTest, ProblemBoundChecks) {
   EXPECT_TRUE(s.ReadProblem(argv));
   Problem &p = s.problem();
 
-  EXPECT_DEATH(p.GetVarLB(-1), "Assertion");
-  EXPECT_DEATH(p.GetVarLB(p.num_vars()), "Assertion");
-  EXPECT_DEATH(p.GetVarUB(-1), "Assertion");
-  EXPECT_DEATH(p.GetVarUB(p.num_vars()), "Assertion");
+  EXPECT_DEATH(p.var_lb(-1), "Assertion");
+  EXPECT_DEATH(p.var_lb(p.num_vars()), "Assertion");
+  EXPECT_DEATH(p.var_ub(-1), "Assertion");
+  EXPECT_DEATH(p.var_ub(p.num_vars()), "Assertion");
 
-  EXPECT_DEATH(p.GetConLB(-1), "Assertion");
-  EXPECT_DEATH(p.GetConLB(p.num_cons()), "Assertion");
-  EXPECT_DEATH(p.GetConUB(-1), "Assertion");
-  EXPECT_DEATH(p.GetConUB(p.num_cons()), "Assertion");
+  EXPECT_DEATH(p.con_lb(-1), "Assertion");
+  EXPECT_DEATH(p.con_lb(p.num_cons()), "Assertion");
+  EXPECT_DEATH(p.con_ub(-1), "Assertion");
+  EXPECT_DEATH(p.con_ub(p.num_cons()), "Assertion");
 
-  EXPECT_DEATH(p.GetObjType(-1), "Assertion");
-  EXPECT_DEATH(p.GetObjType(p.num_objs()), "Assertion");
+  EXPECT_DEATH(p.obj_type(-1), "Assertion");
+  EXPECT_DEATH(p.obj_type(p.num_objs()), "Assertion");
 
   EXPECT_DEATH(p.GetLinearObjExpr(-1), "Assertion");
   EXPECT_DEATH(p.GetLinearObjExpr(p.num_objs()), "Assertion");
