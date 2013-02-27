@@ -134,9 +134,9 @@ fmt::Writer &operator<<(fmt::Writer &w, const Problem &p) {
   for (int i = 0; i < num_vars; ++i) {
     w << "var x" << (i + 1);
     double lb = p.var_lb(i), ub = p.var_ub(i);
-    if (!isinf(lb))
+    if (lb != -Infinity)
       w << " >= " << lb;
-    if (!isinf(ub))
+    if (ub != Infinity)
       w << " <= " << ub;
     w << ";\n";
   }
