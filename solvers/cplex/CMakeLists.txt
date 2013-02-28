@@ -3,6 +3,16 @@
 find_package(CPLEX)
 if (CPLEX_FOUND)
   include_directories(.. ${CPLEX_INCLUDE_DIRS}/ilcplex)
+  if (CMAKE_COMPILER_IS_GNUC)
+    add_definitions(-Wno-deprecated-declarations -Wno-long-long
+                    -Wno-sign-compare -Wno-unused-parameter)
+  elseif (MSVC)
+    foreach (flag_var
+             CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+             CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+      string(REPLACE "/W3" "/w" ${flag_var} "${${flag_var}}")
+    endforeach()
+  endif ()
   add_executable(cplex cplex.c ../funcadd0.c)
   target_link_libraries(cplex ${CPLEX_LIBRARIES} ${SOLVER_LIBS})
   add_dependencies(cplex arith_h)
