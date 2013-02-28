@@ -38,7 +38,8 @@ class Args {
 
  public:
   explicit Args(const char *arg1, const char *arg2 = 0,
-      const char *arg3 = 0, const char *arg4 = 0);
+      const char *arg3 = 0, const char *arg4 = 0,
+      const char *arg5 = 0, const char *arg6 = 0);
 
   operator char **();
 };

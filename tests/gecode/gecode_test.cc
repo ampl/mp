@@ -671,17 +671,20 @@ class GecodeSolverTest : public ::testing::Test, public ExprBuilder {
     return ParseResult(result, eh.error);
   }
 
-  int RunSolver(const char *stub = nullptr, const char *opt = nullptr) {
-    return solver_.Run(Args("gecode", "-s", stub, opt));
+  int RunSolver(const char *stub = nullptr, const char *opt1 = nullptr,
+      const char *opt2 = nullptr, const char *opt3 = nullptr) {
+    return solver_.Run(Args("gecode", "-s", stub, opt1, opt2, opt3));
   }
 
-  SolveResult Solve(const char *stub, const char *opt = nullptr);
+  SolveResult Solve(const char *stub, const char *opt1 = nullptr,
+      const char *opt2 = nullptr, const char *opt3 = nullptr);
 };
 
-SolveResult GecodeSolverTest::Solve(const char *stub, const char *opt) {
+SolveResult GecodeSolverTest::Solve(const char *stub,
+    const char *opt1, const char *opt2, const char *opt3) {
   TestSolutionHandler sh;
   solver_.set_solution_handler(&sh);
-  RunSolver(stub, opt);
+  RunSolver(stub, opt1, opt2, opt3);
   const string &message = sh.message();
   int solve_code = sh.solve_code();
   EXPECT_GE(solve_code, 0);
@@ -1001,7 +1004,7 @@ TEST_F(GecodeSolverTest, VarBranchingOption) {
   EXPECT_EQ(20u, count);
 }
 
-TEST_F(GecodeSolverTest, OutlevOption) {
+TEST_F(GecodeSolverTest, OutLevOption) {
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
     Solve(DATA_DIR "objconstint");
@@ -1016,7 +1019,9 @@ TEST_F(GecodeSolverTest, OutlevOption) {
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
-  EXPECT_EQ("outlev=1\nBest objective: 42\n", ReadFile("out"));
+  EXPECT_EQ("outlev=1\n"
+      " Max Depth      Nodes      Fails      Best Obj\n"
+      "                                            42\n", ReadFile("out"));
 
   EXPECT_TRUE(ParseOptions("outlev=0"));
   EXPECT_TRUE(ParseOptions("outlev=1"));
@@ -1024,5 +1029,30 @@ TEST_F(GecodeSolverTest, OutlevOption) {
       ParseOptions("outlev=-1").error());
   EXPECT_EQ("Invalid value 2 for option outlev",
       ParseOptions("outlev=2").error());
+}
+
+TEST_F(GecodeSolverTest, OutFreqOption) {
+  EXPECT_EXIT({
+    FILE *f = freopen("out", "w", stdout);
+    Solve(DATA_DIR "party1", "outlev=1", "outfreq=1", "timelimit=2.5");
+    fclose(f);
+    exit(0);
+  }, ::testing::ExitedWithCode(0), "");
+  std::string out = ReadFile("out");
+  EXPECT_EQ(6, std::count(out.begin(), out.end(), '\n'));
+
+  EXPECT_EXIT({
+    FILE *f = freopen("out", "w", stdout);
+    Solve(DATA_DIR "party1", "outlev=1", "outfreq=2", "timelimit=2.5");
+    fclose(f);
+    exit(0);
+  }, ::testing::ExitedWithCode(0), "");
+  out = ReadFile("out");
+  EXPECT_EQ(5, std::count(out.begin(), out.end(), '\n'));
+
+  EXPECT_EQ("Invalid value -1 for option outfreq",
+      ParseOptions("outfreq=-1").error());
+  EXPECT_EQ("Invalid value 0 for option outfreq",
+      ParseOptions("outfreq=0").error());
 }
 }
