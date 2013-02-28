@@ -703,7 +703,7 @@ class CallExpr : public NumericExpr {
 
   int num_expr_args() const {
     expr_f* ef = reinterpret_cast<expr_f*>(expr_);
-    return ef->ape - ef->ap;
+    return static_cast<int>(ef->ape - ef->ap);
   }
 
   expr_arg_iterator expr_arg_begin() const {
@@ -715,7 +715,8 @@ class CallExpr : public NumericExpr {
   }
 
   int GetArgIndex(expr_arg_iterator i) const {
-    return i.p_->u.v - reinterpret_cast<expr_f*>(expr_)->al->ra;
+    return static_cast<int>(
+        i.p_->u.v - reinterpret_cast<expr_f*>(expr_)->al->ra);
   }
 };
 
