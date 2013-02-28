@@ -619,9 +619,9 @@ class BasicSolver
 
   // Reports an error printing the formatted error message to stderr.
   // Usage: ReportError("File not found: {}") << filename;
-  fmt::TempFormatter<char, ErrorReporter> ReportError(fmt::StringRef format) {
+  fmt::TempFormatter<ErrorReporter> ReportError(fmt::StringRef format) {
     has_errors_ = true;
-    return fmt::TempFormatter<char, ErrorReporter>(
+    return fmt::TempFormatter<ErrorReporter>(
         format.c_str(), ErrorReporter(error_handler_));
   }
 };

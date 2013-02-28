@@ -183,20 +183,22 @@ inline int IsInf(double x) {
 #endif
 }
 
+#define FMT_SNPRINTF snprintf
+
 #else
 
 inline int SignBit(double value) {
   if (value < 0) return 1;
   if (value == value) return 0;
   int dec = 0, sign = 0;
-  _ecvt(value, 0, &dec, &sign);
+  char buffer[2];  // The buffer size must be >= 2 or _ecvt_s will fail.
+  _ecvt_s(buffer, sizeof(buffer), value, 0, &dec, &sign);
   return sign;
 }
 
 inline int IsInf(double x) { return !_finite(x); }
 
-# undef snprintf
-# define snprintf _snprintf
+#define FMT_SNPRINTF sprintf_s
 
 #endif
 
@@ -693,12 +695,13 @@ void BasicWriter<Char>::FormatDouble(
     Char *start = &buffer_[offset];
     if (width_for_sprintf == 0) {
       n = precision < 0 ?
-          snprintf(start, size, format, value) :
-          snprintf(start, size, format, precision, value);
+          FMT_SNPRINTF(start, size, format, value) :
+          FMT_SNPRINTF(start, size, format, precision, value);
     } else {
       n = precision < 0 ?
-          snprintf(start, size, format, width_for_sprintf, value) :
-          snprintf(start, size, format, width_for_sprintf, precision, value);
+          FMT_SNPRINTF(start, size, format, width_for_sprintf, value) :
+          FMT_SNPRINTF(start, size, format, width_for_sprintf,
+              precision, value);
     }
     if (n >= 0 && offset + n < buffer_.capacity()) {
       if (sign) {
@@ -962,7 +965,8 @@ class BasicFormatter : public BasicWriter<Char> {
       // so it will be alive in the Arg's destructor where Format is called.
       // Note that the string object will not necessarily be alive when
       // the destructor of ArgInserter is called.
-      formatter->CompleteFormatting();
+      if (formatter)
+        formatter->CompleteFormatting();
     }
   };
 
@@ -1151,7 +1155,7 @@ class NoAction {
   Objects of this class normally exist only as temporaries returned
   by one of the formatting functions which explains the name.
  */
-template <typename Char, typename Action = NoAction>
+template <typename Action = NoAction, typename Char = char>
 class TempFormatter : public internal::ArgInserter<Char> {
  private:
   BasicFormatter<Char> formatter_;
@@ -1228,8 +1232,8 @@ class TempFormatter : public internal::ArgInserter<Char> {
   See also `Format String Syntax`_.
   \endrst
 */
-inline TempFormatter<char> Format(StringRef format) {
-  return TempFormatter<char>(format);
+inline TempFormatter<> Format(StringRef format) {
+  return TempFormatter<>(format);
 }
 
 // A formatting action that writes formatted output to stdout.
@@ -1242,8 +1246,8 @@ struct Write {
 // Formats a string and prints it to stdout.
 // Example:
 //   Print("Elapsed time: {0:.2f} seconds") << 1.23;
-inline TempFormatter<char, Write> Print(StringRef format) {
-  return TempFormatter<char, Write>(format);
+inline TempFormatter<Write> Print(StringRef format) {
+  return TempFormatter<Write>(format);
 }
 
 // Throws Exception(message) if format contains '}', otherwise throws
@@ -1296,9 +1300,9 @@ inline const typename BasicFormatter<Char>::Arg
     }
     next_arg_index_ = -1;
     arg_index = ParseUInt(s);
-    if (arg_index >= args_.size())
-      ReportError(s, "argument index is out of range in format");
   }
+  if (arg_index >= args_.size())
+    ReportError(s, "argument index is out of range in format");
   return *args_[arg_index];
 }
 

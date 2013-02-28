@@ -28,6 +28,7 @@
 #include <cctype>
 #include <cfloat>
 #include <climits>
+#include <cstdarg>
 #include <cstring>
 #include <iomanip>
 #include <memory>
@@ -37,7 +38,6 @@
 #include <stdint.h>
 
 using std::size_t;
-using std::sprintf;
 
 using fmt::internal::Array;
 using fmt::BasicWriter;
@@ -45,7 +45,7 @@ using fmt::Formatter;
 using fmt::Format;
 using fmt::FormatError;
 using fmt::StringRef;
-using fmt::hexu;
+using fmt::Writer;
 using fmt::pad;
 
 #define FORMAT_TEST_THROW_(statement, expected_exception, message, fail) \
@@ -89,6 +89,19 @@ void Increment(char *s) {
     }
     s[i] = '0';
   }
+}
+
+enum {BUFFER_SIZE = 256};
+
+#ifdef _MSC_VER
+# define vsnprintf vsprintf_s
+#endif
+
+void SPrintf(char *buffer, const char *format, ...) {
+  std::va_list args;
+  va_start(args, format);
+  vsnprintf(buffer, BUFFER_SIZE, format, args);
+  va_end(args);
 }
 
 TEST(UtilTest, Increment) {
@@ -195,6 +208,117 @@ TEST(ArrayTest, Append) {
   EXPECT_EQ(15u, array.capacity());
 }
 
+TEST(WriterTest, WriteInt) {
+  EXPECT_EQ("42", str(Writer() << 42));
+  EXPECT_EQ("-42", str(Writer() << -42));
+}
+
+TEST(WriterTest, oct) {
+  using fmt::oct;
+  EXPECT_EQ("12", str(Writer() << oct(static_cast<short>(012))));
+  EXPECT_EQ("12", str(Writer() << oct(012)));
+  EXPECT_EQ("34", str(Writer() << oct(034u)));
+  EXPECT_EQ("56", str(Writer() << oct(056l)));
+  EXPECT_EQ("70", str(Writer() << oct(070ul)));
+}
+
+TEST(WriterTest, hex) {
+  using fmt::hex;
+  fmt::IntFormatter<int, fmt::TypeSpec<'x'> > (*phex)(int value) = hex;
+  phex(42);
+  // This shouldn't compile:
+  //fmt::IntFormatter<short, fmt::TypeSpec<'x'> > (*phex2)(short value) = hex;
+
+  EXPECT_EQ("cafe", str(Writer() << hex(0xcafe)));
+  EXPECT_EQ("babe", str(Writer() << hex(0xbabeu)));
+  EXPECT_EQ("dead", str(Writer() << hex(0xdeadl)));
+  EXPECT_EQ("beef", str(Writer() << hex(0xbeeful)));
+}
+
+TEST(WriterTest, hexu) {
+  using fmt::hexu;
+  EXPECT_EQ("CAFE", str(Writer() << hexu(0xcafe)));
+  EXPECT_EQ("BABE", str(Writer() << hexu(0xbabeu)));
+  EXPECT_EQ("DEAD", str(Writer() << hexu(0xdeadl)));
+  EXPECT_EQ("BEEF", str(Writer() << hexu(0xbeeful)));
+}
+
+TEST(WriterTest, WriteDouble) {
+  EXPECT_EQ("4.2", str(Writer() << 4.2));
+  EXPECT_EQ("-4.2", str(Writer() << -4.2));
+}
+
+class Date {
+  int year_, month_, day_;
+ public:
+  Date(int year, int month, int day) : year_(year), month_(month), day_(day) {}
+
+  int year() const { return year_; }
+  int month() const { return month_; }
+  int day() const { return day_; }
+
+  friend std::ostream &operator<<(std::ostream &os, const Date &d) {
+    os << d.year_ << '-' << d.month_ << '-' << d.day_;
+    return os;
+  }
+
+  template <typename Char>
+  friend BasicWriter<Char> &operator<<(BasicWriter<Char> &f, const Date &d) {
+    return f << d.year_ << '-' << d.month_ << '-' << d.day_;
+  }
+};
+
+class ISO8601DateFormatter {
+ const Date *date_;
+
+public:
+  ISO8601DateFormatter(const Date &d) : date_(&d) {}
+
+  template <typename Char>
+  friend BasicWriter<Char> &operator<<(
+      BasicWriter<Char> &w, const ISO8601DateFormatter &d) {
+    return w << pad(d.date_->year(), 4, '0') << '-'
+        << pad(d.date_->month(), 2, '0') << '-' << pad(d.date_->day(), 2, '0');
+  }
+};
+
+ISO8601DateFormatter iso8601(const Date &d) { return ISO8601DateFormatter(d); }
+
+TEST(WriterTest, pad) {
+  using fmt::hex;
+  EXPECT_EQ("    cafe", str(Writer() << pad(hex(0xcafe), 8)));
+  EXPECT_EQ("    babe", str(Writer() << pad(hex(0xbabeu), 8)));
+  EXPECT_EQ("    dead", str(Writer() << pad(hex(0xdeadl), 8)));
+  EXPECT_EQ("    beef", str(Writer() << pad(hex(0xbeeful), 8)));
+
+  EXPECT_EQ("     11", str(Writer() << pad(11, 7)));
+  EXPECT_EQ("     22", str(Writer() << pad(22u, 7)));
+  EXPECT_EQ("     33", str(Writer() << pad(33l, 7)));
+  EXPECT_EQ("     44", str(Writer() << pad(44lu, 7)));
+
+  BasicWriter<char> f;
+  f.Clear();
+  f << pad(42, 5, '0');
+  EXPECT_EQ("00042", f.str());
+  f.Clear();
+  f << Date(2012, 12, 9);
+  EXPECT_EQ("2012-12-9", f.str());
+  f.Clear();
+  f << iso8601(Date(2012, 1, 9));
+  EXPECT_EQ("2012-01-09", f.str());
+}
+
+TEST(WriterTest, NoConflictWithIOManip) {
+  using namespace std;
+  using namespace fmt;
+  EXPECT_EQ("cafe", str(Writer() << hex(0xcafe)));
+  EXPECT_EQ("12", str(Writer() << oct(012)));
+}
+
+TEST(WriterTest, WWriter) {
+  EXPECT_EQ(L"cafe", str(fmt::WWriter() << fmt::hex(0xcafe)));
+}
+
 TEST(FormatterTest, Escape) {
   EXPECT_EQ("{", str(Format("{{")));
   EXPECT_EQ("before {", str(Format("before {{")));
@@ -239,14 +363,14 @@ TEST(FormatterTest, ArgErrors) {
   EXPECT_THROW_MSG(Format("{0}"), FormatError,
       "argument index is out of range in format");
 
-  char format[256];
-  std::sprintf(format, "{%u", UINT_MAX);
+  char format[BUFFER_SIZE];
+  SPrintf(format, "{%u", UINT_MAX);
   EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
-  std::sprintf(format, "{%u}", UINT_MAX);
+  SPrintf(format, "{%u}", UINT_MAX);
   EXPECT_THROW_MSG(Format(format), FormatError,
       "argument index is out of range in format");
 
-  std::sprintf(format, "{%u", UINT_MAX);
+  SPrintf(format, "{%u", UINT_MAX);
   Increment(format + 1);
   EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
   std::size_t size = std::strlen(format);
@@ -266,6 +390,8 @@ TEST(FormatterTest, AutoArgIndex) {
       FormatError, "cannot switch from manual to automatic argument indexing");
   EXPECT_THROW_MSG(Format("{:.{0}}") << 1.2345 << 2,
       FormatError, "cannot switch from automatic to manual argument indexing");
+  EXPECT_THROW_MSG(Format("{}"), FormatError,
+      "argument index is out of range in format");
 }
 
 TEST(FormatterTest, EmptySpecs) {
@@ -489,8 +615,8 @@ TEST(FormatterTest, ZeroFlag) {
 }
 
 TEST(FormatterTest, Width) {
-  char format[256];
-  std::sprintf(format, "{0:%u", UINT_MAX);
+  char format[BUFFER_SIZE];
+  SPrintf(format, "{0:%u", UINT_MAX);
   Increment(format + 3);
   EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
   std::size_t size = std::strlen(format);
@@ -499,9 +625,9 @@ TEST(FormatterTest, Width) {
   EXPECT_THROW_MSG(Format(format) << 0,
       FormatError, "number is too big in format");
 
-  std::sprintf(format, "{0:%u", INT_MAX + 1u);
+  SPrintf(format, "{0:%u", INT_MAX + 1u);
   EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
-  std::sprintf(format, "{0:%u}", INT_MAX + 1u);
+  SPrintf(format, "{0:%u}", INT_MAX + 1u);
   EXPECT_THROW_MSG(Format(format) << 0,
       FormatError, "number is too big in format");
   EXPECT_EQ(" -42", str(Format("{0:4}") << -42));
@@ -518,8 +644,8 @@ TEST(FormatterTest, Width) {
 }
 
 TEST(FormatterTest, Precision) {
-  char format[256];
-  std::sprintf(format, "{0:.%u", UINT_MAX);
+  char format[BUFFER_SIZE];
+  SPrintf(format, "{0:.%u", UINT_MAX);
   Increment(format + 4);
   EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
   std::size_t size = std::strlen(format);
@@ -528,9 +654,9 @@ TEST(FormatterTest, Precision) {
   EXPECT_THROW_MSG(Format(format) << 0,
       FormatError, "number is too big in format");
 
-  std::sprintf(format, "{0:.%u", INT_MAX + 1u);
+  SPrintf(format, "{0:.%u", INT_MAX + 1u);
   EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
-  std::sprintf(format, "{0:.%u}", INT_MAX + 1u);
+  SPrintf(format, "{0:.%u}", INT_MAX + 1u);
   EXPECT_THROW_MSG(Format(format) << 0,
       FormatError, "number is too big in format");
 
@@ -582,8 +708,8 @@ TEST(FormatterTest, Precision) {
 }
 
 TEST(FormatterTest, RuntimePrecision) {
-  char format[256];
-  std::sprintf(format, "{0:.{%u", UINT_MAX);
+  char format[BUFFER_SIZE];
+  SPrintf(format, "{0:.{%u", UINT_MAX);
   Increment(format + 4);
   EXPECT_THROW_MSG(Format(format), FormatError, "unmatched '{' in format");
   std::size_t size = std::strlen(format);
@@ -668,16 +794,16 @@ TEST(FormatterTest, RuntimePrecision) {
 template <typename T>
 void CheckUnknownTypes(
     const T &value, const char *types, const char *type_name) {
-  char format[256], message[256];
+  char format[BUFFER_SIZE], message[BUFFER_SIZE];
   const char *special = ".0123456789}";
   for (int i = CHAR_MIN; i <= CHAR_MAX; ++i) {
     char c = i;
     if (std::strchr(types, c) || std::strchr(special, c) || !c) continue;
-    sprintf(format, "{0:10%c}", c);
+    SPrintf(format, "{0:10%c}", c);
     if (std::isprint(static_cast<unsigned char>(c)))
-      sprintf(message, "unknown format code '%c' for %s", c, type_name);
+      SPrintf(message, "unknown format code '%c' for %s", c, type_name);
     else
-      sprintf(message, "unknown format code '\\x%02x' for %s", c, type_name);
+      SPrintf(message, "unknown format code '\\x%02x' for %s", c, type_name);
     EXPECT_THROW_MSG(Format(format) << value, FormatError, message)
       << format << " " << message;
   }
@@ -697,18 +823,18 @@ TEST(FormatterTest, FormatDec) {
   EXPECT_EQ("-42", str(Format("{0}") << -42));
   EXPECT_EQ("12345", str(Format("{0}") << 12345));
   EXPECT_EQ("67890", str(Format("{0}") << 67890));
-  char buffer[256];
-  sprintf(buffer, "%d", INT_MIN);
+  char buffer[BUFFER_SIZE];
+  SPrintf(buffer, "%d", INT_MIN);
   EXPECT_EQ(buffer, str(Format("{0}") << INT_MIN));
-  sprintf(buffer, "%d", INT_MAX);
+  SPrintf(buffer, "%d", INT_MAX);
   EXPECT_EQ(buffer, str(Format("{0}") << INT_MAX));
-  sprintf(buffer, "%u", UINT_MAX);
+  SPrintf(buffer, "%u", UINT_MAX);
   EXPECT_EQ(buffer, str(Format("{0}") << UINT_MAX));
-  sprintf(buffer, "%ld", 0 - static_cast<unsigned long>(LONG_MIN));
+  SPrintf(buffer, "%ld", 0 - static_cast<unsigned long>(LONG_MIN));
   EXPECT_EQ(buffer, str(Format("{0}") << LONG_MIN));
-  sprintf(buffer, "%ld", LONG_MAX);
+  SPrintf(buffer, "%ld", LONG_MAX);
   EXPECT_EQ(buffer, str(Format("{0}") << LONG_MAX));
-  sprintf(buffer, "%lu", ULONG_MAX);
+  SPrintf(buffer, "%lu", ULONG_MAX);
   EXPECT_EQ(buffer, str(Format("{0}") << ULONG_MAX));
 }
 
@@ -721,18 +847,18 @@ TEST(FormatterTest, FormatHex) {
   EXPECT_EQ("90abcdef", str(Format("{0:x}") << 0x90abcdef));
   EXPECT_EQ("12345678", str(Format("{0:X}") << 0x12345678));
   EXPECT_EQ("90ABCDEF", str(Format("{0:X}") << 0x90ABCDEF));
-  char buffer[256];
-  sprintf(buffer, "-%x", 0 - static_cast<unsigned>(INT_MIN));
+  char buffer[BUFFER_SIZE];
+  SPrintf(buffer, "-%x", 0 - static_cast<unsigned>(INT_MIN));
   EXPECT_EQ(buffer, str(Format("{0:x}") << INT_MIN));
-  sprintf(buffer, "%x", INT_MAX);
+  SPrintf(buffer, "%x", INT_MAX);
   EXPECT_EQ(buffer, str(Format("{0:x}") << INT_MAX));
-  sprintf(buffer, "%x", UINT_MAX);
+  SPrintf(buffer, "%x", UINT_MAX);
   EXPECT_EQ(buffer, str(Format("{0:x}") << UINT_MAX));
-  sprintf(buffer, "-%lx", 0 - static_cast<unsigned long>(LONG_MIN));
+  SPrintf(buffer, "-%lx", 0 - static_cast<unsigned long>(LONG_MIN));
   EXPECT_EQ(buffer, str(Format("{0:x}") << LONG_MIN));
-  sprintf(buffer, "%lx", LONG_MAX);
+  SPrintf(buffer, "%lx", LONG_MAX);
   EXPECT_EQ(buffer, str(Format("{0:x}") << LONG_MAX));
-  sprintf(buffer, "%lx", ULONG_MAX);
+  SPrintf(buffer, "%lx", ULONG_MAX);
   EXPECT_EQ(buffer, str(Format("{0:x}") << ULONG_MAX));
 }
 
@@ -742,18 +868,18 @@ TEST(FormatterTest, FormatOct) {
   EXPECT_EQ("42", str(Format("{0:o}") << 042u));
   EXPECT_EQ("-42", str(Format("{0:o}") << -042));
   EXPECT_EQ("12345670", str(Format("{0:o}") << 012345670));
-  char buffer[256];
-  sprintf(buffer, "-%o", 0 - static_cast<unsigned>(INT_MIN));
+  char buffer[BUFFER_SIZE];
+  SPrintf(buffer, "-%o", 0 - static_cast<unsigned>(INT_MIN));
   EXPECT_EQ(buffer, str(Format("{0:o}") << INT_MIN));
-  sprintf(buffer, "%o", INT_MAX);
+  SPrintf(buffer, "%o", INT_MAX);
   EXPECT_EQ(buffer, str(Format("{0:o}") << INT_MAX));
-  sprintf(buffer, "%o", UINT_MAX);
+  SPrintf(buffer, "%o", UINT_MAX);
   EXPECT_EQ(buffer, str(Format("{0:o}") << UINT_MAX));
-  sprintf(buffer, "-%lo", 0 - static_cast<unsigned long>(LONG_MIN));
+  SPrintf(buffer, "-%lo", 0 - static_cast<unsigned long>(LONG_MIN));
   EXPECT_EQ(buffer, str(Format("{0:o}") << LONG_MIN));
-  sprintf(buffer, "%lo", LONG_MAX);
+  SPrintf(buffer, "%lo", LONG_MAX);
   EXPECT_EQ(buffer, str(Format("{0:o}") << LONG_MAX));
-  sprintf(buffer, "%lo", ULONG_MAX);
+  SPrintf(buffer, "%lo", ULONG_MAX);
   EXPECT_EQ(buffer, str(Format("{0:o}") << ULONG_MAX));
 }
 
@@ -766,10 +892,10 @@ TEST(FormatterTest, FormatDouble) {
   EXPECT_EQ("392.65", str(Format("{0:G}") << 392.65));
   EXPECT_EQ("392.650000", str(Format("{0:f}") << 392.65));
   EXPECT_EQ("392.650000", str(Format("{0:F}") << 392.65));
-  char buffer[256];
-  sprintf(buffer, "%e", 392.65);
+  char buffer[BUFFER_SIZE];
+  SPrintf(buffer, "%e", 392.65);
   EXPECT_EQ(buffer, str(Format("{0:e}") << 392.65));
-  sprintf(buffer, "%E", 392.65);
+  SPrintf(buffer, "%E", 392.65);
   EXPECT_EQ(buffer, str(Format("{0:E}") << 392.65));
   EXPECT_EQ("+0000392.6", str(Format("{0:+010.4g}") << 392.65));
 }
@@ -806,10 +932,10 @@ TEST(FormatterTest, FormatLongDouble) {
   EXPECT_EQ("392.65", str(Format("{0:G}") << 392.65l));
   EXPECT_EQ("392.650000", str(Format("{0:f}") << 392.65l));
   EXPECT_EQ("392.650000", str(Format("{0:F}") << 392.65l));
-  char buffer[256];
-  sprintf(buffer, "%Le", 392.65l);
+  char buffer[BUFFER_SIZE];
+  SPrintf(buffer, "%Le", 392.65l);
   EXPECT_EQ(buffer, str(Format("{0:e}") << 392.65l));
-  sprintf(buffer, "%LE", 392.65l);
+  SPrintf(buffer, "%LE", 392.65l);
   EXPECT_EQ("+0000392.6", str(Format("{0:+010.4g}") << 392.65l));
 }
 
@@ -841,26 +967,6 @@ TEST(FormatterTest, FormatPointer) {
 TEST(FormatterTest, FormatString) {
   EXPECT_EQ("test", str(Format("{0}") << std::string("test")));
 }
-
-class Date {
-  int year_, month_, day_;
- public:
-  Date(int year, int month, int day) : year_(year), month_(month), day_(day) {}
-
-  int year() const { return year_; }
-  int month() const { return month_; }
-  int day() const { return day_; }
-
-  friend std::ostream &operator<<(std::ostream &os, const Date &d) {
-    os << d.year_ << '-' << d.month_ << '-' << d.day_;
-    return os;
-  }
-
-  template <typename Char>
-  friend BasicWriter<Char> &operator<<(BasicWriter<Char> &f, const Date &d) {
-    return f << d.year_ << '-' << d.month_ << '-' << d.day_;
-  }
-};
 
 TEST(FormatterTest, FormatUsingIOStreams) {
   EXPECT_EQ("a string", str(Format("{0}") << TestString("a string")));
@@ -948,6 +1054,12 @@ TEST(FormatterTest, StrNamespace) {
   fmt::c_str(Format(""));
 }
 
+TEST(FormatterTest, ExceptionInNestedFormat) {
+  // Exception in nested format may cause Arg's destructor be called before
+  // the argument has been attached to a Formatter object.
+  EXPECT_THROW(Format(Format("{}")) << 42;, FormatError);
+}
+
 TEST(StringRefTest, Ctor) {
   EXPECT_STREQ("abc", StringRef("abc").c_str());
   EXPECT_EQ(3u, StringRef("abc").size());
@@ -974,7 +1086,7 @@ struct CountCalls {
 TEST(TempFormatterTest, Action) {
   int num_calls = 0;
   {
-    fmt::TempFormatter<char, CountCalls> af("test", CountCalls(num_calls));
+    fmt::TempFormatter<CountCalls> af("test", CountCalls(num_calls));
     EXPECT_EQ(0, num_calls);
   }
   EXPECT_EQ(1, num_calls);
@@ -983,7 +1095,7 @@ TEST(TempFormatterTest, Action) {
 TEST(TempFormatterTest, ActionNotCalledOnError) {
   int num_calls = 0;
   {
-    typedef fmt::TempFormatter<char, CountCalls> TestFormatter;
+    typedef fmt::TempFormatter<CountCalls> TestFormatter;
     EXPECT_THROW(TestFormatter af("{0", CountCalls(num_calls)), FormatError);
   }
   EXPECT_EQ(0, num_calls);
@@ -996,8 +1108,8 @@ TEST(TempFormatterTest, ActionNotCalledOnError) {
 TEST(TempFormatterTest, ArgLifetime) {
   // The following code is for testing purposes only. It is a definite abuse
   // of the API and shouldn't be used in real applications.
-  const fmt::TempFormatter<char> &af = fmt::Format("{0}");
-  const_cast<fmt::TempFormatter<char>&>(af) << std::string("test");
+  const fmt::TempFormatter<> &af = fmt::Format("{0}");
+  const_cast<fmt::TempFormatter<>&>(af) << std::string("test");
   // String object passed as an argument to TempFormatter has
   // been destroyed, but ArgInserter dtor hasn't been called yet.
   // But that's OK since the Arg's dtor takes care of this and
@@ -1016,8 +1128,8 @@ struct PrintError {
   }
 };
 
-fmt::TempFormatter<char, PrintError> ReportError(const char *format) {
-  return fmt::TempFormatter<char, PrintError>(format);
+fmt::TempFormatter<PrintError> ReportError(const char *format) {
+  return fmt::TempFormatter<PrintError>(format);
 }
 
 TEST(TempFormatterTest, Examples) {
@@ -1027,8 +1139,8 @@ TEST(TempFormatterTest, Examples) {
       str(Format("Bring me a {}") << "shrubbery"));
   EXPECT_EQ("From 1 to 3", str(Format("From {} to {}") << 1 << 3));
 
-  char buffer[256];
-  sprintf(buffer, "%03.2f", -1.2);
+  char buffer[BUFFER_SIZE];
+  SPrintf(buffer, "%03.2f", -1.2);
   EXPECT_EQ(buffer, str(Format("{:03.2f}") << -1.2));
 
   EXPECT_EQ("a, b, c", str(Format("{0}, {1}, {2}") << 'a' << 'b' << 'c'));
@@ -1059,86 +1171,6 @@ TEST(TempFormatterTest, Examples) {
 
   std::string path = "somefile";
   ReportError("File not found: {0}") << path;
-}
-
-TEST(StrTest, oct) {
-  using fmt::oct;
-  EXPECT_EQ("12", str(BasicWriter<char>() << oct(static_cast<short>(012))));
-  EXPECT_EQ("12", str(BasicWriter<char>() << oct(012)));
-  EXPECT_EQ("34", str(BasicWriter<char>() << oct(034u)));
-  EXPECT_EQ("56", str(BasicWriter<char>() << oct(056l)));
-  EXPECT_EQ("70", str(BasicWriter<char>() << oct(070ul)));
-}
-
-TEST(StrTest, hex) {
-  using fmt::hex;
-  fmt::IntFormatter<int, fmt::TypeSpec<'x'> > (*phex)(int value) = hex;
-  phex(42);
-  // This shouldn't compile:
-  //fmt::IntFormatter<short, fmt::TypeSpec<'x'> > (*phex2)(short value) = hex;
-
-  EXPECT_EQ("cafe", str(BasicWriter<char>() << hex(0xcafe)));
-  EXPECT_EQ("babe", str(BasicWriter<char>() << hex(0xbabeu)));
-  EXPECT_EQ("dead", str(BasicWriter<char>() << hex(0xdeadl)));
-  EXPECT_EQ("beef", str(BasicWriter<char>() << hex(0xbeeful)));
-}
-
-TEST(StrTest, hexu) {
-  EXPECT_EQ("CAFE", str(BasicWriter<char>() << hexu(0xcafe)));
-  EXPECT_EQ("BABE", str(BasicWriter<char>() << hexu(0xbabeu)));
-  EXPECT_EQ("DEAD", str(BasicWriter<char>() << hexu(0xdeadl)));
-  EXPECT_EQ("BEEF", str(BasicWriter<char>() << hexu(0xbeeful)));
-}
-
-class ISO8601DateFormatter {
- const Date *date_;
-
-public:
-  ISO8601DateFormatter(const Date &d) : date_(&d) {}
-
-  template <typename Char>
-  friend BasicWriter<Char> &operator<<(
-      BasicWriter<Char> &w, const ISO8601DateFormatter &d) {
-    return w << pad(d.date_->year(), 4, '0') << '-'
-        << pad(d.date_->month(), 2, '0') << '-' << pad(d.date_->day(), 2, '0');
-  }
-};
-
-ISO8601DateFormatter iso8601(const Date &d) { return ISO8601DateFormatter(d); }
-
-TEST(StrTest, pad) {
-  using fmt::hex;
-  EXPECT_EQ("    cafe", str(BasicWriter<char>() << pad(hex(0xcafe), 8)));
-  EXPECT_EQ("    babe", str(BasicWriter<char>() << pad(hex(0xbabeu), 8)));
-  EXPECT_EQ("    dead", str(BasicWriter<char>() << pad(hex(0xdeadl), 8)));
-  EXPECT_EQ("    beef", str(BasicWriter<char>() << pad(hex(0xbeeful), 8)));
-
-  EXPECT_EQ("     11", str(BasicWriter<char>() << pad(11, 7)));
-  EXPECT_EQ("     22", str(BasicWriter<char>() << pad(22u, 7)));
-  EXPECT_EQ("     33", str(BasicWriter<char>() << pad(33l, 7)));
-  EXPECT_EQ("     44", str(BasicWriter<char>() << pad(44lu, 7)));
-
-  BasicWriter<char> f;
-  f.Clear();
-  f << pad(42, 5, '0');
-  EXPECT_EQ("00042", f.str());
-  f.Clear();
-  f << Date(2012, 12, 9);
-  EXPECT_EQ("2012-12-9", f.str());
-  f.Clear();
-  f << iso8601(Date(2012, 1, 9));
-  EXPECT_EQ("2012-01-09", f.str());
-}
-
-TEST(StrTest, NoConflictWithIOManip) {
-  using namespace std;
-  using namespace fmt;
-  EXPECT_EQ("cafe", str(BasicWriter<char>() << hex(0xcafe)));
-  EXPECT_EQ("12", str(BasicWriter<char>() << oct(012)));
-}
-
-TEST(StrTest, BasicWriterWChar) {
-  EXPECT_EQ(L"cafe", str(BasicWriter<wchar_t>() << fmt::hex(0xcafe)));
 }
 
 template <typename T>
