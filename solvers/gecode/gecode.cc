@@ -299,9 +299,10 @@ BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr) {
   return BoolExpr();
 }
 
-GecodeSolver::Stop::Stop(const GecodeSolver &s)
-: sh_(s), solver_(s), time_limit_in_milliseconds_(s.time_limit_ * 1000) {
-  has_limit_ = time_limit_in_milliseconds_ < DBL_MAX ||
+GecodeSolver::Stop::Stop(GecodeSolver &s)
+: sh_(s), solver_(s), time_limit_in_milliseconds_(s.time_limit_ * 1000),
+  last_output_time_(0) {
+  output_or_limit_ = s.output_ || time_limit_in_milliseconds_ < DBL_MAX ||
       s.node_limit_ != ULONG_MAX || s.fail_limit_ != ULONG_MAX ||
       s.memory_limit_ != std::numeric_limits<std::size_t>::max();
   timer_.start();
@@ -310,9 +311,15 @@ GecodeSolver::Stop::Stop(const GecodeSolver &s)
 bool GecodeSolver::Stop::stop(
     const Search::Statistics &s, const Search::Options &) {
   if (SignalHandler::stop()) return true;
-  return has_limit_ && (timer_.stop() > time_limit_in_milliseconds_ ||
-      s.node > solver_.node_limit_ || s.fail > solver_.fail_limit_ ||
-      s.memory > solver_.memory_limit_);
+  if (!output_or_limit_) return false;
+  double time = timer_.stop();
+  if (solver_.output_ &&
+      (time - last_output_time_) / 1000 >= solver_.output_frequency_) {
+    solver_.Output("{:10} {:10} {:10}\n") << s.depth << s.node << s.fail;
+    last_output_time_ = time;
+  }
+  return time > time_limit_in_milliseconds_ || s.node > solver_.node_limit_ ||
+      s.fail > solver_.fail_limit_ || s.memory > solver_.memory_limit_;
 }
 
 void GecodeSolver::EnableOutput(const char *name, int value) {
@@ -320,6 +327,13 @@ void GecodeSolver::EnableOutput(const char *name, int value) {
     ReportError("Invalid value {} for option {}") << value << name;
   else
     output_ = value != 0;
+}
+
+void GecodeSolver::SetOutputFrequency(const char *name, int value) {
+  if (value <= 0)
+    ReportError("Invalid value {} for option {}") << value << name;
+  else
+    output_frequency_ = value;
 }
 
 template <typename T>
@@ -342,9 +356,16 @@ void GecodeSolver::SetOption(const char *name, T value, OptionT *option) {
     *option = value;
 }
 
+fmt::TempFormatter<fmt::Write> GecodeSolver::Output(fmt::StringRef format) {
+  if (output_count_ == 0)
+    fmt::Print("{}") << header_;
+  output_count_ = (output_count_ + 1) % 20;
+  return fmt::TempFormatter<fmt::Write>(format);
+}
+
 GecodeSolver::GecodeSolver()
-: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130204),
-  output_(false),
+: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130228),
+  output_(false), output_frequency_(1), output_count_(0),
   var_branching_(Gecode::INT_VAR_SIZE_MIN),
   val_branching_(Gecode::INT_VAL_MIN),
   time_limit_(DBL_MAX), node_limit_(ULONG_MAX), fail_limit_(ULONG_MAX),
@@ -355,6 +376,10 @@ GecodeSolver::GecodeSolver()
   AddIntOption("outlev",
       "0 or 1 (default 0):  Whether to print solution log.",
       &GecodeSolver::EnableOutput);
+
+  AddIntOption("outfreq",
+      "Output frequency in seconds.  The value should be a positive integer.",
+      &GecodeSolver::SetOutputFrequency);
 
   AddStrOption("var_branching",
       "Variable branching.  Possible values:\n"
@@ -460,12 +485,14 @@ int GecodeSolver::Run(char **argv) {
   bool has_obj = problem.num_objs() != 0;
   Search::Statistics stats;
   bool stopped = false;
+  header_ = str(fmt::Format("{:>10} {:>10} {:>10} {:>13}\n")
+    << "Max Depth" << "Nodes" << "Fails" << (has_obj ? "Best Obj" : ""));
   if (has_obj) {
     Gecode::BAB<GecodeProblem> engine(&gecode_problem, options_);
     converter.reset();
     while (GecodeProblem *next = engine.next()) {
       if (output_)
-        fmt::Print("Best objective: {}\n") << next->obj().val();
+        Output("{:46}\n") << next->obj().val();
       solution.reset(next);
     }
     if (solution.get())

@@ -31,12 +31,14 @@ void Args::Add(const char *arg) {
 }
 
 Args::Args(const char *arg1, const char *arg2,
-      const char *arg3, const char *arg4)
+      const char *arg3, const char *arg4, const char *arg5, const char *arg6)
 : argc_(0) {
   Add(arg1);
   Add(arg2);
   Add(arg3);
   Add(arg4);
+  Add(arg5);
+  Add(arg6);
 }
 
 Args::operator char **() {

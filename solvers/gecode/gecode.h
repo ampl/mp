@@ -24,6 +24,7 @@
 #define AMPL_SOLVERS_GECODE_H
 
 #include <memory>
+#include <string>
 
 #ifdef _MSC_VER
 # pragma warning(push)
@@ -290,6 +291,10 @@ struct OptionInfo {
 class GecodeSolver : public Solver<GecodeSolver> {
  private:
   bool output_;
+  double output_frequency_;
+  unsigned output_count_;
+  std::string header_;
+
   Gecode::IntVarBranch var_branching_;
   Gecode::IntValBranch val_branching_;
   Gecode::Search::Options options_;
@@ -299,6 +304,7 @@ class GecodeSolver : public Solver<GecodeSolver> {
   std::size_t memory_limit_;
 
   void EnableOutput(const char *name, int value);
+  void SetOutputFrequency(const char *name, int value);
 
   template <typename T>
   void SetStrOption(const char *name, const char *value,
@@ -311,16 +317,19 @@ class GecodeSolver : public Solver<GecodeSolver> {
     *option = value;
   }
 
+  fmt::TempFormatter<fmt::Write> Output(fmt::StringRef format);
+
   class Stop : public Gecode::Search::Stop {
    private:
     SignalHandler sh_;
     Gecode::Support::Timer timer_;
-    const GecodeSolver &solver_;
+    GecodeSolver &solver_;
     double time_limit_in_milliseconds_;
-    bool has_limit_;
+    double last_output_time_;
+    bool output_or_limit_;
 
    public:
-    explicit Stop(const GecodeSolver &s);
+    explicit Stop(GecodeSolver &s);
 
     bool stop(const Gecode::Search::Statistics &s,
               const Gecode::Search::Options &);
