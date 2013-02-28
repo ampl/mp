@@ -3,7 +3,7 @@
 find_package(CPLEX)
 if (CPLEX_FOUND)
   include_directories(.. ${CPLEX_INCLUDE_DIRS}/ilcplex)
-  if (CMAKE_COMPILER_IS_GNUC)
+  if (CMAKE_COMPILER_IS_GNUCC)
     add_definitions(-Wno-deprecated-declarations -Wno-long-long
                     -Wno-sign-compare -Wno-unused-parameter)
   elseif (MSVC)
