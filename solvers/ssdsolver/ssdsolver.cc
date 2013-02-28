@@ -96,7 +96,7 @@ int SSDSolver::Run(char **argv) {
   // Compute the tails of the reference distribution.
   std::vector<double> ref_tails(extractor.rhs());
   std::sort(ref_tails.begin(), ref_tails.end());
-  for (unsigned i = 1; i < num_scenarios; ++i)
+  for (int i = 1; i < num_scenarios; ++i)
     ref_tails[i] += ref_tails[i - 1];
 
   // TODO: get initial feasible solution
@@ -191,6 +191,7 @@ int SSDSolver::Run(char **argv) {
     solve_code = 500;
     message = "failure";
   }
+  problem.set_solve_code(solve_code);
 
   fmt::Formatter format;
   format("{}: {}\n") << long_name() << message;

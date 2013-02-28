@@ -355,10 +355,10 @@ class ProblemChanges {
   explicit ProblemChanges(const Problem &p) : problem_(&p), vco_() {}
 
   // Returns the number of additional variables.
-  int num_vars() const { return var_lb_.size(); }
+  int num_vars() const { return static_cast<int>(var_lb_.size()); }
 
   // Returns the number of additional constraints.
-  int num_cons() const { return cons_.size(); }
+  int num_cons() const { return static_cast<int>(cons_.size()); }
 
   // Adds a variable.
   int AddVar(double lb, double ub) {
