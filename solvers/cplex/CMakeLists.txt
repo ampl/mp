@@ -4,9 +4,13 @@ find_package(CPLEX)
 if (CPLEX_FOUND)
   include_directories(.. ${CPLEX_INCLUDE_DIRS}/ilcplex)
   if (CMAKE_COMPILER_IS_GNUCC)
+    include(CheckCCompilerFlag)
+    check_c_compiler_flag(-Wno-unused-result HAVE_WNO_UNUSED_RESULT)
+    if (HAVE_WNO_UNUSED_RESULT)
+      add_definitions(-Wno-unused-result)
+    endif ()
     add_definitions(-Wno-deprecated-declarations -Wno-long-long
-                    -Wno-sign-compare -Wno-uninitialized
-                    -Wno-unused-parameter -Wno-unused-result)
+                    -Wno-sign-compare -Wno-uninitialized -Wno-unused-parameter)
   elseif (MSVC)
     foreach (flag_var
              CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
