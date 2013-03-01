@@ -9,8 +9,8 @@ if (CPLEX_FOUND)
                     -Wno-unused-parameter -Wno-unused-result)
   elseif (MSVC)
     foreach (flag_var
-             CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-             CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+             CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+             CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
       string(REPLACE "/W3" "/w" ${flag_var} "${${flag_var}}")
     endforeach()
   endif ()
