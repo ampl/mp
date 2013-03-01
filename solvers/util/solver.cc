@@ -202,9 +202,9 @@ void Problem::Solve(Solution &sol, ProblemChanges *pc, unsigned flags) {
 }
 
 NewVCO *ProblemChanges::vco() {
-  vco_.nnv = var_lb_.size();
-  vco_.nnc = cons_.size();
-  vco_.nno = objs_.size();
+  vco_.nnv = static_cast<int>(var_lb_.size());
+  vco_.nnc = static_cast<int>(cons_.size());
+  vco_.nno = static_cast<int>(objs_.size());
   vco_.LUnv = &var_lb_[0];
   vco_.Unv = &var_ub_[0];
   vco_.LUnc = &con_lb_[0];
@@ -217,7 +217,7 @@ NewVCO *ProblemChanges::vco() {
 
 void ProblemChanges::AddObj(
     ObjType type, unsigned size, const double *coefs, const int *vars) {
-  unsigned start = obj_terms_.size();
+  std::size_t start = obj_terms_.size();
   obj_terms_.resize(start + size);
   ograd dummy;
   ograd *prev = &dummy;
@@ -235,8 +235,8 @@ void ProblemChanges::AddObj(
 void ProblemChanges::AddCon(const double *coefs, double lb, double ub) {
   con_lb_.push_back(lb);
   con_ub_.push_back(ub);
-  unsigned start = con_terms_.size();
-  unsigned num_vars = problem_->num_vars() + var_lb_.size();
+  std::size_t start = con_terms_.size();
+  std::size_t num_vars = problem_->num_vars() + var_lb_.size();
   con_terms_.resize(start + num_vars);
   ograd dummy;
   ograd *prev = &dummy;
