@@ -240,7 +240,7 @@ void ProblemChanges::AddCon(const double *coefs, double lb, double ub) {
   con_terms_.resize(start + num_vars);
   ograd dummy;
   ograd *prev = &dummy;
-  for (unsigned i = 0; i < num_vars; ++i) {
+  for (std::size_t i = 0; i < num_vars; ++i) {
     ograd &term = con_terms_[start + i];
     term.coef = coefs[i];
     term.varno = i;
@@ -403,16 +403,12 @@ bool BasicSolver::ReadProblem(char **&argv) {
     return false;
   }
   FILE *nl = jac0dim_ASL(asl, stub, static_cast<ftnlen>(std::strlen(stub)));
-  aslfg->i.Uvx_ =
-      static_cast<double*>(Malloc(problem_.num_vars() * sizeof(double)));
-  aslfg->i.Urhsx_ =
-      static_cast<double*>(Malloc(problem_.num_cons() * sizeof(double)));
   efunc *r_ops_int[N_OPS];
   for (int i = 0; i < N_OPS; ++i)
     r_ops_int[i] = reinterpret_cast<efunc*>(i);
   aslfg->I.r_ops_ = r_ops_int;
   aslfg->p.want_derivs_ = 0;
-  fg_read_ASL(asl, nl, ASL_allow_CLP);
+  fg_read_ASL(asl, nl, ASL_allow_CLP | ASL_sep_U_arrays);
   aslfg->I.r_ops_ = 0;
   return true;
 }
