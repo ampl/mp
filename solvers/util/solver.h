@@ -364,7 +364,7 @@ class ProblemChanges {
   int AddVar(double lb, double ub) {
     var_lb_.push_back(lb);
     var_ub_.push_back(ub);
-    return problem_->num_vars() + var_lb_.size() - 1;
+    return static_cast<int>(problem_->num_vars() + var_lb_.size() - 1);
   }
 
   // Adds an objective.
