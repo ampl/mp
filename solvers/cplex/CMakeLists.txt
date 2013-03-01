@@ -5,7 +5,8 @@ if (CPLEX_FOUND)
   include_directories(.. ${CPLEX_INCLUDE_DIRS}/ilcplex)
   if (CMAKE_COMPILER_IS_GNUCC)
     add_definitions(-Wno-deprecated-declarations -Wno-long-long
-                    -Wno-sign-compare -Wno-unused-parameter)
+                    -Wno-sign-compare -Wno-uninitialized
+                    -Wno-unused-parameter -Wno-unused-result)
   elseif (MSVC)
     foreach (flag_var
              CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
