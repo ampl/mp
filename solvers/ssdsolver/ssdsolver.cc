@@ -129,7 +129,7 @@ int SSDSolver::Run(char **argv) {
     // Compute violation and minimal tail difference.
     double min_tail_diff = Infinity;
     double max_rel_violation = 0;
-    int min_tail_diff_scen = -1;
+    //int min_tail_diff_scen = -1;
     int max_rel_violation_scen = -1;
     for (int i = 0; i < num_scenarios; ++i) {
       double scaling = 1; // TODO: optional scaling
@@ -143,7 +143,7 @@ int SSDSolver::Run(char **argv) {
       double tail_diff = (tails[i].value - ref_tails[i]) / scaling;
       if (tail_diff < min_tail_diff) {
         min_tail_diff = tail_diff;
-        min_tail_diff_scen = i;
+        //min_tail_diff_scen = i;
       }
     }
 
