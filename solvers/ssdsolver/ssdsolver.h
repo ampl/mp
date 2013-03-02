@@ -71,12 +71,12 @@ class SSDExtractor : public ExprVisitor<SSDExtractor, void, void> {
     con_index_(0), sign_(0), rhs_(num_scenarios) {}
 
   void Extract(CallExpr call) {
-    for (CallExpr::expr_arg_iterator
-        i = call.expr_arg_begin(), e = call.expr_arg_end(); i != e; ++i) {
-      sign_ = call.GetArgIndex(i) == 0 ? 1 : -1;
+    for (CallExpr::arg_expr_iterator
+        i = call.arg_expr_begin(), e = call.arg_expr_end(); i != e; ++i) {
+      sign_ = call.arg_index(i) == 0 ? 1 : -1;
       Visit(*i);
     }
-    rhs_[con_index_] = call.GetArg(1) - call.GetArg(0);
+    rhs_[con_index_] = call.arg_constant(1) - call.arg_constant(0);
     ++con_index_;
   }
 

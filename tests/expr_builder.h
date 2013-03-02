@@ -23,6 +23,7 @@
 #ifndef TESTS_EXPR_BUILDER_H_
 #define TESTS_EXPR_BUILDER_H_
 
+#include <deque>
 #include <vector>
 #include "solvers/util/expr.h"
 
@@ -37,6 +38,26 @@ class ExprBuilder {
     exprs_.push_back(e);
     return Expr::Create<T>(Expr(e));
   }
+
+  static expr *GetImpl(Expr e) { return e.expr_; }
+
+  class Call {
+   private:
+    std::string name_;
+    func_info info_;
+    arglist args_;
+    std::vector<double> constants_;
+    std::vector<argpair> expr_args_;
+    expr_f expr_;
+
+   public:
+    Call() : info_(), args_(), expr_() {}
+
+    expr *Init(const char *name,
+        const NumericExpr *arg_begin, const NumericExpr *arg_end);
+  };
+
+  std::deque<Call> calls_;
 
   static de MakeDE(NumericExpr e) {
     de result = {e.expr_, 0, {0}};
@@ -105,12 +126,16 @@ class ExprBuilder {
     return AddExpr<Variable>(new expr(e));
   }
 
-  // Adds a new numberof expression with up to 3 arguments.
+  // Adds a new numberof expression with up to 2 arguments.
   NumberOfExpr AddNumberOf(NumericExpr value, NumericExpr arg1,
       NumericExpr arg2 = NumericExpr()) {
     return AddIterated<NumberOfExpr, NumericExpr>(
         OPNUMBEROF, value, arg1, arg2);
   }
+
+  // Adds a new call expression with up to 3 arguments.
+  CallExpr AddCall(const char *func_name,
+      const NumericExpr* arg_begin, const NumericExpr *arg_end);
 
   // Adds a new alldiff expression with up to 3 arguments.
   AllDiffExpr AddAllDiff(NumericExpr arg1, NumericExpr arg2,
