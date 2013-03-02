@@ -24,6 +24,27 @@
 
 namespace ampl {
 
+expr *ExprBuilder::Call::Init(const char *name,
+    const NumericExpr *arg_begin, const NumericExpr *arg_end) {
+  name_ = name;
+  info_.name = name_.c_str();
+  int num_args = info_.nargs = arg_end - arg_begin;
+  expr_.op = reinterpret_cast<efunc*>(OPFUNCALL);
+  expr_.fi = &info_;
+  expr_.al = &args_;
+  constants_.resize(num_args);
+  args_.ra = &constants_[0];
+  expr_args_.reserve(info_.nargs);
+  for (int i = 0; i < num_args; ++i) {
+    argpair ap = {GetImpl(arg_begin[i])};
+    ap.u.v = args_.ra + i;
+    expr_args_.push_back(ap);
+  }
+  expr_.ap = &expr_args_[0];
+  expr_.ape = expr_.ap + expr_args_.size();
+  return reinterpret_cast<expr*>(&expr_);
+}
+
 ExprBuilder::~ExprBuilder() {
   for (std::vector<expr*>::const_iterator
        i = exprs_.begin(), end = exprs_.end(); i != end; ++i) {
@@ -63,7 +84,7 @@ VarArgExpr ExprBuilder::AddVarArg(int opcode,
   args[2] = MakeDE(e3);
   args[3] = MakeDE(NumericExpr());
   copy->L.d = args;
-  return Expr::Create<VarArgExpr>(AddExpr<NumericExpr>(result));
+  return AddExpr<VarArgExpr>(result);
 }
 
 PiecewiseLinearTerm ExprBuilder::AddPLTerm(
@@ -78,5 +99,12 @@ PiecewiseLinearTerm ExprBuilder::AddPLTerm(
     bs[i] = args[i];
   pl.expr_->R.e = AddVar(var_index).expr_;
   return pl;
+}
+
+CallExpr ExprBuilder::AddCall(const char *func_name,
+    const NumericExpr *arg_begin, const NumericExpr *arg_end) {
+  calls_.resize(calls_.size() + 1);
+  return Expr::Create<CallExpr>(Expr(
+      calls_.back().Init(func_name, arg_begin, arg_end)));
 }
 }

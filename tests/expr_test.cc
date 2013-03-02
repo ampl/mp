@@ -39,6 +39,7 @@ using ampl::PiecewiseLinearTerm;
 using ampl::NumericConstant;
 using ampl::Variable;
 using ampl::NumberOfExpr;
+using ampl::CallExpr;
 using ampl::LogicalConstant;
 using ampl::RelationalExpr;
 using ampl::NotExpr;
@@ -304,7 +305,7 @@ const OpInfo OP_INFO[] = {
   {OP1POW, "1pow", Expr::BINARY},
   {OP2POW, "^2",   Expr::UNARY},
   {OPCPOW, "cpow", Expr::BINARY},
-  {OPFUNCALL, "function call", Expr::UNKNOWN},
+  {OPFUNCALL, "function call", Expr::CALL},
   {OPNUM, "number", Expr::CONSTANT},
   {OPHOL, "string", Expr::UNKNOWN},
   {OPVARVAL, "variable", Expr::VARIABLE},
@@ -355,7 +356,7 @@ int CheckExpr(Expr::Kind start, Expr::Kind end = Expr::UNKNOWN,
 }
 
 TEST_F(ExprTest, Expr) {
-  EXPECT_EQ(64, CheckExpr<Expr>(Expr::EXPR_START, Expr::EXPR_END, -1));
+  EXPECT_EQ(65, CheckExpr<Expr>(Expr::EXPR_START, Expr::EXPR_END, -1));
   TestAssertInCreate<Expr>(7);
   TestAssertInCreate<Expr>(N_OPS);
   TestAssertInCreate<Expr>(777);
@@ -506,7 +507,7 @@ TEST_F(ExprTest, EqualCount) {
 }
 
 TEST_F(ExprTest, NumericExpr) {
-  EXPECT_EQ(44,
+  EXPECT_EQ(45,
       CheckExpr<NumericExpr>(Expr::NUMERIC_START, Expr::NUMERIC_END, OPNOT));
 }
 
@@ -648,6 +649,33 @@ TEST_F(ExprTest, NumberOfExpr) {
   NumberOfExpr::iterator i2 = i++;
   EXPECT_EQ(args[0], *i2);
   EXPECT_EQ(args[1], *i);
+}
+
+TEST_F(ExprTest, CallExpr) {
+  EXPECT_EQ(1, CheckExpr<CallExpr>(Expr::CALL));
+  NumericExpr args[] = {AddNum(42), AddNum(43), AddNum(44)};
+  CallExpr e(AddCall("foo", args, args + 3));
+  EXPECT_STREQ("foo", e.function().name());
+  EXPECT_EQ(3, e.function().num_args());
+  CallExpr e2(AddCall("bar", args, args + 2));
+  EXPECT_EQ(2, e2.function().num_args());
+  EXPECT_EQ(e.function(), e.function());
+  EXPECT_NE(e.function(), e2.function());
+  EXPECT_FALSE(ampl::Function());
+  int index = 0;
+  CallExpr::arg_expr_iterator i = e.arg_expr_begin();
+  for (CallExpr::arg_expr_iterator
+      end = e.arg_expr_end(); i != end; ++i, ++index) {
+    EXPECT_EQ(args[index], *i);
+    EXPECT_EQ(args[index].opcode(), i->opcode());
+    EXPECT_EQ(index, e.arg_index(i));
+  }
+  EXPECT_EQ(3, index);
+  // TODO: test the case of some arguments constant (no expr)
+  /*i = e.begin();
+  CallExpr::iterator i2 = i++;
+  EXPECT_EQ(args[0], *i2);
+  EXPECT_EQ(args[1], *i);*/
 }
 
 TEST_F(ExprTest, LogicalConstant) {
@@ -797,6 +825,7 @@ struct FullTestVisitor : ExprVisitor<FullTestVisitor, TestResult, TestLResult> {
   TestResult VisitTrunc(BinaryExpr e) { return Handle(e); }
   TestResult VisitCount(CountExpr e) { return Handle(e); }
   TestResult VisitNumberOf(NumberOfExpr e) { return Handle(e); }
+  TestResult VisitCall(CallExpr e) { return Handle(e); }
   TestResult VisitPLTerm(PiecewiseLinearTerm e) { return Handle(e); }
   TestResult VisitPowConstExp(BinaryExpr e) { return Handle(e); }
   TestResult VisitPow2(UnaryExpr e) { return Handle(e); }

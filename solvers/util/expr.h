@@ -636,8 +636,10 @@ class Function {
  public:
   Function() : fi_(0) {}
 
+  // Returns the function name.
   const char *name() const { return fi_->name; }
 
+  // Returns the number of arguments.
   int num_args() const { return fi_->nargs; }
 
   // Returns a value convertible to bool that can be used in conditions but not
@@ -651,8 +653,8 @@ class Function {
   //   }
   operator SafeBool() const { return fi_ ? &Function::True : 0; }
 
-  bool operator==(const Function &other) { return fi_ == other.fi_; }
-  bool operator!=(const Function &other) { return fi_ != other.fi_; }
+  bool operator==(const Function &other) const { return fi_ == other.fi_; }
+  bool operator!=(const Function &other) const { return fi_ != other.fi_; }
 };
 
 // A function call expression.
@@ -665,19 +667,22 @@ class CallExpr : public NumericExpr {
     return Function(reinterpret_cast<expr_f*>(expr_)->fi);
   }
 
-  double GetArg(unsigned index) const {
-    return reinterpret_cast<expr_f*>(expr_)->al->ra[index];
+  // Returns the constant term of the argument.
+  double arg_constant(int index) const {
+    arglist *al = reinterpret_cast<expr_f*>(expr_)->al;
+    assert(index >= 0 && index < al->n);
+    return al->ra[index];
   }
 
-  // An iterator over arguments that are expressions.
-  class expr_arg_iterator :
+  // An iterator over argument expressions.
+  class arg_expr_iterator :
     public std::iterator<std::forward_iterator_tag, NumericExpr> {
    private:
     const argpair *p_;
 
     friend class CallExpr;
 
-    explicit expr_arg_iterator(const argpair *p) : p_(p) {}
+    explicit arg_expr_iterator(const argpair *p) : p_(p) {}
 
    public:
     NumericExpr operator*() const { return Create<NumericExpr>(p_->e); }
@@ -686,35 +691,37 @@ class CallExpr : public NumericExpr {
       return Proxy<NumericExpr>(p_->e);
     }
 
-    expr_arg_iterator &operator++() {
+    arg_expr_iterator &operator++() {
       ++p_;
       return *this;
     }
 
-    expr_arg_iterator operator++(int ) {
-      expr_arg_iterator it(*this);
+    arg_expr_iterator operator++(int ) {
+      arg_expr_iterator it(*this);
       ++p_;
       return it;
     }
 
-    bool operator==(expr_arg_iterator other) const { return p_ == other.p_; }
-    bool operator!=(expr_arg_iterator other) const { return p_ != other.p_; }
+    bool operator==(arg_expr_iterator other) const { return p_ == other.p_; }
+    bool operator!=(arg_expr_iterator other) const { return p_ != other.p_; }
   };
 
-  int num_expr_args() const {
+  // Returns the number of argument expressions.
+  int num_arg_exprs() const {
     expr_f* ef = reinterpret_cast<expr_f*>(expr_);
     return static_cast<int>(ef->ape - ef->ap);
   }
 
-  expr_arg_iterator expr_arg_begin() const {
-    return expr_arg_iterator(reinterpret_cast<expr_f*>(expr_)->ap);
+  arg_expr_iterator arg_expr_begin() const {
+    return arg_expr_iterator(reinterpret_cast<expr_f*>(expr_)->ap);
   }
 
-  expr_arg_iterator expr_arg_end() const {
-    return expr_arg_iterator(reinterpret_cast<expr_f*>(expr_)->ape);
+  arg_expr_iterator arg_expr_end() const {
+    return arg_expr_iterator(reinterpret_cast<expr_f*>(expr_)->ape);
   }
 
-  int GetArgIndex(expr_arg_iterator i) const {
+  // Returns the argument index for the argument expression iterator.
+  int arg_index(arg_expr_iterator i) const {
     return static_cast<int>(
         i.p_->u.v - reinterpret_cast<expr_f*>(expr_)->al->ra);
   }
@@ -1107,6 +1114,10 @@ class ExprVisitor {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
+  Result VisitCall(CallExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
   Result VisitNumericConstant(NumericConstant c) {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(c));
   }
@@ -1289,6 +1300,8 @@ Result ExprVisitor<Impl, Result, LResult>::Visit(NumericExpr e) {
     return AMPL_DISPATCH(VisitPow2(Expr::Create<UnaryExpr>(e)));
   case OPCPOW:
     return AMPL_DISPATCH(VisitPowConstBase(Expr::Create<BinaryExpr>(e)));
+  case OPFUNCALL:
+    return AMPL_DISPATCH(VisitCall(Expr::Create<CallExpr>(e)));
   case OPNUM:
     return AMPL_DISPATCH(VisitNumericConstant(
         Expr::Create<NumericConstant>(e)));
