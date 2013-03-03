@@ -1,4 +1,4 @@
-20130222
-  Fix a bug with multiple t-headers in data sections, leading to error
-message "irregular : ... : header".  An example appears in
-/netlib/ampl/changes.
+20130226
+  Fix a bug with fixing variables that appear in complementarity
+constraints when the fixing should cause the constraints to be
+removed by presolve.
