@@ -25,18 +25,22 @@
 namespace ampl {
 
 expr *ExprBuilder::Call::Init(const char *name,
-    const NumericExpr *arg_begin, const NumericExpr *arg_end) {
+    const CallArg *arg_begin, const CallArg *arg_end) {
   name_ = name;
   info_.name = name_.c_str();
   int num_args = info_.nargs = arg_end - arg_begin;
   expr_.op = reinterpret_cast<efunc*>(OPFUNCALL);
   expr_.fi = &info_;
   expr_.al = &args_;
+  args_.n = num_args;
   constants_.resize(num_args);
   args_.ra = &constants_[0];
   expr_args_.reserve(info_.nargs);
   for (int i = 0; i < num_args; ++i) {
-    argpair ap = {GetImpl(arg_begin[i])};
+    const CallArg &arg = arg_begin[i];
+    constants_[i] = arg.constant();
+    if (!arg.expr()) continue;
+    argpair ap = {GetImpl(arg.expr())};
     ap.u.v = args_.ra + i;
     expr_args_.push_back(ap);
   }
@@ -102,7 +106,7 @@ PiecewiseLinearTerm ExprBuilder::AddPLTerm(
 }
 
 CallExpr ExprBuilder::AddCall(const char *func_name,
-    const NumericExpr *arg_begin, const NumericExpr *arg_end) {
+    const CallArg *arg_begin, const CallArg *arg_end) {
   calls_.resize(calls_.size() + 1);
   return Expr::Create<CallExpr>(Expr(
       calls_.back().Init(func_name, arg_begin, arg_end)));
