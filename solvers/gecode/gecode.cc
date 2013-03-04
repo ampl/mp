@@ -174,13 +174,13 @@ void NLToGecodeConverter::Convert(const Problem &p) {
 
   if (p.num_objs() != 0) {
     problem_.SetObj(p.obj_type(0),
-        ConvertExpr(p.GetLinearObjExpr(0), p.GetNonlinearObjExpr(0)));
+        ConvertExpr(p.linear_obj_expr(0), p.nonlinear_obj_expr(0)));
   }
 
   // Convert constraints.
   for (int i = 0, n = p.num_cons(); i < n; ++i) {
     LinExpr con_expr(
-        ConvertExpr(p.GetLinearConExpr(i), p.GetNonlinearConExpr(i)));
+        ConvertExpr(p.linear_con_expr(i), p.nonlinear_con_expr(i)));
     double lb = p.con_lb(i), ub = p.con_ub(i);
     if (lb <= negInfinity) {
       rel(problem_, con_expr <= CastToInt(ub));
@@ -201,7 +201,7 @@ void NLToGecodeConverter::Convert(const Problem &p) {
 
   // Convert logical constraints.
   for (int i = 0, n = p.num_logical_cons(); i < n; ++i)
-    ConvertFullExpr(p.GetLogicalConExpr(i));
+    ConvertFullExpr(p.logical_con_expr(i));
 }
 
 LinExpr NLToGecodeConverter::VisitMin(VarArgExpr e) {

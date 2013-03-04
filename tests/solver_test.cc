@@ -532,31 +532,31 @@ TEST(SolverTest, ProblemAccessors) {
   EXPECT_EQ(ampl::MAX, p.obj_type(p.num_objs() - 1));
 
   {
-    LinearObjExpr expr = p.GetLinearObjExpr(0);
+    LinearObjExpr expr = p.linear_obj_expr(0);
     EXPECT_EQ(31, expr.begin()->coef());
     EXPECT_EQ(0, expr.begin()->var_index());
-    expr = p.GetLinearObjExpr(p.num_objs() - 1);
+    expr = p.linear_obj_expr(p.num_objs() - 1);
     EXPECT_EQ(52, expr.begin()->coef());
     EXPECT_EQ(3, expr.begin()->var_index());
   }
 
   {
-    LinearConExpr expr = p.GetLinearConExpr(0);
+    LinearConExpr expr = p.linear_con_expr(0);
     EXPECT_EQ(61, expr.begin()->coef());
     EXPECT_EQ(0, expr.begin()->var_index());
-    expr = p.GetLinearConExpr(p.num_cons() - 1);
+    expr = p.linear_con_expr(p.num_cons() - 1);
     EXPECT_EQ(82, expr.begin()->coef());
     EXPECT_EQ(2, expr.begin()->var_index());
   }
 
-  EXPECT_EQ(OP_sin, p.GetNonlinearObjExpr(0).opcode());
-  EXPECT_EQ(OP_cos, p.GetNonlinearObjExpr(p.num_nonlinear_objs() - 1).opcode());
+  EXPECT_EQ(OP_sin, p.nonlinear_obj_expr(0).opcode());
+  EXPECT_EQ(OP_cos, p.nonlinear_obj_expr(p.num_nonlinear_objs() - 1).opcode());
 
-  EXPECT_EQ(OP_log, p.GetNonlinearConExpr(0).opcode());
-  EXPECT_EQ(OP_exp, p.GetNonlinearConExpr(p.num_nonlinear_cons() - 1).opcode());
+  EXPECT_EQ(OP_log, p.nonlinear_con_expr(0).opcode());
+  EXPECT_EQ(OP_exp, p.nonlinear_con_expr(p.num_nonlinear_cons() - 1).opcode());
 
-  EXPECT_EQ(NE, p.GetLogicalConExpr(0).opcode());
-  EXPECT_EQ(OPAND, p.GetLogicalConExpr(p.num_logical_cons() - 1).opcode());
+  EXPECT_EQ(NE, p.logical_con_expr(0).opcode());
+  EXPECT_EQ(OPAND, p.logical_con_expr(p.num_logical_cons() - 1).opcode());
 
   EXPECT_EQ(-1, p.solve_code());
   p.set_solve_code(42);
@@ -584,20 +584,20 @@ TEST(SolverTest, ProblemBoundChecks) {
   EXPECT_DEATH(p.obj_type(-1), "Assertion");
   EXPECT_DEATH(p.obj_type(p.num_objs()), "Assertion");
 
-  EXPECT_DEATH(p.GetLinearObjExpr(-1), "Assertion");
-  EXPECT_DEATH(p.GetLinearObjExpr(p.num_objs()), "Assertion");
+  EXPECT_DEATH(p.linear_obj_expr(-1), "Assertion");
+  EXPECT_DEATH(p.linear_obj_expr(p.num_objs()), "Assertion");
 
-  EXPECT_DEATH(p.GetLinearConExpr(-1), "Assertion");
-  EXPECT_DEATH(p.GetLinearConExpr(p.num_cons()), "Assertion");
+  EXPECT_DEATH(p.linear_con_expr(-1), "Assertion");
+  EXPECT_DEATH(p.linear_con_expr(p.num_cons()), "Assertion");
 
-  EXPECT_DEATH(p.GetNonlinearObjExpr(-1), "Assertion");
-  EXPECT_DEATH(p.GetNonlinearObjExpr(p.num_objs()), "Assertion");
+  EXPECT_DEATH(p.nonlinear_obj_expr(-1), "Assertion");
+  EXPECT_DEATH(p.nonlinear_obj_expr(p.num_objs()), "Assertion");
 
-  EXPECT_DEATH(p.GetNonlinearConExpr(-1), "Assertion");
-  EXPECT_DEATH(p.GetNonlinearConExpr(p.num_cons()), "Assertion");
+  EXPECT_DEATH(p.nonlinear_con_expr(-1), "Assertion");
+  EXPECT_DEATH(p.nonlinear_con_expr(p.num_cons()), "Assertion");
 
-  EXPECT_DEATH(p.GetLogicalConExpr(-1), "Assertion");
-  EXPECT_DEATH(p.GetLogicalConExpr(p.num_logical_cons()), "Assertion");
+  EXPECT_DEATH(p.logical_con_expr(-1), "Assertion");
+  EXPECT_DEATH(p.logical_con_expr(p.num_logical_cons()), "Assertion");
 #endif
 }
 

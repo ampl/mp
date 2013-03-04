@@ -554,12 +554,12 @@ class PiecewiseLinearTerm : public NumericExpr {
   }
 
   // Returns the number of slopes in this term.
-  double GetSlope(int index) const {
+  double slope(int index) const {
     assert(index >= 0 && index < num_slopes());
     return expr_->L.p->bs[2 * index];
   }
 
-  double GetBreakpoint(int index) const {
+  double breakpoint(int index) const {
     assert(index >= 0 && index < num_breakpoints());
     return expr_->L.p->bs[2 * index + 1];
   }

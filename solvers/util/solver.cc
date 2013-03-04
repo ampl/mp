@@ -144,7 +144,7 @@ fmt::Writer &operator<<(fmt::Writer &w, const Problem &p) {
   // Write objectives.
   for (int i = 0, n = p.num_objs(); i < n; ++i) {
     w << (p.obj_type(i) == MIN ? "minimize" : "maximize") << " o: ";
-    WriteExpr(w, p.GetLinearObjExpr(i));
+    WriteExpr(w, p.linear_obj_expr(i));
     w << ";\n";
   }
 
@@ -154,7 +154,7 @@ fmt::Writer &operator<<(fmt::Writer &w, const Problem &p) {
     double lb = p.con_lb(i), ub = p.con_ub(i);
     if (lb != ub && lb != -Infinity && ub != Infinity)
       w << lb << " <= ";
-    WriteExpr(w, p.GetLinearConExpr(i));
+    WriteExpr(w, p.linear_con_expr(i));
     if (lb == ub)
       w << " = " << lb;
     else if (ub != Infinity)
