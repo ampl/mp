@@ -269,31 +269,31 @@ class Problem : Noncopyable {
   }
 
   // Returns the linear part of an objective expression.
-  LinearObjExpr GetLinearObjExpr(int obj_index) const {
+  LinearObjExpr linear_obj_expr(int obj_index) const {
     assert(obj_index >= 0 && obj_index < num_objs());
     return LinearObjExpr(asl_->i.Ograd_[obj_index]);
   }
 
   // Returns the linear part of a constraint expression.
-  LinearConExpr GetLinearConExpr(int con_index) const {
+  LinearConExpr linear_con_expr(int con_index) const {
     assert(con_index >= 0 && con_index < num_cons());
     return LinearConExpr(asl_->i.Cgrad_[con_index]);
   }
 
   // Returns the nonlinear part of an objective expression.
-  NumericExpr GetNonlinearObjExpr(int obj_index) const {
+  NumericExpr nonlinear_obj_expr(int obj_index) const {
     assert(obj_index >= 0 && obj_index < num_objs());
     return Expr::Create<NumericExpr>(asl_->I.obj_de_[obj_index].e);
   }
 
   // Returns the nonlinear part of a constraint expression.
-  NumericExpr GetNonlinearConExpr(int con_index) const {
+  NumericExpr nonlinear_con_expr(int con_index) const {
     assert(con_index >= 0 && con_index < num_cons());
     return Expr::Create<NumericExpr>(asl_->I.con_de_[con_index].e);
   }
 
   // Returns a logical constraint expression.
-  LogicalExpr GetLogicalConExpr(int lcon_index) const {
+  LogicalExpr logical_con_expr(int lcon_index) const {
     assert(lcon_index >= 0 && lcon_index < num_logical_cons());
     return Expr::Create<LogicalExpr>(asl_->I.lcon_de_[lcon_index].e);
   }

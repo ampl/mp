@@ -605,16 +605,16 @@ TEST_F(ExprTest, PiecewiseLinearTerm) {
   double args[] = {-1, 5, 0, 10, 1};
   PiecewiseLinearTerm e(AddPLTerm(5, args, 42));
   EXPECT_EQ(2, e.num_breakpoints());
-  EXPECT_EQ(5, e.GetBreakpoint(0));
-  EXPECT_EQ(10, e.GetBreakpoint(1));
-  EXPECT_DEBUG_DEATH(e.GetBreakpoint(-1);, "Assertion");  // NOLINT(*)
-  EXPECT_DEBUG_DEATH(e.GetBreakpoint(2);, "Assertion");  // NOLINT(*)
+  EXPECT_EQ(5, e.breakpoint(0));
+  EXPECT_EQ(10, e.breakpoint(1));
+  EXPECT_DEBUG_DEATH(e.breakpoint(-1);, "Assertion");  // NOLINT(*)
+  EXPECT_DEBUG_DEATH(e.breakpoint(2);, "Assertion");  // NOLINT(*)
   EXPECT_EQ(3, e.num_slopes());
-  EXPECT_EQ(-1, e.GetSlope(0));
-  EXPECT_EQ(0, e.GetSlope(1));
-  EXPECT_EQ(1, e.GetSlope(2));
-  EXPECT_DEBUG_DEATH(e.GetSlope(-1);, "Assertion");  // NOLINT(*)
-  EXPECT_DEBUG_DEATH(e.GetSlope(3);, "Assertion");  // NOLINT(*)
+  EXPECT_EQ(-1, e.slope(0));
+  EXPECT_EQ(0, e.slope(1));
+  EXPECT_EQ(1, e.slope(2));
+  EXPECT_DEBUG_DEATH(e.slope(-1);, "Assertion");  // NOLINT(*)
+  EXPECT_DEBUG_DEATH(e.slope(3);, "Assertion");  // NOLINT(*)
   EXPECT_EQ(42, e.var_index());
 }
 

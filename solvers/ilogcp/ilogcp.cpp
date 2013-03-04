@@ -554,10 +554,10 @@ IloExpr IlogCPSolver::VisitPLTerm(PiecewiseLinearTerm t) {
   IloNumArray slopes(env_), breakpoints(env_);
   int num_breakpoints = t.num_breakpoints();
   for (int i = 0; i < num_breakpoints; ++i) {
-    slopes.add(t.GetSlope(i));
-    breakpoints.add(t.GetBreakpoint(i));
+    slopes.add(t.slope(i));
+    breakpoints.add(t.breakpoint(i));
   }
-  slopes.add(t.GetSlope(num_breakpoints));
+  slopes.add(t.slope(num_breakpoints));
   return IloPiecewiseLinear(vars_[t.var_index()], breakpoints, slopes, 0, 0);
 }
 
@@ -654,12 +654,12 @@ int IlogCPSolver::Run(char **argv) {
   }
 
   if (problem.num_objs() > 0) {
-    NumericExpr expr(problem.GetNonlinearObjExpr(0));
+    NumericExpr expr(problem.nonlinear_obj_expr(0));
     NumericConstant constant(Cast<NumericConstant>(expr));
     IloExpr ilo_expr(env_, constant ? constant.value() : 0);
     if (problem.num_nonlinear_objs() > 0)
       ilo_expr += Visit(expr);
-    LinearObjExpr linear = problem.GetLinearObjExpr(0);
+    LinearObjExpr linear = problem.linear_obj_expr(0);
     for (LinearObjExpr::iterator
         i = linear.begin(), end = linear.end(); i != end; ++i) {
       ilo_expr += i->coef() * vars_[i->var_index()];
@@ -675,13 +675,13 @@ int IlogCPSolver::Run(char **argv) {
     IloRangeArray cons(optimizer_->cons());
     for (int i = 0; i < n_cons; ++i) {
       IloExpr conExpr(env_);
-      LinearConExpr linear = problem.GetLinearConExpr(i);
+      LinearConExpr linear = problem.linear_con_expr(i);
       for (LinearConExpr::iterator
           j = linear.begin(), end = linear.end(); j != end; ++j) {
         conExpr += j->coef() * vars_[j->var_index()];
       }
       if (i < problem.num_nonlinear_cons())
-        conExpr += Visit(problem.GetNonlinearConExpr(i));
+        conExpr += Visit(problem.nonlinear_con_expr(i));
       cons[i] = (problem.con_lb(i) <= conExpr <= problem.con_ub(i));
     }
     mod_.add(cons);
@@ -690,7 +690,7 @@ int IlogCPSolver::Run(char **argv) {
   if (int n_lcons = problem.num_logical_cons()) {
     IloConstraintArray lcons(env_, n_lcons);
     for (int i = 0; i < n_lcons; ++i)
-      lcons[i] = Visit(problem.GetLogicalConExpr(i));
+      lcons[i] = Visit(problem.logical_con_expr(i));
     mod_.add(lcons);
   }
 

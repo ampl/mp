@@ -66,7 +66,7 @@ int SSDSolver::Run(char **argv) {
   int num_vars = problem.num_vars();
   SSDExtractor extractor(num_scenarios, num_vars);
   for (int i = 0; i < num_scenarios; ++i) {
-    LogicalExpr logical_expr = problem.GetLogicalConExpr(i);
+    LogicalExpr logical_expr = problem.logical_con_expr(i);
     RelationalExpr rel_expr = Cast<RelationalExpr>(logical_expr);
     if (!rel_expr || rel_expr.opcode() != NE ||
         Cast<NumericConstant>(rel_expr.rhs()).value() != 0) {
