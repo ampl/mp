@@ -29,6 +29,19 @@
 
 namespace ampl {
 
+class CallArg {
+ private:
+  double constant_;
+  NumericExpr expr_;
+
+ public:
+  CallArg(double constant, NumericExpr e = NumericExpr())
+  : constant_(constant), expr_(e) {}
+
+  double constant() const { return constant_; }
+  NumericExpr expr() const { return expr_; }
+};
+
 class ExprBuilder {
  private:
   std::vector<expr*> exprs_;
@@ -54,7 +67,7 @@ class ExprBuilder {
     Call() : info_(), args_(), expr_() {}
 
     expr *Init(const char *name,
-        const NumericExpr *arg_begin, const NumericExpr *arg_end);
+        const CallArg *arg_begin, const CallArg *arg_end);
   };
 
   std::deque<Call> calls_;
@@ -135,7 +148,7 @@ class ExprBuilder {
 
   // Adds a new call expression with up to 3 arguments.
   CallExpr AddCall(const char *func_name,
-      const NumericExpr* arg_begin, const NumericExpr *arg_end);
+      const CallArg* arg_begin, const CallArg *arg_end);
 
   // Adds a new alldiff expression with up to 3 arguments.
   AllDiffExpr AddAllDiff(NumericExpr arg1, NumericExpr arg2,

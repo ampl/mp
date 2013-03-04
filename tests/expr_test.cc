@@ -25,6 +25,7 @@
 #include "gtest/gtest.h"
 #include "tests/expr_builder.h"
 
+using ampl::CallArg;
 using ampl::Cast;
 using ampl::Expr;
 using ampl::NumericExpr;
@@ -653,7 +654,9 @@ TEST_F(ExprTest, NumberOfExpr) {
 
 TEST_F(ExprTest, CallExpr) {
   EXPECT_EQ(1, CheckExpr<CallExpr>(Expr::CALL));
-  NumericExpr args[] = {AddNum(42), AddNum(43), AddNum(44)};
+  CallArg args[] = {
+      CallArg(3, AddNum(42)), CallArg(5), CallArg(7, AddNum(44))
+  };
   CallExpr e(AddCall("foo", args, args + 3));
   EXPECT_STREQ("foo", e.function().name());
   EXPECT_EQ(3, e.function().num_args());
@@ -662,20 +665,26 @@ TEST_F(ExprTest, CallExpr) {
   EXPECT_EQ(e.function(), e.function());
   EXPECT_NE(e.function(), e2.function());
   EXPECT_FALSE(ampl::Function());
-  int index = 0;
+  EXPECT_EQ(2, e.num_arg_exprs());
+  int index = 0, arg_expr_count = 0;
   CallExpr::arg_expr_iterator i = e.arg_expr_begin();
-  for (CallExpr::arg_expr_iterator
-      end = e.arg_expr_end(); i != end; ++i, ++index) {
-    EXPECT_EQ(args[index], *i);
-    EXPECT_EQ(args[index].opcode(), i->opcode());
+  for (; index != sizeof(args) / sizeof(*args); ++index) {
+    NumericExpr expr = args[index].expr();
+    EXPECT_EQ(args[index].constant(), e.arg_constant(index));
+    if (!expr) continue;
+    EXPECT_EQ(expr, *i);
+    EXPECT_EQ(expr.opcode(), i->opcode());
     EXPECT_EQ(index, e.arg_index(i));
+    ++arg_expr_count;
+    ++i;
   }
+  EXPECT_EQ(e.arg_expr_end(), i);
   EXPECT_EQ(3, index);
-  // TODO: test the case of some arguments constant (no expr)
-  /*i = e.begin();
-  CallExpr::iterator i2 = i++;
-  EXPECT_EQ(args[0], *i2);
-  EXPECT_EQ(args[1], *i);*/
+  EXPECT_EQ(2, arg_expr_count);
+  i = e.arg_expr_begin();
+  CallExpr::arg_expr_iterator i2 = i++;
+  EXPECT_EQ(args[0].expr(), *i2);
+  EXPECT_EQ(args[2].expr(), *i);
 }
 
 TEST_F(ExprTest, LogicalConstant) {
