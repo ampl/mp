@@ -37,6 +37,7 @@ using ampl::LinearObjExpr;
 using ampl::LinearConExpr;
 using ampl::Problem;
 using ampl::BasicSolver;
+using ampl::Solution;
 using ampl::Solver;
 
 namespace {
@@ -93,6 +94,134 @@ class StderrRedirect {
     Stderr = saved_stderr;
   }
 };
+}
+
+TEST(SolutionTest, DefaultCtor) {
+  Solution s;
+  EXPECT_EQ(Solution::UNKNOWN, s.status());
+  EXPECT_EQ(-1, s.solve_code());
+  EXPECT_EQ(0, s.num_vars());
+  EXPECT_EQ(0, s.num_cons());
+  EXPECT_EQ(0, s.values());
+  EXPECT_EQ(0, s.dual_values());
+}
+
+TEST(SolutionTest, Read) {
+  WriteFile("test.sol", "test\n\n1\n3\n5\n7\n11\n");
+  Solution s;
+  s.Read("test", 3, 2);
+  EXPECT_EQ(Solution::UNKNOWN, s.status());
+  EXPECT_EQ(-1, s.solve_code());
+  EXPECT_EQ(3, s.num_vars());
+  EXPECT_EQ(2, s.num_cons());
+  const double values[] = {5, 7, 11};
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_EQ(values[i], s.value(i));
+    EXPECT_EQ(values[i], s.values()[i]);
+  }
+  const double dual_values[] = {1, 3};
+  for (int i = 0; i < 2; ++i) {
+    EXPECT_EQ(dual_values[i], s.dual_value(i));
+    EXPECT_EQ(dual_values[i], s.dual_values()[i]);
+  }
+}
+
+TEST(SolutionTest, ReadEmpty) {
+  WriteFile("test.sol", "test\n\n");
+  Solution s;
+  s.Read("test", 0, 0);
+  EXPECT_EQ(0, s.num_vars());
+  EXPECT_EQ(0, s.num_cons());
+  EXPECT_EQ(0, s.solve_code());
+}
+
+TEST(SolutionTest, DoubleRead) {
+  WriteFile("test.sol", "test\n\n1\n3\n5\n7\n11\n");
+  Solution s;
+  s.Read("test", 3, 2);
+  WriteFile("test.sol", "test\n\n44\n22\n33\n");
+  s.Read("test", 2, 1);
+  EXPECT_EQ(2, s.num_vars());
+  EXPECT_EQ(1, s.num_cons());
+  EXPECT_EQ(22, s.value(0));
+  EXPECT_EQ(33, s.value(1));
+  EXPECT_EQ(44, s.dual_value(0));
+}
+
+TEST(SolutionTest, SolveCodes) {
+  const Solution::Status STATES[] = {
+      Solution::SOLVED,
+      Solution::SOLVED_MAYBE,
+      Solution::INFEASIBLE,
+      Solution::UNBOUNDED,
+      Solution::LIMIT,
+      Solution::FAILURE
+  };
+  for (std::size_t i = 0; i < sizeof(STATES) / sizeof(*STATES); ++i) {
+    {
+      int solve_code = i * 100;
+      WriteFile("test.sol",
+          c_str(fmt::Format("test\n\n2\n2\nobjno 0 {}\n") << solve_code));
+      Solution s;
+      s.Read("test", 1, 1);
+      EXPECT_EQ(STATES[i], s.status());
+      EXPECT_EQ(solve_code, s.solve_code());
+    }
+    {
+      int solve_code = i * 100 + 99;
+      WriteFile("test.sol",
+          c_str(fmt::Format("test\n\n2\n2\nobjno 0 {}\n") << solve_code));
+      Solution s;
+      s.Read("test", 1, 1);
+      EXPECT_EQ(STATES[i], s.status());
+      EXPECT_EQ(solve_code, s.solve_code());
+    }
+  }
+  const double CODES[] = {-5, -1, 600, 1000};
+  for (std::size_t i = 0; i < sizeof(CODES) / sizeof(*CODES); ++i) {
+    WriteFile("test.sol",
+        c_str(fmt::Format("test\n\n2\n2\nobjno 0 {}\n") << CODES[i]));
+    Solution s;
+    s.Read("test", 1, 1);
+    EXPECT_EQ(Solution::UNKNOWN, s.status());
+    EXPECT_EQ(CODES[i], s.solve_code());
+  }
+}
+
+TEST(SolutionTest, BoundChecks) {
+  WriteFile("test.sol", "test\n\n1\n3\n5\n7\n11\n");
+  Solution s;
+  s.Read("test", 3, 2);
+  EXPECT_DEATH(s.value(-1), "Assertion");
+  EXPECT_DEATH(s.value(3), "Assertion");
+  EXPECT_DEATH(s.dual_value(-1), "Assertion");
+  EXPECT_DEATH(s.dual_value(2), "Assertion");
+}
+
+TEST(SolutionTest, Swap) {
+  WriteFile("test.sol", "test\n\n1\n3\n5\n7\n11\nobjno 0 10\n");
+  Solution s1;
+  s1.Read("test", 3, 2);
+  WriteFile("test.sol", "test\n\n44\n22\n33\nobjno 0 20");
+  Solution s2;
+  s2.Read("test", 2, 1);
+  s1.Swap(s2);
+
+  EXPECT_EQ(20, s1.solve_code());
+  EXPECT_EQ(2, s1.num_vars());
+  EXPECT_EQ(1, s1.num_cons());
+  EXPECT_EQ(22, s1.value(0));
+  EXPECT_EQ(33, s1.value(1));
+  EXPECT_EQ(44, s1.dual_value(0));
+
+  EXPECT_EQ(10, s2.solve_code());
+  EXPECT_EQ(3, s2.num_vars());
+  EXPECT_EQ(2, s2.num_cons());
+  EXPECT_EQ(5, s2.value(0));
+  EXPECT_EQ(7, s2.value(1));
+  EXPECT_EQ(11, s2.value(2));
+  EXPECT_EQ(1, s2.dual_value(0));
+  EXPECT_EQ(3, s2.dual_value(1));
 }
 
 TEST(SolverTest, BasicSolverCtor) {

@@ -132,10 +132,13 @@ class Noncopyable {
 class Solution : Noncopyable {
  private:
   int solve_code_;
+  int num_vars_;
+  int num_cons_;
   double *values_;
   double *dual_values_;
 
  public:
+  // Solution status.
   enum Status {
     UNKNOWN,
     SOLVED,
@@ -146,18 +149,14 @@ class Solution : Noncopyable {
     FAILURE
   };
 
-  Solution() : solve_code_(-1), values_(0), dual_values_(0) {}
+  // Constructs a solution with zero variables and constraints and the
+  // solve code -1.
+  Solution();
 
-  ~Solution() {
-    free(values_);
-    free(dual_values_);
-  }
+  ~Solution();
 
-  void Swap(Solution &other) {
-    std::swap(solve_code_, other.solve_code_);
-    std::swap(values_, other.values_);
-    std::swap(dual_values_, other.dual_values_);
-  }
+  // Swaps this solution with other.
+  void Swap(Solution &other);
 
   // Returns the solution status.
   Status status() const {
@@ -168,6 +167,12 @@ class Solution : Noncopyable {
   // Returns the solve code.
   int solve_code() const { return solve_code_; }
 
+  // Returns the number of variables.
+  int num_vars() const { return num_vars_; }
+
+  // Returns the number of constraints.
+  int num_cons() const { return num_cons_; }
+
   // Returns the values of all variables.
   const double *values() const { return values_; }
 
@@ -175,10 +180,16 @@ class Solution : Noncopyable {
   const double *dual_values() const { return dual_values_; }
 
   // Returns the value of a variable.
-  double value(int var) const { return values_[var]; }
+  double value(int var) const {
+    assert(var >= 0 && var < num_vars_);
+    return values_[var];
+  }
 
   // Returns the value of a dual variable corresponding to constraint con.
-  double dual_value(int con) const { return dual_values_[con]; }
+  double dual_value(int con) const {
+    assert(con >= 0 && con < num_cons_);
+    return dual_values_[con];
+  }
 
   // Reads a solution from the file <stub>.sol.
   void Read(const char *stub, int num_vars, int num_cons);
