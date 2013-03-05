@@ -62,16 +62,16 @@ endif ()
 
 find_package(ODBC)
 if (ODBC_FOUND)
-  include(CheckCXXSourceRuns)
   set(CMAKE_REQUIRED_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/..)
   set(CMAKE_REQUIRED_LIBRARIES ${ODBC_LIBRARIES})
 
   cxx_test_with_flags(odbc_test ""
     "gtest;function;${ODBC_LIBRARIES}" test_main.cc odbc_test.cc odbc.cc)
 
+  include(CheckCXXSourceRuns)
   check_cxx_source_runs(
     "#include \"tests/odbc.cc\"
-     int main(int argc, char **argv) {
+     int main() {
        return odbc::Env().FindDriver(\"excel\").empty() ? 1 : 0;
      }" HAVE_EXCEL_DRIVER)
 
@@ -83,7 +83,7 @@ if (ODBC_FOUND)
 
   check_cxx_source_runs(
     "#include \"tests/odbc.cc\"
-     int main(int argc, char **argv) {
+     int main() {
        return odbc::Env().FindDriver(\"mysql\").empty() ? 1 : 0;
      }" HAVE_MYSQL_DRIVER)
 

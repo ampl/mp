@@ -102,6 +102,22 @@ const char* OptionParser<const char*>::operator()(
 }
 }
 
+Solution::Solution()
+: solve_code_(-1), num_vars_(0), num_cons_(0), values_(0), dual_values_(0) {}
+
+Solution::~Solution() {
+  free(values_);
+  free(dual_values_);
+}
+
+void Solution::Swap(Solution &other) {
+  std::swap(solve_code_, other.solve_code_);
+  std::swap(num_vars_, other.num_vars_);
+  std::swap(num_cons_, other.num_cons_);
+  std::swap(values_, other.values_);
+  std::swap(dual_values_, other.dual_values_);
+}
+
 void Solution::Read(const char *stub, int num_vars, int num_cons) {
   // Allocate filename large enough to hold stub, ".nl" and terminating zero.
   std::size_t stub_len = std::strlen(stub);
@@ -114,6 +130,8 @@ void Solution::Read(const char *stub, int num_vars, int num_cons) {
   asl.i.filename_ = &filename[0];
   asl.i.stub_end_ = asl.i.filename_ + stub_len;
   Solution sol;
+  sol.num_vars_ = num_vars;
+  sol.num_cons_ = num_cons;
   char *message = read_sol_ASL(&asl, &sol.values_, &sol.dual_values_);
   if (!message)
     throw Error("Error reading solution file");
