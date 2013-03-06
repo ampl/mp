@@ -33,6 +33,7 @@ class Args {
   std::size_t argc_;
   std::vector<char> store_;
   std::vector<char*> argv_;
+  char **pargv_;
 
   void Add(const char *arg);
 
@@ -41,7 +42,7 @@ class Args {
       const char *arg3 = 0, const char *arg4 = 0,
       const char *arg5 = 0, const char *arg6 = 0);
 
-  operator char **();
+  operator char **&();
 };
 
 #endif  // TESTS_ARGS_H_

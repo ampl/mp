@@ -32,7 +32,7 @@ void Args::Add(const char *arg) {
 
 Args::Args(const char *arg1, const char *arg2,
       const char *arg3, const char *arg4, const char *arg5, const char *arg6)
-: argc_(0) {
+: argc_(0), pargv_(0) {
   Add(arg1);
   Add(arg2);
   Add(arg3);
@@ -41,11 +41,12 @@ Args::Args(const char *arg1, const char *arg2,
   Add(arg6);
 }
 
-Args::operator char **() {
+Args::operator char **&() {
   argv_.resize(argc_ + 1);
   for (std::size_t i = 0, j = 0; i < argc_;
       j += std::strlen(&store_[j]) + 1, ++i) {
     argv_[i] = &store_[j];
   }
-  return &argv_[0];
+  pargv_ = &argv_[0];
+  return pargv_;
 }

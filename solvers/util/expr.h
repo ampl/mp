@@ -36,6 +36,8 @@
 # include <unordered_map>
 #endif
 
+#include "solvers/util/format.h"
+
 extern "C" {
 #include "solvers/nlp.h"
 #include "solvers/opcode.hd"
@@ -871,7 +873,7 @@ AMPL_SPECIALIZE_IS(AllDiffExpr, OPALLDIFF)
 // A general error.
 class Error : public std::runtime_error {
  public:
-  explicit Error(const std::string &message) : std::runtime_error(message) {}
+  explicit Error(fmt::StringRef message) : std::runtime_error(message) {}
 };
 
 // An exception that is thrown when an ASL expression not supported

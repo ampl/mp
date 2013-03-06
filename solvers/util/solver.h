@@ -33,10 +33,10 @@
 
 extern "C" {
 #include "solvers/getstub.h"
+#undef Char
 }
 
 #include "solvers/util/expr.h"
-#include "solvers/util/format.h"
 
 namespace ampl {
 
@@ -321,7 +321,8 @@ class Problem : Noncopyable {
   enum { IGNORE_FUNCTIONS = 1 };
 
   // Solves the problem.
-  void Solve(Solution &sol, ProblemChanges *pc = 0, unsigned flags = 0);
+  void Solve(const char *solver_name, Solution &sol,
+      ProblemChanges *pc = 0, unsigned flags = 0);
 };
 
 // Writes a problem in the AMPL format.
