@@ -184,13 +184,13 @@ fmt::Writer &operator<<(fmt::Writer &w, const Problem &p) {
   return w;
 }
 
-// Temporary file manager.
+// A manager of temporary files.
 class TempFiles : Noncopyable {
  private:
   char *name_;
 
  public:
-  explicit TempFiles(const AmplExports *ae) : name_(ae->Tempnam(0, 0)) {}
+  TempFiles() : name_(tempnam(0, 0)) {}
   ~TempFiles() {
     std::remove(c_str(fmt::Format("{}.nl") << name_));
     std::remove(c_str(fmt::Format("{}.sol") << name_));
@@ -200,10 +200,10 @@ class TempFiles : Noncopyable {
   const char *stub() const { return name_; }
 };
 
-void Problem::Solve(Solution &sol, ProblemChanges *pc, unsigned flags) {
-  TempFiles temp(asl_->i.ae);
-
+void Problem::Solve(const char *solver_name,
+    Solution &sol, ProblemChanges *pc, unsigned flags) {
   // Write an .nl file.
+  TempFiles temp;
   int nfunc = asl_->i.nfunc_;
   if ((flags & IGNORE_FUNCTIONS) != 0)
     asl_->i.nfunc_ = 0;
@@ -214,7 +214,12 @@ void Problem::Solve(Solution &sol, ProblemChanges *pc, unsigned flags) {
     throw Error("Error writing .nl file");
 
   // Run the solver and read the solution file.
-  std::system(c_str(fmt::Format("cplex {} -AMPL") << temp.stub()));
+  int exit_code = std::system(
+      c_str(fmt::Format("{} {} -AMPL") << solver_name << temp.stub()));
+  if (exit_code != 0) {
+    throw Error(fmt::Format(
+        "Error running solver {}, exit code = {}") << solver_name << exit_code);
+  }
   sol.Read(temp.stub(), num_vars() + (pc ? pc->num_vars() : 0),
       num_cons() + (pc ? pc->num_cons() : 0));
 }

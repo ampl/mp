@@ -172,7 +172,8 @@ int SSDSolver::Run(char **argv) {
     pc.AddCon(&cut_coefs[0], ref_tails[max_rel_violation_scen], Infinity);
 
     Solution sol;
-    problem.Solve(sol, &pc, Problem::IGNORE_FUNCTIONS);
+    // TODO: make solver configurable
+    problem.Solve("cplex", sol, &pc, Problem::IGNORE_FUNCTIONS);
     if ((status = sol.status()) != Solution::SOLVED) {
       // TODO: report an error
       solution.clear();

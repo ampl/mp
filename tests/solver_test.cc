@@ -26,6 +26,7 @@
 #include "gtest/gtest.h"
 #include "solvers/util/solver.h"
 #include "tests/args.h"
+#include "tests/config.h"
 #include "tests/solution_handler.h"
 #include "tests/util.h"
 
@@ -126,6 +127,12 @@ TEST(SolutionTest, Read) {
   }
 }
 
+TEST(SolutionTest, ReadError) {
+  Solution s;
+  StderrRedirect redirect("out");
+  EXPECT_THROW(s.Read("nonexistent", 0, 0), ampl::Error);
+}
+
 TEST(SolutionTest, ReadEmpty) {
   WriteFile("test.sol", "test\n\n");
   Solution s;
@@ -188,6 +195,7 @@ TEST(SolutionTest, SolveCodes) {
   }
 }
 
+#ifndef NDEBUG
 TEST(SolutionTest, BoundChecks) {
   WriteFile("test.sol", "test\n\n1\n3\n5\n7\n11\n");
   Solution s;
@@ -197,6 +205,7 @@ TEST(SolutionTest, BoundChecks) {
   EXPECT_DEATH(s.dual_value(-1), "Assertion");
   EXPECT_DEATH(s.dual_value(2), "Assertion");
 }
+#endif
 
 TEST(SolutionTest, Swap) {
   WriteFile("test.sol", "test\n\n1\n3\n5\n7\n11\nobjno 0 10\n");
@@ -257,8 +266,7 @@ TEST(SolverTest, NameInUsage) {
     TestSolver s("solver-name", "long-solver-name");
     s.set_version("solver-version");
     Args args("program-name");
-    char **argv = args;
-    s.ReadProblem(argv);
+    s.ReadProblem(args);
   }
   std::string usage = "usage: solver-name ";
   EXPECT_EQ(usage, ReadFile("out").substr(0, usage.size()));
@@ -276,10 +284,9 @@ TEST(SolverTest, LongName) {
 TEST(SolverTest, Version) {
   TestSolver s("testsolver", "Test Solver");
   Args args("program-name", "-v");
-  char **argv = args;
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    s.ReadProblem(argv);
+    s.ReadProblem(args);
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Formatter format;
@@ -290,10 +297,9 @@ TEST(SolverTest, Version) {
 TEST(SolverTest, VersionWithDate) {
   TestSolver s("testsolver", "Test Solver", 20121227);
   Args args("program-name", "-v");
-  char **argv = args;
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    s.ReadProblem(argv);
+    s.ReadProblem(args);
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Formatter format;
@@ -308,10 +314,9 @@ TEST(SolverTest, SetVersion) {
   s.set_version(VERSION);
   EXPECT_STREQ(VERSION, s.version());
   Args args("program-name", "-v");
-  char **argv = args;
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    s.ReadProblem(argv);
+    s.ReadProblem(args);
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Formatter format;
@@ -361,30 +366,27 @@ TEST(SolverTest, SolutionHandler) {
 
 TEST(SolverTest, ReadProblem) {
   Args args("testprogram", "data/objconst.nl");
-  char **argv = args;
   TestSolver s("test");
   EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_TRUE(s.ReadProblem(argv));
+  EXPECT_TRUE(s.ReadProblem(args));
   EXPECT_EQ(1, s.problem().num_vars());
 }
 
 TEST(SolverTest, ReadProblemNoStub) {
   StderrRedirect redirect("out");
   Args args("testprogram");
-  char **argv = args;
   TestSolver s("test");
   EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_FALSE(s.ReadProblem(argv));
+  EXPECT_FALSE(s.ReadProblem(args));
   EXPECT_EQ(0, s.problem().num_vars());
 }
 
 TEST(SolverTest, ReadProblemError) {
   Args args("testprogram", "nonexistent");
-  char **argv = args;
   TestSolver s("test");
   EXPECT_EXIT({
     Stderr = stderr;
-    s.ReadProblem(argv);
+    s.ReadProblem(args);
   }, ::testing::ExitedWithCode(1), "testprogram: can't open nonexistent.nl");
 }
 
@@ -577,38 +579,34 @@ TEST(SolverTest, ExceptionInOptionHandler) {
 
 TEST(SolverTest, ProcessArgsReadsProblem) {
   Args args("testprogram", "data/objconst.nl");
-  char **argv = args;
   OptSolver s;
   EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_TRUE(s.ProcessArgs(argv, s));
+  EXPECT_TRUE(s.ProcessArgs(args, s));
   EXPECT_EQ(1, s.problem().num_vars());
 }
 
 TEST(SolverTest, ProcessArgsWithouStub) {
   StderrRedirect redirect("out");
   Args args("testprogram");
-  char **argv = args;
   OptSolver s;
   EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_FALSE(s.ProcessArgs(argv, s));
+  EXPECT_FALSE(s.ProcessArgs(args, s));
   EXPECT_EQ(0, s.problem().num_vars());
 }
 
 TEST(SolverTest, ProcessArgsError) {
   Args args("testprogram", "nonexistent");
-  char **argv = args;
   OptSolver s;
   EXPECT_EXIT({
     Stderr = stderr;
-    s.ProcessArgs(argv, s);
+    s.ProcessArgs(args, s);
   }, ::testing::ExitedWithCode(1), "testprogram: can't open nonexistent.nl");
 }
 
 TEST(SolverTest, ProcessArgsParsesSolverOptions) {
   OptSolver s;
   Args args("testprogram", "data/objconst.nl", "intopt1=3");
-  char **argv = args;
-  EXPECT_TRUE(s.ProcessArgs(argv, s, BasicSolver::NO_OPTION_ECHO));
+  EXPECT_TRUE(s.ProcessArgs(args, s, BasicSolver::NO_OPTION_ECHO));
   EXPECT_EQ(3, s.intopt1);
 }
 
@@ -634,9 +632,8 @@ TEST(SolverTest, EmptyProblem) {
 
 TEST(SolverTest, ProblemAccessors) {
   Args args("", "data/test.nl");
-  char **argv = args;
   TestSolver s("");
-  EXPECT_TRUE(s.ReadProblem(argv));
+  EXPECT_TRUE(s.ReadProblem(args));
   Problem &p = s.problem();
   EXPECT_EQ(5, p.num_vars());
   EXPECT_EQ(19, p.num_objs());
@@ -692,12 +689,11 @@ TEST(SolverTest, ProblemAccessors) {
   EXPECT_EQ(42, p.solve_code());
 }
 
-TEST(SolverTest, ProblemBoundChecks) {
 #ifndef NDEBUG
+TEST(SolverTest, ProblemBoundChecks) {
   Args args("", "data/test.nl");
-  char **argv = args;
   TestSolver s("");
-  EXPECT_TRUE(s.ReadProblem(argv));
+  EXPECT_TRUE(s.ReadProblem(args));
   Problem &p = s.problem();
 
   EXPECT_DEATH(p.var_lb(-1), "Assertion");
@@ -727,8 +723,8 @@ TEST(SolverTest, ProblemBoundChecks) {
 
   EXPECT_DEATH(p.logical_con_expr(-1), "Assertion");
   EXPECT_DEATH(p.logical_con_expr(p.num_logical_cons()), "Assertion");
-#endif
 }
+#endif
 
 TEST(SolverTest, SignalHandler) {
   std::signal(SIGINT, SIG_DFL);
@@ -758,4 +754,31 @@ TEST(SolverTest, SignalHandlerExitOnTwoSIGINTs) {
   }, ::testing::ExitedWithCode(1), "");
   EXPECT_EQ("\n<BREAK> (testsolver)\n\n<BREAK> (testsolver)\n",
       ReadFile("out"));
+}
+
+#ifdef HAVE_CBC
+TEST(SolverTest, Solve) {
+  Args args("", "data/simple.nl");
+  TestSolver solver("testsolver");
+  solver.ReadProblem(args);
+  Solution s;
+  solver.problem().Solve("../solvers/cbc/bin/cbc", s);
+  EXPECT_EQ(2, s.num_vars());
+  EXPECT_EQ(1, s.num_cons());
+  EXPECT_EQ(2, s.value(0));
+  EXPECT_NEAR(0, s.value(1), 1e-5);
+  EXPECT_EQ(0.5, s.dual_value(0));
+}
+#endif
+
+TEST(SolverTest, SolveWithUnknownSolver) {
+  Args args("", "data/simple.nl");
+  TestSolver solver("testsolver");
+  solver.ReadProblem(args);
+  Solution s;
+  EXPECT_THROW(solver.problem().Solve("unknownsolver", s), ampl::Error);
+}
+
+TEST(SolverTest, SolveWithChanges) {
+  // TODO: test ProblemChanges, flags
 }
