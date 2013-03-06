@@ -37,6 +37,7 @@
 using ampl::LinearObjExpr;
 using ampl::LinearConExpr;
 using ampl::Problem;
+using ampl::ProblemChanges;
 using ampl::BasicSolver;
 using ampl::Solution;
 using ampl::Solver;
@@ -779,6 +780,37 @@ TEST(SolverTest, SolveWithUnknownSolver) {
   EXPECT_THROW(solver.problem().Solve("unknownsolver", s), ampl::Error);
 }
 
-TEST(SolverTest, SolveWithChanges) {
-  // TODO: test ProblemChanges, flags
+TEST(SolverTest, AddConAndSolve) {
+  Args args("", "data/simple.nl");
+  TestSolver solver("testsolver");
+  solver.ReadProblem(args);
+  Solution s;
+  ProblemChanges changes(solver.problem());
+  const double coefs[] = {1, 0};
+  changes.AddCon(coefs, -Infinity, 1);
+  solver.problem().Solve("../solvers/cbc/bin/cbc", s, &changes);
+  EXPECT_EQ(2, s.num_vars());
+  EXPECT_EQ(2, s.num_cons());
+  EXPECT_EQ(1, s.value(0));
+  EXPECT_EQ(0.5, s.value(1));
+  EXPECT_EQ(0.5, s.dual_value(0));
+  EXPECT_EQ(0.5, s.dual_value(1));
 }
+
+TEST(SolverTest, AddObjAndSolve) {
+  Args args("", "data/noobj.nl");
+  TestSolver solver("testsolver");
+  solver.ReadProblem(args);
+  Solution s;
+  ProblemChanges changes(solver.problem());
+  double coef = -1;
+  int var = 0;
+  changes.AddObj(ampl::MAX, 1, &coef, &var);
+  solver.problem().Solve("../solvers/cbc/bin/cbc", s, &changes);
+  EXPECT_EQ(1, s.num_vars());
+  EXPECT_EQ(1, s.num_cons());
+  EXPECT_EQ(0, s.value(0));
+  EXPECT_EQ(-1, s.dual_value(0));
+}
+
+// TODO: test ProblemChanges, flags

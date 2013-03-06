@@ -372,6 +372,9 @@ class ProblemChanges {
   // Returns the number of additional constraints.
   int num_cons() const { return static_cast<int>(cons_.size()); }
 
+  // Returns the number of additional objectives.
+  int num_objs() const { return static_cast<int>(objs_.size()); }
+
   // Adds a variable.
   int AddVar(double lb, double ub) {
     var_lb_.push_back(lb);
