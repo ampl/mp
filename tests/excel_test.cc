@@ -24,6 +24,7 @@
 #include <climits>
 
 #include "gtest/gtest.h"
+#include "solvers/util/format.h"
 #include "tests/function.h"
 #include "tests/odbc.h"
 
@@ -67,6 +68,6 @@ TEST_F(ExcelTest, Write256Columns) {
   t = "";
   for (int i = 1; i <= 256; ++i)
     t.Add(c_str(fmt::Format("c{}") << i));
-  handler_->Write("data/test.xls", &t);
+  handler_->Write("data/test.xls", t);
 }
 }
