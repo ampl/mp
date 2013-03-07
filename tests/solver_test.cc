@@ -784,7 +784,7 @@ TEST(SolverTest, Solve) {
   EXPECT_EQ(1, s.num_cons());
   EXPECT_EQ(2, s.value(0));
   EXPECT_NEAR(0, s.value(1), 1e-5);
-  EXPECT_EQ(0.5, s.dual_value(0));
+  EXPECT_EQ(1, s.dual_value(0));
 }
 
 TEST(SolverTest, AddVarAndSolve) {
@@ -806,7 +806,7 @@ TEST(SolverTest, AddVarAndSolve) {
   EXPECT_EQ(2, s.value(0));
   EXPECT_NEAR(0, s.value(1), 1e-5);
   EXPECT_EQ(42, s.value(2));
-  EXPECT_EQ(0.5, s.dual_value(0));
+  EXPECT_EQ(1, s.dual_value(0));
 }
 
 TEST(SolverTest, AddConAndSolve) {
@@ -881,8 +881,8 @@ TEST(SolverTest, WriteProblem) {
   fmt::Writer writer;
   writer << solver.problem();
   EXPECT_EQ(
-      "var x1 <= 2;\n"
-      "var x2;\n"
+      "var x1 >= 0;\n"
+      "var x2 >= 0;\n"
       "maximize o: x1 + x2;\n"
       "s.t. c1: x1 + 2 * x2 <= 2;\n", writer.str());
 }

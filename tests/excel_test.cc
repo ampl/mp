@@ -49,9 +49,9 @@ class ExcelTest : public ::testing::Test {
 fun::Library ExcelTest::lib_("../tables/ampltabl.dll");
 
 TEST_F(ExcelTest, Read) {
-  Table t("T", 1);
+  Table t("TableWith256CharCell", 1);
   t = "S";
-  handler_->Read("data/256-char-cell.xls", &t);
+  handler_->Read("data/test.xls", &t);
   EXPECT_EQ(1u, t.num_rows());
   EXPECT_STREQ(
       "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghij"
@@ -60,5 +60,13 @@ TEST_F(ExcelTest, Read) {
       "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghij"
       "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghij"
       "abcdef", t(0, 0).string());
+}
+
+TEST_F(ExcelTest, Write256Columns) {
+  Table t("TableWith256Cols", 256);
+  t = "";
+  for (int i = 1; i <= 256; ++i)
+    t.Add(c_str(fmt::Format("c{}") << i));
+  handler_->Write("data/test.xls", &t);
 }
 }

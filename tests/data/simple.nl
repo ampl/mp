@@ -1,4 +1,4 @@
-g3 0 1 0	# problem simple
+g3 2 1 0	# problem simple
  2 1 1 0 0	# vars, constraints, objectives, ranges, eqns
  0 0	# nonlinear constraints, objectives
  0 0	# network constraints: nonlinear, linear
@@ -15,8 +15,8 @@ n0
 r
 1 2
 b
-1 2
-3
+2 0
+2 0
 k1
 1
 J0 2
