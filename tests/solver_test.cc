@@ -96,6 +96,22 @@ class StderrRedirect {
     Stderr = saved_stderr;
   }
 };
+
+class CBCPath {
+ private:
+  std::string path_;
+
+ public:
+  CBCPath() : path_("../solvers/cbc/bin/cbc") {
+#ifdef WIN32
+    std::replace(path_.begin(), path_.end(), '/', '\\');
+#endif
+  }
+
+  operator const char *() const { return path_.c_str(); }
+};
+
+const CBCPath CBC_PATH;
 }
 
 TEST(SolutionTest, DefaultCtor) {
@@ -763,7 +779,7 @@ TEST(SolverTest, Solve) {
   TestSolver solver("testsolver");
   solver.ReadProblem(args);
   Solution s;
-  solver.problem().Solve("../solvers/cbc/bin/cbc", s);
+  solver.problem().Solve(CBC_PATH, s);
   EXPECT_EQ(2, s.num_vars());
   EXPECT_EQ(1, s.num_cons());
   EXPECT_EQ(2, s.value(0));
@@ -784,7 +800,7 @@ TEST(SolverTest, AddVarAndSolve) {
   EXPECT_EQ(1, changes.num_vars());
   EXPECT_EQ(0, changes.num_cons());
   EXPECT_EQ(0, changes.num_objs());
-  solver.problem().Solve("../solvers/cbc/bin/cbc", s, &changes);
+  solver.problem().Solve(CBC_PATH, s, &changes);
   EXPECT_EQ(3, s.num_vars());
   EXPECT_EQ(1, s.num_cons());
   EXPECT_EQ(2, s.value(0));
@@ -807,7 +823,7 @@ TEST(SolverTest, AddConAndSolve) {
   EXPECT_EQ(0, changes.num_vars());
   EXPECT_EQ(1, changes.num_cons());
   EXPECT_EQ(0, changes.num_objs());
-  solver.problem().Solve("../solvers/cbc/bin/cbc", s, &changes);
+  solver.problem().Solve(CBC_PATH, s, &changes);
   EXPECT_EQ(2, s.num_vars());
   EXPECT_EQ(2, s.num_cons());
   EXPECT_EQ(1, s.value(0));
@@ -831,7 +847,7 @@ TEST(SolverTest, AddObjAndSolve) {
   EXPECT_EQ(0, changes.num_vars());
   EXPECT_EQ(0, changes.num_cons());
   EXPECT_EQ(1, changes.num_objs());
-  solver.problem().Solve("../solvers/cbc/bin/cbc", s, &changes);
+  solver.problem().Solve(CBC_PATH, s, &changes);
   EXPECT_EQ(1, s.num_vars());
   EXPECT_EQ(1, s.num_cons());
   EXPECT_EQ(0, s.value(0));
@@ -845,8 +861,7 @@ TEST(SolverTest, SolveIgnoreFunctions) {
   putenv(amplfunc);
   solver.ReadProblem(args);
   Solution s;
-  solver.problem().Solve(
-      "../solvers/cbc/bin/cbc", s, 0, Problem::IGNORE_FUNCTIONS);
+  solver.problem().Solve(CBC_PATH, s, 0, Problem::IGNORE_FUNCTIONS);
   EXPECT_EQ(42, s.value(0));
 }
 #endif
