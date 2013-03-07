@@ -229,13 +229,23 @@ NewVCO *ProblemChanges::vco() {
   vco_.nnv = static_cast<int>(var_lb_.size());
   vco_.nnc = static_cast<int>(cons_.size());
   vco_.nno = static_cast<int>(objs_.size());
-  vco_.LUnv = var_lb_.empty() ? &dummy : &var_lb_[0];
-  vco_.Unv = &var_ub_[0];
-  vco_.LUnc = con_lb_.empty() ? &dummy : &con_lb_[0];
-  vco_.Unc = &con_ub_[0];
-  vco_.newc = &cons_[0];
-  vco_.newo = &objs_[0];
-  vco_.ot = &obj_types_[0];
+  if (!var_lb_.empty()) {
+    vco_.LUnv = &var_lb_[0];
+    vco_.Unv = &var_ub_[0];
+  } else {
+    vco_.LUnv = &dummy;
+  }
+  if (!cons_.empty()) {
+    vco_.LUnc = &con_lb_[0];
+    vco_.Unc = &con_ub_[0];
+    vco_.newc = &cons_[0];
+  } else {
+    vco_.LUnc = &dummy;
+  }
+  if (!objs_.empty()) {
+    vco_.newo = &objs_[0];
+    vco_.ot = &obj_types_[0];
+  }
   return &vco_;
 }
 

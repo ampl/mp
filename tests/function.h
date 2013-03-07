@@ -174,11 +174,6 @@ class Table {
     values_.clear();
   }
 
-  void Add(const char *s) {
-    strings_.push_back(s);
-    values_.push_back(Variant::FromString(strings_.back().c_str()));
-  }
-
   void Add(double d) {
     values_.push_back(Variant::FromDouble(d));
   }
@@ -243,6 +238,11 @@ class Table {
     if (row_index >= num_rows())
       throw std::invalid_argument("invalid row index");
     return values_[(row_index + 1) * num_cols_ + col_index];
+  }
+
+  void Add(const char *s) {
+    strings_.push_back(s);
+    values_.push_back(Variant::FromString(strings_.back().c_str()));
   }
 
   Inserter operator=(const char *s) {
