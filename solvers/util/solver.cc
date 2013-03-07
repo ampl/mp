@@ -119,9 +119,9 @@ void Solution::Swap(Solution &other) {
 }
 
 void Solution::Read(const char *stub, int num_vars, int num_cons) {
-  // Allocate filename large enough to hold stub, ".nl" and terminating zero.
+  // Allocate filename large enough to hold stub, ".sol" and terminating zero.
   std::size_t stub_len = std::strlen(stub);
-  std::vector<char> filename(stub_len + 4);
+  std::vector<char> filename(stub_len + 5);
   std::strcpy(&filename[0], stub);
   ASL asl = {};
   asl.i.n_var_ = num_vars;
