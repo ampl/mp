@@ -2119,3 +2119,7 @@ threads are used for input involving Infinity or NaN.
   dtoa.c, dtoa1.c: fix an obscure memory leak in reading hexadecimal-
 format number (0x...).  This change does not affect any known solver
 interfaces.  See /netlib/fp/changes.
+
+20130213
+  asl.h: move qsortv declaration ahead of include "funcadd.h" to avoid
+trouble when Permit_AE_redefs is #defined; asldate.c not changed.
