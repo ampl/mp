@@ -325,7 +325,7 @@ class Problem : Noncopyable {
       ProblemChanges *pc = 0, unsigned flags = 0);
 };
 
-// Writes a problem in the AMPL format.
+// Writes a linear part of the problem in the AMPL format.
 fmt::Writer &operator<<(fmt::Writer &w, const Problem &p);
 
 // Formats a double with objective precision.

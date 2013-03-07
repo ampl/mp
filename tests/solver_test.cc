@@ -770,14 +770,27 @@ TEST(SolverTest, Solve) {
   EXPECT_NEAR(0, s.value(1), 1e-5);
   EXPECT_EQ(0.5, s.dual_value(0));
 }
-#endif
 
-TEST(SolverTest, SolveWithUnknownSolver) {
+TEST(SolverTest, AddVarAndSolve) {
   Args args("", "data/simple.nl");
   TestSolver solver("testsolver");
   solver.ReadProblem(args);
   Solution s;
-  EXPECT_THROW(solver.problem().Solve("unknownsolver", s), ampl::Error);
+  ProblemChanges changes(solver.problem());
+  EXPECT_EQ(0, changes.num_vars());
+  EXPECT_EQ(0, changes.num_cons());
+  EXPECT_EQ(0, changes.num_objs());
+  changes.AddVar(42, 42);
+  EXPECT_EQ(1, changes.num_vars());
+  EXPECT_EQ(0, changes.num_cons());
+  EXPECT_EQ(0, changes.num_objs());
+  solver.problem().Solve("../solvers/cbc/bin/cbc", s, &changes);
+  EXPECT_EQ(3, s.num_vars());
+  EXPECT_EQ(1, s.num_cons());
+  EXPECT_EQ(2, s.value(0));
+  EXPECT_NEAR(0, s.value(1), 1e-5);
+  EXPECT_EQ(42, s.value(2));
+  EXPECT_EQ(0.5, s.dual_value(0));
 }
 
 TEST(SolverTest, AddConAndSolve) {
@@ -787,7 +800,13 @@ TEST(SolverTest, AddConAndSolve) {
   Solution s;
   ProblemChanges changes(solver.problem());
   const double coefs[] = {1, 0};
+  EXPECT_EQ(0, changes.num_vars());
+  EXPECT_EQ(0, changes.num_cons());
+  EXPECT_EQ(0, changes.num_objs());
   changes.AddCon(coefs, -Infinity, 1);
+  EXPECT_EQ(0, changes.num_vars());
+  EXPECT_EQ(1, changes.num_cons());
+  EXPECT_EQ(0, changes.num_objs());
   solver.problem().Solve("../solvers/cbc/bin/cbc", s, &changes);
   EXPECT_EQ(2, s.num_vars());
   EXPECT_EQ(2, s.num_cons());
@@ -805,7 +824,13 @@ TEST(SolverTest, AddObjAndSolve) {
   ProblemChanges changes(solver.problem());
   double coef = -1;
   int var = 0;
+  EXPECT_EQ(0, changes.num_vars());
+  EXPECT_EQ(0, changes.num_cons());
+  EXPECT_EQ(0, changes.num_objs());
   changes.AddObj(ampl::MAX, 1, &coef, &var);
+  EXPECT_EQ(0, changes.num_vars());
+  EXPECT_EQ(0, changes.num_cons());
+  EXPECT_EQ(1, changes.num_objs());
   solver.problem().Solve("../solvers/cbc/bin/cbc", s, &changes);
   EXPECT_EQ(1, s.num_vars());
   EXPECT_EQ(1, s.num_cons());
@@ -813,4 +838,36 @@ TEST(SolverTest, AddObjAndSolve) {
   EXPECT_EQ(-1, s.dual_value(0));
 }
 
-// TODO: test ProblemChanges, flags
+TEST(SolverTest, SolveIgnoreFunctions) {
+  Args args("", "data/ssd.nl");
+  TestSolver solver("testsolver");
+  char amplfunc[] = "AMPLFUNC=../solvers/ssdsolver/ssd.dll";
+  putenv(amplfunc);
+  solver.ReadProblem(args);
+  Solution s;
+  solver.problem().Solve(
+      "../solvers/cbc/bin/cbc", s, 0, Problem::IGNORE_FUNCTIONS);
+  EXPECT_EQ(42, s.value(0));
+}
+#endif
+
+TEST(SolverTest, SolveWithUnknownSolver) {
+  Args args("", "data/simple.nl");
+  TestSolver solver("testsolver");
+  solver.ReadProblem(args);
+  Solution s;
+  EXPECT_THROW(solver.problem().Solve("unknownsolver", s), ampl::Error);
+}
+
+TEST(SolverTest, WriteProblem) {
+  Args args("", "data/simple.nl");
+  TestSolver solver("testsolver");
+  solver.ReadProblem(args);
+  fmt::Writer writer;
+  writer << solver.problem();
+  EXPECT_EQ(
+      "var x1 <= 2;\n"
+      "var x2;\n"
+      "maximize o: x1 + x2;\n"
+      "s.t. c1: x1 + 2 * x2 <= 2;\n", writer.str());
+}
