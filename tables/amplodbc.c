@@ -22,7 +22,7 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
- static char Version[] = "\n@(#) AMPL ODBC driver, version 20121219.\n";
+ static char Version[] = "\n@(#) AMPL ODBC driver, version 20130214.\n";
 
 #ifdef _WIN32
 #include <windows.h>

@@ -1,3 +1,4 @@
-20130201
-  Fix a bug (e.g., fault) with read commands having nested indexings
-in which an inner indexing involves an outer dummy variable.
+20130226
+  Fix a bug with fixing variables that appear in complementarity
+constraints when the fixing should cause the constraints to be
+removed by presolve.
