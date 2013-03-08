@@ -76,6 +76,11 @@ TEST_F(ExcelTest, WriteMaxColumnsExcel2003) {
   handler_->Write("data/test.xls", t);
 }
 
+#ifndef _WIN64
+// The test fails on 64-bit Windows XP with 64-bit ODBC drivers.
+// According to http://www.microsoft.com/en-us/download/details.aspx?id=13255
+// only the 32-bit Access Database Engine (which includes the Excel driver) may
+// be used on Windows XP Service Pack 3.
 TEST_F(ExcelTest, WriteManyColumnsExcel2007) {
   int num_cols = 257;
   Table t("TableWithManyCols", num_cols);
@@ -83,4 +88,5 @@ TEST_F(ExcelTest, WriteManyColumnsExcel2007) {
     t.Add(c_str(fmt::Format("c{}") << i));
   handler_->Write("data/test.xlsx", t);
 }
+#endif
 }
