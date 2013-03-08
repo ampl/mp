@@ -65,7 +65,6 @@ TEST_F(ExcelTest, Read) {
 
 TEST_F(ExcelTest, Write256Columns) {
   Table t("TableWith256Cols", 256);
-  t = "";
   for (int i = 1; i <= 256; ++i)
     t.Add(c_str(fmt::Format("c{}") << i));
   handler_->Write("data/test.xls", t);
