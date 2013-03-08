@@ -63,10 +63,24 @@ TEST_F(ExcelTest, Read) {
       "abcdef", t(0, 0).string());
 }
 
-TEST_F(ExcelTest, Write256Columns) {
-  Table t("TableWith256Cols", 256);
-  for (int i = 1; i <= 256; ++i)
+// A DSN for "Microsoft Excel Driver (*.xsl)" with "Read Only" checkbox
+// unchecked may have to be created in ODBC Data Source Administrator
+// for this test to pass.
+TEST_F(ExcelTest, WriteMaxColumnsExcel2003) {
+  // Excel 2003 and earlier support at most 256 columns
+  // http://office.microsoft.com/en-us/excel-help/excel-specifications-and-limits-HP005199291.aspx
+  int num_cols = 256;
+  Table t("TableWithManyCols", num_cols);
+  for (int i = 1; i <= num_cols; ++i)
     t.Add(c_str(fmt::Format("c{}") << i));
   handler_->Write("data/test.xls", t);
+}
+
+TEST_F(ExcelTest, WriteManyColumnsExcel2007) {
+  int num_cols = 257;
+  Table t("TableWithManyCols", num_cols);
+  for (int i = 1; i <= num_cols; ++i)
+    t.Add(c_str(fmt::Format("c{}") << i));
+  handler_->Write("data/test.xlsx", t);
 }
 }
