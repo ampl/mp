@@ -63,7 +63,7 @@ TEST_F(ExcelTest, Read) {
       "abcdef", t(0, 0).string());
 }
 
-// A DSN for "Microsoft Excel Driver (*.xsl)" with "Read Only" checkbox
+// A DSN for "Microsoft Excel Driver (*.xls)" with "Read Only" checkbox
 // unchecked may have to be created in ODBC Data Source Administrator
 // for this test to pass.
 TEST_F(ExcelTest, WriteMaxColumnsExcel2003) {
@@ -81,8 +81,10 @@ TEST_F(ExcelTest, WriteMaxColumnsExcel2003) {
 // According to http://www.microsoft.com/en-us/download/details.aspx?id=13255
 // only the 32-bit Access Database Engine (which includes the Excel driver) may
 // be used on Windows XP Service Pack 3.
-TEST_F(ExcelTest, WriteManyColumnsExcel2007) {
-  int num_cols = 257;
+TEST_F(ExcelTest, WriteMaxColumnsExcel2007) {
+  // Excel 2007 supports up to 16384 columns, but the ODBC driver only
+  // allows 256.
+  int num_cols = 256;
   Table t("TableWithManyCols", num_cols);
   for (int i = 1; i <= num_cols; ++i)
     t.Add(c_str(fmt::Format("c{}") << i));
