@@ -21,6 +21,7 @@
  */
 
 #include "gtest/gtest.h"
+#include "tests/function.h"
 #include "tests/odbc.h"
 
 using fun::Handler;
