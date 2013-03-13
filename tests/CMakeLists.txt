@@ -84,6 +84,18 @@ if (ODBC_FOUND)
   check_cxx_source_runs(
     "#include \"tests/odbc.cc\"
      int main() {
+       return odbc::Env().FindDriver(\"*.csv\").empty() ? 1 : 0;
+     }" HAVE_ODBC_TEXT_DRIVER)
+
+  if (HAVE_ODBC_TEXT_DRIVER)
+    cxx_test_with_flags(csv_test ""
+      "gtest;function;util;${ODBC_LIBRARIES}"
+      test_main.cc csv_test.cc odbc.cc)
+  endif ()
+
+  check_cxx_source_runs(
+    "#include \"tests/odbc.cc\"
+     int main() {
        return odbc::Env().FindDriver(\"mysql\").empty() ? 1 : 0;
      }" HAVE_MYSQL_DRIVER)
 
