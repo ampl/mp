@@ -2233,8 +2233,6 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 		return i;
 	if (!(dsn = getname(&h, &dbq)))
 		return DB_Error;
-	if (dbq && not_found(ae, TI, dsn, 0))
-		return DB_Error;
 
 	sbuf = 0;
 	colname_adjust(&h, TI);
