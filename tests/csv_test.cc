@@ -49,8 +49,8 @@ TEST_F(CSVTest, Read) {
   Table t("test", 1);
   t = "S";
   odbc::Env env;
-  handler_->Read("DRIVER={" + env.FindDriver("*.csv") + "}; DBQ=data",
-      &t, "SELECT * FROM test.csv");
+  handler_->Read(
+      "DRIVER={" + env.FindDriver("*.csv") + "}; DBQ=data", &t, "test.csv");
   EXPECT_EQ(2u, t.num_rows());
   EXPECT_STREQ("abc", t(0, 0).string());
   EXPECT_STREQ("def", t(1, 0).string());
