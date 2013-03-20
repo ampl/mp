@@ -22,7 +22,7 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
- static char Version[] = "\n@(#) AMPL ODBC driver, version 20130214.\n";
+ static char Version[] = "\n@(#) AMPL ODBC driver, version 20130318.\n";
 
 #ifdef _WIN32
 #include <windows.h>
@@ -31,6 +31,8 @@ THIS SOFTWARE.
 #include <unistd.h>
 #endif
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <sql.h>
 #include <sqlext.h>
 
@@ -846,6 +848,7 @@ not_found(AmplExports *ae, TableInfo *TI, char *dsn, FILE **fp)
 {
 	FILE *f, **fp1;
 	char *mode, *tname;
+	struct stat stb;
 
 	if ((fp1 = fp))
 		mode = "r";
@@ -858,6 +861,8 @@ not_found(AmplExports *ae, TableInfo *TI, char *dsn, FILE **fp)
 			fclose(f);
 		return 0;
 		}
+	if (!fp && !stat(dsn, &stb))
+		return 0;
 	tname = TI->nstrings >= 3 ? TI->strings[2] : TI->tname;
 	sprintf(TI->Errmsg = (char*)TM(strlen(tname) + strlen(dsn) + 40),
 		"Cannot open file %s for table %s.", dsn, tname);
@@ -2459,7 +2464,7 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 funcadd(AmplExports *ae)
 {
 	static char tname[] = "odbc\n"
-	"AMPL ODBC handler: expected 2-8 strings before \":[...]\":\n"
+	"AMPL ODBC handler (20130318): expected 2-8 strings before \":[...]\":\n"
 	"  'ODBC', connection_spec ['ext_name'] [option [option...]]\n"
 	"Connection_spec gives a connection to the external table.  If the table's\n"
 	"external name differs from the AMPL table name, the external name must be\n"
