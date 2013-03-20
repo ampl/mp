@@ -112,3 +112,8 @@ that unixODBC specifies).
 20130214
   amplodbc.c:  tweak to bypass a bug with long names in Microsoft's
 Excel ODBC driver -- thanks to Victor Zverovich.
+
+20130318
+  amplodbc.c: for connection strings involving, e.g.,
+	'Driver={Microsoft Text Driver (*.txt; *.csv)};DBQ=.'
+do not complain if DBQ=... specifies a directory.
