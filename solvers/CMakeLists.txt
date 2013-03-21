@@ -149,5 +149,6 @@ if (HAVE_GECODE)
 endif ()
 
 add_subdirectory(ilogcp)
+add_subdirectory(jacop)
 add_subdirectory(ssdsolver)
 add_subdirectory(util)
