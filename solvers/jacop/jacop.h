@@ -155,6 +155,9 @@ class ClassBase {
 
  public:
   ClassBase() : class_(), ctor_() {}
+  virtual ~ClassBase();
+
+  virtual void Init(Env env) = 0;
 
   operator SafeBool() const { return class_ ? &ClassBase::True : 0; }
 
@@ -198,6 +201,16 @@ CLASS_INFO(XexpYeqZ, "JaCoP/constraints/XexpYeqZ",
 CLASS_INFO(XeqY, "JaCoP/constraints/XeqY",
     "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
 CLASS_INFO(XeqC, "JaCoP/constraints/XeqC", "(LJaCoP/core/IntVar;I)V")
+CLASS_INFO(XneqY, "JaCoP/constraints/XneqY",
+    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
+CLASS_INFO(XltY, "JaCoP/constraints/XltY",
+    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
+CLASS_INFO(XlteqY, "JaCoP/constraints/XlteqY",
+    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
+CLASS_INFO(XgtY, "JaCoP/constraints/XgtY",
+    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
+CLASS_INFO(XgteqY, "JaCoP/constraints/XgteqY",
+    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
 CLASS_INFO(AbsXeqY, "JaCoP/constraints/AbsXeqY",
     "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
 CLASS_INFO(Min, "JaCoP/constraints/Min",
@@ -208,6 +221,14 @@ CLASS_INFO(IfThenElse, "JaCoP/constraints/IfThenElse",
     "(LJaCoP/constraints/PrimitiveConstraint;"
     "LJaCoP/constraints/PrimitiveConstraint;"
     "LJaCoP/constraints/PrimitiveConstraint;)V")
+CLASS_INFO(Or, "JaCoP/constraints/Or",
+    "(LJaCoP/constraints/PrimitiveConstraint;"
+    "LJaCoP/constraints/PrimitiveConstraint;)V")
+CLASS_INFO(And, "JaCoP/constraints/And",
+    "(LJaCoP/constraints/PrimitiveConstraint;"
+    "LJaCoP/constraints/PrimitiveConstraint;)V")
+CLASS_INFO(Not, "JaCoP/constraints/Not",
+    "(LJaCoP/constraints/PrimitiveConstraint;)V")
 
 class NLToJaCoPConverter :
    private ExprVisitor<NLToJaCoPConverter, jobject, jobject> {
@@ -228,10 +249,19 @@ class NLToJaCoPConverter :
   Class<XexpYeqZ> exp_class_;
   Class<XeqY> eq_class_;
   Class<XeqC> eq_const_class_;
+  Class<XltY> lt_class_;
+  Class<XlteqY> le_class_;
+  Class<XgtY> gt_class_;
+  Class<XgteqY> ge_class_;
+  Class<XneqY> ne_class_;
   Class<AbsXeqY> abs_class_;
   Class<Min> min_class_;
   Class<Max> max_class_;
   Class<IfThenElse> if_class_;
+  Class<Or> or_class_;
+  Class<And> and_class_;
+  Class<Not> not_class_;
+  jobject one_var_;
   jint min_int_;
   jint max_int_;
 
@@ -252,30 +282,23 @@ class NLToJaCoPConverter :
 
   // Creates a variable equal to a constant value.
   jobject CreateConst(int value) {
-    if (!eq_const_class_)
-      eq_const_class_.Init(jvm_);
     jobject result_var = CreateVar();
     Impose(eq_const_class_.NewObject(jvm_, result_var, value));
     return result_var;
   }
 
-  // Creates a constraint with a binary expression.
-  template <typename ClassT, typename Arg>
-  jobject CreateCon(ClassT &cls, Arg arg) {
-    if (!cls)
-      cls.Init(jvm_);
+  // Creates a constraint with an argument and a variable to hold the result.
+  jobject CreateCon(ClassBase &cls, jobject arg) {
     jobject result_var = CreateVar();
     Impose(cls.NewObject(jvm_, arg, result_var));
     return result_var;
   }
 
-  // Creates a constraint with a binary expression.
-  template <typename ClassT, typename LHS, typename RHS>
-  jobject CreateCon(ClassT &cls, LHS lhs, RHS rhs) {
-    if (!cls)
-      cls.Init(jvm_);
+  // Creates a constraint with two arguments and a variable to hold the result.
+  template <typename Arg1, typename Arg2>
+  jobject CreateCon(ClassBase &cls, Arg1 arg1, Arg2 arg2) {
     jobject result_var = CreateVar();
-    Impose(cls.NewObject(jvm_, lhs, rhs, result_var));
+    Impose(cls.NewObject(jvm_, arg1, arg2, result_var));
     return result_var;
   }
 
@@ -290,6 +313,12 @@ class NLToJaCoPConverter :
     for (VarArgExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
       jvm_.SetObjectArrayElement(args, index++, Visit(*i));
     return args;
+  }
+
+  // Converts a binary logical expression to a JaCoP constraint of class cls.
+  template <typename ExprT>
+  jobject Convert(ExprT e, ClassBase &cls) {
+    return cls.NewObject(jvm_, Visit(e.lhs()), Visit(e.rhs()));
   }
 
   void Impose(jobject constraint) {
@@ -399,44 +428,44 @@ class NLToJaCoPConverter :
     return vars_[v.index()];
   }
 
-  // TODO
-  /*jobject VisitOr(BinaryLogicalExpr e) {
-    return Visit(e.lhs()) || Visit(e.rhs());
+  jobject VisitOr(BinaryLogicalExpr e) {
+    return Convert(e, or_class_);
   }
 
   jobject VisitAnd(BinaryLogicalExpr e) {
-    return Visit(e.lhs()) && Visit(e.rhs());
+    return Convert(e, and_class_);
   }
 
   jobject VisitLess(RelationalExpr e) {
-    return Visit(e.lhs()) < Visit(e.rhs());
+    return Convert(e, lt_class_);
   }
 
   jobject VisitLessEqual(RelationalExpr e) {
-    return Visit(e.lhs()) <= Visit(e.rhs());
+    return Convert(e, le_class_);
   }
 
   jobject VisitEqual(RelationalExpr e) {
-    return Visit(e.lhs()) == Visit(e.rhs());
+    return Convert(e, eq_class_);
   }
 
   jobject VisitGreaterEqual(RelationalExpr e) {
-    return Visit(e.lhs()) >= Visit(e.rhs());
+    return Convert(e, ge_class_);
   }
 
   jobject VisitGreater(RelationalExpr e) {
-    return Visit(e.lhs()) > Visit(e.rhs());
+    return Convert(e, gt_class_);
   }
 
   jobject VisitNotEqual(RelationalExpr e) {
-    return Visit(e.lhs()) != Visit(e.rhs());
+    return Convert(e, ne_class_);
   }
 
   jobject VisitNot(NotExpr e) {
-    return !Visit(e.arg());
+    return not_class_.NewObject(jvm_, Visit(e.arg()));
   }
 
-  jobject VisitAtLeast(LogicalCountExpr e) {
+  // TODO
+  /*jobject VisitAtLeast(LogicalCountExpr e) {
     return Visit(e.value()) <= Visit(e.count());
   }
 
@@ -477,7 +506,9 @@ class NLToJaCoPConverter :
   jobject VisitAllDiff(AllDiffExpr e);*/
 
   jobject VisitLogicalConstant(LogicalConstant c) {
-    return CreateConst(c.value());
+    if (!one_var_)
+      one_var_ = var_class_.NewObject(jvm_, store_, 1, 1);
+    return eq_const_class_.NewObject(jvm_, one_var_, c.value());
   }
 
  public:
@@ -485,7 +516,7 @@ class NLToJaCoPConverter :
 
   // TODO
   //jobject ConvertFullExpr(NumericExpr e) { return Visit(e); }
-  //jobject ConvertFullExpr(LogicalExpr e, bool post = true);
+  jobject ConvertFullExpr(LogicalExpr e, bool post = true);
   void Convert(const Problem &p);
 
   jobject store() const { return store_; }

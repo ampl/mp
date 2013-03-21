@@ -145,7 +145,11 @@ JVM::JVM() : jvm_() {
   env = Env(static_cast<JNIEnv*>(envp));
 }
 
+ClassBase::~ClassBase() {}
+
 jobject ClassBase::NewObject(Env env, ...) {
+  if (!class_)
+    Init(env);
   std::va_list args;
   va_start(args, env);
   jobject result = 0;
@@ -213,9 +217,12 @@ void NLToJaCoPConverter::ConvertExpr(
     Impose(eq_class_.NewObject(jvm_, Visit(nonlinear), result_var));
 }
 
-// TODO
-/*jobject NLToJaCoPConverter::ConvertFullExpr(LogicalExpr e, bool post) {
-  AllDiffExpr alldiff = Cast<AllDiffExpr>(e);
+jobject NLToJaCoPConverter::ConvertFullExpr(LogicalExpr e, bool post) {
+  // TODO
+  jobject constraint = Visit(e);
+  Impose(constraint);
+  return constraint;
+  /*AllDiffExpr alldiff = Cast<AllDiffExpr>(e);
   if (!alldiff) {
     jobject result = ExprVisitor::Visit(e);
     if (post)
@@ -233,8 +240,8 @@ void NLToJaCoPConverter::ConvertExpr(
       args[i] = Gecode::expr(problem_, Visit(arg));
   }
   distinct(problem_, args);
-  return Gecode::BoolVar();
-}*/
+  return Gecode::BoolVar();*/
+}
 
 jobject NLToJaCoPConverter::VisitNumericLess(BinaryExpr e) {
   jobjectArray args = jvm_.NewObjectArray(2, var_class_.get(), 0);
@@ -245,10 +252,8 @@ jobject NLToJaCoPConverter::VisitNumericLess(BinaryExpr e) {
 }
 
 NLToJaCoPConverter::NLToJaCoPConverter(JVM &jvm)
-: jvm_(jvm), store_(), impose_(), var_array_() {
+: jvm_(jvm), store_(), impose_(), var_array_(), one_var_() {
   var_class_.Init(jvm_);
-  sum_weight_class_.Init(jvm_);
-  eq_class_.Init(jvm_);
   jclass domain_class = jvm_.FindClass("JaCoP/core/IntDomain");
   min_int_ = jvm_.GetStaticIntField(
       domain_class, jvm_.GetStaticFieldID(domain_class, "MinInt", "I"));
@@ -294,15 +299,12 @@ void NLToJaCoPConverter::Convert(const Problem &p) {
     ConvertExpr(p.linear_con_expr(i), p.nonlinear_con_expr(i), result_var);
   }
 
-  // TODO
   // Convert logical constraints.
-  //for (int i = 0, n = p.num_logical_cons(); i < n; ++i)
-  //  ConvertFullExpr(p.logical_con_expr(i));*/
+  for (int i = 0, n = p.num_logical_cons(); i < n; ++i)
+    ConvertFullExpr(p.logical_con_expr(i));
 }
 
 jobject NLToJaCoPConverter::VisitIf(IfExpr e) {
-  if (!if_class_)
-    if_class_.Init(jvm_);
   jobject result_var = CreateVar();
   Impose(if_class_.NewObject(jvm_, Visit(e.condition()),
       eq_class_.NewObject(jvm_, result_var, Visit(e.true_expr())),
@@ -321,6 +323,7 @@ jobject NLToJaCoPConverter::VisitSum(SumExpr e) {
 jobject NLToJaCoPConverter::VisitCount(CountExpr e) {
   jobjectArray args = jvm_.NewObjectArray(e.num_args(), var_class_.get(), 0);
   int index = 0;
+  // TODO: convert each arg from constraint to IntVar
   for (CountExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
     jvm_.SetObjectArrayElement(args, index++, Visit(*i));
   return CreateCon(sum_class_, args);
