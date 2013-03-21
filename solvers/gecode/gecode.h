@@ -90,8 +90,8 @@ class NLToGecodeConverter :
 
   BoolExpr Convert(Gecode::BoolOpType op, IteratedLogicalExpr e);
 
-  static void RequireNonzeroConstRHS(BinaryExpr e,
-      const std::string &func_name);
+  static void RequireNonzeroConstRHS(
+      BinaryExpr e, const std::string &func_name);
 
   template<typename Term>
   LinExpr ConvertExpr(LinearExpr<Term> linear, NumericExpr nonlinear);
