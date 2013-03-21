@@ -7,3 +7,6 @@
 [submodule "solvers/cbc"]
 	path = solvers/cbc
 	url = git://github.com/vitaut/cbc.git
+[submodule "solvers/jacop/lib"]
+	path = solvers/jacop/lib
+	url = git://github.com/vitaut/jacop.git
