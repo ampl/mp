@@ -69,7 +69,7 @@ class Problem;
 
 // A linear expression.
 template <typename Term>
-class LinearExpr : public std::iterator<std::forward_iterator_tag, Term> {
+class LinearExpr {
  private:
   Term first_term_;
 
@@ -79,7 +79,7 @@ class LinearExpr : public std::iterator<std::forward_iterator_tag, Term> {
   : first_term_(Term(first_term)) {}
 
  public:
-  class iterator {
+  class iterator : public std::iterator<std::forward_iterator_tag, Term> {
    private:
     Term term_;
 
