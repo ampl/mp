@@ -24,6 +24,12 @@
 
 #include <iterator>
 
+#ifdef WIN32
+# define CLASSPATH_SEP ";"
+#else
+# define CLASSPATH_SEP ":"
+#endif
+
 namespace {
 
 // TODO
@@ -125,7 +131,8 @@ JVM::JVM() : jvm_() {
   vm_args.version = JNI_VERSION_1_6;
   vm_args.ignoreUnrecognized = false;
   JavaVMOption option = {};
-  option.optionString = const_cast<char*>("-Djava.class.path=JaCoP-3.2.jar");
+  option.optionString = const_cast<char*>(
+      "-Djava.class.path=JaCoP-3.2.jar" CLASSPATH_SEP "lib/JaCoP-3.2.jar");
   vm_args.nOptions = 1;
   vm_args.options = &option;
   void *envp = 0;
