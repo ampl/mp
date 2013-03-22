@@ -861,8 +861,22 @@ not_found(AmplExports *ae, TableInfo *TI, char *dsn, FILE **fp)
 			fclose(f);
 		return 0;
 		}
-	if (!fp && !stat(dsn, &stb))
-		return 0;
+	if (!fp) {
+#ifdef _WIN32
+		/* stat fails on Windows if there is a trailing backslash */
+		size_t dsn_len = strlen(dsn);
+		if (dsn[dsn_len - 1] == '\\') {
+			int result = 0;
+			dsn[dsn_len - 1] = '\0';
+			result = stat(dsn, &stb);
+			dsn[dsn_len - 1] = '\\';
+			if (!result)
+				return 0;
+			}
+#endif
+		if (!stat(dsn, &stb))
+			return 0;
+		}
 	tname = TI->nstrings >= 3 ? TI->strings[2] : TI->tname;
 	sprintf(TI->Errmsg = (char*)TM(strlen(tname) + strlen(dsn) + 40),
 		"Cannot open file %s for table %s.", dsn, tname);
