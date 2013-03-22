@@ -218,29 +218,35 @@ void NLToJaCoPConverter::ConvertExpr(
 }
 
 jobject NLToJaCoPConverter::ConvertFullExpr(LogicalExpr e, bool post) {
-  // TODO
-  jobject constraint = Visit(e);
+  AllDiffExpr alldiff = Cast<AllDiffExpr>(e);
+  if (!alldiff) {
+    jobject constraint = Visit(e);
+    Impose(constraint); // TODO: impose if post is true (for tests?)
+    return constraint;
+  }
+  int num_args = alldiff.num_args();
+  jobjectArray args = jvm_.NewObjectArray(num_args, var_class_.get(), 0);
+  for (int i = 0; i < num_args; ++i) {
+    NumericExpr arg = alldiff[i];
+    jobject result_var = 0;
+    if (Variable var = ampl::Cast<Variable>(arg))
+      result_var = vars_[var.index()];
+    else
+      result_var = Visit(arg);
+    jvm_.SetObjectArrayElement(args, i, result_var);
+  }
+  jobject constraint = alldiff_class_.NewObject(jvm_, args);
   Impose(constraint);
   return constraint;
-  /*AllDiffExpr alldiff = Cast<AllDiffExpr>(e);
-  if (!alldiff) {
-    jobject result = ExprVisitor::Visit(e);
-    if (post)
-      rel(problem_, result);
-    return result;
-  }
-  IntVarArray &vars = problem_.vars();
-  int num_args = alldiff.num_args();
-  IntVarArgs args(num_args);
-  for (int i = 0; i < num_args; ++i) {
-    NumericExpr arg(alldiff[i]);
-    if (Variable var = ampl::Cast<Variable>(arg))
-      args[i] = vars[var.index()];
-    else
-      args[i] = Gecode::expr(problem_, Visit(arg));
-  }
-  distinct(problem_, args);
-  return Gecode::BoolVar();*/
+}
+
+jobject NLToJaCoPConverter::VisitPlus(BinaryExpr e) {
+  NumericExpr lhs = e.lhs(), rhs = e.rhs();
+  if (NumericConstant c = Cast<NumericConstant>(lhs))
+    return CreateCon(plus_const_class_, Visit(e.rhs()), CastToInt(c.value()));
+  if (NumericConstant c = Cast<NumericConstant>(rhs))
+    return CreateCon(plus_const_class_, Visit(e.lhs()), CastToInt(c.value()));
+  return CreateCon(plus_class_, Visit(lhs), Visit(rhs));
 }
 
 jobject NLToJaCoPConverter::VisitNumericLess(BinaryExpr e) {
@@ -323,9 +329,13 @@ jobject NLToJaCoPConverter::VisitSum(SumExpr e) {
 jobject NLToJaCoPConverter::VisitCount(CountExpr e) {
   jobjectArray args = jvm_.NewObjectArray(e.num_args(), var_class_.get(), 0);
   int index = 0;
-  // TODO: convert each arg from constraint to IntVar
-  for (CountExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-    jvm_.SetObjectArrayElement(args, index++, Visit(*i));
+  for (CountExpr::iterator i = e.begin(), end = e.end(); i != end; ++i) {
+    jobject result_var = CreateVar();
+    Impose(if_class_.NewObject(jvm_, *i,
+        eq_const_class_.NewObject(jvm_, result_var, 1),
+        eq_const_class_.NewObject(jvm_, result_var, 0)));
+    jvm_.SetObjectArrayElement(args, index++, result_var);
+  }
   return CreateCon(sum_class_, args);
 }
 
@@ -352,11 +362,6 @@ jobject NLToJaCoPConverter::VisitImplication(ImplicationExpr e) {
     return condition >> Visit(e.true_expr());
   return (condition && Visit(e.true_expr())) ||
         (!condition && Visit(e.false_expr()));
-}
-
-jobject NLToJaCoPConverter::VisitAllDiff(AllDiffExpr) {
-  throw UnsupportedExprError("nested 'alldiff'");
-  return jobject();
 }
 
 JaCoPSolver::Stop::Stop(JaCoPSolver &s)
@@ -531,6 +536,13 @@ int JaCoPSolver::Run(char **argv) {
   Problem &problem = BasicSolver::problem();
   NLToJaCoPConverter converter(jvm_);
   converter.Convert(problem);
+
+  // TODO: debug
+  if (true) {
+    jclass store_class = jvm_.FindClass("JaCoP/core/Store");
+    jvm_.CallVoidMethod(converter.store(),
+        jvm_.GetMethod(store_class, "print", "()V"));
+  }
 
   // Solve the problem.
   SignalHandler sh(*this); // TODO

@@ -188,6 +188,8 @@ CLASS_INFO(SumWeight, "JaCoP/constraints/SumWeight",
     "([LJaCoP/core/IntVar;[ILJaCoP/core/IntVar;)V")
 CLASS_INFO(XplusYeqZ, "JaCoP/constraints/XplusYeqZ",
     "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
+CLASS_INFO(XplusCeqZ, "JaCoP/constraints/XplusCeqZ",
+    "(LJaCoP/core/IntVar;ILJaCoP/core/IntVar;)V")
 CLASS_INFO(XmulYeqZ, "JaCoP/constraints/XmulYeqZ",
     "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
 CLASS_INFO(XmulCeqZ, "JaCoP/constraints/XmulCeqZ",
@@ -229,6 +231,7 @@ CLASS_INFO(And, "JaCoP/constraints/And",
     "LJaCoP/constraints/PrimitiveConstraint;)V")
 CLASS_INFO(Not, "JaCoP/constraints/Not",
     "(LJaCoP/constraints/PrimitiveConstraint;)V")
+CLASS_INFO(Alldiff, "JaCoP/constraints/Alldiff", "([LJaCoP/core/IntVar;)V")
 
 class NLToJaCoPConverter :
    private ExprVisitor<NLToJaCoPConverter, jobject, jobject> {
@@ -242,6 +245,7 @@ class NLToJaCoPConverter :
   Class<SumWeight> sum_class_;
   Class<SumWeight> sum_weight_class_;
   Class<XplusYeqZ> plus_class_;
+  Class<XplusCeqZ> plus_const_class_;
   Class<XmulYeqZ> mul_class_;
   Class<XmulCeqZ> mul_const_class_;
   Class<XdivYeqZ> div_class_;
@@ -261,6 +265,7 @@ class NLToJaCoPConverter :
   Class<Or> or_class_;
   Class<And> and_class_;
   Class<Not> not_class_;
+  Class<Alldiff> alldiff_class_;
   jobject one_var_;
   jint min_int_;
   jint max_int_;
@@ -342,9 +347,7 @@ class NLToJaCoPConverter :
   // * trigonometric functions
   // * log, log10, exp, sqrt
 
-  jobject VisitPlus(BinaryExpr e) {
-    return CreateCon(plus_class_, Visit(e.lhs()), Visit(e.rhs()));
-  }
+  jobject VisitPlus(BinaryExpr e);
 
   jobject VisitMinus(BinaryExpr e) {
     return CreateMinus(Visit(e.lhs()), Visit(e.rhs()));
@@ -501,9 +504,12 @@ class NLToJaCoPConverter :
 
   jobject VisitIff(BinaryLogicalExpr e) {
     return Visit(e.lhs()) == Visit(e.rhs());
-  }
+  }*/
 
-  jobject VisitAllDiff(AllDiffExpr e);*/
+  jobject VisitAllDiff(AllDiffExpr) {
+    throw UnsupportedExprError("nested 'alldiff'");
+    return jobject();
+  }
 
   jobject VisitLogicalConstant(LogicalConstant c) {
     if (!one_var_)
