@@ -449,6 +449,7 @@ mipthreads         number of threads to use solving mixed-integer
                         -1 = use "threads" keyword (default)
                         n > 0 ==> use n threads
 miptol             integer feasibility tolerance (default 5e-6)
+network            [no assignment] try to find and exploit an embedded network
 nodefilebias       a value between 0 and 1 (inclusive) that influences
                         operations when "treememlimit" (on how much of the
                         branch-and-bound tree should be kept in memory) has
@@ -625,7 +626,8 @@ sleeponthreadwait  whether threads should sleep while awaiting work:
                         0 = no (busy-wait; default)
                         1 = yes (sleep; may add overhead)
 sos                whether to use explicit SOS information (default 1 = yes)
-sos2               whether to use implicit SOS information (default 1 = yes)
+sos2               whether to tell XPRESS about SOS2 constraints for
+                        nonconvex piecewise-linear terms (default 1 = yes)
 sosreftol          minimum relative gap between reference row entries
                         default = 1e-6
 symmetry           amount of effort to detect symmetry in MIP problems:

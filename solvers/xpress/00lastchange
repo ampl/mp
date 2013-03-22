@@ -1,2 +1,3 @@
-20130129
-  Correct the description of "sos2" in the "-=" output.
+20130312
+  Add "network" keyword instructing xpress to identify and exploit
+an embedded network.

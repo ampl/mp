@@ -109,17 +109,18 @@ enum lpstat_e {
      };
 
 enum known_parameters {
-      set_primal,        /* Choose algorithm */
+	set_primal,        /* Choose algorithm */
 #ifdef RWA_DEBUG
-      set_debug,
+	set_debug,
 #endif
-      set_dual,
-      set_barrier,
-      set_maxim,         /* What to do */
-      set_minim,
-      set_relax,
-      set_timing,
-      set_iis,
+	set_dual,
+	set_barrier,
+	set_maxim,         /* What to do */
+	set_minim,
+	set_relax,
+	set_timing,
+	set_iis,
+	set_network
      };
 
  typedef struct Defer_setting Defer_setting;
@@ -178,7 +179,7 @@ static int  (XPRS_CC *Optimise)(XPRSprob ,const char *)=NULL;
 
 static int prtmsg = 3;       /* Message output level */
 
-char optimopt[3]={'X', '\0', '\0'};  /* Which algorithm */
+char optimopt[4]={'X', 0,0,0};  /* Which algorithm */
 /* [0] is b|d|X(meaning primal will be used - warning: non standard) */
 /* [1] is l|g|blank */
 
@@ -573,6 +574,7 @@ static char
 			-1 = use \"threads\" keyword (default)\n\
 			n > 0 ==> use n threads",
 	miptol_desc[]		= "integer feasibility tolerance (default 5e-6)",
+	network_desc[]		= "[no assignment] try to find and exploit an embedded network",
 	nodefilebias_desc[]	= "a value between 0 and 1 (inclusive) that influences\n\
 			operations when \"treememlimit\" (on how much of the\n\
 			branch-and-bound tree should be kept in memory) has\n\
@@ -971,6 +973,7 @@ static keyword keywds[]={
 #endif
   KW("mipthreads",	set_int, XPRS_MIPTHREADS,	mipthreads_desc),
   KW("miptol",		set_dbl, XPRS_MIPTOL,		miptol_desc),
+  KW("network",		set_known, set_network,		network_desc),
   KW("nodefilebias",	set_dbl, XPRS_GLOBALFILEBIAS,	nodefilebias_desc),
   KW("nodeselection",	set_int, XPRS_NODESELECTION,	nodeselection_desc),
   KW("objno",		I_val, &nobj,			"objective number (0=none, 1=first...)"),
@@ -1041,7 +1044,7 @@ static keyword keywds[]={
      };
 
 static Option_Info Oinfo = { "xpress", NULL, "xpress_options",
-           keywds,nkeywds,0,"XPRESS", 0,0,0,0,0, 20130129 };
+           keywds,nkeywds,0,"XPRESS", 0,0,0,0,0, 20130312 };
 
  static char *
 strcpy1(char *t, const char *s)
@@ -1270,13 +1273,14 @@ static char *set_known(Option_Info *oi, keyword *kw, char *v)
       *d++ = '\0';
                         break;
 #endif
-  case set_dual:    optimopt[0]='d';       break;
-  case set_barrier: optimopt[0]='b';       break;
-  case set_relax:   optimopt[1]='l';       break;
-  case set_maxim:   Optimise=XPRSmaxim;    break;
-  case set_minim:   Optimise=XPRSminim;    break;
-  case set_timing:  timing=1;              break;
-  case set_iis:     iis_find=1;            break;
+  case set_dual:	optimopt[0] = 'd';	break;
+  case set_barrier:	optimopt[0] = 'b';	break;
+  case set_relax:	optimopt[1] = 'l';	break;
+  case set_maxim:	Optimise = XPRSmaxim;	break;
+  case set_minim:	Optimise = XPRSminim;	break;
+  case set_timing:	timing = 1;		break;
+  case set_iis:		iis_find = 1;		break;
+  case set_network:	optimopt[2] = 'n';	break;
   default:          printf("Unknown option %s\n",kw->name);
                     badopt_ASL(oi);
  }
@@ -2147,7 +2151,7 @@ amplin(char *stub, char *argv[], dims *d)
 		indicator_constrs();
 #endif /*NO_XPR_CON_INDICATOR*/
 
-  if(optimopt[1]=='\0')
+  if(optimopt[1]==0)
   {
    optimopt[1]='g';       /* Search will be global */
    mip_priorities();      /* using provided priorities */
@@ -2173,6 +2177,10 @@ amplin(char *stub, char *argv[], dims *d)
 #endif
  atexit(killtempprob);    /* Ensure temp files are removed on exit */
  get_statuses(d);
+ if (!optimopt[1] && optimopt[2] == 'n') {
+	optimopt[1] = optimopt[2];
+	optimopt[2] = 0;
+	}
 }
 
  static int
