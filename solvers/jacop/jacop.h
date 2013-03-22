@@ -153,11 +153,16 @@ class ClassBase {
   void True() const {}
   typedef void (ClassBase::*SafeBool)() const;
 
+  virtual void DoInit(Env env) = 0;
+
  public:
   ClassBase() : class_(), ctor_() {}
   virtual ~ClassBase();
 
-  virtual void Init(Env env) = 0;
+  void Init(Env env) {
+    if (!class_)
+      Init(env);
+  }
 
   operator SafeBool() const { return class_ ? &ClassBase::True : 0; }
 
@@ -169,8 +174,8 @@ class ClassBase {
 // A reference to a Java class and one of its constructor.
 template <typename Info>
 class Class : public ClassBase {
- public:
-  void Init(Env env) {
+ protected:
+  void DoInit(Env env) {
     class_ = env.FindClass(Info::name());
     ctor_ = env.GetMethod(class_, "<init>", Info::ctor_sig());
   }
@@ -268,6 +273,9 @@ class NLToJaCoPConverter :
   Class<And> and_class_;
   Class<Not> not_class_;
   Class<Alldiff> alldiff_class_;
+  jclass constraint_class_;
+  jmethodID or_array_ctor_;
+  jmethodID and_array_ctor_;
   jobject one_var_;
   jint min_int_;
   jint max_int_;
@@ -333,12 +341,12 @@ class NLToJaCoPConverter :
     return cls.NewObject(jvm_, Visit(e.value()), VisitCount(e.count()));
   }
 
+  // Converts an iterated logical expression.
+  jobject Convert(IteratedLogicalExpr e, ClassBase &cls, jmethodID &ctor);
+
   void Impose(jobject constraint) {
     jvm_.CallVoidMethod(store_, impose_, constraint);
   }
-
-  // TODO
-  //jobject Convert(Gecode::BoolOpType op, IteratedLogicalExpr e);
 
   static void RequireNonzeroConstRHS(
       BinaryExpr e, const std::string &func_name);
@@ -498,16 +506,16 @@ class NLToJaCoPConverter :
     return Convert(e, ne_class_);
   }
 
-  // TODO
-  /*
   jobject VisitForAll(IteratedLogicalExpr e) {
-    return Convert(Gecode::BOT_AND, e);
+    return Convert(e, and_class_, and_array_ctor_);
   }
 
   jobject VisitExists(IteratedLogicalExpr e) {
-    return Convert(Gecode::BOT_OR, e);
+    return Convert(e, or_class_, or_array_ctor_);
   }
 
+  // TODO
+  /*
   jobject VisitImplication(ImplicationExpr e);
 
   jobject VisitIff(BinaryLogicalExpr e) {

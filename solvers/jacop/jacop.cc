@@ -148,8 +148,7 @@ JVM::JVM() : jvm_() {
 ClassBase::~ClassBase() {}
 
 jobject ClassBase::NewObject(Env env, ...) {
-  if (!class_)
-    Init(env);
+  Init(env);
   std::va_list args;
   va_start(args, env);
   jobject result = 0;
@@ -163,20 +162,23 @@ jobject ClassBase::NewObject(Env env, ...) {
   return result;
 }
 
-// TODO
-/*
 jobject NLToJaCoPConverter::Convert(
-    Gecode::BoolOpType op, IteratedLogicalExpr e) {
-  Gecode::BoolVarArgs args(e.num_args());
-  int index = 0;
-  for (IteratedLogicalExpr::iterator
-      i = e.begin(), end = e.end(); i != end; ++i, ++index) {
-    args[index] = Gecode::expr(problem_, Visit(*i));
+    IteratedLogicalExpr e, ClassBase &cls, jmethodID &ctor) {
+  if (!ctor) {
+    cls.Init(jvm_);
+    ctor = jvm_.GetMethod(cls.get(),
+        "<init>", "([LJaCoP/constraints/PrimitiveConstraint;)V");
   }
-  Gecode::BoolVar var(problem_, 0, 1);
-  rel(problem_, op, args, var);
-  return var;
-}*/
+  if (!constraint_class_) {
+    constraint_class_ = jvm_.FindClass(
+        "JaCoP/constraints/PrimitiveConstraint");
+  }
+  int num_args = e.num_args();
+  jobjectArray args = jvm_.NewObjectArray(num_args, constraint_class_, 0);
+  for (int i = 0; i < num_args; ++i)
+    jvm_.SetObjectArrayElement(args, i, Visit(e[i]));
+  return jvm_.NewObject(cls.get(), ctor, args);
+}
 
 void NLToJaCoPConverter::RequireNonzeroConstRHS(
     BinaryExpr e, const std::string &func_name) {
@@ -229,7 +231,7 @@ jobject NLToJaCoPConverter::ConvertFullExpr(LogicalExpr e, bool post) {
   for (int i = 0; i < num_args; ++i) {
     NumericExpr arg = alldiff[i];
     jobject result_var = 0;
-    if (Variable var = ampl::Cast<Variable>(arg))
+    if (Variable var = Cast<Variable>(arg))
       result_var = vars_[var.index()];
     else
       result_var = Visit(arg);
@@ -258,7 +260,8 @@ jobject NLToJaCoPConverter::VisitNumericLess(BinaryExpr e) {
 }
 
 NLToJaCoPConverter::NLToJaCoPConverter(JVM &jvm)
-: jvm_(jvm), store_(), impose_(), var_array_(), one_var_() {
+: jvm_(jvm), store_(), impose_(), var_array_(),
+  constraint_class_(), or_array_ctor_(), and_array_ctor_(), one_var_() {
   var_class_.Init(jvm_);
   jclass domain_class = jvm_.FindClass("JaCoP/core/IntDomain");
   min_int_ = jvm_.GetStaticIntField(
