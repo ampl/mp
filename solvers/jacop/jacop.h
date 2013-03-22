@@ -226,6 +226,9 @@ CLASS_INFO(Min, "JaCoP/constraints/Min",
     "([LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
 CLASS_INFO(Max, "JaCoP/constraints/Max",
     "([LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
+CLASS_INFO(IfThen, "JaCoP/constraints/IfThen",
+    "(LJaCoP/constraints/PrimitiveConstraint;"
+    "LJaCoP/constraints/PrimitiveConstraint;)V")
 CLASS_INFO(IfThenElse, "JaCoP/constraints/IfThenElse",
     "(LJaCoP/constraints/PrimitiveConstraint;"
     "LJaCoP/constraints/PrimitiveConstraint;"
@@ -238,6 +241,9 @@ CLASS_INFO(And, "JaCoP/constraints/And",
     "LJaCoP/constraints/PrimitiveConstraint;)V")
 CLASS_INFO(Not, "JaCoP/constraints/Not",
     "(LJaCoP/constraints/PrimitiveConstraint;)V")
+CLASS_INFO(Eq, "JaCoP/constraints/Eq",
+    "(LJaCoP/constraints/PrimitiveConstraint;"
+    "LJaCoP/constraints/PrimitiveConstraint;)V")
 CLASS_INFO(Alldiff, "JaCoP/constraints/Alldiff", "([LJaCoP/core/IntVar;)V")
 
 class NLToJaCoPConverter :
@@ -269,9 +275,11 @@ class NLToJaCoPConverter :
   Class<Min> min_class_;
   Class<Max> max_class_;
   Class<IfThenElse> if_class_;
+  Class<IfThenElse> if_else_class_;
   Class<Or> or_class_;
   Class<And> and_class_;
   Class<Not> not_class_;
+  Class<Eq> eq_con_class_;
   Class<Alldiff> alldiff_class_;
   jclass constraint_class_;
   jmethodID or_array_ctor_;
@@ -514,13 +522,11 @@ class NLToJaCoPConverter :
     return Convert(e, or_class_, or_array_ctor_);
   }
 
-  // TODO
-  /*
   jobject VisitImplication(ImplicationExpr e);
 
   jobject VisitIff(BinaryLogicalExpr e) {
-    return Visit(e.lhs()) == Visit(e.rhs());
-  }*/
+    return eq_con_class_.NewObject(jvm_, Visit(e.lhs()), Visit(e.rhs()));
+  }
 
   jobject VisitAllDiff(AllDiffExpr) {
     throw UnsupportedExprError("nested 'alldiff'");

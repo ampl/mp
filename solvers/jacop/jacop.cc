@@ -315,7 +315,7 @@ void NLToJaCoPConverter::Convert(const Problem &p) {
 
 jobject NLToJaCoPConverter::VisitIf(IfExpr e) {
   jobject result_var = CreateVar();
-  Impose(if_class_.NewObject(jvm_, Visit(e.condition()),
+  Impose(if_else_class_.NewObject(jvm_, Visit(e.condition()),
       eq_class_.NewObject(jvm_, result_var, Visit(e.true_expr())),
       eq_class_.NewObject(jvm_, result_var, Visit(e.false_expr()))));
   return result_var;
@@ -334,7 +334,7 @@ jobject NLToJaCoPConverter::VisitCount(CountExpr e) {
   int index = 0;
   for (CountExpr::iterator i = e.begin(), end = e.end(); i != end; ++i) {
     jobject result_var = CreateVar();
-    Impose(if_class_.NewObject(jvm_, *i,
+    Impose(if_else_class_.NewObject(jvm_, *i,
         eq_const_class_.NewObject(jvm_, result_var, 1),
         eq_const_class_.NewObject(jvm_, result_var, 0)));
     jvm_.SetObjectArrayElement(args, index++, result_var);
@@ -356,18 +356,19 @@ jobject NLToJaCoPConverter::VisitNumberOf(NumberOfExpr e) {
   count(problem_, args, Gecode::expr(problem_, Visit(e.value())),
       Gecode::IRT_EQ, result);
   return result;
-}
+}*/
 
 jobject NLToJaCoPConverter::VisitImplication(ImplicationExpr e) {
   jobject condition = Visit(e.condition());
   LogicalConstant c = Cast<LogicalConstant>(e.false_expr());
+  jobject true_expr = Visit(e.true_expr());
   if (c && !c.value())
-    return condition >> Visit(e.true_expr());
-  return (condition && Visit(e.true_expr())) ||
-        (!condition && Visit(e.false_expr()));
+    return if_class_.NewObject(jvm_, condition, true_expr);
+  return if_else_class_.NewObject(jvm_, condition,
+      true_expr, Visit(e.false_expr()));
 }
 
-JaCoPSolver::Stop::Stop(JaCoPSolver &s)
+/*JaCoPSolver::Stop::Stop(JaCoPSolver &s)
 : sh_(s), solver_(s), time_limit_in_milliseconds_(s.time_limit_ * 1000),
   last_output_time_(0) {
   output_or_limit_ = s.output_ || time_limit_in_milliseconds_ < DBL_MAX ||
