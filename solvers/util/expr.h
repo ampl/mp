@@ -835,6 +835,11 @@ class IteratedLogicalExpr : public LogicalExpr {
   // Returns the number of arguments.
   int num_args() const { return static_cast<int>(expr_->R.ep - expr_->L.ep); }
 
+  LogicalExpr operator[](int index) {
+    assert(index >= 0 && index < num_args());
+    return Create<LogicalExpr>(expr_->L.ep[index]);
+  }
+
   typedef ArrayIterator<LogicalExpr> iterator;
 
   iterator begin() const {
