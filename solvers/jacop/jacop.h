@@ -213,6 +213,8 @@ CLASS_INFO(XgtY, "JaCoP/constraints/XgtY",
     "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
 CLASS_INFO(XgteqY, "JaCoP/constraints/XgteqY",
     "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
+CLASS_INFO(XgteqC, "JaCoP/constraints/XgteqC",
+    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
 CLASS_INFO(AbsXeqY, "JaCoP/constraints/AbsXeqY",
     "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
 CLASS_INFO(Min, "JaCoP/constraints/Min",
@@ -324,6 +326,11 @@ class NLToJaCoPConverter :
   template <typename ExprT>
   jobject Convert(ExprT e, ClassBase &cls) {
     return cls.NewObject(jvm_, Visit(e.lhs()), Visit(e.rhs()));
+  }
+
+  // Converts a logical count expression.
+  jobject Convert(LogicalCountExpr e, ClassBase &cls) {
+    return cls.NewObject(jvm_, Visit(e.value()), VisitCount(e.count()));
   }
 
   void Impose(jobject constraint) {
@@ -467,31 +474,32 @@ class NLToJaCoPConverter :
     return not_class_.NewObject(jvm_, Visit(e.arg()));
   }
 
-  // TODO
-  /*jobject VisitAtLeast(LogicalCountExpr e) {
-    return Visit(e.value()) <= Visit(e.count());
+  jobject VisitAtLeast(LogicalCountExpr e) {
+    return Convert(e, le_class_);
   }
 
   jobject VisitAtMost(LogicalCountExpr e) {
-    return Visit(e.value()) >= Visit(e.count());
+    return Convert(e, ge_class_);
   }
 
   jobject VisitExactly(LogicalCountExpr e) {
-    return Visit(e.value()) == Visit(e.count());
+    return Convert(e, eq_class_);
   }
 
   jobject VisitNotAtLeast(LogicalCountExpr e) {
-    return Visit(e.value()) > Visit(e.count());
+    return Convert(e, gt_class_);
   }
 
   jobject VisitNotAtMost(LogicalCountExpr e) {
-    return Visit(e.value()) < Visit(e.count());
+    return Convert(e, lt_class_);
   }
 
   jobject VisitNotExactly(LogicalCountExpr e) {
-    return Visit(e.value()) != Visit(e.count());
+    return Convert(e, ne_class_);
   }
 
+  // TODO
+  /*
   jobject VisitForAll(IteratedLogicalExpr e) {
     return Convert(Gecode::BOT_AND, e);
   }
