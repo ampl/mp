@@ -200,7 +200,7 @@ void NLToJaCoPConverter::ConvertExpr(
     if (nonlinear)
       ++num_terms;
     std::vector<int> coefs(num_terms);
-    jobjectArray vars = jvm_.NewObjectArray(num_terms, var_class_.get(), 0);
+    jobjectArray vars = CreateVarArray(num_terms);
     int index = 0;
     for (typename LinearExpr<Term>::iterator
         i = linear.begin(), end = linear.end(); i != end; ++i, ++index) {
@@ -227,7 +227,7 @@ jobject NLToJaCoPConverter::ConvertFullExpr(LogicalExpr e, bool post) {
     return constraint;
   }
   int num_args = alldiff.num_args();
-  jobjectArray args = jvm_.NewObjectArray(num_args, var_class_.get(), 0);
+  jobjectArray args = CreateVarArray(num_args);
   for (int i = 0; i < num_args; ++i) {
     NumericExpr arg = alldiff[i];
     jobject result_var = 0;
@@ -252,7 +252,7 @@ jobject NLToJaCoPConverter::VisitPlus(BinaryExpr e) {
 }
 
 jobject NLToJaCoPConverter::VisitNumericLess(BinaryExpr e) {
-  jobjectArray args = jvm_.NewObjectArray(2, var_class_.get(), 0);
+  jobjectArray args = CreateVarArray(2);
   jvm_.SetObjectArrayElement(args, 0,
       CreateMinus(Visit(e.lhs()), Visit(e.rhs())));
   jvm_.SetObjectArrayElement(args, 1, CreateConst(0));
@@ -281,7 +281,7 @@ void NLToJaCoPConverter::Convert(const Problem &p) {
       "impose", "(LJaCoP/constraints/Constraint;)V");
 
   int num_vars = p.num_integer_vars();
-  var_array_ = jvm_.NewObjectArray(num_vars, var_class_.get(), 0);
+  var_array_ = CreateVarArray(num_vars);
   vars_.resize(num_vars);
   for (int j = 0; j < num_vars; ++j) {
     double lb = p.var_lb(j), ub = p.var_ub(j);
@@ -322,7 +322,7 @@ jobject NLToJaCoPConverter::VisitIf(IfExpr e) {
 }
 
 jobject NLToJaCoPConverter::VisitSum(SumExpr e) {
-  jobjectArray args = jvm_.NewObjectArray(e.num_args(), var_class_.get(), 0);
+  jobjectArray args = CreateVarArray(e.num_args());
   int index = 0;
   for (SumExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
     jvm_.SetObjectArrayElement(args, index++, Visit(*i));
@@ -330,7 +330,7 @@ jobject NLToJaCoPConverter::VisitSum(SumExpr e) {
 }
 
 jobject NLToJaCoPConverter::VisitCount(CountExpr e) {
-  jobjectArray args = jvm_.NewObjectArray(e.num_args(), var_class_.get(), 0);
+  jobjectArray args = CreateVarArray(e.num_args());
   int index = 0;
   for (CountExpr::iterator i = e.begin(), end = e.end(); i != end; ++i) {
     jobject result_var = CreateVar();
@@ -342,21 +342,20 @@ jobject NLToJaCoPConverter::VisitCount(CountExpr e) {
   return CreateCon(sum_class_, args);
 }
 
-// TODO
-/*
 jobject NLToJaCoPConverter::VisitNumberOf(NumberOfExpr e) {
-  // Gecode only supports global cardinality (count) constraint where no other
-  // values except those specified may occur, so we use only local count
-  // constraints.
-  IntVar result(problem_, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-  int index = 0;
-  IntVarArgs args(e.num_args());
-  for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-    args[index++] = Gecode::expr(problem_, Visit(*i));
-  count(problem_, args, Gecode::expr(problem_, Visit(e.value())),
-      Gecode::IRT_EQ, result);
-  return result;
-}*/
+  // JaCoP only supports a count constraint with constant value.
+  NumericConstant num = Cast<NumericConstant>(e.value());
+  if (!num)
+    throw UnsupportedExprError("numberof with variable value");
+  jobject result_var = CreateVar();
+  int num_args = e.num_args();
+  jobjectArray args = CreateVarArray(num_args);
+  for (int i = 0; i < num_args; ++i)
+    jvm_.SetObjectArrayElement(args, i, Visit(e[i]));
+  Impose(count_class_.NewObject(
+      jvm_, args, result_var, CastToInt(num.value())));
+  return result_var;
+}
 
 jobject NLToJaCoPConverter::VisitImplication(ImplicationExpr e) {
   jobject condition = Visit(e.condition());

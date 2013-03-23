@@ -226,6 +226,8 @@ CLASS_INFO(Min, "JaCoP/constraints/Min",
     "([LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
 CLASS_INFO(Max, "JaCoP/constraints/Max",
     "([LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
+CLASS_INFO(Count, "JaCoP/constraints/Count",
+    "([LJaCoP/core/IntVar;LJaCoP/core/IntVar;I)V")
 CLASS_INFO(IfThen, "JaCoP/constraints/IfThen",
     "(LJaCoP/constraints/PrimitiveConstraint;"
     "LJaCoP/constraints/PrimitiveConstraint;)V")
@@ -274,6 +276,7 @@ class NLToJaCoPConverter :
   Class<AbsXeqY> abs_class_;
   Class<Min> min_class_;
   Class<Max> max_class_;
+  Class<Count> count_class_;
   Class<IfThenElse> if_class_;
   Class<IfThenElse> if_else_class_;
   Class<Or> or_class_;
@@ -303,6 +306,10 @@ class NLToJaCoPConverter :
     return var_class_.NewObject(jvm_, store_, min_int_, max_int_);
   }
 
+  jobjectArray CreateVarArray(jsize length) {
+    return jvm_.NewObjectArray(length, var_class_.get(), 0);
+  }
+
   // Creates a variable equal to a constant value.
   jobject CreateConst(int value) {
     jobject result_var = CreateVar();
@@ -329,13 +336,12 @@ class NLToJaCoPConverter :
     return CreateCon(plus_class_, lhs, CreateCon(mul_const_class_, rhs, -1));
   }
 
-  jobjectArray ConvertVarArgs(VarArgExpr e) {
-    jobjectArray args = jvm_.NewObjectArray(
-        std::distance(e.begin(), e.end()), var_class_.get(), 0);
+  jobject Convert(VarArgExpr e, ClassBase &cls) {
+    jobjectArray args = CreateVarArray(std::distance(e.begin(), e.end()));
     int index = 0;
     for (VarArgExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
       jvm_.SetObjectArrayElement(args, index++, Visit(*i));
-    return args;
+    return CreateCon(cls, args);
   }
 
   // Converts a binary logical expression to a JaCoP constraint of class cls.
@@ -391,11 +397,11 @@ class NLToJaCoPConverter :
   jobject VisitNumericLess(BinaryExpr e);
 
   jobject VisitMin(VarArgExpr e) {
-    return CreateCon(min_class_, ConvertVarArgs(e));
+    return Convert(e, min_class_);
   }
 
   jobject VisitMax(VarArgExpr e) {
-    return CreateCon(max_class_, ConvertVarArgs(e));
+    return Convert(e, max_class_);
   }
 
   jobject VisitFloor(UnaryExpr e) {
@@ -438,8 +444,7 @@ class NLToJaCoPConverter :
 
   jobject VisitCount(CountExpr e);
 
-  // TODO
-  //jobject VisitNumberOf(NumberOfExpr e);
+  jobject VisitNumberOf(NumberOfExpr e);
 
   jobject VisitPow2(UnaryExpr e) {
     jobject arg = Visit(e.arg());
