@@ -752,6 +752,7 @@ TEST_F(ExprTest, IteratedLogicalExpr) {
     EXPECT_TRUE(*i);
     EXPECT_EQ(args[index], *i);
     EXPECT_EQ(args[index].opcode(), i->opcode());
+    EXPECT_EQ(args[index], e[index]);
   }
   EXPECT_EQ(3, index);
   i = e.begin();
