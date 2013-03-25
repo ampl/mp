@@ -614,6 +614,11 @@ class NumberOfExpr : public NumericExpr {
     return static_cast<int>(expr_->R.ep - expr_->L.ep - 1);
   }
 
+  NumericExpr operator[](int index) {
+    assert(index >= 0 && index < num_args());
+    return Create<NumericExpr>(expr_->L.ep[index + 1]);
+  }
+
   typedef ArrayIterator<NumericExpr> iterator;
 
   iterator begin() const {
