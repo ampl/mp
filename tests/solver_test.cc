@@ -678,6 +678,7 @@ TEST(SolverTest, ProblemAccessors) {
     LinearObjExpr expr = p.linear_obj_expr(0);
     EXPECT_EQ(31, expr.begin()->coef());
     EXPECT_EQ(0, expr.begin()->var_index());
+    EXPECT_EQ(5, std::distance(expr.begin(), expr.end()));
     expr = p.linear_obj_expr(p.num_objs() - 1);
     EXPECT_EQ(52, expr.begin()->coef());
     EXPECT_EQ(3, expr.begin()->var_index());
@@ -687,6 +688,7 @@ TEST(SolverTest, ProblemAccessors) {
     LinearConExpr expr = p.linear_con_expr(0);
     EXPECT_EQ(61, expr.begin()->coef());
     EXPECT_EQ(0, expr.begin()->var_index());
+    EXPECT_EQ(5, std::distance(expr.begin(), expr.end()));
     expr = p.linear_con_expr(p.num_cons() - 1);
     EXPECT_EQ(82, expr.begin()->coef());
     EXPECT_EQ(2, expr.begin()->var_index());
