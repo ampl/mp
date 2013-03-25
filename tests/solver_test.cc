@@ -354,6 +354,7 @@ TEST(SolverTest, ErrorHandler) {
   struct TestErrorHandler : ampl::ErrorHandler {
     std::string message;
 
+    virtual ~TestErrorHandler() {}
     void HandleError(fmt::StringRef message) {
       this->message = message;
     }
@@ -577,6 +578,7 @@ TEST(SolverTest, OptionParseError) {
 struct TestErrorHandler : ampl::ErrorHandler {
   std::vector<std::string> errors_;
 
+  virtual ~TestErrorHandler() {}
   void HandleError(fmt::StringRef message) {
     errors_.push_back(message);
   }
