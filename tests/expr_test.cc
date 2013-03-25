@@ -553,8 +553,10 @@ TEST_F(ExprTest, VarArgExpr) {
 
 TEST_F(ExprTest, SumExpr) {
   EXPECT_EQ(1, CheckExpr<SumExpr>(Expr::SUM));
+  EXPECT_EQ(0, AddSum().num_args());
   NumericExpr args[] = {AddNum(42), AddNum(43), AddNum(44)};
   SumExpr e(AddSum(args[0], args[1], args[2]));
+  EXPECT_EQ(3, e.num_args());
   int index = 0;
   SumExpr::iterator i = e.begin();
   for (SumExpr::iterator end = e.end(); i != end; ++i, ++index) {
@@ -644,6 +646,7 @@ TEST_F(ExprTest, NumberOfExpr) {
     EXPECT_TRUE(*i);
     EXPECT_EQ(args[index], *i);
     EXPECT_EQ(args[index].opcode(), i->opcode());
+    EXPECT_EQ(args[index], e[index]);
   }
   EXPECT_EQ(2, index);
   i = e.begin();
@@ -768,6 +771,7 @@ TEST_F(ExprTest, AllDiffExpr) {
     EXPECT_TRUE(*i);
     EXPECT_EQ(args[index], *i);
     EXPECT_EQ(args[index].opcode(), i->opcode());
+    EXPECT_EQ(args[index], e[index]);
   }
   EXPECT_EQ(3, index);
   i = e.begin();
