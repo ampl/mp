@@ -140,9 +140,26 @@ void Solution::Read(const char *stub, int num_vars, int num_cons) {
   solve_code_ = asl.p.solve_code_;
 }
 
-Problem::Problem() : asl_(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))) {}
+void Problem::Free() {
+  if (var_capacity_) {
+    delete [] asl_->i.LUv_;
+    delete [] asl_->i.Uvx_;
+    delete [] var_types_;
+    var_capacity_ = 0;
+  }
+  if (logical_con_capacity_) {
+    delete [] asl_->I.lcon_de_;
+    logical_con_capacity_ = 0;
+  }
+}
+
+Problem::Problem()
+: asl_(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))),
+  var_capacity_(0), logical_con_capacity_(0), var_types_(0) {
+}
 
 Problem::~Problem() {
+  Free();
   ASL_free(reinterpret_cast<ASL**>(&asl_));
 }
 
@@ -199,6 +216,60 @@ class TempFiles : Noncopyable {
 
   const char *stub() const { return name_; }
 };
+
+void Problem::AddVar(double lb, double ub, VarType type) {
+  int &num_vars = asl_->i.n_var_;
+  bool increase_capacity = var_capacity_ <= num_vars;
+  if (increase_capacity) {
+    IncreaseCapacity(num_vars, var_capacity_);
+    Grow(asl_->i.LUv_, num_vars, var_capacity_);
+    Grow(asl_->i.Uvx_, num_vars, var_capacity_);
+    if (var_types_)
+      Grow(var_types_, num_vars, var_capacity_);
+  }
+  if (type != CONTINUOUS) {
+    // Allocate var_types_ if this is the first integer variable added
+    // after continuous.
+    int num_integer_vars = Problem::num_integer_vars();
+    if (!var_types_ && num_vars != num_integer_vars) {
+      var_types_ = new VarType[var_capacity_];
+      std::fill(
+          std::fill_n(var_types_, num_integer_vars, INTEGER),
+          var_types_ + num_vars, CONTINUOUS);
+    }
+    ++asl_->i.niv_;
+  }
+  asl_->i.LUv_[num_vars] = lb;
+  asl_->i.Uvx_[num_vars] = ub;
+  if (var_types_)
+    var_types_[num_vars] = type;
+  ++num_vars;
+}
+
+void Problem::AddCon(LogicalExpr expr) {
+  int &num_logical_cons = asl_->i.n_lcon_;
+  if (num_logical_cons == logical_con_capacity_) {
+    IncreaseCapacity(num_logical_cons, logical_con_capacity_);
+    Grow(asl_->I.lcon_de_, num_logical_cons, logical_con_capacity_);
+  }
+  cde e = {expr.expr_};
+  asl_->I.lcon_de_[num_logical_cons] = e;
+  ++num_logical_cons;
+}
+
+void Problem::Read(const char *stub) {
+  Free();
+  ASL *asl = reinterpret_cast<ASL*>(asl_);
+  FILE *nl = jac0dim_ASL(asl, const_cast<char*>(stub),
+      static_cast<ftnlen>(std::strlen(stub)));
+  efunc *r_ops_int[N_OPS];
+  for (int i = 0; i < N_OPS; ++i)
+    r_ops_int[i] = reinterpret_cast<efunc*>(i);
+  asl_->I.r_ops_ = r_ops_int;
+  asl_->p.want_derivs_ = 0;
+  fg_read_ASL(asl, nl, ASL_allow_CLP | ASL_sep_U_arrays);
+  asl_->I.r_ops_ = 0;
+}
 
 void Problem::Solve(const char *solver_name,
     Solution &sol, ProblemChanges *pc, unsigned flags) {
@@ -429,21 +500,12 @@ std::string BasicSolver::FormatDescription(const char *description) {
 
 bool BasicSolver::ReadProblem(char **&argv) {
   SortOptions();
-  ASL_fg *aslfg = problem_.asl_;
-  ASL *asl = reinterpret_cast<ASL*>(aslfg);
-  char *stub = getstub_ASL(asl, &argv, this);
+  char *stub = getstub_ASL(reinterpret_cast<ASL*>(problem_.asl_), &argv, this);
   if (!stub) {
     usage_noexit_ASL(this, 1);
     return false;
   }
-  FILE *nl = jac0dim_ASL(asl, stub, static_cast<ftnlen>(std::strlen(stub)));
-  efunc *r_ops_int[N_OPS];
-  for (int i = 0; i < N_OPS; ++i)
-    r_ops_int[i] = reinterpret_cast<efunc*>(i);
-  aslfg->I.r_ops_ = r_ops_int;
-  aslfg->p.want_derivs_ = 0;
-  fg_read_ASL(asl, nl, ASL_allow_CLP | ASL_sep_U_arrays);
-  aslfg->I.r_ops_ = 0;
+  problem_.Read(stub);
   return true;
 }
 }

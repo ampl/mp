@@ -118,6 +118,9 @@ typedef LinearExpr<LinearConTerm> LinearConExpr;
 // An objective type.
 enum ObjType { MIN = 0, MAX = 1 };
 
+// A variable type.
+enum VarType { CONTINUOUS, INTEGER };
+
 class Noncopyable {
  private:
   // Do not implement!
@@ -201,8 +204,30 @@ class ProblemChanges;
 class Problem : Noncopyable {
  private:
   ASL_fg *asl_;
+  int var_capacity_;
+  int logical_con_capacity_;
+
+  // Array of variable types or null if integer and binary variables precede
+  // continuous variables.
+  VarType *var_types_;
+
+  static void IncreaseCapacity(int size, int &capacity) {
+    capacity = std::max(capacity, size);
+    capacity = capacity ? 2 * capacity : 8;
+  }
+
+  template <typename T>
+  static void Grow(T *&array, int &size, int &capacity) {
+    T *new_array = new T[capacity];
+    std::copy_n(array, size, new_array);
+    delete [] array;
+    array = new_array;
+  }
 
   friend class BasicSolver;
+
+  // Frees all the arrays that were allocated by modifications to the problem.
+  void Free();
 
  public:
   Problem();
@@ -236,6 +261,14 @@ class Problem : Noncopyable {
 
   // Returns the number of logical constraints.
   int num_logical_cons() const { return asl_->i.n_lcon_; }
+
+  // Returns the type of the variable.
+  VarType var_type(int var_index) const {
+    assert(var_index >= 0 && var_index < num_vars());
+    if (var_types_)
+      return var_types_[var_index];
+    return var_index < num_integer_vars() ? INTEGER : CONTINUOUS;
+  }
 
   // Returns the lower bounds for the variables.
   const double *var_lb() const { return asl_->i.LUv_; }
@@ -316,6 +349,15 @@ class Problem : Noncopyable {
   void set_solve_code(int value) {
     asl_->p.solve_code_ = value;
   }
+
+  // Adds a variable.
+  void AddVar(double lb, double ub, VarType type = CONTINUOUS);
+
+  // Adds a logical constraint.
+  void AddCon(LogicalExpr expr);
+
+  // Reads a problem from the file <stub>.nl.
+  void Read(const char *stub);
 
   // Flags for Solve.
   enum { IGNORE_FUNCTIONS = 1 };
