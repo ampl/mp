@@ -165,19 +165,19 @@ jobject ClassBase::NewObject(Env env, ...) {
 jobject NLToJaCoPConverter::Convert(
     IteratedLogicalExpr e, ClassBase &cls, jmethodID &ctor) {
   if (!ctor) {
-    cls.Init(jvm_);
-    ctor = jvm_.GetMethod(cls.get(),
+    cls.Init(env_);
+    ctor = env_.GetMethod(cls.get(),
         "<init>", "([LJaCoP/constraints/PrimitiveConstraint;)V");
   }
   if (!constraint_class_) {
-    constraint_class_ = jvm_.FindClass(
+    constraint_class_ = env_.FindClass(
         "JaCoP/constraints/PrimitiveConstraint");
   }
   int num_args = e.num_args();
-  jobjectArray args = jvm_.NewObjectArray(num_args, constraint_class_, 0);
+  jobjectArray args = env_.NewObjectArray(num_args, constraint_class_, 0);
   for (int i = 0; i < num_args; ++i)
-    jvm_.SetObjectArrayElement(args, i, Visit(e[i]));
-  return jvm_.NewObject(cls.get(), ctor, args);
+    env_.SetObjectArrayElement(args, i, Visit(e[i]));
+  return env_.NewObject(cls.get(), ctor, args);
 }
 
 void NLToJaCoPConverter::RequireNonzeroConstRHS(
@@ -205,26 +205,25 @@ void NLToJaCoPConverter::ConvertExpr(
     for (typename LinearExpr<Term>::iterator
         i = linear.begin(), end = linear.end(); i != end; ++i, ++index) {
       coefs[index] = i->coef();
-      jvm_.SetObjectArrayElement(vars, index, vars_[i->var_index()]);
+      env_.SetObjectArrayElement(vars, index, vars_[i->var_index()]);
     }
     if (nonlinear) {
       assert(index == num_terms - 1);
       coefs[index] = 1;
-      jvm_.SetObjectArrayElement(vars, index, Visit(nonlinear));
+      env_.SetObjectArrayElement(vars, index, Visit(nonlinear));
     }
-    jintArray coefs_array = jvm_.NewIntArray(num_terms);
-    jvm_.SetIntArrayRegion(coefs_array, 0, num_terms, &coefs[0]);
-    Impose(sum_weight_class_.NewObject(jvm_, vars, coefs_array, result_var));
+    jintArray coefs_array = env_.NewIntArray(num_terms);
+    env_.SetIntArrayRegion(coefs_array, 0, num_terms, &coefs[0]);
+    Impose(sum_weight_class_.NewObject(env_, vars, coefs_array, result_var));
   } else if (nonlinear)
-    Impose(eq_class_.NewObject(jvm_, Visit(nonlinear), result_var));
+    Impose(eq_class_.NewObject(env_, Visit(nonlinear), result_var));
 }
 
-jobject NLToJaCoPConverter::ConvertFullExpr(LogicalExpr e, bool post) {
+void NLToJaCoPConverter::ConvertLogicalCon(LogicalExpr e, bool post) {
   AllDiffExpr alldiff = Cast<AllDiffExpr>(e);
   if (!alldiff) {
-    jobject constraint = Visit(e);
-    Impose(constraint); // TODO: impose if post is true (for tests?)
-    return constraint;
+    Impose(Visit(e));
+    return;
   }
   int num_args = alldiff.num_args();
   jobjectArray args = CreateVarArray(num_args);
@@ -235,11 +234,20 @@ jobject NLToJaCoPConverter::ConvertFullExpr(LogicalExpr e, bool post) {
       result_var = vars_[var.index()];
     else
       result_var = Visit(arg);
-    jvm_.SetObjectArrayElement(args, i, result_var);
+    env_.SetObjectArrayElement(args, i, result_var);
   }
-  jobject constraint = alldiff_class_.NewObject(jvm_, args);
-  Impose(constraint);
-  return constraint;
+  Impose(alldiff_class_.NewObject(env_, args));
+}
+
+NLToJaCoPConverter::NLToJaCoPConverter(Env env)
+: env_(env), store_(), impose_(), var_array_(),
+  constraint_class_(), or_array_ctor_(), and_array_ctor_(), one_var_() {
+  var_class_.Init(env);
+  jclass domain_class = env.FindClass("JaCoP/core/IntDomain");
+  min_int_ = env.GetStaticIntField(
+      domain_class, env.GetStaticFieldID(domain_class, "MinInt", "I"));
+  max_int_ = env.GetStaticIntField(
+      domain_class, env.GetStaticFieldID(domain_class, "MaxInt", "I"));
 }
 
 jobject NLToJaCoPConverter::VisitPlus(BinaryExpr e) {
@@ -253,31 +261,20 @@ jobject NLToJaCoPConverter::VisitPlus(BinaryExpr e) {
 
 jobject NLToJaCoPConverter::VisitNumericLess(BinaryExpr e) {
   jobjectArray args = CreateVarArray(2);
-  jvm_.SetObjectArrayElement(args, 0,
+  env_.SetObjectArrayElement(args, 0,
       CreateMinus(Visit(e.lhs()), Visit(e.rhs())));
-  jvm_.SetObjectArrayElement(args, 1, CreateConst(0));
+  env_.SetObjectArrayElement(args, 1, CreateConst(0));
   return CreateCon(max_class_, args);
-}
-
-NLToJaCoPConverter::NLToJaCoPConverter(JVM &jvm)
-: jvm_(jvm), store_(), impose_(), var_array_(),
-  constraint_class_(), or_array_ctor_(), and_array_ctor_(), one_var_() {
-  var_class_.Init(jvm_);
-  jclass domain_class = jvm_.FindClass("JaCoP/core/IntDomain");
-  min_int_ = jvm_.GetStaticIntField(
-      domain_class, jvm_.GetStaticFieldID(domain_class, "MinInt", "I"));
-  max_int_ = jvm_.GetStaticIntField(
-      domain_class, jvm_.GetStaticFieldID(domain_class, "MaxInt", "I"));
 }
 
 void NLToJaCoPConverter::Convert(const Problem &p) {
   if (p.num_continuous_vars() != 0)
     throw std::runtime_error("JaCoP doesn't support continuous variables");
 
-  jclass store_class = jvm_.FindClass("JaCoP/core/Store");
-  store_ = jvm_.NewObject(store_class,
-      jvm_.GetMethod(store_class, "<init>", "()V"));
-  impose_ = jvm_.GetMethod(store_class,
+  jclass store_class = env_.FindClass("JaCoP/core/Store");
+  store_ = env_.NewObject(store_class,
+      env_.GetMethod(store_class, "<init>", "()V"));
+  impose_ = env_.GetMethod(store_class,
       "impose", "(LJaCoP/constraints/Constraint;)V");
 
   int num_vars = p.num_integer_vars();
@@ -285,11 +282,11 @@ void NLToJaCoPConverter::Convert(const Problem &p) {
   vars_.resize(num_vars);
   for (int j = 0; j < num_vars; ++j) {
     double lb = p.var_lb(j), ub = p.var_ub(j);
-    jobject var = var_class_.NewObject(jvm_, store_,
+    jobject var = var_class_.NewObject(env_, store_,
         lb <= negInfinity ? min_int_ : CastToInt(lb),
         ub >= Infinity ? max_int_ : CastToInt(ub));
     vars_[j] = var;
-    jvm_.SetObjectArrayElement(var_array_, j, var);
+    env_.SetObjectArrayElement(var_array_, j, var);
   }
 
   // TODO
@@ -304,20 +301,20 @@ void NLToJaCoPConverter::Convert(const Problem &p) {
     // TODO: check if lb less than MIN_INT in CastToInt
     jint int_lb = lb <= negInfinity ? min_int_ : CastToInt(lb);
     jint int_ub = ub >= Infinity ? max_int_ : CastToInt(ub);
-    jobject result_var = var_class_.NewObject(jvm_, store_, int_lb, int_ub);
+    jobject result_var = var_class_.NewObject(env_, store_, int_lb, int_ub);
     ConvertExpr(p.linear_con_expr(i), p.nonlinear_con_expr(i), result_var);
   }
 
   // Convert logical constraints.
   for (int i = 0, n = p.num_logical_cons(); i < n; ++i)
-    ConvertFullExpr(p.logical_con_expr(i));
+    ConvertLogicalCon(p.logical_con_expr(i));
 }
 
 jobject NLToJaCoPConverter::VisitIf(IfExpr e) {
   jobject result_var = CreateVar();
-  Impose(if_else_class_.NewObject(jvm_, Visit(e.condition()),
-      eq_class_.NewObject(jvm_, result_var, Visit(e.true_expr())),
-      eq_class_.NewObject(jvm_, result_var, Visit(e.false_expr()))));
+  Impose(if_else_class_.NewObject(env_, Visit(e.condition()),
+      eq_class_.NewObject(env_, result_var, Visit(e.true_expr())),
+      eq_class_.NewObject(env_, result_var, Visit(e.false_expr()))));
   return result_var;
 }
 
@@ -325,7 +322,7 @@ jobject NLToJaCoPConverter::VisitSum(SumExpr e) {
   jobjectArray args = CreateVarArray(e.num_args());
   int index = 0;
   for (SumExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-    jvm_.SetObjectArrayElement(args, index++, Visit(*i));
+    env_.SetObjectArrayElement(args, index++, Visit(*i));
   return CreateCon(sum_class_, args);
 }
 
@@ -334,16 +331,16 @@ jobject NLToJaCoPConverter::VisitCount(CountExpr e) {
   int index = 0;
   for (CountExpr::iterator i = e.begin(), end = e.end(); i != end; ++i) {
     jobject result_var = CreateVar();
-    Impose(if_else_class_.NewObject(jvm_, *i,
-        eq_const_class_.NewObject(jvm_, result_var, 1),
-        eq_const_class_.NewObject(jvm_, result_var, 0)));
-    jvm_.SetObjectArrayElement(args, index++, result_var);
+    Impose(if_else_class_.NewObject(env_, Visit(*i),
+        eq_const_class_.NewObject(env_, result_var, 1),
+        eq_const_class_.NewObject(env_, result_var, 0)));
+    env_.SetObjectArrayElement(args, index++, result_var);
   }
   return CreateCon(sum_class_, args);
 }
 
 jobject NLToJaCoPConverter::VisitNumberOf(NumberOfExpr e) {
-  // JaCoP only supports a count constraint with constant value.
+  // JaCoP only supports count constraints with constant value.
   NumericConstant num = Cast<NumericConstant>(e.value());
   if (!num)
     throw UnsupportedExprError("numberof with variable value");
@@ -351,9 +348,9 @@ jobject NLToJaCoPConverter::VisitNumberOf(NumberOfExpr e) {
   int num_args = e.num_args();
   jobjectArray args = CreateVarArray(num_args);
   for (int i = 0; i < num_args; ++i)
-    jvm_.SetObjectArrayElement(args, i, Visit(e[i]));
+    env_.SetObjectArrayElement(args, i, Visit(e[i]));
   Impose(count_class_.NewObject(
-      jvm_, args, result_var, CastToInt(num.value())));
+      env_, args, result_var, CastToInt(num.value())));
   return result_var;
 }
 
@@ -362,8 +359,8 @@ jobject NLToJaCoPConverter::VisitImplication(ImplicationExpr e) {
   LogicalConstant c = Cast<LogicalConstant>(e.false_expr());
   jobject true_expr = Visit(e.true_expr());
   if (c && !c.value())
-    return if_class_.NewObject(jvm_, condition, true_expr);
-  return if_else_class_.NewObject(jvm_, condition,
+    return if_class_.NewObject(env_, condition, true_expr);
+  return if_else_class_.NewObject(env_, condition,
       true_expr, Visit(e.false_expr()));
 }
 
@@ -548,11 +545,11 @@ int JaCoPSolver::Run(char **argv) {
   }
 
   // Solve the problem.
-  SignalHandler sh(*this); // TODO
-  jclass cls = jvm_.FindClass("JaCoP/search/DepthFirstSearch");
-  jmethodID labeling = jvm_.GetMethod(cls, "labeling",
+  SignalHandler signal_handler(*this); // TODO
+  Class<DepthFirstSearch> dfs_class;
+  jobject search = dfs_class.NewObject(jvm_);
+  jmethodID labeling = jvm_.GetMethod(dfs_class.get(), "labeling",
       "(LJaCoP/core/Store;LJaCoP/search/SelectChoicePoint;)Z");
-  jobject search = jvm_.NewObject(cls, jvm_.GetMethod(cls, "<init>", "()V"));
   jobject indomain = jvm_.NewObject("JaCoP/search/IndomainMin", "()V");
   jobject select = jvm_.NewObject("JaCoP/search/InputOrderSelect",
       "(LJaCoP/core/Store;[LJaCoP/core/Var;LJaCoP/search/Indomain;)V",
@@ -607,7 +604,7 @@ int JaCoPSolver::Run(char **argv) {
 
   std::vector<double> final_solution;
   if (found) {
-    jclass var_class = converter.var_class();
+    jclass var_class = converter.var_class().get();
     jmethodID value = jvm_.GetMethod(var_class, "value", "()I");
     const std::vector<jobject> &vars = converter.vars();
     int num_vars = problem.num_vars();

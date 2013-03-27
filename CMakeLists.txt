@@ -69,6 +69,15 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/gecode/gecode-src/CMakeLists.txt)
   set(get_gecode_version solvers/gecode/gecode -v >> versions)
 endif ()
 
+file(GLOB JACOP_PATH solvers/jacop/lib/JaCoP-*.jar)
+if (JACOP_PATH)
+  get_filename_component(JACOP_JAR ${JACOP_PATH} NAME)
+  find_package(JNI)
+  if (JNI_FOUND)
+    set(HAVE_JACOP 1)
+  endif ()
+endif ()
+
 include(CheckCCompilerFlag)
 check_c_compiler_flag(-fPIC HAVE_FPIC_FLAG)
 

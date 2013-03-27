@@ -114,3 +114,7 @@ if (HAVE_GECODE)
 endif ()
 
 add_subdirectory(ilogcp)
+
+if (HAVE_JACOP)
+  add_subdirectory(jacop)
+endif ()
