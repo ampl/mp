@@ -40,6 +40,8 @@
 
 namespace ampl {
 
+typedef Gecode::LinIntExpr LinExpr;
+
 class GecodeProblem: public Gecode::Space {
  private:
   Gecode::IntVarArray vars_;
@@ -60,23 +62,16 @@ class GecodeProblem: public Gecode::Space {
   Gecode::IntVarArray &vars() { return vars_; }
   Gecode::IntVar &obj() { return obj_; }
 
-  void SetObj(ObjType obj_type, const Gecode::LinExpr &expr);
+  void SetObj(ObjType obj_type, const LinExpr &expr);
 
   virtual void constrain(const Gecode::Space &best);
 };
 
 class NLToGecodeConverter :
-  private ExprVisitor<NLToGecodeConverter, Gecode::LinExpr, Gecode::BoolExpr> {
+  public ExprVisitor<NLToGecodeConverter, LinExpr, Gecode::BoolExpr> {
  private:
   GecodeProblem problem_;
 
-  friend class ExprVisitor<
-    NLToGecodeConverter, Gecode::LinExpr, Gecode::BoolExpr>;
-
-  typedef ExprVisitor<NLToGecodeConverter, Gecode::LinExpr, Gecode::BoolExpr>
-    ExprVisitor;
-
-  typedef Gecode::LinExpr LinExpr;
   typedef Gecode::BoolExpr BoolExpr;
 
   static int CastToInt(double value) {
@@ -95,6 +90,16 @@ class NLToGecodeConverter :
 
   template<typename Term>
   LinExpr ConvertExpr(LinearExpr<Term> linear, NumericExpr nonlinear);
+
+ public:
+  NLToGecodeConverter(int num_vars) : problem_(num_vars) {}
+
+  // Converts a logical constraint.
+  void ConvertLogicalCon(LogicalExpr e);
+
+  void Convert(const Problem &p);
+
+  GecodeProblem &problem() { return problem_; }
 
   // The methods below perform conversion of AMPL NL expressions into
   // equivalent Gecode expressions. Gecode doesn't support the following
@@ -260,16 +265,6 @@ class NLToGecodeConverter :
     bool value = c.value();
     return Gecode::BoolVar(problem_, value, value);
   }
-
- public:
-  NLToGecodeConverter(int num_vars) : problem_(num_vars) {}
-
-  LinExpr ConvertFullExpr(NumericExpr e) { return Visit(e); }
-  BoolExpr ConvertFullExpr(LogicalExpr e, bool post = true);
-
-  void Convert(const Problem &p);
-
-  GecodeProblem &problem() { return problem_; }
 };
 
 template <typename Value>

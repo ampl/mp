@@ -31,46 +31,45 @@ using Gecode::BoolExpr;
 using Gecode::IntVarArgs;
 using Gecode::IntVar;
 using Gecode::IntVarArray;
-using Gecode::LinExpr;
 namespace Search = Gecode::Search;
 
 namespace {
 
 const ampl::OptionValue<Gecode::IntVarBranch> VAR_BRANCHINGS[] = {
-    {"none",            Gecode::INT_VAR_NONE},
-    {"rnd",             Gecode::INT_VAR_RND},
-    {"degree_min",      Gecode::INT_VAR_DEGREE_MIN},
-    {"degree_max",      Gecode::INT_VAR_DEGREE_MAX},
-    {"afc_min",         Gecode::INT_VAR_AFC_MIN},
-    {"afc_max",         Gecode::INT_VAR_AFC_MAX},
-    {"min_min",         Gecode::INT_VAR_MIN_MIN},
-    {"min_max",         Gecode::INT_VAR_MIN_MAX},
-    {"max_min",         Gecode::INT_VAR_MAX_MIN},
-    {"max_max",         Gecode::INT_VAR_MAX_MAX},
-    {"size_min",        Gecode::INT_VAR_SIZE_MIN},
-    {"size_max",        Gecode::INT_VAR_SIZE_MAX},
-    {"size_degree_min", Gecode::INT_VAR_SIZE_DEGREE_MIN},
-    {"size_degree_max", Gecode::INT_VAR_SIZE_DEGREE_MAX},
-    {"size_afc_min",    Gecode::INT_VAR_SIZE_AFC_MIN},
-    {"size_afc_max",    Gecode::INT_VAR_SIZE_AFC_MAX},
-    {"regret_min_min",  Gecode::INT_VAR_REGRET_MIN_MIN},
-    {"regret_min_max",  Gecode::INT_VAR_REGRET_MIN_MAX},
-    {"regret_max_min",  Gecode::INT_VAR_REGRET_MAX_MIN},
-    {"regret_max_max",  Gecode::INT_VAR_REGRET_MAX_MAX},
+    {"none",            Gecode::INT_VAR_NONE()},
+    {"rnd",             Gecode::INT_VAR_RND(Gecode::Rnd(0))},
+    {"degree_min",      Gecode::INT_VAR_DEGREE_MIN()},
+    {"degree_max",      Gecode::INT_VAR_DEGREE_MAX()},
+    {"afc_min",         Gecode::INT_VAR_AFC_MIN()},
+    {"afc_max",         Gecode::INT_VAR_AFC_MAX()},
+    {"min_min",         Gecode::INT_VAR_MIN_MIN()},
+    {"min_max",         Gecode::INT_VAR_MIN_MAX()},
+    {"max_min",         Gecode::INT_VAR_MAX_MIN()},
+    {"max_max",         Gecode::INT_VAR_MAX_MAX()},
+    {"size_min",        Gecode::INT_VAR_SIZE_MIN()},
+    {"size_max",        Gecode::INT_VAR_SIZE_MAX()},
+    {"degree_size_min", Gecode::INT_VAR_DEGREE_SIZE_MIN()},
+    {"degree_size_max", Gecode::INT_VAR_DEGREE_SIZE_MAX()},
+    {"afc_size_min",    Gecode::INT_VAR_AFC_SIZE_MIN()},
+    {"afc_size_max",    Gecode::INT_VAR_AFC_SIZE_MAX()},
+    {"regret_min_min",  Gecode::INT_VAR_REGRET_MIN_MIN()},
+    {"regret_min_max",  Gecode::INT_VAR_REGRET_MIN_MAX()},
+    {"regret_max_min",  Gecode::INT_VAR_REGRET_MAX_MIN()},
+    {"regret_max_max",  Gecode::INT_VAR_REGRET_MAX_MAX()},
     {}
 };
 
 const ampl::OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
-    {"min",        Gecode::INT_VAL_MIN},
-    {"med",        Gecode::INT_VAL_MED},
-    {"max",        Gecode::INT_VAL_MAX},
-    {"rnd",        Gecode::INT_VAL_RND},
-    {"split_min",  Gecode::INT_VAL_SPLIT_MIN},
-    {"split_max",  Gecode::INT_VAL_SPLIT_MAX},
-    {"range_min",  Gecode::INT_VAL_RANGE_MIN},
-    {"range_max",  Gecode::INT_VAL_RANGE_MAX},
-    {"values_min", Gecode::INT_VALUES_MIN},
-    {"values_max", Gecode::INT_VALUES_MAX},
+    {"min",        Gecode::INT_VAL_MIN()},
+    {"med",        Gecode::INT_VAL_MED()},
+    {"max",        Gecode::INT_VAL_MAX()},
+    {"rnd",        Gecode::INT_VAL_RND(Gecode::Rnd(0))},
+    {"split_min",  Gecode::INT_VAL_SPLIT_MIN()},
+    {"split_max",  Gecode::INT_VAL_SPLIT_MAX()},
+    {"range_min",  Gecode::INT_VAL_RANGE_MIN()},
+    {"range_max",  Gecode::INT_VAL_RANGE_MAX()},
+    {"values_min", Gecode::INT_VALUES_MIN()},
+    {"values_max", Gecode::INT_VALUES_MAX()},
     {}
 };
 }
@@ -138,13 +137,11 @@ LinExpr NLToGecodeConverter::ConvertExpr(
   return expr;
 }
 
-BoolExpr NLToGecodeConverter::ConvertFullExpr(LogicalExpr e, bool post) {
+void NLToGecodeConverter::ConvertLogicalCon(LogicalExpr e) {
   AllDiffExpr alldiff = Cast<AllDiffExpr>(e);
   if (!alldiff) {
-    BoolExpr result = ExprVisitor::Visit(e);
-    if (post)
-      rel(problem_, result);
-    return result;
+    rel(problem_, Visit(e));
+    return;
   }
   IntVarArray &vars = problem_.vars();
   int num_args = alldiff.num_args();
@@ -157,7 +154,6 @@ BoolExpr NLToGecodeConverter::ConvertFullExpr(LogicalExpr e, bool post) {
       args[i] = Gecode::expr(problem_, Visit(arg));
   }
   distinct(problem_, args);
-  return Gecode::BoolVar();
 }
 
 void NLToGecodeConverter::Convert(const Problem &p) {
@@ -201,7 +197,7 @@ void NLToGecodeConverter::Convert(const Problem &p) {
 
   // Convert logical constraints.
   for (int i = 0, n = p.num_logical_cons(); i < n; ++i)
-    ConvertFullExpr(p.logical_con_expr(i));
+    ConvertLogicalCon(p.logical_con_expr(i));
 }
 
 LinExpr NLToGecodeConverter::VisitMin(VarArgExpr e) {
@@ -364,10 +360,10 @@ fmt::TempFormatter<fmt::Write> GecodeSolver::Output(fmt::StringRef format) {
 }
 
 GecodeSolver::GecodeSolver()
-: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130228),
+: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130327),
   output_(false), output_frequency_(1), output_count_(0),
-  var_branching_(Gecode::INT_VAR_SIZE_MIN),
-  val_branching_(Gecode::INT_VAL_MIN),
+  var_branching_(Gecode::INT_VAR_SIZE_MIN()),
+  val_branching_(Gecode::INT_VAL_MIN()),
   time_limit_(DBL_MAX), node_limit_(ULONG_MAX), fail_limit_(ULONG_MAX),
   memory_limit_(std::numeric_limits<std::size_t>::max()) {
 
@@ -395,10 +391,10 @@ GecodeSolver::GecodeSolver()
       "      max_max         - largest maximum value\n"
       "      size_min        - smallest domain size (default)\n"
       "      size_max        - largest domain size\n"
-      "      size_degree_min - smallest domain size divided by degree\n"
-      "      size_degree_max - largest domain size divided by degree\n"
-      "      size_afc_min    - smallest domain size divided by AFC\n"
-      "      size_afc_max    - largest domain size divided by AFC\n"
+      "      degree_size_min - smallest domain size divided by degree\n"
+      "      degree_size_max - largest domain size divided by degree\n"
+      "      afc_size_min    - smallest domain size divided by AFC\n"
+      "      afc_size_max    - largest domain size divided by AFC\n"
       "      regret_min_min  - smallest minimum-regret\n"
       "      regret_min_max  - largest minimum-regret\n"
       "      regret_max_min  - smallest maximum-regret\n"

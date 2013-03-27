@@ -121,7 +121,7 @@ double GecodeConverterTest::ConvertAndEval(
   ampl::NLToGecodeConverter converter(4);
   GecodeProblem &p = converter.problem();
   InitVars(p, var1, var2, var3);
-  Gecode::rel(p, converter.problem().vars()[0] == converter.ConvertFullExpr(e));
+  Gecode::rel(p, converter.problem().vars()[0] == converter.Visit(e));
   return Solve(p);
 }
 
@@ -131,11 +131,11 @@ double GecodeConverterTest::ConvertAndEval(
   GecodeProblem &p = converter.problem();
   InitVars(p, var1, var2, var3);
   Gecode::BoolVar result(p, 0, 1);
-  Gecode::BoolExpr expr = converter.ConvertFullExpr(e, false);
   if (!ampl::Cast<ampl::AllDiffExpr>(e)) {
-    Gecode::rel(p, result == expr);
+    Gecode::rel(p, result == converter.Visit(e));
     Gecode::channel(p, result, p.vars()[0]);
   } else {
+    converter.ConvertLogicalCon(e);
     Gecode::DFS<GecodeProblem> engine(&p);
     ProblemPtr solution(engine.next());
     return solution.get() ? 1 : 0;
@@ -943,63 +943,64 @@ struct OptionValue {
 };
 
 const OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
-    {"min",        Gecode::INT_VAL_MIN},
-    {"med",        Gecode::INT_VAL_MED},
-    {"max",        Gecode::INT_VAL_MAX},
-    {"rnd",        Gecode::INT_VAL_RND},
-    {"split_min",  Gecode::INT_VAL_SPLIT_MIN},
-    {"split_max",  Gecode::INT_VAL_SPLIT_MAX},
-    {"range_min",  Gecode::INT_VAL_RANGE_MIN},
-    {"range_max",  Gecode::INT_VAL_RANGE_MAX},
-    {"values_min", Gecode::INT_VALUES_MIN},
-    {"values_max", Gecode::INT_VALUES_MAX},
+    {"min",        Gecode::INT_VAL_MIN()},
+    {"med",        Gecode::INT_VAL_MED()},
+    {"max",        Gecode::INT_VAL_MAX()},
+    {"rnd",        Gecode::INT_VAL_RND(Gecode::Rnd(0))},
+    {"split_min",  Gecode::INT_VAL_SPLIT_MIN()},
+    {"split_max",  Gecode::INT_VAL_SPLIT_MAX()},
+    {"range_min",  Gecode::INT_VAL_RANGE_MIN()},
+    {"range_max",  Gecode::INT_VAL_RANGE_MAX()},
+    {"values_min", Gecode::INT_VALUES_MIN()},
+    {"values_max", Gecode::INT_VALUES_MAX()},
     {}
 };
 
 TEST_F(GecodeSolverTest, ValBranchingOption) {
-  EXPECT_EQ(Gecode::INT_VAL_MIN, solver_.val_branching());
+  EXPECT_EQ(Gecode::INT_VAL_MIN().select(), solver_.val_branching().select());
   unsigned count = 0;
   for (const OptionValue<Gecode::IntValBranch>
       *p = VAL_BRANCHINGS; p->name; ++p, ++count) {
     EXPECT_TRUE(ParseOptions(
         c_str(fmt::Format("val_branching={}") << p->name)));
-    EXPECT_EQ(p->value, solver_.val_branching());
+    EXPECT_EQ(p->value.select(), solver_.val_branching().select());
   }
   EXPECT_EQ(10u, count);
 }
 
 const OptionValue<Gecode::IntVarBranch> VAR_BRANCHINGS[] = {
-    {"none",            Gecode::INT_VAR_NONE},
-    {"rnd",             Gecode::INT_VAR_RND},
-    {"degree_min",      Gecode::INT_VAR_DEGREE_MIN},
-    {"degree_max",      Gecode::INT_VAR_DEGREE_MAX},
-    {"afc_min",         Gecode::INT_VAR_AFC_MIN},
-    {"afc_max",         Gecode::INT_VAR_AFC_MAX},
-    {"min_min",         Gecode::INT_VAR_MIN_MIN},
-    {"min_max",         Gecode::INT_VAR_MIN_MAX},
-    {"max_min",         Gecode::INT_VAR_MAX_MIN},
-    {"max_max",         Gecode::INT_VAR_MAX_MAX},
-    {"size_min",        Gecode::INT_VAR_SIZE_MIN},
-    {"size_max",        Gecode::INT_VAR_SIZE_MAX},
-    {"size_degree_min", Gecode::INT_VAR_SIZE_DEGREE_MIN},
-    {"size_degree_max", Gecode::INT_VAR_SIZE_DEGREE_MAX},
-    {"size_afc_min",    Gecode::INT_VAR_SIZE_AFC_MIN},
-    {"size_afc_max",    Gecode::INT_VAR_SIZE_AFC_MAX},
-    {"regret_min_min",  Gecode::INT_VAR_REGRET_MIN_MIN},
-    {"regret_min_max",  Gecode::INT_VAR_REGRET_MIN_MAX},
-    {"regret_max_min",  Gecode::INT_VAR_REGRET_MAX_MIN},
-    {"regret_max_max",  Gecode::INT_VAR_REGRET_MAX_MAX},
+    {"none",            Gecode::INT_VAR_NONE()},
+    {"rnd",             Gecode::INT_VAR_RND(Gecode::Rnd(0))},
+    {"degree_min",      Gecode::INT_VAR_DEGREE_MIN()},
+    {"degree_max",      Gecode::INT_VAR_DEGREE_MAX()},
+    {"afc_min",         Gecode::INT_VAR_AFC_MIN()},
+    {"afc_max",         Gecode::INT_VAR_AFC_MAX()},
+    {"min_min",         Gecode::INT_VAR_MIN_MIN()},
+    {"min_max",         Gecode::INT_VAR_MIN_MAX()},
+    {"max_min",         Gecode::INT_VAR_MAX_MIN()},
+    {"max_max",         Gecode::INT_VAR_MAX_MAX()},
+    {"size_min",        Gecode::INT_VAR_SIZE_MIN()},
+    {"size_max",        Gecode::INT_VAR_SIZE_MAX()},
+    {"degree_size_min", Gecode::INT_VAR_DEGREE_SIZE_MIN()},
+    {"degree_size_max", Gecode::INT_VAR_DEGREE_SIZE_MAX()},
+    {"afc_size_min",    Gecode::INT_VAR_AFC_SIZE_MIN()},
+    {"afc_size_max",    Gecode::INT_VAR_AFC_SIZE_MAX()},
+    {"regret_min_min",  Gecode::INT_VAR_REGRET_MIN_MIN()},
+    {"regret_min_max",  Gecode::INT_VAR_REGRET_MIN_MAX()},
+    {"regret_max_min",  Gecode::INT_VAR_REGRET_MAX_MIN()},
+    {"regret_max_max",  Gecode::INT_VAR_REGRET_MAX_MAX()},
     {}
 };
 
 TEST_F(GecodeSolverTest, VarBranchingOption) {
-  EXPECT_EQ(Gecode::INT_VAR_SIZE_MIN, solver_.var_branching());
+  EXPECT_EQ(Gecode::INT_VAR_SIZE_MIN().select(),
+      solver_.var_branching().select());
   unsigned count = 0;
   for (const OptionValue<Gecode::IntVarBranch>
       *p = VAR_BRANCHINGS; p->name; ++p, ++count) {
     EXPECT_TRUE(ParseOptions(
         c_str(fmt::Format("var_branching={}") << p->name)));
-    EXPECT_EQ(p->value, solver_.var_branching());
+    EXPECT_EQ(p->value.select(), solver_.var_branching().select());
   }
   EXPECT_EQ(20u, count);
 }
