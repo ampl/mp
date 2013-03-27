@@ -906,7 +906,7 @@ TEST_F(GecodeSolverTest, FailLimitOption) {
 }
 
 TEST_F(GecodeSolverTest, MemoryLimitOption) {
-  Solve(DATA_DIR "miplib/assign1", "memorylimit=1000000");
+  Solve(DATA_DIR "miplib/assign1", "memorylimit=100000");
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_EQ("Invalid value -1 for option memorylimit",
       ParseOptions("memorylimit=-1").error());
