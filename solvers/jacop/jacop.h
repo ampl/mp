@@ -161,7 +161,7 @@ class ClassBase {
 
   void Init(Env env) {
     if (!class_)
-      Init(env);
+      DoInit(env);
   }
 
   operator SafeBool() const { return class_ ? &ClassBase::True : 0; }
@@ -188,7 +188,8 @@ struct class_name { \
 };
 
 CLASS_INFO(IntVar, "JaCoP/core/IntVar", "(LJaCoP/core/Store;II)V")
-CLASS_INFO(Sum, "JaCoP/constraints/Sum", "([LJaCoP/core/IntVar;)V")
+CLASS_INFO(Sum, "JaCoP/constraints/Sum",
+    "([LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
 CLASS_INFO(SumWeight, "JaCoP/constraints/SumWeight",
     "([LJaCoP/core/IntVar;[ILJaCoP/core/IntVar;)V")
 CLASS_INFO(XplusYeqZ, "JaCoP/constraints/XplusYeqZ",
@@ -247,17 +248,19 @@ CLASS_INFO(Eq, "JaCoP/constraints/Eq",
     "(LJaCoP/constraints/PrimitiveConstraint;"
     "LJaCoP/constraints/PrimitiveConstraint;)V")
 CLASS_INFO(Alldiff, "JaCoP/constraints/Alldiff", "([LJaCoP/core/IntVar;)V")
+CLASS_INFO(DepthFirstSearch, "JaCoP/search/DepthFirstSearch", "()V")
 
+// Converter of constraint programming problems from NL to JaCoP format.
 class NLToJaCoPConverter :
-   private ExprVisitor<NLToJaCoPConverter, jobject, jobject> {
+   public ExprVisitor<NLToJaCoPConverter, jobject, jobject> {
  private:
-  JVM &jvm_;
+  Env env_;
   jobject store_;
   jmethodID impose_;
   jobjectArray var_array_;
   std::vector<jobject> vars_;
   Class<IntVar> var_class_;
-  Class<SumWeight> sum_class_;
+  Class<Sum> sum_class_;
   Class<SumWeight> sum_weight_class_;
   Class<XplusYeqZ> plus_class_;
   Class<XplusCeqZ> plus_const_class_;
@@ -277,7 +280,7 @@ class NLToJaCoPConverter :
   Class<Min> min_class_;
   Class<Max> max_class_;
   Class<Count> count_class_;
-  Class<IfThenElse> if_class_;
+  Class<IfThen> if_class_;
   Class<IfThenElse> if_else_class_;
   Class<Or> or_class_;
   Class<And> and_class_;
@@ -291,8 +294,6 @@ class NLToJaCoPConverter :
   jint min_int_;
   jint max_int_;
 
-  friend class ExprVisitor<NLToJaCoPConverter, jobject, jobject>;
-
   static jint CastToInt(double value) {
     jint int_value = static_cast<int>(value);
     if (int_value != value) {
@@ -303,24 +304,24 @@ class NLToJaCoPConverter :
   }
 
   jobject CreateVar() {
-    return var_class_.NewObject(jvm_, store_, min_int_, max_int_);
+    return var_class_.NewObject(env_, store_, min_int_, max_int_);
   }
 
   jobjectArray CreateVarArray(jsize length) {
-    return jvm_.NewObjectArray(length, var_class_.get(), 0);
+    return env_.NewObjectArray(length, var_class_.get(), 0);
   }
 
   // Creates a variable equal to a constant value.
   jobject CreateConst(int value) {
     jobject result_var = CreateVar();
-    Impose(eq_const_class_.NewObject(jvm_, result_var, value));
+    Impose(eq_const_class_.NewObject(env_, result_var, value));
     return result_var;
   }
 
   // Creates a constraint with an argument and a variable to hold the result.
   jobject CreateCon(ClassBase &cls, jobject arg) {
     jobject result_var = CreateVar();
-    Impose(cls.NewObject(jvm_, arg, result_var));
+    Impose(cls.NewObject(env_, arg, result_var));
     return result_var;
   }
 
@@ -328,7 +329,7 @@ class NLToJaCoPConverter :
   template <typename Arg1, typename Arg2>
   jobject CreateCon(ClassBase &cls, Arg1 arg1, Arg2 arg2) {
     jobject result_var = CreateVar();
-    Impose(cls.NewObject(jvm_, arg1, arg2, result_var));
+    Impose(cls.NewObject(env_, arg1, arg2, result_var));
     return result_var;
   }
 
@@ -340,26 +341,26 @@ class NLToJaCoPConverter :
     jobjectArray args = CreateVarArray(std::distance(e.begin(), e.end()));
     int index = 0;
     for (VarArgExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-      jvm_.SetObjectArrayElement(args, index++, Visit(*i));
+      env_.SetObjectArrayElement(args, index++, Visit(*i));
     return CreateCon(cls, args);
   }
 
   // Converts a binary logical expression to a JaCoP constraint of class cls.
   template <typename ExprT>
   jobject Convert(ExprT e, ClassBase &cls) {
-    return cls.NewObject(jvm_, Visit(e.lhs()), Visit(e.rhs()));
+    return cls.NewObject(env_, Visit(e.lhs()), Visit(e.rhs()));
   }
 
   // Converts a logical count expression.
   jobject Convert(LogicalCountExpr e, ClassBase &cls) {
-    return cls.NewObject(jvm_, Visit(e.value()), VisitCount(e.count()));
+    return cls.NewObject(env_, Visit(e.value()), VisitCount(e.count()));
   }
 
   // Converts an iterated logical expression.
   jobject Convert(IteratedLogicalExpr e, ClassBase &cls, jmethodID &ctor);
 
   void Impose(jobject constraint) {
-    jvm_.CallVoidMethod(store_, impose_, constraint);
+    env_.CallVoidMethod(store_, impose_, constraint);
   }
 
   static void RequireNonzeroConstRHS(
@@ -368,6 +369,19 @@ class NLToJaCoPConverter :
   template<typename Term>
   void ConvertExpr(LinearExpr<Term> linear,
       NumericExpr nonlinear, jobject result_var);
+
+ public:
+  explicit NLToJaCoPConverter(Env env);
+
+  // Converts a logical constraint.
+  void ConvertLogicalCon(LogicalExpr e, bool post = true);
+
+  void Convert(const Problem &p);
+
+  jobject store() const { return store_; }
+  jobjectArray var_array() const { return var_array_; }
+  const std::vector<jobject> &vars() const { return vars_; }
+  Class<IntVar> &var_class() { return var_class_; }
 
   // The methods below perform conversion of AMPL NL expressions into
   // equivalent JaCoP expressions. JaCoP doesn't support the following
@@ -492,7 +506,7 @@ class NLToJaCoPConverter :
   }
 
   jobject VisitNot(NotExpr e) {
-    return not_class_.NewObject(jvm_, Visit(e.arg()));
+    return not_class_.NewObject(env_, Visit(e.arg()));
   }
 
   jobject VisitAtLeast(LogicalCountExpr e) {
@@ -530,7 +544,7 @@ class NLToJaCoPConverter :
   jobject VisitImplication(ImplicationExpr e);
 
   jobject VisitIff(BinaryLogicalExpr e) {
-    return eq_con_class_.NewObject(jvm_, Visit(e.lhs()), Visit(e.rhs()));
+    return eq_con_class_.NewObject(env_, Visit(e.lhs()), Visit(e.rhs()));
   }
 
   jobject VisitAllDiff(AllDiffExpr) {
@@ -540,22 +554,9 @@ class NLToJaCoPConverter :
 
   jobject VisitLogicalConstant(LogicalConstant c) {
     if (!one_var_)
-      one_var_ = var_class_.NewObject(jvm_, store_, 1, 1);
-    return eq_const_class_.NewObject(jvm_, one_var_, c.value());
+      one_var_ = var_class_.NewObject(env_, store_, 1, 1);
+    return eq_const_class_.NewObject(env_, one_var_, c.value());
   }
-
- public:
-  explicit NLToJaCoPConverter(JVM &jvm);
-
-  // TODO
-  //jobject ConvertFullExpr(NumericExpr e) { return Visit(e); }
-  jobject ConvertFullExpr(LogicalExpr e, bool post = true);
-  void Convert(const Problem &p);
-
-  jobject store() const { return store_; }
-  jobjectArray var_array() const { return var_array_; }
-  const std::vector<jobject> &vars() const { return vars_; }
-  jclass var_class() const { return var_class_.get(); }
 };
 
 // TODO
