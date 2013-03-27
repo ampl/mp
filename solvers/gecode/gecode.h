@@ -67,6 +67,7 @@ class GecodeProblem: public Gecode::Space {
   virtual void constrain(const Gecode::Space &best);
 };
 
+// Converter of constraint programming problems from NL to Gecode format.
 class NLToGecodeConverter :
   public ExprVisitor<NLToGecodeConverter, LinExpr, Gecode::BoolExpr> {
  private:
@@ -92,7 +93,7 @@ class NLToGecodeConverter :
   LinExpr ConvertExpr(LinearExpr<Term> linear, NumericExpr nonlinear);
 
  public:
-  NLToGecodeConverter(int num_vars) : problem_(num_vars) {}
+  explicit NLToGecodeConverter(int num_vars) : problem_(num_vars) {}
 
   // Converts a logical constraint.
   void ConvertLogicalCon(LogicalExpr e);
