@@ -97,5 +97,5 @@ gecode_version = re.sub(r".*-()", r"\1", gecode_version)
 content = re.sub(r"q=gecode\+(\d+)", "q=gecode+{}".format(gecode_version), content)
 with open("ampl.wiki/gecode.html", 'w') as f:
   f.write(content)
-call(["git", "commit", "-m", "update gecode date"], cwd="ampl.wiki/")
+call(["git", "commit", "-a", "-m", "update gecode date"], cwd="ampl.wiki/")
 call(["git", "push"], cwd="ampl.wiki/")
