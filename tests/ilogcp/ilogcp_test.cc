@@ -916,7 +916,7 @@ TEST_F(IlogCPTest, ObjConst) {
 }
 
 TEST_F(IlogCPTest, CPOptimizerDoesntSupportContinuousVars) {
-  EXPECT_EQ(1, RunSolver(DATA_DIR "objconst", "optimizer=cp"));
+  EXPECT_THROW(RunSolver(DATA_DIR "objconst", "optimizer=cp"), ampl::Error);
 }
 
 TEST_F(IlogCPTest, SolveNumberOfCplex) {

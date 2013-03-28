@@ -74,6 +74,8 @@ const ampl::OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
 
 namespace ampl {
 
+JVM JVM::instance_;
+
 void Env::Throw(jthrowable exception, const char *method_name) {
   jmethodID getMessage = GetMethod(FindClass("java/lang/Throwable"),
       "getMessage", "()Ljava/lang/String;");
@@ -126,23 +128,30 @@ jint Env::CallIntMethod(jobject obj, jmethodID method, ...) {
   return result;
 }
 
-JVM::JVM() : jvm_() {
-  JavaVMInitArgs vm_args = {};
-  vm_args.version = JNI_VERSION_1_6;
-  vm_args.ignoreUnrecognized = false;
-  JavaVMOption option = {};
-  option.optionString = const_cast<char*>(
-      "-Djava.class.path=JaCoP-3.2.jar" CLASSPATH_SEP "lib/JaCoP-3.2.jar");
-  vm_args.nOptions = 1;
-  vm_args.options = &option;
-  void *envp = 0;
-  jint result = JNI_CreateJavaVM(&jvm_, &envp, &vm_args);
-  if (result != JNI_OK) {
-    throw Error(fmt::Format(
-        "Java VM initialization failed, error code = {}") << result);
+JVM::~JVM() {
+  if (jvm_)
+    jvm_->DestroyJavaVM();
+}
+
+Env JVM::env() {
+  if (!instance_.jvm_) {
+    JavaVMInitArgs vm_args = {};
+    vm_args.version = JNI_VERSION_1_6;
+    vm_args.ignoreUnrecognized = false;
+    JavaVMOption option = {};
+    option.optionString = const_cast<char*>(
+        "-Djava.class.path=JaCoP-3.2.jar" CLASSPATH_SEP "lib/JaCoP-3.2.jar");
+    vm_args.nOptions = 1;
+    vm_args.options = &option;
+    void *envp = 0;
+    jint result = JNI_CreateJavaVM(&instance_.jvm_, &envp, &vm_args);
+    if (result != JNI_OK) {
+      throw Error(fmt::Format(
+          "Java VM initialization failed, error code = {}") << result);
+    }
+    instance_.env_ = Env(static_cast<JNIEnv*>(envp));
   }
-  Env &env = *this;
-  env = Env(static_cast<JNIEnv*>(envp));
+  return instance_.env_;
 }
 
 ClassBase::~ClassBase() {}
@@ -239,15 +248,15 @@ void NLToJaCoPConverter::ConvertLogicalCon(LogicalExpr e, bool post) {
   Impose(alldiff_class_.NewObject(env_, args));
 }
 
-NLToJaCoPConverter::NLToJaCoPConverter(Env env)
-: env_(env), store_(), impose_(), var_array_(),
+NLToJaCoPConverter::NLToJaCoPConverter()
+: env_(JVM::env()), store_(), impose_(), var_array_(),
   constraint_class_(), or_array_ctor_(), and_array_ctor_(), one_var_() {
-  var_class_.Init(env);
-  jclass domain_class = env.FindClass("JaCoP/core/IntDomain");
-  min_int_ = env.GetStaticIntField(
-      domain_class, env.GetStaticFieldID(domain_class, "MinInt", "I"));
-  max_int_ = env.GetStaticIntField(
-      domain_class, env.GetStaticFieldID(domain_class, "MaxInt", "I"));
+  var_class_.Init(env_);
+  jclass domain_class = env_.FindClass("JaCoP/core/IntDomain");
+  min_int_ = env_.GetStaticIntField(
+      domain_class, env_.GetStaticFieldID(domain_class, "MinInt", "I"));
+  max_int_ = env_.GetStaticIntField(
+      domain_class, env_.GetStaticFieldID(domain_class, "MaxInt", "I"));
 }
 
 jobject NLToJaCoPConverter::VisitPlus(BinaryExpr e) {
@@ -269,7 +278,7 @@ jobject NLToJaCoPConverter::VisitNumericLess(BinaryExpr e) {
 
 void NLToJaCoPConverter::Convert(const Problem &p) {
   if (p.num_continuous_vars() != 0)
-    throw std::runtime_error("JaCoP doesn't support continuous variables");
+    throw Error("JaCoP doesn't support continuous variables");
 
   jclass store_class = env_.FindClass("JaCoP/core/Store");
   store_ = env_.NewObject(store_class,
@@ -531,30 +540,34 @@ JaCoPSolver::JaCoPSolver()
 int JaCoPSolver::Run(char **argv) {
   if (!ProcessArgs(argv, *this))
     return 1;
+  Solve(problem());
+  return 0;
+}
 
+void JaCoPSolver::Solve(Problem &p) {
   // Set up an optimization problem in JaCoP.
-  Problem &problem = BasicSolver::problem();
-  NLToJaCoPConverter converter(jvm_);
-  converter.Convert(problem);
+  NLToJaCoPConverter converter;
+  converter.Convert(p);
 
   // TODO: debug
+  Env env = JVM::env();
   if (true) {
-    jclass store_class = jvm_.FindClass("JaCoP/core/Store");
-    jvm_.CallVoidMethod(converter.store(),
-        jvm_.GetMethod(store_class, "print", "()V"));
+    jclass store_class = env.FindClass("JaCoP/core/Store");
+    env.CallVoidMethod(converter.store(),
+        env.GetMethod(store_class, "print", "()V"));
   }
 
   // Solve the problem.
   SignalHandler signal_handler(*this); // TODO
   Class<DepthFirstSearch> dfs_class;
-  jobject search = dfs_class.NewObject(jvm_);
-  jmethodID labeling = jvm_.GetMethod(dfs_class.get(), "labeling",
+  jobject search = dfs_class.NewObject(env);
+  jmethodID labeling = env.GetMethod(dfs_class.get(), "labeling",
       "(LJaCoP/core/Store;LJaCoP/search/SelectChoicePoint;)Z");
-  jobject indomain = jvm_.NewObject("JaCoP/search/IndomainMin", "()V");
-  jobject select = jvm_.NewObject("JaCoP/search/InputOrderSelect",
+  jobject indomain = env.NewObject("JaCoP/search/IndomainMin", "()V");
+  jobject select = env.NewObject("JaCoP/search/InputOrderSelect",
       "(LJaCoP/core/Store;[LJaCoP/core/Var;LJaCoP/search/Indomain;)V",
       converter.store(), converter.var_array(), indomain);
-  jboolean found = jvm_.CallBooleanMethod(
+  jboolean found = env.CallBooleanMethod(
       search, labeling, converter.store(), select);
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   // TODO
@@ -605,12 +618,12 @@ int JaCoPSolver::Run(char **argv) {
   std::vector<double> final_solution;
   if (found) {
     jclass var_class = converter.var_class().get();
-    jmethodID value = jvm_.GetMethod(var_class, "value", "()I");
+    jmethodID value = env.GetMethod(var_class, "value", "()I");
     const std::vector<jobject> &vars = converter.vars();
-    int num_vars = problem.num_vars();
+    int num_vars = p.num_vars();
     final_solution.resize(num_vars);
     for (int j = 0; j < num_vars; ++j)
-      final_solution[j] = jvm_.CallIntMethod(vars[j], value);
+      final_solution[j] = env.CallIntMethod(vars[j], value);
   }
 
   fmt::Formatter format;
@@ -621,6 +634,5 @@ int JaCoPSolver::Run(char **argv) {
     format(", objective {}") << ObjPrec(obj_val);*/
   HandleSolution(format.c_str(),
       final_solution.empty() ? 0 : &final_solution[0], 0, obj_val);
-  return 0;
 }
 }

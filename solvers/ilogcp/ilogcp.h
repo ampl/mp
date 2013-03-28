@@ -58,7 +58,7 @@ class Optimizer : public Interruptible {
 
   virtual IloAlgorithm algorithm() const = 0;
 
-  virtual double GetSolution(Problem &p, fmt::Formatter &format_message,
+  virtual double GetSolution(const Problem &p, fmt::Formatter &format_message,
       std::vector<double> &primal, std::vector<double> &dual) const = 0;
 
   virtual bool interrupted() const = 0;
@@ -79,7 +79,7 @@ class CPLEXOptimizer : public Optimizer {
   IloCplex cplex() const { return cplex_; }
   IloAlgorithm algorithm() const { return cplex_; }
 
-  double GetSolution(Problem &p, fmt::Formatter &format_message,
+  double GetSolution(const Problem &p, fmt::Formatter &format_message,
       std::vector<double> &values, std::vector<double> &dual_values) const;
 
   void Interrupt() { aborter_.abort(); }
@@ -101,7 +101,7 @@ class CPOptimizer : public Optimizer {
   IloCP solver() const { return solver_; }
   IloAlgorithm algorithm() const { return solver_; }
 
-  double GetSolution(Problem &p, fmt::Formatter &format_message,
+  double GetSolution(const Problem &p, fmt::Formatter &format_message,
       std::vector<double> &values, std::vector<double> &dual_values) const;
 
   void Interrupt() { solver_.abortSearch(); }
@@ -139,6 +139,8 @@ class IlogCPSolver : public Solver<IlogCPSolver>, public Visitor {
 
   typedef NumberOfMap<IloIntVar, CreateVar> IlogNumberOfMap;
   IlogNumberOfMap numberofs_;
+
+  double read_time_;
 
   // Do not implement.
   IlogCPSolver(const IlogCPSolver&);
@@ -473,6 +475,8 @@ class IlogCPSolver : public Solver<IlogCPSolver>, public Visitor {
 
   // Runs the solver.
   int Run(char **argv);
+
+  void Solve(Problem &p);
 };
 }
 

@@ -134,15 +134,19 @@ T Env::Check(T result, const char *method_name) {
 }
 
 // Java Virtual Machine.
-class JVM : private Noncopyable, public Env {
+// A process can have at most one JVM, therefore there is a single static JVM
+// object which is initialized when JVM::env() is called for the first time.
+class JVM {
  private:
   JavaVM *jvm_;
+  Env env_;
+  static JVM instance_;
+
+  JVM() : jvm_() {}
+  ~JVM();
 
  public:
-  JVM();
-  ~JVM() {
-    jvm_->DestroyJavaVM();
-  }
+  static Env env();
 };
 
 class ClassBase {
@@ -371,7 +375,7 @@ class NLToJaCoPConverter :
       NumericExpr nonlinear, jobject result_var);
 
  public:
-  explicit NLToJaCoPConverter(Env env);
+  explicit NLToJaCoPConverter();
 
   // Converts a logical constraint.
   void ConvertLogicalCon(LogicalExpr e, bool post = true);
@@ -578,7 +582,6 @@ struct OptionInfo {
 // JaCoP solver.
 class JaCoPSolver : public Solver<JaCoPSolver> {
  private:
-  JVM jvm_;
   /*bool output_;
   double output_frequency_;
   unsigned output_count_;
@@ -613,6 +616,8 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
 
   // Run the solver.
   int Run(char **argv);
+
+  void Solve(Problem &p);
 
   /*Gecode::IntVarBranch var_branching() const { return var_branching_; }
   Gecode::IntValBranch val_branching() const { return val_branching_; }

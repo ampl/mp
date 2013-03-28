@@ -337,6 +337,8 @@ class GecodeSolver : public Solver<GecodeSolver> {
   // Run the solver.
   int Run(char **argv);
 
+  void Solve(Problem &p);
+
   Gecode::IntVarBranch var_branching() const { return var_branching_; }
   Gecode::IntValBranch val_branching() const { return val_branching_; }
   const Gecode::Search::Options &options() const { return options_; }

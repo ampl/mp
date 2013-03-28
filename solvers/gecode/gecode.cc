@@ -460,12 +460,15 @@ GecodeSolver::GecodeSolver()
 int GecodeSolver::Run(char **argv) {
   if (!ProcessArgs(argv, *this))
     return 1;
+  Solve(problem());
+  return 0;
+}
 
+void GecodeSolver::Solve(Problem &p) {
   // Set up an optimization problem in Gecode.
-  Problem &problem = Solver<GecodeSolver>::problem();
   std::auto_ptr<NLToGecodeConverter>
-    converter(new NLToGecodeConverter(problem.num_vars()));
-  converter->Convert(problem);
+    converter(new NLToGecodeConverter(p.num_vars()));
+  converter->Convert(p);
 
   // Post branching.
   GecodeProblem &gecode_problem = converter->problem();
@@ -478,7 +481,7 @@ int GecodeSolver::Run(char **argv) {
   // Solve the problem.
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   std::auto_ptr<GecodeProblem> solution;
-  bool has_obj = problem.num_objs() != 0;
+  bool has_obj = p.num_objs() != 0;
   Search::Statistics stats;
   bool stopped = false;
   header_ = str(fmt::Format("{:>10} {:>10} {:>10} {:>13}\n")
@@ -519,12 +522,12 @@ int GecodeSolver::Run(char **argv) {
     solve_code = 100;
     status = "feasible solution";
   }
-  problem.set_solve_code(solve_code);
+  p.set_solve_code(solve_code);
 
   std::vector<double> final_solution;
   if (solution.get()) {
     IntVarArray &vars = solution->vars();
-    int num_vars = problem.num_vars();
+    int num_vars = p.num_vars();
     final_solution.resize(num_vars);
     for (int j = 0; j < num_vars; ++j)
       final_solution[j] = vars[j].val();
@@ -537,6 +540,5 @@ int GecodeSolver::Run(char **argv) {
     format(", objective {}") << ObjPrec(obj_val);
   HandleSolution(format.c_str(),
       final_solution.empty() ? 0 : &final_solution[0], 0, obj_val);
-  return 0;
 }
 }

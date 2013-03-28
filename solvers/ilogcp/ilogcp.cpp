@@ -98,7 +98,8 @@ Optimizer::Optimizer(IloEnv env, const Problem &p) :
 
 Optimizer::~Optimizer() {}
 
-double CPLEXOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
+double CPLEXOptimizer::GetSolution(
+    const Problem &p, fmt::Formatter &format_message,
     vector<double> &values, vector<double> &dual_values) const {
   IloNum obj_value = cplex_.getObjValue();
   values.resize(p.num_vars());
@@ -118,7 +119,8 @@ double CPLEXOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
   return obj_value;
 }
 
-double CPOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
+double CPOptimizer::GetSolution(
+    const Problem &p, fmt::Formatter &format_message,
     vector<double> &values, vector<double> &) const {
   format_message("{} choice points, {} fails")
       << solver_.getInfo(IloCP::NumberOfChoicePoints)
@@ -137,7 +139,7 @@ double CPOptimizer::GetSolution(Problem &p, fmt::Formatter &format_message,
 
 IlogCPSolver::IlogCPSolver() :
    Solver<IlogCPSolver>("ilogcp", 0, YYYYMMDD), mod_(env_), gotopttype_(false),
-   debug_(false), numberofs_(CreateVar(env_)) {
+   debug_(false), numberofs_(CreateVar(env_)), read_time_(0) {
   options_[DEBUGEXPR] = 0;
   options_[OPTIMIZER] = AUTO;
   options_[TIMING] = 0;
@@ -627,85 +629,89 @@ void IlogCPSolver::FinishBuildingNumberOf() {
 }
 
 int IlogCPSolver::Run(char **argv) {
-  // Initialize timers.
-  double Times[5];
-  Times[0] = xectim_();
-
-  Problem &problem = Solver<IlogCPSolver>::problem();
+  double start_time = xectim_();
   if (!ReadProblem(argv) || !ParseOptions(argv))
     return 1;
+  // Reset is used to reset read_time_ in case of exceptions.
+  class Reset {
+   private:
+    double &value_;
+   public:
+    Reset(double &value) : value_(value) {}
+    ~Reset() { value_ = 0; }
+  };
+  Reset reset(read_time_ = xectim_() - start_time);
+  Solve(problem());
+  return 0;
+}
+
+void IlogCPSolver::Solve(Problem &p) {
+  double start_time = xectim_();
 
   // Set up optimization problem in ILOG Concert.
 
   vars_ = optimizer_->vars();
 
-  int n_var_cont = problem.num_continuous_vars();
-  if (n_var_cont != 0 && GetOption(OPTIMIZER) == CP) {
-    ReportError("CP Optimizer doesn't support continuous variables");
-    return 1;
-  }
-  for (int j = 0; j < n_var_cont; j++) {
-    vars_[j] = IloNumVar(env_,
-        problem.var_lb(j), problem.var_ub(j), ILOFLOAT);
-  }
-  for (int j = n_var_cont; j < problem.num_vars(); j++) {
-    vars_[j] = IloNumVar(env_,
-        problem.var_lb(j), problem.var_ub(j), ILOINT);
-  }
+  int n_var_cont = p.num_continuous_vars();
+  if (n_var_cont != 0 && GetOption(OPTIMIZER) == CP)
+    throw Error("CP Optimizer doesn't support continuous variables");
+  for (int j = 0; j < n_var_cont; j++)
+    vars_[j] = IloNumVar(env_, p.var_lb(j), p.var_ub(j), ILOFLOAT);
+  for (int j = n_var_cont, num_vars = p.num_vars(); j < num_vars; j++)
+    vars_[j] = IloNumVar(env_, p.var_lb(j), p.var_ub(j), ILOINT);
 
-  if (problem.num_objs() > 0) {
-    NumericExpr expr(problem.nonlinear_obj_expr(0));
+  if (p.num_objs() > 0) {
+    NumericExpr expr(p.nonlinear_obj_expr(0));
     NumericConstant constant(Cast<NumericConstant>(expr));
     IloExpr ilo_expr(env_, constant ? constant.value() : 0);
-    if (problem.num_nonlinear_objs() > 0)
+    if (p.num_nonlinear_objs() > 0)
       ilo_expr += Visit(expr);
-    LinearObjExpr linear = problem.linear_obj_expr(0);
+    LinearObjExpr linear = p.linear_obj_expr(0);
     for (LinearObjExpr::iterator
         i = linear.begin(), end = linear.end(); i != end; ++i) {
       ilo_expr += i->coef() * vars_[i->var_index()];
     }
     IloObjective MinOrMax(env_, ilo_expr,
-        problem.obj_type(0) == MIN ?
-        IloObjective::Minimize : IloObjective::Maximize);
+        p.obj_type(0) == MIN ? IloObjective::Minimize : IloObjective::Maximize);
     optimizer_->set_obj(MinOrMax);
     IloAdd(mod_, MinOrMax);
   }
 
-  if (int n_cons = problem.num_cons()) {
+  if (int n_cons = p.num_cons()) {
     IloRangeArray cons(optimizer_->cons());
     for (int i = 0; i < n_cons; ++i) {
       IloExpr conExpr(env_);
-      LinearConExpr linear = problem.linear_con_expr(i);
+      LinearConExpr linear = p.linear_con_expr(i);
       for (LinearConExpr::iterator
           j = linear.begin(), end = linear.end(); j != end; ++j) {
         conExpr += j->coef() * vars_[j->var_index()];
       }
-      if (i < problem.num_nonlinear_cons())
-        conExpr += Visit(problem.nonlinear_con_expr(i));
-      cons[i] = (problem.con_lb(i) <= conExpr <= problem.con_ub(i));
+      if (i < p.num_nonlinear_cons())
+        conExpr += Visit(p.nonlinear_con_expr(i));
+      cons[i] = (p.con_lb(i) <= conExpr <= p.con_ub(i));
     }
     mod_.add(cons);
   }
 
-  if (int n_lcons = problem.num_logical_cons()) {
+  if (int n_lcons = p.num_logical_cons()) {
     IloConstraintArray lcons(env_, n_lcons);
     for (int i = 0; i < n_lcons; ++i)
-      lcons[i] = Visit(problem.logical_con_expr(i));
+      lcons[i] = Visit(p.logical_con_expr(i));
     mod_.add(lcons);
   }
 
   FinishBuildingNumberOf();
 
   int timing = GetOption(TIMING);
-  Times[1] = timing ? xectim_() : 0;
+  double extract_start_time = timing ? xectim_() : 0;
 
   // Solve the problem.
   IloAlgorithm alg(optimizer_->algorithm());
   alg.extract (mod_);
   SignalHandler sh(*this, optimizer_.get());
-  Times[2] = timing ? xectim_() : 0;
+  double solve_start_time = timing ? xectim_() : 0;
   IloBool successful = alg.solve();
-  Times[3] = timing ? xectim_() : 0;
+  double output_start_time = timing ? xectim_() : 0;
 
   // Convert solution status.
   int solve_code = 0;
@@ -752,7 +758,7 @@ int IlogCPSolver::Run(char **argv) {
     status = "error";
     break;
   }
-  problem.set_solve_code(solve_code);
+  p.set_solve_code(solve_code);
 
   fmt::Formatter format_message;
   format_message("{}: {}\n") << long_name() << status;
@@ -760,19 +766,18 @@ int IlogCPSolver::Run(char **argv) {
   double obj_value = std::numeric_limits<double>::quiet_NaN();
   if (successful) {
     obj_value = optimizer_->GetSolution(
-        problem, format_message, solution, dual_solution);
+        p, format_message, solution, dual_solution);
   }
   HandleSolution(format_message.c_str(), solution.empty() ? 0 : &solution[0],
       dual_solution.empty() ? 0 : &dual_solution[0], obj_value);
 
   if (timing) {
-    Times[4] = xectim_();
+    double end_time = xectim_();
     std::cerr << "\n"
-        << "Define = " << Times[1] - Times[0] << "\n"
-        << "Setup =  " << Times[2] - Times[1] << "\n"
-        << "Solve =  " << Times[3] - Times[2] << "\n"
-        << "Output = " << Times[4] - Times[3] << "\n";
+        << "Define = " << (extract_start_time - start_time) + read_time_ << "\n"
+        << "Setup =  " << solve_start_time - extract_start_time << "\n"
+        << "Solve =  " << output_start_time - solve_start_time << "\n"
+        << "Output = " << end_time - output_start_time << "\n";
   }
-  return 0;
 }
 }
