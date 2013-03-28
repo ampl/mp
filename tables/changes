@@ -117,3 +117,7 @@ Excel ODBC driver -- thanks to Victor Zverovich.
   amplodbc.c: for connection strings involving, e.g.,
 	'Driver={Microsoft Text Driver (*.txt; *.csv)};DBQ=.'
 do not complain if DBQ=... specifies a directory.
+
+20130326
+  amplodbc.c: under MS Windows, ignore trailing slashes when
+checking the validity of DBQ=... strings.
