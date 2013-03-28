@@ -22,7 +22,7 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
- static char Version[] = "\n@(#) AMPL ODBC driver, version 20130318.\n";
+ static char Version[] = "\n@(#) AMPL ODBC driver, version 20130326.\n";
 
 #ifdef _WIN32
 #include <windows.h>
@@ -848,6 +848,9 @@ not_found(AmplExports *ae, TableInfo *TI, char *dsn, FILE **fp)
 {
 	FILE *f, **fp1;
 	char *mode, *tname;
+#ifdef _WIN32
+	int c, i, j;
+#endif
 	struct stat stb;
 
 	if ((fp1 = fp))
@@ -861,8 +864,26 @@ not_found(AmplExports *ae, TableInfo *TI, char *dsn, FILE **fp)
 			fclose(f);
 		return 0;
 		}
-	if (!fp && !stat(dsn, &stb))
-		return 0;
+	if (!fp) {
+		if (!stat(dsn, &stb))
+			return 0;
+#ifdef _WIN32
+		/* stat may fail on Windows if there is a trailing backslash */
+		for(i = 0; dsn[i]; ++i);
+		if (i > 0 && ((c = dsn[--i]) == '\\' || c == '/')) {
+			while(i > 0 && ((c = dsn[i-1]) == '\\' || c == '/'))
+				--i;
+			if (i > 0) {
+				c = dsn[i];
+				dsn[i] = 0;
+				j = stat(dsn, &stb);
+				dsn[i] = c;
+				if (!j)
+					return 0;
+				}
+			}
+#endif
+		}
 	tname = TI->nstrings >= 3 ? TI->strings[2] : TI->tname;
 	sprintf(TI->Errmsg = (char*)TM(strlen(tname) + strlen(dsn) + 40),
 		"Cannot open file %s for table %s.", dsn, tname);
@@ -2464,7 +2485,7 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 funcadd(AmplExports *ae)
 {
 	static char tname[] = "odbc\n"
-	"AMPL ODBC handler (20130318): expected 2-8 strings before \":[...]\":\n"
+	"AMPL ODBC handler (20130326): expected 2-8 strings before \":[...]\":\n"
 	"  'ODBC', connection_spec ['ext_name'] [option [option...]]\n"
 	"Connection_spec gives a connection to the external table.  If the table's\n"
 	"external name differs from the AMPL table name, the external name must be\n"
