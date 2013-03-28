@@ -582,6 +582,7 @@ struct OptionInfo {
 // JaCoP solver.
 class JaCoPSolver : public Solver<JaCoPSolver> {
  private:
+  bool debug_;
   /*bool output_;
   double output_frequency_;
   unsigned output_count_;
@@ -593,10 +594,10 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   double time_limit_; // Time limit in seconds.
   unsigned long node_limit_;
   unsigned long fail_limit_;
-  std::size_t memory_limit_;
+  std::size_t memory_limit_;*/
 
-  void EnableOutput(const char *name, int value);
-  void SetOutputFrequency(const char *name, int value);
+  void SetBoolOption(const char *name, int value, bool *option);
+  /*void SetOutputFrequency(const char *name, int value);
 
   template <typename T>
   void SetStrOption(const char *name, const char *value,
