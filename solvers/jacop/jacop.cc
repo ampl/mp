@@ -394,16 +394,17 @@ bool JaCoPSolver::Stop::stop(
   }
   return time > time_limit_in_milliseconds_ || s.node > solver_.node_limit_ ||
       s.fail > solver_.fail_limit_ || s.memory > solver_.memory_limit_;
-}
+}*/
 
-void JaCoPSolver::EnableOutput(const char *name, int value) {
+void JaCoPSolver::SetBoolOption(const char *name, int value, bool *option) {
   if (value != 0 && value != 1)
     ReportError("Invalid value {} for option {}") << value << name;
   else
-    output_ = value != 0;
+    *option = value != 0;
 }
 
-void JaCoPSolver::SetOutputFrequency(const char *name, int value) {
+// TODO
+/*void JaCoPSolver::SetOutputFrequency(const char *name, int value) {
   if (value <= 0)
     ReportError("Invalid value {} for option {}") << value << name;
   else
@@ -438,7 +439,7 @@ fmt::TempFormatter<fmt::Write> JaCoPSolver::Output(fmt::StringRef format) {
 }*/
 
 JaCoPSolver::JaCoPSolver()
-: Solver<JaCoPSolver>("jacop", 0, 20130312) {
+: Solver<JaCoPSolver>("jacop", 0, 20130312), debug_(false) {
 
   // TODO: options
   /*output_(false), output_frequency_(1), output_count_(0),
@@ -447,9 +448,14 @@ JaCoPSolver::JaCoPSolver()
   time_limit_(DBL_MAX), node_limit_(ULONG_MAX), fail_limit_(ULONG_MAX),
   memory_limit_(std::numeric_limits<std::size_t>::max()) {
 
-  set_version("Gecode " GECODE_VERSION);
+  set_version("JaCoP " GECODE_VERSION);*/
 
-  AddIntOption("outlev",
+  AddIntOption("debug",
+      "0 or 1 (default 0):  Whether to print debug information.",
+      &JaCoPSolver::SetBoolOption, &debug_);
+
+  // TODO
+  /*AddIntOption("outlev",
       "0 or 1 (default 0):  Whether to print solution log.",
       &JaCoPSolver::EnableOutput);
 
@@ -549,9 +555,8 @@ void JaCoPSolver::Solve(Problem &p) {
   NLToJaCoPConverter converter;
   converter.Convert(p);
 
-  // TODO: debug
   Env env = JVM::env();
-  if (true) {
+  if (debug_) {
     jclass store_class = env.FindClass("JaCoP/core/Store");
     env.CallVoidMethod(converter.store(),
         env.GetMethod(store_class, "print", "()V"));
