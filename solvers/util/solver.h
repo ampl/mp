@@ -568,7 +568,6 @@ class BasicSolver
   // Constructs a BasicSolver object.
   // date: The solver date in YYYYMMDD format.
   BasicSolver(fmt::StringRef name, fmt::StringRef long_name, long date);
-  virtual ~BasicSolver();
 
   void set_long_name(fmt::StringRef name) {
     long_name_ = name;
@@ -607,6 +606,8 @@ class BasicSolver
   static std::string FormatDescription(const char *description);
 
  public:
+  virtual ~BasicSolver();
+
   // Flags for DoParseOptions.
   enum {
     // Don't echo options during parsing.
@@ -681,6 +682,8 @@ class BasicSolver
     return fmt::TempFormatter<ErrorReporter>(
         format.c_str(), ErrorReporter(error_handler_));
   }
+
+  virtual void Solve(Problem &p) = 0;
 };
 
 // An AMPL solver.

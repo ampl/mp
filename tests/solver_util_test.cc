@@ -79,6 +79,8 @@ struct TestSolver : BasicSolver {
   std::string FormatDescription(const char *description) {
     return BasicSolver::FormatDescription(description);
   }
+
+  void Solve(Problem &) {}
 };
 
 // Redirects Stderr to a file.
@@ -272,6 +274,7 @@ TEST(SolverTest, BasicSolverVirtualDtor) {
     DtorTestSolver(bool &destroyed)
     : BasicSolver("test", 0, 0), destroyed_(destroyed) {}
     ~DtorTestSolver() { destroyed_ = true; }
+    void Solve(Problem &) {}
   };
   (DtorTestSolver(destroyed));
   EXPECT_TRUE(destroyed);
@@ -450,7 +453,11 @@ TEST(SolverTest, FormatDescription) {
 struct DummyOptionHandler {};
 
 TEST(SolverTest, SolverWithDefaultOptionHandler) {
-  Solver<DummyOptionHandler> s("testsolver");
+  struct TestSolver : Solver<DummyOptionHandler> {
+    TestSolver() : Solver<DummyOptionHandler>("testsolver") {}
+    void Solve(Problem &) {}
+  };
+  TestSolver s;
   EXPECT_STREQ("testsolver", s.name());
   DummyOptionHandler handler;
   s.ParseOptions(Args("wantsol=3"), handler, BasicSolver::NO_OPTION_ECHO);
@@ -524,6 +531,8 @@ struct OptSolver : Solver<OptSolver> {
     return Solver<OptSolver>::ParseOptions(
         argv, *this, BasicSolver::NO_OPTION_ECHO);
   }
+
+  void Solve(Problem &) {}
 };
 
 TEST(SolverTest, SolverOptions) {
@@ -553,6 +562,8 @@ struct TestSolver2 : Solver<TestOptionHandler> {
     AddIntOption("answer", "The answer to life the universe and everything",
         &TestOptionHandler::SetAnswer);
   }
+
+  void Solve(Problem &) {}
 };
 
 TEST(SolverTest, SeparateOptionHandler) {

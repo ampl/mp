@@ -58,7 +58,11 @@ SSDSolver::SSDSolver()
 int SSDSolver::Run(char **argv) {
   if (!ProcessArgs(argv, *this))
     return 1;
+  Solve(problem());
+  return 0;
+}
 
+void SSDSolver::Solve(Problem &p) {
   // TODO: check that there are no nonlinear expressions
   Problem &problem = Solver<SSDSolver>::problem();
   Function ssd_uniform;
@@ -200,6 +204,5 @@ int SSDSolver::Run(char **argv) {
   if (status == Solution::SOLVED)
     format(", dominance {}") << dominance_ub;
   HandleSolution(format.c_str(), &solution[0], 0, 0);
-  return 0;
 }
 }
