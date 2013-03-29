@@ -1,4 +1,14 @@
-20130226
-  Fix a bug with fixing variables that appear in complementarity
-constraints when the fixing should cause the constraints to be
-removed by presolve.
+20130327
+  Fix a bug involving imported functions and defined variables,
+illustrated by the example:
+
+	load amplgsl.dll;
+	function gsl_cdf_ugaussian_P;
+	param y default 0;
+	var theta;
+	var z = gsl_cdf_ugaussian_P(theta*y);
+	display z;
+
+which said "z = 0" rather than "z = 0.5".  The bug was that after 0
+was substituted for theta*y (since y has its default value 0),
+gsl_cdf_ugaussian_P(0) was ignored.
