@@ -422,27 +422,27 @@ class IlogCPSolver : public Solver<IlogCPSolver>, public Visitor {
   }
 
   IloConstraint VisitAtMost(LogicalCountExpr e) {
-    return Visit(e.value()) >= Visit(e.count());
+    return Visit(e.value()) >= VisitCount(e.count());
   }
 
   IloConstraint VisitNotAtMost(LogicalCountExpr e) {
-    return !(Visit(e.value()) >= Visit(e.count()));
+    return !(Visit(e.value()) >= VisitCount(e.count()));
   }
 
   IloConstraint VisitAtLeast(LogicalCountExpr e) {
-    return Visit(e.value()) <= Visit(e.count());
+    return Visit(e.value()) <= VisitCount(e.count());
   }
 
   IloConstraint VisitNotAtLeast(LogicalCountExpr e) {
-    return !(Visit(e.value()) <= Visit(e.count()));
+    return !(Visit(e.value()) <= VisitCount(e.count()));
   }
 
   IloConstraint VisitExactly(LogicalCountExpr e) {
-    return Visit(e.value()) == Visit(e.count());
+    return Visit(e.value()) == VisitCount(e.count());
   }
 
   IloConstraint VisitNotExactly(LogicalCountExpr e) {
-    return Visit(e.value()) != Visit(e.count());
+    return Visit(e.value()) != VisitCount(e.count());
   }
 
   IloConstraint VisitOr(BinaryLogicalExpr e) {

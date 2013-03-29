@@ -223,27 +223,27 @@ class NLToGecodeConverter :
   }
 
   BoolExpr VisitAtLeast(LogicalCountExpr e) {
-    return Visit(e.value()) <= Visit(e.count());
+    return Visit(e.value()) <= VisitCount(e.count());
   }
 
   BoolExpr VisitAtMost(LogicalCountExpr e) {
-    return Visit(e.value()) >= Visit(e.count());
+    return Visit(e.value()) >= VisitCount(e.count());
   }
 
   BoolExpr VisitExactly(LogicalCountExpr e) {
-    return Visit(e.value()) == Visit(e.count());
+    return Visit(e.value()) == VisitCount(e.count());
   }
 
   BoolExpr VisitNotAtLeast(LogicalCountExpr e) {
-    return Visit(e.value()) > Visit(e.count());
+    return Visit(e.value()) > VisitCount(e.count());
   }
 
   BoolExpr VisitNotAtMost(LogicalCountExpr e) {
-    return Visit(e.value()) < Visit(e.count());
+    return Visit(e.value()) < VisitCount(e.count());
   }
 
   BoolExpr VisitNotExactly(LogicalCountExpr e) {
-    return Visit(e.value()) != Visit(e.count());
+    return Visit(e.value()) != VisitCount(e.count());
   }
 
   BoolExpr VisitForAll(IteratedLogicalExpr e) {
