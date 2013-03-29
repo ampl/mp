@@ -439,7 +439,7 @@ fmt::TempFormatter<fmt::Write> JaCoPSolver::Output(fmt::StringRef format) {
 }*/
 
 JaCoPSolver::JaCoPSolver()
-: Solver<JaCoPSolver>("jacop", 0, 20130312), debug_(false) {
+: Solver<JaCoPSolver>("jacop", 0, 20130329), debug_(false) {
 
   // TODO: options
   /*output_(false), output_frequency_(1), output_count_(0),
@@ -566,6 +566,9 @@ void JaCoPSolver::Solve(Problem &p) {
   SignalHandler signal_handler(*this); // TODO
   Class<DepthFirstSearch> dfs_class;
   jobject search = dfs_class.NewObject(env);
+  jmethodID setPrintInfo =
+      env.GetMethod(dfs_class.get(), "setPrintInfo", "(Z)V");
+  env.CallVoidMethod(search, setPrintInfo, false);
   jmethodID labeling = env.GetMethod(dfs_class.get(), "labeling",
       "(LJaCoP/core/Store;LJaCoP/search/SelectChoicePoint;)Z");
   jobject indomain = env.NewObject("JaCoP/search/IndomainMin", "()V");

@@ -191,14 +191,12 @@ TEST_F(GecodeConverterTest, ConvertMin) {
   NumericExpr e = AddVarArg(MINLIST, x, y, z);
   EXPECT_EQ(-7, ConvertAndEval(e, 3, -7, 5));
   EXPECT_EQ(10, ConvertAndEval(e, 10, 20, 30));
-  EXPECT_THROW(ConvertAndEval(AddVarArg(MINLIST)), UnsupportedExprError);
 }
 
 TEST_F(GecodeConverterTest, ConvertMax) {
   NumericExpr e = AddVarArg(MAXLIST, x, y, z);
   EXPECT_EQ(5, ConvertAndEval(e, 3, -7, 5));
   EXPECT_EQ(30, ConvertAndEval(e, 30, 20, 10));
-  EXPECT_THROW(ConvertAndEval(AddVarArg(MAXLIST)), UnsupportedExprError);
 }
 
 TEST_F(GecodeConverterTest, ConvertFloor) {
