@@ -86,6 +86,12 @@ class NLToGecodeConverter :
 
   BoolExpr Convert(Gecode::BoolOpType op, IteratedLogicalExpr e);
 
+  typedef void (*VarArgFunc)(
+      Gecode::Home, const Gecode::IntVarArgs &,
+      Gecode::IntVar, Gecode::IntConLevel);
+
+  LinExpr Convert(VarArgExpr e, VarArgFunc f);
+
   static void RequireNonzeroConstRHS(
       BinaryExpr e, const std::string &func_name);
 
@@ -131,9 +137,13 @@ class NLToGecodeConverter :
     return max(Visit(e.lhs()) - Visit(e.rhs()), 0);
   }
 
-  LinExpr VisitMin(VarArgExpr e);
+  LinExpr VisitMin(VarArgExpr e) {
+    return Convert(e, Gecode::min);
+  }
 
-  LinExpr VisitMax(VarArgExpr e);
+  LinExpr VisitMax(VarArgExpr e) {
+    return Convert(e, Gecode::max);
+  }
 
   LinExpr VisitFloor(UnaryExpr e);
 

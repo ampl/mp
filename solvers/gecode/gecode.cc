@@ -110,6 +110,15 @@ BoolExpr NLToGecodeConverter::Convert(
   return var;
 }
 
+LinExpr NLToGecodeConverter::Convert(VarArgExpr e, VarArgFunc f) {
+  IntVarArgs args;
+  for (VarArgExpr::iterator i = e.begin(); *i; ++i)
+    args << Gecode::expr(problem_, Visit(*i));
+  IntVar result(problem_, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
+  f(problem_, args, result, Gecode::ICL_DEF);
+  return result;
+}
+
 void NLToGecodeConverter::RequireNonzeroConstRHS(
     BinaryExpr e, const std::string &func_name) {
   NumericConstant num = Cast<NumericConstant>(e.rhs());
@@ -198,30 +207,6 @@ void NLToGecodeConverter::Convert(const Problem &p) {
   // Convert logical constraints.
   for (int i = 0, n = p.num_logical_cons(); i < n; ++i)
     ConvertLogicalCon(p.logical_con_expr(i));
-}
-
-LinExpr NLToGecodeConverter::VisitMin(VarArgExpr e) {
-  VarArgExpr::iterator i = e.begin();
-  if (!*i)
-    throw UnsupportedExprError("min with empty argument list");
-  IntVarArgs args;
-  for (; *i; ++i)
-    args << Gecode::expr(problem_, Visit(*i));
-  IntVar result(problem_, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-  min(problem_, args, result);
-  return result;
-}
-
-LinExpr NLToGecodeConverter::VisitMax(VarArgExpr e) {
-  VarArgExpr::iterator i = e.begin();
-  if (!*i)
-    throw UnsupportedExprError("max with empty argument list");
-  IntVarArgs args;
-  for (; *i; ++i)
-    args << Gecode::expr(problem_, Visit(*i));
-  IntVar result(problem_, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-  max(problem_, args, result);
-  return result;
 }
 
 LinExpr NLToGecodeConverter::VisitFloor(UnaryExpr e) {
