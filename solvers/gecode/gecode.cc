@@ -360,7 +360,7 @@ fmt::TempFormatter<fmt::Write> GecodeSolver::Output(fmt::StringRef format) {
 }
 
 GecodeSolver::GecodeSolver()
-: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130327),
+: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130329),
   output_(false), output_frequency_(1), output_count_(0),
   var_branching_(Gecode::INT_VAR_SIZE_MIN()),
   val_branching_(Gecode::INT_VAL_MIN()),
