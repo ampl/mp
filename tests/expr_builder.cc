@@ -79,6 +79,7 @@ ExprBuilder::~ExprBuilder() {
 
 VarArgExpr ExprBuilder::AddVarArg(int opcode,
     NumericExpr e1, NumericExpr e2, NumericExpr e3) {
+  assert(e1);
   expr_va e = {reinterpret_cast<efunc*>(opcode), 0, {0}, {0}, 0, 0, 0};
   expr_va *copy = new expr_va(e);
   expr *result(reinterpret_cast<expr*>(copy));

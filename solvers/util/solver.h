@@ -362,7 +362,7 @@ class Problem : Noncopyable {
   // Flags for Solve.
   enum { IGNORE_FUNCTIONS = 1 };
 
-  // Solves the problem.
+  // Solves the current problem.
   void Solve(const char *solver_name, Solution &sol,
       ProblemChanges *pc = 0, unsigned flags = 0);
 };
@@ -683,6 +683,18 @@ class BasicSolver
         format.c_str(), ErrorReporter(error_handler_));
   }
 
+  // Returns the minimum variable value the solver can represent.
+  virtual double var_min() const {
+    return std::numeric_limits<double>::min();
+  }
+
+  // Returns the maximum variable value the solver can represent.
+  virtual double var_max() const {
+    return std::numeric_limits<double>::max();
+  }
+
+  // Solves a problem.
+  // The solutions are reported via the registered solution handler.
   virtual void Solve(Problem &p) = 0;
 };
 

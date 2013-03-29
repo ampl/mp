@@ -618,6 +618,20 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   // Run the solver.
   int Run(char **argv);
 
+  double var_min() const {
+    Env env = JVM::env();
+    jclass domain_class = env.FindClass("JaCoP/core/IntDomain");
+    return env.GetStaticIntField(
+        domain_class, env.GetStaticFieldID(domain_class, "MinInt", "I"));
+  }
+
+  double var_max() const {
+    Env env = JVM::env();
+    jclass domain_class = env.FindClass("JaCoP/core/IntDomain");
+    return env.GetStaticIntField(
+        domain_class, env.GetStaticFieldID(domain_class, "MaxInt", "I"));
+  }
+
   void Solve(Problem &p);
 
   /*Gecode::IntVarBranch var_branching() const { return var_branching_; }

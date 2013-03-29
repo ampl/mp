@@ -32,21 +32,27 @@ typedef std::auto_ptr<ampl::BasicSolver> (*SolverFactory)();
 // Abstract solver test.
 class SolverTest
     : private ampl::Noncopyable,
-      public ::testing::TestWithParam<SolverFactory>, public ampl::ExprBuilder {
+      public ::testing::TestWithParam<SolverFactory>,
+      public ampl::ExprBuilder {
  protected:
   std::auto_ptr<ampl::BasicSolver> solver_;
   ampl::Variable x;
   ampl::Variable y;
   ampl::Variable z;
 
-  // TODO: get min an max for a solver
-  int min() { return -100; }
-  int max() { return 100; }
+  // Creates and solves a problem containing a single constraint with
+  // the given expression.
+  double Solve(ampl::LogicalExpr e,
+      int var1, int var2, int var3 = 0, bool need_result = false);
 
-  double Eval(ampl::NumericExpr e, int var1 = 0, int var2 = 0, int var3 = 0);
+  // TODO: don't use nan for "no solution"
+  // Evaluates a numeric expression by constructing and solving a problem.
+  double Eval(ampl::NumericExpr e, int var1 = 0, int var2 = 0, int var3 = 0) {
+    return Solve(AddRelational(EQ, AddVar(0), e), var1, var2, var3, true);
+  }
 
+  // Evaluates a logical expression by constructing and solving a problem.
   double Eval(ampl::LogicalExpr e, int var1 = 0, int var2 = 0, int var3 = 0) {
-    // TODO: handle AllDiff specially
     return Eval(AddIf(e, AddNum(1), AddNum(0)), var1, var2, var3);
   }
 

@@ -103,7 +103,7 @@ class ExprBuilder {
   }
 
   // Adds a new variable-argument expression with up to 3 arguments.
-  VarArgExpr AddVarArg(int opcode, NumericExpr e1 = NumericExpr(),
+  VarArgExpr AddVarArg(int opcode, NumericExpr e1,
       NumericExpr e2 = NumericExpr(), NumericExpr e3 = NumericExpr());
 
   // Adds a new sum expression with up to 3 arguments.
