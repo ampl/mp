@@ -40,25 +40,43 @@ class SolverTest
   ampl::Variable y;
   ampl::Variable z;
 
-  // Creates and solves a problem containing a single constraint with
-  // the given expression.
-  double Solve(ampl::LogicalExpr e,
+  class EvalResult {
+   private:
+    bool has_value_;
+    double value_;
+
+   public:
+    EvalResult() : has_value_(false), value_() {}
+    EvalResult(double value) : has_value_(true), value_(value) {}
+
+    bool has_value() const {
+      return has_value_;
+    }
+
+    operator double() const {
+      if (!has_value_)
+        throw std::runtime_error("no value");
+      return value_;
+    }
+  };
+
+  // Solves a problem containing a single constraint with the given
+  // expression and returns the value of the variable with index 0.
+  EvalResult Solve(ampl::LogicalExpr e,
       int var1, int var2, int var3 = 0, bool need_result = false);
 
-  // TODO: don't use nan for "no solution"
   // Evaluates a numeric expression by constructing and solving a problem.
-  double Eval(ampl::NumericExpr e, int var1 = 0, int var2 = 0, int var3 = 0) {
+  EvalResult Eval(ampl::NumericExpr e, int var1 = 0, int var2 = 0, int var3 = 0) {
     return Solve(AddRelational(EQ, AddVar(0), e), var1, var2, var3, true);
   }
 
   // Evaluates a logical expression by constructing and solving a problem.
-  double Eval(ampl::LogicalExpr e, int var1 = 0, int var2 = 0, int var3 = 0) {
+  EvalResult Eval(ampl::LogicalExpr e, int var1 = 0, int var2 = 0, int var3 = 0) {
     return Eval(AddIf(e, AddNum(1), AddNum(0)), var1, var2, var3);
   }
 
  public:
-  SolverTest()
-  : solver_(GetParam()()), x(AddVar(1)), y(AddVar(2)), z(AddVar(3)) {}
+  SolverTest();
 };
 
 #endif  // TESTS_SOLVER_TEST_H_
