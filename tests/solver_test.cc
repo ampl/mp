@@ -26,18 +26,11 @@ using ampl::LogicalExpr;
 using ampl::NumericExpr;
 using ampl::UnsupportedExprError;
 
-#if defined(_MSC_VER)
-# define isnan _isnan
-#else
-# define isnan std::isnan
-#endif
-
-double SolverTest::Solve(
+SolverTest::EvalResult SolverTest::Solve(
     LogicalExpr e, int var1, int var2, int var3, bool need_result) {
   struct TestSolutionHandler : ampl::SolutionHandler {
-    double result;
-    TestSolutionHandler()
-      : result(std::numeric_limits<double>::quiet_NaN()) {}
+    EvalResult result;
+    virtual ~TestSolutionHandler() {}
     void HandleSolution(ampl::BasicSolver &, fmt::StringRef,
           const double *values, const double *, double) {
       if (values)
@@ -57,25 +50,28 @@ double SolverTest::Solve(
   return sh.result;
 }
 
+SolverTest::SolverTest()
+: solver_(GetParam()()), x(AddVar(1)), y(AddVar(2)), z(AddVar(3)) {}
+
 TEST_P(SolverTest, Plus) {
   NumericExpr e = AddBinary(OPPLUS, x, y);
   EXPECT_EQ(25, Eval(e, 10, 15));
   EXPECT_EQ(12, Eval(e, 19, -7));
-  EXPECT_NE(0, isnan(Eval(e, solver_->var_max(), 1)));
+  EXPECT_FALSE(Eval(e, solver_->var_max(), 1).has_value());
 }
 
 TEST_P(SolverTest, Minus) {
   NumericExpr e = AddBinary(OPMINUS, x, y);
   EXPECT_EQ(-5, Eval(e, 10, 15));
   EXPECT_EQ(26, Eval(e, 19, -7));
-  EXPECT_NE(0, isnan(Eval(e, solver_->var_min(), 1)));
+  EXPECT_FALSE(Eval(e, solver_->var_min(), 1).has_value());
 }
 
 TEST_P(SolverTest, Mult) {
   NumericExpr e = AddBinary(OPMULT, x, y);
   EXPECT_EQ(150, Eval(e, 10, 15));
   EXPECT_EQ(-133, Eval(e, 19, -7));
-  EXPECT_NE(0, isnan(Eval(e, solver_->var_max(), 2)));
+  EXPECT_FALSE(Eval(e, solver_->var_max(), 2).has_value());
 }
 
 TEST_P(SolverTest, Div) {
@@ -516,9 +512,9 @@ TEST_P(SolverTest, Iff) {
 
 TEST_P(SolverTest, AllDiff) {
   LogicalExpr e = AddAllDiff(AddNum(1), x, y);
-  EXPECT_EQ(0, Solve(e, 2, 3));
-  EXPECT_NE(0, isnan(Solve(e, 2, 1)));
-  EXPECT_NE(0, isnan(Solve(e, 1, 1)));
+  EXPECT_TRUE(Solve(e, 2, 3).has_value());
+  EXPECT_FALSE(Solve(e, 2, 1).has_value());
+  EXPECT_FALSE(Solve(e, 1, 1).has_value());
 }
 
 TEST_P(SolverTest, NestedAllDiff) {
