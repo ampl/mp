@@ -423,6 +423,7 @@ class BinaryExpr : public NumericExpr {
 };
 
 // A numeric expression with a variable number of arguments.
+// The min and max functions always have at least one argument.
 // Example: min{i in I} x[i], where I is a set and x is a variable.
 class VarArgExpr : public NumericExpr {
  private:

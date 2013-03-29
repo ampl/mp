@@ -411,6 +411,21 @@ TEST(SolverTest, ReadProblemError) {
   }, ::testing::ExitedWithCode(1), "testprogram: can't open nonexistent.nl");
 }
 
+TEST(SolverTest, ReadingMinOrMaxWithZeroArgsFails) {
+  const char *names[] = {"min", "max"};
+  for (size_t i = 0, n = sizeof(names) / sizeof(*names); i < n; ++i) {
+    std::string filename =
+        str(fmt::Format("data/{}-with-zero-args.nl") << names[i]);
+    Args args("testprogram", filename.c_str());
+    TestSolver s("test");
+    EXPECT_EQ(0, s.problem().num_vars());
+    EXPECT_EXIT({
+      EXPECT_TRUE(s.ReadProblem(args));
+    }, ::testing::ExitedWithCode(1),
+        c_str(fmt::Format("bad line 13 of {}: 0") << filename));
+  }
+}
+
 TEST(SolverTest, ReportError) {
   TestSolver s("test");
   EXPECT_EXIT({
