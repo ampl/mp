@@ -91,8 +91,15 @@ in the associated solve_message.
         523     quadratic objective involving division by 0
         524     indefinite quadratic objective or constraint
         525     quadratic constraint involving division by 0
+        530     could not open serverlic file
+        531     error in serverlic file
+        532     error while tuning
         567     complementarity constraint
         600     interrupted
+        601     could not talk to Gurobi compute server
+        602     job rejected by Gurobi compute server
+        603     no license for specified gurobi compute server
+        604     surprise return while trying to use Gurobi compute server
 
 Values 521-524 only arise in Gurobi versions >= 4.0.
 Values 203-205 and 302-303 only arise in Gurobi versions >= 4.5.
