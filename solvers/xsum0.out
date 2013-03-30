@@ -5,10 +5,10 @@ amplsolv.sy	f35a1599	1229
 arith.ibm	f398be2b	1391
 arith.h0	e206209c	2309
 arithchk.c	e460ec03	5299
-asl.h	fb091cb	38492
+asl.h	e45eea9d	38510
 asl_pfg.h	6483336	1268
 asl_pfgh.h	49b5a53	1288
-asldate.c	551e9e7	29
+asldate.c	ee08ec4f	29
 atof.c	1fabc7d3	1747
 auxinfo.c	1a3c8690	1488
 avltree.c	10aeaa58	11346
@@ -128,7 +128,7 @@ strerror.c	1c5c813a	1362
 studchk0.c	d87e575	1388
 suf_sos.c	16e64b9d	11623
 value.c	6854152	5847
-writesol.c	e4be2582	12016
+writesol.c	f33430f2	12056
 wrtsol_.c	e8b23ad5	2429
 ws_desc.c	fceb8f65	214
 wsu_desc.c	fbb1c30c	170

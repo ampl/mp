@@ -186,13 +186,14 @@ AMPL_version_ASL(ASL *asl)
 	}
 
  int
-write_solfx_ASL(ASL *asl, char *msg, double *x, double *y, Option_Info *oi,
+write_solfx_ASL(ASL *asl, const char *msg, double *x, double *y, Option_Info *oi,
 		Fwrite fw_d, Fwrite fw_i, Fwrite fw_s, const char *solfname)
 {
 	FILE *f;
 	SufDesc *d;
 	SufHead sh;
-	char *bsmsg, buf[80], *s, *s1, *s2;
+	char *bsmsg, buf[80];
+	const char *s, *s1, *s2;
 	fint J[2], m, z[4];
 	ftnlen L[6];
 	int N, binary, i, i1, *ip, j, k, n, nlneed, rv, tail, wantsol, *zz;
@@ -221,6 +222,7 @@ write_solfx_ASL(ASL *asl, char *msg, double *x, double *y, Option_Info *oi,
 	xycopy = 0;
 	if ((wantsol = oi ? oi->wantsol : 1) || amplflag) {
 		k = 0;
+		y1 = 0;
 		if ((x0 = x)) {
 			if (asl->i.vmap) {
 				k = asl->i.n_var0;
@@ -515,14 +517,14 @@ write_solfx_ASL(ASL *asl, char *msg, double *x, double *y, Option_Info *oi,
 	}
 
  void
-write_sol_ASL(ASL *asl, char *msg, double *x, double *y, Option_Info *oi)
+write_sol_ASL(ASL *asl, const char *msg, double *x, double *y, Option_Info *oi)
 {
 	if (write_solfx_ASL(asl, msg, x, y, oi, fwrite, fwrite, fwrite, 0))
 		exit(2);
 	}
 
  int
-write_solf_ASL(ASL *asl, char *msg, double *x, double *y, Option_Info *oi, const char *fname)
+write_solf_ASL(ASL *asl, const char *msg, double *x, double *y, Option_Info *oi, const char *fname)
 {
 	return write_solfx_ASL(asl, msg, x, y, oi, fwrite, fwrite, fwrite, fname);
 	}
