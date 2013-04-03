@@ -298,12 +298,14 @@ class NLToJaCoPConverter :
   jint min_int_;
   jint max_int_;
 
-  static jint CastToInt(double value) {
+  jint CastToInt(double value) const {
     jint int_value = static_cast<int>(value);
     if (int_value != value) {
       throw Error(str(
           fmt::Format("value {} can't be represented as int") << value));
     }
+    if (int_value < min_int_ || int_value > max_int_)
+      throw Error(str(fmt::Format("value {} is out of bounds") << value));
     return int_value;
   }
 

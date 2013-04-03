@@ -278,7 +278,7 @@ TEST_P(SolverTest, PowConstBase) {
   EXPECT_THROW(Eval(AddBinary(OPCPOW, AddNum(42), x)), UnsupportedExprError);
 }
 
-TEST_P(SolverTest, Num) {
+TEST_P(SolverTest, NumericConstant) {
   EXPECT_EQ(42, Eval(AddNum(42)));
   std::string message;
   try {
@@ -288,11 +288,9 @@ TEST_P(SolverTest, Num) {
   }
   EXPECT_EQ("value 0.42 can't be represented as int", message);
   EXPECT_EQ(solver_->var_min(), Eval(AddNum(solver_->var_min())));
-  // TODO
-  //EXPECT_THROW(Eval(AddNum(min() - 1)), Gecode::Int::OutOfLimits);
+  EXPECT_THROW(Eval(AddNum(solver_->var_min() - 1)), std::exception);
   EXPECT_EQ(solver_->var_max(), Eval(AddNum(solver_->var_max())));
-  // TODO
-  //EXPECT_THROW(Eval(AddNum(max() + 1)), Gecode::Int::OutOfLimits);
+  EXPECT_THROW(Eval(AddNum(solver_->var_max() + 1)), std::exception);
 }
 
 TEST_P(SolverTest, Var) {
