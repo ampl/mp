@@ -88,9 +88,14 @@ TEST_P(SolverTest, Rem) {
 }
 
 TEST_P(SolverTest, Pow) {
-  NumericExpr e = AddBinary(OPPOW, x, y);
-  EXPECT_EQ(8, Eval(e, 2, 3));
-  EXPECT_EQ(81, Eval(e, 3, 4));
+  try {
+    NumericExpr e = AddBinary(OPPOW, x, y);
+    Eval(e, 2, 3);  // May throw UnsupportedExprError.
+    EXPECT_EQ(8, Eval(e, 2, 3));
+    EXPECT_EQ(81, Eval(e, 3, 4));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, NumericLess) {
@@ -267,7 +272,7 @@ TEST_P(SolverTest, PLTerm) {
 }
 
 TEST_P(SolverTest, PowConstExp) {
-  EXPECT_THROW(Eval(AddBinary(OP1POW, x, AddNum(42))), UnsupportedExprError);
+  EXPECT_EQ(16, Eval(AddBinary(OP1POW, x, AddNum(4)), 2));
 }
 
 TEST_P(SolverTest, Pow2) {
@@ -275,7 +280,12 @@ TEST_P(SolverTest, Pow2) {
 }
 
 TEST_P(SolverTest, PowConstBase) {
-  EXPECT_THROW(Eval(AddBinary(OPCPOW, AddNum(42), x)), UnsupportedExprError);
+  try {
+    EvalResult result = Eval(AddBinary(OPCPOW, AddNum(5), x), 3);
+    EXPECT_EQ(125, result);
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, NumericConstant) {
@@ -522,5 +532,5 @@ TEST_P(SolverTest, NestedAllDiff) {
 
 TEST_P(SolverTest, LogicalConstant) {
   EXPECT_EQ(0, Eval(AddBool(false)));
-  EXPECT_EQ(1, Eval(AddBool(1)));
+  EXPECT_EQ(1, Eval(AddBool(true)));
 }
