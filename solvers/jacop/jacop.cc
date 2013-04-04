@@ -542,6 +542,13 @@ JaCoPSolver::JaCoPSolver()
       &JaCoPSolver::SetOption<int, std::size_t>, &memory_limit_);*/
 }
 
+int JaCoPSolver::GetIntDomainField(const char *name) {
+  Env env = JVM::env();
+  jclass domain_class = env.FindClass("JaCoP/core/IntDomain");
+  return env.GetStaticIntField(
+      domain_class, env.GetStaticFieldID(domain_class, name, "I"));
+}
+
 int JaCoPSolver::Run(char **argv) {
   if (!ProcessArgs(argv, *this))
     return 1;

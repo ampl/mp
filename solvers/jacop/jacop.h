@@ -466,9 +466,17 @@ class NLToJaCoPConverter :
 
   jobject VisitNumberOf(NumberOfExpr e);
 
+  jobject VisitPowConstExp(BinaryExpr e) {
+    return VisitPow(e);
+  }
+
   jobject VisitPow2(UnaryExpr e) {
     jobject arg = Visit(e.arg());
     return CreateCon(mul_class_, arg, arg);
+  }
+
+  jobject VisitPowConstBase(BinaryExpr e) {
+    return VisitPow(e);
   }
 
   jobject VisitNumericConstant(NumericConstant c) {
@@ -614,25 +622,17 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
 
   fmt::TempFormatter<fmt::Write> Output(fmt::StringRef format);
 */
+
+  static int GetIntDomainField(const char *name);
+
  public:
   JaCoPSolver();
 
   // Run the solver.
   int Run(char **argv);
 
-  double var_min() const {
-    Env env = JVM::env();
-    jclass domain_class = env.FindClass("JaCoP/core/IntDomain");
-    return env.GetStaticIntField(
-        domain_class, env.GetStaticFieldID(domain_class, "MinInt", "I"));
-  }
-
-  double var_max() const {
-    Env env = JVM::env();
-    jclass domain_class = env.FindClass("JaCoP/core/IntDomain");
-    return env.GetStaticIntField(
-        domain_class, env.GetStaticFieldID(domain_class, "MaxInt", "I"));
-  }
+  double var_min() const { return GetIntDomainField("MinInt"); }
+  double var_max() const { return GetIntDomainField("MaxInt"); }
 
   void Solve(Problem &p);
 
