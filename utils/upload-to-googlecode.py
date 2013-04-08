@@ -59,7 +59,6 @@ for platform in reversed(["linux32", "linux64", "macosx", "win32", "win64"]):
         if m:
           version += '-' + m.group(1)
         versions[items[0].lower()] = version
-  gecode_version = versions.get("gecode")
   date = datetime.datetime.today()
   date = "{}{:02}{:02}".format(date.year, date.month, date.day)
   dirlen = len(dir) + 1
@@ -88,14 +87,22 @@ for platform in reversed(["linux32", "linux64", "macosx", "win32", "win64"]):
   upload(archive_name, "Open-source AMPL solvers and libraries", None)
   os.remove(archive_name)
 
+def update_redir_page(name):
+  filename = "ampl.wiki/{}.html".format(name)
+  with open(filename, 'r') as f:
+    content = f.read()
+  version = re.sub(r".*-()", r"\1", versions.get(name))
+  print 'changing version: {}, {}'.format(versions.get(name), version)
+  print content
+  content = re.sub(r"q={}\+(\d+)".format(name), "q={}+{}".format(name, version), content)
+  print content
+  with open(filename, 'w') as f:
+    f.write(content)
+
 # Update the page that redirects to the downloads for the most recent version of Gecode.
 rmtree("ampl.wiki")
 call(["git", "clone", "https://code.google.com/p/ampl.wiki/"])
-with open("ampl.wiki/gecode.html", 'r') as f:
-  content = f.read()
-gecode_version = re.sub(r".*-()", r"\1", gecode_version)
-content = re.sub(r"q=gecode\+(\d+)", "q=gecode+{}".format(gecode_version), content)
-with open("ampl.wiki/gecode.html", 'w') as f:
-  f.write(content)
-call(["git", "commit", "-a", "-m", "update gecode date"], cwd="ampl.wiki/")
+update_redir_page('ampltabl')
+update_redir_page('gecode')
+call(["git", "commit", "-a", "-m", "update versions"], cwd="ampl.wiki/")
 call(["git", "push"], cwd="ampl.wiki/")
