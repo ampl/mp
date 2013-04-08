@@ -132,8 +132,10 @@ double CPOptimizer::GetSolution(
   }
   values.resize(p.num_vars());
   IloNumVarArray vars = Optimizer::vars();
-  for (int j = 0, n = p.num_vars(); j < n; ++j)
-    values[j] = solver_.getValue(vars[j]);
+  for (int j = 0, n = p.num_vars(); j < n; ++j) {
+    IloNumVar &v = vars[j];
+    values[j] = solver_.isExtracted(v) ? solver_.getValue(v) : v.getLB();
+  }
   return obj_value;
 }
 
@@ -460,16 +462,10 @@ void IlogCPSolver::SetCPLEXIntOption(const char *name, int value, int param) {
     ReportError("Invalid value {} for option {}") << value << name;
 }
 
-bool IlogCPSolver::ParseOptions(char **argv) {
-  // Get optimizer type.
-  gotopttype_ = false;
-  if (!Solver<IlogCPSolver>::ParseOptions(
-      argv, *this, BasicSolver::NO_OPTION_ECHO)) {
-    return false;
-  }
-
+void IlogCPSolver::CreateOptimizer(const Problem &p) {
+  if (optimizer_.get())
+    return;
   int &opt = options_[OPTIMIZER];
-  const Problem &p = problem();
   if (opt == AUTO) {
     opt = CPLEX;
     if (p.num_nonlinear_objs() + p.num_nonlinear_cons() +
@@ -480,6 +476,16 @@ bool IlogCPSolver::ParseOptions(char **argv) {
   if (opt == CPLEX)
     optimizer_.reset(new CPLEXOptimizer(env_, p));
   else optimizer_.reset(new CPOptimizer(env_, p));
+}
+
+bool IlogCPSolver::ParseOptions(char **argv) {
+  // Get optimizer type.
+  gotopttype_ = false;
+  if (!Solver<IlogCPSolver>::ParseOptions(
+      argv, *this, BasicSolver::NO_OPTION_ECHO)) {
+    return false;
+  }
+  CreateOptimizer(problem());
 
   // Parse remaining options.
   gotopttype_ = true;
@@ -650,6 +656,7 @@ void IlogCPSolver::Solve(Problem &p) {
 
   // Set up optimization problem in ILOG Concert.
 
+  CreateOptimizer(p);
   vars_ = optimizer_->vars();
 
   int n_var_cont = p.num_continuous_vars();

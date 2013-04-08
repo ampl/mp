@@ -193,6 +193,8 @@ class IlogCPSolver : public Solver<IlogCPSolver>, public Visitor {
   // Sets an integer option of the CPLEX optimizer.
   void SetCPLEXIntOption(const char *name, int value, int param);
 
+  void CreateOptimizer(const Problem &p);
+
  public:
   IlogCPSolver();
   virtual ~IlogCPSolver();
@@ -475,6 +477,9 @@ class IlogCPSolver : public Solver<IlogCPSolver>, public Visitor {
 
   // Runs the solver.
   int Run(char **argv);
+
+  double var_min() const { return IloIntMin; }
+  double var_max() const { return IloIntMax; }
 
   void Solve(Problem &p);
 };
