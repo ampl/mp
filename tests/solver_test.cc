@@ -57,21 +57,18 @@ TEST_P(SolverTest, Plus) {
   NumericExpr e = AddBinary(OPPLUS, x, y);
   EXPECT_EQ(25, Eval(e, 10, 15));
   EXPECT_EQ(12, Eval(e, 19, -7));
-  EXPECT_FALSE(Eval(e, solver_->var_max(), 1).has_value());
 }
 
 TEST_P(SolverTest, Minus) {
   NumericExpr e = AddBinary(OPMINUS, x, y);
   EXPECT_EQ(-5, Eval(e, 10, 15));
   EXPECT_EQ(26, Eval(e, 19, -7));
-  EXPECT_FALSE(Eval(e, solver_->var_min(), 1).has_value());
 }
 
 TEST_P(SolverTest, Mult) {
   NumericExpr e = AddBinary(OPMULT, x, y);
   EXPECT_EQ(150, Eval(e, 10, 15));
   EXPECT_EQ(-133, Eval(e, 19, -7));
-  EXPECT_FALSE(Eval(e, solver_->var_max(), 2).has_value());
 }
 
 TEST_P(SolverTest, Div) {
