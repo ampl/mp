@@ -2123,3 +2123,8 @@ interfaces.  See /netlib/fp/changes.
 20130213
   asl.h: move qsortv declaration ahead of include "funcadd.h" to avoid
 trouble when Permit_AE_redefs is #defined; asldate.c not changed.
+
+20130328
+  asl.h, writesol.c: change msg arg to the write_sol* routines from char*
+to const char*.  This should be invisible except for banishing a warning
+in some solver interfaces.

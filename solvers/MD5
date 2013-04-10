@@ -145,8 +145,8 @@ NfE/nd+ZeGE=
 -----END PGP SIGNATURE-----
 -----BEGIN PGP SIGNED MESSAGE-----
 
-# netlib-utk master Fri Feb 15 03:10:02 EST 2013
-lhsaomZPHPzeHh6+DXbb4g	00lastchange
+# netlib-utk master Sat Mar 30 03:10:04 EST 2013
+BHq5hvSnGF643ZrRCzOLJw	00lastchange
 liuYYMQudXHqZpEKRGHQSg	README
 qOEvOeNxr+tkYXE2CClZWw	README.SGI
 hP/T3OfgkqAwrLqbG8BqQw	README.f77
@@ -156,10 +156,10 @@ HdqA3IzapQAbY10JKtAWQQ	amplsolv.sy
 W/Hetls8127GluivncKZVw	arith.h0
 JLU7TMzPd3AjUmhDdgaGmQ	arith.ibm
 G6vjFVw1aR9lWi5Yl/OtiQ	arithchk.c
-zG1dgBNoGQVB1m00Q86y4w	asl.h
+WQUoVVSgb9mQhLWLJ0Cjwg	asl.h
 cWsQSHLhURv8mvXbE/g9DQ	asl_pfg.h
 p057f6BlUh9XCGR26M/IUA	asl_pfgh.h
-YrMB2JC+G6R+9rcfKaQ0Ag	asldate.c
+7lNIzOpDuqrhhtWUBUNUyA	asldate.c
 MwUvqn7mXvmkvc1afriAnQ	atof.c
 VPgRhBjxjjSUuv9+aVsibA	auxinfo.c
 HcQd+byMFVyPt/z7Djmj+w	avltree.c
@@ -167,7 +167,7 @@ TiTwOwAKkrb9rFuWZPf82A	avltree.h
 Lg714wh1GAnDfWqStFsPbQ	b_search.c
 JX+T6A1nVtQxlH2/gHjQ7w	basename.c
 B9aysZxnc2iCJEcny28lrA	bscanf.c
-CaxB0yLPHJornEb+yu0ImQ	changes
+ozckiTTXsZhSm2WqIMWzlA	changes
 iaV5+h9JhXta8i63eG8/QA	com2eval.c
 ViDtWeMTFSx1mxx/G621+Q	comeval.c
 f3BjU/9mf3+4mq1Q2h6CAw	comptry.bat
@@ -282,7 +282,7 @@ rR1B5Vj4YOBToXBxIuAqzg	strerror.c
 PpDt9u+TCFUWnzFAE/jTJQ	studchk0.c
 g7k4lFArU+7LTlFulyD9gg	suf_sos.c
 demnClgCWkLStAvxhZBZEw	value.c
-nxwpcoY0W1Jf0jqxVsrJKA	writesol.c
+taPydtsUgtl/7a1BPDnSzA	writesol.c
 Ho3VEl45oVz77gehigtxmw	wrtsol_.c
 QFvL+hAoa0SxX7tSqgR2EQ	ws_desc.c
 P/1GUr57z63UU2oA9ycqcg	wsu_desc.c
@@ -290,14 +290,14 @@ fKP4V5GxuMz8ZZhUUZbTxw	x2check.c
 iOcxB/spcU8eiXLk2O9qkA	xectim.c
 j5NdrTSBkS5pnfDyKD0Ezg	xp1known.c
 FAbm67iDBwtMlNOTy8jXHw	xp2known.c
-e7i1A4jYciUCNGR9QzoaDg	xsum0.out
+wGeaS+N230PIsOmaRwPUHA	xsum0.out
 
 -----BEGIN PGP SIGNATURE-----
 Version: 2.6.2
 
-iQCVAwUBUR3teOFlxDEfrjtlAQGSEgP+MxOPBpoEBpSWig8vN9xUF8P3eWuTAUV0
-n57rnVHCbJim3WtbNeYmfTWEmbp6LkHInZQ4Xr9Yu3zPCACOOiLcrDzuvFClpyoY
-idbaEIHgnp69vlZw+TNmMHo4PKhFG+LTgttLgnMkPkrWqEPl5mu/+5nlcuIY/+D7
-nTHZWqWatPQ=
-=VTOM
+iQCVAwUBUVaeAuFlxDEfrjtlAQE5zQP/Rzwmb3IXKL6VZ2DGf2mcojbYYpf9QtMq
+o4HAF4WEwxAi3txP1rlDzal/UEXfeDjFn0kabBDF2bVXDfauJdvXpDm26zladdIJ
+3ULyGhfdU1pfkQOzS6GMTDPYmTYV7vB/Yz3i+i5CKkIdyF5fmgbf71OiB2Uit5ou
+fRbMKOLq6Vo=
+=096w
 -----END PGP SIGNATURE-----

@@ -39,6 +39,13 @@ SOFTWARE.
 typedef void sig_func_type(int);
 #endif
 
+#undef ALLOW_GUROBI_SERVER
+#if GRB_VERSION_MAJOR > 5 || (GRB_VERSION_MAJOR == 5 && GRB_VERSION_MINOR >= 5)
+#ifndef DISALLOW_GUROBI_SERVER
+#define ALLOW_GUROBI_SERVER
+#endif
+#endif
+
  typedef struct
 Dims {
 	double	*c;
@@ -142,14 +149,183 @@ mint_val[17] = {
  static int breaking, wantlog;
  static jmp_buf Jb;
 
+#ifdef ALLOW_GUROBI_SERVER /*{*/
+ static char *server, *server_passwd, *serverlic;
+ static int server_port = DEFAULT_CS_PORT, server_priority = DEFAULT_CS_PRIORITY;
+ static double server_timeout = -1.;
+ static char
+	server_desc[] = "Comma-separated list of Gurobi compute servers, specified\n\
+		either by name or by IP address.  Default: run Gurobi locally\n\
+		(i.e., do not use a remote Gurobi server).",
+
+	server_passwd_desc[] = "Password (if needed) for specified Guruobi compute server(s).",
+
+	server_port_desc[] = "IP port to use for Gurobi compute server(s);\n\
+		-1 ==> use default.",
+
+	server_priority_desc[] = "Priority for Gurobi compute server(s).  Default = 1.\n\
+		Highest priority = 100.",
+
+	server_timeout_desc[] = "Report job as rejected by Gurobi compute server if the\n\
+		job is not started within server_timeout seconds.\n\
+		Default = -1 (no limit).",
+
+	serverlic_desc[] = "Name of file containing \"server = ...\" and possibly\n\
+		values for server_password, server_port, and server_timeout";
+
+ static int
+badserverlic(ASL *asl, const char *what, int rn)
+{
+	char *s;
+	size_t L;
+
+	L = strlen(serverlic) + strlen(what) + 32;
+	asl->i.uinfo = s = M1alloc(L);
+	snprintf(s, L, "%s serverlic file \"%s\".", what, serverlic);
+	solve_result_num = rn;
+	return 1;
+	}
+
+ static int
+server_licread(ASL *asl)
+{
+	FILE *f;
+	char buf[4096], *s;
+
+	static keyword lrkeywds[] = {
+	{ "server", C_val, &server, server_desc },
+	{ "server_password", C_val, &server_passwd, server_passwd_desc },
+	{ "server_port", I_val, &server_port, server_port_desc },
+	{ "server_priority", I_val, &server_priority, server_priority_desc },
+	{ "server_timeout", D_val, &server_timeout, server_timeout_desc } };
+	static Option_Info lrinfo = { 0,0,0, lrkeywds,
+		(int)(sizeof(lrkeywds)/sizeof(keyword)), ASL_OI_never_echo };
+
+	if (!(f = fopen(serverlic, "r")))
+		return badserverlic(asl, "Cannot open", 530);
+	lrinfo.asl = asl;
+ nextline:
+	while(lrinfo.n_badopts == 0 && fgets(s = buf, sizeof(buf), f)) {
+		while(*s && lrinfo.n_badopts == 0) {
+			while(*s <= ' ') {
+				if (!*s++)
+					goto nextline;
+				}
+			if (*s == '#')
+				goto nextline;
+			s = get_opt_ASL(&lrinfo, s);
+			}
+		}
+	fclose(f);
+	if (lrinfo.n_badopts)
+		return badserverlic(asl, "Bad assignment in", 531);
+	return 0;
+	}
+#endif /*}*/
+
 #if GRB_VERSION_MAJOR >= 3
  static double ams_eps, ams_epsabs;
  static int ams_limit;
  static char *ams_stub;
 #endif
-#if GRB_VERSION_MAJOR >= 5
+
+#if GRB_VERSION_MAJOR >= 5 /*{*/
  static real lbpen = 1., rhspen = 1., ubpen = 1.;
-#endif
+#ifdef GRB_INT_PAR_TUNEOUTPUT /*{*/
+  static char *tunebase;
+
+ static int
+tunerun(ASL *asl, GRBenv *env, GRBmodel *mdl, char **tunemsg)
+{
+	char *b, *s, *tbuf, tbuf0[4096];
+	const char *fmt, *fmt2, *em, *what;
+	int i, j, k, m, n;
+	size_t L;
+	static char prm[] = ".prm";
+
+	what = "GRBtunemodel";
+	fmt2 = "Return %d from %s: %s().";
+	L = 64;
+	em = 0;
+	if ((i = GRBtunemodel(mdl))) {
+ trouble:
+		fmt = "Return %d from %s().";
+		if ((em = GRBgeterrormsg(env))) {
+			L += strlen(em);
+			fmt = fmt2;
+			}
+ trouble2:
+		*tunemsg = s = (char*)M1alloc(L);
+		snprintf(s, L, fmt, i, what, em);
+ badret:
+		solve_result_num = 532;
+		return 1;
+		}
+	n = -1;
+	fmt = "No tuning results available: return %d from %s().";
+	fmt2 = "No tuning results available: return %d from %s():\n%s.";
+	L = 80;
+	if ((i = GRBgetintattr(mdl, GRB_INT_ATTR_TUNE_RESULTCOUNT, &n))) {
+		what = "GRBgetintattr";
+		goto trouble;
+		}
+	if (n <= 0) {
+		L = 32;
+		fmt = "No tuning results found.";
+		goto trouble2;
+		}
+	for(s = tunebase, b = 0; *s; ++s) {
+		if (*s == '.' && s[1] == 'p' && s[2] == 'r' && s[3] == 'm') {
+			b = s;
+			s += 3;
+			}
+		}
+	if (b)
+		j = b - tunebase;
+	else {
+		j = s - tunebase;
+		b = prm;
+		}
+	tbuf = tbuf0;
+	if ((L = s - tunebase + 16) > sizeof(tbuf0))
+		tbuf = (char*)M1alloc(L);
+	if (j > 0)
+		memcpy(tbuf, tunebase, j);
+	for(k = m = 0; n > 0; ++k) {
+		if ((i = GRBgettuneresult(mdl, --n))) {
+			what = "GRBgettuneresult";
+			if (!k)
+				goto trouble;
+			L = L + 80;
+			*tunemsg = s = (char*)M1alloc(L);
+			snprintf(s, L, "Surprise return %d from %s() after writing"
+				" %d %.*s*%s files.", i, what, k, j, tunebase, b);
+			goto badret;
+			}
+		m = snprintf(tbuf+j, L-j, "%d%s", n+1, b);
+		what = "GRBwriteparams";
+		if ((i = GRBwriteparams(env, tbuf)))
+			goto trouble2;
+		}
+	*tunemsg = s = (char*)M1alloc(L = 2*m + 64);
+	switch(k) {
+	 case 1:
+		snprintf(s, L, "Wrote tuning parameter file \"%s\".", tbuf);
+		break;
+	 case 2:
+		snprintf(s, L,
+			"Wrote tuning parameter files \"%s\" and \"%.*s2%s\".",
+			tbuf, j, tunebase, b);
+		break;
+	 default:
+		snprintf(s, L,
+			"Wrote %d tuning parameter files \"%s\" ... \"%.*s%d%s\".",
+			k, tbuf, j, tunebase, k, b);
+	 }
+	return 0;
+	}
+#endif /*}*/
+#endif /*}*/
 
  static void
 badretfmt(int rc, char *fmt, ...)
@@ -613,6 +789,13 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 			0 = no (default)\n\
 			1 = yes";
 
+#ifdef GRB_INT_PAR_CONCURRENTMIP
+ static char concurrentmip_desc[] =
+		"how many independent MIP solves to allow at once when multiple\n\
+		threads are available.  The available threads are divided as\n\
+		evenly as possible among the concurrent solves.  Default = 1.";
+#endif
+
 #if GRB_VERSION_MAJOR >= 3 /*{*/
  static char crossover_desc[] = "how to transform a barrier solution to a basic one:\n\
 		       -1 = automatic choice (default)\n\
@@ -676,6 +859,11 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 		and .rhspen on constraints (when positive), else by keywords\n\
 		lbpen, ubpen, and rhspen, respectively (default values = 1).\n\
 		Weights <= 0 are treated as Infinity, allowing no violation.";
+#ifdef GRB_DBL_PAR_FEASRELAXBIGM
+ static char feasrelaxbigm_desc[] =
+		"Value of \"big-M\" sometimes used with constraints when doing\n\
+		a feasibility relaxation.  Default = 1e6.";
+#endif
 #endif /*}*/
 
  static char feastol_desc[] = "primal feasibility tolerance (default 1e-6)";
@@ -757,6 +945,12 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 			1 = dual simplex (default)\n\
 			2 = barrier";
 #endif /*}*/
+
+#ifdef GRB_INT_PAR_NUMERICFOCUS
+ static char numericfocus_desc[] = "how much to try detecting and managing numerical issues:\n\
+			0 = automatic choice (default)\n\
+			1-3 = increasing focus on more stable computations";
+#endif
 
 
  static char objno_desc[] = "objective to optimize:\n\
@@ -853,8 +1047,8 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 #endif
 
 #if (GRB_VERSION_MAJOR == 4 && GRB_VERSION_MINOR >= 5) || GRB_VERSION_MAJOR >= 5 /*{*/
- static char rays_desc[] = "Whether to return suffix .unbdd when the objective is unbounded\n\
-		or suffix .dunbdd when the constraints are infeasible:\n\
+ static char rays_desc[] = "Whether to return suffix .unbdd if the objective is unbounded\n\
+		or suffix .dunbdd if the constraints are infeasible:\n\
 			0 = neither\n\
 			1 = just .unbdd\n\
 			2 = just .dunbdd\n\
@@ -962,7 +1156,7 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 				negative values.  The .ref suffix contains\n\
 				corresponding reference values.";
 
- static char sos2_desc[] = "whether to tell GUROBI about SOS2 constraints for nonconvex\n\
+ static char sos2_desc[] = "whether to tell Gurobi about SOS2 constraints for nonconvex\n\
 		piecewise-linear terms:\n\
 			0 = no\n\
 			1 = yes (default), using suffixes .sos and .sosref\n\
@@ -975,6 +1169,38 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 			0 (default) = no\n\
 			1 = report times on stdout\n\
 			2 = report times on stderr";
+
+#ifdef GRB_INT_PAR_TUNEOUTPUT /*{*/
+
+ static char tunebase_desc[] = "base name for results of running Gurobi's search for better\n\
+		parameter settings.  The search is run only when tuneparbase is\n\
+		specified.  Results are written to files with names derived\n\
+		from tunebase by appending \".prm\" if \".prm\" does not occur in\n\
+		tuneparbase and inserting 1, 2, ... (for the first, second, ...\n\
+		set of parameter settings) before the right-most \".prm\".\n\
+		The file with \"1\" inserted is the best set and the solve\n\
+		results returned are for this set.  In a subsequent \"solve;\",\n\
+		you can use paramfile=... to apply the settings in results\n\
+		file ... .";
+
+ static char tuneoutput_desc[] = "amount of tuning output when tunebase is specified:\n\
+			0 = none\n\
+			1 = summarize each new best parameter set\n\
+			2 = summarize each set tried (default)\n\
+			3 = summary plus detailed solver output for each trial";
+
+ static char tuneresults_desc[] = "limit on the number of tuning result files to write\n\
+		when tunerbase is specified.  The default (-1) is to write\n\
+		results for all parameter sets on the efficient frontier.";
+
+ static char tunetimelim_desc[] = "time limit (in seconds) on tuning when tunebase\n\
+		is specified.  Default -1 ==> automatic choice of time limit.";
+
+ static char tunetrials_desc[] = "number of trials for each parameter set when tunebase\n\
+		is specified, each with a different random seed value.\n\
+		Default = 2.";
+
+#endif /*}*/
 
  static char varbranch_desc[] = "MIP branch variable selection strategy:\n\
 		       -1 = automatic choice (default)\n\
@@ -1140,6 +1366,9 @@ keywds[] = {	/* must be in alphabetical order */
 	{ "branchdir", sf_ipar, "BranchDir", branchdir_desc },
 #endif /*}*/
 	{ "cliquecuts", sf_ipar, "CliqueCuts", overrides_cuts },
+#ifdef GRB_INT_PAR_CONCURRENTMIP
+	{ "concurrentmip", sf_ipar, GRB_INT_PAR_CONCURRENTMIP, concurrentmip_desc },
+#endif
 	{ "covercuts", sf_ipar, "CoverCuts", overrides_cuts },
 #if GRB_VERSION_MAJOR >= 3 /*{*/
 	{ "crossover", sf_ipar, "Crossover", crossover_desc },
@@ -1156,6 +1385,9 @@ keywds[] = {	/* must be in alphabetical order */
 #endif
 #if GRB_VERSION_MAJOR >= 5 /*{*/
 	{ "feasrelax", sf_mint, VP set_feasrelax, feasrelax_desc },
+#ifdef GRB_DBL_PAR_FEASRELAXBIGM
+	{ "feasrelaxbigm", sf_dpar, GRB_DBL_PAR_FEASRELAXBIGM, feasrelaxbigm_desc },
+#endif
 #endif /*}*/
 	{ "feastol", sf_dpar, "FeasibilityTol", feastol_desc },
 	{ "flowcover", sf_ipar, "FlowCoverCuts", "flowcover cuts:  " Overrides_cuts },
@@ -1219,6 +1451,9 @@ keywds[] = {	/* must be in alphabetical order */
 #if GRB_VERSION_MAJOR > 1 /*{*/
 	{ "normadjust", sf_ipar, "NormAdjust", "synonym for multprice_norm" },
 #endif /*}*/
+#ifdef GRB_INT_PAR_NUMERICFOCUS
+	{ "numericfocus", sf_ipar, GRB_INT_PAR_NUMERICFOCUS, numericfocus_desc },
+#endif
 	{ "objno", sf_mint, VP set_objno, objno_desc },
 #if GRB_VERSION_MAJOR > 1 /*{*/
 	{ "objscale", sf_dpar, "ObjScale", objscale_desc },
@@ -1285,6 +1520,14 @@ keywds[] = {	/* must be in alphabetical order */
 #ifdef GRB_INT_PAR_SEED
 	{ "seed", sf_ipar, GRB_INT_PAR_SEED, seed_desc },
 #endif
+#ifdef ALLOW_GUROBI_SERVER
+	{ "server", C_val, &server, server_desc },
+	{ "server_password", C_val, &server_passwd, server_passwd_desc },
+	{ "server_port", I_val, &server_port, server_port_desc },
+	{ "server_priority", I_val, &server_priority, server_priority_desc },
+	{ "server_timeout", D_val, &server_timeout, server_timeout_desc },
+	{ "serverlic", C_val, &serverlic, serverlic_desc },
+#endif
 #ifdef GRB_INT_PAR_SIFTING /* new in 4.6 */
 	{ "sifting", sf_ipar, GRB_INT_PAR_SIFTING, sifting_desc },
 	{ "siftmethod", sf_ipar, GRB_INT_PAR_SIFTMETHOD, siftmethod_desc },
@@ -1301,6 +1544,13 @@ keywds[] = {	/* must be in alphabetical order */
 	{ "threads", sf_ipar, "Threads", threads_desc },
 	{ "timelim", sf_dpar, "TimeLimit", "limit on solve time (in seconds; default: no limit)" },
 	{ "timing", sf_mint, VP set_timing, timing_desc },
+#ifdef GRB_INT_PAR_TUNEOUTPUT
+	{ "tunebase", C_val, &tunebase, tunebase_desc },
+	{ "tuneoutput", sf_ipar, GRB_INT_PAR_TUNEOUTPUT, tuneoutput_desc },
+	{ "tuneresults", sf_ipar, GRB_INT_PAR_TUNERESULTS, tuneresults_desc },
+	{ "tunetimelimit", sf_dpar, GRB_DBL_PAR_TUNETIMELIMIT, tunetimelim_desc },
+	{ "tunetrials", sf_ipar, GRB_INT_PAR_TUNETRIALS, tunetrials_desc },
+#endif
 #if GRB_VERSION_MAJOR >= 5
 	{ "ubpen", D_val, &ubpen, "See feasrelax." },
 #endif
@@ -1321,7 +1571,7 @@ keywds[] = {	/* must be in alphabetical order */
 
  static Option_Info
 Oinfo = { "gurobi", verbuf, "gurobi_options", keywds, nkeywds, 0, verbuf,
-	   0,0,0,0,0, 20130206 };
+	   0,0,0,0,0, 20130328 };
 
  static void
 enamefailed(GRBenv *env, const char *what, const char *name)
@@ -1433,7 +1683,7 @@ intcatch(int n)
 	SigRet;
 	}
 
- static char*
+ static const char*
 retiis(ASL *asl, GRBenv *env, GRBmodel *mdl, Dims *d, const char *what, int *srp)
 {
 	char buf[128], *rv;
@@ -1731,10 +1981,11 @@ do_feasrelax(ASL *asl, GRBenv *env, GRBmodel *mdl, const char **objqual, real *f
 	}
 #endif /*}*/
 
- static char*
+ static const char*
 statmsg(ASL *asl, GRBenv *env, GRBmodel *mdl, int i, Dims *d, int *wantobj)
 {
-	char buf[64], *rv, *rv1;
+	char buf[64], *rv1;
+	const char *rv;
 	int m, n, nc, nv, nvr, objwant, sr, srd, srp;
 	real *x, *y;
 	size_t L;
@@ -1770,8 +2021,8 @@ statmsg(ASL *asl, GRBenv *env, GRBmodel *mdl, int i, Dims *d, int *wantobj)
 #endif /*}*/
 		  default:
 			Snprintf(buf, sizeof(buf), "surprise return %d from GRBoptimize", i);
-			rv = M1alloc(strlen(buf)+1);
-			strcpy(rv, buf);
+			rv = rv1 = M1alloc(strlen(buf)+1);
+			strcpy(rv1, buf);
 		  }
 		return rv;
 		}
@@ -1893,9 +2144,9 @@ statmsg(ASL *asl, GRBenv *env, GRBmodel *mdl, int i, Dims *d, int *wantobj)
 #endif
 	  default:
 		Snprintf(buf, sizeof(buf), "surprise status %d after GRBoptimize", i);
-		rv = (char*)M1alloc(strlen(buf)+1);
+		rv = rv1 = (char*)M1alloc(strlen(buf)+1);
 		sr = 530;
-		strcpy(rv, buf);
+		strcpy(rv1, buf);
 	  }
 	solve_result_num = sr;
 	x = y = 0;
@@ -2279,7 +2530,8 @@ main(int argc, char **argv)
 	GRBenv *env;
 	GRBmodel *mdl, *mdl1;
 	char mbuf[MBL];
-	char *hx0, *sense, *solmsg, *sostype, *stub, *vtype;
+	char *hx0, *sense, *smsg, *sostype, *stub, *vtype;
+	const char *solmsg;
 	int i, j, k, lvi, nc, nfree, nlvi, nqc, nsosnz, nrange, nsos;
 	int nv, nvr, nz, nzcr, objprec, rc, wantobj;
 	int *cs, *csr, *rnr, *rsta, *sosbeg, *sosind, *sostypes;
@@ -2290,11 +2542,11 @@ main(int argc, char **argv)
 	sig_func_type *oic;
 	size_t L;
 	static int sos_types[2] = { GRB_SOS_TYPE1, GRB_SOS_TYPE2 };
-#if GRB_VERSION_MAJOR >= 4
+#if GRB_VERSION_MAJOR >= 4 /*{*/
 	fint *colqf, nelqf, *rowqf;
 	int *colq, i1, j1, nelq, *rowq;
 	real *qmat;
-#if GRB_VERSION_MAJOR >= 5
+#if GRB_VERSION_MAJOR >= 5 /*{*/
 	cgrad *cg, **cgp;
 	char qsense;
 	const char *objqual = "";
@@ -2302,8 +2554,11 @@ main(int argc, char **argv)
 	int *ia, *rn, *zc, *zr;
 	int k1, n, nlnz;
 	real *a1, fto, *pfto, *qmatc, qrhs, *resid;
+#ifdef GRB_INT_PAR_TUNEOUTPUT
+	char *tunemsg;
 #endif
-#endif
+#endif /*}*/
+#endif /*}*/
 
 	nelqf = 0;
 	Times[0] = xectim_();
@@ -2322,6 +2577,9 @@ main(int argc, char **argv)
 	Snprintf(verbuf, sizeof(verbuf), "Gurobi %d.%d.%d", vinfo[0], vinfo[1], vinfo[2]);
 	Lic_info_add_ASL = "Portions Copyright Gurobi Optimization, Inc., 2008.";
 
+#ifdef main
+	if (!(asl = asl1))
+#endif
 	asl = ASL_alloc(ASL_read_fg);
 	if (!(stub = getstub(&argv, &Oinfo)))
 		usage_ASL(&Oinfo, 1);
@@ -2368,8 +2626,8 @@ main(int argc, char **argv)
 			if (amplflag | (Oinfo.wantsol & 1))
 				rc = 0;
 			L = strlen(Oinfo.bsname) + strlen(asl->i.uinfo);
-			sprintf(solmsg = (char*)M1alloc(L+3), "%s: %s",
-				Oinfo.bsname, asl->i.uinfo);
+			solmsg = smsg = (char*)M1alloc(L+3);
+			sprintf(smsg, "%s: %s", Oinfo.bsname, asl->i.uinfo);
  ws_now:
 			write_sol(solmsg, 0, 0, &Oinfo);
 			}
@@ -2382,6 +2640,43 @@ main(int argc, char **argv)
 		solmsg = "Bad $gurobi_options.";
 		goto ws_now;
 		}
+#ifdef ALLOW_GUROBI_SERVER
+	if (serverlic && server_licread(asl)) {
+		solmsg = asl->i.uinfo;
+		goto ws_now;
+		}
+	if (server) {
+		if (env0) {
+			GRBfreeenv(env0);
+			env0 = 0;
+			}
+		if ((i = GRBloadclientenv(&env0, logfile, server, server_port,
+				server_passwd, server_priority, server_timeout))) {
+			switch(i) {
+			 case GRB_ERROR_NETWORK:
+				solmsg = "Could not talk to Gurobi Compute Server.";
+				solve_result_num = 601;
+				break;
+			 case GRB_ERROR_JOB_REJECTED:
+				solmsg = "Job rejected by Gurobi Compute Server.";
+				solve_result_num = 602;
+				break;
+			 case GRB_ERROR_NO_LICENSE:
+				solmsg = "No license for specified Gurobi Compute Server.";
+				solve_result_num = 603;
+				break;
+			 default:
+				solmsg = mbuf;
+				snprintf(mbuf, sizeof(mbuf),
+					"Surprise return %d from GRBloadclientenv().", i);
+				solve_result_num = 604;
+			 }
+			goto ws_now;
+			}
+		Oinfo.uinfo = (char*)env0;
+		logfile = 0;
+		}
+#endif
 	if (relax)
 		dims.kiv = 0;
 	breaking = 3;
@@ -2824,6 +3119,13 @@ main(int argc, char **argv)
 #endif
 	breaking = 1;
 	Times[1] = xectim_();
+#ifdef GRB_INT_PAR_TUNEOUTPUT
+	tunemsg = 0;
+	if (tunebase && tunerun(asl, env, mdl, &tunemsg)) {
+		write_sol(tunemsg, 0, 0, &Oinfo);
+		goto done;
+		}
+#endif
 	grbmodel = mdl;
 	i = GRBoptimize(mdl);
 	grbmodel = 0;
@@ -2897,7 +3199,7 @@ main(int argc, char **argv)
 		}
 	if (dims.missing)
 		missing_msg(&dims);
-#if GRB_VERSION_MAJOR >= 3
+#if GRB_VERSION_MAJOR >= 3 /*{*/
 	if (dims.kiv && ams_stub > 0 && wantobj
 	 && !GRBgetintattr(mdl, GRB_INT_ATTR_SOLCOUNT, &i) && i > 1
 	 && (k = ams_write(asl, env, mdl, &dims, i, obj, objprec))) {
@@ -2909,7 +3211,11 @@ main(int argc, char **argv)
 			dpf(&dims, "\nIgnoring %d other inferior alternative MIP solutions.",
 				i - k);
 		}
+#ifdef GRB_INT_PAR_TUNEOUTPUT
+	if (tunemsg)
+		dpf(&dims, "\n%s", tunemsg);
 #endif
+#endif /*}*/
 	write_sol(mbuf, dims.x, dims.y, &Oinfo);
 	for(fn = Wflist[1]; fn; fn = fn->next)
 		if (GRBwrite(mdl, fn->name))
@@ -2921,6 +3227,8 @@ main(int argc, char **argv)
 		GRBfreemodel(mdl);
 	if (env0)
 		GRBfreeenv(env0);
+	if (!amplflag && solve_result_num >= 500)
+		rc = 1;
 	ASL_free(&asl);
 	show_times();
 	return rc;

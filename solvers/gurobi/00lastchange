@@ -1,3 +1,5 @@
-20130206
-  Fix a possible fault, introduced 20120504 (for Gurobi versions >= 5),
-with problems having a dual initial guess but no incoming basis.
+20130328
+  Update for Gurobi 5.5:  add keywords, concurrentmip, feasrelaxbigm,
+impstartnodes, numericfocus, seed, server, server_password,
+server_port, server_priority, server_timeout, serverlic, tunebase,
+tuneoutput, tuneresults, tunetimelimit, tunetrials.
