@@ -1023,10 +1023,10 @@ enum ASL_writer_error_codes {
  extern char *var_name_nomap_ASL(ASL*,int);
  extern void varscale_ASL(ASL*, int, real, fint*);
  extern void what_prog(VOID);
- extern void write_sol_ASL(ASL*, char *msg, double *x, double *y, Option_Info*);
- extern int  write_solf_ASL(ASL*, char *msg, double *x, double *y, Option_Info *,
+ extern void write_sol_ASL(ASL*, const char *msg, double *x, double *y, Option_Info*);
+ extern int  write_solf_ASL(ASL*, const char *msg, double *x, double *y, Option_Info *,
 			const char*);
- extern int  write_solfx_ASL(ASL*, char *msg, double *x, double *y, Option_Info *,
+ extern int  write_solfx_ASL(ASL*, const char *msg, double *x, double *y, Option_Info *,
 			Fwrite, Fwrite, Fwrite, const char*);
  extern void wrsolw_(char *msg, fint *nmsg, real *x, real *y, fint *wantsol,
 			ftnlen msg_len);
