@@ -46,6 +46,7 @@ extern "C" {
 
 #include "tests/args.h"
 #include "tests/expr_builder.h"
+#include "tests/solver_test.h"
 #include "tests/solution_handler.h"
 #include "tests/config.h"
 
@@ -69,6 +70,13 @@ using ampl::UnsupportedExprError;
 #define DATA_DIR "../data/"
 
 namespace {
+
+std::auto_ptr<ampl::BasicSolver> CreateSolver() {
+  return std::auto_ptr<ampl::BasicSolver>(new ampl::IlogCPSolver());
+}
+
+INSTANTIATE_TEST_CASE_P(IlogCP, SolverTest, ::testing::Values(CreateSolver));
+
 
 bool AreBothSpaces(char lhs, char rhs) { return lhs == ' ' && rhs == ' '; }
 
@@ -262,67 +270,6 @@ TEST_F(IlogCPTest, ConvertNum) {
 
 TEST_F(IlogCPTest, ConvertVar) {
   EXPECT_EQ("theta", str(s.Visit(AddVar(2))));
-}
-
-TEST_F(IlogCPTest, ConvertPlus) {
-  EXPECT_EQ("x + 42", str(s.Visit(AddBinary(OPPLUS, AddVar(0), AddNum(42)))));
-  EXPECT_EQ("x + y", str(s.Visit(AddBinary(OPPLUS, AddVar(0), AddVar(1)))));
-}
-
-TEST_F(IlogCPTest, ConvertMinus) {
-  EXPECT_EQ("x + -42", str(s.Visit(
-    AddBinary(OPMINUS, AddVar(0), AddNum(42)))));
-  EXPECT_EQ("x + -1 * y", str(s.Visit(
-    AddBinary(OPMINUS, AddVar(0), AddVar(1)))));
-}
-
-TEST_F(IlogCPTest, ConvertMult) {
-  EXPECT_EQ("42 * x", str(s.Visit(
-    AddBinary(OPMULT, AddVar(0), AddNum(42)))));
-  EXPECT_EQ("x * y", str(s.Visit(
-    AddBinary(OPMULT, AddVar(0), AddVar(1)))));
-}
-
-TEST_F(IlogCPTest, ConvertDiv) {
-  EXPECT_EQ("x / 42", str(s.Visit(
-    AddBinary(OPDIV, AddVar(0), AddNum(42)))));
-  EXPECT_EQ("x / y", str(s.Visit(
-    AddBinary(OPDIV, AddVar(0), AddVar(1)))));
-}
-
-TEST_F(IlogCPTest, ConvertRem) {
-  EXPECT_EQ("x + trunc(x / y ) * y * -1",
-    str(s.Visit(AddBinary(OPREM, AddVar(0), AddVar(1)))));
-  EXPECT_EQ(0, EvalRem(9, 3));
-  EXPECT_EQ(2, EvalRem(8, 3));
-  EXPECT_EQ(-2, EvalRem(-8, 3));
-  EXPECT_EQ(2, EvalRem(8, -3));
-  EXPECT_EQ(-2, EvalRem(-8, -3));
-  EXPECT_EQ(1.5, EvalRem(7.5, 3));
-}
-
-TEST_F(IlogCPTest, ConvertPow) {
-  EXPECT_EQ("x ^ 42", str(s.Visit(
-    AddBinary(OPPOW, AddVar(0), AddNum(42)))));
-  EXPECT_EQ("x ^ y", str(s.Visit(
-    AddBinary(OPPOW, AddVar(0), AddVar(1)))));
-}
-
-TEST_F(IlogCPTest, ConvertLess) {
-  EXPECT_EQ("max(x + -42 , 0)", str(s.Visit(
-    AddBinary(OPLESS, AddVar(0), AddNum(42)))));
-  EXPECT_EQ("max(x + -1 * y , 0)", str(s.Visit(
-    AddBinary(OPLESS, AddVar(0), AddVar(1)))));
-}
-
-TEST_F(IlogCPTest, ConvertMin) {
-  EXPECT_EQ("min( [x , y , 42 ])", str(s.Visit(
-    AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)))));
-}
-
-TEST_F(IlogCPTest, ConvertMax) {
-  EXPECT_EQ("max([x , y , 42 ])", str(s.Visit(
-    AddVarArg(MAXLIST, AddVar(0), AddVar(1), AddNum(42)))));
 }
 
 TEST_F(IlogCPTest, ConvertFloor) {

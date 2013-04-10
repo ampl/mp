@@ -893,9 +893,17 @@ class Error : public std::runtime_error {
 // An exception that is thrown when an ASL expression not supported
 // by the solver is encountered.
 class UnsupportedExprError : public Error {
+ private:
+  explicit UnsupportedExprError(fmt::StringRef message) : Error(message) {}
+
  public:
-  explicit UnsupportedExprError(const std::string &expr) :
-    Error(std::string("unsupported expression: ") + expr) {}
+  static UnsupportedExprError CreateFromMessage(const std::string &message) {
+    return UnsupportedExprError(message);
+  }
+
+  static UnsupportedExprError CreateFromExprString(const std::string &expr) {
+    return UnsupportedExprError(std::string("unsupported expression: ") + expr);
+  }
 };
 
 namespace internal {
@@ -947,11 +955,11 @@ class ExprVisitor {
   LResult Visit(LogicalExpr e);
 
   Result VisitUnhandledNumericExpr(NumericExpr e) {
-    throw UnsupportedExprError(e.opname());
+    throw UnsupportedExprError::CreateFromExprString(e.opname());
   }
 
   LResult VisitUnhandledLogicalExpr(LogicalExpr e) {
-    throw UnsupportedExprError(e.opname());
+    throw UnsupportedExprError::CreateFromExprString(e.opname());
   }
 
   Result VisitInvalidNumericExpr(NumericExpr e) {

@@ -54,7 +54,7 @@ class SSDExtractor : public ExprVisitor<SSDExtractor, void, void> {
     NumericConstant coef = Cast<NumericConstant>(e.lhs());
     Variable var = Cast<Variable>(e.rhs());
     if (!coef || !var)
-      throw UnsupportedExprError("nonlinear *");
+      throw UnsupportedExprError::CreateFromExprString("nonlinear *");
     coefs_[con_index_ * num_vars_ + var.index()] = sign_ * coef.value();
   }
 

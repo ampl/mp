@@ -72,7 +72,14 @@ TEST_P(SolverTest, Mult) {
 }
 
 TEST_P(SolverTest, Div) {
-  EXPECT_THROW(Eval(AddBinary(OPDIV, x, y)), UnsupportedExprError);
+  try {
+    NumericExpr e = AddBinary(OPDIV, x, y);
+    Eval(e, 4, 2);  // May throw UnsupportedExprError.
+    EXPECT_EQ(10, Eval(e, 150, 15));
+    EXPECT_EQ(-7, Eval(e, -133, 19));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, Rem) {
@@ -117,6 +124,13 @@ TEST_P(SolverTest, Floor) {
   NumericExpr e = AddUnary(FLOOR, x);
   EXPECT_EQ(-42, Eval(e, -42));
   EXPECT_EQ(42, Eval(e, 42));
+  try {
+    Eval(AddNum(1.2));  // May throw UnsupportedExprError.
+    EXPECT_EQ(4, Eval(AddUnary(FLOOR, AddNum(4.9))));
+    EXPECT_EQ(-5, Eval(AddUnary(FLOOR, AddNum(-4.1))));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, Ceil) {

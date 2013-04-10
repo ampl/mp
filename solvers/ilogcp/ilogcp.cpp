@@ -76,7 +76,7 @@ const char *TimeModes[] = {
 void RequireNonzeroConstRHS(ampl::BinaryExpr e, const std::string &func_name) {
   ampl::NumericConstant num = ampl::Cast<ampl::NumericConstant>(e.rhs());
   if (!num || num.value() != 0) {
-    throw ampl::UnsupportedExprError(
+    throw ampl::UnsupportedExprError::CreateFromExprString(
         func_name + " with nonzero second parameter");
   }
 }

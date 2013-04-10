@@ -122,8 +122,10 @@ LinExpr NLToGecodeConverter::Convert(VarArgExpr e, VarArgFunc f) {
 void NLToGecodeConverter::RequireNonzeroConstRHS(
     BinaryExpr e, const std::string &func_name) {
   NumericConstant num = Cast<NumericConstant>(e.rhs());
-  if (!num || num.value() != 0)
-    throw UnsupportedExprError(func_name + " with nonzero second parameter");
+  if (!num || num.value() != 0) {
+    throw UnsupportedExprError::CreateFromExprString(
+        func_name + " with nonzero second parameter");
+  }
 }
 
 template <typename Term>
@@ -276,7 +278,7 @@ BoolExpr NLToGecodeConverter::VisitImplication(ImplicationExpr e) {
 }
 
 BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr) {
-  throw UnsupportedExprError("nested 'alldiff'");
+  throw UnsupportedExprError::CreateFromExprString("nested 'alldiff'");
   return BoolExpr();
 }
 
