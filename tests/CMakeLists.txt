@@ -72,6 +72,18 @@ if (ODBC_FOUND)
   check_cxx_source_runs(
     "#include \"tests/odbc.cc\"
      int main() {
+       return odbc::Env().FindDriver(\"access\").empty() ? 1 : 0;
+     }" HAVE_ACCESS_DRIVER)
+
+  if (HAVE_ACCESS_DRIVER)
+    cxx_test_with_flags(access_test ""
+      "gtest;function;util;${ODBC_LIBRARIES}"
+      test_main.cc access_test.cc odbc.cc)
+  endif ()
+
+  check_cxx_source_runs(
+    "#include \"tests/odbc.cc\"
+     int main() {
        return odbc::Env().FindDriver(\"excel\").empty() ? 1 : 0;
      }" HAVE_EXCEL_DRIVER)
 
