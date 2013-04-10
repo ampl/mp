@@ -74,18 +74,18 @@ void SSDSolver::Solve(Problem &p) {
     RelationalExpr rel_expr = Cast<RelationalExpr>(logical_expr);
     if (!rel_expr || rel_expr.opcode() != NE ||
         Cast<NumericConstant>(rel_expr.rhs()).value() != 0) {
-      throw UnsupportedExprError(logical_expr.opname());
+      throw UnsupportedExprError::CreateFromExprString(logical_expr.opname());
     }
     CallExpr call = Cast<CallExpr>(rel_expr.lhs());
     if (!call)
-      throw UnsupportedExprError(rel_expr.lhs().opname());
+      throw UnsupportedExprError::CreateFromExprString(rel_expr.lhs().opname());
     Function f = call.function();
     if (f == ssd_uniform)
       ; // Do nothing.
     else if (!ssd_uniform && std::strcmp(f.name(), "ssd_uniform") == 0)
       ssd_uniform = f;
     else
-      throw UnsupportedExprError(f.name());
+      throw UnsupportedExprError::CreateFromExprString(f.name());
     extractor.Extract(call);
   }
 

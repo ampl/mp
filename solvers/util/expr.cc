@@ -101,7 +101,7 @@ std::size_t std::hash<ampl::Expr>::operator()(Expr expr) const {
       break;
 
     default:
-      throw ampl::UnsupportedExprError(expr.opname());
+      throw ampl::UnsupportedExprError::CreateFromExprString(expr.opname());
   }
   return hash;
 }
@@ -351,7 +351,7 @@ bool Equal(Expr expr1, Expr expr2) {
       return e1->a == e2->a;
 
     default:
-      throw UnsupportedExprError(expr1.opname());
+      throw UnsupportedExprError::CreateFromExprString(expr1.opname());
   }
 }
 

@@ -171,6 +171,17 @@ jobject ClassBase::NewObject(Env env, ...) {
   return result;
 }
 
+jint NLToJaCoPConverter::CastToInt(double value) const {
+  jint int_value = static_cast<jint>(value);
+  if (int_value != value) {
+    throw UnsupportedExprError::CreateFromExprString(str(
+        fmt::Format("value {} can't be represented as int") << value));
+  }
+  if (int_value < min_int_ || int_value > max_int_)
+    throw Error(str(fmt::Format("value {} is out of bounds") << value));
+  return int_value;
+}
+
 jobject NLToJaCoPConverter::Convert(
     IteratedLogicalExpr e, ClassBase &cls, jmethodID &ctor) {
   if (!ctor) {
@@ -192,8 +203,10 @@ jobject NLToJaCoPConverter::Convert(
 void NLToJaCoPConverter::RequireNonzeroConstRHS(
     BinaryExpr e, const std::string &func_name) {
   NumericConstant num = Cast<NumericConstant>(e.rhs());
-  if (!num || num.value() != 0)
-    throw UnsupportedExprError(func_name + " with nonzero second parameter");
+  if (!num || num.value() != 0) {
+    throw UnsupportedExprError::CreateFromExprString(
+        func_name + " with nonzero second parameter");
+  }
 }
 
 template <typename Term>
@@ -350,8 +363,10 @@ jobject NLToJaCoPConverter::VisitCount(CountExpr e) {
 jobject NLToJaCoPConverter::VisitNumberOf(NumberOfExpr e) {
   // JaCoP only supports count constraints with constant value.
   NumericConstant num = Cast<NumericConstant>(e.value());
-  if (!num)
-    throw UnsupportedExprError("numberof with variable value");
+  if (!num) {
+    throw UnsupportedExprError::CreateFromExprString(
+        "numberof with variable value");
+  }
   jobject result_var = CreateVar();
   int num_args = e.num_args();
   jobjectArray args = CreateVarArray(num_args);

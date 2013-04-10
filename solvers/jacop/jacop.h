@@ -298,16 +298,7 @@ class NLToJaCoPConverter :
   jint min_int_;
   jint max_int_;
 
-  jint CastToInt(double value) const {
-    jint int_value = static_cast<int>(value);
-    if (int_value != value) {
-      throw Error(str(
-          fmt::Format("value {} can't be represented as int") << value));
-    }
-    if (int_value < min_int_ || int_value > max_int_)
-      throw Error(str(fmt::Format("value {} is out of bounds") << value));
-    return int_value;
-  }
+  jint CastToInt(double value) const;
 
   jobject CreateVar() {
     return var_class_.NewObject(env_, store_, min_int_, max_int_);
@@ -562,7 +553,7 @@ class NLToJaCoPConverter :
   }
 
   jobject VisitAllDiff(AllDiffExpr) {
-    throw UnsupportedExprError("nested 'alldiff'");
+    throw UnsupportedExprError::CreateFromExprString("nested 'alldiff'");
     return jobject();
   }
 
