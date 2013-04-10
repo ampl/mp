@@ -2431,8 +2431,12 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 			dbc = dbc0 + p[i];
 			switch(dbc->mytype) {
 			 case 0:
-				db->sval[0] = 0;
-				db->dval[0] = dd[dbc->myoffset];
+				if (dbc->len != SQL_NULL_DATA) {
+					db->sval[0] = 0;
+					db->dval[0] = dd[dbc->myoffset];
+					}
+				else
+					db->sval[0] = h.Missing;
 				break;
 			 case 1:
 				db->sval[0] = scrunch(&h, cd[dbc->myoffset], db->dval, mix);
