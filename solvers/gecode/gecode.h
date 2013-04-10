@@ -78,8 +78,8 @@ class NLToGecodeConverter :
   static int CastToInt(double value) {
     int int_value = static_cast<int>(value);
     if (int_value != value) {
-      throw Error(str(
-          fmt::Format("value {} can't be represented as int") << value));
+      throw UnsupportedExprError::CreateFromMessage(
+          fmt::Format("value {} can't be represented as int") << value);
     }
     return int_value;
   }

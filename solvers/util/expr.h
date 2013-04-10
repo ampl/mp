@@ -897,7 +897,7 @@ class UnsupportedExprError : public Error {
   explicit UnsupportedExprError(fmt::StringRef message) : Error(message) {}
 
  public:
-  static UnsupportedExprError CreateFromMessage(const std::string &message) {
+  static UnsupportedExprError CreateFromMessage(const fmt::StringRef message) {
     return UnsupportedExprError(message);
   }
 
