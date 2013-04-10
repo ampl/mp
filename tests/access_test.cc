@@ -50,10 +50,17 @@ class AccessTest : public ::testing::Test {
 fun::Library AccessTest::lib_("../tables/ampltabl.dll");
 
 TEST_F(AccessTest, Read) {
-  Table t("test", 1);
-  t = "field";
+  Table t("Test", 1);
+  t = "N";
   handler_->Read("data/test.accdb", &t);
   EXPECT_EQ(1u, t.num_rows());
   EXPECT_EQ(42, t(0, 0).number());
+}
+
+TEST_F(AccessTest, ReadNullField) {
+  Table t("TableWithNullField", 1);
+  t = "NullField";
+  handler_->Read("data/test.accdb", &t);
+  EXPECT_EQ(0u, t.num_rows());
 }
 }
