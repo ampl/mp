@@ -463,8 +463,6 @@ void IlogCPSolver::SetCPLEXIntOption(const char *name, int value, int param) {
 }
 
 void IlogCPSolver::CreateOptimizer(const Problem &p) {
-  if (optimizer_.get())
-    return;
   int &opt = options_[OPTIMIZER];
   if (opt == AUTO) {
     opt = CPLEX;
@@ -656,7 +654,8 @@ void IlogCPSolver::Solve(Problem &p) {
 
   // Set up optimization problem in ILOG Concert.
 
-  CreateOptimizer(p);
+  if (!optimizer_.get())
+    CreateOptimizer(p);
   vars_ = optimizer_->vars();
 
   int n_var_cont = p.num_continuous_vars();
