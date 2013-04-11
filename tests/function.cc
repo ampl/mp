@@ -39,6 +39,8 @@ using fun::Table;
 
 namespace {
 
+char MISSING;
+
 class ScopedTableInfo : public TableInfo {
  private:
   vector<char*> strings_;
@@ -48,7 +50,6 @@ class ScopedTableInfo : public TableInfo {
   vector<double> dvals_;
   vector<char*> svals_;
   Table *table_;
-  static char MISSING;
 
   void SetString(vector<char*> *strings, unsigned index, const char *str);
   void AddString(vector<char*> *strings, const char *str);
@@ -80,8 +81,6 @@ class ScopedTableInfo : public TableInfo {
       cols_[col].dval[row] = v.number();
   }
 };
-
-char ScopedTableInfo::MISSING;
 
 void ScopedTableInfo::SetString(
     vector<char*> *strings, unsigned index, const char *str) {
@@ -385,10 +384,13 @@ int Table::AddRows(DbCol *cols, long nrows) {  // NOLINT(runtime/int)
   for (long i = 0; i < nrows; ++i) {
     for (unsigned j = 0; j < num_cols(); ++j) {
       DbCol &value = cols[j];
-      if (value.sval[i])
+      const char *sval = value.sval[i];
+      if (!sval)
+        Add(value.dval[i]);
+      else if (sval != &MISSING)
         Add(value.sval[i]);
       else
-        Add(value.dval[i]);
+        values_.push_back(Variant());
     }
   }
   return 0;
