@@ -61,6 +61,7 @@ TEST_F(AccessTest, ReadNullField) {
   Table t("TableWithNullField", 1);
   t = "NullField";
   handler_->Read("data/test.accdb", &t);
-  EXPECT_EQ(0u, t.num_rows());
+  EXPECT_EQ(1u, t.num_rows());
+  EXPECT_EQ(fun::VOID, t(0, 0).type());
 }
 }
