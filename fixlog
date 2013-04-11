@@ -9119,3 +9119,8 @@ to invoke the solver was reduced by 16%.
   The "temporary" debugging interpretation of the "4" bit of $linelim,
 describe in the change-log entry of 20011206, is rescinded.  (Version
 20130407 had a glitch in this change.)
+
+20130409
+  Fix a bug giving "unexpected type 0x960c in augment_incidence()"
+with nonlinear defined variables involving an if-then-else expression
+whose "if" test is constant.
