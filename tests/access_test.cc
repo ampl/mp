@@ -27,6 +27,7 @@
 #include "solvers/util/format.h"
 #include "tests/function.h"
 #include "tests/odbc.h"
+#undef VOID
 
 using fun::Handler;
 using fun::Table;

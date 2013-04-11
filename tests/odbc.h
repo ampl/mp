@@ -27,7 +27,6 @@
 // sqltypes.h needs HWND on Windows.
 # include <windows.h>
 # undef max
-# undef VOID
 #endif
 
 #include <sqltypes.h>
