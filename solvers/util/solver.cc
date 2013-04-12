@@ -169,10 +169,14 @@ fmt::Writer &operator<<(fmt::Writer &w, const Problem &p) {
   for (int i = 0; i < num_vars; ++i) {
     w << "var x" << (i + 1);
     double lb = p.var_lb(i), ub = p.var_ub(i);
-    if (lb != -Infinity)
-      w << " >= " << lb;
-    if (ub != Infinity)
-      w << " <= " << ub;
+    if (lb == ub) {
+      w << " = " << lb;
+    } else {
+      if (lb != -Infinity)
+        w << " >= " << lb;
+      if (ub != Infinity)
+        w << " <= " << ub;
+    }
     w << ";\n";
   }
 
@@ -271,19 +275,21 @@ void Problem::Read(const char *stub) {
   asl_->I.r_ops_ = 0;
 }
 
-void Problem::Solve(const char *solver_name,
-    Solution &sol, ProblemChanges *pc, unsigned flags) {
-  // Write an .nl file.
-  TempFiles temp;
+void Problem::WriteNL(const char *stub, ProblemChanges *pc, unsigned flags) {
   int nfunc = asl_->i.nfunc_;
   if ((flags & IGNORE_FUNCTIONS) != 0)
     asl_->i.nfunc_ = 0;
   int result = fg_write_ASL(reinterpret_cast<ASL*>(asl_),
-      temp.stub(), pc ? pc->vco() : 0, ASL_write_ASCII);
+      stub, pc ? pc->vco() : 0, ASL_write_ASCII);
   asl_->i.nfunc_ = nfunc;
   if (result)
     throw Error("Error writing .nl file");
+}
 
+void Problem::Solve(const char *solver_name,
+    Solution &sol, ProblemChanges *pc, unsigned flags) {
+  TempFiles temp;
+  WriteNL(temp.stub(), pc, flags);
   // Run the solver and read the solution file.
   int exit_code = std::system(
       c_str(fmt::Format("{} {} -AMPL") << solver_name << temp.stub()));

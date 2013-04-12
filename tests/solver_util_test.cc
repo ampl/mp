@@ -916,3 +916,11 @@ TEST(SolverTest, WriteProblem) {
       "maximize o: x1 + x2;\n"
       "s.t. c1: x1 + 2 * x2 <= 2;\n", writer.str());
 }
+
+TEST(SolverTest, WriteVarBounds) {
+  Problem p;
+  p.AddVar(42, 42);
+  fmt::Writer writer;
+  writer << p;
+  EXPECT_EQ("var x1 = 42;\n", writer.str());
+}

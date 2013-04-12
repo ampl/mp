@@ -212,6 +212,8 @@ class Problem : Noncopyable {
   VarType *var_types_;
 
   static void IncreaseCapacity(int size, int &capacity) {
+    if (capacity == 0 && size != 0)
+      throw Error("Problem can't be modified");
     capacity = std::max(capacity, size);
     capacity = capacity ? 2 * capacity : 8;
   }
@@ -362,12 +364,15 @@ class Problem : Noncopyable {
   // Flags for Solve.
   enum { IGNORE_FUNCTIONS = 1 };
 
+  // Write an .nl file.
+  void WriteNL(const char *stub, ProblemChanges *pc = 0, unsigned flags = 0);
+
   // Solves the current problem.
   void Solve(const char *solver_name, Solution &sol,
       ProblemChanges *pc = 0, unsigned flags = 0);
 };
 
-// Writes a linear part of the problem in the AMPL format.
+// Writes the linear part of the problem in the AMPL format.
 fmt::Writer &operator<<(fmt::Writer &w, const Problem &p);
 
 // Formats a double with objective precision.
