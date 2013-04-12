@@ -656,6 +656,7 @@ void IlogCPSolver::Solve(Problem &p) {
 
   if (!optimizer_.get())
     CreateOptimizer(p);
+  mod_ = IloModel(env_);
   vars_ = optimizer_->vars();
 
   int n_var_cont = p.num_continuous_vars();
@@ -713,7 +714,7 @@ void IlogCPSolver::Solve(Problem &p) {
 
   // Solve the problem.
   IloAlgorithm alg(optimizer_->algorithm());
-  alg.extract (mod_);
+  alg.extract(mod_);
   SignalHandler sh(*this, optimizer_.get());
   double solve_start_time = timing ? xectim_() : 0;
   IloBool successful = alg.solve();
