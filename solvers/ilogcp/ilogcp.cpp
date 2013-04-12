@@ -714,7 +714,15 @@ void IlogCPSolver::Solve(Problem &p) {
 
   // Solve the problem.
   IloAlgorithm alg(optimizer_->algorithm());
-  alg.extract(mod_);
+  try {
+    alg.extract(mod_);
+  } catch (IloAlgorithm::CannotExtractException &e) {
+    const IloExtractableArray &extractables = e.getExtractables();
+    if (extractables.getSize() == 0)
+      throw;
+    throw UnsupportedExprError::CreateFromExprString(
+        str(fmt::Format("{}") << extractables[0]));
+  }
   SignalHandler sh(*this, optimizer_.get());
   double solve_start_time = timing ? xectim_() : 0;
   IloBool successful = alg.solve();
