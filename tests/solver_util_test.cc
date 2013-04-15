@@ -76,10 +76,6 @@ struct TestSolver : BasicSolver {
     BasicSolver::AddKeyword("testopt", "A Test Option", TestKeywordFunc, INFO);
   }
 
-  std::string FormatDescription(const char *description) {
-    return BasicSolver::FormatDescription(description);
-  }
-
   void Solve(Problem &) {}
 };
 
@@ -454,15 +450,13 @@ TEST(SolverTest, ParseOptions) {
   EXPECT_EQ(5, s.wantsol());
 }
 
-TEST(SolverTest, FormatDescription) {
-  TestSolver s("testsolver");
+TEST(SolverTest, Format) {
   EXPECT_EQ(
-    "\n"
-    "      This is a very long option description that should be indented and\n"
-    "      wrapped.\n",
-    s.FormatDescription(
+    "     This is a very long option description that should be indented and\n"
+    "     wrapped.\n",
+    ampl::internal::Format(
           "This is a very long option description "
-          "that should be indented and wrapped."));
+          "that should be indented and wrapped.", 5));
 }
 
 struct DummyOptionHandler {};

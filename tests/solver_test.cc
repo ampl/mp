@@ -21,10 +21,13 @@
  */
 
 #include "tests/solver_test.h"
+#include <cmath>
 
 using ampl::LogicalExpr;
 using ampl::NumericExpr;
 using ampl::UnsupportedExprError;
+
+// TODO: pass to the SolverTest information about the unsupported expressions
 
 SolverTest::EvalResult SolverTest::Solve(
     LogicalExpr e, int var1, int var2, int var3, bool need_result) {
@@ -137,6 +140,13 @@ TEST_P(SolverTest, Ceil) {
   NumericExpr e = AddUnary(CEIL, x);
   EXPECT_EQ(-42, Eval(e, -42));
   EXPECT_EQ(42, Eval(e, 42));
+  try {
+    Eval(AddNum(1.2));  // May throw UnsupportedExprError.
+    EXPECT_EQ(5, Eval(AddUnary(CEIL, AddNum(4.1))));
+    EXPECT_EQ(-4, Eval(AddUnary(CEIL, AddNum(-4.9))));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, Abs) {
@@ -158,31 +168,60 @@ TEST_P(SolverTest, If) {
 }
 
 TEST_P(SolverTest, Tanh) {
-  EXPECT_THROW(Eval(AddUnary(OP_tanh, x)), UnsupportedExprError);
+  try {
+    EXPECT_EQ(1, Eval(AddBinary(OPMULT,
+        AddNum(2), AddUnary(OP_tanh, AddNum(std::atanh(0.5))))));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, Tan) {
-  EXPECT_THROW(Eval(AddUnary(OP_tan, x)), UnsupportedExprError);
+  try {
+    EXPECT_EQ(42, Eval(AddUnary(OP_tan, AddNum(std::atan(42)))));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, Sqrt) {
-  EXPECT_THROW(Eval(AddUnary(OP_sqrt, x)), UnsupportedExprError);
+  try {
+    EXPECT_EQ(8, Eval(AddUnary(OP_sqrt, x), 64));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, Sinh) {
-  EXPECT_THROW(Eval(AddUnary(OP_sinh, x)), UnsupportedExprError);
+  try {
+    EXPECT_EQ(2, Eval(AddUnary(OP_sinh, AddNum(std::log(2 + std::sqrt(5))))));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, Sin) {
-  EXPECT_THROW(Eval(AddUnary(OP_sin, x)), UnsupportedExprError);
+  try {
+    EXPECT_EQ(1, Eval(AddUnary(OP_sin, AddNum(M_PI_2))));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, Log10) {
-  EXPECT_THROW(Eval(AddUnary(OP_log10, x)), UnsupportedExprError);
+  try {
+    EXPECT_EQ(3, Eval(AddUnary(OP_log10, AddNum(1000))));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, Log) {
-  EXPECT_THROW(Eval(AddUnary(OP_log, x)), UnsupportedExprError);
+  try {
+    EXPECT_EQ(5, Eval(AddUnary(OP_log, AddNum(std::pow(M_E, 5)))));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, Exp) {
@@ -509,14 +548,6 @@ TEST_P(SolverTest, Implication) {
   EXPECT_EQ(0, Eval(e, 1, 0, 1));
   EXPECT_EQ(1, Eval(e, 1, 1, 0));
   EXPECT_EQ(1, Eval(e, 1, 1, 1));
-  e = AddImplication(
-      AddRelational(EQ, x, AddNum(1)),
-      AddRelational(EQ, y, AddNum(1)),
-      AddBool(false));
-  EXPECT_EQ(1, Eval(e, 0, 0));
-  EXPECT_EQ(1, Eval(e, 0, 1));
-  EXPECT_EQ(0, Eval(e, 1, 0));
-  EXPECT_EQ(1, Eval(e, 1, 1));
 }
 
 TEST_P(SolverTest, Iff) {

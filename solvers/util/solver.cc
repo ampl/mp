@@ -100,6 +100,50 @@ const char* OptionParser<const char*>::operator()(
   s = end;
   return value_.c_str();
 }
+
+std::string Format(const char *s, int indent) {
+  std::ostringstream os;
+  bool new_line = true;
+  int line_offset = 0;
+  int start_indent = indent;
+  const int MAX_LINE_LENGTH = 78;
+  for (;;) {
+    const char *start = s;
+    while (*s == ' ')
+      ++s;
+    const char *word_start = s;
+    while (*s != ' ' && *s != '\n' && *s)
+      ++s;
+    const char *word_end = s;
+    if (new_line) {
+      indent = start_indent + static_cast<int>(word_start - start);
+      new_line = false;
+    }
+    if (line_offset + (word_end - start) > MAX_LINE_LENGTH) {
+      // The word doesn't fit, start a new line.
+      os << '\n';
+      line_offset = 0;
+    }
+    if (line_offset == 0) {
+      // Indent the line.
+      for (; line_offset < indent; ++line_offset)
+        os << ' ';
+      start = word_start;
+    }
+    os.write(start, word_end - start);
+    line_offset += static_cast<int>(word_end - start);
+    if (*s == '\n') {
+      os << '\n';
+      line_offset = 0;
+      new_line = true;
+      ++s;
+    }
+    if (!*s) break;
+  }
+  if (!new_line)
+    os << '\n';
+  return os.str();
+}
 }
 
 Solution::Solution()
@@ -401,10 +445,29 @@ void SignalHandler::HandleSigInt(int sig) {
 
 void BasicSolver::SortOptions() {
   if (options_sorted_) return;
+  std::sort(cl_options_.begin(), cl_options_.end(), KeywordNameLess());
+  options = &cl_options_[0];
+  n_options = static_cast<int>(cl_options_.size());
   std::sort(keywords_.begin(), keywords_.end(), KeywordNameLess());
   keywds = &keywords_[0];
   n_keywds = static_cast<int>(keywords_.size());
   options_sorted_ = true;
+}
+
+char *BasicSolver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
+  std::string header = internal::Format(
+      static_cast<BasicSolver*>(oi)->GetOptionHeader().c_str());
+  if (!header.empty())
+    fmt::Print("{}\n") << header;
+  fmt::Print("Directives:\n");
+  const int DESC_INDENT = 6;
+  for (int i = 0, n = oi->n_keywds; i < n; ++i) {
+    const keyword &kw = oi->keywds[i];
+    fmt::Print("\n{}\n{}") << kw.name <<
+        ampl::internal::Format(kw.desc, DESC_INDENT);
+  }
+  exit(0);
+  return 0;
 }
 
 BasicSolver::BasicSolver(
@@ -432,18 +495,25 @@ BasicSolver::BasicSolver(
   Option_Info::version = bsname;
   driver_date = date;
 
-  version_desc_ = FormatDescription(
+  const char *version_desc =
       "Single-word phrase:  report version details "
-      "before solving the problem.");
-  AddKeyword("version", version_desc_.c_str(), Ver_val, 0);
-  wantsol_desc_ = FormatDescription(
+      "before solving the problem.";
+  AddKeyword("version", version_desc, Ver_val, 0);
+  const char *wantsol_desc =
       "In a stand-alone invocation (no -AMPL on the command line), "
       "what solution information to write.  Sum of\n"
       "      1 = write .sol file\n"
       "      2 = primal variables to stdout\n"
       "      4 = dual variables to stdout\n"
-      "      8 = suppress solution message\n");
-  AddKeyword("wantsol", wantsol_desc_.c_str(), WS_val, 0);
+      "      8 = suppress solution message\n";
+  AddKeyword("wantsol", wantsol_desc, WS_val, 0);
+
+  cl_options_.push_back(keyword());
+  keyword &kw = cl_options_.back();
+  kw.name = const_cast<char*>("=");
+  kw.desc = const_cast<char*>("show name= possibilities");
+  kw.kf = BasicSolver::PrintOptionsAndExit;
+  kw.info = 0;
 }
 
 BasicSolver::~BasicSolver() {}
@@ -456,52 +526,6 @@ void BasicSolver::AddKeyword(const char *name,
   kw.desc = const_cast<char*>(description);
   kw.kf = func;
   kw.info = const_cast<void*>(info);
-}
-
-std::string BasicSolver::FormatDescription(const char *description) {
-  std::ostringstream os;
-  os << '\n';
-  bool new_line = true;
-  int line_offset = 0;
-  int indent = 0;
-  const char *s = description;
-  const int MAX_LINE_LENGTH = 78;
-  for (;;) {
-    const char *start = s;
-    while (*s == ' ')
-      ++s;
-    const char *word_start = s;
-    while (*s != ' ' && *s != '\n' && *s)
-      ++s;
-    const char *word_end = s;
-    if (new_line) {
-      indent = 6 + static_cast<int>(word_start - start);
-      new_line = false;
-    }
-    if (line_offset + (word_end - start) > MAX_LINE_LENGTH) {
-      // The word doesn't fit, start a new line.
-      os << '\n';
-      line_offset = 0;
-    }
-    if (line_offset == 0) {
-      // Indent the line.
-      for (; line_offset < indent; ++line_offset)
-        os << ' ';
-      start = word_start;
-    }
-    os.write(start, word_end - start);
-    line_offset += static_cast<int>(word_end - start);
-    if (*s == '\n') {
-      os << '\n';
-      line_offset = 0;
-      new_line = true;
-      ++s;
-    }
-    if (!*s) break;
-  }
-  if (!new_line)
-    os << '\n';
-  return os.str();
 }
 
 bool BasicSolver::ReadProblem(char **&argv) {

@@ -481,6 +481,9 @@ class OptionParser<const char*> {
  public:
   const char* operator()(Option_Info *, keyword *, char *&s);
 };
+
+// Formats a string by indenting it and performing word wrap.
+std::string Format(const char *s, int indent = 0);
 }
 
 class Interruptible {
@@ -530,9 +533,8 @@ class BasicSolver
   std::string long_name_;
   std::string options_var_name_;
   std::string version_;
-  std::string version_desc_;
-  std::string wantsol_desc_;
 
+  std::vector<keyword> cl_options_;  // command-line options
   std::vector<keyword> keywords_;
   bool options_sorted_;
 
@@ -541,6 +543,8 @@ class BasicSolver
   SolutionHandler *sol_handler_;
 
   void SortOptions();
+
+  static char *PrintOptionsAndExit(Option_Info *oi, keyword *kw, char *value);
 
   void HandleError(fmt::StringRef message) {
     std::fputs(message.c_str(), stderr);
@@ -607,8 +611,7 @@ class BasicSolver
   void AddKeyword(const char *name,
       const char *description, Kwfunc func, const void *info);
 
-  // Formats an option description by indenting it and performing word wrap.
-  static std::string FormatDescription(const char *description);
+  virtual std::string GetOptionHeader() { return std::string(); }
 
  public:
   virtual ~BasicSolver();
@@ -733,8 +736,7 @@ class Solver : public BasicSolver {
     std::string description_;
 
    public:
-    Option(const char *description)
-    : description_(FormatDescription(description)) {}
+    explicit Option(const char *description) : description_(description) {}
 
     virtual ~Option() {}
 

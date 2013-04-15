@@ -111,18 +111,17 @@ class CPOptimizer : public Optimizer {
   }
 };
 
-class IlogCPSolver;
+class NLToConcertConverter;
 
-typedef ExprVisitor<IlogCPSolver, IloExpr, IloConstraint> Visitor;
+typedef ExprVisitor<NLToConcertConverter, IloExpr, IloConstraint> Visitor;
 
-// IlogCP solver.
-class IlogCPSolver : public Solver<IlogCPSolver>, public Visitor {
+// Converter of optimization problems from NL to Concert format.
+class NLToConcertConverter : public Visitor {
  private:
   IloEnv env_;
-  IloModel mod_;
+  IloModel model_;
   IloNumVarArray vars_;
-  std::auto_ptr<Optimizer> optimizer_;
-  bool gotopttype_;
+  bool use_numberof_;
   bool debug_;
 
   class CreateVar {
@@ -140,85 +139,13 @@ class IlogCPSolver : public Solver<IlogCPSolver>, public Visitor {
   typedef NumberOfMap<IloIntVar, CreateVar> IlogNumberOfMap;
   IlogNumberOfMap numberofs_;
 
-  double read_time_;
-
-  // Do not implement.
-  IlogCPSolver(const IlogCPSolver&);
-  IlogCPSolver &operator=(const IlogCPSolver&);
-
- public:
-  // Options accessible from AMPL.
-  enum Option {
-    DEBUGEXPR,
-    OPTIMIZER,
-    TIMING,
-    USENUMBEROF,
-    NUM_OPTIONS
-  };
-
-  // Values for the OPTIMIZER option.
-  enum {
-    AUTO  = -1,
-    CP    =  0,
-    CPLEX =  1
-  };
-
- private:
-  int options_[NUM_OPTIONS];
-
   IloNumExprArray ConvertArgs(VarArgExpr e);
 
-  void SetOptimizer(const char *name, const char *value);
-  void SetBoolOption(const char *name, int value, Option opt);
-
-  // Information about a constraint programming solver option.
-  struct CPOptionInfo {
-    IloCP::IntParam param;
-    int start;           // start value for the enumerated options
-    const char **values; // string values for enum options
-    bool accepts_auto;   // true if the option accepts IloCP::Auto value
-
-    CPOptionInfo(IloCP::IntParam p, int start = 0,
-        const char **values = 0, bool accepts_auto = false)
-    : param(p), start(start), values(values), accepts_auto(accepts_auto) {}
-  };
-
-  // Sets an integer option of the constraint programming optimizer.
-  void SetCPOption(
-      const char *name, const char *value, const CPOptionInfo &info);
-
-  // Sets a double option of the constraint programming optimizer.
-  void SetCPDblOption(const char *name, double value, IloCP::NumParam param);
-
-  // Sets an integer option of the CPLEX optimizer.
-  void SetCPLEXIntOption(const char *name, int value, int param);
-
-  void CreateOptimizer(const Problem &p);
-
  public:
-  IlogCPSolver();
-  virtual ~IlogCPSolver();
+  NLToConcertConverter(
+      IloEnv env, IloNumVarArray vars, bool use_numberof, bool debug);
 
-  IloEnv env() const { return env_; }
-  IloModel mod() const { return mod_; }
-
-  IloAlgorithm alg() const {
-    return optimizer_.get() ? optimizer_->algorithm() : IloAlgorithm();
-  }
-
-  Optimizer *optimizer() const { return optimizer_.get(); }
-
-  IloNumVarArray vars() const { return vars_; }
-  void set_vars(IloNumVarArray vars) { vars_ = vars; }
-
-  bool ParseOptions(char **argv);
-
-  int GetOption(Option opt) const {
-    assert(opt >= 0 && opt < NUM_OPTIONS);
-    return options_[opt];
-  }
-
-  void use_numberof(bool use = true) { options_[USENUMBEROF] = use; }
+  IloModel model() const { return model_; }
 
   IloExpr Visit(NumericExpr e) {
     if (debug_)
@@ -474,6 +401,91 @@ class IlogCPSolver : public Solver<IlogCPSolver>, public Visitor {
   // Combines 'numberof' operators into IloDistribute constraints
   // which are much more useful to the solution procedure.
   void FinishBuildingNumberOf();
+};
+
+// IlogCP solver.
+class IlogCPSolver : public Solver<IlogCPSolver> {
+ private:
+  IloEnv env_;
+  std::auto_ptr<Optimizer> optimizer_;
+  bool gotopttype_;
+  double read_time_;
+
+  // Do not implement.
+  IlogCPSolver(const IlogCPSolver&);
+  IlogCPSolver &operator=(const IlogCPSolver&);
+
+ public:
+  // Options accessible from AMPL.
+  enum Option {
+    DEBUGEXPR,
+    OPTIMIZER,
+    TIMING,
+    USENUMBEROF,
+    NUM_OPTIONS
+  };
+
+  // Values for the OPTIMIZER option.
+  enum {
+    AUTO  = -1,
+    CP    =  0,
+    CPLEX =  1
+  };
+
+ private:
+  int options_[NUM_OPTIONS];
+
+  void SetOptimizer(const char *name, const char *value);
+  void SetBoolOption(const char *name, int value, Option opt);
+
+  // Information about a constraint programming solver option.
+  struct CPOptionInfo {
+    IloCP::IntParam param;
+    int start;           // start value for the enumerated options
+    const char **values; // string values for enum options
+    bool accepts_auto;   // true if the option accepts IloCP::Auto value
+
+    CPOptionInfo(IloCP::IntParam p, int start = 0,
+        const char **values = 0, bool accepts_auto = false)
+    : param(p), start(start), values(values), accepts_auto(accepts_auto) {}
+  };
+
+  // Sets an integer option of the constraint programming optimizer.
+  void SetCPOption(
+      const char *name, const char *value, const CPOptionInfo &info);
+
+  // Sets a double option of the constraint programming optimizer.
+  void SetCPDblOption(const char *name, double value, IloCP::NumParam param);
+
+  // Sets an integer option of the CPLEX optimizer.
+  void SetCPLEXIntOption(const char *name, int value, int param);
+
+  void CreateOptimizer(const Problem &p);
+
+ protected:
+
+  std::string GetOptionHeader();
+
+ public:
+  IlogCPSolver();
+  virtual ~IlogCPSolver();
+
+  IloEnv env() const { return env_; }
+
+  IloAlgorithm alg() const {
+    return optimizer_.get() ? optimizer_->algorithm() : IloAlgorithm();
+  }
+
+  Optimizer *optimizer() const { return optimizer_.get(); }
+
+  bool ParseOptions(char **argv);
+
+  int GetOption(Option opt) const {
+    assert(opt >= 0 && opt < NUM_OPTIONS);
+    return options_[opt];
+  }
+
+  void use_numberof(bool use = true) { options_[USENUMBEROF] = use; }
 
   // Runs the solver.
   int Run(char **argv);

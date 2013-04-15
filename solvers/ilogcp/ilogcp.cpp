@@ -139,9 +139,166 @@ double CPOptimizer::GetSolution(
   return obj_value;
 }
 
+IloNumExprArray NLToConcertConverter::ConvertArgs(VarArgExpr e) {
+  IloNumExprArray args(env_);
+  for (VarArgExpr::iterator i = e.begin(); *i; ++i)
+    args.add(Visit(*i));
+  return args;
+}
+
+NLToConcertConverter::NLToConcertConverter(
+    IloEnv env, IloNumVarArray vars, bool use_numberof, bool debug)
+: env_(env), model_(env), vars_(vars), use_numberof_(use_numberof),
+  debug_(debug), numberofs_(CreateVar(env)) {
+}
+
+IloExpr NLToConcertConverter::VisitIf(IfExpr e) {
+  IloConstraint condition(Visit(e.condition()));
+  IloNumVar var(env_, -IloInfinity, IloInfinity);
+  model_.add(IloIfThen(env_, condition, var == Visit(e.true_expr())));
+  model_.add(IloIfThen(env_, !condition, var == Visit(e.false_expr())));
+  return var;
+}
+
+IloExpr NLToConcertConverter::VisitAtan2(BinaryExpr e) {
+  IloNumExpr y(Visit(e.lhs())), x(Visit(e.rhs()));
+  IloNumExpr atan(IloArcTan(y / x));
+  IloNumVar result(env_, -IloInfinity, IloInfinity);
+  model_.add(IloIfThen(env_, x >= 0, result == atan));
+  model_.add(IloIfThen(env_, x <= 0 && y >= 0, result == atan + M_PI));
+  model_.add(IloIfThen(env_, x <= 0 && y <= 0, result == atan - M_PI));
+  return result;
+}
+
+IloExpr NLToConcertConverter::VisitSum(SumExpr e) {
+  IloExpr sum(env_);
+  for (SumExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+    sum += Visit(*i);
+  return sum;
+}
+
+IloExpr NLToConcertConverter::VisitRound(BinaryExpr e) {
+  RequireNonzeroConstRHS(e, "round");
+  // Note that IloOplRound rounds half up.
+  return IloOplRound(Visit(e.lhs()));
+}
+
+IloExpr NLToConcertConverter::VisitTrunc(BinaryExpr e) {
+  RequireNonzeroConstRHS(e, "trunc");
+  return IloTrunc(Visit(e.lhs()));
+}
+
+IloExpr NLToConcertConverter::VisitCount(CountExpr e) {
+  IloExpr sum(env_);
+  for (CountExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+    sum += Visit(*i);
+  return sum;
+}
+
+IloExpr NLToConcertConverter::VisitNumberOf(NumberOfExpr e) {
+  NumericExpr value = e.value();
+  NumericConstant num = Cast<NumericConstant>(value);
+  if (num && use_numberof_)
+    return numberofs_.Add(num.value(), e);
+  IloExpr sum(env_);
+  IloExpr concert_value(Visit(value));
+  for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+    sum += (Visit(*i) == concert_value);
+  return sum;
+}
+
+IloExpr NLToConcertConverter::VisitPLTerm(PiecewiseLinearTerm t) {
+  IloNumArray slopes(env_), breakpoints(env_);
+  int num_breakpoints = t.num_breakpoints();
+  for (int i = 0; i < num_breakpoints; ++i) {
+    slopes.add(t.slope(i));
+    breakpoints.add(t.breakpoint(i));
+  }
+  slopes.add(t.slope(num_breakpoints));
+  return IloPiecewiseLinear(vars_[t.var_index()], breakpoints, slopes, 0, 0);
+}
+
+IloConstraint NLToConcertConverter::VisitExists(IteratedLogicalExpr e) {
+  IloOr disjunction(env_);
+  for (IteratedLogicalExpr::iterator
+      i = e.begin(), end = e.end(); i != end; ++i) {
+    disjunction.add(Visit(*i));
+  }
+  return disjunction;
+}
+
+IloConstraint NLToConcertConverter::VisitForAll(IteratedLogicalExpr e) {
+  IloAnd conjunction(env_);
+  for (IteratedLogicalExpr::iterator
+      i = e.begin(), end = e.end(); i != end; ++i) {
+    conjunction.add(Visit(*i));
+  }
+  return conjunction;
+}
+
+IloConstraint NLToConcertConverter::VisitImplication(ImplicationExpr e) {
+  IloConstraint condition(Visit(e.condition()));
+  return IloIfThen(env_,  condition, Visit(e.true_expr())) &&
+      IloIfThen(env_, !condition, Visit(e.false_expr()));
+}
+
+IloConstraint NLToConcertConverter::VisitAllDiff(AllDiffExpr e) {
+  IloIntVarArray vars(env_);
+  for (AllDiffExpr::iterator i = e.begin(), end = e.end(); i != end; ++i) {
+    if (Variable v = Cast<Variable>(*i)) {
+      vars.add(vars_[v.index()]);
+      continue;
+    }
+    IloIntVar var(env_, IloIntMin, IloIntMax);
+    model_.add(var == Visit(*i));
+    vars.add(var);
+  }
+  return IloAllDiff(env_, vars);
+}
+
+void NLToConcertConverter::FinishBuildingNumberOf() {
+  for (IlogNumberOfMap::iterator
+      i = numberofs_.begin(), end = numberofs_.end(); i != end; ++i) {
+    int index = 0;
+    const IlogNumberOfMap::ValueMap &val_map = i->values;
+    IloIntVarArray cards(env_, val_map.size());
+    IloIntArray values(env_, val_map.size());
+    for (IlogNumberOfMap::ValueMap::const_iterator j = val_map.begin(),
+        val_end = val_map.end(); j != val_end; ++j, ++index) {
+      values[index] = CastToInt(j->first);
+      cards[index] = j->second;
+    }
+
+    index = 0;
+    NumberOfExpr expr = i->expr;
+    IloIntVarArray vars(env_, expr.num_args());
+    for (NumberOfExpr::iterator
+        j = expr.begin(), expr_end = expr.end(); j != expr_end; ++j, ++index) {
+      IloIntVar var(env_, IloIntMin, IloIntMax);
+      vars[index] = var;
+      model_.add(var == Visit(*j));
+    }
+
+    model_.add(IloDistribute(env_, cards, values, vars));
+  }
+}
+
+std::string IlogCPSolver::GetOptionHeader() {
+  return "IlogCP Directives for AMPL\n"
+      "--------------------------\n"
+      "\n"
+      "To set these directives, assign a string specifying their values to the AMPL "
+      "option ilogcp_options.  For example:\n"
+      "\n"
+      "  ampl: option ilogcp_options 'optimalitytolerance=1e-6 searchtype=restart';\n"
+      "\n"
+      "Where both a number and a keyword are given, either may be used to specify "
+      "the option setting.\n";
+}
+
 IlogCPSolver::IlogCPSolver() :
-   Solver<IlogCPSolver>("ilogcp", 0, YYYYMMDD), mod_(env_), gotopttype_(false),
-   debug_(false), numberofs_(CreateVar(env_)), read_time_(0) {
+   Solver<IlogCPSolver>("ilogcp", 0, YYYYMMDD),
+   gotopttype_(false), read_time_(0) {
   options_[DEBUGEXPR] = 0;
   options_[OPTIMIZER] = AUTO;
   options_[TIMING] = 0;
@@ -489,147 +646,7 @@ bool IlogCPSolver::ParseOptions(char **argv) {
   gotopttype_ = true;
   if (!Solver<IlogCPSolver>::ParseOptions(argv, *this))
     return false;
-
-  debug_ = GetOption(DEBUGEXPR) != 0;
   return true;
-}
-
-IloNumExprArray IlogCPSolver::ConvertArgs(VarArgExpr e) {
-  IloNumExprArray args(env_);
-  for (VarArgExpr::iterator i = e.begin(); *i; ++i)
-    args.add(Visit(*i));
-  return args;
-}
-
-IloExpr IlogCPSolver::VisitIf(IfExpr e) {
-  IloConstraint condition(Visit(e.condition()));
-  IloNumVar var(env_, -IloInfinity, IloInfinity);
-  mod_.add(IloIfThen(env_, condition, var == Visit(e.true_expr())));
-  mod_.add(IloIfThen(env_, !condition, var == Visit(e.false_expr())));
-  return var;
-}
-
-IloExpr IlogCPSolver::VisitAtan2(BinaryExpr e) {
-  IloNumExpr y(Visit(e.lhs())), x(Visit(e.rhs()));
-  IloNumExpr atan(IloArcTan(y / x));
-  IloNumVar result(env_, -IloInfinity, IloInfinity);
-  mod_.add(IloIfThen(env_, x >= 0, result == atan));
-  mod_.add(IloIfThen(env_, x <= 0 && y >= 0, result == atan + M_PI));
-  mod_.add(IloIfThen(env_, x <= 0 && y <= 0, result == atan - M_PI));
-  return result;
-}
-
-IloExpr IlogCPSolver::VisitSum(SumExpr e) {
-  IloExpr sum(env_);
-  for (SumExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-    sum += Visit(*i);
-  return sum;
-}
-
-IloExpr IlogCPSolver::VisitRound(BinaryExpr e) {
-  RequireNonzeroConstRHS(e, "round");
-  // Note that IloOplRound rounds half up.
-  return IloOplRound(Visit(e.lhs()));
-}
-
-IloExpr IlogCPSolver::VisitTrunc(BinaryExpr e) {
-  RequireNonzeroConstRHS(e, "trunc");
-  return IloTrunc(Visit(e.lhs()));
-}
-
-IloExpr IlogCPSolver::VisitCount(CountExpr e) {
-  IloExpr sum(env_);
-  for (CountExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-    sum += Visit(*i);
-  return sum;
-}
-
-IloExpr IlogCPSolver::VisitNumberOf(NumberOfExpr e) {
-  NumericExpr value = e.value();
-  NumericConstant num = Cast<NumericConstant>(value);
-  if (num && GetOption(USENUMBEROF))
-    return numberofs_.Add(num.value(), e);
-  IloExpr sum(env_);
-  IloExpr concert_value(Visit(value));
-  for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-    sum += (Visit(*i) == concert_value);
-  return sum;
-}
-
-IloExpr IlogCPSolver::VisitPLTerm(PiecewiseLinearTerm t) {
-  IloNumArray slopes(env_), breakpoints(env_);
-  int num_breakpoints = t.num_breakpoints();
-  for (int i = 0; i < num_breakpoints; ++i) {
-    slopes.add(t.slope(i));
-    breakpoints.add(t.breakpoint(i));
-  }
-  slopes.add(t.slope(num_breakpoints));
-  return IloPiecewiseLinear(vars_[t.var_index()], breakpoints, slopes, 0, 0);
-}
-
-IloConstraint IlogCPSolver::VisitExists(IteratedLogicalExpr e) {
-  IloOr disjunction(env_);
-  for (IteratedLogicalExpr::iterator
-      i = e.begin(), end = e.end(); i != end; ++i) {
-    disjunction.add(Visit(*i));
-  }
-  return disjunction;
-}
-
-IloConstraint IlogCPSolver::VisitForAll(IteratedLogicalExpr e) {
-  IloAnd conjunction(env_);
-  for (IteratedLogicalExpr::iterator
-      i = e.begin(), end = e.end(); i != end; ++i) {
-    conjunction.add(Visit(*i));
-  }
-  return conjunction;
-}
-
-IloConstraint IlogCPSolver::VisitImplication(ImplicationExpr e) {
-  IloConstraint condition(Visit(e.condition()));
-  return IloIfThen(env_,  condition, Visit(e.true_expr())) &&
-      IloIfThen(env_, !condition, Visit(e.false_expr()));
-}
-
-IloConstraint IlogCPSolver::VisitAllDiff(AllDiffExpr e) {
-  IloIntVarArray vars(env_);
-  for (AllDiffExpr::iterator i = e.begin(), end = e.end(); i != end; ++i) {
-    if (Variable var = Cast<Variable>(*i)) {
-      vars.add(vars_[var.index()]);
-      continue;
-    }
-    IloIntVar var(env_, IloIntMin, IloIntMax);
-    mod_.add(var == Visit(*i));
-    vars.add(var);
-  }
-  return IloAllDiff(env_, vars);
-}
-
-void IlogCPSolver::FinishBuildingNumberOf() {
-  for (IlogNumberOfMap::iterator
-      i = numberofs_.begin(), end = numberofs_.end(); i != end; ++i) {
-    int index = 0;
-    const IlogNumberOfMap::ValueMap &val_map = i->values;
-    IloIntVarArray cards(env_, val_map.size());
-    IloIntArray values(env_, val_map.size());
-    for (IlogNumberOfMap::ValueMap::const_iterator j = val_map.begin(),
-        val_end = val_map.end(); j != val_end; ++j, ++index) {
-      values[index] = CastToInt(j->first);
-      cards[index] = j->second;
-    }
-
-    index = 0;
-    NumberOfExpr expr = i->expr;
-    IloIntVarArray vars(env_, expr.num_args());
-    for (NumberOfExpr::iterator
-        j = expr.begin(), expr_end = expr.end(); j != expr_end; ++j, ++index) {
-      IloIntVar var(env_, IloIntMin, IloIntMax);
-      vars[index] = var;
-      mod_.add(var == Visit(*j));
-    }
-
-    mod_.add(IloDistribute(env_, cards, values, vars));
-  }
 }
 
 int IlogCPSolver::Run(char **argv) {
@@ -656,58 +673,60 @@ void IlogCPSolver::Solve(Problem &p) {
 
   if (!optimizer_.get())
     CreateOptimizer(p);
-  mod_ = IloModel(env_);
-  vars_ = optimizer_->vars();
+  IloNumVarArray vars = optimizer_->vars();
 
   int n_var_cont = p.num_continuous_vars();
   if (n_var_cont != 0 && GetOption(OPTIMIZER) == CP)
     throw Error("CP Optimizer doesn't support continuous variables");
   for (int j = 0; j < n_var_cont; j++)
-    vars_[j] = IloNumVar(env_, p.var_lb(j), p.var_ub(j), ILOFLOAT);
+    vars[j] = IloNumVar(env_, p.var_lb(j), p.var_ub(j), ILOFLOAT);
   for (int j = n_var_cont, num_vars = p.num_vars(); j < num_vars; j++)
-    vars_[j] = IloNumVar(env_, p.var_lb(j), p.var_ub(j), ILOINT);
+    vars[j] = IloNumVar(env_, p.var_lb(j), p.var_ub(j), ILOINT);
 
+  NLToConcertConverter converter(env_, vars,
+      GetOption(USENUMBEROF) != 0, GetOption(DEBUGEXPR) != 0);
+  IloModel model = converter.model();
   if (p.num_objs() > 0) {
     NumericExpr expr(p.nonlinear_obj_expr(0));
     NumericConstant constant(Cast<NumericConstant>(expr));
     IloExpr ilo_expr(env_, constant ? constant.value() : 0);
     if (p.num_nonlinear_objs() > 0)
-      ilo_expr += Visit(expr);
+      ilo_expr += converter.Visit(expr);
     LinearObjExpr linear = p.linear_obj_expr(0);
     for (LinearObjExpr::iterator
         i = linear.begin(), end = linear.end(); i != end; ++i) {
-      ilo_expr += i->coef() * vars_[i->var_index()];
+      ilo_expr += i->coef() * vars[i->var_index()];
     }
     IloObjective MinOrMax(env_, ilo_expr,
         p.obj_type(0) == MIN ? IloObjective::Minimize : IloObjective::Maximize);
     optimizer_->set_obj(MinOrMax);
-    IloAdd(mod_, MinOrMax);
+    IloAdd(model, MinOrMax);
   }
 
   if (int n_cons = p.num_cons()) {
     IloRangeArray cons(optimizer_->cons());
     for (int i = 0; i < n_cons; ++i) {
-      IloExpr conExpr(env_);
+      IloExpr expr(env_);
       LinearConExpr linear = p.linear_con_expr(i);
       for (LinearConExpr::iterator
           j = linear.begin(), end = linear.end(); j != end; ++j) {
-        conExpr += j->coef() * vars_[j->var_index()];
+        expr += j->coef() * vars[j->var_index()];
       }
       if (i < p.num_nonlinear_cons())
-        conExpr += Visit(p.nonlinear_con_expr(i));
-      cons[i] = (p.con_lb(i) <= conExpr <= p.con_ub(i));
+        expr += converter.Visit(p.nonlinear_con_expr(i));
+      cons[i] = (p.con_lb(i) <= expr <= p.con_ub(i));
     }
-    mod_.add(cons);
+    model.add(cons);
   }
 
   if (int n_lcons = p.num_logical_cons()) {
-    IloConstraintArray lcons(env_, n_lcons);
+    IloConstraintArray cons(env_, n_lcons);
     for (int i = 0; i < n_lcons; ++i)
-      lcons[i] = Visit(p.logical_con_expr(i));
-    mod_.add(lcons);
+      cons[i] = converter.Visit(p.logical_con_expr(i));
+    model.add(cons);
   }
 
-  FinishBuildingNumberOf();
+  converter.FinishBuildingNumberOf();
 
   int timing = GetOption(TIMING);
   double extract_start_time = timing ? xectim_() : 0;
@@ -715,7 +734,7 @@ void IlogCPSolver::Solve(Problem &p) {
   // Solve the problem.
   IloAlgorithm alg(optimizer_->algorithm());
   try {
-    alg.extract(mod_);
+    alg.extract(model);
   } catch (IloAlgorithm::CannotExtractException &e) {
     const IloExtractableArray &extractables = e.getExtractables();
     if (extractables.getSize() == 0)

@@ -270,9 +270,6 @@ LinExpr NLToGecodeConverter::VisitNumberOf(NumberOfExpr e) {
 
 BoolExpr NLToGecodeConverter::VisitImplication(ImplicationExpr e) {
   BoolExpr condition = Visit(e.condition());
-  LogicalConstant c = Cast<LogicalConstant>(e.false_expr());
-  if (c && !c.value())
-    return condition >> Visit(e.true_expr());
   return (condition && Visit(e.true_expr())) ||
         (!condition && Visit(e.false_expr()));
 }
@@ -346,8 +343,19 @@ fmt::TempFormatter<fmt::Write> GecodeSolver::Output(fmt::StringRef format) {
   return fmt::TempFormatter<fmt::Write>(format);
 }
 
+std::string GecodeSolver::GetOptionHeader() {
+  return
+      "Gecode Directives for AMPL\n"
+      "--------------------------\n"
+      "\n"
+      "To set these directives, assign a string specifying their values to the AMPL "
+      "option gecode_options.  For example:\n"
+      "\n"
+      "  ampl: option gecode_options 'version nodelimit=30000 val_branching=min';\n";
+}
+
 GecodeSolver::GecodeSolver()
-: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130329),
+: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130415),
   output_(false), output_frequency_(1), output_count_(0),
   var_branching_(Gecode::INT_VAR_SIZE_MIN()),
   val_branching_(Gecode::INT_VAL_MIN()),

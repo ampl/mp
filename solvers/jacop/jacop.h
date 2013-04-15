@@ -616,6 +616,9 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
 
   static int GetIntDomainField(const char *name);
 
+ protected:
+  std::string GetOptionHeader();
+
  public:
   JaCoPSolver();
 
