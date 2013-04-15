@@ -191,6 +191,10 @@ void Problem::Free() {
     delete [] var_types_;
     var_capacity_ = 0;
   }
+  if (obj_capacity_) {
+    delete [] asl_->I.obj_de_;
+    obj_capacity_ = 0;
+  }
   if (logical_con_capacity_) {
     delete [] asl_->I.lcon_de_;
     logical_con_capacity_ = 0;
@@ -199,7 +203,7 @@ void Problem::Free() {
 
 Problem::Problem()
 : asl_(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))),
-  var_capacity_(0), logical_con_capacity_(0), var_types_(0) {
+  var_capacity_(0), obj_capacity_(0), logical_con_capacity_(0), var_types_(0) {
 }
 
 Problem::~Problem() {
@@ -292,6 +296,21 @@ void Problem::AddVar(double lb, double ub, VarType type) {
   if (var_types_)
     var_types_[num_vars] = type;
   ++num_vars;
+}
+
+void Problem::AddObj(ObjType type, NumericExpr expr) {
+  int &num_objs = asl_->i.n_obj_;
+  if (num_objs == obj_capacity_) {
+    IncreaseCapacity(num_objs, obj_capacity_);
+    Grow(asl_->I.obj_de_, num_objs, obj_capacity_);
+    Grow(asl_->i.objtype_, num_objs, obj_capacity_);
+    Grow(asl_->i.Ograd_, num_objs, obj_capacity_);
+  }
+  cde e = {expr.expr_};
+  asl_->I.obj_de_[num_objs] = e;
+  asl_->i.objtype_[num_objs] = type;
+  asl_->i.Ograd_[num_objs] = 0;
+  ++num_objs;
 }
 
 void Problem::AddCon(LogicalExpr expr) {

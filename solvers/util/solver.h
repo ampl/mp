@@ -205,6 +205,7 @@ class Problem : Noncopyable {
  private:
   ASL_fg *asl_;
   int var_capacity_;
+  int obj_capacity_;
   int logical_con_capacity_;
 
   // Array of variable types or null if integer and binary variables precede
@@ -354,6 +355,9 @@ class Problem : Noncopyable {
 
   // Adds a variable.
   void AddVar(double lb, double ub, VarType type = CONTINUOUS);
+
+  // Adds an objective.
+  void AddObj(ObjType type, NumericExpr expr);
 
   // Adds a logical constraint.
   void AddCon(LogicalExpr expr);
