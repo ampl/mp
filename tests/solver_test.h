@@ -44,10 +44,12 @@ class SolverTest
    private:
     bool has_value_;
     double value_;
+    double obj_value_;
 
    public:
-    EvalResult() : has_value_(false), value_() {}
-    EvalResult(double value) : has_value_(true), value_(value) {}
+    EvalResult() : has_value_(false), value_(), obj_value_() {}
+    EvalResult(double value, double obj_value)
+    : has_value_(true), value_(value), obj_value_(obj_value) {}
 
     bool has_value() const {
       return has_value_;
@@ -58,7 +60,13 @@ class SolverTest
         throw std::runtime_error("no value");
       return value_;
     }
+
+    double obj_value() const {
+      return obj_value_;
+    }
   };
+
+  EvalResult Solve(ampl::Problem &p);
 
   // Solves a problem containing a single constraint with the given
   // expression and returns the value of the variable with index 0.
