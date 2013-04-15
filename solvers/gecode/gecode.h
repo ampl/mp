@@ -346,6 +346,9 @@ class GecodeSolver : public Solver<GecodeSolver> {
               const Gecode::Search::Options &);
   };
 
+ protected:
+  std::string GetOptionHeader();
+
  public:
   GecodeSolver();
 

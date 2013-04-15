@@ -379,12 +379,8 @@ jobject NLToJaCoPConverter::VisitNumberOf(NumberOfExpr e) {
 
 jobject NLToJaCoPConverter::VisitImplication(ImplicationExpr e) {
   jobject condition = Visit(e.condition());
-  LogicalConstant c = Cast<LogicalConstant>(e.false_expr());
-  jobject true_expr = Visit(e.true_expr());
-  if (c && !c.value())
-    return if_class_.NewObject(env_, condition, true_expr);
   return if_else_class_.NewObject(env_, condition,
-      true_expr, Visit(e.false_expr()));
+      Visit(e.true_expr()), Visit(e.false_expr()));
 }
 
 /*JaCoPSolver::Stop::Stop(JaCoPSolver &s)
@@ -453,7 +449,7 @@ fmt::TempFormatter<fmt::Write> JaCoPSolver::Output(fmt::StringRef format) {
 }*/
 
 JaCoPSolver::JaCoPSolver()
-: Solver<JaCoPSolver>("jacop", 0, 20130329), debug_(false) {
+: Solver<JaCoPSolver>("jacop", 0, 20130415), debug_(false) {
 
   // TODO: options
   /*output_(false), output_frequency_(1), output_count_(0),
@@ -562,6 +558,18 @@ int JaCoPSolver::GetIntDomainField(const char *name) {
   jclass domain_class = env.FindClass("JaCoP/core/IntDomain");
   return env.GetStaticIntField(
       domain_class, env.GetStaticFieldID(domain_class, name, "I"));
+}
+
+std::string JaCoPSolver::GetOptionHeader() {
+  return
+      "JaCoP Directives for AMPL\n"
+      "--------------------------\n"
+      "\n"
+      "To set these directives, assign a string specifying their values to the AMPL "
+      "option jacop_options.  For example:\n"
+      "\n";
+  // TODO: example
+      //"  ampl: option gecode_options 'version nodelimit=30000 val_branching=min';\n";
 }
 
 int JaCoPSolver::Run(char **argv) {
