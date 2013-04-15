@@ -25,32 +25,37 @@
 
 using ampl::LogicalExpr;
 using ampl::NumericExpr;
+using ampl::Problem;
 using ampl::UnsupportedExprError;
 
 // TODO: pass to the SolverTest information about the unsupported expressions
 
-SolverTest::EvalResult SolverTest::Solve(
-    LogicalExpr e, int var1, int var2, int var3, bool need_result) {
+SolverTest::EvalResult SolverTest::Solve(Problem &p) {
   struct TestSolutionHandler : ampl::SolutionHandler {
     EvalResult result;
     virtual ~TestSolutionHandler() {}
     void HandleSolution(ampl::BasicSolver &, fmt::StringRef,
-          const double *values, const double *, double) {
+          const double *values, const double *, double obj_value) {
       if (values)
-        result = values[0];
+        result = EvalResult(values[0], obj_value);
     }
   };
-  ampl::Problem p;
+  TestSolutionHandler sh;
+  solver_->set_solution_handler(&sh);
+  solver_->Solve(p);
+  return sh.result;
+}
+
+SolverTest::EvalResult SolverTest::Solve(
+    LogicalExpr e, int var1, int var2, int var3, bool need_result) {
+  Problem p;
   p.AddVar(need_result ? negInfinity : 0,
       need_result ? Infinity : 0, ampl::INTEGER);
   p.AddVar(var1, var1, ampl::INTEGER);
   p.AddVar(var2, var2, ampl::INTEGER);
   p.AddVar(var3, var3, ampl::INTEGER);
   p.AddCon(e);
-  TestSolutionHandler sh;
-  solver_->set_solution_handler(&sh);
-  solver_->Solve(p);
-  return sh.result;
+  return Solve(p);
 }
 
 SolverTest::SolverTest()
@@ -575,4 +580,12 @@ TEST_P(SolverTest, NestedAllDiff) {
 TEST_P(SolverTest, LogicalConstant) {
   EXPECT_EQ(0, Eval(AddBool(false)));
   EXPECT_EQ(1, Eval(AddBool(true)));
+}
+
+TEST_P(SolverTest, NonlinearObj) {
+  Problem p;
+  p.AddVar(2, 2, ampl::INTEGER);
+  ampl::Variable x = AddVar(0);
+  p.AddObj(ampl::MIN, AddBinary(OPMULT, x, x));
+  EXPECT_EQ(4, Solve(p).obj_value());
 }
