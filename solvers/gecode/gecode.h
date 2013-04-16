@@ -48,12 +48,13 @@ class GecodeProblem: public Gecode::Space {
   Gecode::IntVar obj_;
   Gecode::IntRelType obj_irt_; // IRT_NQ - no objective,
                                // IRT_LE - minimization, IRT_GR - maximization
+  Gecode::IntConLevel icl_;
 
   Gecode::Space &space() { return *this; }
 
  public:
-  GecodeProblem(int num_vars) :
-    vars_(space(), num_vars), obj_irt_(Gecode::IRT_NQ) {}
+  GecodeProblem(int num_vars, Gecode::IntConLevel icl) :
+    vars_(space(), num_vars), obj_irt_(Gecode::IRT_NQ), icl_(icl) {}
 
   GecodeProblem(bool share, GecodeProblem &s);
 
@@ -72,6 +73,7 @@ class NLToGecodeConverter :
   public ExprVisitor<NLToGecodeConverter, LinExpr, Gecode::BoolExpr> {
  private:
   GecodeProblem problem_;
+  Gecode::IntConLevel icl_;
 
   typedef Gecode::BoolExpr BoolExpr;
 
@@ -99,10 +101,8 @@ class NLToGecodeConverter :
   LinExpr ConvertExpr(LinearExpr<Term> linear, NumericExpr nonlinear);
 
  public:
-  explicit NLToGecodeConverter(int num_vars) : problem_(num_vars) {}
-
-  // Converts a logical constraint.
-  void ConvertLogicalCon(LogicalExpr e);
+  NLToGecodeConverter(int num_vars, Gecode::IntConLevel icl)
+  : problem_(num_vars, icl), icl_(icl) {}
 
   void Convert(const Problem &p);
 
@@ -306,10 +306,11 @@ class GecodeSolver : public Solver<GecodeSolver> {
   unsigned output_count_;
   std::string header_;
 
+  Gecode::IntConLevel icl_;
   Gecode::IntVarBranch var_branching_;
   Gecode::IntValBranch val_branching_;
   Gecode::Search::Options options_;
-  double time_limit_; // Time limit in seconds.
+  double time_limit_;  // Time limit in seconds.
   unsigned long node_limit_;
   unsigned long fail_limit_;
   std::size_t memory_limit_;
@@ -360,6 +361,7 @@ class GecodeSolver : public Solver<GecodeSolver> {
   double var_min() const { return Gecode::Int::Limits::min; }
   double var_max() const { return Gecode::Int::Limits::max; }
 
+  Gecode::IntConLevel icl() const { return icl_; }
   Gecode::IntVarBranch var_branching() const { return var_branching_; }
   Gecode::IntValBranch val_branching() const { return val_branching_; }
   const Gecode::Search::Options &options() const { return options_; }

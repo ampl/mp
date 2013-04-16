@@ -33,7 +33,17 @@ using Gecode::IntVar;
 using Gecode::IntVarArray;
 namespace Search = Gecode::Search;
 
+// TODO: test icl
+
 namespace {
+
+const ampl::OptionValue<Gecode::IntConLevel> INT_CON_LEVELS[] = {
+    {"val", Gecode::ICL_VAL},
+    {"bnd", Gecode::ICL_BND},
+    {"dom", Gecode::ICL_DOM},
+    {"def", Gecode::ICL_DEF},
+    {}
+};
 
 const ampl::OptionValue<Gecode::IntVarBranch> VAR_BRANCHINGS[] = {
     {"none",            Gecode::INT_VAR_NONE()},
@@ -93,8 +103,10 @@ void GecodeProblem::SetObj(ObjType obj_type, const LinExpr &expr) {
 }
 
 void GecodeProblem::constrain(const Gecode::Space &best) {
-  if (obj_irt_ != Gecode::IRT_NQ)
-    rel(*this, obj_, obj_irt_, static_cast<const GecodeProblem&>(best).obj_);
+  if (obj_irt_ != Gecode::IRT_NQ) {
+    rel(*this, obj_, obj_irt_,
+        static_cast<const GecodeProblem&>(best).obj_, icl_);
+  }
 }
 
 BoolExpr NLToGecodeConverter::Convert(
@@ -103,19 +115,19 @@ BoolExpr NLToGecodeConverter::Convert(
   int index = 0;
   for (IteratedLogicalExpr::iterator
       i = e.begin(), end = e.end(); i != end; ++i, ++index) {
-    args[index] = Gecode::expr(problem_, Visit(*i));
+    args[index] = Gecode::expr(problem_, Visit(*i), icl_);
   }
   Gecode::BoolVar var(problem_, 0, 1);
-  rel(problem_, op, args, var);
+  rel(problem_, op, args, var, icl_);
   return var;
 }
 
 LinExpr NLToGecodeConverter::Convert(VarArgExpr e, VarArgFunc f) {
   IntVarArgs args;
   for (VarArgExpr::iterator i = e.begin(); *i; ++i)
-    args << Gecode::expr(problem_, Visit(*i));
+    args << Gecode::expr(problem_, Visit(*i), icl_);
   IntVar result(problem_, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-  f(problem_, args, result, Gecode::ICL_DEF);
+  f(problem_, args, result, icl_);
   return result;
 }
 
@@ -149,25 +161,6 @@ LinExpr NLToGecodeConverter::ConvertExpr(
   return expr;
 }
 
-void NLToGecodeConverter::ConvertLogicalCon(LogicalExpr e) {
-  AllDiffExpr alldiff = Cast<AllDiffExpr>(e);
-  if (!alldiff) {
-    rel(problem_, Visit(e));
-    return;
-  }
-  IntVarArray &vars = problem_.vars();
-  int num_args = alldiff.num_args();
-  IntVarArgs args(num_args);
-  for (int i = 0; i < num_args; ++i) {
-    NumericExpr arg(alldiff[i]);
-    if (Variable var = ampl::Cast<Variable>(arg))
-      args[i] = vars[var.index()];
-    else
-      args[i] = Gecode::expr(problem_, Visit(arg));
-  }
-  distinct(problem_, args);
-}
-
 void NLToGecodeConverter::Convert(const Problem &p) {
   if (p.num_continuous_vars() != 0)
     throw std::runtime_error("Gecode doesn't support continuous variables");
@@ -191,25 +184,41 @@ void NLToGecodeConverter::Convert(const Problem &p) {
         ConvertExpr(p.linear_con_expr(i), p.nonlinear_con_expr(i)));
     double lb = p.con_lb(i), ub = p.con_ub(i);
     if (lb <= negInfinity) {
-      rel(problem_, con_expr <= CastToInt(ub));
+      rel(problem_, con_expr <= CastToInt(ub), icl_);
       continue;
     }
     if (ub >= Infinity) {
-      rel(problem_, con_expr >= CastToInt(lb));
+      rel(problem_, con_expr >= CastToInt(lb), icl_);
       continue;
     }
     int int_lb = CastToInt(lb), int_ub = CastToInt(ub);
     if (int_lb == int_ub) {
-      rel(problem_, con_expr == int_lb);
+      rel(problem_, con_expr == int_lb, icl_);
     } else {
-      rel(problem_, con_expr >= int_lb);
-      rel(problem_, con_expr <= int_ub);
+      rel(problem_, con_expr >= int_lb, icl_);
+      rel(problem_, con_expr <= int_ub, icl_);
     }
   }
 
   // Convert logical constraints.
-  for (int i = 0, n = p.num_logical_cons(); i < n; ++i)
-    ConvertLogicalCon(p.logical_con_expr(i));
+  for (int i = 0, n = p.num_logical_cons(); i < n; ++i) {
+    LogicalExpr e = p.logical_con_expr(i);
+    AllDiffExpr alldiff = Cast<AllDiffExpr>(e);
+    if (!alldiff) {
+      rel(problem_, Visit(e), icl_);
+      continue;
+    }
+    int num_args = alldiff.num_args();
+    IntVarArgs args(num_args);
+    for (int i = 0; i < num_args; ++i) {
+      NumericExpr arg(alldiff[i]);
+      if (Variable var = ampl::Cast<Variable>(arg))
+        args[i] = vars[var.index()];
+      else
+        args[i] = Gecode::expr(problem_, Visit(arg), icl_);
+    }
+    distinct(problem_, args, icl_);
+  }
 }
 
 LinExpr NLToGecodeConverter::VisitFloor(UnaryExpr e) {
@@ -225,11 +234,11 @@ LinExpr NLToGecodeConverter::VisitIf(IfExpr e) {
   IntVar result(problem_, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
   BoolExpr condition = Visit(e.condition());
   rel(problem_, result, Gecode::IRT_EQ,
-      Gecode::expr(problem_, Visit(e.true_expr())),
-      Gecode::expr(problem_, condition));
+      Gecode::expr(problem_, Visit(e.true_expr()), icl_),
+      Gecode::expr(problem_, condition, icl_), icl_);
   rel(problem_, result, Gecode::IRT_EQ,
-      Gecode::expr(problem_, Visit(e.false_expr())),
-      Gecode::expr(problem_, !condition));
+      Gecode::expr(problem_, Visit(e.false_expr()), icl_),
+      Gecode::expr(problem_, !condition, icl_), icl_);
   return result;
 }
 
@@ -248,10 +257,10 @@ LinExpr NLToGecodeConverter::VisitCount(CountExpr e) {
   int index = 0;
   for (CountExpr::iterator
       i = e.begin(), end = e.end(); i != end; ++i, ++index) {
-    args[index] = Gecode::expr(problem_, Visit(*i));
+    args[index] = Gecode::expr(problem_, Visit(*i), icl_);
   }
   IntVar result(problem_, 0, e.num_args());
-  Gecode::linear(problem_, args, Gecode::IRT_EQ, result);
+  Gecode::linear(problem_, args, Gecode::IRT_EQ, result, icl_);
   return result;
 }
 
@@ -263,8 +272,8 @@ LinExpr NLToGecodeConverter::VisitNumberOf(NumberOfExpr e) {
   int index = 0;
   IntVarArgs args(e.num_args());
   for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-    args[index++] = Gecode::expr(problem_, Visit(*i));
-  count(problem_, args, Gecode::expr(problem_, Visit(e.value())),
+    args[index++] = Gecode::expr(problem_, Visit(*i), icl_);
+  count(problem_, args, Gecode::expr(problem_, Visit(e.value()), icl_),
       Gecode::IRT_EQ, result);
   return result;
 }
@@ -358,6 +367,7 @@ std::string GecodeSolver::GetOptionHeader() {
 GecodeSolver::GecodeSolver()
 : Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130415),
   output_(false), output_frequency_(1), output_count_(0),
+  icl_(Gecode::ICL_DEF),
   var_branching_(Gecode::INT_VAR_SIZE_MIN()),
   val_branching_(Gecode::INT_VAL_MIN()),
   time_limit_(DBL_MAX), node_limit_(ULONG_MAX), fail_limit_(ULONG_MAX),
@@ -372,6 +382,15 @@ GecodeSolver::GecodeSolver()
   AddIntOption("outfreq",
       "Output frequency in seconds.  The value should be a positive integer.",
       &GecodeSolver::SetOutputFrequency);
+
+  AddStrOption("icl",
+      "Consistency level for integer propagators.  Possible values:\n"
+      "      val - value propagation or consistency (naive)\n"
+      "      bnd - bounds propagation or consistency\n"
+      "      dom - domain propagation or consistency\n"
+      "      def - the default consistency for a constraint\n",
+      &GecodeSolver::SetStrOption<Gecode::IntConLevel>,
+      OptionInfo<Gecode::IntConLevel>(INT_CON_LEVELS, icl_));
 
   AddStrOption("var_branching",
       "Variable branching.  Possible values:\n"
@@ -463,7 +482,7 @@ int GecodeSolver::Run(char **argv) {
 void GecodeSolver::Solve(Problem &p) {
   // Set up an optimization problem in Gecode.
   std::auto_ptr<NLToGecodeConverter>
-    converter(new NLToGecodeConverter(p.num_vars()));
+    converter(new NLToGecodeConverter(p.num_vars(), icl_));
   converter->Convert(p);
 
   // Post branching.
