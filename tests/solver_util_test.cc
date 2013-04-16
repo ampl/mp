@@ -416,6 +416,7 @@ TEST(SolverTest, ReadingMinOrMaxWithZeroArgsFails) {
     TestSolver s("test");
     EXPECT_EQ(0, s.problem().num_vars());
     EXPECT_EXIT({
+      Stderr = stderr;
       EXPECT_TRUE(s.ReadProblem(args));
     }, ::testing::ExitedWithCode(1),
         c_str(fmt::Format("bad line 13 of {}: 0") << filename));
