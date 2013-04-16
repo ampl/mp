@@ -175,7 +175,7 @@ TEST_P(SolverTest, If) {
 TEST_P(SolverTest, Tanh) {
   try {
     EXPECT_EQ(1, Eval(AddBinary(OPMULT,
-        AddNum(2), AddUnary(OP_tanh, AddNum(std::atanh(0.5))))));
+        AddNum(2), AddUnary(OP_tanh, AddNum(atanh(0.5))))));
   } catch (const UnsupportedExprError &) {
     // Ignore if not supported.
   }
