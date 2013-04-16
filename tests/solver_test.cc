@@ -20,11 +20,9 @@
  Author: Victor Zverovich
  */
 
+#define _USE_MATH_DEFINES
 #include "tests/solver_test.h"
 #include <cmath>
-#include <math.h>
-
-#define _USE_MATH_DEFINES
 
 using ampl::LogicalExpr;
 using ampl::NumericExpr;
