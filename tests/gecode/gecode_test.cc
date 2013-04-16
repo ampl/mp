@@ -398,6 +398,25 @@ struct OptionValue {
   T value;
 };
 
+const OptionValue<Gecode::IntConLevel> INT_CON_LEVELS[] = {
+    {"val", Gecode::ICL_VAL},
+    {"bnd", Gecode::ICL_BND},
+    {"dom", Gecode::ICL_DOM},
+    {"def", Gecode::ICL_DEF},
+    {}
+};
+
+TEST_F(GecodeSolverTest, IntConLevelOption) {
+  EXPECT_EQ(Gecode::ICL_DEF, solver_.icl());
+  unsigned count = 0;
+  for (const OptionValue<Gecode::IntConLevel>
+      *p = INT_CON_LEVELS; p->name; ++p, ++count) {
+    EXPECT_TRUE(ParseOptions(c_str(fmt::Format("icl={}") << p->name)));
+    EXPECT_EQ(p->value, solver_.icl());
+  }
+  EXPECT_EQ(4u, count);
+}
+
 const OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
     {"min",        Gecode::INT_VAL_MIN()},
     {"med",        Gecode::INT_VAL_MED()},
