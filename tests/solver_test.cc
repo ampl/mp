@@ -24,6 +24,8 @@
 #include <cmath>
 #include <math.h>
 
+#define _USE_MATH_DEFINES
+
 using ampl::LogicalExpr;
 using ampl::NumericExpr;
 using ampl::Problem;
@@ -175,8 +177,8 @@ TEST_P(SolverTest, If) {
 
 TEST_P(SolverTest, Tanh) {
   try {
-    EXPECT_EQ(1, Eval(AddBinary(OPMULT,
-        AddNum(2), AddUnary(OP_tanh, AddNum(atanh(0.5))))));
+    EXPECT_EQ(1, Eval(AddBinary(OPMULT, AddNum(2),
+        AddUnary(OP_tanh, AddNum((std::log(1.5) - std::log(0.5)) / 2)))));
   } catch (const UnsupportedExprError &) {
     // Ignore if not supported.
   }
