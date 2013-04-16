@@ -22,6 +22,7 @@
 
 #include "tests/solver_test.h"
 #include <cmath>
+#include <math.h>
 
 using ampl::LogicalExpr;
 using ampl::NumericExpr;
@@ -183,7 +184,7 @@ TEST_P(SolverTest, Tanh) {
 
 TEST_P(SolverTest, Tan) {
   try {
-    EXPECT_EQ(42, Eval(AddUnary(OP_tan, AddNum(std::atan(42)))));
+    EXPECT_EQ(42, Eval(AddUnary(OP_tan, AddNum(std::atan(42.0)))));
   } catch (const UnsupportedExprError &) {
     // Ignore if not supported.
   }
@@ -199,7 +200,7 @@ TEST_P(SolverTest, Sqrt) {
 
 TEST_P(SolverTest, Sinh) {
   try {
-    EXPECT_EQ(2, Eval(AddUnary(OP_sinh, AddNum(std::log(2 + std::sqrt(5))))));
+    EXPECT_EQ(2, Eval(AddUnary(OP_sinh, AddNum(std::log(2 + std::sqrt(5.0))))));
   } catch (const UnsupportedExprError &) {
     // Ignore if not supported.
   }
