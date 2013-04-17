@@ -117,11 +117,8 @@ struct EnumValue {
 
 class IlogCPTest : public ::testing::Test, public ExprBuilder {
  protected:
-  // TODO
   IlogCPSolver s;
   ampl::NLToConcertConverter converter_;
-  IloEnv env_;
-  IloModel mod_;
 
   IloNumVarArray CreateVars() {
     IloEnv env = s.env();
@@ -133,8 +130,7 @@ class IlogCPTest : public ::testing::Test, public ExprBuilder {
   }
 
   IlogCPTest() :
-    converter_(s.env(), CreateVars(), false, false),
-    env_(s.env()), mod_(converter_.model()) {}
+    converter_(s.env(), CreateVars(), false, false) {}
 
   int RunSolver(const char *stub = nullptr, const char *opt = nullptr) {
     try {
@@ -264,21 +260,8 @@ void IlogCPTest::CheckDblCPOption(const char *option,
   EXPECT_FALSE(ParseOptions("optimizer=cplex", Option(option, good).c_str()));
 }
 
-TEST_F(IlogCPTest, ConvertNum) {
-  EXPECT_EQ("0.42", str(converter_.Visit(AddNum(0.42))));
-}
-
-TEST_F(IlogCPTest, ConvertNumberOf) {
-  s.use_numberof();
-  EXPECT_EQ("x == theta + y == theta",
-      str(converter_.Visit(AddNumberOf(AddVar(2), AddVar(0), AddVar(1)))));
-  s.use_numberof(false);
-  EXPECT_EQ("x == 42 + y == 42",
-      str(converter_.Visit(AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
-}
-
 TEST_F(IlogCPTest, IloArrayCopyingIsCheap) {
-  IloIntArray array(env_);
+  IloIntArray array(s.env());
   array.add(42);
   EXPECT_TRUE(array.getImpl() != nullptr);
   EXPECT_EQ(array.getImpl(), IloIntArray(array).getImpl());
@@ -292,7 +275,7 @@ TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
   EXPECT_EQ("IloIntVar(4)" + bounds, str(converter_.Visit(
       AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
   converter_.FinishBuildingNumberOf();
-  IloModel::Iterator iter(mod_);
+  IloModel::Iterator iter(converter_.model());
   ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(6)" + bounds + " == x", str(*iter));
   ++iter;
@@ -320,7 +303,7 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
   EXPECT_EQ("IloIntVar(4)" + bounds, str(converter_.Visit(
       AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
   converter_.FinishBuildingNumberOf();
-  IloModel::Iterator iter(mod_);
+  IloModel::Iterator iter(converter_.model());
   ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(7)" + bounds + " == x", str(*iter));
   ++iter;
@@ -348,7 +331,7 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
   EXPECT_EQ("IloIntVar(6)" + bounds,
       str(converter_.Visit(AddNumberOf(AddNum(43), AddVar(0), AddVar(1)))));
   converter_.FinishBuildingNumberOf();
-  IloModel::Iterator iter(mod_);
+  IloModel::Iterator iter(converter_.model());
   ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(8)" + bounds + " == x", str(*iter));
   ++iter;
@@ -377,7 +360,7 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
   EXPECT_EQ("IloIntVar(6)" + bounds,
       str(converter_.Visit(AddNumberOf(AddNum(42), AddVar(2)))));
   converter_.FinishBuildingNumberOf();
-  IloModel::Iterator iter(mod_);
+  IloModel::Iterator iter(converter_.model());
   ASSERT_NE(0, iter.ok());
   EXPECT_EQ("IloIntVar(8)" + bounds + " == x", str(*iter));
   ++iter;

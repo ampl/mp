@@ -343,14 +343,12 @@ TEST_P(SolverTest, Count) {
 }
 
 TEST_P(SolverTest, NumberOf) {
-  ampl::NumericConstant val = AddNum(42);
-  EXPECT_EQ(0, Eval(AddNumberOf(val, x)));
-  EXPECT_EQ(1, Eval(AddNumberOf(val, x), 42));
-  EXPECT_EQ(0, Eval(AddNumberOf(val, x, y)));
-  EXPECT_EQ(1, Eval(AddNumberOf(val, x, y), 0, 42));
-  EXPECT_EQ(2, Eval(AddNumberOf(val, x, y), 42, 42));
-  EXPECT_EQ(3, Eval(AddBinary(OPPLUS,
-      AddNumberOf(val, x, y), AddNumberOf(AddNum(11), y, z)), 42, 42, 11));
+  ampl::NumericConstant n = AddNum(42);
+  EXPECT_EQ(0, Eval(AddNumberOf(n, x)));
+  EXPECT_EQ(1, Eval(AddNumberOf(n, x), 42));
+  EXPECT_EQ(0, Eval(AddNumberOf(n, x, y)));
+  EXPECT_EQ(1, Eval(AddNumberOf(n, x, y), 0, 42));
+  EXPECT_EQ(2, Eval(AddNumberOf(n, x, y), 42, 42));
 }
 
 TEST_P(SolverTest, PLTerm) {
