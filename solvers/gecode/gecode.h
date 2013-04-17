@@ -53,9 +53,7 @@ class GecodeProblem: public Gecode::Space {
   Gecode::Space &space() { return *this; }
 
  public:
-  GecodeProblem(int num_vars, Gecode::IntConLevel icl) :
-    vars_(space(), num_vars), obj_irt_(Gecode::IRT_NQ), icl_(icl) {}
-
+  GecodeProblem(int num_vars, Gecode::IntConLevel icl);
   GecodeProblem(bool share, GecodeProblem &s);
 
   Gecode::Space *copy(bool share);

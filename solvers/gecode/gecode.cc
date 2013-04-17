@@ -33,8 +33,6 @@ using Gecode::IntVar;
 using Gecode::IntVarArray;
 namespace Search = Gecode::Search;
 
-// TODO: test icl
-
 namespace {
 
 const ampl::OptionValue<Gecode::IntConLevel> INT_CON_LEVELS[] = {
@@ -86,8 +84,12 @@ const ampl::OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
 
 namespace ampl {
 
+GecodeProblem::GecodeProblem(int num_vars, Gecode::IntConLevel icl) :
+  vars_(space(), num_vars), obj_irt_(Gecode::IRT_NQ), icl_(icl) {
+}
+
 GecodeProblem::GecodeProblem(bool share, GecodeProblem &s) :
-  Gecode::Space(share, s), obj_irt_(s.obj_irt_) {
+  Gecode::Space(share, s), obj_irt_(s.obj_irt_), icl_(s.icl_) {
   vars_.update(*this, share, s.vars_);
   if (obj_irt_ != Gecode::IRT_NQ)
     obj_.update(*this, share, s.obj_);
