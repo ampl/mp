@@ -170,10 +170,6 @@ SolveResult JaCoPSolverTest::Solve(const char *stub,
   return SolveResult(solved, sh.obj_value(), message);
 }
 
-TEST_F(JaCoPSolverTest, ObjConst) {
-  EXPECT_EQ(42, Solve(DATA_DIR "objconstint").obj);
-}
-
 TEST_F(JaCoPSolverTest, ContinuousVarsNotSupported) {
   EXPECT_THROW(RunSolver(DATA_DIR "objconst"), std::runtime_error);
 }

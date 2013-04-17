@@ -262,7 +262,11 @@ TEST_P(SolverTest, Atan) {
 }
 
 TEST_P(SolverTest, Asinh) {
-  EXPECT_THROW(Eval(AddUnary(OP_asinh, x)), UnsupportedExprError);
+  try {
+    EXPECT_EQ(5, Eval(AddUnary(OP_asinh, AddNum(std::sinh(5)))));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, Asin) {
@@ -270,7 +274,11 @@ TEST_P(SolverTest, Asin) {
 }
 
 TEST_P(SolverTest, Acosh) {
-  EXPECT_THROW(Eval(AddUnary(OP_acosh, x)), UnsupportedExprError);
+  try {
+    EXPECT_EQ(5, Eval(AddUnary(OP_acosh, AddNum(std::cosh(5)))));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, Acos) {
@@ -298,12 +306,20 @@ TEST_P(SolverTest, Precision) {
 
 TEST_P(SolverTest, Round) {
   EXPECT_EQ(42, Eval(AddBinary(OPround, x, AddNum(0)), 42));
+  EXPECT_EQ(4, Eval(AddBinary(OPround, AddNum(4.4), AddNum(0))));
+  EXPECT_EQ(5, Eval(AddBinary(OPround, AddNum(4.6), AddNum(0))));
+  EXPECT_EQ(-4, Eval(AddBinary(OPround, AddNum(-4.4), AddNum(0))));
+  EXPECT_EQ(-5, Eval(AddBinary(OPround, AddNum(-4.6), AddNum(0))));
   EXPECT_THROW(Eval(AddBinary(OPround, x, AddNum(1))), UnsupportedExprError);
   EXPECT_THROW(Eval(AddBinary(OPround, x, y)), UnsupportedExprError);
 }
 
 TEST_P(SolverTest, Trunc) {
   EXPECT_EQ(42, Eval(AddBinary(OPtrunc, x, AddNum(0)), 42));
+  EXPECT_EQ(4, Eval(AddBinary(OPtrunc, AddNum(4.4), AddNum(0))));
+  EXPECT_EQ(4, Eval(AddBinary(OPtrunc, AddNum(4.6), AddNum(0))));
+  EXPECT_EQ(-4, Eval(AddBinary(OPtrunc, AddNum(-4.4), AddNum(0))));
+  EXPECT_EQ(-4, Eval(AddBinary(OPtrunc, AddNum(-4.6), AddNum(0))));
   EXPECT_THROW(Eval(AddBinary(OPtrunc, x, AddNum(1))), UnsupportedExprError);
   EXPECT_THROW(Eval(AddBinary(OPtrunc, x, y)), UnsupportedExprError);
 }
@@ -330,8 +346,28 @@ TEST_P(SolverTest, NumberOf) {
 }
 
 TEST_P(SolverTest, PLTerm) {
-  double args[] = {-1, 5, 0, 10, 1};
-  EXPECT_THROW(Eval(AddPLTerm(5, args, 1), 0), UnsupportedExprError);
+  try {
+    // Test on the following piecewise-linear function:
+    //
+    //     y^
+    //    \ |           /
+    //     \|  3  6  9 /      x
+    //  ----\-->-->-->/------->
+    //     0|\       /
+    //      | \     /
+    //    -3|  \___/
+    //      |
+    //
+    // Breakpoints are at x = 3 and x = 6. Slopes are -1, 0 and 1.
+    //
+    double args[] = {-1, 3, 0, 6, 1};
+    NumericExpr e = AddPLTerm(5, args, 1);
+    EXPECT_EQ(33, Eval(e, 42));
+    EXPECT_EQ(-3, Eval(e, 4));
+    EXPECT_EQ(1, Eval(e, -1));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, PowConstExp) {
@@ -596,4 +632,11 @@ TEST_P(SolverTest, NonlinearObj) {
   ampl::Variable x = AddVar(0);
   p.AddObj(ampl::MIN, AddBinary(OPMULT, x, x));
   EXPECT_EQ(4, Solve(p).obj_value());
+}
+
+TEST_P(SolverTest, ObjConst) {
+  Problem p;
+  p.AddVar(0, 0, ampl::INTEGER);
+  p.AddObj(ampl::MIN, AddNum(42));
+  EXPECT_EQ(42, Solve(p).obj_value());
 }
