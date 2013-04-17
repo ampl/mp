@@ -20,7 +20,6 @@
  Author: Victor Zverovich
  */
 
-#define _USE_MATH_DEFINES
 #include "tests/solver_test.h"
 #include <cmath>
 
@@ -183,11 +182,7 @@ TEST_P(SolverTest, Tanh) {
 }
 
 TEST_P(SolverTest, Tan) {
-  try {
-    EXPECT_EQ(42, Eval(AddUnary(OP_tan, AddNum(std::atan(42.0)))));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
-  }
+  EXPECT_THROW(Eval(AddUnary(OP_tan, x)), UnsupportedExprError);
 }
 
 TEST_P(SolverTest, Sqrt) {
@@ -207,11 +202,7 @@ TEST_P(SolverTest, Sinh) {
 }
 
 TEST_P(SolverTest, Sin) {
-  try {
-    EXPECT_EQ(1, Eval(AddUnary(OP_sin, AddNum(M_PI_2))));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
-  }
+  EXPECT_THROW(Eval(AddUnary(OP_sin, x)), UnsupportedExprError);
 }
 
 TEST_P(SolverTest, Log10) {
@@ -224,18 +215,28 @@ TEST_P(SolverTest, Log10) {
 
 TEST_P(SolverTest, Log) {
   try {
-    EXPECT_EQ(5, Eval(AddUnary(OP_log, AddNum(std::pow(M_E, 5)))));
+    EXPECT_EQ(5, Eval(AddUnary(OP_log, AddNum(std::exp(5)))));
   } catch (const UnsupportedExprError &) {
     // Ignore if not supported.
   }
 }
 
 TEST_P(SolverTest, Exp) {
-  EXPECT_THROW(Eval(AddUnary(OP_exp, x)), UnsupportedExprError);
+  try {
+    EXPECT_EQ(5, Eval(AddUnary(OP_exp, AddNum(std::log(5)))));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, Cosh) {
-  EXPECT_THROW(Eval(AddUnary(OP_cosh, x)), UnsupportedExprError);
+  try {
+    double x = 5;
+    EXPECT_EQ(5, Eval(AddUnary(OP_cosh,
+        AddNum(std::log(x + std::sqrt(x + 1) * std::sqrt(x - 1))))));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, Cos) {
@@ -243,7 +244,13 @@ TEST_P(SolverTest, Cos) {
 }
 
 TEST_P(SolverTest, Atanh) {
-  EXPECT_THROW(Eval(AddUnary(OP_atanh, x)), UnsupportedExprError);
+  try {
+    ampl::UnaryExpr x = AddUnary(OP_atanh, AddNum(std::tanh(5)));
+    EXPECT_EQ(5000000, Eval(AddUnary(FLOOR, AddBinary(OPPLUS,
+        AddNum(0.5), AddBinary(OPMULT, AddNum(1000000), x)))));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
 }
 
 TEST_P(SolverTest, Atan2) {

@@ -267,68 +267,6 @@ TEST_F(IlogCPTest, ConvertNum) {
   EXPECT_EQ("0.42", str(converter_.Visit(AddNum(0.42))));
 }
 
-TEST_F(IlogCPTest, ConvertExp) {
-  EXPECT_EQ("exp(x )", str(converter_.Visit(AddUnary(OP_exp, AddVar(0)))));
-}
-
-TEST_F(IlogCPTest, ConvertCosh) {
-  EXPECT_EQ("exp(x ) * 0.5 + exp(-1 * x ) * 0.5",
-            str(converter_.Visit(AddUnary(OP_cosh, AddVar(0)))));
-}
-
-TEST_F(IlogCPTest, ConvertCos) {
-  EXPECT_EQ("cos(x )", str(converter_.Visit(AddUnary(OP_cos, AddVar(0)))));
-}
-
-TEST_F(IlogCPTest, ConvertAtanh) {
-  EXPECT_EQ("log(x + 1 ) * 0.5 + log(-1 * x + 1 ) * -0.5",
-            str(converter_.Visit(AddUnary(OP_atanh, AddVar(0)))));
-}
-
-TEST_F(IlogCPTest, ConvertAtan2) {
-  EXPECT_EQ("IloNumVar(8)[-inf..inf]",
-            str(converter_.Visit(AddBinary(OP_atan2, AddVar(1), AddVar(0)))));
-
-  IloModel::Iterator iter(mod_);
-  ASSERT_NE(0, iter.ok());
-  IloIfThenI *ifXNonnegative = dynamic_cast<IloIfThenI*>((*iter).getImpl());
-  ASSERT_TRUE(ifXNonnegative != nullptr);
-  EXPECT_EQ("0 <= x", str(ifXNonnegative->getLeft()));
-  EXPECT_EQ("IloNumVar(8)[-inf..inf] == arc-tan(y / x )",  // (1)
-            str(ifXNonnegative->getRight()));
-
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  IloIfThenI *ifDiffSigns = dynamic_cast<IloIfThenI*>((*iter).getImpl());
-  ASSERT_TRUE(ifDiffSigns != nullptr);
-  EXPECT_EQ("(x <= 0 ) && (0 <= y )", str(ifDiffSigns->getLeft()));
-  EXPECT_EQ("IloNumVar(8)[-inf..inf] == arc-tan(y / x ) + 3.14159",  // (2)
-            str(ifDiffSigns->getRight()));
-
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  IloIfThenI *ifSameSigns = dynamic_cast<IloIfThenI*>((*iter).getImpl());
-  ASSERT_TRUE(ifSameSigns != nullptr);
-  EXPECT_EQ("(x <= 0 ) && (y <= 0 )", str(ifSameSigns->getLeft()));
-  EXPECT_EQ("IloNumVar(8)[-inf..inf] == arc-tan(y / x ) + -3.14159",
-            str(ifSameSigns->getRight()));
-
-  ++iter;
-  EXPECT_FALSE(iter.ok());
-
-  // Check that (1) and (2) both yield NaN when x == 0 and y == 0.
-  volatile double zero = 0;
-  double s = IloArcTan(zero / zero);
-  EXPECT_TRUE(s != s);
-  double d1 = s + 3.14;
-  EXPECT_TRUE(d1 != d1);
-}
-
-TEST_F(IlogCPTest, ConvertAtan) {
-  EXPECT_EQ("arc-tan(x )",
-            str(converter_.Visit(AddUnary(OP_atan, AddVar(0)))));
-}
-
 TEST_F(IlogCPTest, ConvertAsinh) {
   EXPECT_EQ("log(x + square(x ) + 1 ^ 0.5)",
             str(converter_.Visit(AddUnary(OP_asinh, AddVar(0)))));
@@ -340,11 +278,6 @@ TEST_F(IlogCPTest, ConvertAsinh) {
   EXPECT_EQ(0, eval(e));
   e = converter_.Visit(AddUnary(OP_asinh, AddNum(-2)));
   EXPECT_NEAR(-1.443635, eval(e), 1e-5);
-}
-
-TEST_F(IlogCPTest, ConvertAsin) {
-  EXPECT_EQ("arc-sin(x )",
-            str(converter_.Visit(AddUnary(OP_asin, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertAcosh) {
@@ -359,10 +292,6 @@ TEST_F(IlogCPTest, ConvertAcosh) {
   e = converter_.Visit(AddUnary(OP_acosh, AddNum(0)));
   double n = eval(e);
   EXPECT_TRUE(n != n);
-}
-
-TEST_F(IlogCPTest, ConvertAcos) {
-  EXPECT_EQ("arc-cos(x )", str(converter_.Visit(AddUnary(OP_acos, AddVar(0)))));
 }
 
 TEST_F(IlogCPTest, ConvertRound) {
