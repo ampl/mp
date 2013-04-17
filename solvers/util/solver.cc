@@ -311,6 +311,7 @@ void Problem::AddObj(ObjType type, NumericExpr expr) {
   asl_->i.objtype_[num_objs] = type;
   asl_->i.Ograd_[num_objs] = 0;
   ++num_objs;
+  ++asl_->i.nlo_;
 }
 
 void Problem::AddCon(LogicalExpr expr) {
