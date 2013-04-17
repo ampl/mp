@@ -42,24 +42,18 @@ namespace ampl {
 
 class Optimizer : public Interruptible {
  private:
-  IloObjective obj_;
-  IloNumVarArray vars_;
   IloRangeArray cons_;
 
  public:
   Optimizer(IloEnv env, const Problem &p);
   virtual ~Optimizer();
 
-  IloObjective obj() const { return obj_; }
-  void set_obj(IloObjective obj) { obj_ = obj; }
-
-  IloNumVarArray vars() const { return vars_; }
   IloRangeArray cons() const { return cons_; }
 
   virtual IloAlgorithm algorithm() const = 0;
 
-  virtual double GetSolution(const Problem &p, fmt::Formatter &format_message,
-      std::vector<double> &primal, std::vector<double> &dual) const = 0;
+  virtual void GetSolutionInfo(fmt::Formatter &format_message,
+      std::vector<double> &dual_values) const = 0;
 
   virtual bool interrupted() const = 0;
 };
@@ -79,8 +73,8 @@ class CPLEXOptimizer : public Optimizer {
   IloCplex cplex() const { return cplex_; }
   IloAlgorithm algorithm() const { return cplex_; }
 
-  double GetSolution(const Problem &p, fmt::Formatter &format_message,
-      std::vector<double> &values, std::vector<double> &dual_values) const;
+  void GetSolutionInfo(fmt::Formatter &format_message,
+      std::vector<double> &dual_values) const;
 
   void Interrupt() { aborter_.abort(); }
 
@@ -101,8 +95,8 @@ class CPOptimizer : public Optimizer {
   IloCP solver() const { return solver_; }
   IloAlgorithm algorithm() const { return solver_; }
 
-  double GetSolution(const Problem &p, fmt::Formatter &format_message,
-      std::vector<double> &values, std::vector<double> &dual_values) const;
+  void GetSolutionInfo(fmt::Formatter &format_message,
+      std::vector<double> &dual_values) const;
 
   void Interrupt() { solver_.abortSearch(); }
 

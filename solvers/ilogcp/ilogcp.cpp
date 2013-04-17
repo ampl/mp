@@ -93,50 +93,29 @@ inline IloInt CastToInt(double value) {
 
 namespace ampl {
 
-Optimizer::Optimizer(IloEnv env, const Problem &p) :
-  vars_(env, p.num_vars()), cons_(env, p.num_cons()) {}
+Optimizer::Optimizer(IloEnv env, const Problem &p) : cons_(env, p.num_cons()) {}
 
 Optimizer::~Optimizer() {}
 
-double CPLEXOptimizer::GetSolution(
-    const Problem &p, fmt::Formatter &format_message,
-    vector<double> &values, vector<double> &dual_values) const {
-  IloNum obj_value = cplex_.getObjValue();
-  values.resize(p.num_vars());
-  IloNumVarArray vars = Optimizer::vars();
-  for (int j = 0, n = p.num_vars(); j < n; ++j)
-    values[j] = cplex_.getValue(vars[j]);
+void CPLEXOptimizer::GetSolutionInfo(
+    fmt::Formatter &format_message, vector<double> &dual_values) const {
   if (cplex_.isMIP()) {
     format_message("{} nodes, ") << cplex_.getNnodes();
   } else {
-    dual_values.resize(p.num_cons());
     IloRangeArray cons = Optimizer::cons();
-    for (int i = 0, n = p.num_cons(); i < n; ++i)
+    int num_cons = cons.getSize();
+    dual_values.resize(num_cons);
+    for (int i = 0; i < num_cons; ++i)
       dual_values[i] = cplex_.getDual(cons[i]);
   }
-  format_message("{} iterations, objective {}")
-    << cplex_.getNiterations() << ObjPrec(obj_value);
-  return obj_value;
+  format_message("{} iterations") << cplex_.getNiterations();
 }
 
-double CPOptimizer::GetSolution(
-    const Problem &p, fmt::Formatter &format_message,
-    vector<double> &values, vector<double> &) const {
+void CPOptimizer::GetSolutionInfo(
+    fmt::Formatter &format_message, vector<double> &) const {
   format_message("{} choice points, {} fails")
       << solver_.getInfo(IloCP::NumberOfChoicePoints)
       << solver_.getInfo(IloCP::NumberOfFails);
-  double obj_value = 0;
-  if (p.num_objs() > 0) {
-    obj_value = solver_.getValue(obj());
-    format_message(", objective {}") << ObjPrec(obj_value);
-  }
-  values.resize(p.num_vars());
-  IloNumVarArray vars = Optimizer::vars();
-  for (int j = 0, n = p.num_vars(); j < n; ++j) {
-    IloNumVar &v = vars[j];
-    values[j] = solver_.isExtracted(v) ? solver_.getValue(v) : v.getLB();
-  }
-  return obj_value;
 }
 
 IloNumExprArray NLToConcertConverter::ConvertArgs(VarArgExpr e) {
@@ -671,36 +650,38 @@ void IlogCPSolver::Solve(Problem &p) {
 
   // Set up optimization problem in ILOG Concert.
 
+  int num_continuous_vars = p.num_continuous_vars();
+  if (num_continuous_vars != 0 && GetOption(OPTIMIZER) == CP)
+    throw Error("CP Optimizer doesn't support continuous variables");
+
   if (!optimizer_.get())
     CreateOptimizer(p);
-  IloNumVarArray vars = optimizer_->vars();
 
-  int n_var_cont = p.num_continuous_vars();
-  if (n_var_cont != 0 && GetOption(OPTIMIZER) == CP)
-    throw Error("CP Optimizer doesn't support continuous variables");
-  for (int j = 0; j < n_var_cont; j++)
+  int num_vars = p.num_vars();
+  IloNumVarArray vars(env_, num_vars);
+  for (int j = 0; j < num_continuous_vars; j++)
     vars[j] = IloNumVar(env_, p.var_lb(j), p.var_ub(j), ILOFLOAT);
-  for (int j = n_var_cont, num_vars = p.num_vars(); j < num_vars; j++)
+  for (int j = num_continuous_vars; j < num_vars; j++)
     vars[j] = IloNumVar(env_, p.var_lb(j), p.var_ub(j), ILOINT);
 
   NLToConcertConverter converter(env_, vars,
       GetOption(USENUMBEROF) != 0, GetOption(DEBUGEXPR) != 0);
   IloModel model = converter.model();
-  if (p.num_objs() > 0) {
+  int num_objs = p.num_objs();
+  if (num_objs > 0) {
     NumericExpr expr(p.nonlinear_obj_expr(0));
     NumericConstant constant(Cast<NumericConstant>(expr));
     IloExpr ilo_expr(env_, constant ? constant.value() : 0);
-    if (p.num_nonlinear_objs() > 0)
+    if (p.num_nonlinear_objs() > 0 && !constant)
       ilo_expr += converter.Visit(expr);
     LinearObjExpr linear = p.linear_obj_expr(0);
     for (LinearObjExpr::iterator
         i = linear.begin(), end = linear.end(); i != end; ++i) {
       ilo_expr += i->coef() * vars[i->var_index()];
     }
-    IloObjective MinOrMax(env_, ilo_expr,
+    IloObjective obj(env_, ilo_expr,
         p.obj_type(0) == MIN ? IloObjective::Minimize : IloObjective::Maximize);
-    optimizer_->set_obj(MinOrMax);
-    IloAdd(model, MinOrMax);
+    IloAdd(model, obj);
   }
 
   if (int n_cons = p.num_cons()) {
@@ -799,8 +780,16 @@ void IlogCPSolver::Solve(Problem &p) {
   vector<double> solution, dual_solution;
   double obj_value = std::numeric_limits<double>::quiet_NaN();
   if (successful) {
-    obj_value = optimizer_->GetSolution(
-        p, format_message, solution, dual_solution);
+    solution.resize(num_vars);
+    for (int j = 0, n = p.num_vars(); j < n; ++j) {
+      IloNumVar &v = vars[j];
+      solution[j] = alg.isExtracted(v) ? alg.getValue(v) : v.getLB();
+    }
+    optimizer_->GetSolutionInfo(format_message, dual_solution);
+    if (num_objs > 0) {
+      obj_value = alg.getObjValue();
+      format_message(", objective {}") << ObjPrec(obj_value);
+    }
   }
   HandleSolution(format_message.c_str(), solution.empty() ? 0 : &solution[0],
       dual_solution.empty() ? 0 : &dual_solution[0], obj_value);
