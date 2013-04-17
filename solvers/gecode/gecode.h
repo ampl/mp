@@ -356,9 +356,6 @@ class GecodeSolver : public Solver<GecodeSolver> {
 
   void Solve(Problem &p);
 
-  double var_min() const { return Gecode::Int::Limits::min; }
-  double var_max() const { return Gecode::Int::Limits::max; }
-
   Gecode::IntConLevel icl() const { return icl_; }
   Gecode::IntVarBranch var_branching() const { return var_branching_; }
   Gecode::IntValBranch val_branching() const { return val_branching_; }

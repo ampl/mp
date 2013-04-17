@@ -484,9 +484,6 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
   // Runs the solver.
   int Run(char **argv);
 
-  double var_min() const { return IloIntMin; }
-  double var_max() const { return IloIntMax; }
-
   void Solve(Problem &p);
 };
 }

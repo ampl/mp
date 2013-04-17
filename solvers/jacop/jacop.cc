@@ -553,13 +553,6 @@ JaCoPSolver::JaCoPSolver()
       &JaCoPSolver::SetOption<int, std::size_t>, &memory_limit_);*/
 }
 
-int JaCoPSolver::GetIntDomainField(const char *name) {
-  Env env = JVM::env();
-  jclass domain_class = env.FindClass("JaCoP/core/IntDomain");
-  return env.GetStaticIntField(
-      domain_class, env.GetStaticFieldID(domain_class, name, "I"));
-}
-
 std::string JaCoPSolver::GetOptionHeader() {
   return
       "JaCoP Directives for AMPL\n"
