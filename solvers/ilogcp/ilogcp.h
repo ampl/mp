@@ -259,7 +259,7 @@ class NLToConcertConverter : public Visitor {
 
   IloExpr VisitAtanh(UnaryExpr e) {
     IloNumExpr arg(Visit(e.arg()));
-    return (IloLog(1 + arg) - IloLog(1 - arg)) * 0.5;
+    return IloLog((1 + arg) / (1 - arg)) * 0.5;
   }
 
   IloExpr VisitAtan2(BinaryExpr e);
