@@ -614,8 +614,6 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   fmt::TempFormatter<fmt::Write> Output(fmt::StringRef format);
 */
 
-  static int GetIntDomainField(const char *name);
-
  protected:
   std::string GetOptionHeader();
 
@@ -624,9 +622,6 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
 
   // Run the solver.
   int Run(char **argv);
-
-  double var_min() const { return GetIntDomainField("MinInt"); }
-  double var_max() const { return GetIntDomainField("MaxInt"); }
 
   void Solve(Problem &p);
 
