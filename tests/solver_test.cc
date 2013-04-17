@@ -306,20 +306,28 @@ TEST_P(SolverTest, Precision) {
 
 TEST_P(SolverTest, Round) {
   EXPECT_EQ(42, Eval(AddBinary(OPround, x, AddNum(0)), 42));
-  EXPECT_EQ(4, Eval(AddBinary(OPround, AddNum(4.4), AddNum(0))));
-  EXPECT_EQ(5, Eval(AddBinary(OPround, AddNum(4.6), AddNum(0))));
-  EXPECT_EQ(-4, Eval(AddBinary(OPround, AddNum(-4.4), AddNum(0))));
-  EXPECT_EQ(-5, Eval(AddBinary(OPround, AddNum(-4.6), AddNum(0))));
+  try {
+    EXPECT_EQ(4, Eval(AddBinary(OPround, AddNum(4.4), AddNum(0))));
+    EXPECT_EQ(5, Eval(AddBinary(OPround, AddNum(4.6), AddNum(0))));
+    EXPECT_EQ(-4, Eval(AddBinary(OPround, AddNum(-4.4), AddNum(0))));
+    EXPECT_EQ(-5, Eval(AddBinary(OPround, AddNum(-4.6), AddNum(0))));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
   EXPECT_THROW(Eval(AddBinary(OPround, x, AddNum(1))), UnsupportedExprError);
   EXPECT_THROW(Eval(AddBinary(OPround, x, y)), UnsupportedExprError);
 }
 
 TEST_P(SolverTest, Trunc) {
   EXPECT_EQ(42, Eval(AddBinary(OPtrunc, x, AddNum(0)), 42));
-  EXPECT_EQ(4, Eval(AddBinary(OPtrunc, AddNum(4.4), AddNum(0))));
-  EXPECT_EQ(4, Eval(AddBinary(OPtrunc, AddNum(4.6), AddNum(0))));
-  EXPECT_EQ(-4, Eval(AddBinary(OPtrunc, AddNum(-4.4), AddNum(0))));
-  EXPECT_EQ(-4, Eval(AddBinary(OPtrunc, AddNum(-4.6), AddNum(0))));
+  try {
+    EXPECT_EQ(4, Eval(AddBinary(OPtrunc, AddNum(4.4), AddNum(0))));
+    EXPECT_EQ(4, Eval(AddBinary(OPtrunc, AddNum(4.6), AddNum(0))));
+    EXPECT_EQ(-4, Eval(AddBinary(OPtrunc, AddNum(-4.4), AddNum(0))));
+    EXPECT_EQ(-4, Eval(AddBinary(OPtrunc, AddNum(-4.6), AddNum(0))));
+  } catch (const UnsupportedExprError &) {
+    // Ignore if not supported.
+  }
   EXPECT_THROW(Eval(AddBinary(OPtrunc, x, AddNum(1))), UnsupportedExprError);
   EXPECT_THROW(Eval(AddBinary(OPtrunc, x, y)), UnsupportedExprError);
 }
@@ -389,17 +397,11 @@ TEST_P(SolverTest, PowConstBase) {
 
 TEST_P(SolverTest, NumericConstant) {
   EXPECT_EQ(42, Eval(AddNum(42)));
-  std::string message;
   try {
     Eval(AddNum(0.42));
-  } catch (const ampl::Error &e) {
-    message = e.what();
+  } catch (const UnsupportedExprError &e) {
+    EXPECT_STREQ("value 0.42 can't be represented as int", e.what());
   }
-  EXPECT_EQ("value 0.42 can't be represented as int", message);
-  EXPECT_EQ(solver_->var_min(), Eval(AddNum(solver_->var_min())));
-  EXPECT_THROW(Eval(AddNum(solver_->var_min() - 1)), std::exception);
-  EXPECT_EQ(solver_->var_max(), Eval(AddNum(solver_->var_max())));
-  EXPECT_THROW(Eval(AddNum(solver_->var_max() + 1)), std::exception);
 }
 
 TEST_P(SolverTest, Var) {
