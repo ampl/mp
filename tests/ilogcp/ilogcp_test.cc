@@ -117,6 +117,7 @@ struct EnumValue {
 
 class IlogCPTest : public ::testing::Test, public ExprBuilder {
  protected:
+  // TODO
   IlogCPSolver s;
   ampl::NLToConcertConverter converter_;
   IloEnv env_;
@@ -267,63 +268,6 @@ TEST_F(IlogCPTest, ConvertNum) {
   EXPECT_EQ("0.42", str(converter_.Visit(AddNum(0.42))));
 }
 
-TEST_F(IlogCPTest, ConvertAsinh) {
-  EXPECT_EQ("log(x + square(x ) + 1 ^ 0.5)",
-            str(converter_.Visit(AddUnary(OP_asinh, AddVar(0)))));
-  // Concert incorrectly omits brackets around square(x) + 1
-  // above, so test also by evaluating the expression at several points.
-  IloExpr e(converter_.Visit(AddUnary(OP_asinh, AddNum(1))));
-  EXPECT_NEAR(0.881373, eval(e), 1e-5);
-  e = converter_.Visit(AddUnary(OP_asinh, AddNum(0)));
-  EXPECT_EQ(0, eval(e));
-  e = converter_.Visit(AddUnary(OP_asinh, AddNum(-2)));
-  EXPECT_NEAR(-1.443635, eval(e), 1e-5);
-}
-
-TEST_F(IlogCPTest, ConvertAcosh) {
-  EXPECT_EQ("log(x + x + 1 ^ 0.5 * x + -1 ^ 0.5)",
-            str(converter_.Visit(AddUnary(OP_acosh, AddVar(0)))));
-  // Concert incorrectly omits brackets around x + 1 and x + -1
-  // above, so test also by evaluating the expression at several points.
-  IloExpr e(converter_.Visit(AddUnary(OP_acosh, AddNum(1))));
-  EXPECT_NEAR(0, eval(e), 1e-5);
-  e = converter_.Visit(AddUnary(OP_acosh, AddNum(10)));
-  EXPECT_NEAR(2.993222, eval(e), 1e-5);
-  e = converter_.Visit(AddUnary(OP_acosh, AddNum(0)));
-  double n = eval(e);
-  EXPECT_TRUE(n != n);
-}
-
-TEST_F(IlogCPTest, ConvertRound) {
-  EXPECT_EQ("round(x )",
-    str(converter_.Visit(AddBinary(OPround, AddVar(0), AddNum(0)))));
-
-  EXPECT_EQ(1235, eval(converter_.Visit(
-    AddBinary(OPround, AddNum(1234.56), AddNum(0)))));
-  EXPECT_EQ(3, eval(converter_.Visit(
-    AddBinary(OPround, AddNum(2.5), AddNum(0)))));
-  EXPECT_EQ(-2, eval(converter_.Visit(
-    AddBinary(OPround, AddNum(-2.5), AddNum(0)))));
-
-  EXPECT_THROW(converter_.Visit(
-    AddBinary(OPround, AddVar(0), AddVar(1))), UnsupportedExprError);
-}
-
-TEST_F(IlogCPTest, ConvertTrunc) {
-  EXPECT_EQ("trunc(x )", str(converter_.Visit(
-    AddBinary(OPtrunc, AddVar(0), AddNum(0)))));
-  EXPECT_EQ(1234, eval(converter_.Visit(
-    AddBinary(OPtrunc, AddNum(1234.56), AddNum(0)))));
-  EXPECT_THROW(converter_.Visit(
-    AddBinary(OPtrunc, AddVar(0), AddVar(1))), UnsupportedExprError);
-}
-
-TEST_F(IlogCPTest, ConvertPLTerm) {
-  double args[] = {-1, 5, 0, 10, 1};
-  EXPECT_EQ("piecewiselinear(x[0..1] , [5, 10], [-1, 0, 1], 0, 0)",
-            str(converter_.Visit(AddPLTerm(5, args, 0))));
-}
-
 TEST_F(IlogCPTest, ConvertNumberOf) {
   s.use_numberof();
   EXPECT_EQ("x == theta + y == theta",
@@ -465,14 +409,6 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
 // ----------------------------------------------------------------------------
 // Solver tests
 
-TEST_F(IlogCPTest, ObjConst) {
-  EXPECT_EQ(0, RunSolver(DATA_DIR "objconst"));
-  IloModel::Iterator iter(mod_);
-  ASSERT_NE(0, iter.ok());
-  IloObjective obj = (*iter).asObjective();
-  EXPECT_EQ(42, obj.getConstant());
-}
-
 TEST_F(IlogCPTest, CPOptimizerDoesntSupportContinuousVars) {
   EXPECT_THROW(RunSolver(DATA_DIR "objconst", "optimizer=cp"), ampl::Error);
 }
@@ -538,7 +474,7 @@ TEST_F(IlogCPTest, SolveNQueens) {
 }
 
 TEST_F(IlogCPTest, SolveNQueens0) {
-  EXPECT_EQ(0, Solve(DATA_DIR "nqueens0").obj);
+  EXPECT_TRUE(Solve(DATA_DIR "nqueens0").solved);
 }
 
 TEST_F(IlogCPTest, SolveOpenShop) {
