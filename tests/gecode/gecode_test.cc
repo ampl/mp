@@ -21,10 +21,8 @@
  */
 
 #include <algorithm>
-#include <fstream>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include <csignal>
 #include <cstdlib>
@@ -51,23 +49,8 @@ extern "C" {
 # include <thread>
 #endif
 
-#if defined(_MSC_VER)
-# define isnan _isnan
-#else
-# define isnan std::isnan
-#endif
-
-using std::ifstream;
 using std::size_t;
 using std::string;
-using std::vector;
-
-using ampl::Variable;
-using ampl::ExprBuilder;
-using ampl::GecodeProblem;
-using ampl::LogicalExpr;
-using ampl::NumericExpr;
-using ampl::UnsupportedExprError;
 
 #define DATA_DIR "../data/"
 
@@ -86,7 +69,7 @@ TEST_P(SolverTest, FloorSqrt) {
   EXPECT_EQ(6, Eval(AddUnary(FLOOR, AddUnary(OP_sqrt, x)), 42));
 }
 
-class GecodeSolverTest : public ::testing::Test, public ExprBuilder {
+class GecodeSolverTest : public ::testing::Test, public ampl::ExprBuilder {
  protected:
   ampl::GecodeSolver solver_;
 
