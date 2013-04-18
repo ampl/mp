@@ -26,11 +26,8 @@
 #include <ilcp/cp.h>
 
 #include <algorithm>
-#include <fstream>
 #include <memory>
-#include <sstream>
 #include <string>
-#include <vector>
 #include <cstdlib>
 
 #include "gtest/gtest.h"
@@ -54,17 +51,12 @@ extern "C" {
 # include <thread>
 #endif
 
-using std::ifstream;
 using std::size_t;
 using std::string;
-using std::vector;
 
 using ampl::CPLEXOptimizer;
 using ampl::CPOptimizer;
-using ampl::ExprBuilder;
 using ampl::IlogCPSolver;
-using ampl::LogicalExpr;
-using ampl::NumericExpr;
 using ampl::UnsupportedExprError;
 
 #define DATA_DIR "../data/"
@@ -77,60 +69,16 @@ std::auto_ptr<ampl::BasicSolver> CreateSolver() {
 
 INSTANTIATE_TEST_CASE_P(IlogCP, SolverTest, ::testing::Values(CreateSolver));
 
-bool AreBothSpaces(char lhs, char rhs) { return lhs == ' ' && rhs == ' '; }
-
-// Replace all occurrences of string old_s in s with new_s.
-void Replace(string &s, const string &old_s, const string &new_s) {
-  size_t pos = 0;
-  while ((pos = s.find(old_s, pos)) != string::npos) {
-    s.replace(pos, old_s.length(), new_s);
-    pos += new_s.length();
-  }
-}
-
-// Returns a string representation of the argument.
-template <typename T>
-string str(T t) {
-  std::ostringstream ss;
-  ss << t;
-  string s = ss.str();
-
-  // Replace adjacent duplicate spaces and possible trailing space.
-  string::iterator end = std::unique(s.begin(), s.end(), AreBothSpaces);
-  if (*(end - 1) == ' ') --end;
-  s.erase(end, s.end());
-
-  // Normalize representation of infinity.
-  Replace(s, "1.#INF", "inf");
-  return s;
-}
-
-// Evaluates a Concert expression.
-double eval(IloExpr e) {
-  return e.getImpl()->eval(IloAlgorithm());
-}
-
 struct EnumValue {
   const char *name;
   IloCP::ParameterValues value;
 };
 
-class IlogCPTest : public ::testing::Test, public ExprBuilder {
+class IlogCPTest : public ::testing::Test, public ampl::ExprBuilder {
  protected:
   IlogCPSolver s;
-  ampl::NLToConcertConverter converter_;
 
-  IloNumVarArray CreateVars() {
-    IloEnv env = s.env();
-    IloNumVarArray vars = IloNumVarArray(env, 3);
-    vars[0] = IloIntVar(env, 0, 1, "x");
-    vars[1] = IloNumVar(env, 0, 1, "y");
-    vars[2] = IloNumVar(env, 0, 1, "theta");
-    return vars;
-  }
-
-  IlogCPTest() :
-    converter_(s.env(), CreateVars(), false, false) {}
+  int CountIloDistribute();
 
   int RunSolver(const char *stub = nullptr, const char *opt = nullptr) {
     try {
@@ -154,9 +102,7 @@ class IlogCPTest : public ::testing::Test, public ExprBuilder {
 
   template <typename T>
   static string Option(const char *name, T value) {
-    std::ostringstream os;
-    os << name << "=" << value;
-    return os.str();
+    return str(fmt::Format("{}={}") << name << value);
   }
 
   void CheckIntCPOption(const char *option, IloCP::IntParam param,
@@ -164,30 +110,21 @@ class IlogCPTest : public ::testing::Test, public ExprBuilder {
       const EnumValue *values = 0);
 
   template <typename ParamT>
-  void CheckIntCPLEXOption(const char *option,
-      ParamT param, int start, int end) {
-    for (int i = std::max(start, -9); i <= std::min(end, 9); ++i) {
-      EXPECT_TRUE(ParseOptions("optimizer=cplex", Option(option, i).c_str()));
-      CPLEXOptimizer *opt = dynamic_cast<CPLEXOptimizer*>(s.optimizer());
-      ASSERT_TRUE(opt != nullptr);
-      EXPECT_EQ(i, opt->cplex().getParam(param))
-        << "Failed option: " << option;
-    }
-    if (end != INT_MAX) {
-      EXPECT_FALSE(ParseOptions("optimizer=cplex",
-          Option(option, end + 1).c_str()));
-    }
-    if (start != INT_MIN) {
-      int small = start - 1;
-      EXPECT_FALSE(ParseOptions("optimizer=cplex",
-          Option(option, small).c_str()));
-      EXPECT_FALSE(ParseOptions("optimizer=cp", Option(option, start).c_str()));
-    }
-  }
+  void CheckIntCPLEXOption(
+      const char *option, ParamT param, int start, int end);
 
-  void CheckDblCPOption(const char *option, IloCP::NumParam param,
-      double good, double bad);
+  void CheckDblCPOption(const char *option,
+      IloCP::NumParam param, double good, double bad);
 };
+
+int IlogCPTest::CountIloDistribute() {
+  int count = 0;
+  for (IloModel::Iterator i(s.alg().getModel()); i.ok(); ++i) {
+    if (dynamic_cast<IloDistributeI*>((*i).getImpl()))
+      ++count;
+  }
+  return count;
+}
 
 SolveResult IlogCPTest::Solve(const char *stub, const char *opt) {
   TestSolutionHandler sh;
@@ -248,6 +185,28 @@ void IlogCPTest::CheckIntCPOption(const char *option,
   }
 }
 
+template <typename ParamT>
+void IlogCPTest::CheckIntCPLEXOption(const char *option,
+    ParamT param, int start, int end) {
+  for (int i = std::max(start, -9); i <= std::min(end, 9); ++i) {
+    EXPECT_TRUE(ParseOptions("optimizer=cplex", Option(option, i).c_str()));
+    CPLEXOptimizer *opt = dynamic_cast<CPLEXOptimizer*>(s.optimizer());
+    ASSERT_TRUE(opt != nullptr);
+    EXPECT_EQ(i, opt->cplex().getParam(param))
+      << "Failed option: " << option;
+  }
+  if (end != INT_MAX) {
+    EXPECT_FALSE(ParseOptions("optimizer=cplex",
+        Option(option, end + 1).c_str()));
+  }
+  if (start != INT_MIN) {
+    int small = start - 1;
+    EXPECT_FALSE(ParseOptions("optimizer=cplex",
+        Option(option, small).c_str()));
+    EXPECT_FALSE(ParseOptions("optimizer=cp", Option(option, start).c_str()));
+  }
+}
+
 void IlogCPTest::CheckDblCPOption(const char *option,
     IloCP::NumParam param, double good, double bad) {
   EXPECT_TRUE(ParseOptions("optimizer=cp", Option(option, good).c_str()));
@@ -269,124 +228,52 @@ TEST_F(IlogCPTest, IloArrayCopyingIsCheap) {
 
 TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
   s.use_numberof();
-  std::ostringstream os;
-  os << "[" << IloIntMin << ".." << IloIntMax << "]";
-  string bounds = os.str();
-  EXPECT_EQ("IloIntVar(4)" + bounds, str(converter_.Visit(
-      AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
-  converter_.FinishBuildingNumberOf();
-  IloModel::Iterator iter(converter_.model());
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(6)" + bounds + " == x", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(9)" + bounds + " == y", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  IloDistributeI *dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
-  ASSERT_TRUE(dist != nullptr);
-  EXPECT_EQ("[IloIntVar(4)" + bounds + " ]", str(dist->getCardVarArray()));
-  EXPECT_EQ("[IloIntVar(6)" + bounds + " , IloIntVar(9)" + bounds + " ]",
-      str(dist->getVarArray()));
-  EXPECT_EQ("[42]", str(dist->getValueArray()));
-  ++iter;
-  EXPECT_FALSE(iter.ok());
+  ampl::Problem p;
+  p.AddVar(0, 0, ampl::INTEGER);
+  p.AddVar(0, 0, ampl::INTEGER);
+  p.AddCon(AddRelational(EQ, AddNum(0),
+      AddNumberOf(AddNum(42), AddVar(0), AddVar(1))));
+  s.Solve(p);
+  ASSERT_EQ(1, CountIloDistribute());
 }
 
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
   s.use_numberof();
-  std::ostringstream os;
-  os << "[" << IloIntMin << ".." << IloIntMax << "]";
-  string bounds = os.str();
-  NumericExpr expr(AddNumberOf(AddNum(42), AddVar(0), AddVar(1)));
-  EXPECT_EQ("IloIntVar(4)" + bounds, str(converter_.Visit(expr)));
-  EXPECT_EQ("IloIntVar(4)" + bounds, str(converter_.Visit(
-      AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
-  converter_.FinishBuildingNumberOf();
-  IloModel::Iterator iter(converter_.model());
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(7)" + bounds + " == x", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(10)" + bounds + " == y", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  IloDistributeI *dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
-  ASSERT_TRUE(dist != nullptr);
-  EXPECT_EQ("[IloIntVar(4)" + bounds + " ]", str(dist->getCardVarArray()));
-  EXPECT_EQ("[IloIntVar(7)" + bounds + " , IloIntVar(10)" + bounds + " ]",
-      str(dist->getVarArray()));
-  EXPECT_EQ("[42]", str(dist->getValueArray()));
-  ++iter;
-  EXPECT_FALSE(iter.ok());
+  ampl::Problem p;
+  p.AddVar(0, 0, ampl::INTEGER);
+  p.AddVar(0, 0, ampl::INTEGER);
+  p.AddCon(AddRelational(EQ, AddNum(0),
+      AddNumberOf(AddNum(42), AddVar(0), AddVar(1))));
+  p.AddCon(AddRelational(EQ, AddNum(0),
+      AddNumberOf(AddNum(42), AddVar(0), AddVar(1))));
+  s.Solve(p);
+  ASSERT_EQ(1, CountIloDistribute());
 }
 
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
   s.use_numberof();
-  std::ostringstream os;
-  os << "[" << IloIntMin << ".." << IloIntMax << "]";
-  string bounds = os.str();
-  EXPECT_EQ("IloIntVar(4)" + bounds,
-      str(converter_.Visit(AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
-  EXPECT_EQ("IloIntVar(6)" + bounds,
-      str(converter_.Visit(AddNumberOf(AddNum(43), AddVar(0), AddVar(1)))));
-  converter_.FinishBuildingNumberOf();
-  IloModel::Iterator iter(converter_.model());
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(8)" + bounds + " == x", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(11)" + bounds + " == y", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  IloDistributeI *dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
-  ASSERT_TRUE(dist != nullptr);
-  EXPECT_EQ("[IloIntVar(4)" + bounds + " , IloIntVar(6)" + bounds + " ]",
-      str(dist->getCardVarArray()));
-  EXPECT_EQ("[IloIntVar(8)" + bounds + " , IloIntVar(11)" + bounds + " ]",
-      str(dist->getVarArray()));
-  EXPECT_EQ("[42, 43]", str(dist->getValueArray()));
-  ++iter;
-  EXPECT_FALSE(iter.ok());
+  ampl::Problem p;
+  p.AddVar(0, 0, ampl::INTEGER);
+  p.AddVar(0, 0, ampl::INTEGER);
+  p.AddCon(AddRelational(EQ, AddNum(0),
+      AddNumberOf(AddNum(42), AddVar(0), AddVar(1))));
+  p.AddCon(AddRelational(EQ, AddNum(0),
+      AddNumberOf(AddNum(43), AddVar(0), AddVar(1))));
+  s.Solve(p);
+  ASSERT_EQ(1, CountIloDistribute());
 }
 
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
   s.use_numberof();
-  std::ostringstream os;
-  os << "[" << IloIntMin << ".." << IloIntMax << "]";
-  string bounds = os.str();
-  EXPECT_EQ("IloIntVar(4)" + bounds,
-      str(converter_.Visit(AddNumberOf(AddNum(42), AddVar(0), AddVar(1)))));
-  EXPECT_EQ("IloIntVar(6)" + bounds,
-      str(converter_.Visit(AddNumberOf(AddNum(42), AddVar(2)))));
-  converter_.FinishBuildingNumberOf();
-  IloModel::Iterator iter(converter_.model());
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(8)" + bounds + " == x", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(11)" + bounds + " == y", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  IloDistributeI *dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
-  ASSERT_TRUE(dist != nullptr);
-  EXPECT_EQ("[IloIntVar(4)" + bounds + " ]", str(dist->getCardVarArray()));
-  EXPECT_EQ("[IloIntVar(8)" + bounds + " , IloIntVar(11)" + bounds + " ]",
-      str(dist->getVarArray()));
-  EXPECT_EQ("[42]", str(dist->getValueArray()));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  EXPECT_EQ("IloIntVar(15)" + bounds + " == theta", str(*iter));
-  ++iter;
-  ASSERT_NE(0, iter.ok());
-  dist = dynamic_cast<IloDistributeI*>((*iter).getImpl());
-  ASSERT_TRUE(dist != nullptr);
-  EXPECT_EQ("[IloIntVar(6)" + bounds + " ]", str(dist->getCardVarArray()));
-  EXPECT_EQ("[IloIntVar(15)" + bounds + " ]",
-      str(dist->getVarArray()));
-  EXPECT_EQ("[42]", str(dist->getValueArray()));
-  ++iter;
-  EXPECT_FALSE(iter.ok());
+  ampl::Problem p;
+  p.AddVar(0, 0, ampl::INTEGER);
+  p.AddVar(0, 0, ampl::INTEGER);
+  p.AddCon(AddRelational(EQ, AddNum(0),
+      AddNumberOf(AddNum(42), AddVar(0), AddVar(1))));
+  p.AddCon(AddRelational(EQ, AddNum(0),
+      AddNumberOf(AddNum(42), AddVar(1))));
+  s.Solve(p);
+  ASSERT_EQ(2, CountIloDistribute());
 }
 
 // ----------------------------------------------------------------------------
