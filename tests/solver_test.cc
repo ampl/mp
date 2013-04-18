@@ -215,7 +215,7 @@ TEST_P(SolverTest, Log10) {
 
 TEST_P(SolverTest, Log) {
   try {
-    EXPECT_EQ(5, Eval(AddUnary(OP_log, AddNum(std::exp(5)))));
+    EXPECT_EQ(5, Eval(AddUnary(OP_log, AddNum(std::exp(5.0)))));
   } catch (const UnsupportedExprError &) {
     // Ignore if not supported.
   }
@@ -223,7 +223,7 @@ TEST_P(SolverTest, Log) {
 
 TEST_P(SolverTest, Exp) {
   try {
-    EXPECT_EQ(5, Eval(AddUnary(OP_exp, AddNum(std::log(5)))));
+    EXPECT_EQ(5, Eval(AddUnary(OP_exp, AddNum(std::log(5.0)))));
   } catch (const UnsupportedExprError &) {
     // Ignore if not supported.
   }
@@ -245,7 +245,7 @@ TEST_P(SolverTest, Cos) {
 
 TEST_P(SolverTest, Atanh) {
   try {
-    ampl::UnaryExpr x = AddUnary(OP_atanh, AddNum(std::tanh(5)));
+    ampl::UnaryExpr x = AddUnary(OP_atanh, AddNum(std::tanh(5.0)));
     EXPECT_EQ(5000000, Eval(AddUnary(FLOOR, AddBinary(OPPLUS,
         AddNum(0.5), AddBinary(OPMULT, AddNum(1000000), x)))));
   } catch (const UnsupportedExprError &) {
@@ -263,7 +263,7 @@ TEST_P(SolverTest, Atan) {
 
 TEST_P(SolverTest, Asinh) {
   try {
-    EXPECT_EQ(5, Eval(AddUnary(OP_asinh, AddNum(std::sinh(5)))));
+    EXPECT_EQ(5, Eval(AddUnary(OP_asinh, AddNum(std::sinh(5.0)))));
   } catch (const UnsupportedExprError &) {
     // Ignore if not supported.
   }
@@ -275,7 +275,7 @@ TEST_P(SolverTest, Asin) {
 
 TEST_P(SolverTest, Acosh) {
   try {
-    EXPECT_EQ(5, Eval(AddUnary(OP_acosh, AddNum(std::cosh(5)))));
+    EXPECT_EQ(5, Eval(AddUnary(OP_acosh, AddNum(std::cosh(5.0)))));
   } catch (const UnsupportedExprError &) {
     // Ignore if not supported.
   }
