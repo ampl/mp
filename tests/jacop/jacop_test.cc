@@ -57,17 +57,12 @@ extern "C" {
 # define isnan std::isnan
 #endif
 
-using std::ifstream;
 using std::size_t;
 using std::string;
 using std::vector;
 
 using ampl::Class;
-using ampl::Variable;
 using ampl::ExprBuilder;
-using ampl::LogicalExpr;
-using ampl::NumericExpr;
-using ampl::UnsupportedExprError;
 using ampl::NLToJaCoPConverter;
 
 #define DATA_DIR "../data/"
