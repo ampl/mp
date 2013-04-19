@@ -22,7 +22,7 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
- static char Version[] = "\n@(#) AMPL ODBC driver, version 20130326.\n";
+ static char Version[] = "\n@(#) AMPL ODBC driver, version 20130417.\n";
 
 #ifdef _WIN32
 #include <windows.h>
@@ -2438,8 +2438,12 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 			dbc = dbc0 + p[i];
 			switch(dbc->mytype) {
 			 case 0:
-				db->sval[0] = 0;
-				db->dval[0] = dd[dbc->myoffset];
+				if (dbc->len == SQL_NULL_DATA)
+					db->sval[0] = h.Missing;
+				else {
+					db->sval[0] = 0;
+					db->dval[0] = dd[dbc->myoffset];
+					}
 				break;
 			 case 1:
 				db->sval[0] = scrunch(&h, cd[dbc->myoffset], db->dval, mix);
@@ -2485,7 +2489,7 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 funcadd(AmplExports *ae)
 {
 	static char tname[] = "odbc\n"
-	"AMPL ODBC handler (20130326): expected 2-8 strings before \":[...]\":\n"
+	"AMPL ODBC handler (20130417): expected 2-8 strings before \":[...]\":\n"
 	"  'ODBC', connection_spec ['ext_name'] [option [option...]]\n"
 	"Connection_spec gives a connection to the external table.  If the table's\n"
 	"external name differs from the AMPL table name, the external name must be\n"
