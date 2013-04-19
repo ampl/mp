@@ -464,7 +464,7 @@ GecodeSolver::GecodeSolver()
   AddIntOption("a_d", "Adaptive recomputation distance.",
       &GecodeSolver::SetOption<int, unsigned>, &options_.a_d);
 
-  AddDblOption("timelimit", "Time limit.",
+  AddDblOption("timelimit", "Time limit in seconds.",
       &GecodeSolver::SetOption<double, double>, &time_limit_);
   AddIntOption("nodelimit", "Node limit.",
       &GecodeSolver::SetOption<int, unsigned long>, &node_limit_);
