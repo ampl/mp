@@ -1,4 +1,20 @@
-20130409
-  Fix a bug giving "unexpected type 0x960c in augment_incidence()"
-with nonlinear defined variables involving an if-then-else expression
-whose "if" test is constant.
+20130417
+  Fix a bug "solve" involving complementarity constraints, followed
+by "fix" command(s) that remove all complementarity constraints,
+followed by a "solve":  an incorrect .nl file was written for the
+second "solve".
+  Fix an optimization bug with tests of the forms
+
+	expr != numeric_expression
+	expr == numeric_expression
+	numeric_expression != expr
+	numeric_expression == expr
+
+If expr was not numeric, the numeric_expression was not evaluated, so an
+error in it was not detected.  Example:
+
+	set S = {'abc'}; print{i in S, j in S: i != j+1}: i,j;
+
+printed "abc abc" rather than complaining that j+1 cannot be evaluated.
+  Fix an obscure bug with complementarity constraints that led to an
+error message of the form "presolve has k = nnn, P.nfc = mmm".

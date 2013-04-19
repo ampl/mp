@@ -1,6 +1,6 @@
 README	1e7ce361	7642
 TABLES.RME	e1af6e2b	20602
-amplodbc.c	f52d6814	72333
+amplodbc.c	fb69c883	72418
 ampltabl.def	1da9d5ac	95
 calories.tab	14a2b55e	528
 diet.mod	f15d930d	394
@@ -12,8 +12,8 @@ foods.tab	f0d6899d	149
 fullbit.c	eac799ec	29059
 makefile.linux32	ee29ea	2006
 makefile.linux64	fb61be0b	2039
-makefile.macosx32	fd95fa68	2039
-makefile.macosx64	ccde128	2072
+makefile.macosx32	117e7416	2029
+makefile.macosx64	ff207cfa	2052
 makefile.vc	1858c38d	1728
 nutrients.tab	1328f000	107
 simpbit.c	ee7ef53e	11755
