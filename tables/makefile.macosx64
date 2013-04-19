@@ -26,16 +26,16 @@ fullbit_64.dll: fullbit.o
 	$(CC) -shared -o fullbit_64.dll fullbit.o
 
 ampltabl_64.dll: tableproxy.c tableproxyver.h amplodbc.c
-	$(CC) -c $(CFLAGS) -I$S -DOTHER_FUNCADD=funcaddodbc_ASL tableproxy.c
+	$(CC) -c $(CFLAGS) -DOTHER_FUNCADD=funcaddodbc_ASL tableproxy.c
 	$(CC) -c $(CFLAGS) -Dfuncadd_ASL=funcaddodbc_ASL amplodbc.c
-	$(CC) $(CFLAGS) -I$S -shared -o ampltabl_64.dll -framework CoreFoundation tableproxy.o amplodbc.o -lodbc
+	$(CC) $(CFLAGS) -shared -o ampltabl_64.dll -framework CoreFoundation tableproxy.o amplodbc.o -lodbc
 
 tableproxy_64.dll: tableproxy.c tableproxyver.h
-	$(CC) $(CFLAGS) -I$S -shared -o tableproxy_64.dll tableproxy.c
+	$(CC) $(CFLAGS) -shared -o tableproxy_64.dll tableproxy.c
 
 tableproxy64: tableproxy.c $S/printf.o tableproxyver.h
 	$(CC) -c $(CFLAGS) -DQUOTIFY -o printf.o $S/printf.c
-	$(CC) $(CFLAGS) -I$S -DSTAND_ALONE -Dsoclen_t=int -o tableproxy64 tableproxy.c printf.o $S/amplsolver.a -ldl
+	$(CC) $(CFLAGS) -DSTAND_ALONE -Dsoclen_t=int -o tableproxy64 tableproxy.c printf.o $S/amplsolver.a -ldl
 	rm printf.o
 
 ## Under some versions of Linux, the search path
