@@ -8,7 +8,7 @@ arithchk.c	e460ec03	5299
 asl.h	e45eea9d	38510
 asl_pfg.h	6483336	1268
 asl_pfgh.h	49b5a53	1288
-asldate.c	ee08ec4f	29
+asldate.c	edefc564	29
 atof.c	1fabc7d3	1747
 auxinfo.c	1a3c8690	1488
 avltree.c	10aeaa58	11346
@@ -98,8 +98,8 @@ op_type.hd	46993b1	1265
 op_typeb.hd	e07423bd	1265
 opcode.hd	fa56de9c	1326
 opnos.hd	1a7c2f8d	78
-pfg_read.c	531335a	96088
-pfghread.c	1a7f2545	1261
+pfg_read.c	395eff3	96146
+pfghread.c	f64fe1a4	1261
 printf.c	3c002b0	23620
 pshvprod.c	2ebfa50	20824
 psinfo.h	1d93b2e4	9730
