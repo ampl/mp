@@ -1,4 +1,3 @@
-20130328
-  asl.h, writesol.c: change msg arg to the write_sol* routines from char*
-to const char*.  This should be invisible except for banishing a warning
-in some solver interfaces.
+20130419
+  pfg_read.c, pfghread.c:  fix a bug occasionally seen (with readers
+pfg_read() and pfgh_read()) in problems having defined variables.

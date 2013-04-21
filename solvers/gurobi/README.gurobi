@@ -68,7 +68,7 @@ in the associated solve_message.
         301     unbounded [unbounded or infeasible; IIS finder failed]
         302     unbounded; .unbdd returned
         303     unbounded; .unbdd returned [IIS finder failed]
-        400     cutoff reached
+        400     objective cutoff
         401     iteration limit
         402     node limit
         403     time limit

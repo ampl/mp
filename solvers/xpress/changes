@@ -63,3 +63,6 @@ of shell scripts xpress.linux and xpress.macosx.
 20130312
   Add "network" keyword instructing xpress to identify and exploit
 an embedded network.
+
+20130419
+  Update for version 7.5.  New keywords: baralg, barreg, treepresolve.

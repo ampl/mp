@@ -22,7 +22,6 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
-
 #ifdef DEBUG
 #include "assert.h"
 #else
@@ -278,7 +277,7 @@ ed_reset(ASLTYPE *asl)
  static ograd *ogzork;
  static expr *ezork;
  static expr_n *enzork;
- static int izork = -1;
+ static int dzork1, dzork2, izork = -1;
 #endif
 
  static Elemtemp *
@@ -375,6 +374,8 @@ new_derp(Static *S, int a, int b, real *c)
 	d->c.rp = c;
 #ifdef DEBUG
 	if (d == dzork)
+		printf("");
+	if (++dzork1 == dzork2)
 		printf("");
 #endif
 	}
@@ -3221,7 +3222,7 @@ imap_alloc(Static *S)
 	i = amax1 > lasta ? amax1 : lasta;
 	r = imap = (int*)new_mblk(kimap = htcl((i+100)*sizeof(int)));
 	imap_len = (sizeof(char*)/sizeof(int)) << kimap;
-	r += i = nv0x;
+	r += i = max_var1;
 	while(i > 0)
 		*--r = --i;
 	i = nv0x;

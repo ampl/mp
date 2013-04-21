@@ -713,7 +713,12 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 	}
 
  static char aggfill_desc[] = "amount of fill allowed during aggregation during\n\
-			gurobi's presolve (default 10)";
+			gurobi's presolve "
+#if GRB_VERSION_MAJOR > 5 || (GRB_VERSION_MAJOR == 5 && GRB_VERSION_MINOR >= 1)
+	"(default -1)";
+#else
+	"(default 10)";
+#endif
 #endif /*}*/
 
  static char aggregate_desc[] = "whether to use aggregation during Gurobi presolve:\n\
@@ -819,9 +824,9 @@ sf_pf(Option_Info *oi, keyword *kw, char *v)
 		during cut generation (-1 = default = no limit);\n\
 		overrides \"cuts\"";
 
- static char cutoff_desc[] = "target objective value:  stop searching once an objective\n\
-		value better than the target is found; default:\n\
-		-Infinity for minimizing, +Infinity for maximizing";
+ static char cutoff_desc[] = "If the optimal objective value is no better than cutoff,\n\
+		report \"objective cutoff\" and do not return a solution.\n\
+		Default: -Infinity for minimizing, +Infinity for maximizing.";
 
 #if (GRB_VERSION_MAJOR == 4 && GRB_VERSION_MINOR >= 5) || GRB_VERSION_MAJOR >= 5 /*{*/
  static char cutpasses_desc[] = "maximum number of cutting-plane passes to do\n\
@@ -1571,7 +1576,7 @@ keywds[] = {	/* must be in alphabetical order */
 
  static Option_Info
 Oinfo = { "gurobi", verbuf, "gurobi_options", keywds, nkeywds, 0, verbuf,
-	   0,0,0,0,0, 20130328 };
+	   0,0,0,0,0, 20130419 };
 
  static void
 enamefailed(GRBenv *env, const char *what, const char *name)
@@ -2109,7 +2114,7 @@ statmsg(ASL *asl, GRBenv *env, GRBmodel *mdl, int i, Dims *d, int *wantobj)
 #endif /*}*/
 		break;
 	  case GRB_CUTOFF:
-		rv = "cutoff reached";
+		rv = "objective cutoff";
 		sr = 400;
 		break;
 	  case GRB_ITERATION_LIMIT:
