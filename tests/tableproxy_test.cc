@@ -1,5 +1,5 @@
 /*
- Tests of the CSV ODBC connection.
+ Tests of the AMPL table proxy.
 
  Copyright (C) 2012 AMPL Optimization LLC
 
@@ -21,41 +21,38 @@
  */
 
 #include "gtest/gtest.h"
+#include "util/format.h"
 #include "tests/function.h"
-#include "tests/odbc.h"
-
-using fun::Handler;
-using fun::Table;
+#include "tests/util.h"
 
 namespace {
 
-class CSVTest : public ::testing::Test {
+class TableProxyTest : public ::testing::Test {
  protected:
   static fun::Library lib_;
-  const Handler *handler_;
+  const fun::Handler *handler_;
 
   static void SetUpTestCase() {
     lib_.Load();
   }
 
   void SetUp() {
-    handler_ = lib_.GetHandler("odbc");
+    handler_ = lib_.GetHandler("tableproxy");
   }
 };
 
-fun::Library CSVTest::lib_("../tables/ampltabl.dll");
+fun::Library TableProxyTest::lib_("../tables/ampltabl.dll");
 
-TEST_F(CSVTest, Read) {
-  Table t("test", 1);
-  t.AddString("odbc");
-  // Some versions of the text driver require a trailing slash in DBQ value.
-  t.AddString("DRIVER={" + env.FindDriver("*.csv") + "}; DBQ=data\\");
-  t.AddString("test.csv");
-  t = "S";
-  odbc::Env env;
-  handler_->Read(&t);
-  EXPECT_EQ(2u, t.num_rows());
-  EXPECT_STREQ("abc", t(0, 0).string());
-  EXPECT_STREQ("def", t(1, 0).string());
+TEST_F(TableProxyTest, WriteTab) {
+  fun::Table t("test", 1);
+  t.AddString("tableproxy");
+  int bits = sizeof(void*) == 8 ? 64 : 32;
+  t.AddString(fmt::Format("prog=../tables/tableproxy{}") << bits);
+  t.AddString("lib=../tables/fullbit.dll");
+  t.AddString("lib-tab");
+  t = "N", 1, 2;
+  std::remove("test.tab");
+  handler_->Write(t);
+  EXPECT_EQ("ampl.tab 1 0\nN\n1\n2\n", ReadFile("test.tab"));
 }
 }

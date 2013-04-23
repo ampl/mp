@@ -51,8 +51,9 @@ fun::Library ExcelTest::lib_("../tables/ampltabl.dll");
 
 TEST_F(ExcelTest, Read) {
   Table t("TableWith256CharCell", 1);
+  t.AddString("odbc", "data/test.xls");
   t = "S";
-  handler_->Read("data/test.xls", &t);
+  handler_->Read(&t);
   EXPECT_EQ(1u, t.num_rows());
   EXPECT_STREQ(
       "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghij"

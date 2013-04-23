@@ -130,3 +130,6 @@ add_subdirectory(ilogcp)
 if (HAVE_JACOP)
   add_subdirectory(jacop)
 endif ()
+
+cxx_test_with_flags(tableproxy_test ""
+  "gtest;function;util" test_main.cc tableproxy_test.cc util.cc)

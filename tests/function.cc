@@ -51,7 +51,6 @@ class ScopedTableInfo : public TableInfo {
   vector<char*> svals_;
   Table *table_;
 
-  void SetString(vector<char*> *strings, unsigned index, const char *str);
   void AddString(vector<char*> *strings, const char *str);
 
   static int Lookup(real *dv, char **sv, TableInfo *ti);
@@ -67,8 +66,7 @@ class ScopedTableInfo : public TableInfo {
   };
 
  public:
-  ScopedTableInfo(const Table &t, const string &connection_str,
-      const string &sql = string());
+  ScopedTableInfo(const Table &t);
   ~ScopedTableInfo();
 
   Table *GetTable() { return table_; }
@@ -82,18 +80,14 @@ class ScopedTableInfo : public TableInfo {
   }
 };
 
-void ScopedTableInfo::SetString(
-    vector<char*> *strings, unsigned index, const char *str) {
+void ScopedTableInfo::AddString(vector<char*> *strings, const char *str) {
+  if (!str) return;
+  strings->push_back(0);
+  unsigned index = static_cast<unsigned>(strings->size() - 1);
   char *&oldstr = (*strings)[index];
   if (oldstr) delete [] oldstr;
   oldstr = new char[std::strlen(str) + 1];
   std::strcpy(oldstr, str);  // NOLINT(runtime/printf)
-}
-
-void ScopedTableInfo::AddString(vector<char*> *strings, const char *str) {
-  if (!str) return;
-  strings->push_back(0);
-  SetString(strings, static_cast<unsigned>(strings->size() - 1), str);
 }
 
 int ScopedTableInfo::Lookup(real *dv, char **sv, TableInfo *ti) {
@@ -137,20 +131,15 @@ long ScopedTableInfo::AdjustMaxrows(long new_maxrows) {
   return new_maxrows;
 }
 
-ScopedTableInfo::ScopedTableInfo(const Table &t,
-    const string &connection_str, const string &sql) {
+ScopedTableInfo::ScopedTableInfo(const Table &t) {
   // Workaround for GCC bug 30111 that prevents value-initialization of
   // the base POD class.
   TableInfo ti = {};
   static_cast<TableInfo&>(*this) = ti;
 
   tname = const_cast<char*>(t.name());
-  AddString(&strings_, "ODBC");
-  AddString(&strings_, connection_str.c_str());
-  if (!sql.empty())
-    AddString(&strings_, sql.c_str());
-  // Uncomment the following line to get verbose output.
-  //AddString(&strings_, "verbose");
+  for (unsigned i = 0, n = t.num_strings(); i < n; ++i)
+    AddString(&strings_, t.string(i));
   nstrings = static_cast<int>(strings_.size());
   strings = &strings_[0];
   Missing = &MISSING;
@@ -324,10 +313,10 @@ void LibraryImpl::AddFunc(const char *name, rfunc f,
 
 void LibraryImpl::AddTableHandler(
     TableHandlerFunc read, TableHandlerFunc write,
-    char *handler_info, int , void *) {
+    char *handler_info, int , void *vinfo) {
   string info(handler_info);
   string name(info.substr(0, info.find('\n')));
-  Handler handler(library, read, write);
+  Handler handler(library, read, write, vinfo);
   if (!library->impl()->handlers_.insert(
       std::make_pair(name, handler)).second) {
     ReportDuplicateFunction(name);
@@ -439,19 +428,17 @@ std::ostream &operator<<(std::ostream &os, const Table &t) {
   return os;
 }
 
-void Handler::Read(const string &connection_str,
-    Table *t, const string &sql_statement) const {
-  ScopedTableInfo ti(*t, connection_str, sql_statement);
+void Handler::Read(Table *t) const {
+  ScopedTableInfo ti(*t);
   ti.TMI = lib_->impl();
   ti.SetTable(t);
   ti.AddRows = Table::AddRows;
+  ti.Vinfo = vinfo_;
   CheckResult(read_(lib_->impl(), &ti), ti);
 }
 
-int Handler::Write(
-    const string &connection_str, const Table &t, int flags) const {
-  ScopedTableInfo ti(t, connection_str,
-		  (flags & APPEND) != 0 ? "write=append" : "");
+int Handler::Write(const Table &t, int flags) const {
+  ScopedTableInfo ti(t);
   for (unsigned i = 0, m = t.num_rows(); i < m; ++i) {
     for (unsigned j = 0, n = t.num_cols(); j < n; ++j)
       ti.SetValue(i, j, t(i, j));
@@ -461,6 +448,7 @@ int Handler::Write(
   if ((flags & INOUT) != 0)
     ti.flags |= DBTI_flags_IN;
   ti.TMI = lib_->impl();
+  ti.Vinfo = vinfo_;
   int result = write_(lib_->impl(), &ti);
   if ((flags & NOTHROW) == 0)
     CheckResult(result, ti);
