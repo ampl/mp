@@ -30,9 +30,9 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 else ()
   set(TABLEPROXY_SUFFIX 32)
 endif ()
-set(TABLEPROXY_NAME tableproxy${TABLEPROXY_SUFFIX})
 
-add_executable(${TABLEPROXY_NAME} tableproxy.c ../solvers/printf.c tableproxyver.h)
-set_target_properties(${TABLEPROXY_NAME}
-  PROPERTIES COMPILE_DEFINITIONS "STAND_ALONE=1;QUOTIFY=1")
-target_link_libraries(${TABLEPROXY_NAME} ${SOLVER_LIBS} ${TABLEPROXY_LIBS})
+add_executable(tableproxy tableproxy.c ../solvers/printf.c tableproxyver.h)
+set_target_properties(tableproxy
+  PROPERTIES COMPILE_DEFINITIONS "STAND_ALONE=1;QUOTIFY=1"
+             OUTPUT_NAME tableproxy${TABLEPROXY_SUFFIX})
+target_link_libraries(tableproxy ${SOLVER_LIBS} ${TABLEPROXY_LIBS})
