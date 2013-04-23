@@ -33,6 +33,8 @@
 #include <string>
 #include <vector>
 
+#include "util/format.h"
+
 #if defined(_MSC_VER)
 # define isnan _isnan
 #else
@@ -160,7 +162,8 @@ class Table {
   std::string name_;
   unsigned num_cols_;
   unsigned arity_;
-  std::deque<std::string> strings_;
+  std::vector<std::string> strings_;
+  std::deque<std::string> str_values_;
   std::vector<fun::Variant> values_;
 
   friend class Handler;
@@ -170,7 +173,7 @@ class Table {
   Table &operator=(const Table &);
 
   void Clear() {
-    strings_.clear();
+    str_values_.clear();
     values_.clear();
   }
 
@@ -201,8 +204,17 @@ class Table {
   };
 
  public:
-  Table(const std::string &name, unsigned num_cols)
-  : name_(name), num_cols_(num_cols), arity_(std::min(1u, num_cols)) {
+  Table(const std::string &name, unsigned num_cols,
+      const std::vector<std::string> &strings = std::vector<std::string>())
+  : name_(name), num_cols_(num_cols),
+    arity_(std::min(1u, num_cols)), strings_(strings) {}
+
+  unsigned num_strings() const { return strings_.size(); }
+
+  const char *string(unsigned index) const { return strings_[index].c_str(); }
+
+  void AddString(fmt::StringRef s) {
+    strings_.push_back(s);
   }
 
   bool HasColNames() const { return values_.size() >= num_cols_; }
@@ -241,8 +253,8 @@ class Table {
   }
 
   void Add(const char *s) {
-    strings_.push_back(s);
-    values_.push_back(Variant::FromString(strings_.back().c_str()));
+    str_values_.push_back(s);
+    values_.push_back(Variant::FromString(str_values_.back().c_str()));
   }
 
   Inserter operator=(const char *s) {
@@ -300,18 +312,18 @@ class Handler {
   Library *lib_;
   TableHandlerFunc read_;
   TableHandlerFunc write_;
+  void *vinfo_;
 
  public:
-  Handler(Library *lib, TableHandlerFunc read, TableHandlerFunc write) :
-    lib_(lib), read_(read), write_(write) {}
+  Handler(Library *lib, TableHandlerFunc read,
+      TableHandlerFunc write, void *vinfo = 0)
+  : lib_(lib), read_(read), write_(write), vinfo_(vinfo) {}
 
   // Flags for Write.
-  enum { INOUT = 1, APPEND = 2, NOTHROW = 4 };
+  enum { INOUT = 1, NOTHROW = 2 };
 
-  void Read(const std::string &connection_str, Table *t,
-      const std::string &sql_statement = std::string()) const;
-  int Write(const std::string &connection_str, const Table &t,
-      int flags = 0) const;
+  void Read(Table *t) const;
+  int Write(const Table &t, int flags = 0) const;
 };
 
 template <typename T>

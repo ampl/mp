@@ -73,7 +73,7 @@ class MySQLTest : public ::testing::Test {
   static fun::Library lib_;
   const Handler *handler_;
   odbc::Env env_;
-  std::string connection_;
+  std::vector<std::string> strings_;
   std::string table_name_;
   enum {BUFFER_SIZE = 256};
 
@@ -87,8 +87,9 @@ class MySQLTest : public ::testing::Test {
 
 void MySQLTest::SetUp() {
   handler_ = lib_.GetHandler("odbc");
-  connection_ = "DRIVER={" + env_.FindDriver("mysql") +
-      "}; SERVER=" SERVER "; DATABASE=test; USER=test;";
+  strings_.push_back("ODBC");
+  strings_.push_back("DRIVER={" + env_.FindDriver("mysql") +
+      "}; SERVER=" SERVER "; DATABASE=test; USER=test;");
 
   // Create a unique table name from the hostname and pid. This is necessary
   // to avoid clashes between tests running in parallel on different machines
@@ -102,7 +103,7 @@ void MySQLTest::SetUp() {
 void MySQLTest::TearDown() {
   // Drop the table.
   odbc::Connection con(env_);
-  con.Connect(connection_.c_str());
+  con.Connect(strings_[1].c_str());
   odbc::Statement stmt(con);
   try {
     stmt.Execute(c_str(fmt::Format("DROP TABLE `{}`") << table_name_));
@@ -112,65 +113,66 @@ void MySQLTest::TearDown() {
 fun::Library MySQLTest::lib_("../tables/ampltabl.dll");
 
 TEST_F(MySQLTest, Read) {
-  Table t("", 1);
+  Table t("", 1, strings_);
+  t.AddString("SQL=SELECT VERSION();");
   t = "VERSION()";
-  handler_->Read(connection_, &t, "SQL=SELECT VERSION();");
+  handler_->Read(&t);
   EXPECT_EQ(1u, t.num_rows());
   EXPECT_TRUE(t(0, 0).string() != nullptr);
 }
 
 TEST_F(MySQLTest, Write) {
-  Table t1(table_name_, 1);
+  Table t1(table_name_, 1, strings_);
   t1 = "Character Name",
        "Arthur Dent",
        "Ford Prefect";
-  handler_->Write(connection_, t1);
-  Table t2(table_name_, 1);
+  handler_->Write(t1);
+  Table t2(table_name_, 1, strings_);
   t2 = "Character Name";
-  handler_->Read(connection_, &t2);
+  handler_->Read(&t2);
   EXPECT_EQ(t1, t2);
 }
 
 TEST_F(MySQLTest, Rewrite) {
-  Table t1(table_name_, 1);
+  Table t1(table_name_, 1, strings_);
   t1 = "Test",
        "foo";
   // The first write creates a table.
-  handler_->Write(connection_, t1);
-  Table t2(table_name_, 1);
+  handler_->Write(t1);
+  Table t2(table_name_, 1, strings_);
   t2 = "Test";
-  handler_->Read(connection_, &t2);
+  handler_->Read(&t2);
   ASSERT_EQ(t1, t2);
   // The second write should drop the table and create a new one.
-  Table t3(table_name_, 1);
+  Table t3(table_name_, 1, strings_);
   t3 = "Character",
        "Zaphod";
-  handler_->Write(connection_, t3);
-  Table t4(table_name_, 1);
+  handler_->Write(t3);
+  Table t4(table_name_, 1, strings_);
   t4 = "Character";
-  handler_->Read(connection_, &t4);
+  handler_->Read(&t4);
   ASSERT_EQ(t3, t4);
 }
 
 TEST_F(MySQLTest, WriteInOut) {
-  Table t1(table_name_, 1);
+  Table t1(table_name_, 1, strings_);
   t1 = "Name",
        "Beeblebrox";
   // The first write creates a table.
-  handler_->Write(connection_, t1);
-  Table t2(table_name_, 1);
+  handler_->Write(t1);
+  Table t2(table_name_, 1, strings_);
   t2 = "Name";
-  handler_->Read(connection_, &t2);
+  handler_->Read(&t2);
   ASSERT_EQ(t1, t2);
   // The second write appends data to the table.
-  Table t3(table_name_, 1);
+  Table t3(table_name_, 1, strings_);
   t3 = "Name",
        "Zaphod";
-  handler_->Write(connection_, t3, Handler::INOUT);
-  Table t4(table_name_, 1);
+  handler_->Write(t3, Handler::INOUT);
+  Table t4(table_name_, 1, strings_);
   t4 = "Name";
-  handler_->Read(connection_, &t4);
-  Table t5(table_name_, 1);
+  handler_->Read(&t4);
+  Table t5(table_name_, 1, strings_);
   t5= "Name",
       "Zaphod",
       "Beeblebrox";
@@ -178,24 +180,25 @@ TEST_F(MySQLTest, WriteInOut) {
 }
 
 TEST_F(MySQLTest, Append) {
-  Table t1(table_name_, 1);
+  Table t1(table_name_, 1, strings_);
   t1 = "Name",
        "Zaphod";
   // The first write creates a table.
-  handler_->Write(connection_, t1);
-  Table t2(table_name_, 1);
+  handler_->Write(t1);
+  Table t2(table_name_, 1, strings_);
   t2 = "Name";
-  handler_->Read(connection_, &t2);
+  handler_->Read(&t2);
   ASSERT_EQ(t1, t2);
   // The second write appends data to the table.
-  Table t3(table_name_, 1);
+  Table t3(table_name_, 1, strings_);
+  t3.AddString("write=append");
   t3 = "Name",
        "Beeblebrox";
-  handler_->Write(connection_, t3, Handler::INOUT | Handler::APPEND);
-  Table t4(table_name_, 1);
+  handler_->Write(t3, Handler::INOUT);
+  Table t4(table_name_, 1, strings_);
   t4 = "Name";
-  handler_->Read(connection_, &t4);
-  Table t5(table_name_, 1);
+  handler_->Read(&t4);
+  Table t5(table_name_, 1, strings_);
   t5= "Name",
       "Zaphod",
       "Beeblebrox";
@@ -203,15 +206,15 @@ TEST_F(MySQLTest, Append) {
 }
 
 TEST_F(MySQLTest, AdjustColNames) {
-  Table t(table_name_, 3);
+  Table t(table_name_, 3, strings_);
   t = "Time:a",         "Strcol:b", "Mixed:c",
       20121112143000.0, "e",        "f",
       20121112150000.0, "111",      "222";
-  handler_->Write(connection_, t);
-  Table t2(table_name_, 3);
+  handler_->Write(t);
+  Table t2(table_name_, 3, strings_);
   t2 = "a", "b", "c";
-  handler_->Read(connection_, &t2);
-  Table t3(table_name_, 3);
+  handler_->Read(&t2);
+  Table t3(table_name_, 3, strings_);
   t3 = "a",             "b", "c",
       20121112143000.0, "e", "f",
       20121112150000.0, 111, 222;
@@ -231,36 +234,36 @@ do { \
 } while (false)
 
 TEST_F(MySQLTest, EmptyColName) {
-  Table t(table_name_, 2);
+  Table t(table_name_, 2, strings_);
   t = "a", "";
-  EXPECT_ERROR(handler_->Write(connection_, t),
+  EXPECT_ERROR(handler_->Write(t),
       "Column 2's name is the empty string.");
-  EXPECT_ERROR(handler_->Read(connection_, &t),
+  EXPECT_ERROR(handler_->Read(&t),
       "Column 2's name is the empty string.");
 }
 
 TEST_F(MySQLTest, QuoteInTableName) {
   table_name_ += '`';
-  Table t(table_name_, 1);
+  Table t(table_name_, 1, strings_);
   t = "c", "v";
-  handler_->Write(connection_, t);
+  handler_->Write(t);
 }
 
 TEST_F(MySQLTest, QuoteInColumnName) {
-  Table t(table_name_, 1);
+  Table t(table_name_, 1, strings_);
   t = "c`", "v";
-  handler_->Write(connection_, t);
+  handler_->Write(t);
 }
 
 TEST_F(MySQLTest, InvalidCharInTableName) {
   table_name_ += '\t';
-  Table t(table_name_, 1);
+  Table t(table_name_, 1, strings_);
   t = "c", "v";
   std::string error = str(fmt::Format(
       "Table name contains invalid character with code {}")
       << static_cast<int>('\t'));
-  EXPECT_ERROR(handler_->Write(connection_, t), error.c_str());
-  EXPECT_ERROR(handler_->Read(connection_, &t), error.c_str());
+  EXPECT_ERROR(handler_->Write(t), error.c_str());
+  EXPECT_ERROR(handler_->Read(&t), error.c_str());
 }
 
 TEST_F(MySQLTest, LowerCaseLettersInTableName) {
@@ -268,12 +271,12 @@ TEST_F(MySQLTest, LowerCaseLettersInTableName) {
     if (std::isalpha(c) && std::tolower(c) == c)
       table_name_ += static_cast<char>(c);
   }
-  Table t(table_name_, 1);
+  Table t(table_name_, 1, strings_);
   t = "c", "v";
-  handler_->Write(connection_, t);
-  Table in(table_name_, 1);
+  handler_->Write(t);
+  Table in(table_name_, 1, strings_);
   in = "c";
-  handler_->Read(connection_, &in);
+  handler_->Read(&in);
   EXPECT_EQ(t, in);
 }
 
@@ -282,12 +285,12 @@ TEST_F(MySQLTest, UpperCaseLettersInTableName) {
     if (std::isalpha(c) && std::tolower(c) != c)
       table_name_ += static_cast<char>(c);
   }
-  Table t(table_name_, 1);
+  Table t(table_name_, 1, strings_);
   t = "c", "v";
-  handler_->Write(connection_, t);
-  Table in(table_name_, 1);
+  handler_->Write(t);
+  Table in(table_name_, 1, strings_);
   in = "c";
-  handler_->Read(connection_, &in);
+  handler_->Read(&in);
   EXPECT_EQ(t, in);
 }
 
@@ -296,12 +299,12 @@ TEST_F(MySQLTest, DigitsInTableName) {
     if (std::isdigit(c))
       table_name_ += static_cast<char>(c);
   }
-  Table t(table_name_, 1);
+  Table t(table_name_, 1, strings_);
   t = "c", "v";
-  handler_->Write(connection_, t);
-  Table in(table_name_, 1);
+  handler_->Write(t);
+  Table in(table_name_, 1, strings_);
   in = "c";
-  handler_->Read(connection_, &in);
+  handler_->Read(&in);
   EXPECT_EQ(t, in);
 }
 
@@ -310,12 +313,12 @@ TEST_F(MySQLTest, SpecialCharsInTableName) {
     if (std::isprint(c) && !std::isalnum(c))
       table_name_ += static_cast<char>(c);
   }
-  Table t(table_name_, 1);
+  Table t(table_name_, 1, strings_);
   t = "c", "v";
-  handler_->Write(connection_, t);
-  Table in(table_name_, 1);
+  handler_->Write(t);
+  Table in(table_name_, 1, strings_);
   in = "c";
-  handler_->Read(connection_, &in);
+  handler_->Read(&in);
   EXPECT_EQ(t, in);
 }
 
@@ -324,13 +327,13 @@ TEST_F(MySQLTest, InvalidCharsInColumnName) {
     if (std::isprint(c))
       continue;
     char col_name[2] = {static_cast<char>(c)};
-    Table t(table_name_, 1);
+    Table t(table_name_, 1, strings_);
     t = col_name, "v";
     std::string error = str(fmt::Format(
           "Column 1's name contains invalid character with code {}")
           << static_cast<int>(c));
-    EXPECT_ERROR(handler_->Write(connection_, t), error.c_str());
-    EXPECT_ERROR(handler_->Read(connection_, &t), error.c_str());
+    EXPECT_ERROR(handler_->Write(t), error.c_str());
+    EXPECT_ERROR(handler_->Read(&t), error.c_str());
   }
 }
 
@@ -340,12 +343,12 @@ TEST_F(MySQLTest, AlphaNumericColumnName) {
     if (std::isalnum(c))
       col_name += static_cast<char>(c);
   }
-  Table t(table_name_, 1);
+  Table t(table_name_, 1, strings_);
   t = col_name.c_str(), "v";
-  handler_->Write(connection_, t);
-  Table in(table_name_, 1);
+  handler_->Write(t);
+  Table in(table_name_, 1, strings_);
   in = col_name.c_str();
-  handler_->Read(connection_, &in);
+  handler_->Read(&in);
   EXPECT_EQ(t, in);
 }
 
@@ -355,12 +358,12 @@ TEST_F(MySQLTest, SpecialCharsInColumnName) {
     if (std::isprint(c) && !std::isalnum(c))
       col_name += static_cast<char>(c);
   }
-  Table t(table_name_, 1);
+  Table t(table_name_, 1, strings_);
   t = col_name.c_str(), "v";
-  handler_->Write(connection_, t);
-  Table in(table_name_, 1);
+  handler_->Write(t);
+  Table in(table_name_, 1, strings_);
   in = col_name.c_str();
-  handler_->Read(connection_, &in);
+  handler_->Read(&in);
   EXPECT_EQ(t, in);
 }
 }

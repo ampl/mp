@@ -137,10 +137,24 @@ TEST(FunctionTest, VariantOutput) {
 TEST(FunctionTest, EmptyTable) {
   Table t("", 0);
   EXPECT_STREQ("", t.name());
+  EXPECT_EQ(0u, t.num_strings());
   EXPECT_EQ(0u, t.num_rows());
   EXPECT_EQ(0u, t.num_cols());
   EXPECT_THROW(t.GetColName(0), std::invalid_argument);
   EXPECT_THROW(t(0, 0), std::invalid_argument);
+}
+
+TEST(FunctionTest, TableStrings) {
+  std::vector<std::string> strings;
+  strings.push_back("abc");
+  strings.push_back("def");
+  Table t("", 0, strings);
+  EXPECT_EQ(2u, t.num_strings());
+  EXPECT_EQ("abc", t.strings(0));
+  EXPECT_EQ("def", t.strings(1));
+  t.AddString("ghi");
+  EXPECT_EQ(3u, t.num_strings());
+  EXPECT_EQ("ghi", t.strings(2));
 }
 
 TEST(FunctionTest, TableArity) {
@@ -226,7 +240,7 @@ TEST(FunctionTest, Library) {
   const Handler *handler = lib.GetHandler("testhandler");
   EXPECT_TRUE(handler != nullptr);
   Table t("", 0);
-  handler->Read("", &t);
+  handler->Read(&t);
 }
 
 int LookupTest(AmplExports *, TableInfo *ti) {
@@ -245,13 +259,13 @@ TEST(FunctionTest, TableLookup) {
        11,  "v1",  2,    1,
        42,  "v2",  3,    1,
        42,  "v2",  4,    1;
-  EXPECT_EQ(0, handler.Write("", t, Handler::NOTHROW));
+  EXPECT_EQ(0, handler.Write(t, Handler::NOTHROW));
   t.SetArity(2);
-  EXPECT_EQ(2, handler.Write("", t, Handler::NOTHROW));
+  EXPECT_EQ(2, handler.Write(t, Handler::NOTHROW));
   t.SetArity(3);
-  EXPECT_EQ(3, handler.Write("", t, Handler::NOTHROW));
+  EXPECT_EQ(3, handler.Write(t, Handler::NOTHROW));
   t.SetArity(4);
-  EXPECT_EQ(-1, handler.Write("", t, Handler::NOTHROW));
+  EXPECT_EQ(-1, handler.Write(t, Handler::NOTHROW));
 }
 
 int AdjustMaxrowsTest(AmplExports *, TableInfo *ti) {
@@ -276,13 +290,13 @@ TEST(FunctionTest, AdjustMaxrows) {
   Handler handler(&lib, 0, AdjustMaxrowsTest);
   Table t("", 3);
   t = "1", "c2", "c3", "a", 11, "b";
-  EXPECT_EQ(1, handler.Write("", t, Handler::NOTHROW));
+  EXPECT_EQ(1, handler.Write(t, Handler::NOTHROW));
   t = "2", "c2", "c3", "a", 11, "b";
-  EXPECT_EQ(2, handler.Write("", t, Handler::NOTHROW));
+  EXPECT_EQ(2, handler.Write(t, Handler::NOTHROW));
   t = "3", "c2", "c3", "a", 11, "b";
-  EXPECT_EQ(3, handler.Write("", t, Handler::NOTHROW));
+  EXPECT_EQ(3, handler.Write(t, Handler::NOTHROW));
   t = "4", "c2", "c3", "a", 11, "b";
-  EXPECT_EQ(4, handler.Write("", t, Handler::NOTHROW));
+  EXPECT_EQ(4, handler.Write(t, Handler::NOTHROW));
 }
 
 const double ITEMS[] = {5, 7, 11, 13, 17, 19, 23, 29, 31};
