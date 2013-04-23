@@ -297,6 +297,7 @@ class Library {
   LibraryImpl *impl() { return impl_.get(); }
 
   void Load();
+  void Unload();
   std::string error() const;
 
   unsigned GetNumFunctions() const;

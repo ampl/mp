@@ -235,13 +235,17 @@ class LibraryImpl : public AmplExports, public TMInfo {
  private:
   string name_;
   vector<void*> tempmem_;
-  static string error_;
+
+  typedef vector< std::pair<Exitfunc*, void*> > ExitFuncVector;
+  ExitFuncVector exit_funcs_;
 
   typedef std::map<string, func_info> FunctionMap;
   FunctionMap funcs_;
 
   typedef std::map<string, Handler> HandlerMap;
   HandlerMap handlers_;
+
+  static string error_;
 
   static void ReportDuplicateFunction(const string &name) {
     error_ = "duplicate function '" + name + "'";
@@ -254,8 +258,9 @@ class LibraryImpl : public AmplExports, public TMInfo {
       TableHandlerFunc read, TableHandlerFunc write,
       char *handler_info, int , void *);
 
-  static void AtExit(AmplExports *, Exitfunc *, void *) {
-    // Do nothing.
+  static void AtExit(AmplExports *ae, Exitfunc *f, void *data) {
+    LibraryImpl *impl = static_cast<LibraryImpl*>(ae);
+    impl->exit_funcs_.push_back(std::make_pair(f, data));
   }
 
   static void *Tempmem(TMInfo *tmi, size_t size) {
@@ -276,6 +281,13 @@ class LibraryImpl : public AmplExports, public TMInfo {
     // Use funcadd(AmplExports*) instead of func_add(ASL*) because
     // the latter doesn't load random functions.
     funcadd(this);
+  }
+
+  void Unload() {
+    for (ExitFuncVector::const_iterator
+        i = exit_funcs_.begin(), e = exit_funcs_.end(); i != e; ++i) {
+      i->first(i->second);
+    }
   }
 
   string error() const { return error_; }
@@ -354,6 +366,8 @@ Library::~Library() {
 }
 
 void Library::Load() { impl_->Load(); }
+
+void Library::Unload() { impl_->Unload(); }
 
 string Library::error() const { return impl_->error(); }
 
