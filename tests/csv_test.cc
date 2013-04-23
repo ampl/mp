@@ -48,11 +48,11 @@ fun::Library CSVTest::lib_("../tables/ampltabl.dll");
 TEST_F(CSVTest, Read) {
   Table t("test", 1);
   t.AddString("odbc");
+  odbc::Env env;
   // Some versions of the text driver require a trailing slash in DBQ value.
   t.AddString("DRIVER={" + env.FindDriver("*.csv") + "}; DBQ=data\\");
   t.AddString("test.csv");
   t = "S";
-  odbc::Env env;
   handler_->Read(&t);
   EXPECT_EQ(2u, t.num_rows());
   EXPECT_STREQ("abc", t(0, 0).string());
