@@ -38,6 +38,7 @@ class AccessTest : public ::testing::Test {
  protected:
   static fun::Library lib_;
   const Handler *handler_;
+  std::vector<std::string> strings_;
 
   static void SetUpTestCase() {
     lib_.Load();
@@ -45,23 +46,25 @@ class AccessTest : public ::testing::Test {
 
   void SetUp() {
     handler_ = lib_.GetHandler("odbc");
+    strings_.push_back("odbc");
+    strings_.push_back("data/test.accdb");
   }
 };
 
 fun::Library AccessTest::lib_("../tables/ampltabl.dll");
 
 TEST_F(AccessTest, Read) {
-  Table t("Test", 1);
+  Table t("Test", 1, strings_);
   t = "N";
-  handler_->Read("data/test.accdb", &t);
+  handler_->Read(&t);
   EXPECT_EQ(1u, t.num_rows());
   EXPECT_EQ(42, t(0, 0).number());
 }
 
 TEST_F(AccessTest, ReadNullField) {
-  Table t("TableWithNullField", 1);
+  Table t("TableWithNullField", 1, strings_);
   t = "NullField";
-  handler_->Read("data/test.accdb", &t);
+  handler_->Read(&t);
   EXPECT_EQ(1u, t.num_rows());
   EXPECT_EQ(fun::VOID, t(0, 0).type());
 }
