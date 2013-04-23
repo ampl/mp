@@ -133,3 +133,4 @@ endif ()
 
 cxx_test_with_flags(tableproxy_test ""
   "gtest;function;util" test_main.cc tableproxy_test.cc util.cc)
+add_dependencies(tableproxy_test tableproxy)
