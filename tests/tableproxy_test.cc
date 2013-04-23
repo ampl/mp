@@ -36,6 +36,10 @@ class TableProxyTest : public ::testing::Test {
     lib_.Load();
   }
 
+  static void TearDownTestCase() {
+    lib_.Unload();
+  }
+
   void SetUp() {
     handler_ = lib_.GetHandler("tableproxy");
   }
