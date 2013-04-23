@@ -37,6 +37,7 @@ class ExcelTest : public ::testing::Test {
  protected:
   static fun::Library lib_;
   const Handler *handler_;
+  std::vector<std::string> strings_;
 
   static void SetUpTestCase() {
     lib_.Load();
@@ -44,14 +45,15 @@ class ExcelTest : public ::testing::Test {
 
   void SetUp() {
     handler_ = lib_.GetHandler("odbc");
+    strings_.push_back("odbc");
+    strings_.push_back("data/test.xls");
   }
 };
 
 fun::Library ExcelTest::lib_("../tables/ampltabl.dll");
 
 TEST_F(ExcelTest, Read) {
-  Table t("TableWith256CharCell", 1);
-  t.AddString("odbc", "data/test.xls");
+  Table t("TableWith256CharCell", 1, strings_);
   t = "S";
   handler_->Read(&t);
   EXPECT_EQ(1u, t.num_rows());
@@ -71,10 +73,10 @@ TEST_F(ExcelTest, WriteMaxColumnsExcel2003) {
   // Excel 2003 and earlier support at most 256 columns
   // http://office.microsoft.com/en-us/excel-help/excel-specifications-and-limits-HP005199291.aspx
   int num_cols = 256;
-  Table t("TableWithManyCols", num_cols);
+  Table t("TableWithManyCols", num_cols, strings_);
   for (int i = 1; i <= num_cols; ++i)
     t.Add(c_str(fmt::Format("c{}") << i));
-  handler_->Write("data/test.xls", t);
+  handler_->Write(t);
 }
 
 #ifndef _WIN64
@@ -86,10 +88,11 @@ TEST_F(ExcelTest, WriteMaxColumnsExcel2007) {
   // Excel 2007 supports up to 16384 columns, but the ODBC driver only
   // allows 256.
   int num_cols = 256;
-  Table t("TableWithManyCols", num_cols);
+  strings_[1] = "data/test.xlsx";
+  Table t("TableWithManyCols", num_cols, strings_);
   for (int i = 1; i <= num_cols; ++i)
     t.Add(c_str(fmt::Format("c{}") << i));
-  handler_->Write("data/test.xlsx", t);
+  handler_->Write(t);
 }
 #endif
 }
