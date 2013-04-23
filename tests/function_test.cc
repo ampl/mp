@@ -150,11 +150,11 @@ TEST(FunctionTest, TableStrings) {
   strings.push_back("def");
   Table t("", 0, strings);
   EXPECT_EQ(2u, t.num_strings());
-  EXPECT_EQ("abc", t.strings(0));
-  EXPECT_EQ("def", t.strings(1));
+  EXPECT_STREQ("abc", t.string(0));
+  EXPECT_STREQ("def", t.string(1));
   t.AddString("ghi");
   EXPECT_EQ(3u, t.num_strings());
-  EXPECT_EQ("ghi", t.strings(2));
+  EXPECT_STREQ("ghi", t.string(2));
 }
 
 TEST(FunctionTest, TableArity) {
