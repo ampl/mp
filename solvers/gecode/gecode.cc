@@ -31,6 +31,7 @@ using Gecode::BoolExpr;
 using Gecode::IntVarArgs;
 using Gecode::IntVar;
 using Gecode::IntVarArray;
+using Gecode::Reify;
 namespace Search = Gecode::Search;
 
 namespace {
@@ -237,10 +238,10 @@ LinExpr NLToGecodeConverter::VisitIf(IfExpr e) {
   BoolExpr condition = Visit(e.condition());
   rel(problem_, result, Gecode::IRT_EQ,
       Gecode::expr(problem_, Visit(e.true_expr()), icl_),
-      Gecode::expr(problem_, condition, icl_), icl_);
+      Reify(Gecode::expr(problem_, condition, icl_), Gecode::RM_IMP), icl_);
   rel(problem_, result, Gecode::IRT_EQ,
       Gecode::expr(problem_, Visit(e.false_expr()), icl_),
-      Gecode::expr(problem_, !condition, icl_), icl_);
+      Reify(Gecode::expr(problem_, !condition, icl_), Gecode::RM_IMP), icl_);
   return result;
 }
 
@@ -314,11 +315,11 @@ bool GecodeSolver::Stop::stop(
       s.fail > solver_.fail_limit_ || s.memory > solver_.memory_limit_;
 }
 
-void GecodeSolver::EnableOutput(const char *name, int value) {
+void GecodeSolver::SetBoolOption(const char *name, int value, bool *option) {
   if (value != 0 && value != 1)
     ReportError("Invalid value {} for option {}") << value << name;
   else
-    output_ = value != 0;
+    *option = value != 0;
 }
 
 void GecodeSolver::SetOutputFrequency(const char *name, int value) {
@@ -360,15 +361,16 @@ std::string GecodeSolver::GetOptionHeader() {
       "Gecode Directives for AMPL\n"
       "--------------------------\n"
       "\n"
-      "To set these directives, assign a string specifying their values to the AMPL "
-      "option gecode_options.  For example:\n"
+      "To set these directives, assign a string specifying their values to "
+      "the AMPL option gecode_options.  For example:\n"
       "\n"
-      "  ampl: option gecode_options 'version nodelimit=30000 val_branching=min';\n";
+      "  ampl: option gecode_options 'version nodelimit=30000 "
+      "val_branching=min';\n";
 }
 
 GecodeSolver::GecodeSolver()
 : Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130415),
-  output_(false), output_frequency_(1), output_count_(0),
+  output_(false), output_frequency_(1), output_count_(0), print_problem_(false),
   icl_(Gecode::ICL_DEF),
   var_branching_(Gecode::INT_VAR_SIZE_MIN()),
   val_branching_(Gecode::INT_VAL_MIN()),
@@ -379,7 +381,9 @@ GecodeSolver::GecodeSolver()
 
   AddIntOption("outlev",
       "0 or 1 (default 0):  Whether to print solution log.",
-      &GecodeSolver::EnableOutput);
+      &GecodeSolver::SetBoolOption, &output_);
+  AddIntOption("printproblem", "Print the problem for debugging.",
+      &GecodeSolver::SetBoolOption, &print_problem_);
 
   AddIntOption("outfreq",
       "Output frequency in seconds.  The value should be a positive integer.",
@@ -482,6 +486,12 @@ int GecodeSolver::Run(char **argv) {
 }
 
 void GecodeSolver::Solve(Problem &p) {
+  if (print_problem_) {
+    fmt::Writer writer;
+    writer << p;
+    std::puts(c_str(writer));
+  }
+
   // Set up an optimization problem in Gecode.
   std::auto_ptr<NLToGecodeConverter>
     converter(new NLToGecodeConverter(p.num_vars(), icl_));

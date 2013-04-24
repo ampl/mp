@@ -170,6 +170,7 @@ TEST_P(SolverTest, If) {
   NumericExpr e = AddIf(AddRelational(EQ, x, AddNum(1)), y, z);
   EXPECT_EQ(42, Eval(e, 1, 42, 10));
   EXPECT_EQ(10, Eval(e, 0, 42, 10));
+  EXPECT_EQ(42, Eval(e, 1, 42, 42));
 }
 
 TEST_P(SolverTest, Tanh) {
