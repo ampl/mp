@@ -2987,3 +2987,7 @@ error in it was not detected.  Example:
 printed "abc abc" rather than complaining that j+1 cannot be evaluated.
   Fix an obscure bug with complementarity constraints that led to an
 error message of the form "presolve has k = nnn, P.nfc = mmm".
+
+20130422
+  Fix a bug (possible fault) with logical constraints when presolve
+eliminates all of them.
