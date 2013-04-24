@@ -377,7 +377,7 @@ GecodeSolver::GecodeSolver()
 : Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130424),
   output_(false), output_frequency_(1), output_count_(0), print_problem_(false),
   icl_(Gecode::ICL_DEF),
-  var_branching_(IntVarBranch::Select::SEL_SIZE_MIN),
+  var_branching_(IntVarBranch::SEL_SIZE_MIN),
   val_branching_(Gecode::INT_VAL_MIN()),
   decay_(1),
   time_limit_(DBL_MAX), node_limit_(ULONG_MAX), fail_limit_(ULONG_MAX),
@@ -539,6 +539,12 @@ void GecodeSolver::Solve(Problem &p) {
   bool has_obj = p.num_objs() != 0;
   Search::Statistics stats;
   bool stopped = false;
+  // TODO: add an option to return multiple solutions
+  // TODO: report Gecode solution time
+  // TODO: add the following options
+  // - restart (constant, linear, luby, geometric) used by activity* labeling
+  // - restart_base
+  // - restart_scale
   header_ = str(fmt::Format("{:>10} {:>10} {:>10} {:>13}\n")
     << "Max Depth" << "Nodes" << "Fails" << (has_obj ? "Best Obj" : ""));
   if (has_obj) {
