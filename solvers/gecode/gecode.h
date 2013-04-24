@@ -302,6 +302,7 @@ class GecodeSolver : public Solver<GecodeSolver> {
   bool output_;
   double output_frequency_;
   unsigned output_count_;
+  bool print_problem_;
   std::string header_;
 
   Gecode::IntConLevel icl_;
@@ -313,7 +314,7 @@ class GecodeSolver : public Solver<GecodeSolver> {
   unsigned long fail_limit_;
   std::size_t memory_limit_;
 
-  void EnableOutput(const char *name, int value);
+  void SetBoolOption(const char *name, int value, bool *option);
   void SetOutputFrequency(const char *name, int value);
 
   template <typename T>
