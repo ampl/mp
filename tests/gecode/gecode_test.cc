@@ -51,6 +51,7 @@ extern "C" {
 
 using std::size_t;
 using std::string;
+using Gecode::IntVarBranch;
 
 #define DATA_DIR "../data/"
 
@@ -422,41 +423,58 @@ TEST_F(GecodeSolverTest, ValBranchingOption) {
   EXPECT_EQ(10u, count);
 }
 
-const OptionValue<Gecode::IntVarBranch> VAR_BRANCHINGS[] = {
-    {"none",            Gecode::INT_VAR_NONE()},
-    {"rnd",             Gecode::INT_VAR_RND(Gecode::Rnd(0))},
-    {"degree_min",      Gecode::INT_VAR_DEGREE_MIN()},
-    {"degree_max",      Gecode::INT_VAR_DEGREE_MAX()},
-    {"afc_min",         Gecode::INT_VAR_AFC_MIN()},
-    {"afc_max",         Gecode::INT_VAR_AFC_MAX()},
-    {"min_min",         Gecode::INT_VAR_MIN_MIN()},
-    {"min_max",         Gecode::INT_VAR_MIN_MAX()},
-    {"max_min",         Gecode::INT_VAR_MAX_MIN()},
-    {"max_max",         Gecode::INT_VAR_MAX_MAX()},
-    {"size_min",        Gecode::INT_VAR_SIZE_MIN()},
-    {"size_max",        Gecode::INT_VAR_SIZE_MAX()},
-    {"degree_size_min", Gecode::INT_VAR_DEGREE_SIZE_MIN()},
-    {"degree_size_max", Gecode::INT_VAR_DEGREE_SIZE_MAX()},
-    {"afc_size_min",    Gecode::INT_VAR_AFC_SIZE_MIN()},
-    {"afc_size_max",    Gecode::INT_VAR_AFC_SIZE_MAX()},
-    {"regret_min_min",  Gecode::INT_VAR_REGRET_MIN_MIN()},
-    {"regret_min_max",  Gecode::INT_VAR_REGRET_MIN_MAX()},
-    {"regret_max_min",  Gecode::INT_VAR_REGRET_MAX_MIN()},
-    {"regret_max_max",  Gecode::INT_VAR_REGRET_MAX_MAX()},
+const OptionValue<IntVarBranch::Select> VAR_BRANCHINGS[] = {
+    {"none",              IntVarBranch::SEL_NONE},
+    {"rnd",               IntVarBranch::SEL_RND},
+    {"degree_min",        IntVarBranch::SEL_DEGREE_MIN},
+    {"degree_max",        IntVarBranch::SEL_DEGREE_MAX},
+    {"afc_min",           IntVarBranch::SEL_AFC_MIN},
+    {"afc_max",           IntVarBranch::SEL_AFC_MAX},
+    {"activity_min",      IntVarBranch::SEL_ACTIVITY_MIN},
+    {"activity_max",      IntVarBranch::SEL_ACTIVITY_MAX},
+    {"min_min",           IntVarBranch::SEL_MIN_MIN},
+    {"min_max",           IntVarBranch::SEL_MIN_MAX},
+    {"max_min",           IntVarBranch::SEL_MAX_MIN},
+    {"max_max",           IntVarBranch::SEL_MAX_MAX},
+    {"size_min",          IntVarBranch::SEL_SIZE_MIN},
+    {"size_max",          IntVarBranch::SEL_SIZE_MAX},
+    {"degree_size_min",   IntVarBranch::SEL_DEGREE_SIZE_MIN},
+    {"degree_size_max",   IntVarBranch::SEL_DEGREE_SIZE_MAX},
+    {"afc_size_min",      IntVarBranch::SEL_AFC_SIZE_MIN},
+    {"afc_size_max",      IntVarBranch::SEL_AFC_SIZE_MAX},
+    {"activity_size_min", IntVarBranch::SEL_ACTIVITY_SIZE_MIN},
+    {"activity_size_max", IntVarBranch::SEL_ACTIVITY_SIZE_MAX},
+    {"regret_min_min",    IntVarBranch::SEL_REGRET_MIN_MIN},
+    {"regret_min_max",    IntVarBranch::SEL_REGRET_MIN_MAX},
+    {"regret_max_min",    IntVarBranch::SEL_REGRET_MAX_MIN},
+    {"regret_max_max",    IntVarBranch::SEL_REGRET_MAX_MAX},
     {}
 };
 
 TEST_F(GecodeSolverTest, VarBranchingOption) {
-  EXPECT_EQ(Gecode::INT_VAR_SIZE_MIN().select(),
-      solver_.var_branching().select());
+  EXPECT_EQ(IntVarBranch::SEL_SIZE_MIN, solver_.var_branching());
   unsigned count = 0;
-  for (const OptionValue<Gecode::IntVarBranch>
+  for (const OptionValue<IntVarBranch::Select>
       *p = VAR_BRANCHINGS; p->name; ++p, ++count) {
     EXPECT_TRUE(ParseOptions(
         c_str(fmt::Format("var_branching={}") << p->name)));
-    EXPECT_EQ(p->value.select(), solver_.var_branching().select());
+    EXPECT_EQ(p->value, solver_.var_branching());
   }
-  EXPECT_EQ(20u, count);
+  EXPECT_EQ(24u, count);
+}
+
+TEST_F(GecodeSolverTest, DecayOption) {
+  EXPECT_EQ(1, solver_.decay());
+  EXPECT_TRUE(ParseOptions("decay=0.000001"));
+  EXPECT_EQ(0.000001, solver_.decay());
+  EXPECT_TRUE(ParseOptions("decay=0.5"));
+  EXPECT_EQ(0.5, solver_.decay());
+  EXPECT_TRUE(ParseOptions("decay=1"));
+  EXPECT_EQ(1.0, solver_.decay());
+  EXPECT_EQ("Invalid value 0 for option decay",
+      ParseOptions("decay=0").error());
+  EXPECT_EQ("Invalid value 1.1 for option decay",
+      ParseOptions("decay=1.1").error());
 }
 
 TEST_F(GecodeSolverTest, OutLevOption) {
