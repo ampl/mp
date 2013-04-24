@@ -306,8 +306,9 @@ class GecodeSolver : public Solver<GecodeSolver> {
   std::string header_;
 
   Gecode::IntConLevel icl_;
-  Gecode::IntVarBranch var_branching_;
+  Gecode::IntVarBranch::Select var_branching_;
   Gecode::IntValBranch val_branching_;
+  double decay_;
   Gecode::Search::Options options_;
   double time_limit_;  // Time limit in seconds.
   unsigned long node_limit_;
@@ -323,6 +324,13 @@ class GecodeSolver : public Solver<GecodeSolver> {
 
   template <typename T, typename OptionT>
   void SetOption(const char *name, T value, OptionT *option);
+
+  void SetDecay(const char *name, double value) {
+    if (value > 0 && value <= 1)
+      decay_ = value;
+    else
+      ReportInvalidOptionValue(name, value);
+  }
 
   void SetDblOption(const char *, double value, double *option) {
     *option = value;
@@ -358,9 +366,10 @@ class GecodeSolver : public Solver<GecodeSolver> {
   void Solve(Problem &p);
 
   Gecode::IntConLevel icl() const { return icl_; }
-  Gecode::IntVarBranch var_branching() const { return var_branching_; }
+  Gecode::IntVarBranch::Select var_branching() const { return var_branching_; }
   Gecode::IntValBranch val_branching() const { return val_branching_; }
   const Gecode::Search::Options &options() const { return options_; }
+  double decay() const { return decay_; }
 };
 }
 

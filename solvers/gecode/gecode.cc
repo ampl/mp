@@ -31,6 +31,7 @@ using Gecode::BoolExpr;
 using Gecode::IntVarArgs;
 using Gecode::IntVar;
 using Gecode::IntVarArray;
+using Gecode::IntVarBranch;
 using Gecode::Reify;
 namespace Search = Gecode::Search;
 
@@ -44,27 +45,31 @@ const ampl::OptionValue<Gecode::IntConLevel> INT_CON_LEVELS[] = {
     {}
 };
 
-const ampl::OptionValue<Gecode::IntVarBranch> VAR_BRANCHINGS[] = {
-    {"none",            Gecode::INT_VAR_NONE()},
-    {"rnd",             Gecode::INT_VAR_RND(Gecode::Rnd(0))},
-    {"degree_min",      Gecode::INT_VAR_DEGREE_MIN()},
-    {"degree_max",      Gecode::INT_VAR_DEGREE_MAX()},
-    {"afc_min",         Gecode::INT_VAR_AFC_MIN()},
-    {"afc_max",         Gecode::INT_VAR_AFC_MAX()},
-    {"min_min",         Gecode::INT_VAR_MIN_MIN()},
-    {"min_max",         Gecode::INT_VAR_MIN_MAX()},
-    {"max_min",         Gecode::INT_VAR_MAX_MIN()},
-    {"max_max",         Gecode::INT_VAR_MAX_MAX()},
-    {"size_min",        Gecode::INT_VAR_SIZE_MIN()},
-    {"size_max",        Gecode::INT_VAR_SIZE_MAX()},
-    {"degree_size_min", Gecode::INT_VAR_DEGREE_SIZE_MIN()},
-    {"degree_size_max", Gecode::INT_VAR_DEGREE_SIZE_MAX()},
-    {"afc_size_min",    Gecode::INT_VAR_AFC_SIZE_MIN()},
-    {"afc_size_max",    Gecode::INT_VAR_AFC_SIZE_MAX()},
-    {"regret_min_min",  Gecode::INT_VAR_REGRET_MIN_MIN()},
-    {"regret_min_max",  Gecode::INT_VAR_REGRET_MIN_MAX()},
-    {"regret_max_min",  Gecode::INT_VAR_REGRET_MAX_MIN()},
-    {"regret_max_max",  Gecode::INT_VAR_REGRET_MAX_MAX()},
+const ampl::OptionValue<IntVarBranch::Select> VAR_BRANCHINGS[] = {
+    {"none",              IntVarBranch::SEL_NONE},
+    {"rnd",               IntVarBranch::SEL_RND},
+    {"degree_min",        IntVarBranch::SEL_DEGREE_MIN},
+    {"degree_max",        IntVarBranch::SEL_DEGREE_MAX},
+    {"afc_min",           IntVarBranch::SEL_AFC_MIN},
+    {"afc_max",           IntVarBranch::SEL_AFC_MAX},
+    {"activity_min",      IntVarBranch::SEL_ACTIVITY_MIN},
+    {"activity_max",      IntVarBranch::SEL_ACTIVITY_MAX},
+    {"min_min",           IntVarBranch::SEL_MIN_MIN},
+    {"min_max",           IntVarBranch::SEL_MIN_MAX},
+    {"max_min",           IntVarBranch::SEL_MAX_MIN},
+    {"max_max",           IntVarBranch::SEL_MAX_MAX},
+    {"size_min",          IntVarBranch::SEL_SIZE_MIN},
+    {"size_max",          IntVarBranch::SEL_SIZE_MAX},
+    {"degree_size_min",   IntVarBranch::SEL_DEGREE_SIZE_MIN},
+    {"degree_size_max",   IntVarBranch::SEL_DEGREE_SIZE_MAX},
+    {"afc_size_min",      IntVarBranch::SEL_AFC_SIZE_MIN},
+    {"afc_size_max",      IntVarBranch::SEL_AFC_SIZE_MAX},
+    {"activity_size_min", IntVarBranch::SEL_ACTIVITY_SIZE_MIN},
+    {"activity_size_max", IntVarBranch::SEL_ACTIVITY_SIZE_MAX},
+    {"regret_min_min",    IntVarBranch::SEL_REGRET_MIN_MIN},
+    {"regret_min_max",    IntVarBranch::SEL_REGRET_MIN_MAX},
+    {"regret_max_min",    IntVarBranch::SEL_REGRET_MAX_MIN},
+    {"regret_max_max",    IntVarBranch::SEL_REGRET_MAX_MAX},
     {}
 };
 
@@ -317,14 +322,14 @@ bool GecodeSolver::Stop::stop(
 
 void GecodeSolver::SetBoolOption(const char *name, int value, bool *option) {
   if (value != 0 && value != 1)
-    ReportError("Invalid value {} for option {}") << value << name;
+    ReportInvalidOptionValue(name, value);
   else
     *option = value != 0;
 }
 
 void GecodeSolver::SetOutputFrequency(const char *name, int value) {
   if (value <= 0)
-    ReportError("Invalid value {} for option {}") << value << name;
+    ReportInvalidOptionValue(name, value);
   else
     output_frequency_ = value;
 }
@@ -338,13 +343,13 @@ void GecodeSolver::SetStrOption(const char *name, const char *value,
       return;
     }
   }
-  ReportError("Invalid value {} for option {}") << value << name;
+  ReportInvalidOptionValue(name, value);
 }
 
 template <typename T, typename OptionT>
 void GecodeSolver::SetOption(const char *name, T value, OptionT *option) {
   if (value < 0)
-    ReportError("Invalid value {} for option {}") << value << name;
+    ReportInvalidOptionValue(name, value);
   else
     *option = value;
 }
@@ -369,11 +374,12 @@ std::string GecodeSolver::GetOptionHeader() {
 }
 
 GecodeSolver::GecodeSolver()
-: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130415),
+: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130424),
   output_(false), output_frequency_(1), output_count_(0), print_problem_(false),
   icl_(Gecode::ICL_DEF),
-  var_branching_(Gecode::INT_VAR_SIZE_MIN()),
+  var_branching_(IntVarBranch::Select::SEL_SIZE_MIN),
   val_branching_(Gecode::INT_VAL_MIN()),
+  decay_(1),
   time_limit_(DBL_MAX), node_limit_(ULONG_MAX), fail_limit_(ULONG_MAX),
   memory_limit_(std::numeric_limits<std::size_t>::max()) {
 
@@ -400,28 +406,32 @@ GecodeSolver::GecodeSolver()
 
   AddStrOption("var_branching",
       "Variable branching.  Possible values:\n"
-      "      none            - first unassigned\n"
-      "      rnd             - random\n"
-      "      degree_min      - smallest degree\n"
-      "      degree_max      - largest degree\n"
-      "      afc_min         - smallest accumulated failure count (AFC)\n"
-      "      afc_max         - largest accumulated failure count (AFC)\n"
-      "      min_min         - smallest minimum value\n"
-      "      min_max         - largest minimum value\n"
-      "      max_min         - smallest maximum value\n"
-      "      max_max         - largest maximum value\n"
-      "      size_min        - smallest domain size (default)\n"
-      "      size_max        - largest domain size\n"
-      "      degree_size_min - smallest domain size divided by degree\n"
-      "      degree_size_max - largest domain size divided by degree\n"
-      "      afc_size_min    - smallest domain size divided by AFC\n"
-      "      afc_size_max    - largest domain size divided by AFC\n"
-      "      regret_min_min  - smallest minimum-regret\n"
-      "      regret_min_max  - largest minimum-regret\n"
-      "      regret_max_min  - smallest maximum-regret\n"
-      "      regret_max_max  - largest maximum-regret\n",
-      &GecodeSolver::SetStrOption<Gecode::IntVarBranch>,
-      OptionInfo<Gecode::IntVarBranch>(VAR_BRANCHINGS, var_branching_));
+      "      none              - first unassigned\n"
+      "      rnd               - random\n"
+      "      degree_min        - smallest degree\n"
+      "      degree_max        - largest degree\n"
+      "      afc_min           - smallest accumulated failure count (AFC)\n"
+      "      afc_max           - largest accumulated failure count (AFC)\n"
+      "      activity_min      - lowest activity\n"
+      "      activity_max      - highest activity\n"
+      "      min_min           - smallest minimum value\n"
+      "      min_max           - largest minimum value\n"
+      "      max_min           - smallest maximum value\n"
+      "      max_max           - largest maximum value\n"
+      "      size_min          - smallest domain size (default)\n"
+      "      size_max          - largest domain size\n"
+      "      degree_size_min   - smallest domain size divided by degree\n"
+      "      degree_size_max   - largest domain size divided by degree\n"
+      "      afc_size_min      - smallest domain size divided by AFC\n"
+      "      afc_size_max      - largest domain size divided by AFC\n"
+      "      activity_size_min - smallest activity by domain size\n"
+      "      activity_size_max - largest activity by domain size\n"
+      "      regret_min_min    - smallest minimum-regret\n"
+      "      regret_min_max    - largest minimum-regret\n"
+      "      regret_max_min    - smallest maximum-regret\n"
+      "      regret_max_max    - largest maximum-regret\n",
+      &GecodeSolver::SetStrOption<IntVarBranch::Select>,
+      OptionInfo<IntVarBranch::Select>(VAR_BRANCHINGS, var_branching_));
 
   AddStrOption("val_branching",
       "Value branching.  Possible values:\n"
@@ -443,6 +453,10 @@ GecodeSolver::GecodeSolver()
       "      values_min - all values starting from largest\n",
       &GecodeSolver::SetStrOption<Gecode::IntValBranch>,
       OptionInfo<Gecode::IntValBranch>(VAL_BRANCHINGS, val_branching_));
+
+  AddDblOption("decay",
+      "Decay factor for AFC and activity branchings.  Default = 1.",
+      &GecodeSolver::SetDecay);
 
   AddDblOption("threads",
       "The number of parallel threads to use.  Assume that your computer\n"
@@ -499,8 +513,22 @@ void GecodeSolver::Solve(Problem &p) {
 
   // Post branching.
   GecodeProblem &gecode_problem = converter->problem();
-  branch(gecode_problem, gecode_problem.vars(),
-      var_branching_, val_branching_);
+  IntVarBranch var_branch;
+  switch (var_branching_) {
+  case IntVarBranch::SEL_RND:
+    var_branch = IntVarBranch(Gecode::Rnd(0));
+    break;
+  case IntVarBranch::SEL_AFC_MIN:
+  case IntVarBranch::SEL_AFC_MAX:
+  case IntVarBranch::SEL_ACTIVITY_MIN:
+  case IntVarBranch::SEL_ACTIVITY_MAX:
+    var_branch = IntVarBranch(var_branching_, decay_, 0);
+    break;
+  default:
+    var_branch = IntVarBranch(var_branching_, 0);
+    break;
+  }
+  branch(gecode_problem, gecode_problem.vars(), var_branch, val_branching_);
 
   Stop stop(*this);
   options_.stop = &stop;

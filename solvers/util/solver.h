@@ -617,6 +617,11 @@ class BasicSolver
 
   virtual std::string GetOptionHeader() { return std::string(); }
 
+  template <typename T>
+  void ReportInvalidOptionValue(const char *name, T value) {
+    ReportError("Invalid value {} for option {}") << value << name;
+  }
+
  public:
   virtual ~BasicSolver();
 
