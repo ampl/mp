@@ -1,5 +1,4 @@
-20130328
-  Update for Gurobi 5.5:  add keywords, concurrentmip, feasrelaxbigm,
-impstartnodes, numericfocus, seed, server, server_password,
-server_port, server_priority, server_timeout, serverlic, tunebase,
-tuneoutput, tuneresults, tunetimelimit, tunetrials.
+20130419
+  Correct the descriptions of "aggfill" (default value) and "cutoff" in
+the "-=" output.  When the objective is no better than cutoff, report
+"objective cutoff" rather than "cutoff reached".

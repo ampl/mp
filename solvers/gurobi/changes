@@ -170,3 +170,8 @@ with problems having a dual initial guess but no incoming basis.
 	tuneresults
 	tunetimelimit
 	tunetrials
+
+20130419
+  Correct the descriptions of "aggfill" (default value) and "cutoff" in
+the "-=" output.  When the objective is no better than cutoff, report
+"objective cutoff" rather than "cutoff reached".

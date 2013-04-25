@@ -1,16 +1,3 @@
-20130408
-  Fix a bug with "option linelim 0;" that affected some complicated
-examples involving linear and nonlinear defined variables.  The linear
-variables were sometimes evaluated after nonlinear variables that used
-them, leading to wrong values for the nonlinear defined variables.
-Note that "option linelim 0" can lead to substantially faster
-processing of some problems, but makes linear defined variables
-appears as nonlinear.  For some nonlinear solvers, this makes no
-difference, but it cannot be used with purely linear solvers.
-  Somewhat improve performance in handling many linear defined
-variables with the default "option linelim 1".  In one example, time
-to invoke the solver was reduced by 16%.
-  The "temporary" debugging interpretation of the "4" bit of $linelim,
-describe in the change-log entry of 20011206, is rescinded.  (Version
-20130407 had a glitch in this change.)
-
+20130422
+  Fix a bug (possible fault) with logical constraints when presolve
+eliminates all of them.

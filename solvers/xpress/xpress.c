@@ -203,13 +203,20 @@ static char
 			11 = combination of 2 and 4",
 	backtracktie_desc[]	= "how to break ties for the next MIP node:\n\
 			same choices as for \"backtrack\"",
+#ifdef XPRS_BARALG
+	baralg_desc[]		= "which barrier algorithm to use with \"barrier\":\n\
+			-1 = automatic choice (default with just \"barrier\")\n\
+			 1 = infeasible-start barrier algorithm\n\
+			 2 = homogeneous self-dual barrier algorithm\n\
+			 3 = start with 2 and possibly switch to 1 while solving",
+#endif
 	barcrash_desc[]		= "choice of crash procedure for crossover:\n\
 			0 = no crash\n\
 			1-6 = available strategies:\n\
 			1 = most conservative, 6 = most agreessive",
 	bardualstop_desc[]	= "barrier method convergence tolerance on\n\
 			dual infeasibilities (default = 1e-8)",
-	bargapstop_desc[]	= "barrier method convergence tolerance on\n\
+	Bstop_desc[]	= "barrier method convergence tolerance on\n\
 			the relative duality gap (default = 0)",
 	barindeflimit_desc[]	=
 		"maximum indefinite factorizations to tolerate in the barrier\n\
@@ -228,6 +235,16 @@ static char
 			0 = use standard presolve (default)",
 	barprimalstop_desc[]	= "barrier method convergence tolerance on\n\
 			primal infeasibilities (default = 1e-8)",
+#ifdef XPRS_BARREGULARIZE
+	barreg_desc[]		= "regularization to use with \"barrier\":\n\
+			-1 = automatic choice (default with just \"barrier\")\n\
+			Values >= 0 are the sum of:\n\
+			1 = use \"standard\" regularization\n\
+			2 = use \"reduced\" regularization: less perturbation than\n\
+				\"standard\" regularization\n\
+			4 = keep dependent rows in the KKT system\n\
+			8 = keep degenerate rows in the KKT system",
+#endif
 	barrier_desc[]		= "[no assignment] use the Newton Barrier algorithm",
 	barstart_desc[]		= "choice of starting point for barrier method:\n\
 			0 = automatic choice (default)\n\
@@ -822,6 +839,15 @@ static char
 			1 = regular summaries\n\
 			2 = report tree compression and output to nodefile\n\
 			default = 3",
+#ifdef XPRS_TREEPRESOLVE
+	treepresolve_desc[] = "how much presolving to apply to nodes of the MIP\n\
+			branch-and-bound tree:\n\
+			-1 = automatic choice\n\
+			 0 = none (default)\n\
+			 1 = cautious\n\
+			 2 = moderate\n\
+			 3 = agressive",
+#endif
 	treememlimit_desc[]	= "an integer: soft limit in megabytes on memory to use for\n\
 		branch-and-bound trees.  Default = 0 ==> automatic choice.",
 	treememtarget_desc[] 	= "fraction of \"treememlimit\" to try to recover by compression\n\
@@ -850,15 +876,21 @@ static keyword keywds[]={
   KW("autoperturb",	set_int, XPRS_AUTOPERTURB,	autoperturb_desc),
   KW("backtrack",	set_int, XPRS_BACKTRACK,	backtrack_desc),
   KW("backtracktie",	set_int, XPRS_BACKTRACKTIE,	backtracktie_desc),
+#ifdef XPRS_BARALG
+  KW("baralg",		set_int, XPRS_BARALG,		baralg_desc),
+#endif
   KW("barcrash",	set_int, XPRS_BARCRASH,		barcrash_desc),
   KW("bardualstop",	set_dbl, XPRS_BARDUALSTOP,	bardualstop_desc),
-  KW("bargapstop",	set_dbl, XPRS_BARGAPSTOP,	bargapstop_desc),
+  KW("bargapstop",	set_dbl, XPRS_BARGAPSTOP,	Bstop_desc),
   KW("barindeflimit",	set_int, XPRS_BARINDEFLIMIT,	barindeflimit_desc),
   KW("bariterlimit",	set_int, XPRS_BARITERLIMIT,	bariterlimit_desc),
   KW("barorder",	set_int, XPRS_BARORDER,		barorder_desc),
   KW("baroutput",	set_int, XPRS_BAROUTPUT,	barout_desc),
   KW("barpresolve",	set_int, XPRS_BARPRESOLVEOPS,	barpresolve_desc),
   KW("barprimalstop",	set_dbl, XPRS_BARPRIMALSTOP,	barprimalstop_desc),
+#ifdef XPRS_BARREGULARIZE
+  KW("barreg",		set_int, XPRS_BARREGULARIZE,	barreg_desc),
+#endif
   KW("barrier",		set_known, set_barrier,		barrier_desc),
   KW("barstart",	set_int, XPRS_BARSTART,		barstart_desc),
   KW("barstepstop",	set_dbl, XPRS_BARSTEPSTOP,	barstepstop_desc),
@@ -1038,13 +1070,16 @@ static keyword keywds[]={
   KW("treememlimit",	set_int, XPRS_TREEMEMORYLIMIT,	treememlimit_desc),
   KW("treememtarget",	set_dbl, XPRS_TREEMEMORYSAVINGTARGET, treememtarget_desc),
   KW("treeoutlev",	set_int, XPRS_TREEDIAGNOSTICS,	treeoutlev_desc),
+#ifdef XPRS_TREEPRESOLVE
+  KW("treepresolve",	set_int, XPRS_TREEPRESOLVE,	treepresolve_desc),
+#endif
   KW("varselection",	set_int, XPRS_VARSELECTION,	varselection_desc),
   KW("version",		Ver_val, 0,			version_desc),
   KW("wantsol",		WS_val, 0,			WS_desc_ASL),
      };
 
 static Option_Info Oinfo = { "xpress", NULL, "xpress_options",
-           keywds,nkeywds,0,"XPRESS", 0,0,0,0,0, 20130312 };
+           keywds,nkeywds,0,"XPRESS", 0,0,0,0,0, 20130419 };
 
  static char *
 strcpy1(char *t, const char *s)
