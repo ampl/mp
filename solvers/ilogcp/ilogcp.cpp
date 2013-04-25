@@ -97,6 +97,20 @@ Optimizer::Optimizer(IloEnv env, const Problem &p) : cons_(env, p.num_cons()) {}
 
 Optimizer::~Optimizer() {}
 
+CPLEXOptimizer::CPLEXOptimizer(IloEnv env, const Problem &p)
+: Optimizer(env, p), cplex_(env), aborter_(env), started_(false) {
+  cplex_.setParam(IloCplex::MIPDisplay, 0);
+  cplex_.use(aborter_);
+}
+
+bool CPLEXOptimizer::FindNextSolution() {
+  if (!started_)
+    return false;
+  started_ = false;
+  cplex_.solve();
+  return true;
+}
+
 void CPLEXOptimizer::GetSolutionInfo(
     fmt::Formatter &format_message, vector<double> &dual_values) const {
   if (cplex_.isMIP()) {
@@ -109,6 +123,13 @@ void CPLEXOptimizer::GetSolutionInfo(
       dual_values[i] = cplex_.getDual(cons[i]);
   }
   format_message("{} iterations") << cplex_.getNiterations();
+}
+
+CPOptimizer::CPOptimizer(IloEnv env, const Problem &p) :
+    Optimizer(env, p), solver_(env) {
+  solver_.setIntParameter(IloCP::LogVerbosity, IloCP::Quiet);
+  if (p.num_objs() == 0)
+    solver_.setIntParameter(IloCP::SolutionLimit, 1);
 }
 
 void CPOptimizer::GetSolutionInfo(
@@ -465,8 +486,10 @@ IlogCPSolver::IlogCPSolver() :
       CPOptionInfo(IloCP::SearchType, IloCP::DepthFirst, SearchTypes, true));
 
   AddStrOption("solutionlimit",
-      "Limit on the number of feasible solutions found "
-      "before terminating a search.  Default = no limit.",
+      "Limit on the number of feasible solutions found before terminating "
+      "a search.  Leaving the solution limit unspecified will make the "
+      "optimizer search for an optimal solution if there is an objective "
+      "function or for a feasible solution otherwise.",
       &IlogCPSolver::SetCPOption, CPOptionInfo(IloCP::SolutionLimit));
 
   AddStrOption("temporalrelaxation",
@@ -515,7 +538,7 @@ void IlogCPSolver::SetOptimizer(const char *name, const char *value) {
   } else if (strcmp(value, "cplex") == 0) {
     opt = CPLEX;
   } else {
-    ReportError("Invalid value {} for option {}") << value << name;
+    ReportInvalidOptionValue(name, value);
     return;
   }
   if (!gotopttype_)
@@ -526,7 +549,7 @@ void IlogCPSolver::SetBoolOption(const char *name, int value, Option opt) {
   if (!gotopttype_)
     return;
   if (value != 0 && value != 1)
-    ReportError("Invalid value {} for option {}") << value << name;
+    ReportInvalidOptionValue(name, value);
   else
     options_[opt] = value;
 }
@@ -564,7 +587,7 @@ void IlogCPSolver::SetCPOption(
       return;
     }
   } catch (const IloException &) {}
-  ReportError("Invalid value {} for option {}") << value << name;
+  ReportInvalidOptionValue(name, value);
 }
 
 void IlogCPSolver::SetCPDblOption(
@@ -579,7 +602,7 @@ void IlogCPSolver::SetCPDblOption(
   try {
     cp_opt->solver().setParameter(param, value);
   } catch (const IloException &) {
-    ReportError("Invalid value {} for option {}") << value << name;
+    ReportInvalidOptionValue(name, value);
   }
 }
 
@@ -595,7 +618,7 @@ void IlogCPSolver::SetCPLEXIntOption(const char *name, int value, int param) {
   // two overloads, one for the type int and one for the type long.
   cpxenv *env = cplex_opt->cplex().getImpl()->getCplexEnv();
   if (CPXsetintparam(env, param, value) != 0)
-    ReportError("Invalid value {} for option {}") << value << name;
+    ReportInvalidOptionValue(name, value);
 }
 
 void IlogCPSolver::CreateOptimizer(const Problem &p) {
@@ -709,8 +732,8 @@ void IlogCPSolver::Solve(Problem &p) {
 
   converter.FinishBuildingNumberOf();
 
-  int timing = GetOption(TIMING);
-  double extract_start_time = timing ? xectim_() : 0;
+  double define_time = xectim_() - start_time;
+  start_time = xectim_();
 
   // Solve the problem.
   IloAlgorithm alg(optimizer_->algorithm());
@@ -724,83 +747,101 @@ void IlogCPSolver::Solve(Problem &p) {
         str(fmt::Format("{}") << extractables[0]));
   }
   SignalHandler sh(*this, optimizer_.get());
-  double solve_start_time = timing ? xectim_() : 0;
-  IloBool successful = alg.solve();
-  double output_start_time = timing ? xectim_() : 0;
-
-  // Convert solution status.
-  int solve_code = 0;
-  const char *status;
-  switch (alg.getStatus()) {
-  default:
-    // Fall through.
-  case IloAlgorithm::Unknown:
-    if (optimizer_->interrupted()) {
-      solve_code = 600;
-      status = "interrupted";
-    } else {
-      solve_code = 501;
-      status = "unknown solution status";
-    }
-    break;
-  case IloAlgorithm::Feasible:
-    if (optimizer_->interrupted()) {
-      solve_code = 600;
-      status = "interrupted";
-    } else {
-      solve_code = 100;
-      status = "feasible solution";
-    }
-    break;
-  case IloAlgorithm::Optimal:
-    solve_code = 0;
-    status = "optimal solution";
-    break;
-  case IloAlgorithm::Infeasible:
-    solve_code = 200;
-    status = "infeasible problem";
-    break;
-  case IloAlgorithm::Unbounded:
-    solve_code = 300;
-    status = "unbounded problem";
-    break;
-  case IloAlgorithm::InfeasibleOrUnbounded:
-    solve_code = 201;
-    status = "infeasible or unbounded problem";
-    break;
-  case IloAlgorithm::Error:
-    solve_code = 500;
-    status = "error";
-    break;
-  }
-  p.set_solve_code(solve_code);
-
-  fmt::Formatter format_message;
-  format_message("{}: {}\n") << long_name() << status;
   vector<double> solution, dual_solution;
-  double obj_value = std::numeric_limits<double>::quiet_NaN();
-  if (successful) {
-    solution.resize(num_vars);
-    for (int j = 0, n = p.num_vars(); j < n; ++j) {
-      IloNumVar &v = vars[j];
-      solution[j] = alg.isExtracted(v) ? alg.getValue(v) : v.getLB();
+  double setup_time = xectim_() - start_time;
+  double solve_time = 0, output_time = 0;
+  start_time = xectim_();
+  optimizer_->StartSearch();
+  solve_time += xectim_() - start_time;
+  start_time = xectim_();
+  for (bool succeeded = true, first = true; succeeded; first = false) {
+    start_time = xectim_();
+    succeeded = optimizer_->FindNextSolution();
+    solve_time += xectim_() - start_time;
+    start_time = xectim_();
+    if (!succeeded && !first)
+      continue;
+    // Convert solution status.
+    bool has_solution = false;
+    int solve_code = 0;
+    const char *status;
+    switch (alg.getStatus()) {
+    default:
+      // Fall through.
+    case IloAlgorithm::Unknown:
+      if (sh.stop()) {
+        solve_code = 600;
+        status = "interrupted";
+      } else {
+        solve_code = 501;
+        status = "unknown solution status";
+      }
+      break;
+    case IloAlgorithm::Feasible:
+      has_solution = true;
+      if (sh.stop()) {
+        solve_code = 600;
+        status = "interrupted";
+      } else {
+        solve_code = 100;
+        status = "feasible solution";
+      }
+      break;
+    case IloAlgorithm::Optimal:
+      has_solution = true;
+      solve_code = 0;
+      status = "optimal solution";
+      break;
+    case IloAlgorithm::Infeasible:
+      solve_code = 200;
+      status = "infeasible problem";
+      break;
+    case IloAlgorithm::Unbounded:
+      solve_code = 300;
+      status = "unbounded problem";
+      break;
+    case IloAlgorithm::InfeasibleOrUnbounded:
+      solve_code = 201;
+      status = "infeasible or unbounded problem";
+      break;
+    case IloAlgorithm::Error:
+      solve_code = 500;
+      status = "error";
+      break;
     }
-    optimizer_->GetSolutionInfo(format_message, dual_solution);
-    if (num_objs > 0) {
-      obj_value = alg.getObjValue();
-      format_message(", objective {}") << ObjPrec(obj_value);
-    }
-  }
-  HandleSolution(format_message.c_str(), solution.empty() ? 0 : &solution[0],
-      dual_solution.empty() ? 0 : &dual_solution[0], obj_value);
+    p.set_solve_code(solve_code);
 
-  if (timing) {
-    double end_time = xectim_();
+    fmt::Formatter format_message;
+    format_message("{}: {}\n") << long_name() << status;
+    double obj_value = std::numeric_limits<double>::quiet_NaN();
+    solution.clear();
+    dual_solution.clear();
+    if (has_solution) {
+      solution.resize(num_vars);
+      for (int j = 0, n = p.num_vars(); j < n; ++j) {
+        IloNumVar &v = vars[j];
+        solution[j] = alg.isExtracted(v) ? alg.getValue(v) : v.getLB();
+      }
+      optimizer_->GetSolutionInfo(format_message, dual_solution);
+      if (num_objs > 0) {
+        obj_value = alg.getObjValue();
+        format_message(", objective {}") << ObjPrec(obj_value);
+      }
+    }
+    HandleSolution(format_message.c_str(), solution.empty() ? 0 : &solution[0],
+        dual_solution.empty() ? 0 : &dual_solution[0], obj_value);
+    output_time += xectim_() - start_time;
+  }
+  start_time = xectim_();
+  optimizer_->EndSearch();
+  solve_time += xectim_() - start_time;
+
+  if (GetOption(TIMING)) {
     std::cerr << "\n"
-        << "Define = " << (extract_start_time - start_time) + read_time_ << "\n"
-        << "Setup =  " << solve_start_time - extract_start_time << "\n"
-        << "Solve =  " << output_start_time - solve_start_time << "\n"
-        << "Output = " << end_time - output_start_time << "\n";
+        << "Define = " << define_time + read_time_ << "\n"
+        << "Setup =  " << setup_time << "\n"
+        << "Solve =  " << solve_time << "\n"
+        << "Output = " << output_time << "\n";
   }
 }
 }

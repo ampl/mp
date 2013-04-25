@@ -52,35 +52,35 @@ class Optimizer : public Interruptible {
 
   virtual IloAlgorithm algorithm() const = 0;
 
+  virtual void StartSearch() = 0;
+  virtual void EndSearch() = 0;
+  virtual bool FindNextSolution() = 0;
+
   virtual void GetSolutionInfo(fmt::Formatter &format_message,
       std::vector<double> &dual_values) const = 0;
-
-  virtual bool interrupted() const = 0;
 };
 
 class CPLEXOptimizer : public Optimizer {
  private:
   IloCplex cplex_;
   IloCplex::Aborter aborter_;
+  bool started_;
 
  public:
-  CPLEXOptimizer(IloEnv env, const Problem &p)
-  : Optimizer(env, p), cplex_(env), aborter_(env) {
-    cplex_.setParam(IloCplex::MIPDisplay, 0);
-    cplex_.use(aborter_);
-  }
+  CPLEXOptimizer(IloEnv env, const Problem &p);
 
   IloCplex cplex() const { return cplex_; }
   IloAlgorithm algorithm() const { return cplex_; }
+
+  void StartSearch() { started_ = true; }
+  void EndSearch() { started_ = false; }
+
+  bool FindNextSolution();
 
   void GetSolutionInfo(fmt::Formatter &format_message,
       std::vector<double> &dual_values) const;
 
   void Interrupt() { aborter_.abort(); }
-
-  bool interrupted() const {
-    return cplex_.getCplexStatus() == IloCplex::AbortUser;
-  }
 };
 
 class CPOptimizer : public Optimizer {
@@ -88,21 +88,19 @@ class CPOptimizer : public Optimizer {
   IloCP solver_;
 
  public:
-  CPOptimizer(IloEnv env, const Problem &p) : Optimizer(env, p), solver_(env) {
-    solver_.setIntParameter(IloCP::LogVerbosity, IloCP::Quiet);
-  }
+  CPOptimizer(IloEnv env, const Problem &p);
 
   IloCP solver() const { return solver_; }
   IloAlgorithm algorithm() const { return solver_; }
+
+  void StartSearch() { solver_.startNewSearch(); }
+  void EndSearch() { solver_.endSearch(); }
+  bool FindNextSolution() { return solver_.next(); }
 
   void GetSolutionInfo(fmt::Formatter &format_message,
       std::vector<double> &dual_values) const;
 
   void Interrupt() { solver_.abortSearch(); }
-
-  bool interrupted() const {
-    return solver_.getInfo(IloCP::FailStatus) == IloCP::SearchStoppedByAbort;
-  }
 };
 
 class NLToConcertConverter;
