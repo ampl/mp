@@ -26,9 +26,9 @@ fullbit.dll: fullbit.o
 	$(CC) -shared -o fullbit.dll fullbit.o
 
 ampltabl.dll: tableproxy.c tableproxyver.h amplodbc.c
-	$(CC) -c $(CFLAGS) -I$S -DOTHER_FUNCADD=funcaddodbc_ASL tableproxy.c
+	$(CC) -c $(CFLAGS) -DOTHER_FUNCADD=funcaddodbc_ASL tableproxy.c
 	$(CC) -c $(CFLAGS) -Dfuncadd_ASL=funcaddodbc_ASL amplodbc.c
-	$(CC) $(CFLAGS) -I$S -shared -o ampltabl.dll -framework CoreFoundation tableproxy.o amplodbc.o -lodbc
+	$(CC) $(CFLAGS) -shared -o ampltabl.dll -framework CoreFoundation tableproxy.o amplodbc.o -lodbc
 
 tableproxy.dll: tableproxy.c tableproxyver.h
 	$(CC) $(CFLAGS) -I$S -shared -o tableproxy.dll tableproxy.c

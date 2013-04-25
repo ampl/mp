@@ -121,3 +121,7 @@ do not complain if DBQ=... specifies a directory.
 20130326
   amplodbc.c: under MS Windows, ignore trailing slashes when
 checking the validity of DBQ=... strings.
+
+20130417
+  amplodbc.c:  fix a glitch in reading tables with null columns.
+Thanks go to Victor Zverovich for this fix.
