@@ -141,7 +141,7 @@ ScopedTableInfo::ScopedTableInfo(const Table &t) {
   for (unsigned i = 0, n = t.num_strings(); i < n; ++i)
     AddString(&strings_, t.string(i));
   nstrings = static_cast<int>(strings_.size());
-  strings = &strings_[0];
+  strings = nstrings != 0 ? &strings_[0] : nullptr;
   Missing = &MISSING;
 
   TableInfo::Lookup = Lookup;
