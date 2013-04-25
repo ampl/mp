@@ -408,7 +408,7 @@ bool JaCoPSolver::Stop::stop(
 
 void JaCoPSolver::SetBoolOption(const char *name, int value, bool *option) {
   if (value != 0 && value != 1)
-    ReportError("Invalid value {} for option {}") << value << name;
+    ReportInvalidOptionValue(name, value);
   else
     *option = value != 0;
 }

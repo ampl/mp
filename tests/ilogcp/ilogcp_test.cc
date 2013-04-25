@@ -276,6 +276,49 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
   ASSERT_EQ(2, CountIloDistribute());
 }
 
+struct TestSolutionHandler : ampl::SolutionHandler {
+  int num_solutions;
+  TestSolutionHandler() : num_solutions(0) {}
+  void HandleSolution(ampl::BasicSolver &, fmt::StringRef,
+        const double *values, const double *, double) {
+    ++num_solutions;
+    for (int i = 0; i < 3; ++i) {
+      EXPECT_GE(values[i], 1);
+      EXPECT_LE(values[i], 3);
+    }
+    EXPECT_NE(values[0], values[1]);
+    EXPECT_NE(values[0], values[2]);
+    EXPECT_NE(values[1], values[2]);
+  }
+};
+
+TEST_F(IlogCPTest, NoSolutionLimit) {
+  ampl::Problem p;
+  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddCon(AddAllDiff(AddVar(0), AddVar(1), AddVar(2)));
+  TestSolutionHandler sh;
+  s.set_solution_handler(&sh);
+  ParseOptions("optimizer=cp");
+  s.Solve(p);
+  EXPECT_EQ(1, sh.num_solutions);
+}
+
+// TODO: enable
+TEST_F(IlogCPTest, DISABLED_SolutionLimit) {
+  ampl::Problem p;
+  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddCon(AddAllDiff(AddVar(0), AddVar(1), AddVar(2)));
+  TestSolutionHandler sh;
+  ParseOptions("optimizer=cp", "solutionlimit=100");
+  s.set_solution_handler(&sh);
+  s.Solve(p);
+  EXPECT_EQ(6, sh.num_solutions);
+}
+
 // ----------------------------------------------------------------------------
 // Solver tests
 
