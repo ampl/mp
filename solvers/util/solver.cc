@@ -37,6 +37,10 @@
 #include "solvers/util/format.h"
 #include "solvers/getstub.h"
 
+using ampl::NumericConstant;
+using ampl::RelationalExpr;
+using ampl::UnaryExpr;
+
 namespace {
 
 struct KeywordNameLess {
@@ -52,11 +56,287 @@ void WriteTerm(fmt::Writer &w, double coef, unsigned var) {
   w << "x" << (var + 1);
 }
 
+class ExprPrinter : public ampl::ExprVisitor<ExprPrinter, void, void> {
+ private:
+  fmt::Writer &writer_;
+
+ private:
+  void Print(RelationalExpr e, const char *op) {
+    Visit(e.lhs());
+    writer_ << ' ' << op << ' ';
+    Visit(e.rhs());
+  }
+
+ public:
+  ExprPrinter(fmt::Writer &w) : writer_(w) {}
+
+  /*void VisitPlus(BinaryExpr e) {
+     // TODO
+  }
+
+  void VisitMinus(BinaryExpr e) {
+     // TODO
+  }
+
+  void VisitMult(BinaryExpr e) {
+     // TODO
+  }
+
+  void VisitDiv(BinaryExpr e) {
+     // TODO
+  }
+
+  void VisitRem(BinaryExpr e) {
+     // TODO
+  }
+
+  void VisitPow(BinaryExpr e) {
+     // TODO
+  }
+
+  void VisitNumericLess(BinaryExpr e) {
+     // TODO
+  }
+
+  void VisitMin(VarArgExpr e) {
+     // TODO
+  }
+
+  void VisitMax(VarArgExpr e) {
+     // TODO
+  }
+
+  void VisitFloor(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitCeil(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitAbs(UnaryExpr e) {
+     // TODO
+  }*/
+
+  void VisitUnaryMinus(UnaryExpr e) {
+    writer_ << '-';
+    Visit(e.arg());
+  }
+
+  void VisitIf(ampl::IfExpr e) {
+    writer_ << "if ";
+    Visit(e.condition());
+    writer_ << " then ";
+    Visit(e.true_expr());
+    ampl::NumericExpr false_expr = e.false_expr();
+    NumericConstant c = ampl::Cast<NumericConstant>(false_expr);
+    if (!c || c.value() != 0) {
+      writer_ << " else ";
+      Visit(false_expr);
+    }
+  }
+
+  /*void VisitTanh(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitTan(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitSqrt(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitSinh(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitSin(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitLog10(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitLog(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitExp(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitCosh(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitCos(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitAtanh(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitAtan2(BinaryExpr e) {
+     // TODO
+  }
+
+  void VisitAtan(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitAsinh(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitAsin(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitAcosh(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitAcos(UnaryExpr e) {
+     // TODO
+  }*/
+
+  void VisitSum(ampl::SumExpr e) {
+    writer_ << "sum(";
+    ampl::SumExpr::iterator i = e.begin(), end = e.end();
+    if (i != end) {
+      Visit(*i);
+      for (++i; i != end; ++i) {
+        writer_ << ", ";
+        Visit(*i);
+      }
+    }
+    writer_ << ")";
+  }
+
+  /*void VisitIntDiv(BinaryExpr e) {
+     // TODO
+  }
+
+  void VisitPrecision(BinaryExpr e) {
+     // TODO
+  }
+
+  void VisitRound(BinaryExpr e) {
+     // TODO
+  }
+
+  void VisitTrunc(BinaryExpr e) {
+     // TODO
+  }
+
+  void VisitCount(CountExpr e) {
+     // TODO
+  }
+
+  void VisitNumberOf(NumberOfExpr e) {
+     // TODO
+  }
+
+  void VisitPLTerm(PiecewiseLinearTerm t) {
+     // TODO
+  }
+
+  void VisitPowConstExp(BinaryExpr e) {
+     // TODO
+  }
+
+  void VisitPow2(UnaryExpr e) {
+     // TODO
+  }
+
+  void VisitPowConstBase(BinaryExpr e) {
+     // TODO
+  }
+
+  void VisitCall(CallExpr e) {
+     // TODO
+  }*/
+
+  void VisitNumericConstant(NumericConstant c) { writer_ << c.value(); }
+  void VisitVariable(ampl::Variable v) { writer_ << 'x' << (v.index() + 1); }
+
+  /*void VisitOr(BinaryLogicalExpr e) {
+     // TODO
+  }
+
+  void VisitAnd(BinaryLogicalExpr e) {
+     // TODO
+  }*/
+
+  void VisitLess(RelationalExpr e) { Print(e, "<"); }
+  void VisitLessEqual(RelationalExpr e) { Print(e, "<="); }
+  void VisitEqual(RelationalExpr e) { Print(e, "="); }
+  void VisitGreaterEqual(RelationalExpr e) { Print(e, ">="); }
+  void VisitGreater(RelationalExpr e) { Print(e, ">"); }
+  void VisitNotEqual(RelationalExpr e) { Print(e, "!="); }
+
+  /*void VisitNot(NotExpr e) {
+     // TODO
+  }
+
+  void VisitAtLeast(LogicalCountExpr e) {
+     // TODO
+  }
+
+  void VisitAtMost(LogicalCountExpr e) {
+     // TODO
+  }
+
+  void VisitExactly(LogicalCountExpr e) {
+     // TODO
+  }
+
+  void VisitNotAtLeast(LogicalCountExpr e) {
+     // TODO
+  }
+
+  void VisitNotAtMost(LogicalCountExpr e) {
+     // TODO
+  }
+
+  void VisitNotExactly(LogicalCountExpr e) {
+     // TODO
+  }
+
+  void VisitForAll(IteratedLogicalExpr e) {
+     // TODO
+  }
+
+  void VisitExists(IteratedLogicalExpr e) {
+     // TODO
+  }
+
+  void VisitImplication(ImplicationExpr e) {
+     // TODO
+  }
+
+  void VisitIff(BinaryLogicalExpr e) {
+     // TODO
+  }
+
+  void VisitAllDiff(AllDiffExpr e) {
+     // TODO
+  }
+
+  void VisitLogicalConstant(LogicalConstant c) {
+     // TODO
+  }*/
+};
+
 template <typename LinearExpr>
-void WriteExpr(fmt::Writer &w, LinearExpr expr) {
+void WriteExpr(fmt::Writer &w, LinearExpr linear, ampl::NumericExpr nonlinear) {
   bool has_terms = false;
   typedef typename LinearExpr::iterator Iterator;
-  for (Iterator i = expr.begin(), e = expr.end(); i != e; ++i) {
+  for (Iterator i = linear.begin(), e = linear.end(); i != e; ++i) {
     double coef = i->coef();
     if (coef != 0) {
       if (has_terms)
@@ -68,6 +348,10 @@ void WriteExpr(fmt::Writer &w, LinearExpr expr) {
   }
   if (!has_terms)
     w << "0";
+  if (nonlinear) {
+    w << " + ";
+    ExprPrinter(w).Visit(nonlinear);
+  }
 }
 }
 
@@ -231,7 +515,7 @@ fmt::Writer &operator<<(fmt::Writer &w, const Problem &p) {
   // Write objectives.
   for (int i = 0, n = p.num_objs(); i < n; ++i) {
     w << (p.obj_type(i) == MIN ? "minimize" : "maximize") << " o: ";
-    WriteExpr(w, p.linear_obj_expr(i));
+    WriteExpr(w, p.linear_obj_expr(i), p.nonlinear_obj_expr(i));
     w << ";\n";
   }
 
@@ -241,7 +525,7 @@ fmt::Writer &operator<<(fmt::Writer &w, const Problem &p) {
     double lb = p.con_lb(i), ub = p.con_ub(i);
     if (lb != ub && lb != -Infinity && ub != Infinity)
       w << lb << " <= ";
-    WriteExpr(w, p.linear_con_expr(i));
+    WriteExpr(w, p.linear_con_expr(i), p.nonlinear_con_expr(i));
     if (lb == ub)
       w << " = " << lb;
     else if (ub != Infinity)
