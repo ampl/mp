@@ -348,10 +348,13 @@ void WriteExpr(fmt::Writer &w, LinearExpr linear, ampl::NumericExpr nonlinear) {
   }
   if (!has_terms)
     w << "0";
-  if (nonlinear) {
-    w << " + ";
-    ExprPrinter(w).Visit(nonlinear);
-  }
+  if (!nonlinear)
+    return;
+  NumericConstant c = ampl::Cast<NumericConstant>(nonlinear);
+  if (c && c.value() == 0)
+    return;
+  w << " + ";
+  ExprPrinter(w).Visit(nonlinear);
 }
 }
 
