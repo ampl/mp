@@ -612,11 +612,11 @@ void Problem::AddCon(LogicalExpr expr) {
   ++num_logical_cons;
 }
 
-void Problem::Read(const char *stub) {
+void Problem::Read(fmt::StringRef stub) {
   Free();
   ASL *asl = reinterpret_cast<ASL*>(asl_);
-  FILE *nl = jac0dim_ASL(asl, const_cast<char*>(stub),
-      static_cast<ftnlen>(std::strlen(stub)));
+  FILE *nl = jac0dim_ASL(asl, const_cast<char*>(stub.c_str()),
+      static_cast<ftnlen>(stub.size()));
   efunc *r_ops_int[N_OPS];
   for (int i = 0; i < N_OPS; ++i)
     r_ops_int[i] = reinterpret_cast<efunc*>(i);
@@ -835,7 +835,7 @@ void BasicSolver::AddKeyword(const char *name,
   kw.info = const_cast<void*>(info);
 }
 
-bool BasicSolver::ReadProblem(char **&argv) {
+bool BasicSolver::ProcessArgs(char **&argv) {
   SortOptions();
   char *stub = getstub_ASL(reinterpret_cast<ASL*>(problem_.asl_), &argv, this);
   if (!stub) {

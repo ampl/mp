@@ -282,7 +282,7 @@ TEST(SolverTest, NameInUsage) {
     TestSolver s("solver-name", "long-solver-name");
     s.set_version("solver-version");
     Args args("program-name");
-    s.ReadProblem(args);
+    s.ProcessArgs(args);
   }
   std::string usage = "usage: solver-name ";
   EXPECT_EQ(usage, ReadFile("out").substr(0, usage.size()));
@@ -302,11 +302,11 @@ TEST(SolverTest, Version) {
   Args args("program-name", "-v");
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    s.ReadProblem(args);
+    s.ProcessArgs(args);
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Formatter format;
-  format("Test Solver ({0}), ASL({1})\n") << sysdetails_ASL << ASLdate_ASL;
+  format("Test Solver ({}), ASL({})\n") << sysdetails_ASL << ASLdate_ASL;
   EXPECT_EQ(format.str(), ReadFile("out"));
 }
 
@@ -315,11 +315,11 @@ TEST(SolverTest, VersionWithDate) {
   Args args("program-name", "-v");
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    s.ReadProblem(args);
+    s.ProcessArgs(args);
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Formatter format;
-  format("Test Solver ({0}), driver(20121227), ASL({1})\n")
+  format("Test Solver ({}), driver(20121227), ASL({})\n")
     << sysdetails_ASL << ASLdate_ASL;
   EXPECT_EQ(format.str(), ReadFile("out"));
 }
@@ -332,11 +332,11 @@ TEST(SolverTest, SetVersion) {
   Args args("program-name", "-v");
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    s.ReadProblem(args);
+    s.ProcessArgs(args);
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Formatter format;
-  format("{0} ({1}), ASL({2})\n") << VERSION << sysdetails_ASL << ASLdate_ASL;
+  format("{} ({}), ASL({})\n") << VERSION << sysdetails_ASL << ASLdate_ASL;
   EXPECT_EQ(format.str(), ReadFile("out"));
 }
 
@@ -385,7 +385,7 @@ TEST(SolverTest, ReadProblem) {
   Args args("testprogram", "data/objconst.nl");
   TestSolver s("test");
   EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_TRUE(s.ReadProblem(args));
+  EXPECT_TRUE(s.ProcessArgs(args));
   EXPECT_EQ(1, s.problem().num_vars());
 }
 
@@ -394,7 +394,7 @@ TEST(SolverTest, ReadProblemNoStub) {
   Args args("testprogram");
   TestSolver s("test");
   EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_FALSE(s.ReadProblem(args));
+  EXPECT_FALSE(s.ProcessArgs(args));
   EXPECT_EQ(0, s.problem().num_vars());
 }
 
@@ -403,30 +403,27 @@ TEST(SolverTest, ReadProblemError) {
   TestSolver s("test");
   EXPECT_EXIT({
     Stderr = stderr;
-    s.ReadProblem(args);
+    s.ProcessArgs(args);
   }, ::testing::ExitedWithCode(1), "testprogram: can't open nonexistent.nl");
 }
 
 TEST(SolverTest, ReadingMinOrMaxWithZeroArgsFails) {
   const char *names[] = {"min", "max"};
   for (size_t i = 0, n = sizeof(names) / sizeof(*names); i < n; ++i) {
-    std::string filename =
-        str(fmt::Format("data/{}-with-zero-args.nl") << names[i]);
-    Args args("testprogram", filename.c_str());
-    TestSolver s("test");
-    EXPECT_EQ(0, s.problem().num_vars());
+    std::string stub = str(fmt::Format("data/{}-with-zero-args") << names[i]);
     EXPECT_EXIT({
       Stderr = stderr;
-      EXPECT_TRUE(s.ReadProblem(args));
+      Problem p;
+      p.Read(stub);
     }, ::testing::ExitedWithCode(1),
-        c_str(fmt::Format("bad line 13 of {}: 0") << filename));
+        c_str(fmt::Format("bad line 13 of {}.nl: 0") << stub));
   }
 }
 
 TEST(SolverTest, ReportError) {
   TestSolver s("test");
   EXPECT_EXIT({
-    s.ReportError("File not found: {0}") << "somefile";
+    s.ReportError("File not found: {}") << "somefile";
     exit(0);
   }, ::testing::ExitedWithCode(0), "File not found: somefile");
 }
@@ -671,10 +668,8 @@ TEST(SolverTest, EmptyProblem) {
 }
 
 TEST(SolverTest, ProblemAccessors) {
-  Args args("", "data/test.nl");
-  TestSolver s("");
-  EXPECT_TRUE(s.ReadProblem(args));
-  Problem &p = s.problem();
+  Problem p;
+  p.Read("data/test");
   EXPECT_EQ(5, p.num_vars());
   EXPECT_EQ(19, p.num_objs());
   EXPECT_EQ(13, p.num_cons());
@@ -733,10 +728,8 @@ TEST(SolverTest, ProblemAccessors) {
 
 #ifndef NDEBUG
 TEST(SolverTest, ProblemBoundChecks) {
-  Args args("", "data/test.nl");
-  TestSolver s("");
-  EXPECT_TRUE(s.ReadProblem(args));
-  Problem &p = s.problem();
+  Problem p;
+  p.Read("data/test");
 
   EXPECT_DEATH(p.var_lb(-1), "Assertion");
   EXPECT_DEATH(p.var_lb(p.num_vars()), "Assertion");
@@ -800,11 +793,10 @@ TEST(SolverTest, SignalHandlerExitOnTwoSIGINTs) {
 
 #ifdef HAVE_CBC
 TEST(SolverTest, Solve) {
-  Args args("", "data/simple.nl");
-  TestSolver solver("testsolver");
-  solver.ReadProblem(args);
+  Problem p;
+  p.Read("data/simple");
   Solution s;
-  solver.problem().Solve(CBC_PATH, s);
+  p.Solve(CBC_PATH, s);
   EXPECT_EQ(2, s.num_vars());
   EXPECT_EQ(1, s.num_cons());
   EXPECT_EQ(2, s.value(0));
@@ -813,11 +805,10 @@ TEST(SolverTest, Solve) {
 }
 
 TEST(SolverTest, AddVarAndSolve) {
-  Args args("", "data/simple.nl");
-  TestSolver solver("testsolver");
-  solver.ReadProblem(args);
+  Problem p;
+  p.Read("data/simple");
   Solution s;
-  ProblemChanges changes(solver.problem());
+  ProblemChanges changes(p);
   EXPECT_EQ(0, changes.num_vars());
   EXPECT_EQ(0, changes.num_cons());
   EXPECT_EQ(0, changes.num_objs());
@@ -825,7 +816,7 @@ TEST(SolverTest, AddVarAndSolve) {
   EXPECT_EQ(1, changes.num_vars());
   EXPECT_EQ(0, changes.num_cons());
   EXPECT_EQ(0, changes.num_objs());
-  solver.problem().Solve(CBC_PATH, s, &changes);
+  p.Solve(CBC_PATH, s, &changes);
   EXPECT_EQ(3, s.num_vars());
   EXPECT_EQ(1, s.num_cons());
   EXPECT_EQ(2, s.value(0));
@@ -835,11 +826,10 @@ TEST(SolverTest, AddVarAndSolve) {
 }
 
 TEST(SolverTest, AddConAndSolve) {
-  Args args("", "data/simple.nl");
-  TestSolver solver("testsolver");
-  solver.ReadProblem(args);
+  Problem p;
+  p.Read("data/simple");
   Solution s;
-  ProblemChanges changes(solver.problem());
+  ProblemChanges changes(p);
   const double coefs[] = {1, 0};
   EXPECT_EQ(0, changes.num_vars());
   EXPECT_EQ(0, changes.num_cons());
@@ -848,7 +838,7 @@ TEST(SolverTest, AddConAndSolve) {
   EXPECT_EQ(0, changes.num_vars());
   EXPECT_EQ(1, changes.num_cons());
   EXPECT_EQ(0, changes.num_objs());
-  solver.problem().Solve(CBC_PATH, s, &changes);
+  p.Solve(CBC_PATH, s, &changes);
   EXPECT_EQ(2, s.num_vars());
   EXPECT_EQ(2, s.num_cons());
   EXPECT_EQ(1, s.value(0));
@@ -858,11 +848,10 @@ TEST(SolverTest, AddConAndSolve) {
 }
 
 TEST(SolverTest, AddObjAndSolve) {
-  Args args("", "data/noobj.nl");
-  TestSolver solver("testsolver");
-  solver.ReadProblem(args);
+  Problem p;
+  p.Read("data/noobj");
   Solution s;
-  ProblemChanges changes(solver.problem());
+  ProblemChanges changes(p);
   double coef = -1;
   int var = 0;
   EXPECT_EQ(0, changes.num_vars());
@@ -872,7 +861,7 @@ TEST(SolverTest, AddObjAndSolve) {
   EXPECT_EQ(0, changes.num_vars());
   EXPECT_EQ(0, changes.num_cons());
   EXPECT_EQ(1, changes.num_objs());
-  solver.problem().Solve(CBC_PATH, s, &changes);
+  p.Solve(CBC_PATH, s, &changes);
   EXPECT_EQ(1, s.num_vars());
   EXPECT_EQ(1, s.num_cons());
   EXPECT_EQ(0, s.value(0));
@@ -880,31 +869,28 @@ TEST(SolverTest, AddObjAndSolve) {
 }
 
 TEST(SolverTest, SolveIgnoreFunctions) {
-  Args args("", "data/ssd.nl");
-  TestSolver solver("testsolver");
   char amplfunc[] = "AMPLFUNC=../solvers/ssdsolver/ssd.dll";
   putenv(amplfunc);
-  solver.ReadProblem(args);
+  Problem p;
+  p.Read("data/ssd");
   Solution s;
-  solver.problem().Solve(CBC_PATH, s, 0, Problem::IGNORE_FUNCTIONS);
+  p.Solve(CBC_PATH, s, 0, Problem::IGNORE_FUNCTIONS);
   EXPECT_EQ(42, s.value(0));
 }
 #endif
 
 TEST(SolverTest, SolveWithUnknownSolver) {
-  Args args("", "data/simple.nl");
-  TestSolver solver("testsolver");
-  solver.ReadProblem(args);
+  Problem p;
+  p.Read("data/simple");
   Solution s;
-  EXPECT_THROW(solver.problem().Solve("unknownsolver", s), ampl::Error);
+  EXPECT_THROW(p.Solve("unknownsolver", s), ampl::Error);
 }
 
 TEST(SolverTest, WriteProblem) {
-  Args args("", "data/simple.nl");
-  TestSolver solver("testsolver");
-  solver.ReadProblem(args);
+  Problem p;
+  p.Read("data/simple");
   fmt::Writer writer;
-  writer << solver.problem();
+  writer << p;
   EXPECT_EQ(
       "var x1 >= 0;\n"
       "var x2 >= 0;\n"

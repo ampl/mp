@@ -65,8 +65,6 @@ class LinearTerm {
 typedef LinearTerm<ograd> LinearObjTerm;
 typedef LinearTerm<cgrad> LinearConTerm;
 
-class Problem;
-
 // A linear expression.
 template <typename Term>
 class LinearExpr {
@@ -363,7 +361,7 @@ class Problem : Noncopyable {
   void AddCon(LogicalExpr expr);
 
   // Reads a problem from the file <stub>.nl.
-  void Read(const char *stub);
+  void Read(fmt::StringRef stub);
 
   // Flags for Solve.
   enum { IGNORE_FUNCTIONS = 1 };
@@ -677,13 +675,13 @@ class BasicSolver
   // Sets the solution handler.
   void set_solution_handler(SolutionHandler *sh) { sol_handler_ = sh; }
 
-  // Parses command-line options starting with '-' and reads a problem from
+  // Parses command-line arguments starting with '-' and reads a problem from
   // an .nl file if the file name (stub) is specified. Returns true if the
   // arguments contain the file name and false otherwise. If there was an
-  // error parsing arguments or reading the problem ReadProblem will print an
+  // error parsing arguments or reading the problem ProcessArgs will print an
   // error message and call std::exit (this is likely to change in the future
   // version).
-  bool ReadProblem(char **&argv);
+  bool ProcessArgs(char **&argv);
 
   // Passes a solution to the solution handler.
   void HandleSolution(fmt::StringRef message,
@@ -898,6 +896,8 @@ class Solver : public BasicSolver {
     return DoParseOptions(argv, flags);
   }
 
+  using BasicSolver::ProcessArgs;
+
   // Processes command-line arguments, reads a problem from an .nl file
   // if the file name (stub) is specified and parses solver options.
   // Returns true if the arguments contain the file name and options were
@@ -906,7 +906,7 @@ class Solver : public BasicSolver {
   // ProcessArgs will print an error message and call std::exit (this is
   // likely to change in the future version).
   bool ProcessArgs(char **&argv, OptionHandler &h, unsigned flags = 0) {
-    return ReadProblem(argv) && ParseOptions(argv, h, flags);
+    return ProcessArgs(argv) && ParseOptions(argv, h, flags);
   }
 };
 }
