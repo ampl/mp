@@ -53,7 +53,7 @@ TEST_F(TableProxyTest, WriteTab) {
   int bits = sizeof(void*) == 8 ? 64 : 32;
   std::string prog = str(fmt::Format("prog=../tables/tableproxy{}") << bits);
 #ifdef WIN32
-  prog.replace('/', '\\');
+  std::replace(prog.begin(), prog.end(), '/', '\\');
 #endif
   t.AddString(prog);
   t.AddString("lib=../tables/fullbit.dll");
