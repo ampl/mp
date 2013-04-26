@@ -653,7 +653,7 @@ bool IlogCPSolver::ParseOptions(char **argv) {
 
 int IlogCPSolver::Run(char **argv) {
   double start_time = xectim_();
-  if (!ReadProblem(argv) || !ParseOptions(argv))
+  if (!ProcessArgs(argv) || !ParseOptions(argv))
     return 1;
   // Reset is used to reset read_time_ in case of exceptions.
   class Reset {
