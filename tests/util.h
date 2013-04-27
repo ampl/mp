@@ -1,6 +1,7 @@
 #ifndef TESTS_UTIL_H_
 #define TESTS_UTIL_H_
 
+#include <algorithm>
 #include <string>
 
 #include "solvers/util/format.h"
@@ -13,8 +14,9 @@ inline std::string FixPath(fmt::StringRef s) {
   std::string fixed = s;
   std::replace(fixed.begin(), fixed.end(), '/', '\\');
   return fixed;
-#endif
+#else
   return s;
+#endif
 }
 
 #endif  // TESTS_UTIL_H_
