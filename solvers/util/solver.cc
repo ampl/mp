@@ -388,20 +388,21 @@ const char* OptionParser<const char*>::operator()(
   return value_.c_str();
 }
 
-std::string Format(const char *s, int indent) {
+std::string Format(fmt::StringRef s, int indent) {
   std::ostringstream os;
   bool new_line = true;
   int line_offset = 0;
   int start_indent = indent;
   const int MAX_LINE_LENGTH = 78;
+  const char *p = s.c_str();
   for (;;) {
-    const char *start = s;
-    while (*s == ' ')
-      ++s;
-    const char *word_start = s;
-    while (*s != ' ' && *s != '\n' && *s)
-      ++s;
-    const char *word_end = s;
+    const char *start = p;
+    while (*p == ' ')
+      ++p;
+    const char *word_start = p;
+    while (*p != ' ' && *p != '\n' && *p)
+      ++p;
+    const char *word_end = p;
     if (new_line) {
       indent = start_indent + static_cast<int>(word_start - start);
       new_line = false;
@@ -419,13 +420,13 @@ std::string Format(const char *s, int indent) {
     }
     os.write(start, word_end - start);
     line_offset += static_cast<int>(word_end - start);
-    if (*s == '\n') {
+    if (*p == '\n') {
       os << '\n';
       line_offset = 0;
       new_line = true;
-      ++s;
+      ++p;
     }
-    if (!*s) break;
+    if (!*p) break;
   }
   if (!new_line)
     os << '\n';
@@ -449,17 +450,16 @@ void Solution::Swap(Solution &other) {
   std::swap(dual_values_, other.dual_values_);
 }
 
-void Solution::Read(const char *stub, int num_vars, int num_cons) {
+void Solution::Read(fmt::StringRef stub, int num_vars, int num_cons) {
   // Allocate filename large enough to hold stub, ".sol" and terminating zero.
-  std::size_t stub_len = std::strlen(stub);
-  std::vector<char> filename(stub_len + 5);
-  std::strcpy(&filename[0], stub);
+  std::vector<char> filename(stub.size() + 5);
+  std::strcpy(&filename[0], stub.c_str());
   ASL asl = {};
   asl.i.n_var_ = num_vars;
   asl.i.n_con_ = num_cons;
   asl.i.ASLtype = 1;
   asl.i.filename_ = &filename[0];
-  asl.i.stub_end_ = asl.i.filename_ + stub_len;
+  asl.i.stub_end_ = asl.i.filename_ + stub.size();
   Solution sol;
   sol.num_vars_ = num_vars;
   sol.num_cons_ = num_cons;
@@ -626,27 +626,27 @@ void Problem::Read(fmt::StringRef stub) {
   asl_->I.r_ops_ = 0;
 }
 
-void Problem::WriteNL(const char *stub, ProblemChanges *pc, unsigned flags) {
+void Problem::WriteNL(fmt::StringRef stub, ProblemChanges *pc, unsigned flags) {
   int nfunc = asl_->i.nfunc_;
   if ((flags & IGNORE_FUNCTIONS) != 0)
     asl_->i.nfunc_ = 0;
   int result = fg_write_ASL(reinterpret_cast<ASL*>(asl_),
-      stub, pc ? pc->vco() : 0, ASL_write_ASCII);
+      stub.c_str(), pc ? pc->vco() : 0, ASL_write_ASCII);
   asl_->i.nfunc_ = nfunc;
   if (result)
     throw Error("Error writing .nl file");
 }
 
-void Problem::Solve(const char *solver_name,
+void Problem::Solve(fmt::StringRef solver_name,
     Solution &sol, ProblemChanges *pc, unsigned flags) {
   TempFiles temp;
   WriteNL(temp.stub(), pc, flags);
   // Run the solver and read the solution file.
   int exit_code = std::system(
-      c_str(fmt::Format("{} {} -AMPL") << solver_name << temp.stub()));
+      c_str(fmt::Format("{} {} -AMPL") << solver_name.c_str() << temp.stub()));
   if (exit_code != 0) {
-    throw Error(fmt::Format(
-        "Error running solver {}, exit code = {}") << solver_name << exit_code);
+    throw Error(fmt::Format("Error running solver {}, exit code = {}")
+        << solver_name.c_str() << exit_code);
   }
   sol.Read(temp.stub(), num_vars() + (pc ? pc->num_vars() : 0),
       num_cons() + (pc ? pc->num_cons() : 0));
@@ -762,16 +762,15 @@ void BasicSolver::SortOptions() {
 }
 
 char *BasicSolver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
-  std::string header = internal::Format(
-      static_cast<BasicSolver*>(oi)->GetOptionHeader().c_str());
+  std::string header =
+      internal::Format(static_cast<BasicSolver*>(oi)->GetOptionHeader());
   if (!header.empty())
     fmt::Print("{}\n") << header;
   fmt::Print("Directives:\n");
   const int DESC_INDENT = 6;
   for (int i = 0, n = oi->n_keywds; i < n; ++i) {
     const keyword &kw = oi->keywds[i];
-    fmt::Print("\n{}\n{}") << kw.name <<
-        ampl::internal::Format(kw.desc, DESC_INDENT);
+    fmt::Print("\n{}\n{}") << kw.name << internal::Format(kw.desc, DESC_INDENT);
   }
   exit(0);
   return 0;

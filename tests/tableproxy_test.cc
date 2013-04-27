@@ -51,12 +51,10 @@ TEST_F(TableProxyTest, WriteTab) {
   fun::Table t("test", 1);
   t.AddString("tableproxy");
   int bits = sizeof(void*) == 8 ? 64 : 32;
-  std::string prog = str(fmt::Format("prog=../tables/tableproxy{}") << bits);
-#ifdef WIN32
-  std::replace(prog.begin(), prog.end(), '/', '\\');
-#endif
+  std::string prog = FixPath(
+      fmt::Format("prog=../tables/tableproxy{}") << bits);
   t.AddString(prog);
-  t.AddString("lib=../tables/fullbit.dll");
+  t.AddString(FixPath("lib=../tables/fullbit.dll"));
   t.AddString("lib-tab");
   t = "N", 1, 2;
   std::remove("test.tab");

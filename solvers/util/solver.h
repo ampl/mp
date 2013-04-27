@@ -119,6 +119,7 @@ enum ObjType { MIN = 0, MAX = 1 };
 // A variable type.
 enum VarType { CONTINUOUS, INTEGER };
 
+// A class that prohibits copying when inherited from.
 class Noncopyable {
  private:
   // Do not implement!
@@ -193,7 +194,7 @@ class Solution : Noncopyable {
   }
 
   // Reads a solution from the file <stub>.sol.
-  void Read(const char *stub, int num_vars, int num_cons);
+  void Read(fmt::StringRef stub, int num_vars, int num_cons);
 };
 
 class ProblemChanges;
@@ -367,10 +368,10 @@ class Problem : Noncopyable {
   enum { IGNORE_FUNCTIONS = 1 };
 
   // Write an .nl file.
-  void WriteNL(const char *stub, ProblemChanges *pc = 0, unsigned flags = 0);
+  void WriteNL(fmt::StringRef stub, ProblemChanges *pc = 0, unsigned flags = 0);
 
   // Solves the current problem.
-  void Solve(const char *solver_name, Solution &sol,
+  void Solve(fmt::StringRef solver_name, Solution &sol,
       ProblemChanges *pc = 0, unsigned flags = 0);
 };
 
@@ -485,7 +486,7 @@ class OptionParser<const char*> {
 };
 
 // Formats a string by indenting it and performing word wrap.
-std::string Format(const char *s, int indent = 0);
+std::string Format(fmt::StringRef s, int indent = 0);
 }
 
 class Interruptible {
@@ -629,6 +630,7 @@ class BasicSolver
     NO_OPTION_ECHO = 1
   };
 
+  // Returns the current problem.
   Problem &problem() { return problem_; }
 
   // Returns the solver name.

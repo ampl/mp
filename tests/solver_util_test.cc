@@ -95,21 +95,7 @@ class StderrRedirect {
   }
 };
 
-class CBCPath {
- private:
-  std::string path_;
-
- public:
-  CBCPath() : path_("../solvers/cbc/bin/cbc") {
-#ifdef WIN32
-    std::replace(path_.begin(), path_.end(), '/', '\\');
-#endif
-  }
-
-  operator const char *() const { return path_.c_str(); }
-};
-
-const CBCPath CBC_PATH;
+const std::string CBC_PATH = FixPath("../solvers/cbc/bin/cbc");
 }
 
 TEST(SolutionTest, DefaultCtor) {
