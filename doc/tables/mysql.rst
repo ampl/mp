@@ -147,7 +147,7 @@ We assume that you've already installed the MySQL ODBC driver using
 the instructions above and have access to the MySQL ``test`` database.
 
 First download the data for the diet problem `diet-mysql.sql
-<https://raw.github.com/vitaut/ampl/master/models/tables/diet-mysql.sql>`__
+<http://ampl.github.io/models/tables/diet-mysql.sql>`__
 and import it to MySQL:
 
    .. code-block:: bash
@@ -155,9 +155,9 @@ and import it to MySQL:
       $ mysql test < diet-mysql.sql
 
 Then download the model file `diet.mod
-<https://raw.github.com/vitaut/ampl/master/models/tables/diet.mod>`__
+<http://ampl.github.io/models/tables/diet.mod>`__
 and the script file `diet-mysql.run
-<https://raw.github.com/vitaut/ampl/master/models/tables/diet-mysql.run>`__.
+<http://ampl.github.io/models/tables/diet-mysql.run>`__.
 
 The script file first reads the model:
 
