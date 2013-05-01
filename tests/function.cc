@@ -337,6 +337,7 @@ void LibraryImpl::AddTableHandler(
 }
 
 LibraryImpl::LibraryImpl(const char *name) : AmplExports(), name_(name) {
+  ASLdate = 20111028;
   Addfunc = AddFunc;
   Add_table_handler = AddTableHandler;
   AmplExports::AtExit = AtExit;
