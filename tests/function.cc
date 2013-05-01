@@ -37,6 +37,10 @@ using std::string;
 using std::vector;
 using fun::Table;
 
+#ifdef WIN32
+extern "C" char **environ;
+#endif
+
 namespace {
 
 char MISSING;
@@ -270,7 +274,13 @@ class LibraryImpl : public AmplExports, public TMInfo {
   }
 
   static char *Getenv(const char *name) {
-    return name ? getenv(name) : 0;
+    if (!name) {
+#ifdef WIN32
+      return reinterpret_cast<char*>(environ);
+#endif
+      return 0;
+    }
+    return getenv(name);
   }
 
  public:
