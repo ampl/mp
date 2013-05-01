@@ -705,6 +705,8 @@ startremote(AmplExports *ae, TableInfo *TI, ProxyInfo *PI, char *ipstr)
 	return pp;
 	}
 
+extern char **environ;
+
  static ProxProg*
 startprog(AmplExports *ae, TableInfo *TI, ProxyInfo *PI, char *prog)
 {
@@ -748,7 +750,7 @@ startprog(AmplExports *ae, TableInfo *TI, ProxyInfo *PI, char *prog)
 	av[0] = p;
 	av[1] = "--local";
 	av[2] = 0;
-	ep = ae->ASLdate >= 20111028 && !ae->asl ? (char**)getenv(0) : 0;
+	ep = ae->ASLdate >= 20111028 && !ae->asl ? environ : 0;
 #ifdef _WIN32 /*{{*/
 	if (!(cmdline = make_cmdline(ae, TI, av, ' ')))
 		return 0;
