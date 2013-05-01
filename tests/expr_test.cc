@@ -959,12 +959,13 @@ TEST_F(ExprTest, LinearTerm) {
   EXPECT_EQ(22, term.var_index());
 }
 
+struct TestTerm {
+  typedef TestGrad Grad;
+  Grad *grad_;
+  TestTerm(Grad *g) : grad_(g) {}
+};
+
 TEST_F(ExprTest, LinearExprIterator) {
-  struct TestTerm {
-    typedef TestGrad Grad;
-    Grad *grad_;
-    TestTerm(Grad *g) : grad_(g) {}
-  };
   TestGrad g2 = {0};
   TestGrad g1 = {&g2};
   LinearExpr<TestTerm>::iterator i(&g1), i2(i), i3(&g2), end(0);
