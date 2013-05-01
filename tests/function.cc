@@ -61,10 +61,6 @@ class ScopedTableInfo : public TableInfo {
     return static_cast<ScopedTableInfo*>(ti)->AdjustMaxrows(new_maxrows);
   }
 
-  static char *Getenv(const char *name) {
-    return name ? getenv(name) : 0;
-  }
-
   struct Deleter {
     void operator()(char *ptr) { delete [] ptr; }
   };
@@ -273,6 +269,10 @@ class LibraryImpl : public AmplExports, public TMInfo {
     return impl->tempmem_.back() = malloc(size);
   }
 
+  static char *Getenv(const char *name) {
+    return name ? getenv(name) : 0;
+  }
+
  public:
   explicit LibraryImpl(const char *name);
   ~LibraryImpl() {
@@ -358,7 +358,7 @@ LibraryImpl::LibraryImpl(const char *name) : AmplExports(), name_(name) {
   FprintF = fprintf;
   StdErr = stderr;
   Qsortv = qsortv;
-  Getenv = Getenv;
+  AmplExports::Getenv = Getenv;
   Strtod = strtod;
 }
 
