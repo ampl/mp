@@ -1391,6 +1391,79 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
 
 #undef AMPL_DISPATCH
 
+template <typename Grad>
+class LinearExpr;
+
+// A linear term.
+template <typename GradT>
+class LinearTerm {
+ private:
+  typedef GradT Grad;
+  Grad *grad_;
+
+  friend class LinearExpr< LinearTerm<Grad> >;
+
+  explicit LinearTerm(Grad *g) : grad_(g) {}
+
+ public:
+  // Returns the coefficient.
+  double coef() const { return grad_->coef; }
+
+  // Returns the variable index.
+  int var_index() const { return grad_->varno; }
+};
+
+typedef LinearTerm<ograd> LinearObjTerm;
+typedef LinearTerm<cgrad> LinearConTerm;
+
+// A linear expression.
+template <typename Term>
+class LinearExpr {
+ private:
+  Term first_term_;
+
+  friend class Problem;
+
+  explicit LinearExpr(typename Term::Grad *first_term)
+  : first_term_(Term(first_term)) {}
+
+ public:
+  class iterator : public std::iterator<std::forward_iterator_tag, Term> {
+   private:
+    Term term_;
+
+   public:
+    explicit iterator(Term t) : term_(t) {}
+
+    Term operator*() const { return term_; }
+    const Term *operator->() const { return &term_; }
+
+    iterator &operator++() {
+      term_ = Term(term_.grad_->next);
+      return *this;
+    }
+
+    iterator operator++(int ) {
+      iterator it(*this);
+      term_ = Term(term_.grad_->next);
+      return it;
+    }
+
+    bool operator==(iterator other) const {
+      return term_.grad_ == other.term_.grad_;
+    }
+    bool operator!=(iterator other) const {
+      return term_.grad_ != other.term_.grad_;
+    }
+  };
+
+  iterator begin() { return iterator(first_term_); }
+  iterator end() { return iterator(Term(0)); }
+};
+
+typedef LinearExpr<LinearObjTerm> LinearObjExpr;
+typedef LinearExpr<LinearConTerm> LinearConExpr;
+
 #ifdef HAVE_UNORDERED_MAP
 template <class T>
 inline void HashCombine(std::size_t &seed, const T &v) {
