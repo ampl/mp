@@ -51,6 +51,9 @@ using ampl::IteratedLogicalExpr;
 using ampl::AllDiffExpr;
 using ampl::ExprVisitor;
 
+using ampl::LinearTerm;
+using ampl::LinearExpr;
+
 using ampl::UnsupportedExprError;
 using ampl::InvalidNumericExprError;
 using ampl::InvalidLogicalExprError;
@@ -65,6 +68,13 @@ class TestExpr : public Expr {
   template <typename ExprT>
   static ExprT MakeExpr(expr *e) { return Expr::Create<ExprT>(e); }
 };
+
+struct TestGrad {
+  TestGrad *next;
+  double coef;
+  double varno;
+};
+
 }
 
 namespace ampl {
@@ -74,6 +84,16 @@ bool Is<TestExpr>(Expr e) {
   return e.kind() == Expr::BINARY || e.kind() == Expr::UNARY;
 }
 }
+
+template <>
+class LinearExpr< LinearTerm<TestGrad> > {
+ private:
+  TestGrad grad_;
+
+ public:
+  LinearExpr(const TestGrad &g) : grad_(g) {}
+  LinearTerm<TestGrad> get() { return LinearTerm<TestGrad>(&grad_); }
+};
 }
 
 namespace {
@@ -929,6 +949,35 @@ TEST_F(ExprTest, ExprVisitorInvalidThrows) {
   raw.op = reinterpret_cast<efunc*>(-1);
   EXPECT_THROW(NullVisitor().Visit(ne), InvalidNumericExprError);
   EXPECT_THROW(NullVisitor().Visit(le), InvalidLogicalExprError);
+}
+
+TEST_F(ExprTest, LinearTerm) {
+  TestGrad g = {0, 11, 22};
+  LinearExpr< LinearTerm<TestGrad> > expr(g);
+  LinearTerm<TestGrad> term = expr.get();
+  EXPECT_EQ(11, term.coef());
+  EXPECT_EQ(22, term.var_index());
+}
+
+TEST_F(ExprTest, LinearExprIterator) {
+  struct TestTerm {
+    typedef TestGrad Grad;
+    Grad *grad_;
+    TestTerm(Grad *g) : grad_(g) {}
+  };
+  TestGrad g2 = {0};
+  TestGrad g1 = {&g2};
+  LinearExpr<TestTerm>::iterator i(&g1), i2(i), i3(&g2), end(0);
+  EXPECT_TRUE(i == i2);
+  EXPECT_TRUE(i != i3);
+  EXPECT_TRUE(i != end);
+  EXPECT_EQ(&g1, i->grad_);
+  EXPECT_EQ(&g1, (*i).grad_);
+  EXPECT_TRUE(++i == i3);
+  EXPECT_TRUE(i == i3);
+  EXPECT_TRUE(i2++ != i3);
+  EXPECT_TRUE(i2 == i3);
+  EXPECT_EQ(&g2, i->grad_);
 }
 
 struct Var {
