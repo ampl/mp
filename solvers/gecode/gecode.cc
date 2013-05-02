@@ -241,11 +241,20 @@ LinExpr NLToGecodeConverter::VisitFloor(UnaryExpr e) {
 LinExpr NLToGecodeConverter::VisitIf(IfExpr e) {
   IntVar result(problem_, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
   BoolExpr condition = Visit(e.condition());
+  NumericExpr true_expr = e.true_expr(), false_expr = e.false_expr();
+  NumericConstant false_const = Cast<NumericConstant>(false_expr);
+  if (false_const && false_const.value() == 0) {
+    NumericConstant true_const = Cast<NumericConstant>(true_expr);
+    if (true_const && true_const.value() == 1) {
+      Gecode::channel(problem_, Gecode::expr(problem_, condition, icl_), result);
+      return result;
+    }
+  }
   rel(problem_, result, Gecode::IRT_EQ,
-      Gecode::expr(problem_, Visit(e.true_expr()), icl_),
+      Gecode::expr(problem_, Visit(true_expr), icl_),
       Reify(Gecode::expr(problem_, condition, icl_), Gecode::RM_IMP), icl_);
   rel(problem_, result, Gecode::IRT_EQ,
-      Gecode::expr(problem_, Visit(e.false_expr()), icl_),
+      Gecode::expr(problem_, Visit(false_expr), icl_),
       Reify(Gecode::expr(problem_, !condition, icl_), Gecode::RM_IMP), icl_);
   return result;
 }
