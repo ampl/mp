@@ -13,29 +13,29 @@ CPLEX_INC=$(CPLEXDIR)/include
 CPLEX_LIB=$(CPLEXDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
 CPOPTIMIZER_INC=$(CPOPTIMIZERDIR)/include
 CPOPTIMIZER_LIB=$(CPOPTIMIZERDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
-AMPL_INC=$(AMPLDIR)/solvers
+AMPL_INC=$(AMPLDIR)
 AMPL_LIB=$(AMPLDIR)/solvers/amplsolver.a
 LIBS=-lnsl -lm -ldl -lpthread
 
 #DEBUG= -w -xO2 -xtarget=ultra -xarch=v8plus -DNDEBUG
 DEBUG = -g
 MTFLAGS = -DILCUSEMT
-LDMTFLAGS = -mt
+#LDMTFLAGS = -mt
 
-# Remove -DHAVE_UNORDERED_MAP if using an old C++ standard library
-# without std::unordered_map. Conversion of numberof expressions will
-# be slower.
+# Comment out if using pre-C++11 compiler/standard library.
+CXX11_FLAGS = -std=c++11 -DHAVE_UNORDERED_MAP
+
 CXX_FLAGS = $(DEBUG) -I$(CONCERT_INC) -I$(CPLEX_INC) -I$(CPOPTIMIZER_INC) \
-            -I$(AMPL_INC) $(MTFLAGS) -DIL_STD -DHAVE_UNORDERED_MAP
+            -I$(AMPL_INC) -I${AMPL_INC}/solvers $(MTFLAGS) -DIL_STD ${CXX11_FLAGS}
 LD_FLAGS  = -L$(CPOPTIMIZER_LIB) -lcp -L$(CPLEX_LIB) -lilocplex -lcplex \
             -L$(CONCERT_LIB) -lconcert $(LDMTFLAGS) $(AMPL_LIB) $(LIBS)
 
-BINARIES = ilogcp.o build_expr.o main.o util.o
+BINARIES = ilogcp.o main.o util-all.o
 
 ilogcp: $(BINARIES)
 	$(CXX) -o $@ $(BINARIES) $(LD_FLAGS)
 
 %.o: %.cpp
 	$(CXX) $(CXX_FLAGS) -c $<
-%.o: %.c
+util-all.o: ../util/util-all.cc
 	$(CXX) $(CXX_FLAGS) -c $<
