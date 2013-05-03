@@ -149,6 +149,9 @@ class Problem : Noncopyable {
   // Frees all the arrays that were allocated by modifications to the problem.
   void Free();
 
+  // Write an .nl file.
+  void WriteNL(fmt::StringRef stub, ProblemChanges *pc = 0, unsigned flags = 0);
+
  public:
   Problem();
   ~Problem();
@@ -284,9 +287,6 @@ class Problem : Noncopyable {
 
   // Flags for the Solve method.
   enum { IGNORE_FUNCTIONS = 1 };
-
-  // Write an .nl file.
-  void WriteNL(fmt::StringRef stub, ProblemChanges *pc = 0, unsigned flags = 0);
 
   // Solves the current problem.
   void Solve(fmt::StringRef solver_name, Solution &sol,
