@@ -465,5 +465,3 @@ TEST(ProblemTest, AddObj) {
   p.Read("data/simple");
   EXPECT_THROW(p.AddObj(ampl::MAX, expr), ampl::Error);
 }
-
-// TODO: test WriteNL
