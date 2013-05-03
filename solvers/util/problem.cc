@@ -386,12 +386,16 @@ void Problem::Free() {
   }
   if (obj_capacity_) {
     delete [] asl_->I.obj_de_;
+    delete [] asl_->i.objtype_;
+    delete [] asl_->i.Ograd_;
     asl_->I.obj_de_ = 0;
+    asl_->i.objtype_ = 0;
+    asl_->i.Ograd_ = 0;
     obj_capacity_ = 0;
   }
   if (logical_con_capacity_) {
-    asl_->I.lcon_de_ = 0;
     delete [] asl_->I.lcon_de_;
+    asl_->I.lcon_de_ = 0;
     logical_con_capacity_ = 0;
   }
 }
@@ -466,8 +470,7 @@ class TempFiles : Noncopyable {
 
 void Problem::AddVar(double lb, double ub, VarType type) {
   int &num_vars = asl_->i.n_var_;
-  bool increase_capacity = var_capacity_ <= num_vars;
-  if (increase_capacity) {
+  if (num_vars >= var_capacity_) {
     IncreaseCapacity(num_vars, var_capacity_);
     Grow(asl_->i.LUv_, num_vars, var_capacity_);
     Grow(asl_->i.Uvx_, num_vars, var_capacity_);
@@ -495,7 +498,7 @@ void Problem::AddVar(double lb, double ub, VarType type) {
 
 void Problem::AddObj(ObjType type, NumericExpr expr) {
   int &num_objs = asl_->i.n_obj_;
-  if (num_objs == obj_capacity_) {
+  if (num_objs >= obj_capacity_) {
     IncreaseCapacity(num_objs, obj_capacity_);
     Grow(asl_->I.obj_de_, num_objs, obj_capacity_);
     Grow(asl_->i.objtype_, num_objs, obj_capacity_);
@@ -511,7 +514,7 @@ void Problem::AddObj(ObjType type, NumericExpr expr) {
 
 void Problem::AddCon(LogicalExpr expr) {
   int &num_logical_cons = asl_->i.n_lcon_;
-  if (num_logical_cons == logical_con_capacity_) {
+  if (num_logical_cons >= logical_con_capacity_) {
     IncreaseCapacity(num_logical_cons, logical_con_capacity_);
     Grow(asl_->I.lcon_de_, num_logical_cons, logical_con_capacity_);
   }
