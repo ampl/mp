@@ -9158,3 +9158,8 @@ problems, "Solution determined by presolve" is more often possible.
   Fix a bug with "display _logcon;" on problems having both logical and
 arithmetic constraints:  wrong values were displayed.  The bug did not
 affect, e.g., "display {i in 1 .. _nlogcons} _logcon[i];".
+
+20130501
+  Fix some bugs (infinite loop, fault, or surprising error message
+"nonvariable type ... in eput") in simplifying some complicated
+logical expressions.
