@@ -20,9 +20,6 @@
  Author: Victor Zverovich
  */
 
-#include <csignal>
-#include <fstream>
-
 #include "gtest/gtest.h"
 #include "solvers/util/solver.h"
 #include "tests/args.h"
@@ -34,12 +31,8 @@
 # define putenv _putenv
 #endif
 
-using ampl::LinearObjExpr;
-using ampl::LinearConExpr;
-using ampl::Problem;
-using ampl::ProblemChanges;
 using ampl::BasicSolver;
-using ampl::Solution;
+using ampl::Problem;
 using ampl::Solver;
 
 namespace {
@@ -78,160 +71,22 @@ struct TestSolver : BasicSolver {
 
   void Solve(Problem &) {}
 };
-
-// Redirects Stderr to a file.
-class StderrRedirect {
- private:
-  FILE *saved_stderr;
-
- public:
-  StderrRedirect(const char *filename) : saved_stderr(Stderr) {
-    Stderr = fopen(filename, "w");
-  }
-
-  ~StderrRedirect() {
-    fclose(Stderr);
-    Stderr = saved_stderr;
-  }
-};
-
-const std::string CBC_PATH = FixPath("../solvers/cbc/bin/cbc");
 }
 
-TEST(SolutionTest, DefaultCtor) {
-  Solution s;
-  EXPECT_EQ(Solution::UNKNOWN, s.status());
-  EXPECT_EQ(-1, s.solve_code());
-  EXPECT_EQ(0, s.num_vars());
-  EXPECT_EQ(0, s.num_cons());
-  EXPECT_EQ(0, s.values());
-  EXPECT_EQ(0, s.dual_values());
+TEST(SolverTest, ObjPrec) {
+  double value = 12.3456789123456789;
+  char buffer[64];
+  sprintf(buffer, "%.*g", obj_prec(), value);
+  EXPECT_EQ(buffer, str(fmt::Format("{}") << ampl::ObjPrec(value)));
 }
 
-TEST(SolutionTest, Read) {
-  WriteFile("test.sol", "test\n\n1\n3\n5\n7\n11\n");
-  Solution s;
-  s.Read("test", 3, 2);
-  EXPECT_EQ(Solution::UNKNOWN, s.status());
-  EXPECT_EQ(-1, s.solve_code());
-  EXPECT_EQ(3, s.num_vars());
-  EXPECT_EQ(2, s.num_cons());
-  const double values[] = {5, 7, 11};
-  for (int i = 0; i < 3; ++i) {
-    EXPECT_EQ(values[i], s.value(i));
-    EXPECT_EQ(values[i], s.values()[i]);
-  }
-  const double dual_values[] = {1, 3};
-  for (int i = 0; i < 2; ++i) {
-    EXPECT_EQ(dual_values[i], s.dual_value(i));
-    EXPECT_EQ(dual_values[i], s.dual_values()[i]);
-  }
-}
-
-TEST(SolutionTest, ReadError) {
-  Solution s;
-  StderrRedirect redirect("out");
-  EXPECT_THROW(s.Read("nonexistent", 0, 0), ampl::Error);
-}
-
-TEST(SolutionTest, ReadEmpty) {
-  WriteFile("test.sol", "test\n\n");
-  Solution s;
-  s.Read("test", 0, 0);
-  EXPECT_EQ(0, s.num_vars());
-  EXPECT_EQ(0, s.num_cons());
-  EXPECT_EQ(0, s.solve_code());
-}
-
-TEST(SolutionTest, DoubleRead) {
-  WriteFile("test.sol", "test\n\n1\n3\n5\n7\n11\n");
-  Solution s;
-  s.Read("test", 3, 2);
-  WriteFile("test.sol", "test\n\n44\n22\n33\n");
-  s.Read("test", 2, 1);
-  EXPECT_EQ(2, s.num_vars());
-  EXPECT_EQ(1, s.num_cons());
-  EXPECT_EQ(22, s.value(0));
-  EXPECT_EQ(33, s.value(1));
-  EXPECT_EQ(44, s.dual_value(0));
-}
-
-TEST(SolutionTest, SolveCodes) {
-  const Solution::Status STATES[] = {
-      Solution::SOLVED,
-      Solution::SOLVED_MAYBE,
-      Solution::INFEASIBLE,
-      Solution::UNBOUNDED,
-      Solution::LIMIT,
-      Solution::FAILURE
-  };
-  for (std::size_t i = 0; i < sizeof(STATES) / sizeof(*STATES); ++i) {
-    {
-      int solve_code = i * 100;
-      WriteFile("test.sol",
-          c_str(fmt::Format("test\n\n2\n2\nobjno 0 {}\n") << solve_code));
-      Solution s;
-      s.Read("test", 1, 1);
-      EXPECT_EQ(STATES[i], s.status());
-      EXPECT_EQ(solve_code, s.solve_code());
-    }
-    {
-      int solve_code = i * 100 + 99;
-      WriteFile("test.sol",
-          c_str(fmt::Format("test\n\n2\n2\nobjno 0 {}\n") << solve_code));
-      Solution s;
-      s.Read("test", 1, 1);
-      EXPECT_EQ(STATES[i], s.status());
-      EXPECT_EQ(solve_code, s.solve_code());
-    }
-  }
-  const double CODES[] = {-5, -1, 600, 1000};
-  for (std::size_t i = 0; i < sizeof(CODES) / sizeof(*CODES); ++i) {
-    WriteFile("test.sol",
-        c_str(fmt::Format("test\n\n2\n2\nobjno 0 {}\n") << CODES[i]));
-    Solution s;
-    s.Read("test", 1, 1);
-    EXPECT_EQ(Solution::UNKNOWN, s.status());
-    EXPECT_EQ(CODES[i], s.solve_code());
-  }
-}
-
-#ifndef NDEBUG
-TEST(SolutionTest, BoundChecks) {
-  WriteFile("test.sol", "test\n\n1\n3\n5\n7\n11\n");
-  Solution s;
-  s.Read("test", 3, 2);
-  EXPECT_DEATH(s.value(-1), "Assertion");
-  EXPECT_DEATH(s.value(3), "Assertion");
-  EXPECT_DEATH(s.dual_value(-1), "Assertion");
-  EXPECT_DEATH(s.dual_value(2), "Assertion");
-}
-#endif
-
-TEST(SolutionTest, Swap) {
-  WriteFile("test.sol", "test\n\n1\n3\n5\n7\n11\nobjno 0 10\n");
-  Solution s1;
-  s1.Read("test", 3, 2);
-  WriteFile("test.sol", "test\n\n44\n22\n33\nobjno 0 20");
-  Solution s2;
-  s2.Read("test", 2, 1);
-  s1.Swap(s2);
-
-  EXPECT_EQ(20, s1.solve_code());
-  EXPECT_EQ(2, s1.num_vars());
-  EXPECT_EQ(1, s1.num_cons());
-  EXPECT_EQ(22, s1.value(0));
-  EXPECT_EQ(33, s1.value(1));
-  EXPECT_EQ(44, s1.dual_value(0));
-
-  EXPECT_EQ(10, s2.solve_code());
-  EXPECT_EQ(3, s2.num_vars());
-  EXPECT_EQ(2, s2.num_cons());
-  EXPECT_EQ(5, s2.value(0));
-  EXPECT_EQ(7, s2.value(1));
-  EXPECT_EQ(11, s2.value(2));
-  EXPECT_EQ(1, s2.dual_value(0));
-  EXPECT_EQ(3, s2.dual_value(1));
+TEST(SolverTest, Format) {
+  EXPECT_EQ(
+    "     This is a very long option description that should be indented and\n"
+    "     wrapped.\n",
+    ampl::internal::Format(
+          "This is a very long option description "
+          "that should be indented and wrapped.", 5));
 }
 
 TEST(SolverTest, BasicSolverCtor) {
@@ -434,15 +289,6 @@ TEST(SolverTest, ParseOptions) {
   EXPECT_EQ(5, s.wantsol());
 }
 
-TEST(SolverTest, Format) {
-  EXPECT_EQ(
-    "     This is a very long option description that should be indented and\n"
-    "     wrapped.\n",
-    ampl::internal::Format(
-          "This is a very long option description "
-          "that should be indented and wrapped.", 5));
-}
-
 struct DummyOptionHandler {};
 
 TEST(SolverTest, SolverWithDefaultOptionHandler) {
@@ -633,120 +479,6 @@ TEST(SolverTest, ProcessArgsParsesSolverOptions) {
   EXPECT_EQ(3, s.intopt1);
 }
 
-TEST(SolverTest, ObjPrec) {
-  double value = 12.3456789123456789;
-  char buffer[64];
-  sprintf(buffer, "%.*g", obj_prec(), value);
-  EXPECT_EQ(buffer, str(fmt::Format("{}") << ampl::ObjPrec(value)));
-}
-
-TEST(SolverTest, EmptyProblem) {
-  Problem p;
-  EXPECT_EQ(0, p.num_vars());
-  EXPECT_EQ(0, p.num_objs());
-  EXPECT_EQ(0, p.num_cons());
-  EXPECT_EQ(0, p.num_integer_vars());
-  EXPECT_EQ(0, p.num_continuous_vars());
-  EXPECT_EQ(0, p.num_nonlinear_objs());
-  EXPECT_EQ(0, p.num_nonlinear_cons());
-  EXPECT_EQ(0, p.num_logical_cons());
-  EXPECT_EQ(-1, p.solve_code());
-}
-
-TEST(SolverTest, ProblemAccessors) {
-  Problem p;
-  p.Read("data/test");
-  EXPECT_EQ(5, p.num_vars());
-  EXPECT_EQ(19, p.num_objs());
-  EXPECT_EQ(13, p.num_cons());
-  EXPECT_EQ(2, p.num_integer_vars());
-  EXPECT_EQ(3, p.num_continuous_vars());
-  EXPECT_EQ(17, p.num_nonlinear_objs());
-  EXPECT_EQ(11, p.num_nonlinear_cons());
-  EXPECT_EQ(7, p.num_logical_cons());
-
-  EXPECT_EQ(11, p.var_lb(0));
-  EXPECT_EQ(15, p.var_lb(p.num_vars() - 1));
-  EXPECT_EQ(21, p.var_ub(0));
-  EXPECT_EQ(25, p.var_ub(p.num_vars() - 1));
-
-  EXPECT_EQ(101, p.con_lb(0));
-  EXPECT_EQ(113, p.con_lb(p.num_cons() - 1));
-  EXPECT_EQ(201, p.con_ub(0));
-  EXPECT_EQ(213, p.con_ub(p.num_cons() - 1));
-
-  EXPECT_EQ(ampl::MIN, p.obj_type(0));
-  EXPECT_EQ(ampl::MAX, p.obj_type(p.num_objs() - 1));
-
-  {
-    LinearObjExpr expr = p.linear_obj_expr(0);
-    EXPECT_EQ(31, expr.begin()->coef());
-    EXPECT_EQ(0, expr.begin()->var_index());
-    EXPECT_EQ(5, std::distance(expr.begin(), expr.end()));
-    expr = p.linear_obj_expr(p.num_objs() - 1);
-    EXPECT_EQ(52, expr.begin()->coef());
-    EXPECT_EQ(3, expr.begin()->var_index());
-  }
-
-  {
-    LinearConExpr expr = p.linear_con_expr(0);
-    EXPECT_EQ(61, expr.begin()->coef());
-    EXPECT_EQ(0, expr.begin()->var_index());
-    EXPECT_EQ(5, std::distance(expr.begin(), expr.end()));
-    expr = p.linear_con_expr(p.num_cons() - 1);
-    EXPECT_EQ(82, expr.begin()->coef());
-    EXPECT_EQ(2, expr.begin()->var_index());
-  }
-
-  EXPECT_EQ(OP_sin, p.nonlinear_obj_expr(0).opcode());
-  EXPECT_EQ(OP_cos, p.nonlinear_obj_expr(p.num_nonlinear_objs() - 1).opcode());
-
-  EXPECT_EQ(OP_log, p.nonlinear_con_expr(0).opcode());
-  EXPECT_EQ(OP_exp, p.nonlinear_con_expr(p.num_nonlinear_cons() - 1).opcode());
-
-  EXPECT_EQ(NE, p.logical_con_expr(0).opcode());
-  EXPECT_EQ(OPAND, p.logical_con_expr(p.num_logical_cons() - 1).opcode());
-
-  EXPECT_EQ(-1, p.solve_code());
-  p.set_solve_code(42);
-  EXPECT_EQ(42, p.solve_code());
-}
-
-#ifndef NDEBUG
-TEST(SolverTest, ProblemBoundChecks) {
-  Problem p;
-  p.Read("data/test");
-
-  EXPECT_DEATH(p.var_lb(-1), "Assertion");
-  EXPECT_DEATH(p.var_lb(p.num_vars()), "Assertion");
-  EXPECT_DEATH(p.var_ub(-1), "Assertion");
-  EXPECT_DEATH(p.var_ub(p.num_vars()), "Assertion");
-
-  EXPECT_DEATH(p.con_lb(-1), "Assertion");
-  EXPECT_DEATH(p.con_lb(p.num_cons()), "Assertion");
-  EXPECT_DEATH(p.con_ub(-1), "Assertion");
-  EXPECT_DEATH(p.con_ub(p.num_cons()), "Assertion");
-
-  EXPECT_DEATH(p.obj_type(-1), "Assertion");
-  EXPECT_DEATH(p.obj_type(p.num_objs()), "Assertion");
-
-  EXPECT_DEATH(p.linear_obj_expr(-1), "Assertion");
-  EXPECT_DEATH(p.linear_obj_expr(p.num_objs()), "Assertion");
-
-  EXPECT_DEATH(p.linear_con_expr(-1), "Assertion");
-  EXPECT_DEATH(p.linear_con_expr(p.num_cons()), "Assertion");
-
-  EXPECT_DEATH(p.nonlinear_obj_expr(-1), "Assertion");
-  EXPECT_DEATH(p.nonlinear_obj_expr(p.num_objs()), "Assertion");
-
-  EXPECT_DEATH(p.nonlinear_con_expr(-1), "Assertion");
-  EXPECT_DEATH(p.nonlinear_con_expr(p.num_cons()), "Assertion");
-
-  EXPECT_DEATH(p.logical_con_expr(-1), "Assertion");
-  EXPECT_DEATH(p.logical_con_expr(p.num_logical_cons()), "Assertion");
-}
-#endif
-
 TEST(SolverTest, SignalHandler) {
   std::signal(SIGINT, SIG_DFL);
   TestSolver s("testsolver");
@@ -775,119 +507,4 @@ TEST(SolverTest, SignalHandlerExitOnTwoSIGINTs) {
   }, ::testing::ExitedWithCode(1), "");
   EXPECT_EQ("\n<BREAK> (testsolver)\n\n<BREAK> (testsolver)\n",
       ReadFile("out"));
-}
-
-#ifdef HAVE_CBC
-TEST(SolverTest, Solve) {
-  Problem p;
-  p.Read("data/simple");
-  Solution s;
-  p.Solve(CBC_PATH, s);
-  EXPECT_EQ(2, s.num_vars());
-  EXPECT_EQ(1, s.num_cons());
-  EXPECT_EQ(2, s.value(0));
-  EXPECT_NEAR(0, s.value(1), 1e-5);
-  EXPECT_EQ(1, s.dual_value(0));
-}
-
-TEST(SolverTest, AddVarAndSolve) {
-  Problem p;
-  p.Read("data/simple");
-  Solution s;
-  ProblemChanges changes(p);
-  EXPECT_EQ(0, changes.num_vars());
-  EXPECT_EQ(0, changes.num_cons());
-  EXPECT_EQ(0, changes.num_objs());
-  changes.AddVar(42, 42);
-  EXPECT_EQ(1, changes.num_vars());
-  EXPECT_EQ(0, changes.num_cons());
-  EXPECT_EQ(0, changes.num_objs());
-  p.Solve(CBC_PATH, s, &changes);
-  EXPECT_EQ(3, s.num_vars());
-  EXPECT_EQ(1, s.num_cons());
-  EXPECT_EQ(2, s.value(0));
-  EXPECT_NEAR(0, s.value(1), 1e-5);
-  EXPECT_EQ(42, s.value(2));
-  EXPECT_EQ(1, s.dual_value(0));
-}
-
-TEST(SolverTest, AddConAndSolve) {
-  Problem p;
-  p.Read("data/simple");
-  Solution s;
-  ProblemChanges changes(p);
-  const double coefs[] = {1, 0};
-  EXPECT_EQ(0, changes.num_vars());
-  EXPECT_EQ(0, changes.num_cons());
-  EXPECT_EQ(0, changes.num_objs());
-  changes.AddCon(coefs, -Infinity, 1);
-  EXPECT_EQ(0, changes.num_vars());
-  EXPECT_EQ(1, changes.num_cons());
-  EXPECT_EQ(0, changes.num_objs());
-  p.Solve(CBC_PATH, s, &changes);
-  EXPECT_EQ(2, s.num_vars());
-  EXPECT_EQ(2, s.num_cons());
-  EXPECT_EQ(1, s.value(0));
-  EXPECT_EQ(0.5, s.value(1));
-  EXPECT_EQ(0.5, s.dual_value(0));
-  EXPECT_EQ(0.5, s.dual_value(1));
-}
-
-TEST(SolverTest, AddObjAndSolve) {
-  Problem p;
-  p.Read("data/noobj");
-  Solution s;
-  ProblemChanges changes(p);
-  double coef = -1;
-  int var = 0;
-  EXPECT_EQ(0, changes.num_vars());
-  EXPECT_EQ(0, changes.num_cons());
-  EXPECT_EQ(0, changes.num_objs());
-  changes.AddObj(ampl::MAX, 1, &coef, &var);
-  EXPECT_EQ(0, changes.num_vars());
-  EXPECT_EQ(0, changes.num_cons());
-  EXPECT_EQ(1, changes.num_objs());
-  p.Solve(CBC_PATH, s, &changes);
-  EXPECT_EQ(1, s.num_vars());
-  EXPECT_EQ(1, s.num_cons());
-  EXPECT_EQ(0, s.value(0));
-  EXPECT_EQ(-1, s.dual_value(0));
-}
-
-TEST(SolverTest, SolveIgnoreFunctions) {
-  char amplfunc[] = "AMPLFUNC=../solvers/ssdsolver/ssd.dll";
-  putenv(amplfunc);
-  Problem p;
-  p.Read("data/ssd");
-  Solution s;
-  p.Solve(CBC_PATH, s, 0, Problem::IGNORE_FUNCTIONS);
-  EXPECT_EQ(42, s.value(0));
-}
-#endif
-
-TEST(SolverTest, SolveWithUnknownSolver) {
-  Problem p;
-  p.Read("data/simple");
-  Solution s;
-  EXPECT_THROW(p.Solve("unknownsolver", s), ampl::Error);
-}
-
-TEST(SolverTest, WriteProblem) {
-  Problem p;
-  p.Read("data/simple");
-  fmt::Writer writer;
-  writer << p;
-  EXPECT_EQ(
-      "var x1 >= 0;\n"
-      "var x2 >= 0;\n"
-      "maximize o: x1 + x2;\n"
-      "s.t. c1: x1 + 2 * x2 <= 2;\n", writer.str());
-}
-
-TEST(SolverTest, WriteVarBounds) {
-  Problem p;
-  p.AddVar(42, 42);
-  fmt::Writer writer;
-  writer << p;
-  EXPECT_EQ("var x1 = 42;\n", writer.str());
 }
