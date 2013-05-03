@@ -41,8 +41,8 @@ cxx_test_with_flags(expr_test "" "gtest;util"
 cxx_test_with_flags(format_test "" "gtest;util" format_test.cc)
 cxx_test_with_flags(problem_test "" "gtest;util"
   problem_test.cc test_main.cc util.cc)
-cxx_test_with_flags(solver_util_test "" "gtest;util"
-  solver_util_test.cc args.cc test_main.cc util.cc)
+cxx_test_with_flags(basic_solver_test "" "gtest;util"
+  basic_solver_test.cc args.cc test_main.cc util.cc)
 
 add_ampl_library(testlib testlib.cc)
 add_library(function function.cc function.h)
