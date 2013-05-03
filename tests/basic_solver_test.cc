@@ -1,5 +1,5 @@
 /*
- Solver tests.
+ Basic solver tests.
 
  Copyright (C) 2012 AMPL Optimization LLC
 
