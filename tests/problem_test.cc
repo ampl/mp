@@ -447,8 +447,23 @@ TEST(ProblemTest, AddCon) {
   EXPECT_EQ(1, p.num_logical_cons());
   EXPECT_EQ(expr, p.logical_con_expr(0));
 
-  p.Read("data/simple");
+  p.Read("data/test");
   EXPECT_THROW(p.AddCon(expr), ampl::Error);
 }
 
-// TODO: test AddObj, WriteNL
+TEST(ProblemTest, AddObj) {
+  Problem p;
+  p.AddVar(0, 0);
+  EXPECT_EQ(0, p.num_objs());
+  ampl::ExprBuilder eb;
+  ampl::NumericExpr expr = eb.AddBinary(OPPLUS, eb.AddVar(0), eb.AddNum(1));
+  p.AddObj(ampl::MAX, expr);
+  EXPECT_EQ(1, p.num_objs());
+  EXPECT_EQ(ampl::MAX, p.obj_type(0));
+  EXPECT_EQ(expr, p.nonlinear_obj_expr(0));
+
+  p.Read("data/simple");
+  EXPECT_THROW(p.AddObj(ampl::MAX, expr), ampl::Error);
+}
+
+// TODO: test WriteNL
