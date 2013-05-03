@@ -39,6 +39,8 @@ cxx_test_with_flags(expr_test "" "gtest;util"
   test_main.cc expr_builder.cc expr_test.cc no_unordered_map_test.cc)
 
 cxx_test_with_flags(format_test "" "gtest;util" format_test.cc)
+cxx_test_with_flags(problem_test "" "gtest;util"
+  problem_test.cc test_main.cc util.cc)
 cxx_test_with_flags(solver_util_test "" "gtest;util"
   solver_util_test.cc args.cc test_main.cc util.cc)
 
@@ -51,7 +53,7 @@ cxx_test_with_flags(function_test "" "gtest;function"
   test_main.cc function_test.cc)
 
 if (HAVE_CBC)
-  cxx_test_with_flags(cbc_test "" "gtest;" test_main.cc cbc_test.cc util.cc)
+  cxx_test_with_flags(cbc_test "" "gtest;util" test_main.cc cbc_test.cc util.cc)
 endif ()
 
 if (HAVE_GSL)

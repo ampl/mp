@@ -1,6 +1,7 @@
 #ifndef TESTS_UTIL_H_
 #define TESTS_UTIL_H_
 
+#include <cstdio>
 #include <algorithm>
 #include <string>
 
@@ -18,5 +19,15 @@ inline std::string FixPath(fmt::StringRef s) {
   return s;
 #endif
 }
+
+// Redirects Stderr to a file.
+class StderrRedirect {
+ private:
+  std::FILE *saved_stderr;
+
+ public:
+  explicit StderrRedirect(const char *filename);
+  ~StderrRedirect();
+};
 
 #endif  // TESTS_UTIL_H_

@@ -22,4 +22,5 @@
 
 #include "format.cc"
 #include "solver.cc"
+#include "problem.cc"
 #include "expr.cc"

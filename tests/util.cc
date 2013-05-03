@@ -1,4 +1,6 @@
 #include "tests/util.h"
+#include "solvers/asl.h"
+#undef filename
 
 #include <cstring>
 #include <fstream>
@@ -18,4 +20,13 @@ std::string ReadFile(const char *name) {
 void WriteFile(const char *name, const char *data) {
   std::ofstream ofs(name);
   ofs.write(data, std::strlen(data));
+}
+
+StderrRedirect::StderrRedirect(const char *filename) : saved_stderr(Stderr) {
+  Stderr = std::fopen(filename, "w");
+}
+
+StderrRedirect::~StderrRedirect() {
+  std::fclose(Stderr);
+  Stderr = saved_stderr;
 }
