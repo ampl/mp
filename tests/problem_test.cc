@@ -23,15 +23,16 @@
 #include "gtest/gtest.h"
 #include "solvers/util/problem.h"
 #include "tests/config.h"
+#include "tests/expr_builder.h"
 #include "tests/util.h"
 
+using ampl::CONTINUOUS;
+using ampl::INTEGER;
 using ampl::LinearConExpr;
 using ampl::LinearObjExpr;
 using ampl::Problem;
 using ampl::ProblemChanges;
 using ampl::Solution;
-
-static const std::string CBC_PATH = FixPath("../solvers/cbc/bin/cbc");
 
 TEST(SolutionTest, DefaultCtor) {
   Solution s;
@@ -194,6 +195,12 @@ TEST(ProblemTest, ProblemAccessors) {
   EXPECT_EQ(11, p.num_nonlinear_cons());
   EXPECT_EQ(7, p.num_logical_cons());
 
+  EXPECT_EQ(INTEGER, p.var_type(0));
+  EXPECT_EQ(INTEGER, p.var_type(1));
+  EXPECT_EQ(CONTINUOUS, p.var_type(2));
+  EXPECT_EQ(CONTINUOUS, p.var_type(3));
+  EXPECT_EQ(CONTINUOUS, p.var_type(4));
+
   EXPECT_EQ(11, p.var_lb(0));
   EXPECT_EQ(15, p.var_lb(p.num_vars() - 1));
   EXPECT_EQ(21, p.var_ub(0));
@@ -241,10 +248,23 @@ TEST(ProblemTest, ProblemAccessors) {
   EXPECT_EQ(42, p.solve_code());
 }
 
+TEST(ProblemTest, VarType) {
+  Problem p;
+  p.AddVar(0, 0, CONTINUOUS);
+  p.AddVar(0, 0, INTEGER);
+  p.AddVar(0, 0, INTEGER);
+  EXPECT_EQ(CONTINUOUS, p.var_type(0));
+  EXPECT_EQ(INTEGER, p.var_type(1));
+  EXPECT_EQ(INTEGER, p.var_type(2));
+}
+
 #ifndef NDEBUG
 TEST(ProblemTest, BoundChecks) {
   Problem p;
   p.Read("data/test");
+
+  EXPECT_DEATH(p.var_type(-1), "Assertion");
+  EXPECT_DEATH(p.var_type(p.num_vars()), "Assertion");
 
   EXPECT_DEATH(p.var_lb(-1), "Assertion");
   EXPECT_DEATH(p.var_lb(p.num_vars()), "Assertion");
@@ -277,6 +297,8 @@ TEST(ProblemTest, BoundChecks) {
 #endif
 
 #ifdef HAVE_CBC
+static const std::string CBC_PATH = FixPath("../solvers/cbc/bin/cbc");
+
 TEST(ProblemTest, Solve) {
   Problem p;
   p.Read("data/simple");
@@ -289,7 +311,7 @@ TEST(ProblemTest, Solve) {
   EXPECT_EQ(1, s.dual_value(0));
 }
 
-TEST(ProblemTest, AddVarAndSolve) {
+TEST(ProblemChangesTest, AddVarAndSolve) {
   Problem p;
   p.Read("data/simple");
   Solution s;
@@ -310,7 +332,7 @@ TEST(ProblemTest, AddVarAndSolve) {
   EXPECT_EQ(1, s.dual_value(0));
 }
 
-TEST(ProblemTest, AddConAndSolve) {
+TEST(ProblemChangesTest, AddConAndSolve) {
   Problem p;
   p.Read("data/simple");
   Solution s;
@@ -332,7 +354,7 @@ TEST(ProblemTest, AddConAndSolve) {
   EXPECT_EQ(0.5, s.dual_value(1));
 }
 
-TEST(ProblemTest, AddObjAndSolve) {
+TEST(ProblemChangesTest, AddObjAndSolve) {
   Problem p;
   p.Read("data/noobj");
   Solution s;
@@ -391,4 +413,42 @@ TEST(ProblemTest, WriteVarBounds) {
   EXPECT_EQ("var x1 = 42;\n", writer.str());
 }
 
-// TODO: put problem tests here
+TEST(ProblemTest, AddVar) {
+  Problem p;
+  EXPECT_EQ(0, p.num_vars());
+  p.AddVar(111, 222);
+  EXPECT_EQ(1, p.num_vars());
+  EXPECT_EQ(0, p.num_integer_vars());
+  EXPECT_EQ(1, p.num_continuous_vars());
+  EXPECT_EQ(CONTINUOUS, p.var_type(0));
+  EXPECT_EQ(111, p.var_lb(0));
+  EXPECT_EQ(222, p.var_ub(0));
+
+  p.AddVar(333, 444, INTEGER);
+  EXPECT_EQ(2, p.num_vars());
+  EXPECT_EQ(1, p.num_integer_vars());
+  EXPECT_EQ(1, p.num_continuous_vars());
+  EXPECT_EQ(INTEGER, p.var_type(1));
+  EXPECT_EQ(333, p.var_lb(1));
+  EXPECT_EQ(444, p.var_ub(1));
+
+  p.Read("data/simple");
+  EXPECT_THROW(p.AddVar(0, 0), ampl::Error);
+}
+
+TEST(ProblemTest, AddCon) {
+  Problem p;
+  p.AddVar(0, 0);
+  EXPECT_EQ(0, p.num_logical_cons());
+  ampl::ExprBuilder eb;
+  ampl::LogicalExpr expr = eb.AddRelational(EQ, eb.AddVar(0), eb.AddNum(0));
+  p.AddCon(expr);
+  EXPECT_EQ(0, p.num_cons());
+  EXPECT_EQ(1, p.num_logical_cons());
+  EXPECT_EQ(expr, p.logical_con_expr(0));
+
+  p.Read("data/simple");
+  EXPECT_THROW(p.AddCon(expr), ampl::Error);
+}
+
+// TODO: test AddObj, WriteNL

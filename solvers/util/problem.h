@@ -282,7 +282,7 @@ class Problem : Noncopyable {
   // Reads a problem from the file <stub>.nl.
   void Read(fmt::StringRef stub);
 
-  // Flags for Solve.
+  // Flags for the Solve method.
   enum { IGNORE_FUNCTIONS = 1 };
 
   // Write an .nl file.

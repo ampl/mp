@@ -381,13 +381,16 @@ void Problem::Free() {
     delete [] asl_->i.LUv_;
     delete [] asl_->i.Uvx_;
     delete [] var_types_;
+    asl_->i.LUv_ = asl_->i.Uvx_ = 0;
     var_capacity_ = 0;
   }
   if (obj_capacity_) {
     delete [] asl_->I.obj_de_;
+    asl_->I.obj_de_ = 0;
     obj_capacity_ = 0;
   }
   if (logical_con_capacity_) {
+    asl_->I.lcon_de_ = 0;
     delete [] asl_->I.lcon_de_;
     logical_con_capacity_ = 0;
   }

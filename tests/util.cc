@@ -1,5 +1,8 @@
 #include "tests/util.h"
+
+extern "C" {
 #include "solvers/asl.h"
+}
 #undef filename
 
 #include <cstring>
