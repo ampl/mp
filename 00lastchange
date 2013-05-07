@@ -1,4 +1,14 @@
-20130501
-  Fix some bugs (infinite loop, fault, or surprising error message
-"nonvariable type ... in eput") in simplifying some complicated
-logical expressions.
+20130502
+  Fix a bug with loop invariants having internal dummy variables.
+In the following example, the inner sum was moved to the wrong
+place, giving a fault:
+
+  set I; set J; set S within {I,J} default {};;
+  param p{i in I} = sum{z in {0}: sum{j in J: (i,j) in S} 1 > 0} 1;
+  let I := 1..10; let J := I;
+  display p;
+
+In this example, "sum{j in J: (i,j) in S} 1" is a bizarre way of
+writing what more clearly and efficiently would be written
+"card{(i,j) in S}"; making this change bypassed the bug, as did
+changing the inner sum to the clumsier "sum{(i,j) in S} 1".
