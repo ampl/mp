@@ -174,8 +174,8 @@ jobject ClassBase::NewObject(Env env, ...) {
 jint NLToJaCoPConverter::CastToInt(double value) const {
   jint int_value = static_cast<jint>(value);
   if (int_value != value) {
-    throw UnsupportedExprError::CreateFromExprString(str(
-        fmt::Format("value {} can't be represented as int") << value));
+    throw UnsupportedExprError::CreateFromMessage(
+        fmt::Format("value {} can't be represented as int") << value);
   }
   if (int_value < min_int_ || int_value > max_int_)
     throw Error(str(fmt::Format("value {} is out of bounds") << value));
@@ -221,7 +221,7 @@ void NLToJaCoPConverter::ConvertExpr(
   if (num_terms != 0) {
     if (nonlinear)
       ++num_terms;
-    std::vector<int> coefs(num_terms);
+    std::vector<jint> coefs(num_terms);
     jobjectArray vars = CreateVarArray(num_terms);
     int index = 0;
     for (typename LinearExpr<Term>::iterator
@@ -311,11 +311,11 @@ void NLToJaCoPConverter::Convert(const Problem &p) {
     env_.SetObjectArrayElement(var_array_, j, var);
   }
 
-  // TODO
-  /*if (p.num_objs() != 0) {
-    problem_.SetObj(p.obj_type(0),
-        ConvertExpr(p.linear_obj_expr(0), p.nonlinear_obj_expr(0)));
-  }*/
+  if (p.num_objs() != 0) {
+    obj_ = var_class_.NewObject(env_, store_, min_int_, max_int_);
+    // TODO: handle obj type
+    ConvertExpr(p.linear_obj_expr(0), p.nonlinear_obj_expr(0), obj_);
+  }
 
   // Convert constraints.
   for (int i = 0, n = p.num_cons(); i < n; ++i) {
@@ -591,44 +591,32 @@ void JaCoPSolver::Solve(Problem &p) {
   jmethodID setPrintInfo =
       env.GetMethod(dfs_class.get(), "setPrintInfo", "(Z)V");
   env.CallVoidMethod(search, setPrintInfo, false);
-  jmethodID labeling = env.GetMethod(dfs_class.get(), "labeling",
-      "(LJaCoP/core/Store;LJaCoP/search/SelectChoicePoint;)Z");
   jobject indomain = env.NewObject("JaCoP/search/IndomainMin", "()V");
   jobject select = env.NewObject("JaCoP/search/InputOrderSelect",
       "(LJaCoP/core/Store;[LJaCoP/core/Var;LJaCoP/search/Indomain;)V",
       converter.store(), converter.var_array(), indomain);
-  jboolean found = env.CallBooleanMethod(
-      search, labeling, converter.store(), select);
   double obj_val = std::numeric_limits<double>::quiet_NaN();
+  bool has_obj = p.num_objs() != 0;
   // TODO
-  /*std::auto_ptr<GecodeProblem> solution;
-  bool has_obj = problem.num_objs() != 0;
-  Search::Statistics stats;
-  bool stopped = false;
+  /*bool stopped = false;
   header_ = str(fmt::Format("{:>10} {:>10} {:>10} {:>13}\n")
-    << "Max Depth" << "Nodes" << "Fails" << (has_obj ? "Best Obj" : ""));
+    << "Max Depth" << "Nodes" << "Fails" << (has_obj ? "Best Obj" : ""));*/
+  jboolean found = false;
   if (has_obj) {
-    Gecode::BAB<GecodeProblem> engine(&gecode_problem, options_);
-    converter.reset();
-    while (GecodeProblem *next = engine.next()) {
-      if (output_)
-        Output("{:46}\n") << next->obj().val();
-      solution.reset(next);
-    }
-    if (solution.get())
-      obj_val = solution->obj().val();
-    stopped = engine.stopped();
-    stats = engine.statistics();
+    jmethodID labeling = env.GetMethod(dfs_class.get(), "labeling",
+        "(LJaCoP/core/Store;LJaCoP/search/SelectChoicePoint;"
+        "LJaCoP/core/IntVar;)Z");
+    found = env.CallBooleanMethod(
+        search, labeling, converter.store(), select, converter.obj());
   } else {
-    Gecode::DFS<GecodeProblem> engine(&gecode_problem, options_);
-    converter.reset();
-    solution.reset(engine.next());
-    stopped = engine.stopped();
-    stats = engine.statistics();
+    jmethodID labeling = env.GetMethod(dfs_class.get(), "labeling",
+        "(LJaCoP/core/Store;LJaCoP/search/SelectChoicePoint;)Z");
+    found = env.CallBooleanMethod(search, labeling, converter.store(), select);
   }
 
   // Convert solution status.
-  const char *status = 0;
+  // TODO
+  /*const char *status = 0;
   int solve_code = 0;
   if (stopped) {
     solve_code = 600;
@@ -649,6 +637,8 @@ void JaCoPSolver::Solve(Problem &p) {
   if (found) {
     jclass var_class = converter.var_class().get();
     jmethodID value = env.GetMethod(var_class, "value", "()I");
+    if (has_obj)
+      obj_val = env.CallIntMethod(converter.obj(), value);
     const std::vector<jobject> &vars = converter.vars();
     int num_vars = p.num_vars();
     final_solution.resize(num_vars);
@@ -657,9 +647,10 @@ void JaCoPSolver::Solve(Problem &p) {
   }
 
   fmt::Formatter format;
+  const char *status = "";
   // TODO
-  /*format("{}: {}\n") << long_name() << status;
-  format("{} nodes, {} fails") << stats.node << stats.fail;
+  format("{}: {}\n") << long_name() << status;
+  /*format("{} nodes, {} fails") << stats.node << stats.fail;
   if (has_obj && solution.get())
     format(", objective {}") << ObjPrec(obj_val);*/
   HandleSolution(format.c_str(),

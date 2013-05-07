@@ -116,7 +116,7 @@ class Env {
   }
 
   void SetIntArrayRegion(jintArray array,
-      jsize start, jsize length, const int *values) {
+      jsize start, jsize length, const jint *values) {
     env_->SetIntArrayRegion(array, start, length, values);
     Check("SetIntArrayRegion");
   }
@@ -263,6 +263,7 @@ class NLToJaCoPConverter :
   jmethodID impose_;
   jobjectArray var_array_;
   std::vector<jobject> vars_;
+  jobject obj_;
   Class<IntVar> var_class_;
   Class<Sum> sum_class_;
   Class<SumWeight> sum_weight_class_;
@@ -379,6 +380,7 @@ class NLToJaCoPConverter :
   jobjectArray var_array() const { return var_array_; }
   const std::vector<jobject> &vars() const { return vars_; }
   Class<IntVar> &var_class() { return var_class_; }
+  jobject obj() const { return obj_; }
 
   // The methods below perform conversion of AMPL NL expressions into
   // equivalent JaCoP expressions. JaCoP doesn't support the following
