@@ -531,6 +531,10 @@ void GecodeSolver::Solve(Problem &p) {
   case IntVarBranch::SEL_AFC_MAX:
   case IntVarBranch::SEL_ACTIVITY_MIN:
   case IntVarBranch::SEL_ACTIVITY_MAX:
+  case IntVarBranch::SEL_AFC_SIZE_MIN:
+  case IntVarBranch::SEL_AFC_SIZE_MAX:
+  case IntVarBranch::SEL_ACTIVITY_SIZE_MIN:
+  case IntVarBranch::SEL_ACTIVITY_SIZE_MAX:
     var_branch = IntVarBranch(var_branching_, decay_, 0);
     break;
   default:
