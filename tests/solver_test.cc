@@ -641,3 +641,17 @@ TEST_P(SolverTest, ObjConst) {
   p.AddObj(ampl::MIN, AddNum(42));
   EXPECT_EQ(42, Solve(p).obj_value());
 }
+
+TEST_P(SolverTest, Minimize) {
+  Problem p;
+  p.AddVar(42, 100, ampl::INTEGER);
+  p.AddObj(ampl::MIN, AddVar(0));
+  EXPECT_EQ(42, Solve(p).obj_value());
+}
+
+TEST_P(SolverTest, Maximize) {
+  Problem p;
+  p.AddVar(0, 42, ampl::INTEGER);
+  p.AddObj(ampl::MAX, AddVar(0));
+  EXPECT_EQ(42, Solve(p).obj_value());
+}
