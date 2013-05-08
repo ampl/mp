@@ -581,6 +581,10 @@ bad_ending(char *fmt, char *dsname, HInfo *h)
 	for(n = 0; ds; ds = ds->next)
 		if (ds->dsn)
 			n++;
+	if (n == 0) {
+		TI->Errmsg = "No suitable driver found.";
+		return;
+		}
 	z = z1 = (DRV_desc**)TM((n+1)*sizeof(DRV_desc*));
 	for(ds = ds0; ds; ds = ds->next)
 		if (ds->dsn)
