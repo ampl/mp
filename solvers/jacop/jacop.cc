@@ -312,9 +312,10 @@ void NLToJaCoPConverter::Convert(const Problem &p) {
   }
 
   if (p.num_objs() != 0) {
-    obj_ = var_class_.NewObject(env_, store_, min_int_, max_int_);
-    // TODO: handle obj type
-    ConvertExpr(p.linear_obj_expr(0), p.nonlinear_obj_expr(0), obj_);
+    jobject result_var = var_class_.NewObject(env_, store_, min_int_, max_int_);
+    ConvertExpr(p.linear_obj_expr(0), p.nonlinear_obj_expr(0), result_var);
+    obj_ = p.obj_type(0) == MIN ?
+        result_var : CreateCon(mul_const_class_, result_var, -1);
   }
 
   // Convert constraints.
@@ -637,8 +638,11 @@ void JaCoPSolver::Solve(Problem &p) {
   if (found) {
     jclass var_class = converter.var_class().get();
     jmethodID value = env.GetMethod(var_class, "value", "()I");
-    if (has_obj)
+    if (has_obj) {
       obj_val = env.CallIntMethod(converter.obj(), value);
+      if (p.obj_type(0) == MAX)
+        obj_val = -obj_val;
+    }
     const std::vector<jobject> &vars = converter.vars();
     int num_vars = p.num_vars();
     final_solution.resize(num_vars);
