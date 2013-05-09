@@ -50,7 +50,7 @@ the downloaded ``diet.xls`` file in Excel file path:
 
 .. image:: ../img/sql-server-import-source.png
 
-Click Next and on the next page provide the connection settings for the
+Click Next and on the following page provide the connection settings for the
 SQL Server database you are going to use:
 
 .. image:: ../img/sql-server-import-destination.png
