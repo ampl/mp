@@ -1,6 +1,6 @@
 model diet.mod;
 
-param ConnectionStr symbolic = "DRIVER={SQL Server}; SERVER=(local); DATABASE=test;";
+param ConnectionStr symbolic = "DRIVER={SQL Server}; SERVER=(local);";
 
 table dietFoods "ODBC" (ConnectionStr) "Foods":
    FOOD <- [FOOD], cost IN, f_min IN, f_max IN,
