@@ -87,26 +87,26 @@ parameters explicitly. Alternatively, you could use a DSN file name or
 
       param ConnectionStr symbolic = "DRIVER={SQL Server}; SERVER=(local);";
 
-If you are using Linux or MacOS X and have chosen a driver name other
-than ``MySQL``, you will have to specify this name instead of ``MySQL``
-in the ``DRIVER=MySQL`` attribute in the connection string.
+If you are using Linux and have chosen a driver name other than ``SQL Server``,
+you will have to specify this name instead of ``SQL Server`` in the
+``DRIVER={SQL Server}`` attribute in the connection string.
 
-A driver name is chosen automatically during installation on Windows,
+You can use a different version of the ODBC driver for SQL Server on Windows
+as well.  driver name is chosen automatically during installation on Windows,
 so if you are using this OS, you will have to find the driver name and
-specify it instead of ``MySQL`` in the connection string.
+specify it instead of ``SQL Server`` in the connection string.
 To discover the driver name on Windows, run the ODBC Data Source
 Administrator, ``odbcad32.exe``.  Go to the ``Drivers`` tab where all the
-installed drivers are listed and look for the one containing ``MySQL``:
+installed drivers are listed and look for the one containing ``SQL Server``:
 
-.. image:: ../img/odbcad32.png
+.. image:: ../img/odbcad32-sqlserver.png
 
 A driver name containing a semicolon (``;``) should be surrounded with
 ``{`` and ``}`` in a connection string, for example:
 
    .. code-block:: none
 
-      param ConnectionStr symbolic =
-        "DRIVER={MySQL ODBC Driver; version 5.2};";
+      param ConnectionStr symbolic = "DRIVER={SQL Server; version 11.0};";
 
 Next there are several table declarations that use the ``ConnectionStr``
 parameter defined previously:
@@ -142,41 +142,37 @@ and writes the solution back to the database:
 
 Note that the same table ``dietFoods`` is used both for input and output.
 
-Running the ``diet-mysql.run`` script with ampl shows that data connection
+Running the ``diet-sqlserver.run`` script with ampl shows that data connection
 is working properly and the problem is easily solved:
 
    .. code-block:: bash
 
-      $ ampl diet-mysql.run
+      > ampl diet-sqlserver.run
       MINOS 5.51: optimal solution found.
       13 iterations, objective 118.0594032
 
-You can use various database tools such as `MySQL workbench
-<https://www.mysql.com/products/workbench/>`__ or `MySQL command-line tool
-<http://dev.mysql.com/doc/refman/5.5/en/mysql.html>`__ to view the data
+You can use various database tools such as `SQL Server Management Studio
+<http://msdn.microsoft.com/en-us/library/hh213248.aspx>`__ to view the data
 exported to the database from the AMPL script:
 
-.. image:: ../img/mysql-workbench.png
+.. image:: ../img/sql-server-management-studio.png
 
 SQL statements
 --------------
 
-The default `identifier quote character in MySQL
-<http://dev.mysql.com/doc/refman/5.0/en/identifiers.html>`__
-is the backquote (`````). AMPL's ODBC table handler detects the quote
-character automatically and uses it when necessary. However,
-user-supplied SQL statements are passed to the MySQL ODBC driver as is
-and should use the correct quotation. It is possible to enable support for
-the ANSI standard quote character (``"``) in MySQL by setting the SQL mode to
-`ANSI_QUOTES
-<http://dev.mysql.com/doc/refman/5.1/en/server-sql-mode.html#sqlmode_ansi_quotes>`__.
+The default `identifier quote character in SQL Server
+<http://msdn.microsoft.com/en-us/library/ms174393.aspx>`__
+is the double quotation mark (``"``). AMPL's ODBC table handler detects the
+quote character automatically and uses it when necessary. However,
+user-supplied SQL statements are passed to the ODBC driver for SQL Server
+as is and should use the correct quotation.
 
 Example:
 
    .. code-block:: none
 
-      table Foods "ODBC" "DRIVER={SQL Server};"
-         "SQL=SELECT `FOOD`, `cost` FROM `Foods`;": [FOOD], cost;
+      table Foods 'ODBC' 'DRIVER={SQL Server};'
+         'SQL=SELECT "FOOD", "cost" FROM "Foods";': [FOOD], cost;
 
 Troubleshooting
 ---------------
@@ -193,38 +189,3 @@ for example:
      ...
 
 Then rerun your code and you should get a more detailed error message.
-
-Data source name not found
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Verbose error:
-
-.. code-block:: none
-
-   SQLDriverConnect returned -1
-   sqlstate = "IM002"
-   errmsg = "[unixODBC][Driver Manager]Data source name not found, and no default driver specified"
-   native_errno = 0
-
-If the data source name (DSN) was not found as in the example above check 
-if it is spelled correctly in the connection string. If you are not using a
-DSN, check the driver name instead. On a Unix-based system you can get the
-list of installed ODBC drivers using one of the following commands:
-
-.. code-block:: none
-
-   $ myodbc-installer -d -l
-
-.. code-block:: none
-
-   $ odbcinst -d -q
-
-On Windows use the ODBC Data Source Administrator (see :ref:`usage`).
-
-If the driver name contains a semicolon (``;``), check that the name is
-surrounded with ``{`` and ``}`` in the connection string, for example:
-
-   .. code-block:: none
-
-      table Foods "ODBC" "DRIVER={MySQL ODBC Driver; version 5.2};":
-        ...
