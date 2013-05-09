@@ -34,3 +34,4 @@ to one of the following database systems:
    :maxdepth: 2
 
    mysql
+   sqlserver
