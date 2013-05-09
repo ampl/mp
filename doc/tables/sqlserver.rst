@@ -41,7 +41,7 @@ We assume that you've already installed the MS SQL Server ODBC driver using
 the instructions above and have access to an SQL Server database.
 
 First download the data for the diet problem `diet.xls
-<models/tables/diet.xls>`__ and import it using the `SQL Server Import and
+<../models/tables/diet.xls>`__ and import it using the `SQL Server Import and
 Export Wizard <http://msdn.microsoft.com/en-us/library/ms141209.aspx>`__
 which can be run from the Start menu -> All Programs -> Microsoft SQL Server 
 -> Import and Export Data. Skip the Welcome page, if any, by clicking Next,
@@ -67,9 +67,8 @@ Select ``Run immediately`` and click Finish on the next page and the one that
 follows.
 
 Once import is complete, download the model file `diet.mod
-<http://ampl.github.io/models/tables/diet.mod>`__
-and the script file `diet-sqlserver.run
-<http://ampl.github.io/models/tables/diet-sqlserver.run>`__.
+<../models/tables/diet.mod>`__ and the script file `diet-sqlserver.run
+<../models/tables/diet-sqlserver.run>`__.
 
 The script file first reads the model:
 
