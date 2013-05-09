@@ -38,21 +38,20 @@ that satisfies certain nutritional requirements. It is described in
 `Chapter 2 of the AMPL book <http://www.ampl.com/BOOK/CHAPTERS/05-tut2.pdf>`__.
 
 We assume that you've already installed the MS SQL Server ODBC driver using
-the instructions above and have access to the ``test`` database.
+the instructions above and have access to an SQL Server database.
 
 First download the data for the diet problem `diet.xls
 <models/tables/diet.xls>`__ and import it using the `SQL Server Import and
 Export Wizard <http://msdn.microsoft.com/en-us/library/ms141209.aspx>`__
 which can be run from the Start menu -> All Programs -> Microsoft SQL Server 
--> Import and Export Data. Skip the Welcome page if any by clicking Next,
+-> Import and Export Data. Skip the Welcome page, if any, by clicking Next,
 then choose ``Microsoft Excel`` as a Data source and specify the path to
 the downloaded ``diet.xls`` file in Excel file path:
 
 .. image:: ../img/sql-server-import-source.png
 
 Click Next and on the next page provide the connection settings for the
-SQL Server instance you are going to use. Use ``test`` as a database name
-creating it if necessary:
+SQL Server database you are going to use:
 
 .. image:: ../img/sql-server-import-destination.png
 
@@ -86,7 +85,7 @@ parameters explicitly. Alternatively, you could use a DSN file name or
 
    .. code-block:: none
 
-      param ConnectionStr symbolic = "DRIVER={SQL Server}; SERVER=(local); DATABASE=test;";
+      param ConnectionStr symbolic = "DRIVER={SQL Server}; SERVER=(local);";
 
 If you are using Linux or MacOS X and have chosen a driver name other
 than ``MySQL``, you will have to specify this name instead of ``MySQL``
@@ -107,7 +106,7 @@ A driver name containing a semicolon (``;``) should be surrounded with
    .. code-block:: none
 
       param ConnectionStr symbolic =
-        "DRIVER={MySQL ODBC Driver; version 5.2}; DATABASE=test;";
+        "DRIVER={MySQL ODBC Driver; version 5.2};";
 
 Next there are several table declarations that use the ``ConnectionStr``
 parameter defined previously:
@@ -176,7 +175,7 @@ Example:
 
    .. code-block:: none
 
-      table Foods "ODBC" "DRIVER=MySQL; DATABASE=test;"
+      table Foods "ODBC" "DRIVER={SQL Server};"
          "SQL=SELECT `FOOD`, `cost` FROM `Foods`;": [FOOD], cost;
 
 Troubleshooting
@@ -227,5 +226,5 @@ surrounded with ``{`` and ``}`` in the connection string, for example:
 
    .. code-block:: none
 
-      table Foods "ODBC" "DRIVER={MySQL ODBC Driver; version 5.2}; DATABASE=test;":
+      table Foods "ODBC" "DRIVER={MySQL ODBC Driver; version 5.2};":
         ...
