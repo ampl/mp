@@ -46,7 +46,9 @@ class ExcelTest : public ::testing::Test {
   void SetUp() {
     handler_ = lib_.GetHandler("odbc");
     strings_.push_back("odbc");
-    strings_.push_back("data/test.xls");
+    strings_.push_back(
+        "DRIVER={Microsoft Excel Driver (*.xls, *.xlsx, *.xlsm, *.xlsb)}; "
+        "DBQ=data/test.xls; READONLY=FALSE;");
   }
 };
 
@@ -88,7 +90,9 @@ TEST_F(ExcelTest, WriteMaxColumnsExcel2007) {
   // Excel 2007 supports up to 16384 columns, but the ODBC driver only
   // allows 256.
   int num_cols = 256;
-  strings_[1] = "data/test.xlsx";
+  strings_[1] =
+      "DRIVER={Microsoft Excel Driver (*.xls, *.xlsx, *.xlsm, *.xlsb)}; "
+      "DBQ=data/test.xlsx; READONLY=FALSE;";
   Table t("TableWithManyCols", num_cols, strings_);
   for (int i = 1; i <= num_cols; ++i)
     t.Add(c_str(fmt::Format("c{}") << i));
