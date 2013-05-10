@@ -91,7 +91,7 @@ you will have to specify this name instead of ``SQL Server`` in the
 ``DRIVER={SQL Server}`` attribute in the connection string.
 
 You can use a different version of the ODBC driver for SQL Server on Windows
-as well.  driver name is chosen automatically during installation on Windows,
+as well. The driver name is chosen automatically during installation on Windows,
 so if you are using this OS, you will have to find the driver name and
 specify it instead of ``SQL Server`` in the connection string.
 To discover the driver name on Windows, run the ODBC Data Source
