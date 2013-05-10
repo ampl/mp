@@ -1,3 +1,14 @@
-20130422
-  Fix a bug (possible fault) with logical constraints when presolve
-eliminates all of them.
+20130506
+  Fix a glitch with error recovery:  after an error message about
+"no value for ...", supplying the data and then trying to solve
+sometimes led to an invalid .nl file.  Example (typed on stdin):
+
+	set I = 1..2; var x{I} >= 0; param p{I};
+	s.t. c: sum{i in I} x[i] + sum{i in I} 2*x[i] <= 3;
+	minimize zot: sum{i in I} p[i];
+	solve; # error processing objective zot: no value for p[1]
+	data; param p := 1 -1 2 -2; solve; # bad line 22 of ....nl
+
+  Fix a glitch giving an "unexpected nonvariable type..." error
+message when option presolve 0 is unwisely used with certain
+logical constraints involving "exists" or "forall".

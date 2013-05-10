@@ -2991,3 +2991,47 @@ error message of the form "presolve has k = nnn, P.nfc = mmm".
 20130422
   Fix a bug (possible fault) with logical constraints when presolve
 eliminates all of them.
+
+20130427
+  Fix a bug with logical constraints:  on problems having both logical and
+algebraic constraints, when presolve eliminated all logical constraints
+but not all algebraic constraints, a fault was possible.  Now, on other
+problems, "Solution determined by presolve" is more often possible.
+  Fix a bug with "display _logcon;" on problems having both logical and
+arithmetic constraints:  wrong values were displayed.  The bug did not
+affect, e.g., "display {i in 1 .. _nlogcons} _logcon[i];".
+
+20130501
+  Fix some bugs (infinite loop, fault, or surprising error message
+"nonvariable type ... in eput") in simplifying some complicated
+logical expressions.
+
+20130502
+  Fix a bug with loop invariants having internal dummy variables.
+In the following example, the inner sum was moved to the wrong
+place, giving a fault:
+
+  set I; set J; set S within {I,J} default {};;
+  param p{i in I} = sum{z in {0}: sum{j in J: (i,j) in S} 1 > 0} 1;
+  let I := 1..10; let J := I;
+  display p;
+
+In this example, "sum{j in J: (i,j) in S} 1" is a bizarre way of
+writing what more clearly and efficiently would be written
+"card{(i,j) in S}"; making this change bypassed the bug, as did
+changing the inner sum to the clumsier "sum{(i,j) in S} 1".
+
+20130506
+  Fix a glitch with error recovery:  after an error message about
+"no value for ...", supplying the data and then trying to solve
+sometimes led to an invalid .nl file.  Example (typed on stdin):
+
+	set I = 1..2; var x{I} >= 0; param p{I};
+	s.t. c: sum{i in I} x[i] + sum{i in I} 2*x[i] <= 3;
+	minimize zot: sum{i in I} p[i];
+	solve; # error processing objective zot: no value for p[1]
+	data; param p := 1 -1 2 -2; solve; # bad line 22 of ....nl
+
+  Fix a glitch giving an "unexpected nonvariable type..." error
+message when option presolve 0 is unwisely used with certain
+logical constraints involving "exists" or "forall".
