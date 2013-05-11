@@ -66,8 +66,10 @@ class RegKey : ampl::Noncopyable {
   RegKey(HKEY key, const char *subkey, REGSAM access);
   ~RegKey();
 
+  HKEY get() const { return key_; }
+
   std::string GetSubKeyName(int index) const;
-  std::string GetStrValue(fmt::StringRef subkey, fmt::StringRef name) const;
+  std::string GetStrValue(fmt::StringRef name) const;
 };
 
 RegKey::RegKey(HKEY key, const char *subkey, REGSAM access) : key_() {
@@ -96,16 +98,19 @@ std::string RegKey::GetSubKeyName(int index) const {
   return &name[0];
 }
 
-std::string RegKey::GetStrValue(fmt::StringRef subkey, fmt::StringRef name) const {
+std::string RegKey::GetStrValue(fmt::StringRef name) const {
   char buffer[256];
   DWORD size = sizeof(buffer);
-  LONG result = RegGetValueA(key_,
-      subkey.c_str(), name.c_str(), RRF_RT_REG_SZ, 0, buffer, &size);
+  DWORD type = 0;
+  LONG result = RegQueryValueExA(key_,
+      name.c_str(), 0, &type, buffer, &size);
   if (result != ERROR_SUCCESS) {
     throw ampl::JavaError(fmt::Format(
-        "RegGetValueA failed: error code = {}") << result);
+        "RegQueryValueExA failed: error code = {}") << result);
   }
-  buffer[sizeof(buffer) - 1] = 0;
+  if (type != RRF_RT_REG_SZ)
+    return std::string();
+  buffer[std::min(size, sizeof(buffer) - 1)] = 0;
   return buffer;
 }
 #endif
@@ -172,9 +177,10 @@ JVM::JVM() : jvm_() {
 #ifdef WIN32
   std::string runtime_lib_path;
   try {
-    RegKey key(HKEY_LOCAL_MACHINE,
+    RegKey jre_key(HKEY_LOCAL_MACHINE,
         "SOFTWARE\\JavaSoft\\Java Runtime Environment", KEY_ENUMERATE_SUB_KEYS);
-    runtime_lib_path = key.GetStrValue(key.GetSubKeyName(0), "RuntimeLib");
+    RegKey key(jre_key.get(), key.GetSubKeyName(0), KEY_QUERY_VALUE);
+    runtime_lib_path = key.GetStrValue("RuntimeLib");
   } catch (const JavaError &e) {
     return;  // Ignore error.
   }
