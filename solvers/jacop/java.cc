@@ -67,7 +67,7 @@ class RegKey : ampl::Noncopyable {
   ~RegKey();
 
   std::string GetSubKeyName(int index) const;
-  std::string GetStrValue(const char *subkey, const char *name) const;
+  std::string GetStrValue(fmt::StringRef subkey, fmt::StringRef name) const;
 };
 
 RegKey::RegKey(HKEY key, const char *subkey, REGSAM access) : key_() {
@@ -88,7 +88,7 @@ std::string RegKey::GetSubKeyName(int index) const {
     max_subkey_len = 256;
   std::vector<char> name(max_subkey_len + 1);
   DWORD name_size = name.size();
-  result = RegEnumKeyExA(key, 0, &name[0], &name_size, 0, 0, 0, 0);
+  result = RegEnumKeyExA(key_, 0, &name[0], &name_size, 0, 0, 0, 0);
   if (result != ERROR_SUCCESS) {
     throw ampl::JavaError(fmt::Format(
         "RegEnumKeyExA failed: error code = {}") << result);
@@ -96,11 +96,11 @@ std::string RegKey::GetSubKeyName(int index) const {
   return &name[0];
 }
 
-std::string RegKey::GetStrValue(const char *subkey, const char *name) const {
+std::string RegKey::GetStrValue(fmt::StringRef subkey, fmt::StringRef name) const {
   char buffer[256];
   DWORD size = sizeof(buffer);
   LONG result = RegGetValueA(key_,
-      subkey, name, RRF_RT_REG_SZ, 0, buffer, &size);
+      subkey.c_str(), name.c_str(), RRF_RT_REG_SZ, 0, buffer, &size);
   if (result != ERROR_SUCCESS) {
     throw ampl::JavaError(fmt::Format(
         "RegGetValueA failed: error code = {}") << result);
