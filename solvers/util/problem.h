@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "solvers/util/expr.h"
+#include "solvers/util/noncopyable.h"
 
 namespace ampl {
 
@@ -36,17 +37,6 @@ enum ObjType { MIN = 0, MAX = 1 };
 
 // A variable type.
 enum VarType { CONTINUOUS, INTEGER };
-
-// A class that prohibits copying when inherited from.
-class Noncopyable {
- private:
-  // Do not implement!
-  Noncopyable(const Noncopyable &);
-  void operator=(const Noncopyable &);
-
- public:
-  Noncopyable() {}
-};
 
 // A solution of an optimization problem.
 class Solution : Noncopyable {

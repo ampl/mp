@@ -24,12 +24,6 @@
 
 #include <iterator>
 
-#ifdef WIN32
-# define CLASSPATH_SEP ";"
-#else
-# define CLASSPATH_SEP ":"
-#endif
-
 namespace {
 
 // TODO
@@ -73,103 +67,6 @@ const ampl::OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
 }
 
 namespace ampl {
-
-JVM JVM::instance_;
-
-void Env::Throw(jthrowable exception, const char *method_name) {
-  jmethodID getMessage = GetMethod(FindClass("java/lang/Throwable"),
-      "getMessage", "()Ljava/lang/String;");
-  String message(env_, static_cast<jstring>(Check(
-      env_->CallObjectMethod(exception, getMessage), "CallObjectMethod")));
-  throw Error(fmt::Format("{} failed: {}") << method_name << message.c_str());
-}
-
-jobject Env::NewObject(jclass cls, jmethodID ctor, ...) {
-  std::va_list args;
-  va_start(args, ctor);
-  jobject result = NewObjectV(cls, ctor, args);
-  va_end(args);
-  return Check(result, "NewObjectV");
-}
-
-jobject Env::NewObject(const char *class_name, const char *ctor_sig, ...) {
-  jclass cls = FindClass(class_name);
-  jmethodID ctor = GetMethod(cls, "<init>", ctor_sig);
-  std::va_list args;
-  va_start(args, ctor_sig);
-  jobject result = env_->NewObjectV(cls, ctor, args);
-  va_end(args);
-  return Check(result, "NewObjectV");
-}
-
-void Env::CallVoidMethod(jobject obj, jmethodID method, ...) {
-  std::va_list args;
-  va_start(args, method);
-  env_->CallVoidMethodV(obj, method, args);
-  va_end(args);
-  Check("CallVoidMethodV");
-}
-
-jboolean Env::CallBooleanMethod(jobject obj, jmethodID method, ...) {
-  std::va_list args;
-  va_start(args, method);
-  jboolean result = env_->CallBooleanMethodV(obj, method, args);
-  va_end(args);
-  Check("CallBooleanMethodV");
-  return result;
-}
-
-jint Env::CallIntMethod(jobject obj, jmethodID method, ...) {
-  std::va_list args;
-  va_start(args, method);
-  jint result = env_->CallIntMethodV(obj, method, args);
-  va_end(args);
-  Check("CallIntMethodV");
-  return result;
-}
-
-JVM::~JVM() {
-  if (jvm_)
-    jvm_->DestroyJavaVM();
-}
-
-Env JVM::env() {
-  if (!instance_.jvm_) {
-    JavaVMInitArgs vm_args = {};
-    vm_args.version = JNI_VERSION_1_6;
-    vm_args.ignoreUnrecognized = false;
-    JavaVMOption option = {};
-    option.optionString = const_cast<char*>(
-        "-Djava.class.path=JaCoP-3.2.jar" CLASSPATH_SEP "lib/JaCoP-3.2.jar");
-    vm_args.nOptions = 1;
-    vm_args.options = &option;
-    void *envp = 0;
-    jint result = JNI_CreateJavaVM(&instance_.jvm_, &envp, &vm_args);
-    if (result != JNI_OK) {
-      throw Error(fmt::Format(
-          "Java VM initialization failed, error code = {}") << result);
-    }
-    instance_.env_ = Env(static_cast<JNIEnv*>(envp));
-  }
-  return instance_.env_;
-}
-
-ClassBase::~ClassBase() {}
-
-jobject ClassBase::NewObject(Env env, ...) {
-  Init(env);
-  std::va_list args;
-  va_start(args, env);
-  jobject result = 0;
-  try {
-    result = env.NewObjectV(class_, ctor_, args);
-    va_end(args);
-  } catch (...) {
-    va_end(args);
-    throw;
-  }
-  return result;
-}
 
 jint NLToJaCoPConverter::CastToInt(double value) const {
   jint int_value = static_cast<jint>(value);
