@@ -23,7 +23,9 @@
 #include "solvers/jacop/java.h"
 
 #include "solvers/util/noncopyable.h"
+
 #include <cstdlib>
+#include <vector>
 
 #ifdef WIN32
 # include <windows.h>
@@ -71,7 +73,7 @@ class RegKey : ampl::Noncopyable {
 RegKey::RegKey(HKEY key, const char *subkey, REGSAM access) : key_() {
   LONG result = RegOpenKeyExA(key, subkey, 0, access, &key_);
   if (result != ERROR_SUCCESS) {
-    throw JavaError(fmt::Format(
+    throw ampl::JavaError(fmt::Format(
         "RegOpenKeyExA failed: error code = {}") << result);
   }
 }
@@ -88,7 +90,7 @@ std::string RegKey::GetSubKeyName(int index) const {
   DWORD name_size = name.size();
   result = RegEnumKeyExA(key, 0, &name[0], &name_size, 0, 0, 0, 0);
   if (result != ERROR_SUCCESS) {
-    throw JavaError(fmt::Format(
+    throw ampl::JavaError(fmt::Format(
         "RegEnumKeyExA failed: error code = {}") << result);
   }
   return &name[0];
@@ -100,7 +102,7 @@ std::string RegKey::GetStrValue(const char *subkey, const char *name) const {
   LONG result = RegGetValueA(key_,
       subkey, name, RRF_RT_REG_SZ, 0, buffer, &size);
   if (result != ERROR_SUCCESS) {
-    throw JavaError(fmt::Format(
+    throw ampl::JavaError(fmt::Format(
         "RegGetValueA failed: error code = {}") << result);
   }
   buffer[sizeof(buffer) - 1] = 0;
