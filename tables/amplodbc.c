@@ -22,7 +22,7 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
- static char Version[] = "\n@(#) AMPL ODBC driver, version 20130417.\n";
+ static char Version[] = "\n@(#) AMPL ODBC driver, version 20130509.\n";
 
 #ifdef _WIN32
 #include <windows.h>
@@ -581,12 +581,17 @@ bad_ending(char *fmt, char *dsname, HInfo *h)
 	for(n = 0; ds; ds = ds->next)
 		if (ds->dsn)
 			n++;
+	if (n == 0) {
+		TI->Errmsg = "No suitable driver found.";
+		return;
+		}
 	z = z1 = (DRV_desc**)TM((n+1)*sizeof(DRV_desc*));
 	for(ds = ds0; ds; ds = ds->next)
 		if (ds->dsn)
 			*z1++ = ds;
 	*z1 = 0;
-	qsortv(z, n, sizeof(DRV_desc*), dsncompar, 0);
+	if (n > 1)
+		qsortv(z, n, sizeof(DRV_desc*), dsncompar, 0);
 	z1 = z;
 	n = 1;
 	ds = *z;
@@ -2489,7 +2494,7 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 funcadd(AmplExports *ae)
 {
 	static char tname[] = "odbc\n"
-	"AMPL ODBC handler (20130417): expected 2-8 strings before \":[...]\":\n"
+	"AMPL ODBC handler (20130509): expected 2-8 strings before \":[...]\":\n"
 	"  'ODBC', connection_spec ['ext_name'] [option [option...]]\n"
 	"Connection_spec gives a connection to the external table.  If the table's\n"
 	"external name differs from the AMPL table name, the external name must be\n"
