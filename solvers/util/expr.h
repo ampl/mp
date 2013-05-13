@@ -338,9 +338,7 @@ class Expr {
   bool operator!=(Expr other) const { return expr_ != other.expr_; }
 
   template <typename ExprT>
-  friend bool internal::Is(Expr e) {
-    return e.kind() == ExprT::KIND;
-  }
+  friend bool internal::Is(Expr e);
 
   template <typename ExprT>
   friend ExprT Cast(Expr e);
@@ -361,6 +359,11 @@ ExprT Cast(Expr e) {
 }
 
 namespace internal {
+template <typename ExprT>
+inline bool Is(Expr e) {
+  return e.kind() == ExprT::KIND;
+}
+
 template <>
 inline bool Is<Expr>(Expr e) {
   return e.kind() >= Expr::EXPR_START && e.kind() <= Expr::EXPR_END;
