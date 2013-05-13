@@ -29,6 +29,7 @@
 
 #ifdef WIN32
 # include <windows.h>
+# include <delayimp.h>
 # define CLASSPATH_SEP ";"
 #else
 # define CLASSPATH_SEP ":"
@@ -110,7 +111,7 @@ std::string RegKey::GetStrValue(fmt::StringRef name) const {
   }
   if (type != REG_SZ) {
     throw ampl::JavaError(
-        fmt::Format("Value of key {} is not a string") << name);
+        fmt::Format("Value of key {} is not a string") << name.c_str());
   }
   buffer[std::min<DWORD>(size, sizeof(buffer) - 1)] = 0;
   return buffer;
