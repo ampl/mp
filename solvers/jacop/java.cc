@@ -108,8 +108,10 @@ std::string RegKey::GetStrValue(fmt::StringRef name) const {
     throw ampl::JavaError(fmt::Format(
         "RegQueryValueExA failed: error code = {}") << result);
   }
-  if (type != RRF_RT_REG_SZ)
-    return std::string();
+  if (type != REG_SZ) {
+    throw ampl::JavaError(
+        fmt::Format("Value of key {} is not a string") << name);
+  }
   buffer[std::min<DWORD>(size, sizeof(buffer) - 1)] = 0;
   return buffer;
 }
@@ -173,28 +175,6 @@ jint Env::CallIntMethod(jobject obj, jmethodID method, ...) {
   return result;
 }
 
-JVM::JVM() : jvm_() {
-#ifdef WIN32
-  std::string runtime_lib_path;
-  try {
-    RegKey jre_key(HKEY_LOCAL_MACHINE,
-        "SOFTWARE\\JavaSoft\\Java Runtime Environment", KEY_ENUMERATE_SUB_KEYS);
-    RegKey key(jre_key.get(), jre_key.GetSubKeyName(0), KEY_QUERY_VALUE);
-    runtime_lib_path = key.GetStrValue("RuntimeLib");
-  } catch (const JavaError &e) {
-    return;  // Ignore error.
-  }
-  std::string::size_type pos = runtime_lib_path.rfind('\\');
-  if (pos == std::string::npos)
-    return;
-  runtime_lib_path = runtime_lib_path.substr(0, pos);
-  std::string path = std::getenv("PATH");
-  path += ";";
-  path += runtime_lib_path;
-  SetEnvironmentVariable("PATH", path.c_str());
-#endif
-}
-
 JVM::~JVM() {
   if (jvm_)
     jvm_->DestroyJavaVM();
@@ -202,6 +182,28 @@ JVM::~JVM() {
 
 Env JVM::env() {
   if (!instance_.jvm_) {
+#ifdef WIN32
+    std::string runtime_lib_path;
+    try {
+      RegKey jre_key(HKEY_LOCAL_MACHINE,
+          "SOFTWARE\\JavaSoft\\Java Runtime Environment",
+          KEY_ENUMERATE_SUB_KEYS);
+        RegKey key(jre_key.get(), jre_key.GetSubKeyName(0), KEY_QUERY_VALUE);
+        runtime_lib_path = key.GetStrValue("RuntimeLib");
+    } catch (const JavaError &) {
+      // Ignore error.
+    }
+    std::string::size_type pos = runtime_lib_path.rfind('\\');
+    if (pos != std::string::npos) {
+      runtime_lib_path = runtime_lib_path.substr(0, pos);
+      std::string path = std::getenv("PATH");
+      path += ";";
+      path += runtime_lib_path;
+      SetEnvironmentVariable("PATH", path.c_str());
+    }
+    if (FAILED(__HrLoadAllImportsForDll("jvm.dll")))
+       throw JavaError("Failed to load jvm.dll");
+#endif
     JavaVMInitArgs vm_args = {};
     vm_args.version = JNI_VERSION_1_6;
     vm_args.ignoreUnrecognized = false;
