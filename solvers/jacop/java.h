@@ -129,7 +129,7 @@ class JVM {
   Env env_;
   static JVM instance_;
 
-  JVM();
+  JVM() : jvm_() {}
   ~JVM();
 
  public:
