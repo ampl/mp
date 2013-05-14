@@ -54,6 +54,11 @@ else ()
   endif ()
 endif ()
 
+check_cxx_compiler_flag(-stdlib=libc++ HAVE_LIBCPP)
+if (HAVE_LIBCPP)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+endif ()
+
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)
   set(HAVE_GSL 1)
   set(get_amplgsl_version solvers/amplgsl/gen-decls >> versions)
