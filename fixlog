@@ -9193,3 +9193,25 @@ sometimes led to an invalid .nl file.  Example (typed on stdin):
   Fix a glitch giving an "unexpected nonvariable type..." error
 message when option presolve 0 is unwisely used with certain
 logical constraints involving "exists" or "forall".
+
+20130510
+  Fix a glitch with _ncons, which incorrectly gave the number of
+algebraic constraints plus the number of logical constraints
+rather than just the number of algebraic constraints, i.e.,
+_ncons was high by _nlogcons.
+
+	Name		Meaning
+	_nlogcons	number of logical constraints before presolve
+			in the current problem
+	_snlogcons	number of logical constraints after presolve,
+			i.e., as seen by the solver
+	_logcon		indexed by {1 .. _nlogcons}: true (1) or
+			false (0) values of logical constraints before
+			presolve
+	_slogcon	indexed by {1 .. _snlogcons}: true or false
+			values (1 or 0) of logical constraints seen
+			by the solver
+	_logconname	indexed by {1 .. _nlogcons}: names of logical
+			constraints in the current problem
+	_slogconname	indexed by {1 .. _snlogcons}: names of logical
+			constraints after presolve
