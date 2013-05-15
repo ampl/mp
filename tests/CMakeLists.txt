@@ -13,13 +13,9 @@ if (HAVE_WNO_VARIADIC_MACROS_FLAG)
   add_definitions(-Wno-variadic-macros)
 endif ()
 
-include(CheckIncludeFileCXX)
-check_include_file_cxx(tuple HAVE_TUPLE)
-if (NOT HAVE_TUPLE)
-  check_include_file_cxx(tr1/tuple HAVE_TR1_TUPLE)
-  if (NOT HAVE_TR1_TUPLE)
-    add_definitions(-DGTEST_USE_OWN_TR1_TUPLE=1)
-  endif ()
+# GTest doesn't detect <tuple> with clang.
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  add_definitions(-DGTEST_USE_OWN_TR1_TUPLE=1)
 endif ()
 
 # Setup testing.
