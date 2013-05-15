@@ -36,9 +36,16 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 #include <sstream>
+
+// Define FMT_USE_NOEXCEPT to make format use noexcept (C++11 feature).
+#if FMT_USE_NOEXCEPT || \
+    (defined(__has_feature) && __has_feature(cxx_noexcept))
+# define FMT_NOEXCEPT(expr) noexcept(expr)
+#endif
 
 namespace fmt {
 
@@ -101,7 +108,7 @@ class Array {
 
 template <typename T, std::size_t SIZE>
 void Array<T, SIZE>::Grow(std::size_t size) {
-  capacity_ = std::max(size, capacity_ + capacity_ / 2);
+  capacity_ = (std::max)(size, capacity_ + capacity_ / 2);
   T *p = new T[capacity_];
   std::copy(ptr_, ptr_ + size_, p);
   if (ptr_ != data_)
@@ -657,7 +664,7 @@ void BasicWriter<Char>::FormatDouble(
   std::size_t offset = buffer_.size();
   unsigned width = spec.width();
   if (sign) {
-    buffer_.reserve(buffer_.size() + std::max(width, 1u));
+    buffer_.reserve(buffer_.size() + (std::max)(width, 1u));
     if (width > 0)
       --width;
     ++offset;
@@ -918,10 +925,13 @@ class BasicFormatter : public BasicWriter<Char> {
     };
     mutable BasicFormatter *formatter;
 
+    Arg(short value) : type(INT), int_value(value), formatter(0) {}
+    Arg(unsigned short value) : type(UINT), int_value(value), formatter(0) {}
     Arg(int value) : type(INT), int_value(value), formatter(0) {}
     Arg(unsigned value) : type(UINT), uint_value(value), formatter(0) {}
     Arg(long value) : type(LONG), long_value(value), formatter(0) {}
     Arg(unsigned long value) : type(ULONG), ulong_value(value), formatter(0) {}
+    Arg(float value) : type(DOUBLE), double_value(value), formatter(0) {}
     Arg(double value) : type(DOUBLE), double_value(value), formatter(0) {}
     Arg(long double value)
     : type(LONG_DOUBLE), long_double_value(value), formatter(0) {}
@@ -953,7 +963,7 @@ class BasicFormatter : public BasicWriter<Char> {
       custom.format = &internal::FormatCustomArg<Char, T>;
     }
 
-    ~Arg() {
+    ~Arg() FMT_NOEXCEPT(false) {
       // Format is called here to make sure that a referred object is
       // still alive, for example:
       //
@@ -1200,7 +1210,7 @@ class TempFormatter : public internal::ArgInserter<Char> {
   /**
     Performs the actual formatting, invokes the action and destroys the object.
    */
-  ~TempFormatter() {
+  ~TempFormatter() FMT_NOEXCEPT(false) {
     if (this->formatter())
       action_(*this->Format());
   }
