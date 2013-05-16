@@ -32,7 +32,7 @@
 
 namespace ampl {
 
-class JavaError : std::runtime_error {
+class JavaError : public std::runtime_error {
  public:
   explicit JavaError(fmt::StringRef message) : std::runtime_error(message) {}
 };
