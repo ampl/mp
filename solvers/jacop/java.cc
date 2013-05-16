@@ -29,7 +29,7 @@
 
 #ifdef WIN32
 # include <windows.h>
-# include <delayimp.h>
+# include <sys/stat.h>
 # define CLASSPATH_SEP ";"
 #else
 # define CLASSPATH_SEP ":"
@@ -185,24 +185,33 @@ Env JVM::env() {
   if (!instance_.jvm_) {
 #ifdef WIN32
     std::string runtime_lib_path;
+    bool exists = false;
     try {
       RegKey jre_key(HKEY_LOCAL_MACHINE,
           "SOFTWARE\\JavaSoft\\Java Runtime Environment",
           KEY_ENUMERATE_SUB_KEYS);
         RegKey key(jre_key.get(), jre_key.GetSubKeyName(0), KEY_QUERY_VALUE);
         runtime_lib_path = key.GetStrValue("RuntimeLib");
+        struct _stat s = {};
+        exists = _stat(runtime_lib_path.c_str(), &s) == 0;
     } catch (const JavaError &) {
       // Ignore error.
     }
     std::string::size_type pos = runtime_lib_path.rfind('\\');
     if (pos != std::string::npos) {
       runtime_lib_path = runtime_lib_path.substr(0, pos);
+      if (!exists) {
+        // A workaround for broken path to jvm.dll on 64-bit Windows.
+        pos = runtime_lib_path.rfind('\\');
+        if (pos != std::string::npos)
+          runtime_lib_path.replace(pos + 1, std::string::npos, "server");
+      }
       std::string path = std::getenv("PATH");
       path += ";";
       path += runtime_lib_path;
       SetEnvironmentVariable("PATH", path.c_str());
     }
-    if (FAILED(__HrLoadAllImportsForDll("jvm.dll")))
+    if (!LoadLibrary("jvm.dll"))
        throw JavaError("Failed to load jvm.dll");
 #endif
     JavaVMInitArgs vm_args = {};
