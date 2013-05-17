@@ -513,13 +513,14 @@ void JaCoPSolver::Solve(Problem &p) {
   }
 
   // Convert solution status.
-  // TODO
-  /*const char *status = 0;
+  const char *status = 0;
   int solve_code = 0;
-  if (stopped) {
+  // TODO
+  /*if (stopped) {
     solve_code = 600;
     status = "interrupted";
-  } else if (!solution.get()) {
+  } else*/
+  if (!found) {
     solve_code = 200;
     status = "infeasible problem";
   } else if (has_obj) {
@@ -529,7 +530,7 @@ void JaCoPSolver::Solve(Problem &p) {
     solve_code = 100;
     status = "feasible solution";
   }
-  problem.set_solve_code(solve_code);*/
+  p.set_solve_code(solve_code);
 
   std::vector<double> final_solution;
   if (found) {
@@ -548,12 +549,14 @@ void JaCoPSolver::Solve(Problem &p) {
   }
 
   fmt::Formatter format;
-  const char *status = "";
-  // TODO
   format("{}: {}\n") << long_name() << status;
-  /*format("{} nodes, {} fails") << stats.node << stats.fail;
-  if (has_obj && solution.get())
-    format(", objective {}") << ObjPrec(obj_val);*/
+  jmethodID get_nodes = env.GetMethod(dfs_class.get(), "getNodes", "()I");
+  jmethodID get_fails =
+      env.GetMethod(dfs_class.get(), "getWrongDecisions", "()I");
+  format("{} nodes, {} fails") << env.CallIntMethod(search, get_nodes)
+      << env.CallIntMethod(search, get_fails);
+  if (has_obj && found)
+    format(", objective {}") << ObjPrec(obj_val);
   HandleSolution(format.c_str(),
       final_solution.empty() ? 0 : &final_solution[0], 0, obj_val);
 }
