@@ -1,3 +1,5 @@
+.. index:: SQL Server
+
 Connecting AMPL to SQL Server
 =============================
 

@@ -1,3 +1,5 @@
+.. index:: MySQL
+
 Connecting AMPL to MySQL
 ========================
 
