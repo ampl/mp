@@ -33,15 +33,15 @@ wHy5UurYMKkA4llsU6KpS9/RZP4PB7kOAy6uS6B93LK5Vh/jRxdMph4TVCQeju4/
 -----END PGP SIGNATURE-----
 -----BEGIN PGP SIGNED MESSAGE-----
 
-# netlib-utk master Mon Nov 19 03:10:33 EST 2012
-mengI9nss2AVEuZntOmX7Q	00lastchange
+# netlib-utk master Fri May 24 03:10:03 EDT 2013
+L5Dp2vD0NyCUlRC3JMkK6w	00lastchange
 kvgDlLciV4QRWFM2OPPjwg	README.1st
 UIQ9b/W+lJW+USZqbGM9Ng	README.cplex
 IhMc0dKZXsxYL1j3oPTVLw	ampl110.pdf
-ftn7wUUPBkEoZqEv4d6RUQ	changes
+bNFkswxjG6A99LZhLTb0uA	changes
 82tSOHRc4WgaNjS7DZ5+fw	configure
 +lAB5mo/1ivasGDr80Zenw	configurehere
-Kdi8VgXaa+vzMgYZWXm83Q	cplex.c
+3rmAdVZDDhS4kW4lU9WseQ	cplex.c
 +9OESbwr/19WWXxTPcEuzA	cplex4.c
 2phWAX3y2x+iu8xKOYr8DA	cplex60.c
 StjwKcjYpHi0ObxR4zegBg	cplex66.c
@@ -53,14 +53,14 @@ aIfHz7M/sI5Liz3PGpAisg	makefile.vc
 Gh6AKrZG8ERUpxjNwTJeKQ	version4.c
 fGmWAAdsYge/vYlZiOsI+A	version60.c
 sBxvLIPK6YlmgoM0hdWRjg	version66.c
-iKf4niNFWgPtyzil1PZbsQ	xsum0.out
+rVMmMiApPN8UpbHFQ+yBPw	xsum0.out
 
 -----BEGIN PGP SIGNATURE-----
 Version: 2.6.2
 
-iQCVAwUBUKnpfuFlxDEfrjtlAQGsVgP/a6H+uyOa+rpawQaLvpfs7V6q+JXIAN8q
-wqi0SM7UiOkcbWiUHU7VcDrVjbf625gF9f8D1uD1bstNh081gubSQ7gZP25g8Xd4
-l/SzJmH3+xm0sQdli6ujhpWcH04FtiAzBT0OzQUoRq/WMkcIV4v4p8FBgTW1FSyA
-vAbjCkP9XXU=
-=th6U
+iQCVAwUBUZ8SUOFlxDEfrjtlAQGfhAQAgkF0QZpJxgHH93nThbuLdu64OO+BFCAP
+iRDCYJkAYBJrdokXafX744qyGwq4cbktC8zepgiAqJIa5hTPbHsRCm7zOWxDGIP6
+eaWnXMZUHTGl6KiJAaAhOnFE/byMrM998gDIy3k9ehmYNVcOzfNSul6LJqPcy/zC
+eg2Jgk6jRHg=
+=sSrb
 -----END PGP SIGNATURE-----
