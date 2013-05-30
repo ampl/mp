@@ -125,3 +125,9 @@ checking the validity of DBQ=... strings.
 20130417
   amplodbc.c:  fix a glitch in reading tables with null columns.
 Thanks go to Victor Zverovich for this fix.
+
+20130507
+  amplodbc.c:  Fix a fault when no "User DSN" or "System DSN"
+entries appear in the MS Windows ODBC Administrator and the
+filename in a table declaration ends with an unknown extension.
+Thanks go to Victor Zverovich for this fix.

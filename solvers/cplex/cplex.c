@@ -245,7 +245,7 @@ mdbl_val[] = {
  static int hybmethod = CPX_ALG_PRIMAL;
  static int netiters = -1;
  static CPXFILEptr Logf;
- static char cplex_version[] = "AMPL/CPLEX with bad license\0\nAMPL/CPLEX Driver Version 20121117\n";
+ static char cplex_version[] = "AMPL/CPLEX with bad license\0\nAMPL/CPLEX Driver Version 20130522\n";
  static char *baralgname, *endbas, *endsol, *endtree, *endvec, *logfname;
  static char *paramfile, *poolstub, *pretunefile, *pretunefileprm;
  static char *startbas, *startsol, *starttree, *startvec, *tunefile, *tunefileprm;
@@ -1775,6 +1775,9 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 	{ "solutionlim", sf_int,	VP CPX_PARAM_INTSOLLIM },
 	{ "sos",	sf_mint,	VP set_sos },
 	{ "sos2",	sf_mint,	VP set_sos2 },
+#ifdef CPX_PARAM_LANDPCUTS
+	{ "splitcuts",	sf_int,		VP CPX_PARAM_LANDPCUTS },
+#endif
 	{ "startalg",	sf_int,		VP CPX_PARAM_STARTALG },
 	{ "startalgorithm", sf_int,	VP CPX_PARAM_STARTALG },
 	{ "startbasis",	sf_char,	VP set_startbas },
@@ -1856,7 +1859,7 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 
  static Option_Info Oinfo = { "cplex", 0, "cplex_options",
 				keywds, nkeywds, 0, cplex_version,
-				0,0,0,0,0, 20121117 };
+				0,0,0,0,0, 20130522 };
 
  static void
 badlic(int rc, int status)
@@ -2693,14 +2696,15 @@ LazyInfo {
 	} LazyInfo;
 
  Char **
-lazyadj(ASL *asl, LazyInfo *LI, int n, int nint, int *mp, double *b, char *senx,
+lazyadj(ASL *asl, LazyInfo *LI, int n, int nint, int nqc, int *mp, double *b, char *senx,
 	int *ka, int *kal, int *ia, double *a, double *rngvec, char **rname)
 {
 	Char *rv;
 	SufDesc *lp;
 	char *nn, *nn1, *sense, **rowname;
+	const char *s1, *s2;
 	double *matval, *rhs;
-	int i, i1, i2, j, j0, j1, k, m, m0, nrt, nz;
+	int i, i1, i2, j, j0, j1, k, m, m0, nq, nrt, nz;
 	int *colno, nr[3], nt[2], *rl, *rowbeg, *z, *z0;
 	size_t Lnn, Lrl;
 
@@ -2717,14 +2721,28 @@ lazyadj(ASL *asl, LazyInfo *LI, int n, int nint, int *mp, double *b, char *senx,
 	/* For simplicity, we treat 3 as 1 and ignore bits beyond the first two. */
 
 	m0 = n_con;
-	for(i = 0; i < m0; i++) {
+	for(i = nq = 0; i < m0; i++) {
 		if ((j = z[i] & uselazy) && j <= 2) {
+			if (i < nqc) {
+				++nq;
+				continue;
+				}
 			++nr[j = 1 - (j&1)];
 			if (senx[i] == 'R') {
 				++nr[j];
 				++nr[2];
 				}
 			}
+		}
+	if (nq) {
+		if (nq == 1)
+			s1 = s2 = "";
+		else {
+			s1 = "es";
+			s2 = "s";
+			}
+		fprintf(Stderr, "Ignoring .lazy suffix%s on %d quadratic constraint%s.\n",
+			s1, nq, s2);
 		}
 
 	/* nr[0] = number of lazy constraints */
@@ -2733,7 +2751,7 @@ lazyadj(ASL *asl, LazyInfo *LI, int n, int nint, int *mp, double *b, char *senx,
 
 	if (!(nrt = nr[0] + nr[1]))
 		goto done;
-	z0 = z;
+	z0 = z += nqc;
 	m = *mp;
 	if (m > m0) {
 		z = (int*)Malloc(m*sizeof(int));
@@ -3464,11 +3482,11 @@ the objective, you have %d variables and %d constraints.\n", n, m);
 	mq = m - nqc;
 #ifdef Uselazy
 	i = mq;
-	zap[5] = lazyadj(asl, &LI, n, nint, &mq, b+nqc, senx+nqc, ka, kal,
+	zap[5] = lazyadj(asl, &LI, n, nint, nqc, &mq, b+nqc, senx+nqc, ka, kal,
 				 ia, a, rngvec+nqc, rname ? rname+nqc : 0);
 	if ((j = LI.rows[0] + LI.rows[1] - (i - mq)) > 0) {
 		/* unlikely; allocate extra space... */
-		j += mq + nqc + nlogc;
+		j += n_con + mq + nqc + nlogc;
 		d->y = (double*)M1zapalloc(j*(sizeof(double) + sizeof(int)));
 		ia1 = (int*)(d->y + j);
 		memcpy(ia1, d->rstat, n_con * sizeof(int));
@@ -4779,6 +4797,9 @@ CutInfo {
 #endif
 #ifdef CPX_CUT_MCF
 		{ "multi-commodity flow",	CPX_CUT_MCF },
+#endif
+#ifdef CPX_CUT_LANDP
+		{ "split",			CPX_CUT_LANDP },
 #endif
 #if 0
 		{ "",	CPX_CUT_TIGHTEN },

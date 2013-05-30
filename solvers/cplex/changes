@@ -855,3 +855,10 @@ by mipcuts.  Update to CPLEX 12.5:  add keywords dettimelim,
 polishafter_timedet, probetimedet, seed, and tunetimedet, and extend
 timing keyword to allow requesting times in platform-specific "ticks",
 which CPLEX computes in an unspecified way.
+
+20130522
+  cplex.c:  fix bugs with suffix .lazy:  problems with quadratic
+constraints were not handled properly, and a rare case requiring
+allocation of longer arrays was botched.  Now nonzero .lazy values
+on quadratic constraints give a warning message that such .lazy
+values are ignored.
