@@ -1,3 +1,3 @@
-20130419
-  pfg_read.c, pfghread.c:  fix a bug occasionally seen (with readers
-pfg_read() and pfgh_read()) in problems having defined variables.
+20130530
+  suf_sos.c:  fix a bug in removing SOS1 sets of size 1.  Wrong arrays
+were computed.
