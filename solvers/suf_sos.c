@@ -291,6 +291,7 @@ suf_sos_ASL(ASL *asl, int flags, int *nsosnz_p, char **sostype_p,
 			*--gn = *--zg;
 		nsosnz += nsosnz1 = ng;
 		g = gnos;
+		j0 = 0;
 		j = (t = *g) < 0.;
 		for(i = 1;; i++)
 			if (i >= ng || gnos[i] != t) {
@@ -299,13 +300,13 @@ suf_sos_ASL(ASL *asl, int flags, int *nsosnz_p, char **sostype_p,
 				if (i - j >= 2)
 					g++;
 				else {
-					nsosnz -= k = i - j + 1;
+					nsosnz -= k = i - j0;
 					if (t > 0)
 						nsosnz1 -= k;
 					}
 				if (i >= ng)
 					break;
-				t = *g = gnos[j = i];
+				t = *g = gnos[j = j0 = i];
 				if (t < 0.)
 					j++;
 				}
