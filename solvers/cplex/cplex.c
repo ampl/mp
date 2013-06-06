@@ -245,7 +245,7 @@ mdbl_val[] = {
  static int hybmethod = CPX_ALG_PRIMAL;
  static int netiters = -1;
  static CPXFILEptr Logf;
- static char cplex_version[] = "AMPL/CPLEX with bad license\0\nAMPL/CPLEX Driver Version 20130522\n";
+ static char cplex_version[] = "AMPL/CPLEX with bad license\0\nAMPL/CPLEX Driver Version 20130531\n";
  static char *baralgname, *endbas, *endsol, *endtree, *endvec, *logfname;
  static char *paramfile, *poolstub, *pretunefile, *pretunefileprm;
  static char *startbas, *startsol, *starttree, *startvec, *tunefile, *tunefileprm;
@@ -1859,7 +1859,7 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 
  static Option_Info Oinfo = { "cplex", 0, "cplex_options",
 				keywds, nkeywds, 0, cplex_version,
-				0,0,0,0,0, 20130522 };
+				0,0,0,0,0, 20130531 };
 
  static void
 badlic(int rc, int status)
@@ -2179,6 +2179,9 @@ set_mipinit(ASL *asl, cpxlp *cpx, int nint)
 {
 	int i, n1, *r, *r1;
 	real *x, *x1;
+#ifndef NO_DEPRECATED
+	int k, m, m0;
+#endif
 #if CPX_VERSION_VERSION >= 12
 	int beg[2];
 
@@ -2204,7 +2207,6 @@ set_mipinit(ASL *asl, cpxlp *cpx, int nint)
 	else {
 #endif
 #ifndef NO_DEPRECATED
-	int k, m, m0;
 	if ((k = nlvbi))
 		mipinit_loop(asl, &r1, &n1, &x1, nlvb - k, k);
 	m0 = nlvb;

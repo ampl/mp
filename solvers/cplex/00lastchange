@@ -1,6 +1,3 @@
-20130522
-  cplex.c:  fix bugs with suffix .lazy:  problems with quadratic
-constraints were not handled properly, and a rare case requiring
-allocation of longer arrays was botched.  Now nonzero .lazy values
-on quadratic constraints give a warning message that such .lazy
-values are ignored.
+20130531
+  cplex.c:  fix a compilation glitch with NO_DEPRECATED that only
+matters to some compilers.

@@ -3058,4 +3058,9 @@ for logical constraints:
 	_logconname	indexed by {1 .. _nlogcons}: names of logical
 			constraints in the current problem
 	_slogconname	indexed by {1 .. _snlogcons}: names of logical
-			constraints after presolve
+			constraints seen by the solver
+
+20130530
+  Add an error message that symbolic variables are not yet available.
+  Fix a fault with deleting check commands.  Example:
+	param p; check p > 3; delete check 1; # faulted
