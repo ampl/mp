@@ -2136,3 +2136,7 @@ pfg_read() and pfgh_read()) in problems having defined variables.
 20130530
   suf_sos.c:  fix a bug in removing SOS1 sets of size 1.  Wrong arrays
 were computed.
+
+20130604
+  indic_cons.c:  fix a bug in handling unary minus (wrong return value,
+causing indicator constraints to be rejected).
