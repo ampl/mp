@@ -46,7 +46,7 @@ class CSVTest : public ::testing::Test {
 fun::Library CSVTest::lib_("../tables/ampltabl.dll");
 
 TEST_F(CSVTest, Read) {
-  Table t("test", 1);
+  Table t("test", 1, 0);
   t.AddString("odbc");
   odbc::Env env;
   // Some versions of the text driver require a trailing slash in DBQ value.
