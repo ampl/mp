@@ -55,7 +55,7 @@ class ExcelTest : public ::testing::Test {
 fun::Library ExcelTest::lib_("../tables/ampltabl.dll");
 
 TEST_F(ExcelTest, Read) {
-  Table t("TableWith256CharCell", 1, strings_);
+  Table t("TableWith256CharCell", 0, 1, strings_);
   t = "S";
   handler_->Read(&t);
   EXPECT_EQ(1u, t.num_rows());
@@ -75,7 +75,7 @@ TEST_F(ExcelTest, WriteMaxColumnsExcel2003) {
   // Excel 2003 and earlier support at most 256 columns
   // http://office.microsoft.com/en-us/excel-help/excel-specifications-and-limits-HP005199291.aspx
   int num_cols = 256;
-  Table t("TableWithManyCols", num_cols, strings_);
+  Table t("TableWithManyCols", 0, num_cols, strings_);
   for (int i = 1; i <= num_cols; ++i)
     t.Add(c_str(fmt::Format("c{}") << i));
   handler_->Write(t);
@@ -93,7 +93,7 @@ TEST_F(ExcelTest, WriteMaxColumnsExcel2007) {
   strings_[1] =
       "DRIVER={Microsoft Excel Driver (*.xls, *.xlsx, *.xlsm, *.xlsb)}; "
       "DBQ=data/test.xlsx; READONLY=FALSE;";
-  Table t("TableWithManyCols", num_cols, strings_);
+  Table t("TableWithManyCols", 0, num_cols, strings_);
   for (int i = 1; i <= num_cols; ++i)
     t.Add(c_str(fmt::Format("c{}") << i));
   handler_->Write(t);

@@ -54,7 +54,7 @@ class AccessTest : public ::testing::Test {
 fun::Library AccessTest::lib_("../tables/ampltabl.dll");
 
 TEST_F(AccessTest, Read) {
-  Table t("Test", 1, strings_);
+  Table t("Test", 1, 0, strings_);
   t = "N";
   handler_->Read(&t);
   EXPECT_EQ(1u, t.num_rows());
@@ -62,7 +62,7 @@ TEST_F(AccessTest, Read) {
 }
 
 TEST_F(AccessTest, ReadNullField) {
-  Table t("TableWithNullField", 1, strings_);
+  Table t("TableWithNullField", 1, 0, strings_);
   t = "NullField";
   handler_->Read(&t);
   EXPECT_EQ(1u, t.num_rows());

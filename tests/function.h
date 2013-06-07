@@ -204,10 +204,10 @@ class Table {
   };
 
  public:
-  Table(const std::string &name, unsigned num_cols,
+  Table(const std::string &name, unsigned num_key_cols, unsigned num_data_cols,
       const std::vector<std::string> &strings = std::vector<std::string>())
-  : name_(name), num_cols_(num_cols),
-    arity_(std::min(1u, num_cols)), strings_(strings) {}
+  : name_(name), num_cols_(num_key_cols + num_data_cols), arity_(num_key_cols),
+    strings_(strings) {}
 
   unsigned num_strings() const { return strings_.size(); }
 
@@ -222,14 +222,6 @@ class Table {
   const char *name() const { return name_.c_str(); }
 
   unsigned arity() const { return arity_; }
-
-  void SetArity(unsigned arity) {
-    if (arity > num_cols_) {
-      throw std::invalid_argument(
-          "arity is greater than the number of columns");
-    }
-    arity_ = arity;
-  }
 
   unsigned num_rows() const {
     unsigned num_values = static_cast<unsigned>(values_.size());
