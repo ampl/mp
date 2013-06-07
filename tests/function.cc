@@ -157,7 +157,7 @@ ScopedTableInfo::ScopedTableInfo(const Table &t) {
   dvals_.resize(num_values);
 
   nrows = maxrows = t.num_rows();
-  arity = 1;
+  arity = t.arity();
   ncols = t.num_cols() - arity;
   if (t.num_cols() != 0) {
     colnames_.resize(t.num_cols());

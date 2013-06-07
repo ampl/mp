@@ -31,6 +31,7 @@ class TableProxyTest : public ::testing::Test {
  protected:
   static fun::Library lib_;
   const fun::Handler *handler_;
+  std::vector<std::string> strings_;
 
   static void SetUpTestCase() {
     lib_.Load();
@@ -42,23 +43,33 @@ class TableProxyTest : public ::testing::Test {
 
   void SetUp() {
     handler_ = lib_.GetHandler("tableproxy");
+    strings_.push_back("tableproxy");
+    int bits = sizeof(void*) == 8 ? 64 : 32;
+    std::string prog = FixPath(
+        fmt::Format("prog=../tables/tableproxy{}") << bits);
+    strings_.push_back(prog);
+    strings_.push_back(FixPath("lib=../tables/fullbit.dll"));
+    strings_.push_back("lib-tab");
   }
 };
 
 fun::Library TableProxyTest::lib_("../tables/ampltabl.dll");
 
 TEST_F(TableProxyTest, WriteTab) {
-  fun::Table t("test", 1);
-  t.AddString("tableproxy");
-  int bits = sizeof(void*) == 8 ? 64 : 32;
-  std::string prog = FixPath(
-      fmt::Format("prog=../tables/tableproxy{}") << bits);
-  t.AddString(prog);
-  t.AddString(FixPath("lib=../tables/fullbit.dll"));
-  t.AddString("lib-tab");
+  fun::Table t("test", 1, 0, strings_);
   t = "N", 1, 2;
   std::remove("test.tab");
   handler_->Write(t);
   EXPECT_EQ("ampl.tab 1 0\nN\n1\n2\n", ReadFile("test.tab"));
+}
+
+TEST_F(TableProxyTest, WriteDuplicateStringNumKey) {
+  fun::Table t("test", 2, 0, strings_);
+  t = "S", "N",
+      "a",  1;
+  std::remove("test.tab");
+  handler_->Write(t, fun::Handler::INOUT);
+  handler_->Write(t, fun::Handler::INOUT);
+  EXPECT_EQ("ampl.tab 2 0\nS\tN\na\t1\n", ReadFile("test.tab"));
 }
 }

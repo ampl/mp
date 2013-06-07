@@ -135,7 +135,7 @@ TEST(FunctionTest, VariantOutput) {
 }
 
 TEST(FunctionTest, EmptyTable) {
-  Table t("", 0);
+  Table t("", 0, 0);
   EXPECT_STREQ("", t.name());
   EXPECT_EQ(0u, t.num_strings());
   EXPECT_EQ(0u, t.num_rows());
@@ -148,7 +148,7 @@ TEST(FunctionTest, TableStrings) {
   std::vector<std::string> strings;
   strings.push_back("abc");
   strings.push_back("def");
-  Table t("", 0, strings);
+  Table t("", 0, 0, strings);
   EXPECT_EQ(2u, t.num_strings());
   EXPECT_STREQ("abc", t.string(0));
   EXPECT_STREQ("def", t.string(1));
@@ -158,19 +158,16 @@ TEST(FunctionTest, TableStrings) {
 }
 
 TEST(FunctionTest, TableArity) {
-  Table t1("", 0);
+  Table t1("", 0, 0);
   EXPECT_EQ(0u, t1.arity());
-  Table t2("", 2);
+  Table t2("", 1, 0);
   EXPECT_EQ(1u, t2.arity());
-  Table t3("", 3);
-  EXPECT_EQ(1u, t3.arity());
-  t3.SetArity(3);
+  Table t3("", 3, 0);
   EXPECT_EQ(3u, t3.arity());
-  EXPECT_THROW(t3.SetArity(4), std::invalid_argument);
 }
 
 TEST(FunctionTest, Table) {
-  Table t("Test", 3);
+  Table t("Test", 0, 3);
   EXPECT_STREQ("Test", t.name());
   EXPECT_EQ(0u, t.num_rows());
   EXPECT_EQ(3u, t.num_cols());
@@ -193,11 +190,11 @@ TEST(FunctionTest, Table) {
 }
 
 TEST(FunctionTest, TableComparison) {
-  Table t1("t1", 0), t2("t2", 0);
+  Table t1("t1", 0, 0), t2("t2", 0, 0);
   EXPECT_TRUE(t1 == t2);
-  Table t3("", 2);
+  Table t3("", 1, 1);
   EXPECT_FALSE(t1 == t3);
-  Table t4("", 2);
+  Table t4("", 1, 1);
   EXPECT_TRUE(t3 == t4);
   t3 = "a", "b",
        "c", "d";
@@ -205,19 +202,19 @@ TEST(FunctionTest, TableComparison) {
   t4 = "a", "b",
        "c", "d";
   EXPECT_TRUE(t3 == t4);
-  Table t5("", 1);
+  Table t5("", 1, 0);
   t5 = "a", "b", "c", "d";
   EXPECT_FALSE(t3 == t5);
-  Table t6("", 2);
+  Table t6("", 1, 1);
   t6 = "a", "b";
   EXPECT_FALSE(t3 == t6);
-  Table t7("", 2);
+  Table t7("", 1, 1);
   EXPECT_FALSE(t7 == t6);
 }
 
 TEST(FunctionTest, TableOutput) {
   std::stringstream ss;
-  Table t("", 2);
+  Table t("", 1, 1);
   t = "a", "b",
       "c", "d";
   ss << t;
@@ -239,7 +236,7 @@ TEST(FunctionTest, Library) {
   EXPECT_TRUE(lib.GetHandler("nonexistent") == nullptr);
   const Handler *handler = lib.GetHandler("testhandler");
   EXPECT_TRUE(handler != nullptr);
-  Table t("", 0);
+  Table t("", 0, 0);
   handler->Read(&t);
 }
 
@@ -250,22 +247,37 @@ int LookupTest(AmplExports *, TableInfo *ti) {
   return ti->Lookup(dvals, svals, ti);
 }
 
-TEST(FunctionTest, TableLookup) {
-  Library lib("");
-  Handler handler(&lib, 0, LookupTest);
-  Table t("", 4);
+void InitTable(Table &t) {
   t = "c1", "c2", "c3", "c4",
        42,  "v0",  1,    1,
        11,  "v1",  2,    1,
        42,  "v2",  3,    1,
        42,  "v2",  4,    1;
-  EXPECT_EQ(0, handler.Write(t, Handler::NOTHROW));
-  t.SetArity(2);
-  EXPECT_EQ(2, handler.Write(t, Handler::NOTHROW));
-  t.SetArity(3);
-  EXPECT_EQ(3, handler.Write(t, Handler::NOTHROW));
-  t.SetArity(4);
-  EXPECT_EQ(-1, handler.Write(t, Handler::NOTHROW));
+}
+
+TEST(FunctionTest, TableLookup) {
+  Library lib("");
+  Handler handler(&lib, 0, LookupTest);
+  {
+    Table t("", 1, 3);
+    InitTable(t);
+    EXPECT_EQ(0, handler.Write(t, Handler::NOTHROW));
+  }
+  {
+    Table t("", 2, 2);
+    InitTable(t);
+    EXPECT_EQ(2, handler.Write(t, Handler::NOTHROW));
+  }
+  {
+    Table t("", 3, 1);
+    InitTable(t);
+    EXPECT_EQ(3, handler.Write(t, Handler::NOTHROW));
+  }
+  {
+    Table t("", 4, 0);
+    InitTable(t);
+    EXPECT_EQ(-1, handler.Write(t, Handler::NOTHROW));
+  }
 }
 
 int AdjustMaxrowsTest(AmplExports *, TableInfo *ti) {
@@ -288,14 +300,18 @@ int AdjustMaxrowsTest(AmplExports *, TableInfo *ti) {
 TEST(FunctionTest, AdjustMaxrows) {
   Library lib("");
   Handler handler(&lib, 0, AdjustMaxrowsTest);
-  Table t("", 3);
-  t = "1", "c2", "c3", "a", 11, "b";
+  Table t("", 1, 2);
+  t = "1", "c2", "c3",
+      "a",  11,  "b";
   EXPECT_EQ(1, handler.Write(t, Handler::NOTHROW));
-  t = "2", "c2", "c3", "a", 11, "b";
+  t = "2", "c2", "c3",
+      "a",  11,  "b";
   EXPECT_EQ(2, handler.Write(t, Handler::NOTHROW));
-  t = "3", "c2", "c3", "a", 11, "b";
+  t = "3", "c2", "c3",
+      "a",  11,  "b";
   EXPECT_EQ(3, handler.Write(t, Handler::NOTHROW));
-  t = "4", "c2", "c3", "a", 11, "b";
+  t = "4", "c2", "c3",
+      "a",  11,  "b";
   EXPECT_EQ(4, handler.Write(t, Handler::NOTHROW));
 }
 
