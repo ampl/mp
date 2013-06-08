@@ -1,3 +1,5 @@
-20130531
-  cplex.c:  fix a compilation glitch with NO_DEPRECATED that only
-matters to some compilers.
+20130606
+  cplex.c:  do not complain about a diagonal objective Hessian element
+of the "wrong" sign if the associated variable is an integer variable,
+in which case CPLEX seems to not to care about signs, or if
+reqconvex=2 is specified.

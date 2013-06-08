@@ -324,7 +324,7 @@ paradj(ASL *asl, int *pno, real **pow, real **py)
 	ws = asl->i.orscratch;
 	ys = ws + nobj;
 	memset(ys, 0, asl->i.n_con0*sizeof(real));
-	cm = asl->i.cmap;
+	cm = get_vcmap_ASL(asl, ASL_Sufkind_con);
 	if ((y = *py)) {
 		*py = ys;
 		nc = n_con;

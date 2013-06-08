@@ -245,7 +245,7 @@ mdbl_val[] = {
  static int hybmethod = CPX_ALG_PRIMAL;
  static int netiters = -1;
  static CPXFILEptr Logf;
- static char cplex_version[] = "AMPL/CPLEX with bad license\0\nAMPL/CPLEX Driver Version 20130531\n";
+ static char cplex_version[] = "AMPL/CPLEX with bad license\0\nAMPL/CPLEX Driver Version 20130606\n";
  static char *baralgname, *endbas, *endsol, *endtree, *endvec, *logfname;
  static char *paramfile, *poolstub, *pretunefile, *pretunefileprm;
  static char *startbas, *startsol, *starttree, *startvec, *tunefile, *tunefileprm;
@@ -1859,7 +1859,7 @@ sf_parm(Option_Info *oi, keyword *kw, char *v)
 
  static Option_Info Oinfo = { "cplex", 0, "cplex_options",
 				keywds, nkeywds, 0, cplex_version,
-				0,0,0,0,0, 20130531 };
+				0,0,0,0,0, 20130606 };
 
  static void
 badlic(int rc, int status)
@@ -2412,7 +2412,7 @@ get_statuses(ASL *asl, cpxlp *cpx, dims *d)
 	}
 
  static int
-qmatadj(int k, int nr, int os, int *colq, int *colqcnt, double **qmatp)
+qmatadj(int k, int nr, int os, int *colq, int *colqcnt, double **qmatp, char *ctype)
 {
 	double badd[3], *oqmat, osd, *qmat, t;
 	int badk[3], i, nbad = 0, nb, w, w1;
@@ -2426,7 +2426,7 @@ qmatadj(int k, int nr, int os, int *colq, int *colqcnt, double **qmatp)
 		t = 0.;
 		if (colqcnt[k]) {
 			t = oqmat[colq[k]];
-			if (t*osd < 0.) {
+			if (t*osd < 0. && (!ctype || ctype[k] == 'C')) {
 				if (nbad < 3) {
 					badd[nbad] = t;
 					badk[nbad] = k;
@@ -2437,6 +2437,10 @@ qmatadj(int k, int nr, int os, int *colq, int *colqcnt, double **qmatp)
 		qmat[k] = t;
 		}
 	free(oqmat);
+#if CPX_VERSION >= 12030000
+	if (nbad && parval(CPX_PARAM_SOLUTIONTARGET) == 2)
+		nbad = 0;
+#endif
 	if (!nbad)
 		return 0;
 	fprintf(Stderr, "%d diagonal QP coefficients of the wrong sign:\n",
@@ -3596,8 +3600,7 @@ the objective, you have %d variables and %d constraints.\n", n, m);
 		free(colqf);
 		for(i = 0; ; i++) {
 			if (i == k) {
-				i = qmatadj(k, nr, objsen, colq,
-					colqcnt, &qmat);
+				i = qmatadj(k, nr, objsen, colq, colqcnt, &qmat, ctype);
 				if (!i) {
 					for(i = k; i < nr; i++)
 						qmat[i++] = 0.;

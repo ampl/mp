@@ -2140,3 +2140,7 @@ were computed.
 20130604
   indic_cons.c:  fix a bug in handling unary minus (wrong return value,
 causing indicator constraints to be rejected).
+
+20130606
+  obj_adj.c:  fix a fault that was possible with flags
+ASL_obj_replace_ineq and ASL_obj_replace_eq to the .nl reader.
