@@ -54,11 +54,6 @@ else ()
   endif ()
 endif ()
 
-check_cxx_compiler_flag(-stdlib=libc++ HAVE_LIBCPP)
-if (HAVE_LIBCPP)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-endif ()
-
 check_cxx_compiler_flag(-Qunused-arguments HAVE_QUNUSED_ARGUMENTS)
 if (HAVE_QUNUSED_ARGUMENTS)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
