@@ -17,5 +17,5 @@ makefile.macosx64	ff207cfa	2052
 makefile.vc	1858c38d	1728
 nutrients.tab	1328f000	107
 simpbit.c	ee7ef53e	11755
-tableproxy.c	e2fa7704	64634
-tableproxyver.h	8feee61	37
+tableproxy.c	f497c6b1	64637
+tableproxyver.h	708e2d7	37

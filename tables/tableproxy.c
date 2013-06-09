@@ -1818,7 +1818,7 @@ Lookup_w(real *r, char **sa, TableInfo *TI)
 				for(; db < dbe; ++db, ++v, ++ek) {
 					if ((sv = db->sval) && sv[i]) {
 						*ek = 1;
-						*v = sv;
+						*v = sv[i];
 						}
 					else {
 						*ek = 0;
