@@ -145,8 +145,8 @@ NfE/nd+ZeGE=
 -----END PGP SIGNATURE-----
 -----BEGIN PGP SIGNED MESSAGE-----
 
-# netlib-utk master Sun Apr 21 03:10:03 EDT 2013
-JSKD/Y99xVM9YkNyB8DUKA	00lastchange
+# netlib-utk master Fri Jun 7 03:10:02 EDT 2013
+q1oYPB23osFy13Cpmt2pKw	00lastchange
 liuYYMQudXHqZpEKRGHQSg	README
 qOEvOeNxr+tkYXE2CClZWw	README.SGI
 hP/T3OfgkqAwrLqbG8BqQw	README.f77
@@ -159,7 +159,7 @@ G6vjFVw1aR9lWi5Yl/OtiQ	arithchk.c
 WQUoVVSgb9mQhLWLJ0Cjwg	asl.h
 cWsQSHLhURv8mvXbE/g9DQ	asl_pfg.h
 p057f6BlUh9XCGR26M/IUA	asl_pfgh.h
-4kR7JKXV7fjtDLeYK40t7A	asldate.c
+eu9Zxr090I9YL9CsUVfu0w	asldate.c
 MwUvqn7mXvmkvc1afriAnQ	atof.c
 VPgRhBjxjjSUuv9+aVsibA	auxinfo.c
 HcQd+byMFVyPt/z7Djmj+w	avltree.c
@@ -167,7 +167,7 @@ TiTwOwAKkrb9rFuWZPf82A	avltree.h
 Lg714wh1GAnDfWqStFsPbQ	b_search.c
 JX+T6A1nVtQxlH2/gHjQ7w	basename.c
 B9aysZxnc2iCJEcny28lrA	bscanf.c
-yGiZ4RL9TOM251tPK4/lRA	changes
+hakgYAdMqzWZAwFucYDMSQ	changes
 iaV5+h9JhXta8i63eG8/QA	com2eval.c
 ViDtWeMTFSx1mxx/G621+Q	comeval.c
 f3BjU/9mf3+4mq1Q2h6CAw	comptry.bat
@@ -214,7 +214,7 @@ DFytV4KoZfLPtg1L8pG88w	getstub.h
 lfkD5wROt+kPrkExYmSO+A	htcl.c
 uNVcCaAsQ8TWYmoV8erzJA	index
 95NtD4gXJvnj6jMvzHiJEw	index.html
-LmDIPyWZd3hDSJHYbru0oA	indic_cons.c
+7oi5xYODRPbR2r+0wkr2iw	indic_cons.c
 GcNpi3yp3cgT3cQ6tW0SHA	jac0dim.c
 ROvsFFwzLNjoBFYPxYNYvQ	jac2dim.c
 y3FWXkb8qbLheImpNehIWw	jac2dim.h
@@ -280,7 +280,7 @@ HIYBbU+IxYD8verR/ANqSg	sscanf.c
 lMQ9F3KKxWON+31tJsUxHQ	stdio1.h0
 rR1B5Vj4YOBToXBxIuAqzg	strerror.c
 PpDt9u+TCFUWnzFAE/jTJQ	studchk0.c
-g7k4lFArU+7LTlFulyD9gg	suf_sos.c
+oTCTb5sZnSfQQx0DFnQ4Jg	suf_sos.c
 demnClgCWkLStAvxhZBZEw	value.c
 taPydtsUgtl/7a1BPDnSzA	writesol.c
 Ho3VEl45oVz77gehigtxmw	wrtsol_.c
@@ -290,14 +290,14 @@ fKP4V5GxuMz8ZZhUUZbTxw	x2check.c
 iOcxB/spcU8eiXLk2O9qkA	xectim.c
 j5NdrTSBkS5pnfDyKD0Ezg	xp1known.c
 FAbm67iDBwtMlNOTy8jXHw	xp2known.c
-Dw+xcAPDSHmivln4iWMn2A	xsum0.out
+Ete/up0yVv0FnPzF5FD2LA	xsum0.out
 
 -----BEGIN PGP SIGNATURE-----
 Version: 2.6.2
 
-iQCVAwUBUXOQ6OFlxDEfrjtlAQH7GwP+KiO3CLdNwQuXx/ud0JO5DFXDm5F3rWHq
-nG2zZs0NtL1cezrcCfwBhXdhwOibwGcljFbz/jHaQgyZUHAfKyDpLrGpvBCm5+Cr
-a2Qg1uwKvCail5l0ipaeOi14Ehk9PocWG3jCrDdms9QDc+LzJ3A6l7HMLbH4wamJ
-k+GZRkaDBPo=
-=aHUt
+iQCVAwUBUbGHaeFlxDEfrjtlAQE5hQP+K7uDkzoJ1oah4cB8NkOy3ycP/t/TkWmb
+Qbh3s7D4krcQh5Z0p3kzdv6pCHebKcrXnaQD7qaD3giIXOWcxCjnxoRvORuTdQUg
+ZMN6fpMhAoZqWDZjo+o1ZRZGz7C9bPomEp211ysPWFfdVel+B+K5utajuVC8gYKd
+5SIqm9dqA4A=
+=oaw4
 -----END PGP SIGNATURE-----

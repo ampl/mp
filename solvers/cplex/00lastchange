@@ -1,6 +1,5 @@
-20130522
-  cplex.c:  fix bugs with suffix .lazy:  problems with quadratic
-constraints were not handled properly, and a rare case requiring
-allocation of longer arrays was botched.  Now nonzero .lazy values
-on quadratic constraints give a warning message that such .lazy
-values are ignored.
+20130606
+  cplex.c:  do not complain about a diagonal objective Hessian element
+of the "wrong" sign if the associated variable is an integer variable,
+in which case CPLEX seems to not to care about signs, or if
+reqconvex=2 is specified.

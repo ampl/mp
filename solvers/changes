@@ -2132,3 +2132,15 @@ in some solver interfaces.
 20130419
   pfg_read.c, pfghread.c:  fix a bug occasionally seen (with readers
 pfg_read() and pfgh_read()) in problems having defined variables.
+
+20130530
+  suf_sos.c:  fix a bug in removing SOS1 sets of size 1.  Wrong arrays
+were computed.
+
+20130604
+  indic_cons.c:  fix a bug in handling unary minus (wrong return value,
+causing indicator constraints to be rejected).
+
+20130606
+  obj_adj.c:  fix a fault that was possible with flags
+ASL_obj_replace_ineq and ASL_obj_replace_eq to the .nl reader.

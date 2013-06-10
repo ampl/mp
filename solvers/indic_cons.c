@@ -224,8 +224,9 @@ linform(LCADJ_Info *lci, expr *e, ograd **oglp)
 
 	  case OPUMINUS:
 		if ((og1 = linform(lci, e->L.e, oglp))) {
-			do og1->coef = -og1->coef;
-				while((og1 = og1->next));
+			og2 = og1;
+			do og2->coef = -og2->coef;
+				while((og2 = og2->next));
 			}
 		return og1;
 
