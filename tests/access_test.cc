@@ -77,9 +77,35 @@ TEST_F(AccessTest, Write) {
   }
   {
     Table t("T", 1, 0, strings_);
+    t = "N";
+    handler_->Read(&t);
     EXPECT_EQ(2u, t.num_rows());
     EXPECT_EQ(111, t(0, 0).number());
     EXPECT_EQ(222, t(1, 0).number());
+  }
+}
+
+TEST_F(AccessTest, Update) {
+  {
+    Table t("T", 1, 1, strings_);
+    t = "K", "V",
+        "a", "b";
+    handler_->Write(t);
+  }
+  {
+    Table t("T", 1, 1, strings_);
+    t.AddString("write=update");
+    t = "K", "V",
+        "a", "c";
+    handler_->Write(t);
+  }
+  {
+    Table t("T", 1, 1, strings_);
+    t = "K", "V";
+    handler_->Read(&t);
+    EXPECT_EQ(1u, t.num_rows());
+    EXPECT_STREQ("a", t(0, 0).string());
+    EXPECT_STREQ("c", t(0, 1).string());
   }
 }
 }
