@@ -68,4 +68,18 @@ TEST_F(AccessTest, ReadNullField) {
   EXPECT_EQ(1u, t.num_rows());
   EXPECT_EQ(fun::VOID, t(0, 0).type());
 }
+
+TEST_F(AccessTest, Write) {
+  {
+    Table t("T", 1, 0, strings_);
+    t = "N", 111, 222;
+    handler_->Write(t);
+  }
+  {
+    Table t("T", 1, 0, strings_);
+    EXPECT_EQ(2u, t.num_rows());
+    EXPECT_EQ(111, t(0, 0).number());
+    EXPECT_EQ(222, t(1, 0).number());
+  }
+}
 }
