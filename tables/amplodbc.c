@@ -1875,7 +1875,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	ts = ts0 = (TIMESTAMP_STRUCT*)(rb + nc);
 	sb = (char**)(ts + nts);
 	if (nodrop) {
-		if (h->wrmode == wr_update) {
+		if (h.wrmode == wr_update) {
 			j = sprintf(it = ct, "UPDATE %s", tname);
 			if (TI->ncols != 0) {
 				j += sprintf(it + j, " SET %s=?", quoted_colnames[TI->arity]);
@@ -1967,7 +1967,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	db = TI->cols;
 	for(i = 0; i < nc; i++, db++) {
 		u = pi(i);
-		if (nodrop && h->wrmode == wr_update) {
+		if (nodrop && h.wrmode == wr_update) {
 			/* Key columns go after data columns when updating. */
 			u = u >= TI->arity ? u - TI->arity : u + TI->ncols;
 			}
