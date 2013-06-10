@@ -8,7 +8,7 @@ arithchk.c	e460ec03	5299
 asl.h	e45eea9d	38510
 asl_pfg.h	6483336	1268
 asl_pfgh.h	49b5a53	1288
-asldate.c	edefc564	29
+asldate.c	1a109add	29
 atof.c	1fabc7d3	1747
 auxinfo.c	1a3c8690	1488
 avltree.c	10aeaa58	11346
@@ -60,7 +60,7 @@ getenv.c	e86c81a2	1466
 getstub.c	192f3d7	11240
 getstub.h	e962d0f5	6791
 htcl.c	ea2bb913	2277
-indic_cons.c	16ee187a	13048
+indic_cons.c	e45bd5ff	13062
 jac0dim.c	e161a2f5	6964
 jac2dim.c	e257e813	1682
 jac2dim.h	fb302fa6	2057
@@ -87,7 +87,7 @@ nlp.h	f94bd3fd	5474
 nlp2.h	e685079d	7241
 nqpcheck.c	1af50bb3	16881
 obj2val.c	cd51a21	4255
-obj_adj.c	eda34693	10574
+obj_adj.c	15e61fbe	10598
 obj_adj0.c	ffe042be	67
 obj_prec.c	fd065560	1440
 objconst.c	11aa4770	2257
@@ -126,7 +126,7 @@ stderr.c	a5a3dcf	2112
 stdio1.h0	e6e5dc11	2909
 strerror.c	1c5c813a	1362
 studchk0.c	d87e575	1388
-suf_sos.c	16e64b9d	11623
+suf_sos.c	ea216777	11635
 value.c	6854152	5847
 writesol.c	f33430f2	12056
 wrtsol_.c	e8b23ad5	2429

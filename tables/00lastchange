@@ -1,5 +1,4 @@
-20130507
-  amplodbc.c:  Fix a fault when no "User DSN" or "System DSN"
-entries appear in the MS Windows ODBC Administrator and the
-filename in a table declaration ends with an unknown extension.
-Thanks go to Victor Zverovich for this fix.
+20130607
+  tableproxy.c, tableprxyver.h: fix a bug in the tableproxy program
+that could lead to duplicate rows.  Thanks go to Victor Zverovich
+for this fix.
