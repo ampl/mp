@@ -119,7 +119,7 @@ HInfo {
 	SQLCHAR quote; /* A quote character for identifiers. */
 	} HInfo;
 
- enum { /* for wrmode */ wr_drop=0, wr_append=1, wr_update=2 };
+ enum { /* for wrmode */ wr_drop=0, wr_append=1 };
 
 #ifndef NO_Adjust_ampl_odbc
  static int Adjust_ampl_odbc(HInfo*, char*, TIMESTAMP_STRUCT****, int**, int**, int*, int**);
@@ -1371,8 +1371,6 @@ Connect(HInfo *h, DRV_desc **dsp, int *rc, char **sqlp)
 			h->wrmode = wr_append;
 		else if (match("drop", UC s, UC s+4))
 			h->wrmode = wr_drop;
-		else if (match("update", UC s, UC s+6))
-			h->wrmode = wr_update;
 		else {
 			sprintf(TI->Errmsg = TM(strlen(s) + 100),
 				"Inappropriate value in \"write=%s\":\n"
@@ -1875,20 +1873,6 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	ts = ts0 = (TIMESTAMP_STRUCT*)(rb + nc);
 	sb = (char**)(ts + nts);
 	if (nodrop) {
-		if (h.wrmode == wr_update) {
-			j = sprintf(it = ct, "UPDATE %s", tname);
-			if (TI->ncols != 0) {
-				j += sprintf(it + j, " SET %s=?", quoted_colnames[TI->arity]);
-				for	(i = TI->arity + 1; i < nc; ++i)
-					j += sprintf(it + j, ", %s=?", quoted_colnames[i]);
-				}
-			if (TI->arity != 0) {
-				j += sprintf(it + j, " WHERE %s=?", quoted_colnames[0]);
-				for (i = 1; i < TI->arity; ++i)
-					j += sprintf(it + j, " AND %s=?", quoted_colnames[i]);
-				}
-			goto sql_prepare;
-			}
 		j = sprintf(it = ct, "INSERT INTO %s (%s" /*)*/,
 				tname, quoted_colnames[0]);
 		for(i = 1; i < nc; ++i)
@@ -1957,7 +1941,6 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 		j += 3;
 		}
 	strcpy(it+j,/*(*/")");
- sql_prepare:
 	if (prc(&h, "Prepare(INSERT)", SQLPrepare(hs, UC it, SQL_NTS))) {
  failed:
 		TI->Errmsg = "Unexpected ODBC failure";
@@ -1966,12 +1949,7 @@ Write_odbc(AmplExports *ae, TableInfo *TI)
 	s = (char*)(sb + nc);
 	db = TI->cols;
 	for(i = 0; i < nc; i++, db++) {
-		u = pi(i);
-		if (nodrop && h.wrmode == wr_update) {
-			/* Key columns go after data columns when updating. */
-			u = u >= TI->arity ? u - TI->arity : u + TI->ncols;
-			}
-		++u;
+		u = pi(i) + 1;
 		if (tsq && tsq[i])
 			SQLBindParameter(hs, u, SQL_PARAM_INPUT, SQL_C_TIMESTAMP,
 					SQL_TIMESTAMP, ds->tprec, 0, ts++, 0, NULL);
@@ -2527,7 +2505,7 @@ funcadd(AmplExports *ae)
 	"\t'nsmix=...'\n"
 	"\t'time=...'\n"
 	"\t'verbose' or 'verbose=n'\twith 0 <= n <= 3\n"
-	"\t'write=append', 'write=update' or 'write=drop'\n\n"
+	"\t'write=append' or 'write=drop'\n\n"
 	"Use 'maxlen=nnn' to limit character strings to nnn characters (discarding\n"
 	"any excess characters).\n\n"
 	"With 'nsmix=*', columns of string data are treated as containing both\n"
@@ -2550,7 +2528,7 @@ funcadd(AmplExports *ae)
 	"from the column name shown to the database.\n\n"
 	"For OUT and INOUT tables, 'write=...' specifies how \"write table\" should work:\n"
 	"\t'write=drop' ==> drop and completely rewrite an existing table (default)\n"
-	"\t'write=update' ==> use SQL UPDATE to update existing rows\n"
+	/*"\t'write=update' ==> use SQL UPDATE TABLE to update existing rows (default)\n"*/
 	"\t'write=append' ==> assume \"write table\" is only appending new rows\n\n"
 	"For 'verbose=n', n is the sum of\n"
 	"\t\t1 ==> show connection strings and\n"
@@ -2741,7 +2719,7 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 	tsq = 0;
 	tsx = 0;
 	p_ = pi = 0;
-	if (!(TI->flags & DBTI_flags_IN) && h->wrmode != wr_append && h->wrmode != wr_update)
+	if (!(TI->flags & DBTI_flags_IN) && h->wrmode != wr_append)
 		goto done1;
 	cs = buf;
 	Lt = strlen(tname);
@@ -2812,7 +2790,7 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 			for(i = 0; i < kfn; ++i)
 				L += strlen(TI->colnames[i]) + 2;
 			TI->Errmsg = s = Mem(h,L);
-			s += sprintf(s, "Cannot use 'write=append' or 'write=update' because write table "
+			s += sprintf(s, "Cannot use 'write=append' because write table "
 					"%s needs to add\n", tname);
 			if (kfn == 1)
 				s += sprintf(s, "column \"%s\" to the table.",
