@@ -9220,3 +9220,7 @@ _ncons was high by _nlogcons.
   Add an error message that symbolic variables are not yet available.
   Fix a fault with deleting check commands.  Example:
 	param p; check p > 3; delete check 1; # faulted
+
+20130608
+  Fix a glitch (fault after 2 "reset;" invocations after the relevant
+"load" command) with imported libraries that make no addfunc(...) calls.
