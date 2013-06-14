@@ -73,7 +73,8 @@ std::auto_ptr<ampl::BasicSolver> CreateSolver() {
   return std::auto_ptr<ampl::BasicSolver>(new ampl::JaCoPSolver());
 }
 
-INSTANTIATE_TEST_CASE_P(JaCoP, SolverTest, ::testing::Values(CreateSolver));
+INSTANTIATE_TEST_CASE_P(JaCoP, SolverTest,
+    ::testing::Values(SolverTestParam(CreateSolver, feature::POW)));
 
 class JaCoPConverterTest : public ::testing::Test, public ExprBuilder {
  protected:

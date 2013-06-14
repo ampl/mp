@@ -28,8 +28,6 @@ using ampl::NumericExpr;
 using ampl::Problem;
 using ampl::UnsupportedExprError;
 
-// TODO: pass to the SolverTest information about the unsupported expressions
-
 SolverTest::EvalResult SolverTest::Solve(Problem &p) {
   struct TestSolutionHandler : ampl::SolutionHandler {
     EvalResult result;
@@ -59,7 +57,9 @@ SolverTest::EvalResult SolverTest::Solve(
 }
 
 SolverTest::SolverTest()
-: solver_(GetParam()()), x(AddVar(1)), y(AddVar(2)), z(AddVar(3)) {}
+: solver_(GetParam().create_solver()), features_(GetParam().features),
+  x(AddVar(1)), y(AddVar(2)), z(AddVar(3)) {
+}
 
 TEST_P(SolverTest, Plus) {
   NumericExpr e = AddBinary(OPPLUS, x, y);
@@ -80,14 +80,13 @@ TEST_P(SolverTest, Mult) {
 }
 
 TEST_P(SolverTest, Div) {
-  try {
-    NumericExpr e = AddBinary(OPDIV, x, y);
-    Eval(e, 4, 2);  // May throw UnsupportedExprError.
-    EXPECT_EQ(10, Eval(e, 150, 15));
-    EXPECT_EQ(-7, Eval(e, -133, 19));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
+  NumericExpr e = AddBinary(OPDIV, x, y);
+  if (!HasFeature(feature::DIV)) {
+    EXPECT_THROW(Eval(e, 150, 15);, UnsupportedExprError);
+    return;
   }
+  EXPECT_EQ(10, Eval(e, 150, 15));
+  EXPECT_EQ(-7, Eval(e, -133, 19));
 }
 
 TEST_P(SolverTest, Rem) {
@@ -100,14 +99,13 @@ TEST_P(SolverTest, Rem) {
 }
 
 TEST_P(SolverTest, Pow) {
-  try {
-    NumericExpr e = AddBinary(OPPOW, x, y);
-    Eval(e, 2, 3);  // May throw UnsupportedExprError.
-    EXPECT_EQ(8, Eval(e, 2, 3));
-    EXPECT_EQ(81, Eval(e, 3, 4));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
+  NumericExpr e = AddBinary(OPPOW, x, y);
+  if (!HasFeature(feature::POW)) {
+    EXPECT_THROW(Eval(e, 2, 3);, UnsupportedExprError);
+    return;
   }
+  EXPECT_EQ(8, Eval(e, 2, 3));
+  EXPECT_EQ(81, Eval(e, 3, 4));
 }
 
 TEST_P(SolverTest, NumericLess) {
@@ -132,26 +130,18 @@ TEST_P(SolverTest, Floor) {
   NumericExpr e = AddUnary(FLOOR, x);
   EXPECT_EQ(-42, Eval(e, -42));
   EXPECT_EQ(42, Eval(e, 42));
-  try {
-    Eval(AddNum(1.2));  // May throw UnsupportedExprError.
-    EXPECT_EQ(4, Eval(AddUnary(FLOOR, AddNum(4.9))));
-    EXPECT_EQ(-5, Eval(AddUnary(FLOOR, AddNum(-4.1))));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
-  }
+  if (!HasFeature(feature::FLOAT_CONST)) return;
+  EXPECT_EQ(4, Eval(AddUnary(FLOOR, AddNum(4.9))));
+  EXPECT_EQ(-5, Eval(AddUnary(FLOOR, AddNum(-4.1))));
 }
 
 TEST_P(SolverTest, Ceil) {
   NumericExpr e = AddUnary(CEIL, x);
   EXPECT_EQ(-42, Eval(e, -42));
   EXPECT_EQ(42, Eval(e, 42));
-  try {
-    Eval(AddNum(1.2));  // May throw UnsupportedExprError.
-    EXPECT_EQ(5, Eval(AddUnary(CEIL, AddNum(4.1))));
-    EXPECT_EQ(-4, Eval(AddUnary(CEIL, AddNum(-4.9))));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
-  }
+  if (!HasFeature(feature::FLOAT_CONST)) return;
+  EXPECT_EQ(5, Eval(AddUnary(CEIL, AddNum(4.1))));
+  EXPECT_EQ(-4, Eval(AddUnary(CEIL, AddNum(-4.9))));
 }
 
 TEST_P(SolverTest, Abs) {
@@ -174,12 +164,13 @@ TEST_P(SolverTest, If) {
 }
 
 TEST_P(SolverTest, Tanh) {
-  try {
-    EXPECT_EQ(1, Eval(AddBinary(OPMULT, AddNum(2),
-        AddUnary(OP_tanh, AddNum((std::log(1.5) - std::log(0.5)) / 2)))));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
+  NumericExpr e = AddBinary(OPMULT, AddNum(2),
+        AddUnary(OP_tanh, AddNum((std::log(1.5) - std::log(0.5)) / 2)));
+  if (!HasFeature(feature::HYPERBOLIC)) {
+    EXPECT_THROW(Eval(e);, UnsupportedExprError);
+    return;
   }
+  EXPECT_EQ(1, Eval(e));
 }
 
 TEST_P(SolverTest, Tan) {
@@ -187,19 +178,21 @@ TEST_P(SolverTest, Tan) {
 }
 
 TEST_P(SolverTest, Sqrt) {
-  try {
-    EXPECT_EQ(8, Eval(AddUnary(OP_sqrt, x), 64));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
+  NumericExpr e = AddUnary(OP_sqrt, x);
+  if (!HasFeature(feature::SQRT)) {
+    EXPECT_THROW(Eval(e, 64);, UnsupportedExprError);
+    return;
   }
+  EXPECT_EQ(8, Eval(e, 64));
 }
 
 TEST_P(SolverTest, Sinh) {
-  try {
-    EXPECT_EQ(2, Eval(AddUnary(OP_sinh, AddNum(std::log(2 + std::sqrt(5.0))))));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
+  NumericExpr e = AddUnary(OP_sinh, AddNum(std::log(2 + std::sqrt(5.0))));
+  if (!HasFeature(feature::HYPERBOLIC)) {
+    EXPECT_THROW(Eval(e);, UnsupportedExprError);
+    return;
   }
+  EXPECT_EQ(2, Eval(e));
 }
 
 TEST_P(SolverTest, Sin) {
@@ -207,37 +200,41 @@ TEST_P(SolverTest, Sin) {
 }
 
 TEST_P(SolverTest, Log10) {
-  try {
-    EXPECT_EQ(3, Eval(AddUnary(OP_log10, AddNum(1000))));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
+  NumericExpr e = AddUnary(OP_log10, AddNum(1000));
+  if (!HasFeature(feature::LOG)) {
+    EXPECT_THROW(Eval(e);, UnsupportedExprError);
+    return;
   }
+  EXPECT_EQ(3, Eval(e));
 }
 
 TEST_P(SolverTest, Log) {
-  try {
-    EXPECT_EQ(5, Eval(AddUnary(OP_log, AddNum(std::exp(5.0)))));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
+  NumericExpr e = AddUnary(OP_log, AddNum(std::exp(5.0)));
+  if (!HasFeature(feature::LOG)) {
+    EXPECT_THROW(Eval(e);, UnsupportedExprError);
+    return;
   }
+  EXPECT_EQ(5, Eval(e));
 }
 
 TEST_P(SolverTest, Exp) {
-  try {
-    EXPECT_EQ(5, Eval(AddUnary(OP_exp, AddNum(std::log(5.0)))));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
+  NumericExpr e = AddUnary(OP_exp, AddNum(std::log(5.0)));
+  if (!HasFeature(feature::EXP)) {
+    EXPECT_THROW(Eval(e);, UnsupportedExprError);
+    return;
   }
+  EXPECT_EQ(5, Eval(e));
 }
 
 TEST_P(SolverTest, Cosh) {
-  try {
-    double x = 5;
-    EXPECT_EQ(5, Eval(AddUnary(OP_cosh,
-        AddNum(std::log(x + std::sqrt(x + 1) * std::sqrt(x - 1))))));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
+  double x = 5;
+  NumericExpr e = AddUnary(OP_cosh,
+      AddNum(std::log(x + std::sqrt(x + 1) * std::sqrt(x - 1))));
+  if (!HasFeature(feature::HYPERBOLIC)) {
+    EXPECT_THROW(Eval(e);, UnsupportedExprError);
+    return;
   }
+  EXPECT_EQ(5, Eval(e));
 }
 
 TEST_P(SolverTest, Cos) {
@@ -245,13 +242,14 @@ TEST_P(SolverTest, Cos) {
 }
 
 TEST_P(SolverTest, Atanh) {
-  try {
-    ampl::UnaryExpr x = AddUnary(OP_atanh, AddNum(std::tanh(5.0)));
-    EXPECT_EQ(5000000, Eval(AddUnary(FLOOR, AddBinary(OPPLUS,
-        AddNum(0.5), AddBinary(OPMULT, AddNum(1000000), x)))));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
+  ampl::UnaryExpr x = AddUnary(OP_atanh, AddNum(std::tanh(5.0)));
+  NumericExpr e = AddUnary(FLOOR, AddBinary(OPPLUS,
+      AddNum(0.5), AddBinary(OPMULT, AddNum(1000000), x)));
+  if (!HasFeature(feature::HYPERBOLIC)) {
+    EXPECT_THROW(Eval(e);, UnsupportedExprError);
+    return;
   }
+  EXPECT_EQ(5000000, Eval(e));
 }
 
 TEST_P(SolverTest, Atan2) {
@@ -263,11 +261,12 @@ TEST_P(SolverTest, Atan) {
 }
 
 TEST_P(SolverTest, Asinh) {
-  try {
-    EXPECT_EQ(5, Eval(AddUnary(OP_asinh, AddNum(std::sinh(5.0)))));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
+  NumericExpr e = AddUnary(OP_asinh, AddNum(std::sinh(5.0)));
+  if (!HasFeature(feature::HYPERBOLIC)) {
+    EXPECT_THROW(Eval(e);, UnsupportedExprError);
+    return;
   }
+  EXPECT_EQ(5, Eval(e));
 }
 
 TEST_P(SolverTest, Asin) {
@@ -275,11 +274,12 @@ TEST_P(SolverTest, Asin) {
 }
 
 TEST_P(SolverTest, Acosh) {
-  try {
-    EXPECT_EQ(5, Eval(AddUnary(OP_acosh, AddNum(std::cosh(5.0)))));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
+  NumericExpr e = AddUnary(OP_acosh, AddNum(std::cosh(5.0)));
+  if (!HasFeature(feature::HYPERBOLIC)) {
+    EXPECT_THROW(Eval(e);, UnsupportedExprError);
+    return;
   }
+  EXPECT_EQ(5, Eval(e));
 }
 
 TEST_P(SolverTest, Acos) {
@@ -307,13 +307,11 @@ TEST_P(SolverTest, Precision) {
 
 TEST_P(SolverTest, Round) {
   EXPECT_EQ(42, Eval(AddBinary(OPround, x, AddNum(0)), 42));
-  try {
+  if (HasFeature(feature::FLOAT_CONST)) {
     EXPECT_EQ(4, Eval(AddBinary(OPround, AddNum(4.4), AddNum(0))));
     EXPECT_EQ(5, Eval(AddBinary(OPround, AddNum(4.6), AddNum(0))));
     EXPECT_EQ(-4, Eval(AddBinary(OPround, AddNum(-4.4), AddNum(0))));
     EXPECT_EQ(-5, Eval(AddBinary(OPround, AddNum(-4.6), AddNum(0))));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
   }
   EXPECT_THROW(Eval(AddBinary(OPround, x, AddNum(1))), UnsupportedExprError);
   EXPECT_THROW(Eval(AddBinary(OPround, x, y)), UnsupportedExprError);
@@ -321,13 +319,11 @@ TEST_P(SolverTest, Round) {
 
 TEST_P(SolverTest, Trunc) {
   EXPECT_EQ(42, Eval(AddBinary(OPtrunc, x, AddNum(0)), 42));
-  try {
+  if (HasFeature(feature::FLOAT_CONST)) {
     EXPECT_EQ(4, Eval(AddBinary(OPtrunc, AddNum(4.4), AddNum(0))));
     EXPECT_EQ(4, Eval(AddBinary(OPtrunc, AddNum(4.6), AddNum(0))));
     EXPECT_EQ(-4, Eval(AddBinary(OPtrunc, AddNum(-4.4), AddNum(0))));
     EXPECT_EQ(-4, Eval(AddBinary(OPtrunc, AddNum(-4.6), AddNum(0))));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
   }
   EXPECT_THROW(Eval(AddBinary(OPtrunc, x, AddNum(1))), UnsupportedExprError);
   EXPECT_THROW(Eval(AddBinary(OPtrunc, x, y)), UnsupportedExprError);
@@ -353,28 +349,28 @@ TEST_P(SolverTest, NumberOf) {
 }
 
 TEST_P(SolverTest, PLTerm) {
-  try {
-    // Test on the following piecewise-linear function:
-    //
-    //     y^
-    //    \ |           /
-    //     \|  3  6  9 /      x
-    //  ----\-->-->-->/------->
-    //     0|\       /
-    //      | \     /
-    //    -3|  \___/
-    //      |
-    //
-    // Breakpoints are at x = 3 and x = 6. Slopes are -1, 0 and 1.
-    //
-    double args[] = {-1, 3, 0, 6, 1};
-    NumericExpr e = AddPLTerm(5, args, 1);
-    EXPECT_EQ(33, Eval(e, 42));
-    EXPECT_EQ(-3, Eval(e, 4));
-    EXPECT_EQ(1, Eval(e, -1));
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
+  // Test on the following piecewise-linear function:
+  //
+  //     y^
+  //    \ |           /
+  //     \|  3  6  9 /      x
+  //  ----\-->-->-->/------->
+  //     0|\       /
+  //      | \     /
+  //    -3|  \___/
+  //      |
+  //
+  // Breakpoints are at x = 3 and x = 6. Slopes are -1, 0 and 1.
+  //
+  double args[] = {-1, 3, 0, 6, 1};
+  NumericExpr e = AddPLTerm(5, args, 1);
+  if (!HasFeature(feature::PLTERM)) {
+    EXPECT_THROW(Eval(e, 42);, UnsupportedExprError);
+    return;
   }
+  EXPECT_EQ(33, Eval(e, 42));
+  EXPECT_EQ(-3, Eval(e, 4));
+  EXPECT_EQ(1, Eval(e, -1));
 }
 
 TEST_P(SolverTest, PowConstExp) {
@@ -386,21 +382,27 @@ TEST_P(SolverTest, Pow2) {
 }
 
 TEST_P(SolverTest, PowConstBase) {
-  try {
-    EvalResult result = Eval(AddBinary(OPCPOW, AddNum(5), x), 3);
-    EXPECT_EQ(125, result);
-  } catch (const UnsupportedExprError &) {
-    // Ignore if not supported.
+  NumericExpr e = AddBinary(OPCPOW, AddNum(5), x);
+  if (!HasFeature(feature::POW)) {
+    EXPECT_THROW(Eval(e, 3);, UnsupportedExprError);
+    return;
   }
+  EXPECT_EQ(125, Eval(e, 3));
 }
 
 TEST_P(SolverTest, NumericConstant) {
   EXPECT_EQ(42, Eval(AddNum(42)));
+  if (HasFeature(feature::FLOAT_CONST)) {
+    EXPECT_EQ(Eval(AddBinary(OPMULT, AddNum(0.42), AddNum(100))), 42);
+    return;
+  }
+  std::string message;
   try {
     Eval(AddNum(0.42));
   } catch (const UnsupportedExprError &e) {
-    EXPECT_STREQ("value 0.42 can't be represented as int", e.what());
+    message = e.what();
   }
+  EXPECT_EQ("value 0.42 can't be represented as int", message);
 }
 
 TEST_P(SolverTest, Var) {

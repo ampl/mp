@@ -67,7 +67,8 @@ std::auto_ptr<ampl::BasicSolver> CreateSolver() {
   return std::auto_ptr<ampl::BasicSolver>(new ampl::IlogCPSolver());
 }
 
-INSTANTIATE_TEST_CASE_P(IlogCP, SolverTest, ::testing::Values(CreateSolver));
+INSTANTIATE_TEST_CASE_P(IlogCP, SolverTest,
+    ::testing::Values(SolverTestParam(CreateSolver, feature::ALL)));
 
 struct EnumValue {
   const char *name;

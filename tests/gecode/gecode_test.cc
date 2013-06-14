@@ -64,7 +64,8 @@ std::auto_ptr<ampl::BasicSolver> CreateSolver() {
   return std::auto_ptr<ampl::BasicSolver>(new ampl::GecodeSolver());
 }
 
-INSTANTIATE_TEST_CASE_P(Gecode, SolverTest, ::testing::Values(CreateSolver));
+INSTANTIATE_TEST_CASE_P(Gecode, SolverTest,
+    ::testing::Values(SolverTestParam(CreateSolver, 0)));
 
 TEST_P(SolverTest, FloorSqrt) {
   EXPECT_EQ(6, Eval(AddUnary(FLOOR, AddUnary(OP_sqrt, x)), 42));
