@@ -198,8 +198,7 @@ class NLToJaCoPConverter :
     env_.CallVoidMethod(store_, impose_, constraint);
   }
 
-  static void RequireNonzeroConstRHS(
-      BinaryExpr e, const std::string &func_name);
+  static void RequireZeroRHS(BinaryExpr e, const std::string &func_name);
 
   template<typename Term>
   void ConvertExpr(LinearExpr<Term> linear,
@@ -222,8 +221,8 @@ class NLToJaCoPConverter :
   // The methods below perform conversion of AMPL NL expressions into
   // equivalent JaCoP expressions. JaCoP doesn't support the following
   // expressions/functions:
-  // * division other than integer one
-  // * trigonometric functions
+  // * division other than the integer one
+  // * trigonometric & hyperbolic functions
   // * log, log10, exp, sqrt
 
   jobject VisitPlus(BinaryExpr e);
@@ -282,13 +281,13 @@ class NLToJaCoPConverter :
 
   jobject VisitRound(BinaryExpr e) {
     // round does nothing because JaCoP supports only integer expressions.
-    RequireNonzeroConstRHS(e, "round");
+    RequireZeroRHS(e, "round");
     return Visit(e.lhs());
   }
 
   jobject VisitTrunc(BinaryExpr e) {
     // trunc does nothing because JaCoP supports only integer expressions.
-    RequireNonzeroConstRHS(e, "trunc");
+    RequireZeroRHS(e, "trunc");
     return Visit(e.lhs());
   }
 

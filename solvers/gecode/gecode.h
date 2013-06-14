@@ -92,8 +92,7 @@ class NLToGecodeConverter :
 
   LinExpr Convert(VarArgExpr e, VarArgFunc f);
 
-  static void RequireNonzeroConstRHS(
-      BinaryExpr e, const std::string &func_name);
+  static void RequireZeroRHS(BinaryExpr e, const std::string &func_name);
 
   template<typename Term>
   LinExpr ConvertExpr(LinearExpr<Term> linear, NumericExpr nonlinear);
@@ -109,8 +108,8 @@ class NLToGecodeConverter :
   // The methods below perform conversion of AMPL NL expressions into
   // equivalent Gecode expressions. Gecode doesn't support the following
   // expressions/functions:
-  // * division other than integer one
-  // * trigonometric functions
+  // * division other than the integer one
+  // * trigonometric & hyperbolic functions
   //   http://www.gecode.org/pipermail/users/2011-March/003177.html
   // * log, log10, exp, pow
   // * sqrt other than floor(sqrt())
@@ -168,13 +167,13 @@ class NLToGecodeConverter :
 
   LinExpr VisitRound(BinaryExpr e) {
     // round does nothing because Gecode supports only integer expressions.
-    RequireNonzeroConstRHS(e, "round");
+    RequireZeroRHS(e, "round");
     return Visit(e.lhs());
   }
 
   LinExpr VisitTrunc(BinaryExpr e) {
     // trunc does nothing because Gecode supports only integer expressions.
-    RequireNonzeroConstRHS(e, "trunc");
+    RequireZeroRHS(e, "trunc");
     return Visit(e.lhs());
   }
 

@@ -97,7 +97,7 @@ jobject NLToJaCoPConverter::Convert(
   return env_.NewObject(cls.get(), ctor, args);
 }
 
-void NLToJaCoPConverter::RequireNonzeroConstRHS(
+void NLToJaCoPConverter::RequireZeroRHS(
     BinaryExpr e, const std::string &func_name) {
   NumericConstant num = Cast<NumericConstant>(e.rhs());
   if (!num || num.value() != 0) {
