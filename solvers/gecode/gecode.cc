@@ -139,7 +139,7 @@ LinExpr NLToGecodeConverter::Convert(VarArgExpr e, VarArgFunc f) {
   return result;
 }
 
-void NLToGecodeConverter::RequireNonzeroConstRHS(
+void NLToGecodeConverter::RequireZeroRHS(
     BinaryExpr e, const std::string &func_name) {
   NumericConstant num = Cast<NumericConstant>(e.rhs());
   if (!num || num.value() != 0) {
