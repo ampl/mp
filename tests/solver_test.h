@@ -27,18 +27,46 @@
 #include "tests/expr_builder.h"
 #include "gtest/gtest.h"
 
-typedef std::auto_ptr<ampl::BasicSolver> (*SolverFactory)();
+// Solver features.
+namespace feature {
+enum Feature {
+  FLOAT_CONST = 0x01,
+  DIV         = 0x02,
+  POW         = 0x04,
+  HYPERBOLIC  = 0x08,
+  SQRT        = 0x10,
+  LOG         = 0x20,
+  EXP         = 0x40,
+  PLTERM      = 0x80,
+  ALL         = 0xff
+};
+}
+
+struct SolverTestParam {
+  typedef std::auto_ptr<ampl::BasicSolver> (*CreateSolver)();
+
+  CreateSolver create_solver;
+  unsigned features;
+
+  SolverTestParam(CreateSolver cs, unsigned features)
+  : create_solver(cs), features(features) {}
+};
 
 // Abstract solver test.
 class SolverTest
     : private ampl::Noncopyable,
-      public ::testing::TestWithParam<SolverFactory>,
+      public ::testing::TestWithParam<SolverTestParam>,
       public ampl::ExprBuilder {
  protected:
   std::auto_ptr<ampl::BasicSolver> solver_;
+  unsigned features_;
   ampl::Variable x;
   ampl::Variable y;
   ampl::Variable z;
+
+  bool HasFeature(feature::Feature f) const {
+    return (features_ & f) != 0;
+  }
 
   class EvalResult {
    private:
