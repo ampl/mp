@@ -133,7 +133,7 @@ class JVM {
   ~JVM();
 
  public:
-  static Env env();
+  static Env env(bool check_jni = false);
 };
 
 class ClassBase {

@@ -347,7 +347,7 @@ fmt::TempFormatter<fmt::Write> JaCoPSolver::Output(fmt::StringRef format) {
 }*/
 
 JaCoPSolver::JaCoPSolver()
-: Solver<JaCoPSolver>("jacop", 0, 20130415), debug_(false) {
+: Solver<JaCoPSolver>("jacop", 0, 20130415), debug_(false), check_jni_(false) {
 
   // TODO: options
   /*output_(false), output_frequency_(1), output_count_(0),
@@ -361,6 +361,10 @@ JaCoPSolver::JaCoPSolver()
   AddIntOption("debug",
       "0 or 1 (default 0):  Whether to print debug information.",
       &JaCoPSolver::SetBoolOption, &debug_);
+
+  AddIntOption("check_jni",
+      "0 or 1 (default 0):  Whether to perform JNI checks.",
+      &JaCoPSolver::SetBoolOption, &check_jni_);
 
   // TODO
   /*AddIntOption("outlev",
@@ -464,11 +468,12 @@ std::string JaCoPSolver::GetOptionHeader() {
 }
 
 void JaCoPSolver::Solve(Problem &p) {
+  Env env = JVM::env(check_jni_);
+
   // Set up an optimization problem in JaCoP.
   NLToJaCoPConverter converter;
   converter.Convert(p);
 
-  Env env = JVM::env();
   if (debug_) {
     jclass store_class = env.FindClass("JaCoP/core/Store");
     env.CallVoidMethod(converter.store(),

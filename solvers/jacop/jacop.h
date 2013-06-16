@@ -422,6 +422,7 @@ struct OptionInfo {
 class JaCoPSolver : public Solver<JaCoPSolver> {
  private:
   bool debug_;
+  bool check_jni_;
   /*bool output_;
   double output_frequency_;
   unsigned output_count_;
