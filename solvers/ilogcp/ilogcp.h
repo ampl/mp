@@ -401,7 +401,6 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
   IloEnv env_;
   std::auto_ptr<Optimizer> optimizer_;
   bool gotopttype_;
-  double read_time_;
 
   // Do not implement.
   IlogCPSolver(const IlogCPSolver&);
@@ -470,7 +469,7 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
 
   Optimizer *optimizer() const { return optimizer_.get(); }
 
-  bool ParseOptions(char **argv);
+  bool ParseOptions(char **argv, unsigned flags = 0);
 
   int GetOption(Option opt) const {
     assert(opt >= 0 && opt < NUM_OPTIONS);
@@ -478,9 +477,6 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
   }
 
   void use_numberof(bool use = true) { options_[USENUMBEROF] = use; }
-
-  // Runs the solver.
-  int Run(char **argv);
 
   void Solve(Problem &p);
 };

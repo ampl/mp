@@ -463,13 +463,6 @@ std::string JaCoPSolver::GetOptionHeader() {
       //"  ampl: option gecode_options 'version nodelimit=30000 val_branching=min';\n";
 }
 
-int JaCoPSolver::Run(char **argv) {
-  if (!ProcessArgs(argv, *this))
-    return 1;
-  Solve(problem());
-  return 0;
-}
-
 void JaCoPSolver::Solve(Problem &p) {
   // Set up an optimization problem in JaCoP.
   NLToJaCoPConverter converter;

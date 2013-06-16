@@ -297,8 +297,7 @@ std::string IlogCPSolver::GetOptionHeader() {
 }
 
 IlogCPSolver::IlogCPSolver() :
-   Solver<IlogCPSolver>("ilogcp", 0, YYYYMMDD),
-   gotopttype_(false), read_time_(0) {
+   Solver<IlogCPSolver>("ilogcp", 0, YYYYMMDD), gotopttype_(false) {
   options_[DEBUGEXPR] = 0;
   options_[OPTIMIZER] = AUTO;
   options_[TIMING] = 0;
@@ -635,7 +634,7 @@ void IlogCPSolver::CreateOptimizer(const Problem &p) {
   else optimizer_.reset(new CPOptimizer(env_, p));
 }
 
-bool IlogCPSolver::ParseOptions(char **argv) {
+bool IlogCPSolver::ParseOptions(char **argv, unsigned flags) {
   // Get optimizer type.
   gotopttype_ = false;
   if (!Solver<IlogCPSolver>::ParseOptions(
@@ -646,26 +645,9 @@ bool IlogCPSolver::ParseOptions(char **argv) {
 
   // Parse remaining options.
   gotopttype_ = true;
-  if (!Solver<IlogCPSolver>::ParseOptions(argv, *this))
+  if (!Solver<IlogCPSolver>::ParseOptions(argv, *this, flags))
     return false;
   return true;
-}
-
-int IlogCPSolver::Run(char **argv) {
-  double start_time = xectim_();
-  if (!ProcessArgs(argv) || !ParseOptions(argv))
-    return 1;
-  // Reset is used to reset read_time_ in case of exceptions.
-  class Reset {
-   private:
-    double &value_;
-   public:
-    Reset(double &value) : value_(value) {}
-    ~Reset() { value_ = 0; }
-  };
-  Reset reset(read_time_ = xectim_() - start_time);
-  Solve(problem());
-  return 0;
 }
 
 void IlogCPSolver::Solve(Problem &p) {
@@ -838,7 +820,7 @@ void IlogCPSolver::Solve(Problem &p) {
 
   if (GetOption(TIMING)) {
     std::cerr << "\n"
-        << "Define = " << define_time + read_time_ << "\n"
+        << "Define = " << define_time + read_time() << "\n"
         << "Setup =  " << setup_time << "\n"
         << "Solve =  " << solve_time << "\n"
         << "Output = " << output_time << "\n";

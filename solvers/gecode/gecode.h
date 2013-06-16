@@ -359,8 +359,9 @@ class GecodeSolver : public Solver<GecodeSolver> {
  public:
   GecodeSolver();
 
-  // Run the solver.
-  int Run(char **argv);
+  bool ParseOptions(char **argv, unsigned flags = 0) {
+    return Solver<GecodeSolver>::ParseOptions(argv, *this, flags);
+  }
 
   void Solve(Problem &p);
 

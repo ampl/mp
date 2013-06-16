@@ -23,10 +23,46 @@
 #include "tests/solver_test.h"
 #include <cmath>
 
+using std::string;
+
 using ampl::LogicalExpr;
 using ampl::NumericExpr;
 using ampl::Problem;
 using ampl::UnsupportedExprError;
+
+#define DATA_DIR "../data/"
+
+#define FORMAT_TEST_THROW_(statement, expected_exception, message, fail) \
+  GTEST_AMBIGUOUS_ELSE_BLOCKER_ \
+  if (::testing::internal::ConstCharPtr gtest_msg = "") { \
+    bool gtest_caught_expected = false; \
+    try { \
+      GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement); \
+    } \
+    catch (expected_exception const& e) { \
+      gtest_caught_expected = true; \
+      if (std::strcmp(message, e.what()) != 0) \
+        throw; \
+    } \
+    catch (...) { \
+      gtest_msg.value = \
+          "Expected: " #statement " throws an exception of type " \
+          #expected_exception ".\n  Actual: it throws a different type."; \
+      goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__); \
+    } \
+    if (!gtest_caught_expected) { \
+      gtest_msg.value = \
+          "Expected: " #statement " throws an exception of type " \
+          #expected_exception ".\n  Actual: it throws nothing."; \
+      goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__); \
+    } \
+  } else \
+    GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__): \
+      fail(gtest_msg.value)
+
+#define EXPECT_THROW_MSG(statement, expected_exception, expected_message) \
+  FORMAT_TEST_THROW_(statement, expected_exception, expected_message, \
+      GTEST_NONFATAL_FAILURE_)
 
 SolverTest::EvalResult SolverTest::Solve(Problem &p) {
   struct TestSolutionHandler : ampl::SolutionHandler {
@@ -59,6 +95,24 @@ SolverTest::EvalResult SolverTest::Solve(
 SolverTest::SolverTest()
 : solver_(GetParam().create_solver()), features_(GetParam().features),
   x(AddVar(1)), y(AddVar(2)), z(AddVar(3)) {
+}
+
+SolveResult SolverTest::Solve(ampl::BasicSolver &s, const char *stub,
+    const char *opt1, const char *opt2, const char *opt3) {
+  TestSolutionHandler sh;
+  s.set_solution_handler(&sh);
+  s.Run(Args(s.name(), "-s", stub, opt1, opt2, opt3));
+  const string &message = sh.message();
+  int solve_code = sh.solve_code();
+  EXPECT_GE(solve_code, 0);
+  bool solved = true;
+  if (solve_code < 100)
+    EXPECT_TRUE(message.find("optimal solution") != string::npos);
+  else if (solve_code < 200)
+    EXPECT_TRUE(message.find("feasible solution") != string::npos);
+  else
+    solved = false;
+  return SolveResult(solved, sh.obj_value(), message);
 }
 
 TEST_P(SolverTest, Plus) {
@@ -396,13 +450,9 @@ TEST_P(SolverTest, NumericConstant) {
     EXPECT_EQ(Eval(AddBinary(OPMULT, AddNum(0.42), AddNum(100))), 42);
     return;
   }
-  std::string message;
-  try {
-    Eval(AddNum(0.42));
-  } catch (const UnsupportedExprError &e) {
-    message = e.what();
-  }
-  EXPECT_EQ("value 0.42 can't be represented as int", message);
+  EXPECT_THROW_MSG(Eval(AddNum(0.42));, UnsupportedExprError,
+    "value 0.42 can't be represented as int");
+  EXPECT_THROW(RunSolver(DATA_DIR "objconst"), ampl::Error);
 }
 
 TEST_P(SolverTest, Var) {
@@ -656,4 +706,79 @@ TEST_P(SolverTest, Maximize) {
   p.AddVar(0, 42, ampl::INTEGER);
   p.AddObj(ampl::MAX, AddVar(0));
   EXPECT_EQ(42, Solve(p).obj_value());
+}
+
+// ---------------------------------------------------------------------------
+// Solve test problems
+
+TEST_P(SolverTest, SolveAssign0) {
+  EXPECT_EQ(6, Solve(DATA_DIR "assign0").obj);
+}
+
+TEST_P(SolverTest, SolveAssign1) {
+  EXPECT_EQ(6, Solve(DATA_DIR "assign1").obj);
+}
+
+TEST_P(SolverTest, SolveFlowshp0) {
+  EXPECT_EQ(22, Solve(DATA_DIR "flowshp0").obj);
+}
+
+TEST_P(SolverTest, SolveFlowshp1) {
+  EXPECT_EQ(22, Solve(DATA_DIR "flowshp1").obj);
+}
+
+TEST_P(SolverTest, SolveGrpassign0) {
+  EXPECT_EQ(61, Solve(DATA_DIR "grpassign0").obj);
+}
+
+TEST_P(SolverTest, SolveMagic) {
+  EXPECT_TRUE(Solve(DATA_DIR "magic").solved);
+}
+
+TEST_P(SolverTest, SolveMapcoloring) {
+  EXPECT_TRUE(Solve(DATA_DIR "mapcoloring").solved);
+}
+
+TEST_P(SolverTest, SolveNQueens) {
+  EXPECT_TRUE(Solve(DATA_DIR "nqueens").solved);
+}
+
+TEST_P(SolverTest, SolveNQueens0) {
+  EXPECT_TRUE(Solve(DATA_DIR "nqueens0").solved);
+}
+
+TEST_P(SolverTest, SolveSched0) {
+  EXPECT_EQ(5, Solve(DATA_DIR "sched0").obj);
+}
+
+TEST_P(SolverTest, SolveSched1) {
+  EXPECT_EQ(5, Solve(DATA_DIR "sched1").obj);
+}
+
+TEST_P(SolverTest, SolveSched2) {
+  EXPECT_EQ(5, Solve(DATA_DIR "sched2").obj);
+}
+
+TEST_P(SolverTest, SolveSendMoreMoney) {
+  EXPECT_TRUE(Solve(DATA_DIR "send-more-money").solved);
+}
+
+TEST_P(SolverTest, SolveSendMostMoney) {
+  EXPECT_NEAR(10876, Solve(DATA_DIR "send-most-money").obj, 1);
+}
+
+TEST_P(SolverTest, SolveSeq0) {
+  EXPECT_NEAR(332, Solve(DATA_DIR "seq0").obj, 1e-5);
+}
+
+TEST_P(SolverTest, SolveSeq0a) {
+  EXPECT_NEAR(332, Solve(DATA_DIR "seq0a").obj, 1e-5);
+}
+
+TEST_P(SolverTest, SolveSudokuHard) {
+  EXPECT_TRUE(Solve(DATA_DIR "sudokuHard").solved);
+}
+
+TEST_P(SolverTest, SolveSudokuVeryEasy) {
+  EXPECT_TRUE(Solve(DATA_DIR "sudokuVeryEasy").solved);
 }
