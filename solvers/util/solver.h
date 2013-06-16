@@ -305,7 +305,9 @@ class BasicSolver
 
   // Parses solver options and returns true if there were no errors and
   // false otherwise.
-  virtual bool ParseOptions(char **argv, unsigned flags = 0) {}
+  virtual bool ParseOptions(char **argv, unsigned flags = 0) {
+    return true;
+  }
 
   // Passes a solution to the solution handler.
   void HandleSolution(fmt::StringRef message,
