@@ -171,7 +171,7 @@ LinExpr NLToGecodeConverter::ConvertExpr(
 
 void NLToGecodeConverter::Convert(const Problem &p) {
   if (p.num_continuous_vars() != 0)
-    throw std::runtime_error("Gecode doesn't support continuous variables");
+    throw Error("Gecode doesn't support continuous variables");
 
   IntVarArray &vars = problem_.vars();
   for (int j = 0, n = p.num_vars(); j < n; ++j) {
@@ -499,13 +499,6 @@ GecodeSolver::GecodeSolver()
       &GecodeSolver::SetOption<int, unsigned long>, &fail_limit_);
   AddIntOption("memorylimit", "Memory limit.",
       &GecodeSolver::SetOption<int, std::size_t>, &memory_limit_);
-}
-
-int GecodeSolver::Run(char **argv) {
-  if (!ProcessArgs(argv, *this))
-    return 1;
-  Solve(problem());
-  return 0;
 }
 
 void GecodeSolver::Solve(Problem &p) {

@@ -254,4 +254,28 @@ bool BasicSolver::ProcessArgs(char **&argv) {
   problem_.Read(stub);
   return true;
 }
+
+int BasicSolver::Run(char **argv) {
+  double start_time = xectim_();
+  if (!ProcessArgs(argv) || !ParseOptions(argv))
+    return 1;
+
+  // Reset is used to reset read_time_ even in case of exceptions.
+  // Otherwise the read time from Run may affect the time reported in
+  // a subsequent Solve:
+  //   solver.Run(...);
+  //   solver.Solve(...); // Doesn't read anything, but reports previous
+  //                      // read time.
+  class Reset {
+   private:
+    double &value_;
+   public:
+    Reset(double &value) : value_(value) {}
+    ~Reset() { value_ = 0; }
+  };
+  Reset reset(read_time_ = xectim_() - start_time);
+  Solve(problem());
+  return 0;
+}
+
 }

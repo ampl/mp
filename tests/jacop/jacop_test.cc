@@ -21,10 +21,8 @@
  */
 
 #include <algorithm>
-#include <fstream>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include <csignal>
 #include <cstdlib>
@@ -51,23 +49,14 @@ extern "C" {
 # include <thread>
 #endif
 
-#if defined(_MSC_VER)
-# define isnan _isnan
-#else
-# define isnan std::isnan
-#endif
-
-using std::size_t;
 using std::string;
-using std::vector;
-
-using ampl::Class;
-using ampl::ExprBuilder;
-using ampl::NLToJaCoPConverter;
 
 #define DATA_DIR "../data/"
 
 namespace {
+
+// ----------------------------------------------------------------------------
+// Solver tests
 
 std::auto_ptr<ampl::BasicSolver> CreateSolver() {
   return std::auto_ptr<ampl::BasicSolver>(new ampl::JaCoPSolver());
@@ -76,31 +65,22 @@ std::auto_ptr<ampl::BasicSolver> CreateSolver() {
 INSTANTIATE_TEST_CASE_P(JaCoP, SolverTest,
     ::testing::Values(SolverTestParam(CreateSolver, feature::POW)));
 
-class JaCoPConverterTest : public ::testing::Test, public ExprBuilder {
+// TODO: fix segfault
+/*TEST_P(SolverTest, SolveBalassign0) {
+  EXPECT_EQ(14, Solve(DATA_DIR "balassign0").obj);
+}
+
+TEST_P(SolverTest, SolveBalassign1) {
+  EXPECT_EQ(14, Solve(DATA_DIR "balassign1").obj);
+}*/
+
+TEST_P(SolverTest, SolveFlowshp2) {
+  EXPECT_EQ(22, Solve(DATA_DIR "flowshp2").obj);
+}
+
+/*class JaCoPSolverTest : public ::testing::Test {
  protected:
-  ampl::Env env_;
-  int min_int_;
-  int max_int_;
-
-  JaCoPConverterTest() : env_(ampl::JVM::env()) {
-    jclass domain_class = env_.FindClass("JaCoP/core/IntDomain");
-    min_int_ = env_.GetStaticIntField(
-        domain_class, env_.GetStaticFieldID(domain_class, "MinInt", "I"));
-    max_int_ = env_.GetStaticIntField(
-        domain_class, env_.GetStaticFieldID(domain_class, "MaxInt", "I"));
-  }
-
-  double min() const { return min_int_; }
-  double max() const { return max_int_; }
-};
-
-// ----------------------------------------------------------------------------
-// Solver tests
-
-// TODO
-/*class JaCoPSolverTest : public ::testing::Test, public ExprBuilder {
- protected:
-  ampl::GecodeSolver solver_;
+  ampl::JaCoPSolver solver_;
 
   class ParseResult {
    private:
@@ -139,11 +119,6 @@ class JaCoPConverterTest : public ::testing::Test, public ExprBuilder {
     return ParseResult(result, eh.error);
   }
 
-  int RunSolver(const char *stub = nullptr, const char *opt1 = nullptr,
-      const char *opt2 = nullptr, const char *opt3 = nullptr) {
-    return solver_.Run(Args("gecode", "-s", stub, opt1, opt2, opt3));
-  }
-
   SolveResult Solve(const char *stub, const char *opt1 = nullptr,
       const char *opt2 = nullptr, const char *opt3 = nullptr);
 };
@@ -164,131 +139,6 @@ SolveResult JaCoPSolverTest::Solve(const char *stub,
   else
     solved = false;
   return SolveResult(solved, sh.obj_value(), message);
-}
-
-TEST_F(JaCoPSolverTest, ContinuousVarsNotSupported) {
-  EXPECT_THROW(RunSolver(DATA_DIR "objconst"), std::runtime_error);
-}
-
-TEST_F(JaCoPSolverTest, SolveAssign0) {
-  EXPECT_EQ(6, Solve(DATA_DIR "assign0").obj);
-}
-
-TEST_F(JaCoPSolverTest, SolveAssign1) {
-  EXPECT_EQ(6, Solve(DATA_DIR "assign1").obj);
-}
-
-// Disabled because it takes too long to solve.
-TEST_F(JaCoPSolverTest, DISABLED_SolveBalassign0) {
-  EXPECT_EQ(14, Solve(DATA_DIR "balassign0").obj);
-}
-
-// Disabled because it takes too long to solve.
-TEST_F(JaCoPSolverTest, DISABLED_SolveBalassign1) {
-  EXPECT_EQ(14, Solve(DATA_DIR "balassign1").obj);
-}
-
-TEST_F(JaCoPSolverTest, SolveFlowshp0) {
-  EXPECT_EQ(22, Solve(DATA_DIR "flowshp0").obj);
-}
-
-TEST_F(JaCoPSolverTest, SolveFlowshp1) {
-  EXPECT_EQ(22, Solve(DATA_DIR "flowshp1").obj);
-}
-
-TEST_F(JaCoPSolverTest, SolveFlowshp2) {
-  EXPECT_EQ(22, Solve(DATA_DIR "flowshp2").obj);
-}
-
-TEST_F(JaCoPSolverTest, SolveGrpassign0) {
-  EXPECT_EQ(61, Solve(DATA_DIR "grpassign0").obj);
-}
-
-// Disabled because variables in subscripts are not yet allowed.
-TEST_F(JaCoPSolverTest, DISABLED_SolveGrpassign1) {
-  EXPECT_EQ(61, Solve(DATA_DIR "grpassign1").obj);
-}
-
-// Disabled because object-valued variables are not yet allowed.
-TEST_F(JaCoPSolverTest, DISABLED_SolveGrpassign1a) {
-  EXPECT_EQ(61, Solve(DATA_DIR "grpassign1a").obj);
-}
-
-TEST_F(JaCoPSolverTest, SolveMagic) {
-  EXPECT_TRUE(Solve(DATA_DIR "magic").solved);
-}
-
-TEST_F(JaCoPSolverTest, SolveMapcoloring) {
-  EXPECT_TRUE(Solve(DATA_DIR "mapcoloring").solved);
-}
-
-TEST_F(JaCoPSolverTest, SolveNQueens) {
-  EXPECT_TRUE(Solve(DATA_DIR "nqueens").solved);
-}
-
-TEST_F(JaCoPSolverTest, SolveNQueens0) {
-  EXPECT_TRUE(Solve(DATA_DIR "nqueens0").solved);
-}
-
-// Disabled because it takes somewhat long (compared to other tests).
-TEST_F(JaCoPSolverTest, DISABLED_SolveOpenShop) {
-  EXPECT_EQ(1955, Solve(DATA_DIR "openshop").obj);
-}
-
-// Disabled because it's too difficult to solve.
-TEST_F(JaCoPSolverTest, DISABLED_SolveParty1) {
-  EXPECT_EQ(61, Solve(DATA_DIR "party1").obj);
-}
-
-// Disabled because Gecode doesn't support 'alldiff' as a subexpression.
-TEST_F(JaCoPSolverTest, DISABLED_SolveParty2) {
-  EXPECT_EQ(3, Solve(DATA_DIR "party2").obj);
-}
-
-// Disabled because it takes somewhat long (compared to other tests).
-TEST_F(JaCoPSolverTest, DISABLED_SolvePhoto9) {
-  EXPECT_EQ(10, Solve(DATA_DIR "photo9").obj);
-}
-
-// Disabled because it takes somewhat long (compared to other tests).
-TEST_F(JaCoPSolverTest, DISABLED_SolvePhoto11) {
-  EXPECT_EQ(12, Solve(DATA_DIR "photo11").obj);
-}
-
-TEST_F(JaCoPSolverTest, SolveSched0) {
-  EXPECT_EQ(5, Solve(DATA_DIR "sched0").obj);
-}
-
-TEST_F(JaCoPSolverTest, SolveSched1) {
-  EXPECT_EQ(5, Solve(DATA_DIR "sched1").obj);
-}
-
-TEST_F(JaCoPSolverTest, SolveSched2) {
-  EXPECT_EQ(5, Solve(DATA_DIR "sched2").obj);
-}
-
-TEST_F(JaCoPSolverTest, SolveSendMoreMoney) {
-  EXPECT_TRUE(Solve(DATA_DIR "send-more-money").solved);
-}
-
-TEST_F(JaCoPSolverTest, SolveSendMostMoney) {
-  EXPECT_NEAR(10876, Solve(DATA_DIR "send-most-money").obj, 1e-5);
-}
-
-TEST_F(JaCoPSolverTest, SolveSeq0) {
-  EXPECT_NEAR(332, Solve(DATA_DIR "seq0").obj, 1e-5);
-}
-
-TEST_F(JaCoPSolverTest, SolveSeq0a) {
-  EXPECT_NEAR(332, Solve(DATA_DIR "seq0a").obj, 1e-5);
-}
-
-TEST_F(JaCoPSolverTest, SolveSudokuHard) {
-  EXPECT_TRUE(Solve(DATA_DIR "sudokuHard").solved);
-}
-
-TEST_F(JaCoPSolverTest, SolveSudokuVeryEasy) {
-  EXPECT_TRUE(Solve(DATA_DIR "sudokuVeryEasy").solved);
 }
 
 // ----------------------------------------------------------------------------

@@ -24,7 +24,9 @@
 #define TESTS_SOLVER_TEST_H_
 
 #include "solvers/util/solver.h"
+#include "tests/args.h"
 #include "tests/expr_builder.h"
+#include "tests/solution_handler.h"
 #include "gtest/gtest.h"
 
 // Solver features.
@@ -102,17 +104,33 @@ class SolverTest
       int var1, int var2, int var3 = 0, bool need_result = false);
 
   // Evaluates a numeric expression by constructing and solving a problem.
-  EvalResult Eval(ampl::NumericExpr e, int var1 = 0, int var2 = 0, int var3 = 0) {
+  EvalResult Eval(ampl::NumericExpr e,
+      int var1 = 0, int var2 = 0, int var3 = 0) {
     return Solve(AddRelational(EQ, AddVar(0), e), var1, var2, var3, true);
   }
 
   // Evaluates a logical expression by constructing and solving a problem.
-  EvalResult Eval(ampl::LogicalExpr e, int var1 = 0, int var2 = 0, int var3 = 0) {
+  EvalResult Eval(ampl::LogicalExpr e,
+      int var1 = 0, int var2 = 0, int var3 = 0) {
     return Eval(AddIf(e, AddNum(1), AddNum(0)), var1, var2, var3);
+  }
+
+  int RunSolver(const char *stub = nullptr, const char *opt1 = nullptr,
+      const char *opt2 = nullptr, const char *opt3 = nullptr) {
+    return solver_->Run(Args(solver_->name(), "-s", stub, opt1, opt2, opt3));
+  }
+
+  SolveResult Solve(const char *stub, const char *opt1 = nullptr,
+      const char *opt2 = nullptr, const char *opt3 = nullptr) {
+    return Solve(*solver_, stub, opt1, opt2, opt3);
   }
 
  public:
   SolverTest();
+
+  static SolveResult Solve(ampl::BasicSolver &s, const char *stub,
+      const char *opt1 = nullptr, const char *opt2 = nullptr,
+      const char *opt3 = nullptr);
 };
 
 #endif  // TESTS_SOLVER_TEST_H_

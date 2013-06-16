@@ -40,8 +40,8 @@ extern "C" {
 
 #include "tests/args.h"
 #include "tests/expr_builder.h"
-#include "tests/solver_test.h"
 #include "tests/solution_handler.h"
+#include "tests/solver_test.h"
 #include "tests/util.h"
 #include "tests/config.h"
 
@@ -49,7 +49,6 @@ extern "C" {
 # include <thread>
 #endif
 
-using std::size_t;
 using std::string;
 using Gecode::IntVarBranch;
 
@@ -71,32 +70,36 @@ TEST_P(SolverTest, FloorSqrt) {
   EXPECT_EQ(6, Eval(AddUnary(FLOOR, AddUnary(OP_sqrt, x)), 42));
 }
 
-class GecodeSolverTest : public ::testing::Test, public ampl::ExprBuilder {
+TEST_P(SolverTest, SolveFlowshp2) {
+  EXPECT_EQ(22, Solve(DATA_DIR "flowshp2").obj);
+}
+
+class GecodeSolverTest : public ::testing::Test {
  protected:
   ampl::GecodeSolver solver_;
 
   class ParseResult {
    private:
     bool result_;
-    std::string error_;
+    string error_;
 
     void True() const {}
     typedef void (ParseResult::*SafeBool)() const;
 
    public:
-    ParseResult(bool result, std::string error)
+    ParseResult(bool result, string error)
     : result_(result), error_(error) {}
 
     operator SafeBool() const { return result_ ? &ParseResult::True : 0; }
 
-    std::string error() const {
+    string error() const {
       EXPECT_FALSE(result_);
       return error_;
     }
   };
 
   struct TestErrorHandler : ampl::ErrorHandler {
-    std::string error;
+    string error;
     void HandleError(fmt::StringRef message) {
       error += message.c_str();
     }
@@ -106,180 +109,34 @@ class GecodeSolverTest : public ::testing::Test, public ampl::ExprBuilder {
     TestErrorHandler eh;
     solver_.set_error_handler(&eh);
     bool result = solver_.ParseOptions(
-        Args(opt1, opt2), solver_, ampl::BasicSolver::NO_OPTION_ECHO);
+        Args(opt1, opt2), ampl::BasicSolver::NO_OPTION_ECHO);
     if (result)
       EXPECT_EQ("", eh.error);
     return ParseResult(result, eh.error);
   }
 
-  int RunSolver(const char *stub = nullptr, const char *opt1 = nullptr,
-      const char *opt2 = nullptr, const char *opt3 = nullptr) {
-    return solver_.Run(Args("gecode", "-s", stub, opt1, opt2, opt3));
-  }
-
   SolveResult Solve(const char *stub, const char *opt1 = nullptr,
-      const char *opt2 = nullptr, const char *opt3 = nullptr);
+      const char *opt2 = nullptr, const char *opt3 = nullptr) {
+    return SolverTest::Solve(solver_, stub, opt1, opt2, opt3);
+  }
 };
-
-SolveResult GecodeSolverTest::Solve(const char *stub,
-    const char *opt1, const char *opt2, const char *opt3) {
-  TestSolutionHandler sh;
-  solver_.set_solution_handler(&sh);
-  RunSolver(stub, opt1, opt2, opt3);
-  const string &message = sh.message();
-  int solve_code = sh.solve_code();
-  EXPECT_GE(solve_code, 0);
-  bool solved = true;
-  if (solve_code < 100)
-    EXPECT_TRUE(message.find("optimal solution") != string::npos);
-  else if (solve_code < 200)
-    EXPECT_TRUE(message.find("feasible solution") != string::npos);
-  else
-    solved = false;
-  return SolveResult(solved, sh.obj_value(), message);
-}
-
-TEST_F(GecodeSolverTest, ContinuousVarsNotSupported) {
-  EXPECT_THROW(RunSolver(DATA_DIR "objconst"), std::runtime_error);
-}
-
-TEST_F(GecodeSolverTest, SolveAssign0) {
-  EXPECT_EQ(6, Solve(DATA_DIR "assign0").obj);
-}
-
-TEST_F(GecodeSolverTest, SolveAssign1) {
-  EXPECT_EQ(6, Solve(DATA_DIR "assign1").obj);
-}
-
-// Disabled because it takes too long to solve.
-TEST_F(GecodeSolverTest, DISABLED_SolveBalassign0) {
-  EXPECT_EQ(14, Solve(DATA_DIR "balassign0").obj);
-}
-
-// Disabled because it takes too long to solve.
-TEST_F(GecodeSolverTest, DISABLED_SolveBalassign1) {
-  EXPECT_EQ(14, Solve(DATA_DIR "balassign1").obj);
-}
-
-TEST_F(GecodeSolverTest, SolveFlowshp0) {
-  EXPECT_EQ(22, Solve(DATA_DIR "flowshp0").obj);
-}
-
-TEST_F(GecodeSolverTest, SolveFlowshp1) {
-  EXPECT_EQ(22, Solve(DATA_DIR "flowshp1").obj);
-}
-
-TEST_F(GecodeSolverTest, SolveFlowshp2) {
-  EXPECT_EQ(22, Solve(DATA_DIR "flowshp2").obj);
-}
-
-TEST_F(GecodeSolverTest, SolveGrpassign0) {
-  EXPECT_EQ(61, Solve(DATA_DIR "grpassign0").obj);
-}
-
-// Disabled because variables in subscripts are not yet allowed.
-TEST_F(GecodeSolverTest, DISABLED_SolveGrpassign1) {
-  EXPECT_EQ(61, Solve(DATA_DIR "grpassign1").obj);
-}
-
-// Disabled because object-valued variables are not yet allowed.
-TEST_F(GecodeSolverTest, DISABLED_SolveGrpassign1a) {
-  EXPECT_EQ(61, Solve(DATA_DIR "grpassign1a").obj);
-}
-
-TEST_F(GecodeSolverTest, SolveMagic) {
-  EXPECT_TRUE(Solve(DATA_DIR "magic").solved);
-}
-
-TEST_F(GecodeSolverTest, SolveMapcoloring) {
-  EXPECT_TRUE(Solve(DATA_DIR "mapcoloring").solved);
-}
-
-TEST_F(GecodeSolverTest, SolveNQueens) {
-  EXPECT_TRUE(Solve(DATA_DIR "nqueens").solved);
-}
-
-TEST_F(GecodeSolverTest, SolveNQueens0) {
-  EXPECT_TRUE(Solve(DATA_DIR "nqueens0").solved);
-}
-
-// Disabled because it takes somewhat long (compared to other tests).
-TEST_F(GecodeSolverTest, DISABLED_SolveOpenShop) {
-  EXPECT_EQ(1955, Solve(DATA_DIR "openshop").obj);
-}
-
-// Disabled because it's too difficult to solve.
-TEST_F(GecodeSolverTest, DISABLED_SolveParty1) {
-  EXPECT_EQ(61, Solve(DATA_DIR "party1").obj);
-}
-
-// Disabled because Gecode doesn't support 'alldiff' as a subexpression.
-TEST_F(GecodeSolverTest, DISABLED_SolveParty2) {
-  EXPECT_EQ(3, Solve(DATA_DIR "party2").obj);
-}
-
-// Disabled because it takes somewhat long (compared to other tests).
-TEST_F(GecodeSolverTest, DISABLED_SolvePhoto9) {
-  EXPECT_EQ(10, Solve(DATA_DIR "photo9").obj);
-}
-
-// Disabled because it takes somewhat long (compared to other tests).
-TEST_F(GecodeSolverTest, DISABLED_SolvePhoto11) {
-  EXPECT_EQ(12, Solve(DATA_DIR "photo11").obj);
-}
-
-TEST_F(GecodeSolverTest, SolveSched0) {
-  EXPECT_EQ(5, Solve(DATA_DIR "sched0").obj);
-}
-
-TEST_F(GecodeSolverTest, SolveSched1) {
-  EXPECT_EQ(5, Solve(DATA_DIR "sched1").obj);
-}
-
-TEST_F(GecodeSolverTest, SolveSched2) {
-  EXPECT_EQ(5, Solve(DATA_DIR "sched2").obj);
-}
-
-TEST_F(GecodeSolverTest, SolveSendMoreMoney) {
-  EXPECT_TRUE(Solve(DATA_DIR "send-more-money").solved);
-}
-
-TEST_F(GecodeSolverTest, SolveSendMostMoney) {
-  EXPECT_NEAR(10876, Solve(DATA_DIR "send-most-money").obj, 1e-5);
-}
-
-TEST_F(GecodeSolverTest, SolveSeq0) {
-  EXPECT_NEAR(332, Solve(DATA_DIR "seq0").obj, 1e-5);
-}
-
-TEST_F(GecodeSolverTest, SolveSeq0a) {
-  EXPECT_NEAR(332, Solve(DATA_DIR "seq0a").obj, 1e-5);
-}
-
-TEST_F(GecodeSolverTest, SolveSudokuHard) {
-  EXPECT_TRUE(Solve(DATA_DIR "sudokuHard").solved);
-}
-
-TEST_F(GecodeSolverTest, SolveSudokuVeryEasy) {
-  EXPECT_TRUE(Solve(DATA_DIR "sudokuVeryEasy").solved);
-}
 
 // ----------------------------------------------------------------------------
 // Solve code tests
 
-TEST_F(GecodeSolverTest, OptimalSolveCode) {
+TEST_P(SolverTest, OptimalSolveCode) {
   Solve(DATA_DIR "objconstint");
-  EXPECT_EQ(0, solver_.problem().solve_code());
+  EXPECT_EQ(0, solver_->problem().solve_code());
 }
 
-TEST_F(GecodeSolverTest, FeasibleSolveCode) {
+TEST_P(SolverTest, FeasibleSolveCode) {
   Solve(DATA_DIR "feasible");
-  EXPECT_EQ(100, solver_.problem().solve_code());
+  EXPECT_EQ(100, solver_->problem().solve_code());
 }
 
-TEST_F(GecodeSolverTest, InfeasibleSolveCode) {
+TEST_P(SolverTest, InfeasibleSolveCode) {
   Solve(DATA_DIR "infeasible");
-  EXPECT_EQ(200, solver_.problem().solve_code());
+  EXPECT_EQ(200, solver_->problem().solve_code());
 }
 
 // ----------------------------------------------------------------------------
@@ -293,11 +150,11 @@ void Interrupt() {
   std::raise(SIGINT);
 }
 
-TEST_F(GecodeSolverTest, InterruptSolution) {
+TEST_P(SolverTest, InterruptSolution) {
   std::thread t(Interrupt);
-  std::string message = Solve(DATA_DIR "miplib/assign1").message;
+  string message = Solve(DATA_DIR "miplib/assign1").message;
   t.join();
-  EXPECT_EQ(600, solver_.problem().solve_code());
+  EXPECT_EQ(600, solver_->problem().solve_code());
   EXPECT_TRUE(message.find("interrupted") != string::npos);
 }
 #endif
@@ -334,7 +191,7 @@ TEST_F(GecodeSolverTest, CDOption) {
 }
 
 TEST_F(GecodeSolverTest, FailLimitOption) {
-  std::string message =
+  string message =
       Solve(DATA_DIR "miplib/assign1", "faillimit=10").message;
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_TRUE(message.find(" 11 fails") != string::npos);
@@ -350,7 +207,7 @@ TEST_F(GecodeSolverTest, MemoryLimitOption) {
 }
 
 TEST_F(GecodeSolverTest, NodeLimitOption) {
-  std::string message =
+  string message =
       Solve(DATA_DIR "miplib/assign1", "nodelimit=10").message;
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_TRUE(message.find("11 nodes") != string::npos);
@@ -512,7 +369,7 @@ TEST_F(GecodeSolverTest, OutFreqOption) {
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
-  std::string out = ReadFile("out");
+  string out = ReadFile("out");
   EXPECT_EQ(6, std::count(out.begin(), out.end(), '\n'));
 
   EXPECT_EXIT({

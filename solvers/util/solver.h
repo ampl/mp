@@ -159,6 +159,8 @@ class BasicSolver
   ErrorHandler *error_handler_;
   SolutionHandler *sol_handler_;
 
+  double read_time_;
+
   void SortOptions();
 
   static char *PrintOptionsAndExit(Option_Info *oi, keyword *kw, char *value);
@@ -204,6 +206,8 @@ class BasicSolver
     version_ = version;
     Option_Info::version = const_cast<char*>(version_.c_str());
   }
+
+  double read_time() const { return read_time_; }
 
   template <typename SolverT>
   static SolverT *GetSolver(Option_Info *oi) {  // throw()
@@ -299,6 +303,10 @@ class BasicSolver
   // version).
   bool ProcessArgs(char **&argv);
 
+  // Parses solver options and returns true if there were no errors and
+  // false otherwise.
+  virtual bool ParseOptions(char **argv, unsigned flags = 0) {}
+
   // Passes a solution to the solution handler.
   void HandleSolution(fmt::StringRef message,
       const double *values, const double *dual_values,
@@ -317,6 +325,9 @@ class BasicSolver
   // Solves a problem.
   // The solutions are reported via the registered solution handler.
   virtual void Solve(Problem &p) = 0;
+
+  // Runs the solver.
+  int Run(char **argv);
 };
 
 // An AMPL solver.

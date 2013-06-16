@@ -458,8 +458,9 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
  public:
   JaCoPSolver();
 
-  // Run the solver.
-  int Run(char **argv);
+  bool ParseOptions(char **argv, unsigned flags = 0) {
+    return Solver<JaCoPSolver>::ParseOptions(argv, *this, flags);
+  }
 
   void Solve(Problem &p);
 

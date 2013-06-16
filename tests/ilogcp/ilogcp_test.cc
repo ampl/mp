@@ -70,6 +70,26 @@ std::auto_ptr<ampl::BasicSolver> CreateSolver() {
 INSTANTIATE_TEST_CASE_P(IlogCP, SolverTest,
     ::testing::Values(SolverTestParam(CreateSolver, feature::ALL)));
 
+TEST_P(SolverTest, CPOptimizerDoesntSupportContinuousVars) {
+  EXPECT_THROW(RunSolver(DATA_DIR "objconst", "optimizer=cp"), ampl::Error);
+}
+
+TEST_P(SolverTest, SolveBalassign0) {
+  EXPECT_EQ(14, Solve(DATA_DIR "balassign0").obj);
+}
+
+TEST_P(SolverTest, SolveBalassign1) {
+  EXPECT_EQ(14, Solve(DATA_DIR "balassign1").obj);
+}
+
+TEST_P(SolverTest, SolveFlowshp2) {
+  EXPECT_EQ(22, Solve(DATA_DIR "flowshp2", "optimizer=cplex").obj);
+}
+
+TEST_P(SolverTest, SolveOpenShop) {
+  EXPECT_NEAR(1955, Solve(DATA_DIR "openshop", "optimizer=cplex").obj, 1e-5);
+}
+
 struct EnumValue {
   const char *name;
   IloCP::ParameterValues value;
@@ -320,135 +340,9 @@ TEST_F(IlogCPTest, DISABLED_SolutionLimit) {
   EXPECT_EQ(6, sh.num_solutions);
 }
 
-// ----------------------------------------------------------------------------
-// Solver tests
-
-TEST_F(IlogCPTest, CPOptimizerDoesntSupportContinuousVars) {
-  EXPECT_THROW(RunSolver(DATA_DIR "objconst", "optimizer=cp"), ampl::Error);
-}
-
 TEST_F(IlogCPTest, SolveNumberOfCplex) {
   s.use_numberof(false);
   RunSolver(DATA_DIR "numberof", "optimizer=cplex");
-}
-
-TEST_F(IlogCPTest, SolveAssign0) {
-  EXPECT_EQ(6, Solve(DATA_DIR "assign0").obj);
-}
-
-TEST_F(IlogCPTest, SolveAssign1) {
-  EXPECT_EQ(6, Solve(DATA_DIR "assign1").obj);
-}
-
-TEST_F(IlogCPTest, SolveBalassign0) {
-  EXPECT_EQ(14, Solve(DATA_DIR "balassign0").obj);
-}
-
-TEST_F(IlogCPTest, SolveBalassign1) {
-  EXPECT_EQ(14, Solve(DATA_DIR "balassign1").obj);
-}
-
-TEST_F(IlogCPTest, SolveFlowshp0) {
-  EXPECT_NEAR(22, Solve(DATA_DIR "flowshp0").obj, 1e-5);
-}
-
-TEST_F(IlogCPTest, SolveFlowshp1) {
-  EXPECT_EQ(22, Solve(DATA_DIR "flowshp1").obj);
-}
-
-// Disabled because it's too difficult to solve.
-TEST_F(IlogCPTest, DISABLED_SolveFlowshp2) {
-  EXPECT_EQ(22, Solve(DATA_DIR "flowshp2").obj);
-}
-
-TEST_F(IlogCPTest, SolveGrpassign0) {
-  EXPECT_EQ(61, Solve(DATA_DIR "grpassign0").obj);
-}
-
-// Disabled because variables in subscripts are not yet allowed.
-TEST_F(IlogCPTest, DISABLED_SolveGrpassign1) {
-  EXPECT_EQ(61, Solve(DATA_DIR "grpassign1").obj);
-}
-
-// Disabled because object-valued variables are not yet allowed.
-TEST_F(IlogCPTest, DISABLED_SolveGrpassign1a) {
-  EXPECT_EQ(61, Solve(DATA_DIR "grpassign1a").obj);
-}
-
-TEST_F(IlogCPTest, SolveMagic) {
-  EXPECT_TRUE(Solve(DATA_DIR "magic").solved);
-}
-
-TEST_F(IlogCPTest, SolveMapcoloring) {
-  EXPECT_TRUE(Solve(DATA_DIR "mapcoloring").solved);
-}
-
-TEST_F(IlogCPTest, SolveNQueens) {
-  EXPECT_TRUE(Solve(DATA_DIR "nqueens").solved);
-}
-
-TEST_F(IlogCPTest, SolveNQueens0) {
-  EXPECT_TRUE(Solve(DATA_DIR "nqueens0").solved);
-}
-
-TEST_F(IlogCPTest, SolveOpenShop) {
-  EXPECT_NEAR(1955, Solve(DATA_DIR "openshop", "optimizer=cplex").obj, 1e-5);
-}
-
-// Disabled because it's too difficult to solve.
-TEST_F(IlogCPTest, DISABLED_SolveParty1) {
-  EXPECT_EQ(61, Solve(DATA_DIR "party1").obj);
-}
-
-// Disabled because it's too difficult to solve.
-TEST_F(IlogCPTest, DISABLED_SolveParty2) {
-  EXPECT_EQ(3, Solve(DATA_DIR "party2").obj);
-}
-
-TEST_F(IlogCPTest, SolvePhoto9) {
-  EXPECT_EQ(10, Solve(DATA_DIR "photo9").obj);
-}
-
-// Disabled because it takes somewhat long (compared to other tests).
-TEST_F(IlogCPTest, DISABLED_SolvePhoto11) {
-  EXPECT_EQ(12, Solve(DATA_DIR "photo11").obj);
-}
-
-TEST_F(IlogCPTest, SolveSched0) {
-  EXPECT_EQ(5, Solve(DATA_DIR "sched0").obj);
-}
-
-TEST_F(IlogCPTest, SolveSched1) {
-  EXPECT_EQ(5, Solve(DATA_DIR "sched1").obj);
-}
-
-TEST_F(IlogCPTest, SolveSched2) {
-  EXPECT_EQ(5, Solve(DATA_DIR "sched2").obj);
-}
-
-TEST_F(IlogCPTest, SolveSendMoreMoney) {
-  EXPECT_TRUE(Solve(DATA_DIR "send-more-money").solved);
-}
-
-TEST_F(IlogCPTest, SolveSendMostMoney) {
-  EXPECT_NEAR(10876, Solve(DATA_DIR "send-most-money",
-      "relativeoptimalitytolerance=1e-5").obj, 1e-5);
-}
-
-TEST_F(IlogCPTest, SolveSeq0) {
-  EXPECT_NEAR(332, Solve(DATA_DIR "seq0").obj, 1e-5);
-}
-
-TEST_F(IlogCPTest, SolveSeq0a) {
-  EXPECT_NEAR(332, Solve(DATA_DIR "seq0a").obj, 1e-5);
-}
-
-TEST_F(IlogCPTest, SolveSudokuHard) {
-  EXPECT_TRUE(Solve(DATA_DIR "sudokuHard").solved);
-}
-
-TEST_F(IlogCPTest, SolveSudokuVeryEasy) {
-  EXPECT_TRUE(Solve(DATA_DIR "sudokuVeryEasy").solved);
 }
 
 // ----------------------------------------------------------------------------
@@ -614,8 +508,7 @@ TEST_F(IlogCPTest, CPLEXDefaultMIPDisplayZero) {
 
 TEST_F(IlogCPTest, CPLEXOptions) {
   CheckIntCPLEXOption("mipdisplay", IloCplex::MIPDisplay, 0, 5);
-  CheckIntCPLEXOption("mipinterval",
-      IloCplex::MIPInterval, INT_MIN, INT_MAX);
+  CheckIntCPLEXOption("mipinterval", IloCplex::MIPInterval, INT_MIN, INT_MAX);
 }
 
 // ----------------------------------------------------------------------------
