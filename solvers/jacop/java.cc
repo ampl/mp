@@ -45,7 +45,7 @@ class String : ampl::Noncopyable {
 
  public:
   String(JNIEnv *env, jstring s) :
-      env_(env), str_(s), utf_chars_(env->GetStringUTFChars(s, 0)) {
+    env_(env), str_(s), utf_chars_(env->GetStringUTFChars(s, 0)) {
   }
 
   ~String() {
@@ -124,8 +124,9 @@ namespace ampl {
 JVM JVM::instance_;
 
 void Env::Throw(jthrowable exception, const char *method_name) {
-  jmethodID getMessage = GetMethod(FindClass("java/lang/Throwable"),
-      "getMessage", "()Ljava/lang/String;");
+  env_->ExceptionClear();
+  jmethodID getMessage = GetMethod(FindClass("java/lang/Object"),
+      "toString", "()Ljava/lang/String;");
   String message(env_, static_cast<jstring>(Check(
       env_->CallObjectMethod(exception, getMessage), "CallObjectMethod")));
   throw JavaError(fmt::Format("{} failed: {}")
@@ -181,7 +182,7 @@ JVM::~JVM() {
     jvm_->DestroyJavaVM();
 }
 
-Env JVM::env() {
+Env JVM::env(bool check_jni) {
   if (!instance_.jvm_) {
 #ifdef WIN32
     std::string runtime_lib_path;
@@ -217,11 +218,15 @@ Env JVM::env() {
     JavaVMInitArgs vm_args = {};
     vm_args.version = JNI_VERSION_1_6;
     vm_args.ignoreUnrecognized = false;
-    JavaVMOption option = {};
-    option.optionString = const_cast<char*>(
+    JavaVMOption options[2] = {};
+    options[0].optionString = const_cast<char*>(
         "-Djava.class.path=JaCoP-3.2.jar" CLASSPATH_SEP "lib/JaCoP-3.2.jar");
     vm_args.nOptions = 1;
-    vm_args.options = &option;
+    if (check_jni) {
+      options[1].optionString = const_cast<char*>("-Xcheck:jni");
+      ++vm_args.nOptions;
+    }
+    vm_args.options = options;
     void *envp = 0;
     jint result = JNI_CreateJavaVM(&instance_.jvm_, &envp, &vm_args);
     if (result != JNI_OK) {
