@@ -361,7 +361,7 @@ TEST_F(GecodeSolverTest, OutLevOption) {
 TEST_F(GecodeSolverTest, OutFreqOption) {
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    Solve("party1", "outlev=1", "outfreq=1", "timelimit=2.5");
+    Solve("party1", "outlev=1", "outfreq=0.02", "timelimit=0.05");
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
@@ -370,7 +370,7 @@ TEST_F(GecodeSolverTest, OutFreqOption) {
 
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    Solve("party1", "outlev=1", "outfreq=2", "timelimit=2.5");
+    Solve("party1", "outlev=1", "outfreq=0.04", "timelimit=0.05");
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");

@@ -315,7 +315,7 @@ class GecodeSolver : public Solver<GecodeSolver> {
   std::size_t memory_limit_;
 
   void SetBoolOption(const char *name, int value, bool *option);
-  void SetOutputFrequency(const char *name, int value);
+  void SetOutputFrequency(const char *name, double value);
 
   template <typename T>
   void SetStrOption(const char *name, const char *value,

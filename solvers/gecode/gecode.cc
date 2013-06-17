@@ -336,7 +336,7 @@ void GecodeSolver::SetBoolOption(const char *name, int value, bool *option) {
     *option = value != 0;
 }
 
-void GecodeSolver::SetOutputFrequency(const char *name, int value) {
+void GecodeSolver::SetOutputFrequency(const char *name, double value) {
   if (value <= 0)
     ReportInvalidOptionValue(name, value);
   else
@@ -400,8 +400,8 @@ GecodeSolver::GecodeSolver()
   AddIntOption("printproblem", "Print the problem for debugging.",
       &GecodeSolver::SetBoolOption, &print_problem_);
 
-  AddIntOption("outfreq",
-      "Output frequency in seconds.  The value should be a positive integer.",
+  AddDblOption("outfreq",
+      "Output frequency in seconds.  The value should be a positive number.",
       &GecodeSolver::SetOutputFrequency);
 
   AddStrOption("icl",
