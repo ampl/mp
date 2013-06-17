@@ -59,8 +59,6 @@ using ampl::CPOptimizer;
 using ampl::IlogCPSolver;
 using ampl::UnsupportedExprError;
 
-#define DATA_DIR "../data/"
-
 namespace {
 
 std::auto_ptr<ampl::BasicSolver> CreateSolver() {
@@ -71,23 +69,23 @@ INSTANTIATE_TEST_CASE_P(IlogCP, SolverTest,
     ::testing::Values(SolverTestParam(CreateSolver, feature::ALL)));
 
 TEST_P(SolverTest, CPOptimizerDoesntSupportContinuousVars) {
-  EXPECT_THROW(RunSolver(DATA_DIR "objconst", "optimizer=cp"), ampl::Error);
+  EXPECT_THROW(Solve("objconst", "optimizer=cp"), ampl::Error);
 }
 
 TEST_P(SolverTest, SolveBalassign0) {
-  EXPECT_EQ(14, Solve(DATA_DIR "balassign0").obj);
+  EXPECT_EQ(14, Solve("balassign0").obj);
 }
 
 TEST_P(SolverTest, SolveBalassign1) {
-  EXPECT_EQ(14, Solve(DATA_DIR "balassign1").obj);
+  EXPECT_EQ(14, Solve("balassign1").obj);
 }
 
 TEST_P(SolverTest, SolveFlowshp2) {
-  EXPECT_EQ(22, Solve(DATA_DIR "flowshp2", "optimizer=cplex").obj);
+  EXPECT_EQ(22, Solve("flowshp2", "optimizer=cplex").obj);
 }
 
 TEST_P(SolverTest, SolveOpenShop) {
-  EXPECT_NEAR(1955, Solve(DATA_DIR "openshop", "optimizer=cplex").obj, 1e-5);
+  EXPECT_NEAR(1955, Solve("openshop", "optimizer=cplex").obj, 1e-5);
 }
 
 struct EnumValue {
@@ -101,15 +99,6 @@ class IlogCPTest : public ::testing::Test, public ampl::ExprBuilder {
 
   int CountIloDistribute();
 
-  int RunSolver(const char *stub = nullptr, const char *opt = nullptr) {
-    try {
-      return s.Run(Args("ilogcp", "-s", stub, opt));
-    } catch (const IloException &e) {  // NOLINT(whitespace/parens)
-      throw std::runtime_error(e.getMessage());
-    }
-    return 0;
-  }
-
   bool ParseOptions(const char *opt1, const char *opt2 = nullptr) {
     try {
       return s.ParseOptions(Args(opt1, opt2));
@@ -119,7 +108,9 @@ class IlogCPTest : public ::testing::Test, public ampl::ExprBuilder {
     return false;
   }
 
-  SolveResult Solve(const char *stub, const char *opt = nullptr);
+  SolveResult Solve(const char *stub, const char *opt = nullptr) {
+    return SolverTest::Solve(s, stub, opt);
+  }
 
   template <typename T>
   static string Option(const char *name, T value) {
@@ -145,23 +136,6 @@ int IlogCPTest::CountIloDistribute() {
       ++count;
   }
   return count;
-}
-
-SolveResult IlogCPTest::Solve(const char *stub, const char *opt) {
-  TestSolutionHandler sh;
-  s.set_solution_handler(&sh);
-  RunSolver(stub, opt);
-  const string &message = sh.message();
-  int solve_code = sh.solve_code();
-  EXPECT_GE(solve_code, 0);
-  bool solved = true;
-  if (solve_code < 100)
-    EXPECT_TRUE(message.find("optimal solution") != string::npos);
-  else if (solve_code < 200)
-    EXPECT_TRUE(message.find("feasible solution") != string::npos);
-  else
-    solved = false;
-  return SolveResult(solved, sh.obj_value(), message);
 }
 
 void IlogCPTest::CheckIntCPOption(const char *option,
@@ -342,7 +316,7 @@ TEST_F(IlogCPTest, DISABLED_SolutionLimit) {
 
 TEST_F(IlogCPTest, SolveNumberOfCplex) {
   s.use_numberof(false);
-  RunSolver(DATA_DIR "numberof", "optimizer=cplex");
+  Solve("numberof", "optimizer=cplex");
 }
 
 // ----------------------------------------------------------------------------
@@ -515,22 +489,22 @@ TEST_F(IlogCPTest, CPLEXOptions) {
 // Solve code tests
 
 TEST_F(IlogCPTest, OptimalSolveCode) {
-  Solve(DATA_DIR "objconst");
+  Solve("objconst");
   EXPECT_EQ(0, s.problem().solve_code());
 }
 
 TEST_F(IlogCPTest, FeasibleSolveCode) {
-  Solve(DATA_DIR "feasible");
+  Solve("feasible");
   EXPECT_EQ(100, s.problem().solve_code());
 }
 
 TEST_F(IlogCPTest, InfeasibleSolveCode) {
-  Solve(DATA_DIR "infeasible");
+  Solve("infeasible");
   EXPECT_EQ(200, s.problem().solve_code());
 }
 
 TEST_F(IlogCPTest, InfeasibleOrUnboundedSolveCode) {
-  Solve(DATA_DIR "unbounded");
+  Solve("unbounded");
   EXPECT_EQ(201, s.problem().solve_code());
 }
 
@@ -546,8 +520,7 @@ void Interrupt() {
 
 TEST_F(IlogCPTest, InterruptCPLEX) {
   std::thread t(Interrupt);
-  std::string message =
-      Solve(DATA_DIR "miplib/assign1", "optimizer=cplex").message;
+  std::string message = Solve("miplib/assign1", "optimizer=cplex").message;
   t.join();
   EXPECT_EQ(600, s.problem().solve_code());
   EXPECT_TRUE(message.find("interrupted") != string::npos);
@@ -555,8 +528,7 @@ TEST_F(IlogCPTest, InterruptCPLEX) {
 
 TEST_F(IlogCPTest, InterruptCP) {
   std::thread t(Interrupt);
-  std::string message =
-      Solve(DATA_DIR "miplib/assign1", "optimizer=cp").message;
+  std::string message = Solve("miplib/assign1", "optimizer=cp").message;
   t.join();
   EXPECT_EQ(600, s.problem().solve_code());
   EXPECT_TRUE(message.find("interrupted") != string::npos);

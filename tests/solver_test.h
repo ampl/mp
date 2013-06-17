@@ -115,11 +115,6 @@ class SolverTest
     return Eval(AddIf(e, AddNum(1), AddNum(0)), var1, var2, var3);
   }
 
-  int RunSolver(const char *stub = nullptr, const char *opt1 = nullptr,
-      const char *opt2 = nullptr, const char *opt3 = nullptr) {
-    return solver_->Run(Args(solver_->name(), "-s", stub, opt1, opt2, opt3));
-  }
-
   SolveResult Solve(const char *stub, const char *opt1 = nullptr,
       const char *opt2 = nullptr, const char *opt3 = nullptr) {
     return Solve(*solver_, stub, opt1, opt2, opt3);
