@@ -300,7 +300,7 @@ TEST_F(IlogCPTest, NoSolutionLimit) {
   EXPECT_EQ(1, sh.num_solutions);
 }
 
-// TODO: enable
+// TODO: this test is currently disabled because CP reports identical solutions
 TEST_F(IlogCPTest, DISABLED_SolutionLimit) {
   ampl::Problem p;
   p.AddVar(1, 3, ampl::INTEGER);
