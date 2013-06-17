@@ -258,14 +258,24 @@ bool BasicSolver::ProcessArgs(char **&argv, unsigned flags) {
 bool BasicSolver::ParseOptions(char **argv, unsigned flags) {
   has_errors_ = false;
   SortOptions();
-  ASL *asl = reinterpret_cast<ASL*>(problem_.asl_);
-  if ((flags & NO_OPTION_ECHO) != 0) {
-    option_echo |= ASL_OI_echothis;
-    option_echo &= ~ASL_OI_echo;
-  } else {
-    option_echo |= ASL_OI_echo;
+  option_echo = (flags & NO_OPTION_ECHO) == 0 ? ASL_OI_echo : 0;
+  n_badopts = 0;
+  if (opname) {
+    char *s = getenv(opname);
+    if (s) {
+      while(*s)
+        s = get_opt_ASL(this, s);
+    }
   }
-  return getopts_ASL(asl, argv, this) == 0 && !has_errors_;
+  while(char *s = *argv++) {
+    do s = get_opt_ASL(this, s);
+    while (*s);
+  }
+  problem_.asl_->i.need_nl_ = nnl;
+  if (this->flags() & ASL_OI_show_version)
+    show_version_ASL(this);
+  std::fflush(stdout);
+  return n_badopts == 0 && !has_errors_;
 }
 
 int BasicSolver::Run(char **argv) {
