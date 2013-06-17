@@ -359,10 +359,6 @@ class GecodeSolver : public Solver<GecodeSolver> {
  public:
   GecodeSolver();
 
-  bool ParseOptions(char **argv, unsigned flags = 0) {
-    return Solver<GecodeSolver>::ParseOptions(argv, *this, flags);
-  }
-
   void Solve(Problem &p);
 
   Gecode::IntConLevel icl() const { return icl_; }

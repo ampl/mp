@@ -62,7 +62,7 @@ struct TestSolver : BasicSolver {
   }
 
   bool ParseOptions(char **argv, unsigned flags = BasicSolver::NO_OPTION_ECHO) {
-    return DoParseOptions(argv, flags);
+    return BasicSolver::ParseOptions(argv, flags);
   }
 
   void AddKeyword() {
@@ -289,17 +289,14 @@ TEST(SolverTest, ParseOptions) {
   EXPECT_EQ(5, s.wantsol());
 }
 
-struct DummyOptionHandler {};
-
 TEST(SolverTest, SolverWithDefaultOptionHandler) {
-  struct TestSolver : Solver<DummyOptionHandler> {
-    TestSolver() : Solver<DummyOptionHandler>("testsolver") {}
+  struct TestSolver : Solver<TestSolver> {
+    TestSolver() : Solver<TestSolver>("testsolver") {}
     void Solve(Problem &) {}
   };
   TestSolver s;
   EXPECT_STREQ("testsolver", s.name());
-  DummyOptionHandler handler;
-  s.ParseOptions(Args("wantsol=3"), handler, BasicSolver::NO_OPTION_ECHO);
+  s.ParseOptions(Args("wantsol=3"), BasicSolver::NO_OPTION_ECHO);
   EXPECT_EQ(3, s.wantsol());
 }
 
@@ -366,9 +363,8 @@ struct OptSolver : Solver<OptSolver> {
     AddIntOption("throw", "", &OptSolver::Throw);
   }
 
-  bool ParseOptions(char **argv) {
-    return Solver<OptSolver>::ParseOptions(
-        argv, *this, BasicSolver::NO_OPTION_ECHO);
+  bool ParseOptions(char **argv, unsigned flags = BasicSolver::NO_OPTION_ECHO) {
+    return BasicSolver::ParseOptions(argv, flags);
   }
 
   void Solve(Problem &) {}
@@ -387,19 +383,17 @@ TEST(SolverTest, SolverOptions) {
   EXPECT_EQ("def", s.stropt2);
 }
 
-struct TestOptionHandler {
+struct TestSolver2 : Solver<TestSolver2> {
   int answer;
 
   void SetAnswer(const char *name, int value) {
     EXPECT_STREQ("answer", name);
     answer = value;
   }
-};
 
-struct TestSolver2 : Solver<TestOptionHandler> {
-  TestSolver2() : Solver<TestOptionHandler>("test") {
+  TestSolver2() : Solver<TestSolver2>("test") {
     AddIntOption("answer", "The answer to life the universe and everything",
-        &TestOptionHandler::SetAnswer);
+        &TestSolver2::SetAnswer);
   }
 
   void Solve(Problem &) {}
@@ -407,10 +401,9 @@ struct TestSolver2 : Solver<TestOptionHandler> {
 
 TEST(SolverTest, SeparateOptionHandler) {
   TestSolver2 s;
-  TestOptionHandler handler;
   EXPECT_TRUE(s.ParseOptions(
-      Args("answer=42"), handler, BasicSolver::NO_OPTION_ECHO));
-  EXPECT_EQ(42, handler.answer);
+      Args("answer=42"), BasicSolver::NO_OPTION_ECHO));
+  EXPECT_EQ(42, s.answer);
 }
 
 TEST(SolverTest, OptionParseError) {
@@ -450,7 +443,7 @@ TEST(SolverTest, ProcessArgsReadsProblem) {
   Args args("testprogram", "data/objconst.nl");
   OptSolver s;
   EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_TRUE(s.ProcessArgs(args, s));
+  EXPECT_TRUE(s.ProcessArgs(args));
   EXPECT_EQ(1, s.problem().num_vars());
 }
 
@@ -459,7 +452,7 @@ TEST(SolverTest, ProcessArgsWithouStub) {
   Args args("testprogram");
   OptSolver s;
   EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_FALSE(s.ProcessArgs(args, s));
+  EXPECT_FALSE(s.ProcessArgs(args));
   EXPECT_EQ(0, s.problem().num_vars());
 }
 
@@ -468,14 +461,14 @@ TEST(SolverTest, ProcessArgsError) {
   OptSolver s;
   EXPECT_EXIT({
     Stderr = stderr;
-    s.ProcessArgs(args, s);
+    s.ProcessArgs(args);
   }, ::testing::ExitedWithCode(1), "testprogram: can't open nonexistent.nl");
 }
 
 TEST(SolverTest, ProcessArgsParsesSolverOptions) {
   OptSolver s;
   Args args("testprogram", "data/objconst.nl", "intopt1=3");
-  EXPECT_TRUE(s.ProcessArgs(args, s, BasicSolver::NO_OPTION_ECHO));
+  EXPECT_TRUE(s.ProcessArgs(args, BasicSolver::NO_OPTION_ECHO));
   EXPECT_EQ(3, s.intopt1);
 }
 

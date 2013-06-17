@@ -637,17 +637,13 @@ void IlogCPSolver::CreateOptimizer(const Problem &p) {
 bool IlogCPSolver::ParseOptions(char **argv, unsigned flags) {
   // Get optimizer type.
   gotopttype_ = false;
-  if (!Solver<IlogCPSolver>::ParseOptions(
-      argv, *this, BasicSolver::NO_OPTION_ECHO)) {
+  if (!BasicSolver::ParseOptions(argv, BasicSolver::NO_OPTION_ECHO))
     return false;
-  }
   CreateOptimizer(problem());
 
   // Parse remaining options.
   gotopttype_ = true;
-  if (!Solver<IlogCPSolver>::ParseOptions(argv, *this, flags))
-    return false;
-  return true;
+  return BasicSolver::ParseOptions(argv, flags);
 }
 
 void IlogCPSolver::Solve(Problem &p) {

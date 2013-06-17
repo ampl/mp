@@ -244,7 +244,7 @@ void BasicSolver::AddKeyword(const char *name,
   kw.info = const_cast<void*>(info);
 }
 
-bool BasicSolver::ProcessArgs(char **&argv) {
+bool BasicSolver::ProcessArgs(char **&argv, unsigned flags) {
   SortOptions();
   char *stub = getstub_ASL(reinterpret_cast<ASL*>(problem_.asl_), &argv, this);
   if (!stub) {
@@ -252,12 +252,25 @@ bool BasicSolver::ProcessArgs(char **&argv) {
     return false;
   }
   problem_.Read(stub);
-  return true;
+  return ParseOptions(argv, flags);
+}
+
+bool BasicSolver::ParseOptions(char **argv, unsigned flags) {
+  has_errors_ = false;
+  SortOptions();
+  ASL *asl = reinterpret_cast<ASL*>(problem_.asl_);
+  if ((flags & NO_OPTION_ECHO) != 0) {
+    option_echo |= ASL_OI_echothis;
+    option_echo &= ~ASL_OI_echo;
+  } else {
+    option_echo |= ASL_OI_echo;
+  }
+  return getopts_ASL(asl, argv, this) == 0 && !has_errors_;
 }
 
 int BasicSolver::Run(char **argv) {
   double start_time = xectim_();
-  if (!ProcessArgs(argv) || !ParseOptions(argv))
+  if (!ProcessArgs(argv))
     return 1;
 
   // Reset is used to reset read_time_ even in case of exceptions.

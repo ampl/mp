@@ -55,13 +55,6 @@ SSDSolver::SSDSolver()
       &SSDSolver::EnableOutput);
 }
 
-int SSDSolver::Run(char **argv) {
-  if (!ProcessArgs(argv, *this))
-    return 1;
-  Solve(problem());
-  return 0;
-}
-
 void SSDSolver::Solve(Problem &p) {
   // TODO: check that there are no nonlinear expressions
   Problem &problem = Solver<SSDSolver>::problem();

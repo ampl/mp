@@ -93,9 +93,6 @@ class SSDSolver : public Solver<SSDSolver> {
  public:
   SSDSolver();
 
-  // Runs the solver.
-  int Run(char **argv);
-
   void Solve(Problem &p);
 };
 }
