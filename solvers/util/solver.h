@@ -214,21 +214,6 @@ class BasicSolver
     return static_cast<SolverT*>(oi);
   }
 
-  // Parses solver options.
-  // Returns true if there were no errors and false otherwise.
-  bool DoParseOptions(char **argv, unsigned flags) {
-    has_errors_ = false;
-    SortOptions();
-    ASL *asl = reinterpret_cast<ASL*>(problem_.asl_);
-    if ((flags & NO_OPTION_ECHO) != 0) {
-      option_echo |= ASL_OI_echothis;
-      option_echo &= ~ASL_OI_echo;
-    } else {
-      option_echo |= ASL_OI_echo;
-    }
-    return getopts_ASL(asl, argv, this) == 0 && !has_errors_;
-  }
-
   void AddKeyword(const char *name,
       const char *description, Kwfunc func, const void *info);
 
@@ -242,7 +227,7 @@ class BasicSolver
  public:
   virtual ~BasicSolver();
 
-  // Flags for DoParseOptions.
+  // Flags for ParseOptions.
   enum {
     // Don't echo options during parsing.
     NO_OPTION_ECHO = 1
@@ -295,19 +280,20 @@ class BasicSolver
   // Sets the solution handler.
   void set_solution_handler(SolutionHandler *sh) { sol_handler_ = sh; }
 
-  // Parses command-line arguments starting with '-' and reads a problem from
-  // an .nl file if the file name (stub) is specified. Returns true if the
-  // arguments contain the file name and false otherwise. If there was an
-  // error parsing arguments or reading the problem ProcessArgs will print an
-  // error message and call std::exit (this is likely to change in the future
-  // version).
-  bool ProcessArgs(char **&argv);
+  // Processes command-line arguments, reads a problem from an .nl file
+  // if the file name (stub) is specified and parses solver options.
+  // Returns true if the arguments contain the file name and options were
+  // parsed successfully; false otherwise.
+  // If there was an  error parsing arguments or reading the problem
+  // ProcessArgs will print an error message and call std::exit (this is
+  // likely to change in the future version).
+  bool ProcessArgs(char **&argv, unsigned flags = 0);
 
   // Parses solver options and returns true if there were no errors and
-  // false otherwise.
-  virtual bool ParseOptions(char **argv, unsigned flags = 0) {
-    return true;
-  }
+  // false otherwise. Note that handler functions can report errors with
+  // BasicSolver::ReportError and ParseOptions will take them into account
+  // as well, returning false if there was at least one such error.
+  virtual bool ParseOptions(char **argv, unsigned flags = 0);
 
   // Passes a solution to the solution handler.
   void HandleSolution(fmt::StringRef message,
@@ -333,9 +319,8 @@ class BasicSolver
 };
 
 // An AMPL solver.
-// OptionHandler is a class that will receive notification about
-// parsed options. Often OptionHandler is a class derived from Solver,
-// but this is not required.
+// Impl should be a class derived from Solver that will receive notifications
+// about parsed options.
 //
 // Example:
 //
@@ -354,9 +339,11 @@ class BasicSolver
 //                  &MySolver::SetTestOption, 42);
 //   }
 // };
-template <typename OptionHandler>
+template <typename Impl>
 class Solver : public BasicSolver {
  private:
+  typedef Impl OptionHandler;
+
   class Option {
    private:
     std::string description_;
@@ -401,14 +388,13 @@ class Solver : public BasicSolver {
     }
   };
 
-  OptionHandler *handler_;
   std::vector<Option*> options_;
 
   static char *HandleOption(Option_Info *oi, keyword *kw, char *value) {
     Solver *self = GetSolver<Solver>(oi);
     try {
       Option *opt = self->options_[reinterpret_cast<size_t>(kw->info)];
-      opt->Handle(*self->handler_, oi, kw, value);
+      opt->Handle(*static_cast<Impl*>(self), oi, kw, value);
     } catch (const std::exception &e) {
       self->ReportError(e.what());
     } catch (...) {
@@ -510,32 +496,10 @@ class Solver : public BasicSolver {
 
  public:
   Solver(fmt::StringRef name, fmt::StringRef long_name = 0, long date = 0)
-  : BasicSolver(name, long_name, date), handler_(0) {}
+  : BasicSolver(name, long_name, date) {}
 
   ~Solver() {
     std::for_each(options_.begin(), options_.end(), Deleter());
-  }
-
-  // Parses solver options and returns true if there were no errors and
-  // false otherwise. Note that handler functions can report errors with
-  // BasicSolver::ReportError and ParseOptions will take them into account
-  // as well, returning false if there was at least one such error.
-  bool ParseOptions(char **argv, OptionHandler &h, unsigned flags = 0) {
-    handler_ = &h;
-    return DoParseOptions(argv, flags);
-  }
-
-  using BasicSolver::ProcessArgs;
-
-  // Processes command-line arguments, reads a problem from an .nl file
-  // if the file name (stub) is specified and parses solver options.
-  // Returns true if the arguments contain the file name and options were
-  // parsed successfully; false otherwise.
-  // If there was an  error parsing arguments or reading the problem
-  // ProcessArgs will print an error message and call std::exit (this is
-  // likely to change in the future version).
-  bool ProcessArgs(char **&argv, OptionHandler &h, unsigned flags = 0) {
-    return ProcessArgs(argv) && ParseOptions(argv, h, flags);
   }
 };
 }

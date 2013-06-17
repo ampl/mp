@@ -459,10 +459,6 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
  public:
   JaCoPSolver();
 
-  bool ParseOptions(char **argv, unsigned flags = 0) {
-    return Solver<JaCoPSolver>::ParseOptions(argv, *this, flags);
-  }
-
   void Solve(Problem &p);
 
   /*Gecode::IntVarBranch var_branching() const { return var_branching_; }
