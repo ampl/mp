@@ -52,8 +52,6 @@ extern "C" {
 using std::string;
 using Gecode::IntVarBranch;
 
-#define DATA_DIR "../data/"
-
 namespace {
 
 // ----------------------------------------------------------------------------
@@ -71,7 +69,7 @@ TEST_P(SolverTest, FloorSqrt) {
 }
 
 TEST_P(SolverTest, SolveFlowshp2) {
-  EXPECT_EQ(22, Solve(DATA_DIR "flowshp2").obj);
+  EXPECT_EQ(22, Solve("flowshp2").obj);
 }
 
 class GecodeSolverTest : public ::testing::Test {
@@ -125,17 +123,17 @@ class GecodeSolverTest : public ::testing::Test {
 // Solve code tests
 
 TEST_P(SolverTest, OptimalSolveCode) {
-  Solve(DATA_DIR "objconstint");
+  Solve("objconstint");
   EXPECT_EQ(0, solver_->problem().solve_code());
 }
 
 TEST_P(SolverTest, FeasibleSolveCode) {
-  Solve(DATA_DIR "feasible");
+  Solve("feasible");
   EXPECT_EQ(100, solver_->problem().solve_code());
 }
 
 TEST_P(SolverTest, InfeasibleSolveCode) {
-  Solve(DATA_DIR "infeasible");
+  Solve("infeasible");
   EXPECT_EQ(200, solver_->problem().solve_code());
 }
 
@@ -152,7 +150,7 @@ void Interrupt() {
 
 TEST_P(SolverTest, InterruptSolution) {
   std::thread t(Interrupt);
-  string message = Solve(DATA_DIR "miplib/assign1").message;
+  string message = Solve("miplib/assign1").message;
   t.join();
   EXPECT_EQ(600, solver_->problem().solve_code());
   EXPECT_TRUE(message.find("interrupted") != string::npos);
@@ -191,8 +189,7 @@ TEST_F(GecodeSolverTest, CDOption) {
 }
 
 TEST_F(GecodeSolverTest, FailLimitOption) {
-  string message =
-      Solve(DATA_DIR "miplib/assign1", "faillimit=10").message;
+  string message = Solve("miplib/assign1", "faillimit=10").message;
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_TRUE(message.find(" 11 fails") != string::npos);
   EXPECT_EQ("Invalid value -1 for option faillimit",
@@ -200,15 +197,14 @@ TEST_F(GecodeSolverTest, FailLimitOption) {
 }
 
 TEST_F(GecodeSolverTest, MemoryLimitOption) {
-  Solve(DATA_DIR "miplib/assign1", "memorylimit=100000");
+  Solve("miplib/assign1", "memorylimit=100000");
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_EQ("Invalid value -1 for option memorylimit",
       ParseOptions("memorylimit=-1").error());
 }
 
 TEST_F(GecodeSolverTest, NodeLimitOption) {
-  string message =
-      Solve(DATA_DIR "miplib/assign1", "nodelimit=10").message;
+  string message = Solve("miplib/assign1", "nodelimit=10").message;
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_TRUE(message.find("11 nodes") != string::npos);
   EXPECT_EQ("Invalid value -1 for option nodelimit",
@@ -216,7 +212,7 @@ TEST_F(GecodeSolverTest, NodeLimitOption) {
 }
 
 TEST_F(GecodeSolverTest, TimeLimitOption) {
-  Solve(DATA_DIR "miplib/assign1", "timelimit=0.1");
+  Solve("miplib/assign1", "timelimit=0.1");
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_EQ("Invalid value -1 for option timelimit",
       ParseOptions("timelimit=-1").error());
@@ -338,7 +334,7 @@ TEST_F(GecodeSolverTest, DecayOption) {
 TEST_F(GecodeSolverTest, OutLevOption) {
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    Solve(DATA_DIR "objconstint");
+    Solve("objconstint");
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
@@ -346,7 +342,7 @@ TEST_F(GecodeSolverTest, OutLevOption) {
 
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    Solve(DATA_DIR "objconstint", "outlev=1");
+    Solve("objconstint", "outlev=1");
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
@@ -365,7 +361,7 @@ TEST_F(GecodeSolverTest, OutLevOption) {
 TEST_F(GecodeSolverTest, OutFreqOption) {
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    Solve(DATA_DIR "party1", "outlev=1", "outfreq=1", "timelimit=2.5");
+    Solve("party1", "outlev=1", "outfreq=1", "timelimit=2.5");
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
@@ -374,7 +370,7 @@ TEST_F(GecodeSolverTest, OutFreqOption) {
 
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    Solve(DATA_DIR "party1", "outlev=1", "outfreq=2", "timelimit=2.5");
+    Solve("party1", "outlev=1", "outfreq=2", "timelimit=2.5");
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");

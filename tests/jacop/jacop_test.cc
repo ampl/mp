@@ -51,8 +51,6 @@ extern "C" {
 
 using std::string;
 
-#define DATA_DIR "../data/"
-
 namespace {
 
 // ----------------------------------------------------------------------------
@@ -65,17 +63,17 @@ std::auto_ptr<ampl::BasicSolver> CreateSolver() {
 INSTANTIATE_TEST_CASE_P(JaCoP, SolverTest,
     ::testing::Values(SolverTestParam(CreateSolver, feature::POW)));
 
-// TODO: fix segfault
+// TODO: fix stackoverflow
 /*TEST_P(SolverTest, SolveBalassign0) {
-  EXPECT_EQ(14, Solve(DATA_DIR "balassign0").obj);
+  EXPECT_EQ(14, Solve("balassign0").obj);
 }
 
 TEST_P(SolverTest, SolveBalassign1) {
-  EXPECT_EQ(14, Solve(DATA_DIR "balassign1").obj);
+  EXPECT_EQ(14, Solve("balassign1").obj);
 }*/
 
 TEST_P(SolverTest, SolveFlowshp2) {
-  EXPECT_EQ(22, Solve(DATA_DIR "flowshp2").obj);
+  EXPECT_EQ(22, Solve("flowshp2").obj);
 }
 
 /*class JaCoPSolverTest : public ::testing::Test {
@@ -118,44 +116,23 @@ TEST_P(SolverTest, SolveFlowshp2) {
       EXPECT_EQ("", eh.error);
     return ParseResult(result, eh.error);
   }
-
-  SolveResult Solve(const char *stub, const char *opt1 = nullptr,
-      const char *opt2 = nullptr, const char *opt3 = nullptr);
 };
-
-SolveResult JaCoPSolverTest::Solve(const char *stub,
-    const char *opt1, const char *opt2, const char *opt3) {
-  TestSolutionHandler sh;
-  solver_.set_solution_handler(&sh);
-  RunSolver(stub, opt1, opt2, opt3);
-  const string &message = sh.message();
-  int solve_code = sh.solve_code();
-  EXPECT_GE(solve_code, 0);
-  bool solved = true;
-  if (solve_code < 100)
-    EXPECT_TRUE(message.find("optimal solution") != string::npos);
-  else if (solve_code < 200)
-    EXPECT_TRUE(message.find("feasible solution") != string::npos);
-  else
-    solved = false;
-  return SolveResult(solved, sh.obj_value(), message);
-}
 
 // ----------------------------------------------------------------------------
 // Solve code tests
 
 TEST_F(JaCoPSolverTest, OptimalSolveCode) {
-  Solve(DATA_DIR "objconstint");
+  Solve("objconstint");
   EXPECT_EQ(0, solver_.problem().solve_code());
 }
 
 TEST_F(JaCoPSolverTest, FeasibleSolveCode) {
-  Solve(DATA_DIR "feasible");
+  Solve("feasible");
   EXPECT_EQ(100, solver_.problem().solve_code());
 }
 
 TEST_F(JaCoPSolverTest, InfeasibleSolveCode) {
-  Solve(DATA_DIR "infeasible");
+  Solve("infeasible");
   EXPECT_EQ(200, solver_.problem().solve_code());
 }
 
@@ -172,7 +149,7 @@ void Interrupt() {
 
 TEST_F(JaCoPSolverTest, InterruptSolution) {
   std::thread t(Interrupt);
-  std::string message = Solve(DATA_DIR "miplib/assign1").message;
+  std::string message = Solve("miplib/assign1").message;
   t.join();
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_TRUE(message.find("interrupted") != string::npos);
@@ -212,7 +189,7 @@ TEST_F(JaCoPSolverTest, CDOption) {
 
 TEST_F(JaCoPSolverTest, FailLimitOption) {
   std::string message =
-      Solve(DATA_DIR "miplib/assign1", "faillimit=10").message;
+      Solve("miplib/assign1", "faillimit=10").message;
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_TRUE(message.find(" 11 fails") != string::npos);
   EXPECT_EQ("Invalid value -1 for option faillimit",
@@ -220,7 +197,7 @@ TEST_F(JaCoPSolverTest, FailLimitOption) {
 }
 
 TEST_F(JaCoPSolverTest, MemoryLimitOption) {
-  Solve(DATA_DIR "miplib/assign1", "memorylimit=1000000");
+  Solve("miplib/assign1", "memorylimit=1000000");
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_EQ("Invalid value -1 for option memorylimit",
       ParseOptions("memorylimit=-1").error());
@@ -228,7 +205,7 @@ TEST_F(JaCoPSolverTest, MemoryLimitOption) {
 
 TEST_F(JaCoPSolverTest, NodeLimitOption) {
   std::string message =
-      Solve(DATA_DIR "miplib/assign1", "nodelimit=10").message;
+      Solve("miplib/assign1", "nodelimit=10").message;
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_TRUE(message.find("11 nodes") != string::npos);
   EXPECT_EQ("Invalid value -1 for option nodelimit",
@@ -236,7 +213,7 @@ TEST_F(JaCoPSolverTest, NodeLimitOption) {
 }
 
 TEST_F(JaCoPSolverTest, TimeLimitOption) {
-  Solve(DATA_DIR "miplib/assign1", "timelimit=0.1");
+  Solve("miplib/assign1", "timelimit=0.1");
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_EQ("Invalid value -1 for option timelimit",
       ParseOptions("timelimit=-1").error());
@@ -321,7 +298,7 @@ TEST_F(JaCoPSolverTest, VarBranchingOption) {
 TEST_F(JaCoPSolverTest, OutLevOption) {
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    Solve(DATA_DIR "objconstint");
+    Solve("objconstint");
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
@@ -329,7 +306,7 @@ TEST_F(JaCoPSolverTest, OutLevOption) {
 
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    Solve(DATA_DIR "objconstint", "outlev=1");
+    Solve("objconstint", "outlev=1");
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
@@ -348,7 +325,7 @@ TEST_F(JaCoPSolverTest, OutLevOption) {
 TEST_F(JaCoPSolverTest, OutFreqOption) {
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    Solve(DATA_DIR "party1", "outlev=1", "outfreq=1", "timelimit=2.5");
+    Solve("party1", "outlev=1", "outfreq=1", "timelimit=2.5");
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
@@ -357,7 +334,7 @@ TEST_F(JaCoPSolverTest, OutFreqOption) {
 
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    Solve(DATA_DIR "party1", "outlev=1", "outfreq=2", "timelimit=2.5");
+    Solve("party1", "outlev=1", "outfreq=2", "timelimit=2.5");
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
