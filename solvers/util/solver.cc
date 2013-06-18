@@ -22,6 +22,7 @@
 
 #include "solvers/util/solver.h"
 
+#include <cctype>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
@@ -219,16 +220,16 @@ BasicSolver::BasicSolver(
   Option_Info::version = bsname;
   driver_date = date;
 
-  AddKeywordOption("version",
+  AddBasicOption("version",
       "Single-word phrase:  report version details "
-      "before solving the problem.", Ver_val);
-  AddKeywordOption("wantsol",
+      "before solving the problem.", true, &BasicSolver::PrintVersion);
+  AddBasicOption("wantsol",
       "In a stand-alone invocation (no -AMPL on the command line), "
       "what solution information to write.  Sum of\n"
       "      1 = write .sol file\n"
       "      2 = primal variables to stdout\n"
       "      4 = dual variables to stdout\n"
-      "      8 = suppress solution message\n", WS_val);
+      "      8 = suppress solution message\n", false, &BasicSolver::SetWantSol);
 
   cl_options_.push_back(keyword());
   keyword &kw = cl_options_.back();
@@ -275,12 +276,12 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
       name[i] = std::tolower(name_start[i]);
 
     // Parse the option value.
-    bool has_equal = false;
+    bool equal_sign = false;
     SkipSpaces(s);
     if (*s == '=') {
       ++s;
       SkipSpaces(s);
-      has_equal = true;
+      equal_sign = true;
     }
 
     nnl = 0;
@@ -288,7 +289,7 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
     if (i == options_.end()) {
       if (!skip)
         ReportError("Unknown option \"{}\"") << name;
-      if (has_equal) {
+      if (equal_sign) {
         skip = false;
         while (*s && !std::isspace(*s))
           ++s;
@@ -302,7 +303,13 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
       }
       continue;
     }
+
     skip = false;
+    if (i->second->is_keyword() && equal_sign) {
+      ReportError("Option \"{}\" doesn't accept arguments") << name;
+      while (*s && !std::isspace(*s))
+        ++s;
+    }
     // TODO: get rid of keyword
     keyword kw = {const_cast<char*>(i->first.c_str())};
     if (!i->second->Handle(*this, &kw, const_cast<char*&>(s)))
