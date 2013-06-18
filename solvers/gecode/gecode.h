@@ -301,7 +301,6 @@ class GecodeSolver : public Solver<GecodeSolver> {
   bool output_;
   double output_frequency_;
   unsigned output_count_;
-  bool print_problem_;
   std::string header_;
 
   Gecode::IntConLevel icl_;
