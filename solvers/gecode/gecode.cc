@@ -384,7 +384,7 @@ std::string GecodeSolver::GetOptionHeader() {
 
 GecodeSolver::GecodeSolver()
 : Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130424),
-  output_(false), output_frequency_(1), output_count_(0), print_problem_(false),
+  output_(false), output_frequency_(1), output_count_(0),
   icl_(Gecode::ICL_DEF),
   var_branching_(IntVarBranch::SEL_SIZE_MIN),
   val_branching_(Gecode::INT_VAL_MIN()),
@@ -397,8 +397,6 @@ GecodeSolver::GecodeSolver()
   AddIntOption("outlev",
       "0 or 1 (default 0):  Whether to print solution log.",
       &GecodeSolver::SetBoolOption, &output_);
-  AddIntOption("printproblem", "Print the problem for debugging.",
-      &GecodeSolver::SetBoolOption, &print_problem_);
 
   AddDblOption("outfreq",
       "Output frequency in seconds.  The value should be a positive number.",
@@ -502,12 +500,6 @@ GecodeSolver::GecodeSolver()
 }
 
 void GecodeSolver::Solve(Problem &p) {
-  if (print_problem_) {
-    fmt::Writer writer;
-    writer << p;
-    std::puts(c_str(writer));
-  }
-
   // Set up an optimization problem in Gecode.
   std::auto_ptr<NLToGecodeConverter>
     converter(new NLToGecodeConverter(p.num_vars(), icl_));
