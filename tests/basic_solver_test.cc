@@ -37,17 +37,20 @@ using ampl::Solver;
 
 namespace {
 
-const void *const INFO = "";
+struct TestOption : public ampl::SolverOption {
+  BasicSolver *solver;
+  TestOption() : SolverOption("A test option."), solver(0) {}
 
-char *TestKeywordFunc(Option_Info *oi, keyword *kw, char *value) {
-  EXPECT_STREQ("testsolver", oi->sname);
-  EXPECT_TRUE(kw->info == INFO);
-  EXPECT_TRUE(kw->kf == TestKeywordFunc);
-  EXPECT_STREQ("testopt", kw->name);
-  EXPECT_STREQ("A Test Option", kw->desc);
-  EXPECT_EQ("42", std::string(value, 2));
-  return value + 2;
-}
+  bool Handle(BasicSolver &s, keyword *kw, char *&value) {
+    solver = &s;
+    EXPECT_TRUE(kw->info == 0);
+    EXPECT_TRUE(kw->kf == 0);
+    EXPECT_TRUE(kw->desc == 0);
+    EXPECT_STREQ("testopt", kw->name);
+    EXPECT_EQ("42", std::string(value, 2));
+    return true;
+  }
+};
 
 struct TestSolver : BasicSolver {
   TestSolver(const char *name, const char *long_name = 0, long date = 0)
@@ -65,8 +68,11 @@ struct TestSolver : BasicSolver {
     return BasicSolver::ParseOptions(argv, flags);
   }
 
-  void AddKeyword() {
-    BasicSolver::AddKeyword("testopt", "A Test Option", TestKeywordFunc, INFO);
+  TestOption *AddOption() {
+    TestOption *opt = 0;
+    BasicSolver::AddOption("testopt",
+        std::auto_ptr<ampl::SolverOption>(opt = new TestOption()));
+    return opt;
   }
 
   void Solve(Problem &) {}
@@ -284,8 +290,9 @@ TEST(SolverTest, OptionEcho) {
 
 TEST(SolverTest, ParseOptions) {
   TestSolver s("testsolver");
-  s.AddKeyword();
+  TestOption *opt = s.AddOption();
   s.ParseOptions(Args("wantsol=5", "testopt=42"));
+  EXPECT_EQ(opt->solver, &s);
   EXPECT_EQ(5, s.wantsol());
 }
 
@@ -406,37 +413,28 @@ TEST(SolverTest, SeparateOptionHandler) {
   EXPECT_EQ(42, s.answer);
 }
 
-TEST(SolverTest, OptionParseError) {
-  OptSolver s;
-  EXPECT_FALSE(s.ParseOptions(Args("badopt=3")));
-  EXPECT_EXIT({
-    FILE *f = freopen("out", "w", stdout);
-    s.ParseOptions(Args("badopt=3"));
-    fclose(f);
-    exit(0);
-  }, ::testing::ExitedWithCode(0), "");
-  EXPECT_EQ("Unknown keyword \"badopt\"\n", ReadFile("out"));
-}
-
 struct TestErrorHandler : ampl::ErrorHandler {
-  std::vector<std::string> errors_;
+  std::vector<std::string> errors;
 
   virtual ~TestErrorHandler() {}
   void HandleError(fmt::StringRef message) {
-    errors_.push_back(message);
+    errors.push_back(message);
   }
 };
 
-TEST(SolverTest, ExceptionInOptionHandler) {
+TEST(SolverTest, OptionParseError) {
   OptSolver s;
   TestErrorHandler handler;
   s.set_error_handler(&handler);
-  EXPECT_FALSE(s.ParseOptions(Args("throw=1")));
-  EXPECT_EQ(1u, handler.errors_.size());
-  EXPECT_EQ("Unknown exception in option handler", handler.errors_[0]);
-  EXPECT_FALSE(s.ParseOptions(Args("throw=2")));
-  EXPECT_EQ(2u, handler.errors_.size());
-  EXPECT_EQ("Test exception in handler", handler.errors_[1]);
+  EXPECT_FALSE(s.ParseOptions(Args("badopt=3")));
+  EXPECT_EQ(1u, handler.errors.size());
+  EXPECT_EQ("Unknown option \"badopt\"", handler.errors[0]);
+}
+
+TEST(SolverTest, ExceptionInOptionHandler) {
+  OptSolver s;
+  EXPECT_THROW(s.ParseOptions(Args("throw=1")), int);
+  EXPECT_THROW(s.ParseOptions(Args("throw=2")), std::runtime_error);
 }
 
 TEST(SolverTest, ProcessArgsReadsProblem) {
