@@ -322,20 +322,6 @@ TEST_F(IlogCPTest, SolveNumberOfCplex) {
 // ----------------------------------------------------------------------------
 // Option tests
 
-TEST_F(IlogCPTest, VersionOption) {
-  EXPECT_FALSE((s.flags() & ASL_OI_show_version) != 0);
-  EXPECT_TRUE(ParseOptions("version"));
-  EXPECT_TRUE((s.flags() & ASL_OI_show_version) != 0);
-}
-
-TEST_F(IlogCPTest, WantsolOption) {
-  EXPECT_EQ(0, s.wantsol());
-  EXPECT_TRUE(ParseOptions("wantsol=1"));
-  EXPECT_EQ(1, s.wantsol());
-  EXPECT_TRUE(ParseOptions("wantsol=5"));
-  EXPECT_EQ(5, s.wantsol());
-}
-
 TEST_F(IlogCPTest, DebugExprOption) {
   EXPECT_TRUE(ParseOptions("debugexpr=0"));
   EXPECT_EQ(0, s.GetOption(IlogCPSolver::DEBUGEXPR));
