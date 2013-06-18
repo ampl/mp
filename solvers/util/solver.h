@@ -140,6 +140,23 @@ class SignalHandler {
   static bool stop() { return stop_ != 0; }
 };
 
+// A solver option.
+class SolverOption {
+ private:
+  std::string description_;
+
+ public:
+  explicit SolverOption(const char *description) : description_(description) {}
+
+  virtual ~SolverOption() {}
+
+  const char *description() const { return description_.c_str(); }
+
+  // Handles the option and returns true if there were no errors;
+  // false otherwise.
+  virtual bool Handle(BasicSolver &s, keyword *kw, char *&value) = 0;
+};
+
 // Base class for all solver classes.
 class BasicSolver
   : private ErrorHandler, private SolutionHandler, private Option_Info {
@@ -152,7 +169,6 @@ class BasicSolver
   std::string version_;
 
   std::vector<keyword> cl_options_;  // command-line options
-  std::vector<keyword> keywords_;
   bool options_sorted_;
 
   bool has_errors_;
@@ -160,6 +176,9 @@ class BasicSolver
   SolutionHandler *sol_handler_;
 
   double read_time_;
+
+  typedef std::map<std::string, SolverOption*> OptionMap;
+  OptionMap options_;
 
   void SortOptions();
 
@@ -189,10 +208,29 @@ class BasicSolver
     }
   };
 
- protected:
-  // Make Option_Info accessible in subclasses despite private inheritance.
-  typedef Option_Info Option_Info;
+  // Parses an option string.
+  void ParseOptionString(const char *s, unsigned flags);
 
+  class KeywordOption : public SolverOption {
+   private:
+    Kwfunc *func_;
+
+   public:
+    KeywordOption(const char *description, Kwfunc *f)
+    : SolverOption(description), func_(f) {}
+
+    virtual bool Handle(BasicSolver &s, keyword *kw, char *&value) {
+      value = func_(static_cast<Option_Info*>(&s), kw, value);
+      return true;
+    }
+  };
+
+  void AddKeywordOption(const char *name, const char *description, Kwfunc *f) {
+    AddOption(name,
+        std::auto_ptr<SolverOption>(new KeywordOption(description, f)));
+  }
+
+ protected:
   // Constructs a BasicSolver object.
   // date: The solver date in YYYYMMDD format.
   BasicSolver(fmt::StringRef name, fmt::StringRef long_name, long date);
@@ -209,15 +247,12 @@ class BasicSolver
 
   double read_time() const { return read_time_; }
 
-  template <typename SolverT>
-  static SolverT *GetSolver(Option_Info *oi) {  // throw()
-    return static_cast<SolverT*>(oi);
-  }
-
-  void AddKeyword(const char *name,
-      const char *description, Kwfunc func, const void *info);
-
   virtual std::string GetOptionHeader() { return std::string(); }
+
+  void AddOption(const char *name, std::auto_ptr<SolverOption> opt) {
+    SolverOption*& dest = options_[name];
+    dest = opt.release();  // throw()
+  }
 
   template <typename T>
   void ReportInvalidOptionValue(const char *name, T value) {
@@ -342,76 +377,41 @@ class BasicSolver
 template <typename Impl>
 class Solver : public BasicSolver {
  private:
-  typedef Impl OptionHandler;
-
-  class Option {
-   private:
-    std::string description_;
-
-   public:
-    explicit Option(const char *description) : description_(description) {}
-
-    virtual ~Option() {}
-
-    const char *description() const { return description_.c_str(); }
-
-    virtual void Handle(
-        OptionHandler &h, Option_Info *oi, keyword *kw, char *&value) = 0;
-  };
-
   template <typename Func, typename Value>
-  class ConcreteOption : public Option {
+  class ConcreteOption : public SolverOption {
    private:
     Func func_;
 
    public:
     ConcreteOption(const char *description, Func func)
-    : Option(description), func_(func) {}
+    : SolverOption(description), func_(func) {}
 
-    void Handle(OptionHandler &h, Option_Info *oi, keyword *kw, char *&s) {
-      (h.*func_)(kw->name, internal::OptionParser<Value>()(oi, kw, s));
+    bool Handle(BasicSolver &s, keyword *kw, char *&value) {
+      Option_Info oi = {};
+      oi.eqsign = "=";
+      (static_cast<Impl&>(s).*func_)(
+          kw->name, internal::OptionParser<Value>()(&oi, kw, value));
+      return oi.n_badopts == 0;
     }
   };
 
   template <typename Func, typename Info, typename Value>
-  class ConcreteOptionWithInfo : public Option {
+  class ConcreteOptionWithInfo : public SolverOption {
    private:
     Func func_;
     Info info_;
 
    public:
     ConcreteOptionWithInfo(const char *description, Func func, const Info &info)
-    : Option(description), func_(func), info_(info) {}
+    : SolverOption(description), func_(func), info_(info) {}
 
-    void Handle(OptionHandler &h, Option_Info *oi, keyword *kw, char *&s) {
-      (h.*func_)(kw->name, internal::OptionParser<Value>()(oi, kw, s), info_);
+    bool Handle(BasicSolver &s, keyword *kw, char *&value) {
+      Option_Info oi = {};
+      oi.eqsign = "=";
+      (static_cast<Impl&>(s).*func_)(
+          kw->name, internal::OptionParser<Value>()(&oi, kw, value), info_);
+      return oi.n_badopts == 0;
     }
-  };
-
-  std::vector<Option*> options_;
-
-  static char *HandleOption(Option_Info *oi, keyword *kw, char *value) {
-    Solver *self = GetSolver<Solver>(oi);
-    try {
-      Option *opt = self->options_[reinterpret_cast<size_t>(kw->info)];
-      opt->Handle(*static_cast<Impl*>(self), oi, kw, value);
-    } catch (const std::exception &e) {
-      self->ReportError(e.what());
-    } catch (...) {
-      self->ReportError("Unknown exception in option handler");
-    }
-    return value;
-  }
-
-  void AddOption(const char *name, std::auto_ptr<Option> opt) {
-    AddKeyword(name, opt->description(), HandleOption,
-        reinterpret_cast<void*>(options_.size()));
-    options_.push_back(0);
-    options_.back() = opt.release();
-  }
-
-  struct Deleter {
-    void operator()(Option *opt) { delete opt; }
   };
 
  protected:
@@ -423,7 +423,7 @@ class Solver : public BasicSolver {
   // of type "const char*" and value is an option value of type "int".
   template <typename Func>
   void AddIntOption(const char *name, const char *description, Func f) {
-    AddOption(name, std::auto_ptr<Option>(
+    AddOption(name, std::auto_ptr<SolverOption>(
         new ConcreteOption<Func, int>(description, f)));
   }
 
@@ -437,7 +437,7 @@ class Solver : public BasicSolver {
   template <typename Info, typename Func>
   void AddIntOption(const char *name,
       const char *description, Func f, const Info &info) {
-    AddOption(name, std::auto_ptr<Option>(
+    AddOption(name, std::auto_ptr<SolverOption>(
         new ConcreteOptionWithInfo<Func, Info, int>(description, f, info)));
   }
 
@@ -449,7 +449,7 @@ class Solver : public BasicSolver {
   // of type "const char*" and value is an option value of type "double".
   template <typename Func>
   void AddDblOption(const char *name, const char *description, Func f) {
-    AddOption(name, std::auto_ptr<Option>(
+    AddOption(name, std::auto_ptr<SolverOption>(
         new ConcreteOption<Func, double>(description, f)));
   }
 
@@ -463,7 +463,7 @@ class Solver : public BasicSolver {
   template <typename Info, typename Func>
   void AddDblOption(const char *name,
       const char *description, Func f, const Info &info) {
-    AddOption(name, std::auto_ptr<Option>(
+    AddOption(name, std::auto_ptr<SolverOption>(
         new ConcreteOptionWithInfo<Func, Info, double>(description, f, info)));
   }
 
@@ -475,7 +475,7 @@ class Solver : public BasicSolver {
   // of type "const char*" and value is an option value of type "const char*".
   template <typename Func>
   void AddStrOption(const char *name, const char *description, Func f) {
-    AddOption(name, std::auto_ptr<Option>(
+    AddOption(name, std::auto_ptr<SolverOption>(
         new ConcreteOption<Func, const char*>(description, f)));
   }
 
@@ -489,7 +489,7 @@ class Solver : public BasicSolver {
   template <typename Info, typename Func>
   void AddStrOption(const char *name,
       const char *description, Func f, const Info &info) {
-    AddOption(name, std::auto_ptr<Option>(
+    AddOption(name, std::auto_ptr<SolverOption>(
         new ConcreteOptionWithInfo<Func, Info, const char*>(
             description, f, info)));
   }
@@ -497,10 +497,6 @@ class Solver : public BasicSolver {
  public:
   Solver(fmt::StringRef name, fmt::StringRef long_name = 0, long date = 0)
   : BasicSolver(name, long_name, date) {}
-
-  ~Solver() {
-    std::for_each(options_.begin(), options_.end(), Deleter());
-  }
 };
 }
 
