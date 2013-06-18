@@ -144,13 +144,17 @@ class SignalHandler {
 class SolverOption {
  private:
   std::string description_;
+  bool is_keyword_;  // true if this is a keyword option not accepting values.
 
  public:
-  explicit SolverOption(const char *description) : description_(description) {}
+  explicit SolverOption(const char *description, bool is_keyword = false)
+  : description_(description), is_keyword_(is_keyword) {}
 
   virtual ~SolverOption() {}
 
   const char *description() const { return description_.c_str(); }
+
+  bool is_keyword() const { return is_keyword_; }
 
   // Handles the option and returns true if there were no errors;
   // false otherwise.
@@ -208,27 +212,40 @@ class BasicSolver
     }
   };
 
-  // Parses an option string.
-  void ParseOptionString(const char *s, unsigned flags);
+  typedef bool (BasicSolver::*HandleOption)(keyword *kw, char *&value);
 
-  class KeywordOption : public SolverOption {
+  class BasicOption : public SolverOption {
    private:
-    Kwfunc *func_;
+    HandleOption handle_;
 
    public:
-    KeywordOption(const char *description, Kwfunc *f)
-    : SolverOption(description), func_(f) {}
+    BasicOption(const char *description, bool is_keyword, HandleOption h)
+    : SolverOption(description, is_keyword), handle_(h) {}
 
     virtual bool Handle(BasicSolver &s, keyword *kw, char *&value) {
-      value = func_(static_cast<Option_Info*>(&s), kw, value);
-      return true;
+      return (s.*handle_)(kw, value);
     }
   };
 
-  void AddKeywordOption(const char *name, const char *description, Kwfunc *f) {
-    AddOption(name,
-        std::auto_ptr<SolverOption>(new KeywordOption(description, f)));
+  void AddBasicOption(const char *name,
+      const char *description, bool is_keyword, HandleOption handle) {
+    AddOption(name, std::auto_ptr<SolverOption>(
+        new BasicOption(description, is_keyword, handle)));
   }
+
+  bool PrintVersion(keyword *, char *&) {
+    show_version_ASL(this);
+    return true;
+  }
+
+  bool SetWantSol(keyword *kw, char *&value) {
+    Option_Info oi = {};
+    Option_Info::wantsol = internal::OptionParser<int>()(&oi, kw, value);
+    return oi.n_badopts == 0;
+  }
+
+  // Parses an option string.
+  void ParseOptionString(const char *s, unsigned flags);
 
  protected:
   // Constructs a BasicSolver object.
