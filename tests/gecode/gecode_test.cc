@@ -160,20 +160,6 @@ TEST_P(SolverTest, InterruptSolution) {
 // ----------------------------------------------------------------------------
 // Option tests
 
-TEST_F(GecodeSolverTest, VersionOption) {
-  EXPECT_FALSE((solver_.flags() & ASL_OI_show_version) != 0);
-  EXPECT_TRUE(ParseOptions("version"));
-  EXPECT_TRUE((solver_.flags() & ASL_OI_show_version) != 0);
-}
-
-TEST_F(GecodeSolverTest, WantsolOption) {
-  EXPECT_EQ(0, solver_.wantsol());
-  EXPECT_TRUE(ParseOptions("wantsol=1"));
-  EXPECT_EQ(1, solver_.wantsol());
-  EXPECT_TRUE(ParseOptions("wantsol=5"));
-  EXPECT_EQ(5, solver_.wantsol());
-}
-
 TEST_F(GecodeSolverTest, ADOption) {
   EXPECT_EQ(Gecode::Search::Options().a_d, solver_.options().a_d);
   EXPECT_TRUE(ParseOptions("a_d=42"));

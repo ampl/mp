@@ -128,8 +128,7 @@ TEST(SolverTest, NameInUsage) {
     StderrRedirect redirect("out");
     TestSolver s("solver-name", "long-solver-name");
     s.set_version("solver-version");
-    Args args("program-name");
-    s.ProcessArgs(args);
+    s.ProcessArgs(Args("program-name"));
   }
   std::string usage = "usage: solver-name ";
   EXPECT_EQ(usage, ReadFile("out").substr(0, usage.size()));
@@ -146,10 +145,9 @@ TEST(SolverTest, LongName) {
 
 TEST(SolverTest, Version) {
   TestSolver s("testsolver", "Test Solver");
-  Args args("program-name", "-v");
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    s.ProcessArgs(args);
+    s.ProcessArgs(Args("program-name", "-v"));
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Formatter format;
@@ -159,10 +157,9 @@ TEST(SolverTest, Version) {
 
 TEST(SolverTest, VersionWithDate) {
   TestSolver s("testsolver", "Test Solver", 20121227);
-  Args args("program-name", "-v");
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    s.ProcessArgs(args);
+    s.ProcessArgs(Args("program-name", "-v"));
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Formatter format;
@@ -176,15 +173,36 @@ TEST(SolverTest, SetVersion) {
   const char *VERSION = "Solver Version 3.0";
   s.set_version(VERSION);
   EXPECT_STREQ(VERSION, s.version());
-  Args args("program-name", "-v");
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    s.ProcessArgs(args);
+    s.ProcessArgs(Args("program-name", "-v"));
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Formatter format;
   format("{} ({}), ASL({})\n") << VERSION << sysdetails_ASL << ASLdate_ASL;
   EXPECT_EQ(format.str(), ReadFile("out"));
+}
+
+TEST(SolverTest, VersionSolverOption) {
+  TestSolver s("testsolver", "Test Solver");
+  EXPECT_EXIT({
+    FILE *f = freopen("out", "w", stdout);
+    s.ParseOptions(Args("version"));
+    fclose(f);
+    exit(0);
+  }, ::testing::ExitedWithCode(0), "");
+  fmt::Formatter format;
+  format("Test Solver ({}), ASL({})\n") << sysdetails_ASL << ASLdate_ASL;
+  EXPECT_EQ(format.str(), ReadFile("out"));
+}
+
+TEST(SolverTest, WantsolOption) {
+  TestSolver s("");
+  EXPECT_EQ(0, s.wantsol());
+  EXPECT_TRUE(s.ParseOptions(Args("wantsol=1")));
+  EXPECT_EQ(1, s.wantsol());
+  EXPECT_TRUE(s.ParseOptions(Args("wantsol=5")));
+  EXPECT_EQ(5, s.wantsol());
 }
 
 TEST(SolverTest, OptionsVar) {
@@ -229,28 +247,25 @@ TEST(SolverTest, SolutionHandler) {
 }
 
 TEST(SolverTest, ReadProblem) {
-  Args args("testprogram", "data/objconst.nl");
   TestSolver s("test");
   EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_TRUE(s.ProcessArgs(args));
+  EXPECT_TRUE(s.ProcessArgs(Args("testprogram", "data/objconst.nl")));
   EXPECT_EQ(1, s.problem().num_vars());
 }
 
 TEST(SolverTest, ReadProblemNoStub) {
   StderrRedirect redirect("out");
-  Args args("testprogram");
   TestSolver s("test");
   EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_FALSE(s.ProcessArgs(args));
+  EXPECT_FALSE(s.ProcessArgs(Args("testprogram")));
   EXPECT_EQ(0, s.problem().num_vars());
 }
 
 TEST(SolverTest, ReadProblemError) {
-  Args args("testprogram", "nonexistent");
   TestSolver s("test");
   EXPECT_EXIT({
     Stderr = stderr;
-    s.ProcessArgs(args);
+    s.ProcessArgs(Args("testprogram", "nonexistent"));
   }, ::testing::ExitedWithCode(1), "testprogram: can't open nonexistent.nl");
 }
 
@@ -438,35 +453,33 @@ TEST(SolverTest, ExceptionInOptionHandler) {
 }
 
 TEST(SolverTest, ProcessArgsReadsProblem) {
-  Args args("testprogram", "data/objconst.nl");
   OptSolver s;
   EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_TRUE(s.ProcessArgs(args));
+  EXPECT_TRUE(s.ProcessArgs(Args("testprogram", "data/objconst.nl")));
   EXPECT_EQ(1, s.problem().num_vars());
 }
 
 TEST(SolverTest, ProcessArgsWithouStub) {
   StderrRedirect redirect("out");
-  Args args("testprogram");
   OptSolver s;
   EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_FALSE(s.ProcessArgs(args));
+  EXPECT_FALSE(s.ProcessArgs(Args("testprogram")));
   EXPECT_EQ(0, s.problem().num_vars());
 }
 
 TEST(SolverTest, ProcessArgsError) {
-  Args args("testprogram", "nonexistent");
   OptSolver s;
   EXPECT_EXIT({
     Stderr = stderr;
-    s.ProcessArgs(args);
+    s.ProcessArgs(Args("testprogram", "nonexistent"));
   }, ::testing::ExitedWithCode(1), "testprogram: can't open nonexistent.nl");
 }
 
 TEST(SolverTest, ProcessArgsParsesSolverOptions) {
   OptSolver s;
-  Args args("testprogram", "data/objconst.nl", "intopt1=3");
-  EXPECT_TRUE(s.ProcessArgs(args, BasicSolver::NO_OPTION_ECHO));
+  EXPECT_TRUE(s.ProcessArgs(
+      Args("testprogram", "data/objconst.nl", "intopt1=3"),
+      BasicSolver::NO_OPTION_ECHO));
   EXPECT_EQ(3, s.intopt1);
 }
 
