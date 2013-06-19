@@ -321,7 +321,6 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
 
 bool BasicSolver::ParseOptions(char **argv, unsigned flags) {
   has_errors_ = false;
-  SortOptions();
   if (opname) {
     if (const char *s = getenv(opname))
       ParseOptionString(s, flags);

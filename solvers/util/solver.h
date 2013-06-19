@@ -396,20 +396,23 @@ class BasicSolver
 template <typename Impl>
 class Solver : public BasicSolver {
  private:
-  template <typename Value>
+  template <typename Value, typename Result = Value>
   class ConcreteOption : public SolverOption {
    private:
-    typedef void (Impl::*Func)(const char *, Value);
-    Func func_;
+    typedef Result (Impl::*Getter)(const char *);
+    typedef void (Impl::*Setter)(const char *, Value);
+
+    Getter getter_;
+    Setter setter_;
 
    public:
-    ConcreteOption(const char *description, Func func)
-    : SolverOption(description), func_(func) {}
+    ConcreteOption(const char *description, Getter getter, Setter setter)
+    : SolverOption(description), getter_(getter), setter_(setter) {}
 
     bool Handle(BasicSolver &s, keyword *kw, char *&value) {
       Option_Info oi = {};
       oi.eqsign = "=";
-      (static_cast<Impl&>(s).*func_)(
+      (static_cast<Impl&>(s).*setter_)(
           kw->name, internal::OptionParser<Value>()(&oi, kw, value));
       return oi.n_badopts == 0;
     }
@@ -435,16 +438,14 @@ class Solver : public BasicSolver {
   };
 
  protected:
-  // Adds an integer option. The argument f should be a pointer to a member
-  // function in the solver class. This function is called after the option
-  // is parsed:
-  //   (solver.*f)(name, value);
-  // where handler is a reference to a Handler object, name is an option name
-  // of type "const char*" and value is an option value of type "int".
+  // Adds an integer option. The arguments getter and setter should be
+  // pointers to member functions in the solver class. They are used to
+  // get and set an option value respectively.
   void AddIntOption(const char *name, const char *description,
-      void (Impl::*f)(const char *, int)) {
+      int (Impl::*getter)(const char *),
+      void (Impl::*setter)(const char *, int)) {
     AddOption(name, std::auto_ptr<SolverOption>(
-        new ConcreteOption<int>(description, f)));
+        new ConcreteOption<int>(description, getter, setter)));
   }
 
   // Adds an integer option with additional information. The argument f
@@ -471,16 +472,14 @@ class Solver : public BasicSolver {
         new ConcreteOptionWithInfo<Func, Info, int>(description, f, info)));
   }
 
-  // Adds a double option. The argument f should be a pointer to a member
-  // function in the solver class. This function is called after the option
-  // is parsed:
-  //   (solver.*f)(name, value);
-  // where handler is a reference to a Handler object, name is an option name
-  // of type "const char*" and value is an option value of type "double".
+  // Adds a double option. The arguments getter and setter should be
+  // pointers to member functions in the solver class. They are used to
+  // get and set an option value respectively.
   void AddDblOption(const char *name, const char *description,
-      void (Impl::*f)(const char *, double)) {
+      double (Impl::*getter)(const char *),
+      void (Impl::*setter)(const char *, double)) {
     AddOption(name, std::auto_ptr<SolverOption>(
-        new ConcreteOption<double>(description, f)));
+        new ConcreteOption<double>(description, getter, setter)));
   }
 
   // Adds a double option with additional information. The argument f
@@ -507,16 +506,15 @@ class Solver : public BasicSolver {
         new ConcreteOptionWithInfo<Func, Info, double>(description, f, info)));
   }
 
-  // Adds a string option. The argument f should be a pointer to a member
-  // function in the solver class. This function is called after the option
-  // is parsed:
-  //   (solver.*f)(name, value);
-  // where handler is a reference to a Handler object, name is an option name
-  // of type "const char*" and value is an option value of type "const char*".
+  // Adds a string option. The arguments getter and setter should be
+  // pointers to member functions in the solver class. They are used to
+  // get and set an option value respectively.
   void AddStrOption(const char *name, const char *description,
-      void (Impl::*f)(const char *, const char *)) {
+      std::string (Impl::*getter)(const char *),
+      void (Impl::*setter)(const char *, const char *)) {
     AddOption(name, std::auto_ptr<SolverOption>(
-        new ConcreteOption<const char*>(description, f)));
+        new ConcreteOption<const char*, std::string>(
+            description, getter, setter)));
   }
 
   // Adds a string option with additional information. The argument f

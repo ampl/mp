@@ -39,7 +39,7 @@ struct ValueLess {
 
 namespace ampl {
 
-void SSDSolver::EnableOutput(const char *name, int value) {
+void SSDSolver::SetOutLev(const char *name, int value) {
   if (value != 0 && value != 1)
     ReportError("Invalid value {} for option {}") << value << name;
   else
@@ -52,7 +52,7 @@ SSDSolver::SSDSolver()
   set_version("SSD Solver");
   AddIntOption("outlev",
       "0 or 1 (default 0):  Whether to print solution log.",
-      &SSDSolver::EnableOutput);
+      &SSDSolver::GetOutLev, &SSDSolver::SetOutLev);
 }
 
 void SSDSolver::Solve(Problem &p) {

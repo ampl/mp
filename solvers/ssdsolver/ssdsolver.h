@@ -88,7 +88,8 @@ class SSDSolver : public Solver<SSDSolver> {
  private:
   bool output_;
 
-  void EnableOutput(const char *name, int value);
+  int GetOutLev(const char *) { return output_; }
+  void SetOutLev(const char *name, int value);
 
  public:
   SSDSolver();

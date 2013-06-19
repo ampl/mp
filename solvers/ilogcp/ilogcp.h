@@ -426,7 +426,9 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
  private:
   int options_[NUM_OPTIONS];
 
+  std::string GetOptimizer(const char *name);
   void SetOptimizer(const char *name, const char *value);
+
   void SetBoolOption(const char *name, int value, Option opt);
 
   // Information about a constraint programming solver option.
