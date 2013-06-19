@@ -444,6 +444,7 @@ IlogCPSolver::IlogCPSolver() :
       "              otherwise (default)\n"
       "      cp    = CP Optimizer\n"
       "      cplex = CPLEX Optimizer\n",
+      &IlogCPSolver::GetOptimizer,
       &IlogCPSolver::SetOptimizer);
 
   AddStrOption("outlev", "Synonym for \"logverbosity\".",
@@ -526,6 +527,17 @@ IlogCPSolver::IlogCPSolver() :
 
 IlogCPSolver::~IlogCPSolver() {
   env_.end();
+}
+
+std::string IlogCPSolver::GetOptimizer(const char *) {
+  switch (options_[OPTIMIZER]) {
+  default:
+    assert(false);
+    // Fall through.
+  case AUTO:  return "auto";
+  case CP:    return "cp";
+  case CPLEX: return "cplex";
+  }
 }
 
 void IlogCPSolver::SetOptimizer(const char *name, const char *value) {

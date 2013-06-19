@@ -400,7 +400,7 @@ GecodeSolver::GecodeSolver()
 
   AddDblOption("outfreq",
       "Output frequency in seconds.  The value should be a positive number.",
-      &GecodeSolver::SetOutputFrequency);
+      &GecodeSolver::GetOutputFrequency, &GecodeSolver::SetOutputFrequency);
 
   AddStrOption("icl",
       "Consistency level for integer propagators.  Possible values:\n"
@@ -463,7 +463,7 @@ GecodeSolver::GecodeSolver()
 
   AddDblOption("decay",
       "Decay factor for AFC and activity branchings.  Default = 1.",
-      &GecodeSolver::SetDecay);
+      &GecodeSolver::GetDecay, &GecodeSolver::SetDecay);
 
   AddDblOption("threads",
       "The number of parallel threads to use.  Assume that your computer\n"

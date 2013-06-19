@@ -314,6 +314,8 @@ class GecodeSolver : public Solver<GecodeSolver> {
   std::size_t memory_limit_;
 
   void SetBoolOption(const char *name, int value, bool *option);
+
+  double GetOutputFrequency(const char *) { return output_frequency_; }
   void SetOutputFrequency(const char *name, double value);
 
   template <typename T>
@@ -323,6 +325,7 @@ class GecodeSolver : public Solver<GecodeSolver> {
   template <typename T, typename OptionT>
   void SetOption(const char *name, T value, OptionT *option);
 
+  double GetDecay(const char *) { return decay_; }
   void SetDecay(const char *name, double value) {
     if (value > 0 && value <= 1)
       decay_ = value;
