@@ -248,6 +248,10 @@ class BasicSolver
   void ParseOptionString(const char *s, unsigned flags);
 
  protected:
+  // TODO: remove
+  // Make Option_Info accessible in subclasses despite private inheritance.
+  typedef Option_Info Option_Info;
+
   // Constructs a BasicSolver object.
   // date: The solver date in YYYYMMDD format.
   BasicSolver(fmt::StringRef name, fmt::StringRef long_name, long date);
