@@ -234,7 +234,7 @@ class BasicSolver
   }
 
   bool PrintVersion(keyword *, char *&) {
-    show_version_ASL(this);
+    Option_Info::flags |= ASL_OI_show_version;
     return true;
   }
 

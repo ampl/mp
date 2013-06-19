@@ -290,7 +290,6 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
       if (!skip)
         ReportError("Unknown option \"{}\"") << name;
       if (equal_sign) {
-        skip = false;
         while (*s && !std::isspace(*s))
           ++s;
       } else {
@@ -321,6 +320,7 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
 
 bool BasicSolver::ParseOptions(char **argv, unsigned flags) {
   has_errors_ = false;
+  Option_Info::flags &= ~ASL_OI_show_version;
   if (opname) {
     if (const char *s = getenv(opname))
       ParseOptionString(s, flags);
