@@ -267,8 +267,10 @@ class BasicSolver
   virtual std::string GetOptionHeader() { return std::string(); }
 
   void AddOption(const char *name, std::auto_ptr<SolverOption> opt) {
-    SolverOption*& dest = options_[name];
-    dest = opt.release();  // throw()
+    // First insert the option, then release a pointer to it. Doing the other
+    // way around may lead to a memory leak if insertion throws.
+    options_[name] = opt.get();
+    opt.release();
   }
 
   template <typename T>
@@ -394,9 +396,10 @@ class BasicSolver
 template <typename Impl>
 class Solver : public BasicSolver {
  private:
-  template <typename Func, typename Value>
+  template <typename Value>
   class ConcreteOption : public SolverOption {
    private:
+    typedef void (Impl::*Func)(const char *, Value);
     Func func_;
 
    public:
@@ -433,67 +436,87 @@ class Solver : public BasicSolver {
 
  protected:
   // Adds an integer option. The argument f should be a pointer to a member
-  // function in the Handler class. This function is called after the option
+  // function in the solver class. This function is called after the option
   // is parsed:
-  //   (handler.*f)(name, value);
+  //   (solver.*f)(name, value);
   // where handler is a reference to a Handler object, name is an option name
   // of type "const char*" and value is an option value of type "int".
-  template <typename Func>
-  void AddIntOption(const char *name, const char *description, Func f) {
+  void AddIntOption(const char *name, const char *description,
+      void (Impl::*f)(const char *, int)) {
     AddOption(name, std::auto_ptr<SolverOption>(
-        new ConcreteOption<Func, int>(description, f)));
+        new ConcreteOption<int>(description, f)));
   }
 
   // Adds an integer option with additional information. The argument f
-  // should be a pointer to a member function in the Handler class.
+  // should be a pointer to a member function in the solver class.
   // This function is called after the option is parsed:
-  //   (handler.*f)(name, value, info);
+  //   (solver.*f)(name, value, info);
   // where handler is a reference to a Handler object, name is an option name
   // of type "const char*", value is an option value of type "int" and info
   // is a reference to the Info object passed to AddIntOption.
-  template <typename Info, typename Func>
-  void AddIntOption(const char *name,
-      const char *description, Func f, const Info &info) {
+  template <typename Info>
+  void AddIntOption(const char *name, const char *description,
+      void (Impl::*f)(const char *, int, const Info &), const Info &info) {
+    typedef void (Impl::*Func)(const char *, int, const Info &);
+    AddOption(name, std::auto_ptr<SolverOption>(
+        new ConcreteOptionWithInfo<Func, Info, int>(description, f, info)));
+  }
+
+  // The same as above but with Info argument passed by value.
+  template <typename Info>
+  void AddIntOption(const char *name, const char *description,
+      void (Impl::*f)(const char *, int, Info), Info info) {
+    typedef void (Impl::*Func)(const char *, int, Info);
     AddOption(name, std::auto_ptr<SolverOption>(
         new ConcreteOptionWithInfo<Func, Info, int>(description, f, info)));
   }
 
   // Adds a double option. The argument f should be a pointer to a member
-  // function in the Handler class. This function is called after the option
+  // function in the solver class. This function is called after the option
   // is parsed:
-  //   (handler.*f)(name, value);
+  //   (solver.*f)(name, value);
   // where handler is a reference to a Handler object, name is an option name
   // of type "const char*" and value is an option value of type "double".
-  template <typename Func>
-  void AddDblOption(const char *name, const char *description, Func f) {
+  void AddDblOption(const char *name, const char *description,
+      void (Impl::*f)(const char *, double)) {
     AddOption(name, std::auto_ptr<SolverOption>(
-        new ConcreteOption<Func, double>(description, f)));
+        new ConcreteOption<double>(description, f)));
   }
 
   // Adds a double option with additional information. The argument f
-  // should be a pointer to a member function in the Handler class.
+  // should be a pointer to a member function in the solver class.
   // This function is called after the option is parsed:
-  //   (handler.*f)(name, value, info);
+  //   (solver.*f)(name, value, info);
   // where handler is a reference to a Handler object, name is an option name
   // of type "const char*", value is an option value of type "double" and info
   // is a reference to the Info object passed to AddDblOption.
-  template <typename Info, typename Func>
-  void AddDblOption(const char *name,
-      const char *description, Func f, const Info &info) {
+  template <typename Info>
+  void AddDblOption(const char *name, const char *description,
+      void (Impl::*f)(const char *, double, const Info &), const Info &info) {
+    typedef void (Impl::*Func)(const char *, double, const Info &);
+    AddOption(name, std::auto_ptr<SolverOption>(
+        new ConcreteOptionWithInfo<Func, Info, double>(description, f, info)));
+  }
+
+  // The same as above but with Info argument passed by value.
+  template <typename Info>
+  void AddDblOption(const char *name, const char *description,
+      void (Impl::*f)(const char *, double, Info), Info info) {
+    typedef void (Impl::*Func)(const char *, double, Info);
     AddOption(name, std::auto_ptr<SolverOption>(
         new ConcreteOptionWithInfo<Func, Info, double>(description, f, info)));
   }
 
   // Adds a string option. The argument f should be a pointer to a member
-  // function in the Handler class. This function is called after the option
+  // function in the solver class. This function is called after the option
   // is parsed:
-  //   (handler.*f)(name, value);
+  //   (solver.*f)(name, value);
   // where handler is a reference to a Handler object, name is an option name
   // of type "const char*" and value is an option value of type "const char*".
-  template <typename Func>
-  void AddStrOption(const char *name, const char *description, Func f) {
+  void AddStrOption(const char *name, const char *description,
+      void (Impl::*f)(const char *, const char *)) {
     AddOption(name, std::auto_ptr<SolverOption>(
-        new ConcreteOption<Func, const char*>(description, f)));
+        new ConcreteOption<const char*>(description, f)));
   }
 
   // Adds a string option with additional information. The argument f
@@ -503,9 +526,22 @@ class Solver : public BasicSolver {
   // where handler is a reference to a Handler object, name is an option name
   // of type "const char*", value is an option value of type "const char*"
   // and info is a reference to the Info object passed to AddStrOption.
-  template <typename Info, typename Func>
-  void AddStrOption(const char *name,
-      const char *description, Func f, const Info &info) {
+  template <typename Info>
+  void AddStrOption(const char *name, const char *description,
+      void (Impl::*f)(const char *, const char *, const Info &),
+      const Info &info) {
+    typedef void (Impl::*Func)(const char *, const char *, const Info &);
+    AddOption(name, std::auto_ptr<SolverOption>(
+        new ConcreteOptionWithInfo<Func, Info, const char*>(
+            description, f, info)));
+  }
+
+  // The same as above but with Info argument passed by value.
+  template <typename Info>
+  void AddStrOption(const char *name, const char *description,
+      void (Impl::*f)(const char *, const char *, Info),
+      const Info &info) {
+    typedef void (Impl::*Func)(const char *, const char *, Info);
     AddOption(name, std::auto_ptr<SolverOption>(
         new ConcreteOptionWithInfo<Func, Info, const char*>(
             description, f, info)));
