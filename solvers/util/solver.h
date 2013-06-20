@@ -76,29 +76,6 @@ class SolutionHandler {
 };
 
 namespace internal {
-
-template <typename T>
-struct OptionParser;
-
-template <>
-struct OptionParser<int> {
-  int operator()(Option_Info *oi, keyword *kw, char *&s);
-};
-
-template <>
-struct OptionParser<double> {
-  double operator()(Option_Info *oi, keyword *kw, char *&s);
-};
-
-template <>
-class OptionParser<const char*> {
- private:
-  std::string value_;
-
- public:
-  const char* operator()(Option_Info *, keyword *, char *&s);
-};
-
 // Formats a string by indenting it and performing word wrap.
 std::string Format(fmt::StringRef s, int indent = 0);
 }
@@ -147,18 +124,64 @@ class SolverOption {
   bool is_keyword_;  // true if this is a keyword option not accepting values.
 
  public:
-  explicit SolverOption(const char *description, bool is_keyword = false)
+  SolverOption(const char *description, bool is_keyword = false)
   : description_(description), is_keyword_(is_keyword) {}
-
   virtual ~SolverOption() {}
 
   const char *description() const { return description_.c_str(); }
-
   bool is_keyword() const { return is_keyword_; }
 
-  // Handles the option and returns true if there were no errors;
-  // false otherwise.
-  virtual bool Handle(BasicSolver &s, keyword *kw, char *&value) = 0;
+  // Prints the current value of the option.
+  virtual void Print(BasicSolver &s, fmt::StringRef name) = 0;
+
+  // Parses and sets the value of the option.
+  virtual void Parse(BasicSolver &s, fmt::StringRef name, const char *&str) = 0;
+};
+
+template <typename T>
+class TypedSolverOption;
+
+template <>
+class TypedSolverOption<int> : public SolverOption {
+ public:
+  typedef int Arg;
+
+  TypedSolverOption(const char *description) : SolverOption(description) {}
+
+  void Print(BasicSolver &s, fmt::StringRef name);
+  void Parse(BasicSolver &s, fmt::StringRef name, const char *&str);
+
+  virtual int GetValue(BasicSolver &s, fmt::StringRef name) = 0;
+  virtual void SetValue(BasicSolver &s, fmt::StringRef name, int value) = 0;
+};
+
+template <>
+class TypedSolverOption<double>: public SolverOption {
+ public:
+  typedef double Arg;
+
+  TypedSolverOption(const char *description) : SolverOption(description) {}
+
+  void Print(BasicSolver &s, fmt::StringRef name);
+  void Parse(BasicSolver &s, fmt::StringRef name, const char *&str);
+
+  virtual double GetValue(BasicSolver &s, fmt::StringRef name) = 0;
+  virtual void SetValue(BasicSolver &s, fmt::StringRef name, double value) = 0;
+};
+
+template <>
+class TypedSolverOption<std::string>: public SolverOption {
+ public:
+  typedef const char *Arg;
+
+  TypedSolverOption(const char *description) : SolverOption(description) {}
+
+  void Print(BasicSolver &s, fmt::StringRef name);
+  void Parse(BasicSolver &s, fmt::StringRef name, const char *&str);
+
+  virtual std::string GetValue(BasicSolver &s, fmt::StringRef name) = 0;
+  virtual void SetValue(BasicSolver &s,
+      fmt::StringRef name, const char *value) = 0;
 };
 
 // Base class for all solver classes.
@@ -172,9 +195,6 @@ class BasicSolver
   std::string options_var_name_;
   std::string version_;
 
-  std::vector<keyword> cl_options_;  // command-line options
-  bool options_sorted_;
-
   bool has_errors_;
   ErrorHandler *error_handler_;
   SolutionHandler *sol_handler_;
@@ -183,8 +203,7 @@ class BasicSolver
 
   typedef std::map<std::string, SolverOption*> OptionMap;
   OptionMap options_;
-
-  void SortOptions();
+  keyword cl_option_;  // command-line option '='
 
   static char *PrintOptionsAndExit(Option_Info *oi, keyword *kw, char *value);
 
@@ -212,46 +231,10 @@ class BasicSolver
     }
   };
 
-  typedef bool (BasicSolver::*HandleOption)(keyword *kw, char *&value);
-
-  class BasicOption : public SolverOption {
-   private:
-    HandleOption handle_;
-
-   public:
-    BasicOption(const char *description, bool is_keyword, HandleOption h)
-    : SolverOption(description, is_keyword), handle_(h) {}
-
-    virtual bool Handle(BasicSolver &s, keyword *kw, char *&value) {
-      return (s.*handle_)(kw, value);
-    }
-  };
-
-  void AddBasicOption(const char *name,
-      const char *description, bool is_keyword, HandleOption handle) {
-    AddOption(name, std::auto_ptr<SolverOption>(
-        new BasicOption(description, is_keyword, handle)));
-  }
-
-  bool PrintVersion(keyword *, char *&) {
-    Option_Info::flags |= ASL_OI_show_version;
-    return true;
-  }
-
-  bool SetWantSol(keyword *kw, char *&value) {
-    Option_Info oi = {};
-    Option_Info::wantsol = internal::OptionParser<int>()(&oi, kw, value);
-    return oi.n_badopts == 0;
-  }
-
   // Parses an option string.
   void ParseOptionString(const char *s, unsigned flags);
 
  protected:
-  // TODO: remove
-  // Make Option_Info accessible in subclasses despite private inheritance.
-  typedef Option_Info Option_Info;
-
   // Constructs a BasicSolver object.
   // date: The solver date in YYYYMMDD format.
   BasicSolver(fmt::StringRef name, fmt::StringRef long_name, long date);
@@ -275,11 +258,6 @@ class BasicSolver
     // way around may lead to a memory leak if insertion throws.
     options_[name] = opt.get();
     opt.release();
-  }
-
-  template <typename T>
-  void ReportInvalidOptionValue(const char *name, T value) {
-    ReportError("Invalid value {} for option {}") << value << name;
   }
 
  public:
@@ -368,6 +346,11 @@ class BasicSolver
         format.c_str(), ErrorReporter(error_handler_));
   }
 
+  template <typename T>
+  void ReportInvalidOptionValue(fmt::StringRef name, T value) {
+    ReportError("Invalid value {} for option {}") << value << name.c_str();
+  }
+
   // Solves a problem.
   // The solutions are reported via the registered solution handler.
   virtual void Solve(Problem &p) = 0;
@@ -400,44 +383,47 @@ class BasicSolver
 template <typename Impl>
 class Solver : public BasicSolver {
  private:
-  template <typename Value, typename Result = Value>
-  class ConcreteOption : public SolverOption {
+  template <typename T>
+  class ConcreteOption : public TypedSolverOption<T> {
    private:
-    typedef Result (Impl::*Getter)(const char *);
-    typedef void (Impl::*Setter)(const char *, Value);
+    typedef typename TypedSolverOption<T>::Arg Arg;
+    typedef T (Impl::*Getter)(const char *);
+    typedef void (Impl::*Setter)(const char *, Arg);
 
     Getter getter_;
     Setter setter_;
 
    public:
     ConcreteOption(const char *description, Getter getter, Setter setter)
-    : SolverOption(description), getter_(getter), setter_(setter) {}
+    : TypedSolverOption<T>(description),
+      getter_(getter), setter_(setter) {}
 
-    bool Handle(BasicSolver &s, keyword *kw, char *&value) {
-      Option_Info oi = {};
-      oi.eqsign = "=";
-      (static_cast<Impl&>(s).*setter_)(
-          kw->name, internal::OptionParser<Value>()(&oi, kw, value));
-      return oi.n_badopts == 0;
+    T GetValue(BasicSolver &s, fmt::StringRef name) {
+      return (static_cast<Impl&>(s).*getter_)(name.c_str());
+    }
+
+    void SetValue(BasicSolver &s, fmt::StringRef name, Arg value) {
+      (static_cast<Impl&>(s).*setter_)(name.c_str(), value);
     }
   };
 
-  template <typename Func, typename Info, typename Value>
-  class ConcreteOptionWithInfo : public SolverOption {
+  template <typename Func, typename Info, typename T>
+  class ConcreteOptionWithInfo : public TypedSolverOption<T> {
    private:
+    typedef typename TypedSolverOption<T>::Arg Arg;
     Func func_;
     Info info_;
 
    public:
     ConcreteOptionWithInfo(const char *description, Func func, const Info &info)
-    : SolverOption(description), func_(func), info_(info) {}
+    : TypedSolverOption<T>(description), func_(func), info_(info) {}
 
-    bool Handle(BasicSolver &s, keyword *kw, char *&value) {
-      Option_Info oi = {};
-      oi.eqsign = "=";
-      (static_cast<Impl&>(s).*func_)(
-          kw->name, internal::OptionParser<Value>()(&oi, kw, value), info_);
-      return oi.n_badopts == 0;
+    T GetValue(BasicSolver &s, fmt::StringRef name) {
+      return T(); // TODO
+    }
+
+    void SetValue(BasicSolver &s, fmt::StringRef name, Arg value) {
+      (static_cast<Impl&>(s).*func_)(name.c_str(), value, info_);
     }
   };
 
@@ -517,8 +503,7 @@ class Solver : public BasicSolver {
       std::string (Impl::*getter)(const char *),
       void (Impl::*setter)(const char *, const char *)) {
     AddOption(name, std::auto_ptr<SolverOption>(
-        new ConcreteOption<const char*, std::string>(
-            description, getter, setter)));
+        new ConcreteOption<std::string>(description, getter, setter)));
   }
 
   // Adds a string option with additional information. The argument f
@@ -534,7 +519,7 @@ class Solver : public BasicSolver {
       const Info &info) {
     typedef void (Impl::*Func)(const char *, const char *, const Info &);
     AddOption(name, std::auto_ptr<SolverOption>(
-        new ConcreteOptionWithInfo<Func, Info, const char*>(
+        new ConcreteOptionWithInfo<Func, Info, std::string>(
             description, f, info)));
   }
 
@@ -545,7 +530,7 @@ class Solver : public BasicSolver {
       const Info &info) {
     typedef void (Impl::*Func)(const char *, const char *, Info);
     AddOption(name, std::auto_ptr<SolverOption>(
-        new ConcreteOptionWithInfo<Func, Info, const char*>(
+        new ConcreteOptionWithInfo<Func, Info, std::string>(
             description, f, info)));
   }
 

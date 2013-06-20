@@ -40,53 +40,29 @@
 
 namespace {
 
-struct KeywordNameLess {
-  bool operator()(const keyword &lhs, const keyword &rhs) const {
-    return std::strcmp(lhs.name, rhs.name) < 0;
-  }
-};
+const char *SkipSpaces(const char *s) {
+  while (*s && isspace(*s))
+    ++s;
+  return s;
+}
 
-// Skips leading spaces in string s and returns true if the string contains
-// non-space characters; false otherwise.
-bool SkipSpaces(const char *&s) {
-  for (; *s; ++s) {
-    if (!std::isspace(*s))
-      return true;
-  }
-  return false;
+const char *SkipNonSpaces(const char *s) {
+  while (*s && !isspace(*s))
+    ++s;
+  return s;
+}
+
+void ReportInvalidOptionValue(ampl::BasicSolver &s,
+    fmt::StringRef name, const char *&str, const char *cursor) {
+  const char *end = SkipNonSpaces(cursor);
+  s.ReportInvalidOptionValue(name, std::string(str, end - str));
+  str = end;
 }
 }
 
 namespace ampl {
 
 namespace internal {
-int OptionParser<int>::operator()(Option_Info *oi, keyword *kw, char *&s) {
-  keyword thiskw(*kw);
-  int value = 0;
-  thiskw.info = &value;
-  s = I_val(oi, &thiskw, s);
-  return value;
-}
-
-double OptionParser<double>::operator()(
-    Option_Info *oi, keyword *kw, char *&s) {
-  keyword thiskw(*kw);
-  double value = 0;
-  thiskw.info = &value;
-  s = D_val(oi, &thiskw, s);
-  return value;
-}
-
-const char* OptionParser<const char*>::operator()(
-    Option_Info *, keyword *, char *&s) {
-  char *end = s;
-  while (*end && !isspace(*end))
-    ++end;
-  value_.assign(s, end - s);
-  s = end;
-  return value_.c_str();
-}
-
 std::string Format(fmt::StringRef s, int indent) {
   std::ostringstream os;
   bool new_line = true;
@@ -171,22 +147,61 @@ void SignalHandler::HandleSigInt(int sig) {
   std::signal(sig, HandleSigInt);
 }
 
-void BasicSolver::SortOptions() {
-  if (options_sorted_) return;
-  std::sort(cl_options_.begin(), cl_options_.end(), KeywordNameLess());
-  options = &cl_options_[0];
-  n_options = static_cast<int>(cl_options_.size());
-  options_sorted_ = true;
+void TypedSolverOption<int>::Print(BasicSolver &s, fmt::StringRef name) {
+  printf("%s=%d\n", name.c_str(), GetValue(s, name));
+}
+
+void TypedSolverOption<int>::Parse(
+    BasicSolver &s, fmt::StringRef name, const char *&str) {
+  char *end = 0;
+  long value = std::strtol(str, &end, 10);
+  if (*end && !std::isspace(*end)) {
+    ReportInvalidOptionValue(s, name, str, end);
+    return;
+  }
+  str = end;
+  SetValue(s, name, value);
+}
+
+void TypedSolverOption<double>::Print(BasicSolver &s, fmt::StringRef name) {
+  char buffer[32];
+  g_fmt(buffer, GetValue(s, name));
+  printf("%s=%s\n", name.c_str(), buffer);
+}
+
+void TypedSolverOption<double>::Parse(
+    BasicSolver &s, fmt::StringRef name, const char *&str) {
+  char *end = 0;
+  double value = strtod_ASL(str, &end);
+  if (*end && !std::isspace(*end)) {
+    ReportInvalidOptionValue(s, name, str, end);
+    return;
+  }
+  str = end;
+  SetValue(s, name, value);
+}
+
+void TypedSolverOption<std::string>::Print(
+    BasicSolver &s, fmt::StringRef name) {
+  printf("%s=%s\n", name.c_str(), GetValue(s, name).c_str());
+}
+
+void TypedSolverOption<std::string>::Parse(
+    BasicSolver &s, fmt::StringRef name, const char *&str) {
+  const char *end = SkipNonSpaces(str);
+  std::string value(str, end - str);
+  str = end;
+  SetValue(s, name, value.c_str());
 }
 
 char *BasicSolver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
-  std::string header =
-      internal::Format(static_cast<BasicSolver*>(oi)->GetOptionHeader());
+  BasicSolver *solver = static_cast<BasicSolver*>(oi);
+  std::string header = internal::Format(solver->GetOptionHeader());
   if (!header.empty())
     fmt::Print("{}\n") << header;
   fmt::Print("Directives:\n");
   const int DESC_INDENT = 6;
-  const OptionMap &options = static_cast<BasicSolver*>(oi)->options_;
+  const OptionMap &options = solver->options_;
   for (OptionMap::const_iterator i = options.begin(); i != options.end(); ++i) {
     fmt::Print("\n{}\n{}") << i->first
         << internal::Format(i->second->description(), DESC_INDENT);
@@ -197,7 +212,7 @@ char *BasicSolver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
 
 BasicSolver::BasicSolver(
     fmt::StringRef name, fmt::StringRef long_name, long date)
-: name_(name), options_sorted_(false), has_errors_(false) {
+: name_(name), has_errors_(false) {
   error_handler_ = this;
   sol_handler_ = this;
 
@@ -220,23 +235,43 @@ BasicSolver::BasicSolver(
   Option_Info::version = bsname;
   driver_date = date;
 
-  AddBasicOption("version",
-      "Single-word phrase:  report version details "
-      "before solving the problem.", true, &BasicSolver::PrintVersion);
-  AddBasicOption("wantsol",
-      "In a stand-alone invocation (no -AMPL on the command line), "
-      "what solution information to write.  Sum of\n"
-      "      1 = write .sol file\n"
-      "      2 = primal variables to stdout\n"
-      "      4 = dual variables to stdout\n"
-      "      8 = suppress solution message\n", false, &BasicSolver::SetWantSol);
+  struct VersionOption : SolverOption {
+    VersionOption() : SolverOption(
+        "Single-word phrase:  report version details "
+        "before solving the problem.", true) {}
 
-  cl_options_.push_back(keyword());
-  keyword &kw = cl_options_.back();
-  kw.name = const_cast<char*>("=");
-  kw.desc = const_cast<char*>("show name= possibilities");
-  kw.kf = BasicSolver::PrintOptionsAndExit;
-  kw.info = 0;
+    void Print(BasicSolver &s, fmt::StringRef name) {
+      printf("%s=%d\n", name.c_str(), (s.flags() & ASL_OI_show_version) != 0);
+    }
+    void Parse(BasicSolver &s, fmt::StringRef, const char *&) {
+      s.Option_Info::flags |= ASL_OI_show_version;
+    }
+  };
+  AddOption("version", std::auto_ptr<SolverOption>(new VersionOption()));
+
+  struct WantSolOption : TypedSolverOption<int> {
+    WantSolOption() : TypedSolverOption<int>(
+        "In a stand-alone invocation (no -AMPL on the command line), "
+        "what solution information to write.  Sum of\n"
+        "      1 = write .sol file\n"
+        "      2 = primal variables to stdout\n"
+        "      4 = dual variables to stdout\n"
+        "      8 = suppress solution message\n") {}
+
+    int GetValue(BasicSolver &s, fmt::StringRef) { return s.wantsol(); }
+    void SetValue(BasicSolver &s, fmt::StringRef, int value) {
+      s.Option_Info::wantsol = value;
+    }
+  };
+  AddOption("wantsol", std::auto_ptr<SolverOption>(new WantSolOption()));
+
+  cl_option_ = keyword();
+  cl_option_.name = const_cast<char*>("=");
+  cl_option_.desc = const_cast<char*>("show name= possibilities");
+  cl_option_.kf = BasicSolver::PrintOptionsAndExit;
+  cl_option_.info = 0;
+  options = &cl_option_;
+  n_options = 1;
 }
 
 BasicSolver::~BasicSolver() {
@@ -249,7 +284,6 @@ BasicSolver::~BasicSolver() {
 }
 
 bool BasicSolver::ProcessArgs(char **&argv, unsigned flags) {
-  SortOptions();
   char *stub = getstub_ASL(reinterpret_cast<ASL*>(problem_.asl_), &argv, this);
   if (!stub) {
     usage_noexit_ASL(this, 1);
@@ -262,7 +296,7 @@ bool BasicSolver::ProcessArgs(char **&argv, unsigned flags) {
 void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
   bool skip = false;
   for (;;) {
-    if (!SkipSpaces(s))
+    if (!*(s = SkipSpaces(s)))
       return;
 
     // Parse the option name.
@@ -277,10 +311,9 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
 
     // Parse the option value.
     bool equal_sign = false;
-    SkipSpaces(s);
+    s = SkipSpaces(s);
     if (*s == '=') {
-      ++s;
-      SkipSpaces(s);
+      s = SkipSpaces(s + 1);
       equal_sign = true;
     }
 
@@ -290,8 +323,7 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
       if (!skip)
         ReportError("Unknown option \"{}\"") << name;
       if (equal_sign) {
-        while (*s && !std::isspace(*s))
-          ++s;
+        s = SkipNonSpaces(s);
       } else {
         // Skip everything until the next known option if there is no "="
         // because it is impossible to know whether the next token is an
@@ -304,17 +336,25 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
     }
 
     skip = false;
-    if (i->second->is_keyword() && equal_sign) {
-      ReportError("Option \"{}\" doesn't accept arguments") << name;
-      while (*s && !std::isspace(*s))
+    SolverOption *opt = i->second;
+    bool print = false;
+    if (*s == '?') {
+      char next = s[1];
+      if (!next || std::isspace(next)) {
         ++s;
+        print = true;
+        opt->Print(*this, name);
+      }
     }
-    // TODO: get rid of keyword
-    keyword kw = {const_cast<char*>(i->first.c_str())};
-    if (!i->second->Handle(*this, &kw, const_cast<char*&>(s)))
-      has_errors_ = true;
-    if ((flags & NO_OPTION_ECHO) == 0)
-      printf("%.*s\n", static_cast<int>(s - name_start), name_start);
+    if (!print) {
+      if (opt->is_keyword() && equal_sign) {
+        ReportError("Option \"{}\" doesn't accept arguments") << name;
+        s = SkipNonSpaces(s);
+      }
+      opt->Parse(*this, name, s);
+      if ((flags & NO_OPTION_ECHO) == 0)
+        printf("%.*s\n", static_cast<int>(s - name_start), name_start);
+    }
   }
 }
 
