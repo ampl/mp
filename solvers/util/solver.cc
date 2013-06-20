@@ -52,11 +52,12 @@ const char *SkipNonSpaces(const char *s) {
   return s;
 }
 
-void ReportInvalidOptionValue(ampl::BasicSolver &s,
-    fmt::StringRef name, const char *&str, const char *cursor) {
+ampl::InvalidOptionValue MakeInvalidOptionValue(
+    fmt::StringRef name, const char *&s, const char *cursor) {
   const char *end = SkipNonSpaces(cursor);
-  s.ReportInvalidOptionValue(name, std::string(str, end - str));
-  str = end;
+  std::string value(s, end - s);
+  s = end;
+  return ampl::InvalidOptionValue(name, value);
 }
 }
 
@@ -147,51 +148,44 @@ void SignalHandler::HandleSigInt(int sig) {
   std::signal(sig, HandleSigInt);
 }
 
-void TypedSolverOption<int>::Print(BasicSolver &s, fmt::StringRef name) {
-  printf("%s=%d\n", name.c_str(), GetValue(s, name));
+void TypedSolverOption<int>::Print(fmt::StringRef name) {
+  printf("%s=%d\n", name.c_str(), GetValue(name));
 }
 
-void TypedSolverOption<int>::Parse(
-    BasicSolver &s, fmt::StringRef name, const char *&str) {
+void TypedSolverOption<int>::Parse(fmt::StringRef name, const char *&s) {
   char *end = 0;
-  long value = std::strtol(str, &end, 10);
-  if (*end && !std::isspace(*end)) {
-    ReportInvalidOptionValue(s, name, str, end);
-    return;
-  }
-  str = end;
-  SetValue(s, name, value);
+  long value = std::strtol(s, &end, 10);
+  if (*end && !std::isspace(*end))
+    throw MakeInvalidOptionValue(name, s, end);
+  s = end;
+  SetValue(name, value);
 }
 
-void TypedSolverOption<double>::Print(BasicSolver &s, fmt::StringRef name) {
+void TypedSolverOption<double>::Print(fmt::StringRef name) {
   char buffer[32];
-  g_fmt(buffer, GetValue(s, name));
+  g_fmt(buffer, GetValue(name));
   printf("%s=%s\n", name.c_str(), buffer);
 }
 
-void TypedSolverOption<double>::Parse(
-    BasicSolver &s, fmt::StringRef name, const char *&str) {
+void TypedSolverOption<double>::Parse(fmt::StringRef name, const char *&s) {
   char *end = 0;
-  double value = strtod_ASL(str, &end);
-  if (*end && !std::isspace(*end)) {
-    ReportInvalidOptionValue(s, name, str, end);
-    return;
-  }
-  str = end;
-  SetValue(s, name, value);
+  double value = strtod_ASL(s, &end);
+  if (*end && !std::isspace(*end))
+    throw MakeInvalidOptionValue(name, s, end);
+  s = end;
+  SetValue(name, value);
 }
 
-void TypedSolverOption<std::string>::Print(
-    BasicSolver &s, fmt::StringRef name) {
-  printf("%s=%s\n", name.c_str(), GetValue(s, name).c_str());
+void TypedSolverOption<std::string>::Print(fmt::StringRef name) {
+  printf("%s=%s\n", name.c_str(), GetValue(name).c_str());
 }
 
 void TypedSolverOption<std::string>::Parse(
-    BasicSolver &s, fmt::StringRef name, const char *&str) {
-  const char *end = SkipNonSpaces(str);
-  std::string value(str, end - str);
-  str = end;
-  SetValue(s, name, value.c_str());
+    fmt::StringRef name, const char *&s) {
+  const char *end = SkipNonSpaces(s);
+  std::string value(s, end - s);
+  s = end;
+  SetValue(name, value.c_str());
 }
 
 char *BasicSolver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
@@ -236,34 +230,34 @@ BasicSolver::BasicSolver(
   driver_date = date;
 
   struct VersionOption : SolverOption {
-    VersionOption() : SolverOption(
+    BasicSolver &s;
+    VersionOption(BasicSolver &s) : SolverOption(
         "Single-word phrase:  report version details "
-        "before solving the problem.", true) {}
+        "before solving the problem.", true), s(s) {}
 
-    void Print(BasicSolver &s, fmt::StringRef name) {
+    void Print(fmt::StringRef name) {
       printf("%s=%d\n", name.c_str(), (s.flags() & ASL_OI_show_version) != 0);
     }
-    void Parse(BasicSolver &s, fmt::StringRef, const char *&) {
+    void Parse(fmt::StringRef, const char *&) {
       s.Option_Info::flags |= ASL_OI_show_version;
     }
   };
-  AddOption("version", std::auto_ptr<SolverOption>(new VersionOption()));
+  AddOption("version", std::auto_ptr<SolverOption>(new VersionOption(*this)));
 
   struct WantSolOption : TypedSolverOption<int> {
-    WantSolOption() : TypedSolverOption<int>(
+    BasicSolver &s;
+    WantSolOption(BasicSolver &s) : TypedSolverOption<int>(
         "In a stand-alone invocation (no -AMPL on the command line), "
         "what solution information to write.  Sum of\n"
         "      1 = write .sol file\n"
         "      2 = primal variables to stdout\n"
         "      4 = dual variables to stdout\n"
-        "      8 = suppress solution message\n") {}
+        "      8 = suppress solution message\n"), s(s) {}
 
-    int GetValue(BasicSolver &s, fmt::StringRef) { return s.wantsol(); }
-    void SetValue(BasicSolver &s, fmt::StringRef, int value) {
-      s.Option_Info::wantsol = value;
-    }
+    int GetValue(fmt::StringRef) { return s.wantsol(); }
+    void SetValue(fmt::StringRef, int value) { s.Option_Info::wantsol = value; }
   };
-  AddOption("wantsol", std::auto_ptr<SolverOption>(new WantSolOption()));
+  AddOption("wantsol", std::auto_ptr<SolverOption>(new WantSolOption(*this)));
 
   cl_option_ = keyword();
   cl_option_.name = const_cast<char*>("=");
@@ -337,24 +331,26 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
 
     skip = false;
     SolverOption *opt = i->second;
-    bool print = false;
     if (*s == '?') {
       char next = s[1];
       if (!next || std::isspace(next)) {
         ++s;
-        print = true;
-        opt->Print(*this, name);
+        if ((flags & NO_OPTION_ECHO) == 0)
+          opt->Print(name);
+        continue;
       }
     }
-    if (!print) {
-      if (opt->is_keyword() && equal_sign) {
-        ReportError("Option \"{}\" doesn't accept arguments") << name;
-        s = SkipNonSpaces(s);
-      }
-      opt->Parse(*this, name, s);
-      if ((flags & NO_OPTION_ECHO) == 0)
-        printf("%.*s\n", static_cast<int>(s - name_start), name_start);
+    if (opt->is_keyword() && equal_sign) {
+      ReportError("Option \"{}\" doesn't accept arguments") << name;
+      s = SkipNonSpaces(s);
     }
+    try {
+      opt->Parse(name, s);
+    } catch (const OptionError &e) {
+      ReportError("{}") << e.what();
+    }
+    if ((flags & NO_OPTION_ECHO) == 0)
+      printf("%.*s\n", static_cast<int>(s - name_start), name_start);
   }
 }
 

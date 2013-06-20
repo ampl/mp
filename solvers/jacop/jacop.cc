@@ -302,7 +302,7 @@ bool JaCoPSolver::Stop::stop(
   }
   return time > time_limit_in_milliseconds_ || s.node > solver_.node_limit_ ||
       s.fail > solver_.fail_limit_ || s.memory > solver_.memory_limit_;
-}*/
+}
 
 void JaCoPSolver::SetBoolOption(const char *name, int value, bool *option) {
   if (value != 0 && value != 1)
@@ -312,7 +312,7 @@ void JaCoPSolver::SetBoolOption(const char *name, int value, bool *option) {
 }
 
 // TODO
-/*void JaCoPSolver::SetOutputFrequency(const char *name, int value) {
+void JaCoPSolver::SetOutputFrequency(const char *name, int value) {
   if (value <= 0)
     ReportError("Invalid value {} for option {}") << value << name;
   else
@@ -347,7 +347,7 @@ fmt::TempFormatter<fmt::Write> JaCoPSolver::Output(fmt::StringRef format) {
 }*/
 
 JaCoPSolver::JaCoPSolver()
-: Solver<JaCoPSolver>("jacop", 0, 20130415), debug_(false), check_jni_(false) {
+: Solver<JaCoPSolver>("jacop", 0, 20130415) {
 
   // TODO: options
   /*output_(false), output_frequency_(1), output_count_(0),
@@ -356,15 +356,11 @@ JaCoPSolver::JaCoPSolver()
   time_limit_(DBL_MAX), node_limit_(ULONG_MAX), fail_limit_(ULONG_MAX),
   memory_limit_(std::numeric_limits<std::size_t>::max()) {
 
-  set_version("JaCoP " GECODE_VERSION);*/
-
-  AddIntOption("debug",
-      "0 or 1 (default 0):  Whether to print debug information.",
-      &JaCoPSolver::SetBoolOption, &debug_);
+  set_version("JaCoP " GECODE_VERSION);
 
   AddIntOption("check_jni",
       "0 or 1 (default 0):  Whether to perform JNI checks.",
-      &JaCoPSolver::SetBoolOption, &check_jni_);
+      &JaCoPSolver::SetBoolOption, &check_jni_); */
 
   // TODO
   /*AddIntOption("outlev",
@@ -468,17 +464,11 @@ std::string JaCoPSolver::GetOptionHeader() {
 }
 
 void JaCoPSolver::Solve(Problem &p) {
-  Env env = JVM::env(check_jni_);
+  Env env = JVM::env(false);
 
   // Set up an optimization problem in JaCoP.
   NLToJaCoPConverter converter;
   converter.Convert(p);
-
-  if (debug_) {
-    jclass store_class = env.FindClass("JaCoP/core/Store");
-    env.CallVoidMethod(converter.store(),
-        env.GetMethod(store_class, "print", "()V"));
-  }
 
   // Solve the problem.
   SignalHandler signal_handler(*this); // TODO

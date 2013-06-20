@@ -319,18 +319,23 @@ class GecodeSolver : public Solver<GecodeSolver> {
   void SetOutputFrequency(const char *name, double value);
 
   template <typename T>
-  void SetStrOption(const char *name, const char *value,
+  std::string GetEnumOption(const char *name, const OptionInfo<T> &info);
+
+  template <typename T>
+  void SetEnumOption(const char *name, const char *value,
       const OptionInfo<T> &info);
 
   template <typename T, typename OptionT>
-  void SetOption(const char *name, T value, OptionT *option);
+  T GetOption(const char *, OptionT *option) { return *option; }
+
+  template <typename T, typename OptionT>
+  void SetNonnegativeOption(const char *name, T value, OptionT *option);
 
   double GetDecay(const char *) { return decay_; }
   void SetDecay(const char *name, double value) {
-    if (value > 0 && value <= 1)
-      decay_ = value;
-    else
-      ReportInvalidOptionValue(name, value);
+    if (value <= 0 || value > 1)
+      throw InvalidOptionValue(name, value);
+    decay_ = value;
   }
 
   void SetDblOption(const char *, double value, double *option) {

@@ -426,29 +426,45 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
  private:
   int options_[NUM_OPTIONS];
 
+  CPOptimizer *GetCPForOption(fmt::StringRef option_name);
+  CPLEXOptimizer *GetCPLEXForOption(fmt::StringRef option_name);
+
   std::string GetOptimizer(const char *name);
   void SetOptimizer(const char *name, const char *value);
 
+  int GetBoolOption(const char *, Option opt) { return options_[opt]; }
   void SetBoolOption(const char *name, int value, Option opt);
 
-  // Information about a constraint programming solver option.
-  struct CPOptionInfo {
-    IloCP::IntParam param;
-    int start;           // start value for the enumerated options
-    const char **values; // string values for enum options
-    bool accepts_auto;   // true if the option accepts IloCP::Auto value
+  // An integer/enumerated option of the constraint programming optimizer.
+  class CPOption : public TypedSolverOption<std::string> {
+   private:
+    IlogCPSolver &solver_;
+    IloCP::IntParam param_;
+    int start_;           // start value for the enumerated options
+    const char **values_; // string values for enum options
+    bool accepts_auto_;   // true if the option accepts IloCP::Auto value
 
-    CPOptionInfo(IloCP::IntParam p, int start = 0,
+   public:
+    CPOption(const char *description,
+        IlogCPSolver *s, IloCP::IntParam p, int start = 0,
         const char **values = 0, bool accepts_auto = false)
-    : param(p), start(start), values(values), accepts_auto(accepts_auto) {}
+    : TypedSolverOption<std::string>(description),
+      solver_(*s), param_(p), start_(start), values_(values),
+      accepts_auto_(accepts_auto) {
+    }
+
+    std::string GetValue(fmt::StringRef name);
+    void SetValue(fmt::StringRef name, const char *value);
   };
 
-  // Sets an integer option of the constraint programming optimizer.
-  void SetCPOption(
-      const char *name, const char *value, const CPOptionInfo &info);
+  // Returns a double option of the constraint programming optimizer.
+  double GetCPDblOption(const char *name, IloCP::NumParam param);
 
   // Sets a double option of the constraint programming optimizer.
   void SetCPDblOption(const char *name, double value, IloCP::NumParam param);
+
+  // Returns an integer option of the CPLEX optimizer.
+  int GetCPLEXIntOption(const char *name, int param);
 
   // Sets an integer option of the CPLEX optimizer.
   void SetCPLEXIntOption(const char *name, int value, int param);
