@@ -377,15 +377,12 @@ TEST(SolverTest, AddOption) {
     BasicSolver *solver;
     TestOption() : SolverOption("A test option."), solver(0) {}
 
-    bool Handle(BasicSolver &s, keyword *kw, char *&value) {
+    void Print(BasicSolver &s, fmt::StringRef) {}
+    void Parse(BasicSolver &s, fmt::StringRef name, const char *&str) {
       solver = &s;
-      EXPECT_TRUE(kw->info == 0);
-      EXPECT_TRUE(kw->kf == 0);
-      EXPECT_TRUE(kw->desc == 0);
-      EXPECT_STREQ("testopt", kw->name);
-      EXPECT_EQ("42", std::string(value, 2));
-      value += 2;
-      return true;
+      EXPECT_STREQ("testopt", name.c_str());
+      EXPECT_EQ("42", std::string(str, 2));
+      str += 2;
     }
   };
 
