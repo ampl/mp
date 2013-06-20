@@ -86,6 +86,15 @@ const ampl::OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
     {"values_max", Gecode::INT_VALUES_MAX()},
     {}
 };
+
+inline bool operator==(
+    const Gecode::IntValBranch &lhs, const Gecode::IntValBranch &rhs) {
+  return lhs.select() == rhs.select();
+}
+
+std::ostream &operator<<(std::ostream &os, const Gecode::IntValBranch &b) {
+  return os << b.select();
+}
 }
 
 namespace ampl {
@@ -331,20 +340,28 @@ bool GecodeSolver::Stop::stop(
 
 void GecodeSolver::SetBoolOption(const char *name, int value, bool *option) {
   if (value != 0 && value != 1)
-    ReportInvalidOptionValue(name, value);
-  else
-    *option = value != 0;
+    throw InvalidOptionValue(name, value);
+  *option = value != 0;
 }
 
 void GecodeSolver::SetOutputFrequency(const char *name, double value) {
   if (value <= 0)
-    ReportInvalidOptionValue(name, value);
-  else
-    output_frequency_ = value;
+    throw InvalidOptionValue(name, value);
+  output_frequency_ = value;
 }
 
 template <typename T>
-void GecodeSolver::SetStrOption(const char *name, const char *value,
+std::string GecodeSolver::GetEnumOption(
+    const char *, const OptionInfo<T> &info) {
+  for (const OptionValue<T> *p = info.values; p->name; ++p) {
+    if (info.value == p->value)
+      return p->name;
+  }
+  return str(fmt::Format("{}") << info.value);
+}
+
+template <typename T>
+void GecodeSolver::SetEnumOption(const char *name, const char *value,
     const OptionInfo<T> &info) {
   for (const OptionValue<T> *p = info.values; p->name; ++p) {
     if (std::strcmp(value, p->name) == 0) {
@@ -352,15 +369,15 @@ void GecodeSolver::SetStrOption(const char *name, const char *value,
       return;
     }
   }
-  ReportInvalidOptionValue(name, value);
+  throw InvalidOptionValue(name, value);
 }
 
 template <typename T, typename OptionT>
-void GecodeSolver::SetOption(const char *name, T value, OptionT *option) {
+void GecodeSolver::SetNonnegativeOption(
+    const char *name, T value, OptionT *option) {
   if (value < 0)
-    ReportInvalidOptionValue(name, value);
-  else
-    *option = value;
+    throw InvalidOptionValue(name, value);
+  *option = value;
 }
 
 fmt::TempFormatter<fmt::Write> GecodeSolver::Output(fmt::StringRef format) {
@@ -396,6 +413,7 @@ GecodeSolver::GecodeSolver()
 
   AddIntOption("outlev",
       "0 or 1 (default 0):  Whether to print solution log.",
+      &GecodeSolver::GetOption<int, bool>,
       &GecodeSolver::SetBoolOption, &output_);
 
   AddDblOption("outfreq",
@@ -408,7 +426,8 @@ GecodeSolver::GecodeSolver()
       "      bnd - bounds propagation or consistency\n"
       "      dom - domain propagation or consistency\n"
       "      def - the default consistency for a constraint\n",
-      &GecodeSolver::SetStrOption<Gecode::IntConLevel>,
+      &GecodeSolver::GetEnumOption<Gecode::IntConLevel>,
+      &GecodeSolver::SetEnumOption<Gecode::IntConLevel>,
       OptionInfo<Gecode::IntConLevel>(INT_CON_LEVELS, icl_));
 
   AddStrOption("var_branching",
@@ -437,7 +456,8 @@ GecodeSolver::GecodeSolver()
       "      regret_min_max    - largest minimum-regret\n"
       "      regret_max_min    - smallest maximum-regret\n"
       "      regret_max_max    - largest maximum-regret\n",
-      &GecodeSolver::SetStrOption<IntVarBranch::Select>,
+      &GecodeSolver::GetEnumOption<IntVarBranch::Select>,
+      &GecodeSolver::SetEnumOption<IntVarBranch::Select>,
       OptionInfo<IntVarBranch::Select>(VAR_BRANCHINGS, var_branching_));
 
   AddStrOption("val_branching",
@@ -458,7 +478,8 @@ GecodeSolver::GecodeSolver()
       "                   smallest and largest value\n"
       "      values_min - all values starting from smallest\n"
       "      values_min - all values starting from largest\n",
-      &GecodeSolver::SetStrOption<Gecode::IntValBranch>,
+      &GecodeSolver::GetEnumOption<Gecode::IntValBranch>,
+      &GecodeSolver::SetEnumOption<Gecode::IntValBranch>,
       OptionInfo<Gecode::IntValBranch>(VAL_BRANCHINGS, val_branching_));
 
   AddDblOption("decay",
@@ -482,21 +503,28 @@ GecodeSolver::GecodeSolver()
       "      number of processing units not to be used). For example,\n"
       "      when n = −0.25 and m = 8, then 6 threads are used.\n"
       "All values are rounded and at least one thread is used.\n",
+      &GecodeSolver::GetOption<double, double>,
       &GecodeSolver::SetDblOption, &options_.threads);
 
   AddIntOption("c_d", "Commit recomputation distance.",
-      &GecodeSolver::SetOption<int, unsigned>, &options_.c_d);
+      &GecodeSolver::GetOption<int, unsigned>,
+      &GecodeSolver::SetNonnegativeOption<int, unsigned>, &options_.c_d);
   AddIntOption("a_d", "Adaptive recomputation distance.",
-      &GecodeSolver::SetOption<int, unsigned>, &options_.a_d);
+      &GecodeSolver::GetOption<int, unsigned>,
+      &GecodeSolver::SetNonnegativeOption<int, unsigned>, &options_.a_d);
 
   AddDblOption("timelimit", "Time limit in seconds.",
-      &GecodeSolver::SetOption<double, double>, &time_limit_);
+      &GecodeSolver::GetOption<double, double>,
+      &GecodeSolver::SetNonnegativeOption<double, double>, &time_limit_);
   AddIntOption("nodelimit", "Node limit.",
-      &GecodeSolver::SetOption<int, unsigned long>, &node_limit_);
+      &GecodeSolver::GetOption<int, unsigned long>,
+      &GecodeSolver::SetNonnegativeOption<int, unsigned long>, &node_limit_);
   AddIntOption("faillimit", "Fail limit.",
-      &GecodeSolver::SetOption<int, unsigned long>, &fail_limit_);
+      &GecodeSolver::GetOption<int, unsigned long>,
+      &GecodeSolver::SetNonnegativeOption<int, unsigned long>, &fail_limit_);
   AddIntOption("memorylimit", "Memory limit.",
-      &GecodeSolver::SetOption<int, std::size_t>, &memory_limit_);
+      &GecodeSolver::GetOption<int, std::size_t>,
+      &GecodeSolver::SetNonnegativeOption<int, std::size_t>, &memory_limit_);
 }
 
 void GecodeSolver::Solve(Problem &p) {

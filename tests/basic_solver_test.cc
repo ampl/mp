@@ -317,6 +317,8 @@ struct TestSolverWithOptions : Solver<TestSolverWithOptions> {
     EXPECT_STREQ("intopt1", name);
     intopt1 = value;
   }
+
+  int GetIntOptionWithInfo(const char *, Info) { return 0; }
   void SetIntOptionWithInfo(const char *name, int value, Info info) {
     EXPECT_STREQ("intopt2", name);
     intopt2 = value;
@@ -328,6 +330,8 @@ struct TestSolverWithOptions : Solver<TestSolverWithOptions> {
     EXPECT_STREQ("dblopt1", name);
     dblopt1 = value;
   }
+
+  double GetDblOptionWithInfo(const char *, Info) { return 0; }
   void SetDblOptionWithInfo(const char *name, double value, Info info) {
     EXPECT_STREQ("dblopt2", name);
     dblopt2 = value;
@@ -339,6 +343,8 @@ struct TestSolverWithOptions : Solver<TestSolverWithOptions> {
     EXPECT_STREQ("stropt1", name);
     stropt1 = value;
   }
+
+  std::string GetStrOptionWithInfo(const char *, Info) { return ""; }
   void SetStrOptionWithInfo(const char *name, const char *value, Info info) {
     EXPECT_STREQ("stropt2", name);
     stropt2 = value;
@@ -352,16 +358,19 @@ struct TestSolverWithOptions : Solver<TestSolverWithOptions> {
         &TestSolverWithOptions::GetIntOption,
         &TestSolverWithOptions::SetIntOption);
     AddIntOption("intopt2", "Integer option 2",
+        &TestSolverWithOptions::GetIntOptionWithInfo,
         &TestSolverWithOptions::SetIntOptionWithInfo, INFO);
     AddDblOption("dblopt1", "Double option 1",
         &TestSolverWithOptions::GetDblOption,
         &TestSolverWithOptions::SetDblOption);
     AddDblOption("dblopt2", "Double option 2",
+        &TestSolverWithOptions::GetDblOptionWithInfo,
         &TestSolverWithOptions::SetDblOptionWithInfo, INFO);
     AddStrOption("stropt1", "Double option 1",
         &TestSolverWithOptions::GetStrOption,
         &TestSolverWithOptions::SetStrOption);
     AddStrOption("stropt2", "Double option 2",
+        &TestSolverWithOptions::GetStrOptionWithInfo,
         &TestSolverWithOptions::SetStrOptionWithInfo, INFO);
   }
 
@@ -374,15 +383,15 @@ struct TestSolverWithOptions : Solver<TestSolverWithOptions> {
 
 TEST(SolverTest, AddOption) {
   struct TestOption : public ampl::SolverOption {
-    BasicSolver *solver;
-    TestOption() : SolverOption("A test option."), solver(0) {}
+    int value;
+    TestOption() : SolverOption("A test option."), value(0) {}
 
-    void Print(BasicSolver &s, fmt::StringRef) {}
-    void Parse(BasicSolver &s, fmt::StringRef name, const char *&str) {
-      solver = &s;
+    void Print(fmt::StringRef) {}
+    void Parse(fmt::StringRef name, const char *&s) {
       EXPECT_STREQ("testopt", name.c_str());
-      EXPECT_EQ("42", std::string(str, 2));
-      str += 2;
+      char *end = 0;
+      value = std::strtol(s, &end, 10);
+      s = end;
     }
   };
 
@@ -400,7 +409,7 @@ TEST(SolverTest, AddOption) {
   TestSolver s;
   TestOption *opt = s.AddTestOption();
   EXPECT_TRUE(s.ParseOptions(Args("testopt=42"), BasicSolver::NO_OPTION_ECHO));
-  EXPECT_EQ(opt->solver, &s);
+  EXPECT_EQ(42, opt->value);
 }
 
 TEST(SolverTest, ParseOptionsFromArgs) {
