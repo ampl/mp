@@ -23,6 +23,7 @@
 #ifndef SOLVERS_UTIL_SOLVER_H_
 #define SOLVERS_UTIL_SOLVER_H_
 
+#include <cctype>
 #include <csignal>
 #include <cstring>
 
