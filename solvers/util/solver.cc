@@ -51,14 +51,6 @@ const char *SkipNonSpaces(const char *s) {
     ++s;
   return s;
 }
-
-ampl::InvalidOptionValue MakeInvalidOptionValue(
-    fmt::StringRef name, const char *&s, const char *cursor) {
-  const char *end = SkipNonSpaces(cursor);
-  std::string value(s, end - s);
-  s = end;
-  return ampl::InvalidOptionValue(name, value);
-}
 }
 
 namespace ampl {
@@ -148,44 +140,51 @@ void SignalHandler::HandleSigInt(int sig) {
   std::signal(sig, HandleSigInt);
 }
 
-void TypedSolverOption<int>::Print(fmt::StringRef name) {
-  printf("%s=%d\n", name.c_str(), GetValue(name));
+InvalidOptionValue SolverOption::ParseError(
+    const char *&s, const char *cursor) {
+  const char *end = SkipNonSpaces(cursor);
+  std::string value(s, end - s);
+  s = end;
+  return InvalidOptionValue(name_, value);
 }
 
-void TypedSolverOption<int>::Parse(fmt::StringRef name, const char *&s) {
+void TypedSolverOption<int>::Print() {
+  printf("%s=%d\n", name(), GetValue());
+}
+
+void TypedSolverOption<int>::Parse(const char *&s) {
   char *end = 0;
   long value = std::strtol(s, &end, 10);
   if (*end && !std::isspace(*end))
-    throw MakeInvalidOptionValue(name, s, end);
+    throw ParseError(s, end);
   s = end;
-  SetValue(name, value);
+  SetValue(value);
 }
 
-void TypedSolverOption<double>::Print(fmt::StringRef name) {
+void TypedSolverOption<double>::Print() {
   char buffer[32];
-  g_fmt(buffer, GetValue(name));
-  printf("%s=%s\n", name.c_str(), buffer);
+  g_fmt(buffer, GetValue());
+  printf("%s=%s\n", name(), buffer);
 }
 
-void TypedSolverOption<double>::Parse(fmt::StringRef name, const char *&s) {
+void TypedSolverOption<double>::Parse(const char *&s) {
   char *end = 0;
   double value = strtod_ASL(s, &end);
   if (*end && !std::isspace(*end))
-    throw MakeInvalidOptionValue(name, s, end);
+    throw ParseError(s, end);
   s = end;
-  SetValue(name, value);
+  SetValue(value);
 }
 
-void TypedSolverOption<std::string>::Print(fmt::StringRef name) {
-  printf("%s=%s\n", name.c_str(), GetValue(name).c_str());
+void TypedSolverOption<std::string>::Print() {
+  printf("%s=%s\n", name(), GetValue().c_str());
 }
 
-void TypedSolverOption<std::string>::Parse(
-    fmt::StringRef name, const char *&s) {
+void TypedSolverOption<std::string>::Parse(const char *&s) {
   const char *end = SkipNonSpaces(s);
   std::string value(s, end - s);
   s = end;
-  SetValue(name, value.c_str());
+  SetValue(value.c_str());
 }
 
 char *BasicSolver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
@@ -231,22 +230,22 @@ BasicSolver::BasicSolver(
 
   struct VersionOption : SolverOption {
     BasicSolver &s;
-    VersionOption(BasicSolver &s) : SolverOption(
+    VersionOption(BasicSolver &s) : SolverOption("version",
         "Single-word phrase:  report version details "
         "before solving the problem.", true), s(s) {}
 
-    void Print(fmt::StringRef name) {
-      printf("%s=%d\n", name.c_str(), (s.flags() & ASL_OI_show_version) != 0);
+    void Print() {
+      printf("%s=%d\n", name(), (s.flags() & ASL_OI_show_version) != 0);
     }
-    void Parse(fmt::StringRef, const char *&) {
+    void Parse(const char *&) {
       s.Option_Info::flags |= ASL_OI_show_version;
     }
   };
-  AddOption("version", std::auto_ptr<SolverOption>(new VersionOption(*this)));
+  AddOption(SolverOptionPtr(new VersionOption(*this)));
 
   struct WantSolOption : TypedSolverOption<int> {
     BasicSolver &s;
-    WantSolOption(BasicSolver &s) : TypedSolverOption<int>(
+    WantSolOption(BasicSolver &s) : TypedSolverOption<int>("wantsol",
         "In a stand-alone invocation (no -AMPL on the command line), "
         "what solution information to write.  Sum of\n"
         "      1 = write .sol file\n"
@@ -254,10 +253,10 @@ BasicSolver::BasicSolver(
         "      4 = dual variables to stdout\n"
         "      8 = suppress solution message\n"), s(s) {}
 
-    int GetValue(fmt::StringRef) { return s.wantsol(); }
-    void SetValue(fmt::StringRef, int value) { s.Option_Info::wantsol = value; }
+    int GetValue() { return s.wantsol(); }
+    void SetValue(int value) { s.Option_Info::wantsol = value; }
   };
-  AddOption("wantsol", std::auto_ptr<SolverOption>(new WantSolOption(*this)));
+  AddOption(SolverOptionPtr(new WantSolOption(*this)));
 
   cl_option_ = keyword();
   cl_option_.name = const_cast<char*>("=");
@@ -336,7 +335,7 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
       if (!next || std::isspace(next)) {
         ++s;
         if ((flags & NO_OPTION_ECHO) == 0)
-          opt->Print(name);
+          opt->Print();
         continue;
       }
     }
@@ -345,7 +344,7 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
       s = SkipNonSpaces(s);
     }
     try {
-      opt->Parse(name, s);
+      opt->Parse(s);
     } catch (const OptionError &e) {
       ReportError("{}") << e.what();
     }

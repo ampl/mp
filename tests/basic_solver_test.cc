@@ -384,11 +384,10 @@ struct TestSolverWithOptions : Solver<TestSolverWithOptions> {
 TEST(SolverTest, AddOption) {
   struct TestOption : public ampl::SolverOption {
     int value;
-    TestOption() : SolverOption("A test option."), value(0) {}
+    TestOption() : SolverOption("testopt", "A test option."), value(0) {}
 
-    void Print(fmt::StringRef) {}
-    void Parse(fmt::StringRef name, const char *&s) {
-      EXPECT_STREQ("testopt", name.c_str());
+    void Print() {}
+    void Parse(const char *&s) {;
       char *end = 0;
       value = std::strtol(s, &end, 10);
       s = end;
@@ -399,8 +398,7 @@ TEST(SolverTest, AddOption) {
     TestSolver() : BasicSolver("", "", 0) {}
     TestOption *AddTestOption() {
       TestOption *opt = 0;
-      AddOption("testopt",
-          std::auto_ptr<ampl::SolverOption>(opt = new TestOption()));
+      AddOption(SolverOptionPtr(opt = new TestOption()));
       return opt;
     }
     void Solve(Problem &) {}

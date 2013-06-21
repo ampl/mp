@@ -330,7 +330,7 @@ IlogCPSolver::IlogCPSolver() :
   // - CumulFunctionInferenceLevel
   // - StateFunctionInferenceLevel
 
-  AddOption("alldiffinferencelevel", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("alldiffinferencelevel",
       "Inference level for 'alldiff' constraints.  Possible values:\n"
       "      0 = default\n"
       "      1 = low\n"
@@ -339,17 +339,17 @@ IlogCPSolver::IlogCPSolver() :
       "      4 = extended\n",
       this, IloCP::AllDiffInferenceLevel, IloCP::Default, InferenceLevels)));
 
-  AddOption("branchlimit", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("branchlimit",
       "Limit on the number of branches made before "
       "terminating a search.  Default = no limit.",
       this, IloCP::BranchLimit)));
 
-  AddOption("choicepointlimit", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("choicepointlimit",
       "Limit on the number of choice points created"
       "before terminating a search.  Default = no limit.",
       this, IloCP::ChoicePointLimit)));
 
-  AddOption("constraintaggregation", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("constraintaggregation",
       "0 or 1 (default 1):  Whether to aggregate basic constraints.",
       this, IloCP::ConstraintAggregation, IloCP::Off, Flags)));
 
@@ -358,7 +358,7 @@ IlogCPSolver::IlogCPSolver() :
       "information for expression trees.",
       &IlogCPSolver::GetBoolOption, &IlogCPSolver::SetBoolOption, DEBUGEXPR);
 
-  AddOption("defaultinferencelevel", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("defaultinferencelevel",
       "Default inference level for constraints.  Possible values:\n"
       "      1 = low\n"
       "      2 = basic\n"
@@ -366,7 +366,7 @@ IlogCPSolver::IlogCPSolver() :
       "      4 = extended\n",
       this, IloCP::DefaultInferenceLevel, IloCP::Default, InferenceLevels)));
 
-  AddOption("distributeinferencelevel", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("distributeinferencelevel",
       "Inference level for 'distribute' constraints.  Possible values:\n"
       "      0 = default\n"
       "      1 = low\n"
@@ -375,7 +375,7 @@ IlogCPSolver::IlogCPSolver() :
       "      4 = extended\n",
       this, IloCP::DistributeInferenceLevel, IloCP::Default, InferenceLevels)));
 
-  AddOption("dynamicprobing", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("dynamicprobing",
       "Use probing during search.  Possible values:\n"
       "     -1 = auto (default)\n"
       "      0 = off\n"
@@ -388,16 +388,16 @@ IlogCPSolver::IlogCPSolver() :
       &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
       IloCP::DynamicProbingStrength);
 
-  AddOption("faillimit", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("faillimit",
       "Limit on the number of failures allowed before terminating a search.  "
       "Default = no limit",
       this, IloCP::FailLimit)));
 
-  AddOption("logperiod", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("logperiod",
       "Specifies how often the information in the search log is displayed.",
       this, IloCP::LogPeriod)));
 
-  AddOption("logverbosity", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("logverbosity",
       "Verbosity of the search log.  Possible values:\n"
       "      0 = quiet (default)\n"
       "      1 = terse\n"
@@ -424,7 +424,7 @@ IlogCPSolver::IlogCPSolver() :
       &IlogCPSolver::GetCPLEXIntOption, &IlogCPSolver::SetCPLEXIntOption,
       IloCplex::MIPInterval);
 
-  AddOption("multipointnumberofsearchpoints", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("multipointnumberofsearchpoints",
       "Number of solutions for the multi-point search "
       "algorithm.  Default = 30.",
       this, IloCP::MultiPointNumberOfSearchPoints)));
@@ -444,11 +444,11 @@ IlogCPSolver::IlogCPSolver() :
       "      cplex = CPLEX Optimizer\n",
       &IlogCPSolver::GetOptimizer, &IlogCPSolver::SetOptimizer);
 
-  AddOption("outlev", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("outlev",
       "Synonym for \"logverbosity\".",
       this, IloCP::LogVerbosity, IloCP::Quiet, Verbosities)));
 
-  AddOption("propagationlog", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("propagationlog",
       "Level of propagation trace reporting.  Possible values:\n"
       "      0 = quiet (default)\n"
       "      1 = terse\n"
@@ -456,7 +456,7 @@ IlogCPSolver::IlogCPSolver() :
       "      3 = verbose\n",
       this, IloCP::PropagationLog, IloCP::Quiet, Verbosities)));
 
-  AddOption("randomseed", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("randomseed",
       "Seed for the random number generator.  Default = 0.",
       this, IloCP::RandomSeed)));
 
@@ -465,7 +465,7 @@ IlogCPSolver::IlogCPSolver() :
       &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
       IloCP::RelativeOptimalityTolerance);
 
-  AddOption("restartfaillimit", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("restartfaillimit",
       "Number of failures allowed before restarting  search.  Default = 100.",
       this, IloCP::RestartFailLimit)));
 
@@ -475,21 +475,21 @@ IlogCPSolver::IlogCPSolver() :
       &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
       IloCP::RestartGrowthFactor);
 
-  AddOption("searchtype", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("searchtype",
       "Type of search used for solving a problem.  Possible values:\n"
       "      0 = depthfirst\n"
       "      1 = restart (default)\n"
       "      2 = multipoint\n",
       this, IloCP::SearchType, IloCP::DepthFirst, SearchTypes, true)));
 
-  AddOption("solutionlimit", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("solutionlimit",
       "Limit on the number of feasible solutions found before terminating "
       "a search.  Leaving the solution limit unspecified will make the "
       "optimizer search for an optimal solution if there is an objective "
       "function or for a feasible solution otherwise.",
       this, IloCP::SolutionLimit)));
 
-  AddOption("temporalrelaxation", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("temporalrelaxation",
       "0 or 1 (default 1):  Whether to use temporal relaxation.",
       this, IloCP::TemporalRelaxation, IloCP::Off, Flags)));
 
@@ -499,7 +499,7 @@ IlogCPSolver::IlogCPSolver() :
       &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
       IloCP::TimeLimit);
 
-  AddOption("timemode", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("timemode",
       "Specifies how the time is measured in CP Optimizer.  Possible values:\n"
       "      0 = cputime (default)\n"
       "      1 = elapsedtime\n",
@@ -516,7 +516,7 @@ IlogCPSolver::IlogCPSolver() :
       &IlogCPSolver::GetBoolOption, &IlogCPSolver::SetBoolOption,
       IlogCPSolver::USENUMBEROF);
 
-  AddOption("workers", SolverOptionPtr(new CPOption(
+  AddOption(SolverOptionPtr(new CPOption("workers",
       "Number of workers to run in parallel to solve a problem.  "
       "In addition to numeric values this option accepts the value "
       "\"auto\" since CP Optimizer version 12.3.  Default = 1.",
@@ -580,12 +580,12 @@ void IlogCPSolver::SetBoolOption(const char *name, int value, Option opt) {
   options_[opt] = value;
 }
 
-std::string IlogCPSolver::CPOption::GetValue(fmt::StringRef name) {
+std::string IlogCPSolver::CPOption::GetValue() {
   int value = 0;
   try {
-    value = solver_.GetCPForOption(name)->solver().getParameter(param_);
+    value = solver_.GetCPForOption(name())->solver().getParameter(param_);
   } catch (const IloException &e) {
-    throw GetOptionValueError(name, e.getMessage());
+    throw GetOptionValueError(name(), e.getMessage());
   }
   if (values_) {
     for (int i = 0; values_[i]; ++i) {
@@ -596,10 +596,10 @@ std::string IlogCPSolver::CPOption::GetValue(fmt::StringRef name) {
   return str(fmt::Format("{}") << value);
 }
 
-void IlogCPSolver::CPOption::SetValue(fmt::StringRef name, const char *value) {
+void IlogCPSolver::CPOption::SetValue(const char *value) {
   if (!solver_.gotopttype_)
     return;
-  CPOptimizer *cp = solver_.GetCPForOption(name);
+  CPOptimizer *cp = solver_.GetCPForOption(name());
   try {
     char *end = 0;
     long intval = std::strtol(value, &end, 0);
@@ -624,7 +624,7 @@ void IlogCPSolver::CPOption::SetValue(fmt::StringRef name, const char *value) {
       return;
     }
   } catch (const IloException &) {}
-  throw InvalidOptionValue(name, value);
+  throw InvalidOptionValue(name(), value);
 }
 
 double IlogCPSolver::GetCPDblOption(const char *name, IloCP::NumParam param) {

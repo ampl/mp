@@ -445,16 +445,16 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
     bool accepts_auto_;   // true if the option accepts IloCP::Auto value
 
    public:
-    CPOption(const char *description,
+    CPOption(const char *name, const char *description,
         IlogCPSolver *s, IloCP::IntParam p, int start = 0,
         const char **values = 0, bool accepts_auto = false)
-    : TypedSolverOption<std::string>(description),
+    : TypedSolverOption<std::string>(name, description),
       solver_(*s), param_(p), start_(start), values_(values),
       accepts_auto_(accepts_auto) {
     }
 
-    std::string GetValue(fmt::StringRef name);
-    void SetValue(fmt::StringRef name, const char *value);
+    std::string GetValue();
+    void SetValue(const char *value);
   };
 
   // Returns a double option of the constraint programming optimizer.

@@ -135,24 +135,35 @@ class InvalidOptionValue : public OptionError {
 // A solver option.
 class SolverOption {
  private:
+  std::string name_;
   std::string description_;
-  bool is_keyword_;  // true if this is a keyword option not accepting values.
+  bool is_keyword_;
+
+ protected:
+  InvalidOptionValue ParseError(const char *&s, const char *cursor);
 
  public:
-  SolverOption(const char *description, bool is_keyword = false)
-  : description_(description), is_keyword_(is_keyword) {}
+  SolverOption(const char *name,
+      const char *description, bool is_keyword = false)
+  : name_(name), description_(description), is_keyword_(is_keyword) {}
   virtual ~SolverOption() {}
 
+  // Returns the option name.
+  const char *name() const { return name_.c_str(); }
+
+  // Returns the option description.
   const char *description() const { return description_.c_str(); }
+
+  // Returns true if this is a keyword option not accepting values.
   bool is_keyword() const { return is_keyword_; }
 
   // Prints the current value of the option.
   // Throws OptionError in case of error.
-  virtual void Print(fmt::StringRef name) = 0;
+  virtual void Print() = 0;
 
-  // Parses and sets the value of the option. Throws InvalidOptionValue
+  // Parses the string and sets the option value. Throws InvalidOptionValue
   // if the value is invalid or OptionError in case of another error.
-  virtual void Parse(fmt::StringRef name, const char *&str) = 0;
+  virtual void Parse(const char *&s) = 0;
 };
 
 template <typename T>
@@ -163,16 +174,17 @@ class TypedSolverOption<int> : public SolverOption {
  public:
   typedef int Arg;
 
-  TypedSolverOption(const char *description) : SolverOption(description) {}
+  TypedSolverOption(const char *name, const char *description)
+  : SolverOption(name, description) {}
 
-  void Print(fmt::StringRef name);
-  void Parse(fmt::StringRef name, const char *&s);
+  void Print();
+  void Parse(const char *&s);
 
   // Returns the option value.
-  virtual int GetValue(fmt::StringRef name) = 0;
+  virtual int GetValue() = 0;
 
   // Sets the option value or throws InvalidOptionValue if the value is invalid.
-  virtual void SetValue(fmt::StringRef name, int value) = 0;
+  virtual void SetValue(int value) = 0;
 };
 
 template <>
@@ -180,16 +192,17 @@ class TypedSolverOption<double> : public SolverOption {
  public:
   typedef double Arg;
 
-  TypedSolverOption(const char *description) : SolverOption(description) {}
+  TypedSolverOption(const char *name, const char *description)
+  : SolverOption(name, description) {}
 
-  void Print(fmt::StringRef name);
-  void Parse(fmt::StringRef name, const char *&s);
+  void Print();
+  void Parse(const char *&s);
 
   // Returns the option value.
-  virtual double GetValue(fmt::StringRef name) = 0;
+  virtual double GetValue() = 0;
 
   // Sets the option value or throws InvalidOptionValue if the value is invalid.
-  virtual void SetValue(fmt::StringRef name, double value) = 0;
+  virtual void SetValue(double value) = 0;
 };
 
 template <>
@@ -197,16 +210,17 @@ class TypedSolverOption<std::string> : public SolverOption {
  public:
   typedef const char *Arg;
 
-  TypedSolverOption(const char *description) : SolverOption(description) {}
+  TypedSolverOption(const char *name, const char *description)
+  : SolverOption(name, description) {}
 
-  void Print(fmt::StringRef name);
-  void Parse(fmt::StringRef name, const char *&s);
+  void Print();
+  void Parse(const char *&s);
 
   // Returns the option value.
-  virtual std::string GetValue(fmt::StringRef name) = 0;
+  virtual std::string GetValue() = 0;
 
   // Sets the option value or throws InvalidOptionValue if the value is invalid.
-  virtual void SetValue(fmt::StringRef name, const char *value) = 0;
+  virtual void SetValue(const char *value) = 0;
 };
 
 // Base class for all solver classes.
@@ -280,10 +294,10 @@ class BasicSolver
 
   typedef std::auto_ptr<SolverOption> SolverOptionPtr;
 
-  void AddOption(const char *name, SolverOptionPtr opt) {
+  void AddOption(SolverOptionPtr opt) {
     // First insert the option, then release a pointer to it. Doing the other
     // way around may lead to a memory leak if insertion throws.
-    options_[name] = opt.get();
+    options_[opt->name()] = opt.get();
     opt.release();
   }
 
@@ -415,18 +429,13 @@ class Solver : public BasicSolver {
     Setter setter_;
 
    public:
-    ConcreteOption(const char *description,
+    ConcreteOption(const char *name, const char *description,
         Solver *s, Getter getter, Setter setter)
-    : TypedSolverOption<T>(description), impl_(static_cast<Impl&>(*s)),
+    : TypedSolverOption<T>(name, description), impl_(static_cast<Impl&>(*s)),
       getter_(getter), setter_(setter) {}
 
-    T GetValue(fmt::StringRef name) {
-      return (impl_.*getter_)(name.c_str());
-    }
-
-    void SetValue(fmt::StringRef name, Arg value) {
-      (impl_.*setter_)(name.c_str(), value);
-    }
+    T GetValue() { return (impl_.*getter_)(this->name()); }
+    void SetValue(Arg value) { (impl_.*setter_)(this->name(), value); }
   };
 
   template <typename T, typename Info, typename InfoArg = Info>
@@ -442,18 +451,13 @@ class Solver : public BasicSolver {
     Info info_;
 
    public:
-    ConcreteOptionWithInfo(const char *description,
+    ConcreteOptionWithInfo(const char *name, const char *description,
         Solver *s, Getter getter, Setter setter, InfoArg info)
-    : TypedSolverOption<T>(description), impl_(static_cast<Impl&>(*s)),
+    : TypedSolverOption<T>(name, description), impl_(static_cast<Impl&>(*s)),
       getter_(getter), setter_(setter), info_(info) {}
 
-    T GetValue(fmt::StringRef name) {
-      return (impl_.*getter_)(name.c_str(), info_);
-    }
-
-    void SetValue(fmt::StringRef name, Arg value) {
-      (impl_.*setter_)(name.c_str(), value, info_);
-    }
+    T GetValue() { return (impl_.*getter_)(this->name(), info_); }
+    void SetValue(Arg value) { (impl_.*setter_)(this->name(), value, info_); }
   };
 
  protected:
@@ -463,8 +467,8 @@ class Solver : public BasicSolver {
   void AddIntOption(const char *name, const char *description,
       int (Impl::*getter)(const char *),
       void (Impl::*setter)(const char *, int)) {
-    AddOption(name, SolverOptionPtr(
-        new ConcreteOption<int>(description, this, getter, setter)));
+    AddOption(SolverOptionPtr(
+        new ConcreteOption<int>(name, description, this, getter, setter)));
   }
 
   // Adds an integer option with additional information. The arguments getter
@@ -475,9 +479,9 @@ class Solver : public BasicSolver {
       int (Impl::*getter)(const char *, const Info &),
       void (Impl::*setter)(const char *, int, const Info &),
       const Info &info) {
-    AddOption(name, SolverOptionPtr(
+    AddOption(SolverOptionPtr(
         new ConcreteOptionWithInfo<int, Info, const Info &>(
-            description, this, getter, setter, info)));
+            name, description, this, getter, setter, info)));
   }
 
   // The same as above but with Info argument passed by value.
@@ -485,8 +489,8 @@ class Solver : public BasicSolver {
   void AddIntOption(const char *name, const char *description,
       int (Impl::*getter)(const char *, Info),
       void (Impl::*setter)(const char *, int, Info), Info info) {
-    AddOption(name, SolverOptionPtr(new ConcreteOptionWithInfo<int, Info>(
-            description, this, getter, setter, info)));
+    AddOption(SolverOptionPtr(new ConcreteOptionWithInfo<int, Info>(
+            name, description, this, getter, setter, info)));
   }
 
   // Adds a double option. The arguments getter and setter should be
@@ -495,8 +499,8 @@ class Solver : public BasicSolver {
   void AddDblOption(const char *name, const char *description,
       double (Impl::*getter)(const char *),
       void (Impl::*setter)(const char *, double)) {
-    AddOption(name, SolverOptionPtr(new ConcreteOption<double>(
-        description, this, getter, setter)));
+    AddOption(SolverOptionPtr(new ConcreteOption<double>(
+        name, description, this, getter, setter)));
   }
 
   // Adds a double option with additional information. The arguments getter
@@ -507,9 +511,9 @@ class Solver : public BasicSolver {
       double (Impl::*getter)(const char *, const Info &),
       void (Impl::*setter)(const char *, double, const Info &),
       const Info &info) {
-    AddOption(name, SolverOptionPtr(
+    AddOption(SolverOptionPtr(
         new ConcreteOptionWithInfo<double, Info, const Info &>(
-            description, this, getter, setter, info)));
+            name, description, this, getter, setter, info)));
   }
 
   // The same as above but with Info argument passed by value.
@@ -517,8 +521,8 @@ class Solver : public BasicSolver {
   void AddDblOption(const char *name, const char *description,
       double (Impl::*getter)(const char *, Info),
       void (Impl::*setter)(const char *, double, Info), Info info) {
-    AddOption(name, SolverOptionPtr(new ConcreteOptionWithInfo<double, Info>(
-            description, this, getter, setter, info)));
+    AddOption(SolverOptionPtr(new ConcreteOptionWithInfo<double, Info>(
+            name, description, this, getter, setter, info)));
   }
 
   // Adds a string option. The arguments getter and setter should be
@@ -527,8 +531,8 @@ class Solver : public BasicSolver {
   void AddStrOption(const char *name, const char *description,
       std::string (Impl::*getter)(const char *),
       void (Impl::*setter)(const char *, const char *)) {
-    AddOption(name, SolverOptionPtr(new ConcreteOption<std::string>(
-        description, this, getter, setter)));
+    AddOption(SolverOptionPtr(new ConcreteOption<std::string>(
+        name, description, this, getter, setter)));
   }
 
   // Adds a string option with additional information. The arguments getter
@@ -539,9 +543,9 @@ class Solver : public BasicSolver {
       std::string (Impl::*getter)(const char *, const Info &),
       void (Impl::*setter)(const char *, const char *, const Info &),
       const Info &info) {
-    AddOption(name, SolverOptionPtr(
+    AddOption(SolverOptionPtr(
         new ConcreteOptionWithInfo<std::string, Info, const Info &>(
-            description, this, getter, setter, info)));
+            name, description, this, getter, setter, info)));
   }
 
   // The same as above but with Info argument passed by value.
@@ -551,9 +555,8 @@ class Solver : public BasicSolver {
       void (Impl::*setter)(const char *, const char *, Info),
       const Info &info) {
     typedef void (Impl::*Func)(const char *, const char *, Info);
-    AddOption(name, SolverOptionPtr(
-        new ConcreteOptionWithInfo<std::string, Info>(
-            description, this, getter, setter, info)));
+    AddOption(SolverOptionPtr(new ConcreteOptionWithInfo<std::string, Info>(
+            name, description, this, getter, setter, info)));
   }
 
  public:
