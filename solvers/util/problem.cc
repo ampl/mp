@@ -26,6 +26,10 @@ using ampl::NumericConstant;
 using ampl::RelationalExpr;
 using ampl::UnaryExpr;
 
+#ifdef WIN32
+# define tempnam _tempnam
+#endif
+
 namespace {
 
 // Writes a linear term.
@@ -609,11 +613,11 @@ void ProblemChanges::AddCon(const double *coefs, double lb, double ub) {
   con_lb_.push_back(lb);
   con_ub_.push_back(ub);
   std::size_t start = con_terms_.size();
-  std::size_t num_vars = problem_->num_vars() + var_lb_.size();
+  int num_vars = static_cast<int>(problem_->num_vars() + var_lb_.size());
   con_terms_.resize(start + num_vars);
   ograd dummy;
   ograd *prev = &dummy;
-  for (std::size_t i = 0; i < num_vars; ++i) {
+  for (int i = 0; i < num_vars; ++i) {
     ograd &term = con_terms_[start + i];
     term.coef = coefs[i];
     term.varno = i;

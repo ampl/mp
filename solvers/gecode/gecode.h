@@ -326,7 +326,7 @@ class GecodeSolver : public Solver<GecodeSolver> {
       const OptionInfo<T> &info);
 
   template <typename T, typename OptionT>
-  T GetOption(const char *, OptionT *option) { return *option; }
+  T GetOption(const char *, OptionT *option) { return static_cast<T>(*option); }
 
   template <typename T, typename OptionT>
   void SetNonnegativeOption(const char *name, T value, OptionT *option);

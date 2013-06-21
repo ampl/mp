@@ -487,7 +487,7 @@ class SumExpr : public NumericExpr {
   SumExpr() {}
 
   // Returns the number of arguments (terms).
-  int num_args() const { return expr_->R.ep - expr_->L.ep; }
+  int num_args() const { return static_cast<int>(expr_->R.ep - expr_->L.ep); }
 
   typedef ArrayIterator<NumericExpr> iterator;
 

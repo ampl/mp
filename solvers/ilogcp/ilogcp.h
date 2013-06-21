@@ -95,7 +95,7 @@ class CPOptimizer : public Optimizer {
 
   void StartSearch() { solver_.startNewSearch(); }
   void EndSearch() { solver_.endSearch(); }
-  bool FindNextSolution() { return solver_.next(); }
+  bool FindNextSolution() { return solver_.next() != IloFalse; }
 
   void GetSolutionInfo(fmt::Formatter &format_message,
       std::vector<double> &dual_values) const;

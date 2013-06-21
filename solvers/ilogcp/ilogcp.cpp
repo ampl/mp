@@ -123,9 +123,9 @@ void CPLEXOptimizer::GetSolutionInfo(
     format_message("{} nodes, ") << cplex_.getNnodes();
   } else {
     IloRangeArray cons = Optimizer::cons();
-    int num_cons = cons.getSize();
+    IloInt num_cons = cons.getSize();
     dual_values.resize(num_cons);
-    for (int i = 0; i < num_cons; ++i)
+    for (IloInt i = 0; i < num_cons; ++i)
       dual_values[i] = cplex_.getDual(cons[i]);
   }
   format_message("{} iterations") << cplex_.getNiterations();

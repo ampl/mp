@@ -123,7 +123,7 @@ void NLToJaCoPConverter::ConvertExpr(
     int index = 0;
     for (typename LinearExpr<Term>::iterator
         i = linear.begin(), end = linear.end(); i != end; ++i, ++index) {
-      coefs[index] = i->coef();
+      coefs[index] = CastToInt(i->coef());
       env_.SetObjectArrayElement(vars, index, vars_[i->var_index()]);
     }
     if (nonlinear) {
