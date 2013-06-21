@@ -34,6 +34,8 @@
 using ampl::BasicSolver;
 using ampl::Problem;
 using ampl::Solver;
+using ampl::SolverOption;
+using ampl::internal::OptionHelper;
 
 namespace {
 
@@ -49,6 +51,8 @@ struct TestSolver : BasicSolver {
   void set_version(const char *version) {
     BasicSolver::set_version(version);
   }
+
+  void AddOption(SolverOptionPtr opt) { BasicSolver::AddOption(opt); }
 
   bool ParseOptions(char **argv, unsigned flags = BasicSolver::NO_OPTION_ECHO) {
     return BasicSolver::ParseOptions(argv, flags);
@@ -302,6 +306,96 @@ TEST(SolverTest, SignalHandlerExitOnTwoSIGINTs) {
 // ----------------------------------------------------------------------------
 // Option tests
 
+TEST(SolverTest, SolverOption) {
+  struct TestOption : SolverOption {
+    bool formatted, parsed;
+    TestOption(const char *name, const char *description)
+    : SolverOption(name, description), formatted(false), parsed(false) {}
+    TestOption(const char *name, const char *description, bool is_keyword)
+    : SolverOption(name, description, is_keyword),
+      formatted(false), parsed(false) {}
+    void Format(fmt::Formatter &) { formatted = true; }
+    void Parse(const char *&) { parsed = true; }
+  };
+  {
+    TestOption opt("abc", "def");
+    EXPECT_STREQ("abc", opt.name());
+    EXPECT_STREQ("def", opt.description());
+    EXPECT_FALSE(opt.is_keyword());
+  }
+  {
+    TestOption opt("", "", true);
+    EXPECT_TRUE(opt.is_keyword());
+  }
+  {
+    TestOption opt("", "");
+    EXPECT_FALSE(opt.formatted);
+    EXPECT_FALSE(opt.parsed);
+    SolverOption &so = opt;
+    fmt::Formatter f;
+    so.Format(f);
+    EXPECT_TRUE(opt.formatted);
+    const char *s = 0;
+    so.Parse(s);
+    EXPECT_TRUE(opt.parsed);
+  }
+}
+
+TEST(SolverTest, IntOptionHelper) {
+  fmt::Formatter f;
+  OptionHelper<int>::Format(f, 42);
+  EXPECT_EQ("42", str(f));
+  const char *start = "123 ";
+  const char *s = start;
+  EXPECT_EQ(123, OptionHelper<int>::Parse(s));
+  EXPECT_EQ(start + 3, s);
+  EXPECT_EQ(42, OptionHelper<int>::CastArg(42));
+}
+
+TEST(SolverTest, DoubleOptionHelper) {
+  fmt::Formatter f;
+  OptionHelper<double>::Format(f, 4.2);
+  EXPECT_EQ("4.2", str(f));
+  const char *start = "1.23 ";
+  const char *s = start;
+  EXPECT_EQ(1.23, OptionHelper<double>::Parse(s));
+  EXPECT_EQ(start + 4, s);
+  EXPECT_EQ(4.2, OptionHelper<double>::CastArg(4.2));
+}
+
+TEST(SolverTest, StringOptionHelper) {
+  fmt::Formatter f;
+  OptionHelper<std::string>::Format(f, "abc");
+  EXPECT_EQ("abc", str(f));
+  const char *start = "def ";
+  const char *s = start;
+  EXPECT_EQ("def", OptionHelper<std::string>::Parse(s));
+  EXPECT_EQ(start + 3, s);
+  EXPECT_STREQ("abc", OptionHelper<std::string>::CastArg(std::string("abc")));
+}
+
+TEST(SolverTest, TypedSolverOption) {
+  struct TestOption : ampl::TypedSolverOption<int> {
+    int value;
+    TestOption(const char *name, const char *description)
+    : TypedSolverOption<int>(name, description), value(0) {}
+    int GetValue() { return value; }
+    void SetValue(int value) { this->value = value; }
+  };
+  TestOption opt("abc", "def");
+  EXPECT_STREQ("abc", opt.name());
+  EXPECT_STREQ("def", opt.description());
+  EXPECT_FALSE(opt.is_keyword());
+  const char *start = "42";
+  const char *s = start;
+  opt.Parse(s);
+  EXPECT_EQ(start + 2, s);
+  EXPECT_EQ(42, opt.value);
+  fmt::Formatter f;
+  opt.Format(f);
+  EXPECT_EQ("42", str(f));
+}
+
 enum Info { INFO = 0xcafe };
 
 struct TestSolverWithOptions : Solver<TestSolverWithOptions> {
@@ -382,30 +476,20 @@ struct TestSolverWithOptions : Solver<TestSolverWithOptions> {
 };
 
 TEST(SolverTest, AddOption) {
-  struct TestOption : public ampl::SolverOption {
+  struct TestOption : SolverOption {
     int value;
     TestOption() : SolverOption("testopt", "A test option."), value(0) {}
 
-    void Print() {}
-    void Parse(const char *&s) {;
+    void Format(fmt::Formatter &) {}
+    void Parse(const char *&s) {
       char *end = 0;
       value = std::strtol(s, &end, 10);
       s = end;
     }
   };
-
-  struct TestSolver : BasicSolver {
-    TestSolver() : BasicSolver("", "", 0) {}
-    TestOption *AddTestOption() {
-      TestOption *opt = 0;
-      AddOption(SolverOptionPtr(opt = new TestOption()));
-      return opt;
-    }
-    void Solve(Problem &) {}
-  };
-
   TestSolver s;
-  TestOption *opt = s.AddTestOption();
+  TestOption *opt = 0;
+  s.AddOption(std::auto_ptr<SolverOption>(opt = new TestOption()));
   EXPECT_TRUE(s.ParseOptions(Args("testopt=42"), BasicSolver::NO_OPTION_ECHO));
   EXPECT_EQ(42, opt->value);
 }
@@ -477,27 +561,119 @@ TEST(SolverTest, UnknownOption) {
   EXPECT_EQ(42, s.intopt1);
 }
 
-TEST(SolverTest, UnknownOptionRecovery) {
+TEST(SolverTest, ParseOptionRecovery) {
   TestSolverWithOptions s;
   TestErrorHandler handler;
   s.set_error_handler(&handler);
-  EXPECT_FALSE(s.ParseOptions(Args("badopt1 3 badopt2 intopt1=42 badopt3")));
+  // After encountering an unknown option without "=" parsing should skip
+  // everything till the next known option.
+  EXPECT_FALSE(s.ParseOptions(Args("badopt1 3 badopt2=1 intopt1=42 badopt3")));
   EXPECT_EQ(2u, handler.errors.size());
   EXPECT_EQ("Unknown option \"badopt1\"", handler.errors[0]);
   EXPECT_EQ("Unknown option \"badopt3\"", handler.errors[1]);
   EXPECT_EQ(42, s.intopt1);
 }
 
-TEST(SolverTest, UnknownOptionNoRecovery) {
-  TestSolverWithOptions s;
-  TestErrorHandler handler;
-  s.set_error_handler(&handler);
-  EXPECT_FALSE(s.ParseOptions(Args("badopt1 3 badopt2 badopt3=42 badopt4")));
-  EXPECT_EQ(1u, handler.errors.size());
-  EXPECT_EQ("Unknown option \"badopt1\"", handler.errors[0]);
+struct FormatOption : SolverOption {
+  int format_count;
+  FormatOption() : SolverOption("fmtopt", ""), format_count(0) {}
+
+  void Format(fmt::Formatter &f) {
+    f("1");
+    ++format_count;
+  }
+  void Parse(const char *&) {}
+};
+
+TEST(SolverTest, FormatOption) {
+  EXPECT_EXIT({
+    TestSolver s;
+    FILE *f = freopen("out", "w", stdout);
+    s.AddOption(std::auto_ptr<SolverOption>(new FormatOption()));
+    s.ParseOptions(Args("fmtopt=?"), 0);
+    printf("---\n");
+    s.ParseOptions(Args("fmtopt=?", "fmtopt=?"), 0);
+    fclose(f);
+    exit(0);
+  }, ::testing::ExitedWithCode(0), "");
+  EXPECT_EQ("fmtopt=1\n---\nfmtopt=1\nfmtopt=1\n", ReadFile("out"));
 }
 
-// TODO: more tests
+TEST(SolverTest, OptionNotPrintedWhenEchoOff) {
+  TestSolver s;
+  FormatOption *opt = 0;
+  s.AddOption(std::auto_ptr<SolverOption>(opt = new FormatOption()));
+  EXPECT_EQ(0, opt->format_count);
+  s.ParseOptions(Args("fmtopt=?"));
+  EXPECT_EQ(0, opt->format_count);
+}
+
+TEST(SolverTest, NoEchoWhenPrintingOption) {
+  EXPECT_EXIT({
+    TestSolver s;
+    FILE *f = freopen("out", "w", stdout);
+    s.AddOption(std::auto_ptr<SolverOption>(new FormatOption()));
+    s.ParseOptions(Args("fmtopt=?"));
+    fclose(f);
+    exit(0);
+  }, ::testing::ExitedWithCode(0), "");
+  EXPECT_EQ("", ReadFile("out"));
+}
+
+TEST(SolverTest, QuestionMarkInOptionValue) {
+  TestSolverWithOptions s;
+  s.ParseOptions(Args("stropt1=?x"));
+  EXPECT_EQ("?x", s.stropt1);
+}
+
+TEST(SolverTest, ErrorOnKeywordOptionValue) {
+  struct KeywordOption : SolverOption {
+    bool parsed;
+    KeywordOption() : SolverOption("kwopt", "", true), parsed(false) {}
+    void Format(fmt::Formatter &) {}
+    void Parse(const char *&) { parsed = true; }
+  };
+  TestSolver s;
+  TestErrorHandler handler;
+  s.set_error_handler(&handler);
+  KeywordOption *opt = 0;
+  s.AddOption(std::auto_ptr<SolverOption>(opt = new KeywordOption()));
+  s.ParseOptions(Args("kwopt=42"));
+  EXPECT_EQ(1u, handler.errors.size());
+  EXPECT_EQ("Option \"kwopt\" doesn't accept argument", handler.errors[0]);
+  EXPECT_FALSE(opt->parsed);
+}
+
+TEST(SolverTest, ParseOptionsHandlesOptionErrorsInParse) {
+  struct TestOption : SolverOption {
+    TestOption() : SolverOption("testopt", "") {}
+    void Format(fmt::Formatter &) {}
+    void Parse(const char *&s) {
+      while (*s && !std::isspace(*s))
+        ++s;
+      throw ampl::OptionError("test message");
+    }
+  };
+  TestSolver s;
+  TestErrorHandler handler;
+  s.set_error_handler(&handler);
+  s.AddOption(std::auto_ptr<SolverOption>(new TestOption()));
+  s.ParseOptions(Args("testopt=1 testopt=2"));
+  EXPECT_EQ(2u, handler.errors.size());
+  EXPECT_EQ("test message", handler.errors[0]);
+  EXPECT_EQ("test message", handler.errors[1]);
+}
+
+TEST(SolverTest, NoEchoOnErrors) {
+  EXPECT_EXIT({
+    TestSolver s;
+    FILE *f = freopen("out", "w", stdout);
+    s.ParseOptions(Args("badopt=1 version=2"));
+    fclose(f);
+    exit(0);
+  }, ::testing::ExitedWithCode(0), "");
+  EXPECT_EQ("", ReadFile("out"));
+}
 
 TEST(SolverTest, OptionEcho) {
   EXPECT_EXIT({

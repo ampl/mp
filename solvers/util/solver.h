@@ -57,6 +57,33 @@ class ObjPrec {
 namespace internal {
 // Formats a string by indenting it and performing word wrap.
 std::string Format(fmt::StringRef s, int indent = 0);
+
+template <typename T>
+struct OptionHelper;
+
+template <>
+struct OptionHelper<int> {
+  typedef int Arg;
+  static void Format(fmt::Formatter &f, Arg value) { f("{}") << value; }
+  static int Parse(const char *&s);
+  static int CastArg(int value) { return value; }
+};
+
+template <>
+struct OptionHelper<double> {
+  typedef double Arg;
+  static void Format(fmt::Formatter &f, Arg value);
+  static double Parse(const char *&s);
+  static double CastArg(double value) { return value; }
+};
+
+template <>
+struct OptionHelper<std::string> {
+  typedef const char *Arg;
+  static void Format(fmt::Formatter &f, const std::string &s) { f("{}") << s; }
+  static std::string Parse(const char *&s);
+  static const char *CastArg(const std::string &s) { return s.c_str(); }
+};
 }
 
 class BasicSolver;
@@ -139,9 +166,6 @@ class SolverOption {
   std::string description_;
   bool is_keyword_;
 
- protected:
-  InvalidOptionValue ParseError(const char *&s, const char *cursor);
-
  public:
   SolverOption(const char *name,
       const char *description, bool is_keyword = false)
@@ -157,70 +181,40 @@ class SolverOption {
   // Returns true if this is a keyword option not accepting values.
   bool is_keyword() const { return is_keyword_; }
 
-  // Prints the current value of the option.
-  // Throws OptionError in case of error.
-  virtual void Print() = 0;
+  // Formats the option value. Throws OptionError in case of error.
+  virtual void Format(fmt::Formatter &f) = 0;
 
-  // Parses the string and sets the option value. Throws InvalidOptionValue
+  // Parses a string and sets the option value. Throws InvalidOptionValue
   // if the value is invalid or OptionError in case of another error.
   virtual void Parse(const char *&s) = 0;
 };
 
 template <typename T>
-class TypedSolverOption;
-
-template <>
-class TypedSolverOption<int> : public SolverOption {
+class TypedSolverOption : public SolverOption {
  public:
-  typedef int Arg;
-
   TypedSolverOption(const char *name, const char *description)
   : SolverOption(name, description) {}
 
-  void Print();
-  void Parse(const char *&s);
+  void Format(fmt::Formatter &f) {
+    internal::OptionHelper<T>::Format(f, GetValue());
+  }
+
+  void Parse(const char *&s) {
+    const char *start = s;
+    T value = internal::OptionHelper<T>::Parse(s);
+    if (*s && !std::isspace(*s)) {
+      do ++s;
+      while (*s && !std::isspace(*s));
+      throw InvalidOptionValue(name(), std::string(start, s - start));
+    }
+    SetValue(internal::OptionHelper<T>::CastArg(value));
+  }
 
   // Returns the option value.
-  virtual int GetValue() = 0;
+  virtual T GetValue() = 0;
 
   // Sets the option value or throws InvalidOptionValue if the value is invalid.
-  virtual void SetValue(int value) = 0;
-};
-
-template <>
-class TypedSolverOption<double> : public SolverOption {
- public:
-  typedef double Arg;
-
-  TypedSolverOption(const char *name, const char *description)
-  : SolverOption(name, description) {}
-
-  void Print();
-  void Parse(const char *&s);
-
-  // Returns the option value.
-  virtual double GetValue() = 0;
-
-  // Sets the option value or throws InvalidOptionValue if the value is invalid.
-  virtual void SetValue(double value) = 0;
-};
-
-template <>
-class TypedSolverOption<std::string> : public SolverOption {
- public:
-  typedef const char *Arg;
-
-  TypedSolverOption(const char *name, const char *description)
-  : SolverOption(name, description) {}
-
-  void Print();
-  void Parse(const char *&s);
-
-  // Returns the option value.
-  virtual std::string GetValue() = 0;
-
-  // Sets the option value or throws InvalidOptionValue if the value is invalid.
-  virtual void SetValue(const char *value) = 0;
+  virtual void SetValue(typename internal::OptionHelper<T>::Arg value) = 0;
 };
 
 // Base class for all solver classes.
@@ -401,17 +395,20 @@ class BasicSolver
 //
 // class MySolver : public Solver<MySolver> {
 //  public:
+//   void GetTestOption(const char *name, int value, int info) {
+//     // Returns the option value; info is an arbitrary value passed as
+//     // the last argument to AddIntOption. It can be useful if the same
+//     // function handles multiple options.
+//     ...
+//   }
 //   void SetTestOption(const char *name, int value, int info) {
-//     // Set option - called when the test option is parsed;
-//     // info is an arbitrary value passed as a third argument to
-//     // AddIntOption. It can be useful if the same function handles
-//     // multiple options.
+//     // Set the option value; info is the same as in GetTestOption.
 //     ...
 //   }
 //
 //   MySolver()  {
 //     AddIntOption("test", "This is a test option",
-//                  &MySolver::SetTestOption, 42);
+//                  &MySolver::GetTestOption, &MySolver::SetTestOption, 42);
 //   }
 // };
 template <typename Impl>
@@ -420,7 +417,7 @@ class Solver : public BasicSolver {
   template <typename T>
   class ConcreteOption : public TypedSolverOption<T> {
    private:
-    typedef typename TypedSolverOption<T>::Arg Arg;
+    typedef typename internal::OptionHelper<T>::Arg Arg;
     typedef T (Impl::*Getter)(const char *);
     typedef void (Impl::*Setter)(const char *, Arg);
 
@@ -441,7 +438,7 @@ class Solver : public BasicSolver {
   template <typename T, typename Info, typename InfoArg = Info>
   class ConcreteOptionWithInfo : public TypedSolverOption<T> {
    private:
-    typedef typename TypedSolverOption<T>::Arg Arg;
+    typedef typename internal::OptionHelper<T>::Arg Arg;
     typedef T (Impl::*Getter)(const char *, InfoArg);
     typedef void (Impl::*Setter)(const char *, Arg, InfoArg);
 

@@ -100,6 +100,32 @@ std::string Format(fmt::StringRef s, int indent) {
     os << '\n';
   return os.str();
 }
+
+int OptionHelper<int>::Parse(const char *&s) {
+  char *end = 0;
+  long value = std::strtol(s, &end, 10);
+  s = end;
+  return value;
+}
+
+void OptionHelper<double>::Format(fmt::Formatter &f, Arg value) {
+  char buffer[32];
+  g_fmt(buffer, value);
+  f("{}") << buffer;
+}
+
+double OptionHelper<double>::Parse(const char *&s) {
+  char *end = 0;
+  double value = strtod_ASL(s, &end);
+  s = end;
+  return value;
+}
+
+std::string OptionHelper<std::string>::Parse(const char *&s) {
+  const char *start = s;
+  s = SkipNonSpaces(s);
+  return std::string(start, s - start);
+}
 }
 
 std::string SignalHandler::signal_message_;
@@ -138,53 +164,6 @@ void SignalHandler::HandleSigInt(int sig) {
   // Restore the handler since it might have been reset before the handler
   // is called (this is implementation defined).
   std::signal(sig, HandleSigInt);
-}
-
-InvalidOptionValue SolverOption::ParseError(
-    const char *&s, const char *cursor) {
-  const char *end = SkipNonSpaces(cursor);
-  std::string value(s, end - s);
-  s = end;
-  return InvalidOptionValue(name_, value);
-}
-
-void TypedSolverOption<int>::Print() {
-  printf("%s=%d\n", name(), GetValue());
-}
-
-void TypedSolverOption<int>::Parse(const char *&s) {
-  char *end = 0;
-  long value = std::strtol(s, &end, 10);
-  if (*end && !std::isspace(*end))
-    throw ParseError(s, end);
-  s = end;
-  SetValue(value);
-}
-
-void TypedSolverOption<double>::Print() {
-  char buffer[32];
-  g_fmt(buffer, GetValue());
-  printf("%s=%s\n", name(), buffer);
-}
-
-void TypedSolverOption<double>::Parse(const char *&s) {
-  char *end = 0;
-  double value = strtod_ASL(s, &end);
-  if (*end && !std::isspace(*end))
-    throw ParseError(s, end);
-  s = end;
-  SetValue(value);
-}
-
-void TypedSolverOption<std::string>::Print() {
-  printf("%s=%s\n", name(), GetValue().c_str());
-}
-
-void TypedSolverOption<std::string>::Parse(const char *&s) {
-  const char *end = SkipNonSpaces(s);
-  std::string value(s, end - s);
-  s = end;
-  SetValue(value.c_str());
 }
 
 char *BasicSolver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
@@ -234,8 +213,8 @@ BasicSolver::BasicSolver(
         "Single-word phrase:  report version details "
         "before solving the problem.", true), s(s) {}
 
-    void Print() {
-      printf("%s=%d\n", name(), (s.flags() & ASL_OI_show_version) != 0);
+    void Format(fmt::Formatter &f) {
+      f("{}") << ((s.flags() & ASL_OI_show_version) != 0);
     }
     void Parse(const char *&) {
       s.Option_Info::flags |= ASL_OI_show_version;
@@ -334,14 +313,19 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
       char next = s[1];
       if (!next || std::isspace(next)) {
         ++s;
-        if ((flags & NO_OPTION_ECHO) == 0)
-          opt->Print();
+        if ((flags & NO_OPTION_ECHO) == 0) {
+          fmt::Formatter f;
+          f("{}=") << name;
+          opt->Format(f);
+          puts(f.c_str());
+        }
         continue;
       }
     }
     if (opt->is_keyword() && equal_sign) {
-      ReportError("Option \"{}\" doesn't accept arguments") << name;
+      ReportError("Option \"{}\" doesn't accept argument") << name;
       s = SkipNonSpaces(s);
+      continue;
     }
     try {
       opt->Parse(s);
