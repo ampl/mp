@@ -164,28 +164,34 @@ TEST_F(GecodeSolverTest, ADOption) {
   EXPECT_EQ(Gecode::Search::Options().a_d, solver_.options().a_d);
   EXPECT_TRUE(ParseOptions("a_d=42"));
   EXPECT_EQ(42u, solver_.options().a_d);
-  EXPECT_EQ("Invalid value -1 for option a_d", ParseOptions("a_d=-1").error());
+  EXPECT_EQ(42, solver_.GetIntOption("a_d"));
+  EXPECT_EQ("Invalid value \"-1\" for option \"a_d\"",
+      ParseOptions("a_d=-1").error());
 }
 
 TEST_F(GecodeSolverTest, CDOption) {
   EXPECT_EQ(Gecode::Search::Options().c_d, solver_.options().c_d);
   EXPECT_TRUE(ParseOptions("c_d=42"));
   EXPECT_EQ(42u, solver_.options().c_d);
-  EXPECT_EQ("Invalid value -1 for option c_d", ParseOptions("c_d=-1").error());
+  EXPECT_EQ(42, solver_.GetIntOption("c_d"));
+  EXPECT_EQ("Invalid value \"-1\" for option \"c_d\"",
+      ParseOptions("c_d=-1").error());
 }
 
 TEST_F(GecodeSolverTest, FailLimitOption) {
   string message = Solve("miplib/assign1", "faillimit=10").message;
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_TRUE(message.find(" 11 fails") != string::npos);
-  EXPECT_EQ("Invalid value -1 for option faillimit",
+  EXPECT_EQ(10, solver_.GetIntOption("faillimit"));
+  EXPECT_EQ("Invalid value \"-1\" for option \"faillimit\"",
       ParseOptions("faillimit=-1").error());
 }
 
 TEST_F(GecodeSolverTest, MemoryLimitOption) {
   Solve("miplib/assign1", "memorylimit=100000");
   EXPECT_EQ(600, solver_.problem().solve_code());
-  EXPECT_EQ("Invalid value -1 for option memorylimit",
+  EXPECT_EQ(100000, solver_.GetIntOption("memorylimit"));
+  EXPECT_EQ("Invalid value \"-1\" for option \"memorylimit\"",
       ParseOptions("memorylimit=-1").error());
 }
 
@@ -193,20 +199,23 @@ TEST_F(GecodeSolverTest, NodeLimitOption) {
   string message = Solve("miplib/assign1", "nodelimit=10").message;
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_TRUE(message.find("11 nodes") != string::npos);
-  EXPECT_EQ("Invalid value -1 for option nodelimit",
+  EXPECT_EQ(10, solver_.GetIntOption("nodelimit"));
+  EXPECT_EQ("Invalid value \"-1\" for option \"nodelimit\"",
       ParseOptions("nodelimit=-1").error());
 }
 
 TEST_F(GecodeSolverTest, TimeLimitOption) {
   Solve("miplib/assign1", "timelimit=0.1");
   EXPECT_EQ(600, solver_.problem().solve_code());
-  EXPECT_EQ("Invalid value -1 for option timelimit",
+  EXPECT_EQ(0.1, solver_.GetDblOption("timelimit"));
+  EXPECT_EQ("Invalid value \"-1\" for option \"timelimit\"",
       ParseOptions("timelimit=-1").error());
 }
 
 TEST_F(GecodeSolverTest, ThreadsOption) {
   EXPECT_EQ(Gecode::Search::Options().threads, solver_.options().threads);
   EXPECT_TRUE(ParseOptions("threads=0.5"));
+  EXPECT_EQ(0.5, solver_.GetDblOption("threads"));
   EXPECT_EQ(0.5, solver_.options().threads);
   EXPECT_TRUE(ParseOptions("threads=-10"));
   EXPECT_EQ(-10.0, solver_.options().threads);
@@ -232,6 +241,7 @@ TEST_F(GecodeSolverTest, IntConLevelOption) {
   for (const OptionValue<Gecode::IntConLevel>
       *p = INT_CON_LEVELS; p->name; ++p, ++count) {
     EXPECT_TRUE(ParseOptions(c_str(fmt::Format("icl={}") << p->name)));
+    EXPECT_EQ(p->name, solver_.GetStrOption("icl"));
     EXPECT_EQ(p->value, solver_.icl());
   }
   EXPECT_EQ(4u, count);
@@ -258,6 +268,7 @@ TEST_F(GecodeSolverTest, ValBranchingOption) {
       *p = VAL_BRANCHINGS; p->name; ++p, ++count) {
     EXPECT_TRUE(ParseOptions(
         c_str(fmt::Format("val_branching={}") << p->name)));
+    EXPECT_EQ(p->name, solver_.GetStrOption("val_branching"));
     EXPECT_EQ(p->value.select(), solver_.val_branching().select());
   }
   EXPECT_EQ(10u, count);
@@ -298,6 +309,7 @@ TEST_F(GecodeSolverTest, VarBranchingOption) {
       *p = VAR_BRANCHINGS; p->name; ++p, ++count) {
     EXPECT_TRUE(ParseOptions(
         c_str(fmt::Format("var_branching={}") << p->name)));
+    EXPECT_EQ(p->name, solver_.GetStrOption("var_branching"));
     EXPECT_EQ(p->value, solver_.var_branching());
   }
   EXPECT_EQ(24u, count);
@@ -306,14 +318,16 @@ TEST_F(GecodeSolverTest, VarBranchingOption) {
 TEST_F(GecodeSolverTest, DecayOption) {
   EXPECT_EQ(1, solver_.decay());
   EXPECT_TRUE(ParseOptions("decay=0.000001"));
+  EXPECT_EQ(0.000001, solver_.GetDblOption("decay"));
   EXPECT_EQ(0.000001, solver_.decay());
   EXPECT_TRUE(ParseOptions("decay=0.5"));
+  EXPECT_EQ(0.5, solver_.GetDblOption("decay"));
   EXPECT_EQ(0.5, solver_.decay());
   EXPECT_TRUE(ParseOptions("decay=1"));
   EXPECT_EQ(1.0, solver_.decay());
-  EXPECT_EQ("Invalid value 0 for option decay",
+  EXPECT_EQ("Invalid value \"0\" for option \"decay\"",
       ParseOptions("decay=0").error());
-  EXPECT_EQ("Invalid value 1.1 for option decay",
+  EXPECT_EQ("Invalid value \"1.1\" for option \"decay\"",
       ParseOptions("decay=1.1").error());
 }
 
@@ -337,10 +351,12 @@ TEST_F(GecodeSolverTest, OutLevOption) {
       "                                            42\n", ReadFile("out"));
 
   EXPECT_TRUE(ParseOptions("outlev=0"));
+  EXPECT_EQ(0, solver_.GetIntOption("outlev"));
   EXPECT_TRUE(ParseOptions("outlev=1"));
-  EXPECT_EQ("Invalid value -1 for option outlev",
+  EXPECT_EQ(1, solver_.GetIntOption("outlev"));
+  EXPECT_EQ("Invalid value \"-1\" for option \"outlev\"",
       ParseOptions("outlev=-1").error());
-  EXPECT_EQ("Invalid value 2 for option outlev",
+  EXPECT_EQ("Invalid value \"2\" for option \"outlev\"",
       ParseOptions("outlev=2").error());
 }
 
@@ -363,9 +379,11 @@ TEST_F(GecodeSolverTest, OutFreqOption) {
   out = ReadFile("out");
   EXPECT_EQ(5, std::count(out.begin(), out.end(), '\n'));
 
-  EXPECT_EQ("Invalid value -1 for option outfreq",
+  solver_.ParseOptions(Args("outfreq=1.23"));
+  EXPECT_EQ(1.23, solver_.GetDblOption("outfreq"));
+  EXPECT_EQ("Invalid value \"-1\" for option \"outfreq\"",
       ParseOptions("outfreq=-1").error());
-  EXPECT_EQ("Invalid value 0 for option outfreq",
+  EXPECT_EQ("Invalid value \"0\" for option \"outfreq\"",
       ParseOptions("outfreq=0").error());
 }
 }

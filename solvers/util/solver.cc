@@ -230,7 +230,7 @@ BasicSolver::BasicSolver(
         "      4 = dual variables to stdout\n"
         "      8 = suppress solution message\n"), s(s) {}
 
-    int GetValue() { return s.wantsol(); }
+    int GetValue() const { return s.wantsol(); }
     void SetValue(int value) { s.Option_Info::wantsol = value; }
   };
   AddOption(SolverOptionPtr(new WantSolOption(*this)));
@@ -261,6 +261,13 @@ bool BasicSolver::ProcessArgs(char **&argv, unsigned flags) {
   }
   problem_.Read(stub);
   return ParseOptions(argv, flags);
+}
+
+const SolverOption *BasicSolver::GetOption(const char *name) const {
+  OptionMap::const_iterator i = options_.find(name);
+  if (i == options_.end())
+    throw OptionError(fmt::Format("Unknown option \"{}\"") << name);
+  return i->second;
 }
 
 void BasicSolver::ParseOptionString(const char *s, unsigned flags) {

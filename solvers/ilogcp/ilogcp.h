@@ -453,7 +453,7 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
       accepts_auto_(accepts_auto) {
     }
 
-    std::string GetValue();
+    std::string GetValue() const;
     void SetValue(const char *value);
   };
 
