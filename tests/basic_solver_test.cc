@@ -379,7 +379,7 @@ TEST(SolverTest, TypedSolverOption) {
     int value;
     TestOption(const char *name, const char *description)
     : TypedSolverOption<int>(name, description), value(0) {}
-    int GetValue() { return value; }
+    int GetValue() const { return value; }
     void SetValue(int value) { this->value = value; }
   };
   TestOption opt("abc", "def");

@@ -580,7 +580,7 @@ void IlogCPSolver::SetBoolOption(const char *name, int value, Option opt) {
   options_[opt] = value;
 }
 
-std::string IlogCPSolver::CPOption::GetValue() {
+std::string IlogCPSolver::CPOption::GetValue() const {
   int value = 0;
   try {
     value = solver_.GetCPForOption(name())->solver().getParameter(param_);

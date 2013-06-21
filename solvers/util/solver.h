@@ -151,12 +151,12 @@ public:
   OptionError(fmt::StringRef message) : Error(message) {}
 };
 
-// An exception indicating an invalid option value.
+// An exception thrown when an invalid value is provided for an option.
 class InvalidOptionValue : public OptionError {
  public:
   template <typename T>
   InvalidOptionValue(fmt::StringRef name, T value)
-  : OptionError(fmt::Format("Invalid value {} for option {}")
+  : OptionError(fmt::Format("Invalid value \"{}\" for option \"{}\"")
       << value << name.c_str()) {}
 };
 
@@ -212,7 +212,7 @@ class TypedSolverOption : public SolverOption {
   }
 
   // Returns the option value.
-  virtual T GetValue() = 0;
+  virtual T GetValue() const = 0;
 
   // Sets the option value or throws InvalidOptionValue if the value is invalid.
   virtual void SetValue(typename internal::OptionHelper<T>::Arg value) = 0;
@@ -264,6 +264,14 @@ class BasicSolver
       handler_->HandleError(fmt::StringRef(f.c_str(), f.size()));
     }
   };
+
+  // Returns the option with specified name.
+  const SolverOption *GetOption(const char *name) const;
+
+  static OptionError OptionTypeError(fmt::StringRef name, fmt::StringRef type) {
+    return OptionError(fmt::Format("Option \"{}\" is not of type \"{}\"")
+            << name.c_str() << type.c_str());
+  }
 
   // Parses an option string.
   void ParseOptionString(const char *s, unsigned flags);
@@ -365,6 +373,36 @@ class BasicSolver
   // false otherwise.
   virtual bool ParseOptions(char **argv, unsigned flags = 0);
 
+  // Returns the value of an integer option.
+  // Throws OptionError if there is no such option or it has a different type.
+  int GetIntOption(const char *name) const {
+    const TypedSolverOption<int> *opt =
+        dynamic_cast<const TypedSolverOption<int> *>(GetOption(name));
+    if (!opt)
+      throw OptionTypeError(name, "int");
+    return opt->GetValue();
+  }
+
+  // Returns the value of a double option.
+  // Throws OptionError if there is no such option or it has a different type.
+  double GetDblOption(const char *name) const {
+    const TypedSolverOption<double> *opt =
+        dynamic_cast<const TypedSolverOption<double> *>(GetOption(name));
+    if (!opt)
+      throw OptionTypeError(name, "double");
+    return opt->GetValue();
+  }
+
+  // Returns the value of a string option.
+  // Throws OptionError if there is no such option or it has a different type.
+  std::string GetStrOption(const char *name) const {
+    const TypedSolverOption<std::string> *opt =
+        dynamic_cast<const TypedSolverOption<std::string> *>(GetOption(name));
+    if (!opt)
+      throw OptionTypeError(name, "string");
+    return opt->GetValue();
+  }
+
   // Passes a solution to the solution handler.
   void HandleSolution(fmt::StringRef message,
       const double *values, const double *dual_values,
@@ -432,7 +470,7 @@ class Solver : public BasicSolver {
     : TypedSolverOption<T>(name, description), impl_(static_cast<Impl&>(*s)),
       getter_(getter), setter_(setter) {}
 
-    T GetValue() { return (impl_.*getter_)(this->name()); }
+    T GetValue() const { return (impl_.*getter_)(this->name()); }
     void SetValue(Arg value) { (impl_.*setter_)(this->name(), value); }
   };
 
@@ -454,7 +492,7 @@ class Solver : public BasicSolver {
     : TypedSolverOption<T>(name, description), impl_(static_cast<Impl&>(*s)),
       getter_(getter), setter_(setter), info_(info) {}
 
-    T GetValue() { return (impl_.*getter_)(this->name(), info_); }
+    T GetValue() const { return (impl_.*getter_)(this->name(), info_); }
     void SetValue(Arg value) { (impl_.*setter_)(this->name(), value, info_); }
   };
 
