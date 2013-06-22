@@ -435,8 +435,8 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
   int GetBoolOption(const char *, Option opt) { return options_[opt]; }
   void SetBoolOption(const char *name, int value, Option opt);
 
-  // An integer/enumerated option of the constraint programming optimizer.
-  class CPOption : public TypedSolverOption<std::string> {
+  // An enumerated option of the constraint programming optimizer.
+  class EnumCPOption : public TypedSolverOption<std::string> {
    private:
     IlogCPSolver &solver_;
     IloCP::IntParam param_;
@@ -445,9 +445,9 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
     bool accepts_auto_;   // true if the option accepts IloCP::Auto value
 
    public:
-    CPOption(const char *name, const char *description,
-        IlogCPSolver *s, IloCP::IntParam p, int start = 0,
-        const char **values = 0, bool accepts_auto = false)
+    EnumCPOption(const char *name, const char *description,
+        IlogCPSolver *s, IloCP::IntParam p, int start,
+        const char **values, bool accepts_auto = false)
     : TypedSolverOption<std::string>(name, description),
       solver_(*s), param_(p), start_(start), values_(values),
       accepts_auto_(accepts_auto) {
@@ -455,6 +455,21 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
 
     std::string GetValue() const;
     void SetValue(const char *value);
+  };
+
+  // An integer option of the constraint programming optimizer.
+  class IntCPOption : public TypedSolverOption<int> {
+   private:
+    IlogCPSolver &solver_;
+    IloCP::IntParam param_;
+
+   public:
+    IntCPOption(const char *name, const char *description,
+        IlogCPSolver *s, IloCP::IntParam p)
+    : TypedSolverOption<int>(name, description), solver_(*s), param_(p) {}
+
+    int GetValue() const;
+    void SetValue(int value);
   };
 
   // Returns a double option of the constraint programming optimizer.
