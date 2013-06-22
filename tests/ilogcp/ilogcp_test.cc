@@ -147,6 +147,12 @@ void IlogCPTest::CheckIntCPOption(const char *option,
     ASSERT_TRUE(opt != nullptr);
     EXPECT_EQ(offset + i, opt->solver().getParameter(param))
       << "Failed option: " << option;
+    if (!values) {
+      if (accepts_auto)
+        EXPECT_EQ(str(fmt::Format("{}") << i), s.GetStrOption(option));
+      else
+        EXPECT_EQ(i, s.GetIntOption(option));
+    }
   }
   if (end != INT_MAX)
     EXPECT_FALSE(ParseOptions("optimizer=cp", Option(option, end + 1).c_str()));
@@ -160,6 +166,7 @@ void IlogCPTest::CheckIntCPOption(const char *option,
     opt = dynamic_cast<CPOptimizer*>(s.optimizer());
     ASSERT_TRUE(opt != nullptr);
     EXPECT_EQ(IloCP::Auto, opt->solver().getParameter(param));
+    EXPECT_EQ("auto", s.GetStrOption(option));
   }
   int small = start - 1;
   if (accepts_auto && small == -1)
@@ -175,6 +182,7 @@ void IlogCPTest::CheckIntCPOption(const char *option,
       ASSERT_TRUE(opt != nullptr);
       EXPECT_EQ(v->value, opt->solver().getParameter(param))
         << "Failed option: " << option;
+      EXPECT_EQ(v->name, s.GetStrOption(option)) << "Failed option: " << option;
     }
     EXPECT_EQ(end - start + 1, count);
   }
@@ -189,6 +197,7 @@ void IlogCPTest::CheckIntCPLEXOption(const char *option,
     ASSERT_TRUE(opt != nullptr);
     EXPECT_EQ(i, opt->cplex().getParam(param))
       << "Failed option: " << option;
+    EXPECT_EQ(i, s.GetIntOption(option));
   }
   if (end != INT_MAX) {
     EXPECT_FALSE(ParseOptions("optimizer=cplex",
@@ -209,6 +218,7 @@ void IlogCPTest::CheckDblCPOption(const char *option,
   ASSERT_TRUE(opt != nullptr);
   EXPECT_EQ(good, opt->solver().getParameter(param))
     << "Failed option: " << option;
+  EXPECT_EQ(good, s.GetDblOption(option));
 
   EXPECT_FALSE(ParseOptions("optimizer=cp", Option(option, bad).c_str()));
   EXPECT_FALSE(ParseOptions("optimizer=cplex", Option(option, good).c_str()));
@@ -325,20 +335,25 @@ TEST_F(IlogCPTest, SolveNumberOfCplex) {
 TEST_F(IlogCPTest, DebugExprOption) {
   EXPECT_TRUE(ParseOptions("debugexpr=0"));
   EXPECT_EQ(0, s.GetOption(IlogCPSolver::DEBUGEXPR));
+  EXPECT_EQ(0, s.GetIntOption("debugexpr"));
   EXPECT_TRUE(ParseOptions("debugexpr=1"));
   EXPECT_EQ(1, s.GetOption(IlogCPSolver::DEBUGEXPR));
+  EXPECT_EQ(1, s.GetIntOption("debugexpr"));
   EXPECT_FALSE(ParseOptions("debugexpr=42"));
   EXPECT_FALSE(ParseOptions("debugexpr=oops"));
 }
 
 TEST_F(IlogCPTest, OptimizerOption) {
   EXPECT_EQ(IlogCPSolver::AUTO, s.GetOption(IlogCPSolver::OPTIMIZER));
+  EXPECT_EQ("auto", s.GetStrOption("optimizer"));
 
   EXPECT_TRUE(ParseOptions("optimizer=cplex"));
+  EXPECT_EQ("cplex", s.GetStrOption("optimizer"));
   EXPECT_EQ(IlogCPSolver::CPLEX, s.GetOption(IlogCPSolver::OPTIMIZER));
   EXPECT_TRUE(dynamic_cast<IloCplexI*>(s.alg().getImpl()) != nullptr);
 
   EXPECT_TRUE(ParseOptions("optimizer=cp"));
+  EXPECT_EQ("cp", s.GetStrOption("optimizer"));
   EXPECT_EQ(IlogCPSolver::CP, s.GetOption(IlogCPSolver::OPTIMIZER));
   EXPECT_TRUE(dynamic_cast<IloCplexI*>(s.alg().getImpl()) == nullptr);
 }
@@ -346,8 +361,10 @@ TEST_F(IlogCPTest, OptimizerOption) {
 TEST_F(IlogCPTest, TimingOption) {
   EXPECT_TRUE(ParseOptions("timing=0"));
   EXPECT_EQ(0, s.GetOption(IlogCPSolver::TIMING));
+  EXPECT_EQ(0, s.GetIntOption("timing"));
   EXPECT_TRUE(ParseOptions("timing=1"));
   EXPECT_EQ(1, s.GetOption(IlogCPSolver::TIMING));
+  EXPECT_EQ(1, s.GetIntOption("timing"));
   EXPECT_FALSE(ParseOptions("timing=42"));
   EXPECT_FALSE(ParseOptions("timing=oops"));
 }
@@ -355,8 +372,10 @@ TEST_F(IlogCPTest, TimingOption) {
 TEST_F(IlogCPTest, UseNumberOfOption) {
   EXPECT_TRUE(ParseOptions("usenumberof=0"));
   EXPECT_EQ(0, s.GetOption(IlogCPSolver::USENUMBEROF));
+  EXPECT_EQ(0, s.GetIntOption("usenumberof"));
   EXPECT_TRUE(ParseOptions("usenumberof=1"));
   EXPECT_EQ(1, s.GetOption(IlogCPSolver::USENUMBEROF));
+  EXPECT_EQ(1, s.GetIntOption("usenumberof"));
   EXPECT_FALSE(ParseOptions("usenumberof=42"));
   EXPECT_FALSE(ParseOptions("timing=oops"));
 }
@@ -397,6 +416,7 @@ TEST_F(IlogCPTest, CPDefaultVerbosityQuiet) {
   CPOptimizer *opt = dynamic_cast<CPOptimizer*>(s.optimizer());
   ASSERT_TRUE(opt != nullptr);
   EXPECT_EQ(IloCP::Quiet, opt->solver().getParameter(IloCP::LogVerbosity));
+  EXPECT_EQ("quiet", s.GetStrOption("logverbosity"));
 }
 
 TEST_F(IlogCPTest, CPVerbosityOptions) {
@@ -464,6 +484,7 @@ TEST_F(IlogCPTest, CPLEXDefaultMIPDisplayZero) {
   CPLEXOptimizer *opt = dynamic_cast<CPLEXOptimizer*>(s.optimizer());
   ASSERT_TRUE(opt != nullptr);
   EXPECT_EQ(0, opt->cplex().getParam(IloCplex::MIPDisplay));
+  EXPECT_EQ(0, s.GetIntOption("mipdisplay"));
 }
 
 TEST_F(IlogCPTest, CPLEXOptions) {
