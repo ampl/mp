@@ -65,6 +65,7 @@ struct OptionHelper;
 template <>
 struct OptionHelper<int> {
   typedef int Arg;
+  static const char TYPE_NAME[];
   static void Format(fmt::Formatter &f, Arg value) { f("{}") << value; }
   static int Parse(const char *&s);
   static int CastArg(int value) { return value; }
@@ -73,6 +74,7 @@ struct OptionHelper<int> {
 template <>
 struct OptionHelper<double> {
   typedef double Arg;
+  static const char TYPE_NAME[];
   static void Format(fmt::Formatter &f, Arg value);
   static double Parse(const char *&s);
   static double CastArg(double value) { return value; }
@@ -81,6 +83,7 @@ struct OptionHelper<double> {
 template <>
 struct OptionHelper<std::string> {
   typedef const char *Arg;
+  static const char TYPE_NAME[];
   static void Format(fmt::Formatter &f, const std::string &s) { f("{}") << s; }
   static std::string Parse(const char *&s);
   static const char *CastArg(const std::string &s) { return s.c_str(); }
@@ -268,6 +271,15 @@ class BasicSolver
   // Returns the option with specified name.
   const SolverOption *GetOption(const char *name) const;
 
+  template <typename T>
+  T DoGetOption(const char *name) const {
+    const TypedSolverOption<T> *opt =
+        dynamic_cast<const TypedSolverOption<T> *>(GetOption(name));
+    if (!opt)
+      throw OptionTypeError(name, internal::OptionHelper<T>::TYPE_NAME);
+    return opt->GetValue();
+  }
+
   static OptionError OptionTypeError(fmt::StringRef name, fmt::StringRef type) {
     return OptionError(fmt::Format("Option \"{}\" is not of type \"{}\"")
             << name.c_str() << type.c_str());
@@ -375,32 +387,18 @@ class BasicSolver
 
   // Returns the value of an integer option.
   // Throws OptionError if there is no such option or it has a different type.
-  int GetIntOption(const char *name) const {
-    const TypedSolverOption<int> *opt =
-        dynamic_cast<const TypedSolverOption<int> *>(GetOption(name));
-    if (!opt)
-      throw OptionTypeError(name, "int");
-    return opt->GetValue();
-  }
+  int GetIntOption(const char *name) const { return DoGetOption<int>(name); }
 
   // Returns the value of a double option.
   // Throws OptionError if there is no such option or it has a different type.
   double GetDblOption(const char *name) const {
-    const TypedSolverOption<double> *opt =
-        dynamic_cast<const TypedSolverOption<double> *>(GetOption(name));
-    if (!opt)
-      throw OptionTypeError(name, "double");
-    return opt->GetValue();
+    return DoGetOption<double>(name);
   }
 
   // Returns the value of a string option.
   // Throws OptionError if there is no such option or it has a different type.
   std::string GetStrOption(const char *name) const {
-    const TypedSolverOption<std::string> *opt =
-        dynamic_cast<const TypedSolverOption<std::string> *>(GetOption(name));
-    if (!opt)
-      throw OptionTypeError(name, "string");
-    return opt->GetValue();
+    return DoGetOption<std::string>(name);
   }
 
   // Passes a solution to the solution handler.
