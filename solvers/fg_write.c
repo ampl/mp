@@ -825,7 +825,7 @@ fg_write_ASL(ASL *a, const char *stub, NewVCO *nu, int flags)
 	iguess(pf, nl, 'd', pi0, havepi0, n_con, nnc, nu->d0);
 	iguess(pf, nl, 'x', X0, havex0, n_var, nnv, nu->x0);
 	br(pf, nl, 'r', LUrhs, Urhsx, n_con);
-	br(pf, nl, 0, nu->LUnc, nu->Unc, nnc);
+	br(pf, nl, n_con ? 0 : 'r', nu->LUnc, nu->Unc, nnc);
 	br(pf, nl, 'b', LUv, Uvx, n_var);
 	br(pf, nl, 0, nu->LUnv, nu->Unv, nnv);
 	if (A_vals)
