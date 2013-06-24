@@ -48,10 +48,12 @@ void SSDSolver::SetOutLev(const char *name, int value) {
 
 SSDSolver::SSDSolver()
 : Solver<SSDSolver>("ssdsolver", 0, SSDSOLVER_VERSION),
-  output_(false) {
+  output_(false), solver_name_("cplex") {
   set_version("SSD Solver");
   AddIntOption("outlev", "0 or 1 (default 0):  Whether to print solution log.",
       &SSDSolver::GetOutLev, &SSDSolver::SetOutLev);
+  AddStrOption("solver", "Solver to use for subproblems (default = cplex).",
+      &SSDSolver::GetSolverName, &SSDSolver::SetSolverName);
 }
 
 void SSDSolver::Solve(Problem &p) {
@@ -167,8 +169,7 @@ void SSDSolver::Solve(Problem &p) {
     cut_coefs[dominance_var] = -scaling;
     pc.AddCon(&cut_coefs[0], ref_tails[max_rel_violation_scen], Infinity);
 
-    // TODO: make solver configurable
-    problem.Solve("cplex", sol, &pc, Problem::IGNORE_FUNCTIONS);
+    problem.Solve(solver_name_, sol, &pc, Problem::IGNORE_FUNCTIONS);
     if (sol.status() != Solution::SOLVED) {
       solution.clear();
       break;
