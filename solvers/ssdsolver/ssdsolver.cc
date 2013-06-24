@@ -50,8 +50,7 @@ SSDSolver::SSDSolver()
 : Solver<SSDSolver>("ssdsolver", 0, SSDSOLVER_VERSION),
   output_(false) {
   set_version("SSD Solver");
-  AddIntOption("outlev",
-      "0 or 1 (default 0):  Whether to print solution log.",
+  AddIntOption("outlev", "0 or 1 (default 0):  Whether to print solution log.",
       &SSDSolver::GetOutLev, &SSDSolver::SetOutLev);
 }
 
@@ -108,7 +107,7 @@ void SSDSolver::Solve(Problem &p) {
   const double *coefs = extractor.coefs();
   std::vector<ValueScenario> tails(num_scenarios);
   int iteration = 1;
-  Solution::Status status = Solution::UNKNOWN;
+  Solution sol;
   for (; ; ++iteration) {
     // Compute the tails of the distribution.
     for (int i = 0; i < num_scenarios; ++i) {
@@ -168,11 +167,9 @@ void SSDSolver::Solve(Problem &p) {
     cut_coefs[dominance_var] = -scaling;
     pc.AddCon(&cut_coefs[0], ref_tails[max_rel_violation_scen], Infinity);
 
-    Solution sol;
     // TODO: make solver configurable
     problem.Solve("cplex", sol, &pc, Problem::IGNORE_FUNCTIONS);
-    if ((status = sol.status()) != Solution::SOLVED) {
-      // TODO: report an error
+    if (sol.status() != Solution::SOLVED) {
       solution.clear();
       break;
     }
@@ -183,18 +180,27 @@ void SSDSolver::Solve(Problem &p) {
   }
 
   // Convert solution status.
-  int solve_code = 0;
-  const char *message = "optimal solution";
-  if (status != Solution::SOLVED) {
-    solve_code = 500;
-    message = "failure";
+  const char *message = 0;
+  switch (sol.status()) {
+  case Solution::SOLVED:
+    message = "optimal solution";
+    break;
+  case Solution::INFEASIBLE:
+    message = "infeasible problem";
+    break;
+  case Solution::UNBOUNDED:
+    message = "unbounded problem";
+    break;
+  default:
+    message = "error";
+    break;
   }
-  problem.set_solve_code(solve_code);
+  problem.set_solve_code(sol.solve_code());
 
   fmt::Formatter format;
   format("{}: {}\n") << long_name() << message;
-  format("{} iterations") << iteration;
-  if (status == Solution::SOLVED)
+  format("{} iteration(s)") << iteration;
+  if (sol.status() == Solution::SOLVED)
     format(", dominance {}") << dominance_ub;
   HandleSolution(format.c_str(), &solution[0], 0, 0);
 }
