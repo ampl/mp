@@ -87,9 +87,13 @@ class SSDExtractor : public ExprVisitor<SSDExtractor, void, void> {
 class SSDSolver : public Solver<SSDSolver> {
  private:
   bool output_;
+  std::string solver_name_;
 
   int GetOutLev(const char *) { return output_; }
   void SetOutLev(const char *name, int value);
+
+  std::string GetSolverName(const char *) { return solver_name_; }
+  void SetSolverName(const char *, const char *value) { solver_name_ = value; }
 
  public:
   SSDSolver();
