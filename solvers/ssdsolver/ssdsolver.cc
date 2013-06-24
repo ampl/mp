@@ -57,14 +57,12 @@ SSDSolver::SSDSolver()
 }
 
 void SSDSolver::Solve(Problem &p) {
-  // TODO: check that there are no nonlinear expressions
-  Problem &problem = Solver<SSDSolver>::problem();
   Function ssd_uniform;
-  int num_scenarios = problem.num_logical_cons();
-  int num_vars = problem.num_vars();
+  int num_scenarios = p.num_logical_cons();
+  int num_vars = p.num_vars();
   SSDExtractor extractor(num_scenarios, num_vars);
   for (int i = 0; i < num_scenarios; ++i) {
-    LogicalExpr logical_expr = problem.logical_con_expr(i);
+    LogicalExpr logical_expr = p.logical_con_expr(i);
     RelationalExpr rel_expr = Cast<RelationalExpr>(logical_expr);
     if (!rel_expr || rel_expr.opcode() != NE ||
         Cast<NumericConstant>(rel_expr.rhs()).value() != 0) {
@@ -83,10 +81,10 @@ void SSDSolver::Solve(Problem &p) {
     extractor.Extract(call);
   }
 
-  if (problem.num_objs() != 0)
+  if (p.num_objs() != 0)
     throw Error("SSD solver doesn't support user-defined objectives");
 
-  ProblemChanges pc(problem);
+  ProblemChanges pc(p);
   int dominance_var = pc.AddVar(-Infinity, Infinity);
   double coef = 1;
   pc.AddObj(MAX, 1, &coef, &dominance_var);
@@ -97,8 +95,11 @@ void SSDSolver::Solve(Problem &p) {
   for (int i = 1; i < num_scenarios; ++i)
     ref_tails[i] += ref_tails[i - 1];
 
-  // TODO: get initial feasible solution
-  std::vector<double> solution(num_vars, 1.0 / num_vars);
+  // Get initial feasible solution.
+  Solution sol;
+  char solver_msg[] = "solver_msg=0";
+  putenv(solver_msg);
+  p.Solve(solver_name_, sol, 0, Problem::IGNORE_FUNCTIONS);
 
   double abs_tolerance = 1e-5;
 
@@ -109,14 +110,14 @@ void SSDSolver::Solve(Problem &p) {
   const double *coefs = extractor.coefs();
   std::vector<ValueScenario> tails(num_scenarios);
   int iteration = 1;
-  Solution sol;
-  for (; ; ++iteration) {
+  printf("\nItn          Gap\n") ;
+  for (; sol.status() == Solution::SOLVED; ++iteration) {
     // Compute the tails of the distribution.
     for (int i = 0; i < num_scenarios; ++i) {
       double value = 0;
       const double *row = coefs + i * num_vars;
       for (int j = 0; j < num_vars; ++j)
-        value += row[j] * solution[j];
+        value += row[j] * sol.value(j);
       tails[i].value = value;
       tails[i].scenario = i;
     }
@@ -152,7 +153,7 @@ void SSDSolver::Solve(Problem &p) {
     if (min_tail_diff > dominance_lb)
       dominance_lb = min_tail_diff;
 
-    fmt::Print("{:3}  {}\n") << iteration << (dominance_ub - dominance_lb);
+    fmt::Print("{:3} {:>12}\n") << iteration << (dominance_ub - dominance_lb);
 
     if ((dominance_ub - dominance_lb) * scaling <= abs_tolerance) {
       fmt::Print("Absolute tolerance reached.\n");
@@ -169,14 +170,7 @@ void SSDSolver::Solve(Problem &p) {
     cut_coefs[dominance_var] = -scaling;
     pc.AddCon(&cut_coefs[0], ref_tails[max_rel_violation_scen], Infinity);
 
-    problem.Solve(solver_name_, sol, &pc, Problem::IGNORE_FUNCTIONS);
-    if (sol.status() != Solution::SOLVED) {
-      solution.clear();
-      break;
-    }
-    const double *values = sol.values();
-    solution.assign(values, values + num_vars);
-
+    p.Solve(solver_name_, sol, &pc, Problem::IGNORE_FUNCTIONS);
     dominance_ub = sol.value(dominance_var);
   }
 
@@ -196,13 +190,13 @@ void SSDSolver::Solve(Problem &p) {
     message = "error";
     break;
   }
-  problem.set_solve_code(sol.solve_code());
+  p.set_solve_code(sol.solve_code());
 
   fmt::Formatter format;
-  format("{}: {}\n") << long_name() << message;
-  format("{} iteration(s)") << iteration;
+  format("{}: {}") << long_name() << message;
   if (sol.status() == Solution::SOLVED)
-    format(", dominance {}") << dominance_ub;
-  HandleSolution(format.c_str(), &solution[0], 0, 0);
+    format("; dominance {}") << dominance_ub;
+  format("\n{} iteration(s)") << iteration;
+  HandleSolution(format.c_str(), sol.values(), 0, 0);
 }
 }
