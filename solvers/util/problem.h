@@ -201,6 +201,9 @@ class Problem : Noncopyable {
     return asl_->i.Uvx_[var_index];
   }
 
+  // Returns the initial values for the variables.
+  const double *initial_values() const { return asl_->i.X0_; }
+
   // Returns the lower bounds for the constraints.
   const double *con_lb() const { return asl_->i.LUrhs_; }
 
@@ -272,8 +275,11 @@ class Problem : Noncopyable {
   // Adds a logical constraint.
   void AddCon(LogicalExpr expr);
 
+  // Flags for the Read method.
+  enum { READ_INITIAL_VALUES = 1 };
+
   // Reads a problem from the file <stub>.nl.
-  void Read(fmt::StringRef stub);
+  void Read(fmt::StringRef stub, unsigned flags = 0);
 
   // Flags for the Solve method.
   enum { IGNORE_FUNCTIONS = 1 };

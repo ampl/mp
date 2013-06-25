@@ -63,8 +63,6 @@ class SSDExtractor : public ExprVisitor<SSDExtractor, void, void> {
       Visit(*i);
   }
 
-  // TODO: handle variable, constant, addition, division by constant?
-
  public:
   SSDExtractor(unsigned num_scenarios, unsigned num_vars)
   : coefs_(num_scenarios * num_vars), num_vars_(num_vars),
