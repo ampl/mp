@@ -39,18 +39,14 @@ struct ValueLess {
 
 namespace ampl {
 
-void SSDSolver::SetOutLev(const char *name, int value) {
-  if (value != 0 && value != 1)
-    throw InvalidOptionValue(name, value);
-  output_ = value != 0;
-}
-
 SSDSolver::SSDSolver()
 : Solver<SSDSolver>("ssdsolver", 0, SSDSOLVER_VERSION),
-  output_(false), abs_tolerance_(1e-5), solver_name_("cplex") {
+  output_(false), scaled_(false), abs_tolerance_(1e-5), solver_name_("cplex") {
   set_version("SSD Solver");
   AddIntOption("outlev", "0 or 1 (default 0):  Whether to print solution log.",
-      &SSDSolver::GetOutLev, &SSDSolver::SetOutLev);
+      &SSDSolver::GetBoolOption, &SSDSolver::SetBoolOption, &output_);
+  AddIntOption("scaled", "0 or 1 (default 0):  Whether to use a scaled model.",
+      &SSDSolver::GetBoolOption, &SSDSolver::SetBoolOption, &scaled_);
   AddDblOption("abs_tolerance", "Absolute tolerance. Default = 1e-5.",
       &SSDSolver::GetAbsTolerance, &SSDSolver::SetAbsTolerance);
   AddStrOption("solver", "Solver to use for subproblems. Default = cplex.",
@@ -130,7 +126,7 @@ void SSDSolver::Solve(Problem &p) {
     //int min_tail_diff_scen = -1;
     int max_rel_violation_scen = -1;
     for (int i = 0; i < num_scenarios; ++i) {
-      double scaling = 1; // TODO: optional scaling
+      double scaling = scaled_ ? (i + 1.0) / num_scenarios : 1;
       double scaled_dominance = dominance_ub * scaling;
       double rel_violation =
           (scaled_dominance + ref_tails[i] + i + 1) / (tails[i].value + i + 1);
@@ -145,7 +141,8 @@ void SSDSolver::Solve(Problem &p) {
       }
     }
 
-    double scaling = 1; // TODO: optional scaling
+    double scaling = scaled_ ?
+        (max_rel_violation_scen + 1.0) / num_scenarios : 1;
 
     // Update the lower bound for the objective which by definition is a
     // minimum of tail differences (possibly scaled).
