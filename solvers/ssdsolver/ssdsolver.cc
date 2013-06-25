@@ -41,18 +41,19 @@ namespace ampl {
 
 void SSDSolver::SetOutLev(const char *name, int value) {
   if (value != 0 && value != 1)
-    ReportError("Invalid value {} for option {}") << value << name;
-  else
-    output_ = value != 0;
+    throw InvalidOptionValue(name, value);
+  output_ = value != 0;
 }
 
 SSDSolver::SSDSolver()
 : Solver<SSDSolver>("ssdsolver", 0, SSDSOLVER_VERSION),
-  output_(false), solver_name_("cplex") {
+  output_(false), abs_tolerance_(1e-5), solver_name_("cplex") {
   set_version("SSD Solver");
   AddIntOption("outlev", "0 or 1 (default 0):  Whether to print solution log.",
       &SSDSolver::GetOutLev, &SSDSolver::SetOutLev);
-  AddStrOption("solver", "Solver to use for subproblems (default = cplex).",
+  AddDblOption("abs_tolerance", "Absolute tolerance. Default = 1e-5.",
+      &SSDSolver::GetAbsTolerance, &SSDSolver::SetAbsTolerance);
+  AddStrOption("solver", "Solver to use for subproblems. Default = cplex.",
       &SSDSolver::GetSolverName, &SSDSolver::SetSolverName);
 }
 
@@ -95,13 +96,11 @@ void SSDSolver::Solve(Problem &p) {
   for (int i = 1; i < num_scenarios; ++i)
     ref_tails[i] += ref_tails[i - 1];
 
-  // Get initial feasible solution.
+  // TODO: Get initial feasible solution.
   Solution sol;
+  std::vector<double> solution(num_vars, 1.0 / num_vars);
   char solver_msg[] = "solver_msg=0";
   putenv(solver_msg);
-  p.Solve(solver_name_, sol, 0, Problem::IGNORE_FUNCTIONS);
-
-  double abs_tolerance = 1e-5;
 
   // Solve the problem using a cutting-plane method.
   double dominance_lb = -Infinity;
@@ -111,13 +110,13 @@ void SSDSolver::Solve(Problem &p) {
   std::vector<ValueScenario> tails(num_scenarios);
   int iteration = 1;
   printf("\nItn          Gap\n") ;
-  for (; sol.status() == Solution::SOLVED; ++iteration) {
+  for (; ; ++iteration) {
     // Compute the tails of the distribution.
     for (int i = 0; i < num_scenarios; ++i) {
       double value = 0;
       const double *row = coefs + i * num_vars;
       for (int j = 0; j < num_vars; ++j)
-        value += row[j] * sol.value(j);
+        value += row[j] * solution[j];
       tails[i].value = value;
       tails[i].scenario = i;
     }
@@ -155,7 +154,7 @@ void SSDSolver::Solve(Problem &p) {
 
     fmt::Print("{:3} {:>12}\n") << iteration << (dominance_ub - dominance_lb);
 
-    if ((dominance_ub - dominance_lb) * scaling <= abs_tolerance) {
+    if ((dominance_ub - dominance_lb) * scaling <= abs_tolerance_) {
       fmt::Print("Absolute tolerance reached.\n");
       break;
     }
@@ -171,7 +170,10 @@ void SSDSolver::Solve(Problem &p) {
     pc.AddCon(&cut_coefs[0], ref_tails[max_rel_violation_scen], Infinity);
 
     p.Solve(solver_name_, sol, &pc, Problem::IGNORE_FUNCTIONS);
+    if (sol.status() != Solution::SOLVED) break;
     dominance_ub = sol.value(dominance_var);
+    const double *values = sol.values();
+    solution.assign(values, values + num_vars);
   }
 
   // Convert solution status.
@@ -197,6 +199,6 @@ void SSDSolver::Solve(Problem &p) {
   if (sol.status() == Solution::SOLVED)
     format("; dominance {}") << dominance_ub;
   format("\n{} iteration(s)") << iteration;
-  HandleSolution(format.c_str(), sol.values(), 0, 0);
+  HandleSolution(format.c_str(), &solution[0], 0, 0);
 }
 }
