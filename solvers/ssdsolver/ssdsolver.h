@@ -87,10 +87,18 @@ class SSDExtractor : public ExprVisitor<SSDExtractor, void, void> {
 class SSDSolver : public Solver<SSDSolver> {
  private:
   bool output_;
+  double abs_tolerance_;
   std::string solver_name_;
 
   int GetOutLev(const char *) { return output_; }
   void SetOutLev(const char *name, int value);
+
+  double GetAbsTolerance(const char *) { return abs_tolerance_; }
+  void SetAbsTolerance(const char *name, double value) {
+    if (value < 0)
+      throw InvalidOptionValue(name, value);
+    abs_tolerance_ = value;
+  }
 
   std::string GetSolverName(const char *) { return solver_name_; }
   void SetSolverName(const char *, const char *value) { solver_name_ = value; }
