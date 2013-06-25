@@ -23,7 +23,7 @@ THIS SOFTWARE.
 ****************************************************************/
 
 #include "nlp.h"
-
+#include "obj_adj.h"
 #include "r_qp.hd"
 
 #define GULP		200
@@ -576,38 +576,48 @@ lcmp(const void *a, const void *b, void *v)
  fint
 mqpcheck_ASL(ASL *a, int co, fint **rowqp, fint **colqp, real **delsqp)
 {
-	expr *e;
-	term *T;
-	real *L, *U, *delsq, *delsq0, *delsq1, objadj, t, *x;
-	int arrays, *cm, pass, *vmi;
-	fint ftn, i, icol, j, ncom, nelq, nv, nz;
-	fint *colq, *colq1, *rowq, *rowq0, *rowq1, *s, *z;
-	dyad *d, *d1, **q, **q1, **q2, **qe;
-	ograd *og, *og1, *og2, **ogp;
-	expr_n *en;
 	typedef struct dispatch {
 		struct dispatch *next;
 		fint i, j, jend;
 		} dispatch;
-	Static SS, *S;
-	dispatch *cd, *cd0, **cdisp, **cdisp0, *cdnext, **cdp;
-	cde *c;
-	cgrad **cgp;
 	ASL_fg *asl;
+	Objrep *od, **pod;
+	Static SS, *S;
+	cde *c;
+	cgrad *cg, **cgp, **cgq, *cq;
+	dispatch *cd, *cd0, **cdisp, **cdisp0, *cdnext, **cdp;
+	dyad *d, *d1, **q, **q1, **q2, **qe;
+	expr *e;
+	expr_n *en;
+	fint *colq, *colq1, *rowq, *rowq0, *rowq1, *s, *z;
+	fint ftn, i, icol, j, ncom, nelq, nv, nz;
+	int arrays, *cm, co0, pass, *vmi;
+	ograd *og, *og1, *og2, **ogp;
+	real *L, *U, *delsq, *delsq0, *delsq1, objadj, t, *x;
+	term *T;
 
 	ASL_CHECK(a, ASL_read_fg, "nqpcheck");
 	asl = (ASL_fg*)a;
 	if (co >= n_obj || co < -n_con)
 		return -3L;
+	od = 0;
+	co0 = co;
 	if (co >= 0) {
-		c = obj_de + co;
-		ogp = Ograd + co;
-		cgp = 0;
+		if ((pod = asl->i.Or) && (od = pod[co])) {
+			co = od->ico;
+			goto use_Cgrad;
+			}
+		else {
+			c = obj_de + co;
+			ogp = Ograd + co;
+			cgp = 0;
+			}
 		}
 	else {
 		co = -1 - co;
 		if ((cm = asl->i.cmap))
 			co = cm[co];
+ use_Cgrad:
 		c = con_de + co;
 		if (!(cgp = asl->i.Cgrad0))
 			cgp = Cgrad;
@@ -667,7 +677,25 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, fint **colqp, real **delsqp)
 
 	if (cterms)
 		cterm_free(S, cterms + ncom);
-
+	if (od) {
+		od->cg = 0;
+		for(i = 0, cg = *cgp; cg; cg = cg->next) {
+			if (cg->coef != 0.)
+				++i;
+			}
+		if (i) {
+			cgq = &od->cg;
+			cq = Malloc(i*sizeof(cgrad));
+			for(cg = *cgp; cg; cg = cg->next) {
+				*cgq = cq;
+				cgq = &cq->next;
+				*cq = *cg;
+				++cq;
+				}
+			*cgq = 0;
+			}
+		}
+				
 	q = (dyad **)Malloc(nv*sizeof(dyad *));
 	qe = q + nv;
 	objadj = dsort(S, T, (ograd **)q, cgp, ogp, arrays);
@@ -828,6 +856,8 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, fint **colqp, real **delsqp)
 	free(q);
 	free_blocks(S);
 	free(x);
+	if (od && od->cg)
+		M1record(od->cg);
 	if (nelq) {
 		if (arrays) {
 			/* allow one more for obj. adjustment */
@@ -846,7 +876,26 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, fint **colqp, real **delsqp)
 	if (arrays) {
 		en = (expr_n *)mem(sizeof(expr_n));
 		en->op = f_OPNUM_ASL;
-		if (cgp && objadj != 0.) {
+		if (od) {
+			od->opify = 1;
+			if ((t = od->c12) != 1.)
+				for(i = 0; i < nelq; ++i)
+					delsq1[i] *= t;
+			objadj = t*objadj + od->c0a;
+			for(i = 0, cg = *cgp; cg; cg = cg->next)
+				++i;
+			ogp = Ograd + co0;
+			og2 = i ? (ograd*)M1alloc(i*sizeof(ograd)) : 0;
+			for(cg = *cgp; cg; cg = cg->next) {
+				*ogp = og = og2++;
+				ogp = &og->next;
+				og->varno = cg->varno;
+				og->coef = t*cg->coef;
+				}
+			*ogp = 0;
+			c = obj_de + co0;
+			}
+		else if (cgp && objadj != 0.) {
 			if (Urhsx) {
 				L = LUrhs + co;
 				U = Urhsx + co;

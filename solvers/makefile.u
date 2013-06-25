@@ -219,6 +219,7 @@ pfghread.o: pfg_read.c jacpdim.h asl_pfgh.h opnos.hd r_opn0.hd dvalue.hd\
 nqpcheck.o: nlp.h r_qp.hd $(Aslh)
 printf.o punknown.o sscanf.o: stdio1.h
 dtoa1.o: dtoa.c arith.h stdio1.h
+nqpcheck.o obj_adj.o: obj_adj.h
 
 # Use CFLAGS in compiling arithchk.c in case something in CFLAGS affects
 # the number of bits in integral data types.  (It's probably best not to
@@ -381,6 +382,7 @@ xs0 = \
 	nqpcheck.c \
 	obj2val.c \
 	obj_adj.c \
+	obj_adj.h \
 	obj_adj0.c \
 	obj_prec.c \
 	objconst.c \

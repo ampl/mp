@@ -192,6 +192,8 @@ file	ampl/solvers/obj2val.c
 
 file	ampl/solvers/obj_adj.c
 
+file	ampl/solvers/obj_adj.h
+
 file	ampl/solvers/obj_adj0.c
 
 file	ampl/solvers/obj_prec.c

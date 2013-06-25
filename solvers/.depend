@@ -90,6 +90,7 @@ F nlp2.h
 F nqpcheck.c
 F obj2val.c
 F obj_adj.c
+F obj_adj.h
 F obj_adj0.c
 F obj_prec.c
 F objconst.c

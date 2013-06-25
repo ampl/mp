@@ -3068,3 +3068,21 @@ for logical constraints:
 20130608
   Fix a glitch (fault after 2 "reset;" invocations after the relevant
 "load" command) with imported libraries that make no addfunc(...) calls.
+
+20130621
+  Adjust "load", "unload", and "reload" commands to canonicalize
+library names by simplifying paths and, for MS Windows, changing / to \.
+For example, "a/b/../c/foo.dll" becomes "a/c/foo.dll" and "./foo.dll"
+becomes "foo.dll" in _LIBS and the associated test for whether the
+library is already loaded.  Nonetheless, "./foo.dll" is sought only in
+the current directory, whereas "foo.dll" is sought in the directories
+listed in $ampl_libpath.  It is still possible to load the same
+library more than once by using a different name for it, either via a
+hard or symbolic link, by using such variations as "foo.dll",
+"foo_32.dll", "foo_64.dll", or using a name that starts with "../" or
+otherwise involves enough instances of "/../" to take the apparent
+name above the current directory.  Now _LIBS reflects the canonicalized
+names, and possibly simplified full pathnames appear in $AMPLFUNC.
+  Fix some glitches under MS Windows that, depending on the compiler
+used, could lead to a "Cannot find" rather than a "Cannot load" error
+message.

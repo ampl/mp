@@ -28,28 +28,8 @@ of or in connection with the use or performance of this software.
 #include "jacpdim.h"
 #undef ps_func
 #undef psb_elem
+#include "obj_adj.h" /* for Objrep */
 #include "r_qp.hd" /* for OPNUM */
-
- struct
-Objrep {
-	/* For minimization (or maximization, with suitable inequality */
-	/* sense adjustments) of Objective = c0 + c1*v */
-	/* with v = _var[ivo] defined by constraint ico of the form */
-	/* (_con[ico].body = c2*v + f(x)) >= rhs  with c2 > 0   or */
-	/* (_con[ico].body = c2*v + f(x)) <= rhs  with c2 < 0, */
-	/* We change the Objective to */
-	/* Objective = c0 + c1*(rhs - f(x))/c2 = c0a + c12*f(x) */
-	/* with c12 = -c1 / c2  and  c0a = c0 - c12*rhs. */
-	/* Objective gradient = c12 * grad(f(x)). */
-	/* We remove constraint _con[ico] and variable v; writesol */
-	/* calls obj_adj_xy_ASL to compute v = (Objectve - c0)/c1 */
-	/* and dual variable value -c12 for the removed constraint. */
-
-	int ico;	/* index of constraint that gives the objective */
-	int ivo;	/* index of objective variable */
-	int nxval;	/* X generation for f */
-	real c0, c0a, c1, c12, f;
-	};
 
  static void
 obj_adj1(ASL *asl, int no)
@@ -89,10 +69,14 @@ obj_adj1(ASL *asl, int no)
 		break;
 	 default:
 		fprintf(Stderr, "Bug: surprise ASLtype = %d in obj_adj\n", asl->i.ASLtype);
+		e = 0; /* silence bogus warning */
 		exit(1);
 	 }
-	if (e->op != op)
-		return;
+	if (e->op != op) {
+		if (e->op != (efunc_n*)OPNUM)
+			return;
+		op = (efunc_n*)OPNUM;
+		}
 	og = Ograd[no];
 	if (!og || og->next)
 		return;
@@ -115,6 +99,7 @@ obj_adj1(ASL *asl, int no)
 		return;
 	pcg = Cgrd = Cgrad;
 	cgo = 0;
+	co = k = 0;
 	for(pcge = pcg + n_con; pcg < pcge; ++pcg) {
 		for(cg = *pcg; cg; cg = cg->next)
 			if (cg->varno == cv) {
@@ -122,7 +107,7 @@ obj_adj1(ASL *asl, int no)
 					return;
 				cgo = cg;
 				co = pcg - Cgrd;
-				for(k = 0, cg = *pcg; cg; cg = cg->next)
+				for(cg = *pcg; cg; cg = cg->next)
 					++k;
 				break;
 				}
@@ -187,6 +172,7 @@ obj_adj1(ASL *asl, int no)
 	od->c1 = c1;
 	od->c12 = -t;
 	od->nxval = -1;
+	od->opify = 0;
 	od->f = 0.;
 
 	pcg = &Cgrd[co];
@@ -433,15 +419,49 @@ sphes_setup_adj(ASL *asl, SputInfo **spi, int no, int ow, int y, int uptri)
  void
 obj_adj_ASL(ASL *asl)
 {
-	int nc0, no, nobj;
+	Objrep *od, **pod;
+	cgrad *cg, **cgp, **cgp0;
+	int *cs, *cs0, *cs1, ftn, i, j, n, nc0, ng, no, nobj, nv0, nz;
+	int *rn, *rn0, *rn1, *rne, *zc, *zv;
+	ograd *og, **ogp, **ogp0;
+	real *a, *a1, t;
 
-	if (A_vals)
-		return; /* for now, no adjustment when A_vals is used */
 	nobj = n_obj;
+	if (nobj <= 0)
+		return;
 	nc0 = n_con;
+	if (nc0 <= 0)
+		return;
+	nv0 = n_var;
+	ftn = Fortran;
+	if ((a = A_vals)) {
+		nz = nzc;
+		cg = (cgrad*)M1alloc(nz*sizeof(cgrad) + nc0*sizeof(cgrad*));
+		Cgrad = cgp0 = (cgrad**)(cg + nz);
+		memset(cgp0, 0, nc0*sizeof(cgrad*));
+		cs0 = A_colstarts;
+		n = nv0;
+		cs = cs0 + n;
+		rn0 = A_rownos;
+		rn = rn0 + nz;
+		a += nz;
+		while(cs > cs0) {
+			rn1 = rn0 + *--cs - ftn;
+			--n;
+			while(rn > rn1) {
+				cgp = cgp0 + *--rn - ftn;
+				cg->next = *cgp;
+				*cgp = cg;
+				cg->varno = n;
+				cg->coef = *--a;
+				cg->goff = rn - rn0;
+				++cg;
+				}
+			}
+		}
 	for(no = 0; no < nobj; ++no)
 		obj_adj1(asl, no);
-	if (asl->i.Or) {
+	if ((pod = asl->i.Or)) {
 		if (asl->i.ASLtype != ASL_read_f) {
 			asl->p.Objval = objval_adj;
 			asl->p.Objgrd = objgrd_adj;
@@ -456,6 +476,62 @@ obj_adj_ASL(ASL *asl)
 			}
 		jac_adj(asl);
 		asl->i.orscratch = (real*)M1zapalloc((nc0 + nobj)*sizeof(real));
+		if (!a)
+			return;
+		if (!(cgp0 = asl->i.Cgrad0))
+			cgp0 = Cgrad;
+		ogp0 = Ograd;
+		for(ng = no = 0; no < nobj; ++no) {
+			if ((od = pod[no])) {
+				for(cg = cgp0[od->ico]; cg; cg = cg->next)
+					++ng;
+				}
+			}
+		n = nc0 + nv0;
+		og = (ograd*)M1alloc(ng*sizeof(ograd) + n*sizeof(int));
+		zc = (int*)(og + ng);
+		zv = zc + nc0;
+		memset(zc, 0, n*sizeof(int));
+		for(no = 0; no < nobj; ++no) {
+			if ((od = pod[no])) {
+				ogp = ogp0 + no;
+				zc[od->ico] = 1;
+				zv[od->ivo] = 1;
+				t = od->c12;
+				for(cg = cgp0[od->ico]; cg; cg = cg->next) {
+					*ogp = og;
+					ogp = &og->next;
+					og->coef = t*cg->coef;
+					og->varno = cg->varno;
+					++og;
+					}
+				*ogp = 0;
+				}
+			}
+		j = ftn;
+		for(i = 0; i < nc0; ++i)
+			zc[i] = zc[i] ? -1 : j++;
+		cs = cs0 = cs1 = A_colstarts;
+		rn = rn0 = rn1 = A_rownos;
+		a = a1 = A_vals;
+		for(i = 0; i < nv0; ++i) {
+			rne = rn0 + cs0[i+1] - ftn;
+			if (zv[i]) {
+				a += rne - rn;
+				rn = rne;
+				}
+			else {
+				while(rn < rne) {
+					j = *rn++ - ftn;
+					if ((j = zc[j]) >= 0) {
+						*rn1++ = j;
+						*a1++ = *a;
+						}
+					++a;
+					}
+				*++cs1 = rn1 - rn0 + ftn;
+				}
+			}
 		}
 	}
 
@@ -463,16 +539,25 @@ obj_adj_ASL(ASL *asl)
 obj_adj_xy_ASL(ASL *asl, real *x, real *x0, real *y)
 {
 	Objrep *od, **odp;
+	cgrad *cgsave, **cgp;
 	fint nerror;
-	int no, nobj;
+	int no, nobj, opified;
 
 	odp = asl->i.Or;
 	nobj = n_obj;
-	for(no = 0; no < nobj; ++no)
+	for(no = opified = 0; no < nobj; ++no)
 		if ((od = odp[no])) {
+			if (od->opify && !opified) {
+				qp_opify_ASL(asl);
+				opified = 1;
+				}
 			if (od->nxval != asl->i.nxval) {
 				nerror = 0;
-				objval_adj(asl, no, x0, &nerror);
+				cgp = asl->i.Cgrad0 + od->ico;
+				cgsave = *cgp;
+				*cgp = od->cg;
+				od->f = objval_adj(asl, no, x0, &nerror);
+				*cgp = cgsave;
 				if (nerror)
 					continue;
 				}
