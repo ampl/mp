@@ -2144,3 +2144,10 @@ causing indicator constraints to be rejected).
 20130606
   obj_adj.c:  fix a fault that was possible with flags
 ASL_obj_replace_ineq and ASL_obj_replace_eq to the .nl reader.
+
+20130622
+  New source file obj_adj.h, and adjustments to makefile.u, nqpcheck.c
+and obj_adj.c to extend the obj_replace facilities to solvers that
+request A_vals.  Examples: the updated CPLEX and XPRESS drivers,
+/netlib/ampl/solvers/cplex/cplex.c and
+/netlib/ampl/solvers/cplex/xpress.c.
