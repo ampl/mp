@@ -527,7 +527,7 @@ void Problem::AddCon(LogicalExpr expr) {
   ++num_logical_cons;
 }
 
-void Problem::Read(fmt::StringRef stub) {
+void Problem::Read(fmt::StringRef stub, unsigned flags) {
   Free();
   ASL *asl = reinterpret_cast<ASL*>(asl_);
   FILE *nl = jac0dim_ASL(asl, const_cast<char*>(stub.c_str()),
@@ -537,6 +537,7 @@ void Problem::Read(fmt::StringRef stub) {
     r_ops_int[i] = reinterpret_cast<efunc*>(i);
   asl_->I.r_ops_ = r_ops_int;
   asl_->p.want_derivs_ = 0;
+  asl_->i.want_xpi0_ = (flags & READ_INITIAL_VALUES) != 0;
   fg_read_ASL(asl, nl, ASL_allow_CLP | ASL_sep_U_arrays);
   asl_->I.r_ops_ = 0;
 }

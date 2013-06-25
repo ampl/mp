@@ -186,7 +186,7 @@ char *BasicSolver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
 
 BasicSolver::BasicSolver(
     fmt::StringRef name, fmt::StringRef long_name, long date)
-: name_(name), has_errors_(false) {
+: name_(name), has_errors_(false), read_flags_(0), read_time_(0) {
   error_handler_ = this;
   sol_handler_ = this;
 
@@ -263,7 +263,7 @@ bool BasicSolver::ProcessArgs(char **&argv, unsigned flags) {
     usage_noexit_ASL(this, 1);
     return false;
   }
-  problem_.Read(stub);
+  problem_.Read(stub, read_flags_);
   return ParseOptions(argv, flags);
 }
 

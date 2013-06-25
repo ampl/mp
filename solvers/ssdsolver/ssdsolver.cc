@@ -43,6 +43,7 @@ SSDSolver::SSDSolver()
 : Solver<SSDSolver>("ssdsolver", 0, SSDSOLVER_VERSION),
   output_(false), scaled_(false), abs_tolerance_(1e-5), solver_name_("cplex") {
   set_version("SSD Solver");
+  set_read_flags(Problem::READ_INITIAL_VALUES);
   AddIntOption("outlev", "0 or 1 (default 0):  Whether to print solution log.",
       &SSDSolver::GetBoolOption, &SSDSolver::SetBoolOption, &output_);
   AddIntOption("scaled", "0 or 1 (default 0):  Whether to use a scaled model.",
@@ -92,13 +93,19 @@ void SSDSolver::Solve(Problem &p) {
   for (int i = 1; i < num_scenarios; ++i)
     ref_tails[i] += ref_tails[i - 1];
 
-  // TODO: Get initial feasible solution.
-  Solution sol;
-  std::vector<double> solution(num_vars, 1.0 / num_vars);
+  // Get the initial solution.
+  std::vector<double> solution;
+  if (const double *initial_values = p.initial_values())
+    solution.assign(initial_values, initial_values + num_vars);
+  else
+    solution.assign(num_vars, 0);
+
+  // Disable solver output.
   char solver_msg[] = "solver_msg=0";
   putenv(solver_msg);
 
   // Solve the problem using a cutting-plane method.
+  Solution sol;
   double dominance_lb = -Infinity;
   double dominance_ub =  Infinity;
   std::vector<double> cut_coefs(num_vars + 1);
@@ -123,7 +130,6 @@ void SSDSolver::Solve(Problem &p) {
     // Compute violation and minimal tail difference.
     double min_tail_diff = Infinity;
     double max_rel_violation = 0;
-    //int min_tail_diff_scen = -1;
     int max_rel_violation_scen = -1;
     for (int i = 0; i < num_scenarios; ++i) {
       double scaling = scaled_ ? (i + 1.0) / num_scenarios : 1;
@@ -135,18 +141,17 @@ void SSDSolver::Solve(Problem &p) {
         max_rel_violation_scen = i;
       }
       double tail_diff = (tails[i].value - ref_tails[i]) / scaling;
-      if (tail_diff < min_tail_diff) {
+      if (tail_diff < min_tail_diff)
         min_tail_diff = tail_diff;
-        //min_tail_diff_scen = i;
-      }
     }
 
     double scaling = scaled_ ?
         (max_rel_violation_scen + 1.0) / num_scenarios : 1;
 
     // Update the lower bound for the objective which by definition is a
-    // minimum of tail differences (possibly scaled).
-    if (min_tail_diff > dominance_lb)
+    // minimum of tail differences (possibly scaled). Don't update in the
+    // first iteration because the solution may not be feasible.
+    if (min_tail_diff > dominance_lb && iteration != 1)
       dominance_lb = min_tail_diff;
 
     fmt::Print("{:3} {:>12}\n") << iteration << (dominance_ub - dominance_lb);

@@ -236,6 +236,7 @@ class BasicSolver
   ErrorHandler *error_handler_;
   SolutionHandler *sol_handler_;
 
+  unsigned read_flags_;  // flags passed to Problem::Read
   double read_time_;
 
   typedef std::map<std::string, SolverOption*> OptionMap;
@@ -304,6 +305,8 @@ class BasicSolver
   }
 
   double read_time() const { return read_time_; }
+
+  void set_read_flags(unsigned flags) { read_flags_ = flags; }
 
   virtual std::string GetOptionHeader() { return std::string(); }
 
