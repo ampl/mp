@@ -145,8 +145,8 @@ NfE/nd+ZeGE=
 -----END PGP SIGNATURE-----
 -----BEGIN PGP SIGNED MESSAGE-----
 
-# netlib-utk master Fri Jun 7 03:10:02 EDT 2013
-q1oYPB23osFy13Cpmt2pKw	00lastchange
+# netlib-utk master Tue Jun 25 03:10:07 EDT 2013
+a6Q2TFCrbBIV7qs8kgJoSQ	00lastchange
 liuYYMQudXHqZpEKRGHQSg	README
 qOEvOeNxr+tkYXE2CClZWw	README.SGI
 hP/T3OfgkqAwrLqbG8BqQw	README.f77
@@ -159,7 +159,7 @@ G6vjFVw1aR9lWi5Yl/OtiQ	arithchk.c
 WQUoVVSgb9mQhLWLJ0Cjwg	asl.h
 cWsQSHLhURv8mvXbE/g9DQ	asl_pfg.h
 p057f6BlUh9XCGR26M/IUA	asl_pfgh.h
-eu9Zxr090I9YL9CsUVfu0w	asldate.c
+eLV3l4pQkkQj/csiDaSH9A	asldate.c
 MwUvqn7mXvmkvc1afriAnQ	atof.c
 VPgRhBjxjjSUuv9+aVsibA	auxinfo.c
 HcQd+byMFVyPt/z7Djmj+w	avltree.c
@@ -167,7 +167,7 @@ TiTwOwAKkrb9rFuWZPf82A	avltree.h
 Lg714wh1GAnDfWqStFsPbQ	b_search.c
 JX+T6A1nVtQxlH2/gHjQ7w	basename.c
 B9aysZxnc2iCJEcny28lrA	bscanf.c
-hakgYAdMqzWZAwFucYDMSQ	changes
+Ll2vAyvCV+VBg1gsg0NZTA	changes
 iaV5+h9JhXta8i63eG8/QA	com2eval.c
 ViDtWeMTFSx1mxx/G621+Q	comeval.c
 f3BjU/9mf3+4mq1Q2h6CAw	comptry.bat
@@ -212,8 +212,8 @@ x35z18AJkoNFjhfhwxa79A	genrowno.c
 eGyYy63hjmlzs3Qm9ikuMw	getstub.c
 DFytV4KoZfLPtg1L8pG88w	getstub.h
 lfkD5wROt+kPrkExYmSO+A	htcl.c
-uNVcCaAsQ8TWYmoV8erzJA	index
-95NtD4gXJvnj6jMvzHiJEw	index.html
+ASjVLu6hoX88P8X9TKfQ7Q	index
+8qsGsZpYRyMyUiIA2wdzCQ	index.html
 7oi5xYODRPbR2r+0wkr2iw	indic_cons.c
 GcNpi3yp3cgT3cQ6tW0SHA	jac0dim.c
 ROvsFFwzLNjoBFYPxYNYvQ	jac2dim.c
@@ -227,7 +227,7 @@ BSFyfJb6lJhxf0fp79t4hg	mach.c
 nbK9H54MJOD72gdeZw/yTg	mainexit.c
 5qYaGDdbn7nPg5Sm80vBpg	makefile.lc
 kdr3yt+cFLFsn+LY/zUZYA	makefile.sy
-aODndUXNewBSvQgtlXgRGg	makefile.u
+xXqwY5TLokpkyPm54aQU1g	makefile.u
 1RwT+aNF+h9HAY0ew4RkKA	makefile.vc
 KP+uMSpRR1zJMzNVEO9oFw	makefile.wat
 hry2XHmn5STIb8L7RESQTQ	mip_pri.c
@@ -239,9 +239,10 @@ QNI8Q0nKAksFmlXWQj+tUw	names.c
 0jtewnOHKvucq60VO6iz8Q	nl_obj.c
 wFuhidyjMzQy5Q/+7VRABA	nlp.h
 uRfCI6ZJoV9SY5qWrTh3Jg	nlp2.h
-X1EdsDbv2FejyD/Ofvd+Lw	nqpcheck.c
+IzL08fmxi10/tPKrxWWpkA	nqpcheck.c
 TFJvGZNM0BoRuC4LbIoNXw	obj2val.c
-JxTiIn1Brj24RyEzCSbmFg	obj_adj.c
+1iqZLDbAeLznitQyagOgYw	obj_adj.c
+Pd9hOK711DNMv/lQ6jLPzg	obj_adj.h
 twVC7rSMvKwxkdHDLv4i0w	obj_adj0.c
 D5/pso5xzuR56i02k6WU5w	obj_prec.c
 +e8oPcCZLfzFYb5kxO6W/Q	objconst.c
@@ -290,14 +291,14 @@ fKP4V5GxuMz8ZZhUUZbTxw	x2check.c
 iOcxB/spcU8eiXLk2O9qkA	xectim.c
 j5NdrTSBkS5pnfDyKD0Ezg	xp1known.c
 FAbm67iDBwtMlNOTy8jXHw	xp2known.c
-Ete/up0yVv0FnPzF5FD2LA	xsum0.out
+jghsi0f8t63IG32rjZoZfQ	xsum0.out
 
 -----BEGIN PGP SIGNATURE-----
 Version: 2.6.2
 
-iQCVAwUBUbGHaeFlxDEfrjtlAQE5hQP+K7uDkzoJ1oah4cB8NkOy3ycP/t/TkWmb
-Qbh3s7D4krcQh5Z0p3kzdv6pCHebKcrXnaQD7qaD3giIXOWcxCjnxoRvORuTdQUg
-ZMN6fpMhAoZqWDZjo+o1ZRZGz7C9bPomEp211ysPWFfdVel+B+K5utajuVC8gYKd
-5SIqm9dqA4A=
-=oaw4
+iQCVAwUBUclCb+FlxDEfrjtlAQF1JwQAmTFfbCGRdzFbxPJ82e/dHtgrTdNa4bXK
+KKRxJM0RDWE5oAU5iGh5EFos06T5/z20Iu7Xjm7g75YC1sPFXh/uv8Gt16PtcfQo
+r0rDqIPQBS523iiVGtJpj4hVZbGlqePrhCxx8jUy5wck8WijSuVz9kKkBXwoS8P4
+T8qWLWbBkL4=
+=Xxmm
 -----END PGP SIGNATURE-----
