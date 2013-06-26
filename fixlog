@@ -9242,3 +9242,6 @@ names, and possibly simplified full pathnames appear in $AMPLFUNC.
   Fix some glitches under MS Windows that, depending on the compiler
 used, could lead to a "Cannot find" rather than a "Cannot load" error
 message.
+
+20130624
+  Fix more trouble with "load" that may only matter for MS Windows.
