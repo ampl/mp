@@ -1,2 +1,2 @@
-20130624
-  Fix more trouble with "load" that may only matter for MS Windows.
+20130625
+  Fix trouble introduced 20130624 with the incoming $AMPLFUNC.
