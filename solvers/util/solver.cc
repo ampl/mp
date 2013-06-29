@@ -250,7 +250,7 @@ BasicSolver::BasicSolver(
 
 BasicSolver::~BasicSolver() {
   struct Deleter {
-    void operator()(std::pair<const std::string, SolverOption*> &p) {
+    void operator()(std::pair<const char *const, SolverOption*> &p) {
       delete p.second;
     }
   };
@@ -299,7 +299,7 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
     }
 
     nnl = 0;
-    OptionMap::iterator i = options_.find(name);
+    OptionMap::iterator i = options_.find(name.c_str());
     if (i == options_.end()) {
       if (!skip)
         ReportError("Unknown option \"{}\"") << name;

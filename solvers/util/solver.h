@@ -239,7 +239,13 @@ class BasicSolver
   unsigned read_flags_;  // flags passed to Problem::Read
   double read_time_;
 
-  typedef std::map<std::string, SolverOption*> OptionMap;
+  struct CStringLess {
+    bool operator()(const char *lhs, const char *rhs) const {
+      return std::strcmp(lhs, rhs) < 0;
+    }
+  };
+
+  typedef std::map<const char*, SolverOption*, CStringLess> OptionMap;
   OptionMap options_;
   keyword cl_option_;  // command-line option '='
 
