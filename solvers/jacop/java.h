@@ -65,8 +65,18 @@ class Env {
     return Check(env_->GetMethodID(cls, name, sig), "GetMethodID");
   }
 
+  jfieldID GetFieldID(jclass cls, const char *name, const char *sig) {
+    return Check(env_->GetFieldID(cls, name, sig), "GetFieldID");
+  }
+
   jfieldID GetStaticFieldID(jclass cls, const char *name, const char *sig) {
     return Check(env_->GetStaticFieldID(cls, name, sig), "GetStaticFieldID");
+  }
+
+  jboolean GetBooleanField(jobject obj, jfieldID field) {
+    jboolean value = env_->GetBooleanField(obj, field);
+    Check("GetBooleanField");
+    return value;
   }
 
   jint GetStaticIntField(jclass cls, jfieldID field) {
