@@ -119,24 +119,6 @@ TEST_P(SolverTest, SolveFlowshp2) {
 };
 
 // ----------------------------------------------------------------------------
-// Solve code tests
-
-TEST_F(JaCoPSolverTest, OptimalSolveCode) {
-  Solve("objconstint");
-  EXPECT_EQ(0, solver_.problem().solve_code());
-}
-
-TEST_F(JaCoPSolverTest, FeasibleSolveCode) {
-  Solve("feasible");
-  EXPECT_EQ(100, solver_.problem().solve_code());
-}
-
-TEST_F(JaCoPSolverTest, InfeasibleSolveCode) {
-  Solve("infeasible");
-  EXPECT_EQ(200, solver_.problem().solve_code());
-}
-
-// ----------------------------------------------------------------------------
 // Interrupt tests
 
 #ifdef HAVE_THREADS

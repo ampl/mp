@@ -120,24 +120,6 @@ class GecodeSolverTest : public ::testing::Test {
 };
 
 // ----------------------------------------------------------------------------
-// Solve code tests
-
-TEST_P(SolverTest, OptimalSolveCode) {
-  Solve("objconstint");
-  EXPECT_EQ(0, solver_->problem().solve_code());
-}
-
-TEST_P(SolverTest, FeasibleSolveCode) {
-  Solve("feasible");
-  EXPECT_EQ(100, solver_->problem().solve_code());
-}
-
-TEST_P(SolverTest, InfeasibleSolveCode) {
-  Solve("infeasible");
-  EXPECT_EQ(200, solver_->problem().solve_code());
-}
-
-// ----------------------------------------------------------------------------
 // Interrupt tests
 
 #ifdef HAVE_THREADS
