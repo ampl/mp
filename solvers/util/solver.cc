@@ -291,11 +291,12 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
     const char *name_start = s;
     while (*s && !std::isspace(*s) && *s != '=')
       ++s;
-    std::string name;
+    fmt::internal::Array<char, 50> name;
     std::size_t name_size = s - name_start;
-    name.resize(name_size);
+    name.resize(name_size + 1);
     for (std::size_t i = 0; i < name_size; ++i)
       name[i] = name_start[i];
+    name[name_size] = 0;
 
     // Parse the option value.
     bool equal_sign = false;
@@ -306,10 +307,10 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
     }
 
     nnl = 0;
-    OptionMap::iterator i = options_.find(name.c_str());
+    OptionMap::iterator i = options_.find(&name[0]);
     if (i == options_.end()) {
       if (!skip)
-        HandleUnknownOption(name.c_str());
+        HandleUnknownOption(&name[0]);
       if (equal_sign) {
         s = SkipNonSpaces(s);
       } else {
@@ -331,7 +332,7 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
         ++s;
         if ((flags & NO_OPTION_ECHO) == 0) {
           fmt::Formatter f;
-          f("{}=") << name;
+          f("{}=") << &name[0];
           opt->Format(f);
           puts(f.c_str());
         }
@@ -339,7 +340,7 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
       }
     }
     if (opt->is_keyword() && equal_sign) {
-      ReportError("Option \"{}\" doesn't accept argument") << name;
+      ReportError("Option \"{}\" doesn't accept argument") << &name[0];
       s = SkipNonSpaces(s);
       continue;
     }
