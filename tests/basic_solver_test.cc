@@ -561,6 +561,18 @@ TEST(SolverTest, UnknownOption) {
   EXPECT_EQ(42, s.intopt1);
 }
 
+TEST(SolverTest, HandleUnknownOption) {
+  struct TestSolver : BasicSolver {
+    std::string option_name;
+    TestSolver() : BasicSolver("test", 0, 0) {}
+    void Solve(Problem &) {}
+    void HandleUnknownOption(const char *name) { option_name = name; }
+  };
+  TestSolver s;
+  s.ParseOptions(Args("BadOption"));
+  EXPECT_EQ("BadOption", s.option_name);
+}
+
 TEST(SolverTest, ParseOptionRecovery) {
   TestSolverWithOptions s;
   TestErrorHandler handler;
