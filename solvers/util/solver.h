@@ -240,9 +240,7 @@ class BasicSolver
   double read_time_;
 
   struct OptionNameLess {
-    bool operator()(const char *lhs, const char *rhs) const {
-      return strcasecmp(lhs, rhs) < 0;
-    }
+    bool operator()(const char *lhs, const char *rhs) const;
   };
 
   typedef std::map<const char*, SolverOption*, OptionNameLess> OptionMap;
