@@ -90,6 +90,7 @@ CLASS_INFO(Eq, "JaCoP/constraints/Eq",
     "LJaCoP/constraints/PrimitiveConstraint;)V")
 CLASS_INFO(Alldiff, "JaCoP/constraints/Alldiff", "([LJaCoP/core/IntVar;)V")
 CLASS_INFO(DepthFirstSearch, "JaCoP/search/DepthFirstSearch", "()V")
+CLASS_INFO(SimpleTimeOut, "JaCoP/search/SimpleTimeOut", "()V")
 
 // Converter of constraint programming problems from NL to JaCoP format.
 class NLToJaCoPConverter :
@@ -429,13 +430,22 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
 
   Gecode::IntVarBranch var_branching_;
   Gecode::IntValBranch val_branching_;
-  Gecode::Search::Options options_;
-  double time_limit_; // Time limit in seconds.
-  unsigned long node_limit_;
-  unsigned long fail_limit_;
-  std::size_t memory_limit_;
+  Gecode::Search::Options options_;*/
+  int time_limit_;  // Time limit in seconds.
+  int node_limit_;
+  int fail_limit_;
+  int backtrack_limit_;
+  int decision_limit_;
 
-  void SetBoolOption(const char *name, int value, bool *option);
+  int GetIntOption(const char *, int *option) { return *option; }
+
+  void SetIntOption(const char *name, int value, int *option) {
+    if (value < 0)
+      throw InvalidOptionValue(name, value);
+    *option = value;
+  }
+
+  /*void SetBoolOption(const char *name, int value, bool *option);
   void SetOutputFrequency(const char *name, int value);
 
   template <typename T>

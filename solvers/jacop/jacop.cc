@@ -331,14 +331,6 @@ void JaCoPSolver::SetStrOption(const char *name, const char *value,
   ReportError("Invalid value {} for option {}") << value << name;
 }
 
-template <typename T, typename OptionT>
-void JaCoPSolver::SetOption(const char *name, T value, OptionT *option) {
-  if (value < 0)
-    ReportError("Invalid value {} for option {}") << value << name;
-  else
-    *option = value;
-}
-
 fmt::TempFormatter<fmt::Write> JaCoPSolver::Output(fmt::StringRef format) {
   if (output_count_ == 0)
     fmt::Print("{}") << header_;
@@ -356,14 +348,13 @@ void JaCoPSolver::HandleUnknownOption(const char *name) {
 }
 
 JaCoPSolver::JaCoPSolver()
-: Solver<JaCoPSolver>("jacop", 0, 20130701) {
+: Solver<JaCoPSolver>("jacop", 0, 20130701), time_limit_(-1),
+  node_limit_(-1), fail_limit_(-1), backtrack_limit_(-1), decision_limit_(-1) {
 
   // TODO: options
   /*output_(false), output_frequency_(1), output_count_(0),
   var_branching_(Gecode::INT_VAR_SIZE_MIN),
-  val_branching_(Gecode::INT_VAL_MIN),
-  time_limit_(DBL_MAX), node_limit_(ULONG_MAX), fail_limit_(ULONG_MAX),
-  memory_limit_(std::numeric_limits<std::size_t>::max()) {
+  val_branching_(Gecode::INT_VAL_MIN) {
 
   set_version("JaCoP " GECODE_VERSION);
 
@@ -444,16 +435,19 @@ JaCoPSolver::JaCoPSolver()
   AddIntOption("c_d", "Commit recomputation distance.",
       &JaCoPSolver::SetOption<int, unsigned>, &options_.c_d);
   AddIntOption("a_d", "Adaptive recomputation distance.",
-      &JaCoPSolver::SetOption<int, unsigned>, &options_.a_d);
+      &JaCoPSolver::SetOption<int, unsigned>, &options_.a_d);*/
 
-  AddDblOption("timelimit", "Time limit.",
-      &JaCoPSolver::SetOption<double, double>, &time_limit_);
+  AddIntOption("timelimit", "Time limit in seconds.",
+      &JaCoPSolver::GetIntOption, &JaCoPSolver::SetIntOption, &time_limit_);
   AddIntOption("nodelimit", "Node limit.",
-      &JaCoPSolver::SetOption<int, unsigned long>, &node_limit_);
-  AddIntOption("faillimit", "Fail limit.",
-      &JaCoPSolver::SetOption<int, unsigned long>, &fail_limit_);
-  AddIntOption("memorylimit", "Memory limit.",
-      &JaCoPSolver::SetOption<int, std::size_t>, &memory_limit_);*/
+      &JaCoPSolver::GetIntOption, &JaCoPSolver::SetIntOption, &node_limit_);
+  AddIntOption("faillimit", "Fail (wrong decision) limit.",
+      &JaCoPSolver::GetIntOption, &JaCoPSolver::SetIntOption, &fail_limit_);
+  AddIntOption("backtracklimit", "Backtrack limit.",
+      &JaCoPSolver::GetIntOption, &JaCoPSolver::SetIntOption,
+      &backtrack_limit_);
+  AddIntOption("decisionlimit", "Decision limit.",
+      &JaCoPSolver::GetIntOption, &JaCoPSolver::SetIntOption, &decision_limit_);
 }
 
 std::string JaCoPSolver::GetOptionHeader() {
@@ -478,7 +472,6 @@ void JaCoPSolver::Solve(Problem &p) {
   NLToJaCoPConverter converter;
   converter.Convert(p);
 
-  // Solve the problem.
   SignalHandler signal_handler(*this); // TODO
   Class<DepthFirstSearch> dfs_class;
   jobject search = dfs_class.NewObject(env);
@@ -491,6 +484,35 @@ void JaCoPSolver::Solve(Problem &p) {
       converter.store(), converter.var_array(), indomain);
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   bool has_obj = p.num_objs() != 0;
+
+  // Set the limits.
+  Class<SimpleTimeOut> timeout_class;
+  jobject timeout = timeout_class.NewObject(env);
+  env.CallVoidMethod(search,
+       env.GetMethod(dfs_class.get(), "setTimeOutListener",
+           "(LJaCoP/search/TimeOutListener;)V"), timeout);
+  if (time_limit_ != -1) {
+    env.CallVoidMethod(search,
+         env.GetMethod(dfs_class.get(), "setTimeOut", "(J)V"), time_limit_);
+  }
+  if (node_limit_ != -1) {
+    env.CallVoidMethod(search,
+         env.GetMethod(dfs_class.get(), "setNodesOut", "(J)V"), node_limit_);
+  }
+  if (fail_limit_ != -1) {
+    env.CallVoidMethod(search, env.GetMethod(
+        dfs_class.get(), "setWrongDecisionsOut", "(J)V"), fail_limit_);
+  }
+  if (backtrack_limit_ != -1) {
+    env.CallVoidMethod(search, env.GetMethod(
+        dfs_class.get(), "setBacktracksOut", "(J)V"), backtrack_limit_);
+  }
+  if (decision_limit_ != -1) {
+    env.CallVoidMethod(search, env.GetMethod(
+        dfs_class.get(), "setDecisionsOut", "(J)V"), decision_limit_);
+  }
+
+  // Solve the problem.
   // TODO
   /*bool stopped = false;
   header_ = str(fmt::Format("{:>10} {:>10} {:>10} {:>13}\n")
@@ -511,14 +533,15 @@ void JaCoPSolver::Solve(Problem &p) {
   // Convert solution status.
   const char *status = 0;
   int solve_code = 0;
-  // TODO
-  /*if (stopped) {
-    solve_code = 600;
-    status = "interrupted";
-  } else*/
   if (!found) {
-    solve_code = 200;
-    status = "infeasible problem";
+    if (env.GetBooleanField(timeout,
+        env.GetFieldID(timeout_class.get(), "timeOutOccurred", "Z"))) {
+      solve_code = 600;
+      status = "interrupted";
+    } else {
+      solve_code = 200;
+      status = "infeasible problem";
+    }
   } else if (has_obj) {
     solve_code = 0;
     status = "optimal solution";
