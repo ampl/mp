@@ -26,11 +26,13 @@
 #include <cstdio>
 
 #ifndef _WIN32
+# include <strings.h>
 # include <unistd.h>
 # define AMPL_WRITE write
 #else
 # include <io.h>
 # define AMPL_WRITE _write
+# define strcasecmp _stricmp
 #endif
 
 #include "solvers/util/format.h"
@@ -166,6 +168,11 @@ void SignalHandler::HandleSigInt(int sig) {
   // Restore the handler since it might have been reset before the handler
   // is called (this is implementation defined).
   std::signal(sig, HandleSigInt);
+}
+
+bool BasicSolver::OptionNameLess::operator()(
+    const char *lhs, const char *rhs) const {
+  return strcasecmp(lhs, rhs) < 0;
 }
 
 char *BasicSolver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
