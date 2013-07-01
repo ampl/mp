@@ -329,6 +329,11 @@ TEST_F(IlogCPTest, SolveNumberOfCplex) {
   Solve("numberof", "optimizer=cplex");
 }
 
+TEST_F(IlogCPTest, InfeasibleOrUnboundedSolveCode) {
+  Solve("unbounded");
+  EXPECT_EQ(201, s.problem().solve_code());
+}
+
 // ----------------------------------------------------------------------------
 // Option tests
 
@@ -490,29 +495,6 @@ TEST_F(IlogCPTest, CPLEXDefaultMIPDisplayZero) {
 TEST_F(IlogCPTest, CPLEXOptions) {
   CheckIntCPLEXOption("mipdisplay", IloCplex::MIPDisplay, 0, 5);
   CheckIntCPLEXOption("mipinterval", IloCplex::MIPInterval, INT_MIN, INT_MAX);
-}
-
-// ----------------------------------------------------------------------------
-// Solve code tests
-
-TEST_F(IlogCPTest, OptimalSolveCode) {
-  Solve("objconst");
-  EXPECT_EQ(0, s.problem().solve_code());
-}
-
-TEST_F(IlogCPTest, FeasibleSolveCode) {
-  Solve("feasible");
-  EXPECT_EQ(100, s.problem().solve_code());
-}
-
-TEST_F(IlogCPTest, InfeasibleSolveCode) {
-  Solve("infeasible");
-  EXPECT_EQ(200, s.problem().solve_code());
-}
-
-TEST_F(IlogCPTest, InfeasibleOrUnboundedSolveCode) {
-  Solve("unbounded");
-  EXPECT_EQ(201, s.problem().solve_code());
 }
 
 // ----------------------------------------------------------------------------

@@ -781,3 +781,21 @@ TEST_P(SolverTest, SolveSudokuHard) {
 TEST_P(SolverTest, SolveSudokuVeryEasy) {
   EXPECT_TRUE(Solve("sudokuVeryEasy").solved);
 }
+
+// ----------------------------------------------------------------------------
+// Solve code tests
+
+TEST_P(SolverTest, OptimalSolveCode) {
+  EXPECT_TRUE(Solve("objconstint").solved);
+  EXPECT_EQ(0, solver_->problem().solve_code());
+}
+
+TEST_P(SolverTest, FeasibleSolveCode) {
+  EXPECT_TRUE(Solve("feasible").solved);
+  EXPECT_EQ(100, solver_->problem().solve_code());
+}
+
+TEST_P(SolverTest, InfeasibleSolveCode) {
+  EXPECT_FALSE(Solve("infeasible").solved);
+  EXPECT_EQ(200, solver_->problem().solve_code());
+}
