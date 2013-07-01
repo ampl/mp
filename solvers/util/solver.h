@@ -239,13 +239,13 @@ class BasicSolver
   unsigned read_flags_;  // flags passed to Problem::Read
   double read_time_;
 
-  struct CStringLess {
+  struct OptionNameLess {
     bool operator()(const char *lhs, const char *rhs) const {
-      return std::strcmp(lhs, rhs) < 0;
+      return strcasecmp(lhs, rhs) < 0;
     }
   };
 
-  typedef std::map<const char*, SolverOption*, CStringLess> OptionMap;
+  typedef std::map<const char*, SolverOption*, OptionNameLess> OptionMap;
   OptionMap options_;
   keyword cl_option_;  // command-line option '='
 
@@ -323,6 +323,10 @@ class BasicSolver
     // way around may lead to a memory leak if insertion throws.
     options_[opt->name()] = opt.get();
     opt.release();
+  }
+
+  virtual void HandleUnknownOption(const char *name) {
+    ReportError("Unknown option \"{}\"") << name;
   }
 
  public:

@@ -288,7 +288,7 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
     std::size_t name_size = s - name_start;
     name.resize(name_size);
     for (std::size_t i = 0; i < name_size; ++i)
-      name[i] = std::tolower(name_start[i]);
+      name[i] = name_start[i];
 
     // Parse the option value.
     bool equal_sign = false;
@@ -302,7 +302,7 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
     OptionMap::iterator i = options_.find(name.c_str());
     if (i == options_.end()) {
       if (!skip)
-        ReportError("Unknown option \"{}\"") << name;
+        HandleUnknownOption(name.c_str());
       if (equal_sign) {
         s = SkipNonSpaces(s);
       } else {
