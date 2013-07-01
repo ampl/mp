@@ -346,8 +346,17 @@ fmt::TempFormatter<fmt::Write> JaCoPSolver::Output(fmt::StringRef format) {
   return fmt::TempFormatter<fmt::Write>(format);
 }*/
 
+void JaCoPSolver::HandleUnknownOption(const char *name) {
+  if (name[0] == '-') {
+    fmt::Print("{}\n") << name;
+    jvm_options_.push_back(name);
+  } else {
+    BasicSolver::HandleUnknownOption(name);
+  }
+}
+
 JaCoPSolver::JaCoPSolver()
-: Solver<JaCoPSolver>("jacop", 0, 20130415) {
+: Solver<JaCoPSolver>("jacop", 0, 20130701) {
 
   // TODO: options
   /*output_(false), output_frequency_(1), output_count_(0),
@@ -357,10 +366,6 @@ JaCoPSolver::JaCoPSolver()
   memory_limit_(std::numeric_limits<std::size_t>::max()) {
 
   set_version("JaCoP " GECODE_VERSION);
-
-  AddIntOption("check_jni",
-      "0 or 1 (default 0):  Whether to perform JNI checks.",
-      &JaCoPSolver::SetBoolOption, &check_jni_); */
 
   // TODO
   /*AddIntOption("outlev",
@@ -456,15 +461,18 @@ std::string JaCoPSolver::GetOptionHeader() {
       "JaCoP Directives for AMPL\n"
       "--------------------------\n"
       "\n"
-      "To set these directives, assign a string specifying their values to the AMPL "
-      "option jacop_options.  For example:\n"
+      "To set these directives, assign a string specifying their values to "
+      "the AMPL option jacop_options.  For example:\n"
       "\n";
   // TODO: example
       //"  ampl: option gecode_options 'version nodelimit=30000 val_branching=min';\n";
 }
 
 void JaCoPSolver::Solve(Problem &p) {
-  Env env = JVM::env(false);
+  std::vector<const char*> jvm_options(jvm_options_.size() + 1);
+  for (size_t i = 0, n = jvm_options_.size(); i != n; ++i)
+    jvm_options[i] = jvm_options_[i].c_str();
+  Env env = JVM::env(&jvm_options[0]);
 
   // Set up an optimization problem in JaCoP.
   NLToJaCoPConverter converter;
