@@ -182,7 +182,7 @@ JVM::~JVM() {
     jvm_->DestroyJavaVM();
 }
 
-Env JVM::env(bool check_jni) {
+Env JVM::env(const char *const *options) {
   if (!instance_.jvm_) {
 #ifdef WIN32
     std::string runtime_lib_path;
@@ -218,15 +218,17 @@ Env JVM::env(bool check_jni) {
     JavaVMInitArgs vm_args = {};
     vm_args.version = JNI_VERSION_1_6;
     vm_args.ignoreUnrecognized = false;
-    JavaVMOption options[2] = {};
-    options[0].optionString = const_cast<char*>(
+    JavaVMOption jvm_options[2] = {};
+    jvm_options[0].optionString = const_cast<char*>(
         "-Djava.class.path=JaCoP-3.2.jar" CLASSPATH_SEP "lib/JaCoP-3.2.jar");
     vm_args.nOptions = 1;
-    if (check_jni) {
-      options[1].optionString = const_cast<char*>("-Xcheck:jni");
-      ++vm_args.nOptions;
+    if (options) {
+      int i = 0;
+      for (const char *const *opt = options; opt[i]; ++i)
+        jvm_options[i + 1].optionString = const_cast<char*>(opt[i]);
+      vm_args.nOptions = i + 1;
     }
-    vm_args.options = options;
+    vm_args.options = jvm_options;
     void *envp = 0;
     jint result = JNI_CreateJavaVM(&instance_.jvm_, &envp, &vm_args);
     if (result != JNI_OK) {

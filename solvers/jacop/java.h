@@ -133,7 +133,8 @@ class JVM {
   ~JVM();
 
  public:
-  static Env env(bool check_jni = false);
+  // options: an array of JVM options terminated by a null pointer.
+  static Env env(const char *const *options = 0);
 };
 
 class ClassBase {

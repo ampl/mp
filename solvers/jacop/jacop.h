@@ -421,6 +421,7 @@ struct OptionInfo {
 // JaCoP solver.
 class JaCoPSolver : public Solver<JaCoPSolver> {
  private:
+  std::vector<std::string> jvm_options_;
   /*bool output_;
   double output_frequency_;
   unsigned output_count_;
@@ -453,6 +454,8 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
 
  protected:
   std::string GetOptionHeader();
+
+  void HandleUnknownOption(const char *name);
 
  public:
   JaCoPSolver();
