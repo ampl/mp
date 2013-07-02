@@ -315,23 +315,25 @@ class GecodeSolver : public Solver<GecodeSolver> {
 
   void SetBoolOption(const char *name, int value, bool *option);
 
-  double GetOutputFrequency(const char *) { return output_frequency_; }
+  double GetOutputFrequency(const char *) const { return output_frequency_; }
   void SetOutputFrequency(const char *name, double value);
 
   template <typename T>
-  std::string GetEnumOption(const char *name, const OptionInfo<T> &info);
+  std::string GetEnumOption(const char *name, const OptionInfo<T> &info) const;
 
   template <typename T>
   void SetEnumOption(const char *name, const char *value,
       const OptionInfo<T> &info);
 
   template <typename T, typename OptionT>
-  T GetOption(const char *, OptionT *option) { return static_cast<T>(*option); }
+  T GetOption(const char *, OptionT *option) const {
+    return static_cast<T>(*option);
+  }
 
   template <typename T, typename OptionT>
   void SetNonnegativeOption(const char *name, T value, OptionT *option);
 
-  double GetDecay(const char *) { return decay_; }
+  double GetDecay(const char *) const { return decay_; }
   void SetDecay(const char *name, double value) {
     if (value <= 0 || value > 1)
       throw InvalidOptionValue(name, value);

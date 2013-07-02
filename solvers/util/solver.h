@@ -466,7 +466,7 @@ class Solver : public BasicSolver {
   class ConcreteOption : public TypedSolverOption<T> {
    private:
     typedef typename internal::OptionHelper<T>::Arg Arg;
-    typedef T (Impl::*Getter)(const char *);
+    typedef T (Impl::*Getter)(const char *) const;
     typedef void (Impl::*Setter)(const char *, Arg);
 
     Impl &impl_;
@@ -487,7 +487,7 @@ class Solver : public BasicSolver {
   class ConcreteOptionWithInfo : public TypedSolverOption<T> {
    private:
     typedef typename internal::OptionHelper<T>::Arg Arg;
-    typedef T (Impl::*Getter)(const char *, InfoArg);
+    typedef T (Impl::*Getter)(const char *, InfoArg) const;
     typedef void (Impl::*Setter)(const char *, Arg, InfoArg);
 
     Impl &impl_;
@@ -510,7 +510,7 @@ class Solver : public BasicSolver {
   // pointers to member functions in the solver class. They are used to
   // get and set an option value respectively.
   void AddIntOption(const char *name, const char *description,
-      int (Impl::*getter)(const char *),
+      int (Impl::*getter)(const char *) const,
       void (Impl::*setter)(const char *, int)) {
     AddOption(SolverOptionPtr(
         new ConcreteOption<int>(name, description, this, getter, setter)));
@@ -521,7 +521,7 @@ class Solver : public BasicSolver {
   // They are used to get and set an option value respectively.
   template <typename Info>
   void AddIntOption(const char *name, const char *description,
-      int (Impl::*getter)(const char *, const Info &),
+      int (Impl::*getter)(const char *, const Info &) const,
       void (Impl::*setter)(const char *, int, const Info &),
       const Info &info) {
     AddOption(SolverOptionPtr(
@@ -532,7 +532,7 @@ class Solver : public BasicSolver {
   // The same as above but with Info argument passed by value.
   template <typename Info>
   void AddIntOption(const char *name, const char *description,
-      int (Impl::*getter)(const char *, Info),
+      int (Impl::*getter)(const char *, Info) const,
       void (Impl::*setter)(const char *, int, Info), Info info) {
     AddOption(SolverOptionPtr(new ConcreteOptionWithInfo<int, Info>(
             name, description, this, getter, setter, info)));
@@ -542,7 +542,7 @@ class Solver : public BasicSolver {
   // pointers to member functions in the solver class. They are used to
   // get and set an option value respectively.
   void AddDblOption(const char *name, const char *description,
-      double (Impl::*getter)(const char *),
+      double (Impl::*getter)(const char *) const,
       void (Impl::*setter)(const char *, double)) {
     AddOption(SolverOptionPtr(new ConcreteOption<double>(
         name, description, this, getter, setter)));
@@ -553,7 +553,7 @@ class Solver : public BasicSolver {
   // They are used to get and set an option value respectively.
   template <typename Info>
   void AddDblOption(const char *name, const char *description,
-      double (Impl::*getter)(const char *, const Info &),
+      double (Impl::*getter)(const char *, const Info &) const,
       void (Impl::*setter)(const char *, double, const Info &),
       const Info &info) {
     AddOption(SolverOptionPtr(
@@ -564,7 +564,7 @@ class Solver : public BasicSolver {
   // The same as above but with Info argument passed by value.
   template <typename Info>
   void AddDblOption(const char *name, const char *description,
-      double (Impl::*getter)(const char *, Info),
+      double (Impl::*getter)(const char *, Info) const,
       void (Impl::*setter)(const char *, double, Info), Info info) {
     AddOption(SolverOptionPtr(new ConcreteOptionWithInfo<double, Info>(
             name, description, this, getter, setter, info)));
@@ -574,7 +574,7 @@ class Solver : public BasicSolver {
   // pointers to member functions in the solver class. They are used to
   // get and set an option value respectively.
   void AddStrOption(const char *name, const char *description,
-      std::string (Impl::*getter)(const char *),
+      std::string (Impl::*getter)(const char *) const,
       void (Impl::*setter)(const char *, const char *)) {
     AddOption(SolverOptionPtr(new ConcreteOption<std::string>(
         name, description, this, getter, setter)));
@@ -585,7 +585,7 @@ class Solver : public BasicSolver {
   // They are used to get and set an option value respectively.
   template <typename Info>
   void AddStrOption(const char *name, const char *description,
-      std::string (Impl::*getter)(const char *, const Info &),
+      std::string (Impl::*getter)(const char *, const Info &) const,
       void (Impl::*setter)(const char *, const char *, const Info &),
       const Info &info) {
     AddOption(SolverOptionPtr(
@@ -596,7 +596,7 @@ class Solver : public BasicSolver {
   // The same as above but with Info argument passed by value.
   template <typename Info>
   void AddStrOption(const char *name, const char *description,
-      std::string (Impl::*getter)(const char *, Info),
+      std::string (Impl::*getter)(const char *, Info) const,
       void (Impl::*setter)(const char *, const char *, Info),
       const Info &info) {
     typedef void (Impl::*Func)(const char *, const char *, Info);

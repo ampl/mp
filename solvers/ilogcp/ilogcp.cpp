@@ -527,7 +527,7 @@ IlogCPSolver::~IlogCPSolver() {
   env_.end();
 }
 
-CPOptimizer *IlogCPSolver::GetCPForOption(fmt::StringRef option_name) {
+CPOptimizer *IlogCPSolver::GetCPForOption(fmt::StringRef option_name) const {
   CPOptimizer *cp = dynamic_cast<CPOptimizer*>(optimizer_.get());
   if (!cp) {
     throw OptionError(
@@ -537,7 +537,8 @@ CPOptimizer *IlogCPSolver::GetCPForOption(fmt::StringRef option_name) {
   return cp;
 }
 
-CPLEXOptimizer *IlogCPSolver::GetCPLEXForOption(fmt::StringRef option_name) {
+CPLEXOptimizer *IlogCPSolver::GetCPLEXForOption(
+    fmt::StringRef option_name) const {
   CPLEXOptimizer *cplex = dynamic_cast<CPLEXOptimizer*>(optimizer_.get());
   if (!cplex) {
     throw OptionError(
@@ -547,7 +548,7 @@ CPLEXOptimizer *IlogCPSolver::GetCPLEXForOption(fmt::StringRef option_name) {
   return cplex;
 }
 
-std::string IlogCPSolver::GetOptimizer(const char *) {
+std::string IlogCPSolver::GetOptimizer(const char *) const {
   switch (options_[OPTIMIZER]) {
   default:
     assert(false);
@@ -647,7 +648,8 @@ void IlogCPSolver::IntCPOption::SetValue(int value) {
   }
 }
 
-double IlogCPSolver::GetCPDblOption(const char *name, IloCP::NumParam param) {
+double IlogCPSolver::GetCPDblOption(
+    const char *name, IloCP::NumParam param) const {
   try {
     return GetCPForOption(name)->solver().getParameter(param);
   } catch (const IloException &e) {
@@ -666,7 +668,7 @@ void IlogCPSolver::SetCPDblOption(
   }
 }
 
-int IlogCPSolver::GetCPLEXIntOption(const char *name, int param) {
+int IlogCPSolver::GetCPLEXIntOption(const char *name, int param) const {
   // Use CPXgetintparam instead of IloCplex::setParam to avoid dealing with
   // two overloads, one for the type int and one for the type long.
   cpxenv *env = GetCPLEXForOption(name)->cplex().getImpl()->getCplexEnv();

@@ -439,7 +439,7 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   int backtrack_limit_;
   int decision_limit_;
 
-  int GetIntOption(const char *, int *option) { return *option; }
+  int GetIntOption(const char *, int *option) const { return *option; }
 
   void SetIntOption(const char *name, int value, int *option) {
     if (value < 0)

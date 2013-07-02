@@ -89,21 +89,21 @@ class SSDSolver : public Solver<SSDSolver> {
   double abs_tolerance_;
   std::string solver_name_;
 
-  int GetBoolOption(const char *, bool *opt) { return *opt; }
+  int GetBoolOption(const char *, bool *opt) const { return *opt; }
   void SetBoolOption(const char *name, int value, bool *opt) {
     if (value != 0 && value != 1)
       throw InvalidOptionValue(name, value);
     *opt = value != 0;
   }
 
-  double GetAbsTolerance(const char *) { return abs_tolerance_; }
+  double GetAbsTolerance(const char *) const { return abs_tolerance_; }
   void SetAbsTolerance(const char *name, double value) {
     if (value < 0)
       throw InvalidOptionValue(name, value);
     abs_tolerance_ = value;
   }
 
-  std::string GetSolverName(const char *) { return solver_name_; }
+  std::string GetSolverName(const char *) const { return solver_name_; }
   void SetSolverName(const char *, const char *value) { solver_name_ = value; }
 
  public:

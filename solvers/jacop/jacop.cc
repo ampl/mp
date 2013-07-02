@@ -286,14 +286,7 @@ jobject NLToJaCoPConverter::VisitImplication(ImplicationExpr e) {
 }
 
 // TODO
-/*void JaCoPSolver::SetBoolOption(const char *name, int value, bool *option) {
-  if (value != 0 && value != 1)
-    ReportInvalidOptionValue(name, value);
-  else
-    *option = value != 0;
-}
-
-void JaCoPSolver::SetOutputFrequency(const char *name, int value) {
+/*void JaCoPSolver::SetOutputFrequency(const char *name, int value) {
   if (value <= 0)
     ReportError("Invalid value {} for option {}") << value << name;
   else
@@ -479,6 +472,7 @@ void JaCoPSolver::Solve(Problem &p) {
            "(LJaCoP/search/ConsistencyListener;)V"), interrupter);
 
   // Set the limits.
+  // TODO: print solution log if outlev_ != 0
   Class<SimpleTimeOut> timeout_class;
   jobject timeout = timeout_class.NewObject(env);
   env.CallVoidMethod(search,
