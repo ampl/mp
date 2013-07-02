@@ -30,9 +30,6 @@
 #ifdef WIN32
 # include <windows.h>
 # include <sys/stat.h>
-# define CLASSPATH_SEP ";"
-#else
-# define CLASSPATH_SEP ":"
 #endif
 
 namespace {
@@ -218,18 +215,15 @@ Env JVM::env(const char *const *options) {
     JavaVMInitArgs vm_args = {};
     vm_args.version = JNI_VERSION_1_6;
     vm_args.ignoreUnrecognized = false;
-    JavaVMOption jvm_options[2] = {};
-    jvm_options[0].optionString = const_cast<char*>(
-        "-Djava.class.path=JaCoP-3.2.jar" CLASSPATH_SEP
-        "lib/JaCoP-3.2.jar" CLASSPATH_SEP "jacopint.jar");
-    vm_args.nOptions = 1;
+    std::vector<JavaVMOption> jvm_options;
     if (options) {
-      int i = 0;
-      for (const char *const *opt = options; opt[i]; ++i)
-        jvm_options[i + 1].optionString = const_cast<char*>(opt[i]);
-      vm_args.nOptions = i + 1;
+      for (const char *const *opt = options; *opt; ++opt) {
+        JavaVMOption jvm_opt = {const_cast<char*>(*opt)};
+        jvm_options.push_back(jvm_opt);
+      }
     }
-    vm_args.options = jvm_options;
+    vm_args.nOptions = jvm_options.size();
+    vm_args.options = &jvm_options[0];
     void *envp = 0;
     jint result = JNI_CreateJavaVM(&instance_.jvm_, &envp, &vm_args);
     if (result != JNI_OK) {

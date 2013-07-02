@@ -442,9 +442,12 @@ std::string JaCoPSolver::GetOptionHeader() {
 }
 
 void JaCoPSolver::Solve(Problem &p) {
-  std::vector<const char*> jvm_options(jvm_options_.size() + 1);
+  std::vector<const char*> jvm_options(jvm_options_.size() + 2);
   for (size_t i = 0, n = jvm_options_.size(); i != n; ++i)
     jvm_options[i] = jvm_options_[i].c_str();
+  jvm_options[jvm_options_.size()] =
+      "-Djava.class.path=JaCoP-3.2.jar" AMPL_CLASSPATH_SEP
+      "lib/JaCoP-3.2.jar" AMPL_CLASSPATH_SEP "jacopint.jar";
   Env env = JVM::env(&jvm_options[0]);
 
   // Set up an optimization problem in JaCoP.

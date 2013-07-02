@@ -30,6 +30,12 @@
 
 #include "solvers/util/format.h"
 
+#ifdef WIN32
+# define AMPL_CLASSPATH_SEP ";"
+#else
+# define AMPL_CLASSPATH_SEP ":"
+#endif
+
 namespace ampl {
 
 class JavaError : public std::runtime_error {
