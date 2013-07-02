@@ -91,6 +91,8 @@ CLASS_INFO(Eq, "JaCoP/constraints/Eq",
 CLASS_INFO(Alldiff, "JaCoP/constraints/Alldiff", "([LJaCoP/core/IntVar;)V")
 CLASS_INFO(DepthFirstSearch, "JaCoP/search/DepthFirstSearch", "()V")
 CLASS_INFO(SimpleTimeOut, "JaCoP/search/SimpleTimeOut", "()V")
+CLASS_INFO(InterruptSearch, "InterruptSearch", "()V")
+CLASS_INFO(Interrupter, "Interrupter", "()V")
 
 // Converter of constraint programming problems from NL to JaCoP format.
 class NLToJaCoPConverter :
@@ -423,8 +425,8 @@ struct OptionInfo {
 class JaCoPSolver : public Solver<JaCoPSolver> {
  private:
   std::vector<std::string> jvm_options_;
-  /*bool output_;
-  double output_frequency_;
+  int outlev_;
+  /*double output_frequency_;
   unsigned output_count_;
   std::string header_;
 
@@ -441,6 +443,12 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
 
   void SetIntOption(const char *name, int value, int *option) {
     if (value < 0)
+      throw InvalidOptionValue(name, value);
+    *option = value;
+  }
+
+  void SetBoolOption(const char *name, int value, int *option) {
+    if (value != 0 && value != 1)
       throw InvalidOptionValue(name, value);
     *option = value;
   }
