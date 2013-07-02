@@ -352,7 +352,7 @@ void GecodeSolver::SetOutputFrequency(const char *name, double value) {
 
 template <typename T>
 std::string GecodeSolver::GetEnumOption(
-    const char *, const OptionInfo<T> &info) {
+    const char *, const OptionInfo<T> &info) const {
   for (const OptionValue<T> *p = info.values; p->name; ++p) {
     if (info.value == p->value)
       return p->name;

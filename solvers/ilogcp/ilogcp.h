@@ -426,13 +426,13 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
  private:
   int options_[NUM_OPTIONS];
 
-  CPOptimizer *GetCPForOption(fmt::StringRef option_name);
-  CPLEXOptimizer *GetCPLEXForOption(fmt::StringRef option_name);
+  CPOptimizer *GetCPForOption(fmt::StringRef option_name) const;
+  CPLEXOptimizer *GetCPLEXForOption(fmt::StringRef option_name) const;
 
-  std::string GetOptimizer(const char *name);
+  std::string GetOptimizer(const char *name) const;
   void SetOptimizer(const char *name, const char *value);
 
-  int GetBoolOption(const char *, Option opt) { return options_[opt]; }
+  int GetBoolOption(const char *, Option opt) const { return options_[opt]; }
   void SetBoolOption(const char *name, int value, Option opt);
 
   // An enumerated option of the constraint programming optimizer.
@@ -473,13 +473,13 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
   };
 
   // Returns a double option of the constraint programming optimizer.
-  double GetCPDblOption(const char *name, IloCP::NumParam param);
+  double GetCPDblOption(const char *name, IloCP::NumParam param) const;
 
   // Sets a double option of the constraint programming optimizer.
   void SetCPDblOption(const char *name, double value, IloCP::NumParam param);
 
   // Returns an integer option of the CPLEX optimizer.
-  int GetCPLEXIntOption(const char *name, int param);
+  int GetCPLEXIntOption(const char *name, int param) const;
 
   // Sets an integer option of the CPLEX optimizer.
   void SetCPLEXIntOption(const char *name, int value, int param);

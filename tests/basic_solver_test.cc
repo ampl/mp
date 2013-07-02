@@ -406,39 +406,39 @@ struct TestSolverWithOptions : Solver<TestSolverWithOptions> {
   std::string stropt1;
   std::string stropt2;
 
-  int GetIntOption(const char *) { return intopt1; }
+  int GetIntOption(const char *) const { return intopt1; }
   void SetIntOption(const char *name, int value) {
     EXPECT_STREQ("intopt1", name);
     intopt1 = value;
   }
 
-  int GetIntOptionWithInfo(const char *, Info) { return 0; }
+  int GetIntOptionWithInfo(const char *, Info) const { return 0; }
   void SetIntOptionWithInfo(const char *name, int value, Info info) {
     EXPECT_STREQ("intopt2", name);
     intopt2 = value;
     EXPECT_EQ(INFO, info);
   }
 
-  double GetDblOption(const char *) { return dblopt1; }
+  double GetDblOption(const char *) const { return dblopt1; }
   void SetDblOption(const char *name, double value) {
     EXPECT_STREQ("dblopt1", name);
     dblopt1 = value;
   }
 
-  double GetDblOptionWithInfo(const char *, Info) { return 0; }
+  double GetDblOptionWithInfo(const char *, Info) const { return 0; }
   void SetDblOptionWithInfo(const char *name, double value, Info info) {
     EXPECT_STREQ("dblopt2", name);
     dblopt2 = value;
     EXPECT_EQ(INFO, info);
   }
 
-  std::string GetStrOption(const char *) { return stropt1; }
+  std::string GetStrOption(const char *) const { return stropt1; }
   void SetStrOption(const char *name, const char *value) {
     EXPECT_STREQ("stropt1", name);
     stropt1 = value;
   }
 
-  std::string GetStrOptionWithInfo(const char *, Info) { return ""; }
+  std::string GetStrOptionWithInfo(const char *, Info) const { return ""; }
   void SetStrOptionWithInfo(const char *name, const char *value, Info info) {
     EXPECT_STREQ("stropt2", name);
     stropt2 = value;
@@ -703,7 +703,7 @@ TEST(SolverTest, OptionEcho) {
 TEST(SolverTest, ExceptionInOptionHandler) {
   class TestException {};
   struct TestSolver : public Solver<TestSolver> {
-    int GetIntOption(const char *) { return 0; }
+    int GetIntOption(const char *) const { return 0; }
     void Throw(const char *, int) { throw TestException(); }
     TestSolver() : Solver<TestSolver>("") {
       AddIntOption("throw", "", &TestSolver::GetIntOption, &TestSolver::Throw);
