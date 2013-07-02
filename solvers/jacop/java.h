@@ -33,8 +33,14 @@
 namespace ampl {
 
 class JavaError : public std::runtime_error {
+ private:
+  jthrowable exception_;
+
  public:
-  explicit JavaError(fmt::StringRef message) : std::runtime_error(message) {}
+  explicit JavaError(fmt::StringRef message, jthrowable exception = 0)
+    : std::runtime_error(message), exception_(exception) {}
+
+  jthrowable exception() const { return exception_; }
 };
 
 // Java Native Interface environment.
@@ -116,6 +122,17 @@ class Env {
       jsize start, jsize length, const jint *values) {
     env_->SetIntArrayRegion(array, start, length, values);
     Check("SetIntArrayRegion");
+  }
+
+  jboolean IsInstanceOf(jobject obj, jclass cls) {
+    jboolean result = env_->IsInstanceOf(obj, cls);
+    Check("IsInstanceOf");
+    return result;
+  }
+
+  void RegisterNatives(jclass cls, const JNINativeMethod *methods, jint size) {
+    if (env_->RegisterNatives(cls, methods, size) < 0)
+      Check(0, "RegisterNatives");
   }
 };
 

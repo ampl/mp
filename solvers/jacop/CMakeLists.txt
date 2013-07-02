@@ -19,3 +19,7 @@ if (MSVC)
   set(CMAKE_EXE_LINKER_FLAGS "/DELAYLOAD:jvm.dll")
   target_link_libraries(jacop delayimp)
 endif ()
+
+include(UseJava)
+set(CMAKE_JAVA_INCLUDE_PATH lib/JaCoP-3.2.jar)
+add_jar(jacopint Interrupter.java)

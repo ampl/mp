@@ -1,6 +1,6 @@
 # CMake build script for the AMPL solver library.
 
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.6)
 
 # Set the default CMAKE_BUILD_TYPE to Release.
 # This should be done before the project command since the latter can set
@@ -78,7 +78,8 @@ file(GLOB JACOP_PATH solvers/jacop/lib/JaCoP-*.jar)
 if (JACOP_PATH)
   get_filename_component(JACOP_JAR ${JACOP_PATH} NAME)
   find_package(JNI)
-  if (JNI_FOUND)
+  find_package(Java)
+  if (JNI_FOUND AND JAVA_FOUND)
     set(HAVE_JACOP 1)
   endif ()
 endif ()

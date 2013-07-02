@@ -130,7 +130,7 @@ void Env::Throw(jthrowable exception, const char *method_name) {
   String message(env_, static_cast<jstring>(Check(
       env_->CallObjectMethod(exception, getMessage), "CallObjectMethod")));
   throw JavaError(fmt::Format("{} failed: {}")
-        << method_name << message.c_str());
+        << method_name << message.c_str(), exception);
 }
 
 jobject Env::NewObject(jclass cls, jmethodID ctor, ...) {
@@ -220,7 +220,8 @@ Env JVM::env(const char *const *options) {
     vm_args.ignoreUnrecognized = false;
     JavaVMOption jvm_options[2] = {};
     jvm_options[0].optionString = const_cast<char*>(
-        "-Djava.class.path=JaCoP-3.2.jar" CLASSPATH_SEP "lib/JaCoP-3.2.jar");
+        "-Djava.class.path=JaCoP-3.2.jar" CLASSPATH_SEP
+        "lib/JaCoP-3.2.jar" CLASSPATH_SEP "jacopint.jar");
     vm_args.nOptions = 1;
     if (options) {
       int i = 0;

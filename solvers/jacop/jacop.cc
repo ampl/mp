@@ -26,6 +26,10 @@
 
 namespace {
 
+JNIEXPORT jboolean JNICALL stop(JNIEnv *, jobject) {
+  return ampl::SignalHandler::stop();
+}
+
 // TODO
 /*const ampl::OptionValue<Gecode::IntVarBranch> VAR_BRANCHINGS[] = {
     {"none",            Gecode::INT_VAR_NONE},
@@ -159,7 +163,7 @@ void NLToJaCoPConverter::ConvertLogicalCon(LogicalExpr e, bool post) {
 }
 
 NLToJaCoPConverter::NLToJaCoPConverter()
-: env_(JVM::env()), store_(), impose_(), var_array_(),
+: env_(JVM::env()), store_(), impose_(), var_array_(), obj_(),
   constraint_class_(), or_array_ctor_(), and_array_ctor_(), one_var_() {
   var_class_.Init(env_);
   jclass domain_class = env_.FindClass("JaCoP/core/IntDomain");
@@ -281,37 +285,14 @@ jobject NLToJaCoPConverter::VisitImplication(ImplicationExpr e) {
       Visit(e.true_expr()), Visit(e.false_expr()));
 }
 
-/*JaCoPSolver::Stop::Stop(JaCoPSolver &s)
-: sh_(s), solver_(s), time_limit_in_milliseconds_(s.time_limit_ * 1000),
-  last_output_time_(0) {
-  output_or_limit_ = s.output_ || time_limit_in_milliseconds_ < DBL_MAX ||
-      s.node_limit_ != ULONG_MAX || s.fail_limit_ != ULONG_MAX ||
-      s.memory_limit_ != std::numeric_limits<std::size_t>::max();
-  timer_.start();
-}
-
-bool JaCoPSolver::Stop::stop(
-    const Search::Statistics &s, const Search::Options &) {
-  if (SignalHandler::stop()) return true;
-  if (!output_or_limit_) return false;
-  double time = timer_.stop();
-  if (solver_.output_ &&
-      (time - last_output_time_) / 1000 >= solver_.output_frequency_) {
-    solver_.Output("{:10} {:10} {:10}\n") << s.depth << s.node << s.fail;
-    last_output_time_ = time;
-  }
-  return time > time_limit_in_milliseconds_ || s.node > solver_.node_limit_ ||
-      s.fail > solver_.fail_limit_ || s.memory > solver_.memory_limit_;
-}
-
-void JaCoPSolver::SetBoolOption(const char *name, int value, bool *option) {
+// TODO
+/*void JaCoPSolver::SetBoolOption(const char *name, int value, bool *option) {
   if (value != 0 && value != 1)
     ReportInvalidOptionValue(name, value);
   else
     *option = value != 0;
 }
 
-// TODO
 void JaCoPSolver::SetOutputFrequency(const char *name, int value) {
   if (value <= 0)
     ReportError("Invalid value {} for option {}") << value << name;
@@ -348,20 +329,15 @@ void JaCoPSolver::HandleUnknownOption(const char *name) {
 }
 
 JaCoPSolver::JaCoPSolver()
-: Solver<JaCoPSolver>("jacop", 0, 20130701), time_limit_(-1),
+: Solver<JaCoPSolver>("jacop", 0, 20130701), outlev_(0), time_limit_(-1),
   node_limit_(-1), fail_limit_(-1), backtrack_limit_(-1), decision_limit_(-1) {
 
   // TODO: options
-  /*output_(false), output_frequency_(1), output_count_(0),
+  /* output_frequency_(1), output_count_(0),
   var_branching_(Gecode::INT_VAR_SIZE_MIN),
   val_branching_(Gecode::INT_VAL_MIN) {
 
   set_version("JaCoP " GECODE_VERSION);
-
-  // TODO
-  /*AddIntOption("outlev",
-      "0 or 1 (default 0):  Whether to print solution log.",
-      &JaCoPSolver::EnableOutput);
 
   AddIntOption("outfreq",
       "Output frequency in seconds.  The value should be a positive integer.",
@@ -437,6 +413,9 @@ JaCoPSolver::JaCoPSolver()
   AddIntOption("a_d", "Adaptive recomputation distance.",
       &JaCoPSolver::SetOption<int, unsigned>, &options_.a_d);*/
 
+  AddIntOption("outlev", "0 or 1 (default 0):  Whether to print solution log.",
+      &JaCoPSolver::GetIntOption, &JaCoPSolver::SetBoolOption, &outlev_);
+
   AddIntOption("timelimit", "Time limit in seconds.",
       &JaCoPSolver::GetIntOption, &JaCoPSolver::SetIntOption, &time_limit_);
   AddIntOption("nodelimit", "Node limit.",
@@ -472,18 +451,29 @@ void JaCoPSolver::Solve(Problem &p) {
   NLToJaCoPConverter converter;
   converter.Convert(p);
 
-  SignalHandler signal_handler(*this); // TODO
   Class<DepthFirstSearch> dfs_class;
   jobject search = dfs_class.NewObject(env);
   jmethodID setPrintInfo =
       env.GetMethod(dfs_class.get(), "setPrintInfo", "(Z)V");
-  env.CallVoidMethod(search, setPrintInfo, false);
+  env.CallVoidMethod(search, setPrintInfo, JNI_FALSE);
   jobject indomain = env.NewObject("JaCoP/search/IndomainMin", "()V");
   jobject select = env.NewObject("JaCoP/search/InputOrderSelect",
       "(LJaCoP/core/Store;[LJaCoP/core/Var;LJaCoP/search/Indomain;)V",
       converter.store(), converter.var_array(), indomain);
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   bool has_obj = p.num_objs() != 0;
+
+  SignalHandler signal_handler(*this);
+  char NAME[] = "stop";
+  char SIG[] = "()Z";
+  JNINativeMethod method = {NAME, SIG, reinterpret_cast<void*>(stop)};
+  Class<Interrupter> interrupter_class;
+  interrupter_class.Init(env);
+  env.RegisterNatives(interrupter_class.get(), &method, 1);
+  jobject interrupter = interrupter_class.NewObject(env);
+  env.CallVoidMethod(search,
+       env.GetMethod(dfs_class.get(), "setConsistencyListener",
+           "(LJaCoP/search/ConsistencyListener;)V"), interrupter);
 
   // Set the limits.
   Class<SimpleTimeOut> timeout_class;
@@ -518,23 +508,38 @@ void JaCoPSolver::Solve(Problem &p) {
   header_ = str(fmt::Format("{:>10} {:>10} {:>10} {:>13}\n")
     << "Max Depth" << "Nodes" << "Fails" << (has_obj ? "Best Obj" : ""));*/
   jboolean found = false;
-  if (has_obj) {
-    jmethodID labeling = env.GetMethod(dfs_class.get(), "labeling",
-        "(LJaCoP/core/Store;LJaCoP/search/SelectChoicePoint;"
-        "LJaCoP/core/IntVar;)Z");
-    found = env.CallBooleanMethod(
-        search, labeling, converter.store(), select, converter.obj());
-  } else {
-    jmethodID labeling = env.GetMethod(dfs_class.get(), "labeling",
-        "(LJaCoP/core/Store;LJaCoP/search/SelectChoicePoint;)Z");
-    found = env.CallBooleanMethod(search, labeling, converter.store(), select);
+  bool interrupted = false;
+  try {
+    if (has_obj) {
+      jmethodID labeling = env.GetMethod(dfs_class.get(), "labeling",
+          "(LJaCoP/core/Store;LJaCoP/search/SelectChoicePoint;"
+          "LJaCoP/core/IntVar;)Z");
+      found = env.CallBooleanMethod(
+          search, labeling, converter.store(), select, converter.obj());
+    } else {
+      jmethodID labeling = env.GetMethod(dfs_class.get(), "labeling",
+          "(LJaCoP/core/Store;LJaCoP/search/SelectChoicePoint;)Z");
+      found = env.CallBooleanMethod(
+          search, labeling, converter.store(), select);
+    }
+  } catch (const JavaError &e) {
+    // Check if exception is of class InterruptSearch which is used to
+    // interrupt search.
+    if (jthrowable throwable = e.exception()) {
+      Class<InterruptSearch> interrupt_class;
+      interrupt_class.Init(env);
+      if (env.IsInstanceOf(throwable, interrupt_class.get()))
+        interrupted = true;
+    }
+    if (!interrupted)
+      throw;
   }
 
   // Convert solution status.
   const char *status = 0;
   int solve_code = 0;
   if (!found) {
-    if (env.GetBooleanField(timeout,
+    if (interrupted || env.GetBooleanField(timeout,
         env.GetFieldID(timeout_class.get(), "timeOutOccurred", "Z"))) {
       solve_code = 600;
       status = "interrupted";
