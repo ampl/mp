@@ -91,8 +91,10 @@ inline bool operator==(
     const Gecode::IntValBranch &lhs, const Gecode::IntValBranch &rhs) {
   return lhs.select() == rhs.select();
 }
+}
 
-std::ostream &operator<<(std::ostream &os, const Gecode::IntValBranch &b) {
+namespace Gecode {
+std::ostream &operator<<(std::ostream &os, const IntValBranch &b) {
   return os << b.select();
 }
 }
