@@ -311,7 +311,6 @@ class GecodeSolver : public Solver<GecodeSolver> {
   double time_limit_;  // Time limit in seconds.
   unsigned long node_limit_;
   unsigned long fail_limit_;
-  std::size_t memory_limit_;
 
   void SetBoolOption(const char *name, int value, bool *option);
 
