@@ -169,14 +169,6 @@ TEST_F(GecodeSolverTest, FailLimitOption) {
       ParseOptions("faillimit=-1").error());
 }
 
-TEST_F(GecodeSolverTest, MemoryLimitOption) {
-  Solve("miplib/assign1", "memorylimit=100000");
-  EXPECT_EQ(600, solver_.problem().solve_code());
-  EXPECT_EQ(100000, solver_.GetIntOption("memorylimit"));
-  EXPECT_EQ("Invalid value \"-1\" for option \"memorylimit\"",
-      ParseOptions("memorylimit=-1").error());
-}
-
 TEST_F(GecodeSolverTest, NodeLimitOption) {
   string message = Solve("miplib/assign1", "nodelimit=10").message;
   EXPECT_EQ(600, solver_.problem().solve_code());

@@ -321,8 +321,7 @@ GecodeSolver::Stop::Stop(GecodeSolver &s)
 : sh_(s), solver_(s), time_limit_in_milliseconds_(s.time_limit_ * 1000),
   last_output_time_(0) {
   output_or_limit_ = s.output_ || time_limit_in_milliseconds_ < DBL_MAX ||
-      s.node_limit_ != ULONG_MAX || s.fail_limit_ != ULONG_MAX ||
-      s.memory_limit_ != std::numeric_limits<std::size_t>::max();
+      s.node_limit_ != ULONG_MAX || s.fail_limit_ != ULONG_MAX;
   timer_.start();
 }
 
@@ -336,8 +335,8 @@ bool GecodeSolver::Stop::stop(
     solver_.Output("{:10} {:10} {:10}\n") << s.depth << s.node << s.fail;
     last_output_time_ = time;
   }
-  return time > time_limit_in_milliseconds_ || s.node > solver_.node_limit_ ||
-      s.fail > solver_.fail_limit_ || s.memory > solver_.memory_limit_;
+  return time > time_limit_in_milliseconds_ ||
+      s.node > solver_.node_limit_ || s.fail > solver_.fail_limit_;
 }
 
 void GecodeSolver::SetBoolOption(const char *name, int value, bool *option) {
@@ -408,8 +407,7 @@ GecodeSolver::GecodeSolver()
   var_branching_(IntVarBranch::SEL_SIZE_MIN),
   val_branching_(Gecode::INT_VAL_MIN()),
   decay_(1),
-  time_limit_(DBL_MAX), node_limit_(ULONG_MAX), fail_limit_(ULONG_MAX),
-  memory_limit_(std::numeric_limits<std::size_t>::max()) {
+  time_limit_(DBL_MAX), node_limit_(ULONG_MAX), fail_limit_(ULONG_MAX) {
 
   set_version("Gecode " GECODE_VERSION);
 
@@ -524,9 +522,6 @@ GecodeSolver::GecodeSolver()
   AddIntOption("faillimit", "Fail limit.",
       &GecodeSolver::GetOption<int, unsigned long>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned long>, &fail_limit_);
-  AddIntOption("memorylimit", "Memory limit.",
-      &GecodeSolver::GetOption<int, std::size_t>,
-      &GecodeSolver::SetNonnegativeOption<int, std::size_t>, &memory_limit_);
 }
 
 void GecodeSolver::Solve(Problem &p) {
