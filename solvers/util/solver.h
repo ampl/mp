@@ -327,6 +327,11 @@ class BasicSolver
     ReportError("Unknown option \"{}\"") << name;
   }
 
+  void DeclareSuffixes(SufDecl *suffixes, int num_suffixes) {
+    suf_declare_ASL(reinterpret_cast<ASL*>(problem_.asl_),
+        suffixes, num_suffixes);
+  }
+
  public:
   virtual ~BasicSolver();
 
@@ -597,8 +602,7 @@ class Solver : public BasicSolver {
   template <typename Info>
   void AddStrOption(const char *name, const char *description,
       std::string (Impl::*getter)(const char *, Info) const,
-      void (Impl::*setter)(const char *, const char *, Info),
-      const Info &info) {
+      void (Impl::*setter)(const char *, const char *, Info), Info info) {
     typedef void (Impl::*Func)(const char *, const char *, Info);
     AddOption(SolverOptionPtr(new ConcreteOptionWithInfo<std::string, Info>(
             name, description, this, getter, setter, info)));

@@ -30,32 +30,22 @@ JNIEXPORT jboolean JNICALL stop(JNIEnv *, jobject) {
   return ampl::SignalHandler::stop();
 }
 
-// TODO
-/*const ampl::OptionValue<Gecode::IntVarBranch> VAR_BRANCHINGS[] = {
-    {"none",            Gecode::INT_VAR_NONE},
-    {"rnd",             Gecode::INT_VAR_RND},
-    {"degree_min",      Gecode::INT_VAR_DEGREE_MIN},
-    {"degree_max",      Gecode::INT_VAR_DEGREE_MAX},
-    {"afc_min",         Gecode::INT_VAR_AFC_MIN},
-    {"afc_max",         Gecode::INT_VAR_AFC_MAX},
-    {"min_min",         Gecode::INT_VAR_MIN_MIN},
-    {"min_max",         Gecode::INT_VAR_MIN_MAX},
-    {"max_min",         Gecode::INT_VAR_MAX_MIN},
-    {"max_max",         Gecode::INT_VAR_MAX_MAX},
-    {"size_min",        Gecode::INT_VAR_SIZE_MIN},
-    {"size_max",        Gecode::INT_VAR_SIZE_MAX},
-    {"size_degree_min", Gecode::INT_VAR_SIZE_DEGREE_MIN},
-    {"size_degree_max", Gecode::INT_VAR_SIZE_DEGREE_MAX},
-    {"size_afc_min",    Gecode::INT_VAR_SIZE_AFC_MIN},
-    {"size_afc_max",    Gecode::INT_VAR_SIZE_AFC_MAX},
-    {"regret_min_min",  Gecode::INT_VAR_REGRET_MIN_MIN},
-    {"regret_min_max",  Gecode::INT_VAR_REGRET_MIN_MAX},
-    {"regret_max_min",  Gecode::INT_VAR_REGRET_MAX_MIN},
-    {"regret_max_max",  Gecode::INT_VAR_REGRET_MAX_MAX},
-    {}
+const char *const VAR_SELECT[] = {
+    "LargestDomain",
+    "LargestMax",
+    "LargestMin",
+    "MaxRegret",
+    "MinDomainOverDegree",
+    "MostConstrainedDynamic",
+    "MostConstrainedStatic",
+    "SmallestDomain",
+    "SmallestMax",
+    "SmallestMin",
+    "WeightedDegree",
+    0
 };
 
-const ampl::OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
+/*const ampl::OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
     {"min",        Gecode::INT_VAL_MIN},
     {"med",        Gecode::INT_VAL_MED},
     {"max",        Gecode::INT_VAL_MAX},
@@ -68,6 +58,12 @@ const ampl::OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
     {"values_max", Gecode::INT_VALUES_MAX},
     {}
 };*/
+
+bool Match(const char *value, const char *s) {
+  while (*value && *value == std::tolower(*s))
+    ++value, ++s;
+  return *value == std::tolower(*s);
+}
 }
 
 namespace ampl {
@@ -142,7 +138,7 @@ void NLToJaCoPConverter::ConvertExpr(
     Impose(eq_class_.NewObject(env_, Visit(nonlinear), result_var));
 }
 
-void NLToJaCoPConverter::ConvertLogicalCon(LogicalExpr e, bool post) {
+void NLToJaCoPConverter::ConvertLogicalCon(LogicalExpr e) {
   AllDiffExpr alldiff = Cast<AllDiffExpr>(e);
   if (!alldiff) {
     Impose(Visit(e));
@@ -293,18 +289,6 @@ jobject NLToJaCoPConverter::VisitImplication(ImplicationExpr e) {
     output_frequency_ = value;
 }
 
-template <typename T>
-void JaCoPSolver::SetStrOption(const char *name, const char *value,
-    const OptionInfo<T> &info) {
-  for (const OptionValue<T> *p = info.values; p->name; ++p) {
-    if (std::strcmp(value, p->name) == 0) {
-      info.value = p->value;
-      return;
-    }
-  }
-  ReportError("Invalid value {} for option {}") << value << name;
-}
-
 fmt::TempFormatter<fmt::Write> JaCoPSolver::Output(fmt::StringRef format) {
   if (output_count_ == 0)
     fmt::Print("{}") << header_;
@@ -322,12 +306,12 @@ void JaCoPSolver::HandleUnknownOption(const char *name) {
 }
 
 JaCoPSolver::JaCoPSolver()
-: Solver<JaCoPSolver>("jacop", 0, 20130701), outlev_(0), time_limit_(-1),
-  node_limit_(-1), fail_limit_(-1), backtrack_limit_(-1), decision_limit_(-1) {
+: Solver<JaCoPSolver>("jacop", 0, 20130701), outlev_(0),
+  var_select_("SmallestDomain"), time_limit_(-1), node_limit_(-1),
+  fail_limit_(-1), backtrack_limit_(-1), decision_limit_(-1) {
 
   // TODO: options
   /* output_frequency_(1), output_count_(0),
-  var_branching_(Gecode::INT_VAR_SIZE_MIN),
   val_branching_(Gecode::INT_VAL_MIN) {
 
   set_version("JaCoP " GECODE_VERSION);
@@ -335,31 +319,6 @@ JaCoPSolver::JaCoPSolver()
   AddIntOption("outfreq",
       "Output frequency in seconds.  The value should be a positive integer.",
       &JaCoPSolver::SetOutputFrequency);
-
-  AddStrOption("var_branching",
-      "Variable branching.  Possible values:\n"
-      "      none            - first unassigned\n"
-      "      rnd             - random\n"
-      "      degree_min      - smallest degree\n"
-      "      degree_max      - largest degree\n"
-      "      afc_min         - smallest accumulated failure count (AFC)\n"
-      "      afc_max         - largest accumulated failure count (AFC)\n"
-      "      min_min         - smallest minimum value\n"
-      "      min_max         - largest minimum value\n"
-      "      max_min         - smallest maximum value\n"
-      "      max_max         - largest maximum value\n"
-      "      size_min        - smallest domain size (default)\n"
-      "      size_max        - largest domain size\n"
-      "      size_degree_min - smallest domain size divided by degree\n"
-      "      size_degree_max - largest domain size divided by degree\n"
-      "      size_afc_min    - smallest domain size divided by AFC\n"
-      "      size_afc_max    - largest domain size divided by AFC\n"
-      "      regret_min_min  - smallest minimum-regret\n"
-      "      regret_min_max  - largest minimum-regret\n"
-      "      regret_max_min  - smallest maximum-regret\n"
-      "      regret_max_max  - largest maximum-regret\n",
-      &JaCoPSolver::SetStrOption<Gecode::IntVarBranch>,
-      OptionInfo<Gecode::IntVarBranch>(VAR_BRANCHINGS, var_branching_));
 
   AddStrOption("val_branching",
       "Value branching.  Possible values:\n"
@@ -380,34 +339,41 @@ JaCoPSolver::JaCoPSolver()
       "      values_min - all values starting from smallest\n"
       "      values_min - all values starting from largest\n",
       &JaCoPSolver::SetStrOption<Gecode::IntValBranch>,
-      OptionInfo<Gecode::IntValBranch>(VAL_BRANCHINGS, val_branching_));
-
-  AddDblOption("threads",
-      "The number of parallel threads to use.  Assume that your computer\n"
-      "has m processing units and that the value for threads is n.\n"
-      "    * If n = 0, then m threads are used (as many as available\n"
-      "      processing units).\n"
-      "    * If n >= 1, then n threads are used (absolute number of\n"
-      "      threads to be used).\n"
-      "    * If n <= −1, then m + n threads are used (absolute number\n"
-      "      of processing units not to be used). For example, when\n"
-      "      n = −6 and m = 8, then 2 threads are used.\n"
-      "    * If 0 < n < 1, then n * m threads are used (relative number\n"
-      "      of processing units to be used). For example, when n = 0.5\n"
-      "      and m = 8, then 4 threads are used.\n"
-      "    * If −1 < n < 0, then (1 + n) * m threads are used (relative\n"
-      "      number of processing units not to be used). For example,\n"
-      "      when n = −0.25 and m = 8, then 6 threads are used.\n"
-      "All values are rounded and at least one thread is used.\n",
-      &JaCoPSolver::SetDblOption, &options_.threads);
-
-  AddIntOption("c_d", "Commit recomputation distance.",
-      &JaCoPSolver::SetOption<int, unsigned>, &options_.c_d);
-  AddIntOption("a_d", "Adaptive recomputation distance.",
-      &JaCoPSolver::SetOption<int, unsigned>, &options_.a_d);*/
+      OptionInfo<Gecode::IntValBranch>(VAL_BRANCHINGS, val_branching_));*/
 
   AddIntOption("outlev", "0 or 1 (default 0):  Whether to print solution log.",
       &JaCoPSolver::GetIntOption, &JaCoPSolver::SetBoolOption, &outlev_);
+
+  AddStrOption("var_select",
+      "Variable selector.  Possible values:\n"
+      "      largestdomain          - select the variable which has the\n"
+      "                               largest domain size\n"
+      "      largestmax             - select the variable with the largest\n"
+      "                               maximal value in its domain\n"
+      "      largestmin             - select the variable with the largest\n"
+      "                               minimal value in its domain\n"
+      "      maxregret              - max regret selector\n"
+      "      mindomainoverdegree    - select the variable based on the\n"
+      "                               minimal value of domain size divided\n"
+      "                               by the number of constraints currently\n"
+      "                               attached to a variable\n"
+      "      mostconstraineddynamic - select the variable which has the\n"
+      "                               most pending constraints assign to it\n"
+      "      mostconstrainedstatic  - select the variable which has the\n"
+      "                               most constraints assign to it\n"
+      "      smallestdomain         - select the variable which has the\n"
+      "                               smallest domain size (default)\n"
+      "      smallestmax            - select the variable with the smallest\n"
+      "                               maximal value in its domain\n"
+      "      smallestmin            - select the variable with the smallest\n"
+      "                               minimal value in its domain\n"
+      "      weighteddegree         - select the variable with the highest\n"
+      "                               weight divided by its size; every time\n"
+      "                               a constraint failure is encountered\n"
+      "                               all variables within the scope of that\n"
+      "                               constraints have increased weight. \n",
+      &JaCoPSolver::GetEnumOption, &JaCoPSolver::SetEnumOption,
+      OptionInfo(VAR_SELECT, var_select_));
 
   AddIntOption("timelimit", "Time limit in seconds.",
       &JaCoPSolver::GetIntOption, &JaCoPSolver::SetIntOption, &time_limit_);
@@ -422,6 +388,24 @@ JaCoPSolver::JaCoPSolver()
       &JaCoPSolver::GetIntOption, &JaCoPSolver::SetIntOption, &decision_limit_);
 }
 
+std::string JaCoPSolver::GetEnumOption(
+    const char *, const OptionInfo &info) const {
+  std::string value = info.value;
+  std::transform(value.begin(), value.end(), value.begin(), ::tolower);
+  return value;
+}
+
+void JaCoPSolver::SetEnumOption(
+    const char *name, const char *value, const OptionInfo &info) {
+  for (const char *const *v = info.values; *v; ++v) {
+    if (Match(value, *v)) {
+      info.value = *v;
+      return;
+    }
+  }
+  throw InvalidOptionValue(name, value);
+}
+
 std::string JaCoPSolver::GetOptionHeader() {
   return
       "JaCoP Directives for AMPL\n"
@@ -429,9 +413,8 @@ std::string JaCoPSolver::GetOptionHeader() {
       "\n"
       "To set these directives, assign a string specifying their values to "
       "the AMPL option jacop_options.  For example:\n"
-      "\n";
-  // TODO: example
-      //"  ampl: option gecode_options 'version nodelimit=30000 val_branching=min';\n";
+      "\n"
+      "  ampl: option jacop_options 'version nodelimit=30000';\n";
 }
 
 void JaCoPSolver::Solve(Problem &p) {
@@ -452,10 +435,14 @@ void JaCoPSolver::Solve(Problem &p) {
   jmethodID setPrintInfo =
       env.GetMethod(dfs_class.get(), "setPrintInfo", "(Z)V");
   env.CallVoidMethod(search, setPrintInfo, JNI_FALSE);
-  jobject indomain = env.NewObject("JaCoP/search/IndomainMin", "()V");
-  jobject select = env.NewObject("JaCoP/search/InputOrderSelect",
-      "(LJaCoP/core/Store;[LJaCoP/core/Var;LJaCoP/search/Indomain;)V",
-      converter.store(), converter.var_array(), indomain);
+  // TODO: options to configure val_select
+  jobject var_select = env.NewObject(
+      (std::string("JaCoP/search/") + var_select_).c_str(), "()V");
+  jobject val_select = env.NewObject("JaCoP/search/IndomainMin", "()V");
+  jobject select = env.NewObject("JaCoP/search/SimpleSelect",
+      "([LJaCoP/core/Var;LJaCoP/search/ComparatorVariable;"
+      "LJaCoP/search/Indomain;)V", converter.var_array(),
+      var_select, val_select);
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   bool has_obj = p.num_objs() != 0;
 
