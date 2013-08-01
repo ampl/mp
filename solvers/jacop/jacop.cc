@@ -31,33 +31,29 @@ JNIEXPORT jboolean JNICALL stop(JNIEnv *, jobject) {
 }
 
 const char *const VAR_SELECT[] = {
-    "LargestDomain",
-    "LargestMax",
-    "LargestMin",
-    "MaxRegret",
-    "MinDomainOverDegree",
-    "MostConstrainedDynamic",
-    "MostConstrainedStatic",
-    "SmallestDomain",
-    "SmallestMax",
-    "SmallestMin",
-    "WeightedDegree",
-    0
+  "LargestDomain",
+  "LargestMax",
+  "LargestMin",
+  "MaxRegret",
+  "MinDomainOverDegree",
+  "MostConstrainedDynamic",
+  "MostConstrainedStatic",
+  "SmallestDomain",
+  "SmallestMax",
+  "SmallestMin",
+  "WeightedDegree",
+  0
 };
 
-/*const ampl::OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
-    {"min",        Gecode::INT_VAL_MIN},
-    {"med",        Gecode::INT_VAL_MED},
-    {"max",        Gecode::INT_VAL_MAX},
-    {"rnd",        Gecode::INT_VAL_RND},
-    {"split_min",  Gecode::INT_VAL_SPLIT_MIN},
-    {"split_max",  Gecode::INT_VAL_SPLIT_MAX},
-    {"range_min",  Gecode::INT_VAL_RANGE_MIN},
-    {"range_max",  Gecode::INT_VAL_RANGE_MAX},
-    {"values_min", Gecode::INT_VALUES_MIN},
-    {"values_max", Gecode::INT_VALUES_MAX},
-    {}
-};*/
+const char *const VAL_SELECT[] = {
+  "IndomainMax",
+  "IndomainMedian",
+  "IndomainMiddle",
+  "IndomainMin",
+  "IndomainRandom",
+  "IndomainSimpleRandom",
+  0
+};
 
 bool Match(const char *value, const char *s) {
   while (*value && *value == std::tolower(*s))
@@ -307,39 +303,18 @@ void JaCoPSolver::HandleUnknownOption(const char *name) {
 
 JaCoPSolver::JaCoPSolver()
 : Solver<JaCoPSolver>("jacop", 0, 20130701), outlev_(0),
-  var_select_("SmallestDomain"), time_limit_(-1), node_limit_(-1),
-  fail_limit_(-1), backtrack_limit_(-1), decision_limit_(-1) {
+  var_select_("SmallestDomain"), val_select_("IndomainMin"),
+  time_limit_(-1), node_limit_(-1), fail_limit_(-1),
+  backtrack_limit_(-1), decision_limit_(-1) {
 
   // TODO: options
-  /* output_frequency_(1), output_count_(0),
-  val_branching_(Gecode::INT_VAL_MIN) {
+  /* output_frequency_(1), output_count_(0) {
 
   set_version("JaCoP " GECODE_VERSION);
 
   AddIntOption("outfreq",
       "Output frequency in seconds.  The value should be a positive integer.",
-      &JaCoPSolver::SetOutputFrequency);
-
-  AddStrOption("val_branching",
-      "Value branching.  Possible values:\n"
-      "      min        - smallest value (default)\n"
-      "      med        - greatest value not greater than the median\n"
-      "      max        - largest value\n"
-      "      rnd        - random value\n"
-      "      split_min  - values not greater than mean of smallest and\n"
-      "                   largest value\n"
-      "      split_max  - values greater than mean of smallest and largest\n"
-      "                   value\n"
-      "      range_min  - values from smallest range, if domain has several\n"
-      "                   ranges; otherwise, values not greater than mean of\n"
-      "                   smallest and largest value\n"
-      "      range_max  - values from largest range, if domain has several\n"
-      "                   ranges; otherwise, values greater than mean of\n"
-      "                   smallest and largest value\n"
-      "      values_min - all values starting from smallest\n"
-      "      values_min - all values starting from largest\n",
-      &JaCoPSolver::SetStrOption<Gecode::IntValBranch>,
-      OptionInfo<Gecode::IntValBranch>(VAL_BRANCHINGS, val_branching_));*/
+      &JaCoPSolver::SetOutputFrequency);*/
 
   AddIntOption("outlev", "0 or 1 (default 0):  Whether to print solution log.",
       &JaCoPSolver::GetIntOption, &JaCoPSolver::SetBoolOption, &outlev_);
@@ -374,6 +349,26 @@ JaCoPSolver::JaCoPSolver()
       "                               constraints have increased weight. \n",
       &JaCoPSolver::GetEnumOption, &JaCoPSolver::SetEnumOption,
       OptionInfo(VAR_SELECT, var_select_));
+
+  AddStrOption("val_select",
+      "Value selector.  Possible values:\n"
+      "      indomainmax          - select the maximal value in the domain\n"
+      "                             of the variable\n"
+      "      indomainmedian       - select the median value in the domain\n"
+      "                             of the variable and then right and left\n"
+      "                             values\n"
+      "      indomainmiddle       - select the middle value in the domain\n"
+      "                             of the variable and then right and left\n"
+      "                             values\n"
+      "      indomainmin          - select the minimal value in the domain\n"
+      "                             of the variable (default)\n"
+      "      indomainrandom       - select the random value in the domain\n"
+      "                             of the variable; can split domains into\n"
+      "                             multiple intervals\n"
+      "      indomainsimplerandom - similar to indomainrandom, but faster\n"
+      "                             and does not achieve uniform probability\n",
+      &JaCoPSolver::GetEnumOption, &JaCoPSolver::SetEnumOption,
+      OptionInfo(VAL_SELECT, val_select_));
 
   AddIntOption("timelimit", "Time limit in seconds.",
       &JaCoPSolver::GetIntOption, &JaCoPSolver::SetIntOption, &time_limit_);
@@ -435,10 +430,10 @@ void JaCoPSolver::Solve(Problem &p) {
   jmethodID setPrintInfo =
       env.GetMethod(dfs_class.get(), "setPrintInfo", "(Z)V");
   env.CallVoidMethod(search, setPrintInfo, JNI_FALSE);
-  // TODO: options to configure val_select
   jobject var_select = env.NewObject(
       (std::string("JaCoP/search/") + var_select_).c_str(), "()V");
-  jobject val_select = env.NewObject("JaCoP/search/IndomainMin", "()V");
+  jobject val_select = env.NewObject(
+      (std::string("JaCoP/search/") + val_select_).c_str(), "()V");
   jobject select = env.NewObject("JaCoP/search/SimpleSelect",
       "([LJaCoP/core/Var;LJaCoP/search/ComparatorVariable;"
       "LJaCoP/search/Indomain;)V", converter.var_array(),
@@ -459,7 +454,6 @@ void JaCoPSolver::Solve(Problem &p) {
            "(LJaCoP/search/ConsistencyListener;)V"), interrupter);
 
   // Set the limits.
-  // TODO: print solution log if outlev_ != 0
   Class<SimpleTimeOut> timeout_class;
   jobject timeout = timeout_class.NewObject(env);
   env.CallVoidMethod(search,
@@ -487,9 +481,8 @@ void JaCoPSolver::Solve(Problem &p) {
   }
 
   // Solve the problem.
-  // TODO
-  /*bool stopped = false;
-  header_ = str(fmt::Format("{:>10} {:>10} {:>10} {:>13}\n")
+  // TODO: print solution log if outlev_ != 0
+  /*header_ = str(fmt::Format("{:>10} {:>10} {:>10} {:>13}\n")
     << "Max Depth" << "Nodes" << "Fails" << (has_obj ? "Best Obj" : ""));*/
   jboolean found = false;
   bool interrupted = false;

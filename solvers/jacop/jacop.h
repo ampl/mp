@@ -415,6 +415,7 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   unsigned output_count_;
   std::string header_;*/
   const char *var_select_;
+  const char *val_select_;
   int time_limit_;  // Time limit in seconds.
   int node_limit_;
   int fail_limit_;
@@ -450,13 +451,6 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   // TODO
   /*void SetOutputFrequency(const char *name, int value);
 
-  template <typename T, typename OptionT>
-  void SetOption(const char *name, T value, OptionT *option);
-
-  void SetDblOption(const char *, double value, double *option) {
-    *option = value;
-  }
-
   fmt::TempFormatter<fmt::Write> Output(fmt::StringRef format);*/
 
  protected:
@@ -468,10 +462,6 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   JaCoPSolver();
 
   void Solve(Problem &p);
-
-  /*Gecode::IntVarBranch var_branching() const { return var_branching_; }
-  Gecode::IntValBranch val_branching() const { return val_branching_; }
-  const Gecode::Search::Options &options() const { return options_; }*/
 };
 }
 
