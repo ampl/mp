@@ -211,7 +211,7 @@ class NLToJaCoPConverter :
   explicit NLToJaCoPConverter();
 
   // Converts a logical constraint.
-  void ConvertLogicalCon(LogicalExpr e, bool post = true);
+  void ConvertLogicalCon(LogicalExpr e);
 
   void Convert(const Problem &p);
 
@@ -405,34 +405,16 @@ class NLToJaCoPConverter :
   }
 };
 
-// TODO
-/*template <typename Value>
-struct OptionValue {
-  const char *name;
-  Value value;
-};
-
-template <typename T>
-struct OptionInfo {
-  const OptionValue<T> *values;
-  T &value;
-
-  OptionInfo(const OptionValue<T> *values, T &value)
-  : values(values), value(value) {}
-};*/
-
 // JaCoP solver.
 class JaCoPSolver : public Solver<JaCoPSolver> {
  private:
   std::vector<std::string> jvm_options_;
   int outlev_;
+  // TODO
   /*double output_frequency_;
   unsigned output_count_;
-  std::string header_;
-
-  Gecode::IntVarBranch var_branching_;
-  Gecode::IntValBranch val_branching_;
-  Gecode::Search::Options options_;*/
+  std::string header_;*/
+  const char *var_select_;
   int time_limit_;  // Time limit in seconds.
   int node_limit_;
   int fail_limit_;
@@ -453,12 +435,20 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
     *option = value;
   }
 
-  /*void SetBoolOption(const char *name, int value, bool *option);
-  void SetOutputFrequency(const char *name, int value);
+  struct OptionInfo {
+    const char *const *values;
+    const char *&value;
 
-  template <typename T>
-  void SetStrOption(const char *name, const char *value,
-      const OptionInfo<T> &info);
+    OptionInfo(const char *const *values, const char *&value)
+    : values(values), value(value) {}
+  };
+
+  std::string GetEnumOption(const char *name, const OptionInfo &info) const;
+  void SetEnumOption(const char *name,
+      const char *value, const OptionInfo &info);
+
+  // TODO
+  /*void SetOutputFrequency(const char *name, int value);
 
   template <typename T, typename OptionT>
   void SetOption(const char *name, T value, OptionT *option);
@@ -467,8 +457,7 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
     *option = value;
   }
 
-  fmt::TempFormatter<fmt::Write> Output(fmt::StringRef format);
-*/
+  fmt::TempFormatter<fmt::Write> Output(fmt::StringRef format);*/
 
  protected:
   std::string GetOptionHeader();
