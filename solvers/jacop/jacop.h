@@ -92,7 +92,7 @@ CLASS_INFO(Alldiff, "JaCoP/constraints/Alldiff", "([LJaCoP/core/IntVar;)V")
 CLASS_INFO(DepthFirstSearch, "JaCoP/search/DepthFirstSearch", "()V")
 CLASS_INFO(SimpleTimeOut, "JaCoP/search/SimpleTimeOut", "()V")
 CLASS_INFO(InterruptSearch, "InterruptSearch", "()V")
-CLASS_INFO(Interrupter, "Interrupter", "()V")
+CLASS_INFO(Interrupter, "Interrupter", "(J)V")
 
 // Converter of constraint programming problems from NL to JaCoP format.
 class NLToJaCoPConverter :
@@ -410,10 +410,10 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
  private:
   std::vector<std::string> jvm_options_;
   int outlev_;
-  // TODO
-  /*double output_frequency_;
+  double output_frequency_;
+  double last_output_time_;
   unsigned output_count_;
-  std::string header_;*/
+  std::string header_;
   const char *var_select_;
   const char *val_select_;
   int time_limit_;  // Time limit in seconds.
@@ -421,6 +421,11 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   int fail_limit_;
   int backtrack_limit_;
   int decision_limit_;
+  Env env_;
+  jobject search_;
+  jmethodID get_depth_;
+  jmethodID get_nodes_;
+  jmethodID get_fails_;
 
   int GetIntOption(const char *, int *option) const { return *option; }
 
@@ -448,10 +453,13 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   void SetEnumOption(const char *name,
       const char *value, const OptionInfo &info);
 
-  // TODO
-  /*void SetOutputFrequency(const char *name, int value);
+  double GetOutputFrequency(const char *) const { return output_frequency_; }
+  void SetOutputFrequency(const char *name, double value);
 
-  fmt::TempFormatter<fmt::Write> Output(fmt::StringRef format);*/
+  // Prints the solution log entry if the time is right.
+  void PrintLogEntry();
+
+  static JNIEXPORT jboolean JNICALL Stop(JNIEnv *, jobject, jlong data);
 
  protected:
   std::string GetOptionHeader();
