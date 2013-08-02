@@ -157,7 +157,12 @@ class Env {
 
   void CallVoidMethod(jobject obj, jmethodID method, ...);
   jboolean CallBooleanMethod(jobject obj, jmethodID method, ...);
+
   jint CallIntMethod(jobject obj, jmethodID method, ...);
+
+  // Call an int method keeping any Java exception that has been thrown instead
+  // of translating it into a C++ exception.
+  jint CallIntMethodKeepException(jobject obj, jmethodID method, ...);
 
   jobjectArray NewObjectArray(jsize length,
       jclass elementClass, jobject initialElement) {

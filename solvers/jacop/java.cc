@@ -174,6 +174,16 @@ jint Env::CallIntMethod(jobject obj, jmethodID method, ...) {
   return result;
 }
 
+jint Env::CallIntMethodKeepException(jobject obj, jmethodID method, ...) {
+  std::va_list args;
+  va_start(args, method);
+  jint result = env_->CallIntMethodV(obj, method, args);
+  va_end(args);
+  if (env_->ExceptionOccurred())
+    throw JavaError("CallIntMethodV failed");
+  return result;
+}
+
 JVM::~JVM() {
   if (jvm_)
     jvm_->DestroyJavaVM();
