@@ -56,7 +56,7 @@ const char *SkipNonSpaces(const char *s) {
 namespace ampl {
 
 namespace internal {
-std::string Format(fmt::StringRef s, int indent) {
+std::string IndentAndWordWrap(fmt::StringRef s, int indent) {
   std::ostringstream os;
   bool new_line = true;
   int line_offset = 0;
@@ -177,7 +177,7 @@ bool BasicSolver::OptionNameLess::operator()(
 
 char *BasicSolver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
   BasicSolver *solver = static_cast<BasicSolver*>(oi);
-  std::string header = internal::Format(solver->GetOptionHeader());
+  std::string header = internal::IndentAndWordWrap(solver->GetOptionHeader());
   if (!header.empty())
     fmt::Print("{}\n") << header;
   fmt::Print("Directives:\n");
@@ -185,7 +185,7 @@ char *BasicSolver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
   const OptionMap &options = solver->options_;
   for (OptionMap::const_iterator i = options.begin(); i != options.end(); ++i) {
     fmt::Print("\n{}\n{}") << i->first
-        << internal::Format(i->second->description(), DESC_INDENT);
+        << internal::IndentAndWordWrap(i->second->description(), DESC_INDENT);
   }
   exit(0);
   return 0;
