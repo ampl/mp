@@ -49,6 +49,52 @@ class JavaError : public std::runtime_error {
   jthrowable exception() const { return exception_; }
 };
 
+class GlobalRef {
+ private:
+  JNIEnv *env_;
+  jobject obj_;
+
+  friend class Env;
+
+  explicit GlobalRef(JNIEnv *env, jobject obj) : env_(env), obj_(obj) {}
+
+  struct Proxy {
+    JNIEnv *env;
+    jobject obj;
+
+    Proxy(JNIEnv *env, jobject obj) : env(env), obj(obj) {}
+  };
+
+  GlobalRef(GlobalRef &);
+  GlobalRef &operator=(GlobalRef &);
+
+ public:
+  GlobalRef() : env_(), obj_() {}
+  GlobalRef(Proxy p) : env_(p.env), obj_(p.obj) {}
+  GlobalRef &operator=(Proxy p) {
+    GlobalRef temp(p);
+    temp.Swap(*this);
+    return *this;
+  }
+  ~GlobalRef() {
+    if (obj_)
+      env_->DeleteGlobalRef(obj_);
+  }
+
+  void Swap(GlobalRef &other) {
+    std::swap(env_, other.env_);
+    std::swap(obj_, other.obj_);
+  }
+
+  jobject get() const { return obj_; }
+
+  operator Proxy() {
+    Proxy p(env_, obj_);
+    obj_ = 0;
+    return p;
+  }
+};
+
 // Java Native Interface environment.
 class Env {
  private:
@@ -104,6 +150,10 @@ class Env {
   }
 
   jobject NewObject(const char *class_name, const char *ctor_sig, ...);
+
+  GlobalRef NewGlobalRef(jobject obj) {
+    return GlobalRef(env_, Check(env_->NewGlobalRef(obj), "NewGlobalRef"));
+  }
 
   void CallVoidMethod(jobject obj, jmethodID method, ...);
   jboolean CallBooleanMethod(jobject obj, jmethodID method, ...);
