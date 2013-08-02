@@ -403,22 +403,35 @@ void JaCoPSolver::PrintLogEntry() {
   if (time - last_output_time_ < output_frequency_)
     return;
   Output("{:10} {:10} {:10}\n")
-      << env_.CallIntMethod(search_.get(), get_depth_)
-      << env_.CallIntMethod(search_.get(), get_nodes_)
-      << env_.CallIntMethod(search_.get(), get_fails_);
+      << env_.CallIntMethodKeepException(search_.get(), get_depth_)
+      << env_.CallIntMethodKeepException(search_.get(), get_nodes_)
+      << env_.CallIntMethodKeepException(search_.get(), get_fails_);
   last_output_time_ = time;
 }
 
 void JaCoPSolver::PrintObjValue() {
-  if (outlev_ == 0)
-    return;
-  double value = env_.CallIntMethod(obj_var_.get(), value_);
-  Output("{:46}\n") << (obj_type_ == MIN ? value : -value);
+  try {
+    if (outlev_ == 0)
+      return;
+    jint value = env_.CallIntMethodKeepException(obj_var_.get(), value_);
+    Output("{:46}\n") << (obj_type_ == MIN ? value : -value);
+  } catch (const JavaError &) {
+    // This indicates that a Java exception has occurred and it will be
+    // re-thrown when the control returns to the Java code. Therefore the
+    // C++ JavaError exception is ignored here.
+  }
 }
 
 JNIEXPORT jboolean JNICALL JaCoPSolver::Stop(JNIEnv *, jobject, jlong data) {
-  reinterpret_cast<JaCoPSolver*>(data)->PrintLogEntry();
-  return SignalHandler::stop();
+  try {
+    reinterpret_cast<JaCoPSolver*>(data)->PrintLogEntry();
+    return SignalHandler::stop();
+  } catch (const JavaError &) {
+    // This indicates that a Java exception has occurred and it will be
+    // re-thrown when the control returns to the Java code. Therefore the
+    // C++ JavaError exception is ignored here.
+  }
+  return JNI_FALSE;
 }
 
 std::string JaCoPSolver::GetOptionHeader() {
