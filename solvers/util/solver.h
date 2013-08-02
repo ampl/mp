@@ -56,9 +56,11 @@ class ObjPrec {
 };
 
 namespace internal {
-// Formats a string by indenting it and performing word wrap.
-std::string Format(fmt::StringRef s, int indent = 0);
+// Indents a string and breaks it into lines of 78 characters or less
+// by word wrapping.
+std::string IndentAndWordWrap(fmt::StringRef s, int indent = 0);
 
+// A helper class for implementing an option of type T.
 template <typename T>
 struct OptionHelper;
 
@@ -182,7 +184,8 @@ class SolverOption {
   // Returns the option description.
   const char *description() const { return description_.c_str(); }
 
-  // Returns true if this is a keyword option not accepting values.
+  // Returns true if this is a keyword option, i.e. an option that
+  // doesn't take a value.
   bool is_keyword() const { return is_keyword_; }
 
   // Formats the option value. Throws OptionError in case of error.

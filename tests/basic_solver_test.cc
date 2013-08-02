@@ -73,7 +73,7 @@ TEST(SolverTest, Format) {
   EXPECT_EQ(
     "     This is a very long option description that should be indented and\n"
     "     wrapped.\n",
-    ampl::internal::Format(
+    ampl::internal::IndentAndWordWrap(
           "This is a very long option description "
           "that should be indented and wrapped.", 5));
 }
