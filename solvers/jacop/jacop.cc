@@ -296,8 +296,7 @@ JaCoPSolver::JaCoPSolver()
   var_select_("SmallestDomain"), val_select_("IndomainMin"),
   time_limit_(-1), node_limit_(-1), fail_limit_(-1),
   backtrack_limit_(-1), decision_limit_(-1),
-  search_(), get_depth_(), get_nodes_(), get_fails_(),
-  obj_var_(), obj_type_(MIN), value_() {
+  get_depth_(), get_nodes_(), get_fails_(), obj_type_(MIN), value_() {
 
   set_version("JaCoP " JACOP_VERSION);
 
@@ -404,16 +403,16 @@ void JaCoPSolver::PrintLogEntry() {
   if (time - last_output_time_ < output_frequency_)
     return;
   Output("{:10} {:10} {:10}\n")
-      << env_.CallIntMethod(search_, get_depth_)
-      << env_.CallIntMethod(search_, get_nodes_)
-      << env_.CallIntMethod(search_, get_fails_);
+      << env_.CallIntMethod(search_.get(), get_depth_)
+      << env_.CallIntMethod(search_.get(), get_nodes_)
+      << env_.CallIntMethod(search_.get(), get_fails_);
   last_output_time_ = time;
 }
 
 void JaCoPSolver::PrintObjValue() {
   if (outlev_ == 0)
     return;
-  double value = env_.CallIntMethod(obj_var_, value_);
+  double value = env_.CallIntMethod(obj_var_.get(), value_);
   Output("{:46}\n") << (obj_type_ == MIN ? value : -value);
 }
 
@@ -447,7 +446,7 @@ void JaCoPSolver::Solve(Problem &p) {
   converter.Convert(p);
 
   Class<DepthFirstSearch> dfs_class;
-  search_ = dfs_class.NewObject(env_);
+  search_ = env_.NewGlobalRef(dfs_class.NewObject(env_));
   if (!get_depth_) {
     get_depth_ = env_.GetMethod(dfs_class.get(), "getMaximumDepth", "()I");
     get_nodes_ = env_.GetMethod(dfs_class.get(), "getNodes", "()I");
@@ -455,7 +454,7 @@ void JaCoPSolver::Solve(Problem &p) {
   }
   jmethodID setPrintInfo =
       env_.GetMethod(dfs_class.get(), "setPrintInfo", "(Z)V");
-  env_.CallVoidMethod(search_, setPrintInfo, JNI_FALSE);
+  env_.CallVoidMethod(search_.get(), setPrintInfo, JNI_FALSE);
   jobject var_select = env_.NewObject(
       (std::string("JaCoP/search/") + var_select_).c_str(), "()V");
   jobject val_select = env_.NewObject(
@@ -478,7 +477,7 @@ void JaCoPSolver::Solve(Problem &p) {
   }
   jobject interrupter =
       interrupter_class.NewObject(env_, reinterpret_cast<long>(this));
-  env_.CallVoidMethod(search_,
+  env_.CallVoidMethod(search_.get(),
        env_.GetMethod(dfs_class.get(), "setConsistencyListener",
            "(LJaCoP/search/ConsistencyListener;)V"), interrupter);
 
@@ -494,10 +493,10 @@ void JaCoPSolver::Solve(Problem &p) {
     }
     jobject solution_listener =
         solution_listener_class.NewObject(env_, reinterpret_cast<long>(this));
-    env_.CallVoidMethod(search_,
+    env_.CallVoidMethod(search_.get(),
          env_.GetMethod(dfs_class.get(), "setSolutionListener",
              "(LJaCoP/search/SolutionListener;)V"), solution_listener);
-    obj_var_ = converter.obj();
+    obj_var_ = env_.NewGlobalRef(converter.obj());
     obj_type_ = p.obj_type(0);
   }
   jclass var_class = converter.var_class().get();
@@ -506,27 +505,27 @@ void JaCoPSolver::Solve(Problem &p) {
   // Set the limits.
   Class<SimpleTimeOut> timeout_class;
   jobject timeout = timeout_class.NewObject(env_);
-  env_.CallVoidMethod(search_,
+  env_.CallVoidMethod(search_.get(),
        env_.GetMethod(dfs_class.get(), "setTimeOutListener",
            "(LJaCoP/search/TimeOutListener;)V"), timeout);
   if (time_limit_ != -1) {
-    env_.CallVoidMethod(search_,
+    env_.CallVoidMethod(search_.get(),
          env_.GetMethod(dfs_class.get(), "setTimeOut", "(J)V"), time_limit_);
   }
   if (node_limit_ != -1) {
-    env_.CallVoidMethod(search_,
+    env_.CallVoidMethod(search_.get(),
          env_.GetMethod(dfs_class.get(), "setNodesOut", "(J)V"), node_limit_);
   }
   if (fail_limit_ != -1) {
-    env_.CallVoidMethod(search_, env_.GetMethod(
+    env_.CallVoidMethod(search_.get(), env_.GetMethod(
         dfs_class.get(), "setWrongDecisionsOut", "(J)V"), fail_limit_);
   }
   if (backtrack_limit_ != -1) {
-    env_.CallVoidMethod(search_, env_.GetMethod(
+    env_.CallVoidMethod(search_.get(), env_.GetMethod(
         dfs_class.get(), "setBacktracksOut", "(J)V"), backtrack_limit_);
   }
   if (decision_limit_ != -1) {
-    env_.CallVoidMethod(search_, env_.GetMethod(
+    env_.CallVoidMethod(search_.get(), env_.GetMethod(
         dfs_class.get(), "setDecisionsOut", "(J)V"), decision_limit_);
   }
 
@@ -542,12 +541,12 @@ void JaCoPSolver::Solve(Problem &p) {
           "(LJaCoP/core/Store;LJaCoP/search/SelectChoicePoint;"
           "LJaCoP/core/IntVar;)Z");
       found = env_.CallBooleanMethod(
-          search_, labeling, converter.store(), select, obj_var_);
+          search_.get(), labeling, converter.store(), select, obj_var_.get());
     } else {
       jmethodID labeling = env_.GetMethod(dfs_class.get(), "labeling",
           "(LJaCoP/core/Store;LJaCoP/search/SelectChoicePoint;)Z");
       found = env_.CallBooleanMethod(
-          search_, labeling, converter.store(), select);
+          search_.get(), labeling, converter.store(), select);
     }
   } catch (const JavaError &e) {
     // Check if exception is of class InterruptSearch which is used to
@@ -586,7 +585,7 @@ void JaCoPSolver::Solve(Problem &p) {
   std::vector<double> final_solution;
   if (found) {
     if (has_obj) {
-      obj_val = env_.CallIntMethod(obj_var_, value_);
+      obj_val = env_.CallIntMethod(obj_var_.get(), value_);
       if (p.obj_type(0) == MAX)
         obj_val = -obj_val;
     }
@@ -599,8 +598,8 @@ void JaCoPSolver::Solve(Problem &p) {
 
   fmt::Formatter format;
   format("{}: {}\n") << long_name() << status;
-  format("{} nodes, {} fails") << env_.CallIntMethod(search_, get_nodes_)
-      << env_.CallIntMethod(search_, get_fails_);
+  format("{} nodes, {} fails") << env_.CallIntMethod(search_.get(), get_nodes_)
+      << env_.CallIntMethod(search_.get(), get_fails_);
   if (has_obj && found)
     format(", objective {}") << ObjPrec(obj_val);
   BasicSolver::HandleSolution(format.c_str(),

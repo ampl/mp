@@ -423,11 +423,11 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   int backtrack_limit_;
   int decision_limit_;
   Env env_;
-  jobject search_;
+  GlobalRef search_;
   jmethodID get_depth_;
   jmethodID get_nodes_;
   jmethodID get_fails_;
-  jobject obj_var_;  // The variable holding the objective value.
+  GlobalRef obj_var_;  // The variable holding the objective value.
   ObjType obj_type_;
   jmethodID value_;
 
