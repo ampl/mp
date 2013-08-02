@@ -22,4 +22,4 @@ endif ()
 
 include(UseJava)
 set(CMAKE_JAVA_INCLUDE_PATH lib/JaCoP-3.2.jar)
-add_jar(jacopint Interrupter.java)
+add_jar(jacoplisteners Interrupter.java SolutionListener.java)

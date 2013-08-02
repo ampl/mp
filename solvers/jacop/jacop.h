@@ -93,6 +93,7 @@ CLASS_INFO(DepthFirstSearch, "JaCoP/search/DepthFirstSearch", "()V")
 CLASS_INFO(SimpleTimeOut, "JaCoP/search/SimpleTimeOut", "()V")
 CLASS_INFO(InterruptSearch, "InterruptSearch", "()V")
 CLASS_INFO(Interrupter, "Interrupter", "(J)V")
+CLASS_INFO(SolutionListener, "SolutionListener", "(J)V")
 
 // Converter of constraint programming problems from NL to JaCoP format.
 class NLToJaCoPConverter :
@@ -426,6 +427,9 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   jmethodID get_depth_;
   jmethodID get_nodes_;
   jmethodID get_fails_;
+  jobject obj_var_;  // The variable holding the objective value.
+  ObjType obj_type_;
+  jmethodID value_;
 
   int GetIntOption(const char *, int *option) const { return *option; }
 
@@ -456,10 +460,16 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   double GetOutputFrequency(const char *) const { return output_frequency_; }
   void SetOutputFrequency(const char *name, double value);
 
+  fmt::TempFormatter<fmt::Write> Output(fmt::StringRef format);
+
   // Prints the solution log entry if the time is right.
   void PrintLogEntry();
+  void PrintObjValue();
 
   static JNIEXPORT jboolean JNICALL Stop(JNIEnv *, jobject, jlong data);
+  static JNIEXPORT void JNICALL HandleSolution(JNIEnv *, jobject, jlong data) {
+    reinterpret_cast<JaCoPSolver*>(data)->PrintObjValue();
+  }
 
  protected:
   std::string GetOptionHeader();
