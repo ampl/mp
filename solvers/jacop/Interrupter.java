@@ -7,8 +7,13 @@ class InterruptSearch extends RuntimeException {}
  */
 public class Interrupter implements ConsistencyListener {
   private ConsistencyListener[] consistencyListeners;
+  private long data;
 
-  private static native boolean stop();
+  private static native boolean stop(long data);
+  
+  public Interrupter(long data) {
+    this.data = data;
+  }
 
   public void setChildrenListeners(ConsistencyListener[] children) {
     consistencyListeners = children;
@@ -19,7 +24,7 @@ public class Interrupter implements ConsistencyListener {
   }
 
   public boolean executeAfterConsistency(boolean consistent) {
-    if (stop())
+    if (stop(data))
       throw new InterruptSearch();
     if (consistencyListeners != null) {
       boolean code = false;
