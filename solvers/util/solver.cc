@@ -274,7 +274,7 @@ bool BasicSolver::ProcessArgs(char **&argv, unsigned flags) {
   return ParseOptions(argv, flags);
 }
 
-const SolverOption *BasicSolver::GetOption(const char *name) const {
+SolverOption *BasicSolver::FindOption(const char *name) const {
   OptionMap::const_iterator i = options_.find(name);
   if (i == options_.end())
     throw OptionError(fmt::Format("Unknown option \"{}\"") << name);
