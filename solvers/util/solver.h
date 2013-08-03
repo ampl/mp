@@ -56,6 +56,7 @@ class ObjPrec {
 };
 
 namespace internal {
+
 // Indents a string and breaks it into lines of 78 characters or less
 // by word wrapping.
 std::string IndentAndWordWrap(fmt::StringRef s, int indent = 0);
@@ -277,15 +278,25 @@ class BasicSolver
   };
 
   // Returns the option with specified name.
-  const SolverOption *GetOption(const char *name) const;
+  SolverOption *FindOption(const char *name) const;
 
   template <typename T>
-  T DoGetOption(const char *name) const {
+  T GetOptionValue(const char *name) const {
     const TypedSolverOption<T> *opt =
-        dynamic_cast<const TypedSolverOption<T> *>(GetOption(name));
+        dynamic_cast<TypedSolverOption<T> *>(FindOption(name));
     if (!opt)
       throw OptionTypeError(name, internal::OptionHelper<T>::TYPE_NAME);
     return opt->GetValue();
+  }
+
+  template <typename T>
+  void SetOptionValue(const char *name,
+      typename internal::OptionHelper<T>::Arg value) {
+    TypedSolverOption<T> *opt =
+        dynamic_cast<TypedSolverOption<T> *>(FindOption(name));
+    if (!opt)
+      throw OptionTypeError(name, internal::OptionHelper<T>::TYPE_NAME);
+    opt->SetValue(value);
   }
 
   static OptionError OptionTypeError(fmt::StringRef name, fmt::StringRef type) {
@@ -406,18 +417,38 @@ class BasicSolver
 
   // Returns the value of an integer option.
   // Throws OptionError if there is no such option or it has a different type.
-  int GetIntOption(const char *name) const { return DoGetOption<int>(name); }
+  int GetIntOption(const char *name) const {
+    return GetOptionValue<int>(name);
+  }
+
+  // Sets the value of an integer option.
+  // Throws OptionError if there is no such option or it has a different type.
+  void SetIntOption(const char *name, int value) {
+    SetOptionValue<int>(name, value);
+  }
 
   // Returns the value of a double option.
   // Throws OptionError if there is no such option or it has a different type.
   double GetDblOption(const char *name) const {
-    return DoGetOption<double>(name);
+    return GetOptionValue<double>(name);
+  }
+
+  // Sets the value of a double option.
+  // Throws OptionError if there is no such option or it has a different type.
+  void SetDblOption(const char *name, double value) {
+    SetOptionValue<double>(name, value);
   }
 
   // Returns the value of a string option.
   // Throws OptionError if there is no such option or it has a different type.
   std::string GetStrOption(const char *name) const {
-    return DoGetOption<std::string>(name);
+    return GetOptionValue<std::string>(name);
+  }
+
+  // Sets the value of a string option.
+  // Throws OptionError if there is no such option or it has a different type.
+  void SetStrOption(const char *name, const char *value) {
+    SetOptionValue<std::string>(name, value);
   }
 
   // Passes a solution to the solution handler.
