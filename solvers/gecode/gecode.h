@@ -339,7 +339,7 @@ class GecodeSolver : public Solver<GecodeSolver> {
     decay_ = value;
   }
 
-  void SetDblOption(const char *, double value, double *option) {
+  void DoSetDblOption(const char *, double value, double *option) {
     *option = value;
   }
 
