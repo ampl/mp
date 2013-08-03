@@ -51,6 +51,7 @@ extern "C" {
 
 using std::string;
 using Gecode::IntVarBranch;
+using ampl::InvalidOptionValue;
 
 namespace {
 
@@ -71,53 +72,6 @@ TEST_P(SolverTest, FloorSqrt) {
 TEST_P(SolverTest, SolveFlowshp2) {
   EXPECT_EQ(22, Solve("flowshp2").obj);
 }
-
-class GecodeSolverTest : public ::testing::Test {
- protected:
-  ampl::GecodeSolver solver_;
-
-  class ParseResult {
-   private:
-    bool result_;
-    string error_;
-
-    void True() const {}
-    typedef void (ParseResult::*SafeBool)() const;
-
-   public:
-    ParseResult(bool result, string error)
-    : result_(result), error_(error) {}
-
-    operator SafeBool() const { return result_ ? &ParseResult::True : 0; }
-
-    string error() const {
-      EXPECT_FALSE(result_);
-      return error_;
-    }
-  };
-
-  struct TestErrorHandler : ampl::ErrorHandler {
-    string error;
-    void HandleError(fmt::StringRef message) {
-      error += message.c_str();
-    }
-  };
-
-  ParseResult ParseOptions(const char *opt1, const char *opt2 = nullptr) {
-    TestErrorHandler eh;
-    solver_.set_error_handler(&eh);
-    bool result = solver_.ParseOptions(
-        Args(opt1, opt2), ampl::BasicSolver::NO_OPTION_ECHO);
-    if (result)
-      EXPECT_EQ("", eh.error);
-    return ParseResult(result, eh.error);
-  }
-
-  SolveResult Solve(const char *stub, const char *opt1 = nullptr,
-      const char *opt2 = nullptr, const char *opt3 = nullptr) {
-    return SolverTest::Solve(solver_, stub, opt1, opt2, opt3);
-  }
-};
 
 // ----------------------------------------------------------------------------
 // Interrupt tests
@@ -142,22 +96,30 @@ TEST_P(SolverTest, InterruptSolution) {
 // ----------------------------------------------------------------------------
 // Option tests
 
+class GecodeSolverTest : public ::testing::Test {
+ protected:
+  ampl::GecodeSolver solver_;
+
+  SolveResult Solve(const char *stub, const char *opt1 = nullptr,
+      const char *opt2 = nullptr, const char *opt3 = nullptr) {
+    return SolverTest::Solve(solver_, stub, opt1, opt2, opt3);
+  }
+};
+
 TEST_F(GecodeSolverTest, ADOption) {
   EXPECT_EQ(Gecode::Search::Options().a_d, solver_.options().a_d);
-  EXPECT_TRUE(ParseOptions("a_d=42"));
+  solver_.SetIntOption("a_d", 42);
   EXPECT_EQ(42u, solver_.options().a_d);
   EXPECT_EQ(42, solver_.GetIntOption("a_d"));
-  EXPECT_EQ("Invalid value \"-1\" for option \"a_d\"",
-      ParseOptions("a_d=-1").error());
+  EXPECT_THROW(solver_.SetIntOption("a_d", -1), InvalidOptionValue);
 }
 
 TEST_F(GecodeSolverTest, CDOption) {
   EXPECT_EQ(Gecode::Search::Options().c_d, solver_.options().c_d);
-  EXPECT_TRUE(ParseOptions("c_d=42"));
+  solver_.SetIntOption("c_d", 42);
   EXPECT_EQ(42u, solver_.options().c_d);
   EXPECT_EQ(42, solver_.GetIntOption("c_d"));
-  EXPECT_EQ("Invalid value \"-1\" for option \"c_d\"",
-      ParseOptions("c_d=-1").error());
+  EXPECT_THROW(solver_.SetIntOption("c_d", -1), InvalidOptionValue);
 }
 
 TEST_F(GecodeSolverTest, FailLimitOption) {
@@ -165,8 +127,7 @@ TEST_F(GecodeSolverTest, FailLimitOption) {
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_TRUE(message.find(" 11 fails") != string::npos);
   EXPECT_EQ(10, solver_.GetIntOption("faillimit"));
-  EXPECT_EQ("Invalid value \"-1\" for option \"faillimit\"",
-      ParseOptions("faillimit=-1").error());
+  EXPECT_THROW(solver_.SetIntOption("faillimit", -1), InvalidOptionValue);
 }
 
 TEST_F(GecodeSolverTest, NodeLimitOption) {
@@ -174,24 +135,22 @@ TEST_F(GecodeSolverTest, NodeLimitOption) {
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_TRUE(message.find("11 nodes") != string::npos);
   EXPECT_EQ(10, solver_.GetIntOption("nodelimit"));
-  EXPECT_EQ("Invalid value \"-1\" for option \"nodelimit\"",
-      ParseOptions("nodelimit=-1").error());
+  EXPECT_THROW(solver_.SetIntOption("nodelimit", -1), InvalidOptionValue);
 }
 
 TEST_F(GecodeSolverTest, TimeLimitOption) {
   Solve("miplib/assign1", "timelimit=0.1");
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_EQ(0.1, solver_.GetDblOption("timelimit"));
-  EXPECT_EQ("Invalid value \"-1\" for option \"timelimit\"",
-      ParseOptions("timelimit=-1").error());
+  EXPECT_THROW(solver_.SetDblOption("timelimit", -1), InvalidOptionValue);
 }
 
 TEST_F(GecodeSolverTest, ThreadsOption) {
   EXPECT_EQ(Gecode::Search::Options().threads, solver_.options().threads);
-  EXPECT_TRUE(ParseOptions("threads=0.5"));
+  solver_.SetDblOption("threads", 0.5);
   EXPECT_EQ(0.5, solver_.GetDblOption("threads"));
   EXPECT_EQ(0.5, solver_.options().threads);
-  EXPECT_TRUE(ParseOptions("threads=-10"));
+  solver_.SetDblOption("threads", -10);
   EXPECT_EQ(-10.0, solver_.options().threads);
 }
 
@@ -214,7 +173,7 @@ TEST_F(GecodeSolverTest, IntConLevelOption) {
   unsigned count = 0;
   for (const OptionValue<Gecode::IntConLevel>
       *p = INT_CON_LEVELS; p->name; ++p, ++count) {
-    EXPECT_TRUE(ParseOptions(c_str(fmt::Format("icl={}") << p->name)));
+    solver_.SetStrOption("icl", p->name);
     EXPECT_EQ(p->name, solver_.GetStrOption("icl"));
     EXPECT_EQ(p->value, solver_.icl());
   }
@@ -240,8 +199,7 @@ TEST_F(GecodeSolverTest, ValBranchingOption) {
   unsigned count = 0;
   for (const OptionValue<Gecode::IntValBranch>
       *p = VAL_BRANCHINGS; p->name; ++p, ++count) {
-    EXPECT_TRUE(ParseOptions(
-        c_str(fmt::Format("val_branching={}") << p->name)));
+    solver_.SetStrOption("val_branching", p->name);
     EXPECT_EQ(p->name, solver_.GetStrOption("val_branching"));
     EXPECT_EQ(p->value.select(), solver_.val_branching().select());
   }
@@ -281,8 +239,7 @@ TEST_F(GecodeSolverTest, VarBranchingOption) {
   unsigned count = 0;
   for (const OptionValue<IntVarBranch::Select>
       *p = VAR_BRANCHINGS; p->name; ++p, ++count) {
-    EXPECT_TRUE(ParseOptions(
-        c_str(fmt::Format("var_branching={}") << p->name)));
+    solver_.SetStrOption("var_branching", p->name);
     EXPECT_EQ(p->name, solver_.GetStrOption("var_branching"));
     EXPECT_EQ(p->value, solver_.var_branching());
   }
@@ -291,18 +248,16 @@ TEST_F(GecodeSolverTest, VarBranchingOption) {
 
 TEST_F(GecodeSolverTest, DecayOption) {
   EXPECT_EQ(1, solver_.decay());
-  EXPECT_TRUE(ParseOptions("decay=0.000001"));
+  solver_.SetDblOption("decay", 0.000001);
   EXPECT_EQ(0.000001, solver_.GetDblOption("decay"));
   EXPECT_EQ(0.000001, solver_.decay());
-  EXPECT_TRUE(ParseOptions("decay=0.5"));
+  solver_.SetDblOption("decay", 0.5);
   EXPECT_EQ(0.5, solver_.GetDblOption("decay"));
   EXPECT_EQ(0.5, solver_.decay());
-  EXPECT_TRUE(ParseOptions("decay=1"));
+  solver_.SetDblOption("decay", 1);
   EXPECT_EQ(1.0, solver_.decay());
-  EXPECT_EQ("Invalid value \"0\" for option \"decay\"",
-      ParseOptions("decay=0").error());
-  EXPECT_EQ("Invalid value \"1.1\" for option \"decay\"",
-      ParseOptions("decay=1.1").error());
+  EXPECT_THROW(solver_.SetDblOption("decay", 0), InvalidOptionValue);
+  EXPECT_THROW(solver_.SetDblOption("decay", 1.1), InvalidOptionValue);
 }
 
 TEST_F(GecodeSolverTest, OutLevOption) {
@@ -324,14 +279,12 @@ TEST_F(GecodeSolverTest, OutLevOption) {
       " Max Depth      Nodes      Fails      Best Obj\n"
       "                                            42\n", ReadFile("out"));
 
-  EXPECT_TRUE(ParseOptions("outlev=0"));
+  solver_.SetIntOption("outlev", 0);
   EXPECT_EQ(0, solver_.GetIntOption("outlev"));
-  EXPECT_TRUE(ParseOptions("outlev=1"));
+  solver_.SetIntOption("outlev", 1);
   EXPECT_EQ(1, solver_.GetIntOption("outlev"));
-  EXPECT_EQ("Invalid value \"-1\" for option \"outlev\"",
-      ParseOptions("outlev=-1").error());
-  EXPECT_EQ("Invalid value \"2\" for option \"outlev\"",
-      ParseOptions("outlev=2").error());
+  EXPECT_THROW(solver_.SetIntOption("outlev", -1), InvalidOptionValue);
+  EXPECT_THROW(solver_.SetIntOption("outlev", 2), InvalidOptionValue);
 }
 
 TEST_F(GecodeSolverTest, OutFreqOption) {
@@ -353,11 +306,9 @@ TEST_F(GecodeSolverTest, OutFreqOption) {
   out = ReadFile("out");
   EXPECT_EQ(5, std::count(out.begin(), out.end(), '\n'));
 
-  solver_.ParseOptions(Args("outfreq=1.23"));
+  solver_.SetDblOption("outfreq", 1.23);
   EXPECT_EQ(1.23, solver_.GetDblOption("outfreq"));
-  EXPECT_EQ("Invalid value \"-1\" for option \"outfreq\"",
-      ParseOptions("outfreq=-1").error());
-  EXPECT_EQ("Invalid value \"0\" for option \"outfreq\"",
-      ParseOptions("outfreq=0").error());
+  EXPECT_THROW(solver_.SetDblOption("outfreq", -1), InvalidOptionValue);
+  EXPECT_THROW(solver_.SetDblOption("outfreq", 0), InvalidOptionValue);
 }
 }

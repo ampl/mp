@@ -504,7 +504,7 @@ GecodeSolver::GecodeSolver()
       "      when n = −0.25 and m = 8, then 6 threads are used.\n"
       "All values are rounded and at least one thread is used.\n",
       &GecodeSolver::GetOption<double, double>,
-      &GecodeSolver::SetDblOption, &options_.threads);
+      &GecodeSolver::DoSetDblOption, &options_.threads);
 
   AddIntOption("c_d", "Commit recomputation distance.",
       &GecodeSolver::GetOption<int, unsigned>,
