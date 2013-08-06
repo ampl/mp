@@ -21,7 +21,13 @@
  */
 
 #include "tests/solver_test.h"
+#include "tests/config.h"
+
 #include <cmath>
+
+#ifdef HAVE_THREADS
+# include <thread>
+#endif
 
 using std::string;
 
@@ -799,3 +805,23 @@ TEST_P(SolverTest, InfeasibleSolveCode) {
   EXPECT_FALSE(Solve("infeasible").solved);
   EXPECT_EQ(200, solver_->problem().solve_code());
 }
+
+// ----------------------------------------------------------------------------
+// Interrupt tests
+
+#ifdef HAVE_THREADS
+void Interrupt() {
+  // Wait until started.
+  while (ampl::SignalHandler::stop())
+    std::this_thread::yield();
+  std::raise(SIGINT);
+}
+
+TEST_P(SolverTest, InterruptSolution) {
+  std::thread t(Interrupt);
+  string message = Solve("miplib/assign1").message;
+  t.join();
+  EXPECT_EQ(600, solver_->problem().solve_code());
+  EXPECT_TRUE(message.find("interrupted") != string::npos);
+}
+#endif

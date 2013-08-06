@@ -45,10 +45,6 @@ extern "C" {
 #include "tests/util.h"
 #include "tests/config.h"
 
-#ifdef HAVE_THREADS
-# include <thread>
-#endif
-
 using std::string;
 using Gecode::IntVarBranch;
 using ampl::InvalidOptionValue;
@@ -72,26 +68,6 @@ TEST_P(SolverTest, FloorSqrt) {
 TEST_P(SolverTest, SolveFlowshp2) {
   EXPECT_EQ(22, Solve("flowshp2").obj);
 }
-
-// ----------------------------------------------------------------------------
-// Interrupt tests
-
-#ifdef HAVE_THREADS
-void Interrupt() {
-  // Wait until started.
-  while (ampl::SignalHandler::stop())
-    std::this_thread::yield();
-  std::raise(SIGINT);
-}
-
-TEST_P(SolverTest, InterruptSolution) {
-  std::thread t(Interrupt);
-  string message = Solve("miplib/assign1").message;
-  t.join();
-  EXPECT_EQ(600, solver_->problem().solve_code());
-  EXPECT_TRUE(message.find("interrupted") != string::npos);
-}
-#endif
 
 // ----------------------------------------------------------------------------
 // Option tests
