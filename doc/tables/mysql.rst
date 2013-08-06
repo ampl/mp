@@ -104,28 +104,32 @@ Go to :ref:`usage`.
 MacOS X
 ~~~~~~~
 
-#. Install the MySQL Connector/ODBC as described `here
-   <http://dev.mysql.com/doc/refman/5.1/en/connector-odbc-installation.html#connector-odbc-installation-binary-macosx>`__,
-   skipping the outdated last step (driver registration).
+The easiest way to install the MySQL ODBC driver on Mac is by using an
+installer available for download as a DMG archive from the
+`Connector/ODBC download page on the MySQL website
+<http://dev.mysql.com/downloads/connector/odbc/#downloads>`__.
 
-#. Register the driver:
+Alternatively you can install the MySQL Connector/ODBC as described `here
+<http://dev.mysql.com/doc/refman/5.1/en/connector-odbc-installation.html#connector-odbc-installation-binary-macosx>`__,
+skipping the outdated last step (driver registration) and then register
+the driver with the following command:
 
-   .. code-block:: bash
+.. code-block:: bash
 
-      $ sudo myodbc-installer -d -a -n "MySQL" \
-          -t "DRIVER=/usr/local/lib/libmyodbc5a.so"
+   $ sudo myodbc-installer -d -a -n "MySQL" \
+       -t "DRIVER=/usr/local/lib/libmyodbc5w.so"
 
-   ``/usr/local/lib/libmyodbc5a.so`` is the path to the driver library
-   that you installed in the previous step. You might need to change it
-   if you have a different version of the driver or installed it in a
-   different location. See the name of the ``.so`` file in the ``lib``
-   directory of the installation package.
+``/usr/local/lib/libmyodbc5w.so`` is the path to the driver library
+that you installed in the previous step. You might need to change it
+if you have a different version of the driver or installed it in a
+different location. See the name of the ``.so`` file in the ``lib``
+directory of the installation package.
 
-   Note that the MySQL ODBC/Connector distribution does not include a
-   setup library. If you invoke ``myodbc-installer --help``, you may see an
-   outdated example with a ``SETUP`` attribute specifying a setup library.
-   Omit this attribute during the driver registration unless you have
-   installed a setup library from some other source.
+Note that the MySQL ODBC/Connector distribution does not include a
+setup library. If you invoke ``myodbc-installer --help``, you may see an
+outdated example with a ``SETUP`` attribute specifying a setup library.
+Omit this attribute during the driver registration unless you have
+installed a setup library from some other source.
 
 Go to :ref:`usage`.
 
