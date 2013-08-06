@@ -63,99 +63,20 @@ std::auto_ptr<ampl::BasicSolver> CreateSolver() {
 INSTANTIATE_TEST_CASE_P(JaCoP, SolverTest,
     ::testing::Values(SolverTestParam(CreateSolver, feature::POW)));
 
-// TODO: fix stackoverflow
-/*TEST_P(SolverTest, SolveBalassign0) {
-  EXPECT_EQ(14, Solve("balassign0").obj);
-}
-
-TEST_P(SolverTest, SolveBalassign1) {
-  EXPECT_EQ(14, Solve("balassign1").obj);
-}*/
-
 TEST_P(SolverTest, SolveFlowshp2) {
   EXPECT_EQ(22, Solve("flowshp2").obj);
 }
 
-/*class JaCoPSolverTest : public ::testing::Test {
+// TODO
+class JaCoPSolverTest : public ::testing::Test {
  protected:
   ampl::JaCoPSolver solver_;
-
-  class ParseResult {
-   private:
-    bool result_;
-    std::string error_;
-
-    void True() const {}
-    typedef void (ParseResult::*SafeBool)() const;
-
-   public:
-    ParseResult(bool result, std::string error)
-    : result_(result), error_(error) {}
-
-    operator SafeBool() const { return result_ ? &ParseResult::True : 0; }
-
-    std::string error() const {
-      EXPECT_FALSE(result_);
-      return error_;
-    }
-  };
-
-  struct TestErrorHandler : ampl::ErrorHandler {
-    std::string error;
-    void HandleError(fmt::StringRef message) {
-      error += message.c_str();
-    }
-  };
-
-  ParseResult ParseOptions(const char *opt1, const char *opt2 = nullptr) {
-    TestErrorHandler eh;
-    solver_.set_error_handler(&eh);
-    bool result = solver_.ParseOptions(
-        Args(opt1, opt2), solver_, ampl::BasicSolver::NO_OPTION_ECHO);
-    if (result)
-      EXPECT_EQ("", eh.error);
-    return ParseResult(result, eh.error);
-  }
 };
-
-// ----------------------------------------------------------------------------
-// Interrupt tests
-
-#ifdef HAVE_THREADS
-void Interrupt() {
-  // Wait until started.
-  while (ampl::SignalHandler::stop())
-    std::this_thread::yield();
-  std::raise(SIGINT);
-}
-
-TEST_F(JaCoPSolverTest, InterruptSolution) {
-  std::thread t(Interrupt);
-  std::string message = Solve("miplib/assign1").message;
-  t.join();
-  EXPECT_EQ(600, solver_.problem().solve_code());
-  EXPECT_TRUE(message.find("interrupted") != string::npos);
-}
-#endif
 
 // ----------------------------------------------------------------------------
 // Option tests
 
-TEST_F(JaCoPSolverTest, ADOption) {
-  EXPECT_EQ(Gecode::Search::Options().a_d, solver_.options().a_d);
-  EXPECT_TRUE(ParseOptions("a_d=42"));
-  EXPECT_EQ(42u, solver_.options().a_d);
-  EXPECT_EQ("Invalid value -1 for option a_d", ParseOptions("a_d=-1").error());
-}
-
-TEST_F(JaCoPSolverTest, CDOption) {
-  EXPECT_EQ(Gecode::Search::Options().c_d, solver_.options().c_d);
-  EXPECT_TRUE(ParseOptions("c_d=42"));
-  EXPECT_EQ(42u, solver_.options().c_d);
-  EXPECT_EQ("Invalid value -1 for option c_d", ParseOptions("c_d=-1").error());
-}
-
-TEST_F(JaCoPSolverTest, FailLimitOption) {
+/*TEST_F(JaCoPSolverTest, FailLimitOption) {
   std::string message =
       Solve("miplib/assign1", "faillimit=10").message;
   EXPECT_EQ(600, solver_.problem().solve_code());
@@ -185,14 +106,6 @@ TEST_F(JaCoPSolverTest, TimeLimitOption) {
   EXPECT_EQ(600, solver_.problem().solve_code());
   EXPECT_EQ("Invalid value -1 for option timelimit",
       ParseOptions("timelimit=-1").error());
-}
-
-TEST_F(JaCoPSolverTest, ThreadsOption) {
-  EXPECT_EQ(Gecode::Search::Options().threads, solver_.options().threads);
-  EXPECT_TRUE(ParseOptions("threads=0.5"));
-  EXPECT_EQ(0.5, solver_.options().threads);
-  EXPECT_TRUE(ParseOptions("threads=-10"));
-  EXPECT_EQ(-10.0, solver_.options().threads);
 }
 
 template <typename T>
