@@ -10,5 +10,5 @@ target_link_libraries(util ${SOLVER_LIBS})
 # Link with librt for clock_gettime (Linux on i386).
 find_library(RT_LIBRARY rt)
 if (RT_LIBRARY)
-  target_link_libraries(util ${SOLVER_LIBS})
+  target_link_libraries(util ${RT_LIBRARY})
 endif ()
