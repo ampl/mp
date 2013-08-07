@@ -418,11 +418,14 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   std::string header_;
   const char *var_select_;
   const char *val_select_;
-  int time_limit_;  // Time limit in seconds.
-  int node_limit_;
-  int fail_limit_;
-  int backtrack_limit_;
-  int decision_limit_;
+
+  // The limits must be jlong to comply with setters' signatures.
+  jlong time_limit_;  // Time limit in seconds.
+  jlong node_limit_;
+  jlong fail_limit_;
+  jlong backtrack_limit_;
+  jlong decision_limit_;
+
   Env env_;
   GlobalRef search_;
   jmethodID get_depth_;
@@ -432,9 +435,11 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   ObjType obj_type_;
   jmethodID value_;
 
-  int DoGetIntOption(const char *, int *option) const { return *option; }
+  template <typename T>
+  int DoGetIntOption(const char *, T *option) const { return *option; }
 
-  void DoSetIntOption(const char *name, int value, int *option) {
+  template <typename T>
+  void DoSetIntOption(const char *name, int value, T *option) {
     if (value < 0)
       throw InvalidOptionValue(name, value);
     *option = value;
