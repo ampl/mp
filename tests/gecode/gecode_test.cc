@@ -24,26 +24,12 @@
 #include <memory>
 #include <string>
 
-#include <csignal>
-#include <cstdlib>
-
 #include "gtest/gtest.h"
 
 #include "solvers/gecode/gecode.h"
-#include "solvers/util/expr.h"
 
-extern "C" {
-#include "solvers/asl.h"
-#include "solvers/nlp.h"
-#include "solvers/opcode.hd"
-}
-
-#include "tests/args.h"
-#include "tests/expr_builder.h"
-#include "tests/solution_handler.h"
 #include "tests/solver_test.h"
 #include "tests/util.h"
-#include "tests/config.h"
 
 using std::string;
 using Gecode::IntVarBranch;
