@@ -43,8 +43,8 @@ steady_clock::time_point steady_clock::now() {
     assert(0 && "mach_timebase_info failed");
     return time_point();
   }
-  return time_point(static_cast<rep>(
-      static_cast<double>(mach_absolute_time()) * info.numer / info.denom));
+  return time_point(duration(static_cast<rep>(
+      static_cast<double>(mach_absolute_time()) * info.numer / info.denom)));
 }
 
 #elif defined(WIN32)
@@ -68,7 +68,7 @@ steady_clock::time_point steady_clock::now() {
     assert(0 && "QueryPerformanceCounter failed");
     return time_point();
   }
-  return time_point(static_cast<rep>(count.QuadPart * NS_PER_COUNT));
+  return time_point(duration(static_cast<rep>(count.QuadPart * NS_PER_COUNT)));
 }
 
 #else
