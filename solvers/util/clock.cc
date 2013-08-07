@@ -44,8 +44,7 @@ steady_clock::time_point steady_clock::now() {
     return time_point();
   }
   return static_cast<steady_clock::rep>(
-      static_cast<double>(mach_absolute_time()) *
-      MachInfo.numer / MachInfo.denom);
+      static_cast<double>(mach_absolute_time()) * info.numer / info.denom);
 }
 
 #elif defined(WIN32)
