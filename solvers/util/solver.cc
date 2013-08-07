@@ -145,8 +145,8 @@ SignalHandler::SignalHandler(const BasicSolver &s, Interruptible *i) {
   signal_message_ptr_ = signal_message_.c_str();
   signal_message_size_ = static_cast<unsigned>(signal_message_.size());
   interruptible_ = i;
-  stop_ = 0;
   std::signal(SIGINT, HandleSigInt);
+  stop_ = 0;
 }
 
 void SignalHandler::HandleSigInt(int sig) {
