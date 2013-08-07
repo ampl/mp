@@ -23,6 +23,7 @@
 #ifndef AMPL_SOLVERS_JACOP_H
 #define AMPL_SOLVERS_JACOP_H
 
+#include "solvers/util/clock.h"
 #include "solvers/util/solver.h"
 #include "solvers/jacop/java.h"
 
@@ -412,7 +413,7 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   std::vector<std::string> jvm_options_;
   int outlev_;
   double output_frequency_;
-  double last_output_time_;
+  steady_clock::time_point last_output_time_;
   unsigned output_count_;
   std::string header_;
   const char *var_select_;
@@ -431,9 +432,9 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   ObjType obj_type_;
   jmethodID value_;
 
-  int GetIntOption(const char *, int *option) const { return *option; }
+  int DoGetIntOption(const char *, int *option) const { return *option; }
 
-  void SetIntOption(const char *name, int value, int *option) {
+  void DoSetIntOption(const char *name, int value, int *option) {
     if (value < 0)
       throw InvalidOptionValue(name, value);
     *option = value;
