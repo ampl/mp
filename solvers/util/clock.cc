@@ -43,8 +43,8 @@ steady_clock::time_point steady_clock::now() {
     assert(0 && "mach_timebase_info failed");
     return time_point();
   }
-  return static_cast<steady_clock::rep>(
-      static_cast<double>(mach_absolute_time()) * info.numer / info.denom);
+  return time_point(static_cast<rep>(
+      static_cast<double>(mach_absolute_time()) * info.numer / info.denom));
 }
 
 #elif defined(WIN32)
@@ -52,15 +52,23 @@ steady_clock::time_point steady_clock::now() {
 double GetNanosecondsPerCount() {
   LARGE_INTEGER freq;
   typedef steady_clock::period period;
-  return QueryPerformanceFrequency(&freq) ?
-      static_cast<double>(period::den) / period::num / freq.QuadPart : 0;
+  if (!QueryPerformanceFrequency(&freq)) {
+    assert(0 && "QueryPerformanceFrequency failed");
+    return 0;
+  }
+  return static_cast<double>(period::den) / period::num / freq.QuadPart;
 }
 
 steady_clock::time_point steady_clock::now() {
   static const double NS_PER_COUNT = GetNanosecondsPerCount();
+  if (!NS_PER_COUNT)
+    return time_point();
   LARGE_INTEGER count;
-  return time_point(NS_PER_COUNT && QueryPerformanceCounter(&count) ?
-      static_cast<rep>(count.QuadPart * NS_PER_COUNT) : 0);
+  if (!QueryPerformanceCounter(&count)) {
+    assert(0 && "QueryPerformanceCounter failed");
+    return time_point();
+  }
+  return time_point(static_cast<rep>(count.QuadPart * NS_PER_COUNT));
 }
 
 #else
