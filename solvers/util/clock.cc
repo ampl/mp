@@ -26,8 +26,7 @@
 #include <cassert>
 
 #if defined(__APPLE__)
-# include <mach/clock.h>
-# include <mach/mach.h>
+# include <mach/mach_time.h>
 #elif defined(WIN32)
 # include <windows.h>
 #else
