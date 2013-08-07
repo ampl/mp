@@ -292,7 +292,7 @@ void JaCoPSolver::HandleUnknownOption(const char *name) {
 
 JaCoPSolver::JaCoPSolver()
 : Solver<JaCoPSolver>("jacop", 0, 20130701),
-  outlev_(0), output_frequency_(1), last_output_time_(0), output_count_(0),
+  outlev_(0), output_frequency_(1), output_count_(0),
   var_select_("SmallestDomain"), val_select_("IndomainMin"),
   time_limit_(-1), node_limit_(-1), fail_limit_(-1),
   backtrack_limit_(-1), decision_limit_(-1),
@@ -305,7 +305,7 @@ JaCoPSolver::JaCoPSolver()
       &JaCoPSolver::GetOutputFrequency, &JaCoPSolver::SetOutputFrequency);
 
   AddIntOption("outlev", "0 or 1 (default 0):  Whether to print solution log.",
-      &JaCoPSolver::GetIntOption, &JaCoPSolver::SetBoolOption, &outlev_);
+      &JaCoPSolver::DoGetIntOption, &JaCoPSolver::SetBoolOption, &outlev_);
 
   AddStrOption("var_select",
       "Variable selector.  Possible values:\n"
@@ -359,16 +359,17 @@ JaCoPSolver::JaCoPSolver()
       OptionInfo(VAL_SELECT, val_select_));
 
   AddIntOption("timelimit", "Time limit in seconds.",
-      &JaCoPSolver::GetIntOption, &JaCoPSolver::SetIntOption, &time_limit_);
+      &JaCoPSolver::DoGetIntOption, &JaCoPSolver::DoSetIntOption, &time_limit_);
   AddIntOption("nodelimit", "Node limit.",
-      &JaCoPSolver::GetIntOption, &JaCoPSolver::SetIntOption, &node_limit_);
+      &JaCoPSolver::DoGetIntOption, &JaCoPSolver::DoSetIntOption, &node_limit_);
   AddIntOption("faillimit", "Fail (wrong decision) limit.",
-      &JaCoPSolver::GetIntOption, &JaCoPSolver::SetIntOption, &fail_limit_);
+      &JaCoPSolver::DoGetIntOption, &JaCoPSolver::DoSetIntOption, &fail_limit_);
   AddIntOption("backtracklimit", "Backtrack limit.",
-      &JaCoPSolver::GetIntOption, &JaCoPSolver::SetIntOption,
+      &JaCoPSolver::DoGetIntOption, &JaCoPSolver::DoSetIntOption,
       &backtrack_limit_);
   AddIntOption("decisionlimit", "Decision limit.",
-      &JaCoPSolver::GetIntOption, &JaCoPSolver::SetIntOption, &decision_limit_);
+      &JaCoPSolver::DoGetIntOption, &JaCoPSolver::DoSetIntOption,
+      &decision_limit_);
 }
 
 std::string JaCoPSolver::GetEnumOption(
@@ -399,9 +400,11 @@ fmt::TempFormatter<fmt::Write> JaCoPSolver::Output(fmt::StringRef format) {
 void JaCoPSolver::PrintLogEntry() {
   if (outlev_ == 0)
     return;
-  double time = xectim_();
-  if (time - last_output_time_ < output_frequency_)
+  steady_clock::time_point time = steady_clock::now();
+  if (duration_cast< duration<double> >(time - last_output_time_).count()
+      < output_frequency_) {
     return;
+  }
   Output("{:10} {:10} {:10}\n")
       << env_.CallIntMethodKeepException(search_.get(), get_depth_)
       << env_.CallIntMethodKeepException(search_.get(), get_nodes_)
@@ -543,11 +546,11 @@ void JaCoPSolver::Solve(Problem &p) {
   }
 
   // Solve the problem.
-  last_output_time_ = negInfinity;
   header_ = str(fmt::Format("{:>10} {:>10} {:>10} {:>13}\n")
     << "Max Depth" << "Nodes" << "Fails" << (has_obj ? "Best Obj" : ""));
   jboolean found = false;
   bool interrupted = false;
+  last_output_time_ = steady_clock::now();
   try {
     if (has_obj) {
       jmethodID labeling = env_.GetMethod(dfs_class.get(), "labeling",
@@ -577,15 +580,13 @@ void JaCoPSolver::Solve(Problem &p) {
   // Convert solution status.
   const char *status = 0;
   int solve_code = 0;
-  if (!found) {
-    if (interrupted || env_.GetBooleanField(timeout,
-        env_.GetFieldID(timeout_class.get(), "timeOutOccurred", "Z"))) {
-      solve_code = 600;
-      status = "interrupted";
-    } else {
-      solve_code = 200;
-      status = "infeasible problem";
-    }
+  if (interrupted || env_.GetBooleanField(timeout,
+      env_.GetFieldID(timeout_class.get(), "timeOutOccurred", "Z"))) {
+    solve_code = 600;
+    status = "interrupted";
+  } else if (!found) {
+    solve_code = 200;
+    status = "infeasible problem";
   } else if (has_obj) {
     solve_code = 0;
     status = "optimal solution";
