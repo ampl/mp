@@ -2,7 +2,7 @@
  Clock classes similar to the ones from the C++11 time library (chrono),
  but with a reduced API. The goal is to eventually migrate to C++11.
 
- Copyright (C) 2012 AMPL Optimization LLC
+ Copyright (C) 2013 AMPL Optimization LLC
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
@@ -23,11 +23,6 @@
 
 #ifndef SOLVERS_UTIL_CLOCK_H_
 #define SOLVERS_UTIL_CLOCK_H_
-
-#include <cassert>
-#include <time.h>
-
-#include "solvers/util/error.h"
 
 namespace ampl {
 
@@ -90,12 +85,7 @@ struct steady_clock {
   typedef ampl::duration<rep, period> duration;
   typedef ampl::time_point<steady_clock> time_point;
 
-  static time_point now() noexcept {
-    timespec ts;
-    assert(!clock_gettime(CLOCK_MONOTONIC, &ts));
-    return time_point(duration(
-        static_cast<rep>(ts.tv_sec) * 1000000000 + ts.tv_nsec));
-  }
+  static time_point now() noexcept;
 };
 }
 
