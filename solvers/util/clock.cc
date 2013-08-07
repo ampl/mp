@@ -25,7 +25,10 @@
 
 #include <cassert>
 
-#ifdef WIN32
+#if defined(__APPLE__)
+# include <mach/clock.h>
+# include <mach/mach.h>
+#elif defined(WIN32)
 # include <windows.h>
 #else
 # include <time.h>
@@ -33,16 +36,29 @@
 
 namespace ampl {
 
-#ifdef WIN32
+#if defined(__APPLE__)
 
-double GetNanosecondsPerCount() noexcept {
+steady_clock::time_point steady_clock::now() {
+  mach_timebase_info_data_t info;
+  if (mach_timebase_info(&info)) {
+    assert(0 && "mach_timebase_info failed");
+    return time_point();
+  }
+  return static_cast<steady_clock::rep>(
+      static_cast<double>(mach_absolute_time()) *
+      MachInfo.numer / MachInfo.denom);
+}
+
+#elif defined(WIN32)
+
+double GetNanosecondsPerCount() {
   LARGE_INTEGER freq;
   typedef steady_clock::period period;
   return QueryPerformanceFrequency(&freq) ?
       static_cast<double>(period::den) / period::num / freq.QuadPart : 0;
 }
 
-static steady_clock::time_point steady_clock::now() noexcept {
+steady_clock::time_point steady_clock::now() {
   static const double NS_PER_COUNT = GetNanosecondsPerCount();
   LARGE_INTEGER count;
   return time_point(NS_PER_COUNT && QueryPerformanceCounter(&count) ?
@@ -51,9 +67,10 @@ static steady_clock::time_point steady_clock::now() noexcept {
 
 #else
 
-steady_clock::time_point steady_clock::now() noexcept {
+steady_clock::time_point steady_clock::now() {
   timespec ts;
-  assert(!clock_gettime(CLOCK_MONOTONIC, &ts));
+  if (clock_gettime(CLOCK_MONOTONIC, &ts))
+    assert(0 && "clock_gettime failed");
   return time_point(duration(
       static_cast<rep>(ts.tv_sec) * 1000000000 + ts.tv_nsec));
 }

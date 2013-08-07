@@ -32,6 +32,12 @@ struct ratio {
   static const int den = D;
 };
 
+template <int N, int D>
+const int ratio<N, D>::num;
+
+template <int N, int D>
+const int ratio<N, D>::den;
+
 // A time span.
 template <typename Rep, typename Period = ratio<1> >
 class duration {
@@ -85,7 +91,7 @@ struct steady_clock {
   typedef ampl::duration<rep, period> duration;
   typedef ampl::time_point<steady_clock> time_point;
 
-  static time_point now() noexcept;
+  static time_point now(); //noexcept
 };
 }
 
