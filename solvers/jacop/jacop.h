@@ -411,7 +411,7 @@ class NLToJaCoPConverter :
 class JaCoPSolver : public Solver<JaCoPSolver> {
  private:
   std::vector<std::string> jvm_options_;
-  int outlev_;
+  jlong outlev_;
   double output_frequency_;
   steady_clock::time_point last_output_time_;
   unsigned output_count_;
@@ -435,17 +435,15 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   ObjType obj_type_;
   jmethodID value_;
 
-  template <typename T>
-  int DoGetIntOption(const char *, T *option) const { return *option; }
+  int DoGetIntOption(const char *, jlong *option) const { return *option; }
 
-  template <typename T>
-  void DoSetIntOption(const char *name, int value, T *option) {
+  void DoSetIntOption(const char *name, int value, jlong *option) {
     if (value < 0)
       throw InvalidOptionValue(name, value);
     *option = value;
   }
 
-  void SetBoolOption(const char *name, int value, int *option) {
+  void SetBoolOption(const char *name, int value, jlong *option) {
     if (value != 0 && value != 1)
       throw InvalidOptionValue(name, value);
     *option = value;
