@@ -91,7 +91,7 @@ struct steady_clock {
   typedef ampl::duration<rep, period> duration;
   typedef ampl::time_point<steady_clock> time_point;
 
-  static time_point now(); //noexcept
+  static time_point now(); // noexcept
 };
 }
 
