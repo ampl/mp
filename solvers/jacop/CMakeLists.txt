@@ -22,4 +22,5 @@ endif ()
 
 include(UseJava)
 set(CMAKE_JAVA_INCLUDE_PATH lib/JaCoP-3.2.jar)
-add_jar(jacoplisteners Interrupter.java SolutionListener.java)
+set(CMAKE_JAVA_TARGET_OUTPUT_NAME ampljacop)
+add_jar(ampljacop_jar Interrupter.java SolutionListener.java)
