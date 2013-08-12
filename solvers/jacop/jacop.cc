@@ -455,7 +455,7 @@ void JaCoPSolver::Solve(Problem &p) {
     jvm_options[i] = jvm_options_[i].c_str();
   jvm_options[jvm_options_.size()] =
       "-Djava.class.path=JaCoP-" JACOP_VERSION ".jar" AMPL_CLASSPATH_SEP
-      "lib/JaCoP-3.2.jar" AMPL_CLASSPATH_SEP "jacoplisteners.jar";
+      "lib/JaCoP-3.2.jar" AMPL_CLASSPATH_SEP "ampljacop.jar";
   env_ = JVM::env(&jvm_options[0]);
 
   // Set up an optimization problem in JaCoP.
