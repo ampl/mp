@@ -149,24 +149,22 @@ TEST_F(JaCoPSolverTest, VarSelectOption) {
   EXPECT_EQ(11u, count);
 }
 
-/*TEST_F(JaCoPSolverTest, OutLevOption) {
-  EXPECT_EXIT({
-    FILE *f = freopen("out", "w", stdout);
-    Solve("objconstint");
-    fclose(f);
-    _exit(0);
-  }, ::testing::ExitedWithCode(0), "");
-  EXPECT_EQ("", ReadFile("out"));
+struct TestOutputHandler : public ampl::OutputHandler {
+  std::string output;
+  void HandleOutput(fmt::StringRef output) { this->output += output; }
+};
 
-  EXPECT_EXIT({
-    FILE *f = freopen("out", "w", stdout);
-    Solve("objconstint", "outlev=1");
-    fclose(f);
-    _exit(0);
-  }, ::testing::ExitedWithCode(0), "");
+TEST_F(JaCoPSolverTest, OutLevOption) {
+  TestOutputHandler h;
+  solver_.set_output_handler(&h);
+  Solve("objconstint");
+  EXPECT_EQ("", h.output);
+
+  h.output.clear();
+  Solve("objconstint", "outlev=1");
   EXPECT_EQ("outlev=1\n"
       " Max Depth      Nodes      Fails      Best Obj\n"
-      "                                            42\n", ReadFile("out"));
+      "                                            42\n", h.output);
 
   solver_.SetIntOption("outlev", 0);
   EXPECT_EQ(0, solver_.GetIntOption("outlev"));
@@ -177,27 +175,20 @@ TEST_F(JaCoPSolverTest, VarSelectOption) {
 }
 
 TEST_F(JaCoPSolverTest, OutFreqOption) {
-  EXPECT_EXIT({
-    FILE *f = freopen("out", "w", stdout);
-    Solve("party1", "outlev=1", "outfreq=0.4", "timelimit=1");
-    fclose(f);
-    _exit(0);
-  }, ::testing::ExitedWithCode(0), "");
-  string out = ReadFile("out");
+  TestOutputHandler h;
+  solver_.set_output_handler(&h);
+  Solve("party1", "outlev=1", "outfreq=0.4", "timelimit=1");
+  string out = h.output;
   EXPECT_EQ(6, std::count(out.begin(), out.end(), '\n'));
 
-  EXPECT_EXIT({
-    FILE *f = freopen("out", "w", stdout);
-    Solve("party1", "outlev=1", "outfreq=0.8", "timelimit=1");
-    fclose(f);
-    _exit(0);
-  }, ::testing::ExitedWithCode(0), "");
-  out = ReadFile("out");
+  h.output.clear();
+  Solve("party1", "outlev=1", "outfreq=0.8", "timelimit=1");
+  out = h.output;
   EXPECT_EQ(5, std::count(out.begin(), out.end(), '\n'));
 
   solver_.SetDblOption("outfreq", 1.23);
   EXPECT_EQ(1.23, solver_.GetDblOption("outfreq"));
   EXPECT_THROW(solver_.SetDblOption("outfreq", -1), InvalidOptionValue);
   EXPECT_THROW(solver_.SetDblOption("outfreq", 0), InvalidOptionValue);
-}*/
+}
 }
