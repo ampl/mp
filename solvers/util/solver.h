@@ -104,6 +104,15 @@ class ErrorHandler {
   virtual void HandleError(fmt::StringRef message) = 0;
 };
 
+// An interface for receiving solver output.
+class OutputHandler {
+ protected:
+  ~OutputHandler() {}
+
+ public:
+  virtual void HandleOutput(fmt::StringRef output) = 0;
+};
+
 // An interface for receiving solutions.
 class SolutionHandler {
  protected:
@@ -227,7 +236,8 @@ class TypedSolverOption : public SolverOption {
 
 // Base class for all solver classes.
 class BasicSolver
-  : private ErrorHandler, private SolutionHandler, private Option_Info {
+  : private ErrorHandler, private OutputHandler,
+    private SolutionHandler, private Option_Info {
  private:
   Problem problem_;
 
@@ -237,6 +247,7 @@ class BasicSolver
   std::string version_;
 
   bool has_errors_;
+  OutputHandler *output_handler_;
   ErrorHandler *error_handler_;
   SolutionHandler *sol_handler_;
 
@@ -252,6 +263,10 @@ class BasicSolver
   keyword cl_option_;  // command-line option '='
 
   static char *PrintOptionsAndExit(Option_Info *oi, keyword *kw, char *value);
+
+  void HandleOutput(fmt::StringRef output) {
+    std::fputs(output.c_str(), stdout);
+  }
 
   void HandleError(fmt::StringRef message) {
     std::fputs(message.c_str(), stderr);
@@ -332,7 +347,7 @@ class BasicSolver
 
   void AddOption(SolverOptionPtr opt) {
     // First insert the option, then release a pointer to it. Doing the other
-    // way around may lead to a memory leak if insertion throws.
+    // way around may lead to a memory leak if insertion throws an exception.
     options_[opt->name()] = opt.get();
     opt.release();
   }
@@ -345,6 +360,20 @@ class BasicSolver
     suf_declare_ASL(reinterpret_cast<ASL*>(problem_.asl_),
         suffixes, num_suffixes);
   }
+
+  class Printer {
+   private:
+    OutputHandler *handler_;
+
+   public:
+    Printer(OutputHandler *h) : handler_(h) {}
+
+    void operator()(const fmt::Formatter &f) const {
+      handler_->HandleOutput(fmt::StringRef(f.c_str(), f.size()));
+    }
+  };
+
+  Printer MakePrinter() { return Printer(output_handler_); }
 
  public:
   virtual ~BasicSolver();
@@ -395,6 +424,12 @@ class BasicSolver
 
   // Sets the error handler.
   void set_error_handler(ErrorHandler *eh) { error_handler_ = eh; }
+
+  // Returns the output handler.
+  OutputHandler *output_handler() { return output_handler_; }
+
+  // Sets the output handler.
+  void set_output_handler(OutputHandler *oh) { output_handler_ = oh; }
 
   // Returns the solution handler.
   SolutionHandler *solution_handler() { return sol_handler_; }
@@ -463,7 +498,11 @@ class BasicSolver
   fmt::TempFormatter<ErrorReporter> ReportError(fmt::StringRef format) {
     has_errors_ = true;
     return fmt::TempFormatter<ErrorReporter>(
-        format.c_str(), ErrorReporter(error_handler_));
+        format, ErrorReporter(error_handler_));
+  }
+
+  fmt::TempFormatter<Printer> Print(fmt::StringRef format) {
+    return fmt::TempFormatter<Printer>(format, Printer(output_handler_));
   }
 
   // Solves a problem.
