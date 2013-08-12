@@ -85,6 +85,7 @@ if (JACOP_PATH)
   find_package(Java)
   if (JNI_FOUND AND JAVA_FOUND)
     set(HAVE_JACOP 1)
+    set(get_jacop_version solvers/jacop/jacop -v >> versions)
   endif ()
 endif ()
 
@@ -140,6 +141,7 @@ endif ()
 add_custom_target(versions cmake -E remove versions
   COMMAND ${get_amplgsl_version} COMMAND ${get_ampltabl_version}
   COMMAND ${get_cbc_version} COMMAND ${get_gecode_version}
+  COMMAND ${get_jacop_version}
   DEPENDS tables/amplodbc.c)
 
 enable_testing()
