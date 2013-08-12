@@ -32,6 +32,7 @@
 #endif
 
 using ampl::BasicSolver;
+using ampl::OptionError;
 using ampl::Problem;
 using ampl::Solver;
 using ampl::SolverOption;
@@ -183,6 +184,8 @@ TEST(SolverTest, ErrorHandler) {
   s.ReportError("test message");
   EXPECT_EQ("test message", eh.message);
 }
+
+// TODO: test output handler
 
 TEST(SolverTest, SolutionHandler) {
   TestSolutionHandler sh;
@@ -663,7 +666,7 @@ TEST(SolverTest, ParseOptionsHandlesOptionErrorsInParse) {
     void Parse(const char *&s) {
       while (*s && !std::isspace(*s))
         ++s;
-      throw ampl::OptionError("test message");
+      throw OptionError("test message");
     }
   };
   TestSolver s;
@@ -721,11 +724,57 @@ TEST(SolverTest, IntOptions) {
   EXPECT_EQ(7, s.intopt2);
 }
 
+TEST(SolverTest, GetIntOption) {
+  TestSolverWithOptions test_solver;
+  BasicSolver &s = test_solver;
+  EXPECT_EQ(0, s.GetIntOption("intopt1"));
+  test_solver.intopt1 = 42;
+  EXPECT_EQ(42, s.GetIntOption("intopt1"));
+  EXPECT_THROW(s.GetDblOption("intopt1"), OptionError);
+  EXPECT_THROW(s.GetStrOption("intopt1"), OptionError);
+  EXPECT_THROW(s.GetIntOption("badopt"), OptionError);
+}
+
+TEST(SolverTest, SetIntOption) {
+  TestSolverWithOptions test_solver;
+  BasicSolver &s = test_solver;
+  s.SetIntOption("intopt1", 11);
+  EXPECT_EQ(11, test_solver.intopt1);
+  s.SetIntOption("intopt1", 42);
+  EXPECT_EQ(42, test_solver.intopt1);
+  EXPECT_THROW(s.SetDblOption("intopt1", 0), OptionError);
+  EXPECT_THROW(s.SetStrOption("intopt1", ""), OptionError);
+  EXPECT_THROW(s.SetIntOption("badopt", 0), OptionError);
+}
+
 TEST(SolverTest, DblOptions) {
   TestSolverWithOptions s;
   EXPECT_TRUE(s.ParseOptions(Args("dblopt2=1.3", "dblopt1=5.4")));
   EXPECT_EQ(5.4, s.dblopt1);
   EXPECT_EQ(1.3, s.dblopt2);
+}
+
+TEST(SolverTest, GetDblOption) {
+  TestSolverWithOptions test_solver;
+  BasicSolver &s = test_solver;
+  EXPECT_EQ(0, s.GetDblOption("dblopt1"));
+  test_solver.dblopt1 = 42;
+  EXPECT_EQ(42, s.GetDblOption("dblopt1"));
+  EXPECT_THROW(s.GetIntOption("dblopt1"), OptionError);
+  EXPECT_THROW(s.GetStrOption("dblopt1"), OptionError);
+  EXPECT_THROW(s.GetDblOption("badopt"), OptionError);
+}
+
+TEST(SolverTest, SetDblOption) {
+  TestSolverWithOptions test_solver;
+  BasicSolver &s = test_solver;
+  s.SetDblOption("dblopt1", 1.1);
+  EXPECT_EQ(1.1, test_solver.dblopt1);
+  s.SetDblOption("dblopt1", 4.2);
+  EXPECT_EQ(4.2, test_solver.dblopt1);
+  EXPECT_THROW(s.SetIntOption("dblopt1", 0), OptionError);
+  EXPECT_THROW(s.SetStrOption("dblopt1", ""), OptionError);
+  EXPECT_THROW(s.SetDblOption("badopt", 0), OptionError);
 }
 
 TEST(SolverTest, StrOptions) {
@@ -735,37 +784,27 @@ TEST(SolverTest, StrOptions) {
   EXPECT_EQ("def", s.stropt2);
 }
 
-TEST(SolverTest, GetIntOption) {
-  TestSolverWithOptions test_solver;
-  BasicSolver &s = test_solver;
-  EXPECT_EQ(0, s.GetIntOption("intopt1"));
-  test_solver.intopt1 = 42;
-  EXPECT_EQ(42, s.GetIntOption("intopt1"));
-  EXPECT_THROW(s.GetDblOption("intopt1"), ampl::OptionError);
-  EXPECT_THROW(s.GetStrOption("intopt1"), ampl::OptionError);
-  EXPECT_THROW(s.GetIntOption("badopt"), ampl::OptionError);
-}
-
-TEST(SolverTest, GetDblOption) {
-  TestSolverWithOptions test_solver;
-  BasicSolver &s = test_solver;
-  EXPECT_EQ(0, s.GetDblOption("dblopt1"));
-  test_solver.dblopt1 = 42;
-  EXPECT_EQ(42, s.GetDblOption("dblopt1"));
-  EXPECT_THROW(s.GetIntOption("dblopt1"), ampl::OptionError);
-  EXPECT_THROW(s.GetStrOption("dblopt1"), ampl::OptionError);
-  EXPECT_THROW(s.GetDblOption("badopt"), ampl::OptionError);
-}
-
 TEST(SolverTest, GetStrOption) {
   TestSolverWithOptions test_solver;
   BasicSolver &s = test_solver;
   EXPECT_EQ("", s.GetStrOption("stropt1"));
   test_solver.stropt1 = "abc";
   EXPECT_EQ("abc", s.GetStrOption("stropt1"));
-  EXPECT_THROW(s.GetIntOption("stropt1"), ampl::OptionError);
-  EXPECT_THROW(s.GetDblOption("stropt1"), ampl::OptionError);
-  EXPECT_THROW(s.GetStrOption("badopt"), ampl::OptionError);
+  EXPECT_THROW(s.GetIntOption("stropt1"), OptionError);
+  EXPECT_THROW(s.GetDblOption("stropt1"), OptionError);
+  EXPECT_THROW(s.GetStrOption("badopt"), OptionError);
+}
+
+TEST(SolverTest, SetStrOption) {
+  TestSolverWithOptions test_solver;
+  BasicSolver &s = test_solver;
+  s.SetStrOption("stropt1", "abc");
+  EXPECT_EQ("abc", test_solver.stropt1);
+  s.SetStrOption("stropt1", "def");
+  EXPECT_EQ("def", test_solver.stropt1);
+  EXPECT_THROW(s.SetIntOption("stropt1", 0), OptionError);
+  EXPECT_THROW(s.SetDblOption("stropt1", 0), OptionError);
+  EXPECT_THROW(s.SetStrOption("badopt", ""), OptionError);
 }
 
 TEST(SolverTest, VersionOption) {
