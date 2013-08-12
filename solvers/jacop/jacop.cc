@@ -283,7 +283,7 @@ void JaCoPSolver::SetOutputFrequency(const char *name, double value) {
 
 void JaCoPSolver::HandleUnknownOption(const char *name) {
   if (name[0] == '-') {
-    fmt::Print("{}\n") << name;
+    Print("{}\n") << name;
     jvm_options_.push_back(name);
   } else {
     BasicSolver::HandleUnknownOption(name);
@@ -390,11 +390,12 @@ void JaCoPSolver::SetEnumOption(
   throw InvalidOptionValue(name, value);
 }
 
-fmt::TempFormatter<fmt::Write> JaCoPSolver::Output(fmt::StringRef format) {
+fmt::TempFormatter<BasicSolver::Printer> JaCoPSolver::Output(
+    fmt::StringRef format) {
   if (output_count_ == 0)
-    fmt::Print("{}") << header_;
+    Print("{}") << header_;
   output_count_ = (output_count_ + 1) % 20;
-  return fmt::TempFormatter<fmt::Write>(format);
+  return fmt::TempFormatter<Printer>(format, MakePrinter());
 }
 
 void JaCoPSolver::PrintLogEntry() {
@@ -550,6 +551,7 @@ void JaCoPSolver::Solve(Problem &p) {
     << "Max Depth" << "Nodes" << "Fails" << (has_obj ? "Best Obj" : ""));
   jboolean found = false;
   bool interrupted = false;
+  output_count_ = 0;
   last_output_time_ = steady_clock::now();
   try {
     if (has_obj) {

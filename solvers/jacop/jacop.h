@@ -464,7 +464,7 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   double GetOutputFrequency(const char *) const { return output_frequency_; }
   void SetOutputFrequency(const char *name, double value);
 
-  fmt::TempFormatter<fmt::Write> Output(fmt::StringRef format);
+  fmt::TempFormatter<Printer> Output(fmt::StringRef format);
 
   // Prints the solution log entry if the time is right.
   void PrintLogEntry();
