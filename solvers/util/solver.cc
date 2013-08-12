@@ -195,6 +195,7 @@ BasicSolver::BasicSolver(
     fmt::StringRef name, fmt::StringRef long_name, long date)
 : name_(name), has_errors_(false), read_flags_(0), read_time_(0) {
   error_handler_ = this;
+  output_handler_ = this;
   sol_handler_ = this;
 
   // Workaround for GCC bug 30111 that prevents value-initialization of
@@ -334,7 +335,8 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
           fmt::Formatter f;
           f("{}=") << &name[0];
           opt->Format(f);
-          puts(f.c_str());
+          f << '\n';
+          Print(fmt::StringRef(f.c_str(), f.size()));
         }
         continue;
       }
@@ -350,7 +352,7 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
       ReportError("{}") << e.what();
     }
     if ((flags & NO_OPTION_ECHO) == 0)
-      printf("%.*s\n", static_cast<int>(s - name_start), name_start);
+      Print("{}\n") << std::string(name_start, s - name_start);
   }
 }
 
