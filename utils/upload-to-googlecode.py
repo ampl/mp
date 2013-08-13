@@ -62,19 +62,34 @@ for platform in reversed(["linux32", "linux64", "macosx", "win32", "win64"]):
   date = datetime.datetime.today()
   date = "{}{:02}{:02}".format(date.year, date.month, date.day)
   dirlen = len(dir) + 1
+  jacop_version = versions['jacop']
+  jacop_version = jacop_version[:jacop_version.rfind('-')]
+  extra_files = {
+    'jacop': ['ampljacop.jar', 'JaCoP-' + jacop_version + '.jar']
+  }
+  file_package = {}
+  for package, files in extra_files.iteritems():
+    for f in files:
+      file_package[f] = package
+
   # Upload individual files.
   paths = []
   for base, dirs, files in os.walk(dir):
     for file in files:
       path = os.path.join(base, file)
       name = path[dirlen:]
-      if name == "versions":
+      if name == "versions" or name in file_package:
         continue
       basename = os.path.splitext(name)[0]
       suffix = versions.get(basename, date)
       archive_name = "{}-{}-{}.zip".format(basename, suffix, platform)
       with zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED) as zip:
         zip.write(path, name)
+        files = extra_files.get(basename)
+        if files:
+          for f in files:
+            zip.write(os.path.join(base, f), f)
+
       upload(archive_name, summaries[basename], [labels[platform]])
       os.remove(archive_name)
       paths.append(path)
