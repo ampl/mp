@@ -39,9 +39,7 @@ namespace {
 // ----------------------------------------------------------------------------
 // Solver tests
 
-std::unique_ptr<ampl::BasicSolver> CreateSolver() {
-  return std::unique_ptr<ampl::BasicSolver>(new ampl::JaCoPSolver());
-}
+SolverPtr CreateSolver() { return SolverPtr(new ampl::JaCoPSolver()); }
 
 INSTANTIATE_TEST_CASE_P(JaCoP, SolverTest,
     ::testing::Values(SolverTestParam(CreateSolver, feature::POW)));

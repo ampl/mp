@@ -40,9 +40,7 @@ namespace {
 // ----------------------------------------------------------------------------
 // Solver tests
 
-std::unique_ptr<ampl::BasicSolver> CreateSolver() {
-  return std::unique_ptr<ampl::BasicSolver>(new ampl::GecodeSolver());
-}
+SolverPtr CreateSolver() { return SolverPtr(new ampl::GecodeSolver()); }
 
 INSTANTIATE_TEST_CASE_P(Gecode, SolverTest,
     ::testing::Values(SolverTestParam(CreateSolver, 0)));
