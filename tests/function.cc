@@ -113,6 +113,8 @@ int ScopedTableInfo::Lookup(real *dv, char **sv, TableInfo *ti) {
 
 long ScopedTableInfo::AdjustMaxrows(long new_maxrows) {
   assert(new_maxrows >= maxrows);
+  if (new_maxrows == maxrows)
+    return maxrows;
   int total_cols = arity + ncols;
   vector<double> dvals(new_maxrows * total_cols);
   vector<char*> svals(new_maxrows * total_cols);
