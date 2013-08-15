@@ -11,8 +11,9 @@ project = "ampl"
 summaries = {
   "amplgsl": "AMPL bindings for the GNU Scientific Library",
   "ampltabl": "ODBC table handler",
+  "cbc": "COIN-OR CBC solver",
   "gecode": "Gecode solver",
-  "cbc": "COIN-OR CBC solver"
+  "jacop": "JaCoP solver"
 }
 
 labels = {
