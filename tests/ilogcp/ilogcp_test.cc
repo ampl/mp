@@ -61,9 +61,7 @@ using ampl::UnsupportedExprError;
 
 namespace {
 
-std::unique_ptr<ampl::BasicSolver> CreateSolver() {
-  return std::unique_ptr<ampl::BasicSolver>(new ampl::IlogCPSolver());
-}
+SolverPtr CreateSolver() { return SolverPtr(new ampl::IlogCPSolver()); }
 
 INSTANTIATE_TEST_CASE_P(IlogCP, SolverTest,
     ::testing::Values(SolverTestParam(CreateSolver, feature::ALL)));

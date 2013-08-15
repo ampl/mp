@@ -44,8 +44,14 @@ enum Feature {
 };
 }
 
+#ifdef HAVE_UNIQUE_PTR
+typedef std::unique_ptr<ampl::BasicSolver> SolverPtr;
+#else
+typedef std::auto_ptr<ampl::BasicSolver> SolverPtr;
+#endif
+
 struct SolverTestParam {
-  typedef std::unique_ptr<ampl::BasicSolver> (*CreateSolver)();
+  typedef SolverPtr (*CreateSolver)();
 
   CreateSolver create_solver;
   unsigned features;
@@ -60,7 +66,7 @@ class SolverTest
       public ::testing::TestWithParam<SolverTestParam>,
       public ampl::ExprBuilder {
  protected:
-  std::unique_ptr<ampl::BasicSolver> solver_;
+  SolverPtr solver_;
   unsigned features_;
   ampl::Variable x;
   ampl::Variable y;
