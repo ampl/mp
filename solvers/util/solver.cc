@@ -230,7 +230,7 @@ BasicSolver::BasicSolver(
       s.Option_Info::flags |= ASL_OI_show_version;
     }
   };
-  AddOption(SolverOptionPtr(new VersionOption(*this)));
+  AddOption(OptionPtr(new VersionOption(*this)));
 
   struct WantSolOption : TypedSolverOption<int> {
     BasicSolver &s;
@@ -245,7 +245,7 @@ BasicSolver::BasicSolver(
     int GetValue() const { return s.wantsol(); }
     void SetValue(int value) { s.Option_Info::wantsol = value; }
   };
-  AddOption(SolverOptionPtr(new WantSolOption(*this)));
+  AddOption(OptionPtr(new WantSolOption(*this)));
 
   cl_option_ = keyword();
   cl_option_.name = const_cast<char*>("=");

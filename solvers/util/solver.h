@@ -343,9 +343,7 @@ class BasicSolver
 
   virtual std::string GetOptionHeader() { return std::string(); }
 
-  typedef std::auto_ptr<SolverOption> SolverOptionPtr;
-
-  void AddOption(SolverOptionPtr opt) {
+  void AddOption(OptionPtr opt) {
     // First insert the option, then release a pointer to it. Doing the other
     // way around may lead to a memory leak if insertion throws an exception.
     options_[opt->name()] = opt.get();
@@ -376,6 +374,13 @@ class BasicSolver
   Printer MakePrinter() { return Printer(output_handler_); }
 
  public:
+#ifdef HAVE_UNIQUE_PTR
+  typedef std::unique_ptr<SolverOption> OptionPtr;
+#else
+  typedef std::auto_ptr<SolverOption> OptionPtr;
+  static OptionPtr move(OptionPtr p) { return p; }
+#endif
+
   virtual ~BasicSolver();
 
   // Flags for ParseOptions.
@@ -590,7 +595,7 @@ class Solver : public BasicSolver {
   void AddIntOption(const char *name, const char *description,
       int (Impl::*getter)(const char *) const,
       void (Impl::*setter)(const char *, int)) {
-    AddOption(SolverOptionPtr(
+    AddOption(OptionPtr(
         new ConcreteOption<int>(name, description, this, getter, setter)));
   }
 
@@ -602,8 +607,7 @@ class Solver : public BasicSolver {
       int (Impl::*getter)(const char *, const Info &) const,
       void (Impl::*setter)(const char *, int, const Info &),
       const Info &info) {
-    AddOption(SolverOptionPtr(
-        new ConcreteOptionWithInfo<int, Info, const Info &>(
+    AddOption(OptionPtr(new ConcreteOptionWithInfo<int, Info, const Info &>(
             name, description, this, getter, setter, info)));
   }
 
@@ -612,7 +616,7 @@ class Solver : public BasicSolver {
   void AddIntOption(const char *name, const char *description,
       int (Impl::*getter)(const char *, Info) const,
       void (Impl::*setter)(const char *, int, Info), Info info) {
-    AddOption(SolverOptionPtr(new ConcreteOptionWithInfo<int, Info>(
+    AddOption(OptionPtr(new ConcreteOptionWithInfo<int, Info>(
             name, description, this, getter, setter, info)));
   }
 
@@ -622,7 +626,7 @@ class Solver : public BasicSolver {
   void AddDblOption(const char *name, const char *description,
       double (Impl::*getter)(const char *) const,
       void (Impl::*setter)(const char *, double)) {
-    AddOption(SolverOptionPtr(new ConcreteOption<double>(
+    AddOption(OptionPtr(new ConcreteOption<double>(
         name, description, this, getter, setter)));
   }
 
@@ -634,8 +638,7 @@ class Solver : public BasicSolver {
       double (Impl::*getter)(const char *, const Info &) const,
       void (Impl::*setter)(const char *, double, const Info &),
       const Info &info) {
-    AddOption(SolverOptionPtr(
-        new ConcreteOptionWithInfo<double, Info, const Info &>(
+    AddOption(OptionPtr(new ConcreteOptionWithInfo<double, Info, const Info &>(
             name, description, this, getter, setter, info)));
   }
 
@@ -644,7 +647,7 @@ class Solver : public BasicSolver {
   void AddDblOption(const char *name, const char *description,
       double (Impl::*getter)(const char *, Info) const,
       void (Impl::*setter)(const char *, double, Info), Info info) {
-    AddOption(SolverOptionPtr(new ConcreteOptionWithInfo<double, Info>(
+    AddOption(OptionPtr(new ConcreteOptionWithInfo<double, Info>(
             name, description, this, getter, setter, info)));
   }
 
@@ -654,7 +657,7 @@ class Solver : public BasicSolver {
   void AddStrOption(const char *name, const char *description,
       std::string (Impl::*getter)(const char *) const,
       void (Impl::*setter)(const char *, const char *)) {
-    AddOption(SolverOptionPtr(new ConcreteOption<std::string>(
+    AddOption(OptionPtr(new ConcreteOption<std::string>(
         name, description, this, getter, setter)));
   }
 
@@ -666,7 +669,7 @@ class Solver : public BasicSolver {
       std::string (Impl::*getter)(const char *, const Info &) const,
       void (Impl::*setter)(const char *, const char *, const Info &),
       const Info &info) {
-    AddOption(SolverOptionPtr(
+    AddOption(OptionPtr(
         new ConcreteOptionWithInfo<std::string, Info, const Info &>(
             name, description, this, getter, setter, info)));
   }
@@ -677,7 +680,7 @@ class Solver : public BasicSolver {
       std::string (Impl::*getter)(const char *, Info) const,
       void (Impl::*setter)(const char *, const char *, Info), Info info) {
     typedef void (Impl::*Func)(const char *, const char *, Info);
-    AddOption(SolverOptionPtr(new ConcreteOptionWithInfo<std::string, Info>(
+    AddOption(OptionPtr(new ConcreteOptionWithInfo<std::string, Info>(
             name, description, this, getter, setter, info)));
   }
 
