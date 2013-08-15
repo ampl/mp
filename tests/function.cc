@@ -153,12 +153,12 @@ ScopedTableInfo::ScopedTableInfo(const Table &t) {
   TableInfo::Lookup = Lookup;
   TableInfo::AdjustMaxrows = AdjustMaxrows;
 
-  unsigned num_rows = std::max(t.num_rows(), 1u);
-  unsigned num_values = num_rows * t.num_cols();
+  maxrows = std::max(t.num_rows(), 1u);
+  unsigned num_values = maxrows * t.num_cols();
   svals_.resize(num_values);
   dvals_.resize(num_values);
 
-  nrows = maxrows = t.num_rows();
+  nrows = t.num_rows();
   arity = t.arity();
   ncols = t.num_cols() - arity;
   if (t.num_cols() != 0) {
@@ -170,8 +170,8 @@ ScopedTableInfo::ScopedTableInfo(const Table &t) {
       colnames_[i] = t.GetColName(i);
       colnameptrs_[i] = const_cast<char*>(colnames_[i].c_str());
       DbCol col = {};
-      col.dval = &dvals_[i * num_rows];
-      col.sval = &svals_[i * num_rows];
+      col.dval = &dvals_[i * maxrows];
+      col.sval = &svals_[i * maxrows];
       cols_.push_back(col);
     }
     cols = &cols_[0];
