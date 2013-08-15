@@ -2852,11 +2852,9 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 			}
 		}
 	dd = 0; td = 0; /* silence bogus warnings */
-	if (nk[0]) {
-		dd = (double*)TM(n*sizeof(double));
-		if (j)
-			ra0 = dd;
-		}
+	dd = (double*)TM(n*sizeof(double));
+	if (j)
+		ra0 = dd;
 	if ((i = nk[1])) {
 		i1 = i;
 		if (k)
