@@ -489,11 +489,13 @@ void JaCoPSolver::Solve(Problem &p) {
   {
     char NAME[] = "stop";
     char SIG[] = "(J)Z";
-    JNINativeMethod method = {NAME, SIG, reinterpret_cast<void*>(Stop)};
+    JNINativeMethod method = {
+        NAME, SIG, reinterpret_cast<void*>(reinterpret_cast<jlong>(Stop))
+    };
     env_.RegisterNatives(interrupter_class.get(), &method, 1);
   }
   jobject interrupter =
-      interrupter_class.NewObject(env_, reinterpret_cast<long>(this));
+      interrupter_class.NewObject(env_, reinterpret_cast<jlong>(this));
   env_.CallVoidMethod(search_.get(),
        env_.GetMethod(dfs_class.get(), "setConsistencyListener",
            "(LJaCoP/search/ConsistencyListener;)V"), interrupter);
@@ -504,12 +506,14 @@ void JaCoPSolver::Solve(Problem &p) {
     {
       char NAME[] = "handleSolution";
       char SIG[] = "(J)V";
-      JNINativeMethod method =
-        {NAME, SIG, reinterpret_cast<void*>(HandleSolution)};
+      JNINativeMethod method = {
+          NAME, SIG,
+          reinterpret_cast<void*>(reinterpret_cast<jlong>(DoHandleSolution))
+      };
       env_.RegisterNatives(solution_listener_class.get(), &method, 1);
     }
     jobject solution_listener =
-        solution_listener_class.NewObject(env_, reinterpret_cast<long>(this));
+        solution_listener_class.NewObject(env_, reinterpret_cast<jlong>(this));
     env_.CallVoidMethod(search_.get(),
          env_.GetMethod(dfs_class.get(), "setSolutionListener",
              "(LJaCoP/search/SolutionListener;)V"), solution_listener);
@@ -618,7 +622,7 @@ void JaCoPSolver::Solve(Problem &p) {
       << env_.CallIntMethod(search_.get(), get_fails_);
   if (has_obj && found)
     format(", objective {}") << ObjPrec(obj_val);
-  BasicSolver::HandleSolution(format.c_str(),
+  HandleSolution(format.c_str(),
       final_solution.empty() ? 0 : &final_solution[0], 0, obj_val);
 }
 }

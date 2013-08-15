@@ -45,7 +45,7 @@ enum Feature {
 }
 
 struct SolverTestParam {
-  typedef std::auto_ptr<ampl::BasicSolver> (*CreateSolver)();
+  typedef std::unique_ptr<ampl::BasicSolver> (*CreateSolver)();
 
   CreateSolver create_solver;
   unsigned features;
@@ -60,7 +60,7 @@ class SolverTest
       public ::testing::TestWithParam<SolverTestParam>,
       public ampl::ExprBuilder {
  protected:
-  std::auto_ptr<ampl::BasicSolver> solver_;
+  std::unique_ptr<ampl::BasicSolver> solver_;
   unsigned features_;
   ampl::Variable x;
   ampl::Variable y;
