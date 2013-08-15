@@ -40,6 +40,8 @@ using ampl::internal::OptionHelper;
 
 namespace {
 
+typedef BasicSolver::OptionPtr SolverOptionPtr;
+
 struct TestSolver : BasicSolver {
   TestSolver(const char *name = "testsolver",
       const char *long_name = 0, long date = 0)
@@ -53,7 +55,9 @@ struct TestSolver : BasicSolver {
     BasicSolver::set_version(version);
   }
 
-  void AddOption(SolverOptionPtr opt) { BasicSolver::AddOption(opt); }
+  void AddOption(OptionPtr opt) {
+    BasicSolver::AddOption(move(opt));
+  }
 
   bool ParseOptions(char **argv, unsigned flags = BasicSolver::NO_OPTION_ECHO) {
     return BasicSolver::ParseOptions(argv, flags);
@@ -492,7 +496,7 @@ TEST(SolverTest, AddOption) {
   };
   TestSolver s;
   TestOption *opt = 0;
-  s.AddOption(std::auto_ptr<SolverOption>(opt = new TestOption()));
+  s.AddOption(SolverOptionPtr(opt = new TestOption()));
   EXPECT_TRUE(s.ParseOptions(Args("testopt=42"), BasicSolver::NO_OPTION_ECHO));
   EXPECT_EQ(42, opt->value);
 }
@@ -604,7 +608,7 @@ TEST(SolverTest, FormatOption) {
   EXPECT_EXIT({
     TestSolver s;
     FILE *f = freopen("out", "w", stdout);
-    s.AddOption(std::auto_ptr<SolverOption>(new FormatOption()));
+    s.AddOption(SolverOptionPtr(new FormatOption()));
     s.ParseOptions(Args("fmtopt=?"), 0);
     printf("---\n");
     s.ParseOptions(Args("fmtopt=?", "fmtopt=?"), 0);
@@ -617,7 +621,7 @@ TEST(SolverTest, FormatOption) {
 TEST(SolverTest, OptionNotPrintedWhenEchoOff) {
   TestSolver s;
   FormatOption *opt = 0;
-  s.AddOption(std::auto_ptr<SolverOption>(opt = new FormatOption()));
+  s.AddOption(SolverOptionPtr(opt = new FormatOption()));
   EXPECT_EQ(0, opt->format_count);
   s.ParseOptions(Args("fmtopt=?"));
   EXPECT_EQ(0, opt->format_count);
@@ -627,7 +631,7 @@ TEST(SolverTest, NoEchoWhenPrintingOption) {
   EXPECT_EXIT({
     TestSolver s;
     FILE *f = freopen("out", "w", stdout);
-    s.AddOption(std::auto_ptr<SolverOption>(new FormatOption()));
+    s.AddOption(SolverOptionPtr(new FormatOption()));
     s.ParseOptions(Args("fmtopt=?"));
     fclose(f);
     exit(0);
@@ -652,7 +656,7 @@ TEST(SolverTest, ErrorOnKeywordOptionValue) {
   TestErrorHandler handler;
   s.set_error_handler(&handler);
   KeywordOption *opt = 0;
-  s.AddOption(std::auto_ptr<SolverOption>(opt = new KeywordOption()));
+  s.AddOption(SolverOptionPtr(opt = new KeywordOption()));
   s.ParseOptions(Args("kwopt=42"));
   EXPECT_EQ(1u, handler.errors.size());
   EXPECT_EQ("Option \"kwopt\" doesn't accept argument", handler.errors[0]);
@@ -672,7 +676,7 @@ TEST(SolverTest, ParseOptionsHandlesOptionErrorsInParse) {
   TestSolver s;
   TestErrorHandler handler;
   s.set_error_handler(&handler);
-  s.AddOption(std::auto_ptr<SolverOption>(new TestOption()));
+  s.AddOption(SolverOptionPtr(new TestOption()));
   s.ParseOptions(Args("testopt=1 testopt=2"));
   EXPECT_EQ(2u, handler.errors.size());
   EXPECT_EQ("test message", handler.errors[0]);

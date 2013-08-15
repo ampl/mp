@@ -118,6 +118,7 @@ macro(use_dll_runtime)
 endmacro ()
 
 include(CheckCXXSourceCompiles)
+
 check_cxx_source_compiles("
   #include <unordered_map>
   int main() {
@@ -126,6 +127,13 @@ check_cxx_source_compiles("
   }" HAVE_UNORDERED_MAP)
 if (HAVE_UNORDERED_MAP)
   add_definitions(-DHAVE_UNORDERED_MAP)
+endif ()
+
+check_cxx_source_compiles(
+  "#include <memory>
+  int main() { std::unique_ptr<int> p; }" HAVE_UNIQUE_PTR)
+if (HAVE_UNIQUE_PTR)
+  add_definitions(-DHAVE_UNIQUE_PTR)
 endif ()
 
 add_subdirectory(doc)
