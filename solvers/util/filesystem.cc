@@ -53,7 +53,7 @@ ampl::path ampl::GetExecutablePath() {
   buffer.resize(BUFFER_SIZE);
   DWORD size = 0;
   for (;;) {
-    DWORD size = GetModuleFileNameA(0, &buffer[0], buffer.size());
+    size = GetModuleFileNameA(0, &buffer[0], buffer.size());
     if (size == 0)
       ThrowError("GetModuleFileName failed, error code = {}") << GetLastError();
     if (size != buffer.size()) break;
