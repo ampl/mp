@@ -81,15 +81,6 @@ TEST_F(ExcelTest, WriteMaxColumnsExcel2003) {
   handler_->Write(t);
 }
 
-TEST_F(ExcelTest, AppendZeroRows) {
-  Table t("AppendZeroRowsTable", 1, 0, strings_);
-  t = "S",
-       1;
-  handler_->Write(t);
-  t = "S";
-  handler_->Write(t, Handler::INOUT);
-}
-
 #ifndef _WIN64
 // The test fails on 64-bit Windows XP with 64-bit ODBC drivers.
 // According to http://www.microsoft.com/en-us/download/details.aspx?id=13255
@@ -108,4 +99,13 @@ TEST_F(ExcelTest, WriteMaxColumnsExcel2007) {
   handler_->Write(t);
 }
 #endif
+
+TEST_F(ExcelTest, AppendZeroRows) {
+  Table t("AppendZeroRowsTable", 1, 0, strings_);
+  t = "S",
+       1;
+  handler_->Write(t);
+  t = "S";
+  handler_->Write(t, Handler::INOUT);
+}
 }
