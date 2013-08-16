@@ -45,7 +45,7 @@ class path {
 };
 
 // Returns the path to the currently running executable file.
-// Throws AMPLError on error.
+// Throws Error on error.
 path GetExecutablePath();
 
 }
