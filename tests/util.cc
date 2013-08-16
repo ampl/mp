@@ -1,5 +1,7 @@
 #include "tests/util.h"
 
+#include "solvers/util/error.h"
+
 extern "C" {
 #include "solvers/asl.h"
 }
@@ -7,6 +9,12 @@ extern "C" {
 
 #include <cstring>
 #include <fstream>
+
+#ifdef WIN32
+# include <direct.h>
+#else
+# include <unistd.h>
+#endif
 
 std::string ReadFile(const char *name) {
   std::string data;
@@ -32,4 +40,20 @@ StderrRedirect::StderrRedirect(const char *filename) : saved_stderr(Stderr) {
 StderrRedirect::~StderrRedirect() {
   std::fclose(Stderr);
   Stderr = saved_stderr;
+}
+
+void ChangeDirectory(fmt::StringRef path) {
+  if (chdir(path.c_str()) != 0)
+    ampl::ThrowError("chdir failed, error code = {}") << errno;
+}
+
+void ExecuteShellCommand(fmt::StringRef command) {
+#ifdef WIN32
+  std::string command_str(command);
+  std::replace(command_str.begin(), command_str.end(), '/', '\\');
+#else
+  fmt::StringRef command_str(command);
+#endif
+  if (std::system(command_str.c_str()) != 0)
+    ampl::ThrowError("std::system failed, error code = {}") << errno;
 }
