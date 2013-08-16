@@ -21,6 +21,7 @@
  */
 
 #include "solvers/jacop/jacop.h"
+#include "solvers/util/filesystem.h"
 
 #include <iterator>
 
@@ -291,7 +292,7 @@ void JaCoPSolver::HandleUnknownOption(const char *name) {
 }
 
 JaCoPSolver::JaCoPSolver()
-: Solver<JaCoPSolver>("jacop", 0, 20130812),
+: Solver<JaCoPSolver>("jacop", 0, 20130816),
   outlev_(0), output_frequency_(1), output_count_(0),
   var_select_("SmallestDomain"), val_select_("IndomainMin"),
   time_limit_(-1), node_limit_(-1), fail_limit_(-1),
@@ -453,9 +454,12 @@ void JaCoPSolver::Solve(Problem &p) {
   std::vector<const char*> jvm_options(jvm_options_.size() + 2);
   for (size_t i = 0, n = jvm_options_.size(); i != n; ++i)
     jvm_options[i] = jvm_options_[i].c_str();
-  jvm_options[jvm_options_.size()] =
-      "-Djava.class.path=JaCoP-" JACOP_VERSION ".jar" AMPL_CLASSPATH_SEP
-      "lib/JaCoP-3.2.jar" AMPL_CLASSPATH_SEP "ampljacop.jar";
+  std::string exe_dir = GetExecutablePath().remove_filename().string();
+  std::string classpath =
+      "-Djava.class.path=" + exe_dir + "/JaCoP-" JACOP_VERSION ".jar"
+      AMPL_CLASSPATH_SEP + exe_dir + "/lib/JaCoP-3.2.jar"
+      AMPL_CLASSPATH_SEP + exe_dir + "/ampljacop.jar";
+  jvm_options[jvm_options_.size()] = classpath.c_str();
   env_ = JVM::env(&jvm_options[0]);
 
   // Set up an optimization problem in JaCoP.
