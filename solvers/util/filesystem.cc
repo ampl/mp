@@ -33,15 +33,15 @@ enum { BUFFER_SIZE = 500 };
 #include <mach-o/dyld.h>
 
 ampl::path ampl::GetExecutablePath() {
-  fmt::internal::Array<char, BUFFER_SIZE> path;
+  fmt::internal::Array<char, BUFFER_SIZE> buffer;
   uint32_t size = BUFFER_SIZE;
-  path.resize(size);
-  if (_NSGetExecutablePath(&path[0], &size) != 0) {
-    path.resize(size);
-    if (_NSGetExecutablePath(&path[0], &size) != 0)
+  buffer.resize(size);
+  if (_NSGetExecutablePath(&buffer[0], &size) != 0) {
+    buffer.resize(size);
+    if (_NSGetExecutablePath(&buffer[0], &size) != 0)
       assert(0 && "_NSGetExecutablePath failed");
   }
-  return path(&path[0], size);
+  return path(&buffer[0], size);
 }
 
 #elif defined(WIN32)
@@ -49,18 +49,18 @@ ampl::path ampl::GetExecutablePath() {
 #include <windows.h>
 
 ampl::path ampl::GetExecutablePath() {
-  fmt::internal::Array<char, BUFFER_SIZE> path;
-  path.resize(BUFFER_SIZE);
+  fmt::internal::Array<char, BUFFER_SIZE> buffer;
+  buffer.resize(BUFFER_SIZE);
   DWORD size = 0;
   for (;;) {
-    DWORD size = GetModuleFileNameA(0, &path[0], path.size());
+    DWORD size = GetModuleFileNameA(0, &buffer[0], buffer.size());
     if (size == 0)
       ThrowError("GetModuleFileName failed, error code = {}") << GetLastError();
-    if (size != path.size()) break;
-    path.resize(2 * path.size());
+    if (size != buffer.size()) break;
+    buffer.resize(2 * buffer.size());
   }
-  std::replace(&path[0], &path[0] + size, '\\', '/');
-  return path(&path[0], size);
+  std::replace(&buffer[0], &buffer[0] + size, '\\', '/');
+  return path(&buffer[0], size);
 }
 
 #else
