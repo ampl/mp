@@ -22,7 +22,7 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
- static char Version[] = "\n@(#) AMPL ODBC driver, version 20130509.\n";
+ static char Version[] = "\n@(#) AMPL ODBC driver, version 20130815.\n";
 
 #ifdef _WIN32
 #include <windows.h>
@@ -2494,7 +2494,7 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 funcadd(AmplExports *ae)
 {
 	static char tname[] = "odbc\n"
-	"AMPL ODBC handler (20130509): expected 2-8 strings before \":[...]\":\n"
+	"AMPL ODBC handler (20130815): expected 2-8 strings before \":[...]\":\n"
 	"  'ODBC', connection_spec ['ext_name'] [option [option...]]\n"
 	"Connection_spec gives a connection to the external table.  If the table's\n"
 	"external name differs from the AMPL table name, the external name must be\n"
@@ -2851,7 +2851,7 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 				j++;
 			}
 		}
-	dd = 0; td = 0; /* silence bogus warnings */
+	td = 0; /* silence bogus warning */
 	dd = (double*)TM(n*sizeof(double));
 	if (j)
 		ra0 = dd;
@@ -3070,13 +3070,19 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 				db = db0 + (k = p[i]);
 				switch(dbc->mytype) {
 				  case 0:
+					if (!db->dval)
+						(*TI->ColAlloc)(TI, k, 0);
 					db->dval[nrows] = dd[k];
 					break;
 				  case 1:
+					if (!db->sval)
+						(*TI->ColAlloc)(TI, k, 1);
 					db->sval[nrows] = ascrunch(h, dbc->val,
 							&db->dval, nrows, k);
 					break;
 				  case 2:
+					if (!db->sval)
+						(*TI->ColAlloc)(TI, k, 1);
 					tsp = (TIMESTAMP_STRUCT**)db->sval;
 					tsp[nrows] = ts = (TIMESTAMP_STRUCT*)
 							TM(sizeof(TIMESTAMP_STRUCT));
