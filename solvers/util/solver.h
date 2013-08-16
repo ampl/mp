@@ -322,6 +322,14 @@ class BasicSolver
   // Parses an option string.
   void ParseOptionString(const char *s, unsigned flags);
 
+ public:
+#ifdef HAVE_UNIQUE_PTR
+  typedef std::unique_ptr<SolverOption> OptionPtr;
+#else
+  typedef std::auto_ptr<SolverOption> OptionPtr;
+  static OptionPtr move(OptionPtr p) { return p; }
+#endif
+
  protected:
   // Constructs a BasicSolver object.
   // date: The solver date in YYYYMMDD format.
@@ -374,13 +382,6 @@ class BasicSolver
   Printer MakePrinter() { return Printer(output_handler_); }
 
  public:
-#ifdef HAVE_UNIQUE_PTR
-  typedef std::unique_ptr<SolverOption> OptionPtr;
-#else
-  typedef std::auto_ptr<SolverOption> OptionPtr;
-  static OptionPtr move(OptionPtr p) { return p; }
-#endif
-
   virtual ~BasicSolver();
 
   // Flags for ParseOptions.
