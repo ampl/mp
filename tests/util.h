@@ -30,4 +30,10 @@ class StderrRedirect {
   ~StderrRedirect();
 };
 
+// Changes the current working directory. Throws Error on error.
+void ChangeDirectory(fmt::StringRef path);
+
+// Executes a shell command. Throws Error on error.
+void ExecuteShellCommand(fmt::StringRef command);
+
 #endif  // TESTS_UTIL_H_

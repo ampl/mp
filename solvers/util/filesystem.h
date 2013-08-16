@@ -47,7 +47,6 @@ class path {
 // Returns the path to the currently running executable file.
 // Throws Error on error.
 path GetExecutablePath();
-
 }
 
 #endif  // SOLVERS_UTIL_FILESYSTEM_H_
