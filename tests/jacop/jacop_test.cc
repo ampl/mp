@@ -31,6 +31,12 @@
 #include "tests/solver_test.h"
 #include "tests/util.h"
 
+#ifdef WIN32
+# include <direct.h>
+#else
+# include <unistd.h>
+#endif
+
 using std::string;
 using ampl::InvalidOptionValue;
 
@@ -188,5 +194,12 @@ TEST_F(JaCoPSolverTest, OutFreqOption) {
   EXPECT_EQ(1.23, solver_.GetDblOption("outfreq"));
   EXPECT_THROW(solver_.SetDblOption("outfreq", -1), InvalidOptionValue);
   EXPECT_THROW(solver_.SetDblOption("outfreq", 0), InvalidOptionValue);
+}
+
+TEST_F(JaCoPSolverTest, FindJarsRelativeToExecutable) {
+  chdir("..");
+  std::system("../solvers/jacop/jacop data/objconstint > out");
+  chdir("jacop");
+  EXPECT_TRUE(ReadFile("../out").find("objective 42") != std::string::npos);
 }
 }
