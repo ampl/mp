@@ -1,6 +1,9 @@
 The solver "jacop" uses JaCoP (http://jacop.osolpro.com/) to solve
-constraint programming problems.  Normally the jacop solver is
-invoked by AMPL's solve command, which gives the invocation
+constraint programming problems.  Solver binaries are available for
+download at https://code.google.com/p/ampl/downloads/list?q=jacop.
+
+Normally the jacop solver is invoked by AMPL's solve command,
+which gives the invocation
 
      jacop stub -AMPL
 
