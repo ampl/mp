@@ -63,7 +63,7 @@ endif ()
 # Should be fixed in ccache version 3.2
 check_cxx_compiler_flag(-Qunused-arguments HAVE_QUNUSED_ARGUMENTS)
 if (HAVE_QUNUSED_ARGUMENTS)
-  set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Qunused-arguments")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qunused-arguments")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
 endif ()
 
