@@ -225,7 +225,7 @@ TEST(SolverTest, SolutionHandler) {
 TEST(SolverTest, ReadProblem) {
   TestSolver s("test");
   EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_TRUE(s.ProcessArgs(Args("testprogram", "data/objconst.nl")));
+  EXPECT_TRUE(s.ProcessArgs(Args("testprogram", "../data/objconst.nl")));
   EXPECT_EQ(1, s.problem().num_vars());
 }
 
@@ -248,7 +248,7 @@ TEST(SolverTest, ReadProblemError) {
 TEST(SolverTest, ReadingMinOrMaxWithZeroArgsFails) {
   const char *names[] = {"min", "max"};
   for (size_t i = 0, n = sizeof(names) / sizeof(*names); i < n; ++i) {
-    std::string stub = str(fmt::Format("data/{}-with-zero-args") << names[i]);
+    std::string stub = str(fmt::Format("../data/{}-with-zero-args") << names[i]);
     EXPECT_EXIT({
       Stderr = stderr;
       Problem p;
@@ -269,14 +269,14 @@ TEST(SolverTest, ReportError) {
 TEST(SolverTest, ProcessArgsReadsProblem) {
   TestSolver s;
   EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_TRUE(s.ProcessArgs(Args("testprogram", "data/objconst.nl")));
+  EXPECT_TRUE(s.ProcessArgs(Args("testprogram", "../data/objconst.nl")));
   EXPECT_EQ(1, s.problem().num_vars());
 }
 
 TEST(SolverTest, ProcessArgsParsesSolverOptions) {
   TestSolver s;
   EXPECT_TRUE(s.ProcessArgs(
-      Args("testprogram", "data/objconst.nl", "wantsol=5"),
+      Args("testprogram", "../data/objconst.nl", "wantsol=5"),
       BasicSolver::NO_OPTION_ECHO));
   EXPECT_EQ(5, s.wantsol());
 }

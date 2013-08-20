@@ -1,0 +1,11 @@
+cxx_test_with_flags(clock_test "" "gtest;util" ../test_main.cc clock_test.cc)
+cxx_test_with_flags(error_test "" "gtest;util" ../test_main.cc error_test.cc)
+
+cxx_test_with_flags(expr_test "" "gtest;util"
+  ../test_main.cc ../expr_builder.cc expr_test.cc no_unordered_map_test.cc)
+
+cxx_test_with_flags(format_test "" "gtest;util" format_test.cc)
+cxx_test_with_flags(problem_test "" "gtest;util"
+  ../test_main.cc ../expr_builder.cc ../util.cc problem_test.cc)
+cxx_test_with_flags(basic_solver_test "" "gtest;util"
+  ../test_main.cc ../args.cc ../util.cc basic_solver_test.cc)
