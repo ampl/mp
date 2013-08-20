@@ -33,7 +33,7 @@ class path {
 
  public:
   path() {}
-  path(const char *str, std::size_t size) : str_(str, size) {}
+  path(const char *begin, const char *end) : str_(begin, end) {}
 
   const std::string &string() const { return str_; }
 
