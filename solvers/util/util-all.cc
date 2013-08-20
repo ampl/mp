@@ -20,6 +20,8 @@
  Author: Victor Zverovich
  */
 
+#include "clock.cc"
+#include "filesystem.cc"
 #include "format.cc"
 #include "solver.cc"
 #include "problem.cc"

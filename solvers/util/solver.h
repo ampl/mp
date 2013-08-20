@@ -347,6 +347,7 @@ class BasicSolver
 
   double read_time() const { return read_time_; }
 
+  // Sets the flags for Problem::Read.
   void set_read_flags(unsigned flags) { read_flags_ = flags; }
 
   virtual std::string GetOptionHeader() { return std::string(); }
