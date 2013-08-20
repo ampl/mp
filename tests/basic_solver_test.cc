@@ -189,7 +189,24 @@ TEST(SolverTest, ErrorHandler) {
   EXPECT_EQ("test message", eh.message);
 }
 
-// TODO: test output handler
+TEST(SolverTest, OutputHandler) {
+  struct TestOutputHandler : ampl::OutputHandler {
+    std::string output;
+
+    virtual ~TestOutputHandler() {}
+    void HandleOutput(fmt::StringRef output) {
+      this->output += output;
+    }
+  };
+
+  TestOutputHandler oh;
+  TestSolver s("test");
+  s.set_output_handler(&oh);
+  EXPECT_TRUE(&oh == s.output_handler());
+  s.Print("line {}\n") << 1;
+  s.Print("line {}\n") << 2;
+  EXPECT_EQ("line 1\nline 2\n", oh.output);
+}
 
 TEST(SolverTest, SolutionHandler) {
   TestSolutionHandler sh;
