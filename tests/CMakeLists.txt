@@ -37,18 +37,6 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
   ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
-cxx_test_with_flags(clock_test "" "gtest;util" test_main.cc clock_test.cc)
-cxx_test_with_flags(error_test "" "gtest;util" test_main.cc error_test.cc)
-
-cxx_test_with_flags(expr_test "" "gtest;util"
-  test_main.cc expr_builder.cc expr_test.cc no_unordered_map_test.cc)
-
-cxx_test_with_flags(format_test "" "gtest;util" format_test.cc)
-cxx_test_with_flags(problem_test "" "gtest;util"
-  problem_test.cc test_main.cc expr_builder.cc util.cc)
-cxx_test_with_flags(basic_solver_test "" "gtest;util"
-  basic_solver_test.cc args.cc test_main.cc util.cc)
-
 add_ampl_library(testlib testlib.cc)
 add_library(function function.cc function.h)
 add_dependencies(function arith_h)
@@ -137,6 +125,8 @@ add_subdirectory(ilogcp)
 if (HAVE_JACOP)
   add_subdirectory(jacop)
 endif ()
+
+add_subdirectory(util)
 
 cxx_test_with_flags(tableproxy_test ""
   "gtest;function;util" test_main.cc tableproxy_test.cc util.cc)
