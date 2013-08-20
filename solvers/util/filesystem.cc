@@ -41,7 +41,8 @@ ampl::path ampl::GetExecutablePath() {
     if (_NSGetExecutablePath(&buffer[0], &size) != 0)
       assert(0 && "_NSGetExecutablePath failed");
   }
-  return path(&buffer[0], size);
+  const char *s = &buffer[0];
+  return path(s, s + size);
 }
 
 #elif defined(WIN32)
@@ -60,7 +61,8 @@ ampl::path ampl::GetExecutablePath() {
     buffer.resize(2 * buffer.size());
   }
   std::replace(&buffer[0], &buffer[0] + size, '\\', '/');
-  return path(&buffer[0], size);
+  const char *s = &buffer[0];
+  return path(s, s + size);
 }
 
 #else
@@ -81,7 +83,8 @@ ampl::path ampl::GetExecutablePath() {
     if (static_cast<std::size_t>(size) != buffer.size()) break;
     buffer.resize(2 * buffer.size());
   }
-  return path(&buffer[0], size);
+  const char *s = &buffer[0];
+  return path(s, s + size);
 }
 
 #endif
