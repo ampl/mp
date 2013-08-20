@@ -9,3 +9,6 @@ cxx_test_with_flags(problem_test "" "gtest;util"
   ../test_main.cc ../expr_builder.cc ../util.cc problem_test.cc)
 cxx_test_with_flags(basic_solver_test "" "gtest;util"
   ../test_main.cc ../args.cc ../util.cc basic_solver_test.cc)
+
+add_executable(numberofmap_speed_test numberofmap_speed_test.cc ../expr_builder.cc)
+target_link_libraries(numberofmap_speed_test util)
