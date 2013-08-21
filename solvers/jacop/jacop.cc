@@ -400,18 +400,13 @@ fmt::TempFormatter<BasicSolver::Printer> JaCoPSolver::Output(
 }
 
 void JaCoPSolver::PrintLogEntry() {
-  if (outlev_ == 0)
+  if (outlev_ == 0 || steady_clock::now() < next_output_time_)
     return;
-  steady_clock::time_point time = steady_clock::now();
-  if (duration_cast< duration<double> >(time - last_output_time_).count()
-      < output_frequency_) {
-    return;
-  }
   Output("{:10} {:10} {:10}\n")
       << env_.CallIntMethodKeepException(search_.get(), get_depth_)
       << env_.CallIntMethodKeepException(search_.get(), get_nodes_)
       << env_.CallIntMethodKeepException(search_.get(), get_fails_);
-  last_output_time_ = time;
+  next_output_time_ += GetOutputInterval();
 }
 
 void JaCoPSolver::PrintObjValue() {
@@ -560,7 +555,7 @@ void JaCoPSolver::Solve(Problem &p) {
   jboolean found = false;
   bool interrupted = false;
   output_count_ = 0;
-  last_output_time_ = steady_clock::now();
+  next_output_time_ = steady_clock::now() + GetOutputInterval();
   try {
     if (has_obj) {
       jmethodID labeling = env_.GetMethod(dfs_class.get(), "labeling",
