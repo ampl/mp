@@ -318,11 +318,11 @@ BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr) {
 }
 
 GecodeSolver::Stop::Stop(GecodeSolver &s)
-: sh_(s), solver_(s), time_limit_in_milliseconds_(s.time_limit_ * 1000),
-  last_output_time_(0) {
+: sh_(s), solver_(s), time_limit_in_milliseconds_(s.time_limit_ * 1000) {
   output_or_limit_ = s.output_ || time_limit_in_milliseconds_ < DBL_MAX ||
       s.node_limit_ != ULONG_MAX || s.fail_limit_ != ULONG_MAX;
   timer_.start();
+  next_output_time_ = steady_clock::now() + GetOutputInterval();
 }
 
 bool GecodeSolver::Stop::stop(
@@ -330,10 +330,9 @@ bool GecodeSolver::Stop::stop(
   if (SignalHandler::stop()) return true;
   if (!output_or_limit_) return false;
   double time = timer_.stop();
-  if (solver_.output_ &&
-      (time - last_output_time_) / 1000 >= solver_.output_frequency_) {
+  if (solver_.output_ && steady_clock::now() >= next_output_time_) {
     solver_.Output("{:10} {:10} {:10}\n") << s.depth << s.node << s.fail;
-    last_output_time_ = time;
+    next_output_time_ += GetOutputInterval();
   }
   return time > time_limit_in_milliseconds_ ||
       s.node > solver_.node_limit_ || s.fail > solver_.fail_limit_;
