@@ -77,7 +77,7 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/cbc/CMakeLists.txt)
   set(get_cbc_version solvers/cbc/bin/cbc -v -AMPL >> versions)
 endif ()
 
-if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/gecode/gecode-src/CMakeLists.txt)
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/gecode/lib/CMakeLists.txt)
   set(HAVE_GECODE 1)
   set(get_gecode_version solvers/gecode/gecode -v >> versions)
 endif ()
