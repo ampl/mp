@@ -6,8 +6,10 @@
 .*ilcp/cp.h: C4244.*
 .*ilosatomi.h: null character\(s\) ignored
 ^concert.lib: LNK4099: PDB 'concert.pdb' was not found.*
-CoinPresolvePsdebug.cpp.obj: LNK4221:.*
 .*: could not create compact unwind
 
 .*solvers[/\\][a-z0-9_]+.c$: .*
 .*tables[/\\][a-z0-9_]+.c$: .*
+
+CoinPresolvePsdebug.cpp.obj: LNK4221:.*
+[0-9]+ warning(s)? generated\.
