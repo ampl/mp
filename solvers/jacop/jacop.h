@@ -413,7 +413,7 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   std::vector<std::string> jvm_options_;
   jlong outlev_;
   double output_frequency_;
-  steady_clock::time_point last_output_time_;
+  steady_clock::time_point next_output_time_;
   unsigned output_count_;
   std::string header_;
   const char *var_select_;
@@ -465,6 +465,12 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   void SetOutputFrequency(const char *name, double value);
 
   fmt::TempFormatter<Printer> Output(fmt::StringRef format);
+
+  steady_clock::duration GetOutputInterval() const {
+    return steady_clock::duration(
+          static_cast<steady_clock::rep>(output_frequency_ *
+              steady_clock::period::den / steady_clock::period::num));
+  }
 
   // Prints the solution log entry if the time is right.
   void PrintLogEntry();
