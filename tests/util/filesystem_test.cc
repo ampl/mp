@@ -50,5 +50,6 @@ TEST(FilesystemTest, GetExecutablePath) {
 #ifdef WIN32
   ending += ".exe";
 #endif
-  EXPECT_EQ(ending, path.substr(path.size() - ending.size()));
+  EXPECT_EQ(ending, path.size() >= ending.size() ?
+      path.substr(path.size() - ending.size()) : path);
 }
