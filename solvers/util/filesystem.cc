@@ -41,6 +41,8 @@ ampl::path ampl::GetExecutablePath() {
     if (_NSGetExecutablePath(&buffer[0], &size) != 0)
       assert(0 && "_NSGetExecutablePath failed");
   }
+  if (size == BUFFER_SIZE)
+    size = std::strlen(&buffer[0]);
   const char *s = &buffer[0];
   return path(s, s + size);
 }
