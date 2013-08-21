@@ -12,4 +12,4 @@
 .*tables[/\\][a-z0-9_]+.c$: .*
 
 CoinPresolvePsdebug.cpp.obj: LNK4221:.*
-[0-9]+ warning(s)? generated\.
+.*: [0-9]+ warning(s)? generated
