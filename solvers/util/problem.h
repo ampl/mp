@@ -122,7 +122,7 @@ class Problem : Noncopyable {
   static void IncreaseCapacity(int size, int &capacity) {
     if (capacity == 0 && size != 0)
       throw Error("Problem can't be modified");
-    capacity = std::max(capacity, size);
+    capacity = (std::max)(capacity, size);
     capacity = capacity ? 2 * capacity : 8;
   }
 
