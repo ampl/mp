@@ -72,7 +72,7 @@ class TestExpr : public Expr {
 struct TestGrad {
   TestGrad *next;
   double coef;
-  double varno;
+  int varno;
 };
 
 }
