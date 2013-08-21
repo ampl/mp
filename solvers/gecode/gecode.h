@@ -36,6 +36,7 @@
 # pragma warning(pop)
 #endif
 
+#include "solvers/util/clock.h"
 #include "solvers/util/solver.h"
 
 namespace ampl {
@@ -351,8 +352,14 @@ class GecodeSolver : public Solver<GecodeSolver> {
     Gecode::Support::Timer timer_;
     GecodeSolver &solver_;
     double time_limit_in_milliseconds_;
-    double last_output_time_;
+    steady_clock::time_point next_output_time_;
     bool output_or_limit_;
+
+    steady_clock::duration GetOutputInterval() const {
+      return steady_clock::duration(
+            static_cast<steady_clock::rep>(solver_.output_frequency_ *
+                steady_clock::period::den / steady_clock::period::num));
+    }
 
    public:
     explicit Stop(GecodeSolver &s);
