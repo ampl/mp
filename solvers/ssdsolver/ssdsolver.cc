@@ -23,6 +23,10 @@
 
 #include "ssdsolver.h"
 
+#ifdef WIN32
+# define putenv _putenv
+#endif
+
 namespace {
 
 struct ValueScenario {

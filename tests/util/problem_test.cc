@@ -34,6 +34,10 @@ using ampl::Problem;
 using ampl::ProblemChanges;
 using ampl::Solution;
 
+#ifdef WIN32
+# define putenv _putenv
+#endif
+
 TEST(SolutionTest, DefaultCtor) {
   Solution s;
   EXPECT_EQ(Solution::UNKNOWN, s.status());

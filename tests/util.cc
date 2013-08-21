@@ -12,6 +12,7 @@ extern "C" {
 
 #ifdef WIN32
 # include <direct.h>
+# define chdir _chdir
 #else
 # include <unistd.h>
 #endif

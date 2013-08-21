@@ -20,7 +20,6 @@
  Author: Victor Zverovich
  */
 
-#include "tests/util.h"
 #include "solvers/util/filesystem.h"
 #include "gtest/gtest.h"
 #include <cstring>
@@ -43,9 +42,7 @@ TEST(FilesystemTest, NonemptyPath) {
 }
 
 TEST(FilesystemTest, GetExecutablePath) {
-  ChangeDirectory("..");
   std::string path = ampl::GetExecutablePath().string();
-  ChangeDirectory("util");
   std::string ending = "/util/filesystem_test";
 #ifdef WIN32
   ending += ".exe";
