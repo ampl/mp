@@ -53,6 +53,20 @@ class duration {
 
   rep count() const { return rep_; }
 
+  duration &operator+=(const duration &d) {
+    rep_ += d.rep_;
+    return *this;
+  }
+
+  duration &operator-=(const duration &d) {
+    rep_ -= d.rep_;
+    return *this;
+  }
+
+  friend duration operator+(const duration &lhs, const duration &rhs) {
+    return duration(lhs.rep_ + rhs.rep_);
+  }
+
   friend duration operator-(const duration &lhs, const duration &rhs) {
     return duration(lhs.rep_ - rhs.rep_);
   }
@@ -79,8 +93,45 @@ class time_point {
 
   duration time_since_epoch() const { return d_; }
 
+  time_point &operator+=(const duration &d) {
+    d_ += d;
+    return *this;
+  }
+
+  friend time_point operator+(const time_point &pt, const duration &d) {
+    return time_point(pt) += d;
+  }
+
+  friend time_point operator+(const duration &d, const time_point &pt) {
+    return time_point(pt) += d;
+  }
+
   friend duration operator-(const time_point &lhs, const time_point &rhs) {
     return duration(lhs.d_ - rhs.d_);
+  }
+
+  friend bool operator==(const time_point &lhs, const time_point &rhs) {
+    return lhs.d_.count() == rhs.d_.count();
+  }
+
+  friend bool operator!=(const time_point &lhs, const time_point &rhs) {
+    return lhs.d_.count() != rhs.d_.count();
+  }
+
+  friend bool operator<(const time_point &lhs, const time_point &rhs) {
+    return lhs.d_.count() < rhs.d_.count();
+  }
+
+  friend bool operator<=(const time_point &lhs, const time_point &rhs) {
+    return lhs.d_.count() <= rhs.d_.count();
+  }
+
+  friend bool operator>(const time_point &lhs, const time_point &rhs) {
+    return lhs.d_.count() > rhs.d_.count();
+  }
+
+  friend bool operator>=(const time_point &lhs, const time_point &rhs) {
+    return lhs.d_.count() >= rhs.d_.count();
   }
 };
 
