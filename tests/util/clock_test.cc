@@ -43,7 +43,20 @@ TEST(ClockTest, Duration) {
   static_cast< ratio<1> >(duration<Rep>::period());
   EXPECT_EQ(0, duration<int>().count());
   EXPECT_EQ(42, duration<int>(42).count());
-  EXPECT_EQ(10, (duration<int>(15) - duration<int>(5)).count());
+}
+
+TEST(ClockTest, DurationPlus) {
+  duration<int> d(15);
+  EXPECT_EQ(20, (d += duration<int>(5)).count());
+  EXPECT_EQ(20, d.count());
+  EXPECT_EQ(30, (duration<int>(20) + duration<int>(10)).count());
+}
+
+TEST(ClockTest, DurationMinus) {
+  duration<int> d(20);
+  EXPECT_EQ(15, (d -= duration<int>(5)).count());
+  EXPECT_EQ(15, d.count());
+  EXPECT_EQ(10, (duration<int>(20) - duration<int>(10)).count());
 }
 
 TEST(ClockTest, DurationCast) {
@@ -55,18 +68,55 @@ TEST(ClockTest, DurationCast) {
           duration<int, ratio<3, 5> >(10)).count());
 }
 
+struct Duration {};
+
+struct Clock {
+  typedef Duration duration;
+};
+
+typedef time_point<Clock, duration<int> > TimePoint;
+
 TEST(ClockTest, TimePoint) {
-  struct Duration {};
   static_cast<Duration>(time_point<void, Duration>::duration());
-  struct Clock {
-    typedef Duration duration;
-  };
   static_cast<Duration>(time_point<Clock>::duration());
-  typedef time_point<Clock, duration<int> > TimePoint;
   EXPECT_EQ(0, TimePoint().time_since_epoch().count());
   EXPECT_EQ(42, TimePoint(duration<int>(42)).time_since_epoch().count());
+}
+
+TEST(ClockTest, TimePointPlus) {
+  TimePoint t(duration<int>(15));
+  EXPECT_EQ(20, (t += duration<int>(5)).time_since_epoch().count());
+  EXPECT_EQ(20, t.time_since_epoch().count());
+  EXPECT_EQ(30, (TimePoint(duration<int>(20)) + duration<int>(10)).
+      time_since_epoch().count());
+  EXPECT_EQ(30, (duration<int>(10) + TimePoint(duration<int>(20))).
+      time_since_epoch().count());
+}
+
+TEST(ClockTest, TimePointMinus) {
   EXPECT_EQ(12,
       (TimePoint(duration<int>(16)) - TimePoint(duration<int>(4))).count());
+}
+
+TEST(ClockTest, TimePointCompare) {
+  int count = 0;
+  for (int i = 5; i <= 15; i += 5) {
+    for (int j = 5; j <= 15; j += 5, ++count) {
+      EXPECT_EQ(i == j,
+          TimePoint(duration<int>(i)) == TimePoint(duration<int>(j)));
+      EXPECT_EQ(i != j,
+          TimePoint(duration<int>(i)) != TimePoint(duration<int>(j)));
+      EXPECT_EQ(i < j,
+          TimePoint(duration<int>(i)) < TimePoint(duration<int>(j)));
+      EXPECT_EQ(i <= j,
+          TimePoint(duration<int>(i)) <= TimePoint(duration<int>(j)));
+      EXPECT_EQ(i > j,
+          TimePoint(duration<int>(i)) > TimePoint(duration<int>(j)));
+      EXPECT_EQ(i >= j,
+          TimePoint(duration<int>(i)) >= TimePoint(duration<int>(j)));
+    }
+  }
+  EXPECT_EQ(9, count);
 }
 
 TEST(ClockTest, Now) {
