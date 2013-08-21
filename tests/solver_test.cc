@@ -452,7 +452,7 @@ TEST_P(SolverTest, PowConstBase) {
 TEST_P(SolverTest, NumericConstant) {
   EXPECT_EQ(42, Eval(AddNum(42)));
   if (HasFeature(feature::FLOAT_CONST)) {
-    EXPECT_EQ(Eval(AddBinary(OPMULT, AddNum(0.42), AddNum(100))), 42);
+    EXPECT_EQ(42, Eval(AddBinary(OPMULT, AddNum(0.42), AddNum(100))));
     return;
   }
   EXPECT_THROW_MSG(Eval(AddNum(0.42));, UnsupportedExprError,

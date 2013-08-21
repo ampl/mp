@@ -91,10 +91,10 @@ class SolverTest
       return has_value_;
     }
 
-    operator double() const {
-      if (!has_value_)
+    friend bool operator==(double lhs, const EvalResult &rhs) {
+      if (!rhs.has_value_)
         throw std::runtime_error("no value");
-      return value_;
+      return lhs == rhs.value_;
     }
 
     double obj_value() const {
