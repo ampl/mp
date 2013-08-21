@@ -13,6 +13,12 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
     ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_CP_LIBRARIES} ${CPLEX_LIBRARIES})
   add_dependencies(amplilogcp arith_h)
 
+  # Link with librt for clock_gettime (Linux on i386).
+  find_library(RT_LIBRARY rt)
+  if (RT_LIBRARY)
+    target_link_libraries(amplilogcp ${RT_LIBRARY})
+  endif ()
+
   if (MSVC)
     # CP Optimizer only provides libraries built with DLL MSVC runtime
     # so change the compiler flags and build a compatible version of the
