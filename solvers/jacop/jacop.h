@@ -435,7 +435,9 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   ObjType obj_type_;
   jmethodID value_;
 
-  int DoGetIntOption(const char *, jlong *option) const { return *option; }
+  int DoGetIntOption(const char *, jlong *option) const {
+    return static_cast<int>(*option);
+  }
 
   void DoSetIntOption(const char *name, int value, jlong *option) {
     if (value < 0)
