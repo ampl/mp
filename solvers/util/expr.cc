@@ -111,7 +111,10 @@ std::size_t std::hash<ampl::Expr>::operator()(Expr expr) const {
 # elif defined(_MSC_VER)
 #  pragma message("warning: unordered_map not available, numberof may be slow")
 # else
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wpedantic"
 #  warning "unordered_map not available, numberof may be slow"
+#  pragma clang diagnostic pop
 # endif
 #endif
 
