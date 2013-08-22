@@ -426,7 +426,6 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
   enum Option {
     DEBUGEXPR,
     OPTIMIZER,
-    TIMING,
     USENUMBEROF,
     NUM_OPTIONS
   };

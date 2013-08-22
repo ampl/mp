@@ -146,6 +146,10 @@ struct steady_clock {
 
   static time_point now();  // noexcept
 };
+
+// Returns the wall clock time in seconds passed since t and resets t to
+// the current time.
+double GetTimeAndReset(steady_clock::time_point &t);
 }
 
 #endif  // SOLVERS_UTIL_CLOCK_H_

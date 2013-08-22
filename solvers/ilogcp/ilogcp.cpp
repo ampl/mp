@@ -24,6 +24,8 @@
 #include <cctype>
 #include <cstdlib>
 
+#include "solvers/util/clock.h"
+
 using std::vector;
 
 #ifndef ILOGCP_NO_VERS
@@ -306,7 +308,6 @@ IlogCPSolver::IlogCPSolver() :
    Solver<IlogCPSolver>("ilogcp", 0, YYYYMMDD), gotopttype_(false) {
   options_[DEBUGEXPR] = 0;
   options_[OPTIMIZER] = AUTO;
-  options_[TIMING] = 0;
   options_[USENUMBEROF] = 1;
 
   set_long_name(fmt::Format("ilogcp {}.{}.{}")
@@ -504,11 +505,6 @@ IlogCPSolver::IlogCPSolver() :
       "      0 = cputime (default)\n"
       "      1 = elapsedtime\n",
       this, IloCP::TimeMode, IloCP::CPUTime, TimeModes)));
-
-  AddIntOption("timing",
-      "0 or 1 (default 0):  Whether to display timings for the run.\n",
-      &IlogCPSolver::GetBoolOption, &IlogCPSolver::SetBoolOption,
-      IlogCPSolver::TIMING);
 
   AddIntOption("usenumberof",
       "0 or 1 (default 1):  Whether to consolidate 'numberof' expressions "
@@ -717,7 +713,7 @@ bool IlogCPSolver::ParseOptions(char **argv, unsigned flags) {
 }
 
 void IlogCPSolver::Solve(Problem &p) {
-  double start_time = xectim_();
+  steady_clock::time_point time = steady_clock::now();
 
   // Set up optimization problem in ILOG Concert.
 
@@ -780,8 +776,7 @@ void IlogCPSolver::Solve(Problem &p) {
 
   converter.FinishBuildingNumberOf();
 
-  double define_time = xectim_() - start_time;
-  start_time = xectim_();
+  double setup_time = GetTimeAndReset(time);
 
   // Solve the problem.
   IloAlgorithm alg(optimizer_->algorithm());
@@ -796,17 +791,10 @@ void IlogCPSolver::Solve(Problem &p) {
   }
   SignalHandler sh(*this, optimizer_.get());
   vector<double> solution, dual_solution;
-  double setup_time = xectim_() - start_time;
-  double solve_time = 0, output_time = 0;
-  start_time = xectim_();
+  double solution_time = 0, output_time = 0;
   optimizer_->StartSearch();
-  solve_time += xectim_() - start_time;
-  start_time = xectim_();
   for (bool succeeded = true, first = true; succeeded; first = false) {
-    start_time = xectim_();
     succeeded = optimizer_->FindNextSolution();
-    solve_time += xectim_() - start_time;
-    start_time = xectim_();
     if (!succeeded && !first)
       continue;
     // Convert solution status.
@@ -876,20 +864,19 @@ void IlogCPSolver::Solve(Problem &p) {
         format_message(", objective {}") << ObjPrec(obj_value);
       }
     }
+    solution_time += GetTimeAndReset(time);
     HandleSolution(format_message.c_str(), solution.empty() ? 0 : &solution[0],
         dual_solution.empty() ? 0 : &dual_solution[0], obj_value);
-    output_time += xectim_() - start_time;
+    output_time += GetTimeAndReset(time);
   }
-  start_time = xectim_();
   optimizer_->EndSearch();
-  solve_time += xectim_() - start_time;
+  solution_time += GetTimeAndReset(time);
 
-  if (GetOption(TIMING)) {
-    std::cerr << "\n"
-        << "Define = " << define_time + read_time() << "\n"
-        << "Setup =  " << setup_time << "\n"
-        << "Solve =  " << solve_time << "\n"
-        << "Output = " << output_time << "\n";
+  if (timing()) {
+    Print("Setup time = {:.6f}s\n"
+          "Solution time = {:.6f}s\n"
+          "Output time = {:.6f}s\n")
+            << setup_time << solution_time << output_time;
   }
 }
 }

@@ -371,12 +371,13 @@ TEST_F(IlogCPTest, OptimizerOption) {
   EXPECT_TRUE(dynamic_cast<IloCplexI*>(s.alg().getImpl()) == nullptr);
 }
 
+// TODO: move to basic_solver_test and check if ilogcp reports time instead
 TEST_F(IlogCPTest, TimingOption) {
   EXPECT_TRUE(ParseOptions("timing=0"));
-  EXPECT_EQ(0, s.GetOption(IlogCPSolver::TIMING));
+  EXPECT_EQ(0, s.timing());
   EXPECT_EQ(0, s.GetIntOption("timing"));
   EXPECT_TRUE(ParseOptions("timing=1"));
-  EXPECT_EQ(1, s.GetOption(IlogCPSolver::TIMING));
+  EXPECT_EQ(1, s.timing());
   EXPECT_EQ(1, s.GetIntOption("timing"));
   EXPECT_FALSE(ParseOptions("timing=42"));
   EXPECT_FALSE(ParseOptions("timing=oops"));

@@ -35,6 +35,7 @@
 # define strcasecmp _stricmp
 #endif
 
+#include "solvers/util/clock.h"
 #include "solvers/util/format.h"
 #include "solvers/getstub.h"
 
@@ -193,7 +194,7 @@ char *BasicSolver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
 
 BasicSolver::BasicSolver(
     fmt::StringRef name, fmt::StringRef long_name, long date)
-: name_(name), has_errors_(false), read_flags_(0), read_time_(0) {
+: name_(name), has_errors_(false), read_flags_(0), timing_(false) {
   error_handler_ = this;
   output_handler_ = this;
   sol_handler_ = this;
@@ -247,6 +248,17 @@ BasicSolver::BasicSolver(
   };
   AddOption(OptionPtr(new WantSolOption(*this)));
 
+  struct TimingOption : TypedSolverOption<int> {
+    BasicSolver &s;
+    TimingOption(BasicSolver &s) : TypedSolverOption<int>("timing",
+        "0 or 1 (default 0):  Whether to display timings for the run.\n"),
+        s(s) {}
+
+    int GetValue() const { return s.timing_; }
+    void SetValue(int value) { s.timing_ = value; }
+  };
+  AddOption(OptionPtr(new TimingOption(*this)));
+
   cl_option_ = keyword();
   cl_option_.name = const_cast<char*>("=");
   cl_option_.desc = const_cast<char*>("show name= possibilities");
@@ -271,8 +283,13 @@ bool BasicSolver::ProcessArgs(char **&argv, unsigned flags) {
     usage_noexit_ASL(this, 1);
     return false;
   }
+  steady_clock::time_point start = steady_clock::now();
   problem_.Read(stub, read_flags_);
-  return ParseOptions(argv, flags);
+  double read_time = GetTimeAndReset(start);
+  bool result = ParseOptions(argv, flags);
+  if (timing_)
+    Print("Input time = {:.6f}s\n") << read_time;
+  return result;
 }
 
 SolverOption *BasicSolver::FindOption(const char *name) const {
@@ -373,24 +390,8 @@ bool BasicSolver::ParseOptions(char **argv, unsigned flags) {
 }
 
 int BasicSolver::Run(char **argv) {
-  double start_time = xectim_();
   if (!ProcessArgs(argv))
     return 1;
-
-  // Reset is used to reset read_time_ even in case of exceptions.
-  // Otherwise the read time from Run may affect the time reported in
-  // a subsequent Solve:
-  //   solver.Run(...);
-  //   solver.Solve(...); // Doesn't read anything, but reports previous
-  //                      // read time.
-  class Reset {
-   private:
-    double &value_;
-   public:
-    Reset(double &value) : value_(value) {}
-    ~Reset() { value_ = 0; }
-  };
-  Reset reset(read_time_ = xectim_() - start_time);
   Solve(problem());
   return 0;
 }

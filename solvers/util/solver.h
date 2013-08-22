@@ -254,7 +254,6 @@ class BasicSolver
   SolutionHandler *sol_handler_;
 
   unsigned read_flags_;  // flags passed to Problem::Read
-  double read_time_;
 
   struct OptionNameLess {
     bool operator()(const char *lhs, const char *rhs) const;
@@ -263,6 +262,8 @@ class BasicSolver
   typedef std::map<const char*, SolverOption*, OptionNameLess> OptionMap;
   OptionMap options_;
   keyword cl_option_;  // command-line option '='
+
+  bool timing_;
 
   static char *PrintOptionsAndExit(Option_Info *oi, keyword *kw, char *value);
 
@@ -347,8 +348,6 @@ class BasicSolver
     Option_Info::version = const_cast<char*>(version_.c_str());
   }
 
-  double read_time() const { return read_time_; }
-
   // Sets the flags for Problem::Read.
   void set_read_flags(unsigned flags) { read_flags_ = flags; }
 
@@ -427,6 +426,9 @@ class BasicSolver
   //   4 = dual variables to stdout
   //   8 = suppress solution message
   int wantsol() const { return Option_Info::wantsol; }
+
+  // Returns true if the timing is enabled.
+  bool timing() const { return timing_; }
 
   // Returns the error handler.
   ErrorHandler *error_handler() { return error_handler_; }
