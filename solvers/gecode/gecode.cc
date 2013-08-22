@@ -528,6 +528,8 @@ GecodeSolver::GecodeSolver()
 }
 
 void GecodeSolver::Solve(Problem &p) {
+  steady_clock::time_point time = steady_clock::now();
+
   // Set up an optimization problem in Gecode.
   std::auto_ptr<NLToGecodeConverter>
     converter(new NLToGecodeConverter(p.num_vars(), icl_));
@@ -559,6 +561,8 @@ void GecodeSolver::Solve(Problem &p) {
   Stop stop(*this);
   options_.stop = &stop;
 
+  double setup_time = GetTimeAndReset(time);
+
   // Solve the problem.
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   std::auto_ptr<GecodeProblem> solution;
@@ -566,7 +570,6 @@ void GecodeSolver::Solve(Problem &p) {
   Search::Statistics stats;
   bool stopped = false;
   // TODO: add an option to return multiple solutions
-  // TODO: report Gecode solution time
   // TODO: add the following options
   // - restart (constant, linear, luby, geometric) used by activity* labeling
   // - restart_base
@@ -620,6 +623,8 @@ void GecodeSolver::Solve(Problem &p) {
       final_solution[j] = vars[j].val();
   }
 
+  double solution_time = GetTimeAndReset(time);
+
   fmt::Formatter format;
   format("{}: {}\n") << long_name() << status;
   format("{} nodes, {} fails") << stats.node << stats.fail;
@@ -627,5 +632,14 @@ void GecodeSolver::Solve(Problem &p) {
     format(", objective {}") << ObjPrec(obj_val);
   HandleSolution(format.c_str(),
       final_solution.empty() ? 0 : &final_solution[0], 0, obj_val);
+
+  double output_time = GetTimeAndReset(time);
+
+  if (timing()) {
+    Print("Setup time = {:.6f}s\n"
+          "Solution time = {:.6f}s\n"
+          "Output time = {:.6f}s\n")
+              << setup_time << solution_time << output_time;
+  }
 }
 }

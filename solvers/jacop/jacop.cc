@@ -446,6 +446,8 @@ std::string JaCoPSolver::GetOptionHeader() {
 }
 
 void JaCoPSolver::Solve(Problem &p) {
+  steady_clock::time_point time = steady_clock::now();
+
   std::vector<const char*> jvm_options(jvm_options_.size() + 2);
   for (size_t i = 0, n = jvm_options_.size(); i != n; ++i)
     jvm_options[i] = jvm_options_[i].c_str();
@@ -549,6 +551,8 @@ void JaCoPSolver::Solve(Problem &p) {
         dfs_class.get(), "setDecisionsOut", "(J)V"), decision_limit_);
   }
 
+  double setup_time = GetTimeAndReset(time);
+
   // Solve the problem.
   header_ = str(fmt::Format("{:>10} {:>10} {:>10} {:>13}\n")
     << "Max Depth" << "Nodes" << "Fails" << (has_obj ? "Best Obj" : ""));
@@ -615,6 +619,8 @@ void JaCoPSolver::Solve(Problem &p) {
       final_solution[j] = env_.CallIntMethod(vars[j], value_);
   }
 
+  double solution_time = GetTimeAndReset(time);
+
   fmt::Formatter format;
   format("{}: {}\n") << long_name() << status;
   format("{} nodes, {} fails") << env_.CallIntMethod(search_.get(), get_nodes_)
@@ -623,5 +629,14 @@ void JaCoPSolver::Solve(Problem &p) {
     format(", objective {}") << ObjPrec(obj_val);
   HandleSolution(format.c_str(),
       final_solution.empty() ? 0 : &final_solution[0], 0, obj_val);
+
+  double output_time = GetTimeAndReset(time);
+
+  if (timing()) {
+    Print("Setup time = {:.6f}s\n"
+          "Solution time = {:.6f}s\n"
+          "Output time = {:.6f}s\n")
+            << setup_time << solution_time << output_time;
+  }
 }
 }

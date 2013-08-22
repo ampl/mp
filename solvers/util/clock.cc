@@ -82,4 +82,11 @@ steady_clock::time_point steady_clock::now() {
 }
 
 #endif
+
+double GetTimeAndReset(steady_clock::time_point &t) {
+  steady_clock::time_point now = steady_clock::now();
+  double seconds = duration_cast< duration<double> >(now - t).count();
+  t = now;
+  return seconds;
+}
 }
