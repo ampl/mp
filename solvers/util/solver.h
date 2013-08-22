@@ -28,6 +28,7 @@
 #include <cstring>
 
 #include <limits>
+#include <map>
 #include <memory>
 
 extern "C" {
@@ -163,7 +164,7 @@ class SignalHandler {
 // An option error.
 class OptionError : public Error {
 public:
-  OptionError(fmt::StringRef message) : Error(message) {}
+  explicit OptionError(fmt::StringRef message) : Error(message) {}
 };
 
 // An exception thrown when an invalid value is provided for an option.

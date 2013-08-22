@@ -23,8 +23,6 @@
 
 #include "solvers/util/clock.h"
 
-#include <cassert>
-
 #if defined(__APPLE__)
 # include <mach/mach_time.h>
 #elif defined(WIN32)
@@ -32,6 +30,8 @@
 #else
 # include <time.h>
 #endif
+
+#include <cassert>
 
 namespace ampl {
 

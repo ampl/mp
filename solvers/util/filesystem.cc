@@ -22,6 +22,15 @@
 
 #include "solvers/util/filesystem.h"
 
+#if defined(__APPLE__)
+# include <mach-o/dyld.h>
+#elif defined(WIN32)
+# include <windows.h>
+#else
+# include <errno.h>
+# include <unistd.h>
+#endif
+
 #include "solvers/util/error.h"
 
 namespace {
@@ -29,8 +38,6 @@ enum { BUFFER_SIZE = 500 };
 }
 
 #if defined(__APPLE__)
-
-#include <mach-o/dyld.h>
 
 ampl::path ampl::GetExecutablePath() {
   fmt::internal::Array<char, BUFFER_SIZE> buffer;
@@ -49,8 +56,6 @@ ampl::path ampl::GetExecutablePath() {
 
 #elif defined(WIN32)
 
-#include <windows.h>
-
 ampl::path ampl::GetExecutablePath() {
   fmt::internal::Array<char, BUFFER_SIZE> buffer;
   buffer.resize(BUFFER_SIZE);
@@ -68,9 +73,6 @@ ampl::path ampl::GetExecutablePath() {
 }
 
 #else
-
-#include <errno.h>
-#include <unistd.h>
 
 ampl::path ampl::GetExecutablePath() {
   fmt::internal::Array<char, BUFFER_SIZE> buffer;

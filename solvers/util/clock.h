@@ -24,6 +24,8 @@
 #ifndef SOLVERS_UTIL_CLOCK_H_
 #define SOLVERS_UTIL_CLOCK_H_
 
+#include <cstdint>
+
 namespace ampl {
 
 template <int N, int D = 1>
@@ -137,12 +139,12 @@ class time_point {
 
 // A clock for calculating time differences.
 struct steady_clock {
-  typedef long long rep;
+  typedef int64_t rep;
   typedef ratio<1, 1000000000> period;
   typedef ampl::duration<rep, period> duration;
   typedef ampl::time_point<steady_clock> time_point;
 
-  static time_point now(); // noexcept
+  static time_point now();  // noexcept
 };
 }
 
