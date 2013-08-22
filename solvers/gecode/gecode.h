@@ -23,7 +23,6 @@
 #ifndef AMPL_SOLVERS_GECODE_H
 #define AMPL_SOLVERS_GECODE_H
 
-#include <memory>
 #include <string>
 
 #ifdef _MSC_VER
@@ -349,9 +348,8 @@ class GecodeSolver : public Solver<GecodeSolver> {
   class Stop : public Gecode::Search::Stop {
    private:
     SignalHandler sh_;
-    Gecode::Support::Timer timer_;
     GecodeSolver &solver_;
-    double time_limit_in_milliseconds_;
+    steady_clock::time_point end_time_;
     steady_clock::time_point next_output_time_;
     bool output_or_limit_;
 
