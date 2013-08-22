@@ -23,19 +23,18 @@
 #ifndef SOLVERS_UTIL_EXPR_H_
 #define SOLVERS_UTIL_EXPR_H_
 
+#ifdef HAVE_UNORDERED_MAP
+# include <unordered_map>
+#endif
+
 #include <cassert>
 #include <cstddef>
 #include <algorithm>
 #include <iterator>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
-
-#ifdef HAVE_UNORDERED_MAP
-# include <unordered_map>
-#endif
-
-#include "solvers/util/error.h"
 
 extern "C" {
 #include "solvers/nlp.h"
@@ -144,6 +143,8 @@ extern "C" {
 #undef zac
 #undef zao
 #undef zerograds
+
+#include "solvers/util/error.h"
 
 namespace ampl {
 class Expr;
@@ -1486,7 +1487,7 @@ class MatchNumberOfArgs {
   NumberOfExpr expr_;
 
  public:
-  MatchNumberOfArgs(NumberOfExpr e) : expr_(e) {}
+  explicit MatchNumberOfArgs(NumberOfExpr e) : expr_(e) {}
 
   // Returns true if the stored expression has the same arguments as the nof's
   // expression.
@@ -1506,7 +1507,7 @@ class NumberOfMap {
     NumberOfExpr expr;
     ValueMap values;
 
-    NumberOf(NumberOfExpr e) : expr(e) {}
+    explicit NumberOf(NumberOfExpr e) : expr(e) {}
   };
 
  private:
@@ -1522,7 +1523,7 @@ class NumberOfMap {
   std::vector<NumberOf> numberofs_;
 
  public:
-  NumberOfMap(CreateVar cv) : create_var_(cv) {}
+  explicit NumberOfMap(CreateVar cv) : create_var_(cv) {}
 
   typedef typename std::vector<NumberOf>::const_iterator iterator;
 
