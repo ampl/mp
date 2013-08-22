@@ -85,16 +85,15 @@ const ampl::OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
     {"values_max", Gecode::INT_VALUES_MAX()},
     {}
 };
-
-inline bool operator==(
-    const Gecode::IntValBranch &lhs, const Gecode::IntValBranch &rhs) {
-  return lhs.select() == rhs.select();
-}
 }
 
 namespace Gecode {
 std::ostream &operator<<(std::ostream &os, const IntValBranch &b) {
   return os << b.select();
+}
+
+inline bool operator==(const IntValBranch &lhs, const IntValBranch &rhs) {
+  return lhs.select() == rhs.select();
 }
 }
 
