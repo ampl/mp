@@ -24,7 +24,7 @@
 #ifndef SOLVERS_UTIL_CLOCK_H_
 #define SOLVERS_UTIL_CLOCK_H_
 
-#include <cstdint>
+#include <stdint.h>
 
 namespace ampl {
 
