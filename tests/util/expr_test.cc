@@ -78,12 +78,14 @@ struct TestGrad {
 }
 
 namespace ampl {
+#ifndef NDEBUG
 namespace internal {
 template <>
 bool Is<TestExpr>(Expr e) {
   return e.kind() == Expr::BINARY || e.kind() == Expr::UNARY;
 }
 }
+#endif
 
 template <>
 class LinearExpr< LinearTerm<TestGrad> > {
