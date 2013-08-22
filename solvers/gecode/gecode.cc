@@ -24,7 +24,6 @@
 
 #include <limits>
 #include <memory>
-#include <string>
 #include <vector>
 
 using Gecode::BoolExpr;
@@ -318,24 +317,30 @@ BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr) {
 }
 
 GecodeSolver::Stop::Stop(GecodeSolver &s)
-: sh_(s), solver_(s), time_limit_in_milliseconds_(s.time_limit_ * 1000) {
-  output_or_limit_ = s.output_ || time_limit_in_milliseconds_ < DBL_MAX ||
+: sh_(s), solver_(s) {
+  output_or_limit_ = s.output_ || s.time_limit_ < DBL_MAX ||
       s.node_limit_ != ULONG_MAX || s.fail_limit_ != ULONG_MAX;
-  timer_.start();
-  next_output_time_ = steady_clock::now() + GetOutputInterval();
+  steady_clock::time_point start = steady_clock::now();
+  double end_time_in_ticks = start.time_since_epoch().count() +
+      s.time_limit_ * steady_clock::period::den / steady_clock::period::num;
+  end_time_ = steady_clock::time_point(steady_clock::duration(
+      end_time_in_ticks >= std::numeric_limits<steady_clock::rep>::max() ?
+          std::numeric_limits<steady_clock::rep>::max() :
+          static_cast<steady_clock::rep>(end_time_in_ticks)));
+  next_output_time_ = start + GetOutputInterval();
 }
 
 bool GecodeSolver::Stop::stop(
     const Search::Statistics &s, const Search::Options &) {
   if (SignalHandler::stop()) return true;
   if (!output_or_limit_) return false;
-  double time = timer_.stop();
-  if (solver_.output_ && steady_clock::now() >= next_output_time_) {
+  steady_clock::time_point time = steady_clock::now();
+  if (solver_.output_ && time >= next_output_time_) {
     solver_.Output("{:10} {:10} {:10}\n") << s.depth << s.node << s.fail;
     next_output_time_ += GetOutputInterval();
   }
-  return time > time_limit_in_milliseconds_ ||
-      s.node > solver_.node_limit_ || s.fail > solver_.fail_limit_;
+  return time > end_time_ || s.node > solver_.node_limit_ ||
+      s.fail > solver_.fail_limit_;
 }
 
 void GecodeSolver::SetBoolOption(const char *name, int value, bool *option) {
