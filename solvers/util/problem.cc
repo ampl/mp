@@ -51,7 +51,7 @@ class ExprPrinter : public ampl::ExprVisitor<ExprPrinter, void, void> {
   }
 
  public:
-  ExprPrinter(fmt::Writer &w) : writer_(w) {}
+  explicit ExprPrinter(fmt::Writer &w) : writer_(w) {}
 
   /*void VisitPlus(BinaryExpr e) {
      // TODO
