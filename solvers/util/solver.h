@@ -30,6 +30,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <string>
 
 extern "C" {
 #include "solvers/getstub.h"
@@ -286,7 +287,7 @@ class BasicSolver
     ErrorHandler *handler_;
 
    public:
-    ErrorReporter(ErrorHandler *h) : handler_(h) {}
+    explicit ErrorReporter(ErrorHandler *h) : handler_(h) {}
 
     void operator()(const fmt::Formatter &f) const {
       handler_->HandleError(fmt::StringRef(f.c_str(), f.size()));
@@ -374,7 +375,7 @@ class BasicSolver
     OutputHandler *handler_;
 
    public:
-    Printer(OutputHandler *h) : handler_(h) {}
+    explicit Printer(OutputHandler *h) : handler_(h) {}
 
     void operator()(const fmt::Formatter &f) const {
       handler_->HandleOutput(fmt::StringRef(f.c_str(), f.size()));
@@ -498,7 +499,8 @@ class BasicSolver
   void HandleSolution(fmt::StringRef message,
       const double *values, const double *dual_values,
       double obj_value = std::numeric_limits<double>::quiet_NaN()) {
-    sol_handler_->HandleSolution(*this, message, values, dual_values, obj_value);
+    sol_handler_->HandleSolution(
+        *this, message, values, dual_values, obj_value);
   }
 
   // Reports an error printing the formatted error message to stderr.
