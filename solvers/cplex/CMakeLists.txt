@@ -11,6 +11,10 @@ if (CPLEX_FOUND)
     endif ()
     add_definitions(-Wno-deprecated-declarations -Wno-long-long
                     -Wno-sign-compare -Wno-uninitialized -Wno-unused-parameter)
+  elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_definitions(-Wno-self-assign -Wno-sign-compare
+                    -Wno-sometimes-uninitialized -Wno-string-plus-int
+                    -Wno-unused-parameter)
   elseif (MSVC)
     foreach (flag_var
              CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE

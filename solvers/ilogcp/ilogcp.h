@@ -23,9 +23,24 @@
 #ifndef SOLVERS_ILOGCP_ILOGCP_H_
 #define SOLVERS_ILOGCP_ILOGCP_H_
 
+#if __clang__
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wunused-parameter"
+# pragma clang diagnostic ignored "-Wunused-private-field"
+#elif _MSC_VER
+# pragma warning(push)
+# pragma warning(disable: 4244)
+#endif
+
 #include <ilconcert/ilomodel.h>
 #include <ilcplex/ilocplex.h>
 #include <ilcp/cp.h>
+
+#if __clang__
+# pragma clang diagnostic pop
+#elif _MSC_VER
+# pragma warning(pop)
+#endif
 
 #include <string.h> /* This and -fpermissive seem to be needed for MacOSX, */
                     /* at least with g++ 4.6.  Otherwise there are errors */

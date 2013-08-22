@@ -1,9 +1,6 @@
 # Warning suppression file for the buildbot.
 
 # Suppress CPLEX/Concert warnings:
-.*ilconcert/iloexpressioni.h: C4244.*
-.*ilcplex/ilocplexi.h: C4244.*
-.*ilcp/cp.h: C4244.*
 .*ilosatomi.h: null character\(s\) ignored
 ^concert.lib: LNK4099: PDB 'concert.pdb' was not found.*
 .*: could not create compact unwind
@@ -12,4 +9,7 @@
 .*tables[/\\][a-z0-9_]+.c$: .*
 
 CoinPresolvePsdebug.cpp.obj: LNK4221:.*
+.*CglProbing.cpp: use of unary operator that may be intended as compound assignment.*
+.*flatzinc.cpp: use of unary operator that may be intended as compound assignment.*
+
 .*: [0-9]+ warning(s)? generated
