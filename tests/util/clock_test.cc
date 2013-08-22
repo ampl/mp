@@ -38,9 +38,9 @@ TEST(ClockTest, Duration) {
   struct Rep {};
   struct Period {};
   typedef duration<Rep, Period> Duration;
-  static_cast<Rep>(Duration::rep());
-  static_cast<Period>(Duration::period());
-  static_cast< ratio<1> >(duration<Rep>::period());
+  (void)static_cast<Rep>(Duration::rep());
+  (void)static_cast<Period>(Duration::period());
+  (void)static_cast< ratio<1> >(duration<Rep>::period());
   EXPECT_EQ(0, duration<int>().count());
   EXPECT_EQ(42, duration<int>(42).count());
 }
@@ -77,8 +77,8 @@ struct Clock {
 typedef time_point<Clock, duration<int> > TimePoint;
 
 TEST(ClockTest, TimePoint) {
-  static_cast<Duration>(time_point<void, Duration>::duration());
-  static_cast<Duration>(time_point<Clock>::duration());
+  (void)static_cast<Duration>(time_point<void, Duration>::duration());
+  (void)static_cast<Duration>(time_point<Clock>::duration());
   EXPECT_EQ(0, TimePoint().time_since_epoch().count());
   EXPECT_EQ(42, TimePoint(duration<int>(42)).time_since_epoch().count());
 }
@@ -121,9 +121,9 @@ TEST(ClockTest, TimePointCompare) {
 
 TEST(ClockTest, Now) {
   EXPECT_EQ(42, steady_clock::rep(42));
-  static_cast< duration<steady_clock::rep, steady_clock::period> >(
+  (void)static_cast< duration<steady_clock::rep, steady_clock::period> >(
       steady_clock::duration());
-  static_cast< time_point<steady_clock> >(steady_clock::time_point());
+  (void)static_cast< time_point<steady_clock> >(steady_clock::time_point());
   steady_clock::time_point start = steady_clock::now();
   steady_clock::time_point finish = steady_clock::now();
   EXPECT_GT(finish.time_since_epoch().count(),
