@@ -20,10 +20,20 @@
  Author: Victor Zverovich
  */
 
+#if __clang__
+# pragma clang diagnostic push
+# pragma clang diagnostic ignored "-Wunused-parameter"
+# pragma clang diagnostic ignored "-Wunused-private-field"
+#endif
+
 #include <ilconcert/ilodiffi.h>
 #include <ilconcert/ilopathi.h>
 #include <ilcplex/ilocplex.h>
 #include <ilcp/cp.h>
+
+#if __clang__
+# pragma clang diagnostic pop
+#endif
 
 #include <algorithm>
 #include <memory>
