@@ -244,7 +244,11 @@ BasicSolver::BasicSolver(
         "      8 = suppress solution message\n"), s(s) {}
 
     int GetValue() const { return s.wantsol(); }
-    void SetValue(int value) { s.Option_Info::wantsol = value; }
+    void SetValue(int value) {
+      if ((value & ~0xf) != 0)
+        throw InvalidOptionValue("wantsol", value);
+      s.Option_Info::wantsol = value;
+    }
   };
   AddOption(OptionPtr(new WantSolOption(*this)));
 
@@ -255,7 +259,11 @@ BasicSolver::BasicSolver(
         s(s) {}
 
     int GetValue() const { return s.timing_; }
-    void SetValue(int value) { s.timing_ = value; }
+    void SetValue(int value) {
+      if (value != 0 && value != 1)
+        throw InvalidOptionValue("timing", value);
+      s.timing_ = value;
+    }
   };
   AddOption(OptionPtr(new TimingOption(*this)));
 

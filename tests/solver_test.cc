@@ -713,6 +713,35 @@ TEST_P(SolverTest, Maximize) {
   EXPECT_EQ(42, Solve(p).obj_value());
 }
 
+TEST_P(SolverTest, TimingOption) {
+  struct TestOutputHandler : ampl::OutputHandler {
+    std::string output;
+
+    virtual ~TestOutputHandler() {}
+    void HandleOutput(fmt::StringRef output) {
+      this->output += output;
+    }
+  };
+  TestOutputHandler oh;
+  solver_->set_output_handler(&oh);
+
+  Problem p;
+  p.AddVar(42, 100, ampl::INTEGER);
+  p.AddObj(ampl::MIN, AddVar(0));
+
+  solver_->SetIntOption("timing", 0);
+  solver_->Solve(p);
+  EXPECT_TRUE(oh.output.find("Setup time = ") == std::string::npos);
+  EXPECT_TRUE(oh.output.find("Solution time = ") == std::string::npos);
+  EXPECT_TRUE(oh.output.find("Output time = ") == std::string::npos);
+
+  solver_->SetIntOption("timing", 1);
+  solver_->Solve(p);
+  EXPECT_TRUE(oh.output.find("Setup time = ") != std::string::npos);
+  EXPECT_TRUE(oh.output.find("Solution time = ") != std::string::npos);
+  EXPECT_TRUE(oh.output.find("Output time = ") != std::string::npos);
+}
+
 // ---------------------------------------------------------------------------
 // Solve test problems
 

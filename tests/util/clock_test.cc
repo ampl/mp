@@ -28,6 +28,8 @@ using ampl::duration;
 using ampl::steady_clock;
 using ampl::time_point;
 
+namespace {
+
 TEST(ClockTest, Ratio) {
   typedef ratio<42, 77> Ratio;
   EXPECT_EQ(42, Ratio::num);
@@ -128,4 +130,13 @@ TEST(ClockTest, Now) {
   steady_clock::time_point finish = steady_clock::now();
   EXPECT_GT(finish.time_since_epoch().count(),
       start.time_since_epoch().count());
+}
+
+TEST(ClockTest, GetTimeAndReset) {
+  steady_clock::time_point start;
+  steady_clock::time_point t = start;
+  double time = GetTimeAndReset(t);
+  EXPECT_EQ(ampl::duration_cast< duration<double> >(t - start).count(), time);
+  EXPECT_GT(t, start);
+}
 }

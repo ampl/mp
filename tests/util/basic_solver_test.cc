@@ -32,6 +32,7 @@
 #endif
 
 using ampl::BasicSolver;
+using ampl::InvalidOptionValue;
 using ampl::OptionError;
 using ampl::Problem;
 using ampl::Solver;
@@ -859,8 +860,42 @@ TEST(SolverTest, VersionOptionReset) {
 TEST(SolverTest, WantsolOption) {
   TestSolver s("");
   EXPECT_EQ(0, s.wantsol());
-  EXPECT_TRUE(s.ParseOptions(Args("wantsol=1")));
+  s.SetIntOption("wantsol", 1);
   EXPECT_EQ(1, s.wantsol());
-  EXPECT_TRUE(s.ParseOptions(Args("wantsol=5")));
+  s.SetIntOption("wantsol", 5);
   EXPECT_EQ(5, s.wantsol());
+  EXPECT_THROW(s.SetIntOption("wantsol", -1), InvalidOptionValue);
+  EXPECT_THROW(s.SetIntOption("wantsol", 16), InvalidOptionValue);
+}
+
+TEST(SolverTest, TimingOption) {
+  TestSolver s("");
+  EXPECT_EQ(0, s.timing());
+  s.SetIntOption("timing", 1);
+  EXPECT_EQ(1, s.timing());
+  EXPECT_EQ(1, s.GetIntOption("timing"));
+  EXPECT_THROW(s.SetIntOption("timing", -1), InvalidOptionValue);
+  EXPECT_THROW(s.SetIntOption("timing", 2), InvalidOptionValue);
+}
+
+TEST(SolverTest, InputTiming) {
+  struct TestOutputHandler : ampl::OutputHandler {
+    std::string output;
+
+    virtual ~TestOutputHandler() {}
+    void HandleOutput(fmt::StringRef output) {
+      this->output += output;
+    }
+  };
+  TestOutputHandler oh;
+  TestSolver s("");
+  s.set_output_handler(&oh);
+
+  s.SetIntOption("timing", 0);
+  s.ProcessArgs(Args("../data/objconst.nl"));
+  EXPECT_TRUE(oh.output.find("Input time = ") == std::string::npos);
+
+  s.SetIntOption("timing", 1);
+  s.ProcessArgs(Args("../data/objconst.nl"));
+  EXPECT_TRUE(oh.output.find("Input time = ") != std::string::npos);
 }
