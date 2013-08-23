@@ -136,7 +136,8 @@ TEST(ClockTest, GetTimeAndReset) {
   steady_clock::time_point start;
   steady_clock::time_point t = start;
   double time = GetTimeAndReset(t);
-  EXPECT_EQ(ampl::duration_cast< duration<double> >(t - start).count(), time);
+  EXPECT_DOUBLE_EQ(
+      ampl::duration_cast< duration<double> >(t - start).count(), time);
   EXPECT_GT(t, start);
 }
 }
