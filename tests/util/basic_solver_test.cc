@@ -892,10 +892,10 @@ TEST(SolverTest, InputTiming) {
   s.set_output_handler(&oh);
 
   s.SetIntOption("timing", 0);
-  s.ProcessArgs(Args("../data/objconst.nl"));
+  s.ProcessArgs(Args("test", "../data/objconst.nl"));
   EXPECT_TRUE(oh.output.find("Input time = ") == std::string::npos);
 
   s.SetIntOption("timing", 1);
-  s.ProcessArgs(Args("../data/objconst.nl"));
+  s.ProcessArgs(Args("test", "../data/objconst.nl"));
   EXPECT_TRUE(oh.output.find("Input time = ") != std::string::npos);
 }
