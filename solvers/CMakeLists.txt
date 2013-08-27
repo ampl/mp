@@ -154,5 +154,6 @@ if (HAVE_JACOP)
   add_subdirectory(jacop)
 endif ()
 
+add_subdirectory(smpswriter)
 add_subdirectory(ssdsolver)
 add_subdirectory(util)

@@ -105,6 +105,22 @@ class Solution : Noncopyable {
   void Read(fmt::StringRef stub, int num_vars, int num_cons);
 };
 
+class Suffix {
+ private:
+  SufDesc *suffix_;
+
+  friend class Problem;
+
+  explicit Suffix(SufDesc *s) : suffix_(s) {}
+
+  void True() const {}
+  typedef void (Suffix::*SafeBool)() const;
+
+ public:
+  operator SafeBool() const { return suffix_->u.i ? &Suffix::True : 0; }
+  int int_value(int index) const { return suffix_->u.i[index]; }
+};
+
 class ProblemChanges;
 
 // An optimization problem.
@@ -236,7 +252,7 @@ class Problem : Noncopyable {
 
   // Returns the linear part of a constraint expression.
   LinearConExpr linear_con_expr(int con_index) const {
-    assert(con_index >= 0 && con_index < num_cons());
+    assert(con_index >= 0 && con_index < num_cons() && asl_->i.Cgrad_);
     return LinearConExpr(asl_->i.Cgrad_[con_index]);
   }
 
@@ -258,12 +274,51 @@ class Problem : Noncopyable {
     return Expr::Create<LogicalExpr>(asl_->I.lcon_de_[lcon_index].e);
   }
 
+  // Returns the name of the variable or a null pointer if the name is not
+  // available.
+  const char *var_name(int var_index) const {
+    return var_name_ASL(reinterpret_cast<ASL*>(asl_), var_index);
+  }
+
+  // Returns the name of the constraint or a null pointer if the name is not
+  // available.
+  const char *con_name(int con_index) const {
+    return con_name_ASL(reinterpret_cast<ASL*>(asl_), con_index);
+  }
+
+  class ColMatrix {
+   private:
+    Edaginfo *info_;
+
+   public:
+    explicit ColMatrix(Edaginfo *info) : info_(info) {}
+
+    // Returns an offset of a column.
+    int col_start(int col_index) const {
+      return info_->A_colstarts_[col_index];
+    }
+
+    // Returns the row index of an element.
+    int row_index(int elt_index) const { return info_->A_rownos_[elt_index]; }
+
+    // Returns the value of an element.
+    double value(int elt_index) const { return info_->A_vals_[elt_index]; }
+  };
+
+  // Returns the columnwise representation of the constraint matrix.
+  ColMatrix col_matrix() const { return ColMatrix(&asl_->i); }
+
   // Returns the solve code.
   int solve_code() const { return asl_->p.solve_code_; }
 
   // Sets the solve code.
   void set_solve_code(int value) {
     asl_->p.solve_code_ = value;
+  }
+
+  // Returns a suffix.
+  Suffix suffix(const char *name, unsigned flags) const {
+    return Suffix(suf_get_ASL(reinterpret_cast<ASL*>(asl_), name, flags));
   }
 
   // Adds a variable.
@@ -276,7 +331,10 @@ class Problem : Noncopyable {
   void AddCon(LogicalExpr expr);
 
   // Flags for the Read method.
-  enum { READ_INITIAL_VALUES = 1 };
+  enum {
+    READ_INITIAL_VALUES = 1,
+    READ_COLUMNWISE     = 2
+  };
 
   // Reads a problem from the file <stub>.nl.
   void Read(fmt::StringRef stub, unsigned flags = 0);
