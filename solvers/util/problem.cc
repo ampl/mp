@@ -538,6 +538,10 @@ void Problem::Read(fmt::StringRef stub, unsigned flags) {
   asl_->I.r_ops_ = r_ops_int;
   asl_->p.want_derivs_ = 0;
   asl_->i.want_xpi0_ = (flags & READ_INITIAL_VALUES) != 0;
+  if ((flags & READ_COLUMNWISE) != 0) {
+    asl_->i.A_vals_ = reinterpret_cast<double*>(
+        Malloc(asl->i.nzc_ * sizeof(*asl_->i.A_vals_)));
+  }
   fg_read_ASL(asl, nl, ASL_allow_CLP | ASL_sep_U_arrays);
   asl_->I.r_ops_ = 0;
 }
