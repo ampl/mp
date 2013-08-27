@@ -256,28 +256,28 @@ void SMPSWriter::Solve(Problem &p) {
       // Deduce probabilities from objective coefficients.
       LinearObjExpr obj_expr = p.linear_obj_expr(0);
       int reference_var_index = 0;
-      for (const LinearObjTerm& t: obj_expr) {
-        int stage = stage_suffix.int_value(t.var_index()) - 1;
+      for (auto i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
+        int stage = stage_suffix.int_value(i->var_index()) - 1;
         if (stage > 0) {
-          reference_var_index = var_info[t.var_index()].core_index;
+          reference_var_index = var_info[i->var_index()].core_index;
           break;
         }
       }
       std::vector<double> sum_core_obj_coefs(num_core_vars);
-      for (const LinearObjTerm& t: obj_expr) {
-        const VarConInfo &info = var_info[t.var_index()];
+      for (auto i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
+        const VarConInfo &info = var_info[i->var_index()];
         if (info.core_index == reference_var_index)
-          probabilities[info.scenario_index] = t.coef();
-        sum_core_obj_coefs[info.core_index] += t.coef();
+          probabilities[info.scenario_index] = i->coef();
+        sum_core_obj_coefs[info.core_index] += i->coef();
       }
       for (size_t i = 0, n = scenarios.size(); i != n; ++i)
         probabilities[i] /= sum_core_obj_coefs[reference_var_index];
 
       // Compute objective coefficients in the core problem.
-      for (const LinearObjTerm& t: obj_expr) {
-        const VarConInfo &info = var_info[t.var_index()];
+      for (auto i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
+        const VarConInfo &info = var_info[i->var_index()];
         if (info.scenario_index == 0)
-          core_obj_coefs[info.core_index] = t.coef() / probabilities[0];
+          core_obj_coefs[info.core_index] = i->coef() / probabilities[0];
         // TODO: check probabilities deduced from other variables
       }
     }
@@ -289,8 +289,10 @@ void SMPSWriter::Solve(Problem &p) {
       Problem::ColMatrix matrix = p.col_matrix();
       if (var_info[i].scenario_index == 0) {
         // Clear the core_coefs vector.
-        for (int j: nonzero_coef_indices)
-          core_coefs[j] = 0;
+        for (auto j = nonzero_coef_indices.begin(),
+            end = nonzero_coef_indices.end(); j != end; ++j) {
+          core_coefs[*j] = 0;
+        }
         nonzero_coef_indices.clear();
 
         if (double obj_coef = core_obj_coefs[core_var_index]) {
@@ -359,9 +361,9 @@ void SMPSWriter::Solve(Problem &p) {
     for (size_t i = 1, n = scenarios.size(); i != n; ++i) {
       writer.Write(" SC SCEN{:<4}  SCEN1     {:<12}   T2\n")
           << i + 1 << probabilities[i];
-      for (const Scenario::ConTerm &t: scenarios[i]) {
+      for (auto t = scenarios[i].begin(), e = scenarios[i].end(); t != e; ++t) {
         writer.Write("    C{:<7}  R{:<7}  {}\n")
-            << t.var_index + 1 << t.con_index + 1 << t.coef;
+            << t->var_index + 1 << t->con_index + 1 << t->coef;
       }
       // TODO: write rhs
     }
