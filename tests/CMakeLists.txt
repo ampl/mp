@@ -103,15 +103,8 @@ if (ODBC_FOUND)
   endif ()
 endif ()
 
-if (HAVE_GECODE)
-  add_subdirectory(gecode)
-endif ()
-
 add_subdirectory(ilogcp)
-
-if (HAVE_JACOP)
-  add_subdirectory(jacop)
-endif ()
+add_subdirectory(solvers)
 
 add_subdirectory(util)
 
