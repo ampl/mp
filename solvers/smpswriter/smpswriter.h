@@ -28,9 +28,6 @@
 namespace ampl {
 
 class SMPSWriter : public Solver<SMPSWriter> {
- private:
-  std::string ExtractScenario(std::string &name) const;
-
  public:
   SMPSWriter();
 

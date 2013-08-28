@@ -27,14 +27,11 @@
 
 namespace {
 SufDecl STAGE_SUFFIX = {const_cast<char*>("stage"), 0, ASL_Sufkind_var};
-}
 
-namespace ampl {
-
-std::string SMPSWriter::ExtractScenario(std::string &name) const {
+std::string ExtractScenario(std::string &name) {
   std::size_t index_pos = name.find_last_of("[,");
   if (index_pos == std::string::npos)
-    throw Error(fmt::Format("Missing scenario index for {}") << name);
+    throw ampl::Error(fmt::Format("Missing scenario index for {}") << name);
   bool single_index = name[index_pos] == '[';
   ++index_pos;
   std::string index = name.substr(index_pos, name.size() - index_pos - 1);
@@ -43,6 +40,9 @@ std::string SMPSWriter::ExtractScenario(std::string &name) const {
     name += ']';
   return index;
 }
+}
+
+namespace ampl {
 
 SMPSWriter::SMPSWriter() :
   Solver<SMPSWriter>("smpswriter", "SMPSWriter", 20130709) {
@@ -256,11 +256,13 @@ void SMPSWriter::Solve(Problem &p) {
       // Deduce probabilities from objective coefficients.
       LinearObjExpr obj_expr = p.linear_obj_expr(0);
       int reference_var_index = 0;
-      for (auto i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
-        int stage = stage_suffix.int_value(i->var_index()) - 1;
-        if (stage > 0) {
-          reference_var_index = var_info[i->var_index()].core_index;
-          break;
+      if (stage_suffix) {
+        for (auto i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
+          int stage = stage_suffix.int_value(i->var_index()) - 1;
+          if (stage > 0) {
+            reference_var_index = var_info[i->var_index()].core_index;
+            break;
+          }
         }
       }
       std::vector<double> sum_core_obj_coefs(num_core_vars);
