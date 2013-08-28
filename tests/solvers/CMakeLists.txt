@@ -21,4 +21,4 @@ if (HAVE_JACOP)
 endif ()
 
 cxx_test_with_flags(smpswriter_test "" "gtest;amplsmpswriter"
-  ../test_main.cc ../args.cc smpswriter_test.cc)
+  ../test_main.cc ../args.cc ../util.cc smpswriter_test.cc)

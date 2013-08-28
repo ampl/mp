@@ -24,12 +24,19 @@
 
 #include "solvers/smpswriter/smpswriter.h"
 #include "tests/args.h"
+#include "tests/util.h"
 
 namespace {
 
-TEST(SMPSWriterTest, OneStage) {
+TEST(SMPSWriterTest, SingleStage) {
   ampl::SMPSWriter w;
   EXPECT_EQ(0, w.Run(Args("testprogram", "../data/simple.nl")));
+  static const char *const EXTS[] = {".cor", ".sto", ".tim"};
+  for (size_t i = 0, n = sizeof(EXTS) / sizeof(*EXTS); i != n; ++i) {
+    EXPECT_EQ(
+        ReadFile(std::string("../data/smps/simple") + EXTS[i]),
+        ReadFile(std::string("test") + EXTS[i]));
+  }
 }
-// TODO
+// TODO: more tests
 }
