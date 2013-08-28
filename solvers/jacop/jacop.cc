@@ -104,7 +104,8 @@ void NLToJaCoPConverter::RequireZeroRHS(
 template <typename Term>
 void NLToJaCoPConverter::ConvertExpr(
     LinearExpr<Term> linear, NumericExpr nonlinear, jobject result_var) {
-  jsize num_terms = std::distance(linear.begin(), linear.end());
+  jsize num_terms = static_cast<jsize>(
+      std::distance(linear.begin(), linear.end()));
   if (nonlinear) {
     NumericConstant n = Cast<NumericConstant>(nonlinear);
     if (n && n.value() == 0)

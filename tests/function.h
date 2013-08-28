@@ -209,7 +209,9 @@ class Table {
   : name_(name), num_cols_(num_key_cols + num_data_cols), arity_(num_key_cols),
     strings_(strings) {}
 
-  unsigned num_strings() const { return strings_.size(); }
+  unsigned num_strings() const {
+    return static_cast<unsigned>(strings_.size());
+  }
 
   const char *string(unsigned index) const { return strings_[index].c_str(); }
 
