@@ -28,7 +28,7 @@ expr *ExprBuilder::Call::Init(const char *name,
     const CallArg *arg_begin, const CallArg *arg_end) {
   name_ = name;
   info_.name = name_.c_str();
-  int num_args = info_.nargs = arg_end - arg_begin;
+  int num_args = info_.nargs = static_cast<int>(arg_end - arg_begin);
   expr_.op = reinterpret_cast<efunc*>(OPFUNCALL);
   expr_.fi = &info_;
   expr_.al = &args_;

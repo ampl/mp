@@ -178,7 +178,8 @@ class NLToJaCoPConverter :
   }
 
   jobject Convert(VarArgExpr e, ClassBase &cls) {
-    jobjectArray args = CreateVarArray(std::distance(e.begin(), e.end()));
+    jobjectArray args = CreateVarArray(
+        static_cast<jsize>(std::distance(e.begin(), e.end())));
     int index = 0;
     for (VarArgExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
       env_.SetObjectArrayElement(args, index++, Visit(*i));

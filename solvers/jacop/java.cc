@@ -87,7 +87,7 @@ std::string RegKey::GetSubKeyName(int index) const {
   if (result != ERROR_SUCCESS)
     max_subkey_len = 256;
   std::vector<char> name(max_subkey_len + 1);
-  DWORD name_size = name.size();
+  DWORD name_size = static_cast<DWORD>(name.size());
   result = RegEnumKeyExA(key_, 0, &name[0], &name_size, 0, 0, 0, 0);
   if (result != ERROR_SUCCESS) {
     throw ampl::JavaError(fmt::Format(
@@ -232,7 +232,7 @@ Env JVM::env(const char *const *options) {
         jvm_options.push_back(jvm_opt);
       }
     }
-    vm_args.nOptions = jvm_options.size();
+    vm_args.nOptions = static_cast<jint>(jvm_options.size());
     vm_args.options = &jvm_options[0];
     void *envp = 0;
     jint result = JNI_CreateJavaVM(&instance_.jvm_, &envp, &vm_args);

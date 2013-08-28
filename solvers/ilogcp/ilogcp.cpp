@@ -578,7 +578,7 @@ void IlogCPSolver::SetBoolOption(const char *name, int value, Option opt) {
 }
 
 std::string IlogCPSolver::EnumCPOption::GetValue() const {
-  int value = 0;
+  IloInt value = 0;
   try {
     value = solver_.GetCPForOption(name())->solver().getParameter(param_);
   } catch (const IloException &e) {
@@ -628,7 +628,8 @@ void IlogCPSolver::EnumCPOption::SetValue(const char *value) {
 
 int IlogCPSolver::IntCPOption::GetValue() const {
   try {
-    return solver_.GetCPForOption(name())->solver().getParameter(param_);
+    return static_cast<int>(
+        solver_.GetCPForOption(name())->solver().getParameter(param_));
   } catch (const IloException &e) {
     throw GetOptionValueError(name(), e.getMessage());
   }

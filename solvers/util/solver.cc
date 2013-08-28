@@ -262,7 +262,7 @@ BasicSolver::BasicSolver(
     void SetValue(int value) {
       if (value != 0 && value != 1)
         throw InvalidOptionValue("timing", value);
-      s.timing_ = value;
+      s.timing_ = value != 0;
     }
   };
   AddOption(OptionPtr(new TimingOption(*this)));
