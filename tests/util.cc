@@ -17,9 +17,9 @@ extern "C" {
 # include <unistd.h>
 #endif
 
-std::string ReadFile(const char *name) {
+std::string ReadFile(fmt::StringRef name) {
   std::string data;
-  std::ifstream ifs(name);
+  std::ifstream ifs(name.c_str());
   enum { BUFFER_SIZE = 4096 };
   char buffer[BUFFER_SIZE];
   do {
@@ -29,8 +29,8 @@ std::string ReadFile(const char *name) {
   return data;
 }
 
-void WriteFile(const char *name, const char *data) {
-  std::ofstream ofs(name);
+void WriteFile(fmt::StringRef name, const char *data) {
+  std::ofstream ofs(name.c_str());
   ofs.write(data, std::strlen(data));
 }
 

@@ -211,6 +211,12 @@ void SMPSWriter::Solve(Problem &p) {
     num_core_cons = num_stage0_cons + stage1_cons.size();
 
     scenarios.resize(scenario_indices.size());
+  } else {
+    for (int i = 0; i < num_vars; ++i)
+      var_info[i].core_index = i;
+    for (int i = 0; i < num_cons; ++i)
+      con_info[i].core_index = i;
+    scenarios.resize(1);
   }
 
   std::string smps_basename = "test"; // TODO
@@ -222,8 +228,7 @@ void SMPSWriter::Solve(Problem &p) {
       "TIME          PROBLEM\n"
       "PERIODS\n"
       "    C1        OBJ                      T1\n");
-    if (num_stage0_vars > 1) {
-      // TODO: write stage of each variable and constraint from the core
+    if (num_stages > 1) {
       writer.Write("    C{:<7}  R{:<7}                 T2\n")
           << num_stage0_vars + 1 << num_stage0_cons + 1;
     }
@@ -253,10 +258,10 @@ void SMPSWriter::Solve(Problem &p) {
     writer.Write("COLUMNS\n");
     std::vector<double> core_obj_coefs(num_core_vars);
     if (p.num_objs() != 0) {
-      // Deduce probabilities from objective coefficients.
       LinearObjExpr obj_expr = p.linear_obj_expr(0);
-      int reference_var_index = 0;
-      if (stage_suffix) {
+      if (probabilities.size() != 1) {
+        // Deduce probabilities from objective coefficients.
+        int reference_var_index = 0;
         for (auto i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
           int stage = stage_suffix.int_value(i->var_index()) - 1;
           if (stage > 0) {
@@ -264,16 +269,18 @@ void SMPSWriter::Solve(Problem &p) {
             break;
           }
         }
+        std::vector<double> sum_core_obj_coefs(num_core_vars);
+        for (auto i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
+          const VarConInfo &info = var_info[i->var_index()];
+          if (info.core_index == reference_var_index)
+            probabilities[info.scenario_index] = i->coef();
+          sum_core_obj_coefs[info.core_index] += i->coef();
+        }
+        for (size_t i = 0, n = scenarios.size(); i != n; ++i)
+          probabilities[i] /= sum_core_obj_coefs[reference_var_index];
+      } else {
+        probabilities[0] = 1;
       }
-      std::vector<double> sum_core_obj_coefs(num_core_vars);
-      for (auto i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
-        const VarConInfo &info = var_info[i->var_index()];
-        if (info.core_index == reference_var_index)
-          probabilities[info.scenario_index] = i->coef();
-        sum_core_obj_coefs[info.core_index] += i->coef();
-      }
-      for (size_t i = 0, n = scenarios.size(); i != n; ++i)
-        probabilities[i] /= sum_core_obj_coefs[reference_var_index];
 
       // Compute objective coefficients in the core problem.
       for (auto i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
@@ -350,6 +357,21 @@ void SMPSWriter::Solve(Problem &p) {
           << con_info[i].core_index + 1 << (ub >= Infinity ? lb : ub);
     }
 
+    writer.Write("BOUNDS\n");
+    for (int i = 0; i < num_vars; ++i) {
+      if (con_info[i].scenario_index != 0)
+        continue;
+      double lb = p.var_lb(i), ub = p.var_ub(i);
+      if (lb != 0) {
+        writer.Write(" LO BOUND1      C{:<7}  {}\n")
+            << var_info[i].core_index + 1 << lb;
+      }
+      if (ub < Infinity) {
+        writer.Write(" UP BOUND1      C{:<7}  {}\n")
+            << var_info[i].core_index + 1 << ub;
+      }
+    }
+
     writer.Write("ENDATA\n");
   }
 
@@ -360,14 +382,14 @@ void SMPSWriter::Solve(Problem &p) {
       "STOCH         PROBLEM\n"
       "SCENARIOS     DISCRETE\n");
     writer.Write(" SC SCEN1     'ROOT'    {:<12}   T1\n") << probabilities[0];
-    for (size_t i = 1, n = scenarios.size(); i != n; ++i) {
+    for (size_t i = 1, n = scenarios.size(); i < n; ++i) {
       writer.Write(" SC SCEN{:<4}  SCEN1     {:<12}   T2\n")
           << i + 1 << probabilities[i];
       for (auto t = scenarios[i].begin(), e = scenarios[i].end(); t != e; ++t) {
         writer.Write("    C{:<7}  R{:<7}  {}\n")
             << t->var_index + 1 << t->con_index + 1 << t->coef;
       }
-      // TODO: write rhs
+      // TODO: write rhs and bounds
     }
     writer.Write("ENDATA\n");
   }
