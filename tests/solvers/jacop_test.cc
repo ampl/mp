@@ -193,7 +193,7 @@ TEST_F(JaCoPSolverTest, OutFreqOption) {
 TEST_F(JaCoPSolverTest, FindJarsRelativeToExecutable) {
   ChangeDirectory("..");
   ExecuteShellCommand("../solvers/jacop/jacop data/objconstint > out");
-  ChangeDirectory("jacop");
+  ChangeDirectory("solvers");
   EXPECT_TRUE(ReadFile("../out").find("objective 42") != std::string::npos);
 }
 }
