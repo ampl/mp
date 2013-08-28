@@ -19,3 +19,6 @@ if (HAVE_JACOP)
     target_link_libraries(jacop_test delayimp)
   endif ()
 endif ()
+
+cxx_test_with_flags(smpswriter_test "" "gtest;amplsmpswriter"
+  ../test_main.cc ../args.cc smpswriter_test.cc)
