@@ -25,7 +25,7 @@ http://www.gnu.org/software/gsl/.
 Copyright © 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
 2006, 2007, 2008, 2009, 2010, 2011 The GSL Team.
 
-Copyright of modifications © 2012 AMPL Optimization LLC.
+Copyright of modifications © 2012 AMPL Optimization Inc.
 
 Permission is granted to copy, distribute and/or modify this document under the
 terms of the GNU Free Documentation License, Version 1.3 or any later version
