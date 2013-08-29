@@ -64,4 +64,14 @@ TEST(SMPSWriterTest, MoreThan2StagesNotSupported) {
   WriteFile("test.nl", ReadFile("../data/smps/three-stage.nl"));
   EXPECT_THROW(w.Run(Args("", "test.nl")), ampl::Error);
 }
+
+TEST(SMPSWriterTest, InconsistentProbabilities) {
+  ampl::SMPSWriter w;
+  WriteFile("test.nl", ReadFile("../data/smps/inconsistent-probabilities.nl"));
+  WriteFile("test.row",
+      ReadFile("../data/smps/inconsistent-probabilities.row"));
+  WriteFile("test.col",
+      ReadFile("../data/smps/inconsistent-probabilities.col"));
+  EXPECT_THROW(w.Run(Args("", "test.nl")), ampl::Error);
+}
 }

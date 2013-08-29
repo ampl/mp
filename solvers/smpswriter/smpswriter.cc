@@ -90,6 +90,7 @@ typename Map::mapped_type &FindOrInsert(
 
 class Scenario {
  public:
+  // A constraint expression term.
   struct ConTerm {
     int con_index;
     int var_index;
@@ -283,27 +284,30 @@ void SMPSWriter::Solve(Problem &p) {
 
     writer.Write("COLUMNS\n");
     std::vector<double> core_obj_coefs(num_core_vars);
+    std::vector<double> sum_core_obj_coefs;
     if (p.num_objs() != 0) {
       LinearObjExpr obj_expr = p.linear_obj_expr(0);
+      int reference_var_index = 0;
+      int core_reference_var_index = 0;
       if (probabilities.size() != 1) {
         // Deduce probabilities from objective coefficients.
-        int reference_var_index = 0;
         for (auto i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
           int stage = stage_suffix.int_value(i->var_index()) - 1;
           if (stage > 0) {
-            reference_var_index = var_info[i->var_index()].core_index;
+            reference_var_index = i->var_index();
+            core_reference_var_index = var_info[i->var_index()].core_index;
             break;
           }
         }
-        std::vector<double> sum_core_obj_coefs(num_core_vars);
+        sum_core_obj_coefs.resize(num_core_vars);
         for (auto i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
           const VarConInfo &info = var_info[i->var_index()];
-          if (info.core_index == reference_var_index)
+          if (info.core_index == core_reference_var_index)
             probabilities[info.scenario_index] = i->coef();
           sum_core_obj_coefs[info.core_index] += i->coef();
         }
         for (size_t i = 0, n = scenarios.size(); i != n; ++i)
-          probabilities[i] /= sum_core_obj_coefs[reference_var_index];
+          probabilities[i] /= sum_core_obj_coefs[core_reference_var_index];
       } else {
         probabilities[0] = 1;
       }
@@ -317,7 +321,20 @@ void SMPSWriter::Solve(Problem &p) {
             coef /= probabilities[0];
           core_obj_coefs[info.core_index] = coef;
         }
-        // TODO: check probabilities deduced from other variables
+        // Check probabilities deduced using other variables.
+        if (stage_suffix && stage_suffix.int_value(i->var_index()) - 1 > 0) {
+          double ref_prob = probabilities[info.scenario_index];
+          double prob = i->coef() / sum_core_obj_coefs[info.core_index];
+          double prob_tolerance = 1e-5;
+          if (std::abs(prob - ref_prob) > prob_tolerance) {
+            ThrowError("Probability deduced using variable {} ({}) "
+                "is inconsistent with the one deduced using variable {} ({})")
+                    << p.var_name(reference_var_index)
+                    << probabilities[info.scenario_index]
+                    << p.var_name(i->var_index())
+                    << prob;
+          }
+        }
       }
     }
     std::vector<double> core_coefs(num_core_cons);
