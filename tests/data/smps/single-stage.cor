@@ -1,13 +1,13 @@
 NAME          PROBLEM
 ROWS
  N  OBJ
- L  R1
+ G  R1
 COLUMNS
     C1        OBJ       1
-    C1        R1        1
+    C1        R1        2
     C2        OBJ       1
-    C2        R1        2
+    C2        R1        1
 RHS
-    RHS1      R1        2
+    RHS1      R1        1
 BOUNDS
 ENDATA

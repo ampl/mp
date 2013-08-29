@@ -3,18 +3,11 @@
 
 from subprocess import Popen, PIPE
 
-DATA_DIR = 'data/'
-MODELS_DIR = '../models/logic/'
-
 def generate_nl_file(stub, *files, **kwargs):
   code = ''
-  dir = MODELS_DIR
-  outdir = DATA_DIR
   for key, value in kwargs.iteritems():
     if key == 'code':
       code = value
-    elif key == 'dir':
-      outdir = dir = value
     else:
       raise Exception('Invalid parameter: ' + key)
   input = ''
@@ -30,6 +23,8 @@ def generate_nl_file(stub, *files, **kwargs):
   ampl = Popen(['ampl'], stdin=PIPE)
   ampl.communicate(input)
 
+dir = '../models/logic/'
+outdir = 'data/'
 generate_nl_file('assign0', '$.mod', 'assign.dat')
 generate_nl_file('assign1', '$.mod', 'assign.dat')
 generate_nl_file('assign2', '$.mod', 'assign.dat')
@@ -58,14 +53,24 @@ generate_nl_file('seq1a', '$.mod')
 generate_nl_file('seq2', '$.mod')
 generate_nl_file('sudokuHard', 'sudoku.mod', '$.dat')
 generate_nl_file('sudokuVeryEasy', 'sudoku.mod', '$.dat')
-generate_nl_file('test', '$.ampl', dir='data/')
-generate_nl_file('objconst', '$.ampl', dir='data/')
-generate_nl_file('objconstint', '$.ampl', dir='data/')
-generate_nl_file('numberof', '$.ampl', dir='data/')
-generate_nl_file('feasible', '$.ampl', dir='data/')
-generate_nl_file('infeasible', '$.ampl', dir='data/')
-generate_nl_file('unbounded', '$.ampl', dir='data/')
-generate_nl_file('assign1', '$.mod', '$.dat', dir='data/miplib/')
-generate_nl_file('noobj', '$.ampl', dir='data/')
-generate_nl_file('simple', '$.ampl', dir='data/')
-generate_nl_file('ssd', '$.ampl', dir='data/')
+
+dir = 'data/'
+generate_nl_file('test', '$.ampl')
+generate_nl_file('objconst', '$.ampl')
+generate_nl_file('objconstint', '$.ampl')
+generate_nl_file('numberof', '$.ampl')
+generate_nl_file('feasible', '$.ampl')
+generate_nl_file('infeasible', '$.ampl')
+generate_nl_file('unbounded', '$.ampl')
+generate_nl_file('noobj', '$.ampl')
+generate_nl_file('simple', '$.ampl')
+generate_nl_file('ssd', '$.ampl')
+
+dir = outdir = 'data/miplib/'
+generate_nl_file('assign1', '$.mod', '$.dat')
+
+dir = outdir = 'data/smps/'
+generate_nl_file('random-con-matrix', '$.ampl')
+generate_nl_file('random-con-matrix2', '$.ampl')
+generate_nl_file('single-stage', '$.ampl')
+generate_nl_file('three-stage', '$.ampl')
