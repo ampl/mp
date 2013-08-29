@@ -529,6 +529,7 @@ void Problem::AddCon(LogicalExpr expr) {
 
 void Problem::Read(fmt::StringRef stub, unsigned flags) {
   Free();
+  name_.assign(stub.c_str(), stub.size());
   ASL *asl = reinterpret_cast<ASL*>(asl_);
   FILE *nl = jac0dim_ASL(asl, const_cast<char*>(stub.c_str()),
       static_cast<ftnlen>(stub.size()));

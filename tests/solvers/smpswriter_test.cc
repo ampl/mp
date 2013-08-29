@@ -28,15 +28,30 @@
 
 namespace {
 
-TEST(SMPSWriterTest, SingleStage) {
-  ampl::SMPSWriter w;
-  EXPECT_EQ(0, w.Run(Args("testprogram", "../data/simple.nl")));
+TEST(SMPSWriterTest, SMPSOutput) {
   static const char *const EXTS[] = {".cor", ".sto", ".tim"};
-  for (size_t i = 0, n = sizeof(EXTS) / sizeof(*EXTS); i != n; ++i) {
-    EXPECT_EQ(
-        ReadFile(std::string("../data/smps/simple") + EXTS[i]),
-        ReadFile(std::string("test") + EXTS[i]));
+  static const char *const PROBLEMS[] = {
+      "single-stage", "random-con-matrix", "random-con-matrix2"
+  };
+  for (size_t i = 0, n = sizeof(PROBLEMS) / sizeof(*PROBLEMS); i != n; ++i) {
+    ampl::SMPSWriter w;
+    std::string path("../data/smps/");
+    path += PROBLEMS[i];
+    WriteFile("test.nl", ReadFile(path + ".nl"));
+    WriteFile("test.col", ReadFile(path + ".col"));
+    WriteFile("test.row", ReadFile(path + ".row"));
+    EXPECT_EQ(0, w.Run(Args("", "test.nl")));
+    for (size_t j = 0, n = sizeof(EXTS) / sizeof(*EXTS); j != n; ++j) {
+      EXPECT_EQ(
+          ReadFile(std::string(path) + EXTS[j]),
+          ReadFile(std::string("test") + EXTS[j])) << PROBLEMS[i] << EXTS[j];
+    }
   }
 }
-// TODO: more tests
+
+TEST(SMPSWriterTest, MoreThan2StagesNotSupported) {
+  ampl::SMPSWriter w;
+  WriteFile("test.nl", ReadFile("../data/smps/three-stage.nl"));
+  EXPECT_THROW(w.Run(Args("", "test.nl")), ampl::Error);
+}
 }

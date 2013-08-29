@@ -127,6 +127,7 @@ class ProblemChanges;
 class Problem : Noncopyable {
  private:
   ASL_fg *asl_;
+  std::string name_;
   int var_capacity_;
   int obj_capacity_;
   int logical_con_capacity_;
@@ -161,6 +162,8 @@ class Problem : Noncopyable {
  public:
   Problem();
   ~Problem();
+
+  const char *name() const { return name_.c_str(); }
 
   // Returns the number of variables.
   int num_vars() const { return asl_->i.n_var_; }

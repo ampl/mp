@@ -131,10 +131,8 @@ void SMPSWriter::Solve(Problem &p) {
       }
     }
   }
-
-  if (num_stages > 2) {
-    // TODO: error: problems with more than 2 stages are not supported
-  }
+  if (num_stages > 2)
+    throw Error("SMPS writer doesn't support problems with more than 2 stages");
 
   // Information about a variable or constraint.
   struct VarConInfo {
@@ -196,7 +194,7 @@ void SMPSWriter::Solve(Problem &p) {
       int stage = con_stages[i];
       auto &info = con_info[i];
       if (stage > 0) {
-        // Split the name into scenario and the rest and merge cpnstraints that
+        // Split the name into scenario and the rest and merge constraints that
         // only differ by scenario into the same constraint.
         std::string name = p.con_name(i);
         std::string scenario = ExtractScenario(name);
@@ -219,7 +217,7 @@ void SMPSWriter::Solve(Problem &p) {
     scenarios.resize(1);
   }
 
-  std::string smps_basename = "test"; // TODO
+  std::string smps_basename = p.name();
 
   // Write the .tim file.
   {
@@ -285,8 +283,12 @@ void SMPSWriter::Solve(Problem &p) {
       // Compute objective coefficients in the core problem.
       for (auto i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
         const VarConInfo &info = var_info[i->var_index()];
-        if (info.scenario_index == 0)
-          core_obj_coefs[info.core_index] = i->coef() / probabilities[0];
+        if (info.scenario_index == 0) {
+          double coef = i->coef();
+          if (stage_suffix && stage_suffix.int_value(i->var_index()) - 1 > 0)
+            coef /= probabilities[0];
+          core_obj_coefs[info.core_index] = coef;
+        }
         // TODO: check probabilities deduced from other variables
       }
     }
@@ -296,6 +298,7 @@ void SMPSWriter::Solve(Problem &p) {
     for (int i = 0; i < num_vars; ++i) {
       int core_var_index = var_info[i].core_index;
       Problem::ColMatrix matrix = p.col_matrix();
+      // TODO: what if the variables are not ordered by scenarios?
       if (var_info[i].scenario_index == 0) {
         // Clear the core_coefs vector.
         for (auto j = nonzero_coef_indices.begin(),
@@ -320,9 +323,8 @@ void SMPSWriter::Solve(Problem &p) {
           nonzero_coef_indices.push_back(core_con_index);
           writer.Write("    C{:<7}  R{:<7}  {}\n")
               << core_var_index + 1 << core_con_index + 1
-              << matrix.value(k); // TODO << p.var_name(i) << p.con_name(con_index);
+              << matrix.value(k);
         }
-        continue;
       }
 
       // Go over the non-core coefficients and compare them to those in core.
@@ -339,8 +341,6 @@ void SMPSWriter::Solve(Problem &p) {
           if (stage < 1) {
             // TODO: error: coefficient is inconsistent between scenarios
           }
-          fmt::Print("{} {} {}\n") << p.var_name(i)
-              << p.con_name(con_index) << matrix.value(k);
           scenarios[scenario_index].Add(
               core_con_index, core_var_index, coef);
         }
@@ -359,7 +359,7 @@ void SMPSWriter::Solve(Problem &p) {
 
     writer.Write("BOUNDS\n");
     for (int i = 0; i < num_vars; ++i) {
-      if (con_info[i].scenario_index != 0)
+      if (var_info[i].scenario_index != 0)
         continue;
       double lb = p.var_lb(i), ub = p.var_ub(i);
       if (lb != 0) {
@@ -381,15 +381,18 @@ void SMPSWriter::Solve(Problem &p) {
     writer.Write(
       "STOCH         PROBLEM\n"
       "SCENARIOS     DISCRETE\n");
-    writer.Write(" SC SCEN1     'ROOT'    {:<12}   T1\n") << probabilities[0];
-    for (size_t i = 1, n = scenarios.size(); i < n; ++i) {
-      writer.Write(" SC SCEN{:<4}  SCEN1     {:<12}   T2\n")
-          << i + 1 << probabilities[i];
-      for (auto t = scenarios[i].begin(), e = scenarios[i].end(); t != e; ++t) {
-        writer.Write("    C{:<7}  R{:<7}  {}\n")
-            << t->var_index + 1 << t->con_index + 1 << t->coef;
+    if (num_stages > 1) {
+      writer.Write(" SC SCEN1     'ROOT'    {:<12}   T1\n") << probabilities[0];
+      for (size_t i = 1, n = scenarios.size(); i < n; ++i) {
+        writer.Write(" SC SCEN{:<4}  SCEN1     {:<12}   T2\n")
+            << i + 1 << probabilities[i];
+        for (auto t = scenarios[i].begin(),
+            end = scenarios[i].end(); t != end; ++t) {
+          writer.Write("    C{:<7}  R{:<7}  {}\n")
+              << t->var_index + 1 << t->con_index + 1 << t->coef;
+        }
+        // TODO: write random rhs and bounds
       }
-      // TODO: write rhs and bounds
     }
     writer.Write("ENDATA\n");
   }

@@ -7,7 +7,6 @@ extern "C" {
 }
 #undef filename
 
-#include <cstring>
 #include <fstream>
 
 #ifdef WIN32
@@ -29,9 +28,9 @@ std::string ReadFile(fmt::StringRef name) {
   return data;
 }
 
-void WriteFile(fmt::StringRef name, const char *data) {
+void WriteFile(fmt::StringRef name, fmt::StringRef data) {
   std::ofstream ofs(name.c_str());
-  ofs.write(data, std::strlen(data));
+  ofs.write(data.c_str(), data.size());
 }
 
 StderrRedirect::StderrRedirect(const char *filename) : saved_stderr(Stderr) {

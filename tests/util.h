@@ -8,7 +8,7 @@
 #include "solvers/util/format.h"
 
 std::string ReadFile(fmt::StringRef name);
-void WriteFile(fmt::StringRef name, const char *data);
+void WriteFile(fmt::StringRef name, fmt::StringRef data);
 
 inline std::string FixPath(fmt::StringRef s) {
 #ifdef WIN32
