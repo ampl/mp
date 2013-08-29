@@ -28,32 +28,7 @@
 namespace {
 SufDecl STAGE_SUFFIX = {const_cast<char*>("stage"), 0, ASL_Sufkind_var};
 
-std::string ExtractScenario(std::string &name, bool require_scenario = true) {
-  std::size_t index_pos = name.find_last_of("[,");
-  if (index_pos == std::string::npos) {
-    if (!require_scenario)
-      return std::string();
-    throw ampl::Error(fmt::Format("Missing scenario index for {}") << name);
-  }
-  bool single_index = name[index_pos] == '[';
-  ++index_pos;
-  std::string index = name.substr(index_pos, name.size() - index_pos - 1);
-  name = name.substr(0, index_pos - 1);
-  if (!single_index)
-    name += ']';
-  return index;
-}
-}
-
-namespace ampl {
-
-SMPSWriter::SMPSWriter() :
-  Solver<SMPSWriter>("smpswriter", "SMPSWriter", 20130709) {
-  DeclareSuffixes(&STAGE_SUFFIX, 1);
-  set_read_flags(Problem::READ_COLUMNWISE);
-}
-
-class FileWriter : Noncopyable {
+class FileWriter : ampl::Noncopyable {
  private:
   FILE *f_;
 
@@ -88,6 +63,35 @@ typename Map::mapped_type &FindOrInsert(
   return map.insert(lb, std::make_pair(key, value))->second;
 }
 
+std::string ExtractScenario(std::string &name, bool require_scenario = true) {
+  std::size_t index_pos = name.find_last_of("[,");
+  if (index_pos == std::string::npos) {
+    if (!require_scenario)
+      return std::string();
+    throw ampl::Error(fmt::Format("Missing scenario index for {}") << name);
+  }
+  bool single_index = name[index_pos] == '[';
+  ++index_pos;
+  std::string index = name.substr(index_pos, name.size() - index_pos - 1);
+  name = name.substr(0, index_pos - 1);
+  if (!single_index)
+    name += ']';
+  return index;
+}
+
+// Information about a variable or constraint.
+struct VarConInfo {
+  int core_index;  // index of this variable in the core problem
+  int scenario_index;
+  VarConInfo() : core_index(), scenario_index() {}
+};
+
+struct CoreConInfo {
+  char type;
+  double rhs;
+  CoreConInfo() : type(), rhs() {}
+};
+
 class Scenario {
  public:
   // A constraint expression term.
@@ -96,24 +100,114 @@ class Scenario {
     int var_index;
     double coef;
     ConTerm(int con_index, int var_index, double coef)
-    : con_index(con_index), var_index(var_index), coef(coef) { }
+    : con_index(con_index), var_index(var_index), coef(coef) {}
+  };
+
+  struct RHS {
+    int con_index;
+    double rhs;
+    RHS(int con_index, double rhs) : con_index(con_index), rhs(rhs) {}
+  };
+
+  struct Bound {
+    int var_index;
+    double bound;
+    Bound(int var_index, double bound) : var_index(var_index), bound(bound) {}
   };
 
  private:
   std::vector<ConTerm> con_terms_;
+  std::vector<RHS> rhs_;
+  std::vector<Bound> lb_;
+  std::vector<Bound> ub_;
 
  public:
   Scenario() {}
 
-  void Add(int con_index, int var_index, double coef) {
+  void AddConTerm(int con_index, int var_index, double coef) {
     con_terms_.push_back(ConTerm(con_index, var_index, coef));
   }
 
-  typedef std::vector<ConTerm>::const_iterator iterator;
+  void AddRHS(int con_index, double rhs) {
+    rhs_.push_back(RHS(con_index, rhs));
+  }
 
-  iterator begin() const { return con_terms_.begin(); }
-  iterator end() const { return con_terms_.end(); }
+  void AddLB(int var_index, double lb) {
+    lb_.push_back(Bound(var_index, lb));
+  }
+
+  void AddUB(int var_index, double ub) {
+    ub_.push_back(Bound(var_index, ub));
+  }
+
+  typedef std::vector<ConTerm>::const_iterator ConTermIterator;
+
+  ConTermIterator con_term_begin() const { return con_terms_.begin(); }
+  ConTermIterator con_term_end() const { return con_terms_.end(); }
+
+  typedef std::vector<RHS>::const_iterator RHSIterator;
+
+  RHSIterator rhs_begin() const { return rhs_.begin(); }
+  RHSIterator rhs_end() const { return rhs_.end(); }
+
+  typedef std::vector<Bound>::const_iterator BoundIterator;
+
+  BoundIterator lb_begin() const { return lb_.begin(); }
+  BoundIterator lb_end() const { return lb_.end(); }
+
+  BoundIterator ub_begin() const { return ub_.begin(); }
+  BoundIterator ub_end() const { return ub_.end(); }
 };
+
+double GetConRHSAndType(const ampl::Problem &p, int con_index, char &type) {
+  double lb = p.con_lb(con_index), ub = p.con_ub(con_index);
+  if (lb <= negInfinity) {
+    type = ub >= Infinity ? 'N' : 'L';
+    return ub;
+  }
+  if (ub >= Infinity)
+    type = 'G';
+  else if (lb == ub)
+    type = 'E';
+  else
+    throw ampl::Error("SMPS writer doesn't support ranges"); // TODO: test
+  return lb;
+}
+
+void ProcessConstraints(
+    const ampl::Problem &p, const std::vector<VarConInfo> &con_info,
+    std::vector<CoreConInfo> &core_cons, std::vector<Scenario> &scenarios) {
+  int num_cons = p.num_cons();
+  for (int i = 0; i < num_cons; ++i) {
+    auto &info = core_cons[con_info[i].core_index];
+    int scenario_index = con_info[i].scenario_index;
+    if (scenario_index != 0 && info.type)
+      continue;
+    double rhs = GetConRHSAndType(p, i, info.type);
+    if (scenario_index == 0)
+      info.rhs = rhs;
+  }
+  for (int i = 0; i < num_cons; ++i) {
+    int scenario_index = con_info[i].scenario_index;
+    if (scenario_index == 0)
+      continue;
+    char type = 0;
+    double rhs = GetConRHSAndType(p, i, type);
+    int core_con_index = con_info[i].core_index;
+    if (type != core_cons[core_con_index].type)
+      ampl::ThrowError("Inconsistent constraint type for {}") << p.con_name(i);
+    scenarios[scenario_index].AddRHS(core_con_index, rhs);
+  }
+}
+}
+
+namespace ampl {
+
+SMPSWriter::SMPSWriter() :
+  Solver<SMPSWriter>("smpswriter", "SMPSWriter", 20130709) {
+  DeclareSuffixes(&STAGE_SUFFIX, 1);
+  set_read_flags(Problem::READ_COLUMNWISE);
+}
 
 void SMPSWriter::Solve(Problem &p) {
   if (p.num_nonlinear_objs() != 0 || p.num_nonlinear_cons() != 0)
@@ -136,13 +230,6 @@ void SMPSWriter::Solve(Problem &p) {
   }
   if (num_stages > 2)
     throw Error("SMPS writer doesn't support problems with more than 2 stages");
-
-  // Information about a variable or constraint.
-  struct VarConInfo {
-    int core_index;  // index of this variable in the core problem
-    int scenario_index;
-    VarConInfo() : core_index(), scenario_index() {}
-  };
 
   int num_cons = p.num_cons();
   int num_stage0_cons = num_cons;
@@ -246,33 +333,8 @@ void SMPSWriter::Solve(Problem &p) {
     scenarios.resize(1);
   }
 
-  struct CoreConInfo {
-    char type;
-    double rhs;
-    CoreConInfo() : type(), rhs() {}
-  };
   std::vector<CoreConInfo> core_cons(num_core_cons);
-  for (int i = 0; i < num_cons; ++i) {
-    auto &info = core_cons[con_info[i].core_index];
-    int scenario_index = con_info[i].scenario_index;
-    if (scenario_index != 0 && info.type)
-      continue;
-    double lb = p.con_lb(i), ub = p.con_ub(i);
-    if (lb <= negInfinity) {
-      info.type = ub >= Infinity ? 'N' : 'L';
-      if (scenario_index == 0)
-        info.rhs = ub;
-    } else {
-      if (ub >= Infinity)
-        info.type = 'G';
-      else if (lb == ub)
-        info.type = 'E';
-      else
-        throw Error("SMPS writer doesn't support ranges"); // TODO: test
-      if (scenario_index == 0)
-        info.rhs = lb;
-    }
-  }
+  ProcessConstraints(p, con_info, core_cons, scenarios);
 
   std::string smps_basename = p.name();
 
@@ -362,7 +424,6 @@ void SMPSWriter::Solve(Problem &p) {
     for (int i = 0; i < num_vars; ++i) {
       int core_var_index = var_info[i].core_index;
       Problem::ColMatrix matrix = p.col_matrix();
-      // TODO: what if the variables are not ordered by scenarios?
       if (var_info[i].scenario_index == 0) {
         // Clear the core_coefs vector.
         for (auto j = nonzero_coef_indices.begin(),
@@ -402,7 +463,7 @@ void SMPSWriter::Solve(Problem &p) {
         double coef = matrix.value(k);
         double core_coef = core_coefs[core_con_index];
         if (coef != core_coef) {
-          scenarios[scenario_index].Add(
+          scenarios[scenario_index].AddConTerm(
               core_con_index, core_var_index, coef);
           if (core_coef == 0) {
             writer.Write("    C{:<7}  R{:<7}  0\n")
@@ -445,12 +506,17 @@ void SMPSWriter::Solve(Problem &p) {
       for (size_t i = 1, n = scenarios.size(); i < n; ++i) {
         writer.Write(" SC SCEN{:<4}  SCEN1     {:<12}   T2\n")
             << i + 1 << probabilities[i];
-        for (auto t = scenarios[i].begin(),
-            end = scenarios[i].end(); t != end; ++t) {
+        for (auto j = scenarios[i].con_term_begin(),
+            end = scenarios[i].con_term_end(); j != end; ++j) {
           writer.Write("    C{:<7}  R{:<7}  {}\n")
-              << t->var_index + 1 << t->con_index + 1 << t->coef;
+              << j->var_index + 1 << j->con_index + 1 << j->coef;
         }
-        // TODO: write random rhs and bounds
+        for (auto j = scenarios[i].rhs_begin(),
+            end = scenarios[i].rhs_end(); j != end; ++j) {
+          writer.Write("    RHS1      R{:<7}  {}\n")
+              << j->con_index + 1 << j->rhs;
+        }
+        // TODO: bounds
       }
     }
     writer.Write("ENDATA\n");
