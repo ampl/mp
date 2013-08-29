@@ -31,8 +31,8 @@ namespace {
 TEST(SMPSWriterTest, SMPSOutput) {
   static const char *const EXTS[] = {".cor", ".sto", ".tim"};
   static const char *const PROBLEMS[] = {
-      "single-stage", "random-con-matrix",
-      "random-con-matrix2", "zero-core-coefs"
+      "single-stage", "random-con-matrix", "random-con-matrix2",
+      "zero-core-coefs", "zero-core-con"
   };
   int count = 0;
   for (size_t i = 0, n = sizeof(PROBLEMS) / sizeof(*PROBLEMS); i != n; ++i) {
@@ -50,7 +50,7 @@ TEST(SMPSWriterTest, SMPSOutput) {
       ;
     }
   }
-  EXPECT_EQ(4 * 3, count);
+  EXPECT_EQ(5 * 3, count);
 }
 
 TEST(SMPSWriterTest, NonlinearNotSupported) {

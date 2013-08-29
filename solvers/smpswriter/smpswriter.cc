@@ -141,7 +141,7 @@ void SMPSWriter::Solve(Problem &p) {
   struct VarConInfo {
     int core_index;  // index of this variable in the core problem
     int scenario_index;
-    VarConInfo() : core_index(0), scenario_index() {}
+    VarConInfo() : core_index(), scenario_index() {}
   };
 
   int num_cons = p.num_cons();
@@ -246,6 +246,34 @@ void SMPSWriter::Solve(Problem &p) {
     scenarios.resize(1);
   }
 
+  struct CoreConInfo {
+    char type;
+    double rhs;
+    CoreConInfo() : type(), rhs() {}
+  };
+  std::vector<CoreConInfo> core_cons(num_core_cons);
+  for (int i = 0; i < num_cons; ++i) {
+    auto &info = core_cons[con_info[i].core_index];
+    int scenario_index = con_info[i].scenario_index;
+    if (scenario_index != 0 && info.type)
+      continue;
+    double lb = p.con_lb(i), ub = p.con_ub(i);
+    if (lb <= negInfinity) {
+      info.type = ub >= Infinity ? 'N' : 'L';
+      if (scenario_index == 0)
+        info.rhs = ub;
+    } else {
+      if (ub >= Infinity)
+        info.type = 'G';
+      else if (lb == ub)
+        info.type = 'E';
+      else
+        throw Error("SMPS writer doesn't support ranges"); // TODO: test
+      if (scenario_index == 0)
+        info.rhs = lb;
+    }
+  }
+
   std::string smps_basename = p.name();
 
   // Write the .tim file.
@@ -270,17 +298,8 @@ void SMPSWriter::Solve(Problem &p) {
       "NAME          PROBLEM\n"
       "ROWS\n"
       " N  OBJ\n");
-    for (int i = 0; i < num_cons; ++i) {
-      if (con_info[i].scenario_index != 0)
-        continue;
-      double lb = p.con_lb(i), ub = p.con_ub(i);
-      char type = 0;
-      if (lb <= negInfinity)
-        type = ub >= Infinity ? 'N' : 'L';
-      else
-        type = ub >= Infinity ? 'G' : 'E';
-      writer.Write(" {}  R{}\n") << type << con_info[i].core_index + 1;
-    }
+    for (int i = 0; i < num_core_cons; ++i)
+      writer.Write(" {}  R{}\n") << core_cons[i].type << i + 1;
 
     writer.Write("COLUMNS\n");
     std::vector<double> core_obj_coefs(num_core_vars);
@@ -383,10 +402,6 @@ void SMPSWriter::Solve(Problem &p) {
         double coef = matrix.value(k);
         double core_coef = core_coefs[core_con_index];
         if (coef != core_coef) {
-          int stage = stage_suffix.int_value(i) - 1;
-          if (stage < 1) {
-            // TODO: error: coefficient is inconsistent between scenarios
-          }
           scenarios[scenario_index].Add(
               core_con_index, core_var_index, coef);
           if (core_coef == 0) {
@@ -398,14 +413,8 @@ void SMPSWriter::Solve(Problem &p) {
     }
 
     writer.Write("RHS\n");
-    for (int i = 0; i < num_cons; ++i) {
-      if (con_info[i].scenario_index != 0)
-        continue;
-      double lb = p.con_lb(i), ub = p.con_ub(i);
-      // TODO: ranges
-      writer.Write("    RHS1      R{:<7}  {}\n")
-          << con_info[i].core_index + 1 << (ub >= Infinity ? lb : ub);
-    }
+    for (int i = 0; i < num_core_cons; ++i)
+      writer.Write("    RHS1      R{:<7}  {}\n") << i + 1 << core_cons[i].rhs;
 
     writer.Write("BOUNDS\n");
     for (int i = 0; i < num_vars; ++i) {

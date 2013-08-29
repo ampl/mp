@@ -1,0 +1,17 @@
+NAME          PROBLEM
+ROWS
+ N  OBJ
+ G  R1
+COLUMNS
+    C1        OBJ       1
+    C1        R1        0
+    C2        OBJ       1
+    C3        OBJ       1
+    C3        R1        0
+RHS
+    RHS1      R1        0
+BOUNDS
+ LO BOUND1      C1        1
+ LO BOUND1      C2        2
+ LO BOUND1      C3        3
+ENDATA
