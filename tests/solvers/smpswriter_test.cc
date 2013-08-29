@@ -31,8 +31,10 @@ namespace {
 TEST(SMPSWriterTest, SMPSOutput) {
   static const char *const EXTS[] = {".cor", ".sto", ".tim"};
   static const char *const PROBLEMS[] = {
-      "single-stage", "random-con-matrix", "random-con-matrix2"
+      "single-stage", "random-con-matrix",
+      "random-con-matrix2", "zero-core-coefs"
   };
+  int count = 0;
   for (size_t i = 0, n = sizeof(PROBLEMS) / sizeof(*PROBLEMS); i != n; ++i) {
     ampl::SMPSWriter w;
     std::string path("../data/smps/");
@@ -41,12 +43,20 @@ TEST(SMPSWriterTest, SMPSOutput) {
     WriteFile("test.col", ReadFile(path + ".col"));
     WriteFile("test.row", ReadFile(path + ".row"));
     EXPECT_EQ(0, w.Run(Args("", "test.nl")));
-    for (size_t j = 0, n = sizeof(EXTS) / sizeof(*EXTS); j != n; ++j) {
+    for (size_t j = 0, n = sizeof(EXTS) / sizeof(*EXTS); j != n; ++j, ++count) {
       EXPECT_EQ(
           ReadFile(std::string(path) + EXTS[j]),
           ReadFile(std::string("test") + EXTS[j])) << PROBLEMS[i] << EXTS[j];
+      ;
     }
   }
+  EXPECT_EQ(4 * 3, count);
+}
+
+TEST(SMPSWriterTest, NonlinearNotSupported) {
+  ampl::SMPSWriter w;
+  WriteFile("test.nl", ReadFile("../data/smps/nonlinear.nl"));
+  EXPECT_THROW(w.Run(Args("", "test.nl")), ampl::Error);
 }
 
 TEST(SMPSWriterTest, MoreThan2StagesNotSupported) {

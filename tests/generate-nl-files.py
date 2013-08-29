@@ -70,7 +70,9 @@ dir = outdir = 'data/miplib/'
 generate_nl_file('assign1', '$.mod', '$.dat')
 
 dir = outdir = 'data/smps/'
+generate_nl_file('nonlinear', '$.ampl')
 generate_nl_file('random-con-matrix', '$.ampl')
 generate_nl_file('random-con-matrix2', '$.ampl')
 generate_nl_file('single-stage', '$.ampl')
 generate_nl_file('three-stage', '$.ampl')
+generate_nl_file('zero-core-coefs', '$.ampl')

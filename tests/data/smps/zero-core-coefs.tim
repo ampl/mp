@@ -1,0 +1,5 @@
+TIME          PROBLEM
+PERIODS
+    C1        OBJ                      T1
+    C3        R1                       T2
+ENDATA
