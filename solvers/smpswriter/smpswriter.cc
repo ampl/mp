@@ -28,10 +28,13 @@
 namespace {
 SufDecl STAGE_SUFFIX = {const_cast<char*>("stage"), 0, ASL_Sufkind_var};
 
-std::string ExtractScenario(std::string &name) {
+std::string ExtractScenario(std::string &name, bool require_scenario = true) {
   std::size_t index_pos = name.find_last_of("[,");
-  if (index_pos == std::string::npos)
+  if (index_pos == std::string::npos) {
+    if (!require_scenario)
+      return std::string();
     throw ampl::Error(fmt::Format("Missing scenario index for {}") << name);
+  }
   bool single_index = name[index_pos] == '[';
   ++index_pos;
   std::string index = name.substr(index_pos, name.size() - index_pos - 1);
@@ -112,23 +115,22 @@ class Scenario {
 };
 
 void SMPSWriter::Solve(Problem &p) {
-  int num_vars = p.num_vars();
+  if (p.num_nonlinear_objs() != 0 || p.num_nonlinear_cons() != 0)
+    throw Error("SMPS writer doesn't support nonlinear problems");
 
   // Count the number of stages and the number of variables in stage 0.
+  int num_vars = p.num_vars();
   Suffix stage_suffix = p.suffix("stage", ASL_Sufkind_var);
   int num_stage0_vars = num_vars;
   int num_stages = 1;
   if (stage_suffix) {
     num_stage0_vars = 0;
     for (int i = 0; i < num_vars; ++i) {
-      int stage = stage_suffix.int_value(i);
-      if (stage > 0) {
-        if (stage > num_stages)
-          num_stages = stage;
-        --stage;
-      } else {
+      int stage_plus_1 = stage_suffix.int_value(i);
+      if (stage_plus_1 > 0)
+        num_stages = std::max(stage_plus_1, num_stages);
+      else
         ++num_stage0_vars;
-      }
     }
   }
   if (num_stages > 2)
@@ -163,8 +165,9 @@ void SMPSWriter::Solve(Problem &p) {
             stage1_vars, name, num_stage0_vars + stage1_vars.size());
         info.scenario_index =
             FindOrInsert(scenario_indices, scenario, scenario_indices.size());
-      } else
+      } else {
         info.core_index = stage0_var_count++;
+      }
     }
     assert(stage0_var_count == num_stage0_vars);
     num_core_vars = num_stage0_vars + stage1_vars.size();
@@ -173,40 +176,65 @@ void SMPSWriter::Solve(Problem &p) {
     // variables in it.
     Problem::ColMatrix matrix = p.col_matrix();
     std::vector<int> con_stages(num_cons);
+    std::map<std::string, int> stage1_cons;
     for (int j = 0; j < num_vars; ++j) {
       int stage = stage_suffix.int_value(j) - 1;
       if (stage <= 0) continue;
       // Update stages of all constraints containing this variable.
       for (int k = matrix.col_start(j),
           end = matrix.col_start(j + 1); k != end; ++k) {
-        int &con_stage = con_stages[matrix.row_index(k)];
+        int con_index = matrix.row_index(k);
+        int &con_stage = con_stages[con_index];
         if (stage > con_stage) {
-          if (con_stage == 0)
+          if (con_stage == 0) {
+            // Split the name into scenario and the rest and merge constraints
+            // that only differ by scenario into the same constraint.
+            std::string name = p.con_name(con_index);
+            std::string scenario = ExtractScenario(name);
+            auto &info = con_info[con_index];
+            info.core_index = FindOrInsert(
+                stage1_cons, name, stage1_cons.size());
+            info.scenario_index = FindOrInsert(
+                scenario_indices, scenario, scenario_indices.size());
             --num_stage0_cons;
+          }
           con_stage = stage;
         }
       }
     }
 
+    // Check for any stage 1 constraints remaining - some of them may not
+    // have been detected previously because they don't have stage 1 variables.
+    // This can happen if all stage 1 variables have zero coefficients in a
+    // core constraint.
     int stage0_con_count = 0;
-    std::map<std::string, int> stage1_cons;
     for (int i = 0; i < num_cons; ++i) {
-      int stage = con_stages[i];
+      if (con_stages[i] != 0)
+        continue;
       auto &info = con_info[i];
-      if (stage > 0) {
-        // Split the name into scenario and the rest and merge constraints that
-        // only differ by scenario into the same constraint.
-        std::string name = p.con_name(i);
-        std::string scenario = ExtractScenario(name);
-        info.core_index = FindOrInsert(
-            stage1_cons, name, num_stage0_cons + stage1_cons.size());
-        info.scenario_index =
-            FindOrInsert(scenario_indices, scenario, scenario_indices.size());
-      } else
+      // A constraint with a name which only differs in scenario from a
+      // name of some other stage 1 constraint, is also a stage 1 constraint.
+      std::string name = p.con_name(i);
+      std::string scenario = ExtractScenario(name, false);
+      auto stage1_con = scenario.empty() ?
+          stage1_cons.end() : stage1_cons.find(name);
+      if (stage1_con != stage1_cons.end()) {
+        con_stages[i] = 1;
+        info.core_index = stage1_con->second;
+        info.scenario_index = FindOrInsert(
+            scenario_indices, scenario, scenario_indices.size());
+        --num_stage0_cons;
+      } else {
         info.core_index = stage0_con_count++;
+      }
     }
     assert(stage0_con_count == num_stage0_cons);
     num_core_cons = num_stage0_cons + stage1_cons.size();
+
+    for (int i = 0; i < num_cons; ++i) {
+      if (con_stages[i] != 0)
+        con_info[i].core_index += num_stage0_cons;
+    }
 
     scenarios.resize(scenario_indices.size());
   } else {
@@ -327,7 +355,7 @@ void SMPSWriter::Solve(Problem &p) {
         }
       }
 
-      // Go over the non-core coefficients and compare them to those in core.
+      // Go over non-core coefficients and compare them to those in the core.
       for (int k = matrix.col_start(i),
           end = matrix.col_start(i + 1); k != end; ++k) {
         int con_index = matrix.row_index(k);
@@ -336,13 +364,18 @@ void SMPSWriter::Solve(Problem &p) {
           continue;
         int core_con_index = con_info[con_index].core_index;
         double coef = matrix.value(k);
-        if (coef != core_coefs[core_con_index]) {
+        double core_coef = core_coefs[core_con_index];
+        if (coef != core_coef) {
           int stage = stage_suffix.int_value(i) - 1;
           if (stage < 1) {
             // TODO: error: coefficient is inconsistent between scenarios
           }
           scenarios[scenario_index].Add(
               core_con_index, core_var_index, coef);
+          if (core_coef == 0) {
+            writer.Write("    C{:<7}  R{:<7}  0\n")
+                << core_var_index + 1 << core_con_index + 1;
+          }
         }
       }
     }
