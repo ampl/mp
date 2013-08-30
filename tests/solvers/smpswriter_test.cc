@@ -20,6 +20,8 @@
  Author: Victor Zverovich
  */
 
+#include <sstream>
+
 #include "gtest/gtest.h"
 
 #include "solvers/smpswriter/smpswriter.h"
@@ -28,11 +30,46 @@
 
 namespace {
 
+std::vector<std::string> Split(const std::string &s) {
+  std::vector<std::string> lines;
+  std::stringstream ss(s);
+  std::string line;
+  while (std::getline(ss, line))
+    lines.push_back(line);
+  return lines;
+}
+
+::testing::AssertionResult AssertFilesEqual(
+    const char *expected_expr, const char *actual_expr,
+    const std::string &expected_file, const std::string &actual_file) {
+  auto expected = Split(ReadFile(expected_file));
+  auto actual = Split(ReadFile(actual_file));
+  if (expected.size() > actual.size())
+    actual.resize(expected.size());
+  else if (actual.size() > expected.size())
+    expected.resize(actual.size());
+  for (std::size_t i = 0,
+      n = std::min(expected.size(), actual.size()); i != n; ++i) {
+    if (expected[i] != actual[i]) {
+      return ::testing::AssertionFailure()
+        << "Files differ in line " << i + 1 << "\n"
+        << "Expected file: " << expected_file << "\n"
+        << "Actual file: " << actual_file << "\n"
+        << "Expected line: " << expected[i] << "\n"
+        << "Actual line: " << actual[i] << "\n";
+    }
+  }
+  return ::testing::AssertionSuccess();
+}
+
+#define EXPECT_FILES_EQ(expected_file, actual_file) \
+    EXPECT_PRED_FORMAT2(AssertFilesEqual, expected_file, actual_file)
+
 TEST(SMPSWriterTest, SMPSOutput) {
   static const char *const EXTS[] = {".cor", ".sto", ".tim"};
   static const char *const PROBLEMS[] = {
-      "single-stage", "random-con-matrix", "random-con-matrix2",
-      "random-rhs", "zero-core-coefs", "zero-core-con"
+      "single-stage", "random-bound", "random-con-matrix",
+      "random-con-matrix2", "random-rhs", "zero-core-coefs", "zero-core-con"
   };
   int count = 0;
   for (size_t i = 0, n = sizeof(PROBLEMS) / sizeof(*PROBLEMS); i != n; ++i) {
@@ -44,13 +81,11 @@ TEST(SMPSWriterTest, SMPSOutput) {
     WriteFile("test.row", ReadFile(path + ".row"));
     EXPECT_EQ(0, w.Run(Args("", "test.nl")));
     for (size_t j = 0, n = sizeof(EXTS) / sizeof(*EXTS); j != n; ++j, ++count) {
-      EXPECT_EQ(
-          ReadFile(std::string(path) + EXTS[j]),
-          ReadFile(std::string("test") + EXTS[j])) << PROBLEMS[i] << EXTS[j];
-      ;
+      EXPECT_FILES_EQ(
+          std::string(path) + EXTS[j], std::string("test") + EXTS[j]);
     }
   }
-  EXPECT_EQ(6 * 3, count);
+  EXPECT_EQ(7 * 3, count);
 }
 
 TEST(SMPSWriterTest, NonlinearNotSupported) {
@@ -62,6 +97,12 @@ TEST(SMPSWriterTest, NonlinearNotSupported) {
 TEST(SMPSWriterTest, MoreThan2StagesNotSupported) {
   ampl::SMPSWriter w;
   WriteFile("test.nl", ReadFile("../data/smps/three-stage.nl"));
+  EXPECT_THROW(w.Run(Args("", "test.nl")), ampl::Error);
+}
+
+TEST(SMPSWriterTest, RangesNotSupported) {
+  ampl::SMPSWriter w;
+  WriteFile("test.nl", ReadFile("../data/smps/range-con.nl"));
   EXPECT_THROW(w.Run(Args("", "test.nl")), ampl::Error);
 }
 

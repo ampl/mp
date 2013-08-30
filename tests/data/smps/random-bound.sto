@@ -2,5 +2,5 @@ STOCH         PROBLEM
 SCENARIOS     DISCRETE
  SC SCEN1     'ROOT'    0.5            T1
  SC SCEN2     SCEN1     0.5            T2
-    RHS1      R1        4
+ LO BOUND1      C2        4
 ENDATA
