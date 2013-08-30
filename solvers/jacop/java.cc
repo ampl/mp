@@ -217,6 +217,8 @@ Env JVM::env(const char *const *options) {
       std::string path = std::getenv("PATH");
       path += ";";
       path += runtime_lib_path;
+      path += ";";
+      path += runtime_lib_path + "\\..";
       SetEnvironmentVariable("PATH", path.c_str());
     }
     if (!LoadLibrary("jvm.dll"))
