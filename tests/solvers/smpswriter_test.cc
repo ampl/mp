@@ -39,8 +39,7 @@ std::vector<std::string> Split(const std::string &s) {
   return lines;
 }
 
-::testing::AssertionResult AssertFilesEqual(
-    const char *expected_expr, const char *actual_expr,
+::testing::AssertionResult AssertFilesEqual(const char *, const char *,
     const std::string &expected_file, const std::string &actual_file) {
   auto expected = Split(ReadFile(expected_file));
   auto actual = Split(ReadFile(actual_file));
