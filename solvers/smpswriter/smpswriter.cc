@@ -92,6 +92,12 @@ struct CoreConInfo {
   CoreConInfo() : type(), rhs() {}
 };
 
+struct CoreVarInfo {
+  double lb;
+  double ub;
+  CoreVarInfo() : lb(), ub() {}
+};
+
 class Scenario {
  public:
   // A constraint expression term.
@@ -170,11 +176,11 @@ double GetConRHSAndType(const ampl::Problem &p, int con_index, char &type) {
   else if (lb == ub)
     type = 'E';
   else
-    throw ampl::Error("SMPS writer doesn't support ranges"); // TODO: test
+    throw ampl::Error("SMPS writer doesn't support ranges");
   return lb;
 }
 
-void ProcessConstraints(
+void SplitConRHSIntoScenarios(
     const ampl::Problem &p, const std::vector<VarConInfo> &con_info,
     std::vector<CoreConInfo> &core_cons, std::vector<Scenario> &scenarios) {
   int num_cons = p.num_cons();
@@ -194,9 +200,37 @@ void ProcessConstraints(
     char type = 0;
     double rhs = GetConRHSAndType(p, i, type);
     int core_con_index = con_info[i].core_index;
-    if (type != core_cons[core_con_index].type)
+    const auto &info = core_cons[core_con_index];
+    if (type != info.type)
       ampl::ThrowError("Inconsistent constraint type for {}") << p.con_name(i);
-    scenarios[scenario_index].AddRHS(core_con_index, rhs);
+    if (rhs != info.rhs)
+      scenarios[scenario_index].AddRHS(core_con_index, rhs);
+  }
+}
+
+void SplitVarBoundsIntoScenarios(
+    const ampl::Problem &p, const std::vector<VarConInfo> &var_info,
+    std::vector<CoreVarInfo> &core_vars, std::vector<Scenario> &scenarios) {
+  int num_vars = p.num_vars();
+  for (int i = 0; i < num_vars; ++i) {
+    int scenario_index = var_info[i].scenario_index;
+    if (scenario_index != 0)
+      continue;
+    auto &info = core_vars[var_info[i].core_index];
+    info.lb = p.var_lb(i);
+    info.ub = p.var_ub(i);
+  }
+  for (int i = 0; i < num_vars; ++i) {
+    int scenario_index = var_info[i].scenario_index;
+    if (scenario_index == 0)
+      continue;
+    int core_var_index = var_info[i].core_index;
+    const auto &info = core_vars[core_var_index];
+    double lb = p.var_lb(i), ub = p.var_ub(i);
+    if (lb != info.lb)
+      scenarios[scenario_index].AddLB(core_var_index, lb);
+    if (ub != info.ub)
+      scenarios[scenario_index].AddUB(core_var_index, ub);
   }
 }
 }
@@ -334,7 +368,9 @@ void SMPSWriter::Solve(Problem &p) {
   }
 
   std::vector<CoreConInfo> core_cons(num_core_cons);
-  ProcessConstraints(p, con_info, core_cons, scenarios);
+  SplitConRHSIntoScenarios(p, con_info, core_cons, scenarios);
+  std::vector<CoreVarInfo> core_vars(num_core_vars);
+  SplitVarBoundsIntoScenarios(p, var_info, core_vars, scenarios);
 
   std::string smps_basename = p.name();
 
@@ -364,6 +400,7 @@ void SMPSWriter::Solve(Problem &p) {
       writer.Write(" {}  R{}\n") << core_cons[i].type << i + 1;
 
     writer.Write("COLUMNS\n");
+    // TODO: mip
     std::vector<double> core_obj_coefs(num_core_vars);
     std::vector<double> sum_core_obj_coefs;
     if (p.num_objs() != 0) {
@@ -478,18 +515,12 @@ void SMPSWriter::Solve(Problem &p) {
       writer.Write("    RHS1      R{:<7}  {}\n") << i + 1 << core_cons[i].rhs;
 
     writer.Write("BOUNDS\n");
-    for (int i = 0; i < num_vars; ++i) {
-      if (var_info[i].scenario_index != 0)
-        continue;
-      double lb = p.var_lb(i), ub = p.var_ub(i);
-      if (lb != 0) {
-        writer.Write(" LO BOUND1      C{:<7}  {}\n")
-            << var_info[i].core_index + 1 << lb;
-      }
-      if (ub < Infinity) {
-        writer.Write(" UP BOUND1      C{:<7}  {}\n")
-            << var_info[i].core_index + 1 << ub;
-      }
+    for (int i = 0; i < num_core_vars; ++i) {
+      double lb = core_vars[i].lb, ub = core_vars[i].ub;
+      if (lb != 0)
+        writer.Write(" LO BOUND1      C{:<7}  {}\n") << i + 1 << lb;
+      if (ub < Infinity)
+        writer.Write(" UP BOUND1      C{:<7}  {}\n") << i + 1 << ub;
     }
 
     writer.Write("ENDATA\n");
@@ -516,7 +547,16 @@ void SMPSWriter::Solve(Problem &p) {
           writer.Write("    RHS1      R{:<7}  {}\n")
               << j->con_index + 1 << j->rhs;
         }
-        // TODO: bounds
+        for (auto j = scenarios[i].lb_begin(),
+            end = scenarios[i].lb_end(); j != end; ++j) {
+          writer.Write(" LO BOUND1      C{:<7}  {}\n")
+              << j->var_index + 1 << j->bound;
+        }
+        for (auto j = scenarios[i].ub_begin(),
+            end = scenarios[i].ub_end(); j != end; ++j) {
+          writer.Write(" UP BOUND1      C{:<7}  {}\n")
+              << j->var_index + 1 << j->bound;
+        }
       }
     }
     writer.Write("ENDATA\n");
