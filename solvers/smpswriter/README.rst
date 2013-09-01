@@ -14,7 +14,7 @@ the following requirements:
    var sell{Crops, Scenarios} >= 0, suffix stage 2;
 
 2. Second-stage variables and constraints should be indexed over a scenario
-   set which should be the last index:
+   set which should be the last in indexing:
 
    set Scenarios;
    var sell{Crops, Scenarios} >= 0, suffix stage 2;
