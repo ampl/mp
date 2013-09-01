@@ -435,7 +435,8 @@ void SMPSWriter::Solve(Problem &p) {
           core_obj_coefs[info.core_index] = coef;
         }
         // Check probabilities deduced using other variables.
-        if (stage_suffix && stage_suffix.int_value(i->var_index()) - 1 > 0) {
+        if (probabilities.size() != 1 &&
+            stage_suffix && stage_suffix.int_value(i->var_index()) - 1 > 0) {
           double ref_prob = probabilities[info.scenario_index];
           double prob = i->coef() / sum_core_obj_coefs[info.core_index];
           double prob_tolerance = 1e-5;

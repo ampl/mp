@@ -67,9 +67,9 @@ std::vector<std::string> Split(const std::string &s) {
 TEST(SMPSWriterTest, SMPSOutput) {
   static const char *const EXTS[] = {".cor", ".sto", ".tim"};
   static const char *const PROBLEMS[] = {
-      "int-var", "single-stage", "random-bound", "random-con-matrix",
-      "random-con-matrix2", "random-rhs", "vars-not-in-stage-order",
-      "zero-core-coefs", "zero-core-con"
+      "int-var", "random-bound", "random-con-matrix", "random-con-matrix2",
+      "random-rhs", "single-scenario", "single-stage",
+      "vars-not-in-stage-order", "zero-core-coefs", "zero-core-con"
   };
   int count = 0;
   for (size_t i = 0, n = sizeof(PROBLEMS) / sizeof(*PROBLEMS); i != n; ++i) {
@@ -85,7 +85,7 @@ TEST(SMPSWriterTest, SMPSOutput) {
           std::string(path) + EXTS[j], std::string("test") + EXTS[j]);
     }
   }
-  EXPECT_EQ(9 * 3, count);
+  EXPECT_EQ(10 * 3, count);
 }
 
 TEST(SMPSWriterTest, NonlinearNotSupported) {
