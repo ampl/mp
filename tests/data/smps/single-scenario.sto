@@ -1,0 +1,4 @@
+STOCH         PROBLEM
+SCENARIOS     DISCRETE
+ SC SCEN1     'ROOT'    1              T1
+ENDATA
