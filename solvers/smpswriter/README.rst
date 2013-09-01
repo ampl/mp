@@ -1,11 +1,27 @@
+smpswriter
+==========
+
 smpswriter converts a deterministic equivalent of a two-stage
 stochastic programming (SP) problem written in AMPL to an SP problem
 in `SMPS format <http://myweb.dal.ca/gassmann/smps2.htm>`__.
 It is written as an AMPL solver but can be used as a stand-alone program
-to convert .nl files (requires .col and .row files as well) into SMPS.
+to convert `.nl files <http://en.wikipedia.org/wiki/Nl_(format)>`__
+(requires .col and .row files as well) into SMPS.
 
-Usage:
-  smpswriter <nl-file>
+Features
+--------
+
+* Supports continuous, binary and integer variables.
+* Automatically deduces probabilities from the objective function.
+* Supports randomness in
+  - constraint right-hand sides
+  - constraint matrix elements
+  - variable bounds
+* The same problem can be used for solving a deterministic equivalent in
+  AMPL for generating SMPS using smpswriter.
+
+Problem requirements
+--------------------
 
 To be convertible to SMPS with smpswriter the AMPL problem should satisfy
 the following requirements:
@@ -32,8 +48,46 @@ the following requirements:
     .. code-block:: python
 
       param P{Scenarios}; # probabilities
+
       maximize profit: sum{s in Scenarios} P[s] * (
         ExcessSellingPrice * sellExcess[s] +
         sum{c in Crops} (SellingPrice[c] * sell[c, s] -
                          PurchasePrice[c] * buy[c, s]) -
         sum{c in Crops} PlantingCost[c] * area[c]);
+
+Usage example
+-------------
+
+The file farmer.ampl contains the deterministic equivalent of the farmer's
+problem from the book Introduction to Stochastic Programming by Birge and
+Louveaux.
+
+1. Read the deterministic equivalent of the farmer's problem written in AMPL
+   and write .nl, .col and .row files:
+
+   .. code-block:: python
+
+      ampl: include farmer.ampl;
+      ampl: suffix stage IN;    # make the write command output stage information
+      ampl: option auxfiles rc; # make the write command output .row and .col files
+      ampl: write gfarmer;      # write farmer.nl, farmer.row and farmer.col files
+
+2. Convert the deterministic equivalent in the .nl format into the SP problem
+   in SMPS format:
+
+   .. code-block:: shell
+
+      $ smpswriter farmer
+
+   You can do the same from AMPL itself:
+   
+   .. code-block:: python
+
+      ampl: shell 'smpswriter farmer';
+
+3. Use the generated SMPS files as you like. For this example let's solve the SP
+   version of the farmer's problem using FortSP:
+   
+   .. code-block:: shell
+
+      $ fortsp --smps-obj-sense=maximize farmer
