@@ -12,11 +12,15 @@ Features
 --------
 
 * Supports continuous, binary and integer variables.
+
 * Automatically deduces probabilities from the objective function.
+
 * Supports randomness in
+
   - constraint right-hand sides
   - constraint matrix elements
   - variable bounds
+  
 * The same problem can be used for solving a deterministic equivalent in
   AMPL for generating SMPS using smpswriter.
 
@@ -26,7 +30,7 @@ Problem requirements
 To be convertible to SMPS with smpswriter the AMPL problem should satisfy
 the following requirements:
 
-1. Second-stage variables should be marked with "suffix stage 2":
+1. Second-stage variables should be marked with `suffix stage 2`:
 
    .. code-block:: python
 
@@ -58,7 +62,7 @@ the following requirements:
 Usage example
 -------------
 
-The file farmer.ampl contains the deterministic equivalent of the farmer's
+The file `farmer.ampl` contains the deterministic equivalent of the farmer's
 problem from the book Introduction to Stochastic Programming by Birge and
 Louveaux.
 
@@ -85,9 +89,20 @@ Louveaux.
 
       ampl: shell 'smpswriter farmer';
 
-3. Use the generated SMPS files as you like. For this example let's solve the SP
-   version of the farmer's problem using FortSP:
+3. Use the generated SMPS files as you like. For this example let's solve the
+   SP version of the farmer's problem using FortSP:
    
    .. code-block:: shell
 
       $ fortsp --smps-obj-sense=maximize farmer
+
+      Stage 1 has 1 row(s), 3 column(s), and 3 nonzero(s).      Stage 2 has 4 row(s), 7 column(s), and 12 nonzero(s).      Problem has 2 stage(s) and 3 scenario(s).      Itn      Objective          Bound        Rel.Gap        1         107240         136400       0.271914        2         107240         115429      0.0763595        3         107240         111053      0.0355573        4         107240         110011      0.0258422        5         107240         108861      0.0151167        6         108328         108802     0.00437892        7         108328         108390    0.000574388        8         108390         108390    5.37021e-16      Number of iterations = 8.      Master time = 0.001168 s.      Recourse time = 0.002706 s.      Optimal solution found, objective = 108390.      Solution time = 0.011307 s.
+
+   and the optimal value to the one found by solving the deterministic
+   equivalent:
+   
+   .. code-block:: python
+
+      ampl: solve;
+      MINOS 5.51: optimal solution found.
+      11 iterations, objective 108389.8916
