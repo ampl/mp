@@ -1,5 +1,6 @@
-smpswriter converts a deterministic equivalent of a two-stage stochastic
-programming (SP) problem written in AMPL to an SP problem in SMPS format.
+smpswriter converts a deterministic equivalent of a two-stage
+stochastic programming (SP) problem written in AMPL to an SP problem
+in `SMPS format <http://myweb.dal.ca/gassmann/smps2.htm>`__.
 It is written as an AMPL solver but can be used as a stand-alone program
 to convert .nl files (requires .col and .row files as well) into SMPS.
 
@@ -11,22 +12,28 @@ the following requirements:
 
 1. Second-stage variables should be marked with "suffix stage 2":
 
-   var sell{Crops, Scenarios} >= 0, suffix stage 2;
+   .. code-block:: python
+
+      var sell{Crops, Scenarios} >= 0, suffix stage 2;
 
 2. Second-stage variables and constraints should be indexed over a scenario
    set which should be the last in indexing:
 
-   set Scenarios;
-   var sell{Crops, Scenarios} >= 0, suffix stage 2;
-   s.t. quota{s in Scenarios}: sell['beets', s] <= BeetsQuota;
+   .. code-block:: python
+
+      set Scenarios;
+      var sell{Crops, Scenarios} >= 0, suffix stage 2;
+      s.t. quota{s in Scenarios}: sell['beets', s] <= BeetsQuota;
 
 3. Objective should contain at least one second-stage variable, no random
    (scenario-dependent) parameters and expression should have the form of
    expectation:
- 
-   param P{Scenarios}; # probabilities
-   maximize profit: sum{s in Scenarios} P[s] * (
-     ExcessSellingPrice * sellExcess[s] +
-     sum{c in Crops} (SellingPrice[c] * sell[c, s] -
-                      PurchasePrice[c] * buy[c, s]) -
-     sum{c in Crops} PlantingCost[c] * area[c]);
+
+    .. code-block:: python
+
+      param P{Scenarios}; # probabilities
+      maximize profit: sum{s in Scenarios} P[s] * (
+        ExcessSellingPrice * sellExcess[s] +
+        sum{c in Crops} (SellingPrice[c] * sell[c, s] -
+                         PurchasePrice[c] * buy[c, s]) -
+        sum{c in Crops} PlantingCost[c] * area[c]);
