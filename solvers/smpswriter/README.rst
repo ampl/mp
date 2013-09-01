@@ -90,7 +90,8 @@ book Introduction to Stochastic Programming by Birge and Louveaux.
       ampl: shell 'smpswriter farmer';
 
 3. Use the generated SMPS files as you like. For this example let's solve the
-   SP version of the farmer's problem using FortSP:
+   SP version of the farmer's problem using `the FortSP solver
+   <http://www.optirisk-systems.com/products_fortsp.asp>`__:
    
    .. code-block:: shell
 
@@ -121,3 +122,13 @@ book Introduction to Stochastic Programming by Birge and Louveaux.
       ampl: solve;
       MINOS 5.51: optimal solution found.
       11 iterations, objective 108389.8916
+
+Limitations
+-----------
+
+* Ranges are not supported.
+
+* Random objective coefficients are not supported. A simple workaround is
+  to introduce an auxiliary second-stage variable equal to the objective
+  expression (without the expectation) and using this variable in the
+  objective function.
