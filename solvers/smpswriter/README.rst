@@ -114,7 +114,7 @@ book Introduction to Stochastic Programming by Birge and Louveaux.
       Optimal solution found, objective = 108390.
       Solution time = 0.011307 s.
 
-   and the optimal value to the one found by solving the deterministic
+   and compare the optimal value to the one found by solving the deterministic
    equivalent:
    
    .. code-block:: text
