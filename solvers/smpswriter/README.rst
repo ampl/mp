@@ -22,7 +22,7 @@ Features
   - variable bounds
   
 * The same problem can be used for solving a deterministic equivalent in
-  AMPL for generating SMPS using smpswriter.
+  AMPL and for generating SMPS using smpswriter.
 
 Problem requirements
 --------------------
@@ -130,5 +130,5 @@ Limitations
 
 * Random objective coefficients are not supported. A simple workaround is
   to introduce an auxiliary second-stage variable equal to the objective
-  expression (without the expectation) and using this variable in the
+  expression (without the expectation) and use this variable in the
   objective function.
