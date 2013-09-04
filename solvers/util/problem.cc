@@ -472,6 +472,18 @@ class TempFiles : Noncopyable {
   const char *stub() const { return name_; }
 };
 
+Suffix Problem::suffix(const char *name, unsigned flags) const {
+  unsigned kind = flags & ASL_Sufkind_mask;
+  for (SufDesc *d = asl_->i.suffixes[kind],
+      *end = d + asl_->i.nsuff[kind]; d < end; ++d) {
+    if (!strcmp(name, d->sufname)) {
+      return Suffix((flags & ASL_Sufkind_input) != 0 &&
+          (d->kind & ASL_Sufkind_input) == 0 ? 0 : d);
+    }
+  }
+  return Suffix(0);
+}
+
 void Problem::AddVar(double lb, double ub, VarType type) {
   int &num_vars = asl_->i.n_var_;
   if (num_vars >= var_capacity_) {

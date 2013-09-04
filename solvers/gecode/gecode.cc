@@ -196,24 +196,34 @@ void NLToGecodeConverter::Convert(const Problem &p) {
   }
 
   // Convert constraints.
+  Suffix suffix = p.suffix("icl", ASL_Sufkind_con);
   for (int i = 0, n = p.num_cons(); i < n; ++i) {
     LinExpr con_expr(
         ConvertExpr(p.linear_con_expr(i), p.nonlinear_con_expr(i)));
     double lb = p.con_lb(i), ub = p.con_ub(i);
+    Gecode::IntConLevel icl = icl_;
+    if (suffix) {
+      int value = suffix.int_value(i);
+      assert(value == Gecode::ICL_VAL || value == Gecode::ICL_BND ||
+             value == Gecode::ICL_DOM || value == Gecode::ICL_DEF);
+      if (value < 0 || value > Gecode::ICL_DEF)
+        ThrowError("Invalid value \"{}\" for suffix \"icl\"") << value;
+      icl = static_cast<Gecode::IntConLevel>(value);
+    }
     if (lb <= negInfinity) {
-      rel(problem_, con_expr <= CastToInt(ub), icl_);
+      rel(problem_, con_expr <= CastToInt(ub), icl);
       continue;
     }
     if (ub >= Infinity) {
-      rel(problem_, con_expr >= CastToInt(lb), icl_);
+      rel(problem_, con_expr >= CastToInt(lb), icl);
       continue;
     }
     int int_lb = CastToInt(lb), int_ub = CastToInt(ub);
     if (int_lb == int_ub) {
-      rel(problem_, con_expr == int_lb, icl_);
+      rel(problem_, con_expr == int_lb, icl);
     } else {
-      rel(problem_, con_expr >= int_lb, icl_);
-      rel(problem_, con_expr <= int_ub, icl_);
+      rel(problem_, con_expr >= int_lb, icl);
+      rel(problem_, con_expr <= int_ub, icl);
     }
   }
 
@@ -413,6 +423,8 @@ GecodeSolver::GecodeSolver()
   time_limit_(DBL_MAX), node_limit_(ULONG_MAX), fail_limit_(ULONG_MAX) {
 
   set_version("Gecode " GECODE_VERSION);
+
+  AddSuffix("icl", 0, ASL_Sufkind_con);
 
   AddIntOption("outlev",
       "0 or 1 (default 0):  Whether to print solution log.",
