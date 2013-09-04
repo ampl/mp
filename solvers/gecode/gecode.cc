@@ -630,7 +630,7 @@ void GecodeSolver::Solve(Problem &p) {
   format("{} nodes, {} fails") << stats.node << stats.fail;
   if (has_obj && solution.get())
     format(", objective {}") << ObjPrec(obj_val);
-  HandleSolution(format.c_str(),
+  DoHandleSolution(p, format.c_str(),
       final_solution.empty() ? 0 : &final_solution[0], 0, obj_val);
 
   double output_time = GetTimeAndReset(time);

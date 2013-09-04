@@ -295,9 +295,9 @@ void BasicSolver::AddSuffix(
   sd.nextra = nextra;
 }
 
-bool BasicSolver::ProcessArgs(char **&argv, unsigned flags) {
-  ASL *asl = reinterpret_cast<ASL*>(problem_.asl_);
-  if (problem_.asl_->i.nsuffixes == 0 && !suffixes_.empty())
+bool BasicSolver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
+  ASL *asl = reinterpret_cast<ASL*>(p.asl_);
+  if (p.asl_->i.nsuffixes == 0 && !suffixes_.empty())
     suf_declare_ASL(asl, &suffixes_[0], suffixes_.size());
 
   char *stub = getstub_ASL(asl, &argv, this);
@@ -306,9 +306,9 @@ bool BasicSolver::ProcessArgs(char **&argv, unsigned flags) {
     return false;
   }
   steady_clock::time_point start = steady_clock::now();
-  problem_.Read(stub, read_flags_);
+  p.Read(stub, read_flags_);
   double read_time = GetTimeAndReset(start);
-  bool result = ParseOptions(argv, flags);
+  bool result = ParseOptions(argv, flags, &p);
   if (timing_)
     Print("Input time = {:.6f}s\n") << read_time;
   return result;
@@ -395,7 +395,7 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
   }
 }
 
-bool BasicSolver::ParseOptions(char **argv, unsigned flags) {
+bool BasicSolver::ParseOptions(char **argv, unsigned flags, const Problem *) {
   has_errors_ = false;
   Option_Info::flags &= ~ASL_OI_show_version;
   if (opname) {
@@ -404,7 +404,6 @@ bool BasicSolver::ParseOptions(char **argv, unsigned flags) {
   }
   while (const char *s = *argv++)
     ParseOptionString(s, flags);
-  problem_.asl_->i.need_nl_ = nnl;
   if (this->flags() & ASL_OI_show_version)
     show_version_ASL(this);
   std::fflush(stdout);
@@ -412,9 +411,10 @@ bool BasicSolver::ParseOptions(char **argv, unsigned flags) {
 }
 
 int BasicSolver::Run(char **argv) {
-  if (!ProcessArgs(argv))
+  Problem p;
+  if (!ProcessArgs(argv, p))
     return 1;
-  Solve(problem());
+  Solve(p);
   return 0;
 }
 }

@@ -72,7 +72,7 @@ SolverTest::EvalResult SolverTest::Solve(Problem &p) {
   struct TestSolutionHandler : ampl::SolutionHandler {
     EvalResult result;
     virtual ~TestSolutionHandler() {}
-    void HandleSolution(ampl::BasicSolver &, fmt::StringRef,
+    void HandleSolution(ampl::Problem &, fmt::StringRef,
           const double *values, const double *, double obj_value) {
       if (values)
         result = EvalResult(values[0], obj_value);
@@ -101,12 +101,13 @@ SolverTest::SolverTest()
   x(AddVar(1)), y(AddVar(2)), z(AddVar(3)) {
 }
 
-SolveResult SolverTest::Solve(ampl::BasicSolver &s, const char *stub,
-    const char *opt1, const char *opt2, const char *opt3) {
+SolveResult SolverTest::Solve(
+    ampl::BasicSolver &s, Problem &p, const char *stub, const char *opt) {
   TestSolutionHandler sh;
   s.set_solution_handler(&sh);
   const std::string DATA_DIR = "../data/";
-  s.Run(Args(s.name(), "-s", (DATA_DIR + stub).c_str(), opt1, opt2, opt3));
+  if (s.ProcessArgs(Args(s.name(), "-s", (DATA_DIR + stub).c_str(), opt), p))
+    s.Solve(p);
   const string &message = sh.message();
   int solve_code = sh.solve_code();
   EXPECT_GE(solve_code, 0);
@@ -821,18 +822,21 @@ TEST_P(SolverTest, SolveSudokuVeryEasy) {
 // Solve code tests
 
 TEST_P(SolverTest, OptimalSolveCode) {
-  EXPECT_TRUE(Solve("objconstint").solved);
-  EXPECT_EQ(0, solver_->problem().solve_code());
+  Problem p;
+  EXPECT_TRUE(Solve(p, "objconstint").solved);
+  EXPECT_EQ(0, p.solve_code());
 }
 
 TEST_P(SolverTest, FeasibleSolveCode) {
-  EXPECT_TRUE(Solve("feasible").solved);
-  EXPECT_EQ(100, solver_->problem().solve_code());
+  Problem p;
+  EXPECT_TRUE(Solve(p, "feasible").solved);
+  EXPECT_EQ(100, p.solve_code());
 }
 
 TEST_P(SolverTest, InfeasibleSolveCode) {
-  EXPECT_FALSE(Solve("infeasible").solved);
-  EXPECT_EQ(200, solver_->problem().solve_code());
+  Problem p;
+  EXPECT_FALSE(Solve(p, "infeasible").solved);
+  EXPECT_EQ(200, p.solve_code());
 }
 
 // ----------------------------------------------------------------------------
@@ -848,9 +852,10 @@ void Interrupt() {
 
 TEST_P(SolverTest, InterruptSolution) {
   std::thread t(Interrupt);
-  string message = Solve("miplib/assign1").message;
+  Problem p;
+  string message = Solve(p, "miplib/assign1").message;
   t.join();
-  EXPECT_EQ(600, solver_->problem().solve_code());
+  EXPECT_EQ(600, p.solve_code());
   EXPECT_TRUE(message.find("interrupted") != string::npos);
 }
 #endif

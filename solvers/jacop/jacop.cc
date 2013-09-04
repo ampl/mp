@@ -628,7 +628,7 @@ void JaCoPSolver::Solve(Problem &p) {
       << env_.CallIntMethod(search_.get(), get_fails_);
   if (has_obj && found)
     format(", objective {}") << ObjPrec(obj_val);
-  HandleSolution(format.c_str(),
+  BasicSolver::DoHandleSolution(p, format.c_str(),
       final_solution.empty() ? 0 : &final_solution[0], 0, obj_val);
 
   double output_time = GetTimeAndReset(time);

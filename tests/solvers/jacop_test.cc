@@ -33,6 +33,7 @@
 
 using std::string;
 using ampl::InvalidOptionValue;
+using ampl::Problem;
 
 namespace {
 
@@ -52,9 +53,8 @@ class JaCoPSolverTest : public ::testing::Test {
  protected:
   ampl::JaCoPSolver solver_;
 
-  SolveResult Solve(const char *stub, const char *opt1 = nullptr,
-      const char *opt2 = nullptr, const char *opt3 = nullptr) {
-    return SolverTest::Solve(solver_, stub, opt1, opt2, opt3);
+  SolveResult Solve(Problem &p, const char *stub, const char *opt = nullptr) {
+    return SolverTest::Solve(solver_, p, stub, opt);
   }
 };
 
@@ -62,38 +62,43 @@ class JaCoPSolverTest : public ::testing::Test {
 // Option tests
 
 TEST_F(JaCoPSolverTest, BacktrackLimitOption) {
-  Solve("miplib/assign1", "backtracklimit=42");
-  EXPECT_EQ(600, solver_.problem().solve_code());
+  Problem p;
+  Solve(p, "miplib/assign1", "backtracklimit=42");
+  EXPECT_EQ(600, p.solve_code());
   EXPECT_EQ(42, solver_.GetIntOption("backtracklimit"));
   EXPECT_THROW(solver_.SetIntOption("backtracklimit", -1), InvalidOptionValue);
 }
 
 TEST_F(JaCoPSolverTest, DecisionLimitOption) {
-  Solve("miplib/assign1", "decisionlimit=42");
-  EXPECT_EQ(600, solver_.problem().solve_code());
+  Problem p;
+  Solve(p, "miplib/assign1", "decisionlimit=42");
+  EXPECT_EQ(600, p.solve_code());
   EXPECT_EQ(42, solver_.GetIntOption("decisionlimit"));
   EXPECT_THROW(solver_.SetIntOption("decisionlimit", -1), InvalidOptionValue);
 }
 
 TEST_F(JaCoPSolverTest, FailLimitOption) {
-  string message = Solve("miplib/assign1", "faillimit=42").message;
-  EXPECT_EQ(600, solver_.problem().solve_code());
+  Problem p;
+  string message = Solve(p, "miplib/assign1", "faillimit=42").message;
+  EXPECT_EQ(600, p.solve_code());
   EXPECT_TRUE(message.find(" 43 fails") != string::npos);
   EXPECT_EQ(42, solver_.GetIntOption("faillimit"));
   EXPECT_THROW(solver_.SetIntOption("faillimit", -1), InvalidOptionValue);
 }
 
 TEST_F(JaCoPSolverTest, NodeLimitOption) {
-  string message = Solve("miplib/assign1", "nodelimit=42").message;
-  EXPECT_EQ(600, solver_.problem().solve_code());
+  Problem p;
+  string message = Solve(p, "miplib/assign1", "nodelimit=42").message;
+  EXPECT_EQ(600, p.solve_code());
   EXPECT_TRUE(message.find("43 nodes") != string::npos);
   EXPECT_EQ(42, solver_.GetIntOption("nodelimit"));
   EXPECT_THROW(solver_.SetIntOption("nodelimit", -1), InvalidOptionValue);
 }
 
 TEST_F(JaCoPSolverTest, TimeLimitOption) {
-  Solve("miplib/assign1", "timelimit=1");
-  EXPECT_EQ(600, solver_.problem().solve_code());
+  Problem p;
+  Solve(p, "miplib/assign1", "timelimit=1");
+  EXPECT_EQ(600, p.solve_code());
   EXPECT_EQ(1, solver_.GetIntOption("timelimit"));
   EXPECT_THROW(solver_.SetIntOption("timelimit", -1), InvalidOptionValue);
 }
@@ -155,12 +160,15 @@ struct TestOutputHandler : public ampl::OutputHandler {
 TEST_F(JaCoPSolverTest, OutLevOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
-  Solve("objconstint");
+  Problem p;
+  p.Read("../data/objconstint.nl");
+  solver_.Solve(p);
   EXPECT_EQ("", h.output);
 
   h.output.clear();
-  Solve("objconstint", "outlev=1");
-  EXPECT_EQ("outlev=1\n"
+  solver_.SetIntOption("outlev", 1);
+  solver_.Solve(p);
+  EXPECT_EQ(
       " Max Depth      Nodes      Fails      Best Obj\n"
       "                                            42\n", h.output);
 
@@ -175,14 +183,21 @@ TEST_F(JaCoPSolverTest, OutLevOption) {
 TEST_F(JaCoPSolverTest, OutFreqOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
-  Solve("party1", "outlev=1", "outfreq=0.4", "timelimit=1");
+  Problem p;
+  p.Read("../data/party1.nl");
+  solver_.SetIntOption("outlev", 1);
+  solver_.SetIntOption("timelimit", 1);
+
+  solver_.SetDblOption("outfreq", 0.4);
+  solver_.Solve(p);
   string out = h.output;
-  EXPECT_EQ(6, std::count(out.begin(), out.end(), '\n'));
+  EXPECT_EQ(3, std::count(out.begin(), out.end(), '\n'));
 
   h.output.clear();
-  Solve("party1", "outlev=1", "outfreq=0.8", "timelimit=1");
+  solver_.SetDblOption("outfreq", 0.8);
+  solver_.Solve(p);
   out = h.output;
-  EXPECT_EQ(5, std::count(out.begin(), out.end(), '\n'));
+  EXPECT_EQ(2, std::count(out.begin(), out.end(), '\n'));
 
   solver_.SetDblOption("outfreq", 1.23);
   EXPECT_EQ(1.23, solver_.GetDblOption("outfreq"));

@@ -89,7 +89,6 @@ TEST(SolverTest, Format) {
 
 TEST(SolverTest, BasicSolverCtor) {
   TestSolver s;
-  EXPECT_EQ(0, s.problem().num_vars());
   EXPECT_STREQ("testsolver", s.name());
   EXPECT_STREQ("testsolver", s.long_name());
   EXPECT_STREQ("testsolver_options", s.options_var_name());
@@ -120,7 +119,8 @@ TEST(SolverTest, NameInUsage) {
     StderrRedirect redirect("out");
     TestSolver s("solver-name", "long-solver-name");
     s.set_version("solver-version");
-    s.ProcessArgs(Args("program-name"));
+    Problem p;
+    s.ProcessArgs(Args("program-name"), p);
   }
   std::string usage = "usage: solver-name ";
   EXPECT_EQ(usage, ReadFile("out").substr(0, usage.size()));
@@ -139,7 +139,8 @@ TEST(SolverTest, Version) {
   TestSolver s("testsolver", "Test Solver");
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    s.ProcessArgs(Args("program-name", "-v"));
+    Problem p;
+    s.ProcessArgs(Args("program-name", "-v"), p);
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Formatter format;
@@ -151,7 +152,8 @@ TEST(SolverTest, VersionWithDate) {
   TestSolver s("testsolver", "Test Solver", 20121227);
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    s.ProcessArgs(Args("program-name", "-v"));
+    Problem p;
+    s.ProcessArgs(Args("program-name", "-v"), p);
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Formatter format;
@@ -167,7 +169,8 @@ TEST(SolverTest, SetVersion) {
   EXPECT_STREQ(VERSION, s.version());
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    s.ProcessArgs(Args("program-name", "-v"));
+    Problem p;
+    s.ProcessArgs(Args("program-name", "-v"), p);
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Formatter format;
@@ -218,8 +221,9 @@ TEST(SolverTest, SolutionHandler) {
   s.set_solution_handler(&sh);
   EXPECT_TRUE(&sh == s.solution_handler());
   double primal = 0, dual = 0, obj = 42;
-  s.HandleSolution("test message", &primal, &dual, obj);
-  EXPECT_EQ(&s, sh.solver());
+  Problem p;
+  s.DoHandleSolution(p, "test message", &primal, &dual, obj);
+  EXPECT_EQ(&p, sh.problem());
   EXPECT_EQ("test message", sh.message());
   EXPECT_EQ(&primal, sh.primal());
   EXPECT_EQ(&dual, sh.dual());
@@ -228,24 +232,25 @@ TEST(SolverTest, SolutionHandler) {
 
 TEST(SolverTest, ReadProblem) {
   TestSolver s("test");
-  EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_TRUE(s.ProcessArgs(Args("testprogram", "../data/objconst.nl")));
-  EXPECT_EQ(1, s.problem().num_vars());
+  Problem p;
+  EXPECT_TRUE(s.ProcessArgs(Args("testprogram", "../data/objconst.nl"), p));
+  EXPECT_EQ(1, p.num_vars());
 }
 
 TEST(SolverTest, ReadProblemNoStub) {
   StderrRedirect redirect("out");
   TestSolver s("test");
-  EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_FALSE(s.ProcessArgs(Args("testprogram")));
-  EXPECT_EQ(0, s.problem().num_vars());
+  Problem p;
+  EXPECT_FALSE(s.ProcessArgs(Args("testprogram"), p));
+  EXPECT_EQ(0, p.num_vars());
 }
 
 TEST(SolverTest, ReadProblemError) {
   TestSolver s("test");
   EXPECT_EXIT({
     Stderr = stderr;
-    s.ProcessArgs(Args("testprogram", "nonexistent"));
+    Problem p;
+    s.ProcessArgs(Args("testprogram", "nonexistent"), p);
   }, ::testing::ExitedWithCode(1), "testprogram: can't open nonexistent.nl");
 }
 
@@ -272,32 +277,34 @@ TEST(SolverTest, ReportError) {
 
 TEST(SolverTest, ProcessArgsReadsProblem) {
   TestSolver s;
-  EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_TRUE(s.ProcessArgs(Args("testprogram", "../data/objconst.nl")));
-  EXPECT_EQ(1, s.problem().num_vars());
+  Problem p;
+  EXPECT_TRUE(s.ProcessArgs(Args("testprogram", "../data/objconst.nl"), p));
+  EXPECT_EQ(1, p.num_vars());
 }
 
 TEST(SolverTest, ProcessArgsParsesSolverOptions) {
   TestSolver s;
+  Problem p;
   EXPECT_TRUE(s.ProcessArgs(
       Args("testprogram", "../data/objconst.nl", "wantsol=5"),
-      BasicSolver::NO_OPTION_ECHO));
+      p, BasicSolver::NO_OPTION_ECHO));
   EXPECT_EQ(5, s.wantsol());
 }
 
 TEST(SolverTest, ProcessArgsWithouStub) {
   StderrRedirect redirect("out");
   TestSolver s;
-  EXPECT_EQ(0, s.problem().num_vars());
-  EXPECT_FALSE(s.ProcessArgs(Args("testprogram")));
-  EXPECT_EQ(0, s.problem().num_vars());
+  Problem p;
+  EXPECT_FALSE(s.ProcessArgs(Args("testprogram"), p));
+  EXPECT_EQ(0, p.num_vars());
 }
 
 TEST(SolverTest, ProcessArgsError) {
   TestSolver s;
   EXPECT_EXIT({
     Stderr = stderr;
-    s.ProcessArgs(Args("testprogram", "nonexistent"));
+    Problem p;
+    s.ProcessArgs(Args("testprogram", "nonexistent"), p);
   }, ::testing::ExitedWithCode(1), "testprogram: can't open nonexistent.nl");
 }
 
@@ -895,19 +902,26 @@ TEST(SolverTest, InputTiming) {
   s.set_output_handler(&oh);
 
   s.SetIntOption("timing", 0);
-  s.ProcessArgs(Args("test", "../data/objconst.nl"));
-  EXPECT_TRUE(oh.output.find("Input time = ") == std::string::npos);
+  {
+    Problem p;
+    s.ProcessArgs(Args("test", "../data/objconst.nl"), p);
+    EXPECT_TRUE(oh.output.find("Input time = ") == std::string::npos);
+  }
 
-  s.SetIntOption("timing", 1);
-  s.ProcessArgs(Args("test", "../data/objconst.nl"));
-  EXPECT_TRUE(oh.output.find("Input time = ") != std::string::npos);
+  {
+    s.SetIntOption("timing", 1);
+    Problem p;
+    s.ProcessArgs(Args("test", "../data/objconst.nl"), p);
+    EXPECT_TRUE(oh.output.find("Input time = ") != std::string::npos);
+  }
 }
 
 TEST(SolverTest, Suffix) {
   TestSolver s("");
   s.AddSuffix("answer", 0, ASL_Sufkind_var, 0);
-  s.ProcessArgs(Args("program-name", "../data/suffix.nl"), 0);
-  ampl::Suffix suffix = s.problem().suffix("answer", ASL_Sufkind_var);
+  Problem p;
+  s.ProcessArgs(Args("program-name", "../data/suffix.nl"), p);
+  ampl::Suffix suffix = p.suffix("answer", ASL_Sufkind_var);
   EXPECT_EQ(42, suffix.int_value(0));
 }
 }

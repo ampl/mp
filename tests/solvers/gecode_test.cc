@@ -34,6 +34,7 @@
 using std::string;
 using Gecode::IntVarBranch;
 using ampl::InvalidOptionValue;
+using ampl::Problem;
 
 namespace {
 
@@ -60,9 +61,8 @@ class GecodeSolverTest : public ::testing::Test {
  protected:
   ampl::GecodeSolver solver_;
 
-  SolveResult Solve(const char *stub, const char *opt1 = nullptr,
-      const char *opt2 = nullptr, const char *opt3 = nullptr) {
-    return SolverTest::Solve(solver_, stub, opt1, opt2, opt3);
+  SolveResult Solve(Problem &p, const char *stub, const char *opt = nullptr) {
+    return SolverTest::Solve(solver_, p, stub, opt);
   }
 };
 
@@ -83,24 +83,27 @@ TEST_F(GecodeSolverTest, CDOption) {
 }
 
 TEST_F(GecodeSolverTest, FailLimitOption) {
-  string message = Solve("miplib/assign1", "faillimit=10").message;
-  EXPECT_EQ(600, solver_.problem().solve_code());
+  Problem p;
+  string message = Solve(p, "miplib/assign1", "faillimit=10").message;
+  EXPECT_EQ(600, p.solve_code());
   EXPECT_TRUE(message.find(" 11 fails") != string::npos);
   EXPECT_EQ(10, solver_.GetIntOption("faillimit"));
   EXPECT_THROW(solver_.SetIntOption("faillimit", -1), InvalidOptionValue);
 }
 
 TEST_F(GecodeSolverTest, NodeLimitOption) {
-  string message = Solve("miplib/assign1", "nodelimit=10").message;
-  EXPECT_EQ(600, solver_.problem().solve_code());
+  Problem p;
+  string message = Solve(p, "miplib/assign1", "nodelimit=10").message;
+  EXPECT_EQ(600, p.solve_code());
   EXPECT_TRUE(message.find("11 nodes") != string::npos);
   EXPECT_EQ(10, solver_.GetIntOption("nodelimit"));
   EXPECT_THROW(solver_.SetIntOption("nodelimit", -1), InvalidOptionValue);
 }
 
 TEST_F(GecodeSolverTest, TimeLimitOption) {
-  Solve("miplib/assign1", "timelimit=0.1");
-  EXPECT_EQ(600, solver_.problem().solve_code());
+  Problem p;
+  Solve(p, "miplib/assign1", "timelimit=0.1");
+  EXPECT_EQ(600, p.solve_code());
   EXPECT_EQ(0.1, solver_.GetDblOption("timelimit"));
   EXPECT_THROW(solver_.SetDblOption("timelimit", -1), InvalidOptionValue);
 }
@@ -223,7 +226,8 @@ TEST_F(GecodeSolverTest, DecayOption) {
 TEST_F(GecodeSolverTest, OutLevOption) {
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    Solve("objconstint");
+    Problem p;
+    Solve(p, "objconstint");
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
@@ -231,7 +235,8 @@ TEST_F(GecodeSolverTest, OutLevOption) {
 
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    Solve("objconstint", "outlev=1");
+    Problem p;
+    Solve(p, "objconstint", "outlev=1");
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
@@ -250,7 +255,8 @@ TEST_F(GecodeSolverTest, OutLevOption) {
 TEST_F(GecodeSolverTest, OutFreqOption) {
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    Solve("party1", "outlev=1", "outfreq=0.05", "timelimit=0.125");
+    Problem p;
+    Solve(p, "party1", "outlev=1 outfreq=0.05 timelimit=0.125");
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
@@ -259,7 +265,8 @@ TEST_F(GecodeSolverTest, OutFreqOption) {
 
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    Solve("party1", "outlev=1", "outfreq=0.1", "timelimit=0.125");
+    Problem p;
+    Solve(p, "party1", "outlev=1 outfreq=0.1 timelimit=0.125");
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
