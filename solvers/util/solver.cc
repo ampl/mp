@@ -285,8 +285,22 @@ BasicSolver::~BasicSolver() {
   std::for_each(options_.begin(), options_.end(), Deleter());
 }
 
+void BasicSolver::AddSuffix(
+    const char *name, const char *table, int kind, int nextra) {
+  suffixes_.push_back(SufDecl());
+  SufDecl &sd = suffixes_.back();
+  sd.name = const_cast<char*>(name);
+  sd.table = const_cast<char*>(table);
+  sd.kind = kind;
+  sd.nextra = nextra;
+}
+
 bool BasicSolver::ProcessArgs(char **&argv, unsigned flags) {
-  char *stub = getstub_ASL(reinterpret_cast<ASL*>(problem_.asl_), &argv, this);
+  ASL *asl = reinterpret_cast<ASL*>(problem_.asl_);
+  if (problem_.asl_->i.nsuffixes == 0 && !suffixes_.empty())
+    suf_declare_ASL(asl, &suffixes_[0], suffixes_.size());
+
+  char *stub = getstub_ASL(asl, &argv, this);
   if (!stub) {
     usage_noexit_ASL(this, 1);
     return false;

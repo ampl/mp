@@ -26,7 +26,6 @@
 #include <set>
 
 namespace {
-SufDecl STAGE_SUFFIX = {const_cast<char*>("stage"), 0, ASL_Sufkind_var};
 
 template <typename Map>
 typename Map::mapped_type &FindOrInsert(
@@ -99,7 +98,7 @@ class FileWriter : Noncopyable {
 
 SMPSWriter::SMPSWriter() :
   Solver<SMPSWriter>("smpswriter", "SMPSWriter", 20130709) {
-  DeclareSuffixes(&STAGE_SUFFIX, 1);
+  AddSuffix("stage", 0, ASL_Sufkind_var);
   set_read_flags(Problem::READ_COLUMNWISE);
 }
 

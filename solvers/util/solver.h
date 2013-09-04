@@ -265,6 +265,8 @@ class BasicSolver
 
   bool timing_;
 
+  std::vector<SufDecl> suffixes_;
+
   static char *PrintOptionsAndExit(Option_Info *oi, keyword *kw, char *value);
 
   void HandleOutput(fmt::StringRef output) {
@@ -364,10 +366,7 @@ class BasicSolver
     ReportError("Unknown option \"{}\"") << name;
   }
 
-  void DeclareSuffixes(SufDecl *suffixes, int num_suffixes) {
-    suf_declare_ASL(reinterpret_cast<ASL*>(problem_.asl_),
-        suffixes, num_suffixes);
-  }
+  void AddSuffix(const char *name, const char *table, int kind, int nextra = 0);
 
   class Printer {
    private:
