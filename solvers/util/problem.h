@@ -117,7 +117,9 @@ class Suffix {
   typedef void (Suffix::*SafeBool)() const;
 
  public:
-  operator SafeBool() const { return suffix_->u.i ? &Suffix::True : 0; }
+  operator SafeBool() const {
+    return suffix_ && suffix_->u.i ? &Suffix::True : 0;
+  }
   int int_value(int index) const { return suffix_->u.i[index]; }
 };
 
@@ -320,9 +322,7 @@ class Problem : Noncopyable {
   }
 
   // Returns a suffix.
-  Suffix suffix(const char *name, unsigned flags) const {
-    return Suffix(suf_get_ASL(reinterpret_cast<ASL*>(asl_), name, flags));
-  }
+  Suffix suffix(const char *name, unsigned flags) const;
 
   // Adds a variable.
   void AddVar(double lb, double ub, VarType type = CONTINUOUS);
