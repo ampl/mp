@@ -64,9 +64,12 @@ struct TestSolver : BasicSolver {
     return BasicSolver::ParseOptions(argv, flags);
   }
 
+  void AddSuffix(const char *name, const char *table, int kind, int nextra) {
+    BasicSolver::AddSuffix(name, table, kind, nextra);
+  }
+
   void Solve(Problem &) {}
 };
-}
 
 TEST(SolverTest, ObjPrec) {
   double value = 12.3456789123456789;
@@ -898,4 +901,13 @@ TEST(SolverTest, InputTiming) {
   s.SetIntOption("timing", 1);
   s.ProcessArgs(Args("test", "../data/objconst.nl"));
   EXPECT_TRUE(oh.output.find("Input time = ") != std::string::npos);
+}
+
+TEST(SolverTest, Suffix) {
+  TestSolver s("");
+  s.AddSuffix("answer", 0, ASL_Sufkind_var, 0);
+  s.ProcessArgs(Args("program-name", "../data/suffix.nl"), 0);
+  ampl::Suffix suffix = s.problem().suffix("answer", ASL_Sufkind_var);
+  EXPECT_EQ(42, suffix.int_value(0));
+}
 }
