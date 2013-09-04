@@ -60,8 +60,9 @@ struct TestSolver : BasicSolver {
     BasicSolver::AddOption(move(opt));
   }
 
-  bool ParseOptions(char **argv, unsigned flags = BasicSolver::NO_OPTION_ECHO) {
-    return BasicSolver::ParseOptions(argv, flags);
+  bool ParseOptions(char **argv,
+      unsigned flags = BasicSolver::NO_OPTION_ECHO, const Problem *p = 0) {
+    return BasicSolver::ParseOptions(argv, flags, p);
   }
 
   void AddSuffix(const char *name, const char *table, int kind, int nextra) {
