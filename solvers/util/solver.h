@@ -366,6 +366,7 @@ class BasicSolver
     ReportError("Unknown option \"{}\"") << name;
   }
 
+  // Adds a suffix.
   void AddSuffix(const char *name, const char *table, int kind, int nextra = 0);
 
   class Printer {
