@@ -67,6 +67,7 @@ using std::string;
 using ampl::CPLEXOptimizer;
 using ampl::CPOptimizer;
 using ampl::IlogCPSolver;
+using ampl::Problem;
 using ampl::UnsupportedExprError;
 
 namespace {
@@ -107,17 +108,18 @@ class IlogCPTest : public ::testing::Test, public ampl::ExprBuilder {
 
   int CountIloDistribute();
 
-  bool ParseOptions(const char *opt1, const char *opt2 = nullptr) {
+  bool ParseOptions(const char *opt1,
+      const char *opt2 = nullptr, const Problem *p = nullptr) {
     try {
-      return s.ParseOptions(Args(opt1, opt2));
+      return s.ParseOptions(Args(opt1, opt2), 0, p);
     } catch (const IloException &e) {  // NOLINT(whitespace/parens)
       throw std::runtime_error(e.getMessage());
     }
     return false;
   }
 
-  SolveResult Solve(const char *stub, const char *opt = nullptr) {
-    return SolverTest::Solve(s, stub, opt);
+  SolveResult Solve(Problem &p, const char *stub, const char *opt = nullptr) {
+    return SolverTest::Solve(s, p, stub, opt);
   }
 
   template <typename T>
@@ -292,7 +294,7 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
 struct TestSolutionHandler : ampl::SolutionHandler {
   int num_solutions;
   TestSolutionHandler() : num_solutions(0) {}
-  void HandleSolution(ampl::BasicSolver &, fmt::StringRef,
+  void HandleSolution(Problem &, fmt::StringRef,
         const double *values, const double *, double) {
     ++num_solutions;
     for (int i = 0; i < 3; ++i) {
@@ -305,7 +307,7 @@ struct TestSolutionHandler : ampl::SolutionHandler {
   }
 };
 
-TEST_F(IlogCPTest, NoSolutionLimit) {
+TEST_F(IlogCPTest, SolutionLimit) {
   ampl::Problem p;
   p.AddVar(1, 3, ampl::INTEGER);
   p.AddVar(1, 3, ampl::INTEGER);
@@ -313,7 +315,7 @@ TEST_F(IlogCPTest, NoSolutionLimit) {
   p.AddCon(AddAllDiff(AddVar(0), AddVar(1), AddVar(2)));
   TestSolutionHandler sh;
   s.set_solution_handler(&sh);
-  ParseOptions("optimizer=cp");
+  ParseOptions("optimizer=cp", nullptr, &p);
   s.Solve(p);
   EXPECT_EQ(1, sh.num_solutions);
 }
@@ -334,12 +336,14 @@ TEST_F(IlogCPTest, DISABLED_SolutionLimit) {
 
 TEST_F(IlogCPTest, SolveNumberOfCplex) {
   s.use_numberof(false);
-  Solve("numberof", "optimizer=cplex");
+  Problem p;
+  Solve(p, "numberof", "optimizer=cplex");
 }
 
 TEST_F(IlogCPTest, InfeasibleOrUnboundedSolveCode) {
-  Solve("unbounded");
-  EXPECT_EQ(201, s.problem().solve_code());
+  Problem p;
+  Solve(p, "unbounded");
+  EXPECT_EQ(201, p.solve_code());
 }
 
 // ----------------------------------------------------------------------------
@@ -506,17 +510,19 @@ void Interrupt() {
 
 TEST_F(IlogCPTest, InterruptCPLEX) {
   std::thread t(Interrupt);
-  std::string message = Solve("miplib/assign1", "optimizer=cplex").message;
+  Problem p;
+  std::string message = Solve(p, "miplib/assign1", "optimizer=cplex").message;
   t.join();
-  EXPECT_EQ(600, s.problem().solve_code());
+  EXPECT_EQ(600, p.solve_code());
   EXPECT_TRUE(message.find("interrupted") != string::npos);
 }
 
 TEST_F(IlogCPTest, InterruptCP) {
   std::thread t(Interrupt);
-  std::string message = Solve("miplib/assign1", "optimizer=cp").message;
+  Problem p;
+  std::string message = Solve(p, "miplib/assign1", "optimizer=cp").message;
   t.join();
-  EXPECT_EQ(600, s.problem().solve_code());
+  EXPECT_EQ(600, p.solve_code());
   EXPECT_TRUE(message.find("interrupted") != string::npos);
 }
 #endif

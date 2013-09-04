@@ -205,6 +205,6 @@ void SSDSolver::Solve(Problem &p) {
   if (sol.status() == Solution::SOLVED)
     format("; dominance {}") << dominance_ub;
   format("\n{} iteration(s)") << iteration;
-  HandleSolution(format.c_str(), &solution[0], 0, 0);
+  DoHandleSolution(p, format.c_str(), &solution[0], 0, 0);
 }
 }

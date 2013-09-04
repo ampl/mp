@@ -101,12 +101,10 @@ ampl::OptionError GetOptionValueError(
 
 namespace ampl {
 
-Optimizer::Optimizer(IloEnv env, const Problem &p) : cons_(env, p.num_cons()) {}
-
 Optimizer::~Optimizer() {}
 
-CPLEXOptimizer::CPLEXOptimizer(IloEnv env, const Problem &p)
-: Optimizer(env, p), cplex_(env), aborter_(env), started_(false) {
+CPLEXOptimizer::CPLEXOptimizer(IloEnv env)
+: Optimizer(env), cplex_(env), aborter_(env), started_(false) {
   cplex_.setParam(IloCplex::MIPDisplay, 0);
   cplex_.use(aborter_);
 }
@@ -133,10 +131,10 @@ void CPLEXOptimizer::GetSolutionInfo(
   format_message("{} iterations") << cplex_.getNiterations();
 }
 
-CPOptimizer::CPOptimizer(IloEnv env, const Problem &p) :
-    Optimizer(env, p), solver_(env) {
+CPOptimizer::CPOptimizer(IloEnv env, const Problem *p)
+: Optimizer(env), solver_(env) {
   solver_.setIntParameter(IloCP::LogVerbosity, IloCP::Quiet);
-  if (p.num_objs() == 0)
+  if (p && p->num_objs() == 0)
     solver_.setIntParameter(IloCP::SolutionLimit, 1);
 }
 
@@ -686,27 +684,27 @@ void IlogCPSolver::SetCPLEXIntOption(const char *name, int value, int param) {
     throw InvalidOptionValue(name, value);
 }
 
-void IlogCPSolver::CreateOptimizer(const Problem &p) {
+void IlogCPSolver::CreateOptimizer(const Problem *p) {
   int &opt = options_[OPTIMIZER];
   if (opt == AUTO) {
     opt = CPLEX;
-    if (p.num_nonlinear_objs() + p.num_nonlinear_cons() +
-        p.num_logical_cons() != 0) {
+    if (p && p->num_nonlinear_objs() + p->num_nonlinear_cons() +
+        p->num_logical_cons() != 0) {
       opt = CP;
     }
   }
   if (opt == CPLEX)
-    optimizer_.reset(new CPLEXOptimizer(env_, p));
+    optimizer_.reset(new CPLEXOptimizer(env_));
   else
     optimizer_.reset(new CPOptimizer(env_, p));
 }
 
-bool IlogCPSolver::ParseOptions(char **argv, unsigned flags) {
+bool IlogCPSolver::ParseOptions(char **argv, unsigned flags, const Problem *p) {
   // Get optimizer type.
   gotopttype_ = false;
   if (!BasicSolver::ParseOptions(argv, BasicSolver::NO_OPTION_ECHO))
     return false;
-  CreateOptimizer(problem());
+  CreateOptimizer(p);
 
   // Parse remaining options.
   gotopttype_ = true;
@@ -723,7 +721,8 @@ void IlogCPSolver::Solve(Problem &p) {
     throw Error("CP Optimizer doesn't support continuous variables");
 
   if (!optimizer_.get())
-    CreateOptimizer(p);
+    CreateOptimizer(&p);
+  optimizer_->AllocateCons(p.num_cons());
 
   int num_vars = p.num_vars();
   IloNumVarArray vars(env_, num_vars);
@@ -866,7 +865,8 @@ void IlogCPSolver::Solve(Problem &p) {
       }
     }
     solution_time += GetTimeAndReset(time);
-    HandleSolution(format_message.c_str(), solution.empty() ? 0 : &solution[0],
+    DoHandleSolution(p, format_message.c_str(),
+        solution.empty() ? 0 : &solution[0],
         dual_solution.empty() ? 0 : &dual_solution[0], obj_value);
     output_time += GetTimeAndReset(time);
   }

@@ -121,17 +121,21 @@ class SolverTest
     return Eval(AddIf(e, AddNum(1), AddNum(0)), var1, var2, var3);
   }
 
-  SolveResult Solve(const char *stub, const char *opt1 = nullptr,
-      const char *opt2 = nullptr, const char *opt3 = nullptr) {
-    return Solve(*solver_, stub, opt1, opt2, opt3);
+  SolveResult Solve(ampl::Problem &p,
+      const char *stub, const char *opt = nullptr) {
+    return Solve(*solver_, p, stub, opt);
+  }
+
+  SolveResult Solve(const char *stub, const char *opt = nullptr) {
+    ampl::Problem p;
+    return Solve(*solver_, p, stub, opt);
   }
 
  public:
   SolverTest();
 
-  static SolveResult Solve(ampl::BasicSolver &s, const char *stub,
-      const char *opt1 = nullptr, const char *opt2 = nullptr,
-      const char *opt3 = nullptr);
+  static SolveResult Solve(ampl::BasicSolver &s,
+      ampl::Problem &p, const char *stub, const char *opt = nullptr);
 };
 
 #endif  // TESTS_SOLVER_TEST_H_

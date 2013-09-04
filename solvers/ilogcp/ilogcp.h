@@ -60,9 +60,10 @@ class Optimizer : public Interruptible {
   IloRangeArray cons_;
 
  public:
-  Optimizer(IloEnv env, const Problem &p);
+  Optimizer(IloEnv env) : cons_(env) {}
   virtual ~Optimizer();
 
+  void AllocateCons(int num_cons) { cons_.setSize(num_cons); }
   IloRangeArray cons() const { return cons_; }
 
   virtual IloAlgorithm algorithm() const = 0;
@@ -82,7 +83,7 @@ class CPLEXOptimizer : public Optimizer {
   bool started_;
 
  public:
-  CPLEXOptimizer(IloEnv env, const Problem &p);
+  CPLEXOptimizer(IloEnv env);
 
   IloCplex cplex() const { return cplex_; }
   IloAlgorithm algorithm() const { return cplex_; }
@@ -103,7 +104,7 @@ class CPOptimizer : public Optimizer {
   IloCP solver_;
 
  public:
-  CPOptimizer(IloEnv env, const Problem &p);
+  CPOptimizer(IloEnv env, const Problem *p);
 
   IloCP solver() const { return solver_; }
   IloAlgorithm algorithm() const { return solver_; }
@@ -498,7 +499,7 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
   // Sets an integer option of the CPLEX optimizer.
   void SetCPLEXIntOption(const char *name, int value, int param);
 
-  void CreateOptimizer(const Problem &p);
+  void CreateOptimizer(const Problem *p);
 
  protected:
 
@@ -516,7 +517,7 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
 
   Optimizer *optimizer() const { return optimizer_.get(); }
 
-  bool ParseOptions(char **argv, unsigned flags = 0);
+  bool ParseOptions(char **argv, unsigned flags = 0, const Problem *p = 0);
 
   int GetOption(Option opt) const {
     assert(opt >= 0 && opt < NUM_OPTIONS);

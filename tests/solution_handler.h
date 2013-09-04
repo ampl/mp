@@ -7,7 +7,7 @@
 
 class TestSolutionHandler : public ampl::SolutionHandler {
  private:
-  ampl::BasicSolver *solver_;
+  ampl::Problem *problem_;
   std::string message_;
   double obj_value_;
   int solve_code_;
@@ -16,21 +16,21 @@ class TestSolutionHandler : public ampl::SolutionHandler {
 
  public:
   TestSolutionHandler()
-  : solver_(0), obj_value_(std::numeric_limits<double>::quiet_NaN()),
+  : problem_(0), obj_value_(std::numeric_limits<double>::quiet_NaN()),
     solve_code_(0), primal_(0), dual_(0) {}
   virtual ~TestSolutionHandler() {}
 
-  ampl::BasicSolver *solver() const { return solver_; }
+  ampl::Problem *problem() const { return problem_; }
   int solve_code() const { return solve_code_; }
   double obj_value() const { return obj_value_; }
   const std::string &message() const { return message_; }
   const double *primal() const { return primal_; }
   const double *dual() const { return dual_; }
 
-  void HandleSolution(ampl::BasicSolver &s, fmt::StringRef message,
+  void HandleSolution(ampl::Problem &p, fmt::StringRef message,
         const double *primal, const double *dual, double obj_value) {
-    solver_ = &s;
-    solve_code_ = s.problem().solve_code();
+    problem_ = &p;
+    solve_code_ = p.solve_code();
     message_ = message;
     obj_value_ = obj_value;
     primal_ = primal;

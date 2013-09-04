@@ -121,7 +121,7 @@ class SolutionHandler {
   ~SolutionHandler() {}
 
  public:
-  virtual void HandleSolution(BasicSolver &s, fmt::StringRef message,
+  virtual void HandleSolution(Problem &p, fmt::StringRef message,
       const double *values, const double *dual_values, double obj_value) = 0;
 };
 
@@ -241,8 +241,6 @@ class BasicSolver
   : private ErrorHandler, private OutputHandler,
     private SolutionHandler, private Option_Info {
  private:
-  Problem problem_;
-
   std::string name_;
   std::string long_name_;
   std::string options_var_name_;
@@ -278,9 +276,9 @@ class BasicSolver
     std::fputc('\n', stderr);
   }
 
-  void HandleSolution(BasicSolver &, fmt::StringRef message,
+  void HandleSolution(Problem &p, fmt::StringRef message,
         const double *values, const double *dual_values, double) {
-    write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_),
+    write_sol_ASL(reinterpret_cast<ASL*>(p.asl_),
         const_cast<char*>(message.c_str()), const_cast<double*>(values),
         const_cast<double*>(dual_values), this);
   }
@@ -392,9 +390,6 @@ class BasicSolver
     NO_OPTION_ECHO = 1
   };
 
-  // Returns the current problem.
-  Problem &problem() { return problem_; }
-
   // Returns the solver name.
   const char *name() const { return sname; }
 
@@ -455,11 +450,13 @@ class BasicSolver
   // If there was an  error parsing arguments or reading the problem
   // ProcessArgs will print an error message and call std::exit (this is
   // likely to change in the future version).
-  bool ProcessArgs(char **&argv, unsigned flags = 0);
+  bool ProcessArgs(char **&argv, Problem &p, unsigned flags = 0);
 
   // Parses solver options and returns true if there were no errors and
-  // false otherwise.
-  virtual bool ParseOptions(char **argv, unsigned flags = 0);
+  // false otherwise. It accepts a pointer to the problem because some
+  // options may depend on problem features.
+  virtual bool ParseOptions(
+      char **argv, unsigned flags = 0, const Problem *p = 0);
 
   // Returns the value of an integer option.
   // Throws OptionError if there is no such option or it has a different type.
@@ -498,11 +495,10 @@ class BasicSolver
   }
 
   // Passes a solution to the solution handler.
-  void HandleSolution(fmt::StringRef message,
+  void DoHandleSolution(Problem &p, fmt::StringRef message,
       const double *values, const double *dual_values,
       double obj_value = std::numeric_limits<double>::quiet_NaN()) {
-    sol_handler_->HandleSolution(
-        *this, message, values, dual_values, obj_value);
+    sol_handler_->HandleSolution(p, message, values, dual_values, obj_value);
   }
 
   // Reports an error printing the formatted error message to stderr.
