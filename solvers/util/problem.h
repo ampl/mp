@@ -134,8 +134,8 @@ class Problem : Noncopyable {
   int obj_capacity_;
   int logical_con_capacity_;
 
-  // Array of variable types or null if integer and binary variables precede
-  // continuous variables.
+  // Array of variable types or null if continuous variables precede
+  // integer and binary variables.
   VarType *var_types_;
 
   static void IncreaseCapacity(int size, int &capacity) {
@@ -201,7 +201,7 @@ class Problem : Noncopyable {
     assert(var_index >= 0 && var_index < num_vars());
     if (var_types_)
       return var_types_[var_index];
-    return var_index < num_integer_vars() ? INTEGER : CONTINUOUS;
+    return var_index < num_continuous_vars() ? CONTINUOUS : INTEGER;
   }
 
   // Returns the lower bounds for the variables.

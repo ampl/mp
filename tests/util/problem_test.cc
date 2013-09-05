@@ -199,11 +199,11 @@ TEST(ProblemTest, ProblemAccessors) {
   EXPECT_EQ(11, p.num_nonlinear_cons());
   EXPECT_EQ(7, p.num_logical_cons());
 
-  EXPECT_EQ(INTEGER, p.var_type(0));
-  EXPECT_EQ(INTEGER, p.var_type(1));
+  EXPECT_EQ(CONTINUOUS, p.var_type(0));
+  EXPECT_EQ(CONTINUOUS, p.var_type(1));
   EXPECT_EQ(CONTINUOUS, p.var_type(2));
-  EXPECT_EQ(CONTINUOUS, p.var_type(3));
-  EXPECT_EQ(CONTINUOUS, p.var_type(4));
+  EXPECT_EQ(INTEGER, p.var_type(3));
+  EXPECT_EQ(INTEGER, p.var_type(4));
 
   EXPECT_EQ(11, p.var_lb(0));
   EXPECT_EQ(15, p.var_lb(p.num_vars() - 1));
