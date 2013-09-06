@@ -74,6 +74,18 @@ to solve a problem whose solution will take a while; after it finishes,
 (Here, - denotes standard input, and ampl reads the "solution..."
 and "display..." lines.)
 
+--------
+Suffixes
+========
+
+You can use the suffix icl to specify integer consistency level for
+constraints:
+
+  subj to c1: alldiff ({i in 1..n} q[i]) suffix icl icl_dom;
+
+This suffix and possible values for it are defined in gecode.ampl.
+Requires AMPL version 20130906 or later.
+
 *************************
 
 If you have questions about or find bugs with this stuff,
