@@ -117,7 +117,7 @@ class Suffix {
   typedef void (Suffix::*SafeBool)() const;
 
  public:
-  Suffix() {}
+  Suffix() : suffix_() {}
   operator SafeBool() const {
     return suffix_ && suffix_->u.i ? &Suffix::True : 0;
   }
