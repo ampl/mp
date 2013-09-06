@@ -1463,6 +1463,9 @@ class LinearExpr {
 typedef LinearExpr<LinearObjTerm> LinearObjExpr;
 typedef LinearExpr<LinearConTerm> LinearConExpr;
 
+template <typename LinearExpr>
+void WriteExpr(fmt::Writer &w, LinearExpr linear, NumericExpr nonlinear);
+
 #ifdef HAVE_UNORDERED_MAP
 template <class T>
 inline void HashCombine(std::size_t &seed, const T &v) {
