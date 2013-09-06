@@ -504,8 +504,9 @@ struct TestSolverWithOptions : Solver<TestSolverWithOptions> {
         &TestSolverWithOptions::SetStrOptionWithInfo, INFO);
   }
 
-  bool ParseOptions(char **argv, unsigned flags = BasicSolver::NO_OPTION_ECHO) {
-    return Solver<TestSolverWithOptions>::ParseOptions(argv, flags);
+  bool ParseOptions(char **argv,
+      unsigned flags = BasicSolver::NO_OPTION_ECHO, const Problem *p = 0) {
+    return Solver<TestSolverWithOptions>::ParseOptions(argv, flags, p);
   }
 
   void Solve(Problem &) {}
