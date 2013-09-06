@@ -85,6 +85,15 @@ const ampl::OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
     {"values_max", Gecode::INT_VALUES_MAX()},
     {}
 };
+
+const ampl::OptionValue<Gecode::RestartMode> RESTART_MODES[] = {
+    {"none",      Gecode::RM_NONE},
+    {"constant",  Gecode::RM_CONSTANT},
+    {"linear",    Gecode::RM_LINEAR},
+    {"luby",      Gecode::RM_LUBY},
+    {"geometric", Gecode::RM_GEOMETRIC},
+    {}
+};
 }
 
 namespace Gecode {
@@ -178,6 +187,17 @@ LinExpr NLToGecodeConverter::ConvertExpr(
   return expr;
 }
 
+Gecode::IntConLevel NLToGecodeConverter::GetICL(int con_index) const {
+  if (!icl_suffix_)
+    return icl_;
+  int value = icl_suffix_.int_value(con_index);
+  assert(value == Gecode::ICL_VAL || value == Gecode::ICL_BND ||
+         value == Gecode::ICL_DOM || value == Gecode::ICL_DEF);
+  if (value < 0 || value > Gecode::ICL_DEF)
+    ThrowError("Invalid value \"{}\" for suffix \"icl\"") << value;
+  return static_cast<Gecode::IntConLevel>(value);
+}
+
 void NLToGecodeConverter::Convert(const Problem &p) {
   if (p.num_continuous_vars() != 0)
     throw Error("Gecode doesn't support continuous variables");
@@ -195,42 +215,50 @@ void NLToGecodeConverter::Convert(const Problem &p) {
         ConvertExpr(p.linear_obj_expr(0), p.nonlinear_obj_expr(0)));
   }
 
+  icl_suffix_ = p.suffix("icl", ASL_Sufkind_con);
+
+  class ICLSetter : ampl::Noncopyable {
+   private:
+    Gecode::IntConLevel &icl_;
+    Gecode::IntConLevel saved_value_;
+
+   public:
+    ICLSetter(Gecode::IntConLevel &icl, Gecode::IntConLevel new_value) :
+      icl_(icl), saved_value_(icl) {
+      icl = new_value;
+    }
+    ~ICLSetter() { icl_ = saved_value_; }
+  };
+
   // Convert constraints.
-  Suffix suffix = p.suffix("icl", ASL_Sufkind_con);
   for (int i = 0, n = p.num_cons(); i < n; ++i) {
     LinExpr con_expr(
         ConvertExpr(p.linear_con_expr(i), p.nonlinear_con_expr(i)));
     double lb = p.con_lb(i), ub = p.con_ub(i);
-    Gecode::IntConLevel icl = icl_;
-    if (suffix) {
-      int value = suffix.int_value(i);
-      assert(value == Gecode::ICL_VAL || value == Gecode::ICL_BND ||
-             value == Gecode::ICL_DOM || value == Gecode::ICL_DEF);
-      if (value < 0 || value > Gecode::ICL_DEF)
-        ThrowError("Invalid value \"{}\" for suffix \"icl\"") << value;
-      icl = static_cast<Gecode::IntConLevel>(value);
-    }
+    ICLSetter icl_setter(icl_, GetICL(i));
     if (lb <= negInfinity) {
-      rel(problem_, con_expr <= CastToInt(ub), icl);
+      rel(problem_, con_expr <= CastToInt(ub), icl_);
       continue;
     }
     if (ub >= Infinity) {
-      rel(problem_, con_expr >= CastToInt(lb), icl);
+      rel(problem_, con_expr >= CastToInt(lb), icl_);
       continue;
     }
     int int_lb = CastToInt(lb), int_ub = CastToInt(ub);
     if (int_lb == int_ub) {
-      rel(problem_, con_expr == int_lb, icl);
+      rel(problem_, con_expr == int_lb, icl_);
     } else {
-      rel(problem_, con_expr >= int_lb, icl);
-      rel(problem_, con_expr <= int_ub, icl);
+      rel(problem_, con_expr >= int_lb, icl_);
+      rel(problem_, con_expr <= int_ub, icl_);
     }
   }
 
   // Convert logical constraints.
-  for (int i = 0, n = p.num_logical_cons(); i < n; ++i) {
+  int num_logical_cons = p.num_logical_cons();
+  for (int i = 0; i < num_logical_cons; ++i) {
     LogicalExpr e = p.logical_con_expr(i);
     AllDiffExpr alldiff = Cast<AllDiffExpr>(e);
+    ICLSetter icl_setter(icl_, GetICL(p.num_cons() + i));
     if (!alldiff) {
       rel(problem_, Visit(e), icl_);
       continue;
@@ -420,7 +448,8 @@ GecodeSolver::GecodeSolver()
   var_branching_(IntVarBranch::SEL_SIZE_MIN),
   val_branching_(Gecode::INT_VAL_MIN()),
   decay_(1),
-  time_limit_(DBL_MAX), node_limit_(ULONG_MAX), fail_limit_(ULONG_MAX) {
+  time_limit_(DBL_MAX), node_limit_(ULONG_MAX), fail_limit_(ULONG_MAX),
+  restart_(Gecode::RM_NONE) {
 
   set_version("Gecode " GECODE_VERSION);
 
@@ -537,6 +566,17 @@ GecodeSolver::GecodeSolver()
   AddIntOption("faillimit", "Fail limit.",
       &GecodeSolver::GetOption<int, unsigned long>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned long>, &fail_limit_);
+
+  AddStrOption("restart",
+      "Restart sequence type.  Possible values:\n"
+      "      none      - no restarts\n"
+      "      constant  - restart with constant sequence\n"
+      "      linear    - restart with linear sequence\n"
+      "      luby      - restart with Luby sequence\n"
+      "      geometric - restart with geometric sequence\n",
+      &GecodeSolver::GetEnumOption<Gecode::RestartMode>,
+      &GecodeSolver::SetEnumOption<Gecode::RestartMode>,
+      OptionInfo<Gecode::RestartMode>(RESTART_MODES, restart_));
 }
 
 void GecodeSolver::Solve(Problem &p) {
@@ -581,6 +621,7 @@ void GecodeSolver::Solve(Problem &p) {
   bool has_obj = p.num_objs() != 0;
   Search::Statistics stats;
   bool stopped = false;
+  options_.cutoff = Gecode::Driver::createCutoff(*this);
   // TODO: add an option to return multiple solutions
   // TODO: add the following options
   // - restart (constant, linear, luby, geometric) used by activity* labeling

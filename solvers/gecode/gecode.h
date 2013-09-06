@@ -29,6 +29,7 @@
 # pragma warning(push)
 # pragma warning(disable: 4200; disable: 4345; disable: 4800)
 #endif
+#include <gecode/driver.hh>
 #include <gecode/minimodel.hh>
 #include <gecode/search.hh>
 #ifdef _MSC_VER
@@ -72,6 +73,7 @@ class NLToGecodeConverter :
  private:
   GecodeProblem problem_;
   Gecode::IntConLevel icl_;
+  Suffix icl_suffix_;
 
   typedef Gecode::BoolExpr BoolExpr;
 
@@ -96,6 +98,8 @@ class NLToGecodeConverter :
 
   template<typename Term>
   LinExpr ConvertExpr(LinearExpr<Term> linear, NumericExpr nonlinear);
+
+  Gecode::IntConLevel GetICL(int con_index) const;
 
  public:
   NLToGecodeConverter(int num_vars, Gecode::IntConLevel icl)
@@ -311,6 +315,7 @@ class GecodeSolver : public Solver<GecodeSolver> {
   double time_limit_;  // Time limit in seconds.
   unsigned long node_limit_;
   unsigned long fail_limit_;
+  Gecode::RestartMode restart_;
 
   void SetBoolOption(const char *name, int value, bool *option);
 
@@ -379,6 +384,9 @@ class GecodeSolver : public Solver<GecodeSolver> {
   Gecode::IntValBranch val_branching() const { return val_branching_; }
   const Gecode::Search::Options &options() const { return options_; }
   double decay() const { return decay_; }
+  Gecode::RestartMode restart() const { return restart_; }
+  unsigned long restart_scale() const { return 0; } // TODO
+  double restart_base() const { return 0; } // TODO
 };
 }
 
