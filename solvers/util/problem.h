@@ -117,6 +117,7 @@ class Suffix {
   typedef void (Suffix::*SafeBool)() const;
 
  public:
+  Suffix() {}
   operator SafeBool() const {
     return suffix_ && suffix_->u.i ? &Suffix::True : 0;
   }
@@ -289,6 +290,12 @@ class Problem : Noncopyable {
   // available.
   const char *con_name(int con_index) const {
     return con_name_ASL(reinterpret_cast<ASL*>(asl_), con_index);
+  }
+
+  // Returns the name of the logical constraint or a null pointer if the
+  // name is not available.
+  const char *logical_con_name(int lcon_index) const {
+    return lcon_name_ASL(reinterpret_cast<ASL*>(asl_), lcon_index);
   }
 
   class ColMatrix {
