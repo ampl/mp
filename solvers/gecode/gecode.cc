@@ -449,7 +449,7 @@ GecodeSolver::GecodeSolver()
   val_branching_(Gecode::INT_VAL_MIN()),
   decay_(1),
   time_limit_(DBL_MAX), node_limit_(ULONG_MAX), fail_limit_(ULONG_MAX),
-  restart_(Gecode::RM_NONE) {
+  restart_(Gecode::RM_NONE), restart_base_(1.5), restart_scale_(250) {
 
   set_version("Gecode " GECODE_VERSION);
 
@@ -577,6 +577,38 @@ GecodeSolver::GecodeSolver()
       &GecodeSolver::GetEnumOption<Gecode::RestartMode>,
       &GecodeSolver::SetEnumOption<Gecode::RestartMode>,
       OptionInfo<Gecode::RestartMode>(RESTART_MODES, restart_));
+
+  AddDblOption("restart_base",
+      "Base for geometric restart sequence.  Default = 1.5.",
+      &GecodeSolver::GetOption<double, double>,
+      &GecodeSolver::DoSetDblOption, &restart_base_);
+
+  AddIntOption("restart_scale",
+      "Scale factor for restart sequence.  Default = 250.",
+      &GecodeSolver::GetOption<int, unsigned long>,
+      &GecodeSolver::SetNonnegativeOption<int, unsigned long>, &restart_scale_);
+}
+
+template<template<template<typename> class, typename> class Meta>
+std::auto_ptr<GecodeProblem> GecodeSolver::Search(
+    GecodeProblem &problem, Search::Statistics &stats, bool &stopped) {
+  std::auto_ptr<GecodeProblem> solution;
+  if (problem.has_obj()) {
+    Meta<Gecode::BAB, GecodeProblem> engine(&problem, options_);
+    while (GecodeProblem *next = engine.next()) {
+      if (output_)
+        Output("{:46}\n") << next->obj().val();
+      solution.reset(next);
+    }
+    stopped = engine.stopped();
+    stats = engine.statistics();
+  } else {
+    Meta<Gecode::DFS, GecodeProblem> engine(&problem, options_);
+    solution.reset(engine.next());
+    stopped = engine.stopped();
+    stats = engine.statistics();
+  }
+  return solution;
 }
 
 void GecodeSolver::Solve(Problem &p) {
@@ -617,36 +649,19 @@ void GecodeSolver::Solve(Problem &p) {
 
   // Solve the problem.
   double obj_val = std::numeric_limits<double>::quiet_NaN();
-  std::auto_ptr<GecodeProblem> solution;
   bool has_obj = p.num_objs() != 0;
   Search::Statistics stats;
   bool stopped = false;
-  options_.cutoff = Gecode::Driver::createCutoff(*this);
   // TODO: add an option to return multiple solutions
-  // TODO: add the following options
-  // - restart (constant, linear, luby, geometric) used by activity* labeling
-  // - restart_base
-  // - restart_scale
   header_ = str(fmt::Format("{:>10} {:>10} {:>10} {:>13}\n")
     << "Max Depth" << "Nodes" << "Fails" << (has_obj ? "Best Obj" : ""));
-  if (has_obj) {
-    Gecode::BAB<GecodeProblem> engine(&gecode_problem, options_);
-    converter.reset();
-    while (GecodeProblem *next = engine.next()) {
-      if (output_)
-        Output("{:46}\n") << next->obj().val();
-      solution.reset(next);
-    }
-    if (solution.get())
-      obj_val = solution->obj().val();
-    stopped = engine.stopped();
-    stats = engine.statistics();
+  std::auto_ptr<GecodeProblem> solution;
+  if (restart_ != Gecode::RM_NONE) {
+    options_.cutoff = Gecode::Driver::createCutoff(*this);
+    solution = Search<Gecode::RBS>(gecode_problem, stats, stopped);
   } else {
-    Gecode::DFS<GecodeProblem> engine(&gecode_problem, options_);
-    converter.reset();
-    solution.reset(engine.next());
-    stopped = engine.stopped();
-    stats = engine.statistics();
+    solution = Search<Gecode::Driver::EngineToMeta>(
+        gecode_problem, stats, stopped);
   }
 
   // Convert solution status.
@@ -659,6 +674,7 @@ void GecodeSolver::Solve(Problem &p) {
     solve_code = 200;
     status = "infeasible problem";
   } else if (has_obj) {
+    obj_val = solution->obj().val();
     solve_code = 0;
     status = "optimal solution";
   } else {

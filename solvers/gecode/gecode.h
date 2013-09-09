@@ -62,6 +62,7 @@ class GecodeProblem: public Gecode::Space {
   Gecode::IntVarArray &vars() { return vars_; }
   Gecode::IntVar &obj() { return obj_; }
 
+  bool has_obj() const { return obj_irt_ != Gecode::IRT_NQ; }
   void SetObj(ObjType obj_type, const LinExpr &expr);
 
   virtual void constrain(const Gecode::Space &best);
@@ -316,6 +317,8 @@ class GecodeSolver : public Solver<GecodeSolver> {
   unsigned long node_limit_;
   unsigned long fail_limit_;
   Gecode::RestartMode restart_;
+  double restart_base_;
+  unsigned long restart_scale_;
 
   void SetBoolOption(const char *name, int value, bool *option);
 
@@ -371,6 +374,10 @@ class GecodeSolver : public Solver<GecodeSolver> {
               const Gecode::Search::Options &);
   };
 
+  template<template<template<typename> class, typename> class Meta>
+  std::auto_ptr<GecodeProblem> Search(
+      GecodeProblem &p, Gecode::Search::Statistics &stats, bool &stopped);
+
  protected:
   std::string GetOptionHeader();
 
@@ -384,9 +391,10 @@ class GecodeSolver : public Solver<GecodeSolver> {
   Gecode::IntValBranch val_branching() const { return val_branching_; }
   const Gecode::Search::Options &options() const { return options_; }
   double decay() const { return decay_; }
+
   Gecode::RestartMode restart() const { return restart_; }
-  unsigned long restart_scale() const { return 0; } // TODO
-  double restart_base() const { return 0; } // TODO
+  double restart_base() const { return restart_base_; }
+  unsigned long restart_scale() const { return restart_scale_; }
 };
 }
 
