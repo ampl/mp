@@ -72,8 +72,8 @@ class Optimizer : public Interruptible {
   virtual void EndSearch() = 0;
   virtual bool FindNextSolution() = 0;
 
-  virtual void GetSolutionInfo(fmt::Formatter &format_message,
-      std::vector<double> &dual_values) const = 0;
+  virtual void GetSolutionInfo(
+      fmt::Writer &w, std::vector<double> &dual_values) const = 0;
 };
 
 class CPLEXOptimizer : public Optimizer {
@@ -93,8 +93,7 @@ class CPLEXOptimizer : public Optimizer {
 
   bool FindNextSolution();
 
-  void GetSolutionInfo(fmt::Formatter &format_message,
-      std::vector<double> &dual_values) const;
+  void GetSolutionInfo(fmt::Writer &w, std::vector<double> &dual_values) const;
 
   void Interrupt() { aborter_.abort(); }
 };
@@ -113,8 +112,7 @@ class CPOptimizer : public Optimizer {
   void EndSearch() { solver_.endSearch(); }
   bool FindNextSolution() { return solver_.next() != IloFalse; }
 
-  void GetSolutionInfo(fmt::Formatter &format_message,
-      std::vector<double> &dual_values) const;
+  void GetSolutionInfo(fmt::Writer &w, std::vector<double> &dual_values) const;
 
   void Interrupt() { solver_.abortSearch(); }
 };

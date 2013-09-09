@@ -467,7 +467,7 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   double GetOutputFrequency(const char *) const { return output_frequency_; }
   void SetOutputFrequency(const char *name, double value);
 
-  fmt::TempFormatter<Printer> Output(fmt::StringRef format);
+  fmt::Formatter<Printer> Output(fmt::StringRef format);
 
   steady_clock::duration GetOutputInterval() const {
     return steady_clock::duration(

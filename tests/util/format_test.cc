@@ -47,7 +47,6 @@ using std::size_t;
 
 using fmt::internal::Array;
 using fmt::BasicWriter;
-using fmt::Formatter;
 using fmt::Format;
 using fmt::FormatError;
 using fmt::StringRef;
@@ -214,9 +213,51 @@ TEST(ArrayTest, Append) {
   EXPECT_EQ(15u, array.capacity());
 }
 
+TEST(WriterTest, Ctor) {
+  Writer w;
+  EXPECT_EQ(0u, w.size());
+  EXPECT_STREQ("", w.c_str());
+  EXPECT_EQ("", w.str());
+}
+
+TEST(WriterTest, Data) {
+  Writer w;
+  w << 42;
+  EXPECT_EQ("42", std::string(w.data(), w.size()));
+}
+
 TEST(WriterTest, WriteInt) {
   EXPECT_EQ("42", str(Writer() << 42));
   EXPECT_EQ("-42", str(Writer() << -42));
+  EXPECT_EQ("12", str(Writer() << static_cast<short>(12)));
+  EXPECT_EQ("34", str(Writer() << 34u));
+  EXPECT_EQ("56", str(Writer() << 56l));
+  EXPECT_EQ("78", str(Writer() << 78ul));
+
+  char buffer[BUFFER_SIZE];
+  SPrintf(buffer, "%d", INT_MIN);
+  EXPECT_EQ(buffer, str(Writer() << INT_MIN));
+  SPrintf(buffer, "%d", INT_MAX);
+  EXPECT_EQ(buffer, str(Writer() << INT_MAX));
+  SPrintf(buffer, "%u", UINT_MAX);
+  EXPECT_EQ(buffer, str(Writer() << UINT_MAX));
+  SPrintf(buffer, "%ld", 0 - static_cast<unsigned long>(LONG_MIN));
+  EXPECT_EQ(buffer, str(Writer() << LONG_MIN));
+  SPrintf(buffer, "%ld", LONG_MAX);
+  EXPECT_EQ(buffer, str(Writer() << LONG_MAX));
+  SPrintf(buffer, "%lu", ULONG_MAX);
+  EXPECT_EQ(buffer, str(Writer() << ULONG_MAX));
+}
+
+
+TEST(WriterTest, WriteDouble) {
+  EXPECT_EQ("4.2", str(Writer() << 4.2));
+  EXPECT_EQ("-4.2", str(Writer() << -4.2));
+  EXPECT_EQ("4.2", str(Writer() << 4.2l));
+}
+
+TEST(WriterTest, WriteString) {
+  EXPECT_EQ("abc", str(Writer() << "abc"));
 }
 
 TEST(WriterTest, oct) {
@@ -247,15 +288,6 @@ TEST(WriterTest, hexu) {
   EXPECT_EQ("BABE", str(Writer() << hexu(0xbabeu)));
   EXPECT_EQ("DEAD", str(Writer() << hexu(0xdeadl)));
   EXPECT_EQ("BEEF", str(Writer() << hexu(0xbeeful)));
-}
-
-TEST(WriterTest, WriteDouble) {
-  EXPECT_EQ("4.2", str(Writer() << 4.2));
-  EXPECT_EQ("-4.2", str(Writer() << -4.2));
-}
-
-TEST(WriterTest, WriteString) {
-  EXPECT_EQ("abc", str(Writer() << "abc"));
 }
 
 class Date {
@@ -323,6 +355,20 @@ TEST(WriterTest, NoConflictWithIOManip) {
   using namespace fmt;
   EXPECT_EQ("cafe", str(Writer() << hex(0xcafe)));
   EXPECT_EQ("12", str(Writer() << oct(012)));
+}
+
+TEST(WriterTest, Format) {
+  Writer w;
+  w.Format("part{0}") << 1;
+  EXPECT_EQ(strlen("part1"), w.size());
+  EXPECT_STREQ("part1", w.c_str());
+  EXPECT_STREQ("part1", w.data());
+  EXPECT_EQ("part1", w.str());
+  w.Format("part{0}") << 2;
+  EXPECT_EQ(strlen("part1part2"), w.size());
+  EXPECT_STREQ("part1part2", w.c_str());
+  EXPECT_STREQ("part1part2", w.data());
+  EXPECT_EQ("part1part2", w.str());
 }
 
 TEST(WriterTest, WWriter) {
@@ -1008,6 +1054,13 @@ TEST(FormatterTest, CustomFormat) {
   EXPECT_EQ("42", str(Format("{0}") << Answer()));
 }
 
+TEST(FormatterTest, WideFormatString) {
+  EXPECT_EQ(L"42", str(Format(L"{}") << 42));
+  EXPECT_EQ(L"4.2", str(Format(L"{}") << 4.2));
+  EXPECT_EQ(L"abc", str(Format(L"{}") << L"abc"));
+  EXPECT_EQ(L"z", str(Format(L"{}") << L'z'));
+}
+
 TEST(FormatterTest, FormatStringFromSpeedTest) {
   EXPECT_EQ("1.2340000000:0042:+3.13:str:0x3e8:X:%",
       str(Format("{0:0.10f}:{1:04}:{2:+g}:{3}:{4}:{5}:%")
@@ -1015,31 +1068,13 @@ TEST(FormatterTest, FormatStringFromSpeedTest) {
           << reinterpret_cast<void*>(1000) << 'X'));
 }
 
-TEST(FormatterTest, FormatterCtor) {
-  Formatter format;
-  EXPECT_EQ(0u, format.size());
-  EXPECT_STREQ("", format.c_str());
-  EXPECT_EQ("", format.str());
-  format("part{0}") << 1;
-  format("part{0}") << 2;
-  EXPECT_EQ("part1part2", format.str());
+TEST(FormatterTest, StringAccess) {
+  Writer w;
+  EXPECT_EQ("1", str(w.Format("{0}") << 1));
+  EXPECT_STREQ("12", c_str(w.Format("{0}") << 2));
 }
 
-TEST(FormatterTest, FormatterAppend) {
-  Formatter format;
-  format("part{0}") << 1;
-  EXPECT_EQ(strlen("part1"), format.size());
-  EXPECT_STREQ("part1", format.c_str());
-  EXPECT_STREQ("part1", format.data());
-  EXPECT_EQ("part1", format.str());
-  format("part{0}") << 2;
-  EXPECT_EQ(strlen("part1part2"), format.size());
-  EXPECT_STREQ("part1part2", format.c_str());
-  EXPECT_STREQ("part1part2", format.data());
-  EXPECT_EQ("part1part2", format.str());
-}
-
-TEST(FormatterTest, FormatterExamples) {
+TEST(FormatterTest, FormatExamples) {
   using fmt::hex;
   EXPECT_EQ("0000cafe", str(BasicWriter<char>() << pad(hex(0xcafe), 8, '0')));
 
@@ -1050,29 +1085,23 @@ TEST(FormatterTest, FormatterExamples) {
   EXPECT_EQ("42", str(Format(std::string("{}")) << 42));
   EXPECT_EQ("42", str(Format(Format("{{}}")) << 42));
 
-  Formatter format;
-  format("Current point:\n");
-  format("({0:+f}, {1:+f})\n") << -3.14 << 3.14;
-  EXPECT_EQ("Current point:\n(-3.140000, +3.140000)\n", format.str());
+  Writer writer;
+  writer.Format("Current point:\n");
+  writer.Format("({0:+f}, {1:+f})\n") << -3.14 << 3.14;
+  EXPECT_EQ("Current point:\n(-3.140000, +3.140000)\n", writer.str());
 
   {
-    fmt::Formatter format;
+    fmt::Writer writer;
     for (int i = 0; i < 10; i++)
-      format("{0}") << i;
-    std::string s = format.str(); // s == 0123456789
+      writer.Format("{}") << i;
+    std::string s = writer.str(); // s == 0123456789
     EXPECT_EQ("0123456789", s);
   }
 }
 
-TEST(FormatterTest, ArgInserter) {
-  Formatter format;
-  EXPECT_EQ("1", str(format("{0}") << 1));
-  EXPECT_STREQ("12", c_str(format("{0}") << 2));
-}
-
 TEST(FormatterTest, StrNamespace) {
-  fmt::str(Format(""));
-  fmt::c_str(Format(""));
+  str(Format(""));
+  c_str(Format(""));
 }
 
 TEST(FormatterTest, ExceptionInNestedFormat) {
@@ -1099,24 +1128,24 @@ struct CountCalls {
 
   CountCalls(int &num_calls) : num_calls(num_calls) {}
 
-  void operator()(const Formatter &) const {
+  void operator()(const Writer &) const {
     ++num_calls;
   }
 };
 
-TEST(TempFormatterTest, Action) {
+TEST(FormatterTest, Action) {
   int num_calls = 0;
   {
-    fmt::TempFormatter<CountCalls> af("test", CountCalls(num_calls));
+    fmt::Formatter<CountCalls> af("test", CountCalls(num_calls));
     EXPECT_EQ(0, num_calls);
   }
   EXPECT_EQ(1, num_calls);
 }
 
-TEST(TempFormatterTest, ActionNotCalledOnError) {
+TEST(FormatterTest, ActionNotCalledOnError) {
   int num_calls = 0;
   {
-    typedef fmt::TempFormatter<CountCalls> TestFormatter;
+    typedef fmt::Formatter<CountCalls> TestFormatter;
     EXPECT_THROW(TestFormatter af("{0", CountCalls(num_calls)), FormatError);
   }
   EXPECT_EQ(0, num_calls);
@@ -1126,34 +1155,33 @@ TEST(TempFormatterTest, ActionNotCalledOnError) {
 // require an accessible copy constructor when binding a temporary to
 // a const reference.
 #if __GNUC__ >= 4 && __GNUC_MINOR__ >= 7
-TEST(TempFormatterTest, ArgLifetime) {
+TEST(FormatterTest, ArgLifetime) {
   // The following code is for testing purposes only. It is a definite abuse
   // of the API and shouldn't be used in real applications.
-  const fmt::TempFormatter<> &af = fmt::Format("{0}");
-  const_cast<fmt::TempFormatter<>&>(af) << std::string("test");
-  // String object passed as an argument to TempFormatter has
-  // been destroyed, but ArgInserter dtor hasn't been called yet.
-  // But that's OK since the Arg's dtor takes care of this and
-  // calls Format.
+  const fmt::Formatter<> &af = fmt::Format("{0}");
+  const_cast<fmt::Formatter<>&>(af) << std::string("test");
+  // String object passed as an argument to Formatter has been destroyed,
+  // but Formatter's dtor hasn't been called yet. That's OK since the Arg's
+  // dtor takes care of this and calls Format.
 }
 #endif
 
-TEST(TempFormatterTest, ConvertToStringRef) {
+TEST(FormatterTest, ConvertToStringRef) {
   EXPECT_STREQ("abc", StringRef(Format("a{0}c") << 'b').c_str());
   EXPECT_EQ(3u, StringRef(Format("a{0}c") << 'b').size());
 }
 
 struct PrintError {
-  void operator()(const fmt::Formatter &f) const {
-    std::cerr << "Error: " << f.str() << std::endl;
+  void operator()(const fmt::Writer &w) const {
+    std::cerr << "Error: " << w.str() << std::endl;
   }
 };
 
-fmt::TempFormatter<PrintError> ReportError(const char *format) {
-  return fmt::TempFormatter<PrintError>(format);
+fmt::Formatter<PrintError> ReportError(const char *format) {
+  return fmt::Formatter<PrintError>(format);
 }
 
-TEST(TempFormatterTest, Examples) {
+TEST(FormatterTest, Examples) {
   EXPECT_EQ("First, thou shalt count to three",
       str(Format("First, thou shalt count to {0}") << "three"));
   EXPECT_EQ("Bring me a shrubbery",
@@ -1192,6 +1220,10 @@ TEST(TempFormatterTest, Examples) {
 
   std::string path = "somefile";
   ReportError("File not found: {0}") << path;
+}
+
+TEST(FormatIntTest, FormatInt) {
+  EXPECT_EQ("42", fmt::FormatInt(42).str());
 }
 
 template <typename T>

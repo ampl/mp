@@ -118,9 +118,9 @@ bool CPLEXOptimizer::FindNextSolution() {
 }
 
 void CPLEXOptimizer::GetSolutionInfo(
-    fmt::Formatter &format_message, vector<double> &dual_values) const {
+    fmt::Writer &w, vector<double> &dual_values) const {
   if (cplex_.isMIP()) {
-    format_message("{} nodes, ") << cplex_.getNnodes();
+    w << cplex_.getNnodes() << " nodes, ";
   } else {
     IloRangeArray cons = Optimizer::cons();
     IloInt num_cons = cons.getSize();
@@ -128,7 +128,7 @@ void CPLEXOptimizer::GetSolutionInfo(
     for (IloInt i = 0; i < num_cons; ++i)
       dual_values[i] = cplex_.getDual(cons[i]);
   }
-  format_message("{} iterations") << cplex_.getNiterations();
+  w << cplex_.getNiterations() << " iterations";
 }
 
 CPOptimizer::CPOptimizer(IloEnv env, const Problem *p)
@@ -138,9 +138,8 @@ CPOptimizer::CPOptimizer(IloEnv env, const Problem *p)
     solver_.setIntParameter(IloCP::SolutionLimit, 1);
 }
 
-void CPOptimizer::GetSolutionInfo(
-    fmt::Formatter &format_message, vector<double> &) const {
-  format_message("{} choice points, {} fails")
+void CPOptimizer::GetSolutionInfo(fmt::Writer &w, vector<double> &) const {
+  w.Format("{} choice points, {} fails")
       << solver_.getInfo(IloCP::NumberOfChoicePoints)
       << solver_.getInfo(IloCP::NumberOfFails);
 }
@@ -847,8 +846,8 @@ void IlogCPSolver::Solve(Problem &p) {
     }
     p.set_solve_code(solve_code);
 
-    fmt::Formatter format_message;
-    format_message("{}: {}\n") << long_name() << status;
+    fmt::Writer writer;
+    writer.Format("{}: {}\n") << long_name() << status;
     double obj_value = std::numeric_limits<double>::quiet_NaN();
     solution.clear();
     dual_solution.clear();
@@ -858,15 +857,14 @@ void IlogCPSolver::Solve(Problem &p) {
         IloNumVar &v = vars[j];
         solution[j] = alg.isExtracted(v) ? alg.getValue(v) : v.getLB();
       }
-      optimizer_->GetSolutionInfo(format_message, dual_solution);
+      optimizer_->GetSolutionInfo(writer, dual_solution);
       if (num_objs > 0) {
         obj_value = alg.getObjValue();
-        format_message(", objective {}") << ObjPrec(obj_value);
+        writer.Format(", objective {}") << ObjPrec(obj_value);
       }
     }
     solution_time += GetTimeAndReset(time);
-    DoHandleSolution(p, format_message.c_str(),
-        solution.empty() ? 0 : &solution[0],
+    DoHandleSolution(p, writer.c_str(), solution.empty() ? 0 : &solution[0],
         dual_solution.empty() ? 0 : &dual_solution[0], obj_value);
     output_time += GetTimeAndReset(time);
   }
