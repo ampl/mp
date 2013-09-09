@@ -55,6 +55,11 @@
 # define FMT_NOEXCEPT(expr)
 #endif
 
+#ifdef __GNUC__
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wlong-long"
+#endif
+
 namespace fmt {
 
 namespace internal {
@@ -163,6 +168,9 @@ struct IntTraits<int> : SignedIntTraits<int, unsigned> {};
 
 template <>
 struct IntTraits<long> : SignedIntTraits<long, unsigned long> {};
+
+template <>
+struct IntTraits<long long> : SignedIntTraits<long long, unsigned long long> {};
 
 template <typename T>
 struct IsLongDouble { enum {VALUE = 0}; };
@@ -558,13 +566,20 @@ class BasicWriter {
   BasicWriter &operator<<(long value) {
     return *this << IntFormatter<long, TypeSpec<0> >(value, TypeSpec<0>());
   }
+  BasicWriter &operator<<(unsigned long value) {
+    return *this <<
+        IntFormatter<unsigned long, TypeSpec<0> >(value, TypeSpec<0>());
+  }
+  BasicWriter &operator<<(long long value) {
+    return *this << IntFormatter<long long, TypeSpec<0> >(value, TypeSpec<0>());
+  }
 
   /**
     Formats *value* and writes it to the stream.
    */
-  BasicWriter &operator<<(unsigned long value) {
+  BasicWriter &operator<<(unsigned long long value) {
     return *this <<
-        IntFormatter<unsigned long, TypeSpec<0> >(value, TypeSpec<0>());
+        IntFormatter<unsigned long long, TypeSpec<0> >(value, TypeSpec<0>());
   }
 
   BasicWriter &operator<<(double value) {
@@ -1154,5 +1169,9 @@ inline Formatter<Write> Print(StringRef format) {
   return Formatter<Write>(format);
 }
 }
+
+#ifdef __GNUC__
+# pragma GCC diagnostic pop
+#endif
 
 #endif  // FORMAT_H_
