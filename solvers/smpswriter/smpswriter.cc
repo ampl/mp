@@ -22,6 +22,7 @@
 
 #include "smpswriter.h"
 
+#include <cmath>
 #include <cstdio>
 #include <set>
 
