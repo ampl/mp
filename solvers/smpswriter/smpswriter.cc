@@ -82,8 +82,8 @@ class FileWriter : Noncopyable {
    public:
     Writer(FILE *f) : f_(f) {}
 
-    void operator()(const fmt::BasicFormatter<char> &f) const {
-      std::fwrite(f.data(), 1, f.size(), f_);
+    void operator()(const fmt::Writer &w) const {
+      std::fwrite(w.data(), 1, w.size(), f_);
     }
   };
 
@@ -91,8 +91,8 @@ class FileWriter : Noncopyable {
   FileWriter(fmt::StringRef name) : f_(std::fopen(name.c_str(), "w")) {}
   ~FileWriter() { std::fclose(f_); }
 
-  fmt::TempFormatter<Writer> Write(fmt::StringRef format) {
-    return fmt::TempFormatter<Writer>(format, Writer(f_));
+  fmt::Formatter<Writer> Write(fmt::StringRef format) {
+    return fmt::Formatter<Writer>(format, Writer(f_));
   }
 };
 

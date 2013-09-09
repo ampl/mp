@@ -348,7 +348,7 @@ class GecodeSolver : public Solver<GecodeSolver> {
     *option = value;
   }
 
-  fmt::TempFormatter<fmt::Write> Output(fmt::StringRef format);
+  fmt::Formatter<fmt::Write> Output(fmt::StringRef format);
 
   class Stop : public Gecode::Search::Stop {
    private:

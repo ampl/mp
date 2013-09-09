@@ -35,14 +35,14 @@ class Error : public std::runtime_error {
 };
 
 struct Throw {
-  void operator()(const fmt::BasicFormatter<char> &f) const {
-    throw Error(f.str());
+  void operator()(const fmt::Writer &w) const {
+    throw Error(fmt::StringRef(w.c_str(), w.size()));
   }
 };
 
 // Throws Error with formatted error message.
-inline fmt::TempFormatter<Throw> ThrowError(fmt::StringRef format) {
-  return fmt::TempFormatter<Throw>(format);
+inline fmt::Formatter<Throw> ThrowError(fmt::StringRef format) {
+  return fmt::Formatter<Throw>(format);
 }
 }
 

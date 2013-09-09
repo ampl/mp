@@ -422,11 +422,11 @@ void GecodeSolver::SetNonnegativeOption(
   *option = value;
 }
 
-fmt::TempFormatter<fmt::Write> GecodeSolver::Output(fmt::StringRef format) {
+fmt::Formatter<fmt::Write> GecodeSolver::Output(fmt::StringRef format) {
   if (output_count_ == 0)
     fmt::Print("{}") << header_;
   output_count_ = (output_count_ + 1) % 20;
-  return fmt::TempFormatter<fmt::Write>(format);
+  return fmt::Formatter<fmt::Write>(format);
 }
 
 std::string GecodeSolver::GetOptionHeader() {
@@ -678,12 +678,12 @@ void GecodeSolver::Solve(Problem &p) {
 
   double solution_time = GetTimeAndReset(time);
 
-  fmt::Formatter format;
-  format("{}: {}\n") << long_name() << status;
-  format("{} nodes, {} fails") << stats.node << stats.fail;
+  fmt::Writer w;
+  w.Format("{}: {}\n") << long_name() << status;
+  w.Format("{} nodes, {} fails") << stats.node << stats.fail;
   if (has_obj && solution.get())
-    format(", objective {}") << ObjPrec(obj_val);
-  DoHandleSolution(p, format.c_str(),
+    w.Format(", objective {}") << ObjPrec(obj_val);
+  DoHandleSolution(p, w.c_str(),
       final_solution.empty() ? 0 : &final_solution[0], 0, obj_val);
 
   double output_time = GetTimeAndReset(time);

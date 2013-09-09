@@ -392,12 +392,12 @@ void JaCoPSolver::SetEnumOption(
   throw InvalidOptionValue(name, value);
 }
 
-fmt::TempFormatter<BasicSolver::Printer> JaCoPSolver::Output(
-    fmt::StringRef format) {
+fmt::Formatter<BasicSolver::Printer>
+    JaCoPSolver::Output(fmt::StringRef format) {
   if (output_count_ == 0)
     Print("{}") << header_;
   output_count_ = (output_count_ + 1) % 20;
-  return fmt::TempFormatter<Printer>(format, MakePrinter());
+  return fmt::Formatter<Printer>(format, MakePrinter());
 }
 
 void JaCoPSolver::PrintLogEntry() {
@@ -622,13 +622,14 @@ void JaCoPSolver::Solve(Problem &p) {
 
   double solution_time = GetTimeAndReset(time);
 
-  fmt::Formatter format;
-  format("{}: {}\n") << long_name() << status;
-  format("{} nodes, {} fails") << env_.CallIntMethod(search_.get(), get_nodes_)
+  fmt::Writer w;
+  w.Format("{}: {}\n") << long_name() << status;
+  w.Format("{} nodes, {} fails")
+      << env_.CallIntMethod(search_.get(), get_nodes_)
       << env_.CallIntMethod(search_.get(), get_fails_);
   if (has_obj && found)
-    format(", objective {}") << ObjPrec(obj_val);
-  BasicSolver::DoHandleSolution(p, format.c_str(),
+    w.Format(", objective {}") << ObjPrec(obj_val);
+  BasicSolver::DoHandleSolution(p, w.c_str(),
       final_solution.empty() ? 0 : &final_solution[0], 0, obj_val);
 
   double output_time = GetTimeAndReset(time);

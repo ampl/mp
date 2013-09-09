@@ -113,10 +113,10 @@ int OptionHelper<int>::Parse(const char *&s) {
   return value;
 }
 
-void OptionHelper<double>::Format(fmt::Formatter &f, Arg value) {
+void OptionHelper<double>::Write(fmt::Writer &w, Arg value) {
   char buffer[32];
   g_fmt(buffer, value);
-  f("{}") << buffer;
+  w << buffer;
 }
 
 double OptionHelper<double>::Parse(const char *&s) {
@@ -224,8 +224,8 @@ BasicSolver::BasicSolver(
         "Single-word phrase:  report version details "
         "before solving the problem.", true), s(s) {}
 
-    void Format(fmt::Formatter &f) {
-      f("{}") << ((s.flags() & ASL_OI_show_version) != 0);
+    void Write(fmt::Writer &w) {
+      w << ((s.flags() & ASL_OI_show_version) != 0);
     }
     void Parse(const char *&) {
       s.Option_Info::flags |= ASL_OI_show_version;
@@ -371,11 +371,11 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
       if (!next || std::isspace(next)) {
         ++s;
         if ((flags & NO_OPTION_ECHO) == 0) {
-          fmt::Formatter f;
-          f("{}=") << &name[0];
-          opt->Format(f);
-          f << '\n';
-          Print(fmt::StringRef(f.c_str(), f.size()));
+          fmt::Writer w;
+          w.Format("{}=") << &name[0];
+          opt->Write(w);
+          w << '\n';
+          Print(fmt::StringRef(w.c_str(), w.size()));
         }
         continue;
       }

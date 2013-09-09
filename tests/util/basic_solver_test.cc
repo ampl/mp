@@ -144,9 +144,9 @@ TEST(SolverTest, Version) {
     s.ProcessArgs(Args("program-name", "-v"), p);
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
-  fmt::Formatter format;
-  format("Test Solver ({}), ASL({})\n") << sysdetails_ASL << ASLdate_ASL;
-  EXPECT_EQ(format.str(), ReadFile("out"));
+  fmt::Writer w;
+  w.Format("Test Solver ({}), ASL({})\n") << sysdetails_ASL << ASLdate_ASL;
+  EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
 TEST(SolverTest, VersionWithDate) {
@@ -157,10 +157,10 @@ TEST(SolverTest, VersionWithDate) {
     s.ProcessArgs(Args("program-name", "-v"), p);
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
-  fmt::Formatter format;
-  format("Test Solver ({}), driver(20121227), ASL({})\n")
+  fmt::Writer w;
+  w.Format("Test Solver ({}), driver(20121227), ASL({})\n")
     << sysdetails_ASL << ASLdate_ASL;
-  EXPECT_EQ(format.str(), ReadFile("out"));
+  EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
 TEST(SolverTest, SetVersion) {
@@ -174,9 +174,9 @@ TEST(SolverTest, SetVersion) {
     s.ProcessArgs(Args("program-name", "-v"), p);
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
-  fmt::Formatter format;
-  format("{} ({}), ASL({})\n") << VERSION << sysdetails_ASL << ASLdate_ASL;
-  EXPECT_EQ(format.str(), ReadFile("out"));
+  fmt::Writer w;
+  w.Format("{} ({}), ASL({})\n") << VERSION << sysdetails_ASL << ASLdate_ASL;
+  EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
 TEST(SolverTest, ErrorHandler) {
@@ -350,7 +350,7 @@ TEST(SolverTest, SolverOption) {
     TestOption(const char *name, const char *description, bool is_keyword)
     : SolverOption(name, description, is_keyword),
       formatted(false), parsed(false) {}
-    void Format(fmt::Formatter &) { formatted = true; }
+    void Write(fmt::Writer &) { formatted = true; }
     void Parse(const char *&) { parsed = true; }
   };
   {
@@ -368,8 +368,8 @@ TEST(SolverTest, SolverOption) {
     EXPECT_FALSE(opt.formatted);
     EXPECT_FALSE(opt.parsed);
     SolverOption &so = opt;
-    fmt::Formatter f;
-    so.Format(f);
+    fmt::Writer w;
+    so.Write(w);
     EXPECT_TRUE(opt.formatted);
     const char *s = 0;
     so.Parse(s);
@@ -378,9 +378,9 @@ TEST(SolverTest, SolverOption) {
 }
 
 TEST(SolverTest, IntOptionHelper) {
-  fmt::Formatter f;
-  OptionHelper<int>::Format(f, 42);
-  EXPECT_EQ("42", str(f));
+  fmt::Writer w;
+  OptionHelper<int>::Write(w, 42);
+  EXPECT_EQ("42", str(w));
   const char *start = "123 ";
   const char *s = start;
   EXPECT_EQ(123, OptionHelper<int>::Parse(s));
@@ -389,9 +389,9 @@ TEST(SolverTest, IntOptionHelper) {
 }
 
 TEST(SolverTest, DoubleOptionHelper) {
-  fmt::Formatter f;
-  OptionHelper<double>::Format(f, 4.2);
-  EXPECT_EQ("4.2", str(f));
+  fmt::Writer w;
+  OptionHelper<double>::Write(w, 4.2);
+  EXPECT_EQ("4.2", str(w));
   const char *start = "1.23 ";
   const char *s = start;
   EXPECT_EQ(1.23, OptionHelper<double>::Parse(s));
@@ -400,9 +400,9 @@ TEST(SolverTest, DoubleOptionHelper) {
 }
 
 TEST(SolverTest, StringOptionHelper) {
-  fmt::Formatter f;
-  OptionHelper<std::string>::Format(f, "abc");
-  EXPECT_EQ("abc", str(f));
+  fmt::Writer w;
+  OptionHelper<std::string>::Write(w, "abc");
+  EXPECT_EQ("abc", str(w));
   const char *start = "def ";
   const char *s = start;
   EXPECT_EQ("def", OptionHelper<std::string>::Parse(s));
@@ -427,9 +427,9 @@ TEST(SolverTest, TypedSolverOption) {
   opt.Parse(s);
   EXPECT_EQ(start + 2, s);
   EXPECT_EQ(42, opt.value);
-  fmt::Formatter f;
-  opt.Format(f);
-  EXPECT_EQ("42", str(f));
+  fmt::Writer w;
+  opt.Write(w);
+  EXPECT_EQ("42", str(w));
 }
 
 enum Info { INFO = 0xcafe };
@@ -517,7 +517,7 @@ TEST(SolverTest, AddOption) {
     int value;
     TestOption() : SolverOption("testopt", "A test option."), value(0) {}
 
-    void Format(fmt::Formatter &) {}
+    void Write(fmt::Writer &) {}
     void Parse(const char *&s) {
       char *end = 0;
       value = std::strtol(s, &end, 10);
@@ -627,8 +627,8 @@ struct FormatOption : SolverOption {
   int format_count;
   FormatOption() : SolverOption("fmtopt", ""), format_count(0) {}
 
-  void Format(fmt::Formatter &f) {
-    f("1");
+  void Write(fmt::Writer &w) {
+    w << "1";
     ++format_count;
   }
   void Parse(const char *&) {}
@@ -679,7 +679,7 @@ TEST(SolverTest, ErrorOnKeywordOptionValue) {
   struct KeywordOption : SolverOption {
     bool parsed;
     KeywordOption() : SolverOption("kwopt", "", true), parsed(false) {}
-    void Format(fmt::Formatter &) {}
+    void Write(fmt::Writer &) {}
     void Parse(const char *&) { parsed = true; }
   };
   TestSolver s;
@@ -696,7 +696,7 @@ TEST(SolverTest, ErrorOnKeywordOptionValue) {
 TEST(SolverTest, ParseOptionsHandlesOptionErrorsInParse) {
   struct TestOption : SolverOption {
     TestOption() : SolverOption("testopt", "") {}
-    void Format(fmt::Formatter &) {}
+    void Write(fmt::Writer &) {}
     void Parse(const char *&s) {
       while (*s && !std::isspace(*s))
         ++s;
@@ -849,9 +849,9 @@ TEST(SolverTest, VersionOption) {
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
-  fmt::Formatter format;
-  format("Test Solver ({}), ASL({})\n") << sysdetails_ASL << ASLdate_ASL;
-  EXPECT_EQ(format.str(), ReadFile("out"));
+  fmt::Writer w;
+  w.Format("Test Solver ({}), ASL({})\n") << sysdetails_ASL << ASLdate_ASL;
+  EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
 TEST(SolverTest, VersionOptionReset) {
@@ -864,9 +864,9 @@ TEST(SolverTest, VersionOptionReset) {
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
-  fmt::Formatter format;
-  format("Test Solver ({}), ASL({})\nend\n") << sysdetails_ASL << ASLdate_ASL;
-  EXPECT_EQ(format.str(), ReadFile("out"));
+  fmt::Writer w;
+  w.Format("Test Solver ({}), ASL({})\nend\n") << sysdetails_ASL << ASLdate_ASL;
+  EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
 TEST(SolverTest, WantsolOption) {

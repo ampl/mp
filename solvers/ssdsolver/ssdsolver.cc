@@ -200,11 +200,11 @@ void SSDSolver::Solve(Problem &p) {
   }
   p.set_solve_code(sol.solve_code());
 
-  fmt::Formatter format;
-  format("{}: {}") << long_name() << message;
+  fmt::Writer w;
+  w.Format("{}: {}") << long_name() << message;
   if (sol.status() == Solution::SOLVED)
-    format("; dominance {}") << dominance_ub;
-  format("\n{} iteration(s)") << iteration;
-  DoHandleSolution(p, format.c_str(), &solution[0], 0, 0);
+    w.Format("; dominance {}") << dominance_ub;
+  w.Format("\n{} iteration(s)") << iteration;
+  DoHandleSolution(p, w.c_str(), &solution[0], 0, 0);
 }
 }

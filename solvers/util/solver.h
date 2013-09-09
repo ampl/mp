@@ -71,7 +71,7 @@ template <>
 struct OptionHelper<int> {
   typedef int Arg;
   static const char TYPE_NAME[];
-  static void Format(fmt::Formatter &f, Arg value) { f("{}") << value; }
+  static void Write(fmt::Writer &w, Arg value) { w << value; }
   static int Parse(const char *&s);
   static int CastArg(int value) { return value; }
 };
@@ -80,7 +80,7 @@ template <>
 struct OptionHelper<double> {
   typedef double Arg;
   static const char TYPE_NAME[];
-  static void Format(fmt::Formatter &f, Arg value);
+  static void Write(fmt::Writer &w, Arg value);
   static double Parse(const char *&s);
   static double CastArg(double value) { return value; }
 };
@@ -89,7 +89,7 @@ template <>
 struct OptionHelper<std::string> {
   typedef const char *Arg;
   static const char TYPE_NAME[];
-  static void Format(fmt::Formatter &f, const std::string &s) { f("{}") << s; }
+  static void Write(fmt::Writer &w, const std::string &s) { w << s; }
   static std::string Parse(const char *&s);
   static const char *CastArg(const std::string &s) { return s.c_str(); }
 };
@@ -201,7 +201,7 @@ class SolverOption {
   bool is_keyword() const { return is_keyword_; }
 
   // Formats the option value. Throws OptionError in case of error.
-  virtual void Format(fmt::Formatter &f) = 0;
+  virtual void Write(fmt::Writer &w) = 0;
 
   // Parses a string and sets the option value. Throws InvalidOptionValue
   // if the value is invalid or OptionError in case of another error.
@@ -214,8 +214,8 @@ class TypedSolverOption : public SolverOption {
   TypedSolverOption(const char *name, const char *description)
   : SolverOption(name, description) {}
 
-  void Format(fmt::Formatter &f) {
-    internal::OptionHelper<T>::Format(f, GetValue());
+  void Write(fmt::Writer &w) {
+    internal::OptionHelper<T>::Write(w, GetValue());
   }
 
   void Parse(const char *&s) {
@@ -290,8 +290,8 @@ class BasicSolver
    public:
     explicit ErrorReporter(ErrorHandler *h) : handler_(h) {}
 
-    void operator()(const fmt::Formatter &f) const {
-      handler_->HandleError(fmt::StringRef(f.c_str(), f.size()));
+    void operator()(const fmt::Writer &w) const {
+      handler_->HandleError(fmt::StringRef(w.c_str(), w.size()));
     }
   };
 
@@ -374,8 +374,8 @@ class BasicSolver
    public:
     explicit Printer(OutputHandler *h) : handler_(h) {}
 
-    void operator()(const fmt::Formatter &f) const {
-      handler_->HandleOutput(fmt::StringRef(f.c_str(), f.size()));
+    void operator()(const fmt::Writer &w) const {
+      handler_->HandleOutput(fmt::StringRef(w.c_str(), w.size()));
     }
   };
 
@@ -503,14 +503,13 @@ class BasicSolver
 
   // Reports an error printing the formatted error message to stderr.
   // Usage: ReportError("File not found: {}") << filename;
-  fmt::TempFormatter<ErrorReporter> ReportError(fmt::StringRef format) {
+  fmt::Formatter<ErrorReporter> ReportError(fmt::StringRef format) {
     has_errors_ = true;
-    return fmt::TempFormatter<ErrorReporter>(
-        format, ErrorReporter(error_handler_));
+    return fmt::Formatter<ErrorReporter>(format, ErrorReporter(error_handler_));
   }
 
-  fmt::TempFormatter<Printer> Print(fmt::StringRef format) {
-    return fmt::TempFormatter<Printer>(format, Printer(output_handler_));
+  fmt::Formatter<Printer> Print(fmt::StringRef format) {
+    return fmt::Formatter<Printer>(format, Printer(output_handler_));
   }
 
   // Solves a problem.
