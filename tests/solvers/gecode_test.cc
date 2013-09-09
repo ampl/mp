@@ -223,6 +223,49 @@ TEST_F(GecodeSolverTest, DecayOption) {
   EXPECT_THROW(solver_.SetDblOption("decay", 1.1), InvalidOptionValue);
 }
 
+const OptionValue<Gecode::RestartMode> RESTARTS[] = {
+    {"none",      Gecode::RM_NONE},
+    {"constant",  Gecode::RM_CONSTANT},
+    {"linear",    Gecode::RM_LINEAR},
+    {"luby",      Gecode::RM_LUBY},
+    {"geometric", Gecode::RM_GEOMETRIC},
+    {}
+};
+
+TEST_F(GecodeSolverTest, RestartOption) {
+  EXPECT_EQ(Gecode::RM_NONE, solver_.restart());
+  unsigned count = 0;
+  for (const OptionValue<Gecode::RestartMode>
+      *p = RESTARTS; p->name; ++p, ++count) {
+    solver_.SetStrOption("restart", p->name);
+    EXPECT_EQ(p->name, solver_.GetStrOption("restart"));
+    EXPECT_EQ(p->value, solver_.restart());
+  }
+  EXPECT_EQ(5u, count);
+}
+
+TEST_F(GecodeSolverTest, RestartBaseOption) {
+  EXPECT_EQ(1.5, solver_.restart_base());
+  solver_.SetDblOption("restart_base", 0.000001);
+  EXPECT_EQ(0.000001, solver_.GetDblOption("restart_base"));
+  EXPECT_EQ(0.000001, solver_.restart_base());
+  solver_.SetDblOption("restart_base", 0.5);
+  EXPECT_EQ(0.5, solver_.GetDblOption("restart_base"));
+  EXPECT_EQ(0.5, solver_.restart_base());
+  solver_.SetDblOption("restart_base", 1);
+  EXPECT_EQ(1.0, solver_.restart_base());
+  solver_.SetDblOption("restart_base", -100);
+  solver_.SetDblOption("restart_base", 100);
+}
+
+TEST_F(GecodeSolverTest, RestartScaleOption) {
+  EXPECT_EQ(250, solver_.restart_scale());
+  solver_.SetIntOption("restart_scale", 42);
+  EXPECT_EQ(42u, solver_.restart_scale());
+  EXPECT_EQ(42, solver_.GetIntOption("restart_scale"));
+  EXPECT_THROW(solver_.SetIntOption("restart_scale", -1), InvalidOptionValue);
+}
+
 TEST_F(GecodeSolverTest, OutLevOption) {
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
