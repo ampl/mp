@@ -94,8 +94,7 @@ jobject NLToJaCoPConverter::Convert(
 
 void NLToJaCoPConverter::RequireZeroRHS(
     BinaryExpr e, const std::string &func_name) {
-  NumericConstant num = Cast<NumericConstant>(e.rhs());
-  if (!num || num.value() != 0) {
+  if (!IsZero(e.rhs())) {
     throw UnsupportedExprError::CreateFromExprString(
         func_name + " with nonzero second parameter");
   }

@@ -889,6 +889,12 @@ class AllDiffExpr : public LogicalExpr {
 
 AMPL_SPECIALIZE_IS(AllDiffExpr, OPALLDIFF)
 
+// Returns true iff e is a zero constant.
+inline bool IsZero(NumericExpr e) {
+  NumericConstant c = Cast<NumericConstant>(e);
+  return c && c.value() == 0;
+}
+
 // An exception that is thrown when an ASL expression not supported
 // by the solver is encountered.
 class UnsupportedExprError : public Error {

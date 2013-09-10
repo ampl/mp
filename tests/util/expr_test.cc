@@ -1021,6 +1021,14 @@ TEST_F(ExprTest, NumberOfMap) {
   EXPECT_TRUE(i == map.end());
 }
 
+TEST_F(ExprTest, IsZero) {
+  EXPECT_TRUE(IsZero(AddNum(0)));
+  EXPECT_FALSE(IsZero(AddNum(1)));
+  EXPECT_FALSE(IsZero(AddNum(-1)));
+  EXPECT_FALSE(IsZero(AddNum(10)));
+  EXPECT_FALSE(IsZero(AddVar(0)));
+}
+
 #ifdef HAVE_UNORDERED_MAP
 
 using ampl::HashCombine;
