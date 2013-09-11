@@ -244,7 +244,7 @@ TEST_F(ExprTest, SafeBool) {
 
 struct OpInfo {
   int code;
-  const char *name;
+  const char *str;
   Expr::Kind kind;
 };
 
@@ -323,11 +323,11 @@ const OpInfo OP_INFO[] = {
   {ANDLIST, "forall", Expr::ITERATED_LOGICAL},
   {ORLIST,  "exists", Expr::ITERATED_LOGICAL},
   {OPIMPELSE, "implies else", Expr::IMPLICATION},
-  {OP_IFF, "iff", Expr::BINARY_LOGICAL},
+  {OP_IFF, "<==>", Expr::BINARY_LOGICAL},
   {OPALLDIFF, "alldiff", Expr::ALLDIFF},
-  {OP1POW, "1pow", Expr::BINARY},
+  {OP1POW, "^", Expr::BINARY},
   {OP2POW, "^2",   Expr::UNARY},
-  {OPCPOW, "cpow", Expr::BINARY},
+  {OPCPOW, "^", Expr::BINARY},
   {OPFUNCALL, "function call", Expr::CALL},
   {OPNUM, "number", Expr::CONSTANT},
   {OPHOL, "string", Expr::UNKNOWN},
@@ -359,7 +359,7 @@ int CheckExpr(Expr::Kind start, Expr::Kind end = Expr::UNKNOWN,
   for (int i = 0; i < size; ++i) {
     const OpInfo &info = OP_INFO[i];
     int opcode = info.code;
-    const char *opname = info.name;
+    const char *opstr = info.str;
     expr raw = {reinterpret_cast<efunc*>(opcode)};
     bool is_this_kind = info.kind >= start && info.kind <= end;
     if (info.kind != Expr::UNKNOWN) {
@@ -371,7 +371,7 @@ int CheckExpr(Expr::Kind start, Expr::Kind end = Expr::UNKNOWN,
     if (!is_this_kind) continue;
     ExprT e(MakeExpr<ExprT>(&raw));
     EXPECT_EQ(opcode, e.opcode());
-    EXPECT_STREQ(opname, e.opname());
+    EXPECT_STREQ(opstr, e.opstr());
     ++expr_count;
   }
   EXPECT_GT(expr_count, 0);
@@ -1028,6 +1028,124 @@ TEST_F(ExprTest, IsZero) {
   EXPECT_FALSE(IsZero(AddNum(10)));
   EXPECT_FALSE(IsZero(AddVar(0)));
 }
+
+// Checks if WriteExpr produces the expected output for expr.
+static ::testing::AssertionResult CheckWrite(
+    const char *, const char *expr_str,
+    const std::string &expected_output, NumericExpr expr) {
+  fmt::Writer w;
+  WriteExpr(w, ampl::LinearObjExpr(), expr);
+  auto actual_output = w.str();
+  if (expected_output == actual_output)
+    return ::testing::AssertionSuccess();
+  return ::testing::AssertionFailure()
+      << "Output of: Writer(w, LinearObjExpr(), " << expr_str << ")\n"
+      << "   Actual: " << actual_output << "\n"
+      << " Expected: " << expected_output << "\n";
+}
+
+#define CHECK_WRITE(expected_output, expr) \
+  EXPECT_PRED_FORMAT2(CheckWrite, expected_output, expr)
+
+TEST_F(ExprTest, WriteNumericConstant) {
+  CHECK_WRITE("0", AddNum(0));
+  CHECK_WRITE("42", AddNum(42));
+  CHECK_WRITE("12.34", AddNum(12.34));
+}
+
+TEST_F(ExprTest, WriteVariable) {
+  CHECK_WRITE("x1", AddVar(0));
+  CHECK_WRITE("x3", AddVar(2));
+}
+
+TEST_F(ExprTest, WriteBinaryExpr) {
+  Variable x1 = AddVar(0);
+  NumericConstant n42 = AddNum(42);
+  CHECK_WRITE("x1 + 42", AddBinary(OPPLUS, x1, n42));
+  CHECK_WRITE("x1 - 42", AddBinary(OPMINUS, x1, n42));
+  CHECK_WRITE("x1 * 42", AddBinary(OPMULT, x1, n42));
+  CHECK_WRITE("x1 / 42", AddBinary(OPDIV, x1, n42));
+  CHECK_WRITE("x1 mod 42", AddBinary(OPREM, x1, n42));
+  CHECK_WRITE("x1 ^ 42", AddBinary(OPPOW, x1, n42));
+  CHECK_WRITE("x1 ^ 42", AddBinary(OPPOW, x1, n42));
+  CHECK_WRITE("x1 ^ 42", AddBinary(OP1POW, x1, n42));
+  CHECK_WRITE("x1 ^ 42", AddBinary(OPCPOW, x1, n42));
+  CHECK_WRITE("x1 less 42", AddBinary(OPLESS, x1, n42));
+  CHECK_WRITE("x1 div 42", AddBinary(OPintDIV, x1, n42));
+}
+
+TEST_F(ExprTest, WriteBinaryFunc) {
+  auto x1 = AddVar(0);
+  auto n42 = AddNum(42);
+  CHECK_WRITE("atan2(x1, 42)", AddBinary(OP_atan2, x1, n42));
+  CHECK_WRITE("precision(x1, 42)", AddBinary(OPprecision, x1, n42));
+  CHECK_WRITE("round(x1, 42)", AddBinary(OPround, x1, n42));
+  CHECK_WRITE("trunc(x1, 42)", AddBinary(OPtrunc, x1, n42));
+}
+
+TEST_F(ExprTest, WriteUnaryExpr) {
+  auto x1 = AddVar(0);
+  CHECK_WRITE("-x1", AddUnary(OPUMINUS, x1));
+  CHECK_WRITE("x1 ^ 2", AddUnary(OP2POW, x1));
+  int count = 0;
+  for (int i = 0, size = sizeof(OP_INFO) / sizeof(*OP_INFO); i < size; ++i) {
+    const OpInfo &info = OP_INFO[i];
+    int code = info.code;
+    if (info.kind != Expr::UNARY || code == OPUMINUS || code == OP2POW)
+      continue;
+    CHECK_WRITE(str(fmt::Format("{}(x1)") << info.str), AddUnary(code, x1));
+    ++count;
+  }
+  EXPECT_EQ(19, count);
+}
+
+TEST_F(ExprTest, WriteVarArgExpr) {
+  CHECK_WRITE("min(x1, x2, 42)",
+      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)));
+  CHECK_WRITE("max(x1, x2, 42)",
+      AddVarArg(MAXLIST, AddVar(0), AddVar(1), AddNum(42)));
+}
+
+TEST_F(ExprTest, WriteCountExpr) {
+  CHECK_WRITE("count(x1 = 0, 1, 0)",
+      AddCount(AddRelational(EQ, AddVar(0), AddNum(0)),
+          AddBool(true), AddBool(false)));
+}
+
+TEST_F(ExprTest, WriteBinaryLogicalExpr) {
+  auto e1 = AddRelational(GT, AddVar(0), AddNum(0));
+  auto e2 = AddRelational(LT, AddVar(0), AddNum(10));
+  CHECK_WRITE("if x1 > 0 || x1 < 10 then 1",
+      AddIf(AddBinaryLogical(OPOR, e1, e2), AddNum(1), AddNum(0)));
+  CHECK_WRITE("if x1 > 0 && x1 < 10 then 1",
+      AddIf(AddBinaryLogical(OPAND, e1, e2), AddNum(1), AddNum(0)));
+  CHECK_WRITE("if x1 > 0 <==> x1 < 10 then 1",
+      AddIf(AddBinaryLogical(OP_IFF, e1, e2), AddNum(1), AddNum(0)));
+}
+
+TEST_F(ExprTest, WriteNotExpr) {
+  auto n0 = AddNum(0), n1 = AddNum(1);
+  CHECK_WRITE("if !(x1 = 0) then 1",
+      AddIf(AddNot(AddRelational(EQ, AddVar(0), n0)), n1, n0));
+}
+
+TEST_F(ExprTest, WriteRelationalExpr) {
+  auto n0 = AddNum(0), n1 = AddNum(1);
+  CHECK_WRITE("if x1 < 0 then 1",
+      AddIf(AddRelational(LT, AddVar(0), n0), n1, n0));
+  CHECK_WRITE("if x1 <= 0 then 1",
+      AddIf(AddRelational(LE, AddVar(0), n0), n1, n0));
+  CHECK_WRITE("if x1 = 0 then 1",
+      AddIf(AddRelational(EQ, AddVar(0), n0), n1, n0));
+  CHECK_WRITE("if x1 >= 0 then 1",
+      AddIf(AddRelational(GE, AddVar(0), n0), n1, n0));
+  CHECK_WRITE("if x1 > 0 then 1",
+      AddIf(AddRelational(GT, AddVar(0), n0), n1, n0));
+  CHECK_WRITE("if x1 != 0 then 1",
+      AddIf(AddRelational(NE, AddVar(0), n0), n1, n0));
+}
+
+// TODO
 
 #ifdef HAVE_UNORDERED_MAP
 

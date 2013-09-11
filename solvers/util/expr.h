@@ -226,7 +226,7 @@ class Expr {
   };
 
  private:
-  static const char *const OP_NAMES[N_OPS];
+  static const char *const OP_STRINGS[N_OPS];
   static const Kind KINDS[N_OPS];
 
   // Returns the kind of this expression.
@@ -324,16 +324,19 @@ class Expr {
   //   }
   operator SafeBool() const { return expr_ ? &Expr::True : 0; }
 
-  // Returns the operation code (opcode) of this expression which should be
-  // non-null. The opcodes are defined in opcode.hd.
+  // Returns the operation code (opcode) of this expression.
+  // The opcodes are defined in opcode.hd.
   int opcode() const {
     return static_cast<int>(reinterpret_cast<std::size_t>(expr_->op));
   }
 
-  // Returns the operation name of this expression which should be non-null.
-  const char *opname() const {
+  // Returns the function name or operator for this expression as a
+  // string. Expressions with different opcodes can have identical
+  // strings. For example, OPPOW, OP1POW and OPCPOW all use the
+  // same operator "^".
+  const char *opstr() const {
     assert(opcode() >= 0 && opcode() < N_OPS);
-    return OP_NAMES[opcode()];
+    return OP_STRINGS[opcode()];
   }
 
   bool operator==(Expr other) const { return expr_ == other.expr_; }
@@ -960,11 +963,11 @@ class ExprVisitor {
   LResult Visit(LogicalExpr e);
 
   Result VisitUnhandledNumericExpr(NumericExpr e) {
-    throw UnsupportedExprError::CreateFromExprString(e.opname());
+    throw UnsupportedExprError::CreateFromExprString(e.opstr());
   }
 
   LResult VisitUnhandledLogicalExpr(LogicalExpr e) {
-    throw UnsupportedExprError::CreateFromExprString(e.opname());
+    throw UnsupportedExprError::CreateFromExprString(e.opstr());
   }
 
   Result VisitInvalidNumericExpr(NumericExpr e) {
@@ -975,147 +978,178 @@ class ExprVisitor {
     throw InvalidLogicalExprError(e);
   }
 
-  Result VisitPlus(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitMinus(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitMult(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitDiv(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitRem(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitPow(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitNumericLess(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitMin(VarArgExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitMax(VarArgExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitFloor(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitCeil(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitAbs(UnaryExpr e) {
+  // Visits a unary expression or a function taking one argument.
+  Result VisitUnary(UnaryExpr e) {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
   Result VisitUnaryMinus(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitPow2(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitFloor(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitCeil(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitAbs(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitTanh(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitTan(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitSqrt(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitSinh(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitSin(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitLog10(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitLog(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitExp(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitCosh(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitCos(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitAtanh(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitAtan(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitAsinh(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitAsin(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitAcosh(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  Result VisitAcos(UnaryExpr e) {
+    return AMPL_DISPATCH(VisitUnary(e));
+  }
+
+  // Visits a binary expression or a function taking two arguments.
+  Result VisitBinary(BinaryExpr e) {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitPlus(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitBinary(e));
+  }
+
+  Result VisitMinus(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitBinary(e));
+  }
+
+  Result VisitMult(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitBinary(e));
+  }
+
+  Result VisitDiv(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitBinary(e));
+  }
+
+  Result VisitRem(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitBinary(e));
+  }
+
+  Result VisitPow(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitBinary(e));
+  }
+
+  Result VisitPowConstExp(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitBinary(e));
+  }
+
+  Result VisitPowConstBase(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitBinary(e));
+  }
+
+  Result VisitNumericLess(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitBinary(e));
+  }
+
+  Result VisitIntDiv(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitBinary(e));
+  }
+
+  // Visits a function taking two arguments.
+  Result VisitBinaryFunc(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitBinary(e));
+  }
+
+  Result VisitAtan2(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitBinaryFunc(e));
+  }
+
+  Result VisitPrecision(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitBinaryFunc(e));
+  }
+
+  Result VisitRound(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitBinaryFunc(e));
+  }
+
+  Result VisitTrunc(BinaryExpr e) {
+    return AMPL_DISPATCH(VisitBinaryFunc(e));
+  }
+
+  Result VisitVarArg(VarArgExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitMin(VarArgExpr e) {
+    return AMPL_DISPATCH(VisitVarArg(e));
+  }
+
+  Result VisitMax(VarArgExpr e) {
+    return AMPL_DISPATCH(VisitVarArg(e));
   }
 
   Result VisitIf(IfExpr e) {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
-  Result VisitTanh(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitTan(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitSqrt(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitSinh(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitSin(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitLog10(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitLog(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitExp(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitCosh(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitCos(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitAtanh(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitAtan2(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitAtan(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitAsinh(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitAsin(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitAcosh(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitAcos(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitSum(SumExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitIntDiv(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitPrecision(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitRound(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitTrunc(BinaryExpr e) {
+   Result VisitSum(SumExpr e) {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
@@ -1131,18 +1165,6 @@ class ExprVisitor {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(t));
   }
 
-  Result VisitPowConstExp(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitPow2(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitPowConstBase(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
   Result VisitCall(CallExpr e) {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
   }
@@ -1155,36 +1177,48 @@ class ExprVisitor {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(v));
   }
 
-  LResult VisitOr(BinaryLogicalExpr e) {
+  LResult VisitBinaryLogical(BinaryLogicalExpr e) {
     return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
+  LResult VisitOr(BinaryLogicalExpr e) {
+    return AMPL_DISPATCH(VisitBinaryLogical(e));
+  }
+
   LResult VisitAnd(BinaryLogicalExpr e) {
+    return AMPL_DISPATCH(VisitBinaryLogical(e));
+  }
+
+  LResult VisitIff(BinaryLogicalExpr e) {
+    return AMPL_DISPATCH(VisitBinaryLogical(e));
+  }
+
+  LResult VisitRelational(RelationalExpr e) {
     return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
   LResult VisitLess(RelationalExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return AMPL_DISPATCH(VisitRelational(e));
   }
 
   LResult VisitLessEqual(RelationalExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return AMPL_DISPATCH(VisitRelational(e));
   }
 
   LResult VisitEqual(RelationalExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return AMPL_DISPATCH(VisitRelational(e));
   }
 
   LResult VisitGreaterEqual(RelationalExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return AMPL_DISPATCH(VisitRelational(e));
   }
 
   LResult VisitGreater(RelationalExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return AMPL_DISPATCH(VisitRelational(e));
   }
 
   LResult VisitNotEqual(RelationalExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return AMPL_DISPATCH(VisitRelational(e));
   }
 
   LResult VisitNot(NotExpr e) {
@@ -1224,10 +1258,6 @@ class ExprVisitor {
   }
 
   LResult VisitImplication(ImplicationExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
-  }
-
-  LResult VisitIff(BinaryLogicalExpr e) {
     return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
@@ -1408,7 +1438,7 @@ class LinearTerm {
 
   friend class LinearExpr< LinearTerm<Grad> >;
 
-  explicit LinearTerm(Grad *g) : grad_(g) {}
+  explicit LinearTerm(Grad *g = 0) : grad_(g) {}
 
  public:
   // Returns the coefficient.
@@ -1433,6 +1463,8 @@ class LinearExpr {
   : first_term_(Term(first_term)) {}
 
  public:
+  LinearExpr() {}
+
   class iterator : public std::iterator<std::forward_iterator_tag, Term> {
    private:
     Term term_;
@@ -1463,7 +1495,7 @@ class LinearExpr {
   };
 
   iterator begin() { return iterator(first_term_); }
-  iterator end() { return iterator(Term(0)); }
+  iterator end() { return iterator(Term()); }
 };
 
 typedef LinearExpr<LinearObjTerm> LinearObjExpr;

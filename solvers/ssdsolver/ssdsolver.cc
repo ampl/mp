@@ -68,11 +68,11 @@ void SSDSolver::Solve(Problem &p) {
     RelationalExpr rel_expr = Cast<RelationalExpr>(logical_expr);
     if (!rel_expr || rel_expr.opcode() != NE ||
         Cast<NumericConstant>(rel_expr.rhs()).value() != 0) {
-      throw UnsupportedExprError::CreateFromExprString(logical_expr.opname());
+      throw UnsupportedExprError::CreateFromExprString(logical_expr.opstr());
     }
     CallExpr call = Cast<CallExpr>(rel_expr.lhs());
     if (!call)
-      throw UnsupportedExprError::CreateFromExprString(rel_expr.lhs().opname());
+      throw UnsupportedExprError::CreateFromExprString(rel_expr.lhs().opstr());
     Function f = call.function();
     if (f == ssd_uniform)
       ; // Do nothing.

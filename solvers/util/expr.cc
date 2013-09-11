@@ -28,7 +28,6 @@
 using ampl::Expr;
 using ampl::NumericConstant;
 using ampl::RelationalExpr;
-using ampl::UnaryExpr;
 
 namespace {
 // An operation type.
@@ -48,157 +47,27 @@ enum OpType {
   OPTYPE_COUNT    = 11   // The count expression
 };
 
-class ExprPrinter : public ampl::ExprVisitor<ExprPrinter, void, void> {
+enum Precedence {
+  UNKNOWN,
+
+  // Precedence of the relational operators <, <=, =, ==, >=, >, !=, <>.
+  RELATIONAL,
+
+  // Precedence of the logical not operator.
+  NOT
+};
+
+class ExprWriter : public ampl::ExprVisitor<ExprWriter, void, void> {
  private:
   fmt::Writer &writer_;
+  Precedence prec_;
 
- private:
-  void Print(RelationalExpr e, const char *op) {
-    Visit(e.lhs());
-    writer_ << ' ' << op << ' ';
-    Visit(e.rhs());
-  }
+  typedef ampl::ExprVisitor<ExprWriter, void, void> ExprVisitor;
 
- public:
-  explicit ExprPrinter(fmt::Writer &w) : writer_(w) {}
-
-  /*void VisitPlus(BinaryExpr e) {
-     // TODO
-  }
-
-  void VisitMinus(BinaryExpr e) {
-     // TODO
-  }
-
-  void VisitMult(BinaryExpr e) {
-     // TODO
-  }
-
-  void VisitDiv(BinaryExpr e) {
-     // TODO
-  }
-
-  void VisitRem(BinaryExpr e) {
-     // TODO
-  }
-
-  void VisitPow(BinaryExpr e) {
-     // TODO
-  }
-
-  void VisitNumericLess(BinaryExpr e) {
-     // TODO
-  }
-
-  void VisitMin(VarArgExpr e) {
-     // TODO
-  }
-
-  void VisitMax(VarArgExpr e) {
-     // TODO
-  }
-
-  void VisitFloor(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitCeil(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitAbs(UnaryExpr e) {
-     // TODO
-  }*/
-
-  void VisitUnaryMinus(UnaryExpr e) {
-    writer_ << '-';
-    Visit(e.arg());
-  }
-
-  void VisitIf(ampl::IfExpr e) {
-    writer_ << "if ";
-    Visit(e.condition());
-    writer_ << " then ";
-    Visit(e.true_expr());
-    ampl::NumericExpr false_expr = e.false_expr();
-    NumericConstant c = ampl::Cast<NumericConstant>(false_expr);
-    if (!c || c.value() != 0) {
-      writer_ << " else ";
-      Visit(false_expr);
-    }
-  }
-
-  /*void VisitTanh(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitTan(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitSqrt(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitSinh(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitSin(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitLog10(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitLog(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitExp(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitCosh(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitCos(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitAtanh(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitAtan2(BinaryExpr e) {
-     // TODO
-  }
-
-  void VisitAtan(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitAsinh(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitAsin(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitAcosh(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitAcos(UnaryExpr e) {
-     // TODO
-  }*/
-
-  void VisitSum(ampl::SumExpr e) {
-    writer_ << "sum(";
-    ampl::SumExpr::iterator i = e.begin(), end = e.end();
+  template <typename Expr>
+  void WriteFunc(Expr e) {
+    writer_ << e.opstr() << '(';
+    typename Expr::iterator i = e.begin(), end = e.end();
     if (i != end) {
       Visit(*i);
       for (++i; i != end; ++i) {
@@ -206,46 +75,68 @@ class ExprPrinter : public ampl::ExprVisitor<ExprPrinter, void, void> {
         Visit(*i);
       }
     }
-    writer_ << ")";
+    writer_ << ')';
   }
 
-  /*void VisitIntDiv(BinaryExpr e) {
-     // TODO
+  template <typename Expr>
+  void WriteBinary(Expr e, Precedence p = UNKNOWN) {
+    if (p < prec_)
+      writer_ << '(';
+    Visit(e.lhs());
+    writer_ << ' ' << e.opstr() << ' ';
+    Visit(e.rhs());
+    if (p < prec_)
+      writer_ << ')';
   }
 
-  void VisitPrecision(BinaryExpr e) {
-     // TODO
+ public:
+  explicit ExprWriter(fmt::Writer &w) : writer_(w), prec_(UNKNOWN) {}
+
+  void Visit(ampl::NumericExpr e, Precedence p = UNKNOWN) {
+    Precedence saved_prec = prec_;
+    prec_ = p;
+    ExprVisitor::Visit(e);
+    prec_ = saved_prec;
   }
 
-  void VisitRound(BinaryExpr e) {
-     // TODO
+  void Visit(ampl::LogicalExpr e, Precedence p = UNKNOWN) {
+    Precedence saved_prec = prec_;
+    prec_ = p;
+    ExprVisitor::Visit(e);
+    prec_ = saved_prec;
   }
 
-  void VisitTrunc(BinaryExpr e) {
-     // TODO
+  void VisitUnary(ampl::UnaryExpr e) {
+    writer_ << e.opstr() << '(';
+    Visit(e.arg());
+    writer_ << ')';
   }
 
-  void VisitCount(CountExpr e) {
-     // TODO
+  void VisitUnaryMinus(ampl::UnaryExpr e) {
+    writer_ << '-';
+    Visit(e.arg());
   }
 
-  void VisitNumberOf(NumberOfExpr e) {
+  void VisitPow2(ampl::UnaryExpr e) {
+    Visit(e.arg());
+    writer_ << " ^ 2";
+  }
+
+  void VisitBinary(ampl::BinaryExpr e) { WriteBinary(e); }
+  void VisitBinaryFunc(ampl::BinaryExpr e);
+
+  void VisitVarArg(ampl::VarArgExpr e) { WriteFunc(e); }
+
+  void VisitIf(ampl::IfExpr e);
+
+  void VisitSum(ampl::SumExpr e) { WriteFunc(e); }
+  void VisitCount(ampl::CountExpr e) { WriteFunc(e); }
+
+  /*void VisitNumberOf(NumberOfExpr e) {
      // TODO
   }
 
   void VisitPLTerm(PiecewiseLinearTerm t) {
-     // TODO
-  }
-
-  void VisitPowConstExp(BinaryExpr e) {
-     // TODO
-  }
-
-  void VisitPow2(UnaryExpr e) {
-     // TODO
-  }
-
-  void VisitPowConstBase(BinaryExpr e) {
      // TODO
   }
 
@@ -256,26 +147,15 @@ class ExprPrinter : public ampl::ExprVisitor<ExprPrinter, void, void> {
   void VisitNumericConstant(NumericConstant c) { writer_ << c.value(); }
   void VisitVariable(ampl::Variable v) { writer_ << 'x' << (v.index() + 1); }
 
-  /*void VisitOr(BinaryLogicalExpr e) {
-     // TODO
+  void VisitNot(ampl::NotExpr e) {
+     writer_ << '!';
+     Visit(e.arg(), NOT);
   }
 
-  void VisitAnd(BinaryLogicalExpr e) {
-     // TODO
-  }*/
+  void VisitBinaryLogical(ampl::BinaryLogicalExpr e) { WriteBinary(e); }
+  void VisitRelational(RelationalExpr e) { WriteBinary(e, RELATIONAL); }
 
-  void VisitLess(RelationalExpr e) { Print(e, "<"); }
-  void VisitLessEqual(RelationalExpr e) { Print(e, "<="); }
-  void VisitEqual(RelationalExpr e) { Print(e, "="); }
-  void VisitGreaterEqual(RelationalExpr e) { Print(e, ">="); }
-  void VisitGreater(RelationalExpr e) { Print(e, ">"); }
-  void VisitNotEqual(RelationalExpr e) { Print(e, "!="); }
-
-  /*void VisitNot(NotExpr e) {
-     // TODO
-  }
-
-  void VisitAtLeast(LogicalCountExpr e) {
+  /*void VisitAtLeast(LogicalCountExpr e) {
      // TODO
   }
 
@@ -311,18 +191,32 @@ class ExprPrinter : public ampl::ExprVisitor<ExprPrinter, void, void> {
      // TODO
   }
 
-  void VisitIff(BinaryLogicalExpr e) {
-     // TODO
-  }
-
   void VisitAllDiff(AllDiffExpr e) {
      // TODO
-  }
-
-  void VisitLogicalConstant(LogicalConstant c) {
-     // TODO
   }*/
+
+  void VisitLogicalConstant(ampl::LogicalConstant c) { writer_ << c.value(); }
 };
+
+void ExprWriter::VisitBinaryFunc(ampl::BinaryExpr e) {
+  writer_ << e.opstr() << '(';
+  Visit(e.lhs());
+  writer_ << ", ";
+  Visit(e.rhs());
+  writer_ << ')';
+}
+
+void ExprWriter::VisitIf(ampl::IfExpr e) {
+  writer_ << "if ";
+  Visit(e.condition());
+  writer_ << " then ";
+  Visit(e.true_expr());
+  ampl::NumericExpr false_expr = e.false_expr();
+  if (!IsZero(false_expr)) {
+    writer_ << " else ";
+    Visit(false_expr);
+  }
+}
 }
 
 #ifdef HAVE_UNORDERED_MAP
@@ -380,7 +274,7 @@ std::size_t std::hash<ampl::Expr>::operator()(Expr expr) const {
       break;
 
     default:
-      throw ampl::UnsupportedExprError::CreateFromExprString(expr.opname());
+      throw ampl::UnsupportedExprError::CreateFromExprString(expr.opstr());
   }
   return hash;
 }
@@ -476,8 +370,8 @@ const Expr::Kind Expr::KINDS[N_OPS] = {
     Expr::BINARY_LOGICAL,  // OP_IFF
     Expr::ALLDIFF,  // OPALLDIFF
     Expr::BINARY,  // OP1POW
-    Expr::UNARY,  // f_OP2POW
-    Expr::BINARY,  // f_OPCPOW
+    Expr::UNARY,  // OP2POW
+    Expr::BINARY,  // OPCPOW
     Expr::CALL,  // OPFUNCALL
     Expr::CONSTANT,  // OPNUM
     Expr::UNKNOWN,  // OPHOL - not supported yet
@@ -485,7 +379,7 @@ const Expr::Kind Expr::KINDS[N_OPS] = {
 };
 
 // Operator names indexed by opcodes which are defined in opcode.hd.
-const char *const Expr::OP_NAMES[N_OPS] = {
+const char *const Expr::OP_STRINGS[N_OPS] = {
   "+",
   "-",
   "*",
@@ -559,11 +453,11 @@ const char *const Expr::OP_NAMES[N_OPS] = {
   "forall",
   "exists",
   "implies else",
-  "iff",
+  "<==>",
   "alldiff",
-  "1pow",
+  "^",
   "^2",
-  "cpow",
+  "^",
   "function call",
   "number",
   "string",
@@ -633,7 +527,7 @@ bool Equal(Expr expr1, Expr expr2) {
       return e1->a == e2->a;
 
     default:
-      throw UnsupportedExprError::CreateFromExprString(expr1.opname());
+      throw UnsupportedExprError::CreateFromExprString(expr1.opstr());
   }
 }
 
@@ -666,29 +560,28 @@ bool EqualNumberOfArgs::operator()(
 
 template <typename LinearExpr>
 void WriteExpr(fmt::Writer &w, LinearExpr linear, NumericExpr nonlinear) {
-  bool has_terms = false;
+  bool have_terms = false;
   typedef typename LinearExpr::iterator Iterator;
   for (Iterator i = linear.begin(), e = linear.end(); i != e; ++i) {
     double coef = i->coef();
     if (coef != 0) {
-      if (has_terms)
+      if (have_terms)
         w << " + ";
       else
-        has_terms = true;
+        have_terms = true;
       if (coef != 1)
         w << coef << " * ";
       w << "x" << (i->var_index() + 1);
     }
   }
-  if (!has_terms)
-    w << "0";
-  if (!nonlinear)
+  if (!nonlinear || IsZero(nonlinear)) {
+    if (!have_terms)
+      w << "0";
     return;
-  NumericConstant c = Cast<NumericConstant>(nonlinear);
-  if (c && c.value() == 0)
-    return;
-  w << " + ";
-  ExprPrinter(w).Visit(nonlinear);
+  }
+  if (have_terms)
+    w << " + ";
+  ExprWriter(w).Visit(nonlinear);
 }
 
 template
