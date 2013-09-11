@@ -27,7 +27,6 @@
 
 using ampl::Expr;
 using ampl::NumericConstant;
-using ampl::RelationalExpr;
 
 namespace {
 // An operation type.
@@ -64,9 +63,10 @@ class ExprWriter : public ampl::ExprVisitor<ExprWriter, void, void> {
 
   typedef ampl::ExprVisitor<ExprWriter, void, void> ExprVisitor;
 
+  // Writes an argument list surrounded by parentheses.
   template <typename Expr>
-  void WriteFunc(Expr e) {
-    writer_ << e.opstr() << '(';
+  void WriteArgs(Expr e) {
+    writer_ << '(';
     typename Expr::iterator i = e.begin(), end = e.end();
     if (i != end) {
       Visit(*i);
@@ -76,6 +76,13 @@ class ExprWriter : public ampl::ExprVisitor<ExprWriter, void, void> {
       }
     }
     writer_ << ')';
+  }
+
+  // Writes a function or an expression that has a function syntax.
+  template <typename Expr>
+  void WriteFunc(Expr e) {
+    writer_ << e.opstr();
+    WriteArgs(e);
   }
 
   template <typename Expr>
@@ -153,41 +160,23 @@ class ExprWriter : public ampl::ExprVisitor<ExprWriter, void, void> {
   }
 
   void VisitBinaryLogical(ampl::BinaryLogicalExpr e) { WriteBinary(e); }
-  void VisitRelational(RelationalExpr e) { WriteBinary(e, RELATIONAL); }
+  void VisitRelational(ampl::RelationalExpr e) { WriteBinary(e, RELATIONAL); }
 
-  /*void VisitAtLeast(LogicalCountExpr e) {
-     // TODO
+  void VisitLogicalCount(ampl::LogicalCountExpr e);
+
+  void VisitIteratedLogical(ampl::IteratedLogicalExpr e) {
+    // There is no way to produce an AMPL forall/exists expression because
+    // the indexing set is not available any more. So we write a count
+    // expression instead with a comment about the original expression.
+    writer_ << "/* " << e.opstr() << " */ count ";
+    WriteArgs(e);
+    if (e.opcode() == ANDLIST)
+      writer_ << " = " << e.num_args();
+    else
+      writer_ << " > 0";
   }
 
-  void VisitAtMost(LogicalCountExpr e) {
-     // TODO
-  }
-
-  void VisitExactly(LogicalCountExpr e) {
-     // TODO
-  }
-
-  void VisitNotAtLeast(LogicalCountExpr e) {
-     // TODO
-  }
-
-  void VisitNotAtMost(LogicalCountExpr e) {
-     // TODO
-  }
-
-  void VisitNotExactly(LogicalCountExpr e) {
-     // TODO
-  }
-
-  void VisitForAll(IteratedLogicalExpr e) {
-     // TODO
-  }
-
-  void VisitExists(IteratedLogicalExpr e) {
-     // TODO
-  }
-
-  void VisitImplication(ImplicationExpr e) {
+  /*void VisitImplication(ImplicationExpr e) {
      // TODO
   }
 
@@ -216,6 +205,13 @@ void ExprWriter::VisitIf(ampl::IfExpr e) {
     writer_ << " else ";
     Visit(false_expr);
   }
+}
+
+void ExprWriter::VisitLogicalCount(ampl::LogicalCountExpr e) {
+  writer_ << e.opstr() << ' ';
+  Visit(e.value());
+  writer_ << ' ';
+  WriteArgs(e.count());
 }
 }
 
@@ -447,9 +443,9 @@ const char *const Expr::OP_STRINGS[N_OPS] = {
   "pl term",
   "string if-then-else",
   "exactly",
-  "not atleast",
-  "not atmost",
-  "not exactly",
+  "!atleast",
+  "!atmost",
+  "!exactly",
   "forall",
   "exists",
   "implies else",

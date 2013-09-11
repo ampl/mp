@@ -316,18 +316,18 @@ const OpInfo OP_INFO[] = {
   {OPATMOST,  "atmost",  Expr::LOGICAL_COUNT},
   {OPPLTERM, "pl term", Expr::PLTERM},
   {OPIFSYM,  "string if-then-else", Expr::UNKNOWN},
-  {OPEXACTLY,    "exactly",     Expr::LOGICAL_COUNT},
-  {OPNOTATLEAST, "not atleast", Expr::LOGICAL_COUNT},
-  {OPNOTATMOST,  "not atmost",  Expr::LOGICAL_COUNT},
-  {OPNOTEXACTLY, "not exactly", Expr::LOGICAL_COUNT},
+  {OPEXACTLY,    "exactly",  Expr::LOGICAL_COUNT},
+  {OPNOTATLEAST, "!atleast", Expr::LOGICAL_COUNT},
+  {OPNOTATMOST,  "!atmost",  Expr::LOGICAL_COUNT},
+  {OPNOTEXACTLY, "!exactly", Expr::LOGICAL_COUNT},
   {ANDLIST, "forall", Expr::ITERATED_LOGICAL},
   {ORLIST,  "exists", Expr::ITERATED_LOGICAL},
   {OPIMPELSE, "implies else", Expr::IMPLICATION},
   {OP_IFF, "<==>", Expr::BINARY_LOGICAL},
   {OPALLDIFF, "alldiff", Expr::ALLDIFF},
-  {OP1POW, "^", Expr::BINARY},
-  {OP2POW, "^2",   Expr::UNARY},
-  {OPCPOW, "^", Expr::BINARY},
+  {OP1POW, "^",  Expr::BINARY},
+  {OP2POW, "^2", Expr::UNARY},
+  {OPCPOW, "^",  Expr::BINARY},
   {OPFUNCALL, "function call", Expr::CALL},
   {OPNUM, "number", Expr::CONSTANT},
   {OPHOL, "string", Expr::UNKNOWN},
@@ -1112,6 +1112,12 @@ TEST_F(ExprTest, WriteCountExpr) {
           AddBool(true), AddBool(false)));
 }
 
+TEST_F(ExprTest, WriteNotExpr) {
+  auto n0 = AddNum(0), n1 = AddNum(1);
+  CHECK_WRITE("if !(x1 = 0) then 1",
+      AddIf(AddNot(AddRelational(EQ, AddVar(0), n0)), n1, n0));
+}
+
 TEST_F(ExprTest, WriteBinaryLogicalExpr) {
   auto e1 = AddRelational(GT, AddVar(0), AddNum(0));
   auto e2 = AddRelational(LT, AddVar(0), AddNum(10));
@@ -1121,12 +1127,6 @@ TEST_F(ExprTest, WriteBinaryLogicalExpr) {
       AddIf(AddBinaryLogical(OPAND, e1, e2), AddNum(1), AddNum(0)));
   CHECK_WRITE("if x1 > 0 <==> x1 < 10 then 1",
       AddIf(AddBinaryLogical(OP_IFF, e1, e2), AddNum(1), AddNum(0)));
-}
-
-TEST_F(ExprTest, WriteNotExpr) {
-  auto n0 = AddNum(0), n1 = AddNum(1);
-  CHECK_WRITE("if !(x1 = 0) then 1",
-      AddIf(AddNot(AddRelational(EQ, AddVar(0), n0)), n1, n0));
 }
 
 TEST_F(ExprTest, WriteRelationalExpr) {
@@ -1145,7 +1145,35 @@ TEST_F(ExprTest, WriteRelationalExpr) {
       AddIf(AddRelational(NE, AddVar(0), n0), n1, n0));
 }
 
-// TODO
+TEST_F(ExprTest, WriteLogicalCountExpr) {
+  auto n0 = AddNum(0), n1 = AddNum(1), value = AddNum(42);
+  auto count = AddCount(
+      AddRelational(EQ, AddVar(0), AddNum(0)), AddBool(true), AddBool(false));
+  CHECK_WRITE("if atleast 42 (x1 = 0, 1, 0) then 1",
+      AddIf(AddLogicalCount(OPATLEAST, value, count), n1, n0));
+  CHECK_WRITE("if atmost 42 (x1 = 0, 1, 0) then 1",
+      AddIf(AddLogicalCount(OPATMOST, value, count), n1, n0));
+  CHECK_WRITE("if exactly 42 (x1 = 0, 1, 0) then 1",
+      AddIf(AddLogicalCount(OPEXACTLY, value, count), n1, n0));
+  CHECK_WRITE("if !atleast 42 (x1 = 0, 1, 0) then 1",
+      AddIf(AddLogicalCount(OPNOTATLEAST, value, count), n1, n0));
+  CHECK_WRITE("if !atmost 42 (x1 = 0, 1, 0) then 1",
+      AddIf(AddLogicalCount(OPNOTATMOST, value, count), n1, n0));
+  CHECK_WRITE("if !exactly 42 (x1 = 0, 1, 0) then 1",
+      AddIf(AddLogicalCount(OPNOTEXACTLY, value, count), n1, n0));
+}
+
+TEST_F(ExprTest, WriteIteratedLogicalExpr) {
+  LogicalExpr e1 = AddRelational(EQ, AddVar(0), AddNum(0));
+  LogicalExpr e2 = AddBool(true), e3 = AddBool(false);
+  CHECK_WRITE("if /* forall */ count (x1 = 0, 1, 0) = 3 then 1",
+      AddIf(AddIteratedLogical(ANDLIST, e1, e2, e3), AddNum(1), AddNum(0)));
+  CHECK_WRITE("if /* exists */ count (x1 = 0, 1, 0) > 0 then 1",
+      AddIf(AddIteratedLogical(ORLIST, e1, e2, e3), AddNum(1), AddNum(0)));
+}
+
+// TODO: test NumberOfExpr, PiecewiseLinearTerm and CallExpr
+// TODO: test ImplicationExpr and AllDiffExpr
 
 #ifdef HAVE_UNORDERED_MAP
 

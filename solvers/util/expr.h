@@ -948,7 +948,7 @@ class InvalidLogicalExprError : public Error {
 // a corresponding method of ExprVisitor will be called.
 //
 // Example:
-//  class MyExprVisitor : public ExprVisitor<MyExprVisitor, double> {
+//  class MyExprVisitor : public ExprVisitor<MyExprVisitor, double, void> {
 //   public:
 //    double VisitPlus(BinaryExpr e) { return Visit(e.lhs()) + Visit(e.rhs()); }
 //    double VisitConstant(NumericConstant n) { return n.value(); }
@@ -1177,6 +1177,10 @@ class ExprVisitor {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(v));
   }
 
+  LResult VisitNot(NotExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
   LResult VisitBinaryLogical(BinaryLogicalExpr e) {
     return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
@@ -1221,40 +1225,44 @@ class ExprVisitor {
     return AMPL_DISPATCH(VisitRelational(e));
   }
 
-  LResult VisitNot(NotExpr e) {
+  LResult VisitLogicalCount(LogicalCountExpr e) {
     return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
   LResult VisitAtLeast(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return AMPL_DISPATCH(VisitLogicalCount(e));
   }
 
   LResult VisitAtMost(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return AMPL_DISPATCH(VisitLogicalCount(e));
   }
 
   LResult VisitExactly(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return AMPL_DISPATCH(VisitLogicalCount(e));
   }
 
   LResult VisitNotAtLeast(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return AMPL_DISPATCH(VisitLogicalCount(e));
   }
 
   LResult VisitNotAtMost(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return AMPL_DISPATCH(VisitLogicalCount(e));
   }
 
   LResult VisitNotExactly(LogicalCountExpr e) {
+    return AMPL_DISPATCH(VisitLogicalCount(e));
+  }
+
+  LResult VisitIteratedLogical(IteratedLogicalExpr e) {
     return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
   LResult VisitForAll(IteratedLogicalExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return AMPL_DISPATCH(VisitIteratedLogical(e));
   }
 
   LResult VisitExists(IteratedLogicalExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return AMPL_DISPATCH(VisitIteratedLogical(e));
   }
 
   LResult VisitImplication(ImplicationExpr e) {
