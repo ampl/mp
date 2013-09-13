@@ -11,7 +11,7 @@ include_directories(lib)
 add_library(amplgecode gecode.cc)
 target_link_libraries(amplgecode util gecodeminimodel)
 add_dependencies(amplgecode arith_h)
-target_include_directories(amplgecode PUBLIC ${GECODE_SOURCE_DIR})
+include_directories(${GECODE_SOURCE_DIR})
 
 add_executable(gecode main.cc)
 target_link_libraries(gecode amplgecode)
