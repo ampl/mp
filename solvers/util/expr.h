@@ -550,11 +550,11 @@ class IfExpr : public NumericExpr {
 
 AMPL_SPECIALIZE_IS(IfExpr, OPIFnl)
 
-// A piecewise-linear term.
+// A piecewise-linear expression.
 // Example: <<0; -1, 1>> x, where x is a variable.
-class PiecewiseLinearTerm : public NumericExpr {
+class PiecewiseLinearExpr : public NumericExpr {
  public:
-  PiecewiseLinearTerm() {}
+  PiecewiseLinearExpr() {}
 
   // Returns the number of slopes in this term.
   int num_slopes() const {
@@ -583,7 +583,7 @@ class PiecewiseLinearTerm : public NumericExpr {
   }
 };
 
-AMPL_SPECIALIZE_IS(PiecewiseLinearTerm, OPPLTERM)
+AMPL_SPECIALIZE_IS(PiecewiseLinearExpr, OPPLTERM)
 
 // A numeric constant.
 // Examples: 42, -1.23e-4
@@ -1161,8 +1161,8 @@ class ExprVisitor {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
-  Result VisitPLTerm(PiecewiseLinearTerm t) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(t));
+  Result VisitPiecewiseLinear(PiecewiseLinearExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
   Result VisitCall(CallExpr e) {
@@ -1360,7 +1360,8 @@ Result ExprVisitor<Impl, Result, LResult>::Visit(NumericExpr e) {
   case OPNUMBEROF:
     return AMPL_DISPATCH(VisitNumberOf(Expr::Create<NumberOfExpr>(e)));
   case OPPLTERM:
-    return AMPL_DISPATCH(VisitPLTerm(Expr::Create<PiecewiseLinearTerm>(e)));
+    return AMPL_DISPATCH(VisitPiecewiseLinear(
+        Expr::Create<PiecewiseLinearExpr>(e)));
   case OP1POW:
     return AMPL_DISPATCH(VisitPowConstExp(Expr::Create<BinaryExpr>(e)));
   case OP2POW:

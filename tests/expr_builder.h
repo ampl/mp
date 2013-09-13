@@ -125,7 +125,7 @@ class ExprBuilder {
   }
 
   // Adds a new piecewise-linear term.
-  PiecewiseLinearTerm AddPLTerm(int size, const double *args, int var_index);
+  PiecewiseLinearExpr AddPL(int size, const double *args, int var_index);
 
   // Adds a new numeric constant.
   NumericConstant AddNum(double n) {

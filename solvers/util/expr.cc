@@ -131,26 +131,13 @@ class ExprWriter : public ampl::ExprVisitor<ExprWriter, void, void> {
 
   void VisitBinary(ampl::BinaryExpr e) { WriteBinary(e); }
   void VisitBinaryFunc(ampl::BinaryExpr e);
-
   void VisitVarArg(ampl::VarArgExpr e) { WriteFunc(e); }
-
   void VisitIf(ampl::IfExpr e);
-
   void VisitSum(ampl::SumExpr e) { WriteFunc(e); }
   void VisitCount(ampl::CountExpr e) { WriteFunc(e); }
-
-  /*void VisitNumberOf(NumberOfExpr e) {
-     // TODO
-  }
-
-  void VisitPLTerm(PiecewiseLinearTerm t) {
-     // TODO
-  }
-
-  void VisitCall(CallExpr e) {
-     // TODO
-  }*/
-
+  void VisitNumberOf(ampl::NumberOfExpr e);
+  void VisitPiecewiseLinear(ampl::PiecewiseLinearExpr e);
+  void VisitCall(ampl::CallExpr e);
   void VisitNumericConstant(NumericConstant c) { writer_ << c.value(); }
   void VisitVariable(ampl::Variable v) { writer_ << 'x' << (v.index() + 1); }
 
@@ -161,29 +148,10 @@ class ExprWriter : public ampl::ExprVisitor<ExprWriter, void, void> {
 
   void VisitBinaryLogical(ampl::BinaryLogicalExpr e) { WriteBinary(e); }
   void VisitRelational(ampl::RelationalExpr e) { WriteBinary(e, RELATIONAL); }
-
   void VisitLogicalCount(ampl::LogicalCountExpr e);
-
-  void VisitIteratedLogical(ampl::IteratedLogicalExpr e) {
-    // There is no way to produce an AMPL forall/exists expression because
-    // the indexing set is not available any more. So we write a count
-    // expression instead with a comment about the original expression.
-    writer_ << "/* " << e.opstr() << " */ count ";
-    WriteArgs(e);
-    if (e.opcode() == ANDLIST)
-      writer_ << " = " << e.num_args();
-    else
-      writer_ << " > 0";
-  }
-
-  /*void VisitImplication(ImplicationExpr e) {
-     // TODO
-  }
-
-  void VisitAllDiff(AllDiffExpr e) {
-     // TODO
-  }*/
-
+  void VisitIteratedLogical(ampl::IteratedLogicalExpr e);
+  void VisitImplication(ampl::ImplicationExpr e);
+  void VisitAllDiff(ampl::AllDiffExpr e) { WriteFunc(e); }
   void VisitLogicalConstant(ampl::LogicalConstant c) { writer_ << c.value(); }
 };
 
@@ -207,11 +175,69 @@ void ExprWriter::VisitIf(ampl::IfExpr e) {
   }
 }
 
+void ExprWriter::VisitNumberOf(ampl::NumberOfExpr e) {
+  writer_ << "numberof ";
+  Visit(e.value());
+  writer_ << " in ";
+  WriteArgs(e);
+}
+
+void ExprWriter::VisitPiecewiseLinear(ampl::PiecewiseLinearExpr e) {
+  writer_ << "<<" << e.breakpoint(0);
+  for (int i = 1, n = e.num_breakpoints(); i < n; ++i)
+    writer_ << ", " << e.breakpoint(i);
+  writer_ << "; " << e.slope(0);
+  for (int i = 1, n = e.num_slopes(); i < n; ++i)
+    writer_ << ", " << e.slope(i);
+  writer_ << ">> " << "x" << (e.var_index() + 1);
+}
+
+void ExprWriter::VisitCall(ampl::CallExpr e) {
+  writer_ << e.function().name() << '(';
+  /*int num_args = e.function().num_args();
+  if (num_args > 0) {
+    // TODO: arg expressions
+    fmt::internal::Array<Expr> args(num_args);
+    for (ampl::CallExpr::arg_expr_iterator
+        i = e.begin(), end = e.end(); i != end; ++i) {
+      args.push_back(*i);
+    }
+    writer_ << e.arg_constant(0);
+    for (int i = 1; i < num_args; ++i)
+      writer_ << e.arg_constant(0);
+  }*/
+  writer_ << ')';
+}
+
 void ExprWriter::VisitLogicalCount(ampl::LogicalCountExpr e) {
   writer_ << e.opstr() << ' ';
   Visit(e.value());
   writer_ << ' ';
   WriteArgs(e.count());
+}
+
+void ExprWriter::VisitIteratedLogical(ampl::IteratedLogicalExpr e) {
+  // There is no way to produce AMPL forall/exists expression because
+  // the indexing set is not available any more. So we write a count
+  // expression instead with a comment about the original expression.
+  writer_ << "/* " << e.opstr() << " */ count ";
+  WriteArgs(e);
+  if (e.opcode() == ANDLIST)
+    writer_ << " = " << e.num_args();
+  else
+    writer_ << " > 0";
+}
+
+void ExprWriter::VisitImplication(ampl::ImplicationExpr e) {
+  Visit(e.condition());
+  writer_ << ' ' << e.opstr() << ' ';
+  Visit(e.true_expr());
+  ampl::LogicalExpr false_expr = e.false_expr();
+  ampl::LogicalConstant c = ampl::Cast<ampl::LogicalConstant>(false_expr);
+  if (!c || c.value() != 0) {
+    writer_ << " else ";
+    Visit(false_expr);
+  }
 }
 }
 
@@ -411,7 +437,7 @@ const char *const Expr::OP_STRINGS[N_OPS] = {
   "unknown",
   "unknown",
   "!",
-  "if-then-else",
+  "if",
   "unknown",
   "tanh",
   "tan",
@@ -448,7 +474,7 @@ const char *const Expr::OP_STRINGS[N_OPS] = {
   "!exactly",
   "forall",
   "exists",
-  "implies else",
+  "==>",
   "<==>",
   "alldiff",
   "^",

@@ -36,7 +36,7 @@ using ampl::VarArgExpr;
 using ampl::SumExpr;
 using ampl::CountExpr;
 using ampl::IfExpr;
-using ampl::PiecewiseLinearTerm;
+using ampl::PiecewiseLinearExpr;
 using ampl::NumericConstant;
 using ampl::Variable;
 using ampl::NumberOfExpr;
@@ -285,7 +285,7 @@ const OpInfo OP_INFO[] = {
   {32, "unknown"},
   {33, "unknown"},
   {OPNOT, "!", Expr::NOT},
-  {OPIFnl, "if-then-else", Expr::IF},
+  {OPIFnl, "if", Expr::IF},
   {36, "unknown"},
   {OP_tanh,  "tanh",  Expr::UNARY},
   {OP_tan,   "tan",   Expr::UNARY},
@@ -322,7 +322,7 @@ const OpInfo OP_INFO[] = {
   {OPNOTEXACTLY, "!exactly", Expr::LOGICAL_COUNT},
   {ANDLIST, "forall", Expr::ITERATED_LOGICAL},
   {ORLIST,  "exists", Expr::ITERATED_LOGICAL},
-  {OPIMPELSE, "implies else", Expr::IMPLICATION},
+  {OPIMPELSE, "==>", Expr::IMPLICATION},
   {OP_IFF, "<==>", Expr::BINARY_LOGICAL},
   {OPALLDIFF, "alldiff", Expr::ALLDIFF},
   {OP1POW, "^",  Expr::BINARY},
@@ -464,12 +464,12 @@ TEST_F(ExprTest, EqualVarArg) {
 
 TEST_F(ExprTest, EqualPLTerm) {
   double args[] = {-1, 5, 0, 10, 1};
-  EXPECT_TRUE(Equal(AddPLTerm(5, args, 0), AddPLTerm(5, args, 0)));
-  EXPECT_FALSE(Equal(AddPLTerm(5, args, 0), AddPLTerm(3, args, 0)));
-  EXPECT_FALSE(Equal(AddPLTerm(5, args, 0), AddPLTerm(5, args, 1)));
+  EXPECT_TRUE(Equal(AddPL(5, args, 0), AddPL(5, args, 0)));
+  EXPECT_FALSE(Equal(AddPL(5, args, 0), AddPL(3, args, 0)));
+  EXPECT_FALSE(Equal(AddPL(5, args, 0), AddPL(5, args, 1)));
   double args2[] = {-1, 5, 0, 11, 1};
-  EXPECT_FALSE(Equal(AddPLTerm(5, args, 0), AddPLTerm(5, args2, 0)));
-  EXPECT_FALSE(Equal(AddPLTerm(5, args, 0), AddNum(42)));
+  EXPECT_FALSE(Equal(AddPL(5, args, 0), AddPL(5, args2, 0)));
+  EXPECT_FALSE(Equal(AddPL(5, args, 0), AddNum(42)));
 }
 
 TEST_F(ExprTest, EqualIf) {
@@ -623,11 +623,11 @@ TEST_F(ExprTest, IfExpr) {
   EXPECT_EQ(false_expr, e.false_expr());
 }
 
-TEST_F(ExprTest, PiecewiseLinearTerm) {
+TEST_F(ExprTest, PiecewiseLinearExpr) {
   EXPECT_EQ(1,
-      CheckExpr<PiecewiseLinearTerm>(Expr::PLTERM, Expr::PLTERM, OPPLUS));
+      CheckExpr<PiecewiseLinearExpr>(Expr::PLTERM, Expr::PLTERM, OPPLUS));
   double args[] = {-1, 5, 0, 10, 1};
-  PiecewiseLinearTerm e(AddPLTerm(5, args, 42));
+  PiecewiseLinearExpr e(AddPL(5, args, 42));
   EXPECT_EQ(2, e.num_breakpoints());
   EXPECT_EQ(5, e.breakpoint(0));
   EXPECT_EQ(10, e.breakpoint(1));
@@ -862,7 +862,7 @@ struct FullTestVisitor : ExprVisitor<FullTestVisitor, TestResult, TestLResult> {
   TestResult VisitCount(CountExpr e) { return Handle(e); }
   TestResult VisitNumberOf(NumberOfExpr e) { return Handle(e); }
   TestResult VisitCall(CallExpr e) { return Handle(e); }
-  TestResult VisitPLTerm(PiecewiseLinearTerm e) { return Handle(e); }
+  TestResult VisitPiecewiseLinear(PiecewiseLinearExpr e) { return Handle(e); }
   TestResult VisitPowConstExp(BinaryExpr e) { return Handle(e); }
   TestResult VisitPow2(UnaryExpr e) { return Handle(e); }
   TestResult VisitPowConstBase(BinaryExpr e) { return Handle(e); }
@@ -1112,6 +1112,20 @@ TEST_F(ExprTest, WriteCountExpr) {
           AddBool(true), AddBool(false)));
 }
 
+TEST_F(ExprTest, WriteNumberOfExpr) {
+  CHECK_WRITE("numberof 42 in (43, 44)",
+      AddNumberOf(AddNum(42), AddNum(43), AddNum(44)));
+}
+
+TEST_F(ExprTest, WritePiecewiseLinearExpr) {
+  double args[] = {-1, 5, 0, 10, 1};
+  CHECK_WRITE("<<5, 10; -1, 0, 1>> x43", AddPL(5, args, 42));
+}
+
+TEST_F(ExprTest, WriteCallExpr) {
+  // TODO
+}
+
 TEST_F(ExprTest, WriteNotExpr) {
   auto n0 = AddNum(0), n1 = AddNum(1);
   CHECK_WRITE("if !(x1 = 0) then 1",
@@ -1172,8 +1186,20 @@ TEST_F(ExprTest, WriteIteratedLogicalExpr) {
       AddIf(AddIteratedLogical(ORLIST, e1, e2, e3), AddNum(1), AddNum(0)));
 }
 
-// TODO: test NumberOfExpr, PiecewiseLinearTerm and CallExpr
-// TODO: test ImplicationExpr and AllDiffExpr
+TEST_F(ExprTest, WriteImplicationExpr) {
+  LogicalExpr e1 = AddRelational(EQ, AddVar(0), AddNum(0));
+  LogicalExpr e2 = AddBool(true), e3 = AddBool(false);
+  CHECK_WRITE("if x1 = 0 ==> 1 then 1",
+      AddIf(AddImplication(e1, e2, e3), AddNum(1), AddNum(0)));
+  CHECK_WRITE("if x1 = 0 ==> 0 else 1 then 1",
+      AddIf(AddImplication(e1, e3, e2), AddNum(1), AddNum(0)));
+}
+
+TEST_F(ExprTest, WriteAllDiffExpr) {
+  CHECK_WRITE("if alldiff(42, 43, 44) then 1",
+      AddIf(AddAllDiff(AddNum(42), AddNum(43), AddNum(44)),
+          AddNum(1), AddNum(0)));
+}
 
 #ifdef HAVE_UNORDERED_MAP
 
@@ -1218,14 +1244,14 @@ TEST_F(ExprTest, HashVarArg) {
       AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42))));
 }
 
-TEST_F(ExprTest, HashPLTerm) {
+TEST_F(ExprTest, HashPiecewiseLinear) {
   size_t hash = 0;
   HashCombine(hash, OPPLTERM);
   double args[] = {-1, 5, 0, 10, 1};
   for (size_t i = 0; i < sizeof(args) / sizeof(*args); ++i)
     HashCombine(hash, args[i]);
   HashCombine<Expr>(hash, AddVar(11));
-  EXPECT_EQ(hash, std::hash<Expr>()(AddPLTerm(5, args, 11)));
+  EXPECT_EQ(hash, std::hash<Expr>()(AddPL(5, args, 11)));
 }
 
 TEST_F(ExprTest, HashIf) {
