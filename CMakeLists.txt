@@ -1,6 +1,6 @@
 # CMake build script for the AMPL solver library.
 
-cmake_minimum_required(VERSION 2.8.10)
+cmake_minimum_required(VERSION 2.8.7)
 
 # Set the default CMAKE_BUILD_TYPE to Release.
 # This should be done before the project command since the latter can set
