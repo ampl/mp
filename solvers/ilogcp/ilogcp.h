@@ -318,7 +318,7 @@ class NLToConcertConverter : public Visitor {
     return IloPower(Cast<NumericConstant>(e.lhs()).value(), Visit(e.rhs()));
   }
 
-  IloExpr VisitPLTerm(PiecewiseLinearTerm t);
+  IloExpr VisitPiecewiseLinear(PiecewiseLinearExpr e);
 
   IloExpr VisitNumericConstant(NumericConstant n) {
     return IloExpr(env_, n.value());

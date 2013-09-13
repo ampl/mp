@@ -211,15 +211,15 @@ IloExpr NLToConcertConverter::VisitNumberOf(NumberOfExpr e) {
   return sum;
 }
 
-IloExpr NLToConcertConverter::VisitPLTerm(PiecewiseLinearTerm t) {
+IloExpr NLToConcertConverter::VisitPiecewiseLinear(PiecewiseLinearExpr e) {
   IloNumArray slopes(env_), breakpoints(env_);
-  int num_breakpoints = t.num_breakpoints();
+  int num_breakpoints = e.num_breakpoints();
   for (int i = 0; i < num_breakpoints; ++i) {
-    slopes.add(t.slope(i));
-    breakpoints.add(t.breakpoint(i));
+    slopes.add(e.slope(i));
+    breakpoints.add(e.breakpoint(i));
   }
-  slopes.add(t.slope(num_breakpoints));
-  return IloPiecewiseLinear(vars_[t.var_index()], breakpoints, slopes, 0, 0);
+  slopes.add(e.slope(num_breakpoints));
+  return IloPiecewiseLinear(vars_[e.var_index()], breakpoints, slopes, 0, 0);
 }
 
 IloConstraint NLToConcertConverter::VisitExists(IteratedLogicalExpr e) {

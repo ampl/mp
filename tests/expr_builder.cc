@@ -92,10 +92,10 @@ VarArgExpr ExprBuilder::AddVarArg(int opcode,
   return AddExpr<VarArgExpr>(result);
 }
 
-PiecewiseLinearTerm ExprBuilder::AddPLTerm(
+PiecewiseLinearExpr ExprBuilder::AddPL(
     int size, const double *args, int var_index) {
   expr e = {reinterpret_cast<efunc*>(OPPLTERM), 0, 0, {0}, {0}, 0};
-  PiecewiseLinearTerm pl(AddExpr<PiecewiseLinearTerm>(new expr(e)));
+  PiecewiseLinearExpr pl(AddExpr<PiecewiseLinearExpr>(new expr(e)));
   pl.expr_->L.p = static_cast<plterm*>(
       std::calloc(1, sizeof(plterm) + sizeof(double) * (size - 1)));
   pl.expr_->L.p->n = (size + 1) / 2;

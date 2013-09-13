@@ -408,7 +408,7 @@ TEST_P(SolverTest, NumberOf) {
   EXPECT_EQ(2, Eval(AddNumberOf(n, x, y), 42, 42));
 }
 
-TEST_P(SolverTest, PLTerm) {
+TEST_P(SolverTest, PiecewiseLinear) {
   // Test on the following piecewise-linear function:
   //
   //     y^
@@ -423,7 +423,7 @@ TEST_P(SolverTest, PLTerm) {
   // Breakpoints are at x = 3 and x = 6. Slopes are -1, 0 and 1.
   //
   double args[] = {-1, 3, 0, 6, 1};
-  NumericExpr e = AddPLTerm(5, args, 1);
+  NumericExpr e = AddPL(5, args, 1);
   if (!HasFeature(feature::PLTERM)) {
     EXPECT_THROW(Eval(e, 42);, UnsupportedExprError);
     return;
