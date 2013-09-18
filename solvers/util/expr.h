@@ -226,13 +226,18 @@ class Expr {
   };
 
  private:
-  static const char *const OP_STRINGS[N_OPS];
-  static const Kind KINDS[N_OPS];
+  // Expression information.
+  struct Info {
+    Kind kind;
+    int precedence;
+    const char *str;
+  };
+  static const Info INFO[N_OPS];
 
   // Returns the kind of this expression.
   Kind kind() const {
     assert(opcode() >= 0 && opcode() < N_OPS);
-    return KINDS[opcode()];
+    return INFO[opcode()].kind;
   }
 
   void True() const {}
@@ -336,7 +341,12 @@ class Expr {
   // same operator "^".
   const char *opstr() const {
     assert(opcode() >= 0 && opcode() < N_OPS);
-    return OP_STRINGS[opcode()];
+    return INFO[opcode()].str;
+  }
+
+  int precedence() const {
+    assert(opcode() >= 0 && opcode() < N_OPS);
+    return INFO[opcode()].precedence;
   }
 
   bool operator==(Expr other) const { return expr_ == other.expr_; }

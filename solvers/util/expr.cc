@@ -27,6 +27,7 @@
 
 using ampl::Expr;
 using ampl::NumericConstant;
+using ampl::NumericExpr;
 
 namespace {
 // An operation type.
@@ -48,35 +49,34 @@ enum OpType {
 
 enum Precedence {
   UNKNOWN,
-
-  // Precedence of the relational operators <, <=, =, ==, >=, >, !=, <>.
-  RELATIONAL,
-
-  // Precedence of the logical not operator.
-  NOT
+  CALL,              // a function call including functional forms of
+                     // min and max
+  CONDITIONAL,       // if-then-else
+  NOT,               // not
+  RELATIONAL,        // < <= = == >= > != <>
+  PIECEWISE_LINEAR,  // a piecewise-linear expression
+  ADDITIVE,          // + - less
+  ITERATIVE,       // sum prod min max
+  MULTIPLICATIVE,  // * / div mod
+  EXPONENTIATION,    // ^
+  UNARY,             // + - (unary)
+  PRIMARY            // variable or constant
 };
 
+// An expression visitor that writes AMPL expressions in a textual form
+// to fmt::Writer. It takes into account precedence and associativity
+// of operators avoiding unnecessary parentheses except for potentially
+// confusing cases such as "!x = y" which is written as "!(x = y) instead.
 class ExprWriter : public ampl::ExprVisitor<ExprWriter, void, void> {
  private:
   fmt::Writer &writer_;
-  Precedence prec_;
+  int precedence_;
 
   typedef ampl::ExprVisitor<ExprWriter, void, void> ExprVisitor;
 
   // Writes an argument list surrounded by parentheses.
   template <typename Expr>
-  void WriteArgs(Expr e) {
-    writer_ << '(';
-    typename Expr::iterator i = e.begin(), end = e.end();
-    if (i != end) {
-      Visit(*i);
-      for (++i; i != end; ++i) {
-        writer_ << ", ";
-        Visit(*i);
-      }
-    }
-    writer_ << ')';
-  }
+  void WriteArgs(Expr e);
 
   // Writes a function or an expression that has a function syntax.
   template <typename Expr>
@@ -86,31 +86,32 @@ class ExprWriter : public ampl::ExprVisitor<ExprWriter, void, void> {
   }
 
   template <typename Expr>
-  void WriteBinary(Expr e, Precedence p = UNKNOWN) {
-    if (p < prec_)
-      writer_ << '(';
-    Visit(e.lhs());
-    writer_ << ' ' << e.opstr() << ' ';
-    Visit(e.rhs());
-    if (p < prec_)
-      writer_ << ')';
-  }
+  void WriteBinary(Expr e);
+
+  void WriteCallArg(NumericExpr arg, double constant);
+
+  class Parenthesizer {
+   private:
+    ExprWriter &writer_;
+    int saved_precedence_;
+    bool write_paren_;
+
+   public:
+    Parenthesizer(ExprWriter &w, Expr e, int precedence);
+    ~Parenthesizer();
+  };
 
  public:
-  explicit ExprWriter(fmt::Writer &w) : writer_(w), prec_(UNKNOWN) {}
+  explicit ExprWriter(fmt::Writer &w) : writer_(w), precedence_(UNKNOWN) {}
 
-  void Visit(ampl::NumericExpr e, Precedence p = UNKNOWN) {
-    Precedence saved_prec = prec_;
-    prec_ = p;
+  void Visit(NumericExpr e, int precedence = -1) {
+    Parenthesizer p(*this, e, precedence);
     ExprVisitor::Visit(e);
-    prec_ = saved_prec;
   }
 
-  void Visit(ampl::LogicalExpr e, Precedence p = UNKNOWN) {
-    Precedence saved_prec = prec_;
-    prec_ = p;
+  void Visit(ampl::LogicalExpr e, int precedence = -1) {
+    Parenthesizer p(*this, e, precedence);
     ExprVisitor::Visit(e);
-    prec_ = saved_prec;
   }
 
   void VisitUnary(ampl::UnaryExpr e) {
@@ -133,7 +134,7 @@ class ExprWriter : public ampl::ExprVisitor<ExprWriter, void, void> {
   void VisitBinaryFunc(ampl::BinaryExpr e);
   void VisitVarArg(ampl::VarArgExpr e) { WriteFunc(e); }
   void VisitIf(ampl::IfExpr e);
-  void VisitSum(ampl::SumExpr e) { WriteFunc(e); }
+  void VisitSum(ampl::SumExpr e);
   void VisitCount(ampl::CountExpr e) { WriteFunc(e); }
   void VisitNumberOf(ampl::NumberOfExpr e);
   void VisitPiecewiseLinear(ampl::PiecewiseLinearExpr e);
@@ -143,17 +144,70 @@ class ExprWriter : public ampl::ExprVisitor<ExprWriter, void, void> {
 
   void VisitNot(ampl::NotExpr e) {
      writer_ << '!';
-     Visit(e.arg(), NOT);
+     // Use a precedence higher then relational to print expressions
+     // as "!(x = y)" instead of "!x = y".
+     ampl::LogicalExpr arg = e.arg();
+     Visit(arg, arg.precedence() == ::RELATIONAL ? ::RELATIONAL + 1 : -1);
   }
 
   void VisitBinaryLogical(ampl::BinaryLogicalExpr e) { WriteBinary(e); }
-  void VisitRelational(ampl::RelationalExpr e) { WriteBinary(e, RELATIONAL); }
+  void VisitRelational(ampl::RelationalExpr e) { WriteBinary(e); }
   void VisitLogicalCount(ampl::LogicalCountExpr e);
   void VisitIteratedLogical(ampl::IteratedLogicalExpr e);
   void VisitImplication(ampl::ImplicationExpr e);
   void VisitAllDiff(ampl::AllDiffExpr e) { WriteFunc(e); }
   void VisitLogicalConstant(ampl::LogicalConstant c) { writer_ << c.value(); }
 };
+
+ExprWriter::Parenthesizer::Parenthesizer(ExprWriter &w, Expr e, int precedence)
+: writer_(w), write_paren_(false) {
+  saved_precedence_ = w.precedence_;
+  if (precedence == -1)
+    precedence = w.precedence_;
+  write_paren_ = e.precedence() < precedence;
+  if (write_paren_)
+    w.writer_ << '(';
+  w.precedence_ = e.precedence();
+}
+
+ExprWriter::Parenthesizer::~Parenthesizer() {
+  writer_.precedence_ = saved_precedence_;
+  if (write_paren_)
+    writer_.writer_ << ')';
+}
+
+template <typename Expr>
+void ExprWriter::WriteArgs(Expr e) {
+  writer_ << '(';
+  typename Expr::iterator i = e.begin(), end = e.end();
+  if (i != end) {
+    Visit(*i);
+    for (++i; i != end; ++i) {
+      writer_ << ", ";
+      Visit(*i);
+    }
+  }
+  writer_ << ')';
+}
+
+template <typename Expr>
+void ExprWriter::WriteBinary(Expr e) {
+  int precedence = e.precedence();
+  bool right_associative = precedence == EXPONENTIATION;
+  Visit(e.lhs(), precedence + (right_associative ? 1 : 0));
+  writer_ << ' ' << e.opstr() << ' ';
+  Visit(e.rhs(), precedence + (right_associative ? 0 : 1));
+}
+
+void ExprWriter::WriteCallArg(NumericExpr arg, double constant) {
+  if (!arg) {
+    writer_ << constant;
+    return;
+  }
+  Visit(arg);
+  if (constant)
+    writer_ << " + " << constant;
+}
 
 void ExprWriter::VisitBinaryFunc(ampl::BinaryExpr e) {
   writer_ << e.opstr() << '(';
@@ -165,14 +219,28 @@ void ExprWriter::VisitBinaryFunc(ampl::BinaryExpr e) {
 
 void ExprWriter::VisitIf(ampl::IfExpr e) {
   writer_ << "if ";
-  Visit(e.condition());
+  Visit(e.condition(), UNKNOWN);
   writer_ << " then ";
-  Visit(e.true_expr());
-  ampl::NumericExpr false_expr = e.false_expr();
-  if (!IsZero(false_expr)) {
+  NumericExpr false_expr = e.false_expr();
+  bool has_else = !IsZero(false_expr);
+  Visit(e.true_expr(), ::CONDITIONAL + (has_else ? 1 : 0));
+  if (has_else) {
     writer_ << " else ";
     Visit(false_expr);
   }
+}
+
+void ExprWriter::VisitSum(ampl::SumExpr e) {
+  writer_ << "/* sum */ (";
+  ampl::SumExpr::iterator i = e.begin(), end = e.end();
+  if (i != end) {
+    Visit(*i);
+    for (++i; i != end; ++i) {
+      writer_ << " + ";
+      Visit(*i);
+    }
+  }
+  writer_ << ')';
 }
 
 void ExprWriter::VisitNumberOf(ampl::NumberOfExpr e) {
@@ -194,18 +262,20 @@ void ExprWriter::VisitPiecewiseLinear(ampl::PiecewiseLinearExpr e) {
 
 void ExprWriter::VisitCall(ampl::CallExpr e) {
   writer_ << e.function().name() << '(';
-  /*int num_args = e.function().num_args();
+  int num_args = e.function().num_args();
   if (num_args > 0) {
-    // TODO: arg expressions
-    fmt::internal::Array<Expr> args(num_args);
+    fmt::internal::Array<NumericExpr, 10> args;
+    args.resize(num_args);
     for (ampl::CallExpr::arg_expr_iterator
-        i = e.begin(), end = e.end(); i != end; ++i) {
-      args.push_back(*i);
+        i = e.arg_expr_begin(), end = e.arg_expr_end(); i != end; ++i) {
+      args[e.arg_index(i)] = *i;
     }
-    writer_ << e.arg_constant(0);
-    for (int i = 1; i < num_args; ++i)
-      writer_ << e.arg_constant(0);
-  }*/
+    WriteCallArg(args[0], e.arg_constant(0));
+    for (int i = 1; i < num_args; ++i) {
+      writer_ << ", ";
+      WriteCallArg(args[i], e.arg_constant(i));
+    }
+  }
   writer_ << ')';
 }
 
@@ -315,175 +385,95 @@ std::size_t std::hash<ampl::Expr>::operator()(Expr expr) const {
 
 namespace ampl {
 
-const Expr::Kind Expr::KINDS[N_OPS] = {
-    Expr::BINARY,  // OPPLUS
-    Expr::BINARY,  // OPMINUS
-    Expr::BINARY,  // OPMULT
-    Expr::BINARY,  // OPDIV
-    Expr::BINARY,  // OPREM
-    Expr::BINARY,  // OPPOW
-    Expr::BINARY,  // OPLESS
-    Expr::UNKNOWN,
-    Expr::UNKNOWN,
-    Expr::UNKNOWN,
-    Expr::UNKNOWN,
-    Expr::VARARG,  // MINLIST
-    Expr::VARARG,  // MAXLIST
-    Expr::UNARY,  // FLOOR
-    Expr::UNARY,  // CEIL
-    Expr::UNARY,  // ABS
-    Expr::UNARY,  // OPUMINUS
-    Expr::UNKNOWN,
-    Expr::UNKNOWN,
-    Expr::UNKNOWN,
-    Expr::BINARY_LOGICAL,  // OPOR
-    Expr::BINARY_LOGICAL,  // OPAND
-    Expr::RELATIONAL,  // LT
-    Expr::RELATIONAL,  // LE
-    Expr::RELATIONAL,  // EQ
-    Expr::UNKNOWN,
-    Expr::UNKNOWN,
-    Expr::UNKNOWN,
-    Expr::RELATIONAL,  // GE
-    Expr::RELATIONAL,  // GT
-    Expr::RELATIONAL,  // NE
-    Expr::UNKNOWN,
-    Expr::UNKNOWN,
-    Expr::UNKNOWN,
-    Expr::NOT,  // OPNOT
-    Expr::IF,  // OPIFnl
-    Expr::UNKNOWN,
-    Expr::UNARY,  // OP_tanh
-    Expr::UNARY,  // OP_tan
-    Expr::UNARY,  // OP_sqrt
-    Expr::UNARY,  // OP_sinh
-    Expr::UNARY,  // OP_sin
-    Expr::UNARY,  // OP_log10
-    Expr::UNARY,  // OP_log
-    Expr::UNARY,  // OP_exp
-    Expr::UNARY,  // OP_cosh
-    Expr::UNARY,  // OP_cos
-    Expr::UNARY,  // OP_atanh
-    Expr::BINARY,  // OP_atan2
-    Expr::UNARY,  // OP_atan
-    Expr::UNARY,  // OP_asinh
-    Expr::UNARY,  // OP_asin
-    Expr::UNARY,  // OP_acosh
-    Expr::UNARY,  // OP_acos
-    Expr::SUM,  // OPSUMLIST
-    Expr::BINARY,  // OPintDIV
-    Expr::BINARY,  // OPprecision
-    Expr::BINARY,  // OPround
-    Expr::BINARY,  // OPtrunc
-    Expr::COUNT,  // OPCOUNT
-    Expr::NUMBEROF,  // OPNUMBEROF
-    Expr::UNKNOWN,  // OPNUMBEROFs - not supported yet
-    Expr::LOGICAL_COUNT,  // OPATLEAST
-    Expr::LOGICAL_COUNT,  // OPATMOST
-    Expr::PLTERM,  // OPPLTERM
-    Expr::UNKNOWN,  // OPIFSYM - not supported yet
-    Expr::LOGICAL_COUNT,  // OPEXACTLY
-    Expr::LOGICAL_COUNT,  // OPNOTATLEAST
-    Expr::LOGICAL_COUNT,  // OPNOTATMOST
-    Expr::LOGICAL_COUNT,  // OPNOTEXACTLY
-    Expr::ITERATED_LOGICAL,  // ANDLIST
-    Expr::ITERATED_LOGICAL,  // ORLIST
-    Expr::IMPLICATION,  // OPIMPELSE
-    Expr::BINARY_LOGICAL,  // OP_IFF
-    Expr::ALLDIFF,  // OPALLDIFF
-    Expr::BINARY,  // OP1POW
-    Expr::UNARY,  // OP2POW
-    Expr::BINARY,  // OPCPOW
-    Expr::CALL,  // OPFUNCALL
-    Expr::CONSTANT,  // OPNUM
-    Expr::UNKNOWN,  // OPHOL - not supported yet
-    Expr::VARIABLE  // OPVARVAL
-};
-
-// Operator names indexed by opcodes which are defined in opcode.hd.
-const char *const Expr::OP_STRINGS[N_OPS] = {
-  "+",
-  "-",
-  "*",
-  "/",
-  "mod",
-  "^",
-  "less",
-  "unknown",
-  "unknown",
-  "unknown",
-  "unknown",
-  "min",
-  "max",
-  "floor",
-  "ceil",
-  "abs",
-  "unary -",
-  "unknown",
-  "unknown",
-  "unknown",
-  "||",
-  "&&",
-  "<",
-  "<=",
-  "=",
-  "unknown",
-  "unknown",
-  "unknown",
-  ">=",
-  ">",
-  "!=",
-  "unknown",
-  "unknown",
-  "unknown",
-  "!",
-  "if",
-  "unknown",
-  "tanh",
-  "tan",
-  "sqrt",
-  "sinh",
-  "sin",
-  "log10",
-  "log",
-  "exp",
-  "cosh",
-  "cos",
-  "atanh",
-  "atan2",
-  "atan",
-  "asinh",
-  "asin",
-  "acosh",
-  "acos",
-  "sum",
-  "div",
-  "precision",
-  "round",
-  "trunc",
-  "count",
-  "numberof",
-  "string numberof",
-  "atleast",
-  "atmost",
-  "pl term",
-  "string if-then-else",
-  "exactly",
-  "!atleast",
-  "!atmost",
-  "!exactly",
-  "forall",
-  "exists",
-  "==>",
-  "<==>",
-  "alldiff",
-  "^",
-  "^2",
-  "^",
-  "function call",
-  "number",
-  "string",
-  "variable"
+const Expr::Info Expr::INFO[N_OPS] = {
+    {Expr::BINARY,           ::ADDITIVE,       "+"},  // OPPLUS
+    {Expr::BINARY,           ::ADDITIVE,       "-"},  // OPMINUS
+    {Expr::BINARY,           ::MULTIPLICATIVE, "*"},  // OPMULT
+    {Expr::BINARY,           ::MULTIPLICATIVE, "/"},  // OPDIV
+    {Expr::BINARY,           ::MULTIPLICATIVE, "mod"},  // OPREM
+    {Expr::BINARY,           ::EXPONENTIATION, "^"},  // OPPOW
+    {Expr::BINARY,           ::ADDITIVE,       "less"},  // OPLESS
+    {Expr::UNKNOWN,          ::UNKNOWN,        "unknown"},
+    {Expr::UNKNOWN,          ::UNKNOWN,        "unknown"},
+    {Expr::UNKNOWN,          ::UNKNOWN,        "unknown"},
+    {Expr::UNKNOWN,          ::UNKNOWN,        "unknown"},
+    {Expr::VARARG,           ::CALL,           "min"},  // MINLIST
+    {Expr::VARARG,           ::CALL,           "max"},  // MAXLIST
+    {Expr::UNARY,            ::CALL,           "floor"},  // FLOOR
+    {Expr::UNARY,            ::CALL,           "ceil"},  // CEIL
+    {Expr::UNARY,            ::CALL,           "abs"},  // ABS
+    {Expr::UNARY,            ::UNARY,          "unary -"},  // OPUMINUS
+    {Expr::UNKNOWN,          ::UNKNOWN,        "unknown"},
+    {Expr::UNKNOWN,          ::UNKNOWN,        "unknown"},
+    {Expr::UNKNOWN,          ::UNKNOWN,        "unknown"},
+    // TODO
+    {Expr::BINARY_LOGICAL,   ::UNKNOWN,        "||"},  // OPOR
+    {Expr::BINARY_LOGICAL,   ::UNKNOWN,        "&&"},  // OPAND
+    {Expr::RELATIONAL,       ::RELATIONAL,     "<"},  // LT
+    {Expr::RELATIONAL,       ::RELATIONAL,     "<="},  // LE
+    {Expr::RELATIONAL,       ::RELATIONAL,     "="},  // EQ
+    {Expr::UNKNOWN,          ::UNKNOWN,        "unknown"},
+    {Expr::UNKNOWN,          ::UNKNOWN,        "unknown"},
+    {Expr::UNKNOWN,          ::UNKNOWN,        "unknown"},
+    {Expr::RELATIONAL,       ::RELATIONAL,     ">="},  // GE
+    {Expr::RELATIONAL,       ::RELATIONAL,     ">"},  // GT
+    {Expr::RELATIONAL,       ::RELATIONAL,     "!="},  // NE
+    {Expr::UNKNOWN,          ::UNKNOWN,        "unknown"},
+    {Expr::UNKNOWN,          ::UNKNOWN,        "unknown"},
+    {Expr::UNKNOWN,          ::UNKNOWN,        "unknown"},
+    {Expr::NOT,              ::NOT,            "!"},  // OPNOT
+    {Expr::IF,               ::CONDITIONAL,    "if"},  // OPIFnl
+    {Expr::UNKNOWN,          ::UNKNOWN,        "unknown"},
+    {Expr::UNARY,            ::CALL,           "tanh"},  // OP_tanh
+    {Expr::UNARY,            ::CALL,           "tan"},  // OP_tan
+    {Expr::UNARY,            ::CALL,           "sqrt"},  // OP_sqrt
+    {Expr::UNARY,            ::CALL,           "sinh"},  // OP_sinh
+    {Expr::UNARY,            ::CALL,           "sin"},  // OP_sin
+    {Expr::UNARY,            ::CALL,           "log10"},  // OP_log10
+    {Expr::UNARY,            ::CALL,           "log"},  // OP_log
+    {Expr::UNARY,            ::CALL,           "exp"},  // OP_exp
+    {Expr::UNARY,            ::CALL,           "cosh"},  // OP_cosh
+    {Expr::UNARY,            ::CALL,           "cos"},  // OP_cos
+    {Expr::UNARY,            ::CALL,           "atanh"},  // OP_atanh
+    {Expr::BINARY,           ::CALL,           "atan2"},  // OP_atan2
+    {Expr::UNARY,            ::CALL,           "atan"},  // OP_atan
+    {Expr::UNARY,            ::CALL,           "asinh"},  // OP_asinh
+    {Expr::UNARY,            ::CALL,           "asin"},  // OP_asin
+    {Expr::UNARY,            ::CALL,           "acosh"},  // OP_acosh
+    {Expr::UNARY,            ::CALL,           "acos"},  // OP_acos
+    {Expr::SUM,              ::ITERATIVE,      "sum"},  // OPSUMLIST
+    {Expr::BINARY,           ::MULTIPLICATIVE, "div"},  // OPintDIV
+    {Expr::BINARY,           ::CALL,           "precision"},  // OPprecision
+    {Expr::BINARY,           ::CALL,           "round"},  // OPround
+    {Expr::BINARY,           ::CALL,           "trunc"},  // OPtrunc
+    {Expr::COUNT,            ::CALL,           "count"},  // OPCOUNT
+    {Expr::NUMBEROF,         ::CALL,           "numberof"},  // OPNUMBEROF
+    // OPNUMBEROFs - not supported yet
+    {Expr::UNKNOWN,          ::UNKNOWN,        "string numberof"},
+    // TODO
+    {Expr::LOGICAL_COUNT,    ::UNKNOWN,        "atleast"},  // OPATLEAST
+    {Expr::LOGICAL_COUNT,    ::UNKNOWN,        "atmost"},  // OPATMOST
+    {Expr::PLTERM,           ::CALL,           "pl term"},  // OPPLTERM
+    // OPIFSYM - not supported yet
+    {Expr::UNKNOWN,          ::UNKNOWN,        "string if-then-else"},
+    // TODO
+    {Expr::LOGICAL_COUNT,    ::UNKNOWN,        "exactly"},  // OPEXACTLY
+    {Expr::LOGICAL_COUNT,    ::UNKNOWN,        "!atleast"},  // OPNOTATLEAST
+    {Expr::LOGICAL_COUNT,    ::UNKNOWN,        "!atmost"},  // OPNOTATMOST
+    {Expr::LOGICAL_COUNT,    ::UNKNOWN,        "!exactly"},  // OPNOTEXACTLY
+    {Expr::ITERATED_LOGICAL, ::UNKNOWN,        "forall"},  // ANDLIST
+    {Expr::ITERATED_LOGICAL, ::UNKNOWN,        "exists"},  // ORLIST
+    {Expr::IMPLICATION,      ::UNKNOWN,        "==>"},  // OPIMPELSE
+    {Expr::BINARY_LOGICAL,   ::UNKNOWN,        "<==>"},  // OP_IFF
+    {Expr::ALLDIFF,          ::UNKNOWN,        "alldiff"},  // OPALLDIFF
+    {Expr::BINARY,           ::EXPONENTIATION, "^"},  // OP1POW
+    {Expr::UNARY,            ::EXPONENTIATION, "^2"},  // OP2POW
+    {Expr::BINARY,           ::EXPONENTIATION, "^"},  // OPCPOW
+    {Expr::CALL,             ::CALL,           "function call"},  // OPFUNCALL
+    {Expr::CONSTANT,         ::PRIMARY,        "number"},  // OPNUM
+    // OPHOL - not supported yet
+    {Expr::UNKNOWN,          ::PRIMARY,        "string"},
+    {Expr::VARIABLE,         ::PRIMARY,        "variable"}  // OPVARVAL
 };
 
 const de VarArgExpr::END = {0};
