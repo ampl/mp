@@ -49,17 +49,21 @@ enum OpType {
 
 enum Precedence {
   UNKNOWN,
-  CALL,              // a function call including functional forms of
-                     // min and max
   CONDITIONAL,       // if-then-else
+  IFF,               // <==>
+  IMPLICATION,       // ==> else
+  LOGICAL_OR,        // or ||
+  LOGICAL_AND,       // and &&
   NOT,               // not
   RELATIONAL,        // < <= = == >= > != <>
   PIECEWISE_LINEAR,  // a piecewise-linear expression
   ADDITIVE,          // + - less
-  ITERATIVE,       // sum prod min max
-  MULTIPLICATIVE,  // * / div mod
+  ITERATIVE,         // sum prod min max
+  MULTIPLICATIVE,    // * / div mod
   EXPONENTIATION,    // ^
   UNARY,             // + - (unary)
+  CALL,              // a function call including functional forms of
+                     // min and max
   PRIMARY            // variable or constant
 };
 
@@ -76,7 +80,7 @@ class ExprWriter : public ampl::ExprVisitor<ExprWriter, void, void> {
 
   // Writes an argument list surrounded by parentheses.
   template <typename Expr>
-  void WriteArgs(Expr e);
+  void WriteArgs(Expr e, const char *sep = ", ", int precedence = ::UNKNOWN);
 
   // Writes a function or an expression that has a function syntax.
   template <typename Expr>
@@ -102,7 +106,7 @@ class ExprWriter : public ampl::ExprVisitor<ExprWriter, void, void> {
   };
 
  public:
-  explicit ExprWriter(fmt::Writer &w) : writer_(w), precedence_(UNKNOWN) {}
+  explicit ExprWriter(fmt::Writer &w) : writer_(w), precedence_(::UNKNOWN) {}
 
   void Visit(NumericExpr e, int precedence = -1) {
     Parenthesizer p(*this, e, precedence);
@@ -116,7 +120,7 @@ class ExprWriter : public ampl::ExprVisitor<ExprWriter, void, void> {
 
   void VisitUnary(ampl::UnaryExpr e) {
     writer_ << e.opstr() << '(';
-    Visit(e.arg());
+    Visit(e.arg(), ::UNKNOWN);
     writer_ << ')';
   }
 
@@ -126,7 +130,7 @@ class ExprWriter : public ampl::ExprVisitor<ExprWriter, void, void> {
   }
 
   void VisitPow2(ampl::UnaryExpr e) {
-    Visit(e.arg());
+    Visit(e.arg(), ::EXPONENTIATION + 1);
     writer_ << " ^ 2";
   }
 
@@ -177,14 +181,14 @@ ExprWriter::Parenthesizer::~Parenthesizer() {
 }
 
 template <typename Expr>
-void ExprWriter::WriteArgs(Expr e) {
+void ExprWriter::WriteArgs(Expr e, const char *sep, int precedence) {
   writer_ << '(';
   typename Expr::iterator i = e.begin(), end = e.end();
   if (i != end) {
-    Visit(*i);
+    Visit(*i, precedence);
     for (++i; i != end; ++i) {
-      writer_ << ", ";
-      Visit(*i);
+      writer_ << sep;
+      Visit(*i, precedence);
     }
   }
   writer_ << ')';
@@ -204,22 +208,22 @@ void ExprWriter::WriteCallArg(NumericExpr arg, double constant) {
     writer_ << constant;
     return;
   }
-  Visit(arg);
+  Visit(arg, ::UNKNOWN);
   if (constant)
     writer_ << " + " << constant;
 }
 
 void ExprWriter::VisitBinaryFunc(ampl::BinaryExpr e) {
   writer_ << e.opstr() << '(';
-  Visit(e.lhs());
+  Visit(e.lhs(), ::UNKNOWN);
   writer_ << ", ";
-  Visit(e.rhs());
+  Visit(e.rhs(), ::UNKNOWN);
   writer_ << ')';
 }
 
 void ExprWriter::VisitIf(ampl::IfExpr e) {
   writer_ << "if ";
-  Visit(e.condition(), UNKNOWN);
+  Visit(e.condition(), ::UNKNOWN);
   writer_ << " then ";
   NumericExpr false_expr = e.false_expr();
   bool has_else = !IsZero(false_expr);
@@ -245,7 +249,7 @@ void ExprWriter::VisitSum(ampl::SumExpr e) {
 
 void ExprWriter::VisitNumberOf(ampl::NumberOfExpr e) {
   writer_ << "numberof ";
-  Visit(e.value());
+  Visit(e.value(), ::UNKNOWN);
   writer_ << " in ";
   WriteArgs(e);
 }
@@ -287,21 +291,23 @@ void ExprWriter::VisitLogicalCount(ampl::LogicalCountExpr e) {
 }
 
 void ExprWriter::VisitIteratedLogical(ampl::IteratedLogicalExpr e) {
-  // There is no way to produce AMPL forall/exists expression because
-  // the indexing set is not available any more. So we write a count
-  // expression instead with a comment about the original expression.
-  writer_ << "/* " << e.opstr() << " */ count ";
-  WriteArgs(e);
-  if (e.opcode() == ANDLIST)
-    writer_ << " = " << e.num_args();
-  else
-    writer_ << " > 0";
+  // There is no way to produce an AMPL forall/exists expression because
+  // its indexing is not available any more. So we write a count expression
+  // instead with a comment about the original expression.
+  writer_ << "/* " << e.opstr() << " */ ";
+  int precedence = LOGICAL_AND + 1;
+  const char *op = " && ";
+  if (e.opcode() == ORLIST) {
+    precedence = LOGICAL_OR + 1;
+    op = " || ";
+  }
+  WriteArgs(e, op, precedence);
 }
 
 void ExprWriter::VisitImplication(ampl::ImplicationExpr e) {
   Visit(e.condition());
-  writer_ << ' ' << e.opstr() << ' ';
-  Visit(e.true_expr());
+  writer_ << " ==> ";
+  Visit(e.true_expr(), ::IMPLICATION + 1);
   ampl::LogicalExpr false_expr = e.false_expr();
   ampl::LogicalConstant c = ampl::Cast<ampl::LogicalConstant>(false_expr);
   if (!c || c.value() != 0) {
@@ -406,9 +412,8 @@ const Expr::Info Expr::INFO[N_OPS] = {
     {Expr::UNKNOWN,          ::UNKNOWN,        "unknown"},
     {Expr::UNKNOWN,          ::UNKNOWN,        "unknown"},
     {Expr::UNKNOWN,          ::UNKNOWN,        "unknown"},
-    // TODO
-    {Expr::BINARY_LOGICAL,   ::UNKNOWN,        "||"},  // OPOR
-    {Expr::BINARY_LOGICAL,   ::UNKNOWN,        "&&"},  // OPAND
+    {Expr::BINARY_LOGICAL,   ::LOGICAL_OR,     "||"},  // OPOR
+    {Expr::BINARY_LOGICAL,   ::LOGICAL_AND,    "&&"},  // OPAND
     {Expr::RELATIONAL,       ::RELATIONAL,     "<"},  // LT
     {Expr::RELATIONAL,       ::RELATIONAL,     "<="},  // LE
     {Expr::RELATIONAL,       ::RELATIONAL,     "="},  // EQ
@@ -450,22 +455,20 @@ const Expr::Info Expr::INFO[N_OPS] = {
     {Expr::NUMBEROF,         ::CALL,           "numberof"},  // OPNUMBEROF
     // OPNUMBEROFs - not supported yet
     {Expr::UNKNOWN,          ::UNKNOWN,        "string numberof"},
-    // TODO
-    {Expr::LOGICAL_COUNT,    ::UNKNOWN,        "atleast"},  // OPATLEAST
-    {Expr::LOGICAL_COUNT,    ::UNKNOWN,        "atmost"},  // OPATMOST
+    {Expr::LOGICAL_COUNT,    ::CALL,           "atleast"},  // OPATLEAST
+    {Expr::LOGICAL_COUNT,    ::CALL,           "atmost"},  // OPATMOST
     {Expr::PLTERM,           ::CALL,           "pl term"},  // OPPLTERM
     // OPIFSYM - not supported yet
     {Expr::UNKNOWN,          ::UNKNOWN,        "string if-then-else"},
-    // TODO
-    {Expr::LOGICAL_COUNT,    ::UNKNOWN,        "exactly"},  // OPEXACTLY
-    {Expr::LOGICAL_COUNT,    ::UNKNOWN,        "!atleast"},  // OPNOTATLEAST
-    {Expr::LOGICAL_COUNT,    ::UNKNOWN,        "!atmost"},  // OPNOTATMOST
-    {Expr::LOGICAL_COUNT,    ::UNKNOWN,        "!exactly"},  // OPNOTEXACTLY
-    {Expr::ITERATED_LOGICAL, ::UNKNOWN,        "forall"},  // ANDLIST
-    {Expr::ITERATED_LOGICAL, ::UNKNOWN,        "exists"},  // ORLIST
-    {Expr::IMPLICATION,      ::UNKNOWN,        "==>"},  // OPIMPELSE
-    {Expr::BINARY_LOGICAL,   ::UNKNOWN,        "<==>"},  // OP_IFF
-    {Expr::ALLDIFF,          ::UNKNOWN,        "alldiff"},  // OPALLDIFF
+    {Expr::LOGICAL_COUNT,    ::CALL,           "exactly"},  // OPEXACTLY
+    {Expr::LOGICAL_COUNT,    ::CALL,           "!atleast"},  // OPNOTATLEAST
+    {Expr::LOGICAL_COUNT,    ::CALL,           "!atmost"},  // OPNOTATMOST
+    {Expr::LOGICAL_COUNT,    ::CALL,           "!exactly"},  // OPNOTEXACTLY
+    {Expr::ITERATED_LOGICAL, ::CALL,           "forall"},  // ANDLIST
+    {Expr::ITERATED_LOGICAL, ::CALL,           "exists"},  // ORLIST
+    {Expr::IMPLICATION,      ::IMPLICATION,    "==>"},  // OPIMPELSE
+    {Expr::BINARY_LOGICAL,   ::IFF,            "<==>"},  // OP_IFF
+    {Expr::ALLDIFF,          ::CALL,           "alldiff"},  // OPALLDIFF
     {Expr::BINARY,           ::EXPONENTIATION, "^"},  // OP1POW
     {Expr::UNARY,            ::EXPONENTIATION, "^2"},  // OP2POW
     {Expr::BINARY,           ::EXPONENTIATION, "^"},  // OPCPOW
