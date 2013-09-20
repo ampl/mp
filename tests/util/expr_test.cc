@@ -1130,10 +1130,8 @@ TEST_F(ExprTest, WriteCountExpr) {
 }
 
 TEST_F(ExprTest, WriteNumberOfExpr) {
-  NumericExpr e = AddNumberOf(AddNum(42), AddNum(43), AddNum(44));
-  CHECK_WRITE("numberof 42 in (43, 44)", e);
-  CHECK_WRITE("numberof numberof 42 in (43, 44) in (1, 2)",
-      AddNumberOf(e, AddNum(1), AddNum(2)));
+  CHECK_WRITE("numberof 42 in (43, 44)",
+      AddNumberOf(AddNum(42), AddNum(43), AddNum(44)));
 }
 
 TEST_F(ExprTest, WritePiecewiseLinearExpr) {
@@ -1206,9 +1204,9 @@ TEST_F(ExprTest, WriteLogicalCountExpr) {
 TEST_F(ExprTest, WriteIteratedLogicalExpr) {
   auto e1 = AddRelational(EQ, AddVar(0), AddNum(0));
   auto e2 = AddBool(true), e3 = AddBool(false);
-  CHECK_WRITE("if /* forall */ count (x1 = 0, 1, 0) = 3 then 1",
+  CHECK_WRITE("if /* forall */ (x1 = 0 && 1 && 0) then 1",
       AddIf(AddIteratedLogical(ANDLIST, e1, e2, e3), AddNum(1), AddNum(0)));
-  CHECK_WRITE("if /* exists */ count (x1 = 0, 1, 0) > 0 then 1",
+  CHECK_WRITE("if /* exists */ (x1 = 0 || 1 || 0) then 1",
       AddIf(AddIteratedLogical(ORLIST, e1, e2, e3), AddNum(1), AddNum(0)));
 }
 
@@ -1227,37 +1225,212 @@ TEST_F(ExprTest, WriteAllDiffExpr) {
           AddNum(1), AddNum(0)));
 }
 
+TEST_F(ExprTest, UnaryExprPrecedence) {
+  auto x1 = AddVar(0);
+  CHECK_WRITE("--x1", AddUnary(OPUMINUS, AddUnary(OPUMINUS, x1)));
+  CHECK_WRITE("-(x1 ^ x1)", AddUnary(OPUMINUS, AddBinary(OPPOW, x1, x1)));
+}
+
+TEST_F(ExprTest, UnaryFuncPrecedence) {
+  auto x1 = AddVar(0);
+  int count = 0;
+  for (int i = 0, size = sizeof(OP_INFO) / sizeof(*OP_INFO); i < size; ++i) {
+    const OpInfo &info = OP_INFO[i];
+    int code = info.code;
+    if (info.kind != Expr::UNARY || code == OPUMINUS || code == OP2POW)
+      continue;
+    CHECK_WRITE(str(fmt::Format("{0}({0}(x1))") << info.str),
+        AddUnary(code, AddUnary(code, x1)));
+    CHECK_WRITE(str(fmt::Format("{0}(x1 + x1)") << info.str),
+        AddUnary(code, AddBinary(OPPLUS, x1, x1)));
+    ++count;
+  }
+  EXPECT_EQ(19, count);
+}
+
+TEST_F(ExprTest, Pow2Precedence) {
+  auto x1 = AddVar(0);
+  CHECK_WRITE("(x1 ^ 2) ^ 2", AddUnary(OP2POW, AddUnary(OP2POW, x1)));
+  CHECK_WRITE("(x1 * x1) ^ 2", AddUnary(OP2POW, AddBinary(OPMULT, x1, x1)));
+}
+
+TEST_F(ExprTest, AdditiveExprPrecedence) {
+  auto x1 = AddVar(0), x2 = AddVar(1), x3 = AddVar(2);
+  CHECK_WRITE("x1 + x2 + x3",
+      AddBinary(OPPLUS, AddBinary(OPPLUS, x1, x2), x3));
+  CHECK_WRITE("x1 + x2 - x3",
+      AddBinary(OPMINUS, AddBinary(OPPLUS, x1, x2), x3));
+  CHECK_WRITE("x1 + x2 less x3",
+      AddBinary(OPLESS, AddBinary(OPPLUS, x1, x2), x3));
+  CHECK_WRITE("x1 + (x2 + x3)",
+      AddBinary(OPPLUS, x1, AddBinary(OPPLUS, x2, x3)));
+  CHECK_WRITE("(x1 + x2) * x3",
+      AddBinary(OPMULT, AddBinary(OPPLUS, x1, x2), x3));
+  CHECK_WRITE("if 1 then x1 else x2 + x3",
+      AddIf(AddBool(true), x1, AddBinary(OPPLUS, x2, x3)));
+}
+
+TEST_F(ExprTest, MultiplicativeExprPrecedence) {
+  auto x1 = AddVar(0), x2 = AddVar(1), x3 = AddVar(2);
+  CHECK_WRITE("x1 * x2 * x3",
+      AddBinary(OPMULT, AddBinary(OPMULT, x1, x2), x3));
+  CHECK_WRITE("x1 * x2 / x3",
+      AddBinary(OPDIV, AddBinary(OPMULT, x1, x2), x3));
+  CHECK_WRITE("x1 * x2 div x3",
+      AddBinary(OPintDIV, AddBinary(OPMULT, x1, x2), x3));
+  CHECK_WRITE("x1 * x2 mod x3",
+      AddBinary(OPREM, AddBinary(OPMULT, x1, x2), x3));
+  CHECK_WRITE("x1 * (x2 * x3)",
+      AddBinary(OPMULT, x1, AddBinary(OPMULT, x2, x3)));
+  CHECK_WRITE("(x1 * x2) ^ x3",
+      AddBinary(OPPOW, AddBinary(OPMULT, x1, x2), x3));
+  CHECK_WRITE("(x1 + x2) * x3",
+      AddBinary(OPMULT, AddBinary(OPPLUS, x1, x2), x3));
+}
+
+TEST_F(ExprTest, ExponentiationExprPrecedence) {
+  auto x1 = AddVar(0), x2 = AddVar(1), x3 = AddVar(2);
+  CHECK_WRITE("x1 ^ x2 ^ x3",
+      AddBinary(OPPOW, x1, AddBinary(OPPOW, x2, x3)));
+  CHECK_WRITE("x1 ^ x2 ^ 3",
+      AddBinary(OPPOW, x1, AddBinary(OP1POW, x2, AddNum(3))));
+  CHECK_WRITE("x1 ^ 3 ^ x2",
+      AddBinary(OPPOW, x1, AddBinary(OPCPOW, AddNum(3), x2)));
+  CHECK_WRITE("(x1 ^ 2) ^ 3",
+      AddBinary(OP1POW, AddBinary(OP1POW, x1, AddNum(2)), AddNum(3)));
+  CHECK_WRITE("-x1 ^ -x2",
+      AddBinary(OPPOW, AddUnary(OPUMINUS, x1), AddUnary(OPUMINUS, x2)));
+  CHECK_WRITE("x1 ^ (x2 * x3)",
+      AddBinary(OPPOW, x1, AddBinary(OPMULT, x2, x3)));
+}
+
+TEST_F(ExprTest, BinaryFuncPrecedence) {
+  auto x1 = AddVar(0);
+  auto e = AddBinary(OPPLUS, x1, x1);
+  CHECK_WRITE("atan2(atan2(x1, x1), x1 + x1)",
+      AddBinary(OP_atan2, AddBinary(OP_atan2, x1, x1), e));
+  CHECK_WRITE("precision(precision(x1, x1), x1 + x1)",
+      AddBinary(OPprecision, AddBinary(OPprecision, x1, x1), e));
+  CHECK_WRITE("round(round(x1, x1), x1 + x1)",
+      AddBinary(OPround, AddBinary(OPround, x1, x1), e));
+  CHECK_WRITE("trunc(trunc(x1, x1), x1 + x1)",
+      AddBinary(OPtrunc, AddBinary(OPtrunc, x1, x1), e));
+}
+
+TEST_F(ExprTest, VarArgExprPrecedence) {
+  auto x1 = AddVar(0), x2 = AddVar(1);
+  auto e = AddBinary(OPPLUS, x1, x2);
+  CHECK_WRITE("min(x1 + x2, x1 + x2)", AddVarArg(MINLIST, e, e));
+  CHECK_WRITE("max(x1 + x2, x1 + x2)", AddVarArg(MAXLIST, e, e));
+  CHECK_WRITE("min(min(x1), min(x2))",
+      AddVarArg(MINLIST, AddVarArg(MINLIST, x1), AddVarArg(MINLIST, x2)));
+  CHECK_WRITE("max(max(x1), max(x2))",
+      AddVarArg(MAXLIST, AddVarArg(MAXLIST, x1), AddVarArg(MAXLIST, x2)));
+}
+
+TEST_F(ExprTest, IfExprPrecedence) {
+  auto n0 = AddNum(0), n1 = AddNum(1), n2 = AddNum(2);
+  auto e = AddBinaryLogical(OPOR, AddBool(false), AddBool(true));
+  CHECK_WRITE("if 0 || 1 then if 0 || 1 then 1",
+      AddIf(e, AddIf(e, n1, n0), n0));
+  CHECK_WRITE("if 0 || 1 then if 0 || 1 then 1 else 2",
+      AddIf(e, AddIf(e, n1, n2), n0));
+  CHECK_WRITE("if 0 || 1 then (if 0 || 1 then 1) else 2",
+      AddIf(e, AddIf(e, n1, n0), n2));
+  CHECK_WRITE("if 0 || 1 then 0 else if 0 || 1 then 1 else 2",
+      AddIf(e, n0, AddIf(e, n1, n2)));
+  CHECK_WRITE("if !(0 || 1) then x1 + 1",
+      AddIf(AddNot(e), AddBinary(OPPLUS, AddVar(0), n1), n0));
+}
+
+TEST_F(ExprTest, SumExprPrecedence) {
+  auto x1 = AddVar(0), x2 = AddVar(1), x3 = AddVar(2);
+  CHECK_WRITE("/* sum */ (x1 + /* sum */ (x2 + x3))",
+      AddSum(x1, AddSum(x2, x3)));
+  CHECK_WRITE("/* sum */ (x1 + x2 * x3)",
+      AddSum(x1, AddBinary(OPMULT, x2, x3)));
+  CHECK_WRITE("/* sum */ ((x1 + x2) + x3)",
+      AddSum(AddBinary(OPPLUS, x1, x2), x3));
+}
+
+TEST_F(ExprTest, CountExprPrecedence) {
+  auto e = AddBinaryLogical(OPOR, AddBool(false), AddBool(false));
+  CHECK_WRITE("count(0 || 0, 0 || 0)", AddCount(e, e));
+}
+
+TEST_F(ExprTest, NumberOfExprPrecedence) {
+  auto x1 = AddVar(0), x2 = AddVar(1);
+  auto e = AddNumberOf(AddNum(42), x1, x2);
+  CHECK_WRITE("numberof numberof 42 in (x1, x2) in ("
+      "numberof 42 in (x1, x2), numberof 42 in (x1, x2))",
+      AddNumberOf(e, e, e));
+  auto e2 = AddBinary(OPPLUS, x1, x2);
+  CHECK_WRITE("numberof x1 + x2 in (x1 + x2, x1 + x2)",
+      AddNumberOf(e2, e2, e2));
+}
+
+TEST_F(ExprTest, PiecewiseLinearExprPrecedence) {
+  double args[] = {-1, 5, 0, 10, 1};
+  CHECK_WRITE("<<5, 10; -1, 0, 1>> x43 ^ 2",
+      AddBinary(OPPOW, AddPL(5, args, 42), AddNum(2)));
+}
+
 TEST_F(ExprTest, CallExprPrecedence) {
   auto x1 = AddVar(0), x2 = AddVar(1);
   auto e1 = AddIf(AddBool(true), x1, AddNum(0));
   CallArg args[] = {
-      CallArg(0, e1), CallArg(5, x2), 7, CallArg(0, x2)
+      CallArg(0, AddCall("foo", 0, 0)), CallArg(5, x2), 7,
+      CallArg(0, AddUnary(FLOOR, x2))
   };
-  CHECK_WRITE("foo(if 1 then x1, x2 + 5, 7, x2)",
+  CHECK_WRITE("foo(foo(), x2 + 5, 7, floor(x2))",
       AddCall("foo", args, args + 4));
-  CHECK_WRITE("min(if 1 then x1, x2 + 5, 42)",
-      AddVarArg(MINLIST, e1, AddBinary(OPPLUS, x2, AddNum(5)), AddNum(42)));
-}
-
-TEST_F(ExprTest, ConditionalExprPrecedence) {
-  auto n0 = AddNum(0), n1 = AddNum(1), n2 = AddNum(2);
-  auto e = AddRelational(EQ, AddVar(0), n0);
-  CHECK_WRITE("if x1 = 0 then if x1 = 0 then 1",
-      AddIf(e, AddIf(e, n1, n0), n0));
-  CHECK_WRITE("if x1 = 0 then if x1 = 0 then 1 else 2",
-      AddIf(e, AddIf(e, n1, n2), n0));
-  CHECK_WRITE("if x1 = 0 then (if x1 = 0 then 1) else 2",
-      AddIf(e, AddIf(e, n1, n0), n2));
-  CHECK_WRITE("if x1 = 0 then 0 else if x1 = 0 then 1 else 2",
-      AddIf(e, n0, AddIf(e, n1, n2)));
-  CHECK_WRITE("if !(x1 = 0) then x1 + 1",
-      AddIf(AddNot(e), AddBinary(OPPLUS, AddVar(0), n1), n0));
 }
 
 TEST_F(ExprTest, NotExprPrecedence) {
   auto n0 = AddNum(0), n1 = AddNum(1);
   CHECK_WRITE("if !!(x1 = 0) then 1",
       AddIf(AddNot(AddNot(AddRelational(EQ, AddVar(0), n0))), n1, n0));
+}
+
+TEST_F(ExprTest, LogicalOrExprPrecedence) {
+  auto n0 = AddNum(0), n1 = AddNum(1);
+  auto b0 = AddBool(false), b1 = AddBool(true);
+  CHECK_WRITE("if 0 || 1 || 1 then 1",
+      AddIf(AddBinaryLogical(OPOR, AddBinaryLogical(OPOR, b0, b1), b1),
+          n1, n0));
+  CHECK_WRITE("if 0 || (1 || 1) then 1",
+      AddIf(AddBinaryLogical(OPOR, b0, AddBinaryLogical(OPOR, b1, b1)),
+          n1, n0));
+  CHECK_WRITE("if 0 || 1 && 1 then 1",
+      AddIf(AddBinaryLogical(OPOR, b0, AddBinaryLogical(OPAND, b1, b1)),
+          n1, n0));
+}
+
+TEST_F(ExprTest, LogicalAndExprPrecedence) {
+  auto n0 = AddNum(0), n1 = AddNum(1);
+  auto b0 = AddBool(false), b1 = AddBool(true);
+  CHECK_WRITE("if 0 && 1 && 1 then 1",
+      AddIf(AddBinaryLogical(OPAND, AddBinaryLogical(OPAND, b0, b1), b1),
+          n1, n0));
+  CHECK_WRITE("if 0 && (1 && 1) then 1",
+      AddIf(AddBinaryLogical(OPAND, b0, AddBinaryLogical(OPAND, b1, b1)),
+          n1, n0));
+  CHECK_WRITE("if 0 <= 1 && 1 then 1",
+      AddIf(AddBinaryLogical(OPAND, AddRelational(LE, n0, n1), b1), n1, n0));
+}
+
+TEST_F(ExprTest, IffExprPrecedence) {
+  auto n0 = AddNum(0), n1 = AddNum(1);
+  auto b0 = AddBool(false), b1 = AddBool(true);
+  CHECK_WRITE("if 0 <==> 1 <==> 1 then 1",
+      AddIf(AddBinaryLogical(OP_IFF, AddBinaryLogical(OP_IFF, b0, b1), b1),
+          n1, n0));
+  CHECK_WRITE("if 0 <==> (1 <==> 1) then 1",
+      AddIf(AddBinaryLogical(OP_IFF, b0, AddBinaryLogical(OP_IFF, b1, b1)),
+          n1, n0));
+  CHECK_WRITE("if (0 <==> 1) && 1 then 1",
+      AddIf(AddBinaryLogical(OPAND, AddBinaryLogical(OP_IFF, b0, b1), b1),
+          n1, n0));
 }
 
 TEST_F(ExprTest, RelationalExprPrecedence) {
@@ -1278,64 +1451,87 @@ TEST_F(ExprTest, RelationalExprPrecedence) {
       AddIf(AddRelational(NE, e1, e2), n1, n0));
 }
 
-TEST_F(ExprTest, AdditiveExprPrecedence) {
-  auto x1 = AddVar(0), x2 = AddVar(1), x3 = AddVar(2);
-  CHECK_WRITE("x1 + x2 + x3",
-      AddBinary(OPPLUS, AddBinary(OPPLUS, x1, x2), x3));
-  CHECK_WRITE("x1 + x2 - x3",
-      AddBinary(OPMINUS, AddBinary(OPPLUS, x1, x2), x3));
-  CHECK_WRITE("x1 + x2 less x3",
-      AddBinary(OPLESS, AddBinary(OPPLUS, x1, x2), x3));
-  CHECK_WRITE("x1 + (x2 + x3)",
-      AddBinary(OPPLUS, x1, AddBinary(OPPLUS, x2, x3)));
-  CHECK_WRITE("(x1 + x2) * x3",
-      AddBinary(OPMULT, AddBinary(OPPLUS, x1, x2), x3));
-  CHECK_WRITE("/* sum */ ((x1 + x2) + x3)",
-      AddSum(AddBinary(OPPLUS, x1, x2), x3));
+TEST_F(ExprTest, LogicalCountExprPrecedence) {
+  auto n0 = AddNum(0), n1 = AddNum(1), value = AddNum(42);
+  auto count1 = AddLogicalCount(OPATLEAST, value, AddCount(
+      AddRelational(EQ, AddVar(0), AddNum(0)), AddBool(true)));
+  auto count2 = AddCount(count1, AddBool(true));
+  CHECK_WRITE("if atleast 42 (atleast 42 (x1 = 0, 1), 1) then 1",
+      AddIf(AddLogicalCount(OPATLEAST, value, count2), n1, n0));
+  CHECK_WRITE("if atmost 42 (atleast 42 (x1 = 0, 1), 1) then 1",
+      AddIf(AddLogicalCount(OPATMOST, value, count2), n1, n0));
+  CHECK_WRITE("if exactly 42 (atleast 42 (x1 = 0, 1), 1) then 1",
+      AddIf(AddLogicalCount(OPEXACTLY, value, count2), n1, n0));
+  CHECK_WRITE("if !atleast 42 (atleast 42 (x1 = 0, 1), 1) then 1",
+      AddIf(AddLogicalCount(OPNOTATLEAST, value, count2), n1, n0));
+  CHECK_WRITE("if !atmost 42 (atleast 42 (x1 = 0, 1), 1) then 1",
+      AddIf(AddLogicalCount(OPNOTATMOST, value, count2), n1, n0));
+  CHECK_WRITE("if !exactly 42 (atleast 42 (x1 = 0, 1), 1) then 1",
+      AddIf(AddLogicalCount(OPNOTEXACTLY, value, count2), n1, n0));
+
+  auto count = AddCount(AddBool(false), AddBool(true));
+  CHECK_WRITE("if atleast 42 (0, 1) || 0 then 1",
+      AddIf(AddBinaryLogical(OPOR, AddLogicalCount(OPATLEAST, value, count),
+          AddBool(false)), n1, n0));
+  CHECK_WRITE("if atmost 42 (0, 1) || 0 then 1",
+      AddIf(AddBinaryLogical(OPOR, AddLogicalCount(OPATMOST, value, count),
+          AddBool(false)), n1, n0));
+  CHECK_WRITE("if exactly 42 (0, 1) || 0 then 1",
+      AddIf(AddBinaryLogical(OPOR, AddLogicalCount(OPEXACTLY, value, count),
+          AddBool(false)), n1, n0));
+  CHECK_WRITE("if !atleast 42 (0, 1) || 0 then 1",
+      AddIf(AddBinaryLogical(OPOR, AddLogicalCount(OPNOTATLEAST, value, count),
+          AddBool(false)), n1, n0));
+  CHECK_WRITE("if !atmost 42 (0, 1) || 0 then 1",
+      AddIf(AddBinaryLogical(OPOR, AddLogicalCount(OPNOTATMOST, value, count),
+          AddBool(false)), n1, n0));
+  CHECK_WRITE("if !exactly 42 (0, 1) || 0 then 1",
+      AddIf(AddBinaryLogical(OPOR, AddLogicalCount(OPNOTEXACTLY, value, count),
+          AddBool(false)), n1, n0));
 }
 
-TEST_F(ExprTest, IterativeExprPrecedence) {
-  auto x1 = AddVar(0), x2 = AddVar(1), x3 = AddVar(2);
-  CHECK_WRITE("/* sum */ (x1 + /* sum */ (x2 + x3))",
-      AddSum(x1, AddSum(x2, x3)));
-  CHECK_WRITE("/* sum */ (x1 + x2 * x3)",
-      AddSum(x1, AddBinary(OPMULT, x2, x3)));
+TEST_F(ExprTest, IteratedLogicalExprPrecedence) {
+  auto b0 = AddBool(false);
+  auto n0 = AddNum(0), n1 = AddNum(1);
+  CHECK_WRITE("if /* forall */ ((0 && 0) && 0) then 1",
+      AddIf(AddIteratedLogical(ANDLIST, AddBinaryLogical(OPAND, b0, b0), b0),
+          n1, n0));
+  CHECK_WRITE("if /* exists */ ((0 || 0) || 0) then 1",
+      AddIf(AddIteratedLogical(ORLIST, AddBinaryLogical(OPOR, b0, b0), b0),
+          n1, n0));
+  CHECK_WRITE("if /* forall */ (/* forall */ (0 && 0) && 0) then 1",
+      AddIf(AddIteratedLogical(ANDLIST,
+          AddIteratedLogical(ANDLIST, b0, b0), b0), n1, n0));
+  CHECK_WRITE("if /* exists */ (/* exists */ (0 || 0) || 0) then 1",
+      AddIf(AddIteratedLogical(ORLIST,
+          AddIteratedLogical(ORLIST, b0, b0), b0), n1, n0));
 }
 
-TEST_F(ExprTest, MultiplicativeExprPrecedence) {
-  auto x1 = AddVar(0), x2 = AddVar(1), x3 = AddVar(2);
-  CHECK_WRITE("x1 * x2 * x3",
-      AddBinary(OPMULT, AddBinary(OPMULT, x1, x2), x3));
-  CHECK_WRITE("x1 * x2 / x3",
-      AddBinary(OPDIV, AddBinary(OPMULT, x1, x2), x3));
-  CHECK_WRITE("x1 * x2 div x3",
-      AddBinary(OPintDIV, AddBinary(OPMULT, x1, x2), x3));
-  CHECK_WRITE("x1 * x2 mod x3",
-      AddBinary(OPREM, AddBinary(OPMULT, x1, x2), x3));
-  CHECK_WRITE("x1 * (x2 * x3)",
-      AddBinary(OPMULT, x1, AddBinary(OPMULT, x2, x3)));
-  CHECK_WRITE("(x1 * x2) ^ x3",
-      AddBinary(OPPOW, AddBinary(OPMULT, x1, x2), x3));
+TEST_F(ExprTest, ImplicationExprPrecedence) {
+  auto n0 = AddNum(0), n1 = AddNum(1);
+  auto b0 = AddBool(false), b1 = AddBool(true);
+  CHECK_WRITE("if 0 ==> 1 ==> 0 then 1",
+      AddIf(AddImplication(AddImplication(b0, b1, b0), b0, b0), n1, n0));
+  CHECK_WRITE("if 0 ==> 1 ==> 0 else 1 then 1",
+      AddIf(AddImplication(AddImplication(b0, b1, b0), b0, b1), n1, n0));
+  CHECK_WRITE("if 0 ==> 1 else 0 ==> 1 then 1",
+      AddIf(AddImplication(b0, b1, AddImplication(b0, b1, b0)), n1, n0));
+  CHECK_WRITE("if 0 ==> (1 ==> 0) else 1 then 1",
+      AddIf(AddImplication(b0, AddImplication(b1, b0, b0), b1), n1, n0));
+  CHECK_WRITE("if 0 ==> (1 ==> 0 else 1) then 1",
+      AddIf(AddImplication(b0, AddImplication(b1, b0, b1), b0), n1, n0));
+  CHECK_WRITE("if 0 ==> 1 || 0 else 1 then 1",
+      AddIf(AddImplication(b0, AddBinaryLogical(OPOR, b1, b0), b1), n1, n0));
+  CHECK_WRITE("if 0 ==> (1 <==> 0) else 1 then 1",
+      AddIf(AddImplication(b0, AddBinaryLogical(OP_IFF, b1, b0), b1), n1, n0));
 }
 
-TEST_F(ExprTest, ExponentiationExprPrecedence) {
-  auto x1 = AddVar(0), x2 = AddVar(1), x3 = AddVar(2);
-  CHECK_WRITE("x1 ^ x2 ^ x3",
-      AddBinary(OPPOW, x1, AddBinary(OPPOW, x2, x3)));
-  CHECK_WRITE("x1 ^ x2 ^ 2",
-      AddBinary(OPPOW, x1, AddUnary(OP2POW, x2)));
-  CHECK_WRITE("x1 ^ x2 ^ 3",
-      AddBinary(OPPOW, x1, AddBinary(OP1POW, x2, AddNum(3))));
-  CHECK_WRITE("x1 ^ 3 ^ x2",
-      AddBinary(OPPOW, x1, AddBinary(OPCPOW, AddNum(3), x2)));
-  CHECK_WRITE("(x1 ^ x2) ^ x3",
-      AddBinary(OPPOW, AddBinary(OPPOW, x1, x2), x3));
-  CHECK_WRITE("-x1 ^ -x2",
-      AddBinary(OPPOW, AddUnary(OPUMINUS, x1), AddUnary(OPUMINUS, x2)));
-}
-
-TEST_F(ExprTest, UnaryExprPrecedence) {
-  CHECK_WRITE("--x1", AddUnary(OPUMINUS, AddUnary(OPUMINUS, AddVar(0))));
+TEST_F(ExprTest, AllDiffExprPrecedence) {
+  auto n0 = AddNum(0), n1 = AddNum(1);
+  auto b0 = AddBool(0), b1 = AddBool(true);
+  CHECK_WRITE("if alldiff(0 + 1, 0 + 1) then 1",
+      AddIf(AddAllDiff(AddBinary(OPPLUS, n0, n1),
+          AddBinary(OPPLUS, n0, n1)), n1, n0));
 }
 
 #ifdef HAVE_UNORDERED_MAP
