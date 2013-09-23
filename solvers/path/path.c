@@ -11,7 +11,6 @@
 #define CRIPPLE_SIZE 200
 #define CRIPPLE_NNZ 10000
 
-extern char *Path_Version(void);
 static int debug, functimes, quitnow, wantfuncs;
 static int sideineq = 1, sqwarn = 1;
 #ifndef LOGFILE
