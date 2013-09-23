@@ -555,7 +555,7 @@ zshow(char *what, real *z, int n)
 		printf("%d\t%.g\n", i, z[i]);
 	}
 
- int
+ FUN_DECL(int)
 function_evaluation(void *v, int n, real *z, real *f)
 {
 	ASL *asl = cur_ASL;
@@ -760,7 +760,7 @@ sparseJ(int n, int maxnnz, double *z, double *J)
 	return 0;
 	}
 
- void
+ FUN_DECL(void)
 problem_size(void *v, int *n, int *nnz)
 {
 #ifdef Student_Edition
@@ -786,7 +786,7 @@ problem_size(void *v, int *n, int *nnz)
 	*nnz = FI.nnz;
 	}
 
- void
+ FUN_DECL(void)
 bounds(void *v, int n, real *z, real *lower, real *upper)
 {
 	ASL *asl = cur_ASL;
@@ -904,7 +904,7 @@ constraint_name(int constraint, char *buffer, int buffer_size)
 	return;
 	}
 
- int
+ FUN_DECL(int)
 jacobian_evaluation(void *v, int n, double *z, int  wantf, double *f,
 	int *nnz, int *col_start, int *col_len, int *row, double *data)
 {
@@ -924,7 +924,7 @@ jacobian_evaluation(void *v, int n, double *z, int  wantf, double *f,
 	return err;
 	}
 
- static void
+ static FUN_DECL(void)
 jac_typ(void *v, int nnz, int *typ)
 {
 	ASL *asl = cur_ASL;
