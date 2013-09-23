@@ -941,6 +941,7 @@ jac_typ(void *v, int nnz, int *typ)
 				typ[cg->goff] = PRESOLVE_NONLINEAR;
 	}
 
+#undef interface
  static MCP_Interface
 interface = {
 	NULL,
