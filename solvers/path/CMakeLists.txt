@@ -4,7 +4,7 @@ elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
   find_library(PATH_LIB path46 PATHS pathlib/lib/linux/static)
   set(PATH_EXTRA_LIBS m)
 elseif (WIN32)
-  find_library(PATH_LIB path46 PATHS pathlib/lib/windows/static)
+  find_library(PATH_LIB path46 PATHS pathlib/lib/windows/dynamic)
 endif ()
 
 if (PATH_LIB)
