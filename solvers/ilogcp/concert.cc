@@ -1,5 +1,5 @@
 /*
- Converter of optimization problems from NL to Concert format.
+ AMPL to IBM/ILOG Concert interface.
 
  Copyright (C) 2013 AMPL Optimization Inc
 
@@ -20,9 +20,14 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/ilogcp/converter.h"
+#include "solvers/ilogcp/concert.h"
+
+#ifndef M_PI
+# define M_PI 3.14159265358979323846
+#endif
 
 namespace {
+
 inline IloInt CastToInt(double value) {
   IloInt int_value = static_cast<int>(value);
   if (int_value != value) {

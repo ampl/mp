@@ -32,7 +32,6 @@
 # pragma warning(disable: 4244)
 #endif
 
-#include <ilcplex/ilocplex.h>
 #include <ilcp/cp.h>
 
 #if __clang__
@@ -45,7 +44,6 @@
                     /* at least with g++ 4.6.  Otherwise there are errors */
                     /* with iloconcert/iloenv.h . */
 #include <limits.h> /* Needed for g++ -m32 on MacOSX. */
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -54,103 +52,28 @@
 
 namespace ampl {
 
-class Optimizer : public Interruptible {
- private:
-  IloRangeArray cons_;
-
- public:
-  Optimizer(IloEnv env) : cons_(env) {}
-  virtual ~Optimizer();
-
-  void AllocateCons(int num_cons) { cons_.setSize(num_cons); }
-  IloRangeArray cons() const { return cons_; }
-
-  virtual IloAlgorithm algorithm() const = 0;
-
-  virtual void StartSearch() = 0;
-  virtual void EndSearch() = 0;
-  virtual bool FindNextSolution() = 0;
-
-  virtual void GetSolutionInfo(
-      fmt::Writer &w, std::vector<double> &dual_values) const = 0;
-};
-
-class CPLEXOptimizer : public Optimizer {
- private:
-  IloCplex cplex_;
-  IloCplex::Aborter aborter_;
-  bool started_;
-
- public:
-  CPLEXOptimizer(IloEnv env);
-
-  IloCplex cplex() const { return cplex_; }
-  IloAlgorithm algorithm() const { return cplex_; }
-
-  void StartSearch() { started_ = true; }
-  void EndSearch() { started_ = false; }
-
-  bool FindNextSolution();
-
-  void GetSolutionInfo(fmt::Writer &w, std::vector<double> &dual_values) const;
-
-  void Interrupt() { aborter_.abort(); }
-};
-
-class CPOptimizer : public Optimizer {
- private:
-  IloCP cp_;
-
- public:
-  CPOptimizer(IloEnv env, const Problem *p);
-
-  IloCP solver() const { return cp_; }
-  IloAlgorithm algorithm() const { return cp_; }
-
-  void StartSearch() { cp_.startNewSearch(); }
-  void EndSearch() { cp_.endSearch(); }
-  bool FindNextSolution() { return cp_.next() != IloFalse; }
-
-  void GetSolutionInfo(fmt::Writer &w, std::vector<double> &dual_values) const;
-
-  void Interrupt() { cp_.abortSearch(); }
-};
-
 // IlogCP solver.
-class IlogCPSolver : public Solver<IlogCPSolver> {
+class IlogCPSolver : private Interruptible, public Solver<IlogCPSolver> {
  private:
   IloEnv env_;
-  std::auto_ptr<Optimizer> optimizer_;
-  bool gotopttype_;
+  IloCP cp_;
 
   // Do not implement.
   IlogCPSolver(const IlogCPSolver&);
   IlogCPSolver &operator=(const IlogCPSolver&);
 
+  void Interrupt() { cp_.abortSearch(); }
+
  public:
   // Options accessible from AMPL.
   enum Option {
     DEBUGEXPR,
-    OPTIMIZER,
     USENUMBEROF,
     NUM_OPTIONS
   };
 
-  // Values for the OPTIMIZER option.
-  enum {
-    AUTO  = -1,
-    CP    =  0,
-    CPLEX =  1
-  };
-
  private:
   int options_[NUM_OPTIONS];
-
-  CPOptimizer *GetCPForOption(fmt::StringRef option_name) const;
-  CPLEXOptimizer *GetCPLEXForOption(fmt::StringRef option_name) const;
-
-  std::string GetOptimizer(const char *name) const;
-  void SetOptimizer(const char *name, const char *value);
 
   int GetBoolOption(const char *, Option opt) const { return options_[opt]; }
   void SetBoolOption(const char *name, int value, Option opt);
@@ -198,13 +121,8 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
   // Sets a double option of the constraint programming optimizer.
   void SetCPDblOption(const char *name, double value, IloCP::NumParam param);
 
-  // Returns an integer option of the CPLEX optimizer.
-  int GetCPLEXIntOption(const char *name, int param) const;
-
-  // Sets an integer option of the CPLEX optimizer.
-  void SetCPLEXIntOption(const char *name, int value, int param);
-
-  void CreateOptimizer(const Problem *p);
+  void GetSolution(IloNumVarArray vars,
+      std::vector<double> &solution, std::vector<double> &dual_solution);
 
  protected:
 
@@ -215,14 +133,7 @@ class IlogCPSolver : public Solver<IlogCPSolver> {
   virtual ~IlogCPSolver();
 
   IloEnv env() const { return env_; }
-
-  IloAlgorithm alg() const {
-    return optimizer_.get() ? optimizer_->algorithm() : IloAlgorithm();
-  }
-
-  Optimizer *optimizer() const { return optimizer_.get(); }
-
-  bool ParseOptions(char **argv, unsigned flags = 0, const Problem *p = 0);
+  IloCP optimizer() const { return cp_; }
 
   int GetOption(Option opt) const {
     assert(opt >= 0 && opt < NUM_OPTIONS);

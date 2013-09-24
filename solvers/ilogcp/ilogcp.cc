@@ -1,22 +1,34 @@
-/*-------------------------------------------------------------------------*/
-/* AMPL/IBM ILOG CP Optimizer driver                         Robert Fourer */
-/*                                                                         */
-/* Name           : ilogcp.cpp                                             */
-/* Title          : AMPL/IBM ILOG CP Optimizer driver                      */
-/* By             : Robert Fourer                                          */
-/* Date           : October 2000                                           */
-/*                                                                         */
-/* A driver to link AMPL linear integer programs with ILOG Concert 1.0     */
-/* October 2000: Linear/Nonlinear version                                  */
-/* June 2012:    Updated to Concert 12.4 (Victor Zverovich)                */
-/*-------------------------------------------------------------------------*/
-//
-// Possible improvements: Some sort of variable preference mechanism.
-//
-// Reference: "Extending an Algebraic Modeling Language to
-// Support Constraint Programming" by Robert Fourer and David M. Gay,
-// INFORMS Journal on Computing, Fall 2002, vol. 14, no. 4, 322-344
-// (http://joc.journal.informs.org/content/14/4/322).
+/*
+ IBM/ILOG CP solver for AMPL.
+
+ Copyright (C) 2013 AMPL Optimization Inc
+
+ Permission to use, copy, modify, and distribute this software and its
+ documentation for any purpose and without fee is hereby granted,
+ provided that the above copyright notice appear in all copies and that
+ both that the copyright notice and this permission notice and warranty
+ disclaimer appear in supporting documentation.
+
+ The author and AMPL Optimization Inc disclaim all warranties with
+ regard to this software, including all implied warranties of
+ merchantability and fitness.  In no event shall the author be liable
+ for any special, indirect or consequential damages or any damages
+ whatsoever resulting from loss of use, data or profits, whether in an
+ action of contract, negligence or other tortious action, arising out
+ of or in connection with the use or performance of this software.
+
+ Author: Victor Zverovich (based on the older version by Robert Fourer)
+
+ October 2000: Linear/Nonlinear version (Robert Fourer)
+ June 2012:    Updated to Concert 12.4 (Victor Zverovich)
+
+ Possible improvements: Some sort of variable preference mechanism.
+
+ Reference: "Extending an Algebraic Modeling Language to
+ Support Constraint Programming" by Robert Fourer and David M. Gay,
+ INFORMS Journal on Computing, Fall 2002, vol. 14, no. 4, 322-344
+ (http://joc.journal.informs.org/content/14/4/322).
+ */
 
 #include "ilogcp.h"
 #include "ilogcp_date.h"
@@ -27,17 +39,13 @@
 #include <vector>
 
 #include "solvers/util/clock.h"
-#include "solvers/ilogcp/converter.h"
+#include "solvers/ilogcp/concert.h"
 
 using std::vector;
 
 #ifndef ILOGCP_NO_VERS
 static char xxxvers[] = "ilogcp_options\0\n"
   "AMPL/IBM ILOG CP Optimizer Driver Version " qYYYYMMDD "\n";
-#endif
-
-#ifndef M_PI
-# define M_PI 3.14159265358979323846
 #endif
 
 namespace {
@@ -87,52 +95,6 @@ ampl::OptionError GetOptionValueError(
 
 namespace ampl {
 
-Optimizer::~Optimizer() {}
-
-CPLEXOptimizer::CPLEXOptimizer(IloEnv env)
-: Optimizer(env), cplex_(env), aborter_(env), started_(false) {
-  cplex_.setParam(IloCplex::MIPDisplay, 0);
-  cplex_.use(aborter_);
-}
-
-bool CPLEXOptimizer::FindNextSolution() {
-  if (!started_)
-    return false;
-  started_ = false;
-  cplex_.solve();
-  return true;
-}
-
-void CPLEXOptimizer::GetSolutionInfo(
-    fmt::Writer &w, vector<double> &dual_values) const {
-  if (cplex_.isMIP()) {
-    w << cplex_.getNnodes() << " nodes, ";
-  } else {
-    IloRangeArray cons = Optimizer::cons();
-    IloInt num_cons = cons.getSize();
-    dual_values.resize(num_cons);
-    for (IloInt i = 0; i < num_cons; ++i)
-      dual_values[i] = cplex_.getDual(cons[i]);
-  }
-  w << cplex_.getNiterations() << " iterations";
-}
-
-CPOptimizer::CPOptimizer(IloEnv env, const Problem *p)
-: Optimizer(env), cp_(env) {
-  cp_.setIntParameter(IloCP::LogVerbosity, IloCP::Quiet);
-  IloInt value = cp_.getIntParameter(IloCP::SolutionLimit);
-  if (p && p->num_objs() == 0 &&
-      cp_.getIntParameter(IloCP::SolutionLimit) == IloIntMax) {
-    cp_.setIntParameter(IloCP::SolutionLimit, 1);
-  }
-}
-
-void CPOptimizer::GetSolutionInfo(fmt::Writer &w, vector<double> &) const {
-  w.Format("{} choice points, {} fails")
-      << cp_.getInfo(IloCP::NumberOfChoicePoints)
-      << cp_.getInfo(IloCP::NumberOfFails);
-}
-
 std::string IlogCPSolver::GetOptionHeader() {
   return "IlogCP Directives for AMPL\n"
       "--------------------------\n"
@@ -147,9 +109,9 @@ std::string IlogCPSolver::GetOptionHeader() {
 }
 
 IlogCPSolver::IlogCPSolver() :
-   Solver<IlogCPSolver>("ilogcp", 0, YYYYMMDD), gotopttype_(false) {
+   Solver<IlogCPSolver>("ilogcp", 0, YYYYMMDD), cp_(env_) {
+  cp_.setIntParameter(IloCP::LogVerbosity, IloCP::Quiet);
   options_[DEBUGEXPR] = 0;
-  options_[OPTIMIZER] = AUTO;
   options_[USENUMBEROF] = 1;
 
   set_long_name(fmt::Format("ilogcp {}.{}.{}")
@@ -250,25 +212,6 @@ IlogCPSolver::IlogCPSolver() :
       "      3 = verbose\n",
       this, IloCP::LogVerbosity, IloCP::Quiet, Verbosities)));
 
-  AddIntOption<int>("mipdisplay",
-      "Frequency of displaying branch-and-bound information "
-      "(for optimizing integer variables):\n"
-      "      0 (default) = never\n"
-      "      1 = each integer feasible solution\n"
-      "      2 = every \"mipinterval\" nodes\n"
-      "      3 = every \"mipinterval\" nodes plus\n"
-      "          information on LP relaxations\n"
-      "          (as controlled by \"display\")\n"
-      "      4 = same as 2, plus LP relaxation info.\n"
-      "      5 = same as 2, plus LP subproblem info.\n",
-      &IlogCPSolver::GetCPLEXIntOption, &IlogCPSolver::SetCPLEXIntOption,
-      IloCplex::MIPDisplay);
-
-  AddIntOption<int>("mipinterval",
-      "Frequency of node logging for mipdisplay 2 or 3. Default = 1.",
-      &IlogCPSolver::GetCPLEXIntOption, &IlogCPSolver::SetCPLEXIntOption,
-      IloCplex::MIPInterval);
-
   AddOption(OptionPtr(new IntCPOption("multipointnumberofsearchpoints",
       "Number of solutions for the multi-point search "
       "algorithm.  Default = 30.",
@@ -278,16 +221,6 @@ IlogCPSolver::IlogCPSolver() :
       "Absolute tolerance on the objective value.  Default = 0.",
       &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
       IloCP::OptimalityTolerance);
-
-  AddStrOption("optimizer",
-      "Specifies which optimizer to use.  Possible values:\n"
-      "      auto  = CP Optimizer if the problem has\n"
-      "              nonlinear objective/constraints\n"
-      "              or logical constraints, CPLEX\n"
-      "              otherwise (default)\n"
-      "      cp    = CP Optimizer\n"
-      "      cplex = CPLEX Optimizer\n",
-      &IlogCPSolver::GetOptimizer, &IlogCPSolver::SetOptimizer);
 
   AddOption(OptionPtr(new EnumCPOption("outlev",
       "Synonym for \"logverbosity\".",
@@ -367,55 +300,7 @@ IlogCPSolver::~IlogCPSolver() {
   env_.end();
 }
 
-CPOptimizer *IlogCPSolver::GetCPForOption(fmt::StringRef option_name) const {
-  CPOptimizer *cp = dynamic_cast<CPOptimizer*>(optimizer_.get());
-  if (!cp) {
-    throw OptionError(
-        fmt::Format("Invalid option {} for CPLEX optimizer")
-                << option_name.c_str());
-  }
-  return cp;
-}
-
-CPLEXOptimizer *IlogCPSolver::GetCPLEXForOption(
-    fmt::StringRef option_name) const {
-  CPLEXOptimizer *cplex = dynamic_cast<CPLEXOptimizer*>(optimizer_.get());
-  if (!cplex) {
-    throw OptionError(
-        fmt::Format("Invalid option {} for CP optimizer")
-                << option_name.c_str());
-  }
-  return cplex;
-}
-
-std::string IlogCPSolver::GetOptimizer(const char *) const {
-  switch (options_[OPTIMIZER]) {
-  default:
-    assert(false);
-    // Fall through.
-  case AUTO:  return "auto";
-  case CP:    return "cp";
-  case CPLEX: return "cplex";
-  }
-}
-
-void IlogCPSolver::SetOptimizer(const char *name, const char *value) {
-  int opt = 0;
-  if (strcmp(value, "auto") == 0)
-    opt = AUTO;
-  else if (strcmp(value, "cp") == 0)
-    opt = CP;
-  else if (strcmp(value, "cplex") == 0)
-    opt = CPLEX;
-  else
-    throw InvalidOptionValue(name, value);
-  if (!gotopttype_)
-    options_[OPTIMIZER] = opt;
-}
-
 void IlogCPSolver::SetBoolOption(const char *name, int value, Option opt) {
-  if (!gotopttype_)
-    return;
   if (value != 0 && value != 1)
     throw InvalidOptionValue(name, value);
   options_[opt] = value;
@@ -424,7 +309,7 @@ void IlogCPSolver::SetBoolOption(const char *name, int value, Option opt) {
 std::string IlogCPSolver::EnumCPOption::GetValue() const {
   IloInt value = 0;
   try {
-    value = solver_.GetCPForOption(name())->solver().getParameter(param_);
+    value = solver_.cp_.getParameter(param_);
   } catch (const IloException &e) {
     throw GetOptionValueError(name(), e.getMessage());
   }
@@ -440,16 +325,14 @@ std::string IlogCPSolver::EnumCPOption::GetValue() const {
 }
 
 void IlogCPSolver::EnumCPOption::SetValue(const char *value) {
-  if (!solver_.gotopttype_)
-    return;
-  CPOptimizer *cp = solver_.GetCPForOption(name());
+  IloCP &cp = solver_.cp_;
   try {
     char *end = 0;
     long intval = std::strtol(value, &end, 0);
     if (!*end) {
       if (intval != -1 || !accepts_auto_)
         intval += start_;
-      cp->solver().setParameter(param_, intval);
+      cp.setParameter(param_, intval);
       return;
     }
     if (values_) {
@@ -457,13 +340,13 @@ void IlogCPSolver::EnumCPOption::SetValue(const char *value) {
       // Use linear search since the number of values is small.
       for (int i = 0; values_[i]; ++i) {
         if (strcmp(value, values_[i]) == 0) {
-          cp->solver().setParameter(param_, i + start_);
+          cp.setParameter(param_, i + start_);
           return;
         }
       }
     }
     if (accepts_auto_ && strcmp(value, "auto") == 0) {
-      cp->solver().setParameter(param_, IloCP::Auto);
+      cp.setParameter(param_, IloCP::Auto);
       return;
     }
   } catch (const IloException &) {}
@@ -472,18 +355,15 @@ void IlogCPSolver::EnumCPOption::SetValue(const char *value) {
 
 int IlogCPSolver::IntCPOption::GetValue() const {
   try {
-    return static_cast<int>(
-        solver_.GetCPForOption(name())->solver().getParameter(param_));
+    return static_cast<int>(solver_.cp_.getParameter(param_));
   } catch (const IloException &e) {
     throw GetOptionValueError(name(), e.getMessage());
   }
 }
 
 void IlogCPSolver::IntCPOption::SetValue(int value) {
-  if (!solver_.gotopttype_)
-    return;
   try {
-    solver_.GetCPForOption(name())->solver().setParameter(param_, value);
+    solver_.cp_.setParameter(param_, value);
   } catch (const IloException &) {
     throw InvalidOptionValue(name(), value);
   }
@@ -492,7 +372,7 @@ void IlogCPSolver::IntCPOption::SetValue(int value) {
 double IlogCPSolver::GetCPDblOption(
     const char *name, IloCP::NumParam param) const {
   try {
-    return GetCPForOption(name)->solver().getParameter(param);
+    return cp_.getParameter(param);
   } catch (const IloException &e) {
     throw GetOptionValueError(name, e.getMessage());
   }
@@ -500,76 +380,33 @@ double IlogCPSolver::GetCPDblOption(
 
 void IlogCPSolver::SetCPDblOption(
     const char *name, double value, IloCP::NumParam param) {
-  if (!gotopttype_)
-    return;
   try {
-    GetCPForOption(name)->solver().setParameter(param, value);
+    cp_.setParameter(param, value);
   } catch (const IloException &) {
     throw InvalidOptionValue(name, value);
   }
 }
 
-int IlogCPSolver::GetCPLEXIntOption(const char *name, int param) const {
-  // Use CPXgetintparam instead of IloCplex::setParam to avoid dealing with
-  // two overloads, one for the type int and one for the type long.
-  cpxenv *env = GetCPLEXForOption(name)->cplex().getImpl()->getCplexEnv();
-  int value = 0;
-  int result = CPXgetintparam(env, param, &value);
-  if (result != 0)
-    throw GetOptionValueError(name, fmt::Format("CPLEX error = {}") << result);
-  return value;
-}
-
-void IlogCPSolver::SetCPLEXIntOption(const char *name, int value, int param) {
-  if (!gotopttype_)
-    return;
-  // Use CPXsetintparam instead of IloCplex::setParam to avoid dealing with
-  // two overloads, one for the type int and one for the type long.
-  cpxenv *env = GetCPLEXForOption(name)->cplex().getImpl()->getCplexEnv();
-  if (CPXsetintparam(env, param, value) != 0)
-    throw InvalidOptionValue(name, value);
-}
-
-void IlogCPSolver::CreateOptimizer(const Problem *p) {
-  int &opt = options_[OPTIMIZER];
-  if (opt == AUTO) {
-    opt = CPLEX;
-    if (p && p->num_nonlinear_objs() + p->num_nonlinear_cons() +
-        p->num_logical_cons() != 0) {
-      opt = CP;
-    }
+void IlogCPSolver::GetSolution(IloNumVarArray vars,
+    std::vector<double> &solution, std::vector<double> &) {
+  for (int j = 0, n = vars.getSize(); j < n; ++j) {
+    IloNumVar &v = vars[j];
+    solution[j] = cp_.isExtracted(v) ? cp_.getValue(v) : v.getLB();
   }
-  if (opt == CPLEX)
-    optimizer_.reset(new CPLEXOptimizer(env_));
-  else
-    optimizer_.reset(new CPOptimizer(env_, p));
 }
 
-bool IlogCPSolver::ParseOptions(char **argv, unsigned flags, const Problem *p) {
-  // Get optimizer type.
-  gotopttype_ = false;
-  if (!BasicSolver::ParseOptions(argv, BasicSolver::NO_OPTION_ECHO))
-    return false;
-  CreateOptimizer(p);
-
-  // Parse remaining options.
-  gotopttype_ = true;
-  return BasicSolver::ParseOptions(argv, flags);
+inline const double *ptr(const std::vector<double> &v) {
+  return v.empty() ? 0 : &v[0];
 }
 
 void IlogCPSolver::Solve(Problem &p) {
   steady_clock::time_point time = steady_clock::now();
 
-  // Set up optimization problem in ILOG Concert.
-
   int num_continuous_vars = p.num_continuous_vars();
-  if (num_continuous_vars != 0 && GetOption(OPTIMIZER) == CP)
+  if (num_continuous_vars != 0)
     throw Error("CP Optimizer doesn't support continuous variables");
 
-  if (!optimizer_.get())
-    CreateOptimizer(&p);
-  optimizer_->AllocateCons(p.num_cons());
-
+  // Set up optimization problem using the Concert API.
   int num_vars = p.num_vars();
   IloNumVarArray vars(env_, num_vars);
   for (int j = 0; j < num_continuous_vars; j++)
@@ -598,7 +435,7 @@ void IlogCPSolver::Solve(Problem &p) {
   }
 
   if (int n_cons = p.num_cons()) {
-    IloRangeArray cons(optimizer_->cons());
+    IloRangeArray cons(env_, n_cons);
     for (int i = 0; i < n_cons; ++i) {
       IloExpr expr(env_);
       LinearConExpr linear = p.linear_con_expr(i);
@@ -622,12 +459,16 @@ void IlogCPSolver::Solve(Problem &p) {
 
   converter.FinishBuildingNumberOf();
 
+  if (p.num_objs() == 0 &&
+      cp_.getIntParameter(IloCP::SolutionLimit) == IloIntMax) {
+    cp_.setIntParameter(IloCP::SolutionLimit, 1);
+  }
+
   double setup_time = GetTimeAndReset(time);
 
   // Solve the problem.
-  IloAlgorithm alg(optimizer_->algorithm());
   try {
-    alg.extract(model);
+    cp_.extract(model);
   } catch (IloAlgorithm::CannotExtractException &e) {
     const IloExtractableArray &extractables = e.getExtractables();
     if (extractables.getSize() == 0)
@@ -635,98 +476,100 @@ void IlogCPSolver::Solve(Problem &p) {
     throw UnsupportedExprError::CreateFromExprString(
         str(fmt::Format("{}") << extractables[0]));
   }
-  SignalHandler sh(*this, optimizer_.get());
-  vector<double> solution, dual_solution;
-  double solution_time = 0, output_time = 0;
-  optimizer_->StartSearch();
-  std::set< std::vector<double> > solutions;
-  int num_solutions = 0;
-  for (bool succeeded = true, first = true; ; first = false) {
-    succeeded = optimizer_->FindNextSolution();
-    if (!succeeded && !first)
-      break;
-    // Convert solution status.
-    bool has_solution = false;
-    int solve_code = 0;
-    const char *status;
-    switch (alg.getStatus()) {
-    default:
-      // Fall through.
-    case IloAlgorithm::Unknown:
-      if (sh.stop()) {
-        solve_code = 600;
-        status = "interrupted";
-      } else {
-        solve_code = 501;
-        status = "unknown solution status";
-      }
-      break;
-    case IloAlgorithm::Feasible:
-      has_solution = true;
-      if (sh.stop()) {
-        solve_code = 600;
-        status = "interrupted";
-      } else {
-        solve_code = 100;
-        status = "feasible solution";
-      }
-      break;
-    case IloAlgorithm::Optimal:
-      has_solution = true;
-      solve_code = 0;
-      status = "optimal solution";
-      break;
-    case IloAlgorithm::Infeasible:
-      solve_code = 200;
-      status = "infeasible problem";
-      break;
-    case IloAlgorithm::Unbounded:
-      solve_code = 300;
-      status = "unbounded problem";
-      break;
-    case IloAlgorithm::InfeasibleOrUnbounded:
-      solve_code = 201;
-      status = "infeasible or unbounded problem";
-      break;
-    case IloAlgorithm::Error:
-      solve_code = 500;
-      status = "error";
-      break;
-    }
-    p.set_solve_code(solve_code);
 
-    fmt::Writer writer;
-    writer.Format("{}: {}\n") << long_name() << status;
+  SignalHandler sh(*this, this);
+  vector<double> solution(num_vars), dual_solution;
+  double solution_time = 0, output_time = 0;
+  cp_.startNewSearch();
+  std::set< std::vector<double> > solutions;
+  std::string feasible_sol_message =
+      str(fmt::Format("{}: feasible solution") << long_name());
+  while (cp_.next() != IloFalse) {
+    GetSolution(vars, solution, dual_solution);
+    if (!solutions.insert(solution).second)
+      continue;
     double obj_value = std::numeric_limits<double>::quiet_NaN();
-    solution.clear();
-    dual_solution.clear();
-    if (has_solution) {
-      solution.resize(num_vars);
-      for (int j = 0, n = p.num_vars(); j < n; ++j) {
-        IloNumVar &v = vars[j];
-        solution[j] = alg.isExtracted(v) ? alg.getValue(v) : v.getLB();
-      }
-      if (!solutions.insert(solution).second)
-        continue;  // duplicate solution
-      optimizer_->GetSolutionInfo(writer, dual_solution);
-      if (num_objs > 0) {
-        obj_value = alg.getObjValue();
-        writer.Format(", objective {}") << ObjPrec(obj_value);
-      }
-    }
-    solution_time += GetTimeAndReset(time);
-    // TODO: write the suffix only in the final solution
-    Suffix nsol_suffix = p.suffix("nsol", ASL_Sufkind_prob);
-    if (nsol_suffix) {
-      int num_solutions = solutions.size();
-      nsol_suffix.set_values(&num_solutions);
-    }
-    DoHandleSolution(p, writer.c_str(), solution.empty() ? 0 : &solution[0],
-        dual_solution.empty() ? 0 : &dual_solution[0], obj_value);
-    output_time += GetTimeAndReset(time);
+    if (num_objs > 0)
+      obj_value = cp_.getObjValue();
+    DoHandleFeasibleSolution(p, feasible_sol_message,
+        ptr(solution), ptr(dual_solution), obj_value);
   }
-  optimizer_->EndSearch();
-  solution_time += GetTimeAndReset(time);
+  cp_.endSearch();
+  solution_time = GetTimeAndReset(time);
+
+  // Convert solution status.
+  bool has_solution = false;
+  int solve_code = 0;
+  const char *status;
+  switch (cp_.getStatus()) {
+  default:
+    // Fall through.
+  case IloAlgorithm::Unknown:
+    if (sh.stop()) {
+      solve_code = 600;
+      status = "interrupted";
+    } else {
+      solve_code = 501;
+      status = "unknown solution status";
+    }
+    break;
+  case IloAlgorithm::Feasible:
+    has_solution = true;
+    if (sh.stop()) {
+      solve_code = 600;
+      status = "interrupted";
+    } else {
+      solve_code = 100;
+      status = "feasible solution";
+    }
+    break;
+  case IloAlgorithm::Optimal:
+    has_solution = true;
+    solve_code = 0;
+    status = "optimal solution";
+    break;
+  case IloAlgorithm::Infeasible:
+    solve_code = 200;
+    status = "infeasible problem";
+    break;
+  case IloAlgorithm::Unbounded:
+    solve_code = 300;
+    status = "unbounded problem";
+    break;
+  case IloAlgorithm::InfeasibleOrUnbounded:
+    solve_code = 201;
+    status = "infeasible or unbounded problem";
+    break;
+  case IloAlgorithm::Error:
+    solve_code = 500;
+    status = "error";
+    break;
+  }
+  p.set_solve_code(solve_code);
+
+  fmt::Writer writer;
+  writer.Format("{}: {}\n") << long_name() << status;
+  double obj_value = std::numeric_limits<double>::quiet_NaN();
+  if (has_solution) {
+    GetSolution(vars, solution, dual_solution);
+    writer.Format("{} choice points, {} fails")
+        << cp_.getInfo(IloCP::NumberOfChoicePoints)
+        << cp_.getInfo(IloCP::NumberOfFails);
+    if (num_objs > 0) {
+      obj_value = cp_.getObjValue();
+      writer.Format(", objective {}") << ObjPrec(obj_value);
+    }
+  } else {
+    solution.clear();
+  }
+  Suffix nsol_suffix = p.suffix("nsol", ASL_Sufkind_prob);
+  if (nsol_suffix) {
+    int num_solutions = solutions.size();
+    nsol_suffix.set_values(&num_solutions);
+  }
+  DoHandleSolution(p, writer.c_str(),
+      ptr(solution), ptr(dual_solution), obj_value);
+  output_time = GetTimeAndReset(time);
 
   if (timing()) {
     Print("Setup time = {:.6f}s\n"
