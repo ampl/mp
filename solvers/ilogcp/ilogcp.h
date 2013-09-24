@@ -100,21 +100,21 @@ class CPLEXOptimizer : public Optimizer {
 
 class CPOptimizer : public Optimizer {
  private:
-  IloCP solver_;
+  IloCP cp_;
 
  public:
   CPOptimizer(IloEnv env, const Problem *p);
 
-  IloCP solver() const { return solver_; }
-  IloAlgorithm algorithm() const { return solver_; }
+  IloCP solver() const { return cp_; }
+  IloAlgorithm algorithm() const { return cp_; }
 
-  void StartSearch() { solver_.startNewSearch(); }
-  void EndSearch() { solver_.endSearch(); }
-  bool FindNextSolution() { return solver_.next() != IloFalse; }
+  void StartSearch() { cp_.startNewSearch(); }
+  void EndSearch() { cp_.endSearch(); }
+  bool FindNextSolution() { return cp_.next() != IloFalse; }
 
   void GetSolutionInfo(fmt::Writer &w, std::vector<double> &dual_values) const;
 
-  void Interrupt() { solver_.abortSearch(); }
+  void Interrupt() { cp_.abortSearch(); }
 };
 
 class NLToConcertConverter;

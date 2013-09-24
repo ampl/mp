@@ -168,7 +168,7 @@ void SMPSWriter::WriteColumns(
   bool integer_block = false;
   for (int stage = 0; stage < num_stages; ++stage) {
     for (int i = 0, n = p.num_vars(); i < n; ++i) {
-      int var_stage = stage_suffix ?
+      int var_stage = stage_suffix && stage_suffix.has_values() ?
           std::max(stage_suffix.int_value(i) - 1, 0) : 0;
       if (var_stage != stage) continue;
       int core_var_index = var_info[i].core_index;
@@ -249,7 +249,7 @@ void SMPSWriter::Solve(Problem &p) {
   Suffix stage_suffix = p.suffix("stage", ASL_Sufkind_var);
   int num_stage0_vars = num_vars;
   int num_stages = 1;
-  if (stage_suffix) {
+  if (stage_suffix && stage_suffix.has_values()) {
     num_stage0_vars = 0;
     for (int i = 0; i < num_vars; ++i) {
       int stage_plus_1 = stage_suffix.int_value(i);
@@ -268,7 +268,7 @@ void SMPSWriter::Solve(Problem &p) {
   var_info.resize(num_vars);
   con_info.resize(num_cons);
   scenarios.clear();
-  if (stage_suffix) {
+  if (stage_suffix && stage_suffix.has_values()) {
     std::map<std::string, int> scenario_indices;
     int stage0_var_count = 0;
     std::map<std::string, int> stage1_vars;
@@ -430,13 +430,16 @@ void SMPSWriter::Solve(Problem &p) {
         const VarConInfo &info = var_info[i->var_index()];
         if (info.scenario_index == 0) {
           double coef = i->coef();
-          if (stage_suffix && stage_suffix.int_value(i->var_index()) - 1 > 0)
+          if (stage_suffix && stage_suffix.has_values() &&
+              stage_suffix.int_value(i->var_index()) - 1 > 0) {
             coef /= probabilities[0];
+          }
           core_obj_coefs[info.core_index] = coef;
         }
         // Check probabilities deduced using other variables.
         if (probabilities.size() != 1 &&
-            stage_suffix && stage_suffix.int_value(i->var_index()) - 1 > 0) {
+            stage_suffix && stage_suffix.has_values() &&
+            stage_suffix.int_value(i->var_index()) - 1 > 0) {
           double ref_prob = probabilities[info.scenario_index];
           double prob = i->coef() / sum_core_obj_coefs[info.core_index];
           double prob_tolerance = 1e-5;
