@@ -187,7 +187,7 @@ LinExpr NLToGecodeConverter::ConvertExpr(
 }
 
 Gecode::IntConLevel NLToGecodeConverter::GetICL(int con_index) const {
-  if (!icl_suffix_)
+  if (!icl_suffix_ || !icl_suffix_.has_values())
     return icl_;
   int value = icl_suffix_.int_value(con_index);
   assert(value == Gecode::ICL_VAL || value == Gecode::ICL_BND ||
