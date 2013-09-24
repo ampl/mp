@@ -307,7 +307,7 @@ struct TestSolutionHandler : ampl::SolutionHandler {
   }
 };
 
-TEST_F(IlogCPTest, SolutionLimit) {
+TEST_F(IlogCPTest, DefaultSolutionLimit) {
   ampl::Problem p;
   p.AddVar(1, 3, ampl::INTEGER);
   p.AddVar(1, 3, ampl::INTEGER);
@@ -320,8 +320,7 @@ TEST_F(IlogCPTest, SolutionLimit) {
   EXPECT_EQ(1, sh.num_solutions);
 }
 
-// TODO: this test is currently disabled because CP reports identical solutions
-TEST_F(IlogCPTest, DISABLED_SolutionLimit) {
+TEST_F(IlogCPTest, SolutionLimit) {
   ampl::Problem p;
   p.AddVar(1, 3, ampl::INTEGER);
   p.AddVar(1, 3, ampl::INTEGER);
