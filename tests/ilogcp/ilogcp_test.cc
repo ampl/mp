@@ -26,24 +26,21 @@
 # pragma clang diagnostic ignored "-Wunused-private-field"
 #endif
 
-#include <ilconcert/ilodiffi.h>
 #include <ilconcert/ilopathi.h>
-#include <ilcplex/ilocplex.h>
 #include <ilcp/cp.h>
+#include <ilcplex/cpxconst.h>
 
 #if __clang__
 # pragma clang diagnostic pop
 #endif
 
 #include <algorithm>
-#include <memory>
+#include <stdexcept>
 #include <string>
-#include <cstdlib>
 
 #include "gtest/gtest.h"
 
 #include "solvers/ilogcp/ilogcp.h"
-#include "solvers/util/expr.h"
 
 extern "C" {
 #include "solvers/asl.h"
@@ -54,31 +51,20 @@ extern "C" {
 #include "tests/args.h"
 #include "tests/expr_builder.h"
 #include "tests/solver_test.h"
-#include "tests/solution_handler.h"
 #include "tests/config.h"
 
-#ifdef HAVE_THREADS
-# include <thread>
-#endif
-
-using std::size_t;
-using std::string;
-
-using ampl::CPLEXOptimizer;
-using ampl::CPOptimizer;
 using ampl::IlogCPSolver;
 using ampl::Problem;
-using ampl::UnsupportedExprError;
 
 namespace {
 
-SolverPtr CreateSolver() { return SolverPtr(new ampl::IlogCPSolver()); }
+SolverPtr CreateSolver() { return SolverPtr(new IlogCPSolver()); }
 
 INSTANTIATE_TEST_CASE_P(IlogCP, SolverTest,
     ::testing::Values(SolverTestParam(CreateSolver, feature::ALL)));
 
 TEST_P(SolverTest, CPOptimizerDoesntSupportContinuousVars) {
-  EXPECT_THROW(Solve("objconst", "optimizer=cp"), ampl::Error);
+  EXPECT_THROW(Solve("objconst"), ampl::Error);
 }
 
 TEST_P(SolverTest, SolveBalassign0) {
@@ -87,14 +73,6 @@ TEST_P(SolverTest, SolveBalassign0) {
 
 TEST_P(SolverTest, SolveBalassign1) {
   EXPECT_EQ(14, Solve("balassign1").obj);
-}
-
-TEST_P(SolverTest, SolveFlowshp2) {
-  EXPECT_EQ(22, Solve("flowshp2", "optimizer=cplex").obj);
-}
-
-TEST_P(SolverTest, SolveOpenShop) {
-  EXPECT_NEAR(1955, Solve("openshop", "optimizer=cplex").obj, 1e-5);
 }
 
 struct EnumValue {
@@ -123,7 +101,7 @@ class IlogCPTest : public ::testing::Test, public ampl::ExprBuilder {
   }
 
   template <typename T>
-  static string Option(const char *name, T value) {
+  static std::string Option(const char *name, T value) {
     return str(fmt::Format("{}={}") << name << value);
   }
 
@@ -131,17 +109,13 @@ class IlogCPTest : public ::testing::Test, public ampl::ExprBuilder {
       int start, int end, int offset = 0, bool accepts_auto = false,
       const EnumValue *values = 0);
 
-  template <typename ParamT>
-  void CheckIntCPLEXOption(
-      const char *option, ParamT param, int start, int end);
-
   void CheckDblCPOption(const char *option,
       IloCP::NumParam param, double good, double bad);
 };
 
 int IlogCPTest::CountIloDistribute() {
   int count = 0;
-  for (IloModel::Iterator i(s.alg().getModel()); i.ok(); ++i) {
+  for (IloModel::Iterator i(s.optimizer().getModel()); i.ok(); ++i) {
     if (dynamic_cast<IloDistributeI*>((*i).getImpl()))
       ++count;
   }
@@ -151,11 +125,10 @@ int IlogCPTest::CountIloDistribute() {
 void IlogCPTest::CheckIntCPOption(const char *option,
     IloCP::IntParam param, int start, int end, int offset, bool accepts_auto,
     const EnumValue *values) {
+  IloCP cp = s.optimizer();
   for (int i = start; i <= std::min(end, 9); ++i) {
-    EXPECT_TRUE(ParseOptions("optimizer=cp", Option(option, i).c_str()));
-    CPOptimizer *opt = dynamic_cast<CPOptimizer*>(s.optimizer());
-    ASSERT_TRUE(opt != nullptr);
-    EXPECT_EQ(offset + i, opt->solver().getParameter(param))
+    EXPECT_TRUE(ParseOptions(Option(option, i).c_str()));
+    EXPECT_EQ(offset + i, cp.getParameter(param))
       << "Failed option: " << option;
     if (!values) {
       if (accepts_auto)
@@ -165,32 +138,24 @@ void IlogCPTest::CheckIntCPOption(const char *option,
     }
   }
   if (end != INT_MAX)
-    EXPECT_FALSE(ParseOptions("optimizer=cp", Option(option, end + 1).c_str()));
+    EXPECT_FALSE(ParseOptions(Option(option, end + 1).c_str()));
   if (accepts_auto) {
-    EXPECT_TRUE(ParseOptions("optimizer=cp", Option(option, -1).c_str()));
-    CPOptimizer *opt = dynamic_cast<CPOptimizer*>(s.optimizer());
-    ASSERT_TRUE(opt != nullptr);
-    EXPECT_EQ(IloCP::Auto, opt->solver().getParameter(param));
+    EXPECT_TRUE(ParseOptions(Option(option, -1).c_str()));
+    EXPECT_EQ(IloCP::Auto, cp.getParameter(param));
 
-    EXPECT_TRUE(ParseOptions("optimizer=cp", Option(option, "auto").c_str()));
-    opt = dynamic_cast<CPOptimizer*>(s.optimizer());
-    ASSERT_TRUE(opt != nullptr);
-    EXPECT_EQ(IloCP::Auto, opt->solver().getParameter(param));
+    EXPECT_TRUE(ParseOptions(Option(option, "auto").c_str()));
+    EXPECT_EQ(IloCP::Auto, cp.getParameter(param));
     EXPECT_EQ("auto", s.GetStrOption(option));
   }
   int small = start - 1;
   if (accepts_auto && small == -1)
     --small;
-  EXPECT_FALSE(ParseOptions("optimizer=cp", Option(option, small).c_str()));
-  EXPECT_FALSE(ParseOptions("optimizer=cplex", Option(option, start).c_str()));
+  EXPECT_FALSE(ParseOptions(Option(option, small).c_str()));
   if (values) {
     int count = 0;
     for (const EnumValue *v = values; v->name; ++v, ++count) {
-      EXPECT_TRUE(ParseOptions(
-          "optimizer=cp", Option(option, v->name).c_str()));
-      CPOptimizer *opt = dynamic_cast<CPOptimizer*>(s.optimizer());
-      ASSERT_TRUE(opt != nullptr);
-      EXPECT_EQ(v->value, opt->solver().getParameter(param))
+      EXPECT_TRUE(ParseOptions(Option(option, v->name).c_str()));
+      EXPECT_EQ(v->value, cp.getParameter(param))
         << "Failed option: " << option;
       EXPECT_EQ(v->name, s.GetStrOption(option)) << "Failed option: " << option;
     }
@@ -198,40 +163,13 @@ void IlogCPTest::CheckIntCPOption(const char *option,
   }
 }
 
-template <typename ParamT>
-void IlogCPTest::CheckIntCPLEXOption(const char *option,
-    ParamT param, int start, int end) {
-  for (int i = std::max(start, -9); i <= std::min(end, 9); ++i) {
-    EXPECT_TRUE(ParseOptions("optimizer=cplex", Option(option, i).c_str()));
-    CPLEXOptimizer *opt = dynamic_cast<CPLEXOptimizer*>(s.optimizer());
-    ASSERT_TRUE(opt != nullptr);
-    EXPECT_EQ(i, opt->cplex().getParam(param))
-      << "Failed option: " << option;
-    EXPECT_EQ(i, s.GetIntOption(option));
-  }
-  if (end != INT_MAX) {
-    EXPECT_FALSE(ParseOptions("optimizer=cplex",
-        Option(option, end + 1).c_str()));
-  }
-  if (start != INT_MIN) {
-    int small = start - 1;
-    EXPECT_FALSE(ParseOptions("optimizer=cplex",
-        Option(option, small).c_str()));
-    EXPECT_FALSE(ParseOptions("optimizer=cp", Option(option, start).c_str()));
-  }
-}
-
 void IlogCPTest::CheckDblCPOption(const char *option,
     IloCP::NumParam param, double good, double bad) {
-  EXPECT_TRUE(ParseOptions("optimizer=cp", Option(option, good).c_str()));
-  CPOptimizer *opt = dynamic_cast<CPOptimizer*>(s.optimizer());
-  ASSERT_TRUE(opt != nullptr);
-  EXPECT_EQ(good, opt->solver().getParameter(param))
+  EXPECT_TRUE(ParseOptions(Option(option, good).c_str()));
+  EXPECT_EQ(good, s.optimizer().getParameter(param))
     << "Failed option: " << option;
   EXPECT_EQ(good, s.GetDblOption(option));
-
-  EXPECT_FALSE(ParseOptions("optimizer=cp", Option(option, bad).c_str()));
-  EXPECT_FALSE(ParseOptions("optimizer=cplex", Option(option, good).c_str()));
+  EXPECT_FALSE(ParseOptions(Option(option, bad).c_str()));
 }
 
 TEST_F(IlogCPTest, IloArrayCopyingIsCheap) {
@@ -243,7 +181,7 @@ TEST_F(IlogCPTest, IloArrayCopyingIsCheap) {
 
 TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
   s.use_numberof();
-  ampl::Problem p;
+  Problem p;
   p.AddVar(0, 0, ampl::INTEGER);
   p.AddVar(0, 0, ampl::INTEGER);
   p.AddCon(AddRelational(EQ, AddNum(0),
@@ -254,7 +192,7 @@ TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
 
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
   s.use_numberof();
-  ampl::Problem p;
+  Problem p;
   p.AddVar(0, 0, ampl::INTEGER);
   p.AddVar(0, 0, ampl::INTEGER);
   p.AddCon(AddRelational(EQ, AddNum(0),
@@ -267,7 +205,7 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
 
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
   s.use_numberof();
-  ampl::Problem p;
+  Problem p;
   p.AddVar(0, 0, ampl::INTEGER);
   p.AddVar(0, 0, ampl::INTEGER);
   p.AddCon(AddRelational(EQ, AddNum(0),
@@ -280,7 +218,7 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
 
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
   s.use_numberof();
-  ampl::Problem p;
+  Problem p;
   p.AddVar(0, 0, ampl::INTEGER);
   p.AddVar(0, 0, ampl::INTEGER);
   p.AddCon(AddRelational(EQ, AddNum(0),
@@ -308,41 +246,15 @@ struct TestSolutionHandler : ampl::SolutionHandler {
 };
 
 TEST_F(IlogCPTest, DefaultSolutionLimit) {
-  ampl::Problem p;
+  Problem p;
   p.AddVar(1, 3, ampl::INTEGER);
   p.AddVar(1, 3, ampl::INTEGER);
   p.AddVar(1, 3, ampl::INTEGER);
   p.AddCon(AddAllDiff(AddVar(0), AddVar(1), AddVar(2)));
   TestSolutionHandler sh;
   s.set_solution_handler(&sh);
-  ParseOptions("optimizer=cp", nullptr, &p);
   s.Solve(p);
   EXPECT_EQ(1, sh.num_solutions);
-}
-
-TEST_F(IlogCPTest, SolutionLimit) {
-  ampl::Problem p;
-  p.AddVar(1, 3, ampl::INTEGER);
-  p.AddVar(1, 3, ampl::INTEGER);
-  p.AddVar(1, 3, ampl::INTEGER);
-  p.AddCon(AddAllDiff(AddVar(0), AddVar(1), AddVar(2)));
-  TestSolutionHandler sh;
-  ParseOptions("optimizer=cp", "solutionlimit=100");
-  s.set_solution_handler(&sh);
-  s.Solve(p);
-  EXPECT_EQ(6, sh.num_solutions);
-}
-
-TEST_F(IlogCPTest, SolveNumberOfCplex) {
-  s.use_numberof(false);
-  Problem p;
-  Solve(p, "numberof", "optimizer=cplex");
-}
-
-TEST_F(IlogCPTest, InfeasibleOrUnboundedSolveCode) {
-  Problem p;
-  Solve(p, "unbounded");
-  EXPECT_EQ(201, p.solve_code());
 }
 
 // ----------------------------------------------------------------------------
@@ -357,21 +269,6 @@ TEST_F(IlogCPTest, DebugExprOption) {
   EXPECT_EQ(1, s.GetIntOption("debugexpr"));
   EXPECT_FALSE(ParseOptions("debugexpr=42"));
   EXPECT_FALSE(ParseOptions("debugexpr=oops"));
-}
-
-TEST_F(IlogCPTest, OptimizerOption) {
-  EXPECT_EQ(IlogCPSolver::AUTO, s.GetOption(IlogCPSolver::OPTIMIZER));
-  EXPECT_EQ("auto", s.GetStrOption("optimizer"));
-
-  EXPECT_TRUE(ParseOptions("optimizer=cplex"));
-  EXPECT_EQ("cplex", s.GetStrOption("optimizer"));
-  EXPECT_EQ(IlogCPSolver::CPLEX, s.GetOption(IlogCPSolver::OPTIMIZER));
-  EXPECT_TRUE(dynamic_cast<IloCplexI*>(s.alg().getImpl()) != nullptr);
-
-  EXPECT_TRUE(ParseOptions("optimizer=cp"));
-  EXPECT_EQ("cp", s.GetStrOption("optimizer"));
-  EXPECT_EQ(IlogCPSolver::CP, s.GetOption(IlogCPSolver::OPTIMIZER));
-  EXPECT_TRUE(dynamic_cast<IloCplexI*>(s.alg().getImpl()) == nullptr);
 }
 
 TEST_F(IlogCPTest, UseNumberOfOption) {
@@ -417,10 +314,7 @@ TEST_F(IlogCPTest, CPInferenceLevelOptions) {
 }
 
 TEST_F(IlogCPTest, CPDefaultVerbosityQuiet) {
-  EXPECT_TRUE(ParseOptions("optimizer=cp"));
-  CPOptimizer *opt = dynamic_cast<CPOptimizer*>(s.optimizer());
-  ASSERT_TRUE(opt != nullptr);
-  EXPECT_EQ(IloCP::Quiet, opt->solver().getParameter(IloCP::LogVerbosity));
+  EXPECT_EQ(IloCP::Quiet, s.optimizer().getParameter(IloCP::LogVerbosity));
   EXPECT_EQ("quiet", s.GetStrOption("logverbosity"));
 }
 
@@ -483,46 +377,4 @@ TEST_F(IlogCPTest, CPOptions) {
   else
     CheckIntCPOption("workers", IloCP::Workers, 1, 4, 0, false);
 }
-
-TEST_F(IlogCPTest, CPLEXDefaultMIPDisplayZero) {
-  EXPECT_TRUE(ParseOptions("optimizer=cplex"));
-  CPLEXOptimizer *opt = dynamic_cast<CPLEXOptimizer*>(s.optimizer());
-  ASSERT_TRUE(opt != nullptr);
-  EXPECT_EQ(0, opt->cplex().getParam(IloCplex::MIPDisplay));
-  EXPECT_EQ(0, s.GetIntOption("mipdisplay"));
-}
-
-TEST_F(IlogCPTest, CPLEXOptions) {
-  CheckIntCPLEXOption("mipdisplay", IloCplex::MIPDisplay, 0, 5);
-  CheckIntCPLEXOption("mipinterval", IloCplex::MIPInterval, INT_MIN, INT_MAX);
-}
-
-// ----------------------------------------------------------------------------
-
-#ifdef HAVE_THREADS
-void Interrupt() {
-  // Wait until started.
-  while (ampl::SignalHandler::stop())
-    std::this_thread::yield();
-  std::raise(SIGINT);
-}
-
-TEST_F(IlogCPTest, InterruptCPLEX) {
-  std::thread t(Interrupt);
-  Problem p;
-  std::string message = Solve(p, "miplib/assign1", "optimizer=cplex").message;
-  t.join();
-  EXPECT_EQ(600, p.solve_code());
-  EXPECT_TRUE(message.find("interrupted") != string::npos);
-}
-
-TEST_F(IlogCPTest, InterruptCP) {
-  std::thread t(Interrupt);
-  Problem p;
-  std::string message = Solve(p, "miplib/assign1", "optimizer=cp").message;
-  t.join();
-  EXPECT_EQ(600, p.solve_code());
-  EXPECT_TRUE(message.find("interrupted") != string::npos);
-}
-#endif
 }

@@ -7,7 +7,7 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
   include_directories(.. ${CPLEX_ILOCPLEX_INCLUDE_DIRS}
     ${CPLEX_CP_INCLUDE_DIRS})
 
-  add_library(amplilogcp converter.cc converter.h
+  add_library(amplilogcp concert.cc concert.h
     ilogcp.cc ilogcp.h ilogcp_date.h ../util/util-all.cc)
   target_link_libraries(amplilogcp
     ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_CP_LIBRARIES} ${CPLEX_LIBRARIES})

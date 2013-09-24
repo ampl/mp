@@ -1,5 +1,5 @@
 /*
- Converter of optimization problems from NL to Concert format.
+ AMPL to IBM/ILOG Concert interface.
 
  Copyright (C) 2013 AMPL Optimization Inc
 
@@ -20,8 +20,8 @@
  Author: Victor Zverovich
  */
 
-#ifndef AMPL_SOLVERS_ILOGCP_CONVERTER_H
-#define AMPL_SOLVERS_ILOGCP_CONVERTER_H
+#ifndef AMPL_SOLVERS_ILOGCP_CONCERT_H
+#define AMPL_SOLVERS_ILOGCP_CONCERT_H
 
 #include <ilconcert/ilomodel.h>
 
@@ -322,4 +322,4 @@ class NLToConcertConverter : public Visitor {
 };
 }
 
-#endif  // AMPL_SOLVERS_ILOGCP_CONVERTER_H
+#endif  // AMPL_SOLVERS_ILOGCP_CONCERT_H
