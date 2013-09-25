@@ -25,9 +25,15 @@
 
 #include <ilconcert/ilomodel.h>
 
-#include "solvers/util/expr.h"
+#include <iostream>
+#include <memory>
+
+#include "solvers/util/solver.h"
 
 namespace ampl {
+
+class Problem;
+class SignalHandler;
 
 class NLToConcertConverter;
 
@@ -39,6 +45,7 @@ class NLToConcertConverter : public Visitor {
   IloEnv env_;
   IloModel model_;
   IloNumVarArray vars_;
+  IloRangeArray cons_;
   bool use_numberof_;
   bool debug_;
 
@@ -60,10 +67,11 @@ class NLToConcertConverter : public Visitor {
   IloNumExprArray ConvertArgs(VarArgExpr e);
 
  public:
-  NLToConcertConverter(
-      IloEnv env, IloNumVarArray vars, bool use_numberof, bool debug);
+  NLToConcertConverter(IloEnv env, bool use_numberof, bool debug);
 
   IloModel model() const { return model_; }
+  IloNumVarArray vars() const { return vars_; }
+  IloRangeArray cons() const { return cons_; }
 
   IloExpr Visit(NumericExpr e) {
     if (debug_)
@@ -319,7 +327,27 @@ class NLToConcertConverter : public Visitor {
   // Combines 'numberof' operators into IloDistribute constraints
   // which are much more useful to the solution procedure.
   void FinishBuildingNumberOf();
+
+  void Convert(const Problem &p);
 };
+
+std::string ConvertSolutionStatus(IloAlgorithm alg,
+    const SignalHandler &sh, int &solve_code, bool &has_solution);
+
+template <typename Solver>
+int RunSolver(char **argv) {
+  // Solver should be destroyed after any IloException is handled.
+  std::auto_ptr<Solver> s;
+  try {
+    s.reset(new Solver());
+    return s->Run(argv);
+  } catch (const IloException &e) {
+    std::cerr << "Error: " << e << std::endl;
+  } catch (const ampl::Error &e) {
+    std::cerr << "Error: " << e.what() << std::endl;
+  }
+  return 1;
+}
 }
 
 #endif  // AMPL_SOLVERS_ILOGCP_CONCERT_H

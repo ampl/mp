@@ -918,12 +918,23 @@ TEST(SolverTest, InputTiming) {
   }
 }
 
-TEST(SolverTest, Suffix) {
+TEST(SolverTest, InputSuffix) {
   TestSolver s("");
   s.AddSuffix("answer", 0, ASL_Sufkind_var, 0);
   Problem p;
   s.ProcessArgs(Args("program-name", "../data/suffix.nl"), p);
   ampl::Suffix suffix = p.suffix("answer", ASL_Sufkind_var);
+  EXPECT_EQ(42, suffix.int_value(0));
+}
+
+TEST(SolverTest, OutputSuffix) {
+  TestSolver s("");
+  s.AddSuffix("answer", 0, ASL_Sufkind_var | ASL_Sufkind_outonly, 0);
+  Problem p;
+  s.ProcessArgs(Args("program-name"), p);
+  ampl::Suffix suffix = p.suffix("answer", ASL_Sufkind_var);
+  int value = 42;
+  suffix.set_values(&value);
   EXPECT_EQ(42, suffix.int_value(0));
 }
 }

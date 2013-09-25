@@ -229,7 +229,7 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
   ASSERT_EQ(2, CountIloDistribute());
 }
 
-struct TestSolutionHandler : ampl::SolutionHandler {
+struct TestSolutionHandler : ampl::DefaultSolutionHandler {
   int num_solutions;
   TestSolutionHandler() : num_solutions(0) {}
   void HandleSolution(Problem &, fmt::StringRef,

@@ -69,7 +69,7 @@ using ampl::UnsupportedExprError;
       GTEST_NONFATAL_FAILURE_)
 
 SolverTest::EvalResult SolverTest::Solve(Problem &p) {
-  struct TestSolutionHandler : ampl::SolutionHandler {
+  struct TestSolutionHandler : ampl::DefaultSolutionHandler {
     EvalResult result;
     virtual ~TestSolutionHandler() {}
     void HandleSolution(ampl::Problem &, fmt::StringRef,
@@ -754,10 +754,6 @@ TEST_P(SolverTest, SolveAssign1) {
   EXPECT_EQ(6, Solve("assign1").obj);
 }
 
-TEST_P(SolverTest, SolveFlowshp0) {
-  EXPECT_EQ(22, Solve("flowshp0").obj);
-}
-
 TEST_P(SolverTest, SolveFlowshp1) {
   EXPECT_EQ(22, Solve("flowshp1").obj);
 }
@@ -859,3 +855,27 @@ TEST_P(SolverTest, InterruptSolution) {
   EXPECT_TRUE(message.find("interrupted") != string::npos);
 }
 #endif
+
+struct SolutionCounter : ampl::DefaultSolutionHandler {
+  int num_solutions;
+  SolutionCounter() : num_solutions(0) {}
+  void HandleFeasibleSolution(Problem &, fmt::StringRef,
+        const double *values, const double *, double) {
+    ++num_solutions;
+  }
+};
+
+TEST_P(SolverTest, SolutionLimit) {
+  ampl::Problem p;
+  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddCon(AddAllDiff(AddVar(0), AddVar(1), AddVar(2)));
+  SolutionCounter sc;
+  solver_->SetIntOption("solutionlimit", 100);
+  solver_->set_solution_handler(&sc);
+  solver_->Solve(p);
+  EXPECT_EQ(6, sc.num_solutions);
+}
+
+// TODO: test that the solver returns the number of solutions in the .nsol suffix

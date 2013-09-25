@@ -55,8 +55,8 @@ IloNumExprArray NLToConcertConverter::ConvertArgs(VarArgExpr e) {
 }
 
 NLToConcertConverter::NLToConcertConverter(
-    IloEnv env, IloNumVarArray vars, bool use_numberof, bool debug)
-: env_(env), model_(env), vars_(vars), use_numberof_(use_numberof),
+    IloEnv env, bool use_numberof, bool debug)
+: env_(env), model_(env), vars_(env), cons_(env), use_numberof_(use_numberof),
   debug_(debug), numberofs_(CreateVar(env)) {
 }
 
@@ -188,6 +188,99 @@ void NLToConcertConverter::FinishBuildingNumberOf() {
     }
 
     model_.add(IloDistribute(env_, cards, values, vars));
+  }
+}
+
+void NLToConcertConverter::Convert(const Problem &p) {
+  int num_continuous_vars = p.num_continuous_vars();
+
+  // Set up optimization problem using the Concert API.
+  int num_vars = p.num_vars();
+  vars_.setSize(num_vars);
+  for (int j = 0; j < num_continuous_vars; j++)
+    vars_[j] = IloNumVar(env_, p.var_lb(j), p.var_ub(j), ILOFLOAT);
+  for (int j = num_continuous_vars; j < num_vars; j++)
+    vars_[j] = IloNumVar(env_, p.var_lb(j), p.var_ub(j), ILOINT);
+
+  int num_objs = p.num_objs();
+  if (num_objs > 0) {
+    NumericExpr expr(p.nonlinear_obj_expr(0));
+    NumericConstant constant(Cast<NumericConstant>(expr));
+    IloExpr ilo_expr(env_, constant ? constant.value() : 0);
+    if (p.num_nonlinear_objs() > 0 && !constant)
+      ilo_expr += Visit(expr);
+    LinearObjExpr linear = p.linear_obj_expr(0);
+    for (LinearObjExpr::iterator
+        i = linear.begin(), end = linear.end(); i != end; ++i) {
+      ilo_expr += i->coef() * vars_[i->var_index()];
+    }
+    IloObjective obj(env_, ilo_expr,
+        p.obj_type(0) == MIN ? IloObjective::Minimize : IloObjective::Maximize);
+    IloAdd(model_, obj);
+  }
+
+  if (int n_cons = p.num_cons()) {
+    cons_.setSize(n_cons);
+    for (int i = 0; i < n_cons; ++i) {
+      IloExpr expr(env_);
+      LinearConExpr linear = p.linear_con_expr(i);
+      for (LinearConExpr::iterator
+          j = linear.begin(), end = linear.end(); j != end; ++j) {
+        expr += j->coef() * vars_[j->var_index()];
+      }
+      if (i < p.num_nonlinear_cons())
+        expr += Visit(p.nonlinear_con_expr(i));
+      cons_[i] = (p.con_lb(i) <= expr <= p.con_ub(i));
+    }
+    model_.add(cons_);
+  }
+
+  if (int n_lcons = p.num_logical_cons()) {
+    IloConstraintArray cons(env_, n_lcons);
+    for (int i = 0; i < n_lcons; ++i)
+      cons[i] = Visit(p.logical_con_expr(i));
+    model_.add(cons);
+  }
+
+  FinishBuildingNumberOf();
+}
+
+std::string ConvertSolutionStatus(IloAlgorithm alg,
+    const SignalHandler &sh, int &solve_code, bool &has_solution) {
+  switch (alg.getStatus()) {
+  default:
+    // Fall through.
+  case IloAlgorithm::Unknown:
+    if (sh.stop()) {
+      solve_code = 600;
+      return "interrupted";
+    }
+    solve_code = 501;
+    return "unknown solution status";
+  case IloAlgorithm::Feasible:
+    has_solution = true;
+    if (sh.stop()) {
+      solve_code = 600;
+      return "interrupted";
+    }
+    solve_code = 100;
+    return "feasible solution";
+  case IloAlgorithm::Optimal:
+    has_solution = true;
+    solve_code = 0;
+    return "optimal solution";
+  case IloAlgorithm::Infeasible:
+    solve_code = 200;
+    return "infeasible problem";
+  case IloAlgorithm::Unbounded:
+    solve_code = 300;
+    return "unbounded problem";
+  case IloAlgorithm::InfeasibleOrUnbounded:
+    solve_code = 201;
+    return "infeasible or unbounded problem";
+  case IloAlgorithm::Error:
+    solve_code = 500;
+    return "error";
   }
 }
 }

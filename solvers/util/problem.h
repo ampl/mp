@@ -122,9 +122,8 @@ class Suffix {
   operator SafeBool() const { return suffix_ ? &Suffix::True : 0; }
 
   bool has_values() const { return suffix_->u.i; }
-  int int_value(int index) const { return suffix_->u.i[index]; }
 
-  // TODO: test
+  int int_value(int index) const { return suffix_->u.i[index]; }
   void set_values(int *values) {
     suffix_->kind |= ASL_Sufkind_output;
     suffix_->u.i = values;
