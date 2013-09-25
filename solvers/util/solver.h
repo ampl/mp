@@ -31,6 +31,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 extern "C" {
 #include "solvers/getstub.h"
@@ -253,10 +254,12 @@ class TypedSolverOption : public SolverOption {
   virtual void SetValue(typename internal::OptionHelper<T>::Arg value) = 0;
 };
 
+template <typename T>
+inline const T *ptr(const std::vector<T> &v) { return v.empty() ? 0 : &v[0]; }
+
 // Base class for all solver classes.
 class BasicSolver
-  : private ErrorHandler, private OutputHandler,
-    private DefaultSolutionHandler, private Option_Info {
+  : private ErrorHandler, private OutputHandler, private Option_Info {
  private:
   std::string name_;
   std::string long_name_;
@@ -267,6 +270,30 @@ class BasicSolver
   OutputHandler *output_handler_;
   ErrorHandler *error_handler_;
   SolutionHandler *sol_handler_;
+
+  // The filename stub for returning multiple solutions.
+  std::string solution_stub_;
+
+  // The number of feasible solutions found so far.
+  int num_solutions_;
+
+  // Specifies whether to return the number of solutions in the .nsol suffix.
+  bool count_solutions_;
+
+  class BasicSolutionHandler : public DefaultSolutionHandler {
+   private:
+    BasicSolver *solver_;
+
+   public:
+    BasicSolutionHandler() : solver_() {}
+    void set_solver(BasicSolver *s) { solver_ = s; }
+
+    void HandleFeasibleSolution(Problem &p, fmt::StringRef message,
+          const double *values, const double *dual_values, double);
+    void HandleSolution(Problem &p, fmt::StringRef message,
+          const double *values, const double *dual_values, double);
+  };
+  BasicSolutionHandler basic_sol_handler_;
 
   unsigned read_flags_;  // flags passed to Problem::Read
 
@@ -291,13 +318,6 @@ class BasicSolver
   void HandleError(fmt::StringRef message) {
     std::fputs(message.c_str(), stderr);
     std::fputc('\n', stderr);
-  }
-
-  void HandleSolution(Problem &p, fmt::StringRef message,
-        const double *values, const double *dual_values, double) {
-    write_sol_ASL(reinterpret_cast<ASL*>(p.asl_),
-        const_cast<char*>(message.c_str()), const_cast<double*>(values),
-        const_cast<double*>(dual_values), this);
   }
 
   class ErrorReporter {
@@ -351,9 +371,19 @@ class BasicSolver
 #endif
 
  protected:
+  // Flags for the BasicSolver constructor.
+  enum {
+    // Multiple solution support.
+    // Makes BasicSolver register "countsolutions" and "solutionstub" options
+    // and write every solution passed to HandleFeastibleSolution to a file
+    // solutionstub & i & ".sol" where i is a solution number.
+    MULTIPLE_SOL = 1
+  };
+
   // Constructs a BasicSolver object.
   // date: The solver date in YYYYMMDD format.
-  BasicSolver(fmt::StringRef name, fmt::StringRef long_name, long date);
+  BasicSolver(fmt::StringRef name,
+      fmt::StringRef long_name, long date, unsigned flags = 0);
 
   void set_long_name(fmt::StringRef name) {
     long_name_ = name;
@@ -369,6 +399,12 @@ class BasicSolver
   void set_read_flags(unsigned flags) { read_flags_ = flags; }
 
   virtual std::string GetOptionHeader() { return std::string(); }
+
+  virtual void DoSolve(Problem &p) = 0;
+
+  bool need_multiple_solutions() const {
+    return count_solutions_ || !solution_stub_.empty();
+  }
 
   void AddOption(OptionPtr opt) {
     // First insert the option, then release a pointer to it. Doing the other
@@ -512,14 +548,14 @@ class BasicSolver
   }
 
   // Passes a solution to the solution handler.
-  void DoHandleSolution(Problem &p, fmt::StringRef message,
+  void HandleSolution(Problem &p, fmt::StringRef message,
       const double *values, const double *dual_values,
       double obj_value = std::numeric_limits<double>::quiet_NaN()) {
     sol_handler_->HandleSolution(p, message, values, dual_values, obj_value);
   }
 
   // Passes a feasible solution to the solution handler.
-  void DoHandleFeasibleSolution(Problem &p, fmt::StringRef message,
+  void HandleFeasibleSolution(Problem &p, fmt::StringRef message,
       const double *values, const double *dual_values,
       double obj_value = std::numeric_limits<double>::quiet_NaN()) {
     sol_handler_->HandleFeasibleSolution(
@@ -539,7 +575,10 @@ class BasicSolver
 
   // Solves a problem.
   // The solutions are reported via the registered solution handler.
-  virtual void Solve(Problem &p) = 0;
+  void Solve(Problem &p) {
+    num_solutions_ = 0;
+    DoSolve(p);
+  }
 
   // Runs the solver.
   int Run(char **argv);
@@ -712,8 +751,9 @@ class Solver : public BasicSolver {
   }
 
  public:
-  Solver(fmt::StringRef name, fmt::StringRef long_name = 0, long date = 0)
-  : BasicSolver(name, long_name, date) {}
+  Solver(fmt::StringRef name, fmt::StringRef long_name = 0,
+      long date = 0, unsigned flags = 0)
+  : BasicSolver(name, long_name, date, flags) {}
 };
 }
 

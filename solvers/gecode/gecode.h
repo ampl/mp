@@ -380,11 +380,10 @@ class GecodeSolver : public Solver<GecodeSolver> {
 
  protected:
   std::string GetOptionHeader();
+  void DoSolve(Problem &p);
 
  public:
   GecodeSolver();
-
-  void Solve(Problem &p);
 
   Gecode::IntConLevel icl() const { return icl_; }
   Gecode::IntVarBranch::Select var_branching() const { return var_branching_; }

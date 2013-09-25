@@ -58,7 +58,7 @@ SSDSolver::SSDSolver()
       &SSDSolver::GetSolverName, &SSDSolver::SetSolverName);
 }
 
-void SSDSolver::Solve(Problem &p) {
+void SSDSolver::DoSolve(Problem &p) {
   Function ssd_uniform;
   int num_scenarios = p.num_logical_cons();
   int num_vars = p.num_vars();
@@ -205,6 +205,6 @@ void SSDSolver::Solve(Problem &p) {
   if (sol.status() == Solution::SOLVED)
     w.Format("; dominance {}") << dominance_ub;
   w.Format("\n{} iteration(s)") << iteration;
-  DoHandleSolution(p, w.c_str(), &solution[0], 0, 0);
+  HandleSolution(p, w.c_str(), ptr(solution), 0, 0);
 }
 }

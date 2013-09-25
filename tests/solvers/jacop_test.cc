@@ -45,6 +45,10 @@ SolverPtr CreateSolver() { return SolverPtr(new ampl::JaCoPSolver()); }
 INSTANTIATE_TEST_CASE_P(JaCoP, SolverTest,
     ::testing::Values(SolverTestParam(CreateSolver, feature::POW)));
 
+TEST_P(SolverTest, SolveFlowshp0) {
+  EXPECT_EQ(22, Solve("flowshp0").obj);
+}
+
 TEST_P(SolverTest, SolveFlowshp2) {
   EXPECT_EQ(22, Solve("flowshp2").obj);
 }

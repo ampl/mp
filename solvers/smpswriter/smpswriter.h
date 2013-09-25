@@ -132,10 +132,11 @@ class SMPSWriter : public Solver<SMPSWriter> {
   void WriteColumns(FileWriter &writer, const Problem &p, int num_stages,
       int num_core_cons, const std::vector<double> &core_obj_coefs);
 
+ protected:
+  void DoSolve(Problem &p);
+
  public:
   SMPSWriter();
-
-  void Solve(Problem &p);
 };
 }
 

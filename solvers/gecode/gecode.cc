@@ -610,7 +610,7 @@ std::auto_ptr<GecodeProblem> GecodeSolver::Search(
   return solution;
 }
 
-void GecodeSolver::Solve(Problem &p) {
+void GecodeSolver::DoSolve(Problem &p) {
   steady_clock::time_point time = steady_clock::now();
 
   // Set up an optimization problem in Gecode.
@@ -698,8 +698,7 @@ void GecodeSolver::Solve(Problem &p) {
   w.Format("{} nodes, {} fails") << stats.node << stats.fail;
   if (has_obj && solution.get())
     w.Format(", objective {}") << ObjPrec(obj_val);
-  DoHandleSolution(p, w.c_str(),
-      final_solution.empty() ? 0 : &final_solution[0], 0, obj_val);
+  HandleSolution(p, w.c_str(), ptr(final_solution), 0, obj_val);
 
   double output_time = GetTimeAndReset(time);
 

@@ -480,20 +480,18 @@ class JaCoPSolver : public Solver<JaCoPSolver> {
   void PrintObjValue();
 
   static JNIEXPORT jboolean JNICALL Stop(JNIEnv *, jobject, jlong data);
-  static JNIEXPORT void JNICALL DoHandleSolution(
-      JNIEnv *, jobject, jlong data) {
+  static JNIEXPORT void JNICALL HandleSolution(JNIEnv *, jobject, jlong data) {
     reinterpret_cast<JaCoPSolver*>(data)->PrintObjValue();
   }
 
  protected:
   std::string GetOptionHeader();
+  void DoSolve(Problem &p);
 
   void HandleUnknownOption(const char *name);
 
  public:
   JaCoPSolver();
-
-  void Solve(Problem &p);
 };
 }
 

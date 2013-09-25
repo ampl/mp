@@ -1,11 +1,12 @@
-The solver "ilogcp" uses IBM ILOG CPLEX CP Optimizer to solve
-constraint programming problems or CPLEX to solve integer, mixed-integer,
-linear programming, and quadratic problems, possibly involving integer
-variables.  Both CP Optimizer and CPLEX are used through the Concert API.
-Normally the ilogcp solver is invoked by AMPL's solve command, which
-gives the invocation
+The solver "ilogcp" uses IBM ILOG CPLEX CP Optimizer to solve constraint
+programming problems and the solver "ilocplex" uses CPLEX to solve
+integer, mixed-integer, linear programming, and quadratic problems,
+possibly involving integer variables.  Both CP Optimizer and CPLEX
+are used through the Concert API. Normally the ilogcp or ilocplex
+solver is invoked by AMPL's solve command, which gives the invocations
 
      ilogcp stub -AMPL
+     ilocplex stub -AMPL
 
 in which stub.nl is an AMPL generic output file (possibly written
 by "ampl -obstub" or "ampl -ogstub").  After solving the problem,
@@ -16,17 +17,23 @@ give the AMPL commands
      option solver ilogcp;
      solve;
 
-You can control the solver by setting the environment variable
-ilogcp_options appropriately (either by using ampl's option command,
-or by using the shell's set and export commands before you invoke ampl).
-You can put one or more (white-space separated) phrases in
-$ilogcp_options.  A few of the phrases are single words:
+for ilogcp or
+
+     option solver ilocplex;
+     solve;
+
+for ilocplex.
+
+You can control the solvers by setting the environment variable
+ilogcp_options for ilogcp or ilocplex_options for ilocplex appropriately
+(either by using ampl's option command, or by using the shell's set and
+export commands before you invoke ampl).  You can put one or more
+(white-space separated) phrases in $ilogcp_options.  A few of the phrases
+are single words:
 
      Phrase       Meaning
 
-     ilogcplex    Use IBM ILOG CPLEX optimizer.
-
-     ilogsolver   Use IBM ILOG Constraint Programming optimizer.
+     version      Report version details before solving the problem.
 
 Others are name-value pairs, possibly separated by '=', as in
 
@@ -49,16 +56,17 @@ is equivalent to
 In particular, switches that take values 0 or 1 also accept values
 "off" or "on".
 
-The following command prints the full list of options with descriptions:
+The following commands prints the full list of options with descriptions:
 
      ilogcp -=
+     ilogplex -=
 
 -----------------------
 solve_result_num values
 =======================
 
-Here is a table of solve_result_num values that "ilogcp" can return
-to an AMPL session, along with the text that appears in the associated
+Here is a table of solve_result_num values that "ilogcp" or "ilocplex" can
+return to an AMPL session, along with the text that appears in the associated
 solve_message.
 
         Value   Message
