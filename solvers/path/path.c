@@ -3,14 +3,14 @@
 #include "PathOptions.h"
 #include "Macros.h"
 #include "Output.h"
+#include "Output_Interface.h"
 #include "Options.h"
 
 #undef Char
+#undef Long
 #include "getstub.h"
 
-#define CRIPPLE_SIZE 200
-#define CRIPPLE_NNZ 10000
-
+/* extern const char *Path_Version(void); */
 static int debug, functimes, quitnow, wantfuncs;
 static int sideineq = 1, sqwarn = 1;
 #ifndef LOGFILE
@@ -133,13 +133,6 @@ Option_Info Oinfo = {
 	0, mkey, 0, cloptions, sizeof(cloptions) / sizeof(keyword),
 	20020506 };
 
- static void
-show_ver(FILE *f)
-{
-	fprintf(f, "%s", Oinfo.version);
-	fflush(f);
-	}
-
  static int
 cvarcomp(const void *a, const void *b, void *v)
 {
@@ -196,7 +189,7 @@ mcp_adj(ASL *asl)
 	z = (int *)FI.c_scratch;
 	zc = z + nvs;
 	for (i = 0; i < nc; )
-		if (j = Cvar[i++])
+		if ((j = Cvar[i++]))
 			z[j-1] = i;
 
 	lu = LUv;
@@ -355,7 +348,7 @@ prepare_jadj(ASL *asl)
 				*y++ = i;
 			}
 		}
-	if (n = FI.nvb) {
+	if ((n = FI.nvb)) {
 		j = FI.n - (n + FI.nvr);
 		for(i = 0; i < n; i++, j++)
 			switch(FI.vtype[i]) {
@@ -410,7 +403,7 @@ main(int argc, char **argv)
 	asl = ASL_alloc(ASL_read_fg);
 
 	/* Get version of PATH */
-	Oinfo.bsname = stub = Path_Version();
+	Oinfo.bsname = stub = (char *)Path_Version();
 	Oinfo.version = (char*)M1alloc(strlen(stub) + 8);
 	sprintf(Oinfo.version, "AMPL/%s", stub);
 
@@ -426,13 +419,15 @@ main(int argc, char **argv)
 
 	nl = jac0dim(stub, (fint)strlen(stub));
 
-	opt = Path_GetOptions();
+        opt = Options_Create();
+        Path_AddOptions(opt);
 	Options_Default(opt);
 	Options_SetDouble(opt, "infinity", Infinity);
 
-	if (getopts(argv, &Oinfo))
+	if (getopts(argv, &Oinfo)) {
+		Options_Destroy(opt);
 		exit(2);
-	Options_Display(opt);
+        }
 
 	FI.nvsq = FI.ncsq = 0;
 	if ((n = n_eqn + n_cc) != n_var) {
@@ -443,6 +438,7 @@ main(int argc, char **argv)
 			if (sqwarn & 2) {
 				if (sqwarn & 1) {
 					fprintf(Stderr, "%s", buf);
+                                        Options_Destroy(opt);
 					exit(1);
 					}
 				solve_result_num = 504;
@@ -454,10 +450,14 @@ main(int argc, char **argv)
 		else
 			FI.ncsq = -n;
 		}
+
 	if (statusfile)
 		Output_SetStatus(statusfl = Fopen(statusfile, "statusfile"));
+	Output_SetLog(stdout);
 	if (logfile)
 		Output_SetLog(logfl = Fopen(logfile, "logfile"));
+	Options_Display(opt);
+
 	fg_read(nl, ASL_no_linear_cc_rhs_adjust);
 	FI.n = mcp_adj(asl);
 
@@ -473,6 +473,7 @@ main(int argc, char **argv)
 		if (sideineq & 2) {
 			if (sideineq & 1) {
 				fprintf(Stderr, "%s\n", buf);
+				Options_Destroy(opt);
 				exit(1);
 				}
 			solve_result_num = 505;
@@ -493,7 +494,6 @@ main(int argc, char **argv)
 
 	mcp = MCP_Create(FI.n, FI.nnz);
 	MCP_Jacobian_Structure_Constant(mcp, 1);
-	MCP_Jacobian_Data_Contiguous(mcp, 1);
 	install_interface(mcp);
 
 	tc = Path_Solve(mcp, &info);
@@ -517,9 +517,10 @@ main(int argc, char **argv)
 		info.crash_iterations, info.minor_iterations);
 	i += sprintf(buf + i, ".\n%d function, %d gradient evaluations.",
 		info.function_evaluations, info.jacobian_evaluations);
-	write_sol(buf, DenseVector_Array(MCP_GetModX(mcp)), 0, &Oinfo);
+	write_sol(buf, MCP_GetX(mcp), 0, &Oinfo);
 	MCP_Destroy(mcp);
  bailout:
+	Options_Destroy(opt);
 	if (logfl != NULL)
 		fclose(logfl);
 	if (statusfl != NULL)
@@ -555,11 +556,12 @@ zshow(char *what, real *z, int n)
 		printf("%d\t%.g\n", i, z[i]);
 	}
 
- FUN_DECL(int)
+ static CB_FUNC(int)
 function_evaluation(void *v, int n, real *z, real *f)
 {
 	ASL *asl = cur_ASL;
 	int *Cvar, i, j, nc, nr, *sb, *sbe;
+        fint nd = 0;
 	real *c, *lu;
 	Not_Used(v);
 
@@ -567,7 +569,10 @@ function_evaluation(void *v, int n, real *z, real *f)
 		bad_n("F", "n", n);
 	nc = n_con + FI.ncsq;
 	lu = LUrhs;
-	conval(z, c = FI.c_scratch, 0);
+
+	conval(z, c = FI.c_scratch, &nd);
+        if (nd) return 1;
+
 	Cvar = cvar;
 	for (i = 0; i < nc; i++, lu += 2) {
 		j = Cvar[i];
@@ -608,7 +613,7 @@ function_evaluation(void *v, int n, real *z, real *f)
 			f[nr] = z[nr-1];
 			}
 		}
-	if (sb = FI.sba)
+	if ((sb = FI.sba))
 		for(sbe = FI.sbae; sb < sbe; ) {
 			j = *sb++;
 			f[j] -= z[j];
@@ -660,7 +665,7 @@ sparse_struct(int n, int maxnnz, int *row, int *col, int *len)
 		case C_UB:
 		case C_FREE:
 			col[nv] = j+1;
-			if (len[nv++] = ja)
+			if ((len[nv++] = ja))
 				row[j++] = Cvar[i] + 1;
 			break;
 
@@ -693,7 +698,7 @@ sparse_struct(int n, int maxnnz, int *row, int *col, int *len)
 			else {
 				col[nv] = j+1;
 				row[ka[i]-1] = ++k;
-				if (len[nv++] = ja)
+				if ((len[nv++] = ja))
 					row[j++] = k;
 				}
 			} while (vb < vbe);
@@ -711,6 +716,7 @@ sparseJ(int n, int maxnnz, double *z, double *J)
 {
 	ASL *asl = cur_ASL;
 	int *cb, *cbe, i, j, *ka;
+        fint nd = 0;
 
 	if (n != FI.n)
 		bad_n("sparseJ", "n", n);
@@ -718,7 +724,10 @@ sparseJ(int n, int maxnnz, double *z, double *J)
 		bad_nnz("sparseJ", "nnz", maxnnz);
 	if (debug & 4)
 		zshow("z in sparseJ", z, n);
-	jacval(z, J, 0);
+
+	jacval(z, J, &nd);
+        if (nd) return 1;
+
 	j = nzc + FI.nvb;
 	if (FI.sba) {
 		cb = FI.cb;
@@ -760,38 +769,20 @@ sparseJ(int n, int maxnnz, double *z, double *J)
 	return 0;
 	}
 
- FUN_DECL(void)
+ static CB_FUNC(void)
 problem_size(void *v, int *n, int *nnz)
 {
-#ifdef Student_Edition
-	ASL *asl = cur_ASL;
 	Not_Used(v);
-
-	if (FI.n  > CRIPPLE_SIZE || FI.nnz > CRIPPLE_NNZ) {
-		fflush(stdout);
-		fprintf(Stderr,
-"\nSorry, the student edition is limited to\n\
-%d variables and %d Jacobian nonzeros.\n\
-%sou have %d variables and %d nonzeros.\n",
-			CRIPPLE_SIZE, CRIPPLE_NNZ,
-			n_var != FI.n || nzc != FI.nnz
-			? "After problem adjustments,\ny" : "Y",
-			FI.n, FI.nnz);
-		exit(1);
-		}
-#else
-	Not_Used(v);
-#endif
 	*n = FI.n;
 	*nnz = FI.nnz;
 	}
 
- FUN_DECL(void)
+ static CB_FUNC(void)
 bounds(void *v, int n, real *z, real *lower, real *upper)
 {
 	ASL *asl = cur_ASL;
 	int i, j, k, nc, nv;
-	real Lb, Ub, *lu;
+	real Lb = 0, Ub = 0, *lu;
 	Not_Used(v);
 
 	if (n != FI.n)
@@ -884,8 +875,8 @@ bounds(void *v, int n, real *z, real *lower, real *upper)
 	return;
 	}
 
- void
-variable_name(int variable, char *buffer, int buffer_size)
+ static CB_FUNC(void)
+variable_name(void *v, int variable, char *buffer, int buffer_size)
 {
 	ASL * asl = cur_ASL;
 
@@ -894,8 +885,8 @@ variable_name(int variable, char *buffer, int buffer_size)
 	return;
 	}
 
- void
-constraint_name(int constraint, char *buffer, int buffer_size)
+ static CB_FUNC(void)
+constraint_name(void *v, int constraint, char *buffer, int buffer_size)
 {
 	ASL * asl = cur_ASL;
 
@@ -904,7 +895,7 @@ constraint_name(int constraint, char *buffer, int buffer_size)
 	return;
 	}
 
- FUN_DECL(int)
+ static CB_FUNC(int)
 jacobian_evaluation(void *v, int n, double *z, int  wantf, double *f,
 	int *nnz, int *col_start, int *col_len, int *row, double *data)
 {
@@ -924,7 +915,7 @@ jacobian_evaluation(void *v, int n, double *z, int  wantf, double *f,
 	return err;
 	}
 
- static FUN_DECL(void)
+ static CB_FUNC(void)
 jac_typ(void *v, int nnz, int *typ)
 {
 	ASL *asl = cur_ASL;
@@ -941,28 +932,29 @@ jac_typ(void *v, int nnz, int *typ)
 				typ[cg->goff] = PRESOLVE_NONLINEAR;
 	}
 
-#undef interface
  static MCP_Interface
-interface = {
+m_interface = {
 	NULL,
 	problem_size, bounds,
 	function_evaluation, jacobian_evaluation,
-	NULL, NULL,
-	NULL, NULL,
+	NULL, /* Hessian evaluation */
+        NULL, NULL,
+	variable_name, constraint_name,
 	NULL
 	};
 
  static Presolve_Interface
-presolve_interface = {
+p_interface = {
 	NULL,
 	NULL, NULL,
 	NULL, NULL,
-	jac_typ
+	jac_typ,
+	NULL
 	};
 
  static void
 install_interface(MCP *m)
 {
-	MCP_SetInterface(m, &interface);
-	MCP_SetPresolveInterface(m, &presolve_interface);
+	MCP_SetInterface(m, &m_interface);
+	MCP_SetPresolveInterface(m, &p_interface);
 	}
