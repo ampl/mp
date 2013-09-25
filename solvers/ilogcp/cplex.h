@@ -1,7 +1,7 @@
 /*
- IBM/ILOG CP solver for AMPL.
+ IBM/ILOG CPLEX solver for AMPL.
 
- Copyright (C) 2012 AMPL Optimization Inc
+ Copyright (C) 2013 AMPL Optimization Inc
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
@@ -20,8 +20,8 @@
  Author: Victor Zverovich
  */
 
-#ifndef SOLVERS_ILOGCP_ILOGCP_H_
-#define SOLVERS_ILOGCP_ILOGCP_H_
+#ifndef SOLVERS_ILOGCP_CPLEX_H_
+#define SOLVERS_ILOGCP_CPLEX_H_
 
 #if __clang__
 # pragma clang diagnostic push
@@ -32,7 +32,7 @@
 # pragma warning(disable: 4244)
 #endif
 
-#include <ilcp/cp.h>
+#include <ilcplex/ilocplex.h>
 
 #if __clang__
 # pragma clang diagnostic pop
@@ -40,24 +40,16 @@
 # pragma warning(pop)
 #endif
 
-#include <string.h> /* This and -fpermissive seem to be needed for MacOSX, */
-                    /* at least with g++ 4.6.  Otherwise there are errors */
-                    /* with iloconcert/iloenv.h . */
-#include <limits.h> /* Needed for g++ -m32 on MacOSX. */
-#include <string>
-
 #include "solvers/util/solver.h"
 
 namespace ampl {
 
-// IlogCP solver.
-class IlogCPSolver :
-    private Interruptible, private Noncopyable, public Solver<IlogCPSolver> {
+class CPLEXSolver :
+    private Interruptible, private Noncopyable, public Solver<CPLEXSolver> {
  private:
   IloEnv env_;
-  IloCP cp_;
-
-  void Interrupt() { cp_.abortSearch(); }
+  IloCplex cplex_;
+  IloCplex::Aborter aborter_;
 
  public:
   // Boolean options.
@@ -73,22 +65,24 @@ class IlogCPSolver :
   int GetBoolOption(const char *, Option opt) const { return options_[opt]; }
   void SetBoolOption(const char *name, int value, Option opt);
 
-  // Returns a double option of the constraint programming optimizer.
-  double GetCPDblOption(const char *name, IloCP::NumParam param) const;
+  // Returns an integer option of the CPLEX optimizer.
+  int GetCPLEXIntOption(const char *name, int param) const;
 
-  // Sets a double option of the constraint programming optimizer.
-  void SetCPDblOption(const char *name, double value, IloCP::NumParam param);
+  // Sets an integer option of the CPLEX optimizer.
+  void SetCPLEXIntOption(const char *name, int value, int param);
+
+  void Interrupt() { aborter_.abort(); }
 
  protected:
 
   std::string GetOptionHeader();
 
  public:
-  IlogCPSolver();
-  virtual ~IlogCPSolver();
+  CPLEXSolver();
+  virtual ~CPLEXSolver();
 
   IloEnv env() const { return env_; }
-  IloCP optimizer() const { return cp_; }
+  IloCplex optimizer() const { return cplex_; }
 
   int GetOption(Option opt) const {
     assert(opt >= 0 && opt < NUM_OPTIONS);
@@ -101,4 +95,4 @@ class IlogCPSolver :
 };
 }
 
-#endif  // SOLVERS_ILOGCP_ILOGCP_H_
+#endif  // SOLVERS_ILOGCP_CPLEX_H_

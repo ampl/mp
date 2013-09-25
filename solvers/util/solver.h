@@ -121,8 +121,25 @@ class SolutionHandler {
   ~SolutionHandler() {}
 
  public:
+  // Receives a feasible solution.
+  virtual void HandleFeasibleSolution(Problem &p, fmt::StringRef message,
+      const double *values, const double *dual_values, double obj_value) = 0;
+
+  // Receives a final solution or a notification that the problem is
+  // infeasible or unbounded.
   virtual void HandleSolution(Problem &p, fmt::StringRef message,
       const double *values, const double *dual_values, double obj_value) = 0;
+};
+
+class DefaultSolutionHandler : public SolutionHandler {
+ protected:
+  ~DefaultSolutionHandler() {}
+
+ public:
+  virtual void HandleFeasibleSolution(Problem &, fmt::StringRef,
+      const double *, const double *, double) {}
+  virtual void HandleSolution(Problem &, fmt::StringRef,
+      const double *, const double *, double) {}
 };
 
 class Interruptible {
@@ -239,7 +256,7 @@ class TypedSolverOption : public SolverOption {
 // Base class for all solver classes.
 class BasicSolver
   : private ErrorHandler, private OutputHandler,
-    private SolutionHandler, private Option_Info {
+    private DefaultSolutionHandler, private Option_Info {
  private:
   std::string name_;
   std::string long_name_;
@@ -499,6 +516,14 @@ class BasicSolver
       const double *values, const double *dual_values,
       double obj_value = std::numeric_limits<double>::quiet_NaN()) {
     sol_handler_->HandleSolution(p, message, values, dual_values, obj_value);
+  }
+
+  // Passes a feasible solution to the solution handler.
+  void DoHandleFeasibleSolution(Problem &p, fmt::StringRef message,
+      const double *values, const double *dual_values,
+      double obj_value = std::numeric_limits<double>::quiet_NaN()) {
+    sol_handler_->HandleFeasibleSolution(
+        p, message, values, dual_values, obj_value);
   }
 
   // Reports an error printing the formatted error message to stderr.
