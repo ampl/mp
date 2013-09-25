@@ -24,7 +24,6 @@
 
 #include <cctype>
 #include <cstdlib>
-#include <set>
 #include <vector>
 
 #include "solvers/util/clock.h"
@@ -59,8 +58,8 @@ std::string CPLEXSolver::GetOptionHeader() {
 
 CPLEXSolver::CPLEXSolver() :
    Solver<CPLEXSolver>("ilocplex", 0, YYYYMMDD), cplex_(env_), aborter_(env_) {
-  options_[DEBUGEXPR] = 0;
-  options_[USENUMBEROF] = 1;
+  options_[DEBUGEXPR] = false;
+  options_[USENUMBEROF] = true;
 
   set_long_name(fmt::Format("ilocplex {}.{}.{}")
       << IloConcertVersion::_ILO_MAJOR_VERSION
@@ -129,11 +128,11 @@ void CPLEXSolver::SetCPLEXIntOption(const char *name, int value, int param) {
     throw InvalidOptionValue(name, value);
 }
 
-void CPLEXSolver::Solve(Problem &p) {
+void CPLEXSolver::DoSolve(Problem &p) {
   steady_clock::time_point time = steady_clock::now();
 
   NLToConcertConverter converter(env_,
-      GetOption(USENUMBEROF) != 0, GetOption(DEBUGEXPR) != 0);
+      GetOption(USENUMBEROF), GetOption(DEBUGEXPR));
   converter.Convert(p);
   IloModel model = converter.model();
   IloNumVarArray vars = converter.vars();
@@ -190,8 +189,8 @@ void CPLEXSolver::Solve(Problem &p) {
       writer.Format(", objective {}") << ObjPrec(obj_value);
     }
   }
-  DoHandleSolution(p, writer.c_str(), solution.empty() ? 0 : &solution[0],
-      dual_solution.empty() ? 0 : &dual_solution[0], obj_value);
+  HandleSolution(p, writer.c_str(),
+      ptr(solution), ptr(dual_solution), obj_value);
   double output_time = GetTimeAndReset(time);
 
   if (timing()) {

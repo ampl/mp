@@ -106,10 +106,11 @@ class SSDSolver : public Solver<SSDSolver> {
   std::string GetSolverName(const char *) const { return solver_name_; }
   void SetSolverName(const char *, const char *value) { solver_name_ = value; }
 
+ protected:
+  void DoSolve(Problem &p);
+
  public:
   SSDSolver();
-
-  void Solve(Problem &p);
 };
 }
 

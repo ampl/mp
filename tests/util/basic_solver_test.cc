@@ -69,7 +69,7 @@ struct TestSolver : BasicSolver {
     BasicSolver::AddSuffix(name, table, kind, nextra);
   }
 
-  void Solve(Problem &) {}
+  void DoSolve(Problem &) {}
 };
 
 TEST(SolverTest, ObjPrec) {
@@ -109,7 +109,7 @@ TEST(SolverTest, BasicSolverVirtualDtor) {
     DtorTestSolver(bool &destroyed)
     : BasicSolver("test", 0, 0), destroyed_(destroyed) {}
     ~DtorTestSolver() { destroyed_ = true; }
-    void Solve(Problem &) {}
+    void DoSolve(Problem &) {}
   };
   (DtorTestSolver(destroyed));
   EXPECT_TRUE(destroyed);
@@ -221,9 +221,9 @@ TEST(SolverTest, SolutionHandler) {
   TestSolver s("test");
   s.set_solution_handler(&sh);
   EXPECT_TRUE(&sh == s.solution_handler());
-  double primal = 0, dual = 0, obj = 42;
   Problem p;
-  s.DoHandleSolution(p, "test message", &primal, &dual, obj);
+  double primal = 0, dual = 0, obj = 42;
+  s.HandleSolution(p, "test message", &primal, &dual, obj);
   EXPECT_EQ(&p, sh.problem());
   EXPECT_EQ("test message", sh.message());
   EXPECT_EQ(&primal, sh.primal());
@@ -509,7 +509,7 @@ struct TestSolverWithOptions : Solver<TestSolverWithOptions> {
     return Solver<TestSolverWithOptions>::ParseOptions(argv, flags, p);
   }
 
-  void Solve(Problem &) {}
+  void DoSolve(Problem &) {}
 };
 
 TEST(SolverTest, AddOption) {
@@ -602,7 +602,7 @@ TEST(SolverTest, HandleUnknownOption) {
   struct TestSolver : BasicSolver {
     std::string option_name;
     TestSolver() : BasicSolver("test", 0, 0) {}
-    void Solve(Problem &) {}
+    void DoSolve(Problem &) {}
     void HandleUnknownOption(const char *name) { option_name = name; }
   };
   TestSolver s;
@@ -745,7 +745,7 @@ TEST(SolverTest, ExceptionInOptionHandler) {
     TestSolver() : Solver<TestSolver>("") {
       AddIntOption("throw", "", &TestSolver::GetIntOption, &TestSolver::Throw);
     }
-    void Solve(Problem &) {}
+    void DoSolve(Problem &) {}
   };
   TestSolver s;
   EXPECT_THROW(s.ParseOptions(Args("throw=1")), TestException);

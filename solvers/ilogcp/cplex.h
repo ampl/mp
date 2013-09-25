@@ -60,7 +60,7 @@ class CPLEXSolver :
   };
 
  private:
-  int options_[NUM_OPTIONS];
+  bool options_[NUM_OPTIONS];
 
   int GetBoolOption(const char *, Option opt) const { return options_[opt]; }
   void SetBoolOption(const char *name, int value, Option opt);
@@ -76,6 +76,7 @@ class CPLEXSolver :
  protected:
 
   std::string GetOptionHeader();
+  void DoSolve(Problem &p);
 
  public:
   CPLEXSolver();
@@ -84,14 +85,12 @@ class CPLEXSolver :
   IloEnv env() const { return env_; }
   IloCplex optimizer() const { return cplex_; }
 
-  int GetOption(Option opt) const {
+  bool GetOption(Option opt) const {
     assert(opt >= 0 && opt < NUM_OPTIONS);
     return options_[opt];
   }
 
   void use_numberof(bool use = true) { options_[USENUMBEROF] = use; }
-
-  void Solve(Problem &p);
 };
 }
 

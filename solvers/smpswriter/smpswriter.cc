@@ -240,7 +240,7 @@ void SMPSWriter::WriteColumns(
   }
 }
 
-void SMPSWriter::Solve(Problem &p) {
+void SMPSWriter::DoSolve(Problem &p) {
   if (p.num_nonlinear_objs() != 0 || p.num_nonlinear_cons() != 0)
     throw Error("SMPS writer doesn't support nonlinear problems");
 

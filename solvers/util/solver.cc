@@ -171,6 +171,32 @@ void SignalHandler::HandleSigInt(int sig) {
   std::signal(sig, HandleSigInt);
 }
 
+void BasicSolver::BasicSolutionHandler::HandleFeasibleSolution(
+    Problem &p, fmt::StringRef message, const double *values,
+    const double *dual_values, double) {
+  ++solver_->num_solutions_;
+  if (solver_->solution_stub_.empty())
+    return;
+  fmt::Writer w;
+  w << solver_->solution_stub_ << solver_->num_solutions_ << ".sol";
+  write_solf_ASL(reinterpret_cast<ASL*>(p.asl_),
+      const_cast<char*>(message.c_str()), const_cast<double*>(values),
+      const_cast<double*>(dual_values), solver_, w.c_str());
+}
+
+void BasicSolver::BasicSolutionHandler::HandleSolution(
+    Problem &p, fmt::StringRef message, const double *values,
+    const double *dual_values, double) {
+  if (solver_->need_multiple_solutions()) {
+    Suffix nsol_suffix = p.suffix("nsol", ASL_Sufkind_prob);
+    if (nsol_suffix)
+      nsol_suffix.set_values(&solver_->num_solutions_);
+  }
+  write_sol_ASL(reinterpret_cast<ASL*>(p.asl_),
+      const_cast<char*>(message.c_str()), const_cast<double*>(values),
+      const_cast<double*>(dual_values), solver_);
+}
+
 bool BasicSolver::OptionNameLess::operator()(
     const char *lhs, const char *rhs) const {
   return strcasecmp(lhs, rhs) < 0;
@@ -193,11 +219,13 @@ char *BasicSolver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
 }
 
 BasicSolver::BasicSolver(
-    fmt::StringRef name, fmt::StringRef long_name, long date)
-: name_(name), has_errors_(false), read_flags_(0), timing_(false) {
+    fmt::StringRef name, fmt::StringRef long_name, long date, unsigned flags)
+: name_(name), has_errors_(false), read_flags_(0), timing_(false),
+  count_solutions_(false), num_solutions_(0) {
   error_handler_ = this;
   output_handler_ = this;
-  sol_handler_ = this;
+  basic_sol_handler_.set_solver(this);
+  sol_handler_ = &basic_sol_handler_;
 
   // Workaround for GCC bug 30111 that prevents value-initialization of
   // the base POD class.
@@ -252,20 +280,46 @@ BasicSolver::BasicSolver(
   };
   AddOption(OptionPtr(new WantSolOption(*this)));
 
-  struct TimingOption : TypedSolverOption<int> {
-    BasicSolver &s;
-    TimingOption(BasicSolver &s) : TypedSolverOption<int>("timing",
-        "0 or 1 (default 0):  Whether to display timings for the run.\n"),
-        s(s) {}
+  struct BoolOption : TypedSolverOption<int> {
+    bool &value_;
+    BoolOption(bool &value, const char *name, const char *description)
+    : TypedSolverOption<int>(name, description), value_(value) {}
 
-    int GetValue() const { return s.timing_; }
+    int GetValue() const { return value_; }
     void SetValue(int value) {
       if (value != 0 && value != 1)
-        throw InvalidOptionValue("timing", value);
-      s.timing_ = value != 0;
+        throw InvalidOptionValue(name(), value);
+      value_ = value != 0;
     }
   };
-  AddOption(OptionPtr(new TimingOption(*this)));
+  AddOption(OptionPtr(new BoolOption(timing_, "timing",
+      "0 or 1 (default 0):  Whether to display timings for the run.\n")));
+
+  if ((flags & MULTIPLE_SOL) != 0) {
+    AddSuffix("nsol", 0, ASL_Sufkind_prob | ASL_Sufkind_outonly);
+
+    // TODO: test
+    AddOption(OptionPtr(new BoolOption(count_solutions_, "countsolutions",
+        "0 or 1 (default 0):  Whether to count the number of solutions "
+        "and return it in the .nsol problem suffix.")));
+
+    struct StringOption : TypedSolverOption<std::string> {
+      std::string &value_;
+      StringOption(std::string &value,
+          const char *name, const char *description)
+      : TypedSolverOption<std::string>(name, description), value_(value) {}
+
+      std::string GetValue() const { return value_; }
+      void SetValue(const char *value) { value_ = value; }
+    };
+    // TODO: test
+    AddOption(OptionPtr(new StringOption(solution_stub_, "solutionstub",
+        "Stub for solution files.  If solutionstub is specified, "
+        "found solutions are written to files (solutionstub & '1' & '.sol') "
+        "... (solutionstub & Current.nsol & '.sol'), where Current.nsol "
+        "holds the number of returned solutions.  That is, file names are "
+        "obtained by appending 1, 2, ... Current.nsol to solutionstub.")));
+  }
 
   cl_option_ = keyword();
   cl_option_.name = const_cast<char*>("=");

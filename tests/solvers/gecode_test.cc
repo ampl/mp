@@ -50,6 +50,10 @@ TEST_P(SolverTest, FloorSqrt) {
   EXPECT_EQ(6, Eval(AddUnary(FLOOR, AddUnary(OP_sqrt, x)), 42));
 }
 
+TEST_P(SolverTest, SolveFlowshp0) {
+  EXPECT_EQ(22, Solve("flowshp0").obj);
+}
+
 TEST_P(SolverTest, SolveFlowshp2) {
   EXPECT_EQ(22, Solve("flowshp2").obj);
 }

@@ -445,7 +445,7 @@ std::string JaCoPSolver::GetOptionHeader() {
       "  ampl: option jacop_options 'version nodelimit=30000';\n";
 }
 
-void JaCoPSolver::Solve(Problem &p) {
+void JaCoPSolver::DoSolve(Problem &p) {
   steady_clock::time_point time = steady_clock::now();
 
   std::vector<const char*> jvm_options(jvm_options_.size() + 2);
@@ -509,7 +509,7 @@ void JaCoPSolver::Solve(Problem &p) {
       char SIG[] = "(J)V";
       JNINativeMethod method = {
           NAME, SIG,
-          reinterpret_cast<void*>(reinterpret_cast<jlong>(DoHandleSolution))
+          reinterpret_cast<void*>(reinterpret_cast<jlong>(HandleSolution))
       };
       env_.RegisterNatives(solution_listener_class.get(), &method, 1);
     }
@@ -628,8 +628,7 @@ void JaCoPSolver::Solve(Problem &p) {
       << env_.CallIntMethod(search_.get(), get_fails_);
   if (has_obj && found)
     w.Format(", objective {}") << ObjPrec(obj_val);
-  BasicSolver::DoHandleSolution(p, w.c_str(),
-      final_solution.empty() ? 0 : &final_solution[0], 0, obj_val);
+  BasicSolver::HandleSolution(p, w.c_str(), ptr(final_solution), 0, obj_val);
 
   double output_time = GetTimeAndReset(time);
 
