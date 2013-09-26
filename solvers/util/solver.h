@@ -621,12 +621,6 @@ class Solver
  public:
   virtual ~Solver();
 
-  // Flags for ParseOptions.
-  enum {
-    // Don't echo options during parsing.
-    NO_OPTION_ECHO = 1
-  };
-
   // Returns the solver name.
   const char *name() const { return sname; }
 
@@ -689,6 +683,12 @@ class Solver
   // likely to change in the future version).
   bool ProcessArgs(char **&argv, Problem &p, unsigned flags = 0);
 
+  // Flags for ParseOptions.
+  enum {
+    // Don't echo options during parsing.
+    NO_OPTION_ECHO = 1
+  };
+
   // Parses solver options and returns true if there were no errors and
   // false otherwise. It accepts a pointer to the problem because some
   // options may depend on problem features.
@@ -738,6 +738,8 @@ class Solver
     return fmt::Formatter<ErrorReporter>(format, ErrorReporter(error_handler_));
   }
 
+  // Formats a string and prints it to stdout or, if an output handler
+  // is registered, sends it to the output handler.
   fmt::Formatter<Printer> Print(fmt::StringRef format) {
     return fmt::Formatter<Printer>(format, Printer(output_handler_));
   }
