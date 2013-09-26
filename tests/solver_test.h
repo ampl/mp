@@ -45,9 +45,9 @@ enum Feature {
 }
 
 #ifdef HAVE_UNIQUE_PTR
-typedef std::unique_ptr<ampl::BasicSolver> SolverPtr;
+typedef std::unique_ptr<ampl::Solver> SolverPtr;
 #else
-typedef std::auto_ptr<ampl::BasicSolver> SolverPtr;
+typedef std::auto_ptr<ampl::Solver> SolverPtr;
 #endif
 
 struct SolverTestParam {
@@ -134,7 +134,7 @@ class SolverTest
  public:
   SolverTest();
 
-  static SolveResult Solve(ampl::BasicSolver &s,
+  static SolveResult Solve(ampl::Solver &s,
       ampl::Problem &p, const char *stub, const char *opt = nullptr);
 };
 

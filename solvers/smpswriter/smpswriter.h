@@ -31,7 +31,7 @@ namespace ampl {
 
 class FileWriter;
 
-class SMPSWriter : public Solver<SMPSWriter> {
+class SMPSWriter : public Solver {
  private:
   // Information about a variable or constraint.
   struct VarConInfo {

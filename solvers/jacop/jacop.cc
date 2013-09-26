@@ -287,12 +287,12 @@ void JaCoPSolver::HandleUnknownOption(const char *name) {
     Print("{}\n") << name;
     jvm_options_.push_back(name);
   } else {
-    BasicSolver::HandleUnknownOption(name);
+    Solver::HandleUnknownOption(name);
   }
 }
 
 JaCoPSolver::JaCoPSolver()
-: Solver<JaCoPSolver>("jacop", "jacop " JACOP_VERSION, 20130820),
+: Solver("jacop", "jacop " JACOP_VERSION, 20130820),
   outlev_(0), output_frequency_(1), output_count_(0),
   var_select_("SmallestDomain"), val_select_("IndomainMin"),
   time_limit_(-1), node_limit_(-1), fail_limit_(-1),
@@ -391,8 +391,7 @@ void JaCoPSolver::SetEnumOption(
   throw InvalidOptionValue(name, value);
 }
 
-fmt::Formatter<BasicSolver::Printer>
-    JaCoPSolver::Output(fmt::StringRef format) {
+fmt::Formatter<Solver::Printer> JaCoPSolver::Output(fmt::StringRef format) {
   if (output_count_ == 0)
     Print("{}") << header_;
   output_count_ = (output_count_ + 1) % 20;
@@ -628,7 +627,7 @@ void JaCoPSolver::DoSolve(Problem &p) {
       << env_.CallIntMethod(search_.get(), get_fails_);
   if (has_obj && found)
     w.Format(", objective {}") << ObjPrec(obj_val);
-  BasicSolver::HandleSolution(p, w.c_str(), ptr(final_solution), 0, obj_val);
+  Solver::HandleSolution(p, w.c_str(), ptr(final_solution), 0, obj_val);
 
   double output_time = GetTimeAndReset(time);
 

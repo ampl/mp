@@ -5,7 +5,7 @@
 
 #include "solvers/util/solver.h"
 
-class TestSolutionHandler : public ampl::DefaultSolutionHandler {
+class TestSolutionHandler : public ampl::BasicSolutionHandler {
  private:
   ampl::Problem *problem_;
   std::string message_;

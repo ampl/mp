@@ -409,7 +409,7 @@ class NLToJaCoPConverter :
 };
 
 // JaCoP solver.
-class JaCoPSolver : public Solver<JaCoPSolver> {
+class JaCoPSolver : public Solver {
  private:
   std::vector<std::string> jvm_options_;
   jlong outlev_;

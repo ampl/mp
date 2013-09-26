@@ -69,7 +69,7 @@ using ampl::UnsupportedExprError;
       GTEST_NONFATAL_FAILURE_)
 
 SolverTest::EvalResult SolverTest::Solve(Problem &p) {
-  struct TestSolutionHandler : ampl::DefaultSolutionHandler {
+  struct TestSolutionHandler : ampl::BasicSolutionHandler {
     EvalResult result;
     virtual ~TestSolutionHandler() {}
     void HandleSolution(ampl::Problem &, fmt::StringRef,
@@ -102,7 +102,7 @@ SolverTest::SolverTest()
 }
 
 SolveResult SolverTest::Solve(
-    ampl::BasicSolver &s, Problem &p, const char *stub, const char *opt) {
+    ampl::Solver &s, Problem &p, const char *stub, const char *opt) {
   TestSolutionHandler sh;
   s.set_solution_handler(&sh);
   const std::string DATA_DIR = "../data/";
@@ -856,7 +856,7 @@ TEST_P(SolverTest, InterruptSolution) {
 }
 #endif
 
-struct SolutionCounter : ampl::DefaultSolutionHandler {
+struct SolutionCounter : ampl::BasicSolutionHandler {
   int num_solutions;
   SolutionCounter() : num_solutions(0) {}
   void HandleFeasibleSolution(Problem &, fmt::StringRef,

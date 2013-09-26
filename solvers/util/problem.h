@@ -160,7 +160,7 @@ class Problem : Noncopyable {
     array = new_array;
   }
 
-  friend class BasicSolver;
+  friend class Solver;
 
   // Frees all the arrays that were allocated by modifications to the problem.
   void Free();

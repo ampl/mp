@@ -43,8 +43,7 @@ struct ValueLess {
 
 namespace ampl {
 
-SSDSolver::SSDSolver()
-: Solver<SSDSolver>("ssdsolver", 0, SSDSOLVER_VERSION),
+SSDSolver::SSDSolver() : Solver("ssdsolver", 0, SSDSOLVER_VERSION),
   output_(false), scaled_(false), abs_tolerance_(1e-5), solver_name_("cplex") {
   set_version("SSD Solver");
   set_read_flags(Problem::READ_INITIAL_VALUES);

@@ -57,7 +57,7 @@ std::string CPLEXSolver::GetOptionHeader() {
 }
 
 CPLEXSolver::CPLEXSolver() :
-   Solver<CPLEXSolver>("ilocplex", 0, YYYYMMDD), cplex_(env_), aborter_(env_) {
+   Solver("ilocplex", 0, YYYYMMDD), cplex_(env_), aborter_(env_) {
   options_[DEBUGEXPR] = false;
   options_[USENUMBEROF] = true;
 
@@ -75,7 +75,7 @@ CPLEXSolver::CPLEXSolver() :
       "information for expression trees.",
       &CPLEXSolver::GetBoolOption, &CPLEXSolver::SetBoolOption, DEBUGEXPR);
 
-  AddIntOption<int>("mipdisplay",
+  AddIntOption<CPLEXSolver, int>("mipdisplay",
       "Frequency of displaying branch-and-bound information "
       "(for optimizing integer variables):\n"
       "      0 (default) = never\n"
@@ -89,7 +89,7 @@ CPLEXSolver::CPLEXSolver() :
       &CPLEXSolver::GetCPLEXIntOption, &CPLEXSolver::SetCPLEXIntOption,
       IloCplex::MIPDisplay);
 
-  AddIntOption<int>("mipinterval",
+  AddIntOption<CPLEXSolver, int>("mipinterval",
       "Frequency of node logging for mipdisplay 2 or 3. Default = 1.",
       &CPLEXSolver::GetCPLEXIntOption, &CPLEXSolver::SetCPLEXIntOption,
       IloCplex::MIPInterval);

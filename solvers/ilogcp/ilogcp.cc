@@ -215,7 +215,7 @@ std::string IlogCPSolver::GetOptionHeader() {
 }
 
 IlogCPSolver::IlogCPSolver() :
-   Solver<IlogCPSolver>("ilogcp", 0, YYYYMMDD, MULTIPLE_SOL), cp_(env_) {
+   Solver("ilogcp", 0, YYYYMMDD, MULTIPLE_SOL), cp_(env_) {
   cp_.setIntParameter(IloCP::LogVerbosity, IloCP::Quiet);
   options_[DEBUGEXPR] = false;
   options_[USENUMBEROF] = true;

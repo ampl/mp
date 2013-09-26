@@ -301,7 +301,7 @@ struct OptionInfo {
 };
 
 // Gecode solver.
-class GecodeSolver : public Solver<GecodeSolver> {
+class GecodeSolver : public Solver {
  private:
   bool output_;
   double output_frequency_;
