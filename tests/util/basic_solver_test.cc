@@ -27,6 +27,8 @@
 #include "tests/solution_handler.h"
 #include "tests/util.h"
 
+#include <cstdio>
+
 #ifdef WIN32
 # define putenv _putenv
 #endif
@@ -926,11 +928,13 @@ TEST(SolverTest, OutputSuffix) {
   EXPECT_EQ(42, suffix.int_value(0));
 }
 
+enum {NUM_SOLUTIONS = 3};
+
 struct SolCountingSolver : Solver {
   explicit SolCountingSolver(bool multiple_sol)
   : Solver("", "", 0, multiple_sol ? MULTIPLE_SOL : 0) {}
   void DoSolve(Problem &p) {
-    for (int i = 0; i < 7; ++i)
+    for (int i = 0; i < NUM_SOLUTIONS; ++i)
       HandleFeasibleSolution(p, "", 0, 0, 0);
     HandleSolution(p, "", 0, 0, 0);
   }
@@ -945,6 +949,17 @@ TEST(SolverTest, CountSolutionsOption) {
   EXPECT_EQ(1, s2.GetIntOption("countsolutions"));
 }
 
+TEST(SolverTest, SolutionsAreNotCountedByDefault) {
+  SolCountingSolver s(true);
+  s.SetIntOption("wantsol", 1);
+  WriteFile("test.nl", ReadFile("../data/objconst.nl"));
+  Problem p;
+  p.Read("test.nl");
+  s.Solve(p);
+  EXPECT_TRUE(ReadFile("test.sol").find(
+      str(fmt::Format("nsol\n0 {}\n") << NUM_SOLUTIONS)) == std::string::npos);
+}
+
 TEST(SolverTest, CountSolutions) {
   SolCountingSolver s(true);
   s.SetIntOption("countsolutions", 1);
@@ -953,10 +968,51 @@ TEST(SolverTest, CountSolutions) {
   Problem p;
   p.Read("test.nl");
   s.Solve(p);
-  EXPECT_TRUE(ReadFile("test.sol").find("nsol\n0 7\n") != std::string::npos);
+  EXPECT_TRUE(ReadFile("test.sol").find(
+      str(fmt::Format("nsol\n0 {}\n") << NUM_SOLUTIONS)) != std::string::npos);
 }
 
 TEST(SolverTest, SolutionStubOption) {
-  // TODO
+  SolCountingSolver s1(false);
+  EXPECT_THROW(s1.GetStrOption("solutionstub"), OptionError);
+  SolCountingSolver s2(true);
+  EXPECT_EQ("", s2.GetStrOption("solutionstub"));
+  s2.SetStrOption("solutionstub", "abc");
+  EXPECT_EQ("abc", s2.GetStrOption("solutionstub"));
+}
+
+bool Exists(fmt::StringRef filename) {
+  std::FILE *f = std::fopen(filename.c_str(), "r");
+  if (f)
+    std::fclose(f);
+  return f != nullptr;
+}
+
+TEST(SolverTest, SolutionsAreNotWrittenByDefault) {
+  SolCountingSolver s(true);
+  s.SetIntOption("wantsol", 1);
+  WriteFile("test.nl", ReadFile("../data/objconst.nl"));
+  Problem p;
+  p.Read("test.nl");
+  s.Solve(p);
+  EXPECT_TRUE(!Exists("1.sol"));
+  EXPECT_TRUE(ReadFile("test.sol").find(
+      str(fmt::Format("nsol\n0 {}\n") << NUM_SOLUTIONS)) == std::string::npos);
+}
+
+TEST(SolverTest, WriteSolutions) {
+  SolCountingSolver s(true);
+  s.SetStrOption("solutionstub", "abc");
+  s.SetIntOption("wantsol", 1);
+  WriteFile("test.nl", ReadFile("../data/objconst.nl"));
+  Problem p;
+  p.Read("test.nl");
+  for (int i = 1; i <= NUM_SOLUTIONS; ++i)
+    std::remove(c_str(fmt::Format("abc{}.sol") << i));
+  s.Solve(p);
+  for (int i = 1; i <= NUM_SOLUTIONS; ++i)
+    EXPECT_TRUE(Exists(fmt::Format("abc{}.sol") << i));
+  EXPECT_TRUE(ReadFile("test.sol").find(
+      str(fmt::Format("nsol\n0 {}\n") << NUM_SOLUTIONS)) != std::string::npos);
 }
 }

@@ -872,7 +872,8 @@ TEST_P(SolverTest, SolutionLimit) {
   p.AddVar(1, 3, ampl::INTEGER);
   p.AddCon(AddAllDiff(AddVar(0), AddVar(1), AddVar(2)));
   SolutionCounter sc;
-  solver_->SetIntOption("solutionlimit", 100);
+  solver_->SetIntOption("solutionlimit", 10);
+  solver_->SetIntOption("countsolutions", 1);
   solver_->set_solution_handler(&sc);
   solver_->Solve(p);
   EXPECT_EQ(6, sc.num_solutions);

@@ -253,6 +253,7 @@ TEST_F(IlogCPTest, DefaultSolutionLimit) {
   p.AddCon(AddAllDiff(AddVar(0), AddVar(1), AddVar(2)));
   TestSolutionHandler sh;
   s.set_solution_handler(&sh);
+  s.SetIntOption("solutionlimit", 100);
   s.Solve(p);
   EXPECT_EQ(1, sh.num_solutions);
 }
