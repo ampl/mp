@@ -1,5 +1,5 @@
 /*
- Utilities for writing AMPL solvers.
+ A C++ interface to an AMPL solver.
 
  Copyright (C) 2012 AMPL Optimization Inc
 
@@ -141,7 +141,7 @@ Interruptible *SignalHandler::interruptible_;
 // Set stop_ to 1 initially to avoid accessing handler_ which may not be atomic.
 volatile std::sig_atomic_t SignalHandler::stop_ = 1;
 
-SignalHandler::SignalHandler(const BasicSolver &s, Interruptible *i) {
+SignalHandler::SignalHandler(const Solver &s, Interruptible *i) {
   signal_message_ = str(fmt::Format("\n<BREAK> ({})\n") << s.name());
   signal_message_ptr_ = signal_message_.c_str();
   signal_message_size_ = static_cast<unsigned>(signal_message_.size());
@@ -171,7 +171,7 @@ void SignalHandler::HandleSigInt(int sig) {
   std::signal(sig, HandleSigInt);
 }
 
-void BasicSolver::BasicSolutionHandler::HandleFeasibleSolution(
+void Solver::SolutionWriter::HandleFeasibleSolution(
     Problem &p, fmt::StringRef message, const double *values,
     const double *dual_values, double) {
   ++solver_->num_solutions_;
@@ -184,7 +184,7 @@ void BasicSolver::BasicSolutionHandler::HandleFeasibleSolution(
       const_cast<double*>(dual_values), solver_, w.c_str());
 }
 
-void BasicSolver::BasicSolutionHandler::HandleSolution(
+void Solver::SolutionWriter::HandleSolution(
     Problem &p, fmt::StringRef message, const double *values,
     const double *dual_values, double) {
   if (solver_->need_multiple_solutions()) {
@@ -197,13 +197,19 @@ void BasicSolver::BasicSolutionHandler::HandleSolution(
       const_cast<double*>(dual_values), solver_);
 }
 
-bool BasicSolver::OptionNameLess::operator()(
+bool Solver::OptionNameLess::operator()(
     const char *lhs, const char *rhs) const {
   return strcasecmp(lhs, rhs) < 0;
 }
 
-char *BasicSolver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
-  BasicSolver *solver = static_cast<BasicSolver*>(oi);
+void Solver::RegisterSuffixes(Problem &p) {
+  ASL *asl = reinterpret_cast<ASL*>(p.asl_);
+  if (asl->i.nsuffixes == 0 && !suffixes_.empty())
+    suf_declare_ASL(asl, &suffixes_[0], suffixes_.size());
+}
+
+char *Solver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
+  Solver *solver = static_cast<Solver*>(oi);
   std::string header = internal::IndentAndWordWrap(solver->GetOptionHeader());
   if (!header.empty())
     fmt::Print("{}\n") << header;
@@ -218,14 +224,14 @@ char *BasicSolver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
   return 0;
 }
 
-BasicSolver::BasicSolver(
+Solver::Solver(
     fmt::StringRef name, fmt::StringRef long_name, long date, unsigned flags)
 : name_(name), has_errors_(false), read_flags_(0), timing_(false),
   count_solutions_(false), num_solutions_(0) {
   error_handler_ = this;
   output_handler_ = this;
-  basic_sol_handler_.set_solver(this);
-  sol_handler_ = &basic_sol_handler_;
+  sol_writer_.set_solver(this);
+  sol_handler_ = &sol_writer_;
 
   // Workaround for GCC bug 30111 that prevents value-initialization of
   // the base POD class.
@@ -247,8 +253,8 @@ BasicSolver::BasicSolver(
   driver_date = date;
 
   struct VersionOption : SolverOption {
-    BasicSolver &s;
-    VersionOption(BasicSolver &s) : SolverOption("version",
+    Solver &s;
+    VersionOption(Solver &s) : SolverOption("version",
         "Single-word phrase:  report version details "
         "before solving the problem.", true), s(s) {}
 
@@ -262,8 +268,8 @@ BasicSolver::BasicSolver(
   AddOption(OptionPtr(new VersionOption(*this)));
 
   struct WantSolOption : TypedSolverOption<int> {
-    BasicSolver &s;
-    WantSolOption(BasicSolver &s) : TypedSolverOption<int>("wantsol",
+    Solver &s;
+    WantSolOption(Solver &s) : TypedSolverOption<int>("wantsol",
         "In a stand-alone invocation (no -AMPL on the command line), "
         "what solution information to write.  Sum of\n"
         "      1 = write .sol file\n"
@@ -298,7 +304,6 @@ BasicSolver::BasicSolver(
   if ((flags & MULTIPLE_SOL) != 0) {
     AddSuffix("nsol", 0, ASL_Sufkind_prob | ASL_Sufkind_outonly);
 
-    // TODO: test
     AddOption(OptionPtr(new BoolOption(count_solutions_, "countsolutions",
         "0 or 1 (default 0):  Whether to count the number of solutions "
         "and return it in the .nsol problem suffix.")));
@@ -312,7 +317,6 @@ BasicSolver::BasicSolver(
       std::string GetValue() const { return value_; }
       void SetValue(const char *value) { value_ = value; }
     };
-    // TODO: test
     AddOption(OptionPtr(new StringOption(solution_stub_, "solutionstub",
         "Stub for solution files.  If solutionstub is specified, "
         "found solutions are written to files (solutionstub & '1' & '.sol') "
@@ -324,13 +328,13 @@ BasicSolver::BasicSolver(
   cl_option_ = keyword();
   cl_option_.name = const_cast<char*>("=");
   cl_option_.desc = const_cast<char*>("show name= possibilities");
-  cl_option_.kf = BasicSolver::PrintOptionsAndExit;
+  cl_option_.kf = Solver::PrintOptionsAndExit;
   cl_option_.info = 0;
   options = &cl_option_;
   n_options = 1;
 }
 
-BasicSolver::~BasicSolver() {
+Solver::~Solver() {
   struct Deleter {
     void operator()(std::pair<const char *const, SolverOption*> &p) {
       delete p.second;
@@ -339,7 +343,7 @@ BasicSolver::~BasicSolver() {
   std::for_each(options_.begin(), options_.end(), Deleter());
 }
 
-void BasicSolver::AddSuffix(
+void Solver::AddSuffix(
     const char *name, const char *table, int kind, int nextra) {
   suffixes_.push_back(SufDecl());
   SufDecl &sd = suffixes_.back();
@@ -349,11 +353,9 @@ void BasicSolver::AddSuffix(
   sd.nextra = nextra;
 }
 
-bool BasicSolver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
+bool Solver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
   ASL *asl = reinterpret_cast<ASL*>(p.asl_);
-  if (p.asl_->i.nsuffixes == 0 && !suffixes_.empty())
-    suf_declare_ASL(asl, &suffixes_[0], suffixes_.size());
-
+  RegisterSuffixes(p);
   char *stub = getstub_ASL(asl, &argv, this);
   if (!stub) {
     usage_noexit_ASL(this, 1);
@@ -368,14 +370,14 @@ bool BasicSolver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
   return result;
 }
 
-SolverOption *BasicSolver::FindOption(const char *name) const {
+SolverOption *Solver::FindOption(const char *name) const {
   OptionMap::const_iterator i = options_.find(name);
   if (i == options_.end())
     throw OptionError(fmt::Format("Unknown option \"{}\"") << name);
   return i->second;
 }
 
-void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
+void Solver::ParseOptionString(const char *s, unsigned flags) {
   bool skip = false;
   for (;;) {
     if (!*(s = SkipSpaces(s)))
@@ -449,7 +451,7 @@ void BasicSolver::ParseOptionString(const char *s, unsigned flags) {
   }
 }
 
-bool BasicSolver::ParseOptions(char **argv, unsigned flags, const Problem *) {
+bool Solver::ParseOptions(char **argv, unsigned flags, const Problem *) {
   has_errors_ = false;
   Option_Info::flags &= ~ASL_OI_show_version;
   if (opname) {
@@ -464,7 +466,13 @@ bool BasicSolver::ParseOptions(char **argv, unsigned flags, const Problem *) {
   return !has_errors_;
 }
 
-int BasicSolver::Run(char **argv) {
+void Solver::Solve(Problem &p) {
+  num_solutions_ = 0;
+  RegisterSuffixes(p);
+  DoSolve(p);
+}
+
+int Solver::Run(char **argv) {
   Problem p;
   if (!ProcessArgs(argv, p))
     return 1;

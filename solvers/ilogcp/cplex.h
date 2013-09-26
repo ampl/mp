@@ -44,8 +44,7 @@
 
 namespace ampl {
 
-class CPLEXSolver :
-    private Interruptible, private Noncopyable, public Solver<CPLEXSolver> {
+class CPLEXSolver : private Interruptible, private Noncopyable, public Solver {
  private:
   IloEnv env_;
   IloCplex cplex_;

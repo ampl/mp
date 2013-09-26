@@ -441,7 +441,7 @@ std::string GecodeSolver::GetOptionHeader() {
 }
 
 GecodeSolver::GecodeSolver()
-: Solver<GecodeSolver>("gecode", "gecode " GECODE_VERSION, 20130820),
+: Solver("gecode", "gecode " GECODE_VERSION, 20130820),
   output_(false), output_frequency_(1), output_count_(0),
   icl_(Gecode::ICL_DEF),
   var_branching_(IntVarBranch::SEL_SIZE_MIN),

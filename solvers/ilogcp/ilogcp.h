@@ -51,8 +51,7 @@
 namespace ampl {
 
 // IlogCP solver.
-class IlogCPSolver :
-    private Interruptible, private Noncopyable, public Solver<IlogCPSolver> {
+class IlogCPSolver : private Interruptible, private Noncopyable, public Solver {
  private:
   IloEnv env_;
   IloCP cp_;

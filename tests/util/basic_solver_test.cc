@@ -31,7 +31,6 @@
 # define putenv _putenv
 #endif
 
-using ampl::BasicSolver;
 using ampl::InvalidOptionValue;
 using ampl::OptionError;
 using ampl::Problem;
@@ -41,32 +40,22 @@ using ampl::internal::OptionHelper;
 
 namespace {
 
-typedef BasicSolver::OptionPtr SolverOptionPtr;
+typedef Solver::OptionPtr SolverOptionPtr;
 
-struct TestSolver : BasicSolver {
+struct TestSolver : Solver {
   TestSolver(const char *name = "testsolver",
       const char *long_name = 0, long date = 0)
-  : BasicSolver(name, long_name, date) {}
+  : Solver(name, long_name, date) {}
 
-  void set_long_name(const char *name) {
-    BasicSolver::set_long_name(name);
-  }
-
-  void set_version(const char *version) {
-    BasicSolver::set_version(version);
-  }
-
-  void AddOption(OptionPtr opt) {
-    BasicSolver::AddOption(move(opt));
-  }
+  using Solver::set_long_name;
+  using Solver::set_version;
+  using Solver::AddOption;
+  using Solver::AddSuffix;
+  using Solver::HandleSolution;
 
   bool ParseOptions(char **argv,
-      unsigned flags = BasicSolver::NO_OPTION_ECHO, const Problem *p = 0) {
-    return BasicSolver::ParseOptions(argv, flags, p);
-  }
-
-  void AddSuffix(const char *name, const char *table, int kind, int nextra) {
-    BasicSolver::AddSuffix(name, table, kind, nextra);
+      unsigned flags = Solver::NO_OPTION_ECHO, const Problem *p = 0) {
+    return Solver::ParseOptions(argv, flags, p);
   }
 
   void DoSolve(Problem &) {}
@@ -101,13 +90,13 @@ TEST(SolverTest, BasicSolverCtor) {
 
 TEST(SolverTest, BasicSolverVirtualDtor) {
   bool destroyed = false;
-  class DtorTestSolver : public BasicSolver {
+  class DtorTestSolver : public Solver {
    private:
     bool &destroyed_;
 
    public:
     DtorTestSolver(bool &destroyed)
-    : BasicSolver("test", 0, 0), destroyed_(destroyed) {}
+    : Solver("test", 0, 0), destroyed_(destroyed) {}
     ~DtorTestSolver() { destroyed_ = true; }
     void DoSolve(Problem &) {}
   };
@@ -288,7 +277,7 @@ TEST(SolverTest, ProcessArgsParsesSolverOptions) {
   Problem p;
   EXPECT_TRUE(s.ProcessArgs(
       Args("testprogram", "../data/objconst.nl", "wantsol=5"),
-      p, BasicSolver::NO_OPTION_ECHO));
+      p, Solver::NO_OPTION_ECHO));
   EXPECT_EQ(5, s.wantsol());
 }
 
@@ -434,7 +423,7 @@ TEST(SolverTest, TypedSolverOption) {
 
 enum Info { INFO = 0xcafe };
 
-struct TestSolverWithOptions : Solver<TestSolverWithOptions> {
+struct TestSolverWithOptions : Solver {
   int intopt1;
   int intopt2;
   double dblopt1;
@@ -481,8 +470,7 @@ struct TestSolverWithOptions : Solver<TestSolverWithOptions> {
     EXPECT_EQ(INFO, info);
   }
 
-  TestSolverWithOptions()
-  : Solver<TestSolverWithOptions>("testsolver"),
+  TestSolverWithOptions() : Solver("testsolver"),
     intopt1(0), intopt2(0), dblopt1(0), dblopt2(0) {
     AddIntOption("intopt1", "Integer option 1",
         &TestSolverWithOptions::GetIntOption,
@@ -505,8 +493,8 @@ struct TestSolverWithOptions : Solver<TestSolverWithOptions> {
   }
 
   bool ParseOptions(char **argv,
-      unsigned flags = BasicSolver::NO_OPTION_ECHO, const Problem *p = 0) {
-    return Solver<TestSolverWithOptions>::ParseOptions(argv, flags, p);
+      unsigned flags = Solver::NO_OPTION_ECHO, const Problem *p = 0) {
+    return Solver::ParseOptions(argv, flags, p);
   }
 
   void DoSolve(Problem &) {}
@@ -527,7 +515,7 @@ TEST(SolverTest, AddOption) {
   TestSolver s;
   TestOption *opt = 0;
   s.AddOption(SolverOptionPtr(opt = new TestOption()));
-  EXPECT_TRUE(s.ParseOptions(Args("testopt=42"), BasicSolver::NO_OPTION_ECHO));
+  EXPECT_TRUE(s.ParseOptions(Args("testopt=42"), Solver::NO_OPTION_ECHO));
   EXPECT_EQ(42, opt->value);
 }
 
@@ -599,9 +587,9 @@ TEST(SolverTest, UnknownOption) {
 }
 
 TEST(SolverTest, HandleUnknownOption) {
-  struct TestSolver : BasicSolver {
+  struct TestSolver : Solver {
     std::string option_name;
-    TestSolver() : BasicSolver("test", 0, 0) {}
+    TestSolver() : Solver("test", 0, 0) {}
     void DoSolve(Problem &) {}
     void HandleUnknownOption(const char *name) { option_name = name; }
   };
@@ -739,10 +727,10 @@ TEST(SolverTest, OptionEcho) {
 
 TEST(SolverTest, ExceptionInOptionHandler) {
   class TestException {};
-  struct TestSolver : public Solver<TestSolver> {
+  struct TestSolver : public Solver {
     int GetIntOption(const char *) const { return 0; }
     void Throw(const char *, int) { throw TestException(); }
-    TestSolver() : Solver<TestSolver>("") {
+    TestSolver() : Solver("") {
       AddIntOption("throw", "", &TestSolver::GetIntOption, &TestSolver::Throw);
     }
     void DoSolve(Problem &) {}
@@ -760,7 +748,7 @@ TEST(SolverTest, IntOptions) {
 
 TEST(SolverTest, GetIntOption) {
   TestSolverWithOptions test_solver;
-  BasicSolver &s = test_solver;
+  Solver &s = test_solver;
   EXPECT_EQ(0, s.GetIntOption("intopt1"));
   test_solver.intopt1 = 42;
   EXPECT_EQ(42, s.GetIntOption("intopt1"));
@@ -771,7 +759,7 @@ TEST(SolverTest, GetIntOption) {
 
 TEST(SolverTest, SetIntOption) {
   TestSolverWithOptions test_solver;
-  BasicSolver &s = test_solver;
+  Solver &s = test_solver;
   s.SetIntOption("intopt1", 11);
   EXPECT_EQ(11, test_solver.intopt1);
   s.SetIntOption("intopt1", 42);
@@ -790,7 +778,7 @@ TEST(SolverTest, DblOptions) {
 
 TEST(SolverTest, GetDblOption) {
   TestSolverWithOptions test_solver;
-  BasicSolver &s = test_solver;
+  Solver &s = test_solver;
   EXPECT_EQ(0, s.GetDblOption("dblopt1"));
   test_solver.dblopt1 = 42;
   EXPECT_EQ(42, s.GetDblOption("dblopt1"));
@@ -801,7 +789,7 @@ TEST(SolverTest, GetDblOption) {
 
 TEST(SolverTest, SetDblOption) {
   TestSolverWithOptions test_solver;
-  BasicSolver &s = test_solver;
+  Solver &s = test_solver;
   s.SetDblOption("dblopt1", 1.1);
   EXPECT_EQ(1.1, test_solver.dblopt1);
   s.SetDblOption("dblopt1", 4.2);
@@ -820,7 +808,7 @@ TEST(SolverTest, StrOptions) {
 
 TEST(SolverTest, GetStrOption) {
   TestSolverWithOptions test_solver;
-  BasicSolver &s = test_solver;
+  Solver &s = test_solver;
   EXPECT_EQ("", s.GetStrOption("stropt1"));
   test_solver.stropt1 = "abc";
   EXPECT_EQ("abc", s.GetStrOption("stropt1"));
@@ -831,7 +819,7 @@ TEST(SolverTest, GetStrOption) {
 
 TEST(SolverTest, SetStrOption) {
   TestSolverWithOptions test_solver;
-  BasicSolver &s = test_solver;
+  Solver &s = test_solver;
   s.SetStrOption("stropt1", "abc");
   EXPECT_EQ("abc", test_solver.stropt1);
   s.SetStrOption("stropt1", "def");
@@ -936,5 +924,39 @@ TEST(SolverTest, OutputSuffix) {
   int value = 42;
   suffix.set_values(&value);
   EXPECT_EQ(42, suffix.int_value(0));
+}
+
+struct SolCountingSolver : Solver {
+  explicit SolCountingSolver(bool multiple_sol)
+  : Solver("", "", 0, multiple_sol ? MULTIPLE_SOL : 0) {}
+  void DoSolve(Problem &p) {
+    for (int i = 0; i < 7; ++i)
+      HandleFeasibleSolution(p, "", 0, 0, 0);
+    HandleSolution(p, "", 0, 0, 0);
+  }
+};
+
+TEST(SolverTest, CountSolutionsOption) {
+  SolCountingSolver s1(false);
+  EXPECT_THROW(s1.GetIntOption("countsolutions"), OptionError);
+  SolCountingSolver s2(true);
+  EXPECT_EQ(0, s2.GetIntOption("countsolutions"));
+  s2.SetIntOption("countsolutions", 1);
+  EXPECT_EQ(1, s2.GetIntOption("countsolutions"));
+}
+
+TEST(SolverTest, CountSolutions) {
+  SolCountingSolver s(true);
+  s.SetIntOption("countsolutions", 1);
+  s.SetIntOption("wantsol", 1);
+  WriteFile("test.nl", ReadFile("../data/objconst.nl"));
+  Problem p;
+  p.Read("test.nl");
+  s.Solve(p);
+  EXPECT_TRUE(ReadFile("test.sol").find("nsol\n0 7\n") != std::string::npos);
+}
+
+TEST(SolverTest, SolutionStubOption) {
+  // TODO
 }
 }

@@ -1,5 +1,5 @@
 /*
- Utilities for writing AMPL solvers.
+ A C++ interface to an AMPL solver.
 
  Copyright (C) 2012 AMPL Optimization Inc
 
@@ -96,9 +96,7 @@ struct OptionHelper<std::string> {
 };
 }
 
-class BasicSolver;
-
-// An interface for receiving errors reported via BasicSolver::ReportError.
+// An interface for receiving errors reported via Solver::ReportError.
 class ErrorHandler {
  protected:
   ~ErrorHandler() {}
@@ -132,9 +130,9 @@ class SolutionHandler {
       const double *values, const double *dual_values, double obj_value) = 0;
 };
 
-class DefaultSolutionHandler : public SolutionHandler {
+class BasicSolutionHandler : public SolutionHandler {
  protected:
-  ~DefaultSolutionHandler() {}
+  ~BasicSolutionHandler() {}
 
  public:
   virtual void HandleFeasibleSolution(Problem &, fmt::StringRef,
@@ -150,6 +148,8 @@ class Interruptible {
  public:
   virtual void Interrupt() = 0;
 };
+
+class Solver;
 
 // A signal handler.
 // When a solver is run in a terminal it should respond to SIGINT (Ctrl-C)
@@ -169,7 +169,7 @@ class SignalHandler {
   static void HandleSigInt(int sig);
 
  public:
-  explicit SignalHandler(const BasicSolver &s, Interruptible *i = 0);
+  explicit SignalHandler(const Solver &s, Interruptible *i = 0);
 
   ~SignalHandler() {
     stop_ = 1;
@@ -257,8 +257,29 @@ class TypedSolverOption : public SolverOption {
 template <typename T>
 inline const T *ptr(const std::vector<T> &v) { return v.empty() ? 0 : &v[0]; }
 
-// Base class for all solver classes.
-class BasicSolver
+// An AMPL solver.
+//
+// Example:
+//
+// class MySolver : public Solver {
+//  public:
+//   void GetTestOption(const char *name, int value, int info) {
+//     // Returns the option value; info is an arbitrary value passed as
+//     // the last argument to AddIntOption. It can be useful if the same
+//     // function handles multiple options.
+//     ...
+//   }
+//   void SetTestOption(const char *name, int value, int info) {
+//     // Set the option value; info is the same as in GetTestOption.
+//     ...
+//   }
+//
+//   MySolver()  {
+//     AddIntOption("test", "This is a test option",
+//                  &MySolver::GetTestOption, &MySolver::SetTestOption, 42);
+//   }
+// };
+class Solver
   : private ErrorHandler, private OutputHandler, private Option_Info {
  private:
   std::string name_;
@@ -280,20 +301,20 @@ class BasicSolver
   // Specifies whether to return the number of solutions in the .nsol suffix.
   bool count_solutions_;
 
-  class BasicSolutionHandler : public DefaultSolutionHandler {
+  class SolutionWriter : public SolutionHandler {
    private:
-    BasicSolver *solver_;
+    Solver *solver_;
 
    public:
-    BasicSolutionHandler() : solver_() {}
-    void set_solver(BasicSolver *s) { solver_ = s; }
+    SolutionWriter() : solver_() {}
+    void set_solver(Solver *s) { solver_ = s; }
 
     void HandleFeasibleSolution(Problem &p, fmt::StringRef message,
           const double *values, const double *dual_values, double);
     void HandleSolution(Problem &p, fmt::StringRef message,
           const double *values, const double *dual_values, double);
   };
-  BasicSolutionHandler basic_sol_handler_;
+  SolutionWriter sol_writer_;
 
   unsigned read_flags_;  // flags passed to Problem::Read
 
@@ -308,6 +329,8 @@ class BasicSolver
   bool timing_;
 
   std::vector<SufDecl> suffixes_;
+
+  void RegisterSuffixes(Problem &p);
 
   static char *PrintOptionsAndExit(Option_Info *oi, keyword *kw, char *value);
 
@@ -362,6 +385,52 @@ class BasicSolver
   // Parses an option string.
   void ParseOptionString(const char *s, unsigned flags);
 
+  // Handler should be a class derived from Solver that will receive
+  // notifications about parsed options.
+  template <typename Handler, typename T>
+  class ConcreteOption : public TypedSolverOption<T> {
+   private:
+    typedef typename internal::OptionHelper<T>::Arg Arg;
+    typedef T (Handler::*Get)(const char *) const;
+    typedef void (Handler::*Set)(const char *, Arg);
+
+    Handler &handler_;
+    Get get_;
+    Set set_;
+
+   public:
+    ConcreteOption(const char *name,
+        const char *description, Solver *s, Get get, Set set)
+    : TypedSolverOption<T>(name, description),
+      handler_(static_cast<Handler&>(*s)), get_(get), set_(set) {}
+
+    T GetValue() const { return (handler_.*get_)(this->name()); }
+    void SetValue(Arg value) { (handler_.*set_)(this->name(), value); }
+  };
+
+  template <typename Handler, typename T,
+            typename Info, typename InfoArg = Info>
+  class ConcreteOptionWithInfo : public TypedSolverOption<T> {
+   private:
+    typedef typename internal::OptionHelper<T>::Arg Arg;
+    typedef T (Handler::*Get)(const char *, InfoArg) const;
+    typedef void (Handler::*Set)(const char *, Arg, InfoArg);
+
+    Handler &handler_;
+    Get get_;
+    Set set_;
+    Info info_;
+
+   public:
+    ConcreteOptionWithInfo(const char *name, const char *description,
+        Solver *s, Get get, Set set, InfoArg info)
+    : TypedSolverOption<T>(name, description),
+      handler_(static_cast<Handler&>(*s)), get_(get), set_(set), info_(info) {}
+
+    T GetValue() const { return (handler_.*get_)(this->name(), info_); }
+    void SetValue(Arg value) { (handler_.*set_)(this->name(), value, info_); }
+  };
+
  public:
 #ifdef HAVE_UNIQUE_PTR
   typedef std::unique_ptr<SolverOption> OptionPtr;
@@ -371,19 +440,19 @@ class BasicSolver
 #endif
 
  protected:
-  // Flags for the BasicSolver constructor.
+  // Flags for the Solver constructor.
   enum {
     // Multiple solution support.
-    // Makes BasicSolver register "countsolutions" and "solutionstub" options
+    // Makes Solver register "countsolutions" and "solutionstub" options
     // and write every solution passed to HandleFeastibleSolution to a file
     // solutionstub & i & ".sol" where i is a solution number.
     MULTIPLE_SOL = 1
   };
 
-  // Constructs a BasicSolver object.
+  // Constructs a Solver object.
   // date: The solver date in YYYYMMDD format.
-  BasicSolver(fmt::StringRef name,
-      fmt::StringRef long_name, long date, unsigned flags = 0);
+  Solver(fmt::StringRef name, fmt::StringRef long_name = 0,
+      long date = 0, unsigned flags = 0);
 
   void set_long_name(fmt::StringRef name) {
     long_name_ = name;
@@ -406,11 +475,126 @@ class BasicSolver
     return count_solutions_ || !solution_stub_.empty();
   }
 
+  // Passes a solution to the solution handler.
+  void HandleSolution(Problem &p, fmt::StringRef message,
+      const double *values, const double *dual_values,
+      double obj_value = std::numeric_limits<double>::quiet_NaN()) {
+    sol_handler_->HandleSolution(p, message, values, dual_values, obj_value);
+  }
+
+  // Passes a feasible solution to the solution handler.
+  void HandleFeasibleSolution(Problem &p, fmt::StringRef message,
+      const double *values, const double *dual_values,
+      double obj_value = std::numeric_limits<double>::quiet_NaN()) {
+    sol_handler_->HandleFeasibleSolution(
+        p, message, values, dual_values, obj_value);
+  }
+
   void AddOption(OptionPtr opt) {
     // First insert the option, then release a pointer to it. Doing the other
     // way around may lead to a memory leak if insertion throws an exception.
     options_[opt->name()] = opt.get();
     opt.release();
+  }
+
+  // Adds an integer option. The arguments get and set should be
+  // pointers to member functions in the solver class. They are used to
+  // get and set an option value respectively.
+  template <typename Handler>
+  void AddIntOption(const char *name, const char *description,
+      int (Handler::*get)(const char *) const,
+      void (Handler::*set)(const char *, int)) {
+    AddOption(OptionPtr(new ConcreteOption<Handler, int>(
+        name, description, this, get, set)));
+  }
+
+  // Adds an integer option with additional information. The arguments get
+  // and set should be pointers to member functions in the solver class.
+  // They are used to get and set an option value respectively.
+  template <typename Handler, typename Info>
+  void AddIntOption(const char *name, const char *description,
+      int (Handler::*get)(const char *, const Info &) const,
+      void (Handler::*set)(const char *, int, const Info &),
+      const Info &info) {
+    AddOption(OptionPtr(
+        new ConcreteOptionWithInfo<Handler, int, Info, const Info &>(
+            name, description, this, get, set, info)));
+  }
+
+  // The same as above but with Info argument passed by value.
+  template <typename Handler, typename Info>
+  void AddIntOption(const char *name, const char *description,
+      int (Handler::*get)(const char *, Info) const,
+      void (Handler::*set)(const char *, int, Info), Info info) {
+    AddOption(OptionPtr(new ConcreteOptionWithInfo<Handler, int, Info>(
+            name, description, this, get, set, info)));
+  }
+
+  // Adds a double option. The arguments get and set should be
+  // pointers to member functions in the solver class. They are used to
+  // get and set an option value respectively.
+  template <typename Handler>
+  void AddDblOption(const char *name, const char *description,
+      double (Handler::*get)(const char *) const,
+      void (Handler::*set)(const char *, double)) {
+    AddOption(OptionPtr(new ConcreteOption<Handler, double>(
+        name, description, this, get, set)));
+  }
+
+  // Adds a double option with additional information. The arguments get
+  // and set should be pointers to member functions in the solver class.
+  // They are used to get and set an option value respectively.
+  template <typename Handler, typename Info>
+  void AddDblOption(const char *name, const char *description,
+      double (Handler::*get)(const char *, const Info &) const,
+      void (Handler::*set)(const char *, double, const Info &),
+      const Info &info) {
+    AddOption(OptionPtr(
+        new ConcreteOptionWithInfo<Handler, double, Info, const Info &>(
+            name, description, this, get, set, info)));
+  }
+
+  // The same as above but with Info argument passed by value.
+  template <typename Handler, typename Info>
+  void AddDblOption(const char *name, const char *description,
+      double (Handler::*get)(const char *, Info) const,
+      void (Handler::*set)(const char *, double, Info), Info info) {
+    AddOption(OptionPtr(new ConcreteOptionWithInfo<Handler, double, Info>(
+            name, description, this, get, set, info)));
+  }
+
+  // Adds a string option. The arguments get and set should be
+  // pointers to member functions in the solver class. They are used to
+  // get and set an option value respectively.
+  template <typename Handler>
+  void AddStrOption(const char *name, const char *description,
+      std::string (Handler::*get)(const char *) const,
+      void (Handler::*set)(const char *, const char *)) {
+    AddOption(OptionPtr(new ConcreteOption<Handler, std::string>(
+        name, description, this, get, set)));
+  }
+
+  // Adds a string option with additional information. The arguments get
+  // and set should be pointers to member functions in the solver class.
+  // They are used to get and set an option value respectively.
+  template <typename Handler, typename Info>
+  void AddStrOption(const char *name, const char *description,
+      std::string (Handler::*get)(const char *, const Info &) const,
+      void (Handler::*set)(const char *, const char *, const Info &),
+      const Info &info) {
+    AddOption(OptionPtr(
+        new ConcreteOptionWithInfo<Handler, std::string, Info, const Info &>(
+            name, description, this, get, set, info)));
+  }
+
+  // The same as above but with Info argument passed by value.
+  template <typename Handler, typename Info>
+  void AddStrOption(const char *name, const char *description,
+      std::string (Handler::*get)(const char *, Info) const,
+      void (Handler::*set)(const char *, const char *, Info), Info info) {
+    typedef void (Handler::*Func)(const char *, const char *, Info);
+    AddOption(OptionPtr(new ConcreteOptionWithInfo<Handler, std::string, Info>(
+            name, description, this, get, set, info)));
   }
 
   virtual void HandleUnknownOption(const char *name) {
@@ -435,7 +619,7 @@ class BasicSolver
   Printer MakePrinter() { return Printer(output_handler_); }
 
  public:
-  virtual ~BasicSolver();
+  virtual ~Solver();
 
   // Flags for ParseOptions.
   enum {
@@ -547,21 +731,6 @@ class BasicSolver
     SetOptionValue<std::string>(name, value);
   }
 
-  // Passes a solution to the solution handler.
-  void HandleSolution(Problem &p, fmt::StringRef message,
-      const double *values, const double *dual_values,
-      double obj_value = std::numeric_limits<double>::quiet_NaN()) {
-    sol_handler_->HandleSolution(p, message, values, dual_values, obj_value);
-  }
-
-  // Passes a feasible solution to the solution handler.
-  void HandleFeasibleSolution(Problem &p, fmt::StringRef message,
-      const double *values, const double *dual_values,
-      double obj_value = std::numeric_limits<double>::quiet_NaN()) {
-    sol_handler_->HandleFeasibleSolution(
-        p, message, values, dual_values, obj_value);
-  }
-
   // Reports an error printing the formatted error message to stderr.
   // Usage: ReportError("File not found: {}") << filename;
   fmt::Formatter<ErrorReporter> ReportError(fmt::StringRef format) {
@@ -575,185 +744,10 @@ class BasicSolver
 
   // Solves a problem.
   // The solutions are reported via the registered solution handler.
-  void Solve(Problem &p) {
-    num_solutions_ = 0;
-    DoSolve(p);
-  }
+  void Solve(Problem &p);
 
   // Runs the solver.
   int Run(char **argv);
-};
-
-// An AMPL solver.
-// Impl should be a class derived from Solver that will receive notifications
-// about parsed options.
-//
-// Example:
-//
-// class MySolver : public Solver<MySolver> {
-//  public:
-//   void GetTestOption(const char *name, int value, int info) {
-//     // Returns the option value; info is an arbitrary value passed as
-//     // the last argument to AddIntOption. It can be useful if the same
-//     // function handles multiple options.
-//     ...
-//   }
-//   void SetTestOption(const char *name, int value, int info) {
-//     // Set the option value; info is the same as in GetTestOption.
-//     ...
-//   }
-//
-//   MySolver()  {
-//     AddIntOption("test", "This is a test option",
-//                  &MySolver::GetTestOption, &MySolver::SetTestOption, 42);
-//   }
-// };
-template <typename Impl>
-class Solver : public BasicSolver {
- private:
-  template <typename T>
-  class ConcreteOption : public TypedSolverOption<T> {
-   private:
-    typedef typename internal::OptionHelper<T>::Arg Arg;
-    typedef T (Impl::*Getter)(const char *) const;
-    typedef void (Impl::*Setter)(const char *, Arg);
-
-    Impl &impl_;
-    Getter getter_;
-    Setter setter_;
-
-   public:
-    ConcreteOption(const char *name, const char *description,
-        Solver *s, Getter getter, Setter setter)
-    : TypedSolverOption<T>(name, description), impl_(static_cast<Impl&>(*s)),
-      getter_(getter), setter_(setter) {}
-
-    T GetValue() const { return (impl_.*getter_)(this->name()); }
-    void SetValue(Arg value) { (impl_.*setter_)(this->name(), value); }
-  };
-
-  template <typename T, typename Info, typename InfoArg = Info>
-  class ConcreteOptionWithInfo : public TypedSolverOption<T> {
-   private:
-    typedef typename internal::OptionHelper<T>::Arg Arg;
-    typedef T (Impl::*Getter)(const char *, InfoArg) const;
-    typedef void (Impl::*Setter)(const char *, Arg, InfoArg);
-
-    Impl &impl_;
-    Getter getter_;
-    Setter setter_;
-    Info info_;
-
-   public:
-    ConcreteOptionWithInfo(const char *name, const char *description,
-        Solver *s, Getter getter, Setter setter, InfoArg info)
-    : TypedSolverOption<T>(name, description), impl_(static_cast<Impl&>(*s)),
-      getter_(getter), setter_(setter), info_(info) {}
-
-    T GetValue() const { return (impl_.*getter_)(this->name(), info_); }
-    void SetValue(Arg value) { (impl_.*setter_)(this->name(), value, info_); }
-  };
-
- protected:
-  // Adds an integer option. The arguments getter and setter should be
-  // pointers to member functions in the solver class. They are used to
-  // get and set an option value respectively.
-  void AddIntOption(const char *name, const char *description,
-      int (Impl::*getter)(const char *) const,
-      void (Impl::*setter)(const char *, int)) {
-    AddOption(OptionPtr(
-        new ConcreteOption<int>(name, description, this, getter, setter)));
-  }
-
-  // Adds an integer option with additional information. The arguments getter
-  // and setter should be pointers to member functions in the solver class.
-  // They are used to get and set an option value respectively.
-  template <typename Info>
-  void AddIntOption(const char *name, const char *description,
-      int (Impl::*getter)(const char *, const Info &) const,
-      void (Impl::*setter)(const char *, int, const Info &),
-      const Info &info) {
-    AddOption(OptionPtr(new ConcreteOptionWithInfo<int, Info, const Info &>(
-            name, description, this, getter, setter, info)));
-  }
-
-  // The same as above but with Info argument passed by value.
-  template <typename Info>
-  void AddIntOption(const char *name, const char *description,
-      int (Impl::*getter)(const char *, Info) const,
-      void (Impl::*setter)(const char *, int, Info), Info info) {
-    AddOption(OptionPtr(new ConcreteOptionWithInfo<int, Info>(
-            name, description, this, getter, setter, info)));
-  }
-
-  // Adds a double option. The arguments getter and setter should be
-  // pointers to member functions in the solver class. They are used to
-  // get and set an option value respectively.
-  void AddDblOption(const char *name, const char *description,
-      double (Impl::*getter)(const char *) const,
-      void (Impl::*setter)(const char *, double)) {
-    AddOption(OptionPtr(new ConcreteOption<double>(
-        name, description, this, getter, setter)));
-  }
-
-  // Adds a double option with additional information. The arguments getter
-  // and setter should be pointers to member functions in the solver class.
-  // They are used to get and set an option value respectively.
-  template <typename Info>
-  void AddDblOption(const char *name, const char *description,
-      double (Impl::*getter)(const char *, const Info &) const,
-      void (Impl::*setter)(const char *, double, const Info &),
-      const Info &info) {
-    AddOption(OptionPtr(new ConcreteOptionWithInfo<double, Info, const Info &>(
-            name, description, this, getter, setter, info)));
-  }
-
-  // The same as above but with Info argument passed by value.
-  template <typename Info>
-  void AddDblOption(const char *name, const char *description,
-      double (Impl::*getter)(const char *, Info) const,
-      void (Impl::*setter)(const char *, double, Info), Info info) {
-    AddOption(OptionPtr(new ConcreteOptionWithInfo<double, Info>(
-            name, description, this, getter, setter, info)));
-  }
-
-  // Adds a string option. The arguments getter and setter should be
-  // pointers to member functions in the solver class. They are used to
-  // get and set an option value respectively.
-  void AddStrOption(const char *name, const char *description,
-      std::string (Impl::*getter)(const char *) const,
-      void (Impl::*setter)(const char *, const char *)) {
-    AddOption(OptionPtr(new ConcreteOption<std::string>(
-        name, description, this, getter, setter)));
-  }
-
-  // Adds a string option with additional information. The arguments getter
-  // and setter should be pointers to member functions in the solver class.
-  // They are used to get and set an option value respectively.
-  template <typename Info>
-  void AddStrOption(const char *name, const char *description,
-      std::string (Impl::*getter)(const char *, const Info &) const,
-      void (Impl::*setter)(const char *, const char *, const Info &),
-      const Info &info) {
-    AddOption(OptionPtr(
-        new ConcreteOptionWithInfo<std::string, Info, const Info &>(
-            name, description, this, getter, setter, info)));
-  }
-
-  // The same as above but with Info argument passed by value.
-  template <typename Info>
-  void AddStrOption(const char *name, const char *description,
-      std::string (Impl::*getter)(const char *, Info) const,
-      void (Impl::*setter)(const char *, const char *, Info), Info info) {
-    typedef void (Impl::*Func)(const char *, const char *, Info);
-    AddOption(OptionPtr(new ConcreteOptionWithInfo<std::string, Info>(
-            name, description, this, getter, setter, info)));
-  }
-
- public:
-  Solver(fmt::StringRef name, fmt::StringRef long_name = 0,
-      long date = 0, unsigned flags = 0)
-  : BasicSolver(name, long_name, date, flags) {}
 };
 }
 

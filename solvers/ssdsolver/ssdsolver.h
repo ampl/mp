@@ -82,7 +82,7 @@ class SSDExtractor : public ExprVisitor<SSDExtractor, void, void> {
   const std::vector<double> &rhs() const { return rhs_; }
 };
 
-class SSDSolver : public Solver<SSDSolver> {
+class SSDSolver : public Solver {
  private:
   bool output_;
   bool scaled_;
