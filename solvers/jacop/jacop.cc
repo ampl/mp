@@ -292,11 +292,12 @@ void JaCoPSolver::HandleUnknownOption(const char *name) {
 }
 
 JaCoPSolver::JaCoPSolver()
-: Solver("jacop", "jacop " JACOP_VERSION, 20130820),
+: Solver("jacop", "jacop " JACOP_VERSION, 20130820, MULTIPLE_SOL),
   outlev_(0), output_frequency_(1), output_count_(0),
   var_select_("SmallestDomain"), val_select_("IndomainMin"),
   time_limit_(-1), node_limit_(-1), fail_limit_(-1),
   backtrack_limit_(-1), decision_limit_(-1),
+  solution_limit_(-1), num_solutions_(0), solve_code_(-1),
   get_depth_(), get_nodes_(), get_fails_(), obj_type_(MIN), value_() {
 
   set_version("JaCoP " JACOP_VERSION);
@@ -371,6 +372,13 @@ JaCoPSolver::JaCoPSolver()
   AddIntOption("decisionlimit", "Decision limit.",
       &JaCoPSolver::DoGetIntOption, &JaCoPSolver::DoSetIntOption,
       &decision_limit_);
+  AddIntOption("solutionlimit",
+      "Limit on the number of feasible solutions found before terminating "
+      "a search.  Leaving the solution limit unspecified will make the "
+      "optimizer search for an optimal solution if there is an objective "
+      "function or for a feasible solution otherwise.",
+      &JaCoPSolver::DoGetIntOption, &JaCoPSolver::DoSetIntOption,
+      &solution_limit_);
 }
 
 std::string JaCoPSolver::GetEnumOption(
@@ -408,23 +416,38 @@ void JaCoPSolver::PrintLogEntry() {
   next_output_time_ += GetOutputInterval();
 }
 
-void JaCoPSolver::PrintObjValue() {
+bool JaCoPSolver::DoHandleSolution() {
   try {
-    if (outlev_ == 0)
-      return;
-    jint value = env_.CallIntMethodKeepException(obj_var_.get(), value_);
-    Output("{:46}\n") << (obj_type_ == MIN ? value : -value);
+    ++num_solutions_;
+    if (outlev_ != 0 && obj_var_.get()) {
+      jint value = env_.CallIntMethodKeepException(obj_var_.get(), value_);
+      Output("{:46}\n") << (obj_type_ == MIN ? value : -value);
+    }
+    if (need_multiple_solutions()) {
+      // TODO: pass the solution to HandleFeasibleSolution
+    }
+    if (solution_limit_ != -1 && num_solutions_ >= solution_limit_) {
+      solve_code_ = 403;
+      status_ = "solution limit";
+      return true;
+    }
   } catch (const JavaError &) {
     // This indicates that a Java exception has occurred and it will be
     // re-thrown when the control returns to the Java code. Therefore the
     // C++ JavaError exception is ignored here.
   }
+  return false;
 }
 
 JNIEXPORT jboolean JNICALL JaCoPSolver::Stop(JNIEnv *, jobject, jlong data) {
   try {
-    reinterpret_cast<JaCoPSolver*>(data)->PrintLogEntry();
-    return SignalHandler::stop();
+    JaCoPSolver* solver = reinterpret_cast<JaCoPSolver*>(data);
+    solver->PrintLogEntry();
+    if (SignalHandler::stop()) {
+      solver->solve_code_ = 600;
+      solver->status_ = "interrupted";
+      return JNI_TRUE;
+    }
   } catch (const JavaError &) {
     // This indicates that a Java exception has occurred and it will be
     // re-thrown when the control returns to the Java code. Therefore the
@@ -500,25 +523,27 @@ void JaCoPSolver::DoSolve(Problem &p) {
        env_.GetMethod(dfs_class.get(), "setConsistencyListener",
            "(LJaCoP/search/ConsistencyListener;)V"), interrupter);
 
+  Class<SolutionListener> solution_listener_class;
+  solution_listener_class.Init(env_);
+  {
+    char NAME[] = "handleSolution";
+    char SIG[] = "(J)Z";
+    JNINativeMethod method = {
+        NAME, SIG,
+        reinterpret_cast<void*>(reinterpret_cast<jlong>(HandleSolution))
+    };
+    env_.RegisterNatives(solution_listener_class.get(), &method, 1);
+  }
+  jobject solution_listener =
+      solution_listener_class.NewObject(env_, reinterpret_cast<jlong>(this));
+  env_.CallVoidMethod(search_.get(),
+       env_.GetMethod(dfs_class.get(), "setSolutionListener",
+           "(LJaCoP/search/SolutionListener;)V"), solution_listener);
   if (has_obj) {
-    Class<SolutionListener> solution_listener_class;
-    solution_listener_class.Init(env_);
-    {
-      char NAME[] = "handleSolution";
-      char SIG[] = "(J)V";
-      JNINativeMethod method = {
-          NAME, SIG,
-          reinterpret_cast<void*>(reinterpret_cast<jlong>(HandleSolution))
-      };
-      env_.RegisterNatives(solution_listener_class.get(), &method, 1);
-    }
-    jobject solution_listener =
-        solution_listener_class.NewObject(env_, reinterpret_cast<jlong>(this));
-    env_.CallVoidMethod(search_.get(),
-         env_.GetMethod(dfs_class.get(), "setSolutionListener",
-             "(LJaCoP/search/SolutionListener;)V"), solution_listener);
     obj_var_ = env_.NewGlobalRef(converter.obj());
     obj_type_ = p.obj_type(0);
+  } else {
+    GlobalRef().Swap(obj_var_);
   }
   jclass var_class = converter.var_class().get();
   value_ = env_.GetMethod(var_class, "value", "()I");
@@ -553,10 +578,11 @@ void JaCoPSolver::DoSolve(Problem &p) {
   double setup_time = GetTimeAndReset(time);
 
   // Solve the problem.
+  solve_code_ = -1;
+  num_solutions_ = 0;
   header_ = str(fmt::Format("{:>10} {:>10} {:>10} {:>13}\n")
     << "Max Depth" << "Nodes" << "Fails" << (has_obj ? "Best Obj" : ""));
   jboolean found = false;
-  bool interrupted = false;
   output_count_ = 0;
   next_output_time_ = steady_clock::now() + GetOutputInterval();
   try {
@@ -575,6 +601,7 @@ void JaCoPSolver::DoSolve(Problem &p) {
   } catch (const JavaError &e) {
     // Check if exception is of class InterruptSearch which is used to
     // interrupt search.
+    bool interrupted = false;
     if (jthrowable throwable = e.exception()) {
       Class<InterruptSearch> interrupt_class;
       interrupt_class.Init(env_);
@@ -585,32 +612,33 @@ void JaCoPSolver::DoSolve(Problem &p) {
       throw;
   }
 
-  // Convert solution status.
-  const char *status = 0;
-  int solve_code = 0;
-  if (interrupted || env_.GetBooleanField(timeout,
+  // Convert the solution status.
+  if (env_.GetBooleanField(timeout,
       env_.GetFieldID(timeout_class.get(), "timeOutOccurred", "Z"))) {
-    solve_code = 600;
-    status = "interrupted";
-  } else if (!found) {
-    solve_code = 200;
-    status = "infeasible problem";
-  } else if (has_obj) {
-    solve_code = 0;
-    status = "optimal solution";
-  } else {
-    solve_code = 100;
-    status = "feasible solution";
+    solve_code_ = 400;
+    status_ = "limit";
   }
-  p.set_solve_code(solve_code);
-
-  std::vector<double> final_solution;
   if (found) {
-    if (has_obj) {
+    if (!has_obj) {
+      // If the problem has no objectives and there is a solution, report
+      // it as solved even if some limit was reached.
+      solve_code_ = 0;
+      status_ = "feasible solution";
+    } else if (solve_code_ == -1) {
+      solve_code_ = 0;
       obj_val = env_.CallIntMethod(obj_var_.get(), value_);
       if (p.obj_type(0) == MAX)
         obj_val = -obj_val;
+      status_ = "optimal solution";
     }
+  } else if (solve_code_ == -1) {
+    solve_code_ = 200;
+    status_ = "infeasible problem";
+  }
+  p.set_solve_code(solve_code_);
+
+  std::vector<double> final_solution;
+  if (found) {
     const std::vector<jobject> &vars = converter.vars();
     int num_vars = p.num_vars();
     final_solution.resize(num_vars);
@@ -621,7 +649,7 @@ void JaCoPSolver::DoSolve(Problem &p) {
   double solution_time = GetTimeAndReset(time);
 
   fmt::Writer w;
-  w.Format("{}: {}\n") << long_name() << status;
+  w.Format("{}: {}\n") << long_name() << status_;
   w.Format("{} nodes, {} fails")
       << env_.CallIntMethod(search_.get(), get_nodes_)
       << env_.CallIntMethod(search_.get(), get_fails_);
