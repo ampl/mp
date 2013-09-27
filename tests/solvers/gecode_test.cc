@@ -89,7 +89,7 @@ TEST_F(GecodeSolverTest, CDOption) {
 TEST_F(GecodeSolverTest, FailLimitOption) {
   Problem p;
   string message = Solve(p, "miplib/assign1", "faillimit=10").message;
-  EXPECT_EQ(600, p.solve_code());
+  EXPECT_EQ(402, p.solve_code());
   EXPECT_TRUE(message.find(" 11 fails") != string::npos);
   EXPECT_EQ(10, solver_.GetIntOption("faillimit"));
   EXPECT_THROW(solver_.SetIntOption("faillimit", -1), InvalidOptionValue);
@@ -98,7 +98,7 @@ TEST_F(GecodeSolverTest, FailLimitOption) {
 TEST_F(GecodeSolverTest, NodeLimitOption) {
   Problem p;
   string message = Solve(p, "miplib/assign1", "nodelimit=10").message;
-  EXPECT_EQ(600, p.solve_code());
+  EXPECT_EQ(401, p.solve_code());
   EXPECT_TRUE(message.find("11 nodes") != string::npos);
   EXPECT_EQ(10, solver_.GetIntOption("nodelimit"));
   EXPECT_THROW(solver_.SetIntOption("nodelimit", -1), InvalidOptionValue);
@@ -107,7 +107,7 @@ TEST_F(GecodeSolverTest, NodeLimitOption) {
 TEST_F(GecodeSolverTest, TimeLimitOption) {
   Problem p;
   Solve(p, "miplib/assign1", "timelimit=0.1");
-  EXPECT_EQ(600, p.solve_code());
+  EXPECT_EQ(400, p.solve_code());
   EXPECT_EQ(0.1, solver_.GetDblOption("timelimit"));
   EXPECT_THROW(solver_.SetDblOption("timelimit", -1), InvalidOptionValue);
 }
