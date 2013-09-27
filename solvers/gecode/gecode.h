@@ -307,6 +307,8 @@ class GecodeSolver : public Solver {
   double output_frequency_;
   unsigned output_count_;
   std::string header_;
+  int solve_code_;
+  std::string status_;
 
   Gecode::IntConLevel icl_;
   Gecode::IntVarBranch::Select var_branching_;
@@ -316,6 +318,8 @@ class GecodeSolver : public Solver {
   double time_limit_;  // Time limit in seconds.
   unsigned long node_limit_;
   unsigned long fail_limit_;
+  unsigned solution_limit_;
+
   Gecode::RestartMode restart_;
   double restart_base_;
   unsigned long restart_scale_;
@@ -351,6 +355,11 @@ class GecodeSolver : public Solver {
     *option = value;
   }
 
+  void SetStatus(int solve_code, const char *status) {
+    solve_code_ = solve_code;
+    status_ = status;
+  }
+
   fmt::Formatter<fmt::Write> Output(fmt::StringRef format);
 
   class Stop : public Gecode::Search::Stop {
@@ -375,8 +384,8 @@ class GecodeSolver : public Solver {
   };
 
   template<template<template<typename> class, typename> class Meta>
-  std::auto_ptr<GecodeProblem> Search(
-      GecodeProblem &p, Gecode::Search::Statistics &stats, bool &stopped);
+  std::auto_ptr<GecodeProblem> Search(Problem &p,
+      GecodeProblem &gecode_problem, Gecode::Search::Statistics &stats);
 
  protected:
   std::string GetOptionHeader();
