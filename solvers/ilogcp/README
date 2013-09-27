@@ -76,6 +76,7 @@ solve_message.
         200     infeasible problem
         201     infeasible or unbounded problem
         300     unbounded problem
+        400     limit
         500     error
         600     interrupted
 

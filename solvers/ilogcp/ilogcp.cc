@@ -441,11 +441,6 @@ void IlogCPSolver::DoSolve(Problem &p) {
   IloModel model = converter.model();
   IloNumVarArray vars = converter.vars();
 
-  if (p.num_objs() == 0 &&
-      cp_.getIntParameter(IloCP::SolutionLimit) == IloIntMax) {
-    cp_.setIntParameter(IloCP::SolutionLimit, 1);
-  }
-
   try {
     cp_.extract(model);
   } catch (IloAlgorithm::CannotExtractException &e) {
@@ -463,16 +458,20 @@ void IlogCPSolver::DoSolve(Problem &p) {
   std::string feasible_sol_message =
       str(fmt::Format("{}: feasible solution") << long_name());
   bool multiple_sols = need_multiple_solutions();
+  bool stop_after_first_sol = p.num_objs() == 0 &&
+        cp_.getIntParameter(IloCP::SolutionLimit) == IloIntMax;
   double setup_time = GetTimeAndReset(time);
   cp_.startNewSearch();
   while (cp_.next() != IloFalse) {
     GetSolution(cp_, vars, solution);
-    if (!multiple_sols || !solutions.insert(solution).second)
+    if (!multiple_sols || (num_objs == 0 && !solutions.insert(solution).second))
       continue;
     double obj_value = num_objs > 0 ?
         cp_.getObjValue() : std::numeric_limits<double>::quiet_NaN();
     HandleFeasibleSolution(p, feasible_sol_message,
         ptr(solution), 0, obj_value);
+    if (stop_after_first_sol)
+      break;
   }
   cp_.endSearch();
   double solution_time = GetTimeAndReset(time);
@@ -481,6 +480,13 @@ void IlogCPSolver::DoSolve(Problem &p) {
   int solve_code = 0;
   bool has_solution = false;
   std::string status = ConvertSolutionStatus(cp_, sh, solve_code, has_solution);
+  if (p.num_objs() > 0) {
+    if (cp_.getInfo(IloCP::FailStatus) == IloCP::SearchStoppedByLimit) {
+      solve_code = 400;
+      status = "limit";
+    }
+  } else if (solve_code == 100)
+    solve_code = 0;
   p.set_solve_code(solve_code);
 
   fmt::Writer writer;
