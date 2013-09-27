@@ -68,7 +68,7 @@ class JaCoPSolverTest : public ::testing::Test {
 TEST_F(JaCoPSolverTest, BacktrackLimitOption) {
   Problem p;
   Solve(p, "miplib/assign1", "backtracklimit=42");
-  EXPECT_EQ(600, p.solve_code());
+  EXPECT_EQ(400, p.solve_code());
   EXPECT_EQ(42, solver_.GetIntOption("backtracklimit"));
   EXPECT_THROW(solver_.SetIntOption("backtracklimit", -1), InvalidOptionValue);
 }
@@ -76,7 +76,7 @@ TEST_F(JaCoPSolverTest, BacktrackLimitOption) {
 TEST_F(JaCoPSolverTest, DecisionLimitOption) {
   Problem p;
   Solve(p, "miplib/assign1", "decisionlimit=42");
-  EXPECT_EQ(600, p.solve_code());
+  EXPECT_EQ(400, p.solve_code());
   EXPECT_EQ(42, solver_.GetIntOption("decisionlimit"));
   EXPECT_THROW(solver_.SetIntOption("decisionlimit", -1), InvalidOptionValue);
 }
@@ -84,7 +84,7 @@ TEST_F(JaCoPSolverTest, DecisionLimitOption) {
 TEST_F(JaCoPSolverTest, FailLimitOption) {
   Problem p;
   string message = Solve(p, "miplib/assign1", "faillimit=42").message;
-  EXPECT_EQ(600, p.solve_code());
+  EXPECT_EQ(400, p.solve_code());
   EXPECT_TRUE(message.find(" 43 fails") != string::npos);
   EXPECT_EQ(42, solver_.GetIntOption("faillimit"));
   EXPECT_THROW(solver_.SetIntOption("faillimit", -1), InvalidOptionValue);
@@ -93,7 +93,7 @@ TEST_F(JaCoPSolverTest, FailLimitOption) {
 TEST_F(JaCoPSolverTest, NodeLimitOption) {
   Problem p;
   string message = Solve(p, "miplib/assign1", "nodelimit=42").message;
-  EXPECT_EQ(600, p.solve_code());
+  EXPECT_EQ(400, p.solve_code());
   EXPECT_TRUE(message.find("43 nodes") != string::npos);
   EXPECT_EQ(42, solver_.GetIntOption("nodelimit"));
   EXPECT_THROW(solver_.SetIntOption("nodelimit", -1), InvalidOptionValue);
@@ -102,7 +102,7 @@ TEST_F(JaCoPSolverTest, NodeLimitOption) {
 TEST_F(JaCoPSolverTest, TimeLimitOption) {
   Problem p;
   Solve(p, "miplib/assign1", "timelimit=1");
-  EXPECT_EQ(600, p.solve_code());
+  EXPECT_EQ(400, p.solve_code());
   EXPECT_EQ(1, solver_.GetIntOption("timelimit"));
   EXPECT_THROW(solver_.SetIntOption("timelimit", -1), InvalidOptionValue);
 }

@@ -112,11 +112,10 @@ SolveResult SolverTest::Solve(
   int solve_code = sh.solve_code();
   EXPECT_GE(solve_code, 0);
   bool solved = true;
-  if (solve_code < 100)
-    EXPECT_TRUE(message.find("optimal solution") != string::npos);
-  else if (solve_code < 200)
-    EXPECT_TRUE(message.find("feasible solution") != string::npos);
-  else
+  if (solve_code < 100) {
+    EXPECT_TRUE(message.find(p.num_objs() > 0 ?
+        "optimal solution" : "feasible solution") != string::npos);
+  } else
     solved = false;
   return SolveResult(solved, sh.obj_value(), message);
 }
@@ -826,7 +825,7 @@ TEST_P(SolverTest, OptimalSolveCode) {
 TEST_P(SolverTest, FeasibleSolveCode) {
   Problem p;
   EXPECT_TRUE(Solve(p, "feasible").solved);
-  EXPECT_EQ(100, p.solve_code());
+  EXPECT_EQ(0, p.solve_code());
 }
 
 TEST_P(SolverTest, InfeasibleSolveCode) {
@@ -865,7 +864,7 @@ struct SolutionCounter : ampl::BasicSolutionHandler {
   }
 };
 
-TEST_P(SolverTest, SolutionLimit) {
+TEST_P(SolverTest, CountSolutions) {
   ampl::Problem p;
   p.AddVar(1, 3, ampl::INTEGER);
   p.AddVar(1, 3, ampl::INTEGER);
@@ -879,4 +878,27 @@ TEST_P(SolverTest, SolutionLimit) {
   EXPECT_EQ(6, sc.num_solutions);
 }
 
-// TODO: test that the solver returns the number of solutions in the .nsol suffix
+TEST_P(SolverTest, SatisfactionSolutionLimit) {
+  ampl::Problem p;
+  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddCon(AddAllDiff(AddVar(0), AddVar(1), AddVar(2)));
+  solver_->SetIntOption("solutionlimit", 5);
+  solver_->Solve(p);
+  EXPECT_EQ(0, p.solve_code());
+}
+
+TEST_P(SolverTest, OptimizationSolutionLimit) {
+  ampl::Problem p;
+  p.Read("../data/photo9");
+  solver_->SetIntOption("solutionlimit", 2);
+  solver_->Solve(p);
+  EXPECT_GE(p.solve_code(), 400);
+  EXPECT_LT(p.solve_code(), 499);
+}
+
+// TODO: test that the solver passes solutions via HandleFeasibleSolution
+//       if solutionstub option is specified.
+
+// TODO: test if solution status is interrupted and not optimal
