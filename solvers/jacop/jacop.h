@@ -426,6 +426,16 @@ class JaCoPSolver : public Solver {
   jlong fail_limit_;
   jlong backtrack_limit_;
   jlong decision_limit_;
+  jlong solution_limit_;
+  jlong num_solutions_;
+
+  int solve_code_;
+  std::string status_;
+
+  void SetStatus(int solve_code, const char *status) {
+    solve_code_ = solve_code;
+    status_ = status;
+  }
 
   Env env_;
   GlobalRef search_;
@@ -477,11 +487,12 @@ class JaCoPSolver : public Solver {
 
   // Prints the solution log entry if the time is right.
   void PrintLogEntry();
-  void PrintObjValue();
+  bool DoHandleSolution();
 
   static JNIEXPORT jboolean JNICALL Stop(JNIEnv *, jobject, jlong data);
-  static JNIEXPORT void JNICALL HandleSolution(JNIEnv *, jobject, jlong data) {
-    reinterpret_cast<JaCoPSolver*>(data)->PrintObjValue();
+  static JNIEXPORT jboolean JNICALL HandleSolution(
+      JNIEnv *, jobject, jlong data) {
+    return reinterpret_cast<JaCoPSolver*>(data)->DoHandleSolution();
   }
 
  protected:
