@@ -368,15 +368,25 @@ GecodeSolver::Stop::Stop(GecodeSolver &s)
 
 bool GecodeSolver::Stop::stop(
     const Search::Statistics &s, const Search::Options &) {
-  if (SignalHandler::stop()) return true;
+  if (SignalHandler::stop()) {
+    solver_.SetStatus(600, "interrupted");
+    return true;
+  }
   if (!output_or_limit_) return false;
   steady_clock::time_point time = steady_clock::now();
   if (solver_.output_ && time >= next_output_time_) {
     solver_.Output("{:10} {:10} {:10}\n") << s.depth << s.node << s.fail;
     next_output_time_ += GetOutputInterval();
   }
-  return time > end_time_ || s.node > solver_.node_limit_ ||
-      s.fail > solver_.fail_limit_;
+  if (time > end_time_)
+    solver_.SetStatus(400, "time limit");
+  else if (s.node > solver_.node_limit_)
+    solver_.SetStatus(401, "node limit");
+  else if (s.fail > solver_.fail_limit_)
+    solver_.SetStatus(402, "fail limit");
+  else
+    return false;
+  return true;
 }
 
 void GecodeSolver::SetBoolOption(const char *name, int value, bool *option) {
@@ -441,13 +451,14 @@ std::string GecodeSolver::GetOptionHeader() {
 }
 
 GecodeSolver::GecodeSolver()
-: Solver("gecode", "gecode " GECODE_VERSION, 20130820),
-  output_(false), output_frequency_(1), output_count_(0),
+: Solver("gecode", "gecode " GECODE_VERSION, 20130820, MULTIPLE_SOL),
+  output_(false), output_frequency_(1), output_count_(0), solve_code_(-1),
   icl_(Gecode::ICL_DEF),
   var_branching_(IntVarBranch::SEL_SIZE_MIN),
   val_branching_(Gecode::INT_VAL_MIN()),
   decay_(1),
   time_limit_(DBL_MAX), node_limit_(ULONG_MAX), fail_limit_(ULONG_MAX),
+  solution_limit_(UINT_MAX),
   restart_(Gecode::RM_NONE), restart_base_(1.5), restart_scale_(250) {
 
   set_version("Gecode " GECODE_VERSION);
@@ -586,32 +597,69 @@ GecodeSolver::GecodeSolver()
       "Scale factor for restart sequence.  Default = 250.",
       &GecodeSolver::GetOption<int, unsigned long>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned long>, &restart_scale_);
+
+  AddIntOption("solutionlimit",
+      "Limit on the number of feasible solutions found before terminating "
+      "a search.  Leaving the solution limit unspecified will make the "
+      "optimizer search for an optimal solution if there is an objective "
+      "function or for a feasible solution otherwise.",
+      &GecodeSolver::GetOption<int, unsigned>,
+      &GecodeSolver::SetNonnegativeOption<int, unsigned>, &solution_limit_);
+}
+
+void GetSolution(GecodeProblem &gecode_problem, std::vector<double> &solution) {
+  IntVarArray &vars = gecode_problem.vars();
+  size_t num_vars = solution.size();
+  for (size_t j = 0; j < num_vars; ++j)
+    solution[j] = vars[j].val();
 }
 
 template<template<template<typename> class, typename> class Meta>
 std::auto_ptr<GecodeProblem> GecodeSolver::Search(
-    GecodeProblem &problem, Search::Statistics &stats, bool &stopped) {
-  std::auto_ptr<GecodeProblem> solution;
+    Problem &p, GecodeProblem &problem, Search::Statistics &stats) {
+  std::auto_ptr<GecodeProblem> final_problem;
+  unsigned solution_limit = solution_limit_;
+  int num_solutions = 0;
   if (problem.has_obj()) {
     Meta<Gecode::BAB, GecodeProblem> engine(&problem, options_);
     while (GecodeProblem *next = engine.next()) {
       if (output_)
         Output("{:46}\n") << next->obj().val();
-      solution.reset(next);
+      final_problem.reset(next);
+      if (++num_solutions >= solution_limit_) {
+        SetStatus(403, "solution limit");
+        break;
+      }
     }
-    stopped = engine.stopped();
     stats = engine.statistics();
   } else {
+    if (solution_limit == UINT_MAX)
+      solution_limit = 1;
     Meta<Gecode::DFS, GecodeProblem> engine(&problem, options_);
-    solution.reset(engine.next());
-    stopped = engine.stopped();
+    std::vector<double> solution;
+    bool multiple_sol = need_multiple_solutions();
+    if (multiple_sol)
+      solution.resize(p.num_vars());
+    std::string feasible_sol_message =
+        str(fmt::Format("{}: feasible solution") << long_name());
+    while (GecodeProblem *next = engine.next()) {
+      final_problem.reset(next);
+      if (++num_solutions >= solution_limit_)
+        break;
+      if (!multiple_sol)
+        continue;
+      GetSolution(*final_problem, solution);
+      HandleFeasibleSolution(p, feasible_sol_message, ptr(solution), 0, 0);
+    }
     stats = engine.statistics();
   }
-  return solution;
+  return final_problem;
 }
 
 void GecodeSolver::DoSolve(Problem &p) {
   steady_clock::time_point time = steady_clock::now();
+
+  SetStatus(-1, "");
 
   // Set up an optimization problem in Gecode.
   std::auto_ptr<NLToGecodeConverter>
@@ -650,51 +698,44 @@ void GecodeSolver::DoSolve(Problem &p) {
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   bool has_obj = p.num_objs() != 0;
   Search::Statistics stats;
-  bool stopped = false;
-  // TODO: add an option to return multiple solutions
   header_ = str(fmt::Format("{:>10} {:>10} {:>10} {:>13}\n")
     << "Max Depth" << "Nodes" << "Fails" << (has_obj ? "Best Obj" : ""));
   std::auto_ptr<GecodeProblem> solution;
   if (restart_ != Gecode::RM_NONE) {
     options_.cutoff = Gecode::Driver::createCutoff(*this);
-    solution = Search<Gecode::RBS>(gecode_problem, stats, stopped);
+    solution = Search<Gecode::RBS>(p, gecode_problem, stats);
   } else {
-    solution = Search<Gecode::Driver::EngineToMeta>(
-        gecode_problem, stats, stopped);
+    solution = Search<Gecode::Driver::EngineToMeta>(p, gecode_problem, stats);
   }
 
   // Convert solution status.
-  const char *status = 0;
-  int solve_code = 0;
-  if (stopped) {
-    solve_code = 600;
-    status = "interrupted";
-  } else if (!solution.get()) {
-    solve_code = 200;
-    status = "infeasible problem";
-  } else if (has_obj) {
-    obj_val = solution->obj().val();
-    solve_code = 0;
-    status = "optimal solution";
-  } else {
-    solve_code = 100;
-    status = "feasible solution";
+  if (solution.get()) {
+    if (!has_obj) {
+      // If the problem has no objectives and there is a solution, report
+      // it as solved even if some limit was reached.
+      solve_code_ = 0;
+      status_ = "feasible solution";
+    } else if (solve_code_ == -1) {
+      solve_code_ = 0;
+      obj_val = solution->obj().val();
+      status_ = "optimal solution";
+    }
+  } else if (solve_code_ == -1) {
+    solve_code_ = 200;
+    status_ = "infeasible problem";
   }
-  p.set_solve_code(solve_code);
+  p.set_solve_code(solve_code_);
 
   std::vector<double> final_solution;
   if (solution.get()) {
-    IntVarArray &vars = solution->vars();
-    int num_vars = p.num_vars();
-    final_solution.resize(num_vars);
-    for (int j = 0; j < num_vars; ++j)
-      final_solution[j] = vars[j].val();
+    final_solution.resize(p.num_vars());
+    GetSolution(*solution, final_solution);
   }
 
   double solution_time = GetTimeAndReset(time);
 
   fmt::Writer w;
-  w.Format("{}: {}\n") << long_name() << status;
+  w.Format("{}: {}\n") << long_name() << status_;
   w.Format("{} nodes, {} fails") << stats.node << stats.fail;
   if (has_obj && solution.get())
     w.Format(", objective {}") << ObjPrec(obj_val);

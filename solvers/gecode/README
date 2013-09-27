@@ -51,9 +51,13 @@ solve_message.
 
         Value   Message
 
-          0     optimal solution
-        100     feasible solution
+          0     optimal solution (for an optimization problem)
+                feasible solution (for a satisfaction problem)
         200     infeasible problem
+        400     time limit
+        401     node limit
+        402     fail limit
+        403     solution limit
         600     interrupted
 
 -------------------
