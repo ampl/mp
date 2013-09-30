@@ -371,11 +371,22 @@ TEST_F(IlogCPTest, CPOptions) {
       IloCP::RelativeOptimalityTolerance, 42, -1);
   CheckDblCPOption("restartgrowthfactor", IloCP::RestartGrowthFactor, 42, -1);
   CheckIntCPOption("restartfaillimit", IloCP::RestartFailLimit, 1, INT_MAX);
-  CheckIntCPOption("solutionlimit", IloCP::SolutionLimit, 0, INT_MAX);
   CheckDblCPOption("timelimit", IloCP::TimeLimit, 42, -1);
   if (CPX_VERSION > 1220)
     CheckIntCPOption("workers", IloCP::Workers, 0, INT_MAX, 0, true);
   else
     CheckIntCPOption("workers", IloCP::Workers, 1, 4, 0, false);
+}
+
+TEST_F(IlogCPTest, SolutionLimitOption) {
+  EXPECT_EQ(-1, s.GetOption(IlogCPSolver::SOLUTION_LIMIT));
+  EXPECT_TRUE(ParseOptions("solutionlimit=0"));
+  EXPECT_EQ(0, s.GetOption(IlogCPSolver::SOLUTION_LIMIT));
+  EXPECT_EQ(0, s.GetIntOption("solutionlimit"));
+  EXPECT_TRUE(ParseOptions("solutionlimit=42"));
+  EXPECT_EQ(42, s.GetOption(IlogCPSolver::SOLUTION_LIMIT));
+  EXPECT_EQ(42, s.GetIntOption("solutionlimit"));
+  EXPECT_FALSE(ParseOptions("solutionlimit=-1"));
+  EXPECT_FALSE(ParseOptions("solutionlimit=oops"));
 }
 }

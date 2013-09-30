@@ -156,16 +156,14 @@ void CPLEXSolver::DoSolve(Problem &p) {
 
   // Convert solution status.
   int solve_code = 0;
-  bool has_solution = false;
-  std::string status =
-      ConvertSolutionStatus(cplex_, sh, solve_code, has_solution);
+  std::string status = ConvertSolutionStatus(cplex_, sh, solve_code);
   p.set_solve_code(solve_code);
 
   fmt::Writer writer;
   writer.Format("{}: {}\n") << long_name() << status;
   double obj_value = std::numeric_limits<double>::quiet_NaN();
   vector<double> solution, dual_solution;
-  if (has_solution) {
+  if (solve_code < 200) {
     int num_vars = p.num_vars();
     solution.resize(num_vars);
     for (int j = 0; j < num_vars; ++j) {

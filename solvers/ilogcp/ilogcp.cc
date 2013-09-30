@@ -219,6 +219,7 @@ IlogCPSolver::IlogCPSolver() :
   cp_.setIntParameter(IloCP::LogVerbosity, IloCP::Quiet);
   options_[DEBUGEXPR] = false;
   options_[USENUMBEROF] = true;
+  options_[SOLUTION_LIMIT] = -1;
 
   set_long_name(fmt::Format("ilogcp {}.{}.{}")
       << IloConcertVersion::_ILO_MAJOR_VERSION
@@ -267,7 +268,7 @@ IlogCPSolver::IlogCPSolver() :
   AddIntOption("debugexpr",
       "0 or 1 (default 0):  Whether to print debugging "
       "information for expression trees.",
-      &IlogCPSolver::GetBoolOption, &IlogCPSolver::SetBoolOption, DEBUGEXPR);
+      &IlogCPSolver::DoGetIntOption, &IlogCPSolver::SetBoolOption, DEBUGEXPR);
 
   AddOption(OptionPtr(new EnumOption("defaultinferencelevel",
       "Default inference level for constraints.  Possible values:\n"
@@ -364,12 +365,13 @@ IlogCPSolver::IlogCPSolver() :
       "      2 = multipoint\n",
       cp_, IloCP::SearchType, IloCP::DepthFirst, SearchTypes, true)));
 
-  AddOption(OptionPtr(new IntOption("solutionlimit",
+  AddIntOption("solutionlimit",
       "Limit on the number of feasible solutions found before terminating "
       "a search.  Leaving the solution limit unspecified will make the "
       "optimizer search for an optimal solution if there is an objective "
       "function or for a feasible solution otherwise.",
-      cp_, IloCP::SolutionLimit)));
+      &IlogCPSolver::DoGetIntOption, &IlogCPSolver::DoSetIntOption,
+      IlogCPSolver::SOLUTION_LIMIT);
 
   AddOption(OptionPtr(new EnumOption("temporalrelaxation",
       "0 or 1 (default 1):  Whether to use temporal relaxation.",
@@ -390,7 +392,7 @@ IlogCPSolver::IlogCPSolver() :
   AddIntOption("usenumberof",
       "0 or 1 (default 1):  Whether to consolidate 'numberof' expressions "
       "by use of IloDistribute constraints.",
-      &IlogCPSolver::GetBoolOption, &IlogCPSolver::SetBoolOption,
+      &IlogCPSolver::DoGetIntOption, &IlogCPSolver::SetBoolOption,
       IlogCPSolver::USENUMBEROF);
 
   AddOption(OptionPtr(new EnumOption("workers",
@@ -406,6 +408,12 @@ IlogCPSolver::~IlogCPSolver() {
 
 void IlogCPSolver::SetBoolOption(const char *name, int value, Option opt) {
   if (value != 0 && value != 1)
+    throw InvalidOptionValue(name, value);
+  options_[opt] = value;
+}
+
+void IlogCPSolver::DoSetIntOption(const char *name, int value, Option opt) {
+  if (value < 0)
     throw InvalidOptionValue(name, value);
   options_[opt] = value;
 }
@@ -436,7 +444,7 @@ void IlogCPSolver::DoSolve(Problem &p) {
     throw Error("CP Optimizer doesn't support continuous variables");
 
   NLToConcertConverter converter(env_,
-      GetOption(USENUMBEROF), GetOption(DEBUGEXPR));
+      GetOption(USENUMBEROF) != 0, GetOption(DEBUGEXPR) != 0);
   converter.Convert(p);
   IloModel model = converter.model();
   IloNumVarArray vars = converter.vars();
@@ -458,41 +466,59 @@ void IlogCPSolver::DoSolve(Problem &p) {
   std::string feasible_sol_message =
       str(fmt::Format("{}: feasible solution") << long_name());
   bool multiple_sols = need_multiple_solutions();
-  bool stop_after_first_sol = p.num_objs() == 0 &&
-        cp_.getIntParameter(IloCP::SolutionLimit) == IloIntMax;
+  int solution_limit = GetOption(SOLUTION_LIMIT);
+  if (solution_limit == -1 && p.num_objs() == 0)
+    solution_limit = 1;
   double setup_time = GetTimeAndReset(time);
   cp_.startNewSearch();
-  while (cp_.next() != IloFalse) {
-    GetSolution(cp_, vars, solution);
-    if (!multiple_sols || (num_objs == 0 && !solutions.insert(solution).second))
+  IloBool result = IloFalse;
+  int num_solutions = 0;
+  int solve_code = -1;
+  std::string status;
+  do {
+    result = cp_.next();
+    if (solution_limit < 0 && !multiple_sols)
       continue;
-    double obj_value = num_objs > 0 ?
-        cp_.getObjValue() : std::numeric_limits<double>::quiet_NaN();
-    HandleFeasibleSolution(p, feasible_sol_message,
-        ptr(solution), 0, obj_value);
-    if (stop_after_first_sol)
+    IloAlgorithm::Status s = cp_.getStatus();
+    if (s != IloAlgorithm::Feasible && s != IloAlgorithm::Optimal)
+      continue;
+    GetSolution(cp_, vars, solution);
+    if (num_objs == 0 && !solutions.insert(solution).second)
+      continue;
+    if (multiple_sols) {
+      double obj_value = num_objs > 0 ?
+          cp_.getObjValue() : std::numeric_limits<double>::quiet_NaN();
+      HandleFeasibleSolution(p, feasible_sol_message,
+          ptr(solution), 0, obj_value);
+    }
+    if (++num_solutions >= solution_limit) {
+      if (p.num_objs() > 0) {
+        solve_code = 403;
+        status = "solution limit";
+      }
       break;
-  }
+    }
+  } while (result != IloFalse);
   cp_.endSearch();
   double solution_time = GetTimeAndReset(time);
 
   // Convert solution status.
-  int solve_code = 0;
-  bool has_solution = false;
-  std::string status = ConvertSolutionStatus(cp_, sh, solve_code, has_solution);
-  if (p.num_objs() > 0) {
-    if (cp_.getInfo(IloCP::FailStatus) == IloCP::SearchStoppedByLimit) {
-      solve_code = 400;
-      status = "limit";
-    }
-  } else if (solve_code == 100)
-    solve_code = 0;
+  if (solve_code == -1) {
+    status = ConvertSolutionStatus(cp_, sh, solve_code);
+    if (p.num_objs() > 0) {
+      if (cp_.getInfo(IloCP::FailStatus) == IloCP::SearchStoppedByLimit) {
+        solve_code = 400;
+        status = "limit";
+      }
+    } else if (solve_code == 100)
+      solve_code = 0;
+  }
   p.set_solve_code(solve_code);
 
   fmt::Writer writer;
   writer.Format("{}: {}\n") << long_name() << status;
   double obj_value = std::numeric_limits<double>::quiet_NaN();
-  if (has_solution) {
+  if (solve_code < 200) {
     GetSolution(cp_, vars, solution);
     writer.Format("{} choice points, {} fails")
         << cp_.getInfo(IloCP::NumberOfChoicePoints)

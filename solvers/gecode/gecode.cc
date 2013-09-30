@@ -644,12 +644,12 @@ std::auto_ptr<GecodeProblem> GecodeSolver::Search(
         str(fmt::Format("{}: feasible solution") << long_name());
     while (GecodeProblem *next = engine.next()) {
       final_problem.reset(next);
+      if (multiple_sol) {
+        GetSolution(*final_problem, solution);
+        HandleFeasibleSolution(p, feasible_sol_message, ptr(solution), 0, 0);
+      }
       if (++num_solutions >= solution_limit_)
         break;
-      if (!multiple_sol)
-        continue;
-      GetSolution(*final_problem, solution);
-      HandleFeasibleSolution(p, feasible_sol_message, ptr(solution), 0, 0);
     }
     stats = engine.statistics();
   }
