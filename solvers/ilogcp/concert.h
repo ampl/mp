@@ -331,8 +331,8 @@ class NLToConcertConverter : public Visitor {
   void Convert(const Problem &p);
 };
 
-std::string ConvertSolutionStatus(IloAlgorithm alg,
-    const SignalHandler &sh, int &solve_code, bool &has_solution);
+std::string ConvertSolutionStatus(
+    IloAlgorithm alg, const SignalHandler &sh, int &solve_code);
 
 template <typename Solver>
 int RunSolver(char **argv) {

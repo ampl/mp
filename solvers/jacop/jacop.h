@@ -23,6 +23,8 @@
 #ifndef AMPL_SOLVERS_JACOP_H
 #define AMPL_SOLVERS_JACOP_H
 
+#include <vector>
+
 #include "solvers/util/clock.h"
 #include "solvers/util/solver.h"
 #include "solvers/jacop/java.h"
@@ -427,7 +429,6 @@ class JaCoPSolver : public Solver {
   jlong backtrack_limit_;
   jlong decision_limit_;
   jlong solution_limit_;
-  jlong num_solutions_;
 
   int solve_code_;
   std::string status_;
@@ -442,8 +443,6 @@ class JaCoPSolver : public Solver {
   jmethodID get_depth_;
   jmethodID get_nodes_;
   jmethodID get_fails_;
-  GlobalRef obj_var_;  // The variable holding the objective value.
-  ObjType obj_type_;
   jmethodID value_;
 
   int DoGetIntOption(const char *, jlong *option) const {
@@ -487,13 +486,39 @@ class JaCoPSolver : public Solver {
 
   // Prints the solution log entry if the time is right.
   void PrintLogEntry();
-  bool DoHandleSolution();
 
   static JNIEXPORT jboolean JNICALL Stop(JNIEnv *, jobject, jlong data);
-  static JNIEXPORT jboolean JNICALL HandleSolution(
-      JNIEnv *, jobject, jlong data) {
-    return reinterpret_cast<JaCoPSolver*>(data)->DoHandleSolution();
-  }
+
+  class SolutionHandler {
+   private:
+    JaCoPSolver &solver_;
+    Problem &problem_;
+    const jobject *vars_;
+    jobject obj_var_;
+    bool multiple_sol_;
+    jlong num_solutions_;
+    std::string feasible_sol_message_;
+    std::vector<double> solution_;
+
+    bool DoHandleSolution();
+
+   public:
+    SolutionHandler(JaCoPSolver &s,
+        Problem &p, const jobject *vars, jobject obj_var)
+    : solver_(s), problem_(p), vars_(vars), obj_var_(obj_var),
+      multiple_sol_(s.need_multiple_solutions()), num_solutions_(0) {
+      if (multiple_sol_) {
+        feasible_sol_message_ =
+            str(fmt::Format("{}: feasible solution") << s.long_name());
+        solution_.resize(p.num_vars());
+      }
+    }
+
+    static JNIEXPORT jboolean JNICALL HandleSolution(
+        JNIEnv *, jobject, jlong data) {
+      return reinterpret_cast<SolutionHandler*>(data)->DoHandleSolution();
+    }
+  };
 
  protected:
   std::string GetOptionHeader();

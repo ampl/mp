@@ -245,8 +245,8 @@ void NLToConcertConverter::Convert(const Problem &p) {
   FinishBuildingNumberOf();
 }
 
-std::string ConvertSolutionStatus(IloAlgorithm alg,
-    const SignalHandler &sh, int &solve_code, bool &has_solution) {
+std::string ConvertSolutionStatus(
+    IloAlgorithm alg, const SignalHandler &sh, int &solve_code) {
   switch (alg.getStatus()) {
   default:
     // Fall through.
@@ -258,7 +258,6 @@ std::string ConvertSolutionStatus(IloAlgorithm alg,
     solve_code = 501;
     return "unknown solution status";
   case IloAlgorithm::Feasible:
-    has_solution = true;
     if (sh.stop()) {
       solve_code = 600;
       return "interrupted";
@@ -266,7 +265,6 @@ std::string ConvertSolutionStatus(IloAlgorithm alg,
     solve_code = 100;
     return "feasible solution";
   case IloAlgorithm::Optimal:
-    has_solution = true;
     solve_code = 0;
     return "optimal solution";
   case IloAlgorithm::Infeasible:

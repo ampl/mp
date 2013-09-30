@@ -898,7 +898,17 @@ TEST_P(SolverTest, OptimizationSolutionLimit) {
   EXPECT_LT(p.solve_code(), 499);
 }
 
-// TODO: test that the solver passes solutions via HandleFeasibleSolution
-//       if solutionstub option is specified.
-
-// TODO: test if solution status is interrupted and not optimal
+TEST_P(SolverTest, MultipleSolutions) {
+  ampl::Problem p;
+  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddCon(AddAllDiff(AddVar(0), AddVar(1), AddVar(2)));
+  SolutionCounter sc;
+  solver_->set_solution_handler(&sc);
+  solver_->SetIntOption("solutionlimit", 3);
+  solver_->SetStrOption("solutionstub", "test");
+  solver_->Solve(p);
+  EXPECT_EQ(0, p.solve_code());
+  EXPECT_EQ(3, sc.num_solutions);
+}

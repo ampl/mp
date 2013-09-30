@@ -297,8 +297,8 @@ JaCoPSolver::JaCoPSolver()
   var_select_("SmallestDomain"), val_select_("IndomainMin"),
   time_limit_(-1), node_limit_(-1), fail_limit_(-1),
   backtrack_limit_(-1), decision_limit_(-1),
-  solution_limit_(-1), num_solutions_(0), solve_code_(-1),
-  get_depth_(), get_nodes_(), get_fails_(), obj_type_(MIN), value_() {
+  solution_limit_(-1), solve_code_(-1),
+  get_depth_(), get_nodes_(), get_fails_(), value_() {
 
   set_version("JaCoP " JACOP_VERSION);
 
@@ -416,19 +416,27 @@ void JaCoPSolver::PrintLogEntry() {
   next_output_time_ += GetOutputInterval();
 }
 
-bool JaCoPSolver::DoHandleSolution() {
+bool JaCoPSolver::SolutionHandler::DoHandleSolution() {
   try {
     ++num_solutions_;
-    if (outlev_ != 0 && obj_var_.get()) {
-      jint value = env_.CallIntMethodKeepException(obj_var_.get(), value_);
-      Output("{:46}\n") << (obj_type_ == MIN ? value : -value);
+    if (solver_.outlev_ != 0 && obj_var_) {
+      jint value = solver_.env_.CallIntMethodKeepException(
+          obj_var_, solver_.value_);
+      solver_.Output("{:46}\n")
+          << (problem_.obj_type(0) == MIN ? value : -value);
     }
-    if (need_multiple_solutions()) {
-      // TODO: pass the solution to HandleFeasibleSolution
+    if (multiple_sol_) {
+      double obj_value = obj_var_ ?
+        solver_.env_.CallIntMethod(obj_var_, solver_.value_) : 0;
+      for (int j = 0, n = problem_.num_vars(); j < n; ++j)
+        solution_[j] = solver_.env_.CallIntMethod(vars_[j], solver_.value_);
+      solver_.HandleFeasibleSolution(problem_,
+          feasible_sol_message_, ptr(solution_), 0, obj_value);
     }
-    if (solution_limit_ != -1 && num_solutions_ >= solution_limit_) {
-      solve_code_ = 403;
-      status_ = "solution limit";
+    if (solver_.solution_limit_ != -1 &&
+        num_solutions_ >= solver_.solution_limit_) {
+      solver_.solve_code_ = 403;
+      solver_.status_ = "solution limit";
       return true;
     }
   } catch (const JavaError &) {
@@ -530,23 +538,25 @@ void JaCoPSolver::DoSolve(Problem &p) {
     char SIG[] = "(J)Z";
     JNINativeMethod method = {
         NAME, SIG,
-        reinterpret_cast<void*>(reinterpret_cast<jlong>(HandleSolution))
+        reinterpret_cast<void*>(
+            reinterpret_cast<jlong>(SolutionHandler::HandleSolution))
     };
     env_.RegisterNatives(solution_listener_class.get(), &method, 1);
   }
-  jobject solution_listener =
-      solution_listener_class.NewObject(env_, reinterpret_cast<jlong>(this));
-  env_.CallVoidMethod(search_.get(),
-       env_.GetMethod(dfs_class.get(), "setSolutionListener",
-           "(LJaCoP/search/SolutionListener;)V"), solution_listener);
-  if (has_obj) {
-    obj_var_ = env_.NewGlobalRef(converter.obj());
-    obj_type_ = p.obj_type(0);
-  } else {
-    GlobalRef().Swap(obj_var_);
-  }
+  GlobalRef obj_var;  // The variable holding the objective value.
+  if (has_obj)
+    obj_var = env_.NewGlobalRef(converter.obj());
   jclass var_class = converter.var_class().get();
   value_ = env_.GetMethod(var_class, "value", "()I");
+  SolutionHandler sol_handler(*this, p, ptr(converter.vars()), obj_var.get());
+  jobject solution_listener = solution_listener_class.NewObject(
+      env_, reinterpret_cast<jlong>(&sol_handler));
+  env_.CallVoidMethod(solution_listener, env_.GetMethod(
+      solution_listener_class.get(),
+      "setSolutionLimit", "(I)V"), std::numeric_limits<jint>::max());
+  env_.CallVoidMethod(search_.get(),
+      env_.GetMethod(dfs_class.get(), "setSolutionListener",
+          "(LJaCoP/search/SolutionListener;)V"), solution_listener);
 
   // Set the limits.
   Class<SimpleTimeOut> timeout_class;
@@ -579,7 +589,6 @@ void JaCoPSolver::DoSolve(Problem &p) {
 
   // Solve the problem.
   solve_code_ = -1;
-  num_solutions_ = 0;
   header_ = str(fmt::Format("{:>10} {:>10} {:>10} {:>13}\n")
     << "Max Depth" << "Nodes" << "Fails" << (has_obj ? "Best Obj" : ""));
   jboolean found = false;
@@ -591,7 +600,7 @@ void JaCoPSolver::DoSolve(Problem &p) {
           "(LJaCoP/core/Store;LJaCoP/search/SelectChoicePoint;"
           "LJaCoP/core/IntVar;)Z");
       found = env_.CallBooleanMethod(
-          search_.get(), labeling, converter.store(), select, obj_var_.get());
+          search_.get(), labeling, converter.store(), select, obj_var.get());
     } else {
       jmethodID labeling = env_.GetMethod(dfs_class.get(), "labeling",
           "(LJaCoP/core/Store;LJaCoP/search/SelectChoicePoint;)Z");
@@ -610,6 +619,8 @@ void JaCoPSolver::DoSolve(Problem &p) {
     }
     if (!interrupted)
       throw;
+    if (solve_code_ == 403)
+      found = true;
   }
 
   // Convert the solution status.
@@ -626,7 +637,7 @@ void JaCoPSolver::DoSolve(Problem &p) {
       status_ = "feasible solution";
     } else if (solve_code_ == -1) {
       solve_code_ = 0;
-      obj_val = env_.CallIntMethod(obj_var_.get(), value_);
+      obj_val = env_.CallIntMethod(obj_var.get(), value_);
       if (p.obj_type(0) == MAX)
         obj_val = -obj_val;
       status_ = "optimal solution";
@@ -655,7 +666,7 @@ void JaCoPSolver::DoSolve(Problem &p) {
       << env_.CallIntMethod(search_.get(), get_fails_);
   if (has_obj && found)
     w.Format(", objective {}") << ObjPrec(obj_val);
-  Solver::HandleSolution(p, w.c_str(), ptr(final_solution), 0, obj_val);
+  HandleSolution(p, w.c_str(), ptr(final_solution), 0, obj_val);
 
   double output_time = GetTimeAndReset(time);
 

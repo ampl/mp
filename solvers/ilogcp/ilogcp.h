@@ -59,18 +59,20 @@ class IlogCPSolver : private Interruptible, private Noncopyable, public Solver {
   void Interrupt() { cp_.abortSearch(); }
 
  public:
-  // Boolean options.
+  // Integer options.
   enum Option {
     DEBUGEXPR,
     USENUMBEROF,
+    SOLUTION_LIMIT,
     NUM_OPTIONS
   };
 
  private:
-  bool options_[NUM_OPTIONS];
+  int options_[NUM_OPTIONS];
 
-  int GetBoolOption(const char *, Option opt) const { return options_[opt]; }
+  int DoGetIntOption(const char *, Option opt) const { return options_[opt]; }
   void SetBoolOption(const char *name, int value, Option opt);
+  void DoSetIntOption(const char *name, int value, Option opt);
 
   // Returns a double option of the constraint programming optimizer.
   double GetCPDblOption(const char *name, IloCP::NumParam param) const;
@@ -90,7 +92,7 @@ class IlogCPSolver : private Interruptible, private Noncopyable, public Solver {
   IloEnv env() const { return env_; }
   IloCP optimizer() const { return cp_; }
 
-  bool GetOption(Option opt) const {
+  int GetOption(Option opt) const {
     assert(opt >= 0 && opt < NUM_OPTIONS);
     return options_[opt];
   }
