@@ -558,6 +558,18 @@ std::string internal::FormatOpCode(Expr e) {
   return buffer;
 }
 
+CallExpr::Args::Args(CallExpr e) {
+  int num_args = e.num_args();
+  args_.resize(num_args);
+  arglist *al = reinterpret_cast<expr_f*>(e.expr_)->al;
+  for (int i = 0; i < num_args; ++i)
+    args_[i].SetConstant(al->ra + i);
+  for (CallExpr::arg_expr_iterator
+      i = e.arg_expr_begin(), end = e.arg_expr_end(); i != end; ++i) {
+    args_[e.arg_index(i)].SetExpr(i.p_->e);
+  }
+}
+
 #ifdef HAVE_UNORDERED_MAP
 std::size_t HashNumberOfArgs::operator()(const NumberOfExpr &e) const {
   std::size_t hash = 0;

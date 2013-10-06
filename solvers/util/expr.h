@@ -690,11 +690,48 @@ class Function {
 // Example: f(x), where f is a function and x is a variable.
 class CallExpr : public NumericExpr {
  public:
+  class Args;
+
+  class Arg {
+   private:
+    argpair arg_;
+
+    friend class CallExpr::Args;
+
+    void SetConstant(double *constant) { arg_.u.v = constant; }
+    void SetExpr(expr *e) { arg_.e = e; }
+
+   public:
+    Arg() {
+      arg_.e = 0;
+      arg_.u.v = 0;
+    }
+    NumericExpr expr() const { return Create<NumericExpr>(arg_.e); }
+    double constant() const { return *arg_.u.v; }
+  };
+
+  // This class provides a convenient interface for accessing function
+  // call arguments.
+  // Usage:
+  //   CallExpr::Args args(call);
+  //   args[0].expr(); // returns the first argument's expression
+  // where call is a CallExpr object.
+  class Args {
+   private:
+    fmt::internal::Array<Arg, 10> args_;
+
+   public:
+    Args(CallExpr e);
+    const Arg &operator[](unsigned i) const { return args_[i]; }
+  };
+
   CallExpr() {}
 
   Function function() const {
     return Function(reinterpret_cast<expr_f*>(expr_)->fi);
   }
+
+  int num_args() const { return reinterpret_cast<expr_f*>(expr_)->al->n; }
 
   // Returns the constant term of the argument.
   double arg_constant(int index) const {
@@ -915,12 +952,13 @@ class UnsupportedExprError : public Error {
   explicit UnsupportedExprError(fmt::StringRef message) : Error(message) {}
 
  public:
-  static UnsupportedExprError CreateFromMessage(const fmt::StringRef message) {
+  static UnsupportedExprError CreateFromMessage(fmt::StringRef message) {
     return UnsupportedExprError(message);
   }
 
-  static UnsupportedExprError CreateFromExprString(const std::string &expr) {
-    return UnsupportedExprError(std::string("unsupported expression: ") + expr);
+  static UnsupportedExprError CreateFromExprString(fmt::StringRef expr) {
+    return UnsupportedExprError(
+        std::string("unsupported expression: ") + expr.c_str());
   }
 };
 

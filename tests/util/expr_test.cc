@@ -687,8 +687,10 @@ TEST_F(ExprTest, CallExpr) {
   CallExpr e(AddCall("foo", args, args + 3));
   EXPECT_STREQ("foo", e.function().name());
   EXPECT_EQ(3, e.function().num_args());
+  EXPECT_EQ(3, e.num_args());
   CallExpr e2(AddCall("bar", args, args + 2));
   EXPECT_EQ(2, e2.function().num_args());
+  EXPECT_EQ(2, e2.num_args());
   EXPECT_EQ(e.function(), e.function());
   EXPECT_NE(e.function(), e2.function());
   EXPECT_FALSE(ampl::Function());
@@ -712,6 +714,19 @@ TEST_F(ExprTest, CallExpr) {
   CallExpr::arg_expr_iterator i2 = i++;
   EXPECT_EQ(args[0].expr(), *i2);
   EXPECT_EQ(args[2].expr(), *i);
+}
+
+TEST_F(ExprTest, CallExprArgs) {
+  NumericExpr n42 = AddNum(42), n44 = AddNum(44);
+  CallArg arg_array[] = {CallArg(3, n42), CallArg(5), CallArg(7, n44)};
+  CallExpr e(AddCall("foo", arg_array, arg_array + 3));
+  CallExpr::Args args(e);
+  EXPECT_EQ(3, args[0].constant());
+  EXPECT_EQ(n42, args[0].expr());
+  EXPECT_EQ(5, args[1].constant());
+  EXPECT_TRUE(!args[1].expr());
+  EXPECT_EQ(7, args[2].constant());
+  EXPECT_EQ(n44, args[2].expr());
 }
 
 TEST_F(ExprTest, LogicalConstant) {
