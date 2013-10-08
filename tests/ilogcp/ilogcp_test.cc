@@ -54,6 +54,8 @@ extern "C" {
 #include "tests/config.h"
 
 using ampl::IlogCPSolver;
+using ampl::InvalidOptionValue;
+using ampl::OptionError;
 using ampl::Problem;
 
 namespace {
@@ -86,16 +88,6 @@ class IlogCPTest : public ::testing::Test, public ampl::ExprBuilder {
 
   int CountIloDistribute();
 
-  bool ParseOptions(const char *opt1,
-      const char *opt2 = nullptr, const Problem *p = nullptr) {
-    try {
-      return s.ParseOptions(Args(opt1, opt2), 0, p);
-    } catch (const IloException &e) {  // NOLINT(whitespace/parens)
-      throw std::runtime_error(e.getMessage());
-    }
-    return false;
-  }
-
   SolveResult Solve(Problem &p, const char *stub, const char *opt = nullptr) {
     return SolverTest::Solve(s, p, stub, opt);
   }
@@ -127,7 +119,10 @@ void IlogCPTest::CheckIntCPOption(const char *option,
     const EnumValue *values) {
   IloCP cp = s.optimizer();
   for (int i = start; i <= std::min(end, 9); ++i) {
-    EXPECT_TRUE(ParseOptions(Option(option, i).c_str()));
+    if (accepts_auto || values)
+      s.SetStrOption(option, c_str(fmt::Format("{}") << i));
+    else
+      s.SetIntOption(option, i);
     EXPECT_EQ(offset + i, cp.getParameter(param))
       << "Failed option: " << option;
     if (!values) {
@@ -137,24 +132,34 @@ void IlogCPTest::CheckIntCPOption(const char *option,
         EXPECT_EQ(i, s.GetIntOption(option));
     }
   }
-  if (end != INT_MAX)
-    EXPECT_FALSE(ParseOptions(Option(option, end + 1).c_str()));
+  if (end != INT_MAX) {
+    if (accepts_auto || values) {
+      EXPECT_THROW(s.SetStrOption(option, c_str(fmt::Format("{}") << end + 1)),
+          InvalidOptionValue);
+    } else {
+      EXPECT_THROW(s.SetIntOption(option, end + 1), InvalidOptionValue);
+    }
+  }
   if (accepts_auto) {
-    EXPECT_TRUE(ParseOptions(Option(option, -1).c_str()));
+    s.SetStrOption(option, "-1");
     EXPECT_EQ(IloCP::Auto, cp.getParameter(param));
-
-    EXPECT_TRUE(ParseOptions(Option(option, "auto").c_str()));
+    s.SetStrOption(option, "auto");
     EXPECT_EQ(IloCP::Auto, cp.getParameter(param));
     EXPECT_EQ("auto", s.GetStrOption(option));
   }
   int small = start - 1;
   if (accepts_auto && small == -1)
     --small;
-  EXPECT_FALSE(ParseOptions(Option(option, small).c_str()));
+  if (accepts_auto || values) {
+    EXPECT_THROW(s.SetStrOption(option, c_str(fmt::Format("{}") << small)),
+        InvalidOptionValue);
+  } else {
+    EXPECT_THROW(s.SetIntOption(option, small), InvalidOptionValue);
+  }
   if (values) {
     int count = 0;
     for (const EnumValue *v = values; v->name; ++v, ++count) {
-      EXPECT_TRUE(ParseOptions(Option(option, v->name).c_str()));
+      s.SetStrOption(option, v->name);
       EXPECT_EQ(v->value, cp.getParameter(param))
         << "Failed option: " << option;
       EXPECT_EQ(v->name, s.GetStrOption(option)) << "Failed option: " << option;
@@ -165,11 +170,11 @@ void IlogCPTest::CheckIntCPOption(const char *option,
 
 void IlogCPTest::CheckDblCPOption(const char *option,
     IloCP::NumParam param, double good, double bad) {
-  EXPECT_TRUE(ParseOptions(Option(option, good).c_str()));
+  s.SetDblOption(option, good);
   EXPECT_EQ(good, s.optimizer().getParameter(param))
     << "Failed option: " << option;
   EXPECT_EQ(good, s.GetDblOption(option));
-  EXPECT_FALSE(ParseOptions(Option(option, bad).c_str()));
+  EXPECT_THROW(s.SetDblOption(option, bad), InvalidOptionValue);
 }
 
 TEST_F(IlogCPTest, IloArrayCopyingIsCheap) {
@@ -262,25 +267,25 @@ TEST_F(IlogCPTest, DefaultSolutionLimit) {
 // Option tests
 
 TEST_F(IlogCPTest, DebugExprOption) {
-  EXPECT_TRUE(ParseOptions("debugexpr=0"));
+  s.SetIntOption("debugexpr", 0);
   EXPECT_EQ(0, s.GetOption(IlogCPSolver::DEBUGEXPR));
   EXPECT_EQ(0, s.GetIntOption("debugexpr"));
-  EXPECT_TRUE(ParseOptions("debugexpr=1"));
+  s.SetIntOption("debugexpr", 1);
   EXPECT_EQ(1, s.GetOption(IlogCPSolver::DEBUGEXPR));
   EXPECT_EQ(1, s.GetIntOption("debugexpr"));
-  EXPECT_FALSE(ParseOptions("debugexpr=42"));
-  EXPECT_FALSE(ParseOptions("debugexpr=oops"));
+  EXPECT_THROW(s.SetIntOption("debugexpr", 42), InvalidOptionValue);
+  EXPECT_THROW(s.SetStrOption("debugexpr", "oops"), OptionError);
 }
 
 TEST_F(IlogCPTest, UseNumberOfOption) {
-  EXPECT_TRUE(ParseOptions("usenumberof=0"));
+  s.SetIntOption("usenumberof", 0);
   EXPECT_EQ(0, s.GetOption(IlogCPSolver::USENUMBEROF));
   EXPECT_EQ(0, s.GetIntOption("usenumberof"));
-  EXPECT_TRUE(ParseOptions("usenumberof=1"));
+  s.SetIntOption("usenumberof", 1);
   EXPECT_EQ(1, s.GetOption(IlogCPSolver::USENUMBEROF));
   EXPECT_EQ(1, s.GetIntOption("usenumberof"));
-  EXPECT_FALSE(ParseOptions("usenumberof=42"));
-  EXPECT_FALSE(ParseOptions("usenumberof=oops"));
+  EXPECT_THROW(s.SetIntOption("usenumberof", 42), InvalidOptionValue);
+  EXPECT_THROW(s.SetStrOption("usenumberof", "oops"), OptionError);
 }
 
 TEST_F(IlogCPTest, CPFlagOptions) {
@@ -380,13 +385,13 @@ TEST_F(IlogCPTest, CPOptions) {
 
 TEST_F(IlogCPTest, SolutionLimitOption) {
   EXPECT_EQ(-1, s.GetOption(IlogCPSolver::SOLUTION_LIMIT));
-  EXPECT_TRUE(ParseOptions("solutionlimit=0"));
+  s.SetIntOption("solutionlimit", 0);
   EXPECT_EQ(0, s.GetOption(IlogCPSolver::SOLUTION_LIMIT));
   EXPECT_EQ(0, s.GetIntOption("solutionlimit"));
-  EXPECT_TRUE(ParseOptions("solutionlimit=42"));
+  s.SetIntOption("solutionlimit", 42);
   EXPECT_EQ(42, s.GetOption(IlogCPSolver::SOLUTION_LIMIT));
   EXPECT_EQ(42, s.GetIntOption("solutionlimit"));
-  EXPECT_FALSE(ParseOptions("solutionlimit=-1"));
-  EXPECT_FALSE(ParseOptions("solutionlimit=oops"));
+  EXPECT_THROW(s.SetIntOption("solutionlimit", -1), InvalidOptionValue);
+  EXPECT_THROW(s.SetStrOption("solutionlimit", "oops"), OptionError);
 }
 }
