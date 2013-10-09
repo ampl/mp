@@ -35,6 +35,7 @@ class SulumSolver : public Solver {
   SlmModel_t model_;
 
   class IntSulumOption;
+  class DblSulumOption;
 
  protected:
   std::string GetOptionHeader();
