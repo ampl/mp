@@ -23,18 +23,26 @@
 #ifndef AMPL_SOLVERS_SULUM_H
 #define AMPL_SOLVERS_SULUM_H
 
+#include <sulumc.h>
 #include "solvers/util/solver.h"
 
 namespace ampl {
 
 // Sulum solver.
 class SulumSolver : public Solver {
+ private:
+  SlmEnv_t env_;
+  SlmModel_t model_;
+
+  class IntSulumOption;
+
  protected:
   std::string GetOptionHeader();
   void DoSolve(Problem &p);
 
  public:
   SulumSolver();
+  ~SulumSolver();
 };
 }
 
