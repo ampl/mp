@@ -1,4 +1,4 @@
-The solver "sulum" uses Sulum (http://http://www.sulumoptimization.com/)
+The solver "sulum" uses Sulum (http://www.sulumoptimization.com/)
 to solve LP or MIP problems.
 
 Normally the sulum solver is invoked by AMPL's solve command,
