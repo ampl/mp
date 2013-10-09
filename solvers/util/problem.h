@@ -203,6 +203,9 @@ class Problem : Noncopyable {
   // Returns the number of logical constraints.
   int num_logical_cons() const { return asl_->i.n_lcon_; }
 
+  // Returns the number of nonzeros in constraints' Jacobian.
+  int num_con_nonzeros() const { return asl_->i.nzc_; }
+
   // Returns the type of the variable.
   VarType var_type(int var_index) const {
     assert(var_index >= 0 && var_index < num_vars());
@@ -316,11 +319,17 @@ class Problem : Noncopyable {
       return info_->A_colstarts_[col_index];
     }
 
+    const int *col_starts() const { return info_->A_colstarts_; }
+
     // Returns the row index of an element.
     int row_index(int elt_index) const { return info_->A_rownos_[elt_index]; }
 
+    const int *row_indices() const { return info_->A_rownos_; }
+
     // Returns the value of an element.
     double value(int elt_index) const { return info_->A_vals_[elt_index]; }
+
+    const double *values() const { return info_->A_vals_; }
   };
 
   // Returns the columnwise representation of the constraint matrix.
