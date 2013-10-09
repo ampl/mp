@@ -35,6 +35,16 @@ struct OptionInfo {
 const OptionInfo<SlmParamInt> INT_OPTION_INFO[] = {
 #define INT_OPTION(param, name, description) \
   {param, name, description},
+#define DBL_OPTION(param, name, description)
+#include "sulumoptions.h"
+#undef INT_OPTION
+#undef DBL_OPTION
+};
+
+const OptionInfo<SlmParamDb> DBL_OPTION_INFO[] = {
+#define INT_OPTION(param, name, description)
+#define DBL_OPTION(param, name, description) \
+    {param, name, description},
 #include "sulumoptions.h"
 };
 
@@ -74,6 +84,26 @@ class SulumSolver::IntSulumOption : public TypedSolverOption<int> {
   }
 };
 
+class SulumSolver::DblSulumOption : public TypedSolverOption<double> {
+ private:
+  SulumSolver *solver_;
+  SlmParamDb param_;
+
+ public:
+  DblSulumOption(const OptionInfo<SlmParamDb> &info, SulumSolver *s)
+  : TypedSolverOption<double>(info.name, info.description),
+    solver_(s), param_(info.param) {}
+
+  double GetValue() const {
+    double value = 0;
+    Check(SlmGetDbParam(solver_->model_, param_, &value));
+    return value;
+  }
+  void SetValue(double value) {
+    Check(SlmSetDbParam(solver_->model_, param_, value));
+  }
+};
+
 std::string SulumSolver::GetOptionHeader() {
   return
       "Sulum Directives for AMPL\n"
@@ -107,7 +137,12 @@ SulumSolver::SulumSolver() : Solver("sulum", "", 20130908), env_(), model_() {
   size_t num_int_options = sizeof(INT_OPTION_INFO) / sizeof(*INT_OPTION_INFO);
   for (size_t i = 0; i < num_int_options; ++i)
     AddOption(OptionPtr(new IntSulumOption(INT_OPTION_INFO[i], this)));
-  // TODO: register options and suffixes
+
+  size_t num_dbl_options = sizeof(DBL_OPTION_INFO) / sizeof(*DBL_OPTION_INFO);
+  for (size_t i = 0; i < num_dbl_options; ++i)
+    AddOption(OptionPtr(new DblSulumOption(DBL_OPTION_INFO[i], this)));
+
+  // TODO: register suffixes
 }
 
 SulumSolver::~SulumSolver() {
@@ -167,25 +202,63 @@ void SulumSolver::DoSolve(Problem &p) {
         p.num_continuous_vars(), num_vars, &var_types[0]);
   }
 
-  // TODO: handle interrupt
-
   double setup_time = GetTimeAndReset(time);
 
   // Make Sulum update info items.
   Check(SlmSetIntParam(model_, SlmPrmIntUpdateSolQuality, SlmOn));
 
   // Solve the problem.
-  Check(SlmOptimize(model_));
+  // No need to handle SIGINT because Sulum does it.
+  SlmReturn ret = SlmOptimize(model_);
+  int solve_code = Solution::UNKNOWN;
+  const char *status = "";
+  if (ret == SlmRetUserTerm) {
+    solve_code = 600;
+    status = "interrupted";
+    // TODO: make sure solve code is not overwritten later
+  } else {
+    Check(ret);
+  }
 
   SlmSolStatus sulum_status = SlmSolStatUnk;
   Check(SlmGetSolStatus(model_, &sulum_status));
-
-  // TODO: convert the solution status
   switch (sulum_status) {
-  // TODO
+  default:
+    assert(0 && "unknown solution status");
+    // Fall through.
+  case SlmSolStatUnk:
+    solve_code = 500;
+    status = "unknown";
+    break;
+  case SlmSolStatOpt:
+    solve_code = Solution::SOLVED;
+    status = "optimal solution";
+    break;
+  case SlmSolStatPrimFeas:
+    solve_code = Solution::SOLVED_MAYBE;
+    status = "feasible solution";
+    break;
+  case SlmSolStatDualFeas:
+    solve_code = Solution::SOLVED_MAYBE + 1;
+    status = "dual feasible solution";
+    break;
+  case SlmSolStatPrimInf:
+    solve_code = Solution::INFEASIBLE;
+    status = "infeasible problem";
+    break;
+  case SlmSolStatDualInf:
+    // TODO: infeasible or unbounded
+    break;
+  case SlmSolStatIntFeas:
+    // TODO
+    break;
+  case SlmSolStatIntInf:
+    // TODO
+    break;
+  case SlmSolStatIntUnBndInf:
+    // TODO
+    break;
   }
-  int solve_code = 0;
-  const char *status = "";
   p.set_solve_code(solve_code);
 
   double solution_time = GetTimeAndReset(time);
@@ -198,10 +271,9 @@ void SulumSolver::DoSolve(Problem &p) {
   Check(SlmGetSolPrimVars(model_, &solution[0]));
   std::vector<double> dual_solution(num_cons);
   Check(SlmGetSolDualCons(model_, &dual_solution[0]));
-  // TODO
-  //w.Format("{} nodes, {} fails") << stats.node << stats.fail;
+  w << status;
   if (p.num_objs() > 0)
-    w.Format(", objective {}") << ObjPrec(obj_val);
+    w.Format("; objective {}") << ObjPrec(obj_val);
   HandleSolution(p, w.c_str(), ptr(solution), ptr(dual_solution), obj_val);
 
   double output_time = GetTimeAndReset(time);
