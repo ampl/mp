@@ -6,7 +6,12 @@
 #  SULUM_INCLUDE_DIRS - The Sulum include directories
 #  SULUM_LIBRARIES - The libraries needed to use Sulum
 
-set(SULUM_PATH /opt/sulum/RedEric)
+if (WIN32)
+  set(SULUM_PATH "C:/Program Files/sulum/RedEric")
+else ()
+  set(SULUM_PATH /opt/sulum/RedEric)
+endif ()
+
 find_path(SULUM_INCLUDE_DIR sulumcpp.h PATHS ${SULUM_PATH}/header)
 find_library(SULUM_LIBRARY sulum20 PATHS ${SULUM_PATH}/linux64/bin)
 
