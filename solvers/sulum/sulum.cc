@@ -25,13 +25,14 @@
 #include <sulumcpp.h>
 
 namespace {
-struct IntOptionInfo {
-  SlmParamInt param;
+template <typename Param>
+struct OptionInfo {
+  Param param;
   const char *name;
   const char *description;
 };
 
-const IntOptionInfo INT_OPTION_INFO[] = {
+const OptionInfo<SlmParamInt> INT_OPTION_INFO[] = {
 #define INT_OPTION(param, name, description) \
   {param, name, description},
 #include "sulumoptions.h"
@@ -42,28 +43,38 @@ inline void Check(SlmReturn ret) {
     throw Slm::SlmException(ret);
 }
 
-inline void ConvertBounds(double &lb, double &ub, SlmBoundKey &key) {
-  if (lb <= -Infinity) {
-    lb = -SlmInfinity;
-    if (ub >= Infinity) {
-      ub = SlmInfinity;
-      key = SlmBndFr;
-    } else {
-      key = SlmBndUp;
-    }
-  } else if (ub >= Infinity) {
-    ub = SlmInfinity;
-    key = SlmBndLo;
-  } else {
-    key = lb == ub ? SlmBndFx : SlmBndRa;
-  }
+inline SlmBoundKey GetBoundKey(double lb, double ub) {
+  if (lb <= -Infinity)
+    return ub >= Infinity ? SlmBndFr : SlmBndUp;
+  if (ub >= Infinity)
+    return SlmBndLo;
+  return lb == ub ? SlmBndFx : SlmBndRa;
 }
 }
 
 namespace ampl {
 
+class SulumSolver::IntSulumOption : public TypedSolverOption<int> {
+ private:
+  SulumSolver *solver_;
+  SlmParamInt param_;
+
+ public:
+  IntSulumOption(const OptionInfo<SlmParamInt> &info, SulumSolver *s)
+  : TypedSolverOption<int>(info.name, info.description),
+    solver_(s), param_(info.param) {}
+
+  int GetValue() const {
+    int value = 0;
+    Check(SlmGetIntParam(solver_->model_, param_, &value));
+    return value;
+  }
+  void SetValue(int value) {
+    Check(SlmSetIntParam(solver_->model_, param_, value));
+  }
+};
+
 std::string SulumSolver::GetOptionHeader() {
-  // TODO
   return
       "Sulum Directives for AMPL\n"
       "--------------------------\n"
@@ -71,11 +82,11 @@ std::string SulumSolver::GetOptionHeader() {
       "To set these directives, assign a string specifying their values to "
       "the AMPL option sulum_options.  For example:\n"
       "\n"
-      "  ampl: option sulum_options 'version nodelimit=30000 "
-      "val_branching=min';\n";
+      "  ampl: option sulum_options 'version loglevel=10 "
+      "simmaxiter=100';\n";
 }
 
-SulumSolver::SulumSolver() : Solver("sulum", "", 20130820) {
+SulumSolver::SulumSolver() : Solver("sulum", "", 20130908), env_(), model_() {
   int major = 0, minor = 0, interim = 0;
   SlmGetSulumVersion(&major, &minor, &interim);
   std::string version = str(
@@ -85,31 +96,23 @@ SulumSolver::SulumSolver() : Solver("sulum", "", 20130820) {
   set_version(version);
   set_read_flags(Problem::READ_COLUMNWISE);
 
-  class IntSulumOption : public TypedSolverOption<int> {
-   private:
-    SulumSolver *solver_;
-    SlmParamInt param_;
+  Check(SlmMakeEnv(&env_));
+  SlmReturn ret = SlmMakeModel(env_, &model_);
+  if (ret != SlmRetOk)
+    SlmFreeEnv(&env_);
+  Check(ret);
 
-   public:
-    IntSulumOption(const char *name,
-        const char *description, SulumSolver *s, SlmParamInt p)
-    : TypedSolverOption<int>(name, description), solver_(s), param_(p) {}
+  Check(SlmSetIntParam(model_, SlmPrmIntLogPrefix, SlmOff));
 
-    int GetValue() const {
-      // TODO
-      return 0;
-    }
-    void SetValue(int value) {
-      // TODO
-    }
-  };
-  for (size_t i = 0,
-      n = sizeof(INT_OPTION_INFO) / sizeof(*INT_OPTION_INFO); i < n; ++i) {
-    const IntOptionInfo &info = INT_OPTION_INFO[i];
-    AddOption(OptionPtr(new IntSulumOption(
-        info.name, info.description, this, info.param)));
-  }
+  size_t num_int_options = sizeof(INT_OPTION_INFO) / sizeof(*INT_OPTION_INFO);
+  for (size_t i = 0; i < num_int_options; ++i)
+    AddOption(OptionPtr(new IntSulumOption(INT_OPTION_INFO[i], this)));
   // TODO: register options and suffixes
+}
+
+SulumSolver::~SulumSolver() {
+  SlmFreeModel(env_, &model_);
+  SlmFreeEnv(&env_);
 }
 
 void SulumSolver::DoSolve(Problem &p) {
@@ -118,42 +121,16 @@ void SulumSolver::DoSolve(Problem &p) {
   if (p.num_nonlinear_objs() != 0 || p.num_nonlinear_cons() != 0)
     throw Error("Sulum doesn't support nonlinear problems");
 
-  class SulumModel : Noncopyable {
-   private:
-    SlmEnv_t env_;
-    SlmModel_t model_;
-
-   public:
-    SulumModel() : env_(), model_() {
-      Check(SlmMakeEnv(&env_));
-      SlmReturn ret = SlmMakeModel(env_, &model_);
-      if (ret != SlmRetOk)
-        SlmFreeEnv(&env_);
-      Check(ret);
-    }
-    ~SulumModel() {
-      SlmFreeModel(env_, &model_);
-      SlmFreeEnv(&env_);
-    }
-
-    operator SlmModel_t() const { return model_; }
-  };
-  SulumModel model;
-
   // Convert variables.
   int num_vars = p.num_vars();
-  std::vector<SlmBoundKey> var_status(num_vars);
-  std::vector<double> var_lb(num_vars);
-  std::vector<double> var_ub(num_vars);
-  for (int i = 0; i < num_vars; ++i) {
-    ConvertBounds(var_lb[i] = p.var_lb(i),
-        var_ub[i] = p.var_ub(i), var_status[i]);
-  }
+  std::vector<SlmBoundKey> var_bound_keys(num_vars);
+  for (int i = 0; i < num_vars; ++i)
+    var_bound_keys[i] = GetBoundKey(p.var_lb(i), p.var_ub(i));
 
   std::vector<double> obj_coefs(num_vars);
   if (p.num_objs() > 0) {
     // Convert objective.
-    Check(SlmSetIntParam(model, SlmPrmIntObjSense,
+    Check(SlmSetIntParam(model_, SlmPrmIntObjSense,
         p.obj_type(0) == MIN ? SlmObjSenseMin : SlmObjSenseMax));
     LinearObjExpr expr = p.linear_obj_expr(0);
     for (LinearObjExpr::iterator
@@ -164,13 +141,9 @@ void SulumSolver::DoSolve(Problem &p) {
 
   // Convert constraints.
   int num_cons = p.num_cons();
-  std::vector<SlmBoundKey> con_status(num_cons);
-  std::vector<double> con_lb(num_cons);
-  std::vector<double> con_ub(num_cons);
-  for (int i = 0; i < num_cons; ++i) {
-    ConvertBounds(con_lb[i] = p.con_lb(i),
-        con_ub[i] = p.con_ub(i), con_status[i]);
-  }
+  std::vector<SlmBoundKey> con_bound_keys(num_cons);
+  for (int i = 0; i < num_cons; ++i)
+    con_bound_keys[i] = GetBoundKey(p.con_lb(i), p.con_ub(i));
 
   // Convert constraint matrix.
   Problem::ColMatrix matrix = p.col_matrix();
@@ -178,24 +151,39 @@ void SulumSolver::DoSolve(Problem &p) {
   col_starts.reserve(num_vars + 1);
   col_starts.assign(matrix.col_starts(), matrix.col_starts() + num_vars);
   col_starts.push_back(p.num_con_nonzeros());
-  Check(SlmSetAllData(model, num_cons, num_vars, 0,
-      ptr(con_status), ptr(con_lb), ptr(con_ub),
-      ptr(var_status), ptr(obj_coefs), ptr(var_lb), ptr(var_ub),
+  Check(SlmSetAllData(model_, num_cons, num_vars, 0,
+      ptr(con_bound_keys), p.con_lb(), p.con_ub(),
+      ptr(var_bound_keys), ptr(obj_coefs), p.var_lb(), p.var_ub(),
       1, &col_starts[0], matrix.row_indices(), matrix.values()));
 
   // Set up integer variables.
   if (int num_int_vars = p.num_integer_vars()) {
     std::vector<SlmVarType> var_types(num_int_vars, SlmVarTypeInt);
-    SlmSetTypeVarsFromTo(model,
+    for (int i = p.num_continuous_vars(), j = 0; i < num_vars; ++i, ++j) {
+      if (p.var_lb(i) == 0 && p.var_ub(i) == 1)
+        var_types[j] = SlmVarTypeBin;
+    }
+    SlmSetTypeVarsFromTo(model_,
         p.num_continuous_vars(), num_vars, &var_types[0]);
   }
 
+  // TODO: handle interrupt
+
   double setup_time = GetTimeAndReset(time);
 
+  // Make Sulum update info items.
+  Check(SlmSetIntParam(model_, SlmPrmIntUpdateSolQuality, SlmOn));
+
   // Solve the problem.
-  Check(SlmOptimize(model));
+  Check(SlmOptimize(model_));
+
+  SlmSolStatus sulum_status = SlmSolStatUnk;
+  Check(SlmGetSolStatus(model_, &sulum_status));
 
   // TODO: convert the solution status
+  switch (sulum_status) {
+  // TODO
+  }
   int solve_code = 0;
   const char *status = "";
   p.set_solve_code(solve_code);
@@ -204,14 +192,17 @@ void SulumSolver::DoSolve(Problem &p) {
 
   fmt::Writer w;
   w.Format("{}: {}\n") << long_name() << status;
-  double obj_val = 0; // TODO
+  double obj_val = 0;
+  Check(SlmGetDbInfo(model_, SlmInfoDbPrimObj, &obj_val));
   std::vector<double> solution(num_vars);
-  Check(SlmGetSolPrimVars(model, &solution[0]));
+  Check(SlmGetSolPrimVars(model_, &solution[0]));
+  std::vector<double> dual_solution(num_cons);
+  Check(SlmGetSolDualCons(model_, &dual_solution[0]));
   // TODO
   //w.Format("{} nodes, {} fails") << stats.node << stats.fail;
-  //if (has_obj && solution.get())
-  //  w.Format(", objective {}") << ObjPrec(obj_val);
-  HandleSolution(p, w.c_str(), ptr(solution), 0, obj_val);
+  if (p.num_objs() > 0)
+    w.Format(", objective {}") << ObjPrec(obj_val);
+  HandleSolution(p, w.c_str(), ptr(solution), ptr(dual_solution), obj_val);
 
   double output_time = GetTimeAndReset(time);
 
