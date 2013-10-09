@@ -25,9 +25,38 @@
 #include <sulumcpp.h>
 
 namespace {
+struct IntOptionInfo {
+  SlmParamInt param;
+  const char *name;
+  const char *description;
+};
+
+const IntOptionInfo INT_OPTION_INFO[] = {
+#define INT_OPTION(param, name, description) \
+  {param, name, description},
+#include "sulumoptions.h"
+};
+
 inline void Check(SlmReturn ret) {
   if (ret != SlmRetOk)
     throw Slm::SlmException(ret);
+}
+
+inline void ConvertBounds(double &lb, double &ub, SlmBoundKey &key) {
+  if (lb <= -Infinity) {
+    lb = -SlmInfinity;
+    if (ub >= Infinity) {
+      ub = SlmInfinity;
+      key = SlmBndFr;
+    } else {
+      key = SlmBndUp;
+    }
+  } else if (ub >= Infinity) {
+    ub = SlmInfinity;
+    key = SlmBndLo;
+  } else {
+    key = lb == ub ? SlmBndFx : SlmBndRa;
+  }
 }
 }
 
@@ -54,7 +83,32 @@ SulumSolver::SulumSolver() : Solver("sulum", "", 20130820) {
   set_long_name(version);
   version[0] = 'S';
   set_version(version);
-  
+  set_read_flags(Problem::READ_COLUMNWISE);
+
+  class IntSulumOption : public TypedSolverOption<int> {
+   private:
+    SulumSolver *solver_;
+    SlmParamInt param_;
+
+   public:
+    IntSulumOption(const char *name,
+        const char *description, SulumSolver *s, SlmParamInt p)
+    : TypedSolverOption<int>(name, description), solver_(s), param_(p) {}
+
+    int GetValue() const {
+      // TODO
+      return 0;
+    }
+    void SetValue(int value) {
+      // TODO
+    }
+  };
+  for (size_t i = 0,
+      n = sizeof(INT_OPTION_INFO) / sizeof(*INT_OPTION_INFO); i < n; ++i) {
+    const IntOptionInfo &info = INT_OPTION_INFO[i];
+    AddOption(OptionPtr(new IntSulumOption(
+        info.name, info.description, this, info.param)));
+  }
   // TODO: register options and suffixes
 }
 
@@ -92,15 +146,9 @@ void SulumSolver::DoSolve(Problem &p) {
   std::vector<double> var_lb(num_vars);
   std::vector<double> var_ub(num_vars);
   for (int i = 0; i < num_vars; ++i) {
-    double lb = p.var_lb(i), ub = p.var_ub(i);
-    if (lb <= -Infinity)
-      lb = -SlmInfinity;
-    if (ub >= Infinity)
-      ub = SlmInfinity;
-    var_lb[i] = lb;
-    var_ub[i] = ub;
+    ConvertBounds(var_lb[i] = p.var_lb(i),
+        var_ub[i] = p.var_ub(i), var_status[i]);
   }
-  // TODO: handle integer variables
 
   std::vector<double> obj_coefs(num_vars);
   if (p.num_objs() > 0) {
@@ -120,20 +168,27 @@ void SulumSolver::DoSolve(Problem &p) {
   std::vector<double> con_lb(num_cons);
   std::vector<double> con_ub(num_cons);
   for (int i = 0; i < num_cons; ++i) {
-    double lb = p.con_lb(i), ub = p.con_ub(i);
-    if (lb <= -Infinity)
-      lb = -SlmInfinity;
-    if (ub >= Infinity)
-      ub = SlmInfinity;
-    con_lb[i] = lb;
-    con_ub[i] = ub;
+    ConvertBounds(con_lb[i] = p.con_lb(i),
+        con_ub[i] = p.con_ub(i), con_status[i]);
   }
 
+  // Convert constraint matrix.
   Problem::ColMatrix matrix = p.col_matrix();
+  std::vector<int> col_starts;
+  col_starts.reserve(num_vars + 1);
+  col_starts.assign(matrix.col_starts(), matrix.col_starts() + num_vars);
+  col_starts.push_back(p.num_con_nonzeros());
   Check(SlmSetAllData(model, num_cons, num_vars, 0,
       ptr(con_status), ptr(con_lb), ptr(con_ub),
       ptr(var_status), ptr(obj_coefs), ptr(var_lb), ptr(var_ub),
-      1, matrix.col_starts(), matrix.row_indices(), matrix.values()));
+      1, &col_starts[0], matrix.row_indices(), matrix.values()));
+
+  // Set up integer variables.
+  if (int num_int_vars = p.num_integer_vars()) {
+    std::vector<SlmVarType> var_types(num_int_vars, SlmVarTypeInt);
+    SlmSetTypeVarsFromTo(model,
+        p.num_continuous_vars(), num_vars, &var_types[0]);
+  }
 
   double setup_time = GetTimeAndReset(time);
 
