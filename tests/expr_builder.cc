@@ -34,7 +34,7 @@ expr *ExprBuilder::Call::Init(const char *name,
   expr_.al = &args_;
   args_.n = num_args;
   constants_.resize(num_args);
-  args_.ra = &constants_[0];
+  args_.ra = ptr(constants_);
   expr_args_.reserve(info_.nargs);
   for (int i = 0; i < num_args; ++i) {
     const CallArg &arg = arg_begin[i];
