@@ -1662,6 +1662,12 @@ Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
   values.insert(i, typename ValueMap::value_type(value, var));
   return var;
 }
+
+template <typename T>
+inline T *ptr(std::vector<T> &v) { return v.empty() ? 0 : &v[0]; }
+
+template <typename T>
+inline const T *ptr(const std::vector<T> &v) { return v.empty() ? 0 : &v[0]; }
 }
 
 #endif  // SOLVERS_UTIL_EXPR_H_

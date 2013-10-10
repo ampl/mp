@@ -254,9 +254,6 @@ class TypedSolverOption : public SolverOption {
   virtual void SetValue(typename internal::OptionHelper<T>::Arg value) = 0;
 };
 
-template <typename T>
-inline const T *ptr(const std::vector<T> &v) { return v.empty() ? 0 : &v[0]; }
-
 // An AMPL solver.
 //
 // Example:
