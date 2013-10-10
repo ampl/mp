@@ -38,6 +38,17 @@ enum ObjType { MIN = 0, MAX = 1 };
 // A variable type.
 enum VarType { CONTINUOUS, INTEGER };
 
+// Solution status.
+enum SolutionStatus {
+  NOT_SOLVED   =  -1,
+  SOLVED       =   0,
+  SOLVED_MAYBE = 100,
+  INFEASIBLE   = 200,
+  UNBOUNDED    = 300,
+  LIMIT        = 400,
+  FAILURE      = 500
+};
+
 // A solution of an optimization problem.
 class Solution : Noncopyable {
  private:
@@ -48,17 +59,6 @@ class Solution : Noncopyable {
   double *dual_values_;
 
  public:
-  // Solution status.
-  enum Status {
-    UNKNOWN,
-    SOLVED,
-    SOLVED_MAYBE,
-    INFEASIBLE,
-    UNBOUNDED,
-    LIMIT,
-    FAILURE
-  };
-
   // Constructs a solution with zero variables and constraints and the
   // solve code -1.
   Solution();
@@ -69,9 +69,9 @@ class Solution : Noncopyable {
   void Swap(Solution &other);
 
   // Returns the solution status.
-  Status status() const {
-    return solve_code_ < 0 || solve_code_ >= 600 ?
-        UNKNOWN : static_cast<Status>(solve_code_ / 100 + 1);
+  SolutionStatus status() const {
+    return solve_code_ < 0 || solve_code_ >= 600 ? NOT_SOLVED
+        : static_cast<SolutionStatus>(solve_code_ / 100 * 100);
   }
 
   // Returns the solve code.

@@ -40,7 +40,7 @@ using ampl::Solution;
 
 TEST(SolutionTest, DefaultCtor) {
   Solution s;
-  EXPECT_EQ(Solution::UNKNOWN, s.status());
+  EXPECT_EQ(ampl::NOT_SOLVED, s.status());
   EXPECT_EQ(-1, s.solve_code());
   EXPECT_EQ(0, s.num_vars());
   EXPECT_EQ(0, s.num_cons());
@@ -52,7 +52,7 @@ TEST(SolutionTest, Read) {
   WriteFile("test.sol", "test\n\n1\n3\n5\n7\n11\n");
   Solution s;
   s.Read("test", 3, 2);
-  EXPECT_EQ(Solution::UNKNOWN, s.status());
+  EXPECT_EQ(ampl::NOT_SOLVED, s.status());
   EXPECT_EQ(-1, s.solve_code());
   EXPECT_EQ(3, s.num_vars());
   EXPECT_EQ(2, s.num_cons());
@@ -97,13 +97,13 @@ TEST(SolutionTest, DoubleRead) {
 }
 
 TEST(SolutionTest, SolveCodes) {
-  const Solution::Status STATES[] = {
-      Solution::SOLVED,
-      Solution::SOLVED_MAYBE,
-      Solution::INFEASIBLE,
-      Solution::UNBOUNDED,
-      Solution::LIMIT,
-      Solution::FAILURE
+  const ampl::SolutionStatus STATES[] = {
+      ampl::SOLVED,
+      ampl::SOLVED_MAYBE,
+      ampl::INFEASIBLE,
+      ampl::UNBOUNDED,
+      ampl::LIMIT,
+      ampl::FAILURE
   };
   for (std::size_t i = 0; i < sizeof(STATES) / sizeof(*STATES); ++i) {
     {
@@ -131,7 +131,7 @@ TEST(SolutionTest, SolveCodes) {
         c_str(fmt::Format("test\n\n2\n2\nobjno 0 {}\n") << CODES[i]));
     Solution s;
     s.Read("test", 1, 1);
-    EXPECT_EQ(Solution::UNKNOWN, s.status());
+    EXPECT_EQ(ampl::NOT_SOLVED, s.status());
     EXPECT_EQ(CODES[i], s.solve_code());
   }
 }

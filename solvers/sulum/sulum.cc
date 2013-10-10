@@ -210,7 +210,7 @@ void SulumSolver::DoSolve(Problem &p) {
   // Solve the problem.
   // No need to handle SIGINT because Sulum does it.
   SlmReturn ret = SlmOptimize(model_);
-  int solve_code = Solution::UNKNOWN;
+  int solve_code = NOT_SOLVED;
   const char *status = "";
   if (ret == SlmRetUserTerm) {
     solve_code = 600;
@@ -231,32 +231,36 @@ void SulumSolver::DoSolve(Problem &p) {
     status = "unknown";
     break;
   case SlmSolStatOpt:
-    solve_code = Solution::SOLVED;
+    solve_code = SOLVED;
     status = "optimal solution";
     break;
   case SlmSolStatPrimFeas:
-    solve_code = Solution::SOLVED_MAYBE;
+    solve_code = SOLVED_MAYBE;
     status = "feasible solution";
     break;
   case SlmSolStatDualFeas:
-    solve_code = Solution::SOLVED_MAYBE + 1;
+    solve_code = SOLVED_MAYBE + 1;
     status = "dual feasible solution";
     break;
   case SlmSolStatPrimInf:
-    solve_code = Solution::INFEASIBLE;
+    solve_code = INFEASIBLE;
     status = "infeasible problem";
     break;
   case SlmSolStatDualInf:
-    // TODO: infeasible or unbounded
+    solve_code = INFEASIBLE + 1;
+    status = "infeasible or unbounded";
     break;
   case SlmSolStatIntFeas:
-    // TODO
+    solve_code = SOLVED_MAYBE;
+    status = "integer feasible solution";
     break;
   case SlmSolStatIntInf:
-    // TODO
+    solve_code = INFEASIBLE + 1;
+    status = "integer infeasible";
     break;
   case SlmSolStatIntUnBndInf:
-    // TODO
+    solve_code = INFEASIBLE + 2;
+    status = "integer infeasible or unbounded";
     break;
   }
   p.set_solve_code(solve_code);
