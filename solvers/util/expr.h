@@ -1664,10 +1664,10 @@ Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
 }
 
 template <typename T>
-inline T *ptr(std::vector<T> &v) { return v.empty() ? 0 : &v[0]; }
+inline T *ptr(std::vector<T> &v) { return v.data(); }
 
 template <typename T>
-inline const T *ptr(const std::vector<T> &v) { return v.empty() ? 0 : &v[0]; }
+inline const T *ptr(const std::vector<T> &v) { return v.data(); }
 }
 
 #endif  // SOLVERS_UTIL_EXPR_H_
