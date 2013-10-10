@@ -44,7 +44,7 @@ expr *ExprBuilder::Call::Init(const char *name,
     ap.u.v = args_.ra + i;
     expr_args_.push_back(ap);
   }
-  expr_.ap = &expr_args_[0];
+  expr_.ap = ptr(expr_args_);
   expr_.ape = expr_.ap + expr_args_.size();
   return reinterpret_cast<expr*>(&expr_);
 }
