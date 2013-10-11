@@ -188,7 +188,8 @@ void CPLEXSolver::DoSolve(Problem &p) {
     }
   }
   HandleSolution(p, writer.c_str(),
-      ptr(solution), ptr(dual_solution), obj_value);
+      solution.empty() ? 0 : solution.data(),
+      dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
   double output_time = GetTimeAndReset(time);
 
   if (timing()) {

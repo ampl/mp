@@ -489,7 +489,7 @@ void IlogCPSolver::DoSolve(Problem &p) {
       double obj_value = num_objs > 0 ?
           cp_.getObjValue() : std::numeric_limits<double>::quiet_NaN();
       HandleFeasibleSolution(p, feasible_sol_message,
-          ptr(solution), 0, obj_value);
+          solution.data(), 0, obj_value);
     }
     if (++num_solutions >= solution_limit) {
       if (p.num_objs() > 0) {
@@ -530,7 +530,8 @@ void IlogCPSolver::DoSolve(Problem &p) {
   } else {
     solution.clear();
   }
-  HandleSolution(p, writer.c_str(), ptr(solution), 0, obj_value);
+  HandleSolution(p, writer.c_str(),
+      solution.empty() ? 0 : &solution[0], 0, obj_value);
   double output_time = GetTimeAndReset(time);
 
   if (timing()) {
