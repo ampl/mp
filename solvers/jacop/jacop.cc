@@ -430,8 +430,8 @@ bool JaCoPSolver::SolutionHandler::DoHandleSolution() {
         solver_.env_.CallIntMethod(obj_var_, solver_.value_) : 0;
       for (int j = 0, n = problem_.num_vars(); j < n; ++j)
         solution_[j] = solver_.env_.CallIntMethod(vars_[j], solver_.value_);
-      solver_.HandleFeasibleSolution(problem_,
-          feasible_sol_message_, ptr(solution_), 0, obj_value);
+      solver_.HandleFeasibleSolution(problem_, feasible_sol_message_,
+          solution_.empty() ? 0 : solution_.data(), 0, obj_value);
     }
     if (solver_.solution_limit_ != -1 &&
         num_solutions_ >= solver_.solution_limit_) {
@@ -548,7 +548,7 @@ void JaCoPSolver::DoSolve(Problem &p) {
     obj_var = env_.NewGlobalRef(converter.obj());
   jclass var_class = converter.var_class().get();
   value_ = env_.GetMethod(var_class, "value", "()I");
-  SolutionHandler sol_handler(*this, p, ptr(converter.vars()), obj_var.get());
+  SolutionHandler sol_handler(*this, p, converter.vars().data(), obj_var.get());
   jobject solution_listener = solution_listener_class.NewObject(
       env_, reinterpret_cast<jlong>(&sol_handler));
   env_.CallVoidMethod(solution_listener, env_.GetMethod(
@@ -666,7 +666,8 @@ void JaCoPSolver::DoSolve(Problem &p) {
       << env_.CallIntMethod(search_.get(), get_fails_);
   if (has_obj && found)
     w.Format(", objective {}") << ObjPrec(obj_val);
-  HandleSolution(p, w.c_str(), ptr(final_solution), 0, obj_val);
+  HandleSolution(p, w.c_str(),
+      final_solution.empty() ? 0 : final_solution.data(), 0, obj_val);
 
   double output_time = GetTimeAndReset(time);
 

@@ -187,8 +187,8 @@ void SulumSolver::DoSolve(Problem &p) {
   col_starts.assign(matrix.col_starts(), matrix.col_starts() + num_vars);
   col_starts.push_back(p.num_con_nonzeros());
   Check(SlmSetAllData(model_, num_cons, num_vars, 0,
-      ptr(con_bound_keys), p.con_lb(), p.con_ub(),
-      ptr(var_bound_keys), ptr(obj_coefs), p.var_lb(), p.var_ub(),
+      con_bound_keys.data(), p.con_lb(), p.con_ub(),
+      var_bound_keys.data(), obj_coefs.data(), p.var_lb(), p.var_ub(),
       1, &col_starts[0], matrix.row_indices(), matrix.values()));
 
   // Set up integer variables.
@@ -272,13 +272,13 @@ void SulumSolver::DoSolve(Problem &p) {
   double obj_val = 0;
   Check(SlmGetDbInfo(model_, SlmInfoDbPrimObj, &obj_val));
   std::vector<double> solution(num_vars);
-  Check(SlmGetSolPrimVars(model_, &solution[0]));
+  Check(SlmGetSolPrimVars(model_, solution.data()));
   std::vector<double> dual_solution(num_cons);
-  Check(SlmGetSolDualCons(model_, &dual_solution[0]));
+  Check(SlmGetSolDualCons(model_, dual_solution.data()));
   w << status;
   if (p.num_objs() > 0)
     w.Format("; objective {}") << ObjPrec(obj_val);
-  HandleSolution(p, w.c_str(), ptr(solution), ptr(dual_solution), obj_val);
+  HandleSolution(p, w.c_str(), solution.data(), dual_solution.data(), obj_val);
 
   double output_time = GetTimeAndReset(time);
 

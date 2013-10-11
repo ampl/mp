@@ -646,7 +646,7 @@ std::auto_ptr<GecodeProblem> GecodeSolver::Search(
       final_problem.reset(next);
       if (multiple_sol) {
         GetSolution(*final_problem, solution);
-        HandleFeasibleSolution(p, feasible_sol_message, ptr(solution), 0, 0);
+        HandleFeasibleSolution(p, feasible_sol_message, solution.data(), 0, 0);
       }
       if (++num_solutions >= solution_limit_)
         break;
@@ -739,7 +739,8 @@ void GecodeSolver::DoSolve(Problem &p) {
   w.Format("{} nodes, {} fails") << stats.node << stats.fail;
   if (has_obj && solution.get())
     w.Format(", objective {}") << ObjPrec(obj_val);
-  HandleSolution(p, w.c_str(), ptr(final_solution), 0, obj_val);
+  HandleSolution(p, w.c_str(),
+      final_solution.empty() ? 0 : final_solution.data(), 0, obj_val);
 
   double output_time = GetTimeAndReset(time);
 
