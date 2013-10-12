@@ -77,6 +77,131 @@ TEST_P(SolverTest, SolveBalassign1) {
   EXPECT_EQ(14, Solve("balassign1").obj);
 }
 
+// ----------------------------------------------------------------------------
+// element constraint tests
+
+TEST_P(SolverTest, ElementConstraint) {
+  EXPECT_EQ(22, Eval(AddCall("element", 11, 22, 33, x), 1));
+}
+
+TEST_P(SolverTest, TooFewArgsToElementConstraint) {
+  EXPECT_THROW_MSG(Eval(AddCall("element", x), 0),
+      ampl::Error, "element: too few arguments");
+}
+
+TEST_P(SolverTest, ElementConstantIndexOutOfBounds) {
+  EXPECT_THROW_MSG(Eval(AddCall("element", 11, 22, 2)),
+        ampl::Error, "element: index 2 is out of bounds");
+}
+
+TEST_P(SolverTest, ElementConstantAtConstantIndex) {
+  EXPECT_EQ(22, Eval(AddCall("element", 11, 22, 1)));
+}
+
+TEST_P(SolverTest, ElementExprAtConstantIndex) {
+  EXPECT_EQ(42, Eval(AddCall("element", x, 22, 0), 42));
+}
+
+TEST_P(SolverTest, ElementExprPlusConstantAtConstantIndex) {
+  EXPECT_EQ(44, Eval(AddCall("element", 11, ampl::CallArg(2, x), 1), 42));
+}
+
+TEST_P(SolverTest, ElementVariableIndexOutOfBounds) {
+  EXPECT_EQ(ampl::INFEASIBLE,
+      Eval(AddCall("element", 11, 22, x), 2).solve_code());
+}
+
+TEST_P(SolverTest, ElementConstantAtVariableIndex) {
+  EXPECT_EQ(22, Eval(AddCall("element", 11, 22, x), 1));
+}
+
+TEST_P(SolverTest, ElementExprAtVariableIndex) {
+  EXPECT_EQ(42, Eval(AddCall("element", x, 22, y), 42, 0));
+}
+
+TEST_P(SolverTest, ElementExprPlusConstantAtVariableIndex) {
+  EXPECT_EQ(44, Eval(AddCall("element", 11, ampl::CallArg(2, x), y), 42, 1));
+}
+
+// ----------------------------------------------------------------------------
+// in_relation constraint tests
+
+TEST_P(SolverTest, InRelationConstraint) {
+  Problem p;
+  p.AddVar(0, 100, ampl::INTEGER);
+  p.AddObj(ampl::MIN, AddVar(0));
+  p.AddCon(AddRelational(NE, AddCall("in_relation", AddVar(0), 42), AddNum(0)));
+  EXPECT_EQ(42, Solve(p).obj_value());
+}
+
+TEST_P(SolverTest, NestedInRelationNotSupported) {
+  EXPECT_THROW_MSG(Eval(AddBinary(OPPLUS,
+      AddCall("in_relation", AddVar(0), 42), AddNum(1)));,
+      ampl::UnsupportedExprError,
+      "unsupported expression: nested 'in_relation'");
+}
+
+TEST_P(SolverTest, TooFewArgsToInRelationConstraint) {
+  Problem p;
+  p.AddVar(0, 100, ampl::INTEGER);
+  p.AddObj(ampl::MIN, AddVar(0));
+  p.AddCon(AddRelational(NE, AddCall("in_relation"), AddNum(0)));
+  EXPECT_THROW_MSG(Solve(p), ampl::Error, "in_relation: too few arguments");
+}
+
+TEST_P(SolverTest, InRelationSizeIsNotMultipleOfArity) {
+  Problem p;
+  p.AddVar(0, 100, ampl::INTEGER);
+  p.AddVar(0, 100, ampl::INTEGER);
+  p.AddObj(ampl::MIN, AddVar(0));
+  p.AddCon(AddRelational(NE,
+      AddCall("in_relation", AddVar(0), AddVar(1), 1, 2, 3), AddNum(0)));
+  EXPECT_THROW_MSG(Solve(p), ampl::Error,
+      "in_relation: the number of arguments 5 is not a multiple of arity 2");
+}
+
+TEST_P(SolverTest, InRelationTuple) {
+  Problem p;
+  p.AddVar(0, 100, ampl::INTEGER);
+  p.AddVar(0, 100, ampl::INTEGER);
+  p.AddObj(ampl::MIN, AddBinary(OPPLUS, AddVar(0), AddVar(1)));
+  p.AddCon(AddRelational(NE,
+      AddCall("in_relation", AddVar(0), AddVar(1), 11, 22), AddNum(0)));
+  EXPECT_EQ(33, Solve(p).obj_value());
+}
+
+TEST_P(SolverTest, InRelationEmptySet) {
+  Problem p;
+  p.AddVar(0, 100, ampl::INTEGER);
+  p.AddCon(AddRelational(NE, AddCall("in_relation", AddVar(0)), AddNum(0)));
+  EXPECT_EQ(ampl::INFEASIBLE, Solve(p).solve_code());
+}
+
+TEST_P(SolverTest, InRelationNonConstantSetElement) {
+  Problem p;
+  p.AddVar(0, 100, ampl::INTEGER);
+  p.AddCon(AddRelational(NE,
+      AddCall("in_relation", AddVar(0), 0, AddVar(0)), AddNum(0)));
+  EXPECT_THROW_MSG(Solve(p), ampl::Error,
+      "in_relation: argument 3 is not constant");
+}
+
+// ----------------------------------------------------------------------------
+// Other test
+
+TEST_P(SolverTest, MultipleObjectives) {
+  Problem p;
+  p.AddVar(0, 10, ampl::INTEGER);
+  p.AddObj(ampl::MIN, AddBinary(OPREM, AddVar(0), AddNum(3)));
+  p.AddObj(ampl::MIN,
+      AddUnary(OP2POW, AddBinary(OPMINUS, AddVar(0), AddNum(5))));
+  EXPECT_EQ(6, Solve(p));
+}
+
+TEST_P(SolverTest, Priority) {
+  // TODO: test suffix priority
+}
+
 struct EnumValue {
   const char *name;
   IloCP::ParameterValues value;

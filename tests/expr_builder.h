@@ -37,6 +37,7 @@ class CallArg {
  public:
   CallArg(double constant, NumericExpr e = NumericExpr())
   : constant_(constant), expr_(e) {}
+  CallArg(NumericExpr e) : constant_(0), expr_(e) {}
 
   double constant() const { return constant_; }
   NumericExpr expr() const { return expr_; }
@@ -149,6 +150,18 @@ class ExprBuilder {
   // Adds a new call expression with up to 3 arguments.
   CallExpr AddCall(const char *func_name,
       const CallArg* arg_begin, const CallArg *arg_end);
+  CallExpr AddCall(const char *func_name) { return AddCall(func_name, 0, 0); }
+  CallExpr AddCall(const char *func_name, const CallArg &arg);
+  CallExpr AddCall(const char *func_name,
+        const CallArg &arg1, const CallArg &arg2);
+  CallExpr AddCall(const char *func_name,
+      const CallArg &arg1, const CallArg &arg2, const CallArg &arg3);
+  CallExpr AddCall(const char *func_name,
+      const CallArg &arg1, const CallArg &arg2,
+      const CallArg &arg3, const CallArg &arg4);
+  CallExpr AddCall(const char *func_name,
+      const CallArg &arg1, const CallArg &arg2, const CallArg &arg3,
+      const CallArg &arg4, const CallArg &arg5);
 
   // Adds a new alldiff expression with up to 3 arguments.
   AllDiffExpr AddAllDiff(NumericExpr arg1, NumericExpr arg2,

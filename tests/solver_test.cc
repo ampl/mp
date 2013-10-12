@@ -36,46 +36,14 @@ using ampl::NumericExpr;
 using ampl::Problem;
 using ampl::UnsupportedExprError;
 
-#define FORMAT_TEST_THROW_(statement, expected_exception, message, fail) \
-  GTEST_AMBIGUOUS_ELSE_BLOCKER_ \
-  if (::testing::internal::ConstCharPtr gtest_msg = "") { \
-    bool gtest_caught_expected = false; \
-    try { \
-      GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement); \
-    } \
-    catch (expected_exception const& e) { \
-      gtest_caught_expected = true; \
-      if (std::strcmp(message, e.what()) != 0) \
-        throw; \
-    } \
-    catch (...) { \
-      gtest_msg.value = \
-          "Expected: " #statement " throws an exception of type " \
-          #expected_exception ".\n  Actual: it throws a different type."; \
-      goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__); \
-    } \
-    if (!gtest_caught_expected) { \
-      gtest_msg.value = \
-          "Expected: " #statement " throws an exception of type " \
-          #expected_exception ".\n  Actual: it throws nothing."; \
-      goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__); \
-    } \
-  } else \
-    GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__): \
-      fail(gtest_msg.value)
-
-#define EXPECT_THROW_MSG(statement, expected_exception, expected_message) \
-  FORMAT_TEST_THROW_(statement, expected_exception, expected_message, \
-      GTEST_NONFATAL_FAILURE_)
-
 SolverTest::EvalResult SolverTest::Solve(Problem &p) {
   struct TestSolutionHandler : ampl::BasicSolutionHandler {
     EvalResult result;
     virtual ~TestSolutionHandler() {}
-    void HandleSolution(ampl::Problem &, fmt::StringRef,
+    void HandleSolution(ampl::Problem &p, fmt::StringRef,
           const double *values, const double *, double obj_value) {
-      if (values)
-        result = EvalResult(values[0], obj_value);
+      result = values ? EvalResult(values[0], obj_value, p.solve_code())
+          : EvalResult(p.solve_code());
     }
   };
   TestSolutionHandler sh;
@@ -430,6 +398,10 @@ TEST_P(SolverTest, PiecewiseLinear) {
   EXPECT_EQ(33, Eval(e, 42));
   EXPECT_EQ(-3, Eval(e, 4));
   EXPECT_EQ(1, Eval(e, -1));
+}
+
+TEST_P(SolverTest, UnsupportedFunctionCall) {
+  EXPECT_THROW(Eval(AddCall("foo", 1, 2), 3);, UnsupportedExprError);
 }
 
 TEST_P(SolverTest, PowConstExp) {
@@ -859,7 +831,7 @@ struct SolutionCounter : ampl::BasicSolutionHandler {
   int num_solutions;
   SolutionCounter() : num_solutions(0) {}
   void HandleFeasibleSolution(Problem &, fmt::StringRef,
-        const double *values, const double *, double) {
+        const double *, const double *, double) {
     ++num_solutions;
   }
 };
