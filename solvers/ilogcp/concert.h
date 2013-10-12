@@ -65,6 +65,10 @@ class NLToConcertConverter : public Visitor {
   IlogNumberOfMap numberofs_;
 
   IloNumExprArray ConvertArgs(VarArgExpr e);
+  IloIntVar ConvertArg(const CallExpr::Arg &arg,
+      IloInt lb = IloIntMin, IloInt ub = IloIntMax);
+
+  bool ConvertGlobalConstraint(CallExpr expr, IloConstraint &con);
 
  public:
   NLToConcertConverter(IloEnv env, bool use_numberof, bool debug);
@@ -239,6 +243,8 @@ class NLToConcertConverter : public Visitor {
   }
 
   IloExpr VisitPiecewiseLinear(PiecewiseLinearExpr e);
+
+  IloExpr VisitCall(CallExpr e);
 
   IloExpr VisitNumericConstant(NumericConstant n) {
     return IloExpr(env_, n.value());

@@ -81,15 +81,17 @@ class SolverTest
     bool has_value_;
     double value_;
     double obj_value_;
+    int solve_code_;
 
    public:
-    EvalResult() : has_value_(false), value_(), obj_value_() {}
-    EvalResult(double value, double obj_value)
-    : has_value_(true), value_(value), obj_value_(obj_value) {}
+    explicit EvalResult(int solve_code = ampl::NOT_SOLVED)
+    : has_value_(false), value_(), obj_value_(), solve_code_(solve_code) {}
 
-    bool has_value() const {
-      return has_value_;
-    }
+    EvalResult(double value, double obj_value, int solve_code)
+    : has_value_(true), value_(value), obj_value_(obj_value),
+      solve_code_(solve_code) {}
+
+    bool has_value() const { return has_value_; }
 
     friend bool operator==(double lhs, const EvalResult &rhs) {
       if (!rhs.has_value_)
@@ -97,9 +99,8 @@ class SolverTest
       return lhs == rhs.value_;
     }
 
-    double obj_value() const {
-      return obj_value_;
-    }
+    double obj_value() const { return obj_value_; }
+    int solve_code() const { return solve_code_; }
   };
 
   EvalResult Solve(ampl::Problem &p);
@@ -137,5 +138,37 @@ class SolverTest
   static SolveResult Solve(ampl::Solver &s,
       ampl::Problem &p, const char *stub, const char *opt = nullptr);
 };
+
+#define FORMAT_TEST_THROW_(statement, expected_exception, message, fail) \
+  GTEST_AMBIGUOUS_ELSE_BLOCKER_ \
+  if (::testing::internal::ConstCharPtr gtest_msg = "") { \
+    bool gtest_caught_expected = false; \
+    try { \
+      GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement); \
+    } \
+    catch (expected_exception const& e) { \
+      gtest_caught_expected = true; \
+      if (std::strcmp(message, e.what()) != 0) \
+        throw; \
+    } \
+    catch (...) { \
+      gtest_msg.value = \
+          "Expected: " #statement " throws an exception of type " \
+          #expected_exception ".\n  Actual: it throws a different type."; \
+      goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__); \
+    } \
+    if (!gtest_caught_expected) { \
+      gtest_msg.value = \
+          "Expected: " #statement " throws an exception of type " \
+          #expected_exception ".\n  Actual: it throws nothing."; \
+      goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__); \
+    } \
+  } else \
+    GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__): \
+      fail(gtest_msg.value)
+
+#define EXPECT_THROW_MSG(statement, expected_exception, expected_message) \
+  FORMAT_TEST_THROW_(statement, expected_exception, expected_message, \
+      GTEST_NONFATAL_FAILURE_)
 
 #endif  // TESTS_SOLVER_TEST_H_
