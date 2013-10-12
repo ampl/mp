@@ -718,8 +718,7 @@ TEST_F(ExprTest, CallExpr) {
 
 TEST_F(ExprTest, CallExprArgs) {
   NumericExpr n42 = AddNum(42), n44 = AddNum(44);
-  CallArg arg_array[] = {CallArg(3, n42), CallArg(5), CallArg(7, n44)};
-  CallExpr e(AddCall("foo", arg_array, arg_array + 3));
+  CallExpr e(AddCall("foo", CallArg(3, n42), 5, CallArg(7, n44)));
   CallExpr::Args args(e);
   EXPECT_EQ(3, args[0].constant());
   EXPECT_EQ(n42, args[0].expr());
@@ -1155,14 +1154,10 @@ TEST_F(ExprTest, WritePiecewiseLinearExpr) {
 }
 
 TEST_F(ExprTest, WriteCallExpr) {
-  CallArg args[] = {
-      CallArg(3), CallArg(5, AddVar(0)), 7, CallArg(0, AddVar(1))
-  };
-  CHECK_WRITE("foo(3, x1 + 5, 7, x2)", AddCall("foo", args, args + 4));
-  CallArg args2[] = {
-      CallArg(0, AddBinary(OPPLUS, AddVar(0), AddVar(1)))
-  };
-  CHECK_WRITE("foo(x1 + x2)", AddCall("foo", args2, args2 + 1));
+  CHECK_WRITE("foo(3, x1 + 5, 7, x2)",
+      AddCall("foo", 3, CallArg(5, AddVar(0)), 7, CallArg(0, AddVar(1))));
+  CHECK_WRITE("foo(x1 + x2)",
+      AddCall("foo", AddBinary(OPPLUS, AddVar(0), AddVar(1))));
 }
 
 TEST_F(ExprTest, WriteNotExpr) {
@@ -1392,13 +1387,8 @@ TEST_F(ExprTest, PiecewiseLinearExprPrecedence) {
 
 TEST_F(ExprTest, CallExprPrecedence) {
   auto x1 = AddVar(0), x2 = AddVar(1);
-  auto e1 = AddIf(AddBool(true), x1, AddNum(0));
-  CallArg args[] = {
-      CallArg(0, AddCall("foo", 0, 0)), CallArg(5, x2), 7,
-      CallArg(0, AddUnary(FLOOR, x2))
-  };
-  CHECK_WRITE("foo(foo(), x2 + 5, 7, floor(x2))",
-      AddCall("foo", args, args + 4));
+  CHECK_WRITE("foo(foo(), x2 + 5, 7, floor(x2))", AddCall("foo",
+      AddCall("foo", 0, 0), CallArg(5, x2), 7, AddUnary(FLOOR, x2)));
 }
 
 TEST_F(ExprTest, NotExprPrecedence) {
@@ -1543,7 +1533,6 @@ TEST_F(ExprTest, ImplicationExprPrecedence) {
 
 TEST_F(ExprTest, AllDiffExprPrecedence) {
   auto n0 = AddNum(0), n1 = AddNum(1);
-  auto b0 = AddBool(0), b1 = AddBool(true);
   CHECK_WRITE("if alldiff(0 + 1, 0 + 1) then 1",
       AddIf(AddAllDiff(AddBinary(OPPLUS, n0, n1),
           AddBinary(OPPLUS, n0, n1)), n1, n0));
