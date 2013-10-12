@@ -226,8 +226,8 @@ char *Solver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
 
 Solver::Solver(
     fmt::StringRef name, fmt::StringRef long_name, long date, unsigned flags)
-: name_(name), has_errors_(false), read_flags_(0), timing_(false),
-  count_solutions_(false), num_solutions_(0) {
+: name_(name), has_errors_(false), num_solutions_(0), count_solutions_(false),
+  read_flags_(0), timing_(false) {
   error_handler_ = this;
   output_handler_ = this;
   sol_writer_.set_solver(this);
