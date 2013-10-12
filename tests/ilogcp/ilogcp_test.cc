@@ -198,10 +198,6 @@ TEST_P(SolverTest, MultipleObjectives) {
   EXPECT_EQ(6, Solve(p));
 }
 
-TEST_P(SolverTest, Priority) {
-  // TODO: test suffix priority
-}
-
 struct EnumValue {
   const char *name;
   IloCP::ParameterValues value;
