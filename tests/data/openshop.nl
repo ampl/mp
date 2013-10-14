@@ -1,4 +1,4 @@
-g9 2 1 0 12 20130609 0 4 0 240	# problem openshop
+g9 2 1 0 12 20130906 0 4 0 240	# problem openshop
  13 12 1 0 0 30	# vars, constraints, objectives, ranges, eqns, lcons
  0 0	# nonlinear constraints, objectives
  0 0	# network constraints: nonlinear, linear
