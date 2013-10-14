@@ -22,12 +22,11 @@
  */
 
 #include <cstring>
+#include <limits>
 #include "solvers/util/format.h"
 #include "funcadd.h"
 
 namespace {
-const char *const DERIVS_NOT_PROVIDED = "derivatives are not provided";
-
 void error(arglist *al, fmt::StringRef message) {
   al->Errmsg = static_cast<char*>(al->AE->Tempmem(al->TMI, message.size() + 1));
   std::strcpy(al->Errmsg, message.c_str());
@@ -35,8 +34,12 @@ void error(arglist *al, fmt::StringRef message) {
 
 double element(arglist *al) {
   if (al->derivs) {
-    error(al, DERIVS_NOT_PROVIDED);
-    return 0;
+    for (int i = 0, n = al->n; i < n; ++i)
+      al->derivs[i] = std::numeric_limits<double>::quiet_NaN();
+    if (al->hes) {
+      error(al, "derivatives are not provided");
+      return 0;
+    }
   }
   double index = al->ra[al->n - 1];
   int int_index = static_cast<int>(index);

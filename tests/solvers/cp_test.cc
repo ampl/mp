@@ -20,6 +20,7 @@
  Author: Victor Zverovich
  */
 
+#include <limits>
 #include "gtest/gtest.h"
 #include "tests/function.h"
 
@@ -66,8 +67,10 @@ TEST_F(CPTest, Element) {
   EXPECT_EQ(33, element(MakeArgs(11, 22, 33, 2)).value());
   EXPECT_STREQ("invalid index -1", element(MakeArgs(11, 22, 33, -1)).error());
   EXPECT_STREQ("invalid index 3", element(MakeArgs(11, 22, 33, 3)).error());
-  EXPECT_STREQ("derivatives are not provided",
-      element(MakeArgs(42, 0), fun::DERIVS).error());
+  for (int i = 0; i < 2; ++i) {
+    double deriv = element(MakeArgs(42, 0), fun::DERIVS).deriv(0);
+    EXPECT_TRUE(deriv != deriv);
+  }
   EXPECT_STREQ("derivatives are not provided",
       element(MakeArgs(42, 0), fun::HES).error());
 }
