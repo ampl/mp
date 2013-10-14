@@ -142,6 +142,7 @@ if (HAVE_CBC)
   add_subdirectory(cbc)
 endif ()
 
+add_subdirectory(cp)
 add_subdirectory(cplex)
 
 if (HAVE_GECODE)
