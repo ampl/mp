@@ -130,6 +130,9 @@ set(ASL_SOURCES
   xp2known.c)
 
 add_library(amplsolver ${CMAKE_CURRENT_BINARY_DIR}/arith.h ${ASL_SOURCES})
+if (NOT WIN32)
+  target_link_libraries(amplsolver dl)
+endif ()
 
 if (HAVE_GSL)
   add_subdirectory(amplgsl)
@@ -137,7 +140,7 @@ endif ()
 
 if (HAVE_CBC)
   set(COIN_HAS_ASL 1)
-  set(ASL_LIBRARIES ${SOLVER_LIBS})
+  set(ASL_LIBRARIES amplsolver)
   set(COIN_DISABLE_WARNINGS 1)
   add_subdirectory(cbc)
 endif ()

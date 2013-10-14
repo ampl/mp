@@ -23,13 +23,8 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# Set SOLVER_LIBS to point to the AMPL solver library and its dependencies.
 include_directories(. ${CMAKE_CURRENT_BINARY_DIR}
   solvers ${CMAKE_CURRENT_BINARY_DIR}/solvers)
-set(SOLVER_LIBS amplsolver)
-if (NOT WIN32)
-  set(SOLVER_LIBS ${SOLVER_LIBS} dl)
-endif ()
 
 if (NOT MSVC)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic")

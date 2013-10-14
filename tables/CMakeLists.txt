@@ -35,4 +35,4 @@ add_executable(tableproxy tableproxy.c ../solvers/printf.c tableproxyver.h)
 set_target_properties(tableproxy
   PROPERTIES COMPILE_DEFINITIONS "STAND_ALONE=1;QUOTIFY=1"
              OUTPUT_NAME tableproxy${TABLEPROXY_SUFFIX})
-target_link_libraries(tableproxy ${SOLVER_LIBS} ${TABLEPROXY_LIBS})
+target_link_libraries(tableproxy amplsolver ${TABLEPROXY_LIBS})
