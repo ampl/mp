@@ -1,4 +1,4 @@
-g9 0 1 0 4 20130609 0 4 0 240	# problem flowshp1
+g9 0 1 0 4 20130906 0 4 0 240	# problem flowshp1
  5 4 1 0 0 6	# vars, constraints, objectives, ranges, eqns, lcons
  0 0	# nonlinear constraints, objectives
  0 0	# network constraints: nonlinear, linear
