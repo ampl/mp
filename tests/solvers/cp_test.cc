@@ -58,11 +58,12 @@ TEST_F(CPTest, NoLibErrors) {
 
 TEST_F(CPTest, Element) {
   Function element = GetFunction("element");
+  EXPECT_THROW(element(fun::Tuple()), std::invalid_argument);
   EXPECT_THROW(element(42), std::invalid_argument);
-  EXPECT_EQ(42.0, element(MakeArgs(42, 0)).value());
-  EXPECT_EQ(11.0, element(MakeArgs(11, 22, 33, 0)).value());
-  EXPECT_EQ(22.0, element(MakeArgs(11, 22, 33, 1)).value());
-  EXPECT_EQ(33.0, element(MakeArgs(11, 22, 33, 2)).value());
+  EXPECT_EQ(42, element(MakeArgs(42, 0)).value());
+  EXPECT_EQ(11, element(MakeArgs(11, 22, 33, 0)).value());
+  EXPECT_EQ(22, element(MakeArgs(11, 22, 33, 1)).value());
+  EXPECT_EQ(33, element(MakeArgs(11, 22, 33, 2)).value());
   EXPECT_STREQ("invalid index -1", element(MakeArgs(11, 22, 33, -1)).error());
   EXPECT_STREQ("invalid index 3", element(MakeArgs(11, 22, 33, 3)).error());
   EXPECT_STREQ("derivatives are not provided",
@@ -72,6 +73,8 @@ TEST_F(CPTest, Element) {
 }
 
 TEST_F(CPTest, InRelation) {
-  // TODO: test in_relation_function
+  Function in_relation = GetFunction("in_relation");
+  EXPECT_THROW(in_relation(fun::Tuple()), std::invalid_argument);
+  EXPECT_STREQ("can't evaluate in_relation", in_relation(MakeArgs(0)).error());
 }
 }
