@@ -30,12 +30,12 @@ CXX_FLAGS = $(DEBUG) -I$(CONCERT_INC) -I$(CPLEX_INC) -I$(CPOPTIMIZER_INC) \
 LD_FLAGS  = -L$(CPOPTIMIZER_LIB) -lcp -L$(CPLEX_LIB) -lilocplex -lcplex \
             -L$(CONCERT_LIB) -lconcert $(LDMTFLAGS) $(AMPL_LIB) $(LIBS)
 
-BINARIES = ilogcp.o main.o util-all.o
+BINARIES = ilogcp.o ilogcp_main.o concert.o util-all.o
 
 ilogcp: $(BINARIES)
 	$(CXX) -o $@ $(BINARIES) $(LD_FLAGS)
 
-%.o: %.cpp
+%.o: %.cc
 	$(CXX) $(CXX_FLAGS) -c $<
 util-all.o: ../util/util-all.cc
 	$(CXX) $(CXX_FLAGS) -c $<
