@@ -26,13 +26,22 @@
 #include "funcadd.h"
 
 namespace {
+const char *const DERIVS_NOT_PROVIDED = "derivatives are not provided";
+
+void error(arglist *al, fmt::StringRef message) {
+  al->Errmsg = static_cast<char*>(al->AE->Tempmem(al->TMI, message.size()));
+  std::strcpy(al->Errmsg, message.c_str());
+}
+
 double element(arglist *al) {
+  if (al->derivs) {
+    error(al, DERIVS_NOT_PROVIDED);
+    return 0;
+  }
   double index = al->ra[al->n - 1];
   int int_index = static_cast<int>(index);
   if (int_index != index || int_index < 0 || int_index >= al->n - 1) {
-    std::string error = str(fmt::Format("invalid index {}") << index);
-    al->Errmsg = static_cast<char*>(al->AE->Tempmem(al->TMI, error.size()));
-    std::strcpy(al->Errmsg, error.c_str());
+    error(al, fmt::Format("invalid index {}") << index);
     return 0;
   }
   return al->ra[int_index];
