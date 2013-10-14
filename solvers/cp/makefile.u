@@ -1,0 +1,15 @@
+AMPLDIR        = ../..
+AMPL_INC=$(AMPLDIR)
+AMPL_LIB=$(AMPLDIR)/solvers/amplsolver.a
+DEBUG = -g
+
+CXX_FLAGS = $(DEBUG) -I$(AMPL_INC) -I${AMPL_INC}/solvers -fPIC
+LD_FLAGS  = $(AMPL_LIB)
+
+BINARIES = cp.o
+
+cp.dll: $(BINARIES)
+	$(CXX) -shared -o $@ $(BINARIES) $(LD_FLAGS)
+
+%.o: %.cc
+	$(CXX) $(CXX_FLAGS) -c $<
