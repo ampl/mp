@@ -29,7 +29,7 @@ namespace {
 const char *const DERIVS_NOT_PROVIDED = "derivatives are not provided";
 
 void error(arglist *al, fmt::StringRef message) {
-  al->Errmsg = static_cast<char*>(al->AE->Tempmem(al->TMI, message.size()));
+  al->Errmsg = static_cast<char*>(al->AE->Tempmem(al->TMI, message.size() + 1));
   std::strcpy(al->Errmsg, message.c_str());
 }
 
