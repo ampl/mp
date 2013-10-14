@@ -550,7 +550,14 @@ int Function::ftype() const { return fi_->ftype; }
 Function::Result Function::operator()(const Tuple &args,
     int flags, const BitSet &use_deriv, void *info) const {
   int num_args = static_cast<int>(args.size());
-  if (fi_->nargs != num_args)
+  bool invalid_args = false;
+  if (fi_->nargs < 0) {
+    int min_args = -fi_->nargs - 1;
+    invalid_args = num_args < min_args;
+  } else {
+    invalid_args = fi_->nargs != num_args;
+  }
+  if (invalid_args)
     throw std::invalid_argument("invalid number of arguments in function call");
 
   // Initialize the argument list.
