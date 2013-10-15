@@ -47,7 +47,7 @@ for platform in reversed(["linux32", "linux64", "macosx", "win32", "win64"]):
   call("scp -r {}:/var/lib/buildbot/upload/{} {}".format(server, platform, dir),
        shell=True)
   # Get versions.
-  versions_filename = dir + "/versions"
+  versions_filename = os.path.join(dir, "versions")
   versions = {}
   if os.path.exists(versions_filename):
     with open(versions_filename) as f:
@@ -66,9 +66,10 @@ for platform in reversed(["linux32", "linux64", "macosx", "win32", "win64"]):
   jacop_version = versions['jacop']
   jacop_version = jacop_version[:jacop_version.rfind('-')]
   extra_files = {
+    'gecode': ['gecode.ampl'],
     'jacop': ['ampljacop.jar', 'JaCoP-' + jacop_version + '.jar']
   }
-  file_package = {}
+  file_package = {'cp.ampl': None, 'cp.dll': None}
   for package, files in extra_files.iteritems():
     for f in files:
       file_package[f] = package
@@ -89,8 +90,9 @@ for platform in reversed(["linux32", "linux64", "macosx", "win32", "win64"]):
         files = extra_files.get(basename)
         if files:
           for f in files:
-            zip.write(os.path.join(base, f), f)
-
+	    extra_path = os.path.join(base, f)
+            zip.write(extra_path, f)
+            paths.append(extra_path)
       upload(archive_name, summaries[basename], [labels[platform]])
       os.remove(archive_name)
       paths.append(path)
