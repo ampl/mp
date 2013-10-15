@@ -52,6 +52,12 @@ const char *SkipNonSpaces(const char *s) {
     ++s;
   return s;
 }
+
+struct Deleter {
+  void operator()(std::pair<const char *const, ampl::SolverOption*> &p) {
+    delete p.second;
+  }
+};
 }
 
 namespace ampl {
@@ -335,11 +341,6 @@ Solver::Solver(
 }
 
 Solver::~Solver() {
-  struct Deleter {
-    void operator()(std::pair<const char *const, SolverOption*> &p) {
-      delete p.second;
-    }
-  };
   std::for_each(options_.begin(), options_.end(), Deleter());
 }
 
