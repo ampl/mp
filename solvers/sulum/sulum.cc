@@ -36,7 +36,7 @@ const OptionInfo<SlmParamInt> INT_OPTION_INFO[] = {
 #define INT_OPTION(param, name, description) \
   {param, name, description},
 #define DBL_OPTION(param, name, description)
-#include "sulumoptions.h"
+#include "optsulum.ampl"
 #undef INT_OPTION
 #undef DBL_OPTION
 };
@@ -45,7 +45,7 @@ const OptionInfo<SlmParamDb> DBL_OPTION_INFO[] = {
 #define INT_OPTION(param, name, description)
 #define DBL_OPTION(param, name, description) \
     {param, name, description},
-#include "sulumoptions.h"
+#include "optsulum.ampl"
 };
 
 inline void Check(SlmReturn ret) {
