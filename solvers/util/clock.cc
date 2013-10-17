@@ -75,8 +75,8 @@ steady_clock::time_point steady_clock::now() {
 #else
 
 steady_clock::time_point steady_clock::now() {
-  timespec ts;
 #ifdef USE_CLOCK_GETTIME
+  timespec ts;
   if (clock_gettime(CLOCK_MONOTONIC, &ts))
     assert(0 && "clock_gettime failed");
   return time_point(duration(
@@ -86,7 +86,7 @@ steady_clock::time_point steady_clock::now() {
   if (gettimeofday(&tv, 0))
     assert(0 && "gettimeofday failed");
   return time_point(duration(
-      static_cast<rep>(ts.tv_sec) * 1000000000 + tv.tv_usec * 1000));
+      static_cast<rep>(tv.tv_sec) * 1000000000 + tv.tv_usec * 1000));
 #endif
 }
 
