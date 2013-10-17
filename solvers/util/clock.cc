@@ -25,10 +25,11 @@
 
 #if defined(__APPLE__)
 # include <mach/mach_time.h>
-#elif defined(WIN32)
+#elif defined(_WIN32)
 # include <windows.h>
 #else
 # include <time.h>
+# include <sys/time.h>
 #endif
 
 #include <cassert>
@@ -47,7 +48,7 @@ steady_clock::time_point steady_clock::now() {
       static_cast<double>(mach_absolute_time()) * info.numer / info.denom)));
 }
 
-#elif defined(WIN32)
+#elif defined(_WIN32)
 
 double GetNanosecondsPerCount() {
   LARGE_INTEGER freq;
@@ -75,10 +76,18 @@ steady_clock::time_point steady_clock::now() {
 
 steady_clock::time_point steady_clock::now() {
   timespec ts;
+#ifdef USE_CLOCK_GETTIME
   if (clock_gettime(CLOCK_MONOTONIC, &ts))
     assert(0 && "clock_gettime failed");
   return time_point(duration(
       static_cast<rep>(ts.tv_sec) * 1000000000 + ts.tv_nsec));
+#else
+  timeval tv;
+  if (gettimeofday(&tv, 0))
+    assert(0 && "gettimeofday failed");
+  return time_point(duration(
+      static_cast<rep>(ts.tv_sec) * 1000000000 + tv.tv_usec * 1000));
+#endif
 }
 
 #endif
