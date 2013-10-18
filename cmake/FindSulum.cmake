@@ -6,10 +6,12 @@
 #  SULUM_INCLUDE_DIRS - The Sulum include directories
 #  SULUM_LIBRARIES - The libraries needed to use Sulum
 
-if (WIN32)
-  set(SULUM_DIR "C:/Program Files/sulum")
-else ()
+if (UNIX)
   set(SULUM_DIR /opt/sulum)
+  set(SULUM_SYS linux)
+else ()
+  set(SULUM_DIR "C:/Program Files/sulum")
+  set(SULUM_SYS win)
 endif ()
 
 file(GLOB SULUM_DIRS "${SULUM_DIR}/*")
@@ -18,10 +20,18 @@ if (SULUM_DIRS)
   message(STATUS "Found CPLEX Studio: ${SULUM_DIR}")
 endif ()
 
-find_path(SULUM_INCLUDE_DIR sulumcpp.h PATHS ${SULUM_DIR}/header)
-find_library(SULUM_LIBRARY sulum20 PATHS ${SULUM_DIR}/linux64/bin)
+if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+  set(SULUM_BITS 64)
+else ()
+  set(SULUM_BITS 32)
+endif ()
 
-set(SULUM_INCLUDE_DIRS ${SULUM_INCLUDE_DIR})
+set(SULUM_BIN_DIR ${SULUM_DIR}/${SULUM_SYS}${SULUM_BITS}/bin)
+
+find_path(SULUM_INCLUDE_DIR sulumcpp.h PATHS ${SULUM_DIR}/header)
+find_library(SULUM_LIBRARY sulum20 PATHS ${SULUM_BIN_DIR})
+
+set(SULUM_INCLUDE_DIRS ${SULUM_INCLUDE_DIR} ${SULUM_BIN_DIR})
 set(SULUM_LIBRARIES ${SULUM_LIBRARY})
 
 include(FindPackageHandleStandardArgs)
