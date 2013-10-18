@@ -7,13 +7,19 @@
 #  SULUM_LIBRARIES - The libraries needed to use Sulum
 
 if (WIN32)
-  set(SULUM_PATH "C:/Program Files/sulum/RedEric")
+  set(SULUM_DIR "C:/Program Files/sulum")
 else ()
-  set(SULUM_PATH /opt/sulum/RedEric)
+  set(SULUM_DIR /opt/sulum)
 endif ()
 
-find_path(SULUM_INCLUDE_DIR sulumcpp.h PATHS ${SULUM_PATH}/header)
-find_library(SULUM_LIBRARY sulum20 PATHS ${SULUM_PATH}/linux64/bin)
+file(GLOB SULUM_DIRS "${SULUM_DIR}/*")
+if (SULUM_DIRS)
+  list(GET SULUM_DIRS 0 SULUM_DIR)
+  message(STATUS "Found CPLEX Studio: ${SULUM_DIR}")
+endif ()
+
+find_path(SULUM_INCLUDE_DIR sulumcpp.h PATHS ${SULUM_DIR}/header)
+find_library(SULUM_LIBRARY sulum20 PATHS ${SULUM_DIR}/linux64/bin)
 
 set(SULUM_INCLUDE_DIRS ${SULUM_INCLUDE_DIR})
 set(SULUM_LIBRARIES ${SULUM_LIBRARY})
