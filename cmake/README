@@ -17,3 +17,4 @@ Modules:
                      libraries
   FindGecode.cmake - finds the Gecode libraries
   FindODBC.cmake   - finds the ODBC libraries
+  FindSulum.cmake  - finds the Sulum libraries
