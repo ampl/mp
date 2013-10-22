@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/util/solver.h"
+#include "util/solver.h"
 
 #include <cstdarg>
 #include <cstdio>
@@ -35,9 +35,9 @@
 # define strcasecmp _stricmp
 #endif
 
-#include "solvers/util/clock.h"
-#include "solvers/util/format.h"
-#include "solvers/getstub.h"
+#include "util/clock.h"
+#include "util/format.h"
+#include "getstub.h"
 
 namespace {
 
@@ -357,6 +357,11 @@ void Solver::AddSuffix(
 bool Solver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
   ASL *asl = reinterpret_cast<ASL*>(p.asl_);
   RegisterSuffixes(p);
+
+  // Make "-?" show some command-line options that are relevant when
+  // importing functions.
+  Option_Info::flags |= ASL_OI_want_funcadd;
+
   char *stub = getstub_ASL(asl, &argv, this);
   if (!stub) {
     usage_noexit_ASL(this, 1);
