@@ -23,6 +23,11 @@
 #ifndef SOLVERS_ILOGCP_ILOGCP_H_
 #define SOLVERS_ILOGCP_ILOGCP_H_
 
+#ifdef __APPLE__
+#include <limits.h>
+#include <string.h>
+#endif
+
 #if __clang__
 # pragma clang diagnostic push
 # pragma clang diagnostic ignored "-Wunused-parameter"
@@ -33,6 +38,7 @@
 #endif
 
 #include <ilcp/cp.h>
+#include <ilcplex/ilocplex.h>
 
 #if __clang__
 # pragma clang diagnostic pop
@@ -46,17 +52,19 @@
 #include <limits.h> /* Needed for g++ -m32 on MacOSX. */
 #include <string>
 
-#include "solvers/util/solver.h"
+#include "util/clock.h"
+#include "util/solver.h"
 
 namespace ampl {
 
+class NLToConcertConverter;
+
 // IlogCP solver.
-class IlogCPSolver : private Interruptible, private Noncopyable, public Solver {
+class IlogCPSolver : private Noncopyable, public Solver {
  private:
   IloEnv env_;
   IloCP cp_;
-
-  void Interrupt() { cp_.abortSearch(); }
+  IloCplex cplex_;
 
  public:
   // Integer options.
@@ -67,8 +75,14 @@ class IlogCPSolver : private Interruptible, private Noncopyable, public Solver {
     NUM_OPTIONS
   };
 
+  enum Optimizer { AUTO, CP, CPLEX };
+
  private:
+  Optimizer optimizer_;
   int options_[NUM_OPTIONS];
+
+  std::string GetOptimizer(const char *) const;
+  void SetOptimizer(const char *name, const char *value);
 
   int DoGetIntOption(const char *, Option opt) const { return options_[opt]; }
   void SetBoolOption(const char *name, int value, Option opt);
@@ -79,6 +93,23 @@ class IlogCPSolver : private Interruptible, private Noncopyable, public Solver {
 
   // Sets a double option of the constraint programming optimizer.
   void SetCPDblOption(const char *name, double value, IloCP::NumParam param);
+
+  // Returns an integer option of the CPLEX optimizer.
+  int GetCPLEXIntOption(const char *name, int param) const;
+
+  // Sets an integer option of the CPLEX optimizer.
+  void SetCPLEXIntOption(const char *name, int value, int param);
+
+  struct Stats {
+    steady_clock::time_point time;
+    double setup_time;
+    double solution_time;
+  };
+
+  void SolveWithCP(Problem &p,
+      const NLToConcertConverter &converter, Stats &stats);
+  void SolveWithCPLEX(Problem &p,
+      const NLToConcertConverter &converter, Stats &stats);
 
  protected:
 

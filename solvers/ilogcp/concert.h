@@ -23,12 +23,17 @@
 #ifndef AMPL_SOLVERS_ILOGCP_CONCERT_H
 #define AMPL_SOLVERS_ILOGCP_CONCERT_H
 
+#ifdef __APPLE__
+#include <limits.h>
+#include <string.h>
+#endif
+
 #include <ilconcert/ilomodel.h>
 
 #include <iostream>
 #include <memory>
 
-#include "solvers/util/solver.h"
+#include "util/solver.h"
 
 namespace ampl {
 
@@ -336,24 +341,6 @@ class NLToConcertConverter : public Visitor {
 
   void Convert(const Problem &p);
 };
-
-std::string ConvertSolutionStatus(
-    IloAlgorithm alg, const SignalHandler &sh, int &solve_code);
-
-template <typename Solver>
-int RunSolver(char **argv) {
-  // Solver should be destroyed after any IloException is handled.
-  std::auto_ptr<Solver> s;
-  try {
-    s.reset(new Solver());
-    return s->Run(argv);
-  } catch (const IloException &e) {
-    std::cerr << "Error: " << e << std::endl;
-  } catch (const ampl::Error &e) {
-    std::cerr << "Error: " << e.what() << std::endl;
-  }
-  return 1;
-}
 }
 
 #endif  // AMPL_SOLVERS_ILOGCP_CONCERT_H
