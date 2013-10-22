@@ -81,8 +81,9 @@ SolveResult SolverTest::Solve(
   EXPECT_GE(solve_code, 0);
   bool solved = true;
   if (solve_code < 100) {
-    EXPECT_TRUE(message.find(p.num_objs() > 0 ?
-        "optimal solution" : "feasible solution") != string::npos);
+    EXPECT_TRUE(message.find("optimal solution") != string::npos ||
+        (p.num_objs() == 0 &&
+            message.find("feasible solution") != string::npos));
   } else
     solved = false;
   return SolveResult(solved, sh.obj_value(), message);
