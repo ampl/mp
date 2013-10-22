@@ -24,9 +24,7 @@ $ilogcp_options.  A few of the phrases are single words:
 
      Phrase       Meaning
 
-     ilogcplex    Use IBM ILOG CPLEX optimizer.
-
-     ilogsolver   Use IBM ILOG Constraint Programming optimizer.
+     version      Report version details before solving the problem.
 
 Others are name-value pairs, possibly separated by '=', as in
 
