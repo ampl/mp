@@ -452,7 +452,6 @@ IlogCPSolver::IlogCPSolver() :
       "\"auto\" since CP Optimizer version 12.3.  Default = auto.",
       cp_, IloCP::Workers, 0, 0, true)));
 
-  // TODO: test cplex options, optimizer option and interrupt
   AddIntOption<IlogCPSolver, int>("mipdisplay",
       "Frequency of displaying branch-and-bound information "
       "(for optimizing integer variables):\n"
@@ -705,17 +704,14 @@ void IlogCPSolver::DoSolve(Problem &p) {
   Stats stats = {steady_clock::now()};
 
   Optimizer optimizer = optimizer_;
-  IloAlgorithm *alg = 0;
   if (optimizer == AUTO) {
     if (p.num_logical_cons() != 0 || p.num_nonlinear_cons() != 0 ||
         (p.num_objs() != 0 && p.nonlinear_obj_expr(0))) {
       if (p.num_continuous_vars() != 0)
         throw Error("CP Optimizer doesn't support continuous variables");
       optimizer = CP;
-      alg = &cp_;
     } else {
       optimizer = CPLEX;
-      alg = &cplex_;
     }
   }
 
@@ -724,7 +720,8 @@ void IlogCPSolver::DoSolve(Problem &p) {
   converter.Convert(p);
 
   try {
-    alg->extract(converter.model());
+    IloAlgorithm &cp_alg = cp_;
+    (optimizer == CP ? cp_alg : cplex_).extract(converter.model());
   } catch (IloAlgorithm::CannotExtractException &e) {
     const IloExtractableArray &extractables = e.getExtractables();
     if (extractables.getSize() == 0)
