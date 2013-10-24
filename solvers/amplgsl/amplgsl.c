@@ -2680,7 +2680,19 @@ static double amplgsl_cdf_ugaussian_P(arglist *al) {
 }
 
 WRAP(gsl_cdf_ugaussian_Q, ARGS1)
-WRAP(gsl_cdf_ugaussian_Pinv, ARGS1)
+
+static double amplgsl_cdf_ugaussian_Pinv(arglist *al) {
+  double x = al->ra[0];
+  double pinv = gsl_cdf_ugaussian_Pinv(x);
+  if (al->derivs) {
+    double part = 2 * M_PI * exp(pinv * pinv);
+    *al->derivs = sqrt(part);
+    if (al->hes)
+      *al->hes = part * pinv;
+  }
+  return check_result(al, pinv);
+}
+
 WRAP(gsl_cdf_ugaussian_Qinv, ARGS1)
 WRAP(gsl_ran_gaussian_tail, RNG_ARGS2)
 WRAP(gsl_ran_gaussian_tail_pdf, ARGS3)
