@@ -79,5 +79,5 @@ You can generate Eclipse CDT project files with CMake:
   cmake -G "Eclipse CDT 4 -  Unix Makefiles"
 
 To get rid of semantic errors reported by Indexer add preprocessor symbol
-"STAND_ALONE=1" in "Project Properties" / "C/C++ Include Files and Symbols"
-and rebuild the index.
+"_GLIBCPP_USE_NAMESPACES=1" and "STAND_ALONE=1" in "Project Properties" /
+"C/C++ Include Files and Symbols" and rebuild the index.
