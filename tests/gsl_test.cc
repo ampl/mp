@@ -1086,12 +1086,6 @@ TEST_F(GSLTest, Zeta) {
   TEST_EFUNC2(gsl_sf_eta, NoDeriv());
 }
 
-struct GaussianPInfo : FunctionInfo {
-  Result GetDerivative(const Function &f, unsigned , const Tuple &args) const {
-    return args[1].number() == 0 ? EvalError(f, args, "'") : Result();
-  }
-};
-
 TEST_F(GSLTest, Gaussian) {
   TEST_FUNC2(gsl_ran_gaussian, NoDeriv());
   TEST_FUNC(gsl_ran_gaussian_pdf);
@@ -1100,14 +1094,40 @@ TEST_F(GSLTest, Gaussian) {
   TEST_FUNC2(gsl_ran_ugaussian, NoDeriv());
   TEST_FUNC(gsl_ran_ugaussian_pdf);
   TEST_FUNC2(gsl_ran_ugaussian_ratio_method, NoDeriv());
+
+  struct GaussianPInfo : FunctionInfo {
+    Result GetDerivative(
+        const Function &f,unsigned , const Tuple &args) const {
+      return args[1].number() == 0 ? EvalError(f, args, "'") : Result();
+    }
+  };
   TEST_FUNC2(gsl_cdf_gaussian_P, GaussianPInfo());
+
   TEST_FUNC2(gsl_cdf_gaussian_Q, NoDeriv());
   TEST_FUNC2(gsl_cdf_gaussian_Pinv, NoDeriv());
   TEST_FUNC2(gsl_cdf_gaussian_Qinv, NoDeriv());
   TEST_FUNC(gsl_cdf_ugaussian_P);
   TEST_FUNC2(gsl_cdf_ugaussian_Q, NoDeriv());
-  TEST_FUNC2(gsl_cdf_ugaussian_Pinv, NoDeriv());
   TEST_FUNC2(gsl_cdf_ugaussian_Qinv, NoDeriv());
+}
+
+TEST_F(GSLTest, UGaussianPInv) {
+  struct UGaussianPInvInfo : FunctionInfo {
+    Result GetDerivative(const Function &, unsigned , const Tuple &args) const {
+      double x = args[0].number();
+      return x == 0 || x == 1 ? Result(GSL_POSINF) : Result();
+    }
+    Result GetSecondDerivative(
+        const Function &, unsigned, unsigned, const Tuple &args) const {
+      double x = args[0].number();
+      if (x == 0) return Result(GSL_NEGINF);
+      return x == 1 ? Result(GSL_POSINF) : Result();
+    }
+  };
+  TEST_FUNC2(gsl_cdf_ugaussian_Pinv, UGaussianPInvInfo());
+  Function pinv = GetFunction("gsl_cdf_ugaussian_Pinv");
+  EXPECT_NEAR(2.876103, pinv(0.3, DERIVS).deriv(), 1e-5);
+  EXPECT_NEAR(-4.33782, pinv(0.3, HES).hes(), 1e-5);
 }
 
 TEST_F(GSLTest, GaussianTail) {
