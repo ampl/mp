@@ -387,6 +387,24 @@ TEST_F(IlogCPTest, DefaultSolutionLimit) {
 // ----------------------------------------------------------------------------
 // Option tests
 
+TEST_F(IlogCPTest, OptimizerOption) {
+  EXPECT_EQ("auto", s.GetStrOption("optimizer"));
+  Problem p;
+  p.AddVar(1, 2, ampl::INTEGER);
+  p.AddVar(1, 2, ampl::INTEGER);
+  p.AddCon(AddAllDiff(AddVar(0), AddVar(1)));
+  s.SetStrOption("optimizer", "cp");
+  s.Solve(p);
+  EXPECT_EQ(0, p.solve_code());
+  s.SetStrOption("optimizer", "cplex");
+  EXPECT_THROW(s.Solve(p), ampl::UnsupportedExprError);
+  s.SetStrOption("optimizer", "auto");
+  s.Solve(p);
+  EXPECT_EQ(0, p.solve_code());
+}
+
+// TODO: test cplex options and interrupt
+
 TEST_F(IlogCPTest, DebugExprOption) {
   s.SetIntOption("debugexpr", 0);
   EXPECT_EQ(0, s.GetOption(IlogCPSolver::DEBUGEXPR));
