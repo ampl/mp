@@ -1,12 +1,12 @@
 [submodule "solvers/amplgsl/gsl"]
 	path = solvers/amplgsl/gsl
-	url = git://github.com/vitaut/gsl.git
-[submodule "solvers/gecode/lib"]
-	path = solvers/gecode/lib
-	url = git://github.com/vitaut/gecode.git
+	url = git://github.com/ampl/gsl.git
 [submodule "solvers/cbc"]
 	path = solvers/cbc
-	url = git://github.com/vitaut/cbc.git
+	url = git://github.com/ampl/cbc.git
+[submodule "solvers/gecode/lib"]
+	path = solvers/gecode/lib
+	url = git://github.com/ampl/gecode.git
 [submodule "solvers/jacop/lib"]
 	path = solvers/jacop/lib
-	url = git://github.com/vitaut/jacop.git
+	url = git://github.com/ampl/jacop.git
