@@ -25,9 +25,14 @@
 
 #include "solvers/util/solver.h"
 #include "tests/args.h"
+#include "tests/config.h"
 #include "tests/expr_builder.h"
 #include "tests/solution_handler.h"
 #include "gtest/gtest.h"
+
+#ifdef HAVE_THREADS
+# include <thread>
+#endif
 
 // Solver features.
 namespace feature {
@@ -170,5 +175,7 @@ class SolverTest
 #define EXPECT_THROW_MSG(statement, expected_exception, expected_message) \
   FORMAT_TEST_THROW_(statement, expected_exception, expected_message, \
       GTEST_NONFATAL_FAILURE_)
+
+void Interrupt();
 
 #endif  // TESTS_SOLVER_TEST_H_
