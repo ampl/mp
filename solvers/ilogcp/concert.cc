@@ -72,10 +72,9 @@ IloIntVar NLToConcertConverter::ConvertArg(
   return ilo_var;
 }
 
-NLToConcertConverter::NLToConcertConverter(
-    IloEnv env, bool use_numberof, bool debug)
-: env_(env), model_(env), vars_(env), cons_(env), use_numberof_(use_numberof),
-  debug_(debug), numberofs_(CreateVar(env)) {
+NLToConcertConverter::NLToConcertConverter(IloEnv env, unsigned flags)
+: env_(env), model_(env), vars_(env), cons_(env), flags_(flags),
+  numberofs_(CreateVar(env)) {
 }
 
 IloExpr NLToConcertConverter::VisitIf(IfExpr e) {
@@ -124,7 +123,7 @@ IloExpr NLToConcertConverter::VisitCount(CountExpr e) {
 IloExpr NLToConcertConverter::VisitNumberOf(NumberOfExpr e) {
   NumericExpr value = e.value();
   NumericConstant num = Cast<NumericConstant>(value);
-  if (num && use_numberof_)
+  if (num && (flags_ & USENUMBEROF) != 0)
     return numberofs_.Add(num.value(), e);
   IloExpr sum(env_);
   IloExpr concert_value(Visit(value));
@@ -300,6 +299,8 @@ void NLToConcertConverter::Convert(const Problem &p) {
 
   int num_objs = p.num_objs();
   if (num_objs > 0) {
+    if ((flags_ & MULTIOBJ) == 0)
+      num_objs = 1;
     ObjType main_obj_type = p.obj_type(0);
     IloNumExprArray objs(env_);
     for (int i = 0; i < num_objs; ++i) {

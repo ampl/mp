@@ -51,8 +51,7 @@ class NLToConcertConverter : public Visitor {
   IloModel model_;
   IloNumVarArray vars_;
   IloRangeArray cons_;
-  bool use_numberof_;
-  bool debug_;
+  unsigned flags_;
 
   class CreateVar {
    private:
@@ -76,20 +75,26 @@ class NLToConcertConverter : public Visitor {
   bool ConvertGlobalConstraint(CallExpr expr, IloConstraint &con);
 
  public:
-  NLToConcertConverter(IloEnv env, bool use_numberof, bool debug);
+  // Flags.
+  enum {
+    USENUMBEROF = 1,
+    DEBUG       = 2,
+    MULTIOBJ   = 4
+  };
+  NLToConcertConverter(IloEnv env, unsigned flags);
 
   IloModel model() const { return model_; }
   IloNumVarArray vars() const { return vars_; }
   IloRangeArray cons() const { return cons_; }
 
   IloExpr Visit(NumericExpr e) {
-    if (debug_)
+    if ((flags_ & DEBUG) != 0)
       fmt::Print("{}\n") << e.opstr();
     return Visitor::Visit(e);
   }
 
   IloConstraint Visit(LogicalExpr e) {
-    if (debug_)
+    if ((flags_ & DEBUG) != 0)
       fmt::Print("{}\n") << e.opstr();
     return Visitor::Visit(e);
   }
