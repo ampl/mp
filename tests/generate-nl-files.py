@@ -67,6 +67,7 @@ generate_nl_file('noobj', '$.ampl')
 generate_nl_file('simple', '$.ampl')
 generate_nl_file('ssd', '$.ampl')
 generate_nl_file('suffix', '$.ampl')
+generate_nl_file('element', '$.ampl')
 
 dir = outdir = 'data/miplib/'
 generate_nl_file('assign1', '$.mod', '$.dat')
