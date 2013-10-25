@@ -469,3 +469,13 @@ TEST(ProblemTest, AddObj) {
   p.Read("../data/simple");
   EXPECT_THROW(p.AddObj(ampl::MAX, expr), ampl::Error);
 }
+
+TEST(ProblemTest, ReadFunctionWithoutLibrary) {
+  Problem p;
+  // It shouldn't be an error to have a function without an implementation
+  // (provided by a function library) because some functions are not evaluated
+  // but translated into the solver representation.
+  p.Read("../data/element");
+  EXPECT_EQ(1, p.num_objs());
+}
+
