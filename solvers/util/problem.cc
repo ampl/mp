@@ -243,7 +243,8 @@ void Problem::Read(fmt::StringRef stub, unsigned flags) {
     asl_->i.A_vals_ = reinterpret_cast<double*>(
         Malloc(asl->i.nzc_ * sizeof(*asl_->i.A_vals_)));
   }
-  fg_read_ASL(asl, nl, ASL_allow_CLP | ASL_sep_U_arrays);
+  fg_read_ASL(asl, nl,
+      ASL_allow_CLP | ASL_sep_U_arrays | ASL_allow_missing_funcs);
   asl_->I.r_ops_ = 0;
 }
 
