@@ -22,6 +22,9 @@
 
 #include "solvers/util/problem.h"
 
+#include <cstdlib>
+#include <cstring>
+
 #ifdef WIN32
 # define tempnam _tempnam
 #endif
@@ -32,8 +35,8 @@ Solution::Solution()
 : solve_code_(-1), num_vars_(0), num_cons_(0), values_(0), dual_values_(0) {}
 
 Solution::~Solution() {
-  free(values_);
-  free(dual_values_);
+  std::free(values_);
+  std::free(dual_values_);
 }
 
 void Solution::Swap(Solution &other) {
@@ -60,7 +63,7 @@ void Solution::Read(fmt::StringRef stub, int num_vars, int num_cons) {
   char *message = read_sol_ASL(&asl, &sol.values_, &sol.dual_values_);
   if (!message)
     throw Error("Error reading solution file");
-  free(message);
+  std::free(message);
   Swap(sol);
   solve_code_ = asl.p.solve_code_;
 }
@@ -151,7 +154,7 @@ class TempFiles : Noncopyable {
   ~TempFiles() {
     std::remove(c_str(fmt::Format("{}.nl") << name_));
     std::remove(c_str(fmt::Format("{}.sol") << name_));
-    free(name_);
+    std::free(name_);
   }
 
   const char *stub() const { return name_; }
@@ -161,7 +164,7 @@ Suffix Problem::suffix(const char *name, unsigned flags) const {
   unsigned kind = flags & ASL_Sufkind_mask;
   for (SufDesc *d = asl_->i.suffixes[kind],
       *end = d + asl_->i.nsuff[kind]; d < end; ++d) {
-    if (!strcmp(name, d->sufname)) {
+    if (!std::strcmp(name, d->sufname)) {
       return Suffix((flags & ASL_Sufkind_input) != 0 &&
           (d->kind & ASL_Sufkind_input) == 0 ? 0 : d);
     }
