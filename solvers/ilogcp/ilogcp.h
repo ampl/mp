@@ -121,7 +121,8 @@ class IlogCPSolver : private Noncopyable, public Solver {
   virtual ~IlogCPSolver();
 
   IloEnv env() const { return env_; }
-  IloCP optimizer() const { return cp_; }
+  IloCP cp() const { return cp_; }
+  IloCplex cplex() const { return cplex_; }
 
   int GetOption(Option opt) const {
     assert(opt >= 0 && opt < NUM_OPTIONS);

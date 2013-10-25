@@ -40,6 +40,7 @@
 #include "solvers/ilogcp/concert.h"
 #include "solvers/ilogcp/ilogcp_date.h"
 
+using std::strcmp;
 using std::vector;
 
 #ifndef ILOGCP_NO_VERS
@@ -195,6 +196,13 @@ void GetSolution(IloCP cp, IloNumVarArray vars, vector<double> &solution) {
     IloNumVar &v = vars[j];
     solution[j] = cp.isExtracted(v) ? cp.getValue(v) : v.getLB();
   }
+}
+
+bool HasNonlinearObj(const ampl::Problem &p) {
+  if (p.num_objs() == 0)
+    return false;
+  ampl::NumericExpr expr = p.nonlinear_obj_expr(0);
+  return expr && !ampl::Cast<ampl::NumericConstant>(expr);
 }
 
 std::string ConvertSolutionStatus(
@@ -467,7 +475,7 @@ IlogCPSolver::IlogCPSolver() :
       IloCplex::MIPDisplay);
 
   AddIntOption<IlogCPSolver, int>("mipinterval",
-      "Frequency of node logging for mipdisplay 2 or 3. Default = 1.",
+      "Frequency of node logging for mipdisplay 2 or 3. Default = 0.",
       &IlogCPSolver::GetCPLEXIntOption, &IlogCPSolver::SetCPLEXIntOption,
       IloCplex::MIPInterval);
 }
@@ -706,7 +714,7 @@ void IlogCPSolver::DoSolve(Problem &p) {
   Optimizer optimizer = optimizer_;
   if (optimizer == AUTO) {
     if (p.num_logical_cons() != 0 || p.num_nonlinear_cons() != 0 ||
-        (p.num_objs() != 0 && p.nonlinear_obj_expr(0))) {
+        HasNonlinearObj(p)) {
       if (p.num_continuous_vars() != 0)
         throw Error("CP Optimizer doesn't support continuous variables");
       optimizer = CP;
@@ -715,8 +723,14 @@ void IlogCPSolver::DoSolve(Problem &p) {
     }
   }
 
-  NLToConcertConverter converter(env_,
-      GetOption(USENUMBEROF) != 0, GetOption(DEBUGEXPR) != 0);
+  unsigned flags = 0;
+  if (GetOption(USENUMBEROF) != 0)
+    flags |= NLToConcertConverter::USENUMBEROF;
+  if (GetOption(DEBUGEXPR) != 0)
+    flags |= NLToConcertConverter::DEBUG;
+  if (optimizer == CP)
+    flags |= NLToConcertConverter::MULTIOBJ;
+  NLToConcertConverter converter(env_, flags);
   converter.Convert(p);
 
   try {

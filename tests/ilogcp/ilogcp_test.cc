@@ -65,10 +65,6 @@ SolverPtr CreateSolver() { return SolverPtr(new IlogCPSolver()); }
 INSTANTIATE_TEST_CASE_P(IlogCP, SolverTest,
     ::testing::Values(SolverTestParam(CreateSolver, feature::ALL)));
 
-TEST_P(SolverTest, CPOptimizerDoesntSupportContinuousVars) {
-  EXPECT_THROW(Solve("objconst"), ampl::Error);
-}
-
 TEST_P(SolverTest, SolveBalassign0) {
   EXPECT_EQ(14, Solve("balassign0").obj);
 }
@@ -228,7 +224,7 @@ class IlogCPTest : public ::testing::Test, public ampl::ExprBuilder {
 
 int IlogCPTest::CountIloDistribute() {
   int count = 0;
-  for (IloModel::Iterator i(s.optimizer().getModel()); i.ok(); ++i) {
+  for (IloModel::Iterator i(s.cp().getModel()); i.ok(); ++i) {
     if (dynamic_cast<IloDistributeI*>((*i).getImpl()))
       ++count;
   }
@@ -238,7 +234,7 @@ int IlogCPTest::CountIloDistribute() {
 void IlogCPTest::CheckIntCPOption(const char *option,
     IloCP::IntParam param, int start, int end, int offset, bool accepts_auto,
     const EnumValue *values) {
-  IloCP cp = s.optimizer();
+  IloCP cp = s.cp();
   for (int i = start; i <= std::min(end, 9); ++i) {
     if (accepts_auto || values)
       s.SetStrOption(option, c_str(fmt::Format("{}") << i));
@@ -292,7 +288,7 @@ void IlogCPTest::CheckIntCPOption(const char *option,
 void IlogCPTest::CheckDblCPOption(const char *option,
     IloCP::NumParam param, double good, double bad) {
   s.SetDblOption(option, good);
-  EXPECT_EQ(good, s.optimizer().getParameter(param))
+  EXPECT_EQ(good, s.cp().getParameter(param))
     << "Failed option: " << option;
   EXPECT_EQ(good, s.GetDblOption(option));
   EXPECT_THROW(s.SetDblOption(option, bad), InvalidOptionValue);
@@ -384,6 +380,13 @@ TEST_F(IlogCPTest, DefaultSolutionLimit) {
   EXPECT_EQ(1, sh.num_solutions);
 }
 
+TEST_F(IlogCPTest, CPOptimizerDoesntSupportContinuousVars) {
+  Problem p;
+  p.AddVar(0, 1);
+  p.AddObj(ampl::MIN, AddVar(0));
+  EXPECT_THROW(s.Solve(p), ampl::Error);
+}
+
 // ----------------------------------------------------------------------------
 // Option tests
 
@@ -403,7 +406,13 @@ TEST_F(IlogCPTest, OptimizerOption) {
   EXPECT_EQ(0, p.solve_code());
 }
 
-// TODO: test cplex options and interrupt
+TEST_F(IlogCPTest, UseCplexForLinearProblem) {
+  Problem p;
+  p.AddVar(1, 2);
+  p.AddObj(ampl::MIN, AddNum(42));
+  s.Solve(p);
+  EXPECT_EQ(0, p.solve_code());
+}
 
 TEST_F(IlogCPTest, DebugExprOption) {
   s.SetIntOption("debugexpr", 0);
@@ -459,7 +468,7 @@ TEST_F(IlogCPTest, CPInferenceLevelOptions) {
 }
 
 TEST_F(IlogCPTest, CPDefaultVerbosityQuiet) {
-  EXPECT_EQ(IloCP::Quiet, s.optimizer().getParameter(IloCP::LogVerbosity));
+  EXPECT_EQ(IloCP::Quiet, s.cp().getParameter(IloCP::LogVerbosity));
   EXPECT_EQ("quiet", s.GetStrOption("logverbosity"));
 }
 
@@ -533,4 +542,25 @@ TEST_F(IlogCPTest, SolutionLimitOption) {
   EXPECT_THROW(s.SetIntOption("solutionlimit", -1), InvalidOptionValue);
   EXPECT_THROW(s.SetStrOption("solutionlimit", "oops"), OptionError);
 }
+
+TEST_F(IlogCPTest, MIPDisplayOption) {
+  EXPECT_EQ(0, s.GetIntOption("mipdisplay"));
+  EXPECT_EQ(0, s.cplex().getParam(IloCplex::MIPDisplay));
+  s.SetIntOption("mipdisplay", 4);
+  EXPECT_EQ(4, s.GetIntOption("mipdisplay"));
+  EXPECT_EQ(4, s.cplex().getParam(IloCplex::MIPDisplay));
+  EXPECT_THROW(s.SetIntOption("mipdisplay", -1), InvalidOptionValue);
+  EXPECT_THROW(s.SetStrOption("mipdisplay", "oops"), OptionError);
+}
+
+TEST_F(IlogCPTest, MIPIntervalOption) {
+  EXPECT_EQ(0, s.GetIntOption("mipinterval"));
+  EXPECT_EQ(0, s.cplex().getParam(IloCplex::MIPInterval));
+  s.SetIntOption("mipinterval", 42);
+  EXPECT_EQ(42, s.GetIntOption("mipinterval"));
+  EXPECT_EQ(42, s.cplex().getParam(IloCplex::MIPInterval));
+  EXPECT_THROW(s.SetStrOption("mipinterval", "oops"), OptionError);
+}
+
+// TODO: test cplex interrupt
 }
