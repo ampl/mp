@@ -51,12 +51,13 @@ extern "C" {
 #include "tests/args.h"
 #include "tests/expr_builder.h"
 #include "tests/solver_test.h"
-#include "tests/config.h"
 
 using ampl::IlogCPSolver;
 using ampl::InvalidOptionValue;
 using ampl::OptionError;
 using ampl::Problem;
+
+using std::string;
 
 namespace {
 
@@ -562,5 +563,28 @@ TEST_F(IlogCPTest, MIPIntervalOption) {
   EXPECT_THROW(s.SetStrOption("mipinterval", "oops"), OptionError);
 }
 
-// TODO: test cplex interrupt
+// ----------------------------------------------------------------------------
+// Interrupt tests
+
+#ifdef HAVE_THREADS
+TEST_P(SolverTest, CPInterruptSolution) {
+  std::thread t(Interrupt);
+  Problem p;
+  solver_->SetStrOption("optimizer", "cp");
+  string message = Solve(p, "miplib/assign1").message;
+  t.join();
+  EXPECT_EQ(600, p.solve_code());
+  EXPECT_TRUE(message.find("interrupted") != string::npos);
+}
+
+TEST_P(SolverTest, CPLEXInterruptSolution) {
+  std::thread t(Interrupt);
+  Problem p;
+  solver_->SetStrOption("optimizer", "cplex");
+  string message = Solve(p, "miplib/assign1").message;
+  t.join();
+  EXPECT_EQ(600, p.solve_code());
+  EXPECT_TRUE(message.find("interrupted") != string::npos);
+}
+#endif
 }

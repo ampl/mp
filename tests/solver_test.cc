@@ -21,13 +21,8 @@
  */
 
 #include "tests/solver_test.h"
-#include "tests/config.h"
 
 #include <cmath>
-
-#ifdef HAVE_THREADS
-# include <thread>
-#endif
 
 using std::string;
 
