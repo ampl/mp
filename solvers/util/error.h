@@ -40,9 +40,39 @@ struct Throw {
   }
 };
 
-// Throws Error with formatted error message.
+// Throws Error with a formatted message.
 inline fmt::Formatter<Throw> ThrowError(fmt::StringRef format) {
   return fmt::Formatter<Throw>(format);
+}
+
+// An error returned by the operating system or the language runtime,
+// for example a file opening error.
+class SystemError : public Error {
+ private:
+  int error_code_;
+
+ public:
+  SystemError(fmt::StringRef message, int error_code)
+  : Error(message), error_code_(error_code) {}
+};
+
+class SystemThrow {
+ private:
+  int error_code_;
+
+ public:
+  explicit SystemThrow(int error_code) : error_code_(error_code) {}
+
+  void operator()(const fmt::Writer &w) const {
+    throw SystemError(fmt::Format("{}: {}")
+      << w.c_str() << strerror(error_code_), error_code_);
+  }
+};
+
+// Throws SystemError with a code and a formatted message.
+inline fmt::Formatter<SystemThrow> ThrowSystemError(
+    int error_code, fmt::StringRef format) {
+  return fmt::Formatter<SystemThrow>(format, SystemThrow(error_code));
 }
 }
 

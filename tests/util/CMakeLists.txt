@@ -9,7 +9,7 @@ cxx_test_with_flags(expr_test "" "gtest;util"
   ../test_main.cc ../expr_builder.cc expr_test.cc no_unordered_map_test.cc)
 
 cxx_test_with_flags(filesystem_test "" "gtest;util"
-  ../test_main.cc filesystem_test.cc)
+  ../test_main.cc ../util.cc filesystem_test.cc)
 
 cxx_test_with_flags(format_test "" "gtest;util" format_test.cc)
 

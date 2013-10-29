@@ -25,6 +25,8 @@
 
 #include <string>
 
+#include "solvers/util/noncopyable.h"
+
 namespace ampl {
 
 class path {
@@ -47,6 +49,18 @@ class path {
 // Returns the path to the currently running executable file.
 // Throws Error on error.
 path GetExecutablePath();
+
+class MemoryMappedFile : Noncopyable {
+ private:
+  char *start_;
+  std::size_t length_;
+
+ public:
+  MemoryMappedFile(const char *filename);
+  ~MemoryMappedFile();
+
+  const char *start() const { return start_; }
+};
 }
 
 #endif  // SOLVERS_UTIL_FILESYSTEM_H_

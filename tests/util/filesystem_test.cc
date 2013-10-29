@@ -20,9 +20,20 @@
  Author: Victor Zverovich
  */
 
+#include "solvers/util/error.h"
 #include "solvers/util/filesystem.h"
+#include "tests/util.h"
 #include "gtest/gtest.h"
+
 #include <cstring>
+#include <string>
+#include <vector>
+
+using ampl::MemoryMappedFile;
+
+using std::string;
+
+namespace {
 
 TEST(FilesystemTest, EmptyPath) {
   ampl::path p;
@@ -42,11 +53,44 @@ TEST(FilesystemTest, NonemptyPath) {
 }
 
 TEST(FilesystemTest, GetExecutablePath) {
-  std::string path = ampl::GetExecutablePath().string();
-  std::string ending = "/util/filesystem_test";
+  string path = ampl::GetExecutablePath().string();
+  string ending = "/util/filesystem_test";
 #ifdef WIN32
   ending += ".exe";
 #endif
   EXPECT_EQ(ending, path.size() >= ending.size() ?
       path.substr(path.size() - ending.size()) : path);
+}
+
+TEST(MemoryMappedFileTest, MapZeroTerminated) {
+  WriteFile("test", "some content");
+  MemoryMappedFile f("test");
+  EXPECT_STREQ("some content", f.start());
+}
+
+TEST(MemoryMappedFileTest, DtorUnmapsFile) {
+  WriteFile("test", "abc");
+  const volatile char *start = 0;
+  {
+    MemoryMappedFile f("test");
+    start = f.start();
+  }
+  EXPECT_DEATH((void)*start, "");
+}
+
+TEST(MemoryMappedFileTest, CloseFile) {
+  WriteFile("test", "abc");
+  MemoryMappedFile f("test");
+#ifndef WIN32
+  ExecuteShellCommand("lsof test > out");
+  std::vector<string> results = Split(ReadFile("out"), '\n');
+  ASSERT_EQ(2, results.size());
+  // Check that lsof prints mem instead of a file descriptor.
+  EXPECT_TRUE(results[1].find(" mem ") != string::npos);
+#endif
+}
+
+TEST(MemoryMappedFileTest, NonexistentFile) {
+  EXPECT_THROW(MemoryMappedFile("nonexistent"), ampl::SystemError);
+}
 }
