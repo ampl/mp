@@ -30,19 +30,10 @@
 
 namespace {
 
-std::vector<std::string> Split(const std::string &s) {
-  std::vector<std::string> lines;
-  std::stringstream ss(s);
-  std::string line;
-  while (std::getline(ss, line))
-    lines.push_back(line);
-  return lines;
-}
-
 ::testing::AssertionResult AssertFilesEqual(const char *, const char *,
     const std::string &expected_file, const std::string &actual_file) {
-  auto expected = Split(ReadFile(expected_file));
-  auto actual = Split(ReadFile(actual_file));
+  auto expected = Split(ReadFile(expected_file), '\n');
+  auto actual = Split(ReadFile(actual_file), '\n');
   if (expected.size() > actual.size())
     actual.resize(expected.size());
   else if (actual.size() > expected.size())

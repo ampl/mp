@@ -113,3 +113,4 @@ add_subdirectory(util)
 cxx_test_with_flags(tableproxy_test ""
   "gtest;function;util" test_main.cc tableproxy_test.cc util.cc)
 add_dependencies(tableproxy_test tableproxy)
+cxx_test_with_flags(util_test "" "gtest;util" test_main.cc util.cc util_test.cc)
