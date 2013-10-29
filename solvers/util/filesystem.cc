@@ -22,6 +22,13 @@
 
 #include "solvers/util/filesystem.h"
 
+#ifndef WIN32
+# include <sys/mman.h>
+# include <sys/types.h>
+# include <sys/stat.h>
+# include <fcntl.h>
+#endif
+
 #if defined(__APPLE__)
 # include <mach-o/dyld.h>
 #elif defined(WIN32)
@@ -90,5 +97,47 @@ ampl::path ampl::GetExecutablePath() {
   const char *s = &buffer[0];
   return path(s, s + size);
 }
+
+#endif
+
+#ifndef WIN32
+
+ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
+: start_(), length_() {
+  class File : Noncopyable {
+    int fd_;
+   public:
+    explicit File(const char *filename) : fd_(open(filename, O_RDONLY)) {
+      if (fd_ == -1)
+        ThrowSystemError(errno, "cannot open file {}") << filename;
+    }
+    ~File() { close(fd_); }
+    operator int() const { return fd_; }
+  };
+  File file(filename);
+  struct stat file_stat = {};
+  if (fstat(file, &file_stat) == -1)
+    ThrowSystemError(errno, "cannot get attributes of file {}") << filename;
+  length_ = file_stat.st_size;
+  long pagesize = sysconf(_SC_PAGESIZE);
+  std::size_t extra_bytes = length_ % pagesize;
+  if (extra_bytes == 0) {
+    // TODO: don' use mmap
+  }
+  // Round length up to a multiple of the memory page size.
+  length_ += pagesize - extra_bytes;
+  start_ = reinterpret_cast<char*>(
+      mmap(0, length_, PROT_READ, MAP_FILE | MAP_PRIVATE, file, 0));
+  if (start_ == MAP_FAILED)
+    ThrowSystemError(errno, "cannot map file {}") << filename;
+}
+
+ampl::MemoryMappedFile::~MemoryMappedFile() {
+  munmap(start_, length_);
+}
+
+#else
+
+// TODO: Windows implementation
 
 #endif
