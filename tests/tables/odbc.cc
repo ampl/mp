@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "tests/odbc.h"
+#include "tests/tables/odbc.h"
 
 #include <sql.h>
 #include <sqlext.h>

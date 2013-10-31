@@ -26,7 +26,7 @@
 #include "gtest/gtest.h"
 #include "solvers/util/format.h"
 #include "tests/function.h"
-#include "tests/odbc.h"
+#include "tests/tables/odbc.h"
 
 using fun::Handler;
 using fun::Table;
