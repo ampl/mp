@@ -22,7 +22,9 @@
 
 #include "solvers/util/filesystem.h"
 
-#ifndef WIN32
+#include <cerrno>
+
+#ifndef _WIN32
 # include <sys/mman.h>
 # include <sys/types.h>
 # include <sys/stat.h>
@@ -31,10 +33,9 @@
 
 #if defined(__APPLE__)
 # include <mach-o/dyld.h>
-#elif defined(WIN32)
+#elif defined(_WIN32)
 # include <windows.h>
 #else
-# include <errno.h>
 # include <unistd.h>
 #endif
 
@@ -61,7 +62,7 @@ ampl::path ampl::GetExecutablePath() {
   return path(s, s + size);
 }
 
-#elif defined(WIN32)
+#elif defined(_WIN32)
 
 ampl::path ampl::GetExecutablePath() {
   fmt::internal::Array<char, BUFFER_SIZE> buffer;
@@ -100,7 +101,7 @@ ampl::path ampl::GetExecutablePath() {
 
 #endif
 
-#ifndef WIN32
+#ifndef _WIN32
 
 ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
 : start_(), length_() {
