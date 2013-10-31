@@ -3,6 +3,7 @@ add_ampl_library(fullbit fullbit.c)
 
 find_package(ODBC)
 if (ODBC_FOUND)
+  include_directories(${ODBC_INCLUDE_DIR})
   add_library(amplodbc amplodbc.c)
   add_dependencies(amplodbc arith_h)
   set(AMPLODBC amplodbc ${ODBC_LIBRARIES})
