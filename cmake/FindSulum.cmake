@@ -41,4 +41,4 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(SULUM DEFAULT_MSG
   SULUM_LIBRARY SULUM_INCLUDE_DIR SULUM_AMPL_INCLUDE_DIR)
 
-mark_as_advanced(SULUM_LIBRARY SULUM_INCLUDE_DIR)
+mark_as_advanced(SULUM_LIBRARY SULUM_INCLUDE_DIR SULUM_AMPL_INCLUDE_DIR)
