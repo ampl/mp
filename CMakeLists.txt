@@ -41,6 +41,7 @@ endif ()
 if (APPLE)
   add_definitions(-mmacosx-version-min=10.4)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libstdc++")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libstdc++")
 endif ()
 
 include(CheckCXXCompilerFlag)
