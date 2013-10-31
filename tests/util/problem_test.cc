@@ -34,7 +34,7 @@ using ampl::Problem;
 using ampl::ProblemChanges;
 using ampl::Solution;
 
-#ifdef WIN32
+#ifdef _WIN32
 # define putenv _putenv
 #endif
 

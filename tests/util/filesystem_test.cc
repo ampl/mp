@@ -55,7 +55,7 @@ TEST(FilesystemTest, NonemptyPath) {
 TEST(FilesystemTest, GetExecutablePath) {
   string path = ampl::GetExecutablePath().string();
   string ending = "/util/filesystem_test";
-#ifdef WIN32
+#ifdef _WIN32
   ending += ".exe";
 #endif
   EXPECT_EQ(ending, path.size() >= ending.size() ?
@@ -81,7 +81,7 @@ TEST(MemoryMappedFileTest, DtorUnmapsFile) {
 TEST(MemoryMappedFileTest, CloseFile) {
   WriteFile("test", "abc");
   MemoryMappedFile f("test");
-#ifndef WIN32
+#ifndef _WIN32
   ExecuteShellCommand("lsof test > out");
   std::string out = ReadFile("out");
   std::vector<string> results = Split(out, '\n');

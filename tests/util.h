@@ -34,7 +34,7 @@ std::string ReadFile(fmt::StringRef name);
 void WriteFile(fmt::StringRef name, fmt::StringRef data);
 
 inline std::string FixPath(fmt::StringRef s) {
-#ifdef WIN32
+#ifdef _WIN32
   std::string fixed = s;
   std::replace(fixed.begin(), fixed.end(), '/', '\\');
   return fixed;

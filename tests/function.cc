@@ -37,7 +37,7 @@ using std::string;
 using std::vector;
 using fun::Table;
 
-#ifdef WIN32
+#ifdef _WIN32
 extern "C" char **environ;
 #endif
 
@@ -277,7 +277,7 @@ class LibraryImpl : public AmplExports, public TMInfo {
 
   static char *Getenv(const char *name) {
     if (!name) {
-#ifdef WIN32
+#ifdef _WIN32
       return reinterpret_cast<char*>(environ);
 #endif
       return 0;

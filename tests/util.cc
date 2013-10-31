@@ -31,7 +31,7 @@ extern "C" {
 
 #include <fstream>
 
-#ifdef WIN32
+#ifdef _WIN32
 # include <direct.h>
 # define chdir _chdir
 #else
@@ -70,7 +70,7 @@ void ChangeDirectory(fmt::StringRef path) {
 }
 
 void ExecuteShellCommand(fmt::StringRef command) {
-#ifdef WIN32
+#ifdef _WIN32
   std::string command_str(command);
   std::replace(command_str.begin(), command_str.end(), '/', '\\');
 #else
