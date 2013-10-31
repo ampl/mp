@@ -1,5 +1,5 @@
 /*
- Tests of the CSV ODBC connection.
+ Tests of the Access ODBC connection.
 
  Copyright (C) 2012 AMPL Optimization Inc
 
@@ -20,19 +20,25 @@
  Author: Victor Zverovich
  */
 
+#include <cctype>
+#include <climits>
+
 #include "gtest/gtest.h"
+#include "solvers/util/format.h"
 #include "tests/function.h"
-#include "tests/odbc.h"
+#include "tests/tables/odbc.h"
+#undef VOID
 
 using fun::Handler;
 using fun::Table;
 
 namespace {
 
-class CSVTest : public ::testing::Test {
+class AccessTest : public ::testing::Test {
  protected:
   static fun::Library lib_;
   const Handler *handler_;
+  std::vector<std::string> strings_;
 
   static void SetUpTestCase() {
     lib_.Load();
@@ -40,22 +46,42 @@ class CSVTest : public ::testing::Test {
 
   void SetUp() {
     handler_ = lib_.GetHandler("odbc");
+    strings_.push_back("odbc");
+    strings_.push_back("data/test.accdb");
   }
 };
 
-fun::Library CSVTest::lib_("../tables/ampltabl.dll");
+fun::Library AccessTest::lib_("../tables/ampltabl.dll");
 
-TEST_F(CSVTest, Read) {
-  Table t("test", 1, 0);
-  t.AddString("odbc");
-  odbc::Env env;
-  // Some versions of the text driver require a trailing slash in DBQ value.
-  t.AddString("DRIVER={" + env.FindDriver("*.csv") + "}; DBQ=data\\");
-  t.AddString("test.csv");
-  t = "S";
+TEST_F(AccessTest, Read) {
+  Table t("Test", 1, 0, strings_);
+  t = "N";
   handler_->Read(&t);
-  EXPECT_EQ(2u, t.num_rows());
-  EXPECT_STREQ("abc", t(0, 0).string());
-  EXPECT_STREQ("def", t(1, 0).string());
+  EXPECT_EQ(1u, t.num_rows());
+  EXPECT_EQ(42, t(0, 0).number());
+}
+
+TEST_F(AccessTest, ReadNullField) {
+  Table t("TableWithNullField", 1, 0, strings_);
+  t = "NullField";
+  handler_->Read(&t);
+  EXPECT_EQ(1u, t.num_rows());
+  EXPECT_EQ(fun::VOID, t(0, 0).type());
+}
+
+TEST_F(AccessTest, Write) {
+  {
+    Table t("T", 1, 0, strings_);
+    t = "N", 111, 222;
+    handler_->Write(t);
+  }
+  {
+    Table t("T", 1, 0, strings_);
+    t = "N";
+    handler_->Read(&t);
+    EXPECT_EQ(2u, t.num_rows());
+    EXPECT_EQ(111, t(0, 0).number());
+    EXPECT_EQ(222, t(1, 0).number());
+  }
 }
 }

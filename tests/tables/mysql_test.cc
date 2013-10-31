@@ -26,7 +26,7 @@
 #include "gtest/gtest.h"
 #include "tests/config.h"
 #include "tests/function.h"
-#include "tests/odbc.h"
+#include "tests/tables/odbc.h"
 #include "solvers/util/format.h"
 #include "solvers/funcadd.h"
 
