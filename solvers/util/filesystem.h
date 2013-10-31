@@ -56,7 +56,7 @@ class MemoryMappedFile : Noncopyable {
   std::size_t length_;
 
  public:
-  MemoryMappedFile(const char *filename);
+  explicit MemoryMappedFile(const char *filename);
   ~MemoryMappedFile();
 
   const char *start() const { return start_; }

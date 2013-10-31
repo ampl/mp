@@ -139,6 +139,26 @@ ampl::MemoryMappedFile::~MemoryMappedFile() {
 
 #else
 
-// TODO: Windows implementation
+ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
+: start_(), length_() {
+  class Handle : Noncopyable {
+    HANDLE handle_;
+   public:
+    explicit File(HANDLE h) : handle_(h) {}
+    ~File() { CloseHandle(handle_); }
+    operator HANDLE() const { return handle_; }
+  };
+  // TODO: convert UTF-8 to UTF-16 and use CreateFileW
+  Handle file(CreateFileA(filename, GENERIC_READ,
+      FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL));
+  // TODO: get file size and check if it is not a multiple of the page size
+  Handle mapping(CreateFileMappingW(file, 0, PAGE_READONLY, 0, 0, 0));
+  if (mapping == NULL)
+    ThrowSystemError(GetLastError(), "cannot map file {}") << filename;
+}
+
+ampl::MemoryMappedFile::~MemoryMappedFile() {
+  // TODO: unmap
+}
 
 #endif
