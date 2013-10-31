@@ -17,7 +17,7 @@ endif ()
 file(GLOB SULUM_DIRS "${SULUM_DIR}/*")
 if (SULUM_DIRS)
   list(GET SULUM_DIRS 0 SULUM_DIR)
-  message(STATUS "Found Sulum: ${SULUM_DIR}")
+  message(STATUS "Found Sulum directory: ${SULUM_DIR}")
 endif ()
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
