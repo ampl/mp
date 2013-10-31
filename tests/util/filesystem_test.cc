@@ -83,8 +83,9 @@ TEST(MemoryMappedFileTest, CloseFile) {
   MemoryMappedFile f("test");
 #ifndef WIN32
   ExecuteShellCommand("lsof test > out");
-  std::vector<string> results = Split(ReadFile("out"), '\n');
-  ASSERT_EQ(2, results.size());
+  std::string out = ReadFile("out");
+  std::vector<string> results = Split(out, '\n');
+  ASSERT_EQ(2, results.size()) << "Unexpected output from lsof:\n" << out;
   // Check that lsof prints mem instead of a file descriptor.
   EXPECT_TRUE(results[1].find(" mem ") != string::npos);
 #endif
@@ -93,4 +94,6 @@ TEST(MemoryMappedFileTest, CloseFile) {
 TEST(MemoryMappedFileTest, NonexistentFile) {
   EXPECT_THROW(MemoryMappedFile("nonexistent"), ampl::SystemError);
 }
+
+// TODO: test Unicode path in GetExecutablePath
 }
