@@ -27,7 +27,7 @@
 #include <cstdlib>
 #include <vector>
 
-#ifdef WIN32
+#ifdef _WIN32
 # include <windows.h>
 # include <sys/stat.h>
 #endif
@@ -54,7 +54,7 @@ class String : ampl::Noncopyable {
   }
 };
 
-#ifdef WIN32
+#ifdef _WIN32
 // A registry key.
 class RegKey : ampl::Noncopyable {
  private:
@@ -191,7 +191,7 @@ JVM::~JVM() {
 
 Env JVM::env(const char *const *options) {
   if (!instance_.jvm_) {
-#ifdef WIN32
+#ifdef _WIN32
     std::string runtime_lib_path;
     bool exists = false;
     try {

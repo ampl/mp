@@ -49,7 +49,7 @@ namespace {
 class SocketEnv {
  public:
   SocketEnv() {
-#ifdef WIN32
+#ifdef _WIN32
     WSADATA data = {};
     if (WSAStartup(MAKEWORD(2, 2), &data))
       throw std::runtime_error("WSAStartup failed");
@@ -57,7 +57,7 @@ class SocketEnv {
   }
 
   ~SocketEnv() {
-#ifdef WIN32
+#ifdef _WIN32
     WSACleanup();
 #endif
   }

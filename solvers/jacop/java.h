@@ -30,7 +30,7 @@
 
 #include "solvers/util/format.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 # define AMPL_CLASSPATH_SEP ";"
 #else
 # define AMPL_CLASSPATH_SEP ":"

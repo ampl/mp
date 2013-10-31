@@ -29,7 +29,7 @@
 
 #include <cstdio>
 
-#ifdef WIN32
+#ifdef _WIN32
 # define putenv _putenv
 #endif
 

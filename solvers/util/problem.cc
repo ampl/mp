@@ -25,7 +25,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#ifdef WIN32
+#ifdef _WIN32
 # define tempnam _tempnam
 #endif
 

@@ -29,7 +29,7 @@
 TEST(CBCTest, RunSolver) {
   std::remove("data/assign0.sol");
   std::string command = "../solvers/cbc/bin/cbc data/assign0 -AMPL";
-#ifdef WIN32
+#ifdef _WIN32
   std::replace(command.begin(), command.end(), '/', '\\');
 #endif
   EXPECT_EQ(0, std::system(command.c_str()));
