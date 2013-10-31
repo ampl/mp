@@ -22,7 +22,6 @@
 
 #include "solvers/sulum/sulum.h"
 #include "solvers/util/clock.h"
-#include <sulumcpp.h>
 
 namespace {
 template <typename Param>
@@ -49,8 +48,10 @@ const OptionInfo<SlmParamDb> DBL_OPTION_INFO[] = {
 };
 
 inline void Check(SlmReturn ret) {
-  if (ret != SlmRetOk)
-    throw Slm::SlmException(ret);
+  if (ret != SlmRetOk) {
+    // TODO: get error message
+    ampl::ThrowError("Sulum error {}") << ret;
+  }
 }
 
 inline SlmBoundKey GetBoundKey(double lb, double ub) {
