@@ -177,7 +177,7 @@ set AllowedContainerConfigs[1] := 1 3 5 6;
 set AllowedContainerConfigs[2] := 2 4 5 6;
 
 option solver 'ilogcp';
-option ilogcp_options 'outlev=1 timelimit=20 logperiod=50000';
+option ilogcp_options 'outlev=1 timelimit=20 logperiod=50000 multiobj=1';
 solve;
 
 print 'Configuration cost:', totalCost, 'Number of Trips:', tripCount;
