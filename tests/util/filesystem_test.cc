@@ -95,6 +95,4 @@ TEST(MemoryMappedFileTest, CloseFile) {
 TEST(MemoryMappedFileTest, NonexistentFile) {
   EXPECT_THROW(MemoryMappedFile("nonexistent"), ampl::SystemError);
 }
-
-// TODO: test Unicode path in GetExecutablePath
 }
