@@ -85,10 +85,18 @@ TEST(MemoryMappedFileTest, CloseFile) {
   ExecuteShellCommand("lsof test > out");
   std::string out = ReadFile("out");
   std::vector<string> results = Split(out, '\n');
+#ifdef __APPLE__
+  // For some reason lsof prints txt instead of mem for a mapped file on Mac.
+  const char MEM[] = " txt ";
+#else
+  const char MEM[] = " mem ";
+#endif
   // Check that lsof prints mem instead of a file descriptor.
   EXPECT_TRUE(results.size() == 3 &&
-      results[1].find(" mem ") != string::npos && results[2] == "")
+      results[1].find(MEM) != string::npos && results[2] == "")
     << "Unexpected output from lsof:\n" << out;
+#else
+  // TODO: windows test
 #endif
 }
 
