@@ -31,7 +31,7 @@ namespace {
 
 TEST(FilesystemTest, GetExecutablePath) {
   string path = ampl::GetExecutablePath().string();
-  string ending = "/util/unicode_(юникод)_test";
+  string ending = "/util/unicode_юникод_test";
 #ifdef _WIN32
   ending += ".exe";
 #endif
