@@ -85,10 +85,10 @@ TEST(MemoryMappedFileTest, CloseFile) {
   ExecuteShellCommand("lsof test > out");
   std::string out = ReadFile("out");
   std::vector<string> results = Split(out, '\n');
-  ASSERT_EQ(3, results.size()) << "Unexpected output from lsof:\n" << out;
   // Check that lsof prints mem instead of a file descriptor.
-  EXPECT_TRUE(results[1].find(" mem ") != string::npos);
-  EXPECT_EQ("", results[2]);
+  EXPECT_TRUE(results.size() == 3 &&
+      results[1].find(" mem ") != string::npos && results[2] == "")
+    << "Unexpected output from lsof:\n" << out;
 #endif
 }
 
