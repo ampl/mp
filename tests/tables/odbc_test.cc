@@ -28,7 +28,7 @@
 namespace {
 
 TEST(ODBCTest, Load) {
-  fun::Library lib("../tables/ampltabl.dll");
+  fun::Library lib("../../tables/ampltabl.dll");
   lib.Load();
   EXPECT_EQ("", lib.error());
   EXPECT_TRUE(lib.GetHandler("odbc") != nullptr);

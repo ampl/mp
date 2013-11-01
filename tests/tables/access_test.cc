@@ -51,7 +51,7 @@ class AccessTest : public ::testing::Test {
   }
 };
 
-fun::Library AccessTest::lib_("../tables/ampltabl.dll");
+fun::Library AccessTest::lib_("../../tables/ampltabl.dll");
 
 TEST_F(AccessTest, Read) {
   Table t("Test", 1, 0, strings_);

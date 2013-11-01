@@ -43,7 +43,7 @@ class CSVTest : public ::testing::Test {
   }
 };
 
-fun::Library CSVTest::lib_("../tables/ampltabl.dll");
+fun::Library CSVTest::lib_("../../tables/ampltabl.dll");
 
 TEST_F(CSVTest, Read) {
   Table t("test", 1, 0);
