@@ -152,15 +152,14 @@ class UTF8ToUTF16 {
 };
 
 UTF8ToUTF16::UTF8ToUTF16(const char *s) {
-  int length = MultiByteToWideChar(
-    CP_UTF8, MB_ERR_INVALID_CHARS, filename, -1, 0, 0);
+  int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, 0, 0);
   if (length == 0) {
     ThrowSystemError(GetLastError(),
         "Cannot convert string from UTF-8 to UTF-16");
   }
   buffer_.resize(length);
   length = MultiByteToWideChar(
-    CP_UTF8, MB_ERR_INVALID_CHARS, filename, -1, &buffer_[0], length);
+    CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, &buffer_[0], length);
   if (length == 0) {
     ThrowSystemError(GetLastError(),
         "Cannot convert string from UTF-8 to UTF-16");
