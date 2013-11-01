@@ -152,7 +152,7 @@ class UTF16ToUTF8 {
   fmt::internal::Array<char, BUFFER_SIZE> buffer_;
 
  public:
-  explicit UTF16ToUTF8(const char *s);
+  explicit UTF16ToUTF8(const WCHAR *s);
   operator const char*() const { return &buffer_[0]; }
   std::size_t size() const { return buffer_.size(); }
 };
@@ -172,7 +172,7 @@ UTF16ToUTF8::UTF16ToUTF8(const WCHAR *s) {
 }
 
 ampl::path ampl::GetExecutablePath() {
-  fmt::internal::Array<char, BUFFER_SIZE> buffer;
+  fmt::internal::Array<WCHAR, BUFFER_SIZE> buffer;
   buffer.resize(BUFFER_SIZE);
   DWORD size = 0;
   for (;;) {
@@ -182,7 +182,7 @@ ampl::path ampl::GetExecutablePath() {
     if (size != buffer.size()) break;
     buffer.resize(2 * buffer.size());
   }
-  std::replace(&buffer[0], &buffer[0] + size, '\\', '/');
+  std::replace(&buffer[0], &buffer[0] + size, L'\\', L'/');
   UTF16ToUTF8 utf16_str(&buffer[0]);
   const char *s = utf16_str;
   return path(s, s + utf16_str.size());
