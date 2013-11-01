@@ -35,6 +35,7 @@
 # include <mach-o/dyld.h>
 #elif defined(_WIN32)
 # include <windows.h>
+# undef ERROR
 #else
 # include <unistd.h>
 #endif
