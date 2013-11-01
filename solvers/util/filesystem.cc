@@ -45,7 +45,9 @@ namespace {
 enum { BUFFER_SIZE = 500 };
 }
 
-#if defined(__APPLE__)
+#ifndef _WIN32
+
+#ifdef __APPLE__
 
 ampl::path ampl::GetExecutablePath() {
   fmt::internal::Array<char, BUFFER_SIZE> buffer;
@@ -62,24 +64,6 @@ ampl::path ampl::GetExecutablePath() {
   return path(s, s + size);
 }
 
-#elif defined(_WIN32)
-
-ampl::path ampl::GetExecutablePath() {
-  fmt::internal::Array<char, BUFFER_SIZE> buffer;
-  buffer.resize(BUFFER_SIZE);
-  DWORD size = 0;
-  for (;;) {
-    size = GetModuleFileNameA(0, &buffer[0], static_cast<DWORD>(buffer.size()));
-    if (size == 0)
-      ThrowError("GetModuleFileName failed, error code = {}") << GetLastError();
-    if (size != buffer.size()) break;
-    buffer.resize(2 * buffer.size());
-  }
-  std::replace(&buffer[0], &buffer[0] + size, '\\', '/');
-  const char *s = &buffer[0];
-  return path(s, s + size);
-}
-
 #else
 
 ampl::path ampl::GetExecutablePath() {
@@ -88,10 +72,8 @@ ampl::path ampl::GetExecutablePath() {
   ssize_t size = 0;
   for (;;) {
     size = readlink("/proc/self/exe", &buffer[0], buffer.size());
-    if (size < 0) {
-      ThrowError("readlink failed for /proc/self/exe, error code = {}")
-          << errno;
-    }
+    if (size < 0)
+      ThrowSystemError(errno, "cannot get executable path");
     if (static_cast<std::size_t>(size) != buffer.size()) break;
     buffer.resize(2 * buffer.size());
   }
@@ -100,8 +82,6 @@ ampl::path ampl::GetExecutablePath() {
 }
 
 #endif
-
-#ifndef _WIN32
 
 ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
 : start_(), length_() {
@@ -139,12 +119,14 @@ ampl::MemoryMappedFile::~MemoryMappedFile() {
 
 #else
 
+// Windows implementation.
+
 namespace {
 
 // A converter from UTF-8 to UTF-16.
 class UTF8ToUTF16 {
  private:
-  fmt::internal::Array<WCHAR, 500> buffer_;
+  fmt::internal::Array<WCHAR, BUFFER_SIZE> buffer_;
 
  public:
   explicit UTF8ToUTF16(const char *s);
@@ -153,18 +135,56 @@ class UTF8ToUTF16 {
 
 UTF8ToUTF16::UTF8ToUTF16(const char *s) {
   int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, 0, 0);
-  if (length == 0) {
-    ThrowSystemError(GetLastError(),
-        "Cannot convert string from UTF-8 to UTF-16");
-  }
+  static const char ERROR[] = "cannot convert string from UTF-8 to UTF-16";
+  if (length == 0)
+    ampl::ThrowSystemError(GetLastError(), ERROR);
   buffer_.resize(length);
   length = MultiByteToWideChar(
     CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, &buffer_[0], length);
-  if (length == 0) {
-    ThrowSystemError(GetLastError(),
-        "Cannot convert string from UTF-8 to UTF-16");
-  }
+  if (length == 0)
+    ampl::ThrowSystemError(GetLastError(), ERROR);
 }
+
+// A converter from UTF-16 to UTF-8.
+class UTF16ToUTF8 {
+ private:
+  fmt::internal::Array<char, BUFFER_SIZE> buffer_;
+
+ public:
+  explicit UTF16ToUTF8(const char *s);
+  operator const char*() const { return &buffer_[0]; }
+  std::size_t size() const { return buffer_.size(); }
+};
+
+UTF16ToUTF8::UTF16ToUTF8(const WCHAR *s) {
+  int length = WideCharToMultiByte(
+      CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, 0, 0, 0, 0);
+  static const char ERROR[] = "cannot convert string from UTF-16 to UTF-8";
+  if (length == 0)
+    ampl::ThrowSystemError(GetLastError(), ERROR);
+  buffer_.resize(length);
+  length = WideCharToMultiByte(
+    CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, &buffer_[0], length, 0, 0);
+  if (length == 0)
+    ampl::ThrowSystemError(GetLastError(), ERROR);
+}
+}
+
+ampl::path ampl::GetExecutablePath() {
+  fmt::internal::Array<char, BUFFER_SIZE> buffer;
+  buffer.resize(BUFFER_SIZE);
+  DWORD size = 0;
+  for (;;) {
+    size = GetModuleFileNameW(0, &buffer[0], static_cast<DWORD>(buffer.size()));
+    if (size == 0)
+      ThrowSystemError(GetLastError(), "cannot get executable path");
+    if (size != buffer.size()) break;
+    buffer.resize(2 * buffer.size());
+  }
+  std::replace(&buffer[0], &buffer[0] + size, '\\', '/');
+  UTF16ToUTF8 utf16_str(&buffer[0]);
+  const char *s = utf16_str;
+  return path(s, s + utf16_str.size());
 }
 
 ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
