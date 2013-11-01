@@ -186,15 +186,6 @@ TEST_P(SolverTest, InRelationNonConstantSetElement) {
 // ----------------------------------------------------------------------------
 // Other test
 
-TEST_P(SolverTest, MultipleObjectives) {
-  Problem p;
-  p.AddVar(0, 10, ampl::INTEGER);
-  p.AddObj(ampl::MIN, AddBinary(OPREM, AddVar(0), AddNum(3)));
-  p.AddObj(ampl::MIN,
-      AddUnary(OP2POW, AddBinary(OPMINUS, AddVar(0), AddNum(5))));
-  EXPECT_EQ(6, Solve(p));
-}
-
 struct EnumValue {
   const char *name;
   IloCP::ParameterValues value;
@@ -563,6 +554,19 @@ TEST_F(IlogCPTest, MIPIntervalOption) {
   EXPECT_THROW(s.SetStrOption("mipinterval", "oops"), OptionError);
 }
 
+TEST_P(SolverTest, MultiObjOption) {
+  Problem p;
+  p.AddVar(0, 10, ampl::INTEGER);
+  p.AddObj(ampl::MIN, AddBinary(OPREM, AddVar(0), AddNum(3)));
+  p.AddObj(ampl::MIN,
+      AddUnary(OP2POW, AddBinary(OPMINUS, AddVar(0), AddNum(5))));
+  EXPECT_EQ(0, Solve(p));
+  solver_->SetIntOption("multiobj", 1);
+  EXPECT_EQ(6, Solve(p));
+  solver_->SetIntOption("multiobj", 0);
+  EXPECT_EQ(0, Solve(p));
+}
+
 // ----------------------------------------------------------------------------
 // Interrupt tests
 
@@ -588,3 +592,4 @@ TEST_P(SolverTest, CPLEXInterruptSolution) {
 }
 #endif
 }
+

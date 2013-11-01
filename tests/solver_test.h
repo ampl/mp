@@ -104,7 +104,11 @@ class SolverTest
       return lhs == rhs.value_;
     }
 
-    double obj_value() const { return obj_value_; }
+    double obj_value() const {
+      if (!has_value_)
+        throw std::runtime_error("no value");
+      return obj_value_;
+    }
     int solve_code() const { return solve_code_; }
   };
 

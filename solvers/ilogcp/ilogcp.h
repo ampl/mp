@@ -72,6 +72,7 @@ class IlogCPSolver : private Noncopyable, public Solver {
     DEBUGEXPR,
     USENUMBEROF,
     SOLUTION_LIMIT,
+    MULTIOBJ,
     NUM_OPTIONS
   };
 

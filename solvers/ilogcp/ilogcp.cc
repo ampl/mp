@@ -267,6 +267,7 @@ IlogCPSolver::IlogCPSolver() :
   options_[DEBUGEXPR] = false;
   options_[USENUMBEROF] = true;
   options_[SOLUTION_LIMIT] = -1;
+  options_[MULTIOBJ] = false;
 
   set_long_name(fmt::Format("ilogcp {}.{}.{}")
       << IloConcertVersion::_ILO_MAJOR_VERSION
@@ -380,6 +381,13 @@ IlogCPSolver::IlogCPSolver() :
       "Number of solutions for the multi-point search "
       "algorithm.  Default = 30.",
       cp_, IloCP::MultiPointNumberOfSearchPoints)));
+
+  AddIntOption("multiobj",
+      "0 or 1 (default 0):  Whether to use multi-objective optimization. "
+      "If set to 1 multi-objective optimization is performed using "
+      "lexicographic method with the first objective treated as the most "
+      "important, then the second objective and so on.",
+      &IlogCPSolver::DoGetIntOption, &IlogCPSolver::SetBoolOption, MULTIOBJ);
 
   AddDblOption("optimalitytolerance",
       "Absolute tolerance on the objective value.  Default = 0.",
@@ -728,7 +736,7 @@ void IlogCPSolver::DoSolve(Problem &p) {
     flags |= NLToConcertConverter::USENUMBEROF;
   if (GetOption(DEBUGEXPR) != 0)
     flags |= NLToConcertConverter::DEBUG;
-  if (optimizer == CP)
+  if (optimizer == CP && GetOption(MULTIOBJ) != 0)
     flags |= NLToConcertConverter::MULTIOBJ;
   NLToConcertConverter converter(env_, flags);
   converter.Convert(p);
