@@ -139,6 +139,35 @@ ampl::MemoryMappedFile::~MemoryMappedFile() {
 
 #else
 
+namespace {
+
+// A converter from UTF-8 to UTF-16.
+class UTF8ToUTF16 {
+ private:
+  fmt::internal::Array<WCHAR, 500> buffer_;
+
+ public:
+  explicit UTF8ToUTF16(const char *s);
+  operator const WCHAR*() const { return &buffer_[0]; }
+};
+
+UTF8ToUTF16::UTF8ToUTF16(const char *s) {
+  int length = MultiByteToWideChar(
+    CP_UTF8, MB_ERR_INVALID_CHARS, filename, -1, 0, 0);
+  if (length == 0) {
+    ThrowSystemError(GetLastError(),
+        "Cannot convert string from UTF-8 to UTF-16");
+  }
+  buffer_.resize(length);
+  length = MultiByteToWideChar(
+    CP_UTF8, MB_ERR_INVALID_CHARS, filename, -1, &buffer_[0], length);
+  if (length == 0) {
+    ThrowSystemError(GetLastError(),
+        "Cannot convert string from UTF-8 to UTF-16");
+  }
+}
+}
+
 ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
 : start_(), length_() {
   class Handle : Noncopyable {
@@ -148,9 +177,8 @@ ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
     ~Handle() { CloseHandle(handle_); }
     operator HANDLE() const { return handle_; }
   };
-  // TODO: convert UTF-8 to UTF-16 and use CreateFileW
-  Handle file(CreateFileA(filename, GENERIC_READ,
-      FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL));
+  Handle file(CreateFileW(UTF8ToUTF16(filename), GENERIC_READ,
+      FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0));
   // TODO: get file size and check if it is not a multiple of the page size
   Handle mapping(CreateFileMappingW(file, 0, PAGE_READONLY, 0, 0, 0));
   if (!mapping)
