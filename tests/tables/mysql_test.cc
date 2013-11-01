@@ -110,7 +110,7 @@ void MySQLTest::TearDown() {
   } catch (const std::exception &) {}  // Ignore errors.
 }
 
-fun::Library MySQLTest::lib_("../tables/ampltabl.dll");
+fun::Library MySQLTest::lib_("../../tables/ampltabl.dll");
 
 TEST_F(MySQLTest, Read) {
   Table t("", 0, 1, strings_);

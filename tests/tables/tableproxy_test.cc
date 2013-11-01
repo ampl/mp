@@ -46,14 +46,14 @@ class TableProxyTest : public ::testing::Test {
     strings_.push_back("tableproxy");
     int bits = sizeof(void*) == 8 ? 64 : 32;
     std::string prog = FixPath(
-        fmt::Format("prog=../tables/tableproxy{}") << bits);
+        fmt::Format("prog=../../tables/tableproxy{}") << bits);
     strings_.push_back(prog);
-    strings_.push_back(FixPath("lib=../tables/fullbit.dll"));
+    strings_.push_back(FixPath("lib=../../tables/fullbit.dll"));
     strings_.push_back("lib-tab");
   }
 };
 
-fun::Library TableProxyTest::lib_("../tables/ampltabl.dll");
+fun::Library TableProxyTest::lib_("../../tables/ampltabl.dll");
 
 TEST_F(TableProxyTest, WriteTab) {
   fun::Table t("test", 1, 0, strings_);
