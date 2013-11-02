@@ -61,6 +61,29 @@ class MemoryMappedFile : Noncopyable {
 
   const char *start() const { return start_; }
 };
+
+#ifdef _WIN32
+// A converter from UTF-8 to UTF-16.
+class UTF8ToUTF16 {
+ private:
+  fmt::internal::Array<WCHAR, BUFFER_SIZE> buffer_;
+
+ public:
+  explicit UTF8ToUTF16(const char *s);
+  operator const WCHAR*() const { return &buffer_[0]; }
+};
+
+// A converter from UTF-16 to UTF-8.
+class UTF16ToUTF8 {
+ private:
+  fmt::internal::Array<char, BUFFER_SIZE> buffer_;
+
+ public:
+  explicit UTF16ToUTF8(const wchar_t *s);
+  operator const char*() const { return &buffer_[0]; }
+  size_t size() const { return buffer_.size(); }
+};
+#endif
 }
 
 #endif  // SOLVERS_UTIL_FILESYSTEM_H_
