@@ -1,7 +1,7 @@
 /*
- Source code of the whole util library as a single file.
+ Exception classes.
 
- Copyright (C) 2012 AMPL Optimization Inc
+ Copyright (C) 2013 AMPL Optimization Inc
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
@@ -20,10 +20,18 @@
  Author: Victor Zverovich
  */
 
-#include "clock.cc"
-#include "error.cc"
-#include "filesystem.cc"
-#include "format.cc"
-#include "solver.cc"
-#include "problem.cc"
-#include "expr.cc"
+#include "solvers/util/error.h"
+#include <cstring>
+
+void ampl::SystemThrow::operator()(const fmt::Writer &w) const {
+#ifndef _WIN32
+  // TODO: use strerror_r
+  throw SystemError(fmt::Format("{}: {}")
+    << w.c_str() << std::strerror(error_code_), error_code_);
+#else
+  // TODO: use FormatMessageW instead of strerror on Windows
+  // and convert to UTF-8
+  throw SystemError(fmt::Format("{}: error code = {}")
+    << w.c_str() << error_code_, error_code_);
+#endif
+}

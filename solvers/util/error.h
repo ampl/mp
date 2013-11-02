@@ -1,7 +1,7 @@
 /*
  Exception classes.
 
- Copyright (C) 2012 AMPL Optimization Inc
+ Copyright (C) 2013 AMPL Optimization Inc
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
@@ -63,10 +63,7 @@ class SystemThrow {
  public:
   explicit SystemThrow(int error_code) : error_code_(error_code) {}
 
-  void operator()(const fmt::Writer &w) const {
-    throw SystemError(fmt::Format("{}: {}")
-      << w.c_str() << strerror(error_code_), error_code_);
-  }
+  void operator()(const fmt::Writer &w) const;
 };
 
 // Throws SystemError with a code and a formatted message.
