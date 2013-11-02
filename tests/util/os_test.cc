@@ -21,7 +21,7 @@
  */
 
 #include "solvers/util/error.h"
-#include "solvers/util/filesystem.h"
+#include "solvers/util/os.h"
 #include "tests/util.h"
 #include "gtest/gtest.h"
 
@@ -104,3 +104,5 @@ TEST(MemoryMappedFileTest, NonexistentFile) {
   EXPECT_THROW(MemoryMappedFile("nonexistent"), ampl::SystemError);
 }
 }
+
+// TODO: test UTF16ToUTF8 and UTF8ToUTF16

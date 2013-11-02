@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/util/filesystem.h"
+#include "solvers/util/os.h"
 #include "gtest/gtest.h"
 
 #include <string>
