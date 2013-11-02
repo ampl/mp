@@ -63,6 +63,9 @@ class MemoryMappedFile : Noncopyable {
   const char *start() const { return start_; }
 };
 
+// The default buffer size.
+enum { BUFFER_SIZE = 500 };
+
 #ifdef _WIN32
 // A converter from UTF-8 to UTF-16.
 class UTF8ToUTF16 {
