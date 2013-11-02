@@ -45,7 +45,6 @@
 using std::size_t;
 
 namespace {
-enum { BUFFER_SIZE = 500 };
 
 // Round n up to a multiple of page_size.
 size_t RoundUpToMultipleOf(size_t n, size_t page_size) {
