@@ -42,8 +42,19 @@
 
 #include "solvers/util/error.h"
 
+using std::size_t;
+
 namespace {
 enum { BUFFER_SIZE = 500 };
+
+// Round n up to a multiple of page_size.
+size_t RoundUpToMultipleOf(size_t n, size_t page_size) {
+  size_t extra_bytes = n % page_size;
+  if (extra_bytes == 0) {
+    // TODO: don' use mmap
+  }
+  return n += page_size - extra_bytes;
+}
 }
 
 #ifndef _WIN32
@@ -75,7 +86,7 @@ ampl::path ampl::GetExecutablePath() {
     size = readlink("/proc/self/exe", &buffer[0], buffer.size());
     if (size < 0)
       ThrowSystemError(errno, "cannot get executable path");
-    if (static_cast<std::size_t>(size) != buffer.size()) break;
+    if (static_cast<size_t>(size) != buffer.size()) break;
     buffer.resize(2 * buffer.size());
   }
   const char *s = &buffer[0];
@@ -96,18 +107,15 @@ ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
     ~File() { close(fd_); }
     operator int() const { return fd_; }
   };
+
+  // Open file and check that its size is not a multiple of memory page size.
   File file(filename);
   struct stat file_stat = {};
   if (fstat(file, &file_stat) == -1)
     ThrowSystemError(errno, "cannot get attributes of file {}") << filename;
-  length_ = file_stat.st_size;
-  long pagesize = sysconf(_SC_PAGESIZE);
-  std::size_t extra_bytes = length_ % pagesize;
-  if (extra_bytes == 0) {
-    // TODO: don' use mmap
-  }
-  // Round length up to a multiple of the memory page size.
-  length_ += pagesize - extra_bytes;
+  length_ = RoundUpToMultipleOf(file_stat.st_size, sysconf(_SC_PAGESIZE));
+
+  // Map file to memory.
   start_ = reinterpret_cast<char*>(
       mmap(0, length_, PROT_READ, MAP_FILE | MAP_PRIVATE, file, 0));
   if (start_ == MAP_FAILED)
@@ -122,53 +130,29 @@ ampl::MemoryMappedFile::~MemoryMappedFile() {
 
 // Windows implementation.
 
-namespace {
-
-// A converter from UTF-8 to UTF-16.
-class UTF8ToUTF16 {
- private:
-  fmt::internal::Array<WCHAR, BUFFER_SIZE> buffer_;
-
- public:
-  explicit UTF8ToUTF16(const char *s);
-  operator const WCHAR*() const { return &buffer_[0]; }
-};
-
-UTF8ToUTF16::UTF8ToUTF16(const char *s) {
+ampl::UTF8ToUTF16::UTF8ToUTF16(const char *s) {
   int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, 0, 0);
   static const char ERROR[] = "cannot convert string from UTF-8 to UTF-16";
   if (length == 0)
-    ampl::ThrowSystemError(GetLastError(), ERROR);
+    ThrowSystemError(GetLastError(), ERROR);
   buffer_.resize(length);
   length = MultiByteToWideChar(
     CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, &buffer_[0], length);
   if (length == 0)
-    ampl::ThrowSystemError(GetLastError(), ERROR);
+    ThrowSystemError(GetLastError(), ERROR);
 }
 
-// A converter from UTF-16 to UTF-8.
-class UTF16ToUTF8 {
- private:
-  fmt::internal::Array<char, BUFFER_SIZE> buffer_;
-
- public:
-  explicit UTF16ToUTF8(const WCHAR *s);
-  operator const char*() const { return &buffer_[0]; }
-  std::size_t size() const { return buffer_.size(); }
-};
-
-UTF16ToUTF8::UTF16ToUTF8(const WCHAR *s) {
+ampl::UTF16ToUTF8::UTF16ToUTF8(const wchar_t *s) {
+  static const char ERROR[] = "cannot convert string from UTF-16 to UTF-8";
   int length = WideCharToMultiByte(
       CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, 0, 0, 0, 0);
-  static const char ERROR[] = "cannot convert string from UTF-16 to UTF-8";
   if (length == 0)
-    ampl::ThrowSystemError(GetLastError(), ERROR);
+    ThrowSystemError(GetLastError(), ERROR);
   buffer_.resize(length);
   length = WideCharToMultiByte(
     CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, &buffer_[0], length, 0, 0);
   if (length == 0)
-    ampl::ThrowSystemError(GetLastError(), ERROR);
-}
+    ThrowSystemError(GetLastError(), ERROR);
 }
 
 ampl::path ampl::GetExecutablePath() {
@@ -197,12 +181,26 @@ ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
     ~Handle() { CloseHandle(handle_); }
     operator HANDLE() const { return handle_; }
   };
+
+  // Open file.
   Handle file(CreateFileW(UTF8ToUTF16(filename), GENERIC_READ,
       FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0));
-  // TODO: get file size and check if it is not a multiple of the page size
+  if (file == INVALID_HANDLE_VALUE)
+    ThrowSystemError(GetLastError(), "cannot open file {}") << filename;
+
+  // Get file size and check if it is not a multiple of a memory page size.
+  LARGE_INTEGER size = {};
+  if (!GetFileSizeEx(file, &size))
+    ThrowSystemError(GetLastError(), "cannot get size of file {}") << filename;
+  SYSTEM_INFO si = {};
+  GetSystemInfo(&si);
+  length_ = RoundUpToMultipleOf(size.QuadPart, si.dwPageSize);
+
+  // Map file to memory.
   Handle mapping(CreateFileMappingW(file, 0, PAGE_READONLY, 0, 0, 0));
   if (!mapping)
     ThrowSystemError(GetLastError(), "cannot map file {}") << filename;
+  // TODO: MapViewOfFile
 }
 
 ampl::MemoryMappedFile::~MemoryMappedFile() {
