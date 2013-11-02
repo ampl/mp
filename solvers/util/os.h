@@ -1,5 +1,5 @@
 /*
- Functions and classes for working with files and directories.
+ Operating system dependent functionality.
 
  Copyright (C) 2013 AMPL Optimization Inc
 
@@ -20,8 +20,8 @@
  Author: Victor Zverovich
  */
 
-#ifndef SOLVERS_UTIL_FILESYSTEM_H_
-#define SOLVERS_UTIL_FILESYSTEM_H_
+#ifndef SOLVERS_UTIL_OS_H_
+#define SOLVERS_UTIL_OS_H_
 
 #include <string>
 
@@ -66,11 +66,11 @@ class MemoryMappedFile : Noncopyable {
 // A converter from UTF-8 to UTF-16.
 class UTF8ToUTF16 {
  private:
-  fmt::internal::Array<WCHAR, BUFFER_SIZE> buffer_;
+  fmt::internal::Array<wchar_t, BUFFER_SIZE> buffer_;
 
  public:
   explicit UTF8ToUTF16(const char *s);
-  operator const WCHAR*() const { return &buffer_[0]; }
+  operator const wchar_t*() const { return &buffer_[0]; }
 };
 
 // A converter from UTF-16 to UTF-8.
@@ -86,4 +86,4 @@ class UTF16ToUTF8 {
 #endif
 }
 
-#endif  // SOLVERS_UTIL_FILESYSTEM_H_
+#endif  // SOLVERS_UTIL_OS_H_

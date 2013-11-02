@@ -1,5 +1,5 @@
 /*
- Functions and classes for working with files and directories.
+ Operating system dependent functionality.
 
  Copyright (C) 2013 AMPL Optimization Inc
 
@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/util/filesystem.h"
+#include "solvers/util/os.h"
 
 #include <cerrno>
 
@@ -156,7 +156,7 @@ ampl::UTF16ToUTF8::UTF16ToUTF8(const wchar_t *s) {
 }
 
 ampl::path ampl::GetExecutablePath() {
-  fmt::internal::Array<WCHAR, BUFFER_SIZE> buffer;
+  fmt::internal::Array<wchar_t, BUFFER_SIZE> buffer;
   buffer.resize(BUFFER_SIZE);
   DWORD size = 0;
   for (;;) {
