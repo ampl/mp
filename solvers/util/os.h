@@ -25,6 +25,7 @@
 
 #include <string>
 
+#include "solvers/util/format.h"
 #include "solvers/util/noncopyable.h"
 
 namespace ampl {
