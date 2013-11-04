@@ -67,7 +67,7 @@ ampl::path ampl::GetExecutablePath() {
   if (_NSGetExecutablePath(&buffer[0], &size) != 0) {
     buffer.resize(size);
     if (_NSGetExecutablePath(&buffer[0], &size) != 0)
-      assert(0 && "_NSGetExecutablePath failed");
+      ThrowSystemError(errno, "cannot get executable path");
   }
   if (size == BUFFER_SIZE)
     size = std::strlen(&buffer[0]);
@@ -122,7 +122,8 @@ ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
 }
 
 ampl::MemoryMappedFile::~MemoryMappedFile() {
-  munmap(start_, length_);
+  if (munmap(start_, length_) == -1)
+    LogSystemError(errno, "cannot unmap file");
 }
 
 #else
@@ -197,13 +198,19 @@ ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
 
   // Map file to memory.
   Handle mapping(CreateFileMappingW(file, 0, PAGE_READONLY, 0, 0, 0));
-  if (!mapping)
-    ThrowSystemError(GetLastError(), "cannot map file {}") << filename;
-  // TODO: MapViewOfFile
+  if (!mapping) {
+    ThrowSystemError(GetLastError(),
+        "cannot create file mapping for {}") << filename;
+  }
+  start_ = reinterpret_cast<char*>(
+      MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0));
+  if (!start_)
+    ThrowSystemError(GetLastError(), "cannot map file {}")
 }
 
 ampl::MemoryMappedFile::~MemoryMappedFile() {
-  // TODO: unmap
+  if (!UnmapViewOfFile())
+    LogSystemError(GetLastError(), "cannot unmap file");
 }
 
 #endif
