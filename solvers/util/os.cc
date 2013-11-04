@@ -144,7 +144,7 @@ ampl::UTF8ToUTF16::UTF8ToUTF16(const char *s) {
 ampl::UTF16ToUTF8::UTF16ToUTF8(const wchar_t *s) {
   static const char ERROR[] = "cannot convert string from UTF-16 to UTF-8";
   int length = WideCharToMultiByte(
-      CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, 0, 0, 0, 0);
+      CP_UTF8, WC_ERR_INVALID_CHARS, s, -1, 0, 0, 0, 0);
   if (length == 0)
     ThrowSystemError(GetLastError(), ERROR);
   buffer_.resize(length);
