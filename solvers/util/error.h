@@ -71,6 +71,10 @@ inline fmt::Formatter<SystemThrow> ThrowSystemError(
     int error_code, fmt::StringRef format) {
   return fmt::Formatter<SystemThrow>(format, SystemThrow(error_code));
 }
+
+inline void LogSystemError(int error_code, const char *message) { // TODO: noexcept
+  // TODO
+}
 }
 
 #endif  // SOLVERS_UTIL_ERROR_H_
