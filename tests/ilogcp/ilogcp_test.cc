@@ -346,6 +346,7 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
 struct TestSolutionHandler : ampl::BasicSolutionHandler {
   int num_solutions;
   TestSolutionHandler() : num_solutions(0) {}
+  virtual ~TestSolutionHandler() {}
   void HandleSolution(Problem &, fmt::StringRef,
         const double *values, const double *, double) {
     ++num_solutions;
@@ -396,6 +397,29 @@ TEST_F(IlogCPTest, OptimizerOption) {
   s.SetStrOption("optimizer", "auto");
   s.Solve(p);
   EXPECT_EQ(0, p.solve_code());
+}
+
+// TODO: move to solver_test
+TEST_P(SolverTest, ObjnoOption) {
+  EXPECT_EQ(1, solver_->GetIntOption("objno"));
+  Problem p;
+  p.AddVar(11, 22, ampl::INTEGER);
+  ampl::Variable var = AddVar(0);
+  p.AddObj(ampl::MIN, var);
+  p.AddObj(ampl::MAX, var);
+  EXPECT_EQ(11, Solve(p).obj_value());
+  solver_->SetIntOption("objno", 0);
+  EXPECT_EQ(0, solver_->GetIntOption("objno"));
+  EXPECT_EQ(0, Solve(p).obj_value());
+  solver_->SetIntOption("objno", 2);
+  EXPECT_EQ(2, solver_->GetIntOption("objno"));
+  EXPECT_EQ(22, Solve(p).obj_value());
+  solver_->SetStrOption("optimizer", "cplex");
+  EXPECT_EQ(2, solver_->GetIntOption("objno"));
+  EXPECT_EQ(22, Solve(p).obj_value());
+  EXPECT_THROW(solver_->SetIntOption("objno", -1), InvalidOptionValue);
+  solver_->SetIntOption("objno", 3);
+  EXPECT_THROW(Solve(p), InvalidOptionValue);
 }
 
 TEST_F(IlogCPTest, UseCplexForLinearProblem) {
@@ -523,6 +547,19 @@ TEST_F(IlogCPTest, CPOptions) {
     CheckIntCPOption("workers", IloCP::Workers, 1, 4, 0, false);
 }
 
+TEST_P(SolverTest, MultiObjOption) {
+  Problem p;
+  p.AddVar(0, 10, ampl::INTEGER);
+  p.AddObj(ampl::MIN, AddBinary(OPREM, AddVar(0), AddNum(3)));
+  p.AddObj(ampl::MIN,
+      AddUnary(OP2POW, AddBinary(OPMINUS, AddVar(0), AddNum(5))));
+  EXPECT_EQ(0, Solve(p));
+  solver_->SetIntOption("multiobj", 1);
+  EXPECT_EQ(6, Solve(p));
+  solver_->SetIntOption("multiobj", 0);
+  EXPECT_EQ(0, Solve(p));
+}
+
 TEST_F(IlogCPTest, SolutionLimitOption) {
   EXPECT_EQ(-1, s.GetOption(IlogCPSolver::SOLUTION_LIMIT));
   s.SetIntOption("solutionlimit", 0);
@@ -552,19 +589,6 @@ TEST_F(IlogCPTest, MIPIntervalOption) {
   EXPECT_EQ(42, s.GetIntOption("mipinterval"));
   EXPECT_EQ(42, s.cplex().getParam(IloCplex::MIPInterval));
   EXPECT_THROW(s.SetStrOption("mipinterval", "oops"), OptionError);
-}
-
-TEST_P(SolverTest, MultiObjOption) {
-  Problem p;
-  p.AddVar(0, 10, ampl::INTEGER);
-  p.AddObj(ampl::MIN, AddBinary(OPREM, AddVar(0), AddNum(3)));
-  p.AddObj(ampl::MIN,
-      AddUnary(OP2POW, AddBinary(OPMINUS, AddVar(0), AddNum(5))));
-  EXPECT_EQ(0, Solve(p));
-  solver_->SetIntOption("multiobj", 1);
-  EXPECT_EQ(6, Solve(p));
-  solver_->SetIntOption("multiobj", 0);
-  EXPECT_EQ(0, Solve(p));
 }
 
 // ----------------------------------------------------------------------------

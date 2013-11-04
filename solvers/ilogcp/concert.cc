@@ -72,8 +72,9 @@ IloIntVar NLToConcertConverter::ConvertArg(
   return ilo_var;
 }
 
-NLToConcertConverter::NLToConcertConverter(IloEnv env, unsigned flags)
-: env_(env), model_(env), vars_(env), cons_(env), flags_(flags),
+NLToConcertConverter::NLToConcertConverter(
+    IloEnv env, int objno, unsigned flags)
+: env_(env), model_(env), vars_(env), cons_(env), objno_(objno), flags_(flags),
   numberofs_(CreateVar(env)) {
 }
 
@@ -297,13 +298,17 @@ void NLToConcertConverter::Convert(const Problem &p) {
   for (int j = num_continuous_vars; j < num_vars; j++)
     vars_[j] = IloNumVar(env_, p.var_lb(j), p.var_ub(j), ILOINT);
 
-  int num_objs = p.num_objs();
-  if (num_objs > 0) {
-    if ((flags_ & MULTIOBJ) == 0)
-      num_objs = 1;
-    ObjType main_obj_type = p.obj_type(0);
+  if (int num_objs = p.num_objs()) {
+    int obj_start = 0, obj_end = 0;
+    if ((flags_ & MULTIOBJ) != 0) {
+      obj_end = num_objs;
+    } else if (objno_ > 0) {
+      obj_start = objno_ <= num_objs ? objno_ - 1 : 0;
+      obj_end = obj_start + 1;
+    }
+    ObjType main_obj_type = p.obj_type(obj_start);
     IloNumExprArray objs(env_);
-    for (int i = 0; i < num_objs; ++i) {
+    for (int i = obj_start; i < obj_end; ++i) {
       NumericExpr expr(p.nonlinear_obj_expr(i));
       NumericConstant constant(Cast<NumericConstant>(expr));
       IloExpr ilo_expr(env_, constant ? constant.value() : 0);
@@ -316,11 +321,13 @@ void NLToConcertConverter::Convert(const Problem &p) {
       }
       objs.add(p.obj_type(i) == main_obj_type ? ilo_expr : -ilo_expr);
     }
-    IloObjective::Sense sense =
-        main_obj_type == MIN ? IloObjective::Minimize : IloObjective::Maximize;
-    IloAdd(model_, objs.getSize() == 1 ?
-        IloObjective(env_, objs[0], sense) :
-        IloObjective(env_, IloStaticLex(env_, objs), sense));
+    if (objs.getSize() > 0) {
+      IloObjective::Sense sense = main_obj_type == MIN ?
+          IloObjective::Minimize : IloObjective::Maximize;
+      IloAdd(model_, objs.getSize() == 1 ?
+          IloObjective(env_, objs[0], sense) :
+          IloObjective(env_, IloStaticLex(env_, objs), sense));
+    }
   }
 
   if (int n_cons = p.num_cons()) {
