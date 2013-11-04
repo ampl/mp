@@ -149,7 +149,7 @@ ampl::UTF16ToUTF8::UTF16ToUTF8(const wchar_t *s) {
     ThrowSystemError(GetLastError(), ERROR);
   buffer_.resize(length);
   length = WideCharToMultiByte(
-    CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, &buffer_[0], length, 0, 0);
+    CP_UTF8, WC_ERR_INVALID_CHARS, s, -1, &buffer_[0], length, 0, 0);
   if (length == 0)
     ThrowSystemError(GetLastError(), ERROR);
 }
