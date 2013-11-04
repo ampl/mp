@@ -51,6 +51,7 @@ class NLToConcertConverter : public Visitor {
   IloModel model_;
   IloNumVarArray vars_;
   IloRangeArray cons_;
+  int objno_;
   unsigned flags_;
 
   class CreateVar {
@@ -81,7 +82,7 @@ class NLToConcertConverter : public Visitor {
     DEBUG       = 2,
     MULTIOBJ   = 4
   };
-  NLToConcertConverter(IloEnv env, unsigned flags);
+  NLToConcertConverter(IloEnv env, int objno, unsigned flags);
 
   IloModel model() const { return model_; }
   IloNumVarArray vars() const { return vars_; }
