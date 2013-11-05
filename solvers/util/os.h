@@ -76,6 +76,7 @@ class UTF8ToUTF16 {
  public:
   explicit UTF8ToUTF16(const char *s);
   operator const wchar_t*() const { return &buffer_[0]; }
+  size_t size() const { return buffer_.size() - 1; }
 };
 
 // A converter from UTF-16 to UTF-8.
@@ -87,7 +88,7 @@ class UTF16ToUTF8 {
  public:
   explicit UTF16ToUTF8(const wchar_t *s);
   operator const char*() const { return &buffer_[0]; }
-  size_t size() const { return buffer_.size(); }
+  size_t size() const { return buffer_.size() - 1; }
 };
 #endif
 }
