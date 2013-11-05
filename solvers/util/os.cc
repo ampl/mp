@@ -60,6 +60,7 @@ size_t RoundUpToMultipleOf(size_t n, size_t page_size) {
 
 #ifdef __APPLE__
 
+// Mac OS X implementation.
 ampl::path ampl::GetExecutablePath() {
   fmt::internal::Array<char, BUFFER_SIZE> buffer;
   uint32_t size = BUFFER_SIZE;
@@ -77,6 +78,7 @@ ampl::path ampl::GetExecutablePath() {
 
 #else
 
+// Linux implementation.
 ampl::path ampl::GetExecutablePath() {
   fmt::internal::Array<char, BUFFER_SIZE> buffer;
   buffer.resize(BUFFER_SIZE);
@@ -93,6 +95,8 @@ ampl::path ampl::GetExecutablePath() {
 }
 
 #endif
+
+// POSIX implementation of MemoryMappedFile.
 
 ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
 : start_(), length_() {
@@ -128,7 +132,7 @@ ampl::MemoryMappedFile::~MemoryMappedFile() {
 
 #else
 
-// Windows implementation.
+// Windows implementation:
 
 ampl::UTF8ToUTF16::UTF8ToUTF16(const char *s) {
   int length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, 0, 0);
@@ -205,11 +209,11 @@ ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
   start_ = reinterpret_cast<char*>(
       MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0));
   if (!start_)
-    ThrowSystemError(GetLastError(), "cannot map file {}")
+    ThrowSystemError(GetLastError(), "cannot map file {}");
 }
 
 ampl::MemoryMappedFile::~MemoryMappedFile() {
-  if (!UnmapViewOfFile())
+  if (!UnmapViewOfFile(start_))
     LogSystemError(GetLastError(), "cannot unmap file");
 }
 

@@ -68,6 +68,7 @@ enum { BUFFER_SIZE = 500 };
 
 #ifdef _WIN32
 // A converter from UTF-8 to UTF-16.
+// It is only provided for Windows since all normal systems use UTF-8.
 class UTF8ToUTF16 {
  private:
   fmt::internal::Array<wchar_t, BUFFER_SIZE> buffer_;
@@ -78,6 +79,7 @@ class UTF8ToUTF16 {
 };
 
 // A converter from UTF-16 to UTF-8.
+// It is only provided for Windows since all normal systems use UTF-8.
 class UTF16ToUTF8 {
  private:
   fmt::internal::Array<char, BUFFER_SIZE> buffer_;
