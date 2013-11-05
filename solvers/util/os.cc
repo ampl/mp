@@ -167,7 +167,7 @@ ampl::path ampl::GetExecutablePath() {
     size = GetModuleFileNameW(0, &buffer[0], static_cast<DWORD>(buffer.size()));
     if (size == 0)
       ThrowSystemError(GetLastError(), "cannot get executable path");
-    if (size != buffer.size()) break;
+    if (size < buffer.size()) break;
     buffer.resize(2 * buffer.size());
   }
   std::replace(&buffer[0], &buffer[0] + size, L'\\', L'/');
