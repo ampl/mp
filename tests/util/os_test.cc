@@ -35,14 +35,14 @@ using std::string;
 
 namespace {
 
-TEST(FilesystemTest, EmptyPath) {
+TEST(OSTest, EmptyPath) {
   ampl::path p;
   EXPECT_EQ("", p.string());
   EXPECT_EQ("", p.remove_filename().string());
   EXPECT_EQ("", p.string());
 }
 
-TEST(FilesystemTest, NonemptyPath) {
+TEST(OSTest, NonemptyPath) {
   const char *s = "/somewhere/out/in/space";
   ampl::path p(s, s + std::strlen(s));
   EXPECT_EQ("/somewhere/out/in/space", p.string());
@@ -52,7 +52,7 @@ TEST(FilesystemTest, NonemptyPath) {
   EXPECT_EQ("/somewhere/out", p.string());
 }
 
-TEST(FilesystemTest, GetExecutablePath) {
+TEST(OSTest, GetExecutablePath) {
   string path = ampl::GetExecutablePath().string();
   string ending = "/util/os_test";
 #ifdef _WIN32
@@ -61,6 +61,33 @@ TEST(FilesystemTest, GetExecutablePath) {
   EXPECT_EQ(ending, path.size() >= ending.size() ?
       path.substr(path.size() - ending.size()) : path);
 }
+
+TEST(FilesystemTest, GetExecutablePathUnicode) {
+  ExecuteShellCommand("./юникод > out");
+  string path = ReadFile("out");
+  string ending = "/util/юникод";
+#ifdef _WIN32
+  ending += ".exe";
+#endif
+  EXPECT_EQ(ending, path.size() >= ending.size() ?
+      path.substr(path.size() - ending.size()) : path);
+}
+
+#ifdef _WIN32
+TEST(OSTest, UTF16ToUTF8) {
+  std::string s = "ёжик";
+  ampl::UTF16ToUTF8 u(L"\x0451\x0436\x0438\x043A")
+  EXPECT_STREQ(s, u);
+  EXPECT_EQ(s.size(), u.size());
+}
+
+TEST(OSTest, UTF8ToUTF16) {
+  std::string s = "лошадка";
+  ampl::UTF8ToUTF16 u(s);
+  EXPECT_STREQ(L"\x043B\x043E\x0448\x0430\x0434\x043A\x0430", u);
+  EXPECT_EQ(s.size(), u.size());
+}
+#endif  // _WIN32
 
 TEST(MemoryMappedFileTest, MapZeroTerminated) {
   WriteFile("test", "some content");
