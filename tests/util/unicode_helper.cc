@@ -1,5 +1,5 @@
 /*
- Unicode tests.
+ A helper program for testing Unicode handling.
 
  Copyright (C) 2013 AMPL Optimization Inc
 
@@ -21,21 +21,7 @@
  */
 
 #include "solvers/util/os.h"
-#include "gtest/gtest.h"
 
-#include <string>
-
-using std::string;
-
-namespace {
-
-TEST(FilesystemTest, GetExecutablePath) {
-  string path = ampl::GetExecutablePath().string();
-  string ending = "/util/unicode_юникод_test";
-#ifdef _WIN32
-  ending += ".exe";
-#endif
-  EXPECT_EQ(ending, path.size() >= ending.size() ?
-      path.substr(path.size() - ending.size()) : path);
-}
+int main() {
+  fmt::Print("{}") << ampl::GetExecutablePath().string();
 }
