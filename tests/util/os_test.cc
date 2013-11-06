@@ -77,7 +77,7 @@ TEST(FilesystemTest, GetExecutablePathUnicode) {
 TEST(OSTest, UTF16ToUTF8) {
   std::string s = "ёжик";
   ampl::UTF16ToUTF8 u(L"\x0451\x0436\x0438\x043A");
-  EXPECT_EQ(s, u);
+  EXPECT_STREQ(s.c_str(), u);
   EXPECT_EQ(s.size(), u.size());
 }
 
