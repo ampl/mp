@@ -85,7 +85,7 @@ TEST(OSTest, UTF8ToUTF16) {
   std::string s = "лошадка";
   ampl::UTF8ToUTF16 u(s.c_str());
   EXPECT_STREQ(L"\x043B\x043E\x0448\x0430\x0434\x043A\x0430", u);
-  EXPECT_EQ(s.size(), u.size());
+  EXPECT_EQ(7, u.size());
 }
 #endif  // _WIN32
 
