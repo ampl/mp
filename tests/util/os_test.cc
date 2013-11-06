@@ -65,7 +65,7 @@ TEST(OSTest, GetExecutablePath) {
 TEST(FilesystemTest, GetExecutablePathUnicode) {
   ExecuteShellCommand("./юникод > out");
   string path = ReadFile("out");
-  string ending = "/util/юникод";
+  string ending = "/юникод";
 #ifdef _WIN32
   ending += ".exe";
 #endif
@@ -76,14 +76,14 @@ TEST(FilesystemTest, GetExecutablePathUnicode) {
 #ifdef _WIN32
 TEST(OSTest, UTF16ToUTF8) {
   std::string s = "ёжик";
-  ampl::UTF16ToUTF8 u(L"\x0451\x0436\x0438\x043A")
-  EXPECT_STREQ(s, u);
+  ampl::UTF16ToUTF8 u(L"\x0451\x0436\x0438\x043A");
+  EXPECT_EQ(s, u);
   EXPECT_EQ(s.size(), u.size());
 }
 
 TEST(OSTest, UTF8ToUTF16) {
   std::string s = "лошадка";
-  ampl::UTF8ToUTF16 u(s);
+  ampl::UTF8ToUTF16 u(s.c_str());
   EXPECT_STREQ(L"\x043B\x043E\x0448\x0430\x0434\x043A\x0430", u);
   EXPECT_EQ(s.size(), u.size());
 }
