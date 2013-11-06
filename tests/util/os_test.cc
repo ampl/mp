@@ -29,7 +29,18 @@
 #include <string>
 #include <vector>
 
+#ifndef _WIN32
+# include <unistd.h>
+#else
+# include <winbase.h>
+#endif
+
 using ampl::MemoryMappedFile;
+
+#ifdef _WIN32
+using ampl::UTF8ToUTF16;
+using ampl::UTF16ToUTF8;
+#endif
 
 using std::string;
 
@@ -62,13 +73,36 @@ TEST(OSTest, GetExecutablePath) {
       path.substr(path.size() - ending.size()) : path);
 }
 
-TEST(FilesystemTest, GetExecutablePathUnicode) {
-  ExecuteShellCommand("./юникод > out");
-  string path = ReadFile("out");
-  string ending = "/юникод";
-#ifdef _WIN32
-  ending += ".exe";
+// Creates a new link for a file or copies the file if the system doesn't
+// support symlinks. Both filenames are UTF-8 encoded.
+void LinkFile(fmt::StringRef filename, fmt::StringRef linkname) {
+#ifndef _WIN32
+  int result = link(filename.c_str(), linkname.c_str());
+  if (result && errno != EEXIST) {
+    ampl::ThrowSystemError(errno, "cannot create a symlink from {} to {}")
+      << filename.c_str() << linkname.c_str();
+  }
+#else
+  if (!CopyFileW(UTF8ToUTF16(filename), UTF8ToUTF16(linkname), FALSE)) {
+    ampl::ThrowSystemError(GetLastError(), "cannot copy file {} to {}")
+      << filename.c_str() << linkname.c_str();
+  }
 #endif
+}
+
+TEST(FilesystemTest, GetExecutablePathUnicode) {
+  // Neither CMake nor NMake handle Unicode paths properly on Windows,
+  // so copy test executable ourselves.
+  std::string filename = "print-executable-path";
+  std::string linkname = "юникод";
+#ifdef _WIN32
+  src_filename += ".exe";
+  dst_filename += ".exe";
+#endif
+  LinkFile(filename, linkname);
+  ExecuteShellCommand("./" + linkname + " > out");
+  string path = ReadFile("out");
+  string ending = "/" + linkname;
   EXPECT_EQ(ending, path.size() >= ending.size() ?
       path.substr(path.size() - ending.size()) : path);
 }
@@ -76,17 +110,19 @@ TEST(FilesystemTest, GetExecutablePathUnicode) {
 #ifdef _WIN32
 TEST(OSTest, UTF16ToUTF8) {
   std::string s = "ёжик";
-  ampl::UTF16ToUTF8 u(L"\x0451\x0436\x0438\x043A");
+  UTF16ToUTF8 u(L"\x0451\x0436\x0438\x043A");
   EXPECT_STREQ(s.c_str(), u);
   EXPECT_EQ(s.size(), u.size());
 }
 
 TEST(OSTest, UTF8ToUTF16) {
   std::string s = "лошадка";
-  ampl::UTF8ToUTF16 u(s.c_str());
+  UTF8ToUTF16 u(s.c_str());
   EXPECT_STREQ(L"\x043B\x043E\x0448\x0430\x0434\x043A\x0430", u);
   EXPECT_EQ(7, u.size());
 }
+
+// TODO: test errors on invalid input
 #endif  // _WIN32
 
 TEST(MemoryMappedFileTest, MapZeroTerminated) {
@@ -131,5 +167,3 @@ TEST(MemoryMappedFileTest, NonexistentFile) {
   EXPECT_THROW(MemoryMappedFile("nonexistent"), ampl::SystemError);
 }
 }
-
-// TODO: test UTF16ToUTF8 and UTF8ToUTF16
