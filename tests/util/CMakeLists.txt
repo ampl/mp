@@ -20,6 +20,5 @@ cxx_test_with_flags(os_test "" "gtest;util"
 cxx_test_with_flags(problem_test "" "gtest;util"
   ../test_main.cc ../expr_builder.cc ../util.cc problem_test.cc)
 
-add_executable(unicode_helper unicode_helper.cc)
-target_link_libraries(unicode_helper util)
-set_target_properties(unicode_helper PROPERTIES OUTPUT_NAME "юникод")
+add_executable(print-executable-path print-executable-path.cc)
+target_link_libraries(print-executable-path util)
