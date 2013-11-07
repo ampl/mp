@@ -31,11 +31,11 @@ void ampl::SystemThrow::operator()(const fmt::Writer &w) const {
   const char *message = 0;
   for (;;) {
     errno = 0;
-#ifdef _GNU_SOURCE
+# ifdef _GNU_SOURCE
     message = strerror_r(error_code_, &buffer[0], buffer.size());
-#else
+# else
     strerror_r(error_code_, message = &buffer[0], buffer.size());
-#endif
+# endif
     if (errno == 0)
       break;
     if (errno != ERANGE) {
@@ -48,10 +48,27 @@ void ampl::SystemThrow::operator()(const fmt::Writer &w) const {
   throw SystemError(fmt::Format("{}: {}")
     << w.c_str() << message, error_code_);
 #else
-  // TODO: use FormatMessageW instead of strerror on Windows
-  // and convert to UTF-8
-  throw SystemError(fmt::Format("{}: error code = {}")
-    << w.c_str() << error_code_, error_code_);
+  class String {
+   private:
+    LPWSTR str_;
+
+   public:
+    String() : str_() {}
+    ~String() { LocalFree(str_); }
+    LPWSTR *ptr() const { return &str_; }
+    LPWSTR c_str() const { return str_; }
+  };
+  String message;
+  if (!FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+      FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 0,
+      error_code_, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+      reinterpret_cast<LPWSTR>(message.ptr()), 0, 0)) {
+    // Can't get error message, print error code instead.
+    throw SystemError(fmt::Format("{}: error code = {}")
+        << w.c_str() << error_code_, error_code_);
+  }
+  throw SystemError(fmt::Format("{}: {}")
+    << w.c_str() << UTF16ToUTF8(message.c_str()), error_code_);
 #endif
 }
 
