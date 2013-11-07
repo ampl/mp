@@ -54,6 +54,8 @@ class SystemError : public Error {
  public:
   SystemError(fmt::StringRef message, int error_code)
   : Error(message), error_code_(error_code) {}
+
+  int error_code() const { return error_code_; }
 };
 
 class SystemThrow {
@@ -72,9 +74,8 @@ inline fmt::Formatter<SystemThrow> ThrowSystemError(
   return fmt::Formatter<SystemThrow>(format, SystemThrow(error_code));
 }
 
-inline void LogSystemError(int error_code, const char *message) { // TODO: noexcept
-  // TODO
-}
+// Records a system error in the log.
+void LogSystemError(int error_code, const char *message) FMT_NOEXCEPT(true);
 }
 
 #endif  // SOLVERS_UTIL_ERROR_H_

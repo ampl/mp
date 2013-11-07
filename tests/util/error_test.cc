@@ -1,5 +1,5 @@
 /*
- Tests of error classes.
+ Tests of error classes and functions.
 
  Copyright (C) 2012 AMPL Optimization Inc
 
@@ -22,13 +22,14 @@
 
 #include "gtest/gtest.h"
 #include "solvers/util/error.h"
+#include <string.h>
 
-TEST(ClockTest, Error) {
+TEST(ErrorTest, Error) {
   ampl::Error e(fmt::StringRef("test"));
   EXPECT_STREQ("test", e.what());
 }
 
-TEST(ClockTest, ThrowError) {
+TEST(ErrorTest, ThrowError) {
   ampl::Error error("");
   try {
     ampl::ThrowError("test {} message") << "error";
@@ -36,4 +37,21 @@ TEST(ClockTest, ThrowError) {
     error = e;
   }
   EXPECT_STREQ("test error message", error.what());
+}
+
+TEST(ErrorTest, SystemError) {
+  ampl::SystemError e(fmt::StringRef("test"), 42);
+  EXPECT_STREQ("test", e.what());
+  EXPECT_EQ(42, e.error_code());
+}
+
+TEST(ErrorTest, ThrowSystemError) {
+  ampl::SystemError error("", 0);
+  try {
+    ampl::ThrowSystemError(EDOM, "test {}") << "error";
+  } catch (const ampl::SystemError &e) {
+    error = e;
+  }
+  EXPECT_EQ(str(fmt::Format("test error: {}") << strerror(EDOM)), error.what());
+  EXPECT_EQ(EDOM, error.error_code());
 }

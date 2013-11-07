@@ -21,17 +21,41 @@
  */
 
 #include "solvers/util/error.h"
-#include <cstring>
+#include "solvers/util/os.h"
+#include <string.h>
 
 void ampl::SystemThrow::operator()(const fmt::Writer &w) const {
 #ifndef _WIN32
-  // TODO: use strerror_r
+  fmt::internal::Array<char, BUFFER_SIZE> buffer;
+  buffer.resize(BUFFER_SIZE);
+  const char *message = 0;
+  for (;;) {
+    errno = 0;
+#ifdef _GNU_SOURCE
+    message = strerror_r(error_code_, &buffer[0], buffer.size());
+#else
+    strerror_r(error_code_, message = &buffer[0], buffer.size());
+#endif
+    if (errno == 0)
+      break;
+    if (errno != ERANGE) {
+      // Can't get error message, print error code instead.
+      throw SystemError(fmt::Format("{}: error code = {}")
+          << w.c_str() << error_code_, error_code_);
+    }
+    buffer.resize(buffer.size() * 2);
+  }
   throw SystemError(fmt::Format("{}: {}")
-    << w.c_str() << std::strerror(error_code_), error_code_);
+    << w.c_str() << message, error_code_);
 #else
   // TODO: use FormatMessageW instead of strerror on Windows
   // and convert to UTF-8
   throw SystemError(fmt::Format("{}: error code = {}")
     << w.c_str() << error_code_, error_code_);
 #endif
+}
+
+void ampl::LogSystemError(
+    int error_code, const char *message) FMT_NOEXCEPT(true) {
+  // TODO: log error without throwing an exception
 }
