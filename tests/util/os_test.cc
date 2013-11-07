@@ -90,7 +90,17 @@ void LinkFile(fmt::StringRef filename, fmt::StringRef linkname) {
 #endif
 }
 
-TEST(FilesystemTest, GetExecutablePathUnicode) {
+TEST(OSTest, LinkFile) {
+  WriteFile("out", "some content");
+  std::remove("out-link");
+  LinkFile("out", "out-link");
+  EXPECT_EQ("some content", ReadFile("out-link"));
+  // Test creating link if file exists.
+  LinkFile("out", "out-link");
+  EXPECT_EQ("some content", ReadFile("out-link"));
+}
+
+TEST(OSTest, GetExecutablePathUnicode) {
   // Neither CMake nor NMake handle Unicode paths properly on Windows,
   // so copy test executable ourselves.
   std::string filename = "print-executable-path";
@@ -113,6 +123,7 @@ TEST(OSTest, UTF16ToUTF8) {
   UTF16ToUTF8 u(L"\x0451\x0436\x0438\x043A");
   EXPECT_STREQ(s.c_str(), u);
   EXPECT_EQ(s.size(), u.size());
+  EXPECT_THROW(UTF16ToUTF8(L"\xd800\xd800"), ampl::SystemError);
 }
 
 TEST(OSTest, UTF8ToUTF16) {
@@ -120,9 +131,8 @@ TEST(OSTest, UTF8ToUTF16) {
   UTF8ToUTF16 u(s.c_str());
   EXPECT_STREQ(L"\x043B\x043E\x0448\x0430\x0434\x043A\x0430", u);
   EXPECT_EQ(7, u.size());
+  EXPECT_THROW(UTF8ToUTF16("\xc3\x28"), ampl::SystemError);
 }
-
-// TODO: test errors on invalid input
 #endif  // _WIN32
 
 TEST(MemoryMappedFileTest, MapZeroTerminated) {
