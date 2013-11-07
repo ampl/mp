@@ -24,6 +24,8 @@
 #include "solvers/util/error.h"
 #include <string.h>
 
+namespace {
+
 TEST(ErrorTest, Error) {
   ampl::Error e(fmt::StringRef("test"));
   EXPECT_STREQ("test", e.what());
@@ -45,6 +47,7 @@ TEST(ErrorTest, SystemError) {
   EXPECT_EQ(42, e.error_code());
 }
 
+#ifndef _WIN32
 TEST(ErrorTest, ThrowSystemError) {
   ampl::SystemError error("", 0);
   try {
@@ -54,4 +57,23 @@ TEST(ErrorTest, ThrowSystemError) {
   }
   EXPECT_EQ(str(fmt::Format("test error: {}") << strerror(EDOM)), error.what());
   EXPECT_EQ(EDOM, error.error_code());
+}
+#else
+TEST(ErrorTest, ThrowSystemError) {
+  ampl::SystemError error("", 0);
+  try {
+    ampl::ThrowSystemError(ERROR_FILE_EXISTS, "test {}") << "error";
+  } catch (const ampl::SystemError &e) {
+    error = e;
+  }
+  LPWSTR message = 0;
+  FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+      FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 0,
+      ERROR_FILE_EXISTS, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+      reinterpret_cast<LPWSTR>(message), 0, 0)
+  EXPECT_EQ(str(fmt::Format("test error: {}") << message), error.what());
+  LocalFree(message);
+  EXPECT_EQ(ERROR_FILE_EXISTS, error.error_code());
+}
+#endif
 }
