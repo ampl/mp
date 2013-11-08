@@ -333,4 +333,48 @@ void ProblemChanges::AddCon(const double *coefs, double lb, double ub) {
   }
   cons_.push_back(&con_terms_[start]);
 }
+
+ProblemChanges::ProblemChanges(const ProblemChanges &other) {
+  *this = other;
+}
+
+const ProblemChanges &ProblemChanges::operator=(const ProblemChanges &rhs) {
+  if (this == &rhs) {
+      return *this;
+  }
+  problem_ = rhs.problem_;
+  var_lb_ = rhs.var_lb_;
+  var_ub_ = rhs.var_ub_;
+  con_lb_ = rhs.con_lb_;
+  con_ub_ = rhs.con_ub_;
+  con_terms_ = rhs.con_terms_;
+  obj_terms_ = rhs.obj_terms_;
+  obj_types_ = rhs.obj_types_;
+  cons_.resize(rhs.cons_.size());
+  objs_.resize(rhs.objs_.size());
+  vco_ = rhs.vco_;
+
+  int next = 0;
+  for (size_t i = 0; i < rhs.con_terms_.size(); ++i) {
+    if (next < rhs.num_cons() && rhs.cons_[next] == &(rhs.con_terms_[i])) {
+      cons_[next] = &(con_terms_[i]);
+      ++next;
+    }
+    if (con_terms_[i].next) {
+      con_terms_[i].next = &(con_terms_[i+1]);
+    }
+  }
+
+  next = 0;
+  for (size_t i = 0; i < rhs.obj_terms_.size(); ++i) {
+    if (next < rhs.num_objs() && rhs.objs_[next] == &(rhs.obj_terms_[i])) {
+      objs_[next] = &(obj_terms_[i]);
+      ++next;
+    }
+    if (obj_terms_[i].next) {
+      obj_terms_[i].next = &(obj_terms_[i+1]);
+    }
+  }
+  return *this;
+}
 }
