@@ -148,6 +148,27 @@ void Array<T, SIZE>::append(const T *begin, const T *end) {
   size_ += num_elements;
 }
 
+template <typename Char>
+struct CharTraits;
+
+template <>
+struct CharTraits<char> {
+  typedef wchar_t UnsupportedType;
+
+  template <typename T>
+  static int FormatFloat(char *buffer, std::size_t size,
+      const char *format, unsigned width, int precision, T value);
+};
+
+template <>
+struct CharTraits<wchar_t> {
+  typedef char UnsupportedType;
+
+  template <typename T>
+  static int FormatFloat(wchar_t *buffer, std::size_t size,
+      const wchar_t *format, unsigned width, int precision, T value);
+};
+
 // Information about an integer type.
 // IntTraits is not specialized for integer types smaller than int,
 // since these are promoted to int.
@@ -501,6 +522,12 @@ class BasicWriter {
   CharPtr FormatString(const StringChar *s,
       std::size_t size, const FormatSpec &spec);
 
+  // This method is private to disallow writing a wide string to a
+  // char stream and vice versa. If you want to print a wide string
+  // as a pointer as std::ostream does, cast it to const void*.
+  // Do not implement!
+  void operator<<(const typename internal::CharTraits<Char>::UnsupportedType *);
+
  public:
   /**
     Returns the number of characters written to the output buffer.
@@ -596,13 +623,16 @@ class BasicWriter {
     return *this;
   }
 
-  BasicWriter &operator<<(Char value) {
+  BasicWriter &operator<<(char value) {
     *GrowBuffer(1) = value;
     return *this;
   }
 
-  BasicWriter &operator<<(const fmt::StringRef value) {
-    const char *str = value.c_str();
+  /**
+    Writes *value* to the stream.
+   */
+  BasicWriter &operator<<(const fmt::BasicStringRef<Char> value) {
+    const Char *str = value.c_str();
     std::size_t size = value.size();
     std::copy(str, str + size, GrowBuffer(size));
     return *this;
@@ -832,6 +862,11 @@ class BasicFormatter {
       string.size = value.size();
     }
 
+    Arg(StringRef value) : type(STRING), formatter(0) {
+      string.value = value.c_str();
+      string.size = value.size();
+    }
+
     template <typename T>
     Arg(const T &value) : type(CUSTOM), formatter(0) {
       custom.value = &value;
@@ -1011,7 +1046,7 @@ class NoAction {
       }
     };
 
-    // Formats an error message and prints it to std::cerr.
+    // Formats an error message and prints it to stdout.
     fmt::Formatter<PrintError> ReportError(const char *format) {
       return fmt::Formatter<PrintError>(format);
     }
@@ -1110,7 +1145,7 @@ class FormatInt {
 
  public:
   explicit FormatInt(int value) {
-    uint64_t abs_value = value;
+    unsigned abs_value = value;
     bool negative = value < 0;
     if (negative)
       abs_value = 0 - value;
@@ -1156,7 +1191,7 @@ inline Formatter<NoAction, wchar_t> Format(WStringRef format) {
 /** A formatting action that writes formatted output to stdout. */
 class Write {
  public:
-  /** Write the output to stdout. */
+  /** Writes the output to stdout. */
   void operator()(const BasicWriter<char> &w) const {
     std::fwrite(w.data(), 1, w.size(), stdout);
   }

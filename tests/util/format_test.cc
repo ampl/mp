@@ -89,22 +89,44 @@ using fmt::pad;
   FORMAT_TEST_THROW_(statement, expected_exception, expected_message, \
       GTEST_NONFATAL_FAILURE_)
 
-struct WriteChecker {
+// Checks if writing value to BasicWriter<Char> produces the same result
+// as writing it to std::basic_ostringstream<Char>.
+template <typename Char, typename T>
+static ::testing::AssertionResult CheckWrite(const T &value, const char *type) {
+  std::basic_ostringstream<Char> os;
+  os << value;
+  std::basic_string<Char> expected = os.str();
+  std::basic_string<Char> actual = str(BasicWriter<Char>() << value);
+  if (expected == actual)
+    return ::testing::AssertionSuccess();
+  return ::testing::AssertionFailure()
+      << "Value of: str(Writer<" << type << ">() << value)\n"
+      << "  Actual: " << actual << "\n"
+      << "Expected: " << expected << "\n";
+}
+
+struct AnyWriteChecker {
   template <typename T>
   ::testing::AssertionResult operator()(const char *, const T &value) const {
-    std::ostringstream os;
-    os << value;
-    std::string expected = os.str(), actual = str(Writer() << value);
-    if (expected == actual)
-      return ::testing::AssertionSuccess();
-    return ::testing::AssertionFailure()
-        << "Value of: str(Writer() << value)\n"
-        << "  Actual: " << actual << "\n"
-        << "Expected: " << expected << "\n";
+    ::testing::AssertionResult result = CheckWrite<char>(value, "char");
+    return result ? CheckWrite<wchar_t>(value, "wchar_t") : result;
   }
 };
 
-#define CHECK_WRITE(value) ASSERT_PRED_FORMAT1(WriteChecker(), value)
+template <typename Char>
+struct WriteChecker {
+  template <typename T>
+  ::testing::AssertionResult operator()(const char *, const T &value) const {
+    return CheckWrite<Char>(value, "char");
+  }
+};
+
+// Checks if writing value to BasicWriter produces the same result
+// as writing it to std::ostringstream both for char and wchar_t.
+#define CHECK_WRITE(value) EXPECT_PRED_FORMAT1(AnyWriteChecker(), value)
+
+#define CHECK_WRITE_CHAR(value) EXPECT_PRED_FORMAT1(WriteChecker<char>(), value)
+#define CHECK_WRITE_WCHAR(value) EXPECT_PRED_FORMAT1(WriteChecker<wchar_t>(), value)
 
 // Increment a number in a string.
 void Increment(char *s) {
@@ -138,7 +160,6 @@ TEST(UtilTest, Increment) {
   Increment(s);
   EXPECT_STREQ("129", s);
   Increment(s);
-  EXPECT_STREQ("130", s);
   EXPECT_STREQ("130", s);
   s[1] = s[2] = '9';
   Increment(s);
@@ -279,8 +300,20 @@ TEST(WriterTest, WriteDouble) {
   CHECK_WRITE(4.2l);
 }
 
+TEST(WriterTest, WriteChar) {
+  CHECK_WRITE('a');
+}
+
 TEST(WriterTest, WriteString) {
-  CHECK_WRITE("abc");
+  CHECK_WRITE_CHAR("abc");
+  // The following line shouldn't compile:
+  //fmt::Writer() << L"abc";
+}
+
+TEST(WriterTest, WriteWideString) {
+  CHECK_WRITE_WCHAR(L"abc");
+  // The following line shouldn't compile:
+  //fmt::WWriter() << "abc";
 }
 
 TEST(WriterTest, oct) {
@@ -1058,6 +1091,10 @@ TEST(FormatterTest, FormatString) {
   EXPECT_EQ("test", str(Format("{0}") << std::string("test")));
 }
 
+TEST(FormatterTest, FormatStringRef) {
+  EXPECT_EQ("test", str(Format("{0}") << StringRef("test")));
+}
+
 TEST(FormatterTest, FormatUsingIOStreams) {
   EXPECT_EQ("a string", str(Format("{0}") << TestString("a string")));
   std::string s = str(fmt::Format("The date is {0}") << Date(2012, 12, 9));
@@ -1247,6 +1284,7 @@ TEST(FormatterTest, Examples) {
 
 TEST(FormatIntTest, FormatInt) {
   EXPECT_EQ("42", fmt::FormatInt(42).str());
+  EXPECT_EQ("-42", fmt::FormatInt(-42).str());
 }
 
 template <typename T>
