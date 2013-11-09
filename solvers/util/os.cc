@@ -116,7 +116,9 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
   struct stat file_stat = {};
   if (fstat(file, &file_stat) == -1)
     ThrowSystemError(errno, "cannot get attributes of file {}") << filename;
-  size_ = RoundUpToMultipleOf(file_stat.st_size, sysconf(_SC_PAGESIZE));
+  size_ = file_stat.st_size;
+  // TODO: don't use mmap if file size is a multiple of page size
+  //size_t full_size = RoundUpToMultipleOf(size_, sysconf(_SC_PAGESIZE));
 
   // Map file to memory.
   start_ = reinterpret_cast<char*>(
@@ -198,7 +200,9 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
     ThrowSystemError(GetLastError(), "cannot get size of file {}") << filename;
   SYSTEM_INFO si = {};
   GetSystemInfo(&si);
-  size_ = RoundUpToMultipleOf(size.QuadPart, si.dwPageSize);
+  size_ = size.QuadPart;
+  // TODO: don't use mmap if file size is a multiple of page size
+  //size_ = RoundUpToMultipleOf(size.QuadPart, si.dwPageSize);
 
   // Map file to memory.
   Handle mapping(CreateFileMappingW(file, 0, PAGE_READONLY, 0, 0, 0));
