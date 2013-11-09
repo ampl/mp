@@ -22,11 +22,13 @@
 
 #include "solvers/util/error.h"
 #include "solvers/util/os.h"
+
 #include <errno.h>
+#include <stdio.h>
 #include <string.h>
 
 #ifdef _WIN32
-# include <winbase.h>
+# include <windows.h>
 #endif
 
 void ampl::SystemThrow::operator()(const fmt::Writer &w) const {
