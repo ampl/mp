@@ -338,9 +338,9 @@ ProblemChanges::ProblemChanges(const ProblemChanges &other) {
   *this = other;
 }
 
-const ProblemChanges &ProblemChanges::operator=(const ProblemChanges &rhs) {
+ProblemChanges &ProblemChanges::operator=(const ProblemChanges &rhs) {
   if (this == &rhs) {
-      return *this;
+    return *this;
   }
   problem_ = rhs.problem_;
   var_lb_ = rhs.var_lb_;

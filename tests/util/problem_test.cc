@@ -379,6 +379,29 @@ TEST(ProblemChangesTest, AddObjAndSolve) {
   EXPECT_EQ(-1, s.dual_value(0));
 }
 
+TEST(ProblemChangesTest, CopyConstructorCon) {
+  Problem p;
+  p.Read("../data/simple");
+
+  ProblemChanges changes(p);
+  for (int i = 0; i < 10; ++i) {
+    ProblemChanges next(changes);
+    EXPECT_EQ(next.num_cons(), changes.num_cons());
+    const double coefs[] = {1, 0};
+    next.AddCon(coefs, -Infinity, Infinity);
+    changes = next;
+    EXPECT_EQ(next.num_cons(), changes.num_cons());
+  }
+  EXPECT_EQ(10, changes.num_cons());
+  Solution s;
+  p.Solve(CBC_PATH, s, &changes);
+  EXPECT_EQ(2, s.num_vars());
+  EXPECT_EQ(11, s.num_cons());
+  EXPECT_EQ(2, s.value(0));
+  EXPECT_NEAR(0, s.value(1), 1e-5);
+  EXPECT_EQ(1, s.dual_value(0));
+}
+
 TEST(ProblemTest, SolveIgnoreFunctions) {
   char amplfunc[] = "AMPLFUNC=../../solvers/ssdsolver/ssd.dll";
   putenv(amplfunc);
@@ -477,27 +500,4 @@ TEST(ProblemTest, ReadFunctionWithoutLibrary) {
   // but translated into the solver representation.
   p.Read("../data/element");
   EXPECT_EQ(1, p.num_objs());
-}
-
-TEST(ProblemChangesTest, CopyConstructorCon) {
-  Problem p;
-  p.Read("../data/simple");
-
-  ProblemChanges changes(p);
-  for (int i = 0; i < 10; ++i) {
-    ProblemChanges next(changes);
-    EXPECT_EQ(next.num_cons(), changes.num_cons());
-    const double coefs[] = {1, 0};
-    next.AddCon(coefs, -Infinity, Infinity);
-    changes = next;
-    EXPECT_EQ(next.num_cons(), changes.num_cons());
-  }
-  EXPECT_EQ(10, changes.num_cons());
-  Solution s;
-  p.Solve(CBC_PATH, s, &changes);
-  EXPECT_EQ(2, s.num_vars());
-  EXPECT_EQ(11, s.num_cons());
-  EXPECT_EQ(2, s.value(0));
-  EXPECT_NEAR(0, s.value(1), 1e-5);
-  EXPECT_EQ(1, s.dual_value(0));
 }
