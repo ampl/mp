@@ -54,13 +54,14 @@ path GetExecutablePath();
 class MemoryMappedFile : Noncopyable {
  private:
   char *start_;
-  std::size_t length_;
+  std::size_t size_;
 
  public:
-  explicit MemoryMappedFile(const char *filename);
+  explicit MemoryMappedFile(fmt::StringRef filename);
   ~MemoryMappedFile();
 
   const char *start() const { return start_; }
+  std::size_t size() const { return size_; }
 };
 
 // The default buffer size.

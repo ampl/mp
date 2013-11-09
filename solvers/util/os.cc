@@ -98,8 +98,8 @@ ampl::path ampl::GetExecutablePath() {
 
 // POSIX implementation of MemoryMappedFile.
 
-ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
-: start_(), length_() {
+ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
+: start_(), size_() {
   class File : Noncopyable {
     int fd_;
    public:
@@ -112,21 +112,21 @@ ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
   };
 
   // Open file and check that its size is not a multiple of memory page size.
-  File file(filename);
+  File file(filename.c_str());
   struct stat file_stat = {};
   if (fstat(file, &file_stat) == -1)
     ThrowSystemError(errno, "cannot get attributes of file {}") << filename;
-  length_ = RoundUpToMultipleOf(file_stat.st_size, sysconf(_SC_PAGESIZE));
+  size_ = RoundUpToMultipleOf(file_stat.st_size, sysconf(_SC_PAGESIZE));
 
   // Map file to memory.
   start_ = reinterpret_cast<char*>(
-      mmap(0, length_, PROT_READ, MAP_FILE | MAP_PRIVATE, file, 0));
+      mmap(0, size_, PROT_READ, MAP_FILE | MAP_PRIVATE, file, 0));
   if (start_ == MAP_FAILED)
     ThrowSystemError(errno, "cannot map file {}") << filename;
 }
 
 ampl::MemoryMappedFile::~MemoryMappedFile() {
-  if (munmap(start_, length_) == -1)
+  if (munmap(start_, size_) == -1)
     LogSystemError(errno, "cannot unmap file");
 }
 
@@ -176,8 +176,8 @@ ampl::path ampl::GetExecutablePath() {
   return path(s, s + utf16_str.size());
 }
 
-ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
-: start_(), length_() {
+ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
+: start_(), size_() {
   class Handle : Noncopyable {
     HANDLE handle_;
    public:
@@ -187,7 +187,7 @@ ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
   };
 
   // Open file.
-  Handle file(CreateFileW(UTF8ToUTF16(filename), GENERIC_READ,
+  Handle file(CreateFileW(UTF8ToUTF16(filename.c_str()), GENERIC_READ,
       FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0));
   if (file == INVALID_HANDLE_VALUE)
     ThrowSystemError(GetLastError(), "cannot open file {}") << filename;
@@ -198,7 +198,7 @@ ampl::MemoryMappedFile::MemoryMappedFile(const char *filename)
     ThrowSystemError(GetLastError(), "cannot get size of file {}") << filename;
   SYSTEM_INFO si = {};
   GetSystemInfo(&si);
-  length_ = RoundUpToMultipleOf(size.QuadPart, si.dwPageSize);
+  size_ = RoundUpToMultipleOf(size.QuadPart, si.dwPageSize);
 
   // Map file to memory.
   Handle mapping(CreateFileMappingW(file, 0, PAGE_READONLY, 0, 0, 0));

@@ -1,5 +1,5 @@
 /*
- Filesystem library tests.
+ Tests of operating system dependent functionality.
 
  Copyright (C) 2013 AMPL Optimization Inc
 
@@ -136,9 +136,11 @@ TEST(OSTest, UTF8ToUTF16) {
 #endif  // _WIN32
 
 TEST(MemoryMappedFileTest, MapZeroTerminated) {
-  WriteFile("test", "some content");
+  const char *content = "some content";
+  WriteFile("test", content);
   MemoryMappedFile f("test");
-  EXPECT_STREQ("some content", f.start());
+  EXPECT_STREQ(content, f.start());
+  EXPECT_EQ(std::strlen(content), f.size());
 }
 
 TEST(MemoryMappedFileTest, DtorUnmapsFile) {
