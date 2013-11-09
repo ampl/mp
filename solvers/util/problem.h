@@ -397,6 +397,9 @@ class ProblemChanges {
  public:
   explicit ProblemChanges(const Problem &p) : problem_(&p), vco_() {}
 
+  ProblemChanges(const ProblemChanges &other);
+  const ProblemChanges &operator=(const ProblemChanges &rhs);
+
   // Returns the number of additional variables.
   int num_vars() const { return static_cast<int>(var_lb_.size()); }
 
