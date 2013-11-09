@@ -24,7 +24,6 @@
 #include "solvers/util/os.h"
 
 #include <errno.h>
-#include <stdio.h>
 #include <string.h>
 
 #ifdef _WIN32
@@ -35,7 +34,7 @@ void ampl::SystemThrow::operator()(const fmt::Writer &w) const {
 #ifndef _WIN32
   fmt::internal::Array<char, BUFFER_SIZE> buffer;
   buffer.resize(BUFFER_SIZE);
-  const char *message = 0;
+  char *message = 0;
   for (;;) {
     errno = 0;
 # ifdef _GNU_SOURCE
@@ -63,7 +62,7 @@ void ampl::SystemThrow::operator()(const fmt::Writer &w) const {
     String() : str_() {}
     ~String() { LocalFree(str_); }
     LPWSTR *ptr() const { return &str_; }
-    LPWSTR c_str() const { return str_; }
+    LPCWSTR c_str() const { return str_; }
   };
   String message;
   if (!FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
