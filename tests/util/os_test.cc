@@ -25,6 +25,7 @@
 #include "tests/util.h"
 #include "gtest/gtest.h"
 
+#include <cerrno>
 #include <cstring>
 #include <string>
 #include <vector>
