@@ -77,7 +77,7 @@ TEST(ErrorTest, ThrowSystemError) {
   FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
       FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 0,
       ERROR_FILE_EXISTS, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-      reinterpret_cast<LPWSTR>(message), 0, 0);
+      reinterpret_cast<LPWSTR>(&message), 0, 0);
   EXPECT_EQ(str(fmt::Format("test error: {}") << ampl::UTF16ToUTF8(message)),
       error.what());
   LocalFree(message);
