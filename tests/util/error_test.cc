@@ -22,6 +22,7 @@
 
 #include "gtest/gtest.h"
 #include "solvers/util/error.h"
+#include "solvers/util/os.h"
 
 #include <errno.h>
 #include <string.h>
