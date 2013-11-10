@@ -107,8 +107,8 @@ TEST(OSTest, GetExecutablePathUnicode) {
   std::string filename = "print-executable-path";
   std::string linkname = "юникод";
 #ifdef _WIN32
-  src_filename += ".exe";
-  dst_filename += ".exe";
+  filename += ".exe";
+  linkname += ".exe";
 #endif
   LinkFile(filename, linkname);
   ExecuteShellCommand("./" + linkname + " > out");
