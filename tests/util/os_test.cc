@@ -33,7 +33,7 @@
 #ifndef _WIN32
 # include <unistd.h>
 #else
-# include <winbase.h>
+# include <windows.h>
 #endif
 
 using ampl::MemoryMappedFile;
