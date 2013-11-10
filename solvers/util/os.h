@@ -75,7 +75,7 @@ class UTF8ToUTF16 {
   fmt::internal::Array<wchar_t, BUFFER_SIZE> buffer_;
 
  public:
-  explicit UTF8ToUTF16(const char *s);
+  explicit UTF8ToUTF16(fmt::StringRef s);
   operator const wchar_t*() const { return &buffer_[0]; }
   size_t size() const { return buffer_.size() - 1; }
 };
@@ -87,7 +87,7 @@ class UTF16ToUTF8 {
   fmt::internal::Array<char, BUFFER_SIZE> buffer_;
 
  public:
-  explicit UTF16ToUTF8(const wchar_t *s);
+  explicit UTF16ToUTF8(fmt::WStringRef s);
   operator const char*() const { return &buffer_[0]; }
   size_t size() const { return buffer_.size() - 1; }
 };
