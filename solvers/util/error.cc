@@ -61,7 +61,7 @@ void ampl::SystemThrow::operator()(const fmt::Writer &w) const {
    public:
     String() : str_() {}
     ~String() { LocalFree(str_); }
-    LPWSTR *ptr() const { return &str_; }
+    LPWSTR *ptr() { return &str_; }
     LPCWSTR c_str() const { return str_; }
   };
   String message;
