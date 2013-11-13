@@ -589,7 +589,6 @@ class Solver
   void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const char *, Info) const,
       void (Handler::*set)(const char *, const char *, Info), Info info) {
-    typedef void (Handler::*Func)(const char *, const char *, Info);
     AddOption(OptionPtr(new ConcreteOptionWithInfo<Handler, std::string, Info>(
             name, description, this, get, set, info)));
   }
