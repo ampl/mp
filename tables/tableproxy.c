@@ -37,11 +37,13 @@ of or in connection with the use or performance of this software.
 
 #include <stddef.h>
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#define ORIG_STDERR stderr
 #ifdef STAND_ALONE /*{{*/
 #include "asl.h"
 #include "avltree.h"
@@ -2801,6 +2803,18 @@ mswinfork(char **argv)
 	}
 #endif /*}*/
 
+/* Prints to stderr. */
+ int
+printf_redirect(const char *format, ...)
+{
+	int result = 0;
+	va_list args;
+	va_start(args, format);
+	result = vfprintf(ORIG_STDERR, format, args);
+	va_end(args);
+	return result;
+	}
+
  int
 main(int argc, char **argv, char **arge)
 {
@@ -3009,6 +3023,10 @@ main(int argc, char **argv, char **arge)
 	FFlush = fflush;
 	STDout = stdout;
 #endif
+	/* Redirect the output from printf to stderr to avoid interference
+	   with communication between ampl and tableproxy when using pipes. */
+	if (!port)
+		th.ae->PrintF = printf_redirect;
  more_restart2:
 #ifndef _WIN32 /*{*/
 	signal(SIGCHLD, SIG_IGN);
