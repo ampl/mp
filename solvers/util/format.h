@@ -49,13 +49,15 @@
 
 // Define FMT_USE_NOEXCEPT to make format use noexcept (C++11 feature).
 #if FMT_USE_NOEXCEPT || \
-    (defined(__has_feature) && __has_feature(cxx_noexcept))
+    (defined(__has_feature) && __has_feature(cxx_noexcept)) || \
+    (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8))
 # define FMT_NOEXCEPT(expr) noexcept(expr)
 #else
 # define FMT_NOEXCEPT(expr)
 #endif
 
-#ifdef __GNUC__
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
+# define FMT_GCC_DIAGNOSTIC
 # pragma GCC diagnostic push
 # pragma GCC diagnostic ignored "-Wlong-long"
 #endif
@@ -370,6 +372,11 @@ class IntFormatter : public SpecT {
 };
 
 /**
+  Returns an integer formatter that formats the value in base 2.
+ */
+IntFormatter<int, TypeSpec<'b'> > bin(int value);
+
+/**
   Returns an integer formatter that formats the value in base 8.
  */
 IntFormatter<int, TypeSpec<'o'> > oct(int value);
@@ -403,6 +410,10 @@ IntFormatter<int, AlignTypeSpec<TYPE_CODE> > pad(
     int value, unsigned width, wchar_t fill = ' ');
 
 #define DEFINE_INT_FORMATTERS(TYPE) \
+inline IntFormatter<TYPE, TypeSpec<'b'> > bin(TYPE value) { \
+  return IntFormatter<TYPE, TypeSpec<'b'> >(value, TypeSpec<'b'>()); \
+} \
+ \
 inline IntFormatter<TYPE, TypeSpec<'o'> > oct(TYPE value) { \
   return IntFormatter<TYPE, TypeSpec<'o'> >(value, TypeSpec<'o'>()); \
 } \
@@ -433,6 +444,8 @@ DEFINE_INT_FORMATTERS(int)
 DEFINE_INT_FORMATTERS(long)
 DEFINE_INT_FORMATTERS(unsigned)
 DEFINE_INT_FORMATTERS(unsigned long)
+DEFINE_INT_FORMATTERS(long long)
+DEFINE_INT_FORMATTERS(unsigned long long)
 
 template <typename Char>
 class BasicFormatter;
@@ -718,6 +731,24 @@ BasicWriter<Char> &BasicWriter<Char>::operator<<(
     }
     break;
   }
+  case 'b': case 'B': {
+    UnsignedType n = abs_value;
+    bool print_prefix = f.hash_flag();
+    if (print_prefix) size += 2;
+    do {
+      ++size;
+    } while ((n >>= 1) != 0);
+    Char *p = GetBase(PrepareFilledBuffer(size, f, sign));
+    n = abs_value;
+    do {
+      *p-- = '0' + (n & 1);
+    } while ((n >>= 1) != 0);
+    if (print_prefix) {
+      *p-- = f.type();
+      *p = '0';
+    }
+    break;
+  }
   case 'o': {
     UnsignedType n = abs_value;
     bool print_prefix = f.hash_flag();
@@ -782,7 +813,7 @@ class BasicFormatter {
 
   enum Type {
     // Numeric types should go first.
-    INT, UINT, LONG, ULONG, DOUBLE, LONG_DOUBLE,
+    INT, UINT, LONG, ULONG, LONG_LONG, ULONG_LONG, DOUBLE, LONG_DOUBLE,
     LAST_NUMERIC_TYPE = LONG_DOUBLE,
     CHAR, STRING, WSTRING, POINTER, CUSTOM
   };
@@ -817,6 +848,8 @@ class BasicFormatter {
       double double_value;
       long long_value;
       unsigned long ulong_value;
+      long long long_long_value;
+      unsigned long long ulong_long_value;
       long double long_double_value;
       const void *pointer_value;
       struct {
@@ -836,6 +869,10 @@ class BasicFormatter {
     Arg(unsigned value) : type(UINT), uint_value(value), formatter(0) {}
     Arg(long value) : type(LONG), long_value(value), formatter(0) {}
     Arg(unsigned long value) : type(ULONG), ulong_value(value), formatter(0) {}
+    Arg(long long value)
+    : type(LONG_LONG), long_long_value(value), formatter(0) {}
+    Arg(unsigned long long value)
+    : type(ULONG_LONG), ulong_long_value(value), formatter(0) {}
     Arg(float value) : type(DOUBLE), double_value(value), formatter(0) {}
     Arg(double value) : type(DOUBLE), double_value(value), formatter(0) {}
     Arg(long double value)
@@ -1154,6 +1191,7 @@ class FormatInt {
       *--str_ = '-';
   }
   explicit FormatInt(unsigned value) : str_(FormatDecimal(value)) {}
+  explicit FormatInt(uint64_t value) : str_(FormatDecimal(value)) {}
 
   const char *c_str() const { return str_; }
   std::string str() const { return str_; }
@@ -1205,7 +1243,7 @@ inline Formatter<Write> Print(StringRef format) {
 }
 }
 
-#ifdef __GNUC__
+#ifdef FMT_GCC_DIAGNOSTIC
 # pragma GCC diagnostic pop
 #endif
 
