@@ -37,13 +37,11 @@ of or in connection with the use or performance of this software.
 
 #include <stddef.h>
 #include <signal.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#define ORIG_STDERR stderr
 #ifdef STAND_ALONE /*{{*/
 #include "asl.h"
 #include "avltree.h"
@@ -96,7 +94,7 @@ TP_Head {
 	Uint nitab;	/* number of values in the itable (type Uint) */
 	Uint tablen;	/* total length of itable, rtable, and stable */
 
-	/* After the header comes the real-values table (rtable), the		*/
+	/* After the header come the real-values table (rtable), the		*/
 	/* itable (an array of Uint values), and the string table.  The		*/
 	/* rtable has nrcols columns of length nrows, for a total of		*/
 	/* nrtab = nrcols * nrows elements.  The itable has nitab elements	*/
@@ -104,14 +102,16 @@ TP_Head {
 	/* real data for this column ir > 0 meaning real-table column ir-1	*/
 	/* is for this column; similarly, is == 0 means no string data for	*/
 	/* this column and is > 1 means column is-1 of the itable string	*/
-	/* columns is for this column.  The remaining nscols * nrows values	*/
-	/* in the itable constitute the itable string columns.  The string	*/
-	/* table starts with the table name, which is followed by nstrings	*/
-	/* values for the strings in the table declaration, followed by		*/
-	/* string values for the table columns (indexed by elements of the	*/
-	/* itable, giving offsets in the string table, with offset 0		*/
-	/* meaning "use the real value".  and offset 1 meaning "use the		*/
-	/* Missing data value".	*/
+	/* columns is for this column.  Then come nscols * nrows values	for the */
+	/* itable string-column array.  The string table starts with the table  */
+	/* name, which is followed by nstrings values for the strings in the    */
+	/* table declaration, followed by string values for the table.  The     */
+	/* elements of the string columns are indexed by elements of the itable */
+	/* string-column array, giving offsets in the string table, with offset */
+	/* 0 meaning "use the real value" and offset 1 meaning "use the	Missing	*/
+	/* data value".	 If nitab > 2*ncols + nscols*nrows, then the itable     */
+	/* element following the itable string-column array is the offset of    */
+	/* in the string table of "verbose" output for this transaction.	*/
 
 	/* To return an error, we set the TPx_Error bit in job and return	*/
 	/* the error message as the one string value (the whole stable).	*/
@@ -127,6 +127,7 @@ enum { TPx_Read = 0, TPx_Write = 1, TPx_Done = 2, TPx_Error = 4,
  typedef struct ProxProg ProxProg;
  typedef struct MemBlock MemBlock;
  typedef int (*ProxRW)(ProxProg*, void*, Uint);
+ typedef const char cchar;
 
  struct
 ProxProg {
@@ -350,7 +351,7 @@ CloseSocket(int sd)
 #define TM(len) (*ae->Tempmem)(TI->TMI,len)
 
  static char*
-strcpe(char *t, const char *f)
+strcpe(char *t, cchar *f)
 {
 	while((*t++ = *f))
 		++f;
@@ -424,7 +425,7 @@ cleanup(void *v)
 	}
 
  static void*
-Malloc3(AmplExports *ae, TableInfo *TI, size_t L, const char *where)
+Malloc3(AmplExports *ae, TableInfo *TI, size_t L, cchar *where)
 {
 	void *rv = malloc(L);
 	if (!rv) {
@@ -1001,7 +1002,7 @@ Read_ampl_proxy(AmplExports *ae, TableInfo *TI)
 	ProxyInfo *PI;
 	ProxProg *p;
 	TP_Head *H, H0;
-	Uint Lt, i, is, *itab, *itst0, j, nr, stlen, *z;
+	Uint Lt, i, is, *itab, *itst0, j, nitab, nr, stlen, *z;
 	char *s, *stab, **strs, **sv, **sv0, *x[2];
 	int k, nc, nc1, nstr, nsu, rc;
 	real *rtab, *rtab0;
@@ -1052,9 +1053,11 @@ Read_ampl_proxy(AmplExports *ae, TableInfo *TI)
 			TI->Errmsg = "Error return with no error message.";
 		goto ret;
 		}
-	if (!(nr = H0.nrows))
+	nr = H0.nrows;
+	nitab = 2*(H0.ncols + H0.arity) + nr*H0.nscols;
+	if (!nr && H0.nitab == nitab)
 		goto done;
-	if (H0.ncols != nc) {
+	if (H0.ncols != nc && nr > 0) {
 		TI->Errmsg = "H0.ncols error";
 		goto ret;
 		}
@@ -1074,6 +1077,15 @@ Read_ampl_proxy(AmplExports *ae, TableInfo *TI)
 		}
 	itab = (Uint*)(rtab + H0.nrtab);
 	stab = (char*)(itab + H0.nitab);
+	if (H0.nitab > nitab) {
+		s = stab + itab[nitab];
+		if (*s)
+			printf("%s", s);
+		if (!nr) {
+			free(dbc0);
+			goto done;
+			}
+		}
 	itst0 = itab + 2*nc1 - nr;
 	irp = (IRpair*)itab;
 	dbce = dbc + nc1;
@@ -1207,6 +1219,16 @@ Write_ampl_proxy(AmplExports *ae, TableInfo *TI)
 			TI->Errmsg = "error reading error return in Write_ampl_proxy";
 		goto ret;
 		}
+	if (H0.nitab) {
+		if (p->read(p, s = TM(H0.tablen), H0.tablen) != H0.tablen) {
+			TI->Errmsg = "error reading verbose output in Write_ampl_proxy";
+			goto ret;
+			}
+		itab = (Uint*)s;
+		s = (char*)(itab + H0.nitab) + itab[0];
+		if (*s)
+			printf("%s", s);
+		}
 	rc = DB_Done;
  ret:
 	if (p->port > 0)
@@ -1264,6 +1286,50 @@ funcadd(AmplExports *ae)
 
 #else /*} STAND_ALONE {*/
 
+
+ static char *pfc, *pfc1, *pfce;
+
+ static void
+pfc_alloc(size_t *Lp)
+{
+	char *t;
+	size_t L1, L2;
+	L1 = pfc1 - pfc;
+	if (!pfc)
+		L2 = 4096;
+	else
+		L2 = 2*(pfce - pfc);
+	t = (char*)Malloc(L2);
+	if (pfc) {
+		memcpy(t, pfc, L1);
+		free(pfc);
+		}
+	pfc = t;
+	pfc1 = t + L1;
+	pfce = t + L2;
+	*Lp = pfce - pfc1;
+	}
+
+ static int
+printf_capture(cchar *fmt, ...)
+{
+	int n;
+	size_t L;
+	va_list ap;
+
+	L = pfce - pfc1;
+	if (L < 128)
+		pfc_alloc(&L);
+	va_start(ap, fmt);
+	n = vsnprintf(pfc1, L, fmt, ap);
+	if (n >= L) {
+		do pfc_alloc(&L); while(n >= L);
+		n = vsnprintf(pfc1, L, fmt, ap);
+		}
+	pfc1 += n;
+	return n;
+	}
+
  static void*
 Malloc1(size_t L)
 {
@@ -1295,12 +1361,12 @@ Malloc1(size_t L)
 	}
 
 #ifdef MDEBUG
- static int (*PRintf)(const char *, ...);
+ static int (*PRintf)(cchar *, ...);
  static int (*FFlush)(FILE*);
  static FILE *STDout;
  int mdbzork, mdbzork1;
  static void
-Report(const char *what, void *v)
+Report(cchar *what, void *v)
 {
 	PRintf("%d %s: %x\n", ++mdbzork, what, v);
 	if (mdbzork == mdbzork1)
@@ -1319,12 +1385,12 @@ HandlerInfo {
 	struct HandlerInfo *nexth;
 	DbRW DbRead;
 	DbRW DbWrite;
-	const char *info;
-	const char *hname;
-	const char *libname;	 /* name without "_32" or "_64" before final "." */
-	const char *libname_alt; /* name with "_32." or "_64." (NULL if no ".") */
-	const char *libname_found;
-	const char *libname_sought;
+	cchar *info;
+	cchar *hname;
+	cchar *libname;	 /* name without "_32" or "_64" before final "." */
+	cchar *libname_alt; /* name with "_32." or "_64." (NULL if no ".") */
+	cchar *libname_found;
+	cchar *libname_sought;
 	Uint libname_len;
 	Uint libname_altlen;
 	Uint libname_foundlen;
@@ -1368,7 +1434,7 @@ THelp {
 	ProxProg *P;
 	TMInfo *tmi;
 	TableInfo *TI;
-	const char *errmsg;
+	cchar *errmsg;
 	char *tabname;
 	Tcache *tc;
 	Sblock *cursb;
@@ -1394,13 +1460,13 @@ THelp {
 #endif
 	} Saddr;
 
- extern int libload_ASL(AmplExports *ae, const char *s, int ns, int warn);
+ extern int libload_ASL(AmplExports *ae, cchar *s, int ns, int warn);
  static HandlerInfo *Handlers, **NextHandler = &Handlers;
  static TMInfo TMI;
  static char Loopback[] = "127.0.0.1", Missing[1];
  static char *aalast, *aanext, *curdir;
- static const char *libname, *libname0, *libname1, *libname_alt, *libname_found;
- static const char *libname_sought, *libname0_bits, *libname0_dot, *lnspec;
+ static cchar *libname, *libname0, *libname_alt, *libname_found;
+ static cchar *libname_sought, *libname0_bits, *libname0_dot, *lnspec;
  static int curdir_len, libname_altlen, libname_len;
  static int libname_foundlen, libname_soughtlen, sigcaught;
 
@@ -1423,13 +1489,13 @@ Temp_mem(TMInfo *tmi, size_t L)
 	}
 
  static void
-ignore_addfunc(const char *name, rfunc f, int type, int nargs, void *funcinfo, AmplExports *ae)
+ignore_addfunc(cchar *name, rfunc f, int type, int nargs, void *funcinfo, AmplExports *ae)
 {}
 
  static void
-get_dot(const char *name, const char **ndot, const char **bitsuf)
+get_dot(cchar *name, cchar **ndot, cchar **bitsuf)
 {
-	const char *dot, *s;
+	cchar *dot, *s;
 
 	dot = 0;
 	for(s = name; *s; ++s)
@@ -1457,7 +1523,7 @@ lc_map(char *s)
 	}
 
  static int
-Abspath(const char *s)
+Abspath(cchar *s)
 {
 	int c = *s;
 	if (((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
@@ -1468,7 +1534,7 @@ Abspath(const char *s)
 	}
 
  static int
-has_slash(const char *s)
+has_slash(cchar *s)
 {
 	int c;
 
@@ -1487,7 +1553,7 @@ has_slash(const char *s)
 #define Getcwd getcwd
 
  static int
-has_slash(const char *s)
+has_slash(cchar *s)
 {
 	while(*s)
 		if (*s++ == '/')
@@ -1503,7 +1569,7 @@ my_add_table_handler(DbRW DbRead, DbRW DbWrite, char *info, int flags, void *Vin
 	HandlerInfo *H;
 	size_t L, L0, L1, Ls;
 	char *s;
-	const char *bitsuf, *dot;
+	cchar *bitsuf, *dot;
 
 	if (!info)
 		return;
@@ -1615,10 +1681,8 @@ auxinfo_ASL(AmplExports *ae)
 	}
 
  void
-af_libnamesave_ASL(AmplExports *ae, const char *fullname, const char *name, int nlen)
+af_libnamesave_ASL(AmplExports *ae, cchar *fullname, cchar *name, int nlen)
 {
-	const char *dot, *s;
-
 	libname = 0;
 	libname0 = fullname;
 	libname_len = strlen(fullname);
@@ -1649,21 +1713,26 @@ swap(void *v, size_t L, Uint n)
 usage(int rc)
 {
 	fprintf(rc ? Stderr : stdout, "Usage:\n\n"
-	"  %s [--nofork] [start | stop | restart | status [ip=...]] [port=nnn] [lib [lib...]]\n\n"
-	"to start, stop, or inquire about a table-proxy server, using port 5196 or,\n"
-	"if given, port nnn.  If none of start, stop or status is specified,\n"
-	"start is asssumed.  If start is specified or assumed and lib arguments are\n"
-	"given, load the specified libraries initially and look for table handlers\n"
-	"in them; otherwise try to load ampltabl.dll.\n\n"
+	"  %s [--nofork] {job} [port=nnn] [lib [lib...]]\n\n"
+	"to start, stop, or inquire about a tableproxy server, using port 5196 or,\n"
+	"if given in a port=nnn assignment, port nnn.  If given, {job} must be one of\n\n"
+	"\tstart\n"
+	"\tstop\n"
+	"\trestart\n"
+	"\tstatus [ip=IP_addr]\n\n"
+	"If a {job} keyword is not given, \"start\" is assumed.  If \"start\" is specified\n"
+	"or assumed and lib arguments are given, the specified libraries are loaded\n"
+	"initially and table handlers are sought in them; other libraries are loaded\n"
+	"on request.\n\n"
+	"For \"status\", the optional ip=IP_addr is for checking the status of a remote\n"
+	"tableproxy server at the specified (symbolic or numeric) IP address.\n\n"
 #ifdef _WIN32
 	"--nofork ==> do not detach from the invoking console.\n\n"
 #else
 	"--nofork ==> neither fork nor ignore SIGHUP, SIGINT, SIGQUIT.\n\n"
 #endif
-	"For status, the optional ip=... is for checking the status of a remote\n"
-	"tableproxy server.\n\n"
-	"When invoked for local use by tableproxy*.dll, the only command-line\n"
-	"argument is \"--local\".\n\n", progname);
+	"When invoked for local use by tableproxy*.dll, the only command-line argument\n"
+	"is \"--local\".\n\n", progname);
 	return rc;
 	}
 
@@ -1863,7 +1932,7 @@ Lookup_w(real *r, char **sa, TableInfo *TI)
 	}
 
  static char *
-err_msg(THelp *th, const char *fmt, ...)
+err_msg(THelp *th, cchar *fmt, ...)
 {
 	HandlerInfo *H;
 	char *s;
@@ -1947,11 +2016,12 @@ rtab_send(THelp *th, TableInfo *TI, int flags)
 	Tcache *tc, *tce;
 	Uint *cd, *cd0, *it;
 	char *s, *s0, **sp, **spe, *t;
-	const char *emsg;
+	cchar *emsg;
 	int nitab, nr, nrtab, ns, ntc, rc;
 	long m;
 	real *r, *r0;
 	size_t L;
+	static char verbose_output[] = "\nVerbose table-handler output:\n";
 
 	m = th->nr0;
 	th->nr0 = 0;
@@ -1965,11 +2035,31 @@ rtab_send(THelp *th, TableInfo *TI, int flags)
 				emsg = "rtab_send has flags == TPx_Error, but th->errmsg == 0";
 			L = strlen(emsg) + 1;
 			}
+		if (pfc1 > pfc) {
+			*pfc1 = 0;
+			L += pfc1 - pfc + sizeof(verbose_output) + sizeof(Uint) + 2;
+			}
 		H = (TP_Head*)Malloc(sizeof(TP_Head) + L);
 		H_init(H, flags, TI);
 		if (emsg) {
 			H->job = TPx_Error;
-			memcpy(H+1, emsg, L);
+			s = (char*)(H+1);
+			s = strcpe(s, emsg);
+			if (pfc1 > pfc) {
+				s = strcpe(s-1, verbose_output);
+				s = strcpe(s-1, pfc);
+				if (s[-2] != '\n') {
+					s[-1] = '\n';
+					*s = 0;
+					}
+				pfc1 = pfc;
+				}
+			goto finish;
+			}
+		if (pfc1 > pfc) {
+			H->nitab = 1;
+			it = (Uint*)(H+1);
+			s = s0 = (char*)(it + 1);
 			}
 		goto finish;
 		}
@@ -1983,8 +2073,12 @@ rtab_send(THelp *th, TableInfo *TI, int flags)
 			++ns;
 		}
 	nitab = 2*ntc + ns*m;
+	if (pfc1 > pfc)
+		++nitab;
 	nrtab = nr*m;
 	L = nitab*sizeof(Uint) + nrtab*sizeof(real) + th->slen;
+	if (pfc1 > pfc)
+		L += pfc1 - pfc + 1;
 	H = Malloc(sizeof(TP_Head) + L);
 	H_init(H, TPx_Read | flags, TI);
 	H->nrcols = nr;
@@ -2030,6 +2124,12 @@ rtab_send(THelp *th, TableInfo *TI, int flags)
 			*cd++ = 0;
 		}
  finish:
+	if (pfc1 > pfc) {
+		*it++ = s - s0;
+		*pfc1 = 0;
+		s = strcpe(s, pfc);
+		pfc1 = pfc;
+		}
 	H->arith = th->tph.arith;
 	H->tablen = L;
 	L += sizeof(TP_Head);
@@ -2261,11 +2361,11 @@ Col_Alloc(TableInfo *TI, int ncol, int sval)
 	}
 
  static char *
-get_lbuf(const char *ln, char *lbuf0, size_t lbuf_len, Uint *pls, const char **nextdir)
+get_lbuf(cchar *ln, char *lbuf0, size_t lbuf_len, Uint *pls, cchar **nextdir)
 {
 	Uint ln_len;
 	char *lbuf, *s;
-	const char *cdir, *t, *t1;
+	cchar *cdir, *t, *t1;
 	int q;
 	size_t cdlen, L;
 
@@ -2337,6 +2437,26 @@ get_lbuf(const char *ln, char *lbuf0, size_t lbuf_len, Uint *pls, const char **n
 	return lbuf;
 	}
 
+ static int
+strcomp(const char *a, const char *b) /* strcmp ignoring case */
+{
+	int c, d;
+
+	while((c = *a++)) {
+		if (!(d = *b++))
+			return 1;
+		if (c == d)
+			continue;
+		if (c >= 'A' && c <= 'Z')
+			c += 'a' - 'A';
+		if (d >= 'A' && d <= 'Z')
+			d += 'a' - 'A';
+		if (c -= d)
+			return c;
+		}
+	return *b ? -1 : 0;
+	}
+
  static TableInfo *
 TI_init(THelp *th, Uint *itab, real *rtab, char *stab)
 {
@@ -2346,7 +2466,7 @@ TI_init(THelp *th, Uint *itab, real *rtab, char *stab)
 	DbCol *dbc;
 	Uint i, j, k, len, ls, lseen, nc, nc1, nr, ns, *stc, *sti;
 	char *hname, *lbuf, lbuf0[4096], *s, *se, **sp, **st;
-	const char *cannot, *ln, *nextdir, *what;
+	cchar *cannot, *ln, *nextdir, *what;
 	int m, ndcols, nscols;
 	size_t L;
 
@@ -2380,7 +2500,7 @@ TI_init(THelp *th, Uint *itab, real *rtab, char *stab)
 		 && (len != HI->libname_altlen || strcmp(ln, HI->libname_alt)))
 			continue;
 		++lseen;
-		if (!strcmp(HI->hname, hname)) {
+		if (!strcomp(HI->hname, hname)) {
 			Hf = HI;
 			if (itab) {
 				if (!HI->DbWrite)
@@ -2656,7 +2776,7 @@ dojob(AmplExports *ae, ProxProg *p, int job, int port, char *s, int sd)
 	struct hostent *ptrh;
 	struct sockaddr_in sab;
 	static int jobmap[2] = { TPx_quit, TPx_status };
-	static const char *jobname[2] = { "quit", "status" };
+	static cchar *jobname[2] = { "quit", "status" };
 
 	j = job - 1;
 	H_init(&H, jobmap[j], 0);
@@ -2724,7 +2844,7 @@ dojob(AmplExports *ae, ProxProg *p, int job, int port, char *s, int sd)
  static char **my_env;
 
   static char *
-my_getenv(const char *name)
+my_getenv(cchar *name)
 {
 	char **e, *s;
 	size_t L;
@@ -2802,18 +2922,6 @@ mswinfork(char **argv)
 	exit(0);
 	}
 #endif /*}*/
-
-/* Prints to stderr. */
- int
-printf_redirect(const char *format, ...)
-{
-	int result = 0;
-	va_list args;
-	va_start(args, format);
-	result = vfprintf(ORIG_STDERR, format, args);
-	va_end(args);
-	return result;
-	}
 
  int
 main(int argc, char **argv, char **arge)
@@ -3023,10 +3131,7 @@ main(int argc, char **argv, char **arge)
 	FFlush = fflush;
 	STDout = stdout;
 #endif
-	/* Redirect the output from printf to stderr to avoid interference
-	   with communication between ampl and tableproxy when using pipes. */
-	if (!port)
-		th.ae->PrintF = printf_redirect;
+	th.ae->PrintF = printf_capture;
  more_restart2:
 #ifndef _WIN32 /*{*/
 	signal(SIGCHLD, SIG_IGN);

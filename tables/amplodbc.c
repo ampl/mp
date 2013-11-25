@@ -130,7 +130,7 @@ Malloc(AmplExports *ae, size_t len)
 {
 	void *rv = malloc(len);
 	if (!rv) {
-		fprintf(Stderr, "malloc(%lu) failure!\n", (unsigned long)len);
+		printf("malloc(%lu) failure!\n", (unsigned long)len);
 		exit(1);
 		}
 	return rv;
