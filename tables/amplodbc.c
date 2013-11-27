@@ -1065,55 +1065,6 @@ fully_qualify(char *dsname, char *buf, size_t len)
 	} winfo;
 
 #ifdef _WIN32
-
- static char *wprocnames[] = {
-	"start menu",
-	"program manager",
-	"ampl_lic",
-	"ampl",
-	"command prompt",
-	"sw:",
-	0};
-
- static int
-match1(char *s, char *t)
-{
-	while(*t) {
-		if (*s++ != *t++)
-			return 0;
-		}
-	return *s <= ' ';
-	}
-
- static BOOL CALLBACK
-mywproc(HWND hw, LPARAM all)
-{
-	char buf[2048], *s, *se;
-	int i, len;
-
-	len = GetWindowText(hw, buf, sizeof(buf));
-	if (len <= 0)
-		goto done;
-	se = buf + 15;
-	if (len < 15)
-		se = buf + len;
-	for(s = buf; s < se; ++s)
-		*s = tolc[(int)*s];
-	for(i = 0; (s = wprocnames[i++]); ) {
-		if (match1(buf,s)) {
-			if (winfo.score > i) {
-				winfo.score = i;
-				winfo.hw = hw;
-				if (i == 1)
-					return FALSE;
-				break;
-				}
-			}
-		}
- done:
-	return TRUE;
-	}
-
  static void
 hw_get(AmplExports *ae)
 {
@@ -1144,8 +1095,7 @@ hw_get(AmplExports *ae)
 		/*DEBUG*/ /*printf("Got $sw_HWND = #%x\n", wi.hw);*/
 		}
 	else {
-		winfo.hw = 0;
-		EnumWindows(mywproc, 0);
+		winfo.hw = GetDesktopWindow();
 		}
 	}
 
