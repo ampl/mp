@@ -40,7 +40,7 @@ that satisfies certain nutritional requirements. It is described in
 `Chapter 2 of the AMPL book <http://www.ampl.com/BOOK/CHAPTERS/05-tut2.pdf>`__.
 
 We assume that you've already installed the MS SQL Server ODBC driver using
-the instructions above and have access to an SQL Server database.
+the instructions above and have access to a local SQL Server database.
 
 First download the data for the diet problem `diet.xls
 <../models/tables/diet.xls>`__ and import it using the `SQL Server Import and

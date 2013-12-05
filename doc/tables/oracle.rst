@@ -11,111 +11,110 @@ local or remote.
 Installation
 ------------
 
-GNU/Linux
-~~~~~~~~~
+..
+  GNU/Linux
+  ~~~~~~~~~
 
-Debian-based distributions
-``````````````````````````
+  Debian-based distributions
+  ``````````````````````````
 
-The following instructions apply to `Debian <http://www.debian.org/>`__
-and Debian-based Linux distributions such as `Ubuntu
-<http://www.ubuntu.com/>`__ and `Mint <http://linuxmint.com/>`__.
+  The following instructions apply to `Debian <http://www.debian.org/>`__
+  and Debian-based Linux distributions such as `Ubuntu
+  <http://www.ubuntu.com/>`__ and `Mint <http://linuxmint.com/>`__.
 
-#. Install the MySQL ODBC driver:
+  #. Install the MySQL ODBC driver:
 
-   .. code-block:: bash
+    .. code-block:: bash
 
-      $ sudo apt-get install libmyodbc
+	$ sudo apt-get install libmyodbc
 
-#. Register the driver:
+  #. Register the driver:
 
-   .. code-block:: bash
+    .. code-block:: bash
 
-      $ sudo odbcinst -i -d -f /usr/share/libmyodbc/odbcinst.ini
+	$ sudo odbcinst -i -d -f /usr/share/libmyodbc/odbcinst.ini
 
-Go to :ref:`usage`.
+  Go to :ref:`usage`.
 
-Other distributions
-```````````````````
+  Other distributions
+  ```````````````````
 
-#. Install `unixODBC <http://www.unixodbc.org>`__ following `these instructions
-   <http://www.unixodbc.org/download.html>`__.
+  #. Install `unixODBC <http://www.unixodbc.org>`__ following `these instructions
+    <http://www.unixodbc.org/download.html>`__.
 
-#. Install the MySQL Connector/ODBC following `these instructions
-   <http://dev.mysql.com/doc/refman/5.1/en/connector-odbc-installation.html#connector-odbc-installation-binary-unix>`__.
-   Make sure that you use compatible versions of the ODBC driver
-   (Connector/ODBC) and the MySQL client library, otherwise the driver
-   library will not load and any connection attempt will fail.
+  #. Install the MySQL Connector/ODBC following `these instructions
+    <http://dev.mysql.com/doc/refman/5.1/en/connector-odbc-installation.html#connector-odbc-installation-binary-unix>`__.
+    Make sure that you use compatible versions of the ODBC driver
+    (Connector/ODBC) and the MySQL client library, otherwise the driver
+    library will not load and any connection attempt will fail.
 
-#. Register the ODBC driver. The easiest way to register the driver is
-   by using the ``myodbc-installer`` utility included in the distribution,
-   for example:
+  #. Register the ODBC driver. The easiest way to register the driver is
+    by using the ``myodbc-installer`` utility included in the distribution,
+    for example:
 
-   .. code-block:: bash
+    .. code-block:: bash
 
-      $ sudo myodbc-installer -d -a -n "MySQL" \
-          -t "DRIVER=/usr/local/lib/libmyodbc5a.so"
+	$ sudo myodbc-installer -d -a -n "MySQL" \
+	    -t "DRIVER=/usr/local/lib/libmyodbc5a.so"
 
-   ``/usr/local/lib/libmyodbc5a.so`` is the path to the driver library
-   that you installed in the previous step. You might need to change it
-   if you have a different version of the driver or installed it in a
-   different location. See the name of the ``.so`` file in the ``lib``
-   directory of the installation package.
+    ``/usr/local/lib/libmyodbc5a.so`` is the path to the driver library
+    that you installed in the previous step. You might need to change it
+    if you have a different version of the driver or installed it in a
+    different location. See the name of the ``.so`` file in the ``lib``
+    directory of the installation package.
 
-   Note that the MySQL ODBC/Connector distribution does not include a
-   setup library. If you invoke ``myodbc-installer --help``, you may see an
-   outdated example with a ``SETUP`` attribute specifying a setup library.
-   Omit this attribute during the driver registration unless you have
-   installed a setup library from some other source.
+    Note that the MySQL ODBC/Connector distribution does not include a
+    setup library. If you invoke ``myodbc-installer --help``, you may see an
+    outdated example with a ``SETUP`` attribute specifying a setup library.
+    Omit this attribute during the driver registration unless you have
+    installed a setup library from some other source.
 
-Go to :ref:`usage`.
+  Go to :ref:`usage`.
 
-MacOS X
-~~~~~~~
+  MacOS X
+  ~~~~~~~
 
-The easiest way to install the MySQL ODBC driver on Mac is by using an
-installer available for download as a DMG archive from the
-`Connector/ODBC download page on the MySQL website
-<http://dev.mysql.com/downloads/connector/odbc/#downloads>`__.
+  The easiest way to install the MySQL ODBC driver on Mac is by using an
+  installer available for download as a DMG archive from the
+  `Connector/ODBC download page on the MySQL website
+  <http://dev.mysql.com/downloads/connector/odbc/#downloads>`__.
 
-Alternatively you can install the MySQL Connector/ODBC as described `here
-<http://dev.mysql.com/doc/refman/5.1/en/connector-odbc-installation.html#connector-odbc-installation-binary-macosx>`__,
-skipping the outdated last step (driver registration) and then register
-the driver with the following command:
+  Alternatively you can install the MySQL Connector/ODBC as described `here
+  <http://dev.mysql.com/doc/refman/5.1/en/connector-odbc-installation.html#connector-odbc-installation-binary-macosx>`__,
+  skipping the outdated last step (driver registration) and then register
+  the driver with the following command:
 
-.. code-block:: bash
+  .. code-block:: bash
 
-   $ sudo myodbc-installer -d -a -n "MySQL" \
-       -t "DRIVER=/usr/local/lib/libmyodbc5w.so"
+    $ sudo myodbc-installer -d -a -n "MySQL" \
+	-t "DRIVER=/usr/local/lib/libmyodbc5w.so"
 
-``/usr/local/lib/libmyodbc5w.so`` is the path to the driver library
-that you installed in the previous step. You might need to change it
-if you have a different version of the driver or installed it in a
-different location. See the name of the ``.so`` file in the ``lib``
-directory of the installation package.
+  ``/usr/local/lib/libmyodbc5w.so`` is the path to the driver library
+  that you installed in the previous step. You might need to change it
+  if you have a different version of the driver or installed it in a
+  different location. See the name of the ``.so`` file in the ``lib``
+  directory of the installation package.
 
-Note that the MySQL ODBC/Connector distribution does not include a
-setup library. If you invoke ``myodbc-installer --help``, you may see an
-outdated example with a ``SETUP`` attribute specifying a setup library.
-Omit this attribute during the driver registration unless you have
-installed a setup library from some other source.
+  Note that the MySQL ODBC/Connector distribution does not include a
+  setup library. If you invoke ``myodbc-installer --help``, you may see an
+  outdated example with a ``SETUP`` attribute specifying a setup library.
+  Omit this attribute during the driver registration unless you have
+  installed a setup library from some other source.
 
-Go to :ref:`usage`.
+  Go to :ref:`usage`.
 
 Windows
 ~~~~~~~
 
 The ODBC driver for Oracle often comes installed by default on modern versions
 of Windows. You can check if the driver is installed by running the ODBC Data Source
-Administrator, ``odbcad32.exe``, and looking for SQL Server in the ``Drivers`` tab.
+Administrator, ``odbcad32.exe``, and looking for Oracel in the ``Drivers`` tab.
 
-.. image:: ../img/odbcad32-sqlserver.png
+.. image:: ../img/odbcad32-oracle.png
 
 If the driver is missing, follow the instructions in
 `Microsoft ODBC Driver for SQL Server: System Requirements, Installation, and Driver Files
 <http://msdn.microsoft.com/en-us/library/jj730315.aspx>`__ to install it.
-
-.. _usage:
 
 .. _usage:
 
@@ -173,7 +172,7 @@ To discover the driver name on Windows, run the ODBC Data Source
 Administrator, ``odbcad32.exe``.  Go to the ``Drivers`` tab where all the
 installed drivers are listed and look for the one containing ``Oracle``:
 
-.. image:: ../img/odbcad32.png
+.. image:: ../img/odbcad32-oracle.png
 
 A driver name containing a semicolon (``;``) should be surrounded with
 ``{`` and ``}`` in a connection string, for example:
@@ -181,7 +180,7 @@ A driver name containing a semicolon (``;``) should be surrounded with
    .. code-block:: none
 
       param ConnectionStr symbolic =
-        "DRIVER={Oracle ODBC Driver; version 11}; SERVER=localhost;";
+        "DRIVER={Oracle ODBC Driver; version 6.01}; SERVER=localhost;";
 
 Next there are several table declarations that use the ``ConnectionStr``
 parameter defined previously:
@@ -217,41 +216,42 @@ and writes the solution back to the database:
 
 Note that the same table ``dietFoods`` is used both for input and output.
 
-Running the ``diet-mysql.run`` script with ampl shows that data connection
+Running the ``diet-oracle.run`` script with ampl shows that data connection
 is working properly and the problem is easily solved:
 
    .. code-block:: bash
 
-      $ ampl diet-mysql.run
+      $ ampl diet-oracle.run
       MINOS 5.51: optimal solution found.
       13 iterations, objective 118.0594032
 
-You can use various database tools such as `MySQL workbench
-<https://www.mysql.com/products/workbench/>`__ or `MySQL command-line tool
-<http://dev.mysql.com/doc/refman/5.5/en/mysql.html>`__ to view the data
-exported to the database from the AMPL script:
+..
+  You can use various database tools such as `MySQL workbench
+  <https://www.mysql.com/products/workbench/>`__ or `MySQL command-line tool
+  <http://dev.mysql.com/doc/refman/5.5/en/mysql.html>`__ to view the data
+  exported to the database from the AMPL script:
 
-.. image:: ../img/mysql-workbench.png
+  .. image:: ../img/mysql-workbench.png
 
-SQL statements
---------------
+  SQL statements
+  --------------
 
-The default `identifier quote character in MySQL
-<http://dev.mysql.com/doc/refman/5.0/en/identifiers.html>`__
-is the backquote (`````). AMPL's ODBC table handler detects the quote
-character automatically and uses it when necessary. However,
-user-supplied SQL statements are passed to the MySQL ODBC driver as is
-and should use the correct quotation. It is possible to enable support for
-the ANSI standard quote character (``"``) in MySQL by setting the SQL mode to
-`ANSI_QUOTES
-<http://dev.mysql.com/doc/refman/5.1/en/server-sql-mode.html#sqlmode_ansi_quotes>`__.
+  The default `identifier quote character in MySQL
+  <http://dev.mysql.com/doc/refman/5.0/en/identifiers.html>`__
+  is the backquote (`````). AMPL's ODBC table handler detects the quote
+  character automatically and uses it when necessary. However,
+  user-supplied SQL statements are passed to the MySQL ODBC driver as is
+  and should use the correct quotation. It is possible to enable support for
+  the ANSI standard quote character (``"``) in MySQL by setting the SQL mode to
+  `ANSI_QUOTES
+  <http://dev.mysql.com/doc/refman/5.1/en/server-sql-mode.html#sqlmode_ansi_quotes>`__.
 
-Example:
+  Example:
 
-   .. code-block:: none
+    .. code-block:: none
 
-      table Foods "ODBC" "DRIVER=MySQL; DATABASE=test;"
-         "SQL=SELECT `FOOD`, `cost` FROM `Foods`;": [FOOD], cost;
+	table Foods "ODBC" "DRIVER=MySQL; DATABASE=test;"
+	  "SQL=SELECT `FOOD`, `cost` FROM `Foods`;": [FOOD], cost;
 
 Troubleshooting
 ---------------
@@ -301,5 +301,5 @@ surrounded with ``{`` and ``}`` in the connection string, for example:
 
    .. code-block:: none
 
-      table Foods "ODBC" "DRIVER={MySQL ODBC Driver; version 5.2}; DATABASE=test;":
+      table Foods "ODBC" "DRIVER={Oracle ODBC Driver; version 6.01}; DATABASE=test;":
         ...
