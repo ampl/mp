@@ -34,7 +34,7 @@ and Debian-based Linux distributions such as `Ubuntu
 
       $ sudo odbcinst -i -d -f /usr/share/libmyodbc/odbcinst.ini
 
-Go to :ref:`usage`.
+Go to :ref:`mysql-usage`.
 
 SUSE Linux
 ``````````
@@ -64,7 +64,7 @@ SUSE Linux
    Omit this attribute during the driver registration unless you have
    installed a setup library from some other source.
 
-Go to :ref:`usage`.
+Go to :ref:`mysql-usage`.
 
 Other distributions
 ```````````````````
@@ -99,7 +99,7 @@ Other distributions
    Omit this attribute during the driver registration unless you have
    installed a setup library from some other source.
 
-Go to :ref:`usage`.
+Go to :ref:`mysql-usage`.
 
 MacOS X
 ~~~~~~~
@@ -131,7 +131,7 @@ outdated example with a ``SETUP`` attribute specifying a setup library.
 Omit this attribute during the driver registration unless you have
 installed a setup library from some other source.
 
-Go to :ref:`usage`.
+Go to :ref:`mysql-usage`.
 
 Windows
 ~~~~~~~
@@ -139,7 +139,7 @@ Windows
 Install and register the MySQL Connector/ODBC following `these instructions
 <http://dev.mysql.com/doc/refman/5.1/en/connector-odbc-installation.html#connector-odbc-installation-binary-windows>`__.
 
-.. _usage:
+.. _mysql-usage:
 
 Usage
 -----
@@ -313,7 +313,7 @@ list of installed ODBC drivers using one of the following commands:
 
    $ odbcinst -d -q
 
-On Windows use the ODBC Data Source Administrator (see :ref:`usage`).
+On Windows use the ODBC Data Source Administrator (see :ref:`mysql-usage`).
 
 If the driver name contains a semicolon (``;``), check that the name is
 surrounded with ``{`` and ``}`` in the connection string, for example:

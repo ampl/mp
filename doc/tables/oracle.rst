@@ -34,7 +34,7 @@ Installation
 
 	$ sudo odbcinst -i -d -f /usr/share/libmyodbc/odbcinst.ini
 
-  Go to :ref:`usage`.
+  Go to :ref:`oracle-usage`.
 
   Other distributions
   ```````````````````
@@ -69,7 +69,7 @@ Installation
     Omit this attribute during the driver registration unless you have
     installed a setup library from some other source.
 
-  Go to :ref:`usage`.
+  Go to :ref:`oracle-usage`.
 
   MacOS X
   ~~~~~~~
@@ -101,7 +101,7 @@ Installation
   Omit this attribute during the driver registration unless you have
   installed a setup library from some other source.
 
-  Go to :ref:`usage`.
+  Go to :ref:`oracle-usage`.
 
 Windows
 ~~~~~~~
@@ -116,7 +116,7 @@ If the driver is missing, download one from `OracleODBC Drivers Download Page
 <http://www.oracle.com/technetwork/database/windows/downloads/index-096177.html>`__
 and install it.
 
-.. _usage:
+.. _oracle-usage:
 
 Usage
 -----
@@ -290,7 +290,7 @@ list of installed ODBC drivers using  the following commands:
 
    $ odbcinst -d -q
 
-On Windows use the ODBC Data Source Administrator (see :ref:`usage`).
+On Windows use the ODBC Data Source Administrator (see :ref:`oracle-usage`).
 
 If the driver name contains a semicolon (``;``), check that the name is
 surrounded with ``{`` and ``}`` in the connection string, for example:

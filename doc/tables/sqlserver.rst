@@ -29,7 +29,7 @@ If the driver is missing, follow the instructions in
 `Microsoft ODBC Driver for SQL Server: System Requirements, Installation, and Driver Files
 <http://msdn.microsoft.com/en-us/library/jj730315.aspx>`__ to install it.
 
-.. _usage:
+.. _sqlserver-usage:
 
 Usage
 -----
