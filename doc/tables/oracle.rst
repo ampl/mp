@@ -4,7 +4,7 @@ Connecting AMPL to Oracle
 =========================
 
 To use Oracle with AMPL, you need to have the `Oracle ODBC driver
-<http://www.oracle.com/technetwork/database/windows/index-098976.html>`
+<http://www.oracle.com/technetwork/database/windows/index-098976.html>`__
 installed and to have access to a database server, which could be either
 local or remote.
 
@@ -108,13 +108,13 @@ Windows
 
 The ODBC driver for Oracle often comes installed by default on modern versions
 of Windows. You can check if the driver is installed by running the ODBC Data Source
-Administrator, ``odbcad32.exe``, and looking for Oracel in the ``Drivers`` tab.
+Administrator, ``odbcad32.exe``, and looking for Oracle in the ``Drivers`` tab.
 
 .. image:: ../img/odbcad32-oracle.png
 
-If the driver is missing, follow the instructions in
-`Microsoft ODBC Driver for SQL Server: System Requirements, Installation, and Driver Files
-<http://msdn.microsoft.com/en-us/library/jj730315.aspx>`__ to install it.
+If the driver is missing, download one from `OracleODBC Drivers Download Page
+<http://www.oracle.com/technetwork/database/windows/downloads/index-096177.html>`__
+and install it.
 
 .. _usage:
 
@@ -284,11 +284,7 @@ Verbose error:
 If the data source name (DSN) was not found as in the example above check 
 if it is spelled correctly in the connection string. If you are not using a
 DSN, check the driver name instead. On a Unix-based system you can get the
-list of installed ODBC drivers using one of the following commands:
-
-.. code-block:: none
-
-   $ myodbc-installer -d -l
+list of installed ODBC drivers using  the following commands:
 
 .. code-block:: none
 
