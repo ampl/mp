@@ -295,7 +295,7 @@ On Windows use the ODBC Data Source Administrator (see :ref:`oracle-usage`).
 If the driver name contains a semicolon (``;``), check that the name is
 surrounded with ``{`` and ``}`` in the connection string, for example:
 
-   .. code-block:: none
+.. code-block:: none
 
-      table Foods "ODBC" "DRIVER={Oracle ODBC Driver; version 6.01}; DATABASE=test;":
-        ...
+   table Foods "ODBC" "DRIVER={Oracle ODBC Driver; version 6.01}; DATABASE=test;":
+     ...
