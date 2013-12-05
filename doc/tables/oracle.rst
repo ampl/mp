@@ -135,7 +135,7 @@ and import it into an Oracle database:
 
 .. code-block:: bash
 
-   $ sqlplus <username>/<password> @diet-mysql.sql
+   $ sqlplus <username>/<password> @diet-oracle.sql
 
 where ``<username>`` is the name of a database user and ``<password>`` is the
 user's password.
