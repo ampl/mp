@@ -156,9 +156,9 @@ First download the data for the diet problem `diet-mysql.sql
 <http://ampl.github.io/models/tables/diet-mysql.sql>`__
 and import it to MySQL:
 
-   .. code-block:: bash
+.. code-block:: bash
 
-      $ mysql test < diet-mysql.sql
+   $ mysql test < diet-mysql.sql
 
 Then download the model file `diet.mod
 <http://ampl.github.io/models/tables/diet.mod>`__
@@ -167,9 +167,9 @@ and the script file `diet-mysql.run
 
 The script file first reads the model:
 
-   .. code-block:: none
+.. code-block:: none
 
-      model diet.mod;
+   model diet.mod;
 
 Then it defines a parameter to hold a connection string. Since the connection
 parameters are the same for all table declarations in our example, we
@@ -177,9 +177,9 @@ avoid unnecessary duplication. In this case we specify all the connection
 parameters explicitly. Alternatively, you could use a DSN file name or
 ``"DSN=<dsn-name>"`` as a connection string.
 
-   .. code-block:: none
+.. code-block:: none
 
-      param ConnectionStr symbolic = "DRIVER=MySQL; DATABASE=test;";
+   param ConnectionStr symbolic = "DRIVER=MySQL; DATABASE=test;";
 
 If you are using Linux or MacOS X and have chosen a driver name other
 than ``MySQL``, you will have to specify this name instead of ``MySQL``
@@ -197,53 +197,53 @@ installed drivers are listed and look for the one containing ``MySQL``:
 A driver name containing a semicolon (``;``) should be surrounded with
 ``{`` and ``}`` in a connection string, for example:
 
-   .. code-block:: none
+.. code-block:: none
 
-      param ConnectionStr symbolic =
-        "DRIVER={MySQL ODBC Driver; version 5.2}; DATABASE=test;";
+   param ConnectionStr symbolic =
+     "DRIVER={MySQL ODBC Driver; version 5.2}; DATABASE=test;";
 
 Next there are several table declarations that use the ``ConnectionStr``
 parameter defined previously:
 
-   .. code-block:: none
+.. code-block:: none
 
-      table dietFoods "ODBC" (ConnectionStr) "Foods":
-         FOOD <- [FOOD], cost IN, f_min IN, f_max IN,
-         Buy OUT, Buy.rc ~ BuyRC OUT, {j in FOOD} Buy[j]/f_max[j] ~ BuyFrac;
+   table dietFoods "ODBC" (ConnectionStr) "Foods":
+      FOOD <- [FOOD], cost IN, f_min IN, f_max IN,
+      Buy OUT, Buy.rc ~ BuyRC OUT, {j in FOOD} Buy[j]/f_max[j] ~ BuyFrac;
 
-      table dietNutrs IN "ODBC" (ConnectionStr) "Nutrients": NUTR <- [NUTR], n_min, n_max;
-      table dietAmts IN "ODBC" (ConnectionStr) "Amounts": [NUTR, FOOD], amt;
+   table dietNutrs IN "ODBC" (ConnectionStr) "Nutrients": NUTR <- [NUTR], n_min, n_max;
+   table dietAmts IN "ODBC" (ConnectionStr) "Amounts": [NUTR, FOOD], amt;
 
 Finally the script reads the data from the tables
 
-   .. code-block:: none
+.. code-block:: none
 
-      read table dietFoods;
-      read table dietNutrs;
-      read table dietAmts;
+   read table dietFoods;
+   read table dietNutrs;
+   read table dietAmts;
 
 solves the problem
                   
-   .. code-block:: none
+.. code-block:: none
 
-      solve;
+   solve;
 
 and writes the solution back to the database:
 
-   .. code-block:: none
+.. code-block:: none
 
-      write table dietFoods;
+   write table dietFoods;
 
 Note that the same table ``dietFoods`` is used both for input and output.
 
 Running the ``diet-mysql.run`` script with ampl shows that data connection
 is working properly and the problem is easily solved:
 
-   .. code-block:: bash
+.. code-block:: bash
 
-      $ ampl diet-mysql.run
-      MINOS 5.51: optimal solution found.
-      13 iterations, objective 118.0594032
+   $ ampl diet-mysql.run
+   MINOS 5.51: optimal solution found.
+   13 iterations, objective 118.0594032
 
 You can use various database tools such as `MySQL workbench
 <https://www.mysql.com/products/workbench/>`__ or `MySQL command-line tool
@@ -267,10 +267,10 @@ the ANSI standard quote character (``"``) in MySQL by setting the SQL mode to
 
 Example:
 
-   .. code-block:: none
+.. code-block:: none
 
-      table Foods "ODBC" "DRIVER=MySQL; DATABASE=test;"
-         "SQL=SELECT `FOOD`, `cost` FROM `Foods`;": [FOOD], cost;
+   table Foods "ODBC" "DRIVER=MySQL; DATABASE=test;"
+      "SQL=SELECT `FOOD`, `cost` FROM `Foods`;": [FOOD], cost;
 
 Troubleshooting
 ---------------
@@ -318,10 +318,10 @@ On Windows use the ODBC Data Source Administrator (see :ref:`mysql-usage`).
 If the driver name contains a semicolon (``;``), check that the name is
 surrounded with ``{`` and ``}`` in the connection string, for example:
 
-   .. code-block:: none
+.. code-block:: none
 
-      table Foods "ODBC" "DRIVER={MySQL ODBC Driver; version 5.2}; DATABASE=test;":
-        ...
+   table Foods "ODBC" "DRIVER={MySQL ODBC Driver; version 5.2}; DATABASE=test;":
+     ...
 
 Can't connect through socket
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -351,8 +351,8 @@ The ``socket = <path>`` line specifies the path to the socket file.
 You can either create a link from ``/tmp/mysql.sock`` to the socket file
 or specify the socket explicitly in the connection string:
 
-   .. code-block:: none
+.. code-block:: none
 
-      table Foods "ODBC"
-        "DRIVER=MySQL; DATABASE=test; SOCKET=/var/run/mysqld/mysqld.sock;":
-         ...
+   table Foods "ODBC"
+     "DRIVER=MySQL; DATABASE=test; SOCKET=/var/run/mysqld/mysqld.sock;":
+      ...

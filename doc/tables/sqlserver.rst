@@ -74,9 +74,9 @@ Once import is complete, download the model file `diet.mod
 
 The script file first reads the model:
 
-   .. code-block:: none
+.. code-block:: none
 
-      model diet.mod;
+   model diet.mod;
 
 Then it defines a parameter to hold a connection string. Since the connection
 parameters are the same for all table declarations in our example, we
@@ -84,9 +84,9 @@ avoid unnecessary duplication. In this case we specify all the connection
 parameters explicitly. Alternatively, you could use a DSN file name or
 ``"DSN=<dsn-name>"`` as a connection string.
 
-   .. code-block:: none
+.. code-block:: none
 
-      param ConnectionStr symbolic = "DRIVER={SQL Server}; SERVER=(local);";
+   param ConnectionStr symbolic = "DRIVER={SQL Server}; SERVER=(local);";
 
 If you are using Linux and have chosen a driver name other than ``SQL Server``,
 you will have to specify this name instead of ``SQL Server`` in the
@@ -105,52 +105,52 @@ installed drivers are listed and look for the one containing ``SQL Server``:
 A driver name containing a semicolon (``;``) should be surrounded with
 ``{`` and ``}`` in a connection string, for example:
 
-   .. code-block:: none
+.. code-block:: none
 
-      param ConnectionStr symbolic = "DRIVER={SQL Server; version 11.0};";
+   param ConnectionStr symbolic = "DRIVER={SQL Server; version 11.0};";
 
 Next there are several table declarations that use the ``ConnectionStr``
 parameter defined previously:
 
-   .. code-block:: none
+.. code-block:: none
 
-      table dietFoods "ODBC" (ConnectionStr) "Foods":
-         FOOD <- [FOOD], cost IN, f_min IN, f_max IN,
-         Buy OUT, Buy.rc ~ BuyRC OUT, {j in FOOD} Buy[j]/f_max[j] ~ BuyFrac;
+   table dietFoods "ODBC" (ConnectionStr) "Foods":
+      FOOD <- [FOOD], cost IN, f_min IN, f_max IN,
+      Buy OUT, Buy.rc ~ BuyRC OUT, {j in FOOD} Buy[j]/f_max[j] ~ BuyFrac;
 
-      table dietNutrs IN "ODBC" (ConnectionStr) "Nutrients": NUTR <- [NUTR], n_min, n_max;
-      table dietAmts IN "ODBC" (ConnectionStr) "Amounts": [NUTR, FOOD], amt;
+   table dietNutrs IN "ODBC" (ConnectionStr) "Nutrients": NUTR <- [NUTR], n_min, n_max;
+   table dietAmts IN "ODBC" (ConnectionStr) "Amounts": [NUTR, FOOD], amt;
 
 Finally the script reads the data from the tables
 
-   .. code-block:: none
+.. code-block:: none
 
-      read table dietFoods;
-      read table dietNutrs;
-      read table dietAmts;
+   read table dietFoods;
+   read table dietNutrs;
+   read table dietAmts;
 
 solves the problem
                   
-   .. code-block:: none
+.. code-block:: none
 
-      solve;
+   solve;
 
 and writes the solution back to the database:
 
-   .. code-block:: none
+.. code-block:: none
 
-      write table dietFoods;
+   write table dietFoods;
 
 Note that the same table ``dietFoods`` is used both for input and output.
 
 Running the ``diet-sqlserver.run`` script with ampl shows that data connection
 is working properly and the problem is easily solved:
 
-   .. code-block:: bash
+.. code-block:: bash
 
-      > ampl diet-sqlserver.run
-      MINOS 5.51: optimal solution found.
-      13 iterations, objective 118.0594032
+   > ampl diet-sqlserver.run
+   MINOS 5.51: optimal solution found.
+   13 iterations, objective 118.0594032
 
 You can use various database tools such as `SQL Server Management Studio
 <http://msdn.microsoft.com/en-us/library/hh213248.aspx>`__ to view the data
@@ -170,10 +170,10 @@ as is and should use the correct quotation.
 
 Example:
 
-   .. code-block:: none
+.. code-block:: none
 
-      table Foods 'ODBC' 'DRIVER={SQL Server};'
-         'SQL=SELECT "FOOD", "cost" FROM "Foods";': [FOOD], cost;
+   table Foods 'ODBC' 'DRIVER={SQL Server};'
+      'SQL=SELECT "FOOD", "cost" FROM "Foods";': [FOOD], cost;
 
 Troubleshooting
 ---------------
