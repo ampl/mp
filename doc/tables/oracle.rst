@@ -133,9 +133,9 @@ First download the data for the diet problem `diet-oracle.sql
 <http://ampl.github.io/models/tables/diet-oracle.sql>`__
 and import it into an Oracle database:
 
-   .. code-block:: bash
+.. code-block:: bash
 
-      $ sqlplus <username>/<password> @diet-mysql.sql
+   $ sqlplus <username>/<password> @diet-mysql.sql
 
 where ``<username>`` is the name of a database user and ``<password>`` is the
 user's password.
@@ -147,9 +147,9 @@ and the script file `diet-oracle.run
 
 The script file first reads the model:
 
-   .. code-block:: none
+.. code-block:: none
 
-      model diet.mod;
+   model diet.mod;
 
 Then it defines a parameter to hold a connection string. Since the connection
 parameters are the same for all table declarations in our example, we
@@ -157,9 +157,9 @@ avoid unnecessary duplication. In this case we specify all the connection
 parameters explicitly. Alternatively, you could use a DSN file name or
 ``"DSN=<dsn-name>"`` as a connection string.
 
-   .. code-block:: none
+.. code-block:: none
 
-      param ConnectionStr symbolic = "DRIVER=Oracle; SERVER=localhost;";
+   param ConnectionStr symbolic = "DRIVER=Oracle; SERVER=localhost;";
 
 If you are using Linux or MacOS X and have chosen a driver name other
 than ``Oracle``, you will have to specify this name instead of ``Oracle``
@@ -177,53 +177,53 @@ installed drivers are listed and look for the one containing ``Oracle``:
 A driver name containing a semicolon (``;``) should be surrounded with
 ``{`` and ``}`` in a connection string, for example:
 
-   .. code-block:: none
+.. code-block:: none
 
-      param ConnectionStr symbolic =
-        "DRIVER={Oracle ODBC Driver; version 6.01}; SERVER=localhost;";
+   param ConnectionStr symbolic =
+     "DRIVER={Oracle ODBC Driver; version 6.01}; SERVER=localhost;";
 
 Next there are several table declarations that use the ``ConnectionStr``
 parameter defined previously:
 
-   .. code-block:: none
+.. code-block:: none
 
-      table dietFoods "ODBC" (ConnectionStr) "Foods":
-         FOOD <- [FOOD], cost IN, f_min IN, f_max IN,
-         Buy OUT, Buy.rc ~ BuyRC OUT, {j in FOOD} Buy[j]/f_max[j] ~ BuyFrac;
+   table dietFoods "ODBC" (ConnectionStr) "Foods":
+       FOOD <- [FOOD], cost IN, f_min IN, f_max IN,
+       Buy OUT, Buy.rc ~ BuyRC OUT, {j in FOOD} Buy[j]/f_max[j] ~ BuyFrac;
 
-      table dietNutrs IN "ODBC" (ConnectionStr) "Nutrients": NUTR <- [NUTR], n_min, n_max;
-      table dietAmts IN "ODBC" (ConnectionStr) "Amounts": [NUTR, FOOD], amt;
+   table dietNutrs IN "ODBC" (ConnectionStr) "Nutrients": NUTR <- [NUTR], n_min, n_max;
+   table dietAmts IN "ODBC" (ConnectionStr) "Amounts": [NUTR, FOOD], amt;
 
 Finally the script reads the data from the tables
 
-   .. code-block:: none
+.. code-block:: none
 
-      read table dietFoods;
-      read table dietNutrs;
-      read table dietAmts;
+   read table dietFoods;
+   read table dietNutrs;
+   read table dietAmts;
 
 solves the problem
                   
-   .. code-block:: none
+.. code-block:: none
 
-      solve;
+   solve;
 
 and writes the solution back to the database:
 
-   .. code-block:: none
+.. code-block:: none
 
-      write table dietFoods;
+   write table dietFoods;
 
 Note that the same table ``dietFoods`` is used both for input and output.
 
 Running the ``diet-oracle.run`` script with ampl shows that data connection
 is working properly and the problem is easily solved:
 
-   .. code-block:: bash
+.. code-block:: bash
 
-      $ ampl diet-oracle.run
-      MINOS 5.51: optimal solution found.
-      13 iterations, objective 118.0594032
+   $ ampl diet-oracle.run
+   MINOS 5.51: optimal solution found.
+   13 iterations, objective 118.0594032
 
 ..
   You can use various database tools such as `MySQL workbench
