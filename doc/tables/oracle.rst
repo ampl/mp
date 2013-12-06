@@ -49,32 +49,40 @@ and Debian-based Linux distributions such as `Ubuntu
 
    .. code-block:: bash
 
-      echo /usr/lib/oracle/12.1/client64/lib | sudo tee -a /etc/ld.so.conf
+      echo /usr/lib/oracle/*/client*/lib | sudo tee -a /etc/ld.so.conf
       sudo ldconfig
-
-   Change ``/usr/lib/oracle/12.1/client64/lib`` to ```` for a 32-bit (x86) platform.
 
 #. Register the ODBC driver:
 
    .. code-block:: bash
 
-      sudo /usr/share/oracle/12.1/client64/odbc_update_ini.sh / /usr/lib/oracle/12.1/client64/lib
+      sudo /usr/share/oracle/*/client*/odbc_update_ini.sh / /usr/lib/oracle/*/client*/lib
 
-#. Create a symbolic link libodbcinst.so.2:
+#. Create a symbolic link for ``libodbcinst.so`` on ``x86-64``:
 
    .. code-block:: bash
 
       sudo ln -s /usr/lib/x86_64-linux-gnu/libodbcinst.so /usr/lib/x86_64-linux-gnu/libodbcinst.so.2
 
+   Use the following command with the ``x86`` version instead:
+
+   .. code-block:: bash
+
+      sudo ln -s /usr/lib/libodbcinst.so /usr/lib/libodbcinst.so.2
+
 #. Set the ``ORACLE_HOME`` environment variable:
 
    .. code-block:: bash
 
-      export ORACLE_HOME=/usr/lib/oracle/12.1/client64
+      export ORACLE_HOME=<installation-dir>
 
-   Alternatively you can add the line ``ORACLE_HOME=/usr/lib/oracle/12.1/client64`` to
-   ``~/.pam_environment`` to set this environment variable permanently for the current user.
-   Use ``/etc/environment`` instead of ``~/.pam_environment`` for system-wide environment variables.
+   replacing ``<installation-dir>`` with the actual installation directory which can
+   printed with the command ``echo /usr/lib/oracle/*/client*``.
+
+   Alternatively you can add the line ``ORACLE_HOME=<installation-dir>`` to
+   ``~/.pam_environment`` to set this environment variable permanently for
+   the current user. Use ``/etc/environment`` instead of ``~/.pam_environment``
+   for system-wide environment variables.
    See also `Persistent environment variables
    <https://help.ubuntu.com/community/EnvironmentVariables#Persistent_environment_variables>`__.
 
