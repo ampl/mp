@@ -126,18 +126,17 @@ Go to :ref:`oracle-usage`.
 
   Go to :ref:`oracle-usage`.
 
-  MacOS X
-  ~~~~~~~
+MacOS X
+~~~~~~~
 
-  The easiest way to install the MySQL ODBC driver on Mac is by using an
-  installer available for download as a DMG archive from the
-  `Connector/ODBC download page on the MySQL website
-  <http://dev.mysql.com/downloads/connector/odbc/#downloads>`__.
+#. Download zip archives of Oracle Instant Client for your Mac platform from the
+   `Instant Client Downloads page
+   <http://www.oracle.com/technetwork/database/features/instant-client/index-097480.html>`__.
+   You will need Basic and ODBC packages. In the Usage example we also use ``sqlplus`` from
+   the SQL*Plus package.
 
-  Alternatively you can install the MySQL Connector/ODBC as described `here
-  <http://dev.mysql.com/doc/refman/5.1/en/connector-odbc-installation.html#connector-odbc-installation-binary-macosx>`__,
-  skipping the outdated last step (driver registration) and then register
-  the driver with the following command:
+..
+  Register the driver with the following command:
 
   .. code-block:: bash
 
@@ -156,7 +155,7 @@ Go to :ref:`oracle-usage`.
   Omit this attribute during the driver registration unless you have
   installed a setup library from some other source.
 
-  Go to :ref:`oracle-usage`.
+Go to :ref:`oracle-usage`.
 
 Windows
 ~~~~~~~
@@ -280,14 +279,16 @@ is working properly and the problem is easily solved:
    MINOS 5.51: optimal solution found.
    13 iterations, objective 118.0594032
 
+You can use various database tools such as `Oracle SQL Developer IDE
+<http://www.oracle.com/technetwork/developer-tools/sql-developer/overview/index.html>`__,
+`Oracle Application Express
+<http://www.oracle.com/technetwork/developer-tools/apex/overview/index.html>`__,
+or `sqlplus <http://docs.oracle.com/cd/B19306_01/server.102/b14357/toc.htm>`__
+to view the data exported to the database from the AMPL script:
+
+.. image:: ../img/oracle-application-express.png
+
 ..
-  You can use various database tools such as `MySQL workbench
-  <https://www.mysql.com/products/workbench/>`__ or `MySQL command-line tool
-  <http://dev.mysql.com/doc/refman/5.5/en/mysql.html>`__ to view the data
-  exported to the database from the AMPL script:
-
-  .. image:: ../img/mysql-workbench.png
-
   SQL statements
   --------------
 
@@ -307,6 +308,29 @@ is working properly and the problem is easily solved:
 
 	table Foods "ODBC" "DRIVER=MySQL; DATABASE=test;"
 	  "SQL=SELECT `FOOD`, `cost` FROM `Foods`;": [FOOD], cost;
+
+DSN Example
+~~~~~~~~~~~
+
+The following example shows a DSN entry in the ``odbc.ini`` file that
+can be used to connect to a remote Oracle Express Edition (XE) database:
+
+.. code-block:: none
+
+   [Diet]
+   Driver       = Oracle 12c ODBC driver
+   ServerName   = <server-ip-or-hostname>
+   Database     = XE
+   DSN          = Diet
+   Port         = 1521
+   UserID       = <username>
+   Password     = <password>
+
+The DSN can be used in an AMPL table declaration as follows:
+
+.. code-block:: none
+
+   table Foods "ODBC" "DSN=Diet;": ...
 
 Troubleshooting
 ---------------
