@@ -215,10 +215,10 @@ parameters explicitly. Alternatively, you could use a DSN file name or
 
    param ConnectionStr symbolic = "DRIVER=Oracle; SERVER=localhost;";
 
-You have to replace ``Oracle`` with the actual driver name in the
-``DRIVER=Oracle`` attribute in the connection string above.
+Replace ``Oracle`` with the actual driver name in the connection string above.
 
-The following command prints the list of installed ODBC drivers on Linux:
+To find out the driver name on Linux, run the command ``odbcinst -q -d`` to
+display the names of installed ODBC drivers on Linux
 
 .. code-block:: bash
 
@@ -226,7 +226,7 @@ The following command prints the list of installed ODBC drivers on Linux:
    [SQLite3]
    [Oracle 12c ODBC driver]
 
-Select the one containing ``Oracle``; in the example above it is
+and select the one containing ``Oracle``. In the example above it is
 ``Oracle 12c ODBC driver``. Note that the square brackets are not part of the name.
 
 To discover the driver name on Windows, run the ODBC Data Source
