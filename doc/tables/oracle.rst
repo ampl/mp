@@ -31,7 +31,7 @@ and Debian-based Linux distributions such as `Ubuntu
 
    .. code-block:: bash
 
-      sudo apt-get install alien libaio1 unixodbc
+      sudo apt-get install alien libaio1 unixodbc-dev
 
 #. Convert packages from RPM to DEB format:
 
