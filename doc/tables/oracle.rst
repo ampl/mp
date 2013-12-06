@@ -215,13 +215,20 @@ parameters explicitly. Alternatively, you could use a DSN file name or
 
    param ConnectionStr symbolic = "DRIVER=Oracle; SERVER=localhost;";
 
-If you are using Linux or MacOS X and have chosen a driver name other
-than ``Oracle``, you will have to specify this name instead of ``Oracle``
-in the ``DRIVER=Oracle`` attribute in the connection string.
+You have to replace ``Oracle`` with the actual driver name in the
+``DRIVER=Oracle`` attribute in the connection string above.
 
-A driver name is chosen automatically during installation on Windows,
-so if you are using this OS, you will have to find the driver name and
-specify it instead of ``Oracle`` in the connection string.
+The following command prints the list of installed ODBC drivers on Linux:
+
+.. code-block:: bash
+
+   $ odbcinst -q -d
+   [SQLite3]
+   [Oracle 12c ODBC driver]
+
+Select the one containing ``Oracle``; in the example above it is
+``Oracle 12c ODBC driver``. Note that the square brackets are not part of the name.
+
 To discover the driver name on Windows, run the ODBC Data Source
 Administrator, ``odbcad32.exe``.  Go to the ``Drivers`` tab where all the
 installed drivers are listed and look for the one containing ``Oracle``:
@@ -288,26 +295,20 @@ to view the data exported to the database from the AMPL script:
 
 .. image:: ../img/oracle-application-express.png
 
-..
-  SQL statements
-  --------------
+SQL statements
+--------------
 
-  The default `identifier quote character in MySQL
-  <http://dev.mysql.com/doc/refman/5.0/en/identifiers.html>`__
-  is the backquote (`````). AMPL's ODBC table handler detects the quote
-  character automatically and uses it when necessary. However,
-  user-supplied SQL statements are passed to the MySQL ODBC driver as is
-  and should use the correct quotation. It is possible to enable support for
-  the ANSI standard quote character (``"``) in MySQL by setting the SQL mode to
-  `ANSI_QUOTES
-  <http://dev.mysql.com/doc/refman/5.1/en/server-sql-mode.html#sqlmode_ansi_quotes>`__.
+The identifier quote character in Oracle the ANSI standard quote character (``"``).
+AMPL's ODBC table handler detects the quote character automatically and uses it
+when necessary. However, user-supplied SQL statements are passed to the Oracle ODBC
+driver as is and should use the correct quotation.
 
-  Example:
+Example:
 
-    .. code-block:: none
+  .. code-block:: none
 
-	table Foods "ODBC" "DRIVER=MySQL; DATABASE=test;"
-	  "SQL=SELECT `FOOD`, `cost` FROM `Foods`;": [FOOD], cost;
+     table Foods "ODBC" "DRIVER=Oracle; SERVER=localhost;"
+       'SQL=SELECT "FOOD", "cost" FROM "Foods";': [FOOD], cost;
 
 DSN Example
 ~~~~~~~~~~~
