@@ -27,6 +27,12 @@ and Debian-based Linux distributions such as `Ubuntu
    You will need Basic and ODBC packages. In the Usage example we also use ``sqlplus`` from
    the SQL*Plus package.
 
+#. Install dependencies:
+
+   .. code-block:: bash
+
+      sudo apt-get install alien libaio1 unixodbc
+
 #. Convert packages from RPM to DEB format:
 
    .. code-block:: bash
@@ -38,12 +44,6 @@ and Debian-based Linux distributions such as `Ubuntu
    .. code-block:: bash
 
       sudo dpkg -i oracle-instantclient*.deb
-
-#. Install dependencies:
-
-   .. code-block:: bash
-
-      sudo apt-get install libaio1 unixodbc
 
 #. Add the Oracle library directory to the library search paths:
 
