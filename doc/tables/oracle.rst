@@ -62,7 +62,8 @@ and Debian-based Linux distributions such as `Ubuntu
 
    .. code-block:: bash
 
-      sudo ln -s /usr/lib/x86_64-linux-gnu/libodbcinst.so /usr/lib/x86_64-linux-gnu/libodbcinst.so.2
+      sudo ln -s /usr/lib/x86_64-linux-gnu/libodbcinst.so \
+                 /usr/lib/x86_64-linux-gnu/libodbcinst.so.2
 
    Use the following command with the ``x86`` version instead:
 
@@ -77,7 +78,7 @@ and Debian-based Linux distributions such as `Ubuntu
       export ORACLE_HOME=<installation-dir>
 
    replacing ``<installation-dir>`` with the actual installation directory which can
-   printed with the command ``echo /usr/lib/oracle/*/client*``.
+   be printed with the command ``echo /usr/lib/oracle/*/client*``.
 
    Alternatively you can add the line ``ORACLE_HOME=<installation-dir>`` to
    ``~/.pam_environment`` to set this environment variable permanently for
@@ -339,7 +340,7 @@ if it is spelled correctly in the connection string. If you are not using a
 DSN, check the driver name instead. On a Unix-based system you can get the
 list of installed ODBC drivers using  the following commands:
 
-.. code-block:: none
+.. code-block:: bash
 
    $ odbcinst -d -q
 

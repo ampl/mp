@@ -305,11 +305,11 @@ if it is spelled correctly in the connection string. If you are not using a
 DSN, check the driver name instead. On a Unix-based system you can get the
 list of installed ODBC drivers using one of the following commands:
 
-.. code-block:: none
+.. code-block:: bash
 
    $ myodbc-installer -d -l
 
-.. code-block:: none
+.. code-block:: bash
 
    $ odbcinst -d -q
 
