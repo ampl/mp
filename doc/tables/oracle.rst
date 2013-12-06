@@ -69,7 +69,8 @@ and Debian-based Linux distributions such as `Ubuntu
 
    .. code-block:: bash
 
-      sudo ln -s /usr/lib/libodbcinst.so /usr/lib/libodbcinst.so.2
+      sudo ln -s /usr/lib/i386-linux-gnu/libodbcinst.so \
+                 /usr/lib/i386-linux-gnu/libodbcinst.so.2
 
 #. Set the ``ORACLE_HOME`` environment variable:
 
