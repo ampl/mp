@@ -11,31 +11,76 @@ local or remote.
 Installation
 ------------
 
+GNU/Linux
+~~~~~~~~~
+
+Debian-based distributions
+``````````````````````````
+
+The following instructions apply to `Debian <http://www.debian.org/>`__
+and Debian-based Linux distributions such as `Ubuntu
+<http://www.ubuntu.com/>`__ and `Mint <http://linuxmint.com/>`__.
+
+#. Download RPM packages of Oracle Instant Client for your Linux platform from the
+   `Instant Client Downloads page
+   <http://www.oracle.com/technetwork/database/features/instant-client/index-097480.html>`__.
+   You will need Basic and ODBC packages. In the Usage example we also use ``sqlplus`` from
+   the SQL*Plus package.
+
+#. Convert packages from RPM to DEB format:
+
+   .. code-block:: bash
+
+      sudo alien oracle-instantclient*.rpm
+   
+#. Install the packages:
+
+   .. code-block:: bash
+
+      sudo dpkg -i oracle-instantclient*.deb
+
+#. Install dependencies:
+
+   .. code-block:: bash
+
+      sudo apt-get install libaio1 unixodbc
+
+#. Add the Oracle library directory to the library search paths:
+
+   .. code-block:: bash
+
+      echo /usr/lib/oracle/12.1/client64/lib | sudo tee -a /etc/ld.so.conf
+      sudo ldconfig
+
+   Change ``/usr/lib/oracle/12.1/client64/lib`` to ```` for a 32-bit (x86) platform.
+
+#. Register the ODBC driver:
+
+   .. code-block:: bash
+
+      sudo /usr/share/oracle/12.1/client64/odbc_update_ini.sh / /usr/lib/oracle/12.1/client64/lib
+
+#. Create a symbolic link libodbcinst.so.2:
+
+   .. code-block:: bash
+
+      sudo ln -s /usr/lib/x86_64-linux-gnu/libodbcinst.so /usr/lib/x86_64-linux-gnu/libodbcinst.so.2
+
+#. Set the ``ORACLE_HOME`` environment variable:
+
+   .. code-block:: bash
+
+      export ORACLE_HOME=/usr/lib/oracle/12.1/client64
+
+   Alternatively you can add the line ``ORACLE_HOME=/usr/lib/oracle/12.1/client64`` to
+   ``~/.pam_environment`` to set this environment variable permanently for the current user.
+   Use ``/etc/environment`` instead of ``~/.pam_environment`` for system-wide environment variables.
+   See also `Persistent environment variables
+   <https://help.ubuntu.com/community/EnvironmentVariables#Persistent_environment_variables>`__.
+
+Go to :ref:`oracle-usage`.
+
 ..
-  GNU/Linux
-  ~~~~~~~~~
-
-  Debian-based distributions
-  ``````````````````````````
-
-  The following instructions apply to `Debian <http://www.debian.org/>`__
-  and Debian-based Linux distributions such as `Ubuntu
-  <http://www.ubuntu.com/>`__ and `Mint <http://linuxmint.com/>`__.
-
-  #. Install the MySQL ODBC driver:
-
-    .. code-block:: bash
-
-	$ sudo apt-get install libmyodbc
-
-  #. Register the driver:
-
-    .. code-block:: bash
-
-	$ sudo odbcinst -i -d -f /usr/share/libmyodbc/odbcinst.ini
-
-  Go to :ref:`oracle-usage`.
-
   Other distributions
   ```````````````````
 
@@ -299,3 +344,17 @@ surrounded with ``{`` and ``}`` in the connection string, for example:
 
    table Foods "ODBC" "DRIVER={Oracle ODBC Driver; version 6.01}; DATABASE=test;":
      ...
+
+Driver's SQLAllocHandle on SQL_HANDLE_HENV failed
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Verbose error:
+
+.. code-block:: none
+
+   SQLDriverConnect returned -1
+   sqlstate = "IM004"
+   errmsg = "[unixODBC][Driver Manager]Driver's SQLAllocHandle on SQL_HANDLE_HENV failed"
+   native_errno = 0
+
+This error may occur if the ``ORACLE_HOME`` environment variable is not set.
