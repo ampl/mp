@@ -94,7 +94,7 @@ Other distributions
 ```````````````````
 
 #. Install `unixODBC <http://www.unixodbc.org>`__ following `these instructions
-  <http://www.unixodbc.org/download.html>`__.
+   <http://www.unixodbc.org/download.html>`__.
 
 #. Download and install Oracle Instant Client packages for your Linux platform from the
    `Instant Client Downloads page
@@ -107,7 +107,7 @@ Other distributions
    .. code-block:: bash
 
       echo /usr/lib/oracle/*/client*/lib | sudo tee -a /etc/ld.so.conf
-      sudo ldconfig
+      sudo /sbin/ldconfig
 
 #. Register the ODBC driver:
 
@@ -414,3 +414,25 @@ Verbose error:
    native_errno = 0
 
 This error may occur if the ``ORACLE_HOME`` environment variable is not set.
+
+OID generation failed
+~~~~~~~~~~~~~~~~~~~~~
+
+``sqlplus`` prints the following error message:
+
+.. code-block:: none
+
+   ORA-21561: OID generation failed
+
+Make sure your hostname and the name asociated with 127.0.1.1 IP address in ``/etc/hosts``
+are the same:
+
+.. code-block:: none
+
+   $ hostname
+   your-machine
+   $ grep 127.0.1.1 /etc/hosts
+   127.0.1.1	your-machine
+
+If they are not the same add the line ``127.0.1.1 <hostname>`` to ``/etc/hosts``, where
+``<hostname>`` is the name printed by the ``hostname`` command.
