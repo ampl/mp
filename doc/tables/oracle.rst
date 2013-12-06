@@ -90,41 +90,62 @@ and Debian-based Linux distributions such as `Ubuntu
 
 Go to :ref:`oracle-usage`.
 
-..
-  Other distributions
-  ```````````````````
+Other distributions
+```````````````````
 
-  #. Install `unixODBC <http://www.unixodbc.org>`__ following `these instructions
-    <http://www.unixodbc.org/download.html>`__.
+#. Install `unixODBC <http://www.unixodbc.org>`__ following `these instructions
+  <http://www.unixodbc.org/download.html>`__.
 
-  #. Install the MySQL Connector/ODBC following `these instructions
-    <http://dev.mysql.com/doc/refman/5.1/en/connector-odbc-installation.html#connector-odbc-installation-binary-unix>`__.
-    Make sure that you use compatible versions of the ODBC driver
-    (Connector/ODBC) and the MySQL client library, otherwise the driver
-    library will not load and any connection attempt will fail.
+#. Download and install Oracle Instant Client packages for your Linux platform from the
+   `Instant Client Downloads page
+   <http://www.oracle.com/technetwork/database/features/instant-client/index-097480.html>`__.
+   You will need Basic and ODBC packages. In the Usage example we also use ``sqlplus`` from
+   the SQL*Plus package.
 
-  #. Register the ODBC driver. The easiest way to register the driver is
-    by using the ``myodbc-installer`` utility included in the distribution,
-    for example:
+#. Add the Oracle library directory to the library search paths:
 
-    .. code-block:: bash
+   .. code-block:: bash
 
-	$ sudo myodbc-installer -d -a -n "MySQL" \
-	    -t "DRIVER=/usr/local/lib/libmyodbc5a.so"
+      echo /usr/lib/oracle/*/client*/lib | sudo tee -a /etc/ld.so.conf
+      sudo ldconfig
 
-    ``/usr/local/lib/libmyodbc5a.so`` is the path to the driver library
-    that you installed in the previous step. You might need to change it
-    if you have a different version of the driver or installed it in a
-    different location. See the name of the ``.so`` file in the ``lib``
-    directory of the installation package.
+#. Register the ODBC driver:
 
-    Note that the MySQL ODBC/Connector distribution does not include a
-    setup library. If you invoke ``myodbc-installer --help``, you may see an
-    outdated example with a ``SETUP`` attribute specifying a setup library.
-    Omit this attribute during the driver registration unless you have
-    installed a setup library from some other source.
+   .. code-block:: bash
 
-  Go to :ref:`oracle-usage`.
+      sudo /usr/share/oracle/*/client*/odbc_update_ini.sh / /usr/lib/oracle/*/client*/lib
+
+#. Create a symbolic link for ``libodbcinst.so`` on ``x86-64``:
+
+   .. code-block:: bash
+
+      sudo ln -s /usr/lib/x86_64-linux-gnu/libodbcinst.so \
+                 /usr/lib/x86_64-linux-gnu/libodbcinst.so.2
+
+   Use the following command with the ``x86`` version instead:
+
+   .. code-block:: bash
+
+      sudo ln -s /usr/lib/i386-linux-gnu/libodbcinst.so \
+                 /usr/lib/i386-linux-gnu/libodbcinst.so.2
+
+#. Set the ``ORACLE_HOME`` environment variable:
+
+   .. code-block:: bash
+
+      export ORACLE_HOME=<installation-dir>
+
+   replacing ``<installation-dir>`` with the actual installation directory which can
+   be printed with the command ``echo /usr/lib/oracle/*/client*``.
+
+   Alternatively you can add the line ``ORACLE_HOME=<installation-dir>`` to
+   ``~/.pam_environment`` to set this environment variable permanently for
+   the current user. Use ``/etc/environment`` instead of ``~/.pam_environment``
+   for system-wide environment variables.
+   See also `Persistent environment variables
+   <https://help.ubuntu.com/community/EnvironmentVariables#Persistent_environment_variables>`__.
+
+Go to :ref:`oracle-usage`.
 
 MacOS X
 ~~~~~~~
@@ -305,10 +326,10 @@ driver as is and should use the correct quotation.
 
 Example:
 
-  .. code-block:: none
+.. code-block:: none
 
-     table Foods "ODBC" "DRIVER=Oracle; SERVER=localhost;"
-       'SQL=SELECT "FOOD", "cost" FROM "Foods";': [FOOD], cost;
+   table Foods "ODBC" "DRIVER=Oracle; SERVER=localhost;"
+     'SQL=SELECT "FOOD", "cost" FROM "Foods";': [FOOD], cost;
 
 DSN Example
 ~~~~~~~~~~~
