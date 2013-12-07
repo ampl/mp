@@ -123,20 +123,12 @@ Other distributions
 
       sudo /usr/share/oracle/*/client*/odbc_update_ini.sh / /usr/lib/oracle/*/client*/lib
 
-#. Create a symbolic link for ``libodbcinst.so`` on ``x86-64``:
+#. If ``/usr/lib/libodbc.so.1`` doesn't exist create a symbolic link
 
    .. code-block:: bash
 
-      sudo ln -s /usr/lib/x86_64-linux-gnu/libodbcinst.so \
-                 /usr/lib/x86_64-linux-gnu/libodbcinst.so.2
-
-   Use the following command with the ``x86`` version instead:
-
-   .. code-block:: bash
-
-      sudo ln -s /usr/lib/i386-linux-gnu/libodbcinst.so \
-                 /usr/lib/i386-linux-gnu/libodbcinst.so.2
-
+      sudo ln -s /usr/lib/libodbc.so.2 /usr/lib/libodbc.so.1
+      
 #. Set the ``ORACLE_HOME`` environment variable:
 
    .. code-block:: bash
