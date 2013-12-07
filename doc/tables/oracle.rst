@@ -109,6 +109,14 @@ Other distributions
       echo /usr/lib/oracle/*/client*/lib | sudo tee -a /etc/ld.so.conf
       sudo /sbin/ldconfig
 
+#. If the files ``odbc.ini`` and ``odbcinst.ini`` are located in
+   ``/etc/unixODBC`` instead of ``/etc`` create symbolic links:
+
+   .. code-block:: bash
+
+      sudo ln -s /etc/unixODBC/odbc.ini /etc/odbc.ini
+      sudo ln -s /etc/unixODBC/odbcinst.ini /etc/odbcinst.ini
+
 #. Register the ODBC driver:
 
    .. code-block:: bash
@@ -433,6 +441,3 @@ are the same:
    your-machine
    $ grep 127.0.1.1 /etc/hosts
    127.0.1.1	your-machine
-
-If they are not the same add the line ``127.0.1.1 <hostname>`` to ``/etc/hosts``, where
-``<hostname>`` is the name printed by the ``hostname`` command.
