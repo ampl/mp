@@ -150,8 +150,8 @@ Go to :ref:`oracle-usage`.
 MacOS X
 ~~~~~~~
 
-#. Oracle doesn't provide ODBC drivers for Mac OS X but you can get them from
-   third-party companies such as `OpenLink Software <http://www.openlinksw.com/>`__.
+Oracle doesn't provide ODBC drivers for Mac OS X but you can get them from
+third-party companies such as `OpenLink Software <http://www.openlinksw.com/>`__.
 
 Go to :ref:`oracle-usage`.
 
