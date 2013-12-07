@@ -150,31 +150,8 @@ Go to :ref:`oracle-usage`.
 MacOS X
 ~~~~~~~
 
-#. Download zip archives of Oracle Instant Client for your Mac platform from the
-   `Instant Client Downloads page
-   <http://www.oracle.com/technetwork/database/features/instant-client/index-097480.html>`__.
-   You will need Basic and ODBC packages. In the Usage example we also use ``sqlplus`` from
-   the SQL*Plus package.
-
-..
-  Register the driver with the following command:
-
-  .. code-block:: bash
-
-    $ sudo myodbc-installer -d -a -n "MySQL" \
-	-t "DRIVER=/usr/local/lib/libmyodbc5w.so"
-
-  ``/usr/local/lib/libmyodbc5w.so`` is the path to the driver library
-  that you installed in the previous step. You might need to change it
-  if you have a different version of the driver or installed it in a
-  different location. See the name of the ``.so`` file in the ``lib``
-  directory of the installation package.
-
-  Note that the MySQL ODBC/Connector distribution does not include a
-  setup library. If you invoke ``myodbc-installer --help``, you may see an
-  outdated example with a ``SETUP`` attribute specifying a setup library.
-  Omit this attribute during the driver registration unless you have
-  installed a setup library from some other source.
+#. Oracle doesn't provide ODBC drivers for Mac OS X but you can get them from
+   third-party companies such as `OpenLink Software <http://www.openlinksw.com/>`__.
 
 Go to :ref:`oracle-usage`.
 
