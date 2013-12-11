@@ -162,7 +162,7 @@ int ampl::UTF16ToUTF8::Convert(fmt::WStringRef s) {
     return GetLastError();
   buffer_.resize(length);
   length = WideCharToMultiByte(
-    CP_UTF8, WC_ERR_INVALID_CHARS, s.c_str(), -1, &buffer_[0], length, 0, 0);
+    CP_UTF8, 0, s.c_str(), -1, &buffer_[0], length, 0, 0);
   if (length == 0)
     return GetLastError();
   return 0;
