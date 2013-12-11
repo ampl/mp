@@ -150,16 +150,22 @@ ampl::UTF8ToUTF16::UTF8ToUTF16(fmt::StringRef s) {
 }
 
 ampl::UTF16ToUTF8::UTF16ToUTF8(fmt::WStringRef s) {
-  static const char ERROR[] = "cannot convert string from UTF-16 to UTF-8";
-  int length = WideCharToMultiByte(
-      CP_UTF8, WC_ERR_INVALID_CHARS, s.c_str(), -1, 0, 0, 0, 0);
+  if (int error_code = Convert(s)) {
+    ThrowSystemError(GetLastError(),
+        "cannot convert string from UTF-16 to UTF-8");
+  }
+}
+
+int ampl::UTF16ToUTF8::Convert(fmt::WStringRef s) {
+  int length = WideCharToMultiByte(CP_UTF8, 0, s.c_str(), -1, 0, 0, 0, 0);
   if (length == 0)
-    ThrowSystemError(GetLastError(), ERROR);
+    return GetLastError();
   buffer_.resize(length);
   length = WideCharToMultiByte(
     CP_UTF8, WC_ERR_INVALID_CHARS, s.c_str(), -1, &buffer_[0], length, 0, 0);
   if (length == 0)
-    ThrowSystemError(GetLastError(), ERROR);
+    return GetLastError();
+  return 0;
 }
 
 ampl::path ampl::GetExecutablePath() {

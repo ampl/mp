@@ -87,9 +87,14 @@ class UTF16ToUTF8 {
   fmt::internal::Array<char, BUFFER_SIZE> buffer_;
 
  public:
+  UTF16ToUTF8() {}
   explicit UTF16ToUTF8(fmt::WStringRef s);
   operator const char*() const { return &buffer_[0]; }
   size_t size() const { return buffer_.size() - 1; }
+
+  // Performs conversion returning a system error code instead of
+  // throwing exception on error.
+  int Convert(fmt::WStringRef s);
 };
 #endif
 }

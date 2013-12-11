@@ -65,16 +65,19 @@ void ampl::SystemThrow::operator()(const fmt::Writer &w) const {
     LPCWSTR c_str() const { return str_; }
   };
   String message;
-  if (!FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+  if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
       FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 0,
       error_code_, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
       reinterpret_cast<LPWSTR>(message.ptr()), 0, 0)) {
-    // Can't get error message, print error code instead.
-    throw SystemError(fmt::Format("{}: error code = {}")
-        << w.c_str() << error_code_, error_code_);
+    UTF16ToUTF8 utf8_message;
+    if (!utf8_message.Convert(message.c_str())) {
+      throw SystemError(fmt::Format("{}: {}")
+        << w.c_str() << utf8_message, error_code_);
+    }
   }
-  throw SystemError(fmt::Format("{}: {}")
-    << w.c_str() << UTF16ToUTF8(message.c_str()), error_code_);
+  // Can't get error message, print error code instead.
+  throw SystemError(fmt::Format("{}: error code = {}")
+      << w.c_str() << error_code_, error_code_);
 #endif
 }
 
