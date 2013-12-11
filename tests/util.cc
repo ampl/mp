@@ -71,13 +71,14 @@ void ChangeDirectory(fmt::StringRef path) {
 
 void ExecuteShellCommand(fmt::StringRef command) {
 #ifdef _WIN32
-  std::string command_str(command);
-  std::replace(command_str.begin(), command_str.end(), '/', '\\');
+  std::wstring command_str(UTF8ToUTF16(command));
+  std::replace(command_str.begin(), command_str.end(), L'/', L'\\');
+  if (_wsystem(command_str.c_str()) != 0)
+    ampl::ThrowError("_wsystem failed, error code = {}") << errno;
 #else
-  fmt::StringRef command_str(command);
-#endif
-  if (std::system(command_str.c_str()) != 0)
+  if (std::system(command.c_str()) != 0)
     ampl::ThrowError("std::system failed, error code = {}") << errno;
+#endif
 }
 
 std::vector<std::string> Split(const std::string &s, char sep) {
