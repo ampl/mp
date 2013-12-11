@@ -124,7 +124,6 @@ TEST(OSTest, UTF16ToUTF8) {
   UTF16ToUTF8 u(L"\x0451\x0436\x0438\x043A");
   EXPECT_STREQ(s.c_str(), u);
   EXPECT_EQ(s.size(), u.size());
-  EXPECT_THROW(UTF16ToUTF8(L"\xd800\xd800"), ampl::SystemError);
 }
 
 TEST(OSTest, UTF8ToUTF16) {
@@ -132,7 +131,6 @@ TEST(OSTest, UTF8ToUTF16) {
   UTF8ToUTF16 u(s.c_str());
   EXPECT_STREQ(L"\x043B\x043E\x0448\x0430\x0434\x043A\x0430", u);
   EXPECT_EQ(7, u.size());
-  EXPECT_THROW(UTF8ToUTF16("\xc3\x28"), ampl::SystemError);
 }
 #endif  // _WIN32
 
