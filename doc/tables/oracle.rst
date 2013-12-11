@@ -24,7 +24,7 @@ and Debian-based Linux distributions such as `Ubuntu
 #. Download RPM packages of Oracle Instant Client for your Linux platform from the
    `Instant Client Downloads page
    <http://www.oracle.com/technetwork/database/features/instant-client/index-097480.html>`__.
-   You will need Basic and ODBC packages. In the Usage example we also use ``sqlplus`` from
+   You will need the Basic and ODBC packages. In the Usage example we also use ``sqlplus`` from
    the SQL*Plus package.
 
 #. Install dependencies:
@@ -78,7 +78,7 @@ and Debian-based Linux distributions such as `Ubuntu
 
       export ORACLE_HOME=<installation-dir>
 
-   replacing ``<installation-dir>`` with the actual installation directory which can
+   replacing ``<installation-dir>`` with the actual installation directory, which can
    be printed with the command ``echo /usr/lib/oracle/*/client*``.
 
    Alternatively you can add the line ``ORACLE_HOME=<installation-dir>`` to
@@ -99,7 +99,7 @@ Other distributions
 #. Download and install Oracle Instant Client packages for your Linux platform from the
    `Instant Client Downloads page
    <http://www.oracle.com/technetwork/database/features/instant-client/index-097480.html>`__.
-   You will need Basic and ODBC packages. In the Usage example we also use ``sqlplus`` from
+   You will need the Basic and ODBC packages. In the Usage example we also use ``sqlplus`` from
    the SQL*Plus package.
 
 #. Add the Oracle library directory to the library search paths:
@@ -135,13 +135,13 @@ Other distributions
 
       export ORACLE_HOME=<installation-dir>
 
-   replacing ``<installation-dir>`` with the actual installation directory which can
+   replacing ``<installation-dir>`` with the actual installation directory, which can
    be printed with the command ``echo /usr/lib/oracle/*/client*``.
 
    Alternatively you can add the line ``ORACLE_HOME=<installation-dir>`` to
-   ``~/.pam_environment`` to set this environment variable permanently for
-   the current user. Use ``/etc/environment`` instead of ``~/.pam_environment``
-   for system-wide environment variables.
+   ``~/.pam_environment`` or to ``~/.bashrc`` (depending on your distribution)
+   to set this environment variable permanently for the current user.
+   Use ``/etc/environment`` for system-wide environment variables.
    See also `Persistent environment variables
    <https://help.ubuntu.com/community/EnvironmentVariables#Persistent_environment_variables>`__.
 
@@ -166,7 +166,9 @@ Administrator, ``odbcad32.exe``, and looking for Oracle in the ``Drivers`` tab.
 
 If the driver is missing, download one from `OracleODBC Drivers Download Page
 <http://www.oracle.com/technetwork/database/windows/downloads/index-096177.html>`__
-and install it.
+(32-bit version) and install it. 64-bit version of the driver is available as
+a part of `Oracle Data Access Components
+<http://www.oracle.com/technetwork/database/windows/downloads/index-090165.html>`__.
 
 .. _oracle-usage:
 
@@ -359,10 +361,10 @@ Verbose error:
    errmsg = "[unixODBC][Driver Manager]Data source name not found, and no default driver specified"
    native_errno = 0
 
-If the data source name (DSN) was not found as in the example above check 
+If the data source name (DSN) was not found as in the example above, check 
 if it is spelled correctly in the connection string. If you are not using a
 DSN, check the driver name instead. On a Unix-based system you can get the
-list of installed ODBC drivers using  the following commands:
+list of installed ODBC drivers using the following command:
 
 .. code-block:: bash
 
@@ -401,7 +403,7 @@ OID generation failed
 
    ORA-21561: OID generation failed
 
-Make sure your hostname and the name asociated with 127.0.1.1 IP address in ``/etc/hosts``
+Make sure your hostname and the name associated with IP address 127.0.1.1 in ``/etc/hosts``
 are the same:
 
 .. code-block:: none
