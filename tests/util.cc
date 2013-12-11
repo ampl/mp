@@ -23,6 +23,7 @@
 #include "tests/util.h"
 
 #include "solvers/util/error.h"
+#include "solvers/util/os.h"
 
 extern "C" {
 #include "solvers/asl.h"
@@ -71,7 +72,7 @@ void ChangeDirectory(fmt::StringRef path) {
 
 void ExecuteShellCommand(fmt::StringRef command) {
 #ifdef _WIN32
-  std::wstring command_str(UTF8ToUTF16(command));
+  std::wstring command_str(ampl::UTF8ToUTF16(command));
   std::replace(command_str.begin(), command_str.end(), L'/', L'\\');
   if (_wsystem(command_str.c_str()) != 0)
     ampl::ThrowError("_wsystem failed, error code = {}") << errno;
