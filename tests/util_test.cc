@@ -27,15 +27,15 @@ namespace {
 
 TEST(UtilTest, Split) {
   auto result = Split("abc", ' ');
-  EXPECT_EQ(1, result.size());
+  EXPECT_EQ(1u, result.size());
   EXPECT_EQ("abc", result[0]);
   result = Split("a b c", ' ');
-  EXPECT_EQ(3, result.size());
+  EXPECT_EQ(3u, result.size());
   EXPECT_EQ("a", result[0]);
   EXPECT_EQ("b", result[1]);
   EXPECT_EQ("c", result[2]);
   result = Split("abc ", ' ');
-  EXPECT_EQ(2, result.size());
+  EXPECT_EQ(2u, result.size());
   EXPECT_EQ("abc", result[0]);
   EXPECT_EQ("", result[1]);
 }

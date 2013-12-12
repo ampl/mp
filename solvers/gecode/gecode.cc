@@ -619,7 +619,7 @@ std::auto_ptr<GecodeProblem> GecodeSolver::Search(
     Problem &p, GecodeProblem &problem, Search::Statistics &stats) {
   std::auto_ptr<GecodeProblem> final_problem;
   unsigned solution_limit = solution_limit_;
-  int num_solutions = 0;
+  unsigned num_solutions = 0;
   if (problem.has_obj()) {
     Meta<Gecode::BAB, GecodeProblem> engine(&problem, options_);
     while (GecodeProblem *next = engine.next()) {
