@@ -62,4 +62,38 @@ void ExecuteShellCommand(fmt::StringRef command);
 // Splits the string into an array of substrings.
 std::vector<std::string> Split(const std::string &s, char sep);
 
+#define FORMAT_TEST_THROW_(statement, expected_exception, message, fail) \
+  GTEST_AMBIGUOUS_ELSE_BLOCKER_ \
+  if (::testing::internal::ConstCharPtr gtest_msg = "") { \
+    bool gtest_caught_expected = false; \
+    std::string gtest_actual_message; \
+    try { \
+      GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement); \
+    } \
+    catch (expected_exception const& e) { \
+      gtest_caught_expected = true; \
+      gtest_actual_message = e.what(); \
+    } \
+    catch (...) { \
+      gtest_msg.value = \
+          "Expected: " #statement " throws an exception of type " \
+          #expected_exception ".\n  Actual: it throws a different type."; \
+      goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__); \
+    } \
+    if (!gtest_caught_expected) { \
+      gtest_msg.value = \
+          "Expected: " #statement " throws an exception of type " \
+          #expected_exception ".\n  Actual: it throws nothing."; \
+      goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__); \
+    } else { \
+      EXPECT_EQ(message, gtest_actual_message); \
+    } \
+  } else \
+    GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__): \
+      fail(gtest_msg.value)
+
+#define EXPECT_THROW_MSG(statement, expected_exception, expected_message) \
+  FORMAT_TEST_THROW_(statement, expected_exception, expected_message, \
+      GTEST_NONFATAL_FAILURE_)
+
 #endif  // TESTS_UTIL_H_

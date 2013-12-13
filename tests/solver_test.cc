@@ -21,6 +21,7 @@
  */
 
 #include "tests/solver_test.h"
+#include "tests/util.h"
 
 #include <cmath>
 
