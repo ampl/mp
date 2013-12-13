@@ -121,7 +121,7 @@ class Suffix {
 
   operator SafeBool() const { return suffix_ ? &Suffix::True : 0; }
 
-  bool has_values() const { return suffix_->u.i; }
+  bool has_values() const { return suffix_->u.i != 0; }
 
   int int_value(int index) const { return suffix_->u.i[index]; }
   void set_values(int *values) {
