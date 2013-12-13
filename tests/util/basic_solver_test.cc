@@ -872,9 +872,9 @@ TEST(SolverTest, WantsolOption) {
 
 TEST(SolverTest, TimingOption) {
   TestSolver s("");
-  EXPECT_EQ(false, s.timing());
+  EXPECT_FALSE(s.timing());
   s.SetIntOption("timing", 1);
-  EXPECT_EQ(true, s.timing());
+  EXPECT_TRUE(s.timing());
   EXPECT_EQ(1, s.GetIntOption("timing"));
   EXPECT_THROW(s.SetIntOption("timing", -1), InvalidOptionValue);
   EXPECT_THROW(s.SetIntOption("timing", 2), InvalidOptionValue);

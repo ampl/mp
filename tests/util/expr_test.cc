@@ -1387,8 +1387,8 @@ TEST_F(ExprTest, PiecewiseLinearExprPrecedence) {
 
 TEST_F(ExprTest, CallExprPrecedence) {
   auto x1 = AddVar(0), x2 = AddVar(1);
-  CHECK_WRITE("foo(foo(), x2 + 5, 7, floor(x2))", AddCall("foo",
-      AddCall("foo", 0, 0), CallArg(5, x2), 7, AddUnary(FLOOR, x2)));
+  CHECK_WRITE("foo(foo(), x1 + 5, 7, floor(x2))", AddCall("foo",
+      AddCall("foo", 0, 0), CallArg(5, x1), 7, AddUnary(FLOOR, x2)));
 }
 
 TEST_F(ExprTest, NotExprPrecedence) {

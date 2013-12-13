@@ -263,7 +263,7 @@ TEST_F(GecodeSolverTest, RestartBaseOption) {
 }
 
 TEST_F(GecodeSolverTest, RestartScaleOption) {
-  EXPECT_EQ(250, solver_.restart_scale());
+  EXPECT_EQ(250u, solver_.restart_scale());
   solver_.SetIntOption("restart_scale", 42);
   EXPECT_EQ(42u, solver_.restart_scale());
   EXPECT_EQ(42, solver_.GetIntOption("restart_scale"));
