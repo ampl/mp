@@ -615,9 +615,9 @@ void GetSolution(GecodeProblem &gecode_problem, std::vector<double> &solution) {
 }
 
 template<template<template<typename> class, typename> class Meta>
-std::auto_ptr<GecodeProblem> GecodeSolver::Search(
+GecodeSolver::ProblemPtr GecodeSolver::Search(
     Problem &p, GecodeProblem &problem, Search::Statistics &stats) {
-  std::auto_ptr<GecodeProblem> final_problem;
+  ProblemPtr final_problem;
   unsigned solution_limit = solution_limit_;
   unsigned num_solutions = 0;
   if (problem.has_obj()) {
@@ -662,12 +662,11 @@ void GecodeSolver::DoSolve(Problem &p) {
   SetStatus(-1, "");
 
   // Set up an optimization problem in Gecode.
-  std::auto_ptr<NLToGecodeConverter>
-    converter(new NLToGecodeConverter(p.num_vars(), icl_));
-  converter->Convert(p);
+  NLToGecodeConverter converter(p.num_vars(), icl_);
+  converter.Convert(p);
 
   // Post branching.
-  GecodeProblem &gecode_problem = converter->problem();
+  GecodeProblem &gecode_problem = converter.problem();
   IntVarBranch var_branch;
   switch (var_branching_) {
   case IntVarBranch::SEL_RND:
@@ -700,7 +699,7 @@ void GecodeSolver::DoSolve(Problem &p) {
   Search::Statistics stats;
   header_ = str(fmt::Format("{:>10} {:>10} {:>10} {:>13}\n")
     << "Max Depth" << "Nodes" << "Fails" << (has_obj ? "Best Obj" : ""));
-  std::auto_ptr<GecodeProblem> solution;
+  GecodeSolver::ProblemPtr solution;
   if (restart_ != Gecode::RM_NONE) {
     options_.cutoff = Gecode::Driver::createCutoff(*this);
     solution = Search<Gecode::RBS>(p, gecode_problem, stats);

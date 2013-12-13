@@ -852,11 +852,11 @@ class BasicFormatter {
       unsigned long long ulong_long_value;
       long double long_double_value;
       const void *pointer_value;
-      struct {
+      struct String {
         const Char *value;
         std::size_t size;
       } string;
-      struct {
+      struct Custom {
         const void *value;
         FormatFunc format;
       } custom;

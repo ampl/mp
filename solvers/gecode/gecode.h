@@ -23,6 +23,7 @@
 #ifndef AMPL_SOLVERS_GECODE_H
 #define AMPL_SOLVERS_GECODE_H
 
+#include <memory>
 #include <string>
 
 #ifdef _MSC_VER
@@ -383,8 +384,14 @@ class GecodeSolver : public Solver {
               const Gecode::Search::Options &);
   };
 
+#ifdef HAVE_UNIQUE_PTR
+  typedef std::unique_ptr<GecodeProblem> ProblemPtr;
+#else
+  typedef std::auto_ptr<GecodeProblem> ProblemPtr;
+#endif
+
   template<template<template<typename> class, typename> class Meta>
-  std::auto_ptr<GecodeProblem> Search(Problem &p,
+  ProblemPtr Search(Problem &p,
       GecodeProblem &gecode_problem, Gecode::Search::Statistics &stats);
 
  protected:
