@@ -55,33 +55,40 @@ TEST(ErrorTest, SystemError) {
 }
 
 #ifndef _WIN32
-TEST(ErrorTest, ThrowSystemError) {
-  ampl::SystemError error("", 0);
-  try {
-    ampl::ThrowSystemError(EDOM, "test {}") << "error";
-  } catch (const ampl::SystemError &e) {
-    error = e;
-  }
-  EXPECT_EQ(str(fmt::Format("test error: {}") << strerror(EDOM)), error.what());
-  EXPECT_EQ(EDOM, error.error_code());
-}
+const int TEST_ERROR = EDOM;
+std::string GetTestErrorMessage() { return strerror(TEST_ERROR); }
 #else
-TEST(ErrorTest, ThrowSystemError) {
-  ampl::SystemError error("", 0);
-  try {
-    ampl::ThrowSystemError(ERROR_FILE_EXISTS, "test {}") << "error";
-  } catch (const ampl::SystemError &e) {
-    error = e;
-  }
+const int TEST_ERROR = ERROR_FILE_EXISTS;
+std::string GetTestErrorMessage() {
   LPWSTR message = 0;
   FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
       FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 0,
       ERROR_FILE_EXISTS, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
       reinterpret_cast<LPWSTR>(&message), 0, 0);
-  EXPECT_EQ(str(fmt::Format("test error: {}") << ampl::UTF16ToUTF8(message)),
-      error.what());
+  ampl::UTF16ToUTF8 utf8_message(message));
   LocalFree(message);
-  EXPECT_EQ(ERROR_FILE_EXISTS, error.error_code());
+  return utf8_message;
 }
 #endif
+
+TEST(ErrorTest, ThrowSystemError) {
+  ampl::SystemError error("", 0);
+  try {
+    ampl::ThrowSystemError(TEST_ERROR, "test {}") << "error";
+  } catch (const ampl::SystemError &e) {
+    error = e;
+  }
+  EXPECT_EQ(str(fmt::Format("test error: {}") << GetTestErrorMessage()),
+      error.what());
+  EXPECT_EQ(TEST_ERROR, error.error_code());
+}
+
+TEST(ErrorTest, ReportSystemError) {
+  EXPECT_EXIT({
+    ampl::ReportSystemError(TEST_ERROR, "test error");
+    std::fprintf(stderr, "end\n");
+    std::exit(0);
+  }, ::testing::ExitedWithCode(0),
+      str(fmt::Format("test error: {}\nend\n") << GetTestErrorMessage()));
+}
 }

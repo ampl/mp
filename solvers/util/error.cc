@@ -30,29 +30,31 @@
 # include <windows.h>
 #endif
 
-void ampl::SystemThrow::operator()(const fmt::Writer &w) const {
+namespace {
+
+void FormatSystemErrorMessage(
+    fmt::Writer &w, int error_code, fmt::StringRef message) {
 #ifndef _WIN32
-  fmt::internal::Array<char, BUFFER_SIZE> buffer;
-  buffer.resize(BUFFER_SIZE);
-  char *message = 0;
+  fmt::internal::Array<char, ampl::BUFFER_SIZE> buffer;
+  buffer.resize(ampl::BUFFER_SIZE);
+  char *system_message = 0;
   for (;;) {
     errno = 0;
 # ifdef _GNU_SOURCE
-    message = strerror_r(error_code_, &buffer[0], buffer.size());
+    system_message = strerror_r(error_code, &buffer[0], buffer.size());
 # else
-    strerror_r(error_code_, message = &buffer[0], buffer.size());
+    strerror_r(error_code, system_message = &buffer[0], buffer.size());
 # endif
     if (errno == 0)
       break;
     if (errno != ERANGE) {
-      // Can't get error message, print error code instead.
-      throw SystemError(fmt::Format("{}: error code = {}")
-          << w.c_str() << error_code_, error_code_);
+      // Can't get error message, report error code instead.
+      w.Format("{}: error code = {}") << message << error_code;
+      return;
     }
     buffer.resize(buffer.size() * 2);
   }
-  throw SystemError(fmt::Format("{}: {}")
-    << w.c_str() << message, error_code_);
+  w.Format("{}: {}") << message << system_message;
 #else
   class String {
    private:
@@ -64,24 +66,35 @@ void ampl::SystemThrow::operator()(const fmt::Writer &w) const {
     LPWSTR *ptr() { return &str_; }
     LPCWSTR c_str() const { return str_; }
   };
-  String message;
+  String system_message;
   if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
       FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 0,
-      error_code_, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-      reinterpret_cast<LPWSTR>(message.ptr()), 0, 0)) {
+      error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+      reinterpret_cast<LPWSTR>(system_message.ptr()), 0, 0)) {
     UTF16ToUTF8 utf8_message;
-    if (!utf8_message.Convert(message.c_str())) {
-      throw SystemError(fmt::Format("{}: {}")
-        << w.c_str() << utf8_message, error_code_);
+    if (!utf8_message.Convert(system_message.c_str())) {
+      w.Format("{}: {}") << message << utf8_message;
+      return;
     }
   }
-  // Can't get error message, print error code instead.
-  throw SystemError(fmt::Format("{}: error code = {}")
-      << w.c_str() << error_code_, error_code_);
+  // Can't get error message, report error code instead.
+  w.Format("{}: error code = {}") << message << error_code;
 #endif
 }
+}
 
-void ampl::LogSystemError(
+void ampl::SystemThrow::operator()(const fmt::Writer &w) const {
+  fmt::Writer message;
+  FormatSystemErrorMessage(message, error_code_, w.c_str());
+  throw SystemError(message.c_str(), error_code_);
+}
+
+void ampl::ReportSystemError(
     int error_code, const char *message) FMT_NOEXCEPT(true) {
-  // TODO: log error without throwing an exception
+  try {
+    fmt::Writer full_message;
+    FormatSystemErrorMessage(full_message, error_code, message);
+    std::fwrite(full_message.c_str(), full_message.size(), 1, stderr);
+    std::fputc('\n', stderr);
+  } catch (...) {}
 }

@@ -74,8 +74,9 @@ inline fmt::Formatter<SystemThrow> ThrowSystemError(
   return fmt::Formatter<SystemThrow>(format, SystemThrow(error_code));
 }
 
-// Records a system error in the log.
-void LogSystemError(int error_code, const char *message) FMT_NOEXCEPT(true);
+// Reports a system error without throwing an exception.
+// Can be used to report errors from destructors.
+void ReportSystemError(int error_code, const char *message) FMT_NOEXCEPT(true);
 }
 
 #endif  // SOLVERS_UTIL_ERROR_H_
