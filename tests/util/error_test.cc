@@ -65,7 +65,7 @@ std::string GetTestErrorMessage() {
       FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 0,
       ERROR_FILE_EXISTS, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
       reinterpret_cast<LPWSTR>(&message), 0, 0);
-  ampl::UTF16ToUTF8 utf8_message(message));
+  ampl::UTF16ToUTF8 utf8_message(message);
   LocalFree(message);
   return utf8_message;
 }
