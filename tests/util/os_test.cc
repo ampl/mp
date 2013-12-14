@@ -152,10 +152,10 @@ TEST(MemoryMappedFileTest, DtorUnmapsFile) {
   EXPECT_DEATH((void)*start, "");
 }
 
+#ifndef _WIN32
 TEST(MemoryMappedFileTest, CloseFile) {
   WriteFile("test", "abc");
   MemoryMappedFile f("test");
-#ifndef _WIN32
   ExecuteShellCommand("lsof test > out");
   std::string out = ReadFile("out");
   std::vector<string> results = Split(out, '\n');
@@ -169,10 +169,21 @@ TEST(MemoryMappedFileTest, CloseFile) {
   EXPECT_TRUE(results.size() == 3 &&
       results[1].find(MEM) != string::npos && results[2] == "")
     << "Unexpected output from lsof:\n" << out;
-#else
-  // TODO: windows test
-#endif
 }
+#else
+TEST(MemoryMappedFileTest, CloseFile) {
+  WriteFile("test", "abc");
+  DWORD handle_count_before = 0;
+  ASSERT_TRUE(GetProcessHandleCount(
+      GetCurrentProcess(), &handle_count_before) != 0);
+  MemoryMappedFile f("test");
+  DWORD handle_count_after = 0;
+  ASSERT_TRUE(GetProcessHandleCount(
+      GetCurrentProcess(), &handle_count_after) != 0);
+  EXPECT_EQ(handle_count_before, handle_count_after);
+  EXPECT_STREQ("abc", f.start());
+}
+#endif
 
 TEST(MemoryMappedFileTest, NonexistentFile) {
   EXPECT_THROW(MemoryMappedFile("nonexistent"), ampl::SystemError);
