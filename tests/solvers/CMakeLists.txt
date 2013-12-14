@@ -21,7 +21,7 @@ if (HAVE_JACOP)
     ../test_main.cc ../args.cc ../expr_builder.cc
     ../solver_test.cc ../util.cc jacop_test.cc)
   if (MSVC)
-    set(CMAKE_EXE_LINKER_FLAGS "/DELAYLOAD:jvm.dll")
+    set_target_properties(jacop_test PROPERTIES LINK_FLAGS "/DELAYLOAD:jvm.dll")
     target_link_libraries(jacop_test delayimp)
   endif ()
 endif ()
