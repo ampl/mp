@@ -22,7 +22,7 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
- static char Version[] = "\n@(#) AMPL ODBC driver, version 20130815.\n";
+ static char Version[] = "\n@(#) AMPL ODBC driver, version 20131212.\n";
 
 #ifdef _WIN32
 #include <windows.h>
@@ -1064,42 +1064,16 @@ fully_qualify(char *dsname, char *buf, size_t len)
 	int score;
 	} winfo;
 
-#ifdef _WIN32
+#ifdef _WIN32 /*{*/
+
  static void
 hw_get(AmplExports *ae)
 {
-	const char *s;
-	/* work around MS bugs with stdlib (missing routines) */
-	int c;
-#ifdef LONG_LONG_POINTERS
-	unsigned long long x;
-#else
-	unsigned long x;
-#endif
-
 	winfo.score = 9999;
-	if ((s = getenv("sw_HWND"))) {
-		for(x = 0; (c = *s); ++s) {
-			if (c >= '0' && c <= '9')
-				c -= '0';
-			else if (c >= 'a' && c <= 'f')
-				c += 10 - 'a';
-			else if (c >= 'A' && c <= 'F')
-				c += 10 - 'A';
-			else
-				continue;
-			x <<= 4;
-			x |= c;
-			}
-		winfo.hw = (HWND)x;
-		/*DEBUG*/ /*printf("Got $sw_HWND = #%x\n", wi.hw);*/
-		}
-	else {
-		winfo.hw = GetDesktopWindow();
-		}
+	winfo.hw = GetDesktopWindow();
 	}
 
-#endif /* _WIN32 */
+#endif /*} _WIN32 */
 
  static void
 colname_adjust(HInfo *h, TableInfo *TI)
@@ -2444,7 +2418,7 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 funcadd(AmplExports *ae)
 {
 	static char tname[] = "odbc\n"
-	"AMPL ODBC handler (20130815): expected 2-8 strings before \":[...]\":\n"
+	"AMPL ODBC handler (20131212): expected 2-8 strings before \":[...]\":\n"
 	"  'ODBC', connection_spec ['ext_name'] [option [option...]]\n"
 	"Connection_spec gives a connection to the external table.  If the table's\n"
 	"external name differs from the AMPL table name, the external name must be\n"
