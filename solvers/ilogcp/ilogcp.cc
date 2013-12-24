@@ -784,4 +784,6 @@ void IlogCPSolver::DoSolve(Problem &p) {
             << stats.setup_time << stats.solution_time << output_time;
   }
 }
+
+SolverPtr CreateSolver() { return SolverPtr(new IlogCPSolver()); }
 }

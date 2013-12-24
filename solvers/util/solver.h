@@ -679,6 +679,14 @@ class Solver
   // likely to change in the future version).
   bool ProcessArgs(char **&argv, Problem &p, unsigned flags = 0);
 
+  // Returns the number of options.
+  int num_options() const { return options_.size(); }
+
+  // Option iterator.
+  typedef OptionMap::const_iterator option_iterator;
+  option_iterator option_begin() const { return options_.begin(); }
+  option_iterator option_end() const { return options_.end(); }
+
   // Flags for ParseOptions.
   enum {
     // Don't echo options during parsing.
@@ -747,6 +755,18 @@ class Solver
   // Runs the solver.
   int Run(char **argv);
 };
+
+#ifdef HAVE_UNIQUE_PTR
+  typedef std::unique_ptr<Solver> SolverPtr;
+#else
+  typedef std::auto_ptr<Solver> SolverPtr;
+  static SolverPtr move(SolverPtr p) { return p; }
+#endif
+
+// Implement this function in your code returning a new concrete solver object.
+// Example:
+//   SolverPtr CreateSolver() { return SolverPtr(new MySolver()); }
+SolverPtr CreateSolver();
 }
 
 #endif  // SOLVERS_UTIL_SOLVER_H_
