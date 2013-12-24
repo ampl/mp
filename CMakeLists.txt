@@ -97,6 +97,9 @@ endif ()
 
 include(CheckCCompilerFlag)
 check_c_compiler_flag(-fPIC HAVE_FPIC_FLAG)
+if (HAVE_FPIC_FLAG)
+  add_definitions(-fPIC)
+endif ()
 
 # Adds a shared AMPL library which by convention doesn't have any prefix
 # and has a suffix ".dll".
