@@ -7,16 +7,16 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
   include_directories(.. ${CPLEX_ILOCPLEX_INCLUDE_DIRS}
     ${CPLEX_CP_INCLUDE_DIRS})
 
-  add_library(amplilogcp concert.cc concert.h
+  add_library(amplilogcp-static concert.cc concert.h
     ilogcp.cc ilogcp.h ilogcp_date.h ../util/util-all.cc)
-  target_link_libraries(amplilogcp
+  target_link_libraries(amplilogcp-static
     ${CPLEX_CP_LIBRARIES} ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_LIBRARIES})
-  add_dependencies(amplilogcp arith_h)
+  add_dependencies(amplilogcp-static arith_h)
 
   # Link with librt for clock_gettime (Linux on i386).
   find_library(RT_LIBRARY rt)
   if (RT_LIBRARY)
-    target_link_libraries(amplilogcp ${RT_LIBRARY})
+    target_link_libraries(amplilogcp-static ${RT_LIBRARY})
   endif ()
 
   if (MSVC)
@@ -33,11 +33,14 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
     endforeach ()
     add_library(amplsolver-dynrt ${SOURCES})
     add_dependencies(amplsolver-dynrt arith_h)
-    target_link_libraries(amplilogcp amplsolver-dynrt)
+    target_link_libraries(amplilogcp-static amplsolver-dynrt)
   else ()
-    target_link_libraries(amplilogcp amplsolver)
+    target_link_libraries(amplilogcp-static amplsolver)
   endif ()
 
+  add_library(amplilogcp SHARED ../util/solver-c.cc)
+  target_link_libraries(amplilogcp amplilogcp-static)
+
   add_executable(ilogcp ilogcp_main.cc)
-  target_link_libraries(ilogcp amplilogcp)
+  target_link_libraries(ilogcp amplilogcp-static)
 endif ()
