@@ -9,9 +9,6 @@ if (ODBC_FOUND)
   set(AMPLODBC amplodbc ${ODBC_LIBRARIES})
   set_target_properties(amplodbc
     PROPERTIES COMPILE_DEFINITIONS funcadd_ASL=funcaddodbc_ASL)
-  if (HAVE_FPIC_FLAG)
-    set_target_properties(amplodbc PROPERTIES COMPILE_FLAGS -fPIC)
-  endif ()
 endif ()
 
 if (WIN32)
