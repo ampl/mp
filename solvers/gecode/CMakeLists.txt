@@ -8,10 +8,13 @@ set(GECODE_DISABLE_WARNINGS True)
 add_subdirectory(lib)
 include_directories(lib)
 
-add_library(amplgecode gecode.cc)
-target_link_libraries(amplgecode util gecodeminimodel)
-add_dependencies(amplgecode arith_h)
+add_library(amplgecode-static gecode.cc)
+target_link_libraries(amplgecode-static util gecodeminimodel)
+add_dependencies(amplgecode-static arith_h)
 include_directories(${GECODE_SOURCE_DIR})
 
+add_library(amplgecode SHARED ../util/solver-c.cc)
+target_link_libraries(amplgecode amplgecode-static)
+
 add_executable(gecode main.cc)
-target_link_libraries(gecode amplgecode)
+target_link_libraries(gecode amplgecode-static)

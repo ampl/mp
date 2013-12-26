@@ -750,4 +750,6 @@ void GecodeSolver::DoSolve(Problem &p) {
               << setup_time << solution_time << output_time;
   }
 }
+
+SolverPtr CreateSolver() { return SolverPtr(new GecodeSolver()); }
 }
