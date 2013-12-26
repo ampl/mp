@@ -541,7 +541,7 @@ GecodeSolver::GecodeSolver()
       &GecodeSolver::GetDecay, &GecodeSolver::SetDecay);
 
   AddDblOption("threads",
-      "The number of parallel threads to use.  Assume that your computer\n"
+      "The number of parallel threads to use.  Assume that your computer "
       "has m processing units and that the value for threads is n.\n"
       "    * If n = 0, then m threads are used (as many as available\n"
       "      processing units).\n"
