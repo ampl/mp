@@ -4,7 +4,7 @@ add_dependencies(cp_test cp)
 
 if (HAVE_GECODE)
   include_directories(${GECODE_SOURCE_DIR})
-  cxx_test_with_flags(gecode_test "" "gtest;amplgecode"
+  cxx_test_with_flags(gecode_test "" "gtest;amplgecode-static"
     ../test_main.cc ../args.cc ../expr_builder.cc
     ../solver_test.cc ../util.cc gecode_test.cc)
 endif ()
@@ -17,7 +17,7 @@ if (HAVE_JACOP)
   add_custom_command(OUTPUT ampljacop.jar DEPENDS ampljacop
     COMMAND ${CMAKE_COMMAND} -E copy
       ../../solvers/jacop/ampljacop.jar ampljacop.jar)
-  cxx_test_with_flags(jacop_test "" "gtest;ampljacop_lib" ${JACOP_JAR} ampljacop.jar
+  cxx_test_with_flags(jacop_test "" "gtest;ampljacop-static" ${JACOP_JAR} ampljacop.jar
     ../test_main.cc ../args.cc ../expr_builder.cc
     ../solver_test.cc ../util.cc jacop_test.cc)
   if (MSVC)
