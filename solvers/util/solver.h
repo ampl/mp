@@ -28,8 +28,8 @@
 #include <cstring>
 
 #include <limits>
-#include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -198,21 +198,26 @@ class InvalidOptionValue : public OptionError {
 // A solver option.
 class SolverOption {
  private:
-  std::string name_;
-  std::string description_;
+  const char *name_;
+  const char *description_;
   bool is_keyword_;
 
  public:
+  // Constructs a SolverOption object. The solver option stores pointers
+  // to the passed name and description and doesn't copy the strings.
+  // Normally both the name and the description are string literals and
+  // have static storage duration but if this is not the case make sure
+  // that these strings' lifetimes are longer than that of the option object.
   SolverOption(const char *name,
       const char *description, bool is_keyword = false)
   : name_(name), description_(description), is_keyword_(is_keyword) {}
   virtual ~SolverOption() {}
 
   // Returns the option name.
-  const char *name() const { return name_.c_str(); }
+  const char *name() const { return name_; }
 
   // Returns the option description.
-  const char *description() const { return description_.c_str(); }
+  const char *description() const { return description_; }
 
   // Returns true if this is a keyword option, i.e. an option that
   // doesn't take a value.
@@ -316,11 +321,11 @@ class Solver
   unsigned read_flags_;  // flags passed to Problem::Read
 
   struct OptionNameLess {
-    bool operator()(const char *lhs, const char *rhs) const;
+    bool operator()(const SolverOption *lhs, const SolverOption *rhs) const;
   };
 
-  typedef std::map<const char*, SolverOption*, OptionNameLess> OptionMap;
-  OptionMap options_;
+  typedef std::set<SolverOption*, OptionNameLess> OptionSet;
+  OptionSet options_;
   keyword cl_option_;  // command-line option '='
 
   bool timing_;
@@ -352,13 +357,21 @@ class Solver
     }
   };
 
-  // Returns the option with specified name.
+  // Finds an option and returns a pointer to it if found or null otherwise.
   SolverOption *FindOption(const char *name) const;
+
+  // Returns the option with specified name.
+  SolverOption *GetOption(const char *name) const {
+    SolverOption *opt = FindOption(name);
+    if (!opt)
+      throw OptionError(fmt::Format("Unknown option \"{}\"") << name);
+    return opt;
+  }
 
   template <typename T>
   T GetOptionValue(const char *name) const {
     const TypedSolverOption<T> *opt =
-        dynamic_cast<TypedSolverOption<T> *>(FindOption(name));
+        dynamic_cast<TypedSolverOption<T> *>(GetOption(name));
     if (!opt)
       throw OptionTypeError(name, internal::OptionHelper<T>::TYPE_NAME);
     return opt->GetValue();
@@ -368,7 +381,7 @@ class Solver
   void SetOptionValue(const char *name,
       typename internal::OptionHelper<T>::Arg value) {
     TypedSolverOption<T> *opt =
-        dynamic_cast<TypedSolverOption<T> *>(FindOption(name));
+        dynamic_cast<TypedSolverOption<T> *>(GetOption(name));
     if (!opt)
       throw OptionTypeError(name, internal::OptionHelper<T>::TYPE_NAME);
     opt->SetValue(value);
@@ -490,13 +503,16 @@ class Solver
   void AddOption(OptionPtr opt) {
     // First insert the option, then release a pointer to it. Doing the other
     // way around may lead to a memory leak if insertion throws an exception.
-    options_[opt->name()] = opt.get();
+    options_.insert(opt.get());
     opt.release();
   }
 
-  // Adds an integer option. The arguments get and set should be
-  // pointers to member functions in the solver class. They are used to
-  // get and set an option value respectively.
+  // Adds an integer option.
+  // The option stores pointers to the name and the description so make
+  // sure that these strings have sufficient lifetimes (normally these are
+  // string literals).
+  // The arguments get and set should be pointers to member functions in the
+  // solver class. They are used to get and set an option value respectively.
   template <typename Handler>
   void AddIntOption(const char *name, const char *description,
       int (Handler::*get)(const char *) const,
@@ -505,9 +521,12 @@ class Solver
         name, description, this, get, set)));
   }
 
-  // Adds an integer option with additional information. The arguments get
-  // and set should be pointers to member functions in the solver class.
-  // They are used to get and set an option value respectively.
+  // Adds an integer option with additional information.
+  // The option stores pointers to the name and the description so make
+  // sure that these strings have sufficient lifetimes (normally these are
+  // string literals).
+  // The arguments get and set should be pointers to member functions in the
+  // solver class. They are used to get and set an option value respectively.
   template <typename Handler, typename Info>
   void AddIntOption(const char *name, const char *description,
       int (Handler::*get)(const char *, const Info &) const,
@@ -527,9 +546,12 @@ class Solver
             name, description, this, get, set, info)));
   }
 
-  // Adds a double option. The arguments get and set should be
-  // pointers to member functions in the solver class. They are used to
-  // get and set an option value respectively.
+  // Adds a double option.
+  // The option stores pointers to the name and the description so make
+  // sure that these strings have sufficient lifetimes (normally these are
+  // string literals).
+  // The arguments get and set should be pointers to member functions in the
+  // solver class. They are used to get and set an option value respectively.
   template <typename Handler>
   void AddDblOption(const char *name, const char *description,
       double (Handler::*get)(const char *) const,
@@ -538,9 +560,12 @@ class Solver
         name, description, this, get, set)));
   }
 
-  // Adds a double option with additional information. The arguments get
-  // and set should be pointers to member functions in the solver class.
-  // They are used to get and set an option value respectively.
+  // Adds a double option with additional information.
+  // The option stores pointers to the name and the description so make
+  // sure that these strings have sufficient lifetimes (normally these are
+  // string literals).
+  // The arguments get and set should be pointers to member functions in the
+  // solver class. They are used to get and set an option value respectively.
   template <typename Handler, typename Info>
   void AddDblOption(const char *name, const char *description,
       double (Handler::*get)(const char *, const Info &) const,
@@ -560,9 +585,12 @@ class Solver
             name, description, this, get, set, info)));
   }
 
-  // Adds a string option. The arguments get and set should be
-  // pointers to member functions in the solver class. They are used to
-  // get and set an option value respectively.
+  // Adds a string option.
+  // The option stores pointers to the name and the description so make
+  // sure that these strings have sufficient lifetimes (normally these are
+  // string literals).
+  // The arguments get and set should be pointers to member functions in the
+  // solver class. They are used to get and set an option value respectively.
   template <typename Handler>
   void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const char *) const,
@@ -571,9 +599,12 @@ class Solver
         name, description, this, get, set)));
   }
 
-  // Adds a string option with additional information. The arguments get
-  // and set should be pointers to member functions in the solver class.
-  // They are used to get and set an option value respectively.
+  // Adds a string option with additional information.
+  // The option stores pointers to the name and the description so make
+  // sure that these strings have sufficient lifetimes (normally these are
+  // string literals).
+  // The arguments get and set should be pointers to member functions in the
+  // solver class. They are used to get and set an option value respectively.
   template <typename Handler, typename Info>
   void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const char *, const Info &) const,
@@ -683,7 +714,7 @@ class Solver
   int num_options() const { return options_.size(); }
 
   // Option iterator.
-  typedef OptionMap::const_iterator option_iterator;
+  typedef OptionSet::const_iterator option_iterator;
   option_iterator option_begin() const { return options_.begin(); }
   option_iterator option_end() const { return options_.end(); }
 

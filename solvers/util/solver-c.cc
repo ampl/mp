@@ -128,8 +128,9 @@ int ASL_GetSolverOptions(ASL_Solver *s, ASL_SolverOption *options, int size) {
     int index = 0;
     for (ampl::Solver::option_iterator i = solver.option_begin(),
         e = solver.option_end(); i != e && index < size; ++i, ++index) {
-      options[index].name = i->second->name();
-      options[index].description = i->second->description();
+      const ampl::SolverOption *opt = *i;
+      options[index].name = opt->name();
+      options[index].description = opt->description();
     }
     return num_options;
   } catch (const std::exception &e) {

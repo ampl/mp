@@ -54,9 +54,7 @@ const char *SkipNonSpaces(const char *s) {
 }
 
 struct Deleter {
-  void operator()(std::pair<const char *const, ampl::SolverOption*> &p) {
-    delete p.second;
-  }
+  void operator()(ampl::SolverOption* p) const { delete p; }
 };
 }
 
@@ -204,8 +202,8 @@ void Solver::SolutionWriter::HandleSolution(
 }
 
 bool Solver::OptionNameLess::operator()(
-    const char *lhs, const char *rhs) const {
-  return strcasecmp(lhs, rhs) < 0;
+    const SolverOption *lhs, const SolverOption *rhs) const {
+  return strcasecmp(lhs->name(), rhs->name()) < 0;
 }
 
 void Solver::RegisterSuffixes(Problem &p) {
@@ -221,10 +219,11 @@ char *Solver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
     fmt::Print("{}\n") << header;
   fmt::Print("Directives:\n");
   const int DESC_INDENT = 6;
-  const OptionMap &options = solver->options_;
-  for (OptionMap::const_iterator i = options.begin(); i != options.end(); ++i) {
-    fmt::Print("\n{}\n{}") << i->first
-        << internal::IndentAndWordWrap(i->second->description(), DESC_INDENT);
+  const OptionSet &options = solver->options_;
+  for (OptionSet::const_iterator i = options.begin(); i != options.end(); ++i) {
+    SolverOption *opt = *i;
+    fmt::Print("\n{}\n{}") << opt->name()
+        << internal::IndentAndWordWrap(opt->description(), DESC_INDENT);
   }
   exit(0);
   return 0;
@@ -377,10 +376,14 @@ bool Solver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
 }
 
 SolverOption *Solver::FindOption(const char *name) const {
-  OptionMap::const_iterator i = options_.find(name);
-  if (i == options_.end())
-    throw OptionError(fmt::Format("Unknown option \"{}\"") << name);
-  return i->second;
+  struct DummyOption : SolverOption {
+    DummyOption(const char *name) : SolverOption(name, 0) {}
+    void Write(fmt::Writer &) {}
+    void Parse(const char *&) {}
+  };
+  DummyOption option(name);
+  OptionSet::const_iterator i = options_.find(&option);
+  return i != options_.end() ? *i : 0;
 }
 
 void Solver::ParseOptionString(const char *s, unsigned flags) {
@@ -409,8 +412,8 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
     }
 
     nnl = 0;
-    OptionMap::iterator i = options_.find(&name[0]);
-    if (i == options_.end()) {
+    SolverOption *opt = FindOption(&name[0]);
+    if (!opt) {
       if (!skip)
         HandleUnknownOption(&name[0]);
       if (equal_sign) {
@@ -427,7 +430,6 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
     }
 
     skip = false;
-    SolverOption *opt = i->second;
     if (*s == '?') {
       char next = s[1];
       if (!next || std::isspace(next)) {
