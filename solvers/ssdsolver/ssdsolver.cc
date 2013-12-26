@@ -206,4 +206,6 @@ void SSDSolver::DoSolve(Problem &p) {
   w.Format("\n{} iteration(s)") << iteration;
   HandleSolution(p, w.c_str(), solution.data(), 0, 0);
 }
+
+SolverPtr CreateSolver() { return SolverPtr(new SSDSolver()); }
 }
