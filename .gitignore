@@ -12,6 +12,7 @@ Makefile
 /student
 /*Subprojects*
 /*Targets*
+/scripts/*-options.html
 /solvers/arith.h
 /solvers/arithchk
 /solvers/details.c
