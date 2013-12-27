@@ -47,6 +47,9 @@ if (APPLE)
   set(CMAKE_SHARED_LINKER_FLAGS
     "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libstdc++")
   set(CMAKE_REQUIRED_FLAGS "-stdlib=libstdc++")
+
+  # The version of libstdc++ available on Mac doesn't support initializer lists.
+  add_definitions(-DUSE_INITIALIZER_LIST=0)
 endif ()
 
 include(CheckCXXCompilerFlag)
