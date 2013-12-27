@@ -403,7 +403,8 @@ fmt::Formatter<Solver::Printer> JaCoPSolver::Output(fmt::StringRef format) {
   if (output_count_ == 0)
     Print("{}") << header_;
   output_count_ = (output_count_ + 1) % 20;
-  return fmt::Formatter<Printer>(format, MakePrinter());
+  fmt::Formatter<Printer> f(format, MakePrinter());
+  return f;
 }
 
 void JaCoPSolver::PrintLogEntry() {

@@ -42,7 +42,8 @@ struct Throw {
 
 // Throws Error with a formatted message.
 inline fmt::Formatter<Throw> ThrowError(fmt::StringRef format) {
-  return fmt::Formatter<Throw>(format);
+  fmt::Formatter<Throw> f(format);
+  return f;
 }
 
 // An error returned by the operating system or the language runtime,
@@ -71,7 +72,8 @@ class SystemThrow {
 // Throws SystemError with a code and a formatted message.
 inline fmt::Formatter<SystemThrow> ThrowSystemError(
     int error_code, fmt::StringRef format) {
-  return fmt::Formatter<SystemThrow>(format, SystemThrow(error_code));
+  fmt::Formatter<SystemThrow> f(format, SystemThrow(error_code));
+  return f;
 }
 
 // Reports a system error without throwing an exception.

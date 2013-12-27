@@ -435,7 +435,8 @@ fmt::Formatter<fmt::Write> GecodeSolver::Output(fmt::StringRef format) {
   if (output_count_ == 0)
     fmt::Print("{}") << header_;
   output_count_ = (output_count_ + 1) % 20;
-  return fmt::Formatter<fmt::Write>(format);
+  fmt::Formatter<fmt::Write> f(format);
+  return f;
 }
 
 std::string GecodeSolver::GetOptionHeader() {

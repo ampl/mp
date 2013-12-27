@@ -93,7 +93,8 @@ class FileWriter : Noncopyable {
   ~FileWriter() { std::fclose(f_); }
 
   fmt::Formatter<Writer> Write(fmt::StringRef format) {
-    return fmt::Formatter<Writer>(format, Writer(f_));
+    fmt::Formatter<Writer> f(format, Writer(f_));
+    return f;
   }
 };
 

@@ -300,8 +300,21 @@ TEST(WriterTest, WriteDouble) {
   CHECK_WRITE(4.2l);
 }
 
+TEST(WriterTest, WriteDoubleAtBufferBoundary) {
+  fmt::Writer writer;
+  for (int i = 0; i < 100; ++i)
+    writer << 1.23456789;
+}
+
 TEST(WriterTest, WriteChar) {
   CHECK_WRITE('a');
+}
+
+TEST(WriterTest, WriteWideChar) {
+  // TODO
+  //CHECK_WRITE_WCHAR(L'a');
+  // The following line shouldn't compile:
+  CHECK_WRITE_CHAR(L'a');
 }
 
 TEST(WriterTest, WriteString) {
@@ -1155,6 +1168,13 @@ TEST(FormatterTest, FormatChar) {
   CheckUnknownTypes('a', "c", "char");
   EXPECT_EQ("a", str(Format("{0}") << 'a'));
   EXPECT_EQ("z", str(Format("{0:c}") << 'z'));
+  EXPECT_EQ(L"a", str(Format(L"{0}") << 'a'));
+}
+
+TEST(FormatterTest, FormatWChar) {
+  EXPECT_EQ(L"a", str(Format(L"{0}") << L'a'));
+  // This shouldn't compile:
+  //Format("{0}") << L'a';
 }
 
 TEST(FormatterTest, FormatCString) {
@@ -1327,7 +1347,8 @@ struct PrintError {
 };
 
 fmt::Formatter<PrintError> ReportError(const char *format) {
-  return fmt::Formatter<PrintError>(format);
+  fmt::Formatter<PrintError> f(format);
+  return f;
 }
 
 TEST(FormatterTest, Examples) {
@@ -1387,6 +1408,17 @@ TEST(StrTest, Convert) {
   EXPECT_EQ("2012-12-9", s);
 }
 
+template<typename... Args>
+inline std::string Format(const StringRef &format, const Args & ... args) {
+  Writer w;
+  fmt::BasicFormatter<char> f(w, format.c_str(), {args...});
+  return fmt::str(f);
+}
+
+TEST(FormatTest, Variadic) {
+  Writer w;
+  EXPECT_EQ("Hello, world!1", str(Format("Hello, {}!{}", "world", 1)));
+}
 int main(int argc, char **argv) {
 #ifdef _WIN32
   // Disable message boxes on assertion failures.

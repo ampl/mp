@@ -770,13 +770,15 @@ class Solver
   // Usage: ReportError("File not found: {}") << filename;
   fmt::Formatter<ErrorReporter> ReportError(fmt::StringRef format) {
     has_errors_ = true;
-    return fmt::Formatter<ErrorReporter>(format, ErrorReporter(error_handler_));
+    fmt::Formatter<ErrorReporter> f(format, ErrorReporter(error_handler_));
+    return f;
   }
 
   // Formats a string and prints it to stdout or, if an output handler
   // is registered, sends it to the output handler.
   fmt::Formatter<Printer> Print(fmt::StringRef format) {
-    return fmt::Formatter<Printer>(format, Printer(output_handler_));
+    fmt::Formatter<Printer> f(format, Printer(output_handler_));
+    return f;
   }
 
   // Solves a problem.
