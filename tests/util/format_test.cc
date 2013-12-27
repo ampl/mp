@@ -1408,6 +1408,8 @@ TEST(StrTest, Convert) {
   EXPECT_EQ("2012-12-9", s);
 }
 
+#ifdef FMT_USE_INITIALIZER_LIST
+
 template<typename... Args>
 inline std::string Format(const StringRef &format, const Args & ... args) {
   Writer w;
@@ -1419,6 +1421,9 @@ TEST(FormatTest, Variadic) {
   Writer w;
   EXPECT_EQ("Hello, world!1", str(Format("Hello, {}!{}", "world", 1)));
 }
+
+#endif // FMT_USE_INITIALIZER_LIST
+
 int main(int argc, char **argv) {
 #ifdef _WIN32
   // Disable message boxes on assertion failures.
