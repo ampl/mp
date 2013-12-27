@@ -53,8 +53,8 @@
 
 #ifndef FMT_USE_INITIALIZER_LIST
 # define FMT_USE_INITIALIZER_LIST \
-   (__has_feature(cxx_generalized_initializers) || \
-       (FMT_GCC_VERSION >= 404 && __cplusplus >= 201103) || _MSC_VER >= 1700)
+   ((__cplusplus >= 201103 && (FMT_GCC_VERSION >= 404 || \
+      __has_feature(cxx_generalized_initializers))) || _MSC_VER >= 1700)
 #endif
 
 #if FMT_USE_INITIALIZER_LIST
