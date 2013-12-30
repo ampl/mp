@@ -70,13 +70,38 @@ TEST(SolverTest, ObjPrec) {
   EXPECT_EQ(buffer, str(fmt::Format("{}") << ampl::ObjPrec(value)));
 }
 
-TEST(SolverTest, Format) {
+std::string FormatRST(fmt::StringRef s,
+    int indent = 0, const ampl::EnumOptionValue *values = 0) {
+  fmt::Writer w;
+  ampl::internal::FormatRST(w, s, indent, values);
+  return w.str();
+}
+
+TEST(SolverTest, FormatRST) {
   EXPECT_EQ(
     "     This is a very long option description that should be indented and\n"
     "     wrapped.\n",
-    ampl::internal::IndentAndWordWrap(
+    FormatRST(
           "This is a very long option description "
           "that should be indented and wrapped.", 5));
+  EXPECT_EQ(
+    "Leading whitespace should be removed.\n",
+    FormatRST(" \t\v\fLeading whitespace should be removed."));
+  EXPECT_EQ(
+    "* item1\n\n* item2\n",
+    FormatRST("* item1\n* item2"));
+}
+
+TEST(SolverTest, FormatRSTValueTable) {
+  const ampl::EnumOptionValue values[] = {
+      {"val1", "description of val1"},
+      {"val2", "description of val2"},
+      {}
+  };
+  EXPECT_EQ(
+    "  val1 - description of val1\n"
+    "  val2 - description of val2\n",
+    FormatRST(".. value-table::", 2, values));
 }
 
 TEST(SolverTest, BasicSolverCtor) {
@@ -338,8 +363,9 @@ TEST(SolverTest, SolverOption) {
     bool formatted, parsed;
     TestOption(const char *name, const char *description)
     : SolverOption(name, description), formatted(false), parsed(false) {}
-    TestOption(const char *name, const char *description, bool is_keyword)
-    : SolverOption(name, description, is_keyword),
+    TestOption(const char *name, const char *description,
+        const ampl::EnumOptionValue *values, bool is_keyword)
+    : SolverOption(name, description, values, is_keyword),
       formatted(false), parsed(false) {}
     void Write(fmt::Writer &) { formatted = true; }
     void Parse(const char *&) { parsed = true; }
@@ -348,11 +374,17 @@ TEST(SolverTest, SolverOption) {
     TestOption opt("abc", "def");
     EXPECT_STREQ("abc", opt.name());
     EXPECT_STREQ("def", opt.description());
+    EXPECT_EQ(0, opt.values());
     EXPECT_FALSE(opt.is_keyword());
   }
   {
-    TestOption opt("", "", true);
+    const ampl::EnumOptionValue VALUES[] = {
+        {"one", "First value"},
+        {"two", "Second value"}
+    };
+    TestOption opt("", "", VALUES, true);
     EXPECT_TRUE(opt.is_keyword());
+    EXPECT_EQ(VALUES, opt.values());
   }
   {
     TestOption opt("", "");
@@ -668,7 +700,7 @@ TEST(SolverTest, QuestionMarkInOptionValue) {
 TEST(SolverTest, ErrorOnKeywordOptionValue) {
   struct KeywordOption : SolverOption {
     bool parsed;
-    KeywordOption() : SolverOption("kwopt", "", true), parsed(false) {}
+    KeywordOption() : SolverOption("kwopt", "", 0, true), parsed(false) {}
     void Write(fmt::Writer &) {}
     void Parse(const char *&) { parsed = true; }
   };
