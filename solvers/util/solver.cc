@@ -70,7 +70,16 @@ class RSTFormatter : public rst::ContentHandler {
   int pos_in_line_;
   bool end_block_;  // true if there was no text after the last end of block
 
-  enum {LIST_ITEM_INDENT = 2};
+  enum { LIST_ITEM_INDENT = 2 };
+
+  void Indent() {
+    if (end_block_) {
+      end_block_ = false;
+      EndLine();
+    }
+    for (; pos_in_line_ < indent_; ++pos_in_line_)
+      writer_ << ' ';
+  }
 
   // Ends the current line.
   void EndLine() {
@@ -97,18 +106,18 @@ class RSTFormatter : public rst::ContentHandler {
   }
 
   void HandleDirective(const char *type) {
-    if (std::strcmp(type, "value-table") == 0) {
-      // TODO: handle the value-table directive
+    if (std::strcmp(type, "value-table") != 0 || !values_)
+      return;
+    for (const ampl::EnumOptionValue *v = values_; v->value; ++v) {
+      Indent();
+      writer_ << v->value << " - " << v->description;
+      EndLine();
     }
   }
 };
 
 void RSTFormatter::Write(fmt::StringRef s) {
-  if (end_block_) {
-    end_block_ = false;
-    EndLine();
-  }
-  enum {MAX_LINE_LENGTH = 78};
+  enum { MAX_LINE_LENGTH = 78 };
   const char *p = s.c_str();
   for (;;) {
     // Skip leading spaces.
@@ -123,9 +132,7 @@ void RSTFormatter::Write(fmt::StringRef s) {
       EndLine();  // The word doesn't fit in the current line, start a new one.
     }
     if (pos_in_line_ == 0) {
-      // Indent the line.
-      for (; pos_in_line_ < indent_; ++pos_in_line_)
-        writer_ << ' ';
+      Indent();
     } else {
       // Separate words.
       writer_ << ' ';
