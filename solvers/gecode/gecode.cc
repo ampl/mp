@@ -36,6 +36,14 @@ namespace Search = Gecode::Search;
 
 namespace {
 
+const ampl::EnumOptionValue ICL_VALUES[] = {
+    {"val", "value propagation or consistency (naive)"},
+    {"bnd", "bounds propagation or consistency"},
+    {"dom", "domain propagation or consistency"},
+    {"def", "the default consistency for a constraint"},
+    {}
+};
+
 const ampl::OptionValue<Gecode::IntConLevel> INT_CON_LEVELS[] = {
     {"val", Gecode::ICL_VAL},
     {"bnd", Gecode::ICL_BND},
@@ -441,11 +449,11 @@ fmt::Formatter<fmt::Write> GecodeSolver::Output(fmt::StringRef format) {
 
 std::string GecodeSolver::GetOptionHeader() {
   return
-      "Gecode Directives for AMPL\n"
-      "--------------------------\n"
+      "Gecode Options for AMPL\n"
+      "-----------------------\n"
       "\n"
-      "To set these directives, assign a string specifying their values to "
-      "the AMPL option gecode_options.  For example:\n"
+      "To set these options, assign a string specifying their values to "
+      "the AMPL option gecode_options. For example:\n"
       "\n"
       "  ampl: option gecode_options 'version nodelimit=30000 "
       "val_branching=min';\n";
@@ -472,21 +480,18 @@ GecodeSolver::GecodeSolver()
       &GecodeSolver::SetBoolOption, &output_);
 
   AddDblOption("outfreq",
-      "Output frequency in seconds.  The value should be a positive number.",
+      "Output frequency in seconds. The value should be a positive number.",
       &GecodeSolver::GetOutputFrequency, &GecodeSolver::SetOutputFrequency);
 
   AddStrOption("icl",
-      "Consistency level for integer propagators.  Possible values:\n"
-      "      val - value propagation or consistency (naive)\n"
-      "      bnd - bounds propagation or consistency\n"
-      "      dom - domain propagation or consistency\n"
-      "      def - the default consistency for a constraint\n",
+      "Consistency level for integer propagators. Possible values:\n"
+      "\n.. value-table::\n",
       &GecodeSolver::GetEnumOption<Gecode::IntConLevel>,
       &GecodeSolver::SetEnumOption<Gecode::IntConLevel>,
-      OptionInfo<Gecode::IntConLevel>(INT_CON_LEVELS, icl_));
+      OptionInfo<Gecode::IntConLevel>(INT_CON_LEVELS, icl_), ICL_VALUES);
 
   AddStrOption("var_branching",
-      "Variable branching.  Possible values:\n"
+      "Variable branching. Possible values:\n"
       "      none              - first unassigned\n"
       "      rnd               - random\n"
       "      degree_min        - smallest degree\n"
@@ -516,7 +521,7 @@ GecodeSolver::GecodeSolver()
       OptionInfo<IntVarBranch::Select>(VAR_BRANCHINGS, var_branching_));
 
   AddStrOption("val_branching",
-      "Value branching.  Possible values:\n"
+      "Value branching. Possible values:\n"
       "      min        - smallest value (default)\n"
       "      med        - greatest value not greater than the median\n"
       "      max        - largest value\n"
@@ -538,24 +543,24 @@ GecodeSolver::GecodeSolver()
       OptionInfo<Gecode::IntValBranch>(VAL_BRANCHINGS, val_branching_));
 
   AddDblOption("decay",
-      "Decay factor for AFC and activity branchings.  Default = 1.",
+      "Decay factor for AFC and activity branchings. Default = 1.",
       &GecodeSolver::GetDecay, &GecodeSolver::SetDecay);
 
   AddDblOption("threads",
-      "The number of parallel threads to use.  Assume that your computer "
+      "The number of parallel threads to use. Assume that your computer "
       "has m processing units and that the value for threads is n.\n"
-      "    * If n = 0, then m threads are used (as many as available\n"
+      "    * If n = 0, then m threads are used (as many as available "
       "      processing units).\n"
-      "    * If n >= 1, then n threads are used (absolute number of\n"
+      "    * If n >= 1, then n threads are used (absolute number of "
       "      threads to be used).\n"
-      "    * If n <= −1, then m + n threads are used (absolute number\n"
-      "      of processing units not to be used). For example, when\n"
+      "    * If n <= −1, then m + n threads are used (absolute number "
+      "      of processing units not to be used). For example, when "
       "      n = −6 and m = 8, then 2 threads are used.\n"
-      "    * If 0 < n < 1, then n * m threads are used (relative number\n"
-      "      of processing units to be used). For example, when n = 0.5\n"
+      "    * If 0 < n < 1, then n * m threads are used (relative number "
+      "      of processing units to be used). For example, when n = 0.5 "
       "      and m = 8, then 4 threads are used.\n"
-      "    * If −1 < n < 0, then (1 + n) * m threads are used (relative\n"
-      "      number of processing units not to be used). For example,\n"
+      "    * If −1 < n < 0, then (1 + n) * m threads are used (relative "
+      "      number of processing units not to be used). For example, "
       "      when n = −0.25 and m = 8, then 6 threads are used.\n"
       "All values are rounded and at least one thread is used.\n",
       &GecodeSolver::GetOption<double, double>,
@@ -579,7 +584,7 @@ GecodeSolver::GecodeSolver()
       &GecodeSolver::SetNonnegativeOption<int, unsigned long>, &fail_limit_);
 
   AddStrOption("restart",
-      "Restart sequence type.  Possible values:\n"
+      "Restart sequence type. Possible values:\n"
       "      none      - no restarts\n"
       "      constant  - restart with constant sequence\n"
       "      linear    - restart with linear sequence\n"
@@ -590,18 +595,18 @@ GecodeSolver::GecodeSolver()
       OptionInfo<Gecode::RestartMode>(RESTART_MODES, restart_));
 
   AddDblOption("restart_base",
-      "Base for geometric restart sequence.  Default = 1.5.",
+      "Base for geometric restart sequence. Default = 1.5.",
       &GecodeSolver::GetOption<double, double>,
       &GecodeSolver::DoSetDblOption, &restart_base_);
 
   AddIntOption("restart_scale",
-      "Scale factor for restart sequence.  Default = 250.",
+      "Scale factor for restart sequence. Default = 250.",
       &GecodeSolver::GetOption<int, unsigned long>,
       &GecodeSolver::SetNonnegativeOption<int, unsigned long>, &restart_scale_);
 
   AddIntOption("solutionlimit",
       "Limit on the number of feasible solutions found before terminating "
-      "a search.  Leaving the solution limit unspecified will make the "
+      "a search. Leaving the solution limit unspecified will make the "
       "optimizer search for an optimal solution if there is an objective "
       "function or for a feasible solution otherwise.",
       &GecodeSolver::GetOption<int, unsigned>,
