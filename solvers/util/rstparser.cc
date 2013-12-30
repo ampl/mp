@@ -101,6 +101,8 @@ void rst::Parser::ParseBlock(
       if (!*ptr_)
         break;  // End of input.
     }
+    // Strip indentation.
+    line_start = ptr_;
 
     // Find the end of the line.
     while (*ptr_ && *ptr_ != '\n')

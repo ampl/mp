@@ -122,6 +122,7 @@ TEST(ParserTest, UnindentBlock) {
 
 TEST(ParserTest, BulletList) {
   EXPECT_EQ("<ul><li>item</li></ul>", Parse("* item"));
+  EXPECT_EQ("<ul><li>abc\ndef</li></ul>", Parse("* abc\n  def"));
 }
 
 TEST(ParserTest, Comment) {
