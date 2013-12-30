@@ -26,4 +26,5 @@
 #include "solver.cc"
 #include "os.cc"
 #include "problem.cc"
+#include "rstparser.cc"
 #include "expr.cc"
