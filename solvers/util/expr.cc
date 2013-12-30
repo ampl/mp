@@ -22,7 +22,6 @@
 
 #include "solvers/util/expr.h"
 
-#include <sstream>
 #include <cstdio>
 
 using ampl::Expr;
