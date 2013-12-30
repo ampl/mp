@@ -58,11 +58,17 @@ class ObjPrec {
   }
 };
 
+// Value of an enumerated option.
+struct EnumOptionValue {
+  const char *value;
+  const char *description;
+};
+
 namespace internal {
 
-// Indents a string and breaks it into lines of 78 characters or less
-// by word wrapping.
-std::string IndentAndWordWrap(fmt::StringRef s, int indent = 0);
+// Formats reStructuredText in a string.
+void FormatRST(fmt::Writer &w, fmt::StringRef s,
+    int indent = 0, const ampl::EnumOptionValue *values = 0);
 
 // A helper class for implementing an option of type T.
 template <typename T>
@@ -200,17 +206,33 @@ class SolverOption {
  private:
   const char *name_;
   const char *description_;
+  const EnumOptionValue *values_;
   bool is_keyword_;
 
  public:
-  // Constructs a SolverOption object. The solver option stores pointers
-  // to the passed name and description and doesn't copy the strings.
-  // Normally both the name and the description are string literals and
-  // have static storage duration but if this is not the case make sure
-  // that these strings' lifetimes are longer than that of the option object.
-  SolverOption(const char *name,
-      const char *description, bool is_keyword = false)
-  : name_(name), description_(description), is_keyword_(is_keyword) {}
+  // Constructs a SolverOption object.
+  //
+  // The solver option stores pointers to the passed name and description and
+  // doesn't copy the strings. Normally both the name and the description are
+  // string literals and have static storage duration but if this is not the
+  // case make sure that these strings' lifetimes are longer than that of the
+  // option object.
+  //
+  // The description should be written in a subset of reStructuredText (RST).
+  // Currently the following RST constructs are supported:
+  //
+  // * paragraphs
+  // * bullet lists
+  // * the value-table directive (.. value-table::) which is replaced by a
+  //   table of option values as given by the values array
+  //
+  // If the values pointer is non-null, it should point to an array of
+  // EnumOptionValue giving possible values and their descriptions.
+  // The array is terminated by an EnumOptionValue object with a null value.
+  SolverOption(const char *name, const char *description,
+      const EnumOptionValue *values = 0, bool is_keyword = false)
+  : name_(name), description_(description),
+    values_(values), is_keyword_(is_keyword) {}
   virtual ~SolverOption() {}
 
   // Returns the option name.
@@ -218,6 +240,9 @@ class SolverOption {
 
   // Returns the option description.
   const char *description() const { return description_; }
+
+  // Returns the information about possible values.
+  const EnumOptionValue *values() const { return values_; }
 
   // Returns true if this is a keyword option, i.e. an option that
   // doesn't take a value.
@@ -234,8 +259,9 @@ class SolverOption {
 template <typename T>
 class TypedSolverOption : public SolverOption {
  public:
-  TypedSolverOption(const char *name, const char *description)
-  : SolverOption(name, description) {}
+  TypedSolverOption(const char *name, const char *description,
+      const EnumOptionValue *values = 0)
+  : SolverOption(name, description, values) {}
 
   void Write(fmt::Writer &w) {
     internal::OptionHelper<T>::Write(w, GetValue());
@@ -409,9 +435,9 @@ class Solver
     Set set_;
 
    public:
-    ConcreteOption(const char *name,
-        const char *description, Solver *s, Get get, Set set)
-    : TypedSolverOption<T>(name, description),
+    ConcreteOption(const char *name, const char *description,
+        Solver *s, Get get, Set set, const EnumOptionValue *values = 0)
+    : TypedSolverOption<T>(name, description, values),
       handler_(static_cast<Handler&>(*s)), get_(get), set_(set) {}
 
     T GetValue() const { return (handler_.*get_)(this->name()); }
@@ -432,9 +458,9 @@ class Solver
     Info info_;
 
    public:
-    ConcreteOptionWithInfo(const char *name, const char *description,
-        Solver *s, Get get, Set set, InfoArg info)
-    : TypedSolverOption<T>(name, description),
+    ConcreteOptionWithInfo(const char *name, const char *description, Solver *s,
+        Get get, Set set, InfoArg info, const EnumOptionValue *values = 0)
+    : TypedSolverOption<T>(name, description, values),
       handler_(static_cast<Handler&>(*s)), get_(get), set_(set), info_(info) {}
 
     T GetValue() const { return (handler_.*get_)(this->name(), info_); }
@@ -594,9 +620,10 @@ class Solver
   template <typename Handler>
   void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const char *) const,
-      void (Handler::*set)(const char *, const char *)) {
+      void (Handler::*set)(const char *, const char *),
+      const EnumOptionValue *values = 0) {
     AddOption(OptionPtr(new ConcreteOption<Handler, std::string>(
-        name, description, this, get, set)));
+        name, description, this, get, set, values)));
   }
 
   // Adds a string option with additional information.
@@ -609,10 +636,10 @@ class Solver
   void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const char *, const Info &) const,
       void (Handler::*set)(const char *, const char *, const Info &),
-      const Info &info) {
+      const Info &info, const EnumOptionValue *values = 0) {
     AddOption(OptionPtr(
         new ConcreteOptionWithInfo<Handler, std::string, Info, const Info &>(
-            name, description, this, get, set, info)));
+            name, description, this, get, set, info, values)));
   }
 
   // The same as above but with Info argument passed by value.

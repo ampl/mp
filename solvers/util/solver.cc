@@ -22,8 +22,10 @@
 
 #include "util/solver.h"
 
+#include <cctype>
 #include <cstdarg>
 #include <cstdio>
+#include <stack>
 
 #ifndef _WIN32
 # include <strings.h>
@@ -37,6 +39,7 @@
 
 #include "util/clock.h"
 #include "util/format.h"
+#include "util/rstparser.h"
 #include "getstub.h"
 
 namespace {
@@ -56,60 +59,126 @@ const char *SkipNonSpaces(const char *s) {
 struct Deleter {
   void operator()(ampl::SolverOption* p) const { delete p; }
 };
-}
 
-namespace ampl {
+// A reStructuredText (RST) formatter.
+class RSTFormatter : public rst::ContentHandler {
+ private:
+  fmt::Writer &writer_;
+  std::stack<rst::BlockType> blocks_;
+  const ampl::EnumOptionValue *values_;
+  int indent_;
+  int pos_in_line_;
+  bool end_block_;  // true if there was no text after the last end of block
 
-namespace internal {
-std::string IndentAndWordWrap(fmt::StringRef s, int indent) {
-  std::ostringstream os;
-  bool new_line = true;
-  int line_offset = 0;
-  int start_indent = indent;
-  const int MAX_LINE_LENGTH = 78;
+  enum {LIST_ITEM_INDENT = 2};
+
+  // Ends the current line.
+  void EndLine() {
+    writer_ << '\n';
+    pos_in_line_ = 0;
+  }
+
+  // Writes a string doing a text reflow.
+  void Write(fmt::StringRef s);
+
+ public:
+  RSTFormatter(fmt::Writer &w, const ampl::EnumOptionValue *values, int indent)
+  : writer_(w), values_(values), indent_(indent),
+    pos_in_line_(0), end_block_(false) {}
+
+  void StartBlock(rst::BlockType type);
+  void EndBlock();
+
+  void HandleText(const char *text, std::size_t size) {
+    Write(std::string(text, size));
+    size = writer_.size();
+    if (size != 0 && writer_.data()[size - 1] != '\n')
+      EndLine();
+  }
+
+  void HandleDirective(const char *type) {
+    if (std::strcmp(type, "value-table") == 0) {
+      // TODO: handle the value-table directive
+    }
+  }
+};
+
+void RSTFormatter::Write(fmt::StringRef s) {
+  if (end_block_) {
+    end_block_ = false;
+    EndLine();
+  }
+  enum {MAX_LINE_LENGTH = 78};
   const char *p = s.c_str();
   for (;;) {
-    const char *start = p;
+    // Skip leading spaces.
     while (*p == ' ')
       ++p;
     const char *word_start = p;
     while (*p != ' ' && *p != '\n' && *p)
       ++p;
     const char *word_end = p;
-    if (new_line) {
-      indent = start_indent + static_cast<int>(word_start - start);
-      new_line = false;
+    if (pos_in_line_ + (word_end - word_start) +
+        (pos_in_line_ == 0 ? 0 : 1) > MAX_LINE_LENGTH) {
+      EndLine();  // The word doesn't fit in the current line, start a new one.
     }
-    if (line_offset + (word_end - start) > MAX_LINE_LENGTH) {
-      // The word doesn't fit, start a new line.
-      os << '\n';
-      line_offset = 0;
-    }
-    if (line_offset == 0) {
+    if (pos_in_line_ == 0) {
       // Indent the line.
-      for (; line_offset < indent; ++line_offset)
-        os << ' ';
-      start = word_start;
+      for (; pos_in_line_ < indent_; ++pos_in_line_)
+        writer_ << ' ';
+    } else {
+      // Separate words.
+      writer_ << ' ';
+      ++pos_in_line_;
     }
-    os.write(start, word_end - start);
-    line_offset += static_cast<int>(word_end - start);
+    std::size_t length = word_end - word_start;
+    writer_ << fmt::StringRef(word_start, length);
+    pos_in_line_ += static_cast<int>(length);
     if (*p == '\n') {
-      os << '\n';
-      line_offset = 0;
-      new_line = true;
+      EndLine();
       ++p;
     }
     if (!*p) break;
   }
-  if (!new_line)
-    os << '\n';
-  return os.str();
+}
+
+void RSTFormatter::StartBlock(rst::BlockType type) {
+  if (type == rst::LIST_ITEM) {
+    Write("*");
+    indent_ += LIST_ITEM_INDENT;
+  }
+  blocks_.push(type);
+}
+
+void RSTFormatter::EndBlock() {
+  rst::BlockType type = blocks_.top();
+  switch (type) {
+  case rst::LIST_ITEM:
+    indent_ -= LIST_ITEM_INDENT;
+    // Fall through.
+  case rst::PARAGRAPH:
+    end_block_ = true;
+    break;
+  }
+  blocks_.pop();
+}
+}
+
+namespace ampl {
+
+namespace internal {
+
+// Formats restructured text.
+void FormatRST(fmt::Writer &w, fmt::StringRef s, int indent,
+    const ampl::EnumOptionValue *values) {
+  RSTFormatter formatter(w, values, indent);
+  rst::Parser parser(&formatter);
+  parser.Parse(s.c_str());
 }
 
 const char OptionHelper<int>::TYPE_NAME[] = "int";
 const char OptionHelper<double>::TYPE_NAME[] = "double";
 const char OptionHelper<std::string>::TYPE_NAME[] = "string";
-
 int OptionHelper<int>::Parse(const char *&s) {
   char *end = 0;
   long value = std::strtol(s, &end, 10);
@@ -214,17 +283,20 @@ void Solver::RegisterSuffixes(Problem &p) {
 
 char *Solver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
   Solver *solver = static_cast<Solver*>(oi);
-  std::string header = internal::IndentAndWordWrap(solver->GetOptionHeader());
+  std::string header(solver->GetOptionHeader());
+  fmt::Writer writer;
+  internal::FormatRST(writer, header);
   if (!header.empty())
-    fmt::Print("{}\n") << header;
-  fmt::Print("Directives:\n");
+    writer << '\n';
+  writer << "Options:\n";
   const int DESC_INDENT = 6;
   const OptionSet &options = solver->options_;
   for (OptionSet::const_iterator i = options.begin(); i != options.end(); ++i) {
     SolverOption *opt = *i;
-    fmt::Print("\n{}\n{}") << opt->name()
-        << internal::IndentAndWordWrap(opt->description(), DESC_INDENT);
+    writer << '\n' << opt->name() << '\n';
+    internal::FormatRST(writer, opt->description(), DESC_INDENT, opt->values());
   }
+  std::fwrite(writer.data(), writer.size(), 1, stdout);
   exit(0);
   return 0;
 }
@@ -261,7 +333,7 @@ Solver::Solver(
     Solver &s;
     VersionOption(Solver &s) : SolverOption("version",
         "Single-word phrase:  report version details "
-        "before solving the problem.", true), s(s) {}
+        "before solving the problem.", 0, true), s(s) {}
 
     void Write(fmt::Writer &w) {
       w << ((s.flags() & ASL_OI_show_version) != 0);
