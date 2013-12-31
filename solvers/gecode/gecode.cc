@@ -27,6 +27,7 @@
 #include <vector>
 
 using Gecode::BoolExpr;
+using Gecode::IntValBranch;
 using Gecode::IntVarArgs;
 using Gecode::IntVar;
 using Gecode::IntVarArray;
@@ -36,70 +37,198 @@ namespace Search = Gecode::Search;
 
 namespace {
 
-const ampl::EnumOptionValue ICL_VALUES[] = {
-    {"val", "value propagation or consistency (naive)"},
-    {"bnd", "bounds propagation or consistency"},
-    {"dom", "domain propagation or consistency"},
-    {"def", "the default consistency for a constraint"},
+const ampl::EnumOptionValue INT_CON_LEVELS[] = {
+    {"val", "value propagation or consistency (naive)", Gecode::ICL_VAL},
+    {"bnd", "bounds propagation or consistency",        Gecode::ICL_BND},
+    {"dom", "domain propagation or consistency",        Gecode::ICL_DOM},
+    {"def", "the default consistency for a constraint", Gecode::ICL_DEF},
     {}
 };
 
-const ampl::OptionValue<Gecode::IntConLevel> INT_CON_LEVELS[] = {
-    {"val", Gecode::ICL_VAL},
-    {"bnd", Gecode::ICL_BND},
-    {"dom", Gecode::ICL_DOM},
-    {"def", Gecode::ICL_DEF},
+const ampl::EnumOptionValue VAR_BRANCHINGS[] = {
+    {
+        "none",
+        "first unassigned",
+        IntVarBranch::SEL_NONE
+    },
+    {
+        "rnd",
+        "random",
+        IntVarBranch::SEL_RND
+    },
+    {
+        "degree_min",
+        "smallest degree",
+        IntVarBranch::SEL_DEGREE_MIN
+    },
+    {
+        "degree_max",
+        "largest degree",
+        IntVarBranch::SEL_DEGREE_MAX
+    },
+    {
+        "afc_min",
+        "smallest accumulated failure count (AFC)",
+        IntVarBranch::SEL_AFC_MIN
+    },
+    {
+        "afc_max",
+        "largest accumulated failure count (AFC)",
+        IntVarBranch::SEL_AFC_MAX
+    },
+    {
+        "activity_min",
+        "lowest activity",
+        IntVarBranch::SEL_ACTIVITY_MIN
+    },
+    {
+        "activity_max",
+        "highest activity",
+        IntVarBranch::SEL_ACTIVITY_MAX
+    },
+    {
+        "min_min",
+        "smallest minimum value",
+        IntVarBranch::SEL_MIN_MIN
+    },
+    {
+        "min_max",
+        "largest minimum value",
+        IntVarBranch::SEL_MIN_MAX
+    },
+    {
+        "max_min",
+        "smallest maximum value",
+        IntVarBranch::SEL_MAX_MIN
+    },
+    {
+        "max_max",
+        "largest maximum value",
+        IntVarBranch::SEL_MAX_MAX
+    },
+    {
+        "size_min",
+        "smallest domain size (default)",
+        IntVarBranch::SEL_SIZE_MIN
+    },
+    {
+        "size_max",
+        "largest domain size",
+        IntVarBranch::SEL_SIZE_MAX},
+    {
+        "degree_size_min",
+        "smallest domain size divided by degree",
+        IntVarBranch::SEL_DEGREE_SIZE_MIN
+    },
+    {
+        "degree_size_max",
+        "largest domain size divided by degree",
+        IntVarBranch::SEL_DEGREE_SIZE_MAX
+    },
+    {
+        "afc_size_min",
+        "smallest domain size divided by AFC",
+        IntVarBranch::SEL_AFC_SIZE_MIN
+    },
+    {
+        "afc_size_max",
+        "largest domain size divided by AFC",
+        IntVarBranch::SEL_AFC_SIZE_MAX
+    },
+    {
+        "activity_size_min",
+        "smallest activity by domain size",
+        IntVarBranch::SEL_ACTIVITY_SIZE_MIN},
+    {
+        "activity_size_max",
+        "largest activity by domain size",
+        IntVarBranch::SEL_ACTIVITY_SIZE_MAX
+    },
+    {
+        "regret_min_min",
+        "smallest minimum-regret",
+        IntVarBranch::SEL_REGRET_MIN_MIN
+    },
+    {
+        "regret_min_max",
+        "largest minimum-regret",
+        IntVarBranch::SEL_REGRET_MIN_MAX
+    },
+    {
+        "regret_max_min",
+        "smallest maximum-regret",
+        IntVarBranch::SEL_REGRET_MAX_MIN
+    },
+    {
+        "regret_max_max",
+        "largest maximum-regret",
+        IntVarBranch::SEL_REGRET_MAX_MAX
+    },
     {}
 };
 
-const ampl::OptionValue<IntVarBranch::Select> VAR_BRANCHINGS[] = {
-    {"none",              IntVarBranch::SEL_NONE},
-    {"rnd",               IntVarBranch::SEL_RND},
-    {"degree_min",        IntVarBranch::SEL_DEGREE_MIN},
-    {"degree_max",        IntVarBranch::SEL_DEGREE_MAX},
-    {"afc_min",           IntVarBranch::SEL_AFC_MIN},
-    {"afc_max",           IntVarBranch::SEL_AFC_MAX},
-    {"activity_min",      IntVarBranch::SEL_ACTIVITY_MIN},
-    {"activity_max",      IntVarBranch::SEL_ACTIVITY_MAX},
-    {"min_min",           IntVarBranch::SEL_MIN_MIN},
-    {"min_max",           IntVarBranch::SEL_MIN_MAX},
-    {"max_min",           IntVarBranch::SEL_MAX_MIN},
-    {"max_max",           IntVarBranch::SEL_MAX_MAX},
-    {"size_min",          IntVarBranch::SEL_SIZE_MIN},
-    {"size_max",          IntVarBranch::SEL_SIZE_MAX},
-    {"degree_size_min",   IntVarBranch::SEL_DEGREE_SIZE_MIN},
-    {"degree_size_max",   IntVarBranch::SEL_DEGREE_SIZE_MAX},
-    {"afc_size_min",      IntVarBranch::SEL_AFC_SIZE_MIN},
-    {"afc_size_max",      IntVarBranch::SEL_AFC_SIZE_MAX},
-    {"activity_size_min", IntVarBranch::SEL_ACTIVITY_SIZE_MIN},
-    {"activity_size_max", IntVarBranch::SEL_ACTIVITY_SIZE_MAX},
-    {"regret_min_min",    IntVarBranch::SEL_REGRET_MIN_MIN},
-    {"regret_min_max",    IntVarBranch::SEL_REGRET_MIN_MAX},
-    {"regret_max_min",    IntVarBranch::SEL_REGRET_MAX_MIN},
-    {"regret_max_max",    IntVarBranch::SEL_REGRET_MAX_MAX},
+const ampl::EnumOptionValue VAL_BRANCHINGS[] = {
+    {
+        "min",
+        "smallest value (default)",
+        IntValBranch::SEL_MIN
+    },
+    {
+        "med",
+        "greatest value not greater than the median",
+        IntValBranch::SEL_MED
+    },
+    {
+        "max",
+        "largest value",
+        IntValBranch::SEL_MAX
+    },
+    {
+        "rnd",
+        "random value",
+        IntValBranch::SEL_RND
+    },
+    {
+        "split_min",
+        "values not greater than mean of smallest and largest value",
+        IntValBranch::SEL_SPLIT_MIN
+    },
+    {
+        "split_max",
+        "values greater than mean of smallest and largest value",
+        IntValBranch::SEL_SPLIT_MAX
+    },
+    {
+        "range_min",
+        "values from smallest range, if domain has several ranges; "
+        "otherwise, values not greater than mean of smallest and largest value",
+        IntValBranch::SEL_RANGE_MIN
+    },
+    {
+        "range_max",
+        "values from largest range, if domain has several ranges; "
+        "otherwise, values greater than mean of smallest and largest value",
+        IntValBranch::SEL_RANGE_MAX
+    },
+    {
+        "values_min",
+        "all values starting from smallest",
+        IntValBranch::SEL_VALUES_MIN
+    },
+    {
+        "values_max",
+        "all values starting from largest",
+        IntValBranch::SEL_VALUES_MAX
+    },
     {}
 };
 
-const ampl::OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
-    {"min",        Gecode::INT_VAL_MIN()},
-    {"med",        Gecode::INT_VAL_MED()},
-    {"max",        Gecode::INT_VAL_MAX()},
-    {"rnd",        Gecode::INT_VAL_RND(Gecode::Rnd(0))},
-    {"split_min",  Gecode::INT_VAL_SPLIT_MIN()},
-    {"split_max",  Gecode::INT_VAL_SPLIT_MAX()},
-    {"range_min",  Gecode::INT_VAL_RANGE_MIN()},
-    {"range_max",  Gecode::INT_VAL_RANGE_MAX()},
-    {"values_min", Gecode::INT_VALUES_MIN()},
-    {"values_max", Gecode::INT_VALUES_MAX()},
-    {}
-};
-
-const ampl::OptionValue<Gecode::RestartMode> RESTART_MODES[] = {
-    {"none",      Gecode::RM_NONE},
-    {"constant",  Gecode::RM_CONSTANT},
-    {"linear",    Gecode::RM_LINEAR},
-    {"luby",      Gecode::RM_LUBY},
-    {"geometric", Gecode::RM_GEOMETRIC},
+const ampl::EnumOptionValue RESTART_MODES[] = {
+    {"none",      "no restarts",                     Gecode::RM_NONE},
+    {"constant",  "restart with constant sequence",  Gecode::RM_CONSTANT},
+    {"linear",    "restart with linear sequence",    Gecode::RM_LINEAR},
+    {"luby",      "restart with Luby sequence",      Gecode::RM_LUBY},
+    {"geometric", "restart with geometric sequence", Gecode::RM_GEOMETRIC},
     {}
 };
 }
@@ -411,21 +540,20 @@ void GecodeSolver::SetOutputFrequency(const SolverOption &opt, double value) {
 }
 
 template <typename T>
-std::string GecodeSolver::GetEnumOption(
-    const SolverOption &opt, const OptionInfo<T> &info) const {
-  for (const OptionValue<T> *p = info.values; p->name; ++p) {
-    if (info.value == p->value)
-      return p->name;
+std::string GecodeSolver::GetEnumOption(const SolverOption &opt, T *ptr) const {
+  for (const EnumOptionValue *p = opt.values(); p->value; ++p) {
+    if (*ptr == p->id)
+      return p->value;
   }
-  return str(fmt::Format("{}") << info.value);
+  return str(fmt::Format("{}") << *ptr);
 }
 
 template <typename T>
 void GecodeSolver::SetEnumOption(
-    const SolverOption &opt, const char *value, const OptionInfo<T> &info) {
-  for (const OptionValue<T> *p = info.values; p->name; ++p) {
-    if (std::strcmp(value, p->name) == 0) {
-      info.value = p->value;
+    const SolverOption &opt, const char *value, T *ptr) {
+  for (const EnumOptionValue *p = opt.values(); p->value; ++p) {
+    if (std::strcmp(value, p->value) == 0) {
+      *ptr = static_cast<T>(p->id);
       return;
     }
   }
@@ -465,7 +593,7 @@ GecodeSolver::GecodeSolver()
   output_(false), output_frequency_(1), output_count_(0), solve_code_(-1),
   icl_(Gecode::ICL_DEF),
   var_branching_(IntVarBranch::SEL_SIZE_MIN),
-  val_branching_(Gecode::INT_VAL_MIN()),
+  val_branching_(IntValBranch::SEL_MIN),
   decay_(1),
   time_limit_(DBL_MAX), node_limit_(ULONG_MAX), fail_limit_(ULONG_MAX),
   solution_limit_(UINT_MAX),
@@ -489,59 +617,21 @@ GecodeSolver::GecodeSolver()
       "\n.. value-table::\n",
       &GecodeSolver::GetEnumOption<Gecode::IntConLevel>,
       &GecodeSolver::SetEnumOption<Gecode::IntConLevel>,
-      OptionInfo<Gecode::IntConLevel>(INT_CON_LEVELS, icl_), ICL_VALUES);
+      &icl_, INT_CON_LEVELS);
 
   AddStrOption("var_branching",
       "Variable branching. Possible values:\n"
-      "      none              - first unassigned\n"
-      "      rnd               - random\n"
-      "      degree_min        - smallest degree\n"
-      "      degree_max        - largest degree\n"
-      "      afc_min           - smallest accumulated failure count (AFC)\n"
-      "      afc_max           - largest accumulated failure count (AFC)\n"
-      "      activity_min      - lowest activity\n"
-      "      activity_max      - highest activity\n"
-      "      min_min           - smallest minimum value\n"
-      "      min_max           - largest minimum value\n"
-      "      max_min           - smallest maximum value\n"
-      "      max_max           - largest maximum value\n"
-      "      size_min          - smallest domain size (default)\n"
-      "      size_max          - largest domain size\n"
-      "      degree_size_min   - smallest domain size divided by degree\n"
-      "      degree_size_max   - largest domain size divided by degree\n"
-      "      afc_size_min      - smallest domain size divided by AFC\n"
-      "      afc_size_max      - largest domain size divided by AFC\n"
-      "      activity_size_min - smallest activity by domain size\n"
-      "      activity_size_max - largest activity by domain size\n"
-      "      regret_min_min    - smallest minimum-regret\n"
-      "      regret_min_max    - largest minimum-regret\n"
-      "      regret_max_min    - smallest maximum-regret\n"
-      "      regret_max_max    - largest maximum-regret\n",
+      "\n.. value-table::\n",
       &GecodeSolver::GetEnumOption<IntVarBranch::Select>,
       &GecodeSolver::SetEnumOption<IntVarBranch::Select>,
-      OptionInfo<IntVarBranch::Select>(VAR_BRANCHINGS, var_branching_));
+      &var_branching_, VAR_BRANCHINGS);
 
   AddStrOption("val_branching",
       "Value branching. Possible values:\n"
-      "      min        - smallest value (default)\n"
-      "      med        - greatest value not greater than the median\n"
-      "      max        - largest value\n"
-      "      rnd        - random value\n"
-      "      split_min  - values not greater than mean of smallest and\n"
-      "                   largest value\n"
-      "      split_max  - values greater than mean of smallest and largest\n"
-      "                   value\n"
-      "      range_min  - values from smallest range, if domain has several\n"
-      "                   ranges; otherwise, values not greater than mean of\n"
-      "                   smallest and largest value\n"
-      "      range_max  - values from largest range, if domain has several\n"
-      "                   ranges; otherwise, values greater than mean of\n"
-      "                   smallest and largest value\n"
-      "      values_min - all values starting from smallest\n"
-      "      values_min - all values starting from largest\n",
-      &GecodeSolver::GetEnumOption<Gecode::IntValBranch>,
-      &GecodeSolver::SetEnumOption<Gecode::IntValBranch>,
-      OptionInfo<Gecode::IntValBranch>(VAL_BRANCHINGS, val_branching_));
+      "\n.. value-table::\n",
+      &GecodeSolver::GetEnumOption<IntValBranch::Select>,
+      &GecodeSolver::SetEnumOption<IntValBranch::Select>,
+      &val_branching_, VAL_BRANCHINGS);
 
   AddDblOption("decay",
       "Decay factor for AFC and activity branchings. Default = 1.",
@@ -586,14 +676,10 @@ GecodeSolver::GecodeSolver()
 
   AddStrOption("restart",
       "Restart sequence type. Possible values:\n"
-      "      none      - no restarts\n"
-      "      constant  - restart with constant sequence\n"
-      "      linear    - restart with linear sequence\n"
-      "      luby      - restart with Luby sequence\n"
-      "      geometric - restart with geometric sequence\n",
+      "\n.. value-table::\n",
       &GecodeSolver::GetEnumOption<Gecode::RestartMode>,
       &GecodeSolver::SetEnumOption<Gecode::RestartMode>,
-      OptionInfo<Gecode::RestartMode>(RESTART_MODES, restart_));
+      &restart_, RESTART_MODES);
 
   AddDblOption("restart_base",
       "Base for geometric restart sequence. Default = 1.5.",
@@ -693,7 +779,9 @@ void GecodeSolver::DoSolve(Problem &p) {
     var_branch = IntVarBranch(var_branching_, 0);
     break;
   }
-  branch(gecode_problem, gecode_problem.vars(), var_branch, val_branching_);
+  IntValBranch val_branch = val_branching_ == IntVarBranch::SEL_RND ?
+      IntValBranch(Gecode::Rnd(0)) : IntValBranch(val_branching_);
+  branch(gecode_problem, gecode_problem.vars(), var_branch, val_branch);
 
   Stop stop(*this);
   options_.stop = &stop;

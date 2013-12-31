@@ -286,21 +286,6 @@ class NLToGecodeConverter :
   }
 };
 
-template <typename Value>
-struct OptionValue {
-  const char *name;
-  Value value;
-};
-
-template <typename T>
-struct OptionInfo {
-  const OptionValue<T> *values;
-  T &value;
-
-  OptionInfo(const OptionValue<T> *values, T &value)
-  : values(values), value(value) {}
-};
-
 // Gecode solver.
 class GecodeSolver : public Solver {
  private:
@@ -313,7 +298,7 @@ class GecodeSolver : public Solver {
 
   Gecode::IntConLevel icl_;
   Gecode::IntVarBranch::Select var_branching_;
-  Gecode::IntValBranch val_branching_;
+  Gecode::IntValBranch::Select val_branching_;
   double decay_;
   Gecode::Search::Options options_;
   double time_limit_;  // Time limit in seconds.
@@ -333,12 +318,10 @@ class GecodeSolver : public Solver {
   void SetOutputFrequency(const SolverOption &opt, double value);
 
   template <typename T>
-  std::string GetEnumOption(
-      const SolverOption &opt, const OptionInfo<T> &info) const;
+  std::string GetEnumOption(const SolverOption &opt, T *ptr) const;
 
   template <typename T>
-  void SetEnumOption(const SolverOption &opt,
-      const char *value, const OptionInfo<T> &info);
+  void SetEnumOption(const SolverOption &opt, const char *value, T *ptr);
 
   template <typename T, typename OptionT>
   T GetOption(const SolverOption &, OptionT *option) const {
