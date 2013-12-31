@@ -445,19 +445,19 @@ class JaCoPSolver : public Solver {
   jmethodID get_fails_;
   jmethodID value_;
 
-  int DoGetIntOption(const char *, jlong *option) const {
+  int DoGetIntOption(const SolverOption &opt, jlong *option) const {
     return static_cast<int>(*option);
   }
 
-  void DoSetIntOption(const char *name, int value, jlong *option) {
+  void DoSetIntOption(const SolverOption &opt, int value, jlong *option) {
     if (value < 0)
-      throw InvalidOptionValue(name, value);
+      throw InvalidOptionValue(opt, value);
     *option = value;
   }
 
-  void SetBoolOption(const char *name, int value, jlong *option) {
+  void SetBoolOption(const SolverOption &opt, int value, jlong *option) {
     if (value != 0 && value != 1)
-      throw InvalidOptionValue(name, value);
+      throw InvalidOptionValue(opt, value);
     *option = value;
   }
 
@@ -469,12 +469,15 @@ class JaCoPSolver : public Solver {
     : values(values), value(value) {}
   };
 
-  std::string GetEnumOption(const char *name, const OptionInfo &info) const;
-  void SetEnumOption(const char *name,
+  std::string GetEnumOption(
+      const SolverOption &opt, const OptionInfo &info) const;
+  void SetEnumOption(const SolverOption &opt,
       const char *value, const OptionInfo &info);
 
-  double GetOutputFrequency(const char *) const { return output_frequency_; }
-  void SetOutputFrequency(const char *name, double value);
+  double GetOutputFrequency(const SolverOption &) const {
+    return output_frequency_;
+  }
+  void SetOutputFrequency(const SolverOption &opt, double value);
 
   fmt::Formatter<Printer> Output(fmt::StringRef format);
 

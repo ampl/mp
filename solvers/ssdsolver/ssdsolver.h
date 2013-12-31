@@ -89,22 +89,24 @@ class SSDSolver : public Solver {
   double abs_tolerance_;
   std::string solver_name_;
 
-  int GetBoolOption(const char *, bool *opt) const { return *opt; }
-  void SetBoolOption(const char *name, int value, bool *opt) {
+  int GetBoolOption(const SolverOption &, bool *ptr) const { return *ptr; }
+  void SetBoolOption(const SolverOption &opt, int value, bool *ptr) {
     if (value != 0 && value != 1)
-      throw InvalidOptionValue(name, value);
-    *opt = value != 0;
+      throw InvalidOptionValue(opt, value);
+    *ptr = value != 0;
   }
 
-  double GetAbsTolerance(const char *) const { return abs_tolerance_; }
-  void SetAbsTolerance(const char *name, double value) {
+  double GetAbsTolerance(const SolverOption &) const { return abs_tolerance_; }
+  void SetAbsTolerance(const SolverOption &opt, double value) {
     if (value < 0)
-      throw InvalidOptionValue(name, value);
+      throw InvalidOptionValue(opt, value);
     abs_tolerance_ = value;
   }
 
-  std::string GetSolverName(const char *) const { return solver_name_; }
-  void SetSolverName(const char *, const char *value) { solver_name_ = value; }
+  std::string GetSolverName(const SolverOption &) const { return solver_name_; }
+  void SetSolverName(const SolverOption &, const char *value) {
+    solver_name_ = value;
+  }
 
  protected:
   void DoSolve(Problem &p);

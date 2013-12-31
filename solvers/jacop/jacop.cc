@@ -276,9 +276,9 @@ jobject NLToJaCoPConverter::VisitImplication(ImplicationExpr e) {
       Visit(e.true_expr()), Visit(e.false_expr()));
 }
 
-void JaCoPSolver::SetOutputFrequency(const char *name, double value) {
+void JaCoPSolver::SetOutputFrequency(const SolverOption &opt, double value) {
   if (value <= 0)
-    throw InvalidOptionValue(name, value);
+    throw InvalidOptionValue(opt, value);
   output_frequency_ = value;
 }
 
@@ -382,21 +382,21 @@ JaCoPSolver::JaCoPSolver()
 }
 
 std::string JaCoPSolver::GetEnumOption(
-    const char *, const OptionInfo &info) const {
+    const SolverOption &, const OptionInfo &info) const {
   std::string value = info.value;
   std::transform(value.begin(), value.end(), value.begin(), ::tolower);
   return value;
 }
 
 void JaCoPSolver::SetEnumOption(
-    const char *name, const char *value, const OptionInfo &info) {
+    const SolverOption &opt, const char *value, const OptionInfo &info) {
   for (const char *const *v = info.values; *v; ++v) {
     if (Match(value, *v)) {
       info.value = *v;
       return;
     }
   }
-  throw InvalidOptionValue(name, value);
+  throw InvalidOptionValue(opt, value);
 }
 
 fmt::Formatter<Solver::Printer> JaCoPSolver::Output(fmt::StringRef format) {

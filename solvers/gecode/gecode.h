@@ -325,34 +325,37 @@ class GecodeSolver : public Solver {
   double restart_base_;
   unsigned long restart_scale_;
 
-  void SetBoolOption(const char *name, int value, bool *option);
+  void SetBoolOption(const SolverOption &opt, int value, bool *ptr);
 
-  double GetOutputFrequency(const char *) const { return output_frequency_; }
-  void SetOutputFrequency(const char *name, double value);
+  double GetOutputFrequency(const SolverOption &) const {
+    return output_frequency_;
+  }
+  void SetOutputFrequency(const SolverOption &opt, double value);
 
   template <typename T>
-  std::string GetEnumOption(const char *name, const OptionInfo<T> &info) const;
+  std::string GetEnumOption(
+      const SolverOption &opt, const OptionInfo<T> &info) const;
 
   template <typename T>
-  void SetEnumOption(const char *name, const char *value,
-      const OptionInfo<T> &info);
+  void SetEnumOption(const SolverOption &opt,
+      const char *value, const OptionInfo<T> &info);
 
   template <typename T, typename OptionT>
-  T GetOption(const char *, OptionT *option) const {
+  T GetOption(const SolverOption &, OptionT *option) const {
     return static_cast<T>(*option);
   }
 
   template <typename T, typename OptionT>
-  void SetNonnegativeOption(const char *name, T value, OptionT *option);
+  void SetNonnegativeOption(const SolverOption &opt, T value, OptionT *option);
 
-  double GetDecay(const char *) const { return decay_; }
-  void SetDecay(const char *name, double value) {
+  double GetDecay(const SolverOption &) const { return decay_; }
+  void SetDecay(const SolverOption &opt, double value) {
     if (value <= 0 || value > 1)
-      throw InvalidOptionValue(name, value);
+      throw InvalidOptionValue(opt, value);
     decay_ = value;
   }
 
-  void DoSetDblOption(const char *, double value, double *option) {
+  void DoSetDblOption(const SolverOption &, double value, double *option) {
     *option = value;
   }
 

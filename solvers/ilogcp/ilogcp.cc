@@ -87,9 +87,9 @@ const char *TimeModes[] = {
 };
 
 ampl::OptionError GetOptionValueError(
-    fmt::StringRef name, fmt::StringRef message) {
+    const ampl::SolverOption &opt, fmt::StringRef message) {
   throw ampl::OptionError(fmt::Format(
-      "Can't get value of option {}: {}") << name.c_str() << message.c_str());
+      "Can't get value of option {}: {}") << opt.name() << message.c_str());
 }
 
 // An integer option.
@@ -111,7 +111,7 @@ int IntOption::GetValue() const {
   try {
     return static_cast<int>(cp_.getParameter(param_));
   } catch (const IloException &e) {
-    throw GetOptionValueError(name(), e.getMessage());
+    throw GetOptionValueError(*this, e.getMessage());
   }
 }
 
@@ -150,7 +150,7 @@ std::string EnumOption::GetValue() const {
   try {
     value = cp_.getParameter(param_);
   } catch (const IloException &e) {
-    throw GetOptionValueError(name(), e.getMessage());
+    throw GetOptionValueError(*this, e.getMessage());
   }
   if (value == IloCP::Auto && accepts_auto_)
     return "auto";
@@ -504,7 +504,7 @@ IlogCPSolver::~IlogCPSolver() {
   env_.end();
 }
 
-std::string IlogCPSolver::GetOptimizer(const char *) const {
+std::string IlogCPSolver::GetOptimizer(const SolverOption &) const {
   switch (optimizer_) {
   default:
     assert(false);
@@ -515,7 +515,7 @@ std::string IlogCPSolver::GetOptimizer(const char *) const {
   }
 }
 
-void IlogCPSolver::SetOptimizer(const char *name, const char *value) {
+void IlogCPSolver::SetOptimizer(const SolverOption &opt, const char *value) {
   if (strcmp(value, "auto") == 0)
     optimizer_ = AUTO;
   else if (strcmp(value, "cp") == 0)
@@ -523,54 +523,56 @@ void IlogCPSolver::SetOptimizer(const char *name, const char *value) {
   else if (strcmp(value, "cplex") == 0)
     optimizer_ = CPLEX;
   else
-    throw InvalidOptionValue(name, value);
+    throw InvalidOptionValue(opt, value);
 }
 
-void IlogCPSolver::SetBoolOption(const char *name, int value, Option opt) {
+void IlogCPSolver::SetBoolOption(
+    const SolverOption &opt, int value, Option id) {
   if (value != 0 && value != 1)
-    throw InvalidOptionValue(name, value);
-  options_[opt] = value;
+    throw InvalidOptionValue(opt, value);
+  options_[id] = value;
 }
 
-void IlogCPSolver::DoSetIntOption(const char *name, int value, Option opt) {
+void IlogCPSolver::DoSetIntOption(const SolverOption &opt, int value, Option id) {
   if (value < 0)
-    throw InvalidOptionValue(name, value);
-  options_[opt] = value;
+    throw InvalidOptionValue(opt, value);
+  options_[id] = value;
 }
 
 double IlogCPSolver::GetCPDblOption(
-    const char *name, IloCP::NumParam param) const {
+    const SolverOption &opt, IloCP::NumParam param) const {
   try {
     return cp_.getParameter(param);
   } catch (const IloException &e) {
-    throw GetOptionValueError(name, e.getMessage());
+    throw GetOptionValueError(opt, e.getMessage());
   }
 }
 
 void IlogCPSolver::SetCPDblOption(
-    const char *name, double value, IloCP::NumParam param) {
+    const SolverOption &opt, double value, IloCP::NumParam param) {
   try {
     cp_.setParameter(param, value);
   } catch (const IloException &) {
-    throw InvalidOptionValue(name, value);
+    throw InvalidOptionValue(opt, value);
   }
 }
 
-int IlogCPSolver::GetCPLEXIntOption(const char *name, int param) const {
+int IlogCPSolver::GetCPLEXIntOption(const SolverOption &opt, int param) const {
   // Use CPXgetintparam instead of IloCplex::setParam to avoid dealing with
   // two overloads, one for the type int and one for the type long.
   int value = 0;
   int result = CPXgetintparam(cplex_.getImpl()->getCplexEnv(), param, &value);
   if (result != 0)
-    throw GetOptionValueError(name, fmt::Format("CPLEX error = {}") << result);
+    throw GetOptionValueError(opt, fmt::Format("CPLEX error = {}") << result);
   return value;
 }
 
-void IlogCPSolver::SetCPLEXIntOption(const char *name, int value, int param) {
+void IlogCPSolver::SetCPLEXIntOption(
+    const SolverOption &opt, int value, int param) {
   // Use CPXsetintparam instead of IloCplex::setParam to avoid dealing with
   // two overloads, one for the type int and one for the type long.
   if (CPXsetintparam(cplex_.getImpl()->getCplexEnv(), param, value) != 0)
-    throw InvalidOptionValue(name, value);
+    throw InvalidOptionValue(opt, value);
 }
 
 void IlogCPSolver::SolveWithCP(

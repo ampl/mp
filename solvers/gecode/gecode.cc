@@ -397,21 +397,22 @@ bool GecodeSolver::Stop::stop(
   return true;
 }
 
-void GecodeSolver::SetBoolOption(const char *name, int value, bool *option) {
+void GecodeSolver::SetBoolOption(
+    const SolverOption &opt, int value, bool *option) {
   if (value != 0 && value != 1)
-    throw InvalidOptionValue(name, value);
+    throw InvalidOptionValue(opt, value);
   *option = value != 0;
 }
 
-void GecodeSolver::SetOutputFrequency(const char *name, double value) {
+void GecodeSolver::SetOutputFrequency(const SolverOption &opt, double value) {
   if (value <= 0)
-    throw InvalidOptionValue(name, value);
+    throw InvalidOptionValue(opt, value);
   output_frequency_ = value;
 }
 
 template <typename T>
 std::string GecodeSolver::GetEnumOption(
-    const char *, const OptionInfo<T> &info) const {
+    const SolverOption &opt, const OptionInfo<T> &info) const {
   for (const OptionValue<T> *p = info.values; p->name; ++p) {
     if (info.value == p->value)
       return p->name;
@@ -420,22 +421,22 @@ std::string GecodeSolver::GetEnumOption(
 }
 
 template <typename T>
-void GecodeSolver::SetEnumOption(const char *name, const char *value,
-    const OptionInfo<T> &info) {
+void GecodeSolver::SetEnumOption(
+    const SolverOption &opt, const char *value, const OptionInfo<T> &info) {
   for (const OptionValue<T> *p = info.values; p->name; ++p) {
     if (std::strcmp(value, p->name) == 0) {
       info.value = p->value;
       return;
     }
   }
-  throw InvalidOptionValue(name, value);
+  throw InvalidOptionValue(opt, value);
 }
 
 template <typename T, typename OptionT>
 void GecodeSolver::SetNonnegativeOption(
-    const char *name, T value, OptionT *option) {
+    const SolverOption &opt, T value, OptionT *option) {
   if (value < 0)
-    throw InvalidOptionValue(name, value);
+    throw InvalidOptionValue(opt, value);
   *option = value;
 }
 

@@ -465,41 +465,41 @@ struct TestSolverWithOptions : Solver {
   std::string stropt1;
   std::string stropt2;
 
-  int GetIntOption(const char *) const { return intopt1; }
-  void SetIntOption(const char *name, int value) {
-    EXPECT_STREQ("intopt1", name);
+  int GetIntOption(const SolverOption &) const { return intopt1; }
+  void SetIntOption(const SolverOption &opt, int value) {
+    EXPECT_STREQ("intopt1", opt.name());
     intopt1 = value;
   }
 
-  int GetIntOptionWithInfo(const char *, Info) const { return 0; }
-  void SetIntOptionWithInfo(const char *name, int value, Info info) {
-    EXPECT_STREQ("intopt2", name);
+  int GetIntOptionWithInfo(const SolverOption &, Info) const { return 0; }
+  void SetIntOptionWithInfo(const SolverOption &opt, int value, Info info) {
+    EXPECT_STREQ("intopt2", opt.name());
     intopt2 = value;
     EXPECT_EQ(INFO, info);
   }
 
-  double GetDblOption(const char *) const { return dblopt1; }
-  void SetDblOption(const char *name, double value) {
-    EXPECT_STREQ("dblopt1", name);
+  double GetDblOption(const SolverOption &) const { return dblopt1; }
+  void SetDblOption(const SolverOption &opt, double value) {
+    EXPECT_STREQ("dblopt1", opt.name());
     dblopt1 = value;
   }
 
-  double GetDblOptionWithInfo(const char *, Info) const { return 0; }
-  void SetDblOptionWithInfo(const char *name, double value, Info info) {
-    EXPECT_STREQ("dblopt2", name);
+  double GetDblOptionWithInfo(const SolverOption &, Info) const { return 0; }
+  void SetDblOptionWithInfo(const SolverOption &opt, double value, Info info) {
+    EXPECT_STREQ("dblopt2", opt.name());
     dblopt2 = value;
     EXPECT_EQ(INFO, info);
   }
 
-  std::string GetStrOption(const char *) const { return stropt1; }
-  void SetStrOption(const char *name, const char *value) {
-    EXPECT_STREQ("stropt1", name);
+  std::string GetStrOption(const SolverOption &) const { return stropt1; }
+  void SetStrOption(const SolverOption &opt, const char *value) {
+    EXPECT_STREQ("stropt1", opt.name());
     stropt1 = value;
   }
 
-  std::string GetStrOptionWithInfo(const char *, Info) const { return ""; }
-  void SetStrOptionWithInfo(const char *name, const char *value, Info info) {
-    EXPECT_STREQ("stropt2", name);
+  std::string GetStrOptionWithInfo(const SolverOption &, Info) const { return ""; }
+  void SetStrOptionWithInfo(const SolverOption &opt, const char *value, Info info) {
+    EXPECT_STREQ("stropt2", opt.name());
     stropt2 = value;
     EXPECT_EQ(INFO, info);
   }
@@ -762,8 +762,8 @@ TEST(SolverTest, OptionEcho) {
 TEST(SolverTest, ExceptionInOptionHandler) {
   class TestException {};
   struct TestSolver : public Solver {
-    int GetIntOption(const char *) const { return 0; }
-    void Throw(const char *, int) { throw TestException(); }
+    int GetIntOption(const SolverOption &) const { return 0; }
+    void Throw(const SolverOption &, int) { throw TestException(); }
     TestSolver() : Solver("") {
       AddIntOption("throw", "", &TestSolver::GetIntOption, &TestSolver::Throw);
     }

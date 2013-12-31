@@ -83,24 +83,27 @@ class IlogCPSolver : private Noncopyable, public Solver {
   Optimizer optimizer_;
   int options_[NUM_OPTIONS];
 
-  std::string GetOptimizer(const char *) const;
-  void SetOptimizer(const char *name, const char *value);
+  std::string GetOptimizer(const SolverOption &) const;
+  void SetOptimizer(const SolverOption &opt, const char *value);
 
-  int DoGetIntOption(const char *, Option opt) const { return options_[opt]; }
-  void SetBoolOption(const char *name, int value, Option opt);
-  void DoSetIntOption(const char *name, int value, Option opt);
+  int DoGetIntOption(const SolverOption &, Option id) const {
+    return options_[id];
+  }
+  void SetBoolOption(const SolverOption &opt, int value, Option id);
+  void DoSetIntOption(const SolverOption &opt, int value, Option id);
 
   // Returns a double option of the constraint programming optimizer.
-  double GetCPDblOption(const char *name, IloCP::NumParam param) const;
+  double GetCPDblOption(const SolverOption &opt, IloCP::NumParam param) const;
 
   // Sets a double option of the constraint programming optimizer.
-  void SetCPDblOption(const char *name, double value, IloCP::NumParam param);
+  void SetCPDblOption(
+      const SolverOption &opt, double value, IloCP::NumParam param);
 
   // Returns an integer option of the CPLEX optimizer.
-  int GetCPLEXIntOption(const char *name, int param) const;
+  int GetCPLEXIntOption(const SolverOption &opt, int param) const;
 
   // Sets an integer option of the CPLEX optimizer.
-  void SetCPLEXIntOption(const char *name, int value, int param);
+  void SetCPLEXIntOption(const SolverOption &opt, int value, int param);
 
   struct Stats {
     steady_clock::time_point time;
@@ -126,9 +129,9 @@ class IlogCPSolver : private Noncopyable, public Solver {
   IloCP cp() const { return cp_; }
   IloCplex cplex() const { return cplex_; }
 
-  int GetOption(Option opt) const {
-    assert(opt >= 0 && opt < NUM_OPTIONS);
-    return options_[opt];
+  int GetOption(Option id) const {
+    assert(id >= 0 && id < NUM_OPTIONS);
+    return options_[id];
   }
 
   void use_numberof(bool use = true) { options_[USENUMBEROF] = use; }
