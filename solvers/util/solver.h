@@ -62,6 +62,7 @@ class ObjPrec {
 struct EnumOptionValue {
   const char *value;
   const char *description;
+  int id;
 };
 
 namespace internal {
@@ -656,9 +657,10 @@ class Solver
   template <typename Handler, typename Info>
   void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const SolverOption &, Info) const,
-      void (Handler::*set)(const SolverOption &, const char *, Info), Info info) {
+      void (Handler::*set)(const SolverOption &, const char *, Info),
+      Info info, const EnumOptionValue *values = 0) {
     AddOption(OptionPtr(new ConcreteOptionWithInfo<Handler, std::string, Info>(
-            name, description, this, get, set, info)));
+            name, description, this, get, set, info, values)));
   }
 
   virtual void HandleUnknownOption(const char *name) {
