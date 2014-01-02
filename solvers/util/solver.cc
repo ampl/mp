@@ -25,6 +25,9 @@
 #include <cctype>
 #include <cstdarg>
 #include <cstdio>
+#include <cstring>
+
+#include <algorithm>
 #include <stack>
 
 #ifndef _WIN32
@@ -108,9 +111,18 @@ class RSTFormatter : public rst::ContentHandler {
   void HandleDirective(const char *type) {
     if (std::strcmp(type, "value-table") != 0 || !values_)
       return;
+    std::size_t max_len = 0;
+    for (const ampl::EnumOptionValue *v = values_; v->value; ++v)
+      max_len = std::max(max_len, std::strlen(v->value));
     for (const ampl::EnumOptionValue *v = values_; v->value; ++v) {
       Indent();
-      writer_ << v->value << " - " << v->description;
+      static const char SEP[] = " -";
+      writer_ << fmt::pad(v->value, max_len) << SEP;
+      int saved_indent = indent_;
+      indent_ += max_len + sizeof(SEP);
+      pos_in_line_ = indent_;
+      Write(v->description);
+      indent_ = saved_indent;
       EndLine();
     }
   }
