@@ -84,10 +84,8 @@ void rst::Parser::EnterBlock(rst::BlockType &prev_type, rst::BlockType type) {
 
 void rst::Parser::ParseBlock(
     rst::BlockType type, rst::BlockType &prev_type, int indent) {
-  EnterBlock(prev_type, type);
-  handler_->StartBlock(type);
   std::string text;
-  for (bool first = true; ;first = false) {
+  for (bool first = true; ; first = false) {
     const char *line_start = ptr_;
     if (!first) {
       // Check indentation.
@@ -132,8 +130,53 @@ void rst::Parser::ParseBlock(
     if (*ptr_ == '\n')
       ++ptr_;
   }
+
+  // Remove a trailing newline.
   if (*text.rbegin() == '\n')
     text.resize(text.size() - 1);
+
+  if (type == PARAGRAPH && text == "::") {
+    // Parse a literal block.
+    const char *line_start = ptr_;
+    SkipSpace();
+    int new_indent = ptr_ - line_start;
+    if (new_indent > indent)
+      ParseBlock(LITERAL_BLOCK, prev_type, new_indent);
+    return;
+  }
+
+  EnterBlock(prev_type, type);
+  handler_->StartBlock(type);
+  handler_->HandleText(text.c_str(), text.size());
+  handler_->EndBlock();
+}
+
+void rst::Parser::ParseLineBlock(rst::BlockType &prev_type, int indent) {
+  std::string text;
+  for (bool first = true; ; first = false) {
+    const char *line_start = ptr_;
+    if (!first) {
+      // Check indentation.
+      SkipSpace();
+      if (*ptr_ != '|' || !IsSpace(ptr_[1]) || ptr_ - line_start != indent)
+        break;
+      ptr_ += 2;
+      if (!*ptr_)
+        break;  // End of input.
+    }
+    // Strip indentation.
+    line_start = ptr_;
+
+    // Find the end of the line.
+    while (*ptr_ && *ptr_ != '\n')
+      ++ptr_;
+    if (*ptr_ == '\n')
+      ++ptr_;
+    text.append(line_start, ptr_);
+  }
+
+  EnterBlock(prev_type, rst::LINE_BLOCK);
+  handler_->StartBlock(rst::LINE_BLOCK);
   handler_->HandleText(text.c_str(), text.size());
   handler_->EndBlock();
 }
@@ -173,8 +216,18 @@ void rst::Parser::Parse(const char *s) {
       break;
     case '*': case '+': case '-':
       if (IsSpace(ptr_[1])) {
+        // Parse a bullet list item.
         ptr_ += 2;
         ParseBlock(LIST_ITEM, prev_type, ptr_ - line_start);
+        continue;
+      }
+      break;
+    case '|':
+      if (IsSpace(ptr_[1])) {
+        // Parse a line block.
+        int indent = ptr_ - line_start;
+        ptr_ += 2;
+        ParseLineBlock(prev_type, indent);
         continue;
       }
       break;

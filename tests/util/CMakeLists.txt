@@ -24,4 +24,4 @@ add_dependencies(os_test print-executable-path)
 cxx_test_with_flags(problem_test "" "gtest;util"
   ../test_main.cc ../expr_builder.cc ../util.cc problem_test.cc)
 
-cxx_test_with_flags(rstparser_test "" "gtest;util" rstparser_test.cc)
+cxx_test_with_flags(rstparser-test "" "gtest;util" rstparser-test.cc)
