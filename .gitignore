@@ -3,6 +3,7 @@
 *.a
 *.dll
 *.so
+*_test
 CMakeFiles
 CMakeCache.txt
 CTestTestfile.cmake
