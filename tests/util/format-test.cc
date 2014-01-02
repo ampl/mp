@@ -38,6 +38,7 @@
 // Check if format.h compiles with windows.h included.
 #ifdef _WIN32
 # include <windows.h>
+# include <crtdbg.h>
 #endif
 
 #include "solvers/util/format.h"
@@ -55,6 +56,7 @@ using fmt::Format;
 using fmt::FormatError;
 using fmt::StringRef;
 using fmt::Writer;
+using fmt::WWriter;
 using fmt::pad;
 
 #define FORMAT_TEST_THROW_(statement, expected_exception, message, fail) \
@@ -125,8 +127,10 @@ struct WriteChecker {
 // as writing it to std::ostringstream both for char and wchar_t.
 #define CHECK_WRITE(value) EXPECT_PRED_FORMAT1(AnyWriteChecker(), value)
 
-#define CHECK_WRITE_CHAR(value) EXPECT_PRED_FORMAT1(WriteChecker<char>(), value)
-#define CHECK_WRITE_WCHAR(value) EXPECT_PRED_FORMAT1(WriteChecker<wchar_t>(), value)
+#define CHECK_WRITE_CHAR(value) \
+  EXPECT_PRED_FORMAT1(WriteChecker<char>(), value)
+#define CHECK_WRITE_WCHAR(value) \
+  EXPECT_PRED_FORMAT1(WriteChecker<wchar_t>(), value)
 
 // Increment a number in a string.
 void Increment(char *s) {
@@ -311,10 +315,7 @@ TEST(WriterTest, WriteChar) {
 }
 
 TEST(WriterTest, WriteWideChar) {
-  // TODO
-  //CHECK_WRITE_WCHAR(L'a');
-  // The following line shouldn't compile:
-  CHECK_WRITE_CHAR(L'a');
+  CHECK_WRITE_WCHAR(L'a');
 }
 
 TEST(WriterTest, WriteString) {
@@ -354,10 +355,10 @@ TEST(WriterTest, oct) {
 
 TEST(WriterTest, hex) {
   using fmt::hex;
-  fmt::IntFormatter<int, fmt::TypeSpec<'x'> > (*phex)(int value) = hex;
+  fmt::IntFormatSpec<int, fmt::TypeSpec<'x'> > (*phex)(int value) = hex;
   phex(42);
   // This shouldn't compile:
-  //fmt::IntFormatter<short, fmt::TypeSpec<'x'> > (*phex2)(short value) = hex;
+  //fmt::IntFormatSpec<short, fmt::TypeSpec<'x'> > (*phex2)(short value) = hex;
 
   EXPECT_EQ("cafe", str(Writer() << hex(0xcafe)));
   EXPECT_EQ("babe", str(Writer() << hex(0xbabeu)));
@@ -439,6 +440,17 @@ TEST(WriterTest, pad) {
   f.Clear();
   f << iso8601(Date(2012, 1, 9));
   EXPECT_EQ("2012-01-09", f.str());
+}
+
+TEST(WriterTest, PadString) {
+  EXPECT_EQ("test    ", str(Writer() << pad("test", 8)));
+  EXPECT_EQ("test******", str(Writer() << pad("test", 10, '*')));
+}
+
+TEST(WriterTest, PadWString) {
+  EXPECT_EQ(L"test    ", str(WWriter() << pad(L"test", 8)));
+  EXPECT_EQ(L"test******", str(WWriter() << pad(L"test", 10, '*')));
+  EXPECT_EQ(L"test******", str(WWriter() << pad(L"test", 10, L'*')));
 }
 
 TEST(WriterTest, NoConflictWithIOManip) {
@@ -1409,7 +1421,6 @@ TEST(StrTest, Convert) {
 }
 
 #if FMT_USE_INITIALIZER_LIST
-
 template<typename... Args>
 inline std::string Format(const StringRef &format, const Args & ... args) {
   Writer w;
@@ -1421,7 +1432,6 @@ TEST(FormatTest, Variadic) {
   Writer w;
   EXPECT_EQ("Hello, world!1", str(Format("Hello, {}!{}", "world", 1)));
 }
-
 #endif  // FMT_USE_INITIALIZER_LIST
 
 int main(int argc, char **argv) {

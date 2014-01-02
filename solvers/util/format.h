@@ -53,8 +53,8 @@
 
 #ifndef FMT_USE_INITIALIZER_LIST
 # define FMT_USE_INITIALIZER_LIST \
-   ((__cplusplus >= 201103 && (FMT_GCC_VERSION >= 404 || \
-      __has_feature(cxx_generalized_initializers))) || _MSC_VER >= 1700)
+   (__has_feature(cxx_generalized_initializers) || \
+       (FMT_GCC_VERSION >= 404 && __cplusplus >= 201103) || _MSC_VER >= 1700)
 #endif
 
 #if FMT_USE_INITIALIZER_LIST
@@ -322,10 +322,12 @@ enum Alignment {
 // Flags.
 enum { SIGN_FLAG = 1, PLUS_FLAG = 2, HASH_FLAG = 4 };
 
-struct Spec {};
+// An empty format specifier.
+struct EmptySpec {};
 
+// A type specifier.
 template <char TYPE>
-struct TypeSpec : Spec {
+struct TypeSpec : EmptySpec {
   Alignment align() const { return ALIGN_DEFAULT; }
   unsigned width() const { return 0; }
 
@@ -337,6 +339,7 @@ struct TypeSpec : Spec {
   char fill() const { return ' '; }
 };
 
+// A width specifier.
 struct WidthSpec {
   unsigned width_;
   // Fill is always wchar_t and cast to char if necessary to avoid having
@@ -349,15 +352,17 @@ struct WidthSpec {
   wchar_t fill() const { return fill_; }
 };
 
+// An alignment specifier.
 struct AlignSpec : WidthSpec {
   Alignment align_;
 
-  AlignSpec(unsigned width, wchar_t fill)
-  : WidthSpec(width, fill), align_(ALIGN_DEFAULT) {}
+  AlignSpec(unsigned width, wchar_t fill, Alignment align = ALIGN_DEFAULT)
+  : WidthSpec(width, fill), align_(align) {}
 
   Alignment align() const { return align_; }
 };
 
+// An alignment and type specifier.
 template <char TYPE>
 struct AlignTypeSpec : AlignSpec {
   AlignTypeSpec(unsigned width, wchar_t fill) : AlignSpec(width, fill) {}
@@ -369,14 +374,13 @@ struct AlignTypeSpec : AlignSpec {
   char type() const { return TYPE; }
 };
 
+// A full format specifier.
 struct FormatSpec : AlignSpec {
   unsigned flags_;
   char type_;
 
   FormatSpec(unsigned width = 0, char type = 0, wchar_t fill = ' ')
   : AlignSpec(width, fill), flags_(0), type_(type) {}
-
-  Alignment align() const { return align_; }
 
   bool sign_flag() const { return (flags_ & SIGN_FLAG) != 0; }
   bool plus_flag() const { return (flags_ & PLUS_FLAG) != 0; }
@@ -385,44 +389,59 @@ struct FormatSpec : AlignSpec {
   char type() const { return type_; }
 };
 
+// An integer format specifier.
 template <typename T, typename SpecT>
-class IntFormatter : public SpecT {
+class IntFormatSpec : public SpecT {
  private:
   T value_;
 
  public:
-  IntFormatter(T value, const SpecT &spec = SpecT())
+  IntFormatSpec(T value, const SpecT &spec = SpecT())
   : SpecT(spec), value_(value) {}
 
   T value() const { return value_; }
 };
 
-/**
-  Returns an integer formatter that formats the value in base 2.
- */
-IntFormatter<int, TypeSpec<'b'> > bin(int value);
+// A string format specifier.
+template <typename T>
+class StrFormatSpec : public AlignSpec {
+ private:
+  const T *str_;
+
+ public:
+  StrFormatSpec(const T *str, const AlignSpec &spec = AlignSpec())
+  : AlignSpec(spec), str_(str) {}
+
+  const T *str() const { return str_; }
+};
 
 /**
-  Returns an integer formatter that formats the value in base 8.
+  Returns an integer format specifier to format the value in base 2.
  */
-IntFormatter<int, TypeSpec<'o'> > oct(int value);
+IntFormatSpec<int, TypeSpec<'b'> > bin(int value);
 
 /**
-  Returns an integer formatter that formats the value in base 16 using
+  Returns an integer format specifier to format the value in base 8.
+ */
+IntFormatSpec<int, TypeSpec<'o'> > oct(int value);
+
+/**
+  Returns an integer format specifier to format the value in base 16 using
   lower-case letters for the digits above 9.
  */
-IntFormatter<int, TypeSpec<'x'> > hex(int value);
+IntFormatSpec<int, TypeSpec<'x'> > hex(int value);
 
 /**
-  Returns an integer formatter that formats the value in base 16 using
+  Returns an integer formatter format specifier to format in base 16 using
   upper-case letters for the digits above 9.
  */
-IntFormatter<int, TypeSpec<'X'> > hexu(int value);
+IntFormatSpec<int, TypeSpec<'X'> > hexu(int value);
 
 /**
   \rst
-  Returns an integer formatter that pads the formatted argument with the fill
-  character to the specified width using the default (right) alignment.
+  Returns an integer format specifier to pad the formatted argument with the
+  fill character to the specified width using the default (right) numeric
+  alignment.
 
   **Example**::
 
@@ -432,37 +451,37 @@ IntFormatter<int, TypeSpec<'X'> > hexu(int value);
   \endrst
  */
 template <char TYPE_CODE>
-IntFormatter<int, AlignTypeSpec<TYPE_CODE> > pad(
+IntFormatSpec<int, AlignTypeSpec<TYPE_CODE> > pad(
     int value, unsigned width, wchar_t fill = ' ');
 
 #define DEFINE_INT_FORMATTERS(TYPE) \
-inline IntFormatter<TYPE, TypeSpec<'b'> > bin(TYPE value) { \
-  return IntFormatter<TYPE, TypeSpec<'b'> >(value, TypeSpec<'b'>()); \
+inline IntFormatSpec<TYPE, TypeSpec<'b'> > bin(TYPE value) { \
+  return IntFormatSpec<TYPE, TypeSpec<'b'> >(value, TypeSpec<'b'>()); \
 } \
  \
-inline IntFormatter<TYPE, TypeSpec<'o'> > oct(TYPE value) { \
-  return IntFormatter<TYPE, TypeSpec<'o'> >(value, TypeSpec<'o'>()); \
+inline IntFormatSpec<TYPE, TypeSpec<'o'> > oct(TYPE value) { \
+  return IntFormatSpec<TYPE, TypeSpec<'o'> >(value, TypeSpec<'o'>()); \
 } \
  \
-inline IntFormatter<TYPE, TypeSpec<'x'> > hex(TYPE value) { \
-  return IntFormatter<TYPE, TypeSpec<'x'> >(value, TypeSpec<'x'>()); \
+inline IntFormatSpec<TYPE, TypeSpec<'x'> > hex(TYPE value) { \
+  return IntFormatSpec<TYPE, TypeSpec<'x'> >(value, TypeSpec<'x'>()); \
 } \
  \
-inline IntFormatter<TYPE, TypeSpec<'X'> > hexu(TYPE value) { \
-  return IntFormatter<TYPE, TypeSpec<'X'> >(value, TypeSpec<'X'>()); \
+inline IntFormatSpec<TYPE, TypeSpec<'X'> > hexu(TYPE value) { \
+  return IntFormatSpec<TYPE, TypeSpec<'X'> >(value, TypeSpec<'X'>()); \
 } \
  \
 template <char TYPE_CODE> \
-inline IntFormatter<TYPE, AlignTypeSpec<TYPE_CODE> > pad( \
-    IntFormatter<TYPE, TypeSpec<TYPE_CODE> > f, \
+inline IntFormatSpec<TYPE, AlignTypeSpec<TYPE_CODE> > pad( \
+    IntFormatSpec<TYPE, TypeSpec<TYPE_CODE> > f, \
     unsigned width, wchar_t fill = ' ') { \
-  return IntFormatter<TYPE, AlignTypeSpec<TYPE_CODE> >( \
+  return IntFormatSpec<TYPE, AlignTypeSpec<TYPE_CODE> >( \
       f.value(), AlignTypeSpec<TYPE_CODE>(width, fill)); \
 } \
  \
-inline IntFormatter<TYPE, AlignTypeSpec<0> > pad( \
+inline IntFormatSpec<TYPE, AlignTypeSpec<0> > pad( \
     TYPE value, unsigned width, wchar_t fill = ' ') { \
-  return IntFormatter<TYPE, AlignTypeSpec<0> >( \
+  return IntFormatSpec<TYPE, AlignTypeSpec<0> >( \
       value, AlignTypeSpec<0>(width, fill)); \
 }
 
@@ -472,6 +491,29 @@ DEFINE_INT_FORMATTERS(unsigned)
 DEFINE_INT_FORMATTERS(unsigned long)
 DEFINE_INT_FORMATTERS(long long)
 DEFINE_INT_FORMATTERS(unsigned long long)
+
+/**
+  \rst
+  Returns a string formatter that pads the formatted argument with the fill
+  character to the specified width using the default (left) string alignment.
+
+  **Example**::
+
+    std::string s = str(Writer() << pad("abc", 8));
+    // s == "abc     "
+
+  \endrst
+ */
+template <typename Char>
+inline StrFormatSpec<Char> pad(
+    const Char *str, unsigned width, Char fill = ' ') {
+  return StrFormatSpec<Char>(str, AlignSpec(width, fill));
+}
+
+inline StrFormatSpec<wchar_t> pad(
+    const wchar_t *str, unsigned width, char fill = ' ') {
+  return StrFormatSpec<wchar_t>(str, AlignSpec(width, fill));
+}
 
 template <typename Char>
 class BasicFormatter;
@@ -539,7 +581,7 @@ class BasicWriter {
     return internal::CheckPtr(&buffer_[size], n);
   }
 
-  CharPtr PrepareFilledBuffer(unsigned size, const Spec &, char sign) {
+  CharPtr PrepareFilledBuffer(unsigned size, const EmptySpec &, char sign) {
     CharPtr p = GrowBuffer(size);
     *p = sign;
     return p + size - 1;
@@ -547,19 +589,14 @@ class BasicWriter {
 
   CharPtr PrepareFilledBuffer(unsigned size, const AlignSpec &spec, char sign);
 
-  // Formats an integer.
-  template <typename T>
-  void FormatInt(T value, const FormatSpec &spec) {
-    *this << IntFormatter<T, FormatSpec>(value, spec);
-  }
-
   // Formats a floating-point number (double or long double).
   template <typename T>
   void FormatDouble(T value, const FormatSpec &spec, int precision);
 
+  // Formats a string.
   template <typename StringChar>
-  CharPtr FormatString(const StringChar *s,
-      std::size_t size, const FormatSpec &spec);
+  CharPtr FormatString(
+      const StringChar *s, std::size_t size, const AlignSpec &spec);
 
   // This method is private to disallow writing a wide string to a
   // char stream and vice versa. If you want to print a wide string
@@ -624,20 +661,21 @@ class BasicWriter {
   BasicFormatter<Char> Format(StringRef format);
 
   BasicWriter &operator<<(int value) {
-    return *this << IntFormatter<int, TypeSpec<0> >(value, TypeSpec<0>());
+    return *this << IntFormatSpec<int, TypeSpec<0> >(value, TypeSpec<0>());
   }
   BasicWriter &operator<<(unsigned value) {
-    return *this << IntFormatter<unsigned, TypeSpec<0> >(value, TypeSpec<0>());
+    return *this << IntFormatSpec<unsigned, TypeSpec<0> >(value, TypeSpec<0>());
   }
   BasicWriter &operator<<(long value) {
-    return *this << IntFormatter<long, TypeSpec<0> >(value, TypeSpec<0>());
+    return *this << IntFormatSpec<long, TypeSpec<0> >(value, TypeSpec<0>());
   }
   BasicWriter &operator<<(unsigned long value) {
-    return *this <<
-        IntFormatter<unsigned long, TypeSpec<0> >(value, TypeSpec<0>());
+    return *this
+        << IntFormatSpec<unsigned long, TypeSpec<0> >(value, TypeSpec<0>());
   }
   BasicWriter &operator<<(long long value) {
-    return *this << IntFormatter<long long, TypeSpec<0> >(value, TypeSpec<0>());
+    return *this
+        << IntFormatSpec<long long, TypeSpec<0> >(value, TypeSpec<0>());
   }
 
   /**
@@ -645,7 +683,7 @@ class BasicWriter {
    */
   BasicWriter &operator<<(unsigned long long value) {
     return *this <<
-        IntFormatter<unsigned long long, TypeSpec<0> >(value, TypeSpec<0>());
+        IntFormatSpec<unsigned long long, TypeSpec<0> >(value, TypeSpec<0>());
   }
 
   BasicWriter &operator<<(double value) {
@@ -662,8 +700,16 @@ class BasicWriter {
     return *this;
   }
 
+  /**
+   * Writes a character to the stream.
+   */
   BasicWriter &operator<<(char value) {
     *GrowBuffer(1) = value;
+    return *this;
+  }
+
+  BasicWriter &operator<<(wchar_t value) {
+    *GrowBuffer(1) = internal::CharTraits<Char>::ConvertWChar(value);
     return *this;
   }
 
@@ -678,7 +724,14 @@ class BasicWriter {
   }
 
   template <typename T, typename Spec>
-  BasicWriter &operator<<(const IntFormatter<T, Spec> &f);
+  BasicWriter &operator<<(const IntFormatSpec<T, Spec> &spec);
+
+  template <typename StringChar>
+  BasicWriter &operator<<(const StrFormatSpec<StringChar> &spec) {
+    const StringChar *s = spec.str();
+    FormatString(s, std::char_traits<Char>::length(s), spec);
+    return *this;
+  }
 
   void Write(const std::basic_string<char> &s, const FormatSpec &spec) {
     FormatString(s.data(), s.size(), spec);
@@ -692,7 +745,7 @@ class BasicWriter {
 template <typename Char>
 template <typename StringChar>
 typename BasicWriter<Char>::CharPtr BasicWriter<Char>::FormatString(
-    const StringChar *s, std::size_t size, const FormatSpec &spec) {
+    const StringChar *s, std::size_t size, const AlignSpec &spec) {
   CharPtr out = CharPtr();
   if (spec.width() > size) {
     out = GrowBuffer(spec.width());
@@ -715,8 +768,8 @@ typename BasicWriter<Char>::CharPtr BasicWriter<Char>::FormatString(
 template <typename Char>
 template <typename T, typename Spec>
 BasicWriter<Char> &BasicWriter<Char>::operator<<(
-    const IntFormatter<T, Spec> &f) {
-  T value = f.value();
+    const IntFormatSpec<T, Spec> &spec) {
+  T value = spec.value();
   unsigned size = 0;
   char sign = 0;
   typedef typename internal::IntTraits<T>::UnsignedType UnsignedType;
@@ -725,64 +778,64 @@ BasicWriter<Char> &BasicWriter<Char>::operator<<(
     sign = '-';
     ++size;
     abs_value = 0 - abs_value;
-  } else if (f.sign_flag()) {
-    sign = f.plus_flag() ? '+' : ' ';
+  } else if (spec.sign_flag()) {
+    sign = spec.plus_flag() ? '+' : ' ';
     ++size;
   }
-  switch (f.type()) {
+  switch (spec.type()) {
   case 0: case 'd': {
     unsigned num_digits = internal::CountDigits(abs_value);
     CharPtr p =
-        PrepareFilledBuffer(size + num_digits, f, sign) + 1 - num_digits;
+        PrepareFilledBuffer(size + num_digits, spec, sign) + 1 - num_digits;
     BasicWriter::FormatDecimal(p, abs_value, num_digits);
     break;
   }
   case 'x': case 'X': {
     UnsignedType n = abs_value;
-    bool print_prefix = f.hash_flag();
+    bool print_prefix = spec.hash_flag();
     if (print_prefix) size += 2;
     do {
       ++size;
     } while ((n >>= 4) != 0);
-    Char *p = GetBase(PrepareFilledBuffer(size, f, sign));
+    Char *p = GetBase(PrepareFilledBuffer(size, spec, sign));
     n = abs_value;
-    const char *digits = f.type() == 'x' ?
+    const char *digits = spec.type() == 'x' ?
         "0123456789abcdef" : "0123456789ABCDEF";
     do {
       *p-- = digits[n & 0xf];
     } while ((n >>= 4) != 0);
     if (print_prefix) {
-      *p-- = f.type();
+      *p-- = spec.type();
       *p = '0';
     }
     break;
   }
   case 'b': case 'B': {
     UnsignedType n = abs_value;
-    bool print_prefix = f.hash_flag();
+    bool print_prefix = spec.hash_flag();
     if (print_prefix) size += 2;
     do {
       ++size;
     } while ((n >>= 1) != 0);
-    Char *p = GetBase(PrepareFilledBuffer(size, f, sign));
+    Char *p = GetBase(PrepareFilledBuffer(size, spec, sign));
     n = abs_value;
     do {
       *p-- = '0' + (n & 1);
     } while ((n >>= 1) != 0);
     if (print_prefix) {
-      *p-- = f.type();
+      *p-- = spec.type();
       *p = '0';
     }
     break;
   }
   case 'o': {
     UnsignedType n = abs_value;
-    bool print_prefix = f.hash_flag();
+    bool print_prefix = spec.hash_flag();
     if (print_prefix) ++size;
     do {
       ++size;
     } while ((n >>= 3) != 0);
-    Char *p = GetBase(PrepareFilledBuffer(size, f, sign));
+    Char *p = GetBase(PrepareFilledBuffer(size, spec, sign));
     n = abs_value;
     do {
       *p-- = '0' + (n & 7);
@@ -792,7 +845,7 @@ BasicWriter<Char> &BasicWriter<Char>::operator<<(
     break;
   }
   default:
-    internal::ReportUnknownType(f.type(), "integer");
+    internal::ReportUnknownType(spec.type(), "integer");
     break;
   }
   return *this;
@@ -986,6 +1039,12 @@ class BasicFormatter {
   // Parses the format string and performs the actual formatting,
   // writing the output to writer_.
   void DoFormat();
+
+  // Formats an integer.
+  template <typename T>
+  void FormatInt(T value, const FormatSpec &spec) {
+    *writer_ << IntFormatSpec<T, FormatSpec>(value, spec);
+  }
 
   struct Proxy {
     BasicWriter<Char> *writer;
