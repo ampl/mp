@@ -409,7 +409,7 @@ class StrFormatSpec : public AlignSpec {
   const T *str_;
 
  public:
-  StrFormatSpec(const T *str, const AlignSpec &spec = AlignSpec())
+  StrFormatSpec(const T *str, const AlignSpec &spec)
   : AlignSpec(spec), str_(str) {}
 
   const T *str() const { return str_; }
