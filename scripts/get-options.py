@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # This scripts extract options from solvers and formats them in HTML.
 
+import os, errno
 from ctypes import cdll, Structure, c_char_p, c_void_p, byref
+from docutils.core import publish_string
 
 class SolverOption:
   def __init__(self, name, description):
@@ -43,8 +45,22 @@ class Solver:
       options.append(SolverOption(opt.name, opt.description))
     return options
 
-with Solver('../solvers/ilogcp/libamplilogcp.so') as solver:
-  # TODO: output as html
-  for opt in solver.get_options():
-    print opt.name
-    print opt.description
+solver_names = ['gecode', 'ilogcp', 'jacop', 'ssdsolver', 'sulum']
+for solver_name in solver_names:
+  html_filename = solver_name + '-options.html'
+  try:
+    os.remove(html_filename)
+  except OSError as e:
+    if e.errno != errno.ENOENT:
+      raise
+  libname = '../solvers/{0}/libampl{0}.so'.format(solver_name)
+  if not os.path.exists(libname):
+    continue
+  with Solver(libname) as solver:
+    rst = ''
+    for opt in solver.get_options():
+      rst += '``{}``\n'.format(opt.name)
+      for line in opt.description.split('\n'):
+        rst += '  ' + line + '\n'
+    with open(html_filename, 'w') as f:
+      f.write(publish_string(rst, writer_name='html'))
