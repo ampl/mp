@@ -38,6 +38,7 @@
 # include <io.h>
 # define AMPL_WRITE _write
 # define strcasecmp _stricmp
+# undef max
 #endif
 
 #include "util/clock.h"
