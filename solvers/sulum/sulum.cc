@@ -107,14 +107,15 @@ class SulumSolver::DblSulumOption : public TypedSolverOption<double> {
 
 std::string SulumSolver::GetOptionHeader() {
   return
-      "Sulum Directives for AMPL\n"
-      "--------------------------\n"
+      "Sulum Options for AMPL\n"
+      "----------------------\n"
       "\n"
-      "To set these directives, assign a string specifying their values to "
-      "the AMPL option sulum_options.  For example:\n"
+      "To set these options, assign a string specifying their values to "
+      "the AMPL option sulum_options. For example:\n"
       "\n"
-      "  ampl: option sulum_options 'version loglevel=10 "
-      "simmaxiter=100';\n";
+      "::\n"
+      "\n"
+      "  ampl: option sulum_options 'version loglevel=10 simmaxiter=100';\n";
 }
 
 SulumSolver::SulumSolver() : Solver("sulum", "", 20130908), env_(), model_() {
