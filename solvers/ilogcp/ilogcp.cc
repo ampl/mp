@@ -107,6 +107,11 @@ const ampl::EnumOptionValue OPTIMIZERS[] = {
   {}
 };
 
+const ampl::EnumOptionValue AUTO_VALUE[] = {
+  {"auto", 0, IloCP::Auto},
+  {}
+};
+
 ampl::OptionError GetOptionValueError(
     const ampl::SolverOption &opt, fmt::StringRef message) {
   throw ampl::OptionError(fmt::Format(
@@ -267,10 +272,7 @@ std::string IlogCPSolver::GetOptionHeader() {
       "AMPL option ilogcp_options. For example::\n"
       "\n"
       "  ampl: option ilogcp_options 'optimalitytolerance=1e-6 "
-      "searchtype=restart';\n"
-      "\n"
-      "Where both a number and a keyword are given, either may be used to "
-      "specify the option setting.\n";
+      "searchtype=restart';\n";
 }
 
 IlogCPSolver::IlogCPSolver() :
@@ -499,7 +501,7 @@ IlogCPSolver::IlogCPSolver() :
       "Number of workers to run in parallel to solve a problem. "
       "In addition to numeric values this option accepts the value "
       "``auto`` since CP Optimizer version 12.3. Default = auto.",
-      cp_, IloCP::Workers, 0, 0, true)));
+      cp_, IloCP::Workers, 0, AUTO_VALUE, true)));
 
   // CPLEX options:
 
