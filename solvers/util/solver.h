@@ -214,7 +214,9 @@ class SolverOption {
   // Currently the following RST constructs are supported:
   //
   // * paragraphs
+  // * list blocks
   // * bullet lists
+  // * literal blocks
   // * the value-table directive (.. value-table::) which is replaced by a
   //   table of option values as given by the values array
   //

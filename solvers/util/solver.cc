@@ -67,13 +67,16 @@ struct Deleter {
 class RSTFormatter : public rst::ContentHandler {
  private:
   fmt::Writer &writer_;
-  std::stack<rst::BlockType> blocks_;
   const ampl::EnumOptionValue *values_;
+  std::stack<int> indents_;
   int indent_;
   int pos_in_line_;
   bool end_block_;  // true if there was no text after the last end of block
 
-  enum { LIST_ITEM_INDENT = 2 };
+  enum {
+    LITERAL_BLOCK_INDENT = 3,
+    LIST_ITEM_INDENT     = 2
+  };
 
   void Indent() {
     if (end_block_) {
@@ -162,24 +165,19 @@ void RSTFormatter::Write(fmt::StringRef s) {
 }
 
 void RSTFormatter::StartBlock(rst::BlockType type) {
-  if (type == rst::LIST_ITEM) {
+  indents_.push(indent_);
+  if (type == rst::LITERAL_BLOCK) {
+    indent_ += LITERAL_BLOCK_INDENT;
+  } else if (type == rst::LIST_ITEM) {
     Write("*");
     indent_ += LIST_ITEM_INDENT;
   }
-  blocks_.push(type);
 }
 
 void RSTFormatter::EndBlock() {
-  rst::BlockType type = blocks_.top();
-  switch (type) {
-  case rst::LIST_ITEM:
-    indent_ -= LIST_ITEM_INDENT;
-    // Fall through.
-  case rst::PARAGRAPH:
-    end_block_ = true;
-    break;
-  }
-  blocks_.pop();
+  indent_ = indents_.top();
+  indents_.pop();
+  end_block_ = true;
 }
 }
 
@@ -368,10 +366,11 @@ Solver::Solver(
     WantSolOption(Solver &s) : TypedSolverOption<int>("wantsol",
         "In a stand-alone invocation (no -AMPL on the command line), "
         "what solution information to write.  Sum of\n"
-        "      1 = write .sol file\n"
-        "      2 = primal variables to stdout\n"
-        "      4 = dual variables to stdout\n"
-        "      8 = suppress solution message\n"), s(s) {}
+        "\n"
+        "| 1 = write .sol file\n"
+        "| 2 = primal variables to stdout\n"
+        "| 4 = dual variables to stdout\n"
+        "| 8 = suppress solution message\n"), s(s) {}
 
     int GetValue() const { return s.wantsol(); }
     void SetValue(int value) {
