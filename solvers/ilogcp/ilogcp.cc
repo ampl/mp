@@ -250,7 +250,7 @@ std::string IlogCPSolver::GetOptionHeader() {
       "--------------------------\n"
       "\n"
       "To set these directives, assign a string specifying their values to the AMPL "
-      "option ilogcp_options.  For example:\n"
+      "option ilogcp_options. For example::\n"
       "\n"
       "  ampl: option ilogcp_options 'optimalitytolerance=1e-6 searchtype=restart';\n"
       "\n"
@@ -282,7 +282,7 @@ IlogCPSolver::IlogCPSolver() :
   AddSuffix("priority", 0, ASL_Sufkind_var);
 
   AddStrOption("optimizer",
-      "Specifies which optimizer to use.  Possible values:\n"
+      "Specifies which optimizer to use. Possible values:\n"
       "      auto  = CP Optimizer if the problem has\n"
       "              nonlinear objective/constraints\n"
       "              or logical constraints, CPLEX\n"
@@ -313,7 +313,7 @@ IlogCPSolver::IlogCPSolver() :
   // - StateFunctionInferenceLevel
 
   AddOption(OptionPtr(new EnumOption("alldiffinferencelevel",
-      "Inference level for 'alldiff' constraints.  Possible values:\n"
+      "Inference level for 'alldiff' constraints. Possible values:\n"
       "      0 = default\n"
       "      1 = low\n"
       "      2 = basic\n"
@@ -323,12 +323,12 @@ IlogCPSolver::IlogCPSolver() :
 
   AddOption(OptionPtr(new IntOption("branchlimit",
       "Limit on the number of branches made before "
-      "terminating a search.  Default = no limit.",
+      "terminating a search. Default = no limit.",
       cp_, IloCP::BranchLimit)));
 
   AddOption(OptionPtr(new IntOption("choicepointlimit",
       "Limit on the number of choice points created"
-      "before terminating a search.  Default = no limit.",
+      "before terminating a search. Default = no limit.",
       cp_, IloCP::ChoicePointLimit)));
 
   AddOption(OptionPtr(new EnumOption("constraintaggregation",
@@ -341,7 +341,7 @@ IlogCPSolver::IlogCPSolver() :
       &IlogCPSolver::DoGetIntOption, &IlogCPSolver::SetBoolOption, DEBUGEXPR);
 
   AddOption(OptionPtr(new EnumOption("defaultinferencelevel",
-      "Default inference level for constraints.  Possible values:\n"
+      "Default inference level for constraints. Possible values:\n"
       "      1 = low\n"
       "      2 = basic\n"
       "      3 = medium\n"
@@ -349,7 +349,7 @@ IlogCPSolver::IlogCPSolver() :
       cp_, IloCP::DefaultInferenceLevel, IloCP::Default, InferenceLevels)));
 
   AddOption(OptionPtr(new EnumOption("distributeinferencelevel",
-      "Inference level for 'distribute' constraints.  Possible values:\n"
+      "Inference level for 'distribute' constraints. Possible values:\n"
       "      0 = default\n"
       "      1 = low\n"
       "      2 = basic\n"
@@ -358,7 +358,7 @@ IlogCPSolver::IlogCPSolver() :
       cp_, IloCP::DistributeInferenceLevel, IloCP::Default, InferenceLevels)));
 
   AddOption(OptionPtr(new EnumOption("dynamicprobing",
-      "Use probing during search.  Possible values:\n"
+      "Use probing during search. Possible values:\n"
       "     -1 = auto (default)\n"
       "      0 = off\n"
       "      1 = on\n",
@@ -366,12 +366,12 @@ IlogCPSolver::IlogCPSolver() :
 
   AddDblOption("dynamicprobingstrength",
       "Effort dedicated to dynamic probing as a factor "
-      "of the total search effort.  Default = 0.03.",
+      "of the total search effort. Default = 0.03.",
       &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
       IloCP::DynamicProbingStrength);
 
   AddOption(OptionPtr(new IntOption("faillimit",
-      "Limit on the number of failures allowed before terminating a search.  "
+      "Limit on the number of failures allowed before terminating a search. "
       "Default = no limit",
       cp_, IloCP::FailLimit)));
 
@@ -380,7 +380,7 @@ IlogCPSolver::IlogCPSolver() :
       cp_, IloCP::LogPeriod)));
 
   AddOption(OptionPtr(new EnumOption("logverbosity",
-      "Verbosity of the search log.  Possible values:\n"
+      "Verbosity of the search log. Possible values:\n"
       "      0 = quiet (default)\n"
       "      1 = terse\n"
       "      2 = normal\n"
@@ -389,7 +389,7 @@ IlogCPSolver::IlogCPSolver() :
 
   AddOption(OptionPtr(new IntOption("multipointnumberofsearchpoints",
       "Number of solutions for the multi-point search "
-      "algorithm.  Default = 30.",
+      "algorithm. Default = 30.",
       cp_, IloCP::MultiPointNumberOfSearchPoints)));
 
   AddIntOption("multiobj",
@@ -400,7 +400,7 @@ IlogCPSolver::IlogCPSolver() :
       &IlogCPSolver::DoGetIntOption, &IlogCPSolver::SetBoolOption, MULTIOBJ);
 
   AddDblOption("optimalitytolerance",
-      "Absolute tolerance on the objective value.  Default = 0.",
+      "Absolute tolerance on the objective value. Default = 0.",
       &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
       IloCP::OptimalityTolerance);
 
@@ -409,7 +409,7 @@ IlogCPSolver::IlogCPSolver() :
       cp_, IloCP::LogVerbosity, IloCP::Quiet, Verbosities)));
 
   AddOption(OptionPtr(new EnumOption("propagationlog",
-      "Level of propagation trace reporting.  Possible values:\n"
+      "Level of propagation trace reporting. Possible values:\n"
       "      0 = quiet (default)\n"
       "      1 = terse\n"
       "      2 = normal\n"
@@ -417,26 +417,26 @@ IlogCPSolver::IlogCPSolver() :
       cp_, IloCP::PropagationLog, IloCP::Quiet, Verbosities)));
 
   AddOption(OptionPtr(new IntOption("randomseed",
-      "Seed for the random number generator.  Default = 0.",
+      "Seed for the random number generator. Default = 0.",
       cp_, IloCP::RandomSeed)));
 
   AddDblOption("relativeoptimalitytolerance",
-      "Relative tolerance on the objective value.  Default = 1e-4.",
+      "Relative tolerance on the objective value. Default = 1e-4.",
       &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
       IloCP::RelativeOptimalityTolerance);
 
   AddOption(OptionPtr(new IntOption("restartfaillimit",
-      "Number of failures allowed before restarting  search.  Default = 100.",
+      "Number of failures allowed before restarting  search. Default = 100.",
       cp_, IloCP::RestartFailLimit)));
 
   AddDblOption("restartgrowthfactor",
       "Increase of the number of allowed failures "
-      "before restarting search.  Default = 1.05.",
+      "before restarting search. Default = 1.05.",
       &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
       IloCP::RestartGrowthFactor);
 
   AddOption(OptionPtr(new EnumOption("searchtype",
-      "Type of search used for solving a problem.  Possible values:\n"
+      "Type of search used for solving a problem. Possible values:\n"
       "      0 = depthfirst\n"
       "      1 = restart (default)\n"
       "      2 = multipoint\n",
@@ -444,7 +444,7 @@ IlogCPSolver::IlogCPSolver() :
 
   AddIntOption("solutionlimit",
       "Limit on the number of feasible solutions found before terminating "
-      "a search.  Leaving the solution limit unspecified will make the "
+      "a search. Leaving the solution limit unspecified will make the "
       "optimizer search for an optimal solution if there is an objective "
       "function or for a feasible solution otherwise.",
       &IlogCPSolver::DoGetIntOption, &IlogCPSolver::DoSetIntOption,
@@ -456,12 +456,12 @@ IlogCPSolver::IlogCPSolver() :
 
   AddDblOption("timelimit",
       "Limit on the CPU time spent solving before "
-      "terminating a search.  Default = no limit.",
+      "terminating a search. Default = no limit.",
       &IlogCPSolver::GetCPDblOption, &IlogCPSolver::SetCPDblOption,
       IloCP::TimeLimit);
 
   AddOption(OptionPtr(new EnumOption("timemode",
-      "Specifies how the time is measured in CP Optimizer.  Possible values:\n"
+      "Specifies how the time is measured in CP Optimizer. Possible values:\n"
       "      0 = cputime (default)\n"
       "      1 = elapsedtime\n",
       cp_, IloCP::TimeMode, IloCP::CPUTime, TimeModes)));
@@ -473,9 +473,9 @@ IlogCPSolver::IlogCPSolver() :
       IlogCPSolver::USENUMBEROF);
 
   AddOption(OptionPtr(new EnumOption("workers",
-      "Number of workers to run in parallel to solve a problem.  "
+      "Number of workers to run in parallel to solve a problem. "
       "In addition to numeric values this option accepts the value "
-      "\"auto\" since CP Optimizer version 12.3.  Default = auto.",
+      "\"auto\" since CP Optimizer version 12.3. Default = auto.",
       cp_, IloCP::Workers, 0, 0, true)));
 
   // CPLEX options:

@@ -582,9 +582,7 @@ std::string GecodeSolver::GetOptionHeader() {
       "-----------------------\n"
       "\n"
       "To set these options, assign a string specifying their values to "
-      "the AMPL option gecode_options. For example:\n"
-      "\n"
-      "::\n"
+      "the AMPL option gecode_options. For example::\n"
       "\n"
       "  ampl: option gecode_options 'version nodelimit=30000 "
       "val_branching=min';\n";

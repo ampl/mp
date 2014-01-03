@@ -303,14 +303,14 @@ JaCoPSolver::JaCoPSolver()
   set_version("JaCoP " JACOP_VERSION);
 
   AddDblOption("outfreq",
-      "Output frequency in seconds.  The value should be a positive integer.",
+      "Output frequency in seconds. The value should be a positive integer.",
       &JaCoPSolver::GetOutputFrequency, &JaCoPSolver::SetOutputFrequency);
 
   AddIntOption("outlev", "0 or 1 (default 0):  Whether to print solution log.",
       &JaCoPSolver::DoGetIntOption, &JaCoPSolver::SetBoolOption, &outlev_);
 
   AddStrOption("var_select",
-      "Variable selector.  Possible values:\n"
+      "Variable selector. Possible values:\n"
       "      largestdomain          - select the variable which has the\n"
       "                               largest domain size\n"
       "      largestmax             - select the variable with the largest\n"
@@ -341,7 +341,7 @@ JaCoPSolver::JaCoPSolver()
       OptionInfo(VAR_SELECT, var_select_));
 
   AddStrOption("val_select",
-      "Value selector.  Possible values:\n"
+      "Value selector. Possible values:\n"
       "      indomainmax          - select the maximal value in the domain\n"
       "                             of the variable\n"
       "      indomainmedian       - select the median value in the domain\n"
@@ -374,7 +374,7 @@ JaCoPSolver::JaCoPSolver()
       &decision_limit_);
   AddIntOption("solutionlimit",
       "Limit on the number of feasible solutions found before terminating "
-      "a search.  Leaving the solution limit unspecified will make the "
+      "a search. Leaving the solution limit unspecified will make the "
       "optimizer search for an optimal solution if there is an objective "
       "function or for a feasible solution otherwise.",
       &JaCoPSolver::DoGetIntOption, &JaCoPSolver::DoSetIntOption,
@@ -467,11 +467,11 @@ JNIEXPORT jboolean JNICALL JaCoPSolver::Stop(JNIEnv *, jobject, jlong data) {
 
 std::string JaCoPSolver::GetOptionHeader() {
   return
-      "JaCoP Directives for AMPL\n"
-      "--------------------------\n"
+      "JaCoP Options for AMPL\n"
+      "----------------------\n"
       "\n"
-      "To set these directives, assign a string specifying their values to "
-      "the AMPL option jacop_options.  For example:\n"
+      "To set these options, assign a string specifying their values to "
+      "the AMPL option jacop_options. For example::\n"
       "\n"
       "  ampl: option jacop_options 'version nodelimit=30000';\n";
 }
