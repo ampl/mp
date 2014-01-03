@@ -606,7 +606,7 @@ GecodeSolver::GecodeSolver()
   AddSuffix("icl", 0, ASL_Sufkind_con);
 
   AddIntOption("outlev",
-      "0 or 1 (default 0):  Whether to print solution log.",
+      "0 or 1 (default 0): Whether to print solution log.",
       &GecodeSolver::GetOption<int, bool>,
       &GecodeSolver::SetBoolOption, &output_);
 

@@ -349,7 +349,7 @@ Solver::Solver(
   struct VersionOption : SolverOption {
     Solver &s;
     VersionOption(Solver &s) : SolverOption("version",
-        "Single-word phrase:  report version details "
+        "Single-word phrase: report version details "
         "before solving the problem.", 0, true), s(s) {}
 
     void Write(fmt::Writer &w) {
@@ -394,13 +394,13 @@ Solver::Solver(
     }
   };
   AddOption(OptionPtr(new BoolOption(timing_, "timing",
-      "0 or 1 (default 0):  Whether to display timings for the run.\n")));
+      "0 or 1 (default 0): Whether to display timings for the run.\n")));
 
   if ((flags & MULTIPLE_SOL) != 0) {
     AddSuffix("nsol", 0, ASL_Sufkind_prob | ASL_Sufkind_outonly);
 
     AddOption(OptionPtr(new BoolOption(count_solutions_, "countsolutions",
-        "0 or 1 (default 0):  Whether to count the number of solutions "
+        "0 or 1 (default 0): Whether to count the number of solutions "
         "and return it in the .nsol problem suffix.")));
 
     struct StringOption : TypedSolverOption<std::string> {
