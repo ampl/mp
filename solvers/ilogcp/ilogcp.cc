@@ -50,40 +50,61 @@ static char xxxvers[] = "ilogcp_options\0\n"
 
 namespace {
 
-const char *InferenceLevels[] = {
-  "default",
-  "low",
-  "basic",
-  "medium",
-  "extended",
-  0
+const ampl::EnumOptionValue INFERENCE_LEVELS[] = {
+  // Default must be the first item.
+  {"default",  0, IloCP::Default },
+  {"low",      0, IloCP::Low     },
+  {"basic",    0, IloCP::Basic   },
+  {"medium",   0, IloCP::Medium  },
+  {"extended", 0, IloCP::Extended},
+  {}
 };
 
-const char *Flags[] = {
-  "off",
-  "on",
-  0
+const ampl::EnumOptionValue FLAGS[] = {
+  // Auto must be the first item.
+  {"auto", 0, IloCP::Auto},
+  {"off",  0, IloCP::Off },
+  {"on",   0, IloCP::On  },
+  {}
 };
 
-const char *SearchTypes[] = {
-  "depthfirst",
-  "restart",
-  "multipoint",
-  0
+const ampl::EnumOptionValue SEARCH_TYPES[] = {
+  {"auto",       0, IloCP::Auto      },
+  {"depthfirst", 0, IloCP::DepthFirst},
+  {"restart",    0, IloCP::Restart   },
+  {"multipoint", 0, IloCP::MultiPoint},
+  {}
 };
 
-const char *Verbosities[] = {
-  "quiet",
-  "terse",
-  "normal",
-  "verbose",
-  0
+const ampl::EnumOptionValue VERBOSITIES[] = {
+  {"quiet",   0, IloCP::Quiet  },
+  {"terse",   0, IloCP::Terse  },
+  {"normal",  0, IloCP::Normal },
+  {"verbose", 0, IloCP::Verbose},
+  {}
 };
 
-const char *TimeModes[] = {
-  "cputime",
-  "elapsedtime",
-  0
+const ampl::EnumOptionValue TIME_MODES[] = {
+  {"cputime",     0, IloCP::CPUTime    },
+  {"elapsedtime", 0, IloCP::ElapsedTime},
+  {}
+};
+
+const ampl::EnumOptionValue OPTIMIZERS[] = {
+  {
+    "auto",
+    "CP Optimizer if the problem has nonlinear objective/constraints "
+    "or logical constraints, CPLEX otherwise"
+  },
+  {
+    "cp",
+    "CP Optimizer"
+  },
+  {
+    "cplex",
+    "CPLEX Optimizer"
+  },
+  {}
 };
 
 ampl::OptionError GetOptionValueError(
@@ -129,16 +150,14 @@ class EnumOption : public ampl::TypedSolverOption<std::string> {
   IloCP cp_;
   IloCP::IntParam param_;
   int start_;           // start value for the enumerated options
-  const char **values_; // string values for enum options
   bool accepts_auto_;   // true if the option accepts IloCP::Auto value
 
  public:
   EnumOption(const char *name, const char *description,
       IloCP cp, IloCP::IntParam p, int start,
-      const char **values, bool accepts_auto = false)
-  : ampl::TypedSolverOption<std::string>(name, description),
-    cp_(cp), param_(p), start_(start), values_(values),
-    accepts_auto_(accepts_auto) {
+      const ampl::EnumOptionValue *values, bool accepts_auto = false)
+  : ampl::TypedSolverOption<std::string>(name, description, values),
+    cp_(cp), param_(p), start_(start), accepts_auto_(accepts_auto) {
   }
 
   std::string GetValue() const;
@@ -152,12 +171,10 @@ std::string EnumOption::GetValue() const {
   } catch (const IloException &e) {
     throw GetOptionValueError(*this, e.getMessage());
   }
-  if (value == IloCP::Auto && accepts_auto_)
-    return "auto";
-  if (values_) {
-    for (int i = 0; values_[i]; ++i) {
-      if (i + start_ == value)
-        return values_[i];
+  if (const ampl::EnumOptionValue *v = this->values()) {
+    for (; v->value; ++v) {
+      if (v->id == value)
+        return v->value;
     }
   }
   return str(fmt::Format("{}") << value);
@@ -173,19 +190,15 @@ void EnumOption::SetValue(const char *value) {
       cp_.setParameter(param_, intval);
       return;
     }
-    if (values_) {
+    if (const ampl::EnumOptionValue *v = this->values()) {
       // Search for a value in the list of known values.
       // Use linear search since the number of values is small.
-      for (int i = 0; values_[i]; ++i) {
-        if (strcmp(value, values_[i]) == 0) {
-          cp_.setParameter(param_, i + start_);
+      for (; v->value; ++v) {
+        if (strcmp(value, v->value) == 0) {
+          cp_.setParameter(param_, v->id);
           return;
         }
       }
-    }
-    if (accepts_auto_ && strcmp(value, "auto") == 0) {
-      cp_.setParameter(param_, IloCP::Auto);
-      return;
     }
   } catch (const IloException &) {}
   throw ampl::InvalidOptionValue(name(), value);
@@ -246,16 +259,18 @@ std::string ConvertSolutionStatus(
 namespace ampl {
 
 std::string IlogCPSolver::GetOptionHeader() {
-  return "IlogCP Directives for AMPL\n"
-      "--------------------------\n"
+  return
+      "IlogCP Options for AMPL\n"
+      "-----------------------\n"
       "\n"
-      "To set these directives, assign a string specifying their values to the AMPL "
-      "option ilogcp_options. For example::\n"
+      "To set these options, assign a string specifying their values to the "
+      "AMPL option ilogcp_options. For example::\n"
       "\n"
-      "  ampl: option ilogcp_options 'optimalitytolerance=1e-6 searchtype=restart';\n"
+      "  ampl: option ilogcp_options 'optimalitytolerance=1e-6 "
+      "searchtype=restart';\n"
       "\n"
-      "Where both a number and a keyword are given, either may be used to specify "
-      "the option setting.\n";
+      "Where both a number and a keyword are given, either may be used to "
+      "specify the option setting.\n";
 }
 
 IlogCPSolver::IlogCPSolver() :
@@ -283,19 +298,18 @@ IlogCPSolver::IlogCPSolver() :
 
   AddStrOption("optimizer",
       "Specifies which optimizer to use. Possible values:\n"
-      "      auto  = CP Optimizer if the problem has\n"
-      "              nonlinear objective/constraints\n"
-      "              or logical constraints, CPLEX\n"
-      "              otherwise (default)\n"
-      "      cp    = CP Optimizer\n"
-      "      cplex = CPLEX Optimizer\n",
-      &IlogCPSolver::GetOptimizer, &IlogCPSolver::SetOptimizer);
+      "\n"
+      ".. value-table::\n"
+      "\n"
+      "The default value is ``auto``.",
+      &IlogCPSolver::GetOptimizer, &IlogCPSolver::SetOptimizer, OPTIMIZERS);
 
   AddIntOption("objno",
       "Objective to optimize:\n"
-      "      0 = none\n"
-      "      1 = first (default, if available)\n"
-      "      2 = second (if available), etc.\n",
+      "\n"
+      "| 0 - none\n"
+      "| 1 - first (default, if available)\n"
+      "| 2 - second (if available), etc.\n",
       &IlogCPSolver::DoGetIntOption, &IlogCPSolver::DoSetIntOption, OBJNO);
 
   // CP options:
@@ -313,13 +327,14 @@ IlogCPSolver::IlogCPSolver() :
   // - StateFunctionInferenceLevel
 
   AddOption(OptionPtr(new EnumOption("alldiffinferencelevel",
-      "Inference level for 'alldiff' constraints. Possible values:\n"
-      "      0 = default\n"
-      "      1 = low\n"
-      "      2 = basic\n"
-      "      3 = medium\n"
-      "      4 = extended\n",
-      cp_, IloCP::AllDiffInferenceLevel, IloCP::Default, InferenceLevels)));
+      "Inference level for ``alldiff`` constraints. Possible values:\n"
+      "\n"
+      ".. value-table::\n"
+      "\n"
+      "The default value is ``default``, which allows the inference "
+      "strength of all ``alldiff`` constraints to be controlled via "
+      "``defaultinferencelevel``.",
+      cp_, IloCP::AllDiffInferenceLevel, IloCP::Default, INFERENCE_LEVELS)));
 
   AddOption(OptionPtr(new IntOption("branchlimit",
       "Limit on the number of branches made before "
@@ -333,7 +348,7 @@ IlogCPSolver::IlogCPSolver() :
 
   AddOption(OptionPtr(new EnumOption("constraintaggregation",
       "0 or 1 (default 1):  Whether to aggregate basic constraints.",
-      cp_, IloCP::ConstraintAggregation, IloCP::Off, Flags)));
+      cp_, IloCP::ConstraintAggregation, IloCP::Off, FLAGS + 1)));
 
   AddIntOption("debugexpr",
       "0 or 1 (default 0):  Whether to print debugging "
@@ -341,28 +356,33 @@ IlogCPSolver::IlogCPSolver() :
       &IlogCPSolver::DoGetIntOption, &IlogCPSolver::SetBoolOption, DEBUGEXPR);
 
   AddOption(OptionPtr(new EnumOption("defaultinferencelevel",
-      "Default inference level for constraints. Possible values:\n"
-      "      1 = low\n"
-      "      2 = basic\n"
-      "      3 = medium\n"
-      "      4 = extended\n",
-      cp_, IloCP::DefaultInferenceLevel, IloCP::Default, InferenceLevels)));
+      "Inference level for constraints that have inference level set to "
+      "``default``. Possible values:\n"
+      "\n"
+      ".. value-table::\n"
+      "\n"
+      "The default value is ``basic``.",
+      cp_, IloCP::DefaultInferenceLevel, IloCP::Default,
+      INFERENCE_LEVELS + 1)));
 
   AddOption(OptionPtr(new EnumOption("distributeinferencelevel",
-      "Inference level for 'distribute' constraints. Possible values:\n"
-      "      0 = default\n"
-      "      1 = low\n"
-      "      2 = basic\n"
-      "      3 = medium\n"
-      "      4 = extended\n",
-      cp_, IloCP::DistributeInferenceLevel, IloCP::Default, InferenceLevels)));
+      "Inference level for aggregated ``numberof`` (``IloDistribute``) "
+      "constraints. Possible values:\n"
+      "\n"
+      ".. value-table::\n"
+      "\n"
+      "The default value is ``default``, which allows the inference "
+      "strength of all aggregated ``numberof`` constraints to be controlled "
+      "via ``defaultinferencelevel``.",
+      cp_, IloCP::DistributeInferenceLevel, IloCP::Default, INFERENCE_LEVELS)));
 
   AddOption(OptionPtr(new EnumOption("dynamicprobing",
       "Use probing during search. Possible values:\n"
-      "     -1 = auto (default)\n"
-      "      0 = off\n"
-      "      1 = on\n",
-      cp_, IloCP::DynamicProbing, IloCP::Off, Flags, true)));
+      "\n"
+      ".. value-table::\n"
+      "\n"
+      "The default value is ``auto``.",
+      cp_, IloCP::DynamicProbing, IloCP::Off, FLAGS, true)));
 
   AddDblOption("dynamicprobingstrength",
       "Effort dedicated to dynamic probing as a factor "
@@ -372,7 +392,7 @@ IlogCPSolver::IlogCPSolver() :
 
   AddOption(OptionPtr(new IntOption("faillimit",
       "Limit on the number of failures allowed before terminating a search. "
-      "Default = no limit",
+      "Default = no limit.",
       cp_, IloCP::FailLimit)));
 
   AddOption(OptionPtr(new IntOption("logperiod",
@@ -381,11 +401,11 @@ IlogCPSolver::IlogCPSolver() :
 
   AddOption(OptionPtr(new EnumOption("logverbosity",
       "Verbosity of the search log. Possible values:\n"
-      "      0 = quiet (default)\n"
-      "      1 = terse\n"
-      "      2 = normal\n"
-      "      3 = verbose\n",
-      cp_, IloCP::LogVerbosity, IloCP::Quiet, Verbosities)));
+      "\n"
+      ".. value-table::\n"
+      "\n"
+      "The default value is ``quiet``.",
+      cp_, IloCP::LogVerbosity, IloCP::Quiet, VERBOSITIES)));
 
   AddOption(OptionPtr(new IntOption("multipointnumberofsearchpoints",
       "Number of solutions for the multi-point search "
@@ -405,16 +425,16 @@ IlogCPSolver::IlogCPSolver() :
       IloCP::OptimalityTolerance);
 
   AddOption(OptionPtr(new EnumOption("outlev",
-      "Synonym for \"logverbosity\".",
-      cp_, IloCP::LogVerbosity, IloCP::Quiet, Verbosities)));
+      "Synonym for ``logverbosity``.",
+      cp_, IloCP::LogVerbosity, IloCP::Quiet, VERBOSITIES)));
 
   AddOption(OptionPtr(new EnumOption("propagationlog",
       "Level of propagation trace reporting. Possible values:\n"
-      "      0 = quiet (default)\n"
-      "      1 = terse\n"
-      "      2 = normal\n"
-      "      3 = verbose\n",
-      cp_, IloCP::PropagationLog, IloCP::Quiet, Verbosities)));
+      "\n"
+      ".. value-table::\n"
+      "\n"
+      "The default value is ``quiet``.",
+      cp_, IloCP::PropagationLog, IloCP::Quiet, VERBOSITIES)));
 
   AddOption(OptionPtr(new IntOption("randomseed",
       "Seed for the random number generator. Default = 0.",
@@ -437,10 +457,11 @@ IlogCPSolver::IlogCPSolver() :
 
   AddOption(OptionPtr(new EnumOption("searchtype",
       "Type of search used for solving a problem. Possible values:\n"
-      "      0 = depthfirst\n"
-      "      1 = restart (default)\n"
-      "      2 = multipoint\n",
-      cp_, IloCP::SearchType, IloCP::DepthFirst, SearchTypes, true)));
+      "\n"
+      ".. value-table::\n"
+      "\n"
+      "The default value is ``auto``.",
+      cp_, IloCP::SearchType, IloCP::DepthFirst, SEARCH_TYPES, true)));
 
   AddIntOption("solutionlimit",
       "Limit on the number of feasible solutions found before terminating "
@@ -452,7 +473,7 @@ IlogCPSolver::IlogCPSolver() :
 
   AddOption(OptionPtr(new EnumOption("temporalrelaxation",
       "0 or 1 (default 1):  Whether to use temporal relaxation.",
-      cp_, IloCP::TemporalRelaxation, IloCP::Off, Flags)));
+      cp_, IloCP::TemporalRelaxation, IloCP::Off, FLAGS)));
 
   AddDblOption("timelimit",
       "Limit on the CPU time spent solving before "
@@ -462,9 +483,11 @@ IlogCPSolver::IlogCPSolver() :
 
   AddOption(OptionPtr(new EnumOption("timemode",
       "Specifies how the time is measured in CP Optimizer. Possible values:\n"
-      "      0 = cputime (default)\n"
-      "      1 = elapsedtime\n",
-      cp_, IloCP::TimeMode, IloCP::CPUTime, TimeModes)));
+      "\n"
+      ".. value-table::\n"
+      "\n"
+      "The default value is ``cputime``.",
+      cp_, IloCP::TimeMode, IloCP::CPUTime, TIME_MODES)));
 
   AddIntOption("usenumberof",
       "0 or 1 (default 1):  Whether to consolidate 'numberof' expressions "
@@ -475,7 +498,7 @@ IlogCPSolver::IlogCPSolver() :
   AddOption(OptionPtr(new EnumOption("workers",
       "Number of workers to run in parallel to solve a problem. "
       "In addition to numeric values this option accepts the value "
-      "\"auto\" since CP Optimizer version 12.3. Default = auto.",
+      "``auto`` since CP Optimizer version 12.3. Default = auto.",
       cp_, IloCP::Workers, 0, 0, true)));
 
   // CPLEX options:
@@ -483,14 +506,14 @@ IlogCPSolver::IlogCPSolver() :
   AddIntOption<IlogCPSolver, int>("mipdisplay",
       "Frequency of displaying branch-and-bound information "
       "(for optimizing integer variables):\n"
-      "      0 (default) = never\n"
-      "      1 = each integer feasible solution\n"
-      "      2 = every \"mipinterval\" nodes\n"
-      "      3 = every \"mipinterval\" nodes plus\n"
-      "          information on LP relaxations\n"
-      "          (as controlled by \"display\")\n"
-      "      4 = same as 2, plus LP relaxation info.\n"
-      "      5 = same as 2, plus LP subproblem info.\n",
+      "\n"
+      "| 0 (default) - never\n"
+      "| 1 - each integer feasible solution\n"
+      "| 2 - every ``mipinterval`` nodes\n"
+      "| 3 - every ``mipinterval`` nodes plus information on LP relaxations "
+      "(as controlled by ``display``)\n"
+      "| 4 - same as 2, plus LP relaxation info.\n"
+      "| 5 - same as 2, plus LP subproblem info.\n",
       &IlogCPSolver::GetCPLEXIntOption, &IlogCPSolver::SetCPLEXIntOption,
       IloCplex::MIPDisplay);
 
