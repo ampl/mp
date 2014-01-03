@@ -51,6 +51,9 @@ class TestHandler : public rst::ContentHandler {
     case rst::PARAGRAPH:
       tag = "p";
       break;
+    case rst::LINE_BLOCK:
+      tag = "lineblock";
+      break;
     case rst::BLOCK_QUOTE:
       tag = "blockquote";
       break;
@@ -59,6 +62,9 @@ class TestHandler : public rst::ContentHandler {
       break;
     case rst::LIST_ITEM:
       tag = "li";
+      break;
+    case rst::LITERAL_BLOCK:
+      tag = "code";
       break;
     }
     content_ += "<" + tag + ">";
@@ -94,6 +100,11 @@ TEST(ParserTest, Paragraph) {
   EXPECT_EQ("<p>..test</p>", Parse("..test"));
 }
 
+TEST(ParserTest, LineBlock) {
+  EXPECT_EQ("<lineblock>test</lineblock>", Parse("| test"));
+  EXPECT_EQ("<lineblock>  abc\ndef</lineblock>", Parse("|   abc\n| def"));
+}
+
 TEST(ParserTest, BlockQuote) {
   EXPECT_EQ("<blockquote>test</blockquote>", Parse(" test"));
 }
@@ -123,6 +134,13 @@ TEST(ParserTest, UnindentBlock) {
 TEST(ParserTest, BulletList) {
   EXPECT_EQ("<ul><li>item</li></ul>", Parse("* item"));
   EXPECT_EQ("<ul><li>abc\ndef</li></ul>", Parse("* abc\n  def"));
+}
+
+TEST(ParserTest, Literal) {
+  EXPECT_EQ("<p>abc:</p><code>def</code>", Parse("abc::\n\n def"));
+  EXPECT_EQ("<code>abc\ndef</code>", Parse("::\n\n abc\n def"));
+  EXPECT_EQ("<p>abc\ndef</p>", Parse("::\n\nabc\ndef"));
+  EXPECT_EQ("<p>::\nabc\ndef</p>", Parse("::\nabc\ndef"));
 }
 
 TEST(ParserTest, Comment) {

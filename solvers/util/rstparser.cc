@@ -38,6 +38,12 @@ inline bool IsSpace(char c) {
   }
   return false;
 }
+
+// Returns true if s ends with string end.
+bool EndsWith(const std::string &s, const char *end) {
+  std::size_t size = s.size(), end_size = std::strlen(end);
+  return size >= end_size ? std::strcmp(&s[size - end_size], end) == 0 : false;
+}
 }
 
 rst::ContentHandler::~ContentHandler() {}
@@ -135,20 +141,24 @@ void rst::Parser::ParseBlock(
   if (*text.rbegin() == '\n')
     text.resize(text.size() - 1);
 
-  if (type == PARAGRAPH && text == "::") {
+  bool literal = type == PARAGRAPH && EndsWith(text, "::");
+  if (!literal || text.size() != 2) {
+    std::size_t size = text.size();
+    if (literal)
+      --size;
+    EnterBlock(prev_type, type);
+    handler_->StartBlock(type);
+    handler_->HandleText(text.c_str(), size);
+    handler_->EndBlock();
+  }
+  if (literal) {
     // Parse a literal block.
     const char *line_start = ptr_;
     SkipSpace();
     int new_indent = ptr_ - line_start;
     if (new_indent > indent)
       ParseBlock(LITERAL_BLOCK, prev_type, new_indent);
-    return;
   }
-
-  EnterBlock(prev_type, type);
-  handler_->StartBlock(type);
-  handler_->HandleText(text.c_str(), text.size());
-  handler_->EndBlock();
 }
 
 void rst::Parser::ParseLineBlock(rst::BlockType &prev_type, int indent) {
