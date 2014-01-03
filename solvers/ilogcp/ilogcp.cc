@@ -344,7 +344,7 @@ IlogCPSolver::IlogCPSolver() :
       cp_, IloCP::BranchLimit)));
 
   AddOption(OptionPtr(new IntOption("choicepointlimit",
-      "Limit on the number of choice points created"
+      "Limit on the number of choice points created "
       "before terminating a search. Default = no limit.",
       cp_, IloCP::ChoicePointLimit)));
 
@@ -492,15 +492,15 @@ IlogCPSolver::IlogCPSolver() :
       cp_, IloCP::TimeMode, IloCP::CPUTime, TIME_MODES)));
 
   AddIntOption("usenumberof",
-      "0 or 1 (default 1):  Whether to consolidate 'numberof' expressions "
-      "by use of IloDistribute constraints.",
+      "0 or 1 (default 1):  Whether to aggregate ``numberof`` expressions "
+      "by use of ``IloDistribute`` constraints.",
       &IlogCPSolver::DoGetIntOption, &IlogCPSolver::SetBoolOption,
       IlogCPSolver::USENUMBEROF);
 
   AddOption(OptionPtr(new EnumOption("workers",
       "Number of workers to run in parallel to solve a problem. "
       "In addition to numeric values this option accepts the value "
-      "``auto`` since CP Optimizer version 12.3. Default = auto.",
+      "``auto`` since CP Optimizer version 12.3. Default = ``auto``.",
       cp_, IloCP::Workers, 0, AUTO_VALUE, true)));
 
   // CPLEX options:

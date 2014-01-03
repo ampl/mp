@@ -383,10 +383,10 @@ Solver::Solver(
   struct WantSolOption : TypedSolverOption<int> {
     Solver &s;
     WantSolOption(Solver &s) : TypedSolverOption<int>("wantsol",
-        "In a stand-alone invocation (no -AMPL on the command line), "
+        "In a stand-alone invocation (no ``-AMPL`` on the command line), "
         "what solution information to write.  Sum of\n"
         "\n"
-        "| 1 - write .sol file\n"
+        "| 1 - write ``.sol`` file\n"
         "| 2 - primal variables to stdout\n"
         "| 4 - dual variables to stdout\n"
         "| 8 - suppress solution message\n"), s(s) {}
@@ -420,7 +420,7 @@ Solver::Solver(
 
     AddOption(OptionPtr(new BoolOption(count_solutions_, "countsolutions",
         "0 or 1 (default 0): Whether to count the number of solutions "
-        "and return it in the .nsol problem suffix.")));
+        "and return it in the ``.nsol`` problem suffix.")));
 
     struct StringOption : TypedSolverOption<std::string> {
       std::string &value_;
@@ -432,11 +432,12 @@ Solver::Solver(
       void SetValue(const char *value) { value_ = value; }
     };
     AddOption(OptionPtr(new StringOption(solution_stub_, "solutionstub",
-        "Stub for solution files.  If solutionstub is specified, "
-        "found solutions are written to files (solutionstub & '1' & '.sol') "
-        "... (solutionstub & Current.nsol & '.sol'), where Current.nsol "
-        "holds the number of returned solutions.  That is, file names are "
-        "obtained by appending 1, 2, ... Current.nsol to solutionstub.")));
+        "Stub for solution files.  If ``solutionstub`` is specified, "
+        "found solutions are written to files (``solutionstub & '1' & "
+        "'.sol'``) ... (``solutionstub & Current.nsol & '.sol'``), where "
+        "``Current.nsol`` holds the number of returned solutions.  That is, "
+        "file names are obtained by appending 1, 2, ... ``Current.nsol`` to "
+        "``solutionstub``.")));
   }
 
   cl_option_ = keyword();
