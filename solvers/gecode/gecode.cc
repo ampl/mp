@@ -38,198 +38,199 @@ namespace Search = Gecode::Search;
 namespace {
 
 const ampl::EnumOptionValue INT_CON_LEVELS[] = {
-    {"val", "value propagation or consistency (naive)", Gecode::ICL_VAL},
-    {"bnd", "bounds propagation or consistency",        Gecode::ICL_BND},
-    {"dom", "domain propagation or consistency",        Gecode::ICL_DOM},
-    {"def", "the default consistency for a constraint", Gecode::ICL_DEF},
-    {}
+  {"val", "value propagation or consistency (naive)", Gecode::ICL_VAL},
+  {"bnd", "bounds propagation or consistency",        Gecode::ICL_BND},
+  {"dom", "domain propagation or consistency",        Gecode::ICL_DOM},
+  {"def", "the default consistency for a constraint", Gecode::ICL_DEF},
+  {}
 };
 
 const ampl::EnumOptionValue VAR_BRANCHINGS[] = {
-    {
-        "none",
-        "first unassigned",
-        IntVarBranch::SEL_NONE
-    },
-    {
-        "rnd",
-        "random",
-        IntVarBranch::SEL_RND
-    },
-    {
-        "degree_min",
-        "smallest degree",
-        IntVarBranch::SEL_DEGREE_MIN
-    },
-    {
-        "degree_max",
-        "largest degree",
-        IntVarBranch::SEL_DEGREE_MAX
-    },
-    {
-        "afc_min",
-        "smallest accumulated failure count (AFC)",
-        IntVarBranch::SEL_AFC_MIN
-    },
-    {
-        "afc_max",
-        "largest accumulated failure count (AFC)",
-        IntVarBranch::SEL_AFC_MAX
-    },
-    {
-        "activity_min",
-        "lowest activity",
-        IntVarBranch::SEL_ACTIVITY_MIN
-    },
-    {
-        "activity_max",
-        "highest activity",
-        IntVarBranch::SEL_ACTIVITY_MAX
-    },
-    {
-        "min_min",
-        "smallest minimum value",
-        IntVarBranch::SEL_MIN_MIN
-    },
-    {
-        "min_max",
-        "largest minimum value",
-        IntVarBranch::SEL_MIN_MAX
-    },
-    {
-        "max_min",
-        "smallest maximum value",
-        IntVarBranch::SEL_MAX_MIN
-    },
-    {
-        "max_max",
-        "largest maximum value",
-        IntVarBranch::SEL_MAX_MAX
-    },
-    {
-        "size_min",
-        "smallest domain size (default)",
-        IntVarBranch::SEL_SIZE_MIN
-    },
-    {
-        "size_max",
-        "largest domain size",
-        IntVarBranch::SEL_SIZE_MAX},
-    {
-        "degree_size_min",
-        "smallest domain size divided by degree",
-        IntVarBranch::SEL_DEGREE_SIZE_MIN
-    },
-    {
-        "degree_size_max",
-        "largest domain size divided by degree",
-        IntVarBranch::SEL_DEGREE_SIZE_MAX
-    },
-    {
-        "afc_size_min",
-        "smallest domain size divided by AFC",
-        IntVarBranch::SEL_AFC_SIZE_MIN
-    },
-    {
-        "afc_size_max",
-        "largest domain size divided by AFC",
-        IntVarBranch::SEL_AFC_SIZE_MAX
-    },
-    {
-        "activity_size_min",
-        "smallest activity by domain size",
-        IntVarBranch::SEL_ACTIVITY_SIZE_MIN},
-    {
-        "activity_size_max",
-        "largest activity by domain size",
-        IntVarBranch::SEL_ACTIVITY_SIZE_MAX
-    },
-    {
-        "regret_min_min",
-        "smallest minimum-regret",
-        IntVarBranch::SEL_REGRET_MIN_MIN
-    },
-    {
-        "regret_min_max",
-        "largest minimum-regret",
-        IntVarBranch::SEL_REGRET_MIN_MAX
-    },
-    {
-        "regret_max_min",
-        "smallest maximum-regret",
-        IntVarBranch::SEL_REGRET_MAX_MIN
-    },
-    {
-        "regret_max_max",
-        "largest maximum-regret",
-        IntVarBranch::SEL_REGRET_MAX_MAX
-    },
-    {}
+  {
+    "none",
+    "first unassigned",
+    IntVarBranch::SEL_NONE
+  },
+  {
+    "rnd",
+    "random",
+    IntVarBranch::SEL_RND
+  },
+  {
+    "degree_min",
+    "smallest degree",
+    IntVarBranch::SEL_DEGREE_MIN
+  },
+  {
+    "degree_max",
+    "largest degree",
+    IntVarBranch::SEL_DEGREE_MAX
+  },
+  {
+    "afc_min",
+    "smallest accumulated failure count (AFC)",
+    IntVarBranch::SEL_AFC_MIN
+  },
+  {
+    "afc_max",
+    "largest accumulated failure count (AFC)",
+    IntVarBranch::SEL_AFC_MAX
+  },
+  {
+    "activity_min",
+    "lowest activity",
+    IntVarBranch::SEL_ACTIVITY_MIN
+  },
+  {
+    "activity_max",
+    "highest activity",
+    IntVarBranch::SEL_ACTIVITY_MAX
+  },
+  {
+    "min_min",
+    "smallest minimum value",
+    IntVarBranch::SEL_MIN_MIN
+  },
+  {
+    "min_max",
+    "largest minimum value",
+    IntVarBranch::SEL_MIN_MAX
+  },
+  {
+    "max_min",
+    "smallest maximum value",
+    IntVarBranch::SEL_MAX_MIN
+  },
+  {
+    "max_max",
+    "largest maximum value",
+    IntVarBranch::SEL_MAX_MAX
+  },
+  {
+    "size_min",
+    "smallest domain size (default)",
+    IntVarBranch::SEL_SIZE_MIN
+  },
+  {
+    "size_max",
+    "largest domain size",
+    IntVarBranch::SEL_SIZE_MAX
+  },
+  {
+    "degree_size_min",
+    "smallest domain size divided by degree",
+    IntVarBranch::SEL_DEGREE_SIZE_MIN
+  },
+  {
+    "degree_size_max",
+    "largest domain size divided by degree",
+    IntVarBranch::SEL_DEGREE_SIZE_MAX
+  },
+  {
+    "afc_size_min",
+    "smallest domain size divided by AFC",
+    IntVarBranch::SEL_AFC_SIZE_MIN
+  },
+  {
+    "afc_size_max",
+    "largest domain size divided by AFC",
+    IntVarBranch::SEL_AFC_SIZE_MAX
+  },
+  {
+    "activity_size_min",
+    "smallest activity by domain size",
+    IntVarBranch::SEL_ACTIVITY_SIZE_MIN},
+  {
+    "activity_size_max",
+    "largest activity by domain size",
+    IntVarBranch::SEL_ACTIVITY_SIZE_MAX
+  },
+  {
+    "regret_min_min",
+    "smallest minimum-regret",
+    IntVarBranch::SEL_REGRET_MIN_MIN
+  },
+  {
+    "regret_min_max",
+    "largest minimum-regret",
+    IntVarBranch::SEL_REGRET_MIN_MAX
+  },
+  {
+    "regret_max_min",
+    "smallest maximum-regret",
+    IntVarBranch::SEL_REGRET_MAX_MIN
+  },
+  {
+    "regret_max_max",
+    "largest maximum-regret",
+    IntVarBranch::SEL_REGRET_MAX_MAX
+  },
+  {}
 };
 
 const ampl::EnumOptionValue VAL_BRANCHINGS[] = {
-    {
-        "min",
-        "smallest value (default)",
-        IntValBranch::SEL_MIN
-    },
-    {
-        "med",
-        "greatest value not greater than the median",
-        IntValBranch::SEL_MED
-    },
-    {
-        "max",
-        "largest value",
-        IntValBranch::SEL_MAX
-    },
-    {
-        "rnd",
-        "random value",
-        IntValBranch::SEL_RND
-    },
-    {
-        "split_min",
-        "values not greater than mean of smallest and largest value",
-        IntValBranch::SEL_SPLIT_MIN
-    },
-    {
-        "split_max",
-        "values greater than mean of smallest and largest value",
-        IntValBranch::SEL_SPLIT_MAX
-    },
-    {
-        "range_min",
-        "values from smallest range, if domain has several ranges; "
-        "otherwise, values not greater than mean of smallest and largest value",
-        IntValBranch::SEL_RANGE_MIN
-    },
-    {
-        "range_max",
-        "values from largest range, if domain has several ranges; "
-        "otherwise, values greater than mean of smallest and largest value",
-        IntValBranch::SEL_RANGE_MAX
-    },
-    {
-        "values_min",
-        "all values starting from smallest",
-        IntValBranch::SEL_VALUES_MIN
-    },
-    {
-        "values_max",
-        "all values starting from largest",
-        IntValBranch::SEL_VALUES_MAX
-    },
-    {}
+  {
+    "min",
+    "smallest value (default)",
+    IntValBranch::SEL_MIN
+  },
+  {
+    "med",
+    "greatest value not greater than the median",
+    IntValBranch::SEL_MED
+  },
+  {
+    "max",
+    "largest value",
+    IntValBranch::SEL_MAX
+  },
+  {
+    "rnd",
+    "random value",
+    IntValBranch::SEL_RND
+  },
+  {
+    "split_min",
+    "values not greater than mean of smallest and largest value",
+    IntValBranch::SEL_SPLIT_MIN
+  },
+  {
+    "split_max",
+    "values greater than mean of smallest and largest value",
+    IntValBranch::SEL_SPLIT_MAX
+  },
+  {
+    "range_min",
+    "values from smallest range, if domain has several ranges; "
+    "otherwise, values not greater than mean of smallest and largest value",
+    IntValBranch::SEL_RANGE_MIN
+  },
+  {
+    "range_max",
+    "values from largest range, if domain has several ranges; "
+    "otherwise, values greater than mean of smallest and largest value",
+    IntValBranch::SEL_RANGE_MAX
+  },
+  {
+    "values_min",
+    "all values starting from smallest",
+    IntValBranch::SEL_VALUES_MIN
+  },
+  {
+    "values_max",
+    "all values starting from largest",
+    IntValBranch::SEL_VALUES_MAX
+  },
+  {}
 };
 
 const ampl::EnumOptionValue RESTART_MODES[] = {
-    {"none",      "no restarts",                     Gecode::RM_NONE},
-    {"constant",  "restart with constant sequence",  Gecode::RM_CONSTANT},
-    {"linear",    "restart with linear sequence",    Gecode::RM_LINEAR},
-    {"luby",      "restart with Luby sequence",      Gecode::RM_LUBY},
-    {"geometric", "restart with geometric sequence", Gecode::RM_GEOMETRIC},
-    {}
+  {"none",      "no restarts",                     Gecode::RM_NONE},
+  {"constant",  "restart with constant sequence",  Gecode::RM_CONSTANT},
+  {"linear",    "restart with linear sequence",    Gecode::RM_LINEAR},
+  {"luby",      "restart with Luby sequence",      Gecode::RM_LUBY},
+  {"geometric", "restart with geometric sequence", Gecode::RM_GEOMETRIC},
+  {}
 };
 }
 
@@ -614,21 +615,24 @@ GecodeSolver::GecodeSolver()
 
   AddStrOption("icl",
       "Consistency level for integer propagators. Possible values:\n"
-      "\n.. value-table::\n",
+      "\n"
+      ".. value-table::\n",
       &GecodeSolver::GetEnumOption<Gecode::IntConLevel>,
       &GecodeSolver::SetEnumOption<Gecode::IntConLevel>,
       &icl_, INT_CON_LEVELS);
 
   AddStrOption("var_branching",
       "Variable branching. Possible values:\n"
-      "\n.. value-table::\n",
+      "\n"
+      ".. value-table::\n",
       &GecodeSolver::GetEnumOption<IntVarBranch::Select>,
       &GecodeSolver::SetEnumOption<IntVarBranch::Select>,
       &var_branching_, VAR_BRANCHINGS);
 
   AddStrOption("val_branching",
       "Value branching. Possible values:\n"
-      "\n.. value-table::\n",
+      "\n"
+      ".. value-table::\n",
       &GecodeSolver::GetEnumOption<IntValBranch::Select>,
       &GecodeSolver::SetEnumOption<IntValBranch::Select>,
       &val_branching_, VAL_BRANCHINGS);
@@ -676,7 +680,8 @@ GecodeSolver::GecodeSolver()
 
   AddStrOption("restart",
       "Restart sequence type. Possible values:\n"
-      "\n.. value-table::\n",
+      "\n"
+      ".. value-table::\n",
       &GecodeSolver::GetEnumOption<Gecode::RestartMode>,
       &GecodeSolver::SetEnumOption<Gecode::RestartMode>,
       &restart_, RESTART_MODES);
