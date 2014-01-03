@@ -104,31 +104,8 @@ class RSTFormatter : public rst::ContentHandler {
   void StartBlock(rst::BlockType type);
   void EndBlock();
 
-  void HandleText(const char *text, std::size_t size) {
-    Write(std::string(text, size));
-    size = writer_.size();
-    if (size != 0 && writer_.data()[size - 1] != '\n')
-      EndLine();
-  }
-
-  void HandleDirective(const char *type) {
-    if (std::strcmp(type, "value-table") != 0 || !values_)
-      return;
-    std::size_t max_len = 0;
-    for (const ampl::EnumOptionValue *v = values_; v->value; ++v)
-      max_len = std::max(max_len, std::strlen(v->value));
-    for (const ampl::EnumOptionValue *v = values_; v->value; ++v) {
-      Indent();
-      static const char SEP[] = " -";
-      writer_ << fmt::pad(v->value, max_len) << SEP;
-      int saved_indent = indent_;
-      indent_ += max_len + sizeof(SEP);
-      pos_in_line_ = indent_;
-      Write(v->description);
-      indent_ = saved_indent;
-      EndLine();
-    }
-  }
+  void HandleText(const char *text, std::size_t size);
+  void HandleDirective(const char *type);
 };
 
 void RSTFormatter::Write(fmt::StringRef s) {
@@ -177,6 +154,47 @@ void RSTFormatter::StartBlock(rst::BlockType type) {
 void RSTFormatter::EndBlock() {
   indent_ = indents_.top();
   indents_.pop();
+  end_block_ = true;
+}
+
+void RSTFormatter::HandleText(const char *text, std::size_t size) {
+  Write(std::string(text, size));
+  size = writer_.size();
+  if (size != 0 && writer_.data()[size - 1] != '\n')
+    EndLine();
+}
+
+void RSTFormatter::HandleDirective(const char *type) {
+  // TODO: test
+  if (std::strcmp(type, "value-table") != 0)
+    ampl::ThrowError("unknown directive {}") << type;
+  if (!values_)
+    ampl::ThrowError("no values to format");
+  std::size_t max_len = 0;
+  for (const ampl::EnumOptionValue *v = values_; v->value; ++v)
+    max_len = std::max(max_len, std::strlen(v->value));
+
+  // If the values don't have descriptions indent them as list items.
+  if (!values_->description)
+    indent_ += LIST_ITEM_INDENT;
+  for (const ampl::EnumOptionValue *v = values_; v->value; ++v) {
+    Indent();
+    writer_ << fmt::pad(v->value, max_len);
+    if (v->description) {
+      static const char SEP[] = " -";
+      writer_ << SEP;
+      int saved_indent = indent_;
+      indent_ += max_len + sizeof(SEP);
+      pos_in_line_ = indent_;
+      Write(v->description);
+      indent_ = saved_indent;
+    }
+    EndLine();
+  }
+
+  // Unindent values if necessary and end the block.
+  if (!values_->description)
+    indent_ -= LIST_ITEM_INDENT;
   end_block_ = true;
 }
 }
@@ -367,10 +385,10 @@ Solver::Solver(
         "In a stand-alone invocation (no -AMPL on the command line), "
         "what solution information to write.  Sum of\n"
         "\n"
-        "| 1 = write .sol file\n"
-        "| 2 = primal variables to stdout\n"
-        "| 4 = dual variables to stdout\n"
-        "| 8 = suppress solution message\n"), s(s) {}
+        "| 1 - write .sol file\n"
+        "| 2 - primal variables to stdout\n"
+        "| 4 - dual variables to stdout\n"
+        "| 8 - suppress solution message\n"), s(s) {}
 
     int GetValue() const { return s.wantsol(); }
     void SetValue(int value) {
