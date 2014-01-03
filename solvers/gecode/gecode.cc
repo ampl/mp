@@ -543,7 +543,7 @@ void GecodeSolver::SetOutputFrequency(const SolverOption &opt, double value) {
 template <typename T>
 std::string GecodeSolver::GetEnumOption(const SolverOption &opt, T *ptr) const {
   for (const EnumOptionValue *p = opt.values(); p->value; ++p) {
-    if (*ptr == p->id)
+    if (*ptr == p->data)
       return p->value;
   }
   return str(fmt::Format("{}") << *ptr);
@@ -554,7 +554,7 @@ void GecodeSolver::SetEnumOption(
     const SolverOption &opt, const char *value, T *ptr) {
   for (const EnumOptionValue *p = opt.values(); p->value; ++p) {
     if (std::strcmp(value, p->value) == 0) {
-      *ptr = static_cast<T>(p->id);
+      *ptr = static_cast<T>(p->data);
       return;
     }
   }

@@ -29,36 +29,108 @@
 
 namespace {
 
-const char *const VAR_SELECT[] = {
-  "LargestDomain",
-  "LargestMax",
-  "LargestMin",
-  "MaxRegret",
-  "MinDomainOverDegree",
-  "MostConstrainedDynamic",
-  "MostConstrainedStatic",
-  "SmallestDomain",
-  "SmallestMax",
-  "SmallestMin",
-  "WeightedDegree",
-  0
+// Casts value to intptr_t.
+#define CAST(value) reinterpret_cast<intptr_t>(value)
+
+const ampl::EnumOptionValue VAR_SELECT_VALUES[] = {
+  {
+    "largestdomain",
+    "select the variable which has the largest domain size",
+    CAST("LargestDomain")
+  },
+  {
+    "largestmax",
+    "select the variable with the largest maximal value in its domain",
+    CAST("LargestMax")
+  },
+  {
+    "largestmin",
+    "select the variable with the largest minimal value in its domain",
+    CAST("LargestMin")
+  },
+  {
+    "maxregret",
+    "max regret selector",
+    CAST("MaxRegret")
+  },
+  {
+    "mindomainoverdegree",
+    "select the variable based on the minimal value of domain size divided "
+    "by the number of constraints currently attached to a variable",
+    CAST("MinDomainOverDegree")
+  },
+  {
+    "mostconstraineddynamic",
+    "select the variable which has the most pending constraints assigned to it",
+    CAST("MostConstrainedDynamic")
+  },
+  {
+    "mostconstrainedstatic",
+    "select the variable which has the most constraints assigned to it",
+    CAST("MostConstrainedStatic")
+  },
+  {
+    "smallestdomain",
+    "select the variable which has the smallest domain size",
+    CAST("SmallestDomain")
+  },
+  {
+    "smallestmax",
+    "select the variable with the smallest maximal value in its domain",
+    CAST("SmallestMax")
+  },
+  {
+    "smallestmin",
+    "select the variable with the smallest minimal value in its domain",
+    CAST("SmallestMin")
+  },
+  {
+    "weighteddegree",
+    "select the variable with the highest weight divided by its size; "
+    "every time a constraint failure is encountered all variables within "
+    "the scope of that constraints have increased weight",
+    CAST("WeightedDegree")
+  },
+  {}
 };
 
-const char *const VAL_SELECT[] = {
-  "IndomainMax",
-  "IndomainMedian",
-  "IndomainMiddle",
-  "IndomainMin",
-  "IndomainRandom",
-  "IndomainSimpleRandom",
-  0
+const ampl::EnumOptionValue VAL_SELECT_VALUES[] = {
+  {
+    "indomainmax",
+    "select the maximal value in the domain of the variable",
+    CAST("IndomainMax")
+  },
+  {
+    "indomainmedian",
+    "select the median value in the domain of the variable and then right "
+    "and left values",
+    CAST("IndomainMedian")
+  },
+  {
+    "indomainmiddle",
+    "select the middle value in the domain of the variable and then right "
+    "and left values",
+    CAST("IndomainMiddle")
+  },
+  {
+    "indomainmin",
+    "select the minimal value in the domain of the variable",
+    CAST("IndomainMin")
+  },
+  {
+    "indomainrandom",
+    "select the random value in the domain of the variable; can split "
+    "domains into multiple intervals",
+    CAST("IndomainRandom")
+  },
+  {
+    "indomainsimplerandom",
+    "similar to indomainrandom, but faster and does not achieve uniform "
+    "probability",
+    CAST("IndomainSimpleRandom")
+  },
+  {}
 };
-
-bool Match(const char *value, const char *s) {
-  while (*value && *value == std::tolower(*s))
-    ++value, ++s;
-  return *value == std::tolower(*s);
-}
 }
 
 namespace ampl {
@@ -311,54 +383,21 @@ JaCoPSolver::JaCoPSolver()
 
   AddStrOption("var_select",
       "Variable selector. Possible values:\n"
-      "      largestdomain          - select the variable which has the\n"
-      "                               largest domain size\n"
-      "      largestmax             - select the variable with the largest\n"
-      "                               maximal value in its domain\n"
-      "      largestmin             - select the variable with the largest\n"
-      "                               minimal value in its domain\n"
-      "      maxregret              - max regret selector\n"
-      "      mindomainoverdegree    - select the variable based on the\n"
-      "                               minimal value of domain size divided\n"
-      "                               by the number of constraints currently\n"
-      "                               attached to a variable\n"
-      "      mostconstraineddynamic - select the variable which has the\n"
-      "                               most pending constraints assign to it\n"
-      "      mostconstrainedstatic  - select the variable which has the\n"
-      "                               most constraints assign to it\n"
-      "      smallestdomain         - select the variable which has the\n"
-      "                               smallest domain size (default)\n"
-      "      smallestmax            - select the variable with the smallest\n"
-      "                               maximal value in its domain\n"
-      "      smallestmin            - select the variable with the smallest\n"
-      "                               minimal value in its domain\n"
-      "      weighteddegree         - select the variable with the highest\n"
-      "                               weight divided by its size; every time\n"
-      "                               a constraint failure is encountered\n"
-      "                               all variables within the scope of that\n"
-      "                               constraints have increased weight. \n",
+      "\n"
+      ".. value-table::\n"
+      "\n"
+      "The default value is ``smallestdomain``.",
       &JaCoPSolver::GetEnumOption, &JaCoPSolver::SetEnumOption,
-      OptionInfo(VAR_SELECT, var_select_));
+      &var_select_, VAR_SELECT_VALUES);
 
   AddStrOption("val_select",
       "Value selector. Possible values:\n"
-      "      indomainmax          - select the maximal value in the domain\n"
-      "                             of the variable\n"
-      "      indomainmedian       - select the median value in the domain\n"
-      "                             of the variable and then right and left\n"
-      "                             values\n"
-      "      indomainmiddle       - select the middle value in the domain\n"
-      "                             of the variable and then right and left\n"
-      "                             values\n"
-      "      indomainmin          - select the minimal value in the domain\n"
-      "                             of the variable (default)\n"
-      "      indomainrandom       - select the random value in the domain\n"
-      "                             of the variable; can split domains into\n"
-      "                             multiple intervals\n"
-      "      indomainsimplerandom - similar to indomainrandom, but faster\n"
-      "                             and does not achieve uniform probability\n",
+      "\n"
+      ".. value-table::\n"
+      "\n"
+      "The default value is ``indomainmin``.",
       &JaCoPSolver::GetEnumOption, &JaCoPSolver::SetEnumOption,
-      OptionInfo(VAL_SELECT, val_select_));
+      &val_select_, VAL_SELECT_VALUES);
 
   AddIntOption("timelimit", "Time limit in seconds.",
       &JaCoPSolver::DoGetIntOption, &JaCoPSolver::DoSetIntOption, &time_limit_);
@@ -382,17 +421,17 @@ JaCoPSolver::JaCoPSolver()
 }
 
 std::string JaCoPSolver::GetEnumOption(
-    const SolverOption &, const OptionInfo &info) const {
-  std::string value = info.value;
+    const SolverOption &, const char **ptr) const {
+  std::string value = *ptr;
   std::transform(value.begin(), value.end(), value.begin(), ::tolower);
   return value;
 }
 
 void JaCoPSolver::SetEnumOption(
-    const SolverOption &opt, const char *value, const OptionInfo &info) {
-  for (const char *const *v = info.values; *v; ++v) {
-    if (Match(value, *v)) {
-      info.value = *v;
+    const SolverOption &opt, const char *value, const char **ptr) {
+  for (const EnumOptionValue *v = opt.values(); v->value; ++v) {
+    if (std::strcmp(value, v->value) == 0) {
+      *ptr = reinterpret_cast<const char*>(v->data);
       return;
     }
   }

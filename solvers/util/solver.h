@@ -27,6 +27,8 @@
 #include <csignal>
 #include <cstring>
 
+#include <stdint.h>
+
 #include <limits>
 #include <memory>
 #include <set>
@@ -62,7 +64,7 @@ class ObjPrec {
 struct EnumOptionValue {
   const char *value;
   const char *description;
-  int id;
+  intptr_t data;  // Solver-specific data associated with this value.
 };
 
 namespace internal {

@@ -461,18 +461,10 @@ class JaCoPSolver : public Solver {
     *option = value;
   }
 
-  struct OptionInfo {
-    const char *const *values;
-    const char *&value;
-
-    OptionInfo(const char *const *values, const char *&value)
-    : values(values), value(value) {}
-  };
-
   std::string GetEnumOption(
-      const SolverOption &opt, const OptionInfo &info) const;
+      const SolverOption &opt, const char **ptr) const;
   void SetEnumOption(const SolverOption &opt,
-      const char *value, const OptionInfo &info);
+      const char *value, const char **ptr);
 
   double GetOutputFrequency(const SolverOption &) const {
     return output_frequency_;

@@ -178,7 +178,7 @@ std::string EnumOption::GetValue() const {
   }
   if (const ampl::EnumOptionValue *v = this->values()) {
     for (; v->value; ++v) {
-      if (v->id == value)
+      if (v->data == value)
         return v->value;
     }
   }
@@ -200,7 +200,7 @@ void EnumOption::SetValue(const char *value) {
       // Use linear search since the number of values is small.
       for (; v->value; ++v) {
         if (strcmp(value, v->value) == 0) {
-          cp_.setParameter(param_, v->id);
+          cp_.setParameter(param_, v->data);
           return;
         }
       }
