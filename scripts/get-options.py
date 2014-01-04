@@ -3,15 +3,29 @@
 
 import os, errno
 from ctypes import cdll, Structure, c_char_p, c_void_p, byref
-from docutils.core import publish_string
+from docutils.core import publish_parts
+from docutils.parsers.rst import directives
+from docutils.parsers import rst
+from docutils import nodes
 
 class SolverOption:
-  def __init__(self, name, description):
+  def __init__(self, name, description, values):
     self.name = name
     self.description = description
+    self.values = values
 
-class ASL_SolverOption(Structure):
+class ASL_SolverOptionInfo(Structure):
   _fields_ = [("name", c_char_p),
+              ("description", c_char_p),
+              ("option", c_void_p)]
+
+class EnumOptionValue:
+  def __init__(self, value, description):
+    self.value = value
+    self.description = description
+
+class ASL_EnumOptionValue(Structure):
+  _fields_ = [("value", c_char_p),
               ("description", c_char_p)]
 
 class Solver:
@@ -37,13 +51,46 @@ class Solver:
   def get_options(self):
     num_options = self.lib.ASL_GetSolverOptions(self.solver, None, 0)
     self._check(num_options != -1)
-    asl_options = (ASL_SolverOption * num_options)()
-    num_options = self.lib.ASL_GetSolverOptions(self.solver, asl_options, num_options)
+    info = (ASL_SolverOptionInfo * num_options)()
+    num_options = self.lib.ASL_GetSolverOptions(self.solver, info, num_options)
     self._check(num_options != -1)
     options = []
-    for opt in asl_options:
-      options.append(SolverOption(opt.name, opt.description))
+    for i in info:
+      num_values = self.lib.ASL_GetOptionValues(self.solver, i.option, None, 0)
+      self._check(num_values != -1)
+      values = []
+      if num_values != 0:
+        asl_values = (ASL_EnumOptionValue * num_values)()
+        num_values = self.lib.ASL_GetOptionValues(self.solver, i.option, asl_values, num_values)
+        self._check(num_values != -1)
+        for v in asl_values:
+          values.append(EnumOptionValue(v.value, v.description))
+      options.append(SolverOption(i.name, i.description, values))
     return options
+
+class ValueTableDirective(rst.Directive):
+  values = []
+  
+  def run(self):
+    table = nodes.table()
+    tgroup = nodes.tgroup()
+    tbody = nodes.tbody()
+    for v in ValueTableDirective.values:
+      row = nodes.row()
+      entry = nodes.entry()
+      entry += nodes.paragraph(text=v.value)
+      row += entry
+      entry = nodes.entry()
+      entry += nodes.paragraph(text=v.description)
+      row += entry
+      tbody += row
+    tgroup += nodes.colspec(colwidth=1)
+    tgroup += nodes.colspec(colwidth=2)
+    tgroup += tbody
+    table += tgroup
+    return [table]
+
+directives.register_directive('value-table', ValueTableDirective)
 
 solver_names = ['gecode', 'ilogcp', 'jacop', 'ssdsolver', 'sulum']
 for solver_name in solver_names:
@@ -57,10 +104,11 @@ for solver_name in solver_names:
   if not os.path.exists(libname):
     continue
   with Solver(libname) as solver:
-    rst = ''
-    for opt in solver.get_options():
-      rst += '``{}``\n'.format(opt.name)
-      for line in opt.description.split('\n'):
-        rst += '  ' + line + '\n'
     with open(html_filename, 'w') as f:
-      f.write(publish_string(rst, writer_name='html'))
+    # TODO: get header
+      for opt in solver.get_options():
+        rst = '``{}``\n'.format(opt.name)
+        ValueTableDirective.values = opt.values
+        for line in opt.description.split('\n'):
+          rst += '  ' + line + '\n'
+        f.write(publish_parts(rst, writer_name='html')['body'].encode('utf-8'))
