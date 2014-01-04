@@ -119,7 +119,8 @@ const char *ASL_GetErrorMessage(ASL_Error *e) {
   return e->message;  // Doesn't throw.
 }
 
-int ASL_GetSolverOptions(ASL_Solver *s, ASL_SolverOption *options, int size) {
+int ASL_GetSolverOptions(
+    ASL_Solver *s, ASL_SolverOptionInfo *options, int size) {
   try {
     const ampl::Solver &solver = *s->solver;
     int num_options = solver.num_options();
@@ -128,11 +129,41 @@ int ASL_GetSolverOptions(ASL_Solver *s, ASL_SolverOption *options, int size) {
     int index = 0;
     for (ampl::Solver::option_iterator i = solver.option_begin(),
         e = solver.option_end(); i != e && index < size; ++i, ++index) {
-      const ampl::SolverOption *opt = *i;
+      ampl::SolverOption *opt = *i;
       options[index].name = opt->name();
       options[index].description = opt->description();
+      options[index].option = reinterpret_cast<ASL_SolverOption*>(opt);
     }
     return num_options;
+  } catch (const std::exception &e) {
+    SetError(s, e.what());
+  } catch (...) {
+    SetError(s, "unknown error");
+  }
+  return -1;
+}
+
+int ASL_GetOptionValues(ASL_Solver *s,
+    ASL_SolverOption *option, ASL_EnumOptionValue *values, int size) {
+  try {
+    const ampl::Solver &solver = *s->solver;
+    const ampl::EnumOptionValue *val =
+        reinterpret_cast<ampl::SolverOption*>(option)->values();
+    if (!values) {
+      if (!val) return 0;
+      int num_values = 0;
+      for (; val->value; ++val)
+        ++num_values;
+      return num_values;
+    }
+    int index = 0;
+    for (; val->value && index < size; ++val, ++index) {
+      values[index].value = val->value;
+      values[index].description = val->description;
+    }
+    for (; val->value; ++val)
+      ++index;
+    return index;
   } catch (const std::exception &e) {
     SetError(s, e.what());
   } catch (...) {

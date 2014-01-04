@@ -83,25 +83,52 @@ void ASL_DestroyError(ASL_Error *e);
  */
 const char *ASL_GetErrorMessage(ASL_Error *e);
 
-/**
- * A solver option.
- */
-struct ASL_SolverOption {
-  const char *name;         /**< The option name. */
-  const char *description;  /**< The option description. */
-};
+
+typedef struct ASL_SolverOption ASL_SolverOption;
 
 /**
- * Retrieves the solver options. Returns the number of options if succeeded,
- * -1 otherwise.
+ * Solver option information.
+ */
+typedef struct ASL_SolverOptionInfo {
+  const char *name;         /**< The option name. */
+  const char *description;  /**< The option description. */
+  ASL_SolverOption *option;
+} ASL_SolverOptionInfo;
+
+/**
+ * Retrieves the information about solver options. Returns the number of
+ * options if succeeded, -1 otherwise.
  *
  * s: The solver object to query.
  * options: A pointer to an array of the specified size where to store
- *          the options. Can be null in which case the function only returns
- *          the number of options.
+ *          the option information. Can be null in which case the function
+ *          only returns the number of options.
  * size: The size of the options array. Ignored if options is null.
  */
-int ASL_GetSolverOptions(ASL_Solver *s, ASL_SolverOption *options, int size);
+int ASL_GetSolverOptions(
+    ASL_Solver *s, ASL_SolverOptionInfo *options, int size);
+
+/**
+ * A value of an enumerated solver option.
+ */
+struct ASL_EnumOptionValue {
+  const char *value;        /**< The value. */
+  const char *description;  /**< The value description. */
+};
+
+/**
+ * Retrieves the information about possible values of an enumerated option.
+ * Returns the number of values if succeeded, -1 otherwise.
+ *
+ * s: The solver object containing the option.
+ * s: The option object to query.
+ * values: A pointer to an array of the specified size where to store
+ *         the value information. Can be null in which case the function
+ *         only returns the number of values.
+ * size: The size of the values array. Ignored if values is null.
+ */
+int ASL_GetOptionValues(ASL_Solver *s,
+    ASL_SolverOption *option, ASL_EnumOptionValue *values, int size);
 
 /**
  * Runs the solver. This is a programmatic alternative to running the solver
