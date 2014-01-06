@@ -118,7 +118,6 @@ class IlogCPSolver : private Noncopyable, public Solver {
 
  protected:
 
-  std::string GetOptionHeader();
   void DoSolve(Problem &p);
 
  public:

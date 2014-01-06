@@ -263,18 +263,6 @@ std::string ConvertSolutionStatus(
 
 namespace ampl {
 
-std::string IlogCPSolver::GetOptionHeader() {
-  return
-      "IlogCP Options for AMPL\n"
-      "-----------------------\n"
-      "\n"
-      "To set these options, assign a string specifying their values to the "
-      "AMPL option ilogcp_options. For example::\n"
-      "\n"
-      "  ampl: option ilogcp_options 'optimalitytolerance=1e-6 "
-      "searchtype=restart';\n";
-}
-
 IlogCPSolver::IlogCPSolver() :
    Solver("ilogcp", 0, YYYYMMDD, MULTIPLE_SOL), cp_(env_), cplex_(env_),
    optimizer_(AUTO) {
@@ -297,6 +285,16 @@ IlogCPSolver::IlogCPSolver() :
       << IloConcertVersion::_ILO_TECH_VERSION);
 
   AddSuffix("priority", 0, ASL_Sufkind_var);
+
+  set_option_header(
+      "IlogCP Options for AMPL\n"
+      "-----------------------\n"
+      "\n"
+      "To set these options, assign a string specifying their values to the "
+      "AMPL option ``ilogcp_options``. For example::\n"
+      "\n"
+      "  ampl: option ilogcp_options 'optimalitytolerance=1e-6 "
+      "searchtype=restart';\n");
 
   AddStrOption("optimizer",
       "Specifies which optimizer to use. Possible values:\n"

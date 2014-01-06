@@ -105,19 +105,6 @@ class SulumSolver::DblSulumOption : public TypedSolverOption<double> {
   }
 };
 
-std::string SulumSolver::GetOptionHeader() {
-  return
-      "Sulum Options for AMPL\n"
-      "----------------------\n"
-      "\n"
-      "To set these options, assign a string specifying their values to "
-      "the AMPL option sulum_options. For example:\n"
-      "\n"
-      "::\n"
-      "\n"
-      "  ampl: option sulum_options 'version loglevel=10 simmaxiter=100';\n";
-}
-
 SulumSolver::SulumSolver() : Solver("sulum", "", 20130908), env_(), model_() {
   int major = 0, minor = 0, interim = 0;
   SlmGetSulumVersion(&major, &minor, &interim);
@@ -135,6 +122,15 @@ SulumSolver::SulumSolver() : Solver("sulum", "", 20130908), env_(), model_() {
   Check(ret);
 
   Check(SlmSetIntParam(model_, SlmPrmIntLogPrefix, SlmOff));
+
+  set_option_header(
+      "Sulum Options for AMPL\n"
+      "----------------------\n"
+      "\n"
+      "To set these options, assign a string specifying their values to "
+      "the AMPL option ``sulum_options``. For example::\n"
+      "\n"
+      "  ampl: option sulum_options 'version loglevel=10 simmaxiter=100';\n");
 
   size_t num_int_options = sizeof(INT_OPTION_INFO) / sizeof(*INT_OPTION_INFO);
   for (size_t i = 0; i < num_int_options; ++i)

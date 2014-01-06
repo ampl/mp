@@ -381,7 +381,6 @@ class GecodeSolver : public Solver {
       GecodeProblem &gecode_problem, Gecode::Search::Statistics &stats);
 
  protected:
-  std::string GetOptionHeader();
   void DoSolve(Problem &p);
 
  public:

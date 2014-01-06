@@ -38,7 +38,6 @@ class SulumSolver : public Solver {
   class DblSulumOption;
 
  protected:
-  std::string GetOptionHeader();
   void DoSolve(Problem &p);
 
  public:

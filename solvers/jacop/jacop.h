@@ -516,7 +516,6 @@ class JaCoPSolver : public Solver {
   };
 
  protected:
-  std::string GetOptionHeader();
   void DoSolve(Problem &p);
 
   void HandleUnknownOption(const char *name);

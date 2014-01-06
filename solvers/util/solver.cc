@@ -319,10 +319,9 @@ void Solver::RegisterSuffixes(Problem &p) {
 
 char *Solver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
   Solver *solver = static_cast<Solver*>(oi);
-  std::string header(solver->GetOptionHeader());
   fmt::Writer writer;
-  internal::FormatRST(writer, header);
-  if (!header.empty())
+  internal::FormatRST(writer, solver->option_header_);
+  if (!solver->option_header_.empty())
     writer << '\n';
   writer << "Options:\n";
   const int DESC_INDENT = 6;

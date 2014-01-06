@@ -577,18 +577,6 @@ fmt::Formatter<fmt::Write> GecodeSolver::Output(fmt::StringRef format) {
   return f;
 }
 
-std::string GecodeSolver::GetOptionHeader() {
-  return
-      "Gecode Options for AMPL\n"
-      "-----------------------\n"
-      "\n"
-      "To set these options, assign a string specifying their values to "
-      "the AMPL option gecode_options. For example::\n"
-      "\n"
-      "  ampl: option gecode_options 'version nodelimit=30000 "
-      "val_branching=min';\n";
-}
-
 GecodeSolver::GecodeSolver()
 : Solver("gecode", "gecode " GECODE_VERSION, 20131015, MULTIPLE_SOL),
   output_(false), output_frequency_(1), output_count_(0), solve_code_(-1),
@@ -603,6 +591,16 @@ GecodeSolver::GecodeSolver()
   set_version("Gecode " GECODE_VERSION);
 
   AddSuffix("icl", 0, ASL_Sufkind_con);
+
+  set_option_header(
+      "Gecode Options for AMPL\n"
+      "-----------------------\n"
+      "\n"
+      "To set these options, assign a string specifying their values to "
+      "the AMPL option ``gecode_options``. For example::\n"
+      "\n"
+      "  ampl: option gecode_options 'version nodelimit=30000 "
+      "val_branching=min';\n");
 
   AddIntOption("outlev",
       "0 or 1 (default 0): Whether to print solution log.",

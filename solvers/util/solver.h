@@ -365,6 +365,7 @@ class Solver
     bool operator()(const SolverOption *lhs, const SolverOption *rhs) const;
   };
 
+  std::string option_header_;
   typedef std::set<SolverOption*, OptionNameLess> OptionSet;
   OptionSet options_;
   keyword cl_option_;  // command-line option '='
@@ -518,8 +519,6 @@ class Solver
   // Sets the flags for Problem::Read.
   void set_read_flags(unsigned flags) { read_flags_ = flags; }
 
-  virtual std::string GetOptionHeader() { return std::string(); }
-
   virtual void DoSolve(Problem &p) = 0;
 
   bool need_multiple_solutions() const {
@@ -540,6 +539,9 @@ class Solver
     sol_handler_->HandleFeasibleSolution(
         p, message, values, dual_values, obj_value);
   }
+
+  // Sets a text to be displayed before option descriptions.
+  void set_option_header(const char *header) { option_header_ = header; }
 
   void AddOption(OptionPtr opt) {
     // First insert the option, then release a pointer to it. Doing the other
@@ -757,9 +759,13 @@ class Solver
   int num_options() const { return options_.size(); }
 
   // Option iterator.
+  // TODO: test
   typedef OptionSet::const_iterator option_iterator;
   option_iterator option_begin() const { return options_.begin(); }
   option_iterator option_end() const { return options_.end(); }
+
+  // Returns the option header.
+  const char *option_header() const { return option_header_.c_str(); }
 
   // Flags for ParseOptions.
   enum {

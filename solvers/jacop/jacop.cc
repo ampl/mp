@@ -374,6 +374,15 @@ JaCoPSolver::JaCoPSolver()
 
   set_version("JaCoP " JACOP_VERSION);
 
+  set_option_header(
+      "JaCoP Options for AMPL\n"
+      "----------------------\n"
+      "\n"
+      "To set these options, assign a string specifying their values to "
+      "the AMPL option ``jacop_options``. For example::\n"
+      "\n"
+      "  ampl: option jacop_options 'version nodelimit=30000';\n");
+
   AddDblOption("outfreq",
       "Output frequency in seconds. The value should be a positive integer.",
       &JaCoPSolver::GetOutputFrequency, &JaCoPSolver::SetOutputFrequency);
@@ -502,17 +511,6 @@ JNIEXPORT jboolean JNICALL JaCoPSolver::Stop(JNIEnv *, jobject, jlong data) {
     // C++ JavaError exception is ignored here.
   }
   return JNI_FALSE;
-}
-
-std::string JaCoPSolver::GetOptionHeader() {
-  return
-      "JaCoP Options for AMPL\n"
-      "----------------------\n"
-      "\n"
-      "To set these options, assign a string specifying their values to "
-      "the AMPL option jacop_options. For example::\n"
-      "\n"
-      "  ampl: option jacop_options 'version nodelimit=30000';\n";
 }
 
 void JaCoPSolver::DoSolve(Problem &p) {
