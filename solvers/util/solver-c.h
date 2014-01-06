@@ -76,13 +76,20 @@ ASL_Error *ASL_GetLastError(ASL_Solver *s);
 void ASL_DestroyError(ASL_Error *e);
 
 /**
- * Returns a pointer to the error message. The pointer is invalidated
- * when the error object is destroyed.
+ * Returns a pointer to the error message or a null pointer if there was an
+ * error. The pointer is invalidated when the error object is destroyed.
  *
  * e: The error object to query.
  */
 const char *ASL_GetErrorMessage(ASL_Error *e);
 
+/**
+ * Returns a pointer to the option header. The option header is a text printed
+ * before option descriptions.
+ *
+ * s: The solver object to query.
+ */
+const char *ASL_GetOptionHeader(ASL_Solver *s);
 
 typedef struct ASL_SolverOption ASL_SolverOption;
 
@@ -92,6 +99,7 @@ typedef struct ASL_SolverOption ASL_SolverOption;
 typedef struct ASL_SolverOptionInfo {
   const char *name;         /**< The option name. */
   const char *description;  /**< The option description. */
+  int flags;                /**< The option flags. */
   ASL_SolverOption *option;
 } ASL_SolverOptionInfo;
 
@@ -121,7 +129,7 @@ struct ASL_EnumOptionValue {
  * Returns the number of values if succeeded, -1 otherwise.
  *
  * s: The solver object containing the option.
- * s: The option object to query.
+ * option: The option object to query.
  * values: A pointer to an array of the specified size where to store
  *         the value information. Can be null in which case the function
  *         only returns the number of values.

@@ -119,6 +119,17 @@ const char *ASL_GetErrorMessage(ASL_Error *e) {
   return e->message;  // Doesn't throw.
 }
 
+const char *ASL_GetOptionHeader(ASL_Solver *s) {
+  try {
+    return s->solver->option_header();
+  } catch (const std::exception &e) {
+    SetError(s, e.what());
+  } catch (...) {
+    SetError(s, "unknown error");
+  }
+  return 0;
+}
+
 int ASL_GetSolverOptions(
     ASL_Solver *s, ASL_SolverOptionInfo *options, int size) {
   try {
