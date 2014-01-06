@@ -2,7 +2,7 @@
 # This scripts extract options from solvers and formats them in HTML.
 
 import os, errno
-from ctypes import cdll, Structure, c_char_p, c_void_p, byref
+from ctypes import cdll, Structure, c_int, c_char_p, c_void_p, byref
 from docutils.core import publish_parts
 from docutils.parsers.rst import directives
 from docutils.parsers import rst
@@ -17,6 +17,7 @@ class SolverOption:
 class ASL_SolverOptionInfo(Structure):
   _fields_ = [("name", c_char_p),
               ("description", c_char_p),
+              ("flags", c_int),
               ("option", c_void_p)]
 
 class EnumOptionValue:
@@ -47,6 +48,12 @@ class Solver:
     if not success:
       error = self.lib.ASL_GetLastError(self.solver)
       raise Exception(self.lib.ASL_GetErrorMessage(error))
+    
+  def option_header(self):
+    self.lib.ASL_GetOptionHeader.restype = c_char_p
+    header = self.lib.ASL_GetOptionHeader(self.solver)
+    self._check(header is not None)
+    return header
 
   def get_options(self):
     num_options = self.lib.ASL_GetSolverOptions(self.solver, None, 0)
@@ -78,34 +85,37 @@ class ValueTableDirective(rst.Directive):
     for v in ValueTableDirective.values:
       row = nodes.row()
       entry = nodes.entry()
-      entry += nodes.paragraph(text=v.value)
+      entry += nodes.literal(v.value, v.value)
       row += entry
       entry = nodes.entry()
       entry += nodes.paragraph(text=v.description)
       row += entry
       tbody += row
-    tgroup += nodes.colspec(colwidth=1)
-    tgroup += nodes.colspec(colwidth=2)
+    tgroup += nodes.colspec(colwidth=10)
+    tgroup += nodes.colspec(colwidth=90)
     tgroup += tbody
     table += tgroup
     return [table]
 
 directives.register_directive('value-table', ValueTableDirective)
 
-solver_names = ['gecode', 'ilogcp', 'jacop', 'ssdsolver', 'sulum']
+solver_names = ['Gecode', 'IlogCP', 'Jacop', 'SSDSolver', 'Sulum']
 for solver_name in solver_names:
-  html_filename = solver_name + '-options.html'
+  solver_name_lower = solver_name.lower()
+  html_filename = solver_name_lower + '-options.html'
   try:
     os.remove(html_filename)
   except OSError as e:
     if e.errno != errno.ENOENT:
       raise
-  libname = '../solvers/{0}/libampl{0}.so'.format(solver_name)
+  libname = '../solvers/{0}/libampl{0}.so'.format(solver_name_lower)
   if not os.path.exists(libname):
     continue
   with Solver(libname) as solver:
     with open(html_filename, 'w') as f:
-    # TODO: get header
+      f.write(publish_parts(
+        solver.option_header(), writer_name='html')['html_body'].encode('utf-8'))
+      f.write('<h2>Options</h2>\n')
       for opt in solver.get_options():
         rst = '``{}``\n'.format(opt.name)
         ValueTableDirective.values = opt.values
