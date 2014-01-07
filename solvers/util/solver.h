@@ -69,8 +69,13 @@ struct OptionValueInfo {
 
 namespace internal {
 
-// Formats string s containing the text in RST (reStructuredText) format
+// Formats the string s containing the reStructuredText (RST) markup
 // and writes it to w.
+// w:      stream writer used for output
+// indent: indentation to use for the formatted text
+// s:      string containing reStructuredText to format
+// values: information about option values to be formatted by the
+//         value-table directive
 void FormatRST(fmt::Writer &w, fmt::StringRef s,
     int indent = 0, const ampl::OptionValueInfo *values = 0);
 
@@ -217,15 +222,16 @@ class SolverOption {
   // Currently the following RST constructs are supported:
   //
   // * paragraphs
-  // * list blocks
   // * bullet lists
   // * literal blocks
+  // * line blocks
   // * the value-table directive (.. value-table::) which is replaced by a
   //   table of option values as given by the values array
   //
   // If the values pointer is non-null, it should point to an array of
-  // OptionValueInfo giving the information about possible option values.
-  // The array is terminated by an OptionValueInfo object with a null value.
+  // OptionValueInfo objects giving the information about possible option
+  // values. The array is terminated by an OptionValueInfo object with
+  // a null value pointer.
   SolverOption(const char *name, const char *description,
       const OptionValueInfo *values = 0, bool is_keyword = false)
   : name_(name), description_(description),

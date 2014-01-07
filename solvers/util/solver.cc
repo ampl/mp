@@ -204,7 +204,6 @@ namespace ampl {
 
 namespace internal {
 
-// Formats restructured text.
 void FormatRST(fmt::Writer &w, fmt::StringRef s, int indent,
     const ampl::OptionValueInfo *values) {
   RSTFormatter formatter(w, values, indent);
