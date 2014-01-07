@@ -28,7 +28,7 @@ class EnumOptionValue:
 class ASL_EnumOptionValue(Structure):
   _fields_ = [("value", c_char_p),
               ("description", c_char_p)]
-
+  
 class Solver:
   def __init__(self, libpath):
     self.lib = cdll.LoadLibrary(libpath)
@@ -63,8 +63,10 @@ class Solver:
     self._check(num_options != -1)
     options = []
     for i in info:
-      num_values = self.lib.ASL_GetOptionValues(self.solver, i.option, None, 0)
-      self._check(num_values != -1)
+      num_values = 0
+      if (i.flags & 1) != 0:
+        num_values = self.lib.ASL_GetOptionValues(self.solver, i.option, None, 0)
+        self._check(num_values != -1)
       values = []
       if num_values != 0:
         asl_values = (ASL_EnumOptionValue * num_values)()
@@ -79,6 +81,13 @@ class ValueTableDirective(rst.Directive):
   values = []
   
   def run(self):
+    if ValueTableDirective.values[0].description is None:
+      list = nodes.bullet_list()
+      for v in ValueTableDirective.values:
+        item = nodes.list_item()
+        item += nodes.literal(v.value, v.value)
+        list += item
+      return [list]
     table = nodes.table()
     tgroup = nodes.tgroup()
     tbody = nodes.tbody()
