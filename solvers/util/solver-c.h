@@ -91,7 +91,21 @@ const char *ASL_GetErrorMessage(ASL_Error *e);
  */
 const char *ASL_GetOptionHeader(ASL_Solver *s);
 
+/**
+ * A solver option.
+ */
 typedef struct ASL_SolverOption ASL_SolverOption;
+
+/**
+ * Solver option flags.
+ */
+enum {
+  /**
+   * If set the option contains information about possible values that can be
+   * obtained via ASL_GetOptionValues.
+   */
+  ASL_OPT_HAS_VALUES = 1
+};
 
 /**
  * Solver option information.

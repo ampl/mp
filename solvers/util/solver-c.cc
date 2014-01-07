@@ -143,6 +143,7 @@ int ASL_GetSolverOptions(
       ampl::SolverOption *opt = *i;
       options[index].name = opt->name();
       options[index].description = opt->description();
+      options[index].flags = opt->values() ? ASL_OPT_HAS_VALUES : 0;
       options[index].option = reinterpret_cast<ASL_SolverOption*>(opt);
     }
     return num_options;
