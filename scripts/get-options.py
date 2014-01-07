@@ -20,12 +20,12 @@ class ASL_SolverOptionInfo(Structure):
               ("flags", c_int),
               ("option", c_void_p)]
 
-class EnumOptionValue:
+class OptionValueInfo:
   def __init__(self, value, description):
     self.value = value
     self.description = description
 
-class ASL_EnumOptionValue(Structure):
+class ASL_OptionValueInfo(Structure):
   _fields_ = [("value", c_char_p),
               ("description", c_char_p)]
   
@@ -69,11 +69,11 @@ class Solver:
         self._check(num_values != -1)
       values = []
       if num_values != 0:
-        asl_values = (ASL_EnumOptionValue * num_values)()
+        asl_values = (ASL_OptionValueInfo * num_values)()
         num_values = self.lib.ASL_GetOptionValues(self.solver, i.option, asl_values, num_values)
         self._check(num_values != -1)
         for v in asl_values:
-          values.append(EnumOptionValue(v.value, v.description))
+          values.append(OptionValueInfo(v.value, v.description))
       options.append(SolverOption(i.name, i.description, values))
     return options
 

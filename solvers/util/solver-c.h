@@ -131,15 +131,15 @@ int ASL_GetSolverOptions(
     ASL_Solver *s, ASL_SolverOptionInfo *options, int size);
 
 /**
- * A value of an enumerated solver option.
+ * Information about a possible option value.
  */
-struct ASL_EnumOptionValue {
+struct ASL_OptionValueInfo {
   const char *value;        /**< The value. */
   const char *description;  /**< The value description. */
 };
 
 /**
- * Retrieves the information about possible values of an enumerated option.
+ * Retrieves the information about possible option values.
  * Returns the number of values if succeeded, -1 otherwise.
  *
  * s: The solver object containing the option.
@@ -150,7 +150,7 @@ struct ASL_EnumOptionValue {
  * size: The size of the values array. Ignored if values is null.
  */
 int ASL_GetOptionValues(ASL_Solver *s,
-    ASL_SolverOption *option, ASL_EnumOptionValue *values, int size);
+    ASL_SolverOption *option, ASL_OptionValueInfo *values, int size);
 
 /**
  * Runs the solver. This is a programmatic alternative to running the solver

@@ -71,7 +71,7 @@ TEST(SolverTest, ObjPrec) {
 }
 
 std::string FormatRST(fmt::StringRef s,
-    int indent = 0, const ampl::EnumOptionValue *values = 0) {
+    int indent = 0, const ampl::OptionValueInfo *values = 0) {
   fmt::Writer w;
   ampl::internal::FormatRST(w, s, indent, values);
   return w.str();
@@ -93,7 +93,7 @@ TEST(SolverTest, FormatRST) {
 }
 
 TEST(SolverTest, FormatRSTValueTable) {
-  const ampl::EnumOptionValue values[] = {
+  const ampl::OptionValueInfo values[] = {
       {"val1", "description of val1"},
       {"val2", "description of val2"},
       {}
@@ -364,7 +364,7 @@ TEST(SolverTest, SolverOption) {
     TestOption(const char *name, const char *description)
     : SolverOption(name, description), formatted(false), parsed(false) {}
     TestOption(const char *name, const char *description,
-        const ampl::EnumOptionValue *values, bool is_keyword)
+        const ampl::OptionValueInfo *values, bool is_keyword)
     : SolverOption(name, description, values, is_keyword),
       formatted(false), parsed(false) {}
     void Write(fmt::Writer &) { formatted = true; }
@@ -378,7 +378,7 @@ TEST(SolverTest, SolverOption) {
     EXPECT_FALSE(opt.is_keyword());
   }
   {
-    const ampl::EnumOptionValue VALUES[] = {
+    const ampl::OptionValueInfo VALUES[] = {
         {"one", "First value"},
         {"two", "Second value"}
     };

@@ -37,7 +37,7 @@ namespace Search = Gecode::Search;
 
 namespace {
 
-const ampl::EnumOptionValue INT_CON_LEVELS[] = {
+const ampl::OptionValueInfo INT_CON_LEVELS[] = {
   {"val", "value propagation or consistency (naive)", Gecode::ICL_VAL},
   {"bnd", "bounds propagation or consistency",        Gecode::ICL_BND},
   {"dom", "domain propagation or consistency",        Gecode::ICL_DOM},
@@ -45,7 +45,7 @@ const ampl::EnumOptionValue INT_CON_LEVELS[] = {
   {}
 };
 
-const ampl::EnumOptionValue VAR_BRANCHINGS[] = {
+const ampl::OptionValueInfo VAR_BRANCHINGS[] = {
   {
     "none",
     "first unassigned",
@@ -168,7 +168,7 @@ const ampl::EnumOptionValue VAR_BRANCHINGS[] = {
   {}
 };
 
-const ampl::EnumOptionValue VAL_BRANCHINGS[] = {
+const ampl::OptionValueInfo VAL_BRANCHINGS[] = {
   {
     "min",
     "smallest value (default)",
@@ -224,7 +224,7 @@ const ampl::EnumOptionValue VAL_BRANCHINGS[] = {
   {}
 };
 
-const ampl::EnumOptionValue RESTART_MODES[] = {
+const ampl::OptionValueInfo RESTART_MODES[] = {
   {"none",      "no restarts",                     Gecode::RM_NONE},
   {"constant",  "restart with constant sequence",  Gecode::RM_CONSTANT},
   {"linear",    "restart with linear sequence",    Gecode::RM_LINEAR},
@@ -542,7 +542,7 @@ void GecodeSolver::SetOutputFrequency(const SolverOption &opt, double value) {
 
 template <typename T>
 std::string GecodeSolver::GetEnumOption(const SolverOption &opt, T *ptr) const {
-  for (const EnumOptionValue *p = opt.values(); p->value; ++p) {
+  for (const OptionValueInfo *p = opt.values(); p->value; ++p) {
     if (*ptr == p->data)
       return p->value;
   }
@@ -552,7 +552,7 @@ std::string GecodeSolver::GetEnumOption(const SolverOption &opt, T *ptr) const {
 template <typename T>
 void GecodeSolver::SetEnumOption(
     const SolverOption &opt, const char *value, T *ptr) {
-  for (const EnumOptionValue *p = opt.values(); p->value; ++p) {
+  for (const OptionValueInfo *p = opt.values(); p->value; ++p) {
     if (std::strcmp(value, p->value) == 0) {
       *ptr = static_cast<T>(p->data);
       return;

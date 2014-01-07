@@ -60,8 +60,8 @@ class ObjPrec {
   }
 };
 
-// Value of an enumerated option.
-struct EnumOptionValue {
+// Information about a possible option value.
+struct OptionValueInfo {
   const char *value;
   const char *description;
   intptr_t data;  // Solver-specific data associated with this value.
@@ -69,9 +69,10 @@ struct EnumOptionValue {
 
 namespace internal {
 
-// Formats reStructuredText in a string.
+// Formats string s containing the text in RST (reStructuredText) format
+// and writes it to w.
 void FormatRST(fmt::Writer &w, fmt::StringRef s,
-    int indent = 0, const ampl::EnumOptionValue *values = 0);
+    int indent = 0, const ampl::OptionValueInfo *values = 0);
 
 // A helper class for implementing an option of type T.
 template <typename T>
@@ -200,7 +201,7 @@ class SolverOption {
  private:
   const char *name_;
   const char *description_;
-  const EnumOptionValue *values_;
+  const OptionValueInfo *values_;
   bool is_keyword_;
 
  public:
@@ -223,10 +224,10 @@ class SolverOption {
   //   table of option values as given by the values array
   //
   // If the values pointer is non-null, it should point to an array of
-  // EnumOptionValue giving possible values and their descriptions.
-  // The array is terminated by an EnumOptionValue object with a null value.
+  // OptionValueInfo giving the information about possible option values.
+  // The array is terminated by an OptionValueInfo object with a null value.
   SolverOption(const char *name, const char *description,
-      const EnumOptionValue *values = 0, bool is_keyword = false)
+      const OptionValueInfo *values = 0, bool is_keyword = false)
   : name_(name), description_(description),
     values_(values), is_keyword_(is_keyword) {}
   virtual ~SolverOption() {}
@@ -238,7 +239,7 @@ class SolverOption {
   const char *description() const { return description_; }
 
   // Returns the information about possible values.
-  const EnumOptionValue *values() const { return values_; }
+  const OptionValueInfo *values() const { return values_; }
 
   // Returns true if this is a keyword option, i.e. an option that
   // doesn't take a value.
@@ -275,7 +276,7 @@ template <typename T>
 class TypedSolverOption : public SolverOption {
  public:
   TypedSolverOption(const char *name, const char *description,
-      const EnumOptionValue *values = 0)
+      const OptionValueInfo *values = 0)
   : SolverOption(name, description, values) {}
 
   void Write(fmt::Writer &w) {
@@ -452,7 +453,7 @@ class Solver
 
    public:
     ConcreteOption(const char *name, const char *description,
-        Solver *s, Get get, Set set, const EnumOptionValue *values = 0)
+        Solver *s, Get get, Set set, const OptionValueInfo *values = 0)
     : TypedSolverOption<T>(name, description, values),
       handler_(static_cast<Handler&>(*s)), get_(get), set_(set) {}
 
@@ -475,7 +476,7 @@ class Solver
 
    public:
     ConcreteOptionWithInfo(const char *name, const char *description, Solver *s,
-        Get get, Set set, InfoArg info, const EnumOptionValue *values = 0)
+        Get get, Set set, InfoArg info, const OptionValueInfo *values = 0)
     : TypedSolverOption<T>(name, description, values),
       handler_(static_cast<Handler&>(*s)), get_(get), set_(set), info_(info) {}
 
@@ -638,7 +639,7 @@ class Solver
   void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const SolverOption &) const,
       void (Handler::*set)(const SolverOption &, const char *),
-      const EnumOptionValue *values = 0) {
+      const OptionValueInfo *values = 0) {
     AddOption(OptionPtr(new ConcreteOption<Handler, std::string>(
         name, description, this, get, set, values)));
   }
@@ -653,7 +654,7 @@ class Solver
   void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const SolverOption &, const Info &) const,
       void (Handler::*set)(const SolverOption &, const char *, const Info &),
-      const Info &info, const EnumOptionValue *values = 0) {
+      const Info &info, const OptionValueInfo *values = 0) {
     AddOption(OptionPtr(
         new ConcreteOptionWithInfo<Handler, std::string, Info, const Info &>(
             name, description, this, get, set, info, values)));
@@ -664,7 +665,7 @@ class Solver
   void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const SolverOption &, Info) const,
       void (Handler::*set)(const SolverOption &, const char *, Info),
-      Info info, const EnumOptionValue *values = 0) {
+      Info info, const OptionValueInfo *values = 0) {
     AddOption(OptionPtr(new ConcreteOptionWithInfo<Handler, std::string, Info>(
             name, description, this, get, set, info, values)));
   }

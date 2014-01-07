@@ -68,7 +68,7 @@ struct Deleter {
 class RSTFormatter : public rst::ContentHandler {
  private:
   fmt::Writer &writer_;
-  const ampl::EnumOptionValue *values_;
+  const ampl::OptionValueInfo *values_;
   std::stack<int> indents_;
   int indent_;
   int pos_in_line_;
@@ -98,7 +98,7 @@ class RSTFormatter : public rst::ContentHandler {
   void Write(fmt::StringRef s);
 
  public:
-  RSTFormatter(fmt::Writer &w, const ampl::EnumOptionValue *values, int indent)
+  RSTFormatter(fmt::Writer &w, const ampl::OptionValueInfo *values, int indent)
   : writer_(w), values_(values), indent_(indent),
     pos_in_line_(0), end_block_(false) {}
 
@@ -172,13 +172,13 @@ void RSTFormatter::HandleDirective(const char *type) {
   if (!values_)
     ampl::ThrowError("no values to format");
   std::size_t max_len = 0;
-  for (const ampl::EnumOptionValue *v = values_; v->value; ++v)
+  for (const ampl::OptionValueInfo *v = values_; v->value; ++v)
     max_len = std::max(max_len, std::strlen(v->value));
 
   // If the values don't have descriptions indent them as list items.
   if (!values_->description)
     indent_ += LIST_ITEM_INDENT;
-  for (const ampl::EnumOptionValue *v = values_; v->value; ++v) {
+  for (const ampl::OptionValueInfo *v = values_; v->value; ++v) {
     Indent();
     writer_ << fmt::pad(v->value, max_len);
     if (v->description) {
@@ -206,7 +206,7 @@ namespace internal {
 
 // Formats restructured text.
 void FormatRST(fmt::Writer &w, fmt::StringRef s, int indent,
-    const ampl::EnumOptionValue *values) {
+    const ampl::OptionValueInfo *values) {
   RSTFormatter formatter(w, values, indent);
   rst::Parser parser(&formatter);
   parser.Parse(s.c_str());

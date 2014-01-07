@@ -156,10 +156,10 @@ int ASL_GetSolverOptions(
 }
 
 int ASL_GetOptionValues(ASL_Solver *s,
-    ASL_SolverOption *option, ASL_EnumOptionValue *values, int size) {
+    ASL_SolverOption *option, ASL_OptionValueInfo *values, int size) {
   try {
     const ampl::Solver &solver = *s->solver;
-    const ampl::EnumOptionValue *val =
+    const ampl::OptionValueInfo *val =
         reinterpret_cast<ampl::SolverOption*>(option)->values();
     if (!values) {
       if (!val) return 0;

@@ -50,7 +50,7 @@ static char xxxvers[] = "ilogcp_options\0\n"
 
 namespace {
 
-const ampl::EnumOptionValue INFERENCE_LEVELS[] = {
+const ampl::OptionValueInfo INFERENCE_LEVELS[] = {
   // Default must be the first item.
   {"default",  0, IloCP::Default },
   {"low",      0, IloCP::Low     },
@@ -60,7 +60,7 @@ const ampl::EnumOptionValue INFERENCE_LEVELS[] = {
   {}
 };
 
-const ampl::EnumOptionValue FLAGS[] = {
+const ampl::OptionValueInfo FLAGS[] = {
   // Auto must be the first item.
   {"auto", 0, IloCP::Auto},
   {"off",  0, IloCP::Off },
@@ -68,7 +68,7 @@ const ampl::EnumOptionValue FLAGS[] = {
   {}
 };
 
-const ampl::EnumOptionValue SEARCH_TYPES[] = {
+const ampl::OptionValueInfo SEARCH_TYPES[] = {
   {"auto",       0, IloCP::Auto      },
   {"depthfirst", 0, IloCP::DepthFirst},
   {"restart",    0, IloCP::Restart   },
@@ -76,7 +76,7 @@ const ampl::EnumOptionValue SEARCH_TYPES[] = {
   {}
 };
 
-const ampl::EnumOptionValue VERBOSITIES[] = {
+const ampl::OptionValueInfo VERBOSITIES[] = {
   {"quiet",   0, IloCP::Quiet  },
   {"terse",   0, IloCP::Terse  },
   {"normal",  0, IloCP::Normal },
@@ -84,13 +84,13 @@ const ampl::EnumOptionValue VERBOSITIES[] = {
   {}
 };
 
-const ampl::EnumOptionValue TIME_MODES[] = {
+const ampl::OptionValueInfo TIME_MODES[] = {
   {"cputime",     0, IloCP::CPUTime    },
   {"elapsedtime", 0, IloCP::ElapsedTime},
   {}
 };
 
-const ampl::EnumOptionValue OPTIMIZERS[] = {
+const ampl::OptionValueInfo OPTIMIZERS[] = {
   {
     "auto",
     "CP Optimizer if the problem has nonlinear objective/constraints "
@@ -107,7 +107,7 @@ const ampl::EnumOptionValue OPTIMIZERS[] = {
   {}
 };
 
-const ampl::EnumOptionValue AUTO_VALUE[] = {
+const ampl::OptionValueInfo AUTO_VALUE[] = {
   {"auto", 0, IloCP::Auto},
   {}
 };
@@ -160,7 +160,7 @@ class EnumOption : public ampl::TypedSolverOption<std::string> {
  public:
   EnumOption(const char *name, const char *description,
       IloCP cp, IloCP::IntParam p, int start,
-      const ampl::EnumOptionValue *values, bool accepts_auto = false)
+      const ampl::OptionValueInfo *values, bool accepts_auto = false)
   : ampl::TypedSolverOption<std::string>(name, description, values),
     cp_(cp), param_(p), start_(start), accepts_auto_(accepts_auto) {
   }
@@ -176,7 +176,7 @@ std::string EnumOption::GetValue() const {
   } catch (const IloException &e) {
     throw GetOptionValueError(*this, e.getMessage());
   }
-  if (const ampl::EnumOptionValue *v = this->values()) {
+  if (const ampl::OptionValueInfo *v = this->values()) {
     for (; v->value; ++v) {
       if (v->data == value)
         return v->value;
@@ -195,7 +195,7 @@ void EnumOption::SetValue(const char *value) {
       cp_.setParameter(param_, intval);
       return;
     }
-    if (const ampl::EnumOptionValue *v = this->values()) {
+    if (const ampl::OptionValueInfo *v = this->values()) {
       // Search for a value in the list of known values.
       // Use linear search since the number of values is small.
       for (; v->value; ++v) {
