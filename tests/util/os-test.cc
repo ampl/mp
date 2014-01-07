@@ -66,7 +66,7 @@ TEST(OSTest, NonemptyPath) {
 
 TEST(OSTest, GetExecutablePath) {
   string path = ampl::GetExecutablePath().string();
-  string ending = "/util/os_test";
+  string ending = "/util/os-test";
 #ifdef _WIN32
   ending += ".exe";
 #endif
