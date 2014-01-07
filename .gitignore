@@ -4,6 +4,7 @@
 *.dll
 *.so
 *_test
+*-test
 CMakeFiles
 CMakeCache.txt
 CTestTestfile.cmake
@@ -22,6 +23,7 @@ Makefile
 /solvers/cplex/cplex
 /solvers/gecode/gecode
 /solvers/ilogcp/ilogcp
+/solvers/jacop/jacop
 /solvers/smpswriter/smpswriter
 /solvers/ssdsolver/ssdsolver
 /solvers/sulum/sulum
