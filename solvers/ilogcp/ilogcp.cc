@@ -287,8 +287,8 @@ IlogCPSolver::IlogCPSolver() :
   AddSuffix("priority", 0, ASL_Sufkind_var);
 
   set_option_header(
-      "IlogCP Options for AMPL\n"
-      "-----------------------\n"
+      "IBM ILOG CPLEX CP Optimizer Options for AMPL\n"
+      "--------------------------------------------\n"
       "\n"
       "To set these options, assign a string specifying their values to the "
       "AMPL option ``ilogcp_options``. For example::\n"
