@@ -1,5 +1,5 @@
 /*
- Basic solver tests.
+ Solver tests.
 
  Copyright (C) 2012 AMPL Optimization Inc
 
@@ -24,7 +24,7 @@
 #include "solvers/util/solver.h"
 #include "tests/args.h"
 #include "tests/config.h"
-#include "tests/solution_handler.h"
+#include "tests/solution-handler.h"
 #include "tests/util.h"
 
 #include <cstdio>
@@ -608,6 +608,32 @@ TEST(SolverTest, OptionHeader) {
   EXPECT_STREQ("", s.option_header());
   s.set_option_header();
   EXPECT_STREQ("test header", s.option_header());
+}
+
+TEST(SolverTest, NumOptions) {
+  int num_std_options = TestSolver().num_options();
+  EXPECT_EQ(num_std_options + 6, TestSolverWithOptions().num_options());
+}
+
+TEST(SolverTest, OptionIterator) {
+  TestSolverWithOptions s;
+  Solver::option_iterator i = s.option_begin();
+  EXPECT_NE(i, s.option_end());
+  EXPECT_STREQ("dblopt1", i->name());
+  Solver::option_iterator i2 = i++;
+  EXPECT_STREQ("dblopt2", i->name());
+  EXPECT_NE(i, i2);
+  ++i2;
+  EXPECT_EQ(i, i2);
+  Solver::option_iterator i3 = ++i;
+  EXPECT_EQ(i, i3);
+  EXPECT_NE(i, i2);
+  int count = 0;
+  for (Solver::option_iterator
+      j = s.option_begin(), e = s.option_end(); j != e; ++j) {
+    ++count;
+  }
+  EXPECT_EQ(TestSolver().num_options() + 6, count);
 }
 
 TEST(SolverTest, ParseOptionsFromArgs) {

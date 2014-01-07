@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "tests/solver_test.h"
+#include "tests/solver-test.h"
 #include "tests/util.h"
 
 #include <cmath>
@@ -881,3 +881,7 @@ TEST_P(SolverTest, MultipleSolutions) {
   EXPECT_EQ(0, p.solve_code());
   EXPECT_EQ(3, sc.num_solutions);
 }
+
+// TODO: test
+// 1. Solver C API
+// 2. option values (in solver-test) - must be terminated with a null value

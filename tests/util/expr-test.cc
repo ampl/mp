@@ -23,7 +23,7 @@
 #include <algorithm>
 
 #include "gtest/gtest.h"
-#include "tests/expr_builder.h"
+#include "tests/expr-builder.h"
 
 #include "solvers/util/problem.h"
 

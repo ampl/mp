@@ -29,17 +29,17 @@ add_library(function function.cc function.h)
 add_dependencies(function arith_h)
 target_link_libraries(function amplsolver)
 
-cxx_test_with_flags(function_test "" "gtest;function"
-  test_main.cc function_test.cc)
+cxx_test_with_flags(function-test "" "gtest;function"
+  test-main.cc function-test.cc)
 
 if (HAVE_CBC)
-  cxx_test_with_flags(cbc_test "" "gtest;util" test_main.cc cbc_test.cc util.cc)
+  cxx_test_with_flags(cbc-test "" "gtest;util" test-main.cc cbc-test.cc util.cc)
 endif ()
 
 if (HAVE_GSL)
   include_directories(${GSL_BINARY_DIR})
-  cxx_test_with_flags(gsl_test ""
-    "gtest;function;gsl;gslcblas" test_main.cc gsl_test.cc)
+  cxx_test_with_flags(gsl-test ""
+    "gtest;function;gsl;gslcblas" test-main.cc gsl-test.cc)
 endif ()
 
 add_subdirectory(ilogcp)
@@ -47,4 +47,4 @@ add_subdirectory(solvers)
 add_subdirectory(tables)
 add_subdirectory(util)
 
-cxx_test_with_flags(util_test "" "gtest;util" test_main.cc util.cc util_test.cc)
+cxx_test_with_flags(util-test "" "gtest;util" test-main.cc util.cc util-test.cc)

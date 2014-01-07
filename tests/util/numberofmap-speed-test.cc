@@ -1,5 +1,5 @@
 #include "solvers/util/clock.h"
-#include "tests/expr_builder.h"
+#include "tests/expr-builder.h"
 
 struct CreateVar {
   int operator()() { return 0; }

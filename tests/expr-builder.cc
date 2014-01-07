@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "tests/expr_builder.h"
+#include "tests/expr-builder.h"
 
 namespace ampl {
 

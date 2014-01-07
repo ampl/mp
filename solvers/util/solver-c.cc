@@ -140,11 +140,12 @@ int ASL_GetSolverOptions(
     int index = 0;
     for (ampl::Solver::option_iterator i = solver.option_begin(),
         e = solver.option_end(); i != e && index < size; ++i, ++index) {
-      ampl::SolverOption *opt = *i;
-      options[index].name = opt->name();
-      options[index].description = opt->description();
-      options[index].flags = opt->values() ? ASL_OPT_HAS_VALUES : 0;
-      options[index].option = reinterpret_cast<ASL_SolverOption*>(opt);
+      const ampl::SolverOption &opt = *i;
+      options[index].name = opt.name();
+      options[index].description = opt.description();
+      options[index].flags = opt.values() ? ASL_OPT_HAS_VALUES : 0;
+      options[index].option = reinterpret_cast<ASL_SolverOption*>(
+          const_cast<ampl::SolverOption*>(&opt));
     }
     return num_options;
   } catch (const std::exception &e) {

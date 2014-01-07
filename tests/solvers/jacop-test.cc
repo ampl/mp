@@ -28,7 +28,7 @@
 
 #include "solvers/jacop/jacop.h"
 
-#include "tests/solver_test.h"
+#include "tests/solver-test.h"
 #include "tests/util.h"
 
 using std::string;

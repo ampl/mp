@@ -766,10 +766,42 @@ class Solver
   int num_options() const { return options_.size(); }
 
   // Option iterator.
-  // TODO: test
-  typedef OptionSet::const_iterator option_iterator;
-  option_iterator option_begin() const { return options_.begin(); }
-  option_iterator option_end() const { return options_.end(); }
+  class option_iterator :
+    public std::iterator<std::forward_iterator_tag, SolverOption> {
+   private:
+    OptionSet::const_iterator it_;
+
+    friend class Solver;
+
+    explicit option_iterator(OptionSet::const_iterator it) : it_(it) {}
+
+   public:
+    option_iterator() {}
+
+    const SolverOption &operator*() const { return **it_; }
+    const SolverOption *operator->() const { return *it_; }
+
+    option_iterator &operator++() {
+      ++it_;
+      return *this;
+    }
+
+    option_iterator operator++(int ) {
+      option_iterator it(*this);
+      ++it_;
+      return it;
+    }
+
+    bool operator==(option_iterator other) const { return it_ == other.it_; }
+    bool operator!=(option_iterator other) const { return it_ != other.it_; }
+  };
+
+  option_iterator option_begin() const {
+    return option_iterator(options_.begin());
+  }
+  option_iterator option_end() const {
+    return option_iterator(options_.end());
+  }
 
   // Returns the option header.
   const char *option_header() const { return option_header_.c_str(); }

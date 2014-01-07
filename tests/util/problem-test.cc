@@ -23,7 +23,7 @@
 #include "gtest/gtest.h"
 #include "solvers/util/problem.h"
 #include "tests/config.h"
-#include "tests/expr_builder.h"
+#include "tests/expr-builder.h"
 #include "tests/util.h"
 
 using ampl::CONTINUOUS;

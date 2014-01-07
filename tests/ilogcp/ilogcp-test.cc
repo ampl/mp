@@ -49,8 +49,8 @@ extern "C" {
 }
 
 #include "tests/args.h"
-#include "tests/expr_builder.h"
-#include "tests/solver_test.h"
+#include "tests/expr-builder.h"
+#include "tests/solver-test.h"
 #include "tests/util.h"
 
 using ampl::IlogCPSolver;
