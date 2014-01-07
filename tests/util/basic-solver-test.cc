@@ -70,6 +70,7 @@ TEST(SolverTest, ObjPrec) {
   EXPECT_EQ(buffer, str(fmt::Format("{}") << ampl::ObjPrec(value)));
 }
 
+// A wrapper around ampl::internal::FormatRST used to simplify testing.
 std::string FormatRST(fmt::StringRef s,
     int indent = 0, const ampl::OptionValueInfo *values = 0) {
   fmt::Writer w;
@@ -77,22 +78,53 @@ std::string FormatRST(fmt::StringRef s,
   return w.str();
 }
 
-TEST(SolverTest, FormatRST) {
+TEST(FormatRSTTest, IndentAndWrapText) {
   EXPECT_EQ(
     "     This is a very long option description that should be indented and\n"
     "     wrapped.\n",
     FormatRST(
           "This is a very long option description "
           "that should be indented and wrapped.", 5));
+}
+
+TEST(FormatRSTTest, RemoveLeadingWhitespace) {
   EXPECT_EQ(
     "Leading whitespace should be removed.\n",
     FormatRST(" \t\v\fLeading whitespace should be removed."));
+}
+
+TEST(FormatRSTTest, FormatParagraph) {
   EXPECT_EQ(
-    "* item1\n\n* item2\n",
+    "This is the first paragraph.\n"
+    "\n"
+    "This is the second paragraph.\n",
+    FormatRST("This is the first paragraph.\n\nThis is the second paragraph."));
+}
+
+TEST(FormatRSTTest, FormatBulletList) {
+  EXPECT_EQ(
+    "* item1\n"
+    "\n"
+    "* item2\n",
     FormatRST("* item1\n* item2"));
 }
 
-TEST(SolverTest, FormatRSTValueTable) {
+TEST(FormatRSTTest, FormatLiteralBlock) {
+  EXPECT_EQ(
+    "   line1\n"
+    "   line2\n",
+    FormatRST(
+        "::\n\n  line1\n  line2"));
+}
+
+TEST(FormatRSTTest, FormatLineBlock) {
+  EXPECT_EQ(
+    "line1\n"
+    "line2\n",
+    FormatRST("| line1\n| line2"));
+}
+
+TEST(FormatRSTTest, FormatRSTValueTable) {
   const ampl::OptionValueInfo values[] = {
       {"val1", "description of val1"},
       {"val2", "description of val2"},
@@ -101,6 +133,19 @@ TEST(SolverTest, FormatRSTValueTable) {
   EXPECT_EQ(
     "  val1 - description of val1\n"
     "  val2 - description of val2\n",
+    FormatRST(".. value-table::", 2, values));
+}
+
+TEST(FormatRSTTest, FormatRSTValueList) {
+  const ampl::OptionValueInfo values[] = {
+      {"val1"},
+      {"val2"},
+      {}
+  };
+  EXPECT_EQ(
+    "* val1\n"
+    "\n"
+    "* val2\n",
     FormatRST(".. value-table::", 2, values));
 }
 
