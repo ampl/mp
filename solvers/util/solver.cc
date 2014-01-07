@@ -166,7 +166,6 @@ void RSTFormatter::HandleText(const char *text, std::size_t size) {
 }
 
 void RSTFormatter::HandleDirective(const char *type) {
-  // TODO: test
   if (std::strcmp(type, "value-table") != 0)
     ampl::ThrowError("unknown directive {}") << type;
   if (!values_)
@@ -552,7 +551,7 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
         continue;
       }
     }
-    if (opt->is_keyword() && equal_sign) {
+    if (opt->is_flag() && equal_sign) {
       ReportError("Option \"{}\" doesn't accept argument") << &name[0];
       s = SkipNonSpaces(s);
       continue;

@@ -143,10 +143,9 @@ TEST(FormatRSTTest, FormatRSTValueList) {
       {}
   };
   EXPECT_EQ(
-    "* val1\n"
-    "\n"
-    "* val2\n",
-    FormatRST(".. value-table::", 2, values));
+    "  val1\n"
+    "  val2\n",
+    FormatRST(".. value-table::", 0, values));
 }
 
 TEST(SolverTest, BasicSolverCtor) {
@@ -409,8 +408,8 @@ TEST(SolverTest, SolverOption) {
     TestOption(const char *name, const char *description)
     : SolverOption(name, description), formatted(false), parsed(false) {}
     TestOption(const char *name, const char *description,
-        const ampl::OptionValueInfo *values, bool is_keyword)
-    : SolverOption(name, description, values, is_keyword),
+        const ampl::OptionValueInfo *values, bool is_flag)
+    : SolverOption(name, description, values, is_flag),
       formatted(false), parsed(false) {}
     void Write(fmt::Writer &) { formatted = true; }
     void Parse(const char *&) { parsed = true; }
@@ -420,15 +419,15 @@ TEST(SolverTest, SolverOption) {
     EXPECT_STREQ("abc", opt.name());
     EXPECT_STREQ("def", opt.description());
     EXPECT_EQ(0, opt.values());
-    EXPECT_FALSE(opt.is_keyword());
+    EXPECT_FALSE(opt.is_flag());
   }
   {
     const ampl::OptionValueInfo VALUES[] = {
-        {"one", "First value"},
-        {"two", "Second value"}
+        {"value", "description"},
+        {}
     };
     TestOption opt("", "", VALUES, true);
-    EXPECT_TRUE(opt.is_keyword());
+    EXPECT_TRUE(opt.is_flag());
     EXPECT_EQ(VALUES, opt.values());
   }
   {
@@ -489,7 +488,7 @@ TEST(SolverTest, TypedSolverOption) {
   TestOption opt("abc", "def");
   EXPECT_STREQ("abc", opt.name());
   EXPECT_STREQ("def", opt.description());
-  EXPECT_FALSE(opt.is_keyword());
+  EXPECT_FALSE(opt.is_flag());
   const char *start = "42";
   const char *s = start;
   opt.Parse(s);
@@ -596,6 +595,19 @@ TEST(SolverTest, AddOption) {
   s.AddOption(SolverOptionPtr(opt = new TestOption()));
   EXPECT_TRUE(s.ParseOptions(Args("testopt=42"), Solver::NO_OPTION_ECHO));
   EXPECT_EQ(42, opt->value);
+}
+
+TEST(SolverTest, OptionHeader) {
+  struct OptionTestSolver : Solver {
+    OptionTestSolver() : Solver("testsolver") {}
+    void set_option_header() {
+      Solver::set_option_header("test header");
+    }
+    void DoSolve(Problem &) {}
+  } s;
+  EXPECT_STREQ("", s.option_header());
+  s.set_option_header();
+  EXPECT_STREQ("test header", s.option_header());
 }
 
 TEST(SolverTest, ParseOptionsFromArgs) {

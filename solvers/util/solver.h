@@ -156,6 +156,7 @@ class BasicSolutionHandler : public SolutionHandler {
       const double *, const double *, double) {}
 };
 
+// An interface for receiving interrupt notifications.
 class Interruptible {
  protected:
   ~Interruptible() {}
@@ -207,7 +208,7 @@ class SolverOption {
   const char *name_;
   const char *description_;
   const OptionValueInfo *values_;
-  bool is_keyword_;
+  bool is_flag_;
 
  public:
   // Constructs a SolverOption object.
@@ -233,9 +234,9 @@ class SolverOption {
   // values. The array is terminated by an OptionValueInfo object with
   // a null value pointer.
   SolverOption(const char *name, const char *description,
-      const OptionValueInfo *values = 0, bool is_keyword = false)
+      const OptionValueInfo *values = 0, bool is_flag = false)
   : name_(name), description_(description),
-    values_(values), is_keyword_(is_keyword) {}
+    values_(values), is_flag_(is_flag) {}
   virtual ~SolverOption() {}
 
   // Returns the option name.
@@ -247,9 +248,8 @@ class SolverOption {
   // Returns the information about possible values.
   const OptionValueInfo *values() const { return values_; }
 
-  // Returns true if this is a keyword option, i.e. an option that
-  // doesn't take a value.
-  bool is_keyword() const { return is_keyword_; }
+  // Returns true if this option is a flag, i.e. it doesn't take a value.
+  bool is_flag() const { return is_flag_; }
 
   // Formats the option value. Throws OptionError in case of error.
   virtual void Write(fmt::Writer &w) = 0;
