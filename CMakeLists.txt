@@ -113,6 +113,21 @@ macro(add_ampl_library name)
   set_target_properties(${name} PROPERTIES SUFFIX ".dll")
 endmacro()
 
+# Adds an AMPL test.
+function(add_ampl_test name libs)
+  if ("${ARGV2}" STREQUAL "PREFIX")
+    list(REMOVE_AT ARGN 0)
+    set(prefix "ampl")
+  endif ()
+  set(target_name "${prefix}${name}")
+  add_executable(${target_name} ${ARGN})
+  foreach (lib "${libs}")
+    target_link_libraries(${target_name} ${lib})
+  endforeach()
+  set_target_properties(${target_name} PROPERTIES OUTPUT_NAME ${name})
+  add_test(${name} ${name})
+endfunction()
+
 # Change compiler flags to use the DLL runtime - applies to all the binaries
 # in the current directory.
 macro(use_dll_runtime)
