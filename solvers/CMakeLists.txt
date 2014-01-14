@@ -23,7 +23,7 @@ else ()
   target_link_libraries(arithchk m)
 endif ()
 add_custom_command(OUTPUT arith.h DEPENDS arithchk
-  COMMAND $<TARGET_FILE:arithchk> > arith.h)
+  COMMAND arithchk > arith.h)
 add_custom_target(arith_h SOURCES ${CMAKE_CURRENT_BINARY_DIR}/arith.h)
 
 include(CheckSymbolExists)
