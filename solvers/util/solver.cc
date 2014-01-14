@@ -68,7 +68,7 @@ struct Deleter {
 class RSTFormatter : public rst::ContentHandler {
  private:
   fmt::Writer &writer_;
-  const ampl::OptionValueInfo *values_;
+  ampl::ValueArrayRef values_;
   std::stack<int> indents_;
   int indent_;
   int pos_in_line_;
@@ -98,7 +98,7 @@ class RSTFormatter : public rst::ContentHandler {
   void Write(fmt::StringRef s);
 
  public:
-  RSTFormatter(fmt::Writer &w, const ampl::OptionValueInfo *values, int indent)
+  RSTFormatter(fmt::Writer &w, ampl::ValueArrayRef values, int indent)
   : writer_(w), values_(values), indent_(indent),
     pos_in_line_(0), end_block_(false) {}
 
@@ -168,32 +168,35 @@ void RSTFormatter::HandleText(const char *text, std::size_t size) {
 void RSTFormatter::HandleDirective(const char *type) {
   if (std::strcmp(type, "value-table") != 0)
     ampl::ThrowError("unknown directive {}") << type;
-  if (!values_)
+  if (values_.size() == 0)
     ampl::ThrowError("no values to format");
   std::size_t max_len = 0;
-  for (const ampl::OptionValueInfo *v = values_; v->value; ++v)
-    max_len = std::max(max_len, std::strlen(v->value));
+  for (ampl::ValueArrayRef::iterator
+      i = values_.begin(), e = values_.end(); i != e; ++i) {
+    max_len = std::max(max_len, std::strlen(i->value));
+  }
 
   // If the values don't have descriptions indent them as list items.
-  if (!values_->description)
+  if (!values_.begin()->description)
     indent_ += LIST_ITEM_INDENT;
-  for (const ampl::OptionValueInfo *v = values_; v->value; ++v) {
+  for (ampl::ValueArrayRef::iterator
+      i = values_.begin(), e = values_.end(); i != e; ++i) {
     Indent();
-    writer_ << fmt::pad(v->value, max_len);
-    if (v->description) {
+    writer_ << fmt::pad(i->value, max_len);
+    if (i->description) {
       static const char SEP[] = " -";
       writer_ << SEP;
       int saved_indent = indent_;
       indent_ += max_len + sizeof(SEP);
       pos_in_line_ = indent_;
-      Write(v->description);
+      Write(i->description);
       indent_ = saved_indent;
     }
     EndLine();
   }
 
   // Unindent values if necessary and end the block.
-  if (!values_->description)
+  if (!values_.begin()->description)
     indent_ -= LIST_ITEM_INDENT;
   end_block_ = true;
 }
@@ -203,8 +206,8 @@ namespace ampl {
 
 namespace internal {
 
-void FormatRST(fmt::Writer &w, fmt::StringRef s, int indent,
-    const ampl::OptionValueInfo *values) {
+void FormatRST(fmt::Writer &w,
+    fmt::StringRef s, int indent, ValueArrayRef values) {
   RSTFormatter formatter(w, values, indent);
   rst::Parser parser(&formatter);
   parser.Parse(s.c_str());
@@ -366,7 +369,7 @@ Solver::Solver(
     Solver &s;
     VersionOption(Solver &s) : SolverOption("version",
         "Single-word phrase: report version details "
-        "before solving the problem.", 0, true), s(s) {}
+        "before solving the problem.", ValueArrayRef(), true), s(s) {}
 
     void Write(fmt::Writer &w) {
       w << ((s.flags() & ASL_OI_show_version) != 0);

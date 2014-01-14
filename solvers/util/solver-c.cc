@@ -143,7 +143,7 @@ int ASL_GetSolverOptions(
       const ampl::SolverOption &opt = *i;
       options[index].name = opt.name();
       options[index].description = opt.description();
-      options[index].flags = opt.values() ? ASL_OPT_HAS_VALUES : 0;
+      options[index].flags = opt.values().size() != 0 ? ASL_OPT_HAS_VALUES : 0;
       options[index].option = reinterpret_cast<ASL_SolverOption*>(
           const_cast<ampl::SolverOption*>(&opt));
     }
@@ -159,24 +159,18 @@ int ASL_GetSolverOptions(
 int ASL_GetOptionValues(ASL_Solver *s,
     ASL_SolverOption *option, ASL_OptionValueInfo *values, int size) {
   try {
-    const ampl::Solver &solver = *s->solver;
-    const ampl::OptionValueInfo *val =
+    ampl::ValueArrayRef val =
         reinterpret_cast<ampl::SolverOption*>(option)->values();
-    if (!values) {
-      if (!val) return 0;
-      int num_values = 0;
-      for (; val->value; ++val)
-        ++num_values;
+    int num_values = val.size();
+    if (!values)
       return num_values;
-    }
     int index = 0;
-    for (; val->value && index < size; ++val, ++index) {
-      values[index].value = val->value;
-      values[index].description = val->description;
+    for (ampl::ValueArrayRef::iterator
+        i = val.begin(), e = val.end(); i != e && index < size; ++i) {
+      values[index].value = i->value;
+      values[index].description = i->description;
     }
-    for (; val->value; ++val)
-      ++index;
-    return index;
+    return num_values;
   } catch (const std::exception &e) {
     SetError(s, e.what());
   } catch (...) {

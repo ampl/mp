@@ -56,38 +56,33 @@ const ampl::OptionValueInfo INFERENCE_LEVELS[] = {
   {"low",      0, IloCP::Low     },
   {"basic",    0, IloCP::Basic   },
   {"medium",   0, IloCP::Medium  },
-  {"extended", 0, IloCP::Extended},
-  {}
+  {"extended", 0, IloCP::Extended}
 };
 
 const ampl::OptionValueInfo FLAGS[] = {
   // Auto must be the first item.
   {"auto", 0, IloCP::Auto},
   {"off",  0, IloCP::Off },
-  {"on",   0, IloCP::On  },
-  {}
+  {"on",   0, IloCP::On  }
 };
 
 const ampl::OptionValueInfo SEARCH_TYPES[] = {
   {"auto",       0, IloCP::Auto      },
   {"depthfirst", 0, IloCP::DepthFirst},
   {"restart",    0, IloCP::Restart   },
-  {"multipoint", 0, IloCP::MultiPoint},
-  {}
+  {"multipoint", 0, IloCP::MultiPoint}
 };
 
 const ampl::OptionValueInfo VERBOSITIES[] = {
   {"quiet",   0, IloCP::Quiet  },
   {"terse",   0, IloCP::Terse  },
   {"normal",  0, IloCP::Normal },
-  {"verbose", 0, IloCP::Verbose},
-  {}
+  {"verbose", 0, IloCP::Verbose}
 };
 
 const ampl::OptionValueInfo TIME_MODES[] = {
   {"cputime",     0, IloCP::CPUTime    },
-  {"elapsedtime", 0, IloCP::ElapsedTime},
-  {}
+  {"elapsedtime", 0, IloCP::ElapsedTime}
 };
 
 const ampl::OptionValueInfo OPTIMIZERS[] = {
@@ -103,13 +98,11 @@ const ampl::OptionValueInfo OPTIMIZERS[] = {
   {
     "cplex",
     "CPLEX Optimizer"
-  },
-  {}
+  }
 };
 
 const ampl::OptionValueInfo AUTO_VALUE[] = {
-  {"auto", 0, IloCP::Auto},
-  {}
+  {"auto", 0, IloCP::Auto}
 };
 
 ampl::OptionError GetOptionValueError(
@@ -160,7 +153,7 @@ class EnumOption : public ampl::TypedSolverOption<std::string> {
  public:
   EnumOption(const char *name, const char *description,
       IloCP cp, IloCP::IntParam p, int start,
-      const ampl::OptionValueInfo *values, bool accepts_auto = false)
+      ampl::ValueArrayRef values, bool accepts_auto = false)
   : ampl::TypedSolverOption<std::string>(name, description, values),
     cp_(cp), param_(p), start_(start), accepts_auto_(accepts_auto) {
   }
@@ -176,11 +169,10 @@ std::string EnumOption::GetValue() const {
   } catch (const IloException &e) {
     throw GetOptionValueError(*this, e.getMessage());
   }
-  if (const ampl::OptionValueInfo *v = this->values()) {
-    for (; v->value; ++v) {
-      if (v->data == value)
-        return v->value;
-    }
+  for (ampl::ValueArrayRef::iterator
+      i = values().begin(), e = values().end(); i != e; ++i) {
+    if (i->data == value)
+      return i->value;
   }
   return str(fmt::Format("{}") << value);
 }
@@ -195,14 +187,13 @@ void EnumOption::SetValue(const char *value) {
       cp_.setParameter(param_, intval);
       return;
     }
-    if (const ampl::OptionValueInfo *v = this->values()) {
-      // Search for a value in the list of known values.
-      // Use linear search since the number of values is small.
-      for (; v->value; ++v) {
-        if (strcmp(value, v->value) == 0) {
-          cp_.setParameter(param_, v->data);
-          return;
-        }
+    // Search for a value in the list of known values.
+    // Use linear search since the number of values is small.
+    for (ampl::ValueArrayRef::iterator
+        i = values().begin(), e = values().end(); i != e; ++i) {
+      if (strcmp(value, i->value) == 0) {
+        cp_.setParameter(param_, i->data);
+        return;
       }
     }
   } catch (const IloException &) {}
@@ -348,7 +339,8 @@ IlogCPSolver::IlogCPSolver() :
 
   AddOption(OptionPtr(new EnumOption("constraintaggregation",
       "0 or 1 (default 1):  Whether to aggregate basic constraints.",
-      cp_, IloCP::ConstraintAggregation, IloCP::Off, FLAGS + 1)));
+      cp_, IloCP::ConstraintAggregation, IloCP::Off,
+      ValueArrayRef(FLAGS, 1))));
 
   AddIntOption("debugexpr",
       "0 or 1 (default 0):  Whether to print debugging "
@@ -363,7 +355,7 @@ IlogCPSolver::IlogCPSolver() :
       "\n"
       "The default value is ``basic``.",
       cp_, IloCP::DefaultInferenceLevel, IloCP::Default,
-      INFERENCE_LEVELS + 1)));
+      ValueArrayRef(INFERENCE_LEVELS, 1))));
 
   AddOption(OptionPtr(new EnumOption("distributeinferencelevel",
       "Inference level for aggregated ``numberof`` (``IloDistribute``) "

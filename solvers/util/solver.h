@@ -67,6 +67,29 @@ struct OptionValueInfo {
   intptr_t data;  // Solver-specific data associated with this value.
 };
 
+// A reference to an array of OptionValueInfo objects.
+class ValueArrayRef {
+ private:
+  const OptionValueInfo *values_;
+  int size_;
+
+ public:
+  ValueArrayRef() : values_(), size_() {}
+
+  template <int SIZE>
+  ValueArrayRef(const OptionValueInfo (&values)[SIZE], int offset = 0)
+  : values_(values + offset), size_(SIZE - offset) {
+    assert(offset >= 0 && offset < SIZE);
+  }
+
+  int size() const { return size_; }
+
+  typedef const OptionValueInfo *iterator;
+
+  iterator begin() const { return values_; }
+  iterator end() const { return values_ + size_; }
+};
+
 namespace internal {
 
 // Formats the string s containing the reStructuredText (RST) markup
@@ -74,10 +97,10 @@ namespace internal {
 // w:      stream writer used for output
 // indent: indentation to use for the formatted text
 // s:      string containing reStructuredText to format
-// values: information about option values to be formatted by the
+// values: information about possible option values to be formatted by the
 //         value-table directive
 void FormatRST(fmt::Writer &w, fmt::StringRef s,
-    int indent = 0, const ampl::OptionValueInfo *values = 0);
+    int indent = 0, ValueArrayRef values = ValueArrayRef());
 
 // A helper class for implementing an option of type T.
 template <typename T>
@@ -207,7 +230,7 @@ class SolverOption {
  private:
   const char *name_;
   const char *description_;
-  const OptionValueInfo *values_;
+  ValueArrayRef values_;
   bool is_flag_;
 
  public:
@@ -229,12 +252,11 @@ class SolverOption {
   // * the value-table directive (.. value-table::) which is replaced by a
   //   table of option values as given by the values array
   //
-  // If the values pointer is non-null, it should point to an array of
-  // OptionValueInfo objects giving the information about possible option
-  // values. The array is terminated by an OptionValueInfo object with
-  // a null value pointer.
+  // name:        option name
+  // description: option description
+  // values:      information about possible option values
   SolverOption(const char *name, const char *description,
-      const OptionValueInfo *values = 0, bool is_flag = false)
+      ValueArrayRef values = ValueArrayRef(), bool is_flag = false)
   : name_(name), description_(description),
     values_(values), is_flag_(is_flag) {}
   virtual ~SolverOption() {}
@@ -246,7 +268,7 @@ class SolverOption {
   const char *description() const { return description_; }
 
   // Returns the information about possible values.
-  const OptionValueInfo *values() const { return values_; }
+  ValueArrayRef values() const { return values_; }
 
   // Returns true if this option is a flag, i.e. it doesn't take a value.
   bool is_flag() const { return is_flag_; }
@@ -282,7 +304,7 @@ template <typename T>
 class TypedSolverOption : public SolverOption {
  public:
   TypedSolverOption(const char *name, const char *description,
-      const OptionValueInfo *values = 0)
+      ValueArrayRef values = ValueArrayRef())
   : SolverOption(name, description, values) {}
 
   void Write(fmt::Writer &w) {
@@ -459,7 +481,7 @@ class Solver
 
    public:
     ConcreteOption(const char *name, const char *description,
-        Solver *s, Get get, Set set, const OptionValueInfo *values = 0)
+        Solver *s, Get get, Set set, ValueArrayRef values = ValueArrayRef())
     : TypedSolverOption<T>(name, description, values),
       handler_(static_cast<Handler&>(*s)), get_(get), set_(set) {}
 
@@ -482,7 +504,7 @@ class Solver
 
    public:
     ConcreteOptionWithInfo(const char *name, const char *description, Solver *s,
-        Get get, Set set, InfoArg info, const OptionValueInfo *values = 0)
+        Get get, Set set, InfoArg info, ValueArrayRef values = ValueArrayRef())
     : TypedSolverOption<T>(name, description, values),
       handler_(static_cast<Handler&>(*s)), get_(get), set_(set), info_(info) {}
 
@@ -645,7 +667,7 @@ class Solver
   void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const SolverOption &) const,
       void (Handler::*set)(const SolverOption &, const char *),
-      const OptionValueInfo *values = 0) {
+      ValueArrayRef values = ValueArrayRef()) {
     AddOption(OptionPtr(new ConcreteOption<Handler, std::string>(
         name, description, this, get, set, values)));
   }
@@ -660,7 +682,7 @@ class Solver
   void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const SolverOption &, const Info &) const,
       void (Handler::*set)(const SolverOption &, const char *, const Info &),
-      const Info &info, const OptionValueInfo *values = 0) {
+      const Info &info, ValueArrayRef values = ValueArrayRef()) {
     AddOption(OptionPtr(
         new ConcreteOptionWithInfo<Handler, std::string, Info, const Info &>(
             name, description, this, get, set, info, values)));
@@ -671,7 +693,7 @@ class Solver
   void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const SolverOption &, Info) const,
       void (Handler::*set)(const SolverOption &, const char *, Info),
-      Info info, const OptionValueInfo *values = 0) {
+      Info info, ValueArrayRef values = ValueArrayRef()) {
     AddOption(OptionPtr(new ConcreteOptionWithInfo<Handler, std::string, Info>(
             name, description, this, get, set, info, values)));
   }

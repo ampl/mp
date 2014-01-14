@@ -90,8 +90,7 @@ const ampl::OptionValueInfo VAR_SELECT_VALUES[] = {
     "every time a constraint failure is encountered all variables within "
     "the scope of that constraints have increased weight",
     CAST("WeightedDegree")
-  },
-  {}
+  }
 };
 
 const ampl::OptionValueInfo VAL_SELECT_VALUES[] = {
@@ -128,8 +127,7 @@ const ampl::OptionValueInfo VAL_SELECT_VALUES[] = {
     "similar to indomainrandom, but faster and does not achieve uniform "
     "probability",
     CAST("IndomainSimpleRandom")
-  },
-  {}
+  }
 };
 }
 
@@ -438,9 +436,10 @@ std::string JaCoPSolver::GetEnumOption(
 
 void JaCoPSolver::SetEnumOption(
     const SolverOption &opt, const char *value, const char **ptr) {
-  for (const OptionValueInfo *v = opt.values(); v->value; ++v) {
-    if (std::strcmp(value, v->value) == 0) {
-      *ptr = reinterpret_cast<const char*>(v->data);
+  for (ampl::ValueArrayRef::iterator
+      i = opt.values().begin(), e = opt.values().end(); i != e; ++i) {
+    if (std::strcmp(value, i->value) == 0) {
+      *ptr = reinterpret_cast<const char*>(i->data);
       return;
     }
   }

@@ -41,8 +41,7 @@ const ampl::OptionValueInfo INT_CON_LEVELS[] = {
   {"val", "value propagation or consistency (naive)", Gecode::ICL_VAL},
   {"bnd", "bounds propagation or consistency",        Gecode::ICL_BND},
   {"dom", "domain propagation or consistency",        Gecode::ICL_DOM},
-  {"def", "the default consistency for a constraint", Gecode::ICL_DEF},
-  {}
+  {"def", "the default consistency for a constraint", Gecode::ICL_DEF}
 };
 
 const ampl::OptionValueInfo VAR_BRANCHINGS[] = {
@@ -164,8 +163,7 @@ const ampl::OptionValueInfo VAR_BRANCHINGS[] = {
     "regret_max_max",
     "largest maximum-regret",
     IntVarBranch::SEL_REGRET_MAX_MAX
-  },
-  {}
+  }
 };
 
 const ampl::OptionValueInfo VAL_BRANCHINGS[] = {
@@ -220,8 +218,7 @@ const ampl::OptionValueInfo VAL_BRANCHINGS[] = {
     "values_max",
     "all values starting from largest",
     IntValBranch::SEL_VALUES_MAX
-  },
-  {}
+  }
 };
 
 const ampl::OptionValueInfo RESTART_MODES[] = {
@@ -229,8 +226,7 @@ const ampl::OptionValueInfo RESTART_MODES[] = {
   {"constant",  "restart with constant sequence",  Gecode::RM_CONSTANT},
   {"linear",    "restart with linear sequence",    Gecode::RM_LINEAR},
   {"luby",      "restart with Luby sequence",      Gecode::RM_LUBY},
-  {"geometric", "restart with geometric sequence", Gecode::RM_GEOMETRIC},
-  {}
+  {"geometric", "restart with geometric sequence", Gecode::RM_GEOMETRIC}
 };
 }
 
@@ -542,9 +538,10 @@ void GecodeSolver::SetOutputFrequency(const SolverOption &opt, double value) {
 
 template <typename T>
 std::string GecodeSolver::GetEnumOption(const SolverOption &opt, T *ptr) const {
-  for (const OptionValueInfo *p = opt.values(); p->value; ++p) {
-    if (*ptr == p->data)
-      return p->value;
+  for (ampl::ValueArrayRef::iterator
+      i = opt.values().begin(), e = opt.values().end(); i != e; ++i) {
+    if (*ptr == i->data)
+      return i->value;
   }
   return str(fmt::Format("{}") << *ptr);
 }
@@ -552,9 +549,10 @@ std::string GecodeSolver::GetEnumOption(const SolverOption &opt, T *ptr) const {
 template <typename T>
 void GecodeSolver::SetEnumOption(
     const SolverOption &opt, const char *value, T *ptr) {
-  for (const OptionValueInfo *p = opt.values(); p->value; ++p) {
-    if (std::strcmp(value, p->value) == 0) {
-      *ptr = static_cast<T>(p->data);
+  for (ampl::ValueArrayRef::iterator
+      i = opt.values().begin(), e = opt.values().end(); i != e; ++i) {
+    if (std::strcmp(value, i->value) == 0) {
+      *ptr = static_cast<T>(i->data);
       return;
     }
   }

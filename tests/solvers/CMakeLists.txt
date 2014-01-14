@@ -4,10 +4,9 @@ add_dependencies(cp-test cp)
 
 if (HAVE_GECODE)
   include_directories(${GECODE_SOURCE_DIR})
-  cxx_test_with_flags(amplgecode-test "" "gtest;amplgecode-static"
+  add_ampl_test(gecode-test "gtest;amplgecode-static" PREFIX
     ../test-main.cc ../args.cc ../expr-builder.cc
     ../solver-test.cc ../util.cc gecode-test.cc)
-  set_target_properties(amplgecode-test PROPERTIES OUTPUT_NAME gecode-test)
 endif ()
 
 if (HAVE_JACOP)

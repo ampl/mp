@@ -72,7 +72,7 @@ TEST(SolverTest, ObjPrec) {
 
 // A wrapper around ampl::internal::FormatRST used to simplify testing.
 std::string FormatRST(fmt::StringRef s,
-    int indent = 0, const ampl::OptionValueInfo *values = 0) {
+    int indent = 0, ampl::ValueArrayRef values = ampl::ValueArrayRef()) {
   fmt::Writer w;
   ampl::internal::FormatRST(w, s, indent, values);
   return w.str();
@@ -127,8 +127,7 @@ TEST(FormatRSTTest, FormatLineBlock) {
 TEST(FormatRSTTest, FormatRSTValueTable) {
   const ampl::OptionValueInfo values[] = {
       {"val1", "description of val1"},
-      {"val2", "description of val2"},
-      {}
+      {"val2", "description of val2"}
   };
   EXPECT_EQ(
     "  val1 - description of val1\n"
@@ -139,8 +138,7 @@ TEST(FormatRSTTest, FormatRSTValueTable) {
 TEST(FormatRSTTest, FormatRSTValueList) {
   const ampl::OptionValueInfo values[] = {
       {"val1"},
-      {"val2"},
-      {}
+      {"val2"}
   };
   EXPECT_EQ(
     "  val1\n"
@@ -408,7 +406,7 @@ TEST(SolverTest, SolverOption) {
     TestOption(const char *name, const char *description)
     : SolverOption(name, description), formatted(false), parsed(false) {}
     TestOption(const char *name, const char *description,
-        const ampl::OptionValueInfo *values, bool is_flag)
+        ampl::ValueArrayRef values, bool is_flag)
     : SolverOption(name, description, values, is_flag),
       formatted(false), parsed(false) {}
     void Write(fmt::Writer &) { formatted = true; }
@@ -418,17 +416,19 @@ TEST(SolverTest, SolverOption) {
     TestOption opt("abc", "def");
     EXPECT_STREQ("abc", opt.name());
     EXPECT_STREQ("def", opt.description());
-    EXPECT_EQ(0, opt.values());
+    EXPECT_EQ(0, opt.values().size());
     EXPECT_FALSE(opt.is_flag());
   }
   {
     const ampl::OptionValueInfo VALUES[] = {
-        {"value", "description"},
-        {}
+        {"value1", "description1"},
+        {"value2", "description2"},
     };
     TestOption opt("", "", VALUES, true);
     EXPECT_TRUE(opt.is_flag());
-    EXPECT_EQ(VALUES, opt.values());
+    EXPECT_EQ(2, opt.values().size());
+    EXPECT_EQ(VALUES, opt.values().begin());
+    EXPECT_EQ(VALUES + 1, opt.values().begin() + 1);
   }
   {
     TestOption opt("", "");
@@ -783,7 +783,8 @@ TEST(SolverTest, QuestionMarkInOptionValue) {
 TEST(SolverTest, ErrorOnKeywordOptionValue) {
   struct KeywordOption : SolverOption {
     bool parsed;
-    KeywordOption() : SolverOption("kwopt", "", 0, true), parsed(false) {}
+    KeywordOption()
+    : SolverOption("kwopt", "", ampl::ValueArrayRef(), true), parsed(false) {}
     void Write(fmt::Writer &) {}
     void Parse(const char *&) { parsed = true; }
   };

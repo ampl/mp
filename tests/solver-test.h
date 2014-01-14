@@ -26,8 +26,8 @@
 #include "solvers/util/solver.h"
 #include "tests/args.h"
 #include "tests/config.h"
-#include "tests/expr_builder.h"
-#include "tests/solution_handler.h"
+#include "tests/expr-builder.h"
+#include "tests/solution-handler.h"
 #include "gtest/gtest.h"
 
 #ifdef HAVE_THREADS
