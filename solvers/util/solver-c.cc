@@ -189,7 +189,4 @@ int ASL_RunSolver(ASL_Solver *s, int, char **argv) {
   }
   return -1;
 }
-
-// TODO: test
-
 }  // extern "C"

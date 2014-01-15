@@ -1,6 +1,3 @@
-cxx_test_with_flags(solver-test "" "gtest;util"
-  ../test-main.cc ../args.cc ../util.cc solver-test.cc)
-
 cxx_test_with_flags(clock-test "" "gtest;util" ../test-main.cc clock-test.cc)
 
 cxx_test_with_flags(error-test "" "gtest;util" ../test-main.cc error-test.cc)
@@ -25,3 +22,12 @@ cxx_test_with_flags(problem-test "" "gtest;util"
   ../test-main.cc ../expr-builder.cc ../util.cc problem-test.cc)
 
 cxx_test_with_flags(rstparser-test "" "gtest;util" rstparser-test.cc)
+
+cxx_test_with_flags(solver-test "" "gtest;util"
+  ../test-main.cc ../args.cc ../util.cc solver-test.cc)
+
+add_library(ampltestsolver SHARED testsolver.cc ../../solvers/util/solver-c.cc)
+target_link_libraries(ampltestsolver util)
+
+cxx_test_with_flags(solver-c-test "" "gtest;ampltestsolver;util"
+  ../test-main.cc solver-c-test.cc)
