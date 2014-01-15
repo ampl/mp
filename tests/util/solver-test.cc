@@ -667,12 +667,12 @@ TEST(SolverTest, ParseOptionsFromArgs) {
 
 TEST(SolverTest, ParseOptionsFromEnvVar) {
   TestSolverWithOptions s;
-  char options[] = "testsolver_options=intopt1=9 intopt2=11";
+  static char options[] = "testsolver_options=intopt1=9 intopt2=11";
   putenv(options);
   EXPECT_TRUE(s.ParseOptions(Args(0)));
   EXPECT_EQ(9, s.intopt1);
   EXPECT_EQ(11, s.intopt2);
-  char reset_options[] = "testsolver_options=";
+  static char reset_options[] = "testsolver_options=";
   putenv(reset_options);
 }
 
