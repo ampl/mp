@@ -70,6 +70,28 @@ TEST(SolverTest, ObjPrec) {
   EXPECT_EQ(buffer, str(fmt::Format("{}") << ampl::ObjPrec(value)));
 }
 
+TEST(SolverTest, EmptyValueArrayRef) {
+  ampl::ValueArrayRef r;
+  EXPECT_EQ(0, r.size());
+  EXPECT_EQ(r.begin(), r.end());
+}
+
+TEST(SolverTest, ValueArrayRef) {
+  const ampl::OptionValueInfo values[] = {
+      {"val1", "description of val1"},
+      {"val2", "description of val2"}
+  };
+  ampl::ValueArrayRef r(values);
+  EXPECT_EQ(2, r.size());
+  ampl::ValueArrayRef::iterator i = r.begin();
+  EXPECT_NE(i, r.end());
+  EXPECT_STREQ("val1", i->value);
+  ++i;
+  EXPECT_STREQ("val2", i->value);
+  ++i;
+  EXPECT_EQ(i, r.end());
+}
+
 // A wrapper around ampl::internal::FormatRST used to simplify testing.
 std::string FormatRST(fmt::StringRef s,
     int indent = 0, ampl::ValueArrayRef values = ampl::ValueArrayRef()) {
