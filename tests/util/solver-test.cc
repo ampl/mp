@@ -92,6 +92,27 @@ TEST(SolverTest, ValueArrayRef) {
   EXPECT_EQ(i, r.end());
 }
 
+TEST(SolverTest, ValueArrayRefOffset) {
+  const ampl::OptionValueInfo values[] = {
+      {"val1"}, {"val2"}
+  };
+  ampl::ValueArrayRef r(values, 1);
+  EXPECT_EQ(1, r.size());
+  ampl::ValueArrayRef::iterator i = r.begin();
+  EXPECT_STREQ("val2", i->value);
+  EXPECT_EQ(r.end(), ++i);
+}
+
+TEST(SolverTest, ValueArrayRefInvalidOffset) {
+  const ampl::OptionValueInfo values[] = {
+      {"val1"}, {"val2"}
+  };
+  EXPECT_DEBUG_DEATH(
+      ampl::ValueArrayRef r(values, -1);, "Assertion");  // NOLINT(*)
+  EXPECT_DEBUG_DEATH(
+      ampl::ValueArrayRef r(values, 2);, "Assertion");  // NOLINT(*)
+}
+
 // A wrapper around ampl::internal::FormatRST used to simplify testing.
 std::string FormatRST(fmt::StringRef s,
     int indent = 0, ampl::ValueArrayRef values = ampl::ValueArrayRef()) {
