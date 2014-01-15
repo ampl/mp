@@ -20,6 +20,7 @@
  Author: Victor Zverovich
  */
 
+#define ASL_EXPORT
 #include "solvers/util/solver-c.h"
 
 #include "solvers/util/solver.h"

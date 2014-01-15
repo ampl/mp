@@ -27,6 +27,16 @@
 extern "C" {
 #endif
 
+#ifndef _WIN32
+# define ASL_API
+#else
+# ifdef ASL_EXPORT
+#  define ASL_API __declspec(dllexport)
+# else
+#  define ASL_API __declspec(dllimport)
+# endif
+#endif  // _WIN32
+
 /**
  * An error.
  */
@@ -48,14 +58,14 @@ typedef struct ASL_Solver ASL_Solver;
  *    and there was an error, the error object should be destroyed
  *    with ASL_DestroyError once it is no longer needed.
  */
-ASL_Solver *ASL_CreateSolver(ASL_Error **e);
+ASL_API ASL_Solver *ASL_CreateSolver(ASL_Error **e);
 
 /**
  * Destroys the solver object and deallocates memory where it was stored.
  *
  * s: The solver object to destroy.
  */
-void ASL_DestroySolver(ASL_Solver *s);
+ASL_API void ASL_DestroySolver(ASL_Solver *s);
 
 /**
  * Returns a pointer to an object that provides information about the
@@ -66,14 +76,14 @@ void ASL_DestroySolver(ASL_Solver *s);
  *
  * s: The solver in the context of which the error has occurred.
  */
-ASL_Error *ASL_GetLastError(ASL_Solver *s);
+ASL_API ASL_Error *ASL_GetLastError(ASL_Solver *s);
 
 /**
  * Destroys the error object and deallocates memory where it was stored.
  *
  * s: The error object to destroy.
  */
-void ASL_DestroyError(ASL_Error *e);
+ASL_API void ASL_DestroyError(ASL_Error *e);
 
 /**
  * Returns a pointer to the error message or a null pointer if there was an
@@ -81,7 +91,7 @@ void ASL_DestroyError(ASL_Error *e);
  *
  * e: The error object to query.
  */
-const char *ASL_GetErrorMessage(ASL_Error *e);
+ASL_API const char *ASL_GetErrorMessage(ASL_Error *e);
 
 /**
  * Returns a pointer to the option header. The option header is a text printed
@@ -89,7 +99,7 @@ const char *ASL_GetErrorMessage(ASL_Error *e);
  *
  * s: The solver object to query.
  */
-const char *ASL_GetOptionHeader(ASL_Solver *s);
+ASL_API const char *ASL_GetOptionHeader(ASL_Solver *s);
 
 /**
  * A solver option.
@@ -127,7 +137,7 @@ typedef struct ASL_SolverOptionInfo {
  *          only returns the number of options.
  * size: The size of the options array. Ignored if options is null.
  */
-int ASL_GetSolverOptions(
+ASL_API int ASL_GetSolverOptions(
     ASL_Solver *s, ASL_SolverOptionInfo *options, int size);
 
 /**
@@ -149,7 +159,7 @@ struct ASL_OptionValueInfo {
  *         only returns the number of values.
  * size: The size of the values array. Ignored if values is null.
  */
-int ASL_GetOptionValues(ASL_Solver *s,
+ASL_API int ASL_GetOptionValues(ASL_Solver *s,
     ASL_SolverOption *option, ASL_OptionValueInfo *values, int size);
 
 /**
@@ -164,7 +174,7 @@ int ASL_GetOptionValues(ASL_Solver *s,
  * argv: The array of arguments of size argc + 1 with argv[argc] being
  *       a null pointer.
  */
-int ASL_RunSolver(ASL_Solver *s, int argc, char **argv);
+ASL_API int ASL_RunSolver(ASL_Solver *s, int argc, char **argv);
 
 #ifdef __cplusplus
 }  // extern "C"
