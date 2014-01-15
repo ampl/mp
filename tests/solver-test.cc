@@ -882,6 +882,16 @@ TEST_P(SolverTest, MultipleSolutions) {
   EXPECT_EQ(3, sc.num_solutions);
 }
 
-// TODO: test
-// 1. Solver C API
-// 2. option values (in solver-test) - must be terminated with a null value
+TEST_P(SolverTest, OptionValues) {
+  for (ampl::Solver::option_iterator
+    i = solver_->option_begin(), e = solver_->option_end(); i != e; ++i) {
+    for (ampl::ValueArrayRef::iterator j = i->values().begin(),
+        value_end = i->values().end(); j != value_end; ++j) {
+      EXPECT_TRUE(j->value != 0);
+    }
+  }
+}
+
+TEST_P(SolverTest, CreateSolver) {
+  EXPECT_STREQ(solver_->name(), ampl::CreateSolver()->name());
+}
