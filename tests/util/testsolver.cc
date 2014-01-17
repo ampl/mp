@@ -22,14 +22,39 @@
 
 #include "solvers/util/solver.h"
 
+#undef getenv
+
+#include <cstdlib>
+#include <stdexcept>
+
 namespace ampl {
 
 class TestSolver : public Solver {
  protected:
-  void DoSolve(Problem &) {}
+  void DoSolve(Problem &) {
+    const char *fail = std::getenv("ASL_FAIL");
+    if (fail && std::strcmp(fail, "1") == 0)
+      throw std::runtime_error("epic fail");
+  }
+
+  std::string GetOption(const SolverOption &) const { return ""; }
+  void SetOption(const SolverOption &, const char * ) {}
 
  public:
-  TestSolver() : Solver("testsolver") {}
+  TestSolver() : Solver("testsolver") {
+    set_option_header("Options rock!");
+    AddStrOption("opt1", "desc1",
+        &TestSolver::GetOption, &TestSolver::SetOption);
+    static const OptionValueInfo VALUES[] = {
+        {"val1", "valdesc1"},
+        {"val2", "valdesc2"},
+        {"val3", "valdesc3"}
+    };
+    AddStrOption("opt2", "desc2",
+        &TestSolver::GetOption, &TestSolver::SetOption, VALUES);
+    Problem p;
+    DoSolve(p);
+  }
 };
 
 SolverPtr CreateSolver() { return SolverPtr(new TestSolver()); }

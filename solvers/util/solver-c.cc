@@ -45,7 +45,10 @@ struct ASL_Error {
 struct ASL_Solver {
   ampl::SolverPtr solver;
   ASL_Error last_error;
-  ASL_Solver() : solver(ampl::CreateSolver()) {}
+  ASL_Solver() : solver(ampl::CreateSolver()) {
+    last_error.message = 0;
+    last_error.flags = 0;
+  }
 };
 }  // extern "C"
 
@@ -104,7 +107,7 @@ void ASL_DestroySolver(ASL_Solver *s) {
 }
 
 ASL_Error *ASL_GetLastError(ASL_Solver *s) {
-  return &s->last_error;  // Doesn't throw.
+  return s->last_error.message ? &s->last_error : 0;  // Doesn't throw.
 }
 
 void ASL_DestroyError(ASL_Error *e) {
@@ -167,7 +170,7 @@ int ASL_GetOptionValues(ASL_Solver *s,
       return num_values;
     int index = 0;
     for (ampl::ValueArrayRef::iterator
-        i = val.begin(), e = val.end(); i != e && index < size; ++i) {
+        i = val.begin(), e = val.end(); i != e && index < size; ++i, ++index) {
       values[index].value = i->value;
       values[index].description = i->description;
     }
