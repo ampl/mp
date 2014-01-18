@@ -25,10 +25,14 @@
 
 #include <stdlib.h>
 
+#ifdef _WIN32
+# define putenv _putenv
+#endif
+
 namespace {
 
-static char asl_fail_1[] = "ASL_FAIL=1";
-static char asl_fail_0[] = "ASL_FAIL=0";
+char asl_fail_1[] = "ASL_FAIL=1";
+char asl_fail_0[] = "ASL_FAIL=0";
 
 TEST(SolverCTest, CreateSolver) {
   ASL_Solver *s = ASL_CreateSolver(0);

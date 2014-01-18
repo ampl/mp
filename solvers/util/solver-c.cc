@@ -74,7 +74,7 @@ void SetErrorMessage(ASL_Error &e, const char *message) FMT_NOEXCEPT(true) {
 
 void SetError(ASL_Error **e, const char *message) FMT_NOEXCEPT(true) {
   if (!e) return;
-  ASL_Error *error = new (std::nothrow) ASL_Error();
+  ASL_Error *error = new (std::nothrow) ASL_Error;
   if (error) {
     SetErrorMessage(*error, message);
     error->flags |= DELETE_OBJECT;
