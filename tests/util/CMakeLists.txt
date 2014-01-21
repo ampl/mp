@@ -7,6 +7,9 @@ cxx_test_with_flags(expr-test "" "gtest;util"
 
 cxx_test_with_flags(format-test "" "gtest;util" format-test.cc)
 
+cxx_test_with_flags(nlreader-test "" "gtest;util"
+  ../test-main.cc ../util.cc nlreader-test.cc)
+
 add_executable(numberofmap-speed-test
   numberofmap-speed-test.cc ../expr-builder.cc)
 target_link_libraries(numberofmap-speed-test util)
