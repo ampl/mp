@@ -29,11 +29,6 @@ using ampl::NLReader;
 
 namespace {
 
-TEST(NLReaderTest, InvalidFormat) {
-  EXPECT_THROW_MSG(NLReader().ReadString("x"),
-      ampl::ParseError, "(input):1:1: invalid format 'x'");
-}
-
 // The problem below represents the following AMPL problem in NL format
 // without the first line (options):
 //   var x >= 0;
@@ -61,6 +56,25 @@ ampl::NLHeader ReadOptions(const char *options) {
   NLReader reader(&handler);
   reader.ReadString(w.c_str());
   return handler.header;
+}
+
+TEST(NLReaderTest, NoNewlineAtEOF) {
+  NLReader().ReadString("g\n"
+    " 1 1 0\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0\n"
+    " 0 0 0 1\n"
+    " 0 0 0 0 0\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0 0 0\n"
+    "k0\0h");
+}
+
+TEST(NLReaderTest, InvalidFormat) {
+  EXPECT_THROW_MSG(ReadOptions("x"),
+      ampl::ParseError, "(input):1:1: invalid format 'x'");
 }
 
 TEST(NLReaderTest, InvalidNumOptions) {
@@ -160,6 +174,44 @@ TEST(NLReaderTest, NumObjs) {
     "n0\n"
     "k0\n");
   EXPECT_EQ(42, handler.header.num_objs);
+}
+
+TEST(NLReaderTest, MissingNumObjs) {
+  EXPECT_THROW_MSG(
+   NLReader().ReadString(
+    "g\n"
+    " 1 0\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0\n"
+    " 0 0 0 1\n"
+    " 0 0 0 0 0\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0 0 0\n"
+    "O0 0\n"
+    "n0\n"
+    "k0\n"),
+    ampl::ParseError, "(input):2:5: expected integer");
+}
+
+TEST(NLReaderTest, NumRanges) {
+  EXPECT_EQ(0, ReadOptions("g").num_ranges);
+  TestNLHandler handler;
+  NLReader reader(&handler);
+  reader.ReadString(
+    "g\n"
+    " 1 100 0 42\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0\n"
+    " 0 0 0 1\n"
+    " 0 0 0 0 0\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0 0 0\n"
+    "k0\n");
+  EXPECT_EQ(42, handler.header.num_ranges);
 }
 
 // TODO: more tests

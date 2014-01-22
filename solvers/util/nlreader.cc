@@ -94,9 +94,14 @@ class TextReader {
   }
 
   void ReadEndOfLine() {
-    while (*ptr_ && *ptr_ != '\n')
+    while (char c = *ptr_) {
       ++ptr_;
-    ++ptr_;
+      if (c == '\n') {
+        line_start_ = ptr_;
+        ++line_;
+        return;
+      }
+    }
   }
 
   int ReadInt() {
