@@ -166,6 +166,15 @@ void NLReader::ReadBounds(TextReader &reader, int num_bounds) {
   }
 }
 
+void NLReader::ReadColumnOffsets(TextReader &reader, int num_vars) {
+  int count = reader.ReadInt(); // TODO
+  reader.ReadEndOfLine();
+  for (int i = 0; i < count; ++i) {
+    reader.ReadInt(); // TODO
+    reader.ReadEndOfLine();
+  }
+}
+
 void NLReader::ReadFile(fmt::StringRef filename) {
   MemoryMappedFile file(filename);
   // TODO: use a buffer instead of mmap if mmap is not available or the
@@ -200,7 +209,7 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
 
   // Read options.
   NLHeader header = {};
-  header.num_options = reader.ReadInt();
+  reader.ReadOptionalInt(header.num_options);
   if (header.num_options > MAX_NL_OPTIONS)
     reader.ReportParseError("too many options");
   for (int i = 0; i < header.num_options; ++i) {
@@ -210,8 +219,8 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
   if (header.options[VBTOL_OPTION] == READ_VBTOL)
     reader.ReadOptionalDouble(header.ampl_vbtol);
   reader.ReadEndOfLine();
-  handler_->HandleHeader(header);
 
+  // Read problem dimensions.
   header.num_vars = reader.ReadInt();
   header.num_cons = reader.ReadInt();
   header.num_objs = reader.ReadInt();
@@ -281,6 +290,8 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
   header.num_common_obj1_exprs = reader.ReadInt();
   reader.ReadEndOfLine();
 
+  handler_->HandleHeader(header);
+
   for (;;) {
     char c = reader.ReadChar();
     switch (c) {
@@ -340,9 +351,7 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
       ReadBounds(reader, header.num_vars);
       break;
     case 'k': {
-      int value = reader.ReadInt();
-      // TODO: what is value?
-      reader.ReadEndOfLine();
+      ReadColumnOffsets(reader, header.num_vars);
       break;
     }
     case 'x':

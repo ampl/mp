@@ -196,6 +196,10 @@ class NLReader {
   // Reads bounds.
   void ReadBounds(TextReader &reader, int num_bounds);
 
+  // Read the column offsets, the cumulative sums of the numbers of
+  // nonzeros in the first num_var − 1 columns of the Jacobian matrix.
+  void ReadColumnOffsets(TextReader &reader, int num_vars);
+
  public:
   explicit NLReader(NLHandler *h = 0) : handler_(h) {}
 
