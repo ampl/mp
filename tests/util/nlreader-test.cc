@@ -46,23 +46,29 @@ TEST(NLReaderTest, InvalidNumOptions) {
       ampl::ParseError, "(input):1:2: number is too big");
 }
 
-TEST(NLReaderTest, ReadOptions) {
+void CheckReadOptions(size_t num_options, const int *options) {
   struct TestNLHandler : ampl::NLHandler {
     ampl::NLHeader header;
     void HandleHeader(const ampl::NLHeader &h) { header = h; }
   } handler;
   NLReader reader(&handler);
-  const char *input =
-    "g3 0 1 0 # problem test\n"
-    " 1 0 1 0 0      # vars, constraints, objectives, ranges, eqns\n"
-    " 0 0    # nonlinear constraints, objectives\n"
-    " 0 0    # network constraints: nonlinear, linear\n"
-    " 0 0 0  # nonlinear vars in constraints, objectives, both\n"
-    " 0 0 0 1        # linear network variables; functions; arith, flags\n"
-    " 0 0 0 0 0      # discrete variables: binary, integer, nonlinear (b,c,o)\n"
-    " 0 1    # nonzeros in Jacobian, gradients\n"
-    " 0 0    # max name lengths: constraints, variables\n"
-    " 0 0 0 0 0      # common exprs: b,c,o,c1,o1\n"
+  // The problem below represents the following AMPL problem in NL format:
+  //   var x >= 0;
+  //   minimize o: x;
+  fmt::Writer w;
+  w << 'g' << num_options;
+  for (size_t i = 0; i < num_options; ++i)
+    w << ' ' << options[i];
+  w << "\n"
+    " 1 0 1 0 0\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0\n"
+    " 0 0 0 1\n"
+    " 0 0 0 0 0\n"
+    " 0 1\n"
+    " 0 0\n"
+    " 0 0 0 0 0\n"
     "O0 0\n"
     "n0\n"
     "b\n"
@@ -70,12 +76,19 @@ TEST(NLReaderTest, ReadOptions) {
     "k0\n"
     "G0 1\n"
     "0 1\n";
-  reader.ReadString(input);
+  reader.ReadString(w.c_str());
   const ampl::NLHeader &header = handler.header;
-  ASSERT_EQ(3, header.num_options);
-  EXPECT_EQ(0, header.options[0]);
-  EXPECT_EQ(1, header.options[1]);
-  EXPECT_EQ(0, header.options[2]);
+  ASSERT_EQ(num_options, header.num_options);
+  for (size_t i = 0; i < num_options; ++i)
+    EXPECT_EQ(options[i], header.options[i]);
+}
+
+TEST(NLReaderTest, ReadOptions) {
+  const int options[] = {3, 5, 7, 11, 13, 17, 19, 23, 29};
+  size_t num_options = sizeof(options) / sizeof(*options);
+  for (size_t i = 1; i < num_options; ++i)
+    CheckReadOptions(i, options);
+  // TODO: test the number of options different from actual
 }
 
 // TODO: more tests
