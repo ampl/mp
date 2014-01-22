@@ -224,7 +224,6 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
   header.num_vars = reader.ReadInt();
   header.num_cons = reader.ReadInt();
   header.num_objs = reader.ReadInt();
-  reader.SkipSpace();
   header.num_eqns = -1;
   if (reader.ReadOptionalInt(header.num_ranges))
     reader.ReadOptionalInt(header.num_eqns);

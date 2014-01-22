@@ -39,17 +39,15 @@ TEST(NLReaderTest, InvalidFormat) {
 //   var x >= 0;
 //   minimize o: x;
 const char *TEST_PROBLEM_NO_OPTIONS =
-  " 1 0 1 0 0\n"
+  " 1 1 0\n"
   " 0 0\n"
   " 0 0\n"
   " 0 0 0\n"
   " 0 0 0 1\n"
   " 0 0 0 0 0\n"
-  " 0 1\n"
   " 0 0\n"
-  " 0 0 0 0 0\n"
-  "O0 0\n"
-  "n0\n";
+  " 0 0\n"
+  " 0 0 0 0 0\n";
 
 struct TestNLHandler : ampl::NLHandler {
   ampl::NLHeader header;
@@ -113,18 +111,34 @@ TEST(NLReaderTest, NumVars) {
   NLReader reader(&handler);
   reader.ReadString(
     "g\n"
-    " 42 0 1 0 0\n"
+    " 42 1 0\n"
     " 0 0\n"
     " 0 0\n"
     " 0 0 0\n"
     " 0 0 0 1\n"
     " 0 0 0 0 0\n"
-    " 0 1\n"
     " 0 0\n"
-    " 0 0 0 0 0\n"
-    "O0 0\n"
-    "n0\n");
+    " 0 0\n"
+    " 0 0 0 0 0\n");
   EXPECT_EQ(42, handler.header.num_vars);
+}
+
+TEST(NLReaderTest, NumCons) {
+  EXPECT_EQ(1, ReadOptions("g").num_cons);
+  TestNLHandler handler;
+  NLReader reader(&handler);
+  reader.ReadString(
+    "g\n"
+    " 1 42 1\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0\n"
+    " 0 0 0 1\n"
+    " 0 0 0 0 0\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0 0 0\n");
+  EXPECT_EQ(42, handler.header.num_cons);
 }
 
 // TODO: more tests
