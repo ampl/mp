@@ -141,5 +141,26 @@ TEST(NLReaderTest, NumCons) {
   EXPECT_EQ(42, handler.header.num_cons);
 }
 
+TEST(NLReaderTest, NumObjs) {
+  EXPECT_EQ(0, ReadOptions("g").num_objs);
+  TestNLHandler handler;
+  NLReader reader(&handler);
+  reader.ReadString(
+    "g\n"
+    " 1 0 42\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0\n"
+    " 0 0 0 1\n"
+    " 0 0 0 0 0\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0 0 0\n"
+    "O0 0\n"
+    "n0\n"
+    "k0\n");
+  EXPECT_EQ(42, handler.header.num_objs);
+}
+
 // TODO: more tests
 }
