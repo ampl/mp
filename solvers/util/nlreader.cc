@@ -57,7 +57,7 @@ class TextReader {
   std::string name_;
   int line_;
 
-  int DoReadInt() {
+  int DoReadUInt() {
     char c = *ptr_;
     unsigned value = 0;
     do {
@@ -104,20 +104,20 @@ class TextReader {
     }
   }
 
-  int ReadInt() {
+  int ReadUInt() {
     SkipSpace();
     char c = *ptr_;
     if (c < '0' || c > '9')
-      ReportParseError("expected integer");
-    return DoReadInt();
+      ReportParseError("expected nonnegative integer");
+    return DoReadUInt();
   }
 
-  bool ReadOptionalInt(int &value) {
+  bool ReadOptionalUInt(int &value) {
     SkipSpace();
     char c = *ptr_;
     bool has_value = c >= '0' && c <= '9';
     if (has_value)
-      value = DoReadInt();
+      value = DoReadUInt();
     return has_value;
   }
 
@@ -148,15 +148,15 @@ class TextReader {
 void NLReader::ReadExpr(TextReader &reader) {
   char c = reader.ReadChar();
   if (c == 'n')
-    reader.ReadInt(); // TODO: read double
+    reader.ReadUInt(); // TODO: read double
   // TODO: other types of expressions
   reader.ReadEndOfLine();
 }
 
 void NLReader::ReadLinearExpr(TextReader &reader, int num_terms) {
   for (int i = 0; i < num_terms; ++i) {
-    reader.ReadInt();
-    reader.ReadInt(); // TODO: read double
+    reader.ReadUInt();
+    reader.ReadUInt(); // TODO: read double
     // TODO
     reader.ReadEndOfLine();
   }
@@ -164,18 +164,18 @@ void NLReader::ReadLinearExpr(TextReader &reader, int num_terms) {
 
 void NLReader::ReadBounds(TextReader &reader, int num_bounds) {
   for (int i = 0; i < num_bounds; ++i) {
-    reader.ReadInt();
-    reader.ReadInt(); // TODO: read double
+    reader.ReadUInt();
+    reader.ReadUInt(); // TODO: read double
     // TODO
     reader.ReadEndOfLine();
   }
 }
 
 void NLReader::ReadColumnOffsets(TextReader &reader, int num_vars) {
-  int count = reader.ReadInt(); // TODO
+  int count = reader.ReadUInt(); // TODO
   reader.ReadEndOfLine();
   for (int i = 0; i < count; ++i) {
-    reader.ReadInt(); // TODO
+    reader.ReadUInt(); // TODO
     reader.ReadEndOfLine();
   }
 }
@@ -214,11 +214,12 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
 
   // Read options.
   NLHeader header = {};
-  reader.ReadOptionalInt(header.num_options);
+  reader.ReadOptionalUInt(header.num_options);
   if (header.num_options > MAX_NL_OPTIONS)
     reader.ReportParseError("too many options");
   for (int i = 0; i < header.num_options; ++i) {
-    if (!reader.ReadOptionalInt(header.options[i]))
+    // TODO: can option values be negative?
+    if (!reader.ReadOptionalUInt(header.options[i]))
       break;
   }
   if (header.options[VBTOL_OPTION] == READ_VBTOL)
@@ -226,72 +227,74 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
   reader.ReadEndOfLine();
 
   // Read problem dimensions.
-  header.num_vars = reader.ReadInt();
-  header.num_cons = reader.ReadInt();
-  header.num_objs = reader.ReadInt();
+  header.num_vars = reader.ReadUInt();
+  header.num_cons = reader.ReadUInt();
+  header.num_objs = reader.ReadUInt();
   header.num_eqns = -1;
-  if (reader.ReadOptionalInt(header.num_ranges))
-    reader.ReadOptionalInt(header.num_eqns);
+  if (reader.ReadOptionalUInt(header.num_ranges) &&
+      reader.ReadOptionalUInt(header.num_eqns)) {
+      reader.ReadOptionalUInt(header.num_logical_cons);
+  }
   reader.ReadEndOfLine();
 
   // Read the nonlinear and complementarity information.
-  header.num_nl_cons = reader.ReadInt();
-  header.num_nl_objs = reader.ReadInt();
-  bool all_compl = reader.ReadOptionalInt(header.num_compl_conds) &&
-      reader.ReadOptionalInt(header.num_nl_compl_conds) &&
-      reader.ReadOptionalInt(header.num_compl_dbl_ineq) &&
-      reader.ReadOptionalInt(header.num_compl_vars_with_nz_lb);
+  header.num_nl_cons = reader.ReadUInt();
+  header.num_nl_objs = reader.ReadUInt();
+  bool all_compl = reader.ReadOptionalUInt(header.num_compl_conds) &&
+      reader.ReadOptionalUInt(header.num_nl_compl_conds) &&
+      reader.ReadOptionalUInt(header.num_compl_dbl_ineq) &&
+      reader.ReadOptionalUInt(header.num_compl_vars_with_nz_lb);
   header.num_compl_conds += header.num_nl_compl_conds;
   if (header.num_compl_conds > 0 && !all_compl)
     header.num_compl_dbl_ineq = -1;
   reader.ReadEndOfLine();
 
   // Read the information about network constraints.
-  header.num_nl_net_cons = reader.ReadInt();
-  header.num_linear_net_cons = reader.ReadInt();
+  header.num_nl_net_cons = reader.ReadUInt();
+  header.num_linear_net_cons = reader.ReadUInt();
   reader.ReadEndOfLine();
 
   // Read the information about nonlinear variables.
-  header.num_nl_vars_in_cons = reader.ReadInt();
-  header.num_nl_vars_in_objs = reader.ReadInt();
+  header.num_nl_vars_in_cons = reader.ReadUInt();
+  header.num_nl_vars_in_objs = reader.ReadUInt();
   header.num_nl_vars_in_both = -1;
-  reader.ReadOptionalInt(header.num_nl_vars_in_both);
+  reader.ReadOptionalUInt(header.num_nl_vars_in_both);
   reader.ReadEndOfLine();
 
-  header.num_linear_net_vars = reader.ReadInt();
-  header.num_funcs = reader.ReadInt();
+  header.num_linear_net_vars = reader.ReadUInt();
+  header.num_funcs = reader.ReadUInt();
   int arith_kind = 0, flags = 0;
-  if (reader.ReadOptionalInt(arith_kind))
-    reader.ReadOptionalInt(flags);
+  if (reader.ReadOptionalUInt(arith_kind))
+    reader.ReadOptionalUInt(flags);
   // TODO: resolve the mystery with flags
   reader.ReadEndOfLine();
 
   // Read the information about discrete variables.
-  header.num_linear_binary_vars = reader.ReadInt();
-  header.num_linear_integer_vars = reader.ReadInt();
+  header.num_linear_binary_vars = reader.ReadUInt();
+  header.num_linear_integer_vars = reader.ReadUInt();
   if (header.num_nl_vars_in_both >= 0) {  // ampl versions >= 19930630
-    header.num_nl_integer_vars_in_both = reader.ReadInt();
-    header.num_nl_integer_vars_in_cons = reader.ReadInt();
-    header.num_nl_integer_vars_in_objs = reader.ReadInt();
+    header.num_nl_integer_vars_in_both = reader.ReadUInt();
+    header.num_nl_integer_vars_in_cons = reader.ReadUInt();
+    header.num_nl_integer_vars_in_objs = reader.ReadUInt();
   }
   reader.ReadEndOfLine();
 
   // Read the information about nonzeros.
-  header.num_con_nonzeros = reader.ReadInt();
-  header.num_obj_nonzeros = reader.ReadInt();
+  header.num_con_nonzeros = reader.ReadUInt();
+  header.num_obj_nonzeros = reader.ReadUInt();
   reader.ReadEndOfLine();
 
   // Read the information about names.
-  header.max_con_name_len = reader.ReadInt();
-  header.max_var_name_len = reader.ReadInt();
+  header.max_con_name_len = reader.ReadUInt();
+  header.max_var_name_len = reader.ReadUInt();
   reader.ReadEndOfLine();
 
   // Read the information about common expressions.
-  header.num_common_b_exprs = reader.ReadInt(); // FIXME: what is b (both?)
-  header.num_common_con_exprs = reader.ReadInt();
-  header.num_common_obj_exprs = reader.ReadInt();
-  header.num_common_con1_exprs = reader.ReadInt();
-  header.num_common_obj1_exprs = reader.ReadInt();
+  header.num_common_b_exprs = reader.ReadUInt(); // FIXME: what is b (both?)
+  header.num_common_con_exprs = reader.ReadUInt();
+  header.num_common_obj_exprs = reader.ReadUInt();
+  header.num_common_con1_exprs = reader.ReadUInt();
+  header.num_common_obj1_exprs = reader.ReadUInt();
   reader.ReadEndOfLine();
 
   handler_->HandleHeader(header);
@@ -300,10 +303,10 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
     char c = reader.ReadChar();
     switch (c) {
     case '\0':
-      // TODO: check EOF end of input
+      // TODO: check for end of input
       return;
     case 'C': {
-      int con_index = reader.ReadInt();
+      int con_index = reader.ReadUInt();
       if (con_index >= header.num_cons) {
         // TODO: error: constraint index out of bounds
       }
@@ -321,11 +324,11 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
       // TODO
       break;
     case 'G': {
-      int obj_index = reader.ReadInt();
+      int obj_index = reader.ReadUInt();
       if (obj_index < 0 || obj_index >= header.num_objs) {
         // TODO: error: objective index out of bounds
       }
-      int num_terms = reader.ReadInt(); // TODO: check
+      int num_terms = reader.ReadUInt(); // TODO: check
       reader.ReadEndOfLine();
       ReadLinearExpr(reader, num_terms);
       // TODO: read gradient!
@@ -335,11 +338,11 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
       // TODO: read Jacobian matrix
       break;
     case 'O': {
-      int obj_index = reader.ReadInt();
+      int obj_index = reader.ReadUInt();
       if (obj_index < 0 || obj_index >= header.num_objs) {
         // TODO: error: objective index out of bounds
       }
-      int obj_type = reader.ReadInt();
+      int obj_type = reader.ReadUInt();
       reader.ReadEndOfLine();
       ReadExpr(reader);
       break;

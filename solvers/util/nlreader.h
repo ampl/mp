@@ -59,7 +59,7 @@ struct NLHeader {
   // Total number of variables.
   int num_vars;
 
-  // Total number of constraints including ranges.
+  // Total number of constraints including ranges and equality constraints.
   int num_cons;
 
   // Total number of objectives.

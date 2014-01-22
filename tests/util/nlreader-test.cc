@@ -192,7 +192,7 @@ TEST(NLReaderTest, MissingNumObjs) {
     "O0 0\n"
     "n0\n"
     "k0\n"),
-    ampl::ParseError, "(input):2:5: expected integer");
+    ampl::ParseError, "(input):2:5: expected nonnegative integer");
 }
 
 TEST(NLReaderTest, NumRanges) {
@@ -212,6 +212,25 @@ TEST(NLReaderTest, NumRanges) {
     " 0 0 0 0 0\n"
     "k0\n");
   EXPECT_EQ(42, handler.header.num_ranges);
+}
+
+TEST(NLReaderTest, NumEqns) {
+  EXPECT_EQ(-1, ReadOptions("g").num_eqns);
+  TestNLHandler handler;
+  NLReader reader(&handler);
+  reader.ReadString(
+    "g\n"
+    " 1 100 0 0 42\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0\n"
+    " 0 0 0 1\n"
+    " 0 0 0 0 0\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0 0 0\n"
+    "k0\n");
+  EXPECT_EQ(42, handler.header.num_eqns);
 }
 
 // TODO: more tests
