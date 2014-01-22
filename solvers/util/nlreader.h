@@ -42,12 +42,19 @@ class ParseError : public Error {
 
 class TextReader;
 
-enum { MAX_NL_OPTIONS = 9 };
+enum {
+  MAX_NL_OPTIONS = 9,
+  VBTOL_OPTION   = 1,
+  READ_VBTOL     = 3
+};
 
 // NL file header.
 struct NLHeader {
   int num_options;
   int options[MAX_NL_OPTIONS];
+
+  // Extra info for writing solution.
+  double ampl_vbtol;
 
   // Total number of variables.
   int num_vars;
@@ -132,9 +139,11 @@ struct NLHeader {
   int num_nl_integer_vars_in_both;
 
   // Number of integer nonlinear variables just in constraints.
+  // TODO: make consistent with num_nl_vars_in_cons
   int num_nl_integer_vars_in_cons;
 
   // Number of integer nonlinear variables just in objectives.
+  // TODO: make consistent with num_nl_vars_in_objs
   int num_nl_integer_vars_in_objs;
 
   // Information about nonzeros
@@ -159,6 +168,7 @@ struct NLHeader {
   // Information about common expressions
   // ------------------------------------
 
+  // TODO: improve naming
   int num_common_b_exprs;
   int num_common_con_exprs;
   int num_common_obj_exprs;

@@ -94,16 +94,8 @@ class TextReader {
   }
 
   void ReadEndOfLine() {
-    SkipSpace();
-    char c = *ptr_;
-    if (c == '#') {
-      // Skip comment.
-      while ((c = *ptr_) != '\n' && c)
-        c = *++ptr_;
-    }
-    if (c != '\n') {
-      // TODO: report error
-    }
+    while (*ptr_ && *ptr_ != '\n')
+      ++ptr_;
     ++ptr_;
   }
 
@@ -121,6 +113,29 @@ class TextReader {
     bool has_value = c >= '0' && c <= '9';
     if (has_value)
       value = DoReadInt();
+    return has_value;
+  }
+
+  double ReadDouble() {
+    SkipSpace();
+    char *end = 0;
+    double value = 0;
+    if (*ptr_ != '\n')
+      value = strtod(ptr_, &end);
+    if (!end || ptr_ == end)
+      ReportParseError("expected double");
+    ptr_ = end;
+    return value;
+  }
+
+  bool ReadOptionalDouble(double &value) {
+    SkipSpace();
+    if (*ptr_ == '\n')
+      return false;
+    char *end = 0;
+    value = strtod(ptr_, &end);
+    bool has_value = ptr_ != end;
+    ptr_ = end;
     return has_value;
   }
 };
@@ -168,7 +183,9 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
 
   TextReader reader(name, str.c_str());
 
-  // Read the format (text or binary) and options.
+  // TODO: always read header as text
+
+  // Read the format (text or binary).
   bool binary = false;
   switch (char c = reader.ReadChar()) {
   case 'g':
@@ -181,16 +198,17 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
     break;
   }
 
-  // Read AMPL options.
-  NLHeader header;
-  header.num_options = reader.ReadInt(); // TODO: always read as text
+  // Read options.
+  NLHeader header = {};
+  header.num_options = reader.ReadInt();
   if (header.num_options > MAX_NL_OPTIONS)
     reader.ReportParseError("too many options");
   for (int i = 0; i < header.num_options; ++i) {
-    header.options[i] = reader.ReadInt(); // TODO: always read as text
-    // TODO: could be less than num_options
+    if (!reader.ReadOptionalInt(header.options[i]))
+      break;
   }
-  // TODO: ampl_vbtol
+  if (header.options[VBTOL_OPTION] == READ_VBTOL)
+    reader.ReadOptionalDouble(header.ampl_vbtol);
   reader.ReadEndOfLine();
   handler_->HandleHeader(header);
 
@@ -198,7 +216,6 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
   header.num_cons = reader.ReadInt();
   header.num_objs = reader.ReadInt();
   reader.SkipSpace();
-  header.num_ranges = 0;
   header.num_eqns = -1;
   if (reader.ReadOptionalInt(header.num_ranges))
     reader.ReadOptionalInt(header.num_eqns);
@@ -207,10 +224,6 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
   // Read the nonlinear and complementarity information.
   header.num_nl_cons = reader.ReadInt();
   header.num_nl_objs = reader.ReadInt();
-  header.num_compl_conds = 0;
-  header.num_nl_compl_conds = 0;
-  header.num_compl_dbl_ineq = 0;
-  header.num_compl_vars_with_nz_lb = 0;
   bool all_compl = reader.ReadOptionalInt(header.num_compl_conds) &&
       reader.ReadOptionalInt(header.num_nl_compl_conds) &&
       reader.ReadOptionalInt(header.num_compl_dbl_ineq) &&
