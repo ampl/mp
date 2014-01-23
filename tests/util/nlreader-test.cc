@@ -25,6 +25,7 @@
 #include "solvers/util/problem.h"
 #include "tests/util.h"
 
+using ampl::NLHeader;
 using ampl::NLReader;
 
 namespace {
@@ -45,16 +46,23 @@ const char *TEST_PROBLEM_NO_OPTIONS =
   " 0 0 0 0 0\n";
 
 struct TestNLHandler : ampl::NLHandler {
-  ampl::NLHeader header;
-  void HandleHeader(const ampl::NLHeader &h) { header = h; }
+  NLHeader header;
+  void HandleHeader(const NLHeader &h) { header = h; }
 };
 
-ampl::NLHeader ReadOptions(const char *options) {
+NLHeader ReadOptions(const char *options) {
   fmt::Writer w;
   w << options << '\n' << TEST_PROBLEM_NO_OPTIONS;
   TestNLHandler handler;
   NLReader reader(&handler);
   reader.ReadString(w.c_str());
+  return handler.header;
+}
+
+NLHeader ReadHeader(const char *problem) {
+  TestNLHandler handler;
+  NLReader reader(&handler);
+  reader.ReadString(problem);
   return handler.header;
 }
 
@@ -93,7 +101,7 @@ void CheckReadOptions(size_t num_options,
   w << 'g' << num_options;
   for (size_t i = 0; i < num_options_to_write; ++i)
     w << ' ' << options[i];
-  ampl::NLHeader header = ReadOptions(w.c_str());
+  NLHeader header = ReadOptions(w.c_str());
   ASSERT_EQ(num_options, header.num_options);
   size_t min_num_options = std::min(num_options, num_options_to_write);
   for (size_t i = 0; i < min_num_options; ++i)
@@ -169,10 +177,7 @@ TEST(NLReaderTest, NumObjs) {
     " 0 0 0 0 0\n"
     " 0 0\n"
     " 0 0\n"
-    " 0 0 0 0 0\n"
-    "O0 0\n"
-    "n0\n"
-    "k0\n");
+    " 0 0 0 0 0\n");
   EXPECT_EQ(42, handler.header.num_objs);
 }
 
@@ -188,18 +193,13 @@ TEST(NLReaderTest, MissingNumObjs) {
     " 0 0 0 0 0\n"
     " 0 0\n"
     " 0 0\n"
-    " 0 0 0 0 0\n"
-    "O0 0\n"
-    "n0\n"
-    "k0\n"),
+    " 0 0 0 0 0\n"),
     ampl::ParseError, "(input):2:5: expected nonnegative integer");
 }
 
 TEST(NLReaderTest, NumRanges) {
   EXPECT_EQ(0, ReadOptions("g").num_ranges);
-  TestNLHandler handler;
-  NLReader reader(&handler);
-  reader.ReadString(
+  NLHeader header = ReadHeader(
     "g\n"
     " 1 100 0 42\n"
     " 0 0\n"
@@ -209,16 +209,14 @@ TEST(NLReaderTest, NumRanges) {
     " 0 0 0 0 0\n"
     " 0 0\n"
     " 0 0\n"
-    " 0 0 0 0 0\n"
-    "k0\n");
-  EXPECT_EQ(42, handler.header.num_ranges);
+    " 0 0 0 0 0\n");
+  EXPECT_EQ(42, header.num_ranges);
+  EXPECT_EQ(100, header.num_cons);
 }
 
 TEST(NLReaderTest, NumEqns) {
   EXPECT_EQ(-1, ReadOptions("g").num_eqns);
-  TestNLHandler handler;
-  NLReader reader(&handler);
-  reader.ReadString(
+  NLHeader header = ReadHeader(
     "g\n"
     " 1 100 0 0 42\n"
     " 0 0\n"
@@ -228,18 +226,16 @@ TEST(NLReaderTest, NumEqns) {
     " 0 0 0 0 0\n"
     " 0 0\n"
     " 0 0\n"
-    " 0 0 0 0 0\n"
-    "k0\n");
-  EXPECT_EQ(42, handler.header.num_eqns);
+    " 0 0 0 0 0\n");
+  EXPECT_EQ(42, header.num_eqns);
+  EXPECT_EQ(100, header.num_cons);
 }
 
 TEST(NLReaderTest, NumLogicalCons) {
   EXPECT_EQ(0, ReadOptions("g").num_logical_cons);
-  TestNLHandler handler;
-  NLReader reader(&handler);
-  reader.ReadString(
+  NLHeader header = ReadHeader(
     "g\n"
-    " 1 1 0 0 0 42\n"
+    " 1 11 0 0 0 42\n"
     " 0 0\n"
     " 0 0\n"
     " 0 0 0\n"
@@ -250,8 +246,63 @@ TEST(NLReaderTest, NumLogicalCons) {
     " 0 0 0 0 0\n"
     "L0\n"
     "n0\n");
-  EXPECT_EQ(42, handler.header.num_logical_cons);
+  EXPECT_EQ(42, header.num_logical_cons);
+  EXPECT_EQ(53, header.num_cons);
 }
+
+TEST(NLReaderTest, NumNLCons) {
+  EXPECT_EQ(0, ReadOptions("g").num_nl_cons);
+  NLHeader header = ReadHeader(
+    "g\n"
+    " 1 100 0\n"
+    " 42 0\n"
+    " 0 0\n"
+    " 0 0 0\n"
+    " 0 0 0 1\n"
+    " 0 0 0 0 0\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0 0 0\n");
+  EXPECT_EQ(42, header.num_nl_cons);
+  EXPECT_EQ(100, header.num_cons);
+}
+
+TEST(NLReaderTest, NumNLObjs) {
+  EXPECT_EQ(0, ReadOptions("g").num_nl_cons);
+  NLHeader header = ReadHeader(
+    "g\n"
+    " 1 0 100\n"
+    " 0 42\n"
+    " 0 0\n"
+    " 0 0 0\n"
+    " 0 0 0 1\n"
+    " 0 0 0 0 0\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0 0 0\n");
+  EXPECT_EQ(42, header.num_nl_objs);
+  EXPECT_EQ(100, header.num_objs);
+}
+
+TEST(NLReaderTest, NumComplConds) {
+  EXPECT_EQ(0, ReadOptions("g").num_compl_conds);
+  NLHeader header = ReadHeader(
+    "g\n"
+    " 1 100 0\n"
+    " 0 0 42\n"
+    " 0 0\n"
+    " 0 0 0\n"
+    " 0 0 0 1\n"
+    " 0 0 0 0 0\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0 0 0\n");
+  EXPECT_EQ(42, header.num_compl_conds);
+  EXPECT_EQ(100, header.num_cons);
+}
+
+// TODO: test reading num_nl_compl_conds, num_compl_dbl_ineq
+//       and num_compl_vars_with_nz_lb
 
 // TODO: more tests
 }
