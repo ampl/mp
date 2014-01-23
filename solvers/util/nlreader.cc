@@ -234,13 +234,17 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
   if (reader.ReadOptionalUInt(header.num_ranges) &&
       reader.ReadOptionalUInt(header.num_eqns)) {
       reader.ReadOptionalUInt(header.num_logical_cons);
+      // Include the number of logical constraints in the total number of
+      // constraints for consistency.
+      header.num_cons += header.num_logical_cons;
   }
   reader.ReadEndOfLine();
 
   // Read the nonlinear and complementarity information.
   header.num_nl_cons = reader.ReadUInt();
   header.num_nl_objs = reader.ReadUInt();
-  bool all_compl = reader.ReadOptionalUInt(header.num_compl_conds) &&
+  bool all_compl =
+      reader.ReadOptionalUInt(header.num_compl_conds) &&
       reader.ReadOptionalUInt(header.num_nl_compl_conds) &&
       reader.ReadOptionalUInt(header.num_compl_dbl_ineq) &&
       reader.ReadOptionalUInt(header.num_compl_vars_with_nz_lb);
