@@ -317,15 +317,21 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
     case 'F':
       // TODO: read functions
       break;
-    case 'L':
-      // TODO: read logical constraints
+    case 'L': {
+      int lcon_index = reader.ReadUInt();
+      if (lcon_index >= header.num_logical_cons) {
+        // TODO: error: logical constraint index out of bounds
+      }
+      reader.ReadEndOfLine();
+      ReadExpr(reader);
       break;
+    }
     case 'V':
       // TODO
       break;
     case 'G': {
       int obj_index = reader.ReadUInt();
-      if (obj_index < 0 || obj_index >= header.num_objs) {
+      if (obj_index >= header.num_objs) {
         // TODO: error: objective index out of bounds
       }
       int num_terms = reader.ReadUInt(); // TODO: check
@@ -339,7 +345,7 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
       break;
     case 'O': {
       int obj_index = reader.ReadUInt();
-      if (obj_index < 0 || obj_index >= header.num_objs) {
+      if (obj_index >= header.num_objs) {
         // TODO: error: objective index out of bounds
       }
       int obj_type = reader.ReadUInt();

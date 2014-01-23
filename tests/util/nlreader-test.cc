@@ -233,5 +233,25 @@ TEST(NLReaderTest, NumEqns) {
   EXPECT_EQ(42, handler.header.num_eqns);
 }
 
+TEST(NLReaderTest, NumLogicalCons) {
+  EXPECT_EQ(0, ReadOptions("g").num_logical_cons);
+  TestNLHandler handler;
+  NLReader reader(&handler);
+  reader.ReadString(
+    "g\n"
+    " 1 1 0 0 0 42\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0\n"
+    " 0 0 0 1\n"
+    " 0 0 0 0 0\n"
+    " 0 0\n"
+    " 0 0\n"
+    " 0 0 0 0 0\n"
+    "L0\n"
+    "n0\n");
+  EXPECT_EQ(42, handler.header.num_logical_cons);
+}
+
 // TODO: more tests
 }
