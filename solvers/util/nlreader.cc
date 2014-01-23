@@ -246,11 +246,11 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
   bool all_compl =
       reader.ReadOptionalUInt(header.num_compl_conds) &&
       reader.ReadOptionalUInt(header.num_nl_compl_conds) &&
-      reader.ReadOptionalUInt(header.num_compl_dbl_ineq) &&
+      reader.ReadOptionalUInt(header.num_compl_dbl_ineqs) &&
       reader.ReadOptionalUInt(header.num_compl_vars_with_nz_lb);
   header.num_compl_conds += header.num_nl_compl_conds;
   if (header.num_compl_conds > 0 && !all_compl)
-    header.num_compl_dbl_ineq = -1;
+    header.num_compl_dbl_ineqs = -1;
   reader.ReadEndOfLine();
 
   // Read the information about network constraints.

@@ -92,7 +92,7 @@ struct NLHeader {
 
   // Number of complementarities involving double inequalities
   // (for ASL_cc_simplify).
-  int num_compl_dbl_ineq;
+  int num_compl_dbl_ineqs;
 
   // Number of complemented variables with a nonzero lower bound
   // (for ASL_cc_simplify).
