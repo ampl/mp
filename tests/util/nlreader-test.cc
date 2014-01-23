@@ -127,60 +127,6 @@ TEST(NLReaderTest, ReadAMPLVBTol) {
   EXPECT_EQ(0, ReadOptions("g2 0 3").ampl_vbtol);
 }
 
-TEST(NLReaderTest, NumVars) {
-  EXPECT_EQ(1, ReadOptions("g").num_vars);
-  TestNLHandler handler;
-  NLReader reader(&handler);
-  reader.ReadString(
-    "g\n"
-    " 42 1 0\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0\n"
-    " 0 0 0 1\n"
-    " 0 0 0 0 0\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0 0 0\n");
-  EXPECT_EQ(42, handler.header.num_vars);
-}
-
-TEST(NLReaderTest, NumCons) {
-  EXPECT_EQ(1, ReadOptions("g").num_cons);
-  TestNLHandler handler;
-  NLReader reader(&handler);
-  reader.ReadString(
-    "g\n"
-    " 1 42 1\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0\n"
-    " 0 0 0 1\n"
-    " 0 0 0 0 0\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0 0 0\n");
-  EXPECT_EQ(42, handler.header.num_cons);
-}
-
-TEST(NLReaderTest, NumObjs) {
-  EXPECT_EQ(0, ReadOptions("g").num_objs);
-  TestNLHandler handler;
-  NLReader reader(&handler);
-  reader.ReadString(
-    "g\n"
-    " 1 0 42\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0\n"
-    " 0 0 0 1\n"
-    " 0 0 0 0 0\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0 0 0\n");
-  EXPECT_EQ(42, handler.header.num_objs);
-}
-
 TEST(NLReaderTest, MissingNumObjs) {
   EXPECT_THROW_MSG(
     NLReader().ReadString(
@@ -197,93 +143,6 @@ TEST(NLReaderTest, MissingNumObjs) {
       ampl::ParseError, "(input):2:5: expected nonnegative integer");
 }
 
-TEST(NLReaderTest, NumRanges) {
-  EXPECT_EQ(0, ReadOptions("g").num_ranges);
-  NLHeader header = ReadHeader(
-    "g\n"
-    " 1 100 0 42\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0\n"
-    " 0 0 0 1\n"
-    " 0 0 0 0 0\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0 0 0\n");
-  EXPECT_EQ(42, header.num_ranges);
-  EXPECT_EQ(100, header.num_cons);
-}
-
-TEST(NLReaderTest, NumEqns) {
-  EXPECT_EQ(-1, ReadOptions("g").num_eqns);
-  NLHeader header = ReadHeader(
-    "g\n"
-    " 1 100 0 0 42\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0\n"
-    " 0 0 0 1\n"
-    " 0 0 0 0 0\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0 0 0\n");
-  EXPECT_EQ(42, header.num_eqns);
-  EXPECT_EQ(100, header.num_cons);
-}
-
-TEST(NLReaderTest, NumLogicalCons) {
-  EXPECT_EQ(0, ReadOptions("g").num_logical_cons);
-  NLHeader header = ReadHeader(
-    "g\n"
-    " 1 11 0 0 0 42\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0\n"
-    " 0 0 0 1\n"
-    " 0 0 0 0 0\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0 0 0\n"
-    "L0\n"
-    "n0\n");
-  EXPECT_EQ(42, header.num_logical_cons);
-  EXPECT_EQ(53, header.num_cons);
-}
-
-TEST(NLReaderTest, NumNLCons) {
-  EXPECT_EQ(0, ReadOptions("g").num_nl_cons);
-  NLHeader header = ReadHeader(
-    "g\n"
-    " 1 100 0\n"
-    " 42 0\n"
-    " 0 0\n"
-    " 0 0 0\n"
-    " 0 0 0 1\n"
-    " 0 0 0 0 0\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0 0 0\n");
-  EXPECT_EQ(42, header.num_nl_cons);
-  EXPECT_EQ(100, header.num_cons);
-}
-
-TEST(NLReaderTest, NumNLObjs) {
-  EXPECT_EQ(0, ReadOptions("g").num_nl_cons);
-  NLHeader header = ReadHeader(
-    "g\n"
-    " 1 0 100\n"
-    " 0 42\n"
-    " 0 0\n"
-    " 0 0 0\n"
-    " 0 0 0 1\n"
-    " 0 0 0 0 0\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0 0 0\n");
-  EXPECT_EQ(42, header.num_nl_objs);
-  EXPECT_EQ(100, header.num_objs);
-}
-
 TEST(NLReaderTest, MissingNumNLObjs) {
   EXPECT_THROW_MSG(
     NLReader().ReadString(
@@ -298,42 +157,6 @@ TEST(NLReaderTest, MissingNumNLObjs) {
       " 0 0\n"
       " 0 0 0 0 0\n"),
       ampl::ParseError, "(input):3:3: expected nonnegative integer");
-}
-
-TEST(NLReaderTest, NumComplConds) {
-  EXPECT_EQ(0, ReadOptions("g").num_compl_conds);
-  NLHeader header = ReadHeader(
-    "g\n"
-    " 1 100 0\n"
-    " 0 0 42\n"
-    " 0 0\n"
-    " 0 0 0\n"
-    " 0 0 0 1\n"
-    " 0 0 0 0 0\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0 0 0\n");
-  EXPECT_EQ(42, header.num_compl_conds);
-  EXPECT_EQ(0, header.num_nl_compl_conds);
-  EXPECT_EQ(100, header.num_cons);
-}
-
-TEST(NLReaderTest, NumNLComplConds) {
-  EXPECT_EQ(0, ReadOptions("g").num_nl_compl_conds);
-  NLHeader header = ReadHeader(
-    "g\n"
-    " 1 100 0\n"
-    " 0 0 11 42\n"
-    " 0 0\n"
-    " 0 0 0\n"
-    " 0 0 0 1\n"
-    " 0 0 0 0 0\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0 0 0\n");
-  EXPECT_EQ(53, header.num_compl_conds);
-  EXPECT_EQ(42, header.num_nl_compl_conds);
-  EXPECT_EQ(100, header.num_cons);
 }
 
 TEST(NLReaderTest, NumComplDblIneq) {
@@ -378,25 +201,182 @@ TEST(NLReaderTest, NumComplDblIneq) {
   EXPECT_EQ(42, header.num_compl_dbl_ineqs);
 }
 
-TEST(NLReaderTest, NumComplVarsWithNZLB) {
-  EXPECT_EQ(0, ReadOptions("g").num_compl_vars_with_nz_lb);
-  NLHeader header = ReadHeader(
-    "g\n"
-    " 1 100 0\n"
-    " 0 0 50 0 0 42\n"
-    " 0 0\n"
-    " 0 0 0\n"
-    " 0 0 0 1\n"
-    " 0 0 0 0 0\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0 0 0\n");
-  EXPECT_EQ(50, header.num_compl_conds);
-  EXPECT_EQ(42, header.num_compl_vars_with_nz_lb);
-  EXPECT_EQ(100, header.num_cons);
+TEST(NLReaderTest, MissingNumLinearNetCons) {
+  EXPECT_THROW_MSG(
+    NLReader().ReadString(
+      "g\n"
+      " 1 100 0\n"
+      " 0 0 0\n"
+      " 0\n"
+      " 0 0 0\n"
+      " 0 0 0 1\n"
+      " 0 0 0 0 0\n"
+      " 0 0\n"
+      " 0 0\n"
+      " 0 0 0 0 0\n"),
+      ampl::ParseError, "(input):4:3: expected nonnegative integer");
 }
 
-// TODO: test reading num_nl_net_cons & num_linear_net_cons
+void CheckHeader(const NLHeader &h) {
+  fmt::Writer w;
+  w << "g9 2 3 5 7 11 13 17 19 23 1.23\n";
+  w.Format(" {} {} {} {} {} {}\n")
+      << h.num_vars << (h.num_cons - h.num_logical_cons) << h.num_objs
+      << h.num_ranges << h.num_eqns << h.num_logical_cons;
+  w.Format(" {} {} {} {} {} {}\n")
+      << h.num_nl_cons << h.num_nl_objs
+      << (h.num_compl_conds - h.num_nl_compl_conds)
+      << h.num_nl_compl_conds << h.num_compl_dbl_ineqs
+      << h.num_compl_vars_with_nz_lb;
+  w.Format(" {} {}\n")
+      << h.num_nl_net_cons << h.num_linear_net_cons;
+  w.Format(" {} {} {}\n")
+      << h.num_nl_vars_in_cons << h.num_nl_vars_in_objs
+      << h.num_nl_vars_in_both;
+  w.Format(" {} {} 0 {}\n")
+      << h.num_linear_net_vars << h.num_funcs << h.flags;
+  w.Format(" {} {} {} {} {}\n")
+      << h.num_linear_binary_vars << h.num_linear_integer_vars
+      << h.num_nl_integer_vars_in_both << h.num_nl_integer_vars_in_cons
+      << h.num_nl_integer_vars_in_objs;
+  w.Format(" {} {}\n")
+      << h.num_con_nonzeros << h.num_obj_nonzeros;
+  w.Format(" {} {}\n")
+      << h.max_con_name_len << h.max_var_name_len;
+  w.Format(" {} {} {} {} {}\n")
+      << h.num_common_b_exprs << h.num_common_con_exprs
+      << h.num_common_obj_exprs << h.num_common_con1_exprs
+      << h.num_common_obj1_exprs;
+
+  NLHeader actual_header = ReadHeader(w.c_str());
+
+  EXPECT_EQ(h.num_options, actual_header.num_options);
+  for (int i = 0; i < ampl::MAX_NL_OPTIONS; ++i)
+    EXPECT_EQ(h.options[i], actual_header.options[i]);
+  EXPECT_EQ(h.ampl_vbtol, actual_header.ampl_vbtol);
+
+  EXPECT_EQ(h.num_vars, actual_header.num_vars);
+  EXPECT_EQ(h.num_cons, actual_header.num_cons);
+  EXPECT_EQ(h.num_objs, actual_header.num_objs);
+  EXPECT_EQ(h.num_ranges, actual_header.num_ranges);
+  EXPECT_EQ(h.num_eqns, actual_header.num_eqns);
+  EXPECT_EQ(h.num_logical_cons, actual_header.num_logical_cons);
+
+  EXPECT_EQ(h.num_nl_cons, actual_header.num_nl_cons);
+  EXPECT_EQ(h.num_nl_objs, actual_header.num_nl_objs);
+  EXPECT_EQ(h.num_compl_conds, actual_header.num_compl_conds);
+  EXPECT_EQ(h.num_nl_compl_conds, actual_header.num_nl_compl_conds);
+  EXPECT_EQ(h.num_compl_dbl_ineqs, actual_header.num_compl_dbl_ineqs);
+  EXPECT_EQ(h.num_compl_vars_with_nz_lb,
+      actual_header.num_compl_vars_with_nz_lb);
+
+  EXPECT_EQ(h.num_nl_net_cons, actual_header.num_nl_net_cons);
+  EXPECT_EQ(h.num_linear_net_cons, actual_header.num_linear_net_cons);
+
+  EXPECT_EQ(h.num_nl_vars_in_cons, actual_header.num_nl_vars_in_cons);
+  EXPECT_EQ(h.num_nl_vars_in_objs, actual_header.num_nl_vars_in_objs);
+  EXPECT_EQ(h.num_nl_vars_in_both, actual_header.num_nl_vars_in_both);
+
+  EXPECT_EQ(h.num_linear_net_vars, actual_header.num_linear_net_vars);
+  EXPECT_EQ(h.num_funcs, actual_header.num_funcs);
+  // TODO: test arith_kind
+  EXPECT_EQ(h.flags, actual_header.flags);
+
+  EXPECT_EQ(h.num_linear_binary_vars, actual_header.num_linear_binary_vars);
+  EXPECT_EQ(h.num_linear_integer_vars, actual_header.num_linear_integer_vars);
+  EXPECT_EQ(h.num_nl_integer_vars_in_both,
+      actual_header.num_nl_integer_vars_in_both);
+  EXPECT_EQ(h.num_nl_integer_vars_in_cons,
+      actual_header.num_nl_integer_vars_in_cons);
+  EXPECT_EQ(h.num_nl_integer_vars_in_objs,
+      actual_header.num_nl_integer_vars_in_objs);
+
+  EXPECT_EQ(h.num_con_nonzeros, actual_header.num_con_nonzeros);
+  EXPECT_EQ(h.num_obj_nonzeros, actual_header.num_obj_nonzeros);
+
+  EXPECT_EQ(h.max_con_name_len, actual_header.max_con_name_len);
+  EXPECT_EQ(h.max_var_name_len, actual_header.max_var_name_len);
+
+  EXPECT_EQ(h.num_common_b_exprs, actual_header.num_common_b_exprs);
+  EXPECT_EQ(h.num_common_con_exprs, actual_header.num_common_con_exprs);
+  EXPECT_EQ(h.num_common_obj_exprs, actual_header.num_common_obj_exprs);
+  EXPECT_EQ(h.num_common_con1_exprs, actual_header.num_common_con1_exprs);
+  EXPECT_EQ(h.num_common_obj1_exprs, actual_header.num_common_obj1_exprs);
+
+  WriteFile("test.nl", w.c_str());
+  char stub[] = "test.nl";
+  ASL *asl = ASL_alloc(ASL_read_fg);
+  jac0dim_ASL(asl, stub, strlen(stub));
+  std::remove(stub);
+
+  EXPECT_EQ(asl->i.ampl_options_[0], actual_header.num_options);
+  for (int i = 0; i < ampl::MAX_NL_OPTIONS; ++i)
+    EXPECT_EQ(asl->i.ampl_options_[i + 1], actual_header.options[i]);
+  EXPECT_EQ(asl->i.ampl_vbtol_, actual_header.ampl_vbtol);
+
+  EXPECT_EQ(asl->i.n_var_, actual_header.num_vars);
+  EXPECT_EQ(asl->i.n_con_,
+      actual_header.num_cons - actual_header.num_logical_cons);
+  EXPECT_EQ(asl->i.n_obj_, actual_header.num_objs);
+  EXPECT_EQ(asl->i.nranges_, actual_header.num_ranges);
+  EXPECT_EQ(asl->i.n_eqn_, actual_header.num_eqns);
+  EXPECT_EQ(asl->i.n_lcon_, actual_header.num_logical_cons);
+
+  EXPECT_EQ(asl->i.nlc_, actual_header.num_nl_cons);
+  EXPECT_EQ(asl->i.nlo_, actual_header.num_nl_objs);
+  EXPECT_EQ(asl->i.n_cc_, actual_header.num_compl_conds);
+  EXPECT_EQ(asl->i.nlcc_, actual_header.num_nl_compl_conds);
+  EXPECT_EQ(asl->i.ndcc_, actual_header.num_compl_dbl_ineqs);
+  EXPECT_EQ(asl->i.nzlb_, actual_header.num_compl_vars_with_nz_lb);
+
+  EXPECT_EQ(asl->i.nlnc_, actual_header.num_nl_net_cons);
+  EXPECT_EQ(asl->i.lnc_, actual_header.num_linear_net_cons);
+
+  EXPECT_EQ(asl->i.nlvc_, actual_header.num_nl_vars_in_cons);
+  EXPECT_EQ(asl->i.nlvo_, actual_header.num_nl_vars_in_objs);
+  EXPECT_EQ(asl->i.nlvb_, actual_header.num_nl_vars_in_both);
+
+  EXPECT_EQ(asl->i.nwv_, actual_header.num_linear_net_vars);
+  EXPECT_EQ(asl->i.nfunc_, actual_header.num_funcs);
+  // TODO: test arith_kind
+  EXPECT_EQ(asl->i.flags, actual_header.flags);
+
+  EXPECT_EQ(asl->i.nbv_, actual_header.num_linear_binary_vars);
+  EXPECT_EQ(asl->i.niv_, actual_header.num_linear_integer_vars);
+  EXPECT_EQ(asl->i.nlvbi_, actual_header.num_nl_integer_vars_in_both);
+  EXPECT_EQ(asl->i.nlvci_, actual_header.num_nl_integer_vars_in_cons);
+  EXPECT_EQ(asl->i.nlvoi_, actual_header.num_nl_integer_vars_in_objs);
+
+  EXPECT_EQ(asl->i.nzc_, actual_header.num_con_nonzeros);
+  EXPECT_EQ(asl->i.nzo_, actual_header.num_obj_nonzeros);
+
+  EXPECT_EQ(asl->i.maxrownamelen_, actual_header.max_con_name_len);
+  EXPECT_EQ(asl->i.maxcolnamelen_, actual_header.max_var_name_len);
+
+  EXPECT_EQ(asl->i.comb_, actual_header.num_common_b_exprs);
+  EXPECT_EQ(asl->i.comc_, actual_header.num_common_con_exprs);
+  EXPECT_EQ(asl->i.como_, actual_header.num_common_obj_exprs);
+  EXPECT_EQ(asl->i.comc1_, actual_header.num_common_con1_exprs);
+  EXPECT_EQ(asl->i.como1_, actual_header.num_common_obj1_exprs);
+
+  ASL_free(&asl);
+}
+
+TEST(NLReaderTest, ReadHeader) {
+  NLHeader header = {
+    9, {2, 3, 5, 7, 11, 13, 17, 19, 23}, 1.23,
+    29, 47, 37, 41, 43, 31,
+    53, 59, 67, 61, 71, 73,
+    79, 83,
+    89, 97, 101,
+    103, 107, 109,
+    113, 127, 131, 137, 139,
+    149, 151,
+    157, 163,
+    167, 173, 179, 181, 191
+  };
+  CheckHeader(header);
+}
 
 // TODO: more tests
 }

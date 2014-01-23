@@ -267,9 +267,9 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
 
   header.num_linear_net_vars = reader.ReadUInt();
   header.num_funcs = reader.ReadUInt();
-  int arith_kind = 0, flags = 0;
+  int arith_kind = 0;
   if (reader.ReadOptionalUInt(arith_kind))
-    reader.ReadOptionalUInt(flags);
+    reader.ReadOptionalUInt(header.flags);
   // TODO: resolve the mystery with flags
   reader.ReadEndOfLine();
 
@@ -367,10 +367,9 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
       reader.ReadEndOfLine();
       ReadBounds(reader, header.num_vars);
       break;
-    case 'k': {
+    case 'k':
       ReadColumnOffsets(reader, header.num_vars);
       break;
-    }
     case 'x':
       // TODO
       break;

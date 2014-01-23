@@ -121,11 +121,17 @@ struct NLHeader {
   // Number of nonlinear variables in both  constraints and objectives.
   int num_nl_vars_in_both;
 
+  // Miscellaneous
+  // -------------
+
   // Number of linear network variables (arcs).
   int num_linear_net_vars;
 
   // Number of functions.
   int num_funcs;
+
+  // Flags: 1 = want output suffixes.
+  int flags;
 
   // Information about discrete variables
   // ------------------------------------
