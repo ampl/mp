@@ -34,7 +34,7 @@ class ParseError : public Error {
   ParseError(fmt::StringRef filename,
       int line, int column, fmt::StringRef message)
   : Error(message), filename_(filename), line_(line), column_(column) {}
-  ~ParseError() FMT_NOEXCEPT(true) {}
+  ~ParseError() throw() {}
 
   const std::string &filename() const { return filename_; }
   int line() const { return line_; }
