@@ -34,6 +34,8 @@ FILE *out;
 
 #define UNUSED(x) (void)(x)
 
+static const int LIBDATE = 20140124;
+
 /* See AddFunc in funcadd.h */
 static void declare_func(const char *name, rfunc f,
     int type, int nargs, void *funcinfo, AmplExports *ae) {
@@ -50,7 +52,7 @@ static void declare_func(const char *name, rfunc f,
   if (strcmp(name, "gsl_version") == 0) {
     typedef const char *(*Func)(arglist *al);
     Func get_version = (Func)f;
-    printf("amplgsl %s\n", get_version(NULL));
+    printf("amplgsl %s, library(%d)\n", get_version(NULL), LIBDATE);
   }
   fprintf(out, "function %s%s;\n", name, attr);
 }

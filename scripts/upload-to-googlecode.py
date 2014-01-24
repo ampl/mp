@@ -56,7 +56,7 @@ for platform in reversed(["linux32", "linux64", "macosx", "win32", "win64"]):
         if len(items) < 2:
           continue
         version = items[1]
-        m = re.match(r'.*driver\(([0-9]+)\)', line)
+        m = re.match(r'.*(driver|library)\(([0-9]+)\)', line)
         if m:
           version += '-' + m.group(1)
         versions[items[0].lower()] = version
