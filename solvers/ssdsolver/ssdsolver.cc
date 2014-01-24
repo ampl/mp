@@ -207,5 +207,5 @@ void SSDSolver::DoSolve(Problem &p) {
   HandleSolution(p, w.c_str(), solution.data(), 0, 0);
 }
 
-SolverPtr CreateSolver() { return SolverPtr(new SSDSolver()); }
+SolverPtr CreateSolver(const char *) { return SolverPtr(new SSDSolver()); }
 }

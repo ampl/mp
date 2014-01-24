@@ -31,14 +31,12 @@ namespace ampl {
 
 class TestSolver : public Solver {
  protected:
-  void DoSolve(Problem &) {
-    const char *fail = std::getenv("ASL_FAIL");
-    if (fail && std::strcmp(fail, "1") == 0)
-      throw std::runtime_error("epic fail");
-  }
+  void DoSolve(Problem &) {}
 
   std::string GetOption(const SolverOption &) const { return ""; }
-  void SetOption(const SolverOption &, const char * ) {}
+  void SetOption(const SolverOption &, const char * ) {
+    throw std::runtime_error("epic fail");
+  }
 
  public:
   TestSolver() : Solver("testsolver") {
@@ -52,10 +50,12 @@ class TestSolver : public Solver {
     };
     AddStrOption("opt2", "desc2",
         &TestSolver::GetOption, &TestSolver::SetOption, VALUES);
-    Problem p;
-    DoSolve(p);
   }
 };
 
-SolverPtr CreateSolver() { return SolverPtr(new TestSolver()); }
+SolverPtr CreateSolver(const char *options) {
+  if (options)
+    throw std::runtime_error("epic fail");
+  return SolverPtr(new TestSolver());
+}
 }

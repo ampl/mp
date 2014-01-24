@@ -908,8 +908,8 @@ class Solver
 
 // Implement this function in your code returning a new concrete solver object.
 // Example:
-//   SolverPtr CreateSolver() { return SolverPtr(new MySolver()); }
-SolverPtr CreateSolver();
+//   SolverPtr CreateSolver(const char *) { return SolverPtr(new MySolver()); }
+SolverPtr CreateSolver(const char *options);
 }
 
 #endif  // SOLVERS_UTIL_SOLVER_H_

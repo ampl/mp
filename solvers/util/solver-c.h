@@ -53,12 +53,13 @@ typedef struct ASL_Solver ASL_Solver;
  * in a location pointed to by e. The returned solver object should be
  * destroyed with ASL_DestroySolver once it is no longer needed.
  *
+ * options: A string containing solver initialization options.
  * e: A pointer to a location where to store an error, can be null
  *    in which case the error object is discarded. If it is non-null
  *    and there was an error, the error object should be destroyed
  *    with ASL_DestroyError once it is no longer needed.
  */
-ASL_API ASL_Solver *ASL_CreateSolver(ASL_Error **e);
+ASL_API ASL_Solver *ASL_CreateSolver(const char *options, ASL_Error **e);
 
 /**
  * Destroys the solver object and deallocates memory where it was stored.

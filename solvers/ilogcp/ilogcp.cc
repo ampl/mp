@@ -802,5 +802,5 @@ void IlogCPSolver::DoSolve(Problem &p) {
   }
 }
 
-SolverPtr CreateSolver() { return SolverPtr(new IlogCPSolver()); }
+SolverPtr CreateSolver(const char *) { return SolverPtr(new IlogCPSolver()); }
 }

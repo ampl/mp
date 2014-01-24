@@ -716,5 +716,5 @@ void JaCoPSolver::DoSolve(Problem &p) {
   }
 }
 
-SolverPtr CreateSolver() { return SolverPtr(new JaCoPSolver()); }
+SolverPtr CreateSolver(const char *) { return SolverPtr(new JaCoPSolver()); }
 }

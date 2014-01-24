@@ -893,5 +893,5 @@ TEST_P(SolverTest, OptionValues) {
 }
 
 TEST_P(SolverTest, CreateSolver) {
-  EXPECT_STREQ(solver_->name(), ampl::CreateSolver()->name());
+  EXPECT_STREQ(solver_->name(), ampl::CreateSolver(0)->name());
 }

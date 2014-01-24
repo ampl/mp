@@ -45,7 +45,8 @@ struct ASL_Error {
 struct ASL_Solver {
   ampl::SolverPtr solver;
   ASL_Error last_error;
-  ASL_Solver() : solver(ampl::CreateSolver()) {
+  explicit ASL_Solver(const char *options)
+  : solver(ampl::CreateSolver(options)) {
     last_error.message = 0;
     last_error.flags = 0;
   }
@@ -91,9 +92,9 @@ inline void SetError(ASL_Solver *s, const char *message) FMT_NOEXCEPT(true) {
 
 extern "C" {
 
-ASL_Solver *ASL_CreateSolver(ASL_Error **error) {
+ASL_Solver *ASL_CreateSolver(const char *options, ASL_Error **error) {
   try {
-    return new ASL_Solver();
+    return new ASL_Solver(options);
   } catch (const std::exception &e) {
     SetError(error, e.what());
   } catch (...) {

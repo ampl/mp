@@ -31,11 +31,8 @@
 
 namespace {
 
-char asl_fail_1[] = "ASL_FAIL=1";
-char asl_fail_0[] = "ASL_FAIL=0";
-
 TEST(SolverCTest, CreateSolver) {
-  ASL_Solver *s = ASL_CreateSolver(0);
+  ASL_Solver *s = ASL_CreateSolver(0, 0);
   EXPECT_TRUE(s != 0);
   ASL_DestroySolver(s);
 }
@@ -45,12 +42,10 @@ TEST(SolverCTest, DestroyNullSolver) {
 }
 
 TEST(SolverCTest, CreateSolverError) {
-  putenv(asl_fail_1);
   ASL_Error *error = 0;
-  ASL_Solver *s = ASL_CreateSolver(&error);
-  putenv(asl_fail_0);
+  ASL_Solver *s = ASL_CreateSolver("", &error);
   EXPECT_TRUE(!s);
-  EXPECT_TRUE(error != 0);
+  ASSERT_TRUE(error != 0);
   EXPECT_STREQ("epic fail", ASL_GetErrorMessage(error));
   ASL_DestroyError(error);
 }
@@ -60,14 +55,13 @@ TEST(SolverCTest, DestroyNullError) {
 }
 
 TEST(SolverCTest, GetLastError) {
-  ASL_Solver *s = ASL_CreateSolver(0);
+  ASL_Solver *s = ASL_CreateSolver(0, 0);
   EXPECT_TRUE(!ASL_GetLastError(s));
   char arg0[] = "test";
   char arg1[] = "../data/test";
-  char *argv[] = {arg0, arg1, 0};
-  putenv(asl_fail_1);
+  char arg2[] = "opt1=die";
+  char *argv[] = {arg0, arg1, arg2, 0};
   EXPECT_EQ(-1, ASL_RunSolver(s, 2, argv));
-  putenv(asl_fail_0);
   ASL_Error *error = ASL_GetLastError(s);
   EXPECT_TRUE(error != 0);
   EXPECT_STREQ("epic fail", ASL_GetErrorMessage(error));
@@ -76,13 +70,13 @@ TEST(SolverCTest, GetLastError) {
 }
 
 TEST(SolverCTest, GetOptionHeader) {
-  ASL_Solver *s = ASL_CreateSolver(0);
+  ASL_Solver *s = ASL_CreateSolver(0, 0);
   EXPECT_STREQ("Options rock!", ASL_GetOptionHeader(s));
   ASL_DestroySolver(s);
 }
 
 TEST(SolverCTest, GetSolverOptions) {
-  ASL_Solver *s = ASL_CreateSolver(0);
+  ASL_Solver *s = ASL_CreateSolver(0, 0);
   int num_options = ASL_GetSolverOptions(s, 0, 0);
   EXPECT_EQ(5, num_options);
   std::vector<ASL_SolverOptionInfo> options(num_options);
@@ -100,7 +94,7 @@ TEST(SolverCTest, GetSolverOptions) {
 }
 
 TEST(SolverCTest, GetPartOfSolverOptions) {
-  ASL_Solver *s = ASL_CreateSolver(0);
+  ASL_Solver *s = ASL_CreateSolver(0, 0);
   int num_options = ASL_GetSolverOptions(s, 0, 0);
   EXPECT_EQ(5, num_options);
   std::vector<ASL_SolverOptionInfo> options(3);
@@ -115,7 +109,7 @@ TEST(SolverCTest, GetPartOfSolverOptions) {
 }
 
 TEST(SolverCTest, GetOptionValues) {
-  ASL_Solver *s = ASL_CreateSolver(0);
+  ASL_Solver *s = ASL_CreateSolver(0, 0);
   ASL_SolverOptionInfo info[2];
   ASL_GetSolverOptions(s, info, 2);
   int num_values = ASL_GetOptionValues(s, info[1].option, 0, 0);
@@ -133,7 +127,7 @@ TEST(SolverCTest, GetOptionValues) {
 }
 
 TEST(SolverCTest, GetPartOfOptionValues) {
-  ASL_Solver *s = ASL_CreateSolver(0);
+  ASL_Solver *s = ASL_CreateSolver(0, 0);
   ASL_SolverOptionInfo info[2];
   ASL_GetSolverOptions(s, info, 2);
   int num_values = ASL_GetOptionValues(s, info[1].option, 0, 0);
@@ -151,7 +145,7 @@ TEST(SolverCTest, GetPartOfOptionValues) {
 }
 
 TEST(SolverCTest, RunSolver) {
-  ASL_Solver *s = ASL_CreateSolver(0);
+  ASL_Solver *s = ASL_CreateSolver(0, 0);
   char arg0[] = "test";
   char arg1[] = "../data/test";
   char *argv[] = {arg0, arg1, 0};

@@ -849,5 +849,5 @@ void GecodeSolver::DoSolve(Problem &p) {
   }
 }
 
-SolverPtr CreateSolver() { return SolverPtr(new GecodeSolver()); }
+SolverPtr CreateSolver(const char *) { return SolverPtr(new GecodeSolver()); }
 }
