@@ -7,11 +7,10 @@ cmake .
 rm -rf html ampl.github.io
 make doc
 git clone git@github.com:ampl/ampl.github.io.git
-export GLOBIGNORE=ampl.github.io/demo
+export GLOBIGNORE=ampl.github.io/demo ampl.github.io/ampl-book.pdf
 rm -rf ampl.github.io/*
 export GLOBIGNORE=
 cp -r html/* models ampl.github.io
 cd ampl.github.io
-git checkout ampl-book.pdf
 git add --all .
 git commit -m 'Update documentation'
