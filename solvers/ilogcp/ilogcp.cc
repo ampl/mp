@@ -120,7 +120,7 @@ class IntOption : public ampl::TypedSolverOption<int> {
  public:
   IntOption(const char *name, const char *description,
       IloCP cp, IloCP::IntParam p)
-  : TypedSolverOption<int>(name, description), cp_(cp), param_(p) {}
+  : ampl::TypedSolverOption<int>(name, description), cp_(cp), param_(p) {}
 
   int GetValue() const;
   void SetValue(int value);

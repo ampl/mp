@@ -36,9 +36,10 @@ TEST(ClockTest, Ratio) {
   EXPECT_EQ(77, Ratio::den);
 }
 
+struct Rep {};
+struct Period {};
+
 TEST(ClockTest, Duration) {
-  struct Rep {};
-  struct Period {};
   typedef duration<Rep, Period> Duration;
   (void)static_cast<Rep>(Duration::rep());
   (void)static_cast<Period>(Duration::period());

@@ -32,6 +32,7 @@ namespace ampl {
 class Error : public std::runtime_error {
  public:
   explicit Error(fmt::StringRef message) : std::runtime_error(message) {}
+  ~Error() throw() {}
 };
 
 struct Throw {

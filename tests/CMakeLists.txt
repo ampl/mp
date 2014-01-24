@@ -5,6 +5,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   add_definitions(-DGTEST_USE_OWN_TR1_TUPLE=1)
 endif ()
 
+# Enable std::this_thread::yield.
+add_definitions(-D_GLIBCXX_USE_SCHED_YIELD=1)
+
 # Setup testing.
 add_subdirectory(gtest)
 include_directories(gtest/include)

@@ -524,7 +524,7 @@ TEST(SolverTest, TypedSolverOption) {
   struct TestOption : ampl::TypedSolverOption<int> {
     int value;
     TestOption(const char *name, const char *description)
-    : TypedSolverOption<int>(name, description), value(0) {}
+    : ampl::TypedSolverOption<int>(name, description), value(0) {}
     int GetValue() const { return value; }
     void SetValue(int value) { this->value = value; }
   };
@@ -886,17 +886,20 @@ TEST(SolverTest, OptionEcho) {
   EXPECT_EQ("wantsol=5\n", ReadFile("out"));
 }
 
+class TestException {};
+
+struct ExceptionTestSolver : public Solver {
+  int GetIntOption(const SolverOption &) const { return 0; }
+  void Throw(const SolverOption &, int) { throw TestException(); }
+  ExceptionTestSolver() : Solver("") {
+    AddIntOption("throw", "",
+        &ExceptionTestSolver::GetIntOption, &ExceptionTestSolver::Throw);
+  }
+  void DoSolve(Problem &) {}
+};
+
 TEST(SolverTest, ExceptionInOptionHandler) {
-  class TestException {};
-  struct TestSolver : public Solver {
-    int GetIntOption(const SolverOption &) const { return 0; }
-    void Throw(const SolverOption &, int) { throw TestException(); }
-    TestSolver() : Solver("") {
-      AddIntOption("throw", "", &TestSolver::GetIntOption, &TestSolver::Throw);
-    }
-    void DoSolve(Problem &) {}
-  };
-  TestSolver s;
+  ExceptionTestSolver s;
   EXPECT_THROW(s.ParseOptions(Args("throw=1")), TestException);
 }
 
