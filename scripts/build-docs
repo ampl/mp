@@ -7,7 +7,9 @@ cmake .
 rm -rf html ampl.github.io
 make doc
 git clone git@github.com:ampl/ampl.github.io.git
-rm -rf ampl.github.io/!(demo)
+export GLOBIGNORE=ampl.github.io/demo
+rm -rf ampl.github.io/*
+export GLOBIGNORE=
 cp -r html/* models ampl.github.io
 cd ampl.github.io
 git checkout ampl-book.pdf
