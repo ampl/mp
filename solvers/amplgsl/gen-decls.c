@@ -52,7 +52,7 @@ static void declare_func(const char *name, rfunc f,
   if (strcmp(name, "gsl_version") == 0) {
     typedef const char *(*Func)(arglist *al);
     Func get_version = (Func)f;
-    printf("amplgsl %s, library(%d)\n", get_version(NULL), LIBDATE);
+    printf("amplgsl %s library(%d)\n", get_version(NULL), LIBDATE);
   }
   fprintf(out, "function %s%s;\n", name, attr);
 }
