@@ -89,6 +89,16 @@ endif ()
 
 file(GLOB JACOP_PATH solvers/jacop/lib/JaCoP-*.jar)
 if (JACOP_PATH)
+  # Workaround for Ubuntu 10.04.
+  foreach (arch amd64 i386)
+    set(JAVA_XAWT_DIR /usr/lib/jvm/java-6-openjdk/jre/lib/${arch}/xawt)
+    if (EXISTS ${JAVA_XAWT_DIR})
+      message("JAVA_XAWT_DIR: ${JAVA_XAWT_DIR}")
+      link_directories(${JAVA_XAWT_DIR})
+      break ()
+    endif ()
+  endforeach ()
+
   get_filename_component(JACOP_JAR ${JACOP_PATH} NAME)
   find_package(JNI)
   find_package(Java)

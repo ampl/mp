@@ -16,12 +16,6 @@ add_library(ampljacop-shared SHARED ../util/solver-c.cc)
 set_target_properties(ampljacop-shared PROPERTIES OUTPUT_NAME ampljacop)
 target_link_libraries(ampljacop-shared ampljacop-static)
 
-# Workaround for Ubuntu 10.04.
-set(JAVA_XAWT_DIR /usr/lib/jvm/java-6-openjdk/jre/lib/amd64/xawt)
-if (EXISTS ${JAVA_XAWT_DIR})
-  link_directories(${JAVA_XAWT_DIR})
-endif ()
-
 add_executable(jacop main.cc)
 target_link_libraries(jacop ampljacop-static)
 if (MSVC)
