@@ -5,7 +5,7 @@ import datetime, os, re, shutil, sys, zipfile
 import googlecode_upload
 from subprocess import call
 
-server = "callisto.local"
+server = "pandora.local"
 project = "ampl"
 
 summaries = {
@@ -55,10 +55,10 @@ for platform in reversed(["linux32", "linux64", "macosx", "win32", "win64"]):
         items = line.rstrip().split(' ')
         if len(items) < 2:
           continue
-        version = items[1]
+        version = items[1].rstrip(',')
         m = re.match(r'.*(driver|library)\(([0-9]+)\)', line)
         if m:
-          version += '-' + m.group(1)
+          version += '-' + m.group(2)
         versions[items[0].lower()] = version
   date = datetime.datetime.today()
   date = "{}{:02}{:02}".format(date.year, date.month, date.day)
@@ -80,7 +80,7 @@ for platform in reversed(["linux32", "linux64", "macosx", "win32", "win64"]):
     for file in files:
       path = os.path.join(base, file)
       name = path[dirlen:]
-      if name == "versions" or name in file_package:
+      if name == "versions" or name in file_package or 'ampl-lic' in name:
         continue
       basename = os.path.splitext(name)[0]
       suffix = versions.get(basename, date)
@@ -90,7 +90,7 @@ for platform in reversed(["linux32", "linux64", "macosx", "win32", "win64"]):
         files = extra_files.get(basename)
         if files:
           for f in files:
-	    extra_path = os.path.join(base, f)
+            extra_path = os.path.join(base, f)
             zip.write(extra_path, f)
             paths.append(extra_path)
       upload(archive_name, summaries[basename], [labels[platform]])
