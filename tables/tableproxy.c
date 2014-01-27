@@ -1053,14 +1053,13 @@ Read_ampl_proxy(AmplExports *ae, TableInfo *TI)
 			TI->Errmsg = "Error return with no error message.";
 		goto ret;
 		}
-	nr = H0.nrows;
-	nitab = 2*(H0.ncols + H0.arity) + nr*H0.nscols;
-	if (!nr && H0.nitab == nitab)
+	if (!(nr = H0.nrows))
 		goto done;
-	if (H0.ncols != nc && nr > 0) {
+	if (H0.ncols != nc) {
 		TI->Errmsg = "H0.ncols error";
 		goto ret;
 		}
+	nitab = 2*(H0.ncols + H0.arity) + nr*H0.nscols;
 	L = nc1 * sizeof(DbCol);
 	Ls = 0;
 	if (H0.nscols)
@@ -2690,7 +2689,9 @@ wtab_write(THelp *h, ProxProg *P, real *rtab, Uint *itab, char *stab)
  static int
 show_ver(void)
 {
-	printf("%s: tableproxy version " TableProxyVersion "\n", progname);
+	extern char sysdetails_ASL[];
+	printf("%s: tableproxy version " TableProxyVersion " (%s, ASL %ld)\n",
+		progname, sysdetails_ASL, ASLdate_ASL);
 	return 0;
 	}
 
