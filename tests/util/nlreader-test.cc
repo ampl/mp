@@ -30,21 +30,6 @@ using ampl::NLReader;
 
 namespace {
 
-// The problem below represents the following AMPL problem in NL format
-// without the first line (options):
-//   var x >= 0;
-//   minimize o: x;
-const char *TEST_PROBLEM_NO_OPTIONS =
-  " 1 1 0\n"
-  " 0 0\n"
-  " 0 0\n"
-  " 0 0 0\n"
-  " 0 0 0 1\n"
-  " 0 0 0 0 0\n"
-  " 0 0\n"
-  " 0 0\n"
-  " 0 0 0 0 0\n";
-
 struct TestNLHandler : ampl::NLHandler {
   NLHeader header;
   void HandleHeader(const NLHeader &h) { header = h; }
@@ -121,15 +106,6 @@ NLHeader ReadHeader(int line_index, const char *line) {
   return handler.header;
 }
 
-NLHeader ReadOptions(const char *options) {
-  fmt::Writer w;
-  w << options << '\n' << TEST_PROBLEM_NO_OPTIONS;
-  TestNLHandler handler;
-  NLReader reader(&handler);
-  reader.ReadString(w.c_str());
-  return handler.header;
-}
-
 TEST(NLReaderTest, NoNewlineAtEOF) {
   NLReader().ReadString("g\n"
     " 1 1 0\n"
@@ -182,13 +158,13 @@ TEST(NLReaderTest, ReadOptions) {
     for (size_t j = 0; j < ampl::MAX_NL_OPTIONS + 1; ++j)
       CheckReadOptions(i, j, options);
   }
-  EXPECT_EQ(0, ReadOptions("g").num_options);
+  EXPECT_EQ(0, ReadHeader(0, "g").num_options);
 }
 
 TEST(NLReaderTest, ReadAMPLVBTol) {
-  EXPECT_EQ(4.2, ReadOptions("g2 0 3 4.2").ampl_vbtol);
-  EXPECT_EQ(0, ReadOptions("g2 0 0 4.2").ampl_vbtol);
-  EXPECT_EQ(0, ReadOptions("g2 0 3").ampl_vbtol);
+  EXPECT_EQ(4.2, ReadHeader(0, "g2 0 3 4.2").ampl_vbtol);
+  EXPECT_EQ(0, ReadHeader(0, "g2 0 0 4.2").ampl_vbtol);
+  EXPECT_EQ(0, ReadHeader(0, "g2 0 3").ampl_vbtol);
 }
 
 void CheckHeader(const NLHeader &h) {
