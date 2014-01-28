@@ -907,6 +907,7 @@ class Solver
 #endif
 
 // Implement this function in your code returning a new concrete solver object.
+// options: Solver initialization options.
 // Example:
 //   SolverPtr CreateSolver(const char *) { return SolverPtr(new MySolver()); }
 SolverPtr CreateSolver(const char *options);

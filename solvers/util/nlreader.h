@@ -176,12 +176,11 @@ struct NLHeader {
   // Information about common expressions
   // ------------------------------------
 
-  // TODO: improve naming
-  int num_common_b_exprs;
-  int num_common_con_exprs;
-  int num_common_obj_exprs;
-  int num_common_con1_exprs;
-  int num_common_obj1_exprs;
+  int num_common_exprs_in_both;
+  int num_common_exprs_in_cons;
+  int num_common_exprs_in_objs;
+  int num_common_exprs_in_cons1;
+  int num_common_exprs_in_objs1;
 };
 
 class NLHandler {

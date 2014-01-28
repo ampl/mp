@@ -50,19 +50,83 @@ struct TestNLHandler : ampl::NLHandler {
   void HandleHeader(const NLHeader &h) { header = h; }
 };
 
+std::string ReplaceLine(std::string s, int line_index, const char *new_line) {
+  std::string::size_type start = 0;
+  while (line_index-- > 0) {
+    start = s.find('\n', start);
+    if (start == std::string::npos)
+      throw ampl::Error("invalid line index");
+    ++start;
+  }
+  std::string::size_type end = s.find('\n', start);
+  if (end == std::string::npos)
+    end = s.size();
+  s.replace(start, end - start, new_line);
+  return s;
+}
+
+TEST(NLReaderTest, ReplaceLine) {
+  EXPECT_EQ("de", ReplaceLine("", 0, "de"));
+  EXPECT_EQ("de", ReplaceLine("abc", 0, "de"));
+  EXPECT_THROW(ReplaceLine("abc", 1, "de"), ampl::Error);
+  EXPECT_EQ("de\n", ReplaceLine("abc\n", 0, "de"));
+  EXPECT_EQ("abc\nde", ReplaceLine("abc\n", 1, "de"));
+  EXPECT_EQ("gh\ndef", ReplaceLine("abc\ndef", 0, "gh"));
+  EXPECT_EQ("abc\ngh", ReplaceLine("abc\ndef", 1, "gh"));
+  EXPECT_THROW(ReplaceLine("abc\ndef", 2, "gh"), ampl::Error);
+}
+
+// Formats header as a string.
+std::string FormatHeader(const NLHeader &h) {
+  fmt::Writer w;
+  w << 'g' << h.num_options;
+  for (int i = 0; i < ampl::MAX_NL_OPTIONS; ++i)
+    w << ' ' << h.options[i];
+  w << ' ' << h.ampl_vbtol << '\n';
+  w.Format(" {} {} {} {} {} {}\n")
+      << h.num_vars << (h.num_cons - h.num_logical_cons) << h.num_objs
+      << h.num_ranges << h.num_eqns << h.num_logical_cons;
+  w.Format(" {} {} {} {} {} {}\n")
+      << h.num_nl_cons << h.num_nl_objs
+      << (h.num_compl_conds - h.num_nl_compl_conds)
+      << h.num_nl_compl_conds << h.num_compl_dbl_ineqs
+      << h.num_compl_vars_with_nz_lb;
+  w.Format(" {} {}\n")
+      << h.num_nl_net_cons << h.num_linear_net_cons;
+  w.Format(" {} {} {}\n")
+      << h.num_nl_vars_in_cons << h.num_nl_vars_in_objs
+      << h.num_nl_vars_in_both;
+  w.Format(" {} {} 0 {}\n")
+      << h.num_linear_net_vars << h.num_funcs << h.flags;
+  w.Format(" {} {} {} {} {}\n")
+      << h.num_linear_binary_vars << h.num_linear_integer_vars
+      << h.num_nl_integer_vars_in_both << h.num_nl_integer_vars_in_cons
+      << h.num_nl_integer_vars_in_objs;
+  w.Format(" {} {}\n")
+      << h.num_con_nonzeros << h.num_obj_nonzeros;
+  w.Format(" {} {}\n")
+      << h.max_con_name_len << h.max_var_name_len;
+  w.Format(" {} {} {} {} {}\n")
+      << h.num_common_exprs_in_both << h.num_common_exprs_in_cons
+      << h.num_common_exprs_in_objs << h.num_common_exprs_in_cons1
+      << h.num_common_exprs_in_objs1;
+  return w.str();
+}
+
+// Reads a zero header with one modified line.
+NLHeader ReadHeader(int line_index, const char *line) {
+  TestNLHandler handler;
+  NLReader reader(&handler);
+  reader.ReadString(ReplaceLine(FormatHeader(NLHeader()), line_index, line));
+  return handler.header;
+}
+
 NLHeader ReadOptions(const char *options) {
   fmt::Writer w;
   w << options << '\n' << TEST_PROBLEM_NO_OPTIONS;
   TestNLHandler handler;
   NLReader reader(&handler);
   reader.ReadString(w.c_str());
-  return handler.header;
-}
-
-NLHeader ReadHeader(const char *problem) {
-  TestNLHandler handler;
-  NLReader reader(&handler);
-  reader.ReadString(problem);
   return handler.header;
 }
 
@@ -81,17 +145,17 @@ TEST(NLReaderTest, NoNewlineAtEOF) {
 }
 
 TEST(NLReaderTest, InvalidFormat) {
-  EXPECT_THROW_MSG(ReadOptions("x"),
+  EXPECT_THROW_MSG(ReadHeader(0, "x"),
       ampl::ParseError, "(input):1:1: invalid format 'x'");
 }
 
 TEST(NLReaderTest, InvalidNumOptions) {
-  EXPECT_EQ(0, ReadOptions("ga").num_options);
-  EXPECT_EQ(0, ReadOptions("g-1").num_options);
-  EXPECT_THROW_MSG(NLReader().ReadString("g10"),
+  EXPECT_EQ(0, ReadHeader(0, "ga").num_options);
+  EXPECT_EQ(0, ReadHeader(0, "g-1").num_options);
+  EXPECT_THROW_MSG(ReadHeader(0, "g10"),
       ampl::ParseError, "(input):1:2: too many options");
-  EXPECT_THROW_MSG(NLReader().ReadString(
-      str(fmt::Format("g{}") << static_cast<unsigned>(INT_MAX) + 1)),
+  EXPECT_THROW_MSG(ReadHeader(0,
+      c_str(fmt::Format("g{}") << static_cast<unsigned>(INT_MAX) + 1)),
       ampl::ParseError, "(input):1:2: number is too big");
 }
 
@@ -101,7 +165,7 @@ void CheckReadOptions(size_t num_options,
   w << 'g' << num_options;
   for (size_t i = 0; i < num_options_to_write; ++i)
     w << ' ' << options[i];
-  NLHeader header = ReadOptions(w.c_str());
+  NLHeader header = ReadHeader(0, w.c_str());
   ASSERT_EQ(num_options, header.num_options);
   size_t min_num_options = std::min(num_options, num_options_to_write);
   for (size_t i = 0; i < min_num_options; ++i)
@@ -127,128 +191,12 @@ TEST(NLReaderTest, ReadAMPLVBTol) {
   EXPECT_EQ(0, ReadOptions("g2 0 3").ampl_vbtol);
 }
 
-TEST(NLReaderTest, MissingNumObjs) {
-  EXPECT_THROW_MSG(
-    NLReader().ReadString(
-      "g\n"
-      " 1 0\n"
-      " 0 0\n"
-      " 0 0\n"
-      " 0 0 0\n"
-      " 0 0 0 1\n"
-      " 0 0 0 0 0\n"
-      " 0 0\n"
-      " 0 0\n"
-      " 0 0 0 0 0\n"),
-      ampl::ParseError, "(input):2:5: expected nonnegative integer");
-}
-
-TEST(NLReaderTest, MissingNumNLObjs) {
-  EXPECT_THROW_MSG(
-    NLReader().ReadString(
-      "g\n"
-      " 1 0 100\n"
-      " 0\n"
-      " 0 0\n"
-      " 0 0 0\n"
-      " 0 0 0 1\n"
-      " 0 0 0 0 0\n"
-      " 0 0\n"
-      " 0 0\n"
-      " 0 0 0 0 0\n"),
-      ampl::ParseError, "(input):3:3: expected nonnegative integer");
-}
-
-TEST(NLReaderTest, NumComplDblIneq) {
-  EXPECT_EQ(0, ReadOptions("g").num_compl_dbl_ineqs);
-  NLHeader header = ReadHeader(
-    "g\n"
-    " 1 100 0\n"
-    " 0 0 70 0 42 0\n"
-    " 0 0\n"
-    " 0 0 0\n"
-    " 0 0 0 1\n"
-    " 0 0 0 0 0\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0 0 0\n");
-  EXPECT_EQ(70, header.num_compl_conds);
-  EXPECT_EQ(42, header.num_compl_dbl_ineqs);
-  EXPECT_EQ(100, header.num_cons);
-  header = ReadHeader(
-    "g\n"
-    " 1 100 0\n"
-    " 0 0 70 0 42\n"
-    " 0 0\n"
-    " 0 0 0\n"
-    " 0 0 0 1\n"
-    " 0 0 0 0 0\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0 0 0\n");
-  EXPECT_EQ(-1, header.num_compl_dbl_ineqs);
-  header = ReadHeader(
-    "g\n"
-    " 1 100 0\n"
-    " 0 0 0 0 42\n"
-    " 0 0\n"
-    " 0 0 0\n"
-    " 0 0 0 1\n"
-    " 0 0 0 0 0\n"
-    " 0 0\n"
-    " 0 0\n"
-    " 0 0 0 0 0\n");
-  EXPECT_EQ(42, header.num_compl_dbl_ineqs);
-}
-
-TEST(NLReaderTest, MissingNumLinearNetCons) {
-  EXPECT_THROW_MSG(
-    NLReader().ReadString(
-      "g\n"
-      " 1 100 0\n"
-      " 0 0 0\n"
-      " 0\n"
-      " 0 0 0\n"
-      " 0 0 0 1\n"
-      " 0 0 0 0 0\n"
-      " 0 0\n"
-      " 0 0\n"
-      " 0 0 0 0 0\n"),
-      ampl::ParseError, "(input):4:3: expected nonnegative integer");
-}
-
 void CheckHeader(const NLHeader &h) {
-  fmt::Writer w;
-  w << "g9 2 3 5 7 11 13 17 19 23 1.23\n";
-  w.Format(" {} {} {} {} {} {}\n")
-      << h.num_vars << (h.num_cons - h.num_logical_cons) << h.num_objs
-      << h.num_ranges << h.num_eqns << h.num_logical_cons;
-  w.Format(" {} {} {} {} {} {}\n")
-      << h.num_nl_cons << h.num_nl_objs
-      << (h.num_compl_conds - h.num_nl_compl_conds)
-      << h.num_nl_compl_conds << h.num_compl_dbl_ineqs
-      << h.num_compl_vars_with_nz_lb;
-  w.Format(" {} {}\n")
-      << h.num_nl_net_cons << h.num_linear_net_cons;
-  w.Format(" {} {} {}\n")
-      << h.num_nl_vars_in_cons << h.num_nl_vars_in_objs
-      << h.num_nl_vars_in_both;
-  w.Format(" {} {} 0 {}\n")
-      << h.num_linear_net_vars << h.num_funcs << h.flags;
-  w.Format(" {} {} {} {} {}\n")
-      << h.num_linear_binary_vars << h.num_linear_integer_vars
-      << h.num_nl_integer_vars_in_both << h.num_nl_integer_vars_in_cons
-      << h.num_nl_integer_vars_in_objs;
-  w.Format(" {} {}\n")
-      << h.num_con_nonzeros << h.num_obj_nonzeros;
-  w.Format(" {} {}\n")
-      << h.max_con_name_len << h.max_var_name_len;
-  w.Format(" {} {} {} {} {}\n")
-      << h.num_common_b_exprs << h.num_common_con_exprs
-      << h.num_common_obj_exprs << h.num_common_con1_exprs
-      << h.num_common_obj1_exprs;
-
-  NLHeader actual_header = ReadHeader(w.c_str());
+  std::string nl = FormatHeader(h);
+  TestNLHandler handler;
+  NLReader reader(&handler);
+  reader.ReadString(nl);
+  NLHeader actual_header = handler.header;
 
   EXPECT_EQ(h.num_options, actual_header.num_options);
   for (int i = 0; i < ampl::MAX_NL_OPTIONS; ++i)
@@ -297,13 +245,18 @@ void CheckHeader(const NLHeader &h) {
   EXPECT_EQ(h.max_con_name_len, actual_header.max_con_name_len);
   EXPECT_EQ(h.max_var_name_len, actual_header.max_var_name_len);
 
-  EXPECT_EQ(h.num_common_b_exprs, actual_header.num_common_b_exprs);
-  EXPECT_EQ(h.num_common_con_exprs, actual_header.num_common_con_exprs);
-  EXPECT_EQ(h.num_common_obj_exprs, actual_header.num_common_obj_exprs);
-  EXPECT_EQ(h.num_common_con1_exprs, actual_header.num_common_con1_exprs);
-  EXPECT_EQ(h.num_common_obj1_exprs, actual_header.num_common_obj1_exprs);
+  EXPECT_EQ(h.num_common_exprs_in_both, actual_header.num_common_exprs_in_both);
+  EXPECT_EQ(h.num_common_exprs_in_cons, actual_header.num_common_exprs_in_cons);
+  EXPECT_EQ(h.num_common_exprs_in_objs, actual_header.num_common_exprs_in_objs);
+  EXPECT_EQ(h.num_common_exprs_in_cons1,
+      actual_header.num_common_exprs_in_cons1);
+  EXPECT_EQ(h.num_common_exprs_in_objs1,
+      actual_header.num_common_exprs_in_objs1);
 
-  WriteFile("test.nl", w.c_str());
+  if (h.num_vars == 0)
+    return;  // jac0dim fails if there are no vars
+
+  WriteFile("test.nl", nl);
   char stub[] = "test.nl";
   ASL *asl = ASL_alloc(ASL_read_fg);
   jac0dim_ASL(asl, stub, strlen(stub));
@@ -353,16 +306,16 @@ void CheckHeader(const NLHeader &h) {
   EXPECT_EQ(asl->i.maxrownamelen_, actual_header.max_con_name_len);
   EXPECT_EQ(asl->i.maxcolnamelen_, actual_header.max_var_name_len);
 
-  EXPECT_EQ(asl->i.comb_, actual_header.num_common_b_exprs);
-  EXPECT_EQ(asl->i.comc_, actual_header.num_common_con_exprs);
-  EXPECT_EQ(asl->i.como_, actual_header.num_common_obj_exprs);
-  EXPECT_EQ(asl->i.comc1_, actual_header.num_common_con1_exprs);
-  EXPECT_EQ(asl->i.como1_, actual_header.num_common_obj1_exprs);
+  EXPECT_EQ(asl->i.comb_, actual_header.num_common_exprs_in_both);
+  EXPECT_EQ(asl->i.comc_, actual_header.num_common_exprs_in_cons);
+  EXPECT_EQ(asl->i.como_, actual_header.num_common_exprs_in_objs);
+  EXPECT_EQ(asl->i.comc1_, actual_header.num_common_exprs_in_cons1);
+  EXPECT_EQ(asl->i.como1_, actual_header.num_common_exprs_in_objs1);
 
   ASL_free(&asl);
 }
 
-TEST(NLReaderTest, ReadHeader) {
+TEST(NLReaderTest, ReadFullHeader) {
   NLHeader header = {
     9, {2, 3, 5, 7, 11, 13, 17, 19, 23}, 1.23,
     29, 47, 37, 41, 43, 31,
@@ -376,6 +329,30 @@ TEST(NLReaderTest, ReadHeader) {
     167, 173, 179, 181, 191
   };
   CheckHeader(header);
+  NLHeader zero_header = {};
+  CheckHeader(zero_header);
+}
+
+TEST(NLReaderTest, IncompleteHeader) {
+  EXPECT_THROW_MSG(
+      ReadHeader(1, " 1 0"),
+      ampl::ParseError, "(input):2:5: expected nonnegative integer");
+  EXPECT_THROW_MSG(
+      ReadHeader(2, " 0"),
+      ampl::ParseError, "(input):3:3: expected nonnegative integer");
+  EXPECT_THROW_MSG(
+      ReadHeader(3, " 0"),
+      ampl::ParseError, "(input):4:3: expected nonnegative integer");
+  EXPECT_THROW_MSG(
+      ReadHeader(4, " 0"),
+      ampl::ParseError, "(input):5:3: expected nonnegative integer");
+  // TODO: test required and optional elements in all lines
+  //       also check the defaults for optional elements
+}
+
+TEST(NLReaderTest, NumComplDblIneq) {
+  EXPECT_EQ(42, ReadHeader(2, " 0 0 0 0 42").num_compl_dbl_ineqs);
+  EXPECT_EQ(-1, ReadHeader(2, " 0 0 70 0 42").num_compl_dbl_ineqs);
 }
 
 // TODO: more tests

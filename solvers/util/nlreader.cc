@@ -294,11 +294,11 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
   reader.ReadEndOfLine();
 
   // Read the information about common expressions.
-  header.num_common_b_exprs = reader.ReadUInt(); // FIXME: what is b (both?)
-  header.num_common_con_exprs = reader.ReadUInt();
-  header.num_common_obj_exprs = reader.ReadUInt();
-  header.num_common_con1_exprs = reader.ReadUInt();
-  header.num_common_obj1_exprs = reader.ReadUInt();
+  header.num_common_exprs_in_both = reader.ReadUInt();
+  header.num_common_exprs_in_cons = reader.ReadUInt();
+  header.num_common_exprs_in_objs = reader.ReadUInt();
+  header.num_common_exprs_in_cons1 = reader.ReadUInt();
+  header.num_common_exprs_in_objs1 = reader.ReadUInt();
   reader.ReadEndOfLine();
 
   handler_->HandleHeader(header);
