@@ -11,6 +11,9 @@ CMakeCache.txt
 CTestTestfile.cmake
 cmake_install.cmake
 Makefile
+/.cproject
+/.project
+/tests/config.h
 /html
 /student
 /*Subprojects*
