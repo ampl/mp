@@ -3,7 +3,7 @@
 # ampl.github.io repository.
 
 import errno, os, shutil
-from subprocess import check_call
+from subprocess import call, check_call
 from glob import glob
 
 REPO = 'ampl.github.io'
@@ -47,4 +47,5 @@ for entry in glob('html/*'):
 copytodir('models', REPO)
 
 check_call(['git', 'add', '--all'], cwd=REPO)
-check_call(['git', 'commit', '-m', 'Update documentation'], cwd=REPO)
+if call(["git", "diff-index", "--quiet", "HEAD"], cwd=REPO):
+  check_call(['git', 'commit', '-m', 'Update documentation'], cwd=REPO)
