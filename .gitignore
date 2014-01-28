@@ -3,6 +3,7 @@
 *.a
 *.dll
 *.so
+*.pyc
 *_test
 *-test
 CMakeFiles
