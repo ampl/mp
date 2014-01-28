@@ -4,7 +4,6 @@
 *.dll
 *.so
 *.pyc
-*_test
 *-test
 CMakeFiles
 CMakeCache.txt
@@ -31,5 +30,6 @@ Makefile
 /solvers/smpswriter/smpswriter
 /solvers/ssdsolver/ssdsolver
 /solvers/sulum/sulum
+/tables/tableproxy64
 /tests/data/*.sol
 /Testing
