@@ -203,7 +203,6 @@ void CheckHeader(const NLHeader &h) {
 
   EXPECT_EQ(h.num_linear_net_vars, actual_header.num_linear_net_vars);
   EXPECT_EQ(h.num_funcs, actual_header.num_funcs);
-  // TODO: test arith_kind
   EXPECT_EQ(h.flags, actual_header.flags);
 
   EXPECT_EQ(h.num_linear_binary_vars, actual_header.num_linear_binary_vars);
@@ -267,7 +266,6 @@ void CheckHeader(const NLHeader &h) {
 
   EXPECT_EQ(asl->i.nwv_, actual_header.num_linear_net_vars);
   EXPECT_EQ(asl->i.nfunc_, actual_header.num_funcs);
-  // TODO: test arith_kind
   EXPECT_EQ(asl->i.flags, actual_header.flags);
 
   EXPECT_EQ(asl->i.nbv_, actual_header.num_linear_binary_vars);
@@ -325,6 +323,18 @@ TEST(NLReaderTest, IncompleteHeader) {
   // TODO: test required and optional elements in all lines
   //       also check the defaults for optional elements
 }
+
+TEST(NLReaderTest, Arith) {
+  ReadHeader(5, " 0 0");
+  ReadHeader(5, " 0 0 0");
+  ReadHeader(5, c_str(fmt::Format(" 0 0 {}") << Arith_Kind_ASL));
+  ReadHeader(5, c_str(fmt::Format(" 0 0 {}") << 3 - Arith_Kind_ASL));
+  EXPECT_THROW_MSG(
+      ReadHeader(5, c_str(fmt::Format(" 0 0 {}") << 3 - Arith_Kind_ASL + 1)),
+      ampl::ParseError, "(input):6:6: unrecognized binary format");
+  // TODO: check if the bytes are swapped
+}
+
 
 TEST(NLReaderTest, NumComplDblIneq) {
   EXPECT_EQ(42, ReadHeader(2, " 0 0 0 0 42").num_compl_dbl_ineqs);

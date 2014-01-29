@@ -22,8 +22,14 @@
 
 #include "solvers/util/nlreader.h"
 
+#include "solvers/arith.h"
 #include "solvers/util/os.h"
 #include <cctype>
+
+#undef ASL_SWAP_BYTES
+#if defined(IEEE_MC68k) || defined(IEEE_8087)
+# define ASL_SWAP_BYTES
+#endif
 
 namespace {
 
@@ -267,10 +273,21 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
 
   header.num_linear_net_vars = reader.ReadUInt();
   header.num_funcs = reader.ReadUInt();
-  int arith_kind = 0;
-  if (reader.ReadOptionalUInt(arith_kind))
+  int arith = 0;
+  if (reader.ReadOptionalUInt(arith)) {
+    if (arith != Arith_Kind_ASL && arith != 0) {
+      bool swap_bytes = false;
+#ifdef ASL_SWAP_BYTES
+      swap_bytes = arith > 0 && arith + Arith_Kind_ASL == 3;
+#endif
+      if (swap_bytes) {
+        // TODO: swap bytes
+      } else {
+        reader.ReportParseError("unrecognized binary format");
+      }
+    }
     reader.ReadOptionalUInt(header.flags);
-  // TODO: resolve the mystery with flags
+  }
   reader.ReadEndOfLine();
 
   // Read the information about discrete variables.

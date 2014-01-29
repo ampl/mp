@@ -20,6 +20,9 @@
  Author: Victor Zverovich
  */
 
+#ifndef SOLVERS_UTIL_NLREADER_H_
+#define SOLVERS_UTIL_NLREADER_H_
+
 #include "solvers/util/error.h"
 
 namespace ampl {
@@ -218,3 +221,5 @@ class NLReader {
   void ReadString(fmt::StringRef str, fmt::StringRef name = "(input)");
 };
 }
+
+#endif  // SOLVERS_UTIL_NLREADER_H_
