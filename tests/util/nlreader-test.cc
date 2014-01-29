@@ -64,7 +64,7 @@ TEST(NLReaderTest, ReplaceLine) {
 // Formats header as a string.
 std::string FormatHeader(const NLHeader &h) {
   fmt::Writer w;
-  w << 'g' << h.num_options;
+  w << (h.format == NLHeader::TEXT ? 'g' : 'b') << h.num_options;
   for (int i = 0; i < ampl::MAX_NL_OPTIONS; ++i)
     w << ' ' << h.options[i];
   w << ' ' << h.ampl_vbtol << '\n';
@@ -122,7 +122,7 @@ TEST(NLReaderTest, NoNewlineAtEOF) {
 
 TEST(NLReaderTest, InvalidFormat) {
   EXPECT_THROW_MSG(ReadHeader(0, "x"),
-      ampl::ParseError, "(input):1:1: invalid format 'x'");
+      ampl::ParseError, "(input):1:1: expected format specifier");
 }
 
 TEST(NLReaderTest, InvalidNumOptions) {
@@ -173,6 +173,8 @@ void CheckHeader(const NLHeader &h) {
   NLReader reader(&handler);
   reader.ReadString(nl);
   NLHeader actual_header = handler.header;
+
+  EXPECT_EQ(h.format, actual_header.format);
 
   EXPECT_EQ(h.num_options, actual_header.num_options);
   for (int i = 0; i < ampl::MAX_NL_OPTIONS; ++i)
@@ -291,6 +293,7 @@ void CheckHeader(const NLHeader &h) {
 
 TEST(NLReaderTest, ReadFullHeader) {
   NLHeader header = {
+    NLHeader::BINARY,
     9, {2, 3, 5, 7, 11, 13, 17, 19, 23}, 1.23,
     29, 47, 37, 41, 43, 31,
     53, 59, 67, 61, 71, 73,
@@ -307,38 +310,54 @@ TEST(NLReaderTest, ReadFullHeader) {
   CheckHeader(zero_header);
 }
 
-TEST(NLReaderTest, IncompleteHeader) {
-  EXPECT_THROW_MSG(
-      ReadHeader(1, " 1 0"),
-      ampl::ParseError, "(input):2:5: expected nonnegative integer");
-  EXPECT_THROW_MSG(
-      ReadHeader(2, " 0"),
-      ampl::ParseError, "(input):3:3: expected nonnegative integer");
-  EXPECT_THROW_MSG(
-      ReadHeader(3, " 0"),
-      ampl::ParseError, "(input):4:3: expected nonnegative integer");
-  EXPECT_THROW_MSG(
-      ReadHeader(4, " 0"),
-      ampl::ParseError, "(input):5:3: expected nonnegative integer");
-  // TODO: test required and optional elements in all lines
-  //       also check the defaults for optional elements
-}
-
-TEST(NLReaderTest, Arith) {
-  ReadHeader(5, " 0 0");
-  ReadHeader(5, " 0 0 0");
-  ReadHeader(5, c_str(fmt::Format(" 0 0 {}") << Arith_Kind_ASL));
-  ReadHeader(5, c_str(fmt::Format(" 0 0 {}") << 3 - Arith_Kind_ASL));
-  EXPECT_THROW_MSG(
-      ReadHeader(5, c_str(fmt::Format(" 0 0 {}") << 3 - Arith_Kind_ASL + 1)),
-      ampl::ParseError, "(input):6:6: unrecognized binary format");
-  // TODO: check if the bytes are swapped
-}
-
-
 TEST(NLReaderTest, NumComplDblIneq) {
   EXPECT_EQ(42, ReadHeader(2, " 0 0 0 0 42").num_compl_dbl_ineqs);
   EXPECT_EQ(-1, ReadHeader(2, " 0 0 70 0 42").num_compl_dbl_ineqs);
+}
+
+TEST(NLReaderTest, Arith) {
+  EXPECT_EQ(NLHeader::TEXT, ReadHeader(5, " 0 0").format);
+  EXPECT_EQ(NLHeader::TEXT, ReadHeader(5, " 0 0 0").format);
+  EXPECT_EQ(NLHeader::TEXT, ReadHeader(5,
+      c_str(fmt::Format(" 0 0 {}") << Arith_Kind_ASL)).format);
+  EXPECT_EQ(NLHeader::BINARY_SWAPPED, ReadHeader(5,
+      c_str(fmt::Format(" 0 0 {}") << 3 - Arith_Kind_ASL)).format);
+  EXPECT_THROW_MSG(
+      ReadHeader(5, c_str(fmt::Format(" 0 0 {}") << 3 - Arith_Kind_ASL + 1)),
+      ampl::ParseError, "(input):6:6: unrecognized binary format");
+  // TODO: check if the bytes are actually swapped
+}
+
+TEST(NLReaderTest, IncompleteHeader) {
+  ReadHeader(0, "g");
+  EXPECT_THROW_MSG(
+      ReadHeader(0, "\n"),
+      ampl::ParseError, "(input):1:1: expected format specifier");
+  ReadHeader(1, " 1 0 0");
+  EXPECT_THROW_MSG(
+      ReadHeader(1, " 1 0"),
+      ampl::ParseError, "(input):2:5: expected nonnegative integer");
+  for (int i = 2; i <= 8; ++i) {
+    if (i == 6)
+      continue;
+    ReadHeader(i, " 0 0");
+    EXPECT_THROW_MSG(
+        ReadHeader(i, " 0"), ampl::ParseError,
+        c_str(fmt::Format("(input):{}:3: expected nonnegative integer")
+            << i + 1));
+  }
+  for (int i = 6; i <= 9; i += 3) {
+    ReadHeader(1, " 0 0 0 0 0");
+    EXPECT_THROW_MSG(
+        ReadHeader(i, " 0 0 0 0"), ampl::ParseError,
+        c_str(fmt::Format("(input):{}:9: expected nonnegative integer")
+            << i + 1));
+  }
+  std::string input = ReplaceLine(FormatHeader(NLHeader()), 4, " 0 0");
+  NLReader().ReadString(ReplaceLine(input, 6, " 0 0"));
+  EXPECT_THROW_MSG(
+      NLReader().ReadString(ReplaceLine(input, 6, " 0")),
+      ampl::ParseError, "(input):7:3: expected nonnegative integer");
 }
 
 // TODO: more tests

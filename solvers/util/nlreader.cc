@@ -206,20 +206,19 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
   // TODO: always read header as text
 
   // Read the format (text or binary).
-  bool binary = false;
+  NLHeader header = {NLHeader::TEXT};
   switch (char c = reader.ReadChar()) {
   case 'g':
     break;
   case 'b':
-    binary = true;
+    header.format = NLHeader::BINARY;
     break;
   default:
-    reader.ReportParseError("invalid format '{}'") << c;
+    reader.ReportParseError("expected format specifier");
     break;
   }
 
   // Read options.
-  NLHeader header = {};
   reader.ReadOptionalUInt(header.num_options);
   if (header.num_options > MAX_NL_OPTIONS)
     reader.ReportParseError("too many options");
@@ -280,11 +279,10 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
 #ifdef ASL_SWAP_BYTES
       swap_bytes = arith > 0 && arith + Arith_Kind_ASL == 3;
 #endif
-      if (swap_bytes) {
-        // TODO: swap bytes
-      } else {
+      if (!swap_bytes)
         reader.ReportParseError("unrecognized binary format");
-      }
+      header.format = NLHeader::BINARY_SWAPPED;
+      // TODO: swap bytes
     }
     reader.ReadOptionalUInt(header.flags);
   }

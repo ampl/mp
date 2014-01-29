@@ -54,6 +54,10 @@ enum {
 
 // NL file header.
 struct NLHeader {
+  // NL file format.
+  enum Format { TEXT = 0, BINARY = 1, BINARY_SWAPPED = 2 };
+  Format format;
+
   int num_options;
   int options[MAX_NL_OPTIONS];
 
