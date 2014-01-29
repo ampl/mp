@@ -24,6 +24,8 @@
 #define SOLVERS_UTIL_NLREADER_H_
 
 #include "solvers/util/error.h"
+#include "solvers/util/expr.h"
+#include "solvers/util/noncopyable.h"
 
 namespace ampl {
 
@@ -67,9 +69,9 @@ struct NLHeader {
   // Total number of variables.
   int num_vars;
 
-  // Total number of constraints including ranges, equality constraints
-  // and logical constraints.
-  int num_cons;
+  // Number of algebraic constraints including ranges, equality constraints
+  // and not including logical constraints.
+  int num_algebraic_cons;
 
   // Total number of objectives.
   int num_objs;
@@ -194,25 +196,43 @@ class NLHandler {
  public:
   virtual ~NLHandler();
   virtual void HandleHeader(const NLHeader &h) = 0;
+  virtual void HandleObj(int obj_index, bool maximize, NumericExpr expr) = 0;
+};
+
+class ExprFactory : Noncopyable {
+ private:
+  ASL *asl_;
+  efunc *r_ops_[N_OPS];
+
+ public:
+  ExprFactory();
+  ~ExprFactory();
+
+  void Init(const NLHeader &h);
+
+  NumericConstant CreateNumericConstant(double value);
+  Variable CreateVariable(int var_index);
 };
 
 // An nl reader.
 class NLReader {
  private:
   NLHandler *handler_;
+  NLHeader header_;
+  ExprFactory factory_;
 
   // Reads an expression.
-  void ReadExpr(TextReader &reader);
+  NumericExpr ReadExpr(TextReader &reader);
 
   // Reads a linear expression.
   void ReadLinearExpr(TextReader &reader, int num_terms);
 
   // Reads bounds.
-  void ReadBounds(TextReader &reader, int num_bounds);
+  void ReadBounds(TextReader &reader);
 
   // Read the column offsets, the cumulative sums of the numbers of
   // nonzeros in the first num_var − 1 columns of the Jacobian matrix.
-  void ReadColumnOffsets(TextReader &reader, int num_vars);
+  void ReadColumnOffsets(TextReader &reader);
 
  public:
   explicit NLReader(NLHandler *h = 0) : handler_(h) {}

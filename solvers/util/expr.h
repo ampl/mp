@@ -246,6 +246,7 @@ class Expr {
   template <typename Impl, typename Result, typename LResult>
   friend class ExprVisitor;
   friend class ExprBuilder;
+  friend class ExprFactory;
   friend class Problem;
 
   template <typename ExprT>

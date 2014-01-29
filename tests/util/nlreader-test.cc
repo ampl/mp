@@ -32,7 +32,22 @@ namespace {
 
 struct TestNLHandler : ampl::NLHandler {
   NLHeader header;
-  void HandleHeader(const NLHeader &h) { header = h; }
+  fmt::Writer log;  // Call log.
+  std::vector<ampl::NumericExpr> obj_exprs;
+
+  void HandleHeader(const NLHeader &h) {
+    header = h;
+    obj_exprs.resize(h.num_objs);
+    log.Clear();
+  }
+
+  void HandleObj(int obj_index, bool maximize, ampl::NumericExpr expr) {
+    log << (maximize ? "maximize" : "minimize")
+        << " o" << (obj_index + 1) << ": ";
+    WriteExpr(log, ampl::LinearObjExpr(), expr);
+    obj_exprs[obj_index] = expr;
+    log << ";\n";
+  }
 };
 
 std::string ReplaceLine(std::string s, int line_index, const char *new_line) {
@@ -69,7 +84,7 @@ std::string FormatHeader(const NLHeader &h) {
     w << ' ' << h.options[i];
   w << ' ' << h.ampl_vbtol << '\n';
   w.Format(" {} {} {} {} {} {}\n")
-      << h.num_vars << (h.num_cons - h.num_logical_cons) << h.num_objs
+      << h.num_vars << h.num_algebraic_cons << h.num_objs
       << h.num_ranges << h.num_eqns << h.num_logical_cons;
   w.Format(" {} {} {} {} {} {}\n")
       << h.num_nl_cons << h.num_nl_objs
@@ -182,7 +197,7 @@ void CheckHeader(const NLHeader &h) {
   EXPECT_EQ(h.ampl_vbtol, actual_header.ampl_vbtol);
 
   EXPECT_EQ(h.num_vars, actual_header.num_vars);
-  EXPECT_EQ(h.num_cons, actual_header.num_cons);
+  EXPECT_EQ(h.num_algebraic_cons, actual_header.num_algebraic_cons);
   EXPECT_EQ(h.num_objs, actual_header.num_objs);
   EXPECT_EQ(h.num_ranges, actual_header.num_ranges);
   EXPECT_EQ(h.num_eqns, actual_header.num_eqns);
@@ -245,8 +260,7 @@ void CheckHeader(const NLHeader &h) {
   EXPECT_EQ(asl->i.ampl_vbtol_, actual_header.ampl_vbtol);
 
   EXPECT_EQ(asl->i.n_var_, actual_header.num_vars);
-  EXPECT_EQ(asl->i.n_con_,
-      actual_header.num_cons - actual_header.num_logical_cons);
+  EXPECT_EQ(asl->i.n_con_, actual_header.num_algebraic_cons);
   EXPECT_EQ(asl->i.n_obj_, actual_header.num_objs);
   EXPECT_EQ(asl->i.nranges_, actual_header.num_ranges);
   EXPECT_EQ(asl->i.n_eqn_, actual_header.num_eqns);
@@ -359,6 +373,55 @@ TEST(NLReaderTest, IncompleteHeader) {
       NLReader().ReadString(ReplaceLine(input, 6, " 0")),
       ampl::ParseError, "(input):7:3: expected nonnegative integer");
 }
+
+void ReadNL(const NLHeader &header, const char *body) {
+  NLReader reader;
+  reader.ReadString(FormatHeader(header) + body);
+}
+
+TEST(NLReaderTest, ObjIndex) {
+  EXPECT_THROW_MSG(
+    ReadNL(NLHeader(), "O-1 0\nn0"),
+    ampl::ParseError, "(input):11:2: expected nonnegative integer");
+  NLHeader header = {};
+  header.num_objs = 10;
+  ReadNL(header, "O0 9\nn0");
+  EXPECT_THROW_MSG(
+    ReadNL(header, "O10 0\nn0"),
+    ampl::ParseError, "(input):11:2: objective index 10 is out of bounds");
+}
+
+TEST(NLReaderTest, ObjType) {
+  NLHeader header = {};
+  header.num_objs = 1;
+  ReadNL(header, "O0 0\nn0");
+  ReadNL(header, "O0 1\nn0");
+  ReadNL(header, "O0 10\nn0");
+  EXPECT_THROW_MSG(
+    ReadNL(header, "O0 -1\nn0"),
+    ampl::ParseError, "(input):11:4: expected nonnegative integer");
+}
+
+TEST(NLReaderTest, ObjExpr) {
+  TestNLHandler handler;
+  NLReader reader(&handler);
+  NLHeader header = {};
+  header.num_objs = 2;
+  header.num_vars = 1;
+  reader.ReadString(FormatHeader(header) + "O1 0\nn0");
+  EXPECT_TRUE(!handler.obj_exprs[0]);
+  EXPECT_EQ("minimize o2: 0;\n", handler.log.str());
+  reader.ReadString(FormatHeader(header) + "O0 1\nn4.2");
+  EXPECT_EQ("maximize o1: 4.2;\n", handler.log.str());
+  reader.ReadString(FormatHeader(header) + "O0 1\ns4.2");
+  EXPECT_EQ("maximize o1: 4;\n", handler.log.str());
+  reader.ReadString(FormatHeader(header) + "O0 1\nl4.2");
+  EXPECT_EQ("maximize o1: 4;\n", handler.log.str());
+  reader.ReadString(FormatHeader(header) + "O0 1\nv0");
+  EXPECT_EQ("maximize o1: x1;\n", handler.log.str());
+}
+
+// TODO: test expressions
 
 // TODO: more tests
 }
