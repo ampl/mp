@@ -22,7 +22,7 @@
 
 #include "gtest/gtest.h"
 #include "solvers/util/expr-factory.h"
-#include "solvers/util/nlreader.h"
+#include "solvers/util/nl.h"
 
 using ampl::ExprFactory;
 using ampl::NLHeader;
@@ -38,7 +38,7 @@ TEST(ExprFactoryTest, CreateNumericConstant) {
   EXPECT_EQ(42.0, ef.CreateNumericConstant(42).value());
 }
 
-TEST(ExprFactoryTest, CreateVariableChecksIndex) {
+TEST(ExprFactoryTest, CreateVariable) {
   NLHeader header = {};
   header.num_vars = 10;
   ExprFactory ef(header);
@@ -47,6 +47,17 @@ TEST(ExprFactoryTest, CreateVariableChecksIndex) {
   EXPECT_DEBUG_DEATH(ef.CreateVariable(-1);, "Assertion");  // NOLINT(*)
   EXPECT_DEBUG_DEATH(ef.CreateVariable(10);, "Assertion");  // NOLINT(*)
 }
+
+TEST(ExprFactoryTest, CompatibleWithFGRead) {
+  NLHeader header = {};
+  ExprFactory ef(header);
+  ASL *asl = ASL_alloc(ASL_read_fg);
+  // TODO: read asl and compare to the one produced by fg_read
+  ASL_free(&asl);
+}
+
+// TODO: check if the asl produced by ExprFactory is binary compatible with
+//       the one produced by reading an .nl file with fg_read.
 
 // TODO: more tests
 }

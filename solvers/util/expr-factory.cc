@@ -22,7 +22,7 @@
 
 #include "solvers/util/expr-factory.h"
 
-#include "solvers/util/nlreader.h"
+#include "solvers/util/nl.h"
 
 namespace ampl {
 

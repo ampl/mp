@@ -1,5 +1,5 @@
 /*
- An nl reader.
+ .nl file support.
 
  Copyright (C) 2013 AMPL Optimization Inc
 
@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/util/nlreader.h"
+#include "solvers/util/nl.h"
 
 #include "solvers/arith.h"
 #include "solvers/util/os.h"
@@ -54,6 +54,43 @@ class ParseErrorReporter {
 }
 
 namespace ampl {
+
+fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h) {
+  w << (h.format == NLHeader::TEXT ? 'g' : 'b') << h.num_options;
+  for (int i = 0; i < h.num_options; ++i)
+    w << ' ' << h.options[i];
+  if (h.options[VBTOL_OPTION] == READ_VBTOL)
+    w << ' ' << h.ampl_vbtol;
+  w << '\n';
+  w.Format(" {} {} {} {} {} {}\n")
+      << h.num_vars << h.num_algebraic_cons << h.num_objs
+      << h.num_ranges << h.num_eqns << h.num_logical_cons;
+  w.Format(" {} {} {} {} {} {}\n")
+      << h.num_nl_cons << h.num_nl_objs
+      << (h.num_compl_conds - h.num_nl_compl_conds)
+      << h.num_nl_compl_conds << h.num_compl_dbl_ineqs
+      << h.num_compl_vars_with_nz_lb;
+  w.Format(" {} {}\n")
+      << h.num_nl_net_cons << h.num_linear_net_cons;
+  w.Format(" {} {} {}\n")
+      << h.num_nl_vars_in_cons << h.num_nl_vars_in_objs
+      << h.num_nl_vars_in_both;
+  w.Format(" {} {} 0 {}\n")
+      << h.num_linear_net_vars << h.num_funcs << h.flags;
+  w.Format(" {} {} {} {} {}\n")
+      << h.num_linear_binary_vars << h.num_linear_integer_vars
+      << h.num_nl_integer_vars_in_both << h.num_nl_integer_vars_in_cons
+      << h.num_nl_integer_vars_in_objs;
+  w.Format(" {} {}\n")
+      << h.num_con_nonzeros << h.num_obj_nonzeros;
+  w.Format(" {} {}\n")
+      << h.max_con_name_len << h.max_var_name_len;
+  w.Format(" {} {} {} {} {}\n")
+      << h.num_common_exprs_in_both << h.num_common_exprs_in_cons
+      << h.num_common_exprs_in_objs << h.num_common_exprs_in_cons1
+      << h.num_common_exprs_in_objs1;
+  return w;
+}
 
 NLHandler::~NLHandler() {}
 

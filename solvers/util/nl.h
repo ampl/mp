@@ -1,5 +1,5 @@
 /*
- An nl reader.
+ .nl file support.
 
  Copyright (C) 2013 AMPL Optimization Inc
 
@@ -20,8 +20,8 @@
  Author: Victor Zverovich
  */
 
-#ifndef SOLVERS_UTIL_NLREADER_H_
-#define SOLVERS_UTIL_NLREADER_H_
+#ifndef SOLVERS_UTIL_NL_H_
+#define SOLVERS_UTIL_NL_H_
 
 #include "solvers/util/error.h"
 #include "solvers/util/expr-factory.h"
@@ -191,6 +191,8 @@ struct NLHeader {
   int num_common_exprs_in_objs1;
 };
 
+fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h);
+
 class NLHandler {
  public:
   virtual ~NLHandler();
@@ -230,4 +232,4 @@ class NLReader {
 };
 }
 
-#endif  // SOLVERS_UTIL_NLREADER_H_
+#endif  // SOLVERS_UTIL_NL_H_

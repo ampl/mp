@@ -4,7 +4,7 @@
 add_definitions(-DUSE_CLOCK_GETTIME)
 add_library(util
   clock.cc clock.h error.cc error.h expr.cc expr.h
-  expr-factory.cc expr-factory.h format.cc format.h nlreader.cc nlreader.h
+  expr-factory.cc expr-factory.h format.cc format.h nl.cc nl.h
   noncopyable.h os.cc os.h problem.cc problem.h rstparser.cc rstparser.h
   solver.cc solver.h)
 add_dependencies(util arith_h)

@@ -21,7 +21,7 @@
  */
 
 #include "gtest/gtest.h"
-#include "solvers/util/nlreader.h"
+#include "solvers/util/nl.h"
 #include "solvers/util/problem.h"
 #include "tests/util.h"
 
@@ -65,7 +65,7 @@ std::string ReplaceLine(std::string s, int line_index, const char *new_line) {
   return s;
 }
 
-TEST(NLReaderTest, ReplaceLine) {
+TEST(NLTest, ReplaceLine) {
   EXPECT_EQ("de", ReplaceLine("", 0, "de"));
   EXPECT_EQ("de", ReplaceLine("abc", 0, "de"));
   EXPECT_THROW(ReplaceLine("abc", 1, "de"), ampl::Error);
@@ -76,40 +76,76 @@ TEST(NLReaderTest, ReplaceLine) {
   EXPECT_THROW(ReplaceLine("abc\ndef", 2, "gh"), ampl::Error);
 }
 
+TEST(NLTest, WriteTextHeader) {
+  NLHeader header = {
+    NLHeader::TEXT,
+    9, {2, 3, 5, 7, 11, 13, 17, 19, 23}, 1.23,
+    29, 47, 37, 41, 43, 31,
+    53, 59, 67, 61, 71, 73,
+    79, 83,
+    89, 97, 101,
+    103, 107, 109,
+    113, 127, 131, 137, 139,
+    149, 151,
+    157, 163,
+    167, 173, 179, 181, 191
+  };
+  fmt::Writer w;
+  w << header;
+  EXPECT_EQ(
+      "g9 2 3 5 7 11 13 17 19 23 1.23\n"
+      " 29 47 37 41 43 31\n"
+      " 53 59 6 61 71 73\n"
+      " 79 83\n"
+      " 89 97 101\n"
+      " 103 107 0 109\n"
+      " 113 127 131 137 139\n"
+      " 149 151\n"
+      " 157 163\n"
+      " 167 173 179 181 191\n",
+      w.str());
+}
+
+TEST(NLTest, WriteBinaryHeader) {
+  NLHeader header = {NLHeader::BINARY, 3, 11, 22, 33};
+  fmt::Writer w;
+  w << header;
+  EXPECT_EQ(
+      "b3 11 22 33\n"
+      " 0 0 0 0 0 0\n"
+      " 0 0 0 0 0 0\n"
+      " 0 0\n"
+      " 0 0 0\n"
+      " 0 0 0 0\n"
+      " 0 0 0 0 0\n"
+      " 0 0\n"
+      " 0 0\n"
+      " 0 0 0 0 0\n",
+      w.str());
+}
+
+TEST(NLTest, WriteBinarySwappedHeader) {
+  NLHeader header = {NLHeader::BINARY_SWAPPED};
+  fmt::Writer w;
+  w << header;
+  EXPECT_EQ(
+      "b0\n"
+      " 0 0 0 0 0 0\n"
+      " 0 0 0 0 0 0\n"
+      " 0 0\n"
+      " 0 0 0\n"
+      " 0 0 0 0\n"
+      " 0 0 0 0 0\n"
+      " 0 0\n"
+      " 0 0\n"
+      " 0 0 0 0 0\n",
+      w.str());
+}
+
 // Formats header as a string.
 std::string FormatHeader(const NLHeader &h) {
   fmt::Writer w;
-  w << (h.format == NLHeader::TEXT ? 'g' : 'b') << h.num_options;
-  for (int i = 0; i < ampl::MAX_NL_OPTIONS; ++i)
-    w << ' ' << h.options[i];
-  w << ' ' << h.ampl_vbtol << '\n';
-  w.Format(" {} {} {} {} {} {}\n")
-      << h.num_vars << h.num_algebraic_cons << h.num_objs
-      << h.num_ranges << h.num_eqns << h.num_logical_cons;
-  w.Format(" {} {} {} {} {} {}\n")
-      << h.num_nl_cons << h.num_nl_objs
-      << (h.num_compl_conds - h.num_nl_compl_conds)
-      << h.num_nl_compl_conds << h.num_compl_dbl_ineqs
-      << h.num_compl_vars_with_nz_lb;
-  w.Format(" {} {}\n")
-      << h.num_nl_net_cons << h.num_linear_net_cons;
-  w.Format(" {} {} {}\n")
-      << h.num_nl_vars_in_cons << h.num_nl_vars_in_objs
-      << h.num_nl_vars_in_both;
-  w.Format(" {} {} 0 {}\n")
-      << h.num_linear_net_vars << h.num_funcs << h.flags;
-  w.Format(" {} {} {} {} {}\n")
-      << h.num_linear_binary_vars << h.num_linear_integer_vars
-      << h.num_nl_integer_vars_in_both << h.num_nl_integer_vars_in_cons
-      << h.num_nl_integer_vars_in_objs;
-  w.Format(" {} {}\n")
-      << h.num_con_nonzeros << h.num_obj_nonzeros;
-  w.Format(" {} {}\n")
-      << h.max_con_name_len << h.max_var_name_len;
-  w.Format(" {} {} {} {} {}\n")
-      << h.num_common_exprs_in_both << h.num_common_exprs_in_cons
-      << h.num_common_exprs_in_objs << h.num_common_exprs_in_cons1
-      << h.num_common_exprs_in_objs1;
+  w << h;
   return w.str();
 }
 
@@ -121,7 +157,7 @@ NLHeader ReadHeader(int line_index, const char *line) {
   return handler.header;
 }
 
-TEST(NLReaderTest, NoNewlineAtEOF) {
+TEST(NLTest, NoNewlineAtEOF) {
   NLReader().ReadString("g\n"
     " 1 1 0\n"
     " 0 0\n"
@@ -135,12 +171,12 @@ TEST(NLReaderTest, NoNewlineAtEOF) {
     "k0\0h");
 }
 
-TEST(NLReaderTest, InvalidFormat) {
+TEST(NLTest, InvalidFormat) {
   EXPECT_THROW_MSG(ReadHeader(0, "x"),
       ampl::ParseError, "(input):1:1: expected format specifier");
 }
 
-TEST(NLReaderTest, InvalidNumOptions) {
+TEST(NLTest, InvalidNumOptions) {
   EXPECT_EQ(0, ReadHeader(0, "ga").num_options);
   EXPECT_EQ(0, ReadHeader(0, "g-1").num_options);
   EXPECT_THROW_MSG(ReadHeader(0, "g10"),
@@ -165,7 +201,7 @@ void CheckReadOptions(size_t num_options,
     EXPECT_EQ(0, header.options[i]);
 }
 
-TEST(NLReaderTest, ReadOptions) {
+TEST(NLTest, ReadOptions) {
   const int options[ampl::MAX_NL_OPTIONS + 1] = {
       3, 5, 7, 11, 13, 17, 19, 23, 29, 31
   };
@@ -176,7 +212,7 @@ TEST(NLReaderTest, ReadOptions) {
   EXPECT_EQ(0, ReadHeader(0, "g").num_options);
 }
 
-TEST(NLReaderTest, ReadAMPLVBTol) {
+TEST(NLTest, ReadAMPLVBTol) {
   EXPECT_EQ(4.2, ReadHeader(0, "g2 0 3 4.2").ampl_vbtol);
   EXPECT_EQ(0, ReadHeader(0, "g2 0 0 4.2").ampl_vbtol);
   EXPECT_EQ(0, ReadHeader(0, "g2 0 3").ampl_vbtol);
@@ -305,7 +341,7 @@ void CheckHeader(const NLHeader &h) {
   ASL_free(&asl);
 }
 
-TEST(NLReaderTest, ReadFullHeader) {
+TEST(NLTest, ReadFullHeader) {
   NLHeader header = {
     NLHeader::BINARY,
     9, {2, 3, 5, 7, 11, 13, 17, 19, 23}, 1.23,
@@ -324,12 +360,12 @@ TEST(NLReaderTest, ReadFullHeader) {
   CheckHeader(zero_header);
 }
 
-TEST(NLReaderTest, NumComplDblIneq) {
+TEST(NLTest, NumComplDblIneq) {
   EXPECT_EQ(42, ReadHeader(2, " 0 0 0 0 42").num_compl_dbl_ineqs);
   EXPECT_EQ(-1, ReadHeader(2, " 0 0 70 0 42").num_compl_dbl_ineqs);
 }
 
-TEST(NLReaderTest, Arith) {
+TEST(NLTest, Arith) {
   EXPECT_EQ(NLHeader::TEXT, ReadHeader(5, " 0 0").format);
   EXPECT_EQ(NLHeader::TEXT, ReadHeader(5, " 0 0 0").format);
   EXPECT_EQ(NLHeader::TEXT, ReadHeader(5,
@@ -342,7 +378,7 @@ TEST(NLReaderTest, Arith) {
   // TODO: check if the bytes are actually swapped
 }
 
-TEST(NLReaderTest, IncompleteHeader) {
+TEST(NLTest, IncompleteHeader) {
   ReadHeader(0, "g");
   EXPECT_THROW_MSG(
       ReadHeader(0, "\n"),
@@ -379,7 +415,7 @@ void ReadNL(const NLHeader &header, const char *body) {
   reader.ReadString(FormatHeader(header) + body);
 }
 
-TEST(NLReaderTest, ObjIndex) {
+TEST(NLTest, ObjIndex) {
   EXPECT_THROW_MSG(
     ReadNL(NLHeader(), "O-1 0\nn0"),
     ampl::ParseError, "(input):11:2: expected nonnegative integer");
@@ -391,7 +427,7 @@ TEST(NLReaderTest, ObjIndex) {
     ampl::ParseError, "(input):11:2: objective index 10 is out of bounds");
 }
 
-TEST(NLReaderTest, ObjType) {
+TEST(NLTest, ObjType) {
   NLHeader header = {};
   header.num_objs = 1;
   ReadNL(header, "O0 0\nn0");
@@ -402,7 +438,7 @@ TEST(NLReaderTest, ObjType) {
     ampl::ParseError, "(input):11:4: expected nonnegative integer");
 }
 
-TEST(NLReaderTest, ObjExpr) {
+TEST(NLTest, ObjExpr) {
   TestNLHandler handler;
   NLReader reader(&handler);
   NLHeader header = {};
@@ -420,8 +456,6 @@ TEST(NLReaderTest, ObjExpr) {
   reader.ReadString(FormatHeader(header) + "O0 1\nv0");
   EXPECT_EQ("maximize o1: x1;\n", handler.log.str());
 }
-
-// TODO: test expressions
 
 // TODO: more tests
 }

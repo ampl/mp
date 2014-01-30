@@ -10,8 +10,8 @@ cxx_test_with_flags(expr-factory-test "" "gtest;util"
 
 cxx_test_with_flags(format-test "" "gtest;util" format-test.cc)
 
-cxx_test_with_flags(nlreader-test "" "gtest;util"
-  ../test-main.cc ../util.cc nlreader-test.cc)
+cxx_test_with_flags(nl-test "" "gtest;util"
+  ../test-main.cc ../util.cc nl-test.cc)
 
 add_executable(numberofmap-speed-test
   numberofmap-speed-test.cc ../expr-builder.cc)
