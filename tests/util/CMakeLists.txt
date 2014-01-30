@@ -5,6 +5,9 @@ cxx_test_with_flags(error-test "" "gtest;util" ../test-main.cc error-test.cc)
 cxx_test_with_flags(expr-test "" "gtest;util"
   ../test-main.cc ../expr-builder.cc expr-test.cc no-unordered-map-test.cc)
 
+cxx_test_with_flags(expr-factory-test "" "gtest;util"
+  ../test-main.cc expr-factory-test.cc)
+
 cxx_test_with_flags(format-test "" "gtest;util" format-test.cc)
 
 cxx_test_with_flags(nlreader-test "" "gtest;util"

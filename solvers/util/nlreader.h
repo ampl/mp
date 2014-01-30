@@ -24,8 +24,7 @@
 #define SOLVERS_UTIL_NLREADER_H_
 
 #include "solvers/util/error.h"
-#include "solvers/util/expr.h"
-#include "solvers/util/noncopyable.h"
+#include "solvers/util/expr-factory.h"
 
 namespace ampl {
 
@@ -199,27 +198,12 @@ class NLHandler {
   virtual void HandleObj(int obj_index, bool maximize, NumericExpr expr) = 0;
 };
 
-class ExprFactory : Noncopyable {
- private:
-  ASL *asl_;
-  efunc *r_ops_[N_OPS];
-
- public:
-  ExprFactory();
-  ~ExprFactory();
-
-  void Init(const NLHeader &h);
-
-  NumericConstant CreateNumericConstant(double value);
-  Variable CreateVariable(int var_index);
-};
-
 // An nl reader.
 class NLReader {
  private:
   NLHandler *handler_;
   NLHeader header_;
-  ExprFactory factory_;
+  ExprFactory *factory_;
 
   // Reads an expression.
   NumericExpr ReadExpr(TextReader &reader);
@@ -235,7 +219,7 @@ class NLReader {
   void ReadColumnOffsets(TextReader &reader);
 
  public:
-  explicit NLReader(NLHandler *h = 0) : handler_(h) {}
+  explicit NLReader(NLHandler *h = 0) : handler_(h), factory_(0) {}
 
   // Reads a problem from a file.
   void ReadFile(fmt::StringRef filename);

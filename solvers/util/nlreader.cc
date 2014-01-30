@@ -101,7 +101,7 @@ class TextReader {
     token_ = ptr_;
   }
 
-  void ReadEndOfLine() {
+  void ReadTillEndOfLine() {
     while (char c = *ptr_) {
       ++ptr_;
       if (c == '\n') {
@@ -163,127 +163,6 @@ class TextReader {
   }
 };
 
-ExprFactory::ExprFactory() : asl_(0) {
-  for (int i = 0; i < N_OPS; ++i)
-    r_ops_[i] = reinterpret_cast<efunc*>(i);
-}
-
-ExprFactory::~ExprFactory() {
-  ASL_free(&asl_);
-}
-
-void ExprFactory::Init(const NLHeader &h) {
-  // TODO: move to ctor and remove this method
-  ASL_free(&asl_);
-
-  asl_ = ASL_alloc(ASL_read_fg);
-  ASL_fg *asl = reinterpret_cast<ASL_fg*>(asl_);
-  asl->I.r_ops_ = r_ops_;
-
-  asl->i.ampl_options_[0] = h.num_options;
-  for (int i = 0; i < ampl::MAX_NL_OPTIONS; ++i)
-    asl->i.ampl_options_[i + 1] = h.options[i];
-  asl->i.ampl_vbtol_ = h.ampl_vbtol;
-
-  asl->i.n_var_ = h.num_vars;
-  asl->i.n_con_ = h.num_algebraic_cons;
-  asl->i.n_obj_ = h.num_objs;
-  asl->i.nranges_ = h.num_ranges;
-  asl->i.n_eqn_ = h.num_eqns;
-  asl->i.n_lcon_ = h.num_logical_cons;
-
-  asl->i.nlc_ = h.num_nl_cons;
-  asl->i.nlo_ = h.num_nl_objs;
-  asl->i.n_cc_ = h.num_compl_conds;
-  asl->i.nlcc_ = h.num_nl_compl_conds;
-  asl->i.ndcc_ = h.num_compl_dbl_ineqs;
-  asl->i.nzlb_ = h.num_compl_vars_with_nz_lb;
-
-  asl->i.nlnc_ = h.num_nl_net_cons;
-  asl->i.lnc_ = h.num_linear_net_cons;
-
-  asl->i.nlvc_ = h.num_nl_vars_in_cons;
-  asl->i.nlvo_ = h.num_nl_vars_in_objs;
-  asl->i.nlvb_ = h.num_nl_vars_in_both;
-
-  asl->i.nwv_ = h.num_linear_net_vars;
-  asl->i.nfunc_ = h.num_funcs;
-  asl->i.flags = h.flags;
-
-  asl->i.nbv_ = h.num_linear_binary_vars;
-  asl->i.niv_ = h.num_linear_integer_vars;
-  asl->i.nlvbi_ = h.num_nl_integer_vars_in_both;
-  asl->i.nlvci_ = h.num_nl_integer_vars_in_cons;
-  asl->i.nlvoi_ = h.num_nl_integer_vars_in_objs;
-
-  asl->i.nzc_ = h.num_con_nonzeros;
-  asl->i.nzo_ = h.num_obj_nonzeros;
-
-  asl->i.maxrownamelen_ = h.max_con_name_len;
-  asl->i.maxcolnamelen_ = h.max_var_name_len;
-
-  asl->i.comb_ = h.num_common_exprs_in_both;
-  asl->i.comc_ = h.num_common_exprs_in_cons;
-  asl->i.como_ = h.num_common_exprs_in_objs;
-  asl->i.comc1_ = h.num_common_exprs_in_cons1;
-  asl->i.como1_ = h.num_common_exprs_in_objs1;
-
-  asl->i.n_var0 = asl->i.n_var1 = asl->i.n_var_;
-  asl->i.n_con0 = asl->i.n_con1 = asl->i.n_con_;
-  int nlv = asl->i.nlvc_;
-  if (nlv < asl->i.nlvo_)
-    nlv = asl->i.nlvo_;
-  if (nlv <= 0)
-    nlv = 1;
-  asl->i.x0len_ = nlv * sizeof(double);
-  asl->i.x0kind_ = ASL_first_x;
-  asl->i.n_conjac_[0] = 0;
-  asl->i.n_conjac_[1] = asl->i.n_con_;
-  asl->i.c_vars_ = asl->i.o_vars_ =
-      asl->i.n_var_;  // confusion arises otherwise
-
-  // TODO: allocate arrays as fg_read does
-  int nv1 = asl->i.n_var_ + asl->i.nsufext[ASL_Sufkind_var];
-  int ncom = 0;
-  int nv = nv1 + ncom;
-  int nc0 = asl->i.n_con_;
-  int nc = nc0 + asl->i.nsufext[ASL_Sufkind_con];
-  int no = asl->i.n_obj_;
-  //int nvc = asl->i.c_vars_;
-  //int nvo = asl->i.o_vars_;
-  int nlcon = asl->i.n_lcon_;
-  int nco = nc + no + nlcon;
-  asl->i.ncom0_ = asl->i.combc_ + asl->i.como_;
-  asl->i.ncom1_ = asl->i.comc1_ + asl->i.como1_;
-  unsigned x =
-      nco * sizeof(cde) + no * sizeof(ograd*)
-    + nv * (sizeof(expr_v) + 2 * sizeof(int))
-    //+ asl->i.ncom0_ * sizeof(cexp)
-    + asl->i.ncom1_ * sizeof(cexp1)
-    //+ nfunc * sizeof(func_info*)
-    //+ nvref * sizeof(int)
-    + no;
-  expr_v *e = asl->I.var_e_ =
-      reinterpret_cast<expr_v*>(M1zapalloc_ASL(&asl_->i, x));
-  for (int i = 0; i < h.num_vars; ++i, ++e) {
-    e->op = r_ops_[OPVARVAL];
-    e->a = i;
-  }
-}
-
-NumericConstant ExprFactory::CreateNumericConstant(double value) {
-  expr_n *e = reinterpret_cast<expr_n*>(mem_ASL(asl_, asl_->i.size_expr_n_));
-  e->op = reinterpret_cast<efunc_n*>(r_ops_[OPNUM]);
-  e->v = value;
-  return Expr::Create<NumericConstant>(reinterpret_cast<expr*>(e));
-}
-
-Variable ExprFactory::CreateVariable(int var_index) {
-  assert(var_index >= 0);
-  return Expr::Create<Variable>(reinterpret_cast<expr*>(
-      reinterpret_cast<ASL_fg*>(asl_)->I.var_e_ + var_index));
-}
-
 NumericExpr NLReader::ReadExpr(TextReader &reader) {
   NumericExpr expr;
   switch (reader.ReadChar()) {
@@ -294,13 +173,13 @@ NumericExpr NLReader::ReadExpr(TextReader &reader) {
     // TODO: implement string
     break;
   case 's':
-    expr = factory_.CreateNumericConstant(reader.ReadShort());
+    expr = factory_->CreateNumericConstant(reader.ReadShort());
     break;
   case 'l':
-    expr = factory_.CreateNumericConstant(reader.ReadLong());
+    expr = factory_->CreateNumericConstant(reader.ReadLong());
     break;
   case 'n':
-    expr = factory_.CreateNumericConstant(reader.ReadDouble());
+    expr = factory_->CreateNumericConstant(reader.ReadDouble());
     break;
   case 'o':
     // TODO: implement expression
@@ -312,13 +191,13 @@ NumericExpr NLReader::ReadExpr(TextReader &reader) {
       reader.ReportParseError("variable index {} is out of bounds")
           << var_index;
     }
-    expr = factory_.CreateVariable(var_index);
+    expr = factory_->CreateVariable(var_index);
     break;
   }
   default:
     reader.ReportParseError("expected expression");
   }
-  reader.ReadEndOfLine();
+  reader.ReadTillEndOfLine();
   return expr;
 }
 
@@ -327,7 +206,7 @@ void NLReader::ReadLinearExpr(TextReader &reader, int num_terms) {
     reader.ReadUInt();
     reader.ReadUInt(); // TODO: read double
     // TODO
-    reader.ReadEndOfLine();
+    reader.ReadTillEndOfLine();
   }
 }
 
@@ -336,16 +215,16 @@ void NLReader::ReadBounds(TextReader &reader) {
     reader.ReadUInt();
     reader.ReadUInt(); // TODO: read double
     // TODO
-    reader.ReadEndOfLine();
+    reader.ReadTillEndOfLine();
   }
 }
 
 void NLReader::ReadColumnOffsets(TextReader &reader) {
   int count = reader.ReadUInt(); // TODO
-  reader.ReadEndOfLine();
+  reader.ReadTillEndOfLine();
   for (int i = 0; i < count; ++i) {
     reader.ReadUInt(); // TODO
-    reader.ReadEndOfLine();
+    reader.ReadTillEndOfLine();
   }
 }
 
@@ -391,7 +270,7 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
   }
   if (header_.options[VBTOL_OPTION] == READ_VBTOL)
     reader.ReadOptionalDouble(header_.ampl_vbtol);
-  reader.ReadEndOfLine();
+  reader.ReadTillEndOfLine();
 
   // Read problem dimensions.
   header_.num_vars = reader.ReadUInt();
@@ -402,7 +281,7 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
       reader.ReadOptionalUInt(header_.num_eqns)) {
       reader.ReadOptionalUInt(header_.num_logical_cons);
   }
-  reader.ReadEndOfLine();
+  reader.ReadTillEndOfLine();
 
   // Read the nonlinear and complementarity information.
   header_.num_nl_cons = reader.ReadUInt();
@@ -415,19 +294,19 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
   header_.num_compl_conds += header_.num_nl_compl_conds;
   if (header_.num_compl_conds > 0 && !all_compl)
     header_.num_compl_dbl_ineqs = -1;
-  reader.ReadEndOfLine();
+  reader.ReadTillEndOfLine();
 
   // Read the information about network constraints.
   header_.num_nl_net_cons = reader.ReadUInt();
   header_.num_linear_net_cons = reader.ReadUInt();
-  reader.ReadEndOfLine();
+  reader.ReadTillEndOfLine();
 
   // Read the information about nonlinear variables.
   header_.num_nl_vars_in_cons = reader.ReadUInt();
   header_.num_nl_vars_in_objs = reader.ReadUInt();
   header_.num_nl_vars_in_both = -1;
   reader.ReadOptionalUInt(header_.num_nl_vars_in_both);
-  reader.ReadEndOfLine();
+  reader.ReadTillEndOfLine();
 
   header_.num_linear_net_vars = reader.ReadUInt();
   header_.num_funcs = reader.ReadUInt();
@@ -445,7 +324,7 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
     }
     reader.ReadOptionalUInt(header_.flags);
   }
-  reader.ReadEndOfLine();
+  reader.ReadTillEndOfLine();
 
   // Read the information about discrete variables.
   header_.num_linear_binary_vars = reader.ReadUInt();
@@ -455,17 +334,17 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
     header_.num_nl_integer_vars_in_cons = reader.ReadUInt();
     header_.num_nl_integer_vars_in_objs = reader.ReadUInt();
   }
-  reader.ReadEndOfLine();
+  reader.ReadTillEndOfLine();
 
   // Read the information about nonzeros.
   header_.num_con_nonzeros = reader.ReadUInt();
   header_.num_obj_nonzeros = reader.ReadUInt();
-  reader.ReadEndOfLine();
+  reader.ReadTillEndOfLine();
 
   // Read the information about names.
   header_.max_con_name_len = reader.ReadUInt();
   header_.max_var_name_len = reader.ReadUInt();
-  reader.ReadEndOfLine();
+  reader.ReadTillEndOfLine();
 
   // Read the information about common expressions.
   header_.num_common_exprs_in_both = reader.ReadUInt();
@@ -473,7 +352,7 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
   header_.num_common_exprs_in_objs = reader.ReadUInt();
   header_.num_common_exprs_in_cons1 = reader.ReadUInt();
   header_.num_common_exprs_in_objs1 = reader.ReadUInt();
-  reader.ReadEndOfLine();
+  reader.ReadTillEndOfLine();
 
   handler_->HandleHeader(header_);
 
@@ -481,7 +360,8 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
     // TODO: switch to binary reader
   }
 
-  factory_.Init(header_);
+  ExprFactory ef(header_);
+  factory_ = &ef;
   for (;;) {
     char c = reader.ReadChar();
     switch (c) {
@@ -493,7 +373,7 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
       if (con_index >= header_.num_algebraic_cons) {
         // TODO: error: constraint index out of bounds
       }
-      reader.ReadEndOfLine();
+      reader.ReadTillEndOfLine();
       ReadExpr(reader);
       break;
     }
@@ -505,7 +385,7 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
       if (lcon_index >= header_.num_logical_cons) {
         // TODO: error: logical constraint index out of bounds
       }
-      reader.ReadEndOfLine();
+      reader.ReadTillEndOfLine();
       ReadExpr(reader);
       break;
     }
@@ -518,7 +398,7 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
         // TODO: error: objective index out of bounds
       }
       int num_terms = reader.ReadUInt(); // TODO: check
-      reader.ReadEndOfLine();
+      reader.ReadTillEndOfLine();
       ReadLinearExpr(reader, num_terms);
       // TODO: read gradient!
       break;
@@ -533,7 +413,7 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
             << obj_index;
       }
       int obj_type = reader.ReadUInt();
-      reader.ReadEndOfLine();
+      reader.ReadTillEndOfLine();
       handler_->HandleObj(obj_index, obj_type != 0, ReadExpr(reader));
       break;
     }
@@ -544,7 +424,7 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
       // TODO: read RHS
       break;
     case 'b':
-      reader.ReadEndOfLine();
+      reader.ReadTillEndOfLine();
       ReadBounds(reader);
       break;
     case 'k':
