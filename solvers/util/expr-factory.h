@@ -29,14 +29,21 @@
 namespace ampl {
 
 class NLHeader;
+class ExprFactory;
+
+namespace internal {
+const ASL &GetASL(const ExprFactory &ef);
+}
 
 class ExprFactory : Noncopyable {
  private:
   ASL *asl_;
   efunc *r_ops_[N_OPS];
 
+  friend const ASL &internal::GetASL(const ExprFactory &ef) { return *ef.asl_; }
+
  public:
-  ExprFactory(const NLHeader &h);
+  ExprFactory(const NLHeader &h, const char *stub, bool header_only = false);
   ~ExprFactory();
 
   NumericConstant CreateNumericConstant(double value);

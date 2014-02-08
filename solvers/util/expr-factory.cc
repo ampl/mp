@@ -24,10 +24,21 @@
 
 #include "solvers/util/nl.h"
 
+#include <cstring>
+
 namespace ampl {
 
-ExprFactory::ExprFactory(const NLHeader &h) : asl_(ASL_alloc(ASL_read_fg)) {
+ExprFactory::ExprFactory(const NLHeader &h, const char *stub, bool header_only)
+: asl_(ASL_alloc(ASL_read_fg)) {
   ASL_fg *asl = reinterpret_cast<ASL_fg*>(asl_);
+
+  std::size_t stub_len = std::strlen(stub);
+  asl->i.filename_ =
+      reinterpret_cast<char*>(M1alloc_ASL(&asl->i, stub_len + 5));
+  std::strcpy(asl->i.filename_, stub);
+  asl->i.stub_end_ = asl->i.filename_ + stub_len;
+  std::strcpy(asl->i.filename_ + stub_len, ".nl");
+
   for (int i = 0; i < N_OPS; ++i)
     r_ops_[i] = reinterpret_cast<efunc*>(i);
   asl->I.r_ops_ = r_ops_;
@@ -94,6 +105,9 @@ ExprFactory::ExprFactory(const NLHeader &h) : asl_(ASL_alloc(ASL_read_fg)) {
 
   // confusion arises otherwise
   asl->i.c_vars_ = asl->i.o_vars_ = asl->i.n_var_;
+
+  if (header_only)
+    return;
 
   // TODO: allocate arrays as fg_read does
   int nv1 = asl->i.n_var_ + asl->i.nsufext[ASL_Sufkind_var];

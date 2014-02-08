@@ -397,7 +397,7 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
     // TODO: switch to binary reader
   }
 
-  ExprFactory ef(header_);
+  ExprFactory ef(header_, name.c_str());
   factory_ = &ef;
   for (;;) {
     char c = reader.ReadChar();

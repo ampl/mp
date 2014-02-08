@@ -68,8 +68,8 @@ struct NLHeader {
   // Total number of variables.
   int num_vars;
 
-  // Number of algebraic constraints including ranges, equality constraints
-  // and not including logical constraints.
+  // Number of algebraic constraints including ranges and equality constraints.
+  // It doesn't include logical constraints.
   int num_algebraic_cons;
 
   // Total number of objectives.
@@ -127,7 +127,7 @@ struct NLHeader {
   // variables in both constraints and objectives.
   int num_nl_vars_in_objs;
 
-  // Number of nonlinear variables in both  constraints and objectives.
+  // Number of nonlinear variables in both constraints and objectives.
   int num_nl_vars_in_both;
 
   // Miscellaneous
@@ -155,11 +155,9 @@ struct NLHeader {
   int num_nl_integer_vars_in_both;
 
   // Number of integer nonlinear variables just in constraints.
-  // TODO: make consistent with num_nl_vars_in_cons
   int num_nl_integer_vars_in_cons;
 
   // Number of integer nonlinear variables just in objectives.
-  // TODO: make consistent with num_nl_vars_in_objs
   int num_nl_integer_vars_in_objs;
 
   // Information about nonzeros
