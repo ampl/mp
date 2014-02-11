@@ -32,8 +32,28 @@ class NLHeader;
 class ExprFactory;
 
 namespace internal {
-// Initialize ASL from an NLHeader object.
+// Initializes ASL from an NLHeader object.
 void InitASL(ASL &asl, const char *stub, const NLHeader &h);
+
+class ASLBuilder {
+ private:
+  ASL &asl_;
+  bool linear_;
+  efunc **r_ops_;
+  int nv1_;
+  int nderp_;
+
+ public:
+  ASLBuilder(ASL &asl, bool linear = false)
+  : asl_(asl), linear_(linear), r_ops_(0), nv1_(0), nderp_(0) {}
+
+  // Begin building the ASL.
+  // flags: reader flags, see ASL_reader_flag_bits.
+  void BeginBuild(int flags);
+
+  // End building the ASL.
+  void EndBuild();
+};
 
 const ASL &GetASL(const ExprFactory &ef);
 }
@@ -46,7 +66,9 @@ class ExprFactory : Noncopyable {
   friend const ASL &internal::GetASL(const ExprFactory &ef) { return *ef.asl_; }
 
  public:
-  ExprFactory(const NLHeader &h, const char *stub);
+  // Constructs an ExprFactory object.
+  // flags: reader flags, see ASL_reader_flag_bits.
+  ExprFactory(const NLHeader &h, const char *stub, int flags = 0);
   ~ExprFactory();
 
   NumericConstant CreateNumericConstant(double value);

@@ -129,177 +129,189 @@ public:
   }
 };
 
-ExprFactory::ExprFactory(const NLHeader &h, const char *stub) :
-    asl_(ASL_alloc(ASL_read_fg)) {
-  internal::InitASL(*asl_, stub, h);
-
-  int flags = 0; // TODO: flags (ASL_return_read_err, ASL_allow_CLP)
+void internal::ASLBuilder::BeginBuild(int flags) {
+  // TODO: test ASLBuilder
 
   // Includes allocation of LUv, LUrhs, A_vals or Cgrad, etc.
-  flagsave_ASL(asl_, flags);
-  int nlcon = asl_->i.n_lcon_;
+  flagsave_ASL(&asl_, flags);
+
+  Edaginfo &info = asl_.i;
+  int nlcon = info.n_lcon_;
   if (nlcon && (flags & ASL_allow_CLP) == 0)
     throw ReadError(ASL_readerr_CLP, "cannot handle logical constraints");
 
   bool readall = (flags & ASL_keep_all_suffixes) != 0;
-  if (!asl_->i.size_expr_n_)
-    asl_->i.size_expr_n_ = sizeof(expr_n);
+  if (!info.size_expr_n_)
+    info.size_expr_n_ = sizeof(expr_n);
 
-  asl_->i.xscanf_ = asl_->i.binary_nl_ ? bscanf : ascanf;
+  info.xscanf_ = info.binary_nl_ ? bscanf : ascanf;
 
-  bool just_linear = false;
-  ASL_fg *asl = reinterpret_cast<ASL_fg*>(asl_);
+  bool linear_ = false;
+  Edag1info &info1 = reinterpret_cast<ASL_fg&>(asl_).I;
   int ncom = 0;
-  efunc **r_ops = 0;
-  if (!just_linear) {
-    r_ops = asl->I.r_ops_;
-    if (!r_ops)
-      r_ops = r_ops_ASL;
-    if (asl_->i.c_cexp1st_)
-      *asl_->i.c_cexp1st_ = 0;
-    if (asl_->i.o_cexp1st_)
-      *asl_->i.o_cexp1st_ = asl_->i.comc1_;
-    if (asl_->i.nfunc_)
-      func_add(asl_);
-    ncom = asl_->i.comb_ + asl_->i.comc_ + asl_->i.como_ + asl_->i.comc1_
-        + asl_->i.como1_;
+  if (!linear_) {
+    r_ops_ = info1.r_ops_;
+    if (!r_ops_)
+      r_ops_ = r_ops_ASL;
+    if (info.c_cexp1st_)
+      *info.c_cexp1st_ = 0;
+    if (info.o_cexp1st_)
+      *info.o_cexp1st_ = info.comc1_;
+    if (info.nfunc_)
+      func_add(&asl_);
+    ncom = info.comb_ + info.comc_ + info.como_ + info.comc1_
+        + info.como1_;
   }
 
-  int nc0 = asl_->i.n_con_;
-  int nc = nc0 + asl_->i.nsufext[ASL_Sufkind_con];
-  int no = asl_->i.n_obj_;
-  int nvc = asl_->i.c_vars_;
-  int nvo = asl_->i.o_vars_;
+  int nc0 = info.n_con_;
+  int nc = nc0 + info.nsufext[ASL_Sufkind_con];
+  int no = info.n_obj_;
+  int nvc = info.c_vars_;
+  int nvo = info.o_vars_;
   int nco = nc + no + nlcon;
-  // TODO
-  //if (no < 0 || nco <= 0)
-  //  throw ReadError(ASL_readerr_corrupt, "corrupt .nl file");
-  if (asl_->i.pi0_) {
-    memset(asl_->i.pi0_, 0, nc * sizeof(double));
-    if (asl_->i.havepi0_)
-      memset(asl_->i.havepi0_, 0, nc);
+  if (no < 0 || nco <= 0) {
+    throw ReadError(ASL_readerr_corrupt,
+        str(fmt::Format("invalid problem dimensions: "
+            "nc = {}, no = {}, nlcon = {}") << nc0 << no << nlcon));
   }
-  int nxv = asl_->i.nsufext[ASL_Sufkind_var];
-  int nvr = asl_->i.n_var_;  // nv for reading
+  if (info.pi0_) {
+    memset(info.pi0_, 0, nc * sizeof(double));
+    if (info.havepi0_)
+      memset(info.havepi0_, 0, nc);
+  }
+  int nxv = info.nsufext[ASL_Sufkind_var];
+  int nvr = info.n_var_;  // nv for reading
   int nv0 = nvr + nxv;
-  int nv1 = nv0;
-  int nv = nv1;
+  nv1_ = nv0;
+  int nv = nv1_;
   unsigned x = 0, nvref = 0, maxfwd1 = 0;
-  if (just_linear) {
+  if (linear_) {
     x = nco * sizeof(cde) + no * sizeof(ograd*) + nv * sizeof(expr_v) + no;
   } else {
-    int max_var = nv = nv1 + ncom;
-    asl->i.combc_ = asl->i.comb_ + asl->i.comc_;
-    int ncom_togo = asl->i.ncom0_ = asl->i.combc_ + asl->i.como_;
-    int nzclim = asl->i.ncom0_ >> 3;
-    asl->i.ncom1_ = asl->i.comc1_ + asl->i.como1_;
-    int nv0b = nv1 + asl->i.comb_;
-    int nv0c = nv0b + asl->i.comc_;
-    int nv01 = nv1 + asl->i.ncom0_;
+    int max_var = nv = nv1_ + ncom;
+    info.combc_ = info.comb_ + info.comc_;
+    int ncom_togo = info.ncom0_ = info.combc_ + info.como_;
+    int nzclim = info.ncom0_ >> 3;
+    info.ncom1_ = info.comc1_ + info.como1_;
+    int nv0b = nv1_ + info.comb_;
+    int nv0c = nv0b + info.comc_;
+    int nv01 = nv1_ + info.ncom0_;
     int nv011 = nv01 - 1;
     int last_cex = nv011;
-    int lasta00 = nv1 + 1;
+    int lasta00 = nv1_ + 1;
     int lasta = lasta00, lasta0 = lasta00;
-    asl->i.amax_ = lasta;
-    maxfwd1 = maxfwd + 1;
+    info.amax_ = lasta;
+    maxfwd1 = asl_.p.maxfwd_ + 1;
     nvref = 0;
     if (maxfwd1 > 1) {
-      nvref = maxfwd1
-          * ((asl->i.ncom0_ < vrefGulp ? asl->i.ncom0_ : vrefGulp) + 1);
+      nvref = maxfwd1 * ((info.ncom0_ < asl_.p.vrefGulp_ ?
+          info.ncom0_ : asl_.p.vrefGulp_) + 1);
     }
     x = nco * sizeof(cde) + no * sizeof(ograd*)
-        + nv * (sizeof(expr_v) + 2 * sizeof(int)) + asl->i.ncom0_ * sizeof(cexp)
-        + asl->i.ncom1_ * sizeof(cexp1) + asl->i.nfunc_ * sizeof(func_info*)
+        + nv * (sizeof(expr_v) + 2 * sizeof(int)) + info.ncom0_ * sizeof(cexp)
+        + info.ncom1_ * sizeof(cexp1) + info.nfunc_ * sizeof(func_info*)
         + nvref * sizeof(int) + no;
-    int nvar0 = asl_->i.n_var0;
-    int nvinc = asl_->i.n_var_ - nvar0 + nxv;
+    int nvar0 = info.n_var0;
+    int nvinc = info.n_var_ - nvar0 + nxv;
     if (!nvinc)
-      nvar0 += asl_->i.ncom0_ + asl_->i.ncom1_;
+      nvar0 += info.ncom0_ + info.ncom1_;
   }
 
-  if (asl_->i.X0_)
-    memset(asl_->i.X0_, 0, nv1 * sizeof(double));
-  if (asl_->i.havex0_)
-    memset(asl_->i.havex0_, 0, nv1);
-  expr_v *e = asl->I.var_e_ = reinterpret_cast<expr_v*>(M1zapalloc(x));
-  asl->I.con_de_ = reinterpret_cast<cde*>(e + nv);
-  asl->I.lcon_de_ = asl->I.con_de_ + nc;
-  asl->I.obj_de_ = asl->I.lcon_de_ + nlcon;
-  asl->i.Ograd_ = reinterpret_cast<ograd**>(asl->I.obj_de_ + no);
+  if (info.X0_)
+    memset(info.X0_, 0, nv1_ * sizeof(double));
+  if (info.havex0_)
+    memset(info.havex0_, 0, nv1_);
+  expr_v *e = info1.var_e_ =
+      reinterpret_cast<expr_v*>(M1zapalloc_ASL(&info, x));
+  info1.con_de_ = reinterpret_cast<cde*>(e + nv);
+  info1.lcon_de_ = info1.con_de_ + nc;
+  info1.obj_de_ = info1.lcon_de_ + nlcon;
+  info.Ograd_ = reinterpret_cast<ograd**>(info1.obj_de_ + no);
 
-  if (just_linear) {
-    asl_->i.objtype_ = reinterpret_cast<char*>(asl_->i.Ograd_ + no);
+  if (linear_) {
+    info.objtype_ = reinterpret_cast<char*>(info.Ograd_ + no);
   } else {
-    var_ex = e + nv1;
-    var_ex1 = var_ex + asl_->i.ncom0_;
+    info1.var_ex_ = e + nv1_;
+    info1.var_ex1_ = info1.var_ex_ + info.ncom0_;
     for (int k = 0; k < nv; ++e, ++k) {
       e->op = r_ops_[OPVARVAL];
       e->a = k;
     }
-    if (asl->i.skip_int_derivs_) {
-      if (asl_->i.nlvbi_)
-        InitVars(var_e, asl_->i.nlvb_, asl_->i.nlvbi_, nv1);
-      if (asl_->i.nlvci_)
-        InitVars(var_e, asl_->i.nlvb_ + asl_->i.nlvc_, asl_->i.nlvci_, nv1);
-      if (asl_->i.nlvoi_) {
-        InitVars(var_e, asl_->i.nlvb_ + asl_->i.nlvc_ + asl_->i.nlvo_,
-            asl_->i.nlvoi_, nv1);
+    if (info.skip_int_derivs_) {
+      if (info.nlvbi_)
+        InitVars(e, info.nlvb_, info.nlvbi_, nv1_);
+      if (info.nlvci_)
+        InitVars(e, info.nlvb_ + info.nlvc_, info.nlvci_, nv1_);
+      if (info.nlvoi_) {
+        InitVars(e, info.nlvb_ + info.nlvc_ + info.nlvo_,
+            info.nlvoi_, nv1_);
       }
     }
-    asl->I.cexps_ = reinterpret_cast<cexp*>(asl_->i.Ograd_ + no);
-    asl->I.cexps1_ = reinterpret_cast<cexp1*>(asl->I.cexps_ + asl_->i.ncom0_);
-    asl_->i.funcs_ = reinterpret_cast<func_info**>(asl->I.cexps1_
-        + asl_->i.ncom1_);
-    int *zc = reinterpret_cast<int*>(asl_->i.funcs_ + asl_->i.nfunc_);
+    info1.cexps_ = reinterpret_cast<cexp*>(info.Ograd_ + no);
+    info1.cexps1_ = reinterpret_cast<cexp1*>(info1.cexps_ + info.ncom0_);
+    info.funcs_ = reinterpret_cast<func_info**>(info1.cexps1_
+        + info.ncom1_);
+    int *zc = reinterpret_cast<int*>(info.funcs_ + info.nfunc_);
     int *zci = zc + nv;
     int *vrefx = zci + nv;
-    asl_->i.objtype_ = reinterpret_cast<char*>(vrefx + nvref);
+    info.objtype_ = reinterpret_cast<char*>(vrefx + nvref);
     if (nvref) {
       int *vrefnext = vrefx + maxfwd1;
       nvref -= maxfwd1;
     }
     int last_d = 0;
   }
-  if (asl_->i.n_cc_ && !asl_->i.cvar_)
-    asl_->i.cvar_ = reinterpret_cast<int*>(M1alloc(nc * sizeof(int)));
-  if (asl_->i.cvar_)
-    std::memset(asl_->i.cvar_, 0, nc * sizeof(int));
+  if (info.n_cc_ && !info.cvar_)
+    info.cvar_ = reinterpret_cast<int*>(M1alloc_ASL(&info, nc * sizeof(int)));
+  if (info.cvar_)
+    std::memset(info.cvar_, 0, nc * sizeof(int));
   int *ka = 0;
   int nz = 0;
-  int nderp = 0;
+  nderp_ = 0;
+}
+
+void internal::ASLBuilder::EndBuild() {
+  if (!linear_) {
+    // Make amax long enough for nlc to handle
+    // var_e[i].a for common variables i.
+    if (asl_.i.ncom0_) {
+      int i = asl_.i.comb_ + asl_.i.como_;
+      if (i < asl_.i.combc_)
+        i = asl_.i.combc_;
+      if ((i += nv1_ + 1) > asl_.i.amax_)
+        asl_.i.amax_ = i;
+    }
+    asl_.i.adjoints_ = reinterpret_cast<double*>(
+        M1zapalloc_ASL(&asl_.i, asl_.i.amax_ * Sizeof(double)));
+    asl_.i.adjoints_nv1_ = &asl_.i.adjoints_[nv1_];
+    asl_.i.nderps_ += nderp_;
+  }
+  // TODO
+  if (!linear_) {
+    asl_.p.Objval = asl_.p.Objval_nomap = obj1val_ASL;
+    asl_.p.Objgrd = asl_.p.Objgrd_nomap = obj1grd_ASL;
+    asl_.p.Conval = con1val_ASL;
+    asl_.p.Jacval = jac1val_ASL;
+    asl_.p.Conival = asl_.p.Conival_nomap = con1ival_ASL;
+    asl_.p.Congrd = asl_.p.Congrd_nomap = con1grd_ASL;
+    asl_.p.Lconval = lcon1val_ASL;
+    asl_.p.Xknown = x1known_ASL;
+  }
+}
+
+ExprFactory::ExprFactory(const NLHeader &h, const char *stub, int flags)
+: asl_(ASL_alloc(ASL_read_fg)) {
+  internal::InitASL(*asl_, stub, h);
 
   // TODO: this part should be optional
+  ASL_fg *asl = reinterpret_cast<ASL_fg*>(asl_);
   for (int i = 0; i < N_OPS; ++i)
     r_ops_[i] = reinterpret_cast<efunc*>(i);
   asl->I.r_ops_ = r_ops_;
 
-  // TODO: this part should be executed after problem construction
-  if (!just_linear) {
-    // Make amax long enough for nlc to handle
-    // var_e[i].a for common variables i.
-    if (asl_->i.ncom0_) {
-      int i = asl_->i.comb_ + asl_->i.como_;
-      if (i < asl_->i.combc_)
-        i = asl_->i.combc_;
-      if ((i += nv1 + 1) > asl_->i.amax_)
-        asl_->i.amax_ = i;
-    }
-    asl_->i.adjoints_ = reinterpret_cast<double*>(
-        M1zapalloc(asl_->i.amax_ * Sizeof(double)));
-    asl_->i.adjoints_nv1_ = &asl_->i.adjoints_[nv1];
-    asl_->i.nderps_ += nderp;
-  }
-  // TODO
-  if (!just_linear) {
-    asl_->p.Objval = asl_->p.Objval_nomap = obj1val_ASL;
-    asl_->p.Objgrd = asl_->p.Objgrd_nomap = obj1grd_ASL;
-    asl_->p.Conval = con1val_ASL;
-    asl_->p.Jacval = jac1val_ASL;
-    asl_->p.Conival = asl_->p.Conival_nomap = con1ival_ASL;
-    asl_->p.Congrd = asl_->p.Congrd_nomap = con1grd_ASL;
-    asl_->p.Lconval = lcon1val_ASL;
-    asl_->p.Xknown = x1known_ASL;
-  }
+  internal::ASLBuilder builder(*asl_, false);
+  builder.BeginBuild(flags);
+  builder.EndBuild();
 }
 
 ExprFactory::~ExprFactory() {
