@@ -75,8 +75,10 @@ fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h) {
   w.Format(" {} {} {}\n")
       << h.num_nl_vars_in_cons << h.num_nl_vars_in_objs
       << h.num_nl_vars_in_both;
-  w.Format(" {} {} 0 {}\n")
-      << h.num_linear_net_vars << h.num_funcs << h.flags;
+  w.Format(" {} {} {} {}\n")
+      << h.num_linear_net_vars << h.num_funcs
+      << (h.format != NLHeader::BINARY_SWAPPED ? 0 : 3 - Arith_Kind_ASL)
+      << h.flags;
   w.Format(" {} {} {} {} {}\n")
       << h.num_linear_binary_vars << h.num_linear_integer_vars
       << h.num_nl_integer_vars_in_both << h.num_nl_integer_vars_in_cons
