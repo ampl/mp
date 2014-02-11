@@ -92,3 +92,18 @@ std::vector<std::string> Split(const std::string &s, char sep) {
   items.push_back(s.substr(start));
   return items;
 }
+
+std::string ReplaceLine(std::string s, int line_index, const char *new_line) {
+  std::string::size_type start = 0;
+  while (line_index-- > 0) {
+    start = s.find('\n', start);
+    if (start == std::string::npos)
+      throw ampl::Error("invalid line index");
+    ++start;
+  }
+  std::string::size_type end = s.find('\n', start);
+  if (end == std::string::npos)
+    end = s.size();
+  s.replace(start, end - start, new_line);
+  return s;
+}

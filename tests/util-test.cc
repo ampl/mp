@@ -22,6 +22,7 @@
 
 #include "tests/util.h"
 #include "gtest/gtest.h"
+#include "solvers/util/error.h"
 
 namespace {
 
@@ -38,5 +39,16 @@ TEST(UtilTest, Split) {
   EXPECT_EQ(2u, result.size());
   EXPECT_EQ("abc", result[0]);
   EXPECT_EQ("", result[1]);
+}
+
+TEST(NLTest, ReplaceLine) {
+  EXPECT_EQ("de", ReplaceLine("", 0, "de"));
+  EXPECT_EQ("de", ReplaceLine("abc", 0, "de"));
+  EXPECT_THROW(ReplaceLine("abc", 1, "de"), ampl::Error);
+  EXPECT_EQ("de\n", ReplaceLine("abc\n", 0, "de"));
+  EXPECT_EQ("abc\nde", ReplaceLine("abc\n", 1, "de"));
+  EXPECT_EQ("gh\ndef", ReplaceLine("abc\ndef", 0, "gh"));
+  EXPECT_EQ("abc\ngh", ReplaceLine("abc\ndef", 1, "gh"));
+  EXPECT_THROW(ReplaceLine("abc\ndef", 2, "gh"), ampl::Error);
 }
 }

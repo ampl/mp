@@ -62,6 +62,9 @@ void ExecuteShellCommand(fmt::StringRef command);
 // Splits the string into an array of substrings.
 std::vector<std::string> Split(const std::string &s, char sep);
 
+// Replace line at line_index in s with new_line.
+std::string ReplaceLine(std::string s, int line_index, const char *new_line);
+
 #define FORMAT_TEST_THROW_(statement, expected_exception, message, fail) \
   GTEST_AMBIGUOUS_ELSE_BLOCKER_ \
   if (::testing::internal::ConstCharPtr gtest_msg = "") { \

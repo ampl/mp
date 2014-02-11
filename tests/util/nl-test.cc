@@ -50,32 +50,6 @@ struct TestNLHandler : ampl::NLHandler {
   }
 };
 
-std::string ReplaceLine(std::string s, int line_index, const char *new_line) {
-  std::string::size_type start = 0;
-  while (line_index-- > 0) {
-    start = s.find('\n', start);
-    if (start == std::string::npos)
-      throw ampl::Error("invalid line index");
-    ++start;
-  }
-  std::string::size_type end = s.find('\n', start);
-  if (end == std::string::npos)
-    end = s.size();
-  s.replace(start, end - start, new_line);
-  return s;
-}
-
-TEST(NLTest, ReplaceLine) {
-  EXPECT_EQ("de", ReplaceLine("", 0, "de"));
-  EXPECT_EQ("de", ReplaceLine("abc", 0, "de"));
-  EXPECT_THROW(ReplaceLine("abc", 1, "de"), ampl::Error);
-  EXPECT_EQ("de\n", ReplaceLine("abc\n", 0, "de"));
-  EXPECT_EQ("abc\nde", ReplaceLine("abc\n", 1, "de"));
-  EXPECT_EQ("gh\ndef", ReplaceLine("abc\ndef", 0, "gh"));
-  EXPECT_EQ("abc\ngh", ReplaceLine("abc\ndef", 1, "gh"));
-  EXPECT_THROW(ReplaceLine("abc\ndef", 2, "gh"), ampl::Error);
-}
-
 TEST(NLTest, WriteTextHeader) {
   NLHeader header = {
     NLHeader::TEXT,
