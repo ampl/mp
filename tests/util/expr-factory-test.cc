@@ -35,21 +35,6 @@ TEST(ExprFactoryTest, Ctor) {
   ExprFactory ef(NLHeader(), "");
 }
 
-TEST(ExprFactoryTest, CreateNumericConstant) {
-  ExprFactory ef(NLHeader(), "");
-  EXPECT_EQ(42.0, ef.CreateNumericConstant(42).value());
-}
-
-TEST(ExprFactoryTest, CreateVariable) {
-  NLHeader header = {};
-  header.num_vars = 10;
-  ExprFactory ef(header, "");
-  EXPECT_EQ(0, ef.CreateVariable(0).index());
-  EXPECT_EQ(9, ef.CreateVariable(9).index());
-  EXPECT_DEBUG_DEATH(ef.CreateVariable(-1);, "Assertion");  // NOLINT(*)
-  EXPECT_DEBUG_DEATH(ef.CreateVariable(10);, "Assertion");  // NOLINT(*)
-}
-
 // Searches the ASL list for asl backwards from prev and forward from next
 // returning true if it is found, false otherwise.
 bool FindASL(ASLhead *prev, ASLhead *next, const ASL &asl) {
@@ -75,7 +60,40 @@ std::size_t CountBlocks(void *start) {
   return num_blocks;
 }
 
-void CheckASL(const ASL &expected, const ASL &actual) {
+template <typename T>
+void CheckArray(const ASL &expected, const ASL &actual,
+    T *Edaginfo::*ptr, std::size_t size, const char *str) {
+  const char *expected_start = reinterpret_cast<const char*>(
+      reinterpret_cast<const ASL_fg&>(expected).I.var_e_);
+  const char *actual_start = reinterpret_cast<const char*>(
+      reinterpret_cast<const ASL_fg&>(actual).I.var_e_);
+  const char *expected_ptr = reinterpret_cast<const char*>(expected.i.*ptr);
+  const char *actual_ptr = reinterpret_cast<const char*>(actual.i.*ptr);
+  EXPECT_EQ(expected_ptr - expected_start, actual_ptr - actual_start) << str;
+  if (expected_ptr) {
+    for (std::size_t i = 0; i < size; ++i)
+      EXPECT_EQ((expected.i.*ptr)[i], (actual.i.*ptr)[i]) << str << ' ' << i;
+  }
+}
+
+#define CHECK_ARRAY(expected, actual, ptr, size) \
+  CheckArray(expected, actual, ptr, size, #ptr)
+
+template <typename T>
+void ExpectArrayEqual(const T *expected, const T *actual, std::size_t size) {
+  if (!expected) {
+    EXPECT_EQ(expected, actual);
+    EXPECT_EQ(0, size);
+    return;
+  }
+  for (std::size_t i = 0; i < size; ++i)
+    EXPECT_EQ(expected[i], actual[i]);
+}
+
+#define EXPECT_ARRAY_EQ(expected, actual, size) \
+  ExpectArrayEqual(expected, actual, size)
+
+void CheckASL(const ASL &expected, const ASL &actual, bool complete = true) {
   // Compare Edagpars.
   EXPECT_TRUE(FindASL(expected.p.h.prev, expected.p.h.next, actual));
   EXPECT_TRUE(FindASL(actual.p.h.prev, actual.p.h.next, expected));
@@ -117,24 +135,28 @@ void CheckASL(const ASL &expected, const ASL &actual) {
   EXPECT_EQ(expected.i.ASLtype, actual.i.ASLtype);
   EXPECT_EQ(expected.i.amplflag_, actual.i.amplflag_);
   EXPECT_EQ(expected.i.need_nl_, actual.i.need_nl_);
-  EXPECT_EQ(expected.i.funcs_, actual.i.funcs_);
+  CHECK_ARRAY(expected, actual, &Edaginfo::funcs_, expected.i.nfunc_);
   EXPECT_EQ(expected.i.funcsfirst_, actual.i.funcsfirst_);
   EXPECT_EQ(expected.i.funcslast_, actual.i.funcslast_);
   EXPECT_EQ(expected.i.xscanf_, actual.i.xscanf_);
   for (int i = 0; i < NFHASH; ++i)
     EXPECT_EQ(expected.i.fhash_[i], actual.i.fhash_[i]);
 
-  EXPECT_EQ(expected.i.adjoints_, actual.i.adjoints_);
-  EXPECT_EQ(expected.i.adjoints_nv1_, actual.i.adjoints_nv1_);
-  EXPECT_EQ(expected.i.LUrhs_, actual.i.LUrhs_);
+  EXPECT_ARRAY_EQ(expected.i.adjoints_, actual.i.adjoints_, expected.i.amax_);
+  EXPECT_EQ(expected.i.adjoints_nv1_ - expected.i.adjoints_,
+      actual.i.adjoints_nv1_ - actual.i.adjoints_);
+  CHECK_ARRAY(expected, actual, &Edaginfo::LUrhs_, 2 * sizeof(double) *
+      (expected.i.n_con_ + expected.i.nsufext[ASL_Sufkind_con]));
   EXPECT_EQ(expected.i.Urhsx_, actual.i.Urhsx_);
   EXPECT_EQ(expected.i.X0_, actual.i.X0_);
-  EXPECT_EQ(expected.i.LUv_, actual.i.LUv_);
+  std::size_t luv_size = complete ? 2 * sizeof(double) *
+      (expected.i.n_var_ + expected.i.nsufext[ASL_Sufkind_var]) : 0;
+  CHECK_ARRAY(expected, actual, &Edaginfo::LUv_, luv_size);
   EXPECT_EQ(expected.i.Uvx_, actual.i.Uvx_);
   EXPECT_EQ(expected.i.Lastx_, actual.i.Lastx_);
   EXPECT_EQ(expected.i.pi0_, actual.i.pi0_);
 
-  EXPECT_EQ(expected.i.objtype_, actual.i.objtype_);
+  CHECK_ARRAY(expected, actual, &Edaginfo::objtype_, expected.i.n_obj_);
   EXPECT_EQ(expected.i.havex0_, actual.i.havex0_);
   EXPECT_EQ(expected.i.havepi0_, actual.i.havepi0_);
   EXPECT_EQ(expected.i.A_vals_, actual.i.A_vals_);
@@ -142,7 +164,7 @@ void CheckASL(const ASL &expected, const ASL &actual) {
   EXPECT_EQ(expected.i.A_colstarts_, actual.i.A_colstarts_);
 
   EXPECT_EQ(expected.i.Cgrad_, actual.i.Cgrad_);
-  EXPECT_EQ(expected.i.Ograd_, actual.i.Ograd_);
+  CHECK_ARRAY(expected, actual, &Edaginfo::Ograd_, expected.i.n_obj_);
   EXPECT_EQ(expected.i.Cgrad0, actual.i.Cgrad0);
 
   EXPECT_EQ(expected.i.Fortran_, actual.i.Fortran_);
@@ -299,24 +321,113 @@ void CheckASL(const ASL &expected, const ASL &actual) {
   EXPECT_EQ(expected.i.Derrs, actual.i.Derrs);
   EXPECT_EQ(expected.i.Derrs0, actual.i.Derrs0);
 
-  // TODO: compare Edag1info
+  // Compare Edag1info.
+  const ASL_fg &expected_fg = reinterpret_cast<const ASL_fg&>(expected);
+  const ASL_fg &actual_fg = reinterpret_cast<const ASL_fg&>(actual);
+  EXPECT_EQ(expected_fg.I.con_de_, actual_fg.I.con_de_);
+  EXPECT_EQ(expected_fg.I.lcon_de_, actual_fg.I.lcon_de_);
+  EXPECT_EQ(expected_fg.I.obj_de_, actual_fg.I.obj_de_);
+  EXPECT_EQ(expected_fg.I.var_e_, actual_fg.I.var_e_);
+
+  EXPECT_EQ(expected_fg.I.f_b_, actual_fg.I.f_b_);
+  EXPECT_EQ(expected_fg.I.f_c_, actual_fg.I.f_c_);
+  EXPECT_EQ(expected_fg.I.f_o_, actual_fg.I.f_o_);
+  EXPECT_EQ(expected_fg.I.var_ex_, actual_fg.I.var_ex_);
+  EXPECT_EQ(expected_fg.I.var_ex1_, actual_fg.I.var_ex1_);
+  EXPECT_EQ(expected_fg.I.cexps_, actual_fg.I.cexps_);
+  EXPECT_EQ(expected_fg.I.cexps1_, actual_fg.I.cexps1_);
+  EXPECT_EQ(expected_fg.I.r_ops_, actual_fg.I.r_ops_);
+  EXPECT_EQ(expected_fg.I.c_class, actual_fg.I.c_class);
+  EXPECT_EQ(expected_fg.I.o_class, actual_fg.I.o_class);
+  EXPECT_EQ(expected_fg.I.v_class, actual_fg.I.v_class);
+  EXPECT_EQ(expected_fg.I.c_class_max, actual_fg.I.c_class_max);
+  EXPECT_EQ(expected_fg.I.o_class_max, actual_fg.I.o_class_max);
 }
 
-// Check that ExprFactory creates an ASL object compatible with the one
+class ASLPtr : ampl::Noncopyable {
+ private:
+  ASL *asl_;
+
+ public:
+  ASLPtr() : asl_(ASL_alloc(ASL_read_fg)) {}
+  ~ASLPtr() { ASL_free(&asl_); }
+
+  ASL *get() const { return asl_; }
+  ASL &operator*() const { return *asl_; }
+};
+
+// Reads ASL from a file with the specified header and body.
+FILE *ReadASL(ASL &asl, const NLHeader &h, const char *body) {
+  fmt::Writer w;
+  w << h << body;
+  WriteFile("test.nl", w.str());
+  char stub[] = "test";
+  return jac0dim_ASL(&asl, stub, sizeof(stub) - 1);
+}
+
+// Check that InitASL creates an ASL object compatible with the one
 // created by jac0dim.
-TEST(ExprFactoryTest, CompatibleWithJac0Dim) {
+void CheckInitASL(const NLHeader &h) {
+  ASLPtr expected, actual;
+  fclose(ReadASL(*expected, h, ""));
+  ampl::internal::InitASL(*actual, "test", h);
+  CheckASL(*expected, *actual);
+}
+
+TEST(ExprFactoryTest, InitASLTrivial) {
   NLHeader header = {};
   header.num_vars = 1;  // jac0dim can't handle problems with 0 vars
-  ExprFactory ef(header, "test", true);
-  fmt::Writer w;
-  w << header;
-  WriteFile("test.nl", w.c_str());
-  ASL *asl = ASL_alloc(ASL_read_fg);
-  char stub[] = "test";
-  FILE *file = jac0dim_ASL(asl, stub, sizeof(stub) - 1);
-  CheckASL(*asl, ampl::internal::GetASL(ef));
-  fclose(file);
-  ASL_free(&asl);
+  CheckInitASL(header);
+}
+
+TEST(ExprFactoryTest, InitASLFull) {
+  NLHeader header = {
+    NLHeader::BINARY,
+    9, {2, 3, 5, 7, 11, 13, 17, 19, 23}, 1.23,
+    29, 47, 37, 41, 43, 31,
+    53, 59, 67, 61, 71, 73,
+    79, 83,
+    89, 97, 101,
+    103, 107, 109,
+    113, 127, 131, 137, 139,
+    149, 151,
+    157, 163,
+    167, 173, 179, 181, 191
+  };
+  CheckInitASL(header);
+}
+
+TEST(ExprFactoryTest, InitASLAdjFcn) {
+  NLHeader header = {NLHeader::BINARY_SWAPPED};
+  header.num_vars = 1;
+  CheckInitASL(header);
+}
+
+TEST(ExprFactoryTest, Read) {
+  NLHeader header = {};
+  header.num_vars = header.num_objs = 1;
+  ExprFactory ef(header, "test");
+  ASLPtr expected;
+  FILE *file = ReadASL(*expected, header, "");
+  fg_read_ASL(expected.get(), file, 0);
+  CheckASL(*expected, ampl::internal::GetASL(ef), false);
+}
+
+TEST(ExprFactoryTest, CreateNumericConstant) {
+  NLHeader header = {};
+  header.num_vars = header.num_objs = 1;
+  ExprFactory ef(header, "");
+  EXPECT_EQ(42.0, ef.CreateNumericConstant(42).value());
+}
+
+TEST(ExprFactoryTest, CreateVariable) {
+  NLHeader header = {};
+  header.num_vars = 10;
+  ExprFactory ef(header, "");
+  EXPECT_EQ(0, ef.CreateVariable(0).index());
+  EXPECT_EQ(9, ef.CreateVariable(9).index());
+  EXPECT_DEBUG_DEATH(ef.CreateVariable(-1);, "Assertion");  // NOLINT(*)
+  EXPECT_DEBUG_DEATH(ef.CreateVariable(10);, "Assertion");  // NOLINT(*)
 }
 
 // TODO: check if the asl produced by ExprFactory is binary compatible with
