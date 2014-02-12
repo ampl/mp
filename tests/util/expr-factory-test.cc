@@ -37,6 +37,17 @@ bool operator==(const expr_v &lhs, const expr_v &rhs) {
   return lhs.op == rhs.op && lhs.a == rhs.a && lhs.v == rhs.v;
 }
 
+bool operator==(const cexp &lhs, const cexp &rhs) {
+  return lhs.e == rhs.e && lhs.nlin == rhs.nlin && lhs.L == rhs.L &&
+      lhs.funneled == rhs.funneled && lhs.cref == rhs.cref &&
+      lhs.z.e == rhs.z.e && lhs.zlen == rhs.zlen && lhs.d == rhs.d &&
+      lhs.vref == rhs.vref;
+}
+
+bool operator==(const cexp1 &lhs, const cexp1 &rhs) {
+  return lhs.e == rhs.e && lhs.nlin == rhs.nlin && lhs.L == rhs.L;
+}
+
 namespace {
 
 TEST(ExprFactoryTest, Ctor) {
@@ -75,29 +86,41 @@ void GetInfo(const ASL &asl, const Edag1info *&info) {
   info = &reinterpret_cast<const ASL_fg&>(asl).I;
 }
 
-template <typename Info, typename T>
+template <typename T>
+T *GetPtr(const ASL &asl, T *Edaginfo::*ptr) { return asl.i.*ptr; }
+
+template <typename T>
+T *GetPtr(const ASL &asl, T *Edag1info::*ptr) {
+  return reinterpret_cast<const ASL_fg&>(asl).I.*ptr;
+}
+
+// Checks if the array pointed to by ptr in the actual ASL object is the
+// same as the one in the expected object. In particular, they should have
+// the same offset from start and have the same elements.
+template <typename StartInfo, typename Info, typename StartT, typename T>
 void CheckArray(const ASL &expected, const ASL &actual,
-    T *Info::*ptr, std::size_t size, const char *str) {
-  const char *expected_start = reinterpret_cast<const char*>(
-      reinterpret_cast<const ASL_fg&>(expected).I.var_e_);
-  const char *actual_start = reinterpret_cast<const char*>(
-      reinterpret_cast<const ASL_fg&>(actual).I.var_e_);
-  const Info *expected_info = 0, *actual_info = 0;
-  GetInfo(expected, expected_info);
-  GetInfo(actual, actual_info);
-  const char *expected_ptr = reinterpret_cast<const char*>(expected_info->*ptr);
-  const char *actual_ptr = reinterpret_cast<const char*>(actual_info->*ptr);
-  EXPECT_EQ(expected_ptr - expected_start, actual_ptr - actual_start) << str;
+    StartT *StartInfo::*start, T *Info::*ptr, std::size_t size,
+    const char *str) {
+  // Get start pointers.
+  const char *expected_start =
+      reinterpret_cast<const char*>(GetPtr(expected, start));
+  const char *actual_start =
+      reinterpret_cast<const char*>(GetPtr(actual, start));
+
+  // Get array pointers and compare.
+  const T *expected_ptr = GetPtr(expected, ptr);
+  const T *actual_ptr = GetPtr(actual, ptr);
+  EXPECT_EQ(reinterpret_cast<const char*>(expected_ptr) - expected_start,
+      reinterpret_cast<const char*>(actual_ptr) - actual_start) << str;
   if (expected_ptr) {
     for (std::size_t i = 0; i < size; ++i) {
-      EXPECT_EQ((expected_info->*ptr)[i], (actual_info->*ptr)[i])
-          << str << ' ' << i;
+      EXPECT_EQ(expected_ptr[i], actual_ptr[i]) << str << ' ' << i;
     }
   }
 }
 
 #define CHECK_ARRAY(expected, actual, ptr, size) \
-  CheckArray(expected, actual, ptr, size, #ptr)
+  CheckArray(expected, actual, &Edag1info::var_e_, ptr, size, #ptr)
 
 template <typename T>
 void ExpectArrayEqual(const T *expected,
@@ -107,13 +130,14 @@ void ExpectArrayEqual(const T *expected,
     return;
   }
   for (std::size_t i = 0; i < size; ++i)
-    EXPECT_EQ(expected[i], actual[i]) << str;
+    EXPECT_EQ(expected[i], actual[i]) << str << ' ' << i;
 }
 
 // Compare two arrays for equality.
 #define EXPECT_ARRAY_EQ(expected, actual, size) \
   ExpectArrayEqual(expected, actual, size, #expected)
 
+// Compare two ASL objects for equality.
 void CheckASL(const ASL &expected, const ASL &actual, bool complete = true) {
   // Compare Edagpars.
   EXPECT_TRUE(FindASL(expected.p.h.prev, expected.p.h.next, actual));
@@ -166,15 +190,17 @@ void CheckASL(const ASL &expected, const ASL &actual, bool complete = true) {
   EXPECT_ARRAY_EQ(expected.i.adjoints_, actual.i.adjoints_, expected.i.amax_);
   EXPECT_EQ(expected.i.adjoints_nv1_ - expected.i.adjoints_,
       actual.i.adjoints_nv1_ - actual.i.adjoints_);
-  EXPECT_ARRAY_EQ(expected.i.LUrhs_, actual.i.LUrhs_, 2 * sizeof(double) *
-      (expected.i.n_con_ + expected.i.nsufext[ASL_Sufkind_con]));
+  EXPECT_ARRAY_EQ(expected.i.LUrhs_, actual.i.LUrhs_,
+      2 * (expected.i.n_con_ + expected.i.nsufext[ASL_Sufkind_con]));
   EXPECT_EQ(expected.i.Urhsx_, actual.i.Urhsx_);
   EXPECT_EQ(expected.i.X0_, actual.i.X0_);
-  std::size_t luv_size = complete ? 2 * sizeof(double) *
-      (expected.i.n_var_ + expected.i.nsufext[ASL_Sufkind_var]) : 0;
-  EXPECT_ARRAY_EQ(expected.i.LUv_, actual.i.LUv_, luv_size);
+
+  // The number of variables and variable suffixes.
+  std::size_t num_vars_suf = complete ?
+      2 * (expected.i.n_var_ + expected.i.nsufext[ASL_Sufkind_var]) : 0;
+  EXPECT_ARRAY_EQ(expected.i.LUv_, actual.i.LUv_, num_vars_suf);
   EXPECT_EQ(expected.i.Uvx_, actual.i.Uvx_);
-  EXPECT_EQ(expected.i.Lastx_, actual.i.Lastx_);
+  EXPECT_ARRAY_EQ(expected.i.Lastx_, actual.i.Lastx_, num_vars_suf);
   EXPECT_EQ(expected.i.pi0_, actual.i.pi0_);
 
   CHECK_ARRAY(expected, actual, &Edaginfo::objtype_, expected.i.n_obj_);
@@ -285,7 +311,50 @@ void CheckASL(const ASL &expected, const ASL &actual, bool complete = true) {
     EXPECT_EQ(expected.i.suffixes[i], actual.i.suffixes[i]);
   }
 
-  EXPECT_EQ(expected.i.zerograds_, actual.i.zerograds_);
+  if (!expected.i.zerograds_) {
+    EXPECT_EQ(expected.i.zerograds_, actual.i.zerograds_);
+  } else {
+    const char *expected_start =
+        reinterpret_cast<const char*>(expected.i.zerograds_);
+    const char *actual_start =
+        reinterpret_cast<const char*>(actual.i.zerograds_);
+    for (int i = 0; i < expected.i.n_obj_; ++i) {
+      EXPECT_EQ(
+          reinterpret_cast<const char*>(expected.i.zerograds_[i]) -
+          expected_start,
+          reinterpret_cast<const char*>(actual.i.zerograds_[i]) -
+          actual_start);
+
+      // Compare values pointed to by zerograds_[i].
+      int nx = expected.i.nsufext[ASL_Sufkind_var];
+      int nv = expected.i.nlvog;
+      if (nv == 0) {
+        nv = expected.i.n_var_;
+        if (nv > expected.i.n_var0)
+          nx -= nv - expected.i.n_var0;
+      }
+      int size = expected.i.n_obj_;
+      for (ograd **ogp = expected.i.Ograd_, **ogpe = ogp + size;
+          ogp < ogpe; ++ogp) {
+        ograd *og = *ogp;
+        int n = 0;
+        while (og) {
+          size += og->varno - n;
+          n = og->varno + 1;
+          if (n >= nv)
+            break;
+          og = og->next;
+        }
+        if (n < nv)
+          size += nv - n;
+      }
+      size += expected.i.n_obj_ * nx;
+      EXPECT_ARRAY_EQ(reinterpret_cast<const int*>(
+          expected.i.zerograds_ + expected.i.n_obj_),
+          reinterpret_cast<const int*>(actual.i.zerograds_ + expected.i.n_obj_),
+          size);
+    }
+  }
   EXPECT_EQ(expected.i.congrd_mode, actual.i.congrd_mode);
   EXPECT_EQ(expected.i.x_known, actual.i.x_known);
   EXPECT_EQ(expected.i.xknown_ignore, actual.i.xknown_ignore);
@@ -299,8 +368,8 @@ void CheckASL(const ASL &expected, const ASL &actual, bool complete = true) {
   EXPECT_EQ(expected.i.Mblast - expected.i.Mbnext,
             actual.i.Mblast - actual.i.Mbnext);
   EXPECT_EQ(CountBlocks(expected.i.Mb), CountBlocks(actual.i.Mb));
-  EXPECT_EQ(expected.i.memNext, actual.i.memNext);
-  EXPECT_EQ(expected.i.memLast, actual.i.memLast);
+  EXPECT_EQ(expected.i.memLast - expected.i.memNext,
+      actual.i.memLast - actual.i.memNext);
   EXPECT_EQ(expected.i.ae, actual.i.ae);
 
   EXPECT_EQ(expected.i.connames, actual.i.connames);
@@ -350,17 +419,18 @@ void CheckASL(const ASL &expected, const ASL &actual, bool complete = true) {
   CHECK_ARRAY(expected, actual, &Edag1info::lcon_de_, expected.i.n_lcon_);
   CHECK_ARRAY(expected, actual, &Edag1info::obj_de_, expected.i.n_obj_);
   CHECK_ARRAY(expected, actual, &Edag1info::var_e_,
-      expected.i.n_var_ + expected.i.nsufext[ASL_Sufkind_var] +
-      expected.i.comb_ + expected.i.comc_ + expected.i.como_ +
-      expected.i.comc1_ + expected.i.como1_);
+      expected.i.n_var_ + expected.i.nsufext[ASL_Sufkind_var]);
 
   EXPECT_EQ(expected_fg.I.f_b_, actual_fg.I.f_b_);
   EXPECT_EQ(expected_fg.I.f_c_, actual_fg.I.f_c_);
   EXPECT_EQ(expected_fg.I.f_o_, actual_fg.I.f_o_);
-  EXPECT_EQ(expected_fg.I.var_ex_, actual_fg.I.var_ex_);
-  EXPECT_EQ(expected_fg.I.var_ex1_, actual_fg.I.var_ex1_);
-  EXPECT_EQ(expected_fg.I.cexps_, actual_fg.I.cexps_);
-  EXPECT_EQ(expected_fg.I.cexps1_, actual_fg.I.cexps1_);
+
+  CHECK_ARRAY(expected, actual, &Edag1info::var_ex_, expected.i.ncom0_);
+  CHECK_ARRAY(expected, actual, &Edag1info::var_ex1_,
+      expected.i.comc1_ + expected.i.como1_);
+
+  CHECK_ARRAY(expected, actual, &Edag1info::cexps_, expected.i.ncom0_);
+  CHECK_ARRAY(expected, actual, &Edag1info::cexps1_, expected.i.ncom1_);
   EXPECT_EQ(expected_fg.I.r_ops_, actual_fg.I.r_ops_);
   EXPECT_EQ(expected_fg.I.c_class, actual_fg.I.c_class);
   EXPECT_EQ(expected_fg.I.o_class, actual_fg.I.o_class);
@@ -390,12 +460,12 @@ FILE *ReadHeader(ASL &asl, const NLHeader &h, const char *body) {
   return jac0dim_ASL(&asl, stub, sizeof(stub) - 1);
 }
 
-// Check that InitASL creates an ASL object compatible with the one
+// Check that ASLBuilder creates an ASL object compatible with the one
 // created by jac0dim.
 void CheckInitASL(const NLHeader &h) {
   ASLPtr expected, actual;
   fclose(ReadHeader(*expected, h, ""));
-  ampl::internal::InitASL(*actual, "test", h);
+  ampl::internal::ASLBuilder(*actual, "test", h);
   CheckASL(*expected, *actual);
 }
 
@@ -432,8 +502,7 @@ TEST(ExprFactoryTest, ASLBuilder) {
   NLHeader header = {};
   header.num_vars = header.num_objs = 1;
   ASLPtr actual;
-  ampl::internal::InitASL(*actual, "test", header);
-  ampl::internal::ASLBuilder builder(*actual);
+  ampl::internal::ASLBuilder builder(*actual, "test", header);
   builder.BeginBuild(0);
   builder.EndBuild();
   ASLPtr expected;
@@ -458,9 +527,6 @@ TEST(ExprFactoryTest, CreateVariable) {
   EXPECT_DEBUG_DEATH(ef.CreateVariable(-1);, "Assertion");  // NOLINT(*)
   EXPECT_DEBUG_DEATH(ef.CreateVariable(10);, "Assertion");  // NOLINT(*)
 }
-
-// TODO: check if the asl produced by ExprFactory is binary compatible with
-//       the one produced by reading an .nl file with fg_read.
 
 // TODO: more tests
 }

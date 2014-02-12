@@ -40,7 +40,8 @@ void InitVars(expr_v *v, int offset, int count, int var_index) {
 
 namespace ampl {
 
-void internal::InitASL(ASL &asl, const char *stub, const NLHeader &h) {
+internal::ASLBuilder::ASLBuilder(ASL &asl, const char *stub, const NLHeader &h)
+: asl_(asl), linear_(false), r_ops_(0), nv1_(0), nz_(0), nderp_(0) {
   std::size_t stub_len = std::strlen(stub);
   Edaginfo &info = asl.i;
   info.filename_ = reinterpret_cast<char*>(M1alloc_ASL(&info, stub_len + 5));
@@ -129,7 +130,8 @@ public:
   }
 };
 
-void internal::ASLBuilder::BeginBuild(int flags) {
+void internal::ASLBuilder::BeginBuild(int flags, bool linear) {
+  linear_ = linear;
   // TODO: test ASLBuilder
 
   // Includes allocation of LUv, LUrhs, A_vals or Cgrad, etc.
@@ -175,9 +177,9 @@ void internal::ASLBuilder::BeginBuild(int flags) {
             "nc = {}, no = {}, nlcon = {}") << nc0 << no << nlcon));
   }
   if (info.pi0_) {
-    memset(info.pi0_, 0, nc * sizeof(double));
+    std::memset(info.pi0_, 0, nc * sizeof(double));
     if (info.havepi0_)
-      memset(info.havepi0_, 0, nc);
+      std::memset(info.havepi0_, 0, nc);
   }
   int nxv = info.nsufext[ASL_Sufkind_var];
   int nvr = info.n_var_;  // nv for reading
@@ -218,9 +220,9 @@ void internal::ASLBuilder::BeginBuild(int flags) {
   }
 
   if (info.X0_)
-    memset(info.X0_, 0, nv1_ * sizeof(double));
+    std::memset(info.X0_, 0, nv1_ * sizeof(double));
   if (info.havex0_)
-    memset(info.havex0_, 0, nv1_);
+    std::memset(info.havex0_, 0, nv1_);
   expr_v *e = info1.var_e_ =
       reinterpret_cast<expr_v*>(M1zapalloc_ASL(&info, x));
   info1.con_de_ = reinterpret_cast<cde*>(e + nv);
@@ -266,27 +268,35 @@ void internal::ASLBuilder::BeginBuild(int flags) {
   if (info.cvar_)
     std::memset(info.cvar_, 0, nc * sizeof(int));
   int *ka = 0;
-  int nz = 0;
+  nz_ = 0;
   nderp_ = 0;
 }
 
 void internal::ASLBuilder::EndBuild() {
+  Edaginfo &info = asl_.i;
   if (!linear_) {
     // Make amax long enough for nlc to handle
     // var_e[i].a for common variables i.
-    if (asl_.i.ncom0_) {
-      int i = asl_.i.comb_ + asl_.i.como_;
-      if (i < asl_.i.combc_)
-        i = asl_.i.combc_;
-      if ((i += nv1_ + 1) > asl_.i.amax_)
-        asl_.i.amax_ = i;
+    if (info.ncom0_) {
+      int i = info.comb_ + info.como_;
+      if (i < info.combc_)
+        i = info.combc_;
+      if ((i += nv1_ + 1) > info.amax_)
+        info.amax_ = i;
     }
-    asl_.i.adjoints_ = reinterpret_cast<double*>(
-        M1zapalloc_ASL(&asl_.i, asl_.i.amax_ * Sizeof(double)));
-    asl_.i.adjoints_nv1_ = &asl_.i.adjoints_[nv1_];
-    asl_.i.nderps_ += nderp_;
+    info.adjoints_ = reinterpret_cast<double*>(
+        M1zapalloc_ASL(&asl_.i, info.amax_ * Sizeof(double)));
+    info.adjoints_nv1_ = &info.adjoints_[nv1_];
+    info.nderps_ += nderp_;
   }
   // TODO
+  //adjust(S, flags);
+  info.nzjac_ = nz_;
+  if (!info.Lastx_) {
+    info.Lastx_ = reinterpret_cast<double*>(
+        M1alloc_ASL(&info, nv1_ * sizeof(double)));
+  }
+
   if (!linear_) {
     asl_.p.Objval = asl_.p.Objval_nomap = obj1val_ASL;
     asl_.p.Objgrd = asl_.p.Objgrd_nomap = obj1grd_ASL;
@@ -297,11 +307,12 @@ void internal::ASLBuilder::EndBuild() {
     asl_.p.Lconval = lcon1val_ASL;
     asl_.p.Xknown = x1known_ASL;
   }
+  prob_adj_ASL(&asl_);
 }
 
 ExprFactory::ExprFactory(const NLHeader &h, const char *stub, int flags)
 : asl_(ASL_alloc(ASL_read_fg)) {
-  internal::InitASL(*asl_, stub, h);
+  internal::ASLBuilder builder(*asl_, stub, h);
 
   // TODO: this part should be optional
   ASL_fg *asl = reinterpret_cast<ASL_fg*>(asl_);
@@ -309,7 +320,6 @@ ExprFactory::ExprFactory(const NLHeader &h, const char *stub, int flags)
     r_ops_[i] = reinterpret_cast<efunc*>(i);
   asl->I.r_ops_ = r_ops_;
 
-  internal::ASLBuilder builder(*asl_, false);
   builder.BeginBuild(flags);
   builder.EndBuild();
 }

@@ -32,38 +32,31 @@ class NLHeader;
 class ExprFactory;
 
 namespace internal {
-// Initializes ASL from an NLHeader object.
-void InitASL(ASL &asl, const char *stub, const NLHeader &h);
-
 class ASLBuilder {
  private:
   ASL &asl_;
   bool linear_;
   efunc **r_ops_;
   int nv1_;
+  int nz_;
   int nderp_;
 
  public:
-  ASLBuilder(ASL &asl, bool linear = false)
-  : asl_(asl), linear_(linear), r_ops_(0), nv1_(0), nderp_(0) {}
+  ASLBuilder(ASL &asl, const char *stub, const NLHeader &h);
 
   // Begin building the ASL.
   // flags: reader flags, see ASL_reader_flag_bits.
-  void BeginBuild(int flags);
+  void BeginBuild(int flags, bool linear = false);
 
   // End building the ASL.
   void EndBuild();
 };
-
-const ASL &GetASL(const ExprFactory &ef);
 }
 
 class ExprFactory : Noncopyable {
  private:
   ASL *asl_;
   efunc *r_ops_[N_OPS];
-
-  friend const ASL &internal::GetASL(const ExprFactory &ef) { return *ef.asl_; }
 
  public:
   // Constructs an ExprFactory object.
