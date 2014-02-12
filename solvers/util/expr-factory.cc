@@ -24,6 +24,7 @@
 
 #include "solvers/util/nl.h"
 
+#include <algorithm>
 #include <cstring>
 
 extern "C" void bswap_ASL(void *x, unsigned long L);
@@ -105,14 +106,15 @@ internal::ASLBuilder::ASLBuilder(ASL &asl, const char *stub, const NLHeader &h)
 
   info.nclcon_ = info.n_con_ + info.n_lcon_;
 
+  if (h.num_algebraic_cons < 0 || h.num_vars <= 0 || h.num_objs < 0) {
+    throw ASLError(ASL_readerr_corrupt,
+        str(fmt::Format("invalid problem dimensions: M = {}, N = {}, NO = {}")
+          << h.num_algebraic_cons << h.num_vars << h.num_objs));
+  }
+
   info.n_var0 = info.n_var1 = info.n_var_;
   info.n_con0 = info.n_con1 = info.n_con_;
-  int nlv = info.nlvc_;
-  if (nlv < info.nlvo_)
-    nlv = info.nlvo_;
-  if (nlv <= 0)
-    nlv = 1;
-  info.x0len_ = nlv * sizeof(double);
+  info.x0len_ = std::max(std::max(info.nlvo_, info.nlvc_), 1) * sizeof(double);
   info.x0kind_ = ASL_first_x;
   info.n_conjac_[0] = 0;
   info.n_conjac_[1] = info.n_con_;
@@ -120,19 +122,9 @@ internal::ASLBuilder::ASLBuilder(ASL &asl, const char *stub, const NLHeader &h)
   info.c_vars_ = info.o_vars_ = info.n_var_;
 }
 
-class ReadError: public ampl::Error {
-private:
-  int error_code_;
-
-public:
-  ReadError(int error_code, fmt::StringRef message) :
-      Error(message), error_code_(error_code) {
-  }
-};
-
 void internal::ASLBuilder::BeginBuild(int flags, bool linear) {
+  // TODO: test linear
   linear_ = linear;
-  // TODO: test ASLBuilder
 
   // Includes allocation of LUv, LUrhs, A_vals or Cgrad, etc.
   flagsave_ASL(&asl_, flags);
@@ -140,8 +132,9 @@ void internal::ASLBuilder::BeginBuild(int flags, bool linear) {
   Edaginfo &info = asl_.i;
   int nlcon = info.n_lcon_;
   if (nlcon && (flags & ASL_allow_CLP) == 0)
-    throw ReadError(ASL_readerr_CLP, "cannot handle logical constraints");
+    throw ASLError(ASL_readerr_CLP, "cannot handle logical constraints");
 
+  // TODO: test ASLBuilder
   bool readall = (flags & ASL_keep_all_suffixes) != 0;
   if (!info.size_expr_n_)
     info.size_expr_n_ = sizeof(expr_n);
@@ -161,8 +154,7 @@ void internal::ASLBuilder::BeginBuild(int flags, bool linear) {
       *info.o_cexp1st_ = info.comc1_;
     if (info.nfunc_)
       func_add(&asl_);
-    ncom = info.comb_ + info.comc_ + info.como_ + info.comc1_
-        + info.como1_;
+    ncom = info.comb_ + info.comc_ + info.como_ + info.comc1_ + info.como1_;
   }
 
   int nc0 = info.n_con_;
@@ -172,7 +164,7 @@ void internal::ASLBuilder::BeginBuild(int flags, bool linear) {
   int nvo = info.o_vars_;
   int nco = nc + no + nlcon;
   if (no < 0 || nco <= 0) {
-    throw ReadError(ASL_readerr_corrupt,
+    throw ASLError(ASL_readerr_corrupt,
         str(fmt::Format("invalid problem dimensions: "
             "nc = {}, no = {}, nlcon = {}") << nc0 << no << nlcon));
   }
@@ -296,7 +288,6 @@ void internal::ASLBuilder::EndBuild() {
     info.Lastx_ = reinterpret_cast<double*>(
         M1alloc_ASL(&info, nv1_ * sizeof(double)));
   }
-
   if (!linear_) {
     asl_.p.Objval = asl_.p.Objval_nomap = obj1val_ASL;
     asl_.p.Objgrd = asl_.p.Objgrd_nomap = obj1grd_ASL;

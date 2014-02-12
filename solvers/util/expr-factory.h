@@ -32,6 +32,20 @@ class NLHeader;
 class ExprFactory;
 
 namespace internal {
+
+// An exception representing an ASL error.
+class ASLError: public ampl::Error {
+private:
+  int error_code_;
+
+public:
+  ASLError(int error_code, fmt::StringRef message) :
+      Error(message), error_code_(error_code) {
+  }
+
+  int error_code() const { return error_code_; }
+};
+
 class ASLBuilder {
  private:
   ASL &asl_;
@@ -46,6 +60,7 @@ class ASLBuilder {
 
   // Begin building the ASL.
   // flags: reader flags, see ASL_reader_flag_bits.
+  // Throws ASLError on error.
   void BeginBuild(int flags, bool linear = false);
 
   // End building the ASL.

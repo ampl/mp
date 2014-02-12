@@ -28,6 +28,7 @@
 
 using ampl::ExprFactory;
 using ampl::NLHeader;
+using ampl::internal::ASLBuilder;
 
 bool operator==(const cde &lhs, const cde &rhs) {
   return lhs.e == rhs.e && lhs.d == rhs.d && lhs.zaplen == rhs.zaplen;
@@ -52,7 +53,7 @@ namespace {
 
 TEST(ExprFactoryTest, Ctor) {
   NLHeader h = {};
-  h.num_objs = 1;
+  h.num_vars = h.num_objs = 1;
   ExprFactory ef(h, "");
 }
 
@@ -280,7 +281,7 @@ void CheckASL(const ASL &expected, const ASL &actual, bool complete = true) {
   EXPECT_EQ(expected.i.maxcolnamelen_, actual.i.maxcolnamelen_);
   EXPECT_EQ(expected.i.co_index_, actual.i.co_index_);
   EXPECT_EQ(expected.i.cv_index_, actual.i.cv_index_);
-  EXPECT_EQ(expected.i.err_jmp_, actual.i.err_jmp_);
+  // Edaginfo::err_jmp_ is ignored.
   EXPECT_EQ(expected.i.err_jmp1_, actual.i.err_jmp1_);
   for (int i = 0; i < ampl::MAX_NL_OPTIONS + 1; ++i)
     EXPECT_EQ(expected.i.ampl_options_[i], actual.i.ampl_options_[i]);
@@ -465,7 +466,7 @@ FILE *ReadHeader(ASL &asl, const NLHeader &h, const char *body) {
 void CheckInitASL(const NLHeader &h) {
   ASLPtr expected, actual;
   fclose(ReadHeader(*expected, h, ""));
-  ampl::internal::ASLBuilder(*actual, "test", h);
+  ASLBuilder(*actual, "test", h);
   CheckASL(*expected, *actual);
 }
 
@@ -492,21 +493,93 @@ TEST(ExprFactoryTest, InitASLFull) {
   CheckInitASL(header);
 }
 
-TEST(ExprFactoryTest, InitASLAdjFcn) {
+// Check that iadjfcn & dadjfcn are set properly when format is
+// NLHeader::BINARY_SWAPPED.
+TEST(ExprFactoryTest, ASLBuilderAdjFcn) {
   NLHeader header = {NLHeader::BINARY_SWAPPED};
   header.num_vars = 1;
+  CheckInitASL(header);  // iadjfcn & dadjfcn are checked here.
+}
+
+#define CHECK_THROW_ASL_ERROR(code, expected_error_code, expected_message) { \
+  ampl::internal::ASLError error(0, ""); \
+  try { \
+    code; \
+  } catch (const ampl::internal::ASLError &e) { \
+    error = e; \
+  } \
+  EXPECT_EQ(expected_error_code, error.error_code()); \
+  EXPECT_STREQ(expected_message, error.what()); \
+}
+
+TEST(ExprFactoryTest, ASLBuilderInvalidProblemDim) {
+  NLHeader header = {};
+  CHECK_THROW_ASL_ERROR(ASLBuilder(*ASLPtr(), "test", header),
+      ASL_readerr_corrupt, "invalid problem dimensions: M = 0, N = 0, NO = 0");
+  header.num_vars = 1;
+  ASLBuilder(*ASLPtr(), "test", header);
+  header.num_algebraic_cons = -1;
+  CHECK_THROW_ASL_ERROR(ASLBuilder(*ASLPtr(), "test", header),
+      ASL_readerr_corrupt, "invalid problem dimensions: M = -1, N = 1, NO = 0");
+  header.num_objs = -1;
+  header.num_algebraic_cons = 0;
+  CHECK_THROW_ASL_ERROR(ASLBuilder(*ASLPtr(), "test", header),
+      ASL_readerr_corrupt, "invalid problem dimensions: M = 0, N = 1, NO = -1");
+}
+
+// Check that x0len_ is set properly for different values of
+// num_nl_vars_in_cons & num_nl_vars_in_objs.
+TEST(ExprFactoryTest, ASLBuilderX0Len) {
+  NLHeader header = {};
+  header.num_vars = 1;
+  header.num_nl_vars_in_cons = 5;
+  header.num_nl_vars_in_objs = 10;
   CheckInitASL(header);
+  std::swap(header.num_nl_vars_in_cons, header.num_nl_vars_in_objs);
+  CheckInitASL(header);
+}
+
+int ReadASL(ASL &asl, const NLHeader &h, const char *body, int flags) {
+  return fg_read_ASL(&asl, ReadHeader(asl, h, body), flags);
 }
 
 TEST(ExprFactoryTest, ASLBuilder) {
   NLHeader header = {};
   header.num_vars = header.num_objs = 1;
   ASLPtr actual;
-  ampl::internal::ASLBuilder builder(*actual, "test", header);
+  ASLBuilder builder(*actual, "test", header);
   builder.BeginBuild(0);
   builder.EndBuild();
   ASLPtr expected;
-  fg_read_ASL(expected.get(), ReadHeader(*expected, header, ""), 0);
+  EXPECT_EQ(0, ReadASL(*expected, header, "", 0));
+  CheckASL(*expected, *actual, false);
+}
+
+TEST(ExprFactoryTest, ASLBuilderDisallowCLPByDefault) {
+  NLHeader header = {};
+  header.num_vars = header.num_objs = 1;
+  header.num_logical_cons = 1;
+  ASLPtr actual;
+  ASLBuilder builder(*actual, "test", header);
+  CHECK_THROW_ASL_ERROR(builder.BeginBuild(ASL_return_read_err),
+      ASL_readerr_CLP, "cannot handle logical constraints");
+  ASLPtr expected;
+  EXPECT_EQ(ASL_readerr_CLP,
+      ReadASL(*expected, header, "", ASL_return_read_err));
+  CheckASL(*expected, *actual, false);
+}
+
+TEST(ExprFactoryTest, ASLBuilderAllowCLP) {
+  NLHeader header = {};
+  header.num_vars = header.num_objs = 1;
+  header.num_logical_cons = 1;
+  ASLPtr actual;
+  ASLBuilder builder(*actual, "test", header);
+  ampl::internal::ASLError error(0, "");
+  builder.BeginBuild(ASL_return_read_err | ASL_allow_CLP);
+  builder.EndBuild();
+  ASLPtr expected;
+  ReadASL(*expected, header, "", ASL_return_read_err | ASL_allow_CLP);
   CheckASL(*expected, *actual, false);
 }
 
