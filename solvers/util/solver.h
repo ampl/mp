@@ -190,6 +190,16 @@ class Interruptible {
 
 class Solver;
 
+// TODO:
+// Don't use SignalHandler in the solvers' DoSolve methods, because DoSolve
+// can be called from multiple threads & SignalHandler has static data.
+// Move SignalHandler to the implementation of BasicSolver instead & use
+// it from a separate method like RunFromMain. Instead pass an interface
+// that allows interrupting the Solver:
+//   DoSolve(Interrupter *interrupter);  // better name?
+// To make sure that SignalHandler is no used by mistake make it local to
+// the RunFromMain method.
+
 // A signal handler.
 // When a solver is run in a terminal it should respond to SIGINT (Ctrl-C)
 // by interrupting its execution and returning the best solution found.
