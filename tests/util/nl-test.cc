@@ -108,7 +108,7 @@ TEST(NLTest, WriteBinarySwappedHeader) {
       " 0 0 0 0 0 0\n"
       " 0 0\n"
       " 0 0 0\n"
-      " 0 0 0 0\n"
+      " 0 0 2 0\n"
       " 0 0 0 0 0\n"
       " 0 0\n"
       " 0 0\n"
@@ -123,12 +123,17 @@ std::string FormatHeader(const NLHeader &h) {
   return w.str();
 }
 
-// Reads a zero header with one modified line.
-NLHeader ReadHeader(int line_index, const char *line) {
+// Reads a header from the specified string.
+NLHeader ReadHeader(const std::string &s) {
   TestNLHandler handler;
   NLReader reader(&handler);
-  reader.ReadString(ReplaceLine(FormatHeader(NLHeader()), line_index, line));
+  reader.ReadString(s, "(input)", true);
   return handler.header;
+}
+
+// Reads a zero header with one modified line.
+NLHeader ReadHeader(int line_index, const char *line) {
+  return ReadHeader(ReplaceLine(FormatHeader(NLHeader()), line_index, line));
 }
 
 TEST(NLTest, NoNewlineAtEOF) {
@@ -194,10 +199,7 @@ TEST(NLTest, ReadAMPLVBTol) {
 
 void CheckHeader(const NLHeader &h) {
   std::string nl = FormatHeader(h);
-  TestNLHandler handler;
-  NLReader reader(&handler);
-  reader.ReadString(nl);
-  NLHeader actual_header = handler.header;
+  NLHeader actual_header = ReadHeader(nl);
 
   EXPECT_EQ(h.format, actual_header.format);
 
@@ -378,9 +380,9 @@ TEST(NLTest, IncompleteHeader) {
             << i + 1));
   }
   std::string input = ReplaceLine(FormatHeader(NLHeader()), 4, " 0 0");
-  NLReader().ReadString(ReplaceLine(input, 6, " 0 0"));
+  ReadHeader(ReplaceLine(input, 6, " 0 0"));
   EXPECT_THROW_MSG(
-      NLReader().ReadString(ReplaceLine(input, 6, " 0")),
+      ReadHeader(ReplaceLine(input, 6, " 0")),
       ampl::ParseError, "(input):7:3: expected nonnegative integer");
 }
 
@@ -390,11 +392,12 @@ void ReadNL(const NLHeader &header, const char *body) {
 }
 
 TEST(NLTest, ObjIndex) {
-  EXPECT_THROW_MSG(
-    ReadNL(NLHeader(), "O-1 0\nn0"),
-    ampl::ParseError, "(input):11:2: expected nonnegative integer");
   NLHeader header = {};
+  header.num_vars = 1;
   header.num_objs = 10;
+  EXPECT_THROW_MSG(
+    ReadNL(header, "O-1 0\nn0"),
+    ampl::ParseError, "(input):11:2: expected nonnegative integer");
   ReadNL(header, "O0 9\nn0");
   EXPECT_THROW_MSG(
     ReadNL(header, "O10 0\nn0"),
@@ -403,7 +406,7 @@ TEST(NLTest, ObjIndex) {
 
 TEST(NLTest, ObjType) {
   NLHeader header = {};
-  header.num_objs = 1;
+  header.num_vars = header.num_objs = 1;
   ReadNL(header, "O0 0\nn0");
   ReadNL(header, "O0 1\nn0");
   ReadNL(header, "O0 10\nn0");

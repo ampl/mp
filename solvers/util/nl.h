@@ -226,7 +226,9 @@ class NLReader {
 
   // Reads a problem from a string.
   // name: Name to be used when reporting errors.
-  void ReadString(fmt::StringRef str, fmt::StringRef name = "(input)");
+  // header_only: true to read the header only, false to read the whole file
+  void ReadString(fmt::StringRef str,
+      fmt::StringRef name = "(input)", bool header_only = false);
 };
 }
 

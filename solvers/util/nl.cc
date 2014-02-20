@@ -274,7 +274,8 @@ void NLReader::ReadFile(fmt::StringRef filename) {
   ReadString(fmt::StringRef(file.start(), file.size()), filename);
 }
 
-void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
+void NLReader::ReadString(
+    fmt::StringRef str, fmt::StringRef name, bool header_only) {
   class DefaultNLHandler : public NLHandler {
    public:
     void HandleHeader(const NLHeader &) {}
@@ -394,6 +395,8 @@ void NLReader::ReadString(fmt::StringRef str, fmt::StringRef name) {
   reader.ReadTillEndOfLine();
 
   handler_->HandleHeader(header_);
+  if (header_only)
+    return;
 
   if (header_.format != NLHeader::TEXT) {
     // TODO: switch to binary reader
