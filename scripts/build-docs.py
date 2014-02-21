@@ -2,19 +2,12 @@
 # This script builds the HTML documentation and commits it to the
 # ampl.github.io repository.
 
-import errno, os, shutil
+import os, shutil
 from subprocess import call, check_call
 from glob import glob
+from fileutil import rmtree_if_exists
 
 REPO = 'ampl.github.io'
-
-# Delete an entire directory tree if it exists.
-def rmtree_if_exists(path):
-  try:
-    shutil.rmtree(path)
-  except OSError as e:
-    if e.errno != errno.ENOENT:
-      raise
 
 rmtree_if_exists('html')
 rmtree_if_exists(REPO)
