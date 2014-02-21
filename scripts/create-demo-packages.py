@@ -44,25 +44,29 @@ else:
   writefile(StringIO(response), amplcml_filename)
   amplcml = zipfile.ZipFile(StringIO(response))
 
-for system in ['linux', 'macosx']:
-  dirname = 'ampl-demo'
-  fileutil.rmtree_if_exists(dirname)
-  os.mkdir(dirname)
+dirname = 'ampl-demo'
 
-  # Extract files from amplcml.zip.
+# Extract files from amplcml.zip.
+def extract_amplcml(extra_paths = None):
   for name in amplcml.namelist():
-    found = False
-    for path in extra_paths:
-      if name.startswith('amplcml/' + path):
-        found = True
-        break
-    if not found:
-      continue
+    if extra_paths is not None:
+      found = False
+      for path in extra_paths:
+        if name.startswith('amplcml/' + path):
+          found = True
+          break
+      if not found:
+        continue
     outname = name.replace('amplcml/', dirname + '/')
     if name.endswith('/'):
       os.makedirs(outname)
     else:
       writefile(amplcml.open(name), outname)
+
+for system in ['linux', 'macosx']:
+  fileutil.rmtree_if_exists(dirname)
+  os.mkdir(dirname)
+  extract_amplcml(extra_paths)
 
   # Download ampl and solvers.
   for filename in download_files:
@@ -88,10 +92,12 @@ for system in ['linux', 'macosx']:
 
   # Replace libgurobi*.so link with the library ligurobi.so* because some
   # programs don't support symlinks in zip archives.
-  libgurobi_link = glob(os.path.join(dirname, 'libgurobi*.so'))[0]
-  libgurobi = glob(os.path.join(dirname, 'libgurobi.so*'))[0]
-  os.remove(libgurobi_link)
-  shutil.move(libgurobi, libgurobi_link)
+  libs = glob(os.path.join(dirname, 'libgurobi.so*'))
+  if len(libs) > 0:
+    libgurobi = libs[0]
+    libgurobi_link = glob(os.path.join(dirname, 'libgurobi*.so'))[0]
+    os.remove(libgurobi_link)
+    shutil.move(libgurobi, libgurobi_link)
 
   # Download ampltabl.dll.
   suffix = system + '32' if system != 'macosx' else system
@@ -104,4 +110,7 @@ for system in ['linux', 'macosx']:
   # Create an archive.
   shutil.make_archive('ampl-demo-' + system, 'zip', '.', dirname)
 
-# TODO: windows
+# Create a Windows package.
+fileutil.rmtree_if_exists(dirname)
+extract_amplcml()
+shutil.make_archive('ampl-demo-mswin', 'zip', '.', dirname)
