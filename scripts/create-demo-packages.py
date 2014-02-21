@@ -118,11 +118,11 @@ def prepare_windows_package():
   fileutil.rmtree_if_exists(ampl_demo_dir)
   extract_amplcml()
 
-# Map from demo to IDE system names.
-demo2idesys = {
-  'linux':  'linux32',
-  'macosx': 'mac64',
-  'mswin':  'win32'
+# Map from system name to IDE package suffix.
+sys2ide = {
+  'linux':  'linux32.tgz',
+  'macosx': 'mac64.tgz',
+  'mswin':  'win32.zip'
 }
 
 for system in ['linux', 'macosx', 'mswin']:
@@ -134,15 +134,18 @@ for system in ['linux', 'macosx', 'mswin']:
   else:
     archive_format = 'zip'
     prepare_windows_package()
-  shutil.make_archive('ampl-demo-' + system, archive_format, '.', ampl_demo_dir)
+  basename = 'ampl-demo-' + system
+  shutil.make_archive(basename, archive_format, '.', ampl_demo_dir)
 
   # Prepare the IDE demo package.
   amplide_demo_dir = 'amplide-demo'
   fileutil.rmtree_if_exists(amplide_demo_dir)
-  amplide_url = 'http://www.ampl.com/dl/IDE/amplide.{}.tgz'.format(demo2idesys[system])
+  amplide_url = 'http://www.ampl.com/dl/IDE/amplide.' + sys2ide[system]
   amplide = retrieve_cached(amplide_url)
-  with tarfile.open(amplide) as tar:
-    tar.extractall()
+  archive_open = zipfile.ZipFile if amplide_url.endswith('zip') else tarfile.open
+  with archive_open(amplide) as archive:
+    archive.extractall()
   shutil.move('amplide', amplide_demo_dir)
   shutil.move(ampl_demo_dir, os.path.join(amplide_demo_dir, 'ampl'))
-  shutil.make_archive('amplide-demo-' + system, archive_format, '.', amplide_demo_dir)
+  basename = 'amplide-demo-' + system
+  shutil.make_archive(basename, archive_format, '.', amplide_demo_dir)
