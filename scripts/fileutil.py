@@ -19,6 +19,9 @@ def remove_if_exists(path):
       raise
 
 UNIX = 3
+
+# Archives a directory with zip preserving symlinks. The created archive may not
+# be supported by some zip utilities.
 def make_archive(archive_name, dirname):
   with zipfile.ZipFile(archive_name, 'w', compression=zipfile.ZIP_DEFLATED) as zip:
     for root, dirs, files in os.walk(dirname):
@@ -31,7 +34,3 @@ def make_archive(archive_name, dirname):
           zip.writestr(zipinfo, os.readlink(path))
         else:
           zip.write(path, path)
-
-if __name__ == '__main__':
-    import sys
-    make_archive(sys.argv[1], sys.argv[2])

@@ -2,8 +2,9 @@
 # This script creates demo packages of ampl.
 
 from __future__ import print_function
-import gzip, os, stat, tarfile, urllib, zipfile
+import gzip, os, shutil, stat, tarfile, urllib, zipfile
 import fileutil
+from glob import glob
 from sets import Set
 from StringIO import StringIO
 
@@ -85,6 +86,13 @@ for system in ['linux', 'macosx']:
       st = os.stat(path)
       os.chmod(path, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
+  # Replace libgurobi*.so link with the library ligurobi.so* because some
+  # programs don't support symlinks in zip archives.
+  libgurobi_link = glob(os.path.join(dirname, 'libgurobi*.so'))[0]
+  libgurobi = glob(os.path.join(dirname, 'libgurobi.so*'))[0]
+  os.remove(libgurobi_link)
+  shutil.move(libgurobi, libgurobi_link)
+
   # Download ampltabl.dll.
   suffix = system + '32' if system != 'macosx' else system
   ampltabl_url = googlecode_url + 'ampltabl-20131212-{}.zip'.format(suffix)
@@ -94,9 +102,6 @@ for system in ['linux', 'macosx']:
     writefile(zip.open('ampltabl.dll'), os.path.join(dirname, 'ampltabl.dll'))
 
   # Create an archive.
-  packagename = 'ampl-demo-' + system + '.zip'
-  fileutil.remove_if_exists(packagename)
-  with zipfile.ZipFile(packagename, 'w') as zip:
-    for root, dirs, files in os.walk(dirname):
-      for file in files:
-        zip.write(os.path.join(root, file))
+  shutil.make_archive('ampl-demo-' + system, 'zip', '.', dirname)
+
+# TODO: windows
