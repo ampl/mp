@@ -82,6 +82,7 @@ def archive_and_upload(tempdir, simulate):
     jacop_version = versions['jacop']
     jacop_version = jacop_version[:jacop_version.rfind('-')]
     extra_files = {
+      'amplgsl': ['gsl.ampl'],
       'gecode': ['gecode.ampl'],
       'jacop': ['ampljacop.jar', 'JaCoP-' + jacop_version + '.jar']
     }
