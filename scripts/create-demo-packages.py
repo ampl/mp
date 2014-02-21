@@ -3,12 +3,12 @@
 
 from __future__ import print_function
 import gzip, os, stat, tarfile, urllib, zipfile
-from fileutil import rmtree_if_exists
+import fileutil
 from sets import Set
 from StringIO import StringIO
 
 # URL for downloading student versions of AMPL binaries.
-student_url = 'http://ampl.com/netlib/ampl/student/linux'
+student_url = 'http://ampl.com/netlib/ampl/student/'
 
 amplcml_filename = 'amplcml.zip'
 
@@ -16,10 +16,10 @@ amplcml_filename = 'amplcml.zip'
 amplcml_url = 'http://www.ampl.com/NEW/TABLES/' + amplcml_filename
 
 # URL for downloading AMPL table handler.
-ampltabl_url = 'https://ampl.googlecode.com/files/ampltabl-20131212-linux32.zip'
+googlecode_url = 'https://ampl.googlecode.com/files/'
 
 # Files to download.
-files = [
+download_files = [
   'README', 'ampl.gz', 'cplex.gz', 'gjh.gz',
   'gurobi.tgz', 'minos.gz', 'snopt.gz']
 
@@ -43,54 +43,60 @@ else:
   writefile(StringIO(response), amplcml_filename)
   amplcml = zipfile.ZipFile(StringIO(response))
 
-dirname = 'ampl-demo'
-rmtree_if_exists(dirname)
-os.mkdir(dirname)
+for system in ['linux', 'macosx']:
+  dirname = 'ampl-demo'
+  fileutil.rmtree_if_exists(dirname)
+  os.mkdir(dirname)
 
-# Extract files from amplcml.zip.
-for name in amplcml.namelist():
-  found = False
-  for path in extra_paths:
-    if name.startswith('amplcml/' + path):
-      found = True
-      break
-  if not found:
-    continue
-  outname = name.replace('amplcml/', dirname + '/')
-  if name.endswith('/'):
-    os.makedirs(outname)
-  else:
-    writefile(amplcml.open(name), outname)
+  # Extract files from amplcml.zip.
+  for name in amplcml.namelist():
+    found = False
+    for path in extra_paths:
+      if name.startswith('amplcml/' + path):
+        found = True
+        break
+    if not found:
+      continue
+    outname = name.replace('amplcml/', dirname + '/')
+    if name.endswith('/'):
+      os.makedirs(outname)
+    else:
+      writefile(amplcml.open(name), outname)
 
-# Download ampl and solvers.
-for filename in files:
-  print('Downloading', filename)
-  response = urllib.urlopen(student_url + '/' + filename)
-  # Unpack if necessary.
-  outfilename = filename
-  if filename.endswith('.gz'):
-    outfilename = filename.replace('.gz', '')
-    with gzip.GzipFile(fileobj=StringIO(response.read())) as f:
-      writefile(f, os.path.join(dirname, outfilename))
-  elif filename.endswith('.tgz'):
-    with tarfile.open(fileobj=StringIO(response.read())) as tar:
-      tar.extractall(dirname)
-  else:
-    writefile(response, os.path.join(dirname, filename))
-  # Add executable permissions.
-  if outfilename in executables:
-    path = os.path.join(dirname, outfilename)
-    st = os.stat(path)
-    os.chmod(path, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+  # Download ampl and solvers.
+  for filename in download_files:
+    print('Downloading', filename)
+    fullsys = system if system != 'macosx' else system + '/x86_32'
+    response = urllib.urlopen('{}/{}/{}'.format(student_url, fullsys, filename))
+    # Unpack if necessary.
+    outfilename = filename
+    if filename.endswith('.gz'):
+      outfilename = filename.replace('.gz', '')
+      with gzip.GzipFile(fileobj=StringIO(response.read())) as f:
+        writefile(f, os.path.join(dirname, outfilename))
+    elif filename.endswith('.tgz'):
+      with tarfile.open(fileobj=StringIO(response.read())) as tar:
+        tar.extractall(dirname)
+    else:
+      writefile(response, os.path.join(dirname, filename))
+    # Add executable permissions.
+    if outfilename in executables:
+      path = os.path.join(dirname, outfilename)
+      st = os.stat(path)
+      os.chmod(path, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
-# Download ampltabl.dll.
-print('Downloading', ampltabl_url)
-response = urllib.urlopen(ampltabl_url)
-with zipfile.ZipFile(StringIO(response.read())) as zip:
-  writefile(zip.open('ampltabl.dll'), os.path.join(dirname, 'ampltabl.dll'))
+  # Download ampltabl.dll.
+  suffix = system + '32' if system != 'macosx' else system
+  ampltabl_url = googlecode_url + 'ampltabl-20131212-{}.zip'.format(suffix)
+  print('Downloading', ampltabl_url)
+  response = urllib.urlopen(ampltabl_url)
+  with zipfile.ZipFile(StringIO(response.read())) as zip:
+    writefile(zip.open('ampltabl.dll'), os.path.join(dirname, 'ampltabl.dll'))
 
-# Create an archive.
-with zipfile.ZipFile('ampl-demo-linux.zip', 'w') as zip:
-  for root, dirs, files in os.walk(dirname):
-    for file in files:
-      zip.write(os.path.join(root, file))
+  # Create an archive.
+  packagename = 'ampl-demo-' + system + '.zip'
+  fileutil.remove_if_exists(packagename)
+  with zipfile.ZipFile(packagename, 'w') as zip:
+    for root, dirs, files in os.walk(dirname):
+      for file in files:
+        zip.write(os.path.join(root, file))
