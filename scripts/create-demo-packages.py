@@ -7,14 +7,13 @@ import fileutil
 from glob import glob
 from sets import Set
 from StringIO import StringIO
+from urlparse import urlparse
 
 # URL for downloading student versions of AMPL binaries.
 student_url = 'http://ampl.com/netlib/ampl/student/'
 
-amplcml_filename = 'amplcml.zip'
-
 # URL for downloading a command-line version of AMPL.
-amplcml_url = 'http://www.ampl.com/NEW/TABLES/' + amplcml_filename
+amplcml_url = 'http://www.ampl.com/NEW/TABLES/amplcml.zip'
 
 # URL for downloading AMPL table handler.
 googlecode_url = 'https://ampl.googlecode.com/files/'
@@ -35,16 +34,26 @@ def writefile(f, filename):
   with open(filename, 'wb') as out:
     out.write(f.read())
 
-# Download amplcml.zip or use cached version if available.
-if os.path.exists(amplcml_filename):
-  amplcml = zipfile.ZipFile(amplcml_filename)
-else:
-  print('Downloading', amplcml_filename)
-  response = urllib.urlopen(amplcml_url).read()
-  writefile(StringIO(response), amplcml_filename)
-  amplcml = zipfile.ZipFile(StringIO(response))
+# Retrieve the url or use cached version of the file if available.
+cache_dir = 'cache'
+def retrieve_cached(url, system = None):
+  filename = os.path.basename(urlparse(url).path)
+  cached_path = cache_dir
+  if system is not None:
+    cached_path = os.path.join(cache_dir, system)
+    if not os.path.exists(cached_path):
+      os.mkdir(cached_path)
+  cached_path = os.path.join(cached_path, filename)
+  if os.path.exists(cached_path):
+    print('Using cached version of', filename)
+  else:
+    print('Downloading', filename)
+    urllib.urlretrieve(url, cached_path)
+  return cached_path
 
-dirname = 'ampl-demo'
+amplcml = zipfile.ZipFile(retrieve_cached(amplcml_url))
+
+ampl_demo_dir = 'ampl-demo'
 
 # Extract files from amplcml.zip.
 def extract_amplcml(extra_paths = None):
@@ -57,60 +66,83 @@ def extract_amplcml(extra_paths = None):
           break
       if not found:
         continue
-    outname = name.replace('amplcml/', dirname + '/')
+    outname = name.replace('amplcml/', ampl_demo_dir + '/')
     if name.endswith('/'):
       os.makedirs(outname)
     else:
       writefile(amplcml.open(name), outname)
 
-for system in ['linux', 'macosx']:
-  fileutil.rmtree_if_exists(dirname)
-  os.mkdir(dirname)
+# Prepare a demo package for UNIX systems.
+def prepare_unix_package(system):  
+  os.mkdir(ampl_demo_dir)
   extract_amplcml(extra_paths)
 
   # Download ampl and solvers.
   for filename in download_files:
-    print('Downloading', filename)
     fullsys = system if system != 'macosx' else system + '/x86_32'
-    response = urllib.urlopen('{}/{}/{}'.format(student_url, fullsys, filename))
+    retrieved_file = retrieve_cached('{}/{}/{}'.format(student_url, fullsys, filename), system)
     # Unpack if necessary.
     outfilename = filename
     if filename.endswith('.gz'):
       outfilename = filename.replace('.gz', '')
-      with gzip.GzipFile(fileobj=StringIO(response.read())) as f:
-        writefile(f, os.path.join(dirname, outfilename))
+      with gzip.GzipFile(retrieved_file) as f:
+        writefile(f, os.path.join(ampl_demo_dir, outfilename))
     elif filename.endswith('.tgz'):
-      with tarfile.open(fileobj=StringIO(response.read())) as tar:
-        tar.extractall(dirname)
+      with tarfile.open(retrieved_file) as tar:
+        tar.extractall(ampl_demo_dir)
     else:
-      writefile(response, os.path.join(dirname, filename))
+      shutil.copy(retrieved_file, os.path.join(ampl_demo_dir, filename))
     # Add executable permissions.
     if outfilename in executables:
-      path = os.path.join(dirname, outfilename)
+      path = os.path.join(ampl_demo_dir, outfilename)
       st = os.stat(path)
       os.chmod(path, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
   # Replace libgurobi*.so link with the library ligurobi.so* because some
   # programs don't support symlinks in zip archives.
-  libs = glob(os.path.join(dirname, 'libgurobi.so*'))
+  libs = glob(os.path.join(ampl_demo_dir, 'libgurobi.so*'))
   if len(libs) > 0:
     libgurobi = libs[0]
-    libgurobi_link = glob(os.path.join(dirname, 'libgurobi*.so'))[0]
+    libgurobi_link = glob(os.path.join(ampl_demo_dir, 'libgurobi*.so'))[0]
     os.remove(libgurobi_link)
     shutil.move(libgurobi, libgurobi_link)
 
   # Download ampltabl.dll.
   suffix = system + '32' if system != 'macosx' else system
   ampltabl_url = googlecode_url + 'ampltabl-20131212-{}.zip'.format(suffix)
-  print('Downloading', ampltabl_url)
-  response = urllib.urlopen(ampltabl_url)
-  with zipfile.ZipFile(StringIO(response.read())) as zip:
-    writefile(zip.open('ampltabl.dll'), os.path.join(dirname, 'ampltabl.dll'))
+  with zipfile.ZipFile(retrieve_cached(ampltabl_url)) as zip:
+    writefile(zip.open('ampltabl.dll'), os.path.join(ampl_demo_dir, 'ampltabl.dll'))
 
-  # Create an archive.
-  shutil.make_archive('ampl-demo-' + system, 'zip', '.', dirname)
+# Prepare a demo package for Windows.
+def prepare_windows_package():
+  fileutil.rmtree_if_exists(ampl_demo_dir)
+  extract_amplcml()
 
-# Create a Windows package.
-fileutil.rmtree_if_exists(dirname)
-extract_amplcml()
-shutil.make_archive('ampl-demo-mswin', 'zip', '.', dirname)
+# Map from demo to IDE system names.
+demo2idesys = {
+  'linux':  'linux32',
+  'macosx': 'mac64',
+  'mswin':  'win32'
+}
+
+for system in ['linux', 'macosx', 'mswin']:
+  # Prepare the command-line demo package.
+  fileutil.rmtree_if_exists(ampl_demo_dir)
+  if system != 'mswin':
+    archive_format = 'gztar'
+    prepare_unix_package(system)
+  else:
+    archive_format = 'zip'
+    prepare_windows_package()
+  shutil.make_archive('ampl-demo-' + system, archive_format, '.', ampl_demo_dir)
+
+  # Prepare the IDE demo package.
+  amplide_demo_dir = 'amplide-demo'
+  fileutil.rmtree_if_exists(amplide_demo_dir)
+  amplide_url = 'http://www.ampl.com/dl/IDE/amplide.{}.tgz'.format(demo2idesys[system])
+  amplide = retrieve_cached(amplide_url)
+  with tarfile.open(amplide) as tar:
+    tar.extractall()
+  shutil.move('amplide', amplide_demo_dir)
+  shutil.move(ampl_demo_dir, os.path.join(amplide_demo_dir, 'ampl'))
+  shutil.make_archive('amplide-demo-' + system, archive_format, '.', amplide_demo_dir)
