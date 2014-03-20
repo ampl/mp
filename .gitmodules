@@ -10,3 +10,6 @@
 [submodule "solvers/coin"]
 	path = solvers/coin
 	url = git://github.com/ampl/coin.git
+[submodule "solvers/path/pathlib"]
+	path = solvers/path/pathlib
+	url = git://github.com/ampl/pathlib.git
