@@ -35,12 +35,12 @@ L = -lm
 
 S = ..
 # "S = .." assumes this directory is solvers/path .
-P = pathlib/include
+P = pathlib
 
 .c.obj:
-	$(CC) -c $(CFLAGS) -I$S -I$P $*.c
+	$(CC) -c $(CFLAGS) -I$S -I$P/include $*.c
 
-o = path.obj $P/path.lib $S/amplsolv.lib
+o = path.obj $P/lib/windows/dynamic/path46.lib $S/amplsolv.lib
 Lmt = libcmt.lib /link /NODEFAULTLIB:libc.lib
 
 path.exe: $o
