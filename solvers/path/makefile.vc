@@ -35,7 +35,7 @@ L = -lm
 
 S = ..
 # "S = .." assumes this directory is solvers/path .
-P = pathlib
+P = pathlib/include
 
 .c.obj:
 	$(CC) -c $(CFLAGS) -I$S -I$P $*.c
