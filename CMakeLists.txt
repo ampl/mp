@@ -77,9 +77,9 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)
   set(get_amplgsl_version solvers/amplgsl/gen-decls >> versions)
 endif ()
 
-if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/cbc/CMakeLists.txt)
-  set(HAVE_CBC 1)
-  set(get_cbc_version solvers/cbc/bin/cbc -v -AMPL >> versions)
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/coin/CMakeLists.txt)
+  set(HAVE_COIN 1)
+  set(get_cbc_version solvers/coin/bin/cbc -v -AMPL >> versions)
 endif ()
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/gecode/lib/CMakeLists.txt)
