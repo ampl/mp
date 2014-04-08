@@ -18,6 +18,8 @@ Makefile
 /*Subprojects*
 /*Targets*
 /scripts/*-options.html
+/scripts/ampl*-demo
+/scripts/cache
 /solvers/arith.h
 /solvers/arithchk
 /solvers/details.c
