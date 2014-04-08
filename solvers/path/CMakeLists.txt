@@ -1,7 +1,7 @@
 if (NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
   # PATH only supports 32-bit systems.
 elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
-  find_library(PATH_LIB path46 PATHS pathlib/lib/linux/static)
+  find_library(PATH_LIB path46 PATHS pathlib/lib/linux/dynamic)
   set(PATH_EXTRA_LIBS m)
 elseif (WIN32)
   find_library(PATH_LIB path46 PATHS pathlib/lib/windows/dynamic)
