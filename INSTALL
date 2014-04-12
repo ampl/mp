@@ -11,18 +11,24 @@ https://github.com/ampl/ampl/ or using Git:
 Requirements
 ------------
 
-* To build ilogcp, the AMPL driver for IBM ILOG Constraint Programming
-  (CP) Optimizer, you should have IBM ILOG CP Optimizer, CPLEX and Concert
-  installed. Normally these are installed as parts of IBM ILOG CPLEX
-  Optimization Studio. The code has been tested with Optimization Studio
-  version 12.4.
-
 * To build the amplgsl library you should have the source code for GSL with
   CMake build support in ${AMPL_DIR}/solvers/amplgsl/gsl. This version of
   GSL is avaialble for download from https://github.com/ampl/gsl.
   You can retrieve ASL and GSL sources at the same time using the command
 
     git clone --recursive git://github.com/ampl/ampl.git
+
+* To build gecode, the AMPL driver for Gecode constraint programming solver,
+  you should have Gecode source code in ${AMPL_DIR}/solvers/gecode/lib.
+  You can retrieve ASL and Gecode sources at the same time using the command
+
+    git clone --recursive git://github.com/ampl/ampl.git
+
+* To build ilogcp, the AMPL driver for IBM ILOG Constraint Programming
+  (CP) Optimizer, you should have IBM ILOG CP Optimizer, CPLEX and Concert
+  installed. Normally these are installed as parts of IBM ILOG CPLEX
+  Optimization Studio. The code has been tested with Optimization Studio
+  version 12.4.
 
 Build using CMake
 -----------------
