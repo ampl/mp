@@ -4,9 +4,9 @@ function libraries and solver drivers.
 In the following instructions ${AMPL_DIR} denotes a local copy of the
 AMPL repository, which is simply a directory on your computer with ASL
 source code, example models, etc. The repository can be obtained from
-https://github.com/vitaut/ampl/ or using Git:
+https://github.com/ampl/ampl/ or using Git:
 
-  git clone --recursive git://github.com/vitaut/ampl.git
+  git clone --recursive git://github.com/ampl/ampl.git
 
 Requirements
 ------------
@@ -17,12 +17,12 @@ Requirements
   Optimization Studio. The code has been tested with Optimization Studio
   version 12.4.
 
-* To build the amplgsl library you should have GSL source code available
-  in ${AMPL_DIR}/solvers/amplgsl/gsl. It is highly recommened to use
-  a patched version of GSL 1.15 from https://github.com/vitaut/gsl.
+* To build the amplgsl library you should have the source code for GSL with
+  CMake build support in ${AMPL_DIR}/solvers/amplgsl/gsl. This version of
+  GSL is avaialble for download from https://github.com/ampl/gsl.
   You can retrieve ASL and GSL sources at the same time using the command
 
-    git clone --recursive git://github.com/vitaut/ampl.git
+    git clone --recursive git://github.com/ampl/ampl.git
 
 Build using CMake
 -----------------
