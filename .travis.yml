@@ -1,2 +1,7 @@
 language: cpp
-script: cmake . && make
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq cmake
+
+script: apt-cache show cmake && lsb_release -a && cmake . && make
