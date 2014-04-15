@@ -1,7 +1,16 @@
 language: cpp
 
+# Install newer version of CMake as the one that comes preinstalled on
+# travis-ci doesn't support CMakeAddFortranSubdirectory.
 before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq cmake
+  - sudo apt-get install libc6:i386
+  - wget http://www.cmake.org/files/v2.8/cmake-2.8.12.2-Linux-i386.tar.gz
 
-script: apt-cache show cmake && lsb_release -a && cmake . && make
+install:
+  - tar xzf cmake-2.8.12.2-Linux-i386.tar.gz
+  - sudo apt-get install gfortran
+
+script:
+  - cmake-2.8.12.2-Linux-i386/bin/cmake .
+  - make
+  - make test
