@@ -57,7 +57,8 @@ class StderrRedirect {
 void ChangeDirectory(fmt::StringRef path);
 
 // Executes a shell command. Throws Error on error.
-void ExecuteShellCommand(fmt::StringRef command);
+int ExecuteShellCommand(
+  fmt::StringRef command, bool throw_on_nonzero_exit_code = true);
 
 // Splits the string into an array of substrings.
 std::vector<std::string> Split(const std::string &s, char sep);
