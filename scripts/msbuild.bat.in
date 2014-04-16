@@ -1,0 +1,2 @@
+rem A helper script for running msbuild.
+@CMAKE_MAKE_PROGRAM@ %*

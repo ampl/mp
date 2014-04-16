@@ -172,6 +172,11 @@ if (HAVE_UNIQUE_PTR)
   add_definitions(-DHAVE_UNIQUE_PTR)
 endif ()
 
+# Set the path to msbuild in a helper script.
+if (CMAKE_GENERATOR MATCHES "Visual Studio")
+  configure_file(scripts/msbuild.bat.in scripts/msbuild.bat @ONLY)
+endif ()
+
 add_subdirectory(doc)
 add_subdirectory(solvers)
 add_subdirectory(tables)
