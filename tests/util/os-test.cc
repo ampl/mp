@@ -22,6 +22,7 @@
 
 #include "solvers/util/error.h"
 #include "solvers/util/os.h"
+#include "tests/config.h"
 #include "tests/util.h"
 #include "gtest/gtest.h"
 
