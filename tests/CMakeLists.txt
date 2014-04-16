@@ -23,6 +23,9 @@ check_cxx_source_compiles(
   "#include <thread>
   void run() {}
   int main() { std::thread t(run); }" HAVE_THREADS)
+
+find_program(HAVE_LSOF lsof)
+
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
   ${CMAKE_CURRENT_BINARY_DIR}/config.h)

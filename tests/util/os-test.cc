@@ -153,23 +153,25 @@ TEST(MemoryMappedFileTest, DtorUnmapsFile) {
 }
 
 #ifndef _WIN32
+# ifdef HAVE_LSOF
 TEST(MemoryMappedFileTest, CloseFile) {
   WriteFile("test", "abc");
   MemoryMappedFile f("test");
   ExecuteShellCommand("lsof test > out");
   std::string out = ReadFile("out");
   std::vector<string> results = Split(out, '\n');
-#ifdef __APPLE__
+#  ifdef __APPLE__
   // For some reason lsof prints txt instead of mem for a mapped file on Mac.
   const char MEM[] = " txt ";
-#else
+#  else
   const char MEM[] = " mem ";
-#endif
+#  endif
   // Check that lsof prints mem instead of a file descriptor.
   EXPECT_TRUE(results.size() == 3 &&
       results[1].find(MEM) != string::npos && results[2] == "")
     << "Unexpected output from lsof:\n" << out;
 }
+# endif
 #else
 TEST(MemoryMappedFileTest, CloseFile) {
   WriteFile("test", "abc");
