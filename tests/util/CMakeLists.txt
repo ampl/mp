@@ -17,12 +17,12 @@ add_executable(numberofmap-speed-test
   numberofmap-speed-test.cc ../expr-builder.cc)
 target_link_libraries(numberofmap-speed-test util)
 
-add_executable(print-executable-path print-executable-path.cc)
-target_link_libraries(print-executable-path util)
+add_executable(test-helper test-helper.cc)
+target_link_libraries(test-helper util)
 
 cxx_test_with_flags(os-test "" "gtest;util"
   ../test-main.cc ../util.cc os-test.cc)
-add_dependencies(os-test print-executable-path)
+add_dependencies(os-test test-helper)
 
 cxx_test_with_flags(problem-test "" "gtest;util"
   ../test-main.cc ../expr-builder.cc ../util.cc problem-test.cc)

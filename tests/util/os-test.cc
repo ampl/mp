@@ -105,14 +105,14 @@ TEST(OSTest, LinkFile) {
 TEST(OSTest, GetExecutablePathUnicode) {
   // Neither CMake nor NMake handle Unicode paths properly on Windows,
   // so copy test executable ourselves.
-  std::string filename = "print-executable-path";
+  std::string filename = "test-helper";
   std::string linkname = "юникод";
 #ifdef _WIN32
   filename += ".exe";
   linkname += ".exe";
 #endif
   LinkFile(filename, linkname);
-  ExecuteShellCommand("./" + linkname + " > out");
+  ExecuteShellCommand("./" + linkname + " > out", false);
   string path = ReadFile("out");
   string ending = "/" + linkname;
   EXPECT_EQ(ending, path.size() >= ending.size() ?
@@ -158,7 +158,7 @@ TEST(MemoryMappedFileTest, DtorUnmapsFile) {
 TEST(MemoryMappedFileTest, CloseFile) {
   WriteFile("test", "abc");
   MemoryMappedFile f("test");
-  ExecuteShellCommand("lsof test > out");
+  ExecuteShellCommand("lsof test > out", false);
   std::string out = ReadFile("out");
   std::vector<string> results = Split(out, '\n');
 #  ifdef __APPLE__

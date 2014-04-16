@@ -37,6 +37,12 @@ extern "C" {
 # define chdir _chdir
 #else
 # include <unistd.h>
+# include <sys/wait.h>
+#endif
+
+#ifndef WIFEXITED
+# define WIFEXITED(status) true
+# define WEXITSTATUS(status) status
 #endif
 
 std::string ReadFile(fmt::StringRef name) {
@@ -70,19 +76,28 @@ void ChangeDirectory(fmt::StringRef path) {
     ampl::ThrowError("chdir failed, error code = {}") << errno;
 }
 
-void ExecuteShellCommand(fmt::StringRef command) {
+int ExecuteShellCommand(
+    fmt::StringRef command, bool throw_on_nonzero_exit_code) {
 #ifdef _WIN32
   std::wstring command_str((ampl::UTF8ToUTF16(command)));
   std::replace(command_str.begin(), command_str.end(), L'/', L'\\');
-  int error_code = _wsystem(command_str.c_str());
+  int result = _wsystem(command_str.c_str());
 #else
-  int error_code = std::system(command.c_str());
+  int result = std::system(command.c_str());
 #endif
-  if (error_code != 0) {
-    if (error_code != -1)
-      ampl::ThrowError("system failed, result = {}") << error_code;
+  // Check if system function failed.
+  if (result == -1)
     ampl::ThrowError("system failed, error code = {}") << errno;
+  // Check if process hasn't exited normally.
+  if (!WIFEXITED(result)) {
+    ampl::ThrowError("process hasn't exited normally, error code = {}")
+      << result;
   }
+  // Process exited normally - check exit code.
+  int exit_code = WEXITSTATUS(result);
+  if (exit_code != 0 && throw_on_nonzero_exit_code)
+    ampl::ThrowError("process exited with code {}") << exit_code;
+  return exit_code;
 }
 
 std::vector<std::string> Split(const std::string &s, char sep) {
