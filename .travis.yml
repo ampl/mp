@@ -12,5 +12,5 @@ install:
 
 script:
   - cmake-2.8.12.2-Linux-i386/bin/cmake .
-  - make
+  - make -j3
   - make test
