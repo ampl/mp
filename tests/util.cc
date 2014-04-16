@@ -74,12 +74,15 @@ void ExecuteShellCommand(fmt::StringRef command) {
 #ifdef _WIN32
   std::wstring command_str((ampl::UTF8ToUTF16(command)));
   std::replace(command_str.begin(), command_str.end(), L'/', L'\\');
-  if (_wsystem(command_str.c_str()) != 0)
-    ampl::ThrowError("_wsystem failed, error code = {}") << errno;
+  int error_code = _wsystem(command_str.c_str());
 #else
-  if (std::system(command.c_str()) != 0)
-    ampl::ThrowError("std::system failed, error code = {}") << errno;
+  int error_code = std::system(command.c_str());
 #endif
+  if (error_code != 0) {
+    if (error_code != -1)
+      ampl::ThrowError("system failed, result = {}") << error_code;
+    ampl::ThrowError("system failed, error code = {}") << errno;
+  }
 }
 
 std::vector<std::string> Split(const std::string &s, char sep) {

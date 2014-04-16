@@ -23,6 +23,7 @@
 #include "tests/util.h"
 #include "gtest/gtest.h"
 #include "solvers/util/error.h"
+#include <string>
 
 namespace {
 
@@ -41,7 +42,7 @@ TEST(UtilTest, Split) {
   EXPECT_EQ("", result[1]);
 }
 
-TEST(NLTest, ReplaceLine) {
+TEST(UtilTest, ReplaceLine) {
   EXPECT_EQ("de", ReplaceLine("", 0, "de"));
   EXPECT_EQ("de", ReplaceLine("abc", 0, "de"));
   EXPECT_THROW(ReplaceLine("abc", 1, "de"), ampl::Error);
@@ -50,5 +51,16 @@ TEST(NLTest, ReplaceLine) {
   EXPECT_EQ("gh\ndef", ReplaceLine("abc\ndef", 0, "gh"));
   EXPECT_EQ("abc\ngh", ReplaceLine("abc\ndef", 1, "gh"));
   EXPECT_THROW(ReplaceLine("abc\ndef", 2, "gh"), ampl::Error);
+}
+
+TEST(UtilTest, ExecuteShellCommand) {
+  ExecuteShellCommand("cd .");
+  std::string message;
+  try {
+    ExecuteShellCommand("bad-command");
+  } catch (const ampl::Error &e) {
+    message = e.what();
+  }
+  EXPECT_TRUE(message.find("system failed, result = ") != std::string::npos);
 }
 }
