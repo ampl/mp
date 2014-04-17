@@ -61,6 +61,12 @@ TEST(UtilTest, ExecuteShellCommand) {
   } catch (const ampl::Error &e) {
     message = e.what();
   }
-  EXPECT_TRUE(message.find("system failed, result = ") != std::string::npos);
+  EXPECT_TRUE(message.find("process exited with code ") != std::string::npos)
+    << message;
+}
+
+TEST(UtilTest, ExecuteShellThrowsOnNonzeroExitCode) {
+  EXPECT_THROW_MSG(ExecuteShellCommand("util/test-helper > out"),
+    ampl::Error, "process exited with code 42");
 }
 }
