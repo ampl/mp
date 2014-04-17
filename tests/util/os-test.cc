@@ -164,7 +164,9 @@ TEST(MemoryMappedFileTest, CloseFile) {
   fmt::Print("lsof test output:");
   std::fflush(stdout);
   ExecuteShellCommand("lsof test", false);
-  int exit_code = ExecuteShellCommand("lsof test > out", false);
+  std::string path =
+    ampl::GetExecutablePath().remove_filename().string() + "/test";
+  int exit_code = ExecuteShellCommand("lsof " + path + " > out", false);
   std::string out = ReadFile("out");
   std::vector<string> results = Split(out, '\n');
 #  ifdef __APPLE__
