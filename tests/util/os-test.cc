@@ -158,7 +158,7 @@ TEST(MemoryMappedFileTest, DtorUnmapsFile) {
 TEST(MemoryMappedFileTest, CloseFile) {
   WriteFile("test", "abc");
   MemoryMappedFile f("test");
-  ExecuteShellCommand("lsof test > out", false);
+  int exit_code = ExecuteShellCommand("lsof test > out", false);
   std::string out = ReadFile("out");
   std::vector<string> results = Split(out, '\n');
 #  ifdef __APPLE__
@@ -169,8 +169,8 @@ TEST(MemoryMappedFileTest, CloseFile) {
 #  endif
   // Check that lsof prints mem instead of a file descriptor.
   EXPECT_TRUE(results.size() == 3 &&
-      results[1].find(MEM) != string::npos && results[2] == "")
-    << "Unexpected output from lsof:\n" << out;
+    results[1].find(MEM) != string::npos && results[2] == "")
+      << "Unexpected output from lsof:\n" << out << "\nExit code = " << exit_code;
 }
 # endif
 #else
