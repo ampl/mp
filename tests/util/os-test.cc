@@ -49,20 +49,35 @@ using std::string;
 namespace {
 
 TEST(OSTest, EmptyPath) {
-  ampl::path p;
-  EXPECT_EQ("", p.string());
-  EXPECT_EQ("", p.remove_filename().string());
-  EXPECT_EQ("", p.string());
+  EXPECT_EQ("", ampl::path().string());
 }
 
 TEST(OSTest, NonemptyPath) {
-  const char *s = "/somewhere/out/in/space";
+  const char *s = "/some/path";
   ampl::path p(s, s + std::strlen(s));
-  EXPECT_EQ("/somewhere/out/in/space", p.string());
+  EXPECT_EQ("/some/path", p.string());
+}
+
+TEST(OSTest, RemoveFilename) {
+  ampl::path p;
+  EXPECT_EQ("", p.remove_filename().string());
+  EXPECT_EQ("", p.string());
+  const char *s = "/somewhere/out/in/space";
+  p = ampl::path(s, s + std::strlen(s));
   EXPECT_EQ("/somewhere/out/in", p.remove_filename().string());
   EXPECT_EQ("/somewhere/out/in", p.string());
   EXPECT_EQ("/somewhere/out", p.remove_filename().string());
   EXPECT_EQ("/somewhere/out", p.string());
+}
+
+TEST(OSTest, Filename) {
+  ampl::path p;
+  EXPECT_EQ("", p.filename().string());
+  EXPECT_EQ("", p.string());
+  const char *s = "/somewhere/out/in/space";
+  p = ampl::path(s, s + std::strlen(s));
+  EXPECT_EQ("space", p.filename().string());
+  EXPECT_EQ("/somewhere/out/in/space", p.string());
 }
 
 TEST(OSTest, GetExecutablePath) {

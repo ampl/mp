@@ -104,6 +104,17 @@ std::string GetExecutableDir() {
   return ampl::GetExecutablePath().remove_filename().string();
 }
 
+std::string FixBinaryPath(fmt::StringRef path) {
+  ampl::path exe_path = ampl::GetExecutablePath();
+  exe_path.remove_filename();
+  std::string dir = exe_path.filename().string();
+  if (dir != "Debug" && dir != "Release")
+    return path.c_str();
+  ampl::path p(path.c_str(), path.c_str() + path.size());
+  std::string filename = p.filename().string();
+  return p.remove_filename().string() + "/" + dir + "/" + filename;
+}
+
 std::vector<std::string> Split(const std::string &s, char sep) {
   std::vector<std::string> items;
   std::string::size_type start = 0, end = 0;

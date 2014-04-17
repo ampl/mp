@@ -63,6 +63,10 @@ int ExecuteShellCommand(
 // Returns the directory of the currently running executable file.
 std::string GetExecutableDir();
 
+// Fix the path to a binary (executable or shared library) path by
+// inserting a configuration directory (Debug or Release) if necessary.
+std::string FixBinaryPath(fmt::StringRef path);
+
 // Splits the string into an array of substrings.
 std::vector<std::string> Split(const std::string &s, char sep);
 

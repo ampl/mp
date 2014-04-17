@@ -45,7 +45,7 @@ endif ()
 if (HAVE_GSL)
   include_directories(${GSL_BINARY_DIR})
   cxx_test_with_flags(gsl-test ""
-    "gtest;function;gsl;gslcblas" test-main.cc gsl-test.cc)
+    "gtest;function;gsl;gslcblas;util" test-main.cc gsl-test.cc util.cc)
 endif ()
 
 add_subdirectory(ilogcp)

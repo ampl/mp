@@ -33,12 +33,19 @@ namespace ampl {
 class path {
  private:
   std::string str_;
+  
+  explicit path(const std::string &s): str_(s) {}
 
  public:
   path() {}
   path(const char *begin, const char *end) : str_(begin, end) {}
 
   const std::string &string() const { return str_; }
+  
+  path filename() const {
+    size_t last_sep = str_.find_last_of('/');
+    return last_sep == std::string::npos ? path() : path(str_.substr(last_sep + 1));
+  }
 
   path &remove_filename() {
     size_t last_sep = str_.find_last_of('/');

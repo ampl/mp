@@ -36,6 +36,7 @@
 #include "tests/config.h"
 // #define DEBUG_DIFFERENTIATOR
 #include "tests/function.h"
+#include "tests/util.h"
 #include "solvers/asl.h"
 
 using std::string;
@@ -243,7 +244,7 @@ class GSLTest : public ::testing::Test {
 GSLTest::Stats GSLTest::stats_;
 
 const FunctionInfo GSLTest::info;
-fun::Library GSLTest::lib_("../solvers/amplgsl/amplgsl.dll");
+fun::Library GSLTest::lib_(FixBinaryPath("../solvers/amplgsl/amplgsl.dll"));
 gsl_rng *GSLTest::rng_;
 
 template <typename F>
