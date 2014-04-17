@@ -100,6 +100,10 @@ int ExecuteShellCommand(
   return exit_code;
 }
 
+std::string GetExecutableDir() {
+  return ampl::GetExecutablePath().remove_filename().string();
+}
+
 std::vector<std::string> Split(const std::string &s, char sep) {
   std::vector<std::string> items;
   std::string::size_type start = 0, end = 0;

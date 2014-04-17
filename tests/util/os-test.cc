@@ -112,7 +112,7 @@ TEST(OSTest, GetExecutablePathUnicode) {
   linkname += ".exe";
 #endif
   LinkFile(filename, linkname);
-  ExecuteShellCommand("./" + linkname + " > out", false);
+  ExecuteShellCommand(GetExecutableDir() + "/" + linkname + " > out", false);
   string path = ReadFile("out");
   string ending = "/" + linkname;
   EXPECT_EQ(ending, path.size() >= ending.size() ?
@@ -164,8 +164,7 @@ TEST(MemoryMappedFileTest, CloseFile) {
   fmt::Print("lsof test output:");
   std::fflush(stdout);
   ExecuteShellCommand("lsof test", false);
-  std::string path =
-    ampl::GetExecutablePath().remove_filename().string() + "/test";
+  std::string path = GetExecutableDir() + "/test";
   int exit_code = ExecuteShellCommand("lsof " + path + " > out", false);
   std::string out = ReadFile("out");
   std::vector<string> results = Split(out, '\n');
@@ -178,7 +177,8 @@ TEST(MemoryMappedFileTest, CloseFile) {
   // Check that lsof prints mem instead of a file descriptor.
   EXPECT_TRUE(results.size() == 3 &&
     results[1].find(MEM) != string::npos && results[2] == "")
-      << "Unexpected output from lsof:\n" << out << "\nExit code = " << exit_code;
+      << "Unexpected output from lsof:\n" << out << "\nExit code = " << exit_code
+      << "\nPath = "<< path;
 }
 # endif
 #else

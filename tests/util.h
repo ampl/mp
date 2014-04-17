@@ -60,6 +60,9 @@ void ChangeDirectory(fmt::StringRef path);
 int ExecuteShellCommand(
   fmt::StringRef command, bool throw_on_nonzero_exit_code = true);
 
+// Returns the directory of the currently running executable file.
+std::string GetExecutableDir();
+
 // Splits the string into an array of substrings.
 std::vector<std::string> Split(const std::string &s, char sep);
 
