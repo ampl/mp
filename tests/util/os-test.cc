@@ -158,12 +158,12 @@ TEST(MemoryMappedFileTest, DtorUnmapsFile) {
 TEST(MemoryMappedFileTest, CloseFile) {
   WriteFile("test", "abc");
   MemoryMappedFile f("test");
-  fmt::Print("lsof full output:");
+  fmt::Print("lsof full output:\n");
   std::fflush(stdout);
   ExecuteShellCommand("lsof", false);
-  fmt::Print("lsof test output:");
+  fmt::Print("lsof test output:\n");
   std::fflush(stdout);
-  ExecuteShellCommand("lsof test", false);
+  ExecuteShellCommand("lsof -V test", false);
   std::string path = GetExecutableDir() + "/test";
   int exit_code = ExecuteShellCommand("lsof " + path + " > out", false);
   std::string out = ReadFile("out");
