@@ -28,6 +28,7 @@
 #include "gtest/gtest.h"
 #include "tests/function.h"
 #include "tests/config.h"
+#include "tests/util.h"
 #include "solvers/asl.h"
 
 using std::ptr_fun;
