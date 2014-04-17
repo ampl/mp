@@ -28,6 +28,7 @@
 
 #include <cerrno>
 #include <cstring>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -173,12 +174,6 @@ TEST(MemoryMappedFileTest, DtorUnmapsFile) {
 TEST(MemoryMappedFileTest, CloseFile) {
   WriteFile("test", "abc");
   MemoryMappedFile f("test");
-  fmt::Print("lsof full output:\n");
-  std::fflush(stdout);
-  ExecuteShellCommand("lsof", false);
-  fmt::Print("lsof test output:\n");
-  std::fflush(stdout);
-  ExecuteShellCommand("lsof -V test", false);
   std::string path = GetExecutableDir() + "/test";
   int exit_code = ExecuteShellCommand("lsof " + path + " > out", false);
   std::string out = ReadFile("out");
@@ -190,10 +185,27 @@ TEST(MemoryMappedFileTest, CloseFile) {
   const char MEM[] = " mem ";
 #  endif
   // Check that lsof prints mem instead of a file descriptor.
-  EXPECT_TRUE(results.size() == 3 &&
-    results[1].find(MEM) != string::npos && results[2] == "")
-      << "Unexpected output from lsof:\n" << out << "\nExit code = " << exit_code
-      << "\nPath = "<< path;
+  if (results.size() == 3 &&
+    results[1].find(MEM) != string::npos && results[2] == "") {
+    // Got expected output - do nothing.
+  } else {
+    // Running lsof with filename failed, so check the full lsof output instead.
+    ExecuteShellCommand("lsof > out", false);
+    std::string line;
+    std::ifstream out("out");
+    bool found = false;
+    while (std::getline(out, line)) {
+      if (line.find(path) != std::string::npos) {
+        if (line.find(MEM) != string::npos)
+          found = true;
+        break;
+      }
+    }
+    if (!found) {
+      FAIL() << "Unexpected output from lsof:\n" << out
+             << "\nExit code = " << exit_code << "\nPath = "<< path;
+    }
+  }
 }
 # endif
 #else
