@@ -35,7 +35,7 @@ add_library(function function.cc function.h)
 add_dependencies(function arith_h)
 target_link_libraries(function amplsolver)
 
-cxx_test_with_flags(function-test "" "gtest;function"
+cxx_test_with_flags(function-test "" "gtest;function;util"
   test-main.cc function-test.cc)
 
 if (HAVE_CBC)

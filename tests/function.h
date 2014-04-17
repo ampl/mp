@@ -285,7 +285,7 @@ class Library {
   std::auto_ptr<LibraryImpl> impl_;
 
  public:
-  explicit Library(const char *name);
+  explicit Library(fmt::StringRef name);
   ~Library();
 
   LibraryImpl *impl() { return impl_.get(); }

@@ -28,6 +28,7 @@
 #include "gtest/gtest.h"
 #include "tests/function.h"
 #include "tests/config.h"
+#include "solvers/util/os.h"
 #include "solvers/asl.h"
 
 using std::ptr_fun;
@@ -222,7 +223,8 @@ TEST(FunctionTest, TableOutput) {
 }
 
 TEST(FunctionTest, Library) {
-  Library lib("testlib.dll");
+  Library lib(
+    ampl::GetExecutablePath().remove_filename().string() + "/testlib.dll");
   EXPECT_EQ(0u, lib.GetNumFunctions());
   EXPECT_TRUE(lib.GetFunction("foo") == nullptr);
   lib.Load();

@@ -374,7 +374,7 @@ LibraryImpl::LibraryImpl(const char *name) : AmplExports(), name_(name) {
   Strtod = strtod;
 }
 
-Library::Library(const char *name) : impl_(new LibraryImpl(name)) {
+Library::Library(fmt::StringRef name) : impl_(new LibraryImpl(name.c_str())) {
   library = this;
 }
 
