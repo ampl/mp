@@ -79,8 +79,12 @@ def prepare_unix_package(system):
 
   # Download ampl and solvers.
   for filename in download_files:
-    fullsys = system if system != 'macosx' else system + '/x86_32'
-    retrieved_file = retrieve_cached('{}/{}/{}'.format(student_url, fullsys, filename), system)
+    sysdir = system
+    if system == 'macosx':
+      sysdir = system + '/x86_32'
+    elif system == 'linux32':
+      sysdir = 'linux'
+    retrieved_file = retrieve_cached('{}/{}/{}'.format(student_url, sysdir, filename), system)
     # Unpack if necessary.
     outfilename = filename
     if filename.endswith('.gz'):
@@ -108,8 +112,7 @@ def prepare_unix_package(system):
     shutil.move(libgurobi, libgurobi_link)
 
   # Download ampltabl.dll.
-  suffix = system + '32' if system != 'macosx' else system
-  ampltabl_url = googlecode_url + 'ampltabl-20131212-{}.zip'.format(suffix)
+  ampltabl_url = googlecode_url + 'ampltabl-20131212-{}.zip'.format(system)
   with zipfile.ZipFile(retrieve_cached(ampltabl_url)) as zip:
     writefile(zip.open('ampltabl.dll'), os.path.join(ampl_demo_dir, 'ampltabl.dll'))
 
@@ -120,12 +123,13 @@ def prepare_windows_package():
 
 # Map from system name to IDE package suffix.
 sys2ide = {
-  'linux':  'linux32.tgz',
+  'linux32':  'linux32.tgz',
+  'linux64':  'linux32.tgz',
   'macosx': 'mac64.tgz',
   'mswin':  'win32.zip'
 }
 
-for system in ['linux', 'macosx', 'mswin']:
+for system in ['linux32', 'linux64', 'macosx', 'mswin']:
   # Prepare the command-line demo package.
   fileutil.rmtree_if_exists(ampl_demo_dir)
   if system != 'mswin':
