@@ -23,6 +23,7 @@
 #include <limits>
 #include "gtest/gtest.h"
 #include "tests/function.h"
+#include "tests/util.h"
 
 using fun::Function;
 using fun::FunctionInfo;
@@ -51,7 +52,7 @@ class CPTest : public ::testing::Test {
 };
 
 const FunctionInfo CPTest::info;
-fun::Library CPTest::lib_("../../solvers/cp/cp.dll");
+fun::Library CPTest::lib_(FixBinaryPath("../../solvers/cp/cp.dll"));
 
 TEST_F(CPTest, NoLibErrors) {
   EXPECT_EQ("", lib_.error());

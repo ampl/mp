@@ -1,5 +1,5 @@
-cxx_test_with_flags(cp-test "" "gtest;amplsolver;function"
-  ../test-main.cc cp-test.cc)
+cxx_test_with_flags(cp-test "" "gtest;amplsolver;function;util"
+  ../test-main.cc ../util.cc cp-test.cc)
 add_dependencies(cp-test cp)
 
 if (HAVE_GECODE)

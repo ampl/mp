@@ -83,7 +83,7 @@ TEST(OSTest, Filename) {
 
 TEST(OSTest, GetExecutablePath) {
   string path = ampl::GetExecutablePath().string();
-  string ending = "/util/os-test";
+  string ending = FixBinaryPath("/util/os-test");
 #ifdef _WIN32
   ending += ".exe";
 #endif
@@ -121,14 +121,14 @@ TEST(OSTest, LinkFile) {
 TEST(OSTest, GetExecutablePathUnicode) {
   // Neither CMake nor NMake handle Unicode paths properly on Windows,
   // so copy test executable ourselves.
-  std::string filename = "test-helper";
-  std::string linkname = "юникод";
+  std::string filename = FixBinaryPath("test-helper");
+  std::string linkname = FixBinaryPath("юникод");
 #ifdef _WIN32
   filename += ".exe";
   linkname += ".exe";
 #endif
   LinkFile(filename, linkname);
-  ExecuteShellCommand(GetExecutableDir() + "/" + linkname + " > out", false);
+  ExecuteShellCommand("./" + linkname + " > out", false);
   string path = ReadFile("out");
   string ending = "/" + linkname;
   EXPECT_EQ(ending, path.size() >= ending.size() ?
@@ -174,7 +174,8 @@ TEST(MemoryMappedFileTest, DtorUnmapsFile) {
 TEST(MemoryMappedFileTest, CloseFile) {
   WriteFile("test", "abc");
   MemoryMappedFile f("test");
-  std::string path = GetExecutableDir() + "/test";
+  std::string path =
+    ampl::GetExecutablePath().remove_filename().string() + "/test";
   int exit_code = ExecuteShellCommand("lsof " + path + " > out", false);
   std::string out = ReadFile("out");
   std::vector<string> results = Split(out, '\n');

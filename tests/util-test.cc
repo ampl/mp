@@ -58,7 +58,7 @@ TEST(UtilTest, ExecuteShellCommand) {
   ExecuteShellCommand("cd .");
   std::string message;
   try {
-    ExecuteShellCommand(GetExecutableDir() + "/bad-command");
+    ExecuteShellCommand("dir/bad-command");
   } catch (const ampl::Error &e) {
     message = e.what();
   }
@@ -67,11 +67,7 @@ TEST(UtilTest, ExecuteShellCommand) {
 }
 
 TEST(UtilTest, ExecuteShellThrowsOnNonzeroExitCode) {
-  EXPECT_THROW_MSG(ExecuteShellCommand(GetExecutableDir() + "/util/test-helper > out"),
+  EXPECT_THROW_MSG(ExecuteShellCommand(FixBinaryPath("util/test-helper") + " > out"),
     ampl::Error, "process exited with code 42");
-}
-
-TEST(UtilTest, GetExecutableDir) {
-  EXPECT_EQ(ampl::GetExecutablePath().remove_filename().string(), GetExecutableDir());
 }
 }
