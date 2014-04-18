@@ -109,10 +109,10 @@ std::string FixBinaryPath(fmt::StringRef path) {
   exe_path.remove_filename();
   std::string dir = exe_path.filename().string();
   if (dir != "Debug" && dir != "Release")
-    return path.c_str();
+    return FixPath(path.c_str());
   ampl::path p(path.c_str(), path.c_str() + path.size());
   std::string filename = p.filename().string();
-  return p.remove_filename().string() + "/" + dir + "/" + filename;
+  return FixPath(p.remove_filename().string() + "/" + dir + "/" + filename);
 }
 
 std::vector<std::string> Split(const std::string &s, char sep) {
