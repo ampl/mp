@@ -38,6 +38,19 @@ else ()
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif ()
 
+if (MSVC)
+  # Check if Microsoft SDK is installed and, if yes, create a script that
+  # wraps msbuild and configures build environment. It is useful when building
+  # Visual Studio projects without Visual C++ installed.
+  find_program(WINSDK_SETENV NAMES SetEnv.cmd
+    PATHS "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows;CurrentInstallFolder]/bin")
+  if (EXISTS "${WINSDK_SETENV}")
+    file(WRITE msbuild.bat
+      "call \"${WINSDK_SETENV}\"
+       ${CMAKE_MAKE_PROGRAM} %*")
+  endif ()
+endif ()
+
 if (APPLE)
   add_definitions(-mmacosx-version-min=10.4)
 
