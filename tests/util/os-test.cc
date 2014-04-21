@@ -68,6 +68,7 @@ TEST(OSTest, RemoveFilename) {
   EXPECT_EQ("/somewhere/out", p.remove_filename().string());
   EXPECT_EQ("/somewhere/out", p.string());
   EXPECT_EQ("/", ampl::path("/").remove_filename().string());
+  EXPECT_EQ("", ampl::path("test").remove_filename().string());
 }
 
 TEST(OSTest, Filename) {
@@ -78,6 +79,7 @@ TEST(OSTest, Filename) {
   p = ampl::path(s, s + std::strlen(s));
   EXPECT_EQ("space", p.filename().string());
   EXPECT_EQ("/somewhere/out/in/space", p.string());
+  EXPECT_EQ("", ampl::path("/").filename().string());
   EXPECT_EQ("test", ampl::path("test").filename().string());
 }
 
