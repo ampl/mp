@@ -72,6 +72,19 @@ if (HAVE_QUNUSED_ARGUMENTS)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
 endif ()
 
+# Set the path to msbuild in a helper script.
+if (CMAKE_GENERATOR MATCHES "Visual Studio")
+  # If Microsoft SDK is installed add a call to SetEnv.cmd to the script
+  # to set up build environment. It is useful when building Visual Studio
+  # projects without Visual C++ installed.
+  find_program(WINSDK_SETENV NAMES SetEnv.cmd
+    PATHS "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows;CurrentInstallFolder]/bin")
+  if (WINSDK_SETENV)
+    set(MSBUILD_SETUP "call \"${WINSDK_SETENV}\"")
+  endif ()
+  configure_file(scripts/msbuild.bat.in scripts/msbuild.bat @ONLY)
+endif ()
+
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)
   set(HAVE_GSL 1)
   set(get_amplgsl_version solvers/amplgsl/gen-decls >> versions)
@@ -80,6 +93,12 @@ endif ()
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/coin/CMakeLists.txt)
   set(HAVE_COIN 1)
   set(get_cbc_version solvers/coin/bin/cbc -v -AMPL >> versions)
+  if (WINSDK_SETENV)
+    # Create a script that sets up build environment in Fortran subprojects.
+    file(WRITE setenv.bat "call \"${WINSDK_SETENV}\"")
+    # Extra command line flags to pass to CMake in cmake_add_fortran_subdirectory.
+    set(FORTRAN_CMAKE_FLAGS "-DCMAKE_GNUtoMS_VCVARS=../../setenv.bat")
+  endif ()
 endif ()
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/gecode/lib/CMakeLists.txt)
@@ -170,18 +189,6 @@ check_cxx_source_compiles(
   int main() { std::unique_ptr<int> p; }" HAVE_UNIQUE_PTR)
 if (HAVE_UNIQUE_PTR)
   add_definitions(-DHAVE_UNIQUE_PTR)
-endif ()
-
-# Set the path to msbuild in a helper script.
-if (CMAKE_GENERATOR MATCHES "Visual Studio")
-  # If Microsoft SDK is installed add a call to SetEnv.cmd to the script
-  # to set up build environment.
-  find_program(WINSDK_SETENV NAMES SetEnv.cmd
-    PATHS "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows;CurrentInstallFolder]/bin")
-  if (WINSDK_SETENV)
-    set(MSBUILD_SETUP "call \"${WINSDK_SETENV}\"")
-  endif ()
-  configure_file(scripts/msbuild.bat.in scripts/msbuild.bat @ONLY)
 endif ()
 
 add_subdirectory(doc)
