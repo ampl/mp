@@ -70,4 +70,13 @@ TEST(UtilTest, ExecuteShellThrowsOnNonzeroExitCode) {
   EXPECT_THROW_MSG(ExecuteShellCommand(FixBinaryPath("util/test-helper") + " > out"),
     ampl::Error, "process exited with code 42");
 }
+
+TEST(UtilTest, FixBinaryPath) {
+  ampl::path path(FixBinaryPath("test"));
+  EXPECT_EQ("test", path.filename().string());
+  path.remove_filename();
+  if (!path.filename().string().empty())
+    path.remove_filename();
+  EXPECT_EQ("", path.filename().string());
+}
 }

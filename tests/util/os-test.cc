@@ -49,14 +49,12 @@ using std::string;
 
 namespace {
 
-TEST(OSTest, EmptyPath) {
+TEST(OSTest, PathCtor) {
   EXPECT_EQ("", ampl::path().string());
-}
-
-TEST(OSTest, NonemptyPath) {
   const char *s = "/some/path";
   ampl::path p(s, s + std::strlen(s));
   EXPECT_EQ("/some/path", p.string());
+  EXPECT_EQ("/some/path", ampl::path(s).string());
 }
 
 TEST(OSTest, RemoveFilename) {
@@ -69,6 +67,7 @@ TEST(OSTest, RemoveFilename) {
   EXPECT_EQ("/somewhere/out/in", p.string());
   EXPECT_EQ("/somewhere/out", p.remove_filename().string());
   EXPECT_EQ("/somewhere/out", p.string());
+  EXPECT_EQ("/", ampl::path("/").remove_filename().string());
 }
 
 TEST(OSTest, Filename) {
@@ -79,6 +78,7 @@ TEST(OSTest, Filename) {
   p = ampl::path(s, s + std::strlen(s));
   EXPECT_EQ("space", p.filename().string());
   EXPECT_EQ("/somewhere/out/in/space", p.string());
+  EXPECT_EQ("test", ampl::path("test").filename().string());
 }
 
 TEST(OSTest, GetExecutablePath) {
