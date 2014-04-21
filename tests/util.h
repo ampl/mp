@@ -60,11 +60,9 @@ void ChangeDirectory(fmt::StringRef path);
 int ExecuteShellCommand(
   fmt::StringRef command, bool throw_on_nonzero_exit_code = true);
 
-// Returns the directory of the currently running executable file.
-std::string GetExecutableDir();
-
-// Fix the path to a binary (executable or shared library) path by
-// inserting a configuration directory (Debug or Release) if necessary.
+// Fix the path to a binary (executable or shared library) file by
+// inserting a configuration directory (Debug or Release) which is
+// deduced from the path of the currently running executable.
 std::string FixBinaryPath(fmt::StringRef path);
 
 // Splits the string into an array of substrings.
