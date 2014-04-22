@@ -74,15 +74,17 @@ endif ()
 
 # Set the path to msbuild in a helper script.
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
-  # If Microsoft SDK is installed add a call to SetEnv.cmd to the script
-  # to set up build environment. It is useful when building Visual Studio
-  # projects without Visual C++ installed.
-  find_program(WINSDK_SETENV NAMES SetEnv.cmd
-    PATHS "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows;CurrentInstallFolder]/bin")
+  # If Microsoft SDK is installed create script run-msbuild.bat that
+  # calls SetEnv.cmd to to set up build environment and runs msbuild.
+  # It is useful when building Visual Studio projects with the SDK
+  # toolchain rather than Visual Studio.
+  include(SetEnv)
   if (WINSDK_SETENV)
     set(MSBUILD_SETUP "call \"${WINSDK_SETENV}\"")
   endif ()
-  configure_file(scripts/msbuild.bat.in scripts/msbuild.bat @ONLY)
+  file(WRITE run-msbuild.bat "
+    ${MSBUILD_SETUP}
+    ${CMAKE_MAKE_PROGRAM} %*")
 endif ()
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)
