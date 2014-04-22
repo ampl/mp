@@ -78,7 +78,7 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
   # calls SetEnv.cmd to to set up build environment and runs msbuild.
   # It is useful when building Visual Studio projects with the SDK
   # toolchain rather than Visual Studio.
-  include(SetEnv)
+  include(FindSetEnv)
   if (WINSDK_SETENV)
     set(MSBUILD_SETUP "call \"${WINSDK_SETENV}\"")
   endif ()
