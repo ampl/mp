@@ -95,6 +95,19 @@ endif ()
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/coin/CMakeLists.txt)
   set(HAVE_COIN 1)
   set(get_cbc_version solvers/coin/bin/cbc -v -AMPL >> versions)
+
+  # Workaround for f90cache which accept only modified name for GNU fortran
+  # compilers in the form gfortran-4.x.
+  string(REGEX MATCHALL "[^:]+" search_paths "$ENV{PATH}")
+  foreach (search_path ${search_paths})
+    file(GLOB paths ${search_path}/gfortran-4.*)
+    if (paths)
+      list(GET paths 0 CMAKE_Fortran_COMPILER)
+      break ()
+    endif ()
+  endforeach ()
+  message("Detected Fortran compiler: ${CMAKE_Fortran_COMPILER}")
+
   if (WINSDK_SETENV)
     # Create a script that sets up build environment in Fortran subprojects.
     file(WRITE setenv.bat "call \"${WINSDK_SETENV}\"")
