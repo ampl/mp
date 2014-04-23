@@ -782,7 +782,7 @@ void GecodeSolver::DoSolve(Problem &p) {
     var_branch = IntVarBranch(var_branching_, 0);
     break;
   }
-  IntValBranch val_branch = val_branching_ == IntVarBranch::SEL_RND ?
+  IntValBranch val_branch = val_branching_ == IntValBranch::SEL_RND ?
       IntValBranch(Gecode::Rnd(0)) : IntValBranch(val_branching_);
   branch(gecode_problem, gecode_problem.vars(), var_branch, val_branch);
 
