@@ -103,10 +103,10 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/coin/CMakeLists.txt)
     file(GLOB paths ${search_path}/gfortran-4.*)
     if (paths)
       list(GET paths 0 CMAKE_Fortran_COMPILER)
+      message("Detected Fortran compiler: ${CMAKE_Fortran_COMPILER}")
       break ()
     endif ()
   endforeach ()
-  message("Detected Fortran compiler: ${CMAKE_Fortran_COMPILER}")
 
   if (WINSDK_SETENV)
     # Create a script that sets up build environment in Fortran subprojects.
