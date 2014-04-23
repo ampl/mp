@@ -445,7 +445,7 @@ class JaCoPSolver : public Solver {
   jmethodID get_fails_;
   jmethodID value_;
 
-  int DoGetIntOption(const SolverOption &opt, jlong *option) const {
+  int DoGetIntOption(const SolverOption &, jlong *option) const {
     return static_cast<int>(*option);
   }
 
