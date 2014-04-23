@@ -28,7 +28,7 @@
 
 namespace ampl {
 
-class NLHeader;
+struct NLHeader;
 class ExprFactory;
 
 namespace internal {
