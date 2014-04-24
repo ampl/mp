@@ -88,3 +88,13 @@ To get rid of semantic errors reported by Indexer add preprocessor symbols
 "_GLIBCPP_USE_NAMESPACES", "__GXX_EXPERIMENTAL_CXX0X__" and "STAND_ALONE"
 in "Project Properties" / "C/C++ Include Files and Symbols" and rebuild
 the index.
+
+Using Windows SDK
+-----------------
+
+If you want to build ASL with the Windows SDK toolchain, use a helper
+script cmake/run-cmake.bat instead of running CMake directly. This script
+configures build environment and runs CMake forwarding all command-line
+arguments to it, for example:
+
+  cmake\run-cmake -G "Visual Studio 10 Win64" .
