@@ -62,6 +62,14 @@ void WriteFile(fmt::StringRef name, fmt::StringRef data) {
   ofs.write(data.c_str(), data.size());
 }
 
+std::string FixPath(fmt::StringRef path, char sep) {
+  if (sep == '/')
+    return path;
+  std::string fixed = path;
+  std::replace(fixed.begin(), fixed.end(), '/', sep);
+  return fixed;
+}
+
 StderrRedirect::StderrRedirect(const char *filename) : saved_stderr(Stderr) {
   Stderr = std::fopen(filename, "w");
 }

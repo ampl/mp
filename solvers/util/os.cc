@@ -179,7 +179,6 @@ ampl::path ampl::GetExecutablePath() {
     if (size < buffer.size()) break;
     buffer.resize(2 * buffer.size());
   }
-  std::replace(&buffer[0], &buffer[0] + size, L'\\', L'/');
   UTF16ToUTF8 utf16_str(&buffer[0]);
   const char *s = utf16_str;
   return path(s, s + utf16_str.size());

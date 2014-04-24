@@ -49,39 +49,58 @@ using std::string;
 
 namespace {
 
-TEST(OSTest, PathCtor) {
-  EXPECT_EQ("", ampl::path().string());
-  const char *s = "/some/path";
-  ampl::path p(s, s + std::strlen(s));
-  EXPECT_EQ("/some/path", p.string());
-  EXPECT_EQ("/some/path", ampl::path(s).string());
+class PathTest : public ::testing::TestWithParam<char> {};
+
+TEST(PathTest, PreferredSeparator) {
+#ifdef _WIN32
+  EXPECT_EQ('\\', ampl::path::preferred_separator);
+#else
+  EXPECT_EQ('/', ampl::path::preferred_separator);
+#endif
 }
 
-TEST(OSTest, RemoveFilename) {
+TEST_P(PathTest, PathCtor) {
+  EXPECT_EQ("", ampl::path().string());
+  std::string s = FixPath("/some/path", GetParam());
+  ampl::path p(&s[0], &s[0] + s.size());
+  EXPECT_EQ(s, p.string());
+  EXPECT_EQ(s, ampl::path(s).string());
+}
+
+TEST_P(PathTest, RemoveFilename) {
   ampl::path p;
   EXPECT_EQ("", p.remove_filename().string());
   EXPECT_EQ("", p.string());
-  const char *s = "/somewhere/out/in/space";
-  p = ampl::path(s, s + std::strlen(s));
-  EXPECT_EQ("/somewhere/out/in", p.remove_filename().string());
-  EXPECT_EQ("/somewhere/out/in", p.string());
-  EXPECT_EQ("/somewhere/out", p.remove_filename().string());
-  EXPECT_EQ("/somewhere/out", p.string());
-  EXPECT_EQ("/", ampl::path("/").remove_filename().string());
+  std::string s = FixPath("/somewhere/out/in/space", GetParam());
+  p = ampl::path(s);
+  s = FixPath("/somewhere/out/in", GetParam());
+  EXPECT_EQ(s, p.remove_filename().string());
+  EXPECT_EQ(s, p.string());
+  s = FixPath("/somewhere/out", GetParam());
+  EXPECT_EQ(s, p.remove_filename().string());
+  EXPECT_EQ(s, p.string());
+  s = FixPath("/", GetParam());
+  EXPECT_EQ(s, ampl::path(s).remove_filename().string());
   EXPECT_EQ("", ampl::path("test").remove_filename().string());
 }
 
-TEST(OSTest, Filename) {
+TEST_P(PathTest, Filename) {
   ampl::path p;
   EXPECT_EQ("", p.filename().string());
   EXPECT_EQ("", p.string());
-  const char *s = "/somewhere/out/in/space";
-  p = ampl::path(s, s + std::strlen(s));
+  std::string s = FixPath("/somewhere/out/in/space", GetParam());
+  p = ampl::path(s);
   EXPECT_EQ("space", p.filename().string());
-  EXPECT_EQ("/somewhere/out/in/space", p.string());
-  EXPECT_EQ("", ampl::path("/").filename().string());
+  EXPECT_EQ(s, p.string());
+  EXPECT_EQ("", ampl::path(FixPath("/", GetParam())).filename().string());
   EXPECT_EQ("test", ampl::path("test").filename().string());
 }
+
+INSTANTIATE_TEST_CASE_P(POSIX, PathTest, ::testing::Values('/'));
+
+#ifdef _WIN32
+INSTANTIATE_TEST_CASE_P(Win32, PathTest, ::testing::Values('\\'));
+#endif
 
 TEST(OSTest, GetExecutablePath) {
   string path = ampl::GetExecutablePath().string();

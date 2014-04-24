@@ -43,6 +43,13 @@ TEST(UtilTest, Split) {
   EXPECT_EQ("", result[1]);
 }
 
+TEST(UtilTest, FixPath) {
+  std::string path = "/somewhere/out/in/space";
+  EXPECT_EQ("-somewhere-out-in-space", FixPath(path, '-'));
+  std::replace(path.begin(), path.end(), '/', ampl::path::preferred_separator);
+  EXPECT_EQ(path, FixPath("/somewhere/out/in/space"));
+}
+
 TEST(UtilTest, ReplaceLine) {
   EXPECT_EQ("de", ReplaceLine("", 0, "de"));
   EXPECT_EQ("de", ReplaceLine("abc", 0, "de"));

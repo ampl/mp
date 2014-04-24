@@ -29,19 +29,15 @@
 #include <vector>
 
 #include "solvers/util/format.h"
+#include "solvers/util/os.h"
 
 std::string ReadFile(fmt::StringRef name);
 void WriteFile(fmt::StringRef name, fmt::StringRef data);
 
-inline std::string FixPath(fmt::StringRef s) {
-#ifdef _WIN32
-  std::string fixed = s;
-  std::replace(fixed.begin(), fixed.end(), '/', '\\');
-  return fixed;
-#else
-  return s;
-#endif
-}
+// Replaces all occurrences of '/' in the path with sep. If sep is 0
+// it is set to the system-specific directory separator.
+std::string FixPath(
+    fmt::StringRef path, char sep = ampl::path::preferred_separator);
 
 // Redirects Stderr to a file.
 class StderrRedirect {

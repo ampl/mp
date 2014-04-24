@@ -34,7 +34,22 @@ class path {
  private:
   std::string str_;
   
+  inline std::size_t FindLastSep() const {
+#ifdef _WIN32
+    const char *sep = "/\\";
+#else
+    const char sep = '/';
+#endif
+    return str_.find_last_of(sep);
+  }
+
  public:
+#ifdef _WIN32
+  static const char preferred_separator = '\\';
+#else
+  static const char preferred_separator = '/';
+#endif
+
   path() {}
   explicit path(const std::string &s): str_(s) {}
   path(const char *begin, const char *end) : str_(begin, end) {}
@@ -42,13 +57,13 @@ class path {
   const std::string &string() const { return str_; }
   
   path filename() const {
-    size_t last_sep = str_.find_last_of('/');
+    size_t last_sep = FindLastSep();
     return last_sep == std::string::npos ?
         *this : path(str_.substr(last_sep + 1));
   }
 
   path &remove_filename() {
-    size_t last_sep = str_.find_last_of('/');
+    size_t last_sep = FindLastSep();
     if (last_sep == 0)
       ++last_sep;
     str_.resize(last_sep != std::string::npos ? last_sep : 0);
