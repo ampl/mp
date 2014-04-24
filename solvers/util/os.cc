@@ -44,6 +44,8 @@
 
 using std::size_t;
 
+const char ampl::path::preferred_separator;
+
 namespace {
 
 // Round n up to a multiple of page_size.
