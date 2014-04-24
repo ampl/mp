@@ -10,15 +10,15 @@ endif ()
 
 if (HAVE_JACOP)
   include_directories(${JNI_INCLUDE_DIRS})
-  add_custom_command(OUTPUT ${JACOP_JAR}
-    COMMAND ${CMAKE_COMMAND} -E copy
-      ../../solvers/jacop/lib/${JACOP_JAR} ${JACOP_JAR})
-  add_custom_command(OUTPUT ampljacop.jar DEPENDS ampljacop
-    COMMAND ${CMAKE_COMMAND} -E copy
-      ../../solvers/jacop/ampljacop.jar ampljacop.jar)
-  add_ampl_test(jacop-test ${JACOP_JAR} ampljacop.jar
+  add_ampl_test(jacop-test
     ../args.cc ../expr-builder.cc ../solver-test.cc jacop-test.cc
     LIBS ampljacop-static)
+  add_custom_command(TARGET jacop-test
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      ../../solvers/jacop/lib/${JACOP_JAR} $<TARGET_FILE_DIR:jacop-test>)
+  add_custom_command(TARGET jacop-test DEPENDS ampljacop
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      ../../solvers/jacop/ampljacop.jar $<TARGET_FILE_DIR:jacop-test>)
   if (MSVC)
     set_target_properties(jacop-test PROPERTIES LINK_FLAGS "/DELAYLOAD:jvm.dll")
     target_link_libraries(jacop-test delayimp)
