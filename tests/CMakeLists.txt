@@ -13,6 +13,7 @@ include_directories(.)
 find_package(Threads)
 add_library(gtest gtest/gtest-all.cc gtest/gtest.h util.h util.cc test-main.cc)
 target_link_libraries(gtest ${CMAKE_THREAD_LIBS_INIT})
+add_dependencies(gtest arith_h)
 
 # Adds an AMPL test.
 # Usage:
