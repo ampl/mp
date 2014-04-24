@@ -72,7 +72,6 @@ if (HAVE_QUNUSED_ARGUMENTS)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
 endif ()
 
-# Set the path to msbuild in a helper script.
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
   # If Microsoft SDK is installed create script run-msbuild.bat that
   # calls SetEnv.cmd to to set up build environment and runs msbuild.
