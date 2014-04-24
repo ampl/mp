@@ -170,6 +170,24 @@ TEST(UtilTest, Increment) {
   EXPECT_STREQ("200", s);
 }
 
+// Tests fmt::internal::CountDigits for integer type Int.
+template <typename Int>
+void TestCountDigits(Int) {
+  for (Int i = 0; i < 10; ++i)
+    EXPECT_EQ(1u, fmt::internal::CountDigits(i));
+  for (Int i = 1, n = 1,
+       end = std::numeric_limits<Int>::max() / 10; n <= end; ++i) {
+    n *= 10;
+    EXPECT_EQ(i, fmt::internal::CountDigits(n - 1));
+    EXPECT_EQ(i + 1, fmt::internal::CountDigits(n));
+  }
+}
+
+TEST(UtilTest, CountDigits) {
+  TestCountDigits(uint32_t());
+  TestCountDigits(uint64_t());
+}
+
 class TestString {
  private:
   std::string value_;
@@ -188,6 +206,39 @@ TEST(ArrayTest, Ctor) {
   EXPECT_EQ(0u, array.size());
   EXPECT_EQ(123u, array.capacity());
 }
+
+#if FMT_USE_RVALUE_REFERENCES
+
+TEST(ArrayTest, MoveCtor) {
+  Array<char, 5> array;
+  const char test[] = "test";
+  array.append(test, test + 4);
+  {
+    Array<char, 5> array2(std::move(array));
+    // Moving shouldn't destroy the inline content of the first array.
+    EXPECT_EQ(test, std::string(&array[0], array.size()));
+    EXPECT_EQ(test, std::string(&array2[0], array2.size()));
+    EXPECT_EQ(5, array2.capacity());
+  }
+  array.push_back('a');
+  {
+    Array<char, 5> array2(std::move(array));
+    // Moving shouldn't destroy the inline content of the first array.
+    EXPECT_EQ("testa", std::string(&array[0], array.size()));
+    EXPECT_EQ("testa", std::string(&array2[0], array2.size()));
+    EXPECT_EQ(5, array2.capacity());
+  }
+  array.push_back('b');
+  {
+    Array<char, 5> array2(std::move(array));
+    // Moving should rip the guts of the first array.
+    EXPECT_TRUE(!&array[0]);
+    EXPECT_EQ("testab", std::string(&array2[0], array2.size()));
+    EXPECT_GT(array2.capacity(), 5);
+  }
+}
+
+#endif  // FMT_USE_RVALUE_REFERENCES
 
 TEST(ArrayTest, Access) {
   Array<char, 10> array;
@@ -308,6 +359,15 @@ TEST(WriterTest, WriteDoubleAtBufferBoundary) {
   fmt::Writer writer;
   for (int i = 0; i < 100; ++i)
     writer << 1.23456789;
+}
+
+TEST(WriterTest, WriteDoubleWithFilledBuffer) {
+  fmt::Writer writer;
+  // Fill the buffer.
+  for (int i = 0; i < fmt::internal::INLINE_BUFFER_SIZE; ++i)
+    writer << ' ';
+  writer << 1.2;
+  EXPECT_STREQ("1.2", writer.c_str() + fmt::internal::INLINE_BUFFER_SIZE);
 }
 
 TEST(WriterTest, WriteChar) {
@@ -1022,6 +1082,10 @@ void CheckUnknownTypes(
   }
 }
 
+TEST(FormatterTest, FormatBool) {
+  EXPECT_EQ(L"1", str(Format(L"{}") << true));
+}
+
 TEST(FormatterTest, FormatShort) {
   short s = 42;
   EXPECT_EQ("42", str(Format("{0:d}") << s));
@@ -1402,11 +1466,61 @@ TEST(FormatterTest, Examples) {
 
   std::string path = "somefile";
   ReportError("File not found: {0}") << path;
+
+#if FMT_USE_VARIADIC_TEMPLATES && FMT_USE_RVALUE_REFERENCES
+  EXPECT_THROW_MSG(
+    Format("The answer is {:d}", "forty-two"), FormatError,
+    "unknown format code 'd' for string");
+  EXPECT_EQ(L"Cyrillic letter ю", str(Format(L"Cyrillic letter {}", L'ю')));
+#endif
+}
+
+TEST(FormatIntTest, Data) {
+  fmt::FormatInt format_int(42);
+  EXPECT_EQ("42", std::string(format_int.data(), format_int.size()));
 }
 
 TEST(FormatIntTest, FormatInt) {
   EXPECT_EQ("42", fmt::FormatInt(42).str());
+  EXPECT_EQ(2u, fmt::FormatInt(42).size());
   EXPECT_EQ("-42", fmt::FormatInt(-42).str());
+  EXPECT_EQ(3u, fmt::FormatInt(-42).size());
+  EXPECT_EQ("42", fmt::FormatInt(42ul).str());
+  EXPECT_EQ("-42", fmt::FormatInt(-42l).str());
+  EXPECT_EQ("42", fmt::FormatInt(42ull).str());
+  EXPECT_EQ("-42", fmt::FormatInt(-42ll).str());
+  std::ostringstream os;
+  os << std::numeric_limits<int64_t>::max();
+  EXPECT_EQ(os.str(), fmt::FormatInt(std::numeric_limits<int64_t>::max()).str());
+}
+
+template <typename T>
+std::string FormatDec(T value) {
+  char buffer[10];
+  char *ptr = buffer;
+  fmt::FormatDec(ptr, value);
+  return std::string(buffer, ptr);
+}
+
+TEST(FormatIntTest, FormatDec) {
+  EXPECT_EQ("-42", FormatDec(static_cast<char>(-42)));
+  EXPECT_EQ("-42", FormatDec(static_cast<short>(-42)));
+  std::ostringstream os;
+  os << std::numeric_limits<unsigned short>::max();
+  EXPECT_EQ(os.str(), FormatDec(std::numeric_limits<unsigned short>::max()));
+  EXPECT_EQ("1", FormatDec(1));
+  EXPECT_EQ("-1", FormatDec(-1));
+  EXPECT_EQ("42", FormatDec(42));
+  EXPECT_EQ("-42", FormatDec(-42));
+  EXPECT_EQ("42", FormatDec(42l));
+  EXPECT_EQ("42", FormatDec(42ul));
+  EXPECT_EQ("42", FormatDec(42ll));
+  EXPECT_EQ("42", FormatDec(42ull));
+}
+
+TEST(ColorTest, PrintColored) {
+  fmt::PrintColored(fmt::RED, "Hello, {}!\n") << "world";
+  // TODO
 }
 
 template <typename T>
@@ -1420,19 +1534,12 @@ TEST(StrTest, Convert) {
   EXPECT_EQ("2012-12-9", s);
 }
 
-#if FMT_USE_INITIALIZER_LIST
-template<typename... Args>
-inline std::string Format(const StringRef &format, const Args & ... args) {
-  Writer w;
-  fmt::BasicFormatter<char> f(w, format.c_str(), {args...});
-  return fmt::str(f);
-}
-
+#if FMT_USE_VARIADIC_TEMPLATES && FMT_USE_RVALUE_REFERENCES
 TEST(FormatTest, Variadic) {
-  Writer w;
   EXPECT_EQ("Hello, world!1", str(Format("Hello, {}!{}", "world", 1)));
+  EXPECT_EQ(L"Hello, world!1", str(Format(L"Hello, {}!{}", L"world", 1)));
 }
-#endif  // FMT_USE_INITIALIZER_LIST
+#endif  // FMT_USE_VARIADIC_TEMPLATES
 
 int main(int argc, char **argv) {
 #ifdef _WIN32

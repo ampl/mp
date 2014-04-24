@@ -37,6 +37,13 @@
 #include <cmath>
 #include <cstdarg>
 
+using fmt::ULongLong;
+
+#if _MSC_VER
+# pragma warning(push)
+# pragma warning(disable: 4127) // conditional expression is constant
+#endif
+
 namespace {
 
 #ifndef _MSC_VER
@@ -44,8 +51,11 @@ namespace {
 inline int SignBit(double value) {
   // When compiled in C++11 mode signbit is no longer a macro but a function
   // defined in namespace std and the macro is undefined.
-  using namespace std;
+#ifdef signbit
   return signbit(value);
+#else
+  return std::signbit(value);
+#endif
 }
 
 inline int IsInf(double x) {
@@ -80,6 +90,8 @@ inline int FMT_SNPRINTF(char *buffer, size_t size, const char *format, ...) {
 }
 
 #endif  // _MSC_VER
+
+const char RESET_COLOR[] = "\x1b[0m";
 }
 
 template <typename T>
@@ -117,6 +129,27 @@ const char fmt::internal::DIGITS[] =
     "6061626364656667686970717273747576777879"
     "8081828384858687888990919293949596979899";
 
+#define FMT_POWERS_OF_10(factor) \
+  factor * 10, \
+  factor * 100, \
+  factor * 1000, \
+  factor * 10000, \
+  factor * 100000, \
+  factor * 1000000, \
+  factor * 10000000, \
+  factor * 100000000, \
+  factor * 1000000000
+
+const uint32_t fmt::internal::POWERS_OF_10_32[] = {0, FMT_POWERS_OF_10(1)};
+const uint64_t fmt::internal::POWERS_OF_10_64[] = {
+  0,
+  FMT_POWERS_OF_10(1),
+  FMT_POWERS_OF_10(ULongLong(1000000000)),
+  // Multiply several constants instead of using a single long long constants
+  // to avoid warnings about C++98 not supporting long long.
+  ULongLong(1000000000) * ULongLong(1000000000) * 10
+};
+
 void fmt::internal::ReportUnknownType(char code, const char *type) {
   if (std::isprint(static_cast<unsigned char>(code))) {
     throw fmt::FormatError(fmt::str(
@@ -145,29 +178,6 @@ typename fmt::BasicWriter<Char>::CharPtr
 }
 
 template <typename Char>
-void fmt::BasicWriter<Char>::FormatDecimal(
-    CharPtr buffer, uint64_t value, unsigned num_digits) {
-  --num_digits;
-  while (value >= 100) {
-    // Integer division is slow so do it for a group of two digits instead
-    // of for every digit. The idea comes from the talk by Alexandrescu
-    // "Three Optimization Tips for C++". See speed-test for a comparison.
-    unsigned index = (value % 100) * 2;
-    value /= 100;
-    buffer[num_digits] = internal::DIGITS[index + 1];
-    buffer[num_digits - 1] = internal::DIGITS[index];
-    num_digits -= 2;
-  }
-  if (value < 10) {
-    *buffer = static_cast<char>('0' + value);
-    return;
-  }
-  unsigned index = static_cast<unsigned>(value * 2);
-  buffer[1] = internal::DIGITS[index + 1];
-  buffer[0] = internal::DIGITS[index];
-}
-
-template <typename Char>
 typename fmt::BasicWriter<Char>::CharPtr
   fmt::BasicWriter<Char>::PrepareFilledBuffer(
     unsigned size, const AlignSpec &spec, char sign) {
@@ -180,6 +190,7 @@ typename fmt::BasicWriter<Char>::CharPtr
   CharPtr p = GrowBuffer(width);
   CharPtr end = p + width;
   Alignment align = spec.align();
+  // TODO: error if fill is not convertible to Char
   Char fill = static_cast<Char>(spec.fill());
   if (align == ALIGN_LEFT) {
     *p = sign;
@@ -234,7 +245,7 @@ void fmt::BasicWriter<Char>::FormatDouble(
   char sign = 0;
   // Use SignBit instead of value < 0 because the latter is always
   // false for NaN.
-  if (SignBit(value)) {
+  if (SignBit(static_cast<double>(value))) {
     sign = '-';
     value = -value;
   } else if (spec.sign_flag()) {
@@ -256,7 +267,7 @@ void fmt::BasicWriter<Char>::FormatDouble(
     return;
   }
 
-  if (IsInf(value)) {
+  if (IsInf(static_cast<double>(value))) {
     // Format infinity ourselves because sprintf's output is not consistent
     // across platforms.
     std::size_t size = 4;
@@ -309,6 +320,15 @@ void fmt::BasicWriter<Char>::FormatDouble(
   Char fill = static_cast<Char>(spec.fill());
   for (;;) {
     std::size_t size = buffer_.capacity() - offset;
+#if _MSC_VER
+    // MSVC's vsnprintf_s doesn't work with zero size, so reserve
+    // space for at least one extra character to make the size non-zero.
+    // Note that the buffer's capacity will increase by more than 1.
+    if (size == 0) {
+      buffer_.reserve(offset + 1);
+      size = buffer_.capacity() - offset;
+    }
+#endif
     Char *start = &buffer_[offset];
     int n = internal::CharTraits<Char>::FormatFloat(
         start, size, format, width_for_sprintf, precision, value);
@@ -340,7 +360,9 @@ void fmt::BasicWriter<Char>::FormatDouble(
       GrowBuffer(n);
       return;
     }
-    buffer_.reserve(n >= 0 ? offset + n + 1 : 2 * buffer_.capacity());
+    // If n is negative we ask to increase the capacity by at least 1,
+    // but as std::vector, the buffer grows exponentially.
+    buffer_.reserve(n >= 0 ? offset + n + 1 : buffer_.capacity() + 1);
   }
 }
 
@@ -348,7 +370,7 @@ void fmt::BasicWriter<Char>::FormatDouble(
 // FormatError reporting unmatched '{'. The idea is that unmatched '{'
 // should override other errors.
 template <typename Char>
-void fmt::BasicFormatter<Char>::ReportError(
+void fmt::BasicWriter<Char>::FormatParser::ReportError(
     const Char *s, StringRef message) const {
   for (int num_open_braces = num_open_braces_; *s; ++s) {
     if (*s == '{') {
@@ -364,7 +386,7 @@ void fmt::BasicFormatter<Char>::ReportError(
 // Parses an unsigned integer advancing s to the end of the parsed input.
 // This function assumes that the first character of s is a digit.
 template <typename Char>
-unsigned fmt::BasicFormatter<Char>::ParseUInt(const Char *&s) const {
+unsigned fmt::BasicWriter<Char>::FormatParser::ParseUInt(const Char *&s) const {
   assert('0' <= *s && *s <= '9');
   unsigned value = 0;
   do {
@@ -377,8 +399,8 @@ unsigned fmt::BasicFormatter<Char>::ParseUInt(const Char *&s) const {
 }
 
 template <typename Char>
-inline const typename fmt::BasicFormatter<Char>::Arg
-    &fmt::BasicFormatter<Char>::ParseArgIndex(const Char *&s) {
+inline const typename fmt::BasicWriter<Char>::ArgInfo
+    &fmt::BasicWriter<Char>::FormatParser::ParseArgIndex(const Char *&s) {
   unsigned arg_index = 0;
   if (*s < '0' || *s > '9') {
     if (*s != '}' && *s != ':')
@@ -396,32 +418,35 @@ inline const typename fmt::BasicFormatter<Char>::Arg
     next_arg_index_ = -1;
     arg_index = ParseUInt(s);
   }
-  if (arg_index >= args_.size())
+  if (arg_index >= num_args_)
     ReportError(s, "argument index is out of range in format");
-  return *args_[arg_index];
+  return args_[arg_index];
 }
 
 template <typename Char>
-void fmt::BasicFormatter<Char>::CheckSign(const Char *&s, const Arg &arg) {
+void fmt::BasicWriter<Char>::FormatParser::CheckSign(
+    const Char *&s, const ArgInfo &arg) {
   char sign = static_cast<char>(*s);
   if (arg.type > LAST_NUMERIC_TYPE) {
     ReportError(s,
-        Format("format specifier '{}' requires numeric argument") << sign);
+        fmt::Format("format specifier '{}' requires numeric argument") << sign);
   }
   if (arg.type == UINT || arg.type == ULONG || arg.type == ULONG_LONG) {
     ReportError(s,
-        Format("format specifier '{}' requires signed argument") << sign);
+        fmt::Format("format specifier '{}' requires signed argument") << sign);
   }
   ++s;
 }
 
 template <typename Char>
-void fmt::BasicFormatter<Char>::DoFormat() {
-  const Char *start = format_;
-  format_ = 0;
+void fmt::BasicWriter<Char>::FormatParser::Format(
+    BasicWriter<Char> &writer, BasicStringRef<Char> format,
+    std::size_t num_args, const ArgInfo *args) {
+  const Char *start = format.c_str();
+  num_args_ = num_args;
+  args_ = args;
   next_arg_index_ = 0;
   const Char *s = start;
-  BasicWriter<Char> &writer = *writer_;
   while (*s) {
     Char c = *s++;
     if (c != '{' && c != '}') continue;
@@ -435,7 +460,7 @@ void fmt::BasicFormatter<Char>::DoFormat() {
     num_open_braces_= 1;
     writer.buffer_.append(start, s - 1);
 
-    const Arg &arg = ParseArgIndex(s);
+    const ArgInfo &arg = ParseArgIndex(s);
 
     FormatSpec spec;
     int precision = -1;
@@ -526,7 +551,7 @@ void fmt::BasicFormatter<Char>::DoFormat() {
         } else if (*s == '{') {
           ++s;
           ++num_open_braces_;
-          const Arg &precision_arg = ParseArgIndex(s);
+          const ArgInfo &precision_arg = ParseArgIndex(s);
           ULongLong value = 0;
           switch (precision_arg.type) {
           case INT:
@@ -583,22 +608,22 @@ void fmt::BasicFormatter<Char>::DoFormat() {
     // Format argument.
     switch (arg.type) {
     case INT:
-      FormatInt(arg.int_value, spec);
+      writer.FormatInt(arg.int_value, spec);
       break;
     case UINT:
-      FormatInt(arg.uint_value, spec);
+      writer.FormatInt(arg.uint_value, spec);
       break;
     case LONG:
-      FormatInt(arg.long_value, spec);
+      writer.FormatInt(arg.long_value, spec);
       break;
     case ULONG:
-      FormatInt(arg.ulong_value, spec);
+      writer.FormatInt(arg.ulong_value, spec);
       break;
     case LONG_LONG:
-      FormatInt(arg.long_long_value, spec);
+      writer.FormatInt(arg.long_long_value, spec);
       break;
     case ULONG_LONG:
-      FormatInt(arg.ulong_long_value, spec);
+      writer.FormatInt(arg.ulong_long_value, spec);
       break;
     case DOUBLE:
       writer.FormatDouble(arg.double_value, spec, precision);
@@ -625,7 +650,7 @@ void fmt::BasicFormatter<Char>::DoFormat() {
       } else {
         out = writer.GrowBuffer(1);
       }
-      *out = arg.int_value;
+      *out = static_cast<Char>(arg.int_value);
       break;
     }
     case STRING: {
@@ -647,7 +672,7 @@ void fmt::BasicFormatter<Char>::DoFormat() {
         internal::ReportUnknownType(spec.type_, "pointer");
       spec.flags_= HASH_FLAG;
       spec.type_ = 'x';
-      FormatInt(reinterpret_cast<uintptr_t>(arg.pointer_value), spec);
+      writer.FormatInt(reinterpret_cast<uintptr_t>(arg.pointer_value), spec);
       break;
     case CUSTOM:
       if (spec.type_)
@@ -662,6 +687,14 @@ void fmt::BasicFormatter<Char>::DoFormat() {
   writer.buffer_.append(start, s);
 }
 
+void fmt::ColorWriter::operator()(const fmt::BasicWriter<char> &w) const {
+  char escape[] = "\x1b[30m";
+  escape[3] = '0' + static_cast<char>(color_);
+  std::fputs(escape, stdout);
+  std::fwrite(w.data(), 1, w.size(), stdout);
+  std::fputs(RESET_COLOR, stdout);
+}
+
 // Explicit instantiations for char.
 
 template void fmt::BasicWriter<char>::FormatDouble<double>(
@@ -674,25 +707,25 @@ template fmt::BasicWriter<char>::CharPtr
   fmt::BasicWriter<char>::FillPadding(CharPtr buffer,
     unsigned total_size, std::size_t content_size, wchar_t fill);
 
-template void fmt::BasicWriter<char>::FormatDecimal(
-    CharPtr buffer, uint64_t value, unsigned num_digits);
-
 template fmt::BasicWriter<char>::CharPtr
   fmt::BasicWriter<char>::PrepareFilledBuffer(
     unsigned size, const AlignSpec &spec, char sign);
 
-template void fmt::BasicFormatter<char>::ReportError(
+template void fmt::BasicWriter<char>::FormatParser::ReportError(
     const char *s, StringRef message) const;
 
-template unsigned fmt::BasicFormatter<char>::ParseUInt(const char *&s) const;
+template unsigned fmt::BasicWriter<char>::FormatParser::ParseUInt(
+    const char *&s) const;
 
-template const fmt::BasicFormatter<char>::Arg
-    &fmt::BasicFormatter<char>::ParseArgIndex(const char *&s);
+template const fmt::BasicWriter<char>::ArgInfo
+    &fmt::BasicWriter<char>::FormatParser::ParseArgIndex(const char *&s);
 
-template void fmt::BasicFormatter<char>::CheckSign(
-    const char *&s, const Arg &arg);
+template void fmt::BasicWriter<char>::FormatParser::CheckSign(
+    const char *&s, const ArgInfo &arg);
 
-template void fmt::BasicFormatter<char>::DoFormat();
+template void fmt::BasicWriter<char>::FormatParser::Format(
+  BasicWriter<char> &writer, BasicStringRef<char> format,
+  std::size_t num_args, const ArgInfo *args);
 
 // Explicit instantiations for wchar_t.
 
@@ -706,23 +739,26 @@ template fmt::BasicWriter<wchar_t>::CharPtr
   fmt::BasicWriter<wchar_t>::FillPadding(CharPtr buffer,
       unsigned total_size, std::size_t content_size, wchar_t fill);
 
-template void fmt::BasicWriter<wchar_t>::FormatDecimal(
-    CharPtr buffer, uint64_t value, unsigned num_digits);
-
 template fmt::BasicWriter<wchar_t>::CharPtr
   fmt::BasicWriter<wchar_t>::PrepareFilledBuffer(
     unsigned size, const AlignSpec &spec, char sign);
 
-template void fmt::BasicFormatter<wchar_t>::ReportError(
+template void fmt::BasicWriter<wchar_t>::FormatParser::ReportError(
     const wchar_t *s, StringRef message) const;
 
-template unsigned fmt::BasicFormatter<wchar_t>::ParseUInt(
+template unsigned fmt::BasicWriter<wchar_t>::FormatParser::ParseUInt(
     const wchar_t *&s) const;
 
-template const fmt::BasicFormatter<wchar_t>::Arg
-    &fmt::BasicFormatter<wchar_t>::ParseArgIndex(const wchar_t *&s);
+template const fmt::BasicWriter<wchar_t>::ArgInfo
+    &fmt::BasicWriter<wchar_t>::FormatParser::ParseArgIndex(const wchar_t *&s);
 
-template void fmt::BasicFormatter<wchar_t>::CheckSign(
-    const wchar_t *&s, const Arg &arg);
+template void fmt::BasicWriter<wchar_t>::FormatParser::CheckSign(
+    const wchar_t *&s, const ArgInfo &arg);
 
-template void fmt::BasicFormatter<wchar_t>::DoFormat();
+template void fmt::BasicWriter<wchar_t>::FormatParser::Format(
+        BasicWriter<wchar_t> &writer, BasicStringRef<wchar_t> format,
+        std::size_t num_args, const ArgInfo *args);
+
+#if _MSC_VER
+# pragma warning(pop)
+#endif
