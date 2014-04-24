@@ -44,7 +44,12 @@
 
 using std::size_t;
 
+// Workaround for a bug in MSVC.
+// http://connect.microsoft.com/VisualStudio/feedback/details/
+// 786583/in-class-static-const-member-initialization-and-lnk2005
+#ifndef _MSC_EXTENSIONS
 const char ampl::path::preferred_separator;
+#endif
 
 namespace {
 
