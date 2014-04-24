@@ -20,6 +20,8 @@
  Author: Victor Zverovich
  */
 
+#include <climits>
+
 #include "gtest/gtest.h"
 #include "solvers/util/nl.h"
 #include "solvers/util/problem.h"

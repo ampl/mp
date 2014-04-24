@@ -27,6 +27,7 @@
 #include "solvers/asl.h"
 
 #include <cctype>
+#include <climits>
 
 #undef ASL_SWAP_BYTES
 #if defined(IEEE_MC68k) || defined(IEEE_8087)
