@@ -9,9 +9,35 @@ endif ()
 add_definitions(-D_GLIBCXX_USE_SCHED_YIELD=1)
 
 # Setup testing.
-add_subdirectory(gtest)
-include_directories(gtest/include)
-link_directories(${CMAKE_CURRENT_BINARY_DIR}/gtest)
+include_directories(.)
+find_package(Threads)
+add_library(gtest gtest/gtest-all.cc gtest/gtest.h util.h util.cc test-main.cc)
+target_link_libraries(gtest ${CMAKE_THREAD_LIBS_INIT})
+
+# Adds an AMPL test.
+# Usage:
+#   add_ampl_test(name [PREFIX] sources... [LIBS libraries])
+function(add_ampl_test name)
+  set(srcs )
+  set(libs )
+  set(library FALSE)
+  foreach (arg ${ARGN})
+    if (library)
+      set (libs ${libs} ${arg})
+    elseif (arg STREQUAL LIBS)
+      set (library TRUE)
+    elseif (arg STREQUAL PREFIX)
+      set(prefix ampl)
+    else ()
+      set (srcs ${srcs} ${arg})
+    endif ()
+  endforeach ()
+  set(target_name "${prefix}${name}")
+  add_executable(${target_name} ${srcs})
+  set_target_properties(${target_name} PROPERTIES OUTPUT_NAME ${name})
+  target_link_libraries(${target_name} gtest util ${libs})
+  add_test(${name} ${name})
+endfunction()
 
 # Check C++ compiler capabilities.
 include(CheckCXXSourceCompiles)
@@ -35,17 +61,15 @@ add_library(function function.cc function.h)
 add_dependencies(function arith_h)
 target_link_libraries(function amplsolver)
 
-cxx_test_with_flags(function-test "" "gtest;function;util"
-  test-main.cc function-test.cc util.cc)
+add_ampl_test(function-test function-test.cc LIBS function)
 
 if (HAVE_CBC)
-  cxx_test_with_flags(cbc-test "" "gtest;util" test-main.cc cbc-test.cc util.cc)
+  add_ampl_test(cbc-test cbc-test.cc)
 endif ()
 
 if (HAVE_GSL)
   include_directories(${GSL_BINARY_DIR})
-  cxx_test_with_flags(gsl-test ""
-    "gtest;function;gsl;gslcblas;util" test-main.cc gsl-test.cc util.cc)
+  add_ampl_test(gsl-test gsl-test.cc LIBS function gsl gslcblas)
 endif ()
 
 add_subdirectory(ilogcp)
@@ -53,4 +77,4 @@ add_subdirectory(solvers)
 add_subdirectory(tables)
 add_subdirectory(util)
 
-cxx_test_with_flags(util-test "" "gtest;util" test-main.cc util.cc util-test.cc)
+add_ampl_test(util-test util-test.cc)

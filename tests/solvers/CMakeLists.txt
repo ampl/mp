@@ -1,12 +1,11 @@
-cxx_test_with_flags(cp-test "" "gtest;amplsolver;function;util"
-  ../test-main.cc ../util.cc cp-test.cc)
+add_ampl_test(cp-test cp-test.cc LIBS amplsolver function)
 add_dependencies(cp-test cp)
 
 if (HAVE_GECODE)
   include_directories(${GECODE_SOURCE_DIR})
-  add_ampl_test(gecode-test "gtest;amplgecode-static" PREFIX
-    ../test-main.cc ../args.cc ../expr-builder.cc
-    ../solver-test.cc ../util.cc gecode-test.cc)
+  add_ampl_test(gecode-test PREFIX
+    ../args.cc ../expr-builder.cc ../solver-test.cc gecode-test.cc
+    LIBS amplgecode-static)
 endif ()
 
 if (HAVE_JACOP)
@@ -17,14 +16,13 @@ if (HAVE_JACOP)
   add_custom_command(OUTPUT ampljacop.jar DEPENDS ampljacop
     COMMAND ${CMAKE_COMMAND} -E copy
       ../../solvers/jacop/ampljacop.jar ampljacop.jar)
-  cxx_test_with_flags(jacop-test "" "gtest;ampljacop-static" ${JACOP_JAR} ampljacop.jar
-    ../test-main.cc ../args.cc ../expr-builder.cc
-    ../solver-test.cc ../util.cc jacop-test.cc)
+  add_ampl_test(jacop-test ${JACOP_JAR} ampljacop.jar
+    ../args.cc ../expr-builder.cc ../solver-test.cc jacop-test.cc
+    LIBS ampljacop-static)
   if (MSVC)
     set_target_properties(jacop-test PROPERTIES LINK_FLAGS "/DELAYLOAD:jvm.dll")
     target_link_libraries(jacop-test delayimp)
   endif ()
 endif ()
 
-cxx_test_with_flags(smpswriter-test "" "gtest;amplsmpswriter"
-  ../test-main.cc ../args.cc ../util.cc smpswriter-test.cc)
+add_ampl_test(smpswriter-test ../args.cc smpswriter-test.cc LIBS amplsmpswriter)

@@ -5,8 +5,7 @@ if (ODBC_FOUND)
   set(CMAKE_REQUIRED_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/..)
   set(CMAKE_REQUIRED_LIBRARIES ${ODBC_LIBRARIES})
 
-  cxx_test_with_flags(odbc-test ""
-    "gtest;function;${ODBC_LIBRARIES}" ../test-main.cc odbc-test.cc odbc.cc)
+  add_ampl_test(odbc-test odbc-test.cc odbc.cc LIBS function ${ODBC_LIBRARIES})
 
   include(CheckCXXSourceRuns)
   check_cxx_source_runs(
@@ -28,9 +27,8 @@ if (ODBC_FOUND)
      }" HAVE_EXCEL_DRIVER)
 
   if (HAVE_EXCEL_DRIVER)
-    cxx_test_with_flags(excel-test ""
-      "gtest;function;util;${ODBC_LIBRARIES}"
-      ../test-main.cc excel-test.cc odbc.cc)
+    add_ampl_test(excel-test excel-test.cc odbc.cc
+      LIBS function ${ODBC_LIBRARIES})
   endif ()
 
   check_cxx_source_runs(
@@ -40,9 +38,7 @@ if (ODBC_FOUND)
      }" HAVE_ODBC_TEXT_DRIVER)
 
   if (HAVE_ODBC_TEXT_DRIVER)
-    cxx_test_with_flags(csv-test ""
-      "gtest;function;util;${ODBC_LIBRARIES}"
-      ../test-main.cc csv-test.cc odbc.cc)
+    add_ampl_test(csv-test csv-test.cc odbc.cc LIBS function ${ODBC_LIBRARIES})
   endif ()
 
   if (ENABLE_MYSQL_TESTS)
@@ -54,15 +50,13 @@ if (ODBC_FOUND)
 
     if (HAVE_MYSQL_DRIVER)
       if (WIN32)
-  set(MYSQL_TEST_LIBRARIES Ws2_32.lib)
+        set(MYSQL_TEST_LIBRARIES Ws2_32.lib)
       endif ()
-      cxx_test_with_flags(mysql-test ""
-        "gtest;function;util;${ODBC_LIBRARIES};${MYSQL_TEST_LIBRARIES}"
-        ../test-main.cc mysql-test.cc odbc.cc)
+      add_ampl_test(mysql-test mysql-test.cc odbc.cc
+        LIBS function ${ODBC_LIBRARIES} ${MYSQL_TEST_LIBRARIES})
     endif ()
   endif ()
 endif ()
 
-cxx_test_with_flags(tableproxy-test ""
-  "gtest;function;util" ../test-main.cc tableproxy-test.cc ../util.cc)
+add_ampl_test(tableproxy-test tableproxy-test.cc LIBS function)
 add_dependencies(tableproxy-test tableproxy)
