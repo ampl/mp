@@ -8,12 +8,12 @@ endif ()
 # Enable std::this_thread::yield.
 add_definitions(-D_GLIBCXX_USE_SCHED_YIELD=1)
 
-# Setup testing.
 include_directories(.)
+
+# Add gtest library with some extra features.
 find_package(Threads)
 add_library(gtest gtest/gtest-all.cc gtest/gtest.h util.h util.cc test-main.cc)
-target_link_libraries(gtest ${CMAKE_THREAD_LIBS_INIT})
-add_dependencies(gtest arith_h)
+target_link_libraries(gtest util)
 
 # Adds an AMPL test.
 # Usage:
