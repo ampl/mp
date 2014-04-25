@@ -83,7 +83,7 @@ TEST(NLTest, WriteTextHeader) {
 }
 
 TEST(NLTest, WriteBinaryHeader) {
-  NLHeader header = {NLHeader::BINARY, 3, 11, 22, 33};
+  NLHeader header = {NLHeader::BINARY, 3, {11, 22, 33}};
   fmt::Writer w;
   w << header;
   EXPECT_EQ(
@@ -167,18 +167,18 @@ TEST(NLTest, InvalidNumOptions) {
       ampl::ParseError, "(input):1:2: number is too big");
 }
 
-void CheckReadOptions(size_t num_options,
-    size_t num_options_to_write, const int *options) {
+void CheckReadOptions(int num_options,
+    int num_options_to_write, const int *options) {
   fmt::Writer w;
   w << 'g' << num_options;
-  for (size_t i = 0; i < num_options_to_write; ++i)
+  for (int i = 0; i < num_options_to_write; ++i)
     w << ' ' << options[i];
   NLHeader header = ReadHeader(0, w.c_str());
   ASSERT_EQ(num_options, header.num_options);
-  size_t min_num_options = std::min(num_options, num_options_to_write);
-  for (size_t i = 0; i < min_num_options; ++i)
+  int min_num_options = std::min(num_options, num_options_to_write);
+  for (int i = 0; i < min_num_options; ++i)
     EXPECT_EQ(options[i], header.options[i]);
-  for (size_t i = min_num_options; i < num_options_to_write; ++i)
+  for (int i = min_num_options; i < num_options_to_write; ++i)
     EXPECT_EQ(0, header.options[i]);
 }
 
@@ -186,8 +186,8 @@ TEST(NLTest, ReadOptions) {
   const int options[ampl::MAX_NL_OPTIONS + 1] = {
       3, 5, 7, 11, 13, 17, 19, 23, 29, 31
   };
-  for (size_t i = 0; i < ampl::MAX_NL_OPTIONS; ++i) {
-    for (size_t j = 0; j < ampl::MAX_NL_OPTIONS + 1; ++j)
+  for (int i = 0; i < ampl::MAX_NL_OPTIONS; ++i) {
+    for (int j = 0; j < ampl::MAX_NL_OPTIONS + 1; ++j)
       CheckReadOptions(i, j, options);
   }
   EXPECT_EQ(0, ReadHeader(0, "g").num_options);
