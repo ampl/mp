@@ -23,6 +23,7 @@
 #include "solvers/util/os.h"
 
 #include <cerrno>
+#include <cstdlib>
 
 #ifndef _WIN32
 # include <sys/mman.h>
@@ -42,13 +43,16 @@
 
 #include "solvers/util/error.h"
 
+#undef getenv
+
 using std::size_t;
+using ampl::path;
 
 // Workaround for a bug in MSVC.
 // http://connect.microsoft.com/VisualStudio/feedback/details/
 // 786583/in-class-static-const-member-initialization-and-lnk2005
 #ifndef _MSC_EXTENSIONS
-const char ampl::path::preferred_separator;
+const char path::preferred_separator;
 #endif
 
 namespace {
@@ -68,7 +72,7 @@ size_t RoundUpToMultipleOf(size_t n, size_t page_size) {
 #ifdef __APPLE__
 
 // Mac OS X implementation.
-ampl::path ampl::GetExecutablePath() {
+path ampl::GetExecutablePath() {
   fmt::internal::Array<char, BUFFER_SIZE> buffer;
   uint32_t size = BUFFER_SIZE;
   buffer.resize(size);
@@ -86,7 +90,7 @@ ampl::path ampl::GetExecutablePath() {
 #else
 
 // Linux implementation.
-ampl::path ampl::GetExecutablePath() {
+path ampl::GetExecutablePath() {
   fmt::internal::Array<char, BUFFER_SIZE> buffer;
   buffer.resize(BUFFER_SIZE);
   ssize_t size = 0;
@@ -103,7 +107,19 @@ ampl::path ampl::GetExecutablePath() {
 
 #endif
 
-// POSIX implementation of MemoryMappedFile.
+// POSIX implementation.
+
+path path::temp_directory_path() {
+  const char *dir = std::getenv("TMPDIR");
+  if (!dir) {
+#ifdef P_tmpdir
+    dir = P_tmpdir;
+#else
+    dir = "/tmp";
+#endif
+  }
+  return path(dir);
+}
 
 ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
 : start_(), size_() {
@@ -141,7 +157,21 @@ ampl::MemoryMappedFile::~MemoryMappedFile() {
 
 #else
 
-// Windows implementation:
+// Windows implementation.
+
+path path::temp_directory_path() {
+  enum { BUFFER_SIZE = MAX_PATH + 1 };
+  wchar_t buffer[BUFFER_SIZE];
+  DWORD result = GetTempPathW(BUFFER_SIZE, &buffer[0]);
+  if (result == 0) {
+    ThrowSystemError(GetLastError(),
+        "cannot get path to the temporary directory");
+  }
+  assert(result <= BUFFER_SIZE);
+  UTF16ToUTF8 utf8_str(buffer, buffer + std::min(result, BUFFER_SIZE));
+  const char *s = utf8_str;
+  return path(s, s + utf8_str.size());
+}
 
 ampl::UTF8ToUTF16::UTF8ToUTF16(fmt::StringRef s) {
   int length = MultiByteToWideChar(
@@ -175,7 +205,7 @@ int ampl::UTF16ToUTF8::Convert(fmt::WStringRef s) {
   return 0;
 }
 
-ampl::path ampl::GetExecutablePath() {
+path ampl::GetExecutablePath() {
   fmt::internal::Array<wchar_t, BUFFER_SIZE> buffer;
   buffer.resize(BUFFER_SIZE);
   DWORD size = 0;
@@ -186,9 +216,9 @@ ampl::path ampl::GetExecutablePath() {
     if (size < buffer.size()) break;
     buffer.resize(2 * buffer.size());
   }
-  UTF16ToUTF8 utf16_str(&buffer[0]);
-  const char *s = utf16_str;
-  return path(s, s + utf16_str.size());
+  UTF16ToUTF8 utf8_str(&buffer[0]);
+  const char *s = utf8_str;
+  return path(s, s + utf8_str.size());
 }
 
 ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)

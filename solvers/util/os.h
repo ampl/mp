@@ -30,6 +30,7 @@
 
 namespace ampl {
 
+// This class provides a subset of boost filesystem's path API.
 class path {
  private:
   std::string str_;
@@ -69,6 +70,9 @@ class path {
     str_.resize(last_sep != std::string::npos ? last_sep : 0);
     return *this;
   }
+
+  // Returns a path to the system-specific temporary directory.
+  static path temp_directory_path();
 };
 
 // Returns the path to the currently running executable file.

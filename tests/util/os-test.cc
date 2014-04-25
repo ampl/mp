@@ -102,6 +102,18 @@ INSTANTIATE_TEST_CASE_P(POSIX, PathTest, ::testing::Values('/'));
 INSTANTIATE_TEST_CASE_P(Win32, PathTest, ::testing::Values('\\'));
 #endif
 
+TEST(PathTest, TempDirectoryPath) {
+#ifndef _WIN32
+  EXPECT_EQ("/tmp", ampl::path::temp_directory_path().string());
+#else
+  wchar_t buffer[MAX_PATH + 1];
+  DWORD result = GetTempPath(MAX_PATH + 1, buffer);
+  EXPECT_GT(result, 0);
+  EXPECT_LE(result, MAX_PATH);
+  EXPECT_STREQ(UTF16ToUTF8(buffer), ampl::path::temp_directory_path().string());
+#endif
+}
+
 TEST(OSTest, GetExecutablePath) {
   string path = ampl::GetExecutablePath().string();
   string ending = FixBinaryPath("/util/os-test");
