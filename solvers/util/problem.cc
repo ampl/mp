@@ -22,12 +22,17 @@
 
 #include "solvers/util/problem.h"
 
-#include <cstdlib>
+#include <stdlib.h>
 #include <cstring>
 
-#ifdef _WIN32
-# define tempnam _tempnam
+#ifndef _WIN32
+# include <unistd.h>
+#else
+# include <io.h>
+# define close _close
 #endif
+
+#include "solvers/util/os.h"
 
 namespace ampl {
 
@@ -147,18 +152,32 @@ fmt::Writer &operator<<(fmt::Writer &w, const Problem &p) {
 // A manager of temporary files.
 class TempFiles : Noncopyable {
  private:
-  char *name_;
+  fmt::internal::Array<char, fmt::internal::INLINE_BUFFER_SIZE> name_;
 
  public:
-  TempFiles() : name_(tempnam(0, 0)) {}
+  TempFiles();
+
   ~TempFiles() {
-    std::remove(c_str(fmt::Format("{}.nl") << name_));
-    std::remove(c_str(fmt::Format("{}.sol") << name_));
-    std::free(name_);
+    const char *stub = this->stub();
+    std::remove(c_str(fmt::Format("{}.nl") << stub));
+    std::remove(c_str(fmt::Format("{}.sol") << stub));
   }
 
-  const char *stub() const { return name_; }
+  const char *stub() const { return &name_[0]; }
 };
+
+TempFiles::TempFiles() {
+  std::string temp_dir = path::temp_directory_path().string();
+  const char *s = &temp_dir[0];
+  name_.append(s, s + temp_dir.size());
+  const char TEMPLATE[] = "XXXXXX.nl";
+  name_.append(TEMPLATE, TEMPLATE + sizeof(TEMPLATE));  // include nul char
+  const int SUFFIX_LEN = 3;  // length of the ".nl" suffix
+  int fd = mkstemps(&name_[0], SUFFIX_LEN);
+  if (fd == -1)
+    ThrowSystemError(errno, "cannot create temporary file");
+  close(fd);
+}
 
 Suffix Problem::suffix(const char *name, unsigned flags) const {
   unsigned kind = flags & ASL_Sufkind_mask;

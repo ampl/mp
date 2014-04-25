@@ -24,6 +24,7 @@
 
 #include <cerrno>
 #include <cstdlib>
+#include <algorithm>
 
 #ifndef _WIN32
 # include <sys/mman.h>
@@ -37,6 +38,7 @@
 #elif defined(_WIN32)
 # include <windows.h>
 # undef ERROR
+# undef min
 #else
 # include <unistd.h>
 #endif
@@ -168,7 +170,7 @@ path path::temp_directory_path() {
         "cannot get path to the temporary directory");
   }
   assert(result <= BUFFER_SIZE);
-  UTF16ToUTF8 utf8_str(buffer, buffer + (std::min)(result, BUFFER_SIZE));
+  UTF16ToUTF8 utf8_str(buffer, buffer + std::min(result, BUFFER_SIZE));
   const char *s = utf8_str;
   return path(s, s + utf8_str.size());
 }
