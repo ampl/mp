@@ -13,7 +13,7 @@ include_directories(.)
 # Add gtest library with some extra features.
 find_package(Threads)
 add_library(gtest gtest/gtest-all.cc gtest/gtest.h util.h util.cc test-main.cc)
-target_link_libraries(gtest util)
+target_link_libraries(gtest util ${CMAKE_THREAD_LIBS_INIT})
 
 # Adds an AMPL test.
 # Usage:
