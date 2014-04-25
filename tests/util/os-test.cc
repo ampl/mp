@@ -104,7 +104,8 @@ INSTANTIATE_TEST_CASE_P(Win32, PathTest, ::testing::Values('\\'));
 
 TEST(PathTest, TempDirectoryPath) {
 #ifndef _WIN32
-  EXPECT_EQ("/tmp", ampl::path::temp_directory_path().string());
+  const char *dir = std::getenv("TMPDIR");
+  EXPECT_EQ(dir ? dir : "/tmp", ampl::path::temp_directory_path().string());
 #else
   wchar_t buffer[MAX_PATH + 1];
   DWORD result = GetTempPath(MAX_PATH + 1, buffer);
