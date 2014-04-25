@@ -36,7 +36,6 @@
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-#include "ansidecl.h"
 
 /* We need to provide a type for gcc_uint64_t.  */
 #ifdef __GNUC__
