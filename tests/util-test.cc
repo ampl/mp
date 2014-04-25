@@ -84,6 +84,6 @@ TEST(UtilTest, FixBinaryPath) {
   path.remove_filename();
   if (!path.filename().string().empty())
     path.remove_filename();
-  EXPECT_EQ("", path.filename().string());
+  EXPECT_EQ("", path.string());
 }
 }
