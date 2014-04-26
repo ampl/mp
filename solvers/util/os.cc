@@ -170,7 +170,8 @@ path path::temp_directory_path() {
         "cannot get path to the temporary directory");
   }
   assert(result <= BUFFER_SIZE);
-  UTF16ToUTF8 utf8_str(buffer, buffer + std::min<DOUBLE>(result, BUFFER_SIZE));
+  buffer[BUFFER_SIZE - 1] = L'\0';
+  UTF16ToUTF8 utf8_str(buffer);
   const char *s = utf8_str;
   return path(s, s + utf8_str.size());
 }

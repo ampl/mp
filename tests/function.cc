@@ -22,6 +22,7 @@
 
 #include "tests/function.h"
 
+#include <functional>
 #include <iterator>
 #include <map>
 #include <sstream>
