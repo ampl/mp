@@ -20,6 +20,7 @@
  Author: Victor Zverovich
  */
 
+#include <functional>
 #include <limits>
 #include <sstream>
 #include <cmath>
