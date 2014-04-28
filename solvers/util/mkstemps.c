@@ -28,11 +28,16 @@
 #include <errno.h>
 #include <stdio.h>
 #include <fcntl.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
+
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
+
+#ifdef _WIN32
+# include <process.h>
+# define getpid _getpid
+#else
+# include <unistd.h>
 #endif
 
 /* We need to provide a type for gcc_uint64_t.  */
