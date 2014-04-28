@@ -39,6 +39,7 @@
 #endif
 
 using ampl::MemoryMappedFile;
+using ampl::path;
 
 #ifdef _WIN32
 using ampl::UTF8ToUTF16;
@@ -53,26 +54,26 @@ class PathTest : public ::testing::TestWithParam<char> {};
 
 TEST(PathTest, PreferredSeparator) {
 #ifdef _WIN32
-  EXPECT_EQ('\\', ampl::path::preferred_separator);
+  EXPECT_EQ('\\', path::preferred_separator);
 #else
-  EXPECT_EQ('/', ampl::path::preferred_separator);
+  EXPECT_EQ('/', path::preferred_separator);
 #endif
 }
 
 TEST_P(PathTest, PathCtor) {
-  EXPECT_EQ("", ampl::path().string());
+  EXPECT_EQ("", path().string());
   std::string s = FixPath("/some/path", GetParam());
-  ampl::path p(&s[0], &s[0] + s.size());
+  path p(&s[0], &s[0] + s.size());
   EXPECT_EQ(s, p.string());
-  EXPECT_EQ(s, ampl::path(s).string());
+  EXPECT_EQ(s, path(s).string());
 }
 
 TEST_P(PathTest, RemoveFilename) {
-  ampl::path p;
+  path p;
   EXPECT_EQ("", p.remove_filename().string());
   EXPECT_EQ("", p.string());
   std::string s = FixPath("/somewhere/out/in/space", GetParam());
-  p = ampl::path(s);
+  p = path(s);
   s = FixPath("/somewhere/out/in", GetParam());
   EXPECT_EQ(s, p.remove_filename().string());
   EXPECT_EQ(s, p.string());
@@ -80,20 +81,20 @@ TEST_P(PathTest, RemoveFilename) {
   EXPECT_EQ(s, p.remove_filename().string());
   EXPECT_EQ(s, p.string());
   s = FixPath("/", GetParam());
-  EXPECT_EQ(s, ampl::path(s).remove_filename().string());
-  EXPECT_EQ("", ampl::path("test").remove_filename().string());
+  EXPECT_EQ(s, path(s).remove_filename().string());
+  EXPECT_EQ("", path("test").remove_filename().string());
 }
 
 TEST_P(PathTest, Filename) {
-  ampl::path p;
+  path p;
   EXPECT_EQ("", p.filename().string());
   EXPECT_EQ("", p.string());
   std::string s = FixPath("/somewhere/out/in/space", GetParam());
-  p = ampl::path(s);
+  p = path(s);
   EXPECT_EQ("space", p.filename().string());
   EXPECT_EQ(s, p.string());
-  EXPECT_EQ("", ampl::path(FixPath("/", GetParam())).filename().string());
-  EXPECT_EQ("test", ampl::path("test").filename().string());
+  EXPECT_EQ("", path(FixPath("/", GetParam())).filename().string());
+  EXPECT_EQ("test", path("test").filename().string());
 }
 
 INSTANTIATE_TEST_CASE_P(POSIX, PathTest, ::testing::Values('/'));
@@ -105,13 +106,14 @@ INSTANTIATE_TEST_CASE_P(Win32, PathTest, ::testing::Values('\\'));
 TEST(PathTest, TempDirectoryPath) {
 #ifndef _WIN32
   const char *dir = std::getenv("TMPDIR");
-  EXPECT_EQ(dir ? dir : "/tmp", ampl::path::temp_directory_path().string());
+  EXPECT_EQ(dir ? dir : "/tmp", path::temp_directory_path().string());
 #else
   wchar_t buffer[MAX_PATH + 1];
   DWORD result = GetTempPathW(MAX_PATH + 1, buffer);
   EXPECT_GT(result, 0);
   EXPECT_LE(result, MAX_PATH);
-  EXPECT_STREQ(UTF16ToUTF8(buffer), ampl::path::temp_directory_path().string());
+  EXPECT_EQ(std::string(UTF16ToUTF8(buffer)),
+      path::temp_directory_path().string());
 #endif
 }
 
