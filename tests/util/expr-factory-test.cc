@@ -82,11 +82,6 @@ std::size_t CountBlocks(void *start) {
   return num_blocks;
 }
 
-void GetInfo(const ASL &asl, const Edaginfo *&info) { info = &asl.i; }
-void GetInfo(const ASL &asl, const Edag1info *&info) {
-  info = &reinterpret_cast<const ASL_fg&>(asl).I;
-}
-
 template <typename T>
 T *GetPtr(const ASL &asl, T *Edaginfo::*ptr) { return asl.i.*ptr; }
 
