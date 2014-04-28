@@ -876,9 +876,10 @@ bounds(void *v, int n, real *z, real *lower, real *upper)
 	}
 
  static CB_FUNC(void)
-variable_name(void *, int variable, char *buffer, int buffer_size)
+variable_name(void *v, int variable, char *buffer, int buffer_size)
 {
 	ASL * asl = cur_ASL;
+	(void)v;
 
 	strncpy(buffer, var_name(variable - 1), buffer_size - 1);
 	buffer[buffer_size-1] = '\0';
@@ -886,9 +887,10 @@ variable_name(void *, int variable, char *buffer, int buffer_size)
 	}
 
  static CB_FUNC(void)
-constraint_name(void *, int constraint, char *buffer, int buffer_size)
+constraint_name(void *v, int constraint, char *buffer, int buffer_size)
 {
 	ASL * asl = cur_ASL;
+	(void)v;
 
 	strncpy(buffer, con_name(constraint - 1), buffer_size - 1);
 	buffer[buffer_size-1] = '\0';
