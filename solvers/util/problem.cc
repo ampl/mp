@@ -34,6 +34,10 @@
 
 #include "solvers/util/os.h"
 
+#ifndef ASL_HAVE_MKSTEMPS
+extern "C" int mkstemps(char *pattern, int suffix_len);
+#endif
+
 namespace ampl {
 
 Solution::Solution()
