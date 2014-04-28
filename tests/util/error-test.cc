@@ -67,7 +67,7 @@ std::string GetTestErrorMessage() {
       reinterpret_cast<LPWSTR>(&message), 0, 0);
   ampl::UTF16ToUTF8 utf8_message(message);
   LocalFree(message);
-  return utf8_message;
+  return std::string(utf8_message);
 }
 #endif
 
