@@ -910,10 +910,10 @@ class Solver
 };
 
 #ifdef HAVE_UNIQUE_PTR
-  typedef std::unique_ptr<Solver> SolverPtr;
+typedef std::unique_ptr<Solver> SolverPtr;
 #else
-  typedef std::auto_ptr<Solver> SolverPtr;
-  static SolverPtr move(SolverPtr p) { return p; }
+typedef std::auto_ptr<Solver> SolverPtr;
+inline SolverPtr move(SolverPtr p) { return p; }
 #endif
 
 // Implement this function in your code returning a new concrete solver object.
