@@ -28,3 +28,9 @@
 #include "problem.cc"
 #include "rstparser.cc"
 #include "expr.cc"
+
+#ifndef ASL_HAVE_MKSTEMPS
+extern "C" {
+# include "mkstemps.c"
+}
+#endif
