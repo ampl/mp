@@ -6,8 +6,12 @@
 #  ODBC_INCLUDE_DIRS - The ODBC include directories
 #  ODBC_LIBRARIES - The libraries needed to use ODBC
 
-find_path(ODBC_INCLUDE_DIR sql.h)
-find_library(ODBC_LIBRARY NAMES odbc odbc32)
+set(winsdk_key
+  "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows")
+find_path(ODBC_INCLUDE_DIR sql.h
+  PATHS "[${winsdk_key};CurrentInstallFolder]/include")
+find_library(ODBC_LIBRARY NAMES odbc odbc32
+  PATHS "[${winsdk_key};CurrentInstallFolder]/lib")
 
 if (APPLE)
   find_library(COREFOUNDATION_LIBRARY CoreFoundation)
