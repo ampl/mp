@@ -24,11 +24,12 @@
 #include "tests/function.h"
 #include "tests/config.h"
 #include "tests/tables/odbc.h"
+#include "tests/util.h"
 
 namespace {
 
 TEST(ODBCTest, Load) {
-  fun::Library lib("../../tables/ampltabl.dll");
+  fun::Library lib(FixBinaryPath("../../tables/ampltabl.dll"));
   lib.Load();
   EXPECT_EQ("", lib.error());
   EXPECT_TRUE(lib.GetHandler("odbc") != nullptr);
