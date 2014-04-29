@@ -118,7 +118,7 @@ TEST(PathTest, TempDirectoryPath) {
 }
 
 TEST(OSTest, GetExecutablePath) {
-  string filename = FixBinaryPath("os-test");
+  string filename = "os-test";
 #ifdef _WIN32
   filename += ".exe";
 #endif
@@ -170,7 +170,7 @@ TEST(OSTest, GetExecutablePathUnicode) {
   LinkFile(filename, linkname);
   ExecuteShellCommand("./" + linkname + " > out", false);
   string path = ReadFile("out");
-  string ending = "/" + linkname;
+  string ending = path::preferred_separator + linkname;
   EXPECT_EQ(ending, path.size() >= ending.size() ?
       path.substr(path.size() - ending.size()) : path);
 }
