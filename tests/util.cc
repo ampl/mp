@@ -119,10 +119,10 @@ std::string FixBinaryPath(fmt::StringRef path) {
   if (config_dir != "Debug" && config_dir != "Release")
     return FixPath(path.c_str());
   ampl::path p(path.c_str(), path.c_str() + path.size());
+  std::string filename = p.filename().string();
   std::string dirname = p.remove_filename().string();
   if (!dirname.empty())
     dirname += '/';
-  std::string filename = p.filename().string();
   return FixPath(dirname + config_dir + "/" + filename);
 }
 

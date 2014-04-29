@@ -118,13 +118,17 @@ TEST(PathTest, TempDirectoryPath) {
 }
 
 TEST(OSTest, GetExecutablePath) {
-  string path = ampl::GetExecutablePath().string();
-  string ending = FixBinaryPath("/util/os-test");
+  string filename = FixBinaryPath("os-test");
 #ifdef _WIN32
-  ending += ".exe";
+  filename += ".exe";
 #endif
-  EXPECT_EQ(ending, path.size() >= ending.size() ?
-      path.substr(path.size() - ending.size()) : path);
+  path p = ampl::GetExecutablePath();
+  EXPECT_EQ(filename, p.filename().string());
+  p.remove_filename();
+#ifdef _WIN32
+  p.remove_filename();
+#endif
+  EXPECT_EQ("util", p.filename().string());
 }
 
 // Creates a new link for a file or copies the file if the system doesn't
