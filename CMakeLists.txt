@@ -6,8 +6,10 @@ cmake_minimum_required(VERSION 2.8.0)
 # This should be done before the project command since the latter can set
 # CMAKE_BUILD_TYPE itself (it does so for nmake).
 if (NOT CMAKE_BUILD_TYPE)
+  set(options
+    "None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel")
   set(CMAKE_BUILD_TYPE Release CACHE STRING
-    "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
+    "Choose the type of build, options are: ${options}.")
 endif ()
 
 # Use static MSVC runtime.
@@ -85,7 +87,8 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
   # Set FrameworkPathOverride to get rid of MSB3644 warnings.
   file(WRITE run-msbuild.bat "
     ${MSBUILD_SETUP}
-    ${CMAKE_MAKE_PROGRAM} -p:FrameworkPathOverride=\"C:\\Program Files\\Reference Assemblies\\Microsoft\\Framework\\.NETFramework\\v4.0\" %*")
+    ${CMAKE_MAKE_PROGRAM} -p:FrameworkPathOverride=\"C:\\Program Files^
+\\Reference Assemblies\\Microsoft\\Framework\\.NETFramework\\v4.0\" %*")
 endif ()
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)
@@ -112,7 +115,8 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/coin/CMakeLists.txt)
   if (WINSDK_SETENV)
     # Create a script that sets up build environment in Fortran subprojects.
     file(WRITE setenv.bat "call \"${WINSDK_SETENV}\"")
-    # Extra command line flags to pass to CMake in cmake_add_fortran_subdirectory.
+    # Extra command line flags to pass to CMake in
+    # cmake_add_fortran_subdirectory.
     set(FORTRAN_CMAKE_FLAGS "-DCMAKE_GNUtoMS_VCVARS=../../setenv.bat")
   endif ()
 endif ()
@@ -130,7 +134,8 @@ if (JACOP_PATH)
   if (JNI_FOUND AND JAVA_FOUND)
     # Add libmawt.so to JNI_LIBRARIES to avoid linkage errors on Ubuntu 10.04.
     foreach (arch amd64 i386)
-      set(LIBMAWT_PATH /usr/lib/jvm/java-6-openjdk/jre/lib/${arch}/xawt/libmawt.so)
+      set(LIBMAWT_PATH
+        /usr/lib/jvm/java-6-openjdk/jre/lib/${arch}/xawt/libmawt.so)
       if (EXISTS ${LIBMAWT_PATH})
         set(JNI_LIBRARIES ${JNI_LIBRARIES} ${LIBMAWT_PATH})
         break ()
