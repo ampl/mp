@@ -39,7 +39,8 @@ else ()
 endif ()
 
 if (APPLE)
-  add_definitions(-mmacosx-version-min=10.4)
+  # Ipopt uses thread-local storage which requires OS X Lion or higher target.
+  add_definitions(-mmacosx-version-min=10.7)
 
   # Use libstdc++ instead of libc++ on Mac for compatibility with CPLEX 12.4
   # and earlier.
