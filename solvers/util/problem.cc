@@ -179,7 +179,7 @@ TempFiles::TempFiles() {
   const int SUFFIX_LEN = 3;  // length of the ".nl" suffix
   int fd = mkstemps(&name_[0], SUFFIX_LEN);
   if (fd == -1)
-    ThrowSystemError(errno, "cannot create temporary file");
+    fmt::ThrowSystemError(errno, "cannot create temporary file");
   close(fd);
 }
 

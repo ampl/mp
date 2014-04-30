@@ -47,39 +47,15 @@ inline fmt::Formatter<Throw> ThrowError(fmt::StringRef format) {
   return f;
 }
 
-// An error returned by the operating system or the language runtime,
-// for example a file opening error.
-class SystemError : public Error {
- private:
-  int error_code_;
-
- public:
-  SystemError(fmt::StringRef message, int error_code)
-  : Error(message), error_code_(error_code) {}
-
-  int error_code() const { return error_code_; }
-};
-
-class SystemThrow {
- private:
-  int error_code_;
-
- public:
-  explicit SystemThrow(int error_code) : error_code_(error_code) {}
-
-  void operator()(const fmt::Writer &w) const;
-};
-
-// Throws SystemError with a code and a formatted message.
-inline fmt::Formatter<SystemThrow> ThrowSystemError(
-    int error_code, fmt::StringRef format) {
-  fmt::Formatter<SystemThrow> f(format, SystemThrow(error_code));
-  return f;
-}
-
 // Reports a system error without throwing an exception.
 // Can be used to report errors from destructors.
 void ReportSystemError(int error_code, const char *message) FMT_NOEXCEPT(true);
+
+#ifdef _WIN32
+// Reports a Windows error without throwing an exception.
+// Can be used to report errors from destructors.
+void ReportWinError(int error_code, const char *message) FMT_NOEXCEPT(true);
+#endif
 }
 
 #endif  // SOLVERS_UTIL_ERROR_H_

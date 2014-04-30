@@ -417,7 +417,7 @@ TEST(ProblemTest, SolveWithUnknownSolver) {
   Problem p;
   p.Read("../data/simple");
   Solution s;
-  EXPECT_THROW(p.Solve("unknownsolver", s), ampl::Error);
+  EXPECT_THROW(p.Solve("unknownsolver", s), fmt::SystemError);
 }
 
 TEST(ProblemTest, Write) {

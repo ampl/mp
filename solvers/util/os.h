@@ -94,37 +94,6 @@ class MemoryMappedFile : Noncopyable {
 
 // The default buffer size.
 enum { BUFFER_SIZE = 500 };
-
-#ifdef _WIN32
-// A converter from UTF-8 to UTF-16.
-// It is only provided for Windows since all normal systems use UTF-8.
-class UTF8ToUTF16 {
- private:
-  fmt::internal::Array<wchar_t, BUFFER_SIZE> buffer_;
-
- public:
-  explicit UTF8ToUTF16(fmt::StringRef s);
-  operator const wchar_t*() const { return &buffer_[0]; }
-  size_t size() const { return buffer_.size() - 1; }
-};
-
-// A converter from UTF-16 to UTF-8.
-// It is only provided for Windows since all normal systems use UTF-8.
-class UTF16ToUTF8 {
- private:
-  fmt::internal::Array<char, BUFFER_SIZE> buffer_;
-
- public:
-  UTF16ToUTF8() {}
-  explicit UTF16ToUTF8(fmt::WStringRef s);
-  operator const char*() const { return &buffer_[0]; }
-  size_t size() const { return buffer_.size() - 1; }
-
-  // Performs conversion returning a system error code instead of
-  // throwing exception on error.
-  int Convert(fmt::WStringRef s);
-};
-#endif
 }
 
 #endif  // SOLVERS_UTIL_OS_H_

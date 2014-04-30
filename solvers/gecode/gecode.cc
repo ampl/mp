@@ -567,11 +567,11 @@ void GecodeSolver::SetNonnegativeOption(
   *option = value;
 }
 
-fmt::Formatter<fmt::Write> GecodeSolver::Output(fmt::StringRef format) {
+fmt::Formatter<fmt::FileSink> GecodeSolver::Output(fmt::StringRef format) {
   if (output_count_ == 0)
     fmt::Print("{}") << header_;
   output_count_ = (output_count_ + 1) % 20;
-  fmt::Formatter<fmt::Write> f(format);
+  fmt::Formatter<fmt::FileSink> f(format, fmt::FileSink(stdout));
   return f;
 }
 

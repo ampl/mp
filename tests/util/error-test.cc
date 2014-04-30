@@ -48,47 +48,32 @@ TEST(ErrorTest, ThrowError) {
   EXPECT_STREQ("test error message", error.what());
 }
 
-TEST(ErrorTest, SystemError) {
-  ampl::SystemError e(fmt::StringRef("test"), 42);
-  EXPECT_STREQ("test", e.what());
-  EXPECT_EQ(42, e.error_code());
-}
-
-#ifndef _WIN32
-const int TEST_ERROR = EDOM;
-std::string GetTestErrorMessage() { return strerror(TEST_ERROR); }
-#else
-const int TEST_ERROR = ERROR_FILE_EXISTS;
-std::string GetTestErrorMessage() {
-  LPWSTR message = 0;
-  FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-      FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 0,
-      ERROR_FILE_EXISTS, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-      reinterpret_cast<LPWSTR>(&message), 0, 0);
-  ampl::UTF16ToUTF8 utf8_message(message);
-  LocalFree(message);
-  return std::string(utf8_message);
-}
-#endif
-
-TEST(ErrorTest, ThrowSystemError) {
-  ampl::SystemError error("", 0);
-  try {
-    ampl::ThrowSystemError(TEST_ERROR, "test {}") << "error";
-  } catch (const ampl::SystemError &e) {
-    error = e;
-  }
-  EXPECT_EQ(str(fmt::Format("test error: {}") << GetTestErrorMessage()),
-      error.what());
-  EXPECT_EQ(TEST_ERROR, error.error_code());
-}
-
 TEST(ErrorTest, ReportSystemError) {
+  const int TEST_ERROR = EDOM;
   EXPECT_EXIT({
     ampl::ReportSystemError(TEST_ERROR, "test error");
     std::fprintf(stderr, "end\n");
     std::exit(0);
   }, ::testing::ExitedWithCode(0),
-      str(fmt::Format("test error: {}\nend\n") << GetTestErrorMessage()));
+      str(fmt::Format("test error: {}\nend\n") << strerror(TEST_ERROR)));
 }
+
+#ifdef _WIN32
+TEST(ErrorTest, ReportWinError) {
+  const int TEST_ERROR = ERROR_FILE_EXISTS;
+  LPWSTR message = 0;
+  FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+      FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 0,
+      ERROR_FILE_EXISTS, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+      reinterpret_cast<LPWSTR>(&message), 0, 0);
+  fmt::internal::UTF16ToUTF8 utf8_message(message);
+  LocalFree(message);
+  EXPECT_EXIT({
+    ampl::ReportSystemError(TEST_ERROR, "test error");
+    std::fprintf(stderr, "end\n");
+    std::exit(0);
+  }, ::testing::ExitedWithCode(0),
+      str(fmt::Format("test error: {}\nend\n") << fmt::str(utf8_message)));
+}
+#endif
 }

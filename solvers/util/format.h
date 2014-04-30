@@ -31,6 +31,7 @@
 #include <stdint.h>
 
 #include <cassert>
+#include <cerrno>
 #include <cstddef>  // for std::ptrdiff_t
 #include <cstdio>
 #include <algorithm>
@@ -99,6 +100,12 @@
 # define FMT_NOEXCEPT(expr)
 #endif
 
+// A macro to disallow the copy constructor and operator= functions
+// This should be used in the private: declarations for a class
+#define FMT_DISALLOW_COPY_AND_ASSIGN(TypeName) \
+  TypeName(const TypeName&); \
+  void operator=(const TypeName&)
+
 #if _MSC_VER
 # pragma warning(push)
 # pragma warning(disable: 4521) // 'class' : multiple copy constructors specified
@@ -114,16 +121,79 @@ FMT_GCC_EXTENSION typedef unsigned long long ULongLong;
 template <typename Char>
 class BasicWriter;
 
+typedef BasicWriter<char> Writer;
+typedef BasicWriter<wchar_t> WWriter;
+
 template <typename Char>
 class BasicFormatter;
 
 struct FormatSpec;
 
+/**
+  \rst
+  A string reference. It can be constructed from a C string, ``std::string``
+  or as a result of a formatting operation. It is most useful as a parameter
+  type to allow passing different types of strings in a function, for example::
+
+    Formatter<> Format(StringRef format);
+
+    Format("{}") << 42;
+    Format(std::string("{}")) << 42;
+    Format(Format("{{}}")) << 42;
+  \endrst
+ */
+template <typename Char>
+class BasicStringRef {
+ private:
+  const Char *data_;
+  mutable std::size_t size_;
+
+ public:
+  /**
+    Constructs a string reference object from a C string and a size.
+    If *size* is zero, which is the default, the size is computed with
+    `strlen`.
+   */
+  BasicStringRef(const Char *s, std::size_t size = 0) : data_(s), size_(size) {}
+
+  /**
+    Constructs a string reference from an `std::string` object.
+   */
+  BasicStringRef(const std::basic_string<Char> &s)
+  : data_(s.c_str()), size_(s.size()) {}
+
+  /**
+    Converts a string reference to an `std::string` object.
+   */
+  operator std::basic_string<Char>() const {
+    return std::basic_string<Char>(data_, size());
+  }
+
+  /**
+    Returns the pointer to a C string.
+   */
+  const Char *c_str() const { return data_; }
+
+  /**
+    Returns the string size.
+   */
+  std::size_t size() const {
+    if (size_ == 0) size_ = std::char_traits<Char>::length(data_);
+    return size_;
+  }
+};
+
+typedef BasicStringRef<char> StringRef;
+typedef BasicStringRef<wchar_t> WStringRef;
+
 namespace internal {
-  
+
+// The number of characters to store in the Array object, representing the
+// output buffer, itself to avoid dynamic memory allocation.
 enum { INLINE_BUFFER_SIZE = 500 };
 
 #if _SECURE_SCL
+// Use checked iterator to avoid warnings on MSVC.
 template <typename T>
 inline stdext::checked_array_iterator<T*> CheckPtr(T *ptr, std::size_t size) {
   return stdext::checked_array_iterator<T*>(ptr, size);
@@ -165,28 +235,23 @@ class Array {
     }
   }
 
-  // Do not implement!
-  Array(const Array &);
-  void operator=(const Array &);
+  FMT_DISALLOW_COPY_AND_ASSIGN(Array);
 
  public:
   Array() : size_(0), capacity_(SIZE), ptr_(data_) {}
   ~Array() { Free(); }
 
 #if FMT_USE_RVALUE_REFERENCES
-
   Array(Array &&other) {
     Move(other);
   }
 
-  // TODO: test
-  Array& operator=(Array&& other) {
+  Array& operator=(Array &&other) {
     assert(this != &other);
     Free();
     Move(other);
     return *this;
   }
-
 #endif
 
   // Returns the size of this array.
@@ -202,6 +267,7 @@ class Array {
     size_ = new_size;
   }
 
+  // Reserves space to store at least capacity elements.
   void reserve(std::size_t capacity) {
     if (capacity > capacity_)
       Grow(capacity);
@@ -365,9 +431,6 @@ inline unsigned CountDigits(uint64_t n) {
 
 extern const char DIGITS[];
 
-template <typename Char>
-class FormatterProxy;
-
 // Formats a decimal unsigned integer value writing into buffer.
 template <typename UInt, typename Char>
 void FormatDecimal(Char *buffer, UInt value, unsigned num_digits) {
@@ -394,69 +457,81 @@ void FormatDecimal(Char *buffer, UInt value, unsigned num_digits) {
 template <typename Char, typename T>
 void FormatCustomArg(
   BasicWriter<Char> &w, const void *arg, const FormatSpec &spec);
-}
 
-/**
-  \rst
-  A string reference. It can be constructed from a C string, ``std::string``
-  or as a result of a formatting operation. It is most useful as a parameter
-  type to allow passing different types of strings in a function, for example::
-
-    Formatter<> Format(StringRef format);
-
-    Format("{}") << 42;
-    Format(std::string("{}")) << 42;
-    Format(Format("{{}}")) << 42;
-  \endrst
- */
-template <typename Char>
-class BasicStringRef {
+#ifdef _WIN32
+// A converter from UTF-8 to UTF-16.
+// It is only provided for Windows since other systems use UTF-8.
+class UTF8ToUTF16 {
  private:
-  const Char *data_;
-  mutable std::size_t size_;
+  Array<wchar_t, INLINE_BUFFER_SIZE> buffer_;
 
  public:
-  /**
-    Constructs a string reference object from a C string and a size.
-    If *size* is zero, which is the default, the size is computed with
-    `strlen`.
-   */
-  BasicStringRef(const Char *s, std::size_t size = 0) : data_(s), size_(size) {}
-
-  /**
-    Constructs a string reference from an `std::string` object.
-   */
-  BasicStringRef(const std::basic_string<Char> &s)
-  : data_(s.c_str()), size_(s.size()) {}
-
-  /**
-    Converts a string reference to an `std::string` object.
-   */
-  operator std::basic_string<Char>() const {
-    return std::basic_string<Char>(data_, size());
-  }
-
-  /**
-    Returns the pointer to a C string.
-   */
-  const Char *c_str() const { return data_; }
-
-  /**
-    Returns the string size.
-   */
-  std::size_t size() const {
-    if (size_ == 0) size_ = std::char_traits<Char>::length(data_);
-    return size_;
-  }
+  explicit UTF8ToUTF16(StringRef s);
+  operator WStringRef() const { return WStringRef(&buffer_[0], size()); }
+  size_t size() const { return buffer_.size() - 1; }
 };
 
-typedef BasicStringRef<char> StringRef;
-typedef BasicStringRef<wchar_t> WStringRef;
+// A converter from UTF-16 to UTF-8.
+// It is only provided for Windows since other systems use UTF-8.
+class UTF16ToUTF8 {
+ private:
+  Array<char, INLINE_BUFFER_SIZE> buffer_;
 
+ public:
+  UTF16ToUTF8() {}
+  explicit UTF16ToUTF8(WStringRef s);
+  operator StringRef() const { return StringRef(&buffer_[0], size()); }
+  size_t size() const { return buffer_.size() - 1; }
+
+  // Performs conversion returning a system error code instead of
+  // throwing exception on error.
+  int Convert(WStringRef s);
+};
+#endif
+
+// Portable thread-safe version of strerror.
+// Sets buffer to point to a string describing the error code.
+// This can be either a pointer to a string stored in buffer,
+// or a pointer to some static immutable string.
+// Returns one of the following values:
+//   0      - success
+//   ERANGE - buffer is not large enough to store the error message
+//   other  - failure
+// Buffer should be at least of size 1.
+int StrError(int error_code, char *&buffer, std::size_t buffer_size);
+
+void FormatSystemErrorMessage(
+    fmt::Writer &out, int error_code, fmt::StringRef message);
+
+#ifdef _WIN32
+void FormatWinErrorMessage(
+    fmt::Writer &out, int error_code, fmt::StringRef message);
+#endif
+
+}  // namespace internal
+
+/**
+  A formatting error such as invalid format string.
+ */
 class FormatError : public std::runtime_error {
  public:
   explicit FormatError(const std::string &message)
   : std::runtime_error(message) {}
+};
+
+/**
+  An error returned by the operating system or the language runtime,
+  for example a file opening error.
+ */
+class SystemError : public std::runtime_error {
+ private:
+  int error_code_;
+
+ public:
+  SystemError(StringRef message, int error_code)
+  : std::runtime_error(message), error_code_(error_code) {}
+
+  int error_code() const { return error_code_; }
 };
 
 enum Alignment {
@@ -804,13 +879,13 @@ class BasicWriter {
     };
   };
 
-  // Argument action that does nothing.
-  struct EmptyArgAction {
+  // An argument action that does nothing.
+  struct NullArgAction {
     void operator()() const {}
   };
 
   // A wrapper around a format argument.
-  template <typename Action = EmptyArgAction>
+  template <typename Action = NullArgAction>
   class BasicArg : public Action, public ArgInfo {
    private:
     // This method is private to disallow formatting of arbitrary pointers.
@@ -923,6 +998,12 @@ class BasicWriter {
 
 #if FMT_USE_RVALUE_REFERENCES
   BasicWriter(BasicWriter &&other) : buffer_(std::move(other.buffer_)) {}
+
+  BasicWriter& operator=(BasicWriter &&other) {
+    assert(this != &other);
+    buffer_ = std::move(other.buffer_);
+    return *this;
+  }
 #endif
 
   /**
@@ -1032,7 +1113,7 @@ class BasicWriter {
   }
 
   /**
-   * Writes a character to the stream.
+    Writes a character to the stream.
    */
   BasicWriter &operator<<(char value) {
     *GrowBuffer(1) = value;
@@ -1189,9 +1270,6 @@ BasicFormatter<Char> BasicWriter<Char>::Format(StringRef format) {
   return f;
 }
 
-typedef BasicWriter<char> Writer;
-typedef BasicWriter<wchar_t> WWriter;
-
 // The default formatting function.
 template <typename Char, typename T>
 void Format(BasicWriter<Char> &w, const FormatSpec &spec, const T &value) {
@@ -1232,7 +1310,7 @@ class BasicFormatter {
   // Here an Arg object wraps a temporary std::string which is destroyed at
   // the end of the full expression. Since the string object is constructed
   // before the Arg object, it will be destroyed after, so it will be alive
-  // in the Arg's destructor where the action is called.
+  // in the Arg's destructor where the action is invoked.
   // Note that the string object will not necessarily be alive when the
   // destructor of BasicFormatter is called. Otherwise we wouldn't need
   // this class.
@@ -1255,17 +1333,13 @@ class BasicFormatter {
 
   const Char *format_;  // Format string.
 
-  friend class internal::FormatterProxy<Char>;
-
   // Forbid copying from a temporary as in the following example:
   //
   //   fmt::Formatter<> f = Format("test"); // not allowed
   //
   // This is done because BasicFormatter objects should normally exist
   // only as temporaries returned by one of the formatting functions.
-  // Do not implement.
-  BasicFormatter(const BasicFormatter &);
-  BasicFormatter& operator=(const BasicFormatter &);
+  FMT_DISALLOW_COPY_AND_ASSIGN(BasicFormatter);
 
  protected:
   const Char *TakeFormatString() {
@@ -1304,13 +1378,9 @@ class BasicFormatter {
     return *this;
   }
 
-  operator internal::FormatterProxy<Char>() {
-    return internal::FormatterProxy<Char>(this);
-  }
-
-  operator StringRef() {
+  operator BasicStringRef<Char>() {
     CompleteFormatting();
-    return StringRef(writer_->c_str(), writer_->size());
+    return BasicStringRef<Char>(writer_->c_str(), writer_->size());
   }
 };
 
@@ -1322,113 +1392,111 @@ inline std::basic_string<Char> str(const BasicWriter<Char> &f) {
 template <typename Char>
 inline const Char *c_str(const BasicWriter<Char> &f) { return f.c_str(); }
 
-namespace internal {
+/**
+  Converts a string reference an `std::string`.
+ */
+inline std::string str(StringRef s) {
+  return std::string(s.c_str(), s.size());
+}
 
-template <typename Char>
-class FormatterProxy {
- private:
-  BasicFormatter<Char> *formatter_;
+/**
+  Returns the pointer to a C string.
+ */
+inline const char *c_str(StringRef s) {
+  return s.c_str();
+}
 
+inline std::wstring str(WStringRef s) {
+  return std::wstring(s.c_str(), s.size());
+}
+
+inline const wchar_t *c_str(WStringRef s) {
+  return s.c_str();
+}
+
+/**
+  A sink that discards all output written to it.
+ */
+class NullSink {
  public:
-  explicit FormatterProxy(BasicFormatter<Char> *f) : formatter_(f) {}
-
-  BasicWriter<Char> *Format() {
-    formatter_->CompleteFormatting();
-    return formatter_->writer_;
-  }
-};
-}
-
-/**
-  Returns the content of the output buffer as an `std::string`.
- */
-inline std::string str(internal::FormatterProxy<char> p) {
-  return p.Format()->str();
-}
-
-/**
-  Returns a pointer to the output buffer content with terminating null
-  character appended.
- */
-inline const char *c_str(internal::FormatterProxy<char> p) {
-  return p.Format()->c_str();
-}
-
-inline std::wstring str(internal::FormatterProxy<wchar_t> p) {
-  return p.Format()->str();
-}
-
-inline const wchar_t *c_str(internal::FormatterProxy<wchar_t> p) {
-  return p.Format()->c_str();
-}
-
-/**
-  A formatting action that does nothing.
- */
-class NoAction {
- public:
-  /** Does nothing. */
+  /** Discards the output. */
   template <typename Char>
   void operator()(const BasicWriter<Char> &) const {}
 };
 
 /**
   \rst
-  A formatter with an action performed when formatting is complete.
-  Objects of this class normally exist only as temporaries returned
-  by one of the formatting functions. You can use this class to create
-  your own functions similar to :cpp:func:`fmt::Format()`.
+  A formatter that sends output to a sink. Objects of this class normally
+  exist only as temporaries returned by one of the formatting functions.
+  You can use this class to create your own functions similar to
+  :cpp:func:`fmt::Format()`.
 
   **Example**::
 
-    struct PrintError {
+    struct ErrorSink {
       void operator()(const fmt::Writer &w) const {
         fmt::Print("Error: {}\n") << w.str();
       }
     };
 
     // Formats an error message and prints it to stdout.
-    fmt::Formatter<PrintError> ReportError(const char *format) {
-      fmt::Formatter f<PrintError>(format);
+    fmt::Formatter<ErrorSink> ReportError(const char *format) {
+      fmt::Formatter f<ErrorSink>(format);
       return f;
     }
 
     ReportError("File not found: {}") << path;
   \endrst
  */
-template <typename Action = NoAction, typename Char = char>
-class Formatter : private Action, public BasicFormatter<Char> {
+template <typename Sink = NullSink, typename Char = char>
+class Formatter : private Sink, public BasicFormatter<Char> {
  private:
   BasicWriter<Char> writer_;
   bool inactive_;
 
-  // Forbid copying other than from a temporary. Do not implement.
-  Formatter(const Formatter &);
-  Formatter& operator=(const Formatter &);
+  FMT_DISALLOW_COPY_AND_ASSIGN(Formatter);
 
  public:
   /**
     \rst
-    Constructs a formatter with a format string and an action.
-    The action should be an unary function object that takes a const
-    reference to :cpp:class:`fmt::BasicWriter` as an argument.
-    See :cpp:class:`fmt::NoAction` and :cpp:class:`fmt::Write` for
-    examples of action classes.
+    Constructs a formatter with a format string and a sink.
+    The sink should be an unary function object that takes a const
+    reference to :cpp:class:`fmt::BasicWriter`, representing the
+    formatting output, as an argument. See :cpp:class:`fmt::NullSink`
+    and :cpp:class:`fmt::FileSink` for examples of sink classes.
     \endrst
   */
-  explicit Formatter(BasicStringRef<Char> format, Action a = Action())
-  : Action(a), BasicFormatter<Char>(writer_, format.c_str()),
+  explicit Formatter(BasicStringRef<Char> format, Sink s = Sink())
+  : Sink(s), BasicFormatter<Char>(writer_, format.c_str()),
     inactive_(false) {
-  }
-
-  Formatter(Formatter &f)
-  : Action(f), BasicFormatter<Char>(writer_, f.TakeFormatString()),
-    inactive_(false) {
-    f.inactive_ = true;
   }
 
   /**
-    Performs the actual formatting, invokes the action and destroys the object.
+    \rst
+    A "move" constructor. Constructs a formatter transferring the format
+    string from other to this object. This constructor is used to return
+    a formatter object from a formatting function since the copy constructor
+    taking a const reference is disabled to prevent misuse of the API.
+    It is not implemented as a move constructor for compatibility with
+    pre-C++11 compilers, but should be treated as such.
+
+    **Example**::
+
+      fmt::Formatter<> Format(fmt::StringRef format) {
+        fmt::Formatter<> f(format);
+        return f;
+      }
+    \endrst
+   */
+  Formatter(Formatter &other)
+  : Sink(other), BasicFormatter<Char>(writer_, other.TakeFormatString()),
+    inactive_(false) {
+    other.inactive_ = true;
+  }
+
+  /**
+    Performs the formatting, sends the output to the sink and destroys
+    the object.
    */
   ~Formatter() FMT_NOEXCEPT(false) {
     if (!inactive_) {
@@ -1437,6 +1505,169 @@ class Formatter : private Action, public BasicFormatter<Char> {
     }
   }
 };
+
+/**
+  \rst
+  Formats a string similarly to Python's `str.format
+  <http://docs.python.org/3/library/stdtypes.html#str.format>`__.
+  Returns a temporary formatter object that accepts arguments via
+  operator ``<<``.
+
+  *format* is a format string that contains literal text and replacement
+  fields surrounded by braces ``{}``. The formatter object replaces the
+  fields with formatted arguments and stores the output in a memory buffer.
+  The content of the buffer can be converted to ``std::string`` with
+  :cpp:func:`fmt::str()` or accessed as a C string with
+  :cpp:func:`fmt::c_str()`.
+
+  **Example**::
+
+    std::string message = str(Format("The answer is {}") << 42);
+
+  See also `Format String Syntax`_.
+  \endrst
+ */
+inline Formatter<> Format(StringRef format) {
+  Formatter<> f(format);
+  return f;
+}
+
+inline Formatter<NullSink, wchar_t> Format(WStringRef format) {
+  Formatter<NullSink, wchar_t> f(format);
+  return f;
+}
+
+/**
+  A sink that gets the error message corresponding to a system error code
+  as given by errno and throws SystemError.
+ */
+class SystemErrorSink {
+ private:
+  int error_code_;
+
+ public:
+  explicit SystemErrorSink(int error_code) : error_code_(error_code) {}
+
+  void operator()(const Writer &w) const;
+};
+
+/**
+  Formats a message and throws SystemError with the description of the form
+  "<message>: <system-message>", where <message> is the formatted message and
+  <system-message> is the system message corresponding to the error code.
+  error_code is a system error code as given by errno.
+ */
+inline Formatter<SystemErrorSink> ThrowSystemError(
+    int error_code, StringRef format) {
+  Formatter<SystemErrorSink> f(format, SystemErrorSink(error_code));
+  return f;
+}
+
+/**
+  A sink that gets the error message corresponding to a Windows error code
+  as given by GetLastError and throws SystemError.
+ */
+class WinErrorSink {
+ private:
+  int error_code_;
+
+ public:
+  explicit WinErrorSink(int error_code) : error_code_(error_code) {}
+
+  void operator()(const Writer &w) const;
+};
+
+/**
+  Formats a message and throws SystemError with the description of the form
+  "<message>: <system-message>", where <message> is the formatted message and
+  <system-message> is the system message corresponding to the error code.
+  error_code is a Windows error code as given by GetLastError.
+ */
+inline Formatter<WinErrorSink> ThrowWinError(int error_code, StringRef format) {
+  Formatter<WinErrorSink> f(format, WinErrorSink(error_code));
+  return f;
+}
+
+/** A sink that writes output to a file. */
+class FileSink {
+ private:
+  std::FILE *file_;
+
+ public:
+  explicit FileSink(std::FILE *f) : file_(f) {}
+
+  /** Writes the output to a file. */
+  void operator()(const BasicWriter<char> &w) const {
+    if (std::fwrite(w.data(), w.size(), 1, file_) == 0)
+      ThrowSystemError(errno, "cannot write to file");
+  }
+};
+
+// Formats a string and prints it to stdout.
+// Example:
+//   Print("Elapsed time: {0:.2f} seconds") << 1.23;
+// TODO: wchar overload
+inline Formatter<FileSink> Print(StringRef format) {
+  Formatter<FileSink> f(format, FileSink(stdout));
+  return f;
+}
+
+enum Color { BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE };
+
+/**
+  A sink that writes output to a terminal using ANSI escape sequences
+  to specify color.
+ */
+class ANSITerminalSink {
+ private:
+  std::FILE *file_;
+  Color color_;
+
+ public:
+  ANSITerminalSink(std::FILE *f, Color c) : file_(f), color_(c) {}
+
+  /**
+    Writes the output to a terminal using ANSI escape sequences to
+    specify color.
+   */
+  void operator()(const BasicWriter<char> &w) const;
+};
+
+/**
+  Formats a string and prints it to stdout using ANSI escape sequences
+  to specify color (experimental).
+  Example:
+    PrintColored(fmt::RED, "Elapsed time: {0:.2f} seconds") << 1.23;
+ */
+inline Formatter<ANSITerminalSink> PrintColored(Color c, StringRef format) {
+  Formatter<ANSITerminalSink> f(format, ANSITerminalSink(stdout, c));
+  return f;
+}
+
+#if FMT_USE_VARIADIC_TEMPLATES && FMT_USE_RVALUE_REFERENCES
+
+template<typename... Args>
+inline Writer Format(StringRef format, const Args & ... args) {
+  Writer w;
+  w.Format(format, args...);
+  return std::move(w);
+}
+
+template<typename... Args>
+inline WWriter Format(WStringRef format, const Args & ... args) {
+  WWriter w;
+  w.Format(format, args...);
+  return std::move(w);
+}
+
+template<typename... Args>
+void Print(StringRef format, const Args & ... args) {
+  Writer w;
+  w.Format(format, args...);
+  std::fwrite(w.data(), 1, w.size(), stdout);
+}
+
+#endif  // FMT_USE_VARIADIC_TEMPLATES && FMT_USE_RVALUE_REFERENCES
 
 /**
   Fast integer formatter.
@@ -1470,7 +1701,7 @@ class FormatInt {
     *--buffer_end = internal::DIGITS[index];
     return buffer_end;
   }
-  
+
   void FormatSigned(LongLong value) {
     ULongLong abs_value = value;
     bool negative = value < 0;
@@ -1539,92 +1770,6 @@ inline void FormatDec(char *&buffer, T value) {
   internal::FormatDecimal(buffer, abs_value, num_digits);
   buffer += num_digits;
 }
-
-/**
-  \rst
-  Formats a string similarly to Python's `str.format
-  <http://docs.python.org/3/library/stdtypes.html#str.format>`__.
-  Returns a temporary formatter object that accepts arguments via
-  operator ``<<``.
-
-  *format* is a format string that contains literal text and replacement
-  fields surrounded by braces ``{}``. The formatter object replaces the
-  fields with formatted arguments and stores the output in a memory buffer.
-  The content of the buffer can be converted to ``std::string`` with
-  :cpp:func:`fmt::str()` or accessed as a C string with
-  :cpp:func:`fmt::c_str()`.
-
-  **Example**::
-
-    std::string message = str(Format("The answer is {}") << 42);
-
-  See also `Format String Syntax`_.
-  \endrst
-*/
-inline Formatter<> Format(StringRef format) {
-  Formatter<> f(format);
-  return f;
-}
-
-inline Formatter<NoAction, wchar_t> Format(WStringRef format) {
-  Formatter<NoAction, wchar_t> f(format);
-  return f;
-}
-
-/** A formatting action that writes formatted output to stdout. */
-class Write {
- public:
-  /** Writes the output to stdout. */
-  void operator()(const BasicWriter<char> &w) const {
-    std::fwrite(w.data(), 1, w.size(), stdout);
-  }
-};
-
-// Formats a string and prints it to stdout.
-// Example:
-//   Print("Elapsed time: {0:.2f} seconds") << 1.23;
-inline Formatter<Write> Print(StringRef format) {
-  Formatter<Write> f(format);
-  return f;
-}
-
-enum Color {BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE};
-
-/** A formatting action that writes colored output to stdout. */
-class ColorWriter {
- private:
-  Color color_;
-
- public:
-  explicit ColorWriter(Color c) : color_(c) {}
-
-  /** Writes the colored output to stdout. */
-  void operator()(const BasicWriter<char> &w) const;
-};
-
-// Formats a string and prints it to stdout with the given color.
-// Example:
-//   PrintColored(fmt::RED, "Elapsed time: {0:.2f} seconds") << 1.23;
-inline Formatter<ColorWriter> PrintColored(Color c, StringRef format) {
-  Formatter<ColorWriter> f(format, ColorWriter(c));
-  return f;
-}
-
-#if FMT_USE_VARIADIC_TEMPLATES && FMT_USE_RVALUE_REFERENCES
-template<typename... Args>
-inline Writer Format(const StringRef &format, const Args & ... args) {
-  Writer w;
-  w.Format(format, args...);
-  return std::move(w);
-}
-
-template<typename... Args>
-inline WWriter Format(const WStringRef &format, const Args & ... args) {
-  WWriter w;
-  w.Format(format, args...);
-  return std::move(w);
-}
-#endif  // FMT_USE_VARIADIC_TEMPLATES && FMT_USE_RVALUE_REFERENCES
 }
 
 // Restore warnings.

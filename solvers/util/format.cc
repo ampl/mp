@@ -33,10 +33,17 @@
 
 #include "format.h"
 
+#include <string.h>
+
 #include <cctype>
 #include <climits>
 #include <cmath>
 #include <cstdarg>
+
+#ifdef _WIN32
+# include <windows.h>
+# undef ERROR
+#endif
 
 using fmt::ULongLong;
 
@@ -161,6 +168,113 @@ void fmt::internal::ReportUnknownType(char code, const char *type) {
         << static_cast<unsigned>(code) << type));
 }
 
+#ifdef _WIN32
+
+fmt::internal::UTF8ToUTF16::UTF8ToUTF16(fmt::StringRef s) {
+  int length = MultiByteToWideChar(
+      CP_UTF8, MB_ERR_INVALID_CHARS, s.c_str(), -1, 0, 0);
+  static const char ERROR[] = "cannot convert string from UTF-8 to UTF-16";
+  if (length == 0)
+    ThrowSystemError(GetLastError(), ERROR);
+  buffer_.resize(length);
+  length = MultiByteToWideChar(
+    CP_UTF8, MB_ERR_INVALID_CHARS, s.c_str(), -1, &buffer_[0], length);
+  if (length == 0)
+    ThrowSystemError(GetLastError(), ERROR);
+}
+
+fmt::internal::UTF16ToUTF8::UTF16ToUTF8(fmt::WStringRef s) {
+  if (int error_code = Convert(s)) {
+    ThrowSystemError(GetLastError(),
+        "cannot convert string from UTF-16 to UTF-8");
+  }
+}
+
+int fmt::internal::UTF16ToUTF8::Convert(fmt::WStringRef s) {
+  int length = WideCharToMultiByte(CP_UTF8, 0, s.c_str(), -1, 0, 0, 0, 0);
+  if (length == 0)
+    return GetLastError();
+  buffer_.resize(length);
+  length = WideCharToMultiByte(
+    CP_UTF8, 0, s.c_str(), -1, &buffer_[0], length, 0, 0);
+  if (length == 0)
+    return GetLastError();
+  return 0;
+}
+
+#endif
+
+int fmt::internal::StrError(
+    int error_code, char *&buffer, std::size_t buffer_size) {
+  assert(buffer != 0 && buffer_size != 0);
+  int result = 0;
+#ifdef _GNU_SOURCE
+  char *message = strerror_r(error_code, buffer, buffer_size);
+  // If the buffer is full then the message is probably truncated.
+  if (message == buffer && strlen(buffer) == buffer_size - 1)
+    result = ERANGE;
+  buffer = message;
+#elif _WIN32
+  result = strerror_s(buffer, buffer_size, error_code);
+  // If the buffer is full then the message is probably truncated.
+  if (result == 0 && std::strlen(buffer) == buffer_size - 1)
+    result = ERANGE;
+#else
+  result = strerror_r(error_code, buffer, buffer_size);
+  if (result == -1)
+    result = errno;  // glibc versions before 2.13 return result in errno.
+#endif
+  return result;
+}
+
+void fmt::internal::FormatSystemErrorMessage(
+    fmt::Writer &out, int error_code, fmt::StringRef message) {
+  Array<char, INLINE_BUFFER_SIZE> buffer;
+  buffer.resize(INLINE_BUFFER_SIZE);
+  char *system_message = 0;
+  for (;;) {
+    system_message = &buffer[0];
+    int result = StrError(error_code, system_message, buffer.size());
+    if (result == 0)
+      break;
+    if (result != ERANGE) {
+      // Can't get error message, report error code instead.
+      out << message << ": error code = " << error_code;
+      return;
+    }
+    buffer.resize(buffer.size() * 2);
+  }
+  out << message << ": " << system_message;
+}
+
+#ifdef _WIN32
+void fmt::internal::FormatWinErrorMessage(
+    fmt::Writer &out, int error_code, fmt::StringRef message) {
+  class String {
+   private:
+    LPWSTR str_;
+
+   public:
+    String() : str_() {}
+    ~String() { LocalFree(str_); }
+    LPWSTR *ptr() { return &str_; }
+    LPCWSTR c_str() const { return str_; }
+  };
+  String system_message;
+  if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+      FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 0,
+      error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+      reinterpret_cast<LPWSTR>(system_message.ptr()), 0, 0)) {
+    UTF16ToUTF8 utf8_message;
+    if (!utf8_message.Convert(system_message.c_str())) {
+      out << message << ": " << c_str(utf8_message);
+      return;
+    }
+  }
+  // Can't get error message, report error code instead.
+  out << message << ": error code = " << error_code;
+}
+#endif
 
 // Fills the padding around the content and returns the pointer to the
 // content area.
@@ -688,12 +802,27 @@ void fmt::BasicWriter<Char>::FormatParser::Format(
   writer.buffer_.append(start, s);
 }
 
-void fmt::ColorWriter::operator()(const fmt::BasicWriter<char> &w) const {
+void fmt::SystemErrorSink::operator()(const fmt::Writer &w) const {
+  Writer message;
+  internal::FormatSystemErrorMessage(message, error_code_, w.c_str());
+  throw SystemError(message.c_str(), error_code_);
+}
+
+#ifdef _WIN32
+void fmt::WinErrorSink::operator()(const Writer &w) const {
+  Writer message;
+  internal::FormatWinErrorMessage(message, error_code_, w.c_str());
+  throw SystemError(message.c_str(), error_code_);
+}
+#endif
+
+void fmt::ANSITerminalSink::operator()(
+    const fmt::BasicWriter<char> &w) const {
   char escape[] = "\x1b[30m";
   escape[3] = '0' + static_cast<char>(color_);
-  std::fputs(escape, stdout);
-  std::fwrite(w.data(), 1, w.size(), stdout);
-  std::fputs(RESET_COLOR, stdout);
+  std::fputs(escape, file_);
+  std::fwrite(w.data(), 1, w.size(), file_);
+  std::fputs(RESET_COLOR, file_);
 }
 
 // Explicit instantiations for char.

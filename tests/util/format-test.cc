@@ -30,6 +30,7 @@
 #include <climits>
 #include <cstdarg>
 #include <cstring>
+#include <fstream>
 #include <iomanip>
 #include <memory>
 #include <sstream>
@@ -39,6 +40,37 @@
 #ifdef _WIN32
 # include <windows.h>
 # include <crtdbg.h>
+#endif
+
+#if FMT_USE_DUP
+
+# include <sys/types.h>
+# include <sys/stat.h>
+# include <fcntl.h>
+
+# ifdef _WIN32
+
+#  include <io.h>
+
+#  define O_WRONLY _O_WRONLY
+#  define O_CREAT _O_CREAT
+#  define O_TRUNC _O_TRUNC
+#  define S_IRUSR _S_IREAD
+#  define S_IWUSR _S_IWRITE
+#  define close _close
+#  define dup _dup
+#  define dup2 _dup2
+
+namespace {
+int open(const char *path, int oflag, int pmode) {
+  int fd = -1;
+  _sopen_s(&fd, path, oflag, _SH_DENYNO, pmode);
+  return fd;
+}
+}
+# else
+#  include <unistd.h>
+# endif
 #endif
 
 #include "solvers/util/format.h"
@@ -68,7 +100,7 @@ using fmt::pad;
     } \
     catch (expected_exception const& e) { \
       gtest_caught_expected = true; \
-      if (std::strcmp(message, e.what()) != 0) \
+      if (std::string(message) != e.what()) \
         throw; \
     } \
     catch (...) { \
@@ -90,6 +122,8 @@ using fmt::pad;
 #define EXPECT_THROW_MSG(statement, expected_exception, expected_message) \
   FORMAT_TEST_THROW_(statement, expected_exception, expected_message, \
       GTEST_NONFATAL_FAILURE_)
+
+namespace {
 
 // Checks if writing value to BasicWriter<Char> produces the same result
 // as writing it to std::basic_ostringstream<Char>.
@@ -156,6 +190,14 @@ void SPrintf(char *buffer, const char *format, ...) {
   va_end(args);
 }
 
+std::string ReadFile(fmt::StringRef filename) {
+  std::ifstream out(filename.c_str());
+  std::stringstream content;
+  content << out.rdbuf();
+  return content.str();
+}
+}
+
 TEST(UtilTest, Increment) {
   char s[10] = "123";
   Increment(s);
@@ -187,6 +229,94 @@ TEST(UtilTest, CountDigits) {
   TestCountDigits(uint32_t());
   TestCountDigits(uint64_t());
 }
+
+#ifdef _WIN32
+TEST(UtilTest, UTF16ToUTF8) {
+  std::string s = "ёжик";
+  fmt::internal::UTF16ToUTF8 u(L"\x0451\x0436\x0438\x043A");
+  EXPECT_EQ(s, fmt::str(u));
+  EXPECT_EQ(s.size(), u.size());
+}
+
+TEST(UtilTest, UTF8ToUTF16) {
+  std::string s = "лошадка";
+  fmt::internal::UTF8ToUTF16 u(s.c_str());
+  EXPECT_EQ(L"\x043B\x043E\x0448\x0430\x0434\x043A\x0430", fmt::str(u));
+  EXPECT_EQ(7, u.size());
+}
+
+// TODO: test UTF16ToUTF8::Convert
+#endif  // _WIN32
+
+TEST(UtilTest, StrError) {
+  using fmt::internal::StrError;
+  char *message = 0;
+  char buffer[BUFFER_SIZE];
+#ifndef NDEBUG
+  EXPECT_DEBUG_DEATH(StrError(EDOM, message = 0, 0), "Assertion");
+  EXPECT_DEBUG_DEATH(StrError(EDOM, message = buffer, 0), "Assertion");
+#endif
+  buffer[0] = 'x';
+#ifdef _GNU_SOURCE
+  // Use invalid error code to make sure that StrError returns an error
+  // message in the buffer rather than a pointer to a static string.
+  int error_code = -1;
+#else
+  int error_code = EDOM;
+#endif
+  int result = StrError(error_code, message = buffer, 1);
+  EXPECT_EQ(buffer, message);  // Message should point to buffer.
+  EXPECT_EQ(ERANGE, result);
+  EXPECT_STREQ("", message);
+  result = StrError(error_code, message = buffer, BUFFER_SIZE);
+  EXPECT_EQ(0, result);
+  std::size_t message_size = std::strlen(message);
+  EXPECT_GE(BUFFER_SIZE - 1u, message_size);
+  EXPECT_STREQ(strerror(error_code), message);
+  result = StrError(error_code, message = buffer, message_size);
+  EXPECT_EQ(ERANGE, result);
+}
+
+TEST(UtilTest, SystemError) {
+  fmt::SystemError e(fmt::StringRef("test"), 42);
+  EXPECT_STREQ("test", e.what());
+  EXPECT_EQ(42, e.error_code());
+}
+
+TEST(UtilTest, ThrowSystemError) {
+  const int TEST_ERROR = EDOM;
+  fmt::SystemError error("", 0);
+  try {
+    fmt::ThrowSystemError(TEST_ERROR, "test {}") << "error";
+  } catch (const fmt::SystemError &e) {
+    error = e;
+  }
+  EXPECT_EQ(str(fmt::Format("test error: {}") << strerror(TEST_ERROR)),
+      error.what());
+  EXPECT_EQ(TEST_ERROR, error.error_code());
+}
+
+#ifdef _WIN32
+TEST(UtilTest, ThrowWinError) {
+  const int TEST_ERROR = ERROR_FILE_EXISTS;
+  fmt::SystemError error("", 0);
+  try {
+    fmt::ThrowWinError(TEST_ERROR, "test {}") << "error";
+  } catch (const fmt::SystemError &e) {
+    error = e;
+  }
+  LPWSTR message = 0;
+  FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+      FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 0,
+      ERROR_FILE_EXISTS, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+      reinterpret_cast<LPWSTR>(&message), 0, 0);
+  fmt::internal::UTF16ToUTF8 utf8_message(message);
+  LocalFree(message);
+  EXPECT_EQ(str(fmt::Format("test error: {}") << fmt::str(utf8_message)),
+      error.what());
+  EXPECT_EQ(TEST_ERROR, error.error_code());
+}
+#endif
 
 class TestString {
  private:
@@ -231,6 +361,36 @@ TEST(ArrayTest, MoveCtor) {
   // a dynamically allocated buffer.
   array.push_back('b');
   Array<char, 5> array2(std::move(array));
+  // Move should rip the guts of the first array.
+  EXPECT_EQ(inline_buffer_ptr, &array[0]);
+  EXPECT_EQ("testab", std::string(&array2[0], array2.size()));
+  EXPECT_GT(array2.capacity(), 5u);
+}
+
+void CheckMoveAssignArray(const char *str, Array<char, 5> &array) {
+  Array<char, 5> array2;
+  array2 = std::move(array);
+  // Move shouldn't destroy the inline content of the first array.
+  EXPECT_EQ(str, std::string(&array[0], array.size()));
+  EXPECT_EQ(str, std::string(&array2[0], array2.size()));
+  EXPECT_EQ(5, array2.capacity());
+}
+
+TEST(ArrayTest, MoveAssignment) {
+  Array<char, 5> array;
+  const char test[] = "test";
+  array.append(test, test + 4);
+  CheckMoveAssignArray("test", array);
+  // Adding one more character fills the inline buffer, but doesn't cause
+  // dynamic allocation.
+  array.push_back('a');
+  CheckMoveAssignArray("testa", array);
+  const char *inline_buffer_ptr = &array[0];
+  // Adding one more character causes the content to move from the inline to
+  // a dynamically allocated buffer.
+  array.push_back('b');
+  Array<char, 5> array2;
+  array2 = std::move(array);
   // Move should rip the guts of the first array.
   EXPECT_EQ(inline_buffer_ptr, &array[0]);
   EXPECT_EQ("testab", std::string(&array2[0], array2.size()));
@@ -341,6 +501,36 @@ TEST(WriterTest, MoveCtor) {
   // a dynamically allocated buffer.
   w << '*';
   Writer w2(std::move(w));
+  // Move should rip the guts of the first writer.
+  EXPECT_EQ(inline_buffer_ptr, w.data());
+  EXPECT_EQ(s + '*', w2.str());
+}
+
+void CheckMoveAssignWriter(const std::string &str, Writer &w) {
+  Writer w2;
+  w2 = std::move(w);
+  // Move shouldn't destroy the inline content of the first writer.
+  EXPECT_EQ(str, w.str());
+  EXPECT_EQ(str, w2.str());
+}
+
+TEST(WriterTest, MoveAssignment) {
+  Writer w;
+  w << "test";
+  CheckMoveAssignWriter("test", w);
+  // This fills the inline buffer, but doesn't cause dynamic allocation.
+  std::string s;
+  for (int i = 0; i < fmt::internal::INLINE_BUFFER_SIZE; ++i)
+    s += '*';
+  w.Clear();
+  w << s;
+  CheckMoveAssignWriter(s, w);
+  const char *inline_buffer_ptr = w.data();
+  // Adding one more character causes the content to move from the inline to
+  // a dynamically allocated buffer.
+  w << '*';
+  Writer w2;
+  w2 = std::move(w);
   // Move should rip the guts of the first writer.
   EXPECT_EQ(inline_buffer_ptr, w.data());
   EXPECT_EQ(s + '*', w2.str());
@@ -1281,7 +1471,7 @@ TEST(FormatterTest, FormatChar) {
 TEST(FormatterTest, FormatWChar) {
   EXPECT_EQ(L"a", str(Format(L"{0}") << L'a'));
   // This shouldn't compile:
-  //Format("{0}") << L'a';
+  //Format("{}") << L'a';
 }
 
 TEST(FormatterTest, FormatCString) {
@@ -1373,6 +1563,13 @@ TEST(FormatterTest, FormatExamples) {
     std::string s = writer.str(); // s == 0123456789
     EXPECT_EQ("0123456789", s);
   }
+
+  EXPECT_THROW({
+    const char *filename = "nonexistent";
+    FILE *f = fopen(filename, "r");
+    if (!f)
+      fmt::ThrowSystemError(errno, "Cannot open file '{}'") << filename;
+  }, fmt::SystemError);
 }
 
 TEST(FormatterTest, StrNamespace) {
@@ -1399,38 +1596,84 @@ TEST(StringRefTest, ConvertToString) {
   EXPECT_EQ("abc", s);
 }
 
-struct CountCalls {
-  int &num_calls;
+TEST(FormatterTest, Ctor) {
+  fmt::Formatter<> f1("test");
+  fmt::Formatter<> f1copy(f1);
+  fmt::Formatter<> f2("test", fmt::NullSink());
+  fmt::Formatter<fmt::NullSink> f3("test");
+  fmt::Formatter<fmt::NullSink, wchar_t> f4(L"test");
+  fmt::Formatter<fmt::NullSink, wchar_t> f4copy(f4);
+  fmt::Formatter<fmt::NullSink, wchar_t> f5(L"test", fmt::NullSink());
+}
 
-  CountCalls(int &num_calls) : num_calls(num_calls) {}
+// A sink that counts the number of times the output is written to it.
+struct CountingSink {
+  int &num_writes;
+
+  explicit CountingSink(int &num_writes) : num_writes(num_writes) {}
 
   void operator()(const Writer &) const {
-    ++num_calls;
+    ++num_writes;
   }
 };
 
-TEST(FormatterTest, Action) {
-  int num_calls = 0;
+TEST(FormatterTest, Sink) {
+  int num_writes = 0;
   {
-    fmt::Formatter<CountCalls> af("test", CountCalls(num_calls));
-    EXPECT_EQ(0, num_calls);
+    fmt::Formatter<CountingSink> f("test", CountingSink(num_writes));
+    EXPECT_EQ(0, num_writes);
   }
-  EXPECT_EQ(1, num_calls);
+  EXPECT_EQ(1, num_writes);
 }
 
-TEST(FormatterTest, ActionNotCalledOnError) {
-  int num_calls = 0;
+TEST(FormatterTest, Move) {
+  // Test if formatting is performed once if we "move" a formatter.
+  int num_writes = 0;
   {
-    typedef fmt::Formatter<CountCalls> TestFormatter;
-    EXPECT_THROW(TestFormatter af("{0", CountCalls(num_calls)), FormatError);
+    typedef fmt::Formatter<CountingSink> TestFormatter;
+    TestFormatter *f = new TestFormatter("test", CountingSink(num_writes));
+    TestFormatter f2(*f);
+    delete f;
+    EXPECT_EQ(0, num_writes);
   }
-  EXPECT_EQ(0, num_calls);
+  EXPECT_EQ(1, num_writes);
 }
+
+TEST(FormatterTest, OutputNotWrittenOnError) {
+  int num_writes = 0;
+  {
+    typedef fmt::Formatter<CountingSink> TestFormatter;
+    EXPECT_THROW(TestFormatter f("{0", CountingSink(num_writes)), FormatError);
+  }
+  EXPECT_EQ(0, num_writes);
+}
+
+TEST(FormatterTest, FileSink) {
+  FILE *f = std::fopen("out", "w");
+  fmt::FileSink fs(f);
+  fs(Writer() << "test");
+  std::fclose(f);
+  EXPECT_EQ("test", ReadFile("out"));
+}
+
+TEST(FormatterTest, FileSinkWriteError) {
+  FILE *f = std::fopen("out", "r");
+  fmt::FileSink fs(f);
+  int result = std::fwrite(" ", 1, 1, f);
+  int error_code = errno;
+  EXPECT_EQ(0, result);
+  std::string error_message =
+      str(Format("{}: {}") << "cannot write to file" << strerror(error_code));
+  EXPECT_THROW_MSG(fs(Writer() << "test"), fmt::SystemError, error_message);
+  std::fclose(f);
+}
+
+// TODO: test SystemErrorSink, WinErrorSink
 
 // The test doesn't compile on older compilers which follow C++03 and
 // require an accessible copy constructor when binding a temporary to
 // a const reference.
-#if __GNUC__ >= 4 && __GNUC_MINOR__ >= 7
+#if FMT_GCC_VERSION >= 407
 TEST(FormatterTest, ArgLifetime) {
   // The following code is for testing purposes only. It is a definite abuse
   // of the API and shouldn't be used in real applications.
@@ -1503,7 +1746,7 @@ TEST(FormatterTest, Examples) {
     Format("The answer is {:d}", "forty-two"), FormatError,
     "unknown format code 'd' for string");
   EXPECT_EQ(L"Cyrillic letter \x42e",
-      str(Format(L"Cyrillic letter {}", L'\x42e')));
+    str(Format(L"Cyrillic letter {}", L'\x42e')));
 #endif
 }
 
@@ -1550,10 +1793,33 @@ TEST(FormatIntTest, FormatDec) {
   EXPECT_EQ("42", FormatDec(42ull));
 }
 
-TEST(ColorTest, PrintColored) {
+#ifdef FMT_USE_DUP
+
+TEST(FormatTest, PrintColored) {
+  // Temporarily redirect stdout to a file and check if PrintColored adds
+  // necessary ANSI escape sequences.
+  std::fflush(stdout);
+  int saved_stdio = dup(1);
+  EXPECT_NE(-1, saved_stdio);
+  int out = open("out", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+  EXPECT_NE(-1, out);
+  EXPECT_NE(-1, dup2(out, 1));
+  close(out);
   fmt::PrintColored(fmt::RED, "Hello, {}!\n") << "world";
-  // TODO
+  std::fflush(stdout);
+  EXPECT_NE(-1, dup2(saved_stdio, 1));
+  close(saved_stdio);
+  EXPECT_EQ("\x1b[31mHello, world!\n\x1b[0m", ReadFile("out"));
 }
+
+#endif
+
+#if FMT_USE_VARIADIC_TEMPLATES && FMT_USE_RVALUE_REFERENCES
+TEST(FormatTest, Variadic) {
+  EXPECT_EQ("Hello, world!1", str(Format("Hello, {}!{}", "world", 1)));
+  EXPECT_EQ(L"Hello, world!1", str(Format(L"Hello, {}!{}", L"world", 1)));
+}
+#endif  // FMT_USE_VARIADIC_TEMPLATES
 
 template <typename T>
 std::string str(const T &value) {
@@ -1565,13 +1831,6 @@ TEST(StrTest, Convert) {
   std::string s = str(Date(2012, 12, 9));
   EXPECT_EQ("2012-12-9", s);
 }
-
-#if FMT_USE_VARIADIC_TEMPLATES && FMT_USE_RVALUE_REFERENCES
-TEST(FormatTest, Variadic) {
-  EXPECT_EQ("Hello, world!1", str(Format("Hello, {}!{}", "world", 1)));
-  EXPECT_EQ(L"Hello, world!1", str(Format(L"Hello, {}!{}", L"world", 1)));
-}
-#endif  // FMT_USE_VARIADIC_TEMPLATES
 
 int main(int argc, char **argv) {
 #ifdef _WIN32

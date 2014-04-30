@@ -347,7 +347,7 @@ class GecodeSolver : public Solver {
     status_ = status;
   }
 
-  fmt::Formatter<fmt::Write> Output(fmt::StringRef format);
+  fmt::Formatter<fmt::FileSink> Output(fmt::StringRef format);
 
   class Stop : public Gecode::Search::Stop {
    private:

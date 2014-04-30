@@ -37,7 +37,6 @@
 # include <mach-o/dyld.h>
 #elif defined(_WIN32)
 # include <windows.h>
-# undef ERROR
 # undef min
 #else
 # include <unistd.h>
@@ -99,7 +98,7 @@ path ampl::GetExecutablePath() {
   for (;;) {
     size = readlink("/proc/self/exe", &buffer[0], buffer.size());
     if (size < 0)
-      ThrowSystemError(errno, "cannot get executable path");
+      fmt::ThrowSystemError(errno, "cannot get executable path");
     if (static_cast<size_t>(size) != buffer.size()) break;
     buffer.resize(2 * buffer.size());
   }
@@ -130,7 +129,7 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
    public:
     explicit File(const char *filename) : fd_(open(filename, O_RDONLY)) {
       if (fd_ == -1)
-        ThrowSystemError(errno, "cannot open file {}") << filename;
+        fmt::ThrowSystemError(errno, "cannot open file {}") << filename;
     }
     ~File() { close(fd_); }
     operator int() const { return fd_; }
@@ -140,7 +139,7 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
   File file(filename.c_str());
   struct stat file_stat = {};
   if (fstat(file, &file_stat) == -1)
-    ThrowSystemError(errno, "cannot get attributes of file {}") << filename;
+    fmt::ThrowSystemError(errno, "cannot get attributes of file {}") << filename;
   size_ = file_stat.st_size;
   // TODO: don't use mmap if file size is a multiple of page size
   //size_t full_size = RoundUpToMultipleOf(size_, sysconf(_SC_PAGESIZE));
@@ -149,7 +148,7 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
   start_ = reinterpret_cast<char*>(
       mmap(0, size_, PROT_READ, MAP_FILE | MAP_PRIVATE, file, 0));
   if (start_ == MAP_FAILED)
-    ThrowSystemError(errno, "cannot map file {}") << filename;
+    fmt::ThrowSystemError(errno, "cannot map file {}") << filename;
 }
 
 ampl::MemoryMappedFile::~MemoryMappedFile() {
@@ -165,47 +164,13 @@ path path::temp_directory_path() {
   enum { BUFFER_SIZE = MAX_PATH + 1 };
   wchar_t buffer[BUFFER_SIZE];
   DWORD result = GetTempPathW(BUFFER_SIZE, &buffer[0]);
-  if (result == 0) {
-    ThrowSystemError(GetLastError(),
-        "cannot get path to the temporary directory");
-  }
+  if (result == 0)
+    fmt::ThrowWinError(GetLastError(), "cannot get path to the temporary directory");
   assert(result <= BUFFER_SIZE);
   buffer[BUFFER_SIZE - 1] = L'\0';
   UTF16ToUTF8 utf8_str(buffer);
   const char *s = utf8_str;
   return path(s, s + utf8_str.size());
-}
-
-ampl::UTF8ToUTF16::UTF8ToUTF16(fmt::StringRef s) {
-  int length = MultiByteToWideChar(
-      CP_UTF8, MB_ERR_INVALID_CHARS, s.c_str(), -1, 0, 0);
-  static const char ERROR[] = "cannot convert string from UTF-8 to UTF-16";
-  if (length == 0)
-    ThrowSystemError(GetLastError(), ERROR);
-  buffer_.resize(length);
-  length = MultiByteToWideChar(
-    CP_UTF8, MB_ERR_INVALID_CHARS, s.c_str(), -1, &buffer_[0], length);
-  if (length == 0)
-    ThrowSystemError(GetLastError(), ERROR);
-}
-
-ampl::UTF16ToUTF8::UTF16ToUTF8(fmt::WStringRef s) {
-  if (int error_code = Convert(s)) {
-    ThrowSystemError(GetLastError(),
-        "cannot convert string from UTF-16 to UTF-8");
-  }
-}
-
-int ampl::UTF16ToUTF8::Convert(fmt::WStringRef s) {
-  int length = WideCharToMultiByte(CP_UTF8, 0, s.c_str(), -1, 0, 0, 0, 0);
-  if (length == 0)
-    return GetLastError();
-  buffer_.resize(length);
-  length = WideCharToMultiByte(
-    CP_UTF8, 0, s.c_str(), -1, &buffer_[0], length, 0, 0);
-  if (length == 0)
-    return GetLastError();
-  return 0;
 }
 
 path ampl::GetExecutablePath() {
@@ -215,7 +180,7 @@ path ampl::GetExecutablePath() {
   for (;;) {
     size = GetModuleFileNameW(0, &buffer[0], static_cast<DWORD>(buffer.size()));
     if (size == 0)
-      ThrowSystemError(GetLastError(), "cannot get executable path");
+      fmt::ThrowWinError(GetLastError(), "cannot get executable path");
     if (size < buffer.size()) break;
     buffer.resize(2 * buffer.size());
   }
@@ -238,12 +203,12 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
   Handle file(CreateFileW(UTF8ToUTF16(filename.c_str()), GENERIC_READ,
       FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0));
   if (file == INVALID_HANDLE_VALUE)
-    ThrowSystemError(GetLastError(), "cannot open file {}") << filename;
+    fmt::ThrowWinError(GetLastError(), "cannot open file {}") << filename;
 
   // Get file size and check if it is not a multiple of a memory page size.
   LARGE_INTEGER size = {};
   if (!GetFileSizeEx(file, &size))
-    ThrowSystemError(GetLastError(), "cannot get size of file {}") << filename;
+    fmt::ThrowWinError(GetLastError(), "cannot get size of file {}") << filename;
   SYSTEM_INFO si = {};
   GetSystemInfo(&si);
   size_ = size.QuadPart;
@@ -253,13 +218,13 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
   // Map file to memory.
   Handle mapping(CreateFileMappingW(file, 0, PAGE_READONLY, 0, 0, 0));
   if (!mapping) {
-    ThrowSystemError(GetLastError(),
+    fmt::ThrowWinError(GetLastError(),
         "cannot create file mapping for {}") << filename;
   }
   start_ = reinterpret_cast<char*>(
       MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0));
   if (!start_)
-    ThrowSystemError(GetLastError(), "cannot map file {}");
+    fmt::ThrowWinError(GetLastError(), "cannot map file {}") << filename;
 }
 
 ampl::MemoryMappedFile::~MemoryMappedFile() {
