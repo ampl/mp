@@ -137,12 +137,12 @@ void LinkFile(fmt::StringRef filename, fmt::StringRef linkname) {
 #ifndef _WIN32
   int result = link(filename.c_str(), linkname.c_str());
   if (result && errno != EEXIST) {
-    ampl::ThrowSystemError(errno, "cannot create a symlink from {} to {}")
+    fmt::ThrowSystemError(errno, "cannot create a symlink from {} to {}")
       << filename.c_str() << linkname.c_str();
   }
 #else
   if (!CopyFileW(UTF8ToUTF16(filename), UTF8ToUTF16(linkname), FALSE)) {
-    ampl::ThrowSystemError(GetLastError(), "cannot copy file {} to {}")
+    fmt::ThrowSystemError(GetLastError(), "cannot copy file {} to {}")
       << filename.c_str() << linkname.c_str();
   }
 #endif
@@ -174,22 +174,6 @@ TEST(OSTest, GetExecutablePathUnicode) {
   EXPECT_EQ(ending, path.size() >= ending.size() ?
       path.substr(path.size() - ending.size()) : path);
 }
-
-#ifdef _WIN32
-TEST(OSTest, UTF16ToUTF8) {
-  std::string s = "ёжик";
-  UTF16ToUTF8 u(L"\x0451\x0436\x0438\x043A");
-  EXPECT_STREQ(s.c_str(), u);
-  EXPECT_EQ(s.size(), u.size());
-}
-
-TEST(OSTest, UTF8ToUTF16) {
-  std::string s = "лошадка";
-  UTF8ToUTF16 u(s.c_str());
-  EXPECT_STREQ(L"\x043B\x043E\x0448\x0430\x0434\x043A\x0430", u);
-  EXPECT_EQ(7, u.size());
-}
-#endif  // _WIN32
 
 TEST(MemoryMappedFileTest, MapZeroTerminated) {
   const char *content = "some content";
@@ -265,6 +249,6 @@ TEST(MemoryMappedFileTest, CloseFile) {
 #endif
 
 TEST(MemoryMappedFileTest, NonexistentFile) {
-  EXPECT_THROW(MemoryMappedFile("nonexistent"), ampl::SystemError);
+  EXPECT_THROW(MemoryMappedFile("nonexistent"), fmt::SystemError);
 }
 }
