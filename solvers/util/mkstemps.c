@@ -34,8 +34,10 @@
 #endif
 
 #ifdef _WIN32
+# include <io.h>
 # include <process.h>
 # define getpid _getpid
+# define open _open
 #else
 # include <unistd.h>
 #endif
