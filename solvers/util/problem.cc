@@ -174,12 +174,14 @@ TempFiles::TempFiles() {
   std::string temp_dir = path::temp_directory_path().string();
   const char *s = &temp_dir[0];
   name_.append(s, s + temp_dir.size());
-  const char TEMPLATE[] = "XXXXXX.nl";
+  const char TEMPLATE[] = "/XXXXXX.nl";
   name_.append(TEMPLATE, TEMPLATE + sizeof(TEMPLATE));  // include nul char
   const int SUFFIX_LEN = 3;  // length of the ".nl" suffix
   int fd = mkstemps(&name_[0], SUFFIX_LEN);
-  if (fd == -1)
-    fmt::ThrowSystemError(errno, "cannot create temporary file");
+  if (fd == -1) {
+    fmt::ThrowSystemError(errno,
+        "cannot create temporary file {}") << &name_[0];
+  }
   close(fd);
 }
 
@@ -290,8 +292,8 @@ void Problem::Solve(fmt::StringRef solver_name,
   int exit_code = std::system(
       c_str(fmt::Format("{} {} -AMPL") << solver_name.c_str() << temp.stub()));
   if (exit_code != 0) {
-    throw Error(fmt::Format("Error running solver {}, exit code = {}")
-        << solver_name.c_str() << exit_code);
+    ThrowError("Error running solver {}, exit code = {}")
+        << solver_name.c_str() << exit_code;
   }
   sol.Read(temp.stub(), num_vars() + (pc ? pc->num_vars() : 0),
       num_cons() + (pc ? pc->num_cons() : 0));
