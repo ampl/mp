@@ -60,20 +60,13 @@ TEST(ErrorTest, ReportSystemError) {
 
 #ifdef _WIN32
 TEST(ErrorTest, ReportWinError) {
-  const int TEST_ERROR = ERROR_FILE_EXISTS;
-  LPWSTR message = 0;
-  FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-      FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 0,
-      ERROR_FILE_EXISTS, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-      reinterpret_cast<LPWSTR>(&message), 0, 0);
-  fmt::internal::UTF16ToUTF8 utf8_message(message);
-  LocalFree(message);
+  fmt::Writer message;
+  fmt::FormatWinErrorMessage(message, ERROR_FILE_EXISTS, "test error");
   EXPECT_EXIT({
-    ampl::ReportSystemError(TEST_ERROR, "test error");
+    ampl::ReportWinError(TEST_ERROR, "test error");
     std::fprintf(stderr, "end\n");
     std::exit(0);
-  }, ::testing::ExitedWithCode(0),
-      str(fmt::Format("test error: {}\nend\n") << fmt::str(utf8_message)));
+  }, ::testing::ExitedWithCode(0), str(message));
 }
 #endif
 }
