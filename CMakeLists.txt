@@ -93,12 +93,12 @@ endif ()
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)
   set(HAVE_GSL 1)
-  set(get_amplgsl_version solvers/amplgsl/gen-decls >> versions)
+  set(get_amplgsl_version $<TARGET_FILE:gen-decls> >> versions)
 endif ()
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/coin/CMakeLists.txt)
   set(HAVE_COIN 1)
-  set(get_cbc_version solvers/coin/bin/cbc -v -AMPL >> versions)
+  set(get_cbc_version $<TARGET_FILE:cbc-executable> -v -AMPL >> versions)
 
   # Workaround for f90cache which accept only modified name for GNU fortran
   # compilers in the form gfortran-4.x.
@@ -123,7 +123,7 @@ endif ()
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/gecode/lib/CMakeLists.txt)
   set(HAVE_GECODE 1)
-  set(get_gecode_version solvers/gecode/gecode -v >> versions)
+  set(get_gecode_version $<TARGET_FILE:gecode> -v >> versions)
 endif ()
 
 file(GLOB JACOP_PATH solvers/jacop/lib/JaCoP-*.jar)
@@ -143,7 +143,7 @@ if (JACOP_PATH)
     endforeach ()
 
     set(HAVE_JACOP 1)
-    set(get_jacop_version solvers/jacop/jacop -v >> versions)
+    set(get_jacop_version $<TARGET_FILE:jacop> -v >> versions)
   endif ()
 endif ()
 
