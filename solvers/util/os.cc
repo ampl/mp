@@ -168,8 +168,8 @@ path path::temp_directory_path() {
     fmt::ThrowWinError(GetLastError(), "cannot get path to the temporary directory");
   assert(result <= BUFFER_SIZE);
   buffer[BUFFER_SIZE - 1] = L'\0';
-  UTF16ToUTF8 utf8_str(buffer);
-  const char *s = utf8_str;
+  fmt::internal::UTF16ToUTF8 utf8_str(buffer);
+  const char *s = fmt::c_str(utf8_str);
   return path(s, s + utf8_str.size());
 }
 
@@ -184,8 +184,8 @@ path ampl::GetExecutablePath() {
     if (size < buffer.size()) break;
     buffer.resize(2 * buffer.size());
   }
-  UTF16ToUTF8 utf8_str(&buffer[0]);
-  const char *s = utf8_str;
+  fmt::internal::UTF16ToUTF8 utf8_str(&buffer[0]);
+  const char *s = fmt::c_str(utf8_str);
   return path(s, s + utf8_str.size());
 }
 
@@ -200,7 +200,8 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
   };
 
   // Open file.
-  Handle file(CreateFileW(UTF8ToUTF16(filename.c_str()), GENERIC_READ,
+  Handle file(CreateFileW(
+      fmt::c_str(fmt::internal::UTF8ToUTF16(filename.c_str())), GENERIC_READ,
       FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0));
   if (file == INVALID_HANDLE_VALUE)
     fmt::ThrowWinError(GetLastError(), "cannot open file {}") << filename;

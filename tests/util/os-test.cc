@@ -41,11 +41,6 @@
 using ampl::MemoryMappedFile;
 using ampl::path;
 
-#ifdef _WIN32
-using ampl::UTF8ToUTF16;
-using ampl::UTF16ToUTF8;
-#endif
-
 using std::string;
 
 namespace {
@@ -112,7 +107,7 @@ TEST(PathTest, TempDirectoryPath) {
   DWORD result = GetTempPathW(MAX_PATH + 1, buffer);
   EXPECT_GT(result, 0);
   EXPECT_LE(result, MAX_PATH);
-  EXPECT_EQ(std::string(UTF16ToUTF8(buffer)),
+  EXPECT_EQ(fmt::str(fmt::internal::UTF16ToUTF8(buffer)),
       path::temp_directory_path().string());
 #endif
 }
@@ -141,7 +136,9 @@ void LinkFile(fmt::StringRef filename, fmt::StringRef linkname) {
       << filename.c_str() << linkname.c_str();
   }
 #else
-  if (!CopyFileW(UTF8ToUTF16(filename), UTF8ToUTF16(linkname), FALSE)) {
+  using fmt::internal::UTF8ToUTF16;
+  using fmt::c_str;
+  if (!CopyFileW(c_str(UTF8ToUTF16(filename)), c_str(UTF8ToUTF16(linkname)), FALSE)) {
     fmt::ThrowSystemError(GetLastError(), "cannot copy file {} to {}")
       << filename.c_str() << linkname.c_str();
   }
