@@ -42,7 +42,7 @@ void ampl::ReportSystemError(
 }
 
 #ifdef _WIN32
-void ampl::ReportSystemError(
+void ampl::ReportWinError(
     int error_code, const char *message) FMT_NOEXCEPT(true) {
   ReportError(fmt::internal::FormatWinErrorMessage, error_code, message);
 }
