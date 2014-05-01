@@ -49,21 +49,21 @@ TEST(ErrorTest, ThrowError) {
 }
 
 TEST(ErrorTest, ReportSystemError) {
-  const int TEST_ERROR = EDOM;
   EXPECT_EXIT({
-    ampl::ReportSystemError(TEST_ERROR, "test error");
+    ampl::ReportSystemError(EDOM, "test error");
     std::fprintf(stderr, "end\n");
     std::exit(0);
   }, ::testing::ExitedWithCode(0),
-      str(fmt::Format("test error: {}\nend\n") << strerror(TEST_ERROR)));
+      str(fmt::Format("test error: {}\nend\n") << strerror(EDOM)));
 }
 
 #ifdef _WIN32
 TEST(ErrorTest, ReportWinError) {
   fmt::Writer message;
-  fmt::FormatWinErrorMessage(message, ERROR_FILE_EXISTS, "test error");
+  fmt::internal::FormatWinErrorMessage(
+      message, ERROR_FILE_EXISTS, "test error");
   EXPECT_EXIT({
-    ampl::ReportWinError(TEST_ERROR, "test error");
+    ampl::ReportWinError(ERROR_FILE_EXISTS, "test error");
     std::fprintf(stderr, "end\n");
     std::exit(0);
   }, ::testing::ExitedWithCode(0), str(message));
