@@ -3,7 +3,7 @@
 # Suppress CPLEX/Concert warnings:
 .*ilosatomi.h: null character\(s\) ignored
 .*ilomodel.h: private field '.*' is not used
-^concert.lib: LNK4099: PDB 'concert.pdb' was not found.*
+.*concert.lib: LNK4099: PDB 'concert.pdb' was not found.*
 .*: could not create compact unwind
 
 .*solvers[/\\][a-z0-9_]+.c$: .*
