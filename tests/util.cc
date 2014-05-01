@@ -87,7 +87,7 @@ void ChangeDirectory(fmt::StringRef path) {
 int ExecuteShellCommand(
     fmt::StringRef command, bool throw_on_nonzero_exit_code) {
 #ifdef _WIN32
-  std::wstring command_str((ampl::UTF8ToUTF16(command)));
+  std::wstring command_str(fmt::str(fmt::internal::UTF8ToUTF16(command)));
   std::replace(command_str.begin(), command_str.end(), L'/', L'\\');
   int result = _wsystem(command_str.c_str());
 #else
