@@ -245,7 +245,34 @@ TEST(UtilTest, UTF8ToUTF16) {
   EXPECT_EQ(7, u.size());
 }
 
-// TODO: test UTF16ToUTF8::Convert
+template <typename Converter>
+void CheckUTFConversionError(const char *message) {
+  fmt::Writer out;
+  fmt::internal::FormatWinErrorMessage(out, ERROR_INVALID_PARAMETER, message);
+  fmt::SystemError error("", 0);
+  try {
+    Converter(0);
+  } catch (const fmt::SystemError &e) {
+    error = e;
+  }
+  EXPECT_EQ(ERROR_INVALID_PARAMETER, error.error_code());
+  EXPECT_EQ(out.str(), error.what());
+}
+
+TEST(UtilTest, UTF16ToUTF8Error) {
+  CheckUTFConversionError<fmt::internal::UTF16ToUTF8>(
+      "cannot convert string from UTF-16 to UTF-8");
+}
+
+TEST(UtilTest, UTF8ToUTF16Error) {
+  CheckUTFConversionError<fmt::internal::UTF8ToUTF16>(
+      "cannot convert string from UTF-8 to UTF-16");
+}
+
+TEST(UtilTest, UTF16ToUTF8Convert) {
+  fmt::internal::UTF16ToUTF8 u;
+  EXPECT_EQ(ERROR_INVALID_PARAMETER, u.Convert(0));
+}
 #endif  // _WIN32
 
 TEST(UtilTest, StrError) {
@@ -283,28 +310,60 @@ TEST(UtilTest, SystemError) {
   EXPECT_EQ(42, e.error_code());
 }
 
-TEST(UtilTest, ThrowSystemError) {
-  const int TEST_ERROR = EDOM;
+typedef void (*FormatErrorMessage)(
+    fmt::Writer &out, int error_code, fmt::StringRef message);
+
+template <typename Sink>
+void CheckErrorSink(int error_code, FormatErrorMessage format) {
   fmt::SystemError error("", 0);
+  Sink sink(error_code);
+  fmt::Writer w;
+  w << "test";
   try {
-    fmt::ThrowSystemError(TEST_ERROR, "test {}") << "error";
+    sink(w);
   } catch (const fmt::SystemError &e) {
     error = e;
   }
-  EXPECT_EQ(str(fmt::Format("test error: {}") << strerror(TEST_ERROR)),
-      error.what());
-  EXPECT_EQ(TEST_ERROR, error.error_code());
+  fmt::Writer message;
+  format(message, error_code, "test");
+  EXPECT_EQ(str(message), error.what());
+  EXPECT_EQ(error_code, error.error_code());
+}
+
+template <typename Sink>
+void CheckThrowError(int error_code, FormatErrorMessage format,
+    fmt::Formatter<Sink> (*throw_error)(int error_code, StringRef format)) {
+  fmt::SystemError error("", 0);
+  try {
+    throw_error(error_code, "test {}") << "error";
+  } catch (const fmt::SystemError &e) {
+    error = e;
+  }
+  fmt::Writer message;
+  format(message, error_code, "test error");
+  EXPECT_EQ(str(message), error.what());
+  EXPECT_EQ(error_code, error.error_code());
+}
+
+TEST(UtilTest, FormatSystemErrorMessage) {
+  fmt::Writer message;
+  fmt::internal::FormatSystemErrorMessage(message, EDOM, "test");
+  EXPECT_EQ(str(fmt::Format("test: {}") << strerror(EDOM)), fmt::str(message));
+}
+
+TEST(UtilTest, SystemErrorSink) {
+  CheckErrorSink<fmt::SystemErrorSink>(
+      EDOM, fmt::internal::FormatSystemErrorMessage);
+}
+
+TEST(UtilTest, ThrowSystemError) {
+  CheckThrowError(EDOM,
+      fmt::internal::FormatSystemErrorMessage, fmt::ThrowSystemError);
 }
 
 #ifdef _WIN32
-TEST(UtilTest, ThrowWinError) {
-  const int TEST_ERROR = ERROR_FILE_EXISTS;
-  fmt::SystemError error("", 0);
-  try {
-    fmt::ThrowWinError(TEST_ERROR, "test {}") << "error";
-  } catch (const fmt::SystemError &e) {
-    error = e;
-  }
+
+TEST(UtilTest, FormatWinErrorMessage) {
   LPWSTR message = 0;
   FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
       FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 0,
@@ -312,11 +371,24 @@ TEST(UtilTest, ThrowWinError) {
       reinterpret_cast<LPWSTR>(&message), 0, 0);
   fmt::internal::UTF16ToUTF8 utf8_message(message);
   LocalFree(message);
-  EXPECT_EQ(str(fmt::Format("test error: {}") << fmt::str(utf8_message)),
-      error.what());
-  EXPECT_EQ(TEST_ERROR, error.error_code());
+  fmt::Writer actual_message;
+  fmt::internal::FormatWinErrorMessage(
+      actual_message, ERROR_FILE_EXISTS, "test");
+  EXPECT_EQ(str(fmt::Format("test: {}") << fmt::str(utf8_message)),
+      fmt::str(actual_message));
 }
-#endif
+
+TEST(UtilTest, WinErrorSink) {
+  CheckErrorSink<fmt::WinErrorSink>(
+      ERROR_FILE_EXISTS, fmt::internal::FormatWinErrorMessage);
+}
+
+TEST(UtilTest, ThrowWinError) {
+  CheckThrowError(ERROR_FILE_EXISTS,
+      fmt::internal::FormatWinErrorMessage, fmt::ThrowWinError);
+}
+
+#endif  // _WIN32
 
 class TestString {
  private:
@@ -1667,8 +1739,6 @@ TEST(FormatterTest, FileSinkWriteError) {
   EXPECT_THROW_MSG(fs(Writer() << "test"), fmt::SystemError, error_message);
   std::fclose(f);
 }
-
-// TODO: test SystemErrorSink, WinErrorSink
 
 // The test doesn't compile on older compilers which follow C++03 and
 // require an accessible copy constructor when binding a temporary to
