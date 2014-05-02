@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-"""Upload binaries from the build server to Google Code.
+"""Make a release by packaging binaries and uploading them to the server.
 
 Usage:
-  upload-to-googlecode.py [upload | simulate]
+  make-release.py [upload | simulate]
   
 When run in "simulate" mode, this script only simulates upload without
 actually uploading anything. Instead, the files are placed in the directory
