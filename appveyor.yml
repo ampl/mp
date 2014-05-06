@@ -4,5 +4,5 @@ before_build:
   - git submodule update --init
   - cmake .
 
-build:
-  project: AMPL.sln
+build_script:
+  msbuild /m AMPL.sln
