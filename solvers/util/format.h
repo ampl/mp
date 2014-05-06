@@ -1,5 +1,5 @@
 /*
- String formatting library for C++
+ Formatting library for C++
 
  Copyright (c) 2012, Victor Zverovich
  All rights reserved.
@@ -498,7 +498,8 @@ class UTF16ToUTF8 {
 //   ERANGE - buffer is not large enough to store the error message
 //   other  - failure
 // Buffer should be at least of size 1.
-int StrError(int error_code, char *&buffer, std::size_t buffer_size);
+int StrError(int error_code,
+    char *&buffer, std::size_t buffer_size) FMT_NOEXCEPT(true);
 
 void FormatSystemErrorMessage(
     fmt::Writer &out, int error_code, fmt::StringRef message);
@@ -1061,13 +1062,34 @@ class BasicWriter {
    */
   BasicFormatter<Char> Format(StringRef format);
 
-  // TODO: ArgInfo should be made public for this to be usable
   inline void VFormat(BasicStringRef<Char> format,
       std::size_t num_args, const ArgInfo *args) {
     FormatParser().Format(*this, format, num_args, args);
   }
 
 #if FMT_USE_VARIADIC_TEMPLATES
+  /**
+    \rst
+    Formats a string sending the output to the writer.
+
+    **Example**::
+
+       Writer out;
+       out.Format("Current point:\n");
+       out.Format("({:+f}, {:+f})", -3.14, 3.14);
+
+    This will write the following output to the ``out`` object:
+
+    .. code-block:: none
+
+       Current point:
+       (-3.140000, +3.140000)
+
+    The output can be accessed using :meth:`data` or :meth:`c_str`.
+
+    See also `Format String Syntax`_.
+    \endrst
+   */
   template<typename... Args>
   void Format(BasicStringRef<Char> format, const Args & ... args) {
     Arg arg_array[] = {args...};
@@ -1291,7 +1313,7 @@ void FormatCustomArg(
   \rst
   The :cpp:class:`fmt::BasicFormatter` template provides string formatting
   functionality similar to Python's `str.format
-  <http://docs.python.org/3/library/stdtypes.html#str.format>`__.
+  <http://docs.python.org/3/library/stdtypes.html#str.format>`__ function.
   The class provides operator<< for feeding formatting arguments and all
   the output is sent to a :cpp:class:`fmt::Writer` object.
   \endrst
@@ -1563,6 +1585,12 @@ inline Formatter<SystemErrorSink> ThrowSystemError(
   return f;
 }
 
+// Reports a system error without throwing an exception.
+// Can be used to report errors from destructors.
+void ReportSystemError(int error_code, StringRef message) FMT_NOEXCEPT(true);
+
+#ifdef _WIN32
+
 /**
   A sink that gets the error message corresponding to a Windows error code
   as given by GetLastError and throws SystemError.
@@ -1588,6 +1616,12 @@ inline Formatter<WinErrorSink> ThrowWinError(int error_code, StringRef format) {
   return f;
 }
 
+// Reports a Windows error without throwing an exception.
+// Can be used to report errors from destructors.
+void ReportWinError(int error_code, StringRef message) FMT_NOEXCEPT(true);
+
+#endif
+
 /** A sink that writes output to a file. */
 class FileSink {
  private:
@@ -1606,9 +1640,16 @@ class FileSink {
 // Formats a string and prints it to stdout.
 // Example:
 //   Print("Elapsed time: {0:.2f} seconds") << 1.23;
-// TODO: wchar overload
 inline Formatter<FileSink> Print(StringRef format) {
   Formatter<FileSink> f(format, FileSink(stdout));
+  return f;
+}
+
+// Formats a string and prints it to a file.
+// Example:
+//   Print(stderr, "Don't {}!") << "panic";
+inline Formatter<FileSink> Print(std::FILE *file, StringRef format) {
+  Formatter<FileSink> f(format, FileSink(file));
   return f;
 }
 
@@ -1665,6 +1706,13 @@ void Print(StringRef format, const Args & ... args) {
   Writer w;
   w.Format(format, args...);
   std::fwrite(w.data(), 1, w.size(), stdout);
+}
+
+template<typename... Args>
+void Print(std::FILE *f, StringRef format, const Args & ... args) {
+  Writer w;
+  w.Format(format, args...);
+  std::fwrite(w.data(), 1, w.size(), f);
 }
 
 #endif  // FMT_USE_VARIADIC_TEMPLATES && FMT_USE_RVALUE_REFERENCES

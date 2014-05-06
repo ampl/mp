@@ -46,16 +46,6 @@ inline fmt::Formatter<Throw> ThrowError(fmt::StringRef format) {
   fmt::Formatter<Throw> f(format);
   return f;
 }
-
-// Reports a system error without throwing an exception.
-// Can be used to report errors from destructors.
-void ReportSystemError(int error_code, const char *message) FMT_NOEXCEPT(true);
-
-#ifdef _WIN32
-// Reports a Windows error without throwing an exception.
-// Can be used to report errors from destructors.
-void ReportWinError(int error_code, const char *message) FMT_NOEXCEPT(true);
-#endif
 }
 
 #endif  // SOLVERS_UTIL_ERROR_H_

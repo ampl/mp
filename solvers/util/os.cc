@@ -153,7 +153,7 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
 
 ampl::MemoryMappedFile::~MemoryMappedFile() {
   if (munmap(start_, size_) == -1)
-    ReportSystemError(errno, "cannot unmap file");
+    fmt::ReportSystemError(errno, "cannot unmap file");
 }
 
 #else
@@ -230,7 +230,7 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
 
 ampl::MemoryMappedFile::~MemoryMappedFile() {
   if (!UnmapViewOfFile(start_))
-    ReportSystemError(GetLastError(), "cannot unmap file");
+    fmt::ReportWinError(GetLastError(), "cannot unmap file");
 }
 
 #endif

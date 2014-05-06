@@ -1,7 +1,7 @@
 /*
  Formatting library tests.
 
- Copyright (c) 2012, Victor Zverovich
+ Copyright (c) 2012-2014, Victor Zverovich
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -34,46 +34,22 @@
 #include <iomanip>
 #include <memory>
 #include <sstream>
-#include <gtest/gtest.h>
 
 // Check if format.h compiles with windows.h included.
 #ifdef _WIN32
 # include <windows.h>
-# include <crtdbg.h>
-#endif
 
-#if FMT_USE_DUP
-
-# include <sys/types.h>
-# include <sys/stat.h>
-# include <fcntl.h>
-
-# ifdef _WIN32
-
-#  include <io.h>
-
-#  define O_WRONLY _O_WRONLY
-#  define O_CREAT _O_CREAT
-#  define O_TRUNC _O_TRUNC
-#  define S_IRUSR _S_IREAD
-#  define S_IWUSR _S_IWRITE
-#  define close _close
-#  define dup _dup
-#  define dup2 _dup2
-
-namespace {
-int open(const char *path, int oflag, int pmode) {
-  int fd = -1;
-  _sopen_s(&fd, path, oflag, _SH_DENYNO, pmode);
-  return fd;
+// Fix MSVC warning about "unsafe" fopen.
+FILE *FOpen(const char *filename, const char *mode) {
+  FILE *f = 0;
+  errno = fopen_s(&f, filename, mode);
+  return f;
 }
-}
-# else
-#  include <unistd.h>
-# endif
+#define fopen FOpen
 #endif
 
 #include "solvers/util/format.h"
+#include "gtest-extra.h"
 
 #include <stdint.h>
 
@@ -90,38 +66,6 @@ using fmt::StringRef;
 using fmt::Writer;
 using fmt::WWriter;
 using fmt::pad;
-
-#define FORMAT_TEST_THROW_(statement, expected_exception, message, fail) \
-  GTEST_AMBIGUOUS_ELSE_BLOCKER_ \
-  if (::testing::internal::ConstCharPtr gtest_msg = "") { \
-    bool gtest_caught_expected = false; \
-    try { \
-      GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement); \
-    } \
-    catch (expected_exception const& e) { \
-      gtest_caught_expected = true; \
-      if (std::string(message) != e.what()) \
-        throw; \
-    } \
-    catch (...) { \
-      gtest_msg.value = \
-          "Expected: " #statement " throws an exception of type " \
-          #expected_exception ".\n  Actual: it throws a different type."; \
-      goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__); \
-    } \
-    if (!gtest_caught_expected) { \
-      gtest_msg.value = \
-          "Expected: " #statement " throws an exception of type " \
-          #expected_exception ".\n  Actual: it throws nothing."; \
-      goto GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__); \
-    } \
-  } else \
-    GTEST_CONCAT_TOKEN_(gtest_label_testthrow_, __LINE__): \
-      fail(gtest_msg.value)
-
-#define EXPECT_THROW_MSG(statement, expected_exception, expected_message) \
-  FORMAT_TEST_THROW_(statement, expected_exception, expected_message, \
-      GTEST_NONFATAL_FAILURE_)
 
 namespace {
 
@@ -195,6 +139,19 @@ std::string ReadFile(fmt::StringRef filename) {
   std::stringstream content;
   content << out.rdbuf();
   return content.str();
+}
+
+std::string GetSystemErrorMessage(int error_code) {
+#ifndef _WIN32
+  return strerror(error_code);
+#else
+  enum { BUFFER_SIZE = 200 };
+  char buffer[BUFFER_SIZE];
+  EXPECT_EQ(0, strerror_s(buffer, BUFFER_SIZE, error_code));
+  std::size_t max_len = BUFFER_SIZE - 1;
+  EXPECT_LT(std::strlen(buffer), max_len);
+  return buffer;
+#endif
 }
 }
 
@@ -299,7 +256,7 @@ TEST(UtilTest, StrError) {
   EXPECT_EQ(0, result);
   std::size_t message_size = std::strlen(message);
   EXPECT_GE(BUFFER_SIZE - 1u, message_size);
-  EXPECT_STREQ(strerror(error_code), message);
+  EXPECT_EQ(GetSystemErrorMessage(error_code), message);
   result = StrError(error_code, message = buffer, message_size);
   EXPECT_EQ(ERANGE, result);
 }
@@ -348,7 +305,8 @@ void CheckThrowError(int error_code, FormatErrorMessage format,
 TEST(UtilTest, FormatSystemErrorMessage) {
   fmt::Writer message;
   fmt::internal::FormatSystemErrorMessage(message, EDOM, "test");
-  EXPECT_EQ(str(fmt::Format("test: {}") << strerror(EDOM)), fmt::str(message));
+  EXPECT_EQ(str(fmt::Format("test: {}")
+    << GetSystemErrorMessage(EDOM)), fmt::str(message));
 }
 
 TEST(UtilTest, SystemErrorSink) {
@@ -1636,12 +1594,15 @@ TEST(FormatterTest, FormatExamples) {
     EXPECT_EQ("0123456789", s);
   }
 
-  EXPECT_THROW({
-    const char *filename = "nonexistent";
+  const char *filename = "nonexistent";
+  FILE *ftest = fopen(filename, "r");
+  int error_code = errno;
+  EXPECT_TRUE(ftest == 0);
+  EXPECT_SYSTEM_ERROR({
     FILE *f = fopen(filename, "r");
     if (!f)
       fmt::ThrowSystemError(errno, "Cannot open file '{}'") << filename;
-  }, fmt::SystemError);
+  }, error_code, "Cannot open file 'nonexistent'");
 }
 
 TEST(FormatterTest, StrNamespace) {
@@ -1720,25 +1681,33 @@ TEST(FormatterTest, OutputNotWrittenOnError) {
   EXPECT_EQ(0, num_writes);
 }
 
+#if FMT_USE_FILE_DESCRIPTORS
+
 TEST(FormatterTest, FileSink) {
-  FILE *f = std::fopen("out", "w");
-  fmt::FileSink fs(f);
-  fs(Writer() << "test");
-  std::fclose(f);
-  EXPECT_EQ("test", ReadFile("out"));
+  File read_end, write_end;
+  File::pipe(read_end, write_end);
+  BufferedFile f = write_end.fdopen("w");
+  EXPECT_WRITE(f.get(), {
+    fmt::FileSink fs(f.get());
+    fs(Writer() << "test");
+  }, "test");
 }
 
 TEST(FormatterTest, FileSinkWriteError) {
-  FILE *f = std::fopen("out", "r");
-  fmt::FileSink fs(f);
-  int result = std::fwrite(" ", 1, 1, f);
+  File read_end, write_end;
+  File::pipe(read_end, write_end);
+  BufferedFile f = read_end.fdopen("r");
+  fmt::FileSink fs(f.get());
+  int result = std::fwrite(" ", 1, 1, f.get());
   int error_code = errno;
   EXPECT_EQ(0, result);
-  std::string error_message =
-      str(Format("{}: {}") << "cannot write to file" << strerror(error_code));
-  EXPECT_THROW_MSG(fs(Writer() << "test"), fmt::SystemError, error_message);
-  std::fclose(f);
+  EXPECT_SYSTEM_ERROR(
+      fs(Writer() << "test"), error_code, "cannot write to file");
 }
+
+#else
+# pragma message "warning: some tests are disabled"
+#endif
 
 // The test doesn't compile on older compilers which follow C++03 and
 // require an accessible copy constructor when binding a temporary to
@@ -1863,31 +1832,33 @@ TEST(FormatIntTest, FormatDec) {
   EXPECT_EQ("42", FormatDec(42ull));
 }
 
-#ifdef FMT_USE_DUP
+#if FMT_USE_FILE_DESCRIPTORS
+
+TEST(FormatTest, Print) {
+  EXPECT_WRITE(stdout, fmt::Print("Don't {}!") << "panic", "Don't panic!");
+  EXPECT_WRITE(stderr,
+      fmt::Print(stderr, "Don't {}!") << "panic", "Don't panic!");
+}
+
+#if FMT_USE_VARIADIC_TEMPLATES && FMT_USE_RVALUE_REFERENCES
+TEST(FormatTest, PrintVariadic) {
+  EXPECT_WRITE(stdout, fmt::Print("Don't {}!", "panic"), "Don't panic!");
+  EXPECT_WRITE(stderr,
+      fmt::Print(stderr, "Don't {}!", "panic"), "Don't panic!");
+}
+#endif  // FMT_USE_VARIADIC_TEMPLATES
 
 TEST(FormatTest, PrintColored) {
-  // Temporarily redirect stdout to a file and check if PrintColored adds
-  // necessary ANSI escape sequences.
-  std::fflush(stdout);
-  int saved_stdio = dup(1);
-  EXPECT_NE(-1, saved_stdio);
-  int out = open("out", O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-  EXPECT_NE(-1, out);
-  EXPECT_NE(-1, dup2(out, 1));
-  close(out);
-  fmt::PrintColored(fmt::RED, "Hello, {}!\n") << "world";
-  std::fflush(stdout);
-  EXPECT_NE(-1, dup2(saved_stdio, 1));
-  close(saved_stdio);
-  EXPECT_EQ("\x1b[31mHello, world!\n\x1b[0m", ReadFile("out"));
+  EXPECT_WRITE(stdout, fmt::PrintColored(fmt::RED, "Hello, {}!\n") << "world",
+      "\x1b[31mHello, world!\n\x1b[0m");
 }
 
 #endif
 
 #if FMT_USE_VARIADIC_TEMPLATES && FMT_USE_RVALUE_REFERENCES
 TEST(FormatTest, Variadic) {
-  EXPECT_EQ("Hello, world!1", str(Format("Hello, {}!{}", "world", 1)));
-  EXPECT_EQ(L"Hello, world!1", str(Format(L"Hello, {}!{}", L"world", 1)));
+  EXPECT_EQ("abc1", str(Format("{}c{}", "ab", 1)));
+  EXPECT_EQ(L"abc1", str(Format(L"{}c{}", L"ab", 1)));
 }
 #endif  // FMT_USE_VARIADIC_TEMPLATES
 
@@ -1900,16 +1871,4 @@ TEST(StrTest, Convert) {
   EXPECT_EQ("42", str(42));
   std::string s = str(Date(2012, 12, 9));
   EXPECT_EQ("2012-12-9", s);
-}
-
-int main(int argc, char **argv) {
-#ifdef _WIN32
-  // Disable message boxes on assertion failures.
-  _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE | _CRTDBG_MODE_DEBUG);
-  _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
-  _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE | _CRTDBG_MODE_DEBUG);
-  _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
-#endif
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }

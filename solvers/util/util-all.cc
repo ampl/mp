@@ -21,7 +21,6 @@
  */
 
 #include "clock.cc"
-#include "error.cc"
 #include "format.cc"
 #include "solver.cc"
 #include "os.cc"

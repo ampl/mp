@@ -22,14 +22,6 @@
 
 #include "gtest/gtest.h"
 #include "solvers/util/error.h"
-#include "solvers/util/os.h"
-
-#include <errno.h>
-#include <string.h>
-
-#ifdef _WIN32
-# include <windows.h>
-#endif
 
 namespace {
 
@@ -47,26 +39,4 @@ TEST(ErrorTest, ThrowError) {
   }
   EXPECT_STREQ("test error message", error.what());
 }
-
-TEST(ErrorTest, ReportSystemError) {
-  EXPECT_EXIT({
-    ampl::ReportSystemError(EDOM, "test error");
-    std::fprintf(stderr, "end\n");
-    std::exit(0);
-  }, ::testing::ExitedWithCode(0),
-      str(fmt::Format("test error: {}\nend\n") << strerror(EDOM)));
-}
-
-#ifdef _WIN32
-TEST(ErrorTest, ReportWinError) {
-  fmt::Writer message;
-  fmt::internal::FormatWinErrorMessage(
-      message, ERROR_FILE_EXISTS, "test error");
-  EXPECT_EXIT({
-    ampl::ReportWinError(ERROR_FILE_EXISTS, "test error");
-    std::fprintf(stderr, "end\n");
-    std::exit(0);
-  }, ::testing::ExitedWithCode(0), str(message));
-}
-#endif
 }
