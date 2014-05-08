@@ -99,7 +99,9 @@ endif ()
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/coin/CMakeLists.txt)
   set(HAVE_COIN 1)
   set(get_cbc_version $<TARGET_FILE:cbc-executable> -v -AMPL >> versions)
-  set(get_ipopt_version $<TARGET_FILE:ipopt-executable> -v >> versions)
+  if (TARGET ipopt-executable)
+    set(get_ipopt_version $<TARGET_FILE:ipopt-executable> -v >> versions)
+  endif ()
 
   # Workaround for f90cache which accept only modified name for GNU fortran
   # compilers in the form gfortran-4.x.
