@@ -3,6 +3,10 @@
 
 set -e
 
+# If we are in a VM managed by Vagrant, then do everything in the shared
+# /vagrant directory to avoid growth of the VM drive.
+if [ -e /vagrant ]; then cd /vagrant; fi
+
 sudo apt-get update
 
 # Install build tools.
