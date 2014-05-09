@@ -5,8 +5,17 @@
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "lucid32"
-  config.vm.synced_folder "scripts/vagrant/lucid32/lists", "/var/lib/apt/lists"
-  config.vm.synced_folder "scripts/vagrant/lucid32/archives", "/var/cache/apt/archives"
-#  config.vm.provision :shell, :path => "scripts/bootstrap-ubuntu.sh"
+  config.vm.provision :shell, :path => "scripts/bootstrap-ubuntu.sh"
+
+  config.vm.define "lucid32" do |lucid32|
+    lucid32.vm.box = "lucid32"
+    lucid32.vm.box_url = "http://files.vagrantup.com/lucid32.box"
+    lucid32.vm.synced_folder "scripts/vagrant/lucid32/archives", "/var/cache/apt/archives"
+  end
+
+  config.vm.define "lucid64", primary: true do |lucid64|
+    lucid64.vm.box = "lucid64"
+    lucid64.vm.box_url = "http://files.vagrantup.com/lucid64.box"
+    lucid64.vm.synced_folder "scripts/vagrant/lucid64/archives", "/var/cache/apt/archives"
+  end
 end
