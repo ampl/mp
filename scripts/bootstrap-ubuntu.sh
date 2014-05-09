@@ -5,7 +5,13 @@ set -e
 
 # If we are in a VM managed by Vagrant, then do everything in the shared
 # /vagrant directory to avoid growth of the VM drive.
-if [ -e /vagrant ]; then cd /vagrant; fi
+if [ -e /vagrant ]; then
+  cd /vagrant
+  # Copy optional dependencies.
+  if [ -e opt ]; then
+    sudo cp -r opt/linux-`uname -m`/* /opt
+  fi
+fi
 
 sudo apt-get update
 
