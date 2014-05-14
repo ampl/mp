@@ -27,7 +27,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     c.vm.box = "osx-mavericks"
   end
 
-  config.vm.define "win2008-64" do |c|
-    c.vm.box = "win2008-64"
+  config.vm.define "win2008" do |c|
+    c.vm.box = "win2008"
+    c.vm.guest = :windows
+    c.vm.communicator = "winrm"
   end
 end
