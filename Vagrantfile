@@ -5,6 +5,10 @@
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.provider "virtualbox" do |v|
+    v.customize ["modifyvm", :id, "--vrde", "on"]
+  end
+
   config.vm.define "lucid32" do |c|
     c.vm.box = "lucid32"
     c.vm.box_url = "http://files.vagrantup.com/lucid32.box"
