@@ -4,12 +4,14 @@ cd \vagrant
 rem Install .NET Framework 4 for msbuild.
 rem This requires vagrant-windows plugin version 1.7.0.pre.2 or later.
 rem See https://github.com/WinRb/vagrant-windows/pull/189
-if exist opt\win64\dotNetFx40_Full_x86_x64.exe (
-  opt\win64\dotNetFx40_Full_x86_x64.exe /q
+if not exist "\Windows\Microsoft.NET\Framework64" (
+  if exist opt\win64\dotNetFx40_Full_x86_x64.exe (
+    opt\win64\dotNetFx40_Full_x86_x64.exe /q /norestart
+  )
 )
 
 rem Install Windows SDK.
-if exist opt\win64\winsdk if not exist "\Program Files\Microsoft SDKs" (
+if not exist "\Program Files\Microsoft SDKs" if exist opt\win64\winsdk (
   opt\win64\winsdk\setup.exe -q -params:ADDLOCAL=ALL
 )
 
