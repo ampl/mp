@@ -31,12 +31,14 @@ if not exist "\Program Files (x86)\Java\jdk1.7.0_55" (
 
 rem Install CMake.
 if not exist "\Program Files\CMake" (
-  bitsadmin /transfer cmake %
-    http://www.cmake.org/files/v2.8/cmake-2.8.12.2-win32-x86.zip %
-    \vagrant\cmake.zip
-  jar xf cmake.zip
+  bitsadmin /transfer cmake ^
+    http://www.cmake.org/files/v2.8/cmake-2.8.12.2-win32-x86.zip ^
+    C:\vagrant\cmake.zip
+  "\Program Files (x86)\Java\jdk1.7.0_55\bin\jar" xf cmake.zip
   move cmake-2.8.12.2-win32-x86 "\Program Files\CMake"
   setx Path "%Path%;C:\Program Files\CMake\bin"
-)
 
-rem TODO: install mingw
+  if exist opt\win64\root (
+    copy opt\win64\root \
+  )
+)
