@@ -2,8 +2,8 @@
 cd \vagrant
 
 rem Install .NET Framework 4 for msbuild.
-if exist opt\win64\dotNetFx40_Full_x86_x64.exe (
-  opt\win64\dotNetFx40_Full_x86_x64.exe /q
+if exist opt\win64\dotnetfx4 (
+  scripts\install-netfx.cmd
 )
 
 rem Install Windows SDK.
@@ -13,12 +13,12 @@ if exist opt\win64\winsdk if not exist "\Program Files\Microsoft SDKs" (
 
 rem Install 64-bit JDK.
 if exist opt\win64\jdk-7u55-windows-x64.exe (
-  opt\win64\winsdk\jdk-7u55-windows-x64.exe /s
+  opt\win64\jdk-7u55-windows-x64.exe /s
 )
 
 rem Install 32-bit JDK.
 if exist opt\win64\jdk-7u55-windows-i586.exe (
-  opt\win64\winsdk\jdk-7u55-windows-i586.exe /s
+  opt\win64\jdk-7u55-windows-i586.exe /s
 )
 
 rem Install CMake.
