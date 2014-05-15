@@ -26,6 +26,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.define "osx-mavericks" do |c|
     c.vm.box = "osx-mavericks"
+    c.vm.network :private_network, ip: "10.11.12.13"
+    c.vm.synced_folder ".", "/vagrant", :type => "nfs", :mount_options => ["resvport"]
   end
 
   config.vm.define "win2008" do |c|
