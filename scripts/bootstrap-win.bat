@@ -34,7 +34,9 @@ if not exist "\Program Files\CMake" (
   bitsadmin /transfer cmake %
     http://www.cmake.org/files/v2.8/cmake-2.8.12.2-win32-x86.zip %
     \vagrant\cmake.zip
-  rem TODO: unpack
+  jar xf cmake.zip
+  move cmake-2.8.12.2-win32-x86 "\Program Files\CMake"
+  setx Path "%Path%;C:\Program Files\CMake\bin"
 )
 
 rem TODO: install mingw
