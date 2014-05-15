@@ -25,7 +25,7 @@ sudo apt-get install -y git-core gcc g++ gfortran \
 # Install CMake.
 wget http://www.cmake.org/files/v2.8/$CMAKE.tar.gz
 tar xzf $CMAKE.tar.gz
-sudo rm -rf /opt/$CMAKE
+sudo rm -rf $CMAKE.tar.gz /opt/$CMAKE
 sudo mv $CMAKE /opt
 sudo ln -sf /opt/$CMAKE/bin/cmake /usr/local/bin
 
