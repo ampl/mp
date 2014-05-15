@@ -3,7 +3,7 @@ cd \vagrant
 
 rem Install .NET Framework 4 for msbuild.
 if exist opt\win64\dotNetFx40_Full_x86_x64.exe (
-  opt\win64\dotNetFx40_Full_x86_x64.exe /s
+  opt\win64\dotNetFx40_Full_x86_x64.exe /q
 )
 
 rem Install Windows SDK.
