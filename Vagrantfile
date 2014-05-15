@@ -40,6 +40,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     c.vm.box = "win2008"
     c.vm.guest = :windows
     c.vm.communicator = "winrm"
-    c.vm.provision :shell, :path => "scripts/bootstrap-win.sh"
+    c.vm.provision :shell, :path => "scripts/bootstrap-win.bat"
   end
 end
