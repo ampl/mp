@@ -7,7 +7,7 @@ VAGRANTFILE_API_VERSION = "2"
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # This requires VirtualBox Extension Pack to be installed on the host.
   config.vm.provider "virtualbox" do |v|
-    v.customize ["modifyvm", :id, "--vrde", "on"]
+    v.customize ["modifyvm", :id, "--vrde", "on", "--vrdeauthtype", "external"]
   end
 
   config.vm.define "lucid32" do |c|
