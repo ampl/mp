@@ -3,6 +3,9 @@
 
 set -e
 
+CMAKE=cmake-2.8.12.2-Linux-i386
+if [ -e /opt/$CMAKE ]; then exit; fi
+
 # If we are in a VM managed by Vagrant, then do everything in the shared
 # /vagrant directory to avoid growth of the VM drive.
 if [ -e /vagrant ]; then
@@ -20,7 +23,6 @@ sudo apt-get install -y git-core gcc g++ gfortran \
      ccache make buildbot default-jdk unixodbc-dev
 
 # Install CMake.
-CMAKE=cmake-2.8.12.2-Linux-i386
 wget http://www.cmake.org/files/v2.8/$CMAKE.tar.gz
 tar xzf $CMAKE.tar.gz
 sudo rm -rf /opt/$CMAKE
