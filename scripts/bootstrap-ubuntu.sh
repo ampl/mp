@@ -48,6 +48,9 @@ cd /usr/local/bin
 sudo ln -sf f90cache gfortran-4.4
 
 # Install buildbot.
-sudo pip install buildbot
+if [ `uname -m` -eq "x86_64" ]; then
+  sudo pip install buildbot
+  buildbot create-master master
+fi
+
 sudo pip install buildbot-slave
-buildbot create-master master
