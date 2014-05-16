@@ -44,16 +44,15 @@ make
 sudo make install
 cd ..
 rm -rf f90cache
-cd /usr/local/bin
-sudo ln -sf f90cache gfortran-4.4
+sudo ln -sf /usr/local/bin/f90cache /usr/local/bin/gfortran-4.4
 
 # Install buildbot.
 if [ `uname -m` = "x86_64" ]; then
   sudo pip -q install buildbot
   BUILDBOT_BASEDIR=/home/vagrant/master
   sudo -u vagrant buildbot create-master -r $BUILDBOT_BASEDIR
-  (crontab -u vagrant -l; echo "@reboot buildbot start $BUILDBOT_BASEDIR") | crontab -u vagrant -
-  crontab -u vagrant -l
+  (crontab -u vagrant -l || echo "@reboot buildbot start $BUILDBOT_BASEDIR") | \
+   crontab -u vagrant -
   mv $BUILDBOT_BASEDIR/master.cfg.sample $BUILDBOT_BASEDIR/master.cfg
   sudo -u vagrant buildbot start $BUILDBOT_BASEDIR
 fi
