@@ -53,6 +53,7 @@ if [ `uname -m` = "x86_64" ]; then
   BUILDBOT_BASEDIR=/home/vagrant/master
   sudo -u vagrant buildbot create-master -r $BUILDBOT_BASEDIR
   (crontab -u vagrant -l; echo "@reboot buildbot start $BUILDBOT_BASEDIR") | crontab -u vagrant -
+  crontab -u vagrant -l
   mv $BUILDBOT_BASEDIR/master.cfg.sample $BUILDBOT_BASEDIR/master.cfg
   sudo -u vagrant buildbot start $BUILDBOT_BASEDIR
 fi
