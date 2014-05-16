@@ -19,8 +19,8 @@ fi
 sudo apt-get update
 
 # Install build tools.
-sudo apt-get install -y git-core gcc g++ gfortran \
-     ccache make buildbot default-jdk unixodbc-dev
+sudo apt-get install -y git-core gcc g++ gfortran ccache \
+     make python-pip python-dev default-jdk unixodbc-dev
 
 # Install CMake.
 wget http://www.cmake.org/files/v2.8/$CMAKE.tar.gz
@@ -46,3 +46,8 @@ cd ..
 rm -rf f90cache
 cd /usr/local/bin
 sudo ln -sf f90cache gfortran-4.4
+
+# Install buildbot.
+sudo pip install buildbot
+sudo pip install buildbot-slave
+buildbot create-master master
