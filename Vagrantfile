@@ -22,6 +22,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     c.vm.box_url = "http://files.vagrantup.com/lucid64.box"
     c.vm.synced_folder "scripts/vagrant/lucid64/archives", "/var/cache/apt/archives"
     c.vm.provision :shell, :path => "scripts/bootstrap-ubuntu.sh"
+    c.vm.network "forwarded_port", guest: 8010, host: 8010
   end
 
   config.vm.define "osx-mavericks" do |c|
