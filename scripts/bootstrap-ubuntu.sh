@@ -50,7 +50,7 @@ sudo ln -sf f90cache gfortran-4.4
 # Install buildbot.
 if [ `uname -m` = "x86_64" ]; then
   sudo pip -q install buildbot
-  buildbot create-master ~/master
+  sudo -u vagrant buildbot create-master /home/vagrant/master
 fi
 
 sudo pip -q install buildbot-slave
