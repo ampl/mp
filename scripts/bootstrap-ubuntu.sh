@@ -52,8 +52,8 @@ if [ `uname -m` = "x86_64" ]; then
   sudo pip -q install buildbot
   BUILDBOT_BASEDIR=/home/vagrant/master
   sudo -u vagrant buildbot create-master -r $BUILDBOT_BASEDIR
-  echo "@reboot buildbot start $BUILDBOT_BASEDIR" | sudo tee /etc/cron.d/buildbot
+  (crontab -u buildbot -l; echo "@reboot buildbot start $BUILDBOT_BASEDIR") | crontab -u buildbot
   mv $BUILDBOT_BASEDIR/master.cfg.sample $BUILDBOT_BASEDIR/master.cfg
-  buildbot start $BUILDBOT_BASEDIR
+  sudo -u vagrant buildbot start $BUILDBOT_BASEDIR
 fi
 sudo pip -q install buildbot-slave
