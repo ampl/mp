@@ -23,7 +23,7 @@ sudo apt-get install -y git-core gcc g++ gfortran ccache \
      make python-pip python-dev default-jdk unixodbc-dev
 
 # Install CMake.
-wget http://www.cmake.org/files/v2.8/$CMAKE.tar.gz
+wget -nv http://www.cmake.org/files/v2.8/$CMAKE.tar.gz
 tar xzf $CMAKE.tar.gz
 sudo rm -rf $CMAKE.tar.gz /opt/$CMAKE
 sudo mv $CMAKE /opt
