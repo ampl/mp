@@ -51,7 +51,8 @@ if [ `uname -m` = "x86_64" ]; then
   sudo pip -q install buildbot
   BUILDBOT_BASEDIR=/home/vagrant/master
   sudo -u vagrant buildbot create-master -r $BUILDBOT_BASEDIR
-  (crontab -u vagrant -l || echo "@reboot buildbot start $BUILDBOT_BASEDIR") | \
+  (crontab -u vagrant -l ||
+   echo "@reboot PATH=$PATH:/usr/local/bin buildbot start $BUILDBOT_BASEDIR") |
    crontab -u vagrant -
   mv $BUILDBOT_BASEDIR/master.cfg.sample $BUILDBOT_BASEDIR/master.cfg
   sudo -u vagrant buildbot start $BUILDBOT_BASEDIR
