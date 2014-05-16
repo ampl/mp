@@ -54,7 +54,7 @@ if [ `uname -m` = "x86_64" ]; then
   (crontab -u vagrant -l ||
    echo "@reboot PATH=$PATH:/usr/local/bin buildbot start $BUILDBOT_BASEDIR") |
    crontab -u vagrant -
-  mv $BUILDBOT_BASEDIR/master.cfg.sample $BUILDBOT_BASEDIR/master.cfg
+  cp scripts/master.cfg $BUILDBOT_BASEDIR/master.cfg
   sudo -u vagrant buildbot start $BUILDBOT_BASEDIR
 fi
 sudo pip -q install buildbot-slave
