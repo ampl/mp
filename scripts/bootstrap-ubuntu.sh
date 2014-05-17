@@ -66,7 +66,8 @@ sudo pip -q install buildbot-slave
 BUILDSLAVE_DIR=/home/vagrant/slave
 # The password is insecure which doesn't matter as the buildslaves are
 # not publicly accessible.
-buildslave create-slave $BUILDSLAVE_DIR localhost $BUILDSLAVE pass
+sudo -u vagrant buildslave \
+  create-slave $BUILDSLAVE_DIR localhost $BUILDSLAVE pass
 (crontab -u vagrant -l ||
  echo "@reboot PATH=$PATH:/usr/local/bin buildslave start $BUILDSLAVE_DIR") |
  crontab -u vagrant -
