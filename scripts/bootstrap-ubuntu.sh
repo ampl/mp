@@ -49,12 +49,25 @@ sudo ln -sf /usr/local/bin/f90cache /usr/local/bin/gfortran-4.4
 # Install buildbot.
 if [ `uname -m` = "x86_64" ]; then
   sudo pip -q install buildbot
-  BUILDBOT_BASEDIR=/home/vagrant/master
-  sudo -u vagrant buildbot create-master -r $BUILDBOT_BASEDIR
+  BUILDBOT_DIR=/home/vagrant/master
+  sudo -u vagrant buildbot create-master -r $BUILDBOT_DIR
   (crontab -u vagrant -l ||
-   echo "@reboot PATH=$PATH:/usr/local/bin buildbot start $BUILDBOT_BASEDIR") |
+   echo "@reboot PATH=$PATH:/usr/local/bin buildbot start $BUILDBOT_DIR") |
    crontab -u vagrant -
-  sudo -u vagrant cp scripts/master.cfg $BUILDBOT_BASEDIR/master.cfg
-  sudo -u vagrant buildbot start $BUILDBOT_BASEDIR
+  sudo -u vagrant cp scripts/master.cfg $BUILDBOT_DIR/master.cfg
+  sudo -u vagrant buildbot start $BUILDBOT_DIR
+  BUILDSLAVE=lucid64
+else
+  BUILDSLAVE=lucid32
 fi
+
+# Install buildbot slave.
 sudo pip -q install buildbot-slave
+BUILDSLAVE_DIR=/home/vagrant/slave
+# The password is insecure which doesn't matter as the buildslaves are
+# not publicly accessible.
+buildslave create-slave $BUILDSLAVE_DIR localhost $BUILDSLAVE pass
+(crontab -u vagrant -l ||
+ echo "@reboot PATH=$PATH:/usr/local/bin buildslave start $BUILDSLAVE_DIR") |
+ crontab -u vagrant -
+sudo -u vagrant buildslave start $BUILDSLAVE_DIR
