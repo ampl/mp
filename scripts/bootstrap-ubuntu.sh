@@ -68,7 +68,7 @@ BUILDSLAVE_DIR=/home/vagrant/slave
 # The password is insecure which doesn't matter as the buildslaves are
 # not publicly accessible.
 sudo -u vagrant buildslave \
-  create-slave $BUILDSLAVE_DIR localhost $BUILDSLAVE pass
+  create-slave $BUILDSLAVE_DIR 10.0.2.2 $BUILDSLAVE pass
 (crontab -u vagrant -l ||
  echo "@reboot PATH=$PATH:/usr/local/bin buildslave start $BUILDSLAVE_DIR") |
  crontab -u vagrant -
