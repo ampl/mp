@@ -23,7 +23,7 @@ sudo apt-get install -y git-core gcc g++ gfortran ccache \
      make python-pip python-dev default-jdk unixodbc-dev
 
 # Install CMake.
-if [ `uname -m` = "x86_64" ]; then apt-get install libc6-i386; fi
+if [ `uname -m` = "x86_64" ]; then apt-get install -y libc6-i386; fi
 wget -nv http://www.cmake.org/files/v2.8/$CMAKE.tar.gz
 tar xzf $CMAKE.tar.gz
 sudo rm -rf $CMAKE.tar.gz /opt/$CMAKE
