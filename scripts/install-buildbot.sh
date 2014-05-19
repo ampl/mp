@@ -11,6 +11,8 @@ if id -u buildbot >/dev/null 2>&1; then
 else
   sudo useradd buildbot
 fi
+sudo mkdir $BUILDBOT_DIR
+sudo chown buildbot:buildbot $BUILDBOT_DIR
 sudo -u buildbot buildbot create-master -r $BUILDBOT_DIR
 (sudo crontab -u buildbot -l ||
  echo "@reboot PATH=$PATH:/usr/local/bin buildbot start $BUILDBOT_DIR") |
