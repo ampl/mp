@@ -56,7 +56,7 @@ if [ `uname -m` = "x86_64" ]; then
    echo "@reboot PATH=$PATH:/usr/local/bin buildbot start $BUILDBOT_DIR") |
    crontab -u vagrant -
   sudo -u vagrant cp scripts/master.cfg $BUILDBOT_DIR/master.cfg
-  sudo -u vagrant buildbot start $BUILDBOT_DIR
+  sudo -H -u vagrant buildbot start $BUILDBOT_DIR
   BUILDSLAVE=lucid64
 else
   BUILDSLAVE=lucid32
@@ -72,4 +72,4 @@ sudo -u vagrant buildslave \
 (crontab -u vagrant -l ||
  echo "@reboot PATH=$PATH:/usr/local/bin buildslave start $BUILDSLAVE_DIR") |
  crontab -u vagrant -
-sudo -u vagrant HOME=/home/vagrant buildslave start $BUILDSLAVE_DIR
+sudo -H -u vagrant buildslave start $BUILDSLAVE_DIR
