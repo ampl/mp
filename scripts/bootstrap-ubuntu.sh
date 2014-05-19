@@ -70,6 +70,6 @@ BUILDSLAVE_DIR=/home/vagrant/slave
 sudo -u vagrant buildslave \
   create-slave $BUILDSLAVE_DIR localhost $BUILDSLAVE pass
 (crontab -u vagrant -l ||
- echo "@reboot HOME=/home/vagrant PATH=$PATH:/usr/local/bin buildslave start $BUILDSLAVE_DIR") |
+ echo "@reboot PATH=$PATH:/usr/local/bin buildslave start $BUILDSLAVE_DIR") |
  crontab -u vagrant -
-sudo -u vagrant buildslave start $BUILDSLAVE_DIR
+sudo -u vagrant HOME=/home/vagrant buildslave start $BUILDSLAVE_DIR
