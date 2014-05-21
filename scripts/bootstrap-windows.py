@@ -144,7 +144,7 @@ pip_install('buildbot-slave', 'buildbot')
 
 buildslave_dir = '\\buildslave'
 if not os.path.exists(buildslave_dir):
-  check_call([python_dir + 'scripts\\buildslave',
+  check_call([python_dir + 'scripts\\buildslave.bat',
               'create-slave', buildslave_dir])
 
 # Grant the user the right to "log on as a service".
