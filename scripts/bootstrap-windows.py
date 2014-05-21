@@ -39,27 +39,43 @@ if not os.path.exists('\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319'):
   check_call([filename, '/q', '/norestart'])
   os.remove(filename)
 
-# Install Windows SDK.
-if not os.path.exists('\\Program Files\\Microsoft SDKs\\Windows\\v7.1'):
-  # Install 7zip.
+# Install 7zip.
+sevenzip = 'C:\\Program Files (x86)\\7-Zip\\7z.exe'
+if not os.path.exists(sevenzip):
   filename = '7z.exe'
   download('http://downloads.sourceforge.net/sevenzip/7z920.exe', filename)
   check_call([filename, '/S'])
   os.remove(filename)
+
+# Install Windows SDK.
+if not os.path.exists('\\Program Files\\Microsoft SDKs\\Windows\\v7.1'):
   # Extract ISO.
   filename = 'winsdk.iso'
   download(
      'http://download.microsoft.com/download/F/1/0/'
      'F10113F5-B750-4969-A255-274341AC6BCE/GRMSDKX_EN_DVD.iso',
      filename)
-  check_call(['C:\\Program Files (x86)\\7-Zip\\7z',
-              'x', '-tudf', '-owinsdk', filename])
+  check_call([sevenzip, 'x', '-tudf', '-owinsdk', filename])
   os.remove(filename)
   # Install SDK.
   check_call(['winsdk\\setup.exe', '-q'])
   shutil.rmtree('winsdk')
 
-# http://downloads.sourceforge.net/project/sevenzip/7-Zip/9.20/7za920.zip?ts=1400605417&use_mirror=iweb
+# Install MinGW.
+def install_mingw(arch):
+  bits = '64' if arch.endswith('64') else '32'
+  if os.path.exists('\\mingw' + bits):
+    return
+  filename = 'mingw.7z'
+  download(
+    'http://sourceforge.net/projects/mingw-w64/files/' +
+    'Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/4.8.2/' +
+    'threads-win32/sjlj/' + arch +
+    '-4.8.2-release-win32-sjlj-rt_v3-rev4.7z/download', filename)
+  check_call([sevenzip, '-o', 'C:\\', 'x', filename])
+
+install_mingw('i686')
+install_mingw('x86_64')
 
 # TODO: install buildbot
 
