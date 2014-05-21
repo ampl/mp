@@ -1,7 +1,7 @@
 # Set up build environment on Windows.
 
 from __future__ import print_function
-import importlib, os, sys, shutil, urllib, urlparse
+import importlib, os, sys, shutil, urllib2, urlparse
 from glob import glob
 from subprocess import check_call
 from zipfile import ZipFile
@@ -23,11 +23,15 @@ def module_exists(module):
     return False
 
 # Downloads into a temporary file.
-def download(url):
+def download(url, cookie = None):
   filename = os.path.basename(urlparse.urlsplit(url)[2])
   print('Downloading', url, 'to', filename)
   sys.stdout.flush()
-  urllib.urlretrieve(url, filename)
+  opener = urllib2.build_opener()
+  if cookie:
+    opener.addheaders.append(('Cookie', cookie))
+  with open(filename, 'wb') as f:
+    shutil.copyfileobj(opener.open("http://example.com/"), f)
   return TempFile(filename)
 
 def unzip(filename, path):
@@ -47,8 +51,6 @@ check_call(['setx', 'PATH',
   os.getenv('PATH') + ';' + python_dir + ';' + os.path.join(cmake_dir, '\bin')])
 
 # Install .NET Framework 4 for msbuild.
-# This requires vagrant-windows plugin version 1.7.0.pre.2 or later.
-# See https://github.com/WinRb/vagrant-windows/pull/189
 if not os.path.exists(r'\Windows\Microsoft.NET\Framework64\v4.0.30319'):
   with download(
       'http://download.microsoft.com/download/9/5/A/' +
@@ -128,10 +130,8 @@ def pip_install(package, test_module=None):
   requirement_set.prepare_files(finder, force_root_egg_info=False, bundle=False)
   requirement_set.install([], [])
 
-# Install Twisted - buildbot dependency.
+# Install buildbot dependencies.
 pip_install('twisted')
-
-# Install Zope.Interface - buildbot dependency.
 pip_install('zope.interface')
 
 # Install buildbot slave.
@@ -145,8 +145,8 @@ if not os.path.exists(buildslave_dir):
 
   # Grant the user the right to "log on as a service".
   import win32api, win32security
-  username_with_domain = win32api.GetUserNameEx(win32api.NameSamCompatible)
-  domain, username = username_with_domain.split('\\')
+  username = win32api.GetUserNameEx(win32api.NameSamCompatible)
+  domain, username = username.split('\\')
   policy = win32security.LsaOpenPolicy(domain, win32security.POLICY_ALL_ACCESS)
   sid_obj, domain, tmp = win32security.LookupAccountName(domain, username)
   win32security.LsaAddAccountRights(policy, sid_obj, ('SeServiceLogonRight',))
@@ -162,24 +162,26 @@ if not os.path.exists(buildslave_dir):
   check_call([
     os.path.join(python_dir, 'python'),
     os.path.join(python_dir, r'Scripts\buildbot_service.py'),
-    '--user', username_with_domain, '--startup' 'auto' 'install'])
+    '--user', '.\\' + username, '--startup', 'auto', 'install'])
   import win32serviceutil
   win32serviceutil.StartService('BuildBot')
 
-# rem Install 64-bit JDK.
-# if not exist "\Program Files\Java\jdk1.7.0_55" (
-#   if exist opt\win64\jdk-7u55-windows-x64.exe (
-#     opt\win64\jdk-7u55-windows-x64.exe /s
-#   )
-# )
-#
-# rem Install 32-bit JDK.
-# if not exist "\Program Files (x86)\Java\jdk1.7.0_55" (
-#   if exist opt\win32\jdk-7u55-windows-i586.exe (
-#     opt\win32\jdk-7u55-windows-i586.exe /s
-#   )
-# )
-#
+# Install 32-bit JDK.
+cookie = 'oraclelicense=accept-securebackup-cookie'
+if not os.path.exists(r'\Program Files (x86)\Java\jdk1.7.0_55'):
+  with download(
+      'http://download.oracle.com/otn-pub/java/jdk/7u55-b13/' +
+      'jdk-7u55-windows-i586.exe', cookie) as f:
+    check_call([f, '/s'])
+
+# Install 64-bit JDK.
+if not os.path.exists(r'\Program Files\Java\jdk1.7.0_55'):
+  with download(
+      'http://download.oracle.com/otn-pub/java/jdk/7u55-b13/' +
+      'jdk-7u55-windows-i586.exe', cookie) as f:
+    check_call([f, '/s'])
+
+# TODO: copy remaining dependencies
 # rem Install other dependencies using xcopy.
 # if not exist "\Program Files\CMake" (
 #   if exist opt\win64\root (
