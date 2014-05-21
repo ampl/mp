@@ -6,10 +6,6 @@ from glob import glob
 from subprocess import check_call
 from zipfile import ZipFile
 
-from pip.index import PackageFinder
-from pip.req import InstallRequirement, RequirementSet
-from pip.locations import build_prefix, src_prefix
-
 def download(url, filename):
   print('Downloading', url, 'to', filename)
   sys.stdout.flush()
@@ -18,17 +14,6 @@ def download(url, filename):
 def unzip(filename, path):
   with ZipFile(filename) as zip:
     zip.extractall(path)
-
-def pip_install(package):
-  requirement_set = RequirementSet(
-      build_dir=build_prefix,
-      src_dir=src_prefix,
-      download_dir=None)
-  requirement_set.add_requirement(InstallRequirement.from_line(package, None))
-  finder = PackageFinder(
-    find_links=[], index_urls=['http://pypi.python.org/simple/'])
-  requirement_set.prepare_files(finder, force_root_egg_info=False, bundle=False)
-  requirement_set.install([], [])
 
 # Install CMake.
 cmake = 'cmake-2.8.12.2-win32-x86'
@@ -118,6 +103,27 @@ download(
   'http://twistedmatrix.com/Releases/Twisted/' +
   '14.0/Twisted-14.0.0.win-amd64-py2.7.msi', filename)
 check_call(['msiexec', '/i', filename])
+
+# Install pip.
+download('https://bootstrap.pypa.io/get-pip.py', 'get_pip.py')
+import get_pip
+get_pip.main()
+
+from pip.index import PackageFinder
+from pip.req import InstallRequirement, RequirementSet
+from pip.locations import build_prefix, src_prefix
+
+# Install package using pip.
+def pip_install(package):
+  requirement_set = RequirementSet(
+      build_dir=build_prefix,
+      src_dir=src_prefix,
+      download_dir=None)
+  requirement_set.add_requirement(InstallRequirement.from_line(package, None))
+  finder = PackageFinder(
+    find_links=[], index_urls=['http://pypi.python.org/simple/'])
+  requirement_set.prepare_files(finder, force_root_egg_info=False, bundle=False)
+  requirement_set.install([], [])
 
 # Install Zope.Interface - buildbot requirement.
 pip_install('zope.interface')
