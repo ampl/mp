@@ -87,6 +87,7 @@ if not os.path.exists(site_packages_dir + '\\win32'):
   download(
     'http://sourceforge.net/projects/pywin32/files/pywin32/Build%20219/' +
     'pywin32-219.win-amd64-py2.7.exe/download', filename)
+  shutil.rmtree('pywin32')
   check_call([sevenzip, 'x', '-opywin32', filename])
   os.remove(filename)
   for path in glob('pywin32/PLATLIB/*') + glob('pywin32/SCRIPTS/*'):
@@ -95,6 +96,28 @@ if not os.path.exists(site_packages_dir + '\\win32'):
   import pywin32_postinstall
   pywin32_postinstall.install()
   os.remove(site_packages_dir + '\\pywin32_postinstall.py')
+
+filename = 'twisted.msi'
+download(
+  'http://twistedmatrix.com/Releases/Twisted/' +
+  '14.0/Twisted-14.0.0.win-amd64-py2.7.msi', filename)
+check_call(['msiexec', '/i', filename])
+
+from pip.index import PackageFinder
+from pip.req import InstallRequirement, RequirementSet
+from pip.locations import build_prefix, src_prefix
+
+# Install Zope.Interface - buildbot requirement.
+requirement_set = RequirementSet(
+    build_dir=build_prefix,
+    src_dir=src_prefix,
+    download_dir=None)
+requirement_set.add_requirement(
+  InstallRequirement.from_line("zope.interface", None))
+finder = PackageFinder(
+  find_links=[], index_urls=["http://pypi.python.org/simple/"])
+requirement_set.prepare_files(finder, force_root_egg_info=False, bundle=False)
+requirement_set.install([], [])
 
 # TODO: install buildbot
 
