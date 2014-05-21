@@ -1,7 +1,7 @@
 # Set up build environment on Windows.
 
 from __future__ import print_function
-import os, sys, shutil, urllib, urlparse
+import importlib, os, sys, shutil, urllib, urlparse
 from glob import glob
 from subprocess import check_call
 from zipfile import ZipFile
@@ -13,6 +13,14 @@ class TempFile:
     return self.filename
   def __exit__(self, type, value, traceback):
     os.remove(self.filename)
+
+# Returns true iff module exists.
+def module_exists(module):
+  try:
+    importlib.import_module(module)
+    return True
+  except ImportError:
+    return False
 
 # Downloads into a temporary file.
 def download(url):
@@ -80,13 +88,13 @@ install_mingw('i686')
 install_mingw('x86_64')
 
 # Install pywin32 - buildbot dependency.
-site_packages_dir = python_dir + 'lib\\site-packages'
-if not os.path.exists(site_packages_dir + '\\win32'):
+if not module_exists('win32api'):
   shutil.rmtree('pywin32', True)
   with download(
       'http://sourceforge.net/projects/pywin32/files/pywin32/Build%20219/' +
       'pywin32-219.win-amd64-py2.7.exe/download') as f:
     check_call([sevenzip, 'x', '-opywin32', f])
+  site_packages_dir = python_dir + 'lib\\site-packages'
   for path in glob('pywin32/PLATLIB/*') + glob('pywin32/SCRIPTS/*'):
     shutil.move(path, site_packages_dir)
   shutil.rmtree('pywin32')
@@ -94,23 +102,28 @@ if not os.path.exists(site_packages_dir + '\\win32'):
   pywin32_postinstall.install()
   os.remove(site_packages_dir + '\\pywin32_postinstall.py')
 
-# Install Twisted - buildbot requirement.
-filename = 'twisted.msi'
-with download(
-    'http://twistedmatrix.com/Releases/Twisted/' +
-    '14.0/Twisted-14.0.0.win-amd64-py2.7.msi') as f:
-  check_call(['msiexec', '/i', f])
+# Install Twisted - buildbot dependency.
+if not module_exists('twisted'):
+  filename = 'twisted.msi'
+  with download(
+      'http://twistedmatrix.com/Releases/Twisted/' +
+      '14.0/Twisted-14.0.0.win-amd64-py2.7.msi') as f:
+    check_call(['msiexec', '/i', f])
 
 # Install pip.
-with download('https://bootstrap.pypa.io/get-pip.py') as f:
-  check_call(['python', f])
+if not module_exists('pip'):
+  with download('https://bootstrap.pypa.io/get-pip.py') as f:
+    check_call(['python', f])
 
 from pip.index import PackageFinder
 from pip.req import InstallRequirement, RequirementSet
 from pip.locations import build_prefix, src_prefix
 
-# Install package using pip.
+# Install package using pip if it hasn't been installed already.
 def pip_install(package):
+  if module_exists(package):
+    return
+  print('Installing', package)
   requirement_set = RequirementSet(
       build_dir=build_prefix,
       src_dir=src_prefix,
@@ -123,6 +136,8 @@ def pip_install(package):
 
 # Install Zope.Interface - buildbot requirement.
 pip_install('zope.interface')
+
+# Install buildbot.
 pip_install('buildbot')
 
 # Grant the user the right to "log on as a service".
