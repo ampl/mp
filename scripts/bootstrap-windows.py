@@ -36,15 +36,15 @@ def unzip(filename, path):
 
 # Install CMake.
 cmake = 'cmake-2.8.12.2-win32-x86'
-cmake_dir = r'C:\Program Files\' + cmake
+cmake_dir = os.path.join(r'C:\Program Files', cmake)
 if not os.path.exists(cmake_dir):
   with download('http://www.cmake.org/files/v2.8/' + cmake + '.zip') as f:
     unzip(f, r'C:\Program Files')
 
 # Add Python and CMake to PATH.
-python_dir = r'C:\Python27\'
+python_dir = r'C:\Python27'
 check_call(['setx', 'PATH',
-  os.getenv('PATH') + ';' + python_dir + ';' + cmake_dir + r'\bin'])
+  os.getenv('PATH') + ';' + python_dir + ';' + os.path.join(cmake_dir, '\bin')])
 
 # Install .NET Framework 4 for msbuild.
 # This requires vagrant-windows plugin version 1.7.0.pre.2 or later.
@@ -82,7 +82,7 @@ def install_mingw(arch):
       'Toolchains%20targetting%20Win' + bits + '/Personal%20Builds/' +
       'mingw-builds/4.8.2/threads-win32/sjlj/' + arch +
       '-4.8.2-release-win32-sjlj-rt_v3-rev4.7z/download') as f:
-    check_call([sevenzip, 'x', r'-oC:\', f])
+    check_call([sevenzip, 'x', '-oC:\\', f])
 
 install_mingw('i686')
 install_mingw('x86_64')
@@ -94,7 +94,7 @@ if not module_exists('win32api'):
       'http://sourceforge.net/projects/pywin32/files/pywin32/Build%20219/' +
       'pywin32-219.win-amd64-py2.7.exe/download') as f:
     check_call([sevenzip, 'x', '-opywin32', f])
-  site_packages_dir = python_dir + r'lib\site-packages'
+  site_packages_dir = os.path.join(python_dir, r'lib\site-packages')
   for path in glob('pywin32/PLATLIB/*') + glob('pywin32/SCRIPTS/*'):
     shutil.move(path, site_packages_dir)
   shutil.rmtree('pywin32')
@@ -145,13 +145,13 @@ pip_install('buildbot-slave', 'buildbot')
 buildslave_dir = r'\buildslave'
 if not os.path.exists(buildslave_dir):
   # Create buildbot slave.
-  check_call([python_dir + r'scripts\buildslave.bat',
+  check_call([os.path.join(python_dir, r'scripts\buildslave.bat'),
               'create-slave', buildslave_dir, '10.0.2.2', 'win2008', 'pass'])
 
   # Grant the user the right to "log on as a service".
   import win32api, win32security
   username_with_domain = win32api.GetUserNameEx(win32api.NameSamCompatible)
-  domain, username = username_with_domain.split(r'\')
+  domain, username = username_with_domain.split('\\')
   policy = win32security.LsaOpenPolicy(domain, win32security.POLICY_ALL_ACCESS)
   sid_obj, domain, tmp = win32security.LookupAccountName(domain, username)
   win32security.LsaAddAccountRights(policy, sid_obj, ('SeServiceLogonRight',))
@@ -165,7 +165,8 @@ if not os.path.exists(buildslave_dir):
 
   # Install buildbot service.
   check_call([
-    python_dir + 'python', python_dir + r'Scripts\buildbot_service.py',
+    os.path.join(python_dir, 'python'),
+    os.path.join(python_dir, r'Scripts\buildbot_service.py'),
     '--user', username_with_domain, '--startup' 'auto' 'install'])
   import win32serviceutil
   win32serviceutil.StartService('BuildBot')
