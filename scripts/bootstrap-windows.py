@@ -87,7 +87,7 @@ if not os.path.exists(site_packages_dir + '\\win32'):
   download(
     'http://sourceforge.net/projects/pywin32/files/pywin32/Build%20219/' +
     'pywin32-219.win-amd64-py2.7.exe/download', filename)
-  shutil.rmtree('pywin32')
+  shutil.rmtree('pywin32', True)
   check_call([sevenzip, 'x', '-opywin32', filename])
   os.remove(filename)
   for path in glob('pywin32/PLATLIB/*') + glob('pywin32/SCRIPTS/*'):
