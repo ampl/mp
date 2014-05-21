@@ -42,6 +42,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     c.vm.box = "win2008"
     c.vm.guest = :windows
     c.vm.communicator = "winrm"
-    c.vm.provision :shell, :path => "scripts/bootstrap-win.bat"
+    # Write the output to provision.log because of the issue
+    # https://github.com/mitchellh/vagrant/issues/3866
+    c.vm.provision "shell",
+      inline: "\\vagrant\\scripts\\bootstrap-windows.bat > \\vagrant\\provision.log 2>&1"
   end
 end
