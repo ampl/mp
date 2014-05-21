@@ -120,7 +120,9 @@ from pip.req import InstallRequirement, RequirementSet
 from pip.locations import build_prefix, src_prefix
 
 # Install package using pip if it hasn't been installed already.
-def pip_install(package, test_module=package):
+def pip_install(package, test_module=None):
+  if not test_module:
+    test_module = package
   if module_exists(test_module):
     return False
   print('Installing', package)
