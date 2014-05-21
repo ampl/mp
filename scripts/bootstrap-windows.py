@@ -16,16 +16,17 @@ def unzip(filename, path):
 
 # Install CMake.
 cmake = 'cmake-2.8.12.2-win32-x86'
-cmake_install_dir = 'C:\\Program Files\\' + cmake
-if not os.path.exists(cmake_install_dir):
+cmake_dir = 'C:\\Program Files\\' + cmake
+if not os.path.exists(cmake_dir):
   filename = "cmake.zip"
   download('http://www.cmake.org/files/v2.8/' + cmake + '.zip', filename)
   unzip(filename, 'C:\\Program Files')
   os.remove(filename)
 
 # Add Python and CMake to PATH.
+python_dir = 'C:\\Python27\\'
 check_call(['setx', 'PATH',
-  os.getenv('PATH') + ';C:\\Python27;' + cmake_install_dir + '\\bin', '/m'])
+  os.getenv('PATH') + ';' + python_dir ';' + cmake_dir + '\\bin'])
 
 # Install .NET Framework 4 for msbuild.
 # This requires vagrant-windows plugin version 1.7.0.pre.2 or later.
@@ -72,10 +73,26 @@ def install_mingw(arch):
     'Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/4.8.2/' +
     'threads-win32/sjlj/' + arch +
     '-4.8.2-release-win32-sjlj-rt_v3-rev4.7z/download', filename)
-  check_call([sevenzip, '-o', 'C:\\', 'x', filename])
+  check_call([sevenzip, 'x', '-oC:\\', filename])
 
 install_mingw('i686')
 install_mingw('x86_64')
+
+# Install pywin32 - buildbot dependency.
+site_packages_dir = python_dir + 'lib\\site-packages'
+if not os.path.exists(site_packages_dir + '\\win32'):
+  filename = 'pywin32.exe'
+  download(
+    'http://sourceforge.net/projects/pywin32/files/pywin32/Build%20219/' +
+    'pywin32-219.win-amd64-py2.7.exe/download', filename)
+  check_call([sevenzip, 'x', '-opywin32', filename])
+  os.remove(filename)
+  for path in glob('pywin32/PLATLIB/*') + glob('pywin32/SCRIPTS/*'):
+    shutil.move(path, site_packages_dir)
+  shutil.rmtree('pywin32')
+  import pywin32_postinstall
+  pywin32_postinstall.install()
+  os.remove(site_packages_dir + '\\pywin32_postinstall.py')
 
 # TODO: install buildbot
 
