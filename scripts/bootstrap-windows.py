@@ -70,8 +70,8 @@ def install_mingw(arch):
   filename = 'mingw.7z'
   download(
     'http://sourceforge.net/projects/mingw-w64/files/' +
-    'Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/4.8.2/' +
-    'threads-win32/sjlj/' + arch +
+    'Toolchains%20targetting%20Win' + bits + '/Personal%20Builds/' +
+    'mingw-builds/4.8.2/threads-win32/sjlj/' + arch +
     '-4.8.2-release-win32-sjlj-rt_v3-rev4.7z/download', filename)
   check_call([sevenzip, 'x', '-oC:\\', filename])
 
