@@ -105,9 +105,10 @@ download(
 check_call(['msiexec', '/i', filename])
 
 # Install pip.
-download('https://bootstrap.pypa.io/get-pip.py', 'get_pip.py')
+download('https://bootstrap.pypa.io/get-pip.py', 'scripts/get_pip.py')
 import get_pip
 get_pip.main()
+os.remove('scripts/get_pip.py')
 
 from pip.index import PackageFinder
 from pip.req import InstallRequirement, RequirementSet
