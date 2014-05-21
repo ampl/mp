@@ -26,7 +26,7 @@ if not os.path.exists(cmake_dir):
 # Add Python and CMake to PATH.
 python_dir = 'C:\\Python27\\'
 check_call(['setx', 'PATH',
-  os.getenv('PATH') + ';' + python_dir ';' + cmake_dir + '\\bin'])
+  os.getenv('PATH') + ';' + python_dir + ';' + cmake_dir + '\\bin'])
 
 # Install .NET Framework 4 for msbuild.
 # This requires vagrant-windows plugin version 1.7.0.pre.2 or later.
