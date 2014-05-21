@@ -2,8 +2,9 @@
 
 from __future__ import print_function
 import os, sys, shutil, urllib
-from zipfile import ZipFile
+from glob import glob
 from subprocess import check_call
+from zipfile import ZipFile
 
 def download(url, filename):
   print('Downloading', url, 'to', filename)
@@ -74,6 +75,7 @@ def install_mingw(arch):
     'mingw-builds/4.8.2/threads-win32/sjlj/' + arch +
     '-4.8.2-release-win32-sjlj-rt_v3-rev4.7z/download', filename)
   check_call([sevenzip, 'x', '-oC:\\', filename])
+  os.remove(filename)
 
 install_mingw('i686')
 install_mingw('x86_64')
