@@ -102,14 +102,6 @@ if not module_exists('win32api'):
   pywin32_postinstall.install()
   os.remove(site_packages_dir + r'\pywin32_postinstall.py')
 
-# Install Twisted - buildbot dependency.
-if not module_exists('twisted'):
-  filename = 'twisted.msi'
-  with download(
-      'http://twistedmatrix.com/Releases/Twisted/' +
-      '14.0/Twisted-14.0.0.win-amd64-py2.7.msi') as f:
-    check_call(['msiexec', '/i', f])
-
 # Install pip.
 if not module_exists('pip'):
   with download('https://bootstrap.pypa.io/get-pip.py') as f:
@@ -136,7 +128,10 @@ def pip_install(package, test_module=None):
   requirement_set.prepare_files(finder, force_root_egg_info=False, bundle=False)
   requirement_set.install([], [])
 
-# Install Zope.Interface - buildbot requirement.
+# Install Twisted - buildbot dependency.
+pip_install('twisted')
+
+# Install Zope.Interface - buildbot dependency.
 pip_install('zope.interface')
 
 # Install buildbot slave.
