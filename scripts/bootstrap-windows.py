@@ -6,6 +6,10 @@ from glob import glob
 from subprocess import check_call
 from zipfile import ZipFile
 
+from pip.index import PackageFinder
+from pip.req import InstallRequirement, RequirementSet
+from pip.locations import build_prefix, src_prefix
+
 def download(url, filename):
   print('Downloading', url, 'to', filename)
   sys.stdout.flush()
@@ -14,6 +18,17 @@ def download(url, filename):
 def unzip(filename, path):
   with ZipFile(filename) as zip:
     zip.extractall(path)
+
+def pip_install(package):
+  requirement_set = RequirementSet(
+      build_dir=build_prefix,
+      src_dir=src_prefix,
+      download_dir=None)
+  requirement_set.add_requirement(InstallRequirement.from_line(package, None))
+  finder = PackageFinder(
+    find_links=[], index_urls=['http://pypi.python.org/simple/'])
+  requirement_set.prepare_files(finder, force_root_egg_info=False, bundle=False)
+  requirement_set.install([], [])
 
 # Install CMake.
 cmake = 'cmake-2.8.12.2-win32-x86'
@@ -97,29 +112,27 @@ if not os.path.exists(site_packages_dir + '\\win32'):
   pywin32_postinstall.install()
   os.remove(site_packages_dir + '\\pywin32_postinstall.py')
 
+# Install Twisted - buildbot requirement.
 filename = 'twisted.msi'
 download(
   'http://twistedmatrix.com/Releases/Twisted/' +
   '14.0/Twisted-14.0.0.win-amd64-py2.7.msi', filename)
 check_call(['msiexec', '/i', filename])
 
-from pip.index import PackageFinder
-from pip.req import InstallRequirement, RequirementSet
-from pip.locations import build_prefix, src_prefix
-
 # Install Zope.Interface - buildbot requirement.
-requirement_set = RequirementSet(
-    build_dir=build_prefix,
-    src_dir=src_prefix,
-    download_dir=None)
-requirement_set.add_requirement(
-  InstallRequirement.from_line("zope.interface", None))
-finder = PackageFinder(
-  find_links=[], index_urls=["http://pypi.python.org/simple/"])
-requirement_set.prepare_files(finder, force_root_egg_info=False, bundle=False)
-requirement_set.install([], [])
+pip_install('zope.interface')
+pip_install('buildbot')
 
-# TODO: install buildbot
+# Grant the user the right to "log on as a service".
+import win32api, win32security
+username = win32api.GetUserNameEx(win32api.NameSamCompatible)
+domain, username = username.split("\\")
+policy = win32security.LsaOpenPolicy(domain, win32security.POLICY_ALL_ACCESS)
+sid_obj, domain, tmp = win32security.LookupAccountName(domain, username)
+win32security.LsaAddAccountRights(policy, sid_obj, ('SeServiceLogonRight',))
+win32security.LsaClose(policy)
+
+# TODO: autostart buildbot
 
 # rem Install 64-bit JDK.
 # if not exist "\Program Files\Java\jdk1.7.0_55" (
