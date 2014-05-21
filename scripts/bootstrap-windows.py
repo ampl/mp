@@ -124,7 +124,7 @@ def pip_install(package, test_module=None):
   if not test_module:
     test_module = package
   if module_exists(test_module):
-    return False
+    return
   print('Installing', package)
   requirement_set = RequirementSet(
       build_dir=build_prefix,
@@ -135,14 +135,17 @@ def pip_install(package, test_module=None):
     find_links=[], index_urls=['http://pypi.python.org/simple/'])
   requirement_set.prepare_files(finder, force_root_egg_info=False, bundle=False)
   requirement_set.install([], [])
-  return True
 
 # Install Zope.Interface - buildbot requirement.
 pip_install('zope.interface')
 
 # Install buildbot-slave.
-if pip_install('buildbot-slave', 'buildbot'):
-  check_call(['buildslave', 'create-slave', '\\buildslave'])
+pip_install('buildbot-slave', 'buildbot')
+
+buildslave_dir = '\\buildslave'
+if not os.path.exists(buildslave_dir):
+  check_call([python_dir + 'scripts\\buildslave',
+              'create-slave', buildslave_dir])
 
 # Grant the user the right to "log on as a service".
 import win32api, win32security
