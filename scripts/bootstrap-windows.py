@@ -52,7 +52,7 @@ if not os.path.exists('\\Program Files\\Microsoft SDKs\\Windows\\v7.1'):
      'http://download.microsoft.com/download/F/1/0/'
      'F10113F5-B750-4969-A255-274341AC6BCE/GRMSDKX_EN_DVD.iso',
      filename)
-  check_call(['C:\\Program Files (x86)\\7-Zip\7z',
+  check_call(['C:\\Program Files (x86)\\7-Zip\\7z',
               'x', '-tudf', '-owinsdk', filename])
   os.remove(filename)
   # Install SDK.
