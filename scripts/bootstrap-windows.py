@@ -36,53 +36,53 @@ def unzip(filename, path):
 
 # Install CMake.
 cmake = 'cmake-2.8.12.2-win32-x86'
-cmake_dir = 'C:\\Program Files\\' + cmake
+cmake_dir = r'C:\Program Files\' + cmake
 if not os.path.exists(cmake_dir):
   with download('http://www.cmake.org/files/v2.8/' + cmake + '.zip') as f:
-    unzip(f, 'C:\\Program Files')
+    unzip(f, r'C:\Program Files')
 
 # Add Python and CMake to PATH.
-python_dir = 'C:\\Python27\\'
+python_dir = r'C:\Python27\'
 check_call(['setx', 'PATH',
-  os.getenv('PATH') + ';' + python_dir + ';' + cmake_dir + '\\bin'])
+  os.getenv('PATH') + ';' + python_dir + ';' + cmake_dir + r'\bin'])
 
 # Install .NET Framework 4 for msbuild.
 # This requires vagrant-windows plugin version 1.7.0.pre.2 or later.
 # See https://github.com/WinRb/vagrant-windows/pull/189
-if not os.path.exists('\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319'):
+if not os.path.exists(r'\Windows\Microsoft.NET\Framework64\v4.0.30319'):
   with download(
       'http://download.microsoft.com/download/9/5/A/' +
       '95A9616B-7A37-4AF6-BC36-D6EA96C8DAAE/dotNetFx40_Full_x86_x64.exe') as f:
     check_call([f, '/q', '/norestart'])
 
 # Install 7zip.
-sevenzip = 'C:\\Program Files (x86)\\7-Zip\\7z.exe'
+sevenzip = r'C:\Program Files (x86)\7-Zip\7z.exe'
 if not os.path.exists(sevenzip):
   with download('http://downloads.sourceforge.net/sevenzip/7z920.exe') as f:
     check_call([f, '/S'])
 
 # Install Windows SDK.
-if not os.path.exists('\\Program Files\\Microsoft SDKs\\Windows\\v7.1'):
+if not os.path.exists(r'\Program Files\Microsoft SDKs\Windows\v7.1'):
   # Extract ISO.
   with download(
        'http://download.microsoft.com/download/F/1/0/'
        'F10113F5-B750-4969-A255-274341AC6BCE/GRMSDKX_EN_DVD.iso') as f:
     check_call([sevenzip, 'x', '-tudf', '-owinsdk', f])
   # Install SDK.
-  check_call(['winsdk\\setup.exe', '-q'])
+  check_call([r'winsdk\setup.exe', '-q'])
   shutil.rmtree('winsdk')
 
 # Install MinGW.
 def install_mingw(arch):
   bits = '64' if arch.endswith('64') else '32'
-  if os.path.exists('\\mingw' + bits):
+  if os.path.exists(r'\mingw' + bits):
     return
   with download(
       'http://sourceforge.net/projects/mingw-w64/files/' +
       'Toolchains%20targetting%20Win' + bits + '/Personal%20Builds/' +
       'mingw-builds/4.8.2/threads-win32/sjlj/' + arch +
       '-4.8.2-release-win32-sjlj-rt_v3-rev4.7z/download') as f:
-    check_call([sevenzip, 'x', '-oC:\\', f])
+    check_call([sevenzip, 'x', r'-oC:\', f])
 
 install_mingw('i686')
 install_mingw('x86_64')
@@ -94,13 +94,13 @@ if not module_exists('win32api'):
       'http://sourceforge.net/projects/pywin32/files/pywin32/Build%20219/' +
       'pywin32-219.win-amd64-py2.7.exe/download') as f:
     check_call([sevenzip, 'x', '-opywin32', f])
-  site_packages_dir = python_dir + 'lib\\site-packages'
+  site_packages_dir = python_dir + r'lib\site-packages'
   for path in glob('pywin32/PLATLIB/*') + glob('pywin32/SCRIPTS/*'):
     shutil.move(path, site_packages_dir)
   shutil.rmtree('pywin32')
   import pywin32_postinstall
   pywin32_postinstall.install()
-  os.remove(site_packages_dir + '\\pywin32_postinstall.py')
+  os.remove(site_packages_dir + r'\pywin32_postinstall.py')
 
 # Install Twisted - buildbot dependency.
 if not module_exists('twisted'):
@@ -139,24 +139,36 @@ def pip_install(package, test_module=None):
 # Install Zope.Interface - buildbot requirement.
 pip_install('zope.interface')
 
-# Install buildbot-slave.
+# Install buildbot slave.
 pip_install('buildbot-slave', 'buildbot')
 
-buildslave_dir = '\\buildslave'
+buildslave_dir = r'\buildslave'
 if not os.path.exists(buildslave_dir):
-  check_call([python_dir + 'scripts\\buildslave.bat',
+  # Create buildbot slave.
+  check_call([python_dir + r'scripts\buildslave.bat',
               'create-slave', buildslave_dir, '10.0.2.2', 'win2008', 'pass'])
 
-# Grant the user the right to "log on as a service".
-import win32api, win32security
-username = win32api.GetUserNameEx(win32api.NameSamCompatible)
-domain, username = username.split("\\")
-policy = win32security.LsaOpenPolicy(domain, win32security.POLICY_ALL_ACCESS)
-sid_obj, domain, tmp = win32security.LookupAccountName(domain, username)
-win32security.LsaAddAccountRights(policy, sid_obj, ('SeServiceLogonRight',))
-win32security.LsaClose(policy)
+  # Grant the user the right to "log on as a service".
+  import win32api, win32security
+  username_with_domain = win32api.GetUserNameEx(win32api.NameSamCompatible)
+  domain, username = username_with_domain.split(r'\')
+  policy = win32security.LsaOpenPolicy(domain, win32security.POLICY_ALL_ACCESS)
+  sid_obj, domain, tmp = win32security.LookupAccountName(domain, username)
+  win32security.LsaAddAccountRights(policy, sid_obj, ('SeServiceLogonRight',))
+  win32security.LsaClose(policy)
 
-# TODO: autostart buildbot
+  # Set buildslave parameters.
+  import _winreg as reg
+  with reg.CreateKey(reg.HKEY_LOCAL_MACHINE,
+      r'System\CurrentControlSet\services\BuildBot\Parameters') as key:
+    reg.SetValueEx(key, 'directories', 0, reg.REG_SZ, buildslave_dir)
+
+  # Install buildbot service.
+  check_call([
+    python_dir + 'python', python_dir + r'Scripts\buildbot_service.py',
+    '--user', username_with_domain, '--startup' 'auto' 'install'])
+  import win32serviceutil
+  win32serviceutil.StartService('BuildBot')
 
 # rem Install 64-bit JDK.
 # if not exist "\Program Files\Java\jdk1.7.0_55" (
