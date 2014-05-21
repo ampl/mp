@@ -120,9 +120,9 @@ from pip.req import InstallRequirement, RequirementSet
 from pip.locations import build_prefix, src_prefix
 
 # Install package using pip if it hasn't been installed already.
-def pip_install(package):
-  if module_exists(package):
-    return
+def pip_install(package, test_module=package):
+  if module_exists(test_module):
+    return False
   print('Installing', package)
   requirement_set = RequirementSet(
       build_dir=build_prefix,
@@ -133,12 +133,14 @@ def pip_install(package):
     find_links=[], index_urls=['http://pypi.python.org/simple/'])
   requirement_set.prepare_files(finder, force_root_egg_info=False, bundle=False)
   requirement_set.install([], [])
+  return True
 
 # Install Zope.Interface - buildbot requirement.
 pip_install('zope.interface')
 
-# Install buildbot.
-pip_install('buildbot')
+# Install buildbot-slave.
+if pip_install('buildbot-slave', 'buildbot'):
+  check_call(['buildslave', 'create-slave', '\\buildslave'])
 
 # Grant the user the right to "log on as a service".
 import win32api, win32security
