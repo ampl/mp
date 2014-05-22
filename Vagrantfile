@@ -37,6 +37,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.define "win2008" do |c|
     c.vm.provider "virtualbox" do |v|
+      v.memory = 2024
+      v.cpus = 2
       v.customize ["modifyvm", :id, "--vrdeport", "5001"]
     end
     c.vm.box = "win2008"
