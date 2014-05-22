@@ -182,10 +182,11 @@ if not os.path.exists(r'\Program Files\Java\jdk1.7.0_55'):
       'jdk-7u55-windows-i586.exe', cookie) as f:
     check_call([f, '/s'])
 
-# TODO: copy remaining dependencies
-# rem Install other dependencies using xcopy.
-# if not exist "\Program Files\CMake" (
-#   if exist opt\win64\root (
-#     xcopy opt\win64\root C:\ /s /e
-#   )
-# )
+# Copy optional dependencies.
+opt_dir = r'opt\win64'
+if os.path.exists(opt_dir):
+  for entry in os.listdir(opt_dir):
+    for subentry in os.listdir('opt/win64'):
+      dest = os.path.join('C:\\', entry, subentry)
+      if not os.path.exists(dest):
+        shutil.copy(os.path.join(opt_dir, entry, subentry), dest)
