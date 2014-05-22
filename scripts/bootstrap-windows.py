@@ -47,8 +47,14 @@ if not os.path.exists(cmake_dir):
 
 # Add Python and CMake to PATH.
 python_dir = r'C:\Python27'
-check_call(['setx', 'PATH',
-  os.getenv('PATH') + ';' + python_dir + ';' + os.path.join(cmake_dir, 'bin')])
+paths = os.getenv('PATH').split(os.pathsep)
+update_path = False
+for dir in [python_dir, os.path.join(cmake_dir, 'bin')]:
+  if dir not in paths:
+    update_path = True
+    paths.append(dir)
+if update_path:
+  check_call(['setx', 'PATH', os.pathsep.join(paths)])
 
 # Install .NET Framework 4 for msbuild.
 if not os.path.exists(r'\Windows\Microsoft.NET\Framework64\v4.0.30319'):
