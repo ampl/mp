@@ -31,7 +31,7 @@ def download(url, cookie = None):
   if cookie:
     opener.addheaders.append(('Cookie', cookie))
   with open(filename, 'wb') as f:
-    shutil.copyfileobj(opener.open("http://example.com/"), f)
+    shutil.copyfileobj(opener.open(url), f)
   return TempFile(filename)
 
 def unzip(filename, path):
