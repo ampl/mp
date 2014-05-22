@@ -48,7 +48,7 @@ if not os.path.exists(cmake_dir):
 # Add Python and CMake to PATH.
 python_dir = r'C:\Python27'
 check_call(['setx', 'PATH',
-  os.getenv('PATH') + ';' + python_dir + ';' + os.path.join(cmake_dir, '\bin')])
+  os.getenv('PATH') + ';' + python_dir + ';' + os.path.join(cmake_dir, 'bin')])
 
 # Install .NET Framework 4 for msbuild.
 if not os.path.exists(r'\Windows\Microsoft.NET\Framework64\v4.0.30319'):
@@ -186,7 +186,8 @@ if not os.path.exists(r'\Program Files\Java\jdk1.7.0_55'):
 opt_dir = r'opt\win64'
 if os.path.exists(opt_dir):
   for entry in os.listdir(opt_dir):
-    for subentry in os.listdir('opt/win64'):
+    subdir = os.path.join(opt_dir, entry)
+    for subentry in os.listdir(subdir):
       dest = os.path.join('C:\\', entry, subentry)
       if not os.path.exists(dest):
-        shutil.copy(os.path.join(opt_dir, entry, subentry), dest)
+        shutil.copytree(os.path.join(subdir, subentry), dest)
