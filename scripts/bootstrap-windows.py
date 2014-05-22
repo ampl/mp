@@ -179,7 +179,7 @@ if not os.path.exists(r'\Program Files (x86)\Java\jdk1.7.0_55'):
 if not os.path.exists(r'\Program Files\Java\jdk1.7.0_55'):
   with download(
       'http://download.oracle.com/otn-pub/java/jdk/7u55-b13/' +
-      'jdk-7u55-windows-i586.exe', cookie) as f:
+      'jdk-7u55-windows-x64.exe', cookie) as f:
     check_call([f, '/s'])
 
 # Copy optional dependencies.
