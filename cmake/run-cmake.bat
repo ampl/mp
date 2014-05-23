@@ -9,7 +9,6 @@ set args=%*
 set args=%args:"=\"%
 for /F "delims=" %%i IN ('cmake "-DARGS=%args%" -P %~dp0/FindSetEnv.cmake') DO (
   set setenv=%%i
-  set setenv_esc="%setenv:"='%"
 )
-if NOT %setenv_esc% == "" call %setenv%
+if NOT [%setenv%] == [] call %setenv%
 cmake %*
