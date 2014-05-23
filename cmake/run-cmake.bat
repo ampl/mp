@@ -5,6 +5,11 @@ rem arguments to it, for example:
 rem
 rem   cmake\run-cmake -G "Visual Studio 10 Win64" .
 
-for /F "delims=" %%i IN ('cmake "-DPRINT_PATH=1" -P %~dp0/FindSetEnv.cmake') DO set setenv=%%i
-if NOT "%setenv%" == "" call "%setenv%"
+set args=%*
+set args=%args:"=\"%
+for /F "delims=" %%i IN ('cmake "-DARGS=%args%" -P %~dp0/FindSetEnv.cmake') DO (
+  set setenv=%%i
+  set setenv_esc="%setenv:"='%"
+)
+if NOT %setenv_esc% == "" call %setenv%
 cmake %*
