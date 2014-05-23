@@ -8,7 +8,6 @@ rem   cmake\run-cmake -G "Visual Studio 10 Win64" .
 set args=%*
 set args=%args:"=\"%
 for /F "delims=" %%i IN ('cmake "-DARGS=%args%" -P %~dp0/FindSetEnv.cmake') DO (
-  set setenv=%%i
+  call %%i
 )
-if NOT [%setenv%] == [] call %setenv%
 cmake %*
