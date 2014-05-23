@@ -82,7 +82,10 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
   # toolchain rather than Visual Studio.
   include(FindSetEnv)
   if (WINSDK_SETENV)
-    set(MSBUILD_SETUP "call \"${WINSDK_SETENV}\"")
+  if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+    set(setenv_flag /x86)
+  endif()
+    set(MSBUILD_SETUP "call \"${WINSDK_SETENV}\" ${setenv_flag}")
   endif ()
   # Set FrameworkPathOverride to get rid of MSB3644 warnings.
   file(WRITE run-msbuild.bat "
