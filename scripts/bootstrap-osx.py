@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Set up build environment on OS X.
 
 from download import download
