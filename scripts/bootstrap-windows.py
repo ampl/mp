@@ -1,18 +1,11 @@
 # Set up build environment on Windows.
 
 from __future__ import print_function
-import importlib, os, sys, shutil, urllib2, urlparse
+import importlib, os, sys, shutil
+from download import download
 from glob import glob
 from subprocess import check_call
 from zipfile import ZipFile
-
-class TempFile:
-  def __init__(self, filename):
-    self.filename = filename
-  def __enter__(self):
-    return self.filename
-  def __exit__(self, type, value, traceback):
-    os.remove(self.filename)
 
 # Returns true iff module exists.
 def module_exists(module):
@@ -21,18 +14,6 @@ def module_exists(module):
     return True
   except ImportError:
     return False
-
-# Downloads into a temporary file.
-def download(url, cookie = None):
-  filename = os.path.basename(urlparse.urlsplit(url)[2])
-  print('Downloading', url, 'to', filename)
-  sys.stdout.flush()
-  opener = urllib2.build_opener()
-  if cookie:
-    opener.addheaders.append(('Cookie', cookie))
-  with open(filename, 'wb') as f:
-    shutil.copyfileobj(opener.open(url), f)
-  return TempFile(filename)
 
 def unzip(filename, path):
   with ZipFile(filename) as zip:
