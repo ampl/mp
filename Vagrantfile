@@ -28,14 +28,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     c.vm.provision :shell, :path => "scripts/bootstrap-ubuntu.sh"
   end
 
-  config.vm.define "osx-mavericks" do |c|
+  config.vm.define "osx-ml" do |c|
     c.vm.provider "virtualbox" do |v|
       v.customize ["modifyvm", :id, "--vrdeport", "5000"]
     end
-    c.vm.box = "osx-mavericks"
+    c.vm.box = "osx-ml"
     c.vm.network :private_network, ip: "10.11.12.13"
     c.vm.synced_folder ".", "/vagrant", :type => "nfs",
                        :mount_options => ["resvport"]
+    c.vm.provision :shell, :path => "scripts/bootstrap-osx.py"
   end
 
   config.vm.define "win2008" do |c|
