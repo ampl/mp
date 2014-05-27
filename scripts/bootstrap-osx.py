@@ -37,7 +37,7 @@ with download(
   install_pkg(f)
   if vagrant:
     with open('/Users/vagrant', 'a') as f:
-      f.write('export PATH=/opt/local/bin:/opt/local/sbin:$PATH\n'
+      f.write('export PATH=/opt/local/bin:/opt/local/sbin:$PATH\n')
 
 # Install gfortran
 if not installed('gfortran'):
