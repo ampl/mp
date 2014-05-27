@@ -1,4 +1,4 @@
-# Set up build environment on Windows.
+# Set up build environment on 64-bit Windows.
 
 from __future__ import print_function
 import importlib, os, sys, shutil
