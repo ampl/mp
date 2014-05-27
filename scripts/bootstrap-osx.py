@@ -43,4 +43,6 @@ with download(
 if not installed('gfortran'):
   check_call(['port', 'install', 'gcc49', '+gfortran'])
 
+install_f90cache()
+
 # TODO: install buildbot, ccache, fortran cache

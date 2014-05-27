@@ -82,6 +82,19 @@ def install_ccache_links():
   for name in ['gcc', 'cc', 'g++', 'c++']:
     add_to_path('/usr/bin/ccache', name)
 
+# Install f90cache.
+def install_f90cache():
+  if not installed('f90cache'):
+    f90cache = 'f90cache-0.95'
+    with download(
+        'http://people.irisa.fr/Edouard.Canot/f90cache/' + f90cache + '.tar.bz2') as f:
+      with tarfile.open(f, "r:bz2") as archive:
+        archive.extractall('.')
+    check_call(['./configure'], cwd=f90cache)
+    check_call(['make', 'all', 'install'], cwd=f90cache)
+    shutil.rmtree(f90cache)
+    add_to_path('/usr/local/bin/f90cache', 'gfortran-4.9')
+
 # Returns true iff module exists.
 def module_exists(module):
   try:
