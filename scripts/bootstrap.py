@@ -96,7 +96,7 @@ def install_f90cache():
         'http://people.irisa.fr/Edouard.Canot/f90cache/' + f90cache + '.tar.bz2') as f:
       with tarfile.open(f, "r:bz2") as archive:
         archive.extractall('.')
-    check_call(['./configure'], cwd=f90cache)
+    check_call(['sh', 'configure'], cwd=f90cache)
     check_call(['make', 'all', 'install'], cwd=f90cache)
     shutil.rmtree(f90cache)
     add_to_path('/usr/local/bin/f90cache', 'gfortran-4.9')
