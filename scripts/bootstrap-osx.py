@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Set up build environment on OS X Moutain Lion.
 
+from __future__ import print_function
 import os, sys, tempfile
 from glob import glob
 from subprocess import check_call
@@ -32,13 +33,12 @@ if not installed('clang'):
     install_dmg(f)
 
 # Install MacPorts.
-with download(
-    'https://distfiles.macports.org/MacPorts/' +
-    'MacPorts-2.2.0-10.8-MountainLion.pkg') as f:
-  install_pkg(f)
-  if vagrant:
-    with open('/Users/vagrant/.profile', 'a') as f:
-      f.write('export PATH=/opt/local/bin:/opt/local/sbin:$PATH\n')
+if not installed('port'):
+  with download(
+      'https://distfiles.macports.org/MacPorts/' +
+      'MacPorts-2.2.0-10.8-MountainLion.pkg') as f:
+    install_pkg(f)
+    add_to_path('/opt/local/bin/port')
 
 # Install ccache.
 if not installed('ccache'):
