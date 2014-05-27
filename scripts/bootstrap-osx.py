@@ -13,6 +13,7 @@ install_cmake('cmake-2.8.12.2-Darwin64-universal.tar.gz')
 
 # Installs an OS X package.
 def install_pkg(filename):
+  print('Installing', filename)
   check_call(['installer', '-pkg', filename, '-target', '/'])
 
 # Installs a package from a .dmg file.
@@ -36,13 +37,20 @@ with download(
     'MacPorts-2.2.0-10.8-MountainLion.pkg') as f:
   install_pkg(f)
   if vagrant:
-    with open('/Users/vagrant', 'a') as f:
+    with open('/Users/vagrant/.profile', 'a') as f:
       f.write('export PATH=/opt/local/bin:/opt/local/sbin:$PATH\n')
 
-# Install gfortran
+# Install ccache.
+if not installed('ccache'):
+  check_call(['port', 'install', 'ccache'])
+# TODO: install links
+
+# Install gfortran.
 if not installed('gfortran'):
   check_call(['port', 'install', 'gcc49', '+gfortran'])
 
 install_f90cache()
 
-# TODO: install buildbot, ccache, fortran cache
+install_pip()
+
+# TODO: install buildbot

@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 import os, platform, re, shutil, sys, tarfile, urllib2, urlparse, zipfile
+from subprocess import check_call
 
 class TempFile:
   def __init__(self, filename):
@@ -48,6 +49,11 @@ def installed(name):
 # Adds filename to search paths.
 def add_to_path(filename, linkname = None):
   if windows:
+    path = os.path.basename(filename)
+    print('Adding', path, 'to PATH')
+    paths = os.getenv('PATH').split(os.pathsep)
+    paths.append(path)
+    check_call(['setx', 'PATH', os.pathsep.join(paths)])
     return
   path = '/usr/local/bin'
   # Create /usr/local/bin directory if it doesn't exist which can happen
@@ -66,11 +72,11 @@ def install_cmake(filename):
     return
   dir, version, minor = re.match(
     r'(cmake-(\d+\.\d+)\.(\d+)\.[^\.]+)\..*', filename).groups()
-  open_archive = zipfile.ZipFile if filename.endswith('zip') else tarfile.open
   # extractall overwrites existing files, so no need to prepare the destination.
   url = 'http://www.cmake.org/files/v{}/{}'.format(version, filename)
   with download(url) as f:
-    with open_archive(f, "r:gz") as archive:
+    iszip = filename.endswith('zip')
+    with zipfile.ZipFile(f) if iszip else tarfile.open(f, 'r:gz') as archive:
       archive.extractall(opt_dir)
   if platform.system() == 'Darwin':
     dir = os.path.join(
@@ -102,3 +108,9 @@ def module_exists(module):
     return True
   except ImportError:
     return False
+
+# Installs pip.
+def install_pip():
+  if not module_exists('pip'):
+    with download('https://bootstrap.pypa.io/get-pip.py') as f:
+      check_call(['python', f])

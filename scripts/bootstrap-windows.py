@@ -6,18 +6,12 @@ from bootstrap import *
 from glob import glob
 from subprocess import check_call
 
-install_cmake('cmake-2.8.12.2-win32-x86.zip')
-
-# Add Python and CMake to PATH.
+# Add Python to PATH.
 python_dir = r'C:\Python27'
-paths = os.getenv('PATH').split(os.pathsep)
-update_path = False
-for dir in [python_dir, os.path.join(cmake_dir, 'bin')]:
-  if dir not in paths:
-    update_path = True
-    paths.append(dir)
-if update_path:
-  check_call(['setx', 'PATH', os.pathsep.join(paths)])
+if os.path.exists(python_dir) and not installed('python'):
+  add_to_path(python_dir + r'\python')
+
+install_cmake('cmake-2.8.12.2-win32-x86.zip')
 
 # Install .NET Framework 4 for msbuild.
 if not os.path.exists(r'\Windows\Microsoft.NET\Framework64\v4.0.30319'):
@@ -73,11 +67,7 @@ if not module_exists('win32api'):
   pywin32_postinstall.install()
   os.remove(site_packages_dir + r'\pywin32_postinstall.py')
 
-# Install pip.
-if not module_exists('pip'):
-  with download('https://bootstrap.pypa.io/get-pip.py') as f:
-    check_call(['python', f])
-
+install_pip()
 from pip.index import PackageFinder
 from pip.req import InstallRequirement, RequirementSet
 from pip.locations import build_prefix, src_prefix
@@ -100,8 +90,8 @@ def pip_install(package, test_module=None):
   requirement_set.install([], [])
 
 # Install buildbot dependencies.
-pip_install('twisted')
-pip_install('zope.interface')
+#pip_install('twisted')
+#pip_install('zope.interface')
 
 # Install buildbot slave.
 pip_install('buildbot-slave', 'buildbot')
