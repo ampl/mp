@@ -66,11 +66,11 @@ def install_cmake(filename):
     return
   dir, version, minor = re.match(
     r'(cmake-(\d+\.\d+)\.(\d+)\.[^\.]+)\..*', filename).groups()
-  archiver = zipfile.ZipFile if filename.endswith('zip') else tarfile
+  open_archive = zipfile.ZipFile if filename.endswith('zip') else tarfile.open
   # extractall overwrites existing files, so no need to prepare the destination.
   url = 'http://www.cmake.org/files/v{}/{}'.format(version, filename)
   with download(url) as f:
-    with archiver.open(f, "r:gz") as archive:
+    with open_archive(f, "r:gz") as archive:
       archive.extractall(opt_dir)
   if platform.system() == 'Darwin':
     dir = os.path.join(
