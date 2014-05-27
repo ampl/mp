@@ -36,15 +36,21 @@ def bootstrap_init():
     return True
   return False
 
-# Returns true if executable is installed on the path.
-def installed(name):
+# Returns executable location.
+def which(name):
   filename = name + '.exe' if windows else name
   for path in os.environ['PATH'].split(os.pathsep):
     path = os.path.join(path.strip('"'), filename)
     if os.path.isfile(path) and os.access(path, os.X_OK):
-      print(name, 'is installed in', path)
-      return True
-  return False
+      return path
+  return None
+
+# Returns true if executable is installed on the path.
+def installed(name):
+  path = which(name)
+  if path:
+    print(name, 'is installed in', path)
+  return path != None
 
 # Adds filename to search paths.
 def add_to_path(filename, linkname = None):
@@ -82,11 +88,6 @@ def install_cmake(filename):
     dir = os.path.join(
       dir, 'CMake {}-{}.app'.format(version, minor), 'Contents')
   add_to_path(os.path.join(opt_dir, dir, 'bin', 'cmake'))
-
-# Installs symlinks for ccache.
-def install_ccache_links():
-  for name in ['gcc', 'cc', 'g++', 'c++']:
-    add_to_path('/usr/bin/ccache', name)
 
 # Install f90cache.
 def install_f90cache():

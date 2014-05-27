@@ -38,19 +38,21 @@ if not installed('port'):
       'https://distfiles.macports.org/MacPorts/' +
       'MacPorts-2.2.0-10.8-MountainLion.pkg') as f:
     install_pkg(f)
-    # Get rid of "No Xcode installation was found" error.
-    with open('/opt/local/etc/macports/macports.conf', 'r+b') as f:
-      m = mmap.mmap(f.fileno(), 0)
-      pos = m.find('# developer_dir')
-      if pos != -1:
-        m.seek(pos)
-        m.write('developer_dir /\n#')
-    add_to_path('/opt/local/bin/port')
+  # Get rid of "No Xcode installation was found" error.
+  with open('/opt/local/etc/macports/macports.conf', 'r+b') as f:
+    m = mmap.mmap(f.fileno(), 0)
+    pos = m.find('# developer_dir')
+    if pos != -1:
+      m.seek(pos)
+      m.write('developer_dir /\n#')
+  add_to_path('/opt/local/bin/port')
 
 # Install ccache.
 if not installed('ccache'):
   check_call(['port', 'install', 'ccache'])
-# TODO: install links
+  home = os.path.expanduser('~vagrant' if vagrant else '~')
+  with open(home + '/.profile', 'a') as f:
+    f.write('export PATH=/opt/local/libexec/ccache:$PATH')
 
 # Install gfortran.
 if not installed('gfortran'):
