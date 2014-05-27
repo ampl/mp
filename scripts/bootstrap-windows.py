@@ -1,7 +1,7 @@
 # Set up build environment on 64-bit Windows.
 
 from __future__ import print_function
-import importlib, os, sys, shutil
+import os, shutil
 from bootstrap import *
 from glob import glob
 from subprocess import check_call

@@ -1,7 +1,7 @@
 # Common bootstrap functionality.
 
 from __future__ import print_function
-import os, platform, re, shutil, sys, tarfile, urllib2, urlparse, zipfile
+import importlib, os, platform, re, shutil, sys, tarfile, urllib2, urlparse, zipfile
 from subprocess import check_call
 
 class TempFile:
