@@ -2,7 +2,7 @@
 # Set up build environment on OS X Moutain Lion.
 
 from __future__ import print_function
-import os, sys, tempfile
+import mmap, os, sys, tempfile
 from glob import glob
 from subprocess import check_call
 
@@ -38,6 +38,13 @@ if not installed('port'):
       'https://distfiles.macports.org/MacPorts/' +
       'MacPorts-2.2.0-10.8-MountainLion.pkg') as f:
     install_pkg(f)
+    # Get rid of "No Xcode installation was found" error.
+    with open('/opt/local/etc/macports/macports.conf', 'r+b') as f:
+      m = mmap.mmap(f.fileno(), 0)
+      pos = m.find('# developer_dir')
+      if pos != -1:
+        m.seek(pos)
+        m.write('developer_dir /\n#')
     add_to_path('/opt/local/bin/port')
 
 # Install ccache.
