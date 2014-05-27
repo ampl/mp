@@ -1,34 +1,46 @@
 #!/usr/bin/env python
-# Set up build environment on OS X.
+# Set up build environment on OS X Moutain Lion.
 
-import os, tempfile
+import os, sys, tempfile
+from glob import glob
 from subprocess import check_call
 
-# If we are in a VM managed by Vagrant, then do everything in the shared
-# /vagrant directory to avoid growth of the VM drive.
-vagrant_dir = '/vagrant'
-if os.path.exists(vagrant_dir):
-  os.chdir(vagrant_dir)
-  import sys
-  sys.path.append(vagrant_dir + '/scripts')
+sys.path.append('/vagrant/scripts')
+from bootstrap import *
+vagrant = bootstrap_init()
 
-import bootstrap
+install_cmake('cmake-2.8.12.2-Darwin64-universal.tar.gz')
 
-bootstrap.install_cmake('cmake-2.8.12.2-Darwin64-universal.tar.gz')
+# Installs an OS X package.
+def install_pkg(filename):
+  check_call(['installer', '-pkg', filename, '-target', '/'])
+
+# Installs a package from a .dmg file.
+def install_dmg(filename):
+  dir = tempfile.mkdtemp()
+  check_call(['hdiutil', 'attach', filename, '-mountpoint', dir])
+  install_pkg(glob(dir + '/*pkg')[0])
+  check_call(['hdiutil', 'detach', dir])
+  os.rmdir(dir)
 
 # Install command-line tools for Xcode.
-if not os.path.exists('/usr/bin/clang'):
-  with bootstrap.download(
-    'http://devimages.apple.com/downloads/xcode/' +
-    'command_line_tools_for_xcode_os_x_mountain_lion_april_2013.dmg') as f:
-    dir = tempfile.mkdtemp()
-    check_call(['hdiutil', 'attach', f, '-mountpoint', dir])
-    check_call(['installer', '-pkg',
-                dir + '/Command Line Tools (Mountain Lion).mpkg', '-target', '/'])
-    check_call(['hdiutil', 'detach', dir])
-    os.rmdir(dir)
+if not installed('clang'):
+  with download(
+      'http://devimages.apple.com/downloads/xcode/' +
+      'command_line_tools_for_xcode_os_x_mountain_lion_april_2013.dmg') as f:
+    install_dmg(f)
 
-with download('http://coudert.name/software/gfortran-4.8.2-MountainLion.dmg') as f:
-  pass # TODO
+# Install MacPorts.
+with download(
+    'https://distfiles.macports.org/MacPorts/' +
+    'MacPorts-2.2.0-10.8-MountainLion.pkg') as f:
+  install_pkg(f)
+  if vagrant:
+    with open('/Users/vagrant', 'a') as f:
+      f.write('export PATH=/opt/local/bin:/opt/local/sbin:$PATH\n'
 
-# TODO: install buildbot, gfortran, ccache
+# Install gfortran
+if not installed('gfortran'):
+  check_call(['port', 'install', 'gcc49', '+gfortran'])
+
+# TODO: install buildbot, ccache, fortran cache
