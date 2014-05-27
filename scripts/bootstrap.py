@@ -49,7 +49,7 @@ def installed(name):
 # Adds filename to search paths.
 def add_to_path(filename, linkname = None):
   if windows:
-    path = os.path.basename(filename)
+    path = os.path.dirname(filename)
     print('Adding', path, 'to PATH')
     paths = os.getenv('PATH').split(os.pathsep)
     paths.append(path)
