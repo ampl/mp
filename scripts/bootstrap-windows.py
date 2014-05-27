@@ -2,29 +2,11 @@
 
 from __future__ import print_function
 import importlib, os, sys, shutil
-from download import download
+from bootstrap import *
 from glob import glob
 from subprocess import check_call
-from zipfile import ZipFile
 
-# Returns true iff module exists.
-def module_exists(module):
-  try:
-    importlib.import_module(module)
-    return True
-  except ImportError:
-    return False
-
-def unzip(filename, path):
-  with ZipFile(filename) as zip:
-    zip.extractall(path)
-
-# Install CMake.
-cmake = 'cmake-2.8.12.2-win32-x86'
-cmake_dir = os.path.join(r'C:\Program Files', cmake)
-if not os.path.exists(cmake_dir):
-  with download('http://www.cmake.org/files/v2.8/' + cmake + '.zip') as f:
-    unzip(f, r'C:\Program Files')
+install_cmake('cmake-2.8.12.2-win32-x86.zip')
 
 # Add Python and CMake to PATH.
 python_dir = r'C:\Python27'
