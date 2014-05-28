@@ -54,12 +54,13 @@ def installed(name):
 
 # Adds filename to search paths.
 def add_to_path(filename, linkname = None):
+  paths = os.environ['PATH'].split(os.pathsep)
+  path = os.path.dirname(filename)
+  print('Adding', path, 'to PATH')
+  paths.append(path)
+  os.environ['PATH'] = os.pathsep.join(paths)
   if windows:
-    path = os.path.dirname(filename)
-    print('Adding', path, 'to PATH')
-    paths = os.getenv('PATH').split(os.pathsep)
-    paths.append(path)
-    check_call(['setx', 'PATH', os.pathsep.join(paths)])
+    check_call(['setx', 'PATH', os.environ['PATH']])
     return
   path = '/usr/local/bin'
   # Create /usr/local/bin directory if it doesn't exist which can happen
@@ -110,8 +111,44 @@ def module_exists(module):
   except ImportError:
     return False
 
-# Installs pip.
-def install_pip():
+# Install package using pip if it hasn't been installed already.
+def pip_install(package, test_module=None):
+  if not test_module:
+    test_module = package
+  if module_exists(test_module):
+    return
+  # If pip doesn't exist install it first.
   if not module_exists('pip'):
     with download('https://bootstrap.pypa.io/get-pip.py') as f:
       check_call(['python', f])
+  # Install the package.
+  print('Installing', package)
+  from pip.index import PackageFinder
+  from pip.req import InstallRequirement, RequirementSet
+  from pip.locations import build_prefix, src_prefix
+  requirement_set = RequirementSet(
+      build_dir=build_prefix,
+      src_dir=src_prefix,
+      download_dir=None)
+  requirement_set.add_requirement(InstallRequirement.from_line(package, None))
+  finder = PackageFinder(
+    find_links=[], index_urls=['http://pypi.python.org/simple/'])
+  requirement_set.prepare_files(finder, force_root_egg_info=False, bundle=False)
+  requirement_set.install([], [])
+
+# Installs buildbot slave.
+def install_buildbot_slave(name, path):
+  pip_install('buildbot-slave', 'buildbot')
+  # The password is insecure but it doesn't matter as the buildslaves are
+  # not publicly accessible.
+  check_call(['sudo', '-u', 'vagrant', 'buildslave',
+              'create-slave', path, '10.0.2.2', name, 'pass'])
+  if windows:
+    return
+  pip_install('python-crontab', 'crontab')
+  from crontab import CronTab
+  cron = CronTab('vagrant')
+  cron.new('PATH={}:/usr/local/bin buildslave start {}'.format(
+    os.environ['PATH'], buildslave_dir))
+  cron.write()
+  check_call(['sudo', '-H', '-u', 'vagrant', 'buildslave', 'start', buildslave_dir])

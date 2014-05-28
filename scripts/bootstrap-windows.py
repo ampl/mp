@@ -67,40 +67,9 @@ if not module_exists('win32api'):
   pywin32_postinstall.install()
   os.remove(site_packages_dir + r'\pywin32_postinstall.py')
 
-install_pip()
-from pip.index import PackageFinder
-from pip.req import InstallRequirement, RequirementSet
-from pip.locations import build_prefix, src_prefix
-
-# Install package using pip if it hasn't been installed already.
-def pip_install(package, test_module=None):
-  if not test_module:
-    test_module = package
-  if module_exists(test_module):
-    return
-  print('Installing', package)
-  requirement_set = RequirementSet(
-      build_dir=build_prefix,
-      src_dir=src_prefix,
-      download_dir=None)
-  requirement_set.add_requirement(InstallRequirement.from_line(package, None))
-  finder = PackageFinder(
-    find_links=[], index_urls=['http://pypi.python.org/simple/'])
-  requirement_set.prepare_files(finder, force_root_egg_info=False, bundle=False)
-  requirement_set.install([], [])
-
-# Install buildbot dependencies.
-#pip_install('twisted')
-#pip_install('zope.interface')
-
-# Install buildbot slave.
-pip_install('buildbot-slave', 'buildbot')
-
-buildslave_dir = r'\buildslave'
 if not os.path.exists(buildslave_dir):
-  # Create buildbot slave.
-  check_call([os.path.join(python_dir, r'scripts\buildslave.bat'),
-              'create-slave', buildslave_dir, '10.0.2.2', 'win2008', 'pass'])
+  buildslave_dir = r'\buildslave'
+  install_buildbot_slave('win2008', buildslave_dir)
 
   # Grant the user the right to "log on as a service".
   import win32api, win32security

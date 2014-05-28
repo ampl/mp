@@ -60,6 +60,10 @@ if not installed('gfortran'):
 
 install_f90cache()
 
-install_pip()
+if vagrant:
+  buildslave_dir = '/home/vagrant/slave'
+  if not os.path.exists(buildslave_dir):
+    install_buildbot_slave('osx-ml', buildslave_dir)
 
-# TODO: install buildbot
+# Copy optional dependencies.
+# TODO
