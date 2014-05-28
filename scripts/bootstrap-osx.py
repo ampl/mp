@@ -2,12 +2,11 @@
 # Set up build environment on OS X Moutain Lion.
 
 from __future__ import print_function
+from bootstrap import *
 import mmap, os, sys, tempfile
 from glob import glob
 from subprocess import check_call
 
-sys.path.append('/vagrant/scripts')
-from bootstrap import *
 vagrant = bootstrap_init()
 
 install_cmake('cmake-2.8.12.2-Darwin64-universal.tar.gz')

@@ -3,10 +3,9 @@
 # Linux distribution.
 
 import platform
+from bootstrap import *
 from subprocess import check_call
 
-sys.path.append('/vagrant/scripts')
-from bootstrap import *
 vagrant = bootstrap_init()
 
 # Install build tools.
