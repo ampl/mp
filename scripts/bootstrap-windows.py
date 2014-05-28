@@ -67,8 +67,8 @@ if not module_exists('win32api'):
   pywin32_postinstall.install()
   os.remove(site_packages_dir + r'\pywin32_postinstall.py')
 
+buildslave_dir = r'\buildslave'
 if not os.path.exists(buildslave_dir):
-  buildslave_dir = r'\buildslave'
   install_buildbot_slave('win2008', buildslave_dir)
 
   # Grant the user the right to "log on as a service".
