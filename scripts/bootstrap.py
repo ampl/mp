@@ -1,7 +1,7 @@
 # Common bootstrap functionality.
 
 from __future__ import print_function
-import importlib, os, platform, re, shutil, sys, tarfile, urllib2, urlparse, zipfile
+import os, platform, re, shutil, sys, tarfile, urllib2, urlparse, zipfile
 from subprocess import check_call
 
 class TempFile:
@@ -106,7 +106,7 @@ def install_f90cache():
 # Returns true iff module exists.
 def module_exists(module):
   try:
-    importlib.import_module(module)
+    __import__(module)
     return True
   except ImportError:
     return False
