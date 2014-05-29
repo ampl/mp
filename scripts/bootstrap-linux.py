@@ -16,7 +16,7 @@ packages = [
 ]
 if platform.machine() == 'x86_64':
   packages.append('libc6-i386')
-check_call(['apt-get', 'install', '-y', packages])
+check_call(['apt-get', 'install', '-y'] + packages)
 
 install_cmake('cmake-2.8.12.2-Linux-i386.tar.gz')
 
