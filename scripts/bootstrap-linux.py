@@ -11,7 +11,7 @@ vagrant = bootstrap_init()
 # Install build tools.
 check_call(['apt-get', 'update'])
 packages = [
-  'git-core', 'gcc', 'g++', 'gfortran' 'ccache', 'make',
+  'git-core', 'gcc', 'g++', 'gfortran', 'ccache', 'make',
   'python-pip', 'python-dev', 'default-jdk', 'unixodbc-dev'
 ]
 if platform.machine() == 'x86_64':
