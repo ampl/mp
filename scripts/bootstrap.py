@@ -140,14 +140,15 @@ def pip_install(package, test_module=None):
   requirement_set.install([], [])
 
 # Installs buildbot slave.
-def install_buildbot_slave(name, path):
+def install_buildbot_slave(name, path, script_dir=''):
   pip_install('buildbot-slave', 'buildbot')
   # The password is insecure but it doesn't matter as the buildslaves are
   # not publicly accessible.
-  command = ['buildslave', 'create-slave', path, '10.0.2.2', name, 'pass']
+  command = [os.path.join(script_dir, 'buildslave'),
+             'create-slave', path, '10.0.2.2', name, 'pass']
   if not windows:
     command = ['sudo', '-u', 'vagrant'] + command
-  check_call(command)
+  check_call(command, shell=True)
   if windows:
     return
   pip_install('python-crontab', 'crontab')

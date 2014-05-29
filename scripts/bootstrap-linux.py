@@ -26,15 +26,15 @@ for name in ['gcc', 'cc', 'g++', 'c++']:
 
 install_f90cache()
 
-if vagrant:
-  buildslave_name = 'lucid64' if platform.machine() == 'x86_64' else 'lucid32'
-  buildslave_dir = '/home/vagrant/slave'
-  if not os.path.exists(buildslave_dir):
-    install_buildbot_slave(buildslave_name, buildslave_dir)
-
 # Copy optional dependencies.
 if os.path.exists('opt'):
   for dir in glob('opt/linux' + platform.machine() + '/*'):
     dest = '/opt/' + dir
     if not os.path.exists(dest):
       shutil.copytree(dir, dest)
+
+if vagrant:
+  buildslave_name = 'lucid64' if platform.machine() == 'x86_64' else 'lucid32'
+  buildslave_dir = '/home/vagrant/slave'
+  if not os.path.exists(buildslave_dir):
+    install_buildbot_slave(buildslave_name, buildslave_dir)

@@ -52,49 +52,6 @@ def install_mingw(arch):
 install_mingw('i686')
 install_mingw('x86_64')
 
-# Install pywin32 - buildbot dependency.
-if not module_exists('win32api'):
-  shutil.rmtree('pywin32', True)
-  with download(
-      'http://sourceforge.net/projects/pywin32/files/pywin32/Build%20219/' +
-      'pywin32-219.win-amd64-py2.7.exe/download') as f:
-    check_call([sevenzip, 'x', '-opywin32', f])
-  site_packages_dir = os.path.join(python_dir, r'lib\site-packages')
-  for path in glob('pywin32/PLATLIB/*') + glob('pywin32/SCRIPTS/*'):
-    shutil.move(path, site_packages_dir)
-  shutil.rmtree('pywin32')
-  import pywin32_postinstall
-  pywin32_postinstall.install()
-  os.remove(site_packages_dir + r'\pywin32_postinstall.py')
-
-buildslave_dir = r'\buildslave'
-if not os.path.exists(buildslave_dir):
-  install_buildbot_slave('win2008', buildslave_dir)
-
-  # Grant the user the right to "log on as a service".
-  import win32api, win32security
-  username = win32api.GetUserNameEx(win32api.NameSamCompatible)
-  domain, username = username.split('\\')
-  policy = win32security.LsaOpenPolicy(domain, win32security.POLICY_ALL_ACCESS)
-  sid_obj, domain, tmp = win32security.LookupAccountName(domain, username)
-  win32security.LsaAddAccountRights(policy, sid_obj, ('SeServiceLogonRight',))
-  win32security.LsaClose(policy)
-
-  # Set buildslave parameters.
-  import _winreg as reg
-  with reg.CreateKey(reg.HKEY_LOCAL_MACHINE,
-      r'System\CurrentControlSet\services\BuildBot\Parameters') as key:
-    reg.SetValueEx(key, 'directories', 0, reg.REG_SZ, buildslave_dir)
-
-  # Install buildbot service.
-  check_call([
-    os.path.join(python_dir, 'python'),
-    os.path.join(python_dir, r'Scripts\buildbot_service.py'),
-    '--user', '.\\' + username, '--password', 'vagrant',
-    '--startup', 'auto', 'install'])
-  import win32serviceutil
-  win32serviceutil.StartService('BuildBot')
-
 # Install 32-bit JDK.
 cookie = 'oraclelicense=accept-securebackup-cookie'
 if not os.path.exists(r'\Program Files (x86)\Java\jdk1.7.0_55'):
@@ -119,3 +76,46 @@ if os.path.exists(opt_dir):
       dest = os.path.join('C:\\', entry, subentry)
       if not os.path.exists(dest):
         shutil.copytree(os.path.join(subdir, subentry), dest)
+
+# Install pywin32 - buildbot dependency.
+if not module_exists('win32api'):
+  shutil.rmtree('pywin32', True)
+  with download(
+      'http://sourceforge.net/projects/pywin32/files/pywin32/Build%20219/' +
+      'pywin32-219.win-amd64-py2.7.exe/download') as f:
+    check_call([sevenzip, 'x', '-opywin32', f])
+  site_packages_dir = os.path.join(python_dir, r'lib\site-packages')
+  for path in glob('pywin32/PLATLIB/*') + glob('pywin32/SCRIPTS/*'):
+    shutil.move(path, site_packages_dir)
+  shutil.rmtree('pywin32')
+  import pywin32_postinstall
+  pywin32_postinstall.install()
+  os.remove(site_packages_dir + r'\pywin32_postinstall.py')
+
+buildslave_dir = r'\buildslave'
+if not os.path.exists(buildslave_dir):
+  install_buildbot_slave('win2008', buildslave_dir, python_dir + r'\Scripts')
+
+  # Grant the user the right to "log on as a service".
+  import win32api, win32security
+  username = win32api.GetUserNameEx(win32api.NameSamCompatible)
+  domain, username = username.split('\\')
+  policy = win32security.LsaOpenPolicy(domain, win32security.POLICY_ALL_ACCESS)
+  sid_obj, domain, tmp = win32security.LookupAccountName(domain, username)
+  win32security.LsaAddAccountRights(policy, sid_obj, ('SeServiceLogonRight',))
+  win32security.LsaClose(policy)
+
+  # Set buildslave parameters.
+  import _winreg as reg
+  with reg.CreateKey(reg.HKEY_LOCAL_MACHINE,
+      r'System\CurrentControlSet\services\BuildBot\Parameters') as key:
+    reg.SetValueEx(key, 'directories', 0, reg.REG_SZ, buildslave_dir)
+
+  # Install buildbot service.
+  check_call([
+    os.path.join(python_dir, 'python'),
+    os.path.join(python_dir, r'Scripts\buildbot_service.py'),
+    '--user', '.\\' + username, '--password', 'vagrant',
+    '--startup', 'auto', 'install'])
+  import win32serviceutil
+  win32serviceutil.StartService('BuildBot')
