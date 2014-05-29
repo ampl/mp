@@ -22,7 +22,7 @@ install_cmake('cmake-2.8.12.2-Linux-i386.tar.gz')
 
 # Installs symlinks for ccache.
 for name in ['gcc', 'cc', 'g++', 'c++']:
-  add_to_path(which(ccache), name)
+  add_to_path(which('ccache'), name)
 
 install_f90cache()
 
