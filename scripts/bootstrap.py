@@ -68,8 +68,11 @@ def add_to_path(filename, linkname = None):
   if not os.path.exists(path):
     os.makedirs(path)
   linkname = os.path.join(path, linkname or os.path.basename(filename))
-  print('Creating a symlink from', linkname, 'to', filename)
-  os.symlink(filename, linkname)
+  if not os.path.exists(linkname):
+    print('Creating a symlink from', linkname, 'to', filename)
+    os.symlink(filename, linkname)
+  else:
+    print('File already exists:', linkname)
 
 # Downloads and installs CMake.
 # filename: The name of a CMake archive,
