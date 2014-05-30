@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env python
 # Set up build environment on Ubuntu or other Debian-based
 # Linux distribution.
 

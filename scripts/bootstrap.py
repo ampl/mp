@@ -1,7 +1,8 @@
 # Common bootstrap functionality.
 
 from __future__ import print_function
-import glob, os, platform, re, shutil, sys, tarfile, urllib2, urlparse, zipfile
+import contextlib, glob, os, platform, re
+import shutil, sys, tarfile, urllib2, urlparse, zipfile
 from subprocess import check_call
 
 class TempFile:
@@ -82,11 +83,13 @@ def install_cmake(filename):
     return
   dir, version, minor = re.match(
     r'(cmake-(\d+\.\d+)\.(\d+)\.[^\.]+)\..*', filename).groups()
-  # extractall overwrites existing files, so no need to prepare the destination.
+  # extractall overwrites existing files, so no need to prepare the
+  # destination.
   url = 'http://www.cmake.org/files/v{0}/{1}'.format(version, filename)
   with download(url) as f:
     iszip = filename.endswith('zip')
-    with zipfile.ZipFile(f) if iszip else tarfile.open(f, 'r:gz') as archive:
+    with zipfile.ZipFile(f) if iszip
+         else contextlib.closing(tarfile.open(f, 'r:gz')) as archive:
       archive.extractall(opt_dir)
   if platform.system() == 'Darwin':
     dir = os.path.join(
@@ -98,7 +101,8 @@ def install_f90cache():
   if not installed('f90cache'):
     f90cache = 'f90cache-0.95'
     with download(
-        'http://people.irisa.fr/Edouard.Canot/f90cache/' + f90cache + '.tar.bz2') as f:
+        'http://people.irisa.fr/Edouard.Canot/f90cache/' +
+        f90cache + '.tar.bz2') as f:
       with tarfile.open(f, "r:bz2") as archive:
         archive.extractall('.')
     check_call(['sh', 'configure'], cwd=f90cache)
@@ -157,7 +161,8 @@ def install_buildbot_slave(name, path, script_dir=''):
   cron.new('PATH={0}:/usr/local/bin buildslave start {1}'.format(
     os.environ['PATH'], buildslave_dir))
   cron.write()
-  check_call(['sudo', '-H', '-u', 'vagrant', 'buildslave', 'start', buildslave_dir])
+  check_call(['sudo', '-H', '-u', 'vagrant',
+              'buildslave', 'start', buildslave_dir])
 
 # Copies optional dependencies from opt/<platform> to /opt.
 def copy_optional_dependencies(platform):
