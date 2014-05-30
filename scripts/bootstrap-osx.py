@@ -3,7 +3,7 @@
 
 from __future__ import print_function
 from bootstrap import *
-import glob, mmap, os, sys, tempfile
+import glob, os, sys, tempfile
 from subprocess import check_call
 
 vagrant = bootstrap_init()
@@ -37,12 +37,18 @@ if not installed('port'):
       'MacPorts-2.2.0-10.8-MountainLion.pkg') as f:
     install_pkg(f)
   # Get rid of "No Xcode installation was found" error.
-  with open('/opt/local/etc/macports/macports.conf', 'r+b') as f:
-    m = mmap.mmap(f.fileno(), 0)
-    pos = m.find('# developer_dir')
-    if pos != -1:
-      m.seek(pos)
-      m.write('developer_dir /\n#')
+  macports_conf = '/opt/local/etc/macports/macports.conf'
+  macports_conf_new = macports_conf + '.new'
+  if os.path.exists(macports_conf):
+    with open(macports_conf, 'r') as f:
+      conf = f.read()
+    with open(macports_conf_new, 'w') as f:
+      f.write(re.sub(r'#\s*(developer_dir\s*).*', r'\1/', conf))
+    os.remove(macports_conf)
+  # The new config may also exists if the script was interrupted just after
+  # removing the old config and then restarted.
+  if os.path.exists(macports_conf_new):
+    os.rename(macports_conf_new, macports_conf)
   add_to_path('/opt/local/bin/port')
 
 # Install ccache.
