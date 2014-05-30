@@ -1,7 +1,7 @@
 # Common bootstrap functionality.
 
 from __future__ import print_function
-import os, platform, re, shutil, sys, tarfile, urllib2, urlparse, zipfile
+import glob, os, platform, re, shutil, sys, tarfile, urllib2, urlparse, zipfile
 from subprocess import check_call
 
 class TempFile:
@@ -162,7 +162,7 @@ def install_buildbot_slave(name, path, script_dir=''):
 # Copies optional dependencies from opt/<platform> to /opt.
 def copy_optional_dependencies(platform):
   if os.path.exists('opt'):
-    for dir in glob('opt/' + platform + '/*'):
+    for dir in glob.glob('opt/' + platform + '/*'):
       dest = '/opt/' + dir
       if not os.path.exists(dest):
         shutil.copytree(dir, dest)

@@ -3,8 +3,7 @@
 
 from __future__ import print_function
 from bootstrap import *
-import mmap, os, sys, tempfile
-from glob import glob
+import glob, mmap, os, sys, tempfile
 from subprocess import check_call
 
 vagrant = bootstrap_init()
@@ -20,7 +19,7 @@ def install_pkg(filename):
 def install_dmg(filename):
   dir = tempfile.mkdtemp()
   check_call(['hdiutil', 'attach', filename, '-mountpoint', dir])
-  install_pkg(glob(dir + '/*pkg')[0])
+  install_pkg(glob.glob(dir + '/*pkg')[0])
   check_call(['hdiutil', 'detach', dir])
   os.rmdir(dir)
 
