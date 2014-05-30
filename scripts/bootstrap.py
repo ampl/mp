@@ -1,8 +1,8 @@
 # Common bootstrap functionality.
 
 from __future__ import print_function
-import contextlib, glob, os, platform, re
-import shutil, sys, tarfile, urllib2, urlparse, zipfile
+import glob, os, platform, re, shutil, sys, tarfile, urllib2, urlparse, zipfile
+from contextlib import closing
 from subprocess import check_call
 
 class TempFile:
@@ -34,6 +34,8 @@ vagrant_dir = '/vagrant'
 def bootstrap_init():
   if os.path.exists(vagrant_dir):
     os.chdir(vagrant_dir)
+    return True
+  return False
 
 # Returns executable location.
 def which(name):
@@ -86,8 +88,8 @@ def install_cmake(filename):
   url = 'http://www.cmake.org/files/v{0}/{1}'.format(version, filename)
   with download(url) as f:
     iszip = filename.endswith('zip')
-    with zipfile.ZipFile(f) if iszip
-         else contextlib.closing(tarfile.open(f, 'r:gz')) as archive:
+    with zipfile.ZipFile(f) if iszip \
+         else closing(tarfile.open(f, 'r:gz')) as archive:
       archive.extractall(opt_dir)
   if platform.system() == 'Darwin':
     dir = os.path.join(
@@ -101,7 +103,7 @@ def install_f90cache():
     with download(
         'http://people.irisa.fr/Edouard.Canot/f90cache/' +
         f90cache + '.tar.bz2') as f:
-      with tarfile.open(f, "r:bz2") as archive:
+      with closing(tarfile.open(f, "r:bz2")) as archive:
         archive.extractall('.')
     check_call(['sh', 'configure'], cwd=f90cache)
     check_call(['make', 'all', 'install'], cwd=f90cache)
@@ -142,7 +144,7 @@ def pip_install(package, test_module=None):
   requirement_set.install([], [])
 
 # Installs buildbot slave.
-def install_buildbot_slave(name, path=None, script_dir=''):
+def install_buildbot_slave(name, path=None, script_dir='', shell=False):
   path = path or os.path.expanduser('~vagrant/slave')
   if not os.path.exists(vagrant_dir) or os.path.exists(path):
     return
@@ -153,7 +155,7 @@ def install_buildbot_slave(name, path=None, script_dir=''):
              'create-slave', path, '10.0.2.2', name, 'pass']
   if not windows:
     command = ['sudo', '-u', 'vagrant'] + command
-  check_call(command, shell=True)
+  check_call(command, shell=shell)
   if windows:
     return
   pip_install('python-crontab', 'crontab')

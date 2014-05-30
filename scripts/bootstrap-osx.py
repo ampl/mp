@@ -6,7 +6,7 @@ from bootstrap import *
 import glob, os, sys, tempfile
 from subprocess import check_call
 
-bootstrap_init()
+vagrant = bootstrap_init()
 
 install_cmake('cmake-2.8.12.2-Darwin64-universal.tar.gz')
 

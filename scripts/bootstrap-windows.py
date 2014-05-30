@@ -94,7 +94,7 @@ if not module_exists('win32api'):
 
 buildslave_dir = r'\buildslave'
 if not os.path.exists(buildslave_dir):
-  install_buildbot_slave('win2008', buildslave_dir, python_dir + r'\Scripts')
+  install_buildbot_slave('win2008', buildslave_dir, python_dir + r'\Scripts', True)
 
   # Grant the user the right to "log on as a service".
   import win32api, win32security
