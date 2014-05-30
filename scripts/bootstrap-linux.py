@@ -26,12 +26,7 @@ for name in ['gcc', 'cc', 'g++', 'c++']:
 
 install_f90cache()
 
-# Copy optional dependencies.
-if os.path.exists('opt'):
-  for dir in glob('opt/linux' + platform.machine() + '/*'):
-    dest = '/opt/' + dir
-    if not os.path.exists(dest):
-      shutil.copytree(dir, dest)
+copy_optional_dependencies('linux-' + platform.machine())
 
 if vagrant:
   buildslave_name = 'lucid64' if platform.machine() == 'x86_64' else 'lucid32'

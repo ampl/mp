@@ -59,8 +59,7 @@ if not installed('gfortran'):
 
 install_f90cache()
 
-# Copy optional dependencies.
-# TODO
+copy_optional_dependencies('osx')
 
 if vagrant:
   buildslave_dir = '/home/vagrant/slave'

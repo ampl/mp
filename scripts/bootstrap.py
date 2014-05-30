@@ -158,3 +158,11 @@ def install_buildbot_slave(name, path, script_dir=''):
     os.environ['PATH'], buildslave_dir))
   cron.write()
   check_call(['sudo', '-H', '-u', 'vagrant', 'buildslave', 'start', buildslave_dir])
+
+# Copies optional dependencies from opt/<platform> to /opt.
+def copy_optional_dependencies(platform):
+  if os.path.exists('opt'):
+    for dir in glob('opt/' + platform + '/*'):
+      dest = '/opt/' + dir
+      if not os.path.exists(dest):
+        shutil.copytree(dir, dest)
