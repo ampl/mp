@@ -99,15 +99,17 @@ def install_cmake(filename):
 # Install f90cache.
 def install_f90cache():
   if not installed('f90cache'):
-    f90cache_dir = tempfile.mkdtemp(suffix='f90cache', dir='')
+    f90cache = 'f90cache-0.95'
+    tempdir = tempfile.mkdtemp(suffix='f90cache', dir='')
     with download(
         'http://people.irisa.fr/Edouard.Canot/f90cache/' +
-        'f90cache-0.95.tar.bz2', False) as f:
+        f90cache + '.tar.bz2', False) as f:
       with closing(tarfile.open(f, "r:bz2")) as archive:
-        archive.extractall(f90cache_dir)
+        archive.extractall(tempdir)
+    f90cache_dir = os.path.join(tempdir, f90cache)
     check_call(['sh', 'configure'], cwd=f90cache_dir)
     check_call(['make', 'all', 'install'], cwd=f90cache_dir)
-    shutil.rmtree(f90cache_dir)
+    shutil.rmtree(tempdir)
 
 # Returns true iff module exists.
 def module_exists(module):
