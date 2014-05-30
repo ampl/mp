@@ -3,10 +3,10 @@
 from __future__ import print_function
 import glob, os, platform, re, shutil, sys
 import tarfile, tempfile, urllib2, urlparse, zipfile
-from contextlib import closing
+from contextlib import closing, contextmanager
 from subprocess import check_call
 
-@contextlib.contextmanager
+@contextmanager
 def dummy_file(self):
   yield
 
