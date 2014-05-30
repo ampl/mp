@@ -12,7 +12,7 @@ bootstrap_init()
 check_call(['apt-get', 'update'])
 packages = [
   'git-core', 'gcc', 'g++', 'gfortran', 'ccache', 'make',
-  'python-pip', 'python-dev', 'default-jdk', 'unixodbc-dev'
+  'python-dev', 'default-jdk', 'unixodbc-dev'
 ]
 x86_64 = platform.machine() == 'x86_64'
 if x86_64:
