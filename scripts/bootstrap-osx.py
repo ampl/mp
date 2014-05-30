@@ -6,7 +6,7 @@ from bootstrap import *
 import glob, os, sys, tempfile
 from subprocess import check_call
 
-vagrant = bootstrap_init()
+bootstrap_init()
 
 install_cmake('cmake-2.8.12.2-Darwin64-universal.tar.gz')
 
@@ -63,10 +63,5 @@ if not installed('gfortran'):
   check_call(['port', 'install', 'gcc49', '+gfortran'])
 
 install_f90cache()
-
 copy_optional_dependencies('osx')
-
-if vagrant:
-  buildslave_dir = '/home/vagrant/slave'
-  if not os.path.exists(buildslave_dir):
-    install_buildbot_slave('osx-ml', buildslave_dir)
+install_buildbot_slave('osx-ml')

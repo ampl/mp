@@ -30,12 +30,10 @@ opt_dir = r'\Program Files' if windows else '/opt'
 
 # If we are in a VM managed by Vagrant, then do everything in the shared
 # /vagrant directory to avoid growth of the VM drive.
+vagrant_dir = '/vagrant'
 def bootstrap_init():
-  vagrant_dir = '/vagrant'
   if os.path.exists(vagrant_dir):
     os.chdir(vagrant_dir)
-    return True
-  return False
 
 # Returns executable location.
 def which(name):
@@ -144,7 +142,10 @@ def pip_install(package, test_module=None):
   requirement_set.install([], [])
 
 # Installs buildbot slave.
-def install_buildbot_slave(name, path, script_dir=''):
+def install_buildbot_slave(name, path=None, script_dir=''):
+  path = path or os.path.expanduser('~vagrant/slave')
+  if not os.path.exists(vagrant_dir) or os.path.exists(path):
+    return
   pip_install('buildbot-slave', 'buildbot')
   # The password is insecure but it doesn't matter as the buildslaves are
   # not publicly accessible.
@@ -159,10 +160,9 @@ def install_buildbot_slave(name, path, script_dir=''):
   from crontab import CronTab
   cron = CronTab('vagrant')
   cron.new('PATH={0}:/usr/local/bin buildslave start {1}'.format(
-    os.environ['PATH'], buildslave_dir))
+    os.environ['PATH'], path))
   cron.write()
-  check_call(['sudo', '-H', '-u', 'vagrant',
-              'buildslave', 'start', buildslave_dir])
+  check_call(['sudo', '-H', '-u', 'vagrant', 'buildslave', 'start', path])
 
 # Copies optional dependencies from opt/<platform> to /opt.
 def copy_optional_dependencies(platform):
