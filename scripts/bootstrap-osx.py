@@ -28,14 +28,14 @@ if not installed('clang'):
   with download(
       'http://devimages.apple.com/downloads/xcode/' +
       'command_line_tools_for_xcode_os_x_mountain_lion_april_2013.dmg') as f:
-    install_dmg(f.name)
+    install_dmg(f)
 
 # Install MacPorts.
 if not installed('port'):
   with download(
       'https://distfiles.macports.org/MacPorts/' +
       'MacPorts-2.2.0-10.8-MountainLion.pkg') as f:
-    install_pkg(f.name)
+    install_pkg(f)
   # Get rid of "No Xcode installation was found" error.
   macports_conf = '/opt/local/etc/macports/macports.conf'
   macports_conf_new = macports_conf + '.new'
