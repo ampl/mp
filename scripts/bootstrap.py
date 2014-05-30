@@ -103,7 +103,7 @@ def install_f90cache():
     with download(
         'http://people.irisa.fr/Edouard.Canot/f90cache/' +
         'f90cache-0.95.tar.bz2', False) as f:
-      with closing(tarfile.open("r:bz2")) as archive:
+      with closing(tarfile.open(f, "r:bz2")) as archive:
         archive.extractall(f90cache_dir)
     check_call(['sh', 'configure'], cwd=f90cache_dir)
     check_call(['make', 'all', 'install'], cwd=f90cache_dir)
