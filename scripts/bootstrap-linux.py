@@ -2,9 +2,9 @@
 # Set up build environment on Ubuntu or other Debian-based
 # Linux distribution.
 
-import platform
+import platform, re
 from bootstrap import *
-from subprocess import check_call
+from subprocess import check_call, Popen, PIPE
 
 bootstrap_init()
 
@@ -26,7 +26,9 @@ for name in ['gcc', 'cc', 'g++', 'c++']:
   add_to_path(which('ccache'), name)
 
 install_f90cache()
-add_to_path('/usr/local/bin/f90cache', 'gfortran-4.9')
+output = Popen(['gfortran', '--version'], stdout=PIPE).communicate()[0]
+version = re.match(r'.* (\d+\.\d+)\.\d+', s).group(1)
+add_to_path('/usr/local/bin/f90cache', 'gfortran-' + version)
 
 copy_optional_dependencies('linux-' + platform.machine())
 install_buildbot_slave('lucid64' if x86_64 else 'lucid32')
