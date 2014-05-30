@@ -18,13 +18,13 @@ if not os.path.exists(r'\Windows\Microsoft.NET\Framework64\v4.0.30319'):
   with download(
       'http://download.microsoft.com/download/9/5/A/' +
       '95A9616B-7A37-4AF6-BC36-D6EA96C8DAAE/dotNetFx40_Full_x86_x64.exe') as f:
-    check_call([f, '/q', '/norestart'])
+    check_call([f.name, '/q', '/norestart'])
 
 # Install 7zip.
 sevenzip = r'C:\Program Files (x86)\7-Zip\7z.exe'
 if not os.path.exists(sevenzip):
   with download('http://downloads.sourceforge.net/sevenzip/7z920.exe') as f:
-    check_call([f, '/S'])
+    check_call([f.name, '/S'])
 
 # Install Windows SDK.
 if not os.path.exists(r'\Program Files\Microsoft SDKs\Windows\v7.1'):
@@ -32,7 +32,7 @@ if not os.path.exists(r'\Program Files\Microsoft SDKs\Windows\v7.1'):
   with download(
        'http://download.microsoft.com/download/F/1/0/'
        'F10113F5-B750-4969-A255-274341AC6BCE/GRMSDKX_EN_DVD.iso') as f:
-    check_call([sevenzip, 'x', '-tudf', '-owinsdk', f])
+    check_call([sevenzip, 'x', '-tudf', '-owinsdk', f.name])
   # Install SDK.
   check_call([r'winsdk\setup.exe', '-q'])
   shutil.rmtree('winsdk')
@@ -47,7 +47,7 @@ def install_mingw(arch):
       'Toolchains%20targetting%20Win' + bits + '/Personal%20Builds/' +
       'mingw-builds/4.8.2/threads-win32/sjlj/' + arch +
       '-4.8.2-release-win32-sjlj-rt_v3-rev4.7z/download') as f:
-    check_call([sevenzip, 'x', '-oC:\\', f])
+    check_call([sevenzip, 'x', '-oC:\\', f.name])
 
 install_mingw('i686')
 install_mingw('x86_64')
@@ -58,14 +58,14 @@ if not os.path.exists(r'\Program Files (x86)\Java\jdk1.7.0_55'):
   with download(
       'http://download.oracle.com/otn-pub/java/jdk/7u55-b13/' +
       'jdk-7u55-windows-i586.exe', cookie) as f:
-    check_call([f, '/s'])
+    check_call([f.name, '/s'])
 
 # Install 64-bit JDK.
 if not os.path.exists(r'\Program Files\Java\jdk1.7.0_55'):
   with download(
       'http://download.oracle.com/otn-pub/java/jdk/7u55-b13/' +
       'jdk-7u55-windows-x64.exe', cookie) as f:
-    check_call([f, '/s'])
+    check_call([f.name, '/s'])
 
 # Copy optional dependencies.
 opt_dir = r'opt\win64'
@@ -83,7 +83,7 @@ if not module_exists('win32api'):
   with download(
       'http://sourceforge.net/projects/pywin32/files/pywin32/Build%20219/' +
       'pywin32-219.win-amd64-py2.7.exe/download') as f:
-    check_call([sevenzip, 'x', '-opywin32', f])
+    check_call([sevenzip, 'x', '-opywin32', f.name])
   site_packages_dir = os.path.join(python_dir, r'lib\site-packages')
   for path in glob('pywin32/PLATLIB/*') + glob('pywin32/SCRIPTS/*'):
     shutil.move(path, site_packages_dir)

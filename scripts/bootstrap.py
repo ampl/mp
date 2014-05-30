@@ -1,29 +1,24 @@
 # Common bootstrap functionality.
 
 from __future__ import print_function
-import glob, os, platform, re, shutil, sys, tarfile, urllib2, urlparse, zipfile
+import glob, os, platform, re, shutil, sys
+import tarfile, tempfile, urllib2, urlparse, zipfile
 from contextlib import closing
 from subprocess import check_call
 
-class TempFile:
-  def __init__(self, filename):
-    self.filename = filename
-  def __enter__(self):
-    return self.filename
-  def __exit__(self, type, value, traceback):
-    os.remove(self.filename)
-
 # Downloads into a temporary file.
 def download(url, cookie = None):
-  filename = os.path.basename(urlparse.urlsplit(url)[2])
-  print('Downloading', url, 'to', filename)
+  suffix = os.path.splitext(urlparse.urlsplit(url)[2])[1]
+  file = tempfile.NamedTemporaryFile(suffix=suffix, dir='')
+  print('Downloading', url, 'to', file.name)
   sys.stdout.flush()
   opener = urllib2.build_opener()
   if cookie:
     opener.addheaders.append(('Cookie', cookie))
-  with open(filename, 'wb') as f:
-    shutil.copyfileobj(opener.open(url), f)
-  return TempFile(filename)
+  shutil.copyfileobj(opener.open(url), file)
+  file.flush()
+  file.seek(0)
+  return file
 
 windows = platform.system() == 'Windows'
 opt_dir = r'\Program Files' if windows else '/opt'
@@ -89,7 +84,7 @@ def install_cmake(filename):
   with download(url) as f:
     iszip = filename.endswith('zip')
     with zipfile.ZipFile(f) if iszip \
-         else closing(tarfile.open(f, 'r:gz')) as archive:
+         else closing(tarfile.open(fileobj=f, 'r:gz')) as archive:
       archive.extractall(opt_dir)
   if platform.system() == 'Darwin':
     dir = os.path.join(
@@ -103,7 +98,7 @@ def install_f90cache():
     with download(
         'http://people.irisa.fr/Edouard.Canot/f90cache/' +
         f90cache + '.tar.bz2') as f:
-      with closing(tarfile.open(f, "r:bz2")) as archive:
+      with closing(tarfile.open(fileobj=f, "r:bz2")) as archive:
         archive.extractall('.')
     check_call(['sh', 'configure'], cwd=f90cache)
     check_call(['make', 'all', 'install'], cwd=f90cache)
@@ -127,7 +122,7 @@ def pip_install(package, test_module=None):
   # If pip doesn't exist install it first.
   if not module_exists('pip'):
     with download('https://bootstrap.pypa.io/get-pip.py') as f:
-      check_call(['python', f])
+      check_call(['python', f.name])
   # Install the package.
   print('Installing', package)
   from pip.index import PackageFinder
