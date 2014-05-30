@@ -84,7 +84,7 @@ def install_cmake(filename):
   with download(url) as f:
     iszip = filename.endswith('zip')
     with zipfile.ZipFile(f) if iszip \
-         else closing(tarfile.open(fileobj=f, 'r:gz')) as archive:
+         else closing(tarfile.open(None, 'r:gz', fileobj=f)) as archive:
       archive.extractall(opt_dir)
   if platform.system() == 'Darwin':
     dir = os.path.join(
@@ -98,7 +98,7 @@ def install_f90cache():
     with download(
         'http://people.irisa.fr/Edouard.Canot/f90cache/' +
         f90cache + '.tar.bz2') as f:
-      with closing(tarfile.open(fileobj=f, "r:bz2")) as archive:
+      with closing(tarfile.open(None, "r:bz2", fileobj=f)) as archive:
         archive.extractall('.')
     check_call(['sh', 'configure'], cwd=f90cache)
     check_call(['make', 'all', 'install'], cwd=f90cache)
