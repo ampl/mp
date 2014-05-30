@@ -7,7 +7,7 @@ from contextlib import closing
 from subprocess import check_call
 
 # Downloads into a temporary file.
-def download(url, cookie = None):
+def download(url, close=True, cookie=None):
   suffix = os.path.splitext(urlparse.urlsplit(url)[2])[1]
   file = tempfile.NamedTemporaryFile(suffix=suffix, dir='')
   print('Downloading', url, 'to', file.name)
@@ -16,8 +16,11 @@ def download(url, cookie = None):
   if cookie:
     opener.addheaders.append(('Cookie', cookie))
   shutil.copyfileobj(opener.open(url), file)
-  file.flush()
-  file.seek(0)
+  if close:
+    file.file.close()
+  else:
+    file.flush()
+    file.seek(0)
   return file
 
 windows = platform.system() == 'Windows'
@@ -81,7 +84,7 @@ def install_cmake(filename):
   # extractall overwrites existing files, so no need to prepare the
   # destination.
   url = 'http://www.cmake.org/files/v{0}/{1}'.format(version, filename)
-  with download(url) as f:
+  with download(url, False) as f:
     iszip = filename.endswith('zip')
     with zipfile.ZipFile(f) if iszip \
          else closing(tarfile.open(None, 'r:gz', fileobj=f)) as archive:
@@ -97,7 +100,7 @@ def install_f90cache():
     f90cache = 'f90cache-0.95'
     with download(
         'http://people.irisa.fr/Edouard.Canot/f90cache/' +
-        f90cache + '.tar.bz2') as f:
+        f90cache + '.tar.bz2', False) as f:
       with closing(tarfile.open(None, "r:bz2", fileobj=f)) as archive:
         archive.extractall('.')
     check_call(['sh', 'configure'], cwd=f90cache)
