@@ -18,6 +18,13 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE
 set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX
   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cxx_flag_overrides.cmake)
 
+if (APPLE)
+  # Unset CMAKE_OSX_DEPLOYMENT_TARGET to avoid CMake error
+  #   CMAKE_OSX_DEPLOYMENT_TARGET is '...' but CMAKE_OSX_SYSROOT
+  #   is not set to a MacOSX SDK with a recognized version.
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "" CACHE STRING "OS X deployment target")
+endif ()
+
 project(AMPL)
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
