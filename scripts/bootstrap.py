@@ -6,6 +6,10 @@ import tarfile, tempfile, urllib2, urlparse, zipfile
 from contextlib import closing
 from subprocess import check_call
 
+@contextlib.contextmanager
+def dummy_file(self):
+  yield
+
 # Downloads into a temporary file.
 def download(url, close=True, cookie=None):
   suffix = os.path.splitext(urlparse.urlsplit(url)[2])[1]
@@ -18,6 +22,8 @@ def download(url, close=True, cookie=None):
   shutil.copyfileobj(opener.open(url), file)
   if close:
     file.file.close()
+    # Replace file with dummy_file because __enter__ fails on closed files.
+    file.file = dummy_file
   else:
     file.flush()
     file.seek(0)
