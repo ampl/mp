@@ -83,14 +83,14 @@ def install_cmake(filename):
   dir, version, minor = re.match(
     r'(cmake-(\d+\.\d+)\.(\d+)\.[^\.]+)\..*', filename).groups()
   # extractall overwrites existing files, so no need to prepare the destination.
-  url = 'http://www.cmake.org/files/v{}/{}'.format(version, filename)
+  url = 'http://www.cmake.org/files/v{0}/{1}'.format(version, filename)
   with download(url) as f:
     iszip = filename.endswith('zip')
     with zipfile.ZipFile(f) if iszip else tarfile.open(f, 'r:gz') as archive:
       archive.extractall(opt_dir)
   if platform.system() == 'Darwin':
     dir = os.path.join(
-      dir, 'CMake {}-{}.app'.format(version, minor), 'Contents')
+      dir, 'CMake {0}-{1}.app'.format(version, minor), 'Contents')
   add_to_path(os.path.join(opt_dir, dir, 'bin', 'cmake'))
 
 # Install f90cache.
@@ -154,7 +154,7 @@ def install_buildbot_slave(name, path, script_dir=''):
   pip_install('python-crontab', 'crontab')
   from crontab import CronTab
   cron = CronTab('vagrant')
-  cron.new('PATH={}:/usr/local/bin buildslave start {}'.format(
+  cron.new('PATH={0}:/usr/local/bin buildslave start {1}'.format(
     os.environ['PATH'], buildslave_dir))
   cron.write()
   check_call(['sudo', '-H', '-u', 'vagrant', 'buildslave', 'start', buildslave_dir])
