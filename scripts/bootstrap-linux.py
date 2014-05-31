@@ -27,7 +27,7 @@ for name in ['gcc', 'cc', 'g++', 'c++']:
 
 install_f90cache()
 output = Popen(['gfortran', '--version'], stdout=PIPE).communicate()[0]
-version = re.match(r'.* (\d+\.\d+)\.\d+', s).group(1)
+version = re.match(r'.* (\d+\.\d+)\.\d+', output).group(1)
 add_to_path('/usr/local/bin/f90cache', 'gfortran-' + version)
 
 copy_optional_dependencies('linux-' + platform.machine())
