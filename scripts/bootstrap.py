@@ -53,6 +53,13 @@ def installed(name):
     print(name, 'is installed in', path)
   return path != None
 
+def create_symlink(filename, linkname):
+  if not os.path.exists(linkname):
+    print('Creating a symlink from', linkname, 'to', filename)
+    os.symlink(filename, linkname)
+  else:
+    print('File already exists:', linkname)
+
 # Adds path to search paths.
 def add_to_path(path, linkname=None, isdir=False):
   paths = os.environ['PATH'].split(os.pathsep)
@@ -73,11 +80,7 @@ def add_to_path(path, linkname=None, isdir=False):
   if not os.path.exists(dir):
     os.makedirs(dir)
   linkname = os.path.join(dir, linkname or os.path.basename(path))
-  if not os.path.exists(linkname):
-    print('Creating a symlink from', linkname, 'to', path)
-    os.symlink(path, linkname)
-  else:
-    print('File already exists:', linkname)
+  create_symlink(path, linkname)
 
 # Downloads and installs CMake.
 # filename: The name of a CMake archive,

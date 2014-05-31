@@ -65,7 +65,8 @@ if not installed('gfortran-4.9'):
   add_to_path('/opt/local/bin/gfortran-mp-4.9', 'gfortran-4.9')
 
 install_f90cache()
-os.symlink('/usr/local/bin/f90cache', '/opt/local/libexec/ccache/gfortran-4.9')
+create_symlink('/usr/local/bin/f90cache',
+               '/opt/local/libexec/ccache/gfortran-4.9')
 
 copy_optional_dependencies('osx')
 install_buildbot_slave('osx-ml')
