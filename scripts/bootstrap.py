@@ -53,28 +53,29 @@ def installed(name):
     print(name, 'is installed in', path)
   return path != None
 
-# Adds filename to search paths.
-def add_to_path(filename, linkname=None, prepend=False):
+# Adds path to search paths.
+def add_to_path(path, linkname=None, isdir=False):
   paths = os.environ['PATH'].split(os.pathsep)
-  path = os.path.dirname(filename)
-  print('Adding', path, 'to PATH')
-  if prepend:
-    paths.insert(0, path)
+  dir = path if isdir else os.path.dirname(path)
+  print('Adding', dir, 'to PATH')
+  if isdir:
+    paths.insert(0, dir)
   else:
-    paths.append(path)
+    paths.append(dir)
   os.environ['PATH'] = os.pathsep.join(paths)
   if windows:
     check_call(['setx', 'PATH', os.environ['PATH']])
+  if windows or isdir:
     return
-  path = '/usr/local/bin'
+  dir = '/usr/local/bin'
   # Create /usr/local/bin directory if it doesn't exist which can happen
   # on OS X.
-  if not os.path.exists(path):
-    os.makedirs(path)
-  linkname = os.path.join(path, linkname or os.path.basename(filename))
+  if not os.path.exists(dir):
+    os.makedirs(dir)
+  linkname = os.path.join(dir, linkname or os.path.basename(path))
   if not os.path.exists(linkname):
-    print('Creating a symlink from', linkname, 'to', filename)
-    os.symlink(filename, linkname)
+    print('Creating a symlink from', linkname, 'to', path)
+    os.symlink(path, linkname)
   else:
     print('File already exists:', linkname)
 

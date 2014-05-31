@@ -8,6 +8,8 @@ from subprocess import check_call, Popen, PIPE
 
 bootstrap_init()
 
+x86_64 = platform.machine() == 'x86_64'
+
 # Install build tools.
 if not installed('cmake'):
   check_call(['apt-get', 'update'])
@@ -15,7 +17,6 @@ if not installed('cmake'):
     'git-core', 'gcc', 'g++', 'gfortran', 'ccache', 'make',
     'python-dev', 'default-jdk', 'unixodbc-dev'
   ]
-  x86_64 = platform.machine() == 'x86_64'
   if x86_64:
     packages.append('libc6-i386')
   check_call(['apt-get', 'install', '-y'] + packages)
