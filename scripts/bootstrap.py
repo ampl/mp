@@ -170,7 +170,7 @@ def install_buildbot_slave(name, path=None, script_dir='', shell=False):
 # Copies optional dependencies from opt/<platform> to /opt.
 def copy_optional_dependencies(platform):
   if os.path.exists('opt'):
-    for dir in glob.glob('opt/' + platform + '/*'):
-      dest = '/opt/' + dir
+    for src in glob.glob('opt/' + platform + '/*'):
+      dest = '/opt/' + os.path.basename(src)
       if not os.path.exists(dest):
-        shutil.copytree(dir, dest)
+        shutil.copytree(src, dest)

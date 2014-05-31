@@ -9,17 +9,18 @@ from subprocess import check_call, Popen, PIPE
 bootstrap_init()
 
 # Install build tools.
-check_call(['apt-get', 'update'])
-packages = [
-  'git-core', 'gcc', 'g++', 'gfortran', 'ccache', 'make',
-  'python-dev', 'default-jdk', 'unixodbc-dev'
-]
-x86_64 = platform.machine() == 'x86_64'
-if x86_64:
-  packages.append('libc6-i386')
-check_call(['apt-get', 'install', '-y'] + packages)
+if not installed('cmake'):
+  check_call(['apt-get', 'update'])
+  packages = [
+    'git-core', 'gcc', 'g++', 'gfortran', 'ccache', 'make',
+    'python-dev', 'default-jdk', 'unixodbc-dev'
+  ]
+  x86_64 = platform.machine() == 'x86_64'
+  if x86_64:
+    packages.append('libc6-i386')
+  check_call(['apt-get', 'install', '-y'] + packages)
 
-install_cmake('cmake-2.8.12.2-Linux-i386.tar.gz')
+  install_cmake('cmake-2.8.12.2-Linux-i386.tar.gz')
 
 # Installs symlinks for ccache.
 for name in ['gcc', 'cc', 'g++', 'c++']:
