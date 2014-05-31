@@ -50,16 +50,6 @@ endif ()
 if (APPLE)
   # Ipopt uses thread-local storage which requires OS X Lion or higher target.
   add_definitions(-mmacosx-version-min=10.7)
-
-  # Use libstdc++ instead of libc++ on Mac for compatibility with CPLEX 12.4
-  # and earlier.
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libstdc++")
-  set(CMAKE_SHARED_LINKER_FLAGS
-    "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libstdc++")
-  set(CMAKE_REQUIRED_FLAGS "-stdlib=libstdc++")
-
-  # The version of libstdc++ available on Mac doesn't support initializer lists.
-  add_definitions(-DFMT_USE_INITIALIZER_LIST=0)
 endif ()
 
 include(CheckCXXCompilerFlag)
