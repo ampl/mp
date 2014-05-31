@@ -170,7 +170,7 @@ def install_buildbot_slave(name, path=None, script_dir='', shell=False):
   from crontab import CronTab
   cron = CronTab('vagrant')
   cron.new('PATH={0}:/usr/local/bin buildslave start {1}'.format(
-    os.environ['PATH'], path))
+    os.environ['PATH'], path)).every_reboot()
   cron.write()
   check_call(['sudo', '-H', '-u', 'vagrant', 'buildslave', 'start', path])
 
