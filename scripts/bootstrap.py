@@ -21,8 +21,13 @@ def download(url, cookie=None):
   opener = urllib2.build_opener()
   if cookie:
     opener.addheaders.append(('Cookie', cookie))
-  with open(filename, 'wb') as f:
-    shutil.copyfileobj(opener.open(url), f)
+  f = opener.open(url)
+  with open(filename, 'wb') as out:
+    while 1:
+      data = f.read(1024 * 1024)
+      if not data:
+        break
+      out.write(data)
   return remove(filename)
 
 windows = platform.system() == 'Windows'
