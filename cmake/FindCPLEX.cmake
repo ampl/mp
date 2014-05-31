@@ -47,6 +47,7 @@ else ()
     set(CPLEX_ARCH x64)
   else ()
     set(CPLEX_ARCH x86)
+    set(CPLEX_ILOG_DIRS "C:/Program Files (x86)/IBM/ILOG" ${CPLEX_ILOG_DIRS})
   endif ()
   if (MSVC10)
     set(CPLEX_LIB_PATH_SUFFIXES
