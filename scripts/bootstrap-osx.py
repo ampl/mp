@@ -57,6 +57,7 @@ if not installed('ccache'):
   home = os.path.expanduser('~vagrant' if vagrant else '~')
   with open(home + '/.profile', 'a') as f:
     f.write('export PATH=/opt/local/libexec/ccache:$PATH')
+  add_to_path('/opt/local/libexec/ccache', None, True)
 
 # Install gfortran.
 if not installed('gfortran-4.9'):

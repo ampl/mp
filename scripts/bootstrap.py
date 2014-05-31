@@ -54,11 +54,14 @@ def installed(name):
   return path != None
 
 # Adds filename to search paths.
-def add_to_path(filename, linkname = None):
+def add_to_path(filename, linkname=None, prepend=False):
   paths = os.environ['PATH'].split(os.pathsep)
   path = os.path.dirname(filename)
   print('Adding', path, 'to PATH')
-  paths.append(path)
+  if prepend:
+    paths.insert(0, path)
+  else:
+    paths.append(path)
   os.environ['PATH'] = os.pathsep.join(paths)
   if windows:
     check_call(['setx', 'PATH', os.environ['PATH']])
