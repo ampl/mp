@@ -69,11 +69,12 @@ def create_symlink(filename, linkname):
 def add_to_path(path, linkname=None, isdir=False):
   paths = os.environ['PATH'].split(os.pathsep)
   dir = path if isdir else os.path.dirname(path)
+  quoted_dir = dir if ' ' not in dir else '"' + dir + '"'
   print('Adding', dir, 'to PATH')
   if isdir:
-    paths.insert(0, dir)
+    paths.insert(0, quoted_dir)
   else:
-    paths.append(dir)
+    paths.append(quoted_dir)
   os.environ['PATH'] = os.pathsep.join(paths)
   if windows:
     check_call(['setx', 'PATH', os.environ['PATH']])
