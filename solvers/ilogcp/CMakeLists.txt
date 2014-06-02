@@ -43,11 +43,14 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
 
   add_executable(ilogcp ilogcp_main.cc)
   target_link_libraries(ilogcp amplilogcp-static)
-
-  if (CPLEX_DLL)
-    get_filename_component(CPLEX_DLL_NAME "${CPLEX_DLL}" NAME)
-    add_custom_command(TARGET ilogcp
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${CPLEX_DLL}" "$<TARGET_FILE_DIR:ilogcp>/${CPLEX_DLL_NAME}")
-  endif ()
+  
+  function(copy_cplex_dll target)
+    if (CPLEX_DLL)
+      get_filename_component(CPLEX_DLL_NAME "${CPLEX_DLL}" NAME)
+      add_custom_command(TARGET ${target}
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CPLEX_DLL}" "$<TARGET_FILE_DIR:${target}>/${CPLEX_DLL_NAME}")
+    endif ()
+  endfunction()
+  copy_cplex_dll(ilogcp)
 endif ()

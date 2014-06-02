@@ -12,5 +12,6 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
     ../test-main.cc ../args.cc ../expr-builder.cc ../solver-test.cc
     ../gtest/src/gtest-all.cc ilogcp-test.cc)
   target_link_libraries(ilogcp-test amplilogcp-static)
-  add_test(ilogcp-test ilogcp-test)  
+  add_test(ilogcp-test ilogcp-test)
+  copy_cplex_dll(ilogcp-test)
 endif ()
