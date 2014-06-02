@@ -30,6 +30,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.define "osx-ml" do |c|
     c.vm.provider "virtualbox" do |v|
+      v.cpus = 2
       v.customize ["modifyvm", :id, "--vrdeport", "5000"]
     end
     c.vm.box = "osx-ml"
