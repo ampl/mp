@@ -420,7 +420,7 @@ TEST(FileTest, DefaultCtor) {
 
 TEST(FileTest, OpenBufferedFileInCtor) {
   FILE *pf = fopen("test-file", "w");
-  fprintf(pf, FILE_CONTENT);
+  fputs(FILE_CONTENT, pf);
   fclose(pf);
   File f("test-file", File::RDONLY);
   ASSERT_TRUE(IsOpen(f.descriptor()));
