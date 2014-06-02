@@ -113,6 +113,10 @@ elseif (NOT CPLEX_LIBRARY)
   find_win_cplex_library(CPLEX_LIB "${CPLEX_LIB_PATH_SUFFIXES_DEBUG}")
   set(CPLEX_LIBRARY_DEBUG ${CPLEX_LIB} CACHE
     FILEPATH "Path to the debug CPLEX library")
+  if (CPLEX_LIBRARY MATCHES ".*/(cplex.*)\\.lib")
+    file(GLOB CPLEX_DLL_ "${CPLEX_DIR}/bin/*/${CMAKE_MATCH_1}.dll")
+    set(CPLEX_DLL ${CPLEX_DLL_} CACHE PATH "Path to the CPLEX DLL.")
+  endif ()
 endif ()
 
 set(CPLEX_INCLUDE_DIRS ${CPLEX_INCLUDE_DIR})
