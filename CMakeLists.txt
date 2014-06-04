@@ -14,9 +14,9 @@ endif ()
 
 # Use static MSVC runtime.
 set(CMAKE_USER_MAKE_RULES_OVERRIDE
-  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/c_flag_overrides.cmake)
+  ${CMAKE_CURRENT_SOURCE_DIR}/support/cmake/c_flag_overrides.cmake)
 set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX
-  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cxx_flag_overrides.cmake)
+  ${CMAKE_CURRENT_SOURCE_DIR}/support/cmake/cxx_flag_overrides.cmake)
 
 if (APPLE)
   # Unset MACOSX_DEPLOYMENT_TARGET to avoid CMake error
@@ -30,7 +30,7 @@ project(AMPL)
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+  "${CMAKE_CURRENT_SOURCE_DIR}/support/cmake")
 
 include_directories(. ${CMAKE_CURRENT_BINARY_DIR}
   solvers ${CMAKE_CURRENT_BINARY_DIR}/solvers)

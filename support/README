@@ -2,4 +2,5 @@ This directory contains files for build support:
 
 * Bootstrap scripts used to set up build environment.
 * Buildbot configuration files.
+* CMake modules.
 * Various scripts.
