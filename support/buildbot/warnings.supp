@@ -7,7 +7,7 @@
 .*: could not create compact unwind
 
 (.*[/\\])?(objconst|funcadd0|stderr|pfghread|qp_read|jac2dim|auxinfo).c$: .*
-(.*[/\\])?(mpec_adj0|asldate|dtoa|fpinit|obj_adj|mainexit|func_add).c$: .*
+(mpec_adj0|asldate|dtoa|fpinit|obj_adj|mainexit|func_add).c$: .*
 (.*[/\\])?(punknown|conval|printf|conscale|value|mypow|bscanf|com2eval).c$: .*
 (.*[/\\])?(xectim|rops|readsol|xp1known|fpecatch|sigcatch|genrowno).c$: .*
 (.*[/\\])?(basename|sos_add|comeval|strerror|objval_|f_read|repwhere).c$: .*
