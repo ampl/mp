@@ -31,3 +31,5 @@ CoinPresolvePsdebug.cpp.obj: LNK4221:.*
 .*: [0-9]+ warning(s)? generated
 
 .*: This version of Mac OS X is unsupported
+
+<unknown>: \d+ Warning\(s\)
