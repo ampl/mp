@@ -13,6 +13,7 @@ cmake_install.cmake
 Makefile
 /.cproject
 /.project
+/.vagrant
 /tests/config.h
 /html
 /student
@@ -21,6 +22,8 @@ Makefile
 /scripts/*-options.html
 /scripts/ampl*-demo
 /scripts/cache
+/solvers/amplgsl/gen-decls
+/solvers/amplgsl/gsl.ampl
 /solvers/arith.h
 /solvers/arithchk
 /solvers/details.c
