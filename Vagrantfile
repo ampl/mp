@@ -17,7 +17,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     c.vm.box_url = "http://files.vagrantup.com/lucid32.box"
     c.vm.synced_folder "support/vagrant/lucid32/archives",
                        "/var/cache/apt/archives"
-    c.vm.provision :shell, :inline => "/vagrant/support/bootstrap-linux.py"
+    c.vm.provision :shell, :inline => "/vagrant/support/vagrant/bootstrap-linux.py"
   end
 
   config.vm.define "lucid64", primary: true do |c|
@@ -25,7 +25,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     c.vm.box_url = "http://files.vagrantup.com/lucid64.box"
     c.vm.synced_folder "support/vagrant/lucid64/archives",
                        "/var/cache/apt/archives"
-    c.vm.provision :shell, :inline => "/vagrant/support/bootstrap-linux.py"
+    c.vm.provision :shell, :inline => "/vagrant/support/vagrant/bootstrap-linux.py"
   end
 
   config.vm.define "osx-ml" do |c|
@@ -37,7 +37,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     c.vm.network :private_network, ip: "10.11.12.13"
     c.vm.synced_folder ".", "/vagrant", :type => "nfs",
                        :mount_options => ["resvport"]
-    c.vm.provision :shell, :inline => "/vagrant/support/bootstrap-osx.py"
+    c.vm.provision :shell, :inline => "/vagrant/support/vagrant/bootstrap-osx.py"
   end
 
   config.vm.define "win2008" do |c|
@@ -52,7 +52,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # Write the output to provision.log because of the issue
     # https://github.com/mitchellh/vagrant/issues/3866
     c.vm.provision "shell",
-      inline: "\\vagrant\\scripts\\bootstrap-windows.bat " +
+      inline: "\\vagrant\\support\\vagrant\\bootstrap-windows.bat " +
               "> \\vagrant\\provision.log 2>&1"
   end
 end
