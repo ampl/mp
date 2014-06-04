@@ -155,7 +155,7 @@ void rst::Parser::ParseBlock(
     // Parse a literal block.
     const char *line_start = ptr_;
     SkipSpace();
-    int new_indent = ptr_ - line_start;
+    std::ptrdiff_t new_indent = ptr_ - line_start;
     if (new_indent > indent)
       ParseBlock(LITERAL_BLOCK, prev_type, new_indent);
   }
@@ -228,14 +228,14 @@ void rst::Parser::Parse(const char *s) {
       if (IsSpace(ptr_[1])) {
         // Parse a bullet list item.
         ptr_ += 2;
-        ParseBlock(LIST_ITEM, prev_type, ptr_ - line_start);
+        ParseBlock(LIST_ITEM, prev_type, static_cast<int>(ptr_ - line_start));
         continue;
       }
       break;
     case '|':
       if (IsSpace(ptr_[1])) {
         // Parse a line block.
-        int indent = ptr_ - line_start;
+        int indent = static_cast<int>(ptr_ - line_start);
         ptr_ += 2;
         ParseLineBlock(prev_type, indent);
         continue;
@@ -243,7 +243,7 @@ void rst::Parser::Parse(const char *s) {
       break;
     }
     ParseBlock(std::isspace(line_start[0]) ? BLOCK_QUOTE : PARAGRAPH,
-        prev_type, ptr_ - line_start);
+        prev_type, static_cast<int>(ptr_ - line_start));
   }
   EnterBlock(prev_type, PARAGRAPH);
 }

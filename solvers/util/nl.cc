@@ -272,7 +272,7 @@ void NLReader::ReadFile(fmt::StringRef filename) {
   MemoryMappedFile file(filename);
   // TODO: use a buffer instead of mmap if mmap is not available or the
   //       file length is a multiple of the page size
-  std::size_t size = file.size();
+  std::size_t size = static_cast<std::size_t>(file.size());
   // Check if file size fits in size_t.
   if (size != file.size())
     ThrowError("file {} is too big") << filename;
