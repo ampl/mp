@@ -939,7 +939,7 @@ m_interface = {
 	NULL,
 	problem_size, bounds,
 	function_evaluation, jacobian_evaluation,
-	/*NULL, Hessian evaluation */
+	NULL, /* Hessian evaluation */
         NULL, NULL,
 	variable_name, constraint_name,
 	NULL
