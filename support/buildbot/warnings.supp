@@ -22,7 +22,7 @@
 (.*[/\\])?(funcadd1|sscanf|sprintf|rops2|indic_cons|dynlink|sjac0dim)\.c$: .*
 (.*[/\\])?(x2check|xp2known|misc|op_type|pfg_read|pshvprod|getstub)\.c$: .*
 (.*[/\\])?(atof|con2val|con1ival|mpec_adj|conpval)\.c$: .*
-(.*[/\\])?amplodbc\.c$: .*
+(.*[/\\])?(amplodbc|fullbit|simpbit|tableproxy)\.c$: .*
 
 CoinPresolvePsdebug.cpp.obj: LNK4221:.*
 .*CglProbing.cpp: use of unary operator that may be intended as compound assignment.*
