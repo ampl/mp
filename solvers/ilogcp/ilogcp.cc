@@ -201,7 +201,7 @@ void EnumOption::SetValue(const char *value) {
 }
 
 void GetSolution(IloCP cp, IloNumVarArray vars, vector<double> &solution) {
-  for (int j = 0, n = vars.getSize(); j < n; ++j) {
+  for (IloInt j = 0, n = vars.getSize(); j < n; ++j) {
     IloNumVar &v = vars[j];
     solution[j] = cp.isExtracted(v) ? cp.getValue(v) : v.getLB();
   }

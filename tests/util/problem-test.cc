@@ -105,7 +105,8 @@ TEST(SolutionTest, SolveCodes) {
       ampl::LIMIT,
       ampl::FAILURE
   };
-  for (std::size_t i = 0; i < sizeof(STATES) / sizeof(*STATES); ++i) {
+  for (int i = 0,
+         n = static_cast<int>(sizeof(STATES) / sizeof(*STATES)); i < n; ++i) {
     {
       int solve_code = i * 100;
       WriteFile("test.sol",
