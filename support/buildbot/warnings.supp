@@ -8,8 +8,8 @@
 
 # The filenames are matched from the beginning so no need for '^',
 # but '$' is necessary to match complete filenames rather than prefixes.
-.*/solvers/.*\.c$: .*
-.*/tables/.*\.c$: .*
+.*/solvers/[a-zA-Z0-9_]+\.c$: .*
+.*/tables/[a-zA-Z0-9_]+\.c$: .*
 
 CoinPresolvePsdebug.cpp.obj: LNK4221:.*
 .*CglProbing.cpp: use of unary operator that may be intended as compound assignment.*
