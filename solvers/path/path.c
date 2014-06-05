@@ -10,6 +10,9 @@
 #undef Long
 #include "getstub.h"
 
+#undef Not_Used
+#define Not_Used(x) (void)x
+
 /* extern const char *Path_Version(void); */
 static int debug, functimes, quitnow, wantfuncs;
 static int sideineq = 1, sqwarn = 1;
