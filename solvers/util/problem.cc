@@ -212,7 +212,8 @@ void Problem::AddVar(double lb, double ub, VarType type) {
     int num_integer_vars = Problem::num_integer_vars();
     if (!var_types_ && num_vars != num_integer_vars) {
       var_types_ = new VarType[var_capacity_];
-      std::fill_n(var_types_, num_integer_vars, INTEGER);
+      std::fill_n(fmt::internal::CheckPtr(var_types_, var_capacity_),
+        num_integer_vars, INTEGER);
       std::fill(var_types_ + num_integer_vars,
           var_types_ + num_vars, CONTINUOUS);
     }

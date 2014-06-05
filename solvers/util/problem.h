@@ -155,7 +155,8 @@ class Problem : Noncopyable {
   template <typename T>
   static void Grow(T *&array, int &size, int &capacity) {
     T *new_array = new T[capacity];
-    std::copy(array, array + size, new_array);
+    std::copy(array, array + size,
+      fmt::internal::CheckPtr(new_array, capacity));
     delete [] array;
     array = new_array;
   }
