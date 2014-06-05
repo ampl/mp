@@ -30,8 +30,9 @@
 
 namespace {
 
-inline IloInt ConvertToInt(double value) {
-  IloInt int_value = static_cast<int>(value);
+template <typename T>
+inline T ConvertTo(double value) {
+  T int_value = static_cast<T>(value);
   if (int_value != value)
     ampl::ThrowError("value {} can't be represented as int") << value;
   return int_value;
@@ -58,7 +59,7 @@ IloIntVar NLToConcertConverter::ConvertArg(
     const CallExpr::Arg &arg, IloInt lb, IloInt ub) {
   NumericExpr expr = arg.expr();
   if (!expr) {
-    int constant = ConvertToInt(arg.constant());
+    IloInt constant = ConvertTo<IloInt>(arg.constant());
     return IloIntVar(env_, constant, constant);
   }
   Variable var = Cast<Variable>(expr);
@@ -154,7 +155,7 @@ IloExpr NLToConcertConverter::VisitCall(CallExpr e) {
     CallExpr::Arg last_arg = args[num_args - 1];
     if (!last_arg.expr()) {
       // Index is constant - return the argument at specified index.
-      IloInt index = ConvertToInt(last_arg.constant());
+      int index = ConvertTo<int>(last_arg.constant());
       if (index < 0 || index >= num_args - 1)
         ThrowError("{}: index {} is out of bounds") << function_name << index;
       CallExpr::Arg result = args[index];
@@ -233,7 +234,7 @@ void NLToConcertConverter::FinishBuildingNumberOf() {
     IloIntArray values(env_, val_map.size());
     for (IlogNumberOfMap::ValueMap::const_iterator j = val_map.begin(),
         val_end = val_map.end(); j != val_end; ++j, ++index) {
-      values[index] = ConvertToInt(j->first);
+      values[index] = ConvertTo<IloInt>(j->first);
       cards[index] = j->second;
     }
 
@@ -279,7 +280,7 @@ bool NLToConcertConverter::ConvertGlobalConstraint(
         ThrowError("{}: argument {} is not constant")
           << function_name << (i + j + 1);
       }
-      tuple[j] = ConvertToInt(arg.constant());
+      tuple[j] = ConvertTo<IloInt>(arg.constant());
     }
     set.add(tuple);
   }

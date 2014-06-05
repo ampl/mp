@@ -280,16 +280,16 @@ void SMPSWriter::DoSolve(Problem &p) {
         // only differ by scenario into the same variable.
         std::string name = p.var_name(i);
         std::string scenario = ExtractScenario(name);
-        info.core_index = FindOrInsert(
-            stage1_vars, name, num_stage0_vars + stage1_vars.size());
-        info.scenario_index =
-            FindOrInsert(scenario_indices, scenario, scenario_indices.size());
+        info.core_index = FindOrInsert(stage1_vars, name,
+          static_cast<int>(num_stage0_vars + stage1_vars.size()));
+        info.scenario_index = FindOrInsert(scenario_indices,
+          scenario, static_cast<int>(scenario_indices.size()));
       } else {
         info.core_index = stage0_var_count++;
       }
     }
     assert(stage0_var_count == num_stage0_vars);
-    num_core_vars = num_stage0_vars + stage1_vars.size();
+    num_core_vars = static_cast<int>(num_stage0_vars + stage1_vars.size());
 
     // Compute stage of each constraint as a maximum of stages of
     // variables in it.
@@ -312,9 +312,9 @@ void SMPSWriter::DoSolve(Problem &p) {
             std::string scenario = ExtractScenario(name);
             auto &info = con_info[con_index];
             info.core_index = FindOrInsert(
-                stage1_cons, name, stage1_cons.size());
-            info.scenario_index = FindOrInsert(
-                scenario_indices, scenario, scenario_indices.size());
+                stage1_cons, name, static_cast<int>(stage1_cons.size()));
+            info.scenario_index = FindOrInsert(scenario_indices,
+                scenario, static_cast<int>(scenario_indices.size()));
             --num_stage0_cons;
           }
           con_stage = stage;
@@ -340,15 +340,15 @@ void SMPSWriter::DoSolve(Problem &p) {
       if (stage1_con != stage1_cons.end()) {
         con_stages[i] = 1;
         info.core_index = stage1_con->second;
-        info.scenario_index = FindOrInsert(
-            scenario_indices, scenario, scenario_indices.size());
+        info.scenario_index = FindOrInsert(scenario_indices,
+            scenario, static_cast<int>(scenario_indices.size()));
         --num_stage0_cons;
       } else {
         info.core_index = stage0_con_count++;
       }
     }
     assert(stage0_con_count == num_stage0_cons);
-    num_core_cons = num_stage0_cons + stage1_cons.size();
+    num_core_cons = static_cast<int>(num_stage0_cons + stage1_cons.size());
 
     for (int i = 0; i < num_cons; ++i) {
       if (con_stages[i] != 0)
