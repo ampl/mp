@@ -108,8 +108,8 @@ TEST(PathTest, TempDirectoryPath) {
 #else
   wchar_t buffer[MAX_PATH + 1];
   DWORD result = GetTempPathW(MAX_PATH + 1, buffer);
-  EXPECT_GT(result, 0);
-  EXPECT_LE(result, MAX_PATH);
+  EXPECT_GT(result, 0u);
+  EXPECT_LE(result, static_cast<DWORD>(MAX_PATH));
   EXPECT_EQ(fmt::str(fmt::internal::UTF16ToUTF8(buffer)),
       path::temp_directory_path().string());
 #endif
