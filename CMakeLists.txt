@@ -88,7 +88,8 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
   file(WRITE run-msbuild.bat "
     ${MSBUILD_SETUP}
     ${CMAKE_MAKE_PROGRAM} -p:FrameworkPathOverride=^\"C:\\Program Files^
-\\Reference Assemblies\\Microsoft\\Framework\\.NETFramework\\v4.0^\" %*")
+\\Reference Assemblies\\Microsoft\\Framework\\.NETFramework\\v4.0^\" ^
+/clp:NoSummary %*")
 endif ()
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)
