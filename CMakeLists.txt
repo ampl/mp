@@ -96,34 +96,6 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)
   set(get_amplgsl_version $<TARGET_FILE:gen-decls> >> versions)
 endif ()
 
-if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/coin/CMakeLists.txt)
-  set(HAVE_COIN 1)
-  set(get_cbc_version $<TARGET_FILE:cbc-executable> -v -AMPL >> versions)
-  if (TARGET ipopt-executable)
-    set(get_ipopt_version $<TARGET_FILE:ipopt-executable> -v >> versions)
-  endif ()
-
-  # Workaround for f90cache which accept only modified name for GNU fortran
-  # compilers in the form gfortran-4.x.
-  string(REGEX MATCHALL "[^:]+" search_paths "$ENV{PATH}")
-  foreach (search_path ${search_paths})
-    file(GLOB paths ${search_path}/gfortran-4.*)
-    if (paths)
-      list(GET paths 0 CMAKE_Fortran_COMPILER)
-      message("Detected Fortran compiler: ${CMAKE_Fortran_COMPILER}")
-      break ()
-    endif ()
-  endforeach ()
-
-  if (WINSDK_SETENV)
-    # Create a script that sets up build environment in Fortran subprojects.
-    file(WRITE setenv.bat "call \"${WINSDK_SETENV}\"")
-    # Extra command line flags to pass to CMake in
-    # cmake_add_fortran_subdirectory.
-    set(FORTRAN_CMAKE_FLAGS "-DCMAKE_GNUtoMS_VCVARS=../../setenv.bat")
-  endif ()
-endif ()
-
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/gecode/lib/CMakeLists.txt)
   set(HAVE_GECODE 1)
   set(get_gecode_version $<TARGET_FILE:gecode> -v >> versions)
@@ -212,7 +184,6 @@ if (amplodbc MATCHES "version ([0-9]+)")
 endif ()
 add_custom_target(versions cmake -E remove versions
   COMMAND ${get_amplgsl_version} COMMAND ${get_ampltabl_version}
-  COMMAND ${get_cbc_version} COMMAND ${get_ipopt_version}
   COMMAND ${get_gecode_version} COMMAND ${get_jacop_version}
   DEPENDS tables/amplodbc.c)
 

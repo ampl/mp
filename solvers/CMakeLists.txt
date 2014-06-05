@@ -138,13 +138,6 @@ if (HAVE_GSL)
   add_subdirectory(amplgsl)
 endif ()
 
-if (HAVE_COIN)
-  set(COIN_HAS_ASL 1)
-  set(ASL_LIBRARIES amplsolver)
-  set(COIN_DISABLE_WARNINGS 1)
-  add_subdirectory(coin)
-endif ()
-
 add_subdirectory(cp)
 add_subdirectory(cplex)
 
