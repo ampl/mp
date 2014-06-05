@@ -705,8 +705,8 @@ GecodeSolver::GecodeSolver()
 
 void GetSolution(GecodeProblem &gecode_problem, std::vector<double> &solution) {
   IntVarArray &vars = gecode_problem.vars();
-  size_t num_vars = solution.size();
-  for (size_t j = 0; j < num_vars; ++j)
+  int num_vars = static_cast<int>(solution.size());
+  for (int j = 0; j < num_vars; ++j)
     solution[j] = vars[j].val();
 }
 

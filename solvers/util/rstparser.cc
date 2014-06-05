@@ -155,7 +155,7 @@ void rst::Parser::ParseBlock(
     // Parse a literal block.
     const char *line_start = ptr_;
     SkipSpace();
-    std::ptrdiff_t new_indent = ptr_ - line_start;
+    int new_indent = static_cast<int>(ptr_ - line_start);
     if (new_indent > indent)
       ParseBlock(LITERAL_BLOCK, prev_type, new_indent);
   }
