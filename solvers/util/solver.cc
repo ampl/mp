@@ -182,12 +182,12 @@ void RSTFormatter::HandleDirective(const char *type) {
   for (ampl::ValueArrayRef::iterator
       i = values_.begin(), e = values_.end(); i != e; ++i) {
     Indent();
-    writer_ << fmt::pad(i->value, max_len);
+    writer_ << fmt::pad(i->value, static_cast<unsigned>(max_len));
     if (i->description) {
       static const char SEP[] = " -";
       writer_ << SEP;
       int saved_indent = indent_;
-      indent_ += max_len + sizeof(SEP);
+      indent_ += static_cast<int>(max_len + sizeof(SEP));
       pos_in_line_ = indent_;
       Write(i->description);
       indent_ = saved_indent;
@@ -315,7 +315,7 @@ bool Solver::OptionNameLess::operator()(
 void Solver::RegisterSuffixes(Problem &p) {
   ASL *asl = reinterpret_cast<ASL*>(p.asl_);
   if (asl->i.nsuffixes == 0 && !suffixes_.empty())
-    suf_declare_ASL(asl, &suffixes_[0], suffixes_.size());
+    suf_declare_ASL(asl, &suffixes_[0], static_cast<int>(suffixes_.size()));
 }
 
 char *Solver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
