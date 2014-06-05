@@ -795,7 +795,7 @@ class Solver
   bool ProcessArgs(char **&argv, Problem &p, unsigned flags = 0);
 
   // Returns the number of options.
-  int num_options() const { return options_.size(); }
+  int num_options() const { return static_cast<int>(options_.size()); }
 
   // Option iterator.
   class option_iterator :

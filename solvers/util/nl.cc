@@ -125,8 +125,8 @@ class TextReader {
   : ptr_(ptr), line_start_(ptr), token_(ptr), name_(name), line_(1) {}
 
   fmt::Formatter<ParseErrorReporter> ReportParseError(fmt::StringRef message) {
-    fmt::Formatter<ParseErrorReporter> f(message,
-        ParseErrorReporter(name_, line_, token_ - line_start_ + 1));
+    fmt::Formatter<ParseErrorReporter> f(message, ParseErrorReporter(
+      name_, line_, static_cast<int>(token_ - line_start_ + 1)));
     return f;
   }
 
