@@ -49,7 +49,6 @@ public:
 class ASLBuilder {
  private:
   ASL &asl_;
-  bool linear_;
   efunc **r_ops_;
   int nv1_;
   int nz_;
@@ -61,7 +60,7 @@ class ASLBuilder {
   // Begin building the ASL.
   // flags: reader flags, see ASL_reader_flag_bits.
   // Throws ASLError on error.
-  void BeginBuild(int flags, bool linear = false);
+  void BeginBuild(int flags);
 
   // End building the ASL.
   void EndBuild();

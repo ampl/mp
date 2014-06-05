@@ -42,7 +42,7 @@ void InitVars(expr_v *v, int offset, int count, int var_index) {
 namespace ampl {
 
 internal::ASLBuilder::ASLBuilder(ASL &asl, const char *stub, const NLHeader &h)
-: asl_(asl), linear_(false), r_ops_(0), nv1_(0), nz_(0), nderp_(0) {
+: asl_(asl), r_ops_(0), nv1_(0), nz_(0), nderp_(0) {
   std::size_t stub_len = std::strlen(stub);
   Edaginfo &info = asl.i;
   info.filename_ = reinterpret_cast<char*>(M1alloc_ASL(&info, stub_len + 5));
@@ -122,9 +122,8 @@ internal::ASLBuilder::ASLBuilder(ASL &asl, const char *stub, const NLHeader &h)
   info.c_vars_ = info.o_vars_ = info.n_var_;
 }
 
-void internal::ASLBuilder::BeginBuild(int flags, bool linear) {
-  // TODO: test linear
-  linear_ = linear;
+void internal::ASLBuilder::BeginBuild(int flags) {
+  bool linear = asl_.i.ASLtype == ASL_read_f;
 
   // Includes allocation of LUv, LUrhs, A_vals or Cgrad, etc.
   flagsave_ASL(&asl_, flags);
@@ -141,10 +140,9 @@ void internal::ASLBuilder::BeginBuild(int flags, bool linear) {
 
   info.xscanf_ = info.binary_nl_ ? bscanf : ascanf;
 
-  bool linear_ = false;
   Edag1info &info1 = reinterpret_cast<ASL_fg&>(asl_).I;
   int ncom = 0;
-  if (!linear_) {
+  if (!linear) {
     r_ops_ = info1.r_ops_;
     if (!r_ops_)
       r_ops_ = r_ops_ASL;
@@ -179,7 +177,7 @@ void internal::ASLBuilder::BeginBuild(int flags, bool linear) {
   nv1_ = nv0;
   int nv = nv1_;
   unsigned x = 0, nvref = 0, maxfwd1 = 0;
-  if (linear_) {
+  if (linear) {
     x = nco * sizeof(cde) + no * sizeof(ograd*) + nv * sizeof(expr_v) + no;
   } else {
     int max_var = nv = nv1_ + ncom;
@@ -222,7 +220,7 @@ void internal::ASLBuilder::BeginBuild(int flags, bool linear) {
   info1.obj_de_ = info1.lcon_de_ + nlcon;
   info.Ograd_ = reinterpret_cast<ograd**>(info1.obj_de_ + no);
 
-  if (linear_) {
+  if (linear) {
     info.objtype_ = reinterpret_cast<char*>(info.Ograd_ + no);
   } else {
     info1.var_ex_ = e + nv1_;
@@ -265,8 +263,9 @@ void internal::ASLBuilder::BeginBuild(int flags, bool linear) {
 }
 
 void internal::ASLBuilder::EndBuild() {
+  bool linear = asl_.i.ASLtype == ASL_read_f;
   Edaginfo &info = asl_.i;
-  if (!linear_) {
+  if (!linear) {
     // Make amax long enough for nlc to handle
     // var_e[i].a for common variables i.
     if (info.ncom0_) {
@@ -288,7 +287,7 @@ void internal::ASLBuilder::EndBuild() {
     info.Lastx_ = reinterpret_cast<double*>(
         M1alloc_ASL(&info, nv1_ * sizeof(double)));
   }
-  if (!linear_) {
+  if (!linear) {
     asl_.p.Objval = asl_.p.Objval_nomap = obj1val_ASL;
     asl_.p.Objgrd = asl_.p.Objgrd_nomap = obj1grd_ASL;
     asl_.p.Conval = con1val_ASL;
