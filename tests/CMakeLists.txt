@@ -38,7 +38,7 @@ function(add_ampl_test name)
   add_executable(${target_name} ${srcs})
   set_target_properties(${target_name} PROPERTIES OUTPUT_NAME ${name})
   target_link_libraries(${target_name} gtest-extra ${libs})
-  add_test(${name} ${name})
+  add_test(NAME ${name} COMMAND $<TARGET_FILE:${target_name}>)
 endfunction()
 
 # Check C++ compiler capabilities.
