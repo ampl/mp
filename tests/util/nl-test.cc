@@ -265,7 +265,7 @@ void CheckHeader(const NLHeader &h) {
   WriteFile("test.nl", nl);
   char stub[] = "test.nl";
   ASL *asl = ASL_alloc(ASL_read_fg);
-  jac0dim_ASL(asl, stub, strlen(stub));
+  jac0dim_ASL(asl, stub, static_cast<int>(strlen(stub)));
   std::remove(stub);
 
   EXPECT_EQ(asl->i.ampl_options_[0], actual_header.num_options);
