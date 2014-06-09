@@ -13,4 +13,4 @@ del vcredist_x64.exe
 cscript /nologo scripts\wget.js ^
   https://www.python.org/ftp/python/2.7.6/python-2.7.6.amd64.msi python.msi
 msiexec /i python.msi ALLUSERS=1
-\Python27\python scripts\bootstrap-windows.py
+\Python27\python support\vagrant\bootstrap-windows.py
