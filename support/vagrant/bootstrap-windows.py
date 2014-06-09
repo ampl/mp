@@ -5,6 +5,7 @@ import os, shutil
 from bootstrap import *
 from glob import glob
 from subprocess import check_call
+import win32serviceutil
 
 # Add Python to PATH.
 python_dir = r'C:\Python27'
@@ -92,6 +93,19 @@ if not module_exists('win32api'):
   pywin32_postinstall.install()
   os.remove(site_packages_dir + r'\pywin32_postinstall.py')
 
+# Specifies whether to restart BuildBot service.
+restart = False
+
+# Remove sh.exe from the path as it breaks MinGW makefile generation.
+paths = os.environ['PATH'].split(os.pathsep)
+for path in paths:
+  if os.path.exists(os.path.join(path.strip('"'), "sh.exe")):
+    print('Removing', path, 'from $PATH')
+    paths.remove(path)
+    restart = True
+os.environ['PATH'] = os.pathsep.join(paths)
+check_call(['setx', 'PATH', os.environ['PATH']])
+
 buildslave_dir = r'\buildslave'
 if not os.path.exists(buildslave_dir):
   install_buildbot_slave('win2008', buildslave_dir, python_dir + r'\Scripts', True)
@@ -117,5 +131,7 @@ if not os.path.exists(buildslave_dir):
     os.path.join(python_dir, r'Scripts\buildbot_service.py'),
     '--user', '.\\' + username, '--password', 'vagrant',
     '--startup', 'auto', 'install'])
-  import win32serviceutil
   win32serviceutil.StartService('BuildBot')
+elif restart:
+  print('Restarting BuildBot')
+  win32serviceutil.RestartService('BuildBot')
