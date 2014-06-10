@@ -67,7 +67,6 @@ endif ()
 
 # Sets var to a command used to set up a build environment.
 function(ampl_get_msbuild_setup var)
-  include(FindSetEnv)
   if (WINSDK_SETENV)
     if (CMAKE_SIZEOF_VOID_P EQUAL 4)
       set(setenv_flag /x86)
@@ -81,6 +80,7 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
   # calls SetEnv.cmd to to set up build environment and runs msbuild.
   # It is useful when building Visual Studio projects with the SDK
   # toolchain rather than Visual Studio.
+  include(FindSetEnv)
   ampl_get_msbuild_setup(MSBUILD_SETUP)
   # Set FrameworkPathOverride to get rid of MSB3644 warnings.
   file(WRITE run-msbuild.bat "
