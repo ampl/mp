@@ -5,7 +5,6 @@ import os, shutil
 from bootstrap import *
 from glob import glob
 from subprocess import check_call
-import win32serviceutil
 
 # Add Python to PATH.
 python_dir = r'C:\Python27'
@@ -104,7 +103,10 @@ for path in paths:
     paths.remove(path)
     restart = True
 os.environ['PATH'] = os.pathsep.join(paths)
-check_call(['setx', 'PATH', os.environ['PATH']])
+check_call(['setx', '/m', 'PATH', os.environ['PATH']])
+
+import win32serviceutil
+import _winreg as reg
 
 buildslave_dir = r'\buildslave'
 if not os.path.exists(buildslave_dir):
@@ -120,7 +122,6 @@ if not os.path.exists(buildslave_dir):
   win32security.LsaClose(policy)
 
   # Set buildslave parameters.
-  import _winreg as reg
   with reg.CreateKey(reg.HKEY_LOCAL_MACHINE,
       r'System\CurrentControlSet\services\BuildBot\Parameters') as key:
     reg.SetValueEx(key, 'directories', 0, reg.REG_SZ, buildslave_dir)
@@ -135,3 +136,15 @@ if not os.path.exists(buildslave_dir):
 elif restart:
   print('Restarting BuildBot')
   win32serviceutil.RestartService('BuildBot')
+
+# Add a registry key value to get rid of SetEnv.cmd errors
+# "The system was unable to find the specified registry key or value."
+# that are causing custom builds to fail.
+key_name = r'SOFTWARE\Wow6432Node\Microsoft\VisualStudio\SxS\VS7'
+with reg.CreateKey(reg.HKEY_LOCAL_MACHINE, key_name) as key:
+  value_name = '10.0'
+  try:
+    reg.QueryValueEx(key, value_name)
+  except:
+    print('Adding value', value_name, 'for registry key', key_name)
+    reg.SetValueEx(key, value_name, 0, reg.REG_SZ, '')
