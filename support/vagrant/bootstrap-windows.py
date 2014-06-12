@@ -141,14 +141,21 @@ elif restart:
   print('Restarting BuildBot')
   win32serviceutil.RestartService('BuildBot')
 
-# Add a registry key value to get rid of SetEnv.cmd errors
+# Comment the line in SetEnv.cmd causing errors
 # "The system was unable to find the specified registry key or value."
-# that are causing custom builds to fail.
-key_name = r'SOFTWARE\Wow6432Node\Microsoft\VisualStudio\SxS\VS7'
-with reg.CreateKey(reg.HKEY_LOCAL_MACHINE, key_name) as key:
-  value_name = '10.0'
-  try:
-    reg.QueryValueEx(key, value_name)
-  except:
-    print('Adding value', value_name, 'for registry key', key_name)
-    reg.SetValueEx(key, value_name, 0, reg.REG_SZ, '')
+# that are making custom builds to fail.
+with reg.OpenKey(reg.HKEY_LOCAL_MACHINE,
+                r'SOFTWARE\Microsoft\Microsoft SDKs\Windows') as key:
+  setenv_path = os.path.join(
+    reg.QueryValueEx(key, 'CurrentInstallFolder')[0], 'bin', 'setenv.cmd')
+  old_setenv_path = setenv_path + '.old'
+  if not os.path.exists(old_setenv_path):
+    print('Fixing', setenv_path)
+    with open(setenv_path, 'r') as f:
+      content = f.read()
+    content = re.sub(r'(FOR .*REG QUERY "%VSRegKeyPath%")', r'rem \1', content)
+    new_setenv_path = setenv_path + '.new'
+    with open(new_setenv_path, 'w') as f:
+      f.write(content)
+    os.rename(setenv_path, setenv_path + '.old')
+    os.rename(new_setenv_path, setenv_path)
