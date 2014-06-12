@@ -4,7 +4,7 @@ from __future__ import print_function
 import os, shutil
 from bootstrap import *
 from glob import glob
-from subprocess import check_call
+from subprocess import check_call, check_output
 
 # Add Python to PATH.
 python_dir = r'C:\Python27'
@@ -47,7 +47,11 @@ def install_mingw(arch):
       'Toolchains%20targetting%20Win' + bits + '/Personal%20Builds/' +
       'mingw-builds/4.8.2/threads-win32/sjlj/' + arch +
       '-4.8.2-release-win32-sjlj-rt_v3-rev4.7z/download') as f:
-    check_call([sevenzip, 'x', '-oC:\\', f])
+    with timer("Installed MinGW" + bits):
+      output = check_output([sevenzip, 'x', '-oC:\\', f])
+      for line in output.split('\n'):
+        if not line.startswith('Extracting '):
+          print(line)
 
 install_mingw('i686')
 install_mingw('x86_64')
