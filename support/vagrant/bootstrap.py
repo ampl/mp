@@ -78,15 +78,14 @@ def create_symlink(filename, linkname):
 def add_to_path(path, linkname=None, isdir=False):
   paths = os.environ['PATH'].split(os.pathsep)
   dir = path if isdir else os.path.dirname(path)
-  quoted_dir = dir if ' ' not in dir else '"' + dir + '"'
   print('Adding', dir, 'to PATH')
   if isdir:
-    paths.insert(0, quoted_dir)
+    paths.insert(0, dir)
   else:
-    paths.append(quoted_dir)
+    paths.append(dir)
   os.environ['PATH'] = os.pathsep.join(paths)
   if windows:
-    check_call(['setx', 'PATH', os.environ['PATH']])
+    check_call(['setx', '/m', 'PATH', os.environ['PATH']])
   if windows or isdir:
     return
   dir = '/usr/local/bin'
