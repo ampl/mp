@@ -53,6 +53,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # https://github.com/mitchellh/vagrant/issues/3866
     c.vm.provision "shell",
       inline: "\\vagrant\\support\\vagrant\\bootstrap-windows.bat " +
-              "> \\vagrant\\provision.log 2>&1"
+              "> \\vagrant\\support\\vagrant\\provision.log 2>&1"
   end
 end
