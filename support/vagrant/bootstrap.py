@@ -1,7 +1,7 @@
 # Common bootstrap functionality.
 
 from __future__ import print_function
-import glob, os, platform, re, shutil, sys
+import glob, os, platform, re, shutil, sys, time
 import tarfile, tempfile, urllib2, urlparse, zipfile
 from contextlib import closing, contextmanager
 from subprocess import check_call
@@ -11,23 +11,32 @@ def remove(filename):
   yield filename
   os.remove(filename)
 
+@contextmanager
+def timer(*args):
+  start = time.clock()
+  yield
+  finish = time.clock()
+  print(*args, end=' ')
+  print('in', finish - start, 'seconds')
+
 # Downloads into a temporary file.
 def download(url, cookie=None):
   suffix = os.path.splitext(urlparse.urlsplit(url)[2])[1]
   fd, filename = tempfile.mkstemp(suffix=suffix, dir='')
   os.close(fd)
-  print('Downloading', url, 'to', filename)
+  print('Downloading', url, 'to', filename, '...')
   sys.stdout.flush()
-  opener = urllib2.build_opener()
-  if cookie:
-    opener.addheaders.append(('Cookie', cookie))
-  f = opener.open(url)
-  with open(filename, 'wb') as out:
-    while 1:
-      data = f.read(1024 * 1024)
-      if not data:
-        break
-      out.write(data)
+  with timer('Downloaded', url):
+    opener = urllib2.build_opener()
+    if cookie:
+      opener.addheaders.append(('Cookie', cookie))
+    f = opener.open(url)
+    with open(filename, 'wb') as out:
+      while 1:
+        data = f.read(1024 * 1024)
+        if not data:
+          break
+        out.write(data)
   return remove(filename)
 
 windows = platform.system() == 'Windows'
