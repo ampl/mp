@@ -140,22 +140,3 @@ if not os.path.exists(buildslave_dir):
 elif restart:
   print('Restarting BuildBot')
   win32serviceutil.RestartService('BuildBot')
-
-# Comment the line in SetEnv.cmd causing errors
-# "The system was unable to find the specified registry key or value."
-# that are making custom builds to fail.
-with reg.OpenKey(reg.HKEY_LOCAL_MACHINE,
-                r'SOFTWARE\Microsoft\Microsoft SDKs\Windows') as key:
-  setenv_path = os.path.join(
-    reg.QueryValueEx(key, 'CurrentInstallFolder')[0], 'bin', 'setenv.cmd')
-  old_setenv_path = setenv_path + '.old'
-  if not os.path.exists(old_setenv_path):
-    print('Fixing', setenv_path)
-    with open(setenv_path, 'r') as f:
-      content = f.read()
-    content = re.sub(r'(FOR .*REG QUERY "%VSRegKeyPath%")', r'rem \1', content)
-    new_setenv_path = setenv_path + '.new'
-    with open(new_setenv_path, 'w') as f:
-      f.write(content)
-    os.rename(setenv_path, setenv_path + '.old')
-    os.rename(new_setenv_path, setenv_path)
