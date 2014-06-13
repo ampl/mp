@@ -102,7 +102,7 @@ restart = False
 # Remove sh.exe from the path as it breaks MinGW makefile generation.
 paths = os.environ['PATH'].split(os.pathsep)
 for path in paths:
-  if os.path.exists(os.path.join(path.strip('"'), "sh.exe")):
+  if os.path.exists(os.path.join(path, "sh.exe")):
     print('Removing', path, 'from $PATH')
     paths.remove(path)
     restart = True
