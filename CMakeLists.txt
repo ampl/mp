@@ -65,28 +65,22 @@ if (HAVE_QUNUSED_ARGUMENTS)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
 endif ()
 
-# Sets var to a command used to set up a build environment.
-function(ampl_get_msbuild_setup var)
-  if (WINSDK_SETENV)
-    if (CMAKE_SIZEOF_VOID_P EQUAL 4)
-      set(setenv_flag /x86)
-    endif()
-    set(${var} "call \"${WINSDK_SETENV}\" ${setenv_flag}" PARENT_SCOPE)
-  endif ()
-endfunction()
-
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
   # If Microsoft SDK is installed create script run-msbuild.bat that
   # calls SetEnv.cmd to to set up build environment and runs msbuild.
   # It is useful when building Visual Studio projects with the SDK
   # toolchain rather than Visual Studio.
   include(FindSetEnv)
-  ampl_get_msbuild_setup(MSBUILD_SETUP)
-  # Set FrameworkPathOverride to get rid of MSB3644 warnings.
-  file(WRITE run-msbuild.bat "
-    ${MSBUILD_SETUP}
-    ${CMAKE_MAKE_PROGRAM} -p:FrameworkPathOverride=^\"C:\\Program Files^
+  if (WINSDK_SETENV)
+    if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+      set(setenv_flag /x86)
+    endif()
+    # Set FrameworkPathOverride to get rid of MSB3644 warnings.
+    file(WRITE run-msbuild.bat "
+      ${call \"${WINSDK_SETENV}\" ${setenv_flag}}
+      ${CMAKE_MAKE_PROGRAM} -p:FrameworkPathOverride=^\"C:\\Program Files^
 \\Reference Assemblies\\Microsoft\\Framework\\.NETFramework\\v4.0^\" %*")
+  endif ()
 endif ()
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)
