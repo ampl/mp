@@ -77,7 +77,7 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
     endif()
     # Set FrameworkPathOverride to get rid of MSB3644 warnings.
     file(WRITE run-msbuild.bat "
-      ${call \"${WINSDK_SETENV}\" ${setenv_flag}}
+      call \"${WINSDK_SETENV}\" ${setenv_flag}
       ${CMAKE_MAKE_PROGRAM} -p:FrameworkPathOverride=^\"C:\\Program Files^
 \\Reference Assemblies\\Microsoft\\Framework\\.NETFramework\\v4.0^\" %*")
   endif ()
