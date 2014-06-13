@@ -1,4 +1,4 @@
-import JaCoP.search.ConsistencyListener;
+import org.jacop.search.ConsistencyListener;
 
 class InterruptSearch extends RuntimeException {}
 

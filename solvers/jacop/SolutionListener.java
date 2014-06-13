@@ -1,7 +1,7 @@
-import JaCoP.core.Var;
-import JaCoP.search.SimpleSolutionListener;
-import JaCoP.search.Search;
-import JaCoP.search.SelectChoicePoint;
+import org.jacop.core.Var;
+import org.jacop.search.SimpleSolutionListener;
+import org.jacop.search.Search;
+import org.jacop.search.SelectChoicePoint;
 
 class SolutionListener<T extends Var> extends SimpleSolutionListener<T> {
   private long data;

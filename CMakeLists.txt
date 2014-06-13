@@ -93,7 +93,7 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/gecode/lib/CMakeLists.txt)
   set(get_gecode_version $<TARGET_FILE:gecode> -v >> versions)
 endif ()
 
-file(GLOB JACOP_PATH solvers/jacop/lib/JaCoP-*.jar)
+file(GLOB JACOP_PATH solvers/jacop/lib/jacop-*.jar)
 if (JACOP_PATH)
   get_filename_component(JACOP_JAR ${JACOP_PATH} NAME)
   find_package(JNI)

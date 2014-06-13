@@ -31,69 +31,69 @@
 
 namespace ampl {
 
-CLASS_INFO(IntVar, "JaCoP/core/IntVar", "(LJaCoP/core/Store;II)V")
-CLASS_INFO(Sum, "JaCoP/constraints/Sum",
-    "([LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
-CLASS_INFO(SumWeight, "JaCoP/constraints/SumWeight",
-    "([LJaCoP/core/IntVar;[ILJaCoP/core/IntVar;)V")
-CLASS_INFO(XplusYeqZ, "JaCoP/constraints/XplusYeqZ",
-    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
-CLASS_INFO(XplusCeqZ, "JaCoP/constraints/XplusCeqZ",
-    "(LJaCoP/core/IntVar;ILJaCoP/core/IntVar;)V")
-CLASS_INFO(XmulYeqZ, "JaCoP/constraints/XmulYeqZ",
-    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
-CLASS_INFO(XmulCeqZ, "JaCoP/constraints/XmulCeqZ",
-    "(LJaCoP/core/IntVar;ILJaCoP/core/IntVar;)V")
-CLASS_INFO(XdivYeqZ, "JaCoP/constraints/XdivYeqZ",
-    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
-CLASS_INFO(XmodYeqZ, "JaCoP/constraints/XmodYeqZ",
-    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
-CLASS_INFO(XexpYeqZ, "JaCoP/constraints/XexpYeqZ",
-    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
-CLASS_INFO(XeqY, "JaCoP/constraints/XeqY",
-    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
-CLASS_INFO(XeqC, "JaCoP/constraints/XeqC", "(LJaCoP/core/IntVar;I)V")
-CLASS_INFO(XneqY, "JaCoP/constraints/XneqY",
-    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
-CLASS_INFO(XltY, "JaCoP/constraints/XltY",
-    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
-CLASS_INFO(XlteqY, "JaCoP/constraints/XlteqY",
-    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
-CLASS_INFO(XgtY, "JaCoP/constraints/XgtY",
-    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
-CLASS_INFO(XgteqY, "JaCoP/constraints/XgteqY",
-    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
-CLASS_INFO(XgteqC, "JaCoP/constraints/XgteqC",
-    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
-CLASS_INFO(AbsXeqY, "JaCoP/constraints/AbsXeqY",
-    "(LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
-CLASS_INFO(Min, "JaCoP/constraints/Min",
-    "([LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
-CLASS_INFO(Max, "JaCoP/constraints/Max",
-    "([LJaCoP/core/IntVar;LJaCoP/core/IntVar;)V")
-CLASS_INFO(Count, "JaCoP/constraints/Count",
-    "([LJaCoP/core/IntVar;LJaCoP/core/IntVar;I)V")
-CLASS_INFO(IfThen, "JaCoP/constraints/IfThen",
-    "(LJaCoP/constraints/PrimitiveConstraint;"
-    "LJaCoP/constraints/PrimitiveConstraint;)V")
-CLASS_INFO(IfThenElse, "JaCoP/constraints/IfThenElse",
-    "(LJaCoP/constraints/PrimitiveConstraint;"
-    "LJaCoP/constraints/PrimitiveConstraint;"
-    "LJaCoP/constraints/PrimitiveConstraint;)V")
-CLASS_INFO(Or, "JaCoP/constraints/Or",
-    "(LJaCoP/constraints/PrimitiveConstraint;"
-    "LJaCoP/constraints/PrimitiveConstraint;)V")
-CLASS_INFO(And, "JaCoP/constraints/And",
-    "(LJaCoP/constraints/PrimitiveConstraint;"
-    "LJaCoP/constraints/PrimitiveConstraint;)V")
-CLASS_INFO(Not, "JaCoP/constraints/Not",
-    "(LJaCoP/constraints/PrimitiveConstraint;)V")
-CLASS_INFO(Eq, "JaCoP/constraints/Eq",
-    "(LJaCoP/constraints/PrimitiveConstraint;"
-    "LJaCoP/constraints/PrimitiveConstraint;)V")
-CLASS_INFO(Alldiff, "JaCoP/constraints/Alldiff", "([LJaCoP/core/IntVar;)V")
-CLASS_INFO(DepthFirstSearch, "JaCoP/search/DepthFirstSearch", "()V")
-CLASS_INFO(SimpleTimeOut, "JaCoP/search/SimpleTimeOut", "()V")
+CLASS_INFO(IntVar, "org/jacop/core/IntVar", "(Lorg/jacop/core/Store;II)V")
+CLASS_INFO(Sum, "org/jacop/constraints/Sum",
+    "([Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;)V")
+CLASS_INFO(SumWeight, "org/jacop/constraints/SumWeight",
+    "([Lorg/jacop/core/IntVar;[ILorg/jacop/core/IntVar;)V")
+CLASS_INFO(XplusYeqZ, "org/jacop/constraints/XplusYeqZ",
+    "(Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;)V")
+CLASS_INFO(XplusCeqZ, "org/jacop/constraints/XplusCeqZ",
+    "(Lorg/jacop/core/IntVar;ILorg/jacop/core/IntVar;)V")
+CLASS_INFO(XmulYeqZ, "org/jacop/constraints/XmulYeqZ",
+    "(Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;)V")
+CLASS_INFO(XmulCeqZ, "org/jacop/constraints/XmulCeqZ",
+    "(Lorg/jacop/core/IntVar;ILorg/jacop/core/IntVar;)V")
+CLASS_INFO(XdivYeqZ, "org/jacop/constraints/XdivYeqZ",
+    "(Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;)V")
+CLASS_INFO(XmodYeqZ, "org/jacop/constraints/XmodYeqZ",
+    "(Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;)V")
+CLASS_INFO(XexpYeqZ, "org/jacop/constraints/XexpYeqZ",
+    "(Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;)V")
+CLASS_INFO(XeqY, "org/jacop/constraints/XeqY",
+    "(Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;)V")
+CLASS_INFO(XeqC, "org/jacop/constraints/XeqC", "(Lorg/jacop/core/IntVar;I)V")
+CLASS_INFO(XneqY, "org/jacop/constraints/XneqY",
+    "(Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;)V")
+CLASS_INFO(XltY, "org/jacop/constraints/XltY",
+    "(Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;)V")
+CLASS_INFO(XlteqY, "org/jacop/constraints/XlteqY",
+    "(Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;)V")
+CLASS_INFO(XgtY, "org/jacop/constraints/XgtY",
+    "(Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;)V")
+CLASS_INFO(XgteqY, "org/jacop/constraints/XgteqY",
+    "(Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;)V")
+CLASS_INFO(XgteqC, "org/jacop/constraints/XgteqC",
+    "(Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;)V")
+CLASS_INFO(AbsXeqY, "org/jacop/constraints/AbsXeqY",
+    "(Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;)V")
+CLASS_INFO(Min, "org/jacop/constraints/Min",
+    "([Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;)V")
+CLASS_INFO(Max, "org/jacop/constraints/Max",
+    "([Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;)V")
+CLASS_INFO(Count, "org/jacop/constraints/Count",
+    "([Lorg/jacop/core/IntVar;Lorg/jacop/core/IntVar;I)V")
+CLASS_INFO(IfThen, "org/jacop/constraints/IfThen",
+    "(Lorg/jacop/constraints/PrimitiveConstraint;"
+    "Lorg/jacop/constraints/PrimitiveConstraint;)V")
+CLASS_INFO(IfThenElse, "org/jacop/constraints/IfThenElse",
+    "(Lorg/jacop/constraints/PrimitiveConstraint;"
+    "Lorg/jacop/constraints/PrimitiveConstraint;"
+    "Lorg/jacop/constraints/PrimitiveConstraint;)V")
+CLASS_INFO(Or, "org/jacop/constraints/Or",
+    "(Lorg/jacop/constraints/PrimitiveConstraint;"
+    "Lorg/jacop/constraints/PrimitiveConstraint;)V")
+CLASS_INFO(And, "org/jacop/constraints/And",
+    "(Lorg/jacop/constraints/PrimitiveConstraint;"
+    "Lorg/jacop/constraints/PrimitiveConstraint;)V")
+CLASS_INFO(Not, "org/jacop/constraints/Not",
+    "(Lorg/jacop/constraints/PrimitiveConstraint;)V")
+CLASS_INFO(Eq, "org/jacop/constraints/Eq",
+    "(Lorg/jacop/constraints/PrimitiveConstraint;"
+    "Lorg/jacop/constraints/PrimitiveConstraint;)V")
+CLASS_INFO(Alldiff, "org/jacop/constraints/Alldiff", "([Lorg/jacop/core/IntVar;)V")
+CLASS_INFO(DepthFirstSearch, "org/jacop/search/DepthFirstSearch", "()V")
+CLASS_INFO(SimpleTimeOut, "org/jacop/search/SimpleTimeOut", "()V")
 CLASS_INFO(InterruptSearch, "InterruptSearch", "()V")
 CLASS_INFO(Interrupter, "Interrupter", "(J)V")
 CLASS_INFO(SolutionListener, "SolutionListener", "(J)V")

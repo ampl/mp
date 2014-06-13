@@ -7,6 +7,14 @@ if (HAVE_WNO_LONG_LONG)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-long-long")
 endif ()
 
+if (JACOP_JAR MATCHES "jacop-(.*)\\.jar")
+  set(JACOP_VERSION ${CMAKE_MATCH_1})
+else ()
+  message(FATAL_ERROR "Cannot determine JaCoP version.")
+endif ()
+
+add_definitions(-DJACOP_VERSION="${JACOP_VERSION}")
+
 add_library(ampljacop-static jacop.cc jacop.h java.cc java.h)
 target_link_libraries(ampljacop-static util ${JNI_LIBRARIES})
 add_dependencies(ampljacop-static arith_h)
@@ -24,5 +32,5 @@ if (MSVC)
 endif ()
 
 include(UseJava)
-set(CMAKE_JAVA_INCLUDE_PATH lib/JaCoP-3.2.jar)
+set(CMAKE_JAVA_INCLUDE_PATH lib/${JACOP_JAR})
 add_jar(ampljacop Interrupter.java SolutionListener.java)

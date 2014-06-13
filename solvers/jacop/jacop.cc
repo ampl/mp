@@ -25,8 +25,6 @@
 
 #include <iterator>
 
-#define JACOP_VERSION "3.2"
-
 namespace {
 
 // Casts value to intptr_t.
@@ -149,11 +147,11 @@ jobject NLToJaCoPConverter::Convert(
   if (!ctor) {
     cls.Init(env_);
     ctor = env_.GetMethod(cls.get(),
-        "<init>", "([LJaCoP/constraints/PrimitiveConstraint;)V");
+        "<init>", "([Lorg/jacop/constraints/PrimitiveConstraint;)V");
   }
   if (!constraint_class_) {
     constraint_class_ = env_.FindClass(
-        "JaCoP/constraints/PrimitiveConstraint");
+        "org/jacop/constraints/PrimitiveConstraint");
   }
   int num_args = e.num_args();
   jobjectArray args = env_.NewObjectArray(num_args, constraint_class_, 0);
@@ -227,7 +225,7 @@ NLToJaCoPConverter::NLToJaCoPConverter()
 : env_(JVM::env()), store_(), impose_(), var_array_(), obj_(),
   constraint_class_(), or_array_ctor_(), and_array_ctor_(), one_var_() {
   var_class_.Init(env_);
-  jclass domain_class = env_.FindClass("JaCoP/core/IntDomain");
+  jclass domain_class = env_.FindClass("org/jacop/core/IntDomain");
   min_int_ = env_.GetStaticIntField(
       domain_class, env_.GetStaticFieldID(domain_class, "MinInt", "I"));
   max_int_ = env_.GetStaticIntField(
@@ -255,11 +253,11 @@ void NLToJaCoPConverter::Convert(const Problem &p) {
   if (p.num_continuous_vars() != 0)
     throw Error("JaCoP doesn't support continuous variables");
 
-  jclass store_class = env_.FindClass("JaCoP/core/Store");
+  jclass store_class = env_.FindClass("org/jacop/core/Store");
   store_ = env_.NewObject(store_class,
       env_.GetMethod(store_class, "<init>", "()V"));
   impose_ = env_.GetMethod(store_class,
-      "impose", "(LJaCoP/constraints/Constraint;)V");
+      "impose", "(Lorg/jacop/constraints/Constraint;)V");
 
   int num_vars = p.num_integer_vars();
   var_array_ = CreateVarArray(num_vars);
@@ -520,8 +518,8 @@ void JaCoPSolver::DoSolve(Problem &p) {
     jvm_options[i] = jvm_options_[i].c_str();
   std::string exe_dir = GetExecutablePath().remove_filename().string();
   std::string classpath =
-      "-Djava.class.path=" + exe_dir + "/JaCoP-" JACOP_VERSION ".jar"
-      AMPL_CLASSPATH_SEP + exe_dir + "/lib/JaCoP-3.2.jar"
+      "-Djava.class.path=" + exe_dir + "/jacop-" JACOP_VERSION ".jar"
+      AMPL_CLASSPATH_SEP + exe_dir + "/lib/jacop-" JACOP_VERSION ".jar"
       AMPL_CLASSPATH_SEP + exe_dir + "/ampljacop.jar";
   jvm_options[jvm_options_.size()] = classpath.c_str();
   env_ = JVM::env(&jvm_options[0]);
@@ -541,12 +539,12 @@ void JaCoPSolver::DoSolve(Problem &p) {
       env_.GetMethod(dfs_class.get(), "setPrintInfo", "(Z)V");
   env_.CallVoidMethod(search_.get(), setPrintInfo, JNI_FALSE);
   jobject var_select = env_.NewObject(
-      (std::string("JaCoP/search/") + var_select_).c_str(), "()V");
+      (std::string("org/jacop/search/") + var_select_).c_str(), "()V");
   jobject val_select = env_.NewObject(
-      (std::string("JaCoP/search/") + val_select_).c_str(), "()V");
-  jobject select = env_.NewObject("JaCoP/search/SimpleSelect",
-      "([LJaCoP/core/Var;LJaCoP/search/ComparatorVariable;"
-      "LJaCoP/search/Indomain;)V", converter.var_array(),
+      (std::string("org/jacop/search/") + val_select_).c_str(), "()V");
+  jobject select = env_.NewObject("org/jacop/search/SimpleSelect",
+      "([Lorg/jacop/core/Var;Lorg/jacop/search/ComparatorVariable;"
+      "Lorg/jacop/search/Indomain;)V", converter.var_array(),
       var_select, val_select);
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   bool has_obj = p.num_objs() != 0;
@@ -566,7 +564,7 @@ void JaCoPSolver::DoSolve(Problem &p) {
       interrupter_class.NewObject(env_, reinterpret_cast<jlong>(this));
   env_.CallVoidMethod(search_.get(),
        env_.GetMethod(dfs_class.get(), "setConsistencyListener",
-           "(LJaCoP/search/ConsistencyListener;)V"), interrupter);
+           "(Lorg/jacop/search/ConsistencyListener;)V"), interrupter);
 
   Class<SolutionListener> solution_listener_class;
   solution_listener_class.Init(env_);
@@ -593,14 +591,14 @@ void JaCoPSolver::DoSolve(Problem &p) {
       "setSolutionLimit", "(I)V"), std::numeric_limits<jint>::max());
   env_.CallVoidMethod(search_.get(),
       env_.GetMethod(dfs_class.get(), "setSolutionListener",
-          "(LJaCoP/search/SolutionListener;)V"), solution_listener);
+          "(Lorg/jacop/search/SolutionListener;)V"), solution_listener);
 
   // Set the limits.
   Class<SimpleTimeOut> timeout_class;
   jobject timeout = timeout_class.NewObject(env_);
   env_.CallVoidMethod(search_.get(),
        env_.GetMethod(dfs_class.get(), "setTimeOutListener",
-           "(LJaCoP/search/TimeOutListener;)V"), timeout);
+           "(Lorg/jacop/search/TimeOutListener;)V"), timeout);
   if (time_limit_ != -1) {
     env_.CallVoidMethod(search_.get(),
          env_.GetMethod(dfs_class.get(), "setTimeOut", "(J)V"), time_limit_);
@@ -634,13 +632,13 @@ void JaCoPSolver::DoSolve(Problem &p) {
   try {
     if (has_obj) {
       jmethodID labeling = env_.GetMethod(dfs_class.get(), "labeling",
-          "(LJaCoP/core/Store;LJaCoP/search/SelectChoicePoint;"
-          "LJaCoP/core/IntVar;)Z");
+          "(Lorg/jacop/core/Store;Lorg/jacop/search/SelectChoicePoint;"
+          "Lorg/jacop/core/Var;)Z");
       found = env_.CallBooleanMethod(
           search_.get(), labeling, converter.store(), select, obj_var.get());
     } else {
       jmethodID labeling = env_.GetMethod(dfs_class.get(), "labeling",
-          "(LJaCoP/core/Store;LJaCoP/search/SelectChoicePoint;)Z");
+          "(Lorg/jacop/core/Store;Lorg/jacop/search/SelectChoicePoint;)Z");
       found = env_.CallBooleanMethod(
           search_.get(), labeling, converter.store(), select);
     }
