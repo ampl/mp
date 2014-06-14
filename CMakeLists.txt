@@ -83,14 +83,16 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
   endif ()
 endif ()
 
+set(AMPL_VERSIONS_FILE versions.txt)
+
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)
   set(HAVE_GSL 1)
-  set(get_amplgsl_version $<TARGET_FILE:gen-decls> >> versions)
+  set(get_amplgsl_version $<TARGET_FILE:gen-decls> >> ${AMPL_VERSIONS_FILE})
 endif ()
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/gecode/lib/CMakeLists.txt)
   set(HAVE_GECODE 1)
-  set(get_gecode_version $<TARGET_FILE:gecode> -v >> versions)
+  set(get_gecode_version $<TARGET_FILE:gecode> -v >> ${AMPL_VERSIONS_FILE})
 endif ()
 
 file(GLOB JACOP_PATH solvers/jacop/lib/jacop-*.jar)
@@ -110,7 +112,7 @@ if (JACOP_PATH)
     endforeach ()
 
     set(HAVE_JACOP 1)
-    set(get_jacop_version $<TARGET_FILE:jacop> -v >> versions)
+    set(get_jacop_version $<TARGET_FILE:jacop> -v >> ${AMPL_VERSIONS_FILE})
   endif ()
 endif ()
 
@@ -168,13 +170,13 @@ add_subdirectory(doc)
 add_subdirectory(solvers)
 add_subdirectory(tables)
 
-# Add a target that generates versions file listing versions of solvers
+# Add a target that generates the versions file listing versions of solvers
 # and libraries.
 file(READ tables/amplodbc.c amplodbc)
 if (amplodbc MATCHES "version ([0-9]+)")
-  set(get_ampltabl_version echo ampltabl ${CMAKE_MATCH_1} >> versions)
+  set(get_ampltabl_version echo ampltabl ${CMAKE_MATCH_1} >> ${AMPL_VERSIONS_FILE})
 endif ()
-add_custom_target(versions cmake -E remove versions
+add_custom_target(versions cmake -E remove ${AMPL_VERSIONS_FILE}
   COMMAND ${get_amplgsl_version} COMMAND ${get_ampltabl_version}
   COMMAND ${get_gecode_version} COMMAND ${get_jacop_version}
   DEPENDS tables/amplodbc.c)
