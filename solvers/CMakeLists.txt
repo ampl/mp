@@ -156,3 +156,8 @@ add_subdirectory(smpswriter)
 add_subdirectory(ssdsolver)
 add_subdirectory(sulum)
 add_subdirectory(util)
+
+install(TARGETS amplsolver
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+  ARCHIVE DESTINATION lib)
