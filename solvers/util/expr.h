@@ -700,7 +700,7 @@ class CallExpr : public NumericExpr {
     friend class CallExpr::Args;
 
     void SetConstant(double *constant) { arg_.u.v = constant; }
-    void SetExpr(expr *e) { arg_.e = e; }
+    void SetExpr(::expr *e) { arg_.e = e; }
 
    public:
     Arg() {
