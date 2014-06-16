@@ -3,8 +3,10 @@ add_definitions(-DFMT_USE_FILE_DESCRIPTORS=1)
 add_ampl_test(clock-test clock-test.cc)
 add_ampl_test(error-test error-test.cc)
 
-add_ampl_test(expr-test
-  ../expr-builder.cc expr-test.cc no-unordered-map-test.cc)
+if (HAVE_AUTO)
+  add_ampl_test(expr-test
+    ../expr-builder.cc expr-test.cc no-unordered-map-test.cc)
+endif ()
 
 add_ampl_test(expr-factory-test expr-factory-test.cc)
 add_ampl_test(format-test format-test.cc gtest-extra.cc)

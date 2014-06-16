@@ -168,6 +168,8 @@ if (HAVE_UNIQUE_PTR)
   add_definitions(-DHAVE_UNIQUE_PTR)
 endif ()
 
+check_cxx_source_compiles("int main() { auto i = 0; }" HAVE_AUTO)
+
 add_subdirectory(doc)
 add_subdirectory(solvers)
 add_subdirectory(tables)
