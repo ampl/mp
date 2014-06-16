@@ -29,7 +29,7 @@
 namespace {
 
 TEST(UtilTest, Split) {
-  auto result = Split("abc", ' ');
+  std::vector<std::string> result = Split("abc", ' ');
   EXPECT_EQ(1u, result.size());
   EXPECT_EQ("abc", result[0]);
   result = Split("a b c", ' ');

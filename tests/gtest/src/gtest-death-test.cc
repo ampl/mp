@@ -887,7 +887,7 @@ class ExecDeathTest : public ForkingDeathTest {
 class Arguments {
  public:
   Arguments() {
-    args_.push_back(NULL);
+    args_.push_back(static_cast<char*>(0));
   }
 
   ~Arguments() {
