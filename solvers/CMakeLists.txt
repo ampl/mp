@@ -152,7 +152,12 @@ if (HAVE_JACOP)
 endif ()
 
 add_subdirectory(path)
-add_subdirectory(smpswriter)
+
+check_cxx_source_compiles("int main() { auto i = 0; }" HAVE_AUTO)
+if (HAVE_AUTO)
+  add_subdirectory(smpswriter)
+endif ()
+
 add_subdirectory(ssdsolver)
 add_subdirectory(sulum)
 add_subdirectory(util)

@@ -25,4 +25,6 @@ if (HAVE_JACOP)
   endif ()
 endif ()
 
-add_ampl_test(smpswriter-test ../args.cc smpswriter-test.cc LIBS amplsmpswriter)
+if (TARGET amplsmpswriter)
+  add_ampl_test(smpswriter-test ../args.cc smpswriter-test.cc LIBS amplsmpswriter)
+endif ()
