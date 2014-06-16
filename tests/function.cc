@@ -87,7 +87,7 @@ class ScopedTableInfo : public TableInfo {
 
 void ScopedTableInfo::AddString(vector<char*> *strings, const char *str) {
   if (!str) return;
-  strings->push_back(0);
+  strings->push_back(static_cast<char*>(0));
   unsigned index = static_cast<unsigned>(strings->size() - 1);
   char *&oldstr = (*strings)[index];
   if (oldstr) delete [] oldstr;
@@ -272,7 +272,7 @@ class LibraryImpl : public AmplExports, public TMInfo {
 
   static void *Tempmem(TMInfo *tmi, size_t size) {
     LibraryImpl *impl = static_cast<LibraryImpl*>(tmi);
-    impl->tempmem_.push_back(0);
+    impl->tempmem_.push_back(static_cast<void*>(0));
     return impl->tempmem_.back() = malloc(size);
   }
 
