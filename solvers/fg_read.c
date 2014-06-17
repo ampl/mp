@@ -253,12 +253,12 @@ new_expr(Static *S, int opcode, expr *L, expr *R, int deriv)
  static expr *
 eread(EdRead *R, int deriv)
 {
+	ASL_fg *asl;
+	Static *S;
 	expr_n *rvn;
-	short sh;
 	fint L1;
+	int (*Xscanf)(EdRead*, const char*, ...);
 	real r;
-	Static *S = (Static *)R->S;
-	ASL_fg *asl = S->asl;
 #ifndef Just_Linear
 	char **sa;
 	int a0, a1, *at, i, j, k, kd, ks, numargs, symargs;
@@ -282,6 +282,9 @@ eread(EdRead *R, int deriv)
 	Not_Used(deriv);
 #endif /* Just_Linear */
 
+	S = (Static *)R->S;
+	asl = S->asl;
+	Xscanf = xscanf;
 	switch(edag_peek(R)) {
 #ifdef Just_Linear
 		case 'f':
@@ -291,7 +294,7 @@ eread(EdRead *R, int deriv)
 			sorry_nonlin(R);
 #else
 		case 'f':
-			if (xscanf(R, "%d %d", &i, &j) != 2)
+			if (Xscanf(R, "%d %d", &i, &j) != 2)
 				badline(R);
 			fi = funcs[i];
 			if (fi->nargs >= 0) {
@@ -398,19 +401,19 @@ eread(EdRead *R, int deriv)
 			return holread(R);
 #endif /* Just_Linear */
 		case 's':
-			if (xscanf(R, "%hd", &sh) != 1)
+			if (Xscanf(R, "%hd", &L1) != 1)
 				badline(R);
-			r = sh;
+			r = L1;
 			goto have_r;
 
 		case 'l':
-			if (xscanf(R, "%ld", &L1) != 1)
+			if (Xscanf(R, "%ld", &L1) != 1)
 				badline(R);
 			r = L1;
 			goto have_r;
 
 		case 'n':
-			if (xscanf(R, "%lf", &r) != 1)
+			if (Xscanf(R, "%lf", &r) != 1)
 				badline(R);
  have_r:
 			rvn = (expr_n *)mem(size_expr_n);
@@ -423,7 +426,7 @@ eread(EdRead *R, int deriv)
 			break;
 
 		case 'v':
-			if (xscanf(R,"%d",&k) != 1 || k < 0)
+			if (Xscanf(R,"%d",&k) != 1 || k < 0)
 				badline(R);
 			if (k >= S->nvar0)
 				k += S->nvinc;
@@ -440,7 +443,7 @@ eread(EdRead *R, int deriv)
 
 #ifndef Just_Linear
 
-	if (xscanf(R, "%d", &k) != 1 || k < 0 || k >= N_OPS)
+	if (Xscanf(R, asl->i.opfmt, &k) != 1 || k < 0 || k >= N_OPS)
 		badline(R);
 	switch(optype[k]) {
 
@@ -460,7 +463,7 @@ eread(EdRead *R, int deriv)
 
 		case 3:	/* vararg (min, max) */
 			i = -1;
-			xscanf(R, "%d", &i);
+			Xscanf(R, "%d", &i);
 			if (i <= 0)
 				badline(R);
 			rva = (expr_va *)mem(sizeof(expr_va));
@@ -506,7 +509,7 @@ eread(EdRead *R, int deriv)
 
 		case 4: /* piece-wise linear */
 			i = -1;
-			xscanf(R, "%d", &i);
+			Xscanf(R, "%d", &i);
 			if (i <= 1)
 				badline(R);
 			plterms++;
@@ -517,17 +520,17 @@ eread(EdRead *R, int deriv)
 			do {
 				switch(edag_peek(R)) {
 					case 's':
-						if (xscanf(R,"%hd",&sh) != 1)
+						if (Xscanf(R,"%hd",&L1) != 1)
 							badline(R);
-						r = sh;
+						r = L1;
 						break;
 					case 'l':
-						if (xscanf(R,"%ld",&L1) != 1)
+						if (Xscanf(R,"%ld",&L1) != 1)
 							badline(R);
 						r = L1;
 						break;
 					case 'n':
-						if (xscanf(R,"%lf",&r) == 1)
+						if (Xscanf(R,"%lf",&r) == 1)
 							break;
 					default:
 						badline(R);
@@ -592,7 +595,7 @@ eread(EdRead *R, int deriv)
 			/* no break */
 		case 6: /* sumlist */
 			i = j = 0;
-			xscanf(R, "%d", &i);
+			Xscanf(R, "%d", &i);
 			if (i <= 2 && (optype[k] == 6 || i < 1))
 				badline(R);
 			rv = (expr *)mem(sizeof(expr) - sizeof(real)
@@ -904,14 +907,16 @@ co_read(EdRead *R, cde *d, int *cexp1_end, int k, int **z, int wd)
  static linpart *
 linpt_read(EdRead *R, int nlin)
 {
+	int (*Xscanf)(EdRead*, const char*, ...);
 	linpart *L, *rv;
 	ASL *asl = R->asl;
 
 	if (nlin <= 0)
 		return 0;
 	L = rv = (linpart *)mem(nlin*sizeof(linpart));
+	Xscanf = xscanf;
 	do {
-		if (xscanf(R, "%d %lf", &L->v.i, &L->fac) != 2)
+		if (Xscanf(R, "%d %lf", &L->v.i, &L->fac) != 2)
 			badline(R);
 		L++;
 		}
@@ -1178,32 +1183,6 @@ com1adjust(ASL_fg *asl)
 #endif /* Just_Linear */
 
  static void
-goff_comp(ASL_fg *asl)
-{
-	int *ka = A_colstarts + 1;
-	cgrad **cgx, **cgxe;
-	cgrad *cg;
-
-	cgx = Cgrad;
-	cgxe = cgx + asl->i.n_con0;
-	while(cgx < cgxe)
-		for(cg = *cgx++; cg; cg = cg->next)
-			cg->goff = ka[cg->varno]++;
-	}
-
- static void
-colstart_inc(Static *S)
-{
-	int *ka, *kae;
-	ASL_fg *asl = S->asl;
-
-	ka = A_colstarts;
-	kae = ka + asl->i.n_var0;
-	while(ka <= kae)
-		++*ka++;
-	}
-
- static void
 adjust_compl_rhs(ASL_fg *asl, efunc *opnum)
 {
 	cde *C;
@@ -1263,9 +1242,9 @@ adjust(Static *S, int flags)
 #endif /* Just_Linear */
 	if (k_seen) {
 		if (!A_vals)
-			goff_comp(asl);
+			goff_comp_ASL((ASL*)asl);
 		else if (Fortran)
-			colstart_inc(S);
+			colstart_inc_ASL((ASL*)asl);
 		}
 	if (n_cc > nlcc && nlc < n_con
 	 && !(flags & ASL_no_linear_cc_rhs_adjust))
@@ -1276,6 +1255,7 @@ adjust(Static *S, int flags)
 br_read(EdRead *R, int nc, real *L, real *U, int *Cvar, int nv)
 {
 	int i, inc, j, k;
+	int (*Xscanf)(EdRead*, const char*, ...);
 	ASL *asl = R->asl;
 
 	if (U)
@@ -1284,36 +1264,37 @@ br_read(EdRead *R, int nc, real *L, real *U, int *Cvar, int nv)
 		U = L + 1;
 		inc = 2;
 		}
-	xscanf(R, ""); /* purge line */
+	Xscanf = xscanf;
+	Xscanf(R, ""); /* purge line */
 	for(i = 0; i < nc; i++, L += inc, U += inc) {
 		switch(edag_peek(R) - '0') {
 		  case 0:
-			if (xscanf(R,"%lf %lf",L,U)!= 2)
+			if (Xscanf(R,"%lf %lf",L,U)!= 2)
 				badline(R);
 			break;
 		  case 1:
-			if (xscanf(R, "%lf", U) != 1)
+			if (Xscanf(R, "%lf", U) != 1)
 				badline(R);
 			*L = negInfinity;
 			break;
 		  case 2:
-			if (xscanf(R, "%lf", L) != 1)
+			if (Xscanf(R, "%lf", L) != 1)
 				badline(R);
 			*U = Infinity;
 			break;
 		  case 3:
 			*L = negInfinity;
 			*U = Infinity;
-			xscanf(R, ""); /* purge line */
+			Xscanf(R, ""); /* purge line */
 			break;
 		  case 4:
-			if (xscanf(R, "%lf", L) != 1)
+			if (Xscanf(R, "%lf", L) != 1)
 				badline(R);
 			*U = *L;
 			break;
 		  case 5:
 			if (Cvar) {
-				if (xscanf(R, "%d %d", &k, &j) == 2
+				if (Xscanf(R, "%d %d", &k, &j) == 2
 				 && j > 0 && j <= nv) {
 					Cvar[i] = j;
 					*L = k & 2 ? negInfinity : 0.;
@@ -1426,10 +1407,11 @@ fg_read_ASL(ASL *a, FILE *nl, int flags)
 {
 	cgrad *cg, **cgp;
 	expr_v *e;
-	int *ka;
-	int i, i1, j, k, nc, nc0, nco, nlcon, no, nv, nvc, nvo, nvr, nxv, nz, readall;
+	int i, i1, j, k, *ka, kseen, nc, nc0, nco, nlcon, no, nv, nvc, nvo, nvr, nxv, readall;
+	int (*Xscanf)(EdRead*, const char*, ...);
 	ograd *og, **ogp;
 	real t;
+	size_t *kaz, nz;
 	unsigned x;
 #ifdef Just_Linear
 #undef nv1
@@ -1437,9 +1419,10 @@ fg_read_ASL(ASL *a, FILE *nl, int flags)
 #define ASL_readtype ASL_read_f
 #else /* Just_Linear */
 #define ASL_readtype ASL_read_fg
-	int maxfwd1, ncom, nlin;
+	int maxfwd1, ncom;
 	func_info *fi;
 	char fname[128];
+	int nlin;
 #endif /* Just_Linear */
 	EdRead ER, *R;
 	Static SS, *S;
@@ -1464,18 +1447,11 @@ fg_read_ASL(ASL *a, FILE *nl, int flags)
 		sorry_CLP(R, "logical constraints");
 		}
 	readall = flags & ASL_keep_all_suffixes;
+	Xscanf = a->i.xscanf_;
 #define asl ((ASL_fg*)a)
 	ER.lineinc = 1;
 	if (!size_expr_n)	size_expr_n = sizeof(expr_n);
-#ifdef Just_Linear
-	/* Tried "xscanf = binary ? bscanf : ascanf;", but this
-	 * encounters a bug in SGI's C compiler.
-	 */
-	if (binary_nl)
-		xscanf = bscanf;
-	else
-		xscanf = ascanf;
-#else
+#ifndef Just_Linear
 	if (!(SS._r_ops = asl->I.r_ops_))
 		SS._r_ops = r_ops_ASL;
 	if (c_cexp1st)
@@ -1484,14 +1460,10 @@ fg_read_ASL(ASL *a, FILE *nl, int flags)
 		*o_cexp1st = comc1;
 	if (nfunc)
 		func_add(a);
-	if (binary_nl) {
+	if (binary_nl)
 		holread = bholread;
-		xscanf = bscanf;
-		}
-	else {
+	else
 		holread = aholread;
-		xscanf = ascanf;
-		}
 
 	ncom = comb + comc + como + comc1 + como1;
 #endif /* Just_Linear */
@@ -1584,7 +1556,9 @@ fg_read_ASL(ASL *a, FILE *nl, int flags)
 	if (cvar)
 		memset(cvar, 0, nc*sizeof(int));
 	ka = 0;
+	kaz = 0;
 	nz = 0;
+	j = kseen = 0;
 	for(;;) {
 		ER.can_end = 1;
 		i = edag_peek(R);
@@ -1626,7 +1600,7 @@ fg_read_ASL(ASL *a, FILE *nl, int flags)
 		k = -1;
 		switch(i) {
 			case 'C':
-				xscanf(R, "%d", &k);
+				Xscanf(R, "%d", &k);
 				if (k < 0 || k >= nc0)
 					badline(R);
 				co_read(R,con_de,c_cexp1st,k,zac,want_derivs);
@@ -1637,7 +1611,7 @@ fg_read_ASL(ASL *a, FILE *nl, int flags)
 				sorry_nonlin(R);
 #else
 			case 'F':
-				if (xscanf(R, "%d %d %d %127s",
+				if (Xscanf(R, "%d %d %d %127s",
 						&i, &j, &k, fname) != 4
 				|| i < 0 || i >= nfunc)
 					badline(R);
@@ -1668,13 +1642,13 @@ fg_read_ASL(ASL *a, FILE *nl, int flags)
 				funcs[i] = fi;
 				break;
 			case 'L':
-				xscanf(R, "%d", &k);
+				Xscanf(R, "%d", &k);
 				if (k < 0 || k >= nlcon)
 					badline(R);
 				co_read(R, lcon_de, 0, k, 0, 0);
 				break;
 			case 'V':
-				if (xscanf(R, "%d %d %d", &k, &nlin, &j) != 3)
+				if (Xscanf(R, "%d %d %d", &k, &nlin, &j) != 3)
 					badline(R);
 				if (k >= SS.nvar0)
 					k += SS.nvinc;
@@ -1687,61 +1661,67 @@ fg_read_ASL(ASL *a, FILE *nl, int flags)
 				break;
 #endif /* Just_Linear */
 			case 'G':
-				if (xscanf(R, "%d %d", &j, &k) != 2
+				if (Xscanf(R, "%d %d", &j, &k) != 2
 				|| j < 0 || j >= no || k <= 0 || k > nvo)
 					badline(R);
 				ogp = Ograd + j;
 				while(k--) {
 					*ogp = og = (ograd *)mem(sizeof(ograd));
 					ogp = &og->next;
-					if (xscanf(R, "%d %lf", &og->varno,
-							&og->coef) != 2)
+					if (Xscanf(R, "%d %lf", &i, &og->coef) != 2)
 						badline(R);
+					og->varno = i;
 					}
 				*ogp = 0;
 				break;
 			case 'J':
-				if (xscanf(R, "%d %d", &j, &k) != 2
+				if (Xscanf(R, "%d %d", &j, &k) != 2
 				|| j < 0 || j >= nc0 || k <= 0 || k > nvc)
 					badline(R);
 				nz += k;
-				if (ka) {
-					if (!A_vals)
-						goto cg_read;
+				if (A_vals) {
 					j += Fortran;
-					while(k--) {
-						if (xscanf(R, "%d %lf",
-							&i, &t) != 2)
-							badline(R);
-						i1 = ka[i]++;
-						A_vals[i1] = t;
-						A_rownos[i1] = j;
+					if (ka) {
+						while(k--) {
+							if (Xscanf(R, "%d %lf",
+								&i, &t) != 2)
+								badline(R);
+							i1 = ka[i]++;
+							A_vals[i1] = t;
+							A_rownos[i1] = j;
+							}
+						}
+					else {
+						while(k--) {
+							if (Xscanf(R, "%d %lf",
+								&i, &t) != 2)
+								badline(R);
+							i1 = kaz[i]++;
+							A_vals[i1] = t;
+							A_rownos[i1] = j;
+							}
 						}
 					break;
 					}
- cg_read:
 				cgp = Cgrad + j;
-				j = 0;
 				while(k--) {
 					*cgp = cg = (cgrad *)mem(sizeof(cgrad));
 					cgp = &cg->next;
-					if (ka) {
-						if (xscanf(R, "%d %lf",
-								&cg->varno,
-					    			&cg->coef) != 2)
+					if (kseen) {
+						if (Xscanf(R, "%d %lf", &i, &cg->coef) != 2)
 							badline(R);
 						}
 					else
-						if (xscanf(R, "%d %d %lf",
-							    &cg->varno, &j,
+						if (Xscanf(R, "%d %d %lf", &i, &j,
 							    &cg->coef) != 3)
 							badline(R);
+					cg->varno = i;
 					cg->goff = j;
 					}
 				*cgp = 0;
 				break;
 			case 'O':
-				if (xscanf(R, "%d %d", &k, &j) != 2
+				if (Xscanf(R, "%d %d", &k, &j) != 2
 				 || k < 0 || k >= no)
 					badline(R);
 				objtype[k] = j;
@@ -1756,26 +1736,14 @@ fg_read_ASL(ASL *a, FILE *nl, int flags)
 			case 'b':
 				br_read(R, asl->i.n_var0, LUv, Uvx, 0, 0);
 				break;
+			case 'K':
 			case 'k':
-				k_seen++;
-				k = asl->i.n_var0;
-				if (!xscanf(R,"%d",&j) || j != k - 1)
+				k_seen = ++kseen;
+				if (ka_read_ASL(a, R, i, &ka, &kaz))
 					badline(R);
-				if (!(ka = A_colstarts)) {
-					if ((i = k) < n_var)
-						i = n_var;
-					ka = A_colstarts = (int *)
-						M1alloc((i+1)*Sizeof(int));
-					}
-				*ka++ = 0;
-				*ka++ = 0;	/* sic */
-				while(--k > 0)
-					if (!xscanf(R, "%d", ka++))
-						badline(R);
-				ka = A_colstarts + 1;
 				break;
 			case 'x':
-				if (!xscanf(R,"%d",&k)
+				if (!Xscanf(R,"%d",&k)
 				|| k < 0 || k > nvr)
 					badline(R);
 				if (!X0 && want_xpi0 & 1) {
@@ -1787,7 +1755,7 @@ fg_read_ASL(ASL *a, FILE *nl, int flags)
 						havex0 = (char*)(X0 + nv1);
 					}
 				while(k--) {
-					if (xscanf(R, "%d %lf", &j, &t) != 2
+					if (Xscanf(R, "%d %lf", &j, &t) != 2
 					 || j < 0 || j >= nvr)
 						badline(R);
 					if (X0) {
@@ -1798,7 +1766,7 @@ fg_read_ASL(ASL *a, FILE *nl, int flags)
 					}
 				break;
 			case 'd':
-				if (!xscanf(R,"%d",&k)
+				if (!Xscanf(R,"%d",&k)
 				|| k < 0 || k > nc0)
 					badline(R);
 				if (!pi0 && want_xpi0 & 2) {
@@ -1810,7 +1778,7 @@ fg_read_ASL(ASL *a, FILE *nl, int flags)
 						havepi0 = (char*)(pi0 + nc);
 					}
 				while(k--) {
-					if (xscanf(R, "%d %lf", &j, &t) != 2
+					if (Xscanf(R, "%d %lf", &j, &t) != 2
 					 || j < 0 || j >= nc0)
 						badline(R);
 					if (pi0) {

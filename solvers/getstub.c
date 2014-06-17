@@ -55,15 +55,58 @@ kw_width(keyword *kw, int n, keyword **pkwe)
 	}
 
  static void
+tabexpand(int L, const char *name, const char *s)
+{
+	const char *t;
+	int k, n;
+
+	for(t = s;; ++t) {
+		if (!*t) {
+			printf("%-*s%s\n", L, name, s);
+			return;
+			}
+		if (*t == '\n')
+			break;
+		}
+	n = t - s;
+	printf("%-*s%.*s\n", L, name, n, s);
+	while(*(s = ++t)) {
+		while(*t == '\t')
+			++t;
+		if ((n = t - s)) {
+			n *= 8;
+			if (n < L)
+				n = L;
+			for(k = 0; k < n; ++k)
+				putchar(' ');
+			s = t;
+			}
+		else if (*s > ' ')
+			for(k = 0; k < L; ++k)
+				putchar(' ');
+		while(*t != '\n') {
+			if (!*t++) {
+				printf("%s\n", s);
+				return;
+				}
+			}
+		n = t - s;
+		printf("%.*s\n", n, s);
+		}
+	}
+
+ static void
 shownames(Option_Info *oi)
 {
 	const char *s;
 	keyword *v, *ve;
-	int L, L1, L2;
+	int L, L1, L2, anl, te;
 
 	if (oi) {
+		te = oi->option_echo & ASL_OI_tabexpand;
+		anl = oi->option_echo & ASL_OI_addnewline;
 		L = kw_width(oi->keywds, oi->n_keywds, &ve);
-		for(v = oi->keywds; v < ve; v++)
+		for(v = oi->keywds; v < ve; v++) {
 			if ((s = v->desc)) {
 				if (*s == '=') {
 					while(*++s > ' ');
@@ -74,11 +117,16 @@ shownames(Option_Info *oi)
 					printf("%s%-*.*s%s\n", v->name, L2,
 						L1, v->desc, s);
 					}
+				else if (te)
+					tabexpand(L, v->name, s);
 				else
 					printf("%-*s%s\n", L, v->name, s);
 				}
 			else
 				printf("%s\n", v->name);
+			if (anl)
+				putchar('\n');
+			}
 		}
 	exit(0);
 	}
@@ -138,7 +186,7 @@ usage_noexit_ASL(Option_Info *oi, int rc)
 			fprintf(f, "%s\n", s);
 	fprintf(f, "\nOptions:\n");
 	o = (char**)opts;
-	if (!oi || !(oi->flags && ASL_OI_want_funcadd))
+	if (!oi || !(oi->flags & ASL_OI_want_funcadd))
 		ofix(o, 4);
 	else if (!ix_details_ASL[0])
 		ofix(o, 2);
@@ -355,8 +403,9 @@ getstub_ASL(ASL *asl, char ***pargv, Option_Info *oi)
 			if (s1 > s && !*s1 && i >= 0 && !(i & 1))
 				oi->option_echo = ASL_OI_never_echo;
 			}
-		oi->option_echo = (oi->option_echo & ASL_OI_never_echo)
-			? ASL_OI_never_echo : ASL_OI_clopt | ASL_OI_echo;
+		oi->option_echo = (oi->option_echo & ASL_OI_showname_bits)
+			| ((oi->option_echo & ASL_OI_never_echo)
+				? ASL_OI_never_echo : ASL_OI_clopt | ASL_OI_echo);
 		oi->n_badopts = 0;
 		}
 

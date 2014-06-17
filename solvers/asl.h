@@ -108,14 +108,14 @@ typedef Long ftnlen;
 SputInfo {
 	fint *hcolstarts;
 	fint *hrownos;
-	fint *hcs[2];
+	size_t *hcs[2];
 	fint *hrn[2];
-	fint *ulinc;
-	fint *ulcopy;
-	fint *ulinc0;
-	fint *ulcopy0;
-	fint *ulcend;
-	fint nod;
+	ssize_t *ulinc;
+	ssize_t *ulcopy;
+	ssize_t *ulinc0;
+	ssize_t *ulcopy0;
+	ssize_t *ulcend;
+	ssize_t nod;
 	int nobj;	/* from sphsetup() */
 	int ow;		/* from sphsetup() */
 	int y;		/* from sphsetup() */
@@ -123,6 +123,7 @@ SputInfo {
 	int khinfob;
 	int uptri;	/* from sphsetup() */
 	int *uptolow;
+	size_t *hcolstartsZ;
 	} SputInfo;
 
  typedef union
@@ -132,13 +133,39 @@ uirp {
 	void *vp;
 	} uirp;
 
+#ifdef ASL_big_goff /*{{ for jacval() with nzc >= 2^31 */
  struct
 cgrad {
 	real coef;
 	cgrad *next;
-	int  varno;
-	int  goff;
+	ssize_t varno;
+	size_t goff;
 	};
+
+ struct
+ograd {
+	real coef;
+	ograd *next;
+	ssize_t varno;
+	};
+typedef ssize_t varno_t;
+#else	/*}{ less memory */
+ struct
+cgrad {
+	real coef;
+	cgrad *next;
+	int varno;
+	int goff;
+	};
+
+ struct
+ograd {
+	real coef;
+	ograd *next;
+	int varno;
+	};
+typedef int varno_t;
+#endif /*}}*/
 
  struct
 cplist {
@@ -176,13 +203,6 @@ func_info {
 linpart {
 	uirp	v;
 	real	fac;
-	};
-
- struct
-ograd {
-	real coef;
-	ograd *next;
-	int  varno;
 	};
 
  struct
@@ -240,6 +260,8 @@ Edagpars {
 	void (*Congrd_nomap)	(ASL*, int nc, real *X, real *G, fint *nerror);
 	void (*Hvcomp)		(ASL*, real *hv, real *p, int no, real *ow, real *y);
 	void (*Hvcomp_nomap)	(ASL*, real *hv, real *p, int no, real *ow, real *y);
+	void (*Hvcompd)	(ASL*, real *hv, real *p, int co);
+	varno_t (*Hvcomps)	(ASL*, real *hv, real *p, int co, varno_t nz, varno_t *z);
 	void (*Hvinit)		(ASL*, int hid_limit, int nobj, real *ow, real *y);
 	void (*Hvinit_nomap)	(ASL*, int hid_limit, int nobj, real *ow, real *y);
 	void (*Hesset)		(ASL*, int flags, int no, int nno, int nc, int nnc);
@@ -264,6 +286,8 @@ Edagpars {
 #define conival(i,x,ne)		(*((ASL*)asl)->p.Conival)((ASL*)asl,i,x,ne)
 #define congrd(i,x,g,ne)	(*((ASL*)asl)->p.Congrd)((ASL*)asl,i,x,g,ne)
 #define hvcomp(hv,P,no,ow,y)	(*((ASL*)asl)->p.Hvcomp)((ASL*)asl,hv,P,no,ow,y)
+#define hvcompd(hv,P,co)	(*((ASL*)asl)->p.Hvcompd)((ASL*)asl,hv,P,co)
+#define hvcomps(hv,P,co,nz,z)	(*((ASL*)asl)->p.Hvcomps)((ASL*)asl,hv,P,co,nz,z)
 #define hvinit(no,ow,y)		(*((ASL*)asl)->p.Hvinit)((ASL*)asl,ihd_limit,no,ow,y)
 #define hesset(f,o,n,c,nc)	(*((ASL*)asl)->p.Hesset)((ASL*)asl,f,o,n,c,nc)
 #define duthes(h,n,ow,y)	(*((ASL*)asl)->p.Duthes)((ASL*)asl,h,n,ow,y)
@@ -336,6 +360,7 @@ Edaginfo {
 	/* stuff initialized to zero values */
 	int amplflag_;
 	int need_nl_;
+	int nlmode;
 	func_info **funcs_, *funcsfirst_, *funcslast_;
 	int (*xscanf_)(EdRead*, const char*, ...);
 
@@ -364,6 +389,7 @@ Edaginfo {
 				/* rather than in Cgrad_. */
 	int	*A_rownos_,	/* row numbers corresponding to A_vals_ */
 		*A_colstarts_;	/* offsets of columns in A_vals_ */
+	size_t	*A_colstartsZ_;	/* for huge problems -- 2^31 or more nonzeros */
 
 	cgrad	**Cgrad_;	/* constraint gradient info. (linear part) */
 	ograd	**Ograd_;	/* objective  gradient info. (linear part) */
@@ -429,12 +455,14 @@ Edaginfo {
 	int	ncom1_;
 	int	nderps_;
 	int	nfunc_;
-	int	nzjac_;
 	int	o_vars_;
 	int	want_deriv_;
 	int	x0kind_;
 	int	rflags;		/* flags given to the .nl reader */
+	size_t	nzjac_;
 	size_t	x0len_;
+	size_t	nZc_;		/* no. of nonzeros in constraints' Jacobian */
+	size_t	nZo_;		/* no. of nonzeros in all objective gradients */
 
 	char	*filename_;	/* stub + current extension */
 	char	*stub_end_;	/* copy new extension (starting with ".") */
@@ -549,6 +577,7 @@ Edaginfo {
 	/* for reading alternate binary formats */
 	void (*iadjfcn)(void*, unsigned long);
 	void (*dadjfcn)(void*, unsigned long);
+	const char *opfmt;	/* format of opcodes */
 
 	/* for scaling */
 	real *cscale;	/* constraints */
@@ -623,9 +652,11 @@ TMInfo {
 	};
 
 #define A_colstarts	asl->i.A_colstarts_
+#define A_colstartsZ	asl->i.A_colstartsZ_
 #define A_rownos	asl->i.A_rownos_
 #define A_vals		asl->i.A_vals_
 #define Cgrad		asl->i.Cgrad_
+#define CgradZ		asl->i.CgradZ_
 #define Fortran		asl->i.Fortran_
 #define LUrhs		asl->i.LUrhs_
 #define LUv		asl->i.LUv_
@@ -666,9 +697,13 @@ TMInfo {
 #define lnc		asl->i.lnc_
 #define maxcolnamelen	asl->i.maxcolnamelen_
 #define maxrownamelen	asl->i.maxrownamelen_
+#define nZc		asl->i.nZc_
+#define nZo		asl->i.nZo_
 #define n_cc		asl->i.n_cc_
 #define n_con		asl->i.n_con_
 #define n_conjac	asl->i.n_conjac_
+#define n_eqn		asl->i.n_eqn_
+#define n_lcon		asl->i.n_lcon_
 #define n_obj		asl->i.n_obj_
 #define n_var		asl->i.n_var_
 #define nbv		asl->i.nbv_
@@ -677,14 +712,12 @@ TMInfo {
 #define ncom1		asl->i.ncom1_
 #define nderps		asl->i.nderps_
 #define need_nl		asl->i.need_nl_
-#define n_eqn		asl->i.n_eqn_
 #define nfunc		asl->i.nfunc_
 #define niv		asl->i.niv_
 #define nlc		asl->i.nlc_
 #define nlcc		asl->i.nlcc_
 #define nlnc		asl->i.nlnc_
 #define nlo		asl->i.nlo_
-#define n_lcon		asl->i.n_lcon_
 #define nlogv		asl->i.nbv_	/* nbv used to be called nlogv */
 #define nlvb		asl->i.nlvb_
 #define nlvbi		asl->i.nlvbi_
@@ -740,6 +773,7 @@ TMInfo {
 #define g_fmtop		g_fmtop_ASL
 #define g_fmt_E		gfmt_E_ASL
 #define g_fmt_decpt	gfmt_decpt_ASL
+#define hscanf		hscanf_ASL
 #define htcl		htcl_ASL
 #define mem(n)		mem_ASL((ASL*)asl,n)
 #define mymalloc	mymalloc_ASL
@@ -841,7 +875,13 @@ enum ASL_reader_flag_bits {	/* bits in flags arg */
 	ASL_want_A_vals = 0x80000,	/* Allocate and use A_vals (if NULL), allowing */
 					/* space needed for ASL_cc_simplify. */
 
-	ASL_sep_U_arrays = 0x100000	/* Allocate and use Uvx and Urhsx */
+	ASL_sep_U_arrays = 0x100000,	/* Allocate and use Uvx and Urhsx */
+
+	ASL_allow_Z	= 0x200000,	/* Accept problems with nZc >= 2^31, populating */
+					/* A_colstarsZ rather than  A_colstarts. */
+	ASL_use_Z	= 0x400000,	/* Use A_colstartsZ rather than A_colstarts, */
+					/* regardless of problem size. */
+	ASL_opified	= 0x800000	/* internal use: qp_opify called */
 	};
 
 enum ASL_reader_error_codes {
@@ -911,10 +951,11 @@ enum ASL_writer_error_codes {
  extern char *basename(const char*);
  extern int bscanf(EdRead*, const char*, ...);
  extern char *con_name_ASL(ASL*,int);
- extern char *con_name_nomap_ASL(ASL*,int);
+ extern char *con_name_nomap_ASL(ASL*,int,int*);
  extern int conadj_ASL(ASL*,int*,int);
  extern void congrd_(fint *N, fint *I, real *X, real *G, fint *nerror);
  extern real cnival_(fint *N, fint *I, real *X, fint *nerror);
+ extern void colstart_inc_ASL(ASL*);
  extern void conscale_ASL(ASL*, int, real, fint*);
  extern void conval_(fint *M, fint *N, real *X, real *F, fint *nerror);
  extern void delprb_(VOID);
@@ -947,6 +988,8 @@ enum ASL_writer_error_codes {
  extern int *get_vcmap_ASL(ASL*, int);
  extern int *get_vminv_ASL(ASL*);
  extern char *getenv_ASL(const char*);
+ extern void goff_comp_ASL(ASL*);
+ extern int hscanf(EdRead*, const char*, ...);
  extern int htcl_ASL(unsigned int);
  extern void hvcomp_(real *hv, real *p, fint *nobj, real *ow, real *y);
  extern void hvinit_(fint *nobj, real *ow, real *y);
@@ -972,21 +1015,24 @@ enum ASL_writer_error_codes {
 			real *JAC, fint *nerror);
  extern Sig_ret_type fpecatch(int);
  extern jmp_buf fpe_jmpbuf_ASL;
+ extern int ka_read_ASL(ASL *, EdRead *, int, int**, size_t**);
  extern void lagscale_ASL(ASL*, real, fint*);
  extern char *lcon_name_ASL(ASL*,int);
  extern void mainexit_ASL(int);
  extern void *mem_ASL(ASL*, unsigned int);
  extern int mip_pri_ASL(ASL*,int**startp,int**nump,int**prip,fint pmax);
- extern void mnnzchk_ASL(ASL*asl,fint*M,fint*N,fint*NZ,const char*who);
+ extern void mnnzchk_ASL(ASL*asl,fint*M,fint*N,size_t NZ,const char*who);
  extern void mpec_adjust_ASL(ASL*);
  extern void mpec_auxvars_ASL(ASL*, real *c, real *x);
  extern fint mqpcheck_ASL(ASL*, int co, fint **rowqp, fint **colqp, real **delsqp);
+ extern ssize_t mqpcheckZ_ASL(ASL*, int co, fint **rowqp, size_t **colqp, real **delsqp);
  extern void *mymalloc(size_t);
  extern real mypow(real,real);
  extern void *myralloc(void *, size_t);
  extern void *new_mblk_ASL(ASL*, int k);
  extern int nl_obj_ASL(ASL*,int);
  extern fint nqpcheck_ASL(ASL*, int co, fint **rowqp, fint **colqp, real **delsqp);
+ extern ssize_t nqpcheckZ_ASL(ASL*, int co, fint **rowqp, size_t **colqp, real **delsqp);
  extern char *obj_name_ASL(ASL*,int);
  extern int obj_prec(VOID);
  extern void obj_adj_ASL(ASL*);
@@ -1002,6 +1048,7 @@ enum ASL_writer_error_codes {
  extern void qp_opify_ASL(ASL*);
  extern int qp_read_ASL(ASL*, FILE*, int);
  extern fint qpcheck_ASL(ASL*, fint **rowqp, fint **colqp, real **delsqp);
+ extern ssize_t qpcheckZ_ASL(ASL*, fint **rowqp, size_t **colqp, real **delsqp);
  extern char *read_line(EdRead*);
  extern char *read_sol_ASL(ASL*, real**xp, real **yp);
  extern void report_where(ASL*);
@@ -1020,7 +1067,7 @@ enum ASL_writer_error_codes {
  extern SufDesc *suf_rput_ASL(ASL*, const char*, int, real*);
  extern int suf_sos_ASL(ASL*,int,int*,char**,int**,int*,int**,int**,real**);
  extern char *var_name_ASL(ASL*,int);
- extern char *var_name_nomap_ASL(ASL*,int);
+ extern char *var_name_nomap_ASL(ASL*,int,int*);
  extern void varscale_ASL(ASL*, int, real, fint*);
  extern void what_prog(VOID);
  extern void write_sol_ASL(ASL*, const char *msg, double *x, double *y, Option_Info*);

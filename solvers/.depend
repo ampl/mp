@@ -88,8 +88,10 @@ F nl_obj.c
 F nlp.h
 F nlp2.h
 F nqpcheck.c
+F nqpcheckZ.c
 F obj2val.c
 F obj_adj.c
+F obj_adj.h
 F obj_adj0.c
 F obj_prec.c
 F objconst.c
@@ -108,6 +110,7 @@ F psinfo.h
 F punknown.c
 F qp_read.c
 F qpcheck.c
+F qpcheckZ.c
 F qsortv.c
 F r_op.hd
 F r_opn.hd

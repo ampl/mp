@@ -1,3 +1,8 @@
-20130606
-  obj_adj.c:  fix a fault that was possible with flags
-ASL_obj_replace_ineq and ASL_obj_replace_eq to the .nl reader.
+20140617
+  asl.h com2eval.c conpval.c fgh_read.c jac2dim.h jacpdim.h misc.c
+pfg_read.c pshvprod.c psinfo.h xp2known.c:  new functions with
+apparent signatures
+    void hvcompd(real *hv, real *p, int co);
+    varno_t hvcomps(real *hv, real *p, int co, varno_t nz, varno_t *z);
+See netlib/ampl/solvers/changes for more details.  Becuase of new
+components in struct ASL, the entire library needs to be recompiled.

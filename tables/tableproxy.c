@@ -1108,6 +1108,10 @@ Read_ampl_proxy(AmplExports *ae, TableInfo *TI)
 	free(dbc0);
 	if (!(H0.job & TPx_Done))
 		goto readmore;
+	if (TI->Errmsg) {
+		rc = DB_Error;
+		goto ret;
+		}
  done:
 	rc = DB_Done;
  ret:

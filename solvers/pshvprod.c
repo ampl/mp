@@ -29,14 +29,10 @@ extern "C" {
 #endif
 
  static void
-#ifdef KR_headers
-hv_fwd(e) register expr *e;
-#else
-hv_fwd(register expr *e)
-#endif
+hv_fwd(expr *e)
 {
-	register expr *e1, **ep;
 	argpair *da, *dae;
+	expr *e1, **ep;
 	real dO;
 
 	for(; e; e = e->fwd) {
@@ -60,7 +56,7 @@ hv_fwd(register expr *e)
 
 		case Hv_vararg:
 		case Hv_if:
-			if (e1 = ((expr_va *)e)->valf) {
+			if ((e1 = ((expr_va *)e)->valf)) {
 				hv_fwd(e1);
 				e->dO.r = ((expr_va *)e)->vale->dO.r;
 				}
@@ -76,7 +72,7 @@ hv_fwd(register expr *e)
 
 		case Hv_sumlist:
 			ep = e->R.ep;
-			for(dO = 0; e1 = *ep; ep++)
+			for(dO = 0; (e1 = *ep); ep++)
 				dO += e1->dO.r;
 			e->dO.r = dO;
 			break;
@@ -121,11 +117,7 @@ hv_fwd(register expr *e)
 	}
 
  static void
-#ifdef KR_headers
-func_back(f) expr_f *f;
-#else
 func_back(expr_f *f)
-#endif
 {
 	argpair *da, *da1, *dae;
 	expr *e;
@@ -149,28 +141,24 @@ func_back(expr_f *f)
 	}
 
  static void
-#ifdef KR_headers
-funnel_back(asl, c, v, t) ASL_pfgh *asl; cexp *c; expr_v *v; real t;
-#else
 funnel_back(ASL_pfgh *asl, cexp *c, expr_v *v, real t)
-#endif
 {
-	real aO, adO;
-	real *g, *h;
-	hes_fun *hf;
 	expr_v **vp, **vp1, **vpe;
+	hes_fun *hf;
 	ograd *og;
+	real *g, *h;
+	real aO, adO;
 
 	aO = v->aO = t;
 	adO = v->adO;
 	hf = c->hfun;
-	if (og = hf->og) {
+	if ((og = hf->og)) {
 		do {
 			v = var_e + og->varno;
 			v->adO += (t = og->coef) * adO;
 			v->aO += t*aO;
 			}
-			while(og = og->next);
+			while((og = og->next));
 		return;
 		}
 	g = hf->grdhes;
@@ -190,16 +178,12 @@ funnel_back(ASL_pfgh *asl, cexp *c, expr_v *v, real t)
 	}
 
  static void
-#ifdef KR_headers
-hv_back(e) register expr *e;
-#else
-hv_back(register expr *e)
-#endif
+hv_back(expr *e)
 {
-	register expr *e1, **ep, *e2;
+	expr *e1, **ep, *e2;
 	real adO, t1, t2;
 
-	if (!e || !e->aO && !e->adO)
+	if (!e || (!e->aO && !e->adO))
 		return;
 	for(; e; e = e->bak)
 	    switch(e->a) {
@@ -229,7 +213,7 @@ hv_back(register expr *e)
 
 		case Hv_vararg:
 		case Hv_if:
-			if (e1 = ((expr_va *)e)->vale) {
+			if ((e1 = ((expr_va *)e)->vale)) {
 				e1->aO = e->aO;
 				e1->adO = e->adO;
 				hv_back(e1);
@@ -251,7 +235,7 @@ hv_back(register expr *e)
 			ep = e->R.ep;
 			t1 = e->aO;
 			t2 = e->adO;
-			while(e1 = *ep++) {
+			while((e1 = *ep++)) {
 				e1->aO += t1;
 				e1->adO += t2;
 				}
@@ -330,24 +314,20 @@ hv_back(register expr *e)
 	}
 
  static void
-#ifdef KR_headers
-hv_fwd0(asl, c, v) ASL_pfgh *asl; cexp *c; expr_v *v;
-#else
 hv_fwd0(ASL_pfgh *asl, cexp *c, expr_v *v)
-#endif
 {
-	register linpart *L, *Le;
-	real *g, x;
-	hes_fun *hf;
-	ograd *og;
 	expr_v **vp, **vpe;
+	hes_fun *hf;
+	linpart *L, *Le;
+	ograd *og;
+	real *g, x;
 
 	v->aO = v->adO = 0;
-	if (hf = c->hfun) {
+	if ((hf = c->hfun)) {
 		x = 0;
-		if (og = hf->og)
+		if ((og = hf->og))
 			do x += og->coef * var_e[og->varno].dO.r;
-			while(og = og->next);
+			while((og = og->next));
 		else {
 			g = hf->grdhes;
 			vp = hf->vp;
@@ -364,18 +344,14 @@ hv_fwd0(ASL_pfgh *asl, cexp *c, expr_v *v)
 		x = c->e->dO.r;
 	else
 		x = 0;
-	if (L = c->L)
+	if ((L = c->L))
 		for(Le = L + c->nlin; L < Le; L++)
 			x += L->fac * ((expr_v*)L->v.vp)->dO.r;
 	v->dO.r = x;
 	}
 
  static void
-#ifdef KR_headers
-hfg_fwd(e) register expr *e;
-#else
-hfg_fwd(register expr *e)
-#endif
+hfg_fwd(expr *e)
 {
 	expr *e1;
 
@@ -384,23 +360,19 @@ hfg_fwd(register expr *e)
 		switch(e->a) {
 		  case Hv_vararg:
 		  case Hv_if:
-			if (e1 = ((expr_va *)e)->valf)
+			if ((e1 = ((expr_va *)e)->valf))
 				hfg_fwd(e1);
 		  }
 		}
 	}
 
  static void
-#ifdef KR_headers
-hfg_back(e) register expr *e;
-#else
-hfg_back(register expr *e)
-#endif
+hfg_back(expr *e)
 {
-	register expr *e1, **ep;
+	expr *e1, **ep;
 	real aO;
 
-	if (!e || !e->aO && !e->adO)
+	if (!e || (!e->aO && !e->adO))
 		return;
 	for(; e; e = e->bak)
 	    switch(e->a) {
@@ -423,7 +395,7 @@ hfg_back(register expr *e)
 
 		case Hv_vararg:
 		case Hv_if:
-			if (e1 = ((expr_va *)e)->vale) {
+			if ((e1 = ((expr_va *)e)->vale)) {
 				e1->aO = e->aO;
 				hfg_back(e1);
 				}
@@ -441,7 +413,7 @@ hfg_back(register expr *e)
 		case Hv_sumlist:
 			ep = e->R.ep;
 			aO = e->aO;
-			while(e1 = *ep++)
+			while((e1 = *ep++))
 				e1->aO += aO;
 			break;
 
@@ -482,18 +454,14 @@ hfg_back(register expr *e)
 	}
 
  static void
-#ifdef KR_headers
-funnelhes(asl) ASL_pfgh *asl;
-#else
 funnelhes(ASL_pfgh *asl)
-#endif
 {
 	cexp *c;
-	int n;
-	hes_fun *hf;
-	expr_v *v, **vp, **vp1, **vpe;
-	real *g, *h;
 	expr *e;
+	expr_v *v, **vp, **vp1, **vpe;
+	hes_fun *hf;
+	int n;
+	real *g, *h;
 
 	x0kind &= ~ASL_need_funnel;
 	for(hf = asl->I.hesthread; hf; hf = hf->hfthread) {
@@ -526,9 +494,9 @@ funnelhes(ASL_pfgh *asl)
 		do {
 			v = *vp++;
 			v->dO.r = 1;
-			if (e = c->ef)
+			if ((e = c->ef))
 				hv_fwd(e);
-			if (e = c->ee) {
+			if ((e = c->ee)) {
 				e->aO = 0;
 				e->adO = 1;
 				hv_back(e);
@@ -551,29 +519,30 @@ funnelhes(ASL_pfgh *asl)
 	}
 
  static void
-#ifdef KR_headers
-hvp0comp_ASL(a, hv, p, nobj, ow, y0)
-	ASL *a; real *hv, *p, *ow, *y0; int nobj;
-#else
-hvp0comp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y0)
-#endif
+hvp0comp_ASL(ASL_pfgh *asl, real *hv, real *p, int nobj, real *ow, real *y)
 	/* p = direction */
 	/* y = Lagrange multipliers */
 	/* hv = result */
 {
-	expr_v *v, *x, *x0, *xe;
-	expr *e;
-	real *cscale, t, t1, t2, *p1, *y, *ye, yi;
 	cexp *c, *c1, *ce;
-	int *dvsp0, i0, i1, n, no, noe;
-	linpart *L, *Le;
+	expr *e;
+	expr_v *v, *x, *x0, *xe;
+	int *dvsp0, i, i0, i1, n, nc, no, noe;
 	linarg *la;
+	linpart *L, *Le;
 	ograd *og;
 	ps_func *f, *f0;
 	psb_elem *b, *be;
 	psg_elem *g, *ge;
+	real *cscale, t, t2, *p1;
 
-#define asl ((ASL_pfgh*)a)
+#ifdef IGNORE_BOGUS_WARNINGS
+	c1 = ce = 0;
+	dvsp0 = 0;
+	i1 = 0;
+	v = 0;
+#endif
+
 	if (x0kind & ASL_need_funnel)
 		funnelhes(asl);
 	if (nobj >= 0 && nobj < n_obj) {
@@ -590,7 +559,7 @@ hvp0comp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y0)
 	for(la = asl->P.lalist; la; la = la->lnext) {
 		og = la->nz;
 		t = p[og->varno]*og->coef;
-		while(og = og->next)
+		while((og = og->next))
 			t += p[og->varno]*og->coef;
 		x = la->v;
 		x->dO.r = t;
@@ -600,7 +569,7 @@ hvp0comp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y0)
 	x = x0 = var_e;
 	for(xe = x + n; x < xe; x++) {
 		x->dO.r = *p1++;
-		x->aO = x->adO = 0;
+		x->aO = x->adO = 0.;
 		}
 	if (asl->P.ncom) {
 		x = var_ex;
@@ -613,35 +582,17 @@ hvp0comp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y0)
 			hv_fwd0(asl, c, x++);
 			}
 		}
-	if (y = y0) {
-		ye = y + n_con;
-		f = asl->P.cps;
-		for(y0 = 0; y < ye; y++, f++)
-			if (*y) {
-			    for(b = f->b, be = b + f->nb; b < be; b++)
-				if (e = b->D.ef) {
-					if (!y0) {
-						y0 = y;
-						f0 = f;
-						}
-					hv_fwd(e);
-					}
-			    for(g = f->g, ge = g + f->ng; g < ge; g++)
-				for(b = g->E, be = b + g->ns; b < be; b++)
-					if (e = b->D.ef) {
-						if (!y0) {
-							y0 = y;
-							f0 = f;
-							}
-						hv_fwd(e);
-						}
-			    }
-		}
-	for(; no < noe; no++)
-	    if (t2 = *ow++) {
-		f = asl->P.ops + no;
-		for(b = f->b, be = b + f->nb; b < be; b++)
-			if (e = b->D.ef) {
+	if (!y || (nc = n_con) <= 0)
+		goto no_y;
+	cscale = asl->i.lscale;
+	f0 = asl->P.cps;
+	for(i = 0; i < nc; ++i) {
+	    if ((t2 = y[i])) {
+		if (cscale)
+			t2 *= cscale[i];
+		f = f0 + i;
+		for(b = f->b, be = b + f->nb; b < be; b++) {
+			if ((e = b->D.ef)) {
 				hv_fwd(e);
 				e = b->D.ee;
 				e->aO = 0;
@@ -652,9 +603,10 @@ hvp0comp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y0)
 				e->aO = 0;
 				e->adO = t2;
 				}
+			}
 		for(g = f->g, ge = g + f->ng; g < ge; g++) {
-			for(b = g->E, be = b + g->ns; b < be; b++)
-				if (e = b->D.ef) {
+			for(b = g->E, be = b + g->ns; b < be; b++) {
+				if ((e = b->D.ef)) {
 					hv_fwd(e);
 					e = b->D.ee;
 					e->aO = 0;
@@ -665,6 +617,7 @@ hvp0comp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y0)
 					e->aO = 0;
 					e->adO = t2*g->g1;
 					}
+				}
 			if (g->g2) {
 				t = 0.;
 				for(og = g->og; og; og = og->next)
@@ -675,53 +628,50 @@ hvp0comp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y0)
 				}
 			}
 		}
-	if (y0) {
-		if (cscale = a->i.lscale)
-			cscale += f - asl->P.cps;
-		do {
-			yi = *y0++;
-			if (cscale)
-				yi *= *cscale++;
-			for(b = f0->b, be = b + f0->nb; b < be; b++) {
-				if (!(e = b->D.ee)) {
-					if ((e = b->D.e)->op != f_OPNUM) {
-						e->aO = 0;
-						e->adO = yi;
-						}
-					}
-				else if (e->adO = yi) {
+	    }
+ no_y:
+	for(; no < noe; no++) {
+	    if ((t2 = *ow++)) {
+		f = asl->P.ops + no;
+		for(b = f->b, be = b + f->nb; b < be; b++) {
+			if ((e = b->D.ef)) {
+				hv_fwd(e);
+				e = b->D.ee;
+				e->aO = 0;
+				e->adO = t2;
+				hv_back(e);
+				}
+			else if ((e = b->D.e)->op != f_OPNUM) {
+				e->aO = 0;
+				e->adO = t2;
+				}
+			}
+		for(g = f->g, ge = g + f->ng; g < ge; g++) {
+			for(b = g->E, be = b + g->ns; b < be; b++) {
+				if ((e = b->D.ef)) {
+					hv_fwd(e);
+					e = b->D.ee;
 					e->aO = 0;
+					e->adO = t2*g->g1;
 					hv_back(e);
+					}
+				else if ((e = b->D.e)->op != f_OPNUM) {
+					e->aO = 0;
+					e->adO = t2*g->g1;
 					}
 				}
-			for(g = f0->g, ge = g + f0->ng; g < ge; g++) {
-				t = g->g1 * yi;
-				for(b = g->E, be = b + g->ns; b < be; b++) {
-				    if (!(e = b->D.ee)) {
-					if ((e = b->D.e)->op != f_OPNUM) {
-						e->aO = 0;
-						e->adO = t;
-						}
-					}
-				    else if (e->adO = t) {
-					e->aO = 0;
-					hv_back(e);
-					}
-				    }
-				if (!(t = g->g2 * yi))
-					continue;
-				t1 = 0;
+			if (g->g2) {
+				t = 0.;
 				for(og = g->og; og; og = og->next)
-					t1 += og->coef * p[og->varno];
-				t *= t1;
+					t += og->coef * p[og->varno];
+				t *= t2*g->g2;
 				for(og = g->og; og; og = og->next)
 					x0[og->varno].aO += t*og->coef;
 				}
-			f0++;
 			}
-			while(y0 < ye);
 		}
-	if (asl->P.ncom)
+	    }
+	if (asl->P.ncom) {
 	    for(c = cexps; c < ce--; ) {
 		for(i0 = *--dvsp0; i0 < i1; ) {
 			v = asl->P.vp[--i1];
@@ -731,7 +681,7 @@ hvp0comp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y0)
 					((expr_v*)L->v.vp)->aO += t * L->fac;
 			if (c1->hfun)
 				funnel_back(asl, c1, v, t);
-			else if (e = c1->ee) {
+			else if ((e = c1->ee)) {
 				e->aO = t;
 				e->adO = v->adO;
 				hv_back(e);
@@ -746,7 +696,7 @@ hvp0comp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y0)
 				((expr_v*)L->v.vp)->aO += t * L->fac;
 		if (ce->hfun)
 			funnel_back(asl, ce, x, t);
-		else if (e = ce->ee) {
+		else if ((e = ce->ee)) {
 			e->aO = t;
 			e->adO = x->adO;
 			hv_back(e);
@@ -756,25 +706,21 @@ hvp0comp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y0)
 			e->adO = v->adO;
 			}
 		}
+	    }
 	x = var_e;
 	for(la = asl->P.lalist; la; la = la->lnext)
-		if (t = la->v->aO) {
+		if ((t = la->v->aO)) {
 			og = la->nz;
 			do x[og->varno].aO += t*og->coef;
-				while(og = og->next);
+				while((og = og->next));
 			}
 	while(x < xe)
 		*hv++ = (x++)->aO;
 	}
-#undef asl
 
  static real *	/* Compute vector x0 = mat(h)*y0,	*/
 		/* where h = upper triang of mat(h).	*/
-#ifdef KR_headers
-dtmul(n, x0, h, y0) int n; real *x0; real *h; real *y0;
-#else
 dtmul(int n, real *x0, real *h, real *y0)
-#endif
 {
 	int i;
 	real *hi, t, *x, *y, *y1, yi;
@@ -797,41 +743,36 @@ dtmul(int n, real *x0, real *h, real *y0)
 	}
 
  void
-#ifdef KR_headers
-hvpcomp_ASL(a, hv, p, nobj, ow, y)
-	ASL *a; real *hv, *p, *ow, *y; int nobj;
-#else
 hvpcomp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y)
-#endif
 	/* p = direction */
 	/* y = Lagrange multipliers */
 	/* hv = result */
 {
-	int kp, kw, n, no, noe, ns, nv, *ui, *uie;
+	ASL_pfgh *asl;
 	Ihinfo *ihi;
-	range *r;
+	int kp, kw, n, no, noe, ns, nv, *ui, *uie;
 	linarg *la, **lap, **lape;
 	ograd *og;
-	real *cscale, *owi, t, t1, t2, *p0, *s, *w, *wi, *x;
-	psg_elem *g, *ge;
 	ps_func *ps, *pe;
+	psg_elem *g, *ge;
+	range *r;
+	real *cscale, *owi, t, t1, t2, *p0, *s, *w, *wi, *x;
 
 	ASL_CHECK(a, ASL_read_pfgh, "hvpcomp");
-#define asl ((ASL_pfgh*)a)
-	if (a->i.x_known != 2)
-		xpsg_check_ASL(asl, nobj, ow, y);
+	asl = (ASL_pfgh*)a;
+	xpsg_check_ASL(asl, nobj, ow, y);
 	nv = n_var;
 	kp = htcl(nv*sizeof(real));
 	p0 = 0;
-	if (s = asl->i.vscale) {
+	if ((s = asl->i.vscale)) {
 		p0 = (real*)new_mblk(kp);
 		for(n = 0; n < nv; n++)
 			p0[n] = s[n] * p[n];
 		p = p0;
 		}
 	if (!asl->P.ihdcur) {
-		if (asl->P.ihdmin <= 0) {
-			hvp0comp_ASL(a,hv,p,nobj,ow,y);
+		if (asl->P.ndhmax <= 0) {
+			hvp0comp_ASL(asl,hv,p,nobj,ow,y);
 			goto done;
 			}
 		if (!(n = asl->P.nhvprod))
@@ -859,18 +800,18 @@ hvpcomp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y)
 				do {
 					og = (*lap++)->nz;
 					t = p[og->varno]*og->coef;
-					while(og = og->next)
+					while((og = og->next))
 						t += p[og->varno]*og->coef;
 					*wi++ = t;
 					}
 					while(lap < lape);
 				wi = dtmul(n, x, r->hest, w);
 				lap = r->lap;
-				do if (t = *wi++) {
+				do if ((t = *wi++)) {
 					og = (*lap)->nz;
 					do hv[og->varno] +=
 						t*og->coef;
-					   while(og = og->next);
+					   while((og = og->next));
 					}
 					while(++lap < lape);
 				}
@@ -896,7 +837,7 @@ hvpcomp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y)
 			do {
 				og = (*lap++)->nz;
 				t = p[og->varno]*og->coef;
-				while(og = og->next)
+				while((og = og->next))
 					t += p[og->varno]*og->coef;
 				*wi++ = t;
 				}
@@ -905,10 +846,10 @@ hvpcomp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y)
 			lap = r->lap;
 			do {
 				la = *lap++;
-				if (t = la->v->aO) {
+				if ((t = la->v->aO)) {
 					og = la->nz;
 					do hv[og->varno] += t*og->coef;
-						while(og = og->next);
+						while((og = og->next));
 					}
 				}
 				while(lap < lape);
@@ -927,22 +868,22 @@ hvpcomp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y)
 	    else {
 		nobj = -1;
 		no = noe = 0;
-		if (owi = ow)
+		if ((owi = ow))
 			noe = n_obj;
 		}
 	    for(; no < noe; no++)
-		if (t = *owi++) {
+		if ((t = *owi++)) {
 		    ps = asl->P.ops + no;
 		    g = ps->g;
 		    for(ge = g + ps->ng; g < ge; g++)
 			if ((t2 = g->g2) && (og = g->og)) {
 				t1 = p[og->varno]*og->coef;
-				while(og = og->next)
+				while((og = og->next))
 					t1 += p[og->varno]*og->coef;
 				t2 *= t*t1;
 				og = g->og;
 				do hv[og->varno] += t2*og->coef;
-					while(og = og->next);
+					while((og = og->next));
 				}
 		}
 	    }
@@ -950,16 +891,16 @@ hvpcomp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y)
 		cscale = a->i.lscale;
 		ps = asl->P.cps;
 		for(pe = ps + n_con; ps < pe; ps++, y++)
-		    if (t = cscale ? *cscale++ * *y : *y)
+		    if ((t = cscale ? *cscale++ * *y : *y))
 			for(g = ps->g, ge = g + ps->ng; g < ge; g++)
 			    if ((t2 = g->g2) && (og = g->og)) {
 				t1 = p[og->varno]*og->coef;
-				while(og = og->next)
+				while((og = og->next))
 					t1 += p[og->varno]*og->coef;
 				t2 *= t*t1;
 				og = g->og;
 				do hv[og->varno] += t2*og->coef;
-					while(og = og->next);
+					while((og = og->next));
 				}
 		}
  done:
@@ -971,36 +912,29 @@ hvpcomp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y)
 			*hv++ *= *s++;
 		}
 	}
-#undef asl
 
  void
-#ifdef KR_headers
-pshv_prod_ASL(a, r, nobj, ow, y) ASL_pfgh *a; range *r; int nobj; real *ow, *y;
-#else
-pshv_prod_ASL(ASL_pfgh *a, range *r, int nobj, real *ow, real *y)
-#endif
+pshv_prod_ASL(ASL_pfgh *asl, range *r, int nobj, real *ow, real *y)
 {
+	cexp *c;
+	expr *e;
+	expr_v *v;
 	int *cei, *cei0, *ceie, i;
 	linarg *la, **lap, **lape;
 	linpart *L, *Le;
-	expr_v *v;
 	ps_func *p;
-	cexp *c;
-	expr *e;
-	real *cscale, *s, owi, t;
 	psb_elem *b;
 	psg_elem *g;
+	real *cscale, *s, owi, t;
 
-	cscale = a->i.lscale;
-#define asl a
+	cscale = asl->i.lscale;
+	owi = 1.;
 	if (nobj >= 0 && nobj < n_obj) {
 		if (ow) {
 			if ((owi = ow[nobj]) == 0.)
 				nobj = -1;
 			ow = 0;
 			}
-		else
-			owi = 1;
 		}
 	if (x0kind & ASL_need_funnel)
 		funnelhes(asl);
@@ -1013,7 +947,7 @@ pshv_prod_ASL(ASL_pfgh *a, range *r, int nobj, real *ow, real *y)
 		v->dO.r = *s++;
 		v->adO = v->aO = 0.;
 		}
-	if (cei = cei0 = r->cei) {
+	if ((cei = cei0 = r->cei)) {
 		i = *cei0++;
 		ceie = (cei = cei0) + i;
 		do {
@@ -1027,8 +961,10 @@ pshv_prod_ASL(ASL_pfgh *a, range *r, int nobj, real *ow, real *y)
 			i = -2 - i;
 			if (i == nobj)
 				t = owi;
-			else if (ow)
-				t = ow[i];
+			else if (ow) {
+				if (!(t = ow[i]))
+					continue;
+				}
 			else
 				continue;
 			p = asl->P.ops;
@@ -1043,10 +979,10 @@ pshv_prod_ASL(ASL_pfgh *a, range *r, int nobj, real *ow, real *y)
 		if (b->groupno) {
 			p += i;
 			g = p->g + (b->groupno - 1);
-			if (a->P.pshv_g1)
+			if (asl->P.pshv_g1)
 				t *= g->g1;
 			}
-		if (e = b->D.ef) {
+		if ((e = b->D.ef)) {
 			hv_fwd(e);
 			e = b->D.ee;
 			e->aO = 0;
@@ -1065,7 +1001,7 @@ pshv_prod_ASL(ASL_pfgh *a, range *r, int nobj, real *ow, real *y)
 			((expr_v*)L->v.vp)->aO += t * L->fac;
 		if (c->hfun)
 			funnel_back(asl, c, v, t);
-		else if (e = c->ee) {
+		else if ((e = c->ee)) {
 			e->aO = t;
 			e->adO = v->adO;
 			hv_back(e);
@@ -1078,28 +1014,560 @@ pshv_prod_ASL(ASL_pfgh *a, range *r, int nobj, real *ow, real *y)
 	}
 
  void
-#ifdef KR_headers
-funpset_ASL(asl, f) ASL_pfgh *asl; register funnel *f;
-#else
-funpset_ASL(ASL_pfgh *asl, register funnel *f)
-#endif
+funpset_ASL(ASL_pfgh *asl, funnel *f)
 {
-	register derp	*d;
-	register cplist	*cl;
+	cplist	*cl;
+	derp	*d;
 
 	for(; f; f = f->next) {
 		memset(adjoints_nv1, 0, f->fcde.zaplen);
 		cl = f->cl;
 		do *cl->ca.rp = 0;
-			while(cl = cl->next);
+			while((cl = cl->next));
 		d = f->fcde.d;
 		*d->b.rp = 1.;
 		do *d->a.rp += *d->b.rp * *d->c.rp;
-			while(d = d->next);
+			while((d = d->next));
 		cl = f->cl;
 		do *cl->cfa = *cl->ca.rp;
-			while(cl = cl->next);
+			while((cl = cl->next));
 		}
+	}
+
+ void
+hvpcompd_ASL(ASL *a, real *hv, real *p, int co)
+	/* p = direction */
+	/* hv = result */
+	/* co >= 0: behave like hvpcomp_ASL with nobj = -1, ow = 0, y[i] = i == co ? 1. : 0. */
+	/* co < 0: behave like hvpcomp_ASL with nobj = -1 - co, ow = 0, y = 0 */
+{
+	ASL_pfgh *asl;
+	cexp *c, *c1, *ce;
+	cgrad *cg, *cg0;
+	expr *e;
+	expr_v *v, *x, *x0;
+	int *dvsp0, i0, i1, kp, n, no, nx, oxk;
+	linarg *la;
+	linpart *L, *Le;
+	ograd *og, *og0;
+	ps_func *f;
+	psb_elem *b, *be;
+	psg_elem *g, *ge;
+	real *s, t, t2, *p0;
+	varno_t i;
+
+#ifdef IGNORE_BOGUS_WARNINGS
+	c1 = ce = 0;
+	dvsp0 = 0;
+	i1 = 0;
+	v = 0;
+	x = 0;
+#endif
+	ASL_CHECK(a, ASL_read_pfgh, "hvpcompi");
+	asl = (ASL_pfgh*)a;
+	if (x0kind == ASL_first_x) {
+		if (!(s = X0))
+			memset(s = Lastx, 0, n_var*sizeof(real));
+		xp_check_ASL(asl, s);
+		}
+	nx = asl->i.nxval;
+	oxk = asl->i.x_known;
+	asl->i.x_known = 1;
+
+	p0 = 0;
+	cg0 = 0;
+	og0 = 0;
+	x0 = var_e;
+	n = c_vars >= o_vars ? c_vars : o_vars;
+	t2 = 1.;
+	memset(hv, 0, n_var*sizeof(real));
+	for(la = asl->P.lalist; la; la = la->lnext) {
+		og = la->nz;
+		t = p[og->varno]*og->coef;
+		while((og = og->next))
+			t += p[og->varno]*og->coef;
+		x = la->v;
+		x->dO.r = t;
+		x->aO = x->adO = 0;
+		}
+	if (co >= 0) {
+		if (co >= nlc)
+			return;
+		f = asl->P.cps + co;
+		if (asl->i.ncxval[co] != nx)
+			conpival_ASL(a, co, Lastx, 0);
+		if (f->ng && f->nxval != nx)
+			conpgrd_ASL(a, co, Lastx, 0, 0);
+		if ((s = asl->i.lscale))
+			t2 = s[co];
+		cg = cg0 = Cgrad[co];
+		if ((s = asl->i.vscale)) {
+			kp = htcl(n*sizeof(real));
+			p0 = (real*)new_mblk(kp);
+			for(; cg; cg = cg->next) {
+				i = cg->varno;
+				x = x0 + i;
+				x->dO.r = p0[i] = p[i]*s[i];
+				x->aO = x->adO = 0.;
+				}
+			p = p0;
+			}
+		else {
+			for(; cg; cg = cg->next) {
+				i = cg->varno;
+				x = x0 + i;
+				x->dO.r = p[i];
+				x->aO = x->adO = 0.;
+				}
+			}
+		}
+	else {
+		no = -1 - co;
+		if (no >= nlo)
+			return;
+		f = asl->P.ops + no;
+		if (asl->i.ncxval[no] != nx)
+			objpval_ASL(a, no, Lastx, 0);
+		if (f->ng && f->nxval != nx)
+			objpgrd_ASL(a, no, Lastx, 0, 0);
+		og = og0 = Ograd[no];
+		if ((s = asl->i.vscale)) {
+			kp = htcl(n*sizeof(real));
+			p0 = (real*)new_mblk(kp);
+			for(; og; og = og->next) {
+				i = og->varno;
+				x = x0 + i;
+				x->dO.r = p0[i] = p[i]*s[i];
+				x->aO = x->adO = 0.;
+				}
+			p = p0;
+			}
+		else {
+			for(; og; og = og->next) {
+				i = og->varno;
+				x = x0 + i;
+				x->dO.r = p[i];
+				x->aO = x->adO = 0.;
+				}
+			}
+		}
+	if (asl->i.Derrs) {
+		asl->i.x_known = oxk;
+		deriv_errchk_ASL(a, 0, co, 1);
+		asl->i.x_known = 1;
+		}
+	if (asl->P.ncom) {
+		x = var_ex;
+		dvsp0 = asl->P.dvsp0;
+		c = cexps;
+		i0 = *dvsp0;
+		for(ce = c1 = c + asl->P.ncom; c < ce; c++) {
+			for(i1 = *++dvsp0; i0 < i1; i0++)
+				hv_fwd0(asl, c1++, asl->P.vp[i0]);
+			hv_fwd0(asl, c, x++);
+			}
+		}
+	for(b = f->b, be = b + f->nb; b < be; b++) {
+		if ((e = b->D.ef)) {
+			hv_fwd(e);
+			e = b->D.ee;
+			e->aO = 0;
+			e->adO = t2;
+			hv_back(e);
+			}
+		else if ((e = b->D.e)->op != f_OPNUM) {
+			e->aO = 0;
+			e->adO = t2;
+			}
+		}
+	for(g = f->g, ge = g + f->ng; g < ge; g++) {
+		for(b = g->E, be = b + g->ns; b < be; b++) {
+			if ((e = b->D.ef)) {
+				hv_fwd(e);
+				e = b->D.ee;
+				e->aO = 0;
+				e->adO = t2*g->g1;
+				hv_back(e);
+				}
+			else if ((e = b->D.e)->op != f_OPNUM) {
+				e->aO = 0;
+				e->adO = t2*g->g1;
+				}
+			}
+		if (g->g2) {
+			t = 0.;
+			for(og = g->og; og; og = og->next)
+				t += og->coef * p[og->varno];
+			t *= t2*g->g2;
+			for(og = g->og; og; og = og->next)
+				x0[og->varno].aO += t*og->coef;
+			}
+		}
+	if (asl->P.ncom) {
+	    for(c = cexps; c < ce--; ) {
+		for(i0 = *--dvsp0; i0 < i1; ) {
+			v = asl->P.vp[--i1];
+			--c1;
+			if ((t = v->aO) && (L = c1->L))
+				for(Le = L + c1->nlin; L < Le; L++)
+					((expr_v*)L->v.vp)->aO += t * L->fac;
+			if (c1->hfun)
+				funnel_back(asl, c1, v, t);
+			else if ((e = c1->ee)) {
+				e->aO = t;
+				e->adO = v->adO;
+				hv_back(e);
+				}
+			else if ((e = c1->e)->op != f_OPNUM) {
+				e->aO = t;
+				e->adO = v->adO;
+				}
+			}
+		if ((t = (--x)->aO) && (L = ce->L))
+			for(Le = L + ce->nlin; L < Le; L++)
+				((expr_v*)L->v.vp)->aO += t * L->fac;
+		if (ce->hfun)
+			funnel_back(asl, ce, x, t);
+		else if ((e = ce->ee)) {
+			e->aO = t;
+			e->adO = x->adO;
+			hv_back(e);
+			}
+		else if ((e = ce->e)->op != f_OPNUM) {
+			e->aO = t;
+			e->adO = v->adO;
+			}
+		}
+	    }
+	x = var_e;
+	for(la = asl->P.lalist; la; la = la->lnext)
+		if ((t = la->v->aO)) {
+			og = la->nz;
+			do x[og->varno].aO += t*og->coef;
+				while((og = og->next));
+			}
+	if ((cg = cg0)) {
+		if (s) {
+			while(cg) {
+				i = cg->varno;
+				hv[i] = s[i]*x0[i].aO;
+				cg = cg->next;
+				}
+			}
+		else {
+			while(cg) {
+				i = cg->varno;
+				hv[i] = x0[i].aO;
+				cg = cg->next;
+				}
+			}
+		}
+	else {
+		og = og0;
+		if (s) {
+			while(og) {
+				i = og->varno;
+				hv[i] = s[i]*x0[i].aO;
+				og = og->next;
+				}
+			}
+		else {
+			while(og) {
+				i = og->varno;
+				hv[i] = x0[i].aO;
+				og = og->next;
+				}
+			}
+		}
+	if (p0)
+		del_mblk(kp, p0);
+	}
+
+ varno_t
+hvpcomps_ASL(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
+	/* p = direction */
+	/* hv = result */
+	/* co >= 0: behave like hvpcomp_ASL with nobj = -1, ow = 0, y[i] = i == co ? 1. : 0. */
+	/* co < 0: behave like hvpcomp_ASL with nobj = -1 - co, ow = 0, y = 0 */
+{
+	ASL_pfgh *asl;
+	cexp *c, *c1, *ce;
+	cgrad *cg, *cg0;
+	expr *e;
+	expr_v *v, *x, *x0;
+	int *dvsp0, i0, i1, kp, n, no, nx, oxk;
+	linarg *la;
+	linpart *L, *Le;
+	ograd *og, *og0;
+	ps_func *f;
+	psb_elem *b, *be;
+	psg_elem *g, *ge;
+	real *hve, *p0, *s, t, t2, *vscale;
+	varno_t i, rv, *ze;
+
+#ifdef IGNORE_BOGUS_WARNINGS
+	c1 = ce = 0;
+	dvsp0 = 0;
+	i1 = 0;
+	v = 0;
+	x = 0;
+#endif
+	ASL_CHECK(a, ASL_read_pfgh, "hvpcompi");
+	asl = (ASL_pfgh*)a;
+	if (x0kind == ASL_first_x) {
+		if (!(s = X0))
+			memset(s = Lastx, 0, n_var*sizeof(real));
+		xp_check_ASL(asl, s);
+		}
+	nx = asl->i.nxval;
+	oxk = asl->i.x_known;
+	asl->i.x_known = 1;
+
+	p0 = 0;
+	cg0 = 0;
+	og0 = 0;
+	x0 = var_e;
+	n = c_vars >= o_vars ? c_vars : o_vars;
+	t2 = 1.;
+	memset(hv, 0, n_var*sizeof(real));
+	for(la = asl->P.lalist; la; la = la->lnext) {
+		og = la->nz;
+		t = p[og->varno]*og->coef;
+		while((og = og->next))
+			t += p[og->varno]*og->coef;
+		x = la->v;
+		x->dO.r = t;
+		x->aO = x->adO = 0;
+		}
+	no = -1 - co;
+	if (co >= 0) {
+		if (co >= nlc)
+			return 0;
+		f = asl->P.cps + co;
+		if (asl->i.ncxval[co] != nx)
+			conpival_ASL(a, co, Lastx, 0);
+		if (f->ng && f->nxval != nx)
+			conpgrd_ASL(a, co, Lastx, 0, 0);
+		if ((s = asl->i.lscale))
+			t2 = s[co];
+		cg = cg0 = Cgrad[co];
+		if ((vscale = asl->i.vscale)) {
+			kp = htcl(n*sizeof(real));
+			p0 = (real*)new_mblk(kp);
+			for(; cg; cg = cg->next) {
+				i = cg->varno;
+				x = x0 + i;
+				x->dO.r = p0[i] = p[i]*vscale[i];
+				x->aO = x->adO = 0.;
+				}
+			p = p0;
+			}
+		else {
+			for(; cg; cg = cg->next) {
+				i = cg->varno;
+				x = x0 + i;
+				x->dO.r = p[i];
+				x->aO = x->adO = 0.;
+				}
+			}
+		}
+	else {
+		if (no >= nlo)
+			return 0;
+		f = asl->P.ops + no;
+		if (asl->i.ncxval[no] != nx)
+			objpval_ASL(a, no, Lastx, 0);
+		if (f->ng && f->nxval != nx)
+			objpgrd_ASL(a, no, Lastx, 0, 0);
+		og = og0 = Ograd[no];
+		if ((vscale = asl->i.vscale)) {
+			kp = htcl(n*sizeof(real));
+			p0 = (real*)new_mblk(kp);
+			for(; og; og = og->next) {
+				i = og->varno;
+				x = x0 + i;
+				x->dO.r = p0[i] = p[i]*vscale[i];
+				x->aO = x->adO = 0.;
+				}
+			p = p0;
+			}
+		else {
+			for(; og; og = og->next) {
+				i = og->varno;
+				x = x0 + i;
+				x->dO.r = p[i];
+				x->aO = x->adO = 0.;
+				}
+			}
+		}
+	if (asl->i.Derrs) {
+		asl->i.x_known = oxk;
+		deriv_errchk_ASL(a, 0, co, 1);
+		asl->i.x_known = 1;
+		}
+	if (asl->P.ncom) {
+		x = var_ex;
+		dvsp0 = asl->P.dvsp0;
+		c = cexps;
+		i0 = *dvsp0;
+		for(ce = c1 = c + asl->P.ncom; c < ce; c++) {
+			for(i1 = *++dvsp0; i0 < i1; i0++)
+				hv_fwd0(asl, c1++, asl->P.vp[i0]);
+			hv_fwd0(asl, c, x++);
+			}
+		}
+	for(b = f->b, be = b + f->nb; b < be; b++) {
+		if ((e = b->D.ef)) {
+			hv_fwd(e);
+			e = b->D.ee;
+			e->aO = 0;
+			e->adO = t2;
+			hv_back(e);
+			}
+		else if ((e = b->D.e)->op != f_OPNUM) {
+			e->aO = 0;
+			e->adO = t2;
+			}
+		}
+	for(g = f->g, ge = g + f->ng; g < ge; g++) {
+		for(b = g->E, be = b + g->ns; b < be; b++) {
+			if ((e = b->D.ef)) {
+				hv_fwd(e);
+				e = b->D.ee;
+				e->aO = 0;
+				e->adO = t2*g->g1;
+				hv_back(e);
+				}
+			else if ((e = b->D.e)->op != f_OPNUM) {
+				e->aO = 0;
+				e->adO = t2*g->g1;
+				}
+			}
+		if (g->g2) {
+			t = 0.;
+			for(og = g->og; og; og = og->next)
+				t += og->coef * p[og->varno];
+			t *= t2*g->g2;
+			for(og = g->og; og; og = og->next)
+				x0[og->varno].aO += t*og->coef;
+			}
+		}
+	if (asl->P.ncom) {
+	    for(c = cexps; c < ce--; ) {
+		for(i0 = *--dvsp0; i0 < i1; ) {
+			v = asl->P.vp[--i1];
+			--c1;
+			if ((t = v->aO) && (L = c1->L))
+				for(Le = L + c1->nlin; L < Le; L++)
+					((expr_v*)L->v.vp)->aO += t * L->fac;
+			if (c1->hfun)
+				funnel_back(asl, c1, v, t);
+			else if ((e = c1->ee)) {
+				e->aO = t;
+				e->adO = v->adO;
+				hv_back(e);
+				}
+			else if ((e = c1->e)->op != f_OPNUM) {
+				e->aO = t;
+				e->adO = v->adO;
+				}
+			}
+		if ((t = (--x)->aO) && (L = ce->L))
+			for(Le = L + ce->nlin; L < Le; L++)
+				((expr_v*)L->v.vp)->aO += t * L->fac;
+		if (ce->hfun)
+			funnel_back(asl, ce, x, t);
+		else if ((e = ce->ee)) {
+			e->aO = t;
+			e->adO = x->adO;
+			hv_back(e);
+			}
+		else if ((e = ce->e)->op != f_OPNUM) {
+			e->aO = t;
+			e->adO = v->adO;
+			}
+		}
+	    }
+	x = var_e;
+	for(la = asl->P.lalist; la; la = la->lnext)
+		if ((t = la->v->aO)) {
+			og = la->nz;
+			do x[og->varno].aO += t*og->coef;
+				while((og = og->next));
+			}
+	rv = 0;
+	if ((ze = z))
+		ze += nz;
+	if ((hve = hv))
+		hve += nz;
+	if ((cg = cg0)) {
+		if (!hv) {
+			while(cg) {
+				++rv;
+				if (z < ze)
+					*z++ = cg->varno;
+				cg = cg->next;
+				}
+			}
+		else if (vscale) {
+			while(cg) {
+				++rv;
+				i = cg->varno;
+				if (z < ze)
+					*z++ = i;
+				if (hv < hve)
+					*hv++ = vscale[i]*x0[i].aO;
+				cg = cg->next;
+				}
+			}
+		else {
+			while(cg) {
+				++rv;
+				i = cg->varno;
+				if (z < ze)
+					*z++ = i;
+				if (hv < hve)
+					*hv++ = x0[i].aO;
+				cg = cg->next;
+				}
+			}
+		}
+	else {
+		og = Ograd[no];
+		if (!hv) {
+			while(og) {
+				++rv;
+				if (z < ze)
+					*z++ = og->varno;
+				og = og->next;
+				}
+			}
+		else if (vscale) {
+			while(og) {
+				++rv;
+				i = og->varno;
+				if (z < ze)
+					*z++ = i;
+				if (hv < hve)
+					*hv++ = vscale[i]*x0[i].aO;
+				og = og->next;
+				}
+			}
+		else {
+			while(og) {
+				++rv;
+				i = og->varno;
+				if (z < ze)
+					*z++ = i;
+				if (hv < hve)
+					*hv++ = x0[i].aO;
+				og = og->next;
+				}
+			}
+		}
+	if (p0)
+		del_mblk(kp, p0);
+	return rv;
 	}
 
 #ifdef __cplusplus

@@ -79,7 +79,7 @@ conval_(fint *M, fint *N, real *X, real *F, fint *nerror)
 jacval_(fint *M, fint *N, fint *NZ, real *X, real *JAC, fint *nerror)
 {
 	ASL *a = cur_ASL;
-	mnnzchk_ASL(a, M, N, NZ, "jacval_");
+	mnnzchk_ASL(a, M, N, *NZ, "jacval_");
 	(*a->p.Jacval)(a, X, JAC, nerror);
 	}
 

@@ -173,7 +173,7 @@ suf_sos_ASL(ASL *asl, int flags, int *nsosnz_p, char **sostype_p,
 	int nsos, nsos1, nsos2, nsosnz, nsosnz1;
 	ograd *og, **ogp;
 	real *a, *g, *g0, *ge, *gn, *gnos, *sosref, *sufref, t, t1;
-	size_t L;
+	size_t L, *jZa, *jZa1, *jZae;
 
 	nsos1 = nsos2 = 0;
 	gd = grefd = vd = 0;	/* silence buggy "not-initialized" warning */
@@ -507,34 +507,65 @@ suf_sos_ASL(ASL *asl, int flags, int *nsosnz_p, char **sostype_p,
 		}
 	if (!zv)
 		goto adjust_suf1;
-	ja = A_colstarts;
-	jae = ja + n;
 	rn = A_rownos;
-	if (nsos1)
-		for(rt = sosind - nsosnz1; rt < sosind; rt++)
-			*rt = zv[*rt - f] + f;
-	for(j = 0; *zv >= 0; ja++, zv++) {
-		k = ja[1] - f;
-		while(j < k)
-			if (rn[j++] - f >= i)
-				goto copystart;
-		}
- copystart:
-	a = A_vals;
-	i = k = ja[0] - f;
-	ja1 = ja;
-	do {
-		j = k;
-		k = *++ja - f;
-		if (*zv++ >= 0) {
-			for(*ja1++ = i + f; j < k; j++)
-				if ((jz = zc[rn[j]-f]) >= 0) {
-					rn[i] = jz + f;
-					a[i++] = a[j];
-					}
+	if ((ja = A_colstarts)) {
+		jae = ja + n;
+		if (nsos1)
+			for(rt = sosind - nsosnz1; rt < sosind; rt++)
+				*rt = zv[*rt - f] + f;
+		for(j = 0; *zv >= 0; ja++, zv++) {
+			k = ja[1] - f;
+			while(j < k)
+				if (rn[j++] - f >= i)
+					goto copystart;
 			}
-		} while(ja < jae);
-	*ja1 = (nzc = i) + f;
+ copystart:
+		a = A_vals;
+		i = k = ja[0] - f;
+		ja1 = ja;
+		do {
+			j = k;
+			k = *++ja - f;
+			if (*zv++ >= 0) {
+				for(*ja1++ = i + f; j < k; j++)
+					if ((jz = zc[rn[j]-f]) >= 0) {
+						rn[i] = jz + f;
+						a[i++] = a[j];
+						}
+				}
+			} while(ja < jae);
+		*ja1 = (nzc = i) + f;
+		}
+	else if ((jZa = A_colstartsZ)) {
+		jZae = jZa + n;
+		if (nsos1)
+			for(rt = sosind - nsosnz1; rt < sosind; rt++)
+				*rt = zv[*rt - f] + f;
+		for(j = 0; *zv >= 0; jZa++, zv++) {
+			k = jZa[1] - f;
+			while(j < k)
+				if (rn[j++] - f >= i)
+					goto copystartZ;
+			}
+ copystartZ:
+		a = A_vals;
+		i = k = jZa[0] - f;
+		jZa1 = jZa;
+		do {
+			j = k;
+			k = *++jZa - f;
+			if (*zv++ >= 0) {
+				for(*jZa1++ = i + f; j < k; j++)
+					if ((jz = zc[rn[j]-f]) >= 0) {
+						rn[i] = jz + f;
+						a[i++] = a[j];
+						}
+				}
+			} while(jZa < jZae);
+		*jZa1 = (nZc = i) + f;
+		}
+	else
+		return 0; /* should not happen */
  adjust_suf:
 	if (zv)
 		for(d = asl->i.suffixes[0]; d; d = d->next)

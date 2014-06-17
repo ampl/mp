@@ -102,7 +102,11 @@ Option_Info {
 	ASL_OI_echothis = 2,
 	ASL_OI_clopt	= 4,
 	ASL_OI_badvalue = 8,
-	ASL_OI_never_echo = 16
+	ASL_OI_never_echo = 16,
+	ASL_OI_tabexpand  = 32,	/* have shownames() expand tabs */
+	ASL_OI_addnewline = 64, /* have shownames() add a newline */
+				/* after each keyword description */
+	ASL_OI_showname_bits = 96
 	} ;
 
 #ifdef __cplusplus

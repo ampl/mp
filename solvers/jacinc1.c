@@ -42,7 +42,7 @@ jacinc1_(fint *M, fint *N, fint *NO, fint *NZ, fint *JP,
 	cgrad *gr, **grp;
 	ASL *asl = cur_ASL;
 
-	mnnzchk_ASL(asl, M, N, NZ, "jacinc");
+	mnnzchk_ASL(asl, M, N, *NZ, "jacinc");
 	*Inf = Infinity;
 	if ((n = n_con)) {
 		LUcopy_ASL(n, Lrhs, Urhs, LUrhs);

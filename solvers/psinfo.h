@@ -256,7 +256,7 @@ ps_info {
 	int nmax;	/* max{r in ranges} r->n */
 	int ihdcur;	/* Current max internal Hessian dimension, */
 			/* set by hvpinit. */
-	int ihdmax;	/* max possible ihd (limited by ihe_limit) */
+	int ihdmax;	/* max possible ihd */
 	int ihdmin;	/* min possible ihd > 0 and <= ihdmax, or 0 */
 	int khesoprod;	/* used in new_Hesoprod in sputhes.c */
 	int pshv_g1;	/* whether pshv_prod should multiply by g1 */
@@ -271,6 +271,11 @@ ps_info {
 	expr_va *valist;	/* for sphes_setup */
 	expr_if *iflist;	/* for sphes_setup */
 	int *zlsave;	/* for S->_zl */
+	real *oyow;	/* for xpsg_check */
+	int onobj;	/* for xpsg_check */
+	int onxval;	/* for xpsg_check */
+	int nynz;	/* for xpsg_check */
+	int ndhmax;	/* set by hvpinit_ASL */
 #endif /* PSHVREAD */
 	split_ce *Split_ce;	/* for sphes_setup */
 	} ps_info;
@@ -312,6 +317,7 @@ typedef unsigned Long Ulong;
  extern void duthes_ASL(ASL*, real *H, int nobj, real *ow, real *y);
  extern void fullhes_ASL(ASL*, real*H, fint LH, int nobj, real*ow, real*y);
  extern void hvpinit_ASL(ASL*, int ndhmax, int nobj, real *ow, real *y);
+ extern void ihd_clear_ASL(ASL_pfgh*);
  extern ASL_pfgh *pscheck_ASL(ASL*, const char*);
  extern void pshv_prod_ASL(ASL_pfgh*, range*r, int nobj, real*ow, real*y);
  extern fint sphes_setup_ASL(ASL*, SputInfo**, int nobj, int ow, int y, int ul);

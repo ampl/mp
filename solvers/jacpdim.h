@@ -30,10 +30,12 @@ THIS SOFTWARE.
 #define conpgrd  conpgrd_ASL
 #define conpval  conpval_ASL
 #define jacpval  jacpval_ASL
-#define lconpval  lconpval_ASL
+#define lconpval lconpval_ASL
 #define objpgrd  objpgrd_ASL
 #define objpval  objpval_ASL
 #define hvpcomp  hvpcomp_ASL
+#define hvpcompd hvpcompd_ASL
+#define hvpcomps hvpcomps_ASL
 #define xp2known xp2known_ASL
 
 #ifdef __cplusplus
@@ -46,8 +48,10 @@ extern "C" {
  extern int  lconpval ANSI((ASL*, int nc, real *X, fint *ne));
  extern void objpgrd ANSI((ASL*, int nobj, real *X, real *G, fint *nerror));
  extern real objpval ANSI((ASL*, int nobj, real *X, fint *nerror));
- extern void hvpcomp ANSI((ASL*,real *hv,real *p,int nobj,real *ow,real *y));
- extern int xp_check_ASL ANSI((ASL_pfgh*,real*));
+ extern void hvpcomp ANSI((ASL*, real *hv, real *p, int nobj, real *ow, real *y));
+ extern void hvpcompd ANSI((ASL*,real *hv, real *p, int co));
+ extern varno_t hvpcomps ANSI((ASL*, real *hv, real *p, int co, varno_t nz, varno_t *z));
+ extern int xp_check_ASL ANSI((ASL_pfgh*, real*));
  extern void xp2known ANSI((ASL*, real*, fint*));
 #ifdef __cplusplus
 	}

@@ -28,6 +28,7 @@ THIS SOFTWARE.
 #include "nlp2.h"
 #include "asl_pfg.h"
 #include "asl_pfgh.h"
+#include "obj_adj.h"
 
  int
 #ifdef KR_headers
@@ -36,6 +37,7 @@ nl_obj_ASL(asl, n) ASL *asl; int n;
 nl_obj_ASL(ASL *asl, int n)
 #endif
 {
+	Objrep *od, **pod;
 	expr_n *e;
 	static char who[] = "nl_obj";
 
@@ -45,19 +47,37 @@ nl_obj_ASL(ASL *asl, int n)
 		badasl_ASL(asl,ASL_read_f,who);
 
 	if (n >= 0 && n < n_obj) {
-		switch(asl->i.ASLtype) {
-		  case ASL_read_fgh:
-			e = (expr_n*)(((ASL_fgh*)asl)->I.obj2_de_ + n)->e;
-			break;
-		  case ASL_read_pfg:
-			e = (expr_n*)(((ASL_pfg*)asl)->I.obj_de_ + n)->e;
-			break;
-		  case ASL_read_pfgh:
-			e = (expr_n*)(((ASL_pfgh*)asl)->I.obj2_de_ + n)->e;
-			break;
-		  default:
-			e = (expr_n*)(((ASL_fg*)asl)->I.obj_de_ + n)->e;
-		  }
+		if ((pod = asl->i.Or) && (od = pod[n])) {
+			n = od->ico;
+			switch(asl->i.ASLtype) {
+			  case ASL_read_fgh:
+				e = (expr_n*)(((ASL_fgh*)asl)->I.con2_de_ + n)->e;
+				break;
+			  case ASL_read_pfg:
+				e = (expr_n*)(((ASL_pfg*)asl)->I.con_de_ + n)->e;
+				break;
+			  case ASL_read_pfgh:
+				e = (expr_n*)(((ASL_pfgh*)asl)->I.con2_de_ + n)->e;
+				break;
+			  default:
+				e = (expr_n*)(((ASL_fg*)asl)->I.con_de_ + n)->e;
+			  }
+			}
+		else {
+			switch(asl->i.ASLtype) {
+			  case ASL_read_fgh:
+				e = (expr_n*)(((ASL_fgh*)asl)->I.obj2_de_ + n)->e;
+				break;
+			  case ASL_read_pfg:
+				e = (expr_n*)(((ASL_pfg*)asl)->I.obj_de_ + n)->e;
+				break;
+			  case ASL_read_pfgh:
+				e = (expr_n*)(((ASL_pfgh*)asl)->I.obj2_de_ + n)->e;
+				break;
+			  default:
+				e = (expr_n*)(((ASL_fg*)asl)->I.obj_de_ + n)->e;
+			  }
+			}
 		if (e->op != f_OPNUM_ASL)
 			return 1;
 		}
