@@ -1,7 +1,8 @@
 # CMake build script for the AMPL solver tests.
 
-# GTest doesn't detect <tuple> with clang.
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+# Use GTest's own tuple implementation as the one in Visual C++ 2012
+# is broken.
+if (MSVC)
   add_definitions(-DGTEST_USE_OWN_TR1_TUPLE=1)
 endif ()
 
