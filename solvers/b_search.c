@@ -32,14 +32,14 @@ THIS SOFTWARE.
  *
  *	b_search((char *)keywords, (int)sizeof(option_word),
  *		(int)(number of keywords = sizeof(keywords)/sizeof(option_word),
- *		char **sp)
+ *		char **sp, char **peq)
  *
  * where *sp is a string that may contain a keyword.
  * No keyword ==> b_search returns 0 with **sp = 0.
  * Bad keyword ==> b_search returns 0 with *sp = the bad keyword.
  * Keyword matched ==> b_search returns the matched option_word*,
  * sets *sp to the next token (skipping '=' if present), and sets
- * oi->eqsign to "=" if '=' is present and to " " otherwise.
+ * *peq to "=" if '=' is present and to " " otherwise.
  */
 
 #ifdef __cplusplus

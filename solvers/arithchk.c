@@ -25,8 +25,10 @@ THIS SOFTWARE.
 /* Try to deduce arith.h from arithmetic properties. */
 
 #include <stdio.h>
+#include <string.h>	/* possibly for ssize_t */
 #include <math.h>
 #include <errno.h>
+#include <sys/types.h>	/* another possible place for ssize_t */
 
 #ifdef NO_FPINIT
 #define fpinit_ASL()
@@ -185,6 +187,7 @@ main(void)
 	FILE *f;
 	Akind *a = 0;
 	int Ldef = 0;
+	size_t sa, sb;
 	unsigned int nanbits[2];
 
 	fpinit_ASL();
@@ -222,6 +225,22 @@ main(void)
 		if (sizeof(long long) < 8)
 #endif
 			fprintf(f, "#define NO_LONG_LONG\n");
+#ifdef NO_SSIZE_T /*{{*/
+		if (sizeof(size_t) == sizeof(long))
+			fprintf(f, "#define ssize_t long\n");
+		else if (sizeof(size_t) == sizeof(int))
+			fprintf(f, "#define ssize_t int\n");
+#ifndef NO_LONG_LONG
+		else if (sizeof(size_t) == sizeof(long long))
+			fprintf(f, "#define ssize_t long long\n");
+#endif
+		else
+			fprintf(f, "#define ssize_t signed size_t\n"); /* punt */
+#else /*}{*/
+		if (sizeof(size_t) != sizeof(ssize_t))
+			fprintf(f, "/* sizeof(size_t) = %d but sizeof(ssize_t) = %d */\n",
+				(int)sizeof(size_t), (int)sizeof(ssize_t));
+#endif /*}}*/
 		if (a->kind <= 2) {
 			if (fzcheck())
 				fprintf(f, "#define Sudden_Underflow\n");

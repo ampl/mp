@@ -2573,7 +2573,7 @@ strtod
 	for(nd = nf = 0; (c = *s) >= '0' && c <= '9'; nd++, s++)
 		if (nd < 9)
 			y = 10*y + c - '0';
-		else if (nd < 16)
+		else if (nd < DBL_DIG + 2)
 			z = 10*z + c - '0';
 	nd0 = nd;
 	bc.dp0 = bc.dp1 = s - s0;
@@ -2623,11 +2623,11 @@ strtod
 				for(i = 1; i < nz; i++)
 					if (nd++ < 9)
 						y *= 10;
-					else if (nd <= DBL_DIG + 1)
+					else if (nd <= DBL_DIG + 2)
 						z *= 10;
 				if (nd++ < 9)
 					y = 10*y + c;
-				else if (nd <= DBL_DIG + 1)
+				else if (nd <= DBL_DIG + 2)
 					z = 10*z + c;
 				nz = nz1 = 0;
 				}
@@ -2716,7 +2716,7 @@ strtod
 
 	if (!nd0)
 		nd0 = nd;
-	k = nd < DBL_DIG + 1 ? nd : DBL_DIG + 1;
+	k = nd < DBL_DIG + 2 ? nd : DBL_DIG + 2;
 	dval(&rv) = y;
 	if (k > 9) {
 #ifdef SET_INEXACT
@@ -3415,8 +3415,7 @@ strtod
 					goto undfl;
 #else
 					{
-					if (bc.nd > nd)
-						bc.dsign = 1;
+					req_bigcomp = 1;
 					break;
 					}
 #endif

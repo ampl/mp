@@ -147,6 +147,9 @@ qp_opify_ASL(ASL *a)
 
 	ASL_CHECK(a, ASL_read_fg, "qp_opify");
 	asl = (ASL_fg*)a;
+	if (asl->i.rflags & ASL_opified)
+		return;
+	asl->i.rflags |= ASL_opified;
 	f = r_ops_ASL;
 	varval = r_ops_ASL[&f_OPVARVAL - &r_ops[0]];
 	if ((nv = c_vars) < o_vars)
@@ -157,7 +160,7 @@ qp_opify_ASL(ASL *a)
 	while(v < ve)
 		(v++)->op = f_OPVARVAL;
 	ed1oploop(obj_de, n_obj, f, varval);
-	ed1oploop(con_de, n_con, f, varval);
+	ed1oploop(con_de, asl->i.n_con0, f, varval);
 	c1 = cexps1;
 	c1e = c1 + comc1 + como1;
 	while(c1 < c1e)

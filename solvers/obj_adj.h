@@ -34,7 +34,11 @@ Objrep {
 	int ico;	/* index of constraint that gives the objective */
 	int ivo;	/* index of objective variable */
 	int nxval;	/* X generation for f */
-	int opify;	/* whether obj_adj_xy may need to call qp_opify */
+	void (*opify)(ASL*);	/* whether obj_adj_xy may need to call qp_opify */
 	real c0, c0a, c1, c12, f;
-	cgrad *cg;	/* original gradient if modified by mqpcheck() */
+	cgrad *cg;	/* Original gradient if modified by mqpcheck(). */
+	cgrad *cg0;	/* Copy of cg for use in obj_adj_xy_ASL.  For solvers */
+			/* like minos and snopt that separately evaluate the */
+			/* linear and nonlinear parts of objectives, cg and cg0 */
+			/* may differ. */
 	};

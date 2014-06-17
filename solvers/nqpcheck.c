@@ -573,14 +573,20 @@ lcmp(const void *a, const void *b, void *v)
 	return (int)(*(fint *)a - *(fint *)b);
 	}
 
- fint
-mqpcheck_ASL(ASL *a, int co, fint **rowqp, fint **colqp, real **delsqp)
+#ifndef Fint
+#define Fint fint
+#define Fints fint
+#endif
+
+ Fints
+mqpcheck_ASL(ASL *a, int co, fint **rowqp, Fint **colqp, real **delsqp)
 {
 	typedef struct dispatch {
 		struct dispatch *next;
 		fint i, j, jend;
 		} dispatch;
 	ASL_fg *asl;
+	Fint  *colq, *colq1, nelq;
 	Objrep *od, **pod;
 	Static SS, *S;
 	cde *c;
@@ -589,8 +595,8 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, fint **colqp, real **delsqp)
 	dyad *d, *d1, **q, **q1, **q2, **qe;
 	expr *e;
 	expr_n *en;
-	fint *colq, *colq1, *rowq, *rowq0, *rowq1, *s, *z;
-	fint ftn, i, icol, j, ncom, nelq, nv, nz;
+	fint *rowq, *rowq0, *rowq1, *s, *z;
+	fint ftn, i, icol, j, ncom, nv, nz;
 	int arrays, *cm, co0, pass, *vmi;
 	ograd *og, *og1, *og2, **ogp;
 	real *L, *U, *delsq, *delsq0, *delsq1, objadj, t, *x;
@@ -645,7 +651,8 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, fint **colqp, real **delsqp)
 	SS.nvinc = nv - asl->i.n_var0 + asl->i.nsufext[ASL_Sufkind_var];
 
 	delsq = delsq0 = delsq1 = 0; /* silence buggy "not-initialized" warning */
-	colq = colq1 = rowq = rowq0 = rowq1 = 0;	/* ditto */
+	colq = colq1 = 0;				/* ditto */
+	rowq = rowq0 = rowq1 = 0;			/* ditto */
 	cd0 = 0;					/* ditto */
 	cdisp = cdisp0 = 0;				/* ditto */
 
@@ -678,13 +685,12 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, fint **colqp, real **delsqp)
 	if (cterms)
 		cterm_free(S, cterms + ncom);
 	if (od) {
-		od->cg = 0;
+		cgq = &od->cg;
 		for(i = 0, cg = *cgp; cg; cg = cg->next) {
 			if (cg->coef != 0.)
 				++i;
 			}
 		if (i) {
-			cgq = &od->cg;
 			cq = Malloc(i*sizeof(cgrad));
 			for(cg = *cgp; cg; cg = cg->next) {
 				*cgq = cq;
@@ -692,10 +698,10 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, fint **colqp, real **delsqp)
 				*cq = *cg;
 				++cq;
 				}
-			*cgq = 0;
 			}
+		*cgq = 0;
 		}
-				
+
 	q = (dyad **)Malloc(nv*sizeof(dyad *));
 	qe = q + nv;
 	objadj = dsort(S, T, (ograd **)q, cgp, ogp, arrays);
@@ -708,7 +714,7 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, fint **colqp, real **delsqp)
 			free(q);
 			delsq1 = delsq = (double *)Malloc(nelq*sizeof(real));
 			rowq1 = rowq = (fint *)Malloc(nelq*sizeof(fint));
-			colq1 = colq = (fint *)Malloc((nv+2)*sizeof(fint));
+			colq1 = colq = (Fint *)Malloc((nv+2)*sizeof(Fint));
 			nelq = ftn;
 			delsq0 = delsq - ftn;
 			rowq0 = rowq - ftn;
@@ -877,7 +883,7 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, fint **colqp, real **delsqp)
 		en = (expr_n *)mem(sizeof(expr_n));
 		en->op = f_OPNUM_ASL;
 		if (od) {
-			od->opify = 1;
+			od->opify = qp_opify_ASL;
 			if ((t = od->c12) != 1.)
 				for(i = 0; i < nelq; ++i)
 					delsq1[i] *= t;
@@ -917,10 +923,10 @@ mqpcheck_ASL(ASL *a, int co, fint **rowqp, fint **colqp, real **delsqp)
 	}
 
 
- fint
-nqpcheck_ASL(ASL *asl, int co, fint **rowqp, fint **colqp, real **delsqp)
+ Fints
+nqpcheck_ASL(ASL *asl, int co, fint **rowqp, Fint **colqp, real **delsqp)
 {
-	fint rv = mqpcheck_ASL(asl, co, rowqp, colqp, delsqp);
+	Fints rv = mqpcheck_ASL(asl, co, rowqp, colqp, delsqp);
 	if (rowqp && *rowqp) {
 		M1record(*delsqp);
 		M1record(*rowqp);

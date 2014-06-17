@@ -22,7 +22,7 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
- static char Version[] = "\n@(#) AMPL ODBC driver, version 20130509.\n";
+ static char Version[] = "\n@(#) AMPL ODBC driver, version 20131212.\n";
 
 #ifdef _WIN32
 #include <windows.h>
@@ -130,7 +130,7 @@ Malloc(AmplExports *ae, size_t len)
 {
 	void *rv = malloc(len);
 	if (!rv) {
-		fprintf(Stderr, "malloc(%lu) failure!\n", (unsigned long)len);
+		printf("malloc(%lu) failure!\n", (unsigned long)len);
 		exit(1);
 		}
 	return rv;
@@ -1064,92 +1064,16 @@ fully_qualify(char *dsname, char *buf, size_t len)
 	int score;
 	} winfo;
 
-#ifdef _WIN32
-
- static char *wprocnames[] = {
-	"start menu",
-	"program manager",
-	"ampl_lic",
-	"ampl",
-	"command prompt",
-	"sw:",
-	0};
-
- static int
-match1(char *s, char *t)
-{
-	while(*t) {
-		if (*s++ != *t++)
-			return 0;
-		}
-	return *s <= ' ';
-	}
-
- static BOOL CALLBACK
-mywproc(HWND hw, LPARAM all)
-{
-	char buf[2048], *s, *se;
-	int i, len;
-
-	len = GetWindowText(hw, buf, sizeof(buf));
-	if (len <= 0)
-		goto done;
-	se = buf + 15;
-	if (len < 15)
-		se = buf + len;
-	for(s = buf; s < se; ++s)
-		*s = tolc[(int)*s];
-	for(i = 0; (s = wprocnames[i++]); ) {
-		if (match1(buf,s)) {
-			if (winfo.score > i) {
-				winfo.score = i;
-				winfo.hw = hw;
-				if (i == 1)
-					return FALSE;
-				break;
-				}
-			}
-		}
- done:
-	return TRUE;
-	}
+#ifdef _WIN32 /*{*/
 
  static void
 hw_get(AmplExports *ae)
 {
-	const char *s;
-	/* work around MS bugs with stdlib (missing routines) */
-	int c;
-#ifdef LONG_LONG_POINTERS
-	unsigned long long x;
-#else
-	unsigned long x;
-#endif
-
 	winfo.score = 9999;
-	if ((s = getenv("sw_HWND"))) {
-		for(x = 0; (c = *s); ++s) {
-			if (c >= '0' && c <= '9')
-				c -= '0';
-			else if (c >= 'a' && c <= 'f')
-				c += 10 - 'a';
-			else if (c >= 'A' && c <= 'F')
-				c += 10 - 'A';
-			else
-				continue;
-			x <<= 4;
-			x |= c;
-			}
-		winfo.hw = (HWND)x;
-		/*DEBUG*/ /*printf("Got $sw_HWND = #%x\n", wi.hw);*/
-		}
-	else {
-		winfo.hw = 0;
-		EnumWindows(mywproc, 0);
-		}
+	winfo.hw = GetDesktopWindow();
 	}
 
-#endif /* _WIN32 */
+#endif /*} _WIN32 */
 
  static void
 colname_adjust(HInfo *h, TableInfo *TI)
@@ -2494,7 +2418,7 @@ Read_odbc(AmplExports *ae, TableInfo *TI)
 funcadd(AmplExports *ae)
 {
 	static char tname[] = "odbc\n"
-	"AMPL ODBC handler (20130509): expected 2-8 strings before \":[...]\":\n"
+	"AMPL ODBC handler (20131212): expected 2-8 strings before \":[...]\":\n"
 	"  'ODBC', connection_spec ['ext_name'] [option [option...]]\n"
 	"Connection_spec gives a connection to the external table.  If the table's\n"
 	"external name differs from the AMPL table name, the external name must be\n"
@@ -2851,12 +2775,10 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 				j++;
 			}
 		}
-	dd = 0; td = 0; /* silence bogus warnings */
-	if (nk[0]) {
-		dd = (double*)TM(n*sizeof(double));
-		if (j)
-			ra0 = dd;
-		}
+	td = 0; /* silence bogus warning */
+	dd = (double*)TM(n*sizeof(double));
+	if (j)
+		ra0 = dd;
 	if ((i = nk[1])) {
 		i1 = i;
 		if (k)
@@ -3072,13 +2994,19 @@ Adjust_ampl_odbc(HInfo *h, char *tname, TIMESTAMP_STRUCT ****tsqp,
 				db = db0 + (k = p[i]);
 				switch(dbc->mytype) {
 				  case 0:
+					if (!db->dval)
+						(*TI->ColAlloc)(TI, k, 0);
 					db->dval[nrows] = dd[k];
 					break;
 				  case 1:
+					if (!db->sval)
+						(*TI->ColAlloc)(TI, k, 1);
 					db->sval[nrows] = ascrunch(h, dbc->val,
 							&db->dval, nrows, k);
 					break;
 				  case 2:
+					if (!db->sval)
+						(*TI->ColAlloc)(TI, k, 1);
 					tsp = (TIMESTAMP_STRUCT**)db->sval;
 					tsp[nrows] = ts = (TIMESTAMP_STRUCT*)
 							TM(sizeof(TIMESTAMP_STRUCT));

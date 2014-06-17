@@ -187,6 +187,29 @@ hv0comp(ASL *a, real *hv, real *p, int nobj, real *ow, real *y)
 	}
 
  static void
+hv0compd(ASL *a, real *hv, real *p, int co)
+{
+	Not_Used(a);
+	Not_Used(hv);
+	Not_Used(p);
+	Not_Used(co);
+	notread("hvcompd", "pfgh_read or fgh_read");
+	}
+
+ static varno_t
+hv0comps(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
+{
+	Not_Used(a);
+	Not_Used(hv);
+	Not_Used(p);
+	Not_Used(co);
+	Not_Used(nz);
+	Not_Used(z);
+	notread("hvcomps", "pfgh_read or fgh_read");
+	return 0;
+	}
+
+ static void
 hv0init(ASL *a, int n, int no, real *ow, real *y)
 {
 	Not_Used(a);
@@ -292,6 +315,8 @@ Edagpars edagpars_ASL = {
 	con0grd,
 	hv0comp,
 	hv0comp,
+	hv0compd,
+	hv0comps,
 	hv0init,
 	hv0init,
 	hes0set,
@@ -578,7 +603,7 @@ xunkno_(void)
 	}
 
  void
-mnnzchk_ASL(ASL *asl, fint *M, fint *N, fint *NZ, const char *who1)
+mnnzchk_ASL(ASL *asl, fint *M, fint *N, size_t NZ, const char *who1)
 {
 	int n;
 	if (!asl)
@@ -587,12 +612,12 @@ mnnzchk_ASL(ASL *asl, fint *M, fint *N, fint *NZ, const char *who1)
 	if (n < ASL_read_fg || n > ASL_read_pfgh)
 		goto bad;
 	ASL_CHECK(asl, n, who1);
-	if (*M == n_con && *N == c_vars && *NZ == nzjac)
+	if (*M == n_con && *N == c_vars && NZ == nzjac)
 		return;
 	what_prog();
 	fprintf(Stderr,
  "%s: got M = %ld, N = %ld, NZ = %ld\nexpected M = %d, N = %d, NZ = %d\n",
-			who1, (long)*M, (long)*N, *NZ, n_con, c_vars, nzjac);
+			who1, (long)*M, (long)*N, NZ, n_con, c_vars, nzjac);
 	exit(1);
  bad:
 	badasl_ASL(asl, ASL_read_fg, who1);
@@ -740,7 +765,7 @@ Suf_read_ASL(EdRead *R, int readall)
 	SufDesc *D;
 	char *s, sufname[128];
 	const char *fmt;
-	int *d, isreal, i, k, n, nx, nx1;
+	int *d, i, isreal, k, n, nx, nx1;
 	real *r, t;
 
 	if (xscanf(R, "%d %d %127s", &k, &n, sufname) != 3)
@@ -866,8 +891,26 @@ No_derivs_ASL(const char *who)
  void
 flagsave_ASL(ASL *asl, int flags)
 {
-	int nc, nv, nz;
+	real t;
+	ssize_t nc, nv, nz;
 
+	t = nZc;
+	if (t >= 2147483648. /* 2^31 */) {
+		if (sizeof(size_t) <= 4) {
+			fprintf(Stderr, "\n*** Problem too large for 32-bit "
+					"addressing (%.g Jacobian nonzeros).\n", t);
+			exit(1);
+			}
+		else if (!(flags & (ASL_allow_Z | ASL_use_Z))) {
+			fprintf(Stderr, "\n*** Problem too large (%.g Jacobian nonzeros)\n", t);
+			exit(1);
+			}
+		else if (sizeof(((cgrad*)0)->goff) <= 4)
+			fprintf(Stderr, "\n*** Problem too large (%.g Jacobian nonzeros) for "
+				"jacval().\nRecompile ASL with \"#define ASL_big_goff\" "
+				"added to arith.h.\n", t);
+		flags |= ASL_use_Z;
+		}
 	asl->i.rflags = flags;
 	if (flags & ASL_cc_simplify && n_cc) {
 		if (ndcc < 0)
@@ -880,7 +923,7 @@ flagsave_ASL(ASL *asl, int flags)
 		}
 	nv = n_var + asl->i.nsufext[ASL_Sufkind_var];
 	nc = n_con + asl->i.nsufext[ASL_Sufkind_con];
-	nz = nzc + asl->i.nsufext[ASL_Sufkind_prob];
+	nz = nZc + asl->i.nsufext[ASL_Sufkind_prob];
 	if (!LUv) {
 		LUv = (real*)M1alloc(2*sizeof(real)*nv);
 		if (flags & ASL_sep_U_arrays)
@@ -1132,6 +1175,162 @@ get_vminv_ASL(ASL *asl)
 		if (x[i] < 0)
 			x[i] = j++;
 	return asl->i.vminv = x;
+	}
+
+ int
+ka_read_ASL(ASL *asl, EdRead *R, int mode, int **kap, size_t **kapZ)
+{
+	int flags, *kai;
+	size_t i, k, *ka, t;
+	int j;
+	unsigned Long u;
+
+	k = asl->i.n_var0;
+	if (!xscanf(R,"%d",&j) || j != k - 1)
+		return 1;
+	if ((i = k) < n_var)
+		i = n_var;
+	flags = asl->i.rflags;
+	if (flags & ASL_use_Z) {
+		*kap = kai = A_colstarts = 0;
+		if (!(ka = A_colstartsZ))
+			A_colstartsZ = ka = (size_t*)M1alloc((i+1)*Sizeof(size_t));
+		*kapZ = ka + 1;
+		}
+	else {
+		*kapZ = ka = A_colstartsZ = 0;
+		if (!(kai = A_colstarts))
+			A_colstarts = kai = (int*)M1alloc((i+1)*Sizeof(int));
+		*kap = kai + 1;
+		}
+	if (sizeof(int) == sizeof(size_t)) {
+		if (!ka)
+			ka = (size_t*)kai;
+		*ka++ = 0;
+		*ka++ = 0;	/* sic */
+		if (mode == 'K') {
+			t = 0;
+			while(--k > 0) {
+				if (!xscanf(R, "%d", &u))
+					return 1;
+				*ka++ = t += u;
+				}
+			}
+		else {
+			while(--k > 0) {
+				if (!xscanf(R, "%d", &u))
+					return 1;
+				*ka++ = u;
+				}
+			}
+		}
+	else if (flags & ASL_use_Z) {
+		*ka++ = 0;
+		*ka++ = 0;	/* sic */
+		if (mode == 'K') {
+			t = 0;
+			while(--k > 0) {
+				if (!xscanf(R, "%d", &u))
+					return 1;
+				*ka++ = t += u;
+				}
+			}
+		else {
+			while(--k > 0) {
+				if (!xscanf(R, "%d", &u))
+					return 1;
+				*ka++ = u;
+				}
+			}
+		}
+	else {
+		*kai++ = 0;
+		*kai++ = 0;	/* sic */
+		if (mode == 'K') {
+			t = 0;
+			while(--k > 0) {
+				if (!xscanf(R, "%d", &u))
+					return 1;
+				*kai++ = (int)(t += u);
+				}
+			}
+		else {
+			while(--k > 0) {
+				if (!xscanf(R, "%d", &u))
+					return 1;
+				*kai++ = (int)u;
+				}
+			}
+		}
+	return 0;
+	}
+
+ void
+goff_comp_ASL(ASL *asl)
+{
+	cgrad *cg, **cgx, **cgxe;
+	size_t *ka;
+
+
+	/* The following "if" test and either its "then" or its "else" block */
+	/* should be optimized away. */
+
+	if (sizeof(size_t) == sizeof(int)) {
+		cgx = Cgrad;
+		cgxe = cgx + asl->i.n_con0;
+		if (!(ka = A_colstartsZ))
+			ka = (size_t*)A_colstarts;
+		++ka;
+		while(cgx < cgxe)
+			for(cg = *cgx++; cg; cg = cg->next)
+				cg->goff = ka[cg->varno]++;
+		}
+	else {
+		int *kai;
+
+		cgx = Cgrad;
+		cgxe = cgx + asl->i.n_con0;
+		if ((kai = A_colstarts)) {
+			++kai;
+			while(cgx < cgxe)
+				for(cg = *cgx++; cg; cg = cg->next)
+					cg->goff = kai[cg->varno]++;
+			}
+		else {
+			ka = A_colstartsZ + 1;
+			while(cgx < cgxe)
+				for(cg = *cgx++; cg; cg = cg->next)
+					cg->goff = ka[cg->varno]++;
+			}
+		}
+	}
+
+ void
+colstart_inc_ASL(ASL *asl)
+{
+	size_t *ka, *kae;
+
+	ka = A_colstartsZ;
+	if (sizeof(size_t) == sizeof(int)) {
+		if (!ka)
+			ka = (size_t*)A_colstarts;
+		kae = ka + asl->i.n_var0;
+		while(ka <= kae)
+			++*ka++;
+		}
+	else if (ka) {
+		kae = ka + asl->i.n_var0;
+		while(ka <= kae)
+			++*ka++;
+		}
+	else {
+		int *kai, *kaie;
+
+		kai = A_colstarts;
+		kaie = kai + asl->i.n_var0;
+		while(kai <= kaie)
+			++*kai++;
+		}
 	}
 
 #ifdef __cplusplus

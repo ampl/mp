@@ -125,6 +125,7 @@ jac0dim_ASL(ASL *asl, char *stub, ftnlen stub_len)
 	FILE *nl;
 	int i, k, nlv;
 	char *s, *se;
+	const char *opfmt;
 	EdRead ER, *R;
 
 	if (!asl)
@@ -157,6 +158,7 @@ jac0dim_ASL(ASL *asl, char *stub, ftnlen stub_len)
 	R->Line = 0;
 	s = read_line(R);
 	binary_nl = 0;
+	opfmt = "%d";
 	switch(*s) {
 #ifdef DEPRECATED
 		case 'E':	/* deprecated "-oe" format */
@@ -182,9 +184,24 @@ jac0dim_ASL(ASL *asl, char *stub, ftnlen stub_len)
 			}
 			break;
 #endif
+		case 'z':
+		case 'Z':
+			opfmt = "%hd";
+		case 'B':
 		case 'b':
 			binary_nl = 1;
+			xscanf = bscanf;
+			goto have_xscanf;
+		case 'h':
+		case 'H':
+			opfmt = "%hd";
+			binary_nl = 1;
+			xscanf = hscanf;
+			goto have_xscanf;
+		case 'G':
 		case 'g':
+			xscanf = ascanf;
+ have_xscanf:
 			if ((k = ampl_options[0] = strtol(++s, &se, 10))) {
 				if (k > 9) {
 					fprintf(Stderr,
@@ -248,7 +265,13 @@ jac0dim_ASL(ASL *asl, char *stub, ftnlen stub_len)
 				if (k != 5)
 					badints(R,k,5);
 				}
-			read2(R, &nzc, &nzo);
+			/* formerly read2(R, &nzc, &nzo); */
+			s = read_line(R);
+			k = Sscanf(s, " %D %D", &nZc, &nZo);
+			if (k != 2)
+				badints(R, k, 2);
+			nzc = nZc;
+			nzo = nZo;
 			read2(R, &maxrownamelen, &maxcolnamelen);
 			s = read_line(R);
 			k = Sscanf(s, " %d %d %d %d %d", &comb, &comc, &como,
@@ -263,6 +286,7 @@ jac0dim_ASL(ASL *asl, char *stub, ftnlen stub_len)
 		"jacdim: got M = %d, N = %d, NO = %d\n", n_con, n_var, n_obj);
 		exit(1);
 		}
+	asl->i.opfmt = opfmt;
 	asl->i.n_var0 = asl->i.n_var1 = n_var;
 	asl->i.n_con0 = asl->i.n_con1 = n_con;
 	if ((nlv = nlvc) < nlvo)

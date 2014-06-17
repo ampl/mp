@@ -1,4 +1,3 @@
-20130607
-  tableproxy.c, tableprxyver.h: fix a bug in the tableproxy program
-that could lead to duplicate rows.  Thanks go to Victor Zverovich
-for this fix.
+20140525
+  tableproxy.c: Read_ampl_proxy: when table reading is finished and
+TI->Errmsg is set, return DB_Error rather than DB_Done.

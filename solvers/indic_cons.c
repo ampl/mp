@@ -103,12 +103,10 @@ bincheck(LCADJ_Info *lci, expr *e)
  static void
 new_tchunk(LCADJ_Info *lci, int tneed)
 {
-	ASL *asl;
 	Tchunk *tc;
 
 	if (tneed < Gulp)
 		tneed = Gulp;
-	asl = lci->asl;
 	tc = (Tchunk*)Malloc((tneed+1)*sizeof(real));
 	tc->prev = lci->tchunks;
 	lci->tchunks = tc;
@@ -161,6 +159,76 @@ free_og(LCADJ_Info *lci, ograd *og1, ograd *og1e)
 #define voffset_of(t,c) ((void *)&((t*)0)->c)
 
  static ograd *
+finish_plus(LCADJ_Info *lci, ograd *og1, ograd *og2, ograd **oglp)
+{
+	ograd *og, *og0, *oge, **ogp;
+	ssize_t d;
+
+	og0 = oge = 0;
+	ogp = &og0;
+	for(;;) {
+		d = og1->varno - og2->varno;
+		if (d < 0) {
+			*ogp = og1;
+			oge = og1;
+			if ((og1 = og1->next)) {
+				ogp = &oge->next;
+				continue;
+				}
+			oge->next = og2;
+ finish_og2:
+			while((og = og2->next))
+				og2 = og;
+			*oglp = og2;
+			break;
+			}
+		if (d > 0) {
+			*ogp = og2;
+			oge = og2;
+			if ((og2 = og2->next)) {
+				ogp = &oge->next;
+				continue;
+				}
+			oge->next = og1;
+ finish_og1:
+			while((og = og1->next))
+				og1 = og;
+			*oglp = og1;
+			break;
+			}
+		og1->coef += og2->coef;
+		og = og2->next;
+		og2->next = lci->freeog;
+		lci->freeog = og2;
+		og2 = og;
+		if (og1->coef != 0.) {
+			*ogp = oge = og1;
+			ogp = &og1->next;
+			og1 = *ogp;
+			}
+		else {
+			og = og1->next;
+			og1->next = lci->freeog;
+			lci->freeog = og1;
+			og1 = og;
+			}
+		if (!og1) {
+			if ((*ogp = og2))
+				goto finish_og2;
+			*oglp = oge;
+			break;
+			}
+		if (!og2) {
+			*ogp = og1;
+			goto finish_og1;
+			}
+		}
+	if (!og0)
+		og0 = *oglp = new_og(lci, -1, 0.);
+	return og0;
+	}
+
+ static ograd *
 linform(LCADJ_Info *lci, expr *e, ograd **oglp)
 {
 	ASL_fg *asl;
@@ -185,31 +253,7 @@ linform(LCADJ_Info *lci, expr *e, ograd **oglp)
 			free_og(lci, og1, og1e);
 			return og2;
 			}
- finish_plus:
-		if (og1->varno > og2->varno) {
-			og = og1;
-			og1 = og2;
-			og2 = og;
-			og = og1e;
-			og1e = og2e;
-			og2e = og;
-			}
-		else for(og = og1; og; og = og->next) {
-			if (!og2) {
-				og2e = og1e;
-				break;
-				}
-			if (og2->varno != og->varno)
-				break;
-			og->coef += og2->coef;
-			og2x = og2->next;
-			og2->next = lci->freeog;
-			lci->freeog = og2;
-			og2 = og2x;
-			}
-		og1e->next = og2;
-		*oglp = og2e;
-		return og1;
+		return finish_plus(lci, og1, og2, oglp);
 
 	  case OPMINUS:
 		if (!(og1 = linform(lci, e->L.e, &og1e)))
@@ -220,7 +264,7 @@ linform(LCADJ_Info *lci, expr *e, ograd **oglp)
 			}
 		for(og = og2; og; og = og->next)
 			og->coef = -og->coef;
-		goto finish_plus;
+		return finish_plus(lci, og1, og2, oglp);
 
 	  case OPUMINUS:
 		if ((og1 = linform(lci, e->L.e, oglp))) {
@@ -361,9 +405,9 @@ intcomp(const void *a, const void *b, void *v)
 lincheck(LCADJ_Info *lci, expr *e, Lconstr ***pplc)
 {
 	Lconstr *lc;
-	expr *e1, *e2, **ep1, **ep2;
+	expr **ep1, **ep2;
 	int i, j, k, m, *y, *z;
-	ograd *freeog, *og, *og1, *og1e, *og2, **s;
+	ograd *freeog, *og, *og1, *og1e, *og2, *og2e, **s;
 	real *LU, rhs, *x;
 
  top:
@@ -384,20 +428,23 @@ lincheck(LCADJ_Info *lci, expr *e, Lconstr ***pplc)
 	  case EQ: k = 5; break;
 	  default: return 1;
 	  }
-	e1 = e->L.e;
-	e2 = e->R.e;
-	if ((Intcast e1->op) == OPNUM) {
-		rhs = ((expr_n*)e1)->v;
-		e1 = e2;
-		if (k != 5)
-			k = 5 - k;
+	if (!(og1 = linform(lci, e->L.e, &og1e)))
+		return 1;
+	if (!(og2 = linform(lci, e->R.e, &og2e))) {
+		free_og(lci, og1, og1e);
+		return 1;
 		}
-	else if ((Intcast e2->op) != OPNUM)
-		return 1;
-	else
-		rhs = ((expr_n*)e2)->v;
-	if (!(og1 = linform(lci,e1,&og1e)))
-		return 1;
+	for(og = og2; og; og = og->next)
+		og->coef = -og->coef;
+	rhs = 0.;
+	og1 = finish_plus(lci, og1, og2, &og1e);
+	if (og1 && og1->varno < 0) {
+		rhs = -og1->coef;
+		og2 = og1->next;
+		og1->next = lci->freeog;
+		lci->freeog = og1;
+		og1 = og2;
+		}
 	s = lci->s;
 	z = lci->z;
 	m = 0;

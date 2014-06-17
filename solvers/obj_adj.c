@@ -43,7 +43,7 @@ obj_adj1(ASL *asl, int no)
 	ograd *og;
         ps_func *P;
         ps_func2 *P2;
-	real *Lc, *Lv, *Uc, *Uv, c1, c2, rhs, t;
+	real *Lc, *Lv, *Uc, *Uv, c1, c2, *pi, rhs, t;
 
 	op = f_OPNUM_ASL;
 	switch (asl->i.ASLtype) {
@@ -154,8 +154,8 @@ obj_adj1(ASL *asl, int no)
 		--nlc;
 		++nlo;
 		}
-	nzc -= k;
-	nzo += k - 1;
+	nzc = nZc -= k;
+	nzo = nZo = k - 1;
 	pod = asl->i.Or;
 	od = (Objrep*)M1alloc(sizeof(Objrep)
 		+ (pod ? 0 : n_obj*sizeof(Objrep*)));
@@ -174,6 +174,7 @@ obj_adj1(ASL *asl, int no)
 	od->nxval = -1;
 	od->opify = 0;
 	od->f = 0.;
+	od->cg = od->cg0 = 0;
 
 	pcg = &Cgrd[co];
 	while((cg = *pcg) != cgo)
@@ -183,6 +184,7 @@ obj_adj1(ASL *asl, int no)
 		Cgrd0[cm[co]] = Cgrd[co];
 
 	m = --n_con;
+	--n_conjac[1];
 	if (n_conjac[1] > m)
 		n_conjac[1] = m;
 	if (co != m) {
@@ -195,6 +197,9 @@ obj_adj1(ASL *asl, int no)
 			if (Cvar)
 				Cvar[i] = Cvar[j];
 			}
+		if ((pi = pi0))
+			for(i = co; i < m; ++i)
+				pi[i] = pi[i+1];
 		cm[m] = -1;
 		}
 	for(i = co; i < m; ++i) {
@@ -209,6 +214,9 @@ obj_adj1(ASL *asl, int no)
 		for(i = cv; i < n; ++i)
 			vm[i] = vm[i+1];
 		vm[n] = -1;
+		if ((pi = X0))
+			for(i = cv; i < n; ++i)
+				pi[i] = pi[i+1];
 		}
 	for(i = cv; i < n; ++i) {
 		*Lv = Lv[incv];
@@ -226,11 +234,21 @@ obj_adj1(ASL *asl, int no)
 objval_adj(ASL *asl, int no, real *X, fint *nerror)
 {
 	Objrep *od;
+	cgrad *cg, *cg0, **pcg;
+	int i;
 	real c;
 
 	if (!(od = asl->i.Or[no]))
 		return asl->p.Objval_nomap(asl, no, X, nerror);
-	c = asl->p.Conival_nomap(asl, od->ico, X, nerror);
+	if ((cg = od->cg)) {
+		pcg = &asl->i.Cgrad0[i = od->ico];
+		cg0 = *pcg;
+		*pcg = cg;
+		c = asl->p.Conival_nomap(asl, od->ico, X, nerror);
+		*pcg = cg0;
+		}
+	else
+		c = asl->p.Conival_nomap(asl, od->ico, X, nerror);
 	if (nerror && *nerror)
 		return 0.;
 	od->nxval = asl->i.nxval;
@@ -257,7 +275,9 @@ objgrd_adj(ASL *asl, int no, real *X, real *G, fint *nerror)
 	asl->i.congrd_mode = k;
 	if ((c = od->c12) != 1. && (!nerror || !*nerror)) {
 		vmi = get_vminv_ASL(asl);
-		for(gr = asl->i.Cgrad0[od->ico]; gr; gr = gr->next)
+		if (!(gr = od->cg))
+			gr = asl->i.Cgrad0[od->ico];
+		for(; gr; gr = gr->next)
 			G[vmi[gr->varno]] *= c;
 		}
 	}
@@ -421,10 +441,11 @@ obj_adj_ASL(ASL *asl)
 {
 	Objrep *od, **pod;
 	cgrad *cg, **cgp, **cgp0;
-	int *cs, *cs0, *cs1, ftn, i, j, n, nc0, ng, no, nobj, nv0, nz;
+	int *cs, *cs0, ftn, i, j, n, nc0, ng, no, nobj, nv0, nz;
 	int *rn, *rn0, *rn1, *rne, *zc, *zv;
 	ograd *og, **ogp, **ogp0;
 	real *a, *a1, t;
+	size_t *csZ, *csZ0;
 
 	nobj = n_obj;
 	if (nobj <= 0)
@@ -432,6 +453,13 @@ obj_adj_ASL(ASL *asl)
 	nc0 = n_con;
 	if (nc0 <= 0)
 		return;
+	ogp0 = Ograd;
+	for(ogp = ogp0 + nobj;;) {
+		if (ogp <= ogp0)
+			return;	/* no candidates */
+		if ((og = *--ogp) && !og->next)
+			break;
+		}
 	nv0 = n_var;
 	ftn = Fortran;
 	if ((a = A_vals)) {
@@ -439,23 +467,41 @@ obj_adj_ASL(ASL *asl)
 		cg = (cgrad*)M1alloc(nz*sizeof(cgrad) + nc0*sizeof(cgrad*));
 		Cgrad = cgp0 = (cgrad**)(cg + nz);
 		memset(cgp0, 0, nc0*sizeof(cgrad*));
-		cs0 = A_colstarts;
 		n = nv0;
-		cs = cs0 + n;
 		rn0 = A_rownos;
 		rn = rn0 + nz;
 		a += nz;
-		while(cs > cs0) {
-			rn1 = rn0 + *--cs - ftn;
-			--n;
-			while(rn > rn1) {
-				cgp = cgp0 + *--rn - ftn;
-				cg->next = *cgp;
-				*cgp = cg;
-				cg->varno = n;
-				cg->coef = *--a;
-				cg->goff = rn - rn0;
-				++cg;
+		if ((cs0 = A_colstarts)) {
+			cs = cs0 + n;
+			while(cs > cs0) {
+				rn1 = rn0 + *--cs - ftn;
+				--n;
+				while(rn > rn1) {
+					cgp = cgp0 + *--rn - ftn;
+					cg->next = *cgp;
+					*cgp = cg;
+					cg->varno = n;
+					cg->coef = *--a;
+					cg->goff = rn - rn0;
+					++cg;
+					}
+				}
+			}
+		else {
+			csZ0 = A_colstartsZ;
+			csZ = csZ0 + n;
+			while(csZ > csZ0) {
+				rn1 = rn0 + *--csZ - ftn;
+				--n;
+				while(rn > rn1) {
+					cgp = cgp0 + *--rn - ftn;
+					cg->next = *cgp;
+					*cgp = cg;
+					cg->varno = n;
+					cg->coef = *--a;
+					cg->goff = rn - rn0;
+					++cg;
+					}
 				}
 			}
 		}
@@ -511,25 +557,48 @@ obj_adj_ASL(ASL *asl)
 		j = ftn;
 		for(i = 0; i < nc0; ++i)
 			zc[i] = zc[i] ? -1 : j++;
-		cs = cs0 = cs1 = A_colstarts;
 		rn = rn0 = rn1 = A_rownos;
 		a = a1 = A_vals;
-		for(i = 0; i < nv0; ++i) {
-			rne = rn0 + cs0[i+1] - ftn;
-			if (zv[i]) {
-				a += rne - rn;
-				rn = rne;
-				}
-			else {
-				while(rn < rne) {
-					j = *rn++ - ftn;
-					if ((j = zc[j]) >= 0) {
-						*rn1++ = j;
-						*a1++ = *a;
-						}
-					++a;
+		if ((cs = A_colstarts)) {
+			cs0 = cs;
+			for(i = 0; i < nv0; ++i) {
+				rne = rn0 + cs0[i+1] - ftn;
+				if (zv[i]) {
+					a += rne - rn;
+					rn = rne;
 					}
-				*++cs1 = rn1 - rn0 + ftn;
+				else {
+					while(rn < rne) {
+						j = *rn++ - ftn;
+						if ((j = zc[j]) >= 0) {
+							*rn1++ = j;
+							*a1++ = *a;
+							}
+						++a;
+						}
+					*++cs = rn1 - rn0 + ftn;
+					}
+				}
+			}
+		else {
+			csZ = csZ0 = A_colstartsZ;
+			for(i = 0; i < nv0; ++i) {
+				rne = rn0 + csZ0[i+1] - ftn;
+				if (zv[i]) {
+					a += rne - rn;
+					rn = rne;
+					}
+				else {
+					while(rn < rne) {
+						j = *rn++ - ftn;
+						if ((j = zc[j]) >= 0) {
+							*rn1++ = j;
+							*a1++ = *a;
+							}
+						++a;
+						}
+					*++csZ = rn1 - rn0 + ftn;
+					}
 				}
 			}
 		}
@@ -548,14 +617,19 @@ obj_adj_xy_ASL(ASL *asl, real *x, real *x0, real *y)
 	for(no = opified = 0; no < nobj; ++no)
 		if ((od = odp[no])) {
 			if (od->opify && !opified) {
-				qp_opify_ASL(asl);
+				od->opify(asl);
 				opified = 1;
 				}
-			if (od->nxval != asl->i.nxval) {
+			if (od->nxval != asl->i.nxval || od->cg0) {
 				nerror = 0;
-				cgp = asl->i.Cgrad0 + od->ico;
+				if (!(cgp = asl->i.Cgrad0))
+					cgp = asl->i.Cgrad0 = asl->i.Cgrad_;
+				cgp += od->ico;
 				cgsave = *cgp;
-				*cgp = od->cg;
+				if (od->cg0)
+					*cgp = od->cg0;
+				else if (od->cg)
+					*cgp = od->cg;
 				od->f = objval_adj(asl, no, x0, &nerror);
 				*cgp = cgsave;
 				if (nerror)

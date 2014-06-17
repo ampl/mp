@@ -796,25 +796,87 @@ xpsgchk(ASL_pfgh *asl, ps_func *f0, int *xv, int n, int nx,
  void
 xpsg_check_ASL(ASL_pfgh *asl, int nobj, real *ow, real *y)
 {
-	int nx, oxk, *xv;
+	int i, nc, no, nx, nz, oxk, tno, *xv;
 	ps_func *f;
-	real *x;
+	real t, *x;
 
 	if (x0kind == ASL_first_x) {
 		if (!(x = X0))
 			memset(x = Lastx, 0, n_var*sizeof(real));
 		xp_check_ASL(asl, x);
 		}
-	nx = asl->i.nxval;
+	nc = nlc;
+	tno = -1;
+	if (!(no = nlo)) {
+		if (!nc)
+			return;
+		ow = 0;
+		}
+	else if (ow) {
+		for(i = 0; i < no; ++i) {
+			if ((t = ow[i])) {
+				if (t != 1. || tno >= 0) {
+					tno = -2;
+					break;
+					}
+				tno = i;
+				}
+			}
+		}
+	else if (nobj >= 0 && nobj < nlo)
+		tno = nobj;
+	if (!(x = asl->P.oyow))
+		asl->P.oyow = x = (real*)M1alloc((nc + no)*sizeof(real));
+	else {
+		if (asl->P.onxval != asl->i.nxval
+		 || asl->P.onobj != tno)
+			goto work;
+		if (tno == -2 && memcmp(ow, x, no*sizeof(real)))
+			goto work;
+		if (nc) {
+			if (y) {
+				if (memcmp(y, x+no, nc*sizeof(real)))
+					goto work;
+				}
+			else if (asl->P.nynz)
+				goto work;
+			}
+		return;
+		}
+ work:
+	if (asl->P.ihdcur)
+		ihd_clear_ASL(asl);
+	asl->P.onxval = nx = asl->i.nxval;
+	asl->P.onobj = tno;
+	if (no) {
+		if (ow)
+			memcpy(x, ow, no*sizeof(real));
+		else
+			memset(x, 0, no*sizeof(real));
+		x += no;
+		}
+	nz = 0;
+	if (nc) {
+		if (y) {
+			for(i = 0; i < nc; ++i)
+				if ((x[i] = y[i]))
+					++nz;
+			}
+		else
+			memset(x, 0, nc*sizeof(real));
+		}
+	else
+		y = 0;
+	asl->P.nynz = nz;
 	oxk = asl->i.x_known;
 	asl->i.x_known = 1;
 	if (y)
-		xpsgchk(asl, asl->P.cps, asl->i.ncxval, nlc,
+		xpsgchk(asl, asl->P.cps, asl->i.ncxval, nc,
 			nx, conpival_ASL, conpgrd_ASL, y, oxk);
 	f = asl->P.ops;
 	xv = asl->i.noxval;
 	if (nobj >= 0 && nobj < n_obj) {
-		if (nobj >= nlo)
+		if (nobj >= no)
 			goto done;
 		if (ow) {
 			ow += nobj;
@@ -829,9 +891,10 @@ xpsg_check_ASL(ASL_pfgh *asl, int nobj, real *ow, real *y)
 		if (f->nxval != nx)
 			objpgrd_ASL((ASL*)asl, nobj, Lastx, 0, 0);
 		}
-	else if (ow && nlo)
-		xpsgchk(asl, f, xv, nlo,
+	else if (ow && no)
+		xpsgchk(asl, f, xv, no,
 			nx, objpval_ASL, objpgrd_ASL, ow, oxk);
  done:
 	asl->i.x_known = oxk;
+	return;
 	}

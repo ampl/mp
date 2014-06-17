@@ -25,23 +25,20 @@ THIS SOFTWARE.
 #include "jac2dim.h"
 
  void
-#ifdef KR_headers
-com2eval_ASL(asl, i, ie) ASL_fgh *asl; int i; int ie;
-#else
 com2eval_ASL(ASL_fgh *asl, int i, int ie)
-#endif
 {
-	register cexp *c, *ce;
-	register expr *e;
-	register expr_v *V = var_ex + i;
-	register linpart *L, *Le;
+	cexp *c, *ce;
+	expr *e;
+	expr_v *V = var_ex + i;
+	linpart *L, *Le;
 	real t;
+
 	c = cexps + i;
 	ce = cexps + ie;
 	do {
 		e = c->e;
 		t = (*e->op)(e C_ASL);
-		if (L = c->L)
+		if ((L = c->L))
 			for(Le = L + c->nlin; L < Le; L++)
 				t += L->fac * ((expr_v*)L->v.vp)->v;
 		(*V++).v = t;
@@ -50,16 +47,12 @@ com2eval_ASL(ASL_fgh *asl, int i, int ie)
 	}
 
  void
-#ifdef KR_headers
-com1eval(asl, i, n) ASL_fgh *asl; int i; int n;
-#else
 com1eval(ASL_fgh *asl, int i, int n)
-#endif
 {
-	register cexp1 *c, *ce;
-	register expr *e;
-	register expr_v *V;
-	register linpart *L, *Le;
+	cexp1 *c, *ce;
+	expr *e;
+	expr_v *V;
+	linpart *L, *Le;
 	real t;
 
 	V = var_ex1 + i;
@@ -68,7 +61,7 @@ com1eval(ASL_fgh *asl, int i, int n)
 	do {
 		e = c->e;
 		t = (*e->op)(e C_ASL);
-		if (L = c->L)
+		if ((L = c->L))
 			for(Le = L + c->nlin; L < Le; L++)
 				t += L->fac * ((expr_v*)L->v.vp)->v;
 		(*V++).v = t;
@@ -77,39 +70,31 @@ com1eval(ASL_fgh *asl, int i, int n)
 	}
 
  void
-#ifdef KR_headers
-funnelset(asl, f) ASL_fgh *asl; register funnel *f;
-#else
-funnelset(ASL_fgh *asl, register funnel *f)
-#endif
+funnelset(ASL_fgh *asl, funnel *f)
 {
-	register derp	*d;
-	register cplist	*cl;
+	cplist	*cl;
+	derp	*d;
 
 	for(; f; f = f->next) {
 		memset(adjoints_nv1, 0, f->fcde.zaplen);
 		cl = f->cl;
 		do *cl->ca.rp = 0;
-			while(cl = cl->next);
+			while((cl = cl->next));
 		d = f->fcde.d;
 		*d->b.rp = 1.;
 		do *d->a.rp += *d->b.rp * *d->c.rp;
-			while(d = d->next);
+			while((d = d->next));
 		cl = f->cl;
 		do *cl->cfa = *cl->ca.rp;
-			while(cl = cl->next);
+			while((cl = cl->next));
 		}
 	}
 
  static void
-#ifdef KR_headers
-hv_fwd(e) register expr *e;
-#else
-hv_fwd(register expr *e)
-#endif
+hv_fwd(expr *e)
 {
-	register expr *e1, **ep;
 	argpair *da, *dae;
+	expr *e1, **ep;
 	real dO;
 
 	for(; e; e = e->fwd) {
@@ -133,11 +118,11 @@ hv_fwd(register expr *e)
 
 		case Hv_vararg:
 		case Hv_if:
-			if (e1 = ((expr_va *)e)->valf) {
+			if ((e1 = ((expr_va *)e)->valf)) {
 				hv_fwd(e1);
 				e->dO.r = ((expr_va *)e)->vale->dO.r;
 				}
-			else if (e1 = ((expr_va *)e)->val)
+			else if ((e1 = ((expr_va *)e)->val))
 				e->dO.r = e1->dO.r;
 			else
 				e->dO.r = 0;
@@ -149,7 +134,7 @@ hv_fwd(register expr *e)
 
 		case Hv_sumlist:
 			ep = e->R.ep;
-			for(dO = 0; e1 = *ep; ep++)
+			for(dO = 0; (e1 = *ep); ep++)
 				dO += e1->dO.r;
 			e->dO.r = dO;
 			break;
@@ -194,11 +179,7 @@ hv_fwd(register expr *e)
 	}
 
  static void
-#ifdef KR_headers
-func_back(f) expr_f *f;
-#else
 func_back(expr_f *f)
-#endif
 {
 	argpair *da, *da1, *dae;
 	expr *e;
@@ -222,16 +203,12 @@ func_back(expr_f *f)
 	}
 
  static void
-#ifdef KR_headers
-hv_back(e) register expr *e;
-#else
-hv_back(register expr *e)
-#endif
+hv_back(expr *e)
 {
-	register expr *e1, **ep, *e2;
+	expr *e1, **ep, *e2;
 	real adO, t1, t2;
 
-	if (!e || !e->aO && !e->adO)
+	if (!e || (!e->aO && !e->adO))
 		return;
 	for(; e; e = e->bak)
 	    switch(e->a) {
@@ -261,7 +238,7 @@ hv_back(register expr *e)
 
 		case Hv_vararg:
 		case Hv_if:
-			if (e1 = ((expr_va *)e)->vale) {
+			if ((e1 = ((expr_va *)e)->vale)) {
 				e1->aO = e->aO;
 				e1->adO = e->adO;
 				hv_back(e1);
@@ -283,7 +260,7 @@ hv_back(register expr *e)
 			ep = e->R.ep;
 			t1 = e->aO;
 			t2 = e->adO;
-			while(e1 = *ep++) {
+			while((e1 = *ep++)) {
 				e1->aO += t1;
 				e1->adO += t2;
 				}
@@ -362,13 +339,9 @@ hv_back(register expr *e)
 	}
 
  static void
-#ifdef KR_headers
-hv_fwd0(c, v) register cexp *c; register expr_v *v;
-#else
-hv_fwd0(register cexp *c, register expr_v *v)
-#endif
+hv_fwd0(cexp *c, expr_v *v)
 {
-	register linpart *L, *Le;
+	linpart *L, *Le;
 	real x;
 
 	v->aO = v->adO = 0;
@@ -380,22 +353,18 @@ hv_fwd0(register cexp *c, register expr_v *v)
 		x = c->e->dO.r;
 	else
 		x = 0;
-	if (L = c->L)
+	if ((L = c->L))
 		for(Le = L + c->nlin; L < Le; L++)
 			x += L->fac * ((expr_v*)L->v.vp)->dO.r;
 	v->dO.r = x;
 	}
 
  static void
-#ifdef KR_headers
-hv_fwd1(asl, d) ASL_fgh *asl; cde *d;
-#else
 hv_fwd1(ASL_fgh *asl, cde *d)
-#endif
 {
-	int i;
 	cexp1 *c, *ce;
 	expr_v *v;
+	int i;
 
 	i = d->com11;
 	v = var_ex1 + i;
@@ -406,16 +375,12 @@ hv_fwd1(ASL_fgh *asl, cde *d)
 	}
 
  static void
-#ifdef KR_headers
-hv_back0(asl, i, n) ASL_fgh *asl; int i; int n;
-#else
 hv_back0(ASL_fgh *asl, int i, int n)
-#endif
 {
 	cexp *c, *ce;
 	expr *e;
 	expr_v *v;
-	register linpart *L, *Le;
+	linpart *L, *Le;
 	real t;
 
 	v = var_ex + (i + n);
@@ -427,7 +392,7 @@ hv_back0(ASL_fgh *asl, int i, int n)
 		if ((t = v->aO) && (L = c->L))
 			for(Le = L + c->nlin; L < Le; L++)
 				((expr_v*)L->v.vp)->aO += t * L->fac;
-		if (e = c->ee) {
+		if ((e = c->ee)) {
 			e->aO = t;
 			e->adO = v->adO;
 			hv_back(e);
@@ -441,17 +406,13 @@ hv_back0(ASL_fgh *asl, int i, int n)
 	}
 
  static void
-#ifdef KR_headers
-hv_back1(asl, d) ASL_fgh *asl; cde *d;
-#else
 hv_back1(ASL_fgh *asl, cde *d)
-#endif
 {
-	int i;
 	cexp1 *c, *ce;
 	expr *e;
 	expr_v *v;
-	register linpart *L, *Le;
+	int i;
+	linpart *L, *Le;
 	real t;
 
 	i = d->com11 + d->n_com1;
@@ -464,7 +425,7 @@ hv_back1(ASL_fgh *asl, cde *d)
 		if ((t = v->aO) && (L = c->L))
 			for(Le = L + c->nlin; L < Le; L++)
 				((expr_v*)L->v.vp)->aO += t * L->fac;
-		if (e = c->ee) {
+		if ((e = c->ee)) {
 			e->aO = t;
 			e->adO = v->adO;
 			hv_back(e);
@@ -480,23 +441,18 @@ hv_back1(ASL_fgh *asl, cde *d)
 #undef asl
 
  void
-#ifdef KR_headers
-hv2comp_ASL(a, hv, p, nobj, ow, y0)
-	ASL *a; real *hv, *p, *ow, *y0; int nobj;
-#else
 hv2comp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y0)
-#endif
 	/* p = direction */
 	/* y = Lagrange multipliers */
 	/* hv = result */
 {
-	expr_v *x, *xe;
-	expr *e;
-	real *cscale, t, *vscale, *y, *ye, yi;
+	ASL_fgh *asl;
 	cde *d, *d0;
 	cexp *c, *ce;
-	ASL_fgh *asl;
+	expr *e;
+	expr_v *x, *xe;
 	int n, no, noe;
+	real *cscale, t, *vscale, *y, *ye, yi;
 
 	ASL_CHECK(a, ASL_read_fgh, "hv2comp");
 	asl = (ASL_fgh*)a;
@@ -518,14 +474,14 @@ hv2comp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y0)
 		x->dO.r = *p++;
 		x->aO = x->adO = 0;
 		}
-	if (vscale = asl->i.vscale)
+	if ((vscale = asl->i.vscale))
 		for(x = var_e; x < xe; x++)
 			x->dO.r *= *vscale++;
 	x = var_ex;
 	if (comb)
 		for(c = cexps, ce = cexpsc; c < ce; c++)
 			hv_fwd0(c, x++);
-	if (y = y0) {
+	if ((y = y0)) {
 		ye = y + n_con;
 		d = con_de;
 		for(y0 = 0; y < ye; y++, d++)
@@ -546,7 +502,7 @@ hv2comp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y0)
 				}
 		}
 	for(; no < noe; no++)
-	    if (t = *ow++) {
+	    if ((t = *ow++)) {
 		d = obj_de + no;
 		if (cexpso < cexpse) {
 			x = var_ex + combc;
@@ -557,7 +513,7 @@ hv2comp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y0)
 			}
 		if (d->n_com1)
 			hv_fwd1(asl, d);
-		if (e = d->ef) {
+		if ((e = d->ef)) {
 			hv_fwd(e);
 			e = d->ee;
 			e->aO = 0;
@@ -574,24 +530,27 @@ hv2comp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y0)
 			hv_back0(asl, combc, como);
 		}
 	if (y0) {
-		if (cscale = a->i.lscale)
+		if ((cscale = a->i.lscale))
 			cscale += d0 - con_de;
 		do {
-			yi = *y0++;
-			if (cscale)
-				yi *= *cscale++;
-			if (!(e = d0->ee)) {
-				if ((e = d0->e)->op != f_OPNUM) {
+			if ((yi = *y0++)) {
+				if (cscale)
+					yi *= *cscale++;
+				if (!(e = d0->ee)) {
+					if ((e = d0->e)->op != f_OPNUM) {
+						e->aO = 0;
+						e->adO = yi;
+						}
+					}
+				else if ((e->adO = yi)) {
 					e->aO = 0;
-					e->adO = yi;
+					hv_back(e);
+					if (d0->n_com1)
+						hv_back1(asl, d0);
 					}
 				}
-			else if (e->adO = yi) {
-				e->aO = 0;
-				hv_back(e);
-				if (d0->n_com1)
-					hv_back1(asl, d0);
-				}
+			else if (cscale)
+				++cscale;
 			d0++;
 			}
 			while(y0 < ye);
@@ -607,4 +566,352 @@ hv2comp_ASL(ASL *a, real *hv, real *p, int nobj, real *ow, real *y0)
 	else
 		for(; x < xe; x++)
 			*hv++ = x->aO;
+	}
+
+ void
+hv2compd_ASL(ASL *a, real *hv, real *p, int co)
+	/* p = direction */
+	/* hv = result */
+	/* co >= 0: behave like hv2comp_ASL with nobj = -1, ow = 0, y[i] = i == co ? 1. : 0. */
+	/* co < 0: behave like hv2comp_ASL with nobj = -1 - co, ow = 0, y = 0 */
+{
+	ASL_fgh *asl;
+	cde *d;
+	cexp *c, *ce;
+	cgrad *cg, *cg0;
+	expr *e;
+	expr_v *x, *x0;
+	int n, no;
+	ograd *og;
+	real *cscale, t, *vscale;
+	varno_t i;
+
+	ASL_CHECK(a, ASL_read_fgh, "hv2comp");
+	asl = (ASL_fgh*)a;
+
+	n = n_var;
+	memset(hv, 0, n*sizeof(real));
+
+	no = -1 - co;
+	if (co >= nlc || no >= nlo)
+		return;
+	cg0 = 0;
+	vscale = asl->i.vscale;
+	x0 = var_e;
+	if (co >= 0) {
+		cg = cg0 = Cgrad[co];
+		if (vscale) {
+			for(; cg; cg = cg->next) {
+				i = cg->varno;
+				x = x0 + i;
+				x->dO.r = p[i]*vscale[i];
+				x->aO = x->adO = 0.;
+				}
+			}
+		else {
+			for(; cg; cg = cg->next) {
+				i = cg->varno;
+				x = x0 + i;
+				x->dO.r = p[i];
+				x->aO = x->adO = 0.;
+				}
+			}
+		}
+	else {
+		og = Ograd[no];
+		if (vscale) {
+			for(; og; og = og->next) {
+				i = og->varno;
+				x = x0 + i;
+				x->dO.r = p[i]*vscale[i];
+				x->aO = x->adO = 0.;
+				}
+			}
+		else {
+			for(; og; og = og->next) {
+				i = og->varno;
+				x = x0 + i;
+				x->dO.r = p[i];
+				x->aO = x->adO = 0.;
+				}
+			}
+		}
+	x = var_ex;
+	if (comb)
+		for(c = cexps, ce = cexpsc; c < ce; c++)
+			hv_fwd0(c, x++);
+	if (co >= 0) {
+		if (comc) {
+			c = cexpsc;
+			ce = cexpso;
+			for(; c < ce; c++)
+				hv_fwd0(c, x++);
+			}
+		d = con_de + co;
+		t = 1.;
+		if ((cscale = a->i.lscale))
+			t = cscale[co];
+		}
+	else {
+		d = obj_de + no;
+		if (cexpso < cexpse) {
+			x = var_ex + combc;
+			c = cexpso;
+			ce = cexpse;
+			do hv_fwd0(c, x++);
+				while(++c < ce);
+			}
+		t = 1.;
+		}
+	if (d->n_com1)
+		hv_fwd1(asl, d);
+	if ((e = d->ef)) {
+		hv_fwd(e);
+		e = d->ee;
+		e->aO = 0;
+		e->adO = t;
+		hv_back(e);
+		}
+	else if ((e = d->e)->op != f_OPNUM) {
+		e->aO = 0;
+		e->adO = t;
+		}
+	if (d->n_com1)
+		hv_back1(asl, d);
+	if (co >= 0) {
+		if (comc)
+			hv_back0(asl, comb, comc);
+		}
+	else {
+		if (como)
+			hv_back0(asl, combc, como);
+		}
+	if (comb)
+		hv_back0(asl, 0, comb);
+	if ((cg = cg0)) {
+		if (vscale) {
+			while(cg) {
+				i = cg->varno;
+				hv[i] = vscale[i]*x0[i].aO;
+				cg = cg->next;
+				}
+			}
+		else {
+			while(cg) {
+				i = cg->varno;
+				hv[i] = x0[i].aO;
+				cg = cg->next;
+				}
+			}
+		}
+	else {
+		og = Ograd[no];
+		if (vscale) {
+			while(og) {
+				i = og->varno;
+				hv[i] = vscale[i]*x0[i].aO;
+				og = og->next;
+				}
+			}
+		else {
+			while(og) {
+				i = og->varno;
+				hv[i] = x0[i].aO;
+				og = og->next;
+				}
+			}
+		}
+	}
+
+ varno_t
+hv2comps_ASL(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
+	/* p = direction */
+	/* hv = result */
+	/* co >= 0: behave like hv2comp_ASL with nobj = -1, ow = 0, y[i] = i == co ? 1. : 0. */
+	/* co < 0: behave like hv2comp_ASL with nobj = -1 - co, ow = 0, y = 0 */
+{
+	ASL_fgh *asl;
+	cde *d;
+	cexp *c, *ce;
+	cgrad *cg, *cg0;
+	expr *e;
+	expr_v *x, *x0;
+	int n, no;
+	ograd *og;
+	real *cscale, *hve, t, *vscale;
+	varno_t i, rv, *ze;
+
+	ASL_CHECK(a, ASL_read_fgh, "hv2comp");
+	asl = (ASL_fgh*)a;
+
+	n = n_var;
+	memset(hv, 0, n*sizeof(real));
+
+	no = -1 - co;
+	if (co >= nlc || no >= nlo)
+		return 0;
+	cg0 = 0;
+	vscale = asl->i.vscale;
+	x0 = var_e;
+	if (co >= 0) {
+		cg = cg0 = Cgrad[co];
+		if (vscale) {
+			for(; cg; cg = cg->next) {
+				i = cg->varno;
+				x = x0 + i;
+				x->dO.r = p[i]*vscale[i];
+				x->aO = x->adO = 0.;
+				}
+			}
+		else {
+			for(; cg; cg = cg->next) {
+				i = cg->varno;
+				x = x0 + i;
+				x->dO.r = p[i];
+				x->aO = x->adO = 0.;
+				}
+			}
+		}
+	else {
+		og = Ograd[no];
+		if (vscale) {
+			for(; og; og = og->next) {
+				i = og->varno;
+				x = x0 + i;
+				x->dO.r = p[i]*vscale[i];
+				x->aO = x->adO = 0.;
+				}
+			}
+		else {
+			for(; og; og = og->next) {
+				i = og->varno;
+				x = x0 + i;
+				x->dO.r = p[i];
+				x->aO = x->adO = 0.;
+				}
+			}
+		}
+	x = var_ex;
+	if (comb)
+		for(c = cexps, ce = cexpsc; c < ce; c++)
+			hv_fwd0(c, x++);
+	if (co >= 0) {
+		if (comc) {
+			c = cexpsc;
+			ce = cexpso;
+			for(; c < ce; c++)
+				hv_fwd0(c, x++);
+			}
+		d = con_de + co;
+		t = 1.;
+		if ((cscale = a->i.lscale))
+			t = cscale[co];
+		}
+	else {
+		d = obj_de + no;
+		if (cexpso < cexpse) {
+			x = var_ex + combc;
+			c = cexpso;
+			ce = cexpse;
+			do hv_fwd0(c, x++);
+				while(++c < ce);
+			}
+		t = 1.;
+		}
+	if (d->n_com1)
+		hv_fwd1(asl, d);
+	if ((e = d->ef)) {
+		hv_fwd(e);
+		e = d->ee;
+		e->aO = 0;
+		e->adO = t;
+		hv_back(e);
+		}
+	else if ((e = d->e)->op != f_OPNUM) {
+		e->aO = 0;
+		e->adO = t;
+		}
+	if (d->n_com1)
+		hv_back1(asl, d);
+	if (co >= 0) {
+		if (comc)
+			hv_back0(asl, comb, comc);
+		}
+	else {
+		if (como)
+			hv_back0(asl, combc, como);
+		}
+	if (comb)
+		hv_back0(asl, 0, comb);
+	rv = 0;
+	if ((ze = z))
+		ze += nz;
+	if ((hve = hv))
+		hve += nz;
+	if ((cg = cg0)) {
+		if (!hv) {
+			while(cg) {
+				++rv;
+				if (z < ze)
+					*z++ = cg->varno;
+				cg = cg->next;
+				}
+			}
+		else if (vscale) {
+			while(cg) {
+				++rv;
+				i = cg->varno;
+				if (z < ze)
+					*z++ = i;
+				if (hv < hve)
+					*hv++ = vscale[i]*x0[i].aO;
+				cg = cg->next;
+				}
+			}
+		else {
+			while(cg) {
+				++rv;
+				i = cg->varno;
+				if (z < ze)
+					*z++ = i;
+				if (hv < hve)
+					*hv++ = x0[i].aO;
+				cg = cg->next;
+				}
+			}
+		}
+	else {
+		og = Ograd[no];
+		if (!hv) {
+			while(og) {
+				++rv;
+				if (z < ze)
+					*z++ = og->varno;
+				og = og->next;
+				}
+			}
+		else if (vscale) {
+			while(og) {
+				++rv;
+				i = og->varno;
+				if (z < ze)
+					*z++ = i;
+				if (hv < hve)
+					*hv++ = vscale[i]*x0[i].aO;
+				og = og->next;
+				}
+			}
+		else {
+			while(og) {
+				++rv;
+				i = og->varno;
+				if (z < ze)
+					*z++ = i;
+				if (hv < hve)
+					*hv++ = x0[i].aO;
+				og = og->next;
+				}
+			}
+		}
+	return rv;
 	}

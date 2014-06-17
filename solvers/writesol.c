@@ -33,7 +33,7 @@ SufHead {
 	fint tablen;
 	} SufHead;
 
-typedef char *(*Name)(ASL*,int);
+typedef char *(*Name)(ASL*,int,int*);
 
  static void
 getsufhead(ASL *asl, SufDesc *d, SufHead *sh, int *np, int **zp)
@@ -104,12 +104,12 @@ showsol(ASL *asl, real *x, int n, int n0, Name name, const char *what, const cha
 		return;
 	k0 = k = strlen(what);
 	for(i = 0; i < n0; ++i)
-		if ((j = strlen((*name)(asl,i))) > k)
+		if ((j = strlen((*name)(asl,i,0))) > k)
 			k = j;
 	k += 2;
 	printf("\n%s%*s%svalue\n", what, k-k0, "", pfix);
 	for(i = 0; i < n0; ++i)
-		printf("%-*s%.g\n", k, (*name)(asl,i), x[i]);
+		printf("%-*s%.g\n", k, (*name)(asl,i,0), x[i]);
 	}
 
  static real *

@@ -338,7 +338,7 @@ qt_init(void)
 	int n1;
 	const char *t;
 	for(t = "\"'\n.+-_"; *t; t++)
-		qtype[*t] = *t;
+		qtype[(int)*t] = *t;
 	for(n1 = 'A'; n1 <= 'Z'; n1++)
 		qtype[n1] = qtype[n1+'a'-'A'] = 1;
 	for(n1 = '0'; n1 <= '9'; n1++)
@@ -391,16 +391,15 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 	char *digits, *ob0, *outbuf, *s, *s0, *se;
 	Const char *fmt0;
 	char buf[32];
-	long i;
-	unsigned long j, u;
 	double x;
 	int alt, base, c, decpt, dot, conv, i1, k, lead0, left,
 		len, prec, prec1, psign, rv, sgn, sign, width;
 #ifdef QUOTIFY
 	int quote;
 #endif /*QUOTIFY*/
-	long Ltmp, *ip;
 	short sh;
+	size_t Ltmp, *ip, j, u;
+	ssize_t i;
 	unsigned short us;
 	unsigned int ui;
 #ifndef NO_PRINTF_A_FMT /*{*/
@@ -490,6 +489,9 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 			case 'l':
 				len = 1;
 				goto fmtloop;
+			case 'z':
+				len = 3;
+				goto fmtloop;
 			case '.':
 				dot = 1;
 				goto fmtloop;
@@ -524,6 +526,9 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 				  case 2:
 					us = va_arg(ap, int);
 					i = us;
+					break;
+				  case 3:
+					i = va_arg(ap, size_t);
 				  }
 				sign = 0;
 				goto have_i;
@@ -540,6 +545,9 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 				  case 2:
 					sh = va_arg(ap, int);
 					i = sh;
+					break;
+				  case 3:
+					i = va_arg(ap, ssize_t);
 				  }
 				if (i < 0) {
 					sign = '-';
@@ -609,7 +617,7 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 					while(s > buf);
 				continue;
 			case 'n':
-				ip = va_arg(ap, long*);
+				ip = va_arg(ap, size_t*);
 				if (!ip)
 					ip = &Ltmp;
 				c = outbuf - ob0 + rv;
@@ -618,10 +626,13 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 					*(int*)ip = c;
 					break;
 				  case 1:
-					*ip = c;
+					*(long*)ip = c;
 					break;
 				  case 2:
 					*(short*)ip = c;
+					break;
+				  case 3:
+					*ip = c;
 				  }
 				break;
 			case 'p':
@@ -652,6 +663,9 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 				  case 2:
 					us = va_arg(ap, int);
 					u = us;
+					break;
+				  case 3:
+					u = va_arg(ap, size_t);
 				  }
 				if (!u)
 					sign = alt = 0;

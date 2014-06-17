@@ -32,8 +32,8 @@ extern void funpset_ASL ANSI((ASL_pfgh*, funnel*));
 #undef funnelset
 #define funnelset(x) funpset_ASL(asl, x)
 
- static void
-ihd_clear(ASL_pfgh *asl)
+ void
+ihd_clear_ASL(ASL_pfgh *asl)
 {
 	Ihinfo *ihi;
 	int i = asl->P.ihdcur;
@@ -65,7 +65,7 @@ xp_check_ASL(ASL_pfgh *asl, real *x)
 	memcpy(Lastx, x, x0len);
 	asl->i.nxval++;
 	if (asl->P.ihdcur)
-		ihd_clear(asl);
+		ihd_clear_ASL(asl);
 	x0kind = asl->I.x0kind_init;
 	xe = x + n_var;
 	v = v0 = var_e;
@@ -94,6 +94,7 @@ xp_check_ASL(ASL_pfgh *asl, real *x)
 			t += var_e[og->varno].v*og->coef;
 		la->v->v = t;
 		}
+	errno = 0;
 	if (asl->P.ncom) {
 		c = cexps;
 		dvsp0 = asl->P.dvsp0;
@@ -235,18 +236,20 @@ hvpinit_ASL(ASL *a, int ndhmax, int nobj, real *ow, real *y)
 
 	ASL_CHECK(a, ASL_read_pfgh, "xvpinit");
 	asl = (ASL_pfgh*)a;
+	xpsg_check_ASL(asl, nobj, ow, y);
 	asl->P.nhvprod = 0;
 	if (!asl->P.hes_setup_called)
 		(*asl->p.Hesset)(a, 1, 0, nlo, 0, nlc);
+	ihc = 0;
+	if (ndhmax > asl->P.ihdmax)
+		ndhmax = asl->P.ihdmax;
+	if ((asl->P.ndhmax = ndhmax) <= 0)
+		goto done;
 	if (!(ihi = asl->P.ihi1) || ndhmax < asl->P.ihdmin)
 		return;
 	if (nobj < 0 || nobj >= n_obj)
 		nobj = -1;
 	s = asl->P.dOscratch;
-	if (asl->P.ihdcur)
-		ihd_clear(asl);
-	if (ndhmax > asl->P.ihdmax)
-		ndhmax = asl->P.ihdmax;
 	for(ihc = 0; ihi->ihd <= ndhmax; ihi = ihi->next) {
 		ihc = ihi->ihd;
 		ihi->hest = h = (real *)new_mblk(ihi->k);
@@ -272,6 +275,7 @@ hvpinit_ASL(ASL *a, int ndhmax, int nobj, real *ow, real *y)
 				h = bigUmult(asl, h, r, nobj, ow, y);
 			}
 		}
+ done:
 	asl->P.ihdcur = ihc;
 	}
 

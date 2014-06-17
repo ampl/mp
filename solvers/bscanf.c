@@ -22,11 +22,7 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
 ****************************************************************/
 
-#ifdef KR_headers
-#include "varargs.h"
-#else
 #include "stdarg.h"
-#endif
 
 #include "asl.h"	/* for Long */
 
@@ -35,13 +31,7 @@ THIS SOFTWARE.
 #endif
 
  static char *
-#ifdef KR_headers
-Ladvance(s, Lp)
- char *s;
- Long *Lp;
-#else
 Ladvance(register char *s, Long *Lp)
-#endif
 {
 	register Long x;
 	register int c;
@@ -67,11 +57,7 @@ Ladvance(register char *s, Long *Lp)
 	}
 
  static void
-#ifdef KR_headers
-badfmt(R, fmt0) EdRead *R; char *fmt0;
-#else
 badfmt(EdRead *R, const char *fmt0)
-#endif
 {
 	badread(R);
 	fprintf(Stderr, "bad format %s\n", fmt0);
@@ -79,30 +65,17 @@ badfmt(EdRead *R, const char *fmt0)
 	}
 
  int
-#ifdef KR_headers
-ascanf(va_alist)
- va_dcl
-#else
 ascanf(EdRead *R, const char *fmt, ...)
-#endif
 {
 	Const char *fmt0;
-	int *ip;
 	Long L, *Lp;
-	double x, *xp;
-	va_list ap;
 	char *s, *s1;
-	int rc = 0;
+	double x, *xp;
+	int *ip, rc;
+	va_list ap;
 
-#ifdef KR_headers
-	EdRead *R;
-	char *fmt;
-	va_start(ap);
-	R = va_arg(ap, EdRead*);
-	fmt = va_arg(ap, char*);
-#else
 	va_start(ap, fmt);
-#endif
+	rc = 0;
 	s = read_line(R);
 	if (!s)
 		return 0;
@@ -117,7 +90,7 @@ ascanf(EdRead *R, const char *fmt, ...)
 				if (!(s = Ladvance(s,&L)))
 					return rc;
 				ip = va_arg(ap, int*);
-				*ip = (int)L;
+				*ip = L;
 				break;
 			case 'l':
 				switch(*fmt++) {
@@ -128,11 +101,12 @@ ascanf(EdRead *R, const char *fmt, ...)
 						*Lp = (int)L;
 						break;
 					case 'f':
-						x = strtod(s, &s);
-						if (!s)
+						x = strtod(s, &s1);
+						if (s1 <= s)
 							return rc;
 						xp = va_arg(ap, double*);
 						*xp = x;
+						s = s1;
 						break;
 					default:
 						badfmt(R, fmt0);
@@ -156,34 +130,20 @@ ascanf(EdRead *R, const char *fmt, ...)
 	}
 
  int
-#ifdef KR_headers
-bscanf(va_alist)
- va_dcl
-#else
 bscanf(EdRead *R, const char *fmt, ...)
-#endif
 {
 	Const char *fmt0;
-	int *ip;
-	short *shp;
-	Long L, *Lp;
-	Int I;
-	double *xp;
-	va_list ap;
-	char *s1;
-	int len;
 	FILE *fd;
-	int rc = 0;
+	Int I;
+	Long L, *Lp;
+	char *s1;
+	double *xp;
+	int *ip, len, rc;
+	short sh;
+	va_list ap;
 
-#ifdef KR_headers
-	EdRead *R;
-	char *fmt;
-	va_start(ap);
-	R = va_arg(ap, EdRead*);
-	fmt = va_arg(ap, char*);
-#else
 	va_start(ap, fmt);
-#endif
+	rc = 0;
 	fd = R->nl;
 	R->Line += R->lineinc;
 	R->lineinc = 1;
@@ -194,20 +154,124 @@ bscanf(EdRead *R, const char *fmt, ...)
 		switch(*fmt++) {
 			case 'd':
 				ip = va_arg(ap, int*);
-				if (!fread(&I, sizeof(Int), 1, fd))
+				if (!fread(&I, sizeof(I), 1, fd))
 					return rc;
-				*ip = (int)I;
 				if (R->iadjfcn)
-					(*R->iadjfcn)(ip, sizeof(int));
+					(*R->iadjfcn)(&I, sizeof(I));
+				*ip = I;
 				break;
 			case 'h':
 				if (*fmt == 'd')
 					fmt++;
-				shp = va_arg(ap, short*);
-				if (!fread(shp, sizeof(short), 1, fd))
+				Lp = va_arg(ap, Long*);
+				if (!fread(&sh, sizeof(short), 1, fd))
 					return rc;
 				if (R->iadjfcn)
-					(*R->iadjfcn)(shp, sizeof(short));
+					(*R->iadjfcn)(&sh, sizeof(short));
+				*Lp = sh;
+				break;
+			case 'l':
+				switch(*fmt++) {
+					case 'd':
+						Lp = va_arg(ap, Long*);
+						if (!fread(Lp, sizeof(Long),
+								1, fd))
+							return rc;
+						if (R->iadjfcn)
+							(*R->iadjfcn)(Lp,
+								sizeof(Long));
+
+						break;
+					case 'f':
+						xp = va_arg(ap, double*);
+						if (!fread(xp, sizeof(double), 1, fd))
+							return rc;
+						if (R->dadjfcn)
+							(*R->dadjfcn)(xp,
+								sizeof(double));
+						break;
+					default:
+						badfmt(R, fmt0);
+					}
+				break;
+			default:
+				if (!(fmt = Ladvance((char *)fmt-1, &L))
+				 || *fmt++ != 's')
+					badfmt(R, fmt0);
+				/* %127s */
+				s1 = va_arg(ap, char*);
+				if (!fread(&len, sizeof(int), 1, fd))
+					return rc;
+				if (R->iadjfcn)
+					(*R->iadjfcn)(&len, sizeof(int));
+				if (len >= L || !fread(s1, len, 1, fd))
+					return rc;
+				s1[len] = 0;
+				break;
+			}
+		rc++;
+		while(*fmt == ' ')
+			fmt++;
+		}
+	return rc;
+	}
+
+ int
+hscanf(EdRead *R, const char *fmt, ...)
+{
+	Const char *fmt0;
+	FILE *fd;
+#ifdef NO_LONG_LONG
+	Long I[2];
+#else
+	long long I;
+#endif
+	Long L, *Lp;
+	char *s1;
+	double *xp;
+	int *ip, len, rc;
+	short sh;
+	va_list ap;
+
+	va_start(ap, fmt);
+	rc = 0;
+	fd = R->nl;
+	R->Line += R->lineinc;
+	R->lineinc = 1;
+	for(;;) {
+		fmt0 = fmt;
+		if (*fmt++ != '%')
+			break;
+		switch(*fmt++) {
+			case 'd':
+				ip = va_arg(ap, int*);
+#ifdef NO_LONG_LONG /*{{*/
+				if (!fread(I, sizeof(I), 1, fd))
+					return rc;
+				if (R->iadjfcn)
+					(*R->iadjfcn)(I, sizeof(I));
+#ifdef IEEE_8087
+				*ip = I[0];
+#else
+				*ip = I[1];
+#endif
+#else /*}{*/
+				if (!fread(&I, sizeof(I), 1, fd))
+					return rc;
+				if (R->iadjfcn)
+					(*R->iadjfcn)(&I, sizeof(I));
+				*ip = (int)I;
+#endif /*}}*/
+				break;
+			case 'h':
+				if (*fmt == 'd')
+					fmt++;
+				Lp = va_arg(ap, Long*);
+				if (!fread(&sh, sizeof(short), 1, fd))
+					return rc;
+				if (R->iadjfcn)
+					(*R->iadjfcn)(&sh, sizeof(short));
+				*Lp = sh;
 				break;
 			case 'l':
 				switch(*fmt++) {

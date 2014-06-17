@@ -36,6 +36,7 @@ THIS SOFTWARE.
 #include "stdlib.h"
 #endif
 
+#include "arith.h" /* for NO_SSIZE_T */
 #include "stdio1.h"
 #include "string.h"
 
@@ -78,7 +79,8 @@ Sscanf
 	char *s0;
 	va_list ap;
 	long L, *Lp;
-	int i, *ip, rc = 0;
+	int c, i, *ip, rc, sgn;
+	ssize_t Ll, *Llp;
 
 #ifdef KR_headers
 	char *fmt, *s;
@@ -88,6 +90,7 @@ Sscanf
 #else
 	va_start(ap, fmt);
 #endif
+	rc = 0;
 	for(;;) {
 		for(;;) {
 			switch(i = *(unsigned char *)fmt++) {
@@ -129,6 +132,24 @@ Sscanf
 					continue;
 					}
 				return rc;
+			case 'D':
+				Llp = va_arg(ap, ssize_t*);
+				sgn = 0;
+				c = *s;
+				if (c == '-') {
+					sgn = 1;
+					c = *++s;
+					}
+				if (c < '0' || c > '9')
+					return rc;
+				Ll = c - '0';
+				while((c = *++s) >= '0' && c <= '9')
+					Ll = 10*Ll + c - '0';
+				++rc;
+				if (sgn)
+					Ll = -Ll;
+				*Llp = Ll;
+				continue;
 			default:
 				bad(fmt);
 			}

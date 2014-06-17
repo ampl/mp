@@ -234,7 +234,7 @@ wrong_bits(AmplExports *ae, char *name)
 dl_open(AmplExports *ae, char *name, int *warned, int *pns)
 {
 	FILE *f;
-	char *d, *d0, *s;
+	char *d, *d0, *dz, *s;
 	const char *cs;
 	int ns;
 	shl_t h;
@@ -254,14 +254,22 @@ dl_open(AmplExports *ae, char *name, int *warned, int *pns)
 			d = 0;
 		 }
 	ns = s - name;
+	dz = 0;
 	if (d
 	 && d - name > 3
-	 && d[-3] == '_'
-	 && d[-2] == BitsAlt[0]
-	 && d[-1] == BitsAlt[1]) {
-		d[-2] = Bits[0];
-		d[-1] = Bits[1];
-		d = 0;
+	 && d[-3] == '_') {
+		if (d[-2] == BitsAlt[0]
+		 && d[-1] == BitsAlt[1]) {
+			d[-2] = Bits[0];
+			d[-1] = Bits[1];
+			dz = d;
+			d = 0;
+			}
+		else if (d[-2] == Bits[0]
+		 && d[-1] == Bits[1]) {
+			dz = d;
+			d = 0;
+			}
 		}
  tryagain:
 #ifdef Old_APPLE
@@ -302,6 +310,11 @@ dl_open(AmplExports *ae, char *name, int *warned, int *pns)
 			d0 = d;
 			d = 0;
 			ns += 3;
+			goto tryagain;
+			}
+		if (dz) {
+			for(d = dz-3; (*d = *dz); ++d, ++dz);
+			d = dz = 0;
 			goto tryagain;
 			}
 		if (!warned && (f = fopen(name,"rb"))) {

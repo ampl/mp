@@ -140,6 +140,7 @@ a = \
 	names.c \
 	nl_obj.c \
 	nqpcheck.c \
+	nqpcheckZ.c \
 	obj2val.c \
 	obj_adj.c \
 	obj_prec.c \
@@ -154,6 +155,7 @@ a = \
 	punknown.c \
 	qp_read.c \
 	qpcheck.c \
+	qpcheckZ.c \
 	qsortv.c \
 	readsol.c \
 	repwhere.c \
@@ -203,7 +205,7 @@ com2eval.o con2ival.o con2val.o obj2val.o\
 conpval.o pshvprod.o xp2known.o:\
 	jacpdim.h asl_pfgh.h psinfo.h nlp2.h $(Aslh)
 comeval.o con1ival.o conval.o mip_pri.o objval.o qpcheck.o\
- readsol.o: nlp.h $(Aslh)
+ qpcheckZ.o readsol.o: nlp.h $(Aslh)
 indic_cons.o misc.o mpec_adj.o nl_obj.o obj_adj.o sos_add.o suf_sos.o:\
 	nlp.h nlp2.h asl_pfg.h asl_pfgh.h psinfo.h $(Aslh)
 op_type.o: op_type.hd op_typeb.hd
@@ -216,10 +218,10 @@ objconst.o: r_opn0.hd nlp.h nlp2.h asl_pfg.h asl_pfgh.h psinfo.h $(Aslh)
 pfg_read.o: asl_pfg.h r_opn0.hd dvalue.hd nlp.h psinfo.h $(Aslh)
 pfghread.o: pfg_read.c jacpdim.h asl_pfgh.h opnos.hd r_opn0.hd dvalue.hd\
 	psinfo.h nlp2.h $(Aslh)
-nqpcheck.o: nlp.h r_qp.hd $(Aslh)
+nqpcheck.o nqpcheckZ.o: nlp.h r_qp.hd $(Aslh)
 printf.o punknown.o sscanf.o: stdio1.h
 dtoa1.o: dtoa.c arith.h stdio1.h
-nqpcheck.o obj_adj.o: obj_adj.h
+nl_obj.o nqpcheck.o nqpcheckZ.o obj_adj.o: obj_adj.h
 
 # Use CFLAGS in compiling arithchk.c in case something in CFLAGS affects
 # the number of bits in integral data types.  (It's probably best not to
@@ -228,7 +230,9 @@ nqpcheck.o obj_adj.o: obj_adj.h
 arith.h: arithchk.c fpinit.c
 	$(CC) -c $(CFLAGS) -DASL_NO_FPINITMT fpinit.c
 	$(CC) $(CFLAGS) arithchk.c fpinit.o -lm ||\
-	 $(CC) -DNO_LONG_LONG $(CFLAGS) arithchk.c fpinit.o -lm
+	 $(CC) -DNO_LONG_LONG $(CFLAGS) arithchk.c fpinit.o -lm ||\
+	 $(CC) -DNO_SSIZE_T $(CFLAGS) arithchk.c fpinit.o -lm ||\
+	 $(CC) -DNO_SSIZE_T -DNO_SSIZE_T $(CFLAGS) arithchk.c fpinit.o -lm
 	./a.out >arith.h
 	rm -f a.out arithchk.o fpinit.o
 
@@ -380,6 +384,7 @@ xs0 = \
 	nlp.h \
 	nlp2.h \
 	nqpcheck.c \
+	nqpcheckZ.c \
 	obj2val.c \
 	obj_adj.c \
 	obj_adj.h \
@@ -401,6 +406,7 @@ xs0 = \
 	punknown.c \
 	qp_read.c \
 	qpcheck.c \
+	qpcheckZ.c \
 	qsortv.c \
 	r_op.hd \
 	r_opn.hd \
