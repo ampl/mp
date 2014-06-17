@@ -1,9 +1,9 @@
 # CMake build script for the AMPL solver tests.
 
-# Use GTest's own tuple implementation as the one in Visual C++ 2012
-# is broken.
+# Workaround for Visual C++ 2012 which has broken implementation of tuples.
+# See also https://code.google.com/p/googletest/issues/detail?id=412
 if (MSVC)
-  add_definitions(-DGTEST_USE_OWN_TR1_TUPLE=1)
+  add_definitions(-D_VARIADIC_MAX=10)
 endif ()
 
 # Enable std::this_thread::yield.
