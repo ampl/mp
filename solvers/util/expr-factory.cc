@@ -55,6 +55,7 @@ internal::ASLBuilder::ASLBuilder(ASL &asl, const char *stub, const NLHeader &h)
     info.binary_nl_ = 1 << (3 - Arith_Kind_ASL);
     info.iadjfcn = info.dadjfcn = bswap_ASL;
   }
+  info.xscanf_ = info.binary_nl_ ? bscanf : ascanf;
 
   info.ampl_options_[0] = h.num_options;
   for (int i = 0; i < ampl::MAX_NL_OPTIONS; ++i)
@@ -137,8 +138,6 @@ void internal::ASLBuilder::BeginBuild(int flags) {
   bool readall = (flags & ASL_keep_all_suffixes) != 0;
   if (!info.size_expr_n_)
     info.size_expr_n_ = sizeof(expr_n);
-
-  info.xscanf_ = info.binary_nl_ ? bscanf : ascanf;
 
   Edag1info &info1 = reinterpret_cast<ASL_fg&>(asl_).I;
   int ncom = 0;
