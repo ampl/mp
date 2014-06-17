@@ -1,2 +1,6 @@
-20130625
-  Fix trouble introduced 20130624 with the incoming $AMPLFUNC.
+20140524
+  Extend test for "no variables, but lower bound = ..." to fix a glitch
+with "option presolve 0" (which is often a bad idea) whereby infeasible
+constraints with no variables were eliminated when defined variables
+were present.  When no defined variables are present, such infeasible
+constraints are passed to the solver.

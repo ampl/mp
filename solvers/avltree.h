@@ -67,7 +67,7 @@ extern "C" {
  extern Element *AVL_vfirst_ge(const AVL_Tree*, void*, const Element*, AVL_Node**);
  extern Element *AVL_vlast_le(const AVL_Tree*, void*, const Element*, AVL_Node**);
 
- /* The third argument to Avl_Tree_alloc is a malloc-like function that    */
+ /* The third argument to AVL_Tree_alloc is a malloc-like function that    */
  /* only returns nonzero values.  It should use longjmp to avoid returning */
  /* if no memory is available.  If you are using the AMPL/Solver interface */
  /* library, simply pass mymalloc_ASL for this argument. */

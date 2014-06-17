@@ -61,11 +61,10 @@ static char badconname[] = "**con_name(bad n)**";
 static char badvarname[] = "**var_name(bad n)**";
 
  char *
-con_name_nomap_ASL(ASL *asl, int n)
+con_name_nomap_ASL(ASL *asl, int n, int *p)
 {
 	char buf[32], **np, *rv;
 	const char *fmt;
-	int *p;
 
 	if (n < 0 || n >= asl->i.n_con1)
 		return badconname;
@@ -74,7 +73,7 @@ con_name_nomap_ASL(ASL *asl, int n)
 	np = asl->i.connames + n;
 	if (!(rv = *np)) {
 		fmt = "_scon[%d]";
-		if ((p = asl->i.cmap) && p[n] < 0)
+		if (p && p[n] < 0)
 			fmt = "_scon_aux[%d]";
 		*np = rv = (char*)mem(Sprintf(buf,fmt,n+1)+1);
 		strcpy(rv, buf);
@@ -93,7 +92,7 @@ con_name_ASL(ASL *asl, int n)
 		if ((k = p[n]) >= 0 && k < asl->i.n_con1)
 			n = k;
 		}
-	return con_name_nomap_ASL(asl, n);
+	return con_name_nomap_ASL(asl, n, p);
 	}
 
  char *
@@ -133,7 +132,7 @@ obj_name_ASL(ASL *asl, int n)
 	}
 
  char *
-var_name_nomap_ASL(ASL *asl, int n)
+var_name_nomap_ASL(ASL *asl, int n, int *p /* not used */)
 {
 	char buf[32], **np, *rv;
 
@@ -161,5 +160,5 @@ var_name_ASL(ASL *asl, int n)
 		if ((k = p[n]) >= 0 && k < asl->i.n_var1)
 			n = k;
 		}
-	return var_name_nomap_ASL(asl, n);
+	return var_name_nomap_ASL(asl, n, 0);
 	}

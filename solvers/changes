@@ -1877,7 +1877,7 @@ library and anything using its headers must be recompiled.
   New files mpec_adj.c, mpec_adj0.c, obj_adj.c obj_adj0.c.  When
 ASL_cc_simplify is not used, linking with mpec_adj0.o will give a
 slightly smaller program, and when neither ASL_obj_replace_ineq nor
-ASL_obj_replace_eq is used, linking with mpec_adj0.o will give s
+ASL_obj_replace_eq is used, linking with mpec_adj0.o will give a
 slightly smaller program.
 
 20110811
@@ -2151,3 +2151,142 @@ and obj_adj.c to extend the obj_replace facilities to solvers that
 request A_vals.  Examples: the updated CPLEX and XPRESS drivers,
 /netlib/ampl/solvers/cplex/cplex.c and
 /netlib/ampl/solvers/cplex/xpress.c.
+
+20130703
+  New source files npqcheckZ.c and qpcheckZ.c and changes to many
+files.  New alternative A_colstartsZ to A_colstarts:  A_colstartsZ is
+of type size_t* rather than int* to permit handling problems with 2^31
+or more Jacobian nonzeros.  New alternatives nZc and nZo to nzc and
+nzo, of type size_t rather than int.  New bits in flags argument to
+.nl readers:
+	ASL_allow_Z ==> accept problems with nZc >= 2^31, setting the
+		ASL_use_Z bit in flags if nZc >= 2^31.
+	ASL_use_Z ==> populate A_colstartsZ rather than A_colstarts,
+		regardless of problem size.
+New field hcolstartsZ in SputInfo, of type size_t.  For simplicity, both
+hcolstarts and hcolstartsZ are populated.  New source files npqcheckZ.c
+and qpcheckZ.c provide functions mqpcheckZ, nqpcheckZ and qpcheckZ
+as alternatives to mqpcheck, nqpcheck, and qpcheck, respectively,
+taking size_t** rather than fint** arguments for colqp.
+  For jacval() to work with nZc >= 2^31, everything should be compiled
+with -DASL_big_goff.  It is simplest to add "#define ASL_big_goff" to
+arith.h (after "make arith.h").  This increases memory requirements.
+  Add "ifdef NO_SSIZE_T" lines to arithchk.c to define ssize_t when
+not provided by the system.
+
+20130801
+  asl.h, qp_read.c:  new rflags bit for internal use: ASL_opified, used
+in qp_read.c so calls on qp_opify() after the first are quietly ignored.
+  misc.c:  fix a bug that caused ASL_use_Z to be ignored.
+  obj_adj.c:  adjust for ASL_use_Z; avoid looking at A_vals if there
+are no obj_replace candidates.
+
+20130822
+  pfg_read.c, pfghread.c:  fix a possible glitch (error message
+"bad e->a = ...") with Hessian computations when if-then-else,
+min(...), and max(...) are involved.
+
+20130916
+  obj_adj.c:  fix a fault with ASL_use_Z when ASL_obj_replace_eq or
+ASL_obj_replace_ineq was specified (in the flags argument to the .nl
+reader) and there was a linear objective involving just one variable.
+
+20130919
+  asl.h: adjust calling sequences of internally-used routines
+con_name_nomap_ASL and var_name_nomap_ASL.
+  names.c, writesol.c: adjust names printed by write_sol() when
+wantsol & 4 is nonzero and some problem adjustments were done.
+  obj_adj.c:  adjust to give correct results with outside manipulations,
+such as those in netlib/ampl/solvers/cplex/cplex.c for problems with
+quadratic objectives and constraints.
+  qp_read.c:  adjust a loop limit affected by manipulations for
+ASL_obj_replace_ineq and ASL_obj_replace_eq.
+
+20130920
+  getstub.c, getstub.h:  new bits ASL_OI_tabexpand and ASL_OI_addnewline
+in the option_echo field of Option_Info affect command-line option -=
+in getstub().  The ASL_OI_tabexpand bit causes tab expansion and
+causes each line after the first line of each keyword description to
+be indented at least as far as the description portion of the first
+line.  The ASL_OI_addnewline adds an extra newline after each
+keyword description.
+
+20131018
+  funcadd1.c:  if an imported-function library name has "_32" or "_64"
+before the final "." and fails to load (perhaps after changing "32" to
+"64" or vice versa, as appropriate), try omitting the "_32" or "_64".
+  getstub.c:  fix a glitch in the test on the ASL_OI_want_funcadd
+bit of Option_Info.flags (used && instead of &).
+
+20131029
+  suf_sos.c:  fix a bug (fault) with ASL_allow_Z and ASL_use_Z.
+
+20131122
+  nqpcheck.c obj_adj.c obj_adj.h: tweak so qp_opify() need not be
+included in binaries that will never call it.
+  dtoa.c, dtoa1.c: obscure bug fix, probably irrelevant to ASL.
+
+20131124
+  nqpcheckZ.c:  add comment to force recompilation due to changed
+nqpcheck.c.
+
+20131209
+  dtoa.c, dtoa1.c: minor performance improvement; see netlib/fp/changes.
+
+20140131
+  indic_cons.c:  generalize to handle linear_expr op linear_expr,
+e.g., b == 1 ==> linear_expression == linear_expression, rather
+than just constant op linear_expr or linear_expr op constant,
+with op one of ==, !=, >=, <=.
+
+20140205
+  obj_adj.c: fix a glitch (missed adjustment of nZc) with 64-bit
+binaries and problems read with flag ASL_use_Z to the .nl reader.
+
+20140305
+  obj_adj.c: fix missing initialization of od->cg (to 0).  In many
+cases, the value would already have been 0, but a fault was otherwise
+possible.
+
+20140313
+  nl_obj.c: adjust function nl_obj(ASL *asl, int n) to work properly
+reader flag ASL_obj_replace_ineq or ASL_obj_replace_eq results in a
+modified objective.
+  obj_adj.c: correctly update primal and dual initial guesses (X0 and
+pi0) when reader flag ASL_obj_replace_ineq or ASL_obj_replace_eq
+results in a modified objective.
+  obj_adj.[ch]: new field cg0 used, e.g., with drivers for MINOS and
+SNOPT.
+  sscan.f.c:  fix a bug with %D that affects the value nZo provided by
+jac0dim().
+  nqpcheck.c, nqpcheckZ.c: "invisible" tweaks.
+  makefile.u, makefile.vc: tweaks for obj_adj.h
+
+20140612
+  amplsolv.sy, makefile.lc, makefile.sy, makefile.wat: apply updates
+missed in the changes of 20110809.  (I no longer have a way to test
+these files.)
+
+20140617
+  asl.h com2eval.c conpval.c fgh_read.c jac2dim.h jacpdim.h misc.c
+pfg_read.c pshvprod.c psinfo.h xp2known.c:  new functions with
+apparent signatures
+    void hvcompd(real *hv, real *p, int co);
+    varno_t hvcomps(real *hv, real *p, int co, varno_t nz, varno_t *z);
+For -n_obj <= co < 0, hvcompd has the same effect as
+	hvcomp(hv, p, -1-co, 0, 0)
+and for 0 <= co, it has the same effect as
+	hvcomp(hv, p, -1, 0, y)
+with y[co] = 1 and other components = 0.  Function hvcomps is similar
+to hvcompd, but it stores the structural nonzeros of Hessian(co)*p
+in hv and their indices in z and returns the number of nonzeros.
+Only the first nz values are actually stored; then hv and/or z can be
+NULL.  Type varno_t is int unless the ASL is compiled with
+-DASL_big_goff, in which case varno_t is ssize_t.  (For the latter,
+you could add "#define ASL_big_goff" to arith.h or stdio1.h.)
+  Previously after a call on hvcomp(hv, p, nobj, ow, y), another call
+at the same x (primal variables vector) but different (nobj, ow, y)
+sometimes required an intervening call on hvinit(nobj, ow, y) to
+function correctly.  This is no longer necessary.
+  Because of new components in struct ASL, the entire library needs
+to be recompiled.

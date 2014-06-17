@@ -31,7 +31,9 @@ THIS SOFTWARE.
 #ifdef __cplusplus
 extern "C" {
 #endif
- extern void hv2comp_ASL ANSI((ASL*,real*hv,real*p,int nobj,real*ow,real*y));
+ extern void hv2comp_ASL ANSI((ASL*, real *hv, real *p, int nobj, real *ow, real *y));
+ extern void hv2compd_ASL ANSI((ASL*, real *hv, real *p, int co));
+ extern varno_t hv2comps_ASL ANSI((ASL*, real *hv, real *p, int co, varno_t nz, varno_t *z));
  extern real con2ival_ASL ANSI((ASL*, int i, real *X, fint *ne));
  extern void con2grd_ASL  ANSI((ASL*, int i, real *X, real *G, fint *nerror));
  extern void con2val_ASL  ANSI((ASL*, real *X, real *F, fint *nerror));

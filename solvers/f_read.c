@@ -24,4 +24,4 @@ THIS SOFTWARE.
 
 #define Just_Linear
 #include "fg_read.c"
-/* Last update 20020625. */
+/* Last update 20130702. */

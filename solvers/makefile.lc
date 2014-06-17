@@ -40,7 +40,6 @@ a = \
 	asldate.obj \
 	atof.obj \
 	auxinfo.obj \
-	avldelete.obj \
 	avltree.obj \
 	b_search.obj \
 	basename.obj \
@@ -73,20 +72,25 @@ a = \
 	getenv.obj \
 	getstub.obj \
 	htcl.obj \
+	indic_cons.obj \
 	jac0dim.obj \
 	jac2dim.obj \
 	jacdim.obj \
 	jacinc.obj \
 	jacinc1.obj \
+	libnamsave.obj \
 	mach.obj \
 	mainexit.obj \
 	mip_pri.obj \
 	misc.obj \
+	mpec_adj.obj \
 	mypow.obj \
 	names.obj \
 	nl_obj.obj \
 	nqpcheck.obj \
+	nqpcheckZ.obj \
 	obj2val.obj \
+	obj_adj.obj \
 	obj_prec.obj \
 	objconst.obj \
 	objval.obj \
@@ -99,6 +103,7 @@ a = \
 	punknown.obj \
 	qp_read.obj \
 	qpcheck.obj \
+	qpcheckZ.obj \
 	qsortv.obj \
 	readsol.obj \
 	repwhere.obj \
@@ -125,14 +130,14 @@ amplsolv.lib: $a
 	lcclib -out:amplsolv.lib @amplsolv.lbc
 
 Aslh = arith.h asl.h funcadd.h stdio1.h
-auxinfo.obj: funcadd.h stdio1.h
+auxinfo.obj libnamsave.obj: funcadd.h stdio1.h
 mach.obj: arith.h
-avldelete.obj avltree.obj bscanf.obj conscale.obj derprop.obj dynlink.obj func_add.obj\
+avltree.obj bscanf.obj conscale.obj derprop.obj dynlink.obj func_add.obj\
  funcadd.obj funcadd1.obj funcaddk.obj funcaddr.obj funcadd0.obj g_fmt.obj\
  genrowno.obj jac0dim.obj jacdim.obj jac2dim.obj jacinc.obj jacinc1.obj names.obj\
- obj_prec.obj objval_.obj repwhere.obj sigcatch.obj sjac0dim.obj studchk0.obj:\
- $(Aslh)
-avldelete.obj avltree.obj: avltree.h
+ obj_prec.obj objval_.obj sigcatch.obj sjac0dim.obj studchk0.obj: $(Aslh)
+avltree.obj: avltree.h
+repwhere.obj: errchk.h $(Aslh)
 xp1known.obj: asl_pfg.h psinfo.h nlp.h $(Aslh)
 duthes.obj fullhes.obj htcl.obj sphes.obj: asl_pfgh.h psinfo.h nlp2.h $(Aslh)
 getstub.obj value.obj writesol.obj wrtsol_.obj: getstub.h $(Aslh)
@@ -141,20 +146,21 @@ com2eval.obj con2ival.obj con2val.obj obj2val.obj\
 conpval.obj pshvprod.obj xp2known.obj:\
 	jacpdim.h asl_pfgh.h psinfo.h nlp2.h $(Aslh)
 comeval.obj con1ival.obj conval.obj mip_pri.obj objval.obj qpcheck.obj\
- readsol.obj: nlp.h $(Aslh)
-misc.obj nl_obj.obj sos_add.obj suf_sos.obj:\
+ qpcheckZ.obj readsol.obj: nlp.h $(Aslh)
+indic_cons.obj misc.obj mpec_adj.obj nl_obj.obj obj_adj.obj sos_add.obj suf_sos.obj:\
 	nlp.h nlp2.h asl_pfg.h asl_pfgh.h psinfo.h $(Aslh)
+nl_obj.obj nqpcheck.obj nqpcheckZ.obj obj_adj.c: obj_adj.h
 op_type.obj: op_type.hd op_typeb.hd
 fgh_read.obj: jac2dim.h opnos.hd op_type.hd dvalue.hd nlp2.h $(Aslh)
 rops.obj: nlp.h errchk.h $(Aslh)
 rops2.obj: nlp2.h errchk.h $(Aslh)
 conadj.obj fg_write.obj qp_read.obj: nlp.h r_opn.hd $(Aslh)
-f_read.obj fg_read.obj: nlp.h r_opn.hd dvalue.hd $(Aslh)
+f_read.obj fg_read.obj: fg_read.c nlp.h r_opn.hd dvalue.hd $(Aslh)
 objconst.obj: r_opn0.hd nlp.h nlp2.h asl_pfg.h asl_pfgh.h psinfo.h $(Aslh)
 pfg_read.obj: asl_pfg.h r_opn0.hd dvalue.hd nlp.h psinfo.h $(Aslh)
 pfghread.obj: jacpdim.h asl_pfgh.h opnos.hd r_opn0.hd dvalue.hd\
 	psinfo.h nlp2.h $(Aslh)
-nqpcheck.obj: nlp.h r_qp.hd $(Aslh)
+nqpcheck.obj nqpcheckZ.obj: nlp.h r_qp.hd $(Aslh)
 printf.obj punknown.obj sscanf.obj: stdio1.h
 dtoa1.obj: dtoa.c arith.h stdio1.h
 

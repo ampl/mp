@@ -3092,3 +3092,292 @@ message.
 
 20130625
   Fix trouble introduced 20130624 with the incoming $AMPLFUNC.
+
+20130704
+  Adjustments for handling problems with >= 2^31 Jacobian nonzeros.
+New .nl file format codes z, h, and (temporarily, for debugging)
+B, G, H, and Z.  The z format has a "K" section instead of a "k"
+section; the K section has Jacobian column lengths rather than the
+the k section's sums of such lengths, permitting entries in the K
+section to be encoded with 32-bit integers as long as the problem
+has less than 2^31 variables.  (Like the b format, the z format is
+a binary format that only uses 32-bit integers.  The z format uses
+2 bytes per operation code rather than 4, so it is somewhat more
+compact than the b format.)  When the b format is requested and
+the problem has at least 2^31 Jacobian nonzeros, AMPL now uses
+the z format instead.
+  The h format is another binary format, one using 64-bit integers,
+permitting encoding of problems with more than 2^31 variables or
+constraints.  The current AMPL cannot process such large problems,
+but a later version should be able to do so, at least when
+appropriately compiled.  The h format is available now to permit
+preparing solvers that can handle it.
+  Debugging format G is like g, except that it has a K section.
+Debugging formats B, H, and Z are like b, h, and z, but with
+reversed byte encoding of binary numbers.  (The solver interface
+library adjusts for byte ordering if necessary, allowing one to
+generate a binary .nl file on a big-endian machine and solve it
+on a little-endian machine or vice versa.)
+  Reading the new formats requires use of versions >= 20130703 of
+ASL, the AMPL/solver interface library.
+
+20130731
+  Fix a bug with inserting "_64" or substituting "_64" for "_32" in
+file names given to "load" commands with the 64-bit MS Windows binary
+and vice versa with the 32-bit MS Windows binary.
+
+20130809
+  Fix a parsing glitch with entities named "end".  In some contexts,
+such as "redeclare", "read table", "reset", "show", "suffix",
+"update", and "write table", "end" was treated as an "end" command.
+  Fix a bug (fault) that was possible under some conditions with
+a set of variables indexed over the empty set.
+  Fix a bug (wrong values; possible fault) in writing suffix values
+to .nl files for complementarity constraints involving expressions
+of more than one variable on both sides of "complements".  The .nl
+file has two constraints for each such complementarity constraint,
+and both get the same suffix value.
+
+20130815
+  Adjust 64-bit MS Windows binary to avoid trouble (not yet seen)
+with "sw" if ever a thread handle cannot be represented in 32 bits.
+
+20130816
+  Fix a bug (fault) with several entities (e.g., constraints) using,
+using iterated quantities, such as sums, over the same subscripted
+set with a constant subscript.
+
+20130903
+  Fix a fault that was possible with some problem instances involving
+piecewise-linear terms.
+
+20130906
+  Fix a bug that kept suffixes on logical constraints from being
+transmitted to the .nl file.
+
+20130921
+  Fix a possible fault (or worse) with instances having
+piecewise-linear terms whose linearization caused the number of
+variables to grow beyond the next power of 2.
+  Fix a bug unlikely to bother many people:  a fault with duplicate
+false constraints:
+	c: 0; d: 0; display c; # faulted
+
+20130926
+  Fix a bug (eventual fault or worse) with an increase (above the next
+higher power of 2) in cardinality of the indexing set of a defined
+variable, some of whose values had been used in printing or other
+commands.
+
+20131002
+  Fix a glitch with "ampl -b4 ..." in the error message for an
+unavailable solver:  part of the error message did not appear.
+
+20131010
+  Fix a bug with two or more entities indexed over a subscripted
+set with constant subscripts in the entity declarations.  The
+first-used subscript might have been used instead of the correct
+subscript in subsequent instantiations of the affected entities.
+  Have "write ...", including "write 0;", set solve_result_num = 299
+if presolve finds the problem infeasible.
+  Fix a rarely seen bug introduced with the changes of 20130408
+for option linelim 0.  A faulty .nl file was sometimes produced,
+with defined variables incorrectly ordered.  Defined variables
+may sometimes now appear in a different sequence in the .nl file.
+
+20131012
+  Fix a bug that might have bitten after a "problem" command and
+before the next "solve" or "solution" command.  If the "problem"
+command changed the constraints to be enforced or variables
+allowed to vary, if previous commands had caused presolve to run,
+and if nothing else had caused the need to run presolve again,
+commands such as printing and "let" commands that involved
+entities that depend on presolve might have used wrong values
+of some of those quantities.
+
+20131018
+  Fix a bug with inserting "_32" or "_64" (as appropriate) before
+the final "."  in filenames seen by load commands when the portion
+of the name before the "." was only one or two characters long
+(such as "cp.dll").  Alternatively, if a given library name has
+"_32" or "_64" before the final "." and fails to load (perhaps
+after changing "32" to "64" or vice versa, as appropriate), try
+omitting the "_32" or "_64".
+  When a solution is read by "solve" or "solution" and no dual
+variables are present but could have been, and when presolve
+has removed some constraints, delay the computation of dual
+variables for the removed constraints until something, such
+as a request to print dual values, requires them to be computed
+from the then current primal and dual variable values (possibly left
+over from a previous "solve" or still at their initial values).
+
+20131108
+  Fix a fault with redeclaring recursive declarations.
+  Allow "display X;" when X is a param or set indexed over an
+infinite set and X has a recursive default value.  The display
+just shows the values that so far had to be computed.  Example:
+
+  param f{i in Integers} default if i <= 1 then 1 else i*f[i-1];
+  set S{i in Integers} ordered default if i <= 1 then {1}
+	else S[i-1] union {i*last(S[i-1])};
+  display f[6], S[6], f, S;
+
+20131122
+  Fix a bug with "redeclare" that with some commands caused a
+delay in computing the redeclared value.  Example:
+
+	var x := 1; var y := 2; var z = y^2 + 1;
+	display x, y, z;
+	redeclare var z = 3*x + 4*y^2;
+	display x, y, z;	# z was wrong
+	display z;		# z was now right
+
+20131203
+  Fix a fault that was sometimes possible with named problems.
+
+20131212
+  Fix an infinite loop that was possible in interactive AMPL sessions
+after an error.
+  Fix a bug (e.g., fault) that was possible with some instances after
+"option presolve 0;" following a "solve;" of a larger problem.
+
+20131213
+  Allow execution to continue after "write 0;" gives an error message
+about infeasibility.
+
+20140130
+  Fix a bug in the processing of a scalar string-valued expression by
+the _display and csvdisplay commands:  the value should have been
+quoted when the data-section quoting rules require quoting (e.g., the
+value looks like a number or contains white space).
+  Though not previously documented, $csvdisplay_header = 2 has long
+caused the csvdisplay command to give headers of the form Expr_1,
+Expr_2, ..., whereas the default ($$csvdisplay_header = 1) used the
+declared name when appropriate in the header and used Expr_n when the
+n-th item was an expression other than a declared name.
+
+20140205
+  Fix bugs in simplifying logical constraints.  The bugs could give an
+error message about "unexpected nonvariable type" or could result in a
+.nl file that could cause some solvers to complain about an invalid
+indicator constraint.
+
+20140220
+  Fix a bug (error or fault) with "s.t. e: 0; display e.val;".
+(This was reported as corrected on 20140124, but the fix did not make
+it into the distributed binaries.)
+  Improve simplification of piecewise-linear terms:  after summing
+terms applied to the same variable, combine adjacent pieces with the
+same slope and turn the term into a linear term if only one slope
+remains.  Example:
+	var x;
+	minimize zot: <<1,2;-1,2,-3>>x + sin(x) + <<1,2;1,-2,3>>x;
+	solexpand; # now gives sin(x) rather than something messier
+  Add new processing for defined variables whose value is a piecewise-
+linear expression on a single variable.  Now the example
+	var x;
+	var y = 0.5*x + <<1,2,4;-3,1,-1,2>> x + .7;
+	var z = <<-2.3, -1.55, -.8, 1.7, 3.7; -5, 4, -3, 2, -1, 6>> y;
+	minimize zot: 2*y;
+	minimize zot2: 3*z;
+gives the same .nl file (but for roundoff) as
+	var x;
+	minimize zot: 2*(0.5*x + <<1,2,4;-3,1,-1,2>> x + .7);
+	minimize zot2: 3*<<-1.2,-.4,0.6,0.9,1,7/6,5/3,2,3,4,4.2,5.2,6;
+				-15, 2.5, -5, 7.5, -10, 6, -4.5, 3,
+				-1, 1.5, -7.5, 5, -2.5, 15>> x + 4.2;
+For now, at least, the "16" bit of $pl_linearize suppresses the new
+processing, i.e., "option pl_linearize 17" gives the former default
+behavior, and the "32" bit of $pl_linearize causes explicit
+definitions of variables involved in nonconvex (or nonconcave, as
+appropriate) piecewise-linear terms when this gives a sparser
+representation.  Thus "option pl_linearize 33" may sometimes result
+in the output of "solexpand;" being slightly easier to read.  Today's
+changes include recording more pl_linearize bits, including 4 and 8,
+which may cause changes to .sol files when nondefault $presolve_fixeps
+values matter.
+
+20140224
+  Fix a bug with defined variables in tables:  wrong values may have
+been transmitted by "write table".  Explicitly subscripted defined
+variables and those with a ".val" suffix were not affected by the bug.
+  Fix a bug (fault) with "solexpand _con;".
+
+20140312
+  Fix a bug (fault) that crept into version 20140220.
+  Fix a bug with "read" commands in compound statements (e.g., loops)
+that are executed after a "solve" or "solution" command that
+introduces new suffixes.
+  New option cmdtrace: "option cmdtrace 1;" turns on printing of the
+name of each command executed and, when the command comes from a file
+other than stdin, the filename and line number of the command.
+
+20140320
+  Fix a bug with problems with general complementarity conditions
+(expr1 >= 0 complements expr2 >= 0 where neither expression is
+linear in just one variable) and some partially linear nonlinear
+defined variables.  The example that revealed the bug resulted in
+an invalid .nl file.
+
+20140328
+  Fix a bug with sets that appear in loops and involve defined
+variables, illustrated by the following example.
+
+	set K; var x {K}; var y {k in K} = x[k];
+	data; set K := 1 2; var x := 1 1 2 0;
+	for{i in 1..2}{
+		display x, y;
+		display {k in K : x[k] == 1};
+		display {k in K : y[k] == 1};	#was wrong in 2nd iter
+		let x[2] := i;
+		}
+
+  Fix a bug with problem declarations involving iterated entities.
+Changes to things that indirectly affected the sets over which the
+entities were iterated did not cause the drop/restore state to be
+updated.
+  Fix a fault that was possible in interactive sessions with "show x;"
+after an error message about the wrong number of indices in the
+declaration of x.
+
+20140330
+  Work around Microsoft bugs that caused Infinity^2 to give 0.
+
+20140331
+  Fix a bug (causing an error message "Can't evaluate _con[...]")
+with "expand _con;" when logical constraints are present.
+Use "expand _logcon" to see the logical constraints before presolve.
+
+20140409
+  Fix a glitch whereby some commands, such as "fix", that should not
+require the current problem to be fully instantiated, nonetheless
+did so, possibly leading to an error message about "no value" for
+sets or parameters involved with variables, constraints, or objectives
+not involved with the current command.
+
+20140505
+  Fix a bug ("corrupted del_mblk arg") with some sequences of solves
+of subscripted problems.
+
+20140513
+  Fix a bug that could corrupt memory after a "solve" when "let"
+assigns to a variable that is not in the current problem but was
+declared before a variable that is in the current problem.
+  Fix a bug with sequences of commands in which the first of two sets
+that previously had the same value is assigned another value.  In some
+cases a computed value changed when it should not have been affected.
+Example:
+	set A; set B; set C;
+	set D = A union C;
+	set E = B union C;
+	data; set A := a b c; set B := a b c; set C := x y;
+	display D, E;
+	update data A; data; set A := p q r;
+	display D, E; # E was wrong
+
+20140524
+  Extend test for "no variables, but lower bound = ..." to fix a glitch
+with "option presolve 0" (which is often a bad idea) whereby infeasible
+constraints with no variables were eliminated when defined variables
+were present.  When no defined variables are present, such infeasible
+constraints are passed to the solver.

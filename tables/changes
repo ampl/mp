@@ -136,3 +136,32 @@ Thanks go to Victor Zverovich for this fix.
   tableproxy.c, tableprxyver.h: fix a bug in the tableproxy program
 that could lead to duplicate rows.  Thanks go to Victor Zverovich
 for this fix.
+
+20130815
+  amplodbc.c:  fix faults with "write table" of a table that in
+AMPL's view is empty but whose existing file-based version contains
+at least one row.
+
+20131122
+ tableproxy.c, tableproxyver.h:  arrange for 'verbose' output (written
+to the printf supplied by the tableproxy table handler) to be returned
+to the AMPL session.  This requires both a current tableproxy program
+and tableproxy*.dll (or ampltabl.dll that incorporates the tableproxy
+handler).  Have the tableproxy program ignore case when comparing
+handler names.
+ amplodbc.c: "invisible" tweak: use printf rather than fprintf to
+report a malloc failure.  (This is for tableproxy, so all output
+comes via printf.)
+
+20131212
+  amplodbc.c:  under MS Windows, use GetDesktopWindow() rather than
+EnumWindows() to get the window handle for SQLDriverConnect().  Thanks
+to Victor Zverovich for suggesting this change.
+
+20140125
+  tableproxy.c:  fix a bug in ampltabl.dll with reading empty tables
+via the tableproxy handler.  Have "tableproxy -v" show system details.
+
+20140525
+  tableproxy.c: Read_ampl_proxy: when table reading is finished and
+TI->Errmsg is set, return DB_Error rather than DB_Done.

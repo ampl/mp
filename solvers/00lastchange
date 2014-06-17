@@ -1,6 +1,8 @@
-20130622
-  New source file obj_adj.h, and adjustments to makefile.u, nqpcheck.c
-and obj_adj.c to extend the obj_replace facilities to solvers that
-request A_vals.  Examples: the updated CPLEX and XPRESS drivers,
-/netlib/ampl/solvers/cplex/cplex.c and
-/netlib/ampl/solvers/cplex/xpress.c.
+20140617
+  asl.h com2eval.c conpval.c fgh_read.c jac2dim.h jacpdim.h misc.c
+pfg_read.c pshvprod.c psinfo.h xp2known.c:  new functions with
+apparent signatures
+    void hvcompd(real *hv, real *p, int co);
+    varno_t hvcomps(real *hv, real *p, int co, varno_t nz, varno_t *z);
+See netlib/ampl/solvers/changes for more details.  Becuase of new
+components in struct ASL, the entire library needs to be recompiled.

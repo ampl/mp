@@ -188,6 +188,8 @@ file	ampl/solvers/nlp2.h
 
 file	ampl/solvers/nqpcheck.c
 
+file	ampl/solvers/nqpcheckZ.c
+
 file	ampl/solvers/obj2val.c
 
 file	ampl/solvers/obj_adj.c
@@ -229,6 +231,8 @@ file	ampl/solvers/punknown.c
 file	ampl/solvers/qp_read.c
 
 file	ampl/solvers/qpcheck.c
+
+file	ampl/solvers/qpcheckZ.c
 
 file	ampl/solvers/qsortv.c
 

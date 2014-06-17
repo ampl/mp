@@ -1,0 +1,22 @@
+file	ampl/changes
+for	Changes to AMPL since 1 Nov. 1992, plus recent bug fixes.
+
+file	ampl/fixlog
+for	Log of bug fixes and changes since 1 Nov. 1992.
+
+lib	ampl/looping
+for	Description and examples of new flow-of-control constructs.
+
+lib	ampl/models
+for	sample models from older papers.
+
+file	ampl/readme
+
+tlib	ampl/solvers
+for	solver interface code.
+
+lib	ampl/student
+for	directories of student binaries for several platforms.
+
+tlib	ampl/tables
+for	information on tables and constructing table handlers
