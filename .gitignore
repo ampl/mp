@@ -3,6 +3,7 @@
 *.a
 *.deb
 *.dll
+*.jar
 *.so
 *.pyc
 *-test
@@ -38,4 +39,4 @@ Makefile
 /solvers/sulum/sulum
 /tables/tableproxy64
 /tests/data/*.sol
-/Testing
+Testing
