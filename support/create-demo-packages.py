@@ -37,6 +37,8 @@ def writefile(f, filename):
 # Retrieve the url or use cached version of the file if available.
 cache_dir = 'cache'
 def retrieve_cached(url, system = None):
+  if not os.path.exists(cache_dir):
+    os.mkdir(cache_dir)
   filename = os.path.basename(urlparse(url).path)
   cached_path = cache_dir
   if system is not None:
