@@ -85,7 +85,7 @@ def extract_amplcml(amplcml, ampl_demo_dir, extra_paths = None):
     else:
       writefile(amplcml.open(name), outname)
 
-# Prepare a demo package for UNIX-like systems.
+# Prepare a demo package for a UNIX-like system.
 def prepare_unix_package(amplcml, ampl_demo_dir, system):
   os.mkdir(ampl_demo_dir)
   extract_amplcml(amplcml, ampl_demo_dir, extra_paths)
