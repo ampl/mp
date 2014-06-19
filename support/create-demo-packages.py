@@ -9,7 +9,7 @@ Options:
 """
 
 from __future__ import print_function
-import fileutil, gzip, os, shutil, stat
+import fileutil, gzip, os, shutil, stat, subprocess
 import tarfile, tempfile, timer, urllib, zipfile
 from docopt import docopt
 from glob import glob
@@ -131,7 +131,13 @@ def prepare_unix_package(amplcml, ampl_demo_dir, system):
 
 def package(basename, archive_format, package_dir):
   with timer.print_time('Creating', basename, 'package'):
-    shutil.make_archive(basename, archive_format, package_dir, '.')
+    if archive_format == 'gztar':
+      # Use command-line tar instead of shutil.make_archive because the
+      # latter is too slow.
+      archive = os.path.join(os.getcwd(), basename + '.tar.gz')
+      subprocess.check_call(['tar', 'czf', archive, '.'], cwd=package_dir)
+    else:
+      shutil.make_archive(basename, archive_format, package_dir, '.')
 
 def move(filename, target_dir):
   print('Moving', filename, 'to', target_dir)
