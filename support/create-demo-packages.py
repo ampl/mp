@@ -193,6 +193,7 @@ if __name__ == '__main__':
 
   # Move packages to the server.
   if args['update']:
+    demo_dir = '/var/www/dl/demo'
     for system in ['linux32', 'linux64', 'macosx', 'mswin']:
       ext = '.zip' if system == 'mswin' else '.tar.gz'
       move('ampl-demo-' + system + ext, demo_dir)
