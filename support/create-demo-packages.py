@@ -9,7 +9,8 @@ Options:
 """
 
 from __future__ import print_function
-import fileutil, gzip, os, shutil, stat, tarfile, tempfile, urllib, zipfile
+import fileutil, gzip, os, shutil, stat
+import tarfile, tempfile, timer, urllib, zipfile
 from docopt import docopt
 from glob import glob
 from sets import Set
@@ -128,6 +129,14 @@ def prepare_unix_package(amplcml, ampl_demo_dir, system):
   with gzip.GzipFile(retrieve_cached(url)) as f:
     writefile(f, os.path.join(ampl_demo_dir, 'ampltabl.dll'))
 
+def package(basename, archive_format, package_dir):
+  with timer.print_time('Creating', basename, 'package'):
+    shutil.make_archive(basename, archive_format, package_dir, '.')
+
+def move(filename, target_dir):
+  print('Moving', filename, 'to', target_dir)
+  os.rename(filename, os.path.join(target_dir, filename))
+
 # Map from system name to IDE package suffix.
 sys2ide = {
   'linux32': 'linux32.tgz',
@@ -138,6 +147,8 @@ sys2ide = {
 
 if __name__ == '__main__':
   args = docopt(__doc__)
+  
+  # Create packages.
   workdir = tempfile.mkdtemp()
   try:
     if not args['--cache']:
@@ -156,7 +167,7 @@ if __name__ == '__main__':
         archive_format = 'zip'
         extract_amplcml(amplcml, ampl_demo_dir)
       basename = 'ampl-demo-' + system
-      shutil.make_archive(basename, archive_format, package_dir, '.')
+      package(basename, archive_format, package_dir)
 
       # Prepare the IDE demo package.
       amplide_demo_dir = os.path.join(package_dir, 'amplide-demo')
@@ -168,7 +179,15 @@ if __name__ == '__main__':
       shutil.move('amplide', amplide_demo_dir)
       shutil.move(ampl_demo_dir, os.path.join(amplide_demo_dir, 'ampl'))
       basename = 'amplide-demo-' + system
-      shutil.make_archive(basename, archive_format, package_dir, '.')
+      package(basename, archive_format, package_dir)
       shutil.rmtree(amplide_demo_dir)
   finally:
     shutil.rmtree(workdir)
+
+  # Move packages to the server.
+  demo_dir = '/var/www/dl/demo'
+  if os.path.exists(demo_dir):
+    for system in ['linux32', 'linux64', 'macosx', 'mswin']:
+      ext = '.zip' if system == 'mswin' else '.tar.gz'
+      move('ampl-demo-' + system + ext, demo_dir)
+      move('amplide-demo-' + system + ext, demo_dir)
