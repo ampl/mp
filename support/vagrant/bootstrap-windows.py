@@ -1,10 +1,13 @@
 # Set up build environment on 64-bit Windows.
 
 from __future__ import print_function
-import os, shutil, timer
+import os, shutil
 from bootstrap import *
 from glob import glob
 from subprocess import check_call, check_output
+
+# The timer module should be imported after bootstrap which sets up sys.path.
+import timer
 
 # Add Python to PATH.
 python_dir = r'C:\Python27'

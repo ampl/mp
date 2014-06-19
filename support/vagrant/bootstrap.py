@@ -1,12 +1,13 @@
 # Common bootstrap functionality.
 
 from __future__ import print_function
-import glob, os, platform, re, shutil, sys, time, timer
+import glob, os, platform, re, shutil, sys, time
 import tarfile, tempfile, urllib2, urlparse, zipfile
 from contextlib import closing, contextmanager
 from subprocess import check_call
 
 sys.path.append('..')
+import timer
 
 @contextmanager
 def remove(filename):
