@@ -142,7 +142,7 @@ if __name__ == '__main__':
   try:
     if not args['--cache']:
       cache_dir = os.path.join(workdir, 'cache')
-      os.mkdir(workdir)
+      os.mkdir(cache_dir)
     package_dir = os.path.join(workdir, 'package')
     os.mkdir(package_dir)
     amplcml = zipfile.ZipFile(retrieve_cached(amplcml_url))
