@@ -1,35 +1,24 @@
 # Common bootstrap functionality.
 
 from __future__ import print_function
-import glob, os, platform, re, shutil, sys, time
+import glob, os, platform, re, shutil, sys, time, timer
 import tarfile, tempfile, urllib2, urlparse, zipfile
 from contextlib import closing, contextmanager
 from subprocess import check_call
 
 sys.path.append('..')
-from timer import Timer
 
 @contextmanager
 def remove(filename):
   yield filename
   os.remove(filename)
 
-@contextmanager
-def timer(*args):
-  t = Timer()
-  with t:
-    yield
-  print(*args, end=' ')
-  print('in', t.time, 'seconds')
-
 # Downloads into a temporary file.
 def download(url, cookie=None):
   suffix = os.path.splitext(urlparse.urlsplit(url)[2])[1]
   fd, filename = tempfile.mkstemp(suffix=suffix, dir='')
   os.close(fd)
-  print('Downloading', url, 'to', filename, '...')
-  sys.stdout.flush()
-  with timer('Downloaded', url):
+  with timer.print_time('Downloading', url, 'to', filename):
     opener = urllib2.build_opener()
     if cookie:
       opener.addheaders.append(('Cookie', cookie))

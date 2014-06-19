@@ -1,7 +1,7 @@
 # Set up build environment on 64-bit Windows.
 
 from __future__ import print_function
-import os, shutil
+import os, shutil, timer
 from bootstrap import *
 from glob import glob
 from subprocess import check_call, check_output
@@ -47,7 +47,7 @@ def install_mingw(arch):
       'Toolchains%20targetting%20Win' + bits + '/Personal%20Builds/' +
       'mingw-builds/4.8.2/threads-win32/sjlj/' + arch +
       '-4.8.2-release-win32-sjlj-rt_v3-rev4.7z/download') as f:
-    with timer("Installed MinGW" + bits):
+    with timer.print_time("Installing MinGW" + bits):
       output = check_output([sevenzip, 'x', '-oC:\\', f])
       for line in output.split('\n'):
         if not line.startswith('Extracting '):
