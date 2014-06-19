@@ -159,6 +159,7 @@ if __name__ == '__main__':
   try:
     if not args['--cache']:
       cache_dir = os.path.join(workdir, 'cache')
+    if not os.path.exists(cache_dir):
       os.mkdir(cache_dir)
     package_dir = os.path.join(workdir, 'package')
     os.mkdir(package_dir)
