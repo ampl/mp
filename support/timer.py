@@ -32,4 +32,4 @@ def print_time(*args):
   with t:
     yield
   print(*args, end=' ')
-  print('finished in', t.time, 'seconds')
+  print('finished in {:.1f} second(s)'.format(t.time))
