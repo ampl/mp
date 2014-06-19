@@ -1,8 +1,16 @@
 #!/usr/bin/env python
-# This script creates demo packages of ampl.
+"""Create AMPL demo packages.
+
+Usage:
+  create-demo-packages.py [--cache]
+
+Options:
+  --cache  Cache downloaded packages (for debugging).
+"""
 
 from __future__ import print_function
 import fileutil, gzip, os, shutil, stat, tarfile, tempfile, urllib, zipfile
+from docopt import docopt
 from glob import glob
 from sets import Set
 from StringIO import StringIO
@@ -15,7 +23,15 @@ student_url = 'http://ampl.com/netlib/ampl/student/'
 amplcml_url = 'http://www.ampl.com/NEW/TABLES/amplcml.zip'
 
 # URL for downloading AMPL table handler.
-googlecode_url = 'https://ampl.googlecode.com/files/'
+ampltabl_url = 'http://www.ampl.com/NEW/TABLEPROXY/'
+
+# Map from system names used for demo packages to ampltabl's system names.
+ampltabl_sys = {
+  'linux32': 'linux-intel32',
+  'linux64': 'linux-intel64',
+  'macosx':  'macosx64',
+  'mswin':   'mswin32'
+}
 
 # Files to download.
 download_files = [
@@ -33,11 +49,10 @@ def writefile(f, filename):
   with open(filename, 'wb') as out:
     out.write(f.read())
 
-# Retrieve the url or use cached version of the file if available.
 cache_dir = 'cache'
+
+# Retrieve the url or use cached version of the file if available.
 def retrieve_cached(url, system = None):
-  if not os.path.exists(cache_dir):
-    os.mkdir(cache_dir)
   filename = os.path.basename(urlparse(url).path)
   cached_path = cache_dir
   if system is not None:
@@ -52,10 +67,8 @@ def retrieve_cached(url, system = None):
     urllib.urlretrieve(url, cached_path)
   return cached_path
 
-amplcml = zipfile.ZipFile(retrieve_cached(amplcml_url))
-
 # Extract files from amplcml.zip.
-def extract_amplcml(ampl_demo_dir, extra_paths = None):
+def extract_amplcml(amplcml, ampl_demo_dir, extra_paths = None):
   for name in amplcml.namelist():
     if extra_paths is not None:
       found = False
@@ -72,9 +85,9 @@ def extract_amplcml(ampl_demo_dir, extra_paths = None):
       writefile(amplcml.open(name), outname)
 
 # Prepare a demo package for UNIX-like systems.
-def prepare_unix_package(ampl_demo_dir, system):
+def prepare_unix_package(amplcml, ampl_demo_dir, system):
   os.mkdir(ampl_demo_dir)
-  extract_amplcml(ampl_demo_dir, extra_paths)
+  extract_amplcml(amplcml, ampl_demo_dir, extra_paths)
 
   # Download ampl and solvers.
   for filename in download_files:
@@ -111,47 +124,51 @@ def prepare_unix_package(ampl_demo_dir, system):
     shutil.move(libgurobi, libgurobi_link)
 
   # Download ampltabl.dll.
-  ampltabl_url = googlecode_url + 'ampltabl-20131212-{}.zip'.format(system)
-  with zipfile.ZipFile(retrieve_cached(ampltabl_url)) as zip:
-    writefile(zip.open('ampltabl.dll'), os.path.join(ampl_demo_dir, 'ampltabl.dll'))
-
-# Prepare a demo package for Windows.
-def prepare_windows_package(ampl_demo_dir):
-  extract_amplcml()
+  url = ampltabl_url + 'ampltabl.{}.tgz'.format(ampltabl_sys[system])
+  with gzip.GzipFile(retrieve_cached(url)) as f:
+    writefile(f, os.path.join(ampl_demo_dir, 'ampltabl.dll'))
 
 # Map from system name to IDE package suffix.
 sys2ide = {
-  'linux32':  'linux32.tgz',
-  'linux64':  'linux32.tgz',
-  'macosx': 'mac64.tgz',
-  'mswin':  'win32.zip'
+  'linux32': 'linux32.tgz',
+  'linux64': 'linux32.tgz',
+  'macosx':  'mac64.tgz',
+  'mswin':   'win32.zip'
 }
 
-workdir = tempfile.mkdtemp()
-try:
-  ampl_demo_dir = os.path.join(workdir, 'ampl-demo')
-  for system in ['linux32', 'linux64', 'macosx', 'mswin']:
-    # Prepare the command-line demo package.
-    if system != 'mswin':
-      archive_format = 'gztar'
-      prepare_unix_package(ampl_demo_dir, system)
-    else:
-      archive_format = 'zip'
-      prepare_windows_package(ampl_demo_dir)
-    basename = 'ampl-demo-' + system
-    shutil.make_archive(basename, archive_format, '.', ampl_demo_dir)
+if __name__ == '__main__':
+  args = docopt(__doc__)
+  workdir = tempfile.mkdtemp()
+  try:
+    if not args['--cache']:
+      cache_dir = os.path.join(workdir, 'cache')
+      os.mkdir(workdir)
+    package_dir = os.path.join(workdir, 'package')
+    os.mkdir(package_dir)
+    amplcml = zipfile.ZipFile(retrieve_cached(amplcml_url))
+    ampl_demo_dir = os.path.join(package_dir, 'ampl-demo')
+    for system in ['linux32', 'linux64', 'macosx', 'mswin']:
+      # Prepare the command-line demo package.
+      if system != 'mswin':
+        archive_format = 'gztar'
+        prepare_unix_package(amplcml, ampl_demo_dir, system)
+      else:
+        archive_format = 'zip'
+        extract_amplcml(amplcml, ampl_demo_dir)
+      basename = 'ampl-demo-' + system
+      shutil.make_archive(basename, archive_format, package_dir, '.')
 
-    # Prepare the IDE demo package.
-    amplide_demo_dir = os.path.join(workdir, 'amplide-demo')
-    amplide_url = 'http://www.ampl.com/dl/IDE/amplide.' + sys2ide[system]
-    amplide = retrieve_cached(amplide_url)
-    archive_open = zipfile.ZipFile if amplide_url.endswith('zip') else tarfile.open
-    with archive_open(amplide) as archive:
-      archive.extractall()
-    shutil.move('amplide', amplide_demo_dir)
-    shutil.move(ampl_demo_dir, os.path.join(amplide_demo_dir, 'ampl'))
-    basename = 'amplide-demo-' + system
-    shutil.make_archive(basename, archive_format, '.', amplide_demo_dir)
-    shutil.rmtree(amplide_demo_dir)
-finally:
-  shutil.rmtree(workdir)
+      # Prepare the IDE demo package.
+      amplide_demo_dir = os.path.join(package_dir, 'amplide-demo')
+      amplide_url = 'http://www.ampl.com/dl/IDE/amplide.' + sys2ide[system]
+      amplide = retrieve_cached(amplide_url)
+      archive_open = zipfile.ZipFile if amplide_url.endswith('zip') else tarfile.open
+      with archive_open(amplide) as archive:
+        archive.extractall()
+      shutil.move('amplide', amplide_demo_dir)
+      shutil.move(ampl_demo_dir, os.path.join(amplide_demo_dir, 'ampl'))
+      basename = 'amplide-demo-' + system
+      shutil.make_archive(basename, archive_format, package_dir, '.')
+      shutil.rmtree(amplide_demo_dir)
+  finally:
+    shutil.rmtree(workdir)
