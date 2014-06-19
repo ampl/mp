@@ -2,8 +2,7 @@
 # This script creates demo packages of ampl.
 
 from __future__ import print_function
-import gzip, os, shutil, stat, tarfile, urllib, zipfile
-import fileutil
+import fileutil, gzip, os, shutil, stat, tarfile, tempfile, urllib, zipfile
 from glob import glob
 from sets import Set
 from StringIO import StringIO
@@ -55,10 +54,8 @@ def retrieve_cached(url, system = None):
 
 amplcml = zipfile.ZipFile(retrieve_cached(amplcml_url))
 
-ampl_demo_dir = 'ampl-demo'
-
 # Extract files from amplcml.zip.
-def extract_amplcml(extra_paths = None):
+def extract_amplcml(ampl_demo_dir, extra_paths = None):
   for name in amplcml.namelist():
     if extra_paths is not None:
       found = False
@@ -74,10 +71,10 @@ def extract_amplcml(extra_paths = None):
     else:
       writefile(amplcml.open(name), outname)
 
-# Prepare a demo package for UNIX systems.
-def prepare_unix_package(system):  
+# Prepare a demo package for UNIX-like systems.
+def prepare_unix_package(ampl_demo_dir, system):
   os.mkdir(ampl_demo_dir)
-  extract_amplcml(extra_paths)
+  extract_amplcml(ampl_demo_dir, extra_paths)
 
   # Download ampl and solvers.
   for filename in download_files:
@@ -119,8 +116,7 @@ def prepare_unix_package(system):
     writefile(zip.open('ampltabl.dll'), os.path.join(ampl_demo_dir, 'ampltabl.dll'))
 
 # Prepare a demo package for Windows.
-def prepare_windows_package():
-  fileutil.rmtree_if_exists(ampl_demo_dir)
+def prepare_windows_package(ampl_demo_dir):
   extract_amplcml()
 
 # Map from system name to IDE package suffix.
@@ -131,27 +127,31 @@ sys2ide = {
   'mswin':  'win32.zip'
 }
 
-for system in ['linux32', 'linux64', 'macosx', 'mswin']:
-  # Prepare the command-line demo package.
-  fileutil.rmtree_if_exists(ampl_demo_dir)
-  if system != 'mswin':
-    archive_format = 'gztar'
-    prepare_unix_package(system)
-  else:
-    archive_format = 'zip'
-    prepare_windows_package()
-  basename = 'ampl-demo-' + system
-  shutil.make_archive(basename, archive_format, '.', ampl_demo_dir)
+workdir = tempfile.mkdtemp()
+try:
+  ampl_demo_dir = os.path.join(workdir, 'ampl-demo')
+  for system in ['linux32', 'linux64', 'macosx', 'mswin']:
+    # Prepare the command-line demo package.
+    if system != 'mswin':
+      archive_format = 'gztar'
+      prepare_unix_package(ampl_demo_dir, system)
+    else:
+      archive_format = 'zip'
+      prepare_windows_package(ampl_demo_dir)
+    basename = 'ampl-demo-' + system
+    shutil.make_archive(basename, archive_format, '.', ampl_demo_dir)
 
-  # Prepare the IDE demo package.
-  amplide_demo_dir = 'amplide-demo'
-  fileutil.rmtree_if_exists(amplide_demo_dir)
-  amplide_url = 'http://www.ampl.com/dl/IDE/amplide.' + sys2ide[system]
-  amplide = retrieve_cached(amplide_url)
-  archive_open = zipfile.ZipFile if amplide_url.endswith('zip') else tarfile.open
-  with archive_open(amplide) as archive:
-    archive.extractall()
-  shutil.move('amplide', amplide_demo_dir)
-  shutil.move(ampl_demo_dir, os.path.join(amplide_demo_dir, 'ampl'))
-  basename = 'amplide-demo-' + system
-  shutil.make_archive(basename, archive_format, '.', amplide_demo_dir)
+    # Prepare the IDE demo package.
+    amplide_demo_dir = os.path.join(workdir, 'amplide-demo')
+    amplide_url = 'http://www.ampl.com/dl/IDE/amplide.' + sys2ide[system]
+    amplide = retrieve_cached(amplide_url)
+    archive_open = zipfile.ZipFile if amplide_url.endswith('zip') else tarfile.open
+    with archive_open(amplide) as archive:
+      archive.extractall()
+    shutil.move('amplide', amplide_demo_dir)
+    shutil.move(ampl_demo_dir, os.path.join(amplide_demo_dir, 'ampl'))
+    basename = 'amplide-demo-' + system
+    shutil.make_archive(basename, archive_format, '.', amplide_demo_dir)
+    shutil.rmtree(amplide_demo_dir)
+finally:
+  shutil.rmtree(workdir)
