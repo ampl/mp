@@ -182,8 +182,8 @@ if __name__ == '__main__':
       amplide = retrieve_cached(amplide_url)
       archive_open = zipfile.ZipFile if amplide_url.endswith('zip') else tarfile.open
       with archive_open(amplide) as archive:
-        archive.extractall()
-      shutil.move('amplide', amplide_demo_dir)
+        archive.extractall(package_dir)
+      shutil.move(os.path.join(package_dir, 'amplide'), amplide_demo_dir)
       shutil.move(ampl_demo_dir, os.path.join(amplide_demo_dir, 'ampl'))
       basename = 'amplide-demo-' + system
       package(basename, archive_format, package_dir)
