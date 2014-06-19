@@ -2,7 +2,7 @@
 """Create AMPL demo packages.
 
 Usage:
-  create-demo-packages.py [--cache]
+  create-demo-packages.py [--cache] [update]
 
 Options:
   --cache  Cache downloaded packages (for debugging).
@@ -192,8 +192,7 @@ if __name__ == '__main__':
     shutil.rmtree(workdir)
 
   # Move packages to the server.
-  demo_dir = '/var/www/dl/demo'
-  if os.path.exists(demo_dir):
+  if args['update']:
     for system in ['linux32', 'linux64', 'macosx', 'mswin']:
       ext = '.zip' if system == 'mswin' else '.tar.gz'
       move('ampl-demo-' + system + ext, demo_dir)
