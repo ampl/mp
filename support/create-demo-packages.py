@@ -17,7 +17,7 @@ from StringIO import StringIO
 from urlparse import urlparse
 
 # URL for downloading student versions of AMPL binaries.
-student_url = 'http://ampl.com/netlib/ampl/student/'
+student_url = 'http://www.ampl.com/netlib/ampl/student/'
 
 # URL for downloading a command-line version of AMPL.
 amplcml_url = 'http://www.ampl.com/NEW/TABLES/amplcml.zip'
