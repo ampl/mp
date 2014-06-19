@@ -131,7 +131,7 @@ def prepare_unix_package(amplcml, ampl_demo_dir, system):
 # Map from system name to IDE package suffix.
 sys2ide = {
   'linux32': 'linux32.tgz',
-  'linux64': 'linux32.tgz',
+  'linux64': 'linux64.tgz',
   'macosx':  'mac64.tgz',
   'mswin':   'win32.zip'
 }
