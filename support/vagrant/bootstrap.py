@@ -6,6 +6,9 @@ import tarfile, tempfile, urllib2, urlparse, zipfile
 from contextlib import closing, contextmanager
 from subprocess import check_call
 
+sys.path.append('..')
+from timer import Timer
+
 @contextmanager
 def remove(filename):
   yield filename
@@ -13,11 +16,11 @@ def remove(filename):
 
 @contextmanager
 def timer(*args):
-  start = time.clock()
-  yield
-  finish = time.clock()
+  t = Timer()
+  with t:
+    yield
   print(*args, end=' ')
-  print('in', finish - start, 'seconds')
+  print('in', t.time, 'seconds')
 
 # Downloads into a temporary file.
 def download(url, cookie=None):
