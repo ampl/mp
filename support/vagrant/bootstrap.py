@@ -24,11 +24,12 @@ def download(url, cookie=None):
     if cookie:
       opener.addheaders.append(('Cookie', cookie))
     f = opener.open(url)
+    length = int(f.headers['content-length'])
     with open(filename, 'wb') as out:
-      while 1:
+      count = 0
+      while count < length:
         data = f.read(1024 * 1024)
-        if not data:
-          break
+        count += len(data)
         out.write(data)
   return remove(filename)
 
