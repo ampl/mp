@@ -6,7 +6,7 @@ import tarfile, tempfile, urllib2, urlparse, zipfile
 from contextlib import closing, contextmanager
 from subprocess import check_call
 
-sys.path.append('..')
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import timer
 
 @contextmanager
