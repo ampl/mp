@@ -3,15 +3,11 @@
 """Create packages of open-source AMPL solvers and libraries.
 
 Usage:
-  create-open-source-packages.py [upload | simulate]
-  
-When run in "simulate" mode, this script doesn't uploading anything.
+  create-open-source-packages.py [update]
 """
 
 from __future__ import print_function
-import datetime, os, re, shutil, sys, tempfile, zipfile
-from docopt import docopt
-from subprocess import check_call
+import docopt, fileutil, os, re, shutil, subprocess, tempfile, zipfile
 
 project = "ampl"
 
@@ -41,14 +37,19 @@ packages = [
   Package('jacop',   ['jacop', 'ampljacop.jar', 'jacop-{version}.jar'])
 ]
 
-def create_packages(system, workdir, simulate):
+def get_archive_name(system, package=None):
+  if package:
+    return '{}-{}.zip'.format(package.name, system)
+  return 'ampl-open-{}.zip'.format(system)
+
+def create_packages(system, workdir):
   """Create packages and upload them to the server."""
 
   # Download build artifacts.
   artifact_dir = os.path.join(workdir, 'artifacts')
   print("Downloading files for {}:".format(system))
   cmd = "scp -r ampl.com:/var/lib/buildbot/upload/{} {}".format(system, artifact_dir)
-  check_call(cmd, shell=True)
+  subprocess.check_call(cmd, shell=True)
 
   # Read versions.
   versions = {}
@@ -65,38 +66,40 @@ def create_packages(system, workdir, simulate):
         versions[items[0].lower()] = version
 
   # Create individual packages.
+  paths = set()
   for package in packages:
-    archive_name = '{}-{}.zip'.format(package.name, system)
+    archive_name = get_archive_name(system, package)
     with zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED) as zip:
       for f in package.getfiles(system, versions):
-        if not f:
-          continue
-        zip.write(os.path.join(artifact_dir, f), f)
-      zip.write(os.path.join('licenses', package.license), package.license)
+        path = os.path.join(artifact_dir, f)
+        zip.write(path, f)
+        paths.add(path)
+      path = os.path.join('licenses', package.license)
+      zip.write(path, package.license)
+      paths.add(path)
 
-  #date = datetime.datetime.today()
-  #date = "{}{:02}{:02}".format(date.year, date.month, date.day)
-  # TODO: create full package
+  # Careate a full package.
+  with zipfile.ZipFile(get_archive_name(system), 'w', zipfile.ZIP_DEFLATED) as zip:
+    for path in paths:
+      zip.write(path, os.path.join('ampl-open', os.path.basename(path)))
   shutil.rmtree(artifact_dir)
 
-  return
-  # Upload all in one archive.
-  archive_name = os.path.join(tempdir, "ampl-open-{}-{}.zip".format(date, platform))
-  with zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED) as zip:
-    for path in paths:
-      zip.write(path, path[dirlen:])
-    zip.write("LICENSE", "LICENSE")
-  upload(archive_name, "Open-source AMPL solvers and libraries", simulate)
+systems = ['linux32', 'linux64', 'osx', 'win32', 'win64']
 
 if __name__ == '__main__':
-  args = docopt(__doc__)
-  simulate = args['simulate']
-  if not args['upload'] and not simulate:
-    print(__doc__)
-    sys.exit()
+  args = docopt.docopt(__doc__)
   workdir = tempfile.mkdtemp()
   try:
-    for system in ['linux32', 'linux64', 'osx', 'win32', 'win64']:
-      create_packages(system, workdir, simulate)
+    for system in systems:
+      create_packages(system, workdir)
+    if args['update']:
+      target_dir = '/var/www/dl/open'
+      for system in systems:
+        for package in packages:
+          dest = os.path.join(target_dir, package.name)
+          if not os.path.exists(dest):
+            os.mkdir(dest)
+          fileutil.move(get_archive_name(system, package), dest)
+        fileutil.move(get_archive_name(system), target_dir)
   finally:
     shutil.rmtree(workdir)
