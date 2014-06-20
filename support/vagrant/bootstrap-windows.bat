@@ -14,4 +14,5 @@ del vcredist_x64.exe
 cscript /nologo wget.js ^
   https://www.python.org/ftp/python/2.7.6/python-2.7.6.amd64.msi python.msi
 msiexec /i python.msi ALLUSERS=1
+del python.msi
 \Python27\python bootstrap-windows.py
