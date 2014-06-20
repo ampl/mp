@@ -5,52 +5,41 @@
 Usage:
   create-open-source-packages.py [upload | simulate]
   
-When run in "simulate" mode, this script only simulates upload without
-actually uploading anything.
+When run in "simulate" mode, this script doesn't uploading anything.
 """
 
+from __future__ import print_function
 import datetime, os, re, shutil, sys, tempfile, zipfile
 from docopt import docopt
-from subprocess import call, check_call
+from subprocess import check_call
 
-server = "ampl.com"
 project = "ampl"
 
-summaries = {
-  "amplgsl" : "AMPL bindings for the GNU Scientific Library",
-  "ampltabl": "ODBC table handler",
-  "cbc"     : "COIN-OR Cbc solver",
-  "gecode"  : "Gecode solver",
-  "ipopt"   : "COIN-OR Ipopt solver",
-  "jacop"   : "JaCoP solver"
-}
+class Package:
+  def __init__(self, name, files, **args):
+    self.name = name
+    self._files = files
+    self.license = args.get('project', name) + '-license.txt'
+    self._winfiles = args.get('winfiles', [])
 
-# A mapping from the package name to the list of files it contains.
-package_files = {
-  'amplgsl': ['amplgsl.dll', 'gsl.ampl'],
-  'cbc'    : ['bonmin'],
-  'cbc'    : ['cbc'],
-  'gecode' : ['gecode', 'gecode.ampl'],
-  'ipopt'  : ['ipopt', 'win:libipoptfort.dll'],
-  'jacop'  : ['jacop', 'ampljacop.jar', 'jacop-${version}.jar'],
-}
+  def getfiles(self, system, versions):
+    """Get the list of files for the given system."""
+    version = versions[self.name].split('-')[0]
+    files = self._files + (self._winfiles if system.startswith('win') else [])
+    for i in range(len(files)):
+      files[i] = files[i].format(version=version)
+      if system.startswith('win') and os.path.splitext(files[i])[1] == '':
+        files[i] += '.exe'
+    return files
 
-def rmtree_if_exists(path):
-  "Delete an entire directory tree if it exists."
-  if os.path.exists(path):
-    shutil.rmtree(path)
-
-def upload(filename, summary, simulate):
-  "Upload a file to the server."
-  print("Uploading {}".format(filename))
-  return
-  # TODO: implement
-  from netrc import netrc
-  authenticators = netrc().authenticators("code.google.com")
-  username = authenticators[0]
-  password = authenticators[2]
-  if simulate:
-    return
+packages = [
+  Package('amplgsl', ['amplgsl.dll', 'gsl.ampl'], project='gsl'),
+  Package('bonmin',  ['bonmin'], project='coin', winfiles=['libipoptfort.dll']),
+  Package('cbc',     ['cbc'], project='coin'),
+  Package('gecode',  ['gecode', 'gecode.ampl']),
+  Package('ipopt',   ['ipopt'], project='coin', winfiles=['libipoptfort.dll']),
+  Package('jacop',   ['jacop', 'ampljacop.jar', 'jacop-{version}.jar'])
+]
 
 def create_packages(system, workdir, simulate):
   """Create packages and upload them to the server."""
@@ -75,40 +64,22 @@ def create_packages(system, workdir, simulate):
           version += '-' + m.group(2)
         versions[items[0].lower()] = version
 
-  date = datetime.datetime.today()
-  date = "{}{:02}{:02}".format(date.year, date.month, date.day)
-
   # Create individual packages.
-  for package, files in package_files.iteritems():
-    version = versions[package].split('-')[0]
-    print package, version
-    # TODO
-  
+  for package in packages:
+    archive_name = '{}-{}.zip'.format(package.name, system)
+    with zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED) as zip:
+      for f in package.getfiles(system, versions):
+        if not f:
+          continue
+        zip.write(os.path.join(artifact_dir, f), f)
+      zip.write(os.path.join('licenses', package.license), package.license)
+
+  #date = datetime.datetime.today()
+  #date = "{}{:02}{:02}".format(date.year, date.month, date.day)
+  # TODO: create full package
+  shutil.rmtree(artifact_dir)
+
   return
-  paths = []
-  for base, dirs, files in os.walk(artifact_dir):
-    for file in files:
-      path = os.path.join(base, file)
-      name = path[dirlen:]
-      if name == "versions" or name in file_package or 'ampl-lic' in name:
-        continue
-      basename = os.path.splitext(name)[0]
-      suffix = versions.get(basename, date)
-      archive_name = os.path.join(tempdir, "{}-{}-{}.zip".format(basename, suffix, platform))
-      with zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED) as zip:
-        zip.write(path, name)
-        files = extra_files.get(basename)
-        if files:
-          for f in files:
-            items = f.split(':')
-            filename = items[0]
-            if len(items) > 1 and not platform.startswith(items[1]):
-              continue
-            extra_path = os.path.join(base, filename)
-            zip.write(extra_path, filename)
-            paths.append(extra_path)
-      upload(archive_name, summaries[basename], simulate)
-      paths.append(path)
   # Upload all in one archive.
   archive_name = os.path.join(tempdir, "ampl-open-{}-{}.zip".format(date, platform))
   with zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED) as zip:
@@ -116,17 +87,6 @@ def create_packages(system, workdir, simulate):
       zip.write(path, path[dirlen:])
     zip.write("LICENSE", "LICENSE")
   upload(archive_name, "Open-source AMPL solvers and libraries", simulate)
-  shutil.rmtree(filedir)
-
-def update_redir_page(repo_path, name, versions):
-  filename = os.path.join(repo_path, name + ".html")
-  with open(filename, 'r') as f:
-    content = f.read()
-  version = re.sub(r".*-()", r"\1", versions.get(name))
-  print 'changing version: {}, {}'.format(versions.get(name), version)
-  content = re.sub(r"q={}\+(\d+)".format(name), "q={}+{}".format(name, version), content)
-  with open(filename, 'w') as f:
-    f.write(content)
 
 if __name__ == '__main__':
   args = docopt(__doc__)
