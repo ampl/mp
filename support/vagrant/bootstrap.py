@@ -4,7 +4,7 @@ from __future__ import print_function
 import glob, os, platform, re, shutil, sys, time
 import tarfile, tempfile, urllib2, urlparse, zipfile
 from contextlib import closing, contextmanager
-from subprocess import check_call
+from subprocess import check_call, call
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import timer
@@ -179,7 +179,8 @@ def install_buildbot_slave(name, path=None, script_dir='', shell=False):
   cron.new('PATH={0}:/usr/local/bin buildslave start {1}'.format(
     os.environ['PATH'], path)).every_reboot()
   cron.write()
-  check_call(['sudo', '-H', '-u', 'vagrant', 'buildslave', 'start', path])
+  # Ignore errors from buildslave as the buildbot may not be accessible.
+  call(['sudo', '-H', '-u', 'vagrant', 'buildslave', 'start', path])
 
 # Copies optional dependencies from opt/<platform> to /opt.
 def copy_optional_dependencies(platform):
