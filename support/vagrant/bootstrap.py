@@ -161,8 +161,13 @@ def pip_install(package, test_module=None):
 
 # Installs buildbot slave.
 def install_buildbot_slave(name, path=None, script_dir='', shell=False):
-  path = path or os.path.expanduser('~vagrant/slave')
-  if not os.path.exists(vagrant_dir) or os.path.exists(path):
+  # Create buildbot user if it doesn't exist.
+  try:
+    pwd.getpwnam('buildbot')
+  except KeyError:
+    check_call[('sudo', 'useradd', '-r', '-s' '/bin/false')]
+  path = path or os.path.expanduser('~buildbot/slave')
+  if os.path.exists(path):
     return
   pip_install('buildbot-slave', 'buildbot')
   # The password is insecure but it doesn't matter as the buildslaves are
@@ -170,18 +175,18 @@ def install_buildbot_slave(name, path=None, script_dir='', shell=False):
   command = [os.path.join(script_dir, 'buildslave'),
              'create-slave', path, '10.0.2.2', name, 'pass']
   if not windows:
-    command = ['sudo', '-u', 'vagrant'] + command
+    command = ['sudo', '-u', 'buildbot'] + command
   check_call(command, shell=shell)
   if windows:
     return
   pip_install('python-crontab', 'crontab')
   from crontab import CronTab
-  cron = CronTab('vagrant')
+  cron = CronTab('buildbot')
   cron.new('PATH={0}:/usr/local/bin buildslave start {1}'.format(
     os.environ['PATH'], path)).every_reboot()
   cron.write()
   # Ignore errors from buildslave as the buildbot may not be accessible.
-  call(['sudo', '-H', '-u', 'vagrant', 'buildslave', 'start', path])
+  call(['sudo', '-H', '-u', 'buildbot', 'buildslave', 'start', path])
 
 # Copies optional dependencies from opt/<platform> to /opt.
 def copy_optional_dependencies(platform):

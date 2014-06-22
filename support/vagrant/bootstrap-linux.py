@@ -1,36 +1,47 @@
 #!/usr/bin/env python
-# Set up build environment on Ubuntu or other Debian-based
-# Linux distribution.
+"""
+Set up build environment on Ubuntu or other Debian-based
+Linux distribution.
+
+Usage:
+  bootstrap-linux.py [buildbot]
+"""
 
 import platform, re
 from bootstrap import *
 from subprocess import check_call, Popen, PIPE
 
-bootstrap_init()
+if __name__ == '__main__':
+  bootstrap_init()
 
-x86_64 = platform.machine() == 'x86_64'
+  import docopt
+  args = docopt.docopt(__doc__)
 
-# Install build tools.
-if not installed('cmake'):
-  check_call(['apt-get', 'update'])
-  packages = [
-    'git-core', 'gcc', 'g++', 'gfortran', 'ccache', 'make',
-    'python-dev', 'default-jdk', 'unixodbc-dev'
-  ]
-  if x86_64:
-    packages.append('libc6-i386')
-  check_call(['apt-get', 'install', '-y'] + packages)
+  x86_64 = platform.machine() == 'x86_64'
 
-  install_cmake('cmake-2.8.12.2-Linux-i386.tar.gz')
+  # Install build tools.
+  if not installed('cmake'):
+    check_call(['apt-get', 'update', '-q'])
+    packages = [
+      'git-core', 'gcc', 'g++', 'gfortran', 'ccache', 'make',
+      'python-dev', 'default-jdk', 'unixodbc-dev'
+    ]
+    if x86_64:
+      packages.append('libc6-i386')
+    check_call(['apt-get', 'install', '-qy'] + packages)
 
-# Installs symlinks for ccache.
-for name in ['gcc', 'cc', 'g++', 'c++']:
-  add_to_path(which('ccache'), name)
+    install_cmake('cmake-2.8.12.2-Linux-i386.tar.gz')
 
-install_f90cache()
-output = Popen(['gfortran', '--version'], stdout=PIPE).communicate()[0]
-version = re.match(r'.* (\d+\.\d+)\.\d+', output).group(1)
-add_to_path('/usr/local/bin/f90cache', 'gfortran-' + version)
+  # Installs symlinks for ccache.
+  for name in ['gcc', 'cc', 'g++', 'c++']:
+    add_to_path(which('ccache'), name)
 
-copy_optional_dependencies('linux-' + platform.machine())
-install_buildbot_slave('lucid64' if x86_64 else 'lucid32')
+  install_f90cache()
+  output = Popen(['gfortran', '--version'], stdout=PIPE).communicate()[0]
+  version = re.match(r'.* (\d+\.\d+)\.\d+', output).group(1)
+  add_to_path('/usr/local/bin/f90cache', 'gfortran-' + version)
+
+  copy_optional_dependencies('linux-' + platform.machine())
+  
+  if args['buildbot']:
+    install_buildbot_slave('lucid64' if x86_64 else 'lucid32')
