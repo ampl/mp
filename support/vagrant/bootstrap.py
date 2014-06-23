@@ -1,7 +1,7 @@
 # Common bootstrap functionality.
 
 from __future__ import print_function
-import glob, os, platform, re, shutil, sys, time
+import glob, os, platform, pwd, re, shutil, sys, time
 import tarfile, tempfile, urllib2, urlparse, zipfile
 from contextlib import closing, contextmanager
 from subprocess import check_call, call
@@ -165,7 +165,8 @@ def install_buildbot_slave(name, path=None, script_dir='', shell=False):
   try:
     pwd.getpwnam('buildbot')
   except KeyError:
-    check_call[('sudo', 'useradd', '-r', '-s' '/bin/false')]
+    check_call(['sudo', 'useradd', '--system', '--home', '/var/lib/buildbot',
+                '--create-home', '--shell', '/bin/false', 'buildbot'])
   path = path or os.path.expanduser('~buildbot/slave')
   if os.path.exists(path):
     return
