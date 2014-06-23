@@ -22,13 +22,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.define "lucid64", primary: true do |c|
     c.vm.provider "docker" do |d|
-      d.image = "ubuntu:10.04"
-      d.cmd = ["sudo",  "apt-get", "install", "sshd"]
-      d.has_ssh = true
+      d.image = "vitaut/ampl:lucid64"
+      d.cmd = ["sudo", "-H", "-u", "buildbot", "buildslave", "start",
+               "--nodaemon", "/var/lib/buildbot/slave"]
     end
-    c.vm.synced_folder "support/vagrant/lucid64/archives",
-                       "/var/cache/apt/archives"
-    c.vm.provision :shell, :inline => "/vagrant/support/vagrant/bootstrap-linux.py buildbot"
   end
 
   config.vm.define "osx-ml" do |c|
