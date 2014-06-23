@@ -160,34 +160,39 @@ def pip_install(package, test_module=None):
   requirement_set.install([], [])
 
 # Installs buildbot slave.
-def install_buildbot_slave(name, path=None, script_dir='', shell=False):
-  # Create buildbot user if it doesn't exist.
-  try:
-    pwd.getpwnam('buildbot')
-  except KeyError:
-    check_call(['sudo', 'useradd', '--system', '--home', '/var/lib/buildbot',
-                '--create-home', '--shell', '/bin/false', 'buildbot'])
-  path = path or os.path.expanduser('~buildbot/slave')
+def install_buildbot_slave(name, path=None, script_dir='', shell=False, **args):
+  username = 'vagrant'
+  if platform.system() == 'Linux':
+    # Create buildbot user if it doesn't exist.
+    username = 'buildbot'
+    try:
+      pwd.getpwnam(username)
+    except KeyError:
+      check_call(['sudo', 'useradd', '--system', '--home', '/var/lib/buildbot',
+                  '--create-home', '--shell', '/bin/false', 'buildbot'])
+  path = path or os.path.expanduser('~{0}/slave'.format(username))
   if os.path.exists(path):
     return
   pip_install('buildbot-slave', 'buildbot')
   # The password is insecure but it doesn't matter as the buildslaves are
   # not publicly accessible.
   command = [os.path.join(script_dir, 'buildslave'),
-             'create-slave', path, '10.0.2.2', name, 'pass']
+             'create-slave', path, args['ip'] or '10.0.2.2', name, 'pass']
   if not windows:
-    command = ['sudo', '-u', 'buildbot'] + command
+    command = ['sudo', '-u', username] + command
   check_call(command, shell=shell)
   if windows:
     return
+  if args['nocron']:
+    return
   pip_install('python-crontab', 'crontab')
   from crontab import CronTab
-  cron = CronTab('buildbot')
+  cron = CronTab(username)
   cron.new('PATH={0}:/usr/local/bin buildslave start {1}'.format(
     os.environ['PATH'], path)).every_reboot()
   cron.write()
   # Ignore errors from buildslave as the buildbot may not be accessible.
-  call(['sudo', '-H', '-u', 'buildbot', 'buildslave', 'start', path])
+  call(['sudo', '-H', '-u', username, 'buildslave', 'start', path])
 
 # Copies optional dependencies from opt/<platform> to /opt.
 def copy_optional_dependencies(platform):

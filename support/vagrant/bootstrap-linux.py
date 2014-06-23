@@ -4,7 +4,9 @@ Set up build environment on Ubuntu or other Debian-based
 Linux distribution.
 
 Usage:
-  bootstrap-linux.py [buildbot]
+  bootstrap-linux.py [buildbot | docker]
+
+buildbot: install buildbot slave
 """
 
 import platform, re
@@ -43,5 +45,7 @@ if __name__ == '__main__':
 
   copy_optional_dependencies('linux-' + platform.machine())
   
-  if args['buildbot']:
-    install_buildbot_slave('lucid64' if x86_64 else 'lucid32')
+  docker = args['docker']
+  if args['buildbot'] or docker:
+    ip = '172.17.42.1' if docker else None
+    install_buildbot_slave('lucid64' if x86_64 else 'lucid32', nocron=docker, ip=ip)
