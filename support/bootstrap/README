@@ -1,3 +1,2 @@
-This directory contains subdirectories mounted as Vagrant shared
-folders for files that can be discarded after provisioning such as
-/var/cache/apt/archives. This is done to avoid unnecessary VM growth.
+This directory contains bootstrap scripts that configure build
+environment in Vagrant and Docker.

@@ -1,8 +1,13 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+require 'pathname'
+
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
+
+# Path to directory containing optional dependencies.
+OPT_DIR = ENV["AMPL_OPT_DIR"]
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # This requires VirtualBox Extension Pack to be installed on the host.
@@ -17,7 +22,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     c.vm.box_url = "http://files.vagrantup.com/lucid32.box"
     c.vm.synced_folder "support/vagrant/lucid32/archives",
                        "/var/cache/apt/archives"
-    c.vm.provision :shell, :inline => "/vagrant/support/vagrant/bootstrap-linux.py buildbot"
+    c.vm.provision :shell, :inline => "/vagrant/support/bootstrap/bootstrap-linux.py buildbot"
   end
 
   config.vm.define "lucid64", primary: true do |c|
@@ -25,6 +30,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       d.image = "vitaut/ampl:lucid64"
       d.cmd = ["sudo", "-H", "-u", "buildbot", "buildslave", "start",
                "--nodaemon", "/var/lib/buildbot/slave"]
+      # Mount directories containing optional dependencies.
+      if OPT_DIR
+        dir = OPT_DIR + "/linux-x86_64/*/"
+        d.volumes = Pathname.glob(dir).map { |p| p.to_s + ":/opt/" + p.basename.to_s }
+      end
     end
   end
 
@@ -37,7 +47,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     c.vm.network :private_network, ip: "10.11.12.13"
     c.vm.synced_folder ".", "/vagrant", :type => "nfs",
                        :mount_options => ["resvport"]
-    c.vm.provision :shell, :inline => "/vagrant/support/vagrant/bootstrap-osx.py"
+    c.vm.provision :shell, :inline => "/vagrant/support/bootstrap/bootstrap-osx.py"
   end
 
   config.vm.define "win2008" do |c|
@@ -52,7 +62,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # Write the output to provision.log because of the issue
     # https://github.com/mitchellh/vagrant/issues/3866
     c.vm.provision "shell",
-      inline: "\\vagrant\\support\\vagrant\\bootstrap-windows.bat " +
-              "> \\vagrant\\support\\vagrant\\provision.log 2>&1"
+      inline: "\\vagrant\\support\\bootstrap\\bootstrap-windows.bat " +
+              "> \\vagrant\\support\\bootstrap\\provision.log 2>&1"
   end
 end
