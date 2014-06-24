@@ -100,6 +100,11 @@ endif ()
 file(GLOB JACOP_PATH solvers/jacop/lib/jacop-*.jar)
 if (JACOP_PATH)
   get_filename_component(JACOP_JAR ${JACOP_PATH} NAME)
+  if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+    # Set CMAKE_SYSTEM_PROCESSOR to make sure FindJNI finds the correct
+    # AWT and JVM libraries.
+    set(CMAKE_SYSTEM_PROCESSOR i586)
+  endif ()
   find_package(JNI)
   find_package(Java)
   if (JNI_FOUND AND JAVA_FOUND)
