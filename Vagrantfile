@@ -9,6 +9,14 @@ VAGRANTFILE_API_VERSION = "2"
 # Path to directory containing optional dependencies.
 OPT_DIR = ENV["AMPL_OPT_DIR"]
 
+def get_volumes(arch)
+  if OPT_DIR
+    dir = OPT_DIR + "/linux-" + arch + "/*/"
+    return Pathname.glob(dir).map { |p| p.to_s + ":/opt/" + p.basename.to_s }
+  end
+  return []
+end
+  
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # This requires VirtualBox Extension Pack to be installed on the host.
   config.vm.provider "virtualbox" do |v|
@@ -17,24 +25,22 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     v.customize ["modifyvm", :id, "--vrde", "on", "--vrdeauthtype", "external"]
   end
 
+  config.vm.provider "docker" do |d|
+    d.cmd = ["sudo", "-H", "-u", "buildbot", "buildslave", "start",
+             "--nodaemon", "/var/lib/buildbot/slave"]
+  end
+
   config.vm.define "lucid32" do |c|
-    c.vm.box = "lucid32"
-    c.vm.box_url = "http://files.vagrantup.com/lucid32.box"
-    c.vm.synced_folder "support/vagrant/lucid32/archives",
-                       "/var/cache/apt/archives"
-    c.vm.provision :shell, :inline => "/vagrant/support/bootstrap/bootstrap-linux.py buildbot"
+    c.vm.provider "docker" do |d|
+      d.image = "vitaut/ampl:lucid32"
+      d.volumes = get_volumes("i686")
+    end
   end
 
   config.vm.define "lucid64", primary: true do |c|
     c.vm.provider "docker" do |d|
       d.image = "vitaut/ampl:lucid64"
-      d.cmd = ["sudo", "-H", "-u", "buildbot", "buildslave", "start",
-               "--nodaemon", "/var/lib/buildbot/slave"]
-      # Mount directories containing optional dependencies.
-      if OPT_DIR
-        dir = OPT_DIR + "/linux-x86_64/*/"
-        d.volumes = Pathname.glob(dir).map { |p| p.to_s + ":/opt/" + p.basename.to_s }
-      end
+      d.volumes = get_volumes("x86_64")
     end
   end
 

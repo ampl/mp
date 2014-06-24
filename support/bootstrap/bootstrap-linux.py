@@ -19,7 +19,7 @@ if __name__ == '__main__':
   import docopt
   args = docopt.docopt(__doc__)
 
-  x86_64 = platform.machine() == 'x86_64'
+  x86_64 = platform.architecture()[0] == '64bit'
 
   # Install build tools.
   if not installed('cmake'):
