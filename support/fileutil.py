@@ -1,5 +1,6 @@
 # File utils.
 
+from __future__ import print_function
 import errno, os, shutil, zipfile
 
 # Delete an entire directory tree if it exists.
