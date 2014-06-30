@@ -32,6 +32,7 @@ packages = [
   Package('amplgsl', ['amplgsl.dll', 'gsl.ampl'], project='gsl'),
   Package('bonmin',  ['bonmin'], project='coin', winfiles=['libipoptfort.dll']),
   Package('cbc',     ['cbc'], project='coin'),
+  Package('couenne', ['couenne'], project='coin', winfiles=['libipoptfort.dll']),
   Package('gecode',  ['gecode', 'gecode.ampl']),
   Package('ipopt',   ['ipopt'], project='coin', winfiles=['libipoptfort.dll']),
   Package('jacop',   ['jacop', 'ampljacop.jar', 'jacop-{version}.jar'])
