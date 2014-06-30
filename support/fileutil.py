@@ -34,3 +34,7 @@ def make_archive(archive_name, dirname):
           zip.writestr(zipinfo, os.readlink(path))
         else:
           zip.write(path, path)
+
+def move(filename, target_dir):
+  print('Moving', filename, 'to', target_dir)
+  os.rename(filename, os.path.join(target_dir, filename))

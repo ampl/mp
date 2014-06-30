@@ -139,10 +139,6 @@ def package(basename, archive_format, package_dir):
     else:
       shutil.make_archive(basename, archive_format, package_dir, '.')
 
-def move(filename, target_dir):
-  print('Moving', filename, 'to', target_dir)
-  os.rename(filename, os.path.join(target_dir, filename))
-
 # Map from system name to IDE package suffix.
 sys2ide = {
   'linux32': 'linux32.tgz',
@@ -196,5 +192,5 @@ if __name__ == '__main__':
     demo_dir = '/var/www/dl/demo'
     for system in ['linux32', 'linux64', 'macosx', 'mswin']:
       ext = '.zip' if system == 'mswin' else '.tar.gz'
-      move('ampl-demo-' + system + ext, demo_dir)
-      move('amplide-demo-' + system + ext, demo_dir)
+      fileutil.move('ampl-demo-' + system + ext, demo_dir)
+      fileutil.move('amplide-demo-' + system + ext, demo_dir)
