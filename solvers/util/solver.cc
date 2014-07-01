@@ -167,9 +167,9 @@ void RSTFormatter::HandleText(const char *text, std::size_t size) {
 
 void RSTFormatter::HandleDirective(const char *type) {
   if (std::strcmp(type, "value-table") != 0)
-    ampl::ThrowError("unknown directive {}") << type;
+    throw ampl::Error("unknown directive {}", type);
   if (values_.size() == 0)
-    ampl::ThrowError("no values to format");
+    throw ampl::Error("no values to format");
   std::size_t max_len = 0;
   for (ampl::ValueArrayRef::iterator
       i = values_.begin(), e = values_.end(); i != e; ++i) {
@@ -252,7 +252,7 @@ Interruptible *SignalHandler::interruptible_;
 volatile std::sig_atomic_t SignalHandler::stop_ = 1;
 
 SignalHandler::SignalHandler(const Solver &s, Interruptible *i) {
-  signal_message_ = str(fmt::Format("\n<BREAK> ({})\n") << s.name());
+  signal_message_ = fmt::format("\n<BREAK> ({})\n", s.name());
   signal_message_ptr_ = signal_message_.c_str();
   signal_message_size_ = static_cast<unsigned>(signal_message_.size());
   interruptible_ = i;
@@ -481,7 +481,7 @@ bool Solver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
   double read_time = GetTimeAndReset(start);
   bool result = ParseOptions(argv, flags, &p);
   if (timing_)
-    Print("Input time = {:.6f}s\n") << read_time;
+    Print("Input time = {:.6f}s\n", read_time);
   return result;
 }
 
@@ -546,7 +546,7 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
         ++s;
         if ((flags & NO_OPTION_ECHO) == 0) {
           fmt::Writer w;
-          w.Format("{}=") << &name[0];
+          w << &name[0] << '=';
           opt->Write(w);
           w << '\n';
           Print(fmt::StringRef(w.c_str(), w.size()));
@@ -555,17 +555,17 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
       }
     }
     if (opt->is_flag() && equal_sign) {
-      ReportError("Option \"{}\" doesn't accept argument") << &name[0];
+      ReportError("Option \"{}\" doesn't accept argument", &name[0]);
       s = SkipNonSpaces(s);
       continue;
     }
     try {
       opt->Parse(s);
     } catch (const OptionError &e) {
-      ReportError("{}") << e.what();
+      ReportError("{}", e.what());
     }
     if ((flags & NO_OPTION_ECHO) == 0)
-      Print("{}\n") << std::string(name_start, s - name_start);
+      Print("{}\n", std::string(name_start, s - name_start));
   }
 }
 

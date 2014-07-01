@@ -29,23 +29,16 @@
 namespace ampl {
 
 // A general error.
-class Error : public std::runtime_error {
+class Error : public fmt::internal::RuntimeError {
+ private:
+  void init(fmt::StringRef format_str, const fmt::ArgList &args) {
+    std::runtime_error &base = *this;
+    base = std::runtime_error(fmt::format(format_str, args));
+  }
  public:
-  explicit Error(fmt::StringRef message) : std::runtime_error(message) {}
+  FMT_VARIADIC_(char, , Error, init, fmt::StringRef)
   ~Error() throw() {}
 };
-
-struct Throw {
-  void operator()(const fmt::Writer &w) const {
-    throw Error(fmt::StringRef(w.c_str(), w.size()));
-  }
-};
-
-// Throws Error with a formatted message.
-inline fmt::Formatter<Throw> ThrowError(fmt::StringRef format) {
-  fmt::Formatter<Throw> f(format);
-  return f;
-}
 }
 
 #endif  // SOLVERS_UTIL_ERROR_H_

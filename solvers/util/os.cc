@@ -98,7 +98,7 @@ path ampl::GetExecutablePath() {
   for (;;) {
     size = readlink("/proc/self/exe", &buffer[0], buffer.size());
     if (size < 0)
-      fmt::ThrowSystemError(errno, "cannot get executable path");
+      throw fmt::SystemError(errno, "cannot get executable path");
     if (static_cast<size_t>(size) != buffer.size()) break;
     buffer.resize(2 * buffer.size());
   }
@@ -129,7 +129,7 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
    public:
     explicit File(const char *filename) : fd_(open(filename, O_RDONLY)) {
       if (fd_ == -1)
-        fmt::ThrowSystemError(errno, "cannot open file {}") << filename;
+        throw fmt::SystemError(errno, "cannot open file {}", filename);
     }
     ~File() { close(fd_); }
     operator int() const { return fd_; }
@@ -139,7 +139,7 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
   File file(filename.c_str());
   struct stat file_stat = {};
   if (fstat(file, &file_stat) == -1)
-    fmt::ThrowSystemError(errno, "cannot get attributes of file {}") << filename;
+    throw fmt::SystemError(errno, "cannot get attributes of file {}", filename);
   size_ = file_stat.st_size;
   // TODO: don't use mmap if file size is a multiple of page size
   //size_t full_size = RoundUpToMultipleOf(size_, sysconf(_SC_PAGESIZE));
@@ -148,7 +148,7 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
   start_ = reinterpret_cast<char*>(
       mmap(0, size_, PROT_READ, MAP_FILE | MAP_PRIVATE, file, 0));
   if (start_ == MAP_FAILED)
-    fmt::ThrowSystemError(errno, "cannot map file {}") << filename;
+    throw fmt::SystemError(errno, "cannot map file {}", filename);
 }
 
 ampl::MemoryMappedFile::~MemoryMappedFile() {

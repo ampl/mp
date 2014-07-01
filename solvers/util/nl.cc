@@ -34,26 +34,6 @@
 # define ASL_SWAP_BYTES
 #endif
 
-namespace {
-
-class ParseErrorReporter {
- private:
-  fmt::StringRef name_;
-  int line_;
-  int column_;
-
- public:
-  ParseErrorReporter(fmt::StringRef name, int line, int column)
-  : name_(name), line_(line), column_(column) {}
-
-  void operator()(const fmt::Writer &w) const {
-    throw ampl::ParseError(name_, line_, column_,
-        fmt::Format("{}:{}:{}: {}") << name_ << line_ << column_
-          << fmt::StringRef(w.c_str(), w.size()));
-  }
-};
-}
-
 namespace ampl {
 
 fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h) {
@@ -63,35 +43,30 @@ fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h) {
   if (h.options[VBTOL_OPTION] == READ_VBTOL)
     w << ' ' << h.ampl_vbtol;
   w << '\n';
-  w.Format(" {} {} {} {} {} {}\n")
-      << h.num_vars << h.num_algebraic_cons << h.num_objs
-      << h.num_ranges << h.num_eqns << h.num_logical_cons;
-  w.Format(" {} {} {} {} {} {}\n")
-      << h.num_nl_cons << h.num_nl_objs
-      << (h.num_compl_conds - h.num_nl_compl_conds)
-      << h.num_nl_compl_conds << h.num_compl_dbl_ineqs
-      << h.num_compl_vars_with_nz_lb;
-  w.Format(" {} {}\n")
-      << h.num_nl_net_cons << h.num_linear_net_cons;
-  w.Format(" {} {} {}\n")
-      << h.num_nl_vars_in_cons << h.num_nl_vars_in_objs
-      << h.num_nl_vars_in_both;
-  w.Format(" {} {} {} {}\n")
-      << h.num_linear_net_vars << h.num_funcs
-      << (h.format != NLHeader::BINARY_SWAPPED ? 0 : 3 - Arith_Kind_ASL)
-      << h.flags;
-  w.Format(" {} {} {} {} {}\n")
-      << h.num_linear_binary_vars << h.num_linear_integer_vars
-      << h.num_nl_integer_vars_in_both << h.num_nl_integer_vars_in_cons
-      << h.num_nl_integer_vars_in_objs;
-  w.Format(" {} {}\n")
-      << h.num_con_nonzeros << h.num_obj_nonzeros;
-  w.Format(" {} {}\n")
-      << h.max_con_name_len << h.max_var_name_len;
-  w.Format(" {} {} {} {} {}\n")
-      << h.num_common_exprs_in_both << h.num_common_exprs_in_cons
-      << h.num_common_exprs_in_objs << h.num_common_exprs_in_cons1
-      << h.num_common_exprs_in_objs1;
+  w.write(" {} {} {} {} {} {}\n",
+      h.num_vars, h.num_algebraic_cons, h.num_objs,
+      h.num_ranges, h.num_eqns, h.num_logical_cons);
+  w.write(" {} {} {} {} {} {}\n",
+      h.num_nl_cons, h.num_nl_objs,
+      h.num_compl_conds - h.num_nl_compl_conds,
+      h.num_nl_compl_conds, h.num_compl_dbl_ineqs,
+      h.num_compl_vars_with_nz_lb);
+  w.write(" {} {}\n", h.num_nl_net_cons, h.num_linear_net_cons);
+  w.write(" {} {} {}\n",
+      h.num_nl_vars_in_cons, h.num_nl_vars_in_objs, h.num_nl_vars_in_both);
+  w.write(" {} {} {} {}\n",
+      h.num_linear_net_vars, h.num_funcs,
+      h.format != NLHeader::BINARY_SWAPPED ? 0 : 3 - Arith_Kind_ASL, h.flags);
+  w.write(" {} {} {} {} {}\n",
+      h.num_linear_binary_vars, h.num_linear_integer_vars,
+      h.num_nl_integer_vars_in_both, h.num_nl_integer_vars_in_cons,
+      h.num_nl_integer_vars_in_objs);
+  w.write(" {} {}\n", h.num_con_nonzeros, h.num_obj_nonzeros);
+  w.write(" {} {}\n", h.max_con_name_len, h.max_var_name_len);
+  w.write(" {} {} {} {} {}\n",
+      h.num_common_exprs_in_both, h.num_common_exprs_in_cons,
+      h.num_common_exprs_in_objs, h.num_common_exprs_in_cons1,
+      h.num_common_exprs_in_objs1);
   return w;
 }
 
@@ -124,11 +99,15 @@ class TextReader {
   TextReader(fmt::StringRef name, const char *ptr)
   : ptr_(ptr), line_start_(ptr), token_(ptr), name_(name), line_(1) {}
 
-  fmt::Formatter<ParseErrorReporter> ReportParseError(fmt::StringRef message) {
-    fmt::Formatter<ParseErrorReporter> f(message, ParseErrorReporter(
-      name_, line_, static_cast<int>(token_ - line_start_ + 1)));
-    return f;
+  void ReportParseError(fmt::StringRef format_str, const fmt::ArgList &args) {
+    int column = static_cast<int>(token_ - line_start_ + 1);
+    fmt::Writer w;
+    w.write(format_str, args);
+    throw ampl::ParseError(name_, line_, column,
+        fmt::format("{}:{}:{}: {}", name_, line_, column,
+            fmt::StringRef(w.c_str(), w.size())));
   }
+  FMT_VARIADIC(void, ReportParseError, fmt::StringRef)
 
   char ReadChar() {
     token_ = ptr_;
@@ -227,10 +206,8 @@ NumericExpr NLReader::ReadExpr(TextReader &reader) {
   case 'v': {
     // TODO: variable index can be greater than num_vars
     int var_index = reader.ReadUInt();
-    if (var_index >= header_.num_vars) {
-      reader.ReportParseError("variable index {} is out of bounds")
-          << var_index;
-    }
+    if (var_index >= header_.num_vars)
+      reader.ReportParseError("variable index {} is out of bounds", var_index);
     expr = factory_->CreateVariable(var_index);
     break;
   }
@@ -275,7 +252,7 @@ void NLReader::ReadFile(fmt::StringRef filename) {
   std::size_t size = static_cast<std::size_t>(file.size());
   // Check if file size fits in size_t.
   if (size != file.size())
-    ThrowError("file {} is too big") << filename;
+    throw Error("file {} is too big", filename);
   ReadString(fmt::StringRef(file.start(), size), filename);
 }
 
@@ -456,8 +433,8 @@ void NLReader::ReadString(
     case 'O': {
       int obj_index = reader.ReadUInt();
       if (obj_index >= header_.num_objs) {
-        reader.ReportParseError("objective index {} is out of bounds")
-            << obj_index;
+        reader.ReportParseError(
+            "objective index {} is out of bounds", obj_index);
       }
       int obj_type = reader.ReadUInt();
       reader.ReadTillEndOfLine();
@@ -484,7 +461,7 @@ void NLReader::ReadString(
       // TODO
       break;
     default:
-      reader.ReportParseError("invalid segment type '{}'") << c;
+      reader.ReportParseError("invalid segment type '{}'", c);
     }
   }
 }

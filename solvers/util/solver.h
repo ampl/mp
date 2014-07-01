@@ -56,7 +56,7 @@ class ObjPrec {
   friend void Format(fmt::Writer &w, const fmt::FormatSpec &spec, ObjPrec op) {
     char buffer[32];
     g_fmtop(buffer, op.value_);
-    w.Write(buffer, spec);
+    w.write_str(buffer, spec);
   }
 };
 
@@ -296,8 +296,7 @@ class InvalidOptionValue : public OptionError {
  private:
   template <typename T>
   static std::string Format(fmt::StringRef name, T value) {
-    return str(fmt::Format(
-        "Invalid value \"{}\" for option \"{}\"") << value << name);
+    return fmt::format("Invalid value \"{}\" for option \"{}\"", value, name);
   }
 
  public:
@@ -426,18 +425,6 @@ class Solver
     std::fputc('\n', stderr);
   }
 
-  class ErrorReporter {
-   private:
-    ErrorHandler *handler_;
-
-   public:
-    explicit ErrorReporter(ErrorHandler *h) : handler_(h) {}
-
-    void operator()(const fmt::Writer &w) const {
-      handler_->HandleError(fmt::StringRef(w.c_str(), w.size()));
-    }
-  };
-
   // Finds an option and returns a pointer to it if found or null otherwise.
   SolverOption *FindOption(const char *name) const;
 
@@ -445,7 +432,7 @@ class Solver
   SolverOption *GetOption(const char *name) const {
     SolverOption *opt = FindOption(name);
     if (!opt)
-      throw OptionError(fmt::Format("Unknown option \"{}\"") << name);
+      throw OptionError(fmt::format("Unknown option \"{}\"", name));
     return opt;
   }
 
@@ -469,8 +456,9 @@ class Solver
   }
 
   static OptionError OptionTypeError(fmt::StringRef name, fmt::StringRef type) {
-    return OptionError(fmt::Format("Option \"{}\" is not of type \"{}\"")
-            << name.c_str() << type.c_str());
+    fmt::Writer msg;
+    msg.write("Option \"{}\" is not of type \"{}\"", name, type);
+    return OptionError(msg.c_str());
   }
 
   // Parses an option string.
@@ -709,25 +697,11 @@ class Solver
   }
 
   virtual void HandleUnknownOption(const char *name) {
-    ReportError("Unknown option \"{}\"") << name;
+    ReportError("Unknown option \"{}\"", name);
   }
 
   // Adds a suffix.
   void AddSuffix(const char *name, const char *table, int kind, int nextra = 0);
-
-  class Printer {
-   private:
-    OutputHandler *handler_;
-
-   public:
-    explicit Printer(OutputHandler *h) : handler_(h) {}
-
-    void operator()(const fmt::Writer &w) const {
-      handler_->HandleOutput(fmt::StringRef(w.c_str(), w.size()));
-    }
-  };
-
-  Printer MakePrinter() { return Printer(output_handler_); }
 
  public:
   virtual ~Solver();
@@ -888,18 +862,22 @@ class Solver
 
   // Reports an error printing the formatted error message to stderr.
   // Usage: ReportError("File not found: {}") << filename;
-  fmt::Formatter<ErrorReporter> ReportError(fmt::StringRef format) {
+  void ReportError(fmt::StringRef format, const fmt::ArgList &args) {
     has_errors_ = true;
-    fmt::Formatter<ErrorReporter> f(format, ErrorReporter(error_handler_));
-    return f;
+    fmt::Writer w;
+    w.write(format, args);
+    error_handler_->HandleError(fmt::StringRef(w.c_str(), w.size()));
   }
+  FMT_VARIADIC(void, ReportError, fmt::StringRef)
 
   // Formats a string and prints it to stdout or, if an output handler
   // is registered, sends it to the output handler.
-  fmt::Formatter<Printer> Print(fmt::StringRef format) {
-    fmt::Formatter<Printer> f(format, Printer(output_handler_));
-    return f;
+  void Print(fmt::StringRef format, const fmt::ArgList &args) {
+    fmt::Writer w;
+    w.write(format, args);
+    output_handler_->HandleOutput(fmt::StringRef(w.c_str(), w.size()));
   }
+  FMT_VARIADIC(void, Print, fmt::StringRef)
 
   // Solves a problem.
   // The solutions are reported via the registered solution handler.

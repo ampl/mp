@@ -81,7 +81,7 @@ StderrRedirect::~StderrRedirect() {
 
 void ChangeDirectory(fmt::StringRef path) {
   if (chdir(path.c_str()) != 0)
-    ampl::ThrowError("chdir failed, error code = {}") << errno;
+    throw ampl::Error("chdir failed, error code = {}", errno);
 }
 
 int ExecuteShellCommand(
@@ -95,16 +95,16 @@ int ExecuteShellCommand(
 #endif
   // Check if system function failed.
   if (result == -1)
-    ampl::ThrowError("system failed, error code = {}") << errno;
+    throw ampl::Error("system failed, error code = {}", errno);
   // Check if process hasn't exited normally.
   if (!WIFEXITED(result)) {
-    ampl::ThrowError("process hasn't exited normally, error code = {}")
-      << result;
+    throw ampl::Error(
+        "process hasn't exited normally, error code = {}", result);
   }
   // Process exited normally - check exit code.
   int exit_code = WEXITSTATUS(result);
   if (exit_code != 0 && throw_on_nonzero_exit_code)
-    ampl::ThrowError("process exited with code {}") << exit_code;
+    throw ampl::Error("process exited with code {}", exit_code);
   return exit_code;
 }
 

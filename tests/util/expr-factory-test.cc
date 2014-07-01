@@ -462,7 +462,8 @@ class ASLPtr : ampl::Noncopyable {
 FILE *ReadHeader(ASL &asl, const NLHeader &h, const char *body) {
   fmt::Writer w;
   w << h << body;
-  WriteFile("test.nl", w.str());
+  WriteFile("test"
+  ".nl", w.str());
   char stub[] = "test";
   return jac0dim_ASL(&asl, stub, sizeof(stub) - 1);
 }

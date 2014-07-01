@@ -109,8 +109,8 @@ internal::ASLBuilder::ASLBuilder(ASL &asl, const char *stub, const NLHeader &h)
 
   if (h.num_algebraic_cons < 0 || h.num_vars <= 0 || h.num_objs < 0) {
     throw ASLError(ASL_readerr_corrupt,
-        str(fmt::Format("invalid problem dimensions: M = {}, N = {}, NO = {}")
-          << h.num_algebraic_cons << h.num_vars << h.num_objs));
+        fmt::format("invalid problem dimensions: M = {}, N = {}, NO = {}",
+          h.num_algebraic_cons, h.num_vars, h.num_objs));
   }
 
   info.n_var0 = info.n_var1 = info.n_var_;
@@ -162,8 +162,8 @@ void internal::ASLBuilder::BeginBuild(int flags) {
   int nco = nc + no + nlcon;
   if (no < 0 || nco <= 0) {
     throw ASLError(ASL_readerr_corrupt,
-        str(fmt::Format("invalid problem dimensions: "
-            "nc = {}, no = {}, nlcon = {}") << nc0 << no << nlcon));
+        fmt::format("invalid problem dimensions: "
+            "nc = {}, no = {}, nlcon = {}", nc0, no, nlcon));
   }
   if (info.pi0_) {
     std::memset(info.pi0_, 0, nc * sizeof(double));

@@ -163,8 +163,8 @@ class TempFiles : Noncopyable {
 
   ~TempFiles() {
     const char *stub = this->stub();
-    std::remove(c_str(fmt::Format("{}.nl") << stub));
-    std::remove(c_str(fmt::Format("{}.sol") << stub));
+    std::remove(fmt::format("{}.nl", stub).c_str());
+    std::remove(fmt::format("{}.sol", stub).c_str());
   }
 
   const char *stub() const { return &name_[0]; }
@@ -178,10 +178,8 @@ TempFiles::TempFiles() {
   name_.append(TEMPLATE, TEMPLATE + sizeof(TEMPLATE));  // include nul char
   const int SUFFIX_LEN = 3;  // length of the ".nl" suffix
   int fd = mkstemps(&name_[0], SUFFIX_LEN);
-  if (fd == -1) {
-    fmt::ThrowSystemError(errno,
-        "cannot create temporary file {}") << &name_[0];
-  }
+  if (fd == -1)
+    throw fmt::SystemError(errno, "cannot create temporary file {}", &name_[0]);
   close(fd);
 }
 
@@ -290,11 +288,12 @@ void Problem::Solve(fmt::StringRef solver_name,
   TempFiles temp;
   WriteNL(temp.stub(), pc, flags);
   // Run the solver and read the solution file.
-  int exit_code = std::system(
-      c_str(fmt::Format("{} {} -AMPL") << solver_name.c_str() << temp.stub()));
+  fmt::Writer command;
+  command.write("{} {} -AMPL", solver_name.c_str(), temp.stub());
+  int exit_code = std::system(command.c_str());
   if (exit_code != 0) {
-    ThrowError("Error running solver {}, exit code = {}")
-        << solver_name.c_str() << exit_code;
+    throw Error(
+        "Error running solver {}, exit code = {}", solver_name, exit_code);
   }
   sol.Read(temp.stub(), num_vars() + (pc ? pc->num_vars() : 0),
       num_cons() + (pc ? pc->num_cons() : 0));

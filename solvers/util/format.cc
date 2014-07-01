@@ -36,12 +36,16 @@
 #include <string.h>
 
 #include <cctype>
+#include <cerrno>
 #include <climits>
 #include <cmath>
 #include <cstdarg>
 
 #ifdef _WIN32
 # define WIN32_LEAN_AND_MEAN
+# ifdef __MINGW32__
+#  include <cstring>
+# endif
 # include <windows.h>
 # undef ERROR
 #endif
@@ -108,12 +112,41 @@ void ReportError(FormatFunc func,
     int error_code, fmt::StringRef message) FMT_NOEXCEPT(true) {
   try {
     fmt::Writer full_message;
-    func(full_message, error_code, message); // TODO: this may throw?
+    func(full_message, error_code, message); // TODO: make sure this doesn't throw
     std::fwrite(full_message.c_str(), full_message.size(), 1, stderr);
     std::fputc('\n', stderr);
   } catch (...) {}
 }
+
+const fmt::internal::ArgInfo DUMMY_ARG = {fmt::internal::ArgInfo::INT, 0};
+
+fmt::ULongLong GetIntValue(const fmt::internal::ArgInfo &arg) {
+  typedef fmt::internal::ArgInfo Arg;
+  switch (arg.type) {
+    case Arg::INT:
+      return arg.int_value;
+    case Arg::UINT:
+      return arg.uint_value;
+    case Arg::LONG_LONG:
+      return arg.long_long_value;
+    case Arg::ULONG_LONG:
+      return arg.ulong_long_value;
+    default:
+      return -1;
+  }
+}
 }  // namespace
+
+int fmt::internal::SignBitNoInline(double value) { return SignBit(value); }
+
+void fmt::SystemError::init(
+    int error_code, StringRef format_str, const ArgList &args) {
+  error_code_ = error_code;
+  Writer w;
+  internal::FormatSystemErrorMessage(w, error_code, format(format_str, args));
+  std::runtime_error &base = *this;
+  base = std::runtime_error(w.str());
+}
 
 template <typename T>
 int fmt::internal::CharTraits<char>::FormatFloat(
@@ -173,12 +206,12 @@ const uint64_t fmt::internal::POWERS_OF_10_64[] = {
 
 void fmt::internal::ReportUnknownType(char code, const char *type) {
   if (std::isprint(static_cast<unsigned char>(code))) {
-    throw fmt::FormatError(fmt::str(
-        fmt::Format("unknown format code '{}' for {}") << code << type));
+    throw fmt::FormatError(
+        fmt::format("unknown format code '{}' for {}", code, type));
   }
   throw fmt::FormatError(
-      fmt::str(fmt::Format("unknown format code '\\x{:02x}' for {}")
-        << static_cast<unsigned>(code) << type));
+      fmt::format("unknown format code '\\x{:02x}' for {}",
+        static_cast<unsigned>(code), type));
 }
 
 #ifdef _WIN32
@@ -188,17 +221,17 @@ fmt::internal::UTF8ToUTF16::UTF8ToUTF16(fmt::StringRef s) {
       CP_UTF8, MB_ERR_INVALID_CHARS, s.c_str(), -1, 0, 0);
   static const char ERROR[] = "cannot convert string from UTF-8 to UTF-16";
   if (length == 0)
-    ThrowWinError(GetLastError(), ERROR);
+    throw WindowsError(GetLastError(), ERROR);
   buffer_.resize(length);
   length = MultiByteToWideChar(
     CP_UTF8, MB_ERR_INVALID_CHARS, s.c_str(), -1, &buffer_[0], length);
   if (length == 0)
-    ThrowWinError(GetLastError(), ERROR);
+    throw WindowsError(GetLastError(), ERROR);
 }
 
 fmt::internal::UTF16ToUTF8::UTF16ToUTF8(fmt::WStringRef s) {
   if (int error_code = Convert(s)) {
-    ThrowWinError(GetLastError(),
+    throw WindowsError(GetLastError(),
         "cannot convert string from UTF-16 to UTF-8");
   }
 }
@@ -215,6 +248,15 @@ int fmt::internal::UTF16ToUTF8::Convert(fmt::WStringRef s) {
   return 0;
 }
 
+void fmt::WindowsError::init(
+    int error_code, StringRef format_str, const ArgList &args) {
+  error_code_ = error_code;
+  Writer w;
+  internal::FormatWinErrorMessage(w, error_code, format(format_str, args));
+  std::runtime_error &base = *this;
+  base = std::runtime_error(w.str());
+}
+
 #endif
 
 int fmt::internal::StrError(
@@ -228,7 +270,11 @@ int fmt::internal::StrError(
     result = ERANGE;
   buffer = message;
 #elif _WIN32
+# ifdef __MINGW32__
+  strerror(result);
+# else
   result = strerror_s(buffer, buffer_size, error_code);
+# endif
   // If the buffer is full then the message is probably truncated.
   if (result == 0 && std::strlen(buffer) == buffer_size - 1)
     result = ERANGE;
@@ -280,7 +326,7 @@ void fmt::internal::FormatWinErrorMessage(
       reinterpret_cast<LPWSTR>(system_message.ptr()), 0, 0)) {
     UTF16ToUTF8 utf8_message;
     if (!utf8_message.Convert(system_message.c_str())) {
-      out << message << ": " << c_str(utf8_message);
+      out << message << ": " << utf8_message;
       return;
     }
   }
@@ -288,6 +334,40 @@ void fmt::internal::FormatWinErrorMessage(
   out << message << ": error code = " << error_code;
 }
 #endif
+
+template <typename Char>
+void fmt::internal::FormatErrorReporter<Char>::operator()(
+        const Char *s, fmt::StringRef message) const {
+  for (int n = num_open_braces; *s; ++s) {
+    if (*s == '{') {
+      ++n;
+    } else if (*s == '}') {
+      if (--n == 0)
+        throw fmt::FormatError(message);
+    }
+  }
+  throw fmt::FormatError("unmatched '{' in format");
+}
+
+// Parses an unsigned integer advancing s to the end of the parsed input.
+// This function assumes that the first character of s is a digit.
+template <typename Char>
+int fmt::internal::ParseNonnegativeInt(
+    const Char *&s, const char *&error) FMT_NOEXCEPT(true) {
+  assert('0' <= *s && *s <= '9');
+  unsigned value = 0;
+  do {
+    unsigned new_value = value * 10 + (*s++ - '0');
+    // Check if value wrapped around.
+    value = new_value >= value ? new_value : UINT_MAX;
+  } while ('0' <= *s && *s <= '9');
+  if (value > INT_MAX) {
+    if (!error)
+      error = "number is too big in format";
+    return 0;
+  }
+  return value;
+}
 
 // Fills the padding around the content and returns the pointer to the
 // content area.
@@ -306,47 +386,8 @@ typename fmt::BasicWriter<Char>::CharPtr
 }
 
 template <typename Char>
-typename fmt::BasicWriter<Char>::CharPtr
-  fmt::BasicWriter<Char>::PrepareFilledBuffer(
-    unsigned size, const AlignSpec &spec, char sign) {
-  unsigned width = spec.width();
-  if (width <= size) {
-    CharPtr p = GrowBuffer(size);
-    *p = sign;
-    return p + size - 1;
-  }
-  CharPtr p = GrowBuffer(width);
-  CharPtr end = p + width;
-  Alignment align = spec.align();
-  // TODO: error if fill is not convertible to Char
-  Char fill = static_cast<Char>(spec.fill());
-  if (align == ALIGN_LEFT) {
-    *p = sign;
-    p += size;
-    std::fill(p, end, fill);
-  } else if (align == ALIGN_CENTER) {
-    p = FillPadding(p, width, size, fill);
-    *p = sign;
-    p += size;
-  } else {
-    if (align == ALIGN_NUMERIC) {
-      if (sign) {
-        *p++ = sign;
-        --size;
-      }
-    } else {
-      *(end - size) = sign;
-    }
-    std::fill(p, end - size, fill);
-    p = end;
-  }
-  return p - 1;
-}
-
-template <typename Char>
 template <typename T>
-void fmt::BasicWriter<Char>::FormatDouble(
-    T value, const FormatSpec &spec, int precision) {
+void fmt::BasicWriter<Char>::FormatDouble(T value, const FormatSpec &spec) {
   // Check type.
   char type = spec.type();
   bool upper = false;
@@ -354,7 +395,7 @@ void fmt::BasicWriter<Char>::FormatDouble(
   case 0:
     type = 'g';
     break;
-  case 'e': case 'f': case 'g':
+  case 'e': case 'f': case 'g': case 'a':
     break;
   case 'F':
 #ifdef _MSC_VER
@@ -362,7 +403,7 @@ void fmt::BasicWriter<Char>::FormatDouble(
     type = 'f';
 #endif
     // Fall through.
-  case 'E': case 'G':
+  case 'E': case 'G': case 'A':
     upper = true;
     break;
   default:
@@ -389,7 +430,7 @@ void fmt::BasicWriter<Char>::FormatDouble(
       --size;
       ++nan;
     }
-    CharPtr out = FormatString(nan, size, spec);
+    CharPtr out = write_str(nan, size, spec);
     if (sign)
       *out = sign;
     return;
@@ -404,7 +445,7 @@ void fmt::BasicWriter<Char>::FormatDouble(
       --size;
       ++inf;
     }
-    CharPtr out = FormatString(inf, size, spec);
+    CharPtr out = write_str(inf, size, spec);
     if (sign)
       *out = sign;
     return;
@@ -435,7 +476,7 @@ void fmt::BasicWriter<Char>::FormatDouble(
     if (width != 0)
       *format_ptr++ = '*';
   }
-  if (precision >= 0) {
+  if (spec.precision() >= 0) {
     *format_ptr++ = '.';
     *format_ptr++ = '*';
   }
@@ -459,7 +500,7 @@ void fmt::BasicWriter<Char>::FormatDouble(
 #endif
     Char *start = &buffer_[offset];
     int n = internal::CharTraits<Char>::FormatFloat(
-        start, size, format, width_for_sprintf, precision, value);
+        start, size, format, width_for_sprintf, spec.precision(), value);
     if (n >= 0 && offset + n < buffer_.capacity()) {
       if (sign) {
         if ((spec.align() != ALIGN_RIGHT && spec.align() != ALIGN_DEFAULT) ||
@@ -494,84 +535,340 @@ void fmt::BasicWriter<Char>::FormatDouble(
   }
 }
 
-// Throws Exception(message) if format contains '}', otherwise throws
-// FormatError reporting unmatched '{'. The idea is that unmatched '{'
-// should override other errors.
 template <typename Char>
-void fmt::BasicWriter<Char>::FormatParser::ReportError(
-    const Char *s, StringRef message) const {
-  for (int num_open_braces = num_open_braces_; *s; ++s) {
-    if (*s == '{') {
-      ++num_open_braces;
-    } else if (*s == '}') {
-      if (--num_open_braces == 0)
-        throw fmt::FormatError(message);
-    }
+template <typename StringChar>
+void fmt::BasicWriter<Char>::write_str(
+    const internal::StringValue<StringChar> &str, const FormatSpec &spec) {
+  if (spec.type_ && spec.type_ != 's')
+    internal::ReportUnknownType(spec.type_, "string");
+  const StringChar *s = str.value;
+  std::size_t size = str.size;
+  if (size == 0) {
+    if (!s)
+      throw FormatError("string pointer is null");
+    if (*s)
+      size = std::char_traits<StringChar>::length(s);
   }
-  throw fmt::FormatError("unmatched '{' in format");
-}
-
-// Parses an unsigned integer advancing s to the end of the parsed input.
-// This function assumes that the first character of s is a digit.
-template <typename Char>
-unsigned fmt::BasicWriter<Char>::FormatParser::ParseUInt(const Char *&s) const {
-  assert('0' <= *s && *s <= '9');
-  unsigned value = 0;
-  do {
-    unsigned new_value = value * 10 + (*s++ - '0');
-    if (new_value < value)  // Check if value wrapped around.
-      ReportError(s, "number is too big in format");
-    value = new_value;
-  } while ('0' <= *s && *s <= '9');
-  return value;
+  write_str(s, size, spec);
 }
 
 template <typename Char>
-inline const typename fmt::BasicWriter<Char>::ArgInfo
+inline const typename fmt::BasicWriter<Char>::Arg
     &fmt::BasicWriter<Char>::FormatParser::ParseArgIndex(const Char *&s) {
   unsigned arg_index = 0;
   if (*s < '0' || *s > '9') {
     if (*s != '}' && *s != ':')
-      ReportError(s, "invalid argument index in format string");
+      report_error_(s, "invalid argument index in format string");
     if (next_arg_index_ < 0) {
-      ReportError(s,
+      report_error_(s,
           "cannot switch from manual to automatic argument indexing");
     }
     arg_index = next_arg_index_++;
   } else {
     if (next_arg_index_ > 0) {
-      ReportError(s,
+      report_error_(s,
           "cannot switch from automatic to manual argument indexing");
     }
     next_arg_index_ = -1;
-    arg_index = ParseUInt(s);
+    const char *error = 0;
+    arg_index = internal::ParseNonnegativeInt(s, error);
+    if (error)
+      report_error_(s, error); // TODO
   }
-  if (arg_index >= num_args_)
-    ReportError(s, "argument index is out of range in format");
+  if (arg_index >= args_.size())
+    report_error_(s, "argument index is out of range in format");
   return args_[arg_index];
 }
 
 template <typename Char>
 void fmt::BasicWriter<Char>::FormatParser::CheckSign(
-    const Char *&s, const ArgInfo &arg) {
+    const Char *&s, const Arg &arg) {
   char sign = static_cast<char>(*s);
-  if (arg.type > LAST_NUMERIC_TYPE) {
-    ReportError(s,
-        fmt::Format("format specifier '{}' requires numeric argument") << sign);
+  if (arg.type > Arg::LAST_NUMERIC_TYPE) {
+    report_error_(s,
+        fmt::format("format specifier '{}' requires numeric argument", sign).c_str());
   }
-  if (arg.type == UINT || arg.type == ULONG || arg.type == ULONG_LONG) {
-    ReportError(s,
-        fmt::Format("format specifier '{}' requires signed argument") << sign);
+  if (arg.type == Arg::UINT || arg.type == Arg::ULONG_LONG) {
+    report_error_(s,
+        fmt::format("format specifier '{}' requires signed argument", sign).c_str());
   }
   ++s;
 }
 
 template <typename Char>
+void fmt::internal::PrintfParser<Char>::ParseFlags(
+    FormatSpec &spec, const Char *&s) {
+  for (;;) {
+    switch (*s++) {
+      case '-':
+        spec.align_ = ALIGN_LEFT;
+        break;
+      case '+':
+        spec.flags_ |= SIGN_FLAG | PLUS_FLAG;
+        break;
+      case '0':
+        spec.fill_ = '0';
+        break;
+      case ' ':
+        spec.flags_ |= SIGN_FLAG;
+        break;
+      case '#':
+        spec.flags_ |= HASH_FLAG;
+        break;
+      default:
+        --s;
+        return;
+    }
+  }
+}
+
+template <typename Char>
+unsigned fmt::internal::PrintfParser<Char>::ParseHeader(
+  const Char *&s, FormatSpec &spec, const char *&error) {
+  unsigned arg_index = UINT_MAX;
+  Char c = *s;
+  if (c >= '0' && c <= '9') {
+    // Parse an argument index (if followed by '$') or a width possibly
+    // preceded with '0' flag(s).
+    unsigned value = internal::ParseNonnegativeInt(s, error);
+    if (*s == '$') {  // value is an argument index
+      ++s;
+      arg_index = value;
+    } else {
+      if (c == '0')
+        spec.fill_ = '0';
+      if (value != 0) {
+        // Nonzero value means that we parsed width and don't need to
+        // parse it or flags again, so return now.
+        spec.width_ = value;
+        return arg_index;
+      }
+    }
+  }
+  ParseFlags(spec, s);
+  // Parse width.
+  if (*s >= '0' && *s <= '9') {
+    spec.width_ = internal::ParseNonnegativeInt(s, error);
+  } else if (*s == '*') {
+    ++s;
+    const Arg &arg = HandleArgIndex(UINT_MAX, error);
+    // TODO: use ArgVisitor
+    ULongLong width = 0;
+    switch (arg.type) {
+    case Arg::INT:
+      width = arg.int_value;
+      if (arg.int_value < 0) {
+        spec.align_ = ALIGN_LEFT;
+        width = 0 - width;
+      }
+      break;
+    case Arg::UINT:
+      width = arg.uint_value;
+      break;
+    case Arg::LONG_LONG:
+      width = arg.long_long_value;
+      if (arg.long_long_value < 0) {
+        spec.align_ = ALIGN_LEFT;
+        width = 0 - width;
+      }
+      break;
+    case Arg::ULONG_LONG:
+      width = arg.ulong_long_value;
+      break;
+    default:
+      if (!error)
+        error = "width is not integer";
+    }
+    if (width <= INT_MAX)
+      spec.width_ = static_cast<unsigned>(width);
+    else if (!error)
+      error = "number is too big in format";
+  }
+  return arg_index;
+}
+
+// TODO: move to a base class that doesn't depend on template argument
+template <typename Char>
+const fmt::internal::ArgInfo
+  &fmt::internal::PrintfParser<Char>::HandleArgIndex(
+    unsigned arg_index, const char *&error) {
+  if (arg_index != UINT_MAX) {
+    if (next_arg_index_ <= 0) {
+      next_arg_index_ = -1;
+      --arg_index;
+    } else if (!error) {
+      error = "cannot switch from automatic to manual argument indexing";
+    }
+  } else if (next_arg_index_ >= 0) {
+    arg_index = next_arg_index_++;
+  } else if (!error) {
+    error = "cannot switch from manual to automatic argument indexing";
+  }
+  if (arg_index < args_.size())
+    return args_[arg_index];
+  if (!error)
+    error = "argument index is out of range in format";
+  return DUMMY_ARG;
+}
+
+template <typename Char>
+void fmt::internal::PrintfParser<Char>::Format(
+    BasicWriter<Char> &writer, BasicStringRef<Char> format,
+    const ArgList &args) {
+  const Char *start = format.c_str();
+  args_ = args;
+  next_arg_index_ = 0;
+  const Char *s = start;
+  while (*s) {
+    Char c = *s++;
+    if (c != '%') continue;
+    if (*s == c) {
+      writer.buffer_.append(start, s);
+      start = ++s;
+      continue;
+    }
+    writer.buffer_.append(start, s - 1);
+
+    FormatSpec spec;
+    spec.align_ = ALIGN_RIGHT;
+
+    // Reporting errors is delayed till the format specification is
+    // completely parsed. This is done to avoid potentially confusing
+    // error messages for incomplete format strings. For example, in
+    //   sprintf("%2$", 42);
+    // the format specification is incomplete. In naive approach we
+    // would parse 2 as an argument index and report an error that the
+    // index is out of range which would be rather confusing if the
+    // use meant "%2d$" rather than "%2$d". If we delay an error, the
+    // user will get an error that the format string is invalid which
+    // is OK for both cases.
+    const char *error = 0;
+
+    // Parse argument index, flags and width.
+    unsigned arg_index = ParseHeader(s, spec, error);
+
+    // Parse precision.
+    if (*s == '.') {
+      ++s;
+      if ('0' <= *s && *s <= '9') {
+        spec.precision_ = internal::ParseNonnegativeInt(s, error);
+      } else if (*s == '*') {
+        ++s;
+        const Arg &arg = HandleArgIndex(UINT_MAX, error);
+        if (arg.type <= Arg::LAST_INTEGER_TYPE)
+          spec.precision_ = static_cast<int>(GetIntValue(arg)); // TODO: check for overflow
+        else if (!error)
+          error = "precision is not integer";
+      }
+    }
+
+    const Arg &arg = HandleArgIndex(arg_index, error);
+    if (spec.hash_flag() && GetIntValue(arg) == 0)
+      spec.flags_ &= ~HASH_FLAG;
+    if (spec.fill_ == '0') {
+      if (arg.type <= Arg::LAST_NUMERIC_TYPE)
+        spec.align_ = ALIGN_NUMERIC;
+      else
+        spec.fill_ = ' ';  // Ignore '0' flag for non-numeric types.
+    }
+
+    // Parse length.
+    switch (*s) {
+    case 'h':
+      // TODO: convert to short
+    case 'l':
+    case 'j':
+    case 'z':
+    case 't':
+    case 'L':
+      // TODO: handle length
+      ++s;
+      break;
+    }
+
+    // Parse type.
+    if (!*s)
+      throw FormatError("invalid format string");
+    if (error)
+      throw FormatError(error);
+    spec.type_ = static_cast<char>(*s++);
+
+    start = s;
+
+    // Format argument.
+    switch (arg.type) {
+    case Arg::INT:
+      writer.FormatInt(arg.int_value, spec);
+      break;
+    case Arg::UINT:
+      writer.FormatInt(arg.uint_value, spec);
+      break;
+    case Arg::LONG_LONG:
+      writer.FormatInt(arg.long_long_value, spec);
+      break;
+    case Arg::ULONG_LONG:
+      writer.FormatInt(arg.ulong_long_value, spec);
+      break;
+    case Arg::DOUBLE:
+      writer.FormatDouble(arg.double_value, spec);
+      break;
+    case Arg::LONG_DOUBLE:
+      writer.FormatDouble(arg.long_double_value, spec);
+      break;
+    case Arg::CHAR: {
+      if (spec.type_ && spec.type_ != 'c')
+        internal::ReportUnknownType(spec.type_, "char");
+      typedef typename BasicWriter<Char>::CharPtr CharPtr;
+      CharPtr out = CharPtr();
+      if (spec.width_ > 1) {
+        Char fill = static_cast<Char>(spec.fill());
+        out = writer.GrowBuffer(spec.width_);
+        if (spec.align_ == ALIGN_RIGHT) {
+          std::fill_n(out, spec.width_ - 1, fill);
+          out += spec.width_ - 1;
+        } else if (spec.align_ == ALIGN_CENTER) {
+          out = writer.FillPadding(out, spec.width_, 1, fill);
+        } else {
+          std::fill_n(out + 1, spec.width_ - 1, fill);
+        }
+      } else {
+        out = writer.GrowBuffer(1);
+      }
+      *out = static_cast<Char>(arg.int_value);
+      break;
+    }
+    case Arg::STRING:
+      writer.write_str(arg.string, spec);
+      break;
+    case Arg::WSTRING:
+      writer.write_str(internal::CharTraits<Char>::convert(arg.wstring), spec);
+      break;
+    case Arg::POINTER:
+      if (spec.type_ && spec.type_ != 'p')
+        internal::ReportUnknownType(spec.type_, "pointer");
+      spec.flags_= HASH_FLAG;
+      spec.type_ = 'x';
+      writer.FormatInt(reinterpret_cast<uintptr_t>(arg.pointer_value), spec);
+      break;
+    case Arg::CUSTOM:
+      if (spec.type_)
+        internal::ReportUnknownType(spec.type_, "object");
+      arg.custom.format(&writer, arg.custom.value, spec);
+      break;
+    default:
+      assert(false);
+      break;
+    }
+  }
+  writer.buffer_.append(start, s);
+}
+
+template <typename Char>
 void fmt::BasicWriter<Char>::FormatParser::Format(
     BasicWriter<Char> &writer, BasicStringRef<Char> format,
-    std::size_t num_args, const ArgInfo *args) {
+    const ArgList &args) {
+  const char *error = 0;
   const Char *start = format.c_str();
-  num_args_ = num_args;
   args_ = args;
   next_arg_index_ = 0;
   const Char *s = start;
@@ -585,13 +882,12 @@ void fmt::BasicWriter<Char>::FormatParser::Format(
     }
     if (c == '}')
       throw FormatError("unmatched '}' in format");
-    num_open_braces_= 1;
+    report_error_.num_open_braces = 1;
     writer.buffer_.append(start, s - 1);
 
-    const ArgInfo &arg = ParseArgIndex(s);
+    const Arg &arg = ParseArgIndex(s);
 
     FormatSpec spec;
-    int precision = -1;
     if (*s == ':') {
       ++s;
 
@@ -618,12 +914,12 @@ void fmt::BasicWriter<Char>::FormatParser::Format(
             if (p != s) {
               if (c == '}') break;
               if (c == '{')
-                ReportError(s, "invalid fill character '{'");
+                report_error_(s, "invalid fill character '{'");
               s += 2;
               spec.fill_ = c;
             } else ++s;
-            if (spec.align_ == ALIGN_NUMERIC && arg.type > LAST_NUMERIC_TYPE)
-              ReportError(s, "format specifier '=' requires numeric argument");
+            if (spec.align_ == ALIGN_NUMERIC && arg.type > Arg::LAST_NUMERIC_TYPE)
+              report_error_(s, "format specifier '=' requires numeric argument");
             break;
           }
         } while (--p >= s);
@@ -645,8 +941,8 @@ void fmt::BasicWriter<Char>::FormatParser::Format(
       }
 
       if (*s == '#') {
-        if (arg.type > LAST_NUMERIC_TYPE)
-          ReportError(s, "format specifier '#' requires numeric argument");
+        if (arg.type > Arg::LAST_NUMERIC_TYPE)
+          report_error_(s, "format specifier '#' requires numeric argument");
         spec.flags_ |= HASH_FLAG;
         ++s;
       }
@@ -654,72 +950,62 @@ void fmt::BasicWriter<Char>::FormatParser::Format(
       // Parse width and zero flag.
       if ('0' <= *s && *s <= '9') {
         if (*s == '0') {
-          if (arg.type > LAST_NUMERIC_TYPE)
-            ReportError(s, "format specifier '0' requires numeric argument");
+          if (arg.type > Arg::LAST_NUMERIC_TYPE)
+            report_error_(s, "format specifier '0' requires numeric argument");
           spec.align_ = ALIGN_NUMERIC;
           spec.fill_ = '0';
         }
         // Zero may be parsed again as a part of the width, but it is simpler
         // and more efficient than checking if the next char is a digit.
-        unsigned value = ParseUInt(s);
-        if (value > INT_MAX)
-          ReportError(s, "number is too big in format");
-        spec.width_ = value;
+        spec.width_ = internal::ParseNonnegativeInt(s, error);
+        if (error)
+          report_error_(s, error);
       }
 
       // Parse precision.
       if (*s == '.') {
         ++s;
-        precision = 0;
+        spec.precision_ = 0;
         if ('0' <= *s && *s <= '9') {
-          unsigned value = ParseUInt(s);
-          if (value > INT_MAX)
-            ReportError(s, "number is too big in format");
-          precision = value;
+          spec.precision_ = internal::ParseNonnegativeInt(s, error);
+          if (error)
+            report_error_(s, error);
         } else if (*s == '{') {
           ++s;
-          ++num_open_braces_;
-          const ArgInfo &precision_arg = ParseArgIndex(s);
+          ++report_error_.num_open_braces;
+          const Arg &precision_arg = ParseArgIndex(s);
           ULongLong value = 0;
           switch (precision_arg.type) {
-          case INT:
+          case Arg::INT:
             if (precision_arg.int_value < 0)
-              ReportError(s, "negative precision in format");
+              report_error_(s, "negative precision in format");
             value = precision_arg.int_value;
             break;
-          case UINT:
+          case Arg::UINT:
             value = precision_arg.uint_value;
             break;
-          case LONG:
-            if (precision_arg.long_value < 0)
-              ReportError(s, "negative precision in format");
-            value = precision_arg.long_value;
-            break;
-          case ULONG:
-            value = precision_arg.ulong_value;
-            break;
-          case LONG_LONG:
+          case Arg::LONG_LONG:
             if (precision_arg.long_long_value < 0)
-              ReportError(s, "negative precision in format");
+              report_error_(s, "negative precision in format");
             value = precision_arg.long_long_value;
             break;
-          case ULONG_LONG:
+          case Arg::ULONG_LONG:
             value = precision_arg.ulong_long_value;
             break;
           default:
-            ReportError(s, "precision is not integer");
+            report_error_(s, "precision is not integer");
           }
           if (value > INT_MAX)
-            ReportError(s, "number is too big in format");
-          precision = static_cast<int>(value);
+            report_error_(s, "number is too big in format");
+          spec.precision_ = static_cast<int>(value);
           if (*s++ != '}')
             throw FormatError("unmatched '{' in format");
-          --num_open_braces_;
+          --report_error_.num_open_braces;
         } else {
-          ReportError(s, "missing precision in format");
+          report_error_(s, "missing precision in format");
         }
-        if (arg.type != DOUBLE && arg.type != LONG_DOUBLE) {
-          ReportError(s,
+        if (arg.type != Arg::DOUBLE && arg.type != Arg::LONG_DOUBLE) {
+          report_error_(s,
               "precision specifier requires floating-point argument");
         }
       }
@@ -735,31 +1021,25 @@ void fmt::BasicWriter<Char>::FormatParser::Format(
 
     // Format argument.
     switch (arg.type) {
-    case INT:
+    case Arg::INT:
       writer.FormatInt(arg.int_value, spec);
       break;
-    case UINT:
+    case Arg::UINT:
       writer.FormatInt(arg.uint_value, spec);
       break;
-    case LONG:
-      writer.FormatInt(arg.long_value, spec);
-      break;
-    case ULONG:
-      writer.FormatInt(arg.ulong_value, spec);
-      break;
-    case LONG_LONG:
+    case Arg::LONG_LONG:
       writer.FormatInt(arg.long_long_value, spec);
       break;
-    case ULONG_LONG:
+    case Arg::ULONG_LONG:
       writer.FormatInt(arg.ulong_long_value, spec);
       break;
-    case DOUBLE:
-      writer.FormatDouble(arg.double_value, spec, precision);
+    case Arg::DOUBLE:
+      writer.FormatDouble(arg.double_value, spec);
       break;
-    case LONG_DOUBLE:
-      writer.FormatDouble(arg.long_double_value, spec, precision);
+    case Arg::LONG_DOUBLE:
+      writer.FormatDouble(arg.long_double_value, spec);
       break;
-    case CHAR: {
+    case Arg::CHAR: {
       if (spec.type_ && spec.type_ != 'c')
         internal::ReportUnknownType(spec.type_, "char");
       typedef typename BasicWriter<Char>::CharPtr CharPtr;
@@ -781,31 +1061,23 @@ void fmt::BasicWriter<Char>::FormatParser::Format(
       *out = static_cast<Char>(arg.int_value);
       break;
     }
-    case STRING: {
-      if (spec.type_ && spec.type_ != 's')
-        internal::ReportUnknownType(spec.type_, "string");
-      const Char *str = arg.string.value;
-      std::size_t size = arg.string.size;
-      if (size == 0) {
-        if (!str)
-          throw FormatError("string pointer is null");
-        if (*str)
-          size = std::char_traits<Char>::length(str);
-      }
-      writer.FormatString(str, size, spec);
+    case Arg::STRING:
+      writer.write_str(arg.string, spec);
       break;
-    }
-    case POINTER:
+    case Arg::WSTRING:
+      writer.write_str(internal::CharTraits<Char>::convert(arg.wstring), spec);
+      break;
+    case Arg::POINTER:
       if (spec.type_ && spec.type_ != 'p')
         internal::ReportUnknownType(spec.type_, "pointer");
       spec.flags_= HASH_FLAG;
       spec.type_ = 'x';
       writer.FormatInt(reinterpret_cast<uintptr_t>(arg.pointer_value), spec);
       break;
-    case CUSTOM:
+    case Arg::CUSTOM:
       if (spec.type_)
         internal::ReportUnknownType(spec.type_, "object");
-      arg.custom.format(writer, arg.custom.value, spec);
+      arg.custom.format(&writer, arg.custom.value, spec);
       break;
     default:
       assert(false);
@@ -815,12 +1087,6 @@ void fmt::BasicWriter<Char>::FormatParser::Format(
   writer.buffer_.append(start, s);
 }
 
-void fmt::SystemErrorSink::operator()(const fmt::Writer &w) const {
-  Writer message;
-  internal::FormatSystemErrorMessage(message, error_code_, w.c_str());
-  throw SystemError(message.c_str(), error_code_);
-}
-
 void fmt::ReportSystemError(
     int error_code, fmt::StringRef message) FMT_NOEXCEPT(true) {
   // FIXME: FormatSystemErrorMessage may throw
@@ -828,12 +1094,6 @@ void fmt::ReportSystemError(
 }
 
 #ifdef _WIN32
-void fmt::WinErrorSink::operator()(const Writer &w) const {
-  Writer message;
-  internal::FormatWinErrorMessage(message, error_code_, w.c_str());
-  throw SystemError(message.c_str(), error_code_);
-}
-
 void fmt::ReportWinError(
     int error_code, fmt::StringRef message) FMT_NOEXCEPT(true) {
   // FIXME: FormatWinErrorMessage may throw
@@ -841,78 +1101,57 @@ void fmt::ReportWinError(
 }
 #endif
 
-void fmt::ANSITerminalSink::operator()(
-    const fmt::BasicWriter<char> &w) const {
+void fmt::print(StringRef format, const ArgList &args) {
+  Writer w;
+  w.write(format, args);
+  std::fwrite(w.data(), 1, w.size(), stdout);
+}
+
+void fmt::print(std::FILE *f, StringRef format, const ArgList &args) {
+  Writer w;
+  w.write(format, args);
+  std::fwrite(w.data(), 1, w.size(), f);
+}
+
+void fmt::print_colored(Color c, StringRef format, const ArgList &args) {
   char escape[] = "\x1b[30m";
-  escape[3] = '0' + static_cast<char>(color_);
-  std::fputs(escape, file_);
-  std::fwrite(w.data(), 1, w.size(), file_);
-  std::fputs(RESET_COLOR, file_);
+  escape[3] = '0' + static_cast<char>(c);
+  std::fputs(escape, stdout);
+  print(format, args);
+  std::fputs(RESET_COLOR, stdout);
+}
+
+void fmt::printf(StringRef format, const ArgList &args) {
+  Writer w;
+  printf(w, format, args);
+  std::fwrite(w.data(), 1, w.size(), stdout);
 }
 
 // Explicit instantiations for char.
-
-template void fmt::BasicWriter<char>::FormatDouble<double>(
-    double value, const FormatSpec &spec, int precision);
-
-template void fmt::BasicWriter<char>::FormatDouble<long double>(
-    long double value, const FormatSpec &spec, int precision);
 
 template fmt::BasicWriter<char>::CharPtr
   fmt::BasicWriter<char>::FillPadding(CharPtr buffer,
     unsigned total_size, std::size_t content_size, wchar_t fill);
 
-template fmt::BasicWriter<char>::CharPtr
-  fmt::BasicWriter<char>::PrepareFilledBuffer(
-    unsigned size, const AlignSpec &spec, char sign);
-
-template void fmt::BasicWriter<char>::FormatParser::ReportError(
-    const char *s, StringRef message) const;
-
-template unsigned fmt::BasicWriter<char>::FormatParser::ParseUInt(
-    const char *&s) const;
-
-template const fmt::BasicWriter<char>::ArgInfo
-    &fmt::BasicWriter<char>::FormatParser::ParseArgIndex(const char *&s);
-
-template void fmt::BasicWriter<char>::FormatParser::CheckSign(
-    const char *&s, const ArgInfo &arg);
-
 template void fmt::BasicWriter<char>::FormatParser::Format(
-  BasicWriter<char> &writer, BasicStringRef<char> format,
-  std::size_t num_args, const ArgInfo *args);
+  BasicWriter<char> &writer, BasicStringRef<char> format, const ArgList &args);
+
+template void fmt::internal::PrintfParser<char>::Format(
+  BasicWriter<char> &writer, BasicStringRef<char> format, const ArgList &args);
 
 // Explicit instantiations for wchar_t.
 
-template void fmt::BasicWriter<wchar_t>::FormatDouble<double>(
-    double value, const FormatSpec &spec, int precision);
-
-template void fmt::BasicWriter<wchar_t>::FormatDouble<long double>(
-    long double value, const FormatSpec &spec, int precision);
-
 template fmt::BasicWriter<wchar_t>::CharPtr
   fmt::BasicWriter<wchar_t>::FillPadding(CharPtr buffer,
-      unsigned total_size, std::size_t content_size, wchar_t fill);
-
-template fmt::BasicWriter<wchar_t>::CharPtr
-  fmt::BasicWriter<wchar_t>::PrepareFilledBuffer(
-    unsigned size, const AlignSpec &spec, char sign);
-
-template void fmt::BasicWriter<wchar_t>::FormatParser::ReportError(
-    const wchar_t *s, StringRef message) const;
-
-template unsigned fmt::BasicWriter<wchar_t>::FormatParser::ParseUInt(
-    const wchar_t *&s) const;
-
-template const fmt::BasicWriter<wchar_t>::ArgInfo
-    &fmt::BasicWriter<wchar_t>::FormatParser::ParseArgIndex(const wchar_t *&s);
-
-template void fmt::BasicWriter<wchar_t>::FormatParser::CheckSign(
-    const wchar_t *&s, const ArgInfo &arg);
+    unsigned total_size, std::size_t content_size, wchar_t fill);
 
 template void fmt::BasicWriter<wchar_t>::FormatParser::Format(
-        BasicWriter<wchar_t> &writer, BasicStringRef<wchar_t> format,
-        std::size_t num_args, const ArgInfo *args);
+    BasicWriter<wchar_t> &writer, BasicStringRef<wchar_t> format,
+    const ArgList &args);
+
+template void fmt::internal::PrintfParser<wchar_t>::Format(
+    BasicWriter<wchar_t> &writer, BasicStringRef<wchar_t> format,
+    const ArgList &args);
 
 #if _MSC_VER
 # pragma warning(pop)
