@@ -160,12 +160,16 @@ ampl::MemoryMappedFile::~MemoryMappedFile() {
 
 // Windows implementation.
 
+using fmt::WindowsError;
+
 path path::temp_directory_path() {
   enum { BUFFER_SIZE = MAX_PATH + 1 };
   wchar_t buffer[BUFFER_SIZE];
   DWORD result = GetTempPathW(BUFFER_SIZE, &buffer[0]);
-  if (result == 0)
-    fmt::ThrowWinError(GetLastError(), "cannot get path to the temporary directory");
+  if (result == 0) {
+    throw WindowsError(
+      GetLastError(), "cannot get path to the temporary directory");
+  }
   assert(result <= BUFFER_SIZE);
   buffer[BUFFER_SIZE - 1] = L'\0';
   fmt::internal::UTF16ToUTF8 utf8_str(buffer);
@@ -180,7 +184,7 @@ path ampl::GetExecutablePath() {
   for (;;) {
     size = GetModuleFileNameW(0, &buffer[0], static_cast<DWORD>(buffer.size()));
     if (size == 0)
-      fmt::ThrowWinError(GetLastError(), "cannot get executable path");
+      throw WindowsError(GetLastError(), "cannot get executable path");
     if (size < buffer.size()) break;
     buffer.resize(2 * buffer.size());
   }
@@ -204,12 +208,12 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
       fmt::c_str(fmt::internal::UTF8ToUTF16(filename.c_str())), GENERIC_READ,
       FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0));
   if (file == INVALID_HANDLE_VALUE)
-    fmt::ThrowWinError(GetLastError(), "cannot open file {}") << filename;
+    throw WindowsError(GetLastError(), "cannot open file {}") << filename;
 
   // Get file size and check if it is not a multiple of a memory page size.
   LARGE_INTEGER size = {};
   if (!GetFileSizeEx(file, &size))
-    fmt::ThrowWinError(GetLastError(), "cannot get size of file {}") << filename;
+    throw WindowsError(GetLastError(), "cannot get size of file {}") << filename;
   SYSTEM_INFO si = {};
   GetSystemInfo(&si);
   size_ = size.QuadPart;
@@ -219,18 +223,18 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
   // Map file to memory.
   Handle mapping(CreateFileMappingW(file, 0, PAGE_READONLY, 0, 0, 0));
   if (!mapping) {
-    fmt::ThrowWinError(GetLastError(),
+    throw WindowsError(GetLastError(),
         "cannot create file mapping for {}") << filename;
   }
   start_ = reinterpret_cast<char*>(
       MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0));
   if (!start_)
-    fmt::ThrowWinError(GetLastError(), "cannot map file {}") << filename;
+    throw WindowsError(GetLastError(), "cannot map file {}") << filename;
 }
 
 ampl::MemoryMappedFile::~MemoryMappedFile() {
   if (!UnmapViewOfFile(start_))
-    fmt::ReportWinError(GetLastError(), "cannot unmap file");
+    throw WindowsError(GetLastError(), "cannot unmap file");
 }
 
 #endif

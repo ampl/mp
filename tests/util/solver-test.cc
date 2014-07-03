@@ -1090,7 +1090,7 @@ TEST(SolverTest, OutputSuffix) {
   EXPECT_EQ(42, suffix.int_value(0));
 }
 
-enum {NUM_SOLUTIONS = 3};
+const int NUM_SOLUTIONS = 3;
 
 struct SolCountingSolver : Solver {
   explicit SolCountingSolver(bool multiple_sol)
