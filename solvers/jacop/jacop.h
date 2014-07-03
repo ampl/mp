@@ -471,7 +471,8 @@ class JaCoPSolver : public Solver {
   }
   void SetOutputFrequency(const SolverOption &opt, double value);
 
-  fmt::Formatter<Printer> Output(fmt::StringRef format);
+  void Output(fmt::StringRef format, const fmt::ArgList &args);
+  FMT_VARIADIC(void, Output, fmt::StringRef)
 
   steady_clock::duration GetOutputInterval() const {
     return steady_clock::duration(
@@ -504,7 +505,7 @@ class JaCoPSolver : public Solver {
       multiple_sol_(s.need_multiple_solutions()), num_solutions_(0) {
       if (multiple_sol_) {
         feasible_sol_message_ =
-            str(fmt::Format("{}: feasible solution") << s.long_name());
+            fmt::format("{}: feasible solution", s.long_name());
         solution_.resize(p.num_vars());
       }
     }

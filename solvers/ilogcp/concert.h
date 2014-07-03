@@ -90,13 +90,13 @@ class NLToConcertConverter : public Visitor {
 
   IloExpr Visit(NumericExpr e) {
     if ((flags_ & DEBUG) != 0)
-      fmt::Print("{}\n") << e.opstr();
+      fmt::print("{}\n", e.opstr());
     return Visitor::Visit(e);
   }
 
   IloConstraint Visit(LogicalExpr e) {
     if ((flags_ & DEBUG) != 0)
-      fmt::Print("{}\n") << e.opstr();
+      fmt::print("{}\n", e.opstr());
     return Visitor::Visit(e);
   }
 

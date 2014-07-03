@@ -67,7 +67,7 @@ TEST(SolverTest, ObjPrec) {
   double value = 12.3456789123456789;
   char buffer[64];
   sprintf(buffer, "%.*g", obj_prec(), value);
-  EXPECT_EQ(buffer, str(fmt::Format("{}") << ampl::ObjPrec(value)));
+  EXPECT_EQ(buffer, fmt::format("{}", ampl::ObjPrec(value)));
 }
 
 TEST(SolverTest, EmptyValueArrayRef) {
@@ -246,7 +246,7 @@ TEST(SolverTest, Version) {
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Writer w;
-  w.Format("Test Solver ({}), ASL({})\n") << sysdetails_ASL << ASLdate_ASL;
+  w.write("Test Solver ({}), ASL({})\n", sysdetails_ASL, ASLdate_ASL);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
@@ -259,8 +259,8 @@ TEST(SolverTest, VersionWithDate) {
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Writer w;
-  w.Format("Test Solver ({}), driver(20121227), ASL({})\n")
-    << sysdetails_ASL << ASLdate_ASL;
+  w.write("Test Solver ({}), driver(20121227), ASL({})\n",
+    sysdetails_ASL, ASLdate_ASL);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
@@ -276,7 +276,7 @@ TEST(SolverTest, SetVersion) {
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Writer w;
-  w.Format("{} ({}), ASL({})\n") << VERSION << sysdetails_ASL << ASLdate_ASL;
+  w.write("{} ({}), ASL({})\n", VERSION, sysdetails_ASL, ASLdate_ASL);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
@@ -312,8 +312,8 @@ TEST(SolverTest, OutputHandler) {
   TestSolver s("test");
   s.set_output_handler(&oh);
   EXPECT_TRUE(&oh == s.output_handler());
-  s.Print("line {}\n") << 1;
-  s.Print("line {}\n") << 2;
+  s.Print("line {}\n", 1);
+  s.Print("line {}\n", 2);
   EXPECT_EQ("line 1\nline 2\n", oh.output);
 }
 
@@ -359,20 +359,20 @@ TEST(SolverTest, ReadProblemError) {
 TEST(SolverTest, ReadingMinOrMaxWithZeroArgsFails) {
   const char *names[] = {"min", "max"};
   for (size_t i = 0, n = sizeof(names) / sizeof(*names); i < n; ++i) {
-    std::string stub = str(fmt::Format("../data/{}-with-zero-args") << names[i]);
+    std::string stub = fmt::format("../data/{}-with-zero-args", names[i]);
     EXPECT_EXIT({
       Stderr = stderr;
       Problem p;
       p.Read(stub);
     }, ::testing::ExitedWithCode(1),
-        c_str(fmt::Format("bad line 13 of {}.nl: 0") << stub));
+        fmt::format("bad line 13 of {}.nl: 0", stub));
   }
 }
 
 TEST(SolverTest, ReportError) {
   TestSolver s("test");
   EXPECT_EXIT({
-    s.ReportError("File not found: {}") << "somefile";
+    s.ReportError("File not found: {}", "somefile");
     exit(0);
   }, ::testing::ExitedWithCode(0), "File not found: somefile");
 }
@@ -416,10 +416,10 @@ TEST(SolverTest, SignalHandler) {
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
     ampl::SignalHandler sh(s);
-    fmt::Print("{}") << ampl::SignalHandler::stop();
+    fmt::print("{}", ampl::SignalHandler::stop());
     std::fflush(stdout);
     std::raise(SIGINT);
-    fmt::Print("{}") << ampl::SignalHandler::stop();
+    fmt::print("{}", ampl::SignalHandler::stop());
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
@@ -490,7 +490,7 @@ TEST(SolverTest, SolverOption) {
 TEST(SolverTest, IntOptionHelper) {
   fmt::Writer w;
   OptionHelper<int>::Write(w, 42);
-  EXPECT_EQ("42", str(w));
+  EXPECT_EQ("42", w.str());
   const char *start = "123 ";
   const char *s = start;
   EXPECT_EQ(123, OptionHelper<int>::Parse(s));
@@ -501,7 +501,7 @@ TEST(SolverTest, IntOptionHelper) {
 TEST(SolverTest, DoubleOptionHelper) {
   fmt::Writer w;
   OptionHelper<double>::Write(w, 4.2);
-  EXPECT_EQ("4.2", str(w));
+  EXPECT_EQ("4.2", w.str());
   const char *start = "1.23 ";
   const char *s = start;
   EXPECT_EQ(1.23, OptionHelper<double>::Parse(s));
@@ -512,7 +512,7 @@ TEST(SolverTest, DoubleOptionHelper) {
 TEST(SolverTest, StringOptionHelper) {
   fmt::Writer w;
   OptionHelper<std::string>::Write(w, "abc");
-  EXPECT_EQ("abc", str(w));
+  EXPECT_EQ("abc", w.str());
   const char *start = "def ";
   const char *s = start;
   EXPECT_EQ("def", OptionHelper<std::string>::Parse(s));
@@ -539,7 +539,7 @@ TEST(SolverTest, TypedSolverOption) {
   EXPECT_EQ(42, opt.value);
   fmt::Writer w;
   opt.Write(w);
-  EXPECT_EQ("42", str(w));
+  EXPECT_EQ("42", w.str());
 }
 
 enum Info { INFO = 0xcafe };
@@ -1002,7 +1002,7 @@ TEST(SolverTest, VersionOption) {
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Writer w;
-  w.Format("Test Solver ({}), ASL({})\n") << sysdetails_ASL << ASLdate_ASL;
+  w.write("Test Solver ({}), ASL({})\n", sysdetails_ASL, ASLdate_ASL);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
@@ -1017,7 +1017,7 @@ TEST(SolverTest, VersionOptionReset) {
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Writer w;
-  w.Format("Test Solver ({}), ASL({})\nend\n") << sysdetails_ASL << ASLdate_ASL;
+  w.write("Test Solver ({}), ASL({})\nend\n", sysdetails_ASL, ASLdate_ASL);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
@@ -1119,7 +1119,7 @@ TEST(SolverTest, SolutionsAreNotCountedByDefault) {
   p.Read("test.nl");
   s.Solve(p);
   EXPECT_TRUE(ReadFile("test.sol").find(
-      str(fmt::Format("nsol\n0 {}\n") << NUM_SOLUTIONS)) == std::string::npos);
+      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) == std::string::npos);
 }
 
 TEST(SolverTest, CountSolutions) {
@@ -1131,7 +1131,7 @@ TEST(SolverTest, CountSolutions) {
   p.Read("test.nl");
   s.Solve(p);
   EXPECT_TRUE(ReadFile("test.sol").find(
-      str(fmt::Format("nsol\n0 {}\n") << NUM_SOLUTIONS)) != std::string::npos);
+      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) != std::string::npos);
 }
 
 TEST(SolverTest, SolutionStubOption) {
@@ -1159,7 +1159,7 @@ TEST(SolverTest, SolutionsAreNotWrittenByDefault) {
   s.Solve(p);
   EXPECT_TRUE(!Exists("1.sol"));
   EXPECT_TRUE(ReadFile("test.sol").find(
-      str(fmt::Format("nsol\n0 {}\n") << NUM_SOLUTIONS)) == std::string::npos);
+      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) == std::string::npos);
 }
 
 TEST(SolverTest, WriteSolutions) {
@@ -1170,11 +1170,11 @@ TEST(SolverTest, WriteSolutions) {
   Problem p;
   p.Read("test.nl");
   for (int i = 1; i <= NUM_SOLUTIONS; ++i)
-    std::remove(c_str(fmt::Format("abc{}.sol") << i));
+    std::remove(fmt::format("abc{}.sol", i).c_str());
   s.Solve(p);
   for (int i = 1; i <= NUM_SOLUTIONS; ++i)
-    EXPECT_TRUE(Exists(fmt::Format("abc{}.sol") << i));
+    EXPECT_TRUE(Exists(fmt::format("abc{}.sol", i)));
   EXPECT_TRUE(ReadFile("test.sol").find(
-      str(fmt::Format("nsol\n0 {}\n") << NUM_SOLUTIONS)) != std::string::npos);
+      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) != std::string::npos);
 }
 }

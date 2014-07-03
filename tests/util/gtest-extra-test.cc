@@ -27,19 +27,18 @@
 
 #include "gtest-extra.h"
 
-#include <cstdio>
 #include <cstring>
 #include <algorithm>
 #include <stdexcept>
 #include <gtest/gtest-spi.h>
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__MINGW32__)
 # include <crtdbg.h>  // for _CrtSetReportMode
 #endif  // _WIN32
 
 namespace {
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__MINGW32__)
 
 // Suppresses Windows assertions on invalid file descriptors, making
 // POSIX functions return proper error codes instead of crashing on Windows.
@@ -63,8 +62,18 @@ class SuppressAssert {
 };
 
 # define SUPPRESS_ASSERT(statement) { SuppressAssert sa; statement; }
+
+// Fix "secure" warning about using fopen without defining
+// _CRT_SECURE_NO_WARNINGS.
+FILE *OpenFile(const char *filename, const char *mode) {
+  FILE *f = 0;
+  errno = fopen_s(&f, filename, mode);
+  return f;
+}
+#define fopen OpenFile
 #else
 # define SUPPRESS_ASSERT(statement) statement
+using std::fopen;
 #endif  // _WIN32
 
 #define EXPECT_SYSTEM_ERROR_NOASSERT(statement, error_code, message) \
@@ -97,11 +106,23 @@ void ThrowException() {
   throw std::runtime_error("test");
 }
 
+void ThrowSystemError() {
+  throw fmt::SystemError(EDOM, "test");
+}
+
 // Tests that when EXPECT_THROW_MSG fails, it evaluates its message argument
 // exactly once.
 TEST_F(SingleEvaluationTest, FailedEXPECT_THROW_MSG) {
   EXPECT_NONFATAL_FAILURE(
       EXPECT_THROW_MSG(ThrowException(), std::exception, p_++), "01234");
+  EXPECT_EQ(s_ + 1, p_);
+}
+
+// Tests that when EXPECT_SYSTEM_ERROR fails, it evaluates its message argument
+// exactly once.
+TEST_F(SingleEvaluationTest, FailedEXPECT_SYSTEM_ERROR) {
+  EXPECT_NONFATAL_FAILURE(
+      EXPECT_SYSTEM_ERROR(ThrowSystemError(), EDOM, p_++), "01234");
   EXPECT_EQ(s_ + 1, p_);
 }
 
@@ -147,6 +168,39 @@ TEST_F(SingleEvaluationTest, ExceptionTests) {
   EXPECT_EQ(4, b_);
 }
 
+TEST_F(SingleEvaluationTest, SystemErrorTests) {
+  // successful EXPECT_SYSTEM_ERROR
+  EXPECT_SYSTEM_ERROR({  // NOLINT
+    a_++;
+    ThrowSystemError();
+  }, EDOM, (b_++, "test"));
+  EXPECT_EQ(1, a_);
+  EXPECT_EQ(1, b_);
+
+  // failed EXPECT_SYSTEM_ERROR, throws different type
+  EXPECT_NONFATAL_FAILURE(EXPECT_SYSTEM_ERROR({  // NOLINT
+    a_++;
+    ThrowException();
+  }, EDOM, (b_++, "test")), "throws a different type");
+  EXPECT_EQ(2, a_);
+  EXPECT_EQ(2, b_);
+
+  // failed EXPECT_SYSTEM_ERROR, throws an exception with different message
+  EXPECT_NONFATAL_FAILURE(EXPECT_SYSTEM_ERROR({  // NOLINT
+    a_++;
+    ThrowSystemError();
+  }, EDOM, (b_++, "other")),
+      "throws an exception with a different message");
+  EXPECT_EQ(3, a_);
+  EXPECT_EQ(3, b_);
+
+  // failed EXPECT_SYSTEM_ERROR, throws nothing
+  EXPECT_NONFATAL_FAILURE(
+      EXPECT_SYSTEM_ERROR(a_++, EDOM, (b_++, "test")), "throws nothing");
+  EXPECT_EQ(4, a_);
+  EXPECT_EQ(4, b_);
+}
+
 // Tests that assertion arguments are evaluated exactly once.
 TEST_F(SingleEvaluationTest, WriteTests) {
   // successful EXPECT_WRITE
@@ -178,12 +232,33 @@ TEST(ExpectThrowTest, DoesNotGenerateUnreachableCodeWarning) {
       throw runtime_error("a"), runtime_error, "b"), "");
 }
 
+// Tests that the compiler will not complain about unreachable code in the
+// EXPECT_SYSTEM_ERROR macro.
+TEST(ExpectSystemErrorTest, DoesNotGenerateUnreachableCodeWarning) {
+  int n = 0;
+  EXPECT_SYSTEM_ERROR(throw fmt::SystemError(EDOM, "test"), EDOM, "test");
+  EXPECT_NONFATAL_FAILURE(EXPECT_SYSTEM_ERROR(n++, EDOM, ""), "");
+  EXPECT_NONFATAL_FAILURE(EXPECT_SYSTEM_ERROR(throw 1, EDOM, ""), "");
+  EXPECT_NONFATAL_FAILURE(EXPECT_SYSTEM_ERROR(
+      throw fmt::SystemError(EDOM, "aaa"), EDOM, "bbb"), "");
+}
+
 TEST(AssertionSyntaxTest, ExceptionAssertionBehavesLikeSingleStatement) {
   if (::testing::internal::AlwaysFalse())
     EXPECT_THROW_MSG(DoNothing(), std::exception, "");
 
   if (::testing::internal::AlwaysTrue())
     EXPECT_THROW_MSG(ThrowException(), std::exception, "test");
+  else
+    DoNothing();
+}
+
+TEST(AssertionSyntaxTest, SystemErrorAssertionBehavesLikeSingleStatement) {
+  if (::testing::internal::AlwaysFalse())
+    EXPECT_SYSTEM_ERROR(DoNothing(), EDOM, "");
+
+  if (::testing::internal::AlwaysTrue())
+    EXPECT_SYSTEM_ERROR(ThrowSystemError(), EDOM, "test");
   else
     DoNothing();
 }
@@ -216,6 +291,27 @@ TEST(ExpectTest, EXPECT_THROW_MSG) {
       "  Actual: test");
 }
 
+// Tests EXPECT_SYSTEM_ERROR.
+TEST(ExpectTest, EXPECT_SYSTEM_ERROR) {
+  EXPECT_SYSTEM_ERROR(ThrowSystemError(), EDOM, "test");
+  EXPECT_NONFATAL_FAILURE(
+      EXPECT_SYSTEM_ERROR(ThrowException(), EDOM, "test"),
+      "Expected: ThrowException() throws an exception of "
+      "type fmt::SystemError.\n  Actual: it throws a different type.");
+  EXPECT_NONFATAL_FAILURE(
+      EXPECT_SYSTEM_ERROR(DoNothing(), EDOM, "test"),
+      "Expected: DoNothing() throws an exception of type fmt::SystemError.\n"
+      "  Actual: it throws nothing.");
+  EXPECT_NONFATAL_FAILURE(
+      EXPECT_SYSTEM_ERROR(ThrowSystemError(), EDOM, "other"),
+      fmt::format(
+          "ThrowSystemError() throws an exception with a different message.\n"
+          "Expected: {}\n"
+          "  Actual: {}",
+          FormatSystemErrorMessage(EDOM, "other"),
+          FormatSystemErrorMessage(EDOM, "test")));
+}
+
 // Tests EXPECT_WRITE.
 TEST(ExpectTest, EXPECT_WRITE) {
   EXPECT_WRITE(stdout, DoNothing(), "");
@@ -235,6 +331,14 @@ TEST(StreamingAssertionsTest, EXPECT_THROW_MSG) {
       << "expected failure", "expected failure");
 }
 
+TEST(StreamingAssertionsTest, EXPECT_SYSTEM_ERROR) {
+  EXPECT_SYSTEM_ERROR(ThrowSystemError(), EDOM, "test")
+      << "unexpected failure";
+  EXPECT_NONFATAL_FAILURE(
+      EXPECT_SYSTEM_ERROR(ThrowSystemError(), EDOM, "other")
+      << "expected failure", "expected failure");
+}
+
 TEST(StreamingAssertionsTest, EXPECT_WRITE) {
   EXPECT_WRITE(stdout, std::printf("test"), "test")
       << "unexpected failure";
@@ -243,7 +347,17 @@ TEST(StreamingAssertionsTest, EXPECT_WRITE) {
       << "expected failure", "expected failure");
 }
 
+TEST(UtilTest, FormatSystemErrorMessage) {
+  fmt::Writer out;
+  fmt::internal::FormatSystemErrorMessage(out, EDOM, "test message");
+  EXPECT_EQ(out.str(), FormatSystemErrorMessage(EDOM, "test message"));
+}
+
 #if FMT_USE_FILE_DESCRIPTORS
+
+using fmt::BufferedFile;
+using fmt::ErrorCode;
+using fmt::File;
 
 // Checks if the file is open by reading one character from it.
 bool IsOpen(int fd) {
@@ -419,9 +533,9 @@ TEST(FileTest, DefaultCtor) {
 }
 
 TEST(FileTest, OpenBufferedFileInCtor) {
-  FILE *pf = fopen("test-file", "w");
-  fputs(FILE_CONTENT, pf);
-  fclose(pf);
+  FILE *fp = fopen("test-file", "w");
+  std::fputs(FILE_CONTENT, fp);
+  std::fclose(fp);
   File f("test-file", File::RDONLY);
   ASSERT_TRUE(IsOpen(f.descriptor()));
 }
@@ -572,7 +686,7 @@ TEST(FileTest, Dup2) {
 TEST(FileTest, Dup2Error) {
   File f = OpenFile();
   EXPECT_SYSTEM_ERROR_NOASSERT(f.dup2(-1), EBADF,
-    fmt::Format("cannot duplicate file descriptor {} to -1") << f.descriptor());
+    fmt::format("cannot duplicate file descriptor {} to -1", f.descriptor()));
 }
 
 TEST(FileTest, Dup2NoExcept) {
@@ -599,6 +713,19 @@ TEST(FileTest, Pipe) {
   EXPECT_NE(-1, write_end.descriptor());
   Write(write_end, "test");
   EXPECT_READ(read_end, "test");
+}
+
+TEST(FileTest, Fdopen) {
+  File read_end, write_end;
+  File::pipe(read_end, write_end);
+  int read_fd = read_end.descriptor();
+  EXPECT_EQ(read_fd, FMT_POSIX(fileno(read_end.fdopen("r").get())));
+}
+
+TEST(FileTest, FdopenError) {
+  File f;
+  EXPECT_SYSTEM_ERROR_NOASSERT(
+      f.fdopen("r"), EBADF, "cannot associate stream with file descriptor");
 }
 
 TEST(OutputRedirectTest, ScopedRedirect) {
@@ -628,7 +755,7 @@ TEST(OutputRedirectTest, FlushErrorInCtor) {
   FMT_POSIX(close(write_fd));
   OutputRedirect *redir = 0;
   EXPECT_SYSTEM_ERROR_NOASSERT(redir = new OutputRedirect(f.get()),
-      EBADF, fmt::Format("cannot flush stream"));
+      EBADF, "cannot flush stream");
   delete redir;
   write_copy.dup2(write_fd);  // "undo" close or dtor will fail
 }
@@ -640,7 +767,7 @@ TEST(OutputRedirectTest, DupErrorInCtor) {
   FMT_POSIX(close(fd));
   OutputRedirect *redir = 0;
   EXPECT_SYSTEM_ERROR_NOASSERT(redir = new OutputRedirect(f.get()),
-      EBADF, fmt::Format("cannot duplicate file descriptor {}") << fd);
+      EBADF, fmt::format("cannot duplicate file descriptor {}", fd));
   copy.dup2(fd);  // "undo" close or dtor will fail
   delete redir;
 }
@@ -671,7 +798,7 @@ TEST(OutputRedirectTest, FlushErrorInRestoreAndRead) {
   EXPECT_EQ('x', fputc('x', f.get()));
   FMT_POSIX(close(write_fd));
   EXPECT_SYSTEM_ERROR_NOASSERT(redir.RestoreAndRead(),
-      EBADF, fmt::Format("cannot flush stream"));
+      EBADF, "cannot flush stream");
   write_copy.dup2(write_fd);  // "undo" close or dtor will fail
 }
 
@@ -694,9 +821,6 @@ TEST(OutputRedirectTest, ErrorInDtor) {
   }, FormatSystemErrorMessage(EBADF, "cannot flush stream"));
   write_copy.dup2(write_fd); // "undo" close or dtor of BufferedFile will fail
 }
-
-// TODO: test EXPECT_SYSTEM_ERROR
-// TODO: test retry on EINTR
 
 #endif  // FMT_USE_FILE_DESCRIPTORS
 

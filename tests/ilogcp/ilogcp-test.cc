@@ -204,7 +204,7 @@ class IlogCPTest : public ::testing::Test, public ampl::ExprBuilder {
 
   template <typename T>
   static std::string Option(const char *name, T value) {
-    return str(fmt::Format("{}={}") << name << value);
+    return fmt::format("{}={}", name, value);
   }
 
   void CheckIntCPOption(const char *option, IloCP::IntParam param,
@@ -230,21 +230,21 @@ void IlogCPTest::CheckIntCPOption(const char *option,
   IloCP cp = s.cp();
   for (int i = start; i <= std::min(end, 9); ++i) {
     if (accepts_auto || values)
-      s.SetStrOption(option, c_str(fmt::Format("{}") << i));
+      s.SetStrOption(option, fmt::format("{}", i));
     else
       s.SetIntOption(option, i);
     EXPECT_EQ(offset + i, cp.getParameter(param))
       << "Failed option: " << option;
     if (!values) {
       if (accepts_auto)
-        EXPECT_EQ(str(fmt::Format("{}") << i), s.GetStrOption(option));
+        EXPECT_EQ(fmt::format("{}", i), s.GetStrOption(option));
       else
         EXPECT_EQ(i, s.GetIntOption(option));
     }
   }
   if (end != INT_MAX) {
     if (accepts_auto || values) {
-      EXPECT_THROW(s.SetStrOption(option, c_str(fmt::Format("{}") << end + 1)),
+      EXPECT_THROW(s.SetStrOption(option, fmt::format("{}", end + 1)),
           InvalidOptionValue);
     } else {
       EXPECT_THROW(s.SetIntOption(option, end + 1), InvalidOptionValue);
@@ -261,7 +261,7 @@ void IlogCPTest::CheckIntCPOption(const char *option,
   if (accepts_auto && small == -1)
     --small;
   if (accepts_auto || values) {
-    EXPECT_THROW(s.SetStrOption(option, c_str(fmt::Format("{}") << small)),
+    EXPECT_THROW(s.SetStrOption(option, fmt::format("{}", small)),
         InvalidOptionValue);
   } else {
     EXPECT_THROW(s.SetIntOption(option, small), InvalidOptionValue);

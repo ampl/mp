@@ -34,7 +34,7 @@ template <typename T>
 inline T ConvertTo(double value) {
   T int_value = static_cast<T>(value);
   if (int_value != value)
-    ampl::ThrowError("value {} can't be represented as int") << value;
+    throw ampl::Error("value {} can't be represented as int", value);
   return int_value;
 }
 
@@ -151,13 +151,13 @@ IloExpr NLToConcertConverter::VisitCall(CallExpr e) {
   int num_args = e.num_args();
   if (std::strcmp(function_name, "element") == 0) {
     if (num_args < 2)
-      ThrowError("{}: too few arguments") << function_name;
+      throw Error("{}: too few arguments", function_name);
     CallExpr::Arg last_arg = args[num_args - 1];
     if (!last_arg.expr()) {
       // Index is constant - return the argument at specified index.
       int index = ConvertTo<int>(last_arg.constant());
       if (index < 0 || index >= num_args - 1)
-        ThrowError("{}: index {} is out of bounds") << function_name << index;
+        throw Error("{}: index {} is out of bounds", function_name, index);
       CallExpr::Arg result = args[index];
       if (!result.expr())
         return IloExpr(env_, result.constant());
@@ -184,7 +184,7 @@ IloExpr NLToConcertConverter::VisitCall(CallExpr e) {
   } else if (std::strcmp(function_name, "in_relation") == 0)
     throw UnsupportedExprError::CreateFromExprString("nested 'in_relation'");
   throw UnsupportedExprError::CreateFromMessage(
-      fmt::Format("unsupported function: {}") << function_name);
+      fmt::format("unsupported function: {}", function_name));
 }
 
 IloConstraint NLToConcertConverter::VisitExists(IteratedLogicalExpr e) {
@@ -260,7 +260,7 @@ bool NLToConcertConverter::ConvertGlobalConstraint(
   CallExpr::Args args(expr);
   int num_args = expr.num_args();
   if (num_args < 1)
-    ThrowError("{}: too few arguments") << function_name;
+    throw Error("{}: too few arguments", function_name);
   int arity = 0;
   for (; arity < num_args && args[arity].expr(); ++arity)
     ;  // Count variables.
@@ -269,16 +269,16 @@ bool NLToConcertConverter::ConvertGlobalConstraint(
     vars[i] = ConvertArg(args[i]);
   IloIntTupleSet set(env_, arity);
   if (num_args % arity != 0) {
-    ThrowError("{}: the number of arguments {} is not a multiple of arity {}")
-        << function_name << num_args << arity;
+    throw Error("{}: the number of arguments {} is not a multiple of arity {}",
+        function_name, num_args, arity);
   }
   for (int i = arity; i < num_args; i += arity) {
     IloIntArray tuple(env_, arity);
     for (int j = 0; j < arity; ++j) {
       const CallExpr::Arg &arg = args[i + j];
       if (arg.expr()) {
-        ThrowError("{}: argument {} is not constant")
-          << function_name << (i + j + 1);
+        throw Error("{}: argument {} is not constant",
+            function_name, (i + j + 1));
       }
       tuple[j] = ConvertTo<IloInt>(arg.constant());
     }

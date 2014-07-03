@@ -157,10 +157,10 @@ void SSDSolver::DoSolve(Problem &p) {
     if (min_tail_diff > dominance_lb && iteration != 1)
       dominance_lb = min_tail_diff;
 
-    fmt::Print("{:3} {:>12}\n") << iteration << (dominance_ub - dominance_lb);
+    fmt::print("{:3} {:>12}\n", iteration, dominance_ub - dominance_lb);
 
     if ((dominance_ub - dominance_lb) * scaling <= abs_tolerance_) {
-      fmt::Print("Absolute tolerance reached.\n");
+      fmt::print("Absolute tolerance reached.\n");
       break;
     }
 
@@ -200,10 +200,10 @@ void SSDSolver::DoSolve(Problem &p) {
   p.set_solve_code(sol.solve_code());
 
   fmt::Writer w;
-  w.Format("{}: {}") << long_name() << message;
+  w.write("{}: {}", long_name(), message);
   if (sol.status() == SOLVED)
-    w.Format("; dominance {}") << dominance_ub;
-  w.Format("\n{} iteration(s)") << iteration;
+    w.write("; dominance {}", dominance_ub);
+  w.write("\n{} iteration(s)", iteration);
   HandleSolution(p, w.c_str(), solution.data(), 0, 0);
 }
 

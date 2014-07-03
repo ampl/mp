@@ -17,6 +17,6 @@ int main() {
   for (int i = 0; i < num_exprs; ++i)
     map.Add(0, exprs[i]);
   ampl::steady_clock::time_point end = ampl::steady_clock::now();
-  fmt::Print("Executed NumberOfMap.Add {} times in {} s.\n")
-    << num_exprs << ampl::duration_cast< ampl::duration<double> >(end - start).count();
+  fmt::print("Executed NumberOfMap.Add {} times in {} s.\n",
+    num_exprs, ampl::duration_cast< ampl::duration<double> >(end - start).count());
 }

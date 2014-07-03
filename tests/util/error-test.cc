@@ -33,7 +33,7 @@ TEST(ErrorTest, Error) {
 TEST(ErrorTest, ThrowError) {
   ampl::Error error("");
   try {
-    ampl::ThrowError("test {} message") << "error";
+    throw ampl::Error("test {} message", "error");
   } catch (const ampl::Error &e) {
     error = e;
   }

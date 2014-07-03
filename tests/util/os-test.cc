@@ -135,14 +135,14 @@ void LinkFile(fmt::StringRef filename, fmt::StringRef linkname) {
 #ifndef _WIN32
   int result = link(filename.c_str(), linkname.c_str());
   if (result && errno != EEXIST) {
-    fmt::ThrowSystemError(errno, "cannot create a symlink from {} to {}")
-      << filename.c_str() << linkname.c_str();
+    throw fmt::SystemError(errno,
+        "cannot create a symlink from {} to {}", filename, linkname);
   }
 #else
   using fmt::internal::UTF8ToUTF16;
   using fmt::c_str;
   if (!CopyFileW(c_str(UTF8ToUTF16(filename)), c_str(UTF8ToUTF16(linkname)), FALSE)) {
-    fmt::ThrowSystemError(GetLastError(), "cannot copy file {} to {}")
+    throw fmt::SystemError(GetLastError(), "cannot copy file {} to {}")
       << filename.c_str() << linkname.c_str();
   }
 #endif

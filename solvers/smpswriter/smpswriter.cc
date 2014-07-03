@@ -43,7 +43,7 @@ std::string ExtractScenario(std::string &name, bool require_scenario = true) {
   if (index_pos == std::string::npos) {
     if (!require_scenario)
       return std::string();
-    throw ampl::Error(fmt::Format("Missing scenario index for {}") << name);
+    throw ampl::Error("Missing scenario index for {}", name);
   }
   bool single_index = name[index_pos] == '[';
   ++index_pos;
@@ -76,26 +76,14 @@ class FileWriter : Noncopyable {
  private:
   FILE *f_;
 
-  class Writer {
-   private:
-    FILE *f_;
-
-   public:
-    Writer(FILE *f) : f_(f) {}
-
-    void operator()(const fmt::Writer &w) const {
-      std::fwrite(w.data(), 1, w.size(), f_);
-    }
-  };
-
  public:
   FileWriter(fmt::StringRef name) : f_(std::fopen(name.c_str(), "w")) {}
   ~FileWriter() { std::fclose(f_); }
 
-  fmt::Formatter<Writer> Write(fmt::StringRef format) {
-    fmt::Formatter<Writer> f(format, Writer(f_));
-    return f;
+  void Write(fmt::StringRef format, const fmt::ArgList &args) {
+    fmt::print(f_, format, args);
   }
+  FMT_VARIADIC(void, Write, fmt::StringRef)
 };
 
 SMPSWriter::SMPSWriter() : Solver("smpswriter", "SMPSWriter", 20130709) {
@@ -124,7 +112,7 @@ void SMPSWriter::SplitConRHSIntoScenarios(
     int core_con_index = con_info[i].core_index;
     const auto &info = core_cons[core_con_index];
     if (type != info.type)
-      ThrowError("Inconsistent constraint type for {}") << p.con_name(i);
+      throw Error("Inconsistent constraint type for {}", p.con_name(i));
     if (rhs != info.rhs)
       scenarios[scenario_index].AddRHS(core_con_index, rhs);
   }
@@ -183,19 +171,19 @@ void SMPSWriter::WriteColumns(
 
         if (i < num_continuous_vars) {
           if (integer_block) {
-            writer.Write("    INT{:<5}    'MARKER'      'INTEND'\n")
-                << int_var_index;
+            writer.Write(
+                "    INT{:<5}    'MARKER'      'INTEND'\n", int_var_index);
             integer_block = false;
           }
         } else if (!integer_block) {
-          writer.Write("    INT{:<5}    'MARKER'      'INTORG'\n")
-              << ++int_var_index;
+          writer.Write(
+              "    INT{:<5}    'MARKER'      'INTORG'\n", ++int_var_index);
           integer_block = true;
         }
 
         if (double obj_coef = core_obj_coefs[core_var_index]) {
-          writer.Write("    C{:<7}  OBJ       {}\n")
-              << core_var_index + 1 << obj_coef;
+          writer.Write(
+              "    C{:<7}  OBJ       {}\n", core_var_index + 1, obj_coef);
         }
 
         // Write the core coefficients and store them in the core_coefs vector.
@@ -207,9 +195,8 @@ void SMPSWriter::WriteColumns(
           int core_con_index = con_info[con_index].core_index;
           core_coefs[core_con_index] = matrix.value(k);
           nonzero_coef_indices.push_back(core_con_index);
-          writer.Write("    C{:<7}  R{:<7}  {}\n")
-              << core_var_index + 1 << core_con_index + 1
-              << matrix.value(k);
+          writer.Write("    C{:<7}  R{:<7}  {}\n",
+              core_var_index + 1, core_con_index + 1, matrix.value(k));
         }
       }
 
@@ -227,17 +214,15 @@ void SMPSWriter::WriteColumns(
           scenarios[scenario_index].AddConTerm(
               core_con_index, core_var_index, coef);
           if (core_coef == 0) {
-            writer.Write("    C{:<7}  R{:<7}  0\n")
-                << core_var_index + 1 << core_con_index + 1;
+            writer.Write("    C{:<7}  R{:<7}  0\n",
+                core_var_index + 1, core_con_index + 1);
           }
         }
       }
     }
   }
-  if (integer_block) {
-    writer.Write("    INT{:<5}    'MARKER'      'INTEND'\n")
-        << int_var_index;
-  }
+  if (integer_block)
+    writer.Write("    INT{:<5}    'MARKER'      'INTEND'\n", int_var_index);
 }
 
 void SMPSWriter::DoSolve(Problem &p) {
@@ -379,8 +364,8 @@ void SMPSWriter::DoSolve(Problem &p) {
       "PERIODS\n"
       "    C1        OBJ                      T1\n");
     if (num_stages > 1) {
-      writer.Write("    C{:<7}  R{:<7}                 T2\n")
-          << num_stage0_vars + 1 << num_stage0_cons + 1;
+      writer.Write("    C{:<7}  R{:<7}                 T2\n",
+          num_stage0_vars + 1, num_stage0_cons + 1);
     }
     writer.Write("ENDATA\n");
   }
@@ -394,7 +379,7 @@ void SMPSWriter::DoSolve(Problem &p) {
       "ROWS\n"
       " N  OBJ\n");
     for (int i = 0; i < num_core_cons; ++i)
-      writer.Write(" {}  R{}\n") << core_cons[i].type << i + 1;
+      writer.Write(" {}  R{}\n", core_cons[i].type, i + 1);
 
     std::vector<double> core_obj_coefs(num_core_vars);
     std::vector<double> sum_core_obj_coefs;
@@ -444,12 +429,11 @@ void SMPSWriter::DoSolve(Problem &p) {
           double prob = i->coef() / sum_core_obj_coefs[info.core_index];
           double prob_tolerance = 1e-5;
           if (std::abs(prob - ref_prob) > prob_tolerance) {
-            ThrowError("Probability deduced using variable {} ({}) "
-                "is inconsistent with the one deduced using variable {} ({})")
-                    << p.var_name(reference_var_index)
-                    << probabilities[info.scenario_index]
-                    << p.var_name(i->var_index())
-                    << prob;
+            throw Error("Probability deduced using variable {} ({}) "
+                "is inconsistent with the one deduced using variable {} ({})",
+                    p.var_name(reference_var_index),
+                    probabilities[info.scenario_index],
+                    p.var_name(i->var_index()), prob);
           }
         }
       }
@@ -459,15 +443,15 @@ void SMPSWriter::DoSolve(Problem &p) {
 
     writer.Write("RHS\n");
     for (int i = 0; i < num_core_cons; ++i)
-      writer.Write("    RHS1      R{:<7}  {}\n") << i + 1 << core_cons[i].rhs;
+      writer.Write("    RHS1      R{:<7}  {}\n", i + 1, core_cons[i].rhs);
 
     writer.Write("BOUNDS\n");
     for (int i = 0; i < num_core_vars; ++i) {
       double lb = core_vars[i].lb, ub = core_vars[i].ub;
       if (lb != 0)
-        writer.Write(" LO BOUND1      C{:<7}  {}\n") << i + 1 << lb;
+        writer.Write(" LO BOUND1      C{:<7}  {}\n", i + 1, lb);
       if (ub < Infinity)
-        writer.Write(" UP BOUND1      C{:<7}  {}\n") << i + 1 << ub;
+        writer.Write(" UP BOUND1      C{:<7}  {}\n", i + 1, ub);
     }
 
     writer.Write("ENDATA\n");
@@ -480,29 +464,29 @@ void SMPSWriter::DoSolve(Problem &p) {
       "STOCH         PROBLEM\n"
       "SCENARIOS     DISCRETE\n");
     if (num_stages > 1) {
-      writer.Write(" SC SCEN1     'ROOT'    {:<12}   T1\n") << probabilities[0];
+      writer.Write(" SC SCEN1     'ROOT'    {:<12}   T1\n", probabilities[0]);
       for (size_t i = 1, n = scenarios.size(); i < n; ++i) {
-        writer.Write(" SC SCEN{:<4}  SCEN1     {:<12}   T2\n")
-            << i + 1 << probabilities[i];
+        writer.Write(" SC SCEN{:<4}  SCEN1     {:<12}   T2\n",
+            i + 1, probabilities[i]);
         for (auto j = scenarios[i].con_term_begin(),
             end = scenarios[i].con_term_end(); j != end; ++j) {
-          writer.Write("    C{:<7}  R{:<7}  {}\n")
-              << j->var_index + 1 << j->con_index + 1 << j->coef;
+          writer.Write("    C{:<7}  R{:<7}  {}\n",
+              j->var_index + 1, j->con_index + 1, j->coef);
         }
         for (auto j = scenarios[i].rhs_begin(),
             end = scenarios[i].rhs_end(); j != end; ++j) {
-          writer.Write("    RHS1      R{:<7}  {}\n")
-              << j->con_index + 1 << j->rhs;
+          writer.Write("    RHS1      R{:<7}  {}\n",
+              j->con_index + 1, j->rhs);
         }
         for (auto j = scenarios[i].lb_begin(),
             end = scenarios[i].lb_end(); j != end; ++j) {
-          writer.Write(" LO BOUND1      C{:<7}  {}\n")
-              << j->var_index + 1 << j->bound;
+          writer.Write(" LO BOUND1      C{:<7}  {}\n",
+              j->var_index + 1, j->bound);
         }
         for (auto j = scenarios[i].ub_begin(),
             end = scenarios[i].ub_end(); j != end; ++j) {
-          writer.Write(" UP BOUND1      C{:<7}  {}\n")
-              << j->var_index + 1 << j->bound;
+          writer.Write(" UP BOUND1      C{:<7}  {}\n",
+              j->var_index + 1, j->bound);
         }
       }
     }

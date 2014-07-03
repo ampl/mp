@@ -107,8 +107,8 @@ const ampl::OptionValueInfo AUTO_VALUE[] = {
 
 ampl::OptionError GetOptionValueError(
     const ampl::SolverOption &opt, fmt::StringRef message) {
-  throw ampl::OptionError(fmt::Format(
-      "Can't get value of option {}: {}") << opt.name() << message.c_str());
+  throw ampl::OptionError(fmt::format(
+      "Can't get value of option {}: {}", opt.name(), message));
 }
 
 // An integer option.
@@ -174,7 +174,7 @@ std::string EnumOption::GetValue() const {
     if (i->data == value)
       return i->value;
   }
-  return str(fmt::Format("{}") << value);
+  return fmt::format("{}", value);
 }
 
 void EnumOption::SetValue(const char *value) {
@@ -266,14 +266,14 @@ IlogCPSolver::IlogCPSolver() :
   options_[MULTIOBJ] = false;
   options_[OBJNO] = 1;
 
-  set_long_name(fmt::Format("ilogcp {}.{}.{}")
-      << IloConcertVersion::_ILO_MAJOR_VERSION
-      << IloConcertVersion::_ILO_MINOR_VERSION
-      << IloConcertVersion::_ILO_TECH_VERSION);
-  set_version(fmt::Format("AMPL/IBM ILOG CP Optimizer [{} {}.{}.{}]")
-      << IloConcertVersion::_ILO_NAME << IloConcertVersion::_ILO_MAJOR_VERSION
-      << IloConcertVersion::_ILO_MINOR_VERSION
-      << IloConcertVersion::_ILO_TECH_VERSION);
+  set_long_name(fmt::format("ilogcp {}.{}.{}",
+      IloConcertVersion::_ILO_MAJOR_VERSION,
+      IloConcertVersion::_ILO_MINOR_VERSION,
+      IloConcertVersion::_ILO_TECH_VERSION));
+  set_version(fmt::format("AMPL/IBM ILOG CP Optimizer [{} {}.{}.{}]",
+      IloConcertVersion::_ILO_NAME, IloConcertVersion::_ILO_MAJOR_VERSION,
+      IloConcertVersion::_ILO_MINOR_VERSION,
+      IloConcertVersion::_ILO_TECH_VERSION));
 
   AddSuffix("priority", 0, ASL_Sufkind_var);
 
@@ -578,7 +578,7 @@ int IlogCPSolver::GetCPLEXIntOption(const SolverOption &opt, int param) const {
   int value = 0;
   int result = CPXgetintparam(cplex_.getImpl()->getCplexEnv(), param, &value);
   if (result != 0)
-    throw GetOptionValueError(opt, fmt::Format("CPLEX error = {}") << result);
+    throw GetOptionValueError(opt, fmt::format("CPLEX error = {}", result));
   return value;
 }
 
@@ -615,7 +615,7 @@ void IlogCPSolver::SolveWithCP(
   vector<double> solution(p.num_vars());
   std::set< vector<double> > solutions;
   std::string feasible_sol_message =
-      str(fmt::Format("{}: feasible solution") << long_name());
+      fmt::format("{}: feasible solution", long_name());
   bool multiple_sols = need_multiple_solutions();
   int solution_limit = GetOption(SOLUTION_LIMIT);
   if (solution_limit == -1)
@@ -670,11 +670,11 @@ void IlogCPSolver::SolveWithCP(
   p.set_solve_code(solve_code);
 
   fmt::Writer writer;
-  writer.Format("{}: {}\n") << long_name() << status;
+  writer.write("{}: {}\n", long_name(), status);
   double obj_value = std::numeric_limits<double>::quiet_NaN();
-  writer.Format("{} choice points, {} fails")
-      << cp_.getInfo(IloCP::NumberOfChoicePoints)
-      << cp_.getInfo(IloCP::NumberOfFails);
+  writer.write("{} choice points, {} fails",
+      cp_.getInfo(IloCP::NumberOfChoicePoints),
+      cp_.getInfo(IloCP::NumberOfFails));
   IloAlgorithm::Status cpstatus = cp_.getStatus();
   if (cpstatus == IloAlgorithm::Feasible || cpstatus == IloAlgorithm::Optimal) {
     GetSolution(cp_, vars, solution);
@@ -682,7 +682,7 @@ void IlogCPSolver::SolveWithCP(
       // Do nothing.
     } else if (GetOption(OBJNO) != 0) {
       obj_value = cp_.getObjValue();
-      writer.Format(", objective {}") << ObjPrec(obj_value);
+      writer.write(", objective {}", ObjPrec(obj_value));
     } else {
       obj_value = 0;
     }
@@ -716,7 +716,7 @@ void IlogCPSolver::SolveWithCPLEX(
   p.set_solve_code(solve_code);
 
   fmt::Writer writer;
-  writer.Format("{}: {}\n") << long_name() << status;
+  writer.write("{}: {}\n", long_name(), status);
   double obj_value = std::numeric_limits<double>::quiet_NaN();
   vector<double> solution, dual_solution;
   if (solve_code < 200) {
@@ -741,7 +741,7 @@ void IlogCPSolver::SolveWithCPLEX(
 
     if (p.num_objs() > 0) {
       obj_value = cplex_.getObjValue();
-      writer.Format(", objective {}") << ObjPrec(obj_value);
+      writer.write(", objective {}", ObjPrec(obj_value));
     }
   }
   HandleSolution(p, writer.c_str(),
@@ -785,7 +785,7 @@ void IlogCPSolver::DoSolve(Problem &p) {
     if (extractables.getSize() == 0)
       throw;
     throw UnsupportedExprError::CreateFromExprString(
-        str(fmt::Format("{}") << extractables[0]));
+        fmt::format("{}", extractables[0]));
   }
 
   if (optimizer == CP)
@@ -797,8 +797,8 @@ void IlogCPSolver::DoSolve(Problem &p) {
   if (timing()) {
     Print("Setup time = {:.6f}s\n"
           "Solution time = {:.6f}s\n"
-          "Output time = {:.6f}s\n")
-            << stats.setup_time << stats.solution_time << output_time;
+          "Output time = {:.6f}s\n",
+          stats.setup_time, stats.solution_time, output_time);
   }
 }
 

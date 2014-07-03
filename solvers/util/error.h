@@ -35,6 +35,7 @@ class Error : public fmt::internal::RuntimeError {
     std::runtime_error &base = *this;
     base = std::runtime_error(fmt::format(format_str, args));
   }
+
  public:
   FMT_VARIADIC_(char, , Error, init, fmt::StringRef)
   ~Error() throw() {}

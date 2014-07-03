@@ -83,7 +83,7 @@ class NLToGecodeConverter :
     int int_value = static_cast<int>(value);
     if (int_value != value) {
       throw UnsupportedExprError::CreateFromMessage(
-          fmt::Format("value {} can't be represented as int") << value);
+          fmt::format("value {} can't be represented as int", value));
     }
     return int_value;
   }
@@ -347,7 +347,9 @@ class GecodeSolver : public Solver {
     status_ = status;
   }
 
-  fmt::Formatter<fmt::FileSink> Output(fmt::StringRef format);
+  void Output(fmt::StringRef format, const fmt::ArgList &args);
+
+  FMT_VARIADIC(void, Output, fmt::StringRef)
 
   class Stop : public Gecode::Search::Stop {
    private:

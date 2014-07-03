@@ -135,10 +135,10 @@ jint NLToJaCoPConverter::CastToInt(double value) const {
   jint int_value = static_cast<jint>(value);
   if (int_value != value) {
     throw UnsupportedExprError::CreateFromMessage(
-        fmt::Format("value {} can't be represented as int") << value);
+        fmt::format("value {} can't be represented as int", value));
   }
   if (int_value < min_int_ || int_value > max_int_)
-    throw Error(str(fmt::Format("value {} is out of bounds") << value));
+    throw Error("value {} is out of bounds", value);
   return int_value;
 }
 
@@ -352,7 +352,7 @@ void JaCoPSolver::SetOutputFrequency(const SolverOption &opt, double value) {
 
 void JaCoPSolver::HandleUnknownOption(const char *name) {
   if (name[0] == '-') {
-    Print("{}\n") << name;
+    Print("{}\n", name);
     jvm_options_.push_back(name);
   } else {
     Solver::HandleUnknownOption(name);
@@ -444,21 +444,20 @@ void JaCoPSolver::SetEnumOption(
   throw InvalidOptionValue(opt, value);
 }
 
-fmt::Formatter<Solver::Printer> JaCoPSolver::Output(fmt::StringRef format) {
+void JaCoPSolver::Output(fmt::StringRef format, const fmt::ArgList &args) {
   if (output_count_ == 0)
-    Print("{}") << header_;
+    Print("{}", header_);
   output_count_ = (output_count_ + 1) % 20;
-  fmt::Formatter<Printer> f(format, MakePrinter());
-  return f;
+  Print(format, args);
 }
 
 void JaCoPSolver::PrintLogEntry() {
   if (outlev_ == 0 || steady_clock::now() < next_output_time_)
     return;
-  Output("{:10} {:10} {:10}\n")
-      << env_.CallIntMethodKeepException(search_.get(), get_depth_)
-      << env_.CallIntMethodKeepException(search_.get(), get_nodes_)
-      << env_.CallIntMethodKeepException(search_.get(), get_fails_);
+  Output("{:10} {:10} {:10}\n",
+      env_.CallIntMethodKeepException(search_.get(), get_depth_),
+      env_.CallIntMethodKeepException(search_.get(), get_nodes_),
+      env_.CallIntMethodKeepException(search_.get(), get_fails_));
   next_output_time_ += GetOutputInterval();
 }
 
@@ -468,8 +467,7 @@ bool JaCoPSolver::SolutionHandler::DoHandleSolution() {
     if (solver_.outlev_ != 0 && obj_var_) {
       jint value = solver_.env_.CallIntMethodKeepException(
           obj_var_, solver_.value_);
-      solver_.Output("{:46}\n")
-          << (problem_.obj_type(0) == MIN ? value : -value);
+      solver_.Output("{:46}\n", (problem_.obj_type(0) == MIN ? value : -value));
     }
     if (multiple_sol_) {
       double obj_value = obj_var_ ?
@@ -624,8 +622,8 @@ void JaCoPSolver::DoSolve(Problem &p) {
 
   // Solve the problem.
   solve_code_ = -1;
-  header_ = str(fmt::Format("{:>10} {:>10} {:>10} {:>13}\n")
-    << "Max Depth" << "Nodes" << "Fails" << (has_obj ? "Best Obj" : ""));
+  header_ = fmt::format("{:>10} {:>10} {:>10} {:>13}\n",
+    "Max Depth", "Nodes", "Fails", (has_obj ? "Best Obj" : ""));
   jboolean found = false;
   output_count_ = 0;
   next_output_time_ = steady_clock::now() + GetOutputInterval();
@@ -695,12 +693,12 @@ void JaCoPSolver::DoSolve(Problem &p) {
   double solution_time = GetTimeAndReset(time);
 
   fmt::Writer w;
-  w.Format("{}: {}\n") << long_name() << status_;
-  w.Format("{} nodes, {} fails")
-      << env_.CallIntMethod(search_.get(), get_nodes_)
-      << env_.CallIntMethod(search_.get(), get_fails_);
+  w.write("{}: {}\n", long_name(), status_);
+  w.write("{} nodes, {} fails",
+      env_.CallIntMethod(search_.get(), get_nodes_),
+      env_.CallIntMethod(search_.get(), get_fails_));
   if (has_obj && found)
-    w.Format(", objective {}") << ObjPrec(obj_val);
+    w.write(", objective {}", ObjPrec(obj_val));
   HandleSolution(p, w.c_str(),
       final_solution.empty() ? 0 : final_solution.data(), 0, obj_val);
 
@@ -709,8 +707,8 @@ void JaCoPSolver::DoSolve(Problem &p) {
   if (timing()) {
     Print("Setup time = {:.6f}s\n"
           "Solution time = {:.6f}s\n"
-          "Output time = {:.6f}s\n")
-            << setup_time << solution_time << output_time;
+          "Output time = {:.6f}s\n",
+          setup_time, solution_time, output_time);
   }
 }
 

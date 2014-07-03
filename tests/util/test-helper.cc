@@ -3,6 +3,6 @@
 #include "solvers/util/os.h"
 
 int main() {
-  fmt::Print("{}") << ampl::GetExecutablePath().string();
+  fmt::print("{}", ampl::GetExecutablePath().string());
   return 42;
 }

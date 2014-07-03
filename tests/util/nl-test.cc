@@ -40,7 +40,7 @@ struct TestNLHandler : ampl::NLHandler {
   void HandleHeader(const NLHeader &h) {
     header = h;
     obj_exprs.resize(h.num_objs);
-    log.Clear();
+    log.clear();
   }
 
   void HandleObj(int obj_index, bool maximize, ampl::NumericExpr expr) {
@@ -134,8 +134,9 @@ NLHeader ReadHeader(const std::string &s) {
 }
 
 // Reads a zero header with one modified line.
-NLHeader ReadHeader(int line_index, const char *line) {
-  return ReadHeader(ReplaceLine(FormatHeader(NLHeader()), line_index, line));
+NLHeader ReadHeader(int line_index, fmt::StringRef line) {
+  return ReadHeader(ReplaceLine(
+      FormatHeader(NLHeader()), line_index, line.c_str()));
 }
 
 TEST(NLTest, NoNewlineAtEOF) {
@@ -163,7 +164,7 @@ TEST(NLTest, InvalidNumOptions) {
   EXPECT_THROW_MSG(ReadHeader(0, "g10"),
       ampl::ParseError, "(input):1:2: too many options");
   EXPECT_THROW_MSG(ReadHeader(0,
-      c_str(fmt::Format("g{}") << static_cast<unsigned>(INT_MAX) + 1)),
+      fmt::format("g{}", static_cast<unsigned>(INT_MAX) + 1)),
       ampl::ParseError, "(input):1:2: number is too big");
 }
 
@@ -346,12 +347,12 @@ TEST(NLTest, NumComplDblIneq) {
 TEST(NLTest, Arith) {
   EXPECT_EQ(NLHeader::TEXT, ReadHeader(5, " 0 0").format);
   EXPECT_EQ(NLHeader::TEXT, ReadHeader(5, " 0 0 0").format);
-  EXPECT_EQ(NLHeader::TEXT, ReadHeader(5,
-      c_str(fmt::Format(" 0 0 {}") << Arith_Kind_ASL)).format);
-  EXPECT_EQ(NLHeader::BINARY_SWAPPED, ReadHeader(5,
-      c_str(fmt::Format(" 0 0 {}") << 3 - Arith_Kind_ASL)).format);
+  EXPECT_EQ(NLHeader::TEXT,
+      ReadHeader(5, fmt::format(" 0 0 {}", Arith_Kind_ASL)).format);
+  EXPECT_EQ(NLHeader::BINARY_SWAPPED,
+      ReadHeader(5, fmt::format(" 0 0 {}", 3 - Arith_Kind_ASL)).format);
   EXPECT_THROW_MSG(
-      ReadHeader(5, c_str(fmt::Format(" 0 0 {}") << 3 - Arith_Kind_ASL + 1)),
+      ReadHeader(5, fmt::format(" 0 0 {}", 3 - Arith_Kind_ASL + 1)),
       ampl::ParseError, "(input):6:6: unrecognized binary format");
   // TODO: check if the bytes are actually swapped
 }
@@ -371,15 +372,13 @@ TEST(NLTest, IncompleteHeader) {
     ReadHeader(i, " 0 0");
     EXPECT_THROW_MSG(
         ReadHeader(i, " 0"), ampl::ParseError,
-        c_str(fmt::Format("(input):{}:3: expected nonnegative integer")
-            << i + 1));
+        fmt::format("(input):{}:3: expected nonnegative integer", i + 1));
   }
   for (int i = 6; i <= 9; i += 3) {
     ReadHeader(1, " 0 0 0 0 0");
     EXPECT_THROW_MSG(
         ReadHeader(i, " 0 0 0 0"), ampl::ParseError,
-        c_str(fmt::Format("(input):{}:9: expected nonnegative integer")
-            << i + 1));
+        fmt::format("(input):{}:9: expected nonnegative integer", i + 1));
   }
   std::string input = ReplaceLine(FormatHeader(NLHeader()), 4, " 0 0");
   ReadHeader(ReplaceLine(input, 6, " 0 0"));

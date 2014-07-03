@@ -53,7 +53,7 @@ class ObjPrec {
  public:
   explicit ObjPrec(double value) : value_(value) {}
 
-  friend void Format(fmt::Writer &w, const fmt::FormatSpec &spec, ObjPrec op) {
+  friend void format(fmt::Writer &w, const fmt::FormatSpec &spec, ObjPrec op) {
     char buffer[32];
     g_fmtop(buffer, op.value_);
     w.write_str(buffer, spec);
@@ -856,8 +856,8 @@ class Solver
 
   // Sets the value of a string option.
   // Throws OptionError if there is no such option or it has a different type.
-  void SetStrOption(const char *name, const char *value) {
-    SetOptionValue<std::string>(name, value);
+  void SetStrOption(const char *name, fmt::StringRef value) {
+    SetOptionValue<std::string>(name, value.c_str());
   }
 
   // Reports an error printing the formatted error message to stderr.

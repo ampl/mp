@@ -46,7 +46,7 @@ class TableProxyTest : public ::testing::Test {
     strings_.push_back("tableproxy");
     int bits = sizeof(void*) == 8 ? 64 : 32;
     std::string prog = FixBinaryPath(
-        fmt::Format("prog=../../tables/tableproxy{}") << bits);
+        fmt::format("prog=../../tables/tableproxy{}", bits));
     strings_.push_back(prog);
     strings_.push_back(FixBinaryPath("lib=../../tables/fullbit.dll"));
     strings_.push_back("lib-tab");

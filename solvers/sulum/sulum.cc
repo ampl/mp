@@ -50,7 +50,7 @@ const OptionInfo<SlmParamDb> DBL_OPTION_INFO[] = {
 inline void Check(SlmReturn ret) {
   if (ret != SlmRetOk) {
     // TODO: get error message
-    ampl::ThrowError("Sulum error {}") << ret;
+    throw ampl::Error("Sulum error {}", ret);
   }
 }
 
@@ -108,8 +108,7 @@ class SulumSolver::DblSulumOption : public TypedSolverOption<double> {
 SulumSolver::SulumSolver() : Solver("sulum", "", 20130908), env_(), model_() {
   int major = 0, minor = 0, interim = 0;
   SlmGetSulumVersion(&major, &minor, &interim);
-  std::string version = str(
-      fmt::Format("sulum {}.{}.{}") << major << minor << interim);
+  std::string version = fmt::format("sulum {}.{}.{}", major, minor, interim);
   set_long_name(version);
   version[0] = 'S';
   set_version(version);
@@ -266,7 +265,7 @@ void SulumSolver::DoSolve(Problem &p) {
   double solution_time = GetTimeAndReset(time);
 
   fmt::Writer w;
-  w.Format("{}: {}\n") << long_name() << status;
+  w.write("{}: {}\n", long_name(), status);
   double obj_val = 0;
   Check(SlmGetDbInfo(model_, SlmInfoDbPrimObj, &obj_val));
   std::vector<double> solution(num_vars);
@@ -275,7 +274,7 @@ void SulumSolver::DoSolve(Problem &p) {
   Check(SlmGetSolDualCons(model_, dual_solution.data()));
   w << status;
   if (p.num_objs() > 0)
-    w.Format("; objective {}") << ObjPrec(obj_val);
+    w.write("; objective {}", ObjPrec(obj_val));
   HandleSolution(p, w.c_str(), solution.data(), dual_solution.data(), obj_val);
 
   double output_time = GetTimeAndReset(time);
@@ -283,8 +282,8 @@ void SulumSolver::DoSolve(Problem &p) {
   if (timing()) {
     Print("Setup time = {:.6f}s\n"
           "Solution time = {:.6f}s\n"
-          "Output time = {:.6f}s\n")
-              << setup_time << solution_time << output_time;
+          "Output time = {:.6f}s\n",
+          setup_time, solution_time, output_time);
   }
 }
 

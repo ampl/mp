@@ -1109,7 +1109,7 @@ TEST_F(ExprTest, WriteUnaryExpr) {
     int code = info.code;
     if (info.kind != Expr::UNARY || code == OPUMINUS || code == OP2POW)
       continue;
-    CHECK_WRITE(str(fmt::Format("{}(x1)") << info.str), AddUnary(code, x1));
+    CHECK_WRITE(fmt::format("{}(x1)", info.str), AddUnary(code, x1));
     ++count;
   }
   EXPECT_EQ(19, count);
@@ -1249,9 +1249,9 @@ TEST_F(ExprTest, UnaryFuncPrecedence) {
     int code = info.code;
     if (info.kind != Expr::UNARY || code == OPUMINUS || code == OP2POW)
       continue;
-    CHECK_WRITE(str(fmt::Format("{0}({0}(x1))") << info.str),
+    CHECK_WRITE(fmt::format("{0}({0}(x1))", info.str),
         AddUnary(code, AddUnary(code, x1)));
-    CHECK_WRITE(str(fmt::Format("{0}(x1 + x1)") << info.str),
+    CHECK_WRITE(fmt::format("{0}(x1 + x1)", info.str),
         AddUnary(code, AddBinary(OPPLUS, x1, x1)));
     ++count;
   }

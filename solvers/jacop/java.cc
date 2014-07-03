@@ -126,8 +126,8 @@ void Env::Throw(jthrowable exception, const char *method_name) {
       "toString", "()Ljava/lang/String;");
   String message(env_, static_cast<jstring>(Check(
       env_->CallObjectMethod(exception, getMessage), "CallObjectMethod")));
-  throw JavaError(fmt::Format("{} failed: {}")
-        << method_name << message.c_str(), exception);
+  throw JavaError(fmt::format(
+      "{} failed: {}", method_name, message.c_str()), exception);
 }
 
 jobject Env::NewObject(jclass cls, jmethodID ctor, ...) {
@@ -239,8 +239,8 @@ Env JVM::env(const char *const *options) {
     void *envp = 0;
     jint result = JNI_CreateJavaVM(&instance_.jvm_, &envp, &vm_args);
     if (result != JNI_OK) {
-      throw JavaError(fmt::Format(
-          "Java VM initialization failed, error code = {}") << result);
+      throw JavaError(fmt::format(
+          "Java VM initialization failed, error code = {}", result));
     }
     instance_.env_ = Env(static_cast<JNIEnv*>(envp));
   }

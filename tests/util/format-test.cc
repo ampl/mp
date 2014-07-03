@@ -45,7 +45,7 @@ FILE *FOpen(const char *filename, const char *mode) {
 #define fopen FOpen
 #endif
 
-#include "format.h"
+#include "solvers/util/format.h"
 #include "util.h"
 #include "gtest-extra.h"
 

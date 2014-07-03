@@ -327,7 +327,7 @@ Gecode::IntConLevel NLToGecodeConverter::GetICL(int con_index) const {
   assert(value == Gecode::ICL_VAL || value == Gecode::ICL_BND ||
          value == Gecode::ICL_DOM || value == Gecode::ICL_DEF);
   if (value < 0 || value > Gecode::ICL_DEF)
-    ThrowError("Invalid value \"{}\" for suffix \"icl\"") << value;
+    throw Error("Invalid value \"{}\" for suffix \"icl\"", value);
   return static_cast<Gecode::IntConLevel>(value);
 }
 
@@ -509,7 +509,7 @@ bool GecodeSolver::Stop::stop(
   if (!output_or_limit_) return false;
   steady_clock::time_point time = steady_clock::now();
   if (solver_.output_ && time >= next_output_time_) {
-    solver_.Output("{:10} {:10} {:10}\n") << s.depth << s.node << s.fail;
+    solver_.Output("{:10} {:10} {:10}\n", s.depth, s.node, s.fail);
     next_output_time_ += GetOutputInterval();
   }
   if (time > end_time_)
@@ -543,7 +543,7 @@ std::string GecodeSolver::GetEnumOption(const SolverOption &opt, T *ptr) const {
     if (*ptr == i->data)
       return i->value;
   }
-  return str(fmt::Format("{}") << *ptr);
+  return fmt::format("{}", *ptr);
 }
 
 template <typename T>
@@ -567,12 +567,11 @@ void GecodeSolver::SetNonnegativeOption(
   *option = value;
 }
 
-fmt::Formatter<fmt::FileSink> GecodeSolver::Output(fmt::StringRef format) {
+void GecodeSolver::Output(fmt::StringRef format, const fmt::ArgList &args) {
   if (output_count_ == 0)
-    fmt::Print("{}") << header_;
+    Print("{}", header_);
   output_count_ = (output_count_ + 1) % 20;
-  fmt::Formatter<fmt::FileSink> f(format, fmt::FileSink(stdout));
-  return f;
+  Print(format, args);
 }
 
 GecodeSolver::GecodeSolver()
@@ -720,7 +719,7 @@ GecodeSolver::ProblemPtr GecodeSolver::Search(
     Meta<Gecode::BAB, GecodeProblem> engine(&problem, options_);
     while (GecodeProblem *next = engine.next()) {
       if (output_)
-        Output("{:46}\n") << next->obj().val();
+        Output("{:46}\n", next->obj().val());
       final_problem.reset(next);
       if (++num_solutions >= solution_limit_) {
         SetStatus(403, "solution limit");
@@ -737,7 +736,7 @@ GecodeSolver::ProblemPtr GecodeSolver::Search(
     if (multiple_sol)
       solution.resize(p.num_vars());
     std::string feasible_sol_message =
-        str(fmt::Format("{}: feasible solution") << long_name());
+        fmt::format("{}: feasible solution", long_name());
     while (GecodeProblem *next = engine.next()) {
       final_problem.reset(next);
       if (multiple_sol) {
@@ -795,8 +794,8 @@ void GecodeSolver::DoSolve(Problem &p) {
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   bool has_obj = p.num_objs() != 0;
   Search::Statistics stats;
-  header_ = str(fmt::Format("{:>10} {:>10} {:>10} {:>13}\n")
-    << "Max Depth" << "Nodes" << "Fails" << (has_obj ? "Best Obj" : ""));
+  header_ = fmt::format("{:>10} {:>10} {:>10} {:>13}\n",
+    "Max Depth", "Nodes", "Fails", (has_obj ? "Best Obj" : ""));
   GecodeSolver::ProblemPtr solution;
   if (restart_ != Gecode::RM_NONE) {
     options_.cutoff = Gecode::Driver::createCutoff(*this);
@@ -832,10 +831,10 @@ void GecodeSolver::DoSolve(Problem &p) {
   double solution_time = GetTimeAndReset(time);
 
   fmt::Writer w;
-  w.Format("{}: {}\n") << long_name() << status_;
-  w.Format("{} nodes, {} fails") << stats.node << stats.fail;
+  w.write("{}: {}\n", long_name(), status_);
+  w.write("{} nodes, {} fails", stats.node, stats.fail);
   if (has_obj && solution.get())
-    w.Format(", objective {}") << ObjPrec(obj_val);
+    w.write(", objective {}", ObjPrec(obj_val));
   HandleSolution(p, w.c_str(),
       final_solution.empty() ? 0 : final_solution.data(), 0, obj_val);
 
@@ -844,8 +843,8 @@ void GecodeSolver::DoSolve(Problem &p) {
   if (timing()) {
     Print("Setup time = {:.6f}s\n"
           "Solution time = {:.6f}s\n"
-          "Output time = {:.6f}s\n")
-              << setup_time << solution_time << output_time;
+          "Output time = {:.6f}s\n",
+          setup_time, solution_time, output_time);
   }
 }
 

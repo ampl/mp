@@ -110,7 +110,7 @@ TEST(SolutionTest, SolveCodes) {
     {
       int solve_code = i * 100;
       WriteFile("test.sol",
-          c_str(fmt::Format("test\n\n2\n2\nobjno 0 {}\n") << solve_code));
+          fmt::format("test\n\n2\n2\nobjno 0 {}\n", solve_code));
       Solution s;
       s.Read("test", 1, 1);
       EXPECT_EQ(STATES[i], s.status());
@@ -119,7 +119,7 @@ TEST(SolutionTest, SolveCodes) {
     {
       int solve_code = i * 100 + 99;
       WriteFile("test.sol",
-          c_str(fmt::Format("test\n\n2\n2\nobjno 0 {}\n") << solve_code));
+          fmt::format("test\n\n2\n2\nobjno 0 {}\n", solve_code));
       Solution s;
       s.Read("test", 1, 1);
       EXPECT_EQ(STATES[i], s.status());
@@ -129,7 +129,7 @@ TEST(SolutionTest, SolveCodes) {
   const double CODES[] = {-5, -1, 600, 1000};
   for (std::size_t i = 0; i < sizeof(CODES) / sizeof(*CODES); ++i) {
     WriteFile("test.sol",
-        c_str(fmt::Format("test\n\n2\n2\nobjno 0 {}\n") << CODES[i]));
+        fmt::format("test\n\n2\n2\nobjno 0 {}\n", CODES[i]));
     Solution s;
     s.Read("test", 1, 1);
     EXPECT_EQ(ampl::NOT_SOLVED, s.status());
