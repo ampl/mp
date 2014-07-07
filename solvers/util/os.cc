@@ -173,7 +173,7 @@ path path::temp_directory_path() {
   assert(result <= BUFFER_SIZE);
   buffer[BUFFER_SIZE - 1] = L'\0';
   fmt::internal::UTF16ToUTF8 utf8_str(buffer);
-  const char *s = fmt::c_str(utf8_str);
+  const char *s = utf8_str.c_str();
   return path(s, s + utf8_str.size());
 }
 
@@ -189,7 +189,7 @@ path ampl::GetExecutablePath() {
     buffer.resize(2 * buffer.size());
   }
   fmt::internal::UTF16ToUTF8 utf8_str(&buffer[0]);
-  const char *s = fmt::c_str(utf8_str);
+  const char *s = utf8_str.c_str();
   return path(s, s + utf8_str.size());
 }
 
@@ -205,15 +205,15 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
 
   // Open file.
   Handle file(CreateFileW(
-      fmt::c_str(fmt::internal::UTF8ToUTF16(filename.c_str())), GENERIC_READ,
+      fmt::internal::UTF8ToUTF16(filename).c_str(), GENERIC_READ,
       FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0));
   if (file == INVALID_HANDLE_VALUE)
-    throw WindowsError(GetLastError(), "cannot open file {}") << filename;
+    throw WindowsError(GetLastError(), "cannot open file {}", filename);
 
   // Get file size and check if it is not a multiple of a memory page size.
   LARGE_INTEGER size = {};
   if (!GetFileSizeEx(file, &size))
-    throw WindowsError(GetLastError(), "cannot get size of file {}") << filename;
+    throw WindowsError(GetLastError(), "cannot get size of file {}", filename);
   SYSTEM_INFO si = {};
   GetSystemInfo(&si);
   size_ = size.QuadPart;
@@ -224,12 +224,12 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
   Handle mapping(CreateFileMappingW(file, 0, PAGE_READONLY, 0, 0, 0));
   if (!mapping) {
     throw WindowsError(GetLastError(),
-        "cannot create file mapping for {}") << filename;
+        "cannot create file mapping for {}", filename);
   }
   start_ = reinterpret_cast<char*>(
       MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0));
   if (!start_)
-    throw WindowsError(GetLastError(), "cannot map file {}") << filename;
+    throw WindowsError(GetLastError(), "cannot map file {}", filename);
 }
 
 ampl::MemoryMappedFile::~MemoryMappedFile() {
