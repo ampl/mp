@@ -80,7 +80,7 @@ path ampl::GetExecutablePath() {
   if (_NSGetExecutablePath(&buffer[0], &size) != 0) {
     buffer.resize(size);
     if (_NSGetExecutablePath(&buffer[0], &size) != 0)
-      fmt::ThrowSystemError(errno, "cannot get executable path");
+      throw fmt::SystemError(errno, "cannot get executable path");
   }
   if (size == BUFFER_SIZE)
     size = std::strlen(&buffer[0]);
