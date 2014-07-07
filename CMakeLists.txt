@@ -179,6 +179,10 @@ add_subdirectory(doc)
 add_subdirectory(solvers)
 add_subdirectory(tables)
 
+if (TARGET path)
+  set(get_path_version $<TARGET_FILE:path> -v >> ${AMPL_VERSIONS_FILE})
+endif ()
+
 # Add a target that generates the versions file listing versions of solvers
 # and libraries.
 file(READ tables/amplodbc.c amplodbc)
@@ -188,6 +192,7 @@ endif ()
 add_custom_target(versions cmake -E remove ${AMPL_VERSIONS_FILE}
   COMMAND ${get_amplgsl_version} COMMAND ${get_ampltabl_version}
   COMMAND ${get_gecode_version} COMMAND ${get_jacop_version}
+  COMMAND ${get_path_version}
   DEPENDS tables/amplodbc.c)
 
 enable_testing()
