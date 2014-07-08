@@ -106,7 +106,7 @@ std::string RegKey::GetStrValue(fmt::StringRef name) const {
   }
   if (type != REG_SZ) {
     throw fmt::WindowsError(
-      "value of key {} is not a string", name);
+      GetLastError(), "value of key {} is not a string", name);
   }
   buffer[std::min<DWORD>(size, sizeof(buffer) - 1)] = 0;
   return buffer;
