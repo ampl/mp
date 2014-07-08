@@ -73,8 +73,8 @@ class RegKey : ampl::Noncopyable {
 RegKey::RegKey(HKEY key, fmt::StringRef subkey, REGSAM access) : key_() {
   LONG result = RegOpenKeyExA(key, subkey.c_str(), 0, access, &key_);
   if (result != ERROR_SUCCESS) {
-    throw ampl::JavaError(fmt::Format(
-        "RegOpenKeyExA failed: error code = {}") << result);
+    throw fmt::WindowsError(GetLastError(),
+      "cannot open registry key {}", subkey);
   }
 }
 
@@ -89,10 +89,8 @@ std::string RegKey::GetSubKeyName(int index) const {
   std::vector<char> name(max_subkey_len + 1);
   DWORD name_size = static_cast<DWORD>(name.size());
   result = RegEnumKeyExA(key_, 0, &name[0], &name_size, 0, 0, 0, 0);
-  if (result != ERROR_SUCCESS) {
-    throw ampl::JavaError(fmt::Format(
-        "RegEnumKeyExA failed: error code = {}") << result);
-  }
+  if (result != ERROR_SUCCESS)
+    throw fmt::WindowsError(GetLastError(), "cannot get registry key name");
   return &name[0];
 }
 
@@ -103,12 +101,12 @@ std::string RegKey::GetStrValue(fmt::StringRef name) const {
   LONG result = RegQueryValueExA(key_,
       name.c_str(), 0, &type, reinterpret_cast<LPBYTE>(buffer), &size);
   if (result != ERROR_SUCCESS) {
-    throw ampl::JavaError(fmt::Format(
-        "RegQueryValueExA failed: error code = {}") << result);
+    throw fmt::WindowsError(GetLastError(),
+      "cannot get registry key value {}", name);
   }
   if (type != REG_SZ) {
-    throw ampl::JavaError(
-        fmt::Format("Value of key {} is not a string") << name.c_str());
+    throw fmt::WindowsError(
+      "value of key {} is not a string", name);
   }
   buffer[std::min<DWORD>(size, sizeof(buffer) - 1)] = 0;
   return buffer;
