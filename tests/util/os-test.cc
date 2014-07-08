@@ -110,7 +110,7 @@ TEST(PathTest, TempDirectoryPath) {
   DWORD result = GetTempPathW(MAX_PATH + 1, buffer);
   EXPECT_GT(result, 0u);
   EXPECT_LE(result, static_cast<DWORD>(MAX_PATH));
-  EXPECT_EQ(fmt::str(fmt::internal::UTF16ToUTF8(buffer)),
+  EXPECT_EQ(fmt::internal::UTF16ToUTF8(buffer).str(),
       path::temp_directory_path().string());
 #endif
 }
@@ -141,7 +141,8 @@ void LinkFile(fmt::StringRef filename, fmt::StringRef linkname) {
 #else
   using fmt::internal::UTF8ToUTF16;
   using fmt::c_str;
-  if (!CopyFileW(c_str(UTF8ToUTF16(filename)), c_str(UTF8ToUTF16(linkname)), FALSE)) {
+  if (!CopyFileW(UTF8ToUTF16(filename).c_str(),
+      UTF8ToUTF16(linkname).c_str(), FALSE)) {
     throw fmt::SystemError(GetLastError(), "cannot copy file {} to {}")
       << filename.c_str() << linkname.c_str();
   }
