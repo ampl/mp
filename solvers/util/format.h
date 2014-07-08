@@ -512,6 +512,7 @@ class UTF8ToUTF16 {
   explicit UTF8ToUTF16(StringRef s);
   operator WStringRef() const { return WStringRef(&buffer_[0], size()); }
   size_t size() const { return buffer_.size() - 1; }
+  const wchar_t *c_str() const { return &buffer_[0]; }
   std::wstring str() const { return std::wstring(&buffer_[0], size()); }
 };
 
