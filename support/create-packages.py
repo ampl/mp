@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-"""Create packages of open-source AMPL solvers and libraries.
+"""Create packages of AMPL solvers and libraries.
 
 Usage:
-  create-open-source-packages.py [update]
+  create-packages.py [update]
 """
 
 from __future__ import print_function
@@ -15,6 +15,7 @@ class Package:
   def __init__(self, name, files, **args):
     self.name = name
     self._files = files
+    self.is_open = args['is_open'] or True
     self.license = args.get('project', name) + '-license.txt'
     self._winfiles = args.get('winfiles', [])
 
@@ -35,7 +36,8 @@ packages = [
   Package('couenne', ['couenne'], project='coin', winfiles=['libipoptfort.dll']),
   Package('gecode',  ['gecode', 'gecode.ampl']),
   Package('ipopt',   ['ipopt'], project='coin', winfiles=['libipoptfort.dll']),
-  Package('jacop',   ['jacop', 'ampljacop.jar', 'jacop-{version}.jar'])
+  Package('jacop',   ['jacop', 'ampljacop.jar', 'jacop-{version}.jar']),
+  Package('path',    ['path'], is_open=False)
 ]
 
 def get_archive_name(system, package=None):
@@ -74,10 +76,12 @@ def create_packages(system, workdir):
       for f in package.getfiles(system, versions):
         path = os.path.join(artifact_dir, f)
         zip.write(path, f)
-        paths.add(path)
+        if package.is_open:
+          paths.add(path)
       path = os.path.join('licenses', package.license)
       zip.write(path, package.license)
-      paths.add(path)
+      if package.is_open:
+        paths.add(path)
 
   # Careate a full package.
   with zipfile.ZipFile(get_archive_name(system), 'w', zipfile.ZIP_DEFLATED) as zip:
