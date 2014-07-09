@@ -280,7 +280,7 @@ TEST(SolverTest, SetVersion) {
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Writer w;
-  w.write("{} ({}), ASL({})\n", VERSION, sysdetails_ASL, ASLdate_ASL);
+  w.write("{} ({}), ASL({})\n", VERSION, sysdetails(), ASLdate_ASL);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
@@ -1006,7 +1006,7 @@ TEST(SolverTest, VersionOption) {
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Writer w;
-  w.write("Test Solver ({}), ASL({})\n", sysdetails_ASL, ASLdate_ASL);
+  w.write("Test Solver ({}), ASL({})\n", sysdetails(), ASLdate_ASL);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
@@ -1021,7 +1021,7 @@ TEST(SolverTest, VersionOptionReset) {
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Writer w;
-  w.write("Test Solver ({}), ASL({})\nend\n", sysdetails_ASL, ASLdate_ASL);
+  w.write("Test Solver ({}), ASL({})\nend\n", sysdetails(), ASLdate_ASL);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
