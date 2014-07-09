@@ -19,14 +19,13 @@ endif ()
 set(PATH_DIR ${CMAKE_CURRENT_SOURCE_DIR}/pathlib)
 if (EXISTS ${PATH_DIR}/include)
   include_directories(${PATH_DIR}/include)
-  if (WIN32)
-    set(PATH_DLL $<TARGET_FILE_DIR:path>/path${PATH_VERSION}.dll)
-    add_custom_command(
-      OUTPUT ${PATH_DLL}
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different
-              ${PATH_DIR}/lib/win${suffix}/path${PATH_VERSION}.dll ${PATH_DLL})
-  endif ()
-  add_executable(path path.c ${PATH_DLL})
+  add_executable(path path.c)
   target_link_libraries(path
     amplsolver ${PATH_DIR}/lib/${PATH_LIB} ${PATH_EXTRA_LIBS})
+  if (WIN32)
+    add_custom_command(TARGET path
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+              ${PATH_DIR}/lib/win${suffix}/path${PATH_VERSION}.dll
+              $<TARGET_FILE_DIR:path>/path${PATH_VERSION}.dll)
+  endif ()
 endif ()
