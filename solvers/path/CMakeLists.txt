@@ -19,14 +19,12 @@ endif ()
 set(PATH_DIR ${CMAKE_CURRENT_SOURCE_DIR}/pathlib)
 if (EXISTS ${PATH_DIR}/include)
   include_directories(${PATH_DIR}/include)
-  if (MSVC)
-    set(PATH_DLL
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_CFG_INTDIR}/path${PATH_VERSION}.dll)
+  if (WIN32)
+    set(PATH_DLL $<TARGET_FILE_DIR:path>/path${PATH_VERSION}.dll)
     add_custom_command(
       OUTPUT ${PATH_DLL}
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
-              ${PATH_DIR}/lib/win${suffix}/path${PATH_VERSION}.dll
-              ${PATH_DLL})
+              ${PATH_DIR}/lib/win${suffix}/path${PATH_VERSION}.dll ${PATH_DLL})
   endif ()
   add_executable(path path.c ${PATH_DLL})
   target_link_libraries(path
