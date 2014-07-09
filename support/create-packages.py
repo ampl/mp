@@ -38,7 +38,8 @@ packages = [
   Package('gecode',  ['gecode', 'gecode.ampl']),
   Package('ipopt',   ['ipopt'], project='coin', winfiles=['libipoptfort.dll']),
   Package('jacop',   ['jacop', 'ampljacop.jar', 'jacop-{version}.jar']),
-  Package('path',    ['path'], is_open=False, version_name='ampl/path')
+  Package('path',    ['path'], is_open=False, version_name='ampl/path',
+          winfiles=['path47.dll'])
 ]
 
 def get_archive_name(system, package=None):
