@@ -16,12 +16,13 @@ class Package:
     self.name = name
     self._files = files
     self.is_open = args.get('is_open', True)
+    self.version_name = args.get('version_name', name)
     self.license = args.get('project', name) + '-license.txt'
     self._winfiles = args.get('winfiles', [])
 
   def getfiles(self, system, versions):
     """Get the list of files for the given system."""
-    version = versions[self.name].split('-')[0]
+    version = versions[self.version_name].split('-')[0]
     files = self._files + (self._winfiles if system.startswith('win') else [])
     for i in range(len(files)):
       files[i] = files[i].format(version=version)
@@ -37,7 +38,7 @@ packages = [
   Package('gecode',  ['gecode', 'gecode.ampl']),
   Package('ipopt',   ['ipopt'], project='coin', winfiles=['libipoptfort.dll']),
   Package('jacop',   ['jacop', 'ampljacop.jar', 'jacop-{version}.jar']),
-  Package('path',    ['path'], is_open=False)
+  Package('path',    ['path'], is_open=False, version_name='ampl/path')
 ]
 
 def get_archive_name(system, package=None):
@@ -59,14 +60,18 @@ def create_packages(system, workdir):
   for filename in ['versions.txt', 'coin-versions.txt']:
     with open(os.path.join(artifact_dir, filename)) as f:
       for line in f:
-        items = line.rstrip().split(' ')
-        if len(items) < 2:
+        m = re.match(r'([^ ]+) ([^\s]+)(.*)', line)
+        if not m:
           continue
-        version = items[1].rstrip(',')
-        m = re.match(r'.*(driver|library)\(([0-9]+)\)', line)
+        name, version, rest = m.groups()
+        name = name.lower()
+        if name in versions:
+          continue
+        m = re.match(r'.*(driver|library)\(([0-9]+)\)', rest)
         if m:
           version += '-' + m.group(2)
-        versions[items[0].lower()] = version
+        versions[name] = version
+      print(versions)
 
   # Create individual packages.
   paths = set()

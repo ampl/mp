@@ -1,0 +1,23 @@
+
+The PATH license can be set either in an environment variable called
+PATH_LICENSE_STRING or programatically with the Path_SetLicense()
+function.  For example, 
+
+  setenv PATH_LICENSE_STRING "3414366176&Evaluation&&&USR&1001&5_9_2003&1000&PATH&GEN&31_12_2003&0_0_0&0&0_0"
+
+will set the PATH_LICENSE_STRING environment variable on a Solaris or
+Linux system to the evaluation license.  Alternatively, in your interface 
+code, you can set the license with the following function call
+
+  License_SetString("3414366176&Evaluation&&&USR&1001&5_9_2003&1000&PATH&GEN&31_12_2003&0_0_0&0&0_0");
+
+which, if used, must be issued before a call to Path_Solve() or any other
+license management functions.
+
+The above evaluation will allow you to solve problems of any size
+until December 31, 2003.  After that time, you will revert to a demonstration
+license which only solves problems with up to 300 variables and 2000 
+nonzeros.  Please contact either Michael Ferris (ferris@cs.wisc.edu) or
+Todd Munson (tmunson@mcs.anl.gov) for information on obtaining an 
+unrestricted license.
+
