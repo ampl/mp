@@ -53,10 +53,11 @@ class ObjPrec {
  public:
   explicit ObjPrec(double value) : value_(value) {}
 
-  friend void format(fmt::Writer &w, const fmt::FormatSpec &spec, ObjPrec op) {
+  friend void format(fmt::BasicFormatter<char> &f,
+      const char *format_str, ObjPrec op) {
     char buffer[32];
     g_fmtop(buffer, op.value_);
-    w.write_str(buffer, spec);
+    f.format(format_str, fmt::internal::MakeArg<char>(buffer));
   }
 };
 
