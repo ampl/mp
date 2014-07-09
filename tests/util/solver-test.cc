@@ -237,6 +237,10 @@ TEST(SolverTest, LongName) {
   EXPECT_STREQ("another-name", s.long_name());
 }
 
+// Convert sysdetails to a pointer becasue template argument cannot
+// be a reference to an array of unknown bound.
+const char *sysdetails() { return sysdetails_ASL; }
+
 TEST(SolverTest, Version) {
   TestSolver s("testsolver", "Test Solver");
   EXPECT_EXIT({
@@ -246,7 +250,7 @@ TEST(SolverTest, Version) {
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Writer w;
-  w.write("Test Solver ({}), ASL({})\n", sysdetails_ASL, ASLdate_ASL);
+  w.write("Test Solver ({}), ASL({})\n", sysdetails(), ASLdate_ASL);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
@@ -260,7 +264,7 @@ TEST(SolverTest, VersionWithDate) {
   }, ::testing::ExitedWithCode(0), "");
   fmt::Writer w;
   w.write("Test Solver ({}), driver(20121227), ASL({})\n",
-    sysdetails_ASL, ASLdate_ASL);
+    sysdetails(), ASLdate_ASL);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
