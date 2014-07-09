@@ -15,7 +15,7 @@ class Package:
   def __init__(self, name, files, **args):
     self.name = name
     self._files = files
-    self.is_open = args['is_open'] or True
+    self.is_open = args.get('is_open', True)
     self.license = args.get('project', name) + '-license.txt'
     self._winfiles = args.get('winfiles', [])
 
