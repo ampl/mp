@@ -71,7 +71,6 @@ def create_packages(system, workdir):
         if m:
           version += '-' + m.group(2)
         versions[name] = version
-      print(versions)
 
   # Create individual packages.
   paths = set()
