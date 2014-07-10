@@ -135,21 +135,42 @@ if (NOT WIN32)
   target_link_libraries(amplsolver dl)
 endif ()
 
-if (HAVE_GSL)
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/amplgsl/gsl/CMakeLists.txt)
   add_subdirectory(amplgsl)
 endif ()
 
 add_subdirectory(cp)
 add_subdirectory(cplex)
 
-if (HAVE_GECODE)
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/gecode/lib/CMakeLists.txt)
   add_subdirectory(gecode)
 endif ()
 
 add_subdirectory(ilogcp)
 
-if (HAVE_JACOP)
-  add_subdirectory(jacop)
+file(GLOB jar jacop/lib/jacop-*.jar)
+if (jar)
+  get_filename_component(jar ${jar} NAME)
+  set(JACOP_JAR ${jar} CACHE STRING "JaCoP JAR file name.")
+  if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+    # Set CMAKE_SYSTEM_PROCESSOR to make sure FindJNI finds the correct
+    # AWT and JVM libraries.
+    set(CMAKE_SYSTEM_PROCESSOR i586)
+  endif ()
+  find_package(JNI)
+  find_package(Java)
+  if (JNI_FOUND AND JAVA_FOUND)
+    # Add libmawt.so to JNI_LIBRARIES to avoid linkage errors on Ubuntu 10.04.
+    foreach (arch amd64 i386)
+      set(LIBMAWT_PATH
+        /usr/lib/jvm/java-6-openjdk/jre/lib/${arch}/xawt/libmawt.so)
+      if (EXISTS ${LIBMAWT_PATH})
+        set(JNI_LIBRARIES ${JNI_LIBRARIES} ${LIBMAWT_PATH})
+        break ()
+      endif ()
+    endforeach ()
+    add_subdirectory(jacop)
+  endif ()
 endif ()
 
 add_subdirectory(path)
@@ -159,7 +180,12 @@ if (HAVE_AUTO)
 endif ()
 
 add_subdirectory(ssdsolver)
-add_subdirectory(sulum)
+
+find_package(Sulum)
+if (SULUM_FOUND)
+  add_subdirectory(sulum)
+endif ()
+
 add_subdirectory(util)
 
 install(TARGETS amplsolver

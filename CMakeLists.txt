@@ -85,44 +85,6 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
   endif ()
 endif ()
 
-set(AMPL_VERSIONS_FILE versions.txt)
-
-if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/amplgsl/gsl/CMakeLists.txt)
-  set(HAVE_GSL 1)
-  set(get_amplgsl_version $<TARGET_FILE:gen-decls> >> ${AMPL_VERSIONS_FILE})
-endif ()
-
-if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/solvers/gecode/lib/CMakeLists.txt)
-  set(HAVE_GECODE 1)
-  set(get_gecode_version $<TARGET_FILE:gecode> -v >> ${AMPL_VERSIONS_FILE})
-endif ()
-
-file(GLOB JACOP_PATH solvers/jacop/lib/jacop-*.jar)
-if (JACOP_PATH)
-  get_filename_component(JACOP_JAR ${JACOP_PATH} NAME)
-  if (CMAKE_SIZEOF_VOID_P EQUAL 4)
-    # Set CMAKE_SYSTEM_PROCESSOR to make sure FindJNI finds the correct
-    # AWT and JVM libraries.
-    set(CMAKE_SYSTEM_PROCESSOR i586)
-  endif ()
-  find_package(JNI)
-  find_package(Java)
-  if (JNI_FOUND AND JAVA_FOUND)
-    # Add libmawt.so to JNI_LIBRARIES to avoid linkage errors on Ubuntu 10.04.
-    foreach (arch amd64 i386)
-      set(LIBMAWT_PATH
-        /usr/lib/jvm/java-6-openjdk/jre/lib/${arch}/xawt/libmawt.so)
-      if (EXISTS ${LIBMAWT_PATH})
-        set(JNI_LIBRARIES ${JNI_LIBRARIES} ${LIBMAWT_PATH})
-        break ()
-      endif ()
-    endforeach ()
-
-    set(HAVE_JACOP 1)
-    set(get_jacop_version $<TARGET_FILE:jacop> -v >> ${AMPL_VERSIONS_FILE})
-  endif ()
-endif ()
-
 include(CheckCCompilerFlag)
 check_c_compiler_flag(-fPIC HAVE_FPIC_FLAG)
 if (HAVE_FPIC_FLAG)
@@ -179,20 +141,21 @@ add_subdirectory(doc)
 add_subdirectory(solvers)
 add_subdirectory(tables)
 
-# Add a target that generates the versions file listing versions of solvers
-# and libraries.
+# Add a target that generates a file with solver and library versions.
+set(AMPL_VERSIONS_FILE versions.txt)
+add_custom_target(versions cmake -E remove ${AMPL_VERSIONS_FILE}
+  DEPENDS tables/amplodbc.c)
+foreach (target gen-decls gecode jacop path)
+  if (TARGET ${target})
+    add_custom_command(TARGET versions POST_BUILD
+        COMMAND $<TARGET_FILE:${target}> -v >> ${AMPL_VERSIONS_FILE})
+  endif ()
+endforeach ()
 file(READ tables/amplodbc.c amplodbc)
 if (amplodbc MATCHES "version ([0-9]+)")
-  set(get_ampltabl_version echo ampltabl ${CMAKE_MATCH_1} >> ${AMPL_VERSIONS_FILE})
+  add_custom_command(TARGET versions POST_BUILD
+      COMMAND echo ampltabl ${CMAKE_MATCH_1} >> ${AMPL_VERSIONS_FILE})
 endif ()
-if (TARGET path)
-  set(get_path_version $<TARGET_FILE:path> -v >> ${AMPL_VERSIONS_FILE})
-endif ()
-add_custom_target(versions cmake -E remove ${AMPL_VERSIONS_FILE}
-  COMMAND ${get_amplgsl_version} COMMAND ${get_ampltabl_version}
-  COMMAND ${get_gecode_version} COMMAND ${get_jacop_version}
-  COMMAND ${get_path_version}
-  DEPENDS tables/amplodbc.c)
 
 enable_testing()
 add_subdirectory(tests)

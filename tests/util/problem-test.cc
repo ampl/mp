@@ -301,14 +301,14 @@ TEST(ProblemTest, BoundChecks) {
 }
 #endif
 
-#ifdef HAVE_CBC
-static const std::string CBC_PATH = FixPath("../../solvers/cbc/bin/cbc");
+#ifdef HAVE_ILOGCP
+static const std::string SOLVER_PATH = FixPath("../../solvers/ilogcp/ilogcp");;
 
 TEST(ProblemTest, Solve) {
   Problem p;
   p.Read("../data/simple");
   Solution s;
-  p.Solve(CBC_PATH, s);
+  p.Solve(SOLVER_PATH, s);
   EXPECT_EQ(2, s.num_vars());
   EXPECT_EQ(1, s.num_cons());
   EXPECT_EQ(2, s.value(0));
@@ -328,7 +328,7 @@ TEST(ProblemChangesTest, AddVarAndSolve) {
   EXPECT_EQ(1, changes.num_vars());
   EXPECT_EQ(0, changes.num_cons());
   EXPECT_EQ(0, changes.num_objs());
-  p.Solve(CBC_PATH, s, &changes);
+  p.Solve(SOLVER_PATH, s, &changes);
   EXPECT_EQ(3, s.num_vars());
   EXPECT_EQ(1, s.num_cons());
   EXPECT_EQ(2, s.value(0));
@@ -350,7 +350,7 @@ TEST(ProblemChangesTest, AddConAndSolve) {
   EXPECT_EQ(0, changes.num_vars());
   EXPECT_EQ(1, changes.num_cons());
   EXPECT_EQ(0, changes.num_objs());
-  p.Solve(CBC_PATH, s, &changes);
+  p.Solve(SOLVER_PATH, s, &changes);
   EXPECT_EQ(2, s.num_vars());
   EXPECT_EQ(2, s.num_cons());
   EXPECT_EQ(1, s.value(0));
@@ -373,7 +373,7 @@ TEST(ProblemChangesTest, AddObjAndSolve) {
   EXPECT_EQ(0, changes.num_vars());
   EXPECT_EQ(0, changes.num_cons());
   EXPECT_EQ(1, changes.num_objs());
-  p.Solve(CBC_PATH, s, &changes);
+  p.Solve(SOLVER_PATH, s, &changes);
   EXPECT_EQ(1, s.num_vars());
   EXPECT_EQ(1, s.num_cons());
   EXPECT_EQ(0, s.value(0));
@@ -395,7 +395,7 @@ TEST(ProblemChangesTest, CopyConstructorCon) {
   }
   EXPECT_EQ(10, changes.num_cons());
   Solution s;
-  p.Solve(CBC_PATH, s, &changes);
+  p.Solve(SOLVER_PATH, s, &changes);
   EXPECT_EQ(2, s.num_vars());
   EXPECT_EQ(11, s.num_cons());
   EXPECT_EQ(2, s.value(0));
@@ -409,7 +409,7 @@ TEST(ProblemTest, SolveIgnoreFunctions) {
   Problem p;
   p.Read("../data/ssd");
   Solution s;
-  p.Solve(CBC_PATH, s, 0, Problem::IGNORE_FUNCTIONS);
+  p.Solve(SOLVER_PATH, s, 0, Problem::IGNORE_FUNCTIONS);
   EXPECT_EQ(42, s.value(0));
 }
 #endif

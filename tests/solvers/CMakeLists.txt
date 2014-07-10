@@ -1,14 +1,15 @@
 add_ampl_test(cp-test cp-test.cc LIBS amplsolver function)
 add_dependencies(cp-test cp)
 
-if (HAVE_GECODE)
+if (TARGET gecode)
   include_directories(${GECODE_SOURCE_DIR})
   add_ampl_test(gecode-test PREFIX
     ../args.cc ../expr-builder.cc ../solver-test.cc gecode-test.cc
     LIBS amplgecode-static)
 endif ()
 
-if (HAVE_JACOP)
+if (TARGET jacop)
+  find_package(JNI)
   include_directories(${JNI_INCLUDE_DIRS})
   add_ampl_test(jacop-test
     ../args.cc ../expr-builder.cc ../solver-test.cc jacop-test.cc

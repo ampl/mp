@@ -54,6 +54,9 @@ check_cxx_source_compiles(
   int main() { std::thread t(run); }" HAVE_THREADS)
 
 find_program(HAVE_LSOF lsof)
+if (TARGET ilogcp)
+  set(HAVE_ILOGCP 1)
+endif ()
 
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
@@ -66,11 +69,7 @@ target_link_libraries(function amplsolver)
 
 add_ampl_test(function-test function-test.cc LIBS function)
 
-if (HAVE_CBC)
-  add_ampl_test(cbc-test cbc-test.cc)
-endif ()
-
-if (HAVE_GSL)
+if (TARGET amplgsl)
   include_directories(${GSL_BINARY_DIR})
   add_ampl_test(gsl-test gsl-test.cc LIBS function gsl gslcblas)
 endif ()
