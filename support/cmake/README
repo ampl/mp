@@ -13,8 +13,9 @@ the beginning of the module for details.
 
 Modules:
 
-  FindCPLEX.cmake  - finds the CPLEX, Concert, IloCplex and CP Optimizer
-                     libraries
-  FindGecode.cmake - finds the Gecode libraries
-  FindODBC.cmake   - finds the ODBC libraries
-  FindSulum.cmake  - finds the Sulum libraries
+  FindCPLEX.cmake       - finds the CPLEX, Concert, IloCplex and CP Optimizer
+                          libraries
+  FindGecode.cmake      - finds the Gecode libraries
+  FindLocalSolver.cmake - finds the LocalSolver libraries
+  FindODBC.cmake        - finds the ODBC libraries
+  FindSulum.cmake       - finds the Sulum libraries
