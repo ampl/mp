@@ -41,7 +41,7 @@ if (CPLEX_FOUND AND CPLEX_CONCERT_FOUND AND CPLEX_CP_FOUND)
   add_library(amplilogcp SHARED ../util/solver-c.cc)
   target_link_libraries(amplilogcp amplilogcp-static)
 
-  add_executable(ilogcp ilogcp_main.cc)
+  add_executable(ilogcp main.cc)
   target_link_libraries(ilogcp amplilogcp-static)
   
   function(copy_cplex_dll target)
