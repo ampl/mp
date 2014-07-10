@@ -1,4 +1,4 @@
-# CMake build script for the JaCoP solver for AMPL.
+# CMake build script for the AMPL/JaCoP solver.
 
 # Allow "long long" because it it used by JNI.
 include(CheckCXXCompilerFlag)

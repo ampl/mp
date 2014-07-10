@@ -1,4 +1,4 @@
-# CMake build script for the Gecode solver for AMPL.
+# CMake build script for the AMPL/Gecode solver.
 
 # Disable -pedantic when building Gecode because it causes errors
 # when compiling on Mac with older GCC.

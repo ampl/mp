@@ -1,4 +1,4 @@
-# CMake build script for the Sulum solver for AMPL.
+# CMake build script for the AMPL/Sulum solver.
 
 add_definitions(-DSLM_NO_BOOST)
 include_directories(amplsulum-static ${SULUM_INCLUDE_DIRS})

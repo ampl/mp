@@ -1,3 +1,5 @@
+# CMake build script for the AMPL/Path solver.
+
 set(PATH_VERSION 47)
 
 if (APPLE)

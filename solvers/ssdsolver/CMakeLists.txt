@@ -1,4 +1,4 @@
-# CMake build script for the SSD solver for AMPL.
+# CMake build script for AMPL/SSDSolver.
 
 add_library(amplssdsolver-static ssdsolver.cc)
 target_link_libraries(amplssdsolver-static util)
