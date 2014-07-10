@@ -230,16 +230,6 @@ const ampl::OptionValueInfo RESTART_MODES[] = {
 };
 }
 
-namespace Gecode {
-std::ostream &operator<<(std::ostream &os, const IntValBranch &b) {
-  return os << b.select();
-}
-
-inline bool operator==(const IntValBranch &lhs, const IntValBranch &rhs) {
-  return lhs.select() == rhs.select();
-}
-}
-
 namespace ampl {
 
 GecodeProblem::GecodeProblem(int num_vars, Gecode::IntConLevel icl) :
