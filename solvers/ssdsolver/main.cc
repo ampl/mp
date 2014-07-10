@@ -21,14 +21,13 @@
  Author: Victor Zverovich
  */
 
-#include <iostream>
 #include "solvers/ssdsolver/ssdsolver.h"
 
 int main(int, char **argv) {
   try {
     return ampl::SSDSolver().Run(argv);
   } catch (const std::exception &e) {
-    std::cerr << "Error: " << e.what() << std::endl;
+    fmt::print(stderr, "Error: {}\n", e.what());
   }
   return 1;
 }

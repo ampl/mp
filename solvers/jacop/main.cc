@@ -20,14 +20,13 @@
  Author: Victor Zverovich
  */
 
-#include <iostream>
 #include "solvers/jacop/jacop.h"
 
 int main(int, char **argv) {
   try {
     return ampl::JaCoPSolver().Run(argv);
   } catch (const std::exception &e) {
-    std::cerr << "Error: " << e.what() << std::endl;
+    fmt::print(stderr, "Error: {}\n", e.what());
   }
   return 1;
 }
