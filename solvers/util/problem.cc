@@ -180,6 +180,7 @@ TempFiles::TempFiles() {
   int fd = mkstemps(&name_[0], SUFFIX_LEN);
   if (fd == -1)
     throw fmt::SystemError(errno, "cannot create temporary file {}", &name_[0]);
+  name_[name_.size() - SUFFIX_LEN] = '\0';  // remove .nl suffix
   close(fd);
 }
 
