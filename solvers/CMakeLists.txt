@@ -173,6 +173,11 @@ if (jar)
   endif ()
 endif ()
 
+find_package(LocalSolver)
+if (LOCALSOLVER_FOUND)
+  add_subdirectory(localsolver)
+endif ()
+
 add_subdirectory(path)
 
 if (HAVE_AUTO)
