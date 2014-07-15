@@ -799,15 +799,15 @@ void GecodeSolver::DoSolve(Problem &p) {
     if (!has_obj) {
       // If the problem has no objectives and there is a solution, report
       // it as solved even if some limit was reached.
-      solve_code_ = 0;
+      solve_code_ = SOLVED;
       status_ = "feasible solution";
     } else if (solve_code_ == -1) {
-      solve_code_ = 0;
+      solve_code_ = SOLVED;
       obj_val = solution->obj().val();
       status_ = "optimal solution";
     }
   } else if (solve_code_ == -1) {
-    solve_code_ = 200;
+    solve_code_ = INFEASIBLE;
     status_ = "infeasible problem";
   }
   p.set_solve_code(solve_code_);

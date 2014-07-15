@@ -42,10 +42,10 @@ class SignalHandler;
 
 class NLToConcertConverter;
 
-typedef ExprVisitor<NLToConcertConverter, IloExpr, IloConstraint> Visitor;
+typedef ExprConverter<NLToConcertConverter, IloExpr, IloConstraint> Converter;
 
 // Converter of optimization problems from NL to Concert format.
-class NLToConcertConverter : public Visitor {
+class NLToConcertConverter : public Converter {
  private:
   IloEnv env_;
   IloModel model_;
@@ -91,13 +91,13 @@ class NLToConcertConverter : public Visitor {
   IloExpr Visit(NumericExpr e) {
     if ((flags_ & DEBUG) != 0)
       fmt::print("{}\n", e.opstr());
-    return Visitor::Visit(e);
+    return Converter::Visit(e);
   }
 
   IloConstraint Visit(LogicalExpr e) {
     if ((flags_ & DEBUG) != 0)
       fmt::print("{}\n", e.opstr());
-    return Visitor::Visit(e);
+    return Converter::Visit(e);
   }
 
   IloExpr VisitPlus(BinaryExpr e) {
@@ -291,30 +291,6 @@ class NLToConcertConverter : public Visitor {
 
   IloConstraint VisitNotEqual(RelationalExpr e) {
     return Visit(e.lhs()) != Visit(e.rhs());
-  }
-
-  IloConstraint VisitAtMost(LogicalCountExpr e) {
-    return Visit(e.value()) >= VisitCount(e.count());
-  }
-
-  IloConstraint VisitNotAtMost(LogicalCountExpr e) {
-    return !(Visit(e.value()) >= VisitCount(e.count()));
-  }
-
-  IloConstraint VisitAtLeast(LogicalCountExpr e) {
-    return Visit(e.value()) <= VisitCount(e.count());
-  }
-
-  IloConstraint VisitNotAtLeast(LogicalCountExpr e) {
-    return !(Visit(e.value()) <= VisitCount(e.count()));
-  }
-
-  IloConstraint VisitExactly(LogicalCountExpr e) {
-    return Visit(e.value()) == VisitCount(e.count());
-  }
-
-  IloConstraint VisitNotExactly(LogicalCountExpr e) {
-    return Visit(e.value()) != VisitCount(e.count());
   }
 
   IloConstraint VisitOr(BinaryLogicalExpr e) {

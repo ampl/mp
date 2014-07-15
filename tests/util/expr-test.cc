@@ -823,88 +823,88 @@ struct TestResult {
   NumericExpr expr;
 };
 
+TestResult MakeResult(NumericExpr e) {
+  TestResult result = {e};
+  return result;
+}
+
 struct TestLResult {
   LogicalExpr expr;
 };
 
+TestLResult MakeResult(LogicalExpr e) {
+  TestLResult result = {e};
+  return result;
+}
+
 // Use different classes for Result and LResult to check that it is possible.
 struct FullTestVisitor : ExprVisitor<FullTestVisitor, TestResult, TestLResult> {
-  TestResult Handle(NumericExpr e) {
-    TestResult result = {e};
-    return result;
-  }
-
-  TestLResult Handle(LogicalExpr e) {
-    TestLResult result = {e};
-    return result;
-  }
-
-  TestResult VisitPlus(BinaryExpr e) { return Handle(e); }
-  TestResult VisitMinus(BinaryExpr e) { return Handle(e); }
-  TestResult VisitMult(BinaryExpr e) { return Handle(e); }
-  TestResult VisitDiv(BinaryExpr e) { return Handle(e); }
-  TestResult VisitRem(BinaryExpr e) { return Handle(e); }
-  TestResult VisitPow(BinaryExpr e) { return Handle(e); }
-  TestResult VisitNumericLess(BinaryExpr e) { return Handle(e); }
-  TestResult VisitMin(VarArgExpr e) { return Handle(e); }
-  TestResult VisitMax(VarArgExpr e) { return Handle(e); }
-  TestResult VisitFloor(UnaryExpr e) { return Handle(e); }
-  TestResult VisitCeil(UnaryExpr e) { return Handle(e); }
-  TestResult VisitAbs(UnaryExpr e) { return Handle(e); }
-  TestResult VisitUnaryMinus(UnaryExpr e) { return Handle(e); }
-  TestResult VisitIf(IfExpr e) { return Handle(e); }
-  TestResult VisitTanh(UnaryExpr e) { return Handle(e); }
-  TestResult VisitTan(UnaryExpr e) { return Handle(e); }
-  TestResult VisitSqrt(UnaryExpr e) { return Handle(e); }
-  TestResult VisitSinh(UnaryExpr e) { return Handle(e); }
-  TestResult VisitSin(UnaryExpr e) { return Handle(e); }
-  TestResult VisitLog10(UnaryExpr e) { return Handle(e); }
-  TestResult VisitLog(UnaryExpr e) { return Handle(e); }
-  TestResult VisitExp(UnaryExpr e) { return Handle(e); }
-  TestResult VisitCosh(UnaryExpr e) { return Handle(e); }
-  TestResult VisitCos(UnaryExpr e) { return Handle(e); }
-  TestResult VisitAtanh(UnaryExpr e) { return Handle(e); }
-  TestResult VisitAtan2(BinaryExpr e) { return Handle(e); }
-  TestResult VisitAtan(UnaryExpr e) { return Handle(e); }
-  TestResult VisitAsinh(UnaryExpr e) { return Handle(e); }
-  TestResult VisitAsin(UnaryExpr e) { return Handle(e); }
-  TestResult VisitAcosh(UnaryExpr e) { return Handle(e); }
-  TestResult VisitAcos(UnaryExpr e) { return Handle(e); }
-  TestResult VisitSum(SumExpr e) { return Handle(e); }
-  TestResult VisitIntDiv(BinaryExpr e) { return Handle(e); }
-  TestResult VisitPrecision(BinaryExpr e) { return Handle(e); }
-  TestResult VisitRound(BinaryExpr e) { return Handle(e); }
-  TestResult VisitTrunc(BinaryExpr e) { return Handle(e); }
-  TestResult VisitCount(CountExpr e) { return Handle(e); }
-  TestResult VisitNumberOf(NumberOfExpr e) { return Handle(e); }
-  TestResult VisitCall(CallExpr e) { return Handle(e); }
-  TestResult VisitPiecewiseLinear(PiecewiseLinearExpr e) { return Handle(e); }
-  TestResult VisitPowConstExp(BinaryExpr e) { return Handle(e); }
-  TestResult VisitPow2(UnaryExpr e) { return Handle(e); }
-  TestResult VisitPowConstBase(BinaryExpr e) { return Handle(e); }
-  TestResult VisitNumericConstant(NumericConstant e) { return Handle(e); }
-  TestResult VisitVariable(Variable e) { return Handle(e); }
-  TestLResult VisitOr(BinaryLogicalExpr e) { return Handle(e); }
-  TestLResult VisitAnd(BinaryLogicalExpr e) { return Handle(e); }
-  TestLResult VisitLess(RelationalExpr e) { return Handle(e); }
-  TestLResult VisitLessEqual(RelationalExpr e) { return Handle(e); }
-  TestLResult VisitEqual(RelationalExpr e) { return Handle(e); }
-  TestLResult VisitGreaterEqual(RelationalExpr e) { return Handle(e); }
-  TestLResult VisitGreater(RelationalExpr e) { return Handle(e); }
-  TestLResult VisitNotEqual(RelationalExpr e) { return Handle(e); }
-  TestLResult VisitNot(NotExpr e) { return Handle(e); }
-  TestLResult VisitAtLeast(LogicalCountExpr e) { return Handle(e); }
-  TestLResult VisitAtMost(LogicalCountExpr e) { return Handle(e); }
-  TestLResult VisitExactly(LogicalCountExpr e) { return Handle(e); }
-  TestLResult VisitNotAtLeast(LogicalCountExpr e) { return Handle(e); }
-  TestLResult VisitNotAtMost(LogicalCountExpr e) { return Handle(e); }
-  TestLResult VisitNotExactly(LogicalCountExpr e) { return Handle(e); }
-  TestLResult VisitForAll(IteratedLogicalExpr e) { return Handle(e); }
-  TestLResult VisitExists(IteratedLogicalExpr e) { return Handle(e); }
-  TestLResult VisitImplication(ImplicationExpr e) { return Handle(e); }
-  TestLResult VisitIff(BinaryLogicalExpr e) { return Handle(e); }
-  TestLResult VisitAllDiff(AllDiffExpr e) { return Handle(e); }
-  TestLResult VisitLogicalConstant(LogicalConstant e) { return Handle(e); }
+  TestResult VisitPlus(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitMinus(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitMult(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitDiv(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitRem(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitPow(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitNumericLess(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitMin(VarArgExpr e) { return MakeResult(e); }
+  TestResult VisitMax(VarArgExpr e) { return MakeResult(e); }
+  TestResult VisitFloor(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitCeil(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitAbs(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitUnaryMinus(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitIf(IfExpr e) { return MakeResult(e); }
+  TestResult VisitTanh(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitTan(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitSqrt(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitSinh(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitSin(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitLog10(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitLog(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitExp(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitCosh(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitCos(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitAtanh(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitAtan2(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitAtan(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitAsinh(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitAsin(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitAcosh(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitAcos(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitSum(SumExpr e) { return MakeResult(e); }
+  TestResult VisitIntDiv(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitPrecision(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitRound(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitTrunc(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitCount(CountExpr e) { return MakeResult(e); }
+  TestResult VisitNumberOf(NumberOfExpr e) { return MakeResult(e); }
+  TestResult VisitCall(CallExpr e) { return MakeResult(e); }
+  TestResult VisitPiecewiseLinear(PiecewiseLinearExpr e) { return MakeResult(e); }
+  TestResult VisitPowConstExp(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitPow2(UnaryExpr e) { return MakeResult(e); }
+  TestResult VisitPowConstBase(BinaryExpr e) { return MakeResult(e); }
+  TestResult VisitNumericConstant(NumericConstant e) { return MakeResult(e); }
+  TestResult VisitVariable(Variable e) { return MakeResult(e); }
+  TestLResult VisitOr(BinaryLogicalExpr e) { return MakeResult(e); }
+  TestLResult VisitAnd(BinaryLogicalExpr e) { return MakeResult(e); }
+  TestLResult VisitLess(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitLessEqual(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitEqual(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitGreaterEqual(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitGreater(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitNotEqual(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitNot(NotExpr e) { return MakeResult(e); }
+  TestLResult VisitAtLeast(LogicalCountExpr e) { return MakeResult(e); }
+  TestLResult VisitAtMost(LogicalCountExpr e) { return MakeResult(e); }
+  TestLResult VisitExactly(LogicalCountExpr e) { return MakeResult(e); }
+  TestLResult VisitNotAtLeast(LogicalCountExpr e) { return MakeResult(e); }
+  TestLResult VisitNotAtMost(LogicalCountExpr e) { return MakeResult(e); }
+  TestLResult VisitNotExactly(LogicalCountExpr e) { return MakeResult(e); }
+  TestLResult VisitForAll(IteratedLogicalExpr e) { return MakeResult(e); }
+  TestLResult VisitExists(IteratedLogicalExpr e) { return MakeResult(e); }
+  TestLResult VisitImplication(ImplicationExpr e) { return MakeResult(e); }
+  TestLResult VisitIff(BinaryLogicalExpr e) { return MakeResult(e); }
+  TestLResult VisitAllDiff(AllDiffExpr e) { return MakeResult(e); }
+  TestLResult VisitLogicalConstant(LogicalConstant e) { return MakeResult(e); }
 };
 
 TEST_F(ExprTest, ExprVisitorHandlesAll) {
@@ -967,6 +967,37 @@ TEST_F(ExprTest, ExprVisitorInvalidThrows) {
   raw.op = reinterpret_cast<efunc*>(-1);
   EXPECT_THROW(NullVisitor().Visit(ne), InvalidNumericExprError);
   EXPECT_THROW(NullVisitor().Visit(le), InvalidLogicalExprError);
+}
+
+struct TestConverter : ampl::ExprConverter<TestConverter, void, TestLResult> {
+  TestLResult VisitLess(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitLessEqual(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitEqual(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitGreaterEqual(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitGreater(RelationalExpr e) { return MakeResult(e); }
+  TestLResult VisitNotEqual(RelationalExpr e) { return MakeResult(e); }
+};
+
+void CheckConversion(int from_opcode, int to_opcode) {
+  expr lhs = {reinterpret_cast<efunc*>(OPNUM)}, rhs = lhs;
+  expr raw = {reinterpret_cast<efunc*>(from_opcode)};
+  raw.L.e = &lhs;
+  raw.R.e = &rhs;
+  TestConverter converter;
+  RelationalExpr expr =
+      Cast<RelationalExpr>(converter.Visit(MakeExpr<LogicalExpr>(&raw)).expr);
+  EXPECT_EQ(to_opcode, expr.opcode());
+  EXPECT_EQ(MakeExpr(&lhs), expr.lhs());
+  EXPECT_EQ(MakeExpr(&rhs), expr.rhs());
+}
+
+TEST_F(ExprTest, ConvertLogicalCountToRelational) {
+  CheckConversion(OPATLEAST, LE);
+  CheckConversion(OPATMOST, GE);
+  CheckConversion(OPEXACTLY, EQ);
+  CheckConversion(OPNOTATLEAST, GT);
+  CheckConversion(OPNOTATMOST, LT);
+  CheckConversion(OPNOTEXACTLY, NE);
 }
 
 TEST_F(ExprTest, LinearTerm) {

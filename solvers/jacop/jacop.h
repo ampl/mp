@@ -100,7 +100,7 @@ CLASS_INFO(SolutionListener, "SolutionListener", "(J)V")
 
 // Converter of constraint programming problems from NL to JaCoP format.
 class NLToJaCoPConverter :
-   public ExprVisitor<NLToJaCoPConverter, jobject, jobject> {
+   public ExprConverter<NLToJaCoPConverter, jobject, jobject> {
  private:
   Env env_;
   jobject store_;
@@ -358,30 +358,6 @@ class NLToJaCoPConverter :
 
   jobject VisitNot(NotExpr e) {
     return not_class_.NewObject(env_, Visit(e.arg()));
-  }
-
-  jobject VisitAtLeast(LogicalCountExpr e) {
-    return Convert(e, le_class_);
-  }
-
-  jobject VisitAtMost(LogicalCountExpr e) {
-    return Convert(e, ge_class_);
-  }
-
-  jobject VisitExactly(LogicalCountExpr e) {
-    return Convert(e, eq_class_);
-  }
-
-  jobject VisitNotAtLeast(LogicalCountExpr e) {
-    return Convert(e, gt_class_);
-  }
-
-  jobject VisitNotAtMost(LogicalCountExpr e) {
-    return Convert(e, lt_class_);
-  }
-
-  jobject VisitNotExactly(LogicalCountExpr e) {
-    return Convert(e, ne_class_);
   }
 
   jobject VisitForAll(IteratedLogicalExpr e) {

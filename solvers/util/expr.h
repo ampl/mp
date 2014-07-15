@@ -245,6 +245,10 @@ class Expr {
 
   template <typename Impl, typename Result, typename LResult>
   friend class ExprVisitor;
+
+  template <typename Impl, typename Result, typename LResult>
+  friend class ExprConverter;
+
   friend class ExprBuilder;
   friend class ExprFactory;
   friend class Problem;
@@ -1481,6 +1485,42 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
     return AMPL_DISPATCH(VisitInvalidLogicalExpr(e));
   }
 }
+
+// Expression converter.
+// Converts logical count expressions to corresponding relational expressions.
+// For example "atleast" is converted to "<=".
+template <typename Impl, typename Result, typename LResult>
+class ExprConverter : public ExprVisitor<Impl, Result, LResult> {
+ private:
+  std::vector<expr> exprs_;
+
+  RelationalExpr Convert(LogicalCountExpr e, int opcode) {
+    exprs_.push_back(*e.expr_);
+    expr *result = &exprs_.back();
+    result->op = reinterpret_cast<efunc*>(opcode);
+    return Expr::Create<RelationalExpr>(result);
+  }
+
+ public:
+  LResult VisitAtLeast(LogicalCountExpr e) {
+    return AMPL_DISPATCH(VisitLessEqual(Convert(e, LE)));
+  }
+  LResult VisitAtMost(LogicalCountExpr e) {
+    return AMPL_DISPATCH(VisitGreaterEqual(Convert(e, GE)));
+  }
+  LResult VisitExactly(LogicalCountExpr e) {
+    return AMPL_DISPATCH(VisitEqual(Convert(e, EQ)));
+  }
+  LResult VisitNotAtLeast(LogicalCountExpr e) {
+    return AMPL_DISPATCH(VisitGreater(Convert(e, GT)));
+  }
+  LResult VisitNotAtMost(LogicalCountExpr e) {
+    return AMPL_DISPATCH(VisitLess(Convert(e, LT)));
+  }
+  LResult VisitNotExactly(LogicalCountExpr e) {
+    return AMPL_DISPATCH(VisitNotEqual(Convert(e, NE)));
+  }
+};
 
 #undef AMPL_DISPATCH
 

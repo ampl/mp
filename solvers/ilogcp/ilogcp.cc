@@ -661,10 +661,10 @@ void IlogCPSolver::SolveWithCP(
     status = ConvertSolutionStatus(cp_, sh, solve_code);
     if (p.num_objs() > 0) {
       if (cp_.getInfo(IloCP::FailStatus) == IloCP::SearchStoppedByLimit) {
-        solve_code = 400;
+        solve_code = LIMIT;
         status = "limit";
       }
-    } else if (solve_code == 100)
+    } else if (solve_code == SOLVED_MAYBE)
       solve_code = 0;
   }
   p.set_solve_code(solve_code);

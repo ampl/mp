@@ -71,7 +71,7 @@ class GecodeProblem: public Gecode::Space {
 
 // Converter of constraint programming problems from NL to Gecode format.
 class NLToGecodeConverter :
-  public ExprVisitor<NLToGecodeConverter, LinExpr, Gecode::BoolExpr> {
+  public ExprConverter<NLToGecodeConverter, LinExpr, Gecode::BoolExpr> {
  private:
   GecodeProblem problem_;
   Gecode::IntConLevel icl_;
@@ -238,30 +238,6 @@ class NLToGecodeConverter :
 
   BoolExpr VisitNot(NotExpr e) {
     return !Visit(e.arg());
-  }
-
-  BoolExpr VisitAtLeast(LogicalCountExpr e) {
-    return Visit(e.value()) <= VisitCount(e.count());
-  }
-
-  BoolExpr VisitAtMost(LogicalCountExpr e) {
-    return Visit(e.value()) >= VisitCount(e.count());
-  }
-
-  BoolExpr VisitExactly(LogicalCountExpr e) {
-    return Visit(e.value()) == VisitCount(e.count());
-  }
-
-  BoolExpr VisitNotAtLeast(LogicalCountExpr e) {
-    return Visit(e.value()) > VisitCount(e.count());
-  }
-
-  BoolExpr VisitNotAtMost(LogicalCountExpr e) {
-    return Visit(e.value()) < VisitCount(e.count());
-  }
-
-  BoolExpr VisitNotExactly(LogicalCountExpr e) {
-    return Visit(e.value()) != VisitCount(e.count());
   }
 
   BoolExpr VisitForAll(IteratedLogicalExpr e) {
