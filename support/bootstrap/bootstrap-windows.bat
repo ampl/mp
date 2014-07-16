@@ -3,7 +3,7 @@ rem and run the main bootstrap script.
 
 rem If we are in a VM managed by Vagrant, then do everything in
 rem the shared /vagrant directory to avoid growth of the VM drive.
-set VAGRANT_DIR=\vagrant\support\vagrant
+set VAGRANT_DIR=\vagrant\support\bootstrap
 if exist %VAGRANT_DIR% cd %VAGRANT_DIR%
 
 cscript /nologo wget.js ^
