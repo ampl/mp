@@ -23,32 +23,35 @@
 #include "localsolver.h"
 #include "solvers/util/clock.h"
 
+namespace {
+// Returns the value of an expression.
+inline double GetValue(localsolver::LSExpression *e) {
+  return e->isDouble() ? e->getDoubleValue() : e->getValue();
+}
+}
+
 namespace ampl {
 
 template <typename Term>
 ls::LSExpression *NLToLocalSolverConverter::ConvertExpr(
     LinearExpr<Term> linear, NumericExpr nonlinear) {
+  ls::LSExpression *result = 0;
   typename LinearExpr<Term>::iterator i = linear.begin(), end = linear.end();
-  bool has_linear_part = i != end;
-  ls::LSExpression *sum = 0;
-  if (has_linear_part) {
-    sum = model_.createExpression(ls::O_Sum);
+  if (i != end) {
+    result = model_.createExpression(ls::O_Sum);
     for (; i != end; ++i) {
       ls::LSExpression *term = vars_[i->var_index()];
       double coef = i->coef();
       if (coef != 1)
         term = model_.createExpression(ls::O_Prod, coef, term);
-      sum->addOperand(term);
+      result->addOperand(term);
     }
-    if (!nonlinear)
-      return sum;
   }
-  // TODO: nonlinear
-  //if (has_linear_part)
-  //  expr = expr + Visit(nonlinear);
-  //else
-  //  expr = Visit(nonlinear);
-  return sum;
+  if (nonlinear) {
+    ls::LSExpression *nl = Visit(nonlinear);
+    result = result ? model_.createExpression(ls::O_Sum, result, nl) : nl;
+  }
+  return result;
 }
 
 void NLToLocalSolverConverter::Convert(const Problem &p) {
@@ -139,6 +142,19 @@ LocalSolver::LocalSolver() : Solver("localsolver", 0, 20140710), timelimit_(0) {
       &LocalSolver::GetTimeLimit, &LocalSolver::SetTimeLimit);
 }
 
+ls::LSExpression *NLToLocalSolverConverter::VisitAllDiff(AllDiffExpr e) {
+  ls::LSExpression *result = model_.createExpression(ls::O_And);
+  int num_args = e.num_args();
+  std::vector<ls::LSExpression *> args(num_args);
+  for (int i = 0; i < num_args; ++i)
+    args[i] = Visit(e[i]);
+  for (int i = 0; i < num_args; ++i) {
+    for (int j = i + 1; j < num_args; ++j)
+      result->addOperand(model_.createExpression(ls::O_Neq, args[i], args[j]));
+  }
+  return result;
+}
+
 void LocalSolver::DoSolve(Problem &p) {
   steady_clock::time_point time = steady_clock::now();
 
@@ -203,7 +219,7 @@ void LocalSolver::DoSolve(Problem &p) {
   w.write("{}", solver_.getStatistics()->toString());
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   if (p.num_objs() != 0) {
-    obj_val = model.getObjective(0)->getDoubleValue();
+    obj_val = GetValue(model.getObjective(0));
     w.write("objective {}", ObjPrec(obj_val));
   }
   HandleSolution(p, w.c_str(),
