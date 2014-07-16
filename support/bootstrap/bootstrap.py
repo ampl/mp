@@ -1,7 +1,7 @@
 # Common bootstrap functionality.
 
 from __future__ import print_function
-import glob, os, platform, pwd, re, shutil, sys, time
+import glob, os, platform, re, shutil, sys, time
 import tarfile, tempfile, urllib2, urlparse, zipfile
 from contextlib import closing, contextmanager
 from subprocess import check_call, call
@@ -165,6 +165,7 @@ def install_buildbot_slave(name, path=None, script_dir='', shell=False, **args):
   if platform.system() == 'Linux':
     # Create buildbot user if it doesn't exist.
     username = 'buildbot'
+    import pwd
     try:
       pwd.getpwnam(username)
     except KeyError:
