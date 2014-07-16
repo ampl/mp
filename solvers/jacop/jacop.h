@@ -99,8 +99,7 @@ CLASS_INFO(Interrupter, "Interrupter", "(J)V")
 CLASS_INFO(SolutionListener, "SolutionListener", "(J)V")
 
 // Converter of constraint programming problems from NL to JaCoP format.
-class NLToJaCoPConverter :
-   public ExprConverter<NLToJaCoPConverter, jobject, jobject> {
+class NLToJaCoPConverter : public ExprConverter<NLToJaCoPConverter, jobject> {
  private:
   Env env_;
   jobject store_;
