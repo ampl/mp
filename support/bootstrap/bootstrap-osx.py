@@ -68,5 +68,10 @@ install_f90cache()
 create_symlink('/usr/local/bin/f90cache',
                '/opt/local/libexec/ccache/gfortran-4.9')
 
+if not installed('localsolver'):
+  with download('http://www.localsolver.com/downloads/' +
+      'LocalSolver_4_0_20140127_MacOS64.pkg') as f:
+    install_dmg(f)
+
 copy_optional_dependencies('osx')
 install_buildbot_slave('osx-ml')
