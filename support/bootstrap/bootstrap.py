@@ -178,7 +178,7 @@ def install_buildbot_slave(name, path=None, script_dir='', shell=False, **args):
   # The password is insecure but it doesn't matter as the buildslaves are
   # not publicly accessible.
   command = [os.path.join(script_dir, 'buildslave'),
-             'create-slave', path, args['ip'] or '10.0.2.2', name, 'pass']
+             'create-slave', path, args.get('ip', '10.0.2.2'), name, 'pass']
   if not windows:
     command = ['sudo', '-u', username] + command
   check_call(command, shell=shell)
