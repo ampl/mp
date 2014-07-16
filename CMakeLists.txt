@@ -45,6 +45,8 @@ if (APPLE)
   add_definitions(-mmacosx-version-min=10.7)
 endif ()
 
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
+
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag(-std=c++11 HAVE_STD_CPP11_FLAG)
 if (HAVE_STD_CPP11_FLAG)
