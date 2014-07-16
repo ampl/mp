@@ -43,9 +43,10 @@ if __name__ == '__main__':
   version = re.match(r'.* (\d+\.\d+)\.\d+', output).group(1)
   add_to_path('/usr/local/bin/f90cache', 'gfortran-' + version)
 
-  with download('http://www.localsolver.com/downloads/' +
-      'LocalSolver_4_0_20140127_Linux{}.run'.format(64 if x86_64 else 32)) as f:
-    check_call(['sh', f])
+  if not installed('localsolver'):
+    with download('http://www.localsolver.com/downloads/LocalSolver' +
+        '_4_0_20140127_Linux{}.run'.format(64 if x86_64 else 32)) as f:
+      check_call(['sh', f])
 
   copy_optional_dependencies('linux-' + platform.machine())
   
