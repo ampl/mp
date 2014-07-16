@@ -33,8 +33,7 @@ namespace ls = localsolver;
 
 // Converter of optimization problems from NL to LocalSolver format.
 class NLToLocalSolverConverter :
-  public ExprVisitor<NLToLocalSolverConverter,
-                     ls::LSExpression*, ls::LSExpression*> {
+  public ExprConverter<NLToLocalSolverConverter, ls::LSExpression*> {
  private:
   ls::LSModel &model_;
   std::vector<ls::LSExpression*> vars_;
@@ -79,7 +78,6 @@ public:
   // * atan, asin, acos, atan2
   // * piecewise linear
   // TODO
-  // * log, log10, exp
 
   ls::LSExpression *VisitUnaryMinus(UnaryExpr e) {
     return model_.createExpression(ls::O_Sub, MakeConst(0), Visit(e.arg()));
@@ -151,7 +149,7 @@ public:
   }
   ls::LSExpression *VisitIntDiv(BinaryExpr e) {
     ls::LSExpression *rem = VisitRem(e);
-    return model_.createExpression(O_div,
+    return model_.createExpression(ls::O_Div,
         model_.createExpression(ls::O_Sub, rem->getOperand(0), rem),
         rem->getOperand(1));
   }

@@ -1009,7 +1009,7 @@ class InvalidLogicalExprError : public Error {
 //
 // ExprVisitor uses the curiously recurring template pattern:
 // http://en.wikipedia.org/wiki/Curiously_recurring_template_pattern
-template <typename Impl, typename Result, typename LResult>
+template <typename Impl, typename Result, typename LResult = Result>
 class ExprVisitor {
  public:
   Result Visit(NumericExpr e);
@@ -1489,7 +1489,7 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
 // Expression converter.
 // Converts logical count expressions to corresponding relational expressions.
 // For example "atleast" is converted to "<=".
-template <typename Impl, typename Result, typename LResult>
+template <typename Impl, typename Result, typename LResult = Result>
 class ExprConverter : public ExprVisitor<Impl, Result, LResult> {
  private:
   std::vector<expr> exprs_;
