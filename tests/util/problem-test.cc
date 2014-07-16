@@ -302,7 +302,7 @@ TEST(ProblemTest, BoundChecks) {
 #endif
 
 #ifdef HAVE_ILOGCP
-static const std::string SOLVER_PATH = FixPath("../../solvers/ilogcp/ilogcp");;
+static const std::string SOLVER_PATH = FixPath("../../bin/ilogcp");
 
 TEST(ProblemTest, Solve) {
   Problem p;

@@ -74,7 +74,8 @@ TEST(UtilTest, ExecuteShellCommand) {
 }
 
 TEST(UtilTest, ExecuteShellThrowsOnNonzeroExitCode) {
-  EXPECT_THROW_MSG(ExecuteShellCommand(FixBinaryPath("util/test-helper") + " > out"),
+  EXPECT_THROW_MSG(
+    ExecuteShellCommand(FixBinaryPath("../bin/test-helper") + " > out"),
     ampl::Error, "process exited with code 42");
 }
 
