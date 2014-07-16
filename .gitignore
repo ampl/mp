@@ -6,7 +6,6 @@
 *.jar
 *.so
 *.pyc
-*-test
 /bin
 CMakeFiles
 CMakeCache.txt
