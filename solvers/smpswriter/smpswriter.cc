@@ -493,4 +493,6 @@ void SMPSWriter::DoSolve(Problem &p) {
     writer.Write("ENDATA\n");
   }
 }
-}
+
+SolverPtr CreateSolver(const char *) { return SolverPtr(new SMPSWriter()); }
+}  // namespace ampl

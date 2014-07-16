@@ -135,6 +135,94 @@ if (NOT WIN32)
   target_link_libraries(amplsolver dl)
 endif ()
 
+# Assigns the value of input_var to output_var if input_var is defined.
+# Otherwise assigns the values of ARGN to output_var.
+function(get_var output_var input_var)
+  if (${input_var})
+    set(${output_var} ${${input_var}} PARENT_SCOPE)
+  else ()
+    set(${output_var} ${ARGN} PARENT_SCOPE)
+  endif ()
+endfunction ()
+
+# Adds an AMPL solver.
+#
+# Usage:
+#   add_ampl_solver(<name> [DLL_RUNTIME]
+#     [source...] [INCLUDE_DIRS dir...] [LIBRARIES lib...])
+#
+# Sources are relative to the solver diretory and the default list of sources
+# is <name>.cc, <name>.h.
+# If DLL_RUNTIME option is given the solver is linked with DLL MSVC runtime
+# on Windows.
+function(add_ampl_solver name)
+  string(TOUPPER ${name} name_upper)
+
+  # Check if the solver is installed.
+  set(cmake_dir)
+  file(GLOB modules ${AMPL_CMAKE_MODULE_DIR}/Find*.cmake)
+  foreach (module ${modules})
+    string(REGEX REPLACE ".*Find(.*).cmake" "\\1" module ${module})
+    string(TOUPPER ${module} module_upper)
+    if (module_upper STREQUAL ${name_upper})
+      find_package(${module})
+      if (NOT ${module}_FOUND)
+        return ()
+      endif ()
+      break ()
+    endif ()
+  endforeach ()
+
+  # Parse arguments.
+  cmake_parse_arguments(add_ampl_solver
+    DLL_RUNTIME "" "INCLUDE_DIRS;LIBRARIES;DEFINITIONS" ${ARGN})
+  get_var(source_names add_ampl_solver_UNPARSED_ARGUMENTS ${name}.cc ${name}.h)
+  get_var(include_dirs
+    add_ampl_solver_INCLUDE_DIRS ${${module}_INCLUDE_DIRS})
+  get_var(libraries add_ampl_solver_LIBRARIES ${${module}_LIBRARIES})
+  get_var(definitions add_ampl_solver_DEFINITIONS ${${module}_DEFINITIONS})
+  if (add_ampl_solver_DLL_RUNTIME AND MSVC)
+    set(use_dll_runtime True)
+  endif ()
+
+  # Add directory name to sources.
+  set(sources )
+  foreach (src ${source_names})
+    set(sources ${sources} ${name}/${src})
+  endforeach ()
+  if (use_dll_runtime)
+    set(sources ${sources} util/util-all.cc)
+  endif ()
+
+  # Add a solver static library to be linked with the shared library and
+  # the exectuable.
+  set(static_lib ampl${name}-static)
+  add_library(${static_lib} ${sources})
+  target_include_directories(${static_lib} PUBLIC ${include_dirs})
+  target_link_libraries(${static_lib} util ${libraries})
+  target_compile_options(${static_lib} PUBLIC ${definitions})
+  add_dependencies(${static_lib} arith_h)
+
+  if (use_dll_runtime)
+    if (NOT TARGET amplsolver-dynrt)
+      add_library(amplsolver-dynrt ${ASL_SOURCES})
+      # TODO: set compile flags
+      add_dependencies(amplsolver-dynrt arith_h)
+    endif ()
+    target_link_libraries(${static_lib} amplsolver-dynrt)
+  else ()
+    target_link_libraries(${static_lib} util)
+  endif ()
+
+  # Add a solver shared library.
+  add_library(ampl${name} SHARED util/solver-c.cc)
+  target_link_libraries(ampl${name} ${static_lib})
+
+  # Add a solver executable.
+  add_executable(${name} ${name}/main.cc)
+  target_link_libraries(${name} ${static_lib})
+endfunction()
+
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/amplgsl/gsl/CMakeLists.txt)
   add_subdirectory(amplgsl)
 endif ()
@@ -143,10 +231,28 @@ add_subdirectory(cp)
 add_subdirectory(cplex)
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/gecode/lib/CMakeLists.txt)
-  add_subdirectory(gecode)
+  set(GECODE_DISABLE_WARNINGS True)
+  add_subdirectory(gecode/lib)
+  add_ampl_solver(gecode INCLUDE_DIRS gecode/lib LIBRARIES gecodeminimodel)
 endif ()
 
-add_subdirectory(ilogcp)
+find_package(CPLEX)
+add_ampl_solver(ilogcp DLL_RUNTIME
+  concert.cc concert.h ilogcp.cc ilogcp.h ilogcp_date.h
+  INCLUDE_DIRS ${CPLEX_CP_INCLUDE_DIRS} ${CPLEX_ILOCPLEX_INCLUDE_DIRS}
+  LIBRARIES ${CPLEX_CP_LIBRARIES} ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_LIBRARIES}
+  DEFINITIONS ${CPLEX_CONCERT_DEFINITIONS} ${CPLEX_ILOCPLEX_DEFINITIONS})
+
+# Copy CPLEX DLL to the target directory.
+function(copy_cplex_dll target)
+  if (CPLEX_DLL)
+    get_filename_component(CPLEX_DLL_NAME "${CPLEX_DLL}" NAME)
+    add_custom_command(TARGET ${target}
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${CPLEX_DLL}" "$<TARGET_FILE_DIR:${target}>/${CPLEX_DLL_NAME}")
+  endif ()
+endfunction()
+copy_cplex_dll(ilogcp)
 
 file(GLOB jar jacop/lib/jacop-*.jar)
 if (jar)
@@ -173,23 +279,15 @@ if (jar)
   endif ()
 endif ()
 
-find_package(LocalSolver)
-if (LOCALSOLVER_FOUND)
-  add_subdirectory(localsolver)
-endif ()
-
+add_ampl_solver(localsolver)
 add_subdirectory(path)
 
 if (HAVE_AUTO)
-  add_subdirectory(smpswriter)
+  add_ampl_solver(smpswriter)
 endif ()
 
-add_subdirectory(ssdsolver)
-
-find_package(Sulum)
-if (SULUM_FOUND)
-  add_subdirectory(sulum)
-endif ()
+add_ampl_solver(ssdsolver)
+add_ampl_solver(sulum)
 
 add_subdirectory(util)
 
