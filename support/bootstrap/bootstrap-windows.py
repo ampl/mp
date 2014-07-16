@@ -74,6 +74,17 @@ if not os.path.exists(r'\Program Files\Java\jdk1.7.0_55'):
       'jdk-7u55-windows-x64.exe', cookie) as f:
     check_call([f, '/s'])
 
+# Install LocalSolver.
+for bits in [32, 64]:
+  suffix = ' (x86)' if bits == 32 else ''
+  install_dir = r'C:\Program Files{}\localsolver_4_0'.format(suffix)
+  if os.path.exists(install_dir):
+    continue
+  with download(
+      'http://www.localsolver.com/downloads/' +
+      'LocalSolver_4_0_20140130_Win{}.exe'.format(bits)) as f:
+    check_call([sevenzip, 'x', '-o' + install_dir), f])
+
 # Copy optional dependencies.
 opt_dir = r'opt\win64'
 if os.path.exists(opt_dir):
