@@ -72,12 +72,17 @@ class ExprFactory : Noncopyable {
   ASL *asl_;
   efunc *r_ops_[N_OPS];
 
+  template <typename ExprT>
+  ExprT CreateExpr(int opcode, NumericExpr lhs, NumericExpr rhs);
+
  public:
   // Constructs an ExprFactory object.
   // flags: reader flags, see ASL_reader_flag_bits.
   ExprFactory(const NLHeader &h, const char *stub, int flags = 0);
   ~ExprFactory();
 
+  UnaryExpr CreateUnaryExpr(int opcode, NumericExpr arg);
+  BinaryExpr CreateBinaryExpr(int opcode, NumericExpr lhs, NumericExpr rhs);
   NumericConstant CreateNumericConstant(double value);
   Variable CreateVariable(int var_index);
 };

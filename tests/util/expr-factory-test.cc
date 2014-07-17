@@ -550,9 +550,14 @@ int ReadASL(ASL &asl, const NLHeader &h, const char *body, int flags) {
   return fg_read_ASL(&asl, ReadHeader(asl, h, body), flags);
 }
 
-TEST(ExprFactoryTest, ASLBuilderLinear) {
+NLHeader MakeHeader() {
   NLHeader header = {};
   header.num_vars = header.num_objs = 1;
+  return header;
+}
+
+TEST(ExprFactoryTest, ASLBuilderLinear) {
+  NLHeader header = MakeHeader();
   ASLPtr actual(ASL_read_f);
   ASLBuilder builder(*actual, "test", header);
   builder.BeginBuild(0);
@@ -564,8 +569,7 @@ TEST(ExprFactoryTest, ASLBuilderLinear) {
 }
 
 TEST(ExprFactoryTest, ASLBuilderTrivialProblem) {
-  NLHeader header = {};
-  header.num_vars = header.num_objs = 1;
+  NLHeader header = MakeHeader();
   ASLPtr actual;
   ASLBuilder builder(*actual, "test", header);
   builder.BeginBuild(0);
@@ -576,8 +580,7 @@ TEST(ExprFactoryTest, ASLBuilderTrivialProblem) {
 }
 
 TEST(ExprFactoryTest, ASLBuilderDisallowCLPByDefault) {
-  NLHeader header = {};
-  header.num_vars = header.num_objs = 1;
+  NLHeader header = MakeHeader();
   header.num_logical_cons = 1;
   ASLPtr actual;
   ASLBuilder builder(*actual, "test", header);
@@ -590,8 +593,7 @@ TEST(ExprFactoryTest, ASLBuilderDisallowCLPByDefault) {
 }
 
 TEST(ExprFactoryTest, ASLBuilderAllowCLP) {
-  NLHeader header = {};
-  header.num_vars = header.num_objs = 1;
+  NLHeader header = MakeHeader();
   header.num_logical_cons = 1;
   ASLPtr actual;
   ASLBuilder builder(*actual, "test", header);
@@ -603,11 +605,48 @@ TEST(ExprFactoryTest, ASLBuilderAllowCLP) {
   CheckASL(*expected, *actual, false);
 }
 
+TEST(ExprFactoryTest, CreateUnaryExpr) {
+  const int opcodes[] = {
+      FLOOR, CEIL, ABS, OPUMINUS, OP_tanh, OP_tan, OP_sqrt,
+      OP_sinh, OP_sin, OP_log10, OP_log, OP_exp, OP_cosh, OP_cos,
+      OP_atanh, OP_atan, OP_asinh, OP_asin, OP_acosh, OP_acos, OP2POW
+  };
+  ExprFactory ef(MakeHeader(), "");
+  ampl::NumericExpr arg = ef.CreateNumericConstant(42);
+  for (size_t i = 0, n = sizeof(opcodes) / sizeof(*opcodes); i < n; ++i) {
+    ampl::UnaryExpr expr = ef.CreateUnaryExpr(opcodes[i], arg);
+    EXPECT_EQ(opcodes[i], expr.opcode());
+    EXPECT_EQ(arg, expr.arg());
+  }
+  EXPECT_THROW_MSG(ef.CreateUnaryExpr(OPPLUS, arg), ampl::Error,
+    fmt::format("invalid unary expression code {}", OPPLUS));
+}
+
+TEST(ExprFactoryTest, CreateBinaryExpr) {
+  const int opcodes[] = {
+      OPPLUS, OPMINUS, OPMULT, OPDIV, OPREM, OPPOW, OPLESS, OP_atan2,
+      OPintDIV, OPprecision, OPround, OPtrunc, OP1POW, OPCPOW
+  };
+  ExprFactory ef(MakeHeader(), "");
+  ampl::NumericExpr lhs = ef.CreateNumericConstant(1);
+  ampl::NumericExpr rhs = ef.CreateNumericConstant(2);
+  for (size_t i = 0, n = sizeof(opcodes) / sizeof(*opcodes); i < n; ++i) {
+    ampl::BinaryExpr expr = ef.CreateBinaryExpr(opcodes[i], lhs, rhs);
+    EXPECT_EQ(opcodes[i], expr.opcode());
+    EXPECT_EQ(lhs, expr.lhs());
+    EXPECT_EQ(rhs, expr.rhs());
+  }
+  EXPECT_THROW_MSG(ef.CreateBinaryExpr(OPUMINUS, lhs, rhs), ampl::Error,
+    fmt::format("invalid binary expression code {}", OPUMINUS));
+}
+
 TEST(ExprFactoryTest, CreateNumericConstant) {
   NLHeader header = {};
   header.num_vars = header.num_objs = 1;
-  ExprFactory ef(header, "");
-  EXPECT_EQ(42.0, ef.CreateNumericConstant(42).value());
+  ExprFactory ef(MakeHeader(), "");
+  ampl::NumericConstant expr = ef.CreateNumericConstant(42);
+  EXPECT_EQ(OPNUM, expr.opcode());
+  EXPECT_EQ(42.0, expr.value());
 }
 
 TEST(ExprFactoryTest, CreateVariable) {
@@ -615,8 +654,11 @@ TEST(ExprFactoryTest, CreateVariable) {
   header.num_vars = 10;
   header.num_objs = 1;
   ExprFactory ef(header, "");
-  EXPECT_EQ(0, ef.CreateVariable(0).index());
-  EXPECT_EQ(9, ef.CreateVariable(9).index());
+  ampl::Variable var = ef.CreateVariable(0);
+  EXPECT_EQ(OPVARVAL, var.opcode());
+  EXPECT_EQ(0, var.index());
+  var = ef.CreateVariable(9);
+  EXPECT_EQ(9, var.index());
   EXPECT_DEBUG_DEATH(ef.CreateVariable(-1);, "Assertion");  // NOLINT(*)
   EXPECT_DEBUG_DEATH(ef.CreateVariable(10);, "Assertion");  // NOLINT(*)
 }

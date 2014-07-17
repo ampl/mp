@@ -30,6 +30,10 @@
 extern "C" void bswap_ASL(void *x, unsigned long L);
 
 namespace {
+static double DVALUE[] = {
+#include "dvalue.hd"
+};
+
 // Initialize count variables in the array v starting from offset by
 // setting their variable indices to var_index.
 void InitVars(expr_v *v, int offset, int count, int var_index) {
@@ -233,10 +237,8 @@ void internal::ASLBuilder::BeginBuild(int flags) {
         InitVars(e, info.nlvb_, info.nlvbi_, nv1_);
       if (info.nlvci_)
         InitVars(e, info.nlvb_ + info.nlvc_, info.nlvci_, nv1_);
-      if (info.nlvoi_) {
-        InitVars(e, info.nlvb_ + info.nlvc_ + info.nlvo_,
-            info.nlvoi_, nv1_);
-      }
+      if (info.nlvoi_)
+        InitVars(e, info.nlvb_ + info.nlvc_ + info.nlvo_, info.nlvoi_, nv1_);
     }
     info1.cexps_ = reinterpret_cast<cexp*>(info.Ograd_ + no);
     info1.cexps1_ = reinterpret_cast<cexp1*>(info1.cexps_ + info.ncom0_);
@@ -315,6 +317,35 @@ ExprFactory::ExprFactory(const NLHeader &h, const char *stub, int flags)
 
 ExprFactory::~ExprFactory() {
   ASL_free(&asl_);
+}
+
+template <typename ExprT>
+ExprT ExprFactory::CreateExpr(int opcode, NumericExpr lhs, NumericExpr rhs) {
+  expr *e = reinterpret_cast<expr*>(mem_ASL(asl_, sizeof(expr)));
+  e->op = reinterpret_cast<efunc*>(r_ops_[opcode]);
+  e->L.e = lhs.expr_;
+  e->R.e = rhs.expr_;
+  e->a = asl_->i.n_var_ + asl_->i.nsufext[ASL_Sufkind_var];
+  e->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
+  return Expr::Create<ExprT>(e);
+}
+
+UnaryExpr ExprFactory::CreateUnaryExpr(int opcode, NumericExpr arg) {
+  if (Expr::INFO[opcode].kind != Expr::UNARY)
+    throw Error("invalid unary expression code {}", opcode);
+  UnaryExpr expr = CreateExpr<UnaryExpr>(opcode, arg, NumericExpr());
+  expr.expr_->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
+  return expr;
+}
+
+BinaryExpr ExprFactory::CreateBinaryExpr(
+    int opcode, NumericExpr lhs, NumericExpr rhs) {
+  if (Expr::INFO[opcode].kind != Expr::BINARY)
+    throw Error("invalid binary expression code {}", opcode);
+  BinaryExpr expr = CreateExpr<BinaryExpr>(opcode, lhs, rhs);
+  expr.expr_->dL = 1;
+  expr.expr_->dR = DVALUE[opcode];  // for PLUS, MINUS, REM
+  return expr;
 }
 
 NumericConstant ExprFactory::CreateNumericConstant(double value) {
