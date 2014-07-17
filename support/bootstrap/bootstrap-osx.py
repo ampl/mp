@@ -72,7 +72,7 @@ create_symlink('/usr/local/bin/f90cache',
 if not installed('localsolver'):
   with download('http://www.localsolver.com/downloads/' +
       'LocalSolver_4_5_20140715_MacOS64.pkg') as f:
-    install_dmg(f)
+    install_pkg(f)
 
 copy_optional_dependencies('osx')
 install_buildbot_slave('osx-ml')

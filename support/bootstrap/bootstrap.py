@@ -184,7 +184,7 @@ def install_buildbot_slave(name, path=None, script_dir='', shell=False, **args):
   check_call(command, shell=shell)
   if windows:
     return
-  if args['nocron']:
+  if args.get('nocron', False):
     return
   pip_install('python-crontab', 'crontab')
   from crontab import CronTab
