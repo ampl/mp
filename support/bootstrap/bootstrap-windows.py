@@ -82,7 +82,7 @@ for bits in [32, 64]:
     continue
   with download(
       'http://www.localsolver.com/downloads/' +
-      'LocalSolver_4_0_20140130_Win{}.exe'.format(bits)) as f:
+      'LocalSolver_4_5_20140715_Win{}.exe'.format(bits)) as f:
     check_call([sevenzip, 'x', '-o' + install_dir, f])
 
 # Copy optional dependencies.
