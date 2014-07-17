@@ -148,7 +148,7 @@ endfunction ()
 # Adds an AMPL solver.
 #
 # Usage:
-#   add_ampl_solver(<name> [DLL_RUNTIME]
+#   add_ampl_solver(<name> [DLL_RUNTIME] [MODULE module]
 #     [source...] [INCLUDE_DIRS dir...] [LIBRARIES lib...])
 #
 # Sources are relative to the solver diretory and the default list of sources
@@ -158,26 +158,32 @@ endfunction ()
 function(add_ampl_solver name)
   string(TOUPPER ${name} name_upper)
 
-  # Check if the solver is installed.
-  set(cmake_dir)
-  file(GLOB modules ${AMPL_CMAKE_MODULE_DIR}/Find*.cmake)
-  set(module )
-  foreach (m ${modules})
-    string(REGEX REPLACE ".*Find(.*).cmake" "\\1" m ${m})
-    string(TOUPPER ${m} module_upper)
-    if (module_upper STREQUAL ${name_upper})
-      set(module ${m})
-      find_package(${module})
-      if (NOT ${${module}_FOUND})
-        return ()
-      endif ()
-      break ()
-    endif ()
-  endforeach ()
-
-  # Parse arguments.
   cmake_parse_arguments(add_ampl_solver
-    DLL_RUNTIME "" "INCLUDE_DIRS;LIBRARIES;DEFINITIONS" ${ARGN})
+    DLL_RUNTIME MODULE "INCLUDE_DIRS;LIBRARIES;DEFINITIONS" ${ARGN})
+
+  # Check if the solver is installed.
+  if (add_ampl_solver_MODULE)
+    set(module ${add_ampl_solver_MODULE})
+  else ()
+    set(module )
+    file(GLOB modules ${AMPL_CMAKE_MODULE_DIR}/Find*.cmake)
+    foreach (m ${modules})
+      string(REGEX REPLACE ".*Find(.*).cmake" "\\1" m ${m})
+      string(TOUPPER ${m} module_upper)
+      if (module_upper STREQUAL ${name_upper})
+        set(module ${m})
+        break ()
+      endif ()
+    endforeach ()
+  endif ()
+  if (module)
+    find_package(${module})
+    if (NOT ${module_upper}_FOUND)
+      return ()
+    endif ()
+  endif ()
+
+  # Handle arguments.
   get_var(source_names add_ampl_solver_UNPARSED_ARGUMENTS ${name}.cc ${name}.h)
   get_var(include_dirs
     add_ampl_solver_INCLUDE_DIRS ${${module}_INCLUDE_DIRS})
@@ -239,7 +245,7 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/gecode/lib/CMakeLists.txt)
 endif ()
 
 find_package(CPLEX)
-add_ampl_solver(ilogcp DLL_RUNTIME
+add_ampl_solver(ilogcp DLL_RUNTIME MODULE CPLEX
   concert.cc concert.h ilogcp.cc ilogcp.h ilogcp_date.h
   INCLUDE_DIRS ${CPLEX_CP_INCLUDE_DIRS} ${CPLEX_ILOCPLEX_INCLUDE_DIRS}
   LIBRARIES ${CPLEX_CP_LIBRARIES} ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_LIBRARIES}
