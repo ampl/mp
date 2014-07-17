@@ -2,43 +2,43 @@
 #
 # Once done this will define
 #
-#  Sulum_FOUND - System has Sulum
-#  Sulum_INCLUDE_DIRS - The Sulum include directories
-#  Sulum_LIBRARIES - The libraries needed to use Sulum
+#  SULUM_FOUND - System has Sulum
+#  SULUM_INCLUDE_DIRS - The Sulum include directories
+#  SULUM_LIBRARIES - The libraries needed to use Sulum
 
 if (UNIX)
-  set(Sulum_DIR /opt/sulum)
-  set(Sulum_SYS linux)
+  set(SULUM_DIR /opt/sulum)
+  set(SULUM_SYS linux)
 else ()
-  set(Sulum_DIR "C:/Program Files/sulum")
-  set(Sulum_SYS win)
+  set(SULUM_DIR "C:/Program Files/sulum")
+  set(SULUM_SYS win)
 endif ()
 
-file(GLOB Sulum_DIRS "${Sulum_DIR}/*")
-if (Sulum_DIRS)
-  list(GET Sulum_DIRS 0 Sulum_DIR)
-  message(STATUS "Found Sulum directory: ${Sulum_DIR}")
+file(GLOB SULUM_DIRS "${SULUM_DIR}/*")
+if (SULUM_DIRS)
+  list(GET SULUM_DIRS 0 SULUM_DIR)
+  message(STATUS "Found Sulum directory: ${SULUM_DIR}")
 endif ()
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-  set(Sulum_BITS 64)
+  set(SULUM_BITS 64)
 else ()
-  set(Sulum_BITS 32)
+  set(SULUM_BITS 32)
 endif ()
 
-set(Sulum_BIN_DIR ${Sulum_DIR}/${Sulum_SYS}${Sulum_BITS}/bin)
+set(SULUM_BIN_DIR ${SULUM_DIR}/${SULUM_SYS}${SULUM_BITS}/bin)
 
-find_path(Sulum_INCLUDE_DIR sulumcpp.h PATHS ${Sulum_DIR}/header)
-find_path(Sulum_AMPL_INCLUDE_DIR optsulum.ampl PATHS ${Sulum_BIN_DIR})
-find_library(Sulum_LIBRARY sulum20 PATHS ${Sulum_BIN_DIR})
+find_path(SULUM_INCLUDE_DIR sulumcpp.h PATHS ${SULUM_DIR}/header)
+find_path(SULUM_AMPL_INCLUDE_DIR optsulum.ampl PATHS ${SULUM_BIN_DIR})
+find_library(SULUM_LIBRARY sulum20 PATHS ${SULUM_BIN_DIR})
 
-set(Sulum_INCLUDE_DIRS ${Sulum_INCLUDE_DIR} ${Sulum_AMPL_INCLUDE_DIR})
-set(Sulum_LIBRARIES ${Sulum_LIBRARY})
+set(SULUM_INCLUDE_DIRS ${SULUM_INCLUDE_DIR} ${SULUM_AMPL_INCLUDE_DIR})
+set(SULUM_LIBRARIES ${SULUM_LIBRARY})
 
 include(FindPackageHandleStandardArgs)
-# Handle the QUIETLY and REQUIRED arguments and set LocalSolver_FOUND to TRUE
+# Handle the QUIETLY and REQUIRED arguments and set SULUM_FOUND to TRUE
 # if all listed variables are TRUE.
-find_package_handle_standard_args(SULUM DEFAULT_MSG
-  Sulum_LIBRARY Sulum_INCLUDE_DIR Sulum_AMPL_INCLUDE_DIR)
+find_package_handle_standard_args(Sulum DEFAULT_MSG
+  SULUM_LIBRARY SULUM_INCLUDE_DIR SULUM_AMPL_INCLUDE_DIR)
 
-mark_as_advanced(Sulum_LIBRARY Sulum_INCLUDE_DIR Sulum_AMPL_INCLUDE_DIR)
+mark_as_advanced(SULUM_LIBRARY SULUM_INCLUDE_DIR SULUM_AMPL_INCLUDE_DIR)
