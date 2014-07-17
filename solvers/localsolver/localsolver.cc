@@ -25,31 +25,33 @@
 
 namespace {
 // Returns the value of an expression.
-inline double GetValue(localsolver::LSExpression *e) {
-  return e->isDouble() ? e->getDoubleValue() : e->getValue();
+inline double GetValue(localsolver::LSExpression e) {
+  return e.isDouble() ? e.getDoubleValue() : e.getValue();
 }
 }
 
 namespace ampl {
 
 template <typename Term>
-ls::LSExpression *NLToLocalSolverConverter::ConvertExpr(
+ls::LSExpression NLToLocalSolverConverter::ConvertExpr(
     LinearExpr<Term> linear, NumericExpr nonlinear) {
-  ls::LSExpression *result = 0;
+  ls::LSExpression result;
   typename LinearExpr<Term>::iterator i = linear.begin(), end = linear.end();
-  if (i != end) {
+  bool has_linear_part = i != end;
+  if (has_linear_part) {
     result = model_.createExpression(ls::O_Sum);
     for (; i != end; ++i) {
-      ls::LSExpression *term = vars_[i->var_index()];
+      ls::LSExpression term = vars_[i->var_index()];
       double coef = i->coef();
       if (coef != 1)
         term = model_.createExpression(ls::O_Prod, coef, term);
-      result->addOperand(term);
+      result.addOperand(term);
     }
   }
   if (nonlinear) {
-    ls::LSExpression *nl = Visit(nonlinear);
-    result = result ? model_.createExpression(ls::O_Sum, result, nl) : nl;
+    ls::LSExpression nl = Visit(nonlinear);
+    result = has_linear_part ?
+        model_.createExpression(ls::O_Sum, result, nl) : nl;
   }
   return result;
 }
@@ -61,7 +63,7 @@ void NLToLocalSolverConverter::Convert(const Problem &p) {
   // Convert continuous variables.
   int num_continuous_vars = p.num_continuous_vars();
   for (int j = 0; j < num_continuous_vars; ++j) {
-    ls::LSExpression *var =
+    ls::LSExpression var =
         model_.createExpression(ls::O_Float, p.var_lb(j), p.var_ub(j));
     vars_[j] = var;
   }
@@ -69,7 +71,7 @@ void NLToLocalSolverConverter::Convert(const Problem &p) {
   // Convert discrete variables.
   for (int j = num_continuous_vars; j < num_vars; j++) {
     // TODO: generate several bool vars for a general integer and handle bounds
-    ls::LSExpression *var = model_.createExpression(ls::O_Bool);
+    ls::LSExpression var = model_.createExpression(ls::O_Bool);
     vars_[j] = var;
   }
 
@@ -82,7 +84,7 @@ void NLToLocalSolverConverter::Convert(const Problem &p) {
 
   // Convert constraints.
   for (int i = 0, n = p.num_cons(); i < n; ++i) {
-    ls::LSExpression *expr =
+    ls::LSExpression expr =
         ConvertExpr(p.linear_con_expr(i), p.nonlinear_con_expr(i));
     double lb = p.con_lb(i), ub = p.con_ub(i);
     if (lb <= negInfinity) {
@@ -142,15 +144,15 @@ LocalSolver::LocalSolver() : Solver("localsolver", 0, 20140710), timelimit_(0) {
       &LocalSolver::GetTimeLimit, &LocalSolver::SetTimeLimit);
 }
 
-ls::LSExpression *NLToLocalSolverConverter::VisitAllDiff(AllDiffExpr e) {
-  ls::LSExpression *result = model_.createExpression(ls::O_And);
+ls::LSExpression NLToLocalSolverConverter::VisitAllDiff(AllDiffExpr e) {
+  ls::LSExpression result = model_.createExpression(ls::O_And);
   int num_args = e.num_args();
-  std::vector<ls::LSExpression *> args(num_args);
+  std::vector<ls::LSExpression > args(num_args);
   for (int i = 0; i < num_args; ++i)
     args[i] = Visit(e[i]);
   for (int i = 0; i < num_args; ++i) {
     for (int j = i + 1; j < num_args; ++j)
-      result->addOperand(model_.createExpression(ls::O_Neq, args[i], args[j]));
+      result.addOperand(model_.createExpression(ls::O_Neq, args[i], args[j]));
   }
   return result;
 }
@@ -159,13 +161,13 @@ void LocalSolver::DoSolve(Problem &p) {
   steady_clock::time_point time = steady_clock::now();
 
   // Set up an optimization problem in LocalSolver.
-  ls::LSModel &model = *solver_.getModel();
+  ls::LSModel model = solver_.getModel();
   NLToLocalSolverConverter converter(model);
   converter.Convert(p);
   model.close();
 
   // Set options. LS requires this to be done after the model is closed.
-  ls::LSPhase &phase = *solver_.createPhase();
+  ls::LSPhase phase = solver_.createPhase();
   if (timelimit_ != 0)
     phase.setTimeLimit(timelimit_);
 
@@ -176,9 +178,9 @@ void LocalSolver::DoSolve(Problem &p) {
 
   // Convert solution status.
   int solve_code = 0;
-  ls::LSSolution *sol = solver_.getSolution();
+  ls::LSSolution sol = solver_.getSolution();
   const char *status = "unknown";
-  switch (sol->getStatus()) {
+  switch (sol.getStatus()) {
   case ls::SS_Inconsistent:
     solve_code = INFEASIBLE;
     status = "infeasible problem";
@@ -205,18 +207,18 @@ void LocalSolver::DoSolve(Problem &p) {
   p.set_solve_code(solve_code);
 
   int num_vars = p.num_vars();;
-  ls::LSExpression *const *vars = converter.vars();
+  ls::LSExpression const *vars = converter.vars();
   std::vector<double> solution(num_vars);
   int num_continuous_vars = p.num_continuous_vars();
   for (int i = 0; i < num_continuous_vars; ++i)
-    solution[i] = vars[i]->getDoubleValue();
+    solution[i] = vars[i].getDoubleValue();
   for (int i = num_continuous_vars; i < num_vars; ++i)
-    solution[i] = vars[i]->getValue();
+    solution[i] = vars[i].getValue();
   double solution_time = GetTimeAndReset(time);
 
   fmt::Writer w;
   w.write("{}: {}\n", long_name(), status);
-  w.write("{}", solver_.getStatistics()->toString());
+  w.write("{}", solver_.getStatistics().toString());
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   if (p.num_objs() != 0) {
     obj_val = GetValue(model.getObjective(0));
