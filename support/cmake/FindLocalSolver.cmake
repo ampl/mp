@@ -25,7 +25,7 @@ set(LocalSolver_INCLUDE_DIRS ${LocalSolver_INCLUDE_DIR})
 set(LocalSolver_LIBRARIES ${LocalSolver_LIBRARY})
 
 include(FindPackageHandleStandardArgs)
-# Handle the QUIETLY and REQUIRED arguments and set ODBC_FOUND to TRUE
+# Handle the QUIETLY and REQUIRED arguments and set LocalSolver_FOUND to TRUE
 # if all listed variables are TRUE.
 find_package_handle_standard_args(LocalSolver DEFAULT_MSG
   LocalSolver_LIBRARY LocalSolver_INCLUDE_DIR)

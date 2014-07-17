@@ -36,7 +36,7 @@ set(Sulum_INCLUDE_DIRS ${Sulum_INCLUDE_DIR} ${Sulum_AMPL_INCLUDE_DIR})
 set(Sulum_LIBRARIES ${Sulum_LIBRARY})
 
 include(FindPackageHandleStandardArgs)
-# Handle the QUIETLY and REQUIRED arguments and set ODBC_FOUND to TRUE
+# Handle the QUIETLY and REQUIRED arguments and set LocalSolver_FOUND to TRUE
 # if all listed variables are TRUE.
 find_package_handle_standard_args(SULUM DEFAULT_MSG
   Sulum_LIBRARY Sulum_INCLUDE_DIR Sulum_AMPL_INCLUDE_DIR)
