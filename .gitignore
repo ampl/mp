@@ -2,8 +2,6 @@
 *.o
 *.a
 *.deb
-*.dll
-*.jar
 *.so
 *.pyc
 /bin
