@@ -291,8 +291,3 @@ add_ampl_solver(ssdsolver)
 add_ampl_solver(sulum)
 
 add_subdirectory(util)
-
-install(TARGETS amplsolver
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin
-  ARCHIVE DESTINATION lib)
