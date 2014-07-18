@@ -2,15 +2,23 @@ add_ampl_test(cp-test cp-test.cc LIBS amplsolver function)
 add_dependencies(cp-test cp)
 
 if (TARGET gecode)
-  include_directories(${GECODE_SOURCE_DIR})
   add_ampl_test(gecode-test PREFIX
     ../args.cc ../expr-builder.cc ../solver-test.cc gecode-test.cc
     LIBS amplgecode-static)
 endif ()
 
+if (TARGET ilogcp)
+  include_directories(../gtest)
+  # Include the gtest source in test instead of linking with the library to
+  # avoid a problem when gtest is built with a different runtime than ilogcp.
+  add_executable(ilogcp-test
+    ../test-main.cc ../args.cc ../expr-builder.cc ../solver-test.cc
+    ../gtest/src/gtest-all.cc ilogcp-test.cc)
+  target_link_libraries(ilogcp-test amplilogcp-static)
+  add_test(NAME ilogcp-test COMMAND $<TARGET_FILE:ilogcp-test>)
+endif ()
+
 if (TARGET jacop)
-  find_package(JNI)
-  include_directories(${JNI_INCLUDE_DIRS})
   add_ampl_test(jacop-test
     ../args.cc ../expr-builder.cc ../solver-test.cc jacop-test.cc
     LIBS ampljacop-static)

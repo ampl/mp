@@ -74,7 +74,6 @@ if (TARGET amplgsl)
   add_ampl_test(gsl-test gsl-test.cc LIBS function gsl gslcblas)
 endif ()
 
-add_subdirectory(ilogcp)
 add_subdirectory(solvers)
 add_subdirectory(tables)
 add_subdirectory(util)
