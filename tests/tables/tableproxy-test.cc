@@ -48,12 +48,12 @@ class TableProxyTest : public ::testing::Test {
     std::string prog = FixBinaryPath(
         fmt::format("prog=../../bin/tableproxy{}", bits));
     strings_.push_back(prog);
-    strings_.push_back(FixBinaryPath("lib=../../tables/fullbit.dll"));
+    strings_.push_back(FixBinaryPath("lib=../../bin/fullbit.dll"));
     strings_.push_back("lib-tab");
   }
 };
 
-fun::Library TableProxyTest::lib_(FixBinaryPath("../../tables/ampltabl.dll"));
+fun::Library TableProxyTest::lib_(FixBinaryPath("../../bin/ampltabl.dll"));
 
 TEST_F(TableProxyTest, WriteTab) {
   fun::Table t("test", 1, 0, strings_);
