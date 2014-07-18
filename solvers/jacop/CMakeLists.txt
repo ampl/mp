@@ -27,6 +27,9 @@ if (jar)
     if (MSVC)
       target_link_libraries(jacop -DELAYLOAD:jvm.dll delayimp)
     endif ()
+    add_custom_command(TARGET jacop
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        lib/${JACOP_JAR} $<TARGET_FILE_DIR:jacop>)
 
     # Get jacop version.
     if (JACOP_JAR MATCHES "jacop-(.*)\\.jar")
@@ -39,6 +42,6 @@ if (jar)
     include(UseJava)
     set(CMAKE_JAVA_INCLUDE_PATH lib/${JACOP_JAR})
     add_jar(ampljacop-jar Interrupter.java SolutionListener.java
-      OUTPUT_NAME ampljacop)
+      OUTPUT_NAME ampljacop OUTPUT_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
   endif ()
 endif ()
