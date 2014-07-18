@@ -102,22 +102,6 @@ macro(add_ampl_library name)
   set_target_properties(${name} PROPERTIES SUFFIX ".dll")
 endmacro()
 
-# Change compiler flags to use the DLL runtime - applies to all the binaries
-# in the current directory.
-macro(use_dll_runtime)
-  if (MSVC)
-    foreach (var
-        CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-        CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
-        CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-        CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
-      if (${var} MATCHES "${match}")
-        string(REPLACE "/MT" "/MD" ${var} "${${var}}")
-      endif ()
-    endforeach ()
-  endif ()
-endmacro ()
-
 include(CheckCXXSourceCompiles)
 
 check_cxx_source_compiles("
