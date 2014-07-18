@@ -200,18 +200,25 @@ function(add_ampl_solver name)
   get_var(include_dirs
     add_ampl_solver_INCLUDE_DIRS ${${module_upper}_INCLUDE_DIRS})
   get_var(libraries add_ampl_solver_LIBRARIES ${${module_upper}_LIBRARIES})
-  get_var(definitions add_ampl_solver_DEFINITIONS ${${module_upper}_DEFINITIONS})
+  get_var(definitions
+    add_ampl_solver_DEFINITIONS ${${module_upper}_DEFINITIONS})
   if (add_ampl_solver_DLL_RUNTIME AND MSVC)
     set(use_dll_runtime True)
   endif ()
 
-  # Add directory name to sources.
-  set(sources )
-  foreach (src ${source_names})
-    set(sources ${sources} ${name}/${src})
-  endforeach ()
+  if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${name})
+    # Add directory name to sources.
+    set(sources )
+    foreach (src ${source_names})
+      set(sources ${sources} ${name}/${src})
+    endforeach ()
+    set(dir ${name}/)
+  else ()
+    set(sources ${source_names})
+    set(dir )
+  endif ()
   if (use_dll_runtime)
-    set(sources ${sources} util/util-all.cc)
+    set(sources ${sources} ${PROJECT_SOURCE_DIR}/solvers/util/util-all.cc)
   endif ()
 
   # Add a solver static library to be linked with the shared library and
@@ -235,11 +242,11 @@ function(add_ampl_solver name)
   endif ()
 
   # Add a solver shared library.
-  add_library(ampl${name} SHARED util/solver-c.cc)
+  add_library(ampl${name} SHARED ${PROJECT_SOURCE_DIR}/solvers/util/solver-c.cc)
   target_link_libraries(ampl${name} ${static_lib})
 
   # Add a solver executable.
-  add_executable(${name} ${name}/main.cc)
+  add_executable(${name} ${dir}main.cc)
   target_link_libraries(${name} ${static_lib})
 endfunction()
 
@@ -264,40 +271,14 @@ add_ampl_solver(ilogcp DLL_RUNTIME MODULE CPLEX
   DEFINITIONS ${CPLEX_CONCERT_DEFINITIONS} ${CPLEX_ILOCPLEX_DEFINITIONS})
 
 # Copy CPLEX DLL to the target directory.
-function(copy_cplex_dll target)
-  if (CPLEX_DLL)
-    get_filename_component(CPLEX_DLL_NAME "${CPLEX_DLL}" NAME)
-    add_custom_command(TARGET ${target}
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "${CPLEX_DLL}" "$<TARGET_FILE_DIR:${target}>/${CPLEX_DLL_NAME}")
-  endif ()
-endfunction()
-copy_cplex_dll(ilogcp)
-
-file(GLOB jar jacop/lib/jacop-*.jar)
-if (jar)
-  get_filename_component(jar ${jar} NAME)
-  set(JACOP_JAR ${jar} CACHE STRING "JaCoP JAR file name.")
-  if (CMAKE_SIZEOF_VOID_P EQUAL 4)
-    # Set CMAKE_SYSTEM_PROCESSOR to make sure FindJNI finds the correct
-    # AWT and JVM libraries.
-    set(CMAKE_SYSTEM_PROCESSOR i586)
-  endif ()
-  find_package(JNI)
-  find_package(Java)
-  if (JNI_FOUND AND JAVA_FOUND)
-    # Add libmawt.so to JNI_LIBRARIES to avoid linkage errors on Ubuntu 10.04.
-    foreach (arch amd64 i386)
-      set(LIBMAWT_PATH
-        /usr/lib/jvm/java-6-openjdk/jre/lib/${arch}/xawt/libmawt.so)
-      if (EXISTS ${LIBMAWT_PATH})
-        set(JNI_LIBRARIES ${JNI_LIBRARIES} ${LIBMAWT_PATH})
-        break ()
-      endif ()
-    endforeach ()
-    add_subdirectory(jacop)
-  endif ()
+if (CPLEX_DLL)
+  get_filename_component(CPLEX_DLL_NAME "${CPLEX_DLL}" NAME)
+  add_custom_command(TARGET ilogcp
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${CPLEX_DLL}" "$<TARGET_FILE_DIR:ilogcp>/${CPLEX_DLL_NAME}")
 endif ()
+
+add_subdirectory(jacop)
 
 add_ampl_solver(localsolver)
 add_subdirectory(path)

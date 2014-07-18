@@ -1,36 +1,44 @@
 # CMake build script for the AMPL/JaCoP solver.
 
-# Allow "long long" because it it used by JNI.
-include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag(-Wno-long-long HAVE_WNO_LONG_LONG)
-if (HAVE_WNO_LONG_LONG)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-long-long")
+file(GLOB jar lib/jacop-*.jar)
+if (jar)
+  get_filename_component(jar ${jar} NAME)
+  set(JACOP_JAR ${jar} CACHE STRING "JaCoP JAR file name.")
+  if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+    # Set CMAKE_SYSTEM_PROCESSOR to make sure FindJNI finds the correct
+    # AWT and JVM libraries.
+    set(CMAKE_SYSTEM_PROCESSOR i586)
+  endif ()
+  find_package(JNI)
+  find_package(Java)
+  if (JNI_FOUND AND JAVA_FOUND)
+    # Add libmawt.so to JNI_LIBRARIES to avoid linkage errors on Ubuntu 10.04.
+    foreach (arch amd64 i386)
+      set(LIBMAWT_PATH
+        /usr/lib/jvm/java-6-openjdk/jre/lib/${arch}/xawt/libmawt.so)
+      if (EXISTS ${LIBMAWT_PATH})
+        set(JNI_LIBRARIES ${JNI_LIBRARIES} ${LIBMAWT_PATH})
+        break ()
+      endif ()
+    endforeach ()
+
+    add_ampl_solver(jacop jacop.cc jacop.h java.cc java.h
+      INCLUDE_DIRS ${JNI_INCLUDE_DIRS} LIBRARIES ${JNI_LIBRARIES})
+    if (MSVC)
+      target_link_libraries(jacop /DELAYLOAD:jvm.dll delayimp)
+    endif ()
+
+    # Get jacop version.
+    if (JACOP_JAR MATCHES "jacop-(.*)\\.jar")
+      set(JACOP_VERSION ${CMAKE_MATCH_1})
+    else ()
+      message(FATAL_ERROR "Cannot determine JaCoP version.")
+    endif ()
+    target_compile_definitions(ampljacop-static PUBLIC JACOP_VERSION=\"${JACOP_VERSION}\")
+    
+    include(UseJava)
+    set(CMAKE_JAVA_INCLUDE_PATH lib/${JACOP_JAR})
+    add_jar(ampljacop-jar Interrupter.java SolutionListener.java
+      OUTPUT_NAME ampljacop)
+  endif ()
 endif ()
-
-if (JACOP_JAR MATCHES "jacop-(.*)\\.jar")
-  set(JACOP_VERSION ${CMAKE_MATCH_1})
-else ()
-  message(FATAL_ERROR "Cannot determine JaCoP version.")
-endif ()
-
-add_definitions(-DJACOP_VERSION="${JACOP_VERSION}")
-
-add_library(ampljacop-static jacop.cc jacop.h java.cc java.h)
-target_link_libraries(ampljacop-static util ${JNI_LIBRARIES})
-add_dependencies(ampljacop-static arith_h)
-include_directories(${JNI_INCLUDE_DIRS})
-
-add_library(ampljacop-shared SHARED ../util/solver-c.cc)
-set_target_properties(ampljacop-shared PROPERTIES OUTPUT_NAME ampljacop)
-target_link_libraries(ampljacop-shared ampljacop-static)
-
-add_executable(jacop main.cc)
-target_link_libraries(jacop ampljacop-static)
-if (MSVC)
-  set(CMAKE_EXE_LINKER_FLAGS "/DELAYLOAD:jvm.dll")
-  target_link_libraries(jacop delayimp)
-endif ()
-
-include(UseJava)
-set(CMAKE_JAVA_INCLUDE_PATH lib/${JACOP_JAR})
-add_jar(ampljacop Interrupter.java SolutionListener.java)
