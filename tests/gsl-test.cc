@@ -244,7 +244,7 @@ class GSLTest : public ::testing::Test {
 GSLTest::Stats GSLTest::stats_;
 
 const FunctionInfo GSLTest::info;
-fun::Library GSLTest::lib_(FixBinaryPath("../solvers/amplgsl/amplgsl.dll"));
+fun::Library GSLTest::lib_(FixBinaryPath("../bin/amplgsl.dll"));
 gsl_rng *GSLTest::rng_;
 
 template <typename F>
