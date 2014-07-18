@@ -25,7 +25,7 @@ if (jar)
     add_ampl_solver(jacop jacop.cc jacop.h java.cc java.h
       INCLUDE_DIRS ${JNI_INCLUDE_DIRS} LIBRARIES ${JNI_LIBRARIES})
     if (MSVC)
-      target_link_libraries(jacop /DELAYLOAD:jvm.dll delayimp)
+      target_link_libraries(jacop -DELAYLOAD:jvm.dll delayimp)
     endif ()
 
     # Get jacop version.
