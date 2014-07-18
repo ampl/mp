@@ -21,6 +21,8 @@
  */
 
 #include "localsolver.h"
+
+#include <cmath>
 #include "solvers/util/clock.h"
 
 namespace {
@@ -121,6 +123,11 @@ void NLToLocalSolverConverter::Convert(const Problem &p) {
     }
     distinct(problem_, args, icl_);
   }*/
+}
+
+ls::LSExpression NLToLocalSolverConverter::VisitLog10(UnaryExpr e) {
+  return model_.createExpression(
+      ls::O_Div, ConvertUnary(ls::O_Log, e), std::log(10.0));
 }
 
 LocalSolver::LocalSolver() : Solver("localsolver", 0, 20140710), timelimit_(0) {
