@@ -8,6 +8,7 @@
 
 if (UNIX)
   set(LOCALSOLVER_DIR /opt)
+  set(LOCALSOLVER_LIB_NAME localsolver)
 else ()
   set(PROGRAM_FILES_DIR "C:/Program Files")
   set(PROGRAM_FILES_X86_DIR "${PROGRAM_FILES_DIR} (x86)")
@@ -15,6 +16,7 @@ else ()
     set(PROGRAM_FILES_DIR ${PROGRAM_FILES_X86_DIR})
   endif ()
   set(LOCALSOLVER_DIR ${PROGRAM_FILES_DIR})
+  set(LOCALSOLVER_LIB_NAME localsolver.dll)
 endif ()
 
 file(GLOB LOCALSOLVER_DIRS "${LOCALSOLVER_DIR}/localsolver*")
@@ -23,8 +25,10 @@ if (LOCALSOLVER_DIRS)
   message(STATUS "Found LocalSolver directory: ${LOCALSOLVER_DIR}")
 endif ()
 
-find_path(LOCALSOLVER_INCLUDE_DIR localsolver.h PATHS ${LOCALSOLVER_DIR}/include)
-find_library(LOCALSOLVER_LIBRARY localsolver PATHS ${LOCALSOLVER_DIR}/bin)
+find_path(LOCALSOLVER_INCLUDE_DIR
+  localsolver.h PATHS ${LOCALSOLVER_DIR}/include)
+find_library(LOCALSOLVER_LIBRARY
+  ${LOCALSOLVER_LIB_NAME} PATHS ${LOCALSOLVER_DIR}/bin)
 
 set(LOCALSOLVER_INCLUDE_DIRS ${LOCALSOLVER_INCLUDE_DIR})
 set(LOCALSOLVER_LIBRARIES ${LOCALSOLVER_LIBRARY})
