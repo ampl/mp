@@ -105,7 +105,7 @@ public:
   }
   ls::LSExpression VisitLog10(UnaryExpr e) {
     return model_.createExpression(
-        ls::O_Div, ConvertUnary(ls::O_Log, e), M_LN10);
+        ls::O_Div, ConvertUnary(ls::O_Log, e), std::log(10));
   }
   ls::LSExpression VisitLog(UnaryExpr e) {
     return ConvertUnary(ls::O_Log, e);
