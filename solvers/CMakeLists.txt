@@ -208,7 +208,7 @@ function(add_ampl_solver name)
   set(static_lib ampl${name}-static)
   add_library(${static_lib} ${sources})
   target_include_directories(${static_lib} PUBLIC ${include_dirs})
-  target_link_libraries(${static_lib} util ${libraries})
+  target_link_libraries(${static_lib} ${libraries})
   target_compile_options(${static_lib} PUBLIC ${definitions})
   add_dependencies(${static_lib} arith_h)
 
