@@ -7,11 +7,16 @@
 #  SULUM_LIBRARIES - The libraries needed to use Sulum
 
 if (UNIX)
-  set(SULUM_DIR /opt/sulum)
   set(SULUM_SYS linux)
+  set(SULUM_DIR /opt/sulum)
 else ()
-  set(SULUM_DIR "C:/Program Files/sulum")
   set(SULUM_SYS win)
+  set(PROGRAM_FILES_DIR "C:/Program Files")
+  set(PROGRAM_FILES_X86_DIR "${PROGRAM_FILES_DIR} (x86)")
+  if (CMAKE_SIZEOF_VOID_P EQUAL 4 AND EXISTS ${PROGRAM_FILES_X86_DIR})
+    set(PROGRAM_FILES_DIR ${PROGRAM_FILES_X86_DIR})
+  endif ()
+  set(SULUM_DIR ${PROGRAM_FILES_DIR}/sulum)
 endif ()
 
 file(GLOB SULUM_DIRS "${SULUM_DIR}/*")
