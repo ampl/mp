@@ -151,10 +151,21 @@ endfunction ()
 #   add_ampl_solver(<name> [DLL_RUNTIME] [MODULE module]
 #     [source...] [INCLUDE_DIRS dir...] [LIBRARIES lib...])
 #
-# Sources are relative to the solver diretory and the default list of sources
-# is <name>.cc, <name>.h.
 # If DLL_RUNTIME option is given the solver is linked with DLL MSVC runtime
 # on Windows.
+#
+# The MODULE option specifies the CMake module name used to check for solver
+# libraries. If it is omitted, add_ampl_solver looks in support/cmake for
+# a module with a name matching Find<name>.cmake (case-insensitive).
+#
+# Sources are relative to the solver diretory. If no sources are passed to
+# add_ampl_solver, it uses the default list of sources <name>.cc, <name>.h.
+#
+# INCLUDE_DIRS gives a list of solver include directories. If omitted,
+# add_ampl_solver uses <module>_INCLUDE_DIRS.
+#
+# LIBRARIES gives a list of solver libraries. If omitted, add_ampl_solver
+# uses <module>_LIBRARIES.
 function(add_ampl_solver name)
   string(TOUPPER ${name} name_upper)
 
