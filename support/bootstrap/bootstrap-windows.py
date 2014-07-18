@@ -1,7 +1,7 @@
 # Set up build environment on 64-bit Windows.
 
 from __future__ import print_function
-import os, shutil
+import os, shutil, tempfile
 from bootstrap import *
 from glob import glob
 from subprocess import check_call, check_output
@@ -77,13 +77,18 @@ if not os.path.exists(r'\Program Files\Java\jdk1.7.0_55'):
 # Install LocalSolver.
 for bits in [32, 64]:
   suffix = ' (x86)' if bits == 32 else ''
-  install_dir = r'C:\Program Files{}\localsolver_4_0'.format(suffix)
+  install_dir = r'C:\Program Files{}\localsolver_4_5'.format(suffix)
   if os.path.exists(install_dir):
     continue
-  with download(
-      'http://www.localsolver.com/downloads/' +
-      'LocalSolver_4_5_20140715_Win{}.exe'.format(bits)) as f:
-    check_call([sevenzip, 'x', '-o' + install_dir, f])
+  try:
+    tempdir = tempfile.mkdtemp()
+    with download(
+        'http://www.localsolver.com/downloads/' +
+        'LocalSolver_4_5_20140715_Win{}.exe'.format(bits)) as f:
+      check_call([sevenzip, 'x', '-o' + tempdir, f])
+    shutil.move(os.path.join(tempdir, '$_OUTDIR'), install_dir)
+  finally:
+    shutil.rmtree(tempdir)
 
 # Copy optional dependencies.
 opt_dir = r'opt\win64'
