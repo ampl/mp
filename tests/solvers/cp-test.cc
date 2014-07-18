@@ -52,7 +52,7 @@ class CPTest : public ::testing::Test {
 };
 
 const FunctionInfo CPTest::info;
-fun::Library CPTest::lib_(FixBinaryPath("../../solvers/cp/cp.dll"));
+fun::Library CPTest::lib_(FixBinaryPath("../../bin/cp.dll"));
 
 TEST_F(CPTest, NoLibErrors) {
   EXPECT_EQ("", lib_.error());

@@ -46,6 +46,7 @@ if (APPLE)
 endif ()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag(-std=c++11 HAVE_STD_CPP11_FLAG)
