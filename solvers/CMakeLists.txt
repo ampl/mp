@@ -215,7 +215,7 @@ function(add_ampl_solver name)
   if (use_dll_runtime)
     if (NOT TARGET amplsolver-dynrt)
       add_library(amplsolver-dynrt ${ASL_SOURCES})
-      # TODO: set compile flags
+      target_link_libraries(amplsolver-dynrt /MD)
       add_dependencies(amplsolver-dynrt arith_h)
     endif ()
     target_link_libraries(${static_lib} amplsolver-dynrt)
