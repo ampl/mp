@@ -1,6 +1,6 @@
 The solver "gecode" uses Gecode (http://www.gecode.org/) to solve
 constraint programming problems.  Solver binaries are available for
-download at https://code.google.com/p/ampl/downloads/list?q=gecode.
+download from http://ampl.com/products/solvers/open-source#gecode.
 
 Normally the gecode solver is invoked by AMPL's solve command,
 which gives the invocation
