@@ -556,26 +556,27 @@ class PiecewiseLinearExpr : public NumericExpr {
  public:
   PiecewiseLinearExpr() {}
 
-  // Returns the number of slopes in this term.
-  int num_slopes() const {
-    assert(expr_->L.p->n >= 1);
-    return expr_->L.p->n;
-  }
-
   // Returns the number of breakpoints in this term.
   int num_breakpoints() const {
     return num_slopes() - 1;
   }
 
   // Returns the number of slopes in this term.
-  double slope(int index) const {
-    assert(index >= 0 && index < num_slopes());
-    return expr_->L.p->bs[2 * index];
+  int num_slopes() const {
+    assert(expr_->L.p->n >= 1);
+    return expr_->L.p->n;
   }
 
+  // Returns a breakpoint with the specified index.
   double breakpoint(int index) const {
     assert(index >= 0 && index < num_breakpoints());
     return expr_->L.p->bs[2 * index + 1];
+  }
+
+  // Returns a slope with the specified index.
+  double slope(int index) const {
+    assert(index >= 0 && index < num_slopes());
+    return expr_->L.p->bs[2 * index];
   }
 
   int var_index() const {
