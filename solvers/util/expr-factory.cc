@@ -320,8 +320,8 @@ ExprFactory::~ExprFactory() {
 }
 
 template <typename ExprT>
-ExprT ExprFactory::CreateExpr(int opcode, NumericExpr lhs, NumericExpr rhs) {
-  expr *e = reinterpret_cast<expr*>(mem_ASL(asl_, sizeof(expr)));
+ExprT ExprFactory::MakeExpr(int opcode, NumericExpr lhs, NumericExpr rhs) {
+  expr *e = Allocate<expr>();
   e->op = reinterpret_cast<efunc*>(r_ops_[opcode]);
   e->L.e = lhs.expr_;
   e->R.e = rhs.expr_;
@@ -330,36 +330,39 @@ ExprT ExprFactory::CreateExpr(int opcode, NumericExpr lhs, NumericExpr rhs) {
   return Expr::Create<ExprT>(e);
 }
 
-UnaryExpr ExprFactory::CreateUnaryExpr(int opcode, NumericExpr arg) {
-  if (Expr::INFO[opcode].kind != Expr::UNARY)
-    throw Error("invalid unary expression code {}", opcode);
-  UnaryExpr expr = CreateExpr<UnaryExpr>(opcode, arg, NumericExpr());
+UnaryExpr ExprFactory::MakeUnaryExpr(int opcode, NumericExpr arg) {
+  CheckOpCode(opcode, Expr::UNARY, "unary");
+  UnaryExpr expr = MakeExpr<UnaryExpr>(opcode, arg, NumericExpr());
   expr.expr_->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
   return expr;
 }
 
-BinaryExpr ExprFactory::CreateBinaryExpr(
+BinaryExpr ExprFactory::MakeBinaryExpr(
     int opcode, NumericExpr lhs, NumericExpr rhs) {
-  if (Expr::INFO[opcode].kind != Expr::BINARY)
-    throw Error("invalid binary expression code {}", opcode);
-  BinaryExpr expr = CreateExpr<BinaryExpr>(opcode, lhs, rhs);
+  CheckOpCode(opcode, Expr::BINARY, "binary");
+  BinaryExpr expr = MakeExpr<BinaryExpr>(opcode, lhs, rhs);
   expr.expr_->dL = 1;
   expr.expr_->dR = DVALUE[opcode];  // for PLUS, MINUS, REM
   return expr;
 }
 
-NumericConstant ExprFactory::CreateNumericConstant(double value) {
-  expr_n *e = reinterpret_cast<expr_n*>(mem_ASL(asl_, asl_->i.size_expr_n_));
-  e->op = reinterpret_cast<efunc_n*>(r_ops_[OPNUM]);
-  e->v = value;
-  return Expr::Create<NumericConstant>(reinterpret_cast<expr*>(e));
+VarArgExpr ExprFactory::MakeVarArgExpr(
+    int opcode, int num_args, NumericExpr *args) {
+  assert(num_args >= 0);
+  CheckOpCode(opcode, Expr::VARARG, "vararg");
+  expr_va *result = Allocate<expr_va>();
+  result->op = reinterpret_cast<efunc *>(r_ops_[opcode]);
+  de *d = result->L.d = Allocate<de>(num_args * sizeof(de) + sizeof(expr*));
+  for (int i = 0; i < num_args; ++i)
+    d[i].e = args[i].expr_;
+  d[num_args].e = 0;
+  return Expr::Create<VarArgExpr>(reinterpret_cast<expr*>(result));
 }
 
-Variable ExprFactory::CreateVariable(int var_index) {
+Variable ExprFactory::MakeVariable(int var_index) {
   assert(var_index >= 0 && var_index < asl_->i.n_var_);
   return Expr::Create<Variable>(
       reinterpret_cast<expr*>(reinterpret_cast<ASL_fg*>(asl_)->I.var_e_
           + var_index));
 }
 }
-

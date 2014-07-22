@@ -72,8 +72,26 @@ class ExprFactory : Noncopyable {
   ASL *asl_;
   efunc *r_ops_[N_OPS];
 
+  static void CheckOpCode(int opcode, Expr::Kind kind, const char *expr_name) {
+    if (Expr::INFO[opcode].kind != kind)
+      throw Error("invalid {} expression code {}", expr_name, opcode);
+  }
+
   template <typename ExprT>
-  ExprT CreateExpr(int opcode, NumericExpr lhs, NumericExpr rhs);
+  ExprT MakeExpr(int opcode, NumericExpr lhs, NumericExpr rhs);
+
+  template <typename T>
+  T *Allocate(unsigned size = sizeof(T)) {
+    assert(size >= sizeof(T));
+    return reinterpret_cast<T*>(mem_ASL(asl_, size));
+  }
+
+  template <typename ExprT>
+  ExprT MakeConstant(double value);
+
+  // Make sum or count expression.
+  template <typename Arg>
+  BasicSumExpr<Arg> MakeSumExpr(int opcode, int num_args, Arg *args);
 
  public:
   // Constructs an ExprFactory object.
@@ -81,11 +99,49 @@ class ExprFactory : Noncopyable {
   ExprFactory(const NLHeader &h, const char *stub, int flags = 0);
   ~ExprFactory();
 
-  UnaryExpr CreateUnaryExpr(int opcode, NumericExpr arg);
-  BinaryExpr CreateBinaryExpr(int opcode, NumericExpr lhs, NumericExpr rhs);
-  NumericConstant CreateNumericConstant(double value);
-  Variable CreateVariable(int var_index);
+  UnaryExpr MakeUnaryExpr(int opcode, NumericExpr arg);
+  BinaryExpr MakeBinaryExpr(int opcode, NumericExpr lhs, NumericExpr rhs);
+  VarArgExpr MakeVarArgExpr(int opcode, int num_args, NumericExpr *args);
+
+  SumExpr MakeSumExpr(int num_args, NumericExpr *args) {
+    return MakeSumExpr<NumericExpr>(OPSUMLIST, num_args, args);
+  }
+
+  CountExpr MakeCountExpr(int num_args, LogicalExpr *args) {
+    return MakeSumExpr<LogicalExpr>(OPCOUNT, num_args, args);
+  }
+
+  NumericConstant MakeNumericConstant(double value) {
+    return MakeConstant<NumericConstant>(value);
+  }
+
+  Variable MakeVariable(int var_index);
+
+  LogicalConstant MakeLogicalConstant(bool value) {
+    return MakeConstant<LogicalConstant>(value);
+  }
 };
+
+template <typename ExprT>
+ExprT ExprFactory::MakeConstant(double value) {
+  expr_n *result = Allocate<expr_n>(asl_->i.size_expr_n_);
+  result->op = reinterpret_cast<efunc_n*>(r_ops_[OPNUM]);
+  result->v = value;
+  return Expr::Create<ExprT>(reinterpret_cast<expr*>(result));
+}
+
+template <typename Arg>
+BasicSumExpr<Arg> ExprFactory::MakeSumExpr(int opcode, int num_args, Arg *args) {
+  assert(num_args >= 0);
+  expr *result = Allocate<expr>(
+      sizeof(expr) - sizeof(double) + num_args * sizeof(expr*));
+  result->op = r_ops_[opcode];
+  expr **arg_ptrs = result->L.ep = reinterpret_cast<expr**>(&result->dR);
+  for (int i = 0; i < num_args; ++i)
+    arg_ptrs[i] = args[i].expr_;
+  result->R.ep = arg_ptrs + num_args;
+  return Expr::Create< BasicSumExpr<Arg> >(result);
+}
 }
 
 #endif  // SOLVERS_UTIL_EXPR_FACTORY_H_

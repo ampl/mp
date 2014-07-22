@@ -605,62 +605,121 @@ TEST(ExprFactoryTest, ASLBuilderAllowCLP) {
   CheckASL(*expected, *actual, false);
 }
 
-TEST(ExprFactoryTest, CreateUnaryExpr) {
+TEST(ExprFactoryTest, MakeUnaryExpr) {
   const int opcodes[] = {
       FLOOR, CEIL, ABS, OPUMINUS, OP_tanh, OP_tan, OP_sqrt,
       OP_sinh, OP_sin, OP_log10, OP_log, OP_exp, OP_cosh, OP_cos,
       OP_atanh, OP_atan, OP_asinh, OP_asin, OP_acosh, OP_acos, OP2POW
   };
   ExprFactory ef(MakeHeader(), "");
-  ampl::NumericExpr arg = ef.CreateNumericConstant(42);
+  ampl::NumericExpr arg = ef.MakeNumericConstant(42);
   for (size_t i = 0, n = sizeof(opcodes) / sizeof(*opcodes); i < n; ++i) {
-    ampl::UnaryExpr expr = ef.CreateUnaryExpr(opcodes[i], arg);
+    ampl::UnaryExpr expr = ef.MakeUnaryExpr(opcodes[i], arg);
     EXPECT_EQ(opcodes[i], expr.opcode());
     EXPECT_EQ(arg, expr.arg());
   }
-  EXPECT_THROW_MSG(ef.CreateUnaryExpr(OPPLUS, arg), ampl::Error,
+  EXPECT_THROW_MSG(ef.MakeUnaryExpr(OPPLUS, arg), ampl::Error,
     fmt::format("invalid unary expression code {}", OPPLUS));
 }
 
-TEST(ExprFactoryTest, CreateBinaryExpr) {
+TEST(ExprFactoryTest, MakeBinaryExpr) {
   const int opcodes[] = {
       OPPLUS, OPMINUS, OPMULT, OPDIV, OPREM, OPPOW, OPLESS, OP_atan2,
       OPintDIV, OPprecision, OPround, OPtrunc, OP1POW, OPCPOW
   };
   ExprFactory ef(MakeHeader(), "");
-  ampl::NumericExpr lhs = ef.CreateNumericConstant(1);
-  ampl::NumericExpr rhs = ef.CreateNumericConstant(2);
+  ampl::NumericExpr lhs = ef.MakeNumericConstant(1);
+  ampl::NumericExpr rhs = ef.MakeNumericConstant(2);
   for (size_t i = 0, n = sizeof(opcodes) / sizeof(*opcodes); i < n; ++i) {
-    ampl::BinaryExpr expr = ef.CreateBinaryExpr(opcodes[i], lhs, rhs);
+    ampl::BinaryExpr expr = ef.MakeBinaryExpr(opcodes[i], lhs, rhs);
     EXPECT_EQ(opcodes[i], expr.opcode());
     EXPECT_EQ(lhs, expr.lhs());
     EXPECT_EQ(rhs, expr.rhs());
   }
-  EXPECT_THROW_MSG(ef.CreateBinaryExpr(OPUMINUS, lhs, rhs), ampl::Error,
+  EXPECT_THROW_MSG(ef.MakeBinaryExpr(OPUMINUS, lhs, rhs), ampl::Error,
     fmt::format("invalid binary expression code {}", OPUMINUS));
 }
 
-TEST(ExprFactoryTest, CreateNumericConstant) {
+TEST(ExprFactoryTest, MakeVarArgExpr) {
+  const int opcodes[] = {MINLIST, MAXLIST};
+  ExprFactory ef(MakeHeader(), "");
+  enum {NUM_ARGS = 3};
+  ampl::NumericExpr args[NUM_ARGS] = {
+      ef.MakeNumericConstant(1),
+      ef.MakeNumericConstant(2),
+      ef.MakeNumericConstant(3)
+  };
+  for (size_t i = 0, n = sizeof(opcodes) / sizeof(*opcodes); i < n; ++i) {
+    ampl::VarArgExpr expr = ef.MakeVarArgExpr(opcodes[i], NUM_ARGS, args);
+    EXPECT_EQ(opcodes[i], expr.opcode());
+    int arg_index = 0;
+    for (ampl::VarArgExpr::iterator
+        i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
+      EXPECT_EQ(args[arg_index], *i);
+    }
+  }
+  EXPECT_THROW_MSG(ef.MakeVarArgExpr(OPUMINUS, NUM_ARGS, args), ampl::Error,
+          fmt::format("invalid vararg expression code {}", OPUMINUS));
+  EXPECT_DEBUG_DEATH(ef.MakeVarArgExpr(MINLIST, -1, args);, "Assertion");  // NOLINT(*)
+}
+
+TEST(ExprFactoryTest, SumExpr) {
+  ExprFactory ef(MakeHeader(), "");
+  enum {NUM_ARGS = 3};
+  ampl::NumericExpr args[NUM_ARGS] = {
+      ef.MakeNumericConstant(1),
+      ef.MakeNumericConstant(2),
+      ef.MakeNumericConstant(3)
+  };
+  ampl::SumExpr expr = ef.MakeSumExpr(NUM_ARGS, args);
+  EXPECT_EQ(OPSUMLIST, expr.opcode());
+  int arg_index = 0;
+  for (ampl::SumExpr::iterator
+      i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
+    EXPECT_EQ(args[arg_index], *i);
+  }
+  EXPECT_DEBUG_DEATH(ef.MakeSumExpr(-1, args);, "Assertion");  // NOLINT(*)
+}
+
+TEST(ExprFactoryTest, CountExpr) {
+  ExprFactory ef(MakeHeader(), "");
+  enum {NUM_ARGS = 3};
+  ampl::LogicalExpr args[NUM_ARGS] = {
+      ef.MakeLogicalConstant(1),
+      ef.MakeLogicalConstant(2),
+      ef.MakeLogicalConstant(3)
+  };
+  ampl::CountExpr expr = ef.MakeCountExpr(NUM_ARGS, args);
+  EXPECT_EQ(OPCOUNT, expr.opcode());
+  int arg_index = 0;
+  for (ampl::CountExpr::iterator
+      i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
+    EXPECT_EQ(args[arg_index], *i);
+  }
+  EXPECT_DEBUG_DEATH(ef.MakeCountExpr(-1, args);, "Assertion");  // NOLINT(*)
+}
+
+TEST(ExprFactoryTest, MakeNumericConstant) {
   NLHeader header = {};
   header.num_vars = header.num_objs = 1;
   ExprFactory ef(MakeHeader(), "");
-  ampl::NumericConstant expr = ef.CreateNumericConstant(42);
+  ampl::NumericConstant expr = ef.MakeNumericConstant(42);
   EXPECT_EQ(OPNUM, expr.opcode());
   EXPECT_EQ(42.0, expr.value());
 }
 
-TEST(ExprFactoryTest, CreateVariable) {
+TEST(ExprFactoryTest, MakeVariable) {
   NLHeader header = {};
   header.num_vars = 10;
   header.num_objs = 1;
   ExprFactory ef(header, "");
-  ampl::Variable var = ef.CreateVariable(0);
+  ampl::Variable var = ef.MakeVariable(0);
   EXPECT_EQ(OPVARVAL, var.opcode());
   EXPECT_EQ(0, var.index());
-  var = ef.CreateVariable(9);
+  var = ef.MakeVariable(9);
   EXPECT_EQ(9, var.index());
-  EXPECT_DEBUG_DEATH(ef.CreateVariable(-1);, "Assertion");  // NOLINT(*)
-  EXPECT_DEBUG_DEATH(ef.CreateVariable(10);, "Assertion");  // NOLINT(*)
+  EXPECT_DEBUG_DEATH(ef.MakeVariable(-1);, "Assertion");  // NOLINT(*)
+  EXPECT_DEBUG_DEATH(ef.MakeVariable(10);, "Assertion");  // NOLINT(*)
 }
 
 // TODO: test f_read

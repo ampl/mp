@@ -500,16 +500,15 @@ class VarArgExpr : public NumericExpr {
   }
 };
 
-// A sum expression.
-// Example: sum{i in I} x[i], where I is a set and x is a variable.
-class SumExpr : public NumericExpr {
+template <typename Arg>
+class BasicSumExpr : public NumericExpr {
  public:
-  SumExpr() {}
+	BasicSumExpr() {}
 
   // Returns the number of arguments (terms).
   int num_args() const { return static_cast<int>(expr_->R.ep - expr_->L.ep); }
 
-  typedef ArrayIterator<NumericExpr> iterator;
+  typedef ArrayIterator<Arg> iterator;
 
   iterator begin() const {
     return iterator(expr_->L.ep);
@@ -520,28 +519,14 @@ class SumExpr : public NumericExpr {
   }
 };
 
+// A sum expression.
+// Example: sum{i in I} x[i], where I is a set and x is a variable.
+typedef BasicSumExpr<NumericExpr> SumExpr;
 AMPL_SPECIALIZE_IS(SumExpr, OPSUMLIST)
 
 // A count expression.
 // Example: count{i in I} (x[i] >= 0), where I is a set and x is a variable.
-class CountExpr : public NumericExpr {
- public:
-  CountExpr() {}
-
-  // Returns the number of arguments.
-  int num_args() const { return static_cast<int>(expr_->R.ep - expr_->L.ep); }
-
-  typedef ArrayIterator<LogicalExpr> iterator;
-
-  iterator begin() const {
-    return iterator(expr_->L.ep);
-  }
-
-  iterator end() const {
-    return iterator(expr_->R.ep);
-  }
-};
-
+typedef BasicSumExpr<LogicalExpr> CountExpr;
 AMPL_SPECIALIZE_IS(CountExpr, OPCOUNT)
 
 // An if-then-else expression.

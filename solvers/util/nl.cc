@@ -192,13 +192,13 @@ NumericExpr NLReader::ReadExpr(TextReader &reader) {
     // TODO: implement string
     break;
   case 's':
-    expr = factory_->CreateNumericConstant(reader.ReadShort());
+    expr = factory_->MakeNumericConstant(reader.ReadShort());
     break;
   case 'l':
-    expr = factory_->CreateNumericConstant(reader.ReadLong());
+    expr = factory_->MakeNumericConstant(reader.ReadLong());
     break;
   case 'n':
-    expr = factory_->CreateNumericConstant(reader.ReadDouble());
+    expr = factory_->MakeNumericConstant(reader.ReadDouble());
     break;
   case 'o':
     // TODO: implement expression
@@ -208,7 +208,7 @@ NumericExpr NLReader::ReadExpr(TextReader &reader) {
     int var_index = reader.ReadUInt();
     if (var_index >= header_.num_vars)
       reader.ReportParseError("variable index {} is out of bounds", var_index);
-    expr = factory_->CreateVariable(var_index);
+    expr = factory_->MakeVariable(var_index);
     break;
   }
   default:
