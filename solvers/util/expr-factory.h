@@ -114,6 +114,9 @@ class ExprFactory : Noncopyable {
   IfExpr MakeIf(LogicalExpr condition,
       NumericExpr true_expr, NumericExpr false_expr);
 
+  PiecewiseLinearExpr MakePiecewiseLinear(int num_breakpoints,
+      const double *breakpoints, const double *slopes, Variable var);
+
   NumericConstant MakeNumericConstant(double value) {
     return MakeConstant<NumericConstant>(value);
   }

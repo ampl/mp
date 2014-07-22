@@ -29,6 +29,8 @@
 using ampl::ExprFactory;
 using ampl::NLHeader;
 using ampl::internal::ASLBuilder;
+using ampl::LogicalExpr;
+using ampl::NumericExpr;
 
 bool operator==(const cde &lhs, const cde &rhs) {
   return lhs.e == rhs.e && lhs.d == rhs.d && lhs.zaplen == rhs.zaplen;
@@ -612,7 +614,7 @@ TEST(ExprFactoryTest, MakeUnary) {
       OP_atanh, OP_atan, OP_asinh, OP_asin, OP_acosh, OP_acos, OP2POW
   };
   ExprFactory ef(MakeHeader(), "");
-  ampl::NumericExpr arg = ef.MakeNumericConstant(42);
+  NumericExpr arg = ef.MakeNumericConstant(42);
   for (size_t i = 0, n = sizeof(opcodes) / sizeof(*opcodes); i < n; ++i) {
     ampl::UnaryExpr expr = ef.MakeUnary(opcodes[i], arg);
     EXPECT_EQ(opcodes[i], expr.opcode());
@@ -628,8 +630,8 @@ TEST(ExprFactoryTest, MakeBinary) {
       OPintDIV, OPprecision, OPround, OPtrunc, OP1POW, OPCPOW
   };
   ExprFactory ef(MakeHeader(), "");
-  ampl::NumericExpr lhs = ef.MakeNumericConstant(1);
-  ampl::NumericExpr rhs = ef.MakeNumericConstant(2);
+  NumericExpr lhs = ef.MakeNumericConstant(1);
+  NumericExpr rhs = ef.MakeNumericConstant(2);
   for (size_t i = 0, n = sizeof(opcodes) / sizeof(*opcodes); i < n; ++i) {
     ampl::BinaryExpr expr = ef.MakeBinary(opcodes[i], lhs, rhs);
     EXPECT_EQ(opcodes[i], expr.opcode());
@@ -644,7 +646,7 @@ TEST(ExprFactoryTest, MakeVarArg) {
   const int opcodes[] = {MINLIST, MAXLIST};
   ExprFactory ef(MakeHeader(), "");
   enum {NUM_ARGS = 3};
-  ampl::NumericExpr args[NUM_ARGS] = {
+  NumericExpr args[NUM_ARGS] = {
       ef.MakeNumericConstant(1),
       ef.MakeNumericConstant(2),
       ef.MakeNumericConstant(3)
@@ -669,7 +671,7 @@ TEST(ExprFactoryTest, MakeVarArg) {
 TEST(ExprFactoryTest, MakeSum) {
   ExprFactory ef(MakeHeader(), "");
   enum {NUM_ARGS = 3};
-  ampl::NumericExpr args[NUM_ARGS] = {
+  NumericExpr args[NUM_ARGS] = {
       ef.MakeNumericConstant(1),
       ef.MakeNumericConstant(2),
       ef.MakeNumericConstant(3)
@@ -689,7 +691,7 @@ TEST(ExprFactoryTest, MakeSum) {
 TEST(ExprFactoryTest, MakeCount) {
   ExprFactory ef(MakeHeader(), "");
   enum {NUM_ARGS = 3};
-  ampl::LogicalExpr args[NUM_ARGS] = {
+  LogicalExpr args[NUM_ARGS] = {
       ef.MakeLogicalConstant(1),
       ef.MakeLogicalConstant(2),
       ef.MakeLogicalConstant(3)
@@ -708,14 +710,35 @@ TEST(ExprFactoryTest, MakeCount) {
 
 TEST(ExprFactoryTest, MakeIf) {
   ExprFactory ef(MakeHeader(), "");
-  ampl::LogicalExpr condition = ef.MakeLogicalConstant(true);
-  ampl::NumericExpr true_expr = ef.MakeNumericConstant(1);
-  ampl::NumericExpr false_expr = ef.MakeNumericConstant(2);
+  LogicalExpr condition = ef.MakeLogicalConstant(true);
+  NumericExpr true_expr = ef.MakeNumericConstant(1);
+  NumericExpr false_expr = ef.MakeNumericConstant(2);
   ampl::IfExpr expr = ef.MakeIf(condition, true_expr, false_expr);
   EXPECT_EQ(OPIFnl, expr.opcode());
   EXPECT_EQ(condition, expr.condition());
   EXPECT_EQ(true_expr, expr.true_expr());
   EXPECT_EQ(false_expr, expr.false_expr());
+}
+
+TEST(ExprFactoryTest, MakePiecewiseLinear) {
+  NLHeader header = MakeHeader();
+  header.num_vars = 3;
+  enum { NUM_BREAKPOINTS = 2 };
+  double breakpoints[NUM_BREAKPOINTS] = { 11, 22 };
+  double slopes[NUM_BREAKPOINTS + 1] = {33, 44, 55};
+  ExprFactory ef(header, "");
+  ampl::Variable var = ef.MakeVariable(2);
+  ampl::PiecewiseLinearExpr expr = ef.MakePiecewiseLinear(
+      NUM_BREAKPOINTS, breakpoints, slopes, var);
+  EXPECT_EQ(OPPLTERM, expr.opcode());
+  EXPECT_EQ(NUM_BREAKPOINTS, expr.num_breakpoints());
+  EXPECT_EQ(NUM_BREAKPOINTS + 1, expr.num_slopes());
+  for (int i = 0; i < NUM_BREAKPOINTS; ++i) {
+    EXPECT_EQ(breakpoints[i], expr.breakpoint(i));
+    EXPECT_EQ(slopes[i], expr.slope(i));
+  }
+  EXPECT_EQ(slopes[NUM_BREAKPOINTS], expr.slope(NUM_BREAKPOINTS));
+  EXPECT_EQ(2, expr.var_index());
 }
 
 TEST(ExprFactoryTest, MakeNumericConstant) {

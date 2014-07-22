@@ -369,6 +369,23 @@ IfExpr ExprFactory::MakeIf(LogicalExpr condition,
   return Expr::Create<IfExpr>(reinterpret_cast<expr*>(result));
 }
 
+PiecewiseLinearExpr ExprFactory::MakePiecewiseLinear(int num_breakpoints,
+    const double *breakpoints, const double *slopes, Variable var) {
+  plterm *term = Allocate<plterm>(
+      sizeof(plterm) + 2 * num_breakpoints * sizeof(double));
+  double *data = term->bs;
+  for (int i = 0; i < num_breakpoints; ++i) {
+    data[2 * i] = slopes[i];
+    data[2 * i + 1] = breakpoints[i];
+  }
+  data[2 * num_breakpoints] = slopes[num_breakpoints];
+  expr *result = Allocate<expr>();
+  result->op = r_ops_[OPPLTERM];
+  result->L.p = term;
+  result->R.e = var.expr_;
+  return Expr::Create<PiecewiseLinearExpr>(result);
+}
+
 Variable ExprFactory::MakeVariable(int var_index) {
   assert(var_index >= 0 && var_index < asl_->i.n_var_);
   return Expr::Create<Variable>(
