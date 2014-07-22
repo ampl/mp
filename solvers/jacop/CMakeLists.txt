@@ -43,5 +43,8 @@ if (jar)
     set(CMAKE_JAVA_INCLUDE_PATH lib/${JACOP_JAR})
     add_jar(ampljacop-jar Interrupter.java SolutionListener.java
       OUTPUT_NAME ampljacop OUTPUT_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    add_custom_command(TARGET ampljacop-jar
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ampljacop.jar $<TARGET_FILE_DIR:jacop>)
   endif ()
 endif ()
