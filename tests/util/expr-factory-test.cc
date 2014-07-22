@@ -666,7 +666,7 @@ TEST(ExprFactoryTest, MakeVarArgExpr) {
 #endif
 }
 
-TEST(ExprFactoryTest, SumExpr) {
+TEST(ExprFactoryTest, MakeSumExpr) {
   ExprFactory ef(MakeHeader(), "");
   enum {NUM_ARGS = 3};
   ampl::NumericExpr args[NUM_ARGS] = {
@@ -686,7 +686,7 @@ TEST(ExprFactoryTest, SumExpr) {
 #endif
 }
 
-TEST(ExprFactoryTest, CountExpr) {
+TEST(ExprFactoryTest, MakeCountExpr) {
   ExprFactory ef(MakeHeader(), "");
   enum {NUM_ARGS = 3};
   ampl::LogicalExpr args[NUM_ARGS] = {
@@ -704,6 +704,18 @@ TEST(ExprFactoryTest, CountExpr) {
 #ifndef NDEBUG
   EXPECT_DEBUG_DEATH(ef.MakeCountExpr(-1, args);, "Assertion");  // NOLINT(*)
 #endif
+}
+
+TEST(ExprFactoryTest, MakeIfExpr) {
+  ExprFactory ef(MakeHeader(), "");
+  ampl::LogicalExpr condition = ef.MakeLogicalConstant(true);
+  ampl::NumericExpr true_expr = ef.MakeNumericConstant(1);
+  ampl::NumericExpr false_expr = ef.MakeNumericConstant(2);
+  ampl::IfExpr expr = ef.MakeIfExpr(condition, true_expr, false_expr);
+  EXPECT_EQ(OPIFnl, expr.opcode());
+  EXPECT_EQ(condition, expr.condition());
+  EXPECT_EQ(true_expr, expr.true_expr());
+  EXPECT_EQ(false_expr, expr.false_expr());
 }
 
 TEST(ExprFactoryTest, MakeNumericConstant) {

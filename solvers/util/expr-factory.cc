@@ -322,7 +322,7 @@ ExprFactory::~ExprFactory() {
 template <typename ExprT>
 ExprT ExprFactory::MakeExpr(int opcode, NumericExpr lhs, NumericExpr rhs) {
   expr *e = Allocate<expr>();
-  e->op = reinterpret_cast<efunc*>(r_ops_[opcode]);
+  e->op = r_ops_[opcode];
   e->L.e = lhs.expr_;
   e->R.e = rhs.expr_;
   e->a = asl_->i.n_var_ + asl_->i.nsufext[ASL_Sufkind_var];
@@ -351,12 +351,22 @@ VarArgExpr ExprFactory::MakeVarArgExpr(
   assert(num_args >= 0);
   CheckOpCode(opcode, Expr::VARARG, "vararg");
   expr_va *result = Allocate<expr_va>();
-  result->op = reinterpret_cast<efunc *>(r_ops_[opcode]);
+  result->op = r_ops_[opcode];
   de *d = result->L.d = Allocate<de>(num_args * sizeof(de) + sizeof(expr*));
   for (int i = 0; i < num_args; ++i)
     d[i].e = args[i].expr_;
   d[num_args].e = 0;
   return Expr::Create<VarArgExpr>(reinterpret_cast<expr*>(result));
+}
+
+IfExpr ExprFactory::MakeIfExpr(LogicalExpr condition,
+    NumericExpr true_expr, NumericExpr false_expr) {
+  expr_if *result = Allocate<expr_if>();
+  result->op = r_ops_[OPIFnl];
+  result->e = condition.expr_;
+  result->T = true_expr.expr_;
+  result->F = false_expr.expr_;
+  return Expr::Create<IfExpr>(reinterpret_cast<expr*>(result));
 }
 
 Variable ExprFactory::MakeVariable(int var_index) {

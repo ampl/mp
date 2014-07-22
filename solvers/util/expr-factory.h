@@ -111,6 +111,9 @@ class ExprFactory : Noncopyable {
     return MakeSumExpr<LogicalExpr>(OPCOUNT, num_args, args);
   }
 
+  IfExpr MakeIfExpr(LogicalExpr condition,
+      NumericExpr true_expr, NumericExpr false_expr);
+
   NumericConstant MakeNumericConstant(double value) {
     return MakeConstant<NumericConstant>(value);
   }
