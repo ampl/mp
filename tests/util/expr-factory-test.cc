@@ -739,6 +739,32 @@ TEST(ExprFactoryTest, MakePiecewiseLinear) {
   }
   EXPECT_EQ(slopes[NUM_BREAKPOINTS], expr.slope(NUM_BREAKPOINTS));
   EXPECT_EQ(2, expr.var_index());
+#ifndef NDEBUG
+  EXPECT_DEBUG_DEATH(
+      ef.MakePiecewiseLinear(-1, breakpoints, slopes, var);,
+      "Assertion");  // NOLINT(*)
+#endif
+}
+
+TEST(ExprFactoryTest, MakeNumberOf) {
+  ExprFactory ef(MakeHeader(), "");
+  NumericExpr value = ef.MakeNumericConstant(1);
+  enum {NUM_ARGS = 2};
+  NumericExpr args[NUM_ARGS] = {
+      ef.MakeNumericConstant(2), ef.MakeNumericConstant(3)
+  };
+  ampl::NumberOfExpr expr = ef.MakeNumberOf(value, NUM_ARGS, args);
+  EXPECT_EQ(OPNUMBEROF, expr.opcode());
+  EXPECT_EQ(value, expr.value());
+  int arg_index = 0;
+  for (ampl::NumberOfExpr::iterator
+      i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
+    EXPECT_EQ(args[arg_index], *i);
+  }
+#ifndef NDEBUG
+  EXPECT_DEBUG_DEATH(
+      ef.MakeNumberOf(value, -1, args);, "Assertion");  // NOLINT(*)
+#endif
 }
 
 TEST(ExprFactoryTest, MakeNumericConstant) {

@@ -89,6 +89,10 @@ class ExprFactory : Noncopyable {
   template <typename ExprT>
   ExprT MakeConstant(double value);
 
+  // Make a sum-like expression.
+  template <typename ExprT>
+  ExprT MakeSum(int opcode, int num_args);
+
   // Make sum or count expression.
   template <typename Arg>
   BasicSumExpr<Arg> MakeSum(int opcode, int num_args, Arg *args);
@@ -117,11 +121,14 @@ class ExprFactory : Noncopyable {
   PiecewiseLinearExpr MakePiecewiseLinear(int num_breakpoints,
       const double *breakpoints, const double *slopes, Variable var);
 
+  Variable MakeVariable(int var_index);
+
+  NumberOfExpr MakeNumberOf(
+      NumericExpr value, int num_args, const NumericExpr *args);
+
   NumericConstant MakeNumericConstant(double value) {
     return MakeConstant<NumericConstant>(value);
   }
-
-  Variable MakeVariable(int var_index);
 
   LogicalConstant MakeLogicalConstant(bool value) {
     return MakeConstant<LogicalConstant>(value);
@@ -136,17 +143,24 @@ ExprT ExprFactory::MakeConstant(double value) {
   return Expr::Create<ExprT>(reinterpret_cast<expr*>(result));
 }
 
-template <typename Arg>
-BasicSumExpr<Arg> ExprFactory::MakeSum(int opcode, int num_args, Arg *args) {
+template <typename ExprT>
+ExprT ExprFactory::MakeSum(int opcode, int num_args) {
   assert(num_args >= 0);
   expr *result = Allocate<expr>(
-      sizeof(expr) - sizeof(double) + num_args * sizeof(expr*));
+      sizeof(expr) - sizeof(double) + (num_args + 1) * sizeof(expr*));
   result->op = r_ops_[opcode];
-  expr **arg_ptrs = result->L.ep = reinterpret_cast<expr**>(&result->dR);
+  result->L.ep = reinterpret_cast<expr**>(&result->dR);
+  result->R.ep = result->L.ep + num_args;
+  return Expr::Create<ExprT>(result);
+}
+
+template <typename Arg>
+BasicSumExpr<Arg> ExprFactory::MakeSum(int opcode, int num_args, Arg *args) {
+  BasicSumExpr<Arg> result = MakeSum< BasicSumExpr<Arg> >(opcode, num_args);
+  expr **arg_ptrs = result.expr_->L.ep;
   for (int i = 0; i < num_args; ++i)
     arg_ptrs[i] = args[i].expr_;
-  result->R.ep = arg_ptrs + num_args;
-  return Expr::Create< BasicSumExpr<Arg> >(result);
+  return result;
 }
 }
 
