@@ -191,7 +191,7 @@ class Expr {
 
     EXPR_START,
 
-    // To simplify checks numeric expression kinds are in a consecutive range
+    // To simplify checks, numeric expression kinds are in a range
     // [NUMERIC_START, NUMERIC_END].
     NUMERIC_START = EXPR_START,
     UNARY = NUMERIC_START,
@@ -211,7 +211,7 @@ class Expr {
     // ranges overlap at CONSTANT = NUMERIC_END = LOGICAL_START.
     CONSTANT = NUMERIC_END,
 
-    // To simplify checks logical expression kinds are in a consecutive range
+    // To simplify checks, logical expression kinds are in a range
     // [LOGICAL_START, LOGICAL_END].
     LOGICAL_START = CONSTANT,
     RELATIONAL,
