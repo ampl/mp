@@ -91,7 +91,7 @@ class ExprFactory : Noncopyable {
 
   // Make sum or count expression.
   template <typename Arg>
-  BasicSumExpr<Arg> MakeSumExpr(int opcode, int num_args, Arg *args);
+  BasicSumExpr<Arg> MakeSum(int opcode, int num_args, Arg *args);
 
  public:
   // Constructs an ExprFactory object.
@@ -99,19 +99,19 @@ class ExprFactory : Noncopyable {
   ExprFactory(const NLHeader &h, const char *stub, int flags = 0);
   ~ExprFactory();
 
-  UnaryExpr MakeUnaryExpr(int opcode, NumericExpr arg);
-  BinaryExpr MakeBinaryExpr(int opcode, NumericExpr lhs, NumericExpr rhs);
-  VarArgExpr MakeVarArgExpr(int opcode, int num_args, NumericExpr *args);
+  UnaryExpr MakeUnary(int opcode, NumericExpr arg);
+  BinaryExpr MakeBinary(int opcode, NumericExpr lhs, NumericExpr rhs);
+  VarArgExpr MakeVarArg(int opcode, int num_args, NumericExpr *args);
 
-  SumExpr MakeSumExpr(int num_args, NumericExpr *args) {
-    return MakeSumExpr<NumericExpr>(OPSUMLIST, num_args, args);
+  SumExpr MakeSum(int num_args, NumericExpr *args) {
+    return MakeSum<NumericExpr>(OPSUMLIST, num_args, args);
   }
 
-  CountExpr MakeCountExpr(int num_args, LogicalExpr *args) {
-    return MakeSumExpr<LogicalExpr>(OPCOUNT, num_args, args);
+  CountExpr MakeCount(int num_args, LogicalExpr *args) {
+    return MakeSum<LogicalExpr>(OPCOUNT, num_args, args);
   }
 
-  IfExpr MakeIfExpr(LogicalExpr condition,
+  IfExpr MakeIf(LogicalExpr condition,
       NumericExpr true_expr, NumericExpr false_expr);
 
   NumericConstant MakeNumericConstant(double value) {
@@ -134,7 +134,7 @@ ExprT ExprFactory::MakeConstant(double value) {
 }
 
 template <typename Arg>
-BasicSumExpr<Arg> ExprFactory::MakeSumExpr(int opcode, int num_args, Arg *args) {
+BasicSumExpr<Arg> ExprFactory::MakeSum(int opcode, int num_args, Arg *args) {
   assert(num_args >= 0);
   expr *result = Allocate<expr>(
       sizeof(expr) - sizeof(double) + num_args * sizeof(expr*));

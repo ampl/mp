@@ -330,14 +330,14 @@ ExprT ExprFactory::MakeExpr(int opcode, NumericExpr lhs, NumericExpr rhs) {
   return Expr::Create<ExprT>(e);
 }
 
-UnaryExpr ExprFactory::MakeUnaryExpr(int opcode, NumericExpr arg) {
+UnaryExpr ExprFactory::MakeUnary(int opcode, NumericExpr arg) {
   CheckOpCode(opcode, Expr::UNARY, "unary");
   UnaryExpr expr = MakeExpr<UnaryExpr>(opcode, arg, NumericExpr());
   expr.expr_->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
   return expr;
 }
 
-BinaryExpr ExprFactory::MakeBinaryExpr(
+BinaryExpr ExprFactory::MakeBinary(
     int opcode, NumericExpr lhs, NumericExpr rhs) {
   CheckOpCode(opcode, Expr::BINARY, "binary");
   BinaryExpr expr = MakeExpr<BinaryExpr>(opcode, lhs, rhs);
@@ -346,7 +346,7 @@ BinaryExpr ExprFactory::MakeBinaryExpr(
   return expr;
 }
 
-VarArgExpr ExprFactory::MakeVarArgExpr(
+VarArgExpr ExprFactory::MakeVarArg(
     int opcode, int num_args, NumericExpr *args) {
   assert(num_args >= 0);
   CheckOpCode(opcode, Expr::VARARG, "vararg");
@@ -359,7 +359,7 @@ VarArgExpr ExprFactory::MakeVarArgExpr(
   return Expr::Create<VarArgExpr>(reinterpret_cast<expr*>(result));
 }
 
-IfExpr ExprFactory::MakeIfExpr(LogicalExpr condition,
+IfExpr ExprFactory::MakeIf(LogicalExpr condition,
     NumericExpr true_expr, NumericExpr false_expr) {
   expr_if *result = Allocate<expr_if>();
   result->op = r_ops_[OPIFnl];
