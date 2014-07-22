@@ -659,8 +659,11 @@ TEST(ExprFactoryTest, MakeVarArgExpr) {
     }
   }
   EXPECT_THROW_MSG(ef.MakeVarArgExpr(OPUMINUS, NUM_ARGS, args), ampl::Error,
-          fmt::format("invalid vararg expression code {}", OPUMINUS));
-  EXPECT_DEBUG_DEATH(ef.MakeVarArgExpr(MINLIST, -1, args);, "Assertion");  // NOLINT(*)
+      fmt::format("invalid vararg expression code {}", OPUMINUS));
+#ifndef NDEBUG
+  EXPECT_DEBUG_DEATH(
+      ef.MakeVarArgExpr(MINLIST, -1, args);, "Assertion");  // NOLINT(*)
+#endif
 }
 
 TEST(ExprFactoryTest, SumExpr) {
@@ -678,7 +681,9 @@ TEST(ExprFactoryTest, SumExpr) {
       i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
     EXPECT_EQ(args[arg_index], *i);
   }
+#ifndef NDEBUG
   EXPECT_DEBUG_DEATH(ef.MakeSumExpr(-1, args);, "Assertion");  // NOLINT(*)
+#endif
 }
 
 TEST(ExprFactoryTest, CountExpr) {
@@ -696,7 +701,9 @@ TEST(ExprFactoryTest, CountExpr) {
       i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
     EXPECT_EQ(args[arg_index], *i);
   }
+#ifndef NDEBUG
   EXPECT_DEBUG_DEATH(ef.MakeCountExpr(-1, args);, "Assertion");  // NOLINT(*)
+#endif
 }
 
 TEST(ExprFactoryTest, MakeNumericConstant) {
