@@ -1,5 +1,5 @@
 /*
- An AMPL expression factory.
+ An ASL problem builder.
 
  Copyright (C) 2014 AMPL Optimization Inc
 
@@ -40,37 +40,24 @@ private:
 
 public:
   ASLError(int error_code, fmt::StringRef message) :
-      Error(message), error_code_(error_code) {
-  }
+      Error(message), error_code_(error_code) {}
 
   int error_code() const { return error_code_; }
 };
 
-class ASLBuilder {
+// Use standard opcodes when building expressions.
+enum { ASL_STANDARD_OPCODES = 0x1000000 };
+
+// Provides methods for building an ASL problem object.
+class ASLBuilder : Noncopyable {
  private:
   ASL &asl_;
   efunc **r_ops_;
+  efunc *standard_opcodes_[N_OPS];
   int nv1_;
   int nz_;
   int nderp_;
-
- public:
-  ASLBuilder(ASL &asl, const char *stub, const NLHeader &h);
-
-  // Begin building the ASL.
-  // flags: reader flags, see ASL_reader_flag_bits.
-  // Throws ASLError on error.
-  void BeginBuild(int flags);
-
-  // End building the ASL.
-  void EndBuild();
-};
-}
-
-class ExprFactory : Noncopyable {
- private:
-  ASL *asl_;
-  efunc *r_ops_[N_OPS];
+  static const double DVALUE[];
 
   static void CheckOpCode(int opcode, Expr::Kind kind, const char *expr_name) {
     if (Expr::INFO[opcode].kind != kind)
@@ -78,16 +65,26 @@ class ExprFactory : Noncopyable {
   }
 
   template <typename ExprT>
-  ExprT MakeExpr(int opcode, NumericExpr lhs, NumericExpr rhs);
+  ExprT MakeExpr(int opcode, Expr lhs, Expr rhs);
 
   template <typename T>
   T *Allocate(unsigned size = sizeof(T)) {
     assert(size >= sizeof(T));
-    return reinterpret_cast<T*>(mem_ASL(asl_, size));
+    return reinterpret_cast<T*>(mem_ASL(&asl_, size));
   }
 
   template <typename ExprT>
   ExprT MakeConstant(double value);
+
+  template <typename Arg, Expr::Kind KIND>
+  BasicBinaryExpr<Arg, KIND> MakeBinary(int opcode, Arg lhs, Arg rhs) {
+    CheckOpCode(opcode, KIND, "binary");
+    typedef BasicBinaryExpr<Arg, KIND> BinaryExpr;
+    BinaryExpr expr = MakeExpr<BinaryExpr>(opcode, lhs, rhs);
+    expr.expr_->dL = 1;
+    expr.expr_->dR = DVALUE[opcode];  // for PLUS, MINUS, REM
+    return expr;
+  }
 
   // Make a sum-like expression.
   template <typename ExprT>
@@ -98,13 +95,39 @@ class ExprFactory : Noncopyable {
   BasicSumExpr<Arg> MakeSum(int opcode, int num_args, Arg *args);
 
  public:
-  // Constructs an ExprFactory object.
+  ASLBuilder(ASL &asl);
+
+  // Initializes the ASL object in a similar way to jac0dim, but
+  // doesn't read the .nl file as it is the responsibility of NLReader.
+  // Instead it uses the information provided in NLHeader.
+  void InitASL(const char *stub, const NLHeader &h);
+
+  // Begins building the ASL object.
   // flags: reader flags, see ASL_reader_flag_bits.
-  ExprFactory(const NLHeader &h, const char *stub, int flags = 0);
-  ~ExprFactory();
+  // Throws ASLError on error.
+  void BeginBuild(const char *stub, const NLHeader &h, int flags);
+
+  // Ends building the ASL object.
+  void EndBuild();
+
+  // Adds an objective.
+  void AddObj(int obj_index, bool maximize, NumericExpr expr);
+
+  Function AddFunction(int index, int type, int num_args, const char *name);
+
+  // The Make* methods construct expression objects. These objects are
+  // local to the currently built ASL problem and shouldn't be used with
+  // other problems. The expression objects are not accessible via the
+  // ASL API until they are added to the problem as a part of objective
+  // or constraint expression. For this reason the methods below use a
+  // different naming convention from the Add* methods.
 
   UnaryExpr MakeUnary(int opcode, NumericExpr arg);
-  BinaryExpr MakeBinary(int opcode, NumericExpr lhs, NumericExpr rhs);
+
+  BinaryExpr MakeBinary(int opcode, NumericExpr lhs, NumericExpr rhs) {
+    return MakeBinary<NumericExpr, Expr::BINARY>(opcode, lhs, rhs);
+  }
+
   VarArgExpr MakeVarArg(int opcode, int num_args, NumericExpr *args);
 
   SumExpr MakeSum(int num_args, NumericExpr *args) {
@@ -126,6 +149,8 @@ class ExprFactory : Noncopyable {
   NumberOfExpr MakeNumberOf(
       NumericExpr value, int num_args, const NumericExpr *args);
 
+  CallExpr MakeCall(Function f, int num_args, const Expr *args);
+
   NumericConstant MakeNumericConstant(double value) {
     return MakeConstant<NumericConstant>(value);
   }
@@ -133,34 +158,53 @@ class ExprFactory : Noncopyable {
   LogicalConstant MakeLogicalConstant(bool value) {
     return MakeConstant<LogicalConstant>(value);
   }
+
+  BinaryLogicalExpr MakeBinaryLogical(
+      int opcode, LogicalExpr lhs, LogicalExpr rhs) {
+    return MakeBinary<LogicalExpr, Expr::BINARY_LOGICAL>(opcode, lhs, rhs);
+  }
+
+  StringLiteral MakeStringLiteral(int size, const char *value);
 };
 
 template <typename ExprT>
-ExprT ExprFactory::MakeConstant(double value) {
-  expr_n *result = Allocate<expr_n>(asl_->i.size_expr_n_);
-  result->op = reinterpret_cast<efunc_n*>(r_ops_[OPNUM]);
+ExprT ASLBuilder::MakeExpr(int opcode, Expr lhs, Expr rhs) {
+  expr *e = Allocate<expr>();
+  e->op = reinterpret_cast<efunc*>(opcode);
+  e->L.e = lhs.expr_;
+  e->R.e = rhs.expr_;
+  e->a = asl_.i.n_var_ + asl_.i.nsufext[ASL_Sufkind_var];
+  e->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
+  return Expr::Create<ExprT>(e);
+}
+
+template <typename ExprT>
+ExprT ASLBuilder::MakeConstant(double value) {
+  expr_n *result = Allocate<expr_n>(asl_.i.size_expr_n_);
+  result->op = reinterpret_cast<efunc_n*>(OPNUM);
   result->v = value;
   return Expr::Create<ExprT>(reinterpret_cast<expr*>(result));
 }
 
 template <typename ExprT>
-ExprT ExprFactory::MakeSum(int opcode, int num_args) {
+ExprT ASLBuilder::MakeSum(int opcode, int num_args) {
   assert(num_args >= 0);
   expr *result = Allocate<expr>(
       sizeof(expr) - sizeof(double) + (num_args + 1) * sizeof(expr*));
-  result->op = r_ops_[opcode];
+  result->op = reinterpret_cast<efunc*>(opcode);
   result->L.ep = reinterpret_cast<expr**>(&result->dR);
   result->R.ep = result->L.ep + num_args;
   return Expr::Create<ExprT>(result);
 }
 
 template <typename Arg>
-BasicSumExpr<Arg> ExprFactory::MakeSum(int opcode, int num_args, Arg *args) {
+BasicSumExpr<Arg> ASLBuilder::MakeSum(int opcode, int num_args, Arg *args) {
   BasicSumExpr<Arg> result = MakeSum< BasicSumExpr<Arg> >(opcode, num_args);
   expr **arg_ptrs = result.expr_->L.ep;
   for (int i = 0; i < num_args; ++i)
     arg_ptrs[i] = args[i].expr_;
   return result;
+}
 }
 }
 

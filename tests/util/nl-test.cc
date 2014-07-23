@@ -32,23 +32,32 @@ using ampl::NLReader;
 
 namespace {
 
-struct TestNLHandler : ampl::NLHandler {
+struct TestNLHandler {
   NLHeader header;
   fmt::Writer log;  // Call log.
-  std::vector<ampl::NumericExpr> obj_exprs;
+  std::vector<std::string> obj_exprs;
 
-  void HandleHeader(const NLHeader &h) {
+  typedef std::string NumericExpr;
+
+  void BeginBuild(const char *, const NLHeader &h, int) {
     header = h;
     obj_exprs.resize(h.num_objs);
     log.clear();
   }
 
-  void HandleObj(int obj_index, bool maximize, ampl::NumericExpr expr) {
+  void AddObj(int obj_index, bool maximize, std::string expr) {
     log << (maximize ? "maximize" : "minimize")
-        << " o" << (obj_index + 1) << ": ";
-    WriteExpr(log, ampl::LinearObjExpr(), expr);
+        << " o" << (obj_index + 1) << ": " << expr;
     obj_exprs[obj_index] = expr;
     log << ";\n";
+  }
+
+  std::string MakeNumericConstant(double value) {
+    return fmt::format("{}", value);
+  }
+
+  std::string MakeVariable(int index) {
+    return fmt::format("x{}", index + 1);
   }
 };
 
@@ -128,7 +137,7 @@ std::string FormatHeader(const NLHeader &h) {
 // Reads a header from the specified string.
 NLHeader ReadHeader(const std::string &s) {
   TestNLHandler handler;
-  NLReader reader(&handler);
+  NLReader<TestNLHandler> reader(handler);
   reader.ReadString(s, "(input)", true);
   return handler.header;
 }
@@ -140,7 +149,8 @@ NLHeader ReadHeader(int line_index, fmt::StringRef line) {
 }
 
 TEST(NLTest, NoNewlineAtEOF) {
-  NLReader().ReadString("g\n"
+  TestNLHandler handler;
+  NLReader<TestNLHandler>(handler).ReadString("g\n"
     " 1 1 0\n"
     " 0 0\n"
     " 0 0\n"
@@ -388,7 +398,8 @@ TEST(NLTest, IncompleteHeader) {
 }
 
 void ReadNL(const NLHeader &header, const char *body) {
-  NLReader reader;
+  TestNLHandler handler;
+  NLReader<TestNLHandler> reader(handler);
   reader.ReadString(FormatHeader(header) + body);
 }
 
@@ -418,12 +429,12 @@ TEST(NLTest, ObjType) {
 
 TEST(NLTest, ObjExpr) {
   TestNLHandler handler;
-  NLReader reader(&handler);
+  NLReader<TestNLHandler> reader(handler);
   NLHeader header = {};
   header.num_objs = 2;
   header.num_vars = 1;
   reader.ReadString(FormatHeader(header) + "O1 0\nn0");
-  EXPECT_TRUE(!handler.obj_exprs[0]);
+  EXPECT_TRUE(handler.obj_exprs[0].empty());
   EXPECT_EQ("minimize o2: 0;\n", handler.log.str());
   reader.ReadString(FormatHeader(header) + "O0 1\nn4.2");
   EXPECT_EQ("maximize o1: 4.2;\n", handler.log.str());

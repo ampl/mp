@@ -163,6 +163,8 @@ namespace ampl {
 
 namespace internal {
 
+class ASLBuilder;
+
 // Returns true if the non-null expression e is of type ExprT.
 template <typename ExprT>
 bool Is(Expr e);
@@ -222,7 +224,9 @@ class Expr {
     ITERATED_LOGICAL,
     ALLDIFF,
     LOGICAL_END = ALLDIFF,
-    EXPR_END = LOGICAL_END
+
+    STRING,
+    EXPR_END = STRING
   };
 
  private:
@@ -250,7 +254,7 @@ class Expr {
   friend class ExprConverter;
 
   friend class ExprBuilder;
-  friend class ExprFactory;
+  friend class internal::ASLBuilder;
   friend class Problem;
 
   template <typename ExprT>
@@ -430,20 +434,23 @@ class UnaryExpr : public NumericExpr {
   NumericExpr arg() const { return Create<NumericExpr>(expr_->L.e); }
 };
 
-// A binary numeric expression.
-// Examples: x / y, atan2(x, y), where x and y are variables.
-class BinaryExpr : public NumericExpr {
+template <typename ExprT, Expr::Kind K>
+class BasicBinaryExpr : public ExprT {
  public:
-  static const Kind KIND = BINARY;
+  static const Expr::Kind KIND = K;
 
-  BinaryExpr() {}
+  BasicBinaryExpr() {}
 
   // Returns the left-hand side (the first argument) of this expression.
-  NumericExpr lhs() const { return Create<NumericExpr>(expr_->L.e); }
+  ExprT lhs() const { return Expr::Create<ExprT>(this->expr_->L.e); }
 
   // Returns the right-hand side (the second argument) of this expression.
-  NumericExpr rhs() const { return Create<NumericExpr>(expr_->R.e); }
+  ExprT rhs() const { return Expr::Create<ExprT>(this->expr_->R.e); }
 };
+
+// A binary numeric expression.
+// Examples: x / y, atan2(x, y), where x and y are variables.
+typedef BasicBinaryExpr<NumericExpr, Expr::BINARY> BinaryExpr;
 
 // A numeric expression with a variable number of arguments.
 // The min and max functions always have at least one argument.
@@ -503,20 +510,15 @@ class VarArgExpr : public NumericExpr {
 template <typename Arg>
 class BasicSumExpr : public NumericExpr {
  public:
-	BasicSumExpr() {}
+  BasicSumExpr() {}
 
   // Returns the number of arguments (terms).
   int num_args() const { return static_cast<int>(expr_->R.ep - expr_->L.ep); }
 
   typedef ArrayIterator<Arg> iterator;
 
-  iterator begin() const {
-    return iterator(expr_->L.ep);
-  }
-
-  iterator end() const {
-    return iterator(expr_->R.ep);
-  }
+  iterator begin() const { return iterator(expr_->L.ep); }
+  iterator end() const { return iterator(expr_->R.ep); }
 };
 
 // A sum expression.
@@ -644,11 +646,12 @@ AMPL_SPECIALIZE_IS(NumberOfExpr, OPNUMBEROF)
 
 class Function {
  private:
-  const func_info *fi_;
+  func_info *fi_;
 
   friend class CallExpr;
+  friend class internal::ASLBuilder;
 
-  explicit Function(const func_info *fi) : fi_(fi) {}
+  explicit Function(func_info *fi) : fi_(fi) {}
 
   void True() const {}
   typedef void (Function::*SafeBool)() const;
@@ -724,7 +727,17 @@ class CallExpr : public NumericExpr {
 
   int num_args() const { return reinterpret_cast<expr_f*>(expr_)->al->n; }
 
-  // Returns the constant term of the argument.
+  typedef ArrayIterator<Expr> iterator;
+
+  iterator begin() const {
+    return iterator(reinterpret_cast<expr_f*>(expr_)->args);
+  }
+
+  iterator end() const {
+    return iterator(reinterpret_cast<expr_f*>(expr_)->args + num_args());
+  }
+
+  // Returns the constant term in the argument expression.
   double arg_constant(int index) const {
     arglist *al = reinterpret_cast<expr_f*>(expr_)->al;
     assert(index >= 0 && index < al->n);
@@ -842,18 +855,7 @@ class LogicalCountExpr : public LogicalExpr {
 
 // A binary logical expression.
 // Examples: a || b, a && b, where a and b are logical expressions.
-class BinaryLogicalExpr : public LogicalExpr {
- public:
-  static const Kind KIND = BINARY_LOGICAL;
-
-  BinaryLogicalExpr() {}
-
-  // Returns the left-hand side (the first argument) of this expression.
-  LogicalExpr lhs() const { return Create<LogicalExpr>(expr_->L.e); }
-
-  // Returns the right-hand side (the second argument) of this expression.
-  LogicalExpr rhs() const { return Create<LogicalExpr>(expr_->R.e); }
-};
+typedef BasicBinaryExpr<LogicalExpr, Expr::BINARY_LOGICAL> BinaryLogicalExpr;
 
 // An implication expression.
 // Example: a ==> b else c, where a, b and c are logical expressions.
@@ -929,6 +931,15 @@ class AllDiffExpr : public LogicalExpr {
 };
 
 AMPL_SPECIALIZE_IS(AllDiffExpr, OPALLDIFF)
+
+class StringLiteral : public Expr {
+ public:
+  StringLiteral() {}
+
+  const char *value() const { return reinterpret_cast<expr_h*>(expr_)->sym; }
+};
+
+AMPL_SPECIALIZE_IS(StringLiteral, OPHOL)
 
 // Returns true iff e is a zero constant.
 inline bool IsZero(NumericExpr e) {

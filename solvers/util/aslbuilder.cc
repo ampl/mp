@@ -1,5 +1,5 @@
 /*
- An AMPL expression factory.
+ An ASL problem builder.
 
  Copyright (C) 2014 AMPL Optimization Inc
 
@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/util/expr-factory.h"
+#include "solvers/util/aslbuilder.h"
 
 #include "solvers/util/nl.h"
 
@@ -30,9 +30,16 @@
 extern "C" void bswap_ASL(void *x, unsigned long L);
 
 namespace {
-static double DVALUE[] = {
-#include "dvalue.hd"
-};
+
+// If Double_Align is defined, bring size up to the nearest
+// multiple of sizeof(long).
+inline int AddPadding(int size) {
+#ifdef Double_Align
+  return size;
+#else
+  return (size + sizeof(long) - 1) & ~(sizeof(long) - 1);
+#endif
+}
 
 // Initialize count variables in the array v starting from offset by
 // setting their variable indices to var_index.
@@ -44,11 +51,19 @@ void InitVars(expr_v *v, int offset, int count, int var_index) {
 }
 
 namespace ampl {
+namespace internal {
 
-internal::ASLBuilder::ASLBuilder(ASL &asl, const char *stub, const NLHeader &h)
-: asl_(asl), r_ops_(0), nv1_(0), nz_(0), nderp_(0) {
+const double ASLBuilder::DVALUE[] = {
+#include "dvalue.hd"
+};
+
+ASLBuilder::ASLBuilder(ASL &asl)
+: asl_(asl), nv1_(0), nz_(0), nderp_(0) {
+}
+
+void ASLBuilder::InitASL(const char *stub, const NLHeader &h) {
   std::size_t stub_len = std::strlen(stub);
-  Edaginfo &info = asl.i;
+  Edaginfo &info = asl_.i;
   info.filename_ = reinterpret_cast<char*>(M1alloc_ASL(&info, stub_len + 5));
   std::strcpy(info.filename_, stub);
   info.stub_end_ = info.filename_ + stub_len;
@@ -127,7 +142,9 @@ internal::ASLBuilder::ASLBuilder(ASL &asl, const char *stub, const NLHeader &h)
   info.c_vars_ = info.o_vars_ = info.n_var_;
 }
 
-void internal::ASLBuilder::BeginBuild(int flags) {
+void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
+  InitASL(stub, h);
+
   bool linear = asl_.i.ASLtype == ASL_read_f;
 
   // Includes allocation of LUv, LUrhs, A_vals or Cgrad, etc.
@@ -146,9 +163,15 @@ void internal::ASLBuilder::BeginBuild(int flags) {
   Edag1info &info1 = reinterpret_cast<ASL_fg&>(asl_).I;
   int ncom = 0;
   if (!linear) {
-    r_ops_ = info1.r_ops_;
-    if (!r_ops_)
-      r_ops_ = r_ops_ASL;
+    if ((flags & ASL_STANDARD_OPCODES) != 0) {
+      for (int i = 0; i < N_OPS; ++i)
+        standard_opcodes_[i] = reinterpret_cast<efunc*>(i);
+      r_ops_ = standard_opcodes_;
+    } else {
+      r_ops_ = info1.r_ops_;
+      if (!r_ops_)
+        r_ops_ = r_ops_ASL;
+    }
     if (info.c_cexp1st_)
       *info.c_cexp1st_ = 0;
     if (info.o_cexp1st_)
@@ -263,7 +286,122 @@ void internal::ASLBuilder::BeginBuild(int flags) {
   nderp_ = 0;
 }
 
-void internal::ASLBuilder::EndBuild() {
+void ASLBuilder::AddObj(int obj_index, bool maximize, NumericExpr expr) {
+  // TODO
+}
+
+Function ASLBuilder::AddFunction(
+    int index, int type, int num_args, const char *name) {
+  if (index < 0 || index >= asl_.i.nfunc_)
+    throw Error("function index out of range");
+  func_info *fi = func_lookup_ASL(&asl_, name, 0);
+  if (fi) {
+    // TODO: check if functions are consistent
+  } else {
+    fi = reinterpret_cast<func_info*>(mem_ASL(&asl_, sizeof(func_info)));
+    fi->ftype = type;
+    fi->nargs = num_args;
+    fi->funcp = 0;
+    int length = AddPadding(std::strlen(name) + 1);
+    fi->name = strcpy(reinterpret_cast<char*>(mem_ASL(&asl_, length)), name);
+  }
+  // TODO: load function
+  asl_.i.funcs_[index] = fi;
+  return Function(fi);
+}
+
+UnaryExpr ASLBuilder::MakeUnary(int opcode, NumericExpr arg) {
+  CheckOpCode(opcode, Expr::UNARY, "unary");
+  UnaryExpr expr = MakeExpr<UnaryExpr>(opcode, arg, NumericExpr());
+  expr.expr_->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
+  return expr;
+}
+
+VarArgExpr ASLBuilder::MakeVarArg(
+    int opcode, int num_args, NumericExpr *args) {
+  assert(num_args >= 0);
+  CheckOpCode(opcode, Expr::VARARG, "vararg");
+  expr_va *result = Allocate<expr_va>();
+  result->op = r_ops_[opcode];
+  de *d = result->L.d = Allocate<de>(num_args * sizeof(de) + sizeof(expr*));
+  for (int i = 0; i < num_args; ++i)
+    d[i].e = args[i].expr_;
+  d[num_args].e = 0;
+  return Expr::Create<VarArgExpr>(reinterpret_cast<expr*>(result));
+}
+
+IfExpr ASLBuilder::MakeIf(LogicalExpr condition,
+    NumericExpr true_expr, NumericExpr false_expr) {
+  expr_if *result = Allocate<expr_if>();
+  result->op = r_ops_[OPIFnl];
+  result->e = condition.expr_;
+  result->T = true_expr.expr_;
+  result->F = false_expr.expr_;
+  return Expr::Create<IfExpr>(reinterpret_cast<expr*>(result));
+}
+
+PiecewiseLinearExpr ASLBuilder::MakePiecewiseLinear(int num_breakpoints,
+    const double *breakpoints, const double *slopes, Variable var) {
+  assert(num_breakpoints >= 0);
+  plterm *term = Allocate<plterm>(
+      sizeof(plterm) + 2 * num_breakpoints * sizeof(double));
+  term->n = num_breakpoints + 1;
+  double *data = term->bs;
+  for (int i = 0; i < num_breakpoints; ++i) {
+    data[2 * i] = slopes[i];
+    data[2 * i + 1] = breakpoints[i];
+  }
+  data[2 * num_breakpoints] = slopes[num_breakpoints];
+  expr *result = Allocate<expr>();
+  result->op = r_ops_[OPPLTERM];
+  result->L.p = term;
+  result->R.e = var.expr_;
+  return Expr::Create<PiecewiseLinearExpr>(result);
+}
+
+Variable ASLBuilder::MakeVariable(int var_index) {
+  assert(var_index >= 0 && var_index < asl_.i.n_var_);
+  return Expr::Create<Variable>(
+      reinterpret_cast<expr*>(reinterpret_cast<ASL_fg&>(asl_).I.var_e_
+          + var_index));
+}
+
+NumberOfExpr ASLBuilder::MakeNumberOf(
+    NumericExpr value, int num_args, const NumericExpr *args) {
+  assert(num_args >= 0);
+  NumberOfExpr result = MakeSum<NumberOfExpr>(OPNUMBEROF, num_args + 1);
+  expr **arg_ptrs = result.expr_->L.ep;
+  *arg_ptrs++ = value.expr_;
+  for (int i = 0; i < num_args; ++i)
+    arg_ptrs[i] = args[i].expr_;
+  return result;
+}
+
+CallExpr ASLBuilder::MakeCall(Function f, int num_args, const Expr *args) {
+  int num_func_args = f.num_args();
+  if ((num_func_args >= 0 && num_args != num_func_args) ||
+      (num_func_args < 0 && num_args < -(num_func_args + 1))) {
+    throw Error("invalid number of arguments in call to {}", f.name());
+  }
+  expr_f *result = Allocate<expr_f>(
+      sizeof(expr_f) + (num_args - 1) * sizeof(expr*));
+  result->op = r_ops_[OPFUNCALL];
+  result->fi = f.fi_;
+  expr **arg_ptrs = result->args;
+  for (int i = 0; i < num_args; ++i)
+    arg_ptrs[i] = args[i].expr_;
+  return Expr::Create<CallExpr>(reinterpret_cast<expr*>(result));
+}
+
+StringLiteral ASLBuilder::MakeStringLiteral(int size, const char *value) {
+  expr_h *result = Allocate<expr_h>(AddPadding(sizeof(expr_h) + size));
+  result->op = r_ops_[OPHOL];
+  std::copy(value, value + size, result->sym);
+  result->sym[size] = 0;
+  return Expr::Create<StringLiteral>(reinterpret_cast<expr*>(result));
+}
+
+void ASLBuilder::EndBuild() {
   bool linear = asl_.i.ASLtype == ASL_read_f;
   Edaginfo &info = asl_.i;
   if (!linear) {
@@ -289,120 +427,17 @@ void internal::ASLBuilder::EndBuild() {
         M1alloc_ASL(&info, nv1_ * sizeof(double)));
   }
   if (!linear) {
-    asl_.p.Objval = asl_.p.Objval_nomap = obj1val_ASL;
-    asl_.p.Objgrd = asl_.p.Objgrd_nomap = obj1grd_ASL;
-    asl_.p.Conval = con1val_ASL;
-    asl_.p.Jacval = jac1val_ASL;
-    asl_.p.Conival = asl_.p.Conival_nomap = con1ival_ASL;
-    asl_.p.Congrd = asl_.p.Congrd_nomap = con1grd_ASL;
-    asl_.p.Lconval = lcon1val_ASL;
-    asl_.p.Xknown = x1known_ASL;
+    Edagpars &pars = asl_.p;
+    pars.Objval = pars.Objval_nomap = obj1val_ASL;
+    pars.Objgrd = pars.Objgrd_nomap = obj1grd_ASL;
+    pars.Conval = con1val_ASL;
+    pars.Jacval = jac1val_ASL;
+    pars.Conival = pars.Conival_nomap = con1ival_ASL;
+    pars.Congrd = pars.Congrd_nomap = con1grd_ASL;
+    pars.Lconval = lcon1val_ASL;
+    pars.Xknown = x1known_ASL;
   }
   prob_adj_ASL(&asl_);
 }
-
-ExprFactory::ExprFactory(const NLHeader &h, const char *stub, int flags)
-: asl_(ASL_alloc(ASL_read_fg)) {
-  internal::ASLBuilder builder(*asl_, stub, h);
-
-  // TODO: this part should be optional
-  ASL_fg *asl = reinterpret_cast<ASL_fg*>(asl_);
-  for (int i = 0; i < N_OPS; ++i)
-    r_ops_[i] = reinterpret_cast<efunc*>(i);
-  asl->I.r_ops_ = r_ops_;
-
-  builder.BeginBuild(flags);
-  builder.EndBuild();
-}
-
-ExprFactory::~ExprFactory() {
-  ASL_free(&asl_);
-}
-
-template <typename ExprT>
-ExprT ExprFactory::MakeExpr(int opcode, NumericExpr lhs, NumericExpr rhs) {
-  expr *e = Allocate<expr>();
-  e->op = r_ops_[opcode];
-  e->L.e = lhs.expr_;
-  e->R.e = rhs.expr_;
-  e->a = asl_->i.n_var_ + asl_->i.nsufext[ASL_Sufkind_var];
-  e->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
-  return Expr::Create<ExprT>(e);
-}
-
-UnaryExpr ExprFactory::MakeUnary(int opcode, NumericExpr arg) {
-  CheckOpCode(opcode, Expr::UNARY, "unary");
-  UnaryExpr expr = MakeExpr<UnaryExpr>(opcode, arg, NumericExpr());
-  expr.expr_->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
-  return expr;
-}
-
-BinaryExpr ExprFactory::MakeBinary(
-    int opcode, NumericExpr lhs, NumericExpr rhs) {
-  CheckOpCode(opcode, Expr::BINARY, "binary");
-  BinaryExpr expr = MakeExpr<BinaryExpr>(opcode, lhs, rhs);
-  expr.expr_->dL = 1;
-  expr.expr_->dR = DVALUE[opcode];  // for PLUS, MINUS, REM
-  return expr;
-}
-
-VarArgExpr ExprFactory::MakeVarArg(
-    int opcode, int num_args, NumericExpr *args) {
-  assert(num_args >= 0);
-  CheckOpCode(opcode, Expr::VARARG, "vararg");
-  expr_va *result = Allocate<expr_va>();
-  result->op = r_ops_[opcode];
-  de *d = result->L.d = Allocate<de>(num_args * sizeof(de) + sizeof(expr*));
-  for (int i = 0; i < num_args; ++i)
-    d[i].e = args[i].expr_;
-  d[num_args].e = 0;
-  return Expr::Create<VarArgExpr>(reinterpret_cast<expr*>(result));
-}
-
-IfExpr ExprFactory::MakeIf(LogicalExpr condition,
-    NumericExpr true_expr, NumericExpr false_expr) {
-  expr_if *result = Allocate<expr_if>();
-  result->op = r_ops_[OPIFnl];
-  result->e = condition.expr_;
-  result->T = true_expr.expr_;
-  result->F = false_expr.expr_;
-  return Expr::Create<IfExpr>(reinterpret_cast<expr*>(result));
-}
-
-PiecewiseLinearExpr ExprFactory::MakePiecewiseLinear(int num_breakpoints,
-    const double *breakpoints, const double *slopes, Variable var) {
-  assert(num_breakpoints >= 0);
-  plterm *term = Allocate<plterm>(
-      sizeof(plterm) + 2 * num_breakpoints * sizeof(double));
-  term->n = num_breakpoints + 1;
-  double *data = term->bs;
-  for (int i = 0; i < num_breakpoints; ++i) {
-    data[2 * i] = slopes[i];
-    data[2 * i + 1] = breakpoints[i];
-  }
-  data[2 * num_breakpoints] = slopes[num_breakpoints];
-  expr *result = Allocate<expr>();
-  result->op = r_ops_[OPPLTERM];
-  result->L.p = term;
-  result->R.e = var.expr_;
-  return Expr::Create<PiecewiseLinearExpr>(result);
-}
-
-Variable ExprFactory::MakeVariable(int var_index) {
-  assert(var_index >= 0 && var_index < asl_->i.n_var_);
-  return Expr::Create<Variable>(
-      reinterpret_cast<expr*>(reinterpret_cast<ASL_fg*>(asl_)->I.var_e_
-          + var_index));
-}
-
-NumberOfExpr ExprFactory::MakeNumberOf(
-    NumericExpr value, int num_args, const NumericExpr *args) {
-  assert(num_args >= 0);
-  NumberOfExpr result = MakeSum<NumberOfExpr>(OPNUMBEROF, num_args + 1);
-  expr **arg_ptrs = result.expr_->L.ep;
-  *arg_ptrs++ = value.expr_;
-  for (int i = 0; i < num_args; ++i)
-    arg_ptrs[i] = args[i].expr_;
-  return result;
 }
 }

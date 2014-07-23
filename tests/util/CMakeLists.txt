@@ -8,7 +8,7 @@ if (HAVE_AUTO)
     ../expr-builder.cc expr-test.cc no-unordered-map-test.cc)
 endif ()
 
-add_ampl_test(expr-factory-test expr-factory-test.cc)
+add_ampl_test(aslbuilder-test aslbuilder-test.cc)
 add_ampl_test(format-test format-test.cc gtest-extra.cc util.h util.cc)
 add_ampl_test(gtest-extra-test gtest-extra-test.cc gtest-extra.cc)
 add_ampl_test(nl-test nl-test.cc)

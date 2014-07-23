@@ -23,6 +23,7 @@
 #include "solvers/util/expr.h"
 
 #include <cstdio>
+#include <cstring>
 
 using ampl::Expr;
 using ampl::NumericConstant;
@@ -479,8 +480,7 @@ const Expr::Info Expr::INFO[N_OPS] = {
     // OPFUNCALL
     {Expr::CALL,             prec::CALL,           "function call"},
     {Expr::CONSTANT,         prec::PRIMARY,        "number"},  // OPNUM
-    // OPHOL - not supported yet
-    {Expr::UNKNOWN,          prec::PRIMARY,        "string"},
+    {Expr::STRING,           prec::PRIMARY,        "string"},  // OPHOL
     {Expr::VARIABLE,         prec::PRIMARY,        "variable"}  // OPVARVAL
 };
 
@@ -538,6 +538,11 @@ bool Equal(Expr expr1, Expr expr2) {
           return false;
       return ep1 == e1->R.ep && ep2 == e2->R.ep;
     }
+
+    case OPTYPE_STRING:
+      return std::strcmp(
+          reinterpret_cast<const expr_h*>(e1)->sym,
+          reinterpret_cast<const expr_h*>(e2)->sym) == 0;
 
     case OPTYPE_NUMBER:
       return reinterpret_cast<const expr_n*>(e1)->v ==

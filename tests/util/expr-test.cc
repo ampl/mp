@@ -25,6 +25,8 @@
 #include "gtest/gtest.h"
 #include "tests/expr-builder.h"
 
+#include "solvers/util/aslbuilder.h"
+#include "solvers/util/nl.h"
 #include "solvers/util/problem.h"
 
 using ampl::CallArg;
@@ -51,6 +53,7 @@ using ampl::BinaryLogicalExpr;
 using ampl::ImplicationExpr;
 using ampl::IteratedLogicalExpr;
 using ampl::AllDiffExpr;
+using ampl::StringLiteral;
 using ampl::ExprVisitor;
 
 using ampl::LinearTerm;
@@ -156,7 +159,20 @@ void TestExpr::TestArrayIterator() {
   EXPECT_EQ(OPPLUS, vec[1].opcode());
 }
 
-class ExprTest : public ::testing::Test, public ampl::ExprBuilder {};
+class ExprTest : public ::testing::Test,
+  public ampl::ExprBuilder, public ampl::internal::ASLBuilder {
+ private:
+  ASL *asl_;
+
+ public:
+  ExprTest()
+  : ampl::internal::ASLBuilder(*(asl_ = ASL_alloc(ASL_read_fg))) {
+    ampl::NLHeader header = {};
+    header.num_vars = header.num_objs = 1;
+    BeginBuild("", header, ampl::internal::ASL_STANDARD_OPCODES);
+  }
+  ~ExprTest() { ASL_free(&asl_); }
+};
 
 TEST_F(ExprTest, NumericKinds) {
   const Expr::Kind kinds[] = {
@@ -198,7 +214,7 @@ TEST_F(ExprTest, LogicalKinds) {
   };
   int i = 0, n = sizeof(kinds) / sizeof(*kinds);
   EXPECT_GT(n, 0);
-  EXPECT_EQ(Expr::LOGICAL_END, Expr::EXPR_END);
+  EXPECT_LT(Expr::LOGICAL_END, Expr::EXPR_END);
   for (; i < n; ++i) {
     Expr::Kind kind = kinds[i];
     EXPECT_GE(kind, Expr::LOGICAL_START);
@@ -226,12 +242,12 @@ TEST_F(ExprTest, ExprCtor) {
   }
   {
     expr raw = {reinterpret_cast<efunc*>(OPMINUS)};
-    Expr e(MakeExpr(&raw));
+    Expr e(::MakeExpr(&raw));
     EXPECT_EQ(OPMINUS, e.opcode());
   }
   {
     expr raw = {reinterpret_cast<efunc*>(OPOR)};
-    Expr e(MakeExpr(&raw));
+    Expr e(::MakeExpr(&raw));
     EXPECT_EQ(OPOR, e.opcode());
   }
 }
@@ -240,7 +256,7 @@ TEST_F(ExprTest, SafeBool) {
   Expr e1;
   EXPECT_FALSE(e1);
   expr raw2 = {reinterpret_cast<efunc*>(42)};
-  Expr e2(MakeExpr(&raw2));
+  Expr e2(::MakeExpr(&raw2));
   EXPECT_TRUE(e2);
 }
 
@@ -332,7 +348,7 @@ const OpInfo OP_INFO[] = {
   {OPCPOW, "^",  Expr::BINARY},
   {OPFUNCALL, "function call", Expr::CALL},
   {OPNUM, "number", Expr::CONSTANT},
-  {OPHOL, "string", Expr::UNKNOWN},
+  {OPHOL, "string", Expr::STRING},
   {OPVARVAL, "variable", Expr::VARIABLE},
   {N_OPS, "unknown"},
   {777,   "unknown"}
@@ -365,7 +381,7 @@ int CheckExpr(Expr::Kind start, Expr::Kind end = Expr::UNKNOWN,
     expr raw = {reinterpret_cast<efunc*>(opcode)};
     bool is_this_kind = info.kind >= start && info.kind <= end;
     if (info.kind != Expr::UNKNOWN) {
-      Expr e(MakeExpr(&raw));
+      Expr e(::MakeExpr(&raw));
       EXPECT_EQ(is_this_kind, ampl::internal::Is<ExprT>(e));
       bool cast_result = Cast<ExprT>(e);
       EXPECT_EQ(is_this_kind, cast_result);
@@ -381,7 +397,7 @@ int CheckExpr(Expr::Kind start, Expr::Kind end = Expr::UNKNOWN,
 }
 
 TEST_F(ExprTest, Expr) {
-  EXPECT_EQ(65, CheckExpr<Expr>(Expr::EXPR_START, Expr::EXPR_END, -1));
+  EXPECT_EQ(66, CheckExpr<Expr>(Expr::EXPR_START, Expr::EXPR_END, -1));
   TestAssertInCreate<Expr>(7);
   TestAssertInCreate<Expr>(N_OPS);
   TestAssertInCreate<Expr>(777);
@@ -393,19 +409,19 @@ TEST_F(ExprTest, Expr) {
 // and binary but not other expression kinds.
 TEST_F(ExprTest, CreateUsesIs) {
   expr raw1 = {reinterpret_cast<efunc*>(OPPLUS)};  // binary
-  MakeExpr<TestExpr>(&raw1);
+  ::MakeExpr<TestExpr>(&raw1);
   expr raw2 = {reinterpret_cast<efunc*>(OPUMINUS)};  // unary
-  MakeExpr<TestExpr>(&raw2);
+  ::MakeExpr<TestExpr>(&raw2);
   TestAssertInCreate<TestExpr>(OPPLTERM);  // neither
 }
 
 TEST_F(ExprTest, EqualityOperator) {
   expr raw1 = {}, raw2 = {};
-  EXPECT_TRUE(MakeExpr(&raw1) != Expr());
-  EXPECT_TRUE(MakeExpr(&raw1) != MakeExpr(&raw2));
+  EXPECT_TRUE(::MakeExpr(&raw1) != Expr());
+  EXPECT_TRUE(::MakeExpr(&raw1) != ::MakeExpr(&raw2));
   EXPECT_TRUE(Expr() == Expr());
-  EXPECT_TRUE(MakeExpr(&raw1) == MakeExpr(&raw1));
-  EXPECT_TRUE(MakeExpr(&raw2) == MakeExpr(&raw2));
+  EXPECT_TRUE(::MakeExpr(&raw1) == ::MakeExpr(&raw1));
+  EXPECT_TRUE(::MakeExpr(&raw2) == ::MakeExpr(&raw2));
 }
 
 TEST_F(ExprTest, EqualNum) {
@@ -529,6 +545,14 @@ TEST_F(ExprTest, EqualCount) {
   EXPECT_FALSE(Equal(
       AddCount(AddBool(false), AddBool(true), AddBool(true)),
       AddBool(true)));
+}
+
+TEST_F(ExprTest, EqualString) {
+  StringLiteral s1 = MakeStringLiteral(3, "abc");
+  StringLiteral s2 = MakeStringLiteral(3, "abc");
+  EXPECT_NE(s1.value(), s2.value());
+  EXPECT_TRUE(Equal(s1, s2));
+  EXPECT_FALSE(Equal(s1, MakeStringLiteral(3, "def")));
 }
 
 TEST_F(ExprTest, NumericExpr) {
@@ -819,6 +843,12 @@ TEST_F(ExprTest, AllDiffExpr) {
   EXPECT_EQ(args[1], *i);
 }
 
+TEST_F(ExprTest, StringLiteral) {
+  EXPECT_EQ(1, CheckExpr<StringLiteral>(Expr::STRING));
+  StringLiteral e = MakeStringLiteral(3, "abc");
+  EXPECT_STREQ("abc", e.value());
+}
+
 struct TestResult {
   NumericExpr expr;
 };
@@ -912,9 +942,9 @@ TEST_F(ExprTest, ExprVisitorHandlesAll) {
   for (int i = 0; i < size; ++i) {
     FullTestVisitor v;
     const OpInfo &info = OP_INFO[i];
-    if (info.kind == Expr::UNKNOWN) continue;
+    if (info.kind == Expr::UNKNOWN || info.kind == Expr::STRING) continue;
     expr raw = {reinterpret_cast<efunc*>(info.code)};
-    Expr e(MakeExpr(&raw));
+    Expr e(::MakeExpr(&raw));
     Expr result;
     if (NumericExpr ne = Cast<NumericExpr>(e))
       result = v.Visit(ne).expr;
@@ -941,9 +971,9 @@ TEST_F(ExprTest, ExprVisitorForwardsUnhandled) {
   for (int i = 0; i < size; ++i) {
     TestVisitor v;
     const OpInfo &info = OP_INFO[i];
-    if (info.kind == Expr::UNKNOWN) continue;
+    if (info.kind == Expr::UNKNOWN || info.kind == Expr::STRING) continue;
     expr raw = {reinterpret_cast<efunc*>(info.code)};
-    Expr e(MakeExpr(&raw));
+    Expr e(::MakeExpr(&raw));
     Expr result;
     if (NumericExpr ne = Cast<NumericExpr>(e))
       result = v.Visit(ne).expr;
@@ -962,8 +992,8 @@ TEST_F(ExprTest, ExprVisitorUnhandledThrows) {
 
 TEST_F(ExprTest, ExprVisitorInvalidThrows) {
   expr raw = {reinterpret_cast<efunc*>(OPNUM)};
-  NumericExpr ne(MakeExpr<NumericExpr>(&raw));
-  LogicalExpr le(MakeExpr<LogicalExpr>(&raw));
+  NumericExpr ne(::MakeExpr<NumericExpr>(&raw));
+  LogicalExpr le(::MakeExpr<LogicalExpr>(&raw));
   raw.op = reinterpret_cast<efunc*>(-1);
   EXPECT_THROW(NullVisitor().Visit(ne), InvalidNumericExprError);
   EXPECT_THROW(NullVisitor().Visit(le), InvalidLogicalExprError);
@@ -985,10 +1015,10 @@ void CheckConversion(int from_opcode, int to_opcode) {
   raw.R.e = &rhs;
   TestConverter converter;
   RelationalExpr expr =
-      Cast<RelationalExpr>(converter.Visit(MakeExpr<LogicalExpr>(&raw)).expr);
+      Cast<RelationalExpr>(converter.Visit(::MakeExpr<LogicalExpr>(&raw)).expr);
   EXPECT_EQ(to_opcode, expr.opcode());
-  EXPECT_EQ(MakeExpr(&lhs), expr.lhs());
-  EXPECT_EQ(MakeExpr(&rhs), expr.rhs());
+  EXPECT_EQ(::MakeExpr(&lhs), expr.lhs());
+  EXPECT_EQ(::MakeExpr(&rhs), expr.rhs());
 }
 
 TEST_F(ExprTest, ConvertLogicalCountToRelational) {
@@ -1264,6 +1294,12 @@ TEST_F(ExprTest, WriteAllDiffExpr) {
   CHECK_WRITE("if alldiff(42, 43, 44) then 1",
       AddIf(AddAllDiff(AddNum(42), AddNum(43), AddNum(44)),
           AddNum(1), AddNum(0)));
+}
+
+TEST_F(ExprTest, WriteStringLiteral) {
+  // TODO: pass string as an argument to a function
+  //CHECK_WRITE("'abc'", MakeStringLiteral(3, "abc"));
+  //CHECK_WRITE("'ab''c'", MakeStringLiteral(3, "ab'c"));
 }
 
 TEST_F(ExprTest, UnaryExprPrecedence) {
@@ -1657,6 +1693,8 @@ TEST_F(ExprTest, HashNumberOfArgs) {
   EXPECT_EQ(hash, ampl::HashNumberOfArgs()(
       AddNumberOf(AddNum(42), AddVar(11), AddNum(22))));
 }
+
+// TODO: hash string
 
 TEST_F(ExprTest, EqualNumberOfArgs) {
   EXPECT_TRUE(ampl::EqualNumberOfArgs()(
