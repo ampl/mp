@@ -41,6 +41,7 @@
 #include "gtest/gtest.h"
 
 #include "solvers/ilogcp/ilogcp.h"
+#include "solvers/util/aslbuilder.h"
 
 extern "C" {
 #include "solvers/asl.h"
@@ -53,6 +54,7 @@ extern "C" {
 #include "tests/solver-test.h"
 #include "tests/util.h"
 
+using ampl::Expr;
 using ampl::IlogCPSolver;
 using ampl::InvalidOptionValue;
 using ampl::OptionError;
@@ -78,108 +80,176 @@ TEST_P(SolverTest, SolveBalassign1) {
 // ----------------------------------------------------------------------------
 // element constraint tests
 
-TEST_P(SolverTest, ElementConstraint) {
-  EXPECT_EQ(22, Eval(AddCall("element", 11, 22, 33, x), 1));
+class FunctionTest : public SolverTest {
+ protected:
+  ampl::Function element_;
+  ampl::Function in_relation_;
+
+ public:
+  // Create functions permitting less arguments than necessary.
+  // This is done to be able to test calls with invalid arguments.
+  FunctionTest()
+  : element_(AddFunction(0, "element", -2)),
+    in_relation_(AddFunction(1, "in_relation", -1)) {}
+};
+
+INSTANTIATE_TEST_CASE_P(IlogCP, FunctionTest,
+    ::testing::Values(SolverTestParam(CreateSolver, feature::ALL)));
+
+TEST_P(FunctionTest, ElementConstraint) {
+  Expr args[] = {
+      MakeNumericConstant(11),
+      MakeNumericConstant(22),
+      MakeNumericConstant(33),
+      x
+  };
+  EXPECT_EQ(22, Eval(MakeCall(element_, 4, args), 1));
 }
 
-TEST_P(SolverTest, TooFewArgsToElementConstraint) {
-  EXPECT_THROW_MSG(Eval(AddCall("element", x), 0),
+TEST_P(FunctionTest, TooFewArgsToElementConstraint) {
+  EXPECT_THROW_MSG(Eval(MakeCall(element_, 1, &x), 0),
       ampl::Error, "element: too few arguments");
 }
 
-TEST_P(SolverTest, ElementConstantIndexOutOfBounds) {
-  EXPECT_THROW_MSG(Eval(AddCall("element", 11, 22, 2)),
+TEST_P(FunctionTest, ElementConstantIndexOutOfBounds) {
+  Expr args[] = {
+      MakeNumericConstant(11),
+      MakeNumericConstant(22),
+      MakeNumericConstant(2)
+  };
+  EXPECT_THROW_MSG(Eval(MakeCall(element_, 3, args)),
         ampl::Error, "element: index 2 is out of bounds");
 }
 
-TEST_P(SolverTest, ElementConstantAtConstantIndex) {
-  EXPECT_EQ(22, Eval(AddCall("element", 11, 22, 1)));
+TEST_P(FunctionTest, ElementConstantAtConstantIndex) {
+  Expr args[] = {
+      MakeNumericConstant(11),
+      MakeNumericConstant(22),
+      MakeNumericConstant(1)
+  };
+  EXPECT_EQ(22, Eval(MakeCall(element_, 3, args)));
 }
 
-TEST_P(SolverTest, ElementExprAtConstantIndex) {
-  EXPECT_EQ(42, Eval(AddCall("element", x, 22, 0), 42));
+TEST_P(FunctionTest, ElementExprAtConstantIndex) {
+  Expr args[] = {
+      x, MakeNumericConstant(22), MakeNumericConstant(0)
+  };
+  EXPECT_EQ(42, Eval(MakeCall(element_, 3, args), 42));
 }
 
-TEST_P(SolverTest, ElementExprPlusConstantAtConstantIndex) {
-  EXPECT_EQ(44, Eval(AddCall("element", 11, ampl::CallArg(2, x), 1), 42));
+TEST_P(FunctionTest, ElementExprPlusConstantAtConstantIndex) {
+  Expr args[] = {
+      MakeNumericConstant(11),
+      MakeBinary(OPPLUS, x, MakeNumericConstant(2)),
+      MakeNumericConstant(1)
+  };
+  EXPECT_EQ(44, Eval(MakeCall(element_, 3, args), 42));
 }
 
-TEST_P(SolverTest, ElementVariableIndexOutOfBounds) {
+TEST_P(FunctionTest, ElementVariableIndexOutOfBounds) {
+  Expr args[] = {
+      MakeNumericConstant(11), MakeNumericConstant(22), x
+  };
   EXPECT_EQ(ampl::INFEASIBLE,
-      Eval(AddCall("element", 11, 22, x), 2).solve_code());
+      Eval(MakeCall(element_, 3, args), 2).solve_code());
 }
 
-TEST_P(SolverTest, ElementConstantAtVariableIndex) {
-  EXPECT_EQ(22, Eval(AddCall("element", 11, 22, x), 1));
+TEST_P(FunctionTest, ElementConstantAtVariableIndex) {
+  Expr args[] = {
+      MakeNumericConstant(11), MakeNumericConstant(22), x
+  };
+  EXPECT_EQ(22, Eval(MakeCall(element_, 3, args), 1));
 }
 
-TEST_P(SolverTest, ElementExprAtVariableIndex) {
-  EXPECT_EQ(42, Eval(AddCall("element", x, 22, y), 42, 0));
+TEST_P(FunctionTest, ElementExprAtVariableIndex) {
+  Expr args[] = { x, MakeNumericConstant(22), y };
+  EXPECT_EQ(42, Eval(MakeCall(element_, 3, args), 42, 0));
 }
 
-TEST_P(SolverTest, ElementExprPlusConstantAtVariableIndex) {
-  EXPECT_EQ(44, Eval(AddCall("element", 11, ampl::CallArg(2, x), y), 42, 1));
+TEST_P(FunctionTest, ElementExprPlusConstantAtVariableIndex) {
+  Expr args[] = {
+      MakeNumericConstant(11),
+      MakeBinary(OPPLUS, x, MakeNumericConstant(2)),
+      y
+  };
+  EXPECT_EQ(44, Eval(MakeCall(element_, 3, args), 42, 1));
 }
 
 // ----------------------------------------------------------------------------
 // in_relation constraint tests
 
-TEST_P(SolverTest, InRelationConstraint) {
+TEST_P(FunctionTest, InRelationConstraint) {
   Problem p;
   p.AddVar(0, 100, ampl::INTEGER);
   p.AddObj(ampl::MIN, AddVar(0));
-  p.AddCon(AddRelational(NE, AddCall("in_relation", AddVar(0), 42), AddNum(0)));
+  Expr args[] = {AddVar(0), MakeNumericConstant(42)};
+  p.AddCon(AddRelational(NE, MakeCall(in_relation_, 2, args), AddNum(0)));
   EXPECT_EQ(42, Solve(p).obj_value());
 }
 
-TEST_P(SolverTest, NestedInRelationNotSupported) {
+TEST_P(FunctionTest, NestedInRelationNotSupported) {
+  Expr args[] = {AddVar(0), MakeNumericConstant(42)};
   EXPECT_THROW_MSG(Eval(AddBinary(OPPLUS,
-      AddCall("in_relation", AddVar(0), 42), AddNum(1)));,
+      MakeCall(in_relation_, 2, args), AddNum(1)));,
       ampl::UnsupportedExprError,
       "unsupported expression: nested 'in_relation'");
 }
 
-TEST_P(SolverTest, TooFewArgsToInRelationConstraint) {
+TEST_P(FunctionTest, TooFewArgsToInRelationConstraint) {
   Problem p;
   p.AddVar(0, 100, ampl::INTEGER);
   p.AddObj(ampl::MIN, AddVar(0));
-  p.AddCon(AddRelational(NE, AddCall("in_relation"), AddNum(0)));
+  p.AddCon(AddRelational(NE, MakeCall(in_relation_, 0, 0), AddNum(0)));
   EXPECT_THROW_MSG(Solve(p), ampl::Error, "in_relation: too few arguments");
 }
 
-TEST_P(SolverTest, InRelationSizeIsNotMultipleOfArity) {
+TEST_P(FunctionTest, InRelationSizeIsNotMultipleOfArity) {
   Problem p;
   p.AddVar(0, 100, ampl::INTEGER);
   p.AddVar(0, 100, ampl::INTEGER);
   p.AddObj(ampl::MIN, AddVar(0));
+  Expr args[] = {
+      AddVar(0), AddVar(1),
+      MakeNumericConstant(1),
+      MakeNumericConstant(2),
+      MakeNumericConstant(3)
+  };
   p.AddCon(AddRelational(NE,
-      AddCall("in_relation", AddVar(0), AddVar(1), 1, 2, 3), AddNum(0)));
+      MakeCall(in_relation_, 5, args), AddNum(0)));
   EXPECT_THROW_MSG(Solve(p), ampl::Error,
       "in_relation: the number of arguments 5 is not a multiple of arity 2");
 }
 
-TEST_P(SolverTest, InRelationTuple) {
+TEST_P(FunctionTest, InRelationTuple) {
   Problem p;
   p.AddVar(0, 100, ampl::INTEGER);
   p.AddVar(0, 100, ampl::INTEGER);
   p.AddObj(ampl::MIN, AddBinary(OPPLUS, AddVar(0), AddVar(1)));
+  Expr args[] = {
+      AddVar(0), AddVar(1),
+      MakeNumericConstant(11), MakeNumericConstant(22)
+  };
   p.AddCon(AddRelational(NE,
-      AddCall("in_relation", AddVar(0), AddVar(1), 11, 22), AddNum(0)));
+      MakeCall(in_relation_, 4, args), AddNum(0)));
   EXPECT_EQ(33, Solve(p).obj_value());
 }
 
-TEST_P(SolverTest, InRelationEmptySet) {
+TEST_P(FunctionTest, InRelationEmptySet) {
   Problem p;
   p.AddVar(0, 100, ampl::INTEGER);
-  p.AddCon(AddRelational(NE, AddCall("in_relation", AddVar(0)), AddNum(0)));
+  Expr arg = AddVar(0);
+  p.AddCon(AddRelational(NE, MakeCall(in_relation_, 1, &arg), AddNum(0)));
   EXPECT_EQ(ampl::INFEASIBLE, Solve(p).solve_code());
 }
 
-TEST_P(SolverTest, InRelationNonConstantSetElement) {
+TEST_P(FunctionTest, InRelationNonConstantSetElement) {
   Problem p;
   p.AddVar(0, 100, ampl::INTEGER);
+  Expr args[] = {
+      AddVar(0), MakeNumericConstant(0), AddVar(0)
+  };
   p.AddCon(AddRelational(NE,
-      AddCall("in_relation", AddVar(0), 0, AddVar(0)), AddNum(0)));
+      MakeCall(in_relation_, 3, args), AddNum(0)));
   EXPECT_THROW_MSG(Solve(p), ampl::Error,
       "in_relation: argument 3 is not constant");
 }
@@ -192,7 +262,8 @@ struct EnumValue {
   IloCP::ParameterValues value;
 };
 
-class IlogCPTest : public ::testing::Test, public ampl::ExprBuilder {
+class IlogCPTest : public ::testing::Test,
+  public ampl::ExprBuilder, public ampl::internal::ASLBuilder {
  protected:
   IlogCPSolver s;
 

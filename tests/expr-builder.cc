@@ -105,42 +105,4 @@ PiecewiseLinearExpr ExprBuilder::AddPL(
   pl.expr_->R.e = AddVar(var_index).expr_;
   return pl;
 }
-
-CallExpr ExprBuilder::AddCall(const char *func_name,
-    const CallArg *arg_begin, const CallArg *arg_end) {
-  calls_.resize(calls_.size() + 1);
-  return Expr::Create<CallExpr>(Expr(
-      calls_.back().Init(func_name, arg_begin, arg_end)));
-}
-
-CallExpr ExprBuilder::AddCall(const char *func_name, const CallArg &arg) {
-  const CallArg args[] = {arg};
-  return AddCall(func_name, args, args + sizeof(args) / sizeof(*args));
-}
-
-CallExpr ExprBuilder::AddCall(const char *func_name,
-    const CallArg &arg1, const CallArg &arg2) {
-  const CallArg args[] = {arg1, arg2};
-  return AddCall(func_name, args, args + sizeof(args) / sizeof(*args));
-}
-
-CallExpr ExprBuilder::AddCall(const char *func_name,
-    const CallArg &arg1, const CallArg &arg2, const CallArg &arg3) {
-  const CallArg args[] = {arg1, arg2, arg3};
-  return AddCall(func_name, args, args + sizeof(args) / sizeof(*args));
-}
-
-CallExpr ExprBuilder::AddCall(const char *func_name,
-    const CallArg &arg1, const CallArg &arg2,
-    const CallArg &arg3, const CallArg &arg4) {
-  const CallArg args[] = {arg1, arg2, arg3, arg4};
-  return AddCall(func_name, args, args + sizeof(args) / sizeof(*args));
-}
-
-CallExpr ExprBuilder::AddCall(const char *func_name,
-    const CallArg &arg1, const CallArg &arg2, const CallArg &arg3,
-    const CallArg &arg4, const CallArg &arg5) {
-  const CallArg args[] = {arg1, arg2, arg3, arg4, arg5};
-  return AddCall(func_name, args, args + sizeof(args) / sizeof(*args));
-}
 }

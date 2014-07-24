@@ -467,13 +467,13 @@ FILE *ReadHeader(ASL &asl, const NLHeader &h, const char *body) {
 void CheckInitASL(const NLHeader &h) {
   ASLPtr expected, actual;
   fclose(ReadHeader(*expected, h, ""));
-  ASLBuilder(*actual).InitASL("test", h);
+  ASLBuilder(actual.get()).InitASL("test", h);
   CheckASL(*expected, *actual);
 }
 
 TEST(ASLBuilderTest, Ctor) {
   ASLPtr asl;
-  ASLBuilder builder(*asl);
+  ASLBuilder builder(asl.get());
 }
 
 TEST(ASLBuilderTest, InitASLTrivial) {
@@ -520,16 +520,16 @@ TEST(ASLBuilderTest, ASLBuilderAdjFcn) {
 
 TEST(ASLBuilderTest, ASLBuilderInvalidProblemDim) {
   NLHeader header = {};
-  CHECK_THROW_ASL_ERROR(ASLBuilder(*ASLPtr()).InitASL("test", header),
+  CHECK_THROW_ASL_ERROR(ASLBuilder().InitASL("test", header),
       ASL_readerr_corrupt, "invalid problem dimensions: M = 0, N = 0, NO = 0");
   header.num_vars = 1;
-  ASLBuilder(*ASLPtr()).InitASL("test", header);
+  ASLBuilder().InitASL("test", header);
   header.num_algebraic_cons = -1;
-  CHECK_THROW_ASL_ERROR(ASLBuilder(*ASLPtr()).InitASL("test", header),
+  CHECK_THROW_ASL_ERROR(ASLBuilder().InitASL("test", header),
       ASL_readerr_corrupt, "invalid problem dimensions: M = -1, N = 1, NO = 0");
   header.num_objs = -1;
   header.num_algebraic_cons = 0;
-  CHECK_THROW_ASL_ERROR(ASLBuilder(*ASLPtr()).InitASL("test", header),
+  CHECK_THROW_ASL_ERROR(ASLBuilder().InitASL("test", header),
       ASL_readerr_corrupt, "invalid problem dimensions: M = 0, N = 1, NO = -1");
 }
 
@@ -549,16 +549,17 @@ int ReadASL(ASL &asl, const NLHeader &h, const char *body, int flags) {
   return fg_read_ASL(&asl, ReadHeader(asl, h, body), flags);
 }
 
-NLHeader MakeHeader() {
+NLHeader MakeHeader(int num_vars = 1) {
   NLHeader header = {};
-  header.num_vars = header.num_objs = 1;
+  header.num_vars = num_vars;
+  header.num_objs = 1;
   return header;
 }
 
 TEST(ASLBuilderTest, ASLBuilderLinear) {
   NLHeader header = MakeHeader();
   ASLPtr actual(ASL_read_f);
-  ASLBuilder builder(*actual);
+  ASLBuilder builder(actual.get());
   builder.BeginBuild("test", header, 0);
   builder.EndBuild();
   ASLPtr expected(ASL_read_f);
@@ -570,7 +571,7 @@ TEST(ASLBuilderTest, ASLBuilderLinear) {
 TEST(ASLBuilderTest, ASLBuilderTrivialProblem) {
   NLHeader header = MakeHeader();
   ASLPtr actual;
-  ASLBuilder builder(*actual);
+  ASLBuilder builder(actual.get());
   builder.BeginBuild("test", header, 0);
   builder.EndBuild();
   ASLPtr expected;
@@ -582,7 +583,7 @@ TEST(ASLBuilderTest, ASLBuilderDisallowCLPByDefault) {
   NLHeader header = MakeHeader();
   header.num_logical_cons = 1;
   ASLPtr actual;
-  ASLBuilder builder(*actual);
+  ASLBuilder builder(actual.get());
   CHECK_THROW_ASL_ERROR(builder.BeginBuild("test", header, ASL_return_read_err),
       ASL_readerr_CLP, "cannot handle logical constraints");
   ASLPtr expected;
@@ -595,7 +596,7 @@ TEST(ASLBuilderTest, ASLBuilderAllowCLP) {
   NLHeader header = MakeHeader();
   header.num_logical_cons = 1;
   ASLPtr actual;
-  ASLBuilder builder(*actual);
+  ASLBuilder builder(actual.get());
   ampl::internal::ASLError error(0, "");
   builder.BeginBuild("test", header, ASL_return_read_err | ASL_allow_CLP);
   builder.EndBuild();
@@ -604,12 +605,10 @@ TEST(ASLBuilderTest, ASLBuilderAllowCLP) {
   CheckASL(*expected, *actual, false);
 }
 
-class TestASLBuilder : private ASLPtr, public ASLBuilder {
+class TestASLBuilder : public ASLBuilder {
  public:
-  explicit TestASLBuilder(int num_vars = 1) : ASLBuilder(*get()) {
-    NLHeader header = MakeHeader();
-    header.num_vars = num_vars;
-    BeginBuild("", header, ampl::internal::ASL_STANDARD_OPCODES);
+  explicit TestASLBuilder(const NLHeader &h = MakeHeader()) {
+    BeginBuild("", h, ampl::internal::ASL_STANDARD_OPCODES);
   }
 };
 
@@ -730,7 +729,7 @@ TEST(ASLBuilderTest, MakePiecewiseLinear) {
   enum { NUM_BREAKPOINTS = 2 };
   double breakpoints[NUM_BREAKPOINTS] = { 11, 22 };
   double slopes[NUM_BREAKPOINTS + 1] = {33, 44, 55};
-  TestASLBuilder builder(3);
+  TestASLBuilder builder(MakeHeader(3));
   ampl::Variable var = builder.MakeVariable(2);
   ampl::PiecewiseLinearExpr expr = builder.MakePiecewiseLinear(
       NUM_BREAKPOINTS, breakpoints, slopes, var);
@@ -751,7 +750,7 @@ TEST(ASLBuilderTest, MakePiecewiseLinear) {
 }
 
 TEST(ASLBuilderTest, MakeVariable) {
-  TestASLBuilder builder(10);
+  TestASLBuilder builder(MakeHeader(10));
   ampl::Variable var = builder.MakeVariable(0);
   EXPECT_EQ(OPVARVAL, var.opcode());
   EXPECT_EQ(0, var.index());
@@ -783,9 +782,21 @@ TEST(ASLBuilderTest, MakeNumberOf) {
 }
 
 TEST(ASLBuilderTest, MakeCall) {
-  TestASLBuilder builder;
-  //builder.MakeCall();
-  // TODO: where to get function?
+  NLHeader header = MakeHeader();
+  header.num_funcs = 1;
+  TestASLBuilder builder(header);
+  enum {NUM_ARGS = 2};
+  ampl::Function f = builder.AddFunction(0, "foo", NUM_ARGS);
+  ampl::Expr args[NUM_ARGS] = {
+      builder.MakeNumericConstant(2), builder.MakeNumericConstant(3)
+  };
+  ampl::CallExpr expr = builder.MakeCall(f, NUM_ARGS, args);
+  EXPECT_EQ(OPFUNCALL, expr.opcode());
+  int arg_index = 0;
+  for (ampl::CallExpr::iterator
+      i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
+    EXPECT_EQ(args[arg_index], *i);
+  }
 }
 
 TEST(ASLBuilderTest, MakeNumericConstant) {
@@ -795,7 +806,7 @@ TEST(ASLBuilderTest, MakeNumericConstant) {
   EXPECT_EQ(42.0, expr.value());
 }
 
-// TODO: test StringLiteral
+// TODO: test AddFunction, StringLiteral
 
 // TODO: test f_read
 

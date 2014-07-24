@@ -25,6 +25,7 @@
 #include <cstdio>
 #include <cstring>
 
+using ampl::Cast;
 using ampl::Expr;
 using ampl::NumericConstant;
 using ampl::NumericExpr;
@@ -95,7 +96,7 @@ class ExprWriter : public ampl::ExprVisitor<ExprWriter, void, void> {
   template <typename Expr>
   void WriteBinary(Expr e);
 
-  void WriteCallArg(NumericExpr arg, double constant);
+  void WriteCallArg(Expr arg);
 
   class Parenthesizer {
    private:
@@ -208,14 +209,29 @@ void ExprWriter::WriteBinary(Expr e) {
   Visit(e.rhs(), precedence + (right_associative ? 0 : 1));
 }
 
-void ExprWriter::WriteCallArg(NumericExpr arg, double constant) {
-  if (!arg) {
-    writer_ << constant;
+void ExprWriter::WriteCallArg(Expr arg) {
+  if (NumericExpr e = Cast<NumericExpr>(arg)) {
+    Visit(e, prec::UNKNOWN);
     return;
   }
-  Visit(arg, prec::UNKNOWN);
-  if (constant)
-    writer_ << " + " << constant;
+  assert(arg.opcode() == OPHOL);
+  writer_ << "'";
+  const char *s = Cast<ampl::StringLiteral>(arg).value();
+  for ( ; *s; ++s) {
+    char c = *s;
+    switch (c) {
+    case '\n':
+      writer_ << '\\' << c;
+      break;
+    case '\'':
+      // Escape quote by doubling.
+      writer_ << c;
+      // Fall through.
+    default:
+      writer_ << c;
+    }
+  }
+  writer_ << "'";
 }
 
 void ExprWriter::VisitBinaryFunc(ampl::BinaryExpr e) {
@@ -271,18 +287,12 @@ void ExprWriter::VisitPiecewiseLinear(ampl::PiecewiseLinearExpr e) {
 
 void ExprWriter::VisitCall(ampl::CallExpr e) {
   writer_ << e.function().name() << '(';
-  int num_args = e.function().num_args();
+  int num_args = e.num_args();
   if (num_args > 0) {
-    fmt::internal::Array<NumericExpr, 10> args;
-    args.resize(num_args);
-    for (ampl::CallExpr::arg_expr_iterator
-        i = e.arg_expr_begin(), end = e.arg_expr_end(); i != end; ++i) {
-      args[e.arg_index(i)] = *i;
-    }
-    WriteCallArg(args[0], e.arg_constant(0));
+    WriteCallArg(e[0]);
     for (int i = 1; i < num_args; ++i) {
       writer_ << ", ";
-      WriteCallArg(args[i], e.arg_constant(i));
+      WriteCallArg(e[i]);
     }
   }
   writer_ << ')';
@@ -314,7 +324,7 @@ void ExprWriter::VisitImplication(ampl::ImplicationExpr e) {
   writer_ << " ==> ";
   Visit(e.true_expr(), prec::IMPLICATION + 1);
   ampl::LogicalExpr false_expr = e.false_expr();
-  ampl::LogicalConstant c = ampl::Cast<ampl::LogicalConstant>(false_expr);
+  ampl::LogicalConstant c = Cast<ampl::LogicalConstant>(false_expr);
   if (!c || c.value() != 0) {
     writer_ << " else ";
     Visit(false_expr);
@@ -560,18 +570,6 @@ std::string internal::FormatOpCode(Expr e) {
   char buffer[64];
   snprintf(buffer, sizeof(buffer), "%d", e.opcode());
   return buffer;
-}
-
-CallExpr::Args::Args(CallExpr e) {
-  int num_args = e.num_args();
-  args_.resize(num_args);
-  arglist *al = reinterpret_cast<expr_f*>(e.expr_)->al;
-  for (int i = 0; i < num_args; ++i)
-    args_[i].SetConstant(al->ra + i);
-  for (CallExpr::arg_expr_iterator
-      i = e.arg_expr_begin(), end = e.arg_expr_end(); i != end; ++i) {
-    args_[e.arg_index(i)].SetExpr(i.p_->e);
-  }
 }
 
 #ifdef HAVE_UNORDERED_MAP

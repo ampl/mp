@@ -23,6 +23,8 @@
 #include "tests/solver-test.h"
 #include "tests/util.h"
 
+#include "solvers/util/nl.h"
+
 #include <cmath>
 
 using std::string;
@@ -63,6 +65,10 @@ SolverTest::EvalResult SolverTest::Solve(
 SolverTest::SolverTest()
 : solver_(GetParam().create_solver()), features_(GetParam().features),
   x(AddVar(1)), y(AddVar(2)), z(AddVar(3)) {
+  ampl::NLHeader header = {};
+  header.num_vars = header.num_objs = 1;
+  header.num_funcs = 2;
+  BeginBuild("", header, ampl::internal::ASL_STANDARD_OPCODES);
 }
 
 SolveResult SolverTest::Solve(
@@ -398,7 +404,9 @@ TEST_P(SolverTest, PiecewiseLinear) {
 }
 
 TEST_P(SolverTest, UnsupportedFunctionCall) {
-  EXPECT_THROW(Eval(AddCall("foo", 1, 2), 3);, UnsupportedExprError);
+  ampl::Function f = AddFunction(0, "foo", 2);
+  ampl::Expr args[] = {MakeNumericConstant(1), MakeNumericConstant(2)};
+  EXPECT_THROW(Eval(MakeCall(f, 2, args), 3);, UnsupportedExprError);
 }
 
 TEST_P(SolverTest, PowConstExp) {

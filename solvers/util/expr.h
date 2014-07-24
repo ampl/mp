@@ -657,6 +657,11 @@ class Function {
   typedef void (Function::*SafeBool)() const;
 
  public:
+  // Function type.
+  enum Type {
+    SYMBOLIC = 1  // Accepts symbolic arguments.
+  };
+
   Function() : fi_(0) {}
 
   // Returns the function name.
@@ -684,41 +689,6 @@ class Function {
 // Example: f(x), where f is a function and x is a variable.
 class CallExpr : public NumericExpr {
  public:
-  class Args;
-
-  class Arg {
-   private:
-    argpair arg_;
-
-    friend class CallExpr::Args;
-
-    void SetConstant(double *constant) { arg_.u.v = constant; }
-    void SetExpr(::expr *e) { arg_.e = e; }
-
-   public:
-    Arg() {
-      arg_.e = 0;
-      arg_.u.v = 0;
-    }
-    NumericExpr expr() const { return Create<NumericExpr>(arg_.e); }
-    double constant() const { return *arg_.u.v; }
-  };
-
-  // This class provides a convenient interface for accessing function
-  // call arguments.
-  // Usage:
-  //   CallExpr::Args args(call);
-  //   args[0].expr(); // returns the first argument's expression
-  // where call is a CallExpr object.
-  class Args {
-   private:
-    fmt::internal::Array<Arg, 10> args_;
-
-   public:
-    Args(CallExpr e);
-    const Arg &operator[](unsigned i) const { return args_[i]; }
-  };
-
   CallExpr() {}
 
   Function function() const {
@@ -727,6 +697,12 @@ class CallExpr : public NumericExpr {
 
   int num_args() const { return reinterpret_cast<expr_f*>(expr_)->al->n; }
 
+  Expr operator[](int index) {
+    assert(index >= 0 && index < num_args());
+    return Create<Expr>(reinterpret_cast<expr_f*>(expr_)->args[index]);
+  }
+
+  // An argument iterator.
   typedef ArrayIterator<Expr> iterator;
 
   iterator begin() const {
@@ -735,65 +711,6 @@ class CallExpr : public NumericExpr {
 
   iterator end() const {
     return iterator(reinterpret_cast<expr_f*>(expr_)->args + num_args());
-  }
-
-  // Returns the constant term in the argument expression.
-  double arg_constant(int index) const {
-    arglist *al = reinterpret_cast<expr_f*>(expr_)->al;
-    assert(index >= 0 && index < al->n);
-    return al->ra[index];
-  }
-
-  // An iterator over argument expressions.
-  class arg_expr_iterator :
-    public std::iterator<std::forward_iterator_tag, NumericExpr> {
-   private:
-    const argpair *p_;
-
-    friend class CallExpr;
-
-    explicit arg_expr_iterator(const argpair *p) : p_(p) {}
-
-   public:
-    NumericExpr operator*() const { return Create<NumericExpr>(p_->e); }
-
-    Proxy<NumericExpr> operator->() const {
-      return Proxy<NumericExpr>(p_->e);
-    }
-
-    arg_expr_iterator &operator++() {
-      ++p_;
-      return *this;
-    }
-
-    arg_expr_iterator operator++(int ) {
-      arg_expr_iterator it(*this);
-      ++p_;
-      return it;
-    }
-
-    bool operator==(arg_expr_iterator other) const { return p_ == other.p_; }
-    bool operator!=(arg_expr_iterator other) const { return p_ != other.p_; }
-  };
-
-  // Returns the number of argument expressions.
-  int num_arg_exprs() const {
-    expr_f* ef = reinterpret_cast<expr_f*>(expr_);
-    return static_cast<int>(ef->ape - ef->ap);
-  }
-
-  arg_expr_iterator arg_expr_begin() const {
-    return arg_expr_iterator(reinterpret_cast<expr_f*>(expr_)->ap);
-  }
-
-  arg_expr_iterator arg_expr_end() const {
-    return arg_expr_iterator(reinterpret_cast<expr_f*>(expr_)->ape);
-  }
-
-  // Returns the argument index for the argument expression iterator.
-  int arg_index(arg_expr_iterator i) const {
-    return static_cast<int>(
-        i.p_->u.v - reinterpret_cast<expr_f*>(expr_)->al->ra);
   }
 };
 

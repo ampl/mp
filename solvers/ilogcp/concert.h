@@ -70,8 +70,8 @@ class NLToConcertConverter : public Converter {
   IlogNumberOfMap numberofs_;
 
   IloNumExprArray ConvertArgs(VarArgExpr e);
-  IloIntVar ConvertArg(const CallExpr::Arg &arg,
-      IloInt lb = IloIntMin, IloInt ub = IloIntMax);
+  IloIntVar ConvertArg(
+      CallExpr call, int index, IloInt lb = IloIntMin, IloInt ub = IloIntMax);
 
   bool ConvertGlobalConstraint(CallExpr expr, IloConstraint &con);
 

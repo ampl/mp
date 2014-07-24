@@ -24,9 +24,15 @@
 
 #include <ilconcert/ilotupleset.h>
 
+#include <algorithm>
+#include <functional>
+
 #ifndef M_PI
 # define M_PI 3.14159265358979323846
 #endif
+
+using ampl::Error;
+using ampl::NumericExpr;
 
 namespace {
 
@@ -34,8 +40,17 @@ template <typename T>
 inline T ConvertTo(double value) {
   T int_value = static_cast<T>(value);
   if (int_value != value)
-    throw ampl::Error("value {} can't be represented as int", value);
+    throw Error("value {} can't be represented as int", value);
   return int_value;
+}
+
+NumericExpr GetArg(ampl::CallExpr e, int index) {
+  NumericExpr result = ampl::Cast<NumericExpr>(e[index]);
+  if (!result) {
+    throw Error("{}: argument {} is not numeric",
+        e.function().name(), index + 1);
+  }
+  return result;
 }
 
 void RequireNonzeroConstRHS(ampl::BinaryExpr e, const std::string &func_name) {
@@ -56,20 +71,12 @@ IloNumExprArray NLToConcertConverter::ConvertArgs(VarArgExpr e) {
 }
 
 IloIntVar NLToConcertConverter::ConvertArg(
-    const CallExpr::Arg &arg, IloInt lb, IloInt ub) {
-  NumericExpr expr = arg.expr();
-  if (!expr) {
-    IloInt constant = ConvertTo<IloInt>(arg.constant());
-    return IloIntVar(env_, constant, constant);
-  }
-  Variable var = Cast<Variable>(expr);
-  if (var && arg.constant() == 0)
+    CallExpr call, int index, IloInt lb, IloInt ub) {
+  NumericExpr arg = GetArg(call, index);
+  if (Variable var = Cast<Variable>(arg))
     return vars_[var.index()];
-  IloExpr ilo_expr = Visit(expr);
-  if (double constant = arg.constant())
-    ilo_expr += constant;
   IloIntVar ilo_var(env_, lb, ub);
-  model_.add(ilo_var == ilo_expr);
+  model_.add(ilo_var == Visit(arg));
   return ilo_var;
 }
 
@@ -147,39 +154,36 @@ IloExpr NLToConcertConverter::VisitPiecewiseLinear(PiecewiseLinearExpr e) {
 
 IloExpr NLToConcertConverter::VisitCall(CallExpr e) {
   const char *function_name = e.function().name();
-  CallExpr::Args args(e);
   int num_args = e.num_args();
   if (std::strcmp(function_name, "element") == 0) {
     if (num_args < 2)
       throw Error("{}: too few arguments", function_name);
-    CallExpr::Arg last_arg = args[num_args - 1];
-    if (!last_arg.expr()) {
+    if (NumericConstant num = Cast<NumericConstant>(e[num_args - 1])) {
       // Index is constant - return the argument at specified index.
-      int index = ConvertTo<int>(last_arg.constant());
+      int index = ConvertTo<int>(num.value());
       if (index < 0 || index >= num_args - 1)
         throw Error("{}: index {} is out of bounds", function_name, index);
-      CallExpr::Arg result = args[index];
-      if (!result.expr())
-        return IloExpr(env_, result.constant());
-      IloExpr expr = Visit(result.expr());
-      if (double constant = result.constant())
-        expr += constant;
-      return expr;
+      return Visit(GetArg(e, index));
     }
-    IloIntVar index_var = ConvertArg(last_arg, 0, num_args - 2);
-    if (e.num_arg_exprs() > 1) {
+    IloIntVar index_var = ConvertArg(e, num_args - 1, num_args - 2);
+    bool const_args = true;
+    for (int i = 0, n = num_args - 1; i < n; ++i) {
+      if (!Cast<NumericConstant>(e[i])) {
+        const_args = false;
+        break;
+      }
+    }
+    if (!const_args) {
       // Some elements are expressions - build IloIntVarArray.
       IloIntVarArray elements(env_, num_args - 1);
       for (int i = 0, n = num_args - 1; i < n; ++i)
-        elements[i] = ConvertArg(args[i]);
+        elements[i] = ConvertArg(e, i);
       return IloElement(elements, index_var);
     }
     // All elements are constants - build IloNumArray.
     IloNumArray elements(env_, num_args - 1);
-    for (int i = 0, n = num_args - 1; i < n; ++i) {
-      assert(!args[i].expr());
-      elements[i] = args[i].constant();
-    }
+    for (int i = 0, n = num_args - 1; i < n; ++i)
+      elements[i] = Cast<NumericConstant>(e[i]).value();
     return IloElement(elements, index_var);
   } else if (std::strcmp(function_name, "in_relation") == 0)
     throw UnsupportedExprError::CreateFromExprString("nested 'in_relation'");
@@ -257,16 +261,15 @@ bool NLToConcertConverter::ConvertGlobalConstraint(
   const char *function_name = expr.function().name();
   if (std::strcmp(function_name, "in_relation") != 0)
     return false;
-  CallExpr::Args args(expr);
   int num_args = expr.num_args();
   if (num_args < 1)
     throw Error("{}: too few arguments", function_name);
   int arity = 0;
-  for (; arity < num_args && args[arity].expr(); ++arity)
+  for (; arity < num_args && !Cast<NumericConstant>(expr[arity]); ++arity)
     ;  // Count variables.
   IloIntVarArray vars(env_, arity);
   for (int i = 0; i < arity; ++i)
-    vars[i] = ConvertArg(args[i]);
+    vars[i] = ConvertArg(expr, i);
   IloIntTupleSet set(env_, arity);
   if (num_args % arity != 0) {
     throw Error("{}: the number of arguments {} is not a multiple of arity {}",
@@ -275,12 +278,12 @@ bool NLToConcertConverter::ConvertGlobalConstraint(
   for (int i = arity; i < num_args; i += arity) {
     IloIntArray tuple(env_, arity);
     for (int j = 0; j < arity; ++j) {
-      const CallExpr::Arg &arg = args[i + j];
-      if (arg.expr()) {
+      NumericConstant num = Cast<NumericConstant>(expr[i + j]);
+      if (!num) {
         throw Error("{}: argument {} is not constant",
             function_name, (i + j + 1));
       }
-      tuple[j] = ConvertTo<IloInt>(arg.constant());
+      tuple[j] = ConvertTo<IloInt>(num.value());
     }
     set.add(tuple);
   }

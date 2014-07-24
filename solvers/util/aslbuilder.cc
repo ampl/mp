@@ -57,13 +57,22 @@ const double ASLBuilder::DVALUE[] = {
 #include "dvalue.hd"
 };
 
-ASLBuilder::ASLBuilder(ASL &asl)
-: asl_(asl), nv1_(0), nz_(0), nderp_(0) {
+ASLBuilder::ASLBuilder(ASL *asl)
+: asl_(asl), own_asl_(false), r_ops_(0), nv1_(0), nz_(0), nderp_(0) {
+  if (!asl) {
+    asl_ = ASL_alloc(ASL_read_fg);
+    own_asl_ = true;
+  }
+}
+
+ASLBuilder::~ASLBuilder() {
+  if (own_asl_)
+    ASL_free(&asl_);
 }
 
 void ASLBuilder::InitASL(const char *stub, const NLHeader &h) {
   std::size_t stub_len = std::strlen(stub);
-  Edaginfo &info = asl_.i;
+  Edaginfo &info = asl_->i;
   info.filename_ = reinterpret_cast<char*>(M1alloc_ASL(&info, stub_len + 5));
   std::strcpy(info.filename_, stub);
   info.stub_end_ = info.filename_ + stub_len;
@@ -145,12 +154,12 @@ void ASLBuilder::InitASL(const char *stub, const NLHeader &h) {
 void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
   InitASL(stub, h);
 
-  bool linear = asl_.i.ASLtype == ASL_read_f;
+  bool linear = asl_->i.ASLtype == ASL_read_f;
 
   // Includes allocation of LUv, LUrhs, A_vals or Cgrad, etc.
-  flagsave_ASL(&asl_, flags);
+  flagsave_ASL(asl_, flags);
 
-  Edaginfo &info = asl_.i;
+  Edaginfo &info = asl_->i;
   int nlcon = info.n_lcon_;
   if (nlcon && (flags & ASL_allow_CLP) == 0)
     throw ASLError(ASL_readerr_CLP, "cannot handle logical constraints");
@@ -160,7 +169,7 @@ void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
   if (!info.size_expr_n_)
     info.size_expr_n_ = sizeof(expr_n);
 
-  Edag1info &info1 = reinterpret_cast<ASL_fg&>(asl_).I;
+  Edag1info &info1 = reinterpret_cast<ASL_fg*>(asl_)->I;
   int ncom = 0;
   if (!linear) {
     if ((flags & ASL_STANDARD_OPCODES) != 0) {
@@ -177,7 +186,7 @@ void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
     if (info.o_cexp1st_)
       *info.o_cexp1st_ = info.comc1_;
     if (info.nfunc_)
-      func_add(&asl_);
+      func_add(asl_);
     ncom = info.comb_ + info.comc_ + info.como_ + info.comc1_ + info.como1_;
   }
 
@@ -219,11 +228,11 @@ void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
     int lasta00 = nv1_ + 1;
     int lasta = lasta00, lasta0 = lasta00;
     info.amax_ = lasta;
-    maxfwd1 = asl_.p.maxfwd_ + 1;
+    maxfwd1 = asl_->p.maxfwd_ + 1;
     nvref = 0;
     if (maxfwd1 > 1) {
-      nvref = maxfwd1 * ((info.ncom0_ < asl_.p.vrefGulp_ ?
-          info.ncom0_ : asl_.p.vrefGulp_) + 1);
+      nvref = maxfwd1 * ((info.ncom0_ < asl_->p.vrefGulp_ ?
+          info.ncom0_ : asl_->p.vrefGulp_) + 1);
     }
     x = nco * sizeof(cde) + no * sizeof(ograd*)
         + nv * (sizeof(expr_v) + 2 * sizeof(int)) + info.ncom0_ * sizeof(cexp)
@@ -291,22 +300,22 @@ void ASLBuilder::AddObj(int obj_index, bool maximize, NumericExpr expr) {
 }
 
 Function ASLBuilder::AddFunction(
-    int index, int type, int num_args, const char *name) {
-  if (index < 0 || index >= asl_.i.nfunc_)
+    int index, const char *name, int num_args, int type) {
+  if (index < 0 || index >= asl_->i.nfunc_)
     throw Error("function index out of range");
-  func_info *fi = func_lookup_ASL(&asl_, name, 0);
+  func_info *fi = func_lookup_ASL(asl_, name, 0);
   if (fi) {
     // TODO: check if functions are consistent
   } else {
-    fi = reinterpret_cast<func_info*>(mem_ASL(&asl_, sizeof(func_info)));
+    fi = reinterpret_cast<func_info*>(mem_ASL(asl_, sizeof(func_info)));
     fi->ftype = type;
     fi->nargs = num_args;
     fi->funcp = 0;
     int length = AddPadding(std::strlen(name) + 1);
-    fi->name = strcpy(reinterpret_cast<char*>(mem_ASL(&asl_, length)), name);
+    fi->name = strcpy(reinterpret_cast<char*>(mem_ASL(asl_, length)), name);
   }
   // TODO: load function
-  asl_.i.funcs_[index] = fi;
+  asl_->i.funcs_[index] = fi;
   return Function(fi);
 }
 
@@ -360,9 +369,9 @@ PiecewiseLinearExpr ASLBuilder::MakePiecewiseLinear(int num_breakpoints,
 }
 
 Variable ASLBuilder::MakeVariable(int var_index) {
-  assert(var_index >= 0 && var_index < asl_.i.n_var_);
+  assert(var_index >= 0 && var_index < asl_->i.n_var_);
   return Expr::Create<Variable>(
-      reinterpret_cast<expr*>(reinterpret_cast<ASL_fg&>(asl_).I.var_e_
+      reinterpret_cast<expr*>(reinterpret_cast<ASL_fg*>(asl_)->I.var_e_
           + var_index));
 }
 
@@ -383,13 +392,35 @@ CallExpr ASLBuilder::MakeCall(Function f, int num_args, const Expr *args) {
       (num_func_args < 0 && num_args < -(num_func_args + 1))) {
     throw Error("invalid number of arguments in call to {}", f.name());
   }
-  expr_f *result = Allocate<expr_f>(
-      sizeof(expr_f) + (num_args - 1) * sizeof(expr*));
+  expr_f *result = reinterpret_cast<expr_f*>(mem_ASL(
+      asl_, sizeof(expr_f) + (num_args - 1) * sizeof(expr*)));
   result->op = r_ops_[OPFUNCALL];
   result->fi = f.fi_;
   expr **arg_ptrs = result->args;
-  for (int i = 0; i < num_args; ++i)
+  int num_symbolic_args = 0, num_ifsyms = 0, num_constants = 0;
+  for (int i = 0; i < num_args; ++i) {
     arg_ptrs[i] = args[i].expr_;
+    if (Is<StringLiteral>(args[i]))
+      ++num_symbolic_args;
+    else if (args[i].opcode() == OPIFSYM)
+      ++num_ifsyms;
+    else if (Is<NumericConstant>(args[i]))
+      ++num_constants;
+  }
+  num_symbolic_args += num_ifsyms;
+  if (num_symbolic_args != 0)
+    throw Error("function {} doesn't accept symbolic arguments", f.name());
+  int num_numeric_args = num_args - num_symbolic_args;
+  int kd = 0;
+  double *ra = Allocate<double>(
+      sizeof(arglist) + (num_constants + num_ifsyms) * sizeof(argpair) +
+      (num_numeric_args + kd) * sizeof(double) +
+      num_symbolic_args * sizeof(char*) + num_args * sizeof(int));
+  double *b = ra + kd;
+  arglist *al = result->al = reinterpret_cast<arglist*>(b + num_numeric_args);
+  al->n = num_args;
+  al->ra = ra;
+  al->funcinfo = f.fi_->funcinfo;
   return Expr::Create<CallExpr>(reinterpret_cast<expr*>(result));
 }
 
@@ -402,8 +433,8 @@ StringLiteral ASLBuilder::MakeStringLiteral(int size, const char *value) {
 }
 
 void ASLBuilder::EndBuild() {
-  bool linear = asl_.i.ASLtype == ASL_read_f;
-  Edaginfo &info = asl_.i;
+  bool linear = asl_->i.ASLtype == ASL_read_f;
+  Edaginfo &info = asl_->i;
   if (!linear) {
     // Make amax long enough for nlc to handle
     // var_e[i].a for common variables i.
@@ -415,7 +446,7 @@ void ASLBuilder::EndBuild() {
         info.amax_ = i;
     }
     info.adjoints_ = reinterpret_cast<double*>(
-        M1zapalloc_ASL(&asl_.i, info.amax_ * Sizeof(double)));
+        M1zapalloc_ASL(&asl_->i, info.amax_ * Sizeof(double)));
     info.adjoints_nv1_ = &info.adjoints_[nv1_];
     info.nderps_ += nderp_;
   }
@@ -427,7 +458,7 @@ void ASLBuilder::EndBuild() {
         M1alloc_ASL(&info, nv1_ * sizeof(double)));
   }
   if (!linear) {
-    Edagpars &pars = asl_.p;
+    Edagpars &pars = asl_->p;
     pars.Objval = pars.Objval_nomap = obj1val_ASL;
     pars.Objgrd = pars.Objgrd_nomap = obj1grd_ASL;
     pars.Conval = con1val_ASL;
@@ -437,7 +468,7 @@ void ASLBuilder::EndBuild() {
     pars.Lconval = lcon1val_ASL;
     pars.Xknown = x1known_ASL;
   }
-  prob_adj_ASL(&asl_);
+  prob_adj_ASL(asl_);
 }
 }
 }

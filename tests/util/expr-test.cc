@@ -161,17 +161,13 @@ void TestExpr::TestArrayIterator() {
 
 class ExprTest : public ::testing::Test,
   public ampl::ExprBuilder, public ampl::internal::ASLBuilder {
- private:
-  ASL *asl_;
-
  public:
-  ExprTest()
-  : ampl::internal::ASLBuilder(*(asl_ = ASL_alloc(ASL_read_fg))) {
+  ExprTest() {
     ampl::NLHeader header = {};
-    header.num_vars = header.num_objs = 1;
+    header.num_objs = 1;
+    header.num_vars = header.num_funcs = 2;
     BeginBuild("", header, ampl::internal::ASL_STANDARD_OPCODES);
   }
-  ~ExprTest() { ASL_free(&asl_); }
 };
 
 TEST_F(ExprTest, NumericKinds) {
@@ -705,51 +701,32 @@ TEST_F(ExprTest, NumberOfExpr) {
 
 TEST_F(ExprTest, CallExpr) {
   EXPECT_EQ(1, CheckExpr<CallExpr>(Expr::CALL));
-  CallArg args[] = {
-      CallArg(3, AddNum(42)), CallArg(5), CallArg(7, AddNum(44))
+  enum {NUM_ARGS = 3};
+  Expr args[NUM_ARGS] = {
+      MakeNumericConstant(11), MakeVariable(0), MakeNumericConstant(22)
   };
-  CallExpr e(AddCall("foo", args, args + 3));
-  EXPECT_STREQ("foo", e.function().name());
-  EXPECT_EQ(3, e.function().num_args());
-  EXPECT_EQ(3, e.num_args());
-  CallExpr e2(AddCall("bar", args, args + 2));
-  EXPECT_EQ(2, e2.function().num_args());
-  EXPECT_EQ(2, e2.num_args());
-  EXPECT_EQ(e.function(), e.function());
-  EXPECT_NE(e.function(), e2.function());
-  EXPECT_FALSE(ampl::Function());
-  EXPECT_EQ(2, e.num_arg_exprs());
-  int index = 0, arg_expr_count = 0;
-  CallExpr::arg_expr_iterator i = e.arg_expr_begin();
-  for (; index != sizeof(args) / sizeof(*args); ++index) {
-    NumericExpr expr = args[index].expr();
-    EXPECT_EQ(args[index].constant(), e.arg_constant(index));
-    if (!expr) continue;
-    EXPECT_EQ(expr, *i);
-    EXPECT_EQ(expr.opcode(), i->opcode());
-    EXPECT_EQ(index, e.arg_index(i));
-    ++arg_expr_count;
-    ++i;
-  }
-  EXPECT_EQ(e.arg_expr_end(), i);
-  EXPECT_EQ(3, index);
-  EXPECT_EQ(2, arg_expr_count);
-  i = e.arg_expr_begin();
-  CallExpr::arg_expr_iterator i2 = i++;
-  EXPECT_EQ(args[0].expr(), *i2);
-  EXPECT_EQ(args[2].expr(), *i);
-}
 
-TEST_F(ExprTest, CallExprArgs) {
-  NumericExpr n42 = AddNum(42), n44 = AddNum(44);
-  CallExpr e(AddCall("foo", CallArg(3, n42), 5, CallArg(7, n44)));
-  CallExpr::Args args(e);
-  EXPECT_EQ(3, args[0].constant());
-  EXPECT_EQ(n42, args[0].expr());
-  EXPECT_EQ(5, args[1].constant());
-  EXPECT_TRUE(!args[1].expr());
-  EXPECT_EQ(7, args[2].constant());
-  EXPECT_EQ(n44, args[2].expr());
+  ampl::Function f = AddFunction(0, "foo", NUM_ARGS);
+  CallExpr e = MakeCall(f, NUM_ARGS, args);
+  EXPECT_EQ(f, e.function());
+  EXPECT_EQ(NUM_ARGS, e.num_args());
+  for (int i = 0; i < NUM_ARGS; ++i)
+    EXPECT_EQ(args[i], e[i]);
+
+  ampl::Function f2 = AddFunction(0, "bar", 2);
+  CallExpr e2(MakeCall(f2, 2, args));
+  EXPECT_EQ(2, e2.num_args());
+  EXPECT_FALSE(ampl::Function());
+  int index = 0;
+  CallExpr::iterator i = e.begin();
+  for (; index < NUM_ARGS; ++index, ++i)
+    EXPECT_EQ(args[index], *i);
+  EXPECT_EQ(e.end(), i);
+  EXPECT_EQ(3, index);
+  i = e.begin();
+  CallExpr::iterator i2 = i++;
+  EXPECT_EQ(args[0], *i2);
+  EXPECT_EQ(args[1], *i);
 }
 
 TEST_F(ExprTest, LogicalConstant) {
@@ -1215,10 +1192,17 @@ TEST_F(ExprTest, WritePiecewiseLinearExpr) {
 }
 
 TEST_F(ExprTest, WriteCallExpr) {
-  CHECK_WRITE("foo(3, x1 + 5, 7, x2)",
-      AddCall("foo", 3, CallArg(5, AddVar(0)), 7, CallArg(0, AddVar(1))));
-  CHECK_WRITE("foo(x1 + x2)",
-      AddCall("foo", AddBinary(OPPLUS, AddVar(0), AddVar(1))));
+  ampl::Function f = AddFunction(0, "foo", -1);
+  Expr args[] = {
+      MakeNumericConstant(3),
+      MakeBinary(OPPLUS, MakeVariable(0), MakeNumericConstant(5)),
+      MakeNumericConstant(7),
+      MakeVariable(1)
+  };
+  CHECK_WRITE("foo()", MakeCall(f, 0, 0));
+  CHECK_WRITE("foo(3)", MakeCall(f, 1, args));
+  CHECK_WRITE("foo(3, x1 + 5, 7)", MakeCall(f, 3, args));
+  CHECK_WRITE("foo(3, x1 + 5, 7, x2)", MakeCall(f, 4, args));
 }
 
 TEST_F(ExprTest, WriteNotExpr) {
@@ -1454,8 +1438,15 @@ TEST_F(ExprTest, PiecewiseLinearExprPrecedence) {
 
 TEST_F(ExprTest, CallExprPrecedence) {
   auto x1 = AddVar(0), x2 = AddVar(1);
-  CHECK_WRITE("foo(foo(), x1 + 5, 7, floor(x2))", AddCall("foo",
-      AddCall("foo", 0, 0), CallArg(5, x1), 7, AddUnary(FLOOR, x2)));
+  auto f = AddFunction(0, "foo", -1);
+  enum {NUM_ARGS = 4};
+  Expr args[NUM_ARGS] = {
+      MakeCall(f, 0, 0),
+      MakeBinary(OPPLUS, x1, MakeNumericConstant(5)),
+      MakeNumericConstant(7),
+      MakeUnary(FLOOR, x2)
+  };
+  CHECK_WRITE("foo(foo(), x1 + 5, 7, floor(x2))", MakeCall(f, NUM_ARGS, args));
 }
 
 TEST_F(ExprTest, NotExprPrecedence) {

@@ -20,8 +20,8 @@
  Author: Victor Zverovich
  */
 
-#ifndef SOLVERS_UTIL_EXPR_FACTORY_H_
-#define SOLVERS_UTIL_EXPR_FACTORY_H_
+#ifndef SOLVERS_UTIL_ASLBUILDER_H_
+#define SOLVERS_UTIL_ASLBUILDER_H_
 
 #include "solvers/util/expr.h"
 #include "solvers/util/noncopyable.h"
@@ -51,7 +51,8 @@ enum { ASL_STANDARD_OPCODES = 0x1000000 };
 // Provides methods for building an ASL problem object.
 class ASLBuilder : Noncopyable {
  private:
-  ASL &asl_;
+  ASL *asl_;
+  bool own_asl_;
   efunc **r_ops_;
   efunc *standard_opcodes_[N_OPS];
   int nv1_;
@@ -70,7 +71,7 @@ class ASLBuilder : Noncopyable {
   template <typename T>
   T *Allocate(unsigned size = sizeof(T)) {
     assert(size >= sizeof(T));
-    return reinterpret_cast<T*>(mem_ASL(&asl_, size));
+    return reinterpret_cast<T*>(mem_ASL(asl_, size));
   }
 
   template <typename ExprT>
@@ -95,7 +96,8 @@ class ASLBuilder : Noncopyable {
   BasicSumExpr<Arg> MakeSum(int opcode, int num_args, Arg *args);
 
  public:
-  ASLBuilder(ASL &asl);
+  explicit ASLBuilder(ASL *asl = 0);
+  ~ASLBuilder();
 
   // Initializes the ASL object in a similar way to jac0dim, but
   // doesn't read the .nl file as it is the responsibility of NLReader.
@@ -113,7 +115,7 @@ class ASLBuilder : Noncopyable {
   // Adds an objective.
   void AddObj(int obj_index, bool maximize, NumericExpr expr);
 
-  Function AddFunction(int index, int type, int num_args, const char *name);
+  Function AddFunction(int index, const char *name, int num_args, int type = 0);
 
   // The Make* methods construct expression objects. These objects are
   // local to the currently built ASL problem and shouldn't be used with
@@ -173,14 +175,14 @@ ExprT ASLBuilder::MakeExpr(int opcode, Expr lhs, Expr rhs) {
   e->op = reinterpret_cast<efunc*>(opcode);
   e->L.e = lhs.expr_;
   e->R.e = rhs.expr_;
-  e->a = asl_.i.n_var_ + asl_.i.nsufext[ASL_Sufkind_var];
+  e->a = asl_->i.n_var_ + asl_->i.nsufext[ASL_Sufkind_var];
   e->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
   return Expr::Create<ExprT>(e);
 }
 
 template <typename ExprT>
 ExprT ASLBuilder::MakeConstant(double value) {
-  expr_n *result = Allocate<expr_n>(asl_.i.size_expr_n_);
+  expr_n *result = Allocate<expr_n>(asl_->i.size_expr_n_);
   result->op = reinterpret_cast<efunc_n*>(OPNUM);
   result->v = value;
   return Expr::Create<ExprT>(reinterpret_cast<expr*>(result));
@@ -208,4 +210,4 @@ BasicSumExpr<Arg> ASLBuilder::MakeSum(int opcode, int num_args, Arg *args) {
 }
 }
 
-#endif  // SOLVERS_UTIL_EXPR_FACTORY_H_
+#endif  // SOLVERS_UTIL_ASLBUILDER_H_

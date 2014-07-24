@@ -24,6 +24,7 @@
 #define TESTS_SOLVER_TEST_H_
 
 #include "solvers/util/solver.h"
+#include "solvers/util/aslbuilder.h"
 #include "tests/args.h"
 #include "tests/config.h"
 #include "tests/expr-builder.h"
@@ -69,7 +70,8 @@ struct SolverTestParam {
 class SolverTest
     : private ampl::Noncopyable,
       public ::testing::TestWithParam<SolverTestParam>,
-      public ampl::ExprBuilder {
+      public ampl::ExprBuilder,
+      public ampl::internal::ASLBuilder {
  protected:
   SolverPtr solver_;
   unsigned features_;

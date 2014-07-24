@@ -63,18 +63,21 @@ class SSDExtractor : public ExprVisitor<SSDExtractor, void, void> {
       Visit(*i);
   }
 
+  void VisitNumericConstant(NumericConstant n) {
+    rhs_[con_index_] -= sign_ * n.value();
+  }
+
  public:
   SSDExtractor(unsigned num_scenarios, unsigned num_vars)
   : coefs_(num_scenarios * num_vars), num_vars_(num_vars),
     con_index_(0), sign_(0), rhs_(num_scenarios) {}
 
   void Extract(CallExpr call) {
-    for (CallExpr::arg_expr_iterator
-        i = call.arg_expr_begin(), e = call.arg_expr_end(); i != e; ++i) {
-      sign_ = call.arg_index(i) == 0 ? 1 : -1;
-      Visit(*i);
-    }
-    rhs_[con_index_] = call.arg_constant(1) - call.arg_constant(0);
+    assert(call.num_args() == 2);
+    sign_ = 1;
+    Visit(Cast<NumericExpr>(call[0]));
+    sign_ = -1;
+    Visit(Cast<NumericExpr>(call[1]));
     ++con_index_;
   }
 
