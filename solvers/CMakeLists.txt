@@ -288,6 +288,8 @@ if (HAVE_AUTO)
 endif ()
 
 add_ampl_solver(ssdsolver)
+add_ampl_library(ssd ssdsolver/ssd.cc)
+
 add_ampl_solver(sulum)
 
 add_subdirectory(util)
