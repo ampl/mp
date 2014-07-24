@@ -422,35 +422,41 @@ inline bool Is<LogicalExpr>(Expr e) {
 }
 }
 
-// A unary numeric expression.
-// Examples: -x, sin(x), where x is a variable.
-class UnaryExpr : public NumericExpr {
+template <Expr::Kind K, typename Base>
+class BasicUnaryExpr : public Base {
  public:
-  static const Kind KIND = UNARY;
+  static const Expr::Kind KIND = K;
 
-  UnaryExpr() {}
+  BasicUnaryExpr() {}
 
   // Returns the argument of this expression.
-  NumericExpr arg() const { return Create<NumericExpr>(expr_->L.e); }
+  Base arg() const { return Expr::Create<Base>(this->expr_->L.e); }
 };
 
-template <typename ExprT, Expr::Kind K>
-class BasicBinaryExpr : public ExprT {
+// A unary numeric expression.
+// Examples: -x, sin(x), where x is a variable.
+typedef BasicUnaryExpr<Expr::UNARY, NumericExpr> UnaryExpr;
+
+// A binary expression.
+// Base: base expression class.
+// Arg: argument expression class.
+template <Expr::Kind K, typename Base, typename Arg = Base>
+class BasicBinaryExpr : public Base {
  public:
   static const Expr::Kind KIND = K;
 
   BasicBinaryExpr() {}
 
   // Returns the left-hand side (the first argument) of this expression.
-  ExprT lhs() const { return Expr::Create<ExprT>(this->expr_->L.e); }
+  Arg lhs() const { return Expr::Create<Arg>(this->expr_->L.e); }
 
   // Returns the right-hand side (the second argument) of this expression.
-  ExprT rhs() const { return Expr::Create<ExprT>(this->expr_->R.e); }
+  Arg rhs() const { return Expr::Create<Arg>(this->expr_->R.e); }
 };
 
 // A binary numeric expression.
 // Examples: x / y, atan2(x, y), where x and y are variables.
-typedef BasicBinaryExpr<NumericExpr, Expr::BINARY> BinaryExpr;
+typedef BasicBinaryExpr<Expr::BINARY, NumericExpr> BinaryExpr;
 
 // A numeric expression with a variable number of arguments.
 // The min and max functions always have at least one argument.
@@ -507,49 +513,79 @@ class VarArgExpr : public NumericExpr {
   }
 };
 
-template <typename Arg>
-class BasicSumExpr : public NumericExpr {
- public:
-  BasicSumExpr() {}
+template <Expr::Kind>
+struct IteratedExprInfo;
 
-  // Returns the number of arguments (terms).
-  int num_args() const { return static_cast<int>(expr_->R.ep - expr_->L.ep); }
-
-  typedef ArrayIterator<Arg> iterator;
-
-  iterator begin() const { return iterator(expr_->L.ep); }
-  iterator end() const { return iterator(expr_->R.ep); }
+template <typename BaseT = void, typename ArgT = BaseT>
+struct BasicIteratedExprInfo {
+  typedef BaseT Base;
+  typedef ArgT Arg;
 };
+
+template <Expr::Kind K>
+class BasicIteratedExpr : public IteratedExprInfo<K>::Base {
+ public:
+  static const Expr::Kind KIND = K;
+
+  typedef typename IteratedExprInfo<K>::Arg Arg;
+
+  BasicIteratedExpr() {}
+
+  // Returns the number of arguments.
+  int num_args() const {
+    return static_cast<int>(this->expr_->R.ep - this->expr_->L.ep);
+  }
+
+  Arg operator[](int index) {
+    assert(index >= 0 && index < num_args());
+    return Expr::Create<Arg>(this->expr_->L.ep[index]);
+  }
+
+  typedef Expr::ArrayIterator<Arg> iterator;
+
+  iterator begin() const { return iterator(this->expr_->L.ep); }
+  iterator end() const { return iterator(this->expr_->R.ep); }
+};
+
+template <>
+struct IteratedExprInfo<Expr::SUM> : BasicIteratedExprInfo<NumericExpr> {};
 
 // A sum expression.
 // Example: sum{i in I} x[i], where I is a set and x is a variable.
-typedef BasicSumExpr<NumericExpr> SumExpr;
+typedef BasicIteratedExpr<Expr::SUM> SumExpr;
 AMPL_SPECIALIZE_IS(SumExpr, OPSUMLIST)
+
+template <>
+struct IteratedExprInfo<Expr::COUNT> :
+  BasicIteratedExprInfo<NumericExpr, LogicalExpr> {};
 
 // A count expression.
 // Example: count{i in I} (x[i] >= 0), where I is a set and x is a variable.
-typedef BasicSumExpr<LogicalExpr> CountExpr;
+typedef BasicIteratedExpr<Expr::COUNT> CountExpr;
 AMPL_SPECIALIZE_IS(CountExpr, OPCOUNT)
 
-// An if-then-else expression.
-// Example: if x != 0 then y else z, where x, y and z are variables.
-class IfExpr : public NumericExpr {
+template <typename Base>
+class BasicIfExpr : public Base {
  public:
-  IfExpr() {}
+  BasicIfExpr() {}
 
   LogicalExpr condition() const {
-    return Create<LogicalExpr>(reinterpret_cast<expr_if*>(expr_)->e);
+    return Expr::Create<LogicalExpr>(
+        reinterpret_cast<expr_if*>(this->expr_)->e);
   }
 
-  NumericExpr true_expr() const {
-    return Create<NumericExpr>(reinterpret_cast<expr_if*>(expr_)->T);
+  Base true_expr() const {
+    return Expr::Create<Base>(reinterpret_cast<expr_if*>(this->expr_)->T);
   }
 
-  NumericExpr false_expr() const {
-    return Create<NumericExpr>(reinterpret_cast<expr_if*>(expr_)->F);
+  Base false_expr() const {
+    return Expr::Create<Base>(reinterpret_cast<expr_if*>(this->expr_)->F);
   }
 };
 
+// An if-then-else expression.
+// Example: if x != 0 then y else z, where x, y and z are variables.
+typedef BasicIfExpr<NumericExpr> IfExpr;
 AMPL_SPECIALIZE_IS(IfExpr, OPIFnl)
 
 // A piecewise-linear expression.
@@ -730,29 +766,12 @@ AMPL_SPECIALIZE_IS(LogicalConstant, OPNUM)
 
 // A relational expression.
 // Examples: x < y, x != y, where x and y are variables.
-class RelationalExpr : public LogicalExpr {
- public:
-  static const Kind KIND = RELATIONAL;
-
-  RelationalExpr() {}
-
-  // Returns the left-hand side (the first argument) of this expression.
-  NumericExpr lhs() const { return Create<NumericExpr>(expr_->L.e); }
-
-  // Returns the right-hand side (the second argument) of this expression.
-  NumericExpr rhs() const { return Create<NumericExpr>(expr_->R.e); }
-};
+typedef BasicBinaryExpr<
+    Expr::RELATIONAL, LogicalExpr, NumericExpr> RelationalExpr;
 
 // A logical NOT expression.
 // Example: not a, where a is a logical expression.
-class NotExpr : public LogicalExpr {
- public:
-  NotExpr() {}
-
-  // Returns the argument of this expression.
-  LogicalExpr arg() const { return Create<LogicalExpr>(expr_->L.e); }
-};
-
+typedef BasicUnaryExpr<Expr::NOT, LogicalExpr> NotExpr;
 AMPL_SPECIALIZE_IS(NotExpr, OPNOT)
 
 // A logical count expression.
@@ -772,55 +791,20 @@ class LogicalCountExpr : public LogicalExpr {
 
 // A binary logical expression.
 // Examples: a || b, a && b, where a and b are logical expressions.
-typedef BasicBinaryExpr<LogicalExpr, Expr::BINARY_LOGICAL> BinaryLogicalExpr;
+typedef BasicBinaryExpr<Expr::BINARY_LOGICAL, LogicalExpr> BinaryLogicalExpr;
 
 // An implication expression.
 // Example: a ==> b else c, where a, b and c are logical expressions.
-class ImplicationExpr : public LogicalExpr {
- public:
-  ImplicationExpr() {}
-
-  LogicalExpr condition() const {
-    return Create<LogicalExpr>(reinterpret_cast<expr_if*>(expr_)->e);
-  }
-
-  LogicalExpr true_expr() const {
-    return Create<LogicalExpr>(reinterpret_cast<expr_if*>(expr_)->T);
-  }
-
-  LogicalExpr false_expr() const {
-    return Create<LogicalExpr>(reinterpret_cast<expr_if*>(expr_)->F);
-  }
-};
-
+typedef BasicIfExpr<LogicalExpr> ImplicationExpr;
 AMPL_SPECIALIZE_IS(ImplicationExpr, OPIMPELSE)
+
+template <>
+struct IteratedExprInfo<Expr::ITERATED_LOGICAL> :
+  BasicIteratedExprInfo<LogicalExpr> {};
 
 // An iterated logical expression.
 // Example: exists{i in I} x[i] >= 0, where I is a set and x is a variable.
-class IteratedLogicalExpr : public LogicalExpr {
- public:
-  static const Kind KIND = ITERATED_LOGICAL;
-
-  IteratedLogicalExpr() {}
-
-  // Returns the number of arguments.
-  int num_args() const { return static_cast<int>(expr_->R.ep - expr_->L.ep); }
-
-  LogicalExpr operator[](int index) {
-    assert(index >= 0 && index < num_args());
-    return Create<LogicalExpr>(expr_->L.ep[index]);
-  }
-
-  typedef ArrayIterator<LogicalExpr> iterator;
-
-  iterator begin() const {
-    return iterator(expr_->L.ep);
-  }
-
-  iterator end() const {
-    return iterator(expr_->R.ep);
-  }
-};
+typedef BasicIteratedExpr<Expr::ITERATED_LOGICAL> IteratedLogicalExpr;
 
 // An alldiff expression.
 // Example: alldiff{i in I} x[i], where I is a set and x is a variable.

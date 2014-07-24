@@ -378,7 +378,7 @@ Variable ASLBuilder::MakeVariable(int var_index) {
 NumberOfExpr ASLBuilder::MakeNumberOf(
     NumericExpr value, int num_args, const NumericExpr *args) {
   assert(num_args >= 0);
-  NumberOfExpr result = MakeSum<NumberOfExpr>(OPNUMBEROF, num_args + 1);
+  NumberOfExpr result = MakeIterated<NumberOfExpr>(OPNUMBEROF, num_args + 1);
   expr **arg_ptrs = result.expr_->L.ep;
   *arg_ptrs++ = value.expr_;
   for (int i = 0; i < num_args; ++i)

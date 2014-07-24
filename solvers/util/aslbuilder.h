@@ -77,23 +77,24 @@ class ASLBuilder : Noncopyable {
   template <typename ExprT>
   ExprT MakeConstant(double value);
 
-  template <typename Arg, Expr::Kind KIND>
-  BasicBinaryExpr<Arg, KIND> MakeBinary(int opcode, Arg lhs, Arg rhs) {
+  template <Expr::Kind KIND, typename Arg>
+  BasicBinaryExpr<KIND, Arg> MakeBinary(int opcode, Arg lhs, Arg rhs) {
     CheckOpCode(opcode, KIND, "binary");
-    typedef BasicBinaryExpr<Arg, KIND> BinaryExpr;
+    typedef BasicBinaryExpr<KIND, Arg> BinaryExpr;
     BinaryExpr expr = MakeExpr<BinaryExpr>(opcode, lhs, rhs);
     expr.expr_->dL = 1;
     expr.expr_->dR = DVALUE[opcode];  // for PLUS, MINUS, REM
     return expr;
   }
 
-  // Make a sum-like expression.
+  // Makes an iterated expression.
   template <typename ExprT>
-  ExprT MakeSum(int opcode, int num_args);
+  ExprT MakeIterated(int opcode, int num_args);
 
-  // Make sum or count expression.
-  template <typename Arg>
-  BasicSumExpr<Arg> MakeSum(int opcode, int num_args, Arg *args);
+  // Makes an iterated expression.
+  template <Expr::Kind K>
+  BasicIteratedExpr<K> MakeIterated(int opcode,
+      int num_args, typename IteratedExprInfo<K>::Arg *args);
 
  public:
   explicit ASLBuilder(ASL *asl = 0);
@@ -127,17 +128,17 @@ class ASLBuilder : Noncopyable {
   UnaryExpr MakeUnary(int opcode, NumericExpr arg);
 
   BinaryExpr MakeBinary(int opcode, NumericExpr lhs, NumericExpr rhs) {
-    return MakeBinary<NumericExpr, Expr::BINARY>(opcode, lhs, rhs);
+    return MakeBinary<Expr::BINARY, NumericExpr>(opcode, lhs, rhs);
   }
 
   VarArgExpr MakeVarArg(int opcode, int num_args, NumericExpr *args);
 
   SumExpr MakeSum(int num_args, NumericExpr *args) {
-    return MakeSum<NumericExpr>(OPSUMLIST, num_args, args);
+    return MakeIterated<Expr::SUM>(OPSUMLIST, num_args, args);
   }
 
   CountExpr MakeCount(int num_args, LogicalExpr *args) {
-    return MakeSum<LogicalExpr>(OPCOUNT, num_args, args);
+    return MakeIterated<Expr::COUNT>(OPCOUNT, num_args, args);
   }
 
   IfExpr MakeIf(LogicalExpr condition,
@@ -163,7 +164,7 @@ class ASLBuilder : Noncopyable {
 
   BinaryLogicalExpr MakeBinaryLogical(
       int opcode, LogicalExpr lhs, LogicalExpr rhs) {
-    return MakeBinary<LogicalExpr, Expr::BINARY_LOGICAL>(opcode, lhs, rhs);
+    return MakeBinary<Expr::BINARY_LOGICAL, LogicalExpr>(opcode, lhs, rhs);
   }
 
   StringLiteral MakeStringLiteral(int size, const char *value);
@@ -189,7 +190,7 @@ ExprT ASLBuilder::MakeConstant(double value) {
 }
 
 template <typename ExprT>
-ExprT ASLBuilder::MakeSum(int opcode, int num_args) {
+ExprT ASLBuilder::MakeIterated(int opcode, int num_args) {
   assert(num_args >= 0);
   expr *result = Allocate<expr>(
       sizeof(expr) - sizeof(double) + (num_args + 1) * sizeof(expr*));
@@ -199,9 +200,11 @@ ExprT ASLBuilder::MakeSum(int opcode, int num_args) {
   return Expr::Create<ExprT>(result);
 }
 
-template <typename Arg>
-BasicSumExpr<Arg> ASLBuilder::MakeSum(int opcode, int num_args, Arg *args) {
-  BasicSumExpr<Arg> result = MakeSum< BasicSumExpr<Arg> >(opcode, num_args);
+template <Expr::Kind K>
+BasicIteratedExpr<K> ASLBuilder::MakeIterated(
+    int opcode, int num_args, typename IteratedExprInfo<K>::Arg *args) {
+  BasicIteratedExpr<K> result =
+      MakeIterated< BasicIteratedExpr<K> >(opcode, num_args);
   expr **arg_ptrs = result.expr_->L.ep;
   for (int i = 0; i < num_args; ++i)
     arg_ptrs[i] = args[i].expr_;
