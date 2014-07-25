@@ -27,6 +27,7 @@
 #include "solvers/util/error.h"
 #include "solvers/util/os.h"
 
+#include <cctype>
 #include <climits>
 
 namespace ampl {

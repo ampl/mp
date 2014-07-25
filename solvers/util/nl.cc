@@ -24,8 +24,6 @@
 
 #include "solvers/asl.h"
 
-#include <cctype>
-
 #undef ampl_vbtol
 
 namespace ampl {
