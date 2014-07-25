@@ -65,8 +65,8 @@ class ASLBuilder : Noncopyable {
       throw Error("invalid {} expression code {}", expr_name, opcode);
   }
 
-  template <typename ExprT>
-  ExprT MakeExpr(int opcode, Expr lhs, Expr rhs);
+  // Creates a binary or unary expression.
+  expr *MakeExpr(int opcode, Expr lhs, Expr rhs = Expr());
 
   template <typename T>
   T *Allocate(unsigned size = sizeof(T)) {
@@ -74,27 +74,23 @@ class ASLBuilder : Noncopyable {
     return reinterpret_cast<T*>(mem_ASL(asl_, size));
   }
 
-  template <typename ExprT>
-  ExprT MakeConstant(double value);
+  expr *MakeConstant(double value);
 
-  template <Expr::Kind KIND, typename Arg>
-  BasicBinaryExpr<KIND, Arg> MakeBinary(int opcode, Arg lhs, Arg rhs) {
-    CheckOpCode(opcode, KIND, "binary");
-    typedef BasicBinaryExpr<KIND, Arg> BinaryExpr;
-    BinaryExpr expr = MakeExpr<BinaryExpr>(opcode, lhs, rhs);
-    expr.expr_->dL = 1;
-    expr.expr_->dR = DVALUE[opcode];  // for PLUS, MINUS, REM
-    return expr;
-  }
+  expr *MakeBinary(int opcode, Expr::Kind kind, Expr lhs, Expr rhs);
+
+  expr *MakeIf(int opcode,
+      LogicalExpr condition, Expr true_expr, Expr false_expr);
 
   // Makes an iterated expression.
-  template <typename ExprT>
-  ExprT MakeIterated(int opcode, int num_args);
+  expr *MakeIterated(int opcode, int num_args, const Expr *args);
 
   // Makes an iterated expression.
   template <Expr::Kind K>
-  BasicIteratedExpr<K> MakeIterated(int opcode,
-      int num_args, typename ExprInfo<K>::Arg *args);
+  BasicIteratedExpr<K> MakeIterated(
+      int opcode, int num_args, const Expr *args) {
+    return Expr::Create< BasicIteratedExpr<K> >(
+        MakeIterated(opcode, num_args, args));
+  }
 
  public:
   explicit ASLBuilder(ASL *asl = 0);
@@ -118,6 +114,12 @@ class ASLBuilder : Noncopyable {
 
   Function AddFunction(int index, const char *name, int num_args, int type = 0);
 
+  NumericConstant MakeNumericConstant(double value) {
+    return Expr::Create<NumericConstant>(MakeConstant(value));
+  }
+
+  Variable MakeVariable(int var_index);
+
   // The Make* methods construct expression objects. These objects are
   // local to the currently built ASL problem and shouldn't be used with
   // other problems. The expression objects are not accessible via the
@@ -128,88 +130,73 @@ class ASLBuilder : Noncopyable {
   UnaryExpr MakeUnary(int opcode, NumericExpr arg);
 
   BinaryExpr MakeBinary(int opcode, NumericExpr lhs, NumericExpr rhs) {
-    return MakeBinary<Expr::BINARY, NumericExpr>(opcode, lhs, rhs);
+    return Expr::Create<BinaryExpr>(MakeBinary(opcode, Expr::BINARY, lhs, rhs));
   }
-
-  VarArgExpr MakeVarArg(int opcode, int num_args, NumericExpr *args);
-
-  SumExpr MakeSum(int num_args, NumericExpr *args) {
-    return MakeIterated<Expr::SUM>(OPSUMLIST, num_args, args);
-  }
-
-  CountExpr MakeCount(int num_args, LogicalExpr *args) {
-    return MakeIterated<Expr::COUNT>(OPCOUNT, num_args, args);
-  }
-
-  NumberOfExpr MakeNumberOf(
-      NumericExpr value, int num_args, const NumericExpr *args);
 
   IfExpr MakeIf(LogicalExpr condition,
-      NumericExpr true_expr, NumericExpr false_expr);
+      NumericExpr true_expr, NumericExpr false_expr) {
+    return Expr::Create<IfExpr>(
+        MakeIf(OPIFnl, condition, true_expr, false_expr));
+  }
 
   PiecewiseLinearExpr MakePiecewiseLinear(int num_breakpoints,
       const double *breakpoints, const double *slopes, Variable var);
 
-  Variable MakeVariable(int var_index);
-
   CallExpr MakeCall(Function f, int num_args, const Expr *args);
 
-  NumericConstant MakeNumericConstant(double value) {
-    return MakeConstant<NumericConstant>(value);
+  VarArgExpr MakeVarArg(int opcode, int num_args, NumericExpr *args);
+
+  SumExpr MakeSum(int num_args, const NumericExpr *args) {
+    return MakeIterated<Expr::SUM>(OPSUMLIST, num_args, args);
+  }
+
+  CountExpr MakeCount(int num_args, const LogicalExpr *args) {
+    return MakeIterated<Expr::COUNT>(OPCOUNT, num_args, args);
+  }
+
+  NumberOfExpr MakeNumberOf(int num_args, const NumericExpr *args) {
+    assert(num_args >= 1);
+    return MakeIterated<Expr::NUMBEROF>(OPNUMBEROF, num_args, args);
   }
 
   LogicalConstant MakeLogicalConstant(bool value) {
-    return MakeConstant<LogicalConstant>(value);
+    return Expr::Create<LogicalConstant>(MakeConstant(value));
   }
+
+  NotExpr MakeNot(LogicalExpr arg);
 
   BinaryLogicalExpr MakeBinaryLogical(
       int opcode, LogicalExpr lhs, LogicalExpr rhs) {
-    return MakeBinary<Expr::BINARY_LOGICAL, LogicalExpr>(opcode, lhs, rhs);
+    return Expr::Create<BinaryLogicalExpr>(
+        MakeBinary(opcode, Expr::BINARY_LOGICAL, lhs, rhs));
+  }
+
+  RelationalExpr MakeRelational(int opcode, NumericExpr lhs, NumericExpr rhs) {
+    return Expr::Create<RelationalExpr>(
+        MakeBinary(opcode, Expr::RELATIONAL, lhs, rhs));
+  }
+
+  LogicalCountExpr MakeLogicalCount(
+      int opcode, NumericExpr lhs, CountExpr rhs) {
+    return Expr::Create<LogicalCountExpr>(
+        MakeBinary(opcode, Expr::LOGICAL_COUNT, lhs, rhs));
+  }
+
+  ImplicationExpr MakeImplication(
+      LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
+    return Expr::Create<ImplicationExpr>(
+        MakeIf(OPIMPELSE, condition, true_expr, false_expr));
+  }
+
+  IteratedLogicalExpr MakeIteratedLogical(
+      int opcode, int num_args, const LogicalExpr *args);
+
+  AllDiffExpr MakeAllDiff(int num_args, const NumericExpr *args) {
+    return MakeIterated<Expr::ALLDIFF>(OPALLDIFF, num_args, args);
   }
 
   StringLiteral MakeStringLiteral(int size, const char *value);
 };
-
-template <typename ExprT>
-ExprT ASLBuilder::MakeExpr(int opcode, Expr lhs, Expr rhs) {
-  expr *e = Allocate<expr>();
-  e->op = reinterpret_cast<efunc*>(opcode);
-  e->L.e = lhs.expr_;
-  e->R.e = rhs.expr_;
-  e->a = asl_->i.n_var_ + asl_->i.nsufext[ASL_Sufkind_var];
-  e->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
-  return Expr::Create<ExprT>(e);
-}
-
-template <typename ExprT>
-ExprT ASLBuilder::MakeConstant(double value) {
-  expr_n *result = Allocate<expr_n>(asl_->i.size_expr_n_);
-  result->op = reinterpret_cast<efunc_n*>(OPNUM);
-  result->v = value;
-  return Expr::Create<ExprT>(reinterpret_cast<expr*>(result));
-}
-
-template <typename ExprT>
-ExprT ASLBuilder::MakeIterated(int opcode, int num_args) {
-  assert(num_args >= 0);
-  expr *result = Allocate<expr>(
-      sizeof(expr) - sizeof(double) + (num_args + 1) * sizeof(expr*));
-  result->op = reinterpret_cast<efunc*>(opcode);
-  result->L.ep = reinterpret_cast<expr**>(&result->dR);
-  result->R.ep = result->L.ep + num_args;
-  return Expr::Create<ExprT>(result);
-}
-
-template <Expr::Kind K>
-BasicIteratedExpr<K> ASLBuilder::MakeIterated(
-    int opcode, int num_args, typename ExprInfo<K>::Arg *args) {
-  BasicIteratedExpr<K> result =
-      MakeIterated< BasicIteratedExpr<K> >(opcode, num_args);
-  expr **arg_ptrs = result.expr_->L.ep;
-  for (int i = 0; i < num_args; ++i)
-    arg_ptrs[i] = args[i].expr_;
-  return result;
-}
 }
 }
 

@@ -295,6 +295,45 @@ void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
   nderp_ = 0;
 }
 
+void ASLBuilder::EndBuild() {
+  bool linear = asl_->i.ASLtype == ASL_read_f;
+  Edaginfo &info = asl_->i;
+  if (!linear) {
+    // Make amax long enough for nlc to handle
+    // var_e[i].a for common variables i.
+    if (info.ncom0_) {
+      int i = info.comb_ + info.como_;
+      if (i < info.combc_)
+        i = info.combc_;
+      if ((i += nv1_ + 1) > info.amax_)
+        info.amax_ = i;
+    }
+    info.adjoints_ = reinterpret_cast<double*>(
+        M1zapalloc_ASL(&asl_->i, info.amax_ * Sizeof(double)));
+    info.adjoints_nv1_ = &info.adjoints_[nv1_];
+    info.nderps_ += nderp_;
+  }
+  // TODO
+  //adjust(S, flags);
+  info.nzjac_ = nz_;
+  if (!info.Lastx_) {
+    info.Lastx_ = reinterpret_cast<double*>(
+        M1alloc_ASL(&info, nv1_ * sizeof(double)));
+  }
+  if (!linear) {
+    Edagpars &pars = asl_->p;
+    pars.Objval = pars.Objval_nomap = obj1val_ASL;
+    pars.Objgrd = pars.Objgrd_nomap = obj1grd_ASL;
+    pars.Conval = con1val_ASL;
+    pars.Jacval = jac1val_ASL;
+    pars.Conival = pars.Conival_nomap = con1ival_ASL;
+    pars.Congrd = pars.Congrd_nomap = con1grd_ASL;
+    pars.Lconval = lcon1val_ASL;
+    pars.Xknown = x1known_ASL;
+  }
+  prob_adj_ASL(asl_);
+}
+
 void ASLBuilder::AddObj(int obj_index, bool maximize, NumericExpr expr) {
   // TODO
 }
@@ -319,49 +358,71 @@ Function ASLBuilder::AddFunction(
   return Function(fi);
 }
 
+Variable ASLBuilder::MakeVariable(int var_index) {
+  assert(var_index >= 0 && var_index < asl_->i.n_var_);
+  return Expr::Create<Variable>(
+      reinterpret_cast<expr*>(reinterpret_cast<ASL_fg*>(asl_)->I.var_e_
+          + var_index));
+}
+
 UnaryExpr ASLBuilder::MakeUnary(int opcode, NumericExpr arg) {
   CheckOpCode(opcode, Expr::UNARY, "unary");
-  UnaryExpr expr = MakeExpr<UnaryExpr>(opcode, arg, NumericExpr());
+  UnaryExpr expr = Expr::Create<UnaryExpr>(MakeExpr(opcode, arg));
   expr.expr_->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
   return expr;
 }
 
-VarArgExpr ASLBuilder::MakeVarArg(
-    int opcode, int num_args, NumericExpr *args) {
-  assert(num_args >= 0);
-  CheckOpCode(opcode, Expr::VARARG, "vararg");
-  expr_va *result = Allocate<expr_va>();
-  result->op = r_ops_[opcode];
-  de *d = result->L.d = Allocate<de>(num_args * sizeof(de) + sizeof(expr*));
-  for (int i = 0; i < num_args; ++i)
-    d[i].e = args[i].expr_;
-  d[num_args].e = 0;
-  return Expr::Create<VarArgExpr>(reinterpret_cast<expr*>(result));
+expr *ASLBuilder::MakeExpr(int opcode, Expr lhs, Expr rhs) {
+  expr *e = Allocate<expr>();
+  e->op = reinterpret_cast<efunc*>(opcode);
+  e->L.e = lhs.expr_;
+  e->R.e = rhs.expr_;
+  e->a = asl_->i.n_var_ + asl_->i.nsufext[ASL_Sufkind_var];
+  e->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
+  return e;
 }
 
-NumberOfExpr ASLBuilder::MakeNumberOf(
-    NumericExpr value, int num_args, const NumericExpr *args) {
+expr *ASLBuilder::MakeConstant(double value) {
+  expr_n *result = Allocate<expr_n>(asl_->i.size_expr_n_);
+  result->op = reinterpret_cast<efunc_n*>(OPNUM);
+  result->v = value;
+  return reinterpret_cast<expr*>(result);
+}
+
+expr *ASLBuilder::MakeBinary(int opcode, Expr::Kind kind, Expr lhs, Expr rhs) {
+  CheckOpCode(opcode, kind, "binary");
+  expr *e = MakeExpr(opcode, lhs, rhs);
+  e->dL = 1;
+  e->dR = DVALUE[opcode];  // for PLUS, MINUS, REM
+  return e;
+}
+
+expr *ASLBuilder::MakeIf(
+    int opcode, LogicalExpr condition, Expr true_expr, Expr false_expr) {
+  expr_if *result = Allocate<expr_if>();
+  result->op = r_ops_[opcode];
+  result->e = condition.expr_;
+  result->T = true_expr.expr_;
+  result->F = false_expr.expr_;
+  return reinterpret_cast<expr*>(result);
+}
+
+expr *ASLBuilder::MakeIterated(int opcode, int num_args, const Expr *args) {
   assert(num_args >= 0);
-  NumberOfExpr result = MakeIterated<NumberOfExpr>(OPNUMBEROF, num_args + 1);
-  expr **arg_ptrs = result.expr_->L.ep;
-  *arg_ptrs++ = value.expr_;
+  expr *result = Allocate<expr>(
+      sizeof(expr) - sizeof(double) + (num_args + 1) * sizeof(expr*));
+  result->op = reinterpret_cast<efunc*>(opcode);
+  result->L.ep = reinterpret_cast<expr**>(&result->dR);
+  result->R.ep = result->L.ep + num_args;
+  expr **arg_ptrs = result->L.ep;
   for (int i = 0; i < num_args; ++i)
     arg_ptrs[i] = args[i].expr_;
   return result;
 }
 
-IfExpr ASLBuilder::MakeIf(LogicalExpr condition,
-    NumericExpr true_expr, NumericExpr false_expr) {
-  expr_if *result = Allocate<expr_if>();
-  result->op = r_ops_[OPIFnl];
-  result->e = condition.expr_;
-  result->T = true_expr.expr_;
-  result->F = false_expr.expr_;
-  return Expr::Create<IfExpr>(reinterpret_cast<expr*>(result));
-}
-
-PiecewiseLinearExpr ASLBuilder::MakePiecewiseLinear(int num_breakpoints,
-    const double *breakpoints, const double *slopes, Variable var) {
+PiecewiseLinearExpr ASLBuilder::MakePiecewiseLinear(
+    int num_breakpoints, const double *breakpoints,
+    const double *slopes, Variable var) {
   assert(num_breakpoints >= 0);
   plterm *term = Allocate<plterm>(
       sizeof(plterm) + 2 * num_breakpoints * sizeof(double));
@@ -377,13 +438,6 @@ PiecewiseLinearExpr ASLBuilder::MakePiecewiseLinear(int num_breakpoints,
   result->L.p = term;
   result->R.e = var.expr_;
   return Expr::Create<PiecewiseLinearExpr>(result);
-}
-
-Variable ASLBuilder::MakeVariable(int var_index) {
-  assert(var_index >= 0 && var_index < asl_->i.n_var_);
-  return Expr::Create<Variable>(
-      reinterpret_cast<expr*>(reinterpret_cast<ASL_fg*>(asl_)->I.var_e_
-          + var_index));
 }
 
 CallExpr ASLBuilder::MakeCall(Function f, int num_args, const Expr *args) {
@@ -424,51 +478,39 @@ CallExpr ASLBuilder::MakeCall(Function f, int num_args, const Expr *args) {
   return Expr::Create<CallExpr>(reinterpret_cast<expr*>(result));
 }
 
+VarArgExpr ASLBuilder::MakeVarArg(
+    int opcode, int num_args, NumericExpr *args) {
+  assert(num_args >= 0);
+  CheckOpCode(opcode, Expr::VARARG, "vararg");
+  expr_va *result = Allocate<expr_va>();
+  result->op = r_ops_[opcode];
+  de *d = result->L.d = Allocate<de>(num_args * sizeof(de) + sizeof(expr*));
+  for (int i = 0; i < num_args; ++i)
+    d[i].e = args[i].expr_;
+  d[num_args].e = 0;
+  return Expr::Create<VarArgExpr>(reinterpret_cast<expr*>(result));
+}
+
+NotExpr ASLBuilder::MakeNot(LogicalExpr arg) {
+  NotExpr expr = Expr::Create<NotExpr>(MakeExpr(OPNOT, arg));
+  expr.expr_->dL = DVALUE[OPNOT];
+  return expr;
+}
+
+IteratedLogicalExpr ASLBuilder::MakeIteratedLogical(
+    int opcode, int num_args, const LogicalExpr *args) {
+  CheckOpCode(opcode, Expr::ITERATED_LOGICAL, "iterated logical");
+  return MakeIterated<Expr::ITERATED_LOGICAL>(opcode, num_args, args);
+}
+
 StringLiteral ASLBuilder::MakeStringLiteral(int size, const char *value) {
   expr_h *result = Allocate<expr_h>(AddPadding(sizeof(expr_h) + size));
   result->op = r_ops_[OPHOL];
-  std::copy(value, value + size, result->sym);
+  // Passing result->sym makes std::copy causes in assertion failure in MSVC.
+  char *dest = result->sym;
+  std::copy(value, value + size, dest);
   result->sym[size] = 0;
   return Expr::Create<StringLiteral>(reinterpret_cast<expr*>(result));
-}
-
-void ASLBuilder::EndBuild() {
-  bool linear = asl_->i.ASLtype == ASL_read_f;
-  Edaginfo &info = asl_->i;
-  if (!linear) {
-    // Make amax long enough for nlc to handle
-    // var_e[i].a for common variables i.
-    if (info.ncom0_) {
-      int i = info.comb_ + info.como_;
-      if (i < info.combc_)
-        i = info.combc_;
-      if ((i += nv1_ + 1) > info.amax_)
-        info.amax_ = i;
-    }
-    info.adjoints_ = reinterpret_cast<double*>(
-        M1zapalloc_ASL(&asl_->i, info.amax_ * Sizeof(double)));
-    info.adjoints_nv1_ = &info.adjoints_[nv1_];
-    info.nderps_ += nderp_;
-  }
-  // TODO
-  //adjust(S, flags);
-  info.nzjac_ = nz_;
-  if (!info.Lastx_) {
-    info.Lastx_ = reinterpret_cast<double*>(
-        M1alloc_ASL(&info, nv1_ * sizeof(double)));
-  }
-  if (!linear) {
-    Edagpars &pars = asl_->p;
-    pars.Objval = pars.Objval_nomap = obj1val_ASL;
-    pars.Objgrd = pars.Objgrd_nomap = obj1grd_ASL;
-    pars.Conval = con1val_ASL;
-    pars.Jacval = jac1val_ASL;
-    pars.Conival = pars.Conival_nomap = con1ival_ASL;
-    pars.Congrd = pars.Congrd_nomap = con1grd_ASL;
-    pars.Lconval = lcon1val_ASL;
-    pars.Xknown = x1known_ASL;
-  }
-  prob_adj_ASL(asl_);
 }
 }
 }
