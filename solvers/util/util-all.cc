@@ -20,6 +20,7 @@
  Author: Victor Zverovich
  */
 
+#include "aslbuilder.cc"
 #include "clock.cc"
 #include "format.cc"
 #include "solver.cc"
