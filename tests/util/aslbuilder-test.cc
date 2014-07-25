@@ -768,15 +768,14 @@ TEST(ASLBuilderTest, MakeNumberOf) {
       builder.MakeNumericConstant(2),
       builder.MakeNumericConstant(3)
   };
-  ampl::NumberOfExpr expr =
-      builder.MakeNumberOf(args[0], NUM_ARGS - 1, args + 1);
+  ampl::NumberOfExpr expr = builder.MakeNumberOf(NUM_ARGS, args);
   EXPECT_EQ(OPNUMBEROF, expr.opcode());
   EXPECT_EQ(NUM_ARGS, expr.num_args());
   for (int i = 0; i < NUM_ARGS; ++i)
     EXPECT_EQ(args[i], expr[i]);
 #ifndef NDEBUG
   EXPECT_DEBUG_DEATH(
-      builder.MakeNumberOf(args[0], -1, args + 1);, "Assertion");  // NOLINT(*)
+      builder.MakeNumberOf(0, args);, "Assertion");  // NOLINT(*)
 #endif
 }
 
