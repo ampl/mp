@@ -339,6 +339,17 @@ VarArgExpr ASLBuilder::MakeVarArg(
   return Expr::Create<VarArgExpr>(reinterpret_cast<expr*>(result));
 }
 
+NumberOfExpr ASLBuilder::MakeNumberOf(
+    NumericExpr value, int num_args, const NumericExpr *args) {
+  assert(num_args >= 0);
+  NumberOfExpr result = MakeIterated<NumberOfExpr>(OPNUMBEROF, num_args + 1);
+  expr **arg_ptrs = result.expr_->L.ep;
+  *arg_ptrs++ = value.expr_;
+  for (int i = 0; i < num_args; ++i)
+    arg_ptrs[i] = args[i].expr_;
+  return result;
+}
+
 IfExpr ASLBuilder::MakeIf(LogicalExpr condition,
     NumericExpr true_expr, NumericExpr false_expr) {
   expr_if *result = Allocate<expr_if>();
@@ -373,17 +384,6 @@ Variable ASLBuilder::MakeVariable(int var_index) {
   return Expr::Create<Variable>(
       reinterpret_cast<expr*>(reinterpret_cast<ASL_fg*>(asl_)->I.var_e_
           + var_index));
-}
-
-NumberOfExpr ASLBuilder::MakeNumberOf(
-    NumericExpr value, int num_args, const NumericExpr *args) {
-  assert(num_args >= 0);
-  NumberOfExpr result = MakeIterated<NumberOfExpr>(OPNUMBEROF, num_args + 1);
-  expr **arg_ptrs = result.expr_->L.ep;
-  *arg_ptrs++ = value.expr_;
-  for (int i = 0; i < num_args; ++i)
-    arg_ptrs[i] = args[i].expr_;
-  return result;
 }
 
 CallExpr ASLBuilder::MakeCall(Function f, int num_args, const Expr *args) {

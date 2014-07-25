@@ -514,20 +514,20 @@ class VarArgExpr : public NumericExpr {
 };
 
 template <Expr::Kind>
-struct IteratedExprInfo;
+struct ExprInfo;
 
 template <typename BaseT = void, typename ArgT = BaseT>
-struct BasicIteratedExprInfo {
+struct BasicExprInfo {
   typedef BaseT Base;
   typedef ArgT Arg;
 };
 
 template <Expr::Kind K>
-class BasicIteratedExpr : public IteratedExprInfo<K>::Base {
+class BasicIteratedExpr : public ExprInfo<K>::Base {
  public:
   static const Expr::Kind KIND = K;
 
-  typedef typename IteratedExprInfo<K>::Arg Arg;
+  typedef typename ExprInfo<K>::Arg Arg;
 
   BasicIteratedExpr() {}
 
@@ -548,7 +548,7 @@ class BasicIteratedExpr : public IteratedExprInfo<K>::Base {
 };
 
 template <>
-struct IteratedExprInfo<Expr::SUM> : BasicIteratedExprInfo<NumericExpr> {};
+struct ExprInfo<Expr::SUM> : BasicExprInfo<NumericExpr> {};
 
 // A sum expression.
 // Example: sum{i in I} x[i], where I is a set and x is a variable.
@@ -556,8 +556,7 @@ typedef BasicIteratedExpr<Expr::SUM> SumExpr;
 AMPL_SPECIALIZE_IS(SumExpr, OPSUMLIST)
 
 template <>
-struct IteratedExprInfo<Expr::COUNT> :
-  BasicIteratedExprInfo<NumericExpr, LogicalExpr> {};
+struct ExprInfo<Expr::COUNT> : BasicExprInfo<NumericExpr, LogicalExpr> {};
 
 // A count expression.
 // Example: count{i in I} (x[i] >= 0), where I is a set and x is a variable.
@@ -799,38 +798,18 @@ typedef BasicIfExpr<LogicalExpr> ImplicationExpr;
 AMPL_SPECIALIZE_IS(ImplicationExpr, OPIMPELSE)
 
 template <>
-struct IteratedExprInfo<Expr::ITERATED_LOGICAL> :
-  BasicIteratedExprInfo<LogicalExpr> {};
+struct ExprInfo<Expr::ITERATED_LOGICAL> : BasicExprInfo<LogicalExpr> {};
 
 // An iterated logical expression.
 // Example: exists{i in I} x[i] >= 0, where I is a set and x is a variable.
 typedef BasicIteratedExpr<Expr::ITERATED_LOGICAL> IteratedLogicalExpr;
 
+template <>
+struct ExprInfo<Expr::ALLDIFF> : BasicExprInfo<LogicalExpr, NumericExpr> {};
+
 // An alldiff expression.
 // Example: alldiff{i in I} x[i], where I is a set and x is a variable.
-class AllDiffExpr : public LogicalExpr {
- public:
-  AllDiffExpr() {}
-
-  typedef ArrayIterator<NumericExpr> iterator;
-
-  // Returns the number of arguments.
-  int num_args() const { return static_cast<int>(expr_->R.ep - expr_->L.ep); }
-
-  NumericExpr operator[](int index) {
-    assert(index >= 0 && index < num_args());
-    return Create<NumericExpr>(expr_->L.ep[index]);
-  }
-
-  iterator begin() const {
-    return iterator(expr_->L.ep);
-  }
-
-  iterator end() const {
-    return iterator(expr_->R.ep);
-  }
-};
-
+typedef BasicIteratedExpr<Expr::ALLDIFF> AllDiffExpr;
 AMPL_SPECIALIZE_IS(AllDiffExpr, OPALLDIFF)
 
 class StringLiteral : public Expr {

@@ -94,7 +94,7 @@ class ASLBuilder : Noncopyable {
   // Makes an iterated expression.
   template <Expr::Kind K>
   BasicIteratedExpr<K> MakeIterated(int opcode,
-      int num_args, typename IteratedExprInfo<K>::Arg *args);
+      int num_args, typename ExprInfo<K>::Arg *args);
 
  public:
   explicit ASLBuilder(ASL *asl = 0);
@@ -141,6 +141,9 @@ class ASLBuilder : Noncopyable {
     return MakeIterated<Expr::COUNT>(OPCOUNT, num_args, args);
   }
 
+  NumberOfExpr MakeNumberOf(
+      NumericExpr value, int num_args, const NumericExpr *args);
+
   IfExpr MakeIf(LogicalExpr condition,
       NumericExpr true_expr, NumericExpr false_expr);
 
@@ -148,9 +151,6 @@ class ASLBuilder : Noncopyable {
       const double *breakpoints, const double *slopes, Variable var);
 
   Variable MakeVariable(int var_index);
-
-  NumberOfExpr MakeNumberOf(
-      NumericExpr value, int num_args, const NumericExpr *args);
 
   CallExpr MakeCall(Function f, int num_args, const Expr *args);
 
@@ -202,7 +202,7 @@ ExprT ASLBuilder::MakeIterated(int opcode, int num_args) {
 
 template <Expr::Kind K>
 BasicIteratedExpr<K> ASLBuilder::MakeIterated(
-    int opcode, int num_args, typename IteratedExprInfo<K>::Arg *args) {
+    int opcode, int num_args, typename ExprInfo<K>::Arg *args) {
   BasicIteratedExpr<K> result =
       MakeIterated< BasicIteratedExpr<K> >(opcode, num_args);
   expr **arg_ptrs = result.expr_->L.ep;
