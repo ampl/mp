@@ -678,12 +678,10 @@ TEST_F(ExprTest, Variable) {
 
 TEST_F(ExprTest, NumberOfExpr) {
   EXPECT_EQ(1, CheckExpr<NumberOfExpr>(Expr::NUMBEROF));
-  NumericExpr value = AddNum(42);
-  NumericExpr args[] = {AddNum(43), AddNum(44)};
-  EXPECT_EQ(1, AddNumberOf(value, args[0]).num_args());
-  NumberOfExpr e(AddNumberOf(value, args[0], args[1]));
-  EXPECT_EQ(2, e.num_args());
-  EXPECT_EQ(value, e.value());
+  NumericExpr args[] = {AddNum(42), AddNum(43), AddNum(44)};
+  EXPECT_EQ(2, AddNumberOf(args[0], args[1]).num_args());
+  NumberOfExpr e(AddNumberOf(args[0], args[1], args[2]));
+  EXPECT_EQ(3, e.num_args());
   int index = 0;
   NumberOfExpr::iterator i = e.begin();
   for (NumberOfExpr::iterator end = e.end(); i != end; ++i, ++index) {
@@ -692,7 +690,7 @@ TEST_F(ExprTest, NumberOfExpr) {
     EXPECT_EQ(args[index].opcode(), i->opcode());
     EXPECT_EQ(args[index], e[index]);
   }
-  EXPECT_EQ(2, index);
+  EXPECT_EQ(3, index);
   i = e.begin();
   NumberOfExpr::iterator i2 = i++;
   EXPECT_EQ(args[0], *i2);
@@ -758,8 +756,8 @@ TEST_F(ExprTest, LogicalCountExpr) {
   NumericExpr n(AddNum(42));
   CountExpr count(AddCount(AddRelational(EQ, n, n), AddRelational(EQ, n, n)));
   LogicalCountExpr e(AddLogicalCount(OPATLEAST, value, count));
-  EXPECT_EQ(value, e.value());
-  EXPECT_EQ(count, e.count());
+  EXPECT_EQ(value, e.lhs());
+  EXPECT_EQ(count, e.rhs());
 }
 
 TEST_F(ExprTest, BinaryLogicalExpr) {

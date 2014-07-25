@@ -762,22 +762,21 @@ TEST(ASLBuilderTest, MakeVariable) {
 
 TEST(ASLBuilderTest, MakeNumberOf) {
   TestASLBuilder builder;
-  NumericExpr value = builder.MakeNumericConstant(1);
-  enum {NUM_ARGS = 2};
+  enum {NUM_ARGS = 3};
   NumericExpr args[NUM_ARGS] = {
-      builder.MakeNumericConstant(2), builder.MakeNumericConstant(3)
+      builder.MakeNumericConstant(1),
+      builder.MakeNumericConstant(2),
+      builder.MakeNumericConstant(3)
   };
-  ampl::NumberOfExpr expr = builder.MakeNumberOf(value, NUM_ARGS, args);
+  ampl::NumberOfExpr expr =
+      builder.MakeNumberOf(args[0], NUM_ARGS - 1, args + 1);
   EXPECT_EQ(OPNUMBEROF, expr.opcode());
-  EXPECT_EQ(value, expr.value());
-  int arg_index = 0;
-  for (ampl::NumberOfExpr::iterator
-      i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
-    EXPECT_EQ(args[arg_index], *i);
-  }
+  EXPECT_EQ(NUM_ARGS, expr.num_args());
+  for (int i = 0; i < NUM_ARGS; ++i)
+    EXPECT_EQ(args[i], expr[i]);
 #ifndef NDEBUG
   EXPECT_DEBUG_DEATH(
-      builder.MakeNumberOf(value, -1, args);, "Assertion");  // NOLINT(*)
+      builder.MakeNumberOf(args[0], -1, args + 1);, "Assertion");  // NOLINT(*)
 #endif
 }
 

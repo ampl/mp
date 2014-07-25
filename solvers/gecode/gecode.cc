@@ -457,10 +457,11 @@ LinExpr NLToGecodeConverter::VisitNumberOf(NumberOfExpr e) {
   // constraints.
   IntVar result(problem_, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
   int index = 0;
-  IntVarArgs args(e.num_args());
-  for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-    args[index++] = Gecode::expr(problem_, Visit(*i), icl_);
-  count(problem_, args, Gecode::expr(problem_, Visit(e.value()), icl_),
+  int num_args = e.num_args();
+  IntVarArgs args(num_args - 1);
+  for (int i = 1; i < num_args; ++i)
+    args[i - 1] = Gecode::expr(problem_, Visit(e[i]), icl_);
+  count(problem_, args, Gecode::expr(problem_, Visit(e[0]), icl_),
       Gecode::IRT_EQ, result);
   return result;
 }

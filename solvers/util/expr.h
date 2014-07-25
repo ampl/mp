@@ -1,5 +1,5 @@
 /*
- A C++ interface to AMPL expression trees.
+ A C++ interface to AMPL expressions.
 
  Copyright (C) 2012 AMPL Optimization Inc
 
@@ -196,16 +196,16 @@ class Expr {
     // To simplify checks, numeric expression kinds are in a range
     // [NUMERIC_START, NUMERIC_END].
     NUMERIC_START = EXPR_START,
-    UNARY = NUMERIC_START,
+    VARIABLE = NUMERIC_START,
+    UNARY,
     BINARY,
+    IF,
+    PLTERM,
+    CALL,
     VARARG,
     SUM,
     COUNT,
-    IF,
-    PLTERM,
-    VARIABLE,
     NUMBEROF,
-    CALL,
     NUMERIC_END,
 
     // CONSTANT belongs both to numeric and logical expressions therefore
@@ -216,10 +216,10 @@ class Expr {
     // To simplify checks, logical expression kinds are in a range
     // [LOGICAL_START, LOGICAL_END].
     LOGICAL_START = CONSTANT,
-    RELATIONAL,
     NOT,
-    LOGICAL_COUNT,
     BINARY_LOGICAL,
+    RELATIONAL,
+    LOGICAL_COUNT,
     IMPLICATION,
     ITERATED_LOGICAL,
     ALLDIFF,
@@ -422,6 +422,30 @@ inline bool Is<LogicalExpr>(Expr e) {
 }
 }
 
+// A numeric constant.
+// Examples: 42, -1.23e-4
+class NumericConstant : public NumericExpr {
+ public:
+  NumericConstant() {}
+
+  // Returns the value of this number.
+  double value() const { return reinterpret_cast<expr_n*>(expr_)->v; }
+};
+
+AMPL_SPECIALIZE_IS(NumericConstant, OPNUM)
+
+// A reference to a variable.
+// Example: x
+class Variable : public NumericExpr {
+ public:
+  Variable() {}
+
+  // Returns the index of the referenced variable.
+  int index() const { return expr_->a; }
+};
+
+AMPL_SPECIALIZE_IS(Variable, OPVARVAL)
+
 template <Expr::Kind K, typename Base>
 class BasicUnaryExpr : public Base {
  public:
@@ -457,6 +481,138 @@ class BasicBinaryExpr : public Base {
 // A binary numeric expression.
 // Examples: x / y, atan2(x, y), where x and y are variables.
 typedef BasicBinaryExpr<Expr::BINARY, NumericExpr> BinaryExpr;
+
+template <typename Base>
+class BasicIfExpr : public Base {
+ public:
+  BasicIfExpr() {}
+
+  LogicalExpr condition() const {
+    return Expr::Create<LogicalExpr>(
+        reinterpret_cast<expr_if*>(this->expr_)->e);
+  }
+
+  Base true_expr() const {
+    return Expr::Create<Base>(reinterpret_cast<expr_if*>(this->expr_)->T);
+  }
+
+  Base false_expr() const {
+    return Expr::Create<Base>(reinterpret_cast<expr_if*>(this->expr_)->F);
+  }
+};
+
+// An if-then-else expression.
+// Example: if x != 0 then y else z, where x, y and z are variables.
+typedef BasicIfExpr<NumericExpr> IfExpr;
+AMPL_SPECIALIZE_IS(IfExpr, OPIFnl)
+
+// A piecewise-linear expression.
+// Example: <<0; -1, 1>> x, where x is a variable.
+class PiecewiseLinearExpr : public NumericExpr {
+ public:
+  PiecewiseLinearExpr() {}
+
+  // Returns the number of breakpoints in this term.
+  int num_breakpoints() const {
+    return num_slopes() - 1;
+  }
+
+  // Returns the number of slopes in this term.
+  int num_slopes() const {
+    assert(expr_->L.p->n >= 1);
+    return expr_->L.p->n;
+  }
+
+  // Returns a breakpoint with the specified index.
+  double breakpoint(int index) const {
+    assert(index >= 0 && index < num_breakpoints());
+    return expr_->L.p->bs[2 * index + 1];
+  }
+
+  // Returns a slope with the specified index.
+  double slope(int index) const {
+    assert(index >= 0 && index < num_slopes());
+    return expr_->L.p->bs[2 * index];
+  }
+
+  int var_index() const {
+    return reinterpret_cast<expr_v*>(expr_->R.e)->a;
+  }
+};
+
+AMPL_SPECIALIZE_IS(PiecewiseLinearExpr, OPPLTERM)
+
+class Function {
+ private:
+  func_info *fi_;
+
+  friend class CallExpr;
+  friend class internal::ASLBuilder;
+
+  explicit Function(func_info *fi) : fi_(fi) {}
+
+  void True() const {}
+  typedef void (Function::*SafeBool)() const;
+
+ public:
+  // Function type.
+  enum Type {
+    SYMBOLIC = 1  // Accepts symbolic arguments.
+  };
+
+  Function() : fi_(0) {}
+
+  // Returns the function name.
+  const char *name() const { return fi_->name; }
+
+  // Returns the number of arguments.
+  int num_args() const { return fi_->nargs; }
+
+  // Returns a value convertible to bool that can be used in conditions but not
+  // in comparisons and evaluates to "true" if this function is not null
+  // and "false" otherwise.
+  // Example:
+  //   void foo(Function f) {
+  //     if (f) {
+  //       // Do something if e is not null.
+  //     }
+  //   }
+  operator SafeBool() const { return fi_ ? &Function::True : 0; }
+
+  bool operator==(const Function &other) const { return fi_ == other.fi_; }
+  bool operator!=(const Function &other) const { return fi_ != other.fi_; }
+};
+
+// A function call expression.
+// Example: f(x), where f is a function and x is a variable.
+class CallExpr : public NumericExpr {
+ public:
+  CallExpr() {}
+
+  Function function() const {
+    return Function(reinterpret_cast<expr_f*>(expr_)->fi);
+  }
+
+  int num_args() const { return reinterpret_cast<expr_f*>(expr_)->al->n; }
+
+  Expr operator[](int index) {
+    assert(index >= 0 && index < num_args());
+    return Create<Expr>(reinterpret_cast<expr_f*>(expr_)->args[index]);
+  }
+
+  // An argument iterator.
+  typedef ArrayIterator<Expr> iterator;
+
+  iterator begin() const {
+    return iterator(reinterpret_cast<expr_f*>(expr_)->args);
+  }
+
+  iterator end() const {
+    return iterator(reinterpret_cast<expr_f*>(expr_)->args + num_args());
+  }
+};
+
+AMPL_SPECIALIZE_IS(CallExpr, OPFUNCALL)
 
 // A numeric expression with a variable number of arguments.
 // The min and max functions always have at least one argument.
@@ -536,7 +692,7 @@ class BasicIteratedExpr : public ExprInfo<K>::Base {
     return static_cast<int>(this->expr_->R.ep - this->expr_->L.ep);
   }
 
-  Arg operator[](int index) {
+  Arg operator[](int index) const {
     assert(index >= 0 && index < num_args());
     return Expr::Create<Arg>(this->expr_->L.ep[index]);
   }
@@ -563,193 +719,14 @@ struct ExprInfo<Expr::COUNT> : BasicExprInfo<NumericExpr, LogicalExpr> {};
 typedef BasicIteratedExpr<Expr::COUNT> CountExpr;
 AMPL_SPECIALIZE_IS(CountExpr, OPCOUNT)
 
-template <typename Base>
-class BasicIfExpr : public Base {
- public:
-  BasicIfExpr() {}
-
-  LogicalExpr condition() const {
-    return Expr::Create<LogicalExpr>(
-        reinterpret_cast<expr_if*>(this->expr_)->e);
-  }
-
-  Base true_expr() const {
-    return Expr::Create<Base>(reinterpret_cast<expr_if*>(this->expr_)->T);
-  }
-
-  Base false_expr() const {
-    return Expr::Create<Base>(reinterpret_cast<expr_if*>(this->expr_)->F);
-  }
-};
-
-// An if-then-else expression.
-// Example: if x != 0 then y else z, where x, y and z are variables.
-typedef BasicIfExpr<NumericExpr> IfExpr;
-AMPL_SPECIALIZE_IS(IfExpr, OPIFnl)
-
-// A piecewise-linear expression.
-// Example: <<0; -1, 1>> x, where x is a variable.
-class PiecewiseLinearExpr : public NumericExpr {
- public:
-  PiecewiseLinearExpr() {}
-
-  // Returns the number of breakpoints in this term.
-  int num_breakpoints() const {
-    return num_slopes() - 1;
-  }
-
-  // Returns the number of slopes in this term.
-  int num_slopes() const {
-    assert(expr_->L.p->n >= 1);
-    return expr_->L.p->n;
-  }
-
-  // Returns a breakpoint with the specified index.
-  double breakpoint(int index) const {
-    assert(index >= 0 && index < num_breakpoints());
-    return expr_->L.p->bs[2 * index + 1];
-  }
-
-  // Returns a slope with the specified index.
-  double slope(int index) const {
-    assert(index >= 0 && index < num_slopes());
-    return expr_->L.p->bs[2 * index];
-  }
-
-  int var_index() const {
-    return reinterpret_cast<expr_v*>(expr_->R.e)->a;
-  }
-};
-
-AMPL_SPECIALIZE_IS(PiecewiseLinearExpr, OPPLTERM)
-
-// A numeric constant.
-// Examples: 42, -1.23e-4
-class NumericConstant : public NumericExpr {
- public:
-  NumericConstant() {}
-
-  // Returns the value of this number.
-  double value() const { return reinterpret_cast<expr_n*>(expr_)->v; }
-};
-
-AMPL_SPECIALIZE_IS(NumericConstant, OPNUM)
-
-// A reference to a variable.
-// Example: x
-class Variable : public NumericExpr {
- public:
-  Variable() {}
-
-  // Returns the index of the referenced variable.
-  int index() const { return expr_->a; }
-};
-
-AMPL_SPECIALIZE_IS(Variable, OPVARVAL)
+template <>
+struct ExprInfo<Expr::NUMBEROF> : BasicExprInfo<NumericExpr> {};
 
 // A numberof expression.
 // Example: numberof 42 in ({i in I} x[i]),
 // where I is a set and x is a variable.
-class NumberOfExpr : public NumericExpr {
- public:
-  NumberOfExpr() {}
-
-  NumericExpr value() const { return Create<NumericExpr>(*expr_->L.ep); }
-
-  // Returns the number of arguments.
-  int num_args() const {
-    return static_cast<int>(expr_->R.ep - expr_->L.ep - 1);
-  }
-
-  NumericExpr operator[](int index) {
-    assert(index >= 0 && index < num_args());
-    return Create<NumericExpr>(expr_->L.ep[index + 1]);
-  }
-
-  typedef ArrayIterator<NumericExpr> iterator;
-
-  iterator begin() const {
-    return iterator(expr_->L.ep + 1);
-  }
-
-  iterator end() const {
-    return iterator(expr_->R.ep);
-  }
-};
-
+typedef BasicIteratedExpr<Expr::NUMBEROF> NumberOfExpr;
 AMPL_SPECIALIZE_IS(NumberOfExpr, OPNUMBEROF)
-
-class Function {
- private:
-  func_info *fi_;
-
-  friend class CallExpr;
-  friend class internal::ASLBuilder;
-
-  explicit Function(func_info *fi) : fi_(fi) {}
-
-  void True() const {}
-  typedef void (Function::*SafeBool)() const;
-
- public:
-  // Function type.
-  enum Type {
-    SYMBOLIC = 1  // Accepts symbolic arguments.
-  };
-
-  Function() : fi_(0) {}
-
-  // Returns the function name.
-  const char *name() const { return fi_->name; }
-
-  // Returns the number of arguments.
-  int num_args() const { return fi_->nargs; }
-
-  // Returns a value convertible to bool that can be used in conditions but not
-  // in comparisons and evaluates to "true" if this function is not null
-  // and "false" otherwise.
-  // Example:
-  //   void foo(Function f) {
-  //     if (f) {
-  //       // Do something if e is not null.
-  //     }
-  //   }
-  operator SafeBool() const { return fi_ ? &Function::True : 0; }
-
-  bool operator==(const Function &other) const { return fi_ == other.fi_; }
-  bool operator!=(const Function &other) const { return fi_ != other.fi_; }
-};
-
-// A function call expression.
-// Example: f(x), where f is a function and x is a variable.
-class CallExpr : public NumericExpr {
- public:
-  CallExpr() {}
-
-  Function function() const {
-    return Function(reinterpret_cast<expr_f*>(expr_)->fi);
-  }
-
-  int num_args() const { return reinterpret_cast<expr_f*>(expr_)->al->n; }
-
-  Expr operator[](int index) {
-    assert(index >= 0 && index < num_args());
-    return Create<Expr>(reinterpret_cast<expr_f*>(expr_)->args[index]);
-  }
-
-  // An argument iterator.
-  typedef ArrayIterator<Expr> iterator;
-
-  iterator begin() const {
-    return iterator(reinterpret_cast<expr_f*>(expr_)->args);
-  }
-
-  iterator end() const {
-    return iterator(reinterpret_cast<expr_f*>(expr_)->args + num_args());
-  }
-};
-
-AMPL_SPECIALIZE_IS(CallExpr, OPFUNCALL)
 
 // A logical constant.
 // Examples: 0, 1
@@ -763,15 +740,19 @@ class LogicalConstant : public LogicalExpr {
 
 AMPL_SPECIALIZE_IS(LogicalConstant, OPNUM)
 
-// A relational expression.
-// Examples: x < y, x != y, where x and y are variables.
-typedef BasicBinaryExpr<
-    Expr::RELATIONAL, LogicalExpr, NumericExpr> RelationalExpr;
-
 // A logical NOT expression.
 // Example: not a, where a is a logical expression.
 typedef BasicUnaryExpr<Expr::NOT, LogicalExpr> NotExpr;
 AMPL_SPECIALIZE_IS(NotExpr, OPNOT)
+
+// A binary logical expression.
+// Examples: a || b, a && b, where a and b are logical expressions.
+typedef BasicBinaryExpr<Expr::BINARY_LOGICAL, LogicalExpr> BinaryLogicalExpr;
+
+// A relational expression.
+// Examples: x < y, x != y, where x and y are variables.
+typedef BasicBinaryExpr<
+    Expr::RELATIONAL, LogicalExpr, NumericExpr> RelationalExpr;
 
 // A logical count expression.
 // Examples: atleast 1 (x < y, x != y), where x and y are variables.
@@ -781,16 +762,12 @@ class LogicalCountExpr : public LogicalExpr {
 
   LogicalCountExpr() {}
 
-  // Returns the value.
-  NumericExpr value() const { return Create<NumericExpr>(expr_->L.e); }
+  // Returns the left-hand side (the first argument) of this expression.
+  NumericExpr lhs() const { return Create<NumericExpr>(expr_->L.e); }
 
-  // Returns the count expression.
-  CountExpr count() const { return Create<CountExpr>(expr_->R.e); }
+  // Returns the right-hand side (the second argument) of this expression.
+  CountExpr rhs() const { return Create<CountExpr>(expr_->R.e); }
 };
-
-// A binary logical expression.
-// Examples: a || b, a && b, where a and b are logical expressions.
-typedef BasicBinaryExpr<Expr::BINARY_LOGICAL, LogicalExpr> BinaryLogicalExpr;
 
 // An implication expression.
 // Example: a ==> b else c, where a, b and c are logical expressions.
@@ -906,6 +883,14 @@ class ExprVisitor {
 
   LResult VisitInvalidLogicalExpr(LogicalExpr e) {
     throw InvalidLogicalExprError(e);
+  }
+
+  Result VisitNumericConstant(NumericConstant c) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(c));
+  }
+
+  Result VisitVariable(Variable v) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(v));
   }
 
   // Visits a unary expression or a function taking one argument.
@@ -1063,6 +1048,18 @@ class ExprVisitor {
     return AMPL_DISPATCH(VisitBinaryFunc(e));
   }
 
+  Result VisitIf(IfExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitPiecewiseLinear(PiecewiseLinearExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
+  Result VisitCall(CallExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+  }
+
   Result VisitVarArg(VarArgExpr e) {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
   }
@@ -1073,10 +1070,6 @@ class ExprVisitor {
 
   Result VisitMax(VarArgExpr e) {
     return AMPL_DISPATCH(VisitVarArg(e));
-  }
-
-  Result VisitIf(IfExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
    Result VisitSum(SumExpr e) {
@@ -1091,20 +1084,8 @@ class ExprVisitor {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
-  Result VisitPiecewiseLinear(PiecewiseLinearExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitCall(CallExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
-  }
-
-  Result VisitNumericConstant(NumericConstant c) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(c));
-  }
-
-  Result VisitVariable(Variable v) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(v));
+  LResult VisitLogicalConstant(LogicalConstant c) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(c));
   }
 
   LResult VisitNot(NotExpr e) {
@@ -1183,6 +1164,14 @@ class ExprVisitor {
     return AMPL_DISPATCH(VisitLogicalCount(e));
   }
 
+  LResult VisitAllDiff(AllDiffExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
+  LResult VisitImplication(ImplicationExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+  }
+
   LResult VisitIteratedLogical(IteratedLogicalExpr e) {
     return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
@@ -1193,18 +1182,6 @@ class ExprVisitor {
 
   LResult VisitExists(IteratedLogicalExpr e) {
     return AMPL_DISPATCH(VisitIteratedLogical(e));
-  }
-
-  LResult VisitImplication(ImplicationExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
-  }
-
-  LResult VisitAllDiff(AllDiffExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
-  }
-
-  LResult VisitLogicalConstant(LogicalConstant c) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(c));
   }
 };
 
@@ -1488,13 +1465,13 @@ inline void HashCombine(std::size_t &seed, const T &v) {
 
 class HashNumberOfArgs {
  public:
-  std::size_t operator()(const NumberOfExpr &e) const;
+  std::size_t operator()(NumberOfExpr e) const;
 };
 #endif
 
 class EqualNumberOfArgs {
  public:
-  bool operator()(const NumberOfExpr &lhs, const NumberOfExpr &rhs) const;
+  bool operator()(NumberOfExpr lhs, NumberOfExpr rhs) const;
 };
 
 template <typename NumberOf>
@@ -1557,7 +1534,7 @@ class NumberOfMap {
 
 template <typename Var, typename CreateVar>
 Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
-  assert(Cast<NumericConstant>(e.value()).value() == value);
+  assert(Cast<NumericConstant>(e[0]).value() == value);
 #ifdef HAVE_UNORDERED_MAP
   std::pair<typename Map::iterator, bool> result =
       map_.insert(typename Map::value_type(e, numberofs_.size()));

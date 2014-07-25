@@ -130,14 +130,14 @@ IloExpr NLToConcertConverter::VisitCount(CountExpr e) {
 }
 
 IloExpr NLToConcertConverter::VisitNumberOf(NumberOfExpr e) {
-  NumericExpr value = e.value();
+  NumericExpr value = e[0];
   NumericConstant num = Cast<NumericConstant>(value);
   if (num && (flags_ & USENUMBEROF) != 0)
     return numberofs_.Add(num.value(), e);
   IloExpr sum(env_);
   IloExpr concert_value(Visit(value));
-  for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-    sum += (Visit(*i) == concert_value);
+  for (int i = 1, n = e.num_args(); i < n; ++i)
+    sum += (Visit(e[i]) == concert_value);
   return sum;
 }
 
@@ -244,12 +244,12 @@ void NLToConcertConverter::FinishBuildingNumberOf() {
 
     index = 0;
     NumberOfExpr expr = i->expr;
-    IloIntVarArray vars(env_, expr.num_args());
-    for (NumberOfExpr::iterator
-        j = expr.begin(), expr_end = expr.end(); j != expr_end; ++j, ++index) {
+    int num_args = expr.num_args();
+    IloIntVarArray vars(env_, num_args - 1);
+    for (int j = 1; j < num_args; ++j) {
       IloIntVar var(env_, IloIntMin, IloIntMax);
-      vars[index] = var;
-      model_.add(var == Visit(*j));
+      vars[j - 1] = var;
+      model_.add(var == Visit(expr[j]));
     }
 
     model_.add(IloDistribute(env_, cards, values, vars));

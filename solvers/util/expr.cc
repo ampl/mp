@@ -1,5 +1,5 @@
 /*
- A C++ interface to AMPL expression trees.
+ A C++ interface to AMPL expressions.
 
  Copyright (C) 2012 AMPL Optimization Inc
 
@@ -56,7 +56,7 @@ enum Precedence {
   IMPLICATION,       // ==> else
   LOGICAL_OR,        // or ||
   LOGICAL_AND,       // and &&
-  NOT,               // not
+  NOT,               // not !
   RELATIONAL,        // < <= = == >= > != <>
   PIECEWISE_LINEAR,  // a piecewise-linear expression
   ADDITIVE,          // + - less
@@ -82,9 +82,15 @@ class ExprWriter : public ampl::ExprVisitor<ExprWriter, void, void> {
   typedef ampl::ExprVisitor<ExprWriter, void, void> ExprVisitor;
 
   // Writes an argument list surrounded by parentheses.
+  template <typename Iter>
+  void WriteArgs(Iter begin, Iter end, const char *sep = ", ",
+      int precedence = prec::UNKNOWN);
+
   template <typename Expr>
   void WriteArgs(Expr e, const char *sep = ", ",
-      int precedence = prec::UNKNOWN);
+      int precedence = prec::UNKNOWN) {
+    WriteArgs(e.begin(), e.end(), sep, precedence);
+  }
 
   // Writes a function or an expression that has a function syntax.
   template <typename Expr>
@@ -186,15 +192,15 @@ ExprWriter::Parenthesizer::~Parenthesizer() {
     writer_.writer_ << ')';
 }
 
-template <typename Expr>
-void ExprWriter::WriteArgs(Expr e, const char *sep, int precedence) {
+template <typename Iter>
+void ExprWriter::WriteArgs(
+    Iter begin, Iter end, const char *sep, int precedence) {
   writer_ << '(';
-  typename Expr::iterator i = e.begin(), end = e.end();
-  if (i != end) {
-    Visit(*i, precedence);
-    for (++i; i != end; ++i) {
+  if (begin != end) {
+    Visit(*begin, precedence);
+    for (++begin; begin != end; ++begin) {
       writer_ << sep;
-      Visit(*i, precedence);
+      Visit(*begin, precedence);
     }
   }
   writer_ << ')';
@@ -270,9 +276,10 @@ void ExprWriter::VisitSum(ampl::SumExpr e) {
 
 void ExprWriter::VisitNumberOf(ampl::NumberOfExpr e) {
   writer_ << "numberof ";
-  Visit(e.value(), prec::UNKNOWN);
+  ampl::NumberOfExpr::iterator i = e.begin();
+  Visit(*i++, prec::UNKNOWN);
   writer_ << " in ";
-  WriteArgs(e);
+  WriteArgs(i, e.end());
 }
 
 void ExprWriter::VisitPiecewiseLinear(ampl::PiecewiseLinearExpr e) {
@@ -300,9 +307,9 @@ void ExprWriter::VisitCall(ampl::CallExpr e) {
 
 void ExprWriter::VisitLogicalCount(ampl::LogicalCountExpr e) {
   writer_ << e.opstr() << ' ';
-  Visit(e.value());
+  Visit(e.lhs());
   writer_ << ' ';
-  WriteArgs(e.count());
+  WriteArgs(e.rhs());
 }
 
 void ExprWriter::VisitIteratedLogical(ampl::IteratedLogicalExpr e) {
@@ -573,21 +580,20 @@ std::string internal::FormatOpCode(Expr e) {
 }
 
 #ifdef HAVE_UNORDERED_MAP
-std::size_t HashNumberOfArgs::operator()(const NumberOfExpr &e) const {
+std::size_t HashNumberOfArgs::operator()(NumberOfExpr e) const {
   std::size_t hash = 0;
-  for (NumberOfExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
-    HashCombine(hash, static_cast<Expr>(*i));
+  for (int i = 1, n = e.num_args(); i < n; ++i)
+    HashCombine(hash, static_cast<Expr>(e[i]));
   return hash;
 }
 #endif
 
-bool EqualNumberOfArgs::operator()(
-    const NumberOfExpr &lhs, const NumberOfExpr &rhs) const {
-  if (lhs.num_args() != rhs.num_args())
+bool EqualNumberOfArgs::operator()(NumberOfExpr lhs, NumberOfExpr rhs) const {
+  int num_args = lhs.num_args();
+  if (num_args != rhs.num_args())
     return false;
-  for (NumberOfExpr::iterator i = lhs.begin(), end = lhs.end(),
-       j = rhs.begin(); i != end; ++i, ++j) {
-    if (!Equal(*i, *j))
+  for (int i = 1; i < num_args; ++i) {
+    if (!Equal(lhs[i], rhs[i]))
       return false;
   }
   return true;

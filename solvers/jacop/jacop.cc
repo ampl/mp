@@ -323,16 +323,16 @@ jobject NLToJaCoPConverter::VisitCount(CountExpr e) {
 
 jobject NLToJaCoPConverter::VisitNumberOf(NumberOfExpr e) {
   // JaCoP only supports count constraints with constant value.
-  NumericConstant num = Cast<NumericConstant>(e.value());
+  NumericConstant num = Cast<NumericConstant>(e[0]);
   if (!num) {
     throw UnsupportedExprError::CreateFromExprString(
         "numberof with variable value");
   }
   jobject result_var = CreateVar();
   int num_args = e.num_args();
-  jobjectArray args = CreateVarArray(num_args);
-  for (int i = 0; i < num_args; ++i)
-    env_.SetObjectArrayElement(args, i, Visit(e[i]));
+  jobjectArray args = CreateVarArray(num_args - 1);
+  for (int i = 1; i < num_args; ++i)
+    env_.SetObjectArrayElement(args, i - 1, Visit(e[i]));
   Impose(count_class_.NewObject(
       env_, args, result_var, CastToInt(num.value())));
   return result_var;

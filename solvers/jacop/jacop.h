@@ -193,11 +193,6 @@ class NLToJaCoPConverter : public ExprConverter<NLToJaCoPConverter, jobject> {
     return cls.NewObject(env_, Visit(e.lhs()), Visit(e.rhs()));
   }
 
-  // Converts a logical count expression.
-  jobject Convert(LogicalCountExpr e, ClassBase &cls) {
-    return cls.NewObject(env_, Visit(e.value()), VisitCount(e.count()));
-  }
-
   // Converts an iterated logical expression.
   jobject Convert(IteratedLogicalExpr e, ClassBase &cls, jmethodID &ctor);
 
