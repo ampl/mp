@@ -65,9 +65,6 @@ class ASLBuilder : Noncopyable {
       throw Error("invalid {} expression code {}", expr_name, opcode);
   }
 
-  // Creates a binary or unary expression.
-  expr *MakeExpr(int opcode, Expr lhs, Expr rhs = Expr());
-
   template <typename T>
   T *Allocate(unsigned size = sizeof(T)) {
     assert(size >= sizeof(T));
@@ -75,16 +72,12 @@ class ASLBuilder : Noncopyable {
   }
 
   expr *MakeConstant(double value);
-
+  expr *DoMakeUnary(int opcode, Expr lhs);
   expr *MakeBinary(int opcode, Expr::Kind kind, Expr lhs, Expr rhs);
-
   expr *MakeIf(int opcode,
       LogicalExpr condition, Expr true_expr, Expr false_expr);
-
-  // Makes an iterated expression.
   expr *MakeIterated(int opcode, int num_args, const Expr *args);
 
-  // Makes an iterated expression.
   template <Expr::Kind K>
   BasicIteratedExpr<K> MakeIterated(
       int opcode, int num_args, const Expr *args) {
@@ -163,7 +156,9 @@ class ASLBuilder : Noncopyable {
     return Expr::Create<LogicalConstant>(MakeConstant(value));
   }
 
-  NotExpr MakeNot(LogicalExpr arg);
+  NotExpr MakeNot(LogicalExpr arg) {
+    return Expr::Create<NotExpr>(DoMakeUnary(OPNOT, arg));
+  }
 
   BinaryLogicalExpr MakeBinaryLogical(
       int opcode, LogicalExpr lhs, LogicalExpr rhs) {

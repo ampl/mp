@@ -358,6 +358,57 @@ Function ASLBuilder::AddFunction(
   return Function(fi);
 }
 
+expr *ASLBuilder::MakeConstant(double value) {
+  expr_n *result = Allocate<expr_n>(asl_->i.size_expr_n_);
+  result->op = reinterpret_cast<efunc_n*>(OPNUM);
+  result->v = value;
+  return reinterpret_cast<expr*>(result);
+}
+
+expr *ASLBuilder::DoMakeUnary(int opcode, Expr lhs) {
+  expr *e = Allocate<expr>();
+  e->op = reinterpret_cast<efunc*>(opcode);
+  e->L.e = lhs.expr_;
+  e->a = asl_->i.n_var_ + asl_->i.nsufext[ASL_Sufkind_var];
+  e->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
+  return e;
+}
+
+expr *ASLBuilder::MakeBinary(int opcode, Expr::Kind kind, Expr lhs, Expr rhs) {
+  CheckOpCode(opcode, kind, "binary");
+  expr *e = Allocate<expr>();
+  e->op = reinterpret_cast<efunc*>(opcode);
+  e->L.e = lhs.expr_;
+  e->R.e = rhs.expr_;
+  e->a = asl_->i.n_var_ + asl_->i.nsufext[ASL_Sufkind_var];
+  e->dL = 1;
+  e->dR = DVALUE[opcode];  // for PLUS, MINUS, REM
+  return e;
+}
+
+expr *ASLBuilder::MakeIf(
+    int opcode, LogicalExpr condition, Expr true_expr, Expr false_expr) {
+  expr_if *e = Allocate<expr_if>();
+  e->op = r_ops_[opcode];
+  e->e = condition.expr_;
+  e->T = true_expr.expr_;
+  e->F = false_expr.expr_;
+  return reinterpret_cast<expr*>(e);
+}
+
+expr *ASLBuilder::MakeIterated(int opcode, int num_args, const Expr *args) {
+  assert(num_args >= 0);
+  expr *e = Allocate<expr>(
+      sizeof(expr) - sizeof(double) + (num_args + 1) * sizeof(expr*));
+  e->op = reinterpret_cast<efunc*>(opcode);
+  e->L.ep = reinterpret_cast<expr**>(&e->dR);
+  e->R.ep = e->L.ep + num_args;
+  expr **arg_ptrs = e->L.ep;
+  for (int i = 0; i < num_args; ++i)
+    arg_ptrs[i] = args[i].expr_;
+  return e;
+}
+
 Variable ASLBuilder::MakeVariable(int var_index) {
   assert(var_index >= 0 && var_index < asl_->i.n_var_);
   return Expr::Create<Variable>(
@@ -367,57 +418,9 @@ Variable ASLBuilder::MakeVariable(int var_index) {
 
 UnaryExpr ASLBuilder::MakeUnary(int opcode, NumericExpr arg) {
   CheckOpCode(opcode, Expr::UNARY, "unary");
-  UnaryExpr expr = Expr::Create<UnaryExpr>(MakeExpr(opcode, arg));
+  UnaryExpr expr = Expr::Create<UnaryExpr>(DoMakeUnary(opcode, arg));
   expr.expr_->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
   return expr;
-}
-
-expr *ASLBuilder::MakeExpr(int opcode, Expr lhs, Expr rhs) {
-  expr *e = Allocate<expr>();
-  e->op = reinterpret_cast<efunc*>(opcode);
-  e->L.e = lhs.expr_;
-  e->R.e = rhs.expr_;
-  e->a = asl_->i.n_var_ + asl_->i.nsufext[ASL_Sufkind_var];
-  e->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
-  return e;
-}
-
-expr *ASLBuilder::MakeConstant(double value) {
-  expr_n *result = Allocate<expr_n>(asl_->i.size_expr_n_);
-  result->op = reinterpret_cast<efunc_n*>(OPNUM);
-  result->v = value;
-  return reinterpret_cast<expr*>(result);
-}
-
-expr *ASLBuilder::MakeBinary(int opcode, Expr::Kind kind, Expr lhs, Expr rhs) {
-  CheckOpCode(opcode, kind, "binary");
-  expr *e = MakeExpr(opcode, lhs, rhs);
-  e->dL = 1;
-  e->dR = DVALUE[opcode];  // for PLUS, MINUS, REM
-  return e;
-}
-
-expr *ASLBuilder::MakeIf(
-    int opcode, LogicalExpr condition, Expr true_expr, Expr false_expr) {
-  expr_if *result = Allocate<expr_if>();
-  result->op = r_ops_[opcode];
-  result->e = condition.expr_;
-  result->T = true_expr.expr_;
-  result->F = false_expr.expr_;
-  return reinterpret_cast<expr*>(result);
-}
-
-expr *ASLBuilder::MakeIterated(int opcode, int num_args, const Expr *args) {
-  assert(num_args >= 0);
-  expr *result = Allocate<expr>(
-      sizeof(expr) - sizeof(double) + (num_args + 1) * sizeof(expr*));
-  result->op = reinterpret_cast<efunc*>(opcode);
-  result->L.ep = reinterpret_cast<expr**>(&result->dR);
-  result->R.ep = result->L.ep + num_args;
-  expr **arg_ptrs = result->L.ep;
-  for (int i = 0; i < num_args; ++i)
-    arg_ptrs[i] = args[i].expr_;
-  return result;
 }
 
 PiecewiseLinearExpr ASLBuilder::MakePiecewiseLinear(
@@ -489,12 +492,6 @@ VarArgExpr ASLBuilder::MakeVarArg(
     d[i].e = args[i].expr_;
   d[num_args].e = 0;
   return Expr::Create<VarArgExpr>(reinterpret_cast<expr*>(result));
-}
-
-NotExpr ASLBuilder::MakeNot(LogicalExpr arg) {
-  NotExpr expr = Expr::Create<NotExpr>(MakeExpr(OPNOT, arg));
-  expr.expr_->dL = DVALUE[OPNOT];
-  return expr;
 }
 
 IteratedLogicalExpr ASLBuilder::MakeIteratedLogical(

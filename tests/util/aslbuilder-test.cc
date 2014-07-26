@@ -607,129 +607,84 @@ TEST(ASLBuilderTest, ASLBuilderAllowCLP) {
 
 class TestASLBuilder : public ASLBuilder {
  public:
-  explicit TestASLBuilder(const NLHeader &h = MakeHeader()) {
-    BeginBuild("", h, ampl::internal::ASL_STANDARD_OPCODES);
+  explicit TestASLBuilder() {
+    NLHeader header = MakeHeader(10);
+    header.num_funcs = 1;
+    BeginBuild("", header, ampl::internal::ASL_STANDARD_OPCODES);
   }
 };
 
-TEST(ASLBuilderTest, MakeUnary) {
+class ExprBuilderTest : public ::testing::Test {
+ protected:
+  TestASLBuilder builder;
+  NumericExpr n1, n2;
+
+  ExprBuilderTest()
+    : n1(builder.MakeNumericConstant(1)), n2(builder.MakeNumericConstant(1)) {}
+};
+
+TEST_F(ExprBuilderTest, MakeNumericConstant) {
+  ampl::NumericConstant expr = builder.MakeNumericConstant(42);
+  EXPECT_EQ(OPNUM, expr.opcode());
+  EXPECT_EQ(42.0, expr.value());
+}
+
+TEST_F(ExprBuilderTest, MakeVariable) {
+  ampl::Variable var = builder.MakeVariable(0);
+  EXPECT_EQ(OPVARVAL, var.opcode());
+  EXPECT_EQ(0, var.index());
+  var = builder.MakeVariable(9);
+  EXPECT_EQ(9, var.index());
+  EXPECT_DEBUG_DEATH(builder.MakeVariable(-1);, "Assertion");  // NOLINT(*)
+  EXPECT_DEBUG_DEATH(builder.MakeVariable(10);, "Assertion");  // NOLINT(*)
+}
+
+TEST_F(ExprBuilderTest, MakeUnary) {
   const int opcodes[] = {
       FLOOR, CEIL, ABS, OPUMINUS, OP_tanh, OP_tan, OP_sqrt,
       OP_sinh, OP_sin, OP_log10, OP_log, OP_exp, OP_cosh, OP_cos,
       OP_atanh, OP_atan, OP_asinh, OP_asin, OP_acosh, OP_acos, OP2POW
   };
-  TestASLBuilder builder;
-  NumericExpr arg = builder.MakeNumericConstant(42);
   for (size_t i = 0, n = sizeof(opcodes) / sizeof(*opcodes); i < n; ++i) {
-    ampl::UnaryExpr expr = builder.MakeUnary(opcodes[i], arg);
+    ampl::UnaryExpr expr = builder.MakeUnary(opcodes[i], n1);
     EXPECT_EQ(opcodes[i], expr.opcode());
-    EXPECT_EQ(arg, expr.arg());
+    EXPECT_EQ(n1, expr.arg());
   }
-  EXPECT_THROW_MSG(builder.MakeUnary(OPPLUS, arg), ampl::Error,
+  EXPECT_THROW_MSG(builder.MakeUnary(OPPLUS, n1), ampl::Error,
     fmt::format("invalid unary expression code {}", OPPLUS));
 }
 
-TEST(ASLBuilderTest, MakeBinary) {
+#define EXPECT_BINARY(expr, expected_opcode, expected_lhs, expected_rhs) \
+  EXPECT_EQ(expected_opcode, expr.opcode()); \
+  EXPECT_EQ(expected_lhs, expr.lhs()); \
+  EXPECT_EQ(expected_rhs, expr.rhs())
+
+TEST_F(ExprBuilderTest, MakeBinary) {
   const int opcodes[] = {
       OPPLUS, OPMINUS, OPMULT, OPDIV, OPREM, OPPOW, OPLESS, OP_atan2,
       OPintDIV, OPprecision, OPround, OPtrunc, OP1POW, OPCPOW
   };
-  TestASLBuilder builder;
-  NumericExpr lhs = builder.MakeNumericConstant(1);
-  NumericExpr rhs = builder.MakeNumericConstant(2);
   for (size_t i = 0, n = sizeof(opcodes) / sizeof(*opcodes); i < n; ++i) {
-    ampl::BinaryExpr expr = builder.MakeBinary(opcodes[i], lhs, rhs);
-    EXPECT_EQ(opcodes[i], expr.opcode());
-    EXPECT_EQ(lhs, expr.lhs());
-    EXPECT_EQ(rhs, expr.rhs());
+    ampl::BinaryExpr expr = builder.MakeBinary(opcodes[i], n1, n2);
+    EXPECT_BINARY(expr, opcodes[i], n1, n2);
   }
-  EXPECT_THROW_MSG(builder.MakeBinary(OPUMINUS, lhs, rhs), ampl::Error,
+  EXPECT_THROW_MSG(builder.MakeBinary(OPUMINUS, n1, n2), ampl::Error,
     fmt::format("invalid binary expression code {}", OPUMINUS));
 }
 
-TEST(ASLBuilderTest, MakeVarArg) {
-  const int opcodes[] = {MINLIST, MAXLIST};
-  TestASLBuilder builder;
-  enum {NUM_ARGS = 3};
-  NumericExpr args[NUM_ARGS] = {
-      builder.MakeNumericConstant(1),
-      builder.MakeNumericConstant(2),
-      builder.MakeNumericConstant(3)
-  };
-  for (size_t i = 0, n = sizeof(opcodes) / sizeof(*opcodes); i < n; ++i) {
-    ampl::VarArgExpr expr = builder.MakeVarArg(opcodes[i], NUM_ARGS, args);
-    EXPECT_EQ(opcodes[i], expr.opcode());
-    int arg_index = 0;
-    for (ampl::VarArgExpr::iterator
-        i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
-      EXPECT_EQ(args[arg_index], *i);
-    }
-  }
-  EXPECT_THROW_MSG(builder.MakeVarArg(OPUMINUS, NUM_ARGS, args), ampl::Error,
-      fmt::format("invalid vararg expression code {}", OPUMINUS));
-#ifndef NDEBUG
-  EXPECT_DEBUG_DEATH(
-      builder.MakeVarArg(MINLIST, -1, args);, "Assertion");  // NOLINT(*)
-#endif
-}
-
-TEST(ASLBuilderTest, MakeSum) {
-  TestASLBuilder builder;
-  enum {NUM_ARGS = 3};
-  NumericExpr args[NUM_ARGS] = {
-      builder.MakeNumericConstant(1),
-      builder.MakeNumericConstant(2),
-      builder.MakeNumericConstant(3)
-  };
-  ampl::SumExpr expr = builder.MakeSum(NUM_ARGS, args);
-  EXPECT_EQ(OPSUMLIST, expr.opcode());
-  int arg_index = 0;
-  for (ampl::SumExpr::iterator
-      i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
-    EXPECT_EQ(args[arg_index], *i);
-  }
-#ifndef NDEBUG
-  EXPECT_DEBUG_DEATH(builder.MakeSum(-1, args);, "Assertion");  // NOLINT(*)
-#endif
-}
-
-TEST(ASLBuilderTest, MakeCount) {
-  TestASLBuilder builder;
-  enum {NUM_ARGS = 3};
-  LogicalExpr args[NUM_ARGS] = {
-      builder.MakeLogicalConstant(1),
-      builder.MakeLogicalConstant(2),
-      builder.MakeLogicalConstant(3)
-  };
-  ampl::CountExpr expr = builder.MakeCount(NUM_ARGS, args);
-  EXPECT_EQ(OPCOUNT, expr.opcode());
-  int arg_index = 0;
-  for (ampl::CountExpr::iterator
-      i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
-    EXPECT_EQ(args[arg_index], *i);
-  }
-#ifndef NDEBUG
-  EXPECT_DEBUG_DEATH(builder.MakeCount(-1, args);, "Assertion");  // NOLINT(*)
-#endif
-}
-
-TEST(ASLBuilderTest, MakeIf) {
-  TestASLBuilder builder;
+TEST_F(ExprBuilderTest, MakeIf) {
   LogicalExpr condition = builder.MakeLogicalConstant(true);
-  NumericExpr true_expr = builder.MakeNumericConstant(1);
-  NumericExpr false_expr = builder.MakeNumericConstant(2);
-  ampl::IfExpr expr = builder.MakeIf(condition, true_expr, false_expr);
+  ampl::IfExpr expr = builder.MakeIf(condition, n1, n2);
   EXPECT_EQ(OPIFnl, expr.opcode());
   EXPECT_EQ(condition, expr.condition());
-  EXPECT_EQ(true_expr, expr.true_expr());
-  EXPECT_EQ(false_expr, expr.false_expr());
+  EXPECT_EQ(n1, expr.true_expr());
+  EXPECT_EQ(n2, expr.false_expr());
 }
 
-TEST(ASLBuilderTest, MakePiecewiseLinear) {
+TEST_F(ExprBuilderTest, MakePiecewiseLinear) {
   enum { NUM_BREAKPOINTS = 2 };
   double breakpoints[NUM_BREAKPOINTS] = { 11, 22 };
   double slopes[NUM_BREAKPOINTS + 1] = {33, 44, 55};
-  TestASLBuilder builder(MakeHeader(3));
   ampl::Variable var = builder.MakeVariable(2);
   ampl::PiecewiseLinearExpr expr = builder.MakePiecewiseLinear(
       NUM_BREAKPOINTS, breakpoints, slopes, var);
@@ -749,25 +704,76 @@ TEST(ASLBuilderTest, MakePiecewiseLinear) {
 #endif
 }
 
-TEST(ASLBuilderTest, MakeVariable) {
-  TestASLBuilder builder(MakeHeader(10));
-  ampl::Variable var = builder.MakeVariable(0);
-  EXPECT_EQ(OPVARVAL, var.opcode());
-  EXPECT_EQ(0, var.index());
-  var = builder.MakeVariable(9);
-  EXPECT_EQ(9, var.index());
-  EXPECT_DEBUG_DEATH(builder.MakeVariable(-1);, "Assertion");  // NOLINT(*)
-  EXPECT_DEBUG_DEATH(builder.MakeVariable(10);, "Assertion");  // NOLINT(*)
+TEST_F(ExprBuilderTest, MakeCall) {
+  enum {NUM_ARGS = 2};
+  ampl::Function f = builder.AddFunction(0, "foo", NUM_ARGS);
+  ampl::Expr args[NUM_ARGS] = {n1, n2};
+  ampl::CallExpr expr = builder.MakeCall(f, NUM_ARGS, args);
+  EXPECT_EQ(OPFUNCALL, expr.opcode());
+  int arg_index = 0;
+  for (ampl::CallExpr::iterator
+      i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
+    EXPECT_EQ(args[arg_index], *i);
+  }
 }
 
-TEST(ASLBuilderTest, MakeNumberOf) {
-  TestASLBuilder builder;
+TEST_F(ExprBuilderTest, MakeVarArg) {
+  const int opcodes[] = {MINLIST, MAXLIST};
   enum {NUM_ARGS = 3};
-  NumericExpr args[NUM_ARGS] = {
-      builder.MakeNumericConstant(1),
-      builder.MakeNumericConstant(2),
-      builder.MakeNumericConstant(3)
+  NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
+  for (size_t i = 0, n = sizeof(opcodes) / sizeof(*opcodes); i < n; ++i) {
+    ampl::VarArgExpr expr = builder.MakeVarArg(opcodes[i], NUM_ARGS, args);
+    EXPECT_EQ(opcodes[i], expr.opcode());
+    int arg_index = 0;
+    for (ampl::VarArgExpr::iterator
+        i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
+      EXPECT_EQ(args[arg_index], *i);
+    }
+  }
+  EXPECT_THROW_MSG(builder.MakeVarArg(OPUMINUS, NUM_ARGS, args), ampl::Error,
+      fmt::format("invalid vararg expression code {}", OPUMINUS));
+#ifndef NDEBUG
+  EXPECT_DEBUG_DEATH(
+      builder.MakeVarArg(MINLIST, -1, args);, "Assertion");  // NOLINT(*)
+#endif
+}
+
+TEST_F(ExprBuilderTest, MakeSum) {
+  enum {NUM_ARGS = 3};
+  NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
+  ampl::SumExpr expr = builder.MakeSum(NUM_ARGS, args);
+  EXPECT_EQ(OPSUMLIST, expr.opcode());
+  int arg_index = 0;
+  for (ampl::SumExpr::iterator
+      i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
+    EXPECT_EQ(args[arg_index], *i);
+  }
+#ifndef NDEBUG
+  EXPECT_DEBUG_DEATH(builder.MakeSum(-1, args);, "Assertion");  // NOLINT(*)
+#endif
+}
+
+TEST_F(ExprBuilderTest, MakeCount) {
+  enum {NUM_ARGS = 2};
+  LogicalExpr args[NUM_ARGS] = {
+    builder.MakeLogicalConstant(true),
+    builder.MakeLogicalConstant(false)
   };
+  ampl::CountExpr expr = builder.MakeCount(NUM_ARGS, args);
+  EXPECT_EQ(OPCOUNT, expr.opcode());
+  int arg_index = 0;
+  for (ampl::CountExpr::iterator
+      i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
+    EXPECT_EQ(args[arg_index], *i);
+  }
+#ifndef NDEBUG
+  EXPECT_DEBUG_DEATH(builder.MakeCount(-1, args);, "Assertion");  // NOLINT(*)
+#endif
+}
+
+TEST_F(ExprBuilderTest, MakeNumberOf) {
+  enum {NUM_ARGS = 3};
+  NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
   ampl::NumberOfExpr expr = builder.MakeNumberOf(NUM_ARGS, args);
   EXPECT_EQ(OPNUMBEROF, expr.opcode());
   EXPECT_EQ(NUM_ARGS, expr.num_args());
@@ -779,32 +785,37 @@ TEST(ASLBuilderTest, MakeNumberOf) {
 #endif
 }
 
-TEST(ASLBuilderTest, MakeCall) {
-  NLHeader header = MakeHeader();
-  header.num_funcs = 1;
-  TestASLBuilder builder(header);
-  enum {NUM_ARGS = 2};
-  ampl::Function f = builder.AddFunction(0, "foo", NUM_ARGS);
-  ampl::Expr args[NUM_ARGS] = {
-      builder.MakeNumericConstant(2), builder.MakeNumericConstant(3)
-  };
-  ampl::CallExpr expr = builder.MakeCall(f, NUM_ARGS, args);
-  EXPECT_EQ(OPFUNCALL, expr.opcode());
-  int arg_index = 0;
-  for (ampl::CallExpr::iterator
-      i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
-    EXPECT_EQ(args[arg_index], *i);
-  }
-}
-
-TEST(ASLBuilderTest, MakeNumericConstant) {
-  TestASLBuilder builder;
-  ampl::NumericConstant expr = builder.MakeNumericConstant(42);
+TEST_F(ExprBuilderTest, MakeLogicalConstant) {
+  ampl::LogicalConstant expr = builder.MakeLogicalConstant(true);
   EXPECT_EQ(OPNUM, expr.opcode());
-  EXPECT_EQ(42.0, expr.value());
+  EXPECT_TRUE(expr.value());
+  EXPECT_FALSE(builder.MakeLogicalConstant(false).value());
 }
 
-// TODO: test AddFunction, StringLiteral
+TEST_F(ExprBuilderTest, MakeNot) {
+  LogicalExpr arg = builder.MakeLogicalConstant(true);
+  ampl::NotExpr expr = builder.MakeNot(arg);
+  EXPECT_EQ(OPNOT, expr.opcode());
+  EXPECT_EQ(arg, expr.arg());
+}
+
+TEST_F(ExprBuilderTest, MakeBinaryLogical) {
+  const int opcodes[] = {OPOR, OPAND, OP_IFF};
+  LogicalExpr lhs = builder.MakeLogicalConstant(true);
+  LogicalExpr rhs = builder.MakeLogicalConstant(false);
+  for (size_t i = 0, n = sizeof(opcodes) / sizeof(*opcodes); i < n; ++i) {
+    ampl::BinaryLogicalExpr expr =
+        builder.MakeBinaryLogical(opcodes[i], lhs, rhs);
+    EXPECT_BINARY(expr, opcodes[i], lhs, rhs);
+  }
+  EXPECT_THROW_MSG(builder.MakeBinaryLogical(OPUMINUS, lhs, rhs), ampl::Error,
+    fmt::format("invalid binary expression code {}", OPUMINUS));
+}
+
+// TODO: test MakeRelational, MakeLogicalCount, MakeImplication,
+//            MakeIteratedLogical, MakeAllDiff, MakeStringLiteral
+
+// TODO: test AddFunction
 
 // TODO: test f_read
 
