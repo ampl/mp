@@ -501,6 +501,7 @@ IteratedLogicalExpr ASLBuilder::MakeIteratedLogical(
 }
 
 StringLiteral ASLBuilder::MakeStringLiteral(int size, const char *value) {
+  assert(size >= 0);
   expr_h *result = Allocate<expr_h>(AddPadding(sizeof(expr_h) + size));
   result->op = r_ops_[OPHOL];
   // Passing result->sym makes std::copy causes in assertion failure in MSVC.

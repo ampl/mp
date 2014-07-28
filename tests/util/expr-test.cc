@@ -24,6 +24,7 @@
 
 #include "gtest/gtest.h"
 #include "tests/expr-builder.h"
+#include "tests/util.h"
 
 #include "solvers/util/aslbuilder.h"
 #include "solvers/util/nl.h"
@@ -59,6 +60,7 @@ using ampl::ExprVisitor;
 using ampl::LinearTerm;
 using ampl::LinearExpr;
 
+using ampl::Error;
 using ampl::UnsupportedExprError;
 using ampl::InvalidNumericExprError;
 using ampl::InvalidLogicalExprError;
@@ -161,12 +163,20 @@ void TestExpr::TestArrayIterator() {
 
 class ExprTest : public ::testing::Test,
   public ampl::ExprBuilder, public ampl::internal::ASLBuilder {
+ protected:
+  ASLBuilder builder;
+  NumericExpr n1, n2;
+
  public:
   ExprTest() {
     ampl::NLHeader header = {};
+    header.num_vars = 10;
     header.num_objs = 1;
-    header.num_vars = header.num_funcs = 2;
+    header.num_funcs = 2;
     BeginBuild("", header, ampl::internal::ASL_STANDARD_OPCODES);
+    builder.BeginBuild("", header, ampl::internal::ASL_STANDARD_OPCODES);
+    n1 = builder.MakeNumericConstant(1);
+    n2 = builder.MakeNumericConstant(2);
   }
 };
 
@@ -561,267 +571,326 @@ TEST_F(ExprTest, LogicalExpr) {
       CheckExpr<LogicalExpr>(Expr::LOGICAL_START, Expr::LOGICAL_END));
 }
 
-TEST_F(ExprTest, UnaryExpr) {
-  EXPECT_EQ(21, CheckExpr<UnaryExpr>(Expr::UNARY));
-  NumericExpr arg(AddNum(42));
-  UnaryExpr e(AddUnary(OPUMINUS, arg));
-  EXPECT_EQ(arg, e.arg());
+TEST_F(ExprTest, NumericConstant) {
+  EXPECT_EQ(1, CheckExpr<NumericConstant>(Expr::CONSTANT));
+  ampl::NumericConstant expr = builder.MakeNumericConstant(42);
+  EXPECT_EQ(OPNUM, expr.opcode());
+  EXPECT_EQ(42, expr.value());
 }
+
+TEST_F(ExprTest, Variable) {
+  EXPECT_EQ(1, CheckExpr<Variable>(Expr::VARIABLE));
+  ampl::Variable var = builder.MakeVariable(0);
+  EXPECT_EQ(OPVARVAL, var.opcode());
+  EXPECT_EQ(0, var.index());
+  var = builder.MakeVariable(9);
+  EXPECT_EQ(9, var.index());
+  EXPECT_DEBUG_DEATH(builder.MakeVariable(-1);, "Assertion");  // NOLINT(*)
+  EXPECT_DEBUG_DEATH(builder.MakeVariable(10);, "Assertion");  // NOLINT(*)
+}
+
+TEST_F(ExprTest, UnaryExpr) {
+  const int opcodes[] = {
+      FLOOR, CEIL, ABS, OPUMINUS, OP_tanh, OP_tan, OP_sqrt,
+      OP_sinh, OP_sin, OP_log10, OP_log, OP_exp, OP_cosh, OP_cos,
+      OP_atanh, OP_atan, OP_asinh, OP_asin, OP_acosh, OP_acos, OP2POW
+  };
+  std::size_t num_opcodes = sizeof(opcodes) / sizeof(*opcodes);
+  EXPECT_EQ(num_opcodes, CheckExpr<UnaryExpr>(Expr::UNARY));
+  for (std::size_t i = 0; i < num_opcodes; ++i) {
+    ampl::UnaryExpr expr = builder.MakeUnary(opcodes[i], n1);
+    EXPECT_EQ(opcodes[i], expr.opcode());
+    EXPECT_EQ(n1, expr.arg());
+  }
+  EXPECT_THROW_MSG(builder.MakeUnary(OPPLUS, n1), Error,
+    fmt::format("invalid unary expression code {}", OPPLUS));
+}
+
+#define EXPECT_BINARY(expr, expected_opcode, expected_lhs, expected_rhs) \
+  EXPECT_EQ(expected_opcode, expr.opcode()); \
+  EXPECT_EQ(expected_lhs, expr.lhs()); \
+  EXPECT_EQ(expected_rhs, expr.rhs())
 
 TEST_F(ExprTest, BinaryExpr) {
-  EXPECT_EQ(14, CheckExpr<BinaryExpr>(Expr::BINARY));
-  NumericExpr lhs(AddNum(42)), rhs(AddNum(43));
-  BinaryExpr e(AddBinary(OPDIV, lhs, rhs));
-  EXPECT_EQ(lhs, e.lhs());
-  EXPECT_EQ(rhs, e.rhs());
-}
-
-TEST_F(ExprTest, VarArgExpr) {
-  EXPECT_EQ(2, CheckExpr<VarArgExpr>(Expr::VARARG));
-  NumericExpr args[] = {AddNum(42), AddNum(43), AddNum(44)};
-  VarArgExpr e(AddVarArg(MINLIST, args[0], args[1], args[2]));
-  int index = 0;
-  VarArgExpr::iterator i = e.begin();
-  for (VarArgExpr::iterator end = e.end(); i != end; ++i, ++index) {
-    EXPECT_TRUE(*i);
-    EXPECT_EQ(args[index], *i);
-    EXPECT_EQ(args[index].opcode(), i->opcode());
+  const int opcodes[] = {
+      OPPLUS, OPMINUS, OPMULT, OPDIV, OPREM, OPPOW, OPLESS, OP_atan2,
+      OPintDIV, OPprecision, OPround, OPtrunc, OP1POW, OPCPOW
+  };
+  std::size_t num_opcodes = sizeof(opcodes) / sizeof(*opcodes);
+  EXPECT_EQ(num_opcodes, CheckExpr<BinaryExpr>(Expr::BINARY));
+  for (std::size_t i = 0; i < num_opcodes; ++i) {
+    ampl::BinaryExpr expr = builder.MakeBinary(opcodes[i], n1, n2);
+    EXPECT_BINARY(expr, opcodes[i], n1, n2);
   }
-  EXPECT_FALSE(*i);
-  EXPECT_EQ(3, index);
-  i = e.begin();
-  VarArgExpr::iterator i2 = i++;
-  EXPECT_EQ(args[0], *i2);
-  EXPECT_EQ(args[1], *i);
-}
-
-TEST_F(ExprTest, SumExpr) {
-  EXPECT_EQ(1, CheckExpr<SumExpr>(Expr::SUM));
-  EXPECT_EQ(0, AddSum().num_args());
-  NumericExpr args[] = {AddNum(42), AddNum(43), AddNum(44)};
-  SumExpr e(AddSum(args[0], args[1], args[2]));
-  EXPECT_EQ(3, e.num_args());
-  int index = 0;
-  SumExpr::iterator i = e.begin();
-  for (SumExpr::iterator end = e.end(); i != end; ++i, ++index) {
-    EXPECT_TRUE(*i);
-    EXPECT_EQ(args[index], *i);
-    EXPECT_EQ(args[index].opcode(), i->opcode());
-  }
-  EXPECT_EQ(3, index);
-  i = e.begin();
-  SumExpr::iterator i2 = i++;
-  EXPECT_EQ(args[0], *i2);
-  EXPECT_EQ(args[1], *i);
-}
-
-TEST_F(ExprTest, CountExpr) {
-  EXPECT_EQ(1, CheckExpr<CountExpr>(Expr::COUNT));
-  LogicalExpr args[] = {AddBool(false), AddBool(true), AddBool(false)};
-  EXPECT_EQ(2, AddCount(args[0], args[1]).num_args());
-  CountExpr e(AddCount(args[0], args[1], args[2]));
-  EXPECT_EQ(3, e.num_args());
-  int index = 0;
-  CountExpr::iterator i = e.begin();
-  for (CountExpr::iterator end = e.end(); i != end; ++i, ++index) {
-    EXPECT_TRUE(*i);
-    EXPECT_EQ(args[index], *i);
-    EXPECT_EQ(args[index].opcode(), i->opcode());
-  }
-  EXPECT_EQ(3, index);
-  i = e.begin();
-  CountExpr::iterator i2 = i++;
-  EXPECT_EQ(args[0], *i2);
-  EXPECT_EQ(args[1], *i);
+  EXPECT_THROW_MSG(builder.MakeBinary(OPUMINUS, n1, n2), Error,
+    fmt::format("invalid binary expression code {}", OPUMINUS));
 }
 
 TEST_F(ExprTest, IfExpr) {
   EXPECT_EQ(1, CheckExpr<IfExpr>(Expr::IF));
-  LogicalExpr condition(AddBool(true));
-  NumericExpr true_expr(AddNum(42)), false_expr(AddNum(43));
-  IfExpr e(AddIf(condition, true_expr, false_expr));
-  EXPECT_EQ(condition, e.condition());
-  EXPECT_EQ(true_expr, e.true_expr());
-  EXPECT_EQ(false_expr, e.false_expr());
+  LogicalExpr condition = builder.MakeLogicalConstant(true);
+  ampl::IfExpr expr = builder.MakeIf(condition, n1, n2);
+  EXPECT_EQ(OPIFnl, expr.opcode());
+  EXPECT_EQ(condition, expr.condition());
+  EXPECT_EQ(n1, expr.true_expr());
+  EXPECT_EQ(n2, expr.false_expr());
 }
 
 TEST_F(ExprTest, PiecewiseLinearExpr) {
   EXPECT_EQ(1,
       CheckExpr<PiecewiseLinearExpr>(Expr::PLTERM, Expr::PLTERM, OPPLUS));
-  double args[] = {-1, 5, 0, 10, 1};
-  PiecewiseLinearExpr e(AddPL(5, args, 42));
-  EXPECT_EQ(2, e.num_breakpoints());
-  EXPECT_EQ(5, e.breakpoint(0));
-  EXPECT_EQ(10, e.breakpoint(1));
-  EXPECT_DEBUG_DEATH(e.breakpoint(-1);, "Assertion");  // NOLINT(*)
-  EXPECT_DEBUG_DEATH(e.breakpoint(2);, "Assertion");  // NOLINT(*)
-  EXPECT_EQ(3, e.num_slopes());
-  EXPECT_EQ(-1, e.slope(0));
-  EXPECT_EQ(0, e.slope(1));
-  EXPECT_EQ(1, e.slope(2));
-  EXPECT_DEBUG_DEATH(e.slope(-1);, "Assertion");  // NOLINT(*)
-  EXPECT_DEBUG_DEATH(e.slope(3);, "Assertion");  // NOLINT(*)
-  EXPECT_EQ(42, e.var_index());
-}
-
-TEST_F(ExprTest, NumericConstant) {
-  EXPECT_EQ(1, CheckExpr<NumericConstant>(Expr::CONSTANT));
-  NumericConstant e(AddNum(42));
-  EXPECT_EQ(42, e.value());
-}
-
-TEST_F(ExprTest, Variable) {
-  EXPECT_EQ(1, CheckExpr<Variable>(Expr::VARIABLE));
-  Variable e(AddVar(42));
-  EXPECT_EQ(42, e.index());
-}
-
-TEST_F(ExprTest, NumberOfExpr) {
-  EXPECT_EQ(1, CheckExpr<NumberOfExpr>(Expr::NUMBEROF));
-  NumericExpr args[] = {AddNum(42), AddNum(43), AddNum(44)};
-  EXPECT_EQ(2, AddNumberOf(args[0], args[1]).num_args());
-  NumberOfExpr e(AddNumberOf(args[0], args[1], args[2]));
-  EXPECT_EQ(3, e.num_args());
-  int index = 0;
-  NumberOfExpr::iterator i = e.begin();
-  for (NumberOfExpr::iterator end = e.end(); i != end; ++i, ++index) {
-    EXPECT_TRUE(*i);
-    EXPECT_EQ(args[index], *i);
-    EXPECT_EQ(args[index].opcode(), i->opcode());
-    EXPECT_EQ(args[index], e[index]);
+  enum { NUM_BREAKPOINTS = 2 };
+  double breakpoints[NUM_BREAKPOINTS] = { 11, 22 };
+  double slopes[NUM_BREAKPOINTS + 1] = {33, 44, 55};
+  ampl::Variable var = builder.MakeVariable(2);
+  ampl::PiecewiseLinearExpr expr = builder.MakePiecewiseLinear(
+      NUM_BREAKPOINTS, breakpoints, slopes, var);
+  EXPECT_EQ(OPPLTERM, expr.opcode());
+  EXPECT_EQ(NUM_BREAKPOINTS, expr.num_breakpoints());
+  EXPECT_EQ(NUM_BREAKPOINTS + 1, expr.num_slopes());
+  for (int i = 0; i < NUM_BREAKPOINTS; ++i) {
+    EXPECT_EQ(breakpoints[i], expr.breakpoint(i));
+    EXPECT_EQ(slopes[i], expr.slope(i));
   }
-  EXPECT_EQ(3, index);
-  i = e.begin();
-  NumberOfExpr::iterator i2 = i++;
-  EXPECT_EQ(args[0], *i2);
-  EXPECT_EQ(args[1], *i);
+  EXPECT_EQ(slopes[NUM_BREAKPOINTS], expr.slope(NUM_BREAKPOINTS));
+  EXPECT_EQ(2, expr.var_index());
+#ifndef NDEBUG
+  EXPECT_DEBUG_DEATH(
+      builder.MakePiecewiseLinear(-1, breakpoints, slopes, var);,
+      "Assertion");  // NOLINT(*)
+#endif
 }
 
 TEST_F(ExprTest, CallExpr) {
   EXPECT_EQ(1, CheckExpr<CallExpr>(Expr::CALL));
+  enum {NUM_ARGS = 2};
+  ampl::Function f = builder.AddFunction(0, "foo", NUM_ARGS);
+  ampl::Expr args[NUM_ARGS] = {n1, n2};
+  ampl::CallExpr expr = builder.MakeCall(f, NUM_ARGS, args);
+  EXPECT_EQ(OPFUNCALL, expr.opcode());
+  EXPECT_EQ(NUM_ARGS, expr.num_args());
+  EXPECT_EQ(f, expr.function());
+  int arg_index = 0;
+  for (ampl::CallExpr::iterator
+      i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
+    EXPECT_EQ(args[arg_index], *i);
+    EXPECT_EQ(args[arg_index], expr[arg_index]);
+  }
+  EXPECT_EQ(NUM_ARGS, arg_index);
+}
+
+TEST_F(ExprTest, VarArgExpr) {
+  const int opcodes[] = {MINLIST, MAXLIST};
+  std::size_t num_opcodes = sizeof(opcodes) / sizeof(*opcodes);
+  EXPECT_EQ(num_opcodes, CheckExpr<VarArgExpr>(Expr::VARARG));
   enum {NUM_ARGS = 3};
-  Expr args[NUM_ARGS] = {
-      MakeNumericConstant(11), MakeVariable(0), MakeNumericConstant(22)
+  NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
+  for (size_t i = 0, n = sizeof(opcodes) / sizeof(*opcodes); i < n; ++i) {
+    ampl::VarArgExpr expr = builder.MakeVarArg(opcodes[i], NUM_ARGS, args);
+    EXPECT_EQ(opcodes[i], expr.opcode());
+    int arg_index = 0;
+    ampl::VarArgExpr::iterator j = expr.begin(), end = expr.end();
+    for (; j != end; ++j, ++arg_index)
+      EXPECT_EQ(args[arg_index], *j);
+    EXPECT_FALSE(*j);
+    EXPECT_EQ(NUM_ARGS, arg_index);
+    j = expr.begin();
+    VarArgExpr::iterator j2 = j++;
+    EXPECT_EQ(args[0], *j2);
+    EXPECT_EQ(args[1], *j);
+  }
+  EXPECT_THROW_MSG(builder.MakeVarArg(OPUMINUS, NUM_ARGS, args), Error,
+      fmt::format("invalid vararg expression code {}", OPUMINUS));
+#ifndef NDEBUG
+  EXPECT_DEBUG_DEATH(
+      builder.MakeVarArg(MINLIST, -1, args);, "Assertion");  // NOLINT(*)
+#endif
+}
+
+TEST_F(ExprTest, SumExpr) {
+  EXPECT_EQ(1, CheckExpr<SumExpr>(Expr::SUM));
+  enum {NUM_ARGS = 3};
+  NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
+  ampl::SumExpr expr = builder.MakeSum(NUM_ARGS, args);
+  EXPECT_EQ(OPSUMLIST, expr.opcode());
+  int arg_index = 0;
+  for (ampl::SumExpr::iterator
+      i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
+    EXPECT_EQ(args[arg_index], *i);
+  }
+#ifndef NDEBUG
+  EXPECT_DEBUG_DEATH(builder.MakeSum(-1, args);, "Assertion");  // NOLINT(*)
+#endif
+}
+
+TEST_F(ExprTest, CountExpr) {
+  EXPECT_EQ(1, CheckExpr<CountExpr>(Expr::COUNT));
+  enum {NUM_ARGS = 2};
+  LogicalExpr args[NUM_ARGS] = {
+    builder.MakeLogicalConstant(true),
+    builder.MakeLogicalConstant(false)
   };
+  ampl::CountExpr expr = builder.MakeCount(NUM_ARGS, args);
+  EXPECT_EQ(OPCOUNT, expr.opcode());
+  int arg_index = 0;
+  for (ampl::CountExpr::iterator
+      i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
+    EXPECT_EQ(args[arg_index], *i);
+  }
+#ifndef NDEBUG
+  EXPECT_DEBUG_DEATH(builder.MakeCount(-1, args);, "Assertion");  // NOLINT(*)
+#endif
+}
 
-  ampl::Function f = AddFunction(0, "foo", NUM_ARGS);
-  CallExpr e = MakeCall(f, NUM_ARGS, args);
-  EXPECT_EQ(f, e.function());
-  EXPECT_EQ(NUM_ARGS, e.num_args());
+TEST_F(ExprTest, NumberOfExpr) {
+  EXPECT_EQ(1, CheckExpr<NumberOfExpr>(Expr::NUMBEROF));
+  enum {NUM_ARGS = 3};
+  NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
+  ampl::NumberOfExpr expr = builder.MakeNumberOf(NUM_ARGS, args);
+  EXPECT_EQ(OPNUMBEROF, expr.opcode());
+  EXPECT_EQ(NUM_ARGS, expr.num_args());
   for (int i = 0; i < NUM_ARGS; ++i)
-    EXPECT_EQ(args[i], e[i]);
-
-  ampl::Function f2 = AddFunction(0, "bar", 2);
-  CallExpr e2(MakeCall(f2, 2, args));
-  EXPECT_EQ(2, e2.num_args());
-  EXPECT_FALSE(ampl::Function());
-  int index = 0;
-  CallExpr::iterator i = e.begin();
-  for (; index < NUM_ARGS; ++index, ++i)
-    EXPECT_EQ(args[index], *i);
-  EXPECT_EQ(e.end(), i);
-  EXPECT_EQ(3, index);
-  i = e.begin();
-  CallExpr::iterator i2 = i++;
-  EXPECT_EQ(args[0], *i2);
-  EXPECT_EQ(args[1], *i);
+    EXPECT_EQ(args[i], expr[i]);
+#ifndef NDEBUG
+  EXPECT_DEBUG_DEATH(
+      builder.MakeNumberOf(0, args);, "Assertion");  // NOLINT(*)
+#endif
 }
 
 TEST_F(ExprTest, LogicalConstant) {
   EXPECT_EQ(1, CheckExpr<LogicalConstant>(Expr::CONSTANT));
-  LogicalConstant e(AddBool(true));
-  EXPECT_TRUE(e.value());
-  e = AddBool(false);
-  EXPECT_FALSE(e.value());
+  ampl::LogicalConstant expr = builder.MakeLogicalConstant(true);
+  EXPECT_EQ(OPNUM, expr.opcode());
+  EXPECT_TRUE(expr.value());
+  EXPECT_FALSE(builder.MakeLogicalConstant(false).value());
+}
+
+TEST_F(ExprTest, NotExpr) {
+  EXPECT_EQ(1, CheckExpr<NotExpr>(Expr::NOT));
+  LogicalExpr arg = builder.MakeLogicalConstant(true);
+  ampl::NotExpr expr = builder.MakeNot(arg);
+  EXPECT_EQ(OPNOT, expr.opcode());
+  EXPECT_EQ(arg, expr.arg());
+}
+
+TEST_F(ExprTest, BinaryLogicalExpr) {
+  const int opcodes[] = {OPOR, OPAND, OP_IFF};
+  std::size_t num_opcodes = sizeof(opcodes) / sizeof(*opcodes);
+  EXPECT_EQ(num_opcodes, CheckExpr<BinaryLogicalExpr>(Expr::BINARY_LOGICAL));
+  LogicalExpr lhs = builder.MakeLogicalConstant(true);
+  LogicalExpr rhs = builder.MakeLogicalConstant(false);
+  for (size_t i = 0; i < num_opcodes; ++i) {
+    ampl::BinaryLogicalExpr expr =
+        builder.MakeBinaryLogical(opcodes[i], lhs, rhs);
+    EXPECT_BINARY(expr, opcodes[i], lhs, rhs);
+  }
+  EXPECT_THROW_MSG(builder.MakeBinaryLogical(OPUMINUS, lhs, rhs), Error,
+    fmt::format("invalid binary expression code {}", OPUMINUS));
 }
 
 TEST_F(ExprTest, RelationalExpr) {
-  EXPECT_EQ(6, CheckExpr<RelationalExpr>(Expr::RELATIONAL));
+  const int opcodes[] = {LT, LE, EQ, GE, GT, NE};
+  std::size_t num_opcodes = sizeof(opcodes) / sizeof(*opcodes);
+  EXPECT_EQ(num_opcodes, CheckExpr<RelationalExpr>(Expr::RELATIONAL));
+  for (size_t i = 0; i < num_opcodes; ++i) {
+    ampl::RelationalExpr expr = builder.MakeRelational(opcodes[i], n1, n2);
+    EXPECT_BINARY(expr, opcodes[i], n1, n2);
+  }
+  EXPECT_THROW_MSG(builder.MakeRelational(OPUMINUS, n1, n2), Error,
+    fmt::format("invalid binary expression code {}", OPUMINUS));
+
   NumericExpr lhs(AddNum(42)), rhs(AddNum(43));
   RelationalExpr e(AddRelational(EQ, lhs, rhs));
   EXPECT_EQ(lhs, e.lhs());
   EXPECT_EQ(rhs, e.rhs());
 }
 
-TEST_F(ExprTest, NotExpr) {
-  EXPECT_EQ(1, CheckExpr<NotExpr>(Expr::NOT));
-  LogicalExpr arg(AddBool(true));
-  NotExpr e(AddNot(arg));
-  EXPECT_EQ(arg, e.arg());
-}
-
 TEST_F(ExprTest, LogicalCountExpr) {
-  EXPECT_EQ(6, CheckExpr<LogicalCountExpr>(Expr::LOGICAL_COUNT));
-  NumericExpr value(AddNum(42));
-  NumericExpr n(AddNum(42));
-  CountExpr count(AddCount(AddRelational(EQ, n, n), AddRelational(EQ, n, n)));
-  LogicalCountExpr e(AddLogicalCount(OPATLEAST, value, count));
-  EXPECT_EQ(value, e.lhs());
-  EXPECT_EQ(count, e.rhs());
-}
-
-TEST_F(ExprTest, BinaryLogicalExpr) {
-  EXPECT_EQ(3, CheckExpr<BinaryLogicalExpr>(Expr::BINARY_LOGICAL));
-  LogicalExpr lhs(AddBool(false)), rhs(AddBool(true));
-  BinaryLogicalExpr e(AddBinaryLogical(OPOR, lhs, rhs));
-  EXPECT_EQ(lhs, e.lhs());
-  EXPECT_EQ(rhs, e.rhs());
+  const int opcodes[] = {
+    OPATLEAST, OPATMOST, OPEXACTLY, OPNOTATLEAST, OPNOTATMOST, OPNOTEXACTLY
+  };
+  std::size_t num_opcodes = sizeof(opcodes) / sizeof(*opcodes);
+  EXPECT_EQ(num_opcodes, CheckExpr<LogicalCountExpr>(Expr::LOGICAL_COUNT));
+  LogicalExpr count_arg = builder.MakeLogicalConstant(true);
+  ampl::CountExpr count = builder.MakeCount(1, &count_arg);
+  for (size_t i = 0; i < num_opcodes; ++i) {
+    ampl::LogicalCountExpr expr =
+        builder.MakeLogicalCount(opcodes[i], n1, count);
+    EXPECT_BINARY(expr, opcodes[i], n1, count);
+  }
+  EXPECT_THROW_MSG(builder.MakeLogicalCount(OPUMINUS, n1, count), Error,
+    fmt::format("invalid binary expression code {}", OPUMINUS));
 }
 
 TEST_F(ExprTest, ImplicationExpr) {
   EXPECT_EQ(1, CheckExpr<ImplicationExpr>(Expr::IMPLICATION));
-  LogicalExpr condition(AddBool(true));
-  LogicalExpr true_expr(AddBool(true)), false_expr(AddBool(false));
-  ImplicationExpr e(AddImplication(condition, true_expr, false_expr));
-  EXPECT_EQ(condition, e.condition());
-  EXPECT_EQ(true_expr, e.true_expr());
-  EXPECT_EQ(false_expr, e.false_expr());
+  LogicalExpr condition = builder.MakeLogicalConstant(true);
+  LogicalExpr true_expr = builder.MakeLogicalConstant(false);
+  LogicalExpr false_expr = builder.MakeLogicalConstant(true);
+  ampl::ImplicationExpr expr =
+      builder.MakeImplication(condition, true_expr, false_expr);
+  EXPECT_EQ(OPIMPELSE, expr.opcode());
+  EXPECT_EQ(condition, expr.condition());
+  EXPECT_EQ(true_expr, expr.true_expr());
+  EXPECT_EQ(false_expr, expr.false_expr());
 }
 
 TEST_F(ExprTest, IteratedLogicalExpr) {
-  EXPECT_EQ(2, CheckExpr<IteratedLogicalExpr>(Expr::ITERATED_LOGICAL));
-  LogicalExpr args[] = {AddBool(false), AddBool(true), AddBool(false)};
-  IteratedLogicalExpr e(AddIteratedLogical(ORLIST, args[0], args[1], args[2]));
-  EXPECT_EQ(3, e.num_args());
-  int index = 0;
-  IteratedLogicalExpr::iterator i = e.begin();
-  for (IteratedLogicalExpr::iterator end = e.end(); i != end; ++i, ++index) {
-    EXPECT_TRUE(*i);
-    EXPECT_EQ(args[index], *i);
-    EXPECT_EQ(args[index].opcode(), i->opcode());
-    EXPECT_EQ(args[index], e[index]);
+  const int opcodes[] = {ORLIST, ANDLIST};
+  std::size_t num_opcodes = sizeof(opcodes) / sizeof(*opcodes);
+  EXPECT_EQ(num_opcodes,
+    CheckExpr<IteratedLogicalExpr>(Expr::ITERATED_LOGICAL));
+  enum {NUM_ARGS = 3};
+  LogicalExpr args[NUM_ARGS] = {
+    builder.MakeLogicalConstant(false),
+    builder.MakeLogicalConstant(true),
+    builder.MakeLogicalConstant(false)
+  };
+  for (size_t i = 0; i < num_opcodes; ++i) {
+    IteratedLogicalExpr expr =
+        builder.MakeIteratedLogical(opcodes[i], NUM_ARGS, args);
+    EXPECT_EQ(opcodes[i], expr.opcode());
+    int arg_index = 0;
+    for (IteratedLogicalExpr::iterator
+        i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
+      EXPECT_EQ(args[arg_index], *i);
+    }
   }
-  EXPECT_EQ(3, index);
-  i = e.begin();
-  IteratedLogicalExpr::iterator i2 = i++;
-  EXPECT_EQ(args[0], *i2);
-  EXPECT_EQ(args[1], *i);
+  EXPECT_THROW_MSG(
+        builder.MakeIteratedLogical(OPUMINUS, NUM_ARGS, args), Error,
+        fmt::format("invalid iterated logical expression code {}", OPUMINUS));
+#ifndef NDEBUG
+  EXPECT_DEBUG_DEATH(builder.MakeIteratedLogical(
+                       ORLIST, -1, args);, "Assertion");  // NOLINT(*)
+#endif
 }
 
 TEST_F(ExprTest, AllDiffExpr) {
   EXPECT_EQ(1, CheckExpr<AllDiffExpr>(Expr::ALLDIFF));
-  NumericExpr args[] = {AddNum(42), AddNum(43), AddNum(44)};
-  AllDiffExpr e(AddAllDiff(args[0], args[1], args[2]));
-  EXPECT_EQ(3, e.num_args());
+  enum {NUM_ARGS = 3};
+  NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
+  AllDiffExpr expr = builder.MakeAllDiff(NUM_ARGS, args);
+  EXPECT_EQ(NUM_ARGS, expr.num_args());
   int index = 0;
-  AllDiffExpr::iterator i = e.begin();
-  for (AllDiffExpr::iterator end = e.end(); i != end; ++i, ++index) {
-    EXPECT_TRUE(*i);
+  for (AllDiffExpr::iterator
+       i = expr.begin(), end = expr.end(); i != end; ++i, ++index) {
     EXPECT_EQ(args[index], *i);
-    EXPECT_EQ(args[index].opcode(), i->opcode());
-    EXPECT_EQ(args[index], e[index]);
+    EXPECT_EQ(args[index], expr[index]);
   }
-  EXPECT_EQ(3, index);
-  i = e.begin();
-  AllDiffExpr::iterator i2 = i++;
-  EXPECT_EQ(args[0], *i2);
-  EXPECT_EQ(args[1], *i);
+  EXPECT_EQ(NUM_ARGS, index);
+#ifndef NDEBUG
+  EXPECT_DEBUG_DEATH(builder.MakeAllDiff(-1, args);, "Assertion");  // NOLINT(*)
+#endif
 }
 
 TEST_F(ExprTest, StringLiteral) {
   EXPECT_EQ(1, CheckExpr<StringLiteral>(Expr::STRING));
-  StringLiteral e = MakeStringLiteral(3, "abc");
+  StringLiteral e = builder.MakeStringLiteral(3, "abc");
   EXPECT_STREQ("abc", e.value());
+#ifndef NDEBUG
+  EXPECT_DEBUG_DEATH(
+        builder.MakeStringLiteral(-1, "abc");, "Assertion");  // NOLINT(*)
+#endif
 }
 
 struct TestResult {
