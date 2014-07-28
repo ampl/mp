@@ -25,10 +25,21 @@
 #include <cstdio>
 #include <cstring>
 
+using std::size_t;
+
 using ampl::Cast;
 using ampl::Expr;
 using ampl::NumericConstant;
 using ampl::NumericExpr;
+using ampl::LogicalExpr;
+using ampl::internal::HashCombine;
+
+namespace std {
+template <>
+struct hash<Expr> {
+  std::size_t operator()(Expr e) const;
+};
+}
 
 namespace {
 // An operation type.
@@ -68,7 +79,7 @@ enum Precedence {
                      // min and max
   PRIMARY            // variable or constant
 };
-}
+}  // namespace prec
 
 // An expression visitor that writes AMPL expressions in a textual form
 // to fmt::Writer. It takes into account precedence and associativity
@@ -340,63 +351,112 @@ void ExprWriter::VisitImplication(ampl::ImplicationExpr e) {
 }
 
 #ifdef HAVE_UNORDERED_MAP
-std::size_t std::hash<ampl::Expr>::operator()(Expr expr) const {
-  std::size_t hash = 0;
-  ampl::HashCombine(hash, expr.opcode());
 
-  struct expr *e = expr.expr_;
-  switch (optype[expr.opcode()]) {
-    case OPTYPE_UNARY:
-      HashCombine(hash, Expr(e->L.e));
-      break;
-
-    case OPTYPE_BINARY:
-      HashCombine(hash, Expr(e->L.e));
-      HashCombine(hash, Expr(e->R.e));
-      break;
-
-    case OPTYPE_VARARG:
-      for (de *d = reinterpret_cast<const expr_va*>(e)->L.d; d->e; d++)
-        HashCombine(hash, Expr(d->e));
-      break;
-
-    case OPTYPE_PLTERM: {
-      plterm *p = e->L.p;
-      double *pce = p->bs;
-      for (int i = 0, n = p->n * 2 - 1; i < n; i++)
-        ampl::HashCombine(hash, pce[i]);
-      HashCombine(hash, Expr(e->R.e));
-      break;
-    }
-
-    case OPTYPE_IF: {
-      const expr_if *eif = reinterpret_cast<const expr_if*>(e);
-      HashCombine(hash, Expr(eif->e));
-      HashCombine(hash, Expr(eif->T));
-      HashCombine(hash, Expr(eif->F));
-      break;
-    }
-
-    case OPTYPE_SUM:
-    case OPTYPE_COUNT: {
-      struct expr **ep = e->L.ep;
-      for (; ep < e->R.ep; ep++)
-        HashCombine(hash, Expr(*ep));
-      break;
-    }
-
-    case OPTYPE_NUMBER:
-      ampl::HashCombine(hash, reinterpret_cast<const expr_n*>(e)->v);
-      break;
-
-    case OPTYPE_VARIABLE:
-      ampl::HashCombine(hash, e->a);
-      break;
-
-    default:
-      throw ampl::UnsupportedExprError::CreateFromExprString(expr.opstr());
+// Computes a hash value for an expression.
+class ExprHasher : public ampl::ExprVisitor<ExprHasher, size_t> {
+ private:
+  static size_t Hash(Expr e) {
+    return HashCombine(0, e.opcode());
   }
-  return hash;
+
+  template <typename T>
+  static size_t Hash(Expr e, const T &value) {
+    return HashCombine(Hash(e), value);
+  }
+
+  template <typename T>
+  static size_t HashCombine(size_t hash, const T &value) {
+    ampl::internal::HashCombine(hash, value);
+    return hash;
+  }
+
+ public:
+  size_t VisitNumericConstant(NumericConstant c) { return Hash(c, c.value()); }
+  size_t VisitVariable(ampl::Variable v) { return Hash(v, v.index()); }
+
+  template <typename E>
+  size_t VisitUnary(E e) { return Hash(e, e.arg()); }
+
+  template <typename E>
+  size_t VisitBinary(E e) { return HashCombine(Hash(e, e.lhs()), e.rhs()); }
+
+  template <typename E>
+  size_t VisitIf(E e) {
+    size_t hash = HashCombine(Hash(e), e.condition());
+    return HashCombine(HashCombine(hash, e.true_expr()), e.false_expr());
+  }
+
+  size_t VisitPiecewiseLinear(ampl::PiecewiseLinearExpr e) {
+    size_t hash = Hash(e);
+    int num_breakpoints = e.num_breakpoints();
+    for (int i = 0; i < num_breakpoints; ++i) {
+      hash = HashCombine(hash, e.slope(i));
+      hash = HashCombine(hash, e.breakpoint(i));
+    }
+    hash = HashCombine(hash, e.slope(num_breakpoints));
+    return HashCombine(hash, e.var_index());
+  }
+
+  size_t VisitCall(ampl::CallExpr e) { return VisitVarArg(e); }
+
+  template <typename E>
+  size_t VisitVarArg(E e) {
+    size_t hash = Hash(e);
+    for (typename E::iterator i = e.begin(), end = e.end(); i != end; ++i)
+      hash = HashCombine(hash, *i);
+    return hash;
+  }
+
+  size_t VisitSum(ampl::SumExpr e) { return VisitVarArg(e); }
+  size_t VisitCount(ampl::CountExpr e) { return VisitVarArg(e); }
+  size_t VisitNumberOf(ampl::NumberOfExpr e) { return VisitVarArg(e); }
+
+  size_t VisitLogicalConstant(ampl::LogicalConstant c) {
+    return Hash(c, c.value());
+  }
+
+  size_t VisitNot(ampl::NotExpr e) { return Hash(e, e.arg()); }
+
+  size_t VisitBinaryLogical(ampl::BinaryLogicalExpr e) {
+    return VisitBinary(e);
+  }
+
+  size_t VisitRelational(ampl::RelationalExpr e) { return VisitBinary(e); }
+
+  size_t VisitLogicalCount(ampl::LogicalCountExpr e) {
+    NumericExpr rhs = e.rhs();
+    return HashCombine(Hash(e, e.lhs()), rhs);
+  }
+
+  size_t VisitImplication(ampl::ImplicationExpr e) { return VisitIf(e); }
+
+  size_t VisitIteratedLogical(ampl::IteratedLogicalExpr e) {
+    return VisitVarArg(e);
+  }
+
+  size_t VisitAllDiff(ampl::AllDiffExpr e) { return VisitVarArg(e); }
+
+  size_t VisitStringLiteral(ampl::StringLiteral s) {
+    size_t hash = Hash(s);
+    for (const char *value = s.value(); *value; ++value)
+      hash = HashCombine(hash, *value);
+    return hash;
+  }
+};
+
+size_t std::hash<Expr>::operator()(Expr expr) const {
+  ExprHasher hasher;
+  NumericExpr n = Cast<NumericExpr>(expr);
+  return n ? hasher.Visit(n) :
+             hasher.VisitStringLiteral(Cast<ampl::StringLiteral>(expr));
+}
+
+size_t std::hash<NumericExpr>::operator()(NumericExpr expr) const {
+  return ExprHasher().Visit(expr);
+}
+
+size_t std::hash<LogicalExpr>::operator()(LogicalExpr expr) const {
+  return ExprHasher().Visit(expr);
 }
 #else
 # if defined(AMPL_NO_UNORDERED_MAP_WARNING)
@@ -580,15 +640,16 @@ std::string internal::FormatOpCode(Expr e) {
 }
 
 #ifdef HAVE_UNORDERED_MAP
-std::size_t HashNumberOfArgs::operator()(NumberOfExpr e) const {
-  std::size_t hash = 0;
+size_t internal::HashNumberOfArgs::operator()(NumberOfExpr e) const {
+  size_t hash = 0;
   for (int i = 1, n = e.num_args(); i < n; ++i)
-    HashCombine(hash, static_cast<Expr>(e[i]));
+    HashCombine(hash, e[i]);
   return hash;
 }
 #endif
 
-bool EqualNumberOfArgs::operator()(NumberOfExpr lhs, NumberOfExpr rhs) const {
+bool internal::EqualNumberOfArgs::operator()(
+    NumberOfExpr lhs, NumberOfExpr rhs) const {
   int num_args = lhs.num_args();
   if (num_args != rhs.num_args())
     return false;

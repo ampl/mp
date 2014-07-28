@@ -24,6 +24,7 @@
 #define SOLVERS_UTIL_ASLBUILDER_H_
 
 #include "solvers/util/expr.h"
+#include "solvers/util/format.h"
 #include "solvers/util/noncopyable.h"
 
 namespace ampl {
@@ -190,7 +191,7 @@ class ASLBuilder : Noncopyable {
     return MakeIterated<Expr::ALLDIFF>(OPALLDIFF, num_args, args);
   }
 
-  StringLiteral MakeStringLiteral(int size, const char *value);
+  StringLiteral MakeStringLiteral(fmt::StringRef value);
 };
 }
 }

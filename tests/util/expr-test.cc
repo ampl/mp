@@ -81,7 +81,6 @@ struct TestGrad {
   double coef;
   int varno;
 };
-
 }
 
 namespace ampl {
@@ -554,11 +553,11 @@ TEST_F(ExprTest, EqualCount) {
 }
 
 TEST_F(ExprTest, EqualString) {
-  StringLiteral s1 = MakeStringLiteral(3, "abc");
-  StringLiteral s2 = MakeStringLiteral(3, "abc");
+  StringLiteral s1 = MakeStringLiteral("abc");
+  StringLiteral s2 = MakeStringLiteral("abc");
   EXPECT_NE(s1.value(), s2.value());
   EXPECT_TRUE(Equal(s1, s2));
-  EXPECT_FALSE(Equal(s1, MakeStringLiteral(3, "def")));
+  EXPECT_FALSE(Equal(s1, MakeStringLiteral("def")));
 }
 
 TEST_F(ExprTest, NumericExpr) {
@@ -665,7 +664,7 @@ TEST_F(ExprTest, CallExpr) {
   EXPECT_EQ(1, CheckExpr<CallExpr>(Expr::CALL));
   enum {NUM_ARGS = 3};
   Function f = builder.AddFunction( 0, "foo", NUM_ARGS, Function::SYMBOLIC);
-  Expr args[NUM_ARGS] = {n1, n2, builder.MakeStringLiteral(3, "abc")};
+  Expr args[NUM_ARGS] = {n1, n2, builder.MakeStringLiteral("abc")};
   CallExpr expr = builder.MakeCall(f, NUM_ARGS, args);
   EXPECT_EQ(OPFUNCALL, expr.opcode());
   EXPECT_EQ(NUM_ARGS, expr.num_args());
@@ -885,11 +884,11 @@ TEST_F(ExprTest, AllDiffExpr) {
 
 TEST_F(ExprTest, StringLiteral) {
   EXPECT_EQ(1, CheckExpr<StringLiteral>(Expr::STRING));
-  StringLiteral e = builder.MakeStringLiteral(3, "abc");
+  StringLiteral e = builder.MakeStringLiteral("abc");
   EXPECT_STREQ("abc", e.value());
 #ifndef NDEBUG
-  EXPECT_DEBUG_DEATH(
-        builder.MakeStringLiteral(-1, "abc");, "Assertion");  // NOLINT(*)
+  EXPECT_DEBUG_DEATH(builder.MakeStringLiteral(
+    fmt::StringRef("abc", INT_MAX + 1u));, "Assertion");  // NOLINT(*)
 #endif
 }
 
@@ -1348,12 +1347,12 @@ TEST_F(ExprTest, WriteAllDiffExpr) {
 }
 
 TEST_F(ExprTest, WriteStringLiteral) {
-  StringLiteral s = builder.MakeStringLiteral(3, "abc");
+  StringLiteral s = builder.MakeStringLiteral("abc");
   ampl::Function f = builder.AddFunction(0, "f", 1, Function::SYMBOLIC);
   CHECK_WRITE("f('abc')", builder.MakeCall(f, 1, &s));
-  s = builder.MakeStringLiteral(3, "ab''c");
+  s = builder.MakeStringLiteral("ab'c");
   CHECK_WRITE("f('ab''c')", builder.MakeCall(f, 1, &s));
-  s = builder.MakeStringLiteral(3, "ab\nc");
+  s = builder.MakeStringLiteral("ab\nc");
   CHECK_WRITE("f('ab\\\nc')", builder.MakeCall(f, 1, &s));
 }
 
@@ -1669,103 +1668,116 @@ TEST_F(ExprTest, AllDiffExprPrecedence) {
 
 #ifdef HAVE_UNORDERED_MAP
 
-using ampl::HashCombine;
+using ampl::internal::HashCombine;
 
-TEST_F(ExprTest, HashNum) {
+TEST_F(ExprTest, HashNumericConstant) {
   size_t hash = 0;
   HashCombine(hash, OPNUM);
   HashCombine(hash, 42.0);
-  EXPECT_EQ(hash, std::hash<Expr>()(AddNum(42)));
+  EXPECT_EQ(hash, std::hash<NumericExpr>()(builder.MakeNumericConstant(42)));
 }
 
 TEST_F(ExprTest, HashVar) {
   size_t hash = 0;
   HashCombine(hash, OPVARVAL);
   HashCombine(hash, 42);
-  EXPECT_EQ(hash, std::hash<Expr>()(AddVar(42)));
+  EXPECT_EQ(hash, std::hash<NumericExpr>()(AddVar(42)));
 }
 
 TEST_F(ExprTest, HashUnary) {
   size_t hash = 0;
   HashCombine(hash, OPUMINUS);
-  HashCombine<Expr>(hash, AddVar(0));
-  EXPECT_EQ(hash, std::hash<Expr>()(AddUnary(OPUMINUS, AddVar(0))));
+  HashCombine<NumericExpr>(hash, AddVar(0));
+  EXPECT_EQ(hash, std::hash<NumericExpr>()(AddUnary(OPUMINUS, AddVar(0))));
 }
 
 TEST_F(ExprTest, HashBinary) {
   size_t hash = 0;
   HashCombine(hash, OPPLUS);
-  HashCombine<Expr>(hash, AddVar(11));
-  HashCombine<Expr>(hash, AddNum(22));
-  EXPECT_EQ(hash, std::hash<Expr>()(AddBinary(OPPLUS, AddVar(11), AddNum(22))));
-}
-
-TEST_F(ExprTest, HashVarArg) {
-  size_t hash = 0;
-  HashCombine(hash, MINLIST);
-  HashCombine<Expr>(hash, AddVar(0));
-  HashCombine<Expr>(hash, AddVar(1));
-  HashCombine<Expr>(hash, AddNum(42));
-  EXPECT_EQ(hash, std::hash<Expr>()(
-      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42))));
-}
-
-TEST_F(ExprTest, HashPiecewiseLinear) {
-  size_t hash = 0;
-  HashCombine(hash, OPPLTERM);
-  double args[] = {-1, 5, 0, 10, 1};
-  for (size_t i = 0; i < sizeof(args) / sizeof(*args); ++i)
-    HashCombine(hash, args[i]);
-  HashCombine<Expr>(hash, AddVar(11));
-  EXPECT_EQ(hash, std::hash<Expr>()(AddPL(5, args, 11)));
+  HashCombine<NumericExpr>(hash, AddVar(11));
+  HashCombine<NumericExpr>(hash, AddNum(22));
+  EXPECT_EQ(hash, std::hash<NumericExpr>()(
+              AddBinary(OPPLUS, AddVar(11), AddNum(22))));
 }
 
 TEST_F(ExprTest, HashIf) {
   size_t hash = 0;
   HashCombine(hash, OPIFnl);
-  HashCombine<Expr>(hash, AddBool(0));
-  HashCombine<Expr>(hash, AddVar(1));
-  HashCombine<Expr>(hash, AddNum(42));
-  EXPECT_EQ(hash, std::hash<Expr>()(AddIf(AddBool(0), AddVar(1), AddNum(42))));
+  HashCombine<LogicalExpr>(hash, AddBool(0));
+  HashCombine<NumericExpr>(hash, AddVar(1));
+  HashCombine<NumericExpr>(hash, AddNum(42));
+  EXPECT_EQ(hash, std::hash<NumericExpr>()(
+              AddIf(AddBool(0), AddVar(1), AddNum(42))));
+}
+
+TEST_F(ExprTest, HashPiecewiseLinear) {
+  size_t hash = 0;
+  HashCombine(hash, OPPLTERM);
+  enum {NUM_BREAKPOINTS = 2};
+  double breakpoints[NUM_BREAKPOINTS] = {5, 10};
+  double slopes[NUM_BREAKPOINTS + 1] = {-1, 0, 1};
+  for (size_t i = 0; i < NUM_BREAKPOINTS; ++i) {
+    HashCombine(hash, slopes[i]);
+    HashCombine(hash, breakpoints[i]);
+  }
+  HashCombine(hash, slopes[NUM_BREAKPOINTS]);
+  HashCombine(hash, 9);
+  EXPECT_EQ(hash, std::hash<NumericExpr>()(
+    builder.MakePiecewiseLinear(NUM_BREAKPOINTS, breakpoints, slopes,
+                                builder.MakeVariable(9))));
+}
+
+// TODO: hash CallExpr
+
+TEST_F(ExprTest, HashVarArg) {
+  size_t hash = 0;
+  HashCombine(hash, MINLIST);
+  HashCombine<NumericExpr>(hash, AddVar(0));
+  HashCombine<NumericExpr>(hash, AddVar(1));
+  HashCombine<NumericExpr>(hash, AddNum(42));
+  EXPECT_EQ(hash, std::hash<NumericExpr>()(
+      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42))));
 }
 
 TEST_F(ExprTest, HashSum) {
   size_t hash = 0;
   HashCombine(hash, OPSUMLIST);
-  HashCombine<Expr>(hash, AddVar(0));
-  HashCombine<Expr>(hash, AddVar(1));
-  HashCombine<Expr>(hash, AddNum(42));
-  EXPECT_EQ(hash, std::hash<Expr>()(AddSum(AddVar(0), AddVar(1), AddNum(42))));
+  HashCombine<NumericExpr>(hash, AddVar(0));
+  HashCombine<NumericExpr>(hash, AddVar(1));
+  HashCombine<NumericExpr>(hash, AddNum(42));
+  EXPECT_EQ(hash, std::hash<NumericExpr>()(
+              AddSum(AddVar(0), AddVar(1), AddNum(42))));
 }
 
 TEST_F(ExprTest, HashCount) {
   size_t hash = 0;
   HashCombine(hash, OPCOUNT);
-  HashCombine<Expr>(hash, AddBool(false));
-  HashCombine<Expr>(hash, AddBool(true));
-  HashCombine<Expr>(hash, AddBool(true));
-  EXPECT_EQ(hash, std::hash<Expr>()(
+  HashCombine<LogicalExpr>(hash, AddBool(false));
+  HashCombine<LogicalExpr>(hash, AddBool(true));
+  HashCombine<LogicalExpr>(hash, AddBool(true));
+  EXPECT_EQ(hash, std::hash<NumericExpr>()(
       AddCount(AddBool(false), AddBool(true), AddBool(true))));
 }
 
 TEST_F(ExprTest, HashNumberOfArgs) {
   size_t hash = 0;
-  HashCombine<Expr>(hash, AddVar(11));
-  HashCombine<Expr>(hash, AddNum(22));
-  EXPECT_EQ(hash, ampl::HashNumberOfArgs()(
+  HashCombine<NumericExpr>(hash, AddVar(11));
+  HashCombine<NumericExpr>(hash, AddNum(22));
+  EXPECT_EQ(hash, ampl::internal::HashNumberOfArgs()(
       AddNumberOf(AddNum(42), AddVar(11), AddNum(22))));
 }
 
 // TODO: hash string
 
 TEST_F(ExprTest, EqualNumberOfArgs) {
-  EXPECT_TRUE(ampl::EqualNumberOfArgs()(
+  using ampl::internal::EqualNumberOfArgs;
+  EXPECT_TRUE(EqualNumberOfArgs()(
       AddNumberOf(AddNum(0), AddVar(11), AddNum(22)),
       AddNumberOf(AddNum(1), AddVar(11), AddNum(22))));
-  EXPECT_FALSE(ampl::EqualNumberOfArgs()(
+  EXPECT_FALSE(EqualNumberOfArgs()(
       AddNumberOf(AddNum(0), AddVar(11), AddNum(22)),
       AddNumberOf(AddNum(1), AddVar(11))));
-  EXPECT_FALSE(ampl::EqualNumberOfArgs()(
+  EXPECT_FALSE(EqualNumberOfArgs()(
       AddNumberOf(AddNum(0), AddVar(11), AddNum(22)),
       AddNumberOf(AddNum(1), AddVar(11), AddNum(33))));
 }
@@ -1777,13 +1789,14 @@ struct TestNumberOf {
 };
 
 TEST_F(ExprTest, MatchNumberOfArgs) {
-  EXPECT_TRUE(ampl::MatchNumberOfArgs<TestNumberOf>(
+  using ampl::internal::MatchNumberOfArgs;
+  EXPECT_TRUE(MatchNumberOfArgs<TestNumberOf>(
       AddNumberOf(AddNum(1), AddVar(11), AddNum(22)))(
           TestNumberOf(AddNumberOf(AddNum(0), AddVar(11), AddNum(22)))));
-  EXPECT_FALSE(ampl::MatchNumberOfArgs<TestNumberOf>(
+  EXPECT_FALSE(MatchNumberOfArgs<TestNumberOf>(
       AddNumberOf(AddNum(1), AddVar(11)))(
           TestNumberOf(AddNumberOf(AddNum(0), AddVar(11), AddNum(22)))));
-  EXPECT_FALSE(ampl::MatchNumberOfArgs<TestNumberOf>(
+  EXPECT_FALSE(MatchNumberOfArgs<TestNumberOf>(
       AddNumberOf(AddNum(1), AddVar(11), AddNum(33)))(
           TestNumberOf(AddNumberOf(AddNum(0), AddVar(11), AddNum(22)))));
 }

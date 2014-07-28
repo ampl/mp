@@ -500,13 +500,15 @@ IteratedLogicalExpr ASLBuilder::MakeIteratedLogical(
   return MakeIterated<Expr::ITERATED_LOGICAL>(opcode, num_args, args);
 }
 
-StringLiteral ASLBuilder::MakeStringLiteral(int size, const char *value) {
-  assert(size >= 0);
+StringLiteral ASLBuilder::MakeStringLiteral(fmt::StringRef value) {
+  std::size_t size = value.size();
+  assert(size <= INT_MAX);
   expr_h *result = Allocate<expr_h>(AddPadding(sizeof(expr_h) + size));
   result->op = r_ops_[OPHOL];
   // Passing result->sym makes std::copy causes in assertion failure in MSVC.
   char *dest = result->sym;
-  std::copy(value, value + size, dest);
+  const char *str = value.c_str();
+  std::copy(str, str + size, dest);
   result->sym[size] = 0;
   return Expr::Create<StringLiteral>(reinterpret_cast<expr*>(result));
 }

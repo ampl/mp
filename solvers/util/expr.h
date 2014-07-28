@@ -148,13 +148,19 @@ extern "C" {
 
 namespace ampl {
 class Expr;
+class NumericExpr;
+class LogicalExpr;
 }
 
 #ifdef HAVE_UNORDERED_MAP
 namespace std {
 template <>
-struct hash<ampl::Expr> {
-  std::size_t operator()(ampl::Expr e) const;
+struct hash<ampl::NumericExpr> {
+  std::size_t operator()(ampl::NumericExpr e) const;
+};
+template <>
+struct hash<ampl::LogicalExpr> {
+  std::size_t operator()(ampl::LogicalExpr e) const;
 };
 }
 #endif
@@ -168,6 +174,7 @@ class ASLBuilder;
 // Returns true if the non-null expression e is of type ExprT.
 template <typename ExprT>
 bool Is(Expr e);
+}
 
 // Specialize Is<ExprT> for the class ExprClass corresponding to a single
 // expression kind with the specified operation code.
@@ -177,7 +184,6 @@ template <> \
 inline bool Is<ExprClass>(Expr e) { \
   return e.opcode() == code; \
 } \
-}
 }
 
 // An expression.
@@ -372,10 +378,6 @@ class Expr {
 
   // Recursively compares two expressions and returns true if they are equal.
   friend bool Equal(Expr e1, Expr e2);
-
-#ifdef HAVE_UNORDERED_MAP
-  friend struct std::hash<Expr>;
-#endif
 };
 
 // Casts an expression to type ExprT. Returns a null expression if the cast
@@ -1167,10 +1169,6 @@ class ExprVisitor {
     return AMPL_DISPATCH(VisitLogicalCount(e));
   }
 
-  LResult VisitAllDiff(AllDiffExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
-  }
-
   LResult VisitImplication(ImplicationExpr e) {
     return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
@@ -1185,6 +1183,10 @@ class ExprVisitor {
 
   LResult VisitExists(IteratedLogicalExpr e) {
     return AMPL_DISPATCH(VisitIteratedLogical(e));
+  }
+
+  LResult VisitAllDiff(AllDiffExpr e) {
+    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 };
 
@@ -1459,6 +1461,8 @@ typedef LinearExpr<LinearConTerm> LinearConExpr;
 template <typename LinearExpr>
 void WriteExpr(fmt::Writer &w, LinearExpr linear, NumericExpr nonlinear);
 
+namespace internal {
+
 #ifdef HAVE_UNORDERED_MAP
 template <class T>
 inline void HashCombine(std::size_t &seed, const T &v) {
@@ -1491,6 +1495,7 @@ class MatchNumberOfArgs {
     return EqualNumberOfArgs()(expr_, nof.expr);
   }
 };
+}  // namespace internal
 
 // A map from numberof expressions with the same argument lists to
 // values and corresponding variables.
@@ -1511,8 +1516,8 @@ class NumberOfMap {
 
 #ifdef HAVE_UNORDERED_MAP
   // Map from a numberof expression to an index in numberofs_.
-  typedef std::unordered_map<
-      NumberOfExpr, std::size_t, HashNumberOfArgs, EqualNumberOfArgs> Map;
+  typedef std::unordered_map<NumberOfExpr, std::size_t,
+    internal::HashNumberOfArgs, internal::EqualNumberOfArgs> Map;
   Map map_;
 #endif
 
@@ -1545,8 +1550,9 @@ Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
     numberofs_.push_back(NumberOf(e));
   ValueMap &values = numberofs_[result.first->second].values;
 #else
-  typename std::vector<NumberOf>::reverse_iterator np = std::find_if(
-      numberofs_.rbegin(), numberofs_.rend(), MatchNumberOfArgs<NumberOf>(e));
+  typename std::vector<NumberOf>::reverse_iterator np =
+      std::find_if(numberofs_.rbegin(), numberofs_.rend(),
+                   internal::MatchNumberOfArgs<NumberOf>(e));
   if (np == numberofs_.rend()) {
     numberofs_.push_back(NumberOf(e));
     np = numberofs_.rbegin();
@@ -1560,6 +1566,6 @@ Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
   values.insert(i, typename ValueMap::value_type(value, var));
   return var;
 }
-}
+}  // namespace ampl
 
 #endif  // SOLVERS_UTIL_EXPR_H_
