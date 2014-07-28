@@ -30,7 +30,7 @@
 #include "solvers/util/nl.h"
 #include "solvers/util/problem.h"
 
-using ampl::CallArg;
+using ampl::Function;
 using ampl::Cast;
 using ampl::Expr;
 using ampl::NumericExpr;
@@ -663,15 +663,15 @@ TEST_F(ExprTest, PiecewiseLinearExpr) {
 
 TEST_F(ExprTest, CallExpr) {
   EXPECT_EQ(1, CheckExpr<CallExpr>(Expr::CALL));
-  enum {NUM_ARGS = 2};
-  ampl::Function f = builder.AddFunction(0, "foo", NUM_ARGS);
-  ampl::Expr args[NUM_ARGS] = {n1, n2};
-  ampl::CallExpr expr = builder.MakeCall(f, NUM_ARGS, args);
+  enum {NUM_ARGS = 3};
+  Function f = builder.AddFunction( 0, "foo", NUM_ARGS, Function::SYMBOLIC);
+  Expr args[NUM_ARGS] = {n1, n2, builder.MakeStringLiteral(3, "abc")};
+  CallExpr expr = builder.MakeCall(f, NUM_ARGS, args);
   EXPECT_EQ(OPFUNCALL, expr.opcode());
   EXPECT_EQ(NUM_ARGS, expr.num_args());
   EXPECT_EQ(f, expr.function());
   int arg_index = 0;
-  for (ampl::CallExpr::iterator
+  for (CallExpr::iterator
       i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
     EXPECT_EQ(args[arg_index], *i);
     EXPECT_EQ(args[arg_index], expr[arg_index]);
@@ -686,10 +686,10 @@ TEST_F(ExprTest, VarArgExpr) {
   enum {NUM_ARGS = 3};
   NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
   for (size_t i = 0, n = sizeof(opcodes) / sizeof(*opcodes); i < n; ++i) {
-    ampl::VarArgExpr expr = builder.MakeVarArg(opcodes[i], NUM_ARGS, args);
+    VarArgExpr expr = builder.MakeVarArg(opcodes[i], NUM_ARGS, args);
     EXPECT_EQ(opcodes[i], expr.opcode());
     int arg_index = 0;
-    ampl::VarArgExpr::iterator j = expr.begin(), end = expr.end();
+    VarArgExpr::iterator j = expr.begin(), end = expr.end();
     for (; j != end; ++j, ++arg_index)
       EXPECT_EQ(args[arg_index], *j);
     EXPECT_FALSE(*j);
@@ -1179,6 +1179,22 @@ TEST_F(ExprTest, WriteVariable) {
   CHECK_WRITE("x3", AddVar(2));
 }
 
+TEST_F(ExprTest, WriteUnaryExpr) {
+  auto x1 = AddVar(0);
+  CHECK_WRITE("-x1", AddUnary(OPUMINUS, x1));
+  CHECK_WRITE("x1 ^ 2", AddUnary(OP2POW, x1));
+  int count = 0;
+  for (int i = 0, size = sizeof(OP_INFO) / sizeof(*OP_INFO); i < size; ++i) {
+    const OpInfo &info = OP_INFO[i];
+    int code = info.code;
+    if (info.kind != Expr::UNARY || code == OPUMINUS || code == OP2POW)
+      continue;
+    CHECK_WRITE(fmt::format("{}(x1)", info.str), AddUnary(code, x1));
+    ++count;
+  }
+  EXPECT_EQ(19, count);
+}
+
 TEST_F(ExprTest, WriteBinaryExpr) {
   Variable x1 = AddVar(0);
   NumericConstant n42 = AddNum(42);
@@ -1204,53 +1220,12 @@ TEST_F(ExprTest, WriteBinaryFunc) {
   CHECK_WRITE("trunc(x1, 42)", AddBinary(OPtrunc, x1, n42));
 }
 
-TEST_F(ExprTest, WriteUnaryExpr) {
-  auto x1 = AddVar(0);
-  CHECK_WRITE("-x1", AddUnary(OPUMINUS, x1));
-  CHECK_WRITE("x1 ^ 2", AddUnary(OP2POW, x1));
-  int count = 0;
-  for (int i = 0, size = sizeof(OP_INFO) / sizeof(*OP_INFO); i < size; ++i) {
-    const OpInfo &info = OP_INFO[i];
-    int code = info.code;
-    if (info.kind != Expr::UNARY || code == OPUMINUS || code == OP2POW)
-      continue;
-    CHECK_WRITE(fmt::format("{}(x1)", info.str), AddUnary(code, x1));
-    ++count;
-  }
-  EXPECT_EQ(19, count);
-}
-
-TEST_F(ExprTest, WriteVarArgExpr) {
-  CHECK_WRITE("min(x1, x2, 42)",
-      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)));
-  CHECK_WRITE("max(x1, x2, 42)",
-      AddVarArg(MAXLIST, AddVar(0), AddVar(1), AddNum(42)));
-}
-
 TEST_F(ExprTest, WriteIfExpr) {
   auto n0 = AddNum(0), n1 = AddNum(1);
   CHECK_WRITE("if x1 = 0 then 1",
       AddIf(AddRelational(EQ, AddVar(0), n0), n1, n0));
   CHECK_WRITE("if x1 = 0 then 0 else 1",
       AddIf(AddRelational(EQ, AddVar(0), n0), n0, n1));
-}
-
-TEST_F(ExprTest, WriteSumExpr) {
-  CHECK_WRITE("/* sum */ (x1 + x2 + 42)",
-    AddSum(AddVar(0), AddVar(1), AddNum(42)));
-  CHECK_WRITE("/* sum */ ((x1 + x2) + 42)",
-    AddSum(AddBinary(OPPLUS, AddVar(0), AddVar(1)), AddNum(42)));
-}
-
-TEST_F(ExprTest, WriteCountExpr) {
-  CHECK_WRITE("count(x1 = 0, 1, 0)",
-      AddCount(AddRelational(EQ, AddVar(0), AddNum(0)),
-          AddBool(true), AddBool(false)));
-}
-
-TEST_F(ExprTest, WriteNumberOfExpr) {
-  CHECK_WRITE("numberof 42 in (43, 44)",
-      AddNumberOf(AddNum(42), AddNum(43), AddNum(44)));
 }
 
 TEST_F(ExprTest, WritePiecewiseLinearExpr) {
@@ -1270,6 +1245,31 @@ TEST_F(ExprTest, WriteCallExpr) {
   CHECK_WRITE("foo(3)", MakeCall(f, 1, args));
   CHECK_WRITE("foo(3, x1 + 5, 7)", MakeCall(f, 3, args));
   CHECK_WRITE("foo(3, x1 + 5, 7, x2)", MakeCall(f, 4, args));
+}
+
+TEST_F(ExprTest, WriteVarArgExpr) {
+  CHECK_WRITE("min(x1, x2, 42)",
+      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)));
+  CHECK_WRITE("max(x1, x2, 42)",
+      AddVarArg(MAXLIST, AddVar(0), AddVar(1), AddNum(42)));
+}
+
+TEST_F(ExprTest, WriteSumExpr) {
+  CHECK_WRITE("/* sum */ (x1 + x2 + 42)",
+    AddSum(AddVar(0), AddVar(1), AddNum(42)));
+  CHECK_WRITE("/* sum */ ((x1 + x2) + 42)",
+    AddSum(AddBinary(OPPLUS, AddVar(0), AddVar(1)), AddNum(42)));
+}
+
+TEST_F(ExprTest, WriteCountExpr) {
+  CHECK_WRITE("count(x1 = 0, 1, 0)",
+      AddCount(AddRelational(EQ, AddVar(0), AddNum(0)),
+          AddBool(true), AddBool(false)));
+}
+
+TEST_F(ExprTest, WriteNumberOfExpr) {
+  CHECK_WRITE("numberof 42 in (43, 44)",
+      AddNumberOf(AddNum(42), AddNum(43), AddNum(44)));
 }
 
 TEST_F(ExprTest, WriteNotExpr) {
@@ -1323,15 +1323,6 @@ TEST_F(ExprTest, WriteLogicalCountExpr) {
       AddIf(AddLogicalCount(OPNOTEXACTLY, value, count), n1, n0));
 }
 
-TEST_F(ExprTest, WriteIteratedLogicalExpr) {
-  auto e1 = AddRelational(EQ, AddVar(0), AddNum(0));
-  auto e2 = AddBool(true), e3 = AddBool(false);
-  CHECK_WRITE("if /* forall */ (x1 = 0 && 1 && 0) then 1",
-      AddIf(AddIteratedLogical(ANDLIST, e1, e2, e3), AddNum(1), AddNum(0)));
-  CHECK_WRITE("if /* exists */ (x1 = 0 || 1 || 0) then 1",
-      AddIf(AddIteratedLogical(ORLIST, e1, e2, e3), AddNum(1), AddNum(0)));
-}
-
 TEST_F(ExprTest, WriteImplicationExpr) {
   auto e1 = AddRelational(EQ, AddVar(0), AddNum(0));
   auto e2 = AddBool(true), e3 = AddBool(false);
@@ -1341,6 +1332,15 @@ TEST_F(ExprTest, WriteImplicationExpr) {
       AddIf(AddImplication(e1, e3, e2), AddNum(1), AddNum(0)));
 }
 
+TEST_F(ExprTest, WriteIteratedLogicalExpr) {
+  auto e1 = AddRelational(EQ, AddVar(0), AddNum(0));
+  auto e2 = AddBool(true), e3 = AddBool(false);
+  CHECK_WRITE("if /* forall */ (x1 = 0 && 1 && 0) then 1",
+      AddIf(AddIteratedLogical(ANDLIST, e1, e2, e3), AddNum(1), AddNum(0)));
+  CHECK_WRITE("if /* exists */ (x1 = 0 || 1 || 0) then 1",
+      AddIf(AddIteratedLogical(ORLIST, e1, e2, e3), AddNum(1), AddNum(0)));
+}
+
 TEST_F(ExprTest, WriteAllDiffExpr) {
   CHECK_WRITE("if alldiff(42, 43, 44) then 1",
       AddIf(AddAllDiff(AddNum(42), AddNum(43), AddNum(44)),
@@ -1348,9 +1348,13 @@ TEST_F(ExprTest, WriteAllDiffExpr) {
 }
 
 TEST_F(ExprTest, WriteStringLiteral) {
-  // TODO: pass string as an argument to a function
-  //CHECK_WRITE("'abc'", MakeStringLiteral(3, "abc"));
-  //CHECK_WRITE("'ab''c'", MakeStringLiteral(3, "ab'c"));
+  StringLiteral s = builder.MakeStringLiteral(3, "abc");
+  ampl::Function f = builder.AddFunction(0, "f", 1, Function::SYMBOLIC);
+  CHECK_WRITE("f('abc')", builder.MakeCall(f, 1, &s));
+  s = builder.MakeStringLiteral(3, "ab''c");
+  CHECK_WRITE("f('ab''c')", builder.MakeCall(f, 1, &s));
+  s = builder.MakeStringLiteral(3, "ab\nc");
+  CHECK_WRITE("f('ab\\\nc')", builder.MakeCall(f, 1, &s));
 }
 
 TEST_F(ExprTest, UnaryExprPrecedence) {
@@ -1445,17 +1449,6 @@ TEST_F(ExprTest, BinaryFuncPrecedence) {
       AddBinary(OPtrunc, AddBinary(OPtrunc, x1, x1), e));
 }
 
-TEST_F(ExprTest, VarArgExprPrecedence) {
-  auto x1 = AddVar(0), x2 = AddVar(1);
-  auto e = AddBinary(OPPLUS, x1, x2);
-  CHECK_WRITE("min(x1 + x2, x1 + x2)", AddVarArg(MINLIST, e, e));
-  CHECK_WRITE("max(x1 + x2, x1 + x2)", AddVarArg(MAXLIST, e, e));
-  CHECK_WRITE("min(min(x1), min(x2))",
-      AddVarArg(MINLIST, AddVarArg(MINLIST, x1), AddVarArg(MINLIST, x2)));
-  CHECK_WRITE("max(max(x1), max(x2))",
-      AddVarArg(MAXLIST, AddVarArg(MAXLIST, x1), AddVarArg(MAXLIST, x2)));
-}
-
 TEST_F(ExprTest, IfExprPrecedence) {
   auto n0 = AddNum(0), n1 = AddNum(1), n2 = AddNum(2);
   auto e = AddBinaryLogical(OPOR, AddBool(false), AddBool(true));
@@ -1469,6 +1462,36 @@ TEST_F(ExprTest, IfExprPrecedence) {
       AddIf(e, n0, AddIf(e, n1, n2)));
   CHECK_WRITE("if !(0 || 1) then x1 + 1",
       AddIf(AddNot(e), AddBinary(OPPLUS, AddVar(0), n1), n0));
+}
+
+TEST_F(ExprTest, PiecewiseLinearExprPrecedence) {
+  double args[] = {-1, 5, 0, 10, 1};
+  CHECK_WRITE("<<5, 10; -1, 0, 1>> x43 ^ 2",
+      AddBinary(OPPOW, AddPL(5, args, 42), AddNum(2)));
+}
+
+TEST_F(ExprTest, CallExprPrecedence) {
+  auto x1 = AddVar(0), x2 = AddVar(1);
+  auto f = AddFunction(0, "foo", -1);
+  enum {NUM_ARGS = 4};
+  Expr args[NUM_ARGS] = {
+      MakeCall(f, 0, 0),
+      MakeBinary(OPPLUS, x1, MakeNumericConstant(5)),
+      MakeNumericConstant(7),
+      MakeUnary(FLOOR, x2)
+  };
+  CHECK_WRITE("foo(foo(), x1 + 5, 7, floor(x2))", MakeCall(f, NUM_ARGS, args));
+}
+
+TEST_F(ExprTest, VarArgExprPrecedence) {
+  auto x1 = AddVar(0), x2 = AddVar(1);
+  auto e = AddBinary(OPPLUS, x1, x2);
+  CHECK_WRITE("min(x1 + x2, x1 + x2)", AddVarArg(MINLIST, e, e));
+  CHECK_WRITE("max(x1 + x2, x1 + x2)", AddVarArg(MAXLIST, e, e));
+  CHECK_WRITE("min(min(x1), min(x2))",
+      AddVarArg(MINLIST, AddVarArg(MINLIST, x1), AddVarArg(MINLIST, x2)));
+  CHECK_WRITE("max(max(x1), max(x2))",
+      AddVarArg(MAXLIST, AddVarArg(MAXLIST, x1), AddVarArg(MAXLIST, x2)));
 }
 
 TEST_F(ExprTest, SumExprPrecedence) {
@@ -1495,25 +1518,6 @@ TEST_F(ExprTest, NumberOfExprPrecedence) {
   auto e2 = AddBinary(OPPLUS, x1, x2);
   CHECK_WRITE("numberof x1 + x2 in (x1 + x2, x1 + x2)",
       AddNumberOf(e2, e2, e2));
-}
-
-TEST_F(ExprTest, PiecewiseLinearExprPrecedence) {
-  double args[] = {-1, 5, 0, 10, 1};
-  CHECK_WRITE("<<5, 10; -1, 0, 1>> x43 ^ 2",
-      AddBinary(OPPOW, AddPL(5, args, 42), AddNum(2)));
-}
-
-TEST_F(ExprTest, CallExprPrecedence) {
-  auto x1 = AddVar(0), x2 = AddVar(1);
-  auto f = AddFunction(0, "foo", -1);
-  enum {NUM_ARGS = 4};
-  Expr args[NUM_ARGS] = {
-      MakeCall(f, 0, 0),
-      MakeBinary(OPPLUS, x1, MakeNumericConstant(5)),
-      MakeNumericConstant(7),
-      MakeUnary(FLOOR, x2)
-  };
-  CHECK_WRITE("foo(foo(), x1 + 5, 7, floor(x2))", MakeCall(f, NUM_ARGS, args));
 }
 
 TEST_F(ExprTest, NotExprPrecedence) {

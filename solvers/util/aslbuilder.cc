@@ -465,7 +465,7 @@ CallExpr ASLBuilder::MakeCall(Function f, int num_args, const Expr *args) {
       ++num_constants;
   }
   num_symbolic_args += num_ifsyms;
-  if (num_symbolic_args != 0)
+  if (num_symbolic_args != 0 && (f.fi_->ftype & Function::SYMBOLIC) == 0)
     throw Error("function {} doesn't accept symbolic arguments", f.name());
   int num_numeric_args = num_args - num_symbolic_args;
   int kd = 0;
