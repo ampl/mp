@@ -364,12 +364,6 @@ class ExprHasher : public ampl::ExprVisitor<ExprHasher, size_t> {
     return HashCombine(Hash(e), value);
   }
 
-  template <typename T>
-  static size_t HashCombine(size_t hash, const T &value) {
-    ampl::internal::HashCombine(hash, value);
-    return hash;
-  }
-
  public:
   size_t VisitNumericConstant(NumericConstant c) { return Hash(c, c.value()); }
   size_t VisitVariable(ampl::Variable v) { return Hash(v, v.index()); }
@@ -397,7 +391,14 @@ class ExprHasher : public ampl::ExprVisitor<ExprHasher, size_t> {
     return HashCombine(hash, e.var_index());
   }
 
-  size_t VisitCall(ampl::CallExpr e) { return VisitVarArg(e); }
+  size_t VisitCall(ampl::CallExpr e) {
+    // Function name is hashed as a pointer. This works because the function
+    // object is the same for all calls to the same function.
+    size_t hash = Hash(e, e.function().name());
+    for (int i = 0, n = e.num_args(); i < n; ++i)
+      hash = HashCombine(hash, e[i]);
+    return hash;
+  }
 
   template <typename E>
   size_t VisitVarArg(E e) {
@@ -643,7 +644,7 @@ std::string internal::FormatOpCode(Expr e) {
 size_t internal::HashNumberOfArgs::operator()(NumberOfExpr e) const {
   size_t hash = 0;
   for (int i = 1, n = e.num_args(); i < n; ++i)
-    HashCombine(hash, e[i]);
+    hash = HashCombine(hash, e[i]);
   return hash;
 }
 #endif

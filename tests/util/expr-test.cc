@@ -165,6 +165,7 @@ class ExprTest : public ::testing::Test,
  protected:
   ASLBuilder builder;
   NumericExpr n1, n2;
+  LogicalConstant l0, l1;
 
  public:
   ExprTest() {
@@ -176,6 +177,8 @@ class ExprTest : public ::testing::Test,
     builder.BeginBuild("", header, ampl::internal::ASL_STANDARD_OPCODES);
     n1 = builder.MakeNumericConstant(1);
     n2 = builder.MakeNumericConstant(2);
+    l0 = builder.MakeLogicalConstant(false);
+    l1 = builder.MakeLogicalConstant(true);
   }
 };
 
@@ -627,10 +630,9 @@ TEST_F(ExprTest, BinaryExpr) {
 
 TEST_F(ExprTest, IfExpr) {
   EXPECT_EQ(1, CheckExpr<IfExpr>(Expr::IF));
-  LogicalExpr condition = builder.MakeLogicalConstant(true);
-  ampl::IfExpr expr = builder.MakeIf(condition, n1, n2);
+  ampl::IfExpr expr = builder.MakeIf(l1, n1, n2);
   EXPECT_EQ(OPIFnl, expr.opcode());
-  EXPECT_EQ(condition, expr.condition());
+  EXPECT_EQ(l1, expr.condition());
   EXPECT_EQ(n1, expr.true_expr());
   EXPECT_EQ(n2, expr.false_expr());
 }
@@ -725,10 +727,7 @@ TEST_F(ExprTest, SumExpr) {
 TEST_F(ExprTest, CountExpr) {
   EXPECT_EQ(1, CheckExpr<CountExpr>(Expr::COUNT));
   enum {NUM_ARGS = 2};
-  LogicalExpr args[NUM_ARGS] = {
-    builder.MakeLogicalConstant(true),
-    builder.MakeLogicalConstant(false)
-  };
+  LogicalExpr args[NUM_ARGS] = {l1, l0};
   ampl::CountExpr expr = builder.MakeCount(NUM_ARGS, args);
   EXPECT_EQ(OPCOUNT, expr.opcode());
   int arg_index = 0;
@@ -766,24 +765,21 @@ TEST_F(ExprTest, LogicalConstant) {
 
 TEST_F(ExprTest, NotExpr) {
   EXPECT_EQ(1, CheckExpr<NotExpr>(Expr::NOT));
-  LogicalExpr arg = builder.MakeLogicalConstant(true);
-  ampl::NotExpr expr = builder.MakeNot(arg);
+  ampl::NotExpr expr = builder.MakeNot(l1);
   EXPECT_EQ(OPNOT, expr.opcode());
-  EXPECT_EQ(arg, expr.arg());
+  EXPECT_EQ(l1, expr.arg());
 }
 
 TEST_F(ExprTest, BinaryLogicalExpr) {
   const int opcodes[] = {OPOR, OPAND, OP_IFF};
   std::size_t num_opcodes = sizeof(opcodes) / sizeof(*opcodes);
   EXPECT_EQ(num_opcodes, CheckExpr<BinaryLogicalExpr>(Expr::BINARY_LOGICAL));
-  LogicalExpr lhs = builder.MakeLogicalConstant(true);
-  LogicalExpr rhs = builder.MakeLogicalConstant(false);
   for (size_t i = 0; i < num_opcodes; ++i) {
     ampl::BinaryLogicalExpr expr =
-        builder.MakeBinaryLogical(opcodes[i], lhs, rhs);
-    EXPECT_BINARY(expr, opcodes[i], lhs, rhs);
+        builder.MakeBinaryLogical(opcodes[i], l1, l0);
+    EXPECT_BINARY(expr, opcodes[i], l1, l0);
   }
-  EXPECT_THROW_MSG(builder.MakeBinaryLogical(OPUMINUS, lhs, rhs), Error,
+  EXPECT_THROW_MSG(builder.MakeBinaryLogical(OPUMINUS, l1, l0), Error,
     fmt::format("invalid binary expression code {}", OPUMINUS));
 }
 
@@ -810,8 +806,7 @@ TEST_F(ExprTest, LogicalCountExpr) {
   };
   std::size_t num_opcodes = sizeof(opcodes) / sizeof(*opcodes);
   EXPECT_EQ(num_opcodes, CheckExpr<LogicalCountExpr>(Expr::LOGICAL_COUNT));
-  LogicalExpr count_arg = builder.MakeLogicalConstant(true);
-  ampl::CountExpr count = builder.MakeCount(1, &count_arg);
+  ampl::CountExpr count = builder.MakeCount(1, &l1);
   for (size_t i = 0; i < num_opcodes; ++i) {
     ampl::LogicalCountExpr expr =
         builder.MakeLogicalCount(opcodes[i], n1, count);
@@ -824,14 +819,11 @@ TEST_F(ExprTest, LogicalCountExpr) {
 TEST_F(ExprTest, ImplicationExpr) {
   EXPECT_EQ(1, CheckExpr<ImplicationExpr>(Expr::IMPLICATION));
   LogicalExpr condition = builder.MakeLogicalConstant(true);
-  LogicalExpr true_expr = builder.MakeLogicalConstant(false);
-  LogicalExpr false_expr = builder.MakeLogicalConstant(true);
-  ampl::ImplicationExpr expr =
-      builder.MakeImplication(condition, true_expr, false_expr);
+  ampl::ImplicationExpr expr = builder.MakeImplication(condition, l0, l1);
   EXPECT_EQ(OPIMPELSE, expr.opcode());
   EXPECT_EQ(condition, expr.condition());
-  EXPECT_EQ(true_expr, expr.true_expr());
-  EXPECT_EQ(false_expr, expr.false_expr());
+  EXPECT_EQ(l0, expr.true_expr());
+  EXPECT_EQ(l1, expr.false_expr());
 }
 
 TEST_F(ExprTest, IteratedLogicalExpr) {
@@ -840,11 +832,7 @@ TEST_F(ExprTest, IteratedLogicalExpr) {
   EXPECT_EQ(num_opcodes,
     CheckExpr<IteratedLogicalExpr>(Expr::ITERATED_LOGICAL));
   enum {NUM_ARGS = 3};
-  LogicalExpr args[NUM_ARGS] = {
-    builder.MakeLogicalConstant(false),
-    builder.MakeLogicalConstant(true),
-    builder.MakeLogicalConstant(false)
-  };
+  LogicalExpr args[NUM_ARGS] = {l0, l1, builder.MakeLogicalConstant(false)};
   for (size_t i = 0; i < num_opcodes; ++i) {
     IteratedLogicalExpr expr =
         builder.MakeIteratedLogical(opcodes[i], NUM_ARGS, args);
@@ -1671,103 +1659,181 @@ TEST_F(ExprTest, AllDiffExprPrecedence) {
 using ampl::internal::HashCombine;
 
 TEST_F(ExprTest, HashNumericConstant) {
-  size_t hash = 0;
-  HashCombine(hash, OPNUM);
-  HashCombine(hash, 42.0);
+  size_t hash = HashCombine(0, OPNUM);
+  hash = HashCombine(hash, 42.0);
   EXPECT_EQ(hash, std::hash<NumericExpr>()(builder.MakeNumericConstant(42)));
 }
 
-TEST_F(ExprTest, HashVar) {
-  size_t hash = 0;
-  HashCombine(hash, OPVARVAL);
-  HashCombine(hash, 42);
+TEST_F(ExprTest, HashVariable) {
+  size_t hash = HashCombine(0, OPVARVAL);
+  hash = HashCombine(hash, 42);
   EXPECT_EQ(hash, std::hash<NumericExpr>()(AddVar(42)));
 }
 
-TEST_F(ExprTest, HashUnary) {
-  size_t hash = 0;
-  HashCombine(hash, OPUMINUS);
-  HashCombine<NumericExpr>(hash, AddVar(0));
-  EXPECT_EQ(hash, std::hash<NumericExpr>()(AddUnary(OPUMINUS, AddVar(0))));
+template <Expr::Kind K, typename Base>
+void CheckHash(ampl::BasicUnaryExpr<K, Base> e) {
+  size_t hash = HashCombine(0, e.opcode());
+  hash = HashCombine<Base>(hash, e.arg());
+  EXPECT_EQ(hash, std::hash<Base>()(e));
 }
 
-TEST_F(ExprTest, HashBinary) {
-  size_t hash = 0;
-  HashCombine(hash, OPPLUS);
-  HashCombine<NumericExpr>(hash, AddVar(11));
-  HashCombine<NumericExpr>(hash, AddNum(22));
-  EXPECT_EQ(hash, std::hash<NumericExpr>()(
-              AddBinary(OPPLUS, AddVar(11), AddNum(22))));
+TEST_F(ExprTest, HashUnaryExpr) {
+  CheckHash(builder.MakeUnary(OPUMINUS, builder.MakeVariable(0)));
 }
 
-TEST_F(ExprTest, HashIf) {
-  size_t hash = 0;
-  HashCombine(hash, OPIFnl);
-  HashCombine<LogicalExpr>(hash, AddBool(0));
-  HashCombine<NumericExpr>(hash, AddVar(1));
-  HashCombine<NumericExpr>(hash, AddNum(42));
-  EXPECT_EQ(hash, std::hash<NumericExpr>()(
-              AddIf(AddBool(0), AddVar(1), AddNum(42))));
+template <typename Expr, typename Base, typename Arg = Base>
+void CheckHashBinary(Expr e) {
+  size_t hash = HashCombine(0, e.opcode());
+  hash = HashCombine<Arg>(hash, e.lhs());
+  hash = HashCombine<Arg>(hash, e.rhs());
+  EXPECT_EQ(hash, std::hash<Base>()(e));
 }
 
-TEST_F(ExprTest, HashPiecewiseLinear) {
-  size_t hash = 0;
-  HashCombine(hash, OPPLTERM);
+template <Expr::Kind K, typename Base, typename Arg>
+void CheckHash(ampl::BasicBinaryExpr<K, Base, Arg> e) {
+  CheckHashBinary<ampl::BasicBinaryExpr<K, Base, Arg>, Base, Arg>(e);
+}
+
+TEST_F(ExprTest, HashBinaryExpr) {
+  CheckHash(builder.MakeBinary(OPPLUS, builder.MakeVariable(9), n2));
+}
+
+template <typename Base>
+void CheckHash(ampl::BasicIfExpr<Base> e) {
+  size_t hash = HashCombine(0, e.opcode());
+  hash = HashCombine<LogicalExpr>(hash, e.condition());
+  hash = HashCombine<Base>(hash, e.true_expr());
+  hash = HashCombine<Base>(hash, e.false_expr());
+  EXPECT_EQ(hash, std::hash<Base>()(e));
+}
+
+TEST_F(ExprTest, HashIfExpr) {
+  CheckHash(builder.MakeIf(l0, builder.MakeVariable(2), n1));
+}
+
+TEST_F(ExprTest, HashPiecewiseLinearExpr) {
+  size_t hash = HashCombine(0, OPPLTERM);
   enum {NUM_BREAKPOINTS = 2};
   double breakpoints[NUM_BREAKPOINTS] = {5, 10};
   double slopes[NUM_BREAKPOINTS + 1] = {-1, 0, 1};
   for (size_t i = 0; i < NUM_BREAKPOINTS; ++i) {
-    HashCombine(hash, slopes[i]);
-    HashCombine(hash, breakpoints[i]);
+    hash = HashCombine(hash, slopes[i]);
+    hash = HashCombine(hash, breakpoints[i]);
   }
-  HashCombine(hash, slopes[NUM_BREAKPOINTS]);
-  HashCombine(hash, 9);
+  hash = HashCombine(hash, slopes[NUM_BREAKPOINTS]);
+  hash = HashCombine(hash, 9);
   EXPECT_EQ(hash, std::hash<NumericExpr>()(
     builder.MakePiecewiseLinear(NUM_BREAKPOINTS, breakpoints, slopes,
                                 builder.MakeVariable(9))));
 }
 
-// TODO: hash CallExpr
-
-TEST_F(ExprTest, HashVarArg) {
-  size_t hash = 0;
-  HashCombine(hash, MINLIST);
-  HashCombine<NumericExpr>(hash, AddVar(0));
-  HashCombine<NumericExpr>(hash, AddVar(1));
-  HashCombine<NumericExpr>(hash, AddNum(42));
-  EXPECT_EQ(hash, std::hash<NumericExpr>()(
-      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42))));
+size_t HashString(const char *s) {
+  size_t hash = HashCombine(0, OPHOL);
+  for (; *s; ++s)
+    hash = HashCombine(hash, *s);
+  return hash;
 }
 
-TEST_F(ExprTest, HashSum) {
-  size_t hash = 0;
-  HashCombine(hash, OPSUMLIST);
-  HashCombine<NumericExpr>(hash, AddVar(0));
-  HashCombine<NumericExpr>(hash, AddVar(1));
-  HashCombine<NumericExpr>(hash, AddNum(42));
-  EXPECT_EQ(hash, std::hash<NumericExpr>()(
-              AddSum(AddVar(0), AddVar(1), AddNum(42))));
+TEST_F(ExprTest, HashCallExpr) {
+  enum {NUM_ARGS = 3};
+  Variable var = MakeVariable(9);
+  Expr args[NUM_ARGS] = {n1, builder.MakeStringLiteral("test"), var};
+  Function f = builder.AddFunction(0, "foo", NUM_ARGS, Function::SYMBOLIC);
+  size_t hash = HashCombine(0, OPFUNCALL);
+  hash = HashCombine(hash, f.name());
+  hash = HashCombine<NumericExpr>(hash, n1);
+  hash = HashCombine(hash, HashString("test"));
+  hash = HashCombine<NumericExpr>(hash, var);
+  EXPECT_EQ(hash,
+            std::hash<NumericExpr>()(builder.MakeCall(f, NUM_ARGS, args)));
 }
 
-TEST_F(ExprTest, HashCount) {
-  size_t hash = 0;
-  HashCombine(hash, OPCOUNT);
-  HashCombine<LogicalExpr>(hash, AddBool(false));
-  HashCombine<LogicalExpr>(hash, AddBool(true));
-  HashCombine<LogicalExpr>(hash, AddBool(true));
-  EXPECT_EQ(hash, std::hash<NumericExpr>()(
-      AddCount(AddBool(false), AddBool(true), AddBool(true))));
+template <typename Expr, typename Arg, typename Base = Arg>
+size_t CheckHash(Expr e) {
+  size_t hash = HashCombine(0, e.opcode());
+  for (typename Expr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+    hash = HashCombine<Arg>(hash, *i);
+  EXPECT_EQ(hash, std::hash<Base>()(e));
+  return hash;
+}
+
+template <Expr::Kind K>
+void CheckHash(ampl::BasicIteratedExpr<K> e) {
+  CheckHash<ampl::BasicIteratedExpr<K>,
+      typename ampl::ExprInfo<K>::Arg, typename ampl::ExprInfo<K>::Base>(e);
+}
+
+TEST_F(ExprTest, HashNumericVarArgExpr) {
+  // Test computing hash for numeric expressions with abitrary numeric
+  // arguments: VarArgExpr, SumExpr, NumberOfExpr.
+  NumericExpr args[] = {
+    builder.MakeVariable(0),
+    builder.MakeVariable(1),
+    builder.MakeNumericConstant(42)
+  };
+  CheckHash<VarArgExpr, NumericExpr>(builder.MakeVarArg(MINLIST, 3, args));
+  CheckHash(builder.MakeSum(3, args));
+  CheckHash(builder.MakeNumberOf(3, args));
+}
+
+TEST_F(ExprTest, HashCountExpr) {
+  LogicalExpr args[] = {l0, l1, l1};
+  CheckHash(builder.MakeCount(3, args));
+}
+
+TEST_F(ExprTest, HashLogicalConstant) {
+  size_t hash = HashCombine(0, OPNUM);
+  hash = HashCombine(hash, true);
+  EXPECT_EQ(hash, std::hash<LogicalExpr>()(l1));
+}
+
+TEST_F(ExprTest, HashNotExpr) {
+  CheckHash(builder.MakeNot(l1));
+}
+
+TEST_F(ExprTest, HashBinaryLogicalExpr) {
+  CheckHash(builder.MakeBinaryLogical(OPOR, l1, l0));
+}
+
+TEST_F(ExprTest, HashRelationalExpr) {
+  CheckHash(builder.MakeRelational(LT, builder.MakeVariable(6), n2));
+}
+
+TEST_F(ExprTest, HashLogicalCountExpr) {
+  LogicalExpr args[] = {l0, l1};
+  CheckHashBinary<LogicalCountExpr, LogicalExpr, NumericExpr>(
+        builder.MakeLogicalCount(OPATMOST, n1, builder.MakeCount(2, args)));
+}
+
+TEST_F(ExprTest, HashImplicationExpr) {
+  CheckHash(builder.MakeImplication(l1, l0, builder.MakeLogicalConstant(true)));
+}
+
+TEST_F(ExprTest, HashIteratedLogical) {
+  LogicalExpr args[] = {l0, l1, builder.MakeLogicalConstant(false)};
+  CheckHash(builder.MakeIteratedLogical(ORLIST, 3, args));
+}
+
+TEST_F(ExprTest, HashAllDiff) {
+  NumericExpr args[] = {n1, n2, builder.MakeVariable(4)};
+  CheckHash(builder.MakeAllDiff(3, args));
+}
+
+TEST_F(ExprTest, HashStringLiteral) {
+  StringLiteral s = builder.MakeStringLiteral("test");
+  Function f = builder.AddFunction(0, "foo", 1, Function::SYMBOLIC);
+  size_t hash = HashCombine(0, OPFUNCALL);
+  hash = HashCombine(hash, f.name());
+  hash = HashCombine(hash, HashString("test"));
+  EXPECT_EQ(hash, std::hash<NumericExpr>()(builder.MakeCall(f, 1, &s)));
 }
 
 TEST_F(ExprTest, HashNumberOfArgs) {
-  size_t hash = 0;
-  HashCombine<NumericExpr>(hash, AddVar(11));
-  HashCombine<NumericExpr>(hash, AddNum(22));
+  size_t hash = HashCombine<NumericExpr>(0, AddVar(11));
+  hash = HashCombine<NumericExpr>(hash, AddNum(22));
   EXPECT_EQ(hash, ampl::internal::HashNumberOfArgs()(
       AddNumberOf(AddNum(42), AddVar(11), AddNum(22))));
 }
-
-// TODO: hash string
 
 TEST_F(ExprTest, EqualNumberOfArgs) {
   using ampl::internal::EqualNumberOfArgs;

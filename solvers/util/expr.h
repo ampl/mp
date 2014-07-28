@@ -1465,9 +1465,8 @@ namespace internal {
 
 #ifdef HAVE_UNORDERED_MAP
 template <class T>
-inline void HashCombine(std::size_t &seed, const T &v) {
-  std::hash<T> hasher;
-  seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+inline std::size_t HashCombine(std::size_t seed, const T &v) {
+  return seed ^ (std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
 }
 
 class HashNumberOfArgs {
