@@ -25,6 +25,7 @@ add_dependencies(os-test test-helper)
 
 add_ampl_test(problem-test ../expr-builder.cc problem-test.cc)
 add_ampl_test(rstparser-test rstparser-test.cc)
+add_ampl_test(safeint-test safeint-test.cc)
 add_ampl_test(solver-test ../args.cc solver-test.cc)
 
 add_library(ampltestsolver SHARED testsolver.cc ../../solvers/util/solver-c.cc)
