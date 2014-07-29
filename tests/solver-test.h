@@ -27,7 +27,6 @@
 #include "solvers/util/aslbuilder.h"
 #include "tests/args.h"
 #include "tests/config.h"
-#include "tests/expr-builder.h"
 #include "tests/solution-handler.h"
 #include "gtest/gtest.h"
 
@@ -70,7 +69,6 @@ struct SolverTestParam {
 class SolverTest
     : private ampl::Noncopyable,
       public ::testing::TestWithParam<SolverTestParam>,
-      public ampl::ExprBuilder,
       public ampl::internal::ASLBuilder {
  protected:
   SolverPtr solver_;
@@ -78,6 +76,10 @@ class SolverTest
   ampl::Variable x;
   ampl::Variable y;
   ampl::Variable z;
+
+  ampl::NumericConstant MakeConst(double value) {
+    return MakeNumericConstant(value);
+  }
 
   bool HasFeature(feature::Feature f) const {
     return (features_ & f) != 0;
@@ -124,13 +126,14 @@ class SolverTest
   // Evaluates a numeric expression by constructing and solving a problem.
   EvalResult Eval(ampl::NumericExpr e,
       int var1 = 0, int var2 = 0, int var3 = 0) {
-    return Solve(AddRelational(EQ, AddVar(0), e), var1, var2, var3, true);
+    return Solve(MakeRelational(EQ, MakeVariable(0), e),
+                 var1, var2, var3, true);
   }
 
   // Evaluates a logical expression by constructing and solving a problem.
   EvalResult Eval(ampl::LogicalExpr e,
       int var1 = 0, int var2 = 0, int var3 = 0) {
-    return Eval(AddIf(e, AddNum(1), AddNum(0)), var1, var2, var3);
+    return Eval(MakeIf(e, MakeConst(1), MakeConst(0)), var1, var2, var3);
   }
 
   SolveResult Solve(ampl::Problem &p,

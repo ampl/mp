@@ -1296,18 +1296,21 @@ TEST_F(ExprTest, WriteImplicationExpr) {
   auto e1 = AddRelational(EQ, AddVar(0), AddNum(0));
   auto e2 = AddBool(true), e3 = AddBool(false);
   CHECK_WRITE("if x1 = 0 ==> 1 then 1",
-      AddIf(AddImplication(e1, e2, e3), AddNum(1), AddNum(0)));
+      AddIf(MakeImplication(e1, e2, e3), AddNum(1), AddNum(0)));
   CHECK_WRITE("if x1 = 0 ==> 0 else 1 then 1",
-      AddIf(AddImplication(e1, e3, e2), AddNum(1), AddNum(0)));
+      AddIf(MakeImplication(e1, e3, e2), AddNum(1), AddNum(0)));
 }
 
 TEST_F(ExprTest, WriteIteratedLogicalExpr) {
-  auto e1 = AddRelational(EQ, AddVar(0), AddNum(0));
-  auto e2 = AddBool(true), e3 = AddBool(false);
+  LogicalExpr args[] = {
+    AddRelational(EQ, AddVar(0), AddNum(0)),
+    AddBool(true),
+    AddBool(false)
+  };
   CHECK_WRITE("if /* forall */ (x1 = 0 && 1 && 0) then 1",
-      AddIf(AddIteratedLogical(ANDLIST, e1, e2, e3), AddNum(1), AddNum(0)));
+      AddIf(MakeIteratedLogical(ANDLIST, args), AddNum(1), AddNum(0)));
   CHECK_WRITE("if /* exists */ (x1 = 0 || 1 || 0) then 1",
-      AddIf(AddIteratedLogical(ORLIST, e1, e2, e3), AddNum(1), AddNum(0)));
+      AddIf(MakeIteratedLogical(ORLIST, args), AddNum(1), AddNum(0)));
 }
 
 TEST_F(ExprTest, WriteAllDiffExpr) {
@@ -1595,37 +1598,38 @@ TEST_F(ExprTest, LogicalCountExprPrecedence) {
 TEST_F(ExprTest, IteratedLogicalExprPrecedence) {
   auto b0 = AddBool(false);
   auto n0 = AddNum(0), n1 = AddNum(1);
+  LogicalExpr args[] = {AddBinaryLogical(OPAND, b0, b0), b0};
   CHECK_WRITE("if /* forall */ ((0 && 0) && 0) then 1",
-      AddIf(AddIteratedLogical(ANDLIST, AddBinaryLogical(OPAND, b0, b0), b0),
-          n1, n0));
+      AddIf(MakeIteratedLogical(ANDLIST, args), n1, n0));
+  args[0] = AddBinaryLogical(OPOR, b0, b0);
   CHECK_WRITE("if /* exists */ ((0 || 0) || 0) then 1",
-      AddIf(AddIteratedLogical(ORLIST, AddBinaryLogical(OPOR, b0, b0), b0),
-          n1, n0));
+      AddIf(MakeIteratedLogical(ORLIST, args), n1, n0));
+  args[0] = b0;
+  LogicalExpr args2[] = {MakeIteratedLogical(ANDLIST, args), b0};
   CHECK_WRITE("if /* forall */ (/* forall */ (0 && 0) && 0) then 1",
-      AddIf(AddIteratedLogical(ANDLIST,
-          AddIteratedLogical(ANDLIST, b0, b0), b0), n1, n0));
+      AddIf(MakeIteratedLogical(ANDLIST, args2), n1, n0));
+  args2[0] = MakeIteratedLogical(ORLIST, args);
   CHECK_WRITE("if /* exists */ (/* exists */ (0 || 0) || 0) then 1",
-      AddIf(AddIteratedLogical(ORLIST,
-          AddIteratedLogical(ORLIST, b0, b0), b0), n1, n0));
+      AddIf(MakeIteratedLogical(ORLIST, args2), n1, n0));
 }
 
 TEST_F(ExprTest, ImplicationExprPrecedence) {
   auto n0 = AddNum(0), n1 = AddNum(1);
   auto b0 = AddBool(false), b1 = AddBool(true);
   CHECK_WRITE("if 0 ==> 1 ==> 0 then 1",
-      AddIf(AddImplication(AddImplication(b0, b1, b0), b0, b0), n1, n0));
+      AddIf(MakeImplication(MakeImplication(b0, b1, b0), b0, b0), n1, n0));
   CHECK_WRITE("if 0 ==> 1 ==> 0 else 1 then 1",
-      AddIf(AddImplication(AddImplication(b0, b1, b0), b0, b1), n1, n0));
+      AddIf(MakeImplication(MakeImplication(b0, b1, b0), b0, b1), n1, n0));
   CHECK_WRITE("if 0 ==> 1 else 0 ==> 1 then 1",
-      AddIf(AddImplication(b0, b1, AddImplication(b0, b1, b0)), n1, n0));
+      AddIf(MakeImplication(b0, b1, MakeImplication(b0, b1, b0)), n1, n0));
   CHECK_WRITE("if 0 ==> (1 ==> 0) else 1 then 1",
-      AddIf(AddImplication(b0, AddImplication(b1, b0, b0), b1), n1, n0));
+      AddIf(MakeImplication(b0, MakeImplication(b1, b0, b0), b1), n1, n0));
   CHECK_WRITE("if 0 ==> (1 ==> 0 else 1) then 1",
-      AddIf(AddImplication(b0, AddImplication(b1, b0, b1), b0), n1, n0));
+      AddIf(MakeImplication(b0, MakeImplication(b1, b0, b1), b0), n1, n0));
   CHECK_WRITE("if 0 ==> 1 || 0 else 1 then 1",
-      AddIf(AddImplication(b0, AddBinaryLogical(OPOR, b1, b0), b1), n1, n0));
+      AddIf(MakeImplication(b0, AddBinaryLogical(OPOR, b1, b0), b1), n1, n0));
   CHECK_WRITE("if 0 ==> (1 <==> 0) else 1 then 1",
-      AddIf(AddImplication(b0, AddBinaryLogical(OP_IFF, b1, b0), b1), n1, n0));
+      AddIf(MakeImplication(b0, AddBinaryLogical(OP_IFF, b1, b0), b1), n1, n0));
 }
 
 TEST_F(ExprTest, AllDiffExprPrecedence) {

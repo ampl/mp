@@ -588,8 +588,11 @@ struct TestSolverWithOptions : Solver {
     stropt1 = value;
   }
 
-  std::string GetStrOptionWithInfo(const SolverOption &, Info) const { return ""; }
-  void SetStrOptionWithInfo(const SolverOption &opt, const char *value, Info info) {
+  std::string GetStrOptionWithInfo(const SolverOption &, Info) const {
+    return "";
+  }
+  void SetStrOptionWithInfo(
+      const SolverOption &opt, const char *value, Info info) {
     EXPECT_STREQ("stropt2", opt.name());
     stropt2 = value;
     EXPECT_EQ(INFO, info);
