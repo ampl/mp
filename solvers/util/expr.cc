@@ -32,7 +32,6 @@ using ampl::Expr;
 using ampl::NumericConstant;
 using ampl::NumericExpr;
 using ampl::LogicalExpr;
-using ampl::internal::HashCombine;
 
 namespace std {
 template <>
@@ -351,6 +350,8 @@ void ExprWriter::VisitImplication(ampl::ImplicationExpr e) {
 }
 
 #ifdef HAVE_UNORDERED_MAP
+
+using ampl::internal::HashCombine;
 
 // Computes a hash value for an expression.
 class ExprHasher : public ampl::ExprVisitor<ExprHasher, size_t> {
