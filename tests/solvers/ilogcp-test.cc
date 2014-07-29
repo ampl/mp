@@ -103,11 +103,12 @@ TEST_P(FunctionTest, ElementConstraint) {
       MakeNumericConstant(33),
       x
   };
-  EXPECT_EQ(22, Eval(MakeCall(element_, 4, args), 1));
+  EXPECT_EQ(22, Eval(MakeCall(element_, args), 1));
 }
 
 TEST_P(FunctionTest, TooFewArgsToElementConstraint) {
-  EXPECT_THROW_MSG(Eval(MakeCall(element_, 1, &x), 0),
+  Expr args[] = {x};
+  EXPECT_THROW_MSG(Eval(MakeCall(element_, args), 0),
       ampl::Error, "element: too few arguments");
 }
 
@@ -117,7 +118,7 @@ TEST_P(FunctionTest, ElementConstantIndexOutOfBounds) {
       MakeNumericConstant(22),
       MakeNumericConstant(2)
   };
-  EXPECT_THROW_MSG(Eval(MakeCall(element_, 3, args)),
+  EXPECT_THROW_MSG(Eval(MakeCall(element_, args)),
         ampl::Error, "element: index 2 is out of bounds");
 }
 
@@ -127,14 +128,14 @@ TEST_P(FunctionTest, ElementConstantAtConstantIndex) {
       MakeNumericConstant(22),
       MakeNumericConstant(1)
   };
-  EXPECT_EQ(22, Eval(MakeCall(element_, 3, args)));
+  EXPECT_EQ(22, Eval(MakeCall(element_, args)));
 }
 
 TEST_P(FunctionTest, ElementExprAtConstantIndex) {
   Expr args[] = {
       x, MakeNumericConstant(22), MakeNumericConstant(0)
   };
-  EXPECT_EQ(42, Eval(MakeCall(element_, 3, args), 42));
+  EXPECT_EQ(42, Eval(MakeCall(element_, args), 42));
 }
 
 TEST_P(FunctionTest, ElementExprPlusConstantAtConstantIndex) {
@@ -143,27 +144,26 @@ TEST_P(FunctionTest, ElementExprPlusConstantAtConstantIndex) {
       MakeBinary(OPPLUS, x, MakeNumericConstant(2)),
       MakeNumericConstant(1)
   };
-  EXPECT_EQ(44, Eval(MakeCall(element_, 3, args), 42));
+  EXPECT_EQ(44, Eval(MakeCall(element_, args), 42));
 }
 
 TEST_P(FunctionTest, ElementVariableIndexOutOfBounds) {
   Expr args[] = {
       MakeNumericConstant(11), MakeNumericConstant(22), x
   };
-  EXPECT_EQ(ampl::INFEASIBLE,
-      Eval(MakeCall(element_, 3, args), 2).solve_code());
+  EXPECT_EQ(ampl::INFEASIBLE, Eval(MakeCall(element_, args), 2).solve_code());
 }
 
 TEST_P(FunctionTest, ElementConstantAtVariableIndex) {
   Expr args[] = {
       MakeNumericConstant(11), MakeNumericConstant(22), x
   };
-  EXPECT_EQ(22, Eval(MakeCall(element_, 3, args), 1));
+  EXPECT_EQ(22, Eval(MakeCall(element_, args), 1));
 }
 
 TEST_P(FunctionTest, ElementExprAtVariableIndex) {
   Expr args[] = { x, MakeNumericConstant(22), y };
-  EXPECT_EQ(42, Eval(MakeCall(element_, 3, args), 42, 0));
+  EXPECT_EQ(42, Eval(MakeCall(element_, args), 42, 0));
 }
 
 TEST_P(FunctionTest, ElementExprPlusConstantAtVariableIndex) {
@@ -172,7 +172,7 @@ TEST_P(FunctionTest, ElementExprPlusConstantAtVariableIndex) {
       MakeBinary(OPPLUS, x, MakeNumericConstant(2)),
       y
   };
-  EXPECT_EQ(44, Eval(MakeCall(element_, 3, args), 42, 1));
+  EXPECT_EQ(44, Eval(MakeCall(element_, args), 42, 1));
 }
 
 // ----------------------------------------------------------------------------
@@ -183,14 +183,14 @@ TEST_P(FunctionTest, InRelationConstraint) {
   p.AddVar(0, 100, ampl::INTEGER);
   p.AddObj(ampl::MIN, AddVar(0));
   Expr args[] = {AddVar(0), MakeNumericConstant(42)};
-  p.AddCon(AddRelational(NE, MakeCall(in_relation_, 2, args), AddNum(0)));
+  p.AddCon(AddRelational(NE, MakeCall(in_relation_, args), AddNum(0)));
   EXPECT_EQ(42, Solve(p).obj_value());
 }
 
 TEST_P(FunctionTest, NestedInRelationNotSupported) {
   Expr args[] = {AddVar(0), MakeNumericConstant(42)};
   EXPECT_THROW_MSG(Eval(AddBinary(OPPLUS,
-      MakeCall(in_relation_, 2, args), AddNum(1)));,
+      MakeCall(in_relation_, args), AddNum(1)));,
       ampl::UnsupportedExprError,
       "unsupported expression: nested 'in_relation'");
 }
@@ -199,7 +199,8 @@ TEST_P(FunctionTest, TooFewArgsToInRelationConstraint) {
   Problem p;
   p.AddVar(0, 100, ampl::INTEGER);
   p.AddObj(ampl::MIN, AddVar(0));
-  p.AddCon(AddRelational(NE, MakeCall(in_relation_, 0, 0), AddNum(0)));
+  p.AddCon(AddRelational(NE,
+    MakeCall(in_relation_, ampl::internal::ArrayRef<Expr>(0, 0)), AddNum(0)));
   EXPECT_THROW_MSG(Solve(p), ampl::Error, "in_relation: too few arguments");
 }
 
@@ -214,8 +215,7 @@ TEST_P(FunctionTest, InRelationSizeIsNotMultipleOfArity) {
       MakeNumericConstant(2),
       MakeNumericConstant(3)
   };
-  p.AddCon(AddRelational(NE,
-      MakeCall(in_relation_, 5, args), AddNum(0)));
+  p.AddCon(AddRelational(NE, MakeCall(in_relation_, args), AddNum(0)));
   EXPECT_THROW_MSG(Solve(p), ampl::Error,
       "in_relation: the number of arguments 5 is not a multiple of arity 2");
 }
@@ -229,16 +229,15 @@ TEST_P(FunctionTest, InRelationTuple) {
       AddVar(0), AddVar(1),
       MakeNumericConstant(11), MakeNumericConstant(22)
   };
-  p.AddCon(AddRelational(NE,
-      MakeCall(in_relation_, 4, args), AddNum(0)));
+  p.AddCon(AddRelational(NE, MakeCall(in_relation_, args), AddNum(0)));
   EXPECT_EQ(33, Solve(p).obj_value());
 }
 
 TEST_P(FunctionTest, InRelationEmptySet) {
   Problem p;
   p.AddVar(0, 100, ampl::INTEGER);
-  Expr arg = AddVar(0);
-  p.AddCon(AddRelational(NE, MakeCall(in_relation_, 1, &arg), AddNum(0)));
+  Expr args[] = {AddVar(0)};
+  p.AddCon(AddRelational(NE, MakeCall(in_relation_, args), AddNum(0)));
   EXPECT_EQ(ampl::INFEASIBLE, Solve(p).solve_code());
 }
 
@@ -248,8 +247,7 @@ TEST_P(FunctionTest, InRelationNonConstantSetElement) {
   Expr args[] = {
       AddVar(0), MakeNumericConstant(0), AddVar(0)
   };
-  p.AddCon(AddRelational(NE,
-      MakeCall(in_relation_, 3, args), AddNum(0)));
+  p.AddCon(AddRelational(NE, MakeCall(in_relation_, args), AddNum(0)));
   EXPECT_THROW_MSG(Solve(p), ampl::Error,
       "in_relation: argument 3 is not constant");
 }

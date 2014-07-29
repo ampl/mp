@@ -30,6 +30,7 @@ using ampl::NLHeader;
 using ampl::LogicalExpr;
 using ampl::NumericExpr;
 using ampl::internal::ASLBuilder;
+using ampl::internal::MakeArrayRef;
 
 bool operator==(const cde &lhs, const cde &rhs) {
   return lhs.e == rhs.e && lhs.d == rhs.d && lhs.zaplen == rhs.zaplen;
@@ -608,6 +609,57 @@ TEST(ASLBuilderTest, ASLBuilderAllowCLP) {
 // The ASLBuilder::Make* methods are tested in expr-test because they serve
 // the purpose of expression constructors and testing them separately from
 // expression classes doesn't make much sense.
+
+TEST(ASLBuilderTest, SizeOverflow) {
+  ASLBuilder builder;
+  NLHeader header = {};
+  header.num_vars = header.num_objs = header.num_funcs = 1;
+  builder.BeginBuild("", header, ampl::internal::ASL_STANDARD_OPCODES);
+  NumericExpr args[] = {builder.MakeNumericConstant(0)};
+
+  std::size_t num_args = (INT_MAX - sizeof(expr_f)) / sizeof(expr*) + 2;
+  std::size_t max_size = INT_MAX + 1u;
+  ampl::Function f = builder.AddFunction(0, "f", -1);
+  EXPECT_THROW(builder.MakeCall(
+                 f, MakeArrayRef<ampl::Expr>(args, num_args)), OverflowError);
+  EXPECT_THROW(builder.MakeCall(
+                 f, MakeArrayRef<ampl::Expr>(args, max_size)), OverflowError);
+
+  num_args = (INT_MAX - sizeof(expr*)) / sizeof(de) + 1;
+  EXPECT_THROW(builder.MakeVarArg(
+                 MINLIST, MakeArrayRef(args, num_args)), OverflowError);
+  EXPECT_THROW(builder.MakeVarArg(
+                 MINLIST, MakeArrayRef(args, max_size)), OverflowError);
+
+  num_args = (INT_MAX - sizeof(expr) + sizeof(double)) / sizeof(expr*);
+  EXPECT_THROW(builder.MakeSum(MakeArrayRef(args, num_args)), OverflowError);
+  EXPECT_THROW(builder.MakeSum(MakeArrayRef(args, max_size)), OverflowError);
+
+  LogicalExpr largs[] = {builder.MakeLogicalConstant(false)};
+  EXPECT_THROW(builder.MakeCount(MakeArrayRef(largs, num_args)), OverflowError);
+  EXPECT_THROW(builder.MakeCount(MakeArrayRef(largs, max_size)), OverflowError);
+
+  EXPECT_THROW(builder.MakeNumberOf(
+                 MakeArrayRef(args, num_args)), OverflowError);
+  EXPECT_THROW(builder.MakeNumberOf(
+                 MakeArrayRef(args, max_size)), OverflowError);
+
+  EXPECT_THROW(builder.MakeIteratedLogical(
+                 ORLIST, MakeArrayRef(largs, num_args)), OverflowError);
+  EXPECT_THROW(builder.MakeIteratedLogical(
+                 ORLIST, MakeArrayRef(largs, max_size)), OverflowError);
+
+  EXPECT_THROW(builder.MakeAllDiff(
+                 MakeArrayRef(args, num_args)), OverflowError);
+  EXPECT_THROW(builder.MakeAllDiff(
+                 MakeArrayRef(args, max_size)), OverflowError);
+
+  std::size_t size = INT_MAX - sizeof(expr_h) + 1;
+  EXPECT_THROW(builder.MakeStringLiteral(
+                 fmt::StringRef("", size)), OverflowError);
+  EXPECT_THROW(builder.MakeStringLiteral(
+                 fmt::StringRef("", max_size)), OverflowError);
+}
 
 // TODO: test AddFunction
 

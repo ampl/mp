@@ -406,7 +406,7 @@ TEST_P(SolverTest, PiecewiseLinear) {
 TEST_P(SolverTest, UnsupportedFunctionCall) {
   ampl::Function f = AddFunction(0, "foo", 2);
   ampl::Expr args[] = {MakeNumericConstant(1), MakeNumericConstant(2)};
-  EXPECT_THROW(Eval(MakeCall(f, 2, args), 3);, UnsupportedExprError);
+  EXPECT_THROW(Eval(MakeCall(f, args), 3);, UnsupportedExprError);
 }
 
 TEST_P(SolverTest, PowConstExp) {

@@ -358,6 +358,13 @@ Function ASLBuilder::AddFunction(
   return Function(fi);
 }
 
+template <typename T>
+inline T *ASLBuilder::Allocate(SafeInt<int> size) {
+  if (size.value() > INT_MAX)
+    throw std::bad_alloc();
+  return reinterpret_cast<T*>(mem_ASL(asl_, size.value()));
+}
+
 expr *ASLBuilder::MakeConstant(double value) {
   expr_n *result = Allocate<expr_n>(asl_->i.size_expr_n_);
   result->op = reinterpret_cast<efunc_n*>(OPNUM);
@@ -396,10 +403,11 @@ expr *ASLBuilder::MakeIf(
   return reinterpret_cast<expr*>(e);
 }
 
-expr *ASLBuilder::MakeIterated(int opcode, int num_args, const Expr *args) {
-  assert(num_args >= 0);
+expr *ASLBuilder::MakeIterated(int opcode, ArrayRef<Expr> args) {
+  int num_args = SafeInt<int>(args.size()).value();
   expr *e = Allocate<expr>(
-      sizeof(expr) - sizeof(double) + (num_args + 1) * sizeof(expr*));
+      sizeof(expr) - sizeof(double) +
+      SafeInt<int>(num_args + 1) * sizeof(expr*));
   e->op = reinterpret_cast<efunc*>(opcode);
   e->L.ep = reinterpret_cast<expr**>(&e->dR);
   e->R.ep = e->L.ep + num_args;
@@ -443,14 +451,15 @@ PiecewiseLinearExpr ASLBuilder::MakePiecewiseLinear(
   return Expr::Create<PiecewiseLinearExpr>(result);
 }
 
-CallExpr ASLBuilder::MakeCall(Function f, int num_args, const Expr *args) {
+CallExpr ASLBuilder::MakeCall(Function f, ArrayRef<Expr> args) {
   int num_func_args = f.num_args();
+  int num_args = SafeInt<int>(args.size()).value();
   if ((num_func_args >= 0 && num_args != num_func_args) ||
       (num_func_args < 0 && num_args < -(num_func_args + 1))) {
     throw Error("invalid number of arguments in call to {}", f.name());
   }
-  expr_f *result = reinterpret_cast<expr_f*>(mem_ASL(
-      asl_, sizeof(expr_f) + (num_args - 1) * sizeof(expr*)));
+  expr_f *result = Allocate<expr_f>(
+        sizeof(expr_f) + SafeInt<int>(num_args - 1) * sizeof(expr*));
   result->op = r_ops_[OPFUNCALL];
   result->fi = f.fi_;
   expr **arg_ptrs = result->args;
@@ -470,9 +479,11 @@ CallExpr ASLBuilder::MakeCall(Function f, int num_args, const Expr *args) {
   int num_numeric_args = num_args - num_symbolic_args;
   int kd = 0;
   double *ra = Allocate<double>(
-      sizeof(arglist) + (num_constants + num_ifsyms) * sizeof(argpair) +
-      (num_numeric_args + kd) * sizeof(double) +
-      num_symbolic_args * sizeof(char*) + num_args * sizeof(int));
+      sizeof(arglist) +
+      SafeInt<int>(num_constants + num_ifsyms) * sizeof(argpair) +
+      SafeInt<int>(num_numeric_args + kd) * sizeof(double) +
+      SafeInt<int>(num_symbolic_args) * sizeof(char*) +
+      SafeInt<int>(num_args) * sizeof(int));
   double *b = ra + kd;
   arglist *al = result->al = reinterpret_cast<arglist*>(b + num_numeric_args);
   al->n = num_args;
@@ -481,13 +492,13 @@ CallExpr ASLBuilder::MakeCall(Function f, int num_args, const Expr *args) {
   return Expr::Create<CallExpr>(reinterpret_cast<expr*>(result));
 }
 
-VarArgExpr ASLBuilder::MakeVarArg(
-    int opcode, int num_args, NumericExpr *args) {
-  assert(num_args >= 0);
+VarArgExpr ASLBuilder::MakeVarArg(int opcode, ArrayRef<NumericExpr> args) {
   CheckOpCode(opcode, Expr::VARARG, "vararg");
   expr_va *result = Allocate<expr_va>();
   result->op = r_ops_[opcode];
-  de *d = result->L.d = Allocate<de>(num_args * sizeof(de) + sizeof(expr*));
+  int num_args = SafeInt<int>(args.size()).value();
+  de *d = result->L.d = Allocate<de>(
+        SafeInt<int>(num_args) * sizeof(de) + sizeof(expr*));
   for (int i = 0; i < num_args; ++i)
     d[i].e = args[i].expr_;
   d[num_args].e = 0;
@@ -495,17 +506,17 @@ VarArgExpr ASLBuilder::MakeVarArg(
 }
 
 IteratedLogicalExpr ASLBuilder::MakeIteratedLogical(
-    int opcode, int num_args, const LogicalExpr *args) {
+    int opcode, ArrayRef<LogicalExpr> args) {
   CheckOpCode(opcode, Expr::ITERATED_LOGICAL, "iterated logical");
-  return MakeIterated<Expr::ITERATED_LOGICAL>(opcode, num_args, args);
+  return MakeIterated<Expr::ITERATED_LOGICAL>(opcode, args);
 }
 
 StringLiteral ASLBuilder::MakeStringLiteral(fmt::StringRef value) {
   std::size_t size = value.size();
-  assert(size <= INT_MAX);
-  expr_h *result = Allocate<expr_h>(AddPadding(sizeof(expr_h) + size));
+  expr_h *result = Allocate<expr_h>(
+        SafeInt<int>(AddPadding(sizeof(expr_h)) + size));
   result->op = r_ops_[OPHOL];
-  // Passing result->sym makes std::copy causes in assertion failure in MSVC.
+  // Passing result->sym to std::copy causes an assertion failure in MSVC.
   char *dest = result->sym;
   const char *str = value.c_str();
   std::copy(str, str + size, dest);
@@ -513,4 +524,4 @@ StringLiteral ASLBuilder::MakeStringLiteral(fmt::StringRef value) {
   return Expr::Create<StringLiteral>(reinterpret_cast<expr*>(result));
 }
 }
-}
+}  // namespace ampl

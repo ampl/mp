@@ -56,6 +56,7 @@ using ampl::IteratedLogicalExpr;
 using ampl::AllDiffExpr;
 using ampl::StringLiteral;
 using ampl::ExprVisitor;
+using ampl::internal::MakeArrayRef;
 
 using ampl::LinearTerm;
 using ampl::LinearExpr;
@@ -665,9 +666,9 @@ TEST_F(ExprTest, PiecewiseLinearExpr) {
 TEST_F(ExprTest, CallExpr) {
   EXPECT_EQ(1, CheckExpr<CallExpr>(Expr::CALL));
   enum {NUM_ARGS = 3};
-  Function f = builder.AddFunction( 0, "foo", NUM_ARGS, Function::SYMBOLIC);
-  Expr args[NUM_ARGS] = {n1, n2, builder.MakeStringLiteral("abc")};
-  CallExpr expr = builder.MakeCall(f, NUM_ARGS, args);
+  Function f = builder.AddFunction(0, "foo", NUM_ARGS, Function::SYMBOLIC);
+  const Expr args[NUM_ARGS] = {n1, n2, builder.MakeStringLiteral("abc")};
+  CallExpr expr = builder.MakeCall(f, args);
   EXPECT_EQ(OPFUNCALL, expr.opcode());
   EXPECT_EQ(NUM_ARGS, expr.num_args());
   EXPECT_EQ(f, expr.function());
@@ -687,7 +688,7 @@ TEST_F(ExprTest, VarArgExpr) {
   enum {NUM_ARGS = 3};
   NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
   for (size_t i = 0, n = sizeof(opcodes) / sizeof(*opcodes); i < n; ++i) {
-    VarArgExpr expr = builder.MakeVarArg(opcodes[i], NUM_ARGS, args);
+    VarArgExpr expr = builder.MakeVarArg(opcodes[i], args);
     EXPECT_EQ(opcodes[i], expr.opcode());
     int arg_index = 0;
     VarArgExpr::iterator j = expr.begin(), end = expr.end();
@@ -700,58 +701,48 @@ TEST_F(ExprTest, VarArgExpr) {
     EXPECT_EQ(args[0], *j2);
     EXPECT_EQ(args[1], *j);
   }
-  EXPECT_THROW_MSG(builder.MakeVarArg(OPUMINUS, NUM_ARGS, args), Error,
+  EXPECT_THROW_MSG(builder.MakeVarArg(OPUMINUS, args), Error,
       fmt::format("invalid vararg expression code {}", OPUMINUS));
-#ifndef NDEBUG
-  EXPECT_DEBUG_DEATH(
-      builder.MakeVarArg(MINLIST, -1, args);, "Assertion");  // NOLINT(*)
-#endif
 }
 
 TEST_F(ExprTest, SumExpr) {
   EXPECT_EQ(1, CheckExpr<SumExpr>(Expr::SUM));
   enum {NUM_ARGS = 3};
   NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
-  ampl::SumExpr expr = builder.MakeSum(NUM_ARGS, args);
+  ampl::SumExpr expr = builder.MakeSum(args);
   EXPECT_EQ(OPSUMLIST, expr.opcode());
   int arg_index = 0;
   for (ampl::SumExpr::iterator
       i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
     EXPECT_EQ(args[arg_index], *i);
   }
-#ifndef NDEBUG
-  EXPECT_DEBUG_DEATH(builder.MakeSum(-1, args);, "Assertion");  // NOLINT(*)
-#endif
 }
 
 TEST_F(ExprTest, CountExpr) {
   EXPECT_EQ(1, CheckExpr<CountExpr>(Expr::COUNT));
   enum {NUM_ARGS = 2};
   LogicalExpr args[NUM_ARGS] = {l1, l0};
-  ampl::CountExpr expr = builder.MakeCount(NUM_ARGS, args);
+  ampl::CountExpr expr = builder.MakeCount(args);
   EXPECT_EQ(OPCOUNT, expr.opcode());
   int arg_index = 0;
   for (ampl::CountExpr::iterator
       i = expr.begin(), end = expr.end(); i != end; ++i, ++arg_index) {
     EXPECT_EQ(args[arg_index], *i);
   }
-#ifndef NDEBUG
-  EXPECT_DEBUG_DEATH(builder.MakeCount(-1, args);, "Assertion");  // NOLINT(*)
-#endif
 }
 
 TEST_F(ExprTest, NumberOfExpr) {
   EXPECT_EQ(1, CheckExpr<NumberOfExpr>(Expr::NUMBEROF));
   enum {NUM_ARGS = 3};
   NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
-  ampl::NumberOfExpr expr = builder.MakeNumberOf(NUM_ARGS, args);
+  ampl::NumberOfExpr expr = builder.MakeNumberOf(args);
   EXPECT_EQ(OPNUMBEROF, expr.opcode());
   EXPECT_EQ(NUM_ARGS, expr.num_args());
   for (int i = 0; i < NUM_ARGS; ++i)
     EXPECT_EQ(args[i], expr[i]);
 #ifndef NDEBUG
   EXPECT_DEBUG_DEATH(
-      builder.MakeNumberOf(0, args);, "Assertion");  // NOLINT(*)
+      builder.MakeNumberOf(MakeArrayRef(args, 0));, "Assertion");  // NOLINT(*)
 #endif
 }
 
@@ -806,7 +797,7 @@ TEST_F(ExprTest, LogicalCountExpr) {
   };
   std::size_t num_opcodes = sizeof(opcodes) / sizeof(*opcodes);
   EXPECT_EQ(num_opcodes, CheckExpr<LogicalCountExpr>(Expr::LOGICAL_COUNT));
-  ampl::CountExpr count = builder.MakeCount(1, &l1);
+  ampl::CountExpr count = builder.MakeCount(MakeArrayRef(&l1, 1));
   for (size_t i = 0; i < num_opcodes; ++i) {
     ampl::LogicalCountExpr expr =
         builder.MakeLogicalCount(opcodes[i], n1, count);
@@ -834,8 +825,7 @@ TEST_F(ExprTest, IteratedLogicalExpr) {
   enum {NUM_ARGS = 3};
   LogicalExpr args[NUM_ARGS] = {l0, l1, builder.MakeLogicalConstant(false)};
   for (size_t i = 0; i < num_opcodes; ++i) {
-    IteratedLogicalExpr expr =
-        builder.MakeIteratedLogical(opcodes[i], NUM_ARGS, args);
+    IteratedLogicalExpr expr = builder.MakeIteratedLogical(opcodes[i], args);
     EXPECT_EQ(opcodes[i], expr.opcode());
     int arg_index = 0;
     for (IteratedLogicalExpr::iterator
@@ -843,20 +833,15 @@ TEST_F(ExprTest, IteratedLogicalExpr) {
       EXPECT_EQ(args[arg_index], *i);
     }
   }
-  EXPECT_THROW_MSG(
-        builder.MakeIteratedLogical(OPUMINUS, NUM_ARGS, args), Error,
+  EXPECT_THROW_MSG(builder.MakeIteratedLogical(OPUMINUS, args), Error,
         fmt::format("invalid iterated logical expression code {}", OPUMINUS));
-#ifndef NDEBUG
-  EXPECT_DEBUG_DEATH(builder.MakeIteratedLogical(
-                       ORLIST, -1, args);, "Assertion");  // NOLINT(*)
-#endif
 }
 
 TEST_F(ExprTest, AllDiffExpr) {
   EXPECT_EQ(1, CheckExpr<AllDiffExpr>(Expr::ALLDIFF));
   enum {NUM_ARGS = 3};
   NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
-  AllDiffExpr expr = builder.MakeAllDiff(NUM_ARGS, args);
+  AllDiffExpr expr = builder.MakeAllDiff(args);
   EXPECT_EQ(NUM_ARGS, expr.num_args());
   int index = 0;
   for (AllDiffExpr::iterator
@@ -865,9 +850,6 @@ TEST_F(ExprTest, AllDiffExpr) {
     EXPECT_EQ(args[index], expr[index]);
   }
   EXPECT_EQ(NUM_ARGS, index);
-#ifndef NDEBUG
-  EXPECT_DEBUG_DEATH(builder.MakeAllDiff(-1, args);, "Assertion");  // NOLINT(*)
-#endif
 }
 
 TEST_F(ExprTest, StringLiteral) {
@@ -1228,10 +1210,10 @@ TEST_F(ExprTest, WriteCallExpr) {
       MakeNumericConstant(7),
       MakeVariable(1)
   };
-  CHECK_WRITE("foo()", MakeCall(f, 0, 0));
-  CHECK_WRITE("foo(3)", MakeCall(f, 1, args));
-  CHECK_WRITE("foo(3, x1 + 5, 7)", MakeCall(f, 3, args));
-  CHECK_WRITE("foo(3, x1 + 5, 7, x2)", MakeCall(f, 4, args));
+  CHECK_WRITE("foo()", MakeCall(f, MakeArrayRef(args, 0)));
+  CHECK_WRITE("foo(3)", MakeCall(f, MakeArrayRef(args, 1)));
+  CHECK_WRITE("foo(3, x1 + 5, 7)", MakeCall(f, MakeArrayRef(args, 3)));
+  CHECK_WRITE("foo(3, x1 + 5, 7, x2)", MakeCall(f, args));
 }
 
 TEST_F(ExprTest, WriteVarArgExpr) {
@@ -1335,13 +1317,13 @@ TEST_F(ExprTest, WriteAllDiffExpr) {
 }
 
 TEST_F(ExprTest, WriteStringLiteral) {
-  StringLiteral s = builder.MakeStringLiteral("abc");
+  Expr args[] = {builder.MakeStringLiteral("abc")};
   ampl::Function f = builder.AddFunction(0, "f", 1, Function::SYMBOLIC);
-  CHECK_WRITE("f('abc')", builder.MakeCall(f, 1, &s));
-  s = builder.MakeStringLiteral("ab'c");
-  CHECK_WRITE("f('ab''c')", builder.MakeCall(f, 1, &s));
-  s = builder.MakeStringLiteral("ab\nc");
-  CHECK_WRITE("f('ab\\\nc')", builder.MakeCall(f, 1, &s));
+  CHECK_WRITE("f('abc')", builder.MakeCall(f, args));
+  args[0] = builder.MakeStringLiteral("ab'c");
+  CHECK_WRITE("f('ab''c')", builder.MakeCall(f, args));
+  args[0] = builder.MakeStringLiteral("ab\nc");
+  CHECK_WRITE("f('ab\\\nc')", builder.MakeCall(f, args));
 }
 
 TEST_F(ExprTest, UnaryExprPrecedence) {
@@ -1460,14 +1442,13 @@ TEST_F(ExprTest, PiecewiseLinearExprPrecedence) {
 TEST_F(ExprTest, CallExprPrecedence) {
   auto x1 = AddVar(0), x2 = AddVar(1);
   auto f = AddFunction(0, "foo", -1);
-  enum {NUM_ARGS = 4};
-  Expr args[NUM_ARGS] = {
-      MakeCall(f, 0, 0),
+  Expr args[] = {
+      MakeCall(f, MakeArrayRef<Expr>(0, 0)),
       MakeBinary(OPPLUS, x1, MakeNumericConstant(5)),
       MakeNumericConstant(7),
       MakeUnary(FLOOR, x2)
   };
-  CHECK_WRITE("foo(foo(), x1 + 5, 7, floor(x2))", MakeCall(f, NUM_ARGS, args));
+  CHECK_WRITE("foo(foo(), x1 + 5, 7, floor(x2))", MakeCall(f, args));
 }
 
 TEST_F(ExprTest, VarArgExprPrecedence) {
@@ -1744,8 +1725,7 @@ TEST_F(ExprTest, HashCallExpr) {
   hash = HashCombine<NumericExpr>(hash, n1);
   hash = HashCombine(hash, HashString("test"));
   hash = HashCombine<NumericExpr>(hash, var);
-  EXPECT_EQ(hash,
-            std::hash<NumericExpr>()(builder.MakeCall(f, NUM_ARGS, args)));
+  EXPECT_EQ(hash, std::hash<NumericExpr>()(builder.MakeCall(f, args)));
 }
 
 template <typename Expr, typename Arg, typename Base = Arg>
@@ -1771,14 +1751,14 @@ TEST_F(ExprTest, HashNumericVarArgExpr) {
     builder.MakeVariable(1),
     builder.MakeNumericConstant(42)
   };
-  CheckHash<VarArgExpr, NumericExpr>(builder.MakeVarArg(MINLIST, 3, args));
-  CheckHash(builder.MakeSum(3, args));
-  CheckHash(builder.MakeNumberOf(3, args));
+  CheckHash<VarArgExpr, NumericExpr>(builder.MakeVarArg(MINLIST, args));
+  CheckHash(builder.MakeSum(args));
+  CheckHash(builder.MakeNumberOf(args));
 }
 
 TEST_F(ExprTest, HashCountExpr) {
   LogicalExpr args[] = {l0, l1, l1};
-  CheckHash(builder.MakeCount(3, args));
+  CheckHash(builder.MakeCount(args));
 }
 
 TEST_F(ExprTest, HashLogicalConstant) {
@@ -1802,7 +1782,7 @@ TEST_F(ExprTest, HashRelationalExpr) {
 TEST_F(ExprTest, HashLogicalCountExpr) {
   LogicalExpr args[] = {l0, l1};
   CheckHashBinary<LogicalCountExpr, LogicalExpr, NumericExpr>(
-        builder.MakeLogicalCount(OPATMOST, n1, builder.MakeCount(2, args)));
+        builder.MakeLogicalCount(OPATMOST, n1, builder.MakeCount(args)));
 }
 
 TEST_F(ExprTest, HashImplicationExpr) {
@@ -1811,21 +1791,23 @@ TEST_F(ExprTest, HashImplicationExpr) {
 
 TEST_F(ExprTest, HashIteratedLogical) {
   LogicalExpr args[] = {l0, l1, builder.MakeLogicalConstant(false)};
-  CheckHash(builder.MakeIteratedLogical(ORLIST, 3, args));
+  CheckHash(builder.MakeIteratedLogical(ORLIST, args));
 }
 
 TEST_F(ExprTest, HashAllDiff) {
   NumericExpr args[] = {n1, n2, builder.MakeVariable(4)};
-  CheckHash(builder.MakeAllDiff(3, args));
+  CheckHash(builder.MakeAllDiff(args));
 }
 
 TEST_F(ExprTest, HashStringLiteral) {
-  StringLiteral s = builder.MakeStringLiteral("test");
+  // String literal can only occur as a function argument, so test
+  // it as a part of a call expression.
+  Expr args[] = {builder.MakeStringLiteral("test")};
   Function f = builder.AddFunction(0, "foo", 1, Function::SYMBOLIC);
   size_t hash = HashCombine(0, OPFUNCALL);
   hash = HashCombine(hash, f.name());
   hash = HashCombine(hash, HashString("test"));
-  EXPECT_EQ(hash, std::hash<NumericExpr>()(builder.MakeCall(f, 1, &s)));
+  EXPECT_EQ(hash, std::hash<NumericExpr>()(builder.MakeCall(f, args)));
 }
 
 TEST_F(ExprTest, HashNumberOfArgs) {

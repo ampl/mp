@@ -25,7 +25,7 @@
 
 #include "solvers/util/expr.h"
 #include "solvers/util/format.h"
-#include "solvers/util/noncopyable.h"
+#include "solvers/util/safeint.h"
 
 namespace ampl {
 
@@ -49,8 +49,35 @@ public:
 // Use standard opcodes when building expressions.
 enum { ASL_STANDARD_OPCODES = 0x1000000 };
 
+// A reference to an immutable array.
+template <typename T>
+class ArrayRef {
+ private:
+  const T *data_;
+  std::size_t size_;
+
+ public:
+  ArrayRef(const T *data, std::size_t size) : data_(data), size_(size) {}
+
+  template <typename U>
+  ArrayRef(ArrayRef<U> other) : data_(other.data()), size_(other.size()) {}
+
+  template <std::size_t SIZE>
+  ArrayRef(const T (&data)[SIZE]) : data_(data), size_(SIZE) {}
+
+  const T *data() const { return data_; }
+  std::size_t size() const { return size_; }
+
+  const T &operator[](std::size_t i) const { return data_[i]; }
+};
+
+template <typename T>
+ArrayRef<T> MakeArrayRef(const T *data, std::size_t size) {
+  return ArrayRef<T>(data, size);
+}
+
 // Provides methods for building an ASL problem object.
-class ASLBuilder : Noncopyable {
+class ASLBuilder {
  private:
   ASL *asl_;
   bool own_asl_;
@@ -61,29 +88,26 @@ class ASLBuilder : Noncopyable {
   int nderp_;
   static const double DVALUE[];
 
+  FMT_DISALLOW_COPY_AND_ASSIGN(ASLBuilder);
+
   static void CheckOpCode(int opcode, Expr::Kind kind, const char *expr_name) {
     if (Expr::INFO[opcode].kind != kind)
       throw Error("invalid {} expression code {}", expr_name, opcode);
   }
 
   template <typename T>
-  T *Allocate(unsigned size = sizeof(T)) {
-    assert(size >= sizeof(T));
-    return reinterpret_cast<T*>(mem_ASL(asl_, size));
-  }
+  T *Allocate(SafeInt<int> size = sizeof(T));
 
   expr *MakeConstant(double value);
   expr *DoMakeUnary(int opcode, Expr lhs);
   expr *MakeBinary(int opcode, Expr::Kind kind, Expr lhs, Expr rhs);
   expr *MakeIf(int opcode,
       LogicalExpr condition, Expr true_expr, Expr false_expr);
-  expr *MakeIterated(int opcode, int num_args, const Expr *args);
+  expr *MakeIterated(int opcode, ArrayRef<Expr> args);
 
   template <Expr::Kind K>
-  BasicIteratedExpr<K> MakeIterated(
-      int opcode, int num_args, const Expr *args) {
-    return Expr::Create< BasicIteratedExpr<K> >(
-        MakeIterated(opcode, num_args, args));
+  BasicIteratedExpr<K> MakeIterated(int opcode, ArrayRef<Expr> args) {
+    return Expr::Create< BasicIteratedExpr<K> >(MakeIterated(opcode, args));
   }
 
  public:
@@ -117,9 +141,9 @@ class ASLBuilder : Noncopyable {
   // The Make* methods construct expression objects. These objects are
   // local to the currently built ASL problem and shouldn't be used with
   // other problems. The expression objects are not accessible via the
-  // ASL API until they are added to the problem as a part of objective
-  // or constraint expression. For this reason the methods below use a
-  // different naming convention from the Add* methods.
+  // problem API until they are added as a part of objective or constraint
+  // expression. For this reason the methods below use a different naming
+  // convention from the Add* methods.
 
   UnaryExpr MakeUnary(int opcode, NumericExpr arg);
 
@@ -136,21 +160,21 @@ class ASLBuilder : Noncopyable {
   PiecewiseLinearExpr MakePiecewiseLinear(int num_breakpoints,
       const double *breakpoints, const double *slopes, Variable var);
 
-  CallExpr MakeCall(Function f, int num_args, const Expr *args);
+  CallExpr MakeCall(Function f, ArrayRef<Expr> args);
 
-  VarArgExpr MakeVarArg(int opcode, int num_args, NumericExpr *args);
+  VarArgExpr MakeVarArg(int opcode, ArrayRef<NumericExpr> args);
 
-  SumExpr MakeSum(int num_args, const NumericExpr *args) {
-    return MakeIterated<Expr::SUM>(OPSUMLIST, num_args, args);
+  SumExpr MakeSum(ArrayRef<NumericExpr> args) {
+    return MakeIterated<Expr::SUM>(OPSUMLIST, args);
   }
 
-  CountExpr MakeCount(int num_args, const LogicalExpr *args) {
-    return MakeIterated<Expr::COUNT>(OPCOUNT, num_args, args);
+  CountExpr MakeCount(ArrayRef<LogicalExpr> args) {
+    return MakeIterated<Expr::COUNT>(OPCOUNT, args);
   }
 
-  NumberOfExpr MakeNumberOf(int num_args, const NumericExpr *args) {
-    assert(num_args >= 1);
-    return MakeIterated<Expr::NUMBEROF>(OPNUMBEROF, num_args, args);
+  NumberOfExpr MakeNumberOf(ArrayRef<NumericExpr> args) {
+    assert(args.size() >= 1);
+    return MakeIterated<Expr::NUMBEROF>(OPNUMBEROF, args);
   }
 
   LogicalConstant MakeLogicalConstant(bool value) {
@@ -185,15 +209,15 @@ class ASLBuilder : Noncopyable {
   }
 
   IteratedLogicalExpr MakeIteratedLogical(
-      int opcode, int num_args, const LogicalExpr *args);
+      int opcode, ArrayRef<LogicalExpr> args);
 
-  AllDiffExpr MakeAllDiff(int num_args, const NumericExpr *args) {
-    return MakeIterated<Expr::ALLDIFF>(OPALLDIFF, num_args, args);
+  AllDiffExpr MakeAllDiff(ArrayRef<NumericExpr> args) {
+    return MakeIterated<Expr::ALLDIFF>(OPALLDIFF, args);
   }
 
   StringLiteral MakeStringLiteral(fmt::StringRef value);
 };
 }
-}
+}  // namespace ampl
 
 #endif  // SOLVERS_UTIL_ASLBUILDER_H_
