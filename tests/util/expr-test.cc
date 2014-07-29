@@ -23,7 +23,6 @@
 #include <algorithm>
 
 #include "gtest/gtest.h"
-#include "tests/expr-builder.h"
 #include "tests/util.h"
 
 #include "solvers/util/aslbuilder.h"
@@ -161,17 +160,20 @@ void TestExpr::TestArrayIterator() {
   EXPECT_EQ(OPPLUS, vec[1].opcode());
 }
 
-class ExprTest : public ::testing::Test,
-  public ampl::ExprBuilder, public ampl::internal::ASLBuilder {
+class ExprTest : public ::testing::Test, public ampl::internal::ASLBuilder {
  protected:
   ASLBuilder builder;
   NumericExpr n1, n2;
   LogicalConstant l0, l1;
 
+  NumericConstant MakeConst(double value) {
+    return builder.MakeNumericConstant(value);
+  }
+
  public:
   ExprTest() {
     ampl::NLHeader header = {};
-    header.num_vars = 10;
+    header.num_vars = 50;
     header.num_objs = 1;
     header.num_funcs = 2;
     BeginBuild("", header, ampl::internal::ASL_STANDARD_OPCODES);
@@ -433,130 +435,114 @@ TEST_F(ExprTest, EqualityOperator) {
   EXPECT_TRUE(::MakeExpr(&raw2) == ::MakeExpr(&raw2));
 }
 
-TEST_F(ExprTest, EqualNum) {
-  EXPECT_TRUE(Equal(AddNum(0.42), AddNum(0.42)));
-  EXPECT_FALSE(Equal(AddNum(0.42), AddNum(42)));
+TEST_F(ExprTest, EqualNumericConstant) {
+  EXPECT_TRUE(Equal(MakeConst(0.42), MakeConst(0.42)));
+  EXPECT_FALSE(Equal(MakeConst(0.42), MakeConst(42)));
 }
 
-TEST_F(ExprTest, EqualVar) {
-  EXPECT_TRUE(Equal(AddVar(0), AddVar(0)));
-  EXPECT_FALSE(Equal(AddVar(0), AddVar(1)));
-  EXPECT_FALSE(Equal(AddVar(0), AddNum(0)));
+TEST_F(ExprTest, EqualVariable) {
+  EXPECT_TRUE(Equal(MakeVariable(0), MakeVariable(0)));
+  EXPECT_FALSE(Equal(MakeVariable(0), MakeVariable(1)));
+  EXPECT_FALSE(Equal(MakeVariable(0), MakeConst(0)));
 }
 
-TEST_F(ExprTest, EqualUnary) {
-  EXPECT_TRUE(Equal(AddUnary(OPUMINUS, AddVar(0)),
-                    AddUnary(OPUMINUS, AddVar(0))));
-  EXPECT_FALSE(Equal(AddUnary(OPUMINUS, AddVar(0)),
-                     AddVar(0)));
-  EXPECT_FALSE(Equal(AddUnary(OPUMINUS, AddVar(0)),
-                     AddUnary(FLOOR, AddVar(0))));
-  EXPECT_FALSE(Equal(AddUnary(OPUMINUS, AddVar(0)),
-                     AddUnary(OPUMINUS, AddVar(1))));
+TEST_F(ExprTest, EqualUnaryExpr) {
+  NumericExpr e = MakeUnary(OPUMINUS, MakeVariable(0));
+  EXPECT_TRUE(Equal(e, MakeUnary(OPUMINUS, MakeVariable(0))));
+  EXPECT_FALSE(Equal(e, MakeVariable(0)));
+  EXPECT_FALSE(Equal(e, MakeUnary(FLOOR, MakeVariable(0))));
+  EXPECT_FALSE(Equal(e, MakeUnary(OPUMINUS, MakeVariable(1))));
 }
 
-TEST_F(ExprTest, EqualBinary) {
-  EXPECT_TRUE(Equal(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
-                    AddBinary(OPPLUS, AddVar(0), AddNum(42))));
-  EXPECT_FALSE(Equal(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
-                     AddBinary(OPMINUS, AddVar(0), AddNum(42))));
-  EXPECT_FALSE(Equal(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
-                     AddBinary(OPPLUS, AddNum(42), AddVar(0))));
-  EXPECT_FALSE(Equal(AddBinary(OPPLUS, AddVar(0), AddNum(42)),
-                     AddBinary(OPPLUS, AddVar(0), AddNum(0))));
-  EXPECT_FALSE(Equal(AddNum(42),
-                     AddBinary(OPPLUS, AddVar(0), AddNum(42))));
+TEST_F(ExprTest, EqualBinaryExpr) {
+  NumericExpr e = MakeBinary(OPPLUS, MakeVariable(0), MakeConst(42));
+  EXPECT_TRUE(Equal(e, MakeBinary(OPPLUS, MakeVariable(0), MakeConst(42))));
+  EXPECT_FALSE(Equal(e, MakeBinary(OPMINUS, MakeVariable(0), MakeConst(42))));
+  EXPECT_FALSE(Equal(e, MakeBinary(OPPLUS, MakeConst(42), MakeVariable(0))));
+  EXPECT_FALSE(Equal(e, MakeBinary(OPPLUS, MakeVariable(0), MakeConst(0))));
+  EXPECT_FALSE(Equal(MakeConst(42), e));
 }
 
-TEST_F(ExprTest, EqualVarArg) {
+TEST_F(ExprTest, EqualIfExpr) {
+  NumericExpr e =
+      MakeIf(MakeLogicalConstant(0), MakeVariable(1), MakeConst(42));
   EXPECT_TRUE(Equal(
-      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)),
-      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42))));
+      e, MakeIf(MakeLogicalConstant(0), MakeVariable(1), MakeConst(42))));
+  NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
+  EXPECT_FALSE(Equal(e, MakeSum(args)));
   EXPECT_FALSE(Equal(
-      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)),
-      AddVarArg(MINLIST, AddVar(0), AddVar(1))));
-  EXPECT_FALSE(Equal(
-      AddVarArg(MINLIST, AddVar(0), AddVar(1)),
-      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42))));
-  EXPECT_FALSE(Equal(
-      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)),
-      AddVarArg(MAXLIST, AddVar(0), AddVar(1), AddNum(42))));
-  EXPECT_FALSE(Equal(
-      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)),
-      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(0))));
-  EXPECT_FALSE(Equal(
-      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)),
-      AddNum(42)));
+      e, MakeIf(MakeLogicalConstant(0), MakeVariable(1), MakeConst(0))));
+  EXPECT_FALSE(Equal(e, MakeConst(42)));
 }
 
-TEST_F(ExprTest, EqualPLTerm) {
-  double args[] = {-1, 5, 0, 10, 1};
-  EXPECT_TRUE(Equal(AddPL(5, args, 0), AddPL(5, args, 0)));
-  EXPECT_FALSE(Equal(AddPL(5, args, 0), AddPL(3, args, 0)));
-  EXPECT_FALSE(Equal(AddPL(5, args, 0), AddPL(5, args, 1)));
-  double args2[] = {-1, 5, 0, 11, 1};
-  EXPECT_FALSE(Equal(AddPL(5, args, 0), AddPL(5, args2, 0)));
-  EXPECT_FALSE(Equal(AddPL(5, args, 0), AddNum(42)));
+TEST_F(ExprTest, EqualPiecewiseLinear) {
+  double breakpoints[] = {5, 10};
+  double slopes[] = {-1, 0, 1};
+  Variable x = MakeVariable(0), y = MakeVariable(1);
+  NumericExpr e = MakePiecewiseLinear(2, breakpoints, slopes, x);
+  EXPECT_TRUE(Equal(e, MakePiecewiseLinear(2, breakpoints, slopes, x)));
+  EXPECT_FALSE(Equal(e, MakePiecewiseLinear(1, breakpoints, slopes, x)));
+  EXPECT_FALSE(Equal(e, MakePiecewiseLinear(2, breakpoints, slopes, y)));
+  double breakpoints2[] = {5, 11};
+  EXPECT_FALSE(Equal(e, MakePiecewiseLinear(2, breakpoints2, slopes, x)));
+  EXPECT_FALSE(Equal(e, MakeConst(42)));
 }
 
-TEST_F(ExprTest, EqualIf) {
-  EXPECT_TRUE(Equal(
-      AddIf(AddBool(0), AddVar(1), AddNum(42)),
-      AddIf(AddBool(0), AddVar(1), AddNum(42))));
-  EXPECT_FALSE(Equal(
-      AddIf(AddBool(0), AddVar(1), AddNum(42)),
-      AddSum(AddVar(0), AddVar(1), AddNum(42))));
-  EXPECT_FALSE(Equal(
-      AddIf(AddBool(0), AddVar(1), AddNum(42)),
-      AddIf(AddBool(0), AddVar(1), AddNum(0))));
-  EXPECT_FALSE(Equal(
-      AddIf(AddBool(0), AddVar(1), AddNum(42)),
-      AddNum(42)));
+TEST_F(ExprTest, EqualVarArgExpr) {
+  NumericExpr args1[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
+  // args2 is used to make sure that Equal compares expressions structurally
+  // instead of comparing pointers; don't replace with args.
+  NumericExpr args2[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
+  NumericExpr e = MakeVarArg(MINLIST, args1);
+  EXPECT_TRUE(Equal(e, MakeVarArg(MINLIST, args2)));
+  NumericExpr args3[] = {MakeVariable(0), MakeVariable(1)};
+  EXPECT_FALSE(Equal(e, MakeVarArg(MINLIST, args3)));
+  EXPECT_FALSE(Equal(MakeVarArg(MINLIST, args3), MakeVarArg(MINLIST, args1)));
+  EXPECT_FALSE(Equal(e, MakeVarArg(MAXLIST, args1)));
+  NumericExpr args4[] = {MakeVariable(0), MakeVariable(1), MakeConst(0)};
+  EXPECT_FALSE(Equal(e, MakeVarArg(MINLIST, args4)));
+  EXPECT_FALSE(Equal(e, MakeConst(42)));
 }
 
-TEST_F(ExprTest, EqualSum) {
-  EXPECT_TRUE(Equal(
-      AddSum(AddVar(0), AddVar(1), AddNum(42)),
-      AddSum(AddVar(0), AddVar(1), AddNum(42))));
-  EXPECT_FALSE(Equal(
-      AddSum(AddVar(0), AddVar(1), AddNum(42)),
-      AddSum(AddVar(0), AddVar(1))));
-  EXPECT_FALSE(Equal(
-      AddSum(AddVar(0), AddVar(1)),
-      AddSum(AddVar(0), AddVar(1), AddNum(42))));
-  EXPECT_FALSE(Equal(
-      AddSum(AddVar(0), AddVar(1), AddNum(42)),
-      AddCount(AddBool(false), AddBool(true), AddBool(true))));
-  EXPECT_FALSE(Equal(
-      AddSum(AddVar(0), AddVar(1), AddNum(42)),
-      AddSum(AddVar(0), AddVar(1), AddNum(0))));
-  EXPECT_FALSE(Equal(
-      AddSum(AddVar(0), AddVar(1), AddNum(42)),
-      AddNum(42)));
+TEST_F(ExprTest, EqualSumExpr) {
+  NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
+  NumericExpr e = MakeSum(args);
+  // args2 is used to make sure that Equal compares expressions structurally
+  // instead of comparing pointers; don't replace with args.
+  NumericExpr args2[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
+  EXPECT_TRUE(Equal(e, MakeSum(args2)));
+  NumericExpr args3[] = {MakeVariable(0), MakeVariable(1)};
+  EXPECT_FALSE(Equal(e, MakeSum(args3)));
+  EXPECT_FALSE(Equal(MakeSum(args3), e));
+  LogicalExpr args4[] = {l0, l1, l1};
+  EXPECT_FALSE(Equal(e, MakeCount(args4)));
+  NumericExpr args5[] = {MakeVariable(0), MakeVariable(1), MakeConst(0)};
+  EXPECT_FALSE(Equal(e, MakeSum(args5)));
+  EXPECT_FALSE(Equal(e, MakeConst(42)));
 }
 
-TEST_F(ExprTest, EqualCount) {
-  EXPECT_TRUE(Equal(
-      AddCount(AddBool(false), AddBool(true), AddBool(true)),
-      AddCount(AddBool(false), AddBool(true), AddBool(true))));
-  EXPECT_FALSE(Equal(
-      AddCount(AddBool(false), AddBool(true), AddBool(true)),
-      AddCount(AddBool(false), AddBool(true))));
-  EXPECT_FALSE(Equal(
-      AddCount(AddBool(false), AddBool(true)),
-      AddCount(AddBool(false), AddBool(true), AddBool(true))));
-  EXPECT_FALSE(Equal(
-      AddCount(AddBool(false), AddBool(true), AddBool(true)),
-      AddSum(AddNum(0), AddNum(1), AddNum(1))));
-  EXPECT_FALSE(Equal(
-      AddCount(AddBool(false), AddBool(true), AddBool(true)),
-      AddCount(AddBool(false), AddBool(true), AddBool(false))));
-  EXPECT_FALSE(Equal(
-      AddCount(AddBool(false), AddBool(true), AddBool(true)),
-      AddBool(true)));
+TEST_F(ExprTest, EqualCountExpr) {
+  LogicalExpr args[] = {l0, l1, l1};
+  NumericExpr e = MakeCount(args);
+  // args2 is used to make sure that Equal compares expressions structurally
+  // instead of comparing pointers; don't replace with args.
+  LogicalExpr args2[] = {
+    MakeLogicalConstant(false),
+    MakeLogicalConstant(true),
+    MakeLogicalConstant(true)
+  };
+  EXPECT_TRUE(Equal(e, MakeCount(args2)));
+  LogicalExpr args3[] = {l0, l1};
+  EXPECT_FALSE(Equal(e, MakeCount(args3)));
+  EXPECT_FALSE(Equal(MakeCount(args3), e));
+  NumericExpr args4[] = {MakeConst(0), MakeConst(1), MakeConst(1)};
+  EXPECT_FALSE(Equal(e, MakeSum(args4)));
+  LogicalExpr args5[] = {l0, l1, l0};
+  EXPECT_FALSE(Equal(e, MakeCount(args5)));
+  EXPECT_FALSE(Equal(e, l1));
 }
 
-TEST_F(ExprTest, EqualString) {
+TEST_F(ExprTest, EqualStringLiteral) {
   StringLiteral s1 = MakeStringLiteral("abc");
   StringLiteral s2 = MakeStringLiteral("abc");
   EXPECT_NE(s1.value(), s2.value());
@@ -784,11 +770,6 @@ TEST_F(ExprTest, RelationalExpr) {
   }
   EXPECT_THROW_MSG(builder.MakeRelational(OPUMINUS, n1, n2), Error,
     fmt::format("invalid binary expression code {}", OPUMINUS));
-
-  NumericExpr lhs(AddNum(42)), rhs(AddNum(43));
-  RelationalExpr e(AddRelational(EQ, lhs, rhs));
-  EXPECT_EQ(lhs, e.lhs());
-  EXPECT_EQ(rhs, e.rhs());
 }
 
 TEST_F(ExprTest, LogicalCountExpr) {
@@ -921,7 +902,9 @@ struct FullTestVisitor : ExprVisitor<FullTestVisitor, TestResult, TestLResult> {
   TestResult VisitCount(CountExpr e) { return MakeResult(e); }
   TestResult VisitNumberOf(NumberOfExpr e) { return MakeResult(e); }
   TestResult VisitCall(CallExpr e) { return MakeResult(e); }
-  TestResult VisitPiecewiseLinear(PiecewiseLinearExpr e) { return MakeResult(e); }
+  TestResult VisitPiecewiseLinear(PiecewiseLinearExpr e) {
+    return MakeResult(e);
+  }
   TestResult VisitPowConstExp(BinaryExpr e) { return MakeResult(e); }
   TestResult VisitPow2(UnaryExpr e) { return MakeResult(e); }
   TestResult VisitPowConstBase(BinaryExpr e) { return MakeResult(e); }
@@ -999,8 +982,8 @@ TEST_F(ExprTest, ExprVisitorForwardsUnhandled) {
 struct NullVisitor : ExprVisitor<NullVisitor, int, int> {};
 
 TEST_F(ExprTest, ExprVisitorUnhandledThrows) {
-  EXPECT_THROW(NullVisitor().Visit(AddNum(0)), UnsupportedExprError);
-  EXPECT_THROW(NullVisitor().Visit(AddBool(false)), UnsupportedExprError);
+  EXPECT_THROW(NullVisitor().Visit(MakeConst(0)), UnsupportedExprError);
+  EXPECT_THROW(NullVisitor().Visit(l0), UnsupportedExprError);
 }
 
 TEST_F(ExprTest, ExprVisitorInvalidThrows) {
@@ -1093,11 +1076,14 @@ struct CreateVar {
 TEST_F(ExprTest, NumberOfMap) {
   ampl::NumberOfMap<Var, CreateVar> map((CreateVar()));
   EXPECT_TRUE(map.begin() == map.end());
-  NumberOfExpr e1 = AddNumberOf(AddNum(11), AddVar(0));
-  NumberOfExpr e2 = AddNumberOf(AddNum(22), AddVar(1));
+  NumericExpr args1[] = {MakeConst(11), MakeVariable(0)};
+  NumberOfExpr e1 = MakeNumberOf(args1);
+  NumericExpr args2[] = {MakeConst(22), MakeVariable(1)};
+  NumberOfExpr e2 = MakeNumberOf(args2);
   map.Add(11, e1);
   map.Add(22, e2);
-  map.Add(33, AddNumberOf(AddNum(33), AddVar(0)));
+  NumericExpr args3[] = {MakeConst(33), MakeVariable(0)};
+  map.Add(33, MakeNumberOf(args3));
   ampl::NumberOfMap<Var, CreateVar>::iterator i = map.begin();
   EXPECT_EQ(e1, i->expr);
   EXPECT_EQ(2u, i->values.size());
@@ -1112,11 +1098,11 @@ TEST_F(ExprTest, NumberOfMap) {
 }
 
 TEST_F(ExprTest, IsZero) {
-  EXPECT_TRUE(IsZero(AddNum(0)));
-  EXPECT_FALSE(IsZero(AddNum(1)));
-  EXPECT_FALSE(IsZero(AddNum(-1)));
-  EXPECT_FALSE(IsZero(AddNum(10)));
-  EXPECT_FALSE(IsZero(AddVar(0)));
+  EXPECT_TRUE(IsZero(MakeConst(0)));
+  EXPECT_FALSE(IsZero(MakeConst(1)));
+  EXPECT_FALSE(IsZero(MakeConst(-1)));
+  EXPECT_FALSE(IsZero(MakeConst(10)));
+  EXPECT_FALSE(IsZero(MakeVariable(0)));
 }
 
 // Checks if WriteExpr produces the expected output for expr.
@@ -1125,7 +1111,7 @@ static ::testing::AssertionResult CheckWrite(
     const std::string &expected_output, NumericExpr expr) {
   fmt::Writer w;
   WriteExpr(w, ampl::LinearObjExpr(), expr);
-  auto actual_output = w.str();
+  std::string actual_output = w.str();
   if (expected_output == actual_output)
     return ::testing::AssertionSuccess();
   return ::testing::AssertionFailure()
@@ -1138,68 +1124,70 @@ static ::testing::AssertionResult CheckWrite(
   EXPECT_PRED_FORMAT2(CheckWrite, expected_output, expr)
 
 TEST_F(ExprTest, WriteNumericConstant) {
-  CHECK_WRITE("0", AddNum(0));
-  CHECK_WRITE("42", AddNum(42));
-  CHECK_WRITE("12.34", AddNum(12.34));
+  CHECK_WRITE("0", MakeConst(0));
+  CHECK_WRITE("42", MakeConst(42));
+  CHECK_WRITE("12.34", MakeConst(12.34));
 }
 
 TEST_F(ExprTest, WriteVariable) {
-  CHECK_WRITE("x1", AddVar(0));
-  CHECK_WRITE("x3", AddVar(2));
+  CHECK_WRITE("x1", MakeVariable(0));
+  CHECK_WRITE("x3", MakeVariable(2));
 }
 
 TEST_F(ExprTest, WriteUnaryExpr) {
-  auto x1 = AddVar(0);
-  CHECK_WRITE("-x1", AddUnary(OPUMINUS, x1));
-  CHECK_WRITE("x1 ^ 2", AddUnary(OP2POW, x1));
+  NumericExpr x1 = MakeVariable(0);
+  CHECK_WRITE("-x1", MakeUnary(OPUMINUS, x1));
+  CHECK_WRITE("x1 ^ 2", MakeUnary(OP2POW, x1));
   int count = 0;
   for (int i = 0, size = sizeof(OP_INFO) / sizeof(*OP_INFO); i < size; ++i) {
     const OpInfo &info = OP_INFO[i];
     int code = info.code;
     if (info.kind != Expr::UNARY || code == OPUMINUS || code == OP2POW)
       continue;
-    CHECK_WRITE(fmt::format("{}(x1)", info.str), AddUnary(code, x1));
+    CHECK_WRITE(fmt::format("{}(x1)", info.str), MakeUnary(code, x1));
     ++count;
   }
   EXPECT_EQ(19, count);
 }
 
 TEST_F(ExprTest, WriteBinaryExpr) {
-  Variable x1 = AddVar(0);
-  NumericConstant n42 = AddNum(42);
-  CHECK_WRITE("x1 + 42", AddBinary(OPPLUS, x1, n42));
-  CHECK_WRITE("x1 - 42", AddBinary(OPMINUS, x1, n42));
-  CHECK_WRITE("x1 * 42", AddBinary(OPMULT, x1, n42));
-  CHECK_WRITE("x1 / 42", AddBinary(OPDIV, x1, n42));
-  CHECK_WRITE("x1 mod 42", AddBinary(OPREM, x1, n42));
-  CHECK_WRITE("x1 ^ 42", AddBinary(OPPOW, x1, n42));
-  CHECK_WRITE("x1 ^ 42", AddBinary(OPPOW, x1, n42));
-  CHECK_WRITE("x1 ^ 42", AddBinary(OP1POW, x1, n42));
-  CHECK_WRITE("x1 ^ 42", AddBinary(OPCPOW, x1, n42));
-  CHECK_WRITE("x1 less 42", AddBinary(OPLESS, x1, n42));
-  CHECK_WRITE("x1 div 42", AddBinary(OPintDIV, x1, n42));
+  Variable x1 = MakeVariable(0);
+  NumericConstant n42 = MakeConst(42);
+  CHECK_WRITE("x1 + 42", MakeBinary(OPPLUS, x1, n42));
+  CHECK_WRITE("x1 - 42", MakeBinary(OPMINUS, x1, n42));
+  CHECK_WRITE("x1 * 42", MakeBinary(OPMULT, x1, n42));
+  CHECK_WRITE("x1 / 42", MakeBinary(OPDIV, x1, n42));
+  CHECK_WRITE("x1 mod 42", MakeBinary(OPREM, x1, n42));
+  CHECK_WRITE("x1 ^ 42", MakeBinary(OPPOW, x1, n42));
+  CHECK_WRITE("x1 ^ 42", MakeBinary(OPPOW, x1, n42));
+  CHECK_WRITE("x1 ^ 42", MakeBinary(OP1POW, x1, n42));
+  CHECK_WRITE("x1 ^ 42", MakeBinary(OPCPOW, x1, n42));
+  CHECK_WRITE("x1 less 42", MakeBinary(OPLESS, x1, n42));
+  CHECK_WRITE("x1 div 42", MakeBinary(OPintDIV, x1, n42));
 }
 
 TEST_F(ExprTest, WriteBinaryFunc) {
-  auto x1 = AddVar(0);
-  auto n42 = AddNum(42);
-  CHECK_WRITE("atan2(x1, 42)", AddBinary(OP_atan2, x1, n42));
-  CHECK_WRITE("precision(x1, 42)", AddBinary(OPprecision, x1, n42));
-  CHECK_WRITE("round(x1, 42)", AddBinary(OPround, x1, n42));
-  CHECK_WRITE("trunc(x1, 42)", AddBinary(OPtrunc, x1, n42));
+  auto x1 = MakeVariable(0);
+  auto n42 = MakeConst(42);
+  CHECK_WRITE("atan2(x1, 42)", MakeBinary(OP_atan2, x1, n42));
+  CHECK_WRITE("precision(x1, 42)", MakeBinary(OPprecision, x1, n42));
+  CHECK_WRITE("round(x1, 42)", MakeBinary(OPround, x1, n42));
+  CHECK_WRITE("trunc(x1, 42)", MakeBinary(OPtrunc, x1, n42));
 }
 
 TEST_F(ExprTest, WriteIfExpr) {
-  auto n0 = AddNum(0), n1 = AddNum(1);
+  auto n0 = MakeConst(0), n1 = MakeConst(1);
   CHECK_WRITE("if x1 = 0 then 1",
-      AddIf(AddRelational(EQ, AddVar(0), n0), n1, n0));
+      MakeIf(MakeRelational(EQ, MakeVariable(0), n0), n1, n0));
   CHECK_WRITE("if x1 = 0 then 0 else 1",
-      AddIf(AddRelational(EQ, AddVar(0), n0), n0, n1));
+      MakeIf(MakeRelational(EQ, MakeVariable(0), n0), n0, n1));
 }
 
 TEST_F(ExprTest, WritePiecewiseLinearExpr) {
-  double args[] = {-1, 5, 0, 10, 1};
-  CHECK_WRITE("<<5, 10; -1, 0, 1>> x43", AddPL(5, args, 42));
+  double breakpoints[] = {5, 10};
+  double slopes[] = {-1, 0, 1};
+  CHECK_WRITE("<<5, 10; -1, 0, 1>> x43",
+              MakePiecewiseLinear(2, breakpoints, slopes, MakeVariable(42)));
 }
 
 TEST_F(ExprTest, WriteCallExpr) {
@@ -1217,106 +1205,107 @@ TEST_F(ExprTest, WriteCallExpr) {
 }
 
 TEST_F(ExprTest, WriteVarArgExpr) {
-  CHECK_WRITE("min(x1, x2, 42)",
-      AddVarArg(MINLIST, AddVar(0), AddVar(1), AddNum(42)));
-  CHECK_WRITE("max(x1, x2, 42)",
-      AddVarArg(MAXLIST, AddVar(0), AddVar(1), AddNum(42)));
+  NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
+  CHECK_WRITE("min(x1, x2, 42)", MakeVarArg(MINLIST, args));
+  CHECK_WRITE("max(x1, x2, 42)", MakeVarArg(MAXLIST, args));
 }
 
 TEST_F(ExprTest, WriteSumExpr) {
-  CHECK_WRITE("/* sum */ (x1 + x2 + 42)",
-    AddSum(AddVar(0), AddVar(1), AddNum(42)));
-  CHECK_WRITE("/* sum */ ((x1 + x2) + 42)",
-    AddSum(AddBinary(OPPLUS, AddVar(0), AddVar(1)), AddNum(42)));
+  NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
+  CHECK_WRITE("/* sum */ (x1 + x2 + 42)", MakeSum(args));
+  NumericExpr args2[] = {
+    MakeBinary(OPPLUS, MakeVariable(0), MakeVariable(1)), MakeConst(42)
+  };
+  CHECK_WRITE("/* sum */ ((x1 + x2) + 42)", MakeSum(args2));
 }
 
 TEST_F(ExprTest, WriteCountExpr) {
-  CHECK_WRITE("count(x1 = 0, 1, 0)",
-      AddCount(AddRelational(EQ, AddVar(0), AddNum(0)),
-          AddBool(true), AddBool(false)));
+  LogicalExpr args[] = {
+    MakeRelational(EQ, MakeVariable(0), MakeConst(0)), l1, l0
+  };
+  CHECK_WRITE("count(x1 = 0, 1, 0)", MakeCount(args));
 }
 
 TEST_F(ExprTest, WriteNumberOfExpr) {
-  CHECK_WRITE("numberof 42 in (43, 44)",
-      AddNumberOf(AddNum(42), AddNum(43), AddNum(44)));
+  NumericExpr args[] = {MakeConst(42), MakeConst(43), MakeConst(44)};
+  CHECK_WRITE("numberof 42 in (43, 44)", MakeNumberOf(args));
 }
 
 TEST_F(ExprTest, WriteNotExpr) {
-  auto n0 = AddNum(0), n1 = AddNum(1);
+  auto n0 = MakeConst(0), n1 = MakeConst(1);
   CHECK_WRITE("if !(x1 = 0) then 1",
-      AddIf(AddNot(AddRelational(EQ, AddVar(0), n0)), n1, n0));
+      MakeIf(MakeNot(MakeRelational(EQ, MakeVariable(0), n0)), n1, n0));
 }
 
 TEST_F(ExprTest, WriteBinaryLogicalExpr) {
-  auto e1 = AddRelational(GT, AddVar(0), AddNum(0));
-  auto e2 = AddRelational(LT, AddVar(0), AddNum(10));
+  auto e1 = MakeRelational(GT, MakeVariable(0), MakeConst(0));
+  auto e2 = MakeRelational(LT, MakeVariable(0), MakeConst(10));
   CHECK_WRITE("if x1 > 0 || x1 < 10 then 1",
-      AddIf(AddBinaryLogical(OPOR, e1, e2), AddNum(1), AddNum(0)));
+      MakeIf(MakeBinaryLogical(OPOR, e1, e2), MakeConst(1), MakeConst(0)));
   CHECK_WRITE("if x1 > 0 && x1 < 10 then 1",
-      AddIf(AddBinaryLogical(OPAND, e1, e2), AddNum(1), AddNum(0)));
+      MakeIf(MakeBinaryLogical(OPAND, e1, e2), MakeConst(1), MakeConst(0)));
   CHECK_WRITE("if x1 > 0 <==> x1 < 10 then 1",
-      AddIf(AddBinaryLogical(OP_IFF, e1, e2), AddNum(1), AddNum(0)));
+      MakeIf(MakeBinaryLogical(OP_IFF, e1, e2), MakeConst(1), MakeConst(0)));
 }
 
 TEST_F(ExprTest, WriteRelationalExpr) {
-  auto n0 = AddNum(0), n1 = AddNum(1);
+  auto n0 = MakeConst(0), n1 = MakeConst(1);
   CHECK_WRITE("if x1 < 0 then 1",
-      AddIf(AddRelational(LT, AddVar(0), n0), n1, n0));
+      MakeIf(MakeRelational(LT, MakeVariable(0), n0), n1, n0));
   CHECK_WRITE("if x1 <= 0 then 1",
-      AddIf(AddRelational(LE, AddVar(0), n0), n1, n0));
+      MakeIf(MakeRelational(LE, MakeVariable(0), n0), n1, n0));
   CHECK_WRITE("if x1 = 0 then 1",
-      AddIf(AddRelational(EQ, AddVar(0), n0), n1, n0));
+      MakeIf(MakeRelational(EQ, MakeVariable(0), n0), n1, n0));
   CHECK_WRITE("if x1 >= 0 then 1",
-      AddIf(AddRelational(GE, AddVar(0), n0), n1, n0));
+      MakeIf(MakeRelational(GE, MakeVariable(0), n0), n1, n0));
   CHECK_WRITE("if x1 > 0 then 1",
-      AddIf(AddRelational(GT, AddVar(0), n0), n1, n0));
+      MakeIf(MakeRelational(GT, MakeVariable(0), n0), n1, n0));
   CHECK_WRITE("if x1 != 0 then 1",
-      AddIf(AddRelational(NE, AddVar(0), n0), n1, n0));
+      MakeIf(MakeRelational(NE, MakeVariable(0), n0), n1, n0));
 }
 
 TEST_F(ExprTest, WriteLogicalCountExpr) {
-  auto n0 = AddNum(0), n1 = AddNum(1), value = AddNum(42);
-  auto count = AddCount(
-      AddRelational(EQ, AddVar(0), AddNum(0)), AddBool(true), AddBool(false));
+  auto n0 = MakeConst(0), n1 = MakeConst(1), value = MakeConst(42);
+  LogicalExpr args[] = {
+    MakeRelational(EQ, MakeVariable(0), MakeConst(0)), l1, l0
+  };
+  ampl::CountExpr count = MakeCount(args);
   CHECK_WRITE("if atleast 42 (x1 = 0, 1, 0) then 1",
-      AddIf(AddLogicalCount(OPATLEAST, value, count), n1, n0));
+      MakeIf(MakeLogicalCount(OPATLEAST, value, count), n1, n0));
   CHECK_WRITE("if atmost 42 (x1 = 0, 1, 0) then 1",
-      AddIf(AddLogicalCount(OPATMOST, value, count), n1, n0));
+      MakeIf(MakeLogicalCount(OPATMOST, value, count), n1, n0));
   CHECK_WRITE("if exactly 42 (x1 = 0, 1, 0) then 1",
-      AddIf(AddLogicalCount(OPEXACTLY, value, count), n1, n0));
+      MakeIf(MakeLogicalCount(OPEXACTLY, value, count), n1, n0));
   CHECK_WRITE("if !atleast 42 (x1 = 0, 1, 0) then 1",
-      AddIf(AddLogicalCount(OPNOTATLEAST, value, count), n1, n0));
+      MakeIf(MakeLogicalCount(OPNOTATLEAST, value, count), n1, n0));
   CHECK_WRITE("if !atmost 42 (x1 = 0, 1, 0) then 1",
-      AddIf(AddLogicalCount(OPNOTATMOST, value, count), n1, n0));
+      MakeIf(MakeLogicalCount(OPNOTATMOST, value, count), n1, n0));
   CHECK_WRITE("if !exactly 42 (x1 = 0, 1, 0) then 1",
-      AddIf(AddLogicalCount(OPNOTEXACTLY, value, count), n1, n0));
+      MakeIf(MakeLogicalCount(OPNOTEXACTLY, value, count), n1, n0));
 }
 
 TEST_F(ExprTest, WriteImplicationExpr) {
-  auto e1 = AddRelational(EQ, AddVar(0), AddNum(0));
-  auto e2 = AddBool(true), e3 = AddBool(false);
+  auto e1 = MakeRelational(EQ, MakeVariable(0), MakeConst(0));
   CHECK_WRITE("if x1 = 0 ==> 1 then 1",
-      AddIf(MakeImplication(e1, e2, e3), AddNum(1), AddNum(0)));
+      MakeIf(MakeImplication(e1, l1, l0), MakeConst(1), MakeConst(0)));
   CHECK_WRITE("if x1 = 0 ==> 0 else 1 then 1",
-      AddIf(MakeImplication(e1, e3, e2), AddNum(1), AddNum(0)));
+      MakeIf(MakeImplication(e1, l0, l1), MakeConst(1), MakeConst(0)));
 }
 
 TEST_F(ExprTest, WriteIteratedLogicalExpr) {
   LogicalExpr args[] = {
-    AddRelational(EQ, AddVar(0), AddNum(0)),
-    AddBool(true),
-    AddBool(false)
+    MakeRelational(EQ, MakeVariable(0), MakeConst(0)), l1, l0
   };
   CHECK_WRITE("if /* forall */ (x1 = 0 && 1 && 0) then 1",
-      AddIf(MakeIteratedLogical(ANDLIST, args), AddNum(1), AddNum(0)));
+      MakeIf(MakeIteratedLogical(ANDLIST, args), MakeConst(1), MakeConst(0)));
   CHECK_WRITE("if /* exists */ (x1 = 0 || 1 || 0) then 1",
-      AddIf(MakeIteratedLogical(ORLIST, args), AddNum(1), AddNum(0)));
+      MakeIf(MakeIteratedLogical(ORLIST, args), MakeConst(1), MakeConst(0)));
 }
 
 TEST_F(ExprTest, WriteAllDiffExpr) {
+  NumericExpr args[] = {MakeConst(42), MakeConst(43), MakeConst(44)};
   CHECK_WRITE("if alldiff(42, 43, 44) then 1",
-      AddIf(AddAllDiff(AddNum(42), AddNum(43), AddNum(44)),
-          AddNum(1), AddNum(0)));
+      MakeIf(MakeAllDiff(args), MakeConst(1), MakeConst(0)));
 }
 
 TEST_F(ExprTest, WriteStringLiteral) {
@@ -1330,13 +1319,13 @@ TEST_F(ExprTest, WriteStringLiteral) {
 }
 
 TEST_F(ExprTest, UnaryExprPrecedence) {
-  auto x1 = AddVar(0);
-  CHECK_WRITE("--x1", AddUnary(OPUMINUS, AddUnary(OPUMINUS, x1)));
-  CHECK_WRITE("-(x1 ^ x1)", AddUnary(OPUMINUS, AddBinary(OPPOW, x1, x1)));
+  auto x1 = MakeVariable(0);
+  CHECK_WRITE("--x1", MakeUnary(OPUMINUS, MakeUnary(OPUMINUS, x1)));
+  CHECK_WRITE("-(x1 ^ x1)", MakeUnary(OPUMINUS, MakeBinary(OPPOW, x1, x1)));
 }
 
 TEST_F(ExprTest, UnaryFuncPrecedence) {
-  auto x1 = AddVar(0);
+  auto x1 = MakeVariable(0);
   int count = 0;
   for (int i = 0, size = sizeof(OP_INFO) / sizeof(*OP_INFO); i < size; ++i) {
     const OpInfo &info = OP_INFO[i];
@@ -1344,106 +1333,108 @@ TEST_F(ExprTest, UnaryFuncPrecedence) {
     if (info.kind != Expr::UNARY || code == OPUMINUS || code == OP2POW)
       continue;
     CHECK_WRITE(fmt::format("{0}({0}(x1))", info.str),
-        AddUnary(code, AddUnary(code, x1)));
+        MakeUnary(code, MakeUnary(code, x1)));
     CHECK_WRITE(fmt::format("{0}(x1 + x1)", info.str),
-        AddUnary(code, AddBinary(OPPLUS, x1, x1)));
+        MakeUnary(code, MakeBinary(OPPLUS, x1, x1)));
     ++count;
   }
   EXPECT_EQ(19, count);
 }
 
 TEST_F(ExprTest, Pow2Precedence) {
-  auto x1 = AddVar(0);
-  CHECK_WRITE("(x1 ^ 2) ^ 2", AddUnary(OP2POW, AddUnary(OP2POW, x1)));
-  CHECK_WRITE("(x1 * x1) ^ 2", AddUnary(OP2POW, AddBinary(OPMULT, x1, x1)));
+  auto x1 = MakeVariable(0);
+  CHECK_WRITE("(x1 ^ 2) ^ 2", MakeUnary(OP2POW, MakeUnary(OP2POW, x1)));
+  CHECK_WRITE("(x1 * x1) ^ 2", MakeUnary(OP2POW, MakeBinary(OPMULT, x1, x1)));
 }
 
 TEST_F(ExprTest, AdditiveExprPrecedence) {
-  auto x1 = AddVar(0), x2 = AddVar(1), x3 = AddVar(2);
+  auto x1 = MakeVariable(0), x2 = MakeVariable(1), x3 = MakeVariable(2);
   CHECK_WRITE("x1 + x2 + x3",
-      AddBinary(OPPLUS, AddBinary(OPPLUS, x1, x2), x3));
+      MakeBinary(OPPLUS, MakeBinary(OPPLUS, x1, x2), x3));
   CHECK_WRITE("x1 + x2 - x3",
-      AddBinary(OPMINUS, AddBinary(OPPLUS, x1, x2), x3));
+      MakeBinary(OPMINUS, MakeBinary(OPPLUS, x1, x2), x3));
   CHECK_WRITE("x1 + x2 less x3",
-      AddBinary(OPLESS, AddBinary(OPPLUS, x1, x2), x3));
+      MakeBinary(OPLESS, MakeBinary(OPPLUS, x1, x2), x3));
   CHECK_WRITE("x1 + (x2 + x3)",
-      AddBinary(OPPLUS, x1, AddBinary(OPPLUS, x2, x3)));
+      MakeBinary(OPPLUS, x1, MakeBinary(OPPLUS, x2, x3)));
   CHECK_WRITE("(x1 + x2) * x3",
-      AddBinary(OPMULT, AddBinary(OPPLUS, x1, x2), x3));
+      MakeBinary(OPMULT, MakeBinary(OPPLUS, x1, x2), x3));
   CHECK_WRITE("if 1 then x1 else x2 + x3",
-      AddIf(AddBool(true), x1, AddBinary(OPPLUS, x2, x3)));
+      MakeIf(l1, x1, MakeBinary(OPPLUS, x2, x3)));
 }
 
 TEST_F(ExprTest, MultiplicativeExprPrecedence) {
-  auto x1 = AddVar(0), x2 = AddVar(1), x3 = AddVar(2);
+  auto x1 = MakeVariable(0), x2 = MakeVariable(1), x3 = MakeVariable(2);
   CHECK_WRITE("x1 * x2 * x3",
-      AddBinary(OPMULT, AddBinary(OPMULT, x1, x2), x3));
+      MakeBinary(OPMULT, MakeBinary(OPMULT, x1, x2), x3));
   CHECK_WRITE("x1 * x2 / x3",
-      AddBinary(OPDIV, AddBinary(OPMULT, x1, x2), x3));
+      MakeBinary(OPDIV, MakeBinary(OPMULT, x1, x2), x3));
   CHECK_WRITE("x1 * x2 div x3",
-      AddBinary(OPintDIV, AddBinary(OPMULT, x1, x2), x3));
+      MakeBinary(OPintDIV, MakeBinary(OPMULT, x1, x2), x3));
   CHECK_WRITE("x1 * x2 mod x3",
-      AddBinary(OPREM, AddBinary(OPMULT, x1, x2), x3));
+      MakeBinary(OPREM, MakeBinary(OPMULT, x1, x2), x3));
   CHECK_WRITE("x1 * (x2 * x3)",
-      AddBinary(OPMULT, x1, AddBinary(OPMULT, x2, x3)));
+      MakeBinary(OPMULT, x1, MakeBinary(OPMULT, x2, x3)));
   CHECK_WRITE("(x1 * x2) ^ x3",
-      AddBinary(OPPOW, AddBinary(OPMULT, x1, x2), x3));
+      MakeBinary(OPPOW, MakeBinary(OPMULT, x1, x2), x3));
   CHECK_WRITE("(x1 + x2) * x3",
-      AddBinary(OPMULT, AddBinary(OPPLUS, x1, x2), x3));
+      MakeBinary(OPMULT, MakeBinary(OPPLUS, x1, x2), x3));
 }
 
 TEST_F(ExprTest, ExponentiationExprPrecedence) {
-  auto x1 = AddVar(0), x2 = AddVar(1), x3 = AddVar(2);
+  auto x1 = MakeVariable(0), x2 = MakeVariable(1), x3 = MakeVariable(2);
   CHECK_WRITE("x1 ^ x2 ^ x3",
-      AddBinary(OPPOW, x1, AddBinary(OPPOW, x2, x3)));
+      MakeBinary(OPPOW, x1, MakeBinary(OPPOW, x2, x3)));
   CHECK_WRITE("x1 ^ x2 ^ 3",
-      AddBinary(OPPOW, x1, AddBinary(OP1POW, x2, AddNum(3))));
+      MakeBinary(OPPOW, x1, MakeBinary(OP1POW, x2, MakeConst(3))));
   CHECK_WRITE("x1 ^ 3 ^ x2",
-      AddBinary(OPPOW, x1, AddBinary(OPCPOW, AddNum(3), x2)));
+      MakeBinary(OPPOW, x1, MakeBinary(OPCPOW, MakeConst(3), x2)));
   CHECK_WRITE("(x1 ^ 2) ^ 3",
-      AddBinary(OP1POW, AddBinary(OP1POW, x1, AddNum(2)), AddNum(3)));
+      MakeBinary(OP1POW, MakeBinary(OP1POW, x1, MakeConst(2)), MakeConst(3)));
   CHECK_WRITE("-x1 ^ -x2",
-      AddBinary(OPPOW, AddUnary(OPUMINUS, x1), AddUnary(OPUMINUS, x2)));
+      MakeBinary(OPPOW, MakeUnary(OPUMINUS, x1), MakeUnary(OPUMINUS, x2)));
   CHECK_WRITE("x1 ^ (x2 * x3)",
-      AddBinary(OPPOW, x1, AddBinary(OPMULT, x2, x3)));
+      MakeBinary(OPPOW, x1, MakeBinary(OPMULT, x2, x3)));
 }
 
 TEST_F(ExprTest, BinaryFuncPrecedence) {
-  auto x1 = AddVar(0);
-  auto e = AddBinary(OPPLUS, x1, x1);
+  auto x1 = MakeVariable(0);
+  auto e = MakeBinary(OPPLUS, x1, x1);
   CHECK_WRITE("atan2(atan2(x1, x1), x1 + x1)",
-      AddBinary(OP_atan2, AddBinary(OP_atan2, x1, x1), e));
+      MakeBinary(OP_atan2, MakeBinary(OP_atan2, x1, x1), e));
   CHECK_WRITE("precision(precision(x1, x1), x1 + x1)",
-      AddBinary(OPprecision, AddBinary(OPprecision, x1, x1), e));
+      MakeBinary(OPprecision, MakeBinary(OPprecision, x1, x1), e));
   CHECK_WRITE("round(round(x1, x1), x1 + x1)",
-      AddBinary(OPround, AddBinary(OPround, x1, x1), e));
+      MakeBinary(OPround, MakeBinary(OPround, x1, x1), e));
   CHECK_WRITE("trunc(trunc(x1, x1), x1 + x1)",
-      AddBinary(OPtrunc, AddBinary(OPtrunc, x1, x1), e));
+      MakeBinary(OPtrunc, MakeBinary(OPtrunc, x1, x1), e));
 }
 
 TEST_F(ExprTest, IfExprPrecedence) {
-  auto n0 = AddNum(0), n1 = AddNum(1), n2 = AddNum(2);
-  auto e = AddBinaryLogical(OPOR, AddBool(false), AddBool(true));
+  NumericExpr n0 = MakeConst(0), n1 = MakeConst(1), n2 = MakeConst(2);
+  LogicalExpr e = MakeBinaryLogical(OPOR, l0, l1);
   CHECK_WRITE("if 0 || 1 then if 0 || 1 then 1",
-      AddIf(e, AddIf(e, n1, n0), n0));
+      MakeIf(e, MakeIf(e, n1, n0), n0));
   CHECK_WRITE("if 0 || 1 then if 0 || 1 then 1 else 2",
-      AddIf(e, AddIf(e, n1, n2), n0));
+      MakeIf(e, MakeIf(e, n1, n2), n0));
   CHECK_WRITE("if 0 || 1 then (if 0 || 1 then 1) else 2",
-      AddIf(e, AddIf(e, n1, n0), n2));
+      MakeIf(e, MakeIf(e, n1, n0), n2));
   CHECK_WRITE("if 0 || 1 then 0 else if 0 || 1 then 1 else 2",
-      AddIf(e, n0, AddIf(e, n1, n2)));
+      MakeIf(e, n0, MakeIf(e, n1, n2)));
   CHECK_WRITE("if !(0 || 1) then x1 + 1",
-      AddIf(AddNot(e), AddBinary(OPPLUS, AddVar(0), n1), n0));
+      MakeIf(MakeNot(e), MakeBinary(OPPLUS, MakeVariable(0), n1), n0));
 }
 
 TEST_F(ExprTest, PiecewiseLinearExprPrecedence) {
-  double args[] = {-1, 5, 0, 10, 1};
+  double breakpoints[] = {5, 10};
+  double slopes[] = {-1, 0, 1};
+  NumericExpr e = MakePiecewiseLinear(2, breakpoints, slopes, MakeVariable(42));
   CHECK_WRITE("<<5, 10; -1, 0, 1>> x43 ^ 2",
-      AddBinary(OPPOW, AddPL(5, args, 42), AddNum(2)));
+      MakeBinary(OPPOW, e, MakeConst(2)));
 }
 
 TEST_F(ExprTest, CallExprPrecedence) {
-  auto x1 = AddVar(0), x2 = AddVar(1);
+  auto x1 = MakeVariable(0), x2 = MakeVariable(1);
   auto f = AddFunction(0, "foo", -1);
   Expr args[] = {
       MakeCall(f, MakeArrayRef<Expr>(0, 0)),
@@ -1455,188 +1446,194 @@ TEST_F(ExprTest, CallExprPrecedence) {
 }
 
 TEST_F(ExprTest, VarArgExprPrecedence) {
-  auto x1 = AddVar(0), x2 = AddVar(1);
-  auto e = AddBinary(OPPLUS, x1, x2);
-  CHECK_WRITE("min(x1 + x2, x1 + x2)", AddVarArg(MINLIST, e, e));
-  CHECK_WRITE("max(x1 + x2, x1 + x2)", AddVarArg(MAXLIST, e, e));
-  CHECK_WRITE("min(min(x1), min(x2))",
-      AddVarArg(MINLIST, AddVarArg(MINLIST, x1), AddVarArg(MINLIST, x2)));
-  CHECK_WRITE("max(max(x1), max(x2))",
-      AddVarArg(MAXLIST, AddVarArg(MAXLIST, x1), AddVarArg(MAXLIST, x2)));
+  NumericExpr x1 = MakeVariable(0), x2 = MakeVariable(1);
+  NumericExpr e = MakeBinary(OPPLUS, x1, x2);
+  NumericExpr args[] = {e, e};
+  CHECK_WRITE("min(x1 + x2, x1 + x2)", MakeVarArg(MINLIST, args));
+  CHECK_WRITE("max(x1 + x2, x1 + x2)", MakeVarArg(MAXLIST, args));
+  NumericExpr args2[] = {x1}, args3[] = {x2};
+  NumericExpr args4[] = {
+    MakeVarArg(MINLIST, args2), MakeVarArg(MINLIST, args3)
+  };
+  CHECK_WRITE("min(min(x1), min(x2))", MakeVarArg(MINLIST, args4));
+  NumericExpr args5[] = {
+    MakeVarArg(MAXLIST, args2), MakeVarArg(MAXLIST, args3)
+  };
+  CHECK_WRITE("max(max(x1), max(x2))", MakeVarArg(MAXLIST, args5));
 }
 
 TEST_F(ExprTest, SumExprPrecedence) {
-  auto x1 = AddVar(0), x2 = AddVar(1), x3 = AddVar(2);
-  CHECK_WRITE("/* sum */ (x1 + /* sum */ (x2 + x3))",
-      AddSum(x1, AddSum(x2, x3)));
-  CHECK_WRITE("/* sum */ (x1 + x2 * x3)",
-      AddSum(x1, AddBinary(OPMULT, x2, x3)));
-  CHECK_WRITE("/* sum */ ((x1 + x2) + x3)",
-      AddSum(AddBinary(OPPLUS, x1, x2), x3));
+  auto x1 = MakeVariable(0), x2 = MakeVariable(1), x3 = MakeVariable(2);
+  NumericExpr args1[] = {x2, x3};
+  NumericExpr args2[] = {x1, MakeSum(args1)};
+  CHECK_WRITE("/* sum */ (x1 + /* sum */ (x2 + x3))", MakeSum(args2));
+  NumericExpr args3[] = {x1, MakeBinary(OPMULT, x2, x3)};
+  CHECK_WRITE("/* sum */ (x1 + x2 * x3)", MakeSum(args3));
+  NumericExpr args4[] = {MakeBinary(OPPLUS, x1, x2), x3};
+  CHECK_WRITE("/* sum */ ((x1 + x2) + x3)", MakeSum(args4));
 }
 
 TEST_F(ExprTest, CountExprPrecedence) {
-  auto e = AddBinaryLogical(OPOR, AddBool(false), AddBool(false));
-  CHECK_WRITE("count(0 || 0, 0 || 0)", AddCount(e, e));
+  LogicalExpr e = MakeBinaryLogical(OPOR, l0, l1);
+  LogicalExpr args[] = {e, e};
+  CHECK_WRITE("count(0 || 0, 0 || 0)", MakeCount(args));
 }
 
 TEST_F(ExprTest, NumberOfExprPrecedence) {
-  auto x1 = AddVar(0), x2 = AddVar(1);
-  auto e = AddNumberOf(AddNum(42), x1, x2);
+  NumericExpr x1 = MakeVariable(0), x2 = MakeVariable(1);
+  NumericExpr args[] = {MakeConst(42), x1, x2};
+  NumericExpr e = MakeNumberOf(args);
+  NumericExpr args2[] = {e, e, e};
   CHECK_WRITE("numberof numberof 42 in (x1, x2) in ("
-      "numberof 42 in (x1, x2), numberof 42 in (x1, x2))",
-      AddNumberOf(e, e, e));
-  auto e2 = AddBinary(OPPLUS, x1, x2);
-  CHECK_WRITE("numberof x1 + x2 in (x1 + x2, x1 + x2)",
-      AddNumberOf(e2, e2, e2));
+      "numberof 42 in (x1, x2), numberof 42 in (x1, x2))", MakeNumberOf(args2));
+  NumericExpr e2 = MakeBinary(OPPLUS, x1, x2);
+  NumericExpr args3[] = {e2, e2, e2};
+  CHECK_WRITE("numberof x1 + x2 in (x1 + x2, x1 + x2)", MakeNumberOf(args3));
 }
 
 TEST_F(ExprTest, NotExprPrecedence) {
-  auto n0 = AddNum(0), n1 = AddNum(1);
+  NumericExpr n0 = MakeConst(0), n1 = MakeConst(1), x = MakeVariable(0);
   CHECK_WRITE("if !!(x1 = 0) then 1",
-      AddIf(AddNot(AddNot(AddRelational(EQ, AddVar(0), n0))), n1, n0));
+      MakeIf(MakeNot(MakeNot(MakeRelational(EQ, x, n0))), n1, n0));
 }
 
 TEST_F(ExprTest, LogicalOrExprPrecedence) {
-  auto n0 = AddNum(0), n1 = AddNum(1);
-  auto b0 = AddBool(false), b1 = AddBool(true);
+  auto n0 = MakeConst(0), n1 = MakeConst(1);
   CHECK_WRITE("if 0 || 1 || 1 then 1",
-      AddIf(AddBinaryLogical(OPOR, AddBinaryLogical(OPOR, b0, b1), b1),
+      MakeIf(MakeBinaryLogical(OPOR, MakeBinaryLogical(OPOR, l0, l1), l1),
           n1, n0));
   CHECK_WRITE("if 0 || (1 || 1) then 1",
-      AddIf(AddBinaryLogical(OPOR, b0, AddBinaryLogical(OPOR, b1, b1)),
+      MakeIf(MakeBinaryLogical(OPOR, l0, MakeBinaryLogical(OPOR, l1, l1)),
           n1, n0));
   CHECK_WRITE("if 0 || 1 && 1 then 1",
-      AddIf(AddBinaryLogical(OPOR, b0, AddBinaryLogical(OPAND, b1, b1)),
+      MakeIf(MakeBinaryLogical(OPOR, l0, MakeBinaryLogical(OPAND, l1, l1)),
           n1, n0));
 }
 
 TEST_F(ExprTest, LogicalAndExprPrecedence) {
-  auto n0 = AddNum(0), n1 = AddNum(1);
-  auto b0 = AddBool(false), b1 = AddBool(true);
+  auto n0 = MakeConst(0), n1 = MakeConst(1);
   CHECK_WRITE("if 0 && 1 && 1 then 1",
-      AddIf(AddBinaryLogical(OPAND, AddBinaryLogical(OPAND, b0, b1), b1),
+      MakeIf(MakeBinaryLogical(OPAND, MakeBinaryLogical(OPAND, l0, l1), l1),
           n1, n0));
   CHECK_WRITE("if 0 && (1 && 1) then 1",
-      AddIf(AddBinaryLogical(OPAND, b0, AddBinaryLogical(OPAND, b1, b1)),
+      MakeIf(MakeBinaryLogical(OPAND, l0, MakeBinaryLogical(OPAND, l1, l1)),
           n1, n0));
   CHECK_WRITE("if 0 <= 1 && 1 then 1",
-      AddIf(AddBinaryLogical(OPAND, AddRelational(LE, n0, n1), b1), n1, n0));
+      MakeIf(MakeBinaryLogical(OPAND, MakeRelational(LE, n0, n1), l1), n1, n0));
 }
 
 TEST_F(ExprTest, IffExprPrecedence) {
-  auto n0 = AddNum(0), n1 = AddNum(1);
-  auto b0 = AddBool(false), b1 = AddBool(true);
+  auto n0 = MakeConst(0), n1 = MakeConst(1);
   CHECK_WRITE("if 0 <==> 1 <==> 1 then 1",
-      AddIf(AddBinaryLogical(OP_IFF, AddBinaryLogical(OP_IFF, b0, b1), b1),
+      MakeIf(MakeBinaryLogical(OP_IFF, MakeBinaryLogical(OP_IFF, l0, l1), l1),
           n1, n0));
   CHECK_WRITE("if 0 <==> (1 <==> 1) then 1",
-      AddIf(AddBinaryLogical(OP_IFF, b0, AddBinaryLogical(OP_IFF, b1, b1)),
+      MakeIf(MakeBinaryLogical(OP_IFF, l0, MakeBinaryLogical(OP_IFF, l1, l1)),
           n1, n0));
   CHECK_WRITE("if (0 <==> 1) && 1 then 1",
-      AddIf(AddBinaryLogical(OPAND, AddBinaryLogical(OP_IFF, b0, b1), b1),
+      MakeIf(MakeBinaryLogical(OPAND, MakeBinaryLogical(OP_IFF, l0, l1), l1),
           n1, n0));
 }
 
 TEST_F(ExprTest, RelationalExprPrecedence) {
-  auto n0 = AddNum(0), n1 = AddNum(1);
-  auto e1 = AddBinary(OPPLUS, AddVar(0), n1);
-  auto e2 = AddBinary(OPPLUS, AddVar(1), n1);
+  auto n0 = MakeConst(0), n1 = MakeConst(1);
+  auto e1 = MakeBinary(OPPLUS, MakeVariable(0), n1);
+  auto e2 = MakeBinary(OPPLUS, MakeVariable(1), n1);
   CHECK_WRITE("if x1 + 1 < x2 + 1 then 1",
-      AddIf(AddRelational(LT, e1, e2), n1, n0));
+      MakeIf(MakeRelational(LT, e1, e2), n1, n0));
   CHECK_WRITE("if x1 + 1 <= x2 + 1 then 1",
-      AddIf(AddRelational(LE, e1, e2), n1, n0));
+      MakeIf(MakeRelational(LE, e1, e2), n1, n0));
   CHECK_WRITE("if x1 + 1 = x2 + 1 then 1",
-      AddIf(AddRelational(EQ, e1, e2), n1, n0));
+      MakeIf(MakeRelational(EQ, e1, e2), n1, n0));
   CHECK_WRITE("if x1 + 1 >= x2 + 1 then 1",
-      AddIf(AddRelational(GE, e1, e2), n1, n0));
+      MakeIf(MakeRelational(GE, e1, e2), n1, n0));
   CHECK_WRITE("if x1 + 1 > x2 + 1 then 1",
-      AddIf(AddRelational(GT, e1, e2), n1, n0));
+      MakeIf(MakeRelational(GT, e1, e2), n1, n0));
   CHECK_WRITE("if x1 + 1 != x2 + 1 then 1",
-      AddIf(AddRelational(NE, e1, e2), n1, n0));
+      MakeIf(MakeRelational(NE, e1, e2), n1, n0));
 }
 
 TEST_F(ExprTest, LogicalCountExprPrecedence) {
-  auto n0 = AddNum(0), n1 = AddNum(1), value = AddNum(42);
-  auto count1 = AddLogicalCount(OPATLEAST, value, AddCount(
-      AddRelational(EQ, AddVar(0), AddNum(0)), AddBool(true)));
-  auto count2 = AddCount(count1, AddBool(true));
+  NumericExpr n0 = MakeConst(0), n1 = MakeConst(1), lhs = MakeConst(42);
+  LogicalExpr args[] = {MakeRelational(EQ, MakeVariable(0), MakeConst(0)), l1};
+  LogicalExpr count1 = MakeLogicalCount(OPATLEAST, lhs, MakeCount(args));
+  LogicalExpr args2[] ={count1, l1};
+  CountExpr count2 = MakeCount(args2);
   CHECK_WRITE("if atleast 42 (atleast 42 (x1 = 0, 1), 1) then 1",
-      AddIf(AddLogicalCount(OPATLEAST, value, count2), n1, n0));
+      MakeIf(MakeLogicalCount(OPATLEAST, lhs, count2), n1, n0));
   CHECK_WRITE("if atmost 42 (atleast 42 (x1 = 0, 1), 1) then 1",
-      AddIf(AddLogicalCount(OPATMOST, value, count2), n1, n0));
+      MakeIf(MakeLogicalCount(OPATMOST, lhs, count2), n1, n0));
   CHECK_WRITE("if exactly 42 (atleast 42 (x1 = 0, 1), 1) then 1",
-      AddIf(AddLogicalCount(OPEXACTLY, value, count2), n1, n0));
+      MakeIf(MakeLogicalCount(OPEXACTLY, lhs, count2), n1, n0));
   CHECK_WRITE("if !atleast 42 (atleast 42 (x1 = 0, 1), 1) then 1",
-      AddIf(AddLogicalCount(OPNOTATLEAST, value, count2), n1, n0));
+      MakeIf(MakeLogicalCount(OPNOTATLEAST, lhs, count2), n1, n0));
   CHECK_WRITE("if !atmost 42 (atleast 42 (x1 = 0, 1), 1) then 1",
-      AddIf(AddLogicalCount(OPNOTATMOST, value, count2), n1, n0));
+      MakeIf(MakeLogicalCount(OPNOTATMOST, lhs, count2), n1, n0));
   CHECK_WRITE("if !exactly 42 (atleast 42 (x1 = 0, 1), 1) then 1",
-      AddIf(AddLogicalCount(OPNOTEXACTLY, value, count2), n1, n0));
+      MakeIf(MakeLogicalCount(OPNOTEXACTLY, lhs, count2), n1, n0));
 
-  auto count = AddCount(AddBool(false), AddBool(true));
+  args2[0] = l0;
+  CountExpr count = MakeCount(args2);
   CHECK_WRITE("if atleast 42 (0, 1) || 0 then 1",
-      AddIf(AddBinaryLogical(OPOR, AddLogicalCount(OPATLEAST, value, count),
-          AddBool(false)), n1, n0));
+      MakeIf(MakeBinaryLogical(OPOR, MakeLogicalCount(OPATLEAST, lhs, count),
+          l0), n1, n0));
   CHECK_WRITE("if atmost 42 (0, 1) || 0 then 1",
-      AddIf(AddBinaryLogical(OPOR, AddLogicalCount(OPATMOST, value, count),
-          AddBool(false)), n1, n0));
+      MakeIf(MakeBinaryLogical(OPOR, MakeLogicalCount(OPATMOST, lhs, count),
+          l0), n1, n0));
   CHECK_WRITE("if exactly 42 (0, 1) || 0 then 1",
-      AddIf(AddBinaryLogical(OPOR, AddLogicalCount(OPEXACTLY, value, count),
-          AddBool(false)), n1, n0));
+      MakeIf(MakeBinaryLogical(OPOR, MakeLogicalCount(OPEXACTLY, lhs, count),
+          l0), n1, n0));
   CHECK_WRITE("if !atleast 42 (0, 1) || 0 then 1",
-      AddIf(AddBinaryLogical(OPOR, AddLogicalCount(OPNOTATLEAST, value, count),
-          AddBool(false)), n1, n0));
+      MakeIf(MakeBinaryLogical(OPOR, MakeLogicalCount(OPNOTATLEAST, lhs, count),
+          l0), n1, n0));
   CHECK_WRITE("if !atmost 42 (0, 1) || 0 then 1",
-      AddIf(AddBinaryLogical(OPOR, AddLogicalCount(OPNOTATMOST, value, count),
-          AddBool(false)), n1, n0));
+      MakeIf(MakeBinaryLogical(OPOR, MakeLogicalCount(OPNOTATMOST, lhs, count),
+          l0), n1, n0));
   CHECK_WRITE("if !exactly 42 (0, 1) || 0 then 1",
-      AddIf(AddBinaryLogical(OPOR, AddLogicalCount(OPNOTEXACTLY, value, count),
-          AddBool(false)), n1, n0));
+      MakeIf(MakeBinaryLogical(OPOR, MakeLogicalCount(OPNOTEXACTLY, lhs, count),
+          l0), n1, n0));
 }
 
 TEST_F(ExprTest, IteratedLogicalExprPrecedence) {
-  auto b0 = AddBool(false);
-  auto n0 = AddNum(0), n1 = AddNum(1);
-  LogicalExpr args[] = {AddBinaryLogical(OPAND, b0, b0), b0};
+  auto n0 = MakeConst(0), n1 = MakeConst(1);
+  LogicalExpr args[] = {MakeBinaryLogical(OPAND, l0, l0), l0};
   CHECK_WRITE("if /* forall */ ((0 && 0) && 0) then 1",
-      AddIf(MakeIteratedLogical(ANDLIST, args), n1, n0));
-  args[0] = AddBinaryLogical(OPOR, b0, b0);
+      MakeIf(MakeIteratedLogical(ANDLIST, args), n1, n0));
+  args[0] = MakeBinaryLogical(OPOR, l0, l0);
   CHECK_WRITE("if /* exists */ ((0 || 0) || 0) then 1",
-      AddIf(MakeIteratedLogical(ORLIST, args), n1, n0));
-  args[0] = b0;
-  LogicalExpr args2[] = {MakeIteratedLogical(ANDLIST, args), b0};
+      MakeIf(MakeIteratedLogical(ORLIST, args), n1, n0));
+  args[0] = l0;
+  LogicalExpr args2[] = {MakeIteratedLogical(ANDLIST, args), l0};
   CHECK_WRITE("if /* forall */ (/* forall */ (0 && 0) && 0) then 1",
-      AddIf(MakeIteratedLogical(ANDLIST, args2), n1, n0));
+      MakeIf(MakeIteratedLogical(ANDLIST, args2), n1, n0));
   args2[0] = MakeIteratedLogical(ORLIST, args);
   CHECK_WRITE("if /* exists */ (/* exists */ (0 || 0) || 0) then 1",
-      AddIf(MakeIteratedLogical(ORLIST, args2), n1, n0));
+      MakeIf(MakeIteratedLogical(ORLIST, args2), n1, n0));
 }
 
 TEST_F(ExprTest, ImplicationExprPrecedence) {
-  auto n0 = AddNum(0), n1 = AddNum(1);
-  auto b0 = AddBool(false), b1 = AddBool(true);
+  NumericConstant n0 = MakeConst(0), n1 = MakeConst(1);
   CHECK_WRITE("if 0 ==> 1 ==> 0 then 1",
-      AddIf(MakeImplication(MakeImplication(b0, b1, b0), b0, b0), n1, n0));
+      MakeIf(MakeImplication(MakeImplication(l0, l1, l0), l0, l0), n1, n0));
   CHECK_WRITE("if 0 ==> 1 ==> 0 else 1 then 1",
-      AddIf(MakeImplication(MakeImplication(b0, b1, b0), b0, b1), n1, n0));
+      MakeIf(MakeImplication(MakeImplication(l0, l1, l0), l0, l1), n1, n0));
   CHECK_WRITE("if 0 ==> 1 else 0 ==> 1 then 1",
-      AddIf(MakeImplication(b0, b1, MakeImplication(b0, b1, b0)), n1, n0));
+      MakeIf(MakeImplication(l0, l1, MakeImplication(l0, l1, l0)), n1, n0));
   CHECK_WRITE("if 0 ==> (1 ==> 0) else 1 then 1",
-      AddIf(MakeImplication(b0, MakeImplication(b1, b0, b0), b1), n1, n0));
+      MakeIf(MakeImplication(l0, MakeImplication(l1, l0, l0), l1), n1, n0));
   CHECK_WRITE("if 0 ==> (1 ==> 0 else 1) then 1",
-      AddIf(MakeImplication(b0, MakeImplication(b1, b0, b1), b0), n1, n0));
+      MakeIf(MakeImplication(l0, MakeImplication(l1, l0, l1), l0), n1, n0));
   CHECK_WRITE("if 0 ==> 1 || 0 else 1 then 1",
-      AddIf(MakeImplication(b0, AddBinaryLogical(OPOR, b1, b0), b1), n1, n0));
-  CHECK_WRITE("if 0 ==> (1 <==> 0) else 1 then 1",
-      AddIf(MakeImplication(b0, AddBinaryLogical(OP_IFF, b1, b0), b1), n1, n0));
+      MakeIf(MakeImplication(l0, MakeBinaryLogical(OPOR, l1, l0), l1), n1, n0));
+  CHECK_WRITE("if 0 ==> (1 <==> 0) else 1 then 1", MakeIf(
+           MakeImplication(l0, MakeBinaryLogical(OP_IFF, l1, l0), l1), n1, n0));
 }
 
 TEST_F(ExprTest, AllDiffExprPrecedence) {
-  auto n0 = AddNum(0), n1 = AddNum(1);
+  NumericConstant n0 = MakeConst(0), n1 = MakeConst(1);
+  NumericExpr args[] = {MakeBinary(OPPLUS, n0, n1), MakeBinary(OPPLUS, n0, n1)};
   CHECK_WRITE("if alldiff(0 + 1, 0 + 1) then 1",
-      AddIf(AddAllDiff(AddBinary(OPPLUS, n0, n1),
-          AddBinary(OPPLUS, n0, n1)), n1, n0));
+      MakeIf(MakeAllDiff(args), n1, n0));
 }
 
 #ifdef HAVE_UNORDERED_MAP
@@ -1652,7 +1649,7 @@ TEST_F(ExprTest, HashNumericConstant) {
 TEST_F(ExprTest, HashVariable) {
   size_t hash = HashCombine(0, OPVARVAL);
   hash = HashCombine(hash, 42);
-  EXPECT_EQ(hash, std::hash<NumericExpr>()(AddVar(42)));
+  EXPECT_EQ(hash, std::hash<NumericExpr>()(MakeVariable(42)));
 }
 
 template <Expr::Kind K, typename Base>
@@ -1816,23 +1813,21 @@ TEST_F(ExprTest, HashStringLiteral) {
 }
 
 TEST_F(ExprTest, HashNumberOfArgs) {
-  size_t hash = HashCombine<NumericExpr>(0, AddVar(11));
-  hash = HashCombine<NumericExpr>(hash, AddNum(22));
-  EXPECT_EQ(hash, ampl::internal::HashNumberOfArgs()(
-      AddNumberOf(AddNum(42), AddVar(11), AddNum(22))));
+  size_t hash = HashCombine<NumericExpr>(0, MakeVariable(11));
+  hash = HashCombine<NumericExpr>(hash, MakeConst(22));
+  NumericExpr args[] = {MakeConst(42), MakeVariable(11), MakeConst(22)};
+  EXPECT_EQ(hash, ampl::internal::HashNumberOfArgs()(MakeNumberOf(args)));
 }
 
 TEST_F(ExprTest, EqualNumberOfArgs) {
   using ampl::internal::EqualNumberOfArgs;
-  EXPECT_TRUE(EqualNumberOfArgs()(
-      AddNumberOf(AddNum(0), AddVar(11), AddNum(22)),
-      AddNumberOf(AddNum(1), AddVar(11), AddNum(22))));
-  EXPECT_FALSE(EqualNumberOfArgs()(
-      AddNumberOf(AddNum(0), AddVar(11), AddNum(22)),
-      AddNumberOf(AddNum(1), AddVar(11))));
-  EXPECT_FALSE(EqualNumberOfArgs()(
-      AddNumberOf(AddNum(0), AddVar(11), AddNum(22)),
-      AddNumberOf(AddNum(1), AddVar(11), AddNum(33))));
+  NumericExpr args1[] = {MakeConst(0), MakeVariable(11), MakeConst(22)};
+  NumericExpr args2[] = {MakeConst(1), MakeVariable(11), MakeConst(22)};
+  EXPECT_TRUE(EqualNumberOfArgs()(MakeNumberOf(args1), MakeNumberOf(args2)));
+  NumericExpr args3[] = {MakeConst(1), MakeVariable(11)};
+  EXPECT_FALSE(EqualNumberOfArgs()(MakeNumberOf(args1), MakeNumberOf(args3)));
+  NumericExpr args4[] = {MakeConst(1), MakeVariable(11), MakeConst(33)};
+  EXPECT_FALSE(EqualNumberOfArgs()(MakeNumberOf(args1), MakeNumberOf(args4)));
 }
 
 struct TestNumberOf {
@@ -1843,15 +1838,16 @@ struct TestNumberOf {
 
 TEST_F(ExprTest, MatchNumberOfArgs) {
   using ampl::internal::MatchNumberOfArgs;
+  NumericExpr args1[] = {MakeConst(1), MakeVariable(11), MakeConst(22)};
+  NumericExpr args2[] = {MakeConst(0), MakeVariable(11), MakeConst(22)};
   EXPECT_TRUE(MatchNumberOfArgs<TestNumberOf>(
-      AddNumberOf(AddNum(1), AddVar(11), AddNum(22)))(
-          TestNumberOf(AddNumberOf(AddNum(0), AddVar(11), AddNum(22)))));
+      MakeNumberOf(args1))(TestNumberOf(MakeNumberOf(args2))));
+  NumericExpr args3[] = {MakeConst(1), MakeVariable(11)};
   EXPECT_FALSE(MatchNumberOfArgs<TestNumberOf>(
-      AddNumberOf(AddNum(1), AddVar(11)))(
-          TestNumberOf(AddNumberOf(AddNum(0), AddVar(11), AddNum(22)))));
+      MakeNumberOf(args3))(TestNumberOf(MakeNumberOf(args2))));
+  NumericExpr args4[] = {MakeConst(1), MakeVariable(11), MakeConst(33)};
   EXPECT_FALSE(MatchNumberOfArgs<TestNumberOf>(
-      AddNumberOf(AddNum(1), AddVar(11), AddNum(33)))(
-          TestNumberOf(AddNumberOf(AddNum(0), AddVar(11), AddNum(22)))));
+      MakeNumberOf(args4))(TestNumberOf(MakeNumberOf(args2))));
 }
 #endif
 }
