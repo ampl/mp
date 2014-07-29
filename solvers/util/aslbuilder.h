@@ -127,16 +127,10 @@ class ASLBuilder {
   // Ends building the ASL object.
   void EndBuild();
 
-  // Adds an objective.
+  // Adds an objective to the problem.
   void AddObj(int obj_index, bool maximize, NumericExpr expr);
 
   Function AddFunction(int index, const char *name, int num_args, int type = 0);
-
-  NumericConstant MakeNumericConstant(double value) {
-    return Expr::Create<NumericConstant>(MakeConstant(value));
-  }
-
-  Variable MakeVariable(int var_index);
 
   // The Make* methods construct expression objects. These objects are
   // local to the currently built ASL problem and shouldn't be used with
@@ -144,6 +138,12 @@ class ASLBuilder {
   // problem API until they are added as a part of objective or constraint
   // expression. For this reason the methods below use a different naming
   // convention from the Add* methods.
+
+  NumericConstant MakeNumericConstant(double value) {
+    return Expr::Create<NumericConstant>(MakeConstant(value));
+  }
+
+  Variable MakeVariable(int var_index);
 
   UnaryExpr MakeUnary(int opcode, NumericExpr arg);
 
