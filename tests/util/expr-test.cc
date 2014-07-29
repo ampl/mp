@@ -1662,7 +1662,7 @@ TEST_F(ExprTest, HashUnaryExpr) {
   CheckHash(builder.MakeUnary(OPUMINUS, builder.MakeVariable(0)));
 }
 
-template <typename Expr, typename Base, typename Arg = Base>
+template <typename Expr, typename Base, typename Arg>
 void CheckHashBinary(Expr e) {
   size_t hash = HashCombine(0, e.opcode());
   hash = HashCombine<Arg>(hash, e.lhs());
@@ -1728,7 +1728,7 @@ TEST_F(ExprTest, HashCallExpr) {
   EXPECT_EQ(hash, std::hash<NumericExpr>()(builder.MakeCall(f, args)));
 }
 
-template <typename Expr, typename Arg, typename Base = Arg>
+template <typename Expr, typename Arg, typename Base>
 size_t CheckHash(Expr e) {
   size_t hash = HashCombine(0, e.opcode());
   for (typename Expr::iterator i = e.begin(), end = e.end(); i != end; ++i)
@@ -1751,7 +1751,8 @@ TEST_F(ExprTest, HashNumericVarArgExpr) {
     builder.MakeVariable(1),
     builder.MakeNumericConstant(42)
   };
-  CheckHash<VarArgExpr, NumericExpr>(builder.MakeVarArg(MINLIST, args));
+  CheckHash<VarArgExpr, NumericExpr, NumericExpr>(
+        builder.MakeVarArg(MINLIST, args));
   CheckHash(builder.MakeSum(args));
   CheckHash(builder.MakeNumberOf(args));
 }
