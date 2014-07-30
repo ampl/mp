@@ -21,9 +21,10 @@
  */
 
 #include "gtest/gtest.h"
+#include "solvers/util/aslbuilder.h"
+#include "solvers/util/nl.h"
 #include "solvers/util/problem.h"
 #include "tests/config.h"
-#include "tests/expr-builder.h"
 #include "tests/util.h"
 
 using ampl::CONTINUOUS;
@@ -464,12 +465,22 @@ TEST(ProblemTest, AddVar) {
   EXPECT_THROW(p.AddVar(0, 0), ampl::Error);
 }
 
+class TestASLBuilder : public ampl::internal::ASLBuilder {
+ public:
+  TestASLBuilder() {
+    ampl::NLHeader header = {};
+    header.num_vars = header.num_objs = 1;
+    BeginBuild("", header, 0);
+  }
+};
+
 TEST(ProblemTest, AddCon) {
   Problem p;
   p.AddVar(0, 0);
   EXPECT_EQ(0, p.num_logical_cons());
-  ampl::ExprBuilder eb;
-  ampl::LogicalExpr expr = eb.AddRelational(EQ, eb.AddVar(0), eb.AddNum(0));
+  TestASLBuilder builder;
+  ampl::LogicalExpr expr = builder.MakeRelational(
+        EQ, builder.MakeVariable(0), builder.MakeNumericConstant(0));
   p.AddCon(expr);
   EXPECT_EQ(0, p.num_cons());
   EXPECT_EQ(1, p.num_logical_cons());
@@ -483,8 +494,9 @@ TEST(ProblemTest, AddObj) {
   Problem p;
   p.AddVar(0, 0);
   EXPECT_EQ(0, p.num_objs());
-  ampl::ExprBuilder eb;
-  ampl::NumericExpr expr = eb.AddBinary(OPPLUS, eb.AddVar(0), eb.AddNum(1));
+  TestASLBuilder builder;
+  ampl::NumericExpr expr = builder.MakeBinary(
+        OPPLUS, builder.MakeVariable(0), builder.MakeNumericConstant(1));
   p.AddObj(ampl::MAX, expr);
   EXPECT_EQ(1, p.num_objs());
   EXPECT_EQ(ampl::MAX, p.obj_type(0));
