@@ -28,12 +28,29 @@
 #ifndef SAFEINT_H_
 #define SAFEINT_H_
 
+#include <exception>
 #include <limits>
 
-class OverflowError : public std::runtime_error {
+class OverflowError : public std::exception {
  public:
-  OverflowError() : std::runtime_error("integer overflow") {}
+  const char *what() const throw() { return "integer overflow"; }
 };
+
+template <typename T>
+struct MakeUnsigned;
+
+template <>
+struct MakeUnsigned<int> { typedef unsigned Type; };
+
+// Safe std::abs replacement. Unlike std::abs, SafeAbs doesn't result
+// in undefined behavior for std::numeric_limits<T>::min().
+template <typename T>
+inline typename MakeUnsigned<T>::Type SafeAbs(T value) {
+  typename MakeUnsigned<T>::Type result = value;
+  if (value < 0)
+    result = 0 - result;
+  return result;
+}
 
 template <typename T>
 class SafeInt {
@@ -92,10 +109,10 @@ inline SafeInt<T2> operator-(T1 a, SafeInt<T2> b) { return SafeInt<T2>(a) - b; }
 template <typename T>
 inline SafeInt<T> operator*(SafeInt<T> a, SafeInt<T> b) {
   T a_value = a.value(), b_value = b.value();
-  // Only nonnegative case is handled.
-  assert(a_value >= 0 && b_value >= 0);
-  if (b_value != 0 && a_value > std::numeric_limits<T>::max() / b_value)
+  if (b_value != 0 &&
+      SafeAbs(a_value) > std::numeric_limits<T>::max() / SafeAbs(b_value)) {
     throw OverflowError();
+  }
   return a_value * b_value;
 }
 

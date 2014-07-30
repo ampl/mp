@@ -30,6 +30,12 @@
 #include <climits>
 #include "solvers/util/safeint.h"
 
+TEST(SafeIntTest, SafeAbs) {
+  EXPECT_EQ(42, SafeAbs(42));
+  EXPECT_EQ(42, SafeAbs(-42));
+  EXPECT_EQ(INT_MAX + 1u, SafeAbs(INT_MIN));
+}
+
 TEST(SafeIntTest, Ctor) {
   SafeInt<int> n(42);
   EXPECT_EQ(42, n.value());
@@ -77,6 +83,9 @@ TEST(SafeIntTest, Mul) {
 }
 
 TEST(SafeIntTest, MulOverflow) {
+  EXPECT_THROW(SafeInt<int>(INT_MIN) * -1, OverflowError);
   EXPECT_THROW(SafeInt<int>(INT_MAX / 2) * 3, OverflowError);
   EXPECT_THROW(SafeInt<int>(101) * (INT_MAX / 100), OverflowError);
+  EXPECT_THROW(SafeInt<int>(-101) * (INT_MAX / 100), OverflowError);
+  EXPECT_THROW(SafeInt<int>(101) * -(INT_MAX / 100), OverflowError);
 }
