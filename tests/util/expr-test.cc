@@ -166,6 +166,8 @@ class ExprTest : public ::testing::Test, public ampl::internal::ASLBuilder {
   NumericExpr n1, n2;
   LogicalConstant l0, l1;
 
+  enum {NUM_VARS = 50};
+
   NumericConstant MakeConst(double value) {
     return builder.MakeNumericConstant(value);
   }
@@ -173,7 +175,7 @@ class ExprTest : public ::testing::Test, public ampl::internal::ASLBuilder {
  public:
   ExprTest() {
     ampl::NLHeader header = {};
-    header.num_vars = 50;
+    header.num_vars = NUM_VARS;
     header.num_objs = 1;
     header.num_funcs = 2;
     BeginBuild("", header, ampl::internal::ASL_STANDARD_OPCODES);
@@ -575,7 +577,7 @@ TEST_F(ExprTest, Variable) {
   var = builder.MakeVariable(9);
   EXPECT_EQ(9, var.index());
   EXPECT_DEBUG_DEATH(builder.MakeVariable(-1);, "Assertion");  // NOLINT(*)
-  EXPECT_DEBUG_DEATH(builder.MakeVariable(10);, "Assertion");  // NOLINT(*)
+  EXPECT_DEBUG_DEATH(builder.MakeVariable(NUM_VARS);, "Assertion");  // NOLINT(*)
 }
 
 TEST_F(ExprTest, UnaryExpr) {
@@ -837,10 +839,6 @@ TEST_F(ExprTest, StringLiteral) {
   EXPECT_EQ(1, CheckExpr<StringLiteral>(Expr::STRING));
   StringLiteral e = builder.MakeStringLiteral("abc");
   EXPECT_STREQ("abc", e.value());
-#ifndef NDEBUG
-  EXPECT_DEBUG_DEATH(builder.MakeStringLiteral(
-    fmt::StringRef("abc", INT_MAX + 1u));, "Assertion");  // NOLINT(*)
-#endif
 }
 
 struct TestResult {
@@ -1476,7 +1474,7 @@ TEST_F(ExprTest, SumExprPrecedence) {
 TEST_F(ExprTest, CountExprPrecedence) {
   LogicalExpr e = MakeBinaryLogical(OPOR, l0, l1);
   LogicalExpr args[] = {e, e};
-  CHECK_WRITE("count(0 || 0, 0 || 0)", MakeCount(args));
+  CHECK_WRITE("count(0 || 1, 0 || 1)", MakeCount(args));
 }
 
 TEST_F(ExprTest, NumberOfExprPrecedence) {
