@@ -43,8 +43,10 @@ class SafeInt {
 
   template <typename U>
   explicit SafeInt(U value) : value_(value) {
-    if (value_ != value)
+    if (value < std::numeric_limits<T>::min() ||
+        value > std::numeric_limits<T>::max()) {
       throw OverflowError();
+    }
   }
   
   T value() const { return value_; }
