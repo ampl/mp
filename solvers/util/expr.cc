@@ -33,13 +33,6 @@ using ampl::NumericConstant;
 using ampl::NumericExpr;
 using ampl::LogicalExpr;
 
-namespace std {
-template <>
-struct hash<Expr> {
-  std::size_t operator()(Expr e) const;
-};
-}
-
 namespace {
 // An operation type.
 // Numeric values for the operation types should be in sync with the ones in
@@ -350,6 +343,13 @@ void ExprWriter::VisitImplication(ampl::ImplicationExpr e) {
 }
 
 #ifdef HAVE_UNORDERED_MAP
+
+namespace std {
+template <>
+struct hash<Expr> {
+  std::size_t operator()(Expr e) const;
+};
+}
 
 using ampl::internal::HashCombine;
 
