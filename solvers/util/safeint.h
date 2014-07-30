@@ -28,6 +28,8 @@
 #ifndef SAFEINT_H_
 #define SAFEINT_H_
 
+#include <limits>
+
 class OverflowError : public std::runtime_error {
  public:
   OverflowError() : std::runtime_error("integer overflow") {}
@@ -43,7 +45,8 @@ class SafeInt {
 
   template <typename U>
   explicit SafeInt(U value) : value_(value) {
-    if (value < std::numeric_limits<T>::min() ||
+    if ((std::numeric_limits<U>::is_signed &&
+         value < std::numeric_limits<T>::min()) ||
         value > std::numeric_limits<T>::max()) {
       throw OverflowError();
     }

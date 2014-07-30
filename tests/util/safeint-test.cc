@@ -34,6 +34,7 @@ TEST(SafeIntTest, Ctor) {
   SafeInt<int> n(42);
   EXPECT_EQ(42, n.value());
   EXPECT_THROW(SafeInt<int>(INT_MAX + 1u), OverflowError);
+  EXPECT_EQ(42, SafeInt<int>(42u).value());
 }
 
 TEST(SafeIntTest, Add) {
