@@ -160,9 +160,9 @@ void TestExpr::TestArrayIterator() {
   EXPECT_EQ(OPPLUS, vec[1].opcode());
 }
 
-class ExprTest : public ::testing::Test, public ampl::internal::ASLBuilder {
+class ExprTest : public ::testing::Test {
  protected:
-  ASLBuilder builder;
+  ampl::internal::ASLBuilder builder;
   NumericExpr n1, n2;
   LogicalConstant l0, l1;
 
@@ -172,14 +172,48 @@ class ExprTest : public ::testing::Test, public ampl::internal::ASLBuilder {
     return builder.MakeNumericConstant(value);
   }
 
- public:
+  Variable MakeVariable(int index) { return builder.MakeVariable(index); }
+
+  UnaryExpr MakeUnary(int opcode, NumericExpr arg) {
+    return builder.MakeUnary(opcode, arg);
+  }
+
+  BinaryExpr MakeBinary(int opcode, NumericExpr lhs, NumericExpr rhs) {
+    return builder.MakeBinary(opcode, lhs, rhs);
+  }
+
+  IfExpr MakeIf(LogicalExpr condition,
+      NumericExpr true_expr, NumericExpr false_expr) {
+    return builder.MakeIf(condition, true_expr, false_expr);
+  }
+
+  BinaryLogicalExpr MakeBinaryLogical(
+      int opcode, LogicalExpr lhs, LogicalExpr rhs) {
+    return builder.MakeBinaryLogical(opcode, lhs, rhs);
+  }
+
+  RelationalExpr MakeRelational(int opcode, NumericExpr lhs, NumericExpr rhs) {
+    return builder.MakeRelational(opcode, lhs, rhs);
+  }
+
+  LogicalCountExpr MakeLogicalCount(
+      int opcode, NumericExpr lhs, CountExpr rhs) {
+    return builder.MakeLogicalCount(opcode, lhs, rhs);
+  }
+
+  ImplicationExpr MakeImplication(
+      LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
+    return builder.MakeImplication(condition, true_expr, false_expr);
+  }
+
+public:
   ExprTest() {
     ampl::NLHeader header = {};
     header.num_vars = NUM_VARS;
     header.num_objs = 1;
     header.num_funcs = 2;
-    BeginBuild("", header, ampl::internal::ASL_STANDARD_OPCODES);
-    builder.BeginBuild("", header, ampl::internal::ASL_STANDARD_OPCODES);
+    int flags = ampl::internal::ASL_STANDARD_OPCODES | ASL_allow_missing_funcs;
+    builder.BeginBuild("", header, flags);
     n1 = builder.MakeNumericConstant(1);
     n2 = builder.MakeNumericConstant(2);
     l0 = builder.MakeLogicalConstant(false);
@@ -467,26 +501,26 @@ TEST_F(ExprTest, EqualBinaryExpr) {
 
 TEST_F(ExprTest, EqualIfExpr) {
   NumericExpr e =
-      MakeIf(MakeLogicalConstant(0), MakeVariable(1), MakeConst(42));
-  EXPECT_TRUE(Equal(
-      e, MakeIf(MakeLogicalConstant(0), MakeVariable(1), MakeConst(42))));
+      MakeIf(builder.MakeLogicalConstant(0), MakeVariable(1), MakeConst(42));
+  EXPECT_TRUE(Equal(e,
+      MakeIf(builder.MakeLogicalConstant(0), MakeVariable(1), MakeConst(42))));
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
-  EXPECT_FALSE(Equal(e, MakeSum(args)));
-  EXPECT_FALSE(Equal(
-      e, MakeIf(MakeLogicalConstant(0), MakeVariable(1), MakeConst(0))));
+  EXPECT_FALSE(Equal(e, builder.MakeSum(args)));
+  EXPECT_FALSE(Equal(e,
+    MakeIf(builder.MakeLogicalConstant(0), MakeVariable(1), MakeConst(0))));
   EXPECT_FALSE(Equal(e, MakeConst(42)));
 }
 
 TEST_F(ExprTest, EqualPiecewiseLinear) {
-  double breakpoints[] = {5, 10};
+  double breaks[] = {5, 10};
   double slopes[] = {-1, 0, 1};
   Variable x = MakeVariable(0), y = MakeVariable(1);
-  NumericExpr e = MakePiecewiseLinear(2, breakpoints, slopes, x);
-  EXPECT_TRUE(Equal(e, MakePiecewiseLinear(2, breakpoints, slopes, x)));
-  EXPECT_FALSE(Equal(e, MakePiecewiseLinear(1, breakpoints, slopes, x)));
-  EXPECT_FALSE(Equal(e, MakePiecewiseLinear(2, breakpoints, slopes, y)));
-  double breakpoints2[] = {5, 11};
-  EXPECT_FALSE(Equal(e, MakePiecewiseLinear(2, breakpoints2, slopes, x)));
+  NumericExpr e = builder.MakePiecewiseLinear(2, breaks, slopes, x);
+  EXPECT_TRUE(Equal(e, builder.MakePiecewiseLinear(2, breaks, slopes, x)));
+  EXPECT_FALSE(Equal(e, builder.MakePiecewiseLinear(1, breaks, slopes, x)));
+  EXPECT_FALSE(Equal(e, builder.MakePiecewiseLinear(2, breaks, slopes, y)));
+  double breaks2[] = {5, 11};
+  EXPECT_FALSE(Equal(e, builder.MakePiecewiseLinear(2, breaks2, slopes, x)));
   EXPECT_FALSE(Equal(e, MakeConst(42)));
 }
 
@@ -495,61 +529,62 @@ TEST_F(ExprTest, EqualVarArgExpr) {
   // args2 is used to make sure that Equal compares expressions structurally
   // instead of comparing pointers; don't replace with args.
   NumericExpr args2[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
-  NumericExpr e = MakeVarArg(MINLIST, args1);
-  EXPECT_TRUE(Equal(e, MakeVarArg(MINLIST, args2)));
+  NumericExpr e = builder.MakeVarArg(MINLIST, args1);
+  EXPECT_TRUE(Equal(e, builder.MakeVarArg(MINLIST, args2)));
   NumericExpr args3[] = {MakeVariable(0), MakeVariable(1)};
-  EXPECT_FALSE(Equal(e, MakeVarArg(MINLIST, args3)));
-  EXPECT_FALSE(Equal(MakeVarArg(MINLIST, args3), MakeVarArg(MINLIST, args1)));
-  EXPECT_FALSE(Equal(e, MakeVarArg(MAXLIST, args1)));
+  EXPECT_FALSE(Equal(e, builder.MakeVarArg(MINLIST, args3)));
+  EXPECT_FALSE(Equal(builder.MakeVarArg(MINLIST, args3),
+                     builder.MakeVarArg(MINLIST, args1)));
+  EXPECT_FALSE(Equal(e, builder.MakeVarArg(MAXLIST, args1)));
   NumericExpr args4[] = {MakeVariable(0), MakeVariable(1), MakeConst(0)};
-  EXPECT_FALSE(Equal(e, MakeVarArg(MINLIST, args4)));
+  EXPECT_FALSE(Equal(e, builder.MakeVarArg(MINLIST, args4)));
   EXPECT_FALSE(Equal(e, MakeConst(42)));
 }
 
 TEST_F(ExprTest, EqualSumExpr) {
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
-  NumericExpr e = MakeSum(args);
+  NumericExpr e = builder.MakeSum(args);
   // args2 is used to make sure that Equal compares expressions structurally
   // instead of comparing pointers; don't replace with args.
   NumericExpr args2[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
-  EXPECT_TRUE(Equal(e, MakeSum(args2)));
+  EXPECT_TRUE(Equal(e, builder.MakeSum(args2)));
   NumericExpr args3[] = {MakeVariable(0), MakeVariable(1)};
-  EXPECT_FALSE(Equal(e, MakeSum(args3)));
-  EXPECT_FALSE(Equal(MakeSum(args3), e));
+  EXPECT_FALSE(Equal(e, builder.MakeSum(args3)));
+  EXPECT_FALSE(Equal(builder.MakeSum(args3), e));
   LogicalExpr args4[] = {l0, l1, l1};
-  EXPECT_FALSE(Equal(e, MakeCount(args4)));
+  EXPECT_FALSE(Equal(e, builder.MakeCount(args4)));
   NumericExpr args5[] = {MakeVariable(0), MakeVariable(1), MakeConst(0)};
-  EXPECT_FALSE(Equal(e, MakeSum(args5)));
+  EXPECT_FALSE(Equal(e, builder.MakeSum(args5)));
   EXPECT_FALSE(Equal(e, MakeConst(42)));
 }
 
 TEST_F(ExprTest, EqualCountExpr) {
   LogicalExpr args[] = {l0, l1, l1};
-  NumericExpr e = MakeCount(args);
+  NumericExpr e = builder.MakeCount(args);
   // args2 is used to make sure that Equal compares expressions structurally
   // instead of comparing pointers; don't replace with args.
   LogicalExpr args2[] = {
-    MakeLogicalConstant(false),
-    MakeLogicalConstant(true),
-    MakeLogicalConstant(true)
+    builder.MakeLogicalConstant(false),
+    builder.MakeLogicalConstant(true),
+    builder.MakeLogicalConstant(true)
   };
-  EXPECT_TRUE(Equal(e, MakeCount(args2)));
+  EXPECT_TRUE(Equal(e, builder.MakeCount(args2)));
   LogicalExpr args3[] = {l0, l1};
-  EXPECT_FALSE(Equal(e, MakeCount(args3)));
-  EXPECT_FALSE(Equal(MakeCount(args3), e));
+  EXPECT_FALSE(Equal(e, builder.MakeCount(args3)));
+  EXPECT_FALSE(Equal(builder.MakeCount(args3), e));
   NumericExpr args4[] = {MakeConst(0), MakeConst(1), MakeConst(1)};
-  EXPECT_FALSE(Equal(e, MakeSum(args4)));
+  EXPECT_FALSE(Equal(e, builder.MakeSum(args4)));
   LogicalExpr args5[] = {l0, l1, l0};
-  EXPECT_FALSE(Equal(e, MakeCount(args5)));
+  EXPECT_FALSE(Equal(e, builder.MakeCount(args5)));
   EXPECT_FALSE(Equal(e, l1));
 }
 
 TEST_F(ExprTest, EqualStringLiteral) {
-  StringLiteral s1 = MakeStringLiteral("abc");
-  StringLiteral s2 = MakeStringLiteral("abc");
+  StringLiteral s1 = builder.MakeStringLiteral("abc");
+  StringLiteral s2 = builder.MakeStringLiteral("abc");
   EXPECT_NE(s1.value(), s2.value());
   EXPECT_TRUE(Equal(s1, s2));
-  EXPECT_FALSE(Equal(s1, MakeStringLiteral("def")));
+  EXPECT_FALSE(Equal(s1, builder.MakeStringLiteral("def")));
 }
 
 TEST_F(ExprTest, NumericExpr) {
@@ -1075,13 +1110,13 @@ TEST_F(ExprTest, NumberOfMap) {
   ampl::NumberOfMap<Var, CreateVar> map((CreateVar()));
   EXPECT_TRUE(map.begin() == map.end());
   NumericExpr args1[] = {MakeConst(11), MakeVariable(0)};
-  NumberOfExpr e1 = MakeNumberOf(args1);
+  NumberOfExpr e1 = builder.MakeNumberOf(args1);
   NumericExpr args2[] = {MakeConst(22), MakeVariable(1)};
-  NumberOfExpr e2 = MakeNumberOf(args2);
+  NumberOfExpr e2 = builder.MakeNumberOf(args2);
   map.Add(11, e1);
   map.Add(22, e2);
   NumericExpr args3[] = {MakeConst(33), MakeVariable(0)};
-  map.Add(33, MakeNumberOf(args3));
+  map.Add(33, builder.MakeNumberOf(args3));
   ampl::NumberOfMap<Var, CreateVar>::iterator i = map.begin();
   EXPECT_EQ(e1, i->expr);
   EXPECT_EQ(2u, i->values.size());
@@ -1182,57 +1217,57 @@ TEST_F(ExprTest, WriteIfExpr) {
 }
 
 TEST_F(ExprTest, WritePiecewiseLinearExpr) {
-  double breakpoints[] = {5, 10};
+  double breaks[] = {5, 10};
   double slopes[] = {-1, 0, 1};
   CHECK_WRITE("<<5, 10; -1, 0, 1>> x43",
-              MakePiecewiseLinear(2, breakpoints, slopes, MakeVariable(42)));
+              builder.MakePiecewiseLinear(2, breaks, slopes, MakeVariable(42)));
 }
 
 TEST_F(ExprTest, WriteCallExpr) {
-  ampl::Function f = AddFunction(0, "foo", -1);
+  ampl::Function f = builder.AddFunction(0, "foo", -1);
   Expr args[] = {
-      MakeNumericConstant(3),
-      MakeBinary(OPPLUS, MakeVariable(0), MakeNumericConstant(5)),
-      MakeNumericConstant(7),
+      MakeConst(3),
+      MakeBinary(OPPLUS, MakeVariable(0), MakeConst(5)),
+      MakeConst(7),
       MakeVariable(1)
   };
-  CHECK_WRITE("foo()", MakeCall(f, MakeArrayRef(args, 0)));
-  CHECK_WRITE("foo(3)", MakeCall(f, MakeArrayRef(args, 1)));
-  CHECK_WRITE("foo(3, x1 + 5, 7)", MakeCall(f, MakeArrayRef(args, 3)));
-  CHECK_WRITE("foo(3, x1 + 5, 7, x2)", MakeCall(f, args));
+  CHECK_WRITE("foo()", builder.MakeCall(f, MakeArrayRef(args, 0)));
+  CHECK_WRITE("foo(3)", builder.MakeCall(f, MakeArrayRef(args, 1)));
+  CHECK_WRITE("foo(3, x1 + 5, 7)", builder.MakeCall(f, MakeArrayRef(args, 3)));
+  CHECK_WRITE("foo(3, x1 + 5, 7, x2)", builder.MakeCall(f, args));
 }
 
 TEST_F(ExprTest, WriteVarArgExpr) {
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
-  CHECK_WRITE("min(x1, x2, 42)", MakeVarArg(MINLIST, args));
-  CHECK_WRITE("max(x1, x2, 42)", MakeVarArg(MAXLIST, args));
+  CHECK_WRITE("min(x1, x2, 42)", builder.MakeVarArg(MINLIST, args));
+  CHECK_WRITE("max(x1, x2, 42)", builder.MakeVarArg(MAXLIST, args));
 }
 
 TEST_F(ExprTest, WriteSumExpr) {
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeConst(42)};
-  CHECK_WRITE("/* sum */ (x1 + x2 + 42)", MakeSum(args));
+  CHECK_WRITE("/* sum */ (x1 + x2 + 42)", builder.MakeSum(args));
   NumericExpr args2[] = {
     MakeBinary(OPPLUS, MakeVariable(0), MakeVariable(1)), MakeConst(42)
   };
-  CHECK_WRITE("/* sum */ ((x1 + x2) + 42)", MakeSum(args2));
+  CHECK_WRITE("/* sum */ ((x1 + x2) + 42)", builder.MakeSum(args2));
 }
 
 TEST_F(ExprTest, WriteCountExpr) {
   LogicalExpr args[] = {
     MakeRelational(EQ, MakeVariable(0), MakeConst(0)), l1, l0
   };
-  CHECK_WRITE("count(x1 = 0, 1, 0)", MakeCount(args));
+  CHECK_WRITE("count(x1 = 0, 1, 0)", builder.MakeCount(args));
 }
 
 TEST_F(ExprTest, WriteNumberOfExpr) {
   NumericExpr args[] = {MakeConst(42), MakeConst(43), MakeConst(44)};
-  CHECK_WRITE("numberof 42 in (43, 44)", MakeNumberOf(args));
+  CHECK_WRITE("numberof 42 in (43, 44)", builder.MakeNumberOf(args));
 }
 
 TEST_F(ExprTest, WriteNotExpr) {
   auto n0 = MakeConst(0), n1 = MakeConst(1);
   CHECK_WRITE("if !(x1 = 0) then 1",
-      MakeIf(MakeNot(MakeRelational(EQ, MakeVariable(0), n0)), n1, n0));
+      MakeIf(builder.MakeNot(MakeRelational(EQ, MakeVariable(0), n0)), n1, n0));
 }
 
 TEST_F(ExprTest, WriteBinaryLogicalExpr) {
@@ -1267,7 +1302,7 @@ TEST_F(ExprTest, WriteLogicalCountExpr) {
   LogicalExpr args[] = {
     MakeRelational(EQ, MakeVariable(0), MakeConst(0)), l1, l0
   };
-  ampl::CountExpr count = MakeCount(args);
+  ampl::CountExpr count = builder.MakeCount(args);
   CHECK_WRITE("if atleast 42 (x1 = 0, 1, 0) then 1",
       MakeIf(MakeLogicalCount(OPATLEAST, value, count), n1, n0));
   CHECK_WRITE("if atmost 42 (x1 = 0, 1, 0) then 1",
@@ -1295,15 +1330,17 @@ TEST_F(ExprTest, WriteIteratedLogicalExpr) {
     MakeRelational(EQ, MakeVariable(0), MakeConst(0)), l1, l0
   };
   CHECK_WRITE("if /* forall */ (x1 = 0 && 1 && 0) then 1",
-      MakeIf(MakeIteratedLogical(ANDLIST, args), MakeConst(1), MakeConst(0)));
+      MakeIf(builder.MakeIteratedLogical(ANDLIST, args),
+             MakeConst(1), MakeConst(0)));
   CHECK_WRITE("if /* exists */ (x1 = 0 || 1 || 0) then 1",
-      MakeIf(MakeIteratedLogical(ORLIST, args), MakeConst(1), MakeConst(0)));
+      MakeIf(builder.MakeIteratedLogical(ORLIST, args),
+             MakeConst(1), MakeConst(0)));
 }
 
 TEST_F(ExprTest, WriteAllDiffExpr) {
   NumericExpr args[] = {MakeConst(42), MakeConst(43), MakeConst(44)};
   CHECK_WRITE("if alldiff(42, 43, 44) then 1",
-      MakeIf(MakeAllDiff(args), MakeConst(1), MakeConst(0)));
+      MakeIf(builder.MakeAllDiff(args), MakeConst(1), MakeConst(0)));
 }
 
 TEST_F(ExprTest, WriteStringLiteral) {
@@ -1420,79 +1457,83 @@ TEST_F(ExprTest, IfExprPrecedence) {
   CHECK_WRITE("if 0 || 1 then 0 else if 0 || 1 then 1 else 2",
       MakeIf(e, n0, MakeIf(e, n1, n2)));
   CHECK_WRITE("if !(0 || 1) then x1 + 1",
-      MakeIf(MakeNot(e), MakeBinary(OPPLUS, MakeVariable(0), n1), n0));
+      MakeIf(builder.MakeNot(e), MakeBinary(OPPLUS, MakeVariable(0), n1), n0));
 }
 
 TEST_F(ExprTest, PiecewiseLinearExprPrecedence) {
   double breakpoints[] = {5, 10};
   double slopes[] = {-1, 0, 1};
-  NumericExpr e = MakePiecewiseLinear(2, breakpoints, slopes, MakeVariable(42));
+  NumericExpr e = builder.MakePiecewiseLinear(
+        2, breakpoints, slopes, MakeVariable(42));
   CHECK_WRITE("<<5, 10; -1, 0, 1>> x43 ^ 2",
       MakeBinary(OPPOW, e, MakeConst(2)));
 }
 
 TEST_F(ExprTest, CallExprPrecedence) {
   auto x1 = MakeVariable(0), x2 = MakeVariable(1);
-  auto f = AddFunction(0, "foo", -1);
+  auto f = builder.AddFunction(0, "foo", -1);
   Expr args[] = {
-      MakeCall(f, MakeArrayRef<Expr>(0, 0)),
-      MakeBinary(OPPLUS, x1, MakeNumericConstant(5)),
-      MakeNumericConstant(7),
+      builder.MakeCall(f, MakeArrayRef<Expr>(0, 0)),
+      MakeBinary(OPPLUS, x1, MakeConst(5)),
+      MakeConst(7),
       MakeUnary(FLOOR, x2)
   };
-  CHECK_WRITE("foo(foo(), x1 + 5, 7, floor(x2))", MakeCall(f, args));
+  CHECK_WRITE("foo(foo(), x1 + 5, 7, floor(x2))", builder.MakeCall(f, args));
 }
 
 TEST_F(ExprTest, VarArgExprPrecedence) {
   NumericExpr x1 = MakeVariable(0), x2 = MakeVariable(1);
   NumericExpr e = MakeBinary(OPPLUS, x1, x2);
   NumericExpr args[] = {e, e};
-  CHECK_WRITE("min(x1 + x2, x1 + x2)", MakeVarArg(MINLIST, args));
-  CHECK_WRITE("max(x1 + x2, x1 + x2)", MakeVarArg(MAXLIST, args));
+  CHECK_WRITE("min(x1 + x2, x1 + x2)", builder.MakeVarArg(MINLIST, args));
+  CHECK_WRITE("max(x1 + x2, x1 + x2)", builder.MakeVarArg(MAXLIST, args));
   NumericExpr args2[] = {x1}, args3[] = {x2};
   NumericExpr args4[] = {
-    MakeVarArg(MINLIST, args2), MakeVarArg(MINLIST, args3)
+    builder.MakeVarArg(MINLIST, args2), builder.MakeVarArg(MINLIST, args3)
   };
-  CHECK_WRITE("min(min(x1), min(x2))", MakeVarArg(MINLIST, args4));
+  CHECK_WRITE("min(min(x1), min(x2))", builder.MakeVarArg(MINLIST, args4));
   NumericExpr args5[] = {
-    MakeVarArg(MAXLIST, args2), MakeVarArg(MAXLIST, args3)
+    builder.MakeVarArg(MAXLIST, args2), builder.MakeVarArg(MAXLIST, args3)
   };
-  CHECK_WRITE("max(max(x1), max(x2))", MakeVarArg(MAXLIST, args5));
+  CHECK_WRITE("max(max(x1), max(x2))", builder.MakeVarArg(MAXLIST, args5));
 }
 
 TEST_F(ExprTest, SumExprPrecedence) {
   auto x1 = MakeVariable(0), x2 = MakeVariable(1), x3 = MakeVariable(2);
   NumericExpr args1[] = {x2, x3};
-  NumericExpr args2[] = {x1, MakeSum(args1)};
-  CHECK_WRITE("/* sum */ (x1 + /* sum */ (x2 + x3))", MakeSum(args2));
+  NumericExpr args2[] = {x1, builder.MakeSum(args1)};
+  CHECK_WRITE("/* sum */ (x1 + /* sum */ (x2 + x3))", builder.MakeSum(args2));
   NumericExpr args3[] = {x1, MakeBinary(OPMULT, x2, x3)};
-  CHECK_WRITE("/* sum */ (x1 + x2 * x3)", MakeSum(args3));
+  CHECK_WRITE("/* sum */ (x1 + x2 * x3)", builder.MakeSum(args3));
   NumericExpr args4[] = {MakeBinary(OPPLUS, x1, x2), x3};
-  CHECK_WRITE("/* sum */ ((x1 + x2) + x3)", MakeSum(args4));
+  CHECK_WRITE("/* sum */ ((x1 + x2) + x3)", builder.MakeSum(args4));
 }
 
 TEST_F(ExprTest, CountExprPrecedence) {
   LogicalExpr e = MakeBinaryLogical(OPOR, l0, l1);
   LogicalExpr args[] = {e, e};
-  CHECK_WRITE("count(0 || 1, 0 || 1)", MakeCount(args));
+  CHECK_WRITE("count(0 || 1, 0 || 1)", builder.MakeCount(args));
 }
 
 TEST_F(ExprTest, NumberOfExprPrecedence) {
   NumericExpr x1 = MakeVariable(0), x2 = MakeVariable(1);
   NumericExpr args[] = {MakeConst(42), x1, x2};
-  NumericExpr e = MakeNumberOf(args);
+  NumericExpr e = builder.MakeNumberOf(args);
   NumericExpr args2[] = {e, e, e};
   CHECK_WRITE("numberof numberof 42 in (x1, x2) in ("
-      "numberof 42 in (x1, x2), numberof 42 in (x1, x2))", MakeNumberOf(args2));
+      "numberof 42 in (x1, x2), numberof 42 in (x1, x2))",
+              builder.MakeNumberOf(args2));
   NumericExpr e2 = MakeBinary(OPPLUS, x1, x2);
   NumericExpr args3[] = {e2, e2, e2};
-  CHECK_WRITE("numberof x1 + x2 in (x1 + x2, x1 + x2)", MakeNumberOf(args3));
+  CHECK_WRITE("numberof x1 + x2 in (x1 + x2, x1 + x2)",
+              builder.MakeNumberOf(args3));
 }
 
 TEST_F(ExprTest, NotExprPrecedence) {
   NumericExpr n0 = MakeConst(0), n1 = MakeConst(1), x = MakeVariable(0);
   CHECK_WRITE("if !!(x1 = 0) then 1",
-      MakeIf(MakeNot(MakeNot(MakeRelational(EQ, x, n0))), n1, n0));
+      MakeIf(builder.MakeNot(
+               builder.MakeNot(MakeRelational(EQ, x, n0))), n1, n0));
 }
 
 TEST_F(ExprTest, LogicalOrExprPrecedence) {
@@ -1554,9 +1595,10 @@ TEST_F(ExprTest, RelationalExprPrecedence) {
 TEST_F(ExprTest, LogicalCountExprPrecedence) {
   NumericExpr n0 = MakeConst(0), n1 = MakeConst(1), lhs = MakeConst(42);
   LogicalExpr args[] = {MakeRelational(EQ, MakeVariable(0), MakeConst(0)), l1};
-  LogicalExpr count1 = MakeLogicalCount(OPATLEAST, lhs, MakeCount(args));
-  LogicalExpr args2[] ={count1, l1};
-  CountExpr count2 = MakeCount(args2);
+  LogicalExpr count1 =
+      builder.MakeLogicalCount(OPATLEAST, lhs, builder.MakeCount(args));
+  LogicalExpr args2[] = {count1, l1};
+  CountExpr count2 = builder.MakeCount(args2);
   CHECK_WRITE("if atleast 42 (atleast 42 (x1 = 0, 1), 1) then 1",
       MakeIf(MakeLogicalCount(OPATLEAST, lhs, count2), n1, n0));
   CHECK_WRITE("if atmost 42 (atleast 42 (x1 = 0, 1), 1) then 1",
@@ -1571,7 +1613,7 @@ TEST_F(ExprTest, LogicalCountExprPrecedence) {
       MakeIf(MakeLogicalCount(OPNOTEXACTLY, lhs, count2), n1, n0));
 
   args2[0] = l0;
-  CountExpr count = MakeCount(args2);
+  CountExpr count = builder.MakeCount(args2);
   CHECK_WRITE("if atleast 42 (0, 1) || 0 then 1",
       MakeIf(MakeBinaryLogical(OPOR, MakeLogicalCount(OPATLEAST, lhs, count),
           l0), n1, n0));
@@ -1596,17 +1638,17 @@ TEST_F(ExprTest, IteratedLogicalExprPrecedence) {
   auto n0 = MakeConst(0), n1 = MakeConst(1);
   LogicalExpr args[] = {MakeBinaryLogical(OPAND, l0, l0), l0};
   CHECK_WRITE("if /* forall */ ((0 && 0) && 0) then 1",
-      MakeIf(MakeIteratedLogical(ANDLIST, args), n1, n0));
+      MakeIf(builder.MakeIteratedLogical(ANDLIST, args), n1, n0));
   args[0] = MakeBinaryLogical(OPOR, l0, l0);
   CHECK_WRITE("if /* exists */ ((0 || 0) || 0) then 1",
-      MakeIf(MakeIteratedLogical(ORLIST, args), n1, n0));
+      MakeIf(builder.MakeIteratedLogical(ORLIST, args), n1, n0));
   args[0] = l0;
-  LogicalExpr args2[] = {MakeIteratedLogical(ANDLIST, args), l0};
+  LogicalExpr args2[] = {builder.MakeIteratedLogical(ANDLIST, args), l0};
   CHECK_WRITE("if /* forall */ (/* forall */ (0 && 0) && 0) then 1",
-      MakeIf(MakeIteratedLogical(ANDLIST, args2), n1, n0));
-  args2[0] = MakeIteratedLogical(ORLIST, args);
+      MakeIf(builder.MakeIteratedLogical(ANDLIST, args2), n1, n0));
+  args2[0] = builder.MakeIteratedLogical(ORLIST, args);
   CHECK_WRITE("if /* exists */ (/* exists */ (0 || 0) || 0) then 1",
-      MakeIf(MakeIteratedLogical(ORLIST, args2), n1, n0));
+      MakeIf(builder.MakeIteratedLogical(ORLIST, args2), n1, n0));
 }
 
 TEST_F(ExprTest, ImplicationExprPrecedence) {
@@ -1631,7 +1673,7 @@ TEST_F(ExprTest, AllDiffExprPrecedence) {
   NumericConstant n0 = MakeConst(0), n1 = MakeConst(1);
   NumericExpr args[] = {MakeBinary(OPPLUS, n0, n1), MakeBinary(OPPLUS, n0, n1)};
   CHECK_WRITE("if alldiff(0 + 1, 0 + 1) then 1",
-      MakeIf(MakeAllDiff(args), n1, n0));
+      MakeIf(builder.MakeAllDiff(args), n1, n0));
 }
 
 #ifdef HAVE_UNORDERED_MAP
@@ -1814,18 +1856,22 @@ TEST_F(ExprTest, HashNumberOfArgs) {
   size_t hash = HashCombine<NumericExpr>(0, MakeVariable(11));
   hash = HashCombine<NumericExpr>(hash, MakeConst(22));
   NumericExpr args[] = {MakeConst(42), MakeVariable(11), MakeConst(22)};
-  EXPECT_EQ(hash, ampl::internal::HashNumberOfArgs()(MakeNumberOf(args)));
+  EXPECT_EQ(hash, ampl::internal::HashNumberOfArgs()(
+              builder.MakeNumberOf(args)));
 }
 
 TEST_F(ExprTest, EqualNumberOfArgs) {
   using ampl::internal::EqualNumberOfArgs;
   NumericExpr args1[] = {MakeConst(0), MakeVariable(11), MakeConst(22)};
   NumericExpr args2[] = {MakeConst(1), MakeVariable(11), MakeConst(22)};
-  EXPECT_TRUE(EqualNumberOfArgs()(MakeNumberOf(args1), MakeNumberOf(args2)));
+  EXPECT_TRUE(EqualNumberOfArgs()(
+                builder.MakeNumberOf(args1), builder.MakeNumberOf(args2)));
   NumericExpr args3[] = {MakeConst(1), MakeVariable(11)};
-  EXPECT_FALSE(EqualNumberOfArgs()(MakeNumberOf(args1), MakeNumberOf(args3)));
+  EXPECT_FALSE(EqualNumberOfArgs()(
+                 builder.MakeNumberOf(args1), builder.MakeNumberOf(args3)));
   NumericExpr args4[] = {MakeConst(1), MakeVariable(11), MakeConst(33)};
-  EXPECT_FALSE(EqualNumberOfArgs()(MakeNumberOf(args1), MakeNumberOf(args4)));
+  EXPECT_FALSE(EqualNumberOfArgs()(
+                 builder.MakeNumberOf(args1), builder.MakeNumberOf(args4)));
 }
 
 struct TestNumberOf {
@@ -1839,13 +1885,13 @@ TEST_F(ExprTest, MatchNumberOfArgs) {
   NumericExpr args1[] = {MakeConst(1), MakeVariable(11), MakeConst(22)};
   NumericExpr args2[] = {MakeConst(0), MakeVariable(11), MakeConst(22)};
   EXPECT_TRUE(MatchNumberOfArgs<TestNumberOf>(
-      MakeNumberOf(args1))(TestNumberOf(MakeNumberOf(args2))));
+      builder.MakeNumberOf(args1))(TestNumberOf(builder.MakeNumberOf(args2))));
   NumericExpr args3[] = {MakeConst(1), MakeVariable(11)};
   EXPECT_FALSE(MatchNumberOfArgs<TestNumberOf>(
-      MakeNumberOf(args3))(TestNumberOf(MakeNumberOf(args2))));
+      builder.MakeNumberOf(args3))(TestNumberOf(builder.MakeNumberOf(args2))));
   NumericExpr args4[] = {MakeConst(1), MakeVariable(11), MakeConst(33)};
   EXPECT_FALSE(MatchNumberOfArgs<TestNumberOf>(
-      MakeNumberOf(args4))(TestNumberOf(MakeNumberOf(args2))));
+      builder.MakeNumberOf(args4))(TestNumberOf(builder.MakeNumberOf(args2))));
 }
 #endif
 }
