@@ -29,7 +29,7 @@ if (jar)
     endif ()
     add_custom_command(TARGET jacop
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        lib/${JACOP_JAR} $<TARGET_FILE_DIR:jacop>)
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/${JACOP_JAR} $<TARGET_FILE_DIR:jacop>)
 
     # Get jacop version.
     if (JACOP_JAR MATCHES "jacop-(.*)\\.jar")
