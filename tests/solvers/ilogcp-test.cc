@@ -42,6 +42,7 @@
 
 #include "solvers/ilogcp/ilogcp.h"
 #include "solvers/util/aslbuilder.h"
+#include "solvers/util/nl.h"
 
 extern "C" {
 #include "solvers/asl.h"
@@ -235,6 +236,13 @@ struct EnumValue {
 class IlogCPTest : public ::testing::Test, public ampl::internal::ASLBuilder {
  protected:
   IlogCPSolver s;
+
+  IlogCPTest() {
+    ampl::NLHeader h = {};
+    h.num_vars = 3;
+    h.num_objs = 1;
+    BeginBuild("", h, ampl::internal::ASL_STANDARD_OPCODES);
+  }
 
   int CountIloDistribute();
 
