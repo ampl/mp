@@ -1,5 +1,6 @@
-#include "solvers/util/clock.h"
 #include "solvers/util/aslbuilder.h"
+#include "solvers/util/clock.h"
+#include "solvers/util/nl.h"
 
 struct CreateVar {
   int operator()() { return 0; }
@@ -16,8 +17,8 @@ int main() {
   ampl::NumericConstant n = b.MakeNumericConstant(0);
   std::vector<ampl::NumberOfExpr> exprs(num_exprs);
   for (int i = 0; i < num_exprs; ++i) {
-    ampl::NumericExpr args[] = {b.MakeVariable(i)};
-    exprs[i] = b.MakeNumberOf(n, args);
+    ampl::NumericExpr args[] = {n, b.MakeVariable(i)};
+    exprs[i] = b.MakeNumberOf(args);
   }
   ampl::steady_clock::time_point start = ampl::steady_clock::now();
   for (int i = 0; i < num_exprs; ++i)
