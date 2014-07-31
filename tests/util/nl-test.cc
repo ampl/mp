@@ -36,6 +36,7 @@ struct TestNLHandler {
   NLHeader header;
   fmt::Writer log;  // Call log.
   std::vector<std::string> obj_exprs;
+  std::vector<std::string> con_exprs;
 
   typedef std::string NumericExpr;
 
@@ -45,11 +46,22 @@ struct TestNLHandler {
     log.clear();
   }
 
-  void AddObj(int obj_index, bool maximize, std::string expr) {
-    log << (maximize ? "maximize" : "minimize")
-        << " o" << (obj_index + 1) << ": " << expr;
-    obj_exprs[obj_index] = expr;
+  void SetObj(int index, ampl::ObjType type, std::string expr) {
+    log << (type == ampl::MAX ? "maximize" : "minimize")
+        << " o" << (index + 1) << ": " << expr;
+    obj_exprs[index] = expr;
     log << ";\n";
+  }
+
+  void SetCon(int index, std::string expr) {
+    log << "s.t. c" << (index + 1) << ": " << expr;
+    con_exprs[index] = expr;
+    log << ";\n";
+  }
+
+  void SetFunction(
+      int index, const char *name, int num_args, ampl::Function::Type type) {
+    // TODO
   }
 
   std::string MakeNumericConstant(double value) {
@@ -413,7 +425,7 @@ TEST(NLTest, ObjIndex) {
   ReadNL(header, "O0 9\nn0");
   EXPECT_THROW_MSG(
     ReadNL(header, "O10 0\nn0"),
-    ampl::ParseError, "(input):11:2: objective index 10 is out of bounds");
+    ampl::ParseError, "(input):11:2: objective index 10 out of bounds");
 }
 
 TEST(NLTest, ObjType) {

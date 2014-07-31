@@ -25,7 +25,7 @@
 
 #include "solvers/arith.h"
 #include "solvers/util/error.h"
-#include "solvers/util/expr.h"
+#include "solvers/util/problem.h"
 #include "solvers/util/os.h"
 
 #include <cctype>
@@ -341,15 +341,27 @@ class NLReader {
       fmt::StringRef name = "(input)", bool header_only = false);
 };
 
-template <typename Hanlder>
-typename Hanlder::NumericExpr NLReader<Hanlder>::ReadExpr(TextReader &reader) {
-  typename Hanlder::NumericExpr expr;
+template <typename Handler>
+typename Handler::NumericExpr NLReader<Handler>::ReadExpr(TextReader &reader) {
+  typedef typename Handler::NumericExpr NumericExpr;
+  NumericExpr expr;
   switch (reader.ReadChar()) {
-  case 'f':
-    // TODO: implement function
+  case 'f': {
+    int func_index = reader.ReadUInt();
+    if (func_index >= header_.num_funcs)
+      reader.ReportParseError("function index {} out of bounds", func_index);
+    int num_args = reader.ReadUInt();
+    reader.ReadTillEndOfLine();
+    fmt::internal::Array<NumericExpr, 10> args;
+    args.resize(num_args);
+    for (int i = 0; i < num_args; ++i)
+      args[i] = ReadExpr(reader); // TODO: support string args
+    // TODO: get function with index func_index
+    //expr = handler_.MakeCall(, args);
     break;
+  }
   case 'h':
-    // TODO: implement string
+    // TODO: read string
     break;
   case 's':
     expr = handler_.MakeNumericConstant(reader.ReadShort());
@@ -361,13 +373,13 @@ typename Hanlder::NumericExpr NLReader<Hanlder>::ReadExpr(TextReader &reader) {
     expr = handler_.MakeNumericConstant(reader.ReadDouble());
     break;
   case 'o':
-    // TODO: implement expression
+    // TODO: read expression
     break;
   case 'v': {
     // TODO: variable index can be greater than num_vars
     int var_index = reader.ReadUInt();
     if (var_index >= header_.num_vars)
-      reader.ReportParseError("variable index {} is out of bounds", var_index);
+      reader.ReportParseError("variable index {} out of bounds", var_index);
     expr = handler_.MakeVariable(var_index);
     break;
   }
@@ -378,8 +390,8 @@ typename Hanlder::NumericExpr NLReader<Hanlder>::ReadExpr(TextReader &reader) {
   return expr;
 }
 
-template <typename Hanlder>
-void NLReader<Hanlder>::ReadLinearExpr(TextReader &reader, int num_terms) {
+template <typename Handler>
+void NLReader<Handler>::ReadLinearExpr(TextReader &reader, int num_terms) {
   for (int i = 0; i < num_terms; ++i) {
     reader.ReadUInt();
     reader.ReadUInt(); // TODO: read double
@@ -388,8 +400,8 @@ void NLReader<Hanlder>::ReadLinearExpr(TextReader &reader, int num_terms) {
   }
 }
 
-template <typename Hanlder>
-void NLReader<Hanlder>::ReadBounds(TextReader &reader) {
+template <typename Handler>
+void NLReader<Handler>::ReadBounds(TextReader &reader) {
   for (int i = 0; i < header_.num_vars; ++i) {
     reader.ReadUInt();
     reader.ReadUInt(); // TODO: read double
@@ -398,8 +410,8 @@ void NLReader<Hanlder>::ReadBounds(TextReader &reader) {
   }
 }
 
-template <typename Hanlder>
-void NLReader<Hanlder>::ReadColumnOffsets(TextReader &reader) {
+template <typename Handler>
+void NLReader<Handler>::ReadColumnOffsets(TextReader &reader) {
   int count = reader.ReadUInt(); // TODO
   reader.ReadTillEndOfLine();
   for (int i = 0; i < count; ++i) {
@@ -408,8 +420,8 @@ void NLReader<Hanlder>::ReadColumnOffsets(TextReader &reader) {
   }
 }
 
-template <typename Hanlder>
-void NLReader<Hanlder>::ReadFile(fmt::StringRef filename) {
+template <typename Handler>
+void NLReader<Handler>::ReadFile(fmt::StringRef filename) {
   MemoryMappedFile file(filename);
   // TODO: use a buffer instead of mmap if mmap is not available or the
   //       file length is a multiple of the page size
@@ -420,8 +432,8 @@ void NLReader<Hanlder>::ReadFile(fmt::StringRef filename) {
   ReadString(fmt::StringRef(file.start(), size), filename);
 }
 
-template <typename Hanlder>
-void NLReader<Hanlder>::ReadString(
+template <typename Handler>
+void NLReader<Handler>::ReadString(
     fmt::StringRef str, fmt::StringRef name, bool header_only) {
   TextReader reader(name, str.c_str());
 
@@ -548,42 +560,50 @@ void NLReader<Hanlder>::ReadString(
       // TODO: check for end of input
       return;
     case 'C': {
-      int con_index = reader.ReadUInt();
-      if (con_index >= header_.num_algebraic_cons) {
-        // TODO: error: constraint index out of bounds
-      }
+      int index = reader.ReadUInt();
+      if (index >= header_.num_algebraic_cons)
+        reader.ReportParseError("constraint index {} out of bounds", index);
       reader.ReadTillEndOfLine();
-      ReadExpr(reader);
+      handler_.SetCon(index, ReadExpr(reader));
       break;
     }
     case 'F': {
-      // TODO: read functions
-      int type = 0;
-      if (type != ampl::Function::NUMERIC && type != ampl::Function::SYMBOLIC) {
+      using ampl::Function;
+      int index = reader.ReadUInt();
+      if (index >= header_.num_funcs)
+        reader.ReportParseError("function index {} out of bounds", index);
+      int type = reader.ReadUInt();
+      if (type != Function::NUMERIC && type != Function::SYMBOLIC) {
         if (type < 0 || type > 6)
-          throw Error("function {}: invalid function type", name);
+          reader.ReportParseError("invalid function type");
         // Ignore function of unsupported type.
         break;
       }
+      int num_args = reader.ReadLong();
+      const char *name = 0; // TODO: read name
+      reader.ReadTillEndOfLine();
+      handler_.SetFunction(index, name, num_args,
+                           static_cast<Function::Type>(type));
       break;
     }
     case 'L': {
-      int lcon_index = reader.ReadUInt();
-      if (lcon_index >= header_.num_logical_cons) {
-        // TODO: error: logical constraint index out of bounds
+      int index = reader.ReadUInt();
+      if (index >= header_.num_logical_cons) {
+        reader.ReportParseError(
+              "logical constraint index {} out of bounds", index);
       }
       reader.ReadTillEndOfLine();
       ReadExpr(reader);
+      // TODO: send to handler
       break;
     }
     case 'V':
       // TODO
       break;
     case 'G': {
-      int obj_index = reader.ReadUInt();
-      if (obj_index >= header_.num_objs) {
-        // TODO: error: objective index out of bounds
-      }
+      int index = reader.ReadUInt();
+      if (index >= header_.num_objs)
+        reader.ReportParseError("objective index {} out of bounds", index);
       int num_terms = reader.ReadUInt(); // TODO: check
       reader.ReadTillEndOfLine();
       ReadLinearExpr(reader, num_terms);
@@ -594,14 +614,12 @@ void NLReader<Hanlder>::ReadString(
       // TODO: read Jacobian matrix
       break;
     case 'O': {
-      int obj_index = reader.ReadUInt();
-      if (obj_index >= header_.num_objs) {
-        reader.ReportParseError(
-            "objective index {} is out of bounds", obj_index);
-      }
+      int index = reader.ReadUInt();
+      if (index >= header_.num_objs)
+        reader.ReportParseError("objective index {} out of bounds", index);
       int obj_type = reader.ReadUInt();
       reader.ReadTillEndOfLine();
-      handler_.AddObj(obj_index, obj_type != 0, ReadExpr(reader));
+      handler_.SetObj(index, obj_type != 0 ? MAX : MIN, ReadExpr(reader));
       break;
     }
     case 'S':
@@ -628,6 +646,6 @@ void NLReader<Hanlder>::ReadString(
     }
   }
 }
-}
+}  // namespace ampl
 
 #endif  // SOLVERS_UTIL_NL_H_
