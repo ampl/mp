@@ -218,6 +218,25 @@ ASL_fg {
 	Edag1info I;
 	} ASL_fg;
 
+ typedef struct
+ Static_fg {
+        int _k_seen, _nv0;
+        ASL *a;
+        ASL_fg *asl;
+        efunc **_r_ops;
+        derp *_last_d;
+        expr *(*_holread) ANSI((EdRead*));
+        expr_if *_iflist, *_if2list, *_if2list_end;
+        expr_va *_varglist, *_varg2list, *_varg2list_end;
+        relo *_relolist, *_relo2list;
+        int *_imap, *_vrefnext, *_vrefx, *_zc, *_zci;
+        int _amax1, _co_first, _firstc1, _imap_len;
+        int _last_cex, _lasta, _lasta0, _lasta00, _lastc1, _lastj;
+        int _max_var, _ncom_togo, _nderp, _nocopy;
+        int _nv01, _nv011, _nv0b, _nv0c, _nv1, _nvref, _nzc, _nzclim;
+        int nvar0, nvinc;
+        } Static_fg;
+
 #ifdef __cplusplus
  extern "C" {
 #endif

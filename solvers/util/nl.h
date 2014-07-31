@@ -25,6 +25,7 @@
 
 #include "solvers/arith.h"
 #include "solvers/util/error.h"
+#include "solvers/util/expr.h"
 #include "solvers/util/os.h"
 
 #include <cctype>
@@ -555,9 +556,17 @@ void NLReader<Hanlder>::ReadString(
       ReadExpr(reader);
       break;
     }
-    case 'F':
+    case 'F': {
       // TODO: read functions
+      int type = 0;
+      if (type != ampl::Function::NUMERIC && type != ampl::Function::SYMBOLIC) {
+        if (type < 0 || type > 6)
+          throw Error("function {}: invalid function type", name);
+        // Ignore function of unsupported type.
+        break;
+      }
       break;
+    }
     case 'L': {
       int lcon_index = reader.ReadUInt();
       if (lcon_index >= header_.num_logical_cons) {

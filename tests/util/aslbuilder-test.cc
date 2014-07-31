@@ -27,6 +27,7 @@
 #include "tests/util.h"
 
 using ampl::NLHeader;
+using ampl::Function;
 using ampl::LogicalExpr;
 using ampl::NumericExpr;
 using ampl::internal::ASLBuilder;
@@ -620,38 +621,112 @@ class TestASLBuilder : public ASLBuilder {
   }
 };
 
-double TestFunc(arglist *al) { return 0; }
+double TestFunc(arglist *) { return 0; }
+
+template <std::size_t SIZE>
+void CheckFunctionList(const ASLPtr &asl, const func_info *(&funcs)[SIZE]) {
+  int index = 0;
+  for (func_info *fi = asl->i.funcsfirst_; fi; fi = fi->fnext, ++index) {
+    ASSERT_LT(index, SIZE);
+    EXPECT_EQ(fi, funcs[index]);
+  }
+  EXPECT_EQ(SIZE, index);
+}
+
+TEST(ASLBuilderTest, SetObj) {
+  // TODO: test
+}
+
+TEST(ASLBuilderTest, SetCon) {
+  // TODO: test
+}
 
 TEST(ASLBuilderTest, AddFunction) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
-  builder.AddFunction("foo", TestFunc, 0, 1, 0);
-  // TODO: check
+  char info = 0;
+  EXPECT_EQ(0, asl->i.funcsfirst_);
+  Function f = builder.AddFunction(
+        "foo", TestFunc, 11, Function::SYMBOLIC, &info);
+  EXPECT_EQ(11, f.num_args());
+  EXPECT_STREQ("foo", f.name());
+  builder.SetFunction(0, "foo", 11);
+  func_info *fi = asl->i.funcs_[0];
+  EXPECT_TRUE(TestFunc == fi->funcp);
+  EXPECT_EQ(Function::SYMBOLIC, fi->ftype);
+  EXPECT_EQ(11, fi->nargs);
+  EXPECT_EQ(&info, fi->funcinfo);
+  const func_info *funcs[] = {fi};
+  CheckFunctionList(asl, funcs);
+  builder.AddFunction("bar", TestFunc, 0);
+  builder.SetFunction(0, "bar", 0);
+  const func_info *funcs2[] = {fi, asl->i.funcs_[0]};
+  CheckFunctionList(asl, funcs2);
+  EXPECT_NE(Function(),
+            builder.AddFunction("f1", TestFunc, 0, Function::NUMERIC));
 }
 
-TEST(ASLBuilderTest, SetMissingFunction) {
+TEST(ASLBuilderTest, SetFunction) {
   ASLPtr asl;
-  TestASLBuilder builder(asl, true);
+  TestASLBuilder builder(asl);
+  builder.AddFunction("foo", TestFunc, 3, Function::SYMBOLIC);
   EXPECT_EQ(0, asl->i.funcs_[1]);
-  ampl::Function f = builder.SetFunction(1, "foo", 3, 11);
+  Function f = builder.SetFunction(1, "foo", 3, Function::SYMBOLIC);
   EXPECT_STREQ("foo", f.name());
   EXPECT_EQ(3, f.num_args());
   EXPECT_STREQ("foo", asl->i.funcs_[1]->name);
   EXPECT_EQ(3, asl->i.funcs_[1]->nargs);
-  EXPECT_EQ(11, asl->i.funcs_[1]->ftype);
+  EXPECT_EQ(1, asl->i.funcs_[1]->ftype);
+}
+
+TEST(ASLBuilderTest, SetFunctionSameIndex) {
+  ASLPtr asl;
+  TestASLBuilder builder(asl);
+  builder.AddFunction("f", TestFunc, 0);
+  builder.AddFunction("g", TestFunc, 0);
   EXPECT_EQ(0, asl->i.funcs_[0]);
   builder.SetFunction(0, "f", 0);
   EXPECT_STREQ("f", asl->i.funcs_[0]->name);
-  EXPECT_THROW_MSG(builder.SetFunction(-1, "g", 0);,
-      ampl::Error, "function index out of range");
-  EXPECT_THROW_MSG(builder.SetFunction(2, "h", 0);,
-      ampl::Error, "function index out of range");
-  // TODO: check that calling function sets an error
+  builder.SetFunction(0, "g", 0);
+  EXPECT_STREQ("g", asl->i.funcs_[0]->name);
 }
 
-// TODO: test redefining a function
+#ifndef NDEBUG
+TEST(ASLBuilderTest, SetFunctionIndexOutOfRange) {
+  ASLPtr asl;
+  TestASLBuilder builder(asl);
+  builder.AddFunction("foo", TestFunc, 3);
+  EXPECT_DEBUG_DEATH(builder.SetFunction(-1, "f", 0), "Assertion");
+  EXPECT_DEBUG_DEATH(builder.SetFunction(2, "foo", 3), "Assertion");
+}
+#endif
 
-// TODO: loading functions and missing functions
+TEST(ASLBuilderTest, SetFunctionMatchNumArgs) {
+  ASLPtr asl;
+  TestASLBuilder builder(asl);
+  builder.AddFunction("f", TestFunc, 3);
+  CHECK_THROW_ASL_ERROR(builder.SetFunction(0, "f", 2),
+    ASL_readerr_argerr, "function f: disagreement of nargs: 3 and 2");
+  builder.AddFunction("g", TestFunc, -3);
+  builder.SetFunction(0, "g", 0);
+  builder.SetFunction(0, "f", -4);
+  CHECK_THROW_ASL_ERROR(builder.SetFunction(0, "f", -5),
+    ASL_readerr_argerr, "function f: disagreement of nargs: 3 and -5");
+}
+
+TEST(ASLBuilderTest, SetMissingFunction) {
+  ASLPtr asl;
+  TestASLBuilder builder(asl);
+  CHECK_THROW_ASL_ERROR(builder.SetFunction(0, "f", 0),
+    ASL_readerr_unavail, "function f not available");
+  ASLPtr asl2;
+  TestASLBuilder builder2(asl2, true);
+  builder2.SetFunction(0, "f", 0);
+  EXPECT_STREQ("f", asl2->i.funcs_[0]->name);
+  arglist al = {};
+  asl2->i.funcs_[0]->funcp(&al);
+  EXPECT_STREQ("attempt to call unavailable function", al.Errmsg);
+}
 
 // The ASLBuilder::Make* methods are tested in expr-test because they serve
 // the purpose of expression constructors and testing them separately from
@@ -667,7 +742,7 @@ TEST(ASLBuilderTest, SizeOverflow) {
 
   std::size_t num_args = (INT_MAX - sizeof(expr_f)) / sizeof(expr*) + 2;
   std::size_t max_size = INT_MAX + 1u;
-  ampl::Function f = builder.AddFunction("f", TestFunc, -1);
+  Function f = builder.AddFunction("f", TestFunc, -1);
   EXPECT_THROW(builder.MakeCall(
                  f, MakeArrayRef<ampl::Expr>(args, num_args)), OverflowError);
   EXPECT_THROW(builder.MakeCall(

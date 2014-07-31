@@ -562,6 +562,7 @@ class Function {
  public:
   // Function type.
   enum Type {
+    NUMERIC  = 0,
     SYMBOLIC = 1  // Accepts symbolic arguments.
   };
 

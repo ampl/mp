@@ -25,6 +25,7 @@
 
 #include "solvers/util/expr.h"
 #include "solvers/util/format.h"
+#include "solvers/util/problem.h"
 #include "solvers/util/safeint.h"
 
 namespace ampl {
@@ -84,10 +85,12 @@ class ASLBuilder {
   efunc **r_ops_;
   efunc *standard_opcodes_[N_OPS];
   int flags_;  // Flags passed to BeginBuild.
-  int nv1_;
   int nz_;
   int nderp_;
   static const double DVALUE[];
+
+  // "Static" data for the functions in fg_read.
+  Static_fg static_;
 
   FMT_DISALLOW_COPY_AND_ASSIGN(ASLBuilder);
 
@@ -98,6 +101,10 @@ class ASLBuilder {
 
   template <typename T>
   T *Allocate(SafeInt<int> size = sizeof(T));
+
+  // Sets objective or constraint expression; adapted from co_read.
+  void SetObjOrCon(
+      int index, cde *d, int *cexp1_end, NumericExpr expr, int **z);
 
   expr *MakeConstant(double value);
   expr *DoMakeUnary(int opcode, Expr lhs);
@@ -129,20 +136,27 @@ class ASLBuilder {
   // Ends building the ASL object.
   void EndBuild();
 
-  // Adds an objective to the problem.
-  void AddObj(int index, bool maximize, NumericExpr expr);
-
-  Function AddFunction(
-      const char *name, ufunc f, int num_args, int type = 0, void *info = 0);
-
-  Function FindFunction(const char *name) const {
-    return Function(func_lookup_ASL(asl_, name, 0));
+  // Sets an objective at the given index.
+  void SetObj(int index, ObjType type, NumericExpr expr) {
+    asl_->i.objtype_[index] = type;
+    SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.obj_de_,
+                asl_->i.o_cexp1st_, expr, asl_->i.zao_);
   }
 
-  // Sets a function at given index.
+  // Sets a constraint at the given index.
+  void SetCon(int index, NumericExpr expr) {
+    SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.con_de_,
+                asl_->i.c_cexp1st_, expr, asl_->i.zac_);
+  }
+
+  Function AddFunction(const char *name, ufunc f, int num_args,
+                       Function::Type type = Function::NUMERIC, void *info = 0);
+
+  // Sets a function at the given index.
   // If the function with the specified name doesn't exist and the flag
   // ASL_allow_missing_funcs is not set, SetFunction throws ASLError.
-  Function SetFunction(int index, const char *name, int num_args, int type = 0);
+  Function SetFunction(int index, const char *name, int num_args,
+                       Function::Type type = Function::NUMERIC);
 
   // The Make* methods construct expression objects. These objects are
   // local to the currently built ASL problem and shouldn't be used with

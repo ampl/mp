@@ -43,26 +43,7 @@ extern "C" {
 #undef nzc
 #undef r_ops
 
- typedef struct
-Static {
-	int _k_seen, _nv0;
-	ASL *a;
-	ASL_fg *asl;
-	efunc **_r_ops;
-#ifndef Just_Linear
-	derp *_last_d;
-	expr *(*_holread) ANSI((EdRead*));
-	expr_if *_iflist, *_if2list, *_if2list_end;
-	expr_va *_varglist, *_varg2list, *_varg2list_end;
-	relo *_relolist, *_relo2list;
-	int *_imap, *_vrefnext, *_vrefx, *_zc, *_zci;
-	int _amax1, _co_first, _firstc1, _imap_len;
-	int _last_cex, _lasta, _lasta0, _lasta00, _lastc1, _lastj;
-	int _max_var, _ncom_togo, _nderp, _nocopy;
-	int _nv01, _nv011, _nv0b, _nv0c, _nv1, _nvref, _nzc, _nzclim;
-	int nvar0, nvinc;
-#endif /* Just_Linear */
-	} Static;
+typedef Static_fg Static;
 
 #define amax1		S->_amax1
 #define co_first	S->_co_first
@@ -656,7 +637,7 @@ crefs(Static *S)
 	return rv;
 	}
 
- static funnel *
+ funnel *
 funnelfix(funnel *f)
 {
 	cexp *ce;
@@ -751,7 +732,7 @@ derpcopy(Static *S, cexp *ce, derp *dnext)
 	return d00.next;
 	}
 
- static void
+ void
 imap_alloc(Static *S)
 {
 	int i, *r, *re;
@@ -775,7 +756,7 @@ compar(const void *a, const void *b, void *v)
 	return *(int*)a - *(int*)b;
 	}
 
- static void
+ void
 comsubs(Static *S, int alen, cde *d, int **z)
 {
 	list *L;
