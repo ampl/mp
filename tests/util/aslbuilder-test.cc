@@ -606,20 +606,68 @@ TEST(ASLBuilderTest, ASLBuilderAllowCLP) {
   CheckASL(*expected, *actual, false);
 }
 
+class TestASLBuilder : public ASLBuilder {
+ public:
+  enum {NUM_FUNCS = 2};
+  explicit TestASLBuilder(ASLPtr &asl, bool allow_missing_funcs = false)
+  : ASLBuilder(asl.get()) {
+    NLHeader header = MakeHeader();
+    header.num_funcs = NUM_FUNCS;
+    int flags = ampl::internal::ASL_STANDARD_OPCODES;
+    if (allow_missing_funcs)
+      flags |= ASL_allow_missing_funcs;
+    BeginBuild("", header, flags);
+  }
+};
+
+double TestFunc(arglist *al) { return 0; }
+
+TEST(ASLBuilderTest, AddFunction) {
+  ASLPtr asl;
+  TestASLBuilder builder(asl);
+  builder.AddFunction("foo", TestFunc, 0, 1, 0);
+  // TODO: check
+}
+
+TEST(ASLBuilderTest, SetMissingFunction) {
+  ASLPtr asl;
+  TestASLBuilder builder(asl, true);
+  EXPECT_EQ(0, asl->i.funcs_[1]);
+  ampl::Function f = builder.SetFunction(1, "foo", 3, 11);
+  EXPECT_STREQ("foo", f.name());
+  EXPECT_EQ(3, f.num_args());
+  EXPECT_STREQ("foo", asl->i.funcs_[1]->name);
+  EXPECT_EQ(3, asl->i.funcs_[1]->nargs);
+  EXPECT_EQ(11, asl->i.funcs_[1]->ftype);
+  EXPECT_EQ(0, asl->i.funcs_[0]);
+  builder.SetFunction(0, "f", 0);
+  EXPECT_STREQ("f", asl->i.funcs_[0]->name);
+  EXPECT_THROW_MSG(builder.SetFunction(-1, "g", 0);,
+      ampl::Error, "function index out of range");
+  EXPECT_THROW_MSG(builder.SetFunction(2, "h", 0);,
+      ampl::Error, "function index out of range");
+  // TODO: check that calling function sets an error
+}
+
+// TODO: test redefining a function
+
+// TODO: loading functions and missing functions
+
 // The ASLBuilder::Make* methods are tested in expr-test because they serve
 // the purpose of expression constructors and testing them separately from
 // expression classes doesn't make much sense.
 
 TEST(ASLBuilderTest, SizeOverflow) {
   ASLBuilder builder;
-  NLHeader header = {};
-  header.num_vars = header.num_objs = header.num_funcs = 1;
-  builder.BeginBuild("", header, ampl::internal::ASL_STANDARD_OPCODES);
+  NLHeader header = MakeHeader();
+  header.num_funcs = 1;
+  builder.BeginBuild("", header,
+    ampl::internal::ASL_STANDARD_OPCODES | ASL_allow_missing_funcs);
   NumericExpr args[] = {builder.MakeNumericConstant(0)};
 
   std::size_t num_args = (INT_MAX - sizeof(expr_f)) / sizeof(expr*) + 2;
   std::size_t max_size = INT_MAX + 1u;
-  ampl::Function f = builder.AddFunction(0, "f", -1);
+  ampl::Function f = builder.AddFunction("f", TestFunc, -1);
   EXPECT_THROW(builder.MakeCall(
                  f, MakeArrayRef<ampl::Expr>(args, num_args)), OverflowError);
   EXPECT_THROW(builder.MakeCall(
@@ -660,8 +708,6 @@ TEST(ASLBuilderTest, SizeOverflow) {
   EXPECT_THROW(builder.MakeStringLiteral(
                  fmt::StringRef("", max_size)), OverflowError);
 }
-
-// TODO: test AddFunction
 
 // TODO: test f_read
 

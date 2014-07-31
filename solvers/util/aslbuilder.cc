@@ -48,7 +48,17 @@ void InitVars(expr_v *v, int offset, int count, int var_index) {
   while (--count >= 0)
     v[offset + count].a = var_index;
 }
+
+double MissingFunc(arglist *al) {
+  AmplExports *ae = al->AE;
+  func_info *fi = reinterpret_cast<func_info*>(al->funcinfo);
+  char *s = reinterpret_cast<char*>(
+        ae->Tempmem(al->TMI, std::strlen(fi->name) + 64));
+  ae->SprintF(al->Errmsg = s,
+              "Attempt to call unavailable function %s.", fi->name);
+  return 0;
 }
+}  // namespace
 
 namespace ampl {
 namespace internal {
@@ -57,8 +67,67 @@ const double ASLBuilder::DVALUE[] = {
 #include "dvalue.hd"
 };
 
+template <typename T>
+inline T *ASLBuilder::Allocate(SafeInt<int> size) {
+  if (size.value() > INT_MAX)
+    throw std::bad_alloc();
+  return reinterpret_cast<T*>(mem_ASL(asl_, size.value()));
+}
+
+expr *ASLBuilder::MakeConstant(double value) {
+  expr_n *result = Allocate<expr_n>(asl_->i.size_expr_n_);
+  result->op = reinterpret_cast<efunc_n*>(OPNUM);
+  result->v = value;
+  return reinterpret_cast<expr*>(result);
+}
+
+expr *ASLBuilder::DoMakeUnary(int opcode, Expr lhs) {
+  expr *e = Allocate<expr>();
+  e->op = reinterpret_cast<efunc*>(opcode);
+  e->L.e = lhs.expr_;
+  e->a = asl_->i.n_var_ + asl_->i.nsufext[ASL_Sufkind_var];
+  e->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
+  return e;
+}
+
+expr *ASLBuilder::MakeBinary(int opcode, Expr::Kind kind, Expr lhs, Expr rhs) {
+  CheckOpCode(opcode, kind, "binary");
+  expr *e = Allocate<expr>();
+  e->op = reinterpret_cast<efunc*>(opcode);
+  e->L.e = lhs.expr_;
+  e->R.e = rhs.expr_;
+  e->a = asl_->i.n_var_ + asl_->i.nsufext[ASL_Sufkind_var];
+  e->dL = 1;
+  e->dR = DVALUE[opcode];  // for PLUS, MINUS, REM
+  return e;
+}
+
+expr *ASLBuilder::MakeIf(
+    int opcode, LogicalExpr condition, Expr true_expr, Expr false_expr) {
+  expr_if *e = Allocate<expr_if>();
+  e->op = r_ops_[opcode];
+  e->e = condition.expr_;
+  e->T = true_expr.expr_;
+  e->F = false_expr.expr_;
+  return reinterpret_cast<expr*>(e);
+}
+
+expr *ASLBuilder::MakeIterated(int opcode, ArrayRef<Expr> args) {
+  int num_args = SafeInt<int>(args.size()).value();
+  expr *e = Allocate<expr>(
+      sizeof(expr) - sizeof(double) +
+      SafeInt<int>(num_args + 1) * sizeof(expr*));
+  e->op = reinterpret_cast<efunc*>(opcode);
+  e->L.ep = reinterpret_cast<expr**>(&e->dR);
+  e->R.ep = e->L.ep + num_args;
+  expr **arg_ptrs = e->L.ep;
+  for (int i = 0; i < num_args; ++i)
+    arg_ptrs[i] = args[i].expr_;
+  return e;
+}
+
 ASLBuilder::ASLBuilder(ASL *asl)
-: asl_(asl), own_asl_(false), r_ops_(0), nv1_(0), nz_(0), nderp_(0) {
+: asl_(asl), own_asl_(false), r_ops_(0), flags_(0), nv1_(0), nz_(0), nderp_(0) {
   if (!asl) {
     asl_ = ASL_alloc(ASL_read_fg);
     own_asl_ = true;
@@ -152,6 +221,7 @@ void ASLBuilder::InitASL(const char *stub, const NLHeader &h) {
 }
 
 void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
+  flags_ = flags;
   InitASL(stub, h);
 
   bool linear = asl_->i.ASLtype == ASL_read_f;
@@ -334,87 +404,67 @@ void ASLBuilder::EndBuild() {
   prob_adj_ASL(asl_);
 }
 
-void ASLBuilder::AddObj(int obj_index, bool maximize, NumericExpr expr) {
+void ASLBuilder::AddObj(int index, bool maximize, NumericExpr expr) {
   // TODO
 }
 
 Function ASLBuilder::AddFunction(
+    const char *name, ufunc f, int num_args, int type, void *info) {
+  if (type && type != 1) {
+    if (type < 0 || type > 6) {
+      fprintf(Stderr, "function %s: ftype = %d; expected 0 or 1\n", name, type);
+      exit(1);
+      // TODO: don't use exit
+    }
+    return Function();
+  }
+  AmplExports *ae = asl_->i.ae;
+  func_info *fi = func_lookup(asl_, name, 1);
+  if (fi) {
+    fi->funcp = f;
+    fi->ftype = type;
+    fi->nargs = num_args;
+    fi->funcinfo = info;
+    if (!asl_->i.funcsfirst_)
+      asl_->i.funcsfirst_ = fi;
+    else
+      asl_->i.funcslast_->fnext = fi;
+    asl_->i.funcslast_ = fi;
+    fi->fnext = 0;
+  }
+  return Function(fi);
+}
+
+Function ASLBuilder::SetFunction(
     int index, const char *name, int num_args, int type) {
   if (index < 0 || index >= asl_->i.nfunc_)
     throw Error("function index out of range");
   func_info *fi = func_lookup_ASL(asl_, name, 0);
   if (fi) {
-    // TODO: check if functions are consistent
+    if (fi->nargs != num_args && fi->nargs >= 0 &&
+        (num_args >= 0 || fi->nargs < -(num_args + 1))) {
+      throw ASLError(ASL_readerr_argerr,
+          fmt::format("function {}: disagreement of nargs: {} and {}",
+                      name, fi->nargs, num_args));
+    }
   } else {
-    fi = reinterpret_cast<func_info*>(mem_ASL(asl_, sizeof(func_info)));
+    fi = Allocate<func_info>();
     fi->ftype = type;
     fi->nargs = num_args;
     fi->funcp = 0;
     int length = AddPadding(std::strlen(name) + 1);
-    fi->name = strcpy(reinterpret_cast<char*>(mem_ASL(asl_, length)), name);
+    fi->name = std::strcpy(Allocate<char>(length), name);
   }
-  // TODO: load function
+  if (!fi->funcp && !(fi->funcp = dynlink(name))) {
+    if (!(flags_ & ASL_allow_missing_funcs)) {
+      throw ASLError(ASL_readerr_unavail,
+                     fmt::format("function {} not available", name));
+    }
+    fi->funcp = MissingFunc;
+    fi->funcinfo = fi;
+  }
   asl_->i.funcs_[index] = fi;
   return Function(fi);
-}
-
-template <typename T>
-inline T *ASLBuilder::Allocate(SafeInt<int> size) {
-  if (size.value() > INT_MAX)
-    throw std::bad_alloc();
-  return reinterpret_cast<T*>(mem_ASL(asl_, size.value()));
-}
-
-expr *ASLBuilder::MakeConstant(double value) {
-  expr_n *result = Allocate<expr_n>(asl_->i.size_expr_n_);
-  result->op = reinterpret_cast<efunc_n*>(OPNUM);
-  result->v = value;
-  return reinterpret_cast<expr*>(result);
-}
-
-expr *ASLBuilder::DoMakeUnary(int opcode, Expr lhs) {
-  expr *e = Allocate<expr>();
-  e->op = reinterpret_cast<efunc*>(opcode);
-  e->L.e = lhs.expr_;
-  e->a = asl_->i.n_var_ + asl_->i.nsufext[ASL_Sufkind_var];
-  e->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
-  return e;
-}
-
-expr *ASLBuilder::MakeBinary(int opcode, Expr::Kind kind, Expr lhs, Expr rhs) {
-  CheckOpCode(opcode, kind, "binary");
-  expr *e = Allocate<expr>();
-  e->op = reinterpret_cast<efunc*>(opcode);
-  e->L.e = lhs.expr_;
-  e->R.e = rhs.expr_;
-  e->a = asl_->i.n_var_ + asl_->i.nsufext[ASL_Sufkind_var];
-  e->dL = 1;
-  e->dR = DVALUE[opcode];  // for PLUS, MINUS, REM
-  return e;
-}
-
-expr *ASLBuilder::MakeIf(
-    int opcode, LogicalExpr condition, Expr true_expr, Expr false_expr) {
-  expr_if *e = Allocate<expr_if>();
-  e->op = r_ops_[opcode];
-  e->e = condition.expr_;
-  e->T = true_expr.expr_;
-  e->F = false_expr.expr_;
-  return reinterpret_cast<expr*>(e);
-}
-
-expr *ASLBuilder::MakeIterated(int opcode, ArrayRef<Expr> args) {
-  int num_args = SafeInt<int>(args.size()).value();
-  expr *e = Allocate<expr>(
-      sizeof(expr) - sizeof(double) +
-      SafeInt<int>(num_args + 1) * sizeof(expr*));
-  e->op = reinterpret_cast<efunc*>(opcode);
-  e->L.ep = reinterpret_cast<expr**>(&e->dR);
-  e->R.ep = e->L.ep + num_args;
-  expr **arg_ptrs = e->L.ep;
-  for (int i = 0; i < num_args; ++i)
-    arg_ptrs[i] = args[i].expr_;
-  return e;
 }
 
 Variable ASLBuilder::MakeVariable(int var_index) {

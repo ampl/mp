@@ -83,6 +83,7 @@ class ASLBuilder {
   bool own_asl_;
   efunc **r_ops_;
   efunc *standard_opcodes_[N_OPS];
+  int flags_;  // Flags passed to BeginBuild.
   int nv1_;
   int nz_;
   int nderp_;
@@ -122,15 +123,26 @@ class ASLBuilder {
   // Begins building the ASL object.
   // flags: reader flags, see ASL_reader_flag_bits.
   // Throws ASLError on error.
-  void BeginBuild(const char *stub, const NLHeader &h, int flags);
+  void BeginBuild(const char *stub, const NLHeader &h,
+                  int flags = ASL_STANDARD_OPCODES);
 
   // Ends building the ASL object.
   void EndBuild();
 
   // Adds an objective to the problem.
-  void AddObj(int obj_index, bool maximize, NumericExpr expr);
+  void AddObj(int index, bool maximize, NumericExpr expr);
 
-  Function AddFunction(int index, const char *name, int num_args, int type = 0);
+  Function AddFunction(
+      const char *name, ufunc f, int num_args, int type = 0, void *info = 0);
+
+  Function FindFunction(const char *name) const {
+    return Function(func_lookup_ASL(asl_, name, 0));
+  }
+
+  // Sets a function at given index.
+  // If the function with the specified name doesn't exist and the flag
+  // ASL_allow_missing_funcs is not set, SetFunction throws ASLError.
+  Function SetFunction(int index, const char *name, int num_args, int type = 0);
 
   // The Make* methods construct expression objects. These objects are
   // local to the currently built ASL problem and shouldn't be used with

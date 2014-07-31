@@ -470,7 +470,7 @@ class TestASLBuilder : public ampl::internal::ASLBuilder {
   TestASLBuilder() {
     ampl::NLHeader header = {};
     header.num_vars = header.num_objs = 1;
-    BeginBuild("", header, ampl::internal::ASL_STANDARD_OPCODES);
+    BeginBuild("", header);
   }
 };
 

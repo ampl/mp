@@ -90,8 +90,8 @@ class FunctionTest : public SolverTest {
   // Create functions permitting less arguments than necessary.
   // This is done to be able to test calls with invalid arguments.
   FunctionTest()
-  : element_(AddFunction(0, "element", -2)),
-    in_relation_(AddFunction(1, "in_relation", -1)) {}
+  : element_(AddFunction("element", TestFunc, -2)),
+    in_relation_(AddFunction("in_relation", TestFunc, -1)) {}
 };
 
 INSTANTIATE_TEST_CASE_P(IlogCP, FunctionTest,
@@ -241,7 +241,7 @@ class IlogCPTest : public ::testing::Test, public ampl::internal::ASLBuilder {
     ampl::NLHeader h = {};
     h.num_vars = 3;
     h.num_objs = 1;
-    BeginBuild("", h, ampl::internal::ASL_STANDARD_OPCODES);
+    BeginBuild("", h);
   }
 
   int CountIloDistribute();

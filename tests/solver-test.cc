@@ -68,7 +68,7 @@ SolverTest::SolverTest()
   header.num_vars = 4;
   header.num_objs = 1;
   header.num_funcs = 2;
-  BeginBuild("", header, ampl::internal::ASL_STANDARD_OPCODES);
+  BeginBuild("", header);
   x = MakeVariable(1);
   y = MakeVariable(2);
   z = MakeVariable(3);
@@ -416,7 +416,7 @@ TEST_P(SolverTest, PiecewiseLinear) {
 }
 
 TEST_P(SolverTest, UnsupportedFunctionCall) {
-  ampl::Function f = AddFunction(0, "foo", 2);
+  ampl::Function f = AddFunction("foo", TestFunc, 2);
   ampl::Expr args[] = {MakeConst(1), MakeConst(2)};
   EXPECT_THROW(Eval(MakeCall(f, args), 3);, UnsupportedExprError);
 }

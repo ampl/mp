@@ -85,6 +85,8 @@ class SolverTest
     return (features_ & f) != 0;
   }
 
+  static double TestFunc(arglist *) { return 0; }
+
   class EvalResult {
    private:
     bool has_value_;
