@@ -29,6 +29,7 @@
 
 extern "C" {
 void bswap_ASL(void *x, unsigned long L);
+Static_fg *ed_reset(Static_fg *S, ASL *a);
 funnel * funnelfix(funnel *f);
 void imap_alloc(Static_fg *S);
 void comsubs(Static_fg *S, int alen, cde *d, int **z);
@@ -268,13 +269,14 @@ void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
 
   // Includes allocation of LUv, LUrhs, A_vals or Cgrad, etc.
   flagsave_ASL(asl_, flags);
+  ed_reset(&static_, asl_);
 
   Edaginfo &info = asl_->i;
   int nlcon = info.n_lcon_;
   if (nlcon && (flags & ASL_allow_CLP) == 0)
     throw ASLError(ASL_readerr_CLP, "cannot handle logical constraints");
 
-  // TODO: test ASLBuilder
+  // TODO: test
   bool readall = (flags & ASL_keep_all_suffixes) != 0;
   if (!info.size_expr_n_)
     info.size_expr_n_ = sizeof(expr_n);
@@ -325,13 +327,13 @@ void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
   if (linear) {
     x = nco * sizeof(cde) + no * sizeof(ograd*) + nv * sizeof(expr_v) + no;
   } else {
-    int max_var = nv = static_._nv1 + ncom;
+    static_._max_var = nv = static_._nv1 + ncom;
     info.combc_ = info.comb_ + info.comc_;
-    int ncom_togo = info.ncom0_ = info.combc_ + info.como_;
-    int nzclim = info.ncom0_ >> 3;
+    static_._ncom_togo = info.ncom0_ = info.combc_ + info.como_;
+    static_._nzclim = info.ncom0_ >> 3;
     info.ncom1_ = info.comc1_ + info.como1_;
     int nv0b = static_._nv1 + info.comb_;
-    int nv0c = nv0b + info.comc_;
+    static_._nv0c = nv0b + info.comc_;
     int nv01 = static_._nv1 + info.ncom0_;
     static_._nv011 = nv01 - 1;
     static_._last_cex = static_._nv011;
@@ -394,7 +396,7 @@ void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
     int *vrefx = zci + nv;
     info.objtype_ = reinterpret_cast<char*>(vrefx + nvref);
     if (nvref) {
-      int *vrefnext = vrefx + maxfwd1;
+      static_._vrefnext = vrefx + maxfwd1;
       nvref -= maxfwd1;
     }
     static_._last_d = 0;
@@ -445,6 +447,19 @@ void ASLBuilder::EndBuild() {
     pars.Xknown = x1known_ASL;
   }
   prob_adj_ASL(asl_);
+}
+
+void ASLBuilder::SetObj(int index, ObjType type, NumericExpr expr) {
+  assert(0 <= index && index < asl_->i.n_obj_);
+  asl_->i.objtype_[index] = type;
+  SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.obj_de_,
+              asl_->i.o_cexp1st_, expr, asl_->i.zao_);
+}
+
+void ASLBuilder::SetCon(int index, NumericExpr expr) {
+  assert(0 <= index && index < asl_->i.n_con_);
+  SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.con_de_,
+              asl_->i.c_cexp1st_, expr, asl_->i.zac_);
 }
 
 Function ASLBuilder::AddFunction(

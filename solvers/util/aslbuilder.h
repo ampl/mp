@@ -136,18 +136,11 @@ class ASLBuilder {
   // Ends building the ASL object.
   void EndBuild();
 
-  // Sets an objective at the given index.
-  void SetObj(int index, ObjType type, NumericExpr expr) {
-    asl_->i.objtype_[index] = type;
-    SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.obj_de_,
-                asl_->i.o_cexp1st_, expr, asl_->i.zao_);
-  }
+  // Sets objective type and expression.
+  void SetObj(int index, ObjType type, NumericExpr expr);
 
-  // Sets a constraint at the given index.
-  void SetCon(int index, NumericExpr expr) {
-    SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.con_de_,
-                asl_->i.c_cexp1st_, expr, asl_->i.zac_);
-  }
+  // Sets constraint expression.
+  void SetCon(int index, NumericExpr expr);
 
   Function AddFunction(const char *name, ufunc f, int num_args,
                        Function::Type type = Function::NUMERIC, void *info = 0);
@@ -162,8 +155,7 @@ class ASLBuilder {
   // local to the currently built ASL problem and shouldn't be used with
   // other problems. The expression objects are not accessible via the
   // problem API until they are added as a part of objective or constraint
-  // expression. For this reason the methods below use a different naming
-  // convention from the Add* methods.
+  // expression. For this reason the methods are called Make* rather than Add*.
 
   NumericConstant MakeNumericConstant(double value) {
     return Expr::Create<NumericConstant>(MakeConstant(value));

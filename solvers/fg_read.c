@@ -30,6 +30,11 @@ THIS SOFTWARE.
 #ifdef Just_Linear
 #define who "f_read"
 #define fg_read_ASL f_read_ASL
+#define ed_reset f_ed_reset
+#define funnelfix f_funnelfix
+#define imap_alloc f_imap_alloc
+#define comsubs f_comsubs
+
 #else
 #define who "fg_read"
 #ifdef __cplusplus
@@ -110,7 +115,7 @@ sorry_CLP(EdRead *R, const char *what)
 	exit_ASL(R,ASL_readerr_CLP);
 	}
 
- static Static *
+ Static *
 ed_reset(Static *S, ASL *a)
 {
 	memset(S, 0, sizeof(Static));

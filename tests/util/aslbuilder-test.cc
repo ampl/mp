@@ -609,11 +609,13 @@ TEST(ASLBuilderTest, ASLBuilderAllowCLP) {
 
 class TestASLBuilder : public ASLBuilder {
  public:
-  enum {NUM_FUNCS = 2};
+  enum {NUM_FUNCS = 2, NUM_OBJS = 3, NUM_CONS = 4};
   explicit TestASLBuilder(ASLPtr &asl, bool allow_missing_funcs = false)
   : ASLBuilder(asl.get()) {
     NLHeader header = MakeHeader();
     header.num_funcs = NUM_FUNCS;
+    header.num_objs = NUM_OBJS;
+    header.num_algebraic_cons = NUM_CONS;
     int flags = ampl::internal::ASL_STANDARD_OPCODES;
     if (allow_missing_funcs)
       flags |= ASL_allow_missing_funcs;
@@ -634,12 +636,48 @@ void CheckFunctionList(const ASLPtr &asl, const func_info *(&funcs)[SIZE]) {
 }
 
 TEST(ASLBuilderTest, SetObj) {
-  // TODO: test
+  ASLPtr asl;
+  TestASLBuilder builder(asl);
+#undef obj_de
+  cde *obj_de = reinterpret_cast<ASL_fg*>(asl.get())->I.obj_de_;
+  EXPECT_EQ(ampl::MIN, asl->i.objtype_[1]);
+  EXPECT_EQ(0, obj_de[1].e);
+  builder.SetObj(1, ampl::MAX, builder.MakeNumericConstant(42));
+  EXPECT_EQ(ampl::MAX, asl->i.objtype_[1]);
+  EXPECT_EQ(reinterpret_cast<efunc*>(OPNUM), obj_de[1].e->op);
 }
 
-TEST(ASLBuilderTest, SetCon) {
-  // TODO: test
+#ifndef NDEBUG
+TEST(ASLBuilderTest, SetObjIndexOutOfRange) {
+  ASLPtr asl;
+  TestASLBuilder builder(asl);
+  NumericExpr expr = builder.MakeNumericConstant(42);
+  EXPECT_DEBUG_DEATH(builder.SetObj(-1, ampl::MIN, expr), "Assertion");
+  EXPECT_DEBUG_DEATH(
+        builder.SetObj(TestASLBuilder::NUM_OBJS, ampl::MIN, expr), "Assertion");
 }
+#endif
+
+TEST(ASLBuilderTest, SetCon) {
+  ASLPtr asl;
+  TestASLBuilder builder(asl);
+#undef con_de
+  cde *con_de = reinterpret_cast<ASL_fg*>(asl.get())->I.con_de_;
+  EXPECT_EQ(0, con_de[2].e);
+  builder.SetCon(2, builder.MakeNumericConstant(42));
+  EXPECT_EQ(reinterpret_cast<efunc*>(OPNUM), con_de[2].e->op);
+}
+
+#ifndef NDEBUG
+TEST(ASLBuilderTest, SetConIndexOutOfRange) {
+  ASLPtr asl;
+  TestASLBuilder builder(asl);
+  NumericExpr expr = builder.MakeNumericConstant(42);
+  EXPECT_DEBUG_DEATH(builder.SetCon(-1, expr), "Assertion");
+  EXPECT_DEBUG_DEATH(
+        builder.SetCon(TestASLBuilder::NUM_CONS, expr), "Assertion");
+}
+#endif
 
 TEST(ASLBuilderTest, AddFunction) {
   ASLPtr asl;
@@ -697,7 +735,8 @@ TEST(ASLBuilderTest, SetFunctionIndexOutOfRange) {
   TestASLBuilder builder(asl);
   builder.AddFunction("foo", TestFunc, 3);
   EXPECT_DEBUG_DEATH(builder.SetFunction(-1, "f", 0), "Assertion");
-  EXPECT_DEBUG_DEATH(builder.SetFunction(2, "foo", 3), "Assertion");
+  EXPECT_DEBUG_DEATH(
+        builder.SetFunction(TestASLBuilder::NUM_FUNCS, "foo", 3), "Assertion");
 }
 #endif
 
@@ -783,8 +822,4 @@ TEST(ASLBuilderTest, SizeOverflow) {
   EXPECT_THROW(builder.MakeStringLiteral(
                  fmt::StringRef("", max_size)), OverflowError);
 }
-
-// TODO: test f_read
-
-// TODO: more tests
 }
