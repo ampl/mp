@@ -20,6 +20,7 @@
  Author: Victor Zverovich
  */
 
+#define ASL_PRESERVE_DEFINES
 #include "solvers/util/aslbuilder.h"
 
 #include "solvers/util/nl.h"
@@ -27,13 +28,12 @@
 #include <algorithm>
 #include <cstring>
 
-extern "C" {
-void bswap_ASL(void *x, unsigned long L);
-Static_fg *ed_reset(Static_fg *S, ASL *a);
-funnel * funnelfix(funnel *f);
-void imap_alloc(Static_fg *S);
-void comsubs(Static_fg *S, int alen, cde *d, int **z);
-}
+// Include fg_read.c to access static functions defined there.
+#define fg_read_ASL fg_read2_ASL
+#include "fg_read.c"
+#undef asl
+
+extern "C" void bswap_ASL(void *x, unsigned long L);
 
 namespace {
 
@@ -81,37 +81,37 @@ void ASLBuilder::SetObjOrCon(
   bool linear = asl_->i.ASLtype == ASL_read_f;
   ASL_fg *asl = reinterpret_cast<ASL_fg*>(asl_);
   if (!linear) {
-    static_._lastc1 = static_._last_cex - static_._nv011;
+    static_->_lastc1 = static_->_last_cex - static_->_nv011;
     if (cexp1_end)
-      cexp1_end[index + 1] = static_._lastc1;
-    if (static_._amax1 < static_._lasta)
-      static_._amax1 = static_._lasta;
-    if (static_._co_first) {
-      static_._co_first = 0;
-      if (static_._imap_len < static_._lasta)
-        imap_alloc(&static_);
+      cexp1_end[index + 1] = static_->_lastc1;
+    if (static_->_amax1 < static_->_lasta)
+      static_->_amax1 = static_->_lasta;
+    if (static_->_co_first) {
+      static_->_co_first = 0;
+      if (static_->_imap_len < static_->_lasta)
+        imap_alloc(static_);
       asl->I.f_b_ = funnelfix(asl->I.f_b_);
       asl->I.f_c_ = funnelfix(asl->I.f_c_);
       asl->I.f_o_ = funnelfix(asl->I.f_o_);
     }
-    if (!static_._lastj) {
-      static_._lasta = static_._lasta0;
-      static_._last_d = 0;
+    if (!static_->_lastj) {
+      static_->_lasta = static_->_lasta0;
+      static_->_last_d = 0;
     }
-    static_._lastj = 0;
+    static_->_lastj = 0;
   }
   d += index;
   d->e = expr.expr_;
   if (!linear) {
-    int alen = static_._lasta - static_._lasta0;
-    if (static_._imap_len < static_._lasta)
-      imap_alloc(&static_);
+    int alen = static_->_lasta - static_->_lasta0;
+    if (static_->_imap_len < static_->_lasta)
+      imap_alloc(static_);
     if (z) {
       z += index;
       *z = 0;
     }
-    comsubs(&static_, alen, d, z);
-    static_._firstc1 = static_._lastc1;
+    comsubs(static_, alen, d, z);
+    static_->_firstc1 = static_->_lastc1;
   }
 }
 
@@ -178,9 +178,13 @@ ASLBuilder::ASLBuilder(ASL *asl)
 ASLBuilder::~ASLBuilder() {
   if (own_asl_)
     ASL_free(&asl_);
+  if (static_)
+    delete static_;
 }
 
 void ASLBuilder::InitASL(const char *stub, const NLHeader &h) {
+  if (!static_)
+    static_ = new Static();
   std::size_t stub_len = std::strlen(stub);
   Edaginfo &info = asl_->i;
   info.filename_ = reinterpret_cast<char*>(M1alloc_ASL(&info, stub_len + 5));
@@ -269,7 +273,7 @@ void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
 
   // Includes allocation of LUv, LUrhs, A_vals or Cgrad, etc.
   flagsave_ASL(asl_, flags);
-  ed_reset(&static_, asl_);
+  ed_reset(static_, asl_);
 
   Edaginfo &info = asl_->i;
   int nlcon = info.n_lcon_;
@@ -320,37 +324,38 @@ void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
   }
   int nxv = info.nsufext[ASL_Sufkind_var];
   int nvr = info.n_var_;  // nv for reading
-  int nv0 = nvr + nxv;
-  static_._nv1 = nv0;
-  int nv = static_._nv1;
-  unsigned x = 0, nvref = 0, maxfwd1 = 0;
+  static_->_nv0 = nvr + nxv;
+  static_->_nv1 = static_->_nv0;
+  int nv = static_->_nv1;
+  unsigned x = 0, maxfwd1 = 0;
+  static_->_nvref = 0;
   if (linear) {
     x = nco * sizeof(cde) + no * sizeof(ograd*) + nv * sizeof(expr_v) + no;
   } else {
-    static_._max_var = nv = static_._nv1 + ncom;
+    static_->_max_var = nv = static_->_nv1 + ncom;
     info.combc_ = info.comb_ + info.comc_;
-    static_._ncom_togo = info.ncom0_ = info.combc_ + info.como_;
-    static_._nzclim = info.ncom0_ >> 3;
+    static_->_ncom_togo = info.ncom0_ = info.combc_ + info.como_;
+    static_->_nzclim = info.ncom0_ >> 3;
     info.ncom1_ = info.comc1_ + info.como1_;
-    int nv0b = static_._nv1 + info.comb_;
-    static_._nv0c = nv0b + info.comc_;
-    int nv01 = static_._nv1 + info.ncom0_;
-    static_._nv011 = nv01 - 1;
-    static_._last_cex = static_._nv011;
-    int lasta00 = static_._nv1 + 1;
-    static_._lasta = lasta00;
-    static_._lasta0 = lasta00;
-    info.amax_ = static_._lasta;
+    static_->_nv0b = static_->_nv1 + info.comb_;
+    static_->_nv0c = static_->_nv0b + info.comc_;
+    static_->_nv01 = static_->_nv1 + info.ncom0_;
+    static_->_nv011 = static_->_nv01 - 1;
+    static_->_last_cex = static_->_nv011;
+    static_->_lasta00 = static_->_nv1 + 1;
+    static_->_lasta = static_->_lasta00;
+    static_->_lasta0 = static_->_lasta00;
+    info.amax_ = static_->_lasta;
     maxfwd1 = asl_->p.maxfwd_ + 1;
-    nvref = 0;
+    static_->_nvref = 0;
     if (maxfwd1 > 1) {
-      nvref = maxfwd1 * ((info.ncom0_ < asl_->p.vrefGulp_ ?
+      static_->_nvref = maxfwd1 * ((info.ncom0_ < asl_->p.vrefGulp_ ?
           info.ncom0_ : asl_->p.vrefGulp_) + 1);
     }
     x = nco * sizeof(cde) + no * sizeof(ograd*)
         + nv * (sizeof(expr_v) + 2 * sizeof(int)) + info.ncom0_ * sizeof(cexp)
         + info.ncom1_ * sizeof(cexp1) + info.nfunc_ * sizeof(func_info*)
-        + nvref * sizeof(int) + no;
+        + static_->_nvref * sizeof(int) + no;
     int nvar0 = info.n_var0;
     int nvinc = info.n_var_ - nvar0 + nxv;
     if (!nvinc)
@@ -358,9 +363,9 @@ void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
   }
 
   if (info.X0_)
-    std::memset(info.X0_, 0, static_._nv1 * sizeof(double));
+    std::memset(info.X0_, 0, static_->_nv1 * sizeof(double));
   if (info.havex0_)
-    std::memset(info.havex0_, 0, static_._nv1);
+    std::memset(info.havex0_, 0, static_->_nv1);
   expr_v *e = info1.var_e_ =
       reinterpret_cast<expr_v*>(M1zapalloc_ASL(&info, x));
   info1.con_de_ = reinterpret_cast<cde*>(e + nv);
@@ -371,7 +376,7 @@ void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
   if (linear) {
     info.objtype_ = reinterpret_cast<char*>(info.Ograd_ + no);
   } else {
-    info1.var_ex_ = e + static_._nv1;
+    info1.var_ex_ = e + static_->_nv1;
     info1.var_ex1_ = info1.var_ex_ + info.ncom0_;
     for (int k = 0; k < nv; ++e, ++k) {
       e->op = r_ops_[OPVARVAL];
@@ -379,27 +384,27 @@ void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
     }
     if (info.skip_int_derivs_) {
       if (info.nlvbi_)
-        InitVars(e, info.nlvb_, info.nlvbi_, static_._nv1);
+        InitVars(e, info.nlvb_, info.nlvbi_, static_->_nv1);
       if (info.nlvci_)
-        InitVars(e, info.nlvb_ + info.nlvc_, info.nlvci_, static_._nv1);
+        InitVars(e, info.nlvb_ + info.nlvc_, info.nlvci_, static_->_nv1);
       if (info.nlvoi_) {
         InitVars(e, info.nlvb_ + info.nlvc_ + info.nlvo_,
-                 info.nlvoi_, static_._nv1);
+                 info.nlvoi_, static_->_nv1);
       }
     }
     info1.cexps_ = reinterpret_cast<cexp*>(info.Ograd_ + no);
     info1.cexps1_ = reinterpret_cast<cexp1*>(info1.cexps_ + info.ncom0_);
     info.funcs_ = reinterpret_cast<func_info**>(info1.cexps1_
         + info.ncom1_);
-    int *zc = reinterpret_cast<int*>(info.funcs_ + info.nfunc_);
-    int *zci = zc + nv;
-    int *vrefx = zci + nv;
-    info.objtype_ = reinterpret_cast<char*>(vrefx + nvref);
-    if (nvref) {
-      static_._vrefnext = vrefx + maxfwd1;
-      nvref -= maxfwd1;
+    static_->_zc = reinterpret_cast<int*>(info.funcs_ + info.nfunc_);
+    static_->_zci = static_->_zc + nv;
+    static_->_vrefx = static_->_zci + nv;
+    info.objtype_ = reinterpret_cast<char*>(static_->_vrefx + static_->_nvref);
+    if (static_->_nvref) {
+      static_->_vrefnext = static_->_vrefx + maxfwd1;
+      static_->_nvref -= maxfwd1;
     }
-    static_._last_d = 0;
+    static_->_last_d = 0;
   }
   if (info.n_cc_ && !info.cvar_)
     info.cvar_ = reinterpret_cast<int*>(M1alloc_ASL(&info, nc * sizeof(int)));
@@ -420,12 +425,12 @@ void ASLBuilder::EndBuild() {
       int i = info.comb_ + info.como_;
       if (i < info.combc_)
         i = info.combc_;
-      if ((i += static_._nv1 + 1) > info.amax_)
+      if ((i += static_->_nv1 + 1) > info.amax_)
         info.amax_ = i;
     }
     info.adjoints_ = reinterpret_cast<double*>(
         M1zapalloc_ASL(&asl_->i, info.amax_ * Sizeof(double)));
-    info.adjoints_nv1_ = &info.adjoints_[static_._nv1];
+    info.adjoints_nv1_ = &info.adjoints_[static_->_nv1];
     info.nderps_ += nderp_;
   }
   // TODO
@@ -433,7 +438,7 @@ void ASLBuilder::EndBuild() {
   info.nzjac_ = nz_;
   if (!info.Lastx_) {
     info.Lastx_ = reinterpret_cast<double*>(
-        M1alloc_ASL(&info, static_._nv1 * sizeof(double)));
+        M1alloc_ASL(&info, static_->_nv1 * sizeof(double)));
   }
   if (!linear) {
     Edagpars &pars = asl_->p;

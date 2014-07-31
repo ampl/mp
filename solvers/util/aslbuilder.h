@@ -23,10 +23,11 @@
 #ifndef SOLVERS_UTIL_ASLBUILDER_H_
 #define SOLVERS_UTIL_ASLBUILDER_H_
 
-#include "solvers/util/expr.h"
 #include "solvers/util/format.h"
 #include "solvers/util/problem.h"
 #include "solvers/util/safeint.h"
+
+struct Static;
 
 namespace ampl {
 
@@ -90,7 +91,7 @@ class ASLBuilder {
   static const double DVALUE[];
 
   // "Static" data for the functions in fg_read.
-  Static_fg static_;
+  Static *static_;
 
   FMT_DISALLOW_COPY_AND_ASSIGN(ASLBuilder);
 

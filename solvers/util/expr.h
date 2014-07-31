@@ -43,106 +43,108 @@ extern "C" {
 
 // Undefine ASL macros because they often clash with names used in solver
 // libraries.
-#undef Char
 #undef solve_code
-#undef A_colstarts
-#undef A_rownos
-#undef A_vals
-#undef Cgrad
-#undef Fortran
-#undef LUrhs
-#undef LUv
-#undef Lastx
-#undef Ograd
-#undef Urhsx
-#undef Uvx
-#undef X0
-#undef adjoints
-#undef adjoints_nv1
-#undef amax
-#undef ampl_options
-#undef ampl_vbtol
-#undef amplflag
-#undef archan
-#undef awchan
-#undef binary_nl
-#undef c_cexp1st
-#undef c_vars
-#undef co_index
-#undef comb
-#undef combc
-#undef comc
-#undef comc1
-#undef como
-#undef como1
-#undef con_name
-#undef cv_index
-#undef cvar
-#undef err_jmp
-#undef err_jmp1
-#undef fhash
-#undef filename
-#undef funcs
-#undef funcsfirst
-#undef funcslast
-#undef havepi0
-#undef havex0
-#undef lnc
-#undef maxcolnamelen
-#undef maxrownamelen
-#undef n_cc
-#undef n_con
-#undef n_conjac
-#undef n_obj
-#undef n_var
-#undef nbv
-#undef nclcon
-#undef ncom0
-#undef ncom1
-#undef nderps
-#undef need_nl
-#undef n_eqn
-#undef nfunc
-#undef niv
-#undef nlc
-#undef nlcc
-#undef nlnc
-#undef nlo
-#undef n_lcon
-#undef nlogv
-#undef nlvb
-#undef nlvbi
-#undef nlvc
-#undef nlvci
-#undef nlvo
-#undef nlvoi
-#undef nranges
-#undef nwv
-#undef nzc
-#undef nzjac
-#undef nzo
-#undef o_cexp1st
-#undef o_vars
-#undef obj_no
-#undef objtype
-#undef pi0
-#undef plterms
-#undef real
-#undef return_nofile
-#undef size_expr_n
-#undef skip_int_derivs
-#undef sputinfo
-#undef stub_end
 #undef var_name
-#undef want_deriv
-#undef want_xpi0
-#undef x0kind
-#undef x0len
-#undef xscanf
-#undef zaC
-#undef zac
-#undef zao
-#undef zerograds
+#undef con_name
+#undef filename
+#undef ampl_vbtol
+#ifndef ASL_PRESERVE_DEFINES
+# undef Char
+# undef A_colstarts
+# undef A_rownos
+# undef A_vals
+# undef Cgrad
+# undef Fortran
+# undef LUrhs
+# undef LUv
+# undef Lastx
+# undef Ograd
+# undef Urhsx
+# undef Uvx
+# undef X0
+# undef adjoints
+# undef adjoints_nv1
+# undef amax
+# undef ampl_options
+# undef amplflag
+# undef archan
+# undef awchan
+# undef binary_nl
+# undef c_cexp1st
+# undef c_vars
+# undef co_index
+# undef comb
+# undef combc
+# undef comc
+# undef comc1
+# undef como
+# undef como1
+# undef cv_index
+# undef cvar
+# undef err_jmp
+# undef err_jmp1
+# undef fhash
+# undef funcs
+# undef funcsfirst
+# undef funcslast
+# undef havepi0
+# undef havex0
+# undef lnc
+# undef maxcolnamelen
+# undef maxrownamelen
+# undef n_cc
+# undef n_con
+# undef n_conjac
+# undef n_obj
+# undef n_var
+# undef nbv
+# undef nclcon
+# undef ncom0
+# undef ncom1
+# undef nderps
+# undef need_nl
+# undef n_eqn
+# undef nfunc
+# undef niv
+# undef nlc
+# undef nlcc
+# undef nlnc
+# undef nlo
+# undef n_lcon
+# undef nlogv
+# undef nlvb
+# undef nlvbi
+# undef nlvc
+# undef nlvci
+# undef nlvo
+# undef nlvoi
+# undef nranges
+# undef nwv
+# undef nzc
+# undef nzjac
+# undef nzo
+# undef o_cexp1st
+# undef o_vars
+# undef obj_no
+# undef objtype
+# undef pi0
+# undef plterms
+# undef real
+# undef return_nofile
+# undef size_expr_n
+# undef skip_int_derivs
+# undef sputinfo
+# undef stub_end
+# undef want_deriv
+# undef want_xpi0
+# undef x0kind
+# undef x0len
+# undef xscanf
+# undef zaC
+# undef zac
+# undef zao
+# undef zerograds
+#endif  // ASL_PRESERVE_DEFINES
 
 #include "solvers/util/error.h"
 
