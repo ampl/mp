@@ -20,17 +20,15 @@
  Author: Victor Zverovich
  */
 
-#include "clock.cc"
-#include "format.cc"
 #include "aslbuilder.cc"
 #undef nfunc
-#undef min
-#undef max
 #include "solver.cc"
-#include "os.cc"
 #include "problem.cc"
 #include "rstparser.cc"
 #include "expr.cc"
+#include "clock.cc"
+#include "format.cc"
+#include "os.cc"
 
 #ifndef ASL_HAVE_MKSTEMPS
 extern "C" {
