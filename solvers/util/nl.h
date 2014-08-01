@@ -315,8 +315,40 @@ class NLReader {
   NLHeader header_;
   Handler &handler_;
 
-  // Reads an expression.
-  typename Handler::NumericExpr ReadExpr(TextReader &reader);
+  typedef typename Handler::NumericExpr NumericExpr;
+  typedef typename Handler::LogicalExpr LogicalExpr;
+  typedef typename Handler::Variable Variable;
+
+  template <typename Reader>
+  double ReadNumber(Reader &r) {
+    switch (r.ReadChar()) {
+    case 's': return r.ReadShort();
+    case 'l': return r.ReadLong();
+    case 'n': return r.ReadDouble();
+    }
+    r.ReportParseError("expected numeric constant");
+  }
+
+  template <typename Reader>
+  Variable ReadVariable(Reader &r) {
+    // TODO: variable index can be greater than num_vars
+    int var_index = r.ReadUInt();
+    if (var_index >= header_.num_vars)
+      r.ReportParseError("variable index {} out of bounds", var_index);
+    r.ReadTillEndOfLine();
+    return handler_.MakeVariable(var_index);
+  }
+
+  // Reads a numeric expression.
+  NumericExpr ReadNumericExpr(TextReader &reader);
+  NumericExpr ReadNumericExpr(TextReader &reader, int opcode);
+
+  // Reads a logical expression.
+  LogicalExpr ReadLogicalExpr(TextReader &reader) {
+    // TODO: handle NOT, BINARY_LOGICAL, RELATIONAL, LOGICAL_COUNT,
+    // IMPLICATION, ITERATED_LOGICAL, ALLDIFF
+    return LogicalExpr();
+  }
 
   // Reads a linear expression.
   void ReadLinearExpr(TextReader &reader, int num_terms);
@@ -342,8 +374,8 @@ class NLReader {
 };
 
 template <typename Handler>
-typename Handler::NumericExpr NLReader<Handler>::ReadExpr(TextReader &reader) {
-  typedef typename Handler::NumericExpr NumericExpr;
+typename Handler::NumericExpr
+    NLReader<Handler>::ReadNumericExpr(TextReader &reader) {
   NumericExpr expr;
   switch (reader.ReadChar()) {
   case 'f': {
@@ -355,7 +387,7 @@ typename Handler::NumericExpr NLReader<Handler>::ReadExpr(TextReader &reader) {
     fmt::internal::Array<NumericExpr, 10> args;
     args.resize(num_args);
     for (int i = 0; i < num_args; ++i)
-      args[i] = ReadExpr(reader); // TODO: support string args
+      args[i] = ReadNumericExpr(reader); // TODO: support string args
     // TODO: get function with index func_index
     //expr = handler_.MakeCall(, args);
     break;
@@ -372,22 +404,65 @@ typename Handler::NumericExpr NLReader<Handler>::ReadExpr(TextReader &reader) {
   case 'n':
     expr = handler_.MakeNumericConstant(reader.ReadDouble());
     break;
-  case 'o':
-    // TODO: read expression
-    break;
-  case 'v': {
-    // TODO: variable index can be greater than num_vars
-    int var_index = reader.ReadUInt();
-    if (var_index >= header_.num_vars)
-      reader.ReportParseError("variable index {} out of bounds", var_index);
-    expr = handler_.MakeVariable(var_index);
-    break;
+  case 'o': {
+    int opcode = reader.ReadUInt();
+    if (opcode > N_OPS)
+      reader.ReportParseError("invalid opcode {}", opcode);
+    reader.ReadTillEndOfLine();
+    return ReadNumericExpr(reader, opcode);
   }
+  case 'v':
+    return ReadVariable(reader);
   default:
     reader.ReportParseError("expected expression");
   }
   reader.ReadTillEndOfLine();
   return expr;
+}
+
+template <typename Handler>
+typename Handler::NumericExpr
+    NLReader<Handler>::ReadNumericExpr(TextReader &reader, int opcode) {
+  switch (Expr::kind(opcode)) {
+  case Expr::UNARY:
+    return handler_.MakeUnary(opcode, ReadNumericExpr(reader));
+  case Expr::BINARY: {
+    NumericExpr lhs = ReadNumericExpr(reader), rhs = ReadNumericExpr(reader);
+    return handler_.MakeBinary(opcode, lhs, rhs);
+  }
+  case Expr::IF: {
+    LogicalExpr condition = ReadLogicalExpr(reader);
+    NumericExpr true_expr = ReadNumericExpr(reader);
+    NumericExpr false_expr = ReadNumericExpr(reader);
+    return handler_.MakeIf(condition, true_expr, false_expr);
+  }
+  case Expr::PLTERM: {
+    int num_slopes = reader.ReadUInt();
+    if (num_slopes <= 1)
+      reader.ReportParseError("too few slopes in piecewise-linear term");
+    fmt::internal::Array<double, 10> breakpoints;
+    breakpoints.resize(num_slopes - 1);
+    fmt::internal::Array<double, 10> slopes;
+    slopes.resize(num_slopes);
+    for (int i = 0; i < num_slopes - 1; ++i) {
+      slopes[i] = ReadNumber(reader);
+      breakpoints[i] = ReadNumber(reader);
+    }
+    slopes[num_slopes - 1] = ReadNumber(reader);
+    handler_.MakePiecewiseLinear(num_slopes - 1, &breakpoints[0],
+                                 &slopes[0], ReadVariable(reader));
+    break;
+  }
+  case Expr::VARARG:
+  case Expr::SUM:
+  case Expr::COUNT:
+  case Expr::NUMBEROF:
+    // TODO
+    break;
+  default:
+    reader.ReportParseError("expected numeric expression");
+  }
+  return NumericExpr();
 }
 
 template <typename Handler>
@@ -564,7 +639,7 @@ void NLReader<Handler>::ReadString(
       if (index >= header_.num_algebraic_cons)
         reader.ReportParseError("constraint index {} out of bounds", index);
       reader.ReadTillEndOfLine();
-      handler_.SetCon(index, ReadExpr(reader));
+      handler_.SetCon(index, ReadNumericExpr(reader));
       break;
     }
     case 'F': {
@@ -593,7 +668,7 @@ void NLReader<Handler>::ReadString(
               "logical constraint index {} out of bounds", index);
       }
       reader.ReadTillEndOfLine();
-      ReadExpr(reader);
+      ReadLogicalExpr(reader);
       // TODO: send to handler
       break;
     }
@@ -619,7 +694,8 @@ void NLReader<Handler>::ReadString(
         reader.ReportParseError("objective index {} out of bounds", index);
       int obj_type = reader.ReadUInt();
       reader.ReadTillEndOfLine();
-      handler_.SetObj(index, obj_type != 0 ? MAX : MIN, ReadExpr(reader));
+      handler_.SetObj(index, obj_type != 0 ? MAX : MIN,
+                      ReadNumericExpr(reader));
       break;
     }
     case 'S':

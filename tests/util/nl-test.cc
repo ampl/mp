@@ -39,6 +39,8 @@ struct TestNLHandler {
   std::vector<std::string> con_exprs;
 
   typedef std::string NumericExpr;
+  typedef std::string LogicalExpr;
+  typedef std::string Variable;
 
   void BeginBuild(const char *, const NLHeader &h, int) {
     header = h;
@@ -70,6 +72,27 @@ struct TestNLHandler {
 
   std::string MakeVariable(int index) {
     return fmt::format("x{}", index + 1);
+  }
+
+  std::string MakeUnary(int opcode, std::string arg) {
+    return fmt::format("o{}({})", opcode, arg);
+  }
+
+  std::string MakeBinary(int opcode, std::string lhs, std::string rhs) {
+    return fmt::format("o{}({}, {})", opcode, lhs, rhs);
+  }
+
+  std::string MakeIf(std::string condition,
+                     std::string true_expr, std::string false_expr) {
+    return fmt::format("if {} then {} else {}",
+                       condition, true_expr, false_expr);
+  }
+
+  std::string MakePiecewiseLinear(
+      int num_breakpoints,const double *breakpoints,
+      const double *slopes, std::string var) {
+    // TODO
+    return std::string();
   }
 };
 
