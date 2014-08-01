@@ -23,6 +23,9 @@
 #include "clock.cc"
 #include "format.cc"
 #include "aslbuilder.cc"
+#undef nfunc
+#undef min
+#undef max
 #include "solver.cc"
 #include "os.cc"
 #include "problem.cc"
