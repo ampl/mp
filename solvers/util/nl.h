@@ -197,6 +197,33 @@ struct NLHeader {
 
 fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h);
 
+// A reference to an immutable array.
+template <typename T>
+class ArrayRef {
+ private:
+  const T *data_;
+  std::size_t size_;
+
+ public:
+  ArrayRef(const T *data, std::size_t size) : data_(data), size_(size) {}
+
+  template <typename U>
+  ArrayRef(ArrayRef<U> other) : data_(other.data()), size_(other.size()) {}
+
+  template <std::size_t SIZE>
+  ArrayRef(const T (&data)[SIZE]) : data_(data), size_(SIZE) {}
+
+  const T *data() const { return data_; }
+  std::size_t size() const { return size_; }
+
+  const T &operator[](std::size_t i) const { return data_[i]; }
+};
+
+template <typename T>
+ArrayRef<T> MakeArrayRef(const T *data, std::size_t size) {
+  return ArrayRef<T>(data, size);
+}
+
 class TextReader {
  private:
   const char *ptr_;
@@ -341,11 +368,58 @@ class NLReader {
     reader_.ReadTillEndOfLine();
     return handler_.MakeVariable(var_index);
   }
+
   Variable ReadVariable() {
     if (reader_.ReadChar() != 'v')
       reader_.ReportParseError("expected variable");
     return DoReadVariable();
   }
+
+  // Helper structs to provide a uniform interface to Read{Numeric,Logical}Expr
+  // since it is not possible to overload on expression type as NumericExpr
+  // and LogicalExpr can be the same type.
+  struct NumericExprReader {
+    typedef NumericExpr Expr;
+    NumericExpr operator()(NLReader &r) const { return r.ReadNumericExpr(); }
+  };
+  struct LogicalExprReader {
+    typedef LogicalExpr Expr;
+    LogicalExpr operator()(NLReader &r) const { return r.ReadLogicalExpr(); }
+  };
+
+  template <typename ExprReader = NumericExprReader>
+  class ReadArgs {
+   private:
+    typedef typename ExprReader::Expr Expr;
+    fmt::internal::Array<Expr, 10> args_;
+
+   public:
+    ReadArgs(NLReader &r, int min_args) {
+      int num_args = r.reader_.ReadUInt();
+      if (num_args < min_args)
+        r.reader_.ReportParseError("too few arguments");
+      args_.resize(num_args);
+      ExprReader read_expr;
+      for (int i = 0; i < num_args; ++i)
+        args_[i] = read_expr(r);
+    }
+
+    operator ArrayRef<Expr>() const {
+      return ArrayRef<Expr>(&args_[0], args_.size());
+    }
+  };
+
+  // A helper struct used to make sure that the arguments to a binary
+  // expression are read in the correct order and avoid errors of the form:
+  //   MakeBinary(opcode, ReadNumericExpr(), ReadNumericExpr())
+  // The above code is incorrect as the order of evaluation of arguments is
+  // unspecified.
+  template <typename ExprReader = NumericExprReader>
+  struct BinaryArgReader {
+    LogicalExpr lhs;
+    LogicalExpr rhs;
+    BinaryArgReader(NLReader &r) : lhs(ExprReader()(r)), rhs(ExprReader()(r)) {}
+  };
 
   // Reads a numeric expression.
   NumericExpr ReadNumericExpr();
@@ -405,8 +479,8 @@ typename Handler::NumericExpr NLReader<Reader, Handler>::ReadNumericExpr() {
     fmt::internal::Array<NumericExpr, 10> args(num_args);
     for (int i = 0; i < num_args; ++i)
       args[i] = ReadNumericExpr(); // TODO: support string args
-    // TODO: get function with index func_index
-    //expr = handler_.MakeCall(, args);
+    // TODO
+    //expr = handler_.MakeCall(func_index, args);
     break;
   }
   case 'h':
@@ -433,12 +507,13 @@ typename Handler::NumericExpr NLReader<Reader, Handler>::ReadNumericExpr() {
 template <typename Reader, typename Handler>
 typename Handler::NumericExpr
     NLReader<Reader, Handler>::ReadNumericExpr(int opcode) {
+  using fmt::internal::Array;
   switch (Expr::kind(opcode)) {
   case Expr::UNARY:
     return handler_.MakeUnary(opcode, ReadNumericExpr());
   case Expr::BINARY: {
-    NumericExpr lhs = ReadNumericExpr(), rhs = ReadNumericExpr();
-    return handler_.MakeBinary(opcode, lhs, rhs);
+    BinaryArgReader<> args(*this);
+    return handler_.MakeBinary(opcode, args.lhs, args.rhs);
   }
   case Expr::IF: {
     LogicalExpr condition = ReadLogicalExpr();
@@ -451,8 +526,8 @@ typename Handler::NumericExpr
     if (num_slopes <= 1)
       reader_.ReportParseError("too few slopes in piecewise-linear term");
     reader_.ReadTillEndOfLine();
-    fmt::internal::Array<double, 10> breakpoints(num_slopes - 1);
-    fmt::internal::Array<double, 10> slopes(num_slopes);
+    Array<double, 10> breakpoints(num_slopes - 1);
+    Array<double, 10> slopes(num_slopes);
     for (int i = 0; i < num_slopes - 1; ++i) {
       slopes[i] = ReadNumericConstant();
       breakpoints[i] = ReadNumericConstant();
@@ -462,11 +537,13 @@ typename Handler::NumericExpr
           num_slopes - 1, &breakpoints[0], &slopes[0], ReadVariable());
   }
   case Expr::VARARG:
+    return handler_.MakeVarArg(opcode, ReadArgs<>(*this, 1));
   case Expr::SUM:
+    return handler_.MakeSum(ReadArgs<>(*this, 3));
   case Expr::COUNT:
+    return handler_.MakeCount(ReadArgs<LogicalExprReader>(*this, 1));
   case Expr::NUMBEROF:
-    // TODO
-    break;
+    return handler_.MakeNumberOf(ReadArgs<>(*this, 1));
   default:
     reader_.ReportParseError("expected numeric expression");
   }
@@ -495,9 +572,23 @@ typename Handler::LogicalExpr
     NLReader<Reader, Handler>::ReadLogicalExpr(int opcode) {
   switch (Expr::kind(opcode)) {
   case Expr::NOT:
+    return handler_.MakeNot(ReadLogicalExpr());
+  case Expr::BINARY_LOGICAL: {
+    BinaryArgReader<LogicalExprReader> args(*this);
+    return handler_.MakeBinaryLogical(opcode, args.lhs, args.rhs);
+  }
+  case Expr::RELATIONAL: {
+    BinaryArgReader<> args(*this);
+    return handler_.MakeRelational(opcode, args.lhs, args.rhs);
+  }
+  case Expr::LOGICAL_COUNT:
+  case Expr::IMPLICATION:
+  case Expr::ITERATED_LOGICAL:
+  case Expr::ALLDIFF:
+    // TODO
     break;
-  // TODO: handle NOT, BINARY_LOGICAL, RELATIONAL, LOGICAL_COUNT,
-  // IMPLICATION, ITERATED_LOGICAL, ALLDIFF
+  default:
+    reader_.ReportParseError("expected logical expression");
   }
   return LogicalExpr();
 }

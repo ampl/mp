@@ -178,7 +178,7 @@ TEST_P(FunctionTest, TooFewArgsToInRelationConstraint) {
   p.AddVar(0, 100, ampl::INTEGER);
   p.AddObj(ampl::MIN, MakeVariable(0));
   p.AddCon(MakeRelational(NE, MakeCall(in_relation_,
-    ampl::internal::ArrayRef<Expr>(0, 0)), MakeConst(0)));
+    ampl::ArrayRef<Expr>(0, 0)), MakeConst(0)));
   EXPECT_THROW_MSG(Solve(p), ampl::Error, "in_relation: too few arguments");
 }
 

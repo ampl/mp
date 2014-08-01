@@ -23,6 +23,7 @@
 #include <climits>
 
 #include "gtest/gtest.h"
+#include "solvers/util/aslbuilder.h"
 #include "solvers/util/nl.h"
 #include "solvers/util/problem.h"
 #include "tests/util.h"
@@ -107,8 +108,38 @@ class TestNLHandler {
     return w.str();
   }
 
+  std::string MakeVarArg(int opcode, ampl::ArrayRef<std::string> args) {
+    // TODO
+    return "";
+  }
+
+  std::string MakeSum(ampl::ArrayRef<std::string> args) {
+    // TODO
+    return "";
+  }
+
+  std::string MakeCount(ampl::ArrayRef<std::string> args) {
+    // TODO
+    return "";
+  }
+
+  std::string MakeNumberOf(ampl::ArrayRef<std::string> args) {
+    // TODO
+    return "";
+  }
+
   std::string MakeLogicalConstant(bool value) {
     return fmt::format("l{}", value);
+  }
+
+  std::string MakeNot(std::string arg) { return fmt::format("not {}", arg); }
+
+  std::string MakeBinaryLogical(int opcode, std::string lhs, std::string rhs) {
+    return fmt::format("o{}({}, {})", opcode, lhs, rhs);
+  }
+
+  std::string MakeRelational(int opcode, std::string lhs, std::string rhs) {
+    return fmt::format("o{}({}, {})", opcode, lhs, rhs);
   }
 };
 
@@ -541,6 +572,10 @@ TEST(NLTest, ParsePiecewiseLinearExpr) {
   EXPECT_THROW_MSG(
     ReadNL(MakeHeader(), "C0\no64\n1\nn0\nv1"),
     ampl::ParseError, "(input):13:1: too few slopes in piecewise-linear term");
+}
+
+TEST(NLTest, VarArgExpr) {
+  // TODO
 }
 
 // TODO: test parsing expressions

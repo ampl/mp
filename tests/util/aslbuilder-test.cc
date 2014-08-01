@@ -32,8 +32,8 @@ using ampl::NLHeader;
 using ampl::Function;
 using ampl::LogicalExpr;
 using ampl::NumericExpr;
+using ampl::MakeArrayRef;
 using ampl::internal::ASLBuilder;
-using ampl::internal::MakeArrayRef;
 
 bool operator==(const cde &lhs, const cde &rhs) {
   return lhs.e == rhs.e && lhs.d == rhs.d && lhs.zaplen == rhs.zaplen;

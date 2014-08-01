@@ -55,7 +55,7 @@ using ampl::IteratedLogicalExpr;
 using ampl::AllDiffExpr;
 using ampl::StringLiteral;
 using ampl::ExprVisitor;
-using ampl::internal::MakeArrayRef;
+using ampl::MakeArrayRef;
 
 using ampl::LinearTerm;
 using ampl::LinearExpr;

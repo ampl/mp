@@ -324,7 +324,7 @@ TEST_P(SolverTest, Acos) {
 
 TEST_P(SolverTest, Sum) {
   NumericExpr args[] = {x, y, z};
-  using ampl::internal::MakeArrayRef;
+  using ampl::MakeArrayRef;
   EXPECT_EQ(0, Eval(MakeSum(MakeArrayRef(args, 0))));
   EXPECT_EQ(42, Eval(MakeSum(MakeArrayRef(args, 1)), 42));
   EXPECT_EQ(123, Eval(MakeSum(args), 100, 20, 3));
