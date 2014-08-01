@@ -1,5 +1,5 @@
 /*
- An .nl reader tests.
+ An .nl parser tests.
 
  Copyright (C) 2013 AMPL Optimization Inc
 
@@ -28,7 +28,7 @@
 #include "tests/util.h"
 
 using ampl::NLHeader;
-using ampl::NLReader;
+using ampl::ParseNLString;
 
 namespace {
 
@@ -172,8 +172,7 @@ std::string FormatHeader(const NLHeader &h) {
 // Reads a header from the specified string.
 NLHeader ReadHeader(const std::string &s) {
   TestNLHandler handler;
-  NLReader<TestNLHandler> reader(handler);
-  reader.ReadString(s, "(input)", true);
+  ParseNLString(s, handler, "(input)", true);
   return handler.header;
 }
 
@@ -185,7 +184,7 @@ NLHeader ReadHeader(int line_index, fmt::StringRef line) {
 
 TEST(NLTest, NoNewlineAtEOF) {
   TestNLHandler handler;
-  NLReader<TestNLHandler>(handler).ReadString("g\n"
+  ParseNLString("g\n"
     " 1 1 0\n"
     " 0 0\n"
     " 0 0\n"
@@ -195,7 +194,7 @@ TEST(NLTest, NoNewlineAtEOF) {
     " 0 0\n"
     " 0 0\n"
     " 0 0 0 0 0\n"
-    "k0\0h");
+    "k0\0h", handler);
 }
 
 TEST(NLTest, InvalidFormat) {
@@ -434,8 +433,7 @@ TEST(NLTest, IncompleteHeader) {
 
 void ReadNL(const NLHeader &header, const char *body) {
   TestNLHandler handler;
-  NLReader<TestNLHandler> reader(handler);
-  reader.ReadString(FormatHeader(header) + body);
+  ParseNLString(FormatHeader(header) + body, handler);
 }
 
 TEST(NLTest, ObjIndex) {
@@ -464,22 +462,23 @@ TEST(NLTest, ObjType) {
 
 TEST(NLTest, ObjExpr) {
   TestNLHandler handler;
-  NLReader<TestNLHandler> reader(handler);
   NLHeader header = {};
   header.num_objs = 2;
   header.num_vars = 1;
-  reader.ReadString(FormatHeader(header) + "O1 0\nn0");
+  ParseNLString(FormatHeader(header) + "O1 0\nn0", handler);
   EXPECT_TRUE(handler.obj_exprs[0].empty());
   EXPECT_EQ("minimize o2: 0;\n", handler.log.str());
-  reader.ReadString(FormatHeader(header) + "O0 1\nn4.2");
+  ParseNLString(FormatHeader(header) + "O0 1\nn4.2", handler);
   EXPECT_EQ("maximize o1: 4.2;\n", handler.log.str());
-  reader.ReadString(FormatHeader(header) + "O0 1\ns4.2");
+  ParseNLString(FormatHeader(header) + "O0 1\ns4.2", handler);
   EXPECT_EQ("maximize o1: 4;\n", handler.log.str());
-  reader.ReadString(FormatHeader(header) + "O0 1\nl4.2");
+  ParseNLString(FormatHeader(header) + "O0 1\nl4.2", handler);
   EXPECT_EQ("maximize o1: 4;\n", handler.log.str());
-  reader.ReadString(FormatHeader(header) + "O0 1\nv0");
+  ParseNLString(FormatHeader(header) + "O0 1\nv0", handler);
   EXPECT_EQ("maximize o1: x1;\n", handler.log.str());
 }
+
+// TODO: test parsing expressions
 
 // TODO: more tests
 }
