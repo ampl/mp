@@ -247,10 +247,7 @@ class Expr {
   static const Info INFO[N_OPS];
 
   // Returns the kind of this expression.
-  Kind kind() const {
-    assert(opcode() >= 0 && opcode() < N_OPS);
-    return INFO[opcode()].kind;
-  }
+  Kind kind() const { return kind(opcode()); }
 
   void True() const {}
   typedef void (Expr::*SafeBool)() const;
@@ -353,6 +350,11 @@ class Expr {
   // The opcodes are defined in opcode.hd.
   int opcode() const {
     return static_cast<int>(reinterpret_cast<std::size_t>(expr_->op));
+  }
+
+  static Kind kind(int opcode) {
+    assert(opcode >= 0 && opcode < N_OPS);
+    return INFO[opcode].kind;
   }
 
   // Returns the function name or operator for this expression as a
