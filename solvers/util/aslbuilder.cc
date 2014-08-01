@@ -32,6 +32,7 @@
 #define fg_read_ASL fg_read2_ASL
 #include "fg_read.c"
 #undef asl
+#undef max
 
 extern "C" void bswap_ASL(void *x, unsigned long L);
 
