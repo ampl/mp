@@ -534,7 +534,8 @@ UnaryExpr ASLBuilder::MakeUnary(int opcode, NumericExpr arg) {
 PiecewiseLinearExpr ASLBuilder::MakePiecewiseLinear(
     int num_breakpoints, const double *breakpoints,
     const double *slopes, Variable var) {
-  assert(num_breakpoints >= 0);
+  assert(num_breakpoints >= 1);
+  ++asl_->i.plterms_;
   plterm *term = Allocate<plterm>(
       sizeof(plterm) + 2 * num_breakpoints * sizeof(double));
   term->n = num_breakpoints + 1;
