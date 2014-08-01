@@ -1,5 +1,5 @@
 /*
- An .nl parser tests.
+ An .nl reader tests.
 
  Copyright (C) 2013 AMPL Optimization Inc
 
@@ -28,7 +28,7 @@
 #include "tests/util.h"
 
 using ampl::NLHeader;
-using ampl::ParseNLString;
+using ampl::ReadNLString;
 
 namespace {
 
@@ -90,6 +90,10 @@ struct TestNLHandler {
       const double *slopes, std::string var) {
     // TODO
     return std::string();
+  }
+
+  std::string MakeLogicalConstant(bool value) {
+    return fmt::format("l{}", value);
   }
 };
 
@@ -169,7 +173,7 @@ std::string FormatHeader(const NLHeader &h) {
 // Reads a header from the specified string.
 NLHeader ReadHeader(const std::string &s) {
   TestNLHandler handler;
-  ParseNLString(s, handler, "(input)", true);
+  ReadNLString(s, handler, "(input)", true);
   return handler.header;
 }
 
@@ -181,7 +185,7 @@ NLHeader ReadHeader(int line_index, fmt::StringRef line) {
 
 TEST(NLTest, NoNewlineAtEOF) {
   TestNLHandler handler;
-  ParseNLString("g\n"
+  ReadNLString("g\n"
     " 1 1 0\n"
     " 0 0\n"
     " 0 0\n"
@@ -430,7 +434,7 @@ TEST(NLTest, IncompleteHeader) {
 
 void ReadNL(const NLHeader &header, const std::string &body) {
   TestNLHandler handler;
-  ParseNLString(FormatHeader(header) + body, handler);
+  ReadNLString(FormatHeader(header) + body, handler);
 }
 
 TEST(NLTest, ObjIndex) {
@@ -467,16 +471,16 @@ TEST(NLTest, ObjExpr) {
   TestNLHandler handler;
   NLHeader header = MakeHeader();
   header.num_objs = 2;
-  ParseNLString(FormatHeader(header) + "O1 0\nn0", handler);
+  ReadNLString(FormatHeader(header) + "O1 0\nn0", handler);
   EXPECT_TRUE(handler.obj_exprs[0].empty());
   EXPECT_EQ("minimize o2: 0;\n", handler.log.str());
-  ParseNLString(FormatHeader(header) + "O0 1\nv0", handler);
+  ReadNLString(FormatHeader(header) + "O0 1\nv0", handler);
   EXPECT_EQ("maximize o1: x0;\n", handler.log.str());
 }
 
 #define EXPECT_PARSE(expected_output, nl_body) {\
   TestNLHandler handler; \
-  ParseNLString(FormatHeader(MakeHeader()) + nl_body, handler); \
+  ReadNLString(FormatHeader(MakeHeader()) + nl_body, handler); \
   EXPECT_EQ(expected_output, handler.log.str()); \
 }
 

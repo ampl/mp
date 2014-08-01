@@ -258,7 +258,7 @@ class TextReader {
     }
   }
 
-  template <typename Int = int>
+  template <typename Int>
   Int ReadUInt() {
     SkipSpace();
     char c = *ptr_;
@@ -266,6 +266,8 @@ class TextReader {
       ReportParseError("expected nonnegative integer");
     return DoReadUInt<Int>();
   }
+
+  int ReadUInt() { return ReadUInt<int>(); }
 
   bool ReadOptionalUInt(int &value) {
     SkipSpace();
@@ -313,10 +315,10 @@ class TextReader {
   }
 };
 
-// An .nl file parser.
-// Handler is a class that receives notifications about read constructs.
+// An .nl file reader.
+// Handler is a class that receives notifications of the content of a file.
 template <typename Reader, typename Handler>
-class NLParser {
+class NLReader {
  private:
   Reader &reader_;
   NLHeader &header_;
@@ -326,14 +328,9 @@ class NLParser {
   typedef typename Handler::LogicalExpr LogicalExpr;
   typedef typename Handler::Variable Variable;
 
-  double ReadNumber() {
-    switch (reader_.ReadChar()) {
-    case 's': return reader_.template ReadInt<short>();
-    case 'l': return reader_.template ReadInt<long>();
-    case 'n': return reader_.ReadDouble();
-    }
-    reader_.ReportParseError("expected numeric constant");
-    return 0;
+  double ReadNumericConstant(char code);
+  double ReadNumericConstant() {
+    return ReadNumericConstant(reader_.ReadChar());
   }
 
   Variable ReadVariable() {
@@ -350,11 +347,8 @@ class NLParser {
   NumericExpr ReadNumericExpr(int opcode);
 
   // Reads a logical expression.
-  LogicalExpr ReadLogicalExpr() {
-    // TODO: handle NOT, BINARY_LOGICAL, RELATIONAL, LOGICAL_COUNT,
-    // IMPLICATION, ITERATED_LOGICAL, ALLDIFF
-    return LogicalExpr();
-  }
+  LogicalExpr ReadLogicalExpr();
+  LogicalExpr ReadLogicalExpr(int opcode);
 
   // Reads a linear expression.
   void ReadLinearExpr(int num_terms);
@@ -367,17 +361,36 @@ class NLParser {
   void ReadColumnOffsets();
 
  public:
-  NLParser(Reader &reader, NLHeader &header, Handler &handler)
+  NLReader(Reader &reader, NLHeader &header, Handler &handler)
     : reader_(reader), header_(header), handler_(handler) {}
 
-  void Parse();
+  void Read();
 };
 
 template <typename Reader, typename Handler>
-typename Handler::NumericExpr
-    NLParser<Reader, Handler>::ReadNumericExpr() {
+double NLReader<Reader, Handler>::ReadNumericConstant(char code) {
+  double value = 0;
+  switch (code) {
+  case 'n':
+    value = reader_.ReadDouble();
+    break;
+  case 's':
+    value = reader_.template ReadInt<short>();
+    break;
+  case 'l':
+    value = reader_.template ReadInt<long>();
+    break;
+  default:
+    reader_.ReportParseError("expected numeric constant");
+  }
+  reader_.ReadTillEndOfLine();
+  return value;
+}
+
+template <typename Reader, typename Handler>
+typename Handler::NumericExpr NLReader<Reader, Handler>::ReadNumericExpr() {
   NumericExpr expr;
-  switch (reader_.ReadChar()) {
+  switch (char c = reader_.ReadChar()) {
   case 'f': {
     int func_index = reader_.ReadUInt();
     if (func_index >= header_.num_funcs)
@@ -394,15 +407,8 @@ typename Handler::NumericExpr
   case 'h':
     // TODO: read string
     break;
-  case 's':
-    expr = handler_.MakeNumericConstant(reader_.template ReadInt<short>());
-    break;
-  case 'l':
-    expr = handler_.MakeNumericConstant(reader_.template ReadInt<long>());
-    break;
-  case 'n':
-    expr = handler_.MakeNumericConstant(reader_.ReadDouble());
-    break;
+  case 'n': case 'l': case 's':
+    return handler_.MakeNumericConstant(ReadNumericConstant(c));
   case 'o': {
     int opcode = reader_.ReadUInt();
     if (opcode > N_OPS)
@@ -421,7 +427,7 @@ typename Handler::NumericExpr
 
 template <typename Reader, typename Handler>
 typename Handler::NumericExpr
-    NLParser<Reader, Handler>::ReadNumericExpr(int opcode) {
+    NLReader<Reader, Handler>::ReadNumericExpr(int opcode) {
   switch (Expr::kind(opcode)) {
   case Expr::UNARY:
     return handler_.MakeUnary(opcode, ReadNumericExpr());
@@ -442,10 +448,10 @@ typename Handler::NumericExpr
     fmt::internal::Array<double, 10> breakpoints(num_slopes - 1);
     fmt::internal::Array<double, 10> slopes(num_slopes);
     for (int i = 0; i < num_slopes - 1; ++i) {
-      slopes[i] = ReadNumber();
-      breakpoints[i] = ReadNumber();
+      slopes[i] = ReadNumericConstant();
+      breakpoints[i] = ReadNumericConstant();
     }
-    slopes[num_slopes - 1] = ReadNumber();
+    slopes[num_slopes - 1] = ReadNumericConstant();
     handler_.MakePiecewiseLinear(num_slopes - 1, &breakpoints[0],
                                  &slopes[0], ReadVariable());
     break;
@@ -463,7 +469,36 @@ typename Handler::NumericExpr
 }
 
 template <typename Reader, typename Handler>
-void NLParser<Reader, Handler>::ReadLinearExpr(int num_terms) {
+typename Handler::LogicalExpr NLReader<Reader, Handler>::ReadLogicalExpr() {
+  switch (char c = reader_.ReadChar()) {
+  case 'n': case 'l': case 's':
+    return handler_.MakeLogicalConstant(ReadNumericConstant(c) != 0);
+  case 'o': {
+    int opcode = reader_.ReadUInt();
+    if (opcode > N_OPS)
+      reader_.ReportParseError("invalid opcode {}", opcode);
+    reader_.ReadTillEndOfLine();
+    return ReadLogicalExpr(opcode);
+  }
+  }
+  reader_.ReportParseError("expected logical expression");
+  return LogicalExpr();
+}
+
+template <typename Reader, typename Handler>
+typename Handler::LogicalExpr
+    NLReader<Reader, Handler>::ReadLogicalExpr(int opcode) {
+  switch (Expr::kind(opcode)) {
+  case Expr::NOT:
+    break;
+  // TODO: handle NOT, BINARY_LOGICAL, RELATIONAL, LOGICAL_COUNT,
+  // IMPLICATION, ITERATED_LOGICAL, ALLDIFF
+  }
+  return LogicalExpr();
+}
+
+template <typename Reader, typename Handler>
+void NLReader<Reader, Handler>::ReadLinearExpr(int num_terms) {
   for (int i = 0; i < num_terms; ++i) {
     reader_.ReadUInt();
     reader_.ReadUInt(); // TODO: read double
@@ -473,7 +508,7 @@ void NLParser<Reader, Handler>::ReadLinearExpr(int num_terms) {
 }
 
 template <typename Reader, typename Handler>
-void NLParser<Reader, Handler>::ReadBounds() {
+void NLReader<Reader, Handler>::ReadBounds() {
   for (int i = 0; i < header_.num_vars; ++i) {
     reader_.ReadUInt();
     reader_.ReadUInt(); // TODO: read double
@@ -483,7 +518,7 @@ void NLParser<Reader, Handler>::ReadBounds() {
 }
 
 template <typename Reader, typename Handler>
-void NLParser<Reader, Handler>::ReadColumnOffsets() {
+void NLReader<Reader, Handler>::ReadColumnOffsets() {
   int count = reader_.ReadUInt(); // TODO
   reader_.ReadTillEndOfLine();
   for (int i = 0; i < count; ++i) {
@@ -493,7 +528,7 @@ void NLParser<Reader, Handler>::ReadColumnOffsets() {
 }
 
 template <typename Reader, typename Handler>
-void NLParser<Reader, Handler>::Parse() {
+void NLReader<Reader, Handler>::Read() {
   for (;;) {
     char c = reader_.ReadChar();
     switch (c) {
@@ -588,11 +623,11 @@ void NLParser<Reader, Handler>::Parse() {
   }
 }
 
-// Parses a string.
+// Reads a string containing a problem in .nl format.
 // name: Name to be used when reporting errors.
 // header_only: true to read the header only, false to read the whole file
 template <typename Handler>
-void ParseNLString(fmt::StringRef str, Handler &handler,
+void ReadNLString(fmt::StringRef str, Handler &handler,
                    fmt::StringRef name = "(input)", bool header_only = false) {
   TextReader reader(name, str.c_str());
 
@@ -711,12 +746,12 @@ void ParseNLString(fmt::StringRef str, Handler &handler,
   if (header.format != NLHeader::TEXT) {
     // TODO: switch to binary reader
   }
-  NLParser<TextReader, Handler>(reader, header, handler).Parse();
+  NLReader<TextReader, Handler>(reader, header, handler).Read();
 }
 
-// Parses a file.
+// Reads an .nl file.
 template <typename Handler>
-void ParseNLFile(fmt::StringRef filename, Handler &h) {
+void ReadNLFile(fmt::StringRef filename, Handler &h) {
   MemoryMappedFile file(filename);
   // TODO: use a buffer instead of mmap if mmap is not available or the
   //       file length is a multiple of the page size
@@ -724,7 +759,7 @@ void ParseNLFile(fmt::StringRef filename, Handler &h) {
   // Check if file size fits in size_t.
   if (size != file.size())
     throw Error("file {} is too big", filename);
-  ParseNLString(fmt::StringRef(file.start(), size), h, filename);
+  ReadNLString(fmt::StringRef(file.start(), size), h, filename);
 }
 }  // namespace ampl
 
