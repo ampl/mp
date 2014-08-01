@@ -31,6 +31,8 @@
 #include <exception>
 #include <limits>
 
+namespace safeint {
+
 class OverflowError : public std::exception {
  public:
   const char *what() const throw() { return "integer overflow"; }
@@ -127,5 +129,7 @@ inline SafeInt<T1> operator*(SafeInt<T1> a, T2 b) { return a * SafeInt<T1>(b); }
 
 template <typename T1, typename T2>
 inline SafeInt<T2> operator*(T1 a, SafeInt<T2> b) { return SafeInt<T2>(a) * b; }
+
+} //  namespace safeint
 
 #endif  // SAFEINT_H_

@@ -536,7 +536,8 @@ void CheckParseInt(char code) {
   Int min = std::numeric_limits<Int>::min();
   EXPECT_PARSE(fmt::format("c0: {};\n", min + 0.),
                fmt::format("C0\n{}{}", code, min));
-  typename MakeUnsigned<Int>::Type max = std::numeric_limits<Int>::max();
+  typename safeint::MakeUnsigned<Int>::Type max =
+      std::numeric_limits<Int>::max();
   EXPECT_PARSE(fmt::format("c0: {};\n", max + 0.),
                fmt::format("C0\n{}{}", code, max));
   EXPECT_THROW_MSG(

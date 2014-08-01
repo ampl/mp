@@ -30,6 +30,10 @@
 #include <climits>
 #include "solvers/util/safeint.h"
 
+using safeint::SafeAbs;
+using safeint::SafeInt;
+using safeint::OverflowError;
+
 TEST(SafeIntTest, SafeAbs) {
   EXPECT_EQ(42, SafeAbs(42));
   EXPECT_EQ(42, SafeAbs(-42));

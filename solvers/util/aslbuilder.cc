@@ -34,6 +34,8 @@
 #undef asl
 #undef max
 
+using safeint::SafeInt;
+
 extern "C" void bswap_ASL(void *x, unsigned long L);
 
 namespace {

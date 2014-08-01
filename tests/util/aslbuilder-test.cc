@@ -774,6 +774,7 @@ TEST(ASLBuilderTest, SetMissingFunction) {
 // expression classes doesn't make much sense.
 
 TEST(ASLBuilderTest, SizeOverflow) {
+  using safeint::OverflowError;
   ASLBuilder builder;
   NLHeader header = MakeHeader();
   header.num_funcs = 1;

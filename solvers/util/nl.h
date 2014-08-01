@@ -233,9 +233,9 @@ class TextReader {
   int line_;
 
   template <typename Int>
-  typename MakeUnsigned<Int>::Type DoReadUInt() {
+  typename safeint::MakeUnsigned<Int>::Type DoReadUInt() {
     char c = *ptr_;
-    typedef typename MakeUnsigned<Int>::Type UInt;
+    typedef typename safeint::MakeUnsigned<Int>::Type UInt;
     UInt value = 0;
     do {
       UInt new_value = value * 10 + (c - '0');
@@ -310,7 +310,7 @@ class TextReader {
     char sign = *ptr_;
     if (sign == '+' || sign == '-')
       ++ptr_;
-    typedef typename MakeUnsigned<Int>::Type UInt;
+    typedef typename safeint::MakeUnsigned<Int>::Type UInt;
     UInt result = ReadUInt<UInt>();
     UInt max = std::numeric_limits<Int>::max();
     if (result > max && !(sign == '-' && result == max + 1))
@@ -724,7 +724,7 @@ void NLReader<Reader, Handler>::Read() {
 // header_only: true to read the header only, false to read the whole file
 template <typename Handler>
 void ReadNLString(fmt::StringRef str, Handler &handler,
-                   fmt::StringRef name = "(input)", bool header_only = false) {
+                  fmt::StringRef name = "(input)", bool header_only = false) {
   TextReader reader(name, str.c_str());
 
   // Read the format (text or binary).

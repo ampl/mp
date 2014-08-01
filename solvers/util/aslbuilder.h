@@ -75,7 +75,7 @@ class ASLBuilder {
   }
 
   template <typename T>
-  T *Allocate(SafeInt<int> size = SafeInt<int>(sizeof(T)));
+  T *Allocate(safeint::SafeInt<int> size = safeint::SafeInt<int>(sizeof(T)));
 
   // Sets objective or constraint expression; adapted from co_read.
   void SetObjOrCon(
