@@ -72,7 +72,7 @@ const double ASLBuilder::DVALUE[] = {
 
 template <typename T>
 inline T *ASLBuilder::Allocate(SafeInt<int> size) {
-  if (size.value() > INT_MAX)
+  if (size.value() > std::numeric_limits<int>::max())
     throw std::bad_alloc();
   return reinterpret_cast<T*>(mem_ASL(asl_, size.value()));
 }

@@ -36,7 +36,6 @@ struct TestNLHandler {
   NLHeader header;
   fmt::Writer log;  // Call log.
   std::vector<std::string> obj_exprs;
-  std::vector<std::string> con_exprs;
 
   typedef std::string NumericExpr;
   typedef std::string LogicalExpr;
@@ -56,9 +55,7 @@ struct TestNLHandler {
   }
 
   void SetCon(int index, std::string expr) {
-    log << "s.t. c" << (index + 1) << ": " << expr;
-    con_exprs[index] = expr;
-    log << ";\n";
+    log << "c" << index << ": " << expr << ";\n";
   }
 
   void SetFunction(
@@ -71,7 +68,7 @@ struct TestNLHandler {
   }
 
   std::string MakeVariable(int index) {
-    return fmt::format("x{}", index + 1);
+    return fmt::format("x{}", index);
   }
 
   std::string MakeUnary(int opcode, std::string arg) {
@@ -431,7 +428,7 @@ TEST(NLTest, IncompleteHeader) {
       ampl::ParseError, "(input):7:3: expected nonnegative integer");
 }
 
-void ReadNL(const NLHeader &header, const char *body) {
+void ReadNL(const NLHeader &header, const std::string &body) {
   TestNLHandler handler;
   ParseNLString(FormatHeader(header) + body, handler);
 }
@@ -460,22 +457,65 @@ TEST(NLTest, ObjType) {
     ampl::ParseError, "(input):11:4: expected nonnegative integer");
 }
 
+NLHeader MakeHeader() {
+  NLHeader header = {};
+  header.num_vars = header.num_objs = header.num_algebraic_cons = 10;
+  return header;
+}
+
 TEST(NLTest, ObjExpr) {
   TestNLHandler handler;
-  NLHeader header = {};
+  NLHeader header = MakeHeader();
   header.num_objs = 2;
-  header.num_vars = 1;
   ParseNLString(FormatHeader(header) + "O1 0\nn0", handler);
   EXPECT_TRUE(handler.obj_exprs[0].empty());
   EXPECT_EQ("minimize o2: 0;\n", handler.log.str());
-  ParseNLString(FormatHeader(header) + "O0 1\nn4.2", handler);
-  EXPECT_EQ("maximize o1: 4.2;\n", handler.log.str());
-  ParseNLString(FormatHeader(header) + "O0 1\ns4.2", handler);
-  EXPECT_EQ("maximize o1: 4;\n", handler.log.str());
-  ParseNLString(FormatHeader(header) + "O0 1\nl4.2", handler);
-  EXPECT_EQ("maximize o1: 4;\n", handler.log.str());
   ParseNLString(FormatHeader(header) + "O0 1\nv0", handler);
-  EXPECT_EQ("maximize o1: x1;\n", handler.log.str());
+  EXPECT_EQ("maximize o1: x0;\n", handler.log.str());
+}
+
+#define EXPECT_PARSE(expected_output, nl_body) {\
+  TestNLHandler handler; \
+  ParseNLString(FormatHeader(MakeHeader()) + nl_body, handler); \
+  EXPECT_EQ(expected_output, handler.log.str()); \
+}
+
+template <typename Int>
+void CheckParseInt(char code) {
+  EXPECT_PARSE("c0: 4;\n", fmt::format("C0\n{}4.2", code));
+  Int min = std::numeric_limits<Int>::min();
+  EXPECT_PARSE(fmt::format("c0: {};\n", min + 0.),
+               fmt::format("C0\n{}{}", code, min));
+  typename MakeUnsigned<Int>::Type max = std::numeric_limits<Int>::max();
+  EXPECT_PARSE(fmt::format("c0: {};\n", max + 0.),
+               fmt::format("C0\n{}{}", code, max));
+  EXPECT_THROW_MSG(
+    ReadNL(MakeHeader(), fmt::format("C0\n{}{}", code, max + 1)),
+    ampl::ParseError, "(input):12:2: number is too big");
+}
+
+TEST(NLTest, ParseNumericConstant) {
+  EXPECT_PARSE("c0: 4.2;\n", "C0\nn4.2");
+  EXPECT_PARSE("c0: -100;\n", "C0\nn-1e+2");
+  CheckParseInt<short>('s');
+  CheckParseInt<long>('l');
+}
+
+TEST(NLTest, ParseVariable) {
+  EXPECT_PARSE("c0: x5;\n", "C0\nv5");
+}
+
+TEST(NLTest, ParseUnary) {
+  EXPECT_PARSE("c0: o13(x3);\n", "C0\no13\nv3");
+}
+
+TEST(NLTest, ParseBinary) {
+  EXPECT_PARSE("c0: o0(x1, 42);\n", "C0\no0\nv1\nn42");
+}
+
+TEST(NLTest, ParseIf) {
+  // TODO
+  //EXPECT_PARSE("c0: o0(x1, 42);\n", "C0\no0\nv1\nn42");
 }
 
 // TODO: test parsing expressions

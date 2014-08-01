@@ -37,10 +37,16 @@ class OverflowError : public std::exception {
 };
 
 template <typename T>
-struct MakeUnsigned;
+struct MakeUnsigned { typedef T Type; };
+
+template <>
+struct MakeUnsigned<short> { typedef unsigned short Type; };
 
 template <>
 struct MakeUnsigned<int> { typedef unsigned Type; };
+
+template <>
+struct MakeUnsigned<long> { typedef unsigned long Type; };
 
 // Safe std::abs replacement. Unlike std::abs, SafeAbs doesn't result
 // in undefined behavior for std::numeric_limits<T>::min().

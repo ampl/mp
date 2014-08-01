@@ -27,9 +27,10 @@
 #include "solvers/util/error.h"
 #include "solvers/util/problem.h"
 #include "solvers/util/os.h"
+#include "solvers/util/safeint.h"
 
 #include <cctype>
-#include <climits>
+#include <limits>
 
 namespace ampl {
 
@@ -204,17 +205,19 @@ class TextReader {
   std::string name_;
   int line_;
 
-  int DoReadUInt() {
+  template <typename Int>
+  typename MakeUnsigned<Int>::Type DoReadUInt() {
     char c = *ptr_;
-    unsigned value = 0;
+    typedef typename MakeUnsigned<Int>::Type UInt;
+    UInt value = 0;
     do {
-      unsigned new_value = value * 10 + (c - '0');
+      UInt new_value = value * 10 + (c - '0');
       if (new_value < value)
         ReportParseError("number is too big");
       value = new_value;
       c = *++ptr_;
     } while (c >= '0' && c <= '9');
-    if (value > INT_MAX)
+    if (value > std::numeric_limits<Int>::max())
       ReportParseError("number is too big");
     return value;
   }
@@ -255,12 +258,13 @@ class TextReader {
     }
   }
 
-  int ReadUInt() {
+  template <typename Int = int>
+  Int ReadUInt() {
     SkipSpace();
     char c = *ptr_;
     if (c < '0' || c > '9')
       ReportParseError("expected nonnegative integer");
-    return DoReadUInt();
+    return DoReadUInt<Int>();
   }
 
   bool ReadOptionalUInt(int &value) {
@@ -268,19 +272,22 @@ class TextReader {
     char c = *ptr_;
     bool has_value = c >= '0' && c <= '9';
     if (has_value)
-      value = DoReadUInt();
+      value = DoReadUInt<int>();
     return has_value;
   }
 
-  int ReadLong() {
+  template <typename Int>
+  Int ReadInt() {
     char sign = *ptr_;
     if (sign == '+' || sign == '-')
       ++ptr_;
-    int result = ReadUInt();
-    return sign == '-' ? -result : result;
+    typedef typename MakeUnsigned<Int>::Type UInt;
+    UInt result = ReadUInt<UInt>();
+    UInt max = std::numeric_limits<Int>::max();
+    if (result > max && !(sign == '-' && result == max + 1))
+      ReportParseError("number is too big");
+    return sign != '-' ? result : 0 - result;
   }
-
-  int ReadShort() { return ReadLong(); }
 
   double ReadDouble() {
     SkipSpace();
@@ -321,11 +328,12 @@ class NLParser {
 
   double ReadNumber() {
     switch (reader_.ReadChar()) {
-    case 's': return reader_.ReadShort();
-    case 'l': return reader_.ReadLong();
+    case 's': return reader_.template ReadInt<short>();
+    case 'l': return reader_.template ReadInt<long>();
     case 'n': return reader_.ReadDouble();
     }
     reader_.ReportParseError("expected numeric constant");
+    return 0;
   }
 
   Variable ReadVariable() {
@@ -376,8 +384,7 @@ typename Handler::NumericExpr
       reader_.ReportParseError("function index {} out of bounds", func_index);
     int num_args = reader_.ReadUInt();
     reader_.ReadTillEndOfLine();
-    fmt::internal::Array<NumericExpr, 10> args;
-    args.resize(num_args);
+    fmt::internal::Array<NumericExpr, 10> args(num_args);
     for (int i = 0; i < num_args; ++i)
       args[i] = ReadNumericExpr(); // TODO: support string args
     // TODO: get function with index func_index
@@ -388,10 +395,10 @@ typename Handler::NumericExpr
     // TODO: read string
     break;
   case 's':
-    expr = handler_.MakeNumericConstant(reader_.ReadShort());
+    expr = handler_.MakeNumericConstant(reader_.template ReadInt<short>());
     break;
   case 'l':
-    expr = handler_.MakeNumericConstant(reader_.ReadLong());
+    expr = handler_.MakeNumericConstant(reader_.template ReadInt<long>());
     break;
   case 'n':
     expr = handler_.MakeNumericConstant(reader_.ReadDouble());
@@ -432,10 +439,8 @@ typename Handler::NumericExpr
     int num_slopes = reader_.ReadUInt();
     if (num_slopes <= 1)
       reader_.ReportParseError("too few slopes in piecewise-linear term");
-    fmt::internal::Array<double, 10> breakpoints;
-    breakpoints.resize(num_slopes - 1);
-    fmt::internal::Array<double, 10> slopes;
-    slopes.resize(num_slopes);
+    fmt::internal::Array<double, 10> breakpoints(num_slopes - 1);
+    fmt::internal::Array<double, 10> slopes(num_slopes);
     for (int i = 0; i < num_slopes - 1; ++i) {
       slopes[i] = ReadNumber();
       breakpoints[i] = ReadNumber();
@@ -515,7 +520,7 @@ void NLParser<Reader, Handler>::Parse() {
         // Ignore function of unsupported type.
         break;
       }
-      int num_args = reader_.ReadLong();
+      int num_args = reader_.ReadUInt();
       const char *name = 0; // TODO: read name
       reader_.ReadTillEndOfLine();
       handler_.SetFunction(index, name, num_args,

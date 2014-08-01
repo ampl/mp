@@ -26,6 +26,8 @@
 #include "solvers/util/nl.h"
 #include "tests/util.h"
 
+#include <climits>
+
 using ampl::NLHeader;
 using ampl::Function;
 using ampl::LogicalExpr;
