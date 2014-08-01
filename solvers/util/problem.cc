@@ -38,6 +38,8 @@
 extern "C" int mkstemps(char *pattern, int suffix_len);
 #endif
 
+#undef nfunc
+
 namespace ampl {
 
 Solution::Solution()
