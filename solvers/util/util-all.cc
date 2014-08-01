@@ -22,11 +22,11 @@
 
 #include "clock.cc"
 #include "format.cc"
+#include "aslbuilder.cc"
 #include "solver.cc"
 #include "os.cc"
 #include "problem.cc"
 #include "rstparser.cc"
-#include "aslbuilder.cc"
 #include "expr.cc"
 
 #ifndef ASL_HAVE_MKSTEMPS
