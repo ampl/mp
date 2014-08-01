@@ -32,7 +32,17 @@ using ampl::ReadNLString;
 
 namespace {
 
-struct TestNLHandler {
+class TestNLHandler {
+ private:
+  // Writes a comma-separated list.
+  static void WriteList(fmt::Writer &w, int size, const double *values) {
+    for (int i = 0; i < size; ++i) {
+      if (i != 0) w << ", ";
+      w << values[i];
+    }
+  }
+
+ public:
   NLHeader header;
   fmt::Writer log;  // Call log.
   std::vector<std::string> obj_exprs;
@@ -86,10 +96,15 @@ struct TestNLHandler {
   }
 
   std::string MakePiecewiseLinear(
-      int num_breakpoints,const double *breakpoints,
+      int num_breakpoints, const double *breakpoints,
       const double *slopes, std::string var) {
-    // TODO
-    return std::string();
+    fmt::Writer w;
+    w << "<<";
+    WriteList(w, num_breakpoints, breakpoints);
+    w << "; ";
+    WriteList(w, num_breakpoints + 1, slopes);
+    w << ">> " << var;
+    return w.str();
   }
 
   std::string MakeLogicalConstant(bool value) {
@@ -509,17 +524,23 @@ TEST(NLTest, ParseVariable) {
   EXPECT_PARSE("c0: x5;\n", "C0\nv5");
 }
 
-TEST(NLTest, ParseUnary) {
+TEST(NLTest, ParseUnaryExpr) {
   EXPECT_PARSE("c0: o13(x3);\n", "C0\no13\nv3");
 }
 
-TEST(NLTest, ParseBinary) {
+TEST(NLTest, ParseBinaryExpr) {
   EXPECT_PARSE("c0: o0(x1, 42);\n", "C0\no0\nv1\nn42");
 }
 
-TEST(NLTest, ParseIf) {
-  // TODO
-  //EXPECT_PARSE("c0: o0(x1, 42);\n", "C0\no0\nv1\nn42");
+TEST(NLTest, ParseIfExpr) {
+  EXPECT_PARSE("c0: if l1 then x1 else x2;\n", "C0\no35\nn1\nv1\nv2");
+}
+
+TEST(NLTest, ParsePiecewiseLinearExpr) {
+  EXPECT_PARSE("c0: <<0; -1, 1>> x1;\n", "C0\no64\n2\nn-1\nn0\nn1\nv1");
+  EXPECT_THROW_MSG(
+    ReadNL(MakeHeader(), "C0\no64\n1\nn0\nv1"),
+    ampl::ParseError, "(input):13:1: too few slopes in piecewise-linear term");
 }
 
 // TODO: test parsing expressions

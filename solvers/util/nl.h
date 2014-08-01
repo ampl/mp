@@ -333,13 +333,18 @@ class NLReader {
     return ReadNumericConstant(reader_.ReadChar());
   }
 
-  Variable ReadVariable() {
+  Variable DoReadVariable() {
     // TODO: variable index can be greater than num_vars
     int var_index = reader_.ReadUInt();
     if (var_index >= header_.num_vars)
       reader_.ReportParseError("variable index {} out of bounds", var_index);
     reader_.ReadTillEndOfLine();
     return handler_.MakeVariable(var_index);
+  }
+  Variable ReadVariable() {
+    if (reader_.ReadChar() != 'v')
+      reader_.ReportParseError("expected variable");
+    return DoReadVariable();
   }
 
   // Reads a numeric expression.
@@ -417,7 +422,7 @@ typename Handler::NumericExpr NLReader<Reader, Handler>::ReadNumericExpr() {
     return ReadNumericExpr(opcode);
   }
   case 'v':
-    return ReadVariable();
+    return DoReadVariable();
   default:
     reader_.ReportParseError("expected expression");
   }
@@ -445,6 +450,7 @@ typename Handler::NumericExpr
     int num_slopes = reader_.ReadUInt();
     if (num_slopes <= 1)
       reader_.ReportParseError("too few slopes in piecewise-linear term");
+    reader_.ReadTillEndOfLine();
     fmt::internal::Array<double, 10> breakpoints(num_slopes - 1);
     fmt::internal::Array<double, 10> slopes(num_slopes);
     for (int i = 0; i < num_slopes - 1; ++i) {
@@ -452,9 +458,8 @@ typename Handler::NumericExpr
       breakpoints[i] = ReadNumericConstant();
     }
     slopes[num_slopes - 1] = ReadNumericConstant();
-    handler_.MakePiecewiseLinear(num_slopes - 1, &breakpoints[0],
-                                 &slopes[0], ReadVariable());
-    break;
+    return handler_.MakePiecewiseLinear(
+          num_slopes - 1, &breakpoints[0], &slopes[0], ReadVariable());
   }
   case Expr::VARARG:
   case Expr::SUM:
@@ -744,7 +749,7 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
     return;
 
   if (header.format != NLHeader::TEXT) {
-    // TODO: switch to binary reader
+    // TODO: use binary reader
   }
   NLReader<TextReader, Handler>(reader, header, handler).Read();
 }
