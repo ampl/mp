@@ -20,15 +20,19 @@
  Author: Victor Zverovich
  */
 
+#include "clock.cc"
+#include "format.cc"
+#include "os.cc"
+// The above source files include windows.h, so undo the damage.
+#undef min
+#undef max
+
 #include "aslbuilder.cc"
 #undef nfunc
 #include "solver.cc"
 #include "problem.cc"
 #include "rstparser.cc"
 #include "expr.cc"
-#include "clock.cc"
-#include "format.cc"
-#include "os.cc"
 
 #ifndef ASL_HAVE_MKSTEMPS
 extern "C" {
