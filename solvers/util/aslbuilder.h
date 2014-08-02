@@ -24,9 +24,9 @@
 #define SOLVERS_UTIL_ASLBUILDER_H_
 
 #include "solvers/util/format.h"
-#include "solvers/util/problem.h"
-#include "solvers/util/nl.h"
+#include "solvers/util/problem-base.h"
 #include "solvers/util/safeint.h"
+#include "solvers/util/expr.h"
 
 struct Static;
 
