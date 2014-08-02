@@ -274,7 +274,7 @@ void NLToJaCoPConverter::Convert(const Problem &p) {
   if (p.num_objs() != 0) {
     jobject result_var = var_class_.NewObject(env_, store_, min_int_, max_int_);
     ConvertExpr(p.linear_obj_expr(0), p.nonlinear_obj_expr(0), result_var);
-    obj_ = p.obj_type(0) == MIN ?
+    obj_ = p.obj_type(0) == obj::MIN ?
         result_var : CreateCon(mul_const_class_, result_var, -1);
   }
 
@@ -467,7 +467,7 @@ bool JaCoPSolver::SolutionHandler::DoHandleSolution() {
     if (solver_.outlev_ != 0 && obj_var_) {
       jint value = solver_.env_.CallIntMethodKeepException(
           obj_var_, solver_.value_);
-      solver_.Output("{:46}\n", (problem_.obj_type(0) == MIN ? value : -value));
+      solver_.Output("{:46}\n", (problem_.obj_type(0) == obj::MIN ? value : -value));
     }
     if (multiple_sol_) {
       double obj_value = obj_var_ ?
@@ -671,7 +671,7 @@ void JaCoPSolver::DoSolve(Problem &p) {
     } else if (solve_code_ == -1) {
       solve_code_ = 0;
       obj_val = env_.CallIntMethod(obj_var.get(), value_);
-      if (p.obj_type(0) == MAX)
+      if (p.obj_type(0) == obj::MAX)
         obj_val = -obj_val;
       status_ = "optimal solution";
     }
