@@ -333,10 +333,8 @@ class NLReader {
   typedef typename Handler::LogicalExpr LogicalExpr;
   typedef typename Handler::Variable Variable;
 
-  double ReadNumericConstant(char code);
-  double ReadNumericConstant() {
-    return ReadNumericConstant(reader_.ReadChar());
-  }
+  double ReadConstant(char code);
+  double ReadConstant() { return ReadConstant(reader_.ReadChar()); }
 
   Variable DoReadVariable() {
     // TODO: variable index can be greater than num_vars
@@ -454,7 +452,7 @@ class NLReader {
 };
 
 template <typename Reader, typename Handler>
-double NLReader<Reader, Handler>::ReadNumericConstant(char code) {
+double NLReader<Reader, Handler>::ReadConstant(char code) {
   double value = 0;
   switch (code) {
   case 'n':
@@ -498,7 +496,7 @@ typename Handler::NumericExpr
     break;
   }
   case 'n': case 'l': case 's':
-    return handler_.MakeNumericConstant(ReadNumericConstant(code));
+    return handler_.MakeNumericConstant(ReadConstant(code));
   case 'o':
     return ReadExpr<NumericExprReader>();
   case 'v':
@@ -535,10 +533,10 @@ typename Handler::NumericExpr
     Array<double, 10> breakpoints(num_slopes - 1);
     Array<double, 10> slopes(num_slopes);
     for (int i = 0; i < num_slopes - 1; ++i) {
-      slopes[i] = ReadNumericConstant();
-      breakpoints[i] = ReadNumericConstant();
+      slopes[i] = ReadConstant();
+      breakpoints[i] = ReadConstant();
     }
-    slopes[num_slopes - 1] = ReadNumericConstant();
+    slopes[num_slopes - 1] = ReadConstant();
     return handler_.MakePiecewiseLinear(
           num_slopes - 1, &breakpoints[0], &slopes[0], ReadVariable());
   }
@@ -560,7 +558,7 @@ template <typename Reader, typename Handler>
 typename Handler::LogicalExpr NLReader<Reader, Handler>::ReadLogicalExpr() {
   switch (char c = reader_.ReadChar()) {
   case 'n': case 'l': case 's':
-    return handler_.MakeLogicalConstant(ReadNumericConstant(c) != 0);
+    return handler_.MakeLogicalConstant(ReadConstant(c) != 0);
   case 'o':
     return ReadExpr<LogicalExprReader>();
   }
