@@ -1293,7 +1293,7 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
 template <typename Impl, typename Result, typename LResult = Result>
 class ExprConverter : public ExprVisitor<Impl, Result, LResult> {
  private:
-  std::vector<::expr> exprs_;
+  std::vector< ::expr> exprs_;
 
   RelationalExpr Convert(LogicalCountExpr e, int opcode) {
     exprs_.push_back(*e.expr_);
