@@ -38,7 +38,6 @@
 
 extern "C" {
 #include "solvers/nlp.h"
-#include "solvers/opcode.hd"
 }
 
 // Undefine ASL macros because they often clash with names used in solver
@@ -147,6 +146,7 @@ extern "C" {
 #endif  // ASL_PRESERVE_DEFINES
 
 #include "solvers/util/error.h"
+#include "solvers/util/problem-base.h"
 
 namespace ampl {
 class Expr;
@@ -193,61 +193,9 @@ inline bool Is<ExprClass>(Expr e) { \
 // it is cheap to construct and pass by value. A type safe way to
 // process expressions of different types is by using ExprVisitor.
 class Expr {
- public:
-  // Expression kinds - one per each concrete expression class.
-  enum Kind {
-    // An unknown expression.
-    UNKNOWN = 0,
-
-    EXPR_START,
-
-    // To simplify checks, numeric expression kinds are in a range
-    // [NUMERIC_START, NUMERIC_END].
-    NUMERIC_START = EXPR_START,
-    VARIABLE = NUMERIC_START,
-    UNARY,
-    BINARY,
-    IF,
-    PLTERM,
-    CALL,
-    VARARG,
-    SUM,
-    COUNT,
-    NUMBEROF,
-    NUMERIC_END,
-
-    // CONSTANT belongs both to numeric and logical expressions therefore
-    // the [NUMERIC_START, NUMERIC_END] and [LOGICAL_START, LOGICAL_END]
-    // ranges overlap at CONSTANT = NUMERIC_END = LOGICAL_START.
-    CONSTANT = NUMERIC_END,
-
-    // To simplify checks, logical expression kinds are in a range
-    // [LOGICAL_START, LOGICAL_END].
-    LOGICAL_START = CONSTANT,
-    NOT,
-    BINARY_LOGICAL,
-    RELATIONAL,
-    LOGICAL_COUNT,
-    IMPLICATION,
-    ITERATED_LOGICAL,
-    ALLDIFF,
-    LOGICAL_END = ALLDIFF,
-
-    STRING,
-    EXPR_END = STRING
-  };
-
  private:
-  // Expression information.
-  struct Info {
-    Kind kind;
-    int precedence;
-    const char *str;
-  };
-  static const Info INFO[N_OPS];
-
   // Returns the kind of this expression.
-  Kind kind() const { return kind(opcode()); }
+  expr::Kind kind() const { return expr::kind(opcode()); }
 
   void True() const {}
   typedef void (Expr::*SafeBool)() const;
@@ -273,18 +221,18 @@ class Expr {
   // Constructs an Expr object representing a reference to an AMPL
   // expression e. Only a minimal check is performed when assertions are
   // enabled to make sure that the opcode is within the valid range.
-  explicit Expr(expr *e) : expr_(e) {
-    assert(!expr_ || (kind() >= EXPR_START && kind() <= EXPR_END));
+  explicit Expr(::expr *e) : expr_(e) {
+    assert(!expr_ || (kind() >= expr::EXPR_START && kind() <= expr::EXPR_END));
   }
 
  protected:
-  expr *expr_;
+  ::expr *expr_;
 
   // Creates an expression object from a raw expr pointer.
   // For safety reason expression classes don't provide constructors
   // taking raw pointers and this method should be used instead.
   template <typename ExprT>
-  static ExprT Create(expr *e) { return Create<ExprT>(Expr(e)); }
+  static ExprT Create(::expr *e) { return Create<ExprT>(Expr(e)); }
 
   // An expression proxy used for implementing operator-> in iterators.
   template <typename ExprT>
@@ -293,7 +241,7 @@ class Expr {
     ExprT expr_;
 
    public:
-    explicit Proxy(expr *e) : expr_(Create<ExprT>(e)) {}
+    explicit Proxy(::expr *e) : expr_(Create<ExprT>(e)) {}
 
     const ExprT *operator->() const { return &expr_; }
   };
@@ -303,10 +251,10 @@ class Expr {
   class ArrayIterator :
     public std::iterator<std::forward_iterator_tag, ExprT> {
    private:
-    expr *const *ptr_;
+    ::expr *const *ptr_;
 
    public:
-    explicit ArrayIterator(expr *const *p = 0) : ptr_(p) {}
+    explicit ArrayIterator(::expr *const *p = 0) : ptr_(p) {}
 
     ExprT operator*() const { return Create<ExprT>(*ptr_); }
 
@@ -352,23 +300,18 @@ class Expr {
     return static_cast<int>(reinterpret_cast<std::size_t>(expr_->op));
   }
 
-  static Kind kind(int opcode) {
-    assert(opcode >= 0 && opcode < N_OPS);
-    return INFO[opcode].kind;
-  }
-
   // Returns the function name or operator for this expression as a
   // string. Expressions with different opcodes can have identical
   // strings. For example, OPPOW, OP1POW and OPCPOW all use the
   // same operator "^".
   const char *opstr() const {
     assert(opcode() >= 0 && opcode() < N_OPS);
-    return INFO[opcode()].str;
+    return expr::Info::INFO[opcode()].str;
   }
 
   int precedence() const {
     assert(opcode() >= 0 && opcode() < N_OPS);
-    return INFO[opcode()].precedence;
+    return expr::Info::INFO[opcode()].precedence;
   }
 
   bool operator==(Expr other) const { return expr_ == other.expr_; }
@@ -399,7 +342,7 @@ inline bool Is(Expr e) {
 
 template <>
 inline bool Is<Expr>(Expr e) {
-  return e.kind() >= Expr::EXPR_START && e.kind() <= Expr::EXPR_END;
+  return e.kind() >= expr::EXPR_START && e.kind() <= expr::EXPR_END;
 }
 }
 
@@ -412,8 +355,8 @@ class NumericExpr : public Expr {
 namespace internal {
 template <>
 inline bool Is<NumericExpr>(Expr e) {
-  Expr::Kind k = e.kind();
-  return k >= Expr::NUMERIC_START && k <= Expr::NUMERIC_END;
+  expr::Kind k = e.kind();
+  return k >= expr::NUMERIC_START && k <= expr::NUMERIC_END;
 }
 }
 
@@ -426,8 +369,8 @@ class LogicalExpr : public Expr {
 namespace internal {
 template <>
 inline bool Is<LogicalExpr>(Expr e) {
-  Expr::Kind k = e.kind();
-  return k >= Expr::LOGICAL_START && k <= Expr::LOGICAL_END;
+  expr::Kind k = e.kind();
+  return k >= expr::LOGICAL_START && k <= expr::LOGICAL_END;
 }
 }
 
@@ -455,10 +398,10 @@ class Variable : public NumericExpr {
 
 AMPL_SPECIALIZE_IS(Variable, OPVARVAL)
 
-template <Expr::Kind K, typename Base>
+template <expr::Kind K, typename Base>
 class BasicUnaryExpr : public Base {
  public:
-  static const Expr::Kind KIND = K;
+  static const expr::Kind KIND = K;
 
   BasicUnaryExpr() {}
 
@@ -468,15 +411,15 @@ class BasicUnaryExpr : public Base {
 
 // A unary numeric expression.
 // Examples: -x, sin(x), where x is a variable.
-typedef BasicUnaryExpr<Expr::UNARY, NumericExpr> UnaryExpr;
+typedef BasicUnaryExpr<expr::UNARY, NumericExpr> UnaryExpr;
 
 // A binary expression.
 // Base: base expression class.
 // Arg: argument expression class.
-template <Expr::Kind K, typename Base, typename Arg = Base>
+template <expr::Kind K, typename Base, typename Arg = Base>
 class BasicBinaryExpr : public Base {
  public:
-  static const Expr::Kind KIND = K;
+  static const expr::Kind KIND = K;
 
   BasicBinaryExpr() {}
 
@@ -489,7 +432,7 @@ class BasicBinaryExpr : public Base {
 
 // A binary numeric expression.
 // Examples: x / y, atan2(x, y), where x and y are variables.
-typedef BasicBinaryExpr<Expr::BINARY, NumericExpr> BinaryExpr;
+typedef BasicBinaryExpr<expr::BINARY, NumericExpr> BinaryExpr;
 
 template <typename Base>
 class BasicIfExpr : public Base {
@@ -564,12 +507,6 @@ class Function {
   typedef void (Function::*SafeBool)() const;
 
  public:
-  // Function type.
-  enum Type {
-    NUMERIC  = 0,
-    SYMBOLIC = 1  // Accepts symbolic arguments.
-  };
-
   Function() : fi_(0) {}
 
   // Returns the function name.
@@ -632,7 +569,7 @@ class VarArgExpr : public NumericExpr {
   static const de END;
 
  public:
-  static const Kind KIND = VARARG;
+  static const expr::Kind KIND = expr::VARARG;
 
   VarArgExpr() {}
 
@@ -679,7 +616,7 @@ class VarArgExpr : public NumericExpr {
   }
 };
 
-template <Expr::Kind>
+template <expr::Kind>
 struct ExprInfo;
 
 template <typename BaseT = void, typename ArgT = BaseT>
@@ -688,10 +625,10 @@ struct BasicExprInfo {
   typedef ArgT Arg;
 };
 
-template <Expr::Kind K>
+template <expr::Kind K>
 class BasicIteratedExpr : public ExprInfo<K>::Base {
  public:
-  static const Expr::Kind KIND = K;
+  static const expr::Kind KIND = K;
 
   typedef typename ExprInfo<K>::Arg Arg;
 
@@ -714,28 +651,28 @@ class BasicIteratedExpr : public ExprInfo<K>::Base {
 };
 
 template <>
-struct ExprInfo<Expr::SUM> : BasicExprInfo<NumericExpr> {};
+struct ExprInfo<expr::SUM> : BasicExprInfo<NumericExpr> {};
 
 // A sum expression.
 // Example: sum{i in I} x[i], where I is a set and x is a variable.
-typedef BasicIteratedExpr<Expr::SUM> SumExpr;
+typedef BasicIteratedExpr<expr::SUM> SumExpr;
 AMPL_SPECIALIZE_IS(SumExpr, OPSUMLIST)
 
 template <>
-struct ExprInfo<Expr::COUNT> : BasicExprInfo<NumericExpr, LogicalExpr> {};
+struct ExprInfo<expr::COUNT> : BasicExprInfo<NumericExpr, LogicalExpr> {};
 
 // A count expression.
 // Example: count{i in I} (x[i] >= 0), where I is a set and x is a variable.
-typedef BasicIteratedExpr<Expr::COUNT> CountExpr;
+typedef BasicIteratedExpr<expr::COUNT> CountExpr;
 AMPL_SPECIALIZE_IS(CountExpr, OPCOUNT)
 
 template <>
-struct ExprInfo<Expr::NUMBEROF> : BasicExprInfo<NumericExpr> {};
+struct ExprInfo<expr::NUMBEROF> : BasicExprInfo<NumericExpr> {};
 
 // A numberof expression.
 // Example: numberof 42 in ({i in I} x[i]),
 // where I is a set and x is a variable.
-typedef BasicIteratedExpr<Expr::NUMBEROF> NumberOfExpr;
+typedef BasicIteratedExpr<expr::NUMBEROF> NumberOfExpr;
 AMPL_SPECIALIZE_IS(NumberOfExpr, OPNUMBEROF)
 
 // A logical constant.
@@ -752,23 +689,23 @@ AMPL_SPECIALIZE_IS(LogicalConstant, OPNUM)
 
 // A logical NOT expression.
 // Example: not a, where a is a logical expression.
-typedef BasicUnaryExpr<Expr::NOT, LogicalExpr> NotExpr;
+typedef BasicUnaryExpr<expr::NOT, LogicalExpr> NotExpr;
 AMPL_SPECIALIZE_IS(NotExpr, OPNOT)
 
 // A binary logical expression.
 // Examples: a || b, a && b, where a and b are logical expressions.
-typedef BasicBinaryExpr<Expr::BINARY_LOGICAL, LogicalExpr> BinaryLogicalExpr;
+typedef BasicBinaryExpr<expr::BINARY_LOGICAL, LogicalExpr> BinaryLogicalExpr;
 
 // A relational expression.
 // Examples: x < y, x != y, where x and y are variables.
 typedef BasicBinaryExpr<
-    Expr::RELATIONAL, LogicalExpr, NumericExpr> RelationalExpr;
+    expr::RELATIONAL, LogicalExpr, NumericExpr> RelationalExpr;
 
 // A logical count expression.
 // Examples: atleast 1 (x < y, x != y), where x and y are variables.
 class LogicalCountExpr : public LogicalExpr {
  public:
-  static const Kind KIND = LOGICAL_COUNT;
+  static const expr::Kind KIND = expr::LOGICAL_COUNT;
 
   LogicalCountExpr() {}
 
@@ -785,18 +722,18 @@ typedef BasicIfExpr<LogicalExpr> ImplicationExpr;
 AMPL_SPECIALIZE_IS(ImplicationExpr, OPIMPELSE)
 
 template <>
-struct ExprInfo<Expr::ITERATED_LOGICAL> : BasicExprInfo<LogicalExpr> {};
+struct ExprInfo<expr::ITERATED_LOGICAL> : BasicExprInfo<LogicalExpr> {};
 
 // An iterated logical expression.
 // Example: exists{i in I} x[i] >= 0, where I is a set and x is a variable.
-typedef BasicIteratedExpr<Expr::ITERATED_LOGICAL> IteratedLogicalExpr;
+typedef BasicIteratedExpr<expr::ITERATED_LOGICAL> IteratedLogicalExpr;
 
 template <>
-struct ExprInfo<Expr::ALLDIFF> : BasicExprInfo<LogicalExpr, NumericExpr> {};
+struct ExprInfo<expr::ALLDIFF> : BasicExprInfo<LogicalExpr, NumericExpr> {};
 
 // An alldiff expression.
 // Example: alldiff{i in I} x[i], where I is a set and x is a variable.
-typedef BasicIteratedExpr<Expr::ALLDIFF> AllDiffExpr;
+typedef BasicIteratedExpr<expr::ALLDIFF> AllDiffExpr;
 AMPL_SPECIALIZE_IS(AllDiffExpr, OPALLDIFF)
 
 class StringLiteral : public Expr {
@@ -1356,11 +1293,11 @@ LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
 template <typename Impl, typename Result, typename LResult = Result>
 class ExprConverter : public ExprVisitor<Impl, Result, LResult> {
  private:
-  std::vector<expr> exprs_;
+  std::vector<::expr> exprs_;
 
   RelationalExpr Convert(LogicalCountExpr e, int opcode) {
     exprs_.push_back(*e.expr_);
-    expr *result = &exprs_.back();
+    ::expr *result = &exprs_.back();
     result->op = reinterpret_cast<efunc*>(opcode);
     return Expr::Create<RelationalExpr>(result);
   }

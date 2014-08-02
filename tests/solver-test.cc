@@ -33,6 +33,7 @@ using ampl::LogicalExpr;
 using ampl::NumericExpr;
 using ampl::Problem;
 using ampl::UnsupportedExprError;
+namespace obj = ampl::obj;
 
 SolverTest::EvalResult SolverTest::Solve(Problem &p) {
   struct TestSolutionHandler : ampl::BasicSolutionHandler {
@@ -694,28 +695,28 @@ TEST_P(SolverTest, NonlinearObj) {
   Problem p;
   p.AddVar(2, 2, ampl::INTEGER);
   ampl::Variable x = MakeVariable(0);
-  p.AddObj(ampl::MIN, MakeBinary(OPMULT, x, x));
+  p.AddObj(obj::MIN, MakeBinary(OPMULT, x, x));
   EXPECT_EQ(4, Solve(p).obj_value());
 }
 
 TEST_P(SolverTest, ObjConst) {
   Problem p;
   p.AddVar(0, 0, ampl::INTEGER);
-  p.AddObj(ampl::MIN, MakeConst(42));
+  p.AddObj(obj::MIN, MakeConst(42));
   EXPECT_EQ(42, Solve(p).obj_value());
 }
 
 TEST_P(SolverTest, Minimize) {
   Problem p;
   p.AddVar(42, 100, ampl::INTEGER);
-  p.AddObj(ampl::MIN, MakeVariable(0));
+  p.AddObj(obj::MIN, MakeVariable(0));
   EXPECT_EQ(42, Solve(p).obj_value());
 }
 
 TEST_P(SolverTest, Maximize) {
   Problem p;
   p.AddVar(0, 42, ampl::INTEGER);
-  p.AddObj(ampl::MAX, MakeVariable(0));
+  p.AddObj(obj::MAX, MakeVariable(0));
   EXPECT_EQ(42, Solve(p).obj_value());
 }
 
@@ -733,7 +734,7 @@ TEST_P(SolverTest, TimingOption) {
 
   Problem p;
   p.AddVar(42, 100, ampl::INTEGER);
-  p.AddObj(ampl::MIN, MakeVariable(0));
+  p.AddObj(obj::MIN, MakeVariable(0));
 
   solver_->SetIntOption("timing", 0);
   solver_->Solve(p);

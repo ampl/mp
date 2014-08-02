@@ -130,7 +130,7 @@ fmt::Writer &operator<<(fmt::Writer &w, const Problem &p) {
 
   // Write objectives.
   for (int i = 0, n = p.num_objs(); i < n; ++i) {
-    w << (p.obj_type(i) == MIN ? "minimize" : "maximize") << " o: ";
+    w << (p.obj_type(i) == obj::MIN ? "minimize" : "maximize") << " o: ";
     WriteExpr(w, p.linear_obj_expr(i), p.nonlinear_obj_expr(i));
     w << ";\n";
   }
@@ -225,7 +225,7 @@ void Problem::AddVar(double lb, double ub, VarType type) {
   ++num_vars;
 }
 
-void Problem::AddObj(ObjType type, NumericExpr expr) {
+void Problem::AddObj(obj::Type type, NumericExpr expr) {
   int &num_objs = asl_->i.n_obj_;
   if (num_objs >= obj_capacity_) {
     IncreaseCapacity(num_objs, obj_capacity_);
@@ -326,7 +326,7 @@ NewVCO *ProblemChanges::vco() {
 }
 
 void ProblemChanges::AddObj(
-    ObjType type, unsigned size, const double *coefs, const int *vars) {
+    obj::Type type, unsigned size, const double *coefs, const int *vars) {
   std::size_t start = obj_terms_.size();
   obj_terms_.resize(start + size);
   ograd dummy;

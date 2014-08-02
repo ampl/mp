@@ -48,8 +48,10 @@ class TestNLHandler {
   fmt::Writer log;  // Call log.
   std::vector<std::string> obj_exprs;
 
+  typedef std::string Expr;
   typedef std::string NumericExpr;
   typedef std::string LogicalExpr;
+  typedef std::string CountExpr;
   typedef std::string Variable;
 
   void BeginBuild(const char *, const NLHeader &h, int) {
@@ -58,8 +60,8 @@ class TestNLHandler {
     log.clear();
   }
 
-  void SetObj(int index, ampl::ObjType type, std::string expr) {
-    log << (type == ampl::MAX ? "maximize" : "minimize")
+  void SetObj(int index, ampl::obj::Type type, std::string expr) {
+    log << (type == ampl::obj::MAX ? "maximize" : "minimize")
         << " o" << (index + 1) << ": " << expr;
     obj_exprs[index] = expr;
     log << ";\n";
@@ -70,7 +72,7 @@ class TestNLHandler {
   }
 
   void SetFunction(
-      int index, const char *name, int num_args, ampl::Function::Type type) {
+      int index, const char *name, int num_args, ampl::func::Type type) {
     // TODO
   }
 
@@ -140,6 +142,27 @@ class TestNLHandler {
 
   std::string MakeRelational(int opcode, std::string lhs, std::string rhs) {
     return fmt::format("o{}({}, {})", opcode, lhs, rhs);
+  }
+
+  std::string MakeLogicalCount(int opcode, std::string lhs, std::string rhs) {
+    return fmt::format("o{}({}, {})", opcode, lhs, rhs);
+  }
+
+  std::string MakeImplication(std::string condition,
+                              std::string true_expr, std::string false_expr) {
+    return fmt::format("{} ==> {} else {}",
+                       condition, true_expr, false_expr);
+  }
+
+  std::string MakeIteratedLogical(
+      int opcode, ampl::ArrayRef<std::string> args) {
+    // TODO
+    return "";
+  }
+
+  std::string MakeAllDiff(ampl::ArrayRef<std::string> args) {
+    // TODO
+    return "";
   }
 };
 
@@ -579,7 +602,7 @@ TEST(NLTest, VarArgExpr) {
   // TODO
 }
 
-// TODO: test parsing expressions
+// TODO: test parsing expressions, expression hierarchy in handler
 
 // TODO: more tests
 }

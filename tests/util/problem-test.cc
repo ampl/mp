@@ -34,6 +34,7 @@ using ampl::LinearObjExpr;
 using ampl::Problem;
 using ampl::ProblemChanges;
 using ampl::Solution;
+namespace obj = ampl::obj;
 
 #ifdef _WIN32
 # define putenv _putenv
@@ -217,8 +218,8 @@ TEST(ProblemTest, ProblemAccessors) {
   EXPECT_EQ(201, p.con_ub(0));
   EXPECT_EQ(213, p.con_ub(p.num_cons() - 1));
 
-  EXPECT_EQ(ampl::MIN, p.obj_type(0));
-  EXPECT_EQ(ampl::MAX, p.obj_type(p.num_objs() - 1));
+  EXPECT_EQ(obj::MIN, p.obj_type(0));
+  EXPECT_EQ(obj::MAX, p.obj_type(p.num_objs() - 1));
 
   {
     LinearObjExpr expr = p.linear_obj_expr(0);
@@ -370,7 +371,7 @@ TEST(ProblemChangesTest, AddObjAndSolve) {
   EXPECT_EQ(0, changes.num_vars());
   EXPECT_EQ(0, changes.num_cons());
   EXPECT_EQ(0, changes.num_objs());
-  changes.AddObj(ampl::MAX, 1, &coef, &var);
+  changes.AddObj(obj::MAX, 1, &coef, &var);
   EXPECT_EQ(0, changes.num_vars());
   EXPECT_EQ(0, changes.num_cons());
   EXPECT_EQ(1, changes.num_objs());
@@ -497,13 +498,13 @@ TEST(ProblemTest, AddObj) {
   TestASLBuilder builder;
   ampl::NumericExpr expr = builder.MakeBinary(
         OPPLUS, builder.MakeVariable(0), builder.MakeNumericConstant(1));
-  p.AddObj(ampl::MAX, expr);
+  p.AddObj(obj::MAX, expr);
   EXPECT_EQ(1, p.num_objs());
-  EXPECT_EQ(ampl::MAX, p.obj_type(0));
+  EXPECT_EQ(obj::MAX, p.obj_type(0));
   EXPECT_EQ(expr, p.nonlinear_obj_expr(0));
 
   p.Read("../data/simple");
-  EXPECT_THROW(p.AddObj(ampl::MAX, expr), ampl::Error);
+  EXPECT_THROW(p.AddObj(obj::MAX, expr), ampl::Error);
 }
 
 TEST(ProblemTest, ReadFunctionWithoutLibrary) {

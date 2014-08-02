@@ -163,7 +163,7 @@ void SulumSolver::DoSolve(Problem &p) {
   if (p.num_objs() > 0) {
     // Convert objective.
     Check(SlmSetIntParam(model_, SlmPrmIntObjSense,
-        p.obj_type(0) == MIN ? SlmObjSenseMin : SlmObjSenseMax));
+        p.obj_type(0) == obj::MIN ? SlmObjSenseMin : SlmObjSenseMax));
     LinearObjExpr expr = p.linear_obj_expr(0);
     for (LinearObjExpr::iterator
         i = expr.begin(), end = expr.end(); i != end; ++i) {

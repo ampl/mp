@@ -32,9 +32,6 @@
 
 namespace ampl {
 
-// An objective type.
-enum ObjType { MIN = 0, MAX = 1 };
-
 // A variable type.
 enum VarType { CONTINUOUS, INTEGER };
 
@@ -255,9 +252,9 @@ class Problem : Noncopyable {
   }
 
   // Returns the objective type.
-  ObjType obj_type(int obj_index) const {
+  obj::Type obj_type(int obj_index) const {
     assert(obj_index >= 0 && obj_index < num_objs());
-    return static_cast<ObjType>(asl_->i.objtype_[obj_index]);
+    return static_cast<obj::Type>(asl_->i.objtype_[obj_index]);
   }
 
   // Returns the linear part of an objective expression.
@@ -351,7 +348,7 @@ class Problem : Noncopyable {
   void AddVar(double lb, double ub, VarType type = CONTINUOUS);
 
   // Adds an objective.
-  void AddObj(ObjType type, NumericExpr expr);
+  void AddObj(obj::Type type, NumericExpr expr);
 
   // Adds a logical constraint.
   void AddCon(LogicalExpr expr);
@@ -418,7 +415,7 @@ class ProblemChanges {
   }
 
   // Adds an objective.
-  void AddObj(ObjType type,
+  void AddObj(obj::Type type,
       unsigned size, const double *coefs, const int *vars);
 
   // Adds a constraint.

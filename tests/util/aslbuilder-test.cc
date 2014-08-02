@@ -34,6 +34,7 @@ using ampl::LogicalExpr;
 using ampl::NumericExpr;
 using ampl::MakeArrayRef;
 using ampl::internal::ASLBuilder;
+namespace func = ampl::func;
 
 bool operator==(const cde &lhs, const cde &rhs) {
   return lhs.e == rhs.e && lhs.d == rhs.d && lhs.zaplen == rhs.zaplen;
@@ -642,10 +643,10 @@ TEST(ASLBuilderTest, SetObj) {
   TestASLBuilder builder(asl);
 #undef obj_de
   cde *obj_de = reinterpret_cast<ASL_fg*>(asl.get())->I.obj_de_;
-  EXPECT_EQ(ampl::MIN, asl->i.objtype_[1]);
+  EXPECT_EQ(ampl::obj::MIN, asl->i.objtype_[1]);
   EXPECT_EQ(0, obj_de[1].e);
-  builder.SetObj(1, ampl::MAX, builder.MakeNumericConstant(42));
-  EXPECT_EQ(ampl::MAX, asl->i.objtype_[1]);
+  builder.SetObj(1, ampl::obj::MAX, builder.MakeNumericConstant(42));
+  EXPECT_EQ(ampl::obj::MAX, asl->i.objtype_[1]);
   EXPECT_EQ(reinterpret_cast<efunc*>(OPNUM), obj_de[1].e->op);
 }
 
@@ -654,9 +655,9 @@ TEST(ASLBuilderTest, SetObjIndexOutOfRange) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
   NumericExpr expr = builder.MakeNumericConstant(42);
-  EXPECT_DEBUG_DEATH(builder.SetObj(-1, ampl::MIN, expr), "Assertion");
-  EXPECT_DEBUG_DEATH(
-        builder.SetObj(TestASLBuilder::NUM_OBJS, ampl::MIN, expr), "Assertion");
+  EXPECT_DEBUG_DEATH(builder.SetObj(-1, ampl::obj::MIN, expr), "Assertion");
+  EXPECT_DEBUG_DEATH(builder.SetObj(TestASLBuilder::NUM_OBJS,
+                                    ampl::obj::MIN, expr), "Assertion");
 }
 #endif
 
@@ -686,14 +687,13 @@ TEST(ASLBuilderTest, AddFunction) {
   TestASLBuilder builder(asl);
   char info = 0;
   EXPECT_EQ(0, asl->i.funcsfirst_);
-  Function f = builder.AddFunction(
-        "foo", TestFunc, 11, Function::SYMBOLIC, &info);
+  Function f = builder.AddFunction("foo", TestFunc, 11, func::SYMBOLIC, &info);
   EXPECT_EQ(11, f.num_args());
   EXPECT_STREQ("foo", f.name());
   builder.SetFunction(0, "foo", 11);
   func_info *fi = asl->i.funcs_[0];
   EXPECT_TRUE(TestFunc == fi->funcp);
-  EXPECT_EQ(Function::SYMBOLIC, fi->ftype);
+  EXPECT_EQ(func::SYMBOLIC, fi->ftype);
   EXPECT_EQ(11, fi->nargs);
   EXPECT_EQ(&info, fi->funcinfo);
   const func_info *funcs[] = {fi};
@@ -702,16 +702,15 @@ TEST(ASLBuilderTest, AddFunction) {
   builder.SetFunction(0, "bar", 0);
   const func_info *funcs2[] = {fi, asl->i.funcs_[0]};
   CheckFunctionList(asl, funcs2);
-  EXPECT_NE(Function(),
-            builder.AddFunction("f1", TestFunc, 0, Function::NUMERIC));
+  EXPECT_NE(Function(), builder.AddFunction("f1", TestFunc, 0, func::NUMERIC));
 }
 
 TEST(ASLBuilderTest, SetFunction) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
-  builder.AddFunction("foo", TestFunc, 3, Function::SYMBOLIC);
+  builder.AddFunction("foo", TestFunc, 3, func::SYMBOLIC);
   EXPECT_EQ(0, asl->i.funcs_[1]);
-  Function f = builder.SetFunction(1, "foo", 3, Function::SYMBOLIC);
+  Function f = builder.SetFunction(1, "foo", 3, func::SYMBOLIC);
   EXPECT_STREQ("foo", f.name());
   EXPECT_EQ(3, f.num_args());
   EXPECT_STREQ("foo", asl->i.funcs_[1]->name);

@@ -69,8 +69,8 @@ class ASLBuilder {
 
   FMT_DISALLOW_COPY_AND_ASSIGN(ASLBuilder);
 
-  static void CheckOpCode(int opcode, Expr::Kind kind, const char *expr_name) {
-    if (Expr::INFO[opcode].kind != kind)
+  static void CheckOpCode(int opcode, expr::Kind kind, const char *expr_name) {
+    if (expr::kind(opcode) != kind)
       throw Error("invalid {} expression code {}", expr_name, opcode);
   }
 
@@ -81,14 +81,14 @@ class ASLBuilder {
   void SetObjOrCon(
       int index, cde *d, int *cexp1_end, NumericExpr expr, int **z);
 
-  expr *MakeConstant(double value);
-  expr *DoMakeUnary(int opcode, Expr lhs);
-  expr *MakeBinary(int opcode, Expr::Kind kind, Expr lhs, Expr rhs);
-  expr *MakeIf(int opcode,
+  ::expr *MakeConstant(double value);
+  ::expr *DoMakeUnary(int opcode, Expr lhs);
+  ::expr *MakeBinary(int opcode, expr::Kind kind, Expr lhs, Expr rhs);
+  ::expr *MakeIf(int opcode,
       LogicalExpr condition, Expr true_expr, Expr false_expr);
-  expr *MakeIterated(int opcode, ArrayRef<Expr> args);
+  ::expr *MakeIterated(int opcode, ArrayRef<Expr> args);
 
-  template <Expr::Kind K>
+  template <expr::Kind K>
   BasicIteratedExpr<K> MakeIterated(int opcode, ArrayRef<Expr> args) {
     return Expr::Create< BasicIteratedExpr<K> >(MakeIterated(opcode, args));
   }
@@ -112,19 +112,19 @@ class ASLBuilder {
   void EndBuild();
 
   // Sets objective type and expression.
-  void SetObj(int index, ObjType type, NumericExpr expr);
+  void SetObj(int index, obj::Type type, NumericExpr expr);
 
   // Sets constraint expression.
   void SetCon(int index, NumericExpr expr);
 
   Function AddFunction(const char *name, ufunc f, int num_args,
-                       Function::Type type = Function::NUMERIC, void *info = 0);
+                       func::Type type = func::NUMERIC, void *info = 0);
 
   // Sets a function at the given index.
   // If the function with the specified name doesn't exist and the flag
   // ASL_allow_missing_funcs is not set, SetFunction throws ASLError.
   Function SetFunction(int index, const char *name, int num_args,
-                       Function::Type type = Function::NUMERIC);
+                       func::Type type = func::NUMERIC);
 
   // The Make* methods construct expression objects. These objects are
   // local to the currently built ASL problem and shouldn't be used with
@@ -141,7 +141,7 @@ class ASLBuilder {
   UnaryExpr MakeUnary(int opcode, NumericExpr arg);
 
   BinaryExpr MakeBinary(int opcode, NumericExpr lhs, NumericExpr rhs) {
-    return Expr::Create<BinaryExpr>(MakeBinary(opcode, Expr::BINARY, lhs, rhs));
+    return Expr::Create<BinaryExpr>(MakeBinary(opcode, expr::BINARY, lhs, rhs));
   }
 
   IfExpr MakeIf(LogicalExpr condition,
@@ -158,16 +158,16 @@ class ASLBuilder {
   VarArgExpr MakeVarArg(int opcode, ArrayRef<NumericExpr> args);
 
   SumExpr MakeSum(ArrayRef<NumericExpr> args) {
-    return MakeIterated<Expr::SUM>(OPSUMLIST, args);
+    return MakeIterated<expr::SUM>(OPSUMLIST, args);
   }
 
   CountExpr MakeCount(ArrayRef<LogicalExpr> args) {
-    return MakeIterated<Expr::COUNT>(OPCOUNT, args);
+    return MakeIterated<expr::COUNT>(OPCOUNT, args);
   }
 
   NumberOfExpr MakeNumberOf(ArrayRef<NumericExpr> args) {
     assert(args.size() >= 1);
-    return MakeIterated<Expr::NUMBEROF>(OPNUMBEROF, args);
+    return MakeIterated<expr::NUMBEROF>(OPNUMBEROF, args);
   }
 
   LogicalConstant MakeLogicalConstant(bool value) {
@@ -181,18 +181,18 @@ class ASLBuilder {
   BinaryLogicalExpr MakeBinaryLogical(
       int opcode, LogicalExpr lhs, LogicalExpr rhs) {
     return Expr::Create<BinaryLogicalExpr>(
-        MakeBinary(opcode, Expr::BINARY_LOGICAL, lhs, rhs));
+        MakeBinary(opcode, expr::BINARY_LOGICAL, lhs, rhs));
   }
 
   RelationalExpr MakeRelational(int opcode, NumericExpr lhs, NumericExpr rhs) {
     return Expr::Create<RelationalExpr>(
-        MakeBinary(opcode, Expr::RELATIONAL, lhs, rhs));
+        MakeBinary(opcode, expr::RELATIONAL, lhs, rhs));
   }
 
   LogicalCountExpr MakeLogicalCount(
       int opcode, NumericExpr lhs, CountExpr rhs) {
     return Expr::Create<LogicalCountExpr>(
-        MakeBinary(opcode, Expr::LOGICAL_COUNT, lhs, rhs));
+        MakeBinary(opcode, expr::LOGICAL_COUNT, lhs, rhs));
   }
 
   ImplicationExpr MakeImplication(
@@ -205,7 +205,7 @@ class ASLBuilder {
       int opcode, ArrayRef<LogicalExpr> args);
 
   AllDiffExpr MakeAllDiff(ArrayRef<NumericExpr> args) {
-    return MakeIterated<Expr::ALLDIFF>(OPALLDIFF, args);
+    return MakeIterated<expr::ALLDIFF>(OPALLDIFF, args);
   }
 
   StringLiteral MakeStringLiteral(fmt::StringRef value);

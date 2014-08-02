@@ -64,6 +64,8 @@ using ampl::Error;
 using ampl::UnsupportedExprError;
 using ampl::InvalidNumericExprError;
 using ampl::InvalidLogicalExprError;
+namespace ex = ampl::expr;
+namespace func = ampl::func;
 
 namespace {
 
@@ -90,7 +92,7 @@ namespace ampl {
 namespace internal {
 template <>
 bool Is<TestExpr>(Expr e) {
-  return e.kind() == Expr::BINARY || e.kind() == Expr::UNARY;
+  return e.kind() == expr::BINARY || e.kind() == expr::UNARY;
 }
 }
 #endif
@@ -224,54 +226,54 @@ public:
 };
 
 TEST_F(ExprTest, NumericKinds) {
-  const Expr::Kind kinds[] = {
-      Expr::UNARY,
-      Expr::BINARY,
-      Expr::VARARG,
-      Expr::SUM,
-      Expr::COUNT,
-      Expr::IF,
-      Expr::PLTERM,
-      Expr::VARIABLE,
-      Expr::NUMBEROF,
-      Expr::CONSTANT
+  const ex::Kind kinds[] = {
+      ex::UNARY,
+      ex::BINARY,
+      ex::VARARG,
+      ex::SUM,
+      ex::COUNT,
+      ex::IF,
+      ex::PLTERM,
+      ex::VARIABLE,
+      ex::NUMBEROF,
+      ex::CONSTANT
   };
   int i = 0, n = sizeof(kinds) / sizeof(*kinds);
   EXPECT_GT(n, 0);
-  EXPECT_EQ(Expr::NUMERIC_START, Expr::EXPR_START);
+  EXPECT_EQ(ex::NUMERIC_START, ex::EXPR_START);
   for (; i < n; ++i) {
-    Expr::Kind kind = kinds[i];
-    EXPECT_GE(kind, Expr::NUMERIC_START);
-    EXPECT_LE(kind, Expr::NUMERIC_END);
+    ex::Kind kind = kinds[i];
+    EXPECT_GE(kind, ex::NUMERIC_START);
+    EXPECT_LE(kind, ex::NUMERIC_END);
     for (int j = i + 1; j < n; ++j)
       EXPECT_NE(kind, kinds[j]);  // Check if all different.
-    if (kind != Expr::CONSTANT)
-      EXPECT_LT(kind, Expr::LOGICAL_START);
+    if (kind != ex::CONSTANT)
+      EXPECT_LT(kind, ex::LOGICAL_START);
   }
   EXPECT_EQ(i, n);
 }
 
 TEST_F(ExprTest, LogicalKinds) {
-  const Expr::Kind kinds[] = {
-      Expr::CONSTANT,
-      Expr::RELATIONAL,
-      Expr::NOT,
-      Expr::BINARY_LOGICAL,
-      Expr::IMPLICATION,
-      Expr::ITERATED_LOGICAL,
-      Expr::ALLDIFF
+  const ex::Kind kinds[] = {
+      ex::CONSTANT,
+      ex::RELATIONAL,
+      ex::NOT,
+      ex::BINARY_LOGICAL,
+      ex::IMPLICATION,
+      ex::ITERATED_LOGICAL,
+      ex::ALLDIFF
   };
   int i = 0, n = sizeof(kinds) / sizeof(*kinds);
   EXPECT_GT(n, 0);
-  EXPECT_LT(Expr::LOGICAL_END, Expr::EXPR_END);
+  EXPECT_LT(ex::LOGICAL_END, ex::EXPR_END);
   for (; i < n; ++i) {
-    Expr::Kind kind = kinds[i];
-    EXPECT_GE(kind, Expr::LOGICAL_START);
-    EXPECT_LE(kind, Expr::LOGICAL_END);
+    ex::Kind kind = kinds[i];
+    EXPECT_GE(kind, ex::LOGICAL_START);
+    EXPECT_LE(kind, ex::LOGICAL_END);
     for (int j = i + 1; j < n; ++j)
       EXPECT_NE(kind, kinds[j]);  // Check if all different.
-    if (kind != Expr::CONSTANT)
-      EXPECT_GT(kind, Expr::NUMERIC_END);
+    if (kind != ex::CONSTANT)
+      EXPECT_GT(kind, ex::NUMERIC_END);
   }
   EXPECT_EQ(i, n);
 }
@@ -312,93 +314,93 @@ TEST_F(ExprTest, SafeBool) {
 struct OpInfo {
   int code;
   const char *str;
-  Expr::Kind kind;
+  ex::Kind kind;
 };
 
 const OpInfo OP_INFO[] = {
   {-1, "unknown"},
-  {OPPLUS,  "+",    Expr::BINARY},
-  {OPMINUS, "-",    Expr::BINARY},
-  {OPMULT,  "*",    Expr::BINARY},
-  {OPDIV,   "/",    Expr::BINARY},
-  {OPREM,   "mod",  Expr::BINARY},
-  {OPPOW,   "^",    Expr::BINARY},
-  {OPLESS,  "less", Expr::BINARY},
+  {OPPLUS,  "+",    ex::BINARY},
+  {OPMINUS, "-",    ex::BINARY},
+  {OPMULT,  "*",    ex::BINARY},
+  {OPDIV,   "/",    ex::BINARY},
+  {OPREM,   "mod",  ex::BINARY},
+  {OPPOW,   "^",    ex::BINARY},
+  {OPLESS,  "less", ex::BINARY},
   { 7, "unknown"},
   { 8, "unknown"},
   { 9, "unknown"},
   {10, "unknown"},
-  {MINLIST,  "min",     Expr::VARARG},
-  {MAXLIST,  "max",     Expr::VARARG},
-  {FLOOR,    "floor",   Expr::UNARY},
-  {CEIL,     "ceil",    Expr::UNARY},
-  {ABS,      "abs",     Expr::UNARY},
-  {OPUMINUS, "unary -", Expr::UNARY},
+  {MINLIST,  "min",     ex::VARARG},
+  {MAXLIST,  "max",     ex::VARARG},
+  {FLOOR,    "floor",   ex::UNARY},
+  {CEIL,     "ceil",    ex::UNARY},
+  {ABS,      "abs",     ex::UNARY},
+  {OPUMINUS, "unary -", ex::UNARY},
   {17, "unknown"},
   {18, "unknown"},
   {19, "unknown"},
-  {OPOR,  "||", Expr::BINARY_LOGICAL},
-  {OPAND, "&&", Expr::BINARY_LOGICAL},
-  {LT,    "<",  Expr::RELATIONAL},
-  {LE,    "<=", Expr::RELATIONAL},
-  {EQ,    "=",  Expr::RELATIONAL},
+  {OPOR,  "||", ex::BINARY_LOGICAL},
+  {OPAND, "&&", ex::BINARY_LOGICAL},
+  {LT,    "<",  ex::RELATIONAL},
+  {LE,    "<=", ex::RELATIONAL},
+  {EQ,    "=",  ex::RELATIONAL},
   {25, "unknown"},
   {26, "unknown"},
   {27, "unknown"},
-  {GE, ">=", Expr::RELATIONAL},
-  {GT, ">",  Expr::RELATIONAL},
-  {NE, "!=", Expr::RELATIONAL},
+  {GE, ">=", ex::RELATIONAL},
+  {GT, ">",  ex::RELATIONAL},
+  {NE, "!=", ex::RELATIONAL},
   {31, "unknown"},
   {32, "unknown"},
   {33, "unknown"},
-  {OPNOT, "!", Expr::NOT},
-  {OPIFnl, "if", Expr::IF},
+  {OPNOT, "!", ex::NOT},
+  {OPIFnl, "if", ex::IF},
   {36, "unknown"},
-  {OP_tanh,  "tanh",  Expr::UNARY},
-  {OP_tan,   "tan",   Expr::UNARY},
-  {OP_sqrt,  "sqrt",  Expr::UNARY},
-  {OP_sinh,  "sinh",  Expr::UNARY},
-  {OP_sin,   "sin",   Expr::UNARY},
-  {OP_log10, "log10", Expr::UNARY},
-  {OP_log,   "log",   Expr::UNARY},
-  {OP_exp,   "exp",   Expr::UNARY},
-  {OP_cosh,  "cosh",  Expr::UNARY},
-  {OP_cos,   "cos",   Expr::UNARY},
-  {OP_atanh, "atanh", Expr::UNARY},
-  {OP_atan2, "atan2", Expr::BINARY},
-  {OP_atan,  "atan",  Expr::UNARY},
-  {OP_asinh, "asinh", Expr::UNARY},
-  {OP_asin,  "asin",  Expr::UNARY},
-  {OP_acosh, "acosh", Expr::UNARY},
-  {OP_acos,  "acos",  Expr::UNARY},
-  {OPSUMLIST, "sum",  Expr::SUM},
-  {OPintDIV,  "div",  Expr::BINARY},
-  {OPprecision, "precision", Expr::BINARY},
-  {OPround,     "round",     Expr::BINARY},
-  {OPtrunc,     "trunc",     Expr::BINARY},
-  {OPCOUNT,     "count",           Expr::COUNT},
-  {OPNUMBEROF,  "numberof",        Expr::NUMBEROF},
-  {OPNUMBEROFs, "string numberof", Expr::UNKNOWN},
-  {OPATLEAST, "atleast", Expr::LOGICAL_COUNT},
-  {OPATMOST,  "atmost",  Expr::LOGICAL_COUNT},
-  {OPPLTERM, "pl term", Expr::PLTERM},
-  {OPIFSYM,  "string if-then-else", Expr::UNKNOWN},
-  {OPEXACTLY,    "exactly",  Expr::LOGICAL_COUNT},
-  {OPNOTATLEAST, "!atleast", Expr::LOGICAL_COUNT},
-  {OPNOTATMOST,  "!atmost",  Expr::LOGICAL_COUNT},
-  {OPNOTEXACTLY, "!exactly", Expr::LOGICAL_COUNT},
-  {ANDLIST, "forall", Expr::ITERATED_LOGICAL},
-  {ORLIST,  "exists", Expr::ITERATED_LOGICAL},
-  {OPIMPELSE, "==>", Expr::IMPLICATION},
-  {OP_IFF, "<==>", Expr::BINARY_LOGICAL},
-  {OPALLDIFF, "alldiff", Expr::ALLDIFF},
-  {OP1POW, "^",  Expr::BINARY},
-  {OP2POW, "^2", Expr::UNARY},
-  {OPCPOW, "^",  Expr::BINARY},
-  {OPFUNCALL, "function call", Expr::CALL},
-  {OPNUM, "number", Expr::CONSTANT},
-  {OPHOL, "string", Expr::STRING},
-  {OPVARVAL, "variable", Expr::VARIABLE},
+  {OP_tanh,  "tanh",  ex::UNARY},
+  {OP_tan,   "tan",   ex::UNARY},
+  {OP_sqrt,  "sqrt",  ex::UNARY},
+  {OP_sinh,  "sinh",  ex::UNARY},
+  {OP_sin,   "sin",   ex::UNARY},
+  {OP_log10, "log10", ex::UNARY},
+  {OP_log,   "log",   ex::UNARY},
+  {OP_exp,   "exp",   ex::UNARY},
+  {OP_cosh,  "cosh",  ex::UNARY},
+  {OP_cos,   "cos",   ex::UNARY},
+  {OP_atanh, "atanh", ex::UNARY},
+  {OP_atan2, "atan2", ex::BINARY},
+  {OP_atan,  "atan",  ex::UNARY},
+  {OP_asinh, "asinh", ex::UNARY},
+  {OP_asin,  "asin",  ex::UNARY},
+  {OP_acosh, "acosh", ex::UNARY},
+  {OP_acos,  "acos",  ex::UNARY},
+  {OPSUMLIST, "sum",  ex::SUM},
+  {OPintDIV,  "div",  ex::BINARY},
+  {OPprecision, "precision", ex::BINARY},
+  {OPround,     "round",     ex::BINARY},
+  {OPtrunc,     "trunc",     ex::BINARY},
+  {OPCOUNT,     "count",           ex::COUNT},
+  {OPNUMBEROF,  "numberof",        ex::NUMBEROF},
+  {OPNUMBEROFs, "string numberof", ex::UNKNOWN},
+  {OPATLEAST, "atleast", ex::LOGICAL_COUNT},
+  {OPATMOST,  "atmost",  ex::LOGICAL_COUNT},
+  {OPPLTERM, "pl term", ex::PLTERM},
+  {OPIFSYM,  "string if-then-else", ex::UNKNOWN},
+  {OPEXACTLY,    "exactly",  ex::LOGICAL_COUNT},
+  {OPNOTATLEAST, "!atleast", ex::LOGICAL_COUNT},
+  {OPNOTATMOST,  "!atmost",  ex::LOGICAL_COUNT},
+  {OPNOTEXACTLY, "!exactly", ex::LOGICAL_COUNT},
+  {ANDLIST, "forall", ex::ITERATED_LOGICAL},
+  {ORLIST,  "exists", ex::ITERATED_LOGICAL},
+  {OPIMPELSE, "==>", ex::IMPLICATION},
+  {OP_IFF, "<==>", ex::BINARY_LOGICAL},
+  {OPALLDIFF, "alldiff", ex::ALLDIFF},
+  {OP1POW, "^",  ex::BINARY},
+  {OP2POW, "^2", ex::UNARY},
+  {OPCPOW, "^",  ex::BINARY},
+  {OPFUNCALL, "function call", ex::CALL},
+  {OPNUM, "number", ex::CONSTANT},
+  {OPHOL, "string", ex::STRING},
+  {OPVARVAL, "variable", ex::VARIABLE},
   {N_OPS, "unknown"},
   {777,   "unknown"}
 };
@@ -410,9 +412,9 @@ void TestAssertInCreate(int opcode) {
 }
 
 template <typename ExprT>
-int CheckExpr(Expr::Kind start, Expr::Kind end = Expr::UNKNOWN,
+int CheckExpr(ex::Kind start, ex::Kind end = ex::UNKNOWN,
     int bad_opcode = OPPLTERM) {
-  if (end == Expr::UNKNOWN)
+  if (end == ex::UNKNOWN)
     end = start;
   {
     // Check default ctor.
@@ -429,7 +431,7 @@ int CheckExpr(Expr::Kind start, Expr::Kind end = Expr::UNKNOWN,
     const char *opstr = info.str;
     expr raw = {reinterpret_cast<efunc*>(opcode)};
     bool is_this_kind = info.kind >= start && info.kind <= end;
-    if (info.kind != Expr::UNKNOWN) {
+    if (info.kind != ex::UNKNOWN) {
       Expr e(::MakeExpr(&raw));
       EXPECT_EQ(is_this_kind, ampl::internal::Is<ExprT>(e));
       bool cast_result = Cast<ExprT>(e);
@@ -446,7 +448,7 @@ int CheckExpr(Expr::Kind start, Expr::Kind end = Expr::UNKNOWN,
 }
 
 TEST_F(ExprTest, Expr) {
-  EXPECT_EQ(66, CheckExpr<Expr>(Expr::EXPR_START, Expr::EXPR_END, -1));
+  EXPECT_EQ(66, CheckExpr<Expr>(ex::EXPR_START, ex::EXPR_END, -1));
   TestAssertInCreate<Expr>(7);
   TestAssertInCreate<Expr>(N_OPS);
   TestAssertInCreate<Expr>(777);
@@ -591,23 +593,23 @@ TEST_F(ExprTest, EqualStringLiteral) {
 
 TEST_F(ExprTest, NumericExpr) {
   EXPECT_EQ(45,
-      CheckExpr<NumericExpr>(Expr::NUMERIC_START, Expr::NUMERIC_END, OPNOT));
+      CheckExpr<NumericExpr>(ex::NUMERIC_START, ex::NUMERIC_END, OPNOT));
 }
 
 TEST_F(ExprTest, LogicalExpr) {
   EXPECT_EQ(21,
-      CheckExpr<LogicalExpr>(Expr::LOGICAL_START, Expr::LOGICAL_END));
+      CheckExpr<LogicalExpr>(ex::LOGICAL_START, ex::LOGICAL_END));
 }
 
 TEST_F(ExprTest, NumericConstant) {
-  EXPECT_EQ(1, CheckExpr<NumericConstant>(Expr::CONSTANT));
+  EXPECT_EQ(1, CheckExpr<NumericConstant>(ex::CONSTANT));
   ampl::NumericConstant expr = builder.MakeNumericConstant(42);
   EXPECT_EQ(OPNUM, expr.opcode());
   EXPECT_EQ(42, expr.value());
 }
 
 TEST_F(ExprTest, Variable) {
-  EXPECT_EQ(1, CheckExpr<Variable>(Expr::VARIABLE));
+  EXPECT_EQ(1, CheckExpr<Variable>(ex::VARIABLE));
   ampl::Variable var = builder.MakeVariable(0);
   EXPECT_EQ(OPVARVAL, var.opcode());
   EXPECT_EQ(0, var.index());
@@ -624,7 +626,7 @@ TEST_F(ExprTest, UnaryExpr) {
       OP_atanh, OP_atan, OP_asinh, OP_asin, OP_acosh, OP_acos, OP2POW
   };
   std::size_t num_opcodes = sizeof(opcodes) / sizeof(*opcodes);
-  EXPECT_EQ(num_opcodes, CheckExpr<UnaryExpr>(Expr::UNARY));
+  EXPECT_EQ(num_opcodes, CheckExpr<UnaryExpr>(ex::UNARY));
   for (std::size_t i = 0; i < num_opcodes; ++i) {
     ampl::UnaryExpr expr = builder.MakeUnary(opcodes[i], n1);
     EXPECT_EQ(opcodes[i], expr.opcode());
@@ -645,7 +647,7 @@ TEST_F(ExprTest, BinaryExpr) {
       OPintDIV, OPprecision, OPround, OPtrunc, OP1POW, OPCPOW
   };
   std::size_t num_opcodes = sizeof(opcodes) / sizeof(*opcodes);
-  EXPECT_EQ(num_opcodes, CheckExpr<BinaryExpr>(Expr::BINARY));
+  EXPECT_EQ(num_opcodes, CheckExpr<BinaryExpr>(ex::BINARY));
   for (std::size_t i = 0; i < num_opcodes; ++i) {
     ampl::BinaryExpr expr = builder.MakeBinary(opcodes[i], n1, n2);
     EXPECT_BINARY(expr, opcodes[i], n1, n2);
@@ -655,7 +657,7 @@ TEST_F(ExprTest, BinaryExpr) {
 }
 
 TEST_F(ExprTest, IfExpr) {
-  EXPECT_EQ(1, CheckExpr<IfExpr>(Expr::IF));
+  EXPECT_EQ(1, CheckExpr<IfExpr>(ex::IF));
   ampl::IfExpr expr = builder.MakeIf(l1, n1, n2);
   EXPECT_EQ(OPIFnl, expr.opcode());
   EXPECT_EQ(l1, expr.condition());
@@ -664,8 +666,7 @@ TEST_F(ExprTest, IfExpr) {
 }
 
 TEST_F(ExprTest, PiecewiseLinearExpr) {
-  EXPECT_EQ(1,
-      CheckExpr<PiecewiseLinearExpr>(Expr::PLTERM, Expr::PLTERM, OPPLUS));
+  EXPECT_EQ(1, CheckExpr<PiecewiseLinearExpr>(ex::PLTERM, ex::PLTERM, OPPLUS));
   enum { NUM_BREAKPOINTS = 2 };
   double breakpoints[NUM_BREAKPOINTS] = { 11, 22 };
   double slopes[NUM_BREAKPOINTS + 1] = {33, 44, 55};
@@ -689,9 +690,9 @@ TEST_F(ExprTest, PiecewiseLinearExpr) {
 }
 
 TEST_F(ExprTest, CallExpr) {
-  EXPECT_EQ(1, CheckExpr<CallExpr>(Expr::CALL));
+  EXPECT_EQ(1, CheckExpr<CallExpr>(ex::CALL));
   enum {NUM_ARGS = 3};
-  Function f = builder.AddFunction("foo", TestFunc, NUM_ARGS, Function::SYMBOLIC);
+  Function f = builder.AddFunction("foo", TestFunc, NUM_ARGS, func::SYMBOLIC);
   const Expr args[NUM_ARGS] = {n1, n2, builder.MakeStringLiteral("abc")};
   CallExpr expr = builder.MakeCall(f, args);
   EXPECT_EQ(OPFUNCALL, expr.opcode());
@@ -709,7 +710,7 @@ TEST_F(ExprTest, CallExpr) {
 TEST_F(ExprTest, VarArgExpr) {
   const int opcodes[] = {MINLIST, MAXLIST};
   std::size_t num_opcodes = sizeof(opcodes) / sizeof(*opcodes);
-  EXPECT_EQ(num_opcodes, CheckExpr<VarArgExpr>(Expr::VARARG));
+  EXPECT_EQ(num_opcodes, CheckExpr<VarArgExpr>(ex::VARARG));
   enum {NUM_ARGS = 3};
   NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
   for (size_t i = 0, n = sizeof(opcodes) / sizeof(*opcodes); i < n; ++i) {
@@ -731,7 +732,7 @@ TEST_F(ExprTest, VarArgExpr) {
 }
 
 TEST_F(ExprTest, SumExpr) {
-  EXPECT_EQ(1, CheckExpr<SumExpr>(Expr::SUM));
+  EXPECT_EQ(1, CheckExpr<SumExpr>(ex::SUM));
   enum {NUM_ARGS = 3};
   NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
   ampl::SumExpr expr = builder.MakeSum(args);
@@ -744,7 +745,7 @@ TEST_F(ExprTest, SumExpr) {
 }
 
 TEST_F(ExprTest, CountExpr) {
-  EXPECT_EQ(1, CheckExpr<CountExpr>(Expr::COUNT));
+  EXPECT_EQ(1, CheckExpr<CountExpr>(ex::COUNT));
   enum {NUM_ARGS = 2};
   LogicalExpr args[NUM_ARGS] = {l1, l0};
   ampl::CountExpr expr = builder.MakeCount(args);
@@ -757,7 +758,7 @@ TEST_F(ExprTest, CountExpr) {
 }
 
 TEST_F(ExprTest, NumberOfExpr) {
-  EXPECT_EQ(1, CheckExpr<NumberOfExpr>(Expr::NUMBEROF));
+  EXPECT_EQ(1, CheckExpr<NumberOfExpr>(ex::NUMBEROF));
   enum {NUM_ARGS = 3};
   NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
   ampl::NumberOfExpr expr = builder.MakeNumberOf(args);
@@ -772,7 +773,7 @@ TEST_F(ExprTest, NumberOfExpr) {
 }
 
 TEST_F(ExprTest, LogicalConstant) {
-  EXPECT_EQ(1, CheckExpr<LogicalConstant>(Expr::CONSTANT));
+  EXPECT_EQ(1, CheckExpr<LogicalConstant>(ex::CONSTANT));
   ampl::LogicalConstant expr = builder.MakeLogicalConstant(true);
   EXPECT_EQ(OPNUM, expr.opcode());
   EXPECT_TRUE(expr.value());
@@ -780,7 +781,7 @@ TEST_F(ExprTest, LogicalConstant) {
 }
 
 TEST_F(ExprTest, NotExpr) {
-  EXPECT_EQ(1, CheckExpr<NotExpr>(Expr::NOT));
+  EXPECT_EQ(1, CheckExpr<NotExpr>(ex::NOT));
   ampl::NotExpr expr = builder.MakeNot(l1);
   EXPECT_EQ(OPNOT, expr.opcode());
   EXPECT_EQ(l1, expr.arg());
@@ -789,7 +790,7 @@ TEST_F(ExprTest, NotExpr) {
 TEST_F(ExprTest, BinaryLogicalExpr) {
   const int opcodes[] = {OPOR, OPAND, OP_IFF};
   std::size_t num_opcodes = sizeof(opcodes) / sizeof(*opcodes);
-  EXPECT_EQ(num_opcodes, CheckExpr<BinaryLogicalExpr>(Expr::BINARY_LOGICAL));
+  EXPECT_EQ(num_opcodes, CheckExpr<BinaryLogicalExpr>(ex::BINARY_LOGICAL));
   for (size_t i = 0; i < num_opcodes; ++i) {
     ampl::BinaryLogicalExpr expr =
         builder.MakeBinaryLogical(opcodes[i], l1, l0);
@@ -802,7 +803,7 @@ TEST_F(ExprTest, BinaryLogicalExpr) {
 TEST_F(ExprTest, RelationalExpr) {
   const int opcodes[] = {LT, LE, EQ, GE, GT, NE};
   std::size_t num_opcodes = sizeof(opcodes) / sizeof(*opcodes);
-  EXPECT_EQ(num_opcodes, CheckExpr<RelationalExpr>(Expr::RELATIONAL));
+  EXPECT_EQ(num_opcodes, CheckExpr<RelationalExpr>(ex::RELATIONAL));
   for (size_t i = 0; i < num_opcodes; ++i) {
     ampl::RelationalExpr expr = builder.MakeRelational(opcodes[i], n1, n2);
     EXPECT_BINARY(expr, opcodes[i], n1, n2);
@@ -816,7 +817,7 @@ TEST_F(ExprTest, LogicalCountExpr) {
     OPATLEAST, OPATMOST, OPEXACTLY, OPNOTATLEAST, OPNOTATMOST, OPNOTEXACTLY
   };
   std::size_t num_opcodes = sizeof(opcodes) / sizeof(*opcodes);
-  EXPECT_EQ(num_opcodes, CheckExpr<LogicalCountExpr>(Expr::LOGICAL_COUNT));
+  EXPECT_EQ(num_opcodes, CheckExpr<LogicalCountExpr>(ex::LOGICAL_COUNT));
   ampl::CountExpr count = builder.MakeCount(MakeArrayRef(&l1, 1));
   for (size_t i = 0; i < num_opcodes; ++i) {
     ampl::LogicalCountExpr expr =
@@ -828,7 +829,7 @@ TEST_F(ExprTest, LogicalCountExpr) {
 }
 
 TEST_F(ExprTest, ImplicationExpr) {
-  EXPECT_EQ(1, CheckExpr<ImplicationExpr>(Expr::IMPLICATION));
+  EXPECT_EQ(1, CheckExpr<ImplicationExpr>(ex::IMPLICATION));
   LogicalExpr condition = builder.MakeLogicalConstant(true);
   ampl::ImplicationExpr expr = builder.MakeImplication(condition, l0, l1);
   EXPECT_EQ(OPIMPELSE, expr.opcode());
@@ -841,7 +842,7 @@ TEST_F(ExprTest, IteratedLogicalExpr) {
   const int opcodes[] = {ORLIST, ANDLIST};
   std::size_t num_opcodes = sizeof(opcodes) / sizeof(*opcodes);
   EXPECT_EQ(num_opcodes,
-    CheckExpr<IteratedLogicalExpr>(Expr::ITERATED_LOGICAL));
+    CheckExpr<IteratedLogicalExpr>(ex::ITERATED_LOGICAL));
   enum {NUM_ARGS = 3};
   LogicalExpr args[NUM_ARGS] = {l0, l1, builder.MakeLogicalConstant(false)};
   for (size_t i = 0; i < num_opcodes; ++i) {
@@ -858,7 +859,7 @@ TEST_F(ExprTest, IteratedLogicalExpr) {
 }
 
 TEST_F(ExprTest, AllDiffExpr) {
-  EXPECT_EQ(1, CheckExpr<AllDiffExpr>(Expr::ALLDIFF));
+  EXPECT_EQ(1, CheckExpr<AllDiffExpr>(ex::ALLDIFF));
   enum {NUM_ARGS = 3};
   NumericExpr args[NUM_ARGS] = {n1, n2, builder.MakeNumericConstant(3)};
   AllDiffExpr expr = builder.MakeAllDiff(args);
@@ -873,7 +874,7 @@ TEST_F(ExprTest, AllDiffExpr) {
 }
 
 TEST_F(ExprTest, StringLiteral) {
-  EXPECT_EQ(1, CheckExpr<StringLiteral>(Expr::STRING));
+  EXPECT_EQ(1, CheckExpr<StringLiteral>(ex::STRING));
   StringLiteral e = builder.MakeStringLiteral("abc");
   EXPECT_STREQ("abc", e.value());
 }
@@ -973,7 +974,7 @@ TEST_F(ExprTest, ExprVisitorHandlesAll) {
   for (int i = 0; i < size; ++i) {
     FullTestVisitor v;
     const OpInfo &info = OP_INFO[i];
-    if (info.kind == Expr::UNKNOWN || info.kind == Expr::STRING) continue;
+    if (info.kind == ex::UNKNOWN || info.kind == ex::STRING) continue;
     expr raw = {reinterpret_cast<efunc*>(info.code)};
     Expr e(::MakeExpr(&raw));
     Expr result;
@@ -1002,7 +1003,7 @@ TEST_F(ExprTest, ExprVisitorForwardsUnhandled) {
   for (int i = 0; i < size; ++i) {
     TestVisitor v;
     const OpInfo &info = OP_INFO[i];
-    if (info.kind == Expr::UNKNOWN || info.kind == Expr::STRING) continue;
+    if (info.kind == ex::UNKNOWN || info.kind == ex::STRING) continue;
     expr raw = {reinterpret_cast<efunc*>(info.code)};
     Expr e(::MakeExpr(&raw));
     Expr result;
@@ -1177,7 +1178,7 @@ TEST_F(ExprTest, WriteUnaryExpr) {
   for (int i = 0, size = sizeof(OP_INFO) / sizeof(*OP_INFO); i < size; ++i) {
     const OpInfo &info = OP_INFO[i];
     int code = info.code;
-    if (info.kind != Expr::UNARY || code == OPUMINUS || code == OP2POW)
+    if (info.kind != ex::UNARY || code == OPUMINUS || code == OP2POW)
       continue;
     CHECK_WRITE(fmt::format("{}(x1)", info.str), MakeUnary(code, x1));
     ++count;
@@ -1347,7 +1348,7 @@ TEST_F(ExprTest, WriteAllDiffExpr) {
 
 TEST_F(ExprTest, WriteStringLiteral) {
   Expr args[] = {builder.MakeStringLiteral("abc")};
-  ampl::Function f = builder.AddFunction("f", TestFunc, 1, Function::SYMBOLIC);
+  ampl::Function f = builder.AddFunction("f", TestFunc, 1, func::SYMBOLIC);
   CHECK_WRITE("f('abc')", builder.MakeCall(f, args));
   args[0] = builder.MakeStringLiteral("ab'c");
   CHECK_WRITE("f('ab''c')", builder.MakeCall(f, args));
@@ -1367,7 +1368,7 @@ TEST_F(ExprTest, UnaryFuncPrecedence) {
   for (int i = 0, size = sizeof(OP_INFO) / sizeof(*OP_INFO); i < size; ++i) {
     const OpInfo &info = OP_INFO[i];
     int code = info.code;
-    if (info.kind != Expr::UNARY || code == OPUMINUS || code == OP2POW)
+    if (info.kind != ex::UNARY || code == OPUMINUS || code == OP2POW)
       continue;
     CHECK_WRITE(fmt::format("{0}({0}(x1))", info.str),
         MakeUnary(code, MakeUnary(code, x1)));
@@ -1694,7 +1695,7 @@ TEST_F(ExprTest, HashVariable) {
   EXPECT_EQ(hash, std::hash<NumericExpr>()(MakeVariable(42)));
 }
 
-template <Expr::Kind K, typename Base>
+template <ex::Kind K, typename Base>
 void CheckHash(ampl::BasicUnaryExpr<K, Base> e) {
   size_t hash = HashCombine(0, e.opcode());
   hash = HashCombine<Base>(hash, e.arg());
@@ -1713,7 +1714,7 @@ void CheckHashBinary(Expr e) {
   EXPECT_EQ(hash, std::hash<Base>()(e));
 }
 
-template <Expr::Kind K, typename Base, typename Arg>
+template <ex::Kind K, typename Base, typename Arg>
 void CheckHash(ampl::BasicBinaryExpr<K, Base, Arg> e) {
   CheckHashBinary<ampl::BasicBinaryExpr<K, Base, Arg>, Base, Arg>(e);
 }
@@ -1762,8 +1763,7 @@ TEST_F(ExprTest, HashCallExpr) {
   enum {NUM_ARGS = 3};
   Variable var = MakeVariable(9);
   Expr args[NUM_ARGS] = {n1, builder.MakeStringLiteral("test"), var};
-  Function f = builder.AddFunction(
-        "foo", TestFunc, NUM_ARGS, Function::SYMBOLIC);
+  Function f = builder.AddFunction("foo", TestFunc, NUM_ARGS, func::SYMBOLIC);
   size_t hash = HashCombine(0, OPFUNCALL);
   hash = HashCombine(hash, f.name());
   hash = HashCombine<NumericExpr>(hash, n1);
@@ -1781,7 +1781,7 @@ size_t CheckHash(Expr e) {
   return hash;
 }
 
-template <Expr::Kind K>
+template <ex::Kind K>
 void CheckHash(ampl::BasicIteratedExpr<K> e) {
   CheckHash<ampl::BasicIteratedExpr<K>,
       typename ampl::ExprInfo<K>::Arg, typename ampl::ExprInfo<K>::Base>(e);
@@ -1848,7 +1848,7 @@ TEST_F(ExprTest, HashStringLiteral) {
   // String literal can only occur as a function argument, so test
   // it as a part of a call expression.
   Expr args[] = {builder.MakeStringLiteral("test")};
-  Function f = builder.AddFunction("foo", TestFunc, 1, Function::SYMBOLIC);
+  Function f = builder.AddFunction("foo", TestFunc, 1, func::SYMBOLIC);
   size_t hash = HashCombine(0, OPFUNCALL);
   hash = HashCombine(hash, f.name());
   hash = HashCombine(hash, HashString("test"));

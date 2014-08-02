@@ -61,6 +61,8 @@ using ampl::InvalidOptionValue;
 using ampl::OptionError;
 using ampl::Problem;
 
+namespace obj = ampl::obj;
+
 using std::string;
 
 namespace {
@@ -159,7 +161,7 @@ TEST_P(FunctionTest, ElementExprPlusConstantAtVariableIndex) {
 TEST_P(FunctionTest, InRelationConstraint) {
   Problem p;
   p.AddVar(0, 100, ampl::INTEGER);
-  p.AddObj(ampl::MIN, MakeVariable(0));
+  p.AddObj(obj::MIN, MakeVariable(0));
   Expr args[] = {MakeVariable(0), MakeConst(42)};
   p.AddCon(MakeRelational(NE, MakeCall(in_relation_, args), MakeConst(0)));
   EXPECT_EQ(42, Solve(p).obj_value());
@@ -176,7 +178,7 @@ TEST_P(FunctionTest, NestedInRelationNotSupported) {
 TEST_P(FunctionTest, TooFewArgsToInRelationConstraint) {
   Problem p;
   p.AddVar(0, 100, ampl::INTEGER);
-  p.AddObj(ampl::MIN, MakeVariable(0));
+  p.AddObj(obj::MIN, MakeVariable(0));
   p.AddCon(MakeRelational(NE, MakeCall(in_relation_,
     ampl::ArrayRef<Expr>(0, 0)), MakeConst(0)));
   EXPECT_THROW_MSG(Solve(p), ampl::Error, "in_relation: too few arguments");
@@ -186,7 +188,7 @@ TEST_P(FunctionTest, InRelationSizeIsNotMultipleOfArity) {
   Problem p;
   p.AddVar(0, 100, ampl::INTEGER);
   p.AddVar(0, 100, ampl::INTEGER);
-  p.AddObj(ampl::MIN, MakeVariable(0));
+  p.AddObj(obj::MIN, MakeVariable(0));
   Expr args[] = {
       MakeVariable(0), MakeVariable(1),
       MakeConst(1), MakeConst(2), MakeConst(3)
@@ -200,7 +202,7 @@ TEST_P(FunctionTest, InRelationTuple) {
   Problem p;
   p.AddVar(0, 100, ampl::INTEGER);
   p.AddVar(0, 100, ampl::INTEGER);
-  p.AddObj(ampl::MIN, MakeBinary(OPPLUS, MakeVariable(0), MakeVariable(1)));
+  p.AddObj(obj::MIN, MakeBinary(OPPLUS, MakeVariable(0), MakeVariable(1)));
   Expr args[] = {
     MakeVariable(0), MakeVariable(1), MakeConst(11), MakeConst(22)
   };
@@ -429,7 +431,7 @@ TEST_F(IlogCPTest, DefaultSolutionLimit) {
 TEST_F(IlogCPTest, CPOptimizerDoesntSupportContinuousVars) {
   Problem p;
   p.AddVar(0, 1);
-  p.AddObj(ampl::MIN, MakeVariable(0));
+  p.AddObj(ampl::obj::MIN, MakeVariable(0));
   EXPECT_THROW(s.Solve(p), ampl::Error);
 }
 
@@ -459,8 +461,8 @@ TEST_P(SolverTest, ObjnoOption) {
   Problem p;
   p.AddVar(11, 22, ampl::INTEGER);
   ampl::Variable var = MakeVariable(0);
-  p.AddObj(ampl::MIN, var);
-  p.AddObj(ampl::MAX, var);
+  p.AddObj(obj::MIN, var);
+  p.AddObj(obj::MAX, var);
   EXPECT_EQ(11, Solve(p).obj_value());
   solver_->SetIntOption("objno", 0);
   EXPECT_EQ(0, solver_->GetIntOption("objno"));
@@ -479,7 +481,7 @@ TEST_P(SolverTest, ObjnoOption) {
 TEST_F(IlogCPTest, UseCplexForLinearProblem) {
   Problem p;
   p.AddVar(1, 2);
-  p.AddObj(ampl::MIN, MakeConst(42));
+  p.AddObj(obj::MIN, MakeConst(42));
   s.Solve(p);
   EXPECT_EQ(0, p.solve_code());
 }
@@ -604,8 +606,8 @@ TEST_F(IlogCPTest, CPOptions) {
 TEST_P(SolverTest, MultiObjOption) {
   Problem p;
   p.AddVar(0, 10, ampl::INTEGER);
-  p.AddObj(ampl::MIN, MakeBinary(OPREM, MakeVariable(0), MakeConst(3)));
-  p.AddObj(ampl::MIN,
+  p.AddObj(obj::MIN, MakeBinary(OPREM, MakeVariable(0), MakeConst(3)));
+  p.AddObj(obj::MIN,
       MakeUnary(OP2POW, MakeBinary(OPMINUS, MakeVariable(0), MakeConst(5))));
   EXPECT_EQ(0, Solve(p));
   solver_->SetIntOption("multiobj", 1);

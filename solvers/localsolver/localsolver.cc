@@ -81,7 +81,7 @@ void NLToLocalSolverConverter::Convert(const Problem &p) {
   if (p.num_objs() != 0) {
     model_.addObjective(
         ConvertExpr(p.linear_obj_expr(0), p.nonlinear_obj_expr(0)),
-        p.obj_type(0) == MIN ? ls::OD_Minimize : ls::OD_Maximize);
+        p.obj_type(0) == obj::MIN ? ls::OD_Minimize : ls::OD_Maximize);
   }
 
   // Convert constraints.

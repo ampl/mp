@@ -310,7 +310,7 @@ void NLToConcertConverter::Convert(const Problem &p) {
       obj_start = objno_ <= num_objs ? objno_ - 1 : 0;
       obj_end = obj_start + 1;
     }
-    ObjType main_obj_type = p.obj_type(obj_start);
+    obj::Type main_obj_type = p.obj_type(obj_start);
     IloNumExprArray objs(env_);
     for (int i = obj_start; i < obj_end; ++i) {
       NumericExpr expr(p.nonlinear_obj_expr(i));
@@ -326,7 +326,7 @@ void NLToConcertConverter::Convert(const Problem &p) {
       objs.add(p.obj_type(i) == main_obj_type ? ilo_expr : -ilo_expr);
     }
     if (objs.getSize() > 0) {
-      IloObjective::Sense sense = main_obj_type == MIN ?
+      IloObjective::Sense sense = main_obj_type == obj::MIN ?
           IloObjective::Minimize : IloObjective::Maximize;
       IloAdd(model_, objs.getSize() == 1 ?
           IloObjective(env_, objs[0], sense) :

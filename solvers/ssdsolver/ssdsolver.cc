@@ -88,7 +88,7 @@ void SSDSolver::DoSolve(Problem &p) {
   ProblemChanges pc(p);
   int dominance_var = pc.AddVar(-Infinity, Infinity);
   double coef = 1;
-  pc.AddObj(MAX, 1, &coef, &dominance_var);
+  pc.AddObj(obj::MAX, 1, &coef, &dominance_var);
 
   // Compute the tails of the reference distribution.
   std::vector<double> ref_tails(extractor.rhs());
