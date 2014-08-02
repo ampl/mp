@@ -64,7 +64,7 @@ class GecodeProblem: public Gecode::Space {
   Gecode::IntVar &obj() { return obj_; }
 
   bool has_obj() const { return obj_irt_ != Gecode::IRT_NQ; }
-  void SetObj(ObjType obj_type, const LinExpr &expr);
+  void SetObj(obj::Type obj_type, const LinExpr &expr);
 
   virtual void constrain(const Gecode::Space &best);
 };

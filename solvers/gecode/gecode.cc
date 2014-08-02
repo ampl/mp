@@ -247,8 +247,8 @@ Gecode::Space *GecodeProblem::copy(bool share) {
   return new GecodeProblem(share, *this);
 }
 
-void GecodeProblem::SetObj(ObjType obj_type, const LinExpr &expr) {
-  obj_irt_ = obj_type == MAX ? Gecode::IRT_GR : Gecode::IRT_LE;
+void GecodeProblem::SetObj(obj::Type obj_type, const LinExpr &expr) {
+  obj_irt_ = obj_type == obj::MAX ? Gecode::IRT_GR : Gecode::IRT_LE;
   obj_ = Gecode::expr(*this, expr);
 }
 
