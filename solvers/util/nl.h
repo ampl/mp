@@ -227,13 +227,29 @@ class TextReader {
   TextReader(fmt::StringRef name, const char *ptr)
   : ptr_(ptr), line_start_(ptr), token_(ptr), name_(name), line_(1) {}
 
-  void ReportParseError(fmt::StringRef format_str, const fmt::ArgList &args) {
-    int column = static_cast<int>(token_ - line_start_ + 1);
+  void DoReportParseError(
+      const char *loc, fmt::StringRef format_str,
+      const fmt::ArgList &args = fmt::ArgList()) {
+    int line = line_;
+    const char *line_start = line_start_;
+    if (loc < line_start) {
+      --line;
+      // Find the beginning of the previous line.
+      line_start = loc - 1;
+      while (*line_start != '\n')
+        --line_start;
+      ++line_start;
+    }
+    int column = static_cast<int>(loc - line_start + 1);
     fmt::Writer w;
     w.write(format_str, args);
-    throw ampl::ParseError(name_, line_, column,
-        fmt::format("{}:{}:{}: {}", name_, line_, column,
+    throw ampl::ParseError(name_, line, column,
+        fmt::format("{}:{}:{}: {}", name_, line, column,
             fmt::StringRef(w.c_str(), w.size())));
+  }
+
+  void ReportParseError(fmt::StringRef format_str, const fmt::ArgList &args) {
+    DoReportParseError(token_, format_str, args);
   }
   FMT_VARIADIC(void, ReportParseError, fmt::StringRef)
 
@@ -257,6 +273,7 @@ class TextReader {
         return;
       }
     }
+    DoReportParseError(ptr_, "expected newline");
   }
 
   template <typename Int>
@@ -317,26 +334,7 @@ class TextReader {
     return has_value;
   }
 
-  fmt::StringRef ReadString() {
-    const char *start = ptr_;
-    int length = ReadUInt();
-    if (ReadChar() != ':')
-      ReportParseError("expected ':'");
-    for (int i = 0; i < length; ++i) {
-      char c = ReadChar();
-      if (c == '\n') {
-        line_start_ = ptr_;
-        ++line_;
-      } else if (c == 0) {
-        ReportParseError("unexpected end of file");
-      }
-    }
-    if (ReadChar() != '\n')
-      ReportParseError("expected newline");
-    // FIXME: this won't work with size = 0 because string is not
-    //        null-terminated
-    return fmt::StringRef(start, length);
-  }
+  fmt::StringRef ReadString();
 };
 
 // An .nl file reader.
@@ -399,7 +397,7 @@ class NLReader {
     typedef typename Handler::CountExpr Expr;
     Expr Read(NLReader &r, int opcode) const {
       if (opcode != OPCOUNT)
-        r.reader_.ReportParseError("expected count expression");
+        r.reader_.ReportParseError("expected count expression opcode");
       return r.ReadCountExpr();
     }
   };
@@ -411,15 +409,7 @@ class NLReader {
     fmt::internal::Array<Expr, 10> args_;
 
    public:
-    ReadArgs(NLReader &r, int min_args = MIN_ITER_ARGS) {
-      int num_args = r.reader_.ReadUInt();
-      if (num_args < min_args)
-        r.reader_.ReportParseError("too few arguments");
-      args_.resize(num_args);
-      ExprReader expr_reader;
-      for (int i = 0; i < num_args; ++i)
-        args_[i] = expr_reader.Read(r);
-    }
+    ReadArgs(NLReader &r, int min_args = MIN_ITER_ARGS);
 
     operator ArrayRef<Expr>() const {
       return ArrayRef<Expr>(&args_[0], args_.size());
@@ -442,7 +432,7 @@ class NLReader {
   template <typename ExprReader>
   typename ExprReader::Expr ReadExpr() {
     int opcode = reader_.ReadUInt();
-    if (opcode > N_OPS)
+    if (opcode >= N_OPS)
       reader_.ReportParseError("invalid opcode {}", opcode);
     reader_.ReadTillEndOfLine();
     return ExprReader().Read(*this, opcode);
@@ -488,16 +478,29 @@ double NLReader<Reader, Handler>::ReadConstant(char code) {
     value = reader_.template ReadInt<long>();
     break;
   default:
-    reader_.ReportParseError("expected numeric constant");
+    reader_.ReportParseError("expected constant");
   }
   reader_.ReadTillEndOfLine();
   return value;
 }
 
 template <typename Reader, typename Handler>
+template <typename ExprReader>
+NLReader<Reader, Handler>::ReadArgs<ExprReader>::ReadArgs(
+    NLReader &r, int min_args) {
+  int num_args = r.reader_.ReadUInt();
+  if (num_args < min_args)
+    r.reader_.ReportParseError("too few arguments");
+  r.reader_.ReadTillEndOfLine();
+  args_.resize(num_args);
+  ExprReader expr_reader;
+  for (int i = 0; i < num_args; ++i)
+    args_[i] = expr_reader.Read(r);
+}
+
+template <typename Reader, typename Handler>
 typename Handler::NumericExpr
     NLReader<Reader, Handler>::ReadNumericExpr(char code) {
-  NumericExpr expr;
   switch (code) {
   case 'f': {
     int func_index = reader_.ReadUInt();
@@ -513,8 +516,7 @@ typename Handler::NumericExpr
             handler_.MakeString(reader_.ReadString()) :
             args[i] = ReadNumericExpr(c);
     }
-    expr = handler_.MakeCall(func_index, ArrayRef<Expr>(&args[0], args.size()));
-    break;
+    return handler_.MakeCall(func_index, ArrayRef<Expr>(&args[0], args.size()));
   }
   case 'n': case 'l': case 's':
     return handler_.MakeNumericConstant(ReadConstant(code));
@@ -523,10 +525,9 @@ typename Handler::NumericExpr
   case 'v':
     return DoReadVariable();
   default:
-    reader_.ReportParseError("expected numeric expression");
+    reader_.ReportParseError("expected expression");
   }
-  reader_.ReadTillEndOfLine();
-  return expr;
+  return NumericExpr();
 }
 
 template <typename Reader, typename Handler>
@@ -570,7 +571,7 @@ typename Handler::NumericExpr
   case expr::NUMBEROF:
     return handler_.MakeNumberOf(ReadArgs<>(*this, 1));
   default:
-    reader_.ReportParseError("expected numeric expression");
+    reader_.ReportParseError("expected numeric expression opcode");
   }
   return NumericExpr();
 }
@@ -610,8 +611,8 @@ typename Handler::LogicalExpr
   }
   case expr::IMPLICATION: {
     LogicalExpr condition = ReadLogicalExpr();
-    LogicalExpr true_expr = ReadNumericExpr();
-    LogicalExpr false_expr = ReadNumericExpr();
+    LogicalExpr true_expr = ReadLogicalExpr();
+    LogicalExpr false_expr = ReadLogicalExpr();
     return handler_.MakeImplication(condition, true_expr, false_expr);
   }
   case expr::ITERATED_LOGICAL:
@@ -620,7 +621,7 @@ typename Handler::LogicalExpr
   case expr::ALLDIFF:
     return handler_.MakeAllDiff(ReadArgs<>(*this));
   default:
-    reader_.ReportParseError("expected logical expression");
+    reader_.ReportParseError("expected logical expression opcode");
   }
   return LogicalExpr();
 }
@@ -696,8 +697,7 @@ void NLReader<Reader, Handler>::Read() {
               "logical constraint index {} out of bounds", index);
       }
       reader_.ReadTillEndOfLine();
-      ReadLogicalExpr();
-      // TODO: send to handler
+      handler_.SetLogicalCon(index, ReadLogicalExpr());
       break;
     }
     case 'V':

@@ -30,17 +30,27 @@
 
 using ampl::NLHeader;
 using ampl::ReadNLString;
+using ampl::ParseError;
 
 namespace {
 
 class TestNLHandler {
  private:
   // Writes a comma-separated list.
-  static void WriteList(fmt::Writer &w, int size, const double *values) {
+  template <typename T>
+  static void WriteList(fmt::Writer &w, int size, const T *values) {
     for (int i = 0; i < size; ++i) {
       if (i != 0) w << ", ";
       w << values[i];
     }
+  }
+
+  std::string MakeVarArg(std::string op, ampl::ArrayRef<std::string> args) {
+    fmt::Writer w;
+    w << op << '(';
+    WriteList(w, args.size(), args.data());
+    w << ')';
+    return w.str();
   }
 
  public:
@@ -71,6 +81,10 @@ class TestNLHandler {
     log << "c" << index << ": " << expr << ";\n";
   }
 
+  void SetLogicalCon(int index, std::string expr) {
+    log << "l" << index << ": " << expr << ";\n";
+  }
+
   void SetFunction(
       int index, const char *name, int num_args, ampl::func::Type type) {
     // TODO
@@ -81,15 +95,15 @@ class TestNLHandler {
   }
 
   std::string MakeVariable(int index) {
-    return fmt::format("x{}", index);
+    return fmt::format("v{}", index);
   }
 
   std::string MakeUnary(int opcode, std::string arg) {
-    return fmt::format("o{}({})", opcode, arg);
+    return fmt::format("u{}({})", opcode, arg);
   }
 
   std::string MakeBinary(int opcode, std::string lhs, std::string rhs) {
-    return fmt::format("o{}({}, {})", opcode, lhs, rhs);
+    return fmt::format("b{}({}, {})", opcode, lhs, rhs);
   }
 
   std::string MakeIf(std::string condition,
@@ -111,28 +125,31 @@ class TestNLHandler {
   }
 
   std::string MakeCall(int func_index, ampl::ArrayRef<std::string> args) {
-    // TODO
-    return "";
+    fmt::Writer w;
+    w << 'f' << func_index << '(';
+    WriteList(w, args.size(), args.data());
+    w << ')';
+    return w.str();
   }
 
   std::string MakeVarArg(int opcode, ampl::ArrayRef<std::string> args) {
-    // TODO
-    return "";
+    return MakeVarArg(fmt::format("v{}", opcode), args);
   }
 
   std::string MakeSum(ampl::ArrayRef<std::string> args) {
-    // TODO
-    return "";
+    return MakeVarArg("sum", args);
   }
 
   std::string MakeCount(ampl::ArrayRef<std::string> args) {
-    // TODO
-    return "";
+    return MakeVarArg("count", args);
   }
 
   std::string MakeNumberOf(ampl::ArrayRef<std::string> args) {
-    // TODO
-    return "";
+    fmt::Writer w;
+    w << "numberof " << args[0] << " in (";
+    WriteList(w, args.size() - 1, args.data() + 1);
+    w << ')';
+    return w.str();
   }
 
   std::string MakeLogicalConstant(bool value) {
@@ -142,15 +159,15 @@ class TestNLHandler {
   std::string MakeNot(std::string arg) { return fmt::format("not {}", arg); }
 
   std::string MakeBinaryLogical(int opcode, std::string lhs, std::string rhs) {
-    return fmt::format("o{}({}, {})", opcode, lhs, rhs);
+    return fmt::format("bl{}({}, {})", opcode, lhs, rhs);
   }
 
   std::string MakeRelational(int opcode, std::string lhs, std::string rhs) {
-    return fmt::format("o{}({}, {})", opcode, lhs, rhs);
+    return fmt::format("r{}({}, {})", opcode, lhs, rhs);
   }
 
   std::string MakeLogicalCount(int opcode, std::string lhs, std::string rhs) {
-    return fmt::format("o{}({}, {})", opcode, lhs, rhs);
+    return fmt::format("lc{}({}, {})", opcode, lhs, rhs);
   }
 
   std::string MakeImplication(std::string condition,
@@ -161,18 +178,15 @@ class TestNLHandler {
 
   std::string MakeIteratedLogical(
       int opcode, ampl::ArrayRef<std::string> args) {
-    // TODO
-    return "";
+    return MakeVarArg(fmt::format("il{}", opcode), args);
   }
 
   std::string MakeAllDiff(ampl::ArrayRef<std::string> args) {
-    // TODO
-    return "";
+    return MakeVarArg("alldiff", args);
   }
 
   std::string MakeString(fmt::StringRef value) {
-    // TODO
-    return "";
+    return fmt::format("'{}'", std::string(value.c_str(), value.size()));
   }
 };
 
@@ -264,7 +278,7 @@ NLHeader ReadHeader(int line_index, fmt::StringRef line) {
 
 TEST(NLTest, NoNewlineAtEOF) {
   TestNLHandler handler;
-  ReadNLString("g\n"
+  EXPECT_THROW_MSG(ReadNLString("g\n"
     " 1 1 0\n"
     " 0 0\n"
     " 0 0\n"
@@ -274,22 +288,23 @@ TEST(NLTest, NoNewlineAtEOF) {
     " 0 0\n"
     " 0 0\n"
     " 0 0 0 0 0\n"
-    "k0\0h", handler);
+    "k0\0deadbeef", handler),
+      ParseError, "(input):11:3: expected newline");
 }
 
 TEST(NLTest, InvalidFormat) {
   EXPECT_THROW_MSG(ReadHeader(0, "x"),
-      ampl::ParseError, "(input):1:1: expected format specifier");
+      ParseError, "(input):1:1: expected format specifier");
 }
 
 TEST(NLTest, InvalidNumOptions) {
   EXPECT_EQ(0, ReadHeader(0, "ga").num_options);
   EXPECT_EQ(0, ReadHeader(0, "g-1").num_options);
   EXPECT_THROW_MSG(ReadHeader(0, "g10"),
-      ampl::ParseError, "(input):1:2: too many options");
+      ParseError, "(input):1:2: too many options");
   EXPECT_THROW_MSG(ReadHeader(0,
       fmt::format("g{}", static_cast<unsigned>(INT_MAX) + 1)),
-      ampl::ParseError, "(input):1:2: number is too big");
+      ParseError, "(input):1:2: number is too big");
 }
 
 void CheckReadOptions(int num_options,
@@ -477,7 +492,7 @@ TEST(NLTest, Arith) {
       ReadHeader(5, fmt::format(" 0 0 {}", 3 - Arith_Kind_ASL)).format);
   EXPECT_THROW_MSG(
       ReadHeader(5, fmt::format(" 0 0 {}", 3 - Arith_Kind_ASL + 1)),
-      ampl::ParseError, "(input):6:6: unrecognized binary format");
+      ParseError, "(input):6:6: unrecognized binary format");
   // TODO: check if the bytes are actually swapped
 }
 
@@ -485,30 +500,30 @@ TEST(NLTest, IncompleteHeader) {
   ReadHeader(0, "g");
   EXPECT_THROW_MSG(
       ReadHeader(0, "\n"),
-      ampl::ParseError, "(input):1:1: expected format specifier");
+      ParseError, "(input):1:1: expected format specifier");
   ReadHeader(1, " 1 0 0");
   EXPECT_THROW_MSG(
       ReadHeader(1, " 1 0"),
-      ampl::ParseError, "(input):2:5: expected nonnegative integer");
+      ParseError, "(input):2:5: expected nonnegative integer");
   for (int i = 2; i <= 8; ++i) {
     if (i == 6)
       continue;
     ReadHeader(i, " 0 0");
     EXPECT_THROW_MSG(
-        ReadHeader(i, " 0"), ampl::ParseError,
+        ReadHeader(i, " 0"), ParseError,
         fmt::format("(input):{}:3: expected nonnegative integer", i + 1));
   }
   for (int i = 6; i <= 9; i += 3) {
     ReadHeader(1, " 0 0 0 0 0");
     EXPECT_THROW_MSG(
-        ReadHeader(i, " 0 0 0 0"), ampl::ParseError,
+        ReadHeader(i, " 0 0 0 0"), ParseError,
         fmt::format("(input):{}:9: expected nonnegative integer", i + 1));
   }
   std::string input = ReplaceLine(FormatHeader(NLHeader()), 4, " 0 0");
   ReadHeader(ReplaceLine(input, 6, " 0 0"));
   EXPECT_THROW_MSG(
       ReadHeader(ReplaceLine(input, 6, " 0")),
-      ampl::ParseError, "(input):7:3: expected nonnegative integer");
+      ParseError, "(input):7:3: expected nonnegative integer");
 }
 
 void ReadNL(const NLHeader &header, const std::string &body) {
@@ -521,98 +536,213 @@ TEST(NLTest, ObjIndex) {
   header.num_vars = 1;
   header.num_objs = 10;
   EXPECT_THROW_MSG(
-    ReadNL(header, "O-1 0\nn0"),
-    ampl::ParseError, "(input):11:2: expected nonnegative integer");
-  ReadNL(header, "O0 9\nn0");
+    ReadNL(header, "O-1 0\nn0\n"),
+    ParseError, "(input):11:2: expected nonnegative integer");
+  ReadNL(header, "O0 9\nn0\n");
   EXPECT_THROW_MSG(
-    ReadNL(header, "O10 0\nn0"),
-    ampl::ParseError, "(input):11:2: objective index 10 out of bounds");
+    ReadNL(header, "O10 0\nn0\n"),
+    ParseError, "(input):11:2: objective index 10 out of bounds");
 }
 
 TEST(NLTest, ObjType) {
   NLHeader header = {};
   header.num_vars = header.num_objs = 1;
-  ReadNL(header, "O0 0\nn0");
-  ReadNL(header, "O0 1\nn0");
-  ReadNL(header, "O0 10\nn0");
+  ReadNL(header, "O0 0\nn0\n");
+  ReadNL(header, "O0 1\nn0\n");
+  ReadNL(header, "O0 10\nn0\n");
   EXPECT_THROW_MSG(
-    ReadNL(header, "O0 -1\nn0"),
-    ampl::ParseError, "(input):11:4: expected nonnegative integer");
+    ReadNL(header, "O0 -1\nn0\n"),
+    ParseError, "(input):11:4: expected nonnegative integer");
 }
 
 NLHeader MakeHeader() {
   NLHeader header = {};
-  header.num_vars = header.num_objs = header.num_algebraic_cons = 10;
+  header.num_vars = 10;
+  header.num_objs = 15;
+  header.num_algebraic_cons = 20;
+  header.num_logical_cons = 25;
+  header.num_funcs = 10;
   return header;
 }
 
-TEST(NLTest, ObjExpr) {
+TEST(NLTest, ReadObjExpr) {
   TestNLHandler handler;
   NLHeader header = MakeHeader();
   header.num_objs = 2;
-  ReadNLString(FormatHeader(header) + "O1 0\nn0", handler);
+  ReadNLString(FormatHeader(header) + "O1 0\nn0\n", handler);
   EXPECT_TRUE(handler.obj_exprs[0].empty());
   EXPECT_EQ("minimize o2: 0;\n", handler.log.str());
-  ReadNLString(FormatHeader(header) + "O0 1\nv0", handler);
-  EXPECT_EQ("maximize o1: x0;\n", handler.log.str());
+  ReadNLString(FormatHeader(header) + "O0 1\nv0\n", handler);
+  EXPECT_EQ("maximize o1: v0;\n", handler.log.str());
 }
 
-#define EXPECT_PARSE(expected_output, nl_body) {\
+#define EXPECT_READ(expected_output, nl_body) {\
   TestNLHandler handler; \
   ReadNLString(FormatHeader(MakeHeader()) + nl_body, handler); \
   EXPECT_EQ(expected_output, handler.log.str()); \
 }
 
+#define EXPECT_READ_ERROR(nl_body, error) \
+  EXPECT_THROW_MSG(ReadNL(MakeHeader(), nl_body), ParseError, error);
+
 template <typename Int>
-void CheckParseInt(char code) {
-  EXPECT_PARSE("c0: 4;\n", fmt::format("C0\n{}4.2", code));
+void CheckReadInt(char code) {
+  EXPECT_READ("c0: 4;\n", fmt::format("C0\n{}4.2\n", code));
   Int min = std::numeric_limits<Int>::min();
-  EXPECT_PARSE(fmt::format("c0: {};\n", min + 0.),
-               fmt::format("C0\n{}{}", code, min));
+  EXPECT_READ(fmt::format("c0: {};\n", min + 0.),
+               fmt::format("C0\n{}{}\n", code, min));
   typename safeint::MakeUnsigned<Int>::Type max =
       std::numeric_limits<Int>::max();
-  EXPECT_PARSE(fmt::format("c0: {};\n", max + 0.),
-               fmt::format("C0\n{}{}", code, max));
-  EXPECT_THROW_MSG(
-    ReadNL(MakeHeader(), fmt::format("C0\n{}{}", code, max + 1)),
-    ampl::ParseError, "(input):12:2: number is too big");
+  EXPECT_READ(fmt::format("c0: {};\n", max + 0.),
+               fmt::format("C0\n{}{}\n", code, max));
+  EXPECT_READ_ERROR(fmt::format("C0\n{}{}\n", code, max + 1),
+    "(input):12:2: number is too big");
 }
 
-TEST(NLTest, ParseNumericConstant) {
-  EXPECT_PARSE("c0: 4.2;\n", "C0\nn4.2");
-  EXPECT_PARSE("c0: -100;\n", "C0\nn-1e+2");
-  CheckParseInt<short>('s');
-  CheckParseInt<long>('l');
+TEST(NLTest, ReadNumericConstant) {
+  EXPECT_READ("c0: 4.2;\n", "C0\nn4.2\n");
+  EXPECT_READ("c0: -100;\n", "C0\nn-1e+2\n");
+  CheckReadInt<short>('s');
+  CheckReadInt<long>('l');
 }
 
-TEST(NLTest, ParseVariable) {
-  EXPECT_PARSE("c0: x5;\n", "C0\nv5");
+TEST(NLTest, ReadVariable) {
+  // TODO: test variable index out of bounds
+  EXPECT_READ("c0: v5;\n", "C0\nv5\n");
+  EXPECT_READ_ERROR("C0\nv-1\n", "(input):12:2: expected nonnegative integer");
 }
 
-TEST(NLTest, ParseUnaryExpr) {
-  EXPECT_PARSE("c0: o13(x3);\n", "C0\no13\nv3");
+TEST(NLTest, ReadUnaryExpr) {
+  EXPECT_READ("c0: u13(v3);\n", "C0\no13\nv3\n");
 }
 
-TEST(NLTest, ParseBinaryExpr) {
-  EXPECT_PARSE("c0: o0(x1, 42);\n", "C0\no0\nv1\nn42");
+TEST(NLTest, ReadBinaryExpr) {
+  EXPECT_READ("c0: b0(v1, 42);\n", "C0\no0\nv1\nn42\n");
 }
 
-TEST(NLTest, ParseIfExpr) {
-  EXPECT_PARSE("c0: if l1 then x1 else x2;\n", "C0\no35\nn1\nv1\nv2");
+TEST(NLTest, ReadIfExpr) {
+  EXPECT_READ("c0: if l1 then v1 else v2;\n", "C0\no35\nn1\nv1\nv2\n");
 }
 
-TEST(NLTest, ParsePiecewiseLinearExpr) {
-  EXPECT_PARSE("c0: <<0; -1, 1>> x1;\n", "C0\no64\n2\nn-1\nn0\nn1\nv1");
-  EXPECT_THROW_MSG(
-    ReadNL(MakeHeader(), "C0\no64\n1\nn0\nv1"),
-    ampl::ParseError, "(input):13:1: too few slopes in piecewise-linear term");
+TEST(NLTest, ReadPiecewiseLinearExpr) {
+  EXPECT_READ("c0: <<0; -1, 1>> v1;\n", "C0\no64\n2\nn-1\ns0\nl1\nv1\n");
+  EXPECT_READ_ERROR("C0\no64\n-1\nn0\nv1\n",
+    "(input):13:1: expected nonnegative integer");
+  EXPECT_READ_ERROR("C0\no64\n1\nn0\nv1\n",
+    "(input):13:1: too few slopes in piecewise-linear term");
+  EXPECT_READ_ERROR("C0\no64\n2\nv1\nn0\nn1\nv1\n",
+    "(input):14:1: expected constant");
+  EXPECT_READ_ERROR("C0\no64\n2\nn-1\nv0\nn1\nv1\n",
+    "(input):15:1: expected constant");
+  EXPECT_READ_ERROR("C0\no64\n2\nn-1\nn0\nn1\nn1\n",
+    "(input):17:1: expected variable");
 }
 
-TEST(NLTest, VarArgExpr) {
-  // TODO
+TEST(NLTest, ReadCallExpr) {
+  EXPECT_READ("c0: f1(v1, 0);\n", "C0\nf1 2\nv1\nn0\n");
+  EXPECT_READ_ERROR("C0\nf-1 1\nn0\n",
+    "(input):12:2: expected nonnegative integer");
+  EXPECT_READ_ERROR("C0\nf10 1\nn0\n",
+    "(input):12:2: function index 10 out of bounds");
+  EXPECT_READ_ERROR("C0\nf1 1\nx\n", "(input):13:1: expected expression");
 }
 
-// TODO: test parsing expressions, expression hierarchy in handler
+TEST(NLTest, ReadVarArgExpr) {
+  EXPECT_READ("c0: v11(v4, 5, v1);\n", "C0\no11\n3\nv4\nn5\nv1\n");
+  EXPECT_READ("c0: v12(v4);\n", "C0\no12\n1\nv4\n");
+  EXPECT_READ_ERROR("C0\no12\n0\n" , "(input):13:1: too few arguments");
+}
+
+TEST(NLTest, ReadSumExpr) {
+  EXPECT_READ("c0: sum(v4, 5, v1);\n", "C0\no54\n3\nv4\nn5\nv1\n");
+  EXPECT_READ_ERROR("C0\no54\n2\nv4\nn5\n", "(input):13:1: too few arguments");
+}
+
+TEST(NLTest, ReadCountExpr) {
+  EXPECT_READ("c0: count(l1, r24(v1, 42), l0);\n",
+               "C0\no59\n3\nn1\no24\nv1\nn42\nn0\n");
+  EXPECT_READ("c0: count(l1);\n", "C0\no59\n1\nn1\n");
+  EXPECT_READ_ERROR("C0\no59\n0\n", "(input):13:1: too few arguments");
+}
+
+TEST(NLTest, ReadNumberOfExpr) {
+  EXPECT_READ("c0: numberof v4 in (5, v1);\n", "C0\no60\n3\nv4\nn5\nv1\n");
+  EXPECT_READ("c0: numberof v4 in ();\n", "C0\no60\n1\nv4\n");
+  EXPECT_READ_ERROR( "C0\no60\n0\n", "(input):13:1: too few arguments");
+}
+
+TEST(NLTest, ReadLogicalConstant) {
+  EXPECT_READ("l0: l0;\n", "L0\nn0\n");
+  EXPECT_READ("l0: l1;\n", "L0\nn1\n");
+  EXPECT_READ("l0: l1;\n", "L0\nn4.2\n");
+  EXPECT_READ("l0: l1;\n", "L0\ns1\n");
+  EXPECT_READ("l0: l1;\n", "L0\nl1\n");
+}
+
+TEST(NLTest, ReadNotExpr) {
+  EXPECT_READ("l0: not l0;\n", "L0\no34\nn0\n");
+}
+
+TEST(NLTest, ReadBinaryLogicalExpr) {
+  EXPECT_READ("l0: bl20(l1, l0);\n", "L0\no20\nn1\nn0\n");
+}
+
+TEST(NLTest, ReadRelationalExpr) {
+  EXPECT_READ("l0: r23(v1, 0);\n", "L0\no23\nv1\nn0\n");
+}
+
+TEST(NLTest, ReadLogicalCountExpr) {
+  EXPECT_READ("l0: lc63(v1, count(l1));\n", "L0\no63\nv1\no59\n1\nn1\n");
+  EXPECT_READ_ERROR("L0\no63\nv1\nn0\n",
+    "(input):14:1: expected count expression");
+  EXPECT_READ_ERROR("L0\no63\nv1\no16\nn0\n",
+    "(input):14:2: expected count expression opcode");
+}
+
+TEST(NLTest, ReadImplicationExpr) {
+  EXPECT_READ("l0: l1 ==> l0 else l1;\n", "L0\no72\nn1\nn0\nn1\n");
+}
+
+TEST(NLTest, ReadIteratedLogicalExpr) {
+  EXPECT_READ("l0: il71(l1, l0, l1);\n", "L0\no71\n3\nn1\nn0\nn1\n");
+  EXPECT_READ_ERROR("L0\no71\n2\nn1\nn0\n", "(input):13:1: too few arguments");
+}
+
+TEST(NLTest, ReadAllDiffExpr) {
+  EXPECT_READ("l0: alldiff(v4, 5, v1);\n", "L0\no74\n3\nv4\nn5\nv1\n");
+  EXPECT_READ_ERROR("L0\no74\n2\nv4\nn5\n", "(input):13:1: too few arguments");
+}
+
+TEST(NLTest, ReadStringLiteral) {
+  EXPECT_READ("c0: f1('');\n", "C0\nf1 1\nh0:\n");
+  EXPECT_READ("c0: f1('abc');\n", "C0\nf1 1\nh3:abc\n");
+  EXPECT_READ("c0: f1('ab\nc');\n", "C0\nf1 1\nh4:ab\nc\n");
+  EXPECT_READ_ERROR("C0\nf1 1\nh3:ab",
+        "(input):13:6: unexpected end of file in string");
+  EXPECT_READ_ERROR("C0\nf1 1\nh3:a\n",
+        "(input):14:1: unexpected end of file in string");
+  EXPECT_READ_ERROR("C0\nf1 1\nh3:abc", "(input):13:7: expected newline");
+  EXPECT_READ_ERROR( "C0\nf1 1\nh3:ab\n", "(input):14:1: expected newline");
+}
+
+TEST(NLTest, ReadInvalidOpCode) {
+  EXPECT_READ_ERROR("C0\no-1\n", "(input):12:2: expected nonnegative integer");
+  EXPECT_READ_ERROR("C0\no82\n", "(input):12:2: invalid opcode 82");
+}
+
+TEST(NLTest, ReadInvalidNumericExpr) {
+  EXPECT_READ_ERROR("C0\nx\n", "(input):12:1: expected expression");
+  EXPECT_READ_ERROR("C0\no22\nv1\nn0\n",
+        "(input):12:2: expected numeric expression opcode");
+}
+
+TEST(NLTest, ReadInvalidLogicalExpr) {
+  EXPECT_READ_ERROR("L0\nx\n", "(input):12:1: expected logical expression");
+  EXPECT_READ_ERROR("L0\no0\nv1\nn0\n",
+        "(input):12:2: expected logical expression opcode");
+}
+
+// TODO: test expression hierarchy in handler
 
 // TODO: more tests
 }

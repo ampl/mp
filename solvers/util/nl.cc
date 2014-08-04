@@ -61,4 +61,25 @@ fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h) {
       h.num_common_exprs_in_objs1);
   return w;
 }
+
+fmt::StringRef TextReader::ReadString() {
+  int length = ReadUInt();
+  if (*ptr_ != ':')
+    DoReportParseError(ptr_, "expected ':'");
+  ++ptr_;
+  const char *start = ptr_;
+  for (int i = 0; i < length; ++i, ++ptr_) {
+    char c = *ptr_;
+    if (c == '\n') {
+      line_start_ = ptr_  + 1;
+      ++line_;
+    } else if (c == 0) {
+      DoReportParseError(ptr_, "unexpected end of file in string");
+    }
+  }
+  if (*ptr_ != '\n')
+    DoReportParseError(ptr_, "expected newline");
+  ++ptr_;
+  return fmt::StringRef(length != 0 ? start : 0, length);
+}
 }
