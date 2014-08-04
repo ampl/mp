@@ -21,6 +21,7 @@
  */
 
 #include "solvers/util/os.h"
+#include "solvers/util/posix.h"
 
 #include <cerrno>
 #include <cstdlib>
@@ -124,21 +125,10 @@ path path::temp_directory_path() {
 
 ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
 : start_(), size_() {
-  class File : Noncopyable {
-    int fd_;
-   public:
-    explicit File(const char *filename) : fd_(open(filename, O_RDONLY)) {
-      if (fd_ == -1)
-        throw fmt::SystemError(errno, "cannot open file {}", filename);
-    }
-    ~File() { close(fd_); }
-    operator int() const { return fd_; }
-  };
-
   // Open file and check that its size is not a multiple of memory page size.
-  File file(filename.c_str());
+  fmt::File file(filename.c_str(), fmt::File::RDONLY);
   struct stat file_stat = {};
-  if (fstat(file, &file_stat) == -1)
+  if (fstat(file.descriptor(), &file_stat) == -1)
     throw fmt::SystemError(errno, "cannot get attributes of file {}", filename);
   size_ = file_stat.st_size;
   // TODO: don't use mmap if file size is a multiple of page size
@@ -146,7 +136,7 @@ ampl::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
 
   // Map file to memory.
   start_ = reinterpret_cast<char*>(
-      mmap(0, size_, PROT_READ, MAP_FILE | MAP_PRIVATE, file, 0));
+      mmap(0, size_, PROT_READ, MAP_FILE | MAP_PRIVATE, file.descriptor(), 0));
   if (start_ == MAP_FAILED)
     throw fmt::SystemError(errno, "cannot map file {}", filename);
 }

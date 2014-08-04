@@ -26,7 +26,6 @@
 #include <string>
 
 #include "solvers/util/format.h"
-#include "solvers/util/noncopyable.h"
 
 namespace ampl {
 
@@ -79,10 +78,12 @@ class path {
 // Throws Error on error.
 path GetExecutablePath();
 
-class MemoryMappedFile : Noncopyable {
+class MemoryMappedFile {
  private:
   char *start_;
   unsigned long long size_;
+
+  FMT_DISALLOW_COPY_AND_ASSIGN(MemoryMappedFile);
 
  public:
   explicit MemoryMappedFile(fmt::StringRef filename);

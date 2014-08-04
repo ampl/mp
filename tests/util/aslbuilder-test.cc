@@ -444,9 +444,10 @@ void CheckASL(const ASL &expected, const ASL &actual, bool complete = true) {
   EXPECT_EQ(expected_fg.I.o_class_max, actual_fg.I.o_class_max);
 }
 
-class ASLPtr : ampl::Noncopyable {
+class ASLPtr {
  private:
   ASL *asl_;
+  FMT_DISALLOW_COPY_AND_ASSIGN(ASLPtr);
 
  public:
   explicit ASLPtr(int type = ASL_read_fg) : asl_(ASL_alloc(type)) {}

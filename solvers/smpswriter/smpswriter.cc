@@ -72,9 +72,10 @@ double GetConRHSAndType(const ampl::Problem &p, int con_index, char &type) {
 
 namespace ampl {
 
-class FileWriter : Noncopyable {
+class FileWriter {
  private:
   FILE *f_;
+  FMT_DISALLOW_COPY_AND_ASSIGN(FileWriter);
 
  public:
   FileWriter(fmt::StringRef name) : f_(std::fopen(name.c_str(), "w")) {}

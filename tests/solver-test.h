@@ -67,8 +67,7 @@ struct SolverTestParam {
 
 // Abstract solver test.
 class SolverTest
-    : private ampl::Noncopyable,
-      public ::testing::TestWithParam<SolverTestParam>,
+    : public ::testing::TestWithParam<SolverTestParam>,
       public ampl::internal::ASLBuilder {
  protected:
   SolverPtr solver_;
@@ -76,6 +75,8 @@ class SolverTest
   ampl::Variable x;
   ampl::Variable y;
   ampl::Variable z;
+
+  FMT_DISALLOW_COPY_AND_ASSIGN(SolverTest);
 
   ampl::NumericConstant MakeConst(double value) {
     return MakeNumericConstant(value);

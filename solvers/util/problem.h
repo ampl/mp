@@ -1,5 +1,5 @@
 /*
- A C++ interface to an AMPL problem.
+ An optimization problem.
 
  Copyright (C) 2012 AMPL Optimization Inc
 
@@ -28,7 +28,6 @@
 #include <vector>
 
 #include "solvers/util/expr.h"
-#include "solvers/util/noncopyable.h"
 
 namespace ampl {
 
@@ -47,13 +46,15 @@ enum SolutionStatus {
 };
 
 // A solution of an optimization problem.
-class Solution : Noncopyable {
+class Solution {
  private:
   int solve_code_;
   int num_vars_;
   int num_cons_;
   double *values_;
   double *dual_values_;
+
+  FMT_DISALLOW_COPY_AND_ASSIGN(Solution);
 
  public:
   // Constructs a solution with zero variables and constraints and the
@@ -130,7 +131,7 @@ class Suffix {
 class ProblemChanges;
 
 // An optimization problem.
-class Problem : Noncopyable {
+class Problem {
  private:
   ASL_fg *asl_;
   std::string name_;
@@ -141,6 +142,8 @@ class Problem : Noncopyable {
   // Array of variable types or null if continuous variables precede
   // integer and binary variables.
   VarType *var_types_;
+
+  FMT_DISALLOW_COPY_AND_ASSIGN(Problem);
 
   static void IncreaseCapacity(int size, int &capacity) {
     if (capacity == 0 && size != 0)

@@ -60,11 +60,13 @@ namespace ampl {
 class NLToConcertConverter;
 
 // IlogCP solver.
-class IlogCPSolver : private Noncopyable, public Solver {
+class IlogCPSolver : public Solver {
  private:
   IloEnv env_;
   IloCP cp_;
   IloCplex cplex_;
+
+  FMT_DISALLOW_COPY_AND_ASSIGN(IlogCPSolver);
 
  public:
   // Integer options.

@@ -154,9 +154,11 @@ fmt::Writer &operator<<(fmt::Writer &w, const Problem &p) {
 }
 
 // A manager of temporary files.
-class TempFiles : Noncopyable {
+class TempFiles {
  private:
   fmt::internal::Array<char, fmt::internal::INLINE_BUFFER_SIZE> name_;
+
+  FMT_DISALLOW_COPY_AND_ASSIGN(TempFiles);
 
  public:
   TempFiles();
