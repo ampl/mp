@@ -28,7 +28,6 @@
 #include "solvers/util/os.h"
 #include "solvers/util/problem-base.h"
 #include "solvers/util/safeint.h"
-#include "solvers/opcode.hd"
 
 #include <cctype>
 #include <limits>

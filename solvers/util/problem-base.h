@@ -6,7 +6,7 @@
  problems. So instead of including problem.h and expr.h from nl.h, this
  header containing common stuff is included from problem.h, expr.h and nl.h.
 
- Copyright (C) 2012 AMPL Optimization Inc
+ Copyright (C) 2014 AMPL Optimization Inc
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
