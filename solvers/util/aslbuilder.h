@@ -78,8 +78,7 @@ class ASLBuilder {
   T *Allocate(safeint::SafeInt<int> size = safeint::SafeInt<int>(sizeof(T)));
 
   // Sets objective or constraint expression; adapted from co_read.
-  void SetObjOrCon(
-      int index, cde *d, int *cexp1_end, NumericExpr expr, int **z);
+  void SetObjOrCon(int index, cde *d, int *cexp1_end, ::expr *e, int **z);
 
   ::expr *MakeConstant(double value);
   ::expr *DoMakeUnary(int opcode, Expr lhs);
@@ -112,10 +111,16 @@ class ASLBuilder {
   void EndBuild();
 
   // Sets objective type and expression.
+  // index: Index of an objective; 0 <= index < num_objs.
   void SetObj(int index, obj::Type type, NumericExpr expr);
 
-  // Sets constraint expression.
+  // Sets an algebraic constraint expression.
+  // index: Index of an algebraic contraint; 0 <= index < num_algebraic_cons.
   void SetCon(int index, NumericExpr expr);
+
+  // Sets a logical constraint expression.
+  // index: Index of a logical contraint; 0 <= index < num_logical_cons.
+  void SetLogicalCon(int index, LogicalExpr expr);
 
   Function AddFunction(const char *name, ufunc f, int num_args,
                        func::Type type = func::NUMERIC, void *info = 0);

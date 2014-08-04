@@ -80,7 +80,7 @@ inline T *ASLBuilder::Allocate(SafeInt<int> size) {
 }
 
 void ASLBuilder::SetObjOrCon(
-    int index, cde *d, int *cexp1_end, NumericExpr expr, int **z) {
+    int index, cde *d, int *cexp1_end, ::expr *e, int **z) {
   bool linear = asl_->i.ASLtype == ASL_read_f;
   ASL_fg *asl = reinterpret_cast<ASL_fg*>(asl_);
   if (!linear) {
@@ -104,7 +104,7 @@ void ASLBuilder::SetObjOrCon(
     static_->_lastj = 0;
   }
   d += index;
-  d->e = expr.expr_;
+  d->e = e;
   if (!linear) {
     int alen = static_->_lasta - static_->_lasta0;
     if (static_->_imap_len < static_->_lasta)
@@ -463,13 +463,19 @@ void ASLBuilder::SetObj(int index, obj::Type type, NumericExpr expr) {
   assert(0 <= index && index < asl_->i.n_obj_);
   asl_->i.objtype_[index] = type;
   SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.obj_de_,
-              asl_->i.o_cexp1st_, expr, asl_->i.zao_);
+              asl_->i.o_cexp1st_, expr.expr_, asl_->i.zao_);
 }
 
 void ASLBuilder::SetCon(int index, NumericExpr expr) {
   assert(0 <= index && index < asl_->i.n_con_);
   SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.con_de_,
-              asl_->i.c_cexp1st_, expr, asl_->i.zac_);
+              asl_->i.c_cexp1st_, expr.expr_, asl_->i.zac_);
+}
+
+void ASLBuilder::SetLogicalCon(int index, LogicalExpr expr) {
+  assert(0 <= index && index < asl_->i.n_lcon_);
+  SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.lcon_de_,
+              0, expr.expr_, 0);
 }
 
 Function ASLBuilder::AddFunction(

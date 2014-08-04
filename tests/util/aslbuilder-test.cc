@@ -613,14 +613,15 @@ TEST(ASLBuilderTest, ASLBuilderAllowCLP) {
 
 class TestASLBuilder : public ASLBuilder {
  public:
-  enum {NUM_FUNCS = 2, NUM_OBJS = 3, NUM_CONS = 4};
+  enum {NUM_FUNCS = 2, NUM_OBJS = 3, NUM_CONS = 4, NUM_LOGICAL_CONS = 5};
   explicit TestASLBuilder(ASLPtr &asl, bool allow_missing_funcs = false)
   : ASLBuilder(asl.get()) {
     NLHeader header = MakeHeader();
     header.num_funcs = NUM_FUNCS;
     header.num_objs = NUM_OBJS;
     header.num_algebraic_cons = NUM_CONS;
-    int flags = ampl::internal::ASL_STANDARD_OPCODES;
+    header.num_logical_cons = NUM_LOGICAL_CONS;
+    int flags = ampl::internal::ASL_STANDARD_OPCODES | ASL_allow_CLP;
     if (allow_missing_funcs)
       flags |= ASL_allow_missing_funcs;
     BeginBuild("", header, flags);
@@ -680,6 +681,27 @@ TEST(ASLBuilderTest, SetConIndexOutOfRange) {
   EXPECT_DEBUG_DEATH(builder.SetCon(-1, expr), "Assertion");
   EXPECT_DEBUG_DEATH(
         builder.SetCon(TestASLBuilder::NUM_CONS, expr), "Assertion");
+}
+#endif
+
+TEST(ASLBuilderTest, SetLogicalCon) {
+  ASLPtr asl;
+  TestASLBuilder builder(asl);
+#undef lcon_de
+  cde *lcon_de = reinterpret_cast<ASL_fg*>(asl.get())->I.lcon_de_;
+  EXPECT_EQ(0, lcon_de[2].e);
+  builder.SetLogicalCon(2, builder.MakeLogicalConstant(true));
+  EXPECT_EQ(reinterpret_cast<efunc*>(OPNUM), lcon_de[2].e->op);
+}
+
+#ifndef NDEBUG
+TEST(ASLBuilderTest, SetLogicalConIndexOutOfRange) {
+  ASLPtr asl;
+  TestASLBuilder builder(asl);
+  LogicalExpr expr = builder.MakeLogicalConstant(true);
+  EXPECT_DEBUG_DEATH(builder.SetLogicalCon(-1, expr), "Assertion");
+  EXPECT_DEBUG_DEATH(builder.SetLogicalCon(
+                       TestASLBuilder::NUM_LOGICAL_CONS, expr), "Assertion");
 }
 #endif
 
