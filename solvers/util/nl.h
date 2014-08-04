@@ -30,8 +30,11 @@
 #include "solvers/util/safeint.h"
 
 #include <cctype>
+#include <cmath>
 #include <cstdlib>
 #include <limits>
+
+#define AMPL_INFINITY INFINITY
 
 namespace ampl {
 
@@ -60,9 +63,11 @@ enum {
   READ_VBTOL     = 3
 };
 
-// NL file header.
+// .nl file header.
+// The .nl file format is described in the technical report
+// "Writing .nl Files" (http://www.cs.sandia.gov/~dmgay/nlwrite.pdf).
 struct NLHeader {
-  // NL file format.
+  // .nl file format.
   enum Format { TEXT = 0, BINARY = 1, BINARY_SWAPPED = 2 };
   Format format;
 
@@ -82,7 +87,7 @@ struct NLHeader {
   // Total number of objectives.
   int num_objs;
 
-  // Number of ranges (constraints with -Infinity < LHS < RHS < Infinity).
+  // Number of ranges (constraints with -INFINITY < LHS < RHS < INFINITY).
   int num_ranges;
 
   // Number of equality constraints or -1 if unknown (AMPL prior to 19970627).
@@ -423,8 +428,8 @@ class NLReader {
   // unspecified.
   template <typename ExprReader = NumericExprReader>
   struct BinaryArgReader {
-    LogicalExpr lhs;
-    LogicalExpr rhs;
+    typename ExprReader::Expr lhs;
+    typename ExprReader::Expr rhs;
     BinaryArgReader(NLReader &r)
       : lhs(ExprReader().Read(r)), rhs(ExprReader().Read(r)) {}
   };
@@ -450,7 +455,8 @@ class NLReader {
   // Reads a linear expression.
   void ReadLinearExpr(int num_terms);
 
-  // Reads bounds.
+  // Reads variable or constraint bounds.
+  template <bool VAR>
   void ReadBounds();
 
   // Read the column offsets, the cumulative sums of the numbers of
@@ -637,12 +643,61 @@ void NLReader<Reader, Handler>::ReadLinearExpr(int num_terms) {
 }
 
 template <typename Reader, typename Handler>
+template <bool VAR>
 void NLReader<Reader, Handler>::ReadBounds() {
-  for (int i = 0; i < header_.num_vars; ++i) {
-    reader_.ReadUInt();
-    reader_.ReadUInt(); // TODO: read double
-    // TODO
+  enum BoundType {
+    RANGE,  // Both lower and upper bounds: l <= body <= u.
+    UPPER,  // Only upper bound: body <= u.
+    LOWER,  // Only lower bound: l <= body.
+    FREE,   // No constraints on body (free variable or constraint).
+    CONST,  // Equal to constant: body = c.
+    COMPL   // Body complements variable v[i - 1].
+  };
+  reader_.ReadTillEndOfLine();
+  double lb = 0, ub = 0;
+  for (int i = 0, n = header_.num_vars; i < n; ++i) {
+    switch (reader_.ReadUInt()) {
+    case RANGE:
+      lb = reader_.ReadDouble();
+      ub = reader_.ReadDouble();
+      break;
+    case UPPER:
+      lb = -AMPL_INFINITY;
+      ub = reader_.ReadDouble();
+      break;
+    case LOWER:
+      lb = reader_.ReadDouble();
+      ub = AMPL_INFINITY;
+      break;
+    case FREE:
+      lb = -AMPL_INFINITY;
+      ub =  AMPL_INFINITY;
+      break;
+    case CONST:
+      lb = ub = reader_.ReadDouble();
+      break;
+    case COMPL:
+      if (!VAR) {
+        int kind = reader_.template ReadInt<int>();
+        int var_index = reader_.ReadUInt();
+        if (var_index <= 0 || var_index > header_.num_vars) {
+          reader_.ReportParseError(
+                "variable index {} out of bounds", var_index - 1);
+        }
+        // TODO: Cvar[i] = var_index;
+        lb = kind & 2 ? -AMPL_INFINITY : 0;
+        ub = kind & 1 ?  AMPL_INFINITY : 0;
+        break;
+      }
+      // Fall through as COMPL bound type is invalid for variables.
+    default:
+      reader_.ReportParseError("invalid bound type");
+    }
     reader_.ReadTillEndOfLine();
+    if (VAR)
+      handler_.SetVarBounds(i, lb, ub);
+    else
+      handler_.SetConBounds(i, lb, ub);
   }
 }
 
@@ -730,11 +785,10 @@ void NLReader<Reader, Handler>::Read() {
       // TODO: read suffix
       break;
     case 'r':
-      // TODO: read RHS
+      ReadBounds<false>();
       break;
     case 'b':
-      reader_.ReadTillEndOfLine();
-      ReadBounds();
+      ReadBounds<true>();
       break;
     case 'k':
       ReadColumnOffsets();

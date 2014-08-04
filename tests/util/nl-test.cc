@@ -70,6 +70,14 @@ class TestNLHandler {
     log.clear();
   }
 
+  void SetVarBounds(int index, double lb, double ub) {
+    // TODO
+  }
+
+  void SetConBounds(int index, double lb, double ub) {
+    // TODO
+  }
+
   void SetObj(int index, ampl::obj::Type type, std::string expr) {
     log << (type == ampl::obj::MAX ? "maximize" : "minimize")
         << " o" << (index + 1) << ": " << expr;
@@ -742,7 +750,100 @@ TEST(NLTest, ReadInvalidLogicalExpr) {
         "(input):12:2: expected logical expression opcode");
 }
 
-// TODO: test expression hierarchy in handler
+struct TestNLHandler2 {
+  typedef struct TestExpr {} Expr;
+  typedef struct TestNumericExpr : TestExpr {} NumericExpr;
+  typedef struct TestVariable : TestNumericExpr {} Variable;
+  typedef struct TestCountExpr : TestNumericExpr {} CountExpr;
+  typedef struct TestLogicalExpr : TestExpr {} LogicalExpr;
+
+  void BeginBuild(const char *, const NLHeader &, int) {}
+
+  void SetVarBounds(int, double, double) {}
+  void SetConBounds(int, double, double) {}
+
+  void SetObj(int, ampl::obj::Type, TestNumericExpr) {}
+  void SetCon(int, TestNumericExpr) {}
+  void SetLogicalCon(int, TestLogicalExpr) {}
+
+  void SetFunction(int, const char *, int, ampl::func::Type) {}
+
+  TestNumericExpr MakeNumericConstant(double) { return TestNumericExpr(); }
+  TestVariable MakeVariable(int) { return TestVariable(); }
+  TestNumericExpr MakeUnary(int, TestNumericExpr) { return TestNumericExpr(); }
+
+  TestNumericExpr MakeBinary(int, TestNumericExpr, TestNumericExpr) {
+    return TestNumericExpr();
+  }
+
+  TestNumericExpr MakeIf(TestLogicalExpr, TestNumericExpr, TestNumericExpr) {
+    return TestNumericExpr();
+  }
+
+  TestNumericExpr MakePiecewiseLinear(
+      int, const double *, const double *, TestVariable) {
+    return TestNumericExpr();
+  }
+
+  TestNumericExpr MakeCall(int, ampl::ArrayRef<TestExpr>) {
+    return TestNumericExpr();
+  }
+
+  TestNumericExpr MakeVarArg(int, ampl::ArrayRef<TestNumericExpr>) {
+    return TestNumericExpr();
+  }
+
+  TestNumericExpr MakeSum(ampl::ArrayRef<TestNumericExpr>) {
+    return TestNumericExpr();
+  }
+
+  TestCountExpr MakeCount(ampl::ArrayRef<TestLogicalExpr>) {
+    return TestCountExpr();
+  }
+
+  TestNumericExpr MakeNumberOf(ampl::ArrayRef<TestNumericExpr>) {
+    return TestNumericExpr();
+  }
+
+  TestLogicalExpr MakeLogicalConstant(bool) { return TestLogicalExpr(); }
+  TestLogicalExpr MakeNot(TestLogicalExpr) { return TestLogicalExpr(); }
+
+  TestLogicalExpr MakeBinaryLogical(int, TestLogicalExpr, TestLogicalExpr) {
+    return TestLogicalExpr();
+  }
+
+  TestLogicalExpr MakeRelational(int, TestNumericExpr, TestNumericExpr) {
+    return TestLogicalExpr();
+  }
+
+  TestLogicalExpr MakeLogicalCount(int, TestNumericExpr, TestCountExpr) {
+    return TestLogicalExpr();
+  }
+
+  TestLogicalExpr MakeImplication(
+      TestLogicalExpr, TestLogicalExpr, TestLogicalExpr) {
+    return TestLogicalExpr();
+  }
+
+  TestLogicalExpr MakeIteratedLogical(int, ampl::ArrayRef<TestLogicalExpr>) {
+    return TestLogicalExpr();
+  }
+
+  TestLogicalExpr MakeAllDiff(ampl::ArrayRef<TestNumericExpr>) {
+    return TestLogicalExpr();
+  }
+
+  TestExpr MakeString(fmt::StringRef) { return TestExpr(); }
+};
+
+// Test that the .nl reader accepts expression class hierarchy rather than
+// a single expression type.
+TEST(NLTest, ExprHierarchy) {
+  TestNLHandler2 handler;
+  ReadNLString(FormatHeader(MakeHeader()), handler);
+}
+
+// TODO: test bounds
 
 // TODO: more tests
 }
