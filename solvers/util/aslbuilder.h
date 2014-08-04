@@ -155,6 +155,13 @@ class ASLBuilder {
 
   CallExpr MakeCall(Function f, ArrayRef<Expr> args);
 
+  CallExpr MakeCall(int func_index, ArrayRef<Expr> args) {
+    Function f(asl_->i.funcs_[func_index]);
+    if (!f)
+      throw Error("function {} undefined", func_index);
+    return MakeCall(f, args);
+  }
+
   VarArgExpr MakeVarArg(int opcode, ArrayRef<NumericExpr> args);
 
   SumExpr MakeSum(ArrayRef<NumericExpr> args) {
@@ -208,6 +215,8 @@ class ASLBuilder {
     return MakeIterated<expr::ALLDIFF>(OPALLDIFF, args);
   }
 
+  // Constructs a StringLiteral object.
+  // value: string value which may not be null-terminated.
   StringLiteral MakeStringLiteral(fmt::StringRef value);
 };
 }

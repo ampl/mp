@@ -110,6 +110,11 @@ class TestNLHandler {
     return w.str();
   }
 
+  std::string MakeCall(int func_index, ampl::ArrayRef<std::string> args) {
+    // TODO
+    return "";
+  }
+
   std::string MakeVarArg(int opcode, ampl::ArrayRef<std::string> args) {
     // TODO
     return "";
@@ -161,6 +166,11 @@ class TestNLHandler {
   }
 
   std::string MakeAllDiff(ampl::ArrayRef<std::string> args) {
+    // TODO
+    return "";
+  }
+
+  std::string MakeString(fmt::StringRef value) {
     // TODO
     return "";
   }

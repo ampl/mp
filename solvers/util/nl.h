@@ -30,6 +30,7 @@
 #include "solvers/util/safeint.h"
 
 #include <cctype>
+#include <cstdlib>
 #include <limits>
 
 namespace ampl {
@@ -291,12 +292,14 @@ class TextReader {
     return sign != '-' ? result : 0 - result;
   }
 
+#undef strtod
+
   double ReadDouble() {
     SkipSpace();
     char *end = 0;
     double value = 0;
     if (*ptr_ != '\n')
-      value = strtod(ptr_, &end);
+      value = std::strtod(ptr_, &end);
     if (!end || ptr_ == end)
       ReportParseError("expected double");
     ptr_ = end;
@@ -308,10 +311,31 @@ class TextReader {
     if (*ptr_ == '\n')
       return false;
     char *end = 0;
-    value = strtod(ptr_, &end);
+    value = std::strtod(ptr_, &end);
     bool has_value = ptr_ != end;
     ptr_ = end;
     return has_value;
+  }
+
+  fmt::StringRef ReadString() {
+    const char *start = ptr_;
+    int length = ReadUInt();
+    if (ReadChar() != ':')
+      ReportParseError("expected ':'");
+    for (int i = 0; i < length; ++i) {
+      char c = ReadChar();
+      if (c == '\n') {
+        line_start_ = ptr_;
+        ++line_;
+      } else if (c == 0) {
+        ReportParseError("unexpected end of file");
+      }
+    }
+    if (ReadChar() != '\n')
+      ReportParseError("expected newline");
+    // FIXME: this won't work with size = 0 because string is not
+    //        null-terminated
+    return fmt::StringRef(start, length);
   }
 };
 
@@ -481,17 +505,15 @@ typename Handler::NumericExpr
       reader_.ReportParseError("function index {} out of bounds", func_index);
     int num_args = reader_.ReadUInt();
     reader_.ReadTillEndOfLine();
-    fmt::internal::Array<typename Handler::Expr, 10> args(num_args);
+    typedef typename Handler::Expr Expr;
+    fmt::internal::Array<Expr, 10> args(num_args);
     for (int i = 0; i < num_args; ++i) {
       char c = reader_.ReadChar();
-      if (c == 'h') {
-        // TODO: read string
-      } else {
-        args[i] = ReadNumericExpr(c);
-      }
+      args[i] = c == 'h' ?
+            handler_.MakeString(reader_.ReadString()) :
+            args[i] = ReadNumericExpr(c);
     }
-    // TODO
-    //expr = handler_.MakeCall(func_index, args);
+    expr = handler_.MakeCall(func_index, ArrayRef<Expr>(&args[0], args.size()));
     break;
   }
   case 'n': case 'l': case 's':
