@@ -112,6 +112,11 @@ enum Type {
 };
 }
 
+namespace var {
+// Variable type.
+enum Type { CONTINUOUS, INTEGER };
+}
+
 namespace obj {
 // Objective type.
 enum Type { MIN = 0, MAX = 1 };

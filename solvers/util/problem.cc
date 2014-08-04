@@ -198,7 +198,7 @@ Suffix Problem::suffix(const char *name, unsigned flags) const {
   return Suffix(0);
 }
 
-void Problem::AddVar(double lb, double ub, VarType type) {
+void Problem::AddVar(double lb, double ub, var::Type type) {
   int &num_vars = asl_->i.n_var_;
   if (num_vars >= var_capacity_) {
     IncreaseCapacity(num_vars, var_capacity_);
@@ -207,16 +207,16 @@ void Problem::AddVar(double lb, double ub, VarType type) {
     if (var_types_)
       Grow(var_types_, num_vars, var_capacity_);
   }
-  if (type != CONTINUOUS) {
+  if (type != var::CONTINUOUS) {
     // Allocate var_types_ if this is the first integer variable added
     // after continuous.
     int num_integer_vars = Problem::num_integer_vars();
     if (!var_types_ && num_vars != num_integer_vars) {
-      var_types_ = new VarType[var_capacity_];
+      var_types_ = new var::Type[var_capacity_];
       std::fill_n(fmt::internal::CheckPtr(var_types_, var_capacity_),
-        num_integer_vars, INTEGER);
+        num_integer_vars, var::INTEGER);
       std::fill(var_types_ + num_integer_vars,
-          var_types_ + num_vars, CONTINUOUS);
+          var_types_ + num_vars, var::CONTINUOUS);
     }
     ++asl_->i.niv_;
   }

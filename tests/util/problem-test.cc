@@ -27,8 +27,8 @@
 #include "tests/config.h"
 #include "tests/util.h"
 
-using ampl::CONTINUOUS;
-using ampl::INTEGER;
+using ampl::var::CONTINUOUS;
+using ampl::var::INTEGER;
 using ampl::LinearConExpr;
 using ampl::LinearObjExpr;
 using ampl::Problem;

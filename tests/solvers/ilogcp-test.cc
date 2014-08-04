@@ -61,6 +61,7 @@ using ampl::InvalidOptionValue;
 using ampl::OptionError;
 using ampl::Problem;
 
+namespace var = ampl::var;
 namespace obj = ampl::obj;
 
 using std::string;
@@ -160,7 +161,7 @@ TEST_P(FunctionTest, ElementExprPlusConstantAtVariableIndex) {
 
 TEST_P(FunctionTest, InRelationConstraint) {
   Problem p;
-  p.AddVar(0, 100, ampl::INTEGER);
+  p.AddVar(0, 100, var::INTEGER);
   p.AddObj(obj::MIN, MakeVariable(0));
   Expr args[] = {MakeVariable(0), MakeConst(42)};
   p.AddCon(MakeRelational(NE, MakeCall(in_relation_, args), MakeConst(0)));
@@ -177,7 +178,7 @@ TEST_P(FunctionTest, NestedInRelationNotSupported) {
 
 TEST_P(FunctionTest, TooFewArgsToInRelationConstraint) {
   Problem p;
-  p.AddVar(0, 100, ampl::INTEGER);
+  p.AddVar(0, 100, var::INTEGER);
   p.AddObj(obj::MIN, MakeVariable(0));
   p.AddCon(MakeRelational(NE, MakeCall(in_relation_,
     ampl::ArrayRef<Expr>(0, 0)), MakeConst(0)));
@@ -186,8 +187,8 @@ TEST_P(FunctionTest, TooFewArgsToInRelationConstraint) {
 
 TEST_P(FunctionTest, InRelationSizeIsNotMultipleOfArity) {
   Problem p;
-  p.AddVar(0, 100, ampl::INTEGER);
-  p.AddVar(0, 100, ampl::INTEGER);
+  p.AddVar(0, 100, var::INTEGER);
+  p.AddVar(0, 100, var::INTEGER);
   p.AddObj(obj::MIN, MakeVariable(0));
   Expr args[] = {
       MakeVariable(0), MakeVariable(1),
@@ -200,8 +201,8 @@ TEST_P(FunctionTest, InRelationSizeIsNotMultipleOfArity) {
 
 TEST_P(FunctionTest, InRelationTuple) {
   Problem p;
-  p.AddVar(0, 100, ampl::INTEGER);
-  p.AddVar(0, 100, ampl::INTEGER);
+  p.AddVar(0, 100, var::INTEGER);
+  p.AddVar(0, 100, var::INTEGER);
   p.AddObj(obj::MIN, MakeBinary(OPPLUS, MakeVariable(0), MakeVariable(1)));
   Expr args[] = {
     MakeVariable(0), MakeVariable(1), MakeConst(11), MakeConst(22)
@@ -212,7 +213,7 @@ TEST_P(FunctionTest, InRelationTuple) {
 
 TEST_P(FunctionTest, InRelationEmptySet) {
   Problem p;
-  p.AddVar(0, 100, ampl::INTEGER);
+  p.AddVar(0, 100, var::INTEGER);
   Expr args[] = {MakeVariable(0)};
   p.AddCon(MakeRelational(NE, MakeCall(in_relation_, args), MakeConst(0)));
   EXPECT_EQ(ampl::INFEASIBLE, Solve(p).solve_code());
@@ -220,7 +221,7 @@ TEST_P(FunctionTest, InRelationEmptySet) {
 
 TEST_P(FunctionTest, InRelationNonConstantSetElement) {
   Problem p;
-  p.AddVar(0, 100, ampl::INTEGER);
+  p.AddVar(0, 100, var::INTEGER);
   Expr args[] = { MakeVariable(0), MakeConst(0), MakeVariable(0) };
   p.AddCon(MakeRelational(NE, MakeCall(in_relation_, args), MakeConst(0)));
   EXPECT_THROW_MSG(Solve(p), ampl::Error,
@@ -351,8 +352,8 @@ TEST_F(IlogCPTest, IloArrayCopyingIsCheap) {
 TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
   s.use_numberof();
   Problem p;
-  p.AddVar(0, 0, ampl::INTEGER);
-  p.AddVar(0, 0, ampl::INTEGER);
+  p.AddVar(0, 0, var::INTEGER);
+  p.AddVar(0, 0, var::INTEGER);
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
   p.AddCon(MakeRelational(EQ, MakeConst(0), MakeNumberOf(args)));
   s.Solve(p);
@@ -362,8 +363,8 @@ TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
   s.use_numberof();
   Problem p;
-  p.AddVar(0, 0, ampl::INTEGER);
-  p.AddVar(0, 0, ampl::INTEGER);
+  p.AddVar(0, 0, var::INTEGER);
+  p.AddVar(0, 0, var::INTEGER);
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
   p.AddCon(MakeRelational(EQ, MakeConst(0), MakeNumberOf(args)));
   p.AddCon(MakeRelational(EQ, MakeConst(0), MakeNumberOf(args)));
@@ -374,8 +375,8 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
   s.use_numberof();
   Problem p;
-  p.AddVar(0, 0, ampl::INTEGER);
-  p.AddVar(0, 0, ampl::INTEGER);
+  p.AddVar(0, 0, var::INTEGER);
+  p.AddVar(0, 0, var::INTEGER);
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
   p.AddCon(MakeRelational(EQ, MakeConst(0), MakeNumberOf(args)));
   args[0] = MakeConst(43);
@@ -387,8 +388,8 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
 TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
   s.use_numberof();
   Problem p;
-  p.AddVar(0, 0, ampl::INTEGER);
-  p.AddVar(0, 0, ampl::INTEGER);
+  p.AddVar(0, 0, var::INTEGER);
+  p.AddVar(0, 0, var::INTEGER);
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
   p.AddCon(MakeRelational(EQ, MakeConst(0), MakeNumberOf(args)));
   NumericExpr args2[] = {MakeConst(42), MakeVariable(1)};
@@ -416,9 +417,9 @@ struct TestSolutionHandler : ampl::BasicSolutionHandler {
 
 TEST_F(IlogCPTest, DefaultSolutionLimit) {
   Problem p;
-  p.AddVar(1, 3, ampl::INTEGER);
-  p.AddVar(1, 3, ampl::INTEGER);
-  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddVar(1, 3, var::INTEGER);
+  p.AddVar(1, 3, var::INTEGER);
+  p.AddVar(1, 3, var::INTEGER);
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeVariable(2)};
   p.AddCon(MakeAllDiff(args));
   TestSolutionHandler sh;
@@ -441,8 +442,8 @@ TEST_F(IlogCPTest, CPOptimizerDoesntSupportContinuousVars) {
 TEST_F(IlogCPTest, OptimizerOption) {
   EXPECT_EQ("auto", s.GetStrOption("optimizer"));
   Problem p;
-  p.AddVar(1, 2, ampl::INTEGER);
-  p.AddVar(1, 2, ampl::INTEGER);
+  p.AddVar(1, 2, var::INTEGER);
+  p.AddVar(1, 2, var::INTEGER);
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1)};
   p.AddCon(MakeAllDiff(args));
   s.SetStrOption("optimizer", "cp");
@@ -459,7 +460,7 @@ TEST_F(IlogCPTest, OptimizerOption) {
 TEST_P(SolverTest, ObjnoOption) {
   EXPECT_EQ(1, solver_->GetIntOption("objno"));
   Problem p;
-  p.AddVar(11, 22, ampl::INTEGER);
+  p.AddVar(11, 22, var::INTEGER);
   ampl::Variable var = MakeVariable(0);
   p.AddObj(obj::MIN, var);
   p.AddObj(obj::MAX, var);
@@ -605,7 +606,7 @@ TEST_F(IlogCPTest, CPOptions) {
 
 TEST_P(SolverTest, MultiObjOption) {
   Problem p;
-  p.AddVar(0, 10, ampl::INTEGER);
+  p.AddVar(0, 10, var::INTEGER);
   p.AddObj(obj::MIN, MakeBinary(OPREM, MakeVariable(0), MakeConst(3)));
   p.AddObj(obj::MIN,
       MakeUnary(OP2POW, MakeBinary(OPMINUS, MakeVariable(0), MakeConst(5))));

@@ -33,6 +33,7 @@ using ampl::LogicalExpr;
 using ampl::NumericExpr;
 using ampl::Problem;
 using ampl::UnsupportedExprError;
+namespace var = ampl::var;
 namespace obj = ampl::obj;
 
 SolverTest::EvalResult SolverTest::Solve(Problem &p) {
@@ -55,10 +56,10 @@ SolverTest::EvalResult SolverTest::Solve(
     LogicalExpr e, int var1, int var2, int var3, bool need_result) {
   Problem p;
   p.AddVar(need_result ? negInfinity : 0,
-      need_result ? Infinity : 0, ampl::INTEGER);
-  p.AddVar(var1, var1, ampl::INTEGER);
-  p.AddVar(var2, var2, ampl::INTEGER);
-  p.AddVar(var3, var3, ampl::INTEGER);
+      need_result ? Infinity : 0, var::INTEGER);
+  p.AddVar(var1, var1, var::INTEGER);
+  p.AddVar(var2, var2, var::INTEGER);
+  p.AddVar(var3, var3, var::INTEGER);
   p.AddCon(e);
   return Solve(p);
 }
@@ -693,7 +694,7 @@ TEST_P(SolverTest, LogicalConstant) {
 
 TEST_P(SolverTest, NonlinearObj) {
   Problem p;
-  p.AddVar(2, 2, ampl::INTEGER);
+  p.AddVar(2, 2, var::INTEGER);
   ampl::Variable x = MakeVariable(0);
   p.AddObj(obj::MIN, MakeBinary(OPMULT, x, x));
   EXPECT_EQ(4, Solve(p).obj_value());
@@ -701,21 +702,21 @@ TEST_P(SolverTest, NonlinearObj) {
 
 TEST_P(SolverTest, ObjConst) {
   Problem p;
-  p.AddVar(0, 0, ampl::INTEGER);
+  p.AddVar(0, 0, var::INTEGER);
   p.AddObj(obj::MIN, MakeConst(42));
   EXPECT_EQ(42, Solve(p).obj_value());
 }
 
 TEST_P(SolverTest, Minimize) {
   Problem p;
-  p.AddVar(42, 100, ampl::INTEGER);
+  p.AddVar(42, 100, var::INTEGER);
   p.AddObj(obj::MIN, MakeVariable(0));
   EXPECT_EQ(42, Solve(p).obj_value());
 }
 
 TEST_P(SolverTest, Maximize) {
   Problem p;
-  p.AddVar(0, 42, ampl::INTEGER);
+  p.AddVar(0, 42, var::INTEGER);
   p.AddObj(obj::MAX, MakeVariable(0));
   EXPECT_EQ(42, Solve(p).obj_value());
 }
@@ -733,7 +734,7 @@ TEST_P(SolverTest, TimingOption) {
   solver_->set_output_handler(&oh);
 
   Problem p;
-  p.AddVar(42, 100, ampl::INTEGER);
+  p.AddVar(42, 100, var::INTEGER);
   p.AddObj(obj::MIN, MakeVariable(0));
 
   solver_->SetIntOption("timing", 0);
@@ -873,9 +874,9 @@ struct SolutionCounter : ampl::BasicSolutionHandler {
 
 TEST_P(SolverTest, CountSolutions) {
   ampl::Problem p;
-  p.AddVar(1, 3, ampl::INTEGER);
-  p.AddVar(1, 3, ampl::INTEGER);
-  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddVar(1, 3, var::INTEGER);
+  p.AddVar(1, 3, var::INTEGER);
+  p.AddVar(1, 3, var::INTEGER);
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeVariable(2)};
   p.AddCon(MakeAllDiff(args));
   SolutionCounter sc;
@@ -888,9 +889,9 @@ TEST_P(SolverTest, CountSolutions) {
 
 TEST_P(SolverTest, SatisfactionSolutionLimit) {
   ampl::Problem p;
-  p.AddVar(1, 3, ampl::INTEGER);
-  p.AddVar(1, 3, ampl::INTEGER);
-  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddVar(1, 3, var::INTEGER);
+  p.AddVar(1, 3, var::INTEGER);
+  p.AddVar(1, 3, var::INTEGER);
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeVariable(2)};
   p.AddCon(MakeAllDiff(args));
   solver_->SetIntOption("solutionlimit", 5);
@@ -909,9 +910,9 @@ TEST_P(SolverTest, OptimizationSolutionLimit) {
 
 TEST_P(SolverTest, MultipleSolutions) {
   ampl::Problem p;
-  p.AddVar(1, 3, ampl::INTEGER);
-  p.AddVar(1, 3, ampl::INTEGER);
-  p.AddVar(1, 3, ampl::INTEGER);
+  p.AddVar(1, 3, var::INTEGER);
+  p.AddVar(1, 3, var::INTEGER);
+  p.AddVar(1, 3, var::INTEGER);
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeVariable(2)};
   p.AddCon(MakeAllDiff(args));
   SolutionCounter sc;

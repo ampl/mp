@@ -31,9 +31,6 @@
 
 namespace ampl {
 
-// A variable type.
-enum VarType { CONTINUOUS, INTEGER };
-
 // Solution status.
 enum SolutionStatus {
   NOT_SOLVED   =  -1,
@@ -141,7 +138,7 @@ class Problem {
 
   // Array of variable types or null if continuous variables precede
   // integer and binary variables.
-  VarType *var_types_;
+  var::Type *var_types_;
 
   FMT_DISALLOW_COPY_AND_ASSIGN(Problem);
 
@@ -208,11 +205,11 @@ class Problem {
   int num_con_nonzeros() const { return asl_->i.nzc_; }
 
   // Returns the type of the variable.
-  VarType var_type(int var_index) const {
+  var::Type var_type(int var_index) const {
     assert(var_index >= 0 && var_index < num_vars());
     if (var_types_)
       return var_types_[var_index];
-    return var_index < num_continuous_vars() ? CONTINUOUS : INTEGER;
+    return var_index < num_continuous_vars() ? var::CONTINUOUS : var::INTEGER;
   }
 
   // Returns the lower bounds for the variables.
@@ -348,7 +345,7 @@ class Problem {
   Suffix suffix(const char *name, unsigned flags) const;
 
   // Adds a variable.
-  void AddVar(double lb, double ub, VarType type = CONTINUOUS);
+  void AddVar(double lb, double ub, var::Type type = var::CONTINUOUS);
 
   // Adds an objective.
   void AddObj(obj::Type type, NumericExpr expr);
