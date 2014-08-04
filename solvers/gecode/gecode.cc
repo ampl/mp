@@ -340,10 +340,12 @@ void NLToGecodeConverter::Convert(const Problem &p) {
 
   icl_suffix_ = p.suffix("icl", ASL_Sufkind_con);
 
-  class ICLSetter : ampl::Noncopyable {
+  class ICLSetter {
    private:
     Gecode::IntConLevel &icl_;
     Gecode::IntConLevel saved_value_;
+    
+    FMT_DISALLOW_COPY_AND_ASSIGN(ICLSetter);
 
    public:
     ICLSetter(Gecode::IntConLevel &icl, Gecode::IntConLevel new_value) :

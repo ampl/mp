@@ -22,8 +22,6 @@
 
 #include "solvers/jacop/java.h"
 
-#include "solvers/util/noncopyable.h"
-
 #include <cstdlib>
 #include <vector>
 
@@ -34,11 +32,13 @@
 
 namespace {
 
-class String : ampl::Noncopyable {
+class String {
  private:
   JNIEnv *env_;
   jstring str_;
   const char *utf_chars_;
+
+  FMT_DISALLOW_COPY_AND_ASSIGN(String);
 
  public:
   String(JNIEnv *env, jstring s) :
@@ -56,9 +56,11 @@ class String : ampl::Noncopyable {
 
 #ifdef _WIN32
 // A registry key.
-class RegKey : ampl::Noncopyable {
+class RegKey {
  private:
   HKEY key_;
+  
+  FMT_DISALLOW_COPY_AND_ASSIGN(RegKey);
 
  public:
   RegKey(HKEY key, fmt::StringRef subkey, REGSAM access);
