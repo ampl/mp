@@ -82,4 +82,113 @@ fmt::StringRef TextReader::ReadString() {
   ++ptr_;
   return fmt::StringRef(length != 0 ? start : 0, length);
 }
+
+void TextReader::ReadHeader(NLHeader &header) {
+  // Read the format (text or binary).
+  switch (ReadChar()) {
+  case 'g':
+    break;
+  case 'b':
+    header.format = NLHeader::BINARY;
+    break;
+  default:
+    ReportParseError("expected format specifier");
+    break;
+  }
+
+  // Read options.
+  ReadOptionalUInt(header.num_options);
+  if (header.num_options > MAX_NL_OPTIONS)
+    ReportParseError("too many options");
+  for (int i = 0; i < header.num_options; ++i) {
+    // TODO: can option values be negative?
+    if (!ReadOptionalUInt(header.options[i]))
+      break;
+  }
+  if (header.options[VBTOL_OPTION] == READ_VBTOL)
+    ReadOptionalDouble(header.ampl_vbtol);
+  ReadTillEndOfLine();
+
+  // Read problem dimensions.
+  header.num_vars = ReadUInt();
+  header.num_algebraic_cons = ReadUInt();
+  header.num_objs = ReadUInt();
+  header.num_eqns = -1;
+  if (ReadOptionalUInt(header.num_ranges) &&
+      ReadOptionalUInt(header.num_eqns)) {
+      ReadOptionalUInt(header.num_logical_cons);
+  }
+  ReadTillEndOfLine();
+
+  // Read the nonlinear and complementarity information.
+  header.num_nl_cons = ReadUInt();
+  header.num_nl_objs = ReadUInt();
+  bool all_compl =
+      ReadOptionalUInt(header.num_compl_conds) &&
+      ReadOptionalUInt(header.num_nl_compl_conds) &&
+      ReadOptionalUInt(header.num_compl_dbl_ineqs) &&
+      ReadOptionalUInt(header.num_compl_vars_with_nz_lb);
+  header.num_compl_conds += header.num_nl_compl_conds;
+  if (header.num_compl_conds > 0 && !all_compl)
+    header.num_compl_dbl_ineqs = -1;
+  ReadTillEndOfLine();
+
+  // Read the information about network constraints.
+  header.num_nl_net_cons = ReadUInt();
+  header.num_linear_net_cons = ReadUInt();
+  ReadTillEndOfLine();
+
+  // Read the information about nonlinear variables.
+  header.num_nl_vars_in_cons = ReadUInt();
+  header.num_nl_vars_in_objs = ReadUInt();
+  header.num_nl_vars_in_both = -1;
+  ReadOptionalUInt(header.num_nl_vars_in_both);
+  ReadTillEndOfLine();
+
+  header.num_linear_net_vars = ReadUInt();
+  header.num_funcs = ReadUInt();
+  int arith = 0;
+  if (ReadOptionalUInt(arith)) {
+    if (arith != Arith_Kind_ASL && arith != 0) {
+      bool swap_bytes = false;
+#if defined(IEEE_MC68k) || defined(IEEE_8087)
+      swap_bytes = arith > 0 && arith + Arith_Kind_ASL == 3;
+#endif
+      if (!swap_bytes)
+        ReportParseError("unrecognized binary format");
+      header.format = NLHeader::BINARY_SWAPPED;
+      // TODO: swap bytes
+    }
+    ReadOptionalUInt(header.flags);
+  }
+  ReadTillEndOfLine();
+
+  // Read the information about discrete variables.
+  header.num_linear_binary_vars = ReadUInt();
+  header.num_linear_integer_vars = ReadUInt();
+  if (header.num_nl_vars_in_both >= 0) {  // ampl versions >= 19930630
+    header.num_nl_integer_vars_in_both = ReadUInt();
+    header.num_nl_integer_vars_in_cons = ReadUInt();
+    header.num_nl_integer_vars_in_objs = ReadUInt();
+  }
+  ReadTillEndOfLine();
+
+  // Read the information about nonzeros.
+  header.num_con_nonzeros = ReadUInt();
+  header.num_obj_nonzeros = ReadUInt();
+  ReadTillEndOfLine();
+
+  // Read the information about names.
+  header.max_con_name_len = ReadUInt();
+  header.max_var_name_len = ReadUInt();
+  ReadTillEndOfLine();
+
+  // Read the information about common expressions.
+  header.num_common_exprs_in_both = ReadUInt();
+  header.num_common_exprs_in_cons = ReadUInt();
+  header.num_common_exprs_in_objs = ReadUInt();
+  header.num_common_exprs_in_cons1 = ReadUInt();
+  header.num_common_exprs_in_objs1 = ReadUInt();
+  ReadTillEndOfLine();
 }
+}  // namespace ampl

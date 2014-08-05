@@ -38,6 +38,7 @@
 
 namespace ampl {
 
+// TODO: rename to ReadError
 class ParseError : public Error {
  private:
   std::string filename_;
@@ -340,6 +341,10 @@ class TextReader {
   }
 
   fmt::StringRef ReadString();
+
+  // Reads an .nl file header. The header is always in text format, so this
+  // function doesn't have a counterpart in BinaryReader.
+  void ReadHeader(NLHeader &header);
 };
 
 // An .nl file reader.
@@ -452,8 +457,17 @@ class NLReader {
   LogicalExpr ReadLogicalExpr();
   LogicalExpr ReadLogicalExpr(int opcode);
 
-  // Reads a linear expression.
-  void ReadLinearExpr(int num_terms);
+  void ReadDefinedVar() {
+    int var_index = reader_.ReadUInt();
+    int num_linear_terms = reader_.ReadUInt();
+    int where = reader_.ReadUInt();
+    // TODO: check above & read linear part
+    ReadNumericExpr();
+    // TODO: pass to handler
+  }
+
+  // Reads the linear part of an objective expression.
+  void ReadLinearObjExpr();
 
   // Reads variable or constraint bounds.
   template <bool VAR>
@@ -633,12 +647,23 @@ typename Handler::LogicalExpr
 }
 
 template <typename Reader, typename Handler>
-void NLReader<Reader, Handler>::ReadLinearExpr(int num_terms) {
+void NLReader<Reader, Handler>::ReadLinearObjExpr() {
+  int obj_index = reader_.ReadUInt();
+  if (obj_index >= header_.num_objs)
+    reader_.ReportParseError("objective index {} out of bounds", obj_index);
+  int num_terms = reader_.ReadUInt();
+  if (num_terms <= 0 || num_terms > header_.num_vars) {
+    reader_.ReportParseError(
+          "number of linear objective terms {} out of bounds", num_terms);
+  }
+  reader_.ReadTillEndOfLine();
+  typename Handler::LinearObjHandler
+      linear_obj(handler_.GetLinearObjHandler(obj_index, num_terms));
   for (int i = 0; i < num_terms; ++i) {
-    reader_.ReadUInt();
-    reader_.ReadUInt(); // TODO: read double
-    // TODO
+    int var_index = reader_.ReadUInt();
+    double coef = reader_.ReadDouble();
     reader_.ReadTillEndOfLine();
+    linear_obj.AddTerm(var_index, coef);
   }
 }
 
@@ -655,7 +680,8 @@ void NLReader<Reader, Handler>::ReadBounds() {
   };
   reader_.ReadTillEndOfLine();
   double lb = 0, ub = 0;
-  for (int i = 0, n = header_.num_vars; i < n; ++i) {
+  int num_bounds = VAR ? header_.num_vars : header_.num_algebraic_cons;
+  for (int i = 0; i < num_bounds; ++i) {
     switch (reader_.ReadUInt()) {
     case RANGE:
       lb = reader_.ReadDouble();
@@ -678,15 +704,15 @@ void NLReader<Reader, Handler>::ReadBounds() {
       break;
     case COMPL:
       if (!VAR) {
-        int kind = reader_.template ReadInt<int>();
-        int var_index = reader_.ReadUInt();
-        if (var_index <= 0 || var_index > header_.num_vars) {
+        int flags = reader_.template ReadInt<int>();
+        int var_index = reader_.ReadUInt() - 1;
+        if (var_index < 0 || var_index >= header_.num_vars) {
           reader_.ReportParseError(
-                "variable index {} out of bounds", var_index - 1);
+                "variable index {} out of bounds", var_index);
         }
-        // TODO: Cvar[i] = var_index;
-        lb = kind & 2 ? -AMPL_INFINITY : 0;
-        ub = kind & 1 ?  AMPL_INFINITY : 0;
+        handler_.SetComplVar(i, var_index);
+        lb = flags & 2 ? -AMPL_INFINITY : 0;
+        ub = flags & 1 ?  AMPL_INFINITY : 0;
         break;
       }
       // Fall through as COMPL bound type is invalid for variables.
@@ -703,9 +729,13 @@ void NLReader<Reader, Handler>::ReadBounds() {
 
 template <typename Reader, typename Handler>
 void NLReader<Reader, Handler>::ReadColumnOffsets() {
-  int count = reader_.ReadUInt(); // TODO
+  int num_offsets = reader_.ReadUInt();
+  if (num_offsets != header_.num_vars - 1) {
+    reader_.ReportParseError(
+          "invalid number of column offsets {}", num_offsets);
+  }
   reader_.ReadTillEndOfLine();
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < num_offsets; ++i) {
     reader_.ReadUInt(); // TODO
     reader_.ReadTillEndOfLine();
   }
@@ -719,7 +749,7 @@ void NLReader<Reader, Handler>::Read() {
     case '\0':
       // TODO: check for end of input
       return;
-    case 'C': {
+    case 'C': {  // Nonlinear part of an algebraic constraint body.
       int index = reader_.ReadUInt();
       if (index >= header_.num_algebraic_cons)
         reader_.ReportParseError("constraint index {} out of bounds", index);
@@ -745,7 +775,7 @@ void NLReader<Reader, Handler>::Read() {
                            static_cast<func::Type>(type));
       break;
     }
-    case 'L': {
+    case 'L': {  // Logical constraint expression.
       int index = reader_.ReadUInt();
       if (index >= header_.num_logical_cons) {
         reader_.ReportParseError(
@@ -756,22 +786,18 @@ void NLReader<Reader, Handler>::Read() {
       break;
     }
     case 'V':
-      // TODO
+      // Defined variable definition (must precede V, C, L, O segments
+      // where used).
+      ReadDefinedVar();
       break;
-    case 'G': {
-      int index = reader_.ReadUInt();
-      if (index >= header_.num_objs)
-        reader_.ReportParseError("objective index {} out of bounds", index);
-      int num_terms = reader_.ReadUInt(); // TODO: check
-      reader_.ReadTillEndOfLine();
-      ReadLinearExpr(num_terms);
-      // TODO: read gradient!
+    case 'G':  // Linear part of an objective expression & gradient sparsity.
+      ReadLinearObjExpr();
       break;
-    }
     case 'J':
-      // TODO: read Jacobian matrix
+      // TODO: read linear constraint parts
       break;
     case 'O': {
+      // Objective type and nonlinear part of an objective expression.
       int index = reader_.ReadUInt();
       if (index >= header_.num_objs)
         reader_.ReportParseError("objective index {} out of bounds", index);
@@ -781,16 +807,17 @@ void NLReader<Reader, Handler>::Read() {
                       ReadNumericExpr());
       break;
     }
-    case 'S':
+    case 'S':  // Suffix values.
       // TODO: read suffix
       break;
-    case 'r':
+    case 'r':  // Bounds on algebraic constraint bodies ("ranges").
       ReadBounds<false>();
       break;
-    case 'b':
+    case 'b':  // Bounds on variables.
       ReadBounds<true>();
       break;
-    case 'k':
+    case 'k': case 'K':
+      // Jacobian column counts (must precede all J segments).
       ReadColumnOffsets();
       break;
     case 'x':
@@ -807,128 +834,17 @@ void NLReader<Reader, Handler>::Read() {
 
 // Reads a string containing a problem in .nl format.
 // name: Name to be used when reporting errors.
-// header_only: true to read the header only, false to read the whole file
 template <typename Handler>
 void ReadNLString(fmt::StringRef str, Handler &handler,
-                  fmt::StringRef name = "(input)", bool header_only = false) {
+                  fmt::StringRef name = "(input)") {
   TextReader reader(name, str.c_str());
-
-  // Read the format (text or binary).
   NLHeader header = NLHeader();
-  switch (reader.ReadChar()) {
-  case 'g':
-    break;
-  case 'b':
-    header.format = NLHeader::BINARY;
-    break;
-  default:
-    reader.ReportParseError("expected format specifier");
-    break;
-  }
-
-  // Read options.
-  reader.ReadOptionalUInt(header.num_options);
-  if (header.num_options > MAX_NL_OPTIONS)
-    reader.ReportParseError("too many options");
-  for (int i = 0; i < header.num_options; ++i) {
-    // TODO: can option values be negative?
-    if (!reader.ReadOptionalUInt(header.options[i]))
-      break;
-  }
-  if (header.options[VBTOL_OPTION] == READ_VBTOL)
-    reader.ReadOptionalDouble(header.ampl_vbtol);
-  reader.ReadTillEndOfLine();
-
-  // Read problem dimensions.
-  header.num_vars = reader.ReadUInt();
-  header.num_algebraic_cons = reader.ReadUInt();
-  header.num_objs = reader.ReadUInt();
-  header.num_eqns = -1;
-  if (reader.ReadOptionalUInt(header.num_ranges) &&
-      reader.ReadOptionalUInt(header.num_eqns)) {
-      reader.ReadOptionalUInt(header.num_logical_cons);
-  }
-  reader.ReadTillEndOfLine();
-
-  // Read the nonlinear and complementarity information.
-  header.num_nl_cons = reader.ReadUInt();
-  header.num_nl_objs = reader.ReadUInt();
-  bool all_compl =
-      reader.ReadOptionalUInt(header.num_compl_conds) &&
-      reader.ReadOptionalUInt(header.num_nl_compl_conds) &&
-      reader.ReadOptionalUInt(header.num_compl_dbl_ineqs) &&
-      reader.ReadOptionalUInt(header.num_compl_vars_with_nz_lb);
-  header.num_compl_conds += header.num_nl_compl_conds;
-  if (header.num_compl_conds > 0 && !all_compl)
-    header.num_compl_dbl_ineqs = -1;
-  reader.ReadTillEndOfLine();
-
-  // Read the information about network constraints.
-  header.num_nl_net_cons = reader.ReadUInt();
-  header.num_linear_net_cons = reader.ReadUInt();
-  reader.ReadTillEndOfLine();
-
-  // Read the information about nonlinear variables.
-  header.num_nl_vars_in_cons = reader.ReadUInt();
-  header.num_nl_vars_in_objs = reader.ReadUInt();
-  header.num_nl_vars_in_both = -1;
-  reader.ReadOptionalUInt(header.num_nl_vars_in_both);
-  reader.ReadTillEndOfLine();
-
-  header.num_linear_net_vars = reader.ReadUInt();
-  header.num_funcs = reader.ReadUInt();
-  int arith = 0;
-  if (reader.ReadOptionalUInt(arith)) {
-    if (arith != Arith_Kind_ASL && arith != 0) {
-      bool swap_bytes = false;
-#if defined(IEEE_MC68k) || defined(IEEE_8087)
-      swap_bytes = arith > 0 && arith + Arith_Kind_ASL == 3;
-#endif
-      if (!swap_bytes)
-        reader.ReportParseError("unrecognized binary format");
-      header.format = NLHeader::BINARY_SWAPPED;
-      // TODO: swap bytes
-    }
-    reader.ReadOptionalUInt(header.flags);
-  }
-  reader.ReadTillEndOfLine();
-
-  // Read the information about discrete variables.
-  header.num_linear_binary_vars = reader.ReadUInt();
-  header.num_linear_integer_vars = reader.ReadUInt();
-  if (header.num_nl_vars_in_both >= 0) {  // ampl versions >= 19930630
-    header.num_nl_integer_vars_in_both = reader.ReadUInt();
-    header.num_nl_integer_vars_in_cons = reader.ReadUInt();
-    header.num_nl_integer_vars_in_objs = reader.ReadUInt();
-  }
-  reader.ReadTillEndOfLine();
-
-  // Read the information about nonzeros.
-  header.num_con_nonzeros = reader.ReadUInt();
-  header.num_obj_nonzeros = reader.ReadUInt();
-  reader.ReadTillEndOfLine();
-
-  // Read the information about names.
-  header.max_con_name_len = reader.ReadUInt();
-  header.max_var_name_len = reader.ReadUInt();
-  reader.ReadTillEndOfLine();
-
-  // Read the information about common expressions.
-  header.num_common_exprs_in_both = reader.ReadUInt();
-  header.num_common_exprs_in_cons = reader.ReadUInt();
-  header.num_common_exprs_in_objs = reader.ReadUInt();
-  header.num_common_exprs_in_cons1 = reader.ReadUInt();
-  header.num_common_exprs_in_objs1 = reader.ReadUInt();
-  reader.ReadTillEndOfLine();
-
+  reader.ReadHeader(header);
   handler.BeginBuild(name.c_str(), header, 0);
-  if (header_only)
-    return;
-
-  if (header.format != NLHeader::TEXT) {
-    // TODO: use binary reader
-  }
-  NLReader<TextReader, Handler>(reader, header, handler).Read();
+  if (header.format == NLHeader::TEXT)
+    NLReader<TextReader, Handler>(reader, header, handler).Read();
+  else
+    ; // TODO: use binary reader
 }
 
 // Reads an .nl file.
