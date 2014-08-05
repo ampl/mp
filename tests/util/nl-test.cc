@@ -94,19 +94,42 @@ class TestNLHandler {
     WriteBounds('c', index, lb, ub);
   }
 
-  void SetComplVar(int con_index, int var_index) {
-    // TODO
+  void SetComplement(int con_index, int var_index, int flags) {
+    WriteSep().write("c{} complements v{} {};", con_index, var_index, flags);
   }
 
   class LinearObjHandler {
+   private:
+    std::string str_;
+    fmt::Writer &log_;
+
    public:
+    explicit LinearObjHandler(fmt::Writer &log) : log_(log) {}
+    ~LinearObjHandler() { log_ << str_ << ';'; }
     void AddTerm(int var_index, double coef) {
-      // TODO
+      if (!str_.empty())
+        str_ += " + ";
+      str_ += fmt::format("{} * v{}", coef, var_index);
     }
   };
 
   LinearObjHandler GetLinearObjHandler(int index, int num_terms) {
-    return LinearObjHandler();
+    WriteSep().write("o{} {}: ", index, num_terms);
+    return LinearObjHandler(log);
+  }
+
+  class ColumnSizeHandler {
+   private:
+    fmt::Writer &log_;
+
+   public:
+    explicit ColumnSizeHandler(fmt::Writer &log) : log_(log) {}
+    ~ColumnSizeHandler() { log_ << ';'; }
+    void Add(int offset) { log_ << ' ' << offset; };
+  };
+  ColumnSizeHandler GetColumnSizeHandler() {
+    log << "sizes:";
+    return ColumnSizeHandler(log);
   }
 
   void SetObj(int index, ampl::obj::Type type, std::string expr) {
@@ -793,12 +816,17 @@ struct TestNLHandler2 {
 
   void SetVarBounds(int, double, double) {}
   void SetConBounds(int, double, double) {}
-  void SetComplVar(int, int) {}
+  void SetComplement(int, int, int) {}
 
   struct LinearObjHandler {
     void AddTerm(int, double) {}
   };
   LinearObjHandler GetLinearObjHandler(int, int) { return LinearObjHandler(); }
+
+  struct ColumnSizeHandler {
+    void Add(int) {}
+  };
+  ColumnSizeHandler GetColumnSizeHandler() { return ColumnSizeHandler(); }
 
   void SetObj(int, ampl::obj::Type, TestNumericExpr) {}
   void SetCon(int, TestNumericExpr) {}
@@ -891,16 +919,38 @@ TEST(NLTest, ReadVarBounds) {
 }
 
 TEST(NLTest, ReadConBounds) {
-  EXPECT_READ("11 <= c0; c1 <= 22; c2 = 33; c3; 44 <= c4 <= 55; c5 = 0; c6;",
-              "r\n2 11\n1 22\n4 33\n3\n0 44 55\n5 0 4\n5 3 1\n");
+  EXPECT_READ("11 <= c0; c1 <= 22; c2 = 33; c3; 44 <= c4 <= 55; "
+              "c5 complements v1 3; c6 complements v4 2;",
+              "r\n2 11\n1 22\n4 33\n3\n0 44 55\n5 7 2\n5 2 5\n");
   EXPECT_READ_ERROR("r\n-1\n", "(input):12:1: expected nonnegative integer");
   EXPECT_READ_ERROR("r\n6 1\n", "(input):12:1: invalid bound type");
   EXPECT_READ_ERROR("r\n2 11\n1 22\n4 33\n3\n",
                     "(input):16:1: expected nonnegative integer");
-  // TODO: test complementarity
+  EXPECT_READ_ERROR("r\n5 1 0\n",
+                    "(input):12:5: variable index -1 out of bounds");
+  EXPECT_READ_ERROR("r\n5 1 6\n",
+                    "(input):12:5: variable index 5 out of bounds");
 }
 
-// TODO: test reading linear obj. expression
+TEST(NLTest, ReadLinearObjExpr) {
+  EXPECT_READ("o0 2: 3 * v1 + 5 * v3;", "G0 2\n1 3\n3 5\n");
+  EXPECT_READ("o5 5: 1 * v1 + 1 * v2 + 1 * v3 + 1 * v4 + 1 * v5;",
+              "G5 5\n1 1\n2 1\n3 1\n4 1\n5 1\n");
+  EXPECT_READ_ERROR("G-1", "(input):11:2: expected nonnegative integer");
+  EXPECT_READ_ERROR("G6", "(input):11:2: objective index 6 out of bounds");
+  EXPECT_READ_ERROR("G0 0",
+    "(input):11:4: number of linear objective terms 0 out of bounds");
+  EXPECT_READ_ERROR("G0 6",
+    "(input):11:4: number of linear objective terms 6 out of bounds");
+}
 
-// TODO: more tests
+TEST(NLTest, ReadJacobianColumns) {
+  EXPECT_READ("sizes: 1 2 2 4;", "k4\n1\n3\n5\n9\n");
+  EXPECT_READ("sizes: 1 2 2 4;", "K4\n1\n2\n2\n4\n");
+  EXPECT_READ_ERROR("k3\n", "(input):11:2: expected 4");
+  EXPECT_READ_ERROR("k4\n-1\n", "(input):12:1: expected nonnegative integer");
+}
+
+// TODO: test reading Jacobian, functions, defined vars, suffixes,
+//       initial primal & dual solution
 }

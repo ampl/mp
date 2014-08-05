@@ -56,8 +56,6 @@ class ParseError : public Error {
   int column() const { return column_; }
 };
 
-class TextReader;
-
 enum {
   MAX_NL_OPTIONS = 9,
   VBTOL_OPTION   = 1,
@@ -230,31 +228,12 @@ class TextReader {
     return value;
   }
 
- public:
-  TextReader(fmt::StringRef data, fmt::StringRef name)
-  : ptr_(data.c_str()), end_(ptr_ + data.size()),
-    line_start_(ptr_), token_(ptr_), name_(name), line_(1) {}
-
   void DoReportParseError(
       const char *loc, fmt::StringRef format_str,
-      const fmt::ArgList &args = fmt::ArgList()) {
-    int line = line_;
-    const char *line_start = line_start_;
-    if (loc < line_start) {
-      --line;
-      // Find the beginning of the previous line.
-      line_start = loc - 1;
-      while (*line_start != '\n')
-        --line_start;
-      ++line_start;
-    }
-    int column = static_cast<int>(loc - line_start + 1);
-    fmt::Writer w;
-    w.write(format_str, args);
-    throw ampl::ParseError(name_, line, column,
-        fmt::format("{}:{}:{}: {}", name_, line, column,
-            fmt::StringRef(w.c_str(), w.size())));
-  }
+      const fmt::ArgList &args = fmt::ArgList());
+
+ public:
+  TextReader(fmt::StringRef data, fmt::StringRef name);
 
   void ReportParseError(fmt::StringRef format_str, const fmt::ArgList &args) {
     DoReportParseError(token_, format_str, args);
@@ -475,9 +454,10 @@ class NLReader {
   template <bool VAR>
   void ReadBounds();
 
-  // Read the column offsets, the cumulative sums of the numbers of
-  // nonzeros in the first num_var − 1 columns of the Jacobian matrix.
-  void ReadColumnOffsets();
+  // Read column sizes, numbers of nonzeros in the first num_var − 1
+  // columns of the Jacobian sparsity matrix.
+  template <bool CUMULATIVE>
+  void ReadColumnSizes();
 
  public:
   NLReader(Reader &reader, NLHeader &header, Handler &handler)
@@ -660,7 +640,7 @@ void NLReader<Reader, Handler>::ReadLinearObjExpr() {
   }
   reader_.ReadTillEndOfLine();
   typename Handler::LinearObjHandler
-      linear_obj(handler_.GetLinearObjHandler(obj_index, num_terms));
+      linear_obj = handler_.GetLinearObjHandler(obj_index, num_terms);
   for (int i = 0; i < num_terms; ++i) {
     int var_index = reader_.ReadUInt();
     double coef = reader_.ReadDouble();
@@ -712,10 +692,10 @@ void NLReader<Reader, Handler>::ReadBounds() {
           reader_.ReportParseError(
                 "variable index {} out of bounds", var_index);
         }
-        handler_.SetComplVar(i, var_index);
-        lb = flags & 2 ? -AMPL_INFINITY : 0;
-        ub = flags & 1 ?  AMPL_INFINITY : 0;
-        break;
+        int mask = comp::INF_LB | comp::INF_UB;
+        handler_.SetComplement(i, var_index, flags & mask);
+        reader_.ReadTillEndOfLine();
+        continue;
       }
       // Fall through as COMPL bound type is invalid for variables.
     default:
@@ -730,15 +710,19 @@ void NLReader<Reader, Handler>::ReadBounds() {
 }
 
 template <typename Reader, typename Handler>
-void NLReader<Reader, Handler>::ReadColumnOffsets() {
-  int num_offsets = reader_.ReadUInt();
-  if (num_offsets != header_.num_vars - 1) {
-    reader_.ReportParseError(
-          "invalid number of column offsets {}", num_offsets);
-  }
+template <bool CUMULATIVE>
+void NLReader<Reader, Handler>::ReadColumnSizes() {
+  int num_sizes = header_.num_vars - 1;
+  if (reader_.ReadUInt() != num_sizes)
+    reader_.ReportParseError("expected {}", num_sizes);
   reader_.ReadTillEndOfLine();
-  for (int i = 0; i < num_offsets; ++i) {
-    reader_.ReadUInt(); // TODO
+  typename Handler::ColumnSizeHandler
+      size_handler = handler_.GetColumnSizeHandler();
+  int prev_size = 0;
+  for (int i = 0; i < num_sizes; ++i) {
+    int size = reader_.ReadUInt();
+    size_handler.Add(CUMULATIVE ? size - prev_size : size);
+    prev_size = size;
     reader_.ReadTillEndOfLine();
   }
 }
@@ -751,7 +735,8 @@ void NLReader<Reader, Handler>::Read() {
     case '\0':
       // TODO: check for end of input
       return;
-    case 'C': {  // Nonlinear part of an algebraic constraint body.
+    case 'C': {
+      // Nonlinear part of an algebraic constraint body.
       int index = reader_.ReadUInt();
       if (index >= header_.num_algebraic_cons)
         reader_.ReportParseError("constraint index {} out of bounds", index);
@@ -777,7 +762,8 @@ void NLReader<Reader, Handler>::Read() {
                            static_cast<func::Type>(type));
       break;
     }
-    case 'L': {  // Logical constraint expression.
+    case 'L': {
+      // Logical constraint expression.
       int index = reader_.ReadUInt();
       if (index >= header_.num_logical_cons) {
         reader_.ReportParseError(
@@ -792,11 +778,13 @@ void NLReader<Reader, Handler>::Read() {
       // where used).
       ReadDefinedVar();
       break;
-    case 'G':  // Linear part of an objective expression & gradient sparsity.
+    case 'G':
+      // Linear part of an objective expression & gradient sparsity.
       ReadLinearObjExpr();
       break;
     case 'J':
-      // TODO: read linear constraint parts
+      // Jacobian sparsity & linear terms in constraints.
+      // TODO: read
       break;
     case 'O': {
       // Objective type and nonlinear part of an objective expression.
@@ -809,18 +797,27 @@ void NLReader<Reader, Handler>::Read() {
                       ReadNumericExpr());
       break;
     }
-    case 'S':  // Suffix values.
+    case 'S':
+      // Suffix values.
       // TODO: read suffix
       break;
-    case 'r':  // Bounds on algebraic constraint bodies ("ranges").
+    case 'r':
+      // Bounds on algebraic constraint bodies ("ranges").
       ReadBounds<false>();
       break;
-    case 'b':  // Bounds on variables.
+    case 'b':
+      // Bounds on variables.
       ReadBounds<true>();
       break;
-    case 'k': case 'K':
-      // Jacobian column counts (must precede all J segments).
-      ReadColumnOffsets();
+    case 'K':
+      // Jacobian sparsity & linear constraint term matrix column sizes
+      // (must precede all J segments).
+      ReadColumnSizes<false>();
+      break;
+    case 'k':
+      // Cumulative Jacobian sparsity & linear constraint term matrix column
+      // sizes (must precede all J segments).
+      ReadColumnSizes<true>();
       break;
     case 'x':
       // TODO

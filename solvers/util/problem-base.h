@@ -122,6 +122,13 @@ namespace obj {
 enum Type { MIN = 0, MAX = 1 };
 }
 
+// Complementarity namespace. It would make more sense to call it compl,
+// but the latter is a reserved word in C++.
+namespace comp {
+// Flags for complementarity constraints.
+enum { INF_LB = 1, INF_UB = 2 };
+}
+
 // A reference to an immutable array.
 template <typename T>
 class ArrayRef {

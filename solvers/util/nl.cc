@@ -62,6 +62,30 @@ fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h) {
   return w;
 }
 
+TextReader::TextReader(fmt::StringRef data, fmt::StringRef name)
+: ptr_(data.c_str()), end_(ptr_ + data.size()),
+  line_start_(ptr_), token_(ptr_), name_(name), line_(1) {}
+
+void TextReader::DoReportParseError(
+    const char *loc, fmt::StringRef format_str, const fmt::ArgList &args) {
+  int line = line_;
+  const char *line_start = line_start_;
+  if (loc < line_start) {
+    --line;
+    // Find the beginning of the previous line.
+    line_start = loc - 1;
+    while (*line_start != '\n')
+      --line_start;
+    ++line_start;
+  }
+  int column = static_cast<int>(loc - line_start + 1);
+  fmt::Writer w;
+  w.write(format_str, args);
+  throw ampl::ParseError(name_, line, column,
+      fmt::format("{}:{}:{}: {}", name_, line, column,
+          fmt::StringRef(w.c_str(), w.size())));
+}
+
 fmt::StringRef TextReader::ReadString() {
   int length = ReadUInt();
   if (*ptr_ != ':')
