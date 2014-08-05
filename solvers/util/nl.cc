@@ -73,7 +73,7 @@ fmt::StringRef TextReader::ReadString() {
     if (c == '\n') {
       line_start_ = ptr_  + 1;
       ++line_;
-    } else if (c == 0) {
+    } else if (c == 0 && ptr_ == end_) {
       DoReportParseError(ptr_, "unexpected end of file in string");
     }
   }

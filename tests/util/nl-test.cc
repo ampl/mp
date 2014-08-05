@@ -753,12 +753,16 @@ TEST(NLTest, ReadStringLiteral) {
   EXPECT_READ("c0: f1('');", "C0\nf1 1\nh0:\n");
   EXPECT_READ("c0: f1('abc');", "C0\nf1 1\nh3:abc\n");
   EXPECT_READ("c0: f1('ab\nc');", "C0\nf1 1\nh4:ab\nc\n");
+  const char input[] = "C0\nf1 1\nh1:\0\n";
+  const char output[] = "c0: f1('\0');";
+  EXPECT_READ(std::string(output, sizeof(output) - 1),
+              std::string(input, sizeof(input) - 1));
   EXPECT_READ_ERROR("C0\nf1 1\nh3:ab",
         "(input):13:6: unexpected end of file in string");
   EXPECT_READ_ERROR("C0\nf1 1\nh3:a\n",
         "(input):14:1: unexpected end of file in string");
   EXPECT_READ_ERROR("C0\nf1 1\nh3:abc", "(input):13:7: expected newline");
-  EXPECT_READ_ERROR( "C0\nf1 1\nh3:ab\n", "(input):14:1: expected newline");
+  EXPECT_READ_ERROR("C0\nf1 1\nh3:ab\n", "(input):14:1: expected newline");
 }
 
 TEST(NLTest, ReadInvalidOpCode) {

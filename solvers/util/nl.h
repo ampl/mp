@@ -202,11 +202,12 @@ struct NLHeader {
   int num_common_exprs_in_objs1;
 };
 
+// Writes NLHeader in the .nl file format.
 fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h);
 
 class TextReader {
  private:
-  const char *ptr_;
+  const char *ptr_, *end_;
   const char *line_start_;
   const char *token_;  // start of the current token
   std::string name_;
@@ -230,8 +231,9 @@ class TextReader {
   }
 
  public:
-  TextReader(fmt::StringRef name, const char *ptr)
-  : ptr_(ptr), line_start_(ptr), token_(ptr), name_(name), line_(1) {}
+  TextReader(fmt::StringRef data, fmt::StringRef name)
+  : ptr_(data.c_str()), end_(ptr_ + data.size()),
+    line_start_(ptr_), token_(ptr_), name_(name), line_(1) {}
 
   void DoReportParseError(
       const char *loc, fmt::StringRef format_str,
@@ -837,7 +839,7 @@ void NLReader<Reader, Handler>::Read() {
 template <typename Handler>
 void ReadNLString(fmt::StringRef str, Handler &handler,
                   fmt::StringRef name = "(input)") {
-  TextReader reader(name, str.c_str());
+  TextReader reader(str, name);
   NLHeader header = NLHeader();
   reader.ReadHeader(header);
   handler.BeginBuild(name.c_str(), header, 0);
