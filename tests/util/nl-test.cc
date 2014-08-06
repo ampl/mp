@@ -99,14 +99,14 @@ class TestNLHandler {
     WriteSep().write("c{} complements v{} {};", con_index, var_index, flags);
   }
 
-  class LinearObjHandler {
+  class LinearExprHandler {
    private:
     std::string str_;
     fmt::Writer &log_;
 
    public:
-    explicit LinearObjHandler(fmt::Writer &log) : log_(log) {}
-    ~LinearObjHandler() { log_ << str_ << ';'; }
+    explicit LinearExprHandler(fmt::Writer &log) : log_(log) {}
+    ~LinearExprHandler() { log_ << str_ << ';'; }
     void AddTerm(int var_index, double coef) {
       if (!str_.empty())
         str_ += " + ";
@@ -114,9 +114,13 @@ class TestNLHandler {
     }
   };
 
-  LinearObjHandler GetLinearObjHandler(int index, int num_terms) {
+  LinearExprHandler GetLinearObjHandler(int index, int num_terms) {
     WriteSep().write("o{} {}: ", index, num_terms);
-    return LinearObjHandler(log);
+    return LinearExprHandler(log);
+  }
+  LinearExprHandler GetLinearConHandler(int index, int num_terms) {
+    WriteSep().write("c{} {}: ", index, num_terms);
+    return LinearExprHandler(log);
   }
 
   class ColumnSizeHandler {
@@ -827,10 +831,15 @@ struct TestNLHandler2 {
   void SetConBounds(int, double, double) {}
   void SetComplement(int, int, int) {}
 
-  struct LinearObjHandler {
+  struct LinearExprHandler {
     void AddTerm(int, double) {}
   };
-  LinearObjHandler GetLinearObjHandler(int, int) { return LinearObjHandler(); }
+  LinearExprHandler GetLinearObjHandler(int, int) {
+    return LinearExprHandler();
+  }
+  LinearExprHandler GetLinearConHandler(int, int) {
+    return LinearExprHandler();
+  }
 
   struct ColumnSizeHandler {
     void Add(int) {}
@@ -951,9 +960,21 @@ TEST(NLTest, ReadLinearObjExpr) {
   EXPECT_READ_ERROR("G-1", "(input):11:2: expected nonnegative integer");
   EXPECT_READ_ERROR("G6", "(input):11:2: objective index 6 out of bounds");
   EXPECT_READ_ERROR("G0 0",
-    "(input):11:4: number of linear objective terms 0 out of bounds");
+    "(input):11:4: number of linear terms 0 out of bounds");
   EXPECT_READ_ERROR("G0 6",
-    "(input):11:4: number of linear objective terms 6 out of bounds");
+    "(input):11:4: number of linear terms 6 out of bounds");
+}
+
+TEST(NLTest, ReadLinearConExpr) {
+  EXPECT_READ("c0 2: 1.3 * v1 + 5 * v3;", "J0 2\n1 1.3\n3 5\n");
+  EXPECT_READ("c5 5: 1 * v1 + 1 * v2 + 1 * v3 + 1 * v4 + 1 * v5;",
+              "J5 5\n1 1\n2 1\n3 1\n4 1\n5 1\n");
+  EXPECT_READ_ERROR("J-1", "(input):11:2: expected nonnegative integer");
+  EXPECT_READ_ERROR("J8", "(input):11:2: constraint index 8 out of bounds");
+  EXPECT_READ_ERROR("J0 0",
+    "(input):11:4: number of linear terms 0 out of bounds");
+  EXPECT_READ_ERROR("J0 6",
+    "(input):11:4: number of linear terms 6 out of bounds");
 }
 
 TEST(NLTest, ReadJacobianColumns) {
@@ -968,7 +989,8 @@ TEST(NLTest, ReadInitialValues) {
               "x5\n4 1.1\n3 0\n2 1\n1 2\n0 3\n");
   EXPECT_READ_ERROR("x6\n", "(input):11:2: too many initial values");
   EXPECT_READ_ERROR("x1\n-1 0\n", "(input):12:1: expected nonnegative integer");
-  EXPECT_READ_ERROR("x1\n5 0\n", "(input):12:1: index 5 out of bounds");
+  EXPECT_READ_ERROR("x1\n5 0\n",
+                    "(input):12:1: variable index 5 out of bounds");
   EXPECT_READ_ERROR("x2\n4 1.1\n\n",
                     "(input):13:1: expected nonnegative integer");
 }
@@ -979,11 +1001,12 @@ TEST(NLTest, ReadInitialDualValues) {
               "d7\n4 1.1\n3 0\n2 1\n1 2\n0 3\n5 1\n6 2\n");
   EXPECT_READ_ERROR("d8\n", "(input):11:2: too many initial values");
   EXPECT_READ_ERROR("d1\n-1 0\n", "(input):12:1: expected nonnegative integer");
-  EXPECT_READ_ERROR("d1\n7 0\n", "(input):12:1: index 7 out of bounds");
+  EXPECT_READ_ERROR("d1\n7 0\n",
+                    "(input):12:1: constraint index 7 out of bounds");
   EXPECT_READ_ERROR("d2\n4 1.1\n\n",
                     "(input):13:1: expected nonnegative integer");
 }
 
-// TODO: test reading Jacobian, functions, defined vars, suffixes
+// TODO: test reading functions, defined vars, suffixes
 
 }  // namespace

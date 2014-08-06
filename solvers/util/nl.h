@@ -443,48 +443,83 @@ class NLReader {
     // TODO: pass to handler
   }
 
-  // Reads the linear part of an objective expression.
-  void ReadLinearObjExpr();
+  enum ItemType { VAR, OBJ, CON };
 
-  enum { VAR, CON };
-
-  class VarHandler {
-   private:
+  template <ItemType T>
+  class ItemHandler {
+   protected:
     NLReader &reader_;
 
    public:
-    enum { TYPE = VAR };
+    enum { TYPE = T };
+    explicit ItemHandler(NLReader &r) : reader_(r) {}
+  };
 
-    explicit VarHandler(NLReader &r) : reader_(r) {}
+  struct VarHandler : ItemHandler<VAR> {
+    explicit VarHandler(NLReader &r) : ItemHandler<VAR>(r) {}
 
-    int num_items() const { return reader_.header_.num_vars; }
+    int num_items() const { return this->reader_.header_.num_vars; }
 
+    void CheckIndex(int index) {
+      if (index >= num_items()) {
+        this->reader_.reader_.ReportReadError(
+              "variable index {} out of bounds", index);
+      }
+    }
     void SetBounds(int index, double lb, double ub) {
-      reader_.handler_.SetVarBounds(index, lb, ub);
+      this->reader_.handler_.SetVarBounds(index, lb, ub);
     }
     void SetInitialValue(int index, double value) {
-      reader_.handler_.SetInitialValue(index, value);
+      this->reader_.handler_.SetInitialValue(index, value);
     }
   };
 
-  class ConHandler {
-   private:
-    NLReader &reader_;
+  struct ObjHandler : ItemHandler<OBJ> {
+    explicit ObjHandler(NLReader &r) : ItemHandler<OBJ>(r) {}
 
-   public:
-    enum { TYPE = CON };
+    int num_items() const { return this->reader_.header_.num_objs; }
 
-    explicit ConHandler(NLReader &r) : reader_(r) {}
-
-    int num_items() const { return reader_.header_.num_algebraic_cons; }
-
-    void SetBounds(int index, double lb, double ub) {
-      reader_.handler_.SetConBounds(index, lb, ub);
+    void CheckIndex(int index) {
+      if (index >= num_items()) {
+        this->reader_.reader_.ReportReadError(
+              "objective index {} out of bounds", index);
+      }
     }
-    void SetInitialValue(int index, double value) {
-      reader_.handler_.SetInitialDualValue(index, value);
+
+    typename Handler::LinearExprHandler
+        GetLinearExprHandler(int index, int num_terms) {
+      return this->reader_.handler_.GetLinearObjHandler(index, num_terms);
     }
   };
+
+  struct ConHandler : ItemHandler<CON> {
+    explicit ConHandler(NLReader &r) : ItemHandler<CON>(r) {}
+
+    int num_items() const { return this->reader_.header_.num_algebraic_cons; }
+
+    void CheckIndex(int index) {
+      if (index >= num_items()) {
+        this->reader_.reader_.ReportReadError(
+              "constraint index {} out of bounds", index);
+      }
+    }
+
+    typename Handler::LinearExprHandler
+        GetLinearExprHandler(int index, int num_terms) {
+      return this->reader_.handler_.GetLinearConHandler(index, num_terms);
+    }
+
+    void SetBounds(int index, double lb, double ub) {
+      this->reader_.handler_.SetConBounds(index, lb, ub);
+    }
+    void SetInitialValue(int index, double value) {
+      this->reader_.handler_.SetInitialDualValue(index, value);
+    }
+  };
+
+  // Reads the linear part of an objective or constraint expression.
+  template <typename LinearHandler>
+  void ReadLinearExpr();
 
   // Reads variable or constraint bounds.
   template <typename BoundHandler>
@@ -669,23 +704,24 @@ typename Handler::LogicalExpr
 }
 
 template <typename Reader, typename Handler>
-void NLReader<Reader, Handler>::ReadLinearObjExpr() {
-  int obj_index = reader_.ReadUInt();
-  if (obj_index >= header_.num_objs)
-    reader_.ReportReadError("objective index {} out of bounds", obj_index);
+template <typename LinearHandler>
+void NLReader<Reader, Handler>::ReadLinearExpr() {
+  int index = reader_.ReadUInt();
+  LinearHandler lh(*this);
+  lh.CheckIndex(index);
   int num_terms = reader_.ReadUInt();
   if (num_terms <= 0 || num_terms > header_.num_vars) {
     reader_.ReportReadError(
-          "number of linear objective terms {} out of bounds", num_terms);
+          "number of linear terms {} out of bounds", num_terms);
   }
   reader_.ReadTillEndOfLine();
-  typename Handler::LinearObjHandler
-      linear_obj = handler_.GetLinearObjHandler(obj_index, num_terms);
+  typename Handler::LinearExprHandler
+      linear_expr = lh.GetLinearExprHandler(index, num_terms);
   for (int i = 0; i < num_terms; ++i) {
     int var_index = reader_.ReadUInt();
     double coef = reader_.ReadDouble();
     reader_.ReadTillEndOfLine();
-    linear_obj.AddTerm(var_index, coef);
+    linear_expr.AddTerm(var_index, coef);
   }
 }
 
@@ -771,16 +807,13 @@ template <typename ValueHandler>
 void NLReader<Reader, Handler>::ReadInitialValues() {
   int num_values = reader_.ReadUInt();
   ValueHandler vh(*this);
-  int num_items = vh.num_items();
-  if (num_values > num_items)
+  if (num_values > vh.num_items())
     reader_.ReportReadError("too many initial values");
   reader_.ReadTillEndOfLine();
   for (int i = 0; i < num_values; ++i) {
     int index = reader_.ReadUInt();
-    if (index >= num_items)
-      reader_.ReportReadError("index {} out of bounds", index);
-    double value = reader_.ReadDouble();
-    vh.SetInitialValue(index, value);
+    vh.CheckIndex(index);
+    vh.SetInitialValue(index, reader_.ReadDouble());
     reader_.ReadTillEndOfLine();
   }
 }
@@ -838,11 +871,11 @@ void NLReader<Reader, Handler>::Read() {
       break;
     case 'G':
       // Linear part of an objective expression & gradient sparsity.
-      ReadLinearObjExpr();
+      ReadLinearExpr<ObjHandler>();
       break;
     case 'J':
       // Jacobian sparsity & linear terms in constraints.
-      // TODO: read
+      ReadLinearExpr<ConHandler>();
       break;
     case 'O': {
       // Objective type and nonlinear part of an objective expression.
