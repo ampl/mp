@@ -157,8 +157,9 @@ class TestNLHandler {
   }
 
   void SetFunction(
-      int index, const char *name, int num_args, ampl::func::Type type) {
-    // TODO
+      int index, fmt::StringRef name, int num_args, ampl::func::Type type) {
+    WriteSep().write("f{}: {} {} {};", index,
+                     std::string(name.c_str(), name.size()), num_args, type);
   }
 
   std::string MakeNumericConstant(double value) {
@@ -712,7 +713,7 @@ struct TestNLHandler2 {
   void SetInitialValue(int, double) {}
   void SetInitialDualValue(int, double) {}
 
-  void SetFunction(int, const char *, int, ampl::func::Type) {}
+  void SetFunction(int, fmt::StringRef, int, ampl::func::Type) {}
 
   TestNumericExpr MakeNumericConstant(double) { return TestNumericExpr(); }
   TestVariable MakeVariable(int) { return TestVariable(); }
@@ -867,9 +868,22 @@ TEST(NLTest, ReadInitialDualValues) {
 }
 
 TEST(NLTest, ReadFunction) {
+  EXPECT_READ("f0: foo 2 1;", "F0 1 2 foo\n");
+  EXPECT_READ("f0:  2 1;", "F0 1 2 \n");
+  EXPECT_READ("f0: foo -1 0;", "F0 0 -1 foo\n");
+  EXPECT_READ_ERROR("F-1 0 0 f\n",
+                    "(input):11:2: expected nonnegative integer");
+  EXPECT_READ_ERROR("F9 0 0 f\n",
+                    "(input):11:2: function index 9 out of bounds");
+  EXPECT_READ_ERROR("F0 -1 0 f\n",
+                    "(input):11:4: expected nonnegative integer");
+  EXPECT_READ_ERROR("F0 2 0 f\n", "(input):11:4: invalid function type");
+}
+
+TEST(NLTest, ReadDefinedVars) {
   // TODO
 }
 
-// TODO: test defined vars, suffixes, variable index
+// TODO: test suffixes, variable index
 
 }  // namespace

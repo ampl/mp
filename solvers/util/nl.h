@@ -207,21 +207,43 @@ class TextReader {
   std::string name_;
   int line_;
 
+  // Reads an integer without a sign.
+  // Int: signed or unsigned integer type.
   template <typename Int>
-  typename safeint::MakeUnsigned<Int>::Type DoReadUInt() {
+  bool ReadIntWithoutSign(Int& value) {
     char c = *ptr_;
+    if (c < '0' || c > '9')
+      return false;
     typedef typename safeint::MakeUnsigned<Int>::Type UInt;
-    UInt value = 0;
+    UInt result = 0;
     do {
-      UInt new_value = value * 10 + (c - '0');
-      if (new_value < value)
+      UInt new_result = result * 10 + (c - '0');
+      if (new_result < result)
         ReportReadError("number is too big");
-      value = new_value;
+      result = new_result;
       c = *++ptr_;
     } while (c >= '0' && c <= '9');
-    if (value > std::numeric_limits<Int>::max())
+    if (result > std::numeric_limits<Int>::max())
       ReportReadError("number is too big");
-    return value;
+    value = result;
+    return true;
+  }
+
+  template <typename Int>
+  bool DoReadOptionalInt(Int &value) {
+    SkipSpace();
+    char sign = *ptr_;
+    if (sign == '+' || sign == '-')
+      ++ptr_;
+    typedef typename safeint::MakeUnsigned<Int>::Type UInt;
+    UInt result = 0;
+    if (!ReadIntWithoutSign<UInt>(result))
+      return false;
+    UInt max = std::numeric_limits<Int>::max();
+    if (result > max && !(sign == '-' && result == max + 1))
+      ReportReadError("number is too big");
+    value = sign != '-' ? result : 0 - result;
+    return true;
   }
 
   void DoReportReadError(
@@ -259,37 +281,27 @@ class TextReader {
     DoReportReadError(ptr_, "expected newline");
   }
 
-  template <typename Int>
-  Int ReadUInt() {
-    SkipSpace();
-    char c = *ptr_;
-    if (c < '0' || c > '9')
-      ReportReadError("expected nonnegative integer");
-    return DoReadUInt<Int>();
-  }
-
-  int ReadUInt() { return ReadUInt<int>(); }
+  bool ReadOptionalInt(int &value) { return DoReadOptionalInt(value); }
 
   bool ReadOptionalUInt(int &value) {
     SkipSpace();
-    char c = *ptr_;
-    bool has_value = c >= '0' && c <= '9';
-    if (has_value)
-      value = DoReadUInt<int>();
-    return has_value;
+    return ReadIntWithoutSign(value);
   }
 
   template <typename Int>
   Int ReadInt() {
-    char sign = *ptr_;
-    if (sign == '+' || sign == '-')
-      ++ptr_;
-    typedef typename safeint::MakeUnsigned<Int>::Type UInt;
-    UInt result = ReadUInt<UInt>();
-    UInt max = std::numeric_limits<Int>::max();
-    if (result > max && !(sign == '-' && result == max + 1))
-      ReportReadError("number is too big");
-    return sign != '-' ? result : 0 - result;
+    Int value = 0;
+    if (!DoReadOptionalInt(value))
+      ReportReadError("expected integer");
+    return value;
+  }
+
+  int ReadUInt() {
+    SkipSpace();
+    int value = 0;
+    if (!ReadIntWithoutSign(value))
+      ReportReadError("expected nonnegative integer");
+    return value;
   }
 
 #undef strtod
@@ -318,6 +330,7 @@ class TextReader {
   }
 
   fmt::StringRef ReadString();
+  fmt::StringRef ReadStringLiteral();
 
   // Reads an .nl file header. The header is always in text format, so this
   // function doesn't have a counterpart in BinaryReader.
@@ -451,7 +464,7 @@ class NLReader {
     NLReader &reader_;
 
    public:
-    enum { TYPE = T };
+    static const ItemType TYPE = T;
     explicit ItemHandler(NLReader &r) : reader_(r) {}
   };
 
@@ -590,7 +603,7 @@ typename Handler::NumericExpr
     for (int i = 0; i < num_args; ++i) {
       char c = reader_.ReadChar();
       args[i] = c == 'h' ?
-            handler_.MakeString(reader_.ReadString()) :
+            handler_.MakeString(reader_.ReadStringLiteral()) :
             args[i] = ReadNumericExpr(c);
     }
     return handler_.MakeCall(func_index, ArrayRef<Expr>(&args[0], args.size()));
@@ -823,9 +836,6 @@ void NLReader<Reader, Handler>::Read() {
   for (;;) {
     char c = reader_.ReadChar();
     switch (c) {
-    case '\0':
-      // TODO: check for end of input
-      return;
     case 'C': {
       // Nonlinear part of an algebraic constraint body.
       int index = reader_.ReadUInt();
@@ -833,24 +843,6 @@ void NLReader<Reader, Handler>::Read() {
         reader_.ReportReadError("constraint index {} out of bounds", index);
       reader_.ReadTillEndOfLine();
       handler_.SetCon(index, ReadNumericExpr());
-      break;
-    }
-    case 'F': {
-      int index = reader_.ReadUInt();
-      if (index >= header_.num_funcs)
-        reader_.ReportReadError("function index {} out of bounds", index);
-      int type = reader_.ReadUInt();
-      if (type != func::NUMERIC && type != func::SYMBOLIC) {
-        if (type < 0 || type > 6)
-          reader_.ReportReadError("invalid function type");
-        // Ignore function of unsupported type.
-        break;
-      }
-      int num_args = reader_.ReadUInt();
-      const char *name = 0; // TODO: read name
-      reader_.ReadTillEndOfLine();
-      handler_.SetFunction(index, name, num_args,
-                           static_cast<func::Type>(type));
       break;
     }
     case 'L': {
@@ -862,6 +854,31 @@ void NLReader<Reader, Handler>::Read() {
       }
       reader_.ReadTillEndOfLine();
       handler_.SetLogicalCon(index, ReadLogicalExpr());
+      break;
+    }
+    case 'O': {
+      // Objective type and nonlinear part of an objective expression.
+      int index = reader_.ReadUInt();
+      if (index >= header_.num_objs)
+        reader_.ReportReadError("objective index {} out of bounds", index);
+      int obj_type = reader_.ReadUInt();
+      reader_.ReadTillEndOfLine();
+      handler_.SetObj(index, obj_type != 0 ? obj::MAX : obj::MIN,
+                      ReadNumericExpr());
+      break;
+    }
+    case 'F': {
+      int index = reader_.ReadUInt();
+      if (index >= header_.num_funcs)
+        reader_.ReportReadError("function index {} out of bounds", index);
+      int type = reader_.ReadUInt();
+      if (type != func::NUMERIC && type != func::SYMBOLIC)
+        reader_.ReportReadError("invalid function type");
+      int num_args = reader_.template ReadInt<int>();
+      fmt::StringRef name = reader_.ReadString();
+      reader_.ReadTillEndOfLine();
+      handler_.SetFunction(index, name, num_args,
+                           static_cast<func::Type>(type));
       break;
     }
     case 'V':
@@ -877,28 +894,17 @@ void NLReader<Reader, Handler>::Read() {
       // Jacobian sparsity & linear terms in constraints.
       ReadLinearExpr<ConHandler>();
       break;
-    case 'O': {
-      // Objective type and nonlinear part of an objective expression.
-      int index = reader_.ReadUInt();
-      if (index >= header_.num_objs)
-        reader_.ReportReadError("objective index {} out of bounds", index);
-      int obj_type = reader_.ReadUInt();
-      reader_.ReadTillEndOfLine();
-      handler_.SetObj(index, obj_type != 0 ? obj::MAX : obj::MIN,
-                      ReadNumericExpr());
-      break;
-    }
     case 'S':
       // Suffix values.
       // TODO: read suffix
       break;
-    case 'r':
-      // Bounds on algebraic constraint bodies ("ranges").
-      ReadBounds<ConHandler>();
-      break;
     case 'b':
       // Bounds on variables.
       ReadBounds<VarHandler>();
+      break;
+    case 'r':
+      // Bounds on algebraic constraint bodies ("ranges").
+      ReadBounds<ConHandler>();
       break;
     case 'K':
       // Jacobian sparsity & linear constraint term matrix column sizes
@@ -918,6 +924,9 @@ void NLReader<Reader, Handler>::Read() {
       // Dual initial guess.
       ReadInitialValues<ConHandler>();
       break;
+    case '\0':
+      // TODO: check for end of input
+      return;
     default:
       reader_.ReportReadError("invalid segment type '{}'", c);
     }

@@ -86,6 +86,15 @@ void TextReader::DoReportReadError(
 }
 
 fmt::StringRef TextReader::ReadString() {
+  SkipSpace();
+  const char *start = ptr_;
+  while (!std::isspace(*ptr_) && *ptr_)
+    ++ptr_;
+  std::size_t length = ptr_ - start;
+  return fmt::StringRef(length != 0 ? start : 0, length);
+}
+
+fmt::StringRef TextReader::ReadStringLiteral() {
   int length = ReadUInt();
   if (*ptr_ != ':')
     DoReportReadError(ptr_, "expected ':'");
@@ -124,8 +133,7 @@ void TextReader::ReadHeader(NLHeader &header) {
   if (header.num_options > MAX_NL_OPTIONS)
     ReportReadError("too many options");
   for (int i = 0; i < header.num_options; ++i) {
-    // TODO: can option values be negative?
-    if (!ReadOptionalUInt(header.options[i]))
+    if (!ReadOptionalInt(header.options[i]))
       break;
   }
   if (header.options[VBTOL_OPTION] == READ_VBTOL)
