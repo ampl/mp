@@ -446,8 +446,48 @@ class NLReader {
   // Reads the linear part of an objective expression.
   void ReadLinearObjExpr();
 
+  enum { VAR, CON };
+
+  class VarHandler {
+   private:
+    NLReader &reader_;
+
+   public:
+    enum { TYPE = VAR };
+
+    explicit VarHandler(NLReader &r) : reader_(r) {}
+
+    int num_items() const { return reader_.header_.num_vars; }
+
+    void SetBounds(int index, double lb, double ub) {
+      reader_.handler_.SetVarBounds(index, lb, ub);
+    }
+    void SetInitialValue(int index, double value) {
+      reader_.handler_.SetInitialValue(index, value);
+    }
+  };
+
+  class ConHandler {
+   private:
+    NLReader &reader_;
+
+   public:
+    enum { TYPE = CON };
+
+    explicit ConHandler(NLReader &r) : reader_(r) {}
+
+    int num_items() const { return reader_.header_.num_algebraic_cons; }
+
+    void SetBounds(int index, double lb, double ub) {
+      reader_.handler_.SetConBounds(index, lb, ub);
+    }
+    void SetInitialValue(int index, double value) {
+      reader_.handler_.SetInitialDualValue(index, value);
+    }
+  };
+
   // Reads variable or constraint bounds.
-  template <bool VAR>
+  template <typename BoundHandler>
   void ReadBounds();
 
   // Reads column sizes, numbers of nonzeros in the first num_var − 1
@@ -456,7 +496,7 @@ class NLReader {
   void ReadColumnSizes();
 
   // Reads initial values for primal or dual variables.
-  template <bool DUAL>
+  template <typename ValueHandler>
   void ReadInitialValues();
 
  public:
@@ -650,7 +690,7 @@ void NLReader<Reader, Handler>::ReadLinearObjExpr() {
 }
 
 template <typename Reader, typename Handler>
-template <bool VAR>
+template <typename BoundHandler>
 void NLReader<Reader, Handler>::ReadBounds() {
   enum BoundType {
     RANGE,  // Both lower and upper bounds: l <= body <= u.
@@ -662,7 +702,8 @@ void NLReader<Reader, Handler>::ReadBounds() {
   };
   reader_.ReadTillEndOfLine();
   double lb = 0, ub = 0;
-  int num_bounds = VAR ? header_.num_vars : header_.num_algebraic_cons;
+  BoundHandler bh(*this);
+  int num_bounds = bh.num_items();
   double infinity = std::numeric_limits<double>::infinity();
   for (int i = 0; i < num_bounds; ++i) {
     switch (reader_.ReadUInt()) {
@@ -686,7 +727,7 @@ void NLReader<Reader, Handler>::ReadBounds() {
       lb = ub = reader_.ReadDouble();
       break;
     case COMPL:
-      if (!VAR) {
+      if (BoundHandler::TYPE == CON) {
         int flags = reader_.template ReadInt<int>();
         int var_index = reader_.ReadUInt() - 1;
         if (var_index < 0 || var_index >= header_.num_vars) {
@@ -703,10 +744,7 @@ void NLReader<Reader, Handler>::ReadBounds() {
       reader_.ReportReadError("invalid bound type");
     }
     reader_.ReadTillEndOfLine();
-    if (VAR)
-      handler_.SetVarBounds(i, lb, ub);
-    else
-      handler_.SetConBounds(i, lb, ub);
+    bh.SetBounds(i, lb, ub);
   }
 }
 
@@ -729,10 +767,11 @@ void NLReader<Reader, Handler>::ReadColumnSizes() {
 }
 
 template <typename Reader, typename Handler>
-template <bool DUAL>
+template <typename ValueHandler>
 void NLReader<Reader, Handler>::ReadInitialValues() {
   int num_values = reader_.ReadUInt();
-  int num_items = DUAL ? header_.num_algebraic_cons : header_.num_vars;
+  ValueHandler vh(*this);
+  int num_items = vh.num_items();
   if (num_values > num_items)
     reader_.ReportReadError("too many initial values");
   reader_.ReadTillEndOfLine();
@@ -741,10 +780,7 @@ void NLReader<Reader, Handler>::ReadInitialValues() {
     if (index >= num_items)
       reader_.ReportReadError("index {} out of bounds", index);
     double value = reader_.ReadDouble();
-    if (DUAL)
-      handler_.SetInitialDualValue(index, value);
-    else
-      handler_.SetInitialValue(index, value);
+    vh.SetInitialValue(index, value);
     reader_.ReadTillEndOfLine();
   }
 }
@@ -825,11 +861,11 @@ void NLReader<Reader, Handler>::Read() {
       break;
     case 'r':
       // Bounds on algebraic constraint bodies ("ranges").
-      ReadBounds<false>();
+      ReadBounds<ConHandler>();
       break;
     case 'b':
       // Bounds on variables.
-      ReadBounds<true>();
+      ReadBounds<VarHandler>();
       break;
     case 'K':
       // Jacobian sparsity & linear constraint term matrix column sizes
@@ -843,11 +879,11 @@ void NLReader<Reader, Handler>::Read() {
       break;
     case 'x':
       // Primal initial guess.
-      ReadInitialValues<false>();
+      ReadInitialValues<VarHandler>();
       break;
     case 'd':
       // Dual initial guess.
-      ReadInitialValues<true>();
+      ReadInitialValues<ConHandler>();
       break;
     default:
       reader_.ReportReadError("invalid segment type '{}'", c);
