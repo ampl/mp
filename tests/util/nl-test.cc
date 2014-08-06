@@ -112,6 +112,10 @@ class TestNLHandler {
     }
   };
 
+  LinearExprHandler GetLinearVarHandler(int index, int num_terms) {
+    WriteSep().write("v{} {}: ", index, num_terms);
+    return LinearExprHandler(log);
+  }
   LinearExprHandler GetLinearObjHandler(int index, int num_terms) {
     WriteSep().write("o{} {}: ", index, num_terms);
     return LinearExprHandler(log);
@@ -133,6 +137,10 @@ class TestNLHandler {
   ColumnSizeHandler GetColumnSizeHandler() {
     log << "sizes:";
     return ColumnSizeHandler(log);
+  }
+
+  void SetVar(int index, std::string expr, int position) {
+    WriteSep().write("v{}/{} = {};", index, position, expr);
   }
 
   void SetObj(int index, ampl::obj::Type type, std::string expr) {
@@ -495,6 +503,7 @@ NLHeader MakeHeader() {
   header.num_algebraic_cons = 7;
   header.num_logical_cons = 8;
   header.num_funcs = 9;
+  header.num_common_exprs_in_objs = 1;
   return header;
 }
 
@@ -539,9 +548,10 @@ TEST(NLTest, ReadNumericConstant) {
 }
 
 TEST(NLTest, ReadVariable) {
-  // TODO: test variable index out of bounds
   EXPECT_READ("c0: v4;", "C0\nv4\n");
+  EXPECT_READ("c0: v5;", "C0\nv5\n");
   EXPECT_READ_ERROR("C0\nv-1\n", "(input):12:2: expected nonnegative integer");
+  EXPECT_READ_ERROR("C0\nv6\n", "(input):12:2: variable index 6 out of bounds");
 }
 
 TEST(NLTest, ReadUnaryExpr) {
@@ -694,6 +704,9 @@ struct TestNLHandler2 {
   struct LinearExprHandler {
     void AddTerm(int, double) {}
   };
+  LinearExprHandler GetLinearVarHandler(int, int) {
+    return LinearExprHandler();
+  }
   LinearExprHandler GetLinearObjHandler(int, int) {
     return LinearExprHandler();
   }
@@ -706,6 +719,7 @@ struct TestNLHandler2 {
   };
   ColumnSizeHandler GetColumnSizeHandler() { return ColumnSizeHandler(); }
 
+  void SetVar(int, TestNumericExpr, int) {}
   void SetObj(int, ampl::obj::Type, TestNumericExpr) {}
   void SetCon(int, TestNumericExpr) {}
   void SetLogicalCon(int, TestLogicalExpr) {}
@@ -823,6 +837,10 @@ TEST(NLTest, ReadLinearObjExpr) {
     "(input):11:4: number of linear terms 0 out of bounds");
   EXPECT_READ_ERROR("G0 6",
     "(input):11:4: number of linear terms 6 out of bounds");
+  EXPECT_READ_ERROR("G0 1\n-1 0\n",
+    "(input):12:1: expected nonnegative integer");
+  EXPECT_READ_ERROR("G0 1\n6 0\n",
+    "(input):12:1: variable index 6 out of bounds");
 }
 
 TEST(NLTest, ReadLinearConExpr) {
@@ -835,6 +853,10 @@ TEST(NLTest, ReadLinearConExpr) {
     "(input):11:4: number of linear terms 0 out of bounds");
   EXPECT_READ_ERROR("J0 6",
     "(input):11:4: number of linear terms 6 out of bounds");
+  EXPECT_READ_ERROR("J0 1\n-1 0\n",
+    "(input):12:1: expected nonnegative integer");
+  EXPECT_READ_ERROR("J0 1\n6 0\n",
+    "(input):12:1: variable index 6 out of bounds");
 }
 
 TEST(NLTest, ReadJacobianColumns) {
@@ -881,9 +903,14 @@ TEST(NLTest, ReadFunction) {
 }
 
 TEST(NLTest, ReadDefinedVars) {
-  // TODO
+  EXPECT_READ("v5/1 = b2(v0, 42);", "V5 0 1\no2\nv0\nn42\n");
+  EXPECT_READ("v5 2: 2 * v1 + 3 * v0; v5/1 = 0;", "V5 2 1\n1 2.0\n0 3\nn0\n");
+  EXPECT_READ_ERROR("V4 0 1\nv0\n",
+                    "(input):11:2: defined variable index 4 out of bounds");
+  EXPECT_READ_ERROR("V6 0 1\nv0\n",
+                    "(input):11:2: defined variable index 6 out of bounds");
 }
 
-// TODO: test suffixes, variable index
+// TODO: test suffixes
 
 }  // namespace

@@ -57,8 +57,8 @@ fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h) {
   w.write(" {} {}\n", h.max_con_name_len, h.max_var_name_len);
   w.write(" {} {} {} {} {}\n",
       h.num_common_exprs_in_both, h.num_common_exprs_in_cons,
-      h.num_common_exprs_in_objs, h.num_common_exprs_in_cons1,
-      h.num_common_exprs_in_objs1);
+      h.num_common_exprs_in_objs, h.num_common_exprs_in_single_cons,
+      h.num_common_exprs_in_single_objs);
   return w;
 }
 
@@ -218,8 +218,8 @@ void TextReader::ReadHeader(NLHeader &header) {
   header.num_common_exprs_in_both = ReadUInt();
   header.num_common_exprs_in_cons = ReadUInt();
   header.num_common_exprs_in_objs = ReadUInt();
-  header.num_common_exprs_in_cons1 = ReadUInt();
-  header.num_common_exprs_in_objs1 = ReadUInt();
+  header.num_common_exprs_in_single_cons = ReadUInt();
+  header.num_common_exprs_in_single_objs = ReadUInt();
   ReadTillEndOfLine();
 }
 }  // namespace ampl

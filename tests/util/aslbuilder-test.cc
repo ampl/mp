@@ -502,10 +502,10 @@ void CheckHeader(const NLHeader &h) {
   EXPECT_EQ(h.num_common_exprs_in_both, actual_header.num_common_exprs_in_both);
   EXPECT_EQ(h.num_common_exprs_in_cons, actual_header.num_common_exprs_in_cons);
   EXPECT_EQ(h.num_common_exprs_in_objs, actual_header.num_common_exprs_in_objs);
-  EXPECT_EQ(h.num_common_exprs_in_cons1,
-      actual_header.num_common_exprs_in_cons1);
-  EXPECT_EQ(h.num_common_exprs_in_objs1,
-      actual_header.num_common_exprs_in_objs1);
+  EXPECT_EQ(h.num_common_exprs_in_single_cons,
+      actual_header.num_common_exprs_in_single_cons);
+  EXPECT_EQ(h.num_common_exprs_in_single_objs,
+      actual_header.num_common_exprs_in_single_objs);
 
   if (h.num_vars == 0)
     return;  // jac0dim fails if there are no vars
@@ -561,8 +561,8 @@ void CheckHeader(const NLHeader &h) {
   EXPECT_EQ(asl->i.comb_, actual_header.num_common_exprs_in_both);
   EXPECT_EQ(asl->i.comc_, actual_header.num_common_exprs_in_cons);
   EXPECT_EQ(asl->i.como_, actual_header.num_common_exprs_in_objs);
-  EXPECT_EQ(asl->i.comc1_, actual_header.num_common_exprs_in_cons1);
-  EXPECT_EQ(asl->i.como1_, actual_header.num_common_exprs_in_objs1);
+  EXPECT_EQ(asl->i.comc1_, actual_header.num_common_exprs_in_single_cons);
+  EXPECT_EQ(asl->i.como1_, actual_header.num_common_exprs_in_single_objs);
 
   ASL_free(&asl);
 }

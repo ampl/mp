@@ -249,8 +249,8 @@ void ASLBuilder::InitASL(const char *stub, const NLHeader &h) {
   info.comb_ = h.num_common_exprs_in_both;
   info.comc_ = h.num_common_exprs_in_cons;
   info.como_ = h.num_common_exprs_in_objs;
-  info.comc1_ = h.num_common_exprs_in_cons1;
-  info.como1_ = h.num_common_exprs_in_objs1;
+  info.comc1_ = h.num_common_exprs_in_single_cons;
+  info.como1_ = h.num_common_exprs_in_single_objs;
 
   info.nclcon_ = info.n_con_ + info.n_lcon_;
 

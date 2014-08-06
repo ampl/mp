@@ -192,8 +192,14 @@ struct NLHeader {
   int num_common_exprs_in_both;
   int num_common_exprs_in_cons;
   int num_common_exprs_in_objs;
-  int num_common_exprs_in_cons1;
-  int num_common_exprs_in_objs1;
+
+  // Number of common expressions that only appear in a single constraint
+  // and don't appear in objectives.
+  int num_common_exprs_in_single_cons;
+
+  // Number of common expressions that only appear in a single objective
+  // and don't appear in constraints.
+  int num_common_exprs_in_single_objs;
 };
 
 // Writes NLHeader in the .nl file format.
@@ -345,6 +351,7 @@ class NLReader {
   Reader &reader_;
   NLHeader &header_;
   Handler &handler_;
+  int total_num_vars_;  // Total number of variables including defined ones.
 
   // Minimum number of arguments for an iterated expression that has a
   // binary counterpart. Examples: sum (+), forall (&&), exists (||).
@@ -357,11 +364,15 @@ class NLReader {
   double ReadConstant(char code);
   double ReadConstant() { return ReadConstant(reader_.ReadChar()); }
 
+  int ReadVarIndex() {
+    int index = reader_.ReadUInt();
+    if (index >= total_num_vars_)
+      reader_.ReportReadError("variable index {} out of bounds", index);
+    return index;
+  }
+
   Variable DoReadVariable() {
-    // TODO: variable index can be greater than num_vars
-    int var_index = reader_.ReadUInt();
-    if (var_index >= header_.num_vars)
-      reader_.ReportReadError("variable index {} out of bounds", var_index);
+    int var_index = ReadVarIndex();
     reader_.ReadTillEndOfLine();
     return handler_.MakeVariable(var_index);
   }
@@ -447,15 +458,6 @@ class NLReader {
   LogicalExpr ReadLogicalExpr();
   LogicalExpr ReadLogicalExpr(int opcode);
 
-  void ReadDefinedVar() {
-    int var_index = reader_.ReadUInt();
-    int num_linear_terms = reader_.ReadUInt();
-    int where = reader_.ReadUInt();
-    // TODO: check above & read linear part
-    ReadNumericExpr();
-    // TODO: pass to handler
-  }
-
   enum ItemType { VAR, OBJ, CON };
 
   template <ItemType T>
@@ -534,6 +536,9 @@ class NLReader {
   template <typename LinearHandler>
   void ReadLinearExpr();
 
+  void ReadLinearExpr(
+      int num_terms, typename Handler::LinearExprHandler linear_expr);
+
   // Reads variable or constraint bounds.
   template <typename BoundHandler>
   void ReadBounds();
@@ -549,7 +554,7 @@ class NLReader {
 
  public:
   NLReader(Reader &reader, NLHeader &header, Handler &handler)
-    : reader_(reader), header_(header), handler_(handler) {}
+    : reader_(reader), header_(header), handler_(handler), total_num_vars_(0) {}
 
   void Read();
 };
@@ -728,10 +733,15 @@ void NLReader<Reader, Handler>::ReadLinearExpr() {
           "number of linear terms {} out of bounds", num_terms);
   }
   reader_.ReadTillEndOfLine();
-  typename Handler::LinearExprHandler
-      linear_expr = lh.GetLinearExprHandler(index, num_terms);
+  ReadLinearExpr(num_terms,
+                 LinearHandler(*this).GetLinearExprHandler(index, num_terms));
+}
+
+template <typename Reader, typename Handler>
+void NLReader<Reader, Handler>::ReadLinearExpr(
+    int num_terms, typename Handler::LinearExprHandler linear_expr) {
   for (int i = 0; i < num_terms; ++i) {
-    int var_index = reader_.ReadUInt();
+    int var_index = ReadVarIndex();
     double coef = reader_.ReadDouble();
     reader_.ReadTillEndOfLine();
     linear_expr.AddTerm(var_index, coef);
@@ -833,6 +843,12 @@ void NLReader<Reader, Handler>::ReadInitialValues() {
 
 template <typename Reader, typename Handler>
 void NLReader<Reader, Handler>::Read() {
+  total_num_vars_ = header_.num_vars +
+      header_.num_common_exprs_in_both +
+      header_.num_common_exprs_in_cons +
+      header_.num_common_exprs_in_objs +
+      header_.num_common_exprs_in_single_cons +
+      header_.num_common_exprs_in_single_objs;
   for (;;) {
     char c = reader_.ReadChar();
     switch (c) {
@@ -867,6 +883,24 @@ void NLReader<Reader, Handler>::Read() {
                       ReadNumericExpr());
       break;
     }
+    case 'V': {
+      // Defined variable definition (must precede V, C, L, O segments
+      // where used).
+      int var_index = reader_.ReadUInt();
+      if (var_index < header_.num_vars || var_index >= total_num_vars_) {
+        reader_.ReportReadError(
+              "defined variable index {} out of bounds", var_index);
+      }
+      int num_linear_terms = reader_.ReadUInt();
+      int position = reader_.ReadUInt();
+      reader_.ReadTillEndOfLine();
+      if (num_linear_terms != 0) {
+        ReadLinearExpr(num_linear_terms,
+            handler_.GetLinearVarHandler(var_index, num_linear_terms));
+      }
+      handler_.SetVar(var_index, ReadNumericExpr(), position);
+      break;
+    }
     case 'F': {
       int index = reader_.ReadUInt();
       if (index >= header_.num_funcs)
@@ -881,11 +915,6 @@ void NLReader<Reader, Handler>::Read() {
                            static_cast<func::Type>(type));
       break;
     }
-    case 'V':
-      // Defined variable definition (must precede V, C, L, O segments
-      // where used).
-      ReadDefinedVar();
-      break;
     case 'G':
       // Linear part of an objective expression & gradient sparsity.
       ReadLinearExpr<ObjHandler>();
@@ -912,7 +941,7 @@ void NLReader<Reader, Handler>::Read() {
       ReadColumnSizes<false>();
       break;
     case 'k':
-      // Cumulative Jacobian sparsity & linear constraint term matrix column
+      // Jacobian sparsity & linear constraint term matrix cumulative column
       // sizes (must precede all J segments).
       ReadColumnSizes<true>();
       break;
