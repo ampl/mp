@@ -23,9 +23,7 @@
 #include <climits>
 
 #include "gtest/gtest.h"
-#include "solvers/util/aslbuilder.h"
 #include "solvers/util/nl.h"
-#include "solvers/util/problem.h"
 #include "tests/util.h"
 
 using ampl::NLHeader;
@@ -410,145 +408,6 @@ TEST(NLTest, ReadAMPLVBTol) {
   EXPECT_EQ(4.2, ReadHeader(0, "g2 0 3 4.2").ampl_vbtol);
   EXPECT_EQ(0, ReadHeader(0, "g2 0 0 4.2").ampl_vbtol);
   EXPECT_EQ(0, ReadHeader(0, "g2 0 3").ampl_vbtol);
-}
-
-void CheckHeader(const NLHeader &h) {
-  std::string nl = FormatHeader(h);
-  NLHeader actual_header = ReadHeader(nl);
-
-  EXPECT_EQ(h.format, actual_header.format);
-
-  EXPECT_EQ(h.num_options, actual_header.num_options);
-  for (int i = 0; i < ampl::MAX_NL_OPTIONS; ++i)
-    EXPECT_EQ(h.options[i], actual_header.options[i]);
-  EXPECT_EQ(h.ampl_vbtol, actual_header.ampl_vbtol);
-
-  EXPECT_EQ(h.num_vars, actual_header.num_vars);
-  EXPECT_EQ(h.num_algebraic_cons, actual_header.num_algebraic_cons);
-  EXPECT_EQ(h.num_objs, actual_header.num_objs);
-  EXPECT_EQ(h.num_ranges, actual_header.num_ranges);
-  EXPECT_EQ(h.num_eqns, actual_header.num_eqns);
-  EXPECT_EQ(h.num_logical_cons, actual_header.num_logical_cons);
-
-  EXPECT_EQ(h.num_nl_cons, actual_header.num_nl_cons);
-  EXPECT_EQ(h.num_nl_objs, actual_header.num_nl_objs);
-  EXPECT_EQ(h.num_compl_conds, actual_header.num_compl_conds);
-  EXPECT_EQ(h.num_nl_compl_conds, actual_header.num_nl_compl_conds);
-  EXPECT_EQ(h.num_compl_dbl_ineqs, actual_header.num_compl_dbl_ineqs);
-  EXPECT_EQ(h.num_compl_vars_with_nz_lb,
-      actual_header.num_compl_vars_with_nz_lb);
-
-  EXPECT_EQ(h.num_nl_net_cons, actual_header.num_nl_net_cons);
-  EXPECT_EQ(h.num_linear_net_cons, actual_header.num_linear_net_cons);
-
-  EXPECT_EQ(h.num_nl_vars_in_cons, actual_header.num_nl_vars_in_cons);
-  EXPECT_EQ(h.num_nl_vars_in_objs, actual_header.num_nl_vars_in_objs);
-  EXPECT_EQ(h.num_nl_vars_in_both, actual_header.num_nl_vars_in_both);
-
-  EXPECT_EQ(h.num_linear_net_vars, actual_header.num_linear_net_vars);
-  EXPECT_EQ(h.num_funcs, actual_header.num_funcs);
-  EXPECT_EQ(h.flags, actual_header.flags);
-
-  EXPECT_EQ(h.num_linear_binary_vars, actual_header.num_linear_binary_vars);
-  EXPECT_EQ(h.num_linear_integer_vars, actual_header.num_linear_integer_vars);
-  EXPECT_EQ(h.num_nl_integer_vars_in_both,
-      actual_header.num_nl_integer_vars_in_both);
-  EXPECT_EQ(h.num_nl_integer_vars_in_cons,
-      actual_header.num_nl_integer_vars_in_cons);
-  EXPECT_EQ(h.num_nl_integer_vars_in_objs,
-      actual_header.num_nl_integer_vars_in_objs);
-
-  EXPECT_EQ(h.num_con_nonzeros, actual_header.num_con_nonzeros);
-  EXPECT_EQ(h.num_obj_nonzeros, actual_header.num_obj_nonzeros);
-
-  EXPECT_EQ(h.max_con_name_len, actual_header.max_con_name_len);
-  EXPECT_EQ(h.max_var_name_len, actual_header.max_var_name_len);
-
-  EXPECT_EQ(h.num_common_exprs_in_both, actual_header.num_common_exprs_in_both);
-  EXPECT_EQ(h.num_common_exprs_in_cons, actual_header.num_common_exprs_in_cons);
-  EXPECT_EQ(h.num_common_exprs_in_objs, actual_header.num_common_exprs_in_objs);
-  EXPECT_EQ(h.num_common_exprs_in_cons1,
-      actual_header.num_common_exprs_in_cons1);
-  EXPECT_EQ(h.num_common_exprs_in_objs1,
-      actual_header.num_common_exprs_in_objs1);
-
-  if (h.num_vars == 0)
-    return;  // jac0dim fails if there are no vars
-
-  WriteFile("test.nl", nl);
-  char stub[] = "test.nl";
-  ASL *asl = ASL_alloc(ASL_read_fg);
-  jac0dim_ASL(asl, stub, static_cast<int>(strlen(stub)));
-  std::remove(stub);
-
-  EXPECT_EQ(asl->i.ampl_options_[0], actual_header.num_options);
-  for (int i = 0; i < ampl::MAX_NL_OPTIONS; ++i)
-    EXPECT_EQ(asl->i.ampl_options_[i + 1], actual_header.options[i]);
-  EXPECT_EQ(asl->i.ampl_vbtol_, actual_header.ampl_vbtol);
-
-  EXPECT_EQ(asl->i.n_var_, actual_header.num_vars);
-  EXPECT_EQ(asl->i.n_con_, actual_header.num_algebraic_cons);
-  EXPECT_EQ(asl->i.n_obj_, actual_header.num_objs);
-  EXPECT_EQ(asl->i.nranges_, actual_header.num_ranges);
-  EXPECT_EQ(asl->i.n_eqn_, actual_header.num_eqns);
-  EXPECT_EQ(asl->i.n_lcon_, actual_header.num_logical_cons);
-
-  EXPECT_EQ(asl->i.nlc_, actual_header.num_nl_cons);
-  EXPECT_EQ(asl->i.nlo_, actual_header.num_nl_objs);
-  EXPECT_EQ(asl->i.n_cc_, actual_header.num_compl_conds);
-  EXPECT_EQ(asl->i.nlcc_, actual_header.num_nl_compl_conds);
-  EXPECT_EQ(asl->i.ndcc_, actual_header.num_compl_dbl_ineqs);
-  EXPECT_EQ(asl->i.nzlb_, actual_header.num_compl_vars_with_nz_lb);
-
-  EXPECT_EQ(asl->i.nlnc_, actual_header.num_nl_net_cons);
-  EXPECT_EQ(asl->i.lnc_, actual_header.num_linear_net_cons);
-
-  EXPECT_EQ(asl->i.nlvc_, actual_header.num_nl_vars_in_cons);
-  EXPECT_EQ(asl->i.nlvo_, actual_header.num_nl_vars_in_objs);
-  EXPECT_EQ(asl->i.nlvb_, actual_header.num_nl_vars_in_both);
-
-  EXPECT_EQ(asl->i.nwv_, actual_header.num_linear_net_vars);
-  EXPECT_EQ(asl->i.nfunc_, actual_header.num_funcs);
-  EXPECT_EQ(asl->i.flags, actual_header.flags);
-
-  EXPECT_EQ(asl->i.nbv_, actual_header.num_linear_binary_vars);
-  EXPECT_EQ(asl->i.niv_, actual_header.num_linear_integer_vars);
-  EXPECT_EQ(asl->i.nlvbi_, actual_header.num_nl_integer_vars_in_both);
-  EXPECT_EQ(asl->i.nlvci_, actual_header.num_nl_integer_vars_in_cons);
-  EXPECT_EQ(asl->i.nlvoi_, actual_header.num_nl_integer_vars_in_objs);
-
-  EXPECT_EQ(asl->i.nzc_, actual_header.num_con_nonzeros);
-  EXPECT_EQ(asl->i.nzo_, actual_header.num_obj_nonzeros);
-
-  EXPECT_EQ(asl->i.maxrownamelen_, actual_header.max_con_name_len);
-  EXPECT_EQ(asl->i.maxcolnamelen_, actual_header.max_var_name_len);
-
-  EXPECT_EQ(asl->i.comb_, actual_header.num_common_exprs_in_both);
-  EXPECT_EQ(asl->i.comc_, actual_header.num_common_exprs_in_cons);
-  EXPECT_EQ(asl->i.como_, actual_header.num_common_exprs_in_objs);
-  EXPECT_EQ(asl->i.comc1_, actual_header.num_common_exprs_in_cons1);
-  EXPECT_EQ(asl->i.como1_, actual_header.num_common_exprs_in_objs1);
-
-  ASL_free(&asl);
-}
-
-TEST(NLTest, ReadFullHeader) {
-  NLHeader header = {
-    NLHeader::BINARY,
-    9, {2, 3, 5, 7, 11, 13, 17, 19, 23}, 1.23,
-    29, 47, 37, 41, 43, 31,
-    53, 59, 67, 61, 71, 73,
-    79, 83,
-    89, 97, 101,
-    103, 107, 109,
-    113, 127, 131, 137, 139,
-    149, 151,
-    157, 163,
-    167, 173, 179, 181, 191
-  };
-  CheckHeader(header);
-  NLHeader zero_header = {};
-  CheckHeader(zero_header);
 }
 
 TEST(NLTest, NumComplDblIneq) {
@@ -1007,6 +866,10 @@ TEST(NLTest, ReadInitialDualValues) {
                     "(input):13:1: expected nonnegative integer");
 }
 
-// TODO: test reading functions, defined vars, suffixes
+TEST(NLTest, ReadFunction) {
+  // TODO
+}
+
+// TODO: test defined vars, suffixes, variable index
 
 }  // namespace
