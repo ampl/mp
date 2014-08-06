@@ -66,7 +66,7 @@ TextReader::TextReader(fmt::StringRef data, fmt::StringRef name)
 : ptr_(data.c_str()), end_(ptr_ + data.size()),
   line_start_(ptr_), token_(ptr_), name_(name), line_(1) {}
 
-void TextReader::DoReportParseError(
+void TextReader::DoReportReadError(
     const char *loc, fmt::StringRef format_str, const fmt::ArgList &args) {
   int line = line_;
   const char *line_start = line_start_;
@@ -81,15 +81,14 @@ void TextReader::DoReportParseError(
   int column = static_cast<int>(loc - line_start + 1);
   fmt::Writer w;
   w.write(format_str, args);
-  throw ampl::ParseError(name_, line, column,
-      fmt::format("{}:{}:{}: {}", name_, line, column,
-          fmt::StringRef(w.c_str(), w.size())));
+  throw ReadError(name_, line, column,
+      fmt::format("{}:{}:{}: {}", name_, line, column, w.c_str()));
 }
 
 fmt::StringRef TextReader::ReadString() {
   int length = ReadUInt();
   if (*ptr_ != ':')
-    DoReportParseError(ptr_, "expected ':'");
+    DoReportReadError(ptr_, "expected ':'");
   ++ptr_;
   const char *start = ptr_;
   for (int i = 0; i < length; ++i, ++ptr_) {
@@ -98,11 +97,11 @@ fmt::StringRef TextReader::ReadString() {
       line_start_ = ptr_  + 1;
       ++line_;
     } else if (c == 0 && ptr_ == end_) {
-      DoReportParseError(ptr_, "unexpected end of file in string");
+      DoReportReadError(ptr_, "unexpected end of file in string");
     }
   }
   if (*ptr_ != '\n')
-    DoReportParseError(ptr_, "expected newline");
+    DoReportReadError(ptr_, "expected newline");
   ++ptr_;
   return fmt::StringRef(length != 0 ? start : 0, length);
 }
@@ -116,14 +115,14 @@ void TextReader::ReadHeader(NLHeader &header) {
     header.format = NLHeader::BINARY;
     break;
   default:
-    ReportParseError("expected format specifier");
+    ReportReadError("expected format specifier");
     break;
   }
 
   // Read options.
   ReadOptionalUInt(header.num_options);
   if (header.num_options > MAX_NL_OPTIONS)
-    ReportParseError("too many options");
+    ReportReadError("too many options");
   for (int i = 0; i < header.num_options; ++i) {
     // TODO: can option values be negative?
     if (!ReadOptionalUInt(header.options[i]))
@@ -179,7 +178,7 @@ void TextReader::ReadHeader(NLHeader &header) {
       swap_bytes = arith > 0 && arith + Arith_Kind_ASL == 3;
 #endif
       if (!swap_bytes)
-        ReportParseError("unrecognized binary format");
+        ReportReadError("unrecognized binary format");
       header.format = NLHeader::BINARY_SWAPPED;
       // TODO: swap bytes
     }

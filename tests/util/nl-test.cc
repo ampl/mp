@@ -29,8 +29,8 @@
 #include "tests/util.h"
 
 using ampl::NLHeader;
+using ampl::ReadError;
 using ampl::ReadNLString;
-using ampl::ParseError;
 
 namespace {
 
@@ -61,12 +61,13 @@ class TestNLHandler {
 
   void WriteBounds(char type, int index, double lb, double ub) {
     WriteSep();
-    if (lb != -AMPL_INFINITY && lb != ub)
+    double infinity = std::numeric_limits<double>::infinity();
+    if (lb != -infinity && lb != ub)
       log << lb << " <= ";
     log << type << index;
     if (lb == ub)
       log << " = " << ub;
-    else if (ub != AMPL_INFINITY)
+    else if (ub != infinity)
       log << " <= " << ub;
     log << ';';
   }
@@ -143,6 +144,14 @@ class TestNLHandler {
 
   void SetLogicalCon(int index, std::string expr) {
     WriteSep() << "l" << index << ": " << expr << ";";
+  }
+
+  void SetInitialValue(int var_index, double value) {
+    WriteSep().write("v{} := {};", var_index, value);
+  }
+
+  void SetInitialDualValue(int con_index, double value) {
+    WriteSep().write("c{} := {};", con_index, value);
   }
 
   void SetFunction(
@@ -349,22 +358,22 @@ TEST(NLTest, NoNewlineAtEOF) {
     " 0 0\n"
     " 0 0 0 0 0\n"
     "k0\0deadbeef", handler),
-      ParseError, "(input):11:3: expected newline");
+      ReadError, "(input):11:3: expected newline");
 }
 
 TEST(NLTest, InvalidFormat) {
   EXPECT_THROW_MSG(ReadHeader(0, "x"),
-      ParseError, "(input):1:1: expected format specifier");
+      ReadError, "(input):1:1: expected format specifier");
 }
 
 TEST(NLTest, InvalidNumOptions) {
   EXPECT_EQ(0, ReadHeader(0, "ga").num_options);
   EXPECT_EQ(0, ReadHeader(0, "g-1").num_options);
   EXPECT_THROW_MSG(ReadHeader(0, "g10"),
-      ParseError, "(input):1:2: too many options");
+      ReadError, "(input):1:2: too many options");
   EXPECT_THROW_MSG(ReadHeader(0,
       fmt::format("g{}", static_cast<unsigned>(INT_MAX) + 1)),
-      ParseError, "(input):1:2: number is too big");
+      ReadError, "(input):1:2: number is too big");
 }
 
 void CheckReadOptions(int num_options,
@@ -552,7 +561,7 @@ TEST(NLTest, Arith) {
       ReadHeader(5, fmt::format(" 0 0 {}", 3 - Arith_Kind_ASL)).format);
   EXPECT_THROW_MSG(
       ReadHeader(5, fmt::format(" 0 0 {}", 3 - Arith_Kind_ASL + 1)),
-      ParseError, "(input):6:6: unrecognized binary format");
+      ReadError, "(input):6:6: unrecognized binary format");
   // TODO: check if the bytes are actually swapped
 }
 
@@ -560,30 +569,30 @@ TEST(NLTest, IncompleteHeader) {
   ReadHeader(0, "g");
   EXPECT_THROW_MSG(
       ReadHeader(0, "\n"),
-      ParseError, "(input):1:1: expected format specifier");
+      ReadError, "(input):1:1: expected format specifier");
   ReadHeader(1, " 1 0 0");
   EXPECT_THROW_MSG(
       ReadHeader(1, " 1 0"),
-      ParseError, "(input):2:5: expected nonnegative integer");
+      ReadError, "(input):2:5: expected nonnegative integer");
   for (int i = 2; i <= 8; ++i) {
     if (i == 6)
       continue;
     ReadHeader(i, " 0 0");
     EXPECT_THROW_MSG(
-        ReadHeader(i, " 0"), ParseError,
+        ReadHeader(i, " 0"), ReadError,
         fmt::format("(input):{}:3: expected nonnegative integer", i + 1));
   }
   for (int i = 6; i <= 9; i += 3) {
     ReadHeader(1, " 0 0 0 0 0");
     EXPECT_THROW_MSG(
-        ReadHeader(i, " 0 0 0 0"), ParseError,
+        ReadHeader(i, " 0 0 0 0"), ReadError,
         fmt::format("(input):{}:9: expected nonnegative integer", i + 1));
   }
   std::string input = ReplaceLine(FormatHeader(NLHeader()), 4, " 0 0");
   ReadHeader(ReplaceLine(input, 6, " 0 0"));
   EXPECT_THROW_MSG(
       ReadHeader(ReplaceLine(input, 6, " 0")),
-      ParseError, "(input):7:3: expected nonnegative integer");
+      ReadError, "(input):7:3: expected nonnegative integer");
 }
 
 void ReadNL(const NLHeader &header, const std::string &body) {
@@ -597,11 +606,11 @@ TEST(NLTest, ObjIndex) {
   header.num_objs = 10;
   EXPECT_THROW_MSG(
     ReadNL(header, "O-1 0\nn0\n"),
-    ParseError, "(input):11:2: expected nonnegative integer");
+    ReadError, "(input):11:2: expected nonnegative integer");
   ReadNL(header, "O0 9\nn0\n");
   EXPECT_THROW_MSG(
     ReadNL(header, "O10 0\nn0\n"),
-    ParseError, "(input):11:2: objective index 10 out of bounds");
+    ReadError, "(input):11:2: objective index 10 out of bounds");
 }
 
 TEST(NLTest, ObjType) {
@@ -612,7 +621,7 @@ TEST(NLTest, ObjType) {
   ReadNL(header, "O0 10\nn0\n");
   EXPECT_THROW_MSG(
     ReadNL(header, "O0 -1\nn0\n"),
-    ParseError, "(input):11:4: expected nonnegative integer");
+    ReadError, "(input):11:4: expected nonnegative integer");
 }
 
 NLHeader MakeHeader() {
@@ -642,7 +651,7 @@ TEST(NLTest, ReadObjExpr) {
 }
 
 #define EXPECT_READ_ERROR(nl_body, error) \
-  EXPECT_THROW_MSG(ReadNL(MakeHeader(), nl_body), ParseError, error);
+  EXPECT_THROW_MSG(ReadNL(MakeHeader(), nl_body), ReadError, error);
 
 template <typename Int>
 void CheckReadInt(char code) {
@@ -684,7 +693,7 @@ TEST(NLTest, ReadIfExpr) {
 }
 
 TEST(NLTest, ReadPiecewiseLinearExpr) {
-  EXPECT_READ("c0: <<0; -1, 1>> v1;", "C0\no64\n2\nn-1\ns0\nl1\nv1\n");
+  EXPECT_READ("c0: <<0; -1, 1>> v1;", "C0\no64\n2\nn-1.0\ns0\nl1\nv1\n");
   EXPECT_READ_ERROR("C0\no64\n-1\nn0\nv1\n",
     "(input):13:1: expected nonnegative integer");
   EXPECT_READ_ERROR("C0\no64\n1\nn0\nv1\n",
@@ -832,6 +841,9 @@ struct TestNLHandler2 {
   void SetCon(int, TestNumericExpr) {}
   void SetLogicalCon(int, TestLogicalExpr) {}
 
+  void SetInitialValue(int, double) {}
+  void SetInitialDualValue(int, double) {}
+
   void SetFunction(int, const char *, int, ampl::func::Type) {}
 
   TestNumericExpr MakeNumericConstant(double) { return TestNumericExpr(); }
@@ -910,8 +922,8 @@ TEST(NLTest, ExprHierarchy) {
 }
 
 TEST(NLTest, ReadVarBounds) {
-  EXPECT_READ("11 <= v0; v1 <= 22; v2 = 33; v3; 44 <= v4 <= 55;",
-              "b\n2 11\n1 22\n4 33\n3\n0 44 55\n");
+  EXPECT_READ("1.1 <= v0; v1 <= 22; v2 = 33; v3; 44 <= v4 <= 55;",
+              "b\n2 1.1\n1 22\n4 33\n3\n0 44 55\n");
   EXPECT_READ_ERROR("b\n-1\n", "(input):12:1: expected nonnegative integer");
   EXPECT_READ_ERROR("b\n5 1\n", "(input):12:1: invalid bound type");
   EXPECT_READ_ERROR("b\n2 11\n1 22\n4 33\n3\n",
@@ -919,9 +931,9 @@ TEST(NLTest, ReadVarBounds) {
 }
 
 TEST(NLTest, ReadConBounds) {
-  EXPECT_READ("11 <= c0; c1 <= 22; c2 = 33; c3; 44 <= c4 <= 55; "
+  EXPECT_READ("1.1 <= c0; c1 <= 22; c2 = 33; c3; 44 <= c4 <= 55; "
               "c5 complements v1 3; c6 complements v4 2;",
-              "r\n2 11\n1 22\n4 33\n3\n0 44 55\n5 7 2\n5 2 5\n");
+              "r\n2 1.1\n1 22\n4 33\n3\n0 44 55\n5 7 2\n5 2 5\n");
   EXPECT_READ_ERROR("r\n-1\n", "(input):12:1: expected nonnegative integer");
   EXPECT_READ_ERROR("r\n6 1\n", "(input):12:1: invalid bound type");
   EXPECT_READ_ERROR("r\n2 11\n1 22\n4 33\n3\n",
@@ -933,7 +945,7 @@ TEST(NLTest, ReadConBounds) {
 }
 
 TEST(NLTest, ReadLinearObjExpr) {
-  EXPECT_READ("o0 2: 3 * v1 + 5 * v3;", "G0 2\n1 3\n3 5\n");
+  EXPECT_READ("o0 2: 1.3 * v1 + 5 * v3;", "G0 2\n1 1.3\n3 5\n");
   EXPECT_READ("o5 5: 1 * v1 + 1 * v2 + 1 * v3 + 1 * v4 + 1 * v5;",
               "G5 5\n1 1\n2 1\n3 1\n4 1\n5 1\n");
   EXPECT_READ_ERROR("G-1", "(input):11:2: expected nonnegative integer");
@@ -951,6 +963,27 @@ TEST(NLTest, ReadJacobianColumns) {
   EXPECT_READ_ERROR("k4\n-1\n", "(input):12:1: expected nonnegative integer");
 }
 
-// TODO: test reading Jacobian, functions, defined vars, suffixes,
-//       initial primal & dual solution
+TEST(NLTest, ReadInitialValues) {
+  EXPECT_READ("v4 := 1.1; v3 := 0; v2 := 1; v1 := 2; v0 := 3;",
+              "x5\n4 1.1\n3 0\n2 1\n1 2\n0 3\n");
+  EXPECT_READ_ERROR("x6\n", "(input):11:2: too many initial values");
+  EXPECT_READ_ERROR("x1\n-1 0\n", "(input):12:1: expected nonnegative integer");
+  EXPECT_READ_ERROR("x1\n5 0\n", "(input):12:1: index 5 out of bounds");
+  EXPECT_READ_ERROR("x2\n4 1.1\n\n",
+                    "(input):13:1: expected nonnegative integer");
 }
+
+TEST(NLTest, ReadInitialDualValues) {
+  EXPECT_READ("c4 := 1.1; c3 := 0; c2 := 1; c1 := 2; "
+              "c0 := 3; c5 := 1; c6 := 2;",
+              "d7\n4 1.1\n3 0\n2 1\n1 2\n0 3\n5 1\n6 2\n");
+  EXPECT_READ_ERROR("d8\n", "(input):11:2: too many initial values");
+  EXPECT_READ_ERROR("d1\n-1 0\n", "(input):12:1: expected nonnegative integer");
+  EXPECT_READ_ERROR("d1\n7 0\n", "(input):12:1: index 7 out of bounds");
+  EXPECT_READ_ERROR("d2\n4 1.1\n\n",
+                    "(input):13:1: expected nonnegative integer");
+}
+
+// TODO: test reading Jacobian, functions, defined vars, suffixes
+
+}  // namespace
