@@ -820,6 +820,16 @@ TEST(NLTest, ReadConBounds) {
                     "(input):16:1: expected nonnegative integer");
   EXPECT_READ_ERROR("r\n5 1 0\n", "(input):12:5: integer 0 out of bounds");
   EXPECT_READ_ERROR("r\n5 1 6\n", "(input):12:5: integer 6 out of bounds");
+  // Check that there is no overflow for largest possible var index.
+  TestNLHandler handler;
+  NLHeader header = {};
+  header.num_vars = INT_MAX;
+  header.num_algebraic_cons = 1;
+  ReadNLString(FormatHeader(header) + fmt::format("r\n5 1 {}\n", INT_MAX),
+               handler);
+  EXPECT_EQ(fmt::format("c0 complements v{} 1;", INT_MAX - 1),
+            handler.log.str());
+
 }
 
 TEST(NLTest, ReadLinearObjExpr) {

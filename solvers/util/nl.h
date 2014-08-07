@@ -31,6 +31,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <limits>
+#include <string>
 
 namespace ampl {
 
@@ -816,8 +817,11 @@ void NLReader<Reader, Handler>::ReadBounds() {
     case COMPL:
       if (BoundHandler::TYPE == CON) {
         int flags = reader_.template ReadInt<int>();
-        // TODO: check for overflow
-        int var_index = ReadUInt(1, header_.num_vars + 1) - 1;
+        int var_index = reader_.ReadUInt();
+        // Don't use NLReader::ReadUInt(int, int) as num_vars + 1 may overflow.
+        if (var_index == 0 || var_index > header_.num_vars)
+          reader_.ReportError("integer {} out of bounds", var_index);
+        --var_index;
         int mask = comp::INF_LB | comp::INF_UB;
         handler_.SetComplement(i, var_index, flags & mask);
         reader_.ReadTillEndOfLine();
