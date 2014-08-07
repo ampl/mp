@@ -198,9 +198,13 @@ void ASLBuilder::InitASL(const char *stub, const NLHeader &h) {
   std::strcpy(info.filename_ + stub_len, ".nl");
 
   info.binary_nl_ = h.format;
-  if (h.format == NLHeader::BINARY_SWAPPED) {
-    info.binary_nl_ = 1 << (3 - Arith_Kind_ASL);
-    info.iadjfcn = info.dadjfcn = bswap_ASL;
+  if (h.arith_kind != arith::UNKNOWN) {
+    arith::Kind arith_kind = arith::GetKind();
+    if (arith_kind != h.arith_kind &&
+        arith::IsIEEE(arith_kind) && arith::IsIEEE(h.arith_kind)) {
+      info.binary_nl_ = h.arith_kind << 1;
+      info.iadjfcn = info.dadjfcn = bswap_ASL;
+    }
   }
   info.xscanf_ = info.binary_nl_ ? bscanf : ascanf;
 
@@ -497,9 +501,9 @@ Function ASLBuilder::AddFunction(
 }
 
 Function ASLBuilder::SetFunction(
-    int index, const char *name, int num_args, func::Type type) {
+    int index, fmt::StringRef name, int num_args, func::Type type) {
   assert(index >= 0 && index < asl_->i.nfunc_);
-  func_info *fi = func_lookup_ASL(asl_, name, 0);
+  func_info *fi = func_lookup_ASL(asl_, name.c_str(), 0);
   if (fi) {
     if (fi->nargs != num_args && fi->nargs >= 0 &&
         (num_args >= 0 || fi->nargs < -(num_args + 1))) {
@@ -512,10 +516,10 @@ Function ASLBuilder::SetFunction(
     fi->ftype = type;
     fi->nargs = num_args;
     fi->funcp = 0;
-    int length = AddPadding(std::strlen(name) + 1);
-    fi->name = std::strcpy(Allocate<char>(length), name);
+    int length = AddPadding(name.size() + 1);
+    fi->name = std::strcpy(Allocate<char>(length), name.c_str());
   }
-  if (!fi->funcp && !(fi->funcp = dynlink(name))) {
+  if (!fi->funcp && !(fi->funcp = dynlink(name.c_str()))) {
     if (!(flags_ & ASL_allow_missing_funcs)) {
       throw ASLError(ASL_readerr_unavail,
                      fmt::format("function {} not available", name));

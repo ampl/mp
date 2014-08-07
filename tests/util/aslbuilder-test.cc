@@ -444,11 +444,15 @@ void CheckASL(const ASL &expected, const ASL &actual, bool complete = true) {
   EXPECT_EQ(expected_fg.I.o_class_max, actual_fg.I.o_class_max);
 }
 
-void CheckHeader(const NLHeader &h) {
+std::string HeaderToStr(const NLHeader &h) {
   fmt::Writer w;
   w << h;
-  std::string nl = w.str();
+  return w.str();
+}
+
+void CheckHeader(const NLHeader &h) {
   NLHeader actual_header = {};
+  std::string nl = HeaderToStr(h);
   ampl::TextReader(nl, "(input)").ReadHeader(actual_header);
 
   EXPECT_EQ(h.format, actual_header.format);
@@ -575,7 +579,7 @@ TEST(NLTest, ReadFullHeader) {
     53, 59, 67, 61, 71, 73,
     79, 83,
     89, 97, 101,
-    103, 107, 109,
+    103, 107, ampl::arith::GetKind(), 109,
     113, 127, 131, 137, 139,
     149, 151,
     157, 163,
@@ -604,8 +608,7 @@ class ASLPtr {
 FILE *ReadHeader(ASL &asl, const NLHeader &h, const char *body) {
   fmt::Writer w;
   w << h << body;
-  WriteFile("test"
-  ".nl", w.str());
+  WriteFile("test.nl", w.str());
   char stub[] = "test";
   return jac0dim_ASL(&asl, stub, sizeof(stub) - 1);
 }
@@ -638,7 +641,7 @@ TEST(ASLBuilderTest, InitASLFull) {
     53, 59, 67, 61, 71, 73,
     79, 83,
     89, 97, 101,
-    103, 107, 109,
+    103, 107, ampl::arith::IEEE_BIG_ENDIAN, 109,
     113, 127, 131, 137, 139,
     149, 151,
     157, 163,
@@ -647,12 +650,18 @@ TEST(ASLBuilderTest, InitASLFull) {
   CheckInitASL(header);
 }
 
-// Check that iadjfcn & dadjfcn are set properly when format is
-// NLHeader::BINARY_SWAPPED.
+// Check that iadjfcn & dadjfcn are set properly when using different
+// endianness.
 TEST(ASLBuilderTest, ASLBuilderAdjFcn) {
-  NLHeader header = {NLHeader::BINARY_SWAPPED};
-  header.num_vars = 1;
-  CheckInitASL(header);  // iadjfcn & dadjfcn are checked here.
+  namespace arith = ampl::arith;
+  arith::Kind arith_kind = arith::GetKind();
+  if (arith::IsIEEE(arith_kind)) {
+    NLHeader header = {NLHeader::BINARY};
+    header.num_vars = 1;
+    header.arith_kind = arith_kind == arith::IEEE_BIG_ENDIAN ?
+          arith::IEEE_LITTLE_ENDIAN : arith::IEEE_BIG_ENDIAN;
+    CheckInitASL(header);  // iadjfcn & dadjfcn are checked here.
+  }
 }
 
 #define CHECK_THROW_ASL_ERROR(code, expected_error_code, expected_message) { \
@@ -989,4 +998,12 @@ TEST(ASLBuilderTest, SizeOverflow) {
   EXPECT_THROW(builder.MakeStringLiteral(
                  fmt::StringRef("", max_size)), OverflowError);
 }
+
+// Test that ASLBuilder can act as a handler for NLReader.
+TEST(ASLBuilderTest, NLHandler) {
+  ASLBuilder builder;
+  ampl::ReadNLString(HeaderToStr(MakeHeader()), builder);
+}
+
+// TODO: test SetVarBounds, SetConBounds
 }

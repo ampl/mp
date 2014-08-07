@@ -69,6 +69,18 @@ class ASLBuilder {
 
   FMT_DISALLOW_COPY_AND_ASSIGN(ASLBuilder);
 
+  void SetBounds(double *lbs, double *&ubs, int index, double lb, double ub) {
+    if (!ubs)
+      ubs = lbs;
+    if (lbs != ubs) {
+      lbs[index] = lb;
+      ubs[index] = ub;
+    } else {
+      lbs[2 * index] = lb;
+      ubs[2 * index + 1] = ub;
+    }
+  }
+
   static void CheckOpCode(int opcode, expr::Kind kind, const char *expr_name) {
     if (expr::kind(opcode) != kind)
       throw Error("invalid {} expression code {}", expr_name, opcode);
@@ -93,6 +105,12 @@ class ASLBuilder {
   }
 
  public:
+  typedef ampl::Expr Expr;
+  typedef ampl::NumericExpr NumericExpr;
+  typedef ampl::LogicalExpr LogicalExpr;
+  typedef ampl::Variable Variable;
+  typedef ampl::CountExpr CountExpr;
+
   explicit ASLBuilder(ASL *asl = 0);
   ~ASLBuilder();
 
@@ -110,6 +128,21 @@ class ASLBuilder {
   // Ends building the ASL object.
   void EndBuild();
 
+  void SetVarBounds(int index, double lb, double ub) {
+    SetBounds(asl_->i.LUv_, asl_->i.Uvx_, index, lb, ub);
+  }
+  void SetConBounds(int index, double lb, double ub) {
+    SetBounds(asl_->i.LUrhs_, asl_->i.Urhsx_, index, lb, ub);
+  }
+
+  void SetComplement(int, int, int) {
+    // TODO
+  }
+
+  void SetVar(int, NumericExpr, int) {
+    // TODO
+  }
+
   // Sets objective type and expression.
   // index: Index of an objective; 0 <= index < num_objs.
   void SetObj(int index, obj::Type type, NumericExpr expr);
@@ -122,13 +155,45 @@ class ASLBuilder {
   // index: Index of a logical contraint; 0 <= index < num_logical_cons.
   void SetLogicalCon(int index, LogicalExpr expr);
 
+  class LinearExprHandler {
+   public:
+    void AddTerm(int, double) {
+      // TODO
+    }
+  };
+  LinearExprHandler GetLinearVarHandler(int, int) {
+    // TODO
+    return LinearExprHandler();
+  }
+  LinearExprHandler GetLinearObjHandler(int, int) {
+    // TODO
+    return LinearExprHandler();
+  }
+  LinearExprHandler GetLinearConHandler(int, int) {
+    // TODO
+    return LinearExprHandler();
+  }
+
+  struct ColumnSizeHandler {
+    void Add(int) {
+      // TODO
+    }
+  };
+  ColumnSizeHandler GetColumnSizeHandler() {
+    // TODO
+    return ColumnSizeHandler();
+  }
+
+  void SetInitialValue(int, double) {}
+  void SetInitialDualValue(int, double) {}
+
   Function AddFunction(const char *name, ufunc f, int num_args,
                        func::Type type = func::NUMERIC, void *info = 0);
 
   // Sets a function at the given index.
   // If the function with the specified name doesn't exist and the flag
   // ASL_allow_missing_funcs is not set, SetFunction throws ASLError.
-  Function SetFunction(int index, const char *name, int num_args,
+  Function SetFunction(int index, fmt::StringRef name, int num_args,
                        func::Type type = func::NUMERIC);
 
   // The Make* methods construct expression objects. These objects are

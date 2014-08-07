@@ -22,11 +22,25 @@
 
 #include "solvers/util/nl.h"
 
-#include "solvers/asl.h"
-
-#undef ampl_vbtol
-
 namespace ampl {
+
+arith::Kind arith::GetKind() {
+  // Unlike ASL, we don't try detecting floating-point arithmetic at
+  // configuration time because it doesn't work with cross-compiling.
+  if (sizeof(double) != 2 * sizeof(uint32_t))
+    return UNKNOWN;
+  union {
+    double d;
+    uint32_t i[2];
+  } u;
+  u.i[0] = u.i[1] = 0;
+  u.d = 1e13;
+  if (u.i[1] == 0x42A2309C && u.i[0] == 0xE5400000)
+    return IEEE_LITTLE_ENDIAN;
+  if (u.i[0] == 0x42A2309C && u.i[1] == 0xE5400000)
+    return IEEE_BIG_ENDIAN;
+  return UNKNOWN;
+}
 
 fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h) {
   w << (h.format == NLHeader::TEXT ? 'g' : 'b') << h.num_options;
@@ -48,7 +62,7 @@ fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h) {
       h.num_nl_vars_in_cons, h.num_nl_vars_in_objs, h.num_nl_vars_in_both);
   w.write(" {} {} {} {}\n",
       h.num_linear_net_vars, h.num_funcs,
-      h.format != NLHeader::BINARY_SWAPPED ? 0 : 3 - Arith_Kind_ASL, h.flags);
+          h.format == NLHeader::TEXT ? 0 : h.arith_kind, h.flags);
   w.write(" {} {} {} {} {}\n",
       h.num_linear_binary_vars, h.num_linear_integer_vars,
       h.num_nl_integer_vars_in_both, h.num_nl_integer_vars_in_cons,
@@ -66,7 +80,7 @@ TextReader::TextReader(fmt::StringRef data, fmt::StringRef name)
 : ptr_(data.c_str()), end_(ptr_ + data.size()),
   line_start_(ptr_), token_(ptr_), name_(name), line_(1) {}
 
-void TextReader::DoReportReadError(
+void TextReader::DoReportError(
     const char *loc, fmt::StringRef format_str, const fmt::ArgList &args) {
   int line = line_;
   const char *line_start = line_start_;
@@ -85,19 +99,31 @@ void TextReader::DoReportReadError(
       fmt::format("{}:{}:{}: {}", name_, line, column, w.c_str()));
 }
 
-fmt::StringRef TextReader::ReadString() {
+bool TextReader::ReadOptionalDouble(double &value) {
   SkipSpace();
-  const char *start = ptr_;
-  while (!std::isspace(*ptr_) && *ptr_)
-    ++ptr_;
-  std::size_t length = ptr_ - start;
-  return fmt::StringRef(length != 0 ? start : 0, length);
+  if (*ptr_ == '\n')
+    return false;
+  char *end = 0;
+  value = std::strtod(ptr_, &end);
+  bool has_value = ptr_ != end;
+  ptr_ = end;
+  return has_value;
 }
 
-fmt::StringRef TextReader::ReadStringLiteral() {
+fmt::StringRef TextReader::ReadName() {
+  SkipSpace();
+  const char *start = ptr_;
+  if (*ptr_ == '\n' || !*ptr_)
+    ReportError("expected name");
+  do ++ptr_;
+  while (!std::isspace(*ptr_) && *ptr_);
+  return fmt::StringRef(start, ptr_ - start);
+}
+
+fmt::StringRef TextReader::ReadString() {
   int length = ReadUInt();
   if (*ptr_ != ':')
-    DoReportReadError(ptr_, "expected ':'");
+    DoReportError(ptr_, "expected ':'");
   ++ptr_;
   const char *start = ptr_;
   for (int i = 0; i < length; ++i, ++ptr_) {
@@ -106,11 +132,11 @@ fmt::StringRef TextReader::ReadStringLiteral() {
       line_start_ = ptr_  + 1;
       ++line_;
     } else if (c == 0 && ptr_ == end_) {
-      DoReportReadError(ptr_, "unexpected end of file in string");
+      DoReportError(ptr_, "unexpected end of file in string");
     }
   }
   if (*ptr_ != '\n')
-    DoReportReadError(ptr_, "expected newline");
+    DoReportError(ptr_, "expected newline");
   ++ptr_;
   return fmt::StringRef(length != 0 ? start : 0, length);
 }
@@ -124,14 +150,14 @@ void TextReader::ReadHeader(NLHeader &header) {
     header.format = NLHeader::BINARY;
     break;
   default:
-    ReportReadError("expected format specifier");
+    ReportError("expected format specifier");
     break;
   }
 
   // Read options.
   ReadOptionalUInt(header.num_options);
   if (header.num_options > MAX_NL_OPTIONS)
-    ReportReadError("too many options");
+    ReportError("too many options");
   for (int i = 0; i < header.num_options; ++i) {
     if (!ReadOptionalInt(header.options[i]))
       break;
@@ -178,18 +204,11 @@ void TextReader::ReadHeader(NLHeader &header) {
 
   header.num_linear_net_vars = ReadUInt();
   header.num_funcs = ReadUInt();
-  int arith = 0;
-  if (ReadOptionalUInt(arith)) {
-    if (arith != Arith_Kind_ASL && arith != 0) {
-      bool swap_bytes = false;
-#if defined(IEEE_MC68k) || defined(IEEE_8087)
-      swap_bytes = arith > 0 && arith + Arith_Kind_ASL == 3;
-#endif
-      if (!swap_bytes)
-        ReportReadError("unrecognized binary format");
-      header.format = NLHeader::BINARY_SWAPPED;
-      // TODO: swap bytes
-    }
+  int arith_kind = 0;
+  if (ReadOptionalUInt(arith_kind)) {
+    if (arith_kind > arith::LAST)
+      ReportError("unknown floating-point arithmetic kind");
+    header.arith_kind = static_cast<arith::Kind>(arith_kind);
     ReadOptionalUInt(header.flags);
   }
   ReadTillEndOfLine();

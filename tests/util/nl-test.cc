@@ -32,6 +32,18 @@ using ampl::ReadNLString;
 
 namespace {
 
+TEST(NLTest, ArithKind) {
+  namespace arith = ampl::arith;
+  EXPECT_GE(arith::GetKind(), arith::UNKNOWN);
+  EXPECT_LE(arith::GetKind(), arith::LAST);
+  EXPECT_TRUE(arith::IsIEEE(arith::IEEE_BIG_ENDIAN));
+  EXPECT_TRUE(arith::IsIEEE(arith::IEEE_BIG_ENDIAN));
+  EXPECT_FALSE(arith::IsIEEE(arith::UNKNOWN));
+  EXPECT_FALSE(arith::IsIEEE(arith::IBM));
+  EXPECT_FALSE(arith::IsIEEE(arith::VAX));
+  EXPECT_FALSE(arith::IsIEEE(arith::CRAY));
+}
+
 class TestNLHandler {
  private:
   // Writes a comma-separated list.
@@ -265,7 +277,7 @@ class TestNLHandler {
     return MakeVarArg("alldiff", args);
   }
 
-  std::string MakeString(fmt::StringRef value) {
+  std::string MakeStringLiteral(fmt::StringRef value) {
     return fmt::format("'{}'", std::string(value.c_str(), value.size()));
   }
 };
@@ -278,7 +290,7 @@ TEST(NLTest, WriteTextHeader) {
     53, 59, 67, 61, 71, 73,
     79, 83,
     89, 97, 101,
-    103, 107, 109,
+    103, 107, ampl::arith::IEEE_LITTLE_ENDIAN, 109,
     113, 127, 131, 137, 139,
     149, 151,
     157, 163,
@@ -302,6 +314,7 @@ TEST(NLTest, WriteTextHeader) {
 
 TEST(NLTest, WriteBinaryHeader) {
   NLHeader header = {NLHeader::BINARY, 3, {11, 22, 33}};
+  header.arith_kind = ampl::arith::CRAY;
   fmt::Writer w;
   w << header;
   EXPECT_EQ(
@@ -310,25 +323,7 @@ TEST(NLTest, WriteBinaryHeader) {
       " 0 0 0 0 0 0\n"
       " 0 0\n"
       " 0 0 0\n"
-      " 0 0 0 0\n"
-      " 0 0 0 0 0\n"
-      " 0 0\n"
-      " 0 0\n"
-      " 0 0 0 0 0\n",
-      w.str());
-}
-
-TEST(NLTest, WriteBinarySwappedHeader) {
-  NLHeader header = {NLHeader::BINARY_SWAPPED};
-  fmt::Writer w;
-  w << header;
-  EXPECT_EQ(
-      "b0\n"
-      " 0 0 0 0 0 0\n"
-      " 0 0 0 0 0 0\n"
-      " 0 0\n"
-      " 0 0 0\n"
-      " 0 0 2 0\n"
+      " 0 0 5 0\n"
       " 0 0 0 0 0\n"
       " 0 0\n"
       " 0 0\n"
@@ -354,6 +349,133 @@ NLHeader ReadHeader(const std::string &s) {
 NLHeader ReadHeader(int line_index, fmt::StringRef line) {
   return ReadHeader(ReplaceLine(
       FormatHeader(NLHeader()), line_index, line.c_str()));
+}
+
+struct TestNLHandler2 {
+  typedef struct TestExpr {} Expr;
+  typedef struct TestNumericExpr : TestExpr {} NumericExpr;
+  typedef struct TestVariable : TestNumericExpr {} Variable;
+  typedef struct TestCountExpr : TestNumericExpr {} CountExpr;
+  typedef struct TestLogicalExpr : TestExpr {} LogicalExpr;
+
+  void BeginBuild(const char *, const NLHeader &, int) {}
+
+  void SetVarBounds(int, double, double) {}
+  void SetConBounds(int, double, double) {}
+  void SetComplement(int, int, int) {}
+
+  struct LinearExprHandler {
+    void AddTerm(int, double) {}
+  };
+  LinearExprHandler GetLinearVarHandler(int, int) {
+    return LinearExprHandler();
+  }
+  LinearExprHandler GetLinearObjHandler(int, int) {
+    return LinearExprHandler();
+  }
+  LinearExprHandler GetLinearConHandler(int, int) {
+    return LinearExprHandler();
+  }
+
+  struct ColumnSizeHandler {
+    void Add(int) {}
+  };
+  ColumnSizeHandler GetColumnSizeHandler() { return ColumnSizeHandler(); }
+
+  void SetVar(int, TestNumericExpr, int) {}
+  void SetObj(int, ampl::obj::Type, TestNumericExpr) {}
+  void SetCon(int, TestNumericExpr) {}
+  void SetLogicalCon(int, TestLogicalExpr) {}
+
+  void SetInitialValue(int, double) {}
+  void SetInitialDualValue(int, double) {}
+
+  void SetFunction(int, fmt::StringRef, int, ampl::func::Type) {}
+
+  TestNumericExpr MakeNumericConstant(double) { return TestNumericExpr(); }
+  TestVariable MakeVariable(int) { return TestVariable(); }
+  TestNumericExpr MakeUnary(int, TestNumericExpr) { return TestNumericExpr(); }
+
+  TestNumericExpr MakeBinary(int, TestNumericExpr, TestNumericExpr) {
+    return TestNumericExpr();
+  }
+
+  TestNumericExpr MakeIf(TestLogicalExpr, TestNumericExpr, TestNumericExpr) {
+    return TestNumericExpr();
+  }
+
+  TestNumericExpr MakePiecewiseLinear(
+      int, const double *, const double *, TestVariable) {
+    return TestNumericExpr();
+  }
+
+  TestNumericExpr MakeCall(int, ampl::ArrayRef<TestExpr>) {
+    return TestNumericExpr();
+  }
+
+  TestNumericExpr MakeVarArg(int, ampl::ArrayRef<TestNumericExpr>) {
+    return TestNumericExpr();
+  }
+
+  TestNumericExpr MakeSum(ampl::ArrayRef<TestNumericExpr>) {
+    return TestNumericExpr();
+  }
+
+  TestCountExpr MakeCount(ampl::ArrayRef<TestLogicalExpr>) {
+    return TestCountExpr();
+  }
+
+  TestNumericExpr MakeNumberOf(ampl::ArrayRef<TestNumericExpr>) {
+    return TestNumericExpr();
+  }
+
+  TestLogicalExpr MakeLogicalConstant(bool) { return TestLogicalExpr(); }
+  TestLogicalExpr MakeNot(TestLogicalExpr) { return TestLogicalExpr(); }
+
+  TestLogicalExpr MakeBinaryLogical(int, TestLogicalExpr, TestLogicalExpr) {
+    return TestLogicalExpr();
+  }
+
+  TestLogicalExpr MakeRelational(int, TestNumericExpr, TestNumericExpr) {
+    return TestLogicalExpr();
+  }
+
+  TestLogicalExpr MakeLogicalCount(int, TestNumericExpr, TestCountExpr) {
+    return TestLogicalExpr();
+  }
+
+  TestLogicalExpr MakeImplication(
+      TestLogicalExpr, TestLogicalExpr, TestLogicalExpr) {
+    return TestLogicalExpr();
+  }
+
+  TestLogicalExpr MakeIteratedLogical(int, ampl::ArrayRef<TestLogicalExpr>) {
+    return TestLogicalExpr();
+  }
+
+  TestLogicalExpr MakeAllDiff(ampl::ArrayRef<TestNumericExpr>) {
+    return TestLogicalExpr();
+  }
+
+  TestExpr MakeStringLiteral(fmt::StringRef) { return TestExpr(); }
+};
+
+NLHeader MakeHeader() {
+  NLHeader header = {};
+  header.num_vars = 5;
+  header.num_objs = 6;
+  header.num_algebraic_cons = 7;
+  header.num_logical_cons = 8;
+  header.num_funcs = 9;
+  header.num_common_exprs_in_objs = 1;
+  return header;
+}
+
+// Test that the .nl reader accepts expression class hierarchy rather than
+// a single expression type.
+TEST(NLTest, ExprHierarchy) {
+  TestNLHandler2 handler;
+  ReadNLString(FormatHeader(MakeHeader()), handler);
 }
 
 TEST(NLTest, NoNewlineAtEOF) {
@@ -424,17 +546,14 @@ TEST(NLTest, NumComplDblIneq) {
   EXPECT_EQ(-1, ReadHeader(2, " 0 0 70 0 42").num_compl_dbl_ineqs);
 }
 
-TEST(NLTest, Arith) {
+TEST(NLTest, ReadArithKind) {
   EXPECT_EQ(NLHeader::TEXT, ReadHeader(5, " 0 0").format);
   EXPECT_EQ(NLHeader::TEXT, ReadHeader(5, " 0 0 0").format);
   EXPECT_EQ(NLHeader::TEXT,
-      ReadHeader(5, fmt::format(" 0 0 {}", Arith_Kind_ASL)).format);
-  EXPECT_EQ(NLHeader::BINARY_SWAPPED,
-      ReadHeader(5, fmt::format(" 0 0 {}", 3 - Arith_Kind_ASL)).format);
+      ReadHeader(5, fmt::format(" 0 0 {}", ampl::arith::LAST)).format);
   EXPECT_THROW_MSG(
-      ReadHeader(5, fmt::format(" 0 0 {}", 3 - Arith_Kind_ASL + 1)),
-      ReadError, "(input):6:6: unrecognized binary format");
-  // TODO: check if the bytes are actually swapped
+      ReadHeader(5, fmt::format(" 0 0 {}", ampl::arith::LAST + 1)),
+      ReadError, "(input):6:6: unknown floating-point arithmetic kind");
 }
 
 TEST(NLTest, IncompleteHeader) {
@@ -467,64 +586,29 @@ TEST(NLTest, IncompleteHeader) {
       ReadError, "(input):7:3: expected nonnegative integer");
 }
 
-void ReadNL(const NLHeader &header, const std::string &body) {
+std::string ReadNL(std::string body) {
   TestNLHandler handler;
-  ReadNLString(FormatHeader(header) + body, handler);
+  ReadNLString(FormatHeader(MakeHeader()) + body, handler);
+  return handler.log.str();
 }
 
-TEST(NLTest, ObjIndex) {
-  NLHeader header = {};
-  header.num_vars = 1;
-  header.num_objs = 10;
-  EXPECT_THROW_MSG(
-    ReadNL(header, "O-1 0\nn0\n"),
-    ReadError, "(input):11:2: expected nonnegative integer");
-  ReadNL(header, "O0 9\nn0\n");
-  EXPECT_THROW_MSG(
-    ReadNL(header, "O10 0\nn0\n"),
-    ReadError, "(input):11:2: objective index 10 out of bounds");
-}
-
-TEST(NLTest, ObjType) {
-  NLHeader header = {};
-  header.num_vars = header.num_objs = 1;
-  ReadNL(header, "O0 0\nn0\n");
-  ReadNL(header, "O0 1\nn0\n");
-  ReadNL(header, "O0 10\nn0\n");
-  EXPECT_THROW_MSG(
-    ReadNL(header, "O0 -1\nn0\n"),
-    ReadError, "(input):11:4: expected nonnegative integer");
-}
-
-NLHeader MakeHeader() {
-  NLHeader header = {};
-  header.num_vars = 5;
-  header.num_objs = 6;
-  header.num_algebraic_cons = 7;
-  header.num_logical_cons = 8;
-  header.num_funcs = 9;
-  header.num_common_exprs_in_objs = 1;
-  return header;
-}
-
-TEST(NLTest, ReadObjExpr) {
-  TestNLHandler handler;
-  NLHeader header = MakeHeader();
-  header.num_objs = 2;
-  ReadNLString(FormatHeader(header) + "O1 0\nn0\n", handler);
-  EXPECT_EQ("minimize o1: 0;", handler.log.str());
-  ReadNLString(FormatHeader(header) + "O0 1\nv0\n", handler);
-  EXPECT_EQ("maximize o0: v0;", handler.log.str());
-}
-
-#define EXPECT_READ(expected_output, nl_body) {\
-  TestNLHandler handler; \
-  ReadNLString(FormatHeader(MakeHeader()) + nl_body, handler); \
-  EXPECT_EQ(expected_output, handler.log.str()); \
-}
+#define EXPECT_READ(expected_output, nl_body) \
+  EXPECT_EQ(expected_output, ReadNL(nl_body))
 
 #define EXPECT_READ_ERROR(nl_body, error) \
-  EXPECT_THROW_MSG(ReadNL(MakeHeader(), nl_body), ReadError, error);
+  EXPECT_THROW_MSG(ReadNL(nl_body), ReadError, error)
+
+TEST(NLTest, ReadObj) {
+  EXPECT_READ("minimize o1: 0;", "O1 0\nn0\n");
+  EXPECT_READ("maximize o0: v0;", "O0 1\nv0\n");
+  EXPECT_READ("maximize o5: v0;", "O5 10\nv0\n");
+  EXPECT_READ_ERROR("O0 -1\nn0\n",
+    "(input):11:4: expected nonnegative integer");
+  EXPECT_READ_ERROR("O-1 0\nn0\n",
+    "(input):11:2: expected nonnegative integer");
+  EXPECT_READ_ERROR("O6 0\nn0\n",
+    "(input):11:2: objective index 6 out of bounds");
+}
 
 template <typename Int>
 void CheckReadInt(char code) {
@@ -688,122 +772,6 @@ TEST(NLTest, ReadInvalidLogicalExpr) {
         "(input):12:2: expected logical expression opcode");
 }
 
-struct TestNLHandler2 {
-  typedef struct TestExpr {} Expr;
-  typedef struct TestNumericExpr : TestExpr {} NumericExpr;
-  typedef struct TestVariable : TestNumericExpr {} Variable;
-  typedef struct TestCountExpr : TestNumericExpr {} CountExpr;
-  typedef struct TestLogicalExpr : TestExpr {} LogicalExpr;
-
-  void BeginBuild(const char *, const NLHeader &, int) {}
-
-  void SetVarBounds(int, double, double) {}
-  void SetConBounds(int, double, double) {}
-  void SetComplement(int, int, int) {}
-
-  struct LinearExprHandler {
-    void AddTerm(int, double) {}
-  };
-  LinearExprHandler GetLinearVarHandler(int, int) {
-    return LinearExprHandler();
-  }
-  LinearExprHandler GetLinearObjHandler(int, int) {
-    return LinearExprHandler();
-  }
-  LinearExprHandler GetLinearConHandler(int, int) {
-    return LinearExprHandler();
-  }
-
-  struct ColumnSizeHandler {
-    void Add(int) {}
-  };
-  ColumnSizeHandler GetColumnSizeHandler() { return ColumnSizeHandler(); }
-
-  void SetVar(int, TestNumericExpr, int) {}
-  void SetObj(int, ampl::obj::Type, TestNumericExpr) {}
-  void SetCon(int, TestNumericExpr) {}
-  void SetLogicalCon(int, TestLogicalExpr) {}
-
-  void SetInitialValue(int, double) {}
-  void SetInitialDualValue(int, double) {}
-
-  void SetFunction(int, fmt::StringRef, int, ampl::func::Type) {}
-
-  TestNumericExpr MakeNumericConstant(double) { return TestNumericExpr(); }
-  TestVariable MakeVariable(int) { return TestVariable(); }
-  TestNumericExpr MakeUnary(int, TestNumericExpr) { return TestNumericExpr(); }
-
-  TestNumericExpr MakeBinary(int, TestNumericExpr, TestNumericExpr) {
-    return TestNumericExpr();
-  }
-
-  TestNumericExpr MakeIf(TestLogicalExpr, TestNumericExpr, TestNumericExpr) {
-    return TestNumericExpr();
-  }
-
-  TestNumericExpr MakePiecewiseLinear(
-      int, const double *, const double *, TestVariable) {
-    return TestNumericExpr();
-  }
-
-  TestNumericExpr MakeCall(int, ampl::ArrayRef<TestExpr>) {
-    return TestNumericExpr();
-  }
-
-  TestNumericExpr MakeVarArg(int, ampl::ArrayRef<TestNumericExpr>) {
-    return TestNumericExpr();
-  }
-
-  TestNumericExpr MakeSum(ampl::ArrayRef<TestNumericExpr>) {
-    return TestNumericExpr();
-  }
-
-  TestCountExpr MakeCount(ampl::ArrayRef<TestLogicalExpr>) {
-    return TestCountExpr();
-  }
-
-  TestNumericExpr MakeNumberOf(ampl::ArrayRef<TestNumericExpr>) {
-    return TestNumericExpr();
-  }
-
-  TestLogicalExpr MakeLogicalConstant(bool) { return TestLogicalExpr(); }
-  TestLogicalExpr MakeNot(TestLogicalExpr) { return TestLogicalExpr(); }
-
-  TestLogicalExpr MakeBinaryLogical(int, TestLogicalExpr, TestLogicalExpr) {
-    return TestLogicalExpr();
-  }
-
-  TestLogicalExpr MakeRelational(int, TestNumericExpr, TestNumericExpr) {
-    return TestLogicalExpr();
-  }
-
-  TestLogicalExpr MakeLogicalCount(int, TestNumericExpr, TestCountExpr) {
-    return TestLogicalExpr();
-  }
-
-  TestLogicalExpr MakeImplication(
-      TestLogicalExpr, TestLogicalExpr, TestLogicalExpr) {
-    return TestLogicalExpr();
-  }
-
-  TestLogicalExpr MakeIteratedLogical(int, ampl::ArrayRef<TestLogicalExpr>) {
-    return TestLogicalExpr();
-  }
-
-  TestLogicalExpr MakeAllDiff(ampl::ArrayRef<TestNumericExpr>) {
-    return TestLogicalExpr();
-  }
-
-  TestExpr MakeString(fmt::StringRef) { return TestExpr(); }
-};
-
-// Test that the .nl reader accepts expression class hierarchy rather than
-// a single expression type.
-TEST(NLTest, ExprHierarchy) {
-  TestNLHandler2 handler;
-  ReadNLString(FormatHeader(MakeHeader()), handler);
-}
-
 TEST(NLTest, ReadVarBounds) {
   EXPECT_READ("1.1 <= v0; v1 <= 22; v2 = 33; v3; 44 <= v4 <= 55;",
               "b\n2 1.1\n1 22\n4 33\n3\n0 44 55\n");
@@ -859,11 +827,12 @@ TEST(NLTest, ReadLinearConExpr) {
     "(input):12:1: variable index 6 out of bounds");
 }
 
-TEST(NLTest, ReadJacobianColumns) {
+TEST(NLTest, ReadColumnSizes) {
   EXPECT_READ("sizes: 1 2 2 4;", "k4\n1\n3\n5\n9\n");
   EXPECT_READ("sizes: 1 2 2 4;", "K4\n1\n2\n2\n4\n");
   EXPECT_READ_ERROR("k3\n", "(input):11:2: expected 4");
   EXPECT_READ_ERROR("k4\n-1\n", "(input):12:1: expected nonnegative integer");
+  EXPECT_READ_ERROR("k4\n2\n1\n", "(input):13:1: invalid column offset");
 }
 
 TEST(NLTest, ReadInitialValues) {
@@ -891,8 +860,9 @@ TEST(NLTest, ReadInitialDualValues) {
 
 TEST(NLTest, ReadFunction) {
   EXPECT_READ("f0: foo 2 1;", "F0 1 2 foo\n");
-  EXPECT_READ("f0:  2 1;", "F0 1 2 \n");
   EXPECT_READ("f0: foo -1 0;", "F0 0 -1 foo\n");
+  EXPECT_READ_ERROR("F0 1 2 \n",
+                    "(input):11:8: expected name");
   EXPECT_READ_ERROR("F-1 0 0 f\n",
                     "(input):11:2: expected nonnegative integer");
   EXPECT_READ_ERROR("F9 0 0 f\n",
@@ -911,6 +881,10 @@ TEST(NLTest, ReadDefinedVars) {
                     "(input):11:2: defined variable index 6 out of bounds");
 }
 
-// TODO: test suffixes
+TEST(NLTest, ReadSuffix) {
+  // TODO: test
+}
+
+// TODO: test TextReader
 
 }  // namespace

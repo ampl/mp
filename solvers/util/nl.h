@@ -23,7 +23,6 @@
 #ifndef SOLVERS_UTIL_NL_H_
 #define SOLVERS_UTIL_NL_H_
 
-#include "solvers/arith.h"
 #include "solvers/util/error.h"
 #include "solvers/util/os.h"
 #include "solvers/util/problem-base.h"
@@ -58,12 +57,34 @@ enum {
   READ_VBTOL     = 3
 };
 
+namespace arith {
+// Floating-point arithmetic kind.
+enum Kind {
+  UNKNOWN            = 0,
+  // Standard IEEE-754 floating-point:
+  IEEE_LITTLE_ENDIAN = 1,
+  IEEE_BIG_ENDIAN    = 2,
+  // Historical floating-point formats:
+  IBM                = 3,
+  VAX                = 4,
+  CRAY               = 5,
+  LAST               = CRAY
+};
+
+// Returns floating-point arithmetic kind used on the current system.
+Kind GetKind();
+
+inline bool IsIEEE(arith::Kind k) {
+  return k == IEEE_LITTLE_ENDIAN || k == IEEE_BIG_ENDIAN;
+}
+}
+
 // .nl file header.
 // The .nl file format is described in the technical report
 // "Writing .nl Files" (http://www.cs.sandia.gov/~dmgay/nlwrite.pdf).
 struct NLHeader {
   // .nl file format.
-  enum Format { TEXT = 0, BINARY = 1, BINARY_SWAPPED = 2 };
+  enum Format { TEXT = 0, BINARY = 1 };
   Format format;
 
   int num_options;
@@ -146,6 +167,12 @@ struct NLHeader {
   // Number of functions.
   int num_funcs;
 
+  // Floating-point arithmetic kind used with binary format to check
+  // if an .nl file is written using a compatible representation of
+  // floating-point numbers. It is not used with text format and normally
+  // set to arith::UNKNOWN there.
+  arith::Kind arith_kind;
+
   // Flags: 1 = want output suffixes.
   int flags;
 
@@ -225,12 +252,12 @@ class TextReader {
     do {
       UInt new_result = result * 10 + (c - '0');
       if (new_result < result)
-        ReportReadError("number is too big");
+        ReportError("number is too big");
       result = new_result;
       c = *++ptr_;
     } while (c >= '0' && c <= '9');
     if (result > std::numeric_limits<Int>::max())
-      ReportReadError("number is too big");
+      ReportError("number is too big");
     value = result;
     return true;
   }
@@ -247,32 +274,32 @@ class TextReader {
       return false;
     UInt max = std::numeric_limits<Int>::max();
     if (result > max && !(sign == '-' && result == max + 1))
-      ReportReadError("number is too big");
+      ReportError("number is too big");
     value = sign != '-' ? result : 0 - result;
     return true;
   }
 
-  void DoReportReadError(
+  void DoReportError(
       const char *loc, fmt::StringRef format_str,
       const fmt::ArgList &args = fmt::ArgList());
-
- public:
-  TextReader(fmt::StringRef data, fmt::StringRef name);
-
-  void ReportReadError(fmt::StringRef format_str, const fmt::ArgList &args) {
-    DoReportReadError(token_, format_str, args);
-  }
-  FMT_VARIADIC(void, ReportReadError, fmt::StringRef)
-
-  char ReadChar() {
-    token_ = ptr_;
-    return *ptr_++;
-  }
 
   void SkipSpace() {
     while (std::isspace(*ptr_) && *ptr_ != '\n')
       ++ptr_;
     token_ = ptr_;
+  }
+
+ public:
+  TextReader(fmt::StringRef data, fmt::StringRef name);
+
+  void ReportError(fmt::StringRef format_str, const fmt::ArgList &args) {
+    DoReportError(token_, format_str, args);
+  }
+  FMT_VARIADIC(void, ReportError, fmt::StringRef)
+
+  char ReadChar() {
+    token_ = ptr_;
+    return *ptr_++;
   }
 
   void ReadTillEndOfLine() {
@@ -284,7 +311,7 @@ class TextReader {
         return;
       }
     }
-    DoReportReadError(ptr_, "expected newline");
+    DoReportError(ptr_, "expected newline");
   }
 
   bool ReadOptionalInt(int &value) { return DoReadOptionalInt(value); }
@@ -298,7 +325,7 @@ class TextReader {
   Int ReadInt() {
     Int value = 0;
     if (!DoReadOptionalInt(value))
-      ReportReadError("expected integer");
+      ReportError("expected integer");
     return value;
   }
 
@@ -306,11 +333,9 @@ class TextReader {
     SkipSpace();
     int value = 0;
     if (!ReadIntWithoutSign(value))
-      ReportReadError("expected nonnegative integer");
+      ReportError("expected nonnegative integer");
     return value;
   }
-
-#undef strtod
 
   double ReadDouble() {
     SkipSpace();
@@ -319,24 +344,17 @@ class TextReader {
     if (*ptr_ != '\n')
       value = std::strtod(ptr_, &end);
     if (!end || ptr_ == end)
-      ReportReadError("expected double");
+      ReportError("expected double");
     ptr_ = end;
     return value;
   }
 
-  bool ReadOptionalDouble(double &value) {
-    SkipSpace();
-    if (*ptr_ == '\n')
-      return false;
-    char *end = 0;
-    value = std::strtod(ptr_, &end);
-    bool has_value = ptr_ != end;
-    ptr_ = end;
-    return has_value;
-  }
+  bool ReadOptionalDouble(double &value);
+
+  // Reads a function or suffix name.
+  fmt::StringRef ReadName();
 
   fmt::StringRef ReadString();
-  fmt::StringRef ReadStringLiteral();
 
   // Reads an .nl file header. The header is always in text format, so this
   // function doesn't have a counterpart in BinaryReader.
@@ -367,7 +385,7 @@ class NLReader {
   int ReadVarIndex() {
     int index = reader_.ReadUInt();
     if (index >= total_num_vars_)
-      reader_.ReportReadError("variable index {} out of bounds", index);
+      reader_.ReportError("variable index {} out of bounds", index);
     return index;
   }
 
@@ -379,7 +397,7 @@ class NLReader {
 
   Variable ReadVariable() {
     if (reader_.ReadChar() != 'v')
-      reader_.ReportReadError("expected variable");
+      reader_.ReportError("expected variable");
     return DoReadVariable();
   }
 
@@ -408,7 +426,7 @@ class NLReader {
     typedef typename Handler::CountExpr Expr;
     Expr Read(NLReader &r, int opcode) const {
       if (opcode != OPCOUNT)
-        r.reader_.ReportReadError("expected count expression opcode");
+        r.reader_.ReportError("expected count expression opcode");
       return r.ReadCountExpr();
     }
   };
@@ -444,7 +462,7 @@ class NLReader {
   typename ExprReader::Expr ReadExpr() {
     int opcode = reader_.ReadUInt();
     if (opcode >= N_OPS)
-      reader_.ReportReadError("invalid opcode {}", opcode);
+      reader_.ReportError("invalid opcode {}", opcode);
     reader_.ReadTillEndOfLine();
     return ExprReader().Read(*this, opcode);
   }
@@ -477,7 +495,7 @@ class NLReader {
 
     void CheckIndex(int index) {
       if (index >= num_items()) {
-        this->reader_.reader_.ReportReadError(
+        this->reader_.reader_.ReportError(
               "variable index {} out of bounds", index);
       }
     }
@@ -496,7 +514,7 @@ class NLReader {
 
     void CheckIndex(int index) {
       if (index >= num_items()) {
-        this->reader_.reader_.ReportReadError(
+        this->reader_.reader_.ReportError(
               "objective index {} out of bounds", index);
       }
     }
@@ -514,7 +532,7 @@ class NLReader {
 
     void CheckIndex(int index) {
       if (index >= num_items()) {
-        this->reader_.reader_.ReportReadError(
+        this->reader_.reader_.ReportError(
               "constraint index {} out of bounds", index);
       }
     }
@@ -573,7 +591,7 @@ double NLReader<Reader, Handler>::ReadConstant(char code) {
     value = reader_.template ReadInt<long>();
     break;
   default:
-    reader_.ReportReadError("expected constant");
+    reader_.ReportError("expected constant");
   }
   reader_.ReadTillEndOfLine();
   return value;
@@ -585,7 +603,7 @@ NLReader<Reader, Handler>::ReadArgs<ExprReader>::ReadArgs(
     NLReader &r, int min_args) {
   int num_args = r.reader_.ReadUInt();
   if (num_args < min_args)
-    r.reader_.ReportReadError("too few arguments");
+    r.reader_.ReportError("too few arguments");
   r.reader_.ReadTillEndOfLine();
   args_.resize(num_args);
   ExprReader expr_reader;
@@ -600,7 +618,7 @@ typename Handler::NumericExpr
   case 'f': {
     int func_index = reader_.ReadUInt();
     if (func_index >= header_.num_funcs)
-      reader_.ReportReadError("function index {} out of bounds", func_index);
+      reader_.ReportError("function index {} out of bounds", func_index);
     int num_args = reader_.ReadUInt();
     reader_.ReadTillEndOfLine();
     typedef typename Handler::Expr Expr;
@@ -608,7 +626,7 @@ typename Handler::NumericExpr
     for (int i = 0; i < num_args; ++i) {
       char c = reader_.ReadChar();
       args[i] = c == 'h' ?
-            handler_.MakeString(reader_.ReadStringLiteral()) :
+            handler_.MakeStringLiteral(reader_.ReadString()) :
             args[i] = ReadNumericExpr(c);
     }
     return handler_.MakeCall(func_index, ArrayRef<Expr>(&args[0], args.size()));
@@ -620,7 +638,7 @@ typename Handler::NumericExpr
   case 'v':
     return DoReadVariable();
   default:
-    reader_.ReportReadError("expected expression");
+    reader_.ReportError("expected expression");
   }
   return NumericExpr();
 }
@@ -645,7 +663,7 @@ typename Handler::NumericExpr
   case expr::PLTERM: {
     int num_slopes = reader_.ReadUInt();
     if (num_slopes <= 1)
-      reader_.ReportReadError("too few slopes in piecewise-linear term");
+      reader_.ReportError("too few slopes in piecewise-linear term");
     reader_.ReadTillEndOfLine();
     Array<double, 10> breakpoints(num_slopes - 1);
     Array<double, 10> slopes(num_slopes);
@@ -666,7 +684,7 @@ typename Handler::NumericExpr
   case expr::NUMBEROF:
     return handler_.MakeNumberOf(ReadArgs<>(*this, 1));
   default:
-    reader_.ReportReadError("expected numeric expression opcode");
+    reader_.ReportError("expected numeric expression opcode");
   }
   return NumericExpr();
 }
@@ -679,7 +697,7 @@ typename Handler::LogicalExpr NLReader<Reader, Handler>::ReadLogicalExpr() {
   case 'o':
     return ReadExpr<LogicalExprReader>();
   }
-  reader_.ReportReadError("expected logical expression");
+  reader_.ReportError("expected logical expression");
   return LogicalExpr();
 }
 
@@ -701,7 +719,7 @@ typename Handler::LogicalExpr
     NumericExpr lhs = ReadNumericExpr();
     char c = reader_.ReadChar();
     if (c != 'o')
-      reader_.ReportReadError("expected count expression");
+      reader_.ReportError("expected count expression");
     return handler_.MakeLogicalCount(opcode, lhs, ReadExpr<CountExprReader>());
   }
   case expr::IMPLICATION: {
@@ -716,7 +734,7 @@ typename Handler::LogicalExpr
   case expr::ALLDIFF:
     return handler_.MakeAllDiff(ReadArgs<>(*this));
   default:
-    reader_.ReportReadError("expected logical expression opcode");
+    reader_.ReportError("expected logical expression opcode");
   }
   return LogicalExpr();
 }
@@ -728,10 +746,8 @@ void NLReader<Reader, Handler>::ReadLinearExpr() {
   LinearHandler lh(*this);
   lh.CheckIndex(index);
   int num_terms = reader_.ReadUInt();
-  if (num_terms <= 0 || num_terms > header_.num_vars) {
-    reader_.ReportReadError(
-          "number of linear terms {} out of bounds", num_terms);
-  }
+  if (num_terms <= 0 || num_terms > header_.num_vars)
+    reader_.ReportError("number of linear terms {} out of bounds", num_terms);
   reader_.ReadTillEndOfLine();
   ReadLinearExpr(num_terms,
                  LinearHandler(*this).GetLinearExprHandler(index, num_terms));
@@ -789,10 +805,8 @@ void NLReader<Reader, Handler>::ReadBounds() {
       if (BoundHandler::TYPE == CON) {
         int flags = reader_.template ReadInt<int>();
         int var_index = reader_.ReadUInt() - 1;
-        if (var_index < 0 || var_index >= header_.num_vars) {
-          reader_.ReportReadError(
-                "variable index {} out of bounds", var_index);
-        }
+        if (var_index < 0 || var_index >= header_.num_vars)
+          reader_.ReportError("variable index {} out of bounds", var_index);
         int mask = comp::INF_LB | comp::INF_UB;
         handler_.SetComplement(i, var_index, flags & mask);
         reader_.ReadTillEndOfLine();
@@ -800,7 +814,7 @@ void NLReader<Reader, Handler>::ReadBounds() {
       }
       // Fall through as COMPL bound type is invalid for variables.
     default:
-      reader_.ReportReadError("invalid bound type");
+      reader_.ReportError("invalid bound type");
     }
     reader_.ReadTillEndOfLine();
     bh.SetBounds(i, lb, ub);
@@ -812,15 +826,20 @@ template <bool CUMULATIVE>
 void NLReader<Reader, Handler>::ReadColumnSizes() {
   int num_sizes = header_.num_vars - 1;
   if (reader_.ReadUInt() != num_sizes)
-    reader_.ReportReadError("expected {}", num_sizes);
+    reader_.ReportError("expected {}", num_sizes);
   reader_.ReadTillEndOfLine();
   typename Handler::ColumnSizeHandler
       size_handler = handler_.GetColumnSizeHandler();
   int prev_size = 0;
   for (int i = 0; i < num_sizes; ++i) {
     int size = reader_.ReadUInt();
-    size_handler.Add(CUMULATIVE ? size - prev_size : size);
-    prev_size = size;
+    if (CUMULATIVE) {
+      if (size < prev_size)
+        reader_.ReportError("invalid column offset");
+      size -= prev_size;
+      prev_size += size;
+    }
+    size_handler.Add(size);
     reader_.ReadTillEndOfLine();
   }
 }
@@ -831,7 +850,7 @@ void NLReader<Reader, Handler>::ReadInitialValues() {
   int num_values = reader_.ReadUInt();
   ValueHandler vh(*this);
   if (num_values > vh.num_items())
-    reader_.ReportReadError("too many initial values");
+    reader_.ReportError("too many initial values");
   reader_.ReadTillEndOfLine();
   for (int i = 0; i < num_values; ++i) {
     int index = reader_.ReadUInt();
@@ -856,7 +875,7 @@ void NLReader<Reader, Handler>::Read() {
       // Nonlinear part of an algebraic constraint body.
       int index = reader_.ReadUInt();
       if (index >= header_.num_algebraic_cons)
-        reader_.ReportReadError("constraint index {} out of bounds", index);
+        reader_.ReportError("constraint index {} out of bounds", index);
       reader_.ReadTillEndOfLine();
       handler_.SetCon(index, ReadNumericExpr());
       break;
@@ -864,10 +883,8 @@ void NLReader<Reader, Handler>::Read() {
     case 'L': {
       // Logical constraint expression.
       int index = reader_.ReadUInt();
-      if (index >= header_.num_logical_cons) {
-        reader_.ReportReadError(
-              "logical constraint index {} out of bounds", index);
-      }
+      if (index >= header_.num_logical_cons)
+        reader_.ReportError("logical constraint index {} out of bounds", index);
       reader_.ReadTillEndOfLine();
       handler_.SetLogicalCon(index, ReadLogicalExpr());
       break;
@@ -876,7 +893,7 @@ void NLReader<Reader, Handler>::Read() {
       // Objective type and nonlinear part of an objective expression.
       int index = reader_.ReadUInt();
       if (index >= header_.num_objs)
-        reader_.ReportReadError("objective index {} out of bounds", index);
+        reader_.ReportError("objective index {} out of bounds", index);
       int obj_type = reader_.ReadUInt();
       reader_.ReadTillEndOfLine();
       handler_.SetObj(index, obj_type != 0 ? obj::MAX : obj::MIN,
@@ -888,7 +905,7 @@ void NLReader<Reader, Handler>::Read() {
       // where used).
       int var_index = reader_.ReadUInt();
       if (var_index < header_.num_vars || var_index >= total_num_vars_) {
-        reader_.ReportReadError(
+        reader_.ReportError(
               "defined variable index {} out of bounds", var_index);
       }
       int num_linear_terms = reader_.ReadUInt();
@@ -902,14 +919,15 @@ void NLReader<Reader, Handler>::Read() {
       break;
     }
     case 'F': {
+      // Imported function description.
       int index = reader_.ReadUInt();
       if (index >= header_.num_funcs)
-        reader_.ReportReadError("function index {} out of bounds", index);
+        reader_.ReportError("function index {} out of bounds", index);
       int type = reader_.ReadUInt();
       if (type != func::NUMERIC && type != func::SYMBOLIC)
-        reader_.ReportReadError("invalid function type");
+        reader_.ReportError("invalid function type");
       int num_args = reader_.template ReadInt<int>();
-      fmt::StringRef name = reader_.ReadString();
+      fmt::StringRef name = reader_.ReadName();
       reader_.ReadTillEndOfLine();
       handler_.SetFunction(index, name, num_args,
                            static_cast<func::Type>(type));
@@ -923,10 +941,20 @@ void NLReader<Reader, Handler>::Read() {
       // Jacobian sparsity & linear terms in constraints.
       ReadLinearExpr<ConHandler>();
       break;
-    case 'S':
+    case 'S': {
       // Suffix values.
-      // TODO: read suffix
+      int kind = reader_.ReadUInt();
+      int num_values = reader_.ReadUInt();
+      fmt::StringRef name = reader_.ReadName();
+      reader_.ReadTillEndOfLine();
+      for (int i = 0; i < num_values; ++i) {
+        int index = reader_.ReadUInt();
+        reader_.ReadDouble();
+        reader_.ReadTillEndOfLine();
+      }
+      // TODO: pass to handler
       break;
+    }
     case 'b':
       // Bounds on variables.
       ReadBounds<VarHandler>();
@@ -957,12 +985,13 @@ void NLReader<Reader, Handler>::Read() {
       // TODO: check for end of input
       return;
     default:
-      reader_.ReportReadError("invalid segment type '{}'", c);
+      // TODO: handle unprintable chars
+      reader_.ReportError("invalid segment type '{}'", c);
     }
   }
 }
 
-// Reads a string containing a problem in .nl format.
+// Reads a string containing an optimization problem in .nl format.
 // name: Name to be used when reporting errors.
 template <typename Handler>
 void ReadNLString(fmt::StringRef str, Handler &handler,
@@ -971,10 +1000,23 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
   NLHeader header = NLHeader();
   reader.ReadHeader(header);
   handler.BeginBuild(name.c_str(), header, 0);
-  if (header.format == NLHeader::TEXT)
+  switch (header.format) {
+  case NLHeader::TEXT:
     NLReader<TextReader, Handler>(reader, header, handler).Read();
-  else
-    ; // TODO: use binary reader
+    break;
+  case NLHeader::BINARY: {
+    arith::Kind arith_kind = arith::GetKind();
+    if (arith_kind != header.arith_kind) {
+      if (IsIEEE(arith_kind) && IsIEEE(header.arith_kind))
+        ; // TODO: use binary reader & swap bytes
+      else
+        throw ReadError(name, 0, 0, "unsupported floating-point arithmetic");
+    } else {
+      // TODO: use binary reader
+    }
+    break;
+  }
+  }
 }
 
 // Reads an .nl file.

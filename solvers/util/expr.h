@@ -47,6 +47,7 @@ extern "C" {
 #undef con_name
 #undef filename
 #undef ampl_vbtol
+#undef strtod
 #ifndef ASL_PRESERVE_DEFINES
 # undef Char
 # undef A_colstarts
