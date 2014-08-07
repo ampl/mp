@@ -196,6 +196,14 @@ class ASLBuilder {
   Function SetFunction(int index, fmt::StringRef name, int num_args,
                        func::Type type = func::NUMERIC);
 
+  class SuffixHandler {
+    // TODO
+  };
+  SuffixHandler AddSuffix(int kind, int num_values, fmt::StringRef name) {
+    // TODO
+    return SuffixHandler();
+  }
+
   // The Make* methods construct expression objects. These objects are
   // local to the currently built ASL problem and shouldn't be used with
   // other problems. The expression objects are not accessible via the

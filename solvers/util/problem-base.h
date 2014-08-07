@@ -129,6 +129,22 @@ namespace comp {
 enum { INF_LB = 1, INF_UB = 2 };
 }
 
+namespace suf {
+// Suffix kinds.
+enum {
+  VAR     =  0,  // Applies to variables.
+  CON     =  1,  // Applies to constraints.
+  OBJ     =  2,  // Applies to objectives.
+  PROB    =  3,  // Applies to problems.
+  MASK    =  3,  // Mask for the above.
+  FLOAT   =  4,  // Suffix values are floating-point numbers.
+  IODECL  =  8,  // Tell AMPL to make this an INOUT suffix.
+  OUTPUT  = 16,  // Output suffix: return values to AMPL.
+  INPUT   = 32,  // Input suffix: values were received from AMPL.
+  OUTONLY = 64   // Output only: reject as an input value.
+};
+}
+
 // A reference to an immutable array.
 template <typename T>
 class ArrayRef {

@@ -182,6 +182,15 @@ class TestNLHandler {
                      std::string(name.c_str(), name.size()), num_args, type);
   }
 
+  class SuffixHandler {
+    // TODO
+  };
+
+  SuffixHandler AddSuffix(int kind, int num_values, fmt::StringRef name) {
+    // TODO
+    return SuffixHandler();
+  }
+
   std::string MakeNumericConstant(double value) {
     return fmt::format("{}", value);
   }
@@ -391,6 +400,9 @@ struct TestNLHandler2 {
   void SetInitialDualValue(int, double) {}
 
   void SetFunction(int, fmt::StringRef, int, ampl::func::Type) {}
+
+  struct SuffixHandler {};
+  SuffixHandler AddSuffix(int, int, fmt::StringRef) { return SuffixHandler(); }
 
   TestNumericExpr MakeNumericConstant(double) { return TestNumericExpr(); }
   TestVariable MakeVariable(int) { return TestVariable(); }
@@ -625,8 +637,7 @@ TEST(NLTest, ReadObj) {
     "(input):11:4: expected nonnegative integer");
   EXPECT_READ_ERROR("O-1 0\nn0\n",
     "(input):11:2: expected nonnegative integer");
-  EXPECT_READ_ERROR("O6 0\nn0\n",
-    "(input):11:2: objective index 6 out of bounds");
+  EXPECT_READ_ERROR("O6 0\nn0\n", "(input):11:2: integer 6 out of bounds");
 }
 
 template <typename Int>
@@ -654,7 +665,7 @@ TEST(NLTest, ReadVariable) {
   EXPECT_READ("c0: v4;", "C0\nv4\n");
   EXPECT_READ("c0: v5;", "C0\nv5\n");
   EXPECT_READ_ERROR("C0\nv-1\n", "(input):12:2: expected nonnegative integer");
-  EXPECT_READ_ERROR("C0\nv6\n", "(input):12:2: variable index 6 out of bounds");
+  EXPECT_READ_ERROR("C0\nv6\n", "(input):12:2: integer 6 out of bounds");
 }
 
 TEST(NLTest, ReadUnaryExpr) {
@@ -687,8 +698,7 @@ TEST(NLTest, ReadCallExpr) {
   EXPECT_READ("c0: f1(v1, 0);", "C0\nf1 2\nv1\nn0\n");
   EXPECT_READ_ERROR("C0\nf-1 1\nn0\n",
     "(input):12:2: expected nonnegative integer");
-  EXPECT_READ_ERROR("C0\nf10 1\nn0\n",
-    "(input):12:2: function index 10 out of bounds");
+  EXPECT_READ_ERROR("C0\nf10 1\nn0\n", "(input):12:2: integer 10 out of bounds");
   EXPECT_READ_ERROR("C0\nf1 1\nx\n", "(input):13:1: expected expression");
 }
 
@@ -808,10 +818,8 @@ TEST(NLTest, ReadConBounds) {
   EXPECT_READ_ERROR("r\n6 1\n", "(input):12:1: invalid bound type");
   EXPECT_READ_ERROR("r\n2 11\n1 22\n4 33\n3\n",
                     "(input):16:1: expected nonnegative integer");
-  EXPECT_READ_ERROR("r\n5 1 0\n",
-                    "(input):12:5: variable index -1 out of bounds");
-  EXPECT_READ_ERROR("r\n5 1 6\n",
-                    "(input):12:5: variable index 5 out of bounds");
+  EXPECT_READ_ERROR("r\n5 1 0\n", "(input):12:5: integer 0 out of bounds");
+  EXPECT_READ_ERROR("r\n5 1 6\n", "(input):12:5: integer 6 out of bounds");
 }
 
 TEST(NLTest, ReadLinearObjExpr) {
@@ -819,15 +827,12 @@ TEST(NLTest, ReadLinearObjExpr) {
   EXPECT_READ("o5 5: 1 * v1 + 1 * v2 + 1 * v3 + 1 * v4 + 1 * v5;",
               "G5 5\n1 1\n2 1\n3 1\n4 1\n5 1\n");
   EXPECT_READ_ERROR("G-1", "(input):11:2: expected nonnegative integer");
-  EXPECT_READ_ERROR("G6", "(input):11:2: objective index 6 out of bounds");
-  EXPECT_READ_ERROR("G0 0",
-    "(input):11:4: number of linear terms 0 out of bounds");
-  EXPECT_READ_ERROR("G0 6",
-    "(input):11:4: number of linear terms 6 out of bounds");
+  EXPECT_READ_ERROR("G6", "(input):11:2: integer 6 out of bounds");
+  EXPECT_READ_ERROR("G0 0", "(input):11:4: integer 0 out of bounds");
+  EXPECT_READ_ERROR("G0 6", "(input):11:4: integer 6 out of bounds");
   EXPECT_READ_ERROR("G0 1\n-1 0\n",
     "(input):12:1: expected nonnegative integer");
-  EXPECT_READ_ERROR("G0 1\n6 0\n",
-    "(input):12:1: variable index 6 out of bounds");
+  EXPECT_READ_ERROR("G0 1\n6 0\n", "(input):12:1: integer 6 out of bounds");
 }
 
 TEST(NLTest, ReadLinearConExpr) {
@@ -835,15 +840,12 @@ TEST(NLTest, ReadLinearConExpr) {
   EXPECT_READ("c5 5: 1 * v1 + 1 * v2 + 1 * v3 + 1 * v4 + 1 * v5;",
               "J5 5\n1 1\n2 1\n3 1\n4 1\n5 1\n");
   EXPECT_READ_ERROR("J-1", "(input):11:2: expected nonnegative integer");
-  EXPECT_READ_ERROR("J8", "(input):11:2: constraint index 8 out of bounds");
-  EXPECT_READ_ERROR("J0 0",
-    "(input):11:4: number of linear terms 0 out of bounds");
-  EXPECT_READ_ERROR("J0 6",
-    "(input):11:4: number of linear terms 6 out of bounds");
+  EXPECT_READ_ERROR("J8", "(input):11:2: integer 8 out of bounds");
+  EXPECT_READ_ERROR("J0 0", "(input):11:4: integer 0 out of bounds");
+  EXPECT_READ_ERROR("J0 6", "(input):11:4: integer 6 out of bounds");
   EXPECT_READ_ERROR("J0 1\n-1 0\n",
     "(input):12:1: expected nonnegative integer");
-  EXPECT_READ_ERROR("J0 1\n6 0\n",
-    "(input):12:1: variable index 6 out of bounds");
+  EXPECT_READ_ERROR("J0 1\n6 0\n", "(input):12:1: integer 6 out of bounds");
 }
 
 TEST(NLTest, ReadColumnSizes) {
@@ -859,8 +861,7 @@ TEST(NLTest, ReadInitialValues) {
               "x5\n4 1.1\n3 0\n2 1\n1 2\n0 3\n");
   EXPECT_READ_ERROR("x6\n", "(input):11:2: too many initial values");
   EXPECT_READ_ERROR("x1\n-1 0\n", "(input):12:1: expected nonnegative integer");
-  EXPECT_READ_ERROR("x1\n5 0\n",
-                    "(input):12:1: variable index 5 out of bounds");
+  EXPECT_READ_ERROR("x1\n5 0\n", "(input):12:1: integer 5 out of bounds");
   EXPECT_READ_ERROR("x2\n4 1.1\n\n",
                     "(input):13:1: expected nonnegative integer");
 }
@@ -871,8 +872,7 @@ TEST(NLTest, ReadInitialDualValues) {
               "d7\n4 1.1\n3 0\n2 1\n1 2\n0 3\n5 1\n6 2\n");
   EXPECT_READ_ERROR("d8\n", "(input):11:2: too many initial values");
   EXPECT_READ_ERROR("d1\n-1 0\n", "(input):12:1: expected nonnegative integer");
-  EXPECT_READ_ERROR("d1\n7 0\n",
-                    "(input):12:1: constraint index 7 out of bounds");
+  EXPECT_READ_ERROR("d1\n7 0\n", "(input):12:1: integer 7 out of bounds");
   EXPECT_READ_ERROR("d2\n4 1.1\n\n",
                     "(input):13:1: expected nonnegative integer");
 }
@@ -884,8 +884,7 @@ TEST(NLTest, ReadFunction) {
                     "(input):11:8: expected name");
   EXPECT_READ_ERROR("F-1 0 0 f\n",
                     "(input):11:2: expected nonnegative integer");
-  EXPECT_READ_ERROR("F9 0 0 f\n",
-                    "(input):11:2: function index 9 out of bounds");
+  EXPECT_READ_ERROR("F9 0 0 f\n", "(input):11:2: integer 9 out of bounds");
   EXPECT_READ_ERROR("F0 -1 0 f\n",
                     "(input):11:4: expected nonnegative integer");
   EXPECT_READ_ERROR("F0 2 0 f\n", "(input):11:4: invalid function type");
@@ -894,10 +893,8 @@ TEST(NLTest, ReadFunction) {
 TEST(NLTest, ReadDefinedVars) {
   EXPECT_READ("v5/1 = b2(v0, 42);", "V5 0 1\no2\nv0\nn42\n");
   EXPECT_READ("v5 2: 2 * v1 + 3 * v0; v5/1 = 0;", "V5 2 1\n1 2.0\n0 3\nn0\n");
-  EXPECT_READ_ERROR("V4 0 1\nv0\n",
-                    "(input):11:2: defined variable index 4 out of bounds");
-  EXPECT_READ_ERROR("V6 0 1\nv0\n",
-                    "(input):11:2: defined variable index 6 out of bounds");
+  EXPECT_READ_ERROR("V4 0 1\nv0\n", "(input):11:2: integer 4 out of bounds");
+  EXPECT_READ_ERROR("V6 0 1\nv0\n", "(input):11:2: integer 6 out of bounds");
 }
 
 TEST(NLTest, ReadSuffix) {
