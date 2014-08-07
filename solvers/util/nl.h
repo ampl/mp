@@ -279,6 +279,16 @@ class TextReader {
     return true;
   }
 
+  // Reads a nonnegative integer and checks that adding it to accumulator
+  // doesn't overflow.
+  int ReadUInt(int &accumulator) {
+    int value = ReadUInt();
+    if (accumulator > std::numeric_limits<int>::max() - value)
+      ReportError("integer overflow");
+    accumulator += value;
+    return value;
+  }
+
   void DoReportError(
       const char *loc, fmt::StringRef format_str,
       const fmt::ArgList &args = fmt::ArgList());
@@ -862,6 +872,7 @@ void NLReader<Reader, Handler>::ReadInitialValues() {
 
 template <typename Reader, typename Handler>
 void NLReader<Reader, Handler>::Read() {
+  // TextReader::ReadHeader checks that this doesn't overflow.
   total_num_vars_ = header_.num_vars +
       header_.num_common_exprs_in_both +
       header_.num_common_exprs_in_cons +

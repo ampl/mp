@@ -233,12 +233,14 @@ void TextReader::ReadHeader(NLHeader &header) {
   header.max_var_name_len = ReadUInt();
   ReadTillEndOfLine();
 
-  // Read the information about common expressions.
-  header.num_common_exprs_in_both = ReadUInt();
-  header.num_common_exprs_in_cons = ReadUInt();
-  header.num_common_exprs_in_objs = ReadUInt();
-  header.num_common_exprs_in_single_cons = ReadUInt();
-  header.num_common_exprs_in_single_objs = ReadUInt();
+  // Read the information about common expressions checking for overflow
+  // as the variable indices go from 0 to num_vars + num_common_exprs.
+  int max_vars = header.num_vars;
+  header.num_common_exprs_in_both = ReadUInt(max_vars);
+  header.num_common_exprs_in_cons = ReadUInt(max_vars);
+  header.num_common_exprs_in_objs = ReadUInt(max_vars);
+  header.num_common_exprs_in_single_cons = ReadUInt(max_vars);
+  header.num_common_exprs_in_single_objs = ReadUInt(max_vars);
   ReadTillEndOfLine();
 }
 }  // namespace ampl

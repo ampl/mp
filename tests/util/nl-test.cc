@@ -586,6 +586,25 @@ TEST(NLTest, IncompleteHeader) {
       ReadError, "(input):7:3: expected nonnegative integer");
 }
 
+#define CHECK_INT_OVERFLOW(field, col) { \
+  NLHeader h = {NLHeader::TEXT}; \
+  h.num_vars = INT_MAX; \
+  h.field = 1; \
+  fmt::Writer w; \
+  w << h; \
+  NLHeader actual = {}; \
+  EXPECT_THROW_MSG(ampl::TextReader(w.str(), "in").ReadHeader(actual), \
+                   ReadError, fmt::format("in:10:{}: integer overflow", col)); \
+}
+
+TEST(NLTest, ReadHeaderIntegerOverflow) {
+  CHECK_INT_OVERFLOW(num_common_exprs_in_both, 2);
+  CHECK_INT_OVERFLOW(num_common_exprs_in_cons, 4);
+  CHECK_INT_OVERFLOW(num_common_exprs_in_objs, 6);
+  CHECK_INT_OVERFLOW(num_common_exprs_in_single_cons, 8);
+  CHECK_INT_OVERFLOW(num_common_exprs_in_single_objs, 10);
+}
+
 std::string ReadNL(std::string body) {
   TestNLHandler handler;
   ReadNLString(FormatHeader(MakeHeader()) + body, handler);
