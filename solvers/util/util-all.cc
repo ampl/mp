@@ -27,6 +27,7 @@
 #undef min
 #undef max
 
+#include "nl.cc"
 #include "aslbuilder.cc"
 #undef nfunc
 #include "solver.cc"
