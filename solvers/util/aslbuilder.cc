@@ -79,6 +79,23 @@ inline T *ASLBuilder::Allocate(SafeInt<int> size) {
   return reinterpret_cast<T*>(mem_ASL(asl_, size.value()));
 }
 
+template <typename T>
+inline T *ASLBuilder::ZapAllocate(std::size_t size) {
+  return reinterpret_cast<T*>(M1zapalloc_ASL(&asl_->i, size));
+}
+
+template <typename T>
+T *ASLBuilder::AllocateSuffixValues(
+    T *&values, int num_values, int nx, int nx1) {
+  if (!values)
+    values = Allocate<T>(nx1 * sizeof(T));
+  if (num_values < nx)
+    std::memset(values, 0, nx * sizeof(T));
+  if (nx < nx1)
+    std::memset(values + nx, 0, (nx1 - nx) * sizeof(T));
+  return values;
+}
+
 void ASLBuilder::SetObjOrCon(
     int index, cde *d, int *cexp1_end, ::expr *e, int **z) {
   bool linear = asl_->i.ASLtype == ASL_read_f;
@@ -375,8 +392,7 @@ void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
     std::memset(info.X0_, 0, static_->_nv1 * sizeof(double));
   if (info.havex0_)
     std::memset(info.havex0_, 0, static_->_nv1);
-  expr_v *e = info1.var_e_ =
-      reinterpret_cast<expr_v*>(M1zapalloc_ASL(&info, x));
+  expr_v *e = info1.var_e_ = ZapAllocate<expr_v>(x);
   info1.con_de_ = reinterpret_cast<cde*>(e + nv);
   info1.lcon_de_ = info1.con_de_ + nc;
   info1.obj_de_ = info1.lcon_de_ + nlcon;
@@ -437,8 +453,7 @@ void ASLBuilder::EndBuild() {
       if ((i += static_->_nv1 + 1) > info.amax_)
         info.amax_ = i;
     }
-    info.adjoints_ = reinterpret_cast<double*>(
-        M1zapalloc_ASL(&asl_->i, info.amax_ * Sizeof(double)));
+    info.adjoints_ = ZapAllocate<double>(info.amax_ * sizeof(double));
     info.adjoints_nv1_ = &info.adjoints_[static_->_nv1];
     info.nderps_ += nderp_;
   }
@@ -517,6 +532,7 @@ Function ASLBuilder::SetFunction(
     fi->nargs = num_args;
     fi->funcp = 0;
     int length = AddPadding(name.size() + 1);
+    // TODO: name may not be null terminated
     fi->name = std::strcpy(Allocate<char>(length), name.c_str());
   }
   if (!fi->funcp && !(fi->funcp = dynlink(name.c_str()))) {
@@ -529,6 +545,45 @@ Function ASLBuilder::SetFunction(
   }
   asl_->i.funcs_[index] = fi;
   return Function(fi);
+}
+
+ASLBuilder::SuffixHandler ASLBuilder::AddSuffix(
+    int kind, int num_values, fmt::StringRef name) {
+  bool readall = (flags_ & ASL_keep_all_suffixes) != 0;
+  int item_type = kind & suf::MASK;
+  SufDesc *d = 0;
+  if (readall) {
+    d = ZapAllocate<SufDesc>(sizeof(SufDesc) + name.size() + 1);
+    d->next = asl_->i.suffixes[item_type];
+    asl_->i.suffixes[item_type] = d;
+    asl_->i.nsuff[item_type]++;
+    asl_->i.nsuffixes++;
+    std::copy(name.c_str(), name.c_str() + name.size(),
+              d->sufname = reinterpret_cast<char*>(d + 1));
+    d->kind = kind;
+  } else {
+    for (d = asl_->i.suffixes[item_type]; ; d = d->next) {
+      if (!d)
+        return SuffixHandler();  // Skip this suffix table.
+      if (item_type == (d->kind & suf::MASK) &&
+          !strncmp(name.c_str(), d->sufname, name.size()) &&
+          !d->sufname[name.size()])
+        if ((d->kind & suf::OUTONLY) != 0)
+          return SuffixHandler();
+        break;
+    }
+  }
+  int nx = (&asl_->i.n_var_)[item_type];
+  int nx1 = nx + d->nextra + asl_->i.nsufext[item_type];
+  d->kind |= suf::INPUT;
+  if ((d->kind & suf::FLOAT) != 0) {
+    d->u.i = 0;
+    return SuffixHandler(AllocateSuffixValues(d->u.r, num_values, nx, nx1));
+  } else {
+    d->u.r = 0;
+    return SuffixHandler(AllocateSuffixValues(d->u.i, num_values, nx, nx1));
+  }
+  return SuffixHandler();
 }
 
 Variable ASLBuilder::MakeVariable(int var_index) {

@@ -183,7 +183,10 @@ class TestNLHandler {
   }
 
   class SuffixHandler {
-    // TODO
+   public:
+    void SetValue(int index, double value) {
+      // TODO
+    }
   };
 
   SuffixHandler AddSuffix(int kind, int num_values, fmt::StringRef name) {
@@ -401,7 +404,9 @@ struct TestNLHandler2 {
 
   void SetFunction(int, fmt::StringRef, int, ampl::func::Type) {}
 
-  struct SuffixHandler {};
+  struct SuffixHandler {
+    void SetValue(int, double) {}
+  };
   SuffixHandler AddSuffix(int, int, fmt::StringRef) { return SuffixHandler(); }
 
   TestNumericExpr MakeNumericConstant(double) { return TestNumericExpr(); }

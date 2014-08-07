@@ -455,6 +455,7 @@ class NLReader {
   class ReadArgs {
    private:
     typedef typename ExprReader::Expr Expr;
+    // TODO: pass arguments directly to handler
     fmt::internal::Array<Expr, 10> args_;
 
    public:
@@ -639,7 +640,7 @@ typename Handler::NumericExpr
     int num_args = reader_.ReadUInt();
     reader_.ReadTillEndOfLine();
     typedef typename Handler::Expr Expr;
-    fmt::internal::Array<Expr, 10> args(num_args);
+    fmt::internal::Array<Expr, 10> args(num_args); // TODO
     for (int i = 0; i < num_args; ++i) {
       char c = reader_.ReadChar();
       args[i] = c == 'h' ?
@@ -882,13 +883,16 @@ void NLReader<Reader, Handler>::ReadSuffix(int kind) {
   int num_values = ReadUInt(1, num_items);
   fmt::StringRef name = reader_.ReadName();
   reader_.ReadTillEndOfLine();
+  bool is_float = (kind & suf::FLOAT) != 0;
   typename Handler::SuffixHandler
       suffix_handler = handler_.AddSuffix(kind, num_values, name);
   for (int i = 0; i < num_values; ++i) {
     int index = ReadUInt(num_items);
-    reader_.ReadDouble(); // TODO: read int if suffix is not suf::FLOAT
+    if (is_float)
+      suffix_handler.SetValue(index, reader_.ReadDouble());
+    else
+      suffix_handler.SetValue(index, reader_.template ReadInt<int>());
     reader_.ReadTillEndOfLine();
-    // TODO: pass to handler
   }
 }
 

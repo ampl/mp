@@ -89,6 +89,12 @@ class ASLBuilder {
   template <typename T>
   T *Allocate(safeint::SafeInt<int> size = safeint::SafeInt<int>(sizeof(T)));
 
+  template <typename T>
+  T *ZapAllocate(std::size_t size);
+
+  template <typename T>
+  T *AllocateSuffixValues(T *&values, int num_values, int nx, int nx1);
+
   // Sets objective or constraint expression; adapted from co_read.
   void SetObjOrCon(int index, cde *d, int *cexp1_end, ::expr *e, int **z);
 
@@ -197,12 +203,32 @@ class ASLBuilder {
                        func::Type type = func::NUMERIC);
 
   class SuffixHandler {
-    // TODO
+   private:
+    int *int_values_;
+    double *dbl_values_;
+
+   public:
+    explicit SuffixHandler(int *values = 0)
+      : int_values_(values), dbl_values_(0) {}
+    explicit SuffixHandler(double *values)
+      : int_values_(0), dbl_values_(values) {}
+
+    void SetValue(int index, int value) {
+      if (int_values_)
+        int_values_[index] = value;
+      else if (dbl_values_)
+        dbl_values_[index] = value;
+    }
+
+    void SetValue(int index, double value) {
+      if (int_values_)
+        int_values_[index] = static_cast<int>(value + 0.5);
+      else if (dbl_values_)
+        dbl_values_[index] = value;
+    }
   };
-  SuffixHandler AddSuffix(int kind, int num_values, fmt::StringRef name) {
-    // TODO
-    return SuffixHandler();
-  }
+
+  SuffixHandler AddSuffix(int kind, int num_values, fmt::StringRef name);
 
   // The Make* methods construct expression objects. These objects are
   // local to the currently built ASL problem and shouldn't be used with

@@ -1005,5 +1005,5 @@ TEST(ASLBuilderTest, NLHandler) {
   ampl::ReadNLString(HeaderToStr(MakeHeader()), builder);
 }
 
-// TODO: test SetVarBounds, SetConBounds
+// TODO: test SetVarBounds, SetConBounds, AddSuffix
 }
