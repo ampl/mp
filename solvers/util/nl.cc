@@ -22,9 +22,7 @@
 
 #include "solvers/util/nl.h"
 
-namespace ampl {
-
-arith::Kind arith::GetKind() {
+ampl::arith::Kind ampl::arith::GetKind() {
   // Unlike ASL, we don't try detecting floating-point arithmetic at
   // configuration time because it doesn't work with cross-compiling.
   if (sizeof(double) != 2 * sizeof(uint32_t))
@@ -41,6 +39,8 @@ arith::Kind arith::GetKind() {
     return IEEE_BIG_ENDIAN;
   return UNKNOWN;
 }
+
+namespace ampl {
 
 fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h) {
   w << (h.format == NLHeader::TEXT ? 'g' : 'b') << h.num_options;
