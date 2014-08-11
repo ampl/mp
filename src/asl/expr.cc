@@ -342,7 +342,7 @@ void ExprWriter::VisitImplication(mp::ImplicationExpr e) {
 }
 }
 
-#ifdef HAVE_UNORDERED_MAP
+#ifdef MP_USE_UNORDERED_MAP
 
 namespace std {
 template <>
@@ -641,7 +641,7 @@ std::string internal::FormatOpCode(Expr e) {
   return buffer;
 }
 
-#ifdef HAVE_UNORDERED_MAP
+#ifdef MP_USE_UNORDERED_MAP
 size_t internal::HashNumberOfArgs::operator()(NumberOfExpr e) const {
   size_t hash = 0;
   for (int i = 1, n = e.num_args(); i < n; ++i)

@@ -23,7 +23,7 @@
 #ifndef MP_EXPR_H_
 #define MP_EXPR_H_
 
-#ifdef HAVE_UNORDERED_MAP
+#ifdef MP_USE_UNORDERED_MAP
 # include <unordered_map>
 #endif
 
@@ -155,7 +155,7 @@ class NumericExpr;
 class LogicalExpr;
 }
 
-#ifdef HAVE_UNORDERED_MAP
+#ifdef MP_USE_UNORDERED_MAP
 namespace std {
 template <>
 struct hash<mp::NumericExpr> {
@@ -1406,7 +1406,7 @@ void WriteExpr(fmt::Writer &w, LinearExpr linear, NumericExpr nonlinear);
 
 namespace internal {
 
-#ifdef HAVE_UNORDERED_MAP
+#ifdef MP_USE_UNORDERED_MAP
 template <class T>
 inline std::size_t HashCombine(std::size_t seed, const T &v) {
   return seed ^ (std::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
@@ -1456,7 +1456,7 @@ class NumberOfMap {
  private:
   CreateVar create_var_;
 
-#ifdef HAVE_UNORDERED_MAP
+#ifdef MP_USE_UNORDERED_MAP
   // Map from a numberof expression to an index in numberofs_.
   typedef std::unordered_map<NumberOfExpr, std::size_t,
     internal::HashNumberOfArgs, internal::EqualNumberOfArgs> Map;
@@ -1485,7 +1485,7 @@ class NumberOfMap {
 template <typename Var, typename CreateVar>
 Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
   assert(Cast<NumericConstant>(e[0]).value() == value);
-#ifdef HAVE_UNORDERED_MAP
+#ifdef MP_USE_UNORDERED_MAP
   std::pair<typename Map::iterator, bool> result =
       map_.insert(typename Map::value_type(e, numberofs_.size()));
   if (result.second)

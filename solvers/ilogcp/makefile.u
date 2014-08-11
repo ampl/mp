@@ -23,7 +23,7 @@ MTFLAGS = -DILCUSEMT
 #LDMTFLAGS = -mt
 
 # Comment out if using pre-C++11 compiler/standard library.
-CXX11_FLAGS = -std=c++11 -DHAVE_UNORDERED_MAP
+CXX11_FLAGS = -std=c++11 -DMP_USE_UNORDERED_MAP
 
 CXX_FLAGS = $(DEBUG) -I$(CONCERT_INC) -I$(CPLEX_INC) -I$(CPOPTIMIZER_INC) \
             -I$(AMPL_INC) -I${AMPL_INC}/solvers $(MTFLAGS) -DIL_STD ${CXX11_FLAGS}

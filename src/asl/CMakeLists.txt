@@ -137,6 +137,14 @@ add_library(asl ${ASL_SOURCES}
   aslbuilder.cc aslbuilder.h expr.cc expr.h problem.cc problem.h
   solver-c.cc solver-c.h solver.cc solver.h)
 
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles("
+  #include <unordered_map>
+  int main() { std::unordered_map<int, int> m; }" HAVE_UNORDERED_MAP)
+if (HAVE_UNORDERED_MAP)
+  target_compile_definitions(asl PUBLIC MP_USE_UNORDERED_MAP)
+endif ()
+
 # Link with librt for clock_gettime (Linux on i386).
 find_library(RT_LIBRARY rt)
 if (RT_LIBRARY)

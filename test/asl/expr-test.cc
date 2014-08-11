@@ -1679,7 +1679,7 @@ TEST_F(ExprTest, AllDiffExprPrecedence) {
       MakeIf(builder.MakeAllDiff(args), n1, n0));
 }
 
-#ifdef HAVE_UNORDERED_MAP
+#ifdef MP_USE_UNORDERED_MAP
 
 using ampl::internal::HashCombine;
 
