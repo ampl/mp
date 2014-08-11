@@ -3,11 +3,11 @@
 
 #include <limits>
 
-#include "solvers/util/solver.h"
+#include "asl/solver.h"
 
-class TestSolutionHandler : public ampl::BasicSolutionHandler {
+class TestSolutionHandler : public mp::BasicSolutionHandler {
  private:
-  ampl::Problem *problem_;
+  mp::Problem *problem_;
   std::string message_;
   double obj_value_;
   int solve_code_;
@@ -20,14 +20,14 @@ class TestSolutionHandler : public ampl::BasicSolutionHandler {
     solve_code_(0), primal_(0), dual_(0) {}
   virtual ~TestSolutionHandler() {}
 
-  ampl::Problem *problem() const { return problem_; }
+  mp::Problem *problem() const { return problem_; }
   int solve_code() const { return solve_code_; }
   double obj_value() const { return obj_value_; }
   const std::string &message() const { return message_; }
   const double *primal() const { return primal_; }
   const double *dual() const { return dual_; }
 
-  void HandleSolution(ampl::Problem &p, fmt::StringRef message,
+  void HandleSolution(mp::Problem &p, fmt::StringRef message,
         const double *primal, const double *dual, double obj_value) {
     problem_ = &p;
     solve_code_ = p.solve_code();

@@ -20,27 +20,27 @@
  Author: Victor Zverovich
  */
 
-#include "tests/solver-test.h"
-#include "tests/util.h"
+#include "solver-test.h"
+#include "util.h"
 
-#include "solvers/util/nl.h"
+#include "mp/nl.h"
 
 #include <cmath>
 
 using std::string;
 
-using ampl::LogicalExpr;
-using ampl::NumericExpr;
-using ampl::Problem;
-using ampl::UnsupportedExprError;
-namespace var = ampl::var;
-namespace obj = ampl::obj;
+using mp::LogicalExpr;
+using mp::NumericExpr;
+using mp::Problem;
+using mp::UnsupportedExprError;
+namespace var = mp::var;
+namespace obj = mp::obj;
 
 SolverTest::EvalResult SolverTest::Solve(Problem &p) {
-  struct TestSolutionHandler : ampl::BasicSolutionHandler {
+  struct TestSolutionHandler : mp::BasicSolutionHandler {
     EvalResult result;
     virtual ~TestSolutionHandler() {}
-    void HandleSolution(ampl::Problem &p, fmt::StringRef,
+    void HandleSolution(mp::Problem &p, fmt::StringRef,
           const double *values, const double *, double obj_value) {
       result = values ? EvalResult(values[0], obj_value, p.solve_code())
           : EvalResult(p.solve_code());
@@ -66,7 +66,7 @@ SolverTest::EvalResult SolverTest::Solve(
 
 SolverTest::SolverTest()
 : solver_(GetParam().create_solver()), features_(GetParam().features) {
-  ampl::NLHeader header = {};
+  mp::NLHeader header = {};
   header.num_vars = 4;
   header.num_objs = 1;
   header.num_funcs = 2;
@@ -77,7 +77,7 @@ SolverTest::SolverTest()
 }
 
 SolveResult SolverTest::Solve(
-    ampl::Solver &s, Problem &p, const char *stub, const char *opt) {
+    mp::Solver &s, Problem &p, const char *stub, const char *opt) {
   TestSolutionHandler sh;
   s.set_solution_handler(&sh);
   const std::string DATA_DIR = "../data/";
@@ -280,7 +280,7 @@ TEST_P(SolverTest, Cos) {
 }
 
 TEST_P(SolverTest, Atanh) {
-  ampl::UnaryExpr x = MakeUnary(OP_atanh, MakeConst(std::tanh(5.0)));
+  mp::UnaryExpr x = MakeUnary(OP_atanh, MakeConst(std::tanh(5.0)));
   NumericExpr e = MakeUnary(FLOOR, MakeBinary(OPPLUS,
       MakeConst(0.5), MakeBinary(OPMULT, MakeConst(1000000), x)));
   if (!HasFeature(feature::HYPERBOLIC)) {
@@ -326,7 +326,7 @@ TEST_P(SolverTest, Acos) {
 
 TEST_P(SolverTest, Sum) {
   NumericExpr args[] = {x, y, z};
-  using ampl::MakeArrayRef;
+  using mp::MakeArrayRef;
   EXPECT_EQ(0, Eval(MakeSum(MakeArrayRef(args, 0))));
   EXPECT_EQ(42, Eval(MakeSum(MakeArrayRef(args, 1)), 42));
   EXPECT_EQ(123, Eval(MakeSum(args), 100, 20, 3));
@@ -418,8 +418,8 @@ TEST_P(SolverTest, PiecewiseLinear) {
 }
 
 TEST_P(SolverTest, UnsupportedFunctionCall) {
-  ampl::Function f = AddFunction("foo", TestFunc, 2);
-  ampl::Expr args[] = {MakeConst(1), MakeConst(2)};
+  mp::Function f = AddFunction("foo", TestFunc, 2);
+  mp::Expr args[] = {MakeConst(1), MakeConst(2)};
   EXPECT_THROW(Eval(MakeCall(f, args), 3);, UnsupportedExprError);
 }
 
@@ -448,7 +448,7 @@ TEST_P(SolverTest, NumericConstant) {
   }
   EXPECT_THROW_MSG(Eval(MakeConst(0.42));, UnsupportedExprError,
     "value 0.42 can't be represented as int");
-  EXPECT_THROW(Solve("objconst"), ampl::Error);
+  EXPECT_THROW(Solve("objconst"), mp::Error);
 }
 
 TEST_P(SolverTest, Var) {
@@ -695,7 +695,7 @@ TEST_P(SolverTest, LogicalConstant) {
 TEST_P(SolverTest, NonlinearObj) {
   Problem p;
   p.AddVar(2, 2, var::INTEGER);
-  ampl::Variable x = MakeVariable(0);
+  mp::Variable x = MakeVariable(0);
   p.AddObj(obj::MIN, MakeBinary(OPMULT, x, x));
   EXPECT_EQ(4, Solve(p).obj_value());
 }
@@ -722,7 +722,7 @@ TEST_P(SolverTest, Maximize) {
 }
 
 TEST_P(SolverTest, TimingOption) {
-  struct TestOutputHandler : ampl::OutputHandler {
+  struct TestOutputHandler : mp::OutputHandler {
     std::string output;
 
     virtual ~TestOutputHandler() {}
@@ -848,7 +848,7 @@ TEST_P(SolverTest, InfeasibleSolveCode) {
 #ifdef HAVE_THREADS
 void Interrupt() {
   // Wait until started.
-  while (ampl::SignalHandler::stop())
+  while (mp::SignalHandler::stop())
     std::this_thread::yield();
   std::raise(SIGINT);
 }
@@ -863,7 +863,7 @@ TEST_P(SolverTest, InterruptSolution) {
 }
 #endif
 
-struct SolutionCounter : ampl::BasicSolutionHandler {
+struct SolutionCounter : mp::BasicSolutionHandler {
   int num_solutions;
   SolutionCounter() : num_solutions(0) {}
   void HandleFeasibleSolution(Problem &, fmt::StringRef,
@@ -873,7 +873,7 @@ struct SolutionCounter : ampl::BasicSolutionHandler {
 };
 
 TEST_P(SolverTest, CountSolutions) {
-  ampl::Problem p;
+  mp::Problem p;
   p.AddVar(1, 3, var::INTEGER);
   p.AddVar(1, 3, var::INTEGER);
   p.AddVar(1, 3, var::INTEGER);
@@ -888,7 +888,7 @@ TEST_P(SolverTest, CountSolutions) {
 }
 
 TEST_P(SolverTest, SatisfactionSolutionLimit) {
-  ampl::Problem p;
+  mp::Problem p;
   p.AddVar(1, 3, var::INTEGER);
   p.AddVar(1, 3, var::INTEGER);
   p.AddVar(1, 3, var::INTEGER);
@@ -900,7 +900,7 @@ TEST_P(SolverTest, SatisfactionSolutionLimit) {
 }
 
 TEST_P(SolverTest, OptimizationSolutionLimit) {
-  ampl::Problem p;
+  mp::Problem p;
   p.Read("../data/photo9");
   solver_->SetIntOption("solutionlimit", 2);
   solver_->Solve(p);
@@ -909,7 +909,7 @@ TEST_P(SolverTest, OptimizationSolutionLimit) {
 }
 
 TEST_P(SolverTest, MultipleSolutions) {
-  ampl::Problem p;
+  mp::Problem p;
   p.AddVar(1, 3, var::INTEGER);
   p.AddVar(1, 3, var::INTEGER);
   p.AddVar(1, 3, var::INTEGER);
@@ -925,9 +925,9 @@ TEST_P(SolverTest, MultipleSolutions) {
 }
 
 TEST_P(SolverTest, OptionValues) {
-  for (ampl::Solver::option_iterator
+  for (mp::Solver::option_iterator
     i = solver_->option_begin(), e = solver_->option_end(); i != e; ++i) {
-    for (ampl::ValueArrayRef::iterator j = i->values().begin(),
+    for (mp::ValueArrayRef::iterator j = i->values().begin(),
         value_end = i->values().end(); j != value_end; ++j) {
       EXPECT_TRUE(j->value != 0);
     }
@@ -935,5 +935,5 @@ TEST_P(SolverTest, OptionValues) {
 }
 
 TEST_P(SolverTest, CreateSolver) {
-  EXPECT_STREQ(solver_->name(), ampl::CreateSolver(0)->name());
+  EXPECT_STREQ(solver_->name(), mp::CreateSolver(0)->name());
 }

@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/ilogcp/concert.h"
+#include "ilogcp/concert.h"
 
 #include <ilconcert/ilotupleset.h>
 
@@ -31,8 +31,8 @@
 # define M_PI 3.14159265358979323846
 #endif
 
-using ampl::Error;
-using ampl::NumericExpr;
+using mp::Error;
+using mp::NumericExpr;
 
 namespace {
 
@@ -44,8 +44,8 @@ inline T ConvertTo(double value) {
   return int_value;
 }
 
-NumericExpr GetArg(ampl::CallExpr e, int index) {
-  NumericExpr result = ampl::Cast<NumericExpr>(e[index]);
+NumericExpr GetArg(mp::CallExpr e, int index) {
+  NumericExpr result = mp::Cast<NumericExpr>(e[index]);
   if (!result) {
     throw Error("{}: argument {} is not numeric",
         e.function().name(), index + 1);
@@ -53,15 +53,15 @@ NumericExpr GetArg(ampl::CallExpr e, int index) {
   return result;
 }
 
-void RequireNonzeroConstRHS(ampl::BinaryExpr e, const std::string &func_name) {
+void RequireNonzeroConstRHS(mp::BinaryExpr e, const std::string &func_name) {
   if (!IsZero(e.rhs())) {
-    throw ampl::UnsupportedExprError::CreateFromExprString(
+    throw mp::UnsupportedExprError::CreateFromExprString(
         func_name + " with nonzero second parameter");
   }
 }
 }
 
-namespace ampl {
+namespace mp {
 
 IloNumExprArray NLToConcertConverter::ConvertArgs(VarArgExpr e) {
   IloNumExprArray args(env_);

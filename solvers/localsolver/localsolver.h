@@ -20,13 +20,13 @@
  Author: Victor Zverovich
  */
 
-#ifndef AMPL_SOLVERS_LOCALSOLVER_H
-#define AMPL_SOLVERS_LOCALSOLVER_H
+#ifndef MP_SOLVERS_LOCALSOLVER_H_
+#define MP_SOLVERS_LOCALSOLVER_H_
 
 #include <localsolver.h>
-#include "solvers/util/solver.h"
+#include "asl/solver.h"
 
-namespace ampl {
+namespace mp {
 
 namespace ls = localsolver;
 
@@ -273,4 +273,4 @@ class LocalSolver : public Solver {
 };
 }
 
-#endif // AMPL_SOLVERS_LOCALSOLVER_H
+#endif  // MP_SOLVERS_LOCALSOLVER_H_

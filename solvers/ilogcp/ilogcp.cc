@@ -30,15 +30,15 @@
  (http://joc.journal.informs.org/content/14/4/322).
  */
 
-#include "solvers/ilogcp/ilogcp.h"
+#include "ilogcp/ilogcp.h"
 
 #include <cctype>
 #include <cstdlib>
 #include <set>
 #include <vector>
 
-#include "solvers/ilogcp/concert.h"
-#include "solvers/ilogcp/ilogcp_date.h"
+#include "concert.h"
+#include "ilogcp_date.h"
 
 using std::strcmp;
 using std::vector;
@@ -50,7 +50,7 @@ static char xxxvers[] = "ilogcp_options\0\n"
 
 namespace {
 
-const ampl::OptionValueInfo INFERENCE_LEVELS[] = {
+const mp::OptionValueInfo INFERENCE_LEVELS[] = {
   // Default must be the first item.
   {"default",  0, IloCP::Default },
   {"low",      0, IloCP::Low     },
@@ -59,33 +59,33 @@ const ampl::OptionValueInfo INFERENCE_LEVELS[] = {
   {"extended", 0, IloCP::Extended}
 };
 
-const ampl::OptionValueInfo FLAGS[] = {
+const mp::OptionValueInfo FLAGS[] = {
   // Auto must be the first item.
   {"auto", 0, IloCP::Auto},
   {"off",  0, IloCP::Off },
   {"on",   0, IloCP::On  }
 };
 
-const ampl::OptionValueInfo SEARCH_TYPES[] = {
+const mp::OptionValueInfo SEARCH_TYPES[] = {
   {"auto",       0, IloCP::Auto      },
   {"depthfirst", 0, IloCP::DepthFirst},
   {"restart",    0, IloCP::Restart   },
   {"multipoint", 0, IloCP::MultiPoint}
 };
 
-const ampl::OptionValueInfo VERBOSITIES[] = {
+const mp::OptionValueInfo VERBOSITIES[] = {
   {"quiet",   0, IloCP::Quiet  },
   {"terse",   0, IloCP::Terse  },
   {"normal",  0, IloCP::Normal },
   {"verbose", 0, IloCP::Verbose}
 };
 
-const ampl::OptionValueInfo TIME_MODES[] = {
+const mp::OptionValueInfo TIME_MODES[] = {
   {"cputime",     0, IloCP::CPUTime    },
   {"elapsedtime", 0, IloCP::ElapsedTime}
 };
 
-const ampl::OptionValueInfo OPTIMIZERS[] = {
+const mp::OptionValueInfo OPTIMIZERS[] = {
   {
     "auto",
     "CP Optimizer if the problem has nonlinear objective/constraints "
@@ -101,18 +101,18 @@ const ampl::OptionValueInfo OPTIMIZERS[] = {
   }
 };
 
-const ampl::OptionValueInfo AUTO_VALUE[] = {
+const mp::OptionValueInfo AUTO_VALUE[] = {
   {"auto", 0, IloCP::Auto}
 };
 
-ampl::OptionError GetOptionValueError(
-    const ampl::SolverOption &opt, fmt::StringRef message) {
-  throw ampl::OptionError(fmt::format(
+mp::OptionError GetOptionValueError(
+    const mp::SolverOption &opt, fmt::StringRef message) {
+  throw mp::OptionError(fmt::format(
       "Can't get value of option {}: {}", opt.name(), message));
 }
 
 // An integer option.
-class IntOption : public ampl::TypedSolverOption<int> {
+class IntOption : public mp::TypedSolverOption<int> {
  private:
   IloCP cp_;
   IloCP::IntParam param_;
@@ -120,7 +120,7 @@ class IntOption : public ampl::TypedSolverOption<int> {
  public:
   IntOption(const char *name, const char *description,
       IloCP cp, IloCP::IntParam p)
-  : ampl::TypedSolverOption<int>(name, description), cp_(cp), param_(p) {}
+  : mp::TypedSolverOption<int>(name, description), cp_(cp), param_(p) {}
 
   int GetValue() const;
   void SetValue(int value);
@@ -138,12 +138,12 @@ void IntOption::SetValue(int value) {
   try {
     cp_.setParameter(param_, value);
   } catch (const IloException &) {
-    throw ampl::InvalidOptionValue(name(), value);
+    throw mp::InvalidOptionValue(name(), value);
   }
 }
 
 // An enumerated option.
-class EnumOption : public ampl::TypedSolverOption<std::string> {
+class EnumOption : public mp::TypedSolverOption<std::string> {
  private:
   IloCP cp_;
   IloCP::IntParam param_;
@@ -153,8 +153,8 @@ class EnumOption : public ampl::TypedSolverOption<std::string> {
  public:
   EnumOption(const char *name, const char *description,
       IloCP cp, IloCP::IntParam p, int start,
-      ampl::ValueArrayRef values, bool accepts_auto = false)
-  : ampl::TypedSolverOption<std::string>(name, description, values),
+      mp::ValueArrayRef values, bool accepts_auto = false)
+  : mp::TypedSolverOption<std::string>(name, description, values),
     cp_(cp), param_(p), start_(start), accepts_auto_(accepts_auto) {
   }
 
@@ -169,7 +169,7 @@ std::string EnumOption::GetValue() const {
   } catch (const IloException &e) {
     throw GetOptionValueError(*this, e.getMessage());
   }
-  for (ampl::ValueArrayRef::iterator
+  for (mp::ValueArrayRef::iterator
       i = values().begin(), e = values().end(); i != e; ++i) {
     if (i->data == value)
       return i->value;
@@ -189,7 +189,7 @@ void EnumOption::SetValue(const char *value) {
     }
     // Search for a value in the list of known values.
     // Use linear search since the number of values is small.
-    for (ampl::ValueArrayRef::iterator
+    for (mp::ValueArrayRef::iterator
         i = values().begin(), e = values().end(); i != e; ++i) {
       if (strcmp(value, i->value) == 0) {
         cp_.setParameter(param_, i->data);
@@ -197,7 +197,7 @@ void EnumOption::SetValue(const char *value) {
       }
     }
   } catch (const IloException &) {}
-  throw ampl::InvalidOptionValue(name(), value);
+  throw mp::InvalidOptionValue(name(), value);
 }
 
 void GetSolution(IloCP cp, IloNumVarArray vars, vector<double> &solution) {
@@ -207,15 +207,15 @@ void GetSolution(IloCP cp, IloNumVarArray vars, vector<double> &solution) {
   }
 }
 
-bool HasNonlinearObj(const ampl::Problem &p) {
+bool HasNonlinearObj(const mp::Problem &p) {
   if (p.num_objs() == 0)
     return false;
-  ampl::NumericExpr expr = p.nonlinear_obj_expr(0);
-  return expr && !ampl::Cast<ampl::NumericConstant>(expr);
+  mp::NumericExpr expr = p.nonlinear_obj_expr(0);
+  return expr && !mp::Cast<mp::NumericConstant>(expr);
 }
 
 std::string ConvertSolutionStatus(
-    IloAlgorithm alg, const ampl::SignalHandler &sh, int &solve_code) {
+    IloAlgorithm alg, const mp::SignalHandler &sh, int &solve_code) {
   switch (alg.getStatus()) {
   default:
     // Fall through.
@@ -252,7 +252,7 @@ std::string ConvertSolutionStatus(
 }
 }
 
-namespace ampl {
+namespace mp {
 
 IlogCPSolver::IlogCPSolver() :
    Solver("ilogcp", 0, YYYYMMDD, MULTIPLE_SOL), cp_(env_), cplex_(env_),

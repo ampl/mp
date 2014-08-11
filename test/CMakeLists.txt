@@ -3,9 +3,9 @@ include_directories(../thirdparty)
 add_test(support-test nose2 -s support)
 
 # Add gtest library with some extra features.
+set(GTEST_SRC ../thirdparty/gtest/gtest-all.cc util.h util.cc test-main.cc)
+add_library(gtest-extra ${GTEST_SRC})
 find_package(Threads)
-add_library(gtest-extra
-  ../thirdparty/gtest/gtest-all.cc util.h util.cc test-main.cc)
 target_link_libraries(gtest-extra mp ${CMAKE_THREAD_LIBS_INIT})
 
 # Adds an MP test.

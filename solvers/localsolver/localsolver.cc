@@ -20,10 +20,10 @@
  Author: Victor Zverovich
  */
 
-#include "localsolver.h"
+#include "localsolver/localsolver.h"
 
 #include <cmath>
-#include "solvers/util/clock.h"
+#include "mp/clock.h"
 
 namespace {
 // Returns the value of an expression.
@@ -32,7 +32,7 @@ inline double GetValue(localsolver::LSExpression e) {
 }
 }
 
-namespace ampl {
+namespace mp {
 
 template <typename Term>
 ls::LSExpression NLToLocalSolverConverter::ConvertExpr(

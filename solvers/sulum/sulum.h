@@ -20,13 +20,13 @@
  Author: Victor Zverovich
  */
 
-#ifndef AMPL_SOLVERS_SULUM_H
-#define AMPL_SOLVERS_SULUM_H
+#ifndef MP_SOLVERS_SULUM_H_
+#define MP_SOLVERS_SULUM_H_
 
 #include <sulumc.h>
-#include "solvers/util/solver.h"
+#include "asl/solver.h"
 
-namespace ampl {
+namespace mp {
 
 // Sulum solver.
 class SulumSolver : public Solver {
@@ -46,4 +46,4 @@ class SulumSolver : public Solver {
 };
 }
 
-#endif // AMPL_SOLVERS_SULUM_H
+#endif  // MP_SOLVERS_SULUM_H_

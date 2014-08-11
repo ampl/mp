@@ -20,8 +20,8 @@
  Author: Victor Zverovich
  */
 
-#ifndef AMPL_SOLVERS_GECODE_H
-#define AMPL_SOLVERS_GECODE_H
+#ifndef MP_SOLVERS_GECODE_H_
+#define MP_SOLVERS_GECODE_H_
 
 #include <memory>
 #include <string>
@@ -37,8 +37,8 @@
 # pragma warning(pop)
 #endif
 
-#include "solvers/util/clock.h"
-#include "solvers/util/solver.h"
+#include "mp/clock.h"
+#include "mp/solver.h"
 
 namespace ampl {
 
@@ -376,4 +376,4 @@ class GecodeSolver : public Solver {
 };
 }
 
-#endif // AMPL_SOLVERS_GECODE_H
+#endif  // MP_SOLVERS_GECODE_H_

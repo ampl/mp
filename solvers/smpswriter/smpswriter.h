@@ -20,12 +20,12 @@
  Author: Victor Zverovich
  */
 
-#ifndef AMPL_SOLVERS_SMPSWRITER_H
-#define AMPL_SOLVERS_SMPSWRITER_H
+#ifndef MP_SOLVERS_SMPSWRITER_H_
+#define MP_SOLVERS_SMPSWRITER_H_
 
 #include <vector>
 
-#include "solvers/util/solver.h"
+#include "asl/solver.h"
 
 namespace ampl {
 
@@ -140,4 +140,4 @@ class SMPSWriter : public Solver {
 };
 }
 
-#endif // AMPL_SOLVERS_SMPSWRITER_H
+#endif  // MP_SOLVERS_SMPSWRITER_H_

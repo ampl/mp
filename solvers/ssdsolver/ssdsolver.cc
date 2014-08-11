@@ -21,7 +21,7 @@
  Author: Victor Zverovich
  */
 
-#include "ssdsolver.h"
+#include "ssdsolver/ssdsolver.h"
 
 #ifdef _WIN32
 # define putenv _putenv
@@ -41,7 +41,7 @@ struct ValueLess {
 };
 }
 
-namespace ampl {
+namespace mp {
 
 SSDSolver::SSDSolver() : Solver("ssdsolver", 0, SSDSOLVER_VERSION),
   output_(false), scaled_(false), abs_tolerance_(1e-5), solver_name_("cplex") {

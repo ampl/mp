@@ -20,11 +20,11 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/sulum/sulum.h"
+#include "sulum/sulum.h"
 
 int main(int, char **argv) {
   try {
-    return ampl::SulumSolver().Run(argv);
+    return mp::SulumSolver().Run(argv);
   } catch (const std::exception &e) {
     fmt::print(stderr, "Error: {}\n", e.what());
   }

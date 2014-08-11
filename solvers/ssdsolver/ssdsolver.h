@@ -21,16 +21,16 @@
  Author: Victor Zverovich
  */
 
-#ifndef AMPL_SOLVERS_SSDSOLVER_H
-#define AMPL_SOLVERS_SSDSOLVER_H
+#ifndef MP_SOLVERS_SSDSOLVER_H_
+#define MP_SOLVERS_SSDSOLVER_H_
 
 #include <vector>
 
-#include "solvers/util/solver.h"
+#include "asl/solver.h"
 
 #define SSDSOLVER_VERSION 20130226
 
-namespace ampl {
+namespace mp {
 
 // Expression visitor that extracts SSD constraints.
 class SSDExtractor : public ExprVisitor<SSDExtractor, void, void> {
@@ -119,4 +119,4 @@ class SSDSolver : public Solver {
 };
 }
 
-#endif // AMPL_SOLVERS_SSDSOLVER_H
+#endif  // MP_SOLVERS_SSDSOLVER_H_

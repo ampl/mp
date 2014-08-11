@@ -20,8 +20,8 @@
  Author: Victor Zverovich
  */
 
-#ifndef SOLVERS_ILOGCP_ILOGCP_H_
-#define SOLVERS_ILOGCP_ILOGCP_H_
+#ifndef MP_SOLVERS_ILOGCP_H_
+#define MP_SOLVERS_ILOGCP_H_
 
 #ifdef __APPLE__
 #include <limits.h>
@@ -52,10 +52,10 @@
 #include <limits.h> /* Needed for g++ -m32 on MacOSX. */
 #include <string>
 
-#include "util/clock.h"
-#include "util/solver.h"
+#include "mp/clock.h"
+#include "asl/solver.h"
 
-namespace ampl {
+namespace mp {
 
 class NLToConcertConverter;
 
@@ -139,4 +139,4 @@ class IlogCPSolver : public Solver {
 };
 }
 
-#endif  // SOLVERS_ILOGCP_ILOGCP_H_
+#endif  // MP_SOLVERS_ILOGCP_H_

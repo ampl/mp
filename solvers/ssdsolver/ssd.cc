@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "ssdsolver.h"
+#include "ssdsolver/ssdsolver.h"
 #include "funcadd.h"
 
 #include <cstring>

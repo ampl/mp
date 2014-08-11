@@ -21,11 +21,11 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/ssdsolver/ssdsolver.h"
+#include "ssdsolver/ssdsolver.h"
 
 int main(int, char **argv) {
   try {
-    return ampl::SSDSolver().Run(argv);
+    return mp::SSDSolver().Run(argv);
   } catch (const std::exception &e) {
     fmt::print(stderr, "Error: {}\n", e.what());
   }

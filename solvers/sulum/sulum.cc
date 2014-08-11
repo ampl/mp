@@ -20,8 +20,8 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/sulum/sulum.h"
-#include "solvers/util/clock.h"
+#include "sulum/sulum.h"
+#include "mp/clock.h"
 
 namespace {
 template <typename Param>
@@ -50,7 +50,7 @@ const OptionInfo<SlmParamDb> DBL_OPTION_INFO[] = {
 inline void Check(SlmReturn ret) {
   if (ret != SlmRetOk) {
     // TODO: get error message
-    throw ampl::Error("Sulum error {}", ret);
+    throw mp::Error("Sulum error {}", ret);
   }
 }
 
@@ -63,7 +63,7 @@ inline SlmBoundKey GetBoundKey(double lb, double ub) {
 }
 }
 
-namespace ampl {
+namespace mp {
 
 class SulumSolver::IntSulumOption : public TypedSolverOption<int> {
  private:

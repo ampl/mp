@@ -20,8 +20,8 @@
  Author: Victor Zverovich
  */
 
-#ifndef AMPL_SOLVERS_ILOGCP_CONCERT_H
-#define AMPL_SOLVERS_ILOGCP_CONCERT_H
+#ifndef MP_SOLVERS_ILOGCP_CONCERT_H_
+#define MP_SOLVERS_ILOGCP_CONCERT_H_
 
 #ifdef __APPLE__
 #include <limits.h>
@@ -33,9 +33,9 @@
 #include <iostream>
 #include <memory>
 
-#include "util/solver.h"
+#include "asl/solver.h"
 
-namespace ampl {
+namespace mp {
 
 class Problem;
 class SignalHandler;
@@ -325,4 +325,4 @@ class NLToConcertConverter : public Converter {
 };
 }
 
-#endif  // AMPL_SOLVERS_ILOGCP_CONCERT_H
+#endif  // MP_SOLVERS_ILOGCP_CONCERT_H_

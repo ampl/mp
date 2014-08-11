@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "smpswriter.h"
+#include "smpswriter/smpswriter.h"
 
 #include <cmath>
 #include <cstdio>

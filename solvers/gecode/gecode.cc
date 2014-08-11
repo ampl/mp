@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "gecode.h"
+#include "gecode/gecode.h"
 
 #include <limits>
 #include <memory>

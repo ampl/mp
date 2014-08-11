@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/jacop/jacop.h"
+#include "jacop/jacop.h"
 
 int main(int, char **argv) {
   try {

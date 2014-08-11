@@ -20,15 +20,15 @@
  Author: Victor Zverovich
  */
 
-#ifndef AMPL_SOLVERS_JACOP_JAVA_H_
-#define AMPL_SOLVERS_JACOP_JAVA_H_
+#ifndef MP_SOLVERS_JACOP_JAVA_H_
+#define MP_SOLVERS_JACOP_JAVA_H_
 
 #include <jni.h>
 #include <cstdarg>
 #include <stdexcept>
 #include <string>
 
-#include "solvers/util/format.h"
+#include "mp/format.h"
 
 #ifdef _WIN32
 # define AMPL_CLASSPATH_SEP ";"
@@ -268,4 +268,4 @@ struct class_name { \
 };
 }
 
-#endif // AMPL_SOLVERS_JACOP_JAVA_H_
+#endif  // MP_SOLVERS_JACOP_JAVA_H_

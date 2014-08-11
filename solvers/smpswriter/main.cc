@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/smpswriter/smpswriter.h"
+#include "asmpswriter/smpswriter.h"
 
 int main(int, char **argv) {
   try {

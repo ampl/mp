@@ -29,6 +29,7 @@
 #define MP_PROBLEM_BASE_H_
 
 #include <cassert>
+#include <cstddef>
 
 #include "mp/opcode.hd"
 

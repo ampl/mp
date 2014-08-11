@@ -20,11 +20,11 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/localsolver/localsolver.h"
+#include "localsolver/localsolver.h"
 
 int main(int, char **argv) {
   try {
-    return ampl::LocalSolver().Run(argv);
+    return mp::LocalSolver().Run(argv);
   } catch (const std::exception &e) {
     fmt::print(stderr, "Error: {}\n", e.what());
   }

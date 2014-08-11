@@ -20,14 +20,14 @@
  Author: Victor Zverovich
  */
 
-#ifndef AMPL_SOLVERS_JACOP_H
-#define AMPL_SOLVERS_JACOP_H
+#ifndef MP_SOLVERS_JACOP_H_
+#define MP_SOLVERS_JACOP_H_
 
 #include <vector>
 
-#include "solvers/util/clock.h"
-#include "solvers/util/solver.h"
-#include "solvers/jacop/java.h"
+#include "mp/clock.h"
+#include "mp/solver.h"
+#include "jacop/java.h"
 
 namespace ampl {
 
@@ -496,4 +496,4 @@ class JaCoPSolver : public Solver {
 };
 }
 
-#endif // AMPL_SOLVERS_JACOP_H
+#endif  // MP_SOLVERS_JACOP_H_

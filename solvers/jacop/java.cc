@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/jacop/java.h"
+#include "jacop/java.h"
 
 #include <cstdlib>
 #include <vector>

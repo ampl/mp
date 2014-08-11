@@ -1,7 +1,7 @@
 /*
- AMPL solver interface to Gecode.
+ Operator precedence.
 
- Copyright (C) 2012 AMPL Optimization Inc
+ Copyright (C) 2014 AMPL Optimization Inc
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
@@ -20,13 +20,26 @@
  Author: Victor Zverovich
  */
 
-#include "gecode/gecode.h"
-
-int main(int, char **argv) {
-  try {
-    return ampl::GecodeSolver().Run(argv);
-  } catch (const std::exception &e) {
-    fmt::print(stderr, "Error: {}\n", e.what());
-  }
-  return 1;
+namespace mp {
+namespace prec {
+enum Precedence {
+  UNKNOWN,
+  CONDITIONAL,       // if-then-else
+  IFF,               // <==>
+  IMPLICATION,       // ==> else
+  LOGICAL_OR,        // or ||
+  LOGICAL_AND,       // and &&
+  NOT,               // not !
+  RELATIONAL,        // < <= = == >= > != <>
+  PIECEWISE_LINEAR,  // a piecewise-linear expression
+  ADDITIVE,          // + - less
+  ITERATIVE,         // sum prod min max
+  MULTIPLICATIVE,    // * / div mod
+  EXPONENTIATION,    // ^
+  UNARY,             // + - (unary)
+  CALL,              // a function call including functional forms of
+                     // min and max
+  PRIMARY            // variable or constant
+};
+}
 }

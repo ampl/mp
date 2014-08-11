@@ -23,11 +23,10 @@
 #ifndef TESTS_SOLVER_TEST_H_
 #define TESTS_SOLVER_TEST_H_
 
-#include "solvers/util/solver.h"
-#include "solvers/util/aslbuilder.h"
-#include "tests/args.h"
-#include "tests/config.h"
-#include "tests/solution-handler.h"
+#include "asl/solver.h"
+#include "asl/aslbuilder.h"
+#include "args.h"
+#include "solution-handler.h"
 #include "gtest/gtest.h"
 
 #ifdef HAVE_THREADS
@@ -50,9 +49,9 @@ enum Feature {
 }
 
 #ifdef HAVE_UNIQUE_PTR
-typedef std::unique_ptr<ampl::Solver> SolverPtr;
+typedef std::unique_ptr<mp::Solver> SolverPtr;
 #else
-typedef std::auto_ptr<ampl::Solver> SolverPtr;
+typedef std::auto_ptr<mp::Solver> SolverPtr;
 #endif
 
 struct SolverTestParam {
@@ -68,17 +67,17 @@ struct SolverTestParam {
 // Abstract solver test.
 class SolverTest
     : public ::testing::TestWithParam<SolverTestParam>,
-      public ampl::internal::ASLBuilder {
+      public mp::internal::ASLBuilder {
  protected:
   SolverPtr solver_;
   unsigned features_;
-  ampl::Variable x;
-  ampl::Variable y;
-  ampl::Variable z;
+  mp::Variable x;
+  mp::Variable y;
+  mp::Variable z;
 
   FMT_DISALLOW_COPY_AND_ASSIGN(SolverTest);
 
-  ampl::NumericConstant MakeConst(double value) {
+  mp::NumericConstant MakeConst(double value) {
     return MakeNumericConstant(value);
   }
 
@@ -96,7 +95,7 @@ class SolverTest
     int solve_code_;
 
    public:
-    explicit EvalResult(int solve_code = ampl::NOT_SOLVED)
+    explicit EvalResult(int solve_code = mp::NOT_SOLVED)
     : has_value_(false), value_(), obj_value_(), solve_code_(solve_code) {}
 
     EvalResult(double value, double obj_value, int solve_code)
@@ -119,41 +118,41 @@ class SolverTest
     int solve_code() const { return solve_code_; }
   };
 
-  EvalResult Solve(ampl::Problem &p);
+  EvalResult Solve(mp::Problem &p);
 
   // Solves a problem containing a single constraint with the given
   // expression and returns the value of the variable with index 0.
-  EvalResult Solve(ampl::LogicalExpr e,
+  EvalResult Solve(mp::LogicalExpr e,
       int var1, int var2, int var3 = 0, bool need_result = false);
 
   // Evaluates a numeric expression by constructing and solving a problem.
-  EvalResult Eval(ampl::NumericExpr e,
+  EvalResult Eval(mp::NumericExpr e,
       int var1 = 0, int var2 = 0, int var3 = 0) {
     return Solve(MakeRelational(EQ, MakeVariable(0), e),
                  var1, var2, var3, true);
   }
 
   // Evaluates a logical expression by constructing and solving a problem.
-  EvalResult Eval(ampl::LogicalExpr e,
+  EvalResult Eval(mp::LogicalExpr e,
       int var1 = 0, int var2 = 0, int var3 = 0) {
     return Eval(MakeIf(e, MakeConst(1), MakeConst(0)), var1, var2, var3);
   }
 
-  SolveResult Solve(ampl::Problem &p,
+  SolveResult Solve(mp::Problem &p,
       const char *stub, const char *opt = nullptr) {
     return Solve(*solver_, p, stub, opt);
   }
 
   SolveResult Solve(const char *stub, const char *opt = nullptr) {
-    ampl::Problem p;
+    mp::Problem p;
     return Solve(*solver_, p, stub, opt);
   }
 
  public:
   SolverTest();
 
-  static SolveResult Solve(ampl::Solver &s,
-      ampl::Problem &p, const char *stub, const char *opt = nullptr);
+  static SolveResult Solve(mp::Solver &s,
+      mp::Problem &p, const char *stub, const char *opt = nullptr);
 };
 
 void Interrupt();

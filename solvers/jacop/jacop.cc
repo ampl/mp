@@ -20,8 +20,8 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/jacop/jacop.h"
-#include "solvers/util/os.h"
+#include "jacop/jacop.h"
+#include "mp/os.h"
 
 #include <iterator>
 

@@ -65,8 +65,7 @@ macro(add_ampl_library name)
   add_library(${name} SHARED ${ARGN})
   set_target_properties(${name} PROPERTIES PREFIX "")
   set_target_properties(${name} PROPERTIES SUFFIX ".dll")
-  target_include_directories(${name} PUBLIC
-    ${PROJECT_SOURCE_DIR}/src/asl/solvers ${PROJECT_BINARY_DIR}/src/asl)
+  target_link_libraries(${name} asl)
 endmacro()
 
 include_directories(include)
@@ -81,12 +80,13 @@ endif ()
 add_prefix(MP_HEADERS include/mp/
   clock.h error.h format.h nl.h os.h posix.h
   problem-base.h rstparser.h safeint.h)
-add_prefix(MP_SOURCES src/ clock.cc format.cc nl.cc os.cc posix.cc rstparser.cc)
+add_prefix(MP_SOURCES src/
+  clock.cc format.cc nl.cc os.cc posix.cc problem-base.cc rstparser.cc)
 add_library(mp ${MP_HEADERS} ${MP_SOURCES})
-target_link_libraries(mp asl)
 
 add_subdirectory(src/asl)
 add_subdirectory(src/cp)
+add_subdirectory(solvers)
 
 if (EXISTS ${PROJECT_SOURCE_DIR}/thirdparty/gsl/CMakeLists.txt)
   add_subdirectory(thirdparty/gsl)

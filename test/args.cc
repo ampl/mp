@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "tests/args.h"
+#include "args.h"
 
 #include <cstring>
 

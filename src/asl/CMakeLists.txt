@@ -14,7 +14,7 @@ if (WIN32)
   set_property(TARGET arithchk
     PROPERTY COMPILE_DEFINITIONS NO_FPINIT NO_SSIZE_T)
 else ()
-  set_target_properties(arithchk PROPERTIES COMPILE_DEFINITIONS ASL_NO_FPINITMT)
+  target_compile_definitions(arithchk PRIVATE ASL_NO_FPINITMT)
   target_link_libraries(arithchk m)
 endif ()
 add_custom_command(OUTPUT arith.h DEPENDS arithchk COMMAND arithchk > arith.h)
@@ -123,18 +123,39 @@ add_prefix(ASL_SOURCES solvers/
   xp1known.c
   xp2known.c)
 
+add_library(asl ${ASL_SOURCES}
+  aslbuilder.cc aslbuilder.h expr.cc expr.h problem.cc problem.h
+  solver-c.cc solver-c.h solver.cc solver.h)
+target_include_directories(asl PUBLIC .. solvers ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(asl mp)
+
+if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+  # Changing the floating point precision is not supported on x64.
+  target_compile_definitions(asl PRIVATE No_Control87)
+endif ()
+
 include(CheckSymbolExists)
+
 check_symbol_exists(mkstemps stdlib.h HAVE_MKSTEMPS)
 if (HAVE_MKSTEMPS)
-  add_definitions(-DMP_HAVE_MKSTEMPS=1)
+  target_compile_definitions(asl PRIVATE MP_HAVE_MKSTEMPS=1)
 else ()
   set(ASL_SOURCES ${ASL_SOURCES} mkstemps.c)
 endif ()
 
-add_library(asl ${ASL_SOURCES}
-  aslbuilder.cc aslbuilder.h expr.cc expr.h problem.cc problem.h
-  solver-c.cc solver-c.h solver.cc solver.h)
-target_include_directories(asl PUBLIC solvers ${CMAKE_CURRENT_BINARY_DIR})
+check_symbol_exists(strtoull stdlib.h HAVE_STRTOULL)
+if (NOT HAVE_STRTOULL)
+  check_symbol_exists(_strtoui64 stdlib.h HAVE_STRTOUI64)
+  if (HAVE_STRTOUI64)
+    target_compile_definitions(asl PRIVATE strtoull=_strtoui64)
+  endif ()
+endif ()
+
+include(CheckFunctionExists)
+check_function_exists(getrusage HAVE_GETRUSAGE)
+if (NOT HAVE_GETRUSAGE)
+ target_compile_definitions(asl PRIVATE NO_RUSAGE)
+endif ()
 
 include(CheckCXXSourceCompiles)
 check_cxx_source_compiles("
