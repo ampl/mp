@@ -159,11 +159,11 @@ class LogicalExpr;
 namespace std {
 template <>
 struct hash<mp::NumericExpr> {
-  std::size_t operator()(ampl::NumericExpr e) const;
+  std::size_t operator()(mp::NumericExpr e) const;
 };
 template <>
 struct hash<mp::LogicalExpr> {
-  std::size_t operator()(ampl::LogicalExpr e) const;
+  std::size_t operator()(mp::LogicalExpr e) const;
 };
 }
 #endif
