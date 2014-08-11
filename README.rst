@@ -3,15 +3,12 @@ AMPL/MP
 
 An open-source library for mathematical programming.
 
-Components:
+Features:
 
 * Reusable high-performance `.nl <https://en.wikipedia.org/wiki/Nl_(format)>`__ reader
 
 * Efficient type-safe C++ API for writing AMPL solvers:
   `source <https://github.com/ampl/mp/tree/master/src/asl>`__
-
-* AMPL bindings for the GNU Scientific Library: `docs <http://ampl.github.io/amplgsl/>`__,
-  `source <https://github.com/ampl/mp/tree/master/src/gsl>`__
 
 * Interfaces to solvers supporting
   `AMPL extensions for logic and constraint programming <http://ampl.com/resources/logic-and-constraint-programming-extensions/>`__:
@@ -28,6 +25,24 @@ Components:
   - `Sulum <https://github.com/ampl/mp/tree/master/solvers/sulum>`__
 
 * Interfaces to other solvers via AMPL Solver Library
+
+* `CMake <http://www.cmake.org/>`__ build support including third-party solvers and libraries
+  (COIN-OR solvers with CMake support are available in the `ampl/coin <https://github.com/ampl/coin>`__
+  repository).
+
+* `AMPLGSL <https://github.com/ampl/ampl/tree/master/solvers/amplgsl>`__, an AMPL function
+  library providing access to the GNU Scientific Library (GSL) functions.
+  See the `AMPLGSL documentation <http://ampl.github.io/ampl/solvers/amplgsl/doc/>`__.
+
+* Database support on Linux and MacOS X.
+  See `Database and spreadsheet connection guide <http://ampl.github.io/tables/>`__.
+
+* `SMPSWriter <https://github.com/ampl/ampl/tree/master/solvers/smpswriter>`__, a converter
+  from deterministic equivalent of a two-stage stochastic programming (SP) problem written in
+  AMPL to an SP problem in SMPS format.
+
+Binaries for the open-source AMPL solvers and libraries for major platforms can be downloaded
+from the AMPL's `Open Source Solvers <http://ampl.com/products/solvers/open-source/>`__ page.
 
 Links
 -----
