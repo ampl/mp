@@ -30,9 +30,11 @@ or by using the shell's set and export commands before you invoke ampl).
 You can put one or more (white-space separated) phrases in
 ``$ilogcp_options``.  A few of the phrases are single words:
 
-     Phrase       Meaning
-
-     version      Report version details before solving the problem.
+=======      ==================================================
+Phrase       Meaning
+=======      ==================================================
+version      Report version details before solving the problem.
+=======      ==================================================
 
 Others are name-value pairs, possibly separated by '=', as in
 
@@ -67,20 +69,19 @@ is equivalent to
      logverbosity=1
 
 In particular, switches that take values 0 or 1 also accept values
-"off" or "on".
+``off`` or ``on``.
 
-The following command prints the full list of options with descriptions:
+The following command prints the full list of options with descriptions::
 
-::
      ilogcp -=
 
 
 solve_result_num values
 =======================
 
-Here is a table of solve_result_num values that ``ilogcp`` can return
+Here is a table of ``solve_result_num`` values that ``ilogcp`` can return
 to an AMPL session, along with the text that appears in the associated
-solve_message.
+``solve_message``.
 
 =====   ===============================
 Value   Message
@@ -100,9 +101,7 @@ Value   Message
 
 If you invoke ``ilogcp stub -AMPL`` or ``ilogcp stub``, you can also
 supply additional command-line arguments of the form name=value.
-Such arguments override specifications in ``$ilogcp_options``.  Example:
-
-::
+Such arguments override specifications in ``$ilogcp_options``.  Example::
 
      ampl -obfoo foo.model foo.data
      nohup ilogcp -s foo timing=1 2>>times&
