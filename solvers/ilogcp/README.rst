@@ -75,6 +75,8 @@ The following command prints the full list of options with descriptions::
 
      ilogcp -=
 
+See `IBM ILOG CPLEX CP Optimizer Options for AMPL
+<http://ampl.com/products/solvers/ilogcp-options/>`__ for the full list of options.
 
 solve_result_num values
 =======================
