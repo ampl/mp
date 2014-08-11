@@ -6,18 +6,18 @@ to AMPL via the Concert API. It fully supports
 can handle wide range of problems including linear, mixed-integer, quadratic and
 constraint programming problems.
 
-Normally the ilogcp solver is invoked by AMPL's solve command, which
+Normally the ilogcp solver is invoked by AMPL's ``solve`` command, which
 gives the invocation
 
 ::
 
      ilogcp stub -AMPL
 
-in which stub.nl is an AMPL generic output file (possibly written
-by "ampl -obstub" or "ampl -ogstub").  After solving the problem,
-the solver writes a stub.sol file for use by ampl's solve and solution
-commands.  When you run ampl, this all happens automatically if you
-give the AMPL commands
+in which ``stub.nl`` is an AMPL generic output file (possibly written
+by ``ampl -obstub`` or ``ampl -ogstub``).  After solving the problem,
+the solver writes a ``stub.sol`` file for use by ampl's ``solve`` and
+``solution`` commands.  When you run ampl, this all happens automatically
+if you give the AMPL commands
 
 ::
 
@@ -25,10 +25,10 @@ give the AMPL commands
      solve;
 
 You can control the solver by setting the environment variable
-ilogcp_options appropriately (either by using ampl's option command,
+``ilogcp_options`` appropriately (either by using ampl's ``option`` command,
 or by using the shell's set and export commands before you invoke ampl).
 You can put one or more (white-space separated) phrases in
-$ilogcp_options.  A few of the phrases are single words:
+``$ilogcp_options``.  A few of the phrases are single words:
 
      Phrase       Meaning
 
@@ -53,7 +53,7 @@ or
      timelimit = 600
 
 any of which limits CP Optimizer search time to 600 seconds.  Options such
-as logverbosity, that take enumerated list of values, accept both numeric
+as ``logverbosity``, that take enumerated list of values, accept both numeric
 and string values, so
 
 ::
@@ -78,27 +78,29 @@ The following command prints the full list of options with descriptions:
 solve_result_num values
 =======================
 
-Here is a table of solve_result_num values that "ilogcp" can return
+Here is a table of solve_result_num values that ``ilogcp`` can return
 to an AMPL session, along with the text that appears in the associated
 solve_message.
 
-        Value   Message
-
-          0     optimal solution
-        100     feasible solution
-        200     infeasible problem
-        201     infeasible or unbounded problem
-        300     unbounded problem
-        400     limit
-        403     solution limit
-        500     error
-        600     interrupted
+=====   ===============================
+Value   Message
+=====   ===============================
+  0     optimal solution
+100     feasible solution
+200     infeasible problem
+201     infeasible or unbounded problem
+300     unbounded problem
+400     limit
+403     solution limit
+500     error
+600     interrupted
+=====   ===============================
 
 ------------
 
-If you invoke "ilogcp stub -AMPL" or "ilogcp stub", you can also
+If you invoke ``ilogcp stub -AMPL`` or ``ilogcp stub``, you can also
 supply additional command-line arguments of the form name=value.
-Such arguments override specifications in $ilogcp_options.  Example:
+Such arguments override specifications in ``$ilogcp_options``.  Example:
 
 ::
 
@@ -113,8 +115,8 @@ to solve a problem whose solution will take a while; after it finishes,
      solution foo.sol;
      display ... /* things involving the computed solution */;
 
-(Here, - denotes standard input, and ampl reads the "solution..."
-and "display..." lines.)
+(Here, - denotes standard input, and ampl reads the ``solution...``
+and ``display...`` lines.)
 
 ------------
 
