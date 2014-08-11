@@ -7,7 +7,7 @@ Features:
 
 * Reusable high-performance `.nl <https://en.wikipedia.org/wiki/Nl_(format)>`__ reader
 
-* Efficient type-safe C++ API for writing AMPL solvers:
+* Efficient type-safe C++ API for conneting solvers to AMPL and other systems:
   `source <https://github.com/ampl/mp/tree/master/src/asl>`__
 
 * Interfaces to solvers supporting
