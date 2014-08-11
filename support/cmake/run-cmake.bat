@@ -1,5 +1,5 @@
 @echo on
-rem Use this script if you want to build ASL with the Windows SDK toolchain.
+rem Use this script if you want to build with the Windows SDK toolchain.
 rem It configures build environment and runs CMake forwarding all command-line
 rem arguments to it, for example:
 rem
