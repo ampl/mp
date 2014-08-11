@@ -1,6 +1,6 @@
-# Use CMake 3.0 as it can be easily obtained and used without superuser
+# Use CMake 2.8 as it can be easily obtained and used without superuser
 # privileges even if the system has an older version of CMake installed.
-cmake_minimum_required (VERSION 3.0)
+cmake_minimum_required (VERSION 2.8)
 
 # Set the default CMAKE_BUILD_TYPE to Release.
 # This should be done before the project command since the latter can set
