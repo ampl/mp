@@ -344,7 +344,7 @@ class TextReader {
     SkipSpace();
     int value = 0;
     if (!ReadIntWithoutSign(value))
-      ReportError("expected nonnegative integer");
+      ReportError("expected unsigned integer");
     return value;
   }
 
@@ -664,7 +664,6 @@ typename Handler::NumericExpr
 template <typename Reader, typename Handler>
 typename Handler::NumericExpr
     NLReader<Reader, Handler>::ReadNumericExpr(int opcode) {
-  using fmt::internal::Array;
   switch (expr::kind(opcode)) {
   case expr::UNARY:
     return handler_.MakeUnary(opcode, ReadNumericExpr());
@@ -683,6 +682,7 @@ typename Handler::NumericExpr
     if (num_slopes <= 1)
       reader_.ReportError("too few slopes in piecewise-linear term");
     reader_.ReadTillEndOfLine();
+    using fmt::internal::Array; // TODO
     Array<double, 10> breakpoints(num_slopes - 1);
     Array<double, 10> slopes(num_slopes);
     for (int i = 0; i < num_slopes - 1; ++i) {
@@ -762,7 +762,7 @@ template <typename LinearHandler>
 void NLReader<Reader, Handler>::ReadLinearExpr() {
   LinearHandler lh(*this);
   int index = ReadUInt(lh.num_items());
-  int num_terms = ReadUInt(1, total_num_vars_);
+  int num_terms = ReadUInt(1, total_num_vars_); // TODO: inclusive
   reader_.ReadTillEndOfLine();
   ReadLinearExpr(num_terms, lh.GetLinearExprHandler(index, num_terms));
 }
@@ -880,7 +880,7 @@ template <typename SuffixHandler>
 void NLReader<Reader, Handler>::ReadSuffix(int kind) {
   SuffixHandler sh(*this);
   int num_items = sh.num_items();
-  int num_values = ReadUInt(1, num_items);
+  int num_values = ReadUInt(1, num_items + 1);
   fmt::StringRef name = reader_.ReadName();
   reader_.ReadTillEndOfLine();
   bool is_float = (kind & suf::FLOAT) != 0;
