@@ -25,8 +25,8 @@
 
 #include "asl/solver.h"
 #include "asl/aslbuilder.h"
-#include "args.h"
-#include "solution-handler.h"
+#include "../args.h"
+#include "../solution-handler.h"
 #include "gtest/gtest.h"
 
 #ifdef HAVE_THREADS

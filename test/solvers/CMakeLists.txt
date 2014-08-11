@@ -1,4 +1,4 @@
-add_library(solver-test ../args.cc ../solver-test.cc)
+add_library(solver-test ../args.cc solver-test.cc)
 target_link_libraries(solver-test asl)
 
 if (TARGET gecode)

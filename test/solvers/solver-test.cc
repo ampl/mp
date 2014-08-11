@@ -21,7 +21,7 @@
  */
 
 #include "solver-test.h"
-#include "util.h"
+#include "../util.h"
 
 #include "mp/nl.h"
 

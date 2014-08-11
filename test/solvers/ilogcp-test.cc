@@ -50,8 +50,7 @@ extern "C" {
 #include "opcode.hd"
 }
 
-#include "../args.h"
-#include "../solver-test.h"
+#include "solver-test.h"
 #include "../util.h"
 
 using mp::Expr;
