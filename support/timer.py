@@ -11,7 +11,7 @@ class Timer:
     t = Timer()
     with t:
       do_something()
-    print t.time
+    time = t.time
   """
     
   def __enter__(self):
@@ -32,4 +32,4 @@ def print_time(*args):
   with t:
     yield
   print(*args, end=' ')
-  print('finished in {0:.1f} second(s)'.format(t.time))
+  print('finished in {0:.2f} second(s)'.format(t.time))

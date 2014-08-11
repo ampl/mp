@@ -2,7 +2,7 @@ This directory contains CMake modules for finding various software libraries.
 To use any of the modules, first add the path to this directory to the
 CMAKE_MODULE_PATH variable in CMakeLists.txt:
 
-  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /path/to/ampl/cmake)
+  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /path/to/mp/support/cmake)
 
 and then load the module with the find_package command, for example:
 

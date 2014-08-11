@@ -1,40 +1,23 @@
 # Common bootstrap functionality.
 
 from __future__ import print_function
-import glob, os, platform, re, shutil, sys, time
-import tarfile, tempfile, urllib2, urlparse, zipfile
-from contextlib import closing, contextmanager
+import glob, os, platform, re, shutil, sys
+import tarfile, tempfile, zipfile
+from contextlib import closing
 from subprocess import check_call, call
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import timer
-
-@contextmanager
-def remove(filename):
-  yield filename
-  os.remove(filename)
-
-# Downloads into a temporary file.
-def download(url, cookie=None):
-  suffix = os.path.splitext(urlparse.urlsplit(url)[2])[1]
-  fd, filename = tempfile.mkstemp(suffix=suffix, dir='')
-  os.close(fd)
-  with timer.print_time('Downloading', url, 'to', filename):
-    opener = urllib2.build_opener()
-    if cookie:
-      opener.addheaders.append(('Cookie', cookie))
-    f = opener.open(url)
-    length = int(f.headers['content-length'])
-    with open(filename, 'wb') as out:
-      count = 0
-      while count < length:
-        data = f.read(1024 * 1024)
-        count += len(data)
-        out.write(data)
-  return remove(filename)
+from download import Downloader
 
 windows = platform.system() == 'Windows'
 opt_dir = r'\Program Files' if windows else '/opt'
+
+# Downloads to a temporary file in the current directory.
+# When running in a Vagrant VM, the current directory is in a synced folder so
+# this reduces VM growth.
+def download(url, cookie=None):
+  return Downloader('').download(url, cookie);
 
 # If we are in a VM managed by Vagrant, then do everything in the shared
 # /vagrant directory to avoid growth of the VM drive.
