@@ -9,6 +9,7 @@ constraint programming problems.
 Normally the ilogcp solver is invoked by AMPL's solve command, which
 gives the invocation
 
+::
      ilogcp stub -AMPL
 
 in which stub.nl is an AMPL generic output file (possibly written
@@ -17,6 +18,7 @@ the solver writes a stub.sol file for use by ampl's solve and solution
 commands.  When you run ampl, this all happens automatically if you
 give the AMPL commands
 
+::
      option solver ilogcp;
      solve;
 
@@ -32,24 +34,29 @@ $ilogcp_options.  A few of the phrases are single words:
 
 Others are name-value pairs, possibly separated by '=', as in
 
+::
      timelimit 600
 
 or
 
+::
      timelimit=600
 
 or
 
+::
      timelimit = 600
 
 any of which limits CP Optimizer search time to 600 seconds.  Options such
 as logverbosity, that take enumerated list of values, accept both numeric
 and string values, so
 
+::
      logverbosity=terse
 
 is equivalent to
 
+::
      logverbosity=1
 
 In particular, switches that take values 0 or 1 also accept values
@@ -57,6 +64,7 @@ In particular, switches that take values 0 or 1 also accept values
 
 The following command prints the full list of options with descriptions:
 
+::
      ilogcp -=
 
 
@@ -85,11 +93,13 @@ If you invoke "ilogcp stub -AMPL" or "ilogcp stub", you can also
 supply additional command-line arguments of the form name=value.
 Such arguments override specifications in $ilogcp_options.  Example:
 
+::
      ampl -obfoo foo.model foo.data
      nohup ilogcp -s foo timing=1 2>>times&
 
 to solve a problem whose solution will take a while; after it finishes,
 
+::
      ampl foo.model foo.data -
      solution foo.sol;
      display ... /* things involving the computed solution */;
@@ -99,10 +109,7 @@ and "display..." lines.)
 
 ------------
 
-See also http://ampl.com/resources/logic-and-constraint-programming-extensions/
+See also `AMPL extensions for constraint programming <http://www.ampl.com/NEW/LOGIC>`__.
 
 If you have questions about or find bugs with this stuff,
-please contact:
-
-     Victor Zverovich
-     viz@ampl.com
+please contact `Victor Zverovich <mailto:viz@ampl.com>`__.
