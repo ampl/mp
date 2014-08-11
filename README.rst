@@ -7,11 +7,11 @@ Components:
 
 * Fast and reusable `.nl <https://en.wikipedia.org/wiki/Nl_(format)>`__ reader
 
-* C++ interface to the AMPL Solver Library
-  (`source <https://github.com/ampl/mp/tree/master/src/asl>`__)
+* C++ interface to the AMPL Solver Library:
+  `source <https://github.com/ampl/mp/tree/master/src/asl>`__
 
-* AMPL bindings for the GNU Scientific Library (`docs <http://ampl.github.io/amplgsl/>`__,
-  `source <https://github.com/ampl/mp/tree/master/src/gsl>`__)
+* AMPL bindings for the GNU Scientific Library: `docs <http://ampl.github.io/amplgsl/>`__,
+  `source <https://github.com/ampl/mp/tree/master/src/gsl>`__
 
 * Interfaces to constraint programming and MIP solvers that support
   `AMPL extensions for logic and constraint programming <http://ampl.com/resources/logic-and-constraint-programming-extensions/>`__:
