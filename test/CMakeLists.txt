@@ -33,6 +33,22 @@ function(add_mp_test name)
   add_test(NAME ${name} COMMAND $<TARGET_FILE:${target_name}>)
 endfunction()
 
+add_ampl_library(testlib testlib.cc)
+add_library(function function.cc function.h)
+target_link_libraries(function asl)
+
+add_mp_test(function-test function-test.cc LIBS function)
+
+if (TARGET amplgsl)
+  include_directories(${GSL_BINARY_DIR})
+  add_mp_test(gsl-test gsl-test.cc LIBS function gsl gslcblas)
+endif ()
+
+add_subdirectory(solvers)
+add_subdirectory(tables)
+
+add_mp_test(util-test util-test.cc)
+
 add_mp_test(clock-test clock-test.cc)
 add_mp_test(error-test error-test.cc)
 add_mp_test(nl-test nl-test.cc)
@@ -45,3 +61,4 @@ add_dependencies(os-test test-helper)
 
 add_mp_test(rstparser-test rstparser-test.cc)
 add_mp_test(safeint-test safeint-test.cc)
+

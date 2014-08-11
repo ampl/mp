@@ -1,8 +1,8 @@
-add_ampl_test(cp-test cp-test.cc LIBS amplsolver function)
+add_mp_test(cp-test cp-test.cc LIBS amplsolver function)
 add_dependencies(cp-test cp)
 
 if (TARGET gecode)
-  add_ampl_test(gecode-test PREFIX
+  add_mp_test(gecode-test PREFIX
     ../args.cc ../solver-test.cc gecode-test.cc LIBS amplgecode-static)
 endif ()
 
@@ -18,7 +18,7 @@ if (TARGET ilogcp)
 endif ()
 
 if (TARGET jacop)
-  add_ampl_test(jacop-test
+  add_mp_test(jacop-test
     ../args.cc ../solver-test.cc jacop-test.cc LIBS ampljacop-static)
   if (MSVC)
     set_target_properties(jacop-test PROPERTIES LINK_FLAGS "/DELAYLOAD:jvm.dll")
@@ -27,5 +27,5 @@ if (TARGET jacop)
 endif ()
 
 if (TARGET amplsmpswriter)
-  add_ampl_test(smpswriter-test ../args.cc smpswriter-test.cc LIBS amplsmpswriter)
+  add_mp_test(smpswriter-test ../args.cc smpswriter-test.cc LIBS amplsmpswriter)
 endif ()

@@ -150,3 +150,40 @@ find_library(RT_LIBRARY rt)
 if (RT_LIBRARY)
   target_link_libraries(asl ${RT_LIBRARY})
 endif ()
+
+add_ampl_library(simpbit tables/simpbit.c)
+add_ampl_library(fullbit tables/fullbit.c)
+
+find_package(ODBC)
+if (ODBC_FOUND)
+  include_directories(${ODBC_INCLUDE_DIR})
+  add_library(amplodbc ${CMAKE_CURRENT_BINARY_DIR}/arith.h tables/amplodbc.c)
+  set(AMPLODBC amplodbc ${ODBC_LIBRARIES})
+  set_target_properties(amplodbc
+    PROPERTIES COMPILE_DEFINITIONS funcadd_ASL=funcaddodbc_ASL)
+endif ()
+
+add_ampl_library(ampltabl tables/tableproxy.c tables/tableproxyver.h)
+target_link_libraries(ampltabl ${AMPLODBC})
+if (ODBC_FOUND)
+  set_target_properties(ampltabl
+    PROPERTIES COMPILE_DEFINITIONS OTHER_FUNCADD=funcaddodbc_ASL)
+endif ()
+
+if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+  set(TABLEPROXY_SUFFIX 64)
+else ()
+  set(TABLEPROXY_SUFFIX 32)
+endif ()
+
+add_executable(tableproxy tables/tableproxy.c solvers/printf.c tables/tableproxyver.h)
+set_target_properties(tableproxy
+  PROPERTIES COMPILE_DEFINITIONS "STAND_ALONE=1;QUOTIFY=1"
+             OUTPUT_NAME tableproxy${TABLEPROXY_SUFFIX})
+target_link_libraries(tableproxy asl)
+
+if (WIN32)
+  target_link_libraries(ampltabl wsock32)
+  target_link_libraries(tableproxy wsock32)
+  target_compile_definitions(tableproxy PRIVATE NO_sockaddr_in6)
+endif ()
