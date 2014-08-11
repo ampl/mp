@@ -1,6 +1,6 @@
 include_directories(../thirdparty)
 
-add_test(support-test nose2 -s support)
+add_test(support-test nose2 -s ${CMAKE_CURRENT_SOURCE_DIR}/support)
 
 # Add gtest library with some extra features.
 set(GTEST_SRC ../thirdparty/gtest/gtest-all.cc util.h util.cc test-main.cc)
