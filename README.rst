@@ -28,3 +28,7 @@ Components:
   - `Sulum <https://github.com/ampl/mp/tree/master/solvers/sulum>`__
 
 * Interfaces to other solvers via AMPL Solver Library
+
+Links
+-----
+`AMPL home <http://www.ampl.com/>`__ | `AMPL book <http://ampl.github.io/ampl-book.pdf>`__ | `Discussion group <https://groups.google.com/group/ampl>`__ | `SolverStudio for Excel <http://solverstudio.org/languages/ampl/>`__ | `AMPL models by Håkan Kjellerstrand <http://www.hakank.org/ampl/>`__
