@@ -1,7 +1,11 @@
-The solver "ilogcp" uses IBM ILOG CPLEX CP Optimizer to solve
-constraint programming problems or CPLEX to solve integer, mixed-integer,
-linear programming, and quadratic problems, possibly involving integer
-variables.  Both CP Optimizer and CPLEX are used through the Concert API.
+The solver ``ilogcp`` connects IBM ILOG
+`CPLEX CP Optimizer <http://www-01.ibm.com/software/integration/optimization/cplex-cp-optimizer/>`__
+and `CPLEX <http://www-01.ibm.com/software/integration/optimization/cplex-optimizer/>`__
+to AMPL via the Concert API. It fully supports
+`AMPL extensions for constraint programming <http://www.ampl.com/NEW/LOGIC>`__ and
+can handle wide range of problems including linear, mixed-integer, quadratic and
+constraint programming problems.
+
 Normally the ilogcp solver is invoked by AMPL's solve command, which
 gives the invocation
 
