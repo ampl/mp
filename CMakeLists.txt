@@ -42,6 +42,14 @@ else ()
   endif ()
 endif ()
 
+if (NOT MSVC)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
+else ()
+  # Disable useless MSVC warnings suggesting nonportable "secure" alternatives.
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+endif ()
+
 # Adds a prefix to arguments.
 function (add_prefix var prefix)
   set(result ${${var}})
