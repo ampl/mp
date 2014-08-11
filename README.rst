@@ -26,9 +26,9 @@ Features:
 
 * Interfaces to other solvers via AMPL Solver Library
 
-* `CMake <http://www.cmake.org/>`__ build support including third-party solvers and libraries
-  (COIN-OR solvers with CMake support are available in the `ampl/coin <https://github.com/ampl/coin>`__
-  repository).
+* Cross-platform build support with `CMake <http://www.cmake.org/>`__ and continuous integration
+  systems. This includes third-party solvers and libraries (COIN-OR solvers with CMake support
+  are available in the `ampl/coin <https://github.com/ampl/coin>`__ repository).
 
 * `AMPLGSL <https://github.com/ampl/ampl/tree/master/solvers/amplgsl>`__, an AMPL function
   library providing access to the GNU Scientific Library (GSL) functions.
