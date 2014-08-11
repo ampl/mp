@@ -5,9 +5,9 @@ An open-source library for mathematical programming.
 
 Components:
 
-* Fast and reusable `.nl <https://en.wikipedia.org/wiki/Nl_(format)>`__ reader
+* Reusable high-performance `.nl <https://en.wikipedia.org/wiki/Nl_(format)>`__ reader
 
-* C++ interface to the AMPL Solver Library:
+* Efficient type-safe C++ API for writing AMPL solvers:
   `source <https://github.com/ampl/mp/tree/master/src/asl>`__
 
 * AMPL bindings for the GNU Scientific Library: `docs <http://ampl.github.io/amplgsl/>`__,
@@ -26,3 +26,5 @@ Components:
 
   - `LocalSolver <https://github.com/ampl/mp/tree/master/solvers/localsolver>`__
   - `Sulum <https://github.com/ampl/mp/tree/master/solvers/sulum>`__
+
+* Interfaces to other solvers via AMPL Solver Library
