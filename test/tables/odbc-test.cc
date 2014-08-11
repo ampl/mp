@@ -29,7 +29,7 @@
 namespace {
 
 TEST(ODBCTest, Load) {
-  fun::Library lib(FixBinaryPath("../../bin/ampltabl.dll"));
+  fun::Library lib(GetExecutableDir() + "/ampltabl.dll");
   lib.Load();
   EXPECT_EQ("", lib.error());
   EXPECT_TRUE(lib.GetHandler("odbc") != nullptr);

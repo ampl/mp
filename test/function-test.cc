@@ -223,7 +223,7 @@ TEST(FunctionTest, TableOutput) {
 }
 
 TEST(FunctionTest, Library) {
-  Library lib(FixBinaryPath("../bin/testlib.dll"));
+  Library lib(GetExecutableDir() + "/testlib.dll");
   EXPECT_EQ(0u, lib.GetNumFunctions());
   EXPECT_TRUE(lib.GetFunction("foo") == nullptr);
   lib.Load();

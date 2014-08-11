@@ -46,10 +46,9 @@ void ChangeDirectory(fmt::StringRef path);
 int ExecuteShellCommand(
   fmt::StringRef command, bool throw_on_nonzero_exit_code = true);
 
-// Fix the path to a binary (executable or shared library) file by
-// inserting a configuration directory (Debug or Release) which is
-// deduced from the path of the currently running executable.
-std::string FixBinaryPath(fmt::StringRef path);
+inline std::string GetExecutableDir() {
+  return mp::GetExecutablePath().remove_filename().string();
+}
 
 // Splits the string into an array of substrings.
 std::vector<std::string> Split(const std::string &s, char sep);

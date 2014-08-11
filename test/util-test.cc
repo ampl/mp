@@ -75,16 +75,7 @@ TEST(UtilTest, ExecuteShellCommand) {
 
 TEST(UtilTest, ExecuteShellThrowsOnNonzeroExitCode) {
   EXPECT_THROW_MSG(
-    ExecuteShellCommand(FixBinaryPath("../bin/test-helper") + " > out"),
+    ExecuteShellCommand(GetExecutableDir() + "/test-helper > out"),
     mp::Error, "process exited with code 42");
-}
-
-TEST(UtilTest, FixBinaryPath) {
-  mp::path path(FixBinaryPath("test"));
-  EXPECT_EQ("test", path.filename().string());
-  path.remove_filename();
-  if (!path.filename().string().empty())
-    path.remove_filename();
-  EXPECT_EQ("", path.string());
 }
 }

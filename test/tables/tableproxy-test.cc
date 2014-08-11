@@ -45,15 +45,14 @@ class TableProxyTest : public ::testing::Test {
     handler_ = lib_.GetHandler("tableproxy");
     strings_.push_back("tableproxy");
     int bits = sizeof(void*) == 8 ? 64 : 32;
-    std::string prog = FixBinaryPath(
-        fmt::format("prog=../../bin/tableproxy{}", bits));
-    strings_.push_back(prog);
-    strings_.push_back(FixBinaryPath("lib=../../bin/fullbit.dll"));
+    std::string dir = GetExecutableDir();
+    strings_.push_back(fmt::format("prog={}/tableproxy{}", dir, bits));
+    strings_.push_back(fmt::format("lib={}/fullbit.dll", dir));
     strings_.push_back("lib-tab");
   }
 };
 
-fun::Library TableProxyTest::lib_(FixBinaryPath("../../bin/ampltabl.dll"));
+fun::Library TableProxyTest::lib_(GetExecutableDir() + "/ampltabl.dll");
 
 TEST_F(TableProxyTest, WriteTab) {
   fun::Table t("test", 1, 0, strings_);

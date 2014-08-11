@@ -95,24 +95,6 @@ int ExecuteShellCommand(
   return exit_code;
 }
 
-std::string GetExecutableDir() {
-  return mp::GetExecutablePath().remove_filename().string();
-}
-
-std::string FixBinaryPath(fmt::StringRef path) {
-  mp::path exe_path = mp::GetExecutablePath();
-  exe_path.remove_filename();
-  std::string config_dir = exe_path.filename().string();
-  if (config_dir != "Debug" && config_dir != "Release")
-    return FixPath(path.c_str());
-  mp::path p(path.c_str(), path.c_str() + path.size());
-  std::string filename = p.filename().string();
-  std::string dirname = p.remove_filename().string();
-  if (!dirname.empty())
-    dirname += '/';
-  return FixPath(dirname + config_dir + "/" + filename);
-}
-
 std::vector<std::string> Split(const std::string &s, char sep) {
   std::vector<std::string> items;
   std::string::size_type start = 0, end = 0;
