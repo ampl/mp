@@ -27,6 +27,18 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
+# Enable C++11.
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-std=c++11 HAVE_STD_CPP11_FLAG)
+if (HAVE_STD_CPP11_FLAG)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+else ()
+  check_cxx_compiler_flag(-std=c++0x HAVE_STD_CPP0X_FLAG)
+  if (HAVE_STD_CPP0X_FLAG)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+  endif ()
+endif ()
+
 # Adds a prefix to arguments.
 function (add_prefix var prefix)
   set(result ${${var}})
