@@ -33,9 +33,13 @@ $ilogcp_options.  A few of the phrases are single words:
 Others are name-value pairs, possibly separated by '=', as in
 
      timelimit 600
+
 or
+
      timelimit=600
+
 or
+
      timelimit = 600
 
 any of which limits CP Optimizer search time to 600 seconds.  Options such
@@ -55,7 +59,7 @@ The following command prints the full list of options with descriptions:
 
      ilogcp -=
 
------------------------
+
 solve_result_num values
 =======================
 
@@ -75,7 +79,7 @@ solve_message.
         500     error
         600     interrupted
 
--------------------
+------------
 
 If you invoke "ilogcp stub -AMPL" or "ilogcp stub", you can also
 supply additional command-line arguments of the form name=value.
@@ -93,7 +97,7 @@ to solve a problem whose solution will take a while; after it finishes,
 (Here, - denotes standard input, and ampl reads the "solution..."
 and "display..." lines.)
 
-*************************
+------------
 
 See also http://ampl.com/resources/logic-and-constraint-programming-extensions/
 
