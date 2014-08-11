@@ -44,6 +44,9 @@ if (TARGET amplgsl)
   add_mp_test(gsl-test gsl-test.cc LIBS function gsl gslcblas)
 endif ()
 
+add_mp_test(cp-test cp-test.cc LIBS function)
+add_dependencies(cp-test cp)
+
 add_subdirectory(solvers)
 add_subdirectory(tables)
 

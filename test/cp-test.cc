@@ -22,8 +22,8 @@
 
 #include <limits>
 #include "gtest/gtest.h"
-#include "tests/function.h"
-#include "tests/util.h"
+#include "function.h"
+#include "util.h"
 
 using fun::Function;
 using fun::FunctionInfo;

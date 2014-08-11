@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "tests/function.h"
+#include "function.h"
 
 #include <functional>
 #include <iterator>
@@ -29,8 +29,7 @@
 #include <cassert>
 #include <cstring>
 
-#include "solvers/asl.h"
-#include "tests/config.h"
+#include "asl.h"
 #undef VOID
 
 using std::size_t;

@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/funcadd.h"
+#include "funcadd.h"
 
 #define UNUSED(x) (void)(x)
 

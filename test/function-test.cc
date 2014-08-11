@@ -27,10 +27,9 @@
 #include <cstring>
 
 #include "gtest/gtest.h"
-#include "tests/function.h"
-#include "tests/config.h"
-#include "tests/util.h"
-#include "solvers/asl.h"
+#include "function.h"
+#include "util.h"
+#include "asl.h"
 
 using std::ptr_fun;
 using std::sqrt;

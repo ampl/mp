@@ -21,9 +21,9 @@
  */
 
 #include "gtest/gtest.h"
-#include "util/format.h"
-#include "tests/function.h"
-#include "tests/util.h"
+#include "mp/format.h"
+#include "../function.h"
+#include "../util.h"
 
 namespace {
 

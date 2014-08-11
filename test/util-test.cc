@@ -20,10 +20,10 @@
  Author: Victor Zverovich
  */
 
-#include "tests/util.h"
 #include "gtest/gtest.h"
-#include "solvers/util/error.h"
-#include "solvers/util/os.h"
+#include "mp/error.h"
+#include "mp/os.h"
+#include "util.h"
 #include <string>
 
 namespace {
@@ -46,19 +46,19 @@ TEST(UtilTest, Split) {
 TEST(UtilTest, FixPath) {
   std::string path = "/somewhere/out/in/space";
   EXPECT_EQ("-somewhere-out-in-space", FixPath(path, '-'));
-  std::replace(path.begin(), path.end(), '/', ampl::path::preferred_separator);
+  std::replace(path.begin(), path.end(), '/', mp::path::preferred_separator);
   EXPECT_EQ(path, FixPath("/somewhere/out/in/space"));
 }
 
 TEST(UtilTest, ReplaceLine) {
   EXPECT_EQ("de", ReplaceLine("", 0, "de"));
   EXPECT_EQ("de", ReplaceLine("abc", 0, "de"));
-  EXPECT_THROW(ReplaceLine("abc", 1, "de"), ampl::Error);
+  EXPECT_THROW(ReplaceLine("abc", 1, "de"), mp::Error);
   EXPECT_EQ("de\n", ReplaceLine("abc\n", 0, "de"));
   EXPECT_EQ("abc\nde", ReplaceLine("abc\n", 1, "de"));
   EXPECT_EQ("gh\ndef", ReplaceLine("abc\ndef", 0, "gh"));
   EXPECT_EQ("abc\ngh", ReplaceLine("abc\ndef", 1, "gh"));
-  EXPECT_THROW(ReplaceLine("abc\ndef", 2, "gh"), ampl::Error);
+  EXPECT_THROW(ReplaceLine("abc\ndef", 2, "gh"), mp::Error);
 }
 
 TEST(UtilTest, ExecuteShellCommand) {
@@ -66,7 +66,7 @@ TEST(UtilTest, ExecuteShellCommand) {
   std::string message;
   try {
     ExecuteShellCommand("dir/bad-command");
-  } catch (const ampl::Error &e) {
+  } catch (const mp::Error &e) {
     message = e.what();
   }
   EXPECT_TRUE(message.find("process exited with code ") != std::string::npos)
@@ -76,11 +76,11 @@ TEST(UtilTest, ExecuteShellCommand) {
 TEST(UtilTest, ExecuteShellThrowsOnNonzeroExitCode) {
   EXPECT_THROW_MSG(
     ExecuteShellCommand(FixBinaryPath("../bin/test-helper") + " > out"),
-    ampl::Error, "process exited with code 42");
+    mp::Error, "process exited with code 42");
 }
 
 TEST(UtilTest, FixBinaryPath) {
-  ampl::path path(FixBinaryPath("test"));
+  mp::path path(FixBinaryPath("test"));
   EXPECT_EQ("test", path.filename().string());
   path.remove_filename();
   if (!path.filename().string().empty())

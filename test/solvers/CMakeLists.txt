@@ -1,6 +1,3 @@
-add_mp_test(cp-test cp-test.cc LIBS amplsolver function)
-add_dependencies(cp-test cp)
-
 if (TARGET gecode)
   add_mp_test(gecode-test PREFIX
     ../args.cc ../solver-test.cc gecode-test.cc LIBS amplgecode-static)

@@ -33,7 +33,7 @@
 #include <string>
 #include <vector>
 
-#include "util/format.h"
+#include "mp/format.h"
 
 #if defined(_MSC_VER)
 # define isnan _isnan

@@ -19,8 +19,6 @@ else ()
 endif ()
 add_custom_command(OUTPUT arith.h DEPENDS arithchk COMMAND arithchk > arith.h)
 
-include_directories(solvers ${CMAKE_CURRENT_BINARY_DIR})
-
 set(ASL_SOURCES
   ${CMAKE_CURRENT_BINARY_DIR}/arith.h
   ${CMAKE_CURRENT_BINARY_DIR}/stdio1.h
@@ -136,6 +134,7 @@ endif ()
 add_library(asl ${ASL_SOURCES}
   aslbuilder.cc aslbuilder.h expr.cc expr.h problem.cc problem.h
   solver-c.cc solver-c.h solver.cc solver.h)
+target_include_directories(asl PUBLIC solvers ${CMAKE_CURRENT_BINARY_DIR})
 
 include(CheckCXXSourceCompiles)
 check_cxx_source_compiles("
@@ -143,6 +142,11 @@ check_cxx_source_compiles("
   int main() { std::unordered_map<int, int> m; }" HAVE_UNORDERED_MAP)
 if (HAVE_UNORDERED_MAP)
   target_compile_definitions(asl PUBLIC MP_USE_UNORDERED_MAP)
+endif ()
+
+find_library(DL_LIBRARY dl)
+if (DL_LIBRARY)
+  target_link_libraries(asl dl)
 endif ()
 
 # Link with librt for clock_gettime (Linux on i386).
@@ -156,11 +160,10 @@ add_ampl_library(fullbit tables/fullbit.c)
 
 find_package(ODBC)
 if (ODBC_FOUND)
-  include_directories(${ODBC_INCLUDE_DIR})
   add_library(amplodbc ${CMAKE_CURRENT_BINARY_DIR}/arith.h tables/amplodbc.c)
+  target_include_directories(amplodbc PRIVATE ${ODBC_INCLUDE_DIR})
+  target_compile_definitons(amplodbc PRIVATE funcadd_ASL=funcaddodbc_ASL)
   set(AMPLODBC amplodbc ${ODBC_LIBRARIES})
-  set_target_properties(amplodbc
-    PROPERTIES COMPILE_DEFINITIONS funcadd_ASL=funcaddodbc_ASL)
 endif ()
 
 add_ampl_library(ampltabl tables/tableproxy.c tables/tableproxyver.h)
@@ -176,7 +179,8 @@ else ()
   set(TABLEPROXY_SUFFIX 32)
 endif ()
 
-add_executable(tableproxy tables/tableproxy.c solvers/printf.c tables/tableproxyver.h)
+add_executable(tableproxy
+  tables/tableproxy.c solvers/printf.c tables/tableproxyver.h)
 set_target_properties(tableproxy
   PROPERTIES COMPILE_DEFINITIONS "STAND_ALONE=1;QUOTIFY=1"
              OUTPUT_NAME tableproxy${TABLEPROXY_SUFFIX})
