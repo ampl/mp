@@ -36,6 +36,10 @@ using mp::UnsupportedExprError;
 namespace var = mp::var;
 namespace obj = mp::obj;
 
+#ifndef MP_TEST_DATA_DIR
+# define MP_TEST_DATA_DIR "../data"
+#endif
+
 SolverTest::EvalResult SolverTest::Solve(Problem &p) {
   struct TestSolutionHandler : mp::BasicSolutionHandler {
     EvalResult result;
@@ -80,7 +84,7 @@ SolveResult SolverTest::Solve(
     mp::Solver &s, Problem &p, const char *stub, const char *opt) {
   TestSolutionHandler sh;
   s.set_solution_handler(&sh);
-  const std::string DATA_DIR = "../data/";
+  const std::string DATA_DIR = MP_TEST_DATA_DIR "/";
   if (s.ProcessArgs(Args(s.name(), "-s", (DATA_DIR + stub).c_str(), opt), p))
     s.Solve(p);
   const string &message = sh.message();
@@ -901,7 +905,7 @@ TEST_P(SolverTest, SatisfactionSolutionLimit) {
 
 TEST_P(SolverTest, OptimizationSolutionLimit) {
   mp::Problem p;
-  p.Read("../data/photo9");
+  p.Read(MP_TEST_DATA_DIR "/photo9");
   solver_->SetIntOption("solutionlimit", 2);
   solver_->Solve(p);
   EXPECT_GE(p.solve_code(), 400);
