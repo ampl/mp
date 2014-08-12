@@ -40,6 +40,10 @@ namespace obj = mp::obj;
 # define putenv _putenv
 #endif
 
+#ifndef MP_TEST_DATA_DIR
+# define MP_TEST_DATA_DIR "../data"
+#endif
+
 TEST(SolutionTest, DefaultCtor) {
   Solution s;
   EXPECT_EQ(mp::NOT_SOLVED, s.status());
@@ -192,7 +196,7 @@ TEST(ProblemTest, EmptyProblem) {
 
 TEST(ProblemTest, ProblemAccessors) {
   Problem p;
-  p.Read("../data/test");
+  p.Read(MP_TEST_DATA_DIR "/test");
   EXPECT_EQ(5, p.num_vars());
   EXPECT_EQ(19, p.num_objs());
   EXPECT_EQ(13, p.num_cons());
@@ -268,7 +272,7 @@ TEST(ProblemTest, VarType) {
 #ifndef NDEBUG
 TEST(ProblemTest, BoundChecks) {
   Problem p;
-  p.Read("../data/test");
+  p.Read(MP_TEST_DATA_DIR "/test");
 
   EXPECT_DEATH(p.var_type(-1), "Assertion");
   EXPECT_DEATH(p.var_type(p.num_vars()), "Assertion");
@@ -308,7 +312,7 @@ static const std::string SOLVER_PATH = GetExecutableDir() + "/ilogcp";
 
 TEST(ProblemTest, Solve) {
   Problem p;
-  p.Read("../data/simple");
+  p.Read(MP_TEST_DATA_DIR "/simple");
   Solution s;
   p.Solve(SOLVER_PATH, s);
   EXPECT_EQ(2, s.num_vars());
@@ -320,7 +324,7 @@ TEST(ProblemTest, Solve) {
 
 TEST(ProblemChangesTest, AddVarAndSolve) {
   Problem p;
-  p.Read("../data/simple");
+  p.Read(MP_TEST_DATA_DIR "/simple");
   Solution s;
   ProblemChanges changes(p);
   EXPECT_EQ(0, changes.num_vars());
@@ -341,7 +345,7 @@ TEST(ProblemChangesTest, AddVarAndSolve) {
 
 TEST(ProblemChangesTest, AddConAndSolve) {
   Problem p;
-  p.Read("../data/simple");
+  p.Read(MP_TEST_DATA_DIR "/simple");
   Solution s;
   ProblemChanges changes(p);
   const double coefs[] = {1, 0};
@@ -363,7 +367,7 @@ TEST(ProblemChangesTest, AddConAndSolve) {
 
 TEST(ProblemChangesTest, AddObjAndSolve) {
   Problem p;
-  p.Read("../data/noobj");
+  p.Read(MP_TEST_DATA_DIR "/noobj");
   Solution s;
   ProblemChanges changes(p);
   double coef = -1;
@@ -384,7 +388,7 @@ TEST(ProblemChangesTest, AddObjAndSolve) {
 
 TEST(ProblemChangesTest, CopyConstructorCon) {
   Problem p;
-  p.Read("../data/simple");
+  p.Read(MP_TEST_DATA_DIR "/simple");
 
   ProblemChanges changes(p);
   for (int i = 0; i < 10; ++i) {
@@ -409,7 +413,7 @@ TEST(ProblemTest, SolveIgnoreFunctions) {
   char amplfunc[] = "AMPLFUNC=../../solvers/ssdsolver/ssd.dll";
   putenv(amplfunc);
   Problem p;
-  p.Read("../data/ssd");
+  p.Read(MP_TEST_DATA_DIR "/ssd");
   Solution s;
   p.Solve(SOLVER_PATH, s, 0, Problem::IGNORE_FUNCTIONS);
   EXPECT_EQ(42, s.value(0));
@@ -418,14 +422,14 @@ TEST(ProblemTest, SolveIgnoreFunctions) {
 
 TEST(ProblemTest, SolveWithUnknownSolver) {
   Problem p;
-  p.Read("../data/simple");
+  p.Read(MP_TEST_DATA_DIR "/simple");
   Solution s;
   EXPECT_THROW(p.Solve("unknownsolver", s), mp::Error);
 }
 
 TEST(ProblemTest, Write) {
   Problem p;
-  p.Read("../data/simple");
+  p.Read(MP_TEST_DATA_DIR "/simple");
   fmt::Writer writer;
   writer << p;
   EXPECT_EQ(
@@ -462,7 +466,7 @@ TEST(ProblemTest, AddVar) {
   EXPECT_EQ(333, p.var_lb(1));
   EXPECT_EQ(444, p.var_ub(1));
 
-  p.Read("../data/simple");
+  p.Read(MP_TEST_DATA_DIR "/simple");
   EXPECT_THROW(p.AddVar(0, 0), mp::Error);
 }
 
@@ -487,7 +491,7 @@ TEST(ProblemTest, AddCon) {
   EXPECT_EQ(1, p.num_logical_cons());
   EXPECT_EQ(expr, p.logical_con_expr(0));
 
-  p.Read("../data/test");
+  p.Read(MP_TEST_DATA_DIR "/test");
   EXPECT_THROW(p.AddCon(expr), mp::Error);
 }
 
@@ -503,7 +507,7 @@ TEST(ProblemTest, AddObj) {
   EXPECT_EQ(obj::MAX, p.obj_type(0));
   EXPECT_EQ(expr, p.nonlinear_obj_expr(0));
 
-  p.Read("../data/simple");
+  p.Read(MP_TEST_DATA_DIR "/simple");
   EXPECT_THROW(p.AddObj(obj::MAX, expr), mp::Error);
 }
 
@@ -512,6 +516,6 @@ TEST(ProblemTest, ReadFunctionWithoutLibrary) {
   // It shouldn't be an error to have a function without an implementation
   // (provided by a function library) because some functions are not evaluated
   // but translated into the solver representation.
-  p.Read("../data/element");
+  p.Read(MP_TEST_DATA_DIR "/element");
   EXPECT_EQ(1, p.num_objs());
 }

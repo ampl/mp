@@ -117,7 +117,7 @@ TEST_F(MySQLTest, Read) {
   t = "VERSION()";
   handler_->Read(&t);
   EXPECT_EQ(1u, t.num_rows());
-  EXPECT_TRUE(t(0, 0).string() != nullptr);
+  EXPECT_TRUE(t(0, 0).string() != 0);
 }
 
 TEST_F(MySQLTest, Write) {

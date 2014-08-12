@@ -329,7 +329,7 @@ bool GSLTest::CheckDerivative(F f, const Function &af,
     else
       EXPECT_ERROR(EvalError(af, args, "'").error(), r);
   } else {
-    EXPECT_TRUE(r.error() != nullptr);
+    EXPECT_TRUE(r.error() != 0);
   }
   return false;
 }
@@ -360,7 +360,7 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
       double error = 0;
       FunctionInfo::Result deriv_result = f.GetSecondDerivative(i, j, args);
       double d = GSL_NAN;
-      bool no_first_deriv = f(args, DERIVS, use_deriv).error() != nullptr;
+      bool no_first_deriv = f(args, DERIVS, use_deriv).error() != 0;
       if (!deriv_result.error() && !no_first_deriv) {
         d = Diff(DerivativeBinder(f, j, i, args), args[i].number(), &error);
         double overridden_deriv = deriv_result.value();
@@ -387,7 +387,7 @@ void GSLTest::CheckSecondDerivatives(const Function &f,
       }
       Function::Result r = f(args, HES, use_deriv);
       if (no_first_deriv)
-        EXPECT_TRUE(r.error() != nullptr);
+        EXPECT_TRUE(r.error() != 0);
       else if (deriv_result.error())
         EXPECT_ERROR(deriv_result.error(), r);
       else
@@ -741,7 +741,7 @@ TEST_F(GSLTest, Coupling6j) {
   Function f = GetFunction("gsl_sf_coupling_6j");
   Tuple args(MakeArgs(2, 4, 6, 8, 10, 12));
   EXPECT_EQ(value, f(args).value());
-  EXPECT_TRUE(f(MakeArgs(0, 0, 0, 0, 0, 0)).error() == nullptr);
+  EXPECT_TRUE(f(MakeArgs(0, 0, 0, 0, 0, 0)).error() == 0);
   EXPECT_ERROR(NotIntError("two_ja"), f(MakeArgs(0.5, 0, 0, 0, 0, 0)));
   EXPECT_ERROR(NotIntError("two_jb"), f(MakeArgs(0, 0.5, 0, 0, 0, 0)));
   EXPECT_ERROR(NotIntError("two_jc"), f(MakeArgs(0, 0, 0.5, 0, 0, 0)));
@@ -759,7 +759,7 @@ TEST_F(GSLTest, Coupling9j) {
   Function f = GetFunction("gsl_sf_coupling_9j");
   Tuple args(MakeArgs(6, 16, 18, 8, 20, 14, 12, 10, 4));
   EXPECT_EQ(value, f(args).value());
-  EXPECT_TRUE(f(MakeArgs(0, 0, 0, 0, 0, 0, 0, 0, 0)).error() == nullptr);
+  EXPECT_TRUE(f(MakeArgs(0, 0, 0, 0, 0, 0, 0, 0, 0)).error() == 0);
   EXPECT_ERROR(NotIntError("two_ja"), f(MakeArgs(0.5, 0, 0, 0, 0, 0, 0, 0, 0)));
   EXPECT_ERROR(NotIntError("two_jb"), f(MakeArgs(0, 0.5, 0, 0, 0, 0, 0, 0, 0)));
   EXPECT_ERROR(NotIntError("two_jc"), f(MakeArgs(0, 0, 0.5, 0, 0, 0, 0, 0, 0)));

@@ -8,6 +8,9 @@ add_executable(numberofmap-speed-test numberofmap-speed-test.cc)
 target_link_libraries(numberofmap-speed-test asl)
 
 add_mp_test(problem-test problem-test.cc stderr-redirect.h LIBS asl)
+target_compile_definitions(problem-test PRIVATE
+  MP_TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../data")
+
 add_mp_test(solver-test PREFIX ../args.cc solver-test.cc LIBS asl)
 
 add_library(ampltestsolver SHARED testsolver.cc ../../src/asl/solver-c.cc)

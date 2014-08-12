@@ -31,6 +31,6 @@ TEST(ODBCTest, Load) {
   fun::Library lib(GetExecutableDir() + "/ampltabl.dll");
   lib.Load();
   EXPECT_EQ("", lib.error());
-  EXPECT_TRUE(lib.GetHandler("odbc") != nullptr);
+  EXPECT_TRUE(lib.GetHandler("odbc") != 0);
 }
 }

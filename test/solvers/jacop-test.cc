@@ -57,7 +57,7 @@ class JaCoPSolverTest : public ::testing::Test {
  protected:
   mp::JaCoPSolver solver_;
 
-  SolveResult Solve(Problem &p, const char *stub, const char *opt = nullptr) {
+  SolveResult Solve(Problem &p, const char *stub, const char *opt = 0) {
     return SolverTest::Solve(solver_, p, stub, opt);
   }
 };
