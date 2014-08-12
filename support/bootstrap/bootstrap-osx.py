@@ -8,7 +8,7 @@ from subprocess import check_call
 
 vagrant = bootstrap_init()
 
-install_cmake('cmake-2.8.12.2-Darwin64-universal.tar.gz')
+install_cmake('cmake-3.0.1-Darwin64-universal.tar.gz')
 
 # Installs an OS X package.
 def install_pkg(filename):
