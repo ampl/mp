@@ -24,11 +24,10 @@
 #include <climits>
 
 #include "gtest/gtest.h"
-#include "tests/config.h"
-#include "tests/function.h"
-#include "tests/tables/odbc.h"
-#include "solvers/util/format.h"
-#include "solvers/funcadd.h"
+#include "mp/format.h"
+#include "asl/solvers/funcadd.h"
+#include "../function.h"
+#include "odbc.h"
 
 #ifdef _WIN32
 # include <process.h>

@@ -21,8 +21,8 @@
  */
 
 #include "gtest/gtest.h"
-#include "tests/function.h"
-#include "tests/tables/odbc.h"
+#include "../function.h"
+#include "odbc.h"
 
 using fun::Handler;
 using fun::Table;

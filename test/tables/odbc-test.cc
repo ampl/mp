@@ -21,10 +21,9 @@
  */
 
 #include "gtest/gtest.h"
-#include "tests/function.h"
-#include "tests/config.h"
-#include "tests/tables/odbc.h"
-#include "tests/util.h"
+#include "../function.h"
+#include "../util.h"
+#include "odbc.h"
 
 namespace {
 

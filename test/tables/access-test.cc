@@ -24,9 +24,9 @@
 #include <climits>
 
 #include "gtest/gtest.h"
-#include "solvers/util/format.h"
-#include "tests/function.h"
-#include "tests/tables/odbc.h"
+#include "mp/format.h"
+#include "../function.h"
+#include "odbc.h"
 #undef VOID
 
 using fun::Handler;
