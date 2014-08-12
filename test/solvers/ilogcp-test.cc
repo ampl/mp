@@ -550,7 +550,7 @@ TEST_F(IlogCPTest, CPVerbosityOptions) {
       {"terse",   IloCP::Terse},
       {"normal",  IloCP::Normal},
       {"verbose", IloCP::Verbose},
-      {nullptr}
+      {nullptr,   IloCP::Off}
   };
   CheckIntCPOption("logverbosity", IloCP::LogVerbosity,
       0, 3, IloCP::Quiet, false, verbosities);
@@ -565,7 +565,7 @@ TEST_F(IlogCPTest, CPSearchTypeOption) {
       {"depthfirst", IloCP::DepthFirst},
       {"restart",    IloCP::Restart},
       {"multipoint", IloCP::MultiPoint},
-      {nullptr}
+      {nullptr,      IloCP::Off}
   };
   CheckIntCPOption("searchtype", IloCP::SearchType,
       0, 2, IloCP::DepthFirst, CPX_VERSION > 1220, types);
@@ -575,7 +575,7 @@ TEST_F(IlogCPTest, CPTimeModeOption) {
   const EnumValue modes[] = {
       {"cputime",     IloCP::CPUTime},
       {"elapsedtime", IloCP::ElapsedTime},
-      {nullptr}
+      {nullptr,       IloCP::Off}
   };
   CheckIntCPOption("timemode", IloCP::TimeMode,
       0, 1, IloCP::CPUTime, false, modes);

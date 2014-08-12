@@ -48,7 +48,7 @@ enum Feature {
 };
 }
 
-#ifdef HAVE_UNIQUE_PTR
+#ifdef MP_USE_UNIQUE_PTR
 typedef std::unique_ptr<mp::Solver> SolverPtr;
 #else
 typedef std::auto_ptr<mp::Solver> SolverPtr;

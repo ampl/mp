@@ -11,13 +11,17 @@ if (NOT WIN32)
 endif ()
 add_executable(arithchk solvers/arithchk.c ${FPINIT})
 if (WIN32)
-  set_property(TARGET arithchk
-    PROPERTY COMPILE_DEFINITIONS NO_FPINIT NO_SSIZE_T)
+  target_compile_definitions(arithchk PRIVATE NO_FPINIT NO_SSIZE_T)
 else ()
   target_compile_definitions(arithchk PRIVATE ASL_NO_FPINITMT)
   target_link_libraries(arithchk m)
 endif ()
 add_custom_command(OUTPUT arith.h DEPENDS arithchk COMMAND arithchk > arith.h)
+
+if (NOT MSVC)
+  string(REPLACE "-Wall -Wextra -pedantic" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+  target_compile_options(arithchk PUBLIC -Wno-format-security)
+endif ()
 
 set(ASL_SOURCES
   ${CMAKE_CURRENT_BINARY_DIR}/arith.h

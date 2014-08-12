@@ -126,7 +126,8 @@ mp::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
 : start_(), size_() {
   // Open file and check that its size is not a multiple of memory page size.
   fmt::File file(filename.c_str(), fmt::File::RDONLY);
-  struct stat file_stat = {};
+  typedef struct stat Stat;
+  Stat file_stat = Stat();
   if (fstat(file.descriptor(), &file_stat) == -1)
     throw fmt::SystemError(errno, "cannot get attributes of file {}", filename);
   size_ = file_stat.st_size;

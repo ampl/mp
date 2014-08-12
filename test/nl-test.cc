@@ -494,7 +494,7 @@ struct TestNLHandler2 {
 };
 
 NLHeader MakeHeader() {
-  NLHeader header = {};
+  NLHeader header = NLHeader();
   header.num_vars = 5;
   header.num_objs = 6;
   header.num_algebraic_cons = 7;
@@ -620,12 +620,13 @@ TEST(NLTest, IncompleteHeader) {
 }
 
 #define CHECK_INT_OVERFLOW(field, col) { \
-  NLHeader h = {NLHeader::TEXT}; \
+  NLHeader h = NLHeader(); \
+  h.format = NLHeader::TEXT; \
   h.num_vars = INT_MAX; \
   h.field = 1; \
   fmt::Writer w; \
   w << h; \
-  NLHeader actual = {}; \
+  NLHeader actual = NLHeader(); \
   EXPECT_THROW_MSG(mp::TextReader(w.str(), "in").ReadHeader(actual), \
                    ReadError, fmt::format("in:10:{}: integer overflow", col)); \
 }
@@ -841,7 +842,7 @@ TEST(NLTest, ReadConBounds) {
   EXPECT_READ_ERROR("r\n5 1 6\n", "(input):12:5: integer 6 out of bounds");
   // Check that there is no overflow for largest possible var index.
   TestNLHandler handler;
-  NLHeader header = {};
+  NLHeader header = NLHeader();
   header.num_vars = INT_MAX;
   header.num_algebraic_cons = 1;
   ReadNLString(FormatHeader(header) + fmt::format("r\n5 1 {}\n", INT_MAX),

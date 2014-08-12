@@ -3,6 +3,14 @@ target_link_libraries(solver-test asl)
 target_compile_definitions(solver-test PRIVATE
   MP_TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../data")
 
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles(
+  "#include <memory>
+  int main() { std::unique_ptr<int> p; }" HAVE_UNIQUE_PTR)
+if (HAVE_UNIQUE_PTR)
+  target_compile_definitions(solver-test PUBLIC MP_USE_UNIQUE_PTR)
+endif ()
+
 if (TARGET gecode)
   add_mp_test(gecode-test PREFIX gecode-test.cc
     LIBS amplgecode-static solver-test)
