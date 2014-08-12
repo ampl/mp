@@ -1,7 +1,5 @@
 add_library(solver-test ../args.cc solver-test.cc)
 target_link_libraries(solver-test asl)
-target_compile_definitions(solver-test PRIVATE
-  MP_TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../data")
 
 include(CheckCXXSourceCompiles)
 check_cxx_source_compiles(

@@ -33,6 +33,10 @@
 # define putenv _putenv
 #endif
 
+#ifndef MP_TEST_DATA_DIR
+# define MP_TEST_DATA_DIR "../data"
+#endif
+
 using mp::InvalidOptionValue;
 using mp::OptionError;
 using mp::Problem;
@@ -339,7 +343,8 @@ TEST(SolverTest, SolutionHandler) {
 TEST(SolverTest, ReadProblem) {
   TestSolver s("test");
   Problem p;
-  EXPECT_TRUE(s.ProcessArgs(Args("testprogram", "../data/objconst.nl"), p));
+  EXPECT_TRUE(s.ProcessArgs(
+                Args("testprogram", MP_TEST_DATA_DIR "/objconst.nl"), p));
   EXPECT_EQ(1, p.num_vars());
 }
 
@@ -363,7 +368,8 @@ TEST(SolverTest, ReadProblemError) {
 TEST(SolverTest, ReadingMinOrMaxWithZeroArgsFails) {
   const char *names[] = {"min", "max"};
   for (size_t i = 0, n = sizeof(names) / sizeof(*names); i < n; ++i) {
-    std::string stub = fmt::format("../data/{}-with-zero-args", names[i]);
+    std::string stub =
+        fmt::format(MP_TEST_DATA_DIR "/{}-with-zero-args", names[i]);
     EXPECT_EXIT({
       Stderr = stderr;
       Problem p;
@@ -384,7 +390,8 @@ TEST(SolverTest, ReportError) {
 TEST(SolverTest, ProcessArgsReadsProblem) {
   TestSolver s;
   Problem p;
-  EXPECT_TRUE(s.ProcessArgs(Args("testprogram", "../data/objconst.nl"), p));
+  EXPECT_TRUE(s.ProcessArgs(
+                Args("testprogram", MP_TEST_DATA_DIR "/objconst.nl"), p));
   EXPECT_EQ(1, p.num_vars());
 }
 
@@ -392,7 +399,7 @@ TEST(SolverTest, ProcessArgsParsesSolverOptions) {
   TestSolver s;
   Problem p;
   EXPECT_TRUE(s.ProcessArgs(
-      Args("testprogram", "../data/objconst.nl", "wantsol=5"),
+      Args("testprogram", MP_TEST_DATA_DIR "/objconst.nl", "wantsol=5"),
       p, Solver::NO_OPTION_ECHO));
   EXPECT_EQ(5, s.wantsol());
 }
@@ -1065,14 +1072,14 @@ TEST(SolverTest, InputTiming) {
   s.SetIntOption("timing", 0);
   {
     Problem p;
-    s.ProcessArgs(Args("test", "../data/objconst.nl"), p);
+    s.ProcessArgs(Args("test", MP_TEST_DATA_DIR "/objconst.nl"), p);
     EXPECT_TRUE(oh.output.find("Input time = ") == std::string::npos);
   }
 
   {
     s.SetIntOption("timing", 1);
     Problem p;
-    s.ProcessArgs(Args("test", "../data/objconst.nl"), p);
+    s.ProcessArgs(Args("test", MP_TEST_DATA_DIR "/objconst.nl"), p);
     EXPECT_TRUE(oh.output.find("Input time = ") != std::string::npos);
   }
 }
@@ -1081,7 +1088,7 @@ TEST(SolverTest, InputSuffix) {
   TestSolver s("");
   s.AddSuffix("answer", 0, ASL_Sufkind_var, 0);
   Problem p;
-  s.ProcessArgs(Args("program-name", "../data/suffix.nl"), p);
+  s.ProcessArgs(Args("program-name", MP_TEST_DATA_DIR "/suffix.nl"), p);
   mp::Suffix suffix = p.suffix("answer", ASL_Sufkind_var);
   EXPECT_EQ(42, suffix.int_value(0));
 }
@@ -1121,7 +1128,7 @@ TEST(SolverTest, CountSolutionsOption) {
 TEST(SolverTest, SolutionsAreNotCountedByDefault) {
   SolCountingSolver s(true);
   s.SetIntOption("wantsol", 1);
-  WriteFile("test.nl", ReadFile("../data/objconst.nl"));
+  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
   Problem p;
   p.Read("test.nl");
   s.Solve(p);
@@ -1133,7 +1140,7 @@ TEST(SolverTest, CountSolutions) {
   SolCountingSolver s(true);
   s.SetIntOption("countsolutions", 1);
   s.SetIntOption("wantsol", 1);
-  WriteFile("test.nl", ReadFile("../data/objconst.nl"));
+  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
   Problem p;
   p.Read("test.nl");
   s.Solve(p);
@@ -1160,7 +1167,7 @@ bool Exists(fmt::StringRef filename) {
 TEST(SolverTest, SolutionsAreNotWrittenByDefault) {
   SolCountingSolver s(true);
   s.SetIntOption("wantsol", 1);
-  WriteFile("test.nl", ReadFile("../data/objconst.nl"));
+  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
   Problem p;
   p.Read("test.nl");
   s.Solve(p);
@@ -1173,7 +1180,7 @@ TEST(SolverTest, WriteSolutions) {
   SolCountingSolver s(true);
   s.SetStrOption("solutionstub", "abc");
   s.SetIntOption("wantsol", 1);
-  WriteFile("test.nl", ReadFile("../data/objconst.nl"));
+  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
   Problem p;
   p.Read("test.nl");
   for (int i = 1; i <= NUM_SOLUTIONS; ++i)

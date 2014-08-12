@@ -33,6 +33,8 @@ function(add_mp_test name)
   add_executable(${target_name} ${srcs})
   set_target_properties(${target_name} PROPERTIES OUTPUT_NAME ${name})
   target_link_libraries(${target_name} gtest-extra ${libs})
+  target_compile_definitions(${target_name} PRIVATE
+    MP_TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test/data")
   add_test(NAME ${name} COMMAND $<TARGET_FILE:${target_name}>)
 endfunction()
 
