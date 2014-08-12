@@ -30,14 +30,14 @@ Features:
   systems. This includes third-party solvers and libraries (COIN-OR solvers with CMake support
   are available in the `ampl/coin <https://github.com/ampl/coin>`__ repository).
 
-* `AMPLGSL <https://github.com/ampl/ampl/tree/master/solvers/amplgsl>`__, an AMPL function
+* `AMPLGSL <https://github.com/ampl/mp/tree/master/src/gsl>`__, an AMPL function
   library providing access to the GNU Scientific Library (GSL) functions.
-  See the `AMPLGSL documentation <http://ampl.github.io/ampl/solvers/amplgsl/doc/>`__.
+  See the `AMPLGSL documentation <http://ampl.github.io/amplgsl>`__.
 
 * Database support on Linux and MacOS X.
   See `Database and spreadsheet connection guide <http://ampl.github.io/tables/>`__.
 
-* `SMPSWriter <https://github.com/ampl/ampl/tree/master/solvers/smpswriter>`__, a converter
+* `SMPSWriter <https://github.com/ampl/mp/tree/master/solvers/smpswriter>`__, a converter
   from deterministic equivalent of a two-stage stochastic programming (SP) problem written in
   AMPL to an SP problem in SMPS format.
 
