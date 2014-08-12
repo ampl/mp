@@ -71,7 +71,7 @@ create_symlink('/usr/local/bin/f90cache',
 # Install LocalSolver.
 if not installed('localsolver'):
   with download('http://www.localsolver.com/downloads/' +
-      'LocalSolver_4_5_20140715_MacOS64.pkg') as f:
+      'LocalSolver_{0}_MacOS64.pkg'.format(LOCALSOLVER_VERSION)) as f:
     install_pkg(f)
 
 copy_optional_dependencies('osx')

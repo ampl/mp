@@ -185,3 +185,5 @@ def copy_optional_dependencies(platform):
       dest = '/opt/' + os.path.basename(src)
       if not os.path.exists(dest):
         shutil.copytree(src, dest)
+
+LOCALSOLVER_VERSION = '4_5_20140718'
