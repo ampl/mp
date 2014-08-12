@@ -183,14 +183,14 @@ if (ODBC_FOUND)
   add_library(amplodbc ${CMAKE_CURRENT_BINARY_DIR}/arith.h tables/amplodbc.c)
   target_include_directories(amplodbc PRIVATE ${ODBC_INCLUDE_DIR})
   target_compile_definitions(amplodbc PRIVATE funcadd_ASL=funcaddodbc_ASL)
+  target_link_libraries(amplodbc asl)
   set(AMPLODBC amplodbc ${ODBC_LIBRARIES})
 endif ()
 
 add_ampl_library(ampltabl tables/tableproxy.c tables/tableproxyver.h)
 target_link_libraries(ampltabl ${AMPLODBC})
 if (ODBC_FOUND)
-  set_target_properties(ampltabl
-    PROPERTIES COMPILE_DEFINITIONS OTHER_FUNCADD=funcaddodbc_ASL)
+  target_compile_definitions(ampltabl PRIVATE OTHER_FUNCADD=funcaddodbc_ASL)
 endif ()
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -202,8 +202,8 @@ endif ()
 add_executable(tableproxy
   tables/tableproxy.c solvers/printf.c tables/tableproxyver.h)
 set_target_properties(tableproxy
-  PROPERTIES COMPILE_DEFINITIONS "STAND_ALONE=1;QUOTIFY=1"
-             OUTPUT_NAME tableproxy${TABLEPROXY_SUFFIX})
+  PROPERTIES OUTPUT_NAME tableproxy${TABLEPROXY_SUFFIX})
+target_compile_definitions(tableproxy PRIVATE STAND_ALONE=1 QUOTIFY=1)
 target_link_libraries(tableproxy asl)
 
 if (WIN32)
