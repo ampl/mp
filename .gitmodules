@@ -2,11 +2,11 @@
 	path = solvers/amplgsl/gsl
 	url = git://github.com/ampl/gsl.git
 [submodule "solvers/gecode/lib"]
-	path = solvers/gecode/lib
+	path = thirdparty/gecode
 	url = git://github.com/ampl/gecode.git
 [submodule "solvers/jacop/lib"]
-	path = solvers/jacop/lib
+	path = thirdparty/jacop
 	url = git://github.com/ampl/jacop.git
 [submodule "solvers/path/pathlib"]
-	path = solvers/path/pathlib
+	path = thirdparty/path
 	url = git://github.com/ampl/pathlib.git
