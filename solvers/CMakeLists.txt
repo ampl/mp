@@ -127,7 +127,9 @@ add_ampl_solver(ilogcp DLL_RUNTIME MODULE CPLEX
   INCLUDE_DIRS ${CPLEX_CP_INCLUDE_DIRS} ${CPLEX_ILOCPLEX_INCLUDE_DIRS}
   LIBRARIES ${CPLEX_CP_LIBRARIES} ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_LIBRARIES}
   DEFINITIONS ${CPLEX_CONCERT_DEFINITIONS} ${CPLEX_ILOCPLEX_DEFINITIONS})
-target_compile_definitions(amplilogcp-static PRIVATE ILOGCP_NO_VERS)
+if (TARGET ilogcp)
+  target_compile_definitions(amplilogcp-static PRIVATE ILOGCP_NO_VERS)
+endif ()
 
 # Copy CPLEX DLL to the target directory.
 if (CPLEX_DLL)
