@@ -225,18 +225,18 @@ TEST(FunctionTest, TableOutput) {
 TEST(FunctionTest, Library) {
   Library lib(GetExecutableDir() + "/testlib.dll");
   EXPECT_EQ(0u, lib.GetNumFunctions());
-  EXPECT_TRUE(lib.GetFunction("foo") == nullptr);
+  EXPECT_TRUE(lib.GetFunction("foo") == 0);
   lib.Load();
   EXPECT_EQ(2u, lib.GetNumFunctions());
-  EXPECT_TRUE(lib.GetFunction("nonexistent") == nullptr);
+  EXPECT_TRUE(lib.GetFunction("nonexistent") == 0);
   const func_info *fi = lib.GetFunction("foo");
-  EXPECT_TRUE(fi != nullptr);
+  EXPECT_TRUE(fi != 0);
   EXPECT_STREQ(fi->name, "foo");
-  EXPECT_EQ(42, fi->funcp(nullptr));
+  EXPECT_EQ(42, fi->funcp(0));
   EXPECT_EQ("duplicate function 'bar'", lib.error());
-  EXPECT_TRUE(lib.GetHandler("nonexistent") == nullptr);
+  EXPECT_TRUE(lib.GetHandler("nonexistent") == 0);
   const Handler *handler = lib.GetHandler("testhandler");
-  EXPECT_TRUE(handler != nullptr);
+  EXPECT_TRUE(handler != 0);
   Table t("", 0, 0);
   handler->Read(&t);
 }
@@ -615,7 +615,7 @@ TEST(FunctionTest, FunctionInfoGetDerivative) {
 
 TEST(FunctionTest, FunctionInfoResult) {
   EXPECT_EQ(42, FunctionInfo::Result(42).value());
-  EXPECT_TRUE(FunctionInfo::Result().error() == nullptr);
+  EXPECT_TRUE(FunctionInfo::Result().error() == 0);
   EXPECT_NE(0, isnan(FunctionInfo::Result().value()));
   EXPECT_NE(0, isnan(FunctionInfo::Result("oops").value()));
   EXPECT_STREQ("oops", FunctionInfo::Result("oops").error());
@@ -624,7 +624,7 @@ TEST(FunctionTest, FunctionInfoResult) {
 TEST(FunctionTest, FunctionResult) {
   static const real ARGS[] = {5, 7, 11, 13, 17};
   Function::Result r(42, vector<real>(ARGS, ARGS + 2),
-      vector<real>(ARGS + 2, ARGS + 5), nullptr);
+      vector<real>(ARGS + 2, ARGS + 5), 0);
   EXPECT_EQ(42, r.value());
   EXPECT_EQ(5, r.deriv());
   EXPECT_EQ(5, r.deriv(0));
@@ -635,7 +635,7 @@ TEST(FunctionTest, FunctionResult) {
   EXPECT_EQ(13, r.hes(1));
   EXPECT_EQ(17, r.hes(2));
   EXPECT_THROW(r.hes(3), std::out_of_range);
-  EXPECT_TRUE(r.error() == nullptr);
+  EXPECT_TRUE(r.error() == 0);
 }
 
 TEST(FunctionTest, FunctionResultError) {
@@ -713,10 +713,10 @@ TEST(FunctionTest, FunctionCall) {
   ASSERT_EQ(1, data.n);
   EXPECT_EQ(1, data.nr);
   EXPECT_EQ(777, data.ra[0]);
-  EXPECT_TRUE(data.derivs == nullptr);
-  EXPECT_TRUE(data.hes == nullptr);
-  EXPECT_TRUE(data.dig == nullptr);
-  EXPECT_TRUE(data.error == nullptr);
+  EXPECT_TRUE(data.derivs == 0);
+  EXPECT_TRUE(data.hes == 0);
+  EXPECT_TRUE(data.dig == 0);
+  EXPECT_TRUE(data.error == 0);
 }
 
 TEST(FunctionTest, FunctionReturnsError) {
@@ -740,14 +740,14 @@ TEST(FunctionTest, FunctionReturnsDerivs) {
   EXPECT_EQ(456, res.deriv(1));
   EXPECT_EQ(789, res.deriv(2));
   EXPECT_THROW(res.deriv(3), std::out_of_range);
-  EXPECT_TRUE(data.hes == nullptr);
-  EXPECT_TRUE(data.dig == nullptr);
-  EXPECT_TRUE(data.error == nullptr);
+  EXPECT_TRUE(data.hes == 0);
+  EXPECT_TRUE(data.dig == 0);
+  EXPECT_TRUE(data.error == 0);
 }
 
 TEST(FunctionTest, FunctionReturnsHes) {
   TestFunction f(2);
-  CallData data = {};
+  CallData data = CallData();
   Function::Result res = f.get()(MakeArgs(111, 222), fun::HES, BitSet(), &data);
   EXPECT_EQ(42, res.value());
   ASSERT_EQ(2, data.n);
@@ -761,8 +761,8 @@ TEST(FunctionTest, FunctionReturnsHes) {
   EXPECT_EQ(34, res.hes(1));
   EXPECT_EQ(56, res.hes(2));
   EXPECT_THROW(res.hes(3), std::out_of_range);
-  EXPECT_TRUE(data.dig == nullptr);
-  EXPECT_TRUE(data.error == nullptr);
+  EXPECT_TRUE(data.dig == 0);
+  EXPECT_TRUE(data.error == 0);
 }
 
 TEST(FunctionTest, FunctionArgNames) {
