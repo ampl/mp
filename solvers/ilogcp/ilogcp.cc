@@ -89,15 +89,15 @@ const mp::OptionValueInfo OPTIMIZERS[] = {
   {
     "auto",
     "CP Optimizer if the problem has nonlinear objective/constraints "
-    "or logical constraints, CPLEX otherwise"
+    "or logical constraints, CPLEX otherwise", 0
   },
   {
     "cp",
-    "CP Optimizer"
+    "CP Optimizer", 0
   },
   {
     "cplex",
-    "CPLEX Optimizer"
+    "CPLEX Optimizer", 0
   }
 };
 
@@ -750,7 +750,8 @@ void IlogCPSolver::SolveWithCPLEX(
 }
 
 void IlogCPSolver::DoSolve(Problem &p) {
-  Stats stats = {steady_clock::now()};
+  Stats stats = Stats();
+  stats.time = steady_clock::now();
 
   Optimizer optimizer = optimizer_;
   if (optimizer == AUTO) {

@@ -70,7 +70,7 @@ SolverTest::EvalResult SolverTest::Solve(
 
 SolverTest::SolverTest()
 : solver_(GetParam().create_solver()), features_(GetParam().features) {
-  mp::NLHeader header = {};
+  mp::NLHeader header = mp::NLHeader();
   header.num_vars = 4;
   header.num_objs = 1;
   header.num_funcs = 2;

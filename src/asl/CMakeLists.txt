@@ -127,6 +127,13 @@ add_prefix(ASL_SOURCES solvers/
   xp1known.c
   xp2known.c)
 
+include(CheckSymbolExists)
+
+check_symbol_exists(mkstemps stdlib.h HAVE_MKSTEMPS)
+if (NOT HAVE_MKSTEMPS)
+  set(ASL_SOURCES ${ASL_SOURCES} mkstemps.c)
+endif ()
+
 add_library(asl ${ASL_SOURCES}
   aslbuilder.cc aslbuilder.h expr.cc expr.h problem.cc problem.h
   solver-c.cc solver-c.h solver.cc solver.h)
@@ -139,13 +146,9 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 8)
   target_compile_definitions(asl PRIVATE No_Control87)
 endif ()
 
-include(CheckSymbolExists)
-
 check_symbol_exists(mkstemps stdlib.h HAVE_MKSTEMPS)
 if (HAVE_MKSTEMPS)
   target_compile_definitions(asl PRIVATE MP_HAVE_MKSTEMPS=1)
-else ()
-  set(ASL_SOURCES ${ASL_SOURCES} mkstemps.c)
 endif ()
 
 check_symbol_exists(strtoull stdlib.h HAVE_STRTOULL)

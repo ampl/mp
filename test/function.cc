@@ -140,7 +140,7 @@ long ScopedTableInfo::AdjustMaxrows(long new_maxrows) {
 ScopedTableInfo::ScopedTableInfo(const Table &t) {
   // Workaround for GCC bug 30111 that prevents value-initialization of
   // the base POD class.
-  TableInfo ti = {};
+  TableInfo ti = TableInfo();
   static_cast<TableInfo&>(*this) = ti;
 
   tname = const_cast<char*>(t.name());
@@ -571,7 +571,7 @@ Function::Result Function::operator()(const Tuple &args,
     for (int i = 0; i < num_args; ++i)
       dig[i] = !use_deriv[i];
   }
-  arglist al = {};
+  arglist al = arglist();
   al.ra = !ra.empty() ? &ra[0] : nullptr;
   al.nr = al.n = num_args;
   al.TMI = lib_->impl();

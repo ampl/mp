@@ -341,7 +341,11 @@ TEST(NLTest, WriteTextHeader) {
 }
 
 TEST(NLTest, WriteBinaryHeader) {
-  NLHeader header = {NLHeader::BINARY, 3, {11, 22, 33}};
+  NLHeader header = NLHeader();
+  header.format = NLHeader::BINARY;
+  header.num_options = 3;
+  for (int i = 1; i < header.num_options; ++i)
+    header.options[i] = 11 * i;
   header.arith_kind = mp::arith::CRAY;
   fmt::Writer w;
   w << header;

@@ -708,7 +708,7 @@ class TestFunction {
 
 TEST(FunctionTest, FunctionCall) {
   TestFunction f(1);
-  CallData data = {};
+  CallData data = CallData();
   EXPECT_EQ(42, f.get()(777, 0, BitSet(), &data).value());
   ASSERT_EQ(1, data.n);
   EXPECT_EQ(1, data.nr);
