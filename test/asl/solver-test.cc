@@ -78,8 +78,8 @@ TEST(SolverTest, EmptyValueArrayRef) {
 
 TEST(SolverTest, ValueArrayRef) {
   const mp::OptionValueInfo values[] = {
-      {"val1", "description of val1"},
-      {"val2", "description of val2"}
+      {"val1", "description of val1", 0},
+      {"val2", "description of val2", 0}
   };
   mp::ValueArrayRef r(values);
   EXPECT_EQ(2, r.size());
@@ -94,7 +94,7 @@ TEST(SolverTest, ValueArrayRef) {
 
 TEST(SolverTest, ValueArrayRefOffset) {
   const mp::OptionValueInfo values[] = {
-      {"val1"}, {"val2"}
+      {"val1", 0, 0}, {"val2", 0, 0}
   };
   mp::ValueArrayRef r(values, 1);
   EXPECT_EQ(1, r.size());
@@ -105,7 +105,7 @@ TEST(SolverTest, ValueArrayRefOffset) {
 
 TEST(SolverTest, ValueArrayRefInvalidOffset) {
   const mp::OptionValueInfo values[] = {
-      {"val1"}, {"val2"}
+      {"val1", 0, 0}, {"val2", 0, 0}
   };
   EXPECT_DEBUG_DEATH(
       mp::ValueArrayRef r(values, -1);, "Assertion");  // NOLINT(*)
@@ -169,8 +169,8 @@ TEST(FormatRSTTest, FormatLineBlock) {
 
 TEST(FormatRSTTest, FormatRSTValueTable) {
   const mp::OptionValueInfo values[] = {
-      {"val1", "description of val1"},
-      {"val2", "description of val2"}
+      {"val1", "description of val1", 0},
+      {"val2", "description of val2", 0}
   };
   EXPECT_EQ(
     "  val1 - description of val1\n"
@@ -180,8 +180,8 @@ TEST(FormatRSTTest, FormatRSTValueTable) {
 
 TEST(FormatRSTTest, FormatRSTValueList) {
   const mp::OptionValueInfo values[] = {
-      {"val1"},
-      {"val2"}
+      {"val1", 0, 0},
+      {"val2", 0, 0}
   };
   EXPECT_EQ(
     "  val1\n"
@@ -468,8 +468,8 @@ TEST(SolverTest, SolverOption) {
   }
   {
     const mp::OptionValueInfo VALUES[] = {
-        {"value1", "description1"},
-        {"value2", "description2"},
+        {"value1", "description1", 0},
+        {"value2", "description2", 0},
     };
     TestOption opt("", "", VALUES, true);
     EXPECT_TRUE(opt.is_flag());
@@ -1154,7 +1154,7 @@ bool Exists(fmt::StringRef filename) {
   std::FILE *f = std::fopen(filename.c_str(), "r");
   if (f)
     std::fclose(f);
-  return f != nullptr;
+  return f != 0;
 }
 
 TEST(SolverTest, SolutionsAreNotWrittenByDefault) {

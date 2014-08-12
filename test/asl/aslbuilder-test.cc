@@ -451,7 +451,7 @@ std::string HeaderToStr(const NLHeader &h) {
 }
 
 void CheckHeader(const NLHeader &h) {
-  NLHeader actual_header = {};
+  NLHeader actual_header = NLHeader();
   std::string nl = HeaderToStr(h);
   mp::TextReader(nl, "(input)").ReadHeader(actual_header);
 
@@ -586,7 +586,7 @@ TEST(NLTest, ReadFullHeader) {
     167, 173, 179, 181, 191
   };
   CheckHeader(header);
-  NLHeader zero_header = {};
+  NLHeader zero_header = NLHeader();
   CheckHeader(zero_header);
 }
 
@@ -628,7 +628,7 @@ TEST(ASLBuilderTest, Ctor) {
 }
 
 TEST(ASLBuilderTest, InitASLTrivial) {
-  NLHeader header = {};
+  NLHeader header = NLHeader();
   header.num_vars = 1;  // jac0dim can't handle problems with 0 vars
   CheckInitASL(header);
 }
@@ -656,7 +656,8 @@ TEST(ASLBuilderTest, ASLBuilderAdjFcn) {
   namespace arith = mp::arith;
   arith::Kind arith_kind = arith::GetKind();
   if (arith::IsIEEE(arith_kind)) {
-    NLHeader header = {NLHeader::BINARY};
+    NLHeader header = NLHeader();
+    header.format = NLHeader::BINARY;
     header.num_vars = 1;
     header.arith_kind = arith_kind == arith::IEEE_BIG_ENDIAN ?
           arith::IEEE_LITTLE_ENDIAN : arith::IEEE_BIG_ENDIAN;
@@ -676,7 +677,7 @@ TEST(ASLBuilderTest, ASLBuilderAdjFcn) {
 }
 
 TEST(ASLBuilderTest, ASLBuilderInvalidProblemDim) {
-  NLHeader header = {};
+  NLHeader header = NLHeader();
   CHECK_THROW_ASL_ERROR(ASLBuilder().InitASL("test", header),
       ASL_readerr_corrupt, "invalid problem dimensions: M = 0, N = 0, NO = 0");
   header.num_vars = 1;
@@ -693,7 +694,7 @@ TEST(ASLBuilderTest, ASLBuilderInvalidProblemDim) {
 // Check that x0len_ is set properly for different values of
 // num_nl_vars_in_cons & num_nl_vars_in_objs.
 TEST(ASLBuilderTest, ASLBuilderX0Len) {
-  NLHeader header = {};
+  NLHeader header = NLHeader();
   header.num_vars = 1;
   header.num_nl_vars_in_cons = 5;
   header.num_nl_vars_in_objs = 10;
@@ -707,7 +708,7 @@ int ReadASL(ASL &asl, const NLHeader &h, const char *body, int flags) {
 }
 
 NLHeader MakeHeader(int num_vars = 1) {
-  NLHeader header = {};
+  NLHeader header = NLHeader();
   header.num_vars = num_vars;
   header.num_objs = 1;
   return header;
@@ -937,7 +938,7 @@ TEST(ASLBuilderTest, SetMissingFunction) {
   TestASLBuilder builder2(asl2, true);
   builder2.SetFunction(0, "f", 0);
   EXPECT_STREQ("f", asl2->i.funcs_[0]->name);
-  arglist al = {};
+  arglist al = arglist();
   asl2->i.funcs_[0]->funcp(&al);
   EXPECT_STREQ("attempt to call unavailable function", al.Errmsg);
 }

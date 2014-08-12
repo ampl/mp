@@ -469,7 +469,7 @@ TEST(ProblemTest, AddVar) {
 class TestASLBuilder : public mp::internal::ASLBuilder {
  public:
   TestASLBuilder() {
-    mp::NLHeader header = {};
+    mp::NLHeader header = mp::NLHeader();
     header.num_vars = header.num_objs = 1;
     BeginBuild("", header);
   }

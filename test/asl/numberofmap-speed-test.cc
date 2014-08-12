@@ -9,7 +9,7 @@ struct CreateVar {
 int main() {
   mp::internal::ASLBuilder b;
   int num_exprs = 10000;
-  mp::NLHeader h = {};
+  mp::NLHeader h = mp::NLHeader();
   h.num_vars = num_exprs;
   h.num_objs = 1;
   b.BeginBuild("", h, 0);
