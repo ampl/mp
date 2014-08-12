@@ -187,7 +187,8 @@ mp::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
 : start_(), size_() {
   class Handle {
     HANDLE handle_;
-    FMT_DISALLOW_COPY_AND_ASSIGN(Handle);
+    Handle(const Handle &);
+    void operator=(const Handle &);
    public:
     explicit Handle(HANDLE h) : handle_(h) {}
     ~Handle() { CloseHandle(handle_); }
