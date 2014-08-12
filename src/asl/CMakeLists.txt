@@ -178,7 +178,7 @@ find_package(ODBC)
 if (ODBC_FOUND)
   add_library(amplodbc ${CMAKE_CURRENT_BINARY_DIR}/arith.h tables/amplodbc.c)
   target_include_directories(amplodbc PRIVATE ${ODBC_INCLUDE_DIR})
-  target_compile_definitons(amplodbc PRIVATE funcadd_ASL=funcaddodbc_ASL)
+  target_compile_definitions(amplodbc PRIVATE funcadd_ASL=funcaddodbc_ASL)
   set(AMPLODBC amplodbc ${ODBC_LIBRARIES})
 endif ()
 
