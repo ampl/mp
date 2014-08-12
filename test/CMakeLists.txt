@@ -50,6 +50,7 @@ endif ()
 add_mp_test(cp-test cp-test.cc LIBS function)
 add_dependencies(cp-test cp)
 
+add_subdirectory(asl)
 add_subdirectory(solvers)
 add_subdirectory(tables)
 

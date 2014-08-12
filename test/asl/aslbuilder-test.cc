@@ -22,19 +22,19 @@
 
 #include <gtest/gtest.h>
 
-#include "solvers/util/aslbuilder.h"
-#include "solvers/util/nl.h"
-#include "tests/util.h"
+#include "asl/aslbuilder.h"
+#include "mp/nl.h"
+#include "../util.h"
 
 #include <climits>
 
-using ampl::NLHeader;
-using ampl::Function;
-using ampl::LogicalExpr;
-using ampl::NumericExpr;
-using ampl::MakeArrayRef;
-using ampl::internal::ASLBuilder;
-namespace func = ampl::func;
+using mp::NLHeader;
+using mp::Function;
+using mp::LogicalExpr;
+using mp::NumericExpr;
+using mp::MakeArrayRef;
+using mp::internal::ASLBuilder;
+namespace func = mp::func;
 
 bool operator==(const cde &lhs, const cde &rhs) {
   return lhs.e == rhs.e && lhs.d == rhs.d && lhs.zaplen == rhs.zaplen;
@@ -280,7 +280,7 @@ void CheckASL(const ASL &expected, const ASL &actual, bool complete = true) {
   EXPECT_EQ(expected.i.cv_index_, actual.i.cv_index_);
   // Edaginfo::err_jmp_ is ignored.
   EXPECT_EQ(expected.i.err_jmp1_, actual.i.err_jmp1_);
-  for (int i = 0; i < ampl::MAX_NL_OPTIONS + 1; ++i)
+  for (int i = 0; i < mp::MAX_NL_OPTIONS + 1; ++i)
     EXPECT_EQ(expected.i.ampl_options_[i], actual.i.ampl_options_[i]);
   EXPECT_EQ(expected.i.obj_no_, actual.i.obj_no_);
   EXPECT_EQ(expected.i.nranges_, actual.i.nranges_);
@@ -453,12 +453,12 @@ std::string HeaderToStr(const NLHeader &h) {
 void CheckHeader(const NLHeader &h) {
   NLHeader actual_header = {};
   std::string nl = HeaderToStr(h);
-  ampl::TextReader(nl, "(input)").ReadHeader(actual_header);
+  mp::TextReader(nl, "(input)").ReadHeader(actual_header);
 
   EXPECT_EQ(h.format, actual_header.format);
 
   EXPECT_EQ(h.num_options, actual_header.num_options);
-  for (int i = 0; i < ampl::MAX_NL_OPTIONS; ++i)
+  for (int i = 0; i < mp::MAX_NL_OPTIONS; ++i)
     EXPECT_EQ(h.options[i], actual_header.options[i]);
   EXPECT_EQ(h.ampl_vbtol, actual_header.ampl_vbtol);
 
@@ -521,7 +521,7 @@ void CheckHeader(const NLHeader &h) {
   std::remove(stub);
 
   EXPECT_EQ(asl->i.ampl_options_[0], actual_header.num_options);
-  for (int i = 0; i < ampl::MAX_NL_OPTIONS; ++i)
+  for (int i = 0; i < mp::MAX_NL_OPTIONS; ++i)
     EXPECT_EQ(asl->i.ampl_options_[i + 1], actual_header.options[i]);
   EXPECT_EQ(asl->i.ampl_vbtol_, actual_header.ampl_vbtol);
 
@@ -579,7 +579,7 @@ TEST(NLTest, ReadFullHeader) {
     53, 59, 67, 61, 71, 73,
     79, 83,
     89, 97, 101,
-    103, 107, ampl::arith::GetKind(), 109,
+    103, 107, mp::arith::GetKind(), 109,
     113, 127, 131, 137, 139,
     149, 151,
     157, 163,
@@ -641,7 +641,7 @@ TEST(ASLBuilderTest, InitASLFull) {
     53, 59, 67, 61, 71, 73,
     79, 83,
     89, 97, 101,
-    103, 107, ampl::arith::IEEE_BIG_ENDIAN, 109,
+    103, 107, mp::arith::IEEE_BIG_ENDIAN, 109,
     113, 127, 131, 137, 139,
     149, 151,
     157, 163,
@@ -653,7 +653,7 @@ TEST(ASLBuilderTest, InitASLFull) {
 // Check that iadjfcn & dadjfcn are set properly when using different
 // endianness.
 TEST(ASLBuilderTest, ASLBuilderAdjFcn) {
-  namespace arith = ampl::arith;
+  namespace arith = mp::arith;
   arith::Kind arith_kind = arith::GetKind();
   if (arith::IsIEEE(arith_kind)) {
     NLHeader header = {NLHeader::BINARY};
@@ -665,10 +665,10 @@ TEST(ASLBuilderTest, ASLBuilderAdjFcn) {
 }
 
 #define CHECK_THROW_ASL_ERROR(code, expected_error_code, expected_message) { \
-  ampl::internal::ASLError error(0, ""); \
+  mp::internal::ASLError error(0, ""); \
   try { \
     code; \
-  } catch (const ampl::internal::ASLError &e) { \
+  } catch (const mp::internal::ASLError &e) { \
     error = e; \
   } \
   EXPECT_EQ(expected_error_code, error.error_code()); \
@@ -754,7 +754,7 @@ TEST(ASLBuilderTest, ASLBuilderAllowCLP) {
   header.num_logical_cons = 1;
   ASLPtr actual;
   ASLBuilder builder(actual.get());
-  ampl::internal::ASLError error(0, "");
+  mp::internal::ASLError error(0, "");
   builder.BeginBuild("test", header, ASL_return_read_err | ASL_allow_CLP);
   builder.EndBuild();
   ASLPtr expected;
@@ -772,7 +772,7 @@ class TestASLBuilder : public ASLBuilder {
     header.num_objs = NUM_OBJS;
     header.num_algebraic_cons = NUM_CONS;
     header.num_logical_cons = NUM_LOGICAL_CONS;
-    int flags = ampl::internal::ASL_STANDARD_OPCODES | ASL_allow_CLP;
+    int flags = mp::internal::ASL_STANDARD_OPCODES | ASL_allow_CLP;
     if (allow_missing_funcs)
       flags |= ASL_allow_missing_funcs;
     BeginBuild("", header, flags);
@@ -796,10 +796,10 @@ TEST(ASLBuilderTest, SetObj) {
   TestASLBuilder builder(asl);
 #undef obj_de
   cde *obj_de = reinterpret_cast<ASL_fg*>(asl.get())->I.obj_de_;
-  EXPECT_EQ(ampl::obj::MIN, asl->i.objtype_[1]);
+  EXPECT_EQ(mp::obj::MIN, asl->i.objtype_[1]);
   EXPECT_EQ(0, obj_de[1].e);
-  builder.SetObj(1, ampl::obj::MAX, builder.MakeNumericConstant(42));
-  EXPECT_EQ(ampl::obj::MAX, asl->i.objtype_[1]);
+  builder.SetObj(1, mp::obj::MAX, builder.MakeNumericConstant(42));
+  EXPECT_EQ(mp::obj::MAX, asl->i.objtype_[1]);
   EXPECT_EQ(reinterpret_cast<efunc*>(OPNUM), obj_de[1].e->op);
 }
 
@@ -808,9 +808,9 @@ TEST(ASLBuilderTest, SetObjIndexOutOfRange) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
   NumericExpr expr = builder.MakeNumericConstant(42);
-  EXPECT_DEBUG_DEATH(builder.SetObj(-1, ampl::obj::MIN, expr), "Assertion");
+  EXPECT_DEBUG_DEATH(builder.SetObj(-1, mp::obj::MIN, expr), "Assertion");
   EXPECT_DEBUG_DEATH(builder.SetObj(TestASLBuilder::NUM_OBJS,
-                                    ampl::obj::MIN, expr), "Assertion");
+                                    mp::obj::MIN, expr), "Assertion");
 }
 #endif
 
@@ -947,21 +947,21 @@ TEST(ASLBuilderTest, SetMissingFunction) {
 // expression classes doesn't make much sense.
 
 TEST(ASLBuilderTest, SizeOverflow) {
-  using safeint::OverflowError;
+  using mp::OverflowError;
   ASLBuilder builder;
   NLHeader header = MakeHeader();
   header.num_funcs = 1;
   builder.BeginBuild("", header,
-    ampl::internal::ASL_STANDARD_OPCODES | ASL_allow_missing_funcs);
+    mp::internal::ASL_STANDARD_OPCODES | ASL_allow_missing_funcs);
   NumericExpr args[] = {builder.MakeNumericConstant(0)};
 
   std::size_t num_args = (INT_MAX - sizeof(expr_f)) / sizeof(expr*) + 2;
   std::size_t max_size = INT_MAX + 1u;
   Function f = builder.AddFunction("f", TestFunc, -1);
   EXPECT_THROW(builder.MakeCall(
-                 f, MakeArrayRef<ampl::Expr>(args, num_args)), OverflowError);
+                 f, MakeArrayRef<mp::Expr>(args, num_args)), OverflowError);
   EXPECT_THROW(builder.MakeCall(
-                 f, MakeArrayRef<ampl::Expr>(args, max_size)), OverflowError);
+                 f, MakeArrayRef<mp::Expr>(args, max_size)), OverflowError);
 
   num_args = (INT_MAX - sizeof(expr*)) / sizeof(de) + 1;
   EXPECT_THROW(builder.MakeVarArg(
@@ -1002,7 +1002,7 @@ TEST(ASLBuilderTest, SizeOverflow) {
 // Test that ASLBuilder can act as a handler for NLReader.
 TEST(ASLBuilderTest, NLHandler) {
   ASLBuilder builder;
-  ampl::ReadNLString(HeaderToStr(MakeHeader()), builder);
+  mp::ReadNLString(HeaderToStr(MakeHeader()), builder);
 }
 
 // TODO: test SetVarBounds, SetConBounds, AddSuffix

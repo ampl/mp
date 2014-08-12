@@ -21,11 +21,11 @@
  */
 
 #include <gtest/gtest.h>
-#include "solvers/util/solver.h"
-#include "tests/args.h"
-#include "tests/config.h"
-#include "tests/solution-handler.h"
-#include "tests/util.h"
+#include "asl/solver.h"
+#include "../args.h"
+#include "../solution-handler.h"
+#include "../util.h"
+#include "stderr-redirect.h"
 
 #include <cstdio>
 
@@ -33,12 +33,12 @@
 # define putenv _putenv
 #endif
 
-using ampl::InvalidOptionValue;
-using ampl::OptionError;
-using ampl::Problem;
-using ampl::Solver;
-using ampl::SolverOption;
-using ampl::internal::OptionHelper;
+using mp::InvalidOptionValue;
+using mp::OptionError;
+using mp::Problem;
+using mp::Solver;
+using mp::SolverOption;
+using mp::internal::OptionHelper;
 
 namespace {
 
@@ -67,23 +67,23 @@ TEST(SolverTest, ObjPrec) {
   double value = 12.3456789123456789;
   char buffer[64];
   sprintf(buffer, "%.*g", obj_prec(), value);
-  EXPECT_EQ(buffer, fmt::format("{}", ampl::ObjPrec(value)));
+  EXPECT_EQ(buffer, fmt::format("{}", mp::ObjPrec(value)));
 }
 
 TEST(SolverTest, EmptyValueArrayRef) {
-  ampl::ValueArrayRef r;
+  mp::ValueArrayRef r;
   EXPECT_EQ(0, r.size());
   EXPECT_EQ(r.begin(), r.end());
 }
 
 TEST(SolverTest, ValueArrayRef) {
-  const ampl::OptionValueInfo values[] = {
+  const mp::OptionValueInfo values[] = {
       {"val1", "description of val1"},
       {"val2", "description of val2"}
   };
-  ampl::ValueArrayRef r(values);
+  mp::ValueArrayRef r(values);
   EXPECT_EQ(2, r.size());
-  ampl::ValueArrayRef::iterator i = r.begin();
+  mp::ValueArrayRef::iterator i = r.begin();
   EXPECT_NE(i, r.end());
   EXPECT_STREQ("val1", i->value);
   ++i;
@@ -93,31 +93,31 @@ TEST(SolverTest, ValueArrayRef) {
 }
 
 TEST(SolverTest, ValueArrayRefOffset) {
-  const ampl::OptionValueInfo values[] = {
+  const mp::OptionValueInfo values[] = {
       {"val1"}, {"val2"}
   };
-  ampl::ValueArrayRef r(values, 1);
+  mp::ValueArrayRef r(values, 1);
   EXPECT_EQ(1, r.size());
-  ampl::ValueArrayRef::iterator i = r.begin();
+  mp::ValueArrayRef::iterator i = r.begin();
   EXPECT_STREQ("val2", i->value);
   EXPECT_EQ(r.end(), ++i);
 }
 
 TEST(SolverTest, ValueArrayRefInvalidOffset) {
-  const ampl::OptionValueInfo values[] = {
+  const mp::OptionValueInfo values[] = {
       {"val1"}, {"val2"}
   };
   EXPECT_DEBUG_DEATH(
-      ampl::ValueArrayRef r(values, -1);, "Assertion");  // NOLINT(*)
+      mp::ValueArrayRef r(values, -1);, "Assertion");  // NOLINT(*)
   EXPECT_DEBUG_DEATH(
-      ampl::ValueArrayRef r(values, 2);, "Assertion");  // NOLINT(*)
+      mp::ValueArrayRef r(values, 2);, "Assertion");  // NOLINT(*)
 }
 
-// A wrapper around ampl::internal::FormatRST used to simplify testing.
+// A wrapper around mp::internal::FormatRST used to simplify testing.
 std::string FormatRST(fmt::StringRef s,
-    int indent = 0, ampl::ValueArrayRef values = ampl::ValueArrayRef()) {
+    int indent = 0, mp::ValueArrayRef values = mp::ValueArrayRef()) {
   fmt::Writer w;
-  ampl::internal::FormatRST(w, s, indent, values);
+  mp::internal::FormatRST(w, s, indent, values);
   return w.str();
 }
 
@@ -168,7 +168,7 @@ TEST(FormatRSTTest, FormatLineBlock) {
 }
 
 TEST(FormatRSTTest, FormatRSTValueTable) {
-  const ampl::OptionValueInfo values[] = {
+  const mp::OptionValueInfo values[] = {
       {"val1", "description of val1"},
       {"val2", "description of val2"}
   };
@@ -179,7 +179,7 @@ TEST(FormatRSTTest, FormatRSTValueTable) {
 }
 
 TEST(FormatRSTTest, FormatRSTValueList) {
-  const ampl::OptionValueInfo values[] = {
+  const mp::OptionValueInfo values[] = {
       {"val1"},
       {"val2"}
   };
@@ -285,7 +285,7 @@ TEST(SolverTest, SetVersion) {
 }
 
 TEST(SolverTest, ErrorHandler) {
-  struct TestErrorHandler : ampl::ErrorHandler {
+  struct TestErrorHandler : mp::ErrorHandler {
     std::string message;
 
     virtual ~TestErrorHandler() {}
@@ -303,7 +303,7 @@ TEST(SolverTest, ErrorHandler) {
 }
 
 TEST(SolverTest, OutputHandler) {
-  struct TestOutputHandler : ampl::OutputHandler {
+  struct TestOutputHandler : mp::OutputHandler {
     std::string output;
 
     virtual ~TestOutputHandler() {}
@@ -419,11 +419,11 @@ TEST(SolverTest, SignalHandler) {
   TestSolver s;
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    ampl::SignalHandler sh(s);
-    fmt::print("{}", ampl::SignalHandler::stop());
+    mp::SignalHandler sh(s);
+    fmt::print("{}", mp::SignalHandler::stop());
     std::fflush(stdout);
     std::raise(SIGINT);
-    fmt::print("{}", ampl::SignalHandler::stop());
+    fmt::print("{}", mp::SignalHandler::stop());
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
@@ -434,7 +434,7 @@ TEST(SolverTest, SignalHandlerExitOnTwoSIGINTs) {
   std::signal(SIGINT, SIG_DFL);
   TestSolver s;
   EXPECT_EXIT({
-    ampl::SignalHandler sh(s);
+    mp::SignalHandler sh(s);
     FILE *f = freopen("out", "w", stdout);
     std::raise(SIGINT);
     std::raise(SIGINT);
@@ -453,7 +453,7 @@ TEST(SolverTest, SolverOption) {
     TestOption(const char *name, const char *description)
     : SolverOption(name, description), formatted(false), parsed(false) {}
     TestOption(const char *name, const char *description,
-        ampl::ValueArrayRef values, bool is_flag)
+        mp::ValueArrayRef values, bool is_flag)
     : SolverOption(name, description, values, is_flag),
       formatted(false), parsed(false) {}
     void Write(fmt::Writer &) { formatted = true; }
@@ -467,7 +467,7 @@ TEST(SolverTest, SolverOption) {
     EXPECT_FALSE(opt.is_flag());
   }
   {
-    const ampl::OptionValueInfo VALUES[] = {
+    const mp::OptionValueInfo VALUES[] = {
         {"value1", "description1"},
         {"value2", "description2"},
     };
@@ -525,10 +525,10 @@ TEST(SolverTest, StringOptionHelper) {
 }
 
 TEST(SolverTest, TypedSolverOption) {
-  struct TestOption : ampl::TypedSolverOption<int> {
+  struct TestOption : mp::TypedSolverOption<int> {
     int value;
     TestOption(const char *name, const char *description)
-    : ampl::TypedSolverOption<int>(name, description), value(0) {}
+    : mp::TypedSolverOption<int>(name, description), value(0) {}
     int GetValue() const { return value; }
     void SetValue(int value) { this->value = value; }
   };
@@ -732,7 +732,7 @@ TEST(SolverTest, ParseOptionsNoEqualSign) {
   EXPECT_EQ("abc", s.stropt1);
 }
 
-struct TestErrorHandler : ampl::ErrorHandler {
+struct TestErrorHandler : mp::ErrorHandler {
   std::vector<std::string> errors;
 
   virtual ~TestErrorHandler() {}
@@ -834,7 +834,7 @@ TEST(SolverTest, ErrorOnKeywordOptionValue) {
   struct KeywordOption : SolverOption {
     bool parsed;
     KeywordOption()
-    : SolverOption("kwopt", "", ampl::ValueArrayRef(), true), parsed(false) {}
+    : SolverOption("kwopt", "", mp::ValueArrayRef(), true), parsed(false) {}
     void Write(fmt::Writer &) {}
     void Parse(const char *&) { parsed = true; }
   };
@@ -1050,7 +1050,7 @@ TEST(SolverTest, TimingOption) {
 }
 
 TEST(SolverTest, InputTiming) {
-  struct TestOutputHandler : ampl::OutputHandler {
+  struct TestOutputHandler : mp::OutputHandler {
     std::string output;
 
     virtual ~TestOutputHandler() {}
@@ -1082,7 +1082,7 @@ TEST(SolverTest, InputSuffix) {
   s.AddSuffix("answer", 0, ASL_Sufkind_var, 0);
   Problem p;
   s.ProcessArgs(Args("program-name", "../data/suffix.nl"), p);
-  ampl::Suffix suffix = p.suffix("answer", ASL_Sufkind_var);
+  mp::Suffix suffix = p.suffix("answer", ASL_Sufkind_var);
   EXPECT_EQ(42, suffix.int_value(0));
 }
 
@@ -1091,7 +1091,7 @@ TEST(SolverTest, OutputSuffix) {
   s.AddSuffix("answer", 0, ASL_Sufkind_var | ASL_Sufkind_outonly, 0);
   Problem p;
   s.ProcessArgs(Args("program-name"), p);
-  ampl::Suffix suffix = p.suffix("answer", ASL_Sufkind_var);
+  mp::Suffix suffix = p.suffix("answer", ASL_Sufkind_var);
   int value = 42;
   suffix.set_values(&value);
   EXPECT_EQ(42, suffix.int_value(0));

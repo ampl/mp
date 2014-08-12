@@ -21,20 +21,20 @@
  */
 
 #include <gtest/gtest.h>
-#include "solvers/util/aslbuilder.h"
-#include "solvers/util/nl.h"
-#include "solvers/util/problem.h"
-#include "tests/config.h"
-#include "tests/util.h"
+#include "asl/aslbuilder.h"
+#include "asl/problem.h"
+#include "mp/nl.h"
+#include "../util.h"
+#include "stderr-redirect.h"
 
-using ampl::var::CONTINUOUS;
-using ampl::var::INTEGER;
-using ampl::LinearConExpr;
-using ampl::LinearObjExpr;
-using ampl::Problem;
-using ampl::ProblemChanges;
-using ampl::Solution;
-namespace obj = ampl::obj;
+using mp::var::CONTINUOUS;
+using mp::var::INTEGER;
+using mp::LinearConExpr;
+using mp::LinearObjExpr;
+using mp::Problem;
+using mp::ProblemChanges;
+using mp::Solution;
+namespace obj = mp::obj;
 
 #ifdef _WIN32
 # define putenv _putenv
@@ -42,7 +42,7 @@ namespace obj = ampl::obj;
 
 TEST(SolutionTest, DefaultCtor) {
   Solution s;
-  EXPECT_EQ(ampl::NOT_SOLVED, s.status());
+  EXPECT_EQ(mp::NOT_SOLVED, s.status());
   EXPECT_EQ(-1, s.solve_code());
   EXPECT_EQ(0, s.num_vars());
   EXPECT_EQ(0, s.num_cons());
@@ -54,7 +54,7 @@ TEST(SolutionTest, Read) {
   WriteFile("test.sol", "test\n\n1\n3\n5\n7\n11\n");
   Solution s;
   s.Read("test", 3, 2);
-  EXPECT_EQ(ampl::NOT_SOLVED, s.status());
+  EXPECT_EQ(mp::NOT_SOLVED, s.status());
   EXPECT_EQ(-1, s.solve_code());
   EXPECT_EQ(3, s.num_vars());
   EXPECT_EQ(2, s.num_cons());
@@ -73,7 +73,7 @@ TEST(SolutionTest, Read) {
 TEST(SolutionTest, ReadError) {
   Solution s;
   StderrRedirect redirect("out");
-  EXPECT_THROW(s.Read("nonexistent", 0, 0), ampl::Error);
+  EXPECT_THROW(s.Read("nonexistent", 0, 0), mp::Error);
 }
 
 TEST(SolutionTest, ReadEmpty) {
@@ -99,13 +99,13 @@ TEST(SolutionTest, DoubleRead) {
 }
 
 TEST(SolutionTest, SolveCodes) {
-  const ampl::SolutionStatus STATES[] = {
-      ampl::SOLVED,
-      ampl::SOLVED_MAYBE,
-      ampl::INFEASIBLE,
-      ampl::UNBOUNDED,
-      ampl::LIMIT,
-      ampl::FAILURE
+  const mp::SolutionStatus STATES[] = {
+      mp::SOLVED,
+      mp::SOLVED_MAYBE,
+      mp::INFEASIBLE,
+      mp::UNBOUNDED,
+      mp::LIMIT,
+      mp::FAILURE
   };
   for (int i = 0,
          n = static_cast<int>(sizeof(STATES) / sizeof(*STATES)); i < n; ++i) {
@@ -134,7 +134,7 @@ TEST(SolutionTest, SolveCodes) {
         fmt::format("test\n\n2\n2\nobjno 0 {}\n", CODES[i]));
     Solution s;
     s.Read("test", 1, 1);
-    EXPECT_EQ(ampl::NOT_SOLVED, s.status());
+    EXPECT_EQ(mp::NOT_SOLVED, s.status());
     EXPECT_EQ(CODES[i], s.solve_code());
   }
 }
@@ -420,7 +420,7 @@ TEST(ProblemTest, SolveWithUnknownSolver) {
   Problem p;
   p.Read("../data/simple");
   Solution s;
-  EXPECT_THROW(p.Solve("unknownsolver", s), ampl::Error);
+  EXPECT_THROW(p.Solve("unknownsolver", s), mp::Error);
 }
 
 TEST(ProblemTest, Write) {
@@ -463,13 +463,13 @@ TEST(ProblemTest, AddVar) {
   EXPECT_EQ(444, p.var_ub(1));
 
   p.Read("../data/simple");
-  EXPECT_THROW(p.AddVar(0, 0), ampl::Error);
+  EXPECT_THROW(p.AddVar(0, 0), mp::Error);
 }
 
-class TestASLBuilder : public ampl::internal::ASLBuilder {
+class TestASLBuilder : public mp::internal::ASLBuilder {
  public:
   TestASLBuilder() {
-    ampl::NLHeader header = {};
+    mp::NLHeader header = {};
     header.num_vars = header.num_objs = 1;
     BeginBuild("", header);
   }
@@ -480,7 +480,7 @@ TEST(ProblemTest, AddCon) {
   p.AddVar(0, 0);
   EXPECT_EQ(0, p.num_logical_cons());
   TestASLBuilder builder;
-  ampl::LogicalExpr expr = builder.MakeRelational(
+  mp::LogicalExpr expr = builder.MakeRelational(
         EQ, builder.MakeVariable(0), builder.MakeNumericConstant(0));
   p.AddCon(expr);
   EXPECT_EQ(0, p.num_cons());
@@ -488,7 +488,7 @@ TEST(ProblemTest, AddCon) {
   EXPECT_EQ(expr, p.logical_con_expr(0));
 
   p.Read("../data/test");
-  EXPECT_THROW(p.AddCon(expr), ampl::Error);
+  EXPECT_THROW(p.AddCon(expr), mp::Error);
 }
 
 TEST(ProblemTest, AddObj) {
@@ -496,7 +496,7 @@ TEST(ProblemTest, AddObj) {
   p.AddVar(0, 0);
   EXPECT_EQ(0, p.num_objs());
   TestASLBuilder builder;
-  ampl::NumericExpr expr = builder.MakeBinary(
+  mp::NumericExpr expr = builder.MakeBinary(
         OPPLUS, builder.MakeVariable(0), builder.MakeNumericConstant(1));
   p.AddObj(obj::MAX, expr);
   EXPECT_EQ(1, p.num_objs());
@@ -504,7 +504,7 @@ TEST(ProblemTest, AddObj) {
   EXPECT_EQ(expr, p.nonlinear_obj_expr(0));
 
   p.Read("../data/simple");
-  EXPECT_THROW(p.AddObj(obj::MAX, expr), ampl::Error);
+  EXPECT_THROW(p.AddObj(obj::MAX, expr), mp::Error);
 }
 
 TEST(ProblemTest, ReadFunctionWithoutLibrary) {

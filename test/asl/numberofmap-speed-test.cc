@@ -1,29 +1,29 @@
-#include "solvers/util/aslbuilder.h"
-#include "solvers/util/clock.h"
-#include "solvers/util/nl.h"
+#include "asl/aslbuilder.h"
+#include "mp/clock.h"
+#include "mp/nl.h"
 
 struct CreateVar {
   int operator()() { return 0; }
 };
 
 int main() {
-  ampl::internal::ASLBuilder b;
+  mp::internal::ASLBuilder b;
   int num_exprs = 10000;
-  ampl::NLHeader h = {};
+  mp::NLHeader h = {};
   h.num_vars = num_exprs;
   h.num_objs = 1;
   b.BeginBuild("", h, 0);
-  ampl::NumberOfMap<int, CreateVar> map((CreateVar()));
-  ampl::NumericConstant n = b.MakeNumericConstant(0);
-  std::vector<ampl::NumberOfExpr> exprs(num_exprs);
+  mp::NumberOfMap<int, CreateVar> map((CreateVar()));
+  mp::NumericConstant n = b.MakeNumericConstant(0);
+  std::vector<mp::NumberOfExpr> exprs(num_exprs);
   for (int i = 0; i < num_exprs; ++i) {
-    ampl::NumericExpr args[] = {n, b.MakeVariable(i)};
+    mp::NumericExpr args[] = {n, b.MakeVariable(i)};
     exprs[i] = b.MakeNumberOf(args);
   }
-  ampl::steady_clock::time_point start = ampl::steady_clock::now();
+  mp::steady_clock::time_point start = mp::steady_clock::now();
   for (int i = 0; i < num_exprs; ++i)
     map.Add(0, exprs[i]);
-  ampl::steady_clock::time_point end = ampl::steady_clock::now();
+  mp::steady_clock::time_point end = mp::steady_clock::now();
   fmt::print("Executed NumberOfMap.Add {} times in {} s.\n",
-    num_exprs, ampl::duration_cast< ampl::duration<double> >(end - start).count());
+    num_exprs, mp::duration_cast< mp::duration<double> >(end - start).count());
 }

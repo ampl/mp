@@ -138,12 +138,11 @@ class SolverTest
     return Eval(MakeIf(e, MakeConst(1), MakeConst(0)), var1, var2, var3);
   }
 
-  SolveResult Solve(mp::Problem &p,
-      const char *stub, const char *opt = nullptr) {
+  SolveResult Solve(mp::Problem &p, const char *stub, const char *opt = 0) {
     return Solve(*solver_, p, stub, opt);
   }
 
-  SolveResult Solve(const char *stub, const char *opt = nullptr) {
+  SolveResult Solve(const char *stub, const char *opt = 0) {
     mp::Problem p;
     return Solve(*solver_, p, stub, opt);
   }
@@ -152,7 +151,7 @@ class SolverTest
   SolverTest();
 
   static SolveResult Solve(mp::Solver &s,
-      mp::Problem &p, const char *stub, const char *opt = nullptr);
+      mp::Problem &p, const char *stub, const char *opt = 0);
 };
 
 void Interrupt();

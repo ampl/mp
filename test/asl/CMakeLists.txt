@@ -1,16 +1,16 @@
 if (HAVE_AUTO)
-  add_ampl_test(expr-test expr-test.cc no-unordered-map-test.cc)
+  add_mp_test(expr-test expr-test.cc no-unordered-map-test.cc)
 endif ()
 
-add_ampl_test(aslbuilder-test aslbuilder-test.cc)
+add_mp_test(aslbuilder-test aslbuilder-test.cc LIBS asl)
 
 add_executable(numberofmap-speed-test numberofmap-speed-test.cc)
-target_link_libraries(numberofmap-speed-test util)
+target_link_libraries(numberofmap-speed-test asl)
 
-add_ampl_test(problem-test problem-test.cc)
-add_ampl_test(solver-test ../args.cc solver-test.cc)
+add_mp_test(problem-test problem-test.cc stderr-redirect.h LIBS asl)
+add_mp_test(solver-test PREFIX ../args.cc solver-test.cc LIBS asl)
 
-add_library(ampltestsolver SHARED testsolver.cc ../../solvers/util/solver-c.cc)
-target_link_libraries(ampltestsolver util)
+add_library(ampltestsolver SHARED testsolver.cc ../../src/asl/solver-c.cc)
+target_link_libraries(ampltestsolver asl)
 
-add_ampl_test(solver-c-test solver-c-test.cc LIBS ampltestsolver)
+add_mp_test(solver-c-test solver-c-test.cc LIBS ampltestsolver)

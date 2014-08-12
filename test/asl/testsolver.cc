@@ -20,14 +20,14 @@
  Author: Victor Zverovich
  */
 
-#include "solvers/util/solver.h"
+#include "asl/solver.h"
 
 #undef getenv
 
 #include <cstdlib>
 #include <stdexcept>
 
-namespace ampl {
+namespace mp {
 
 class TestSolver : public Solver {
  protected:
@@ -44,9 +44,9 @@ class TestSolver : public Solver {
     AddStrOption("opt1", "desc1",
         &TestSolver::GetOption, &TestSolver::SetOption);
     static const OptionValueInfo VALUES[] = {
-        {"val1", "valdesc1"},
-        {"val2", "valdesc2"},
-        {"val3", "valdesc3"}
+        {"val1", "valdesc1", 0},
+        {"val2", "valdesc2", 0},
+        {"val3", "valdesc3", 0}
     };
     AddStrOption("opt2", "desc2",
         &TestSolver::GetOption, &TestSolver::SetOption, VALUES);
