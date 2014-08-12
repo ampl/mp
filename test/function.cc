@@ -147,7 +147,7 @@ ScopedTableInfo::ScopedTableInfo(const Table &t) {
   for (unsigned i = 0, n = t.num_strings(); i < n; ++i)
     AddString(&strings_, t.string(i));
   nstrings = static_cast<int>(strings_.size());
-  strings = nstrings != 0 ? &strings_[0] : nullptr;
+  strings = nstrings != 0 ? &strings_[0] : 0;
   Missing = &MISSING;
 
   TableInfo::Lookup = Lookup;
@@ -572,11 +572,11 @@ Function::Result Function::operator()(const Tuple &args,
       dig[i] = !use_deriv[i];
   }
   arglist al = arglist();
-  al.ra = !ra.empty() ? &ra[0] : nullptr;
+  al.ra = !ra.empty() ? &ra[0] : 0;
   al.nr = al.n = num_args;
   al.TMI = lib_->impl();
   al.AE = lib_->impl();
-  al.dig = !dig.empty() ? &dig[0] : nullptr;
+  al.dig = !dig.empty() ? &dig[0] : 0;
   al.funcinfo = info ? info : fi_->funcinfo;
 
   // Allocate storage for the derivatives if needed.
