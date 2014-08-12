@@ -23,7 +23,6 @@
 #ifndef MP_ERROR_H_
 #define MP_ERROR_H_
 
-#include <stdexcept>
 #include "mp/format.h"
 
 namespace mp {
