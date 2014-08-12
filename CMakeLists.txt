@@ -117,5 +117,21 @@ if (EXISTS ${PROJECT_SOURCE_DIR}/thirdparty/gsl/CMakeLists.txt)
   add_subdirectory(src/gsl)
 endif ()
 
+# Add a target that generates a file with solver and library versions.
+set(AMPL_VERSIONS_FILE versions.txt)
+add_custom_target(versions cmake -E remove ${AMPL_VERSIONS_FILE}
+  DEPENDS src/asl/tables/amplodbc.c)
+foreach (target gen-decls gecode jacop path)
+  if (TARGET ${target})
+    add_custom_command(TARGET versions POST_BUILD
+        COMMAND $<TARGET_FILE:${target}> -v >> ${AMPL_VERSIONS_FILE})
+  endif ()
+endforeach ()
+file(READ src/asl/tables/amplodbc.c amplodbc)
+if (amplodbc MATCHES "version ([0-9]+)")
+  add_custom_command(TARGET versions POST_BUILD
+      COMMAND echo ampltabl ${CMAKE_MATCH_1} >> ${AMPL_VERSIONS_FILE})
+endif ()
+
 enable_testing()
 add_subdirectory(test)
