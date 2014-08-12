@@ -80,7 +80,7 @@ def install_cmake(filename):
   if installed('cmake'):
     return
   dir, version, minor = re.match(
-    r'(cmake-(\d+\.\d+)\.(\d+)\.[^\.]+)\..*', filename).groups()
+    r'(cmake-(\d+\.\d+)\.(\d+).*-[^\.]+)\..*', filename).groups()
   # extractall overwrites existing files, so no need to prepare the
   # destination.
   url = 'http://www.cmake.org/files/v{0}/{1}'.format(version, filename)
