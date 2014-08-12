@@ -17,7 +17,7 @@ opt_dir = r'\Program Files' if windows else '/opt'
 # When running in a Vagrant VM, the current directory is in a synced folder so
 # this reduces VM growth.
 def download(url, cookie=None):
-  return Downloader('').download(url, cookie);
+  return Downloader('.').download(url, cookie);
 
 # If we are in a VM managed by Vagrant, then do everything in the shared
 # /vagrant directory to avoid growth of the VM drive.
