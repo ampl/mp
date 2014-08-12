@@ -1,6 +1,11 @@
 AMPL/MP
 =======
 
+.. image:: https://travis-ci.org/ampl/mp.png?branch=master
+  :target: https://travis-ci.org/ampl/mp
+
+.. image:: https://ci.appveyor.com/api/projects/status/mhqf4dpwll0enks6
+  :target: https://ci.appveyor.com/project/vitaut/mp
 An open-source library for mathematical programming.
 
 Features:
