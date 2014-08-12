@@ -348,7 +348,7 @@ Solver::Solver(
 
   // Workaround for GCC bug 30111 that prevents value-initialization of
   // the base POD class.
-  Option_Info init = {};
+  Option_Info init = Option_Info();
   Option_Info &self = *this;
   self = init;
 

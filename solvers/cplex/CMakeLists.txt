@@ -10,7 +10,8 @@ if (CPLEX_FOUND)
       add_definitions(-Wno-unused-result)
     endif ()
     add_definitions(-Wno-deprecated-declarations -Wno-long-long
-                    -Wno-sign-compare -Wno-uninitialized -Wno-unused-parameter)
+                    -Wno-sign-compare -Wno-uninitialized -Wno-unused-parameter
+                    -Wno-missing-field-initializers)
   elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_definitions(-Wno-self-assign -Wno-sign-compare
                     -Wno-sometimes-uninitialized -Wno-string-plus-int

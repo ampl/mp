@@ -56,7 +56,7 @@ struct ASL_Solver {
 namespace {
 
 const char OUT_OF_MEMORY_MSG[] = "out of memory";
-ASL_Error out_of_memory = {OUT_OF_MEMORY_MSG};
+ASL_Error out_of_memory = {OUT_OF_MEMORY_MSG, 0};
 
 // Sets the error message deleting the old one if necessary.
 void SetErrorMessage(ASL_Error &e, const char *message) FMT_NOEXCEPT(true) {

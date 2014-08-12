@@ -60,7 +60,7 @@ void Solution::Read(fmt::StringRef stub, int num_vars, int num_cons) {
   // Allocate filename large enough to hold stub, ".sol" and terminating zero.
   std::vector<char> filename(stub.size() + 5);
   std::strcpy(&filename[0], stub.c_str());
-  ASL asl = {};
+  ASL asl = ASL();
   asl.i.n_var_ = num_vars;
   asl.i.n_con_ = num_cons;
   asl.i.ASLtype = 1;
@@ -235,7 +235,8 @@ void Problem::AddObj(obj::Type type, NumericExpr expr) {
     Grow(asl_->i.objtype_, num_objs, obj_capacity_);
     Grow(asl_->i.Ograd_, num_objs, obj_capacity_);
   }
-  cde e = {expr.expr_};
+  cde e = cde();
+  e.e = expr.expr_;
   asl_->I.obj_de_[num_objs] = e;
   asl_->i.objtype_[num_objs] = type;
   asl_->i.Ograd_[num_objs] = 0;
@@ -249,7 +250,8 @@ void Problem::AddCon(LogicalExpr expr) {
     IncreaseCapacity(num_logical_cons, logical_con_capacity_);
     Grow(asl_->I.lcon_de_, num_logical_cons, logical_con_capacity_);
   }
-  cde e = {expr.expr_};
+  cde e = cde();
+  e.e = expr.expr_;
   asl_->I.lcon_de_[num_logical_cons] = e;
   ++num_logical_cons;
 }

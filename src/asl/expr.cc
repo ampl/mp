@@ -455,7 +455,7 @@ size_t std::hash<LogicalExpr>::operator()(LogicalExpr expr) const {
 
 namespace mp {
 
-const de VarArgExpr::END = {0};
+const de VarArgExpr::END = de();
 
 bool Equal(Expr expr1, Expr expr2) {
   if (expr1.opcode() != expr2.opcode())
