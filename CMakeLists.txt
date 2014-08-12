@@ -50,6 +50,24 @@ else ()
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif ()
 
+if (CMAKE_GENERATOR MATCHES "Visual Studio")
+  # If Microsoft SDK is installed create script run-msbuild.bat that
+  # calls SetEnv.cmd to to set up build environment and runs msbuild.
+  # It is useful when building Visual Studio projects with the SDK
+  # toolchain rather than Visual Studio.
+  include(FindSetEnv)
+  if (WINSDK_SETENV)
+    if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+      set(setenv_flag /x86)
+    endif()
+    # Set FrameworkPathOverride to get rid of MSB3644 warnings.
+    file(WRITE run-msbuild.bat "
+      call \"${WINSDK_SETENV}\" ${setenv_flag}
+      ${CMAKE_MAKE_PROGRAM} -p:FrameworkPathOverride=^\"C:\\Program Files^
+\\Reference Assemblies\\Microsoft\\Framework\\.NETFramework\\v4.0^\" %*")
+  endif ()
+endif ()
+
 # Adds a prefix to arguments.
 function (add_prefix var prefix)
   set(result ${${var}})
