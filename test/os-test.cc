@@ -166,7 +166,7 @@ TEST(OSTest, GetExecutablePathUnicode) {
   // so copy test executable ourselves.
   std::string exe_dir = GetExecutableDir();
   std::string filename = exe_dir + "/test-helper";
-  std::string linkname = exe_dir + "/юникод";
+  std::string linkname = exe_dir + mp::path::preferred_separator + "юникод";
 #ifdef _WIN32
   filename += ".exe";
   linkname += ".exe";
