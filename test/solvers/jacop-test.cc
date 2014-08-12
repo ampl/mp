@@ -26,21 +26,21 @@
 
 #include "gtest/gtest.h"
 
-#include "solvers/jacop/jacop.h"
+#include "jacop/jacop.h"
 
-#include "tests/solver-test.h"
-#include "tests/util.h"
+#include "solver-test.h"
+#include "../util.h"
 
 using std::string;
-using ampl::InvalidOptionValue;
-using ampl::Problem;
+using mp::InvalidOptionValue;
+using mp::Problem;
 
 namespace {
 
 // ----------------------------------------------------------------------------
 // Solver tests
 
-SolverPtr CreateSolver() { return SolverPtr(new ampl::JaCoPSolver()); }
+SolverPtr CreateSolver() { return SolverPtr(new mp::JaCoPSolver()); }
 
 INSTANTIATE_TEST_CASE_P(JaCoP, SolverTest,
     ::testing::Values(SolverTestParam(CreateSolver, feature::POW)));
@@ -55,7 +55,7 @@ TEST_P(SolverTest, SolveFlowshp2) {
 
 class JaCoPSolverTest : public ::testing::Test {
  protected:
-  ampl::JaCoPSolver solver_;
+  mp::JaCoPSolver solver_;
 
   SolveResult Solve(Problem &p, const char *stub, const char *opt = nullptr) {
     return SolverTest::Solve(solver_, p, stub, opt);
@@ -156,7 +156,7 @@ TEST_F(JaCoPSolverTest, VarSelectOption) {
   EXPECT_EQ(11u, count);
 }
 
-struct TestOutputHandler : public ampl::OutputHandler {
+struct TestOutputHandler : public mp::OutputHandler {
   std::string output;
   void HandleOutput(fmt::StringRef output) { this->output += output; }
 };

@@ -37,14 +37,14 @@ namespace Search = Gecode::Search;
 
 namespace {
 
-const ampl::OptionValueInfo INT_CON_LEVELS[] = {
+const mp::OptionValueInfo INT_CON_LEVELS[] = {
   {"val", "value propagation or consistency (naive)", Gecode::ICL_VAL},
   {"bnd", "bounds propagation or consistency",        Gecode::ICL_BND},
   {"dom", "domain propagation or consistency",        Gecode::ICL_DOM},
   {"def", "the default consistency for a constraint", Gecode::ICL_DEF}
 };
 
-const ampl::OptionValueInfo VAR_BRANCHINGS[] = {
+const mp::OptionValueInfo VAR_BRANCHINGS[] = {
   {
     "none",
     "first unassigned",
@@ -166,7 +166,7 @@ const ampl::OptionValueInfo VAR_BRANCHINGS[] = {
   }
 };
 
-const ampl::OptionValueInfo VAL_BRANCHINGS[] = {
+const mp::OptionValueInfo VAL_BRANCHINGS[] = {
   {
     "min",
     "smallest value (default)",
@@ -221,7 +221,7 @@ const ampl::OptionValueInfo VAL_BRANCHINGS[] = {
   }
 };
 
-const ampl::OptionValueInfo RESTART_MODES[] = {
+const mp::OptionValueInfo RESTART_MODES[] = {
   {"none",      "no restarts",                     Gecode::RM_NONE},
   {"constant",  "restart with constant sequence",  Gecode::RM_CONSTANT},
   {"linear",    "restart with linear sequence",    Gecode::RM_LINEAR},
@@ -230,7 +230,7 @@ const ampl::OptionValueInfo RESTART_MODES[] = {
 };
 }
 
-namespace ampl {
+namespace mp {
 
 GecodeProblem::GecodeProblem(int num_vars, Gecode::IntConLevel icl) :
   vars_(space(), num_vars), obj_irt_(Gecode::IRT_NQ), icl_(icl) {
@@ -392,7 +392,7 @@ void NLToGecodeConverter::Convert(const Problem &p) {
     IntVarArgs args(num_args);
     for (int i = 0; i < num_args; ++i) {
       NumericExpr arg(alldiff[i]);
-      if (Variable var = ampl::Cast<Variable>(arg))
+      if (Variable var = mp::Cast<Variable>(arg))
         args[i] = vars[var.index()];
       else
         args[i] = Gecode::expr(problem_, Visit(arg), icl_);
@@ -531,7 +531,7 @@ void GecodeSolver::SetOutputFrequency(const SolverOption &opt, double value) {
 
 template <typename T>
 std::string GecodeSolver::GetEnumOption(const SolverOption &opt, T *ptr) const {
-  for (ampl::ValueArrayRef::iterator
+  for (mp::ValueArrayRef::iterator
       i = opt.values().begin(), e = opt.values().end(); i != e; ++i) {
     if (*ptr == i->data)
       return i->value;
@@ -542,7 +542,7 @@ std::string GecodeSolver::GetEnumOption(const SolverOption &opt, T *ptr) const {
 template <typename T>
 void GecodeSolver::SetEnumOption(
     const SolverOption &opt, const char *value, T *ptr) {
-  for (ampl::ValueArrayRef::iterator
+  for (mp::ValueArrayRef::iterator
       i = opt.values().begin(), e = opt.values().end(); i != e; ++i) {
     if (std::strcmp(value, i->value) == 0) {
       *ptr = static_cast<T>(i->data);

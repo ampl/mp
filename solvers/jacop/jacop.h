@@ -29,7 +29,7 @@
 #include "asl/solver.h"
 #include "jacop/java.h"
 
-namespace ampl {
+namespace mp {
 
 CLASS_INFO(IntVar, "org/jacop/core/IntVar", "(Lorg/jacop/core/Store;II)V")
 CLASS_INFO(Sum, "org/jacop/constraints/Sum",

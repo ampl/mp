@@ -30,7 +30,7 @@ namespace {
 // Casts value to intptr_t.
 #define CAST(value) reinterpret_cast<intptr_t>(value)
 
-const ampl::OptionValueInfo VAR_SELECT_VALUES[] = {
+const mp::OptionValueInfo VAR_SELECT_VALUES[] = {
   {
     "largestdomain",
     "select the variable which has the largest domain size",
@@ -91,7 +91,7 @@ const ampl::OptionValueInfo VAR_SELECT_VALUES[] = {
   }
 };
 
-const ampl::OptionValueInfo VAL_SELECT_VALUES[] = {
+const mp::OptionValueInfo VAL_SELECT_VALUES[] = {
   {
     "indomainmax",
     "select the maximal value in the domain of the variable",
@@ -129,7 +129,7 @@ const ampl::OptionValueInfo VAL_SELECT_VALUES[] = {
 };
 }
 
-namespace ampl {
+namespace mp {
 
 jint NLToJaCoPConverter::CastToInt(double value) const {
   jint int_value = static_cast<jint>(value);
@@ -434,7 +434,7 @@ std::string JaCoPSolver::GetEnumOption(
 
 void JaCoPSolver::SetEnumOption(
     const SolverOption &opt, const char *value, const char **ptr) {
-  for (ampl::ValueArrayRef::iterator
+  for (mp::ValueArrayRef::iterator
       i = opt.values().begin(), e = opt.values().end(); i != e; ++i) {
     if (std::strcmp(value, i->value) == 0) {
       *ptr = reinterpret_cast<const char*>(i->data);

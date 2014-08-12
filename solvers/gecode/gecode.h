@@ -38,9 +38,9 @@
 #endif
 
 #include "mp/clock.h"
-#include "mp/solver.h"
+#include "asl/solver.h"
 
-namespace ampl {
+namespace mp {
 
 typedef Gecode::LinIntExpr LinExpr;
 

@@ -26,22 +26,22 @@
 
 #include "gtest/gtest.h"
 
-#include "solvers/gecode/gecode.h"
+#include "gecode/gecode.h"
 
-#include "tests/solver-test.h"
-#include "tests/util.h"
+#include "solver-test.h"
+#include "../util.h"
 
 using std::string;
 using Gecode::IntVarBranch;
-using ampl::InvalidOptionValue;
-using ampl::Problem;
+using mp::InvalidOptionValue;
+using mp::Problem;
 
 namespace {
 
 // ----------------------------------------------------------------------------
 // Solver tests
 
-SolverPtr CreateSolver() { return SolverPtr(new ampl::GecodeSolver()); }
+SolverPtr CreateSolver() { return SolverPtr(new mp::GecodeSolver()); }
 
 INSTANTIATE_TEST_CASE_P(Gecode, SolverTest,
     ::testing::Values(SolverTestParam(CreateSolver, 0)));
@@ -63,7 +63,7 @@ TEST_P(SolverTest, SolveFlowshp2) {
 
 class GecodeSolverTest : public ::testing::Test {
  protected:
-  ampl::GecodeSolver solver_;
+  mp::GecodeSolver solver_;
 
   SolveResult Solve(Problem &p, const char *stub, const char *opt = nullptr) {
     return SolverTest::Solve(solver_, p, stub, opt);

@@ -84,6 +84,12 @@ add_prefix(MP_SOURCES src/
   clock.cc format.cc nl.cc os.cc posix.cc problem-base.cc rstparser.cc)
 add_library(mp ${MP_HEADERS} ${MP_SOURCES})
 
+# Link with librt for clock_gettime (Linux on i386).
+find_library(RT_LIBRARY rt)
+if (RT_LIBRARY)
+  target_link_libraries(mp ${RT_LIBRARY})
+endif ()
+
 add_subdirectory(src/asl)
 add_subdirectory(src/cp)
 add_subdirectory(solvers)

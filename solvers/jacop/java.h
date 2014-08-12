@@ -36,7 +36,7 @@
 # define AMPL_CLASSPATH_SEP ":"
 #endif
 
-namespace ampl {
+namespace mp {
 
 class JavaError : public std::runtime_error {
  private:

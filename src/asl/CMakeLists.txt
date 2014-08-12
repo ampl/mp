@@ -171,12 +171,6 @@ if (DL_LIBRARY)
   target_link_libraries(asl dl)
 endif ()
 
-# Link with librt for clock_gettime (Linux on i386).
-find_library(RT_LIBRARY rt)
-if (RT_LIBRARY)
-  target_link_libraries(asl ${RT_LIBRARY})
-endif ()
-
 add_ampl_library(simpbit tables/simpbit.c)
 add_ampl_library(fullbit tables/fullbit.c)
 

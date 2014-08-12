@@ -24,7 +24,7 @@
 
 int main(int, char **argv) {
   try {
-    return ampl::JaCoPSolver().Run(argv);
+    return mp::JaCoPSolver().Run(argv);
   } catch (const std::exception &e) {
     fmt::print(stderr, "Error: {}\n", e.what());
   }

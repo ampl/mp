@@ -116,7 +116,7 @@ std::string RegKey::GetStrValue(fmt::StringRef name) const {
 #endif
 }
 
-namespace ampl {
+namespace mp {
 
 JVM JVM::instance_;
 
