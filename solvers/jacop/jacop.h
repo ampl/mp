@@ -26,7 +26,7 @@
 #include <vector>
 
 #include "mp/clock.h"
-#include "mp/solver.h"
+#include "asl/solver.h"
 #include "jacop/java.h"
 
 namespace ampl {

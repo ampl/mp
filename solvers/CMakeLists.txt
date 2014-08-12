@@ -88,7 +88,8 @@ function(add_ampl_solver name)
   # the exectuable.
   set(static_lib ampl${name}-static)
   add_library(${static_lib} ${sources})
-  target_include_directories(${static_lib} PUBLIC ${include_dirs} .)
+  target_include_directories(${static_lib}
+    PUBLIC ${include_dirs} ${PROJECT_SOURCE_DIR}/solvers)
   target_link_libraries(${static_lib} ${libraries})
   target_compile_options(${static_lib} PUBLIC ${definitions})
 

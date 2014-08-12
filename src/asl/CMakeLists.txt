@@ -126,7 +126,8 @@ add_prefix(ASL_SOURCES solvers/
 add_library(asl ${ASL_SOURCES}
   aslbuilder.cc aslbuilder.h expr.cc expr.h problem.cc problem.h
   solver-c.cc solver-c.h solver.cc solver.h)
-target_include_directories(asl PUBLIC .. solvers ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(asl PUBLIC
+  ${PROJECT_SOURCE_DIR}/src solvers ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(asl mp)
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
