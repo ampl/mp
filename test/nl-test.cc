@@ -344,8 +344,8 @@ TEST(NLTest, WriteBinaryHeader) {
   NLHeader header = NLHeader();
   header.format = NLHeader::BINARY;
   header.num_options = 3;
-  for (int i = 1; i < header.num_options; ++i)
-    header.options[i] = 11 * i;
+  for (int i = 0; i < header.num_options; ++i)
+    header.options[i] = 11 * (i + 1);
   header.arith_kind = mp::arith::CRAY;
   fmt::Writer w;
   w << header;
