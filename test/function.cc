@@ -169,7 +169,7 @@ ScopedTableInfo::ScopedTableInfo(const Table &t) {
     for (unsigned i = 0; i < t.num_cols(); ++i) {
       colnames_[i] = t.GetColName(i);
       colnameptrs_[i] = const_cast<char*>(colnames_[i].c_str());
-      DbCol col = {};
+      DbCol col = DbCol();
       col.dval = &dvals_[i * maxrows];
       col.sval = &svals_[i * maxrows];
       cols_.push_back(col);
@@ -327,7 +327,7 @@ string LibraryImpl::error_;
 
 void LibraryImpl::AddFunc(const char *name, rfunc f,
     int type, int nargs, void *funcinfo, AmplExports *ae) {
-  func_info fi = {};
+  func_info fi = func_info();
   fi.name = name;
   fi.funcp = f;
   fi.ftype = type;

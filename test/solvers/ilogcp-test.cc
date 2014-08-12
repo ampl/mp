@@ -240,7 +240,7 @@ class IlogCPTest : public ::testing::Test, public mp::internal::ASLBuilder {
   IlogCPSolver s;
 
   IlogCPTest() {
-    mp::NLHeader h = {};
+    mp::NLHeader h = mp::NLHeader();
     h.num_vars = 3;
     h.num_objs = 1;
     BeginBuild("", h);
@@ -252,7 +252,7 @@ class IlogCPTest : public ::testing::Test, public mp::internal::ASLBuilder {
     return MakeNumericConstant(value);
   }
 
-  SolveResult Solve(Problem &p, const char *stub, const char *opt = nullptr) {
+  SolveResult Solve(Problem &p, const char *stub, const char *opt = 0) {
     return SolverTest::Solve(s, p, stub, opt);
   }
 
@@ -344,7 +344,7 @@ void IlogCPTest::CheckDblCPOption(const char *option,
 TEST_F(IlogCPTest, IloArrayCopyingIsCheap) {
   IloIntArray array(s.env());
   array.add(42);
-  EXPECT_TRUE(array.getImpl() != nullptr);
+  EXPECT_TRUE(array.getImpl() != 0);
   EXPECT_EQ(array.getImpl(), IloIntArray(array).getImpl());
 }
 
@@ -512,7 +512,7 @@ TEST_F(IlogCPTest, CPFlagOptions) {
   const EnumValue flags[] = {
       {"off", IloCP::Off},
       {"on",  IloCP::On},
-      {nullptr}
+      {0,     IloCP::Off}
   };
   CheckIntCPOption("constraintaggregation", IloCP::ConstraintAggregation,
       0, 1, IloCP::Off, false, flags);
@@ -529,7 +529,7 @@ TEST_F(IlogCPTest, CPInferenceLevelOptions) {
       {"basic",    IloCP::Basic},
       {"medium",   IloCP::Medium},
       {"extended", IloCP::Extended},
-      {nullptr}
+      {0,          IloCP::Off}
   };
   CheckIntCPOption("alldiffinferencelevel", IloCP::AllDiffInferenceLevel,
       0, 4, IloCP::Default, false, inf_levels);
@@ -550,7 +550,7 @@ TEST_F(IlogCPTest, CPVerbosityOptions) {
       {"terse",   IloCP::Terse},
       {"normal",  IloCP::Normal},
       {"verbose", IloCP::Verbose},
-      {nullptr,   IloCP::Off}
+      {0,         IloCP::Off}
   };
   CheckIntCPOption("logverbosity", IloCP::LogVerbosity,
       0, 3, IloCP::Quiet, false, verbosities);
@@ -565,7 +565,7 @@ TEST_F(IlogCPTest, CPSearchTypeOption) {
       {"depthfirst", IloCP::DepthFirst},
       {"restart",    IloCP::Restart},
       {"multipoint", IloCP::MultiPoint},
-      {nullptr,      IloCP::Off}
+      {0,            IloCP::Off}
   };
   CheckIntCPOption("searchtype", IloCP::SearchType,
       0, 2, IloCP::DepthFirst, CPX_VERSION > 1220, types);
@@ -575,7 +575,7 @@ TEST_F(IlogCPTest, CPTimeModeOption) {
   const EnumValue modes[] = {
       {"cputime",     IloCP::CPUTime},
       {"elapsedtime", IloCP::ElapsedTime},
-      {nullptr,       IloCP::Off}
+      {0,             IloCP::Off}
   };
   CheckIntCPOption("timemode", IloCP::TimeMode,
       0, 1, IloCP::CPUTime, false, modes);

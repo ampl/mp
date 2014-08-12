@@ -721,13 +721,13 @@ TEST(FunctionTest, FunctionCall) {
 
 TEST(FunctionTest, FunctionReturnsError) {
   TestFunction f(1);
-  CallData data = {};
+  CallData data = CallData();
   EXPECT_STREQ("oops", f.get()(-1, 0, BitSet(), &data).error());
 }
 
 TEST(FunctionTest, FunctionReturnsDerivs) {
   TestFunction f(3);
-  CallData data = {};
+  CallData data = CallData();
   Function::Result res =
       f.get()(MakeArgs(11, 22, 33), fun::DERIVS, BitSet(), &data);
   EXPECT_EQ(42, res.value());
@@ -803,7 +803,7 @@ real ASLHypot(arglist *al) {
 
 TEST(FunctionTest, DerivativeBinder) {
   Library lib("");
-  func_info fi = {};
+  func_info fi = func_info();
   fi.nargs = 2;
   fi.funcp = ASLHypot;
   Function f(&lib, &fi, 0);
