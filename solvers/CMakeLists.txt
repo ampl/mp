@@ -115,9 +115,10 @@ endfunction()
 add_subdirectory(cplex)
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/gecode/lib/CMakeLists.txt)
-  set(GECODE_DISABLE_WARNINGS True)
+  set(GECODE_DISABLE_WARNINGS TRUE)
+  set(GECODE_USE_QT FALSE)
   add_subdirectory(gecode/lib)
-  add_ampl_solver(gecode INCLUDE_DIRS gecode/lib LIBRARIES gecodeminimodel)
+  add_ampl_solver(gecode LIBRARIES gecodeminimodel)
 endif ()
 
 find_package(CPLEX)
