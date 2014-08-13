@@ -131,7 +131,7 @@ __ http://www-03.ibm.com/software/products/en/ibmilogcpleoptistud
 Using Eclipse CDT
 `````````````````
 
-You can generate `Eclipse CDT <http://www.eclipse.org/cdt/>` project files
+You can generate `Eclipse CDT <http://www.eclipse.org/cdt/>`_ project files
 with CMake::
 
   cmake -G "Eclipse CDT 4 -  Unix Makefiles"
