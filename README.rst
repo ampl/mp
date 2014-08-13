@@ -109,7 +109,7 @@ By default all modules are disabled and only the main MP libraries are built.
 To enable modules, pass their names as a comma-separated list in the ``BUILD``
 variable when running CMake::
 
-  cmake -DBUILD=gsl,ilogcp
+  cmake -DBUILD=gsl,ilogcp .
 
 Use ``-DBUILD=all`` to build all modules.
 
