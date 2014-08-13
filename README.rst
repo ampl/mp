@@ -58,8 +58,10 @@ Features
 Usage
 -----
 
-Binaries for the open-source AMPL solvers and libraries for major platforms
+Binaries for the open-source AMPL solvers for major platforms
 can be downloaded from the AMPL's `Open Source Solvers`__ page.
+To use a solver with AMPL, extract the binaries from a downloaded
+archive into the AMPL installation directory.
 
 __ http://ampl.com/products/solvers/open-source/
 
