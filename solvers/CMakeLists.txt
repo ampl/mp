@@ -12,7 +12,8 @@ endfunction ()
 #
 # Usage:
 #   add_ampl_solver(<name> [DLL_RUNTIME] [MODULE module]
-#     [source...] [INCLUDE_DIRS dir...] [LIBRARIES lib...])
+#     [source...] [INCLUDE_DIRS dir...] [LIBRARIES lib...]
+#     [EXTERNAL dep])
 #
 # If DLL_RUNTIME option is given the solver is linked with DLL MSVC runtime
 # on Windows.
@@ -30,15 +31,15 @@ endfunction ()
 # LIBRARIES gives a list of solver libraries. If omitted, add_ampl_solver
 # uses <module>_LIBRARIES.
 function(add_ampl_solver name)
-  is_module_enabled(${name} build_solver)
+  cmake_parse_arguments(add_ampl_solver DLL_RUNTIME
+    "MODULE;EXTERNAL" "INCLUDE_DIRS;LIBRARIES;DEFINITIONS" ${ARGN})
+
+  is_module_enabled(${name} build_solver ${add_ampl_solver_EXTERNAL})
   if (NOT build_solver)
     return ()
   endif ()
 
   string(TOUPPER ${name} name_upper)
-
-  cmake_parse_arguments(add_ampl_solver
-    DLL_RUNTIME MODULE "INCLUDE_DIRS;LIBRARIES;DEFINITIONS" ${ARGN})
 
   # Check if the solver is installed.
   if (add_ampl_solver_MODULE)
@@ -124,10 +125,7 @@ endif ()
 
 set(GECODE_DISABLE_WARNINGS TRUE)
 set(GECODE_USE_QT FALSE)
-is_module_enabled(gecode build_gecode gecode)
-if (build_gecode)
-  add_ampl_solver(gecode LIBRARIES gecodeminimodel)
-endif ()
+add_ampl_solver(gecode EXTERNAL gecode LIBRARIES gecodeminimodel)
 
 find_package(CPLEX)
 add_ampl_solver(ilogcp DLL_RUNTIME MODULE CPLEX
