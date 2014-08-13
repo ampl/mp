@@ -124,8 +124,7 @@ Dependencies of some modules cannot be handled automatically due to
 licensing restrictions. If you enable such module, you should have its
 dependencies installed on the systems or it will not be built.
 For example, if you enable the ``ilogcp`` module, you should have
-IBM ILOG CP Optimizer, CPLEX and Concert installed. Normally these are
-installed as parts of `IBM ILOG CPLEX Optimization Studio`__.
+`IBM ILOG CPLEX Optimization Studio`__ installed.
 
 __ http://www-03.ibm.com/software/products/en/ibmilogcpleoptistud
 
