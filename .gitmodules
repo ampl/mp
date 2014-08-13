@@ -1,3 +1,9 @@
 [submodule "thirdparty/gecode"]
 	path = thirdparty/gecode
 	url = https://github.com/ampl/gecode
+[submodule "thirdparty/jacop"]
+	path = thirdparty/jacop
+	url = https://github.com/ampl/jacop
+[submodule "thirdparty/path"]
+	path = thirdparty/path
+	url = https://github.com/ampl/pathlib

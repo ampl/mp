@@ -67,9 +67,11 @@ function(is_module_enabled name var)
     set(dir ${PROJECT_SOURCE_DIR}/thirdparty/${dependency})
     execute_process(COMMAND
       ${GIT_EXECUTABLE} submodule update --init ${repo} ${dir})
-    add_subdirectory(
-      ${PROJECT_SOURCE_DIR}/thirdparty/${dependency}
-      ${PROJECT_BINARY_DIR}/thirdparty/build/${dependency})
+    if (EXISTS ${PROJECT_SOURCE_DIR}/thirdparty/${dependency}/CMakeLists.txt)
+      add_subdirectory(
+        ${PROJECT_SOURCE_DIR}/thirdparty/${dependency}
+        ${PROJECT_BINARY_DIR}/thirdparty/build/${dependency})
+    endif ()
   endif ()
   message(STATUS "Module ${name} enabled")
   set(${var} TRUE PARENT_SCOPE)
