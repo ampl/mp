@@ -46,17 +46,34 @@ function (add_module name)
 endfunction ()
 
 # Sets ${var} to TRUE if module ${name} is enabled.
-function (is_module_enabled name var)
+# Usage:
+#   is_module_enabled(<name> <var> [<dependency>])
+function(is_module_enabled name var)
   add_module(${name})
   list(FIND MP_MODULES ${name} module_index)
-  if (NOT module_index EQUAL -1 OR MP_MODULES STREQUAL all)
-    message(STATUS "Module ${name} enabled")
-    set(${var} TRUE PARENT_SCOPE)
-  else ()
+  set(${var} FALSE PARENT_SCOPE)
+  if (module_index EQUAL -1 AND NOT MP_MODULES STREQUAL all)
     message(STATUS "Module ${name} disabled")
-    set(${var} FALSE PARENT_SCOPE)
+    return ()
   endif ()
-endfunction ()
+  if (ARGN)
+    # Get a dependency using git.
+    set(dependency ${ARGN})
+    find_package(Git)
+    if (NOT GIT_FOUND)
+      message(SEND_ERROR "Git not found (required by ${name})")
+      return ()
+    endif ()
+    set(dir ${PROJECT_SOURCE_DIR}/thirdparty/${dependency})
+    execute_process(COMMAND
+      ${GIT_EXECUTABLE} submodule update --init ${repo} ${dir})
+    add_subdirectory(
+      ${PROJECT_SOURCE_DIR}/thirdparty/${dependency}
+      ${PROJECT_BINARY_DIR}/thirdparty/build/${dependency})
+  endif ()
+  message(STATUS "Module ${name} enabled")
+  set(${var} TRUE PARENT_SCOPE)
+endfunction()
 
 # Enable C++11.
 include(CheckCXXCompilerFlag)
