@@ -85,7 +85,7 @@ workflow starts with::
 
 where ``<path/to/mp>`` is a path to the ``mp`` repository.
 
-If you are on a *nix system, you should now see a Makefile in the
+If you are on a \*nix system, you should now see a Makefile in the
 current directory. Now you can build MP by running ``make``.
 
 Once MP has been built you can invoke ``make test`` to run the tests.
@@ -96,37 +96,42 @@ using Visual Studio or msbuild.
 
 On Mac OS X with Xcode installed, an ``.xcodeproj`` file will be generated.
 
-Optional packages
-`````````````````
+Modules
+```````
 
-* To build the amplgsl library you should have the source code for GSL with
-  CMake build support in ${MP_DIR}/solvers/amplgsl/gsl. This version of
-  GSL is avaialble for download from https://github.com/ampl/gsl.
-  You can retrieve MP and GSL sources at the same time using the command
+AMPL/MP allows building only parts of the project you are interested in,
+for example you can choose to build only a single solver interface.
+This is done with the help of modules which are optional components that
+can be built separately. Each solver interface and function library is
+a module.
 
-  ::
+By default all modules are disabled and only the main MP libraries are built.
+To enable modules, pass their names as a comma-separated list in the ``BUILD``
+variable when running CMake::
 
-    git clone --recursive git://github.com/ampl/mp.git
+  cmake -DBUILD=ilogcp
 
-* To build gecode, the AMPL driver for Gecode constraint programming solver,
-  you should have Gecode source code in ${AMPL_DIR}/solvers/gecode/lib.
-  You can retrieve MP and Gecode sources at the same time using the command
+Pass ``-DBUILD=all`` to build all modules.
 
-  ::
+If a module is enabled, its dependencies are automatically downloaded
+and built when necessary. For example, enabling the ``gecode`` module
+will download the source code of Gecode constraint programming solver,
+build the solver and its AMPL interface.
 
-    git clone --recursive git://github.com/ampl/mp.git
+Dependencies of some modules cannot be handled automatically due to
+licensing restrictions. If you enable such module, you should have its
+dependencies installed on the systems or it will not be built.
+For example, if you enable the ``ilogcp`` module, you should have
+IBM ILOG CP Optimizer, CPLEX and Concert installed. Normally these are
+installed as parts of `IBM ILOG CPLEX Optimization Studio`__.
 
-* To build ilogcp, the AMPL driver for IBM ILOG Constraint Programming
-  (CP) Optimizer, you should have IBM ILOG CP Optimizer, CPLEX and Concert
-  installed. Normally these are installed as parts of IBM ILOG CPLEX
-  Optimization Studio. The code has been tested with Optimization Studio
-  version 12.4.
-
+__ http://www-03.ibm.com/software/products/en/ibmilogcpleoptistud
 
 Using Eclipse CDT
 `````````````````
 
-You can generate Eclipse CDT project files with CMake::
+You can generate `Eclipse CDT <http://www.eclipse.org/cdt/>` project files
+with CMake::
 
   cmake -G "Eclipse CDT 4 -  Unix Makefiles"
 
