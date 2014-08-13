@@ -1,0 +1,3 @@
+[submodule "thirdparty/gecode"]
+	path = thirdparty/gecode
+	url = https://github.com/ampl/gecode
