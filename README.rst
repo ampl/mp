@@ -109,14 +109,16 @@ By default all modules are disabled and only the main MP libraries are built.
 To enable modules, pass their names as a comma-separated list in the ``BUILD``
 variable when running CMake::
 
-  cmake -DBUILD=ilogcp
+  cmake -DBUILD=gsl,ilogcp
 
-Pass ``-DBUILD=all`` to build all modules.
+Use ``-DBUILD=all`` to build all modules.
 
 If a module is enabled, its dependencies are automatically downloaded
 and built when necessary. For example, enabling the ``gecode`` module
-will download the source code of Gecode constraint programming solver,
+will download the source code of Gecode__ constraint programming solver,
 build the solver and its AMPL interface.
+
+__ http://www.gecode.org/
 
 Dependencies of some modules cannot be handled automatically due to
 licensing restrictions. If you enable such module, you should have its
