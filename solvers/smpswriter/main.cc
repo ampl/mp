@@ -20,11 +20,11 @@
  Author: Victor Zverovich
  */
 
-#include "asmpswriter/smpswriter.h"
+#include "smpswriter/smpswriter.h"
 
 int main(int, char **argv) {
   try {
-    return ampl::SMPSWriter().Run(argv);
+    return mp::SMPSWriter().Run(argv);
   } catch (const std::exception &e) {
     fmt::print(stderr, "Error: {}\n", e.what());
   }

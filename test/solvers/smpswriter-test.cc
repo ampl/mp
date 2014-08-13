@@ -20,13 +20,11 @@
  Author: Victor Zverovich
  */
 
-#include <sstream>
-
 #include "gtest/gtest.h"
 
-#include "solvers/smpswriter/smpswriter.h"
-#include "tests/args.h"
-#include "tests/util.h"
+#include "smpswriter/smpswriter.h"
+#include "../args.h"
+#include "../util.h"
 
 namespace {
 
@@ -64,7 +62,7 @@ TEST(SMPSWriterTest, SMPSOutput) {
   };
   int count = 0;
   for (size_t i = 0, n = sizeof(PROBLEMS) / sizeof(*PROBLEMS); i != n; ++i) {
-    ampl::SMPSWriter w;
+    mp::SMPSWriter w;
     std::string path("../data/smps/");
     path += PROBLEMS[i];
     WriteFile("test.nl", ReadFile(path + ".nl"));
@@ -80,30 +78,30 @@ TEST(SMPSWriterTest, SMPSOutput) {
 }
 
 TEST(SMPSWriterTest, NonlinearNotSupported) {
-  ampl::SMPSWriter w;
+  mp::SMPSWriter w;
   WriteFile("test.nl", ReadFile("../data/smps/nonlinear.nl"));
-  EXPECT_THROW(w.Run(Args("", "test.nl")), ampl::Error);
+  EXPECT_THROW(w.Run(Args("", "test.nl")), mp::Error);
 }
 
 TEST(SMPSWriterTest, MoreThan2StagesNotSupported) {
-  ampl::SMPSWriter w;
+  mp::SMPSWriter w;
   WriteFile("test.nl", ReadFile("../data/smps/three-stage.nl"));
-  EXPECT_THROW(w.Run(Args("", "test.nl")), ampl::Error);
+  EXPECT_THROW(w.Run(Args("", "test.nl")), mp::Error);
 }
 
 TEST(SMPSWriterTest, RangesNotSupported) {
-  ampl::SMPSWriter w;
+  mp::SMPSWriter w;
   WriteFile("test.nl", ReadFile("../data/smps/range-con.nl"));
-  EXPECT_THROW(w.Run(Args("", "test.nl")), ampl::Error);
+  EXPECT_THROW(w.Run(Args("", "test.nl")), mp::Error);
 }
 
 TEST(SMPSWriterTest, InconsistentProbabilities) {
-  ampl::SMPSWriter w;
+  mp::SMPSWriter w;
   WriteFile("test.nl", ReadFile("../data/smps/inconsistent-probabilities.nl"));
   WriteFile("test.row",
       ReadFile("../data/smps/inconsistent-probabilities.row"));
   WriteFile("test.col",
       ReadFile("../data/smps/inconsistent-probabilities.col"));
-  EXPECT_THROW(w.Run(Args("", "test.nl")), ampl::Error);
+  EXPECT_THROW(w.Run(Args("", "test.nl")), mp::Error);
 }
 }

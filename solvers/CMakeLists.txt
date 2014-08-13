@@ -117,7 +117,10 @@ function(add_ampl_solver name)
   target_link_libraries(${name} ${static_lib})
 endfunction()
 
-add_subdirectory(cplex)
+is_module_enabled(cplex build_cplex)
+if (build_cplex)
+  add_subdirectory(cplex)
+endif ()
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/gecode/lib/CMakeLists.txt)
   set(GECODE_DISABLE_WARNINGS TRUE)
@@ -149,9 +152,7 @@ add_subdirectory(jacop)
 add_ampl_solver(localsolver)
 add_subdirectory(path)
 
-if (HAVE_AUTO)
-  add_ampl_solver(smpswriter)
-endif ()
+add_ampl_solver(smpswriter)
 
 add_ampl_solver(ssdsolver)
 if (TARGET ssdsolver)

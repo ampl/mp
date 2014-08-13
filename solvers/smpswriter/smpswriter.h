@@ -27,7 +27,7 @@
 
 #include "asl/solver.h"
 
-namespace ampl {
+namespace mp {
 
 class FileWriter;
 

@@ -41,9 +41,13 @@ if (BUILD)
   endif ()
 endif ()
 
+function (add_module name)
+  set_property(GLOBAL APPEND PROPERTY MP_USED_MODULES ${MP_USED_MODULES} ${name})
+endfunction ()
+
 # Sets ${var} to TRUE if module ${name} is enabled.
 function (is_module_enabled name var)
-  set(MP_USED_MODULES ${MP_USED_MODULES} ${name})
+  add_module(${name})
   list(FIND MP_MODULES ${name} module_index)
   if (NOT module_index EQUAL -1 OR MP_MODULES STREQUAL all)
     message(STATUS "Module ${name} enabled")
@@ -158,9 +162,10 @@ if (amplodbc MATCHES "version ([0-9]+)")
 endif ()
 
 # Check for invalid module names.
+get_property(modules GLOBAL PROPERTY MP_USED_MODULES)
 foreach (module ${MP_MODULES})
   if (NOT module STREQUAL all)
-    list(FIND MP_USED_MODULES ${module} module_index)
+    list(FIND modules ${module} module_index)
     if (module_index EQUAL -1)
       message(SEND_ERROR "Unknown module ${module}")
     endif ()

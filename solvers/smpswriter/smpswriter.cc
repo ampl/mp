@@ -32,7 +32,7 @@ template <typename Map>
 typename Map::mapped_type &FindOrInsert(
     Map &map, const typename Map::key_type &key,
     const typename Map::mapped_type &value) {
-  auto lb = map.lower_bound(key);
+  typename Map::iterator lb = map.lower_bound(key);
   if (lb != map.end() && !(map.key_comp()(key, lb->first)))
     return lb->second;
   return map.insert(lb, std::make_pair(key, value))->second;
@@ -43,7 +43,7 @@ std::string ExtractScenario(std::string &name, bool require_scenario = true) {
   if (index_pos == std::string::npos) {
     if (!require_scenario)
       return std::string();
-    throw ampl::Error("Missing scenario index for {}", name);
+    throw mp::Error("Missing scenario index for {}", name);
   }
   bool single_index = name[index_pos] == '[';
   ++index_pos;
@@ -54,7 +54,7 @@ std::string ExtractScenario(std::string &name, bool require_scenario = true) {
   return index;
 }
 
-double GetConRHSAndType(const ampl::Problem &p, int con_index, char &type) {
+double GetConRHSAndType(const mp::Problem &p, int con_index, char &type) {
   double lb = p.con_lb(con_index), ub = p.con_ub(con_index);
   if (lb <= negInfinity) {
     type = ub >= Infinity ? 'N' : 'L';
@@ -65,12 +65,12 @@ double GetConRHSAndType(const ampl::Problem &p, int con_index, char &type) {
   else if (lb == ub)
     type = 'E';
   else
-    throw ampl::Error("SMPS writer doesn't support ranges");
+    throw mp::Error("SMPS writer doesn't support ranges");
   return lb;
 }
 }
 
-namespace ampl {
+namespace mp {
 
 class FileWriter {
  private:
@@ -96,7 +96,7 @@ void SMPSWriter::SplitConRHSIntoScenarios(
     const Problem &p, std::vector<CoreConInfo> &core_cons) {
   int num_cons = p.num_cons();
   for (int i = 0; i < num_cons; ++i) {
-    auto &info = core_cons[con_info[i].core_index];
+    CoreConInfo &info = core_cons[con_info[i].core_index];
     int scenario_index = con_info[i].scenario_index;
     if (scenario_index != 0 && info.type)
       continue;
@@ -111,7 +111,7 @@ void SMPSWriter::SplitConRHSIntoScenarios(
     char type = 0;
     double rhs = GetConRHSAndType(p, i, type);
     int core_con_index = con_info[i].core_index;
-    const auto &info = core_cons[core_con_index];
+    const CoreConInfo &info = core_cons[core_con_index];
     if (type != info.type)
       throw Error("Inconsistent constraint type for {}", p.con_name(i));
     if (rhs != info.rhs)
@@ -126,7 +126,7 @@ void SMPSWriter::SplitVarBoundsIntoScenarios(
     int scenario_index = var_info[i].scenario_index;
     if (scenario_index != 0)
       continue;
-    auto &info = core_vars[var_info[i].core_index];
+    CoreVarInfo &info = core_vars[var_info[i].core_index];
     info.lb = p.var_lb(i);
     info.ub = p.var_ub(i);
   }
@@ -135,7 +135,7 @@ void SMPSWriter::SplitVarBoundsIntoScenarios(
     if (scenario_index == 0)
       continue;
     int core_var_index = var_info[i].core_index;
-    const auto &info = core_vars[core_var_index];
+    const CoreVarInfo &info = core_vars[core_var_index];
     double lb = p.var_lb(i), ub = p.var_ub(i);
     if (lb != info.lb)
       scenarios[scenario_index].AddLB(core_var_index, lb);
@@ -164,7 +164,7 @@ void SMPSWriter::WriteColumns(
       Problem::ColMatrix matrix = p.col_matrix();
       if (var_info[i].scenario_index == 0) {
         // Clear the core_coefs vector.
-        for (auto j = nonzero_coef_indices.begin(),
+        for (std::vector<int>::const_iterator j = nonzero_coef_indices.begin(),
             end = nonzero_coef_indices.end(); j != end; ++j) {
           core_coefs[*j] = 0;
         }
@@ -260,7 +260,7 @@ void SMPSWriter::DoSolve(Problem &p) {
     std::map<std::string, int> stage1_vars;
     for (int i = 0; i < num_vars; ++i) {
       int stage = stage_suffix.int_value(i) - 1;
-      auto &info = var_info[i];
+      VarConInfo &info = var_info[i];
       if (stage > 0) {
         // Split the name into scenario and the rest and merge variables that
         // only differ by scenario into the same variable.
@@ -296,7 +296,7 @@ void SMPSWriter::DoSolve(Problem &p) {
             // that only differ by scenario into the same constraint.
             std::string name = p.con_name(con_index);
             std::string scenario = ExtractScenario(name);
-            auto &info = con_info[con_index];
+            VarConInfo &info = con_info[con_index];
             info.core_index = FindOrInsert(
                 stage1_cons, name, static_cast<int>(stage1_cons.size()));
             info.scenario_index = FindOrInsert(scenario_indices,
@@ -316,13 +316,13 @@ void SMPSWriter::DoSolve(Problem &p) {
     for (int i = 0; i < num_cons; ++i) {
       if (con_stages[i] != 0)
         continue;
-      auto &info = con_info[i];
+      VarConInfo &info = con_info[i];
       // A constraint with a name which only differs in scenario from a
       // name of some other stage 1 constraint, is also a stage 1 constraint.
       std::string name = p.con_name(i);
       std::string scenario = ExtractScenario(name, false);
-      auto stage1_con = scenario.empty() ?
-          stage1_cons.end() : stage1_cons.find(name);
+      std::map<std::string, int>::iterator stage1_con =
+          scenario.empty() ? stage1_cons.end() : stage1_cons.find(name);
       if (stage1_con != stage1_cons.end()) {
         con_stages[i] = 1;
         info.core_index = stage1_con->second;
@@ -390,7 +390,8 @@ void SMPSWriter::DoSolve(Problem &p) {
       int core_reference_var_index = 0;
       if (probabilities.size() != 1) {
         // Deduce probabilities from objective coefficients.
-        for (auto i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
+        for (LinearObjExpr::iterator
+             i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
           int stage = stage_suffix.int_value(i->var_index()) - 1;
           if (stage > 0) {
             reference_var_index = i->var_index();
@@ -399,7 +400,8 @@ void SMPSWriter::DoSolve(Problem &p) {
           }
         }
         sum_core_obj_coefs.resize(num_core_vars);
-        for (auto i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
+        for (LinearObjExpr::iterator
+             i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
           const VarConInfo &info = var_info[i->var_index()];
           if (info.core_index == core_reference_var_index)
             probabilities[info.scenario_index] = i->coef();
@@ -412,7 +414,8 @@ void SMPSWriter::DoSolve(Problem &p) {
       }
 
       // Compute objective coefficients in the core problem.
-      for (auto i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
+      for (LinearObjExpr::iterator
+           i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
         const VarConInfo &info = var_info[i->var_index()];
         if (info.scenario_index == 0) {
           double coef = i->coef();
@@ -469,22 +472,22 @@ void SMPSWriter::DoSolve(Problem &p) {
       for (size_t i = 1, n = scenarios.size(); i < n; ++i) {
         writer.Write(" SC SCEN{:<4}  SCEN1     {:<12}   T2\n",
             i + 1, probabilities[i]);
-        for (auto j = scenarios[i].con_term_begin(),
+        for (Scenario::ConTermIterator j = scenarios[i].con_term_begin(),
             end = scenarios[i].con_term_end(); j != end; ++j) {
           writer.Write("    C{:<7}  R{:<7}  {}\n",
               j->var_index + 1, j->con_index + 1, j->coef);
         }
-        for (auto j = scenarios[i].rhs_begin(),
+        for (Scenario::RHSIterator j = scenarios[i].rhs_begin(),
             end = scenarios[i].rhs_end(); j != end; ++j) {
           writer.Write("    RHS1      R{:<7}  {}\n",
               j->con_index + 1, j->rhs);
         }
-        for (auto j = scenarios[i].lb_begin(),
+        for (Scenario::BoundIterator j = scenarios[i].lb_begin(),
             end = scenarios[i].lb_end(); j != end; ++j) {
           writer.Write(" LO BOUND1      C{:<7}  {}\n",
               j->var_index + 1, j->bound);
         }
-        for (auto j = scenarios[i].ub_begin(),
+        for (Scenario::BoundIterator j = scenarios[i].ub_begin(),
             end = scenarios[i].ub_end(); j != end; ++j) {
           writer.Write(" UP BOUND1      C{:<7}  {}\n",
               j->var_index + 1, j->bound);
