@@ -9,7 +9,8 @@ AMPL/MP
 
 An open-source library for mathematical programming.
 
-Features:
+Features
+--------
 
 * Reusable high-performance `.nl <https://en.wikipedia.org/wiki/Nl_(format)>`_
   reader
@@ -54,10 +55,95 @@ Features:
   a converter from deterministic equivalent of a two-stage stochastic
   programming (SP) problem written in AMPL to an SP problem in SMPS format.
 
+Usage
+-----
+
 Binaries for the open-source AMPL solvers and libraries for major platforms
 can be downloaded from the AMPL's `Open Source Solvers`__ page.
 
 __ http://ampl.com/products/solvers/open-source/
+
+Building from source
+~~~~~~~~~~~~~~~~~~~~
+
+An included `CMake build script`__ can be used to build the MP library,
+solver interfaces and function libraries on a wide range of platforms.
+You can download CMake for free from
+http://www.cmake.org/cmake/resources/software.html.
+
+__ https://github.com/ampl/mp/blob/master/CMakeLists.txt
+
+CMake works by generating native makefiles or project files that can
+be used in the compiler environment of your choice. The typical
+workflow starts with::
+
+  mkdir build         # Create a directory to hold the build output.
+  cd build
+  cmake <path/to/mp>  # Generate native build scripts.
+
+where ``<path/to/mp>`` is a path to the ``mp`` repository.
+
+If you are on a *nix system, you should now see a Makefile in the
+current directory. Now you can build MP by running ``make``.
+
+Once MP has been built you can invoke ``make test`` to run the tests.
+
+If you use Windows and have Vistual Studio installed, an ``MP.sln`` file
+and several ``.vcproj`` files will be created. You can then build them
+using Visual Studio or msbuild.
+
+On Mac OS X with Xcode installed, an ``.xcodeproj`` file will be generated.
+
+Optional packages
+`````````````````
+
+* To build the amplgsl library you should have the source code for GSL with
+  CMake build support in ${MP_DIR}/solvers/amplgsl/gsl. This version of
+  GSL is avaialble for download from https://github.com/ampl/gsl.
+  You can retrieve MP and GSL sources at the same time using the command
+
+  ::
+
+    git clone --recursive git://github.com/ampl/mp.git
+
+* To build gecode, the AMPL driver for Gecode constraint programming solver,
+  you should have Gecode source code in ${AMPL_DIR}/solvers/gecode/lib.
+  You can retrieve MP and Gecode sources at the same time using the command
+
+  ::
+
+    git clone --recursive git://github.com/ampl/mp.git
+
+* To build ilogcp, the AMPL driver for IBM ILOG Constraint Programming
+  (CP) Optimizer, you should have IBM ILOG CP Optimizer, CPLEX and Concert
+  installed. Normally these are installed as parts of IBM ILOG CPLEX
+  Optimization Studio. The code has been tested with Optimization Studio
+  version 12.4.
+
+
+Using Eclipse CDT
+`````````````````
+
+You can generate Eclipse CDT project files with CMake::
+
+  cmake -G "Eclipse CDT 4 -  Unix Makefiles"
+
+To get rid of semantic errors reported by Indexer add preprocessor symbols
+``_GLIBCPP_USE_NAMESPACES``, ``__GXX_EXPERIMENTAL_CXX0X__`` and ``STAND_ALONE``
+in "Project Properties" / "C/C++ Include Files and Symbols" and rebuild
+the index.
+
+Using Windows SDK
+`````````````````
+
+If you want to build MP with the Windows SDK toolchain, use a helper
+script run-cmake.bat__ instead of running CMake directly. This script
+configures build environment and runs CMake forwarding all command-line
+arguments to it, for example::
+
+  support\cmake\run-cmake -G "Visual Studio 10 Win64" .
+
+__ https://github.com/ampl/mp/blob/master/support/cmake/run-cmake.bat
 
 Links
 -----
