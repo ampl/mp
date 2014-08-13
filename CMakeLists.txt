@@ -21,14 +21,38 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX
 
 project(MP)
 
-message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
 set(MP_CMAKE_MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/support/cmake)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${MP_CMAKE_MODULE_DIR})
+
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+
+# Get optional modules.
+set(BUILD "" CACHE STRING
+  "Comma-separated list of optional modules to build or \"all\" to build all modules.")
+if (BUILD)
+  if (BUILD STREQUAL all)
+    set(MP_MODULES all)
+  else ()
+    string(REGEX MATCHALL "[^,]+" MP_MODULES "${BUILD}")
+  endif ()
+endif ()
+
+# Sets ${var} to TRUE if module ${name} is enabled.
+function (is_module_enabled name var)
+  set(MP_USED_MODULES ${MP_USED_MODULES} ${name})
+  list(FIND MP_MODULES ${name} module_index)
+  if (NOT module_index EQUAL -1 OR MP_MODULES STREQUAL all)
+    message(STATUS "Module ${name} enabled")
+    set(${var} TRUE PARENT_SCOPE)
+  else ()
+    message(STATUS "Module ${name} disabled")
+    set(${var} FALSE PARENT_SCOPE)
+  endif ()
+endfunction ()
 
 # Enable C++11.
 include(CheckCXXCompilerFlag)
@@ -132,6 +156,16 @@ if (amplodbc MATCHES "version ([0-9]+)")
   add_custom_command(TARGET versions POST_BUILD
       COMMAND echo ampltabl ${CMAKE_MATCH_1} >> ${AMPL_VERSIONS_FILE})
 endif ()
+
+# Check for invalid module names.
+foreach (module ${MP_MODULES})
+  if (NOT module STREQUAL all)
+    list(FIND MP_USED_MODULES ${module} module_index)
+    if (module_index EQUAL -1)
+      message(SEND_ERROR "Unknown module ${module}")
+    endif ()
+  endif ()
+endforeach ()
 
 enable_testing()
 add_subdirectory(test)

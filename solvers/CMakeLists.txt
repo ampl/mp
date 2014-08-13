@@ -30,6 +30,11 @@ endfunction ()
 # LIBRARIES gives a list of solver libraries. If omitted, add_ampl_solver
 # uses <module>_LIBRARIES.
 function(add_ampl_solver name)
+  is_module_enabled(${name} build_solver)
+  if (NOT build_solver)
+    return ()
+  endif ()
+
   string(TOUPPER ${name} name_upper)
 
   cmake_parse_arguments(add_ampl_solver
@@ -149,7 +154,9 @@ if (HAVE_AUTO)
 endif ()
 
 add_ampl_solver(ssdsolver)
-add_ampl_library(ssd ssdsolver/ssd.cc)
-target_include_directories(ssd PRIVATE .)
+if (TARGET ssdsolver)
+  add_ampl_library(ssd ssdsolver/ssd.cc)
+  target_include_directories(ssd PRIVATE .)
+endif ()
 
 add_ampl_solver(sulum)
