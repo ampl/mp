@@ -116,7 +116,7 @@ to solve a problem whose solution will take a while; after it finishes,
      solution foo.sol;
      display ... /* things involving the computed solution */;
 
-(Here, - denotes standard input, and ampl reads the ``solution...``
+(Here, ``-`` denotes standard input, and ampl reads the ``solution...``
 and ``display...`` lines.)
 
 ------------
