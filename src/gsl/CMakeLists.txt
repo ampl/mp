@@ -1,6 +1,6 @@
 # CMake build script for the GSL wrapper for AMPL.
 
-include_directories(${PROJECT_BINARY_DIR}/thirdparty/gsl)
+include_directories(${PROJECT_BINARY_DIR}/thirdparty/build/gsl)
 
 set(GSL_DISABLE_WARNINGS 1)
 

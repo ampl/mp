@@ -33,10 +33,9 @@
 #include <cstring>
 
 #include "gtest/gtest.h"
-#include "tests/config.h"
 // #define DEBUG_DIFFERENTIATOR
-#include "tests/function.h"
-#include "tests/util.h"
+#include "function.h"
+#include "util.h"
 #include "solvers/asl.h"
 
 using std::string;
