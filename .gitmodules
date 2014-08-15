@@ -7,3 +7,6 @@
 [submodule "thirdparty/path"]
 	path = thirdparty/path
 	url = https://github.com/ampl/pathlib
+[submodule "thirdparty/gsl"]
+	path = thirdparty/gsl
+	url = https://github.com/ampl/gsl
