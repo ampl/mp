@@ -11,7 +11,7 @@ src_files = ['format.cc', 'posix.cc']
 def copyfile(src, dst):
   for line in src:
     # Fix includes.
-    dst.write(re.sub(r'#include "(.*)"', r'#include "mp/\1"', line))
+    dst.write(re.sub(r'# *include "(format.h|posix.h)"', r'#include "mp/\1"', line))
 
 def extract(archive, filenames, dest, archive_dir, **kwargs):
   dest = os.path.join(project_dir, dest)
@@ -19,8 +19,13 @@ def extract(archive, filenames, dest, archive_dir, **kwargs):
     fileutil.rmtree_if_exists(dest)
     os.mkdir(dest)
   for filename in filenames:
+    dest_path = os.path.join(dest, filename)
+    if filename.endswith('/'):
+      if not os.path.exists(dest_path):
+        os.mkdir(dest_path)
+      continue
     with archive.open(archive_dir + filename) as src:
-      with open(os.path.join(dest, filename), 'w') as dst:
+      with open(dest_path, 'w') as dst:
         copyfile(src, dst)
 
 d = download.Downloader()
@@ -29,9 +34,3 @@ with d.download('https://github.com/cppformat/cppformat/archive/master.zip') as 
     root = 'cppformat-master/'
     extract(zf, include_files, 'include/mp', root)
     extract(zf, src_files, 'src', root)
-    test_files = []
-    archive_test_dir = root + 'test/'
-    for name in zf.namelist():
-      if name.startswith(archive_test_dir) and name != archive_test_dir:
-        test_files.append(name[len(archive_test_dir):])
-    extract(zf, test_files, 'test/format', archive_test_dir, clean=True)

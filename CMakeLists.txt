@@ -1,7 +1,7 @@
 # Use CMake 2.8.12 for target_compile_options.
 # It can be easily obtained and used without superuser privileges even
 # if the system has an older version of CMake installed.
-cmake_minimum_required (VERSION 2.8.12)
+cmake_minimum_required(VERSION 2.8.12)
 
 # Set the path to CMake modules.
 set(MP_CMAKE_MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/support/cmake)

@@ -75,13 +75,13 @@ inline int getsign(double x) {
 }
 
 // Portable version of isinf.
-inline int isinfinity(double x) {
 #ifdef isinf
-  return isinf(x);
+inline int isinfinity(double x) { return isinf(x); }
+inline int isinfinity(long double x) { return isinf(x); }
 #else
-  return std::isinf(x);
+inline int isinfinity(double x) { return std::isinf(x); }
+inline int isinfinity(long double x) { return std::isinf(x); }
 #endif
-}
 
 #define FMT_SNPRINTF snprintf
 
@@ -108,6 +108,12 @@ inline int safe_printf(char *buffer, size_t size, const char *format, ...) {
 #define FMT_SNPRINTF safe_printf
 
 #endif  // _MSC_VER
+
+template <typename T>
+struct IsLongDouble { enum {VALUE = 0}; };
+
+template <>
+struct IsLongDouble<long double> { enum {VALUE = 1}; };
 
 const char RESET_COLOR[] = "\x1b[0m";
 
@@ -225,7 +231,7 @@ class ArgConverter : public fmt::internal::ArgVisitor<ArgConverter<T>, void> {
     if (sizeof(T) <= sizeof(int)) {
       if (is_signed) {
         arg_.type = Arg::INT;
-        arg_.int_value = static_cast<T>(value);
+        arg_.int_value = static_cast<int>(static_cast<T>(value));
       } else {
         arg_.type = Arg::UINT;
         arg_.uint_value =
@@ -259,8 +265,6 @@ template <>
 inline Arg::StringValue<wchar_t> ignore_incompatible_str(
     Arg::StringValue<wchar_t> s) { return s; }
 }  // namespace
-
-int fmt::internal::signbit_noinline(double value) { return getsign(value); }
 
 void fmt::SystemError::init(
     int error_code, StringRef format_str, const ArgList &args) {
@@ -601,7 +605,7 @@ void fmt::BasicWriter<Char>::write_double(T value, const FormatSpec &spec) {
     return;
   }
 
-  if (isinfinity(static_cast<double>(value))) {
+  if (isinfinity(value)) {
     // Format infinity ourselves because sprintf's output is not consistent
     // across platforms.
     std::size_t size = 4;
@@ -645,7 +649,7 @@ void fmt::BasicWriter<Char>::write_double(T value, const FormatSpec &spec) {
     *format_ptr++ = '.';
     *format_ptr++ = '*';
   }
-  if (internal::IsLongDouble<T>::VALUE)
+  if (IsLongDouble<T>::VALUE)
     *format_ptr++ = 'L';
   *format_ptr++ = type;
   *format_ptr = '\0';
@@ -908,26 +912,33 @@ void fmt::internal::PrintfFormatter<Char>::format(
     }
 
     // Parse length and convert the argument to the required type.
-    switch (*s) {
-    case 'h': {
-      ++s;
+    switch (*s++) {
+    case 'h':
       if (*s == 'h')
         ArgConverter<signed char>(arg, *++s).visit(arg);
       else
         ArgConverter<short>(arg, *s).visit(arg);
       break;
-    }
     case 'l':
-      ++s;
-      ArgConverter<long>(arg, *s).visit(arg);
+      if (*s == 'l')
+        ArgConverter<fmt::LongLong>(arg, *++s).visit(arg);
+      else
+        ArgConverter<long>(arg, *s).visit(arg);
       break;
     case 'j':
+      ArgConverter<intmax_t>(arg, *s).visit(arg);
+      break;
     case 'z':
+      ArgConverter<size_t>(arg, *s).visit(arg);
+      break;
     case 't':
+      ArgConverter<ptrdiff_t>(arg, *s).visit(arg);
+      break;
     case 'L':
       // TODO: handle length
-      ++s;
       break;
+    default:
+      --s;
     }
 
     // Parse type.
