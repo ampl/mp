@@ -55,6 +55,12 @@ endfunction ()
 # If EXTERNAL is specified, check_module initializes an external dependency
 # in thirdparty/${name}.
 function(check_module name var)
+  get_property(modules GLOBAL PROPERTY MP_USED_MODULES)
+  list(FIND modules ${name} module_index)
+  if (NOT module_index EQUAL -1)
+    set(${var} TRUE PARENT_SCOPE)
+    return () # Module already checked.
+  endif ()
   add_module(${name})
   list(FIND MP_MODULES ${name} module_index)
   set(${var} FALSE PARENT_SCOPE)
