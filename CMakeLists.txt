@@ -1,38 +1,41 @@
-# Use CMake 2.8.12.2 as it can be easily obtained and used without superuser
-# privileges even if the system has an older version of CMake installed.
-cmake_minimum_required (VERSION 2.8.12.2)
+# Use CMake 2.8.12 for target_compile_options.
+# It can be easily obtained and used without superuser privileges even
+# if the system has an older version of CMake installed.
+cmake_minimum_required (VERSION 2.8.12)
+
+# Set the path to CMake modules.
+set(MP_CMAKE_MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/support/cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${MP_CMAKE_MODULE_DIR})
+
+include(util)
 
 # Set the default CMAKE_BUILD_TYPE to Release.
-# This should be done before the project command since the latter can set
-# CMAKE_BUILD_TYPE itself (it does so for nmake).
-if (NOT CMAKE_BUILD_TYPE)
-  set(none "None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used)")
-  set(options "${none} Debug Release RelWithDebInfo MinSizeRel")
-  set(CMAKE_BUILD_TYPE Release CACHE STRING
-    "Choose the type of build, options are: ${options}.")
-endif ()
+# This should be done before the project command since the latter sets
+# CMAKE_BUILD_TYPE itself.
+set_cache(CMAKE_BUILD_TYPE Release STRING
+  "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or"
+  "CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
 
 # Use static MSVC runtime.
 # This should be done before the project command.
 set(CMAKE_USER_MAKE_RULES_OVERRIDE
-  ${CMAKE_CURRENT_SOURCE_DIR}/support/cmake/c_flag_overrides.cmake)
+  ${MP_CMAKE_MODULE_DIR}/c_flag_overrides.cmake)
 set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX
-  ${CMAKE_CURRENT_SOURCE_DIR}/support/cmake/cxx_flag_overrides.cmake)
+  ${MP_CMAKE_MODULE_DIR}/cxx_flag_overrides.cmake)
 
 project(MP)
 
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+
+# Set output directories.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
-set(MP_CMAKE_MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/support/cmake)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${MP_CMAKE_MODULE_DIR})
-
-message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-
 # Get optional modules.
-set(BUILD "" CACHE STRING
-  "Comma-separated list of optional modules to build or \"all\" to build all modules.")
+set_cache(BUILD "" STRING
+  "Comma-separated list of optional modules to build or \"all\""
+  "to build all modules.")
 if (BUILD)
   if (BUILD STREQUAL all)
     set(MP_MODULES all)
@@ -42,13 +45,16 @@ if (BUILD)
 endif ()
 
 function (add_module name)
-  set_property(GLOBAL APPEND PROPERTY MP_USED_MODULES ${MP_USED_MODULES} ${name})
+  set_property(GLOBAL APPEND PROPERTY
+    MP_USED_MODULES ${MP_USED_MODULES} ${name})
 endfunction ()
 
 # Sets ${var} to TRUE if module ${name} is enabled.
 # Usage:
-#   is_module_enabled(<name> <var> [<dependency>])
-function(is_module_enabled name var)
+#   check_module(<name> <var> [EXTERNAL])
+# If EXTERNAL is specified, check_module initializes an external dependency
+# in thirdparty/${name}.
+function(check_module name var)
   add_module(${name})
   list(FIND MP_MODULES ${name} module_index)
   set(${var} FALSE PARENT_SCOPE)
@@ -56,21 +62,21 @@ function(is_module_enabled name var)
     message(STATUS "Module ${name} disabled")
     return ()
   endif ()
-  if (ARGN)
+  cmake_parse_arguments(check_module EXTERNAL "" "" ${ARGN})
+  if (check_module_EXTERNAL)
     # Get a dependency using git.
-    set(dependency ${ARGN})
     find_package(Git)
     if (NOT GIT_FOUND)
       message(SEND_ERROR "Git not found (required by ${name})")
       return ()
     endif ()
-    set(dir ${PROJECT_SOURCE_DIR}/thirdparty/${dependency})
+    set(dir ${PROJECT_SOURCE_DIR}/thirdparty/${name})
     execute_process(COMMAND
       ${GIT_EXECUTABLE} submodule update --init ${repo} ${dir})
-    if (EXISTS ${PROJECT_SOURCE_DIR}/thirdparty/${dependency}/CMakeLists.txt)
+    if (EXISTS ${PROJECT_SOURCE_DIR}/thirdparty/${name}/CMakeLists.txt)
       add_subdirectory(
-        ${PROJECT_SOURCE_DIR}/thirdparty/${dependency}
-        ${PROJECT_BINARY_DIR}/thirdparty/build/${dependency})
+        ${PROJECT_SOURCE_DIR}/thirdparty/${name}
+        ${PROJECT_BINARY_DIR}/thirdparty/build/${name})
     endif ()
   endif ()
   message(STATUS "Module ${name} enabled")
@@ -159,8 +165,8 @@ add_subdirectory(src/asl)
 add_subdirectory(src/cp)
 add_subdirectory(solvers)
 
-if (EXISTS ${PROJECT_SOURCE_DIR}/thirdparty/gsl/CMakeLists.txt)
-  add_subdirectory(thirdparty/gsl)
+check_module(gsl build_gsl EXTERNAL)
+if (build_gsl)
   add_subdirectory(src/gsl)
 endif ()
 

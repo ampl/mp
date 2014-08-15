@@ -1,6 +1,6 @@
 # CMake build script for the AMPL/JaCoP solver.
 
-is_module_enabled(jacop build_jacop jacop)
+check_module(jacop build_jacop EXTERNAL)
 if (build_jacop)
   file(GLOB JACOP_JAR_PATH ${PROJECT_SOURCE_DIR}/thirdparty/jacop/jacop-*.jar)
   get_filename_component(jar ${JACOP_JAR_PATH} NAME)
