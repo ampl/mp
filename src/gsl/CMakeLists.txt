@@ -1,7 +1,5 @@
 # CMake build script for the GSL wrapper for AMPL.
 
-set(GSL_DISABLE_WARNINGS 1)
-
 add_ampl_library(amplgsl amplgsl.c)
 target_link_libraries(amplgsl asl gsl gslcblas)
 target_include_directories(amplgsl

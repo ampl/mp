@@ -171,6 +171,7 @@ add_subdirectory(src/asl)
 add_subdirectory(src/cp)
 add_subdirectory(solvers)
 
+set(GSL_DISABLE_WARNINGS 1)
 check_module(gsl build_gsl EXTERNAL)
 if (build_gsl)
   add_subdirectory(src/gsl)

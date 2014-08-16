@@ -36,7 +36,7 @@
 // #define DEBUG_DIFFERENTIATOR
 #include "function.h"
 #include "util.h"
-#include "solvers/asl.h"
+#include "asl/solvers/asl.h"
 
 using std::string;
 using std::vector;
@@ -519,7 +519,7 @@ class ResultBinder {
   }
 
   double operator()(const Tuple &args) const {
-    gsl_sf_result result = {};
+    gsl_sf_result result = gsl_sf_result();
     return fun::OneBinder<F, gsl_sf_result*, int>(
         f_, &result, GetNumArgs())(args) ? GSL_NAN : result.val;
   }
