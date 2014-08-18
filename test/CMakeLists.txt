@@ -1,7 +1,7 @@
 include_directories(../thirdparty)
 
 add_test(cmake-test ${CMAKE_COMMAND}
-  -DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH} -P cmake/util-test.cmake)
+  -DCMAKE_MODULE_PATH=${CMAKE_MODULE_PATH} -P cmake/init-test.cmake)
 
 find_program(NOSE2 nose2)
 if (NOSE2)

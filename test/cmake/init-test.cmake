@@ -4,7 +4,7 @@ function(expect_eq expected actual)
   endif ()
 endfunction()
 
-include(util)
+include(init)
 
 join(result)
 expect_eq("" "${result}")

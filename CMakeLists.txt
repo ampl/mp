@@ -7,21 +7,7 @@ cmake_minimum_required(VERSION 2.8.12)
 set(MP_CMAKE_MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/support/cmake)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${MP_CMAKE_MODULE_DIR})
 
-include(util)
-
-# Set the default CMAKE_BUILD_TYPE to Release.
-# This should be done before the project command since the latter sets
-# CMAKE_BUILD_TYPE itself.
-set_cache(CMAKE_BUILD_TYPE Release STRING
-  "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or"
-  "CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel.")
-
-# Use static MSVC runtime.
-# This should be done before the project command.
-set(CMAKE_USER_MAKE_RULES_OVERRIDE
-  ${MP_CMAKE_MODULE_DIR}/c_flag_overrides.cmake)
-set(CMAKE_USER_MAKE_RULES_OVERRIDE_CXX
-  ${MP_CMAKE_MODULE_DIR}/cxx_flag_overrides.cmake)
+include(init)
 
 project(MP)
 
@@ -109,24 +95,6 @@ else ()
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif ()
 
-if (CMAKE_GENERATOR MATCHES "Visual Studio")
-  # If Microsoft SDK is installed create script run-msbuild.bat that
-  # calls SetEnv.cmd to to set up build environment and runs msbuild.
-  # It is useful when building Visual Studio projects with the SDK
-  # toolchain rather than Visual Studio.
-  include(FindSetEnv)
-  if (WINSDK_SETENV)
-    if (CMAKE_SIZEOF_VOID_P EQUAL 4)
-      set(setenv_flag /x86)
-    endif()
-    # Set FrameworkPathOverride to get rid of MSB3644 warnings.
-    file(WRITE run-msbuild.bat "
-      call \"${WINSDK_SETENV}\" ${setenv_flag}
-      ${CMAKE_MAKE_PROGRAM} -p:FrameworkPathOverride=^\"C:\\Program Files^
-\\Reference Assemblies\\Microsoft\\Framework\\.NETFramework\\v4.0^\" %*")
-  endif ()
-endif ()
-
 # Adds a prefix to arguments.
 function (add_prefix var prefix)
   set(result ${${var}})
@@ -172,7 +140,7 @@ add_subdirectory(src/cp)
 add_subdirectory(solvers)
 
 set(GSL_DISABLE_WARNINGS TRUE)
-set(GSL_DISABLE_TESTS TRUE)
+set(GSL_DISABLE_TESTS TRUE) # GSL tests are run separately
 check_module(gsl build_gsl EXTERNAL)
 if (build_gsl)
   add_subdirectory(src/gsl)
