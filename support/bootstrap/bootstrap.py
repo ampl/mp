@@ -89,9 +89,10 @@ def install_cmake(filename):
     with zipfile.ZipFile(f) if iszip \
          else closing(tarfile.open(f, 'r:gz')) as archive:
       archive.extractall(opt_dir)
+  dir = os.path.join(opt_dir, dir)
   if platform.system() == 'Darwin':
     dir = glob.glob(os.path.join(dir, 'CMake*.app', 'Contents'))[0]
-  add_to_path(os.path.join(opt_dir, dir, 'bin', 'cmake'))
+  add_to_path(os.path.join(dir, 'bin', 'cmake'))
 
 # Install f90cache.
 def install_f90cache():
