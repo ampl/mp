@@ -15,7 +15,7 @@ if (CPLEX_FOUND)
   elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_definitions(-Wno-self-assign -Wno-sign-compare
                     -Wno-sometimes-uninitialized -Wno-string-plus-int
-                    -Wno-unused-parameter)
+                    -Wno-unused-parameter -Wno-missing-field-initializers)
   elseif (MSVC)
     add_definitions(/wd4244 /wd4267 /wd4996)
   endif ()
