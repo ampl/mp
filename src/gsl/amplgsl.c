@@ -206,7 +206,7 @@ static int check_bessel_args(arglist *al, int flags, const char *arg_name) {
 
 #define CHECK_CALL(value, call) { \
     int status = 0; \
-    gsl_sf_result result = {0}; \
+    gsl_sf_result result = {0, 0}; \
     status = call; \
     if (status != GSL_SUCCESS) { \
       eval_error(al); \
