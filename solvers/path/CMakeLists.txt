@@ -24,6 +24,7 @@ if (build_path)
   add_executable(path path.c)
   target_include_directories(path PRIVATE ${PATH_DIR}/include)
   target_link_libraries(path asl ${PATH_DIR}/lib/${PATH_LIB} ${PATH_EXTRA_LIBS})
+  add_c_compiler_flag(path -Wno-missing-field-initializers)
   if (WIN32)
     add_custom_command(TARGET path
       COMMAND ${CMAKE_COMMAND} -E copy_if_different

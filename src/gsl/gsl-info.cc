@@ -1,6 +1,6 @@
 /*
- A program for generating AMPL declarations for the functions provided
- by the amplgsl library.
+ This program generates AMPL declarations for the functions provided
+ by the amplgsl library and prints the library version information.
 
  Copyright (C) 2012 AMPL Optimization LLC
 
@@ -30,7 +30,7 @@
 #undef fprintf
 #undef printf
 
-FILE *out;
+static FILE *out;
 
 #define UNUSED(x) (void)(x)
 
@@ -64,7 +64,7 @@ static void dummy_at_reset(AmplExports *ae, Exitfunc *f, void *data) {
 }
 
 int main() {
-  AmplExports ae = {0};
+  AmplExports ae = AmplExports();
   ae.Addfunc = declare_func;
   ae.AtReset = dummy_at_reset;
   out = fopen("gsl.ampl.tmp", "w");

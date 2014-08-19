@@ -31,6 +31,14 @@ if (BUILD)
   endif ()
 endif ()
 
+# Checks if the C compiler supports flag and if it does, adds it to the target.
+function (add_c_compiler_flag target flag)
+  check_c_compiler_flag(${flag} supports_flag)
+  if (supports_flag)
+    target_compile_options(${target} PRIVATE ${flag})
+  endif ()
+endfunction ()
+
 function (add_module name)
   set_property(GLOBAL APPEND PROPERTY
     MP_USED_MODULES ${MP_USED_MODULES} ${name})
@@ -162,7 +170,7 @@ endif ()
 set(AMPL_VERSIONS_FILE versions.txt)
 add_custom_target(versions cmake -E remove ${AMPL_VERSIONS_FILE}
   DEPENDS src/asl/tables/amplodbc.c)
-foreach (target gen-decls gecode jacop path)
+foreach (target gsl-info gecode jacop path)
   if (TARGET ${target})
     add_custom_command(TARGET versions POST_BUILD
         COMMAND $<TARGET_FILE:${target}> -v >> ${AMPL_VERSIONS_FILE})
