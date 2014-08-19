@@ -257,7 +257,8 @@ class TextReader {
       result = new_result;
       c = *++ptr_;
     } while (c >= '0' && c <= '9');
-    if (result > std::numeric_limits<Int>::max())
+    UInt max = std::numeric_limits<Int>::max();
+    if (result > max)
       ReportError("number is too big");
     value = result;
     return true;
