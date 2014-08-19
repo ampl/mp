@@ -224,13 +224,13 @@ Env JVM::env(const char *const *options) {
     if (!LoadLibrary("jvm.dll"))
        throw JavaError("Failed to load jvm.dll");
 #endif
-    JavaVMInitArgs vm_args = {};
+    JavaVMInitArgs vm_args = JavaVMInitArgs();
     vm_args.version = JNI_VERSION_1_6;
     vm_args.ignoreUnrecognized = false;
     std::vector<JavaVMOption> jvm_options;
     if (options) {
       for (const char *const *opt = options; *opt; ++opt) {
-        JavaVMOption jvm_opt = {const_cast<char*>(*opt)};
+        JavaVMOption jvm_opt = {const_cast<char*>(*opt), 0};
         jvm_options.push_back(jvm_opt);
       }
     }

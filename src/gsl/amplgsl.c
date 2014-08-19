@@ -1209,7 +1209,7 @@ static double amplgsl_sf_hydrogenicR(arglist *al) {
 }
 
 static double amplgsl_sf_coulomb_CL(arglist *al) {
-  gsl_sf_result result = {0};
+  gsl_sf_result result = {0, 0};
   if (al->derivs) {
     error(al, DERIVS_NOT_PROVIDED);
     return 0;
@@ -2323,7 +2323,7 @@ static double amplgsl_sf_log_1plusx_mx(arglist *al) {
 static double amplgsl_sf_mathieu_a(arglist *al) {
   int n = 0;
   double q = 0;
-  gsl_sf_result result = {0};
+  gsl_sf_result result = {0, 0};
   if (!check_int_arg(al, 0, "n"))
     return 0;
   n = (int)al->ra[0];
@@ -2339,7 +2339,7 @@ static double amplgsl_sf_mathieu_a(arglist *al) {
 static double amplgsl_sf_mathieu_b(arglist *al) {
   int n = 0;
   double q = 0;
-  gsl_sf_result result = {0};
+  gsl_sf_result result = {0, 0};
   if (!check_int_arg(al, 0, "n"))
     return 0;
   n = (int)al->ra[0];
@@ -2355,7 +2355,7 @@ static double amplgsl_sf_mathieu_b(arglist *al) {
 static double amplgsl_sf_mathieu_ce(arglist *al) {
   int n = 0;
   double q = 0, x = 0;
-  gsl_sf_result result = {0};
+  gsl_sf_result result = {0, 0};
   if (!check_int_arg(al, 0, "n") || !check_args(al))
     return 0;
   n = (int)al->ra[0];
@@ -2372,7 +2372,7 @@ static double amplgsl_sf_mathieu_ce(arglist *al) {
 static double amplgsl_sf_mathieu_se(arglist *al) {
   int n = 0;
   double q = 0, x = 0;
-  gsl_sf_result result = {0};
+  gsl_sf_result result = {0, 0};
   if (!check_int_arg(al, 0, "n"))
     return 0;
   n = (int)al->ra[0];
@@ -2389,7 +2389,7 @@ static double amplgsl_sf_mathieu_se(arglist *al) {
 static double amplgsl_sf_mathieu_Mc(arglist *al) {
   int j = 0, n = 0;
   double q = 0, x = 0;
-  gsl_sf_result result = {0};
+  gsl_sf_result result = {0, 0};
   if (!check_int_arg(al, 0, "j") || !check_int_arg(al, 1, "n"))
     return 0;
   j = (int)al->ra[0];
@@ -2407,7 +2407,7 @@ static double amplgsl_sf_mathieu_Mc(arglist *al) {
 static double amplgsl_sf_mathieu_Ms(arglist *al) {
   int j = 0, n = 0;
   double q = 0, x = 0;
-  gsl_sf_result result = {0};
+  gsl_sf_result result = {0, 0};
   if (!check_int_arg(al, 0, "j") || !check_int_arg(al, 1, "n"))
     return 0;
   j = (int)al->ra[0];

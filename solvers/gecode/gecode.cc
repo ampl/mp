@@ -458,7 +458,6 @@ LinExpr NLToGecodeConverter::VisitNumberOf(NumberOfExpr e) {
   // values except those specified may occur, so we use only local count
   // constraints.
   IntVar result(problem_, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
-  int index = 0;
   int num_args = e.num_args();
   IntVarArgs args(num_args - 1);
   for (int i = 1; i < num_args; ++i)
