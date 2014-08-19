@@ -31,8 +31,8 @@ class StderrRedirect {
   std::FILE *saved_stderr;
 
  public:
-  explicit StderrRedirect(const char *filename) {
-      Stderr = std::fopen(filename, "w");
+  explicit StderrRedirect(const char *filename) : saved_stderr(Stderr) {
+    Stderr = std::fopen(filename, "w");
   }
   ~StderrRedirect() {
     std::fclose(Stderr);
