@@ -11,6 +11,8 @@ include(init)
 
 project(MP)
 
+cmake_policy(SET CMP0042 NEW)
+
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 # Set output directories.
