@@ -95,6 +95,17 @@ else ()
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif ()
 
+# This is a workaround for ccache bug 8118
+# https://bugzilla.samba.org/show_bug.cgi?id=8118
+# Should be fixed in ccache version 3.2
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  check_cxx_compiler_flag(-Qunused-arguments HAVE_QUNUSED_ARGUMENTS)
+  if (HAVE_QUNUSED_ARGUMENTS)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Qunused-arguments")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
+  endif ()
+endif ()
+
 # Adds a prefix to arguments.
 function (add_prefix var prefix)
   set(result ${${var}})
