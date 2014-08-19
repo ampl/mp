@@ -35,8 +35,8 @@ using mp::SafeInt;
 using mp::OverflowError;
 
 TEST(SafeIntTest, SafeAbs) {
-  EXPECT_EQ(42, SafeAbs(42));
-  EXPECT_EQ(42, SafeAbs(-42));
+  EXPECT_EQ(42u, SafeAbs(42));
+  EXPECT_EQ(42u, SafeAbs(-42));
   EXPECT_EQ(INT_MAX + 1u, SafeAbs(INT_MIN));
 }
 

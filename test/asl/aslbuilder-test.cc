@@ -784,7 +784,7 @@ double TestFunc(arglist *) { return 0; }
 
 template <std::size_t SIZE>
 void CheckFunctionList(const ASLPtr &asl, const func_info *(&funcs)[SIZE]) {
-  int index = 0;
+  std::size_t index = 0;
   for (func_info *fi = asl->i.funcsfirst_; fi; fi = fi->fnext, ++index) {
     ASSERT_LT(index, SIZE);
     EXPECT_EQ(fi, funcs[index]);
