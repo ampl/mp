@@ -7,28 +7,4 @@
 .*concert.lib: LNK4099: PDB 'concert.pdb' was not found.*
 .*: could not create compact unwind
 
-# The filenames are matched from the beginning so no need for '^',
-# but '$' is necessary to match complete filenames rather than prefixes.
-(.*/)?(objconst|funcadd0|stderr|pfghread|qp_read|jac2dim|auxinfo)\.c$: .*
-(.*/)?(mpec_adj0|asldate|dtoa|fpinit|obj_adj|mainexit|func_add)\.c$: .*
-(.*/)?(punknown|conval|printf|conscale|value|mypow|bscanf|com2eval)\.c$: .*
-(.*/)?(xectim|rops|readsol|xp1known|fpecatch|sigcatch|genrowno)\.c$: .*
-(.*/)?(basename|sos_add|comeval|strerror|objval_|f_read|repwhere)\.c$: .*
-(.*/)?(funcaddk|derprop|mach|conadj|ws_desc|arithchk|wsu_desc)\.c$: .*
-(.*/)?(fullhes|qpcheck|b_search|nl_obj|libnamsave|names|objval)\.c$: .*
-(.*/)?(sphes|writesol|wrtsol_|studchk0|jacdim|suf_sos|con2ival)\.c$: .*
-(.*/)?(details|mip_pri|dtoa1|qsortv|duthes|jacinc1|g_fmt|htcl)\.c$: .*
-(.*/)?(funcadd|fpinitmt|fgh_read|obj_adj0|funcaddr|nqpcheck|avltree)\.c$: .*
-(.*/)?(jac0dim|obj_prec|fg_read|obj2val|jacinc|fg_write|getenv)\.c$: .*
-(.*/)?(funcadd1|sscanf|sprintf|rops2|indic_cons|dynlink|sjac0dim)\.c$: .*
-(.*/)?(x2check|xp2known|misc|op_type|pfg_read|pshvprod|getstub)\.c$: .*
-(.*/)?(atof|con2val|con1ival|mpec_adj|conpval)\.c$: .*
-(.*/)?(amplodbc|fullbit|simpbit|tableproxy)\.c$: .*
-
-CoinPresolvePsdebug.cpp.obj: LNK4221:.*
-.*CglProbing.cpp: use of unary operator that may be intended as compound assignment.*
-.*flatzinc.cpp: use of unary operator that may be intended as compound assignment.*
-
 .*: [0-9]+ warning(s)? generated
-
-.*: This version of Mac OS X is unsupported
