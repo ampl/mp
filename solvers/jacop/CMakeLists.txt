@@ -38,7 +38,8 @@ if (build_jacop)
     else ()
       message(FATAL_ERROR "Cannot determine JaCoP version.")
     endif ()
-    target_compile_definitions(ampljacop-static PRIVATE JACOP_VERSION=\"${JACOP_VERSION}\")
+    target_compile_definitions(ampljacop-static
+      PRIVATE JACOP_VERSION=\"${JACOP_VERSION}\")
     
     include(UseJava)
     set(CMAKE_JAVA_INCLUDE_PATH ${JACOP_JAR_PATH})
