@@ -132,7 +132,7 @@ const OptionValue<Gecode::IntConLevel> INT_CON_LEVELS[] = {
     {"bnd", Gecode::ICL_BND},
     {"dom", Gecode::ICL_DOM},
     {"def", Gecode::ICL_DEF},
-    {}
+    {0,     Gecode::ICL_VAL}
 };
 
 TEST_F(GecodeSolverTest, IntConLevelOption) {
@@ -158,7 +158,7 @@ const OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
     {"range_max",  Gecode::INT_VAL_RANGE_MAX()},
     {"values_min", Gecode::INT_VALUES_MIN()},
     {"values_max", Gecode::INT_VALUES_MAX()},
-    {}
+    {0,            Gecode::INT_VAL_MIN()}
 };
 
 TEST_F(GecodeSolverTest, ValBranchingOption) {
@@ -198,7 +198,7 @@ const OptionValue<IntVarBranch::Select> VAR_BRANCHINGS[] = {
     {"regret_min_max",    IntVarBranch::SEL_REGRET_MIN_MAX},
     {"regret_max_min",    IntVarBranch::SEL_REGRET_MAX_MIN},
     {"regret_max_max",    IntVarBranch::SEL_REGRET_MAX_MAX},
-    {}
+    {0,                   IntVarBranch::SEL_NONE}
 };
 
 TEST_F(GecodeSolverTest, VarBranchingOption) {
@@ -233,7 +233,7 @@ const OptionValue<Gecode::RestartMode> RESTARTS[] = {
     {"linear",    Gecode::RM_LINEAR},
     {"luby",      Gecode::RM_LUBY},
     {"geometric", Gecode::RM_GEOMETRIC},
-    {}
+    {0,           Gecode::RM_NONE}
 };
 
 TEST_F(GecodeSolverTest, RestartOption) {
