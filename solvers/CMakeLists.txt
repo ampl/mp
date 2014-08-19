@@ -72,7 +72,10 @@ function(add_ampl_solver name)
   get_var(source_names add_ampl_solver_UNPARSED_ARGUMENTS ${name}.cc ${name}.h)
   get_var(include_dirs
     add_ampl_solver_INCLUDE_DIRS ${${module_upper}_INCLUDE_DIRS})
-  get_var(libraries add_ampl_solver_LIBRARIES ${${module_upper}_LIBRARIES})
+  get_var(libraries add_ampl_solver_LIBRARIES)
+  if (NOT libraries AND TARGET ${name}-library)
+    set(libraries ${name}-library)
+  endif ()
   get_var(definitions
     add_ampl_solver_DEFINITIONS ${${module_upper}_DEFINITIONS})
   if (add_ampl_solver_DLL_RUNTIME AND MSVC)
@@ -131,7 +134,6 @@ set(GECODE_DISABLE_WARNINGS TRUE)
 set(GECODE_USE_QT FALSE)
 add_ampl_solver(gecode EXTERNAL LIBRARIES gecodeminimodel)
 
-find_package(CPLEX)
 add_ampl_solver(ilogcp DLL_RUNTIME MODULE CPLEX
   concert.cc concert.h ilogcp.cc ilogcp.h ilogcp_date.h
   LIBRARIES cplex-cp ilocplex)

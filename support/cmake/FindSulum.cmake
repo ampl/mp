@@ -1,10 +1,12 @@
-# Try to find the Sulum libraries.
+# Try to find the Sulum library.
 #
-# Once done this will define
+# Once done this will add the following imported targets:
 #
-#  SULUM_FOUND - System has Sulum
-#  SULUM_INCLUDE_DIRS - The Sulum include directories
-#  SULUM_LIBRARIES - The libraries needed to use Sulum
+#  sulum-library - the Sulum library
+
+if (TARGET sulum-library)
+  return () # Already found.
+endif ()
 
 if (UNIX)
   set(SULUM_SYS linux)
@@ -37,9 +39,6 @@ find_path(SULUM_INCLUDE_DIR sulumcpp.h PATHS ${SULUM_DIR}/header)
 find_path(SULUM_AMPL_INCLUDE_DIR optsulum.ampl PATHS ${SULUM_BIN_DIR})
 find_library(SULUM_LIBRARY sulum20 PATHS ${SULUM_BIN_DIR})
 
-set(SULUM_INCLUDE_DIRS ${SULUM_INCLUDE_DIR} ${SULUM_AMPL_INCLUDE_DIR})
-set(SULUM_LIBRARIES ${SULUM_LIBRARY})
-
 include(FindPackageHandleStandardArgs)
 # Handle the QUIETLY and REQUIRED arguments and set SULUM_FOUND to TRUE
 # if all listed variables are TRUE.
@@ -47,3 +46,11 @@ find_package_handle_standard_args(Sulum DEFAULT_MSG
   SULUM_LIBRARY SULUM_INCLUDE_DIR SULUM_AMPL_INCLUDE_DIR)
 
 mark_as_advanced(SULUM_LIBRARY SULUM_INCLUDE_DIR SULUM_AMPL_INCLUDE_DIR)
+
+if (SULUM_FOUND)
+  add_library(sulum-library STATIC IMPORTED GLOBAL)
+  set_target_properties(sulum-library PROPERTIES
+    IMPORTED_LOCATION "${SULUM_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES
+      "${SULUM_INCLUDE_DIR};${SULUM_AMPL_INCLUDE_DIR}")
+endif ()

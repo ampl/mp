@@ -2,12 +2,12 @@
 #
 # Once done this will add the following imported targets:
 #
-#  cplex - the CPLEX library
+#  cplex-library - the CPLEX library
 #  cplex-concert - the Concert library
 #  ilocplex - the IloCplex library
 #  cplex-cp - the CP Optimizer library
 
-if (TARGET cplex)
+if (TARGET cplex-library)
   return () # Already found.
 endif ()
 
@@ -123,8 +123,8 @@ if (CPLEX_FOUND)
   if (HAVE_LIBM)
     set(CPLEX_LINK_LIBRARIES ${CPLEX_LINK_LIBRARIES} m)
   endif ()
-  add_library(cplex STATIC IMPORTED GLOBAL)
-  set_target_properties(cplex PROPERTIES
+  add_library(cplex-library STATIC IMPORTED GLOBAL)
+  set_target_properties(cplex-library PROPERTIES
     IMPORTED_LOCATION "${CPLEX_LIBRARY}"
     IMPORTED_LOCATION_DEBUG "${CPLEX_LIBRARY_DEBUG}"
     INTERFACE_INCLUDE_DIRECTORIES "${CPLEX_INCLUDE_DIR}"

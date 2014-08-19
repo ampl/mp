@@ -1,10 +1,12 @@
-# Try to find the LocalSolver libraries.
+# Try to find the LocalSolver library.
 #
-# Once done this will define
+# Once done this will add the following imported targets:
 #
-#  LOCALSOLVER_FOUND - System has LocalSolver
-#  LOCALSOLVER_INCLUDE_DIRS - The LocalSolver include directories
-#  LOCALSOLVER_LIBRARIES - The libraries needed to use LocalSolver
+#  localsolver-library - the LocalSolver library
+
+if (TARGET localsolver-library)
+  return () # Already found.
+endif ()
 
 if (UNIX)
   set(LOCALSOLVER_DIR /opt)
@@ -30,9 +32,6 @@ find_path(LOCALSOLVER_INCLUDE_DIR
 find_library(LOCALSOLVER_LIBRARY
   ${LOCALSOLVER_LIB_NAME} PATHS ${LOCALSOLVER_DIR}/bin)
 
-set(LOCALSOLVER_INCLUDE_DIRS ${LOCALSOLVER_INCLUDE_DIR})
-set(LOCALSOLVER_LIBRARIES ${LOCALSOLVER_LIBRARY})
-
 include(FindPackageHandleStandardArgs)
 # Handle the QUIETLY and REQUIRED arguments and set LOCALSOLVER_FOUND to TRUE
 # if all listed variables are TRUE.
@@ -40,3 +39,10 @@ find_package_handle_standard_args(LocalSolver DEFAULT_MSG
   LOCALSOLVER_LIBRARY LOCALSOLVER_INCLUDE_DIR)
 
 mark_as_advanced(LOCALSOLVER_LIBRARY LOCALSOLVER_INCLUDE_DIR)
+
+if (LOCALSOLVER_FOUND)
+  add_library(localsolver-library STATIC IMPORTED GLOBAL)
+  set_target_properties(localsolver-library PROPERTIES
+    IMPORTED_LOCATION "${LOCALSOLVER_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${LOCALSOLVER_INCLUDE_DIR}")
+endif ()
