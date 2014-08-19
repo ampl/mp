@@ -1,24 +1,15 @@
 # Try to find the CPLEX, Concert, IloCplex and CP Optimizer libraries.
 #
-# Once done this will define
+# Once done this will add the following imported targets:
 #
-#  CPLEX_FOUND - System has CPLEX
-#  CPLEX_INCLUDE_DIRS - The CPLEX include directories
-#  CPLEX_LIBRARIES - The libraries needed to use CPLEX
-#
-#  CPLEX_ILOCPLEX_FOUND - System has IloCplex
-#  CPLEX_ILOCPLEX_INCLUDE_DIRS - The IloCplex include directories
-#  CPLEX_ILOCPLEX_LIBRARIES - The libraries needed to use IloCplex
-#  CPLEX_ILOCPLEX_DEFINITIONS - Compiler switches required for using IloCplex
-#
-#  CPLEX_CONCERT_FOUND - System has Concert
-#  CPLEX_CONCERT_INCLUDE_DIRS - The Concert include directories
-#  CPLEX_CONCERT_LIBRARIES - The libraries needed to use Concert
-#  CPLEX_CONCERT_DEFINITIONS - Compiler switches required for using Concert
-#
-#  CPLEX_CP_FOUND - System has CP Optimizer
-#  CPLEX_CP_INCLUDE_DIRS - The CP Optimizer include directories
-#  CPLEX_CP_LIBRARIES - The libraries needed to use CP Optimizer
+#  cplex - the CPLEX library
+#  cplex-concert - the Concert library
+#  ilocplex - the IloCplex library
+#  cplex-cp - the CP Optimizer library
+
+if (TARGET cplex)
+  return () # Already found.
+endif ()
 
 include(FindPackageHandleStandardArgs)
 
@@ -119,21 +110,26 @@ elseif (NOT CPLEX_LIBRARY)
   endif ()
 endif ()
 
-set(CPLEX_INCLUDE_DIRS ${CPLEX_INCLUDE_DIR})
-set(CPLEX_LIBRARIES
-  optimized ${CPLEX_LIBRARY} debug ${CPLEX_LIBRARY_DEBUG}
-  ${CMAKE_THREAD_LIBS_INIT})
-check_library_exists(m floor "" HAVE_LIBM)
-if (HAVE_LIBM)
-  set(CPLEX_LIBRARIES ${CPLEX_LIBRARIES} m)
-endif ()
-
 # Handle the QUIETLY and REQUIRED arguments and set CPLEX_FOUND to TRUE
 # if all listed variables are TRUE.
 find_package_handle_standard_args(
   CPLEX DEFAULT_MSG CPLEX_LIBRARY CPLEX_LIBRARY_DEBUG CPLEX_INCLUDE_DIR)
 
 mark_as_advanced(CPLEX_LIBRARY CPLEX_LIBRARY_DEBUG CPLEX_INCLUDE_DIR)
+
+if (CPLEX_FOUND)
+  set(CPLEX_LINK_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+  check_library_exists(m floor "" HAVE_LIBM)
+  if (HAVE_LIBM)
+    set(CPLEX_LINK_LIBRARIES ${CPLEX_LINK_LIBRARIES} m)
+  endif ()
+  add_library(cplex STATIC IMPORTED GLOBAL)
+  set_target_properties(cplex PROPERTIES
+    IMPORTED_LOCATION "${CPLEX_LIBRARY}"
+    IMPORTED_LOCATION_DEBUG "${CPLEX_LIBRARY_DEBUG}"
+    INTERFACE_INCLUDE_DIRECTORIES "${CPLEX_INCLUDE_DIR}"
+    INTERFACE_LINK_LIBRARIES "${CPLEX_LINK_LIBRARIES}")
+endif ()
 
 # ----------------------------------------------------------------------------
 # Concert
@@ -151,20 +147,12 @@ endmacro()
 
 set(CPLEX_CONCERT_DIR ${CPLEX_STUDIO_DIR}/concert)
 
-# Require standard compliance.
-set(CPLEX_CONCERT_DEFINITIONS -DIL_STD)
-
 # Find the Concert include directory.
 find_path(CPLEX_CONCERT_INCLUDE_DIR ilconcert/ilosys.h
   PATHS ${CPLEX_CONCERT_DIR}/include)
 
 # Find the Concert library.
 find_cplex_library(CPLEX_CONCERT_LIBRARY concert ${CPLEX_CONCERT_DIR})
-
-set(CPLEX_CONCERT_INCLUDE_DIRS ${CPLEX_CONCERT_INCLUDE_DIR})
-set(CPLEX_CONCERT_LIBRARIES
-  optimized ${CPLEX_CONCERT_LIBRARY} debug ${CPLEX_CONCERT_LIBRARY_DEBUG}
-  ${CMAKE_THREAD_LIBS_INIT})
 
 # Handle the QUIETLY and REQUIRED arguments and set CPLEX_CONCERT_FOUND to
 # TRUE if all listed variables are TRUE.
@@ -174,6 +162,16 @@ find_package_handle_standard_args(
 
 mark_as_advanced(CPLEX_CONCERT_LIBRARY CPLEX_CONCERT_LIBRARY_DEBUG
   CPLEX_CONCERT_INCLUDE_DIR)
+
+if (CPLEX_CONCERT_FOUND)
+  add_library(concert STATIC IMPORTED GLOBAL)
+  set_target_properties(concert PROPERTIES
+    IMPORTED_LOCATION "${CPLEX_CONCERT_LIBRARY}"
+    IMPORTED_LOCATION_DEBUG "${CPLEX_CONCERT_LIBRARY_DEBUG}"
+    INTERFACE_COMPILE_DEFINITIONS IL_STD # Require standard compliance.
+    INTERFACE_INCLUDE_DIRECTORIES "${CPLEX_CONCERT_INCLUDE_DIR}"
+    INTERFACE_LINK_LIBRARIES "${CMAKE_THREAD_LIBS_INIT}")
+endif ()
 
 # ----------------------------------------------------------------------------
 # IloCplex - depends on CPLEX and Concert
@@ -193,12 +191,6 @@ find_path(CPLEX_ILOCPLEX_INCLUDE_DIR ilcplex/ilocplex.h
 # Find the IloCplex library.
 find_cplex_library(CPLEX_ILOCPLEX_LIBRARY ilocplex ${CPLEX_DIR})
 
-set(CPLEX_ILOCPLEX_INCLUDE_DIRS
-  ${CPLEX_ILOCPLEX_INCLUDE_DIR} ${CPLEX_CONCERT_INCLUDE_DIRS})
-set(CPLEX_ILOCPLEX_LIBRARIES
-  optimized ${CPLEX_ILOCPLEX_LIBRARY} debug ${CPLEX_ILOCPLEX_LIBRARY_DEBUG}
-  ${CPLEX_CONCERT_LIBRARIES} ${CPLEX_LIBRARIES})
-
 # Handle the QUIETLY and REQUIRED arguments and set CPLEX_ILOCPLEX_FOUND to
 # TRUE if all listed variables are TRUE.
 find_package_handle_standard_args(
@@ -208,6 +200,15 @@ find_package_handle_standard_args(
 
 mark_as_advanced(CPLEX_ILOCPLEX_LIBRARY CPLEX_ILOCPLEX_LIBRARY_DEBUG
   CPLEX_ILOCPLEX_INCLUDE_DIR)
+
+if (CPLEX_ILOCPLEX_FOUND)
+  add_library(ilocplex STATIC IMPORTED GLOBAL)
+  set_target_properties(ilocplex PROPERTIES
+    IMPORTED_LOCATION "${CPLEX_ILOCPLEX_LIBRARY}"
+    IMPORTED_LOCATION_DEBUG "${CPLEX_ILOCPLEX_LIBRARY_DEBUG}"
+    INTERFACE_INCLUDE_DIRECTORIES "${CPLEX_ILOCPLEX_INCLUDE_DIR}"
+    INTERFACE_LINK_LIBRARIES "concert;cplex")
+endif ()
 
 # ----------------------------------------------------------------------------
 # CP Optimizer - depends on Concert
@@ -224,12 +225,6 @@ if (WIN32)
   set(CPLEX_CP_EXTRA_LIBRARIES Ws2_32.lib)
 endif ()
 
-set(CPLEX_CP_INCLUDE_DIRS
-  ${CPLEX_CP_INCLUDE_DIR} ${CPLEX_CONCERT_INCLUDE_DIRS})
-set(CPLEX_CP_LIBRARIES
-  optimized ${CPLEX_CP_LIBRARY} debug ${CPLEX_CP_LIBRARY_DEBUG}
-  ${CPLEX_CONCERT_LIBRARIES} ${CPLEX_CP_EXTRA_LIBRARIES})
-
 # Handle the QUIETLY and REQUIRED arguments and set CPLEX_CP_FOUND to TRUE
 # if all listed variables are TRUE.
 find_package_handle_standard_args(
@@ -237,3 +232,12 @@ find_package_handle_standard_args(
   CPLEX_CP_INCLUDE_DIR CPLEX_CONCERT_FOUND)
 
 mark_as_advanced(CPLEX_CP_LIBRARY CPLEX_CP_LIBRARY_DEBUG CPLEX_CP_INCLUDE_DIR)
+
+if (CPLEX_CP_FOUND)
+  add_library(cplex-cp STATIC IMPORTED GLOBAL)
+  set_target_properties(cplex-cp PROPERTIES
+    IMPORTED_LOCATION "${CPLEX_CP_LIBRARY}"
+    IMPORTED_LOCATION_DEBUG "${CPLEX_CP_LIBRARY_DEBUG}"
+    INTERFACE_INCLUDE_DIRECTORIES "${CPLEX_CP_INCLUDE_DIR}"
+    INTERFACE_LINK_LIBRARIES "concert;${CPLEX_CP_EXTRA_LIBRARIES}")
+endif ()

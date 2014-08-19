@@ -100,7 +100,7 @@ function(add_ampl_solver name)
   add_library(${static_lib} ${sources})
   target_include_directories(${static_lib}
     PUBLIC ${include_dirs} ${PROJECT_SOURCE_DIR}/solvers)
-  target_link_libraries(${static_lib} ${libraries})
+  target_link_libraries(${static_lib} PUBLIC ${libraries})
   target_compile_options(${static_lib} PUBLIC ${definitions})
 
   if (use_dll_runtime)
@@ -108,9 +108,9 @@ function(add_ampl_solver name)
       add_library(asl-dynrt ${ASL_SOURCES})
       target_compile_options(asl-dynrt PUBLIC /MD)
     endif ()
-    target_link_libraries(${static_lib} asl-dynrt)
+    target_link_libraries(${static_lib} PUBLIC asl-dynrt)
   else ()
-    target_link_libraries(${static_lib} asl)
+    target_link_libraries(${static_lib} PUBLIC asl)
   endif ()
 
   # Add a solver shared library.
@@ -134,9 +134,7 @@ add_ampl_solver(gecode EXTERNAL LIBRARIES gecodeminimodel)
 find_package(CPLEX)
 add_ampl_solver(ilogcp DLL_RUNTIME MODULE CPLEX
   concert.cc concert.h ilogcp.cc ilogcp.h ilogcp_date.h
-  INCLUDE_DIRS ${CPLEX_CP_INCLUDE_DIRS} ${CPLEX_ILOCPLEX_INCLUDE_DIRS}
-  LIBRARIES ${CPLEX_CP_LIBRARIES} ${CPLEX_ILOCPLEX_LIBRARIES} ${CPLEX_LIBRARIES}
-  DEFINITIONS ${CPLEX_CONCERT_DEFINITIONS} ${CPLEX_ILOCPLEX_DEFINITIONS})
+  LIBRARIES cplex-cp ilocplex)
 if (TARGET ilogcp)
   target_compile_definitions(amplilogcp-static PRIVATE ILOGCP_NO_VERS)
 endif ()
