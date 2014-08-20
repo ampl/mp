@@ -184,6 +184,9 @@ endif ()
 add_ampl_library(simpbit tables/simpbit.c)
 add_ampl_library(fullbit tables/fullbit.c)
 
+add_c_compiler_flags(simpbit -Wno-parentheses)
+add_c_compiler_flags(fullbit -Wno-parentheses)
+
 find_package(ODBC)
 if (ODBC_FOUND)
   add_library(amplodbc ${CMAKE_CURRENT_BINARY_DIR}/arith.h tables/amplodbc.c)
