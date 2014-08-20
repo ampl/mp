@@ -52,7 +52,7 @@ class ExcelTest : public ::testing::Test {
   }
 };
 
-fun::Library ExcelTest::lib_("../../tables/ampltabl.dll");
+fun::Library ExcelTest::lib_(GetExecutableDir() + "/ampltabl.dll");
 
 TEST_F(ExcelTest, Read) {
   Table t("TableWith256CharCell", 0, 1, strings_);
