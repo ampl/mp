@@ -3147,9 +3147,12 @@ main(int argc, char **argv, char **arge)
 		setsid();
 		if (fork())
 			_exit(0);
-		freopen("/dev/null", "r", stdin);
-		freopen("/dev/null", "w", stdout);
-		freopen("/dev/null", "w", stderr);
+		if (!freopen("/dev/null", "r", stdin) ||
+		    !freopen("/dev/null", "w", stdout) ||
+		    !freopen("/dev/null", "w", stderr)) {
+			fprintf(Stderr, "freopen(...) failed\n");
+			goto done;
+			}
 		}
 	signal(SIGHUP,  sighandler);
 	signal(SIGQUIT, sighandler);
