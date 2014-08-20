@@ -1,5 +1,5 @@
 /*
- A C++ interface to an AMPL solver.
+ A mathematical optimization solver.
 
  Copyright (C) 2012 AMPL Optimization Inc
 
@@ -19,6 +19,11 @@
 
  Author: Victor Zverovich
  */
+
+extern "C" {
+#include "solvers/getstub.h"
+#undef Char
+}
 
 #include "solver.h"
 
@@ -44,7 +49,8 @@
 #include "mp/clock.h"
 #include "mp/format.h"
 #include "mp/rstparser.h"
-#include "getstub.h"
+
+extern "C" const char *Version_Qualifier_ASL;
 
 namespace {
 
@@ -289,9 +295,12 @@ void Solver::SolutionWriter::HandleFeasibleSolution(
     return;
   fmt::Writer w;
   w << solver_->solution_stub_ << solver_->num_solutions_ << ".sol";
+  Option_Info option_info = Option_Info();
+  option_info.bsname = const_cast<char*>(solver_->long_name_.c_str());
+  option_info.wantsol = solver_->wantsol_;
   write_solf_ASL(reinterpret_cast<ASL*>(p.asl_),
       const_cast<char*>(message.c_str()), const_cast<double*>(values),
-      const_cast<double*>(dual_values), solver_, w.c_str());
+      const_cast<double*>(dual_values), &option_info, w.c_str());
 }
 
 void Solver::SolutionWriter::HandleSolution(
@@ -302,9 +311,12 @@ void Solver::SolutionWriter::HandleSolution(
     if (nsol_suffix)
       nsol_suffix.set_values(&solver_->num_solutions_);
   }
+  Option_Info option_info = Option_Info();
+  option_info.bsname = const_cast<char*>(solver_->long_name_.c_str());
+  option_info.wantsol = solver_->wantsol_;
   write_sol_ASL(reinterpret_cast<ASL*>(p.asl_),
       const_cast<char*>(message.c_str()), const_cast<double*>(values),
-      const_cast<double*>(dual_values), solver_);
+      const_cast<double*>(dual_values), &option_info);
 }
 
 bool Solver::OptionNameLess::operator()(
@@ -318,52 +330,17 @@ void Solver::RegisterSuffixes(Problem &p) {
     suf_declare_ASL(asl, &suffixes_[0], static_cast<int>(suffixes_.size()));
 }
 
-char *Solver::PrintOptionsAndExit(Option_Info *oi, keyword *, char *) {
-  Solver *solver = static_cast<Solver*>(oi);
-  fmt::Writer writer;
-  internal::FormatRST(writer, solver->option_header_);
-  if (!solver->option_header_.empty())
-    writer << '\n';
-  writer << "Options:\n";
-  const int DESC_INDENT = 6;
-  const OptionSet &options = solver->options_;
-  for (OptionSet::const_iterator i = options.begin(); i != options.end(); ++i) {
-    SolverOption *opt = *i;
-    writer << '\n' << opt->name() << '\n';
-    internal::FormatRST(writer, opt->description(), DESC_INDENT, opt->values());
-  }
-  std::fwrite(writer.data(), writer.size(), 1, stdout);
-  exit(0);
-  return 0;
-}
-
 Solver::Solver(
     fmt::StringRef name, fmt::StringRef long_name, long date, unsigned flags)
-: name_(name), has_errors_(false), num_solutions_(0), count_solutions_(false),
+: name_(name), long_name_(long_name.c_str() ? long_name : name), date_(date),
+  flags_(0), wantsol_(0),
+  has_errors_(false), num_solutions_(0), count_solutions_(false),
   read_flags_(0), timing_(false) {
+  version_ = long_name_;
   error_handler_ = this;
   output_handler_ = this;
   sol_writer_.set_solver(this);
   sol_handler_ = &sol_writer_;
-
-  // Workaround for GCC bug 30111 that prevents value-initialization of
-  // the base POD class.
-  Option_Info init = Option_Info();
-  Option_Info &self = *this;
-  self = init;
-
-  sname = const_cast<char*>(name_.c_str());
-  if (long_name.c_str()) {
-    long_name_ = long_name;
-    bsname = const_cast<char*>(long_name_.c_str());
-  } else {
-    bsname = sname;
-  }
-  options_var_name_ = name_;
-  options_var_name_ += "_options";
-  opname = const_cast<char*>(options_var_name_.c_str());
-  Option_Info::version = bsname;
-  driver_date = date;
 
   struct VersionOption : SolverOption {
     Solver &s;
@@ -375,7 +352,7 @@ Solver::Solver(
       w << ((s.flags() & ASL_OI_show_version) != 0);
     }
     void Parse(const char *&) {
-      s.Option_Info::flags |= ASL_OI_show_version;
+      s.flags_ |= ASL_OI_show_version;
     }
   };
   AddOption(OptionPtr(new VersionOption(*this)));
@@ -395,7 +372,7 @@ Solver::Solver(
     void SetValue(int value) {
       if ((value & ~0xf) != 0)
         throw InvalidOptionValue("wantsol", value);
-      s.Option_Info::wantsol = value;
+      s.wantsol_ = value;
     }
   };
   AddOption(OptionPtr(new WantSolOption(*this)));
@@ -439,14 +416,6 @@ Solver::Solver(
         "file names are obtained by appending 1, 2, ... ``Current.nsol`` to "
         "``solutionstub``.")));
   }
-
-  cl_option_ = keyword();
-  cl_option_.name = const_cast<char*>("=");
-  cl_option_.desc = const_cast<char*>("show name= possibilities");
-  cl_option_.kf = Solver::PrintOptionsAndExit;
-  cl_option_.info = 0;
-  options = &cl_option_;
-  n_options = 1;
 }
 
 Solver::~Solver() {
@@ -467,19 +436,61 @@ bool Solver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
   ASL *asl = reinterpret_cast<ASL*>(p.asl_);
   RegisterSuffixes(p);
 
+  // Workaround for GCC bug 30111 that prevents value-initialization of
+  // the base POD class.
+  Option_Info option_info = Option_Info();
+  keyword cl_option = keyword();  // command-line option '='
+  cl_option.name = const_cast<char*>("=");
+  cl_option.desc = const_cast<char*>("show name= possibilities");
+  struct OptionPrinter {
+    static char *PrintOptionsAndExit(Option_Info *, keyword *kw, char *) {
+      Solver *solver = static_cast<Solver*>(kw->info);
+      fmt::Writer writer;
+      internal::FormatRST(writer, solver->option_header_);
+      if (!solver->option_header_.empty())
+        writer << '\n';
+      writer << "Options:\n";
+      const int DESC_INDENT = 6;
+      const OptionSet &options = solver->options_;
+      for (OptionSet::const_iterator
+           i = options.begin(); i != options.end(); ++i) {
+        SolverOption *opt = *i;
+        writer << '\n' << opt->name() << '\n';
+        internal::FormatRST(writer, opt->description(),
+                            DESC_INDENT, opt->values());
+      }
+      std::fwrite(writer.data(), writer.size(), 1, stdout);
+      exit(0);
+      return 0;
+    }
+  };
+  cl_option.kf = OptionPrinter::PrintOptionsAndExit;
+  cl_option.info = this;
+  option_info.options = &cl_option;
+  option_info.n_options = 1;
+
+  option_info.sname = const_cast<char*>(name_.c_str());
+  option_info.bsname = const_cast<char*>(long_name_.c_str());
+  std::string options_var_name = name_ + "_options";
+  option_info.opname = const_cast<char*>(options_var_name.c_str());
+  option_info.version = const_cast<char*>(version_.c_str());;
+  option_info.driver_date = date_;
+
   // Make "-?" show some command-line options that are relevant when
   // importing functions.
-  Option_Info::flags |= ASL_OI_want_funcadd;
+  option_info.flags |= ASL_OI_want_funcadd;
 
-  char *stub = getstub_ASL(asl, &argv, this);
+  char *stub = getstub_ASL(asl, &argv, &option_info);
   if (!stub) {
-    usage_noexit_ASL(this, 1);
+    usage_noexit_ASL(&option_info, 1);
     return false;
   }
   steady_clock::time_point start = steady_clock::now();
   p.Read(stub, read_flags_);
   double read_time = GetTimeAndReset(start);
   bool result = ParseOptions(argv, flags, &p);
+  option_info.flags = flags_;
+  option_info.wantsol = wantsol_;
   if (timing_)
     Print("Input time = {:.6f}s\n", read_time);
   return result;
@@ -521,7 +532,6 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
       equal_sign = true;
     }
 
-    nnl = 0;
     SolverOption *opt = FindOption(&name[0]);
     if (!opt) {
       if (!skip)
@@ -571,15 +581,22 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
 
 bool Solver::ParseOptions(char **argv, unsigned flags, const Problem *) {
   has_errors_ = false;
-  Option_Info::flags &= ~ASL_OI_show_version;
-  if (opname) {
-    if (const char *s = getenv(opname))
-      ParseOptionString(s, flags);
-  }
+  flags_ &= ~ASL_OI_show_version;
+  if (const char *s = getenv((name_ + "_options").c_str()))
+    ParseOptionString(s, flags);
   while (const char *s = *argv++)
     ParseOptionString(s, flags);
-  if (this->flags() & ASL_OI_show_version)
-    show_version_ASL(this);
+  if (this->flags() & ASL_OI_show_version) {
+    const char *ver = Version_Qualifier_ASL ? Version_Qualifier_ASL : "";
+    fmt::print("{}{}", ver, version_.c_str());
+    if (*sysdetails_ASL)
+      fmt::print(" ({})", sysdetails_ASL);
+    if (date_ > 0)
+      fmt::print(", driver({})", date_);
+    fmt::print(", ASL({})\n", ASLdate_ASL);
+    if (Lic_info_add_ASL)
+      fmt::print("{}\n", Lic_info_add_ASL);
+  }
   std::fflush(stdout);
   return !has_errors_;
 }

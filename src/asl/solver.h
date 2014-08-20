@@ -1,5 +1,5 @@
 /*
- A C++ interface to an AMPL solver.
+ A mathematical optimization solver.
 
  Copyright (C) 2012 AMPL Optimization Inc
 
@@ -34,11 +34,6 @@
 #include <set>
 #include <string>
 #include <vector>
-
-extern "C" {
-#include "solvers/getstub.h"
-#undef Char
-}
 
 #include "problem.h"
 
@@ -361,13 +356,14 @@ class TypedSolverOption : public SolverOption {
 //                  &MySolver::GetTestOption, &MySolver::SetTestOption, 42);
 //   }
 // };
-class Solver
-  : private ErrorHandler, private OutputHandler, private Option_Info {
+class Solver : private ErrorHandler, private OutputHandler {
  private:
   std::string name_;
   std::string long_name_;
-  std::string options_var_name_;
   std::string version_;
+  long date_;
+  int flags_;
+  int wantsol_;
 
   bool has_errors_;
   OutputHandler *output_handler_;
@@ -407,15 +403,12 @@ class Solver
   std::string option_header_;
   typedef std::set<SolverOption*, OptionNameLess> OptionSet;
   OptionSet options_;
-  keyword cl_option_;  // command-line option '='
 
   bool timing_;
 
   std::vector<SufDecl> suffixes_;
 
   void RegisterSuffixes(Problem &p);
-
-  static char *PrintOptionsAndExit(Option_Info *oi, keyword *kw, char *value);
 
   void HandleOutput(fmt::StringRef output) {
     std::fputs(output.c_str(), stdout);
@@ -534,15 +527,8 @@ class Solver
   Solver(fmt::StringRef name, fmt::StringRef long_name = 0,
       long date = 0, unsigned flags = 0);
 
-  void set_long_name(fmt::StringRef name) {
-    long_name_ = name;
-    bsname = const_cast<char*>(long_name_.c_str());
-  }
-
-  void set_version(fmt::StringRef version) {
-    version_ = version;
-    Option_Info::version = const_cast<char*>(version_.c_str());
-  }
+  void set_long_name(fmt::StringRef name) { long_name_ = name; }
+  void set_version(fmt::StringRef version) { version_ = version; }
 
   // Sets the flags for Problem::Read.
   void set_read_flags(unsigned flags) { read_flags_ = flags; }
@@ -708,27 +694,24 @@ class Solver
   virtual ~Solver();
 
   // Returns the solver name.
-  const char *name() const { return sname; }
+  const char *name() const { return name_.c_str(); }
 
   // Returns the long solver name.
   // This name is used in startup "banner".
-  const char *long_name() const { return bsname; }
-
-  // Returns the name of <solver>_options environment variable.
-  const char *options_var_name() const { return opname; }
+  const char *long_name() const { return long_name_.c_str(); }
 
   // Returns the solver version.
-  const char *version() const { return Option_Info::version; }
+  const char *version() const { return version_.c_str(); }
 
   // Returns the solver date in YYYYMMDD format.
-  long date() const { return driver_date; }
+  long date() const { return date_; }
 
   // Returns the solver flags.
   // Possible values that can be combined with bitwise OR:
   //   ASL_OI_want_funcadd
   //   ASL_OI_keep_underscores
   //   ASL_OI_show_version
-  int flags() const { return Option_Info::flags; }
+  int flags() const { return flags_; }
 
   // Returns the value of the wantsol option which specifies what solution
   // information to write in a stand-alone invocation (no -AMPL on the
@@ -737,7 +720,7 @@ class Solver
   //   2 = primal variables to stdout
   //   4 = dual variables to stdout
   //   8 = suppress solution message
-  int wantsol() const { return Option_Info::wantsol; }
+  int wantsol() const { return wantsol_; }
 
   // Returns true if the timing is enabled.
   bool timing() const { return timing_; }

@@ -21,6 +21,7 @@
  */
 
 #include <gtest/gtest.h>
+#include "asl/solvers/getstub.h"
 #include "asl/solver.h"
 #include "../args.h"
 #include "../solution-handler.h"
@@ -197,7 +198,6 @@ TEST(SolverTest, BasicSolverCtor) {
   TestSolver s;
   EXPECT_STREQ("testsolver", s.name());
   EXPECT_STREQ("testsolver", s.long_name());
-  EXPECT_STREQ("testsolver_options", s.options_var_name());
   EXPECT_STREQ("testsolver", s.version());
   EXPECT_EQ(0, s.date());
   EXPECT_EQ(0, s.flags());
@@ -241,7 +241,7 @@ TEST(SolverTest, LongName) {
   EXPECT_STREQ("another-name", s.long_name());
 }
 
-// Convert sysdetails to a pointer becasue template argument cannot
+// Convert sysdetails to a pointer because template argument cannot
 // be a reference to an array of unknown bound.
 const char *sysdetails() { return sysdetails_ASL; }
 
