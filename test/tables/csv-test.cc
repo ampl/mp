@@ -22,6 +22,7 @@
 
 #include "gtest/gtest.h"
 #include "../function.h"
+#include "../util.h"
 #include "odbc.h"
 
 using fun::Handler;
@@ -43,7 +44,7 @@ class CSVTest : public ::testing::Test {
   }
 };
 
-fun::Library CSVTest::lib_("../../tables/ampltabl.dll");
+fun::Library CSVTest::lib_(GetExecutableDir() + "/ampltabl.dll");
 
 TEST_F(CSVTest, Read) {
   Table t("test", 1, 0);

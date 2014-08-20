@@ -26,6 +26,7 @@
 #include "gtest/gtest.h"
 #include "mp/format.h"
 #include "../function.h"
+#include "../util.h"
 #include "odbc.h"
 
 using fun::Handler;

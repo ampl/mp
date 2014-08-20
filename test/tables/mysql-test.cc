@@ -27,6 +27,7 @@
 #include "mp/format.h"
 #include "asl/solvers/funcadd.h"
 #include "../function.h"
+#include "../util.h"
 #include "odbc.h"
 
 #ifdef _WIN32
