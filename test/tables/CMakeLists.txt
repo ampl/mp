@@ -2,14 +2,14 @@ find_package(ODBC)
 if (ODBC_FOUND)
   include_directories(${ODBC_INCLUDE_DIRS})
 
-  set(CMAKE_REQUIRED_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/..)
+  set(CMAKE_REQUIRED_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
   set(CMAKE_REQUIRED_LIBRARIES ${ODBC_LIBRARIES})
 
   add_mp_test(odbc-test odbc-test.cc odbc.cc LIBS function ${ODBC_LIBRARIES})
 
   include(CheckCXXSourceRuns)
   check_cxx_source_runs(
-    "#include \"tests/odbc.cc\"
+    "#include \"odbc.cc\"
      int main() {
        return odbc::Env().FindDriver(\"access\").empty() ? 1 : 0;
      }" HAVE_ACCESS_DRIVER)
@@ -21,7 +21,7 @@ if (ODBC_FOUND)
   endif ()
 
   check_cxx_source_runs(
-    "#include \"tests/odbc.cc\"
+    "#include \"odbc.cc\"
      int main() {
        return odbc::Env().FindDriver(\"excel\").empty() ? 1 : 0;
      }" HAVE_EXCEL_DRIVER)
@@ -32,7 +32,7 @@ if (ODBC_FOUND)
   endif ()
 
   check_cxx_source_runs(
-    "#include \"tests/odbc.cc\"
+    "#include \"odbc.cc\"
      int main() {
        return odbc::Env().FindDriver(\"*.csv\").empty() ? 1 : 0;
      }" HAVE_ODBC_TEXT_DRIVER)
@@ -43,7 +43,7 @@ if (ODBC_FOUND)
 
   if (ENABLE_MYSQL_TESTS)
     check_cxx_source_runs(
-      "#include \"tests/odbc.cc\"
+      "#include \"odbc.cc\"
       int main() {
         return odbc::Env().FindDriver(\"mysql\").empty() ? 1 : 0;
       }" HAVE_MYSQL_DRIVER)
