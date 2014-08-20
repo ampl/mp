@@ -61,14 +61,14 @@ class SafeInt {
 
   template <typename U>
   explicit SafeInt(U value) : value_(value) {
-    if (value >= 0) {
-      typename MakeUnsigned<U>::Type unsigned_value = value;
-      typename MakeUnsigned<U>::Type max = std::numeric_limits<T>::max();
-      if (unsigned_value > max)
-        throw OverflowError();
-    } else {
+    if (fmt::internal::is_negative(value)) {
       fmt::LongLong min = std::numeric_limits<T>::min();
       if (value < min)
+        throw OverflowError();
+    } else {
+      typename MakeUnsigned<U>::Type unsigned_value = value;
+      typename MakeUnsigned<T>::Type max = std::numeric_limits<T>::max();
+      if (unsigned_value > max)
         throw OverflowError();
     }
   }
