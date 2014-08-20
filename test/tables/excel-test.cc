@@ -77,7 +77,7 @@ TEST_F(ExcelTest, WriteMaxColumnsExcel2003) {
   int num_cols = 256;
   Table t("TableWithManyCols", 0, num_cols, strings_);
   for (int i = 1; i <= num_cols; ++i)
-    t.Add(c_str(fmt::Format("c{}") << i));
+    t.Add(fmt::format("c{}", i));
   handler_->Write(t);
 }
 
@@ -95,7 +95,7 @@ TEST_F(ExcelTest, WriteMaxColumnsExcel2007) {
       "DBQ=data/test.xlsx; READONLY=FALSE;";
   Table t("TableWithManyCols", 0, num_cols, strings_);
   for (int i = 1; i <= num_cols; ++i)
-    t.Add(c_str(fmt::Format("c{}") << i));
+    t.Add(fmt::format("c{}", i));
   handler_->Write(t);
 }
 #endif

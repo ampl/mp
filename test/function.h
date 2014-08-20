@@ -246,8 +246,8 @@ class Table {
     return values_[(row_index + 1) * num_cols_ + col_index];
   }
 
-  void Add(const char *s) {
-    str_values_.push_back(s);
+  void Add(fmt::StringRef s) {
+    str_values_.push_back(s.c_str());
     values_.push_back(Variant::FromString(str_values_.back().c_str()));
   }
 
