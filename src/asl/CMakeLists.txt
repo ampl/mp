@@ -158,7 +158,7 @@ check_symbol_exists(strtoull stdlib.h HAVE_STRTOULL)
 if (NOT HAVE_STRTOULL)
   check_symbol_exists(_strtoui64 stdlib.h HAVE_STRTOUI64)
   if (HAVE_STRTOUI64)
-    target_compile_definitions(asl PRIVATE strtoull=_strtoui64)
+    target_compile_definitions(asl-core PRIVATE strtoull=_strtoui64)
   endif ()
 endif ()
 
