@@ -295,7 +295,7 @@ valid_param(char *t, int ekeep)
 	switch(*t) {
 	 case '0':
 		if ((t[1] == 'x' || t[1] == 'X')) {
-			strtod(t,&se);
+			(void)strtod(t,&se);
 			return *se == 0;
 			}
 		break;
