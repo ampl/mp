@@ -15,9 +15,8 @@ if (ODBC_FOUND)
      }" HAVE_ACCESS_DRIVER)
 
   if (HAVE_ACCESS_DRIVER)
-    cxx_test_with_flags(access-test ""
-      "gtest;function;util;${ODBC_LIBRARIES}"
-      ../test-main.cc access-test.cc odbc.cc)
+    add_mp_test(access-test access-test.cc odbc.cc
+      LIBS function ${ODBC_LIBRARIES})
   endif ()
 
   check_cxx_source_runs(
