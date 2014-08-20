@@ -28,6 +28,10 @@
 using fun::Handler;
 using fun::Table;
 
+#ifndef MP_TEST_DATA_DIR
+# define MP_TEST_DATA_DIR "../data"
+#endif
+
 namespace {
 
 class CSVTest : public ::testing::Test {
@@ -51,7 +55,7 @@ TEST_F(CSVTest, Read) {
   t.AddString("odbc");
   odbc::Env env;
   // Some versions of the text driver require a trailing slash in DBQ value.
-  t.AddString("DRIVER={" + env.FindDriver("*.csv") + "}; DBQ=data\\");
+  t.AddString("DRIVER={" + env.FindDriver("*.csv") + "}; DBQ=" MP_TEST_DATA_DIR);
   t.AddString("test.csv");
   t = "S";
   handler_->Read(&t);

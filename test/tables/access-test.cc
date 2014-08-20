@@ -33,6 +33,10 @@
 using fun::Handler;
 using fun::Table;
 
+#ifndef MP_TEST_DATA_DIR
+# define MP_TEST_DATA_DIR "../data"
+#endif
+
 namespace {
 
 class AccessTest : public ::testing::Test {
@@ -48,7 +52,7 @@ class AccessTest : public ::testing::Test {
   void SetUp() {
     handler_ = lib_.GetHandler("odbc");
     strings_.push_back("odbc");
-    strings_.push_back("data/test.accdb");
+    strings_.push_back(MP_TEST_DATA_DIR "/test.accdb");
   }
 };
 

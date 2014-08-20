@@ -32,6 +32,10 @@
 using fun::Handler;
 using fun::Table;
 
+#ifndef MP_TEST_DATA_DIR
+# define MP_TEST_DATA_DIR "../data"
+#endif
+
 namespace {
 
 class ExcelTest : public ::testing::Test {
@@ -49,7 +53,7 @@ class ExcelTest : public ::testing::Test {
     strings_.push_back("odbc");
     strings_.push_back(
         "DRIVER={Microsoft Excel Driver (*.xls, *.xlsx, *.xlsm, *.xlsb)}; "
-        "DBQ=data/test.xls; READONLY=FALSE;");
+        "DBQ=" MP_TEST_DATA_DIR "/test.xls; READONLY=FALSE;");
   }
 };
 
@@ -93,7 +97,7 @@ TEST_F(ExcelTest, WriteMaxColumnsExcel2007) {
   int num_cols = 256;
   strings_[1] =
       "DRIVER={Microsoft Excel Driver (*.xls, *.xlsx, *.xlsm, *.xlsb)}; "
-      "DBQ=data/test.xlsx; READONLY=FALSE;";
+      "DBQ=" MP_TEST_DATA_DIR "/test.xlsx; READONLY=FALSE;";
   Table t("TableWithManyCols", 0, num_cols, strings_);
   for (int i = 1; i <= num_cols; ++i)
     t.Add(fmt::format("c{}", i));
