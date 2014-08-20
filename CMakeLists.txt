@@ -32,11 +32,13 @@ if (BUILD)
 endif ()
 
 # Checks if the C compiler supports flag and if it does, adds it to the target.
-function (add_c_compiler_flag target flag)
-  check_c_compiler_flag(${flag} supports_flag)
-  if (supports_flag)
-    target_compile_options(${target} PRIVATE ${flag})
-  endif ()
+function (add_c_compiler_flags target)
+  foreach (flag ${ARGN})
+    check_c_compiler_flag(${flag} supports_flag)
+    if (supports_flag)
+      target_compile_options(${target} PRIVATE ${flag})
+    endif ()
+  endforeach ()
 endfunction ()
 
 function (add_module name)

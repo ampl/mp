@@ -134,12 +134,15 @@ if (NOT HAVE_MKSTEMPS)
   set(ASL_SOURCES ${ASL_SOURCES} mkstemps.c)
 endif ()
 
-add_library(asl ${ASL_SOURCES}
+add_library(asl-core ${ASL_SOURCES})
+add_c_compiler_flags(asl-core -Wno-unused-result -Wno-parentheses)
+target_include_directories(asl-core PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+
+add_library(asl
   aslbuilder.cc aslbuilder.h expr.cc expr.h problem.cc problem.h
   solver-c.cc solver-c.h solver.cc solver.h)
-target_include_directories(asl PUBLIC
-  ${PROJECT_SOURCE_DIR}/src solvers ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(asl mp)
+target_include_directories(asl-core PUBLIC solvers ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(asl asl-core mp)
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
   # Changing the floating point precision is not supported on x64.
