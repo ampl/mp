@@ -24,6 +24,7 @@
 
 #include <cmath>
 #include "mp/clock.h"
+#include "asl/problem.h"
 
 namespace {
 // Returns the value of an expression.

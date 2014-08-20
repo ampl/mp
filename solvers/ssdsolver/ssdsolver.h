@@ -26,6 +26,7 @@
 
 #include <vector>
 
+#include "asl/expr.h"
 #include "asl/solver.h"
 
 #define SSDSOLVER_VERSION 20130226

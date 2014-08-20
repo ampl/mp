@@ -20,11 +20,6 @@
  Author: Victor Zverovich
  */
 
-extern "C" {
-#include "solvers/getstub.h"
-#undef Char
-}
-
 #include "solver.h"
 
 #include <cctype>
@@ -47,8 +42,14 @@ extern "C" {
 #endif
 
 #include "mp/clock.h"
-#include "mp/format.h"
 #include "mp/rstparser.h"
+
+extern "C" {
+#include "solvers/getstub.h"
+#undef Char
+}
+
+#include "problem.h"
 
 extern "C" const char *Version_Qualifier_ASL;
 
@@ -247,6 +248,12 @@ std::string OptionHelper<std::string>::Parse(const char *&s) {
   s = SkipNonSpaces(s);
   return std::string(start, s - start);
 }
+}  // namespace internal
+
+void format(fmt::BasicFormatter<char> &f, const char *format_str, ObjPrec op) {
+  char buffer[32];
+  g_fmtop(buffer, op.value_);
+  f.format(format_str, fmt::internal::MakeArg<char>(buffer));
 }
 
 std::string SignalHandler::signal_message_;
@@ -287,6 +294,22 @@ void SignalHandler::HandleSigInt(int sig) {
   std::signal(sig, HandleSigInt);
 }
 
+void Solver::RegisterSuffixes(Problem &p) {
+  std::size_t num_suffixes = suffixes_.size();
+  std::vector<SufDecl> suffix_decls(num_suffixes);
+  for (std::size_t i = 0; i < num_suffixes; ++i) {
+    const SuffixInfo &si = suffixes_[i];
+    SufDecl &sd = suffix_decls[i];
+    sd.name = const_cast<char*>(si.name);
+    sd.table = const_cast<char*>(si.table);
+    sd.kind = si.kind;
+    sd.nextra = si.nextra;
+  }
+  ASL *asl = reinterpret_cast<ASL*>(p.asl_);
+  if (asl->i.nsuffixes == 0 && num_suffixes != 0)
+    suf_declare_ASL(asl, &suffix_decls[0], static_cast<int>(num_suffixes));
+}
+
 void Solver::SolutionWriter::HandleFeasibleSolution(
     Problem &p, fmt::StringRef message, const double *values,
     const double *dual_values, double) {
@@ -322,12 +345,6 @@ void Solver::SolutionWriter::HandleSolution(
 bool Solver::OptionNameLess::operator()(
     const SolverOption *lhs, const SolverOption *rhs) const {
   return strcasecmp(lhs->name(), rhs->name()) < 0;
-}
-
-void Solver::RegisterSuffixes(Problem &p) {
-  ASL *asl = reinterpret_cast<ASL*>(p.asl_);
-  if (asl->i.nsuffixes == 0 && !suffixes_.empty())
-    suf_declare_ASL(asl, &suffixes_[0], static_cast<int>(suffixes_.size()));
 }
 
 Solver::Solver(
@@ -420,16 +437,6 @@ Solver::Solver(
 
 Solver::~Solver() {
   std::for_each(options_.begin(), options_.end(), Deleter());
-}
-
-void Solver::AddSuffix(
-    const char *name, const char *table, int kind, int nextra) {
-  suffixes_.push_back(SufDecl());
-  SufDecl &sd = suffixes_.back();
-  sd.name = const_cast<char*>(name);
-  sd.table = const_cast<char*>(table);
-  sd.kind = kind;
-  sd.nextra = nextra;
 }
 
 bool Solver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
@@ -588,7 +595,7 @@ bool Solver::ParseOptions(char **argv, unsigned flags, const Problem *) {
     ParseOptionString(s, flags);
   if (this->flags() & ASL_OI_show_version) {
     const char *ver = Version_Qualifier_ASL ? Version_Qualifier_ASL : "";
-    fmt::print("{}{}", ver, version_.c_str());
+    fmt::print("{}{}", ver, version_);
     if (*sysdetails_ASL)
       fmt::print(" ({})", sysdetails_ASL);
     if (date_ > 0)

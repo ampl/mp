@@ -22,6 +22,9 @@
 
 #include "sulum/sulum.h"
 #include "mp/clock.h"
+#include "asl/problem.h"
+
+#include <limits>
 
 namespace {
 template <typename Param>
@@ -55,9 +58,10 @@ inline void Check(SlmReturn ret) {
 }
 
 inline SlmBoundKey GetBoundKey(double lb, double ub) {
-  if (lb <= -Infinity)
-    return ub >= Infinity ? SlmBndFr : SlmBndUp;
-  if (ub >= Infinity)
+  double inf = std::numeric_limits<double>::infinity();
+  if (lb <= -inf)
+    return ub >= inf ? SlmBndFr : SlmBndUp;
+  if (ub >= inf)
     return SlmBndLo;
   return lb == ub ? SlmBndFx : SlmBndRa;
 }

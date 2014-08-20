@@ -21,6 +21,7 @@
  */
 
 #include "ilogcp/concert.h"
+#include "asl/problem.h"
 
 #include <ilconcert/ilotupleset.h>
 

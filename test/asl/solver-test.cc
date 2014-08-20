@@ -21,8 +21,8 @@
  */
 
 #include <gtest/gtest.h>
-#include "asl/solvers/getstub.h"
 #include "asl/solver.h"
+#include "asl/solvers/getstub.h"
 #include "../args.h"
 #include "../solution-handler.h"
 #include "../util.h"

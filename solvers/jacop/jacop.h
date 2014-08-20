@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "mp/clock.h"
+#include "asl/problem.h"
 #include "asl/solver.h"
 #include "jacop/java.h"
 

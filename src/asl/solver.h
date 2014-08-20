@@ -35,9 +35,12 @@
 #include <string>
 #include <vector>
 
-#include "problem.h"
+#include "mp/error.h"
+#include "mp/format.h"
 
 namespace mp {
+
+class Problem;
 
 // Formats a double with objective precision.
 // Usage: fmt::Format("{}") << ObjPrec(42.0);
@@ -49,11 +52,7 @@ class ObjPrec {
   explicit ObjPrec(double value) : value_(value) {}
 
   friend void format(fmt::BasicFormatter<char> &f,
-      const char *format_str, ObjPrec op) {
-    char buffer[32];
-    g_fmtop(buffer, op.value_);
-    f.format(format_str, fmt::internal::MakeArg<char>(buffer));
-  }
+      const char *format_str, ObjPrec op);
 };
 
 // Information about a possible option value.
@@ -379,6 +378,7 @@ class Solver : private ErrorHandler, private OutputHandler {
   // Specifies whether to return the number of solutions in the .nsol suffix.
   bool count_solutions_;
 
+
   class SolutionWriter : public SolutionHandler {
    private:
     Solver *solver_;
@@ -406,7 +406,13 @@ class Solver : private ErrorHandler, private OutputHandler {
 
   bool timing_;
 
-  std::vector<SufDecl> suffixes_;
+  struct SuffixInfo {
+    const char *name;
+    const char *table;
+    int kind;
+    int nextra;
+  };
+  std::vector<SuffixInfo> suffixes_;
 
   void RegisterSuffixes(Problem &p);
 
@@ -688,7 +694,11 @@ class Solver : private ErrorHandler, private OutputHandler {
   }
 
   // Adds a suffix.
-  void AddSuffix(const char *name, const char *table, int kind, int nextra = 0);
+  void AddSuffix(const char *name, const char *table,
+                 int kind, int nextra = 0) {
+    SuffixInfo suffix = {name, table, kind, nextra};
+    suffixes_.push_back(suffix);
+  }
 
  public:
   virtual ~Solver();

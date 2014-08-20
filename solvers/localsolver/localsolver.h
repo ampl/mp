@@ -24,6 +24,7 @@
 #define MP_SOLVERS_LOCALSOLVER_H_
 
 #include <localsolver.h>
+#include "asl/expr.h"
 #include "asl/solver.h"
 
 namespace mp {

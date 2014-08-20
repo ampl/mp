@@ -3,6 +3,7 @@
 
 #include <limits>
 
+#include "asl/problem.h"
 #include "asl/solver.h"
 
 class TestSolutionHandler : public mp::BasicSolutionHandler {

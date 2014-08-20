@@ -38,6 +38,7 @@
 #endif
 
 #include "mp/clock.h"
+#include "asl/problem.h"
 #include "asl/solver.h"
 
 namespace mp {
