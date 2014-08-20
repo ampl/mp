@@ -30,6 +30,7 @@
 
 #include <exception>
 #include <limits>
+#include "mp/format.h"
 
 namespace mp {
 
@@ -38,17 +39,7 @@ class OverflowError : public std::exception {
   const char *what() const throw() { return "integer overflow"; }
 };
 
-template <typename T>
-struct MakeUnsigned { typedef T Type; };
-
-template <>
-struct MakeUnsigned<short> { typedef unsigned short Type; };
-
-template <>
-struct MakeUnsigned<int> { typedef unsigned Type; };
-
-template <>
-struct MakeUnsigned<long> { typedef unsigned long Type; };
+using fmt::internal::MakeUnsigned;
 
 // Safe std::abs replacement. Unlike std::abs, SafeAbs doesn't result
 // in undefined behavior for std::numeric_limits<T>::min().
@@ -70,10 +61,15 @@ class SafeInt {
 
   template <typename U>
   explicit SafeInt(U value) : value_(value) {
-    if ((std::numeric_limits<U>::is_signed &&
-         value < std::numeric_limits<T>::min()) ||
-        value > std::numeric_limits<T>::max()) {
-      throw OverflowError();
+    if (value >= 0) {
+      typename MakeUnsigned<U>::Type unsigned_value = value;
+      typename MakeUnsigned<U>::Type max = std::numeric_limits<T>::max();
+      if (unsigned_value > max)
+        throw OverflowError();
+    } else {
+      fmt::LongLong min = std::numeric_limits<T>::min();
+      if (value < min)
+        throw OverflowError();
     }
   }
   
