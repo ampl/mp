@@ -4,10 +4,6 @@
 #
 #  sulum-library - the Sulum library
 
-if (TARGET sulum-library)
-  return () # Already found.
-endif ()
-
 if (UNIX)
   set(SULUM_SYS linux)
   set(SULUM_DIR /opt/sulum)
@@ -47,7 +43,7 @@ find_package_handle_standard_args(Sulum DEFAULT_MSG
 
 mark_as_advanced(SULUM_LIBRARY SULUM_INCLUDE_DIR SULUM_AMPL_INCLUDE_DIR)
 
-if (SULUM_FOUND)
+if (SULUM_FOUND AND NOT TARGET sulum-library)
   add_library(sulum-library STATIC IMPORTED GLOBAL)
   set_target_properties(sulum-library PROPERTIES
     IMPORTED_LOCATION "${SULUM_LIBRARY}"

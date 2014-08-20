@@ -4,10 +4,6 @@
 #
 #  localsolver-library - the LocalSolver library
 
-if (TARGET localsolver-library)
-  return () # Already found.
-endif ()
-
 if (UNIX)
   set(LOCALSOLVER_DIR /opt)
   set(LOCALSOLVER_LIB_NAME localsolver)
@@ -40,7 +36,7 @@ find_package_handle_standard_args(LocalSolver DEFAULT_MSG
 
 mark_as_advanced(LOCALSOLVER_LIBRARY LOCALSOLVER_INCLUDE_DIR)
 
-if (LOCALSOLVER_FOUND)
+if (LOCALSOLVER_FOUND AND NOT TARGET localsolver-library)
   add_library(localsolver-library STATIC IMPORTED GLOBAL)
   set_target_properties(localsolver-library PROPERTIES
     IMPORTED_LOCATION "${LOCALSOLVER_LIBRARY}"
