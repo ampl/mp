@@ -203,7 +203,7 @@ if (CPLEX_ILOCPLEX_FOUND AND NOT TARGET ilocplex)
     IMPORTED_LOCATION "${CPLEX_ILOCPLEX_LIBRARY}"
     IMPORTED_LOCATION_DEBUG "${CPLEX_ILOCPLEX_LIBRARY_DEBUG}"
     INTERFACE_INCLUDE_DIRECTORIES "${CPLEX_ILOCPLEX_INCLUDE_DIR}"
-    INTERFACE_LINK_LIBRARIES "cplex-concert;cplex")
+    INTERFACE_LINK_LIBRARIES "cplex-concert;cplex-library")
 endif ()
 
 # ----------------------------------------------------------------------------
