@@ -135,8 +135,14 @@ if (NOT HAVE_MKSTEMPS)
 endif ()
 
 add_library(asl-core ${ASL_SOURCES})
-add_c_compiler_flags(asl-core -Wno-unused-result -Wno-parentheses)
 target_include_directories(asl-core PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+
+# Suppress warnings.
+if (MSVC)
+  target_compile_options(asl-core /wd4244 /wd4267)
+else ()
+  add_c_compiler_flags(asl-core -Wno-unused-result -Wno-parentheses)
+endif ()
 
 add_library(asl
   aslbuilder.cc aslbuilder.h expr.cc expr.h problem.cc problem.h
@@ -215,6 +221,7 @@ set_target_properties(tableproxy
   PROPERTIES OUTPUT_NAME tableproxy${TABLEPROXY_SUFFIX})
 target_compile_definitions(tableproxy PRIVATE STAND_ALONE=1 QUOTIFY=1)
 target_link_libraries(tableproxy asl)
+add_c_compiler_flags(tableproxy -Wno-string-plus-int)
 
 if (WIN32)
   target_link_libraries(ampltabl wsock32)
