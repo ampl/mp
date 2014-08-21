@@ -596,8 +596,11 @@ bool Solver::ParseOptions(char **argv, unsigned flags, const Problem *) {
   if (this->flags() & ASL_OI_show_version) {
     const char *ver = Version_Qualifier_ASL ? Version_Qualifier_ASL : "";
     fmt::print("{}{}", ver, version_);
-    if (*sysdetails_ASL)
-      fmt::print(" ({})", sysdetails_ASL);
+    if (*sysdetails_ASL) {
+      // Convert argument to StringRef to work around
+      // http://www.open-std.org/jtc1/sc22/wg21/docs/cwg_active.html#393
+      fmt::print(" ({})", fmt::StringRef(sysdetails_ASL));
+    }
     if (date_ > 0)
       fmt::print(", driver({})", date_);
     fmt::print(", ASL({})\n", ASLdate_ASL);
