@@ -511,7 +511,7 @@ class Solver : private ErrorHandler, private OutputHandler {
   };
 
  public:
-#ifdef HAVE_UNIQUE_PTR
+#ifdef MP_USE_UNIQUE_PTR
   typedef std::unique_ptr<SolverOption> OptionPtr;
 #else
   typedef std::auto_ptr<SolverOption> OptionPtr;
@@ -881,7 +881,7 @@ class Solver : private ErrorHandler, private OutputHandler {
   int Run(char **argv);
 };
 
-#ifdef HAVE_UNIQUE_PTR
+#ifdef MP_USE_UNIQUE_PTR
 typedef std::unique_ptr<Solver> SolverPtr;
 #else
 typedef std::auto_ptr<Solver> SolverPtr;

@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "asl/solver.h"
+#include "mp/solver.h"
 
 #undef getenv
 

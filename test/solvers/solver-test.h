@@ -23,7 +23,7 @@
 #ifndef TESTS_SOLVER_TEST_H_
 #define TESTS_SOLVER_TEST_H_
 
-#include "asl/solver.h"
+#include "mp/solver.h"
 #include "asl/aslbuilder.h"
 #include "../args.h"
 #include "../solution-handler.h"

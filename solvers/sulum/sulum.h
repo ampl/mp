@@ -24,7 +24,7 @@
 #define MP_SOLVERS_SULUM_H_
 
 #include <sulumc.h>
-#include "asl/solver.h"
+#include "mp/solver.h"
 
 namespace mp {
 

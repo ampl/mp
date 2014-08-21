@@ -146,7 +146,7 @@ endif ()
 
 add_library(asl
   aslbuilder.cc aslbuilder.h expr.cc expr.h problem.cc problem.h
-  solver-c.cc solver-c.h solver.cc solver.h)
+  solver-c.cc solver-c.h solver.cc)
 target_include_directories(asl-core PUBLIC solvers ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(asl asl-core mp)
 

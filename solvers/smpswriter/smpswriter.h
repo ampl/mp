@@ -25,7 +25,7 @@
 
 #include <vector>
 
-#include "asl/solver.h"
+#include "mp/solver.h"
 
 namespace mp {
 

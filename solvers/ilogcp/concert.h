@@ -33,7 +33,7 @@
 #include <iostream>
 #include <memory>
 
-#include "asl/solver.h"
+#include "mp/solver.h"
 #include "asl/expr.h"
 
 namespace mp {

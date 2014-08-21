@@ -23,7 +23,7 @@
 #define ASL_EXPORT
 #include "solver-c.h"
 
-#include "solver.h"
+#include "mp/solver.h"
 
 #include <cstring>
 #include <exception>

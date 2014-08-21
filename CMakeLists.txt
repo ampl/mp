@@ -146,7 +146,7 @@ endif ()
 
 add_prefix(MP_HEADERS include/mp/
   clock.h error.h format.h nl.h os.h posix.h
-  problem-base.h rstparser.h safeint.h)
+  problem-base.h rstparser.h safeint.h solver.h)
 add_prefix(MP_SOURCES src/
   clock.cc format.cc nl.cc os.cc posix.cc problem-base.cc rstparser.cc)
 add_library(mp ${MP_HEADERS} ${MP_SOURCES})

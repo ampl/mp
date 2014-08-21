@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "solver.h"
+#include "mp/solver.h"
 
 #include <cctype>
 #include <cstdarg>
