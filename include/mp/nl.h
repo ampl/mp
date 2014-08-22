@@ -982,7 +982,7 @@ void NLReader<Reader, Handler>::Read() {
       case suf::OBJ:
         ReadSuffix<ObjHandler>(kind);
         break;
-      case suf::PROB:
+      case suf::PROBLEM:
         ReadSuffix<ProblemHandler>(kind);
         break;
       }

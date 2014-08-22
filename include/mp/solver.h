@@ -114,7 +114,7 @@ template <>
 struct OptionHelper<double> {
   typedef double Arg;
   static const char TYPE_NAME[];
-  static void Write(fmt::Writer &w, Arg value);
+  static void Write(fmt::Writer &w, double value) { w << value; }
   static double Parse(const char *&s);
   static double CastArg(double value) { return value; }
 };
@@ -360,9 +360,12 @@ class Solver : private ErrorHandler, private OutputHandler {
   std::string name_;
   std::string long_name_;
   std::string version_;
+  std::string license_info_;
   long date_;
-  int flags_;
   int wantsol_;
+
+  enum {SHOW_VERSION = 1};
+  int flags_;
 
   bool has_errors_;
   OutputHandler *output_handler_;
@@ -531,7 +534,7 @@ class Solver : private ErrorHandler, private OutputHandler {
   // Constructs a Solver object.
   // date: The solver date in YYYYMMDD format.
   Solver(fmt::StringRef name, fmt::StringRef long_name = 0,
-      long date = 0, unsigned flags = 0);
+      long date = 0, int flags = 0);
 
   void set_long_name(fmt::StringRef name) { long_name_ = name; }
   void set_version(fmt::StringRef version) { version_ = version; }

@@ -144,12 +144,25 @@ if (HAVE_FPIC_FLAG)
   add_definitions(${FPIC_FLAG})
 endif ()
 
+# Generate the header config.h with the date of the last revision and
+# system information.
+set(MP_CONFIG_HEADER ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+add_custom_command(
+  COMMAND ${CMAKE_COMMAND}
+    "-DCONFIG_HEADER=${MP_CONFIG_HEADER}"
+    "-DSYSINFO=${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}"
+    -P ${MP_CMAKE_MODULE_DIR}/generate-config-h.cmake
+  # Nonexistent output makes sure that the command is always executed.
+  OUTPUT ${MP_CONFIG_HEADER} OUTPUT does/not/exist)
+
 add_prefix(MP_HEADERS include/mp/
   clock.h error.h format.h nl.h os.h posix.h
   problem-base.h rstparser.h safeint.h solver.h)
 add_prefix(MP_SOURCES src/
-  clock.cc format.cc nl.cc os.cc posix.cc problem-base.cc rstparser.cc)
-add_library(mp ${MP_HEADERS} ${MP_SOURCES})
+  clock.cc format.cc nl.cc os.cc posix.cc problem-base.cc
+  rstparser.cc solver.cc)
+add_library(mp ${MP_HEADERS} ${MP_SOURCES} ${MP_CONFIG_HEADER})
+target_include_directories(mp PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # Link with librt for clock_gettime (Linux on i386).
 find_library(RT_LIBRARY rt)

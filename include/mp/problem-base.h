@@ -136,7 +136,7 @@ enum {
   VAR     =  0,  // Applies to variables.
   CON     =  1,  // Applies to constraints.
   OBJ     =  2,  // Applies to objectives.
-  PROB    =  3,  // Applies to problems.
+  PROBLEM =  3,  // Applies to problems.
   MASK    =  3,  // Mask for the above.
   FLOAT   =  4,  // Suffix values are floating-point numbers.
   IODECL  =  8,  // Tell AMPL to make this an INOUT suffix.

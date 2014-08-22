@@ -21,6 +21,7 @@
  */
 
 #include "mp/solver.h"
+#include "mp/problem-base.h"
 
 #include <cctype>
 #include <cstdarg>
@@ -43,15 +44,7 @@
 
 #include "mp/clock.h"
 #include "mp/rstparser.h"
-
-extern "C" {
-#include "solvers/getstub.h"
-#undef Char
-}
-
-#include "problem.h"
-
-extern "C" const char *Version_Qualifier_ASL;
+#include "config.h"
 
 namespace {
 
@@ -230,15 +223,9 @@ int OptionHelper<int>::Parse(const char *&s) {
   return value;
 }
 
-void OptionHelper<double>::Write(fmt::Writer &w, Arg value) {
-  char buffer[32];
-  g_fmt(buffer, value);
-  w << buffer;
-}
-
 double OptionHelper<double>::Parse(const char *&s) {
   char *end = 0;
-  double value = strtod_ASL(s, &end);
+  double value = std::strtod(s, &end);
   s = end;
   return value;
 }
@@ -294,63 +281,15 @@ void SignalHandler::HandleSigInt(int sig) {
   std::signal(sig, HandleSigInt);
 }
 
-void Solver::RegisterSuffixes(Problem &p) {
-  std::size_t num_suffixes = suffixes_.size();
-  std::vector<SufDecl> suffix_decls(num_suffixes);
-  for (std::size_t i = 0; i < num_suffixes; ++i) {
-    const SuffixInfo &si = suffixes_[i];
-    SufDecl &sd = suffix_decls[i];
-    sd.name = const_cast<char*>(si.name);
-    sd.table = const_cast<char*>(si.table);
-    sd.kind = si.kind;
-    sd.nextra = si.nextra;
-  }
-  ASL *asl = reinterpret_cast<ASL*>(p.asl_);
-  if (asl->i.nsuffixes == 0 && num_suffixes != 0)
-    suf_declare_ASL(asl, &suffix_decls[0], static_cast<int>(num_suffixes));
-}
-
-void Solver::SolutionWriter::HandleFeasibleSolution(
-    Problem &p, fmt::StringRef message, const double *values,
-    const double *dual_values, double) {
-  ++solver_->num_solutions_;
-  if (solver_->solution_stub_.empty())
-    return;
-  fmt::Writer w;
-  w << solver_->solution_stub_ << solver_->num_solutions_ << ".sol";
-  Option_Info option_info = Option_Info();
-  option_info.bsname = const_cast<char*>(solver_->long_name_.c_str());
-  option_info.wantsol = solver_->wantsol_;
-  write_solf_ASL(reinterpret_cast<ASL*>(p.asl_),
-      const_cast<char*>(message.c_str()), const_cast<double*>(values),
-      const_cast<double*>(dual_values), &option_info, w.c_str());
-}
-
-void Solver::SolutionWriter::HandleSolution(
-    Problem &p, fmt::StringRef message, const double *values,
-    const double *dual_values, double) {
-  if (solver_->need_multiple_solutions()) {
-    Suffix nsol_suffix = p.suffix("nsol", ASL_Sufkind_prob);
-    if (nsol_suffix)
-      nsol_suffix.set_values(&solver_->num_solutions_);
-  }
-  Option_Info option_info = Option_Info();
-  option_info.bsname = const_cast<char*>(solver_->long_name_.c_str());
-  option_info.wantsol = solver_->wantsol_;
-  write_sol_ASL(reinterpret_cast<ASL*>(p.asl_),
-      const_cast<char*>(message.c_str()), const_cast<double*>(values),
-      const_cast<double*>(dual_values), &option_info);
-}
-
 bool Solver::OptionNameLess::operator()(
     const SolverOption *lhs, const SolverOption *rhs) const {
   return strcasecmp(lhs->name(), rhs->name()) < 0;
 }
 
 Solver::Solver(
-    fmt::StringRef name, fmt::StringRef long_name, long date, unsigned flags)
+    fmt::StringRef name, fmt::StringRef long_name, long date, int flags)
 : name_(name), long_name_(long_name.c_str() ? long_name : name), date_(date),
-  flags_(0), wantsol_(0),
+  wantsol_(0), flags_(0),
   has_errors_(false), num_solutions_(0), count_solutions_(false),
   read_flags_(0), timing_(false) {
   version_ = long_name_;
@@ -365,12 +304,8 @@ Solver::Solver(
         "Single-word phrase: report version details "
         "before solving the problem.", ValueArrayRef(), true), s(s) {}
 
-    void Write(fmt::Writer &w) {
-      w << ((s.flags() & ASL_OI_show_version) != 0);
-    }
-    void Parse(const char *&) {
-      s.flags_ |= ASL_OI_show_version;
-    }
+    void Write(fmt::Writer &w) { w << ((s.flags_ & SHOW_VERSION) != 0); }
+    void Parse(const char *&) { s.flags_ |= SHOW_VERSION; }
   };
   AddOption(OptionPtr(new VersionOption(*this)));
 
@@ -410,7 +345,7 @@ Solver::Solver(
       "0 or 1 (default 0): Whether to display timings for the run.\n")));
 
   if ((flags & MULTIPLE_SOL) != 0) {
-    AddSuffix("nsol", 0, ASL_Sufkind_prob | ASL_Sufkind_outonly);
+    AddSuffix("nsol", 0, suf::PROBLEM | suf::OUTONLY);
 
     AddOption(OptionPtr(new BoolOption(count_solutions_, "countsolutions",
         "0 or 1 (default 0): Whether to count the number of solutions "
@@ -437,70 +372,6 @@ Solver::Solver(
 
 Solver::~Solver() {
   std::for_each(options_.begin(), options_.end(), Deleter());
-}
-
-bool Solver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
-  ASL *asl = reinterpret_cast<ASL*>(p.asl_);
-  RegisterSuffixes(p);
-
-  // Workaround for GCC bug 30111 that prevents value-initialization of
-  // the base POD class.
-  Option_Info option_info = Option_Info();
-  keyword cl_option = keyword();  // command-line option '='
-  cl_option.name = const_cast<char*>("=");
-  cl_option.desc = const_cast<char*>("show name= possibilities");
-  struct OptionPrinter {
-    static char *PrintOptionsAndExit(Option_Info *, keyword *kw, char *) {
-      Solver *solver = static_cast<Solver*>(kw->info);
-      fmt::Writer writer;
-      internal::FormatRST(writer, solver->option_header_);
-      if (!solver->option_header_.empty())
-        writer << '\n';
-      writer << "Options:\n";
-      const int DESC_INDENT = 6;
-      const OptionSet &options = solver->options_;
-      for (OptionSet::const_iterator
-           i = options.begin(); i != options.end(); ++i) {
-        SolverOption *opt = *i;
-        writer << '\n' << opt->name() << '\n';
-        internal::FormatRST(writer, opt->description(),
-                            DESC_INDENT, opt->values());
-      }
-      std::fwrite(writer.data(), writer.size(), 1, stdout);
-      exit(0);
-      return 0;
-    }
-  };
-  cl_option.kf = OptionPrinter::PrintOptionsAndExit;
-  cl_option.info = this;
-  option_info.options = &cl_option;
-  option_info.n_options = 1;
-
-  option_info.sname = const_cast<char*>(name_.c_str());
-  option_info.bsname = const_cast<char*>(long_name_.c_str());
-  std::string options_var_name = name_ + "_options";
-  option_info.opname = const_cast<char*>(options_var_name.c_str());
-  option_info.version = const_cast<char*>(version_.c_str());;
-  option_info.driver_date = date_;
-
-  // Make "-?" show some command-line options that are relevant when
-  // importing functions.
-  option_info.flags |= ASL_OI_want_funcadd;
-
-  char *stub = getstub_ASL(asl, &argv, &option_info);
-  if (!stub) {
-    usage_noexit_ASL(&option_info, 1);
-    return false;
-  }
-  steady_clock::time_point start = steady_clock::now();
-  p.Read(stub, read_flags_);
-  double read_time = GetTimeAndReset(start);
-  bool result = ParseOptions(argv, flags, &p);
-  option_info.flags = flags_;
-  option_info.wantsol = wantsol_;
-  if (timing_)
-    Print("Input time = {:.6f}s\n", read_time);
-  return result;
 }
 
 SolverOption *Solver::FindOption(const char *name) const {
@@ -588,24 +459,16 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
 
 bool Solver::ParseOptions(char **argv, unsigned flags, const Problem *) {
   has_errors_ = false;
-  flags_ &= ~ASL_OI_show_version;
+  flags_ &= ~SHOW_VERSION;
   if (const char *s = getenv((name_ + "_options").c_str()))
     ParseOptionString(s, flags);
   while (const char *s = *argv++)
     ParseOptionString(s, flags);
-  if (this->flags() & ASL_OI_show_version) {
-    const char *ver = Version_Qualifier_ASL ? Version_Qualifier_ASL : "";
-    fmt::print("{}{}", ver, version_);
-    if (*sysdetails_ASL) {
-      // Convert argument to StringRef to work around
-      // http://www.open-std.org/jtc1/sc22/wg21/docs/cwg_active.html#393
-      fmt::print(" ({})", fmt::StringRef(sysdetails_ASL));
-    }
-    if (date_ > 0)
-      fmt::print(", driver({})", date_);
-    fmt::print(", ASL({})\n", ASLdate_ASL);
-    if (Lic_info_add_ASL)
-      fmt::print("{}\n", Lic_info_add_ASL);
+  if ((flags_ & SHOW_VERSION) != 0) {
+    Print("{} ({}), driver({}), ASL ({})\n",
+          version_, MP_SYSINFO, date_, MP_DATE);
+    if (!license_info_.empty())
+      Print("{}\n", license_info_);
   }
   std::fflush(stdout);
   return !has_errors_;
@@ -616,12 +479,4 @@ void Solver::Solve(Problem &p) {
   RegisterSuffixes(p);
   DoSolve(p);
 }
-
-int Solver::Run(char **argv) {
-  Problem p;
-  if (!ProcessArgs(argv, p))
-    return 1;
-  Solve(p);
-  return 0;
-}
-}
+}  // namespace mp
