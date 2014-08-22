@@ -230,7 +230,7 @@ void LocalSolver::DoSolve(Problem &p) {
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   if (p.num_objs() != 0) {
     obj_val = GetValue(model.getObjective(0));
-    w.write("objective {}", ObjPrec(obj_val));
+    w.write("objective {}", FormatObjValue(obj_val));
   }
   HandleSolution(p, w.c_str(),
       solution.empty() ? 0 : solution.data(), 0, obj_val);

@@ -698,7 +698,7 @@ void JaCoPSolver::DoSolve(Problem &p) {
       env_.CallIntMethod(search_.get(), get_nodes_),
       env_.CallIntMethod(search_.get(), get_fails_));
   if (has_obj && found)
-    w.write(", objective {}", ObjPrec(obj_val));
+    w.write(", objective {}", FormatObjValue(obj_val));
   HandleSolution(p, w.c_str(),
       final_solution.empty() ? 0 : final_solution.data(), 0, obj_val);
 

@@ -826,7 +826,7 @@ void GecodeSolver::DoSolve(Problem &p) {
   w.write("{}: {}\n", long_name(), status_);
   w.write("{} nodes, {} fails", stats.node, stats.fail);
   if (has_obj && solution.get())
-    w.write(", objective {}", ObjPrec(obj_val));
+    w.write(", objective {}", FormatObjValue(obj_val));
   HandleSolution(p, w.c_str(),
       final_solution.empty() ? 0 : final_solution.data(), 0, obj_val);
 

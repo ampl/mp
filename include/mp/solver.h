@@ -42,19 +42,6 @@ namespace mp {
 
 class Problem;
 
-// Formats a double with objective precision.
-// Usage: fmt::Format("{}") << ObjPrec(42.0);
-class ObjPrec {
- private:
-  double value_;
-
- public:
-  explicit ObjPrec(double value) : value_(value) {}
-
-  friend void format(fmt::BasicFormatter<char> &f,
-      const char *format_str, ObjPrec op);
-};
-
 // Information about a possible option value.
 struct OptionValueInfo {
   const char *value;
@@ -188,9 +175,9 @@ class Solver;
 // TODO:
 // Don't use SignalHandler in the solvers' DoSolve methods, because DoSolve
 // can be called from multiple threads & SignalHandler has static data.
-// Move SignalHandler to the implementation of BasicSolver instead & use
-// it from a separate method like RunFromMain. Instead pass an interface
-// that allows interrupting the Solver:
+// Instead, move SignalHandler to the implementation of Solve, use it
+// from a separate method like RunFromMain & pass an interface that allows
+// interrupting the Solver:
 //   DoSolve(Interrupter *interrupter);  // better name?
 // To make sure that SignalHandler is no used by mistake make it local to
 // the RunFromMain method.
@@ -363,6 +350,7 @@ class Solver : private ErrorHandler, private OutputHandler {
   std::string license_info_;
   long date_;
   int wantsol_;
+  int obj_precision_;
 
   enum {SHOW_VERSION = 1};
   int flags_;
@@ -380,7 +368,6 @@ class Solver : private ErrorHandler, private OutputHandler {
 
   // Specifies whether to return the number of solutions in the .nsol suffix.
   bool count_solutions_;
-
 
   class SolutionWriter : public SolutionHandler {
    private:
@@ -520,6 +507,16 @@ class Solver : private ErrorHandler, private OutputHandler {
   typedef std::auto_ptr<SolverOption> OptionPtr;
   static OptionPtr move(OptionPtr p) { return p; }
 #endif
+
+  struct DoubleFormatter {
+    double value;
+    int precision;
+
+    friend void format(fmt::BasicFormatter<char> &f,
+                       const char *, DoubleFormatter df) {
+      f.writer().write("{:.{}}", df.value, df.precision);
+    }
+  };
 
  protected:
   // Flags for the Solver constructor.
@@ -875,6 +872,15 @@ class Solver : private ErrorHandler, private OutputHandler {
     output_handler_->HandleOutput(fmt::StringRef(w.c_str(), w.size()));
   }
   FMT_VARIADIC(void, Print, fmt::StringRef)
+
+  // The default precision used in FormatObjValue if the objective_precision
+  // option is not specified or 0.
+  enum { DEFAULT_PRECISION = 15 };
+
+  // Returns a formatter that writes value using objective precision.
+  // Usage:
+  //   Print("objective {}", FormatObjValue(obj_value));
+  DoubleFormatter FormatObjValue(double value);
 
   // Solves a problem.
   // The solutions are reported via the registered solution handler.

@@ -9,6 +9,8 @@ target_link_libraries(numberofmap-speed-test asl)
 
 add_mp_test(problem-test problem-test.cc stderr-redirect.h LIBS asl)
 add_mp_test(solver-test PREFIX ../args.cc solver-test.cc LIBS asl)
+target_compile_definitions(mpsolver-test PRIVATE MP_SYSINFO="${MP_SYSINFO}")
+target_include_directories(mpsolver-test PRIVATE ${MP_DATE_HEADER_DIR})
 
 add_library(ampltestsolver SHARED testsolver.cc ../../src/asl/solver-c.cc)
 target_link_libraries(ampltestsolver asl)

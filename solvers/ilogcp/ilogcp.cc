@@ -683,7 +683,7 @@ void IlogCPSolver::SolveWithCP(
       // Do nothing.
     } else if (GetOption(OBJNO) != 0) {
       obj_value = cp_.getObjValue();
-      writer.write(", objective {}", ObjPrec(obj_value));
+      writer.write(", objective {}", FormatObjValue(obj_value));
     } else {
       obj_value = 0;
     }
@@ -742,7 +742,7 @@ void IlogCPSolver::SolveWithCPLEX(
 
     if (p.num_objs() > 0) {
       obj_value = cplex_.getObjValue();
-      writer.write(", objective {}", ObjPrec(obj_value));
+      writer.write(", objective {}", FormatObjValue(obj_value));
     }
   }
   HandleSolution(p, writer.c_str(),

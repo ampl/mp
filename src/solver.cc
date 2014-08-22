@@ -44,7 +44,7 @@
 
 #include "mp/clock.h"
 #include "mp/rstparser.h"
-#include "config.h"
+#include "date.h"
 
 namespace {
 
@@ -237,12 +237,6 @@ std::string OptionHelper<std::string>::Parse(const char *&s) {
 }
 }  // namespace internal
 
-void format(fmt::BasicFormatter<char> &f, const char *format_str, ObjPrec op) {
-  char buffer[32];
-  g_fmtop(buffer, op.value_);
-  f.format(format_str, fmt::internal::MakeArg<char>(buffer));
-}
-
 std::string SignalHandler::signal_message_;
 const char *SignalHandler::signal_message_ptr_;
 unsigned SignalHandler::signal_message_size_;
@@ -289,7 +283,7 @@ bool Solver::OptionNameLess::operator()(
 Solver::Solver(
     fmt::StringRef name, fmt::StringRef long_name, long date, int flags)
 : name_(name), long_name_(long_name.c_str() ? long_name : name), date_(date),
-  wantsol_(0), flags_(0),
+  wantsol_(0), obj_precision_(-1), flags_(0),
   has_errors_(false), num_solutions_(0), count_solutions_(false),
   read_flags_(0), timing_(false) {
   version_ = long_name_;
@@ -460,18 +454,31 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
 bool Solver::ParseOptions(char **argv, unsigned flags, const Problem *) {
   has_errors_ = false;
   flags_ &= ~SHOW_VERSION;
-  if (const char *s = getenv((name_ + "_options").c_str()))
+  if (const char *s = std::getenv((name_ + "_options").c_str()))
     ParseOptionString(s, flags);
   while (const char *s = *argv++)
     ParseOptionString(s, flags);
   if ((flags_ & SHOW_VERSION) != 0) {
-    Print("{} ({}), driver({}), ASL ({})\n",
-          version_, MP_SYSINFO, date_, MP_DATE);
+    Print("{} ({})", version_, MP_SYSINFO);
+    if (date_ > 0)
+      Print(", driver({})", date_);
+    Print(", ASL({})\n", MP_DATE);
     if (!license_info_.empty())
       Print("{}\n", license_info_);
   }
   std::fflush(stdout);
   return !has_errors_;
+}
+
+Solver::DoubleFormatter Solver::FormatObjValue(double value) {
+  if (obj_precision_ < 0) {
+    const char *s =  std::getenv("objective_precision");
+    obj_precision_ = s ? std::atoi(s) : 0;
+    if (obj_precision_ == 0)
+      obj_precision_ = DEFAULT_PRECISION;
+  }
+  DoubleFormatter formatter = {value, obj_precision_};
+  return formatter;
 }
 
 void Solver::Solve(Problem &p) {

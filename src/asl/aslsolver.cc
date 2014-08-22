@@ -25,6 +25,8 @@ extern "C" {
 #undef Char
 }
 
+#include "mp/clock.h"
+#include "mp/solver.h"
 #include "problem.h"
 
 extern "C" const char *Version_Qualifier_ASL;
@@ -45,7 +47,7 @@ void mp::Solver::RegisterSuffixes(Problem &p) {
     suf_declare_ASL(asl, &suffix_decls[0], static_cast<int>(num_suffixes));
 }
 
-void Solver::SolutionWriter::HandleFeasibleSolution(
+void mp::Solver::SolutionWriter::HandleFeasibleSolution(
     Problem &p, fmt::StringRef message, const double *values,
     const double *dual_values, double) {
   ++solver_->num_solutions_;

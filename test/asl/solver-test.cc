@@ -22,11 +22,11 @@
 
 #include <gtest/gtest.h>
 #include "mp/solver.h"
-#include "asl/solvers/getstub.h"
 #include "../args.h"
 #include "../solution-handler.h"
 #include "../util.h"
 #include "stderr-redirect.h"
+#include "date.h"
 
 #include <cstdio>
 
@@ -68,11 +68,21 @@ struct TestSolver : Solver {
   void DoSolve(Problem &) {}
 };
 
-TEST(SolverTest, ObjPrec) {
+void CheckObjPrecision(int precision) {
   double value = 12.3456789123456789;
-  char buffer[64];
-  sprintf(buffer, "%.*g", obj_prec(), value);
-  EXPECT_EQ(buffer, fmt::format("{}", mp::ObjPrec(value)));
+  TestSolver solver;
+  EXPECT_EQ(fmt::format("{:.{}}", value, precision),
+            fmt::format("{}", solver.FormatObjValue(value)));
+}
+
+TEST(SolverTest, FormatObjValue) {
+  CheckObjPrecision(Solver::DEFAULT_PRECISION);
+  static char options[] = "objective_precision=0";
+  putenv(options);
+  CheckObjPrecision(Solver::DEFAULT_PRECISION);
+  static char options2[] = "objective_precision=7";
+  putenv(options2);
+  CheckObjPrecision(7);
 }
 
 TEST(SolverTest, EmptyValueArrayRef) {
@@ -241,10 +251,6 @@ TEST(SolverTest, LongName) {
   EXPECT_STREQ("another-name", s.long_name());
 }
 
-// Convert sysdetails to a pointer because template argument cannot
-// be a reference to an array of unknown bound.
-const char *sysdetails() { return sysdetails_ASL; }
-
 TEST(SolverTest, Version) {
   TestSolver s("testsolver", "Test Solver");
   EXPECT_EXIT({
@@ -254,7 +260,7 @@ TEST(SolverTest, Version) {
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Writer w;
-  w.write("Test Solver ({}), ASL({})\n", sysdetails(), ASLdate_ASL);
+  w.write("Test Solver ({}), ASL({})\n", MP_SYSINFO, MP_DATE);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
@@ -268,7 +274,7 @@ TEST(SolverTest, VersionWithDate) {
   }, ::testing::ExitedWithCode(0), "");
   fmt::Writer w;
   w.write("Test Solver ({}), driver(20121227), ASL({})\n",
-    sysdetails(), ASLdate_ASL);
+    MP_SYSINFO, MP_DATE);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
@@ -284,7 +290,7 @@ TEST(SolverTest, SetVersion) {
     fclose(f);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Writer w;
-  w.write("{} ({}), ASL({})\n", VERSION, sysdetails(), ASLdate_ASL);
+  w.write("{} ({}), ASL({})\n", VERSION, MP_SYSINFO, MP_DATE);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
@@ -1016,7 +1022,7 @@ TEST(SolverTest, VersionOption) {
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Writer w;
-  w.write("Test Solver ({}), ASL({})\n", sysdetails(), ASLdate_ASL);
+  w.write("Test Solver ({}), ASL({})\n", MP_SYSINFO, MP_DATE);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
@@ -1031,7 +1037,7 @@ TEST(SolverTest, VersionOptionReset) {
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
   fmt::Writer w;
-  w.write("Test Solver ({}), ASL({})\nend\n", sysdetails(), ASLdate_ASL);
+  w.write("Test Solver ({}), ASL({})\nend\n", MP_SYSINFO, MP_DATE);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 

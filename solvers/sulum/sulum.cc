@@ -278,7 +278,7 @@ void SulumSolver::DoSolve(Problem &p) {
   Check(SlmGetSolDualCons(model_, dual_solution.data()));
   w << status;
   if (p.num_objs() > 0)
-    w.write("; objective {}", ObjPrec(obj_val));
+    w.write("; objective {}", FormatObjValue(obj_val));
   HandleSolution(p, w.c_str(), solution.data(), dual_solution.data(), obj_val);
 
   double output_time = GetTimeAndReset(time);

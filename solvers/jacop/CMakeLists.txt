@@ -47,6 +47,7 @@ if (build_jacop)
       OUTPUT_NAME ampljacop OUTPUT_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
     add_custom_command(TARGET ampljacop-java
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ampljacop.jar $<TARGET_FILE_DIR:jacop>)
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ampljacop.jar
+        $<TARGET_FILE_DIR:jacop>)
   endif ()
 endif ()
