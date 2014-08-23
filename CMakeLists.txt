@@ -153,7 +153,8 @@ add_custom_command(
     "-DDATE_HEADER=${MP_DATE_HEADER}"
     -P ${MP_CMAKE_MODULE_DIR}/generate-date-h.cmake
   # Nonexistent output makes sure that the command is always executed.
-  OUTPUT ${MP_DATE_HEADER} OUTPUT does/not/exist)
+  OUTPUT generate-date-h OUTPUT ${MP_DATE_HEADER})
+set_source_files_properties(generate-date-h PROPERTIES SYMBOLIC ON)
 
 add_prefix(MP_HEADERS include/mp/
   clock.h error.h format.h nl.h os.h posix.h
