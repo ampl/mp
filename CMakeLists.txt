@@ -166,6 +166,14 @@ add_library(mp ${MP_HEADERS} ${MP_SOURCES} ${MP_DATE_HEADER})
 target_compile_definitions(mp PRIVATE MP_SYSINFO="${MP_SYSINFO}")
 target_include_directories(mp PRIVATE ${MP_DATE_HEADER_DIR})
 
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles(
+  "#include <memory>
+  int main() { std::unique_ptr<int> p; }" HAVE_UNIQUE_PTR)
+if (HAVE_UNIQUE_PTR)
+  target_compile_definitions(mp PUBLIC MP_USE_UNIQUE_PTR)
+endif ()
+
 # Link with librt for clock_gettime (Linux on i386).
 find_library(RT_LIBRARY rt)
 if (RT_LIBRARY)
