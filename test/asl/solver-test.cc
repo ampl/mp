@@ -26,7 +26,6 @@
 #include "../solution-handler.h"
 #include "../util.h"
 #include "stderr-redirect.h"
-#include "date.h"
 
 #include <cstdio>
 

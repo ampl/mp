@@ -144,17 +144,8 @@ if (HAVE_FPIC_FLAG)
   add_definitions(${FPIC_FLAG})
 endif ()
 
-# Generate the header date.h with the date of the last revision.
-set(MP_DATE_HEADER_DIR ${PROJECT_BINARY_DIR}/src)
-set(MP_DATE_HEADER ${MP_DATE_HEADER_DIR}/date.h)
+set(MP_DATE 20140617)
 set(MP_SYSINFO "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
-add_custom_command(
-  COMMAND ${CMAKE_COMMAND}
-    "-DDATE_HEADER=${MP_DATE_HEADER}"
-    -P ${MP_CMAKE_MODULE_DIR}/generate-date-h.cmake
-  # Nonexistent output makes sure that the command is always executed.
-  OUTPUT generate-date-h OUTPUT ${MP_DATE_HEADER})
-set_source_files_properties(generate-date-h PROPERTIES SYMBOLIC ON)
 
 add_prefix(MP_HEADERS include/mp/
   clock.h error.h format.h nl.h os.h posix.h
@@ -162,9 +153,10 @@ add_prefix(MP_HEADERS include/mp/
 add_prefix(MP_SOURCES src/
   clock.cc format.cc nl.cc os.cc posix.cc problem-base.cc
   rstparser.cc solver.cc)
-add_library(mp ${MP_HEADERS} ${MP_SOURCES} ${MP_DATE_HEADER})
-target_compile_definitions(mp PRIVATE MP_SYSINFO="${MP_SYSINFO}")
-target_include_directories(mp PRIVATE ${MP_DATE_HEADER_DIR})
+add_library(mp ${MP_HEADERS} ${MP_SOURCES})
+target_compile_definitions(mp PRIVATE
+  MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}")
+target_include_directories(mp PRIVATE)
 
 include(CheckCXXSourceCompiles)
 check_cxx_source_compiles(

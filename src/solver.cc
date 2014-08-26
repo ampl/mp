@@ -44,7 +44,6 @@
 
 #include "mp/clock.h"
 #include "mp/rstparser.h"
-#include "date.h"
 
 namespace {
 
