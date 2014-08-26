@@ -1,11 +1,16 @@
 # CMake initialization code that should be run before the project command.
 
-if (ARGS)
-  # Run CMake in a Microsoft SDK build environment.
+function (find_setenv var)
   set(winsdk_key
     "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows")
-  find_program(WINSDK_SETENV NAMES SetEnv.cmd
+  find_program(setenv NAMES SetEnv.cmd
     PATHS "[${winsdk_key};CurrentInstallFolder]/bin")
+  set(${var} ${setenv} PARENT_SCOPE)
+endfunction ()
+
+if (ARGS)
+  # Run CMake in a Microsoft SDK build environment.
+  find_setenv(WINSDK_SETENV)
   if (WINSDK_SETENV)
     if (NOT ARGS MATCHES Win64)
       set(setenv_arg "/x86")
