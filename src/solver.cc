@@ -466,7 +466,6 @@ bool Solver::ParseOptions(char **argv, unsigned flags, const Problem *) {
     if (!license_info_.empty())
       Print("{}\n", license_info_);
   }
-  std::fflush(stdout);
   return !has_errors_;
 }
 
