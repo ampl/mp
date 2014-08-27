@@ -11,7 +11,7 @@ if (ODBC_FOUND)
   check_cxx_source_runs(
     "#include \"odbc.cc\"
      int main() {
-       return odbc::Env().FindDriver(\"access\").empty() ? 1 : 0;
+       return odbc::Env().FindDriver(\"*.accdb\").empty() ? 1 : 0;
      }" HAVE_ACCESS_DRIVER)
 
   if (HAVE_ACCESS_DRIVER)
@@ -22,7 +22,7 @@ if (ODBC_FOUND)
   check_cxx_source_runs(
     "#include \"odbc.cc\"
      int main() {
-       return odbc::Env().FindDriver(\"excel\").empty() ? 1 : 0;
+       return odbc::Env().FindDriver(\"*.xlsx\").empty() ? 1 : 0;
      }" HAVE_EXCEL_DRIVER)
 
   if (HAVE_EXCEL_DRIVER)
