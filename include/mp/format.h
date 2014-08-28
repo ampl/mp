@@ -271,7 +271,8 @@ class Array {
   FMT_DISALLOW_COPY_AND_ASSIGN(Array);
 
  public:
-  explicit Array(std::size_t size = 0) : size_(size), capacity_(SIZE), ptr_(data_) {}
+  explicit Array(std::size_t size = 0)
+    : size_(size), capacity_(SIZE), ptr_(data_) {}
   ~Array() { free(); }
 
 #if FMT_USE_RVALUE_REFERENCES
@@ -551,15 +552,6 @@ void format_system_error(
 void format_windows_error(
     fmt::Writer &out, int error_code, fmt::StringRef message);
 #endif
-
-// Throws Exception(message) if format contains '}', otherwise throws
-// FormatError reporting unmatched '{'. The idea is that unmatched '{'
-// should override other errors.
-template <typename Char>
-struct FormatErrorReporter {
-  int num_open_braces;
-  void operator()(const Char *s, fmt::StringRef message) const;
-};
 
 // Computes max(Arg, 1) at compile time. It is used to avoid errors about
 // allocating an array of 0 size.
@@ -853,21 +845,18 @@ class FormatterBase {
 protected:
   ArgList args_;
   int next_arg_index_;
-  const char *error_;
 
-  FormatterBase() : error_(0) {}
+  // Returns the next argument.
+  const Arg *next_arg(const char *&error);
 
-  const Arg &next_arg();
-
-  const Arg &handle_arg_index(unsigned arg_index);
+  // Returns the argument with specified index.
+  const Arg *get_arg(unsigned arg_index, const char *&error);
 
   template <typename Char>
   void write(BasicWriter<Char> &w, const Char *start, const Char *end) {
     if (start != end)
       w << BasicStringRef<Char>(start, end - start);
   }
-
-  // TODO
 };
 
 // A printf formatter.
@@ -876,8 +865,12 @@ class PrintfFormatter : private FormatterBase {
  private:
   void parse_flags(FormatSpec &spec, const Char *&s);
 
-  // Parses argument index, flags and width and returns the parsed
-  // argument index.
+  // Returns the argument with specified index or, if arg_index is equal
+  // to the maximum unsigned value, the next argument.
+  const Arg &get_arg(const Char *s,
+      unsigned arg_index = std::numeric_limits<unsigned>::max());
+
+  // Parses argument index, flags and width and returns the argument index.
   unsigned parse_header(const Char *&s, FormatSpec &spec);
 
  public:
@@ -892,9 +885,8 @@ class BasicFormatter : private internal::FormatterBase {
 private:
   BasicWriter<Char> &writer_;
   const Char *start_;
-  internal::FormatErrorReporter<Char> report_error_;
 
-  // Parses argument index and returns an argument with this index.
+  // Parses argument index and returns corresponding argument.
   const internal::Arg &parse_arg_index(const Char *&s);
 
   void check_sign(const Char *&s, const internal::Arg &arg);
@@ -1744,21 +1736,11 @@ void print_colored(Color c, StringRef format, const ArgList &args);
 
 /**
   \rst
-  Formats a string similarly to Python's `str.format
-  <http://docs.python.org/3/library/stdtypes.html#str.format>`__ function
-  and returns the result as a string.
-
-  *format_str* is a format string that contains literal text and replacement
-  fields surrounded by braces ``{}``. The fields are replaced with formatted
-  arguments in the resulting string.
-  
-  *args* is an argument list representing arbitrary arguments.
+  Formats arguments and returns the result as a string.
 
   **Example**::
 
     std::string message = format("The answer is {}", 42);
-
-  See also `Format String Syntax`_.
   \endrst
 */
 inline std::string format(StringRef format_str, const ArgList &args) {
@@ -1775,6 +1757,17 @@ inline std::wstring format(WStringRef format_str, const ArgList &args) {
 
 /**
   \rst
+  Prints formatted data to the file *f*.
+
+  **Example**::
+
+    print(stderr, "Don't {}!", "panic");
+  \endrst
+ */
+void print(std::FILE *f, StringRef format_str, const ArgList &args);
+
+/**
+  \rst
   Prints formatted data to ``stdout``.
 
   **Example**::
@@ -1782,29 +1775,20 @@ inline std::wstring format(WStringRef format_str, const ArgList &args) {
     print("Elapsed time: {0:.2f} seconds", 1.23);
   \endrst
  */
-void print(StringRef format, const ArgList &args);
+inline void print(StringRef format_str, const ArgList &args) {
+  print(stdout, format_str, args);
+}
 
 /**
   \rst
-  Prints formatted data to a file.
-
-  **Example**::
-
-    print(stderr, "Don't {}!", "panic");
-  \endrst
- */
-void print(std::FILE *f, StringRef format, const ArgList &args);
-
-/**
-  \rst
-  Prints formatted data to a stream.
+  Prints formatted data to the stream *os*.
 
   **Example**::
 
     print(cerr, "Don't {}!", "panic");
   \endrst
  */
-void print(std::ostream &os, StringRef format, const ArgList &args);
+void print(std::ostream &os, StringRef format_str, const ArgList &args);
 
 template <typename Char>
 void printf(BasicWriter<Char> &w,
@@ -1812,13 +1796,44 @@ void printf(BasicWriter<Char> &w,
   internal::PrintfFormatter<Char>().format(w, format, args);
 }
 
+/**
+  \rst
+  Formats arguments and returns the result as a string.
+
+  **Example**::
+
+    std::string message = fmt::sprintf("The answer is %d", 42);
+  \endrst
+*/
 inline std::string sprintf(StringRef format, const ArgList &args) {
   Writer w;
   printf(w, format, args);
   return w.str();
 }
 
-void printf(StringRef format, const ArgList &args);
+/**
+  \rst
+  Prints formatted data to the file *f*.
+
+  **Example**::
+
+    fmt::fprintf(stderr, "Don't %s!", "panic");
+  \endrst
+ */
+int fprintf(std::FILE *f, StringRef format, const ArgList &args);
+
+/**
+  \rst
+  Prints formatted data to ``stdout``.
+
+  **Example**::
+
+    fmt::printf("Elapsed time: %.2f seconds", 1.23);
+  \endrst
+ */
+inline int printf(StringRef format, const ArgList &args) {
+  return fprintf(stdout, format, args);
+}
 
 /**
   Fast integer formatter.
@@ -2003,6 +2018,18 @@ inline void format_decimal(char *&buffer, T value) {
       fmt::print(format, args);
     }
     FMT_VARIADIC(void, print_error, const char *, int, const char *)
+
+  ``FMT_VARIADIC`` is used for compatibility with legacy C++ compilers that
+  don't implement variadic templates. You don't have to use this macro if
+  you don't need legacy compiler support and can use variadic templates
+  directly::
+
+    template<typename... Args>
+    void print_error(const char *file, int line, const char *format,
+                     const Args & ... args) {
+      fmt::print("{}: {}: ", file, line);
+      fmt::print(format, args...);
+    }
   \endrst
  */
 #define FMT_VARIADIC(ReturnType, func, ...) \
@@ -2019,7 +2046,8 @@ FMT_VARIADIC(void, print, std::FILE *, StringRef)
 FMT_VARIADIC(void, print, std::ostream &, StringRef)
 FMT_VARIADIC(void, print_colored, Color, StringRef)
 FMT_VARIADIC(std::string, sprintf, StringRef)
-FMT_VARIADIC(void, printf, StringRef)
+FMT_VARIADIC(int, printf, StringRef)
+FMT_VARIADIC(int, fprintf, std::FILE *, StringRef)
 }
 
 // Restore warnings.
