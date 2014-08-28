@@ -18,28 +18,34 @@ class Package:
     self.is_open = args.get('is_open', True)
     self.version_name = args.get('version_name', name)
     self.license = args.get('project', name) + '-license.txt'
-    self._winfiles = args.get('winfiles', [])
+    self._sysfiles = args.get('sysfiles', {})
 
   def getfiles(self, system, versions):
     """Get the list of files for the given system."""
     version = versions[self.version_name].split('-')[0]
-    files = self._files + (self._winfiles if system.startswith('win') else [])
+    files = self._files
+    if system == 'osx':
+      files += self._sysfiles.get('osx', [])
+    elif system.startswith('win'):
+      files += self._sysfiles.get('win', [])
     for i in range(len(files)):
       files[i] = files[i].format(version=version)
       if system.startswith('win') and os.path.splitext(files[i])[1] == '':
         files[i] += '.exe'
     return files
 
+ipopt_libs = {'win': ['libipoptfort.dll']}
+
 packages = [
   Package('amplgsl', ['amplgsl.dll', 'gsl.ampl'], project='gsl'),
-  Package('bonmin',  ['bonmin'], project='coin', winfiles=['libipoptfort.dll']),
+  Package('bonmin',  ['bonmin'], project='coin', sysfiles=ipopt_libs),
   Package('cbc',     ['cbc'], project='coin'),
-  Package('couenne', ['couenne'], project='coin', winfiles=['libipoptfort.dll']),
+  Package('couenne', ['couenne'], project='coin', sysfiles=ipopt_libs),
   Package('gecode',  ['gecode', 'gecode.ampl']),
-  Package('ipopt',   ['ipopt'], project='coin', winfiles=['libipoptfort.dll']),
+  Package('ipopt',   ['ipopt'], project='coin', sysfiles=ipopt_libs),
   Package('jacop',   ['jacop', 'ampljacop.jar', 'jacop-{version}.jar']),
   Package('path',    ['path'], is_open=False, version_name='ampl/path',
-          winfiles=['path47.dll'])
+          sysfiles={'win': ['path47.dll']})
 ]
 
 def get_archive_name(system, package=None):
