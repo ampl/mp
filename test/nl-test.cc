@@ -29,6 +29,7 @@
 using mp::NLHeader;
 using mp::ReadError;
 using mp::ReadNLString;
+namespace expr = mp::expr;
 
 namespace {
 
@@ -144,7 +145,7 @@ class TestNLHandler {
    public:
     explicit ColumnSizeHandler(fmt::Writer &log) : log_(log) {}
     ~ColumnSizeHandler() { log_ << ';'; }
-    void Add(int offset) { log_ << ' ' << offset; };
+    void Add(int offset) { log_ << ' ' << offset; }
   };
   ColumnSizeHandler GetColumnSizeHandler() {
     log << "sizes:";
@@ -218,12 +219,12 @@ class TestNLHandler {
     return fmt::format("v{}", index);
   }
 
-  std::string MakeUnary(int opcode, std::string arg) {
-    return fmt::format("u{}({})", opcode, arg);
+  std::string MakeUnary(expr::Kind kind, std::string arg) {
+    return fmt::format("u{}({})", opcode(kind), arg);
   }
 
-  std::string MakeBinary(int opcode, std::string lhs, std::string rhs) {
-    return fmt::format("b{}({}, {})", opcode, lhs, rhs);
+  std::string MakeBinary(expr::Kind kind, std::string lhs, std::string rhs) {
+    return fmt::format("b{}({}, {})", opcode(kind), lhs, rhs);
   }
 
   std::string MakeIf(std::string condition,
@@ -252,8 +253,8 @@ class TestNLHandler {
     return w.str();
   }
 
-  std::string MakeVarArg(int opcode, mp::ArrayRef<std::string> args) {
-    return MakeVarArg(fmt::format("v{}", opcode), args);
+  std::string MakeVarArg(expr::Kind kind, mp::ArrayRef<std::string> args) {
+    return MakeVarArg(fmt::format("v{}", opcode(kind)), args);
   }
 
   std::string MakeSum(mp::ArrayRef<std::string> args) {
@@ -278,16 +279,19 @@ class TestNLHandler {
 
   std::string MakeNot(std::string arg) { return fmt::format("not {}", arg); }
 
-  std::string MakeBinaryLogical(int opcode, std::string lhs, std::string rhs) {
-    return fmt::format("bl{}({}, {})", opcode, lhs, rhs);
+  std::string MakeBinaryLogical(
+      expr::Kind kind, std::string lhs, std::string rhs) {
+    return fmt::format("bl{}({}, {})", opcode(kind), lhs, rhs);
   }
 
-  std::string MakeRelational(int opcode, std::string lhs, std::string rhs) {
-    return fmt::format("r{}({}, {})", opcode, lhs, rhs);
+  std::string MakeRelational(
+      expr::Kind kind, std::string lhs, std::string rhs) {
+    return fmt::format("r{}({}, {})", opcode(kind), lhs, rhs);
   }
 
-  std::string MakeLogicalCount(int opcode, std::string lhs, std::string rhs) {
-    return fmt::format("lc{}({}, {})", opcode, lhs, rhs);
+  std::string MakeLogicalCount(
+      expr::Kind kind, std::string lhs, std::string rhs) {
+    return fmt::format("lc{}({}, {})", opcode(kind), lhs, rhs);
   }
 
   std::string MakeImplication(std::string condition,
@@ -297,8 +301,8 @@ class TestNLHandler {
   }
 
   std::string MakeIteratedLogical(
-      int opcode, mp::ArrayRef<std::string> args) {
-    return MakeVarArg(fmt::format("il{}", opcode), args);
+      expr::Kind kind, mp::ArrayRef<std::string> args) {
+    return MakeVarArg(fmt::format("il{}", opcode(kind)), args);
   }
 
   std::string MakeAllDiff(mp::ArrayRef<std::string> args) {

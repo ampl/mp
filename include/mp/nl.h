@@ -446,7 +446,7 @@ class NLReader {
   struct CountExprReader {
     typedef typename Handler::CountExpr Expr;
     Expr Read(NLReader &r, int opcode) const {
-      if (opcode != expr::COUNT)
+      if (expr::GetOpCodeInfo(opcode).kind != expr::COUNT)
         r.reader_.ReportError("expected count expression opcode");
       return r.ReadCountExpr();
     }

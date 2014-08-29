@@ -159,8 +159,6 @@ enum Kind {
   LAST_EXPR = STRING
 };
 
-Kind kind(int opcode);
-
 // Maximum opcode index.
 enum { MAX_OPCODE = 81 };
 
@@ -179,6 +177,8 @@ inline const OpCodeInfo &GetOpCodeInfo(int opcode) {
   assert(opcode >= 0 && opcode <= MAX_OPCODE);
   return OpCodeInfo::INFO[opcode];
 }
+
+int opcode(expr::Kind kind);
 }  // namespace expr
 
 class Expr;
@@ -191,9 +191,15 @@ class ExprInfo {
 
   friend class mp::Expr;
 
-public:
- int precedence;
- const char *str;
+ public:
+  int opcode;
+  int precedence;
+  const char *str;
+
+  friend int expr::opcode(expr::Kind kind) {
+    assert(kind >= expr::UNKNOWN && kind <= expr::LAST_EXPR);
+    return INFO[kind].opcode;
+  }
 };
 }
 
