@@ -190,17 +190,18 @@ class ExprInfo {
   static const ExprInfo INFO[];
 
   friend class mp::Expr;
+  friend int expr::opcode(expr::Kind kind);
 
  public:
   int opcode;
   int precedence;
   const char *str;
-
-  friend int expr::opcode(expr::Kind kind) {
-    assert(kind >= expr::UNKNOWN && kind <= expr::LAST_EXPR);
-    return INFO[kind].opcode;
-  }
 };
+}
+
+inline int expr::opcode(expr::Kind kind) {
+  assert(kind >= expr::UNKNOWN && kind <= expr::LAST_EXPR);
+  return internal::ExprInfo::INFO[kind].opcode;
 }
 
 namespace func {
