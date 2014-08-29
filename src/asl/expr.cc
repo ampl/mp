@@ -33,7 +33,6 @@ using mp::Expr;
 using mp::NumericConstant;
 using mp::NumericExpr;
 using mp::LogicalExpr;
-using mp::internal::HashCombine;
 namespace prec = mp::prec;
 
 namespace {
@@ -407,7 +406,13 @@ class ExprEqual : public mp::ExprVisitor<ExprEqual, bool> {
 
   bool VisitAllDiff(mp::AllDiffExpr e) { return VisitVarArg(e); }
 };
+}  // namespace
 
+#ifdef MP_USE_UNORDERED_MAP
+
+using mp::internal::HashCombine;
+
+namespace {
 // Computes a hash value for an expression.
 class ExprHasher : public mp::ExprVisitor<ExprHasher, size_t> {
  private:
@@ -496,9 +501,7 @@ class ExprHasher : public mp::ExprVisitor<ExprHasher, size_t> {
     return hash;
   }
 };
-}  // namespace
-
-#ifdef MP_USE_UNORDERED_MAP
+}
 
 namespace std {
 template <>
