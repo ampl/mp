@@ -33,7 +33,6 @@ struct Static;
 namespace mp {
 
 struct NLHeader;
-class ExprFactory;
 
 namespace internal {
 
@@ -58,7 +57,7 @@ class ASLBuilder {
   ASL *asl_;
   bool own_asl_;
   efunc **r_ops_;
-  efunc *standard_opcodes_[N_OPS];
+  efunc *standard_opcodes_[expr::MAX_OPCODE + 1];
   int flags_;  // Flags passed to BeginBuild.
   int nz_;
   int nderp_;
@@ -81,9 +80,10 @@ class ASLBuilder {
     }
   }
 
-  static void CheckOpCode(int opcode, expr::Kind kind, const char *expr_name) {
-    if (expr::kind(opcode) != kind)
-      throw Error("invalid {} expression code {}", expr_name, opcode);
+  template <typename ExprT>
+  static void CheckKind(expr::Kind kind, const char *expr_name) {
+    if (!internal::Is<ExprT>(kind))
+      throw Error("invalid {} expression kind {}", expr_name, kind);
   }
 
   template <typename T>
@@ -99,15 +99,29 @@ class ASLBuilder {
   void SetObjOrCon(int index, cde *d, int *cexp1_end, ::expr *e, int **z);
 
   ::expr *MakeConstant(double value);
-  ::expr *DoMakeUnary(int opcode, Expr lhs);
-  ::expr *MakeBinary(int opcode, expr::Kind kind, Expr lhs, Expr rhs);
-  ::expr *MakeIf(int opcode,
-      LogicalExpr condition, Expr true_expr, Expr false_expr);
-  ::expr *MakeIterated(int opcode, ArrayRef<Expr> args);
 
-  template <expr::Kind K>
-  BasicIteratedExpr<K> MakeIterated(int opcode, ArrayRef<Expr> args) {
-    return Expr::Create< BasicIteratedExpr<K> >(MakeIterated(opcode, args));
+  ::expr *DoMakeUnary(expr::Kind kind, Expr arg);
+
+  template <typename ExprT>
+  ExprT MakeUnary(expr::Kind kind, Expr arg) {
+    return Expr::Create<ExprT>(DoMakeUnary(kind, arg));
+  }
+
+  ::expr *DoMakeBinary(expr::Kind kind, Expr lhs, Expr rhs);
+
+  template <typename ExprT>
+  ExprT MakeBinary(expr::Kind kind, Expr lhs, Expr rhs, const char *name) {
+    CheckKind<ExprT>(kind, name);
+    return Expr::Create<ExprT>(DoMakeBinary(kind, lhs, rhs));
+  }
+
+  ::expr *MakeIf(expr::Kind kind,
+      LogicalExpr condition, Expr true_expr, Expr false_expr);
+  ::expr *MakeIterated(expr::Kind kind, ArrayRef<Expr> args);
+
+  template <typename IteratedExpr>
+  IteratedExpr MakeIterated(expr::Kind kind, ArrayRef<Expr> args) {
+    return Expr::Create<IteratedExpr>(MakeIterated(kind, args));
   }
 
  public:
@@ -242,16 +256,16 @@ class ASLBuilder {
 
   Variable MakeVariable(int var_index);
 
-  UnaryExpr MakeUnary(int opcode, NumericExpr arg);
+  UnaryExpr MakeUnary(expr::Kind kind, NumericExpr arg);
 
-  BinaryExpr MakeBinary(int opcode, NumericExpr lhs, NumericExpr rhs) {
-    return Expr::Create<BinaryExpr>(MakeBinary(opcode, expr::BINARY, lhs, rhs));
+  BinaryExpr MakeBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
+    return MakeBinary<BinaryExpr>(kind, lhs, rhs, "binary");
   }
 
   IfExpr MakeIf(LogicalExpr condition,
       NumericExpr true_expr, NumericExpr false_expr) {
     return Expr::Create<IfExpr>(
-        MakeIf(OPIFnl, condition, true_expr, false_expr));
+        MakeIf(expr::IF, condition, true_expr, false_expr));
   }
 
   PiecewiseLinearExpr MakePiecewiseLinear(int num_breakpoints,
@@ -266,57 +280,53 @@ class ASLBuilder {
     return MakeCall(f, args);
   }
 
-  VarArgExpr MakeVarArg(int opcode, ArrayRef<NumericExpr> args);
+  VarArgExpr MakeVarArg(expr::Kind kind, ArrayRef<NumericExpr> args);
 
   SumExpr MakeSum(ArrayRef<NumericExpr> args) {
-    return MakeIterated<expr::SUM>(OPSUMLIST, args);
+    return MakeIterated<SumExpr>(expr::SUM, args);
   }
 
   CountExpr MakeCount(ArrayRef<LogicalExpr> args) {
-    return MakeIterated<expr::COUNT>(OPCOUNT, args);
+    return MakeIterated<CountExpr>(expr::COUNT, args);
   }
 
   NumberOfExpr MakeNumberOf(ArrayRef<NumericExpr> args) {
     assert(args.size() >= 1);
-    return MakeIterated<expr::NUMBEROF>(OPNUMBEROF, args);
+    return MakeIterated<NumberOfExpr>(expr::NUMBEROF, args);
   }
 
   LogicalConstant MakeLogicalConstant(bool value) {
     return Expr::Create<LogicalConstant>(MakeConstant(value));
   }
 
-  NotExpr MakeNot(LogicalExpr arg) {
-    return Expr::Create<NotExpr>(DoMakeUnary(OPNOT, arg));
-  }
+  NotExpr MakeNot(LogicalExpr arg) { return MakeUnary<NotExpr>(expr::NOT, arg); }
 
   BinaryLogicalExpr MakeBinaryLogical(
-      int opcode, LogicalExpr lhs, LogicalExpr rhs) {
-    return Expr::Create<BinaryLogicalExpr>(
-        MakeBinary(opcode, expr::BINARY_LOGICAL, lhs, rhs));
+      expr::Kind kind, LogicalExpr lhs, LogicalExpr rhs) {
+    return MakeBinary<BinaryLogicalExpr>(kind, lhs, rhs, "binary logical");
   }
 
-  RelationalExpr MakeRelational(int opcode, NumericExpr lhs, NumericExpr rhs) {
-    return Expr::Create<RelationalExpr>(
-        MakeBinary(opcode, expr::RELATIONAL, lhs, rhs));
+  RelationalExpr MakeRelational(
+      expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
+    return MakeBinary<RelationalExpr>(kind, lhs, rhs, "relational");
   }
 
   LogicalCountExpr MakeLogicalCount(
-      int opcode, NumericExpr lhs, CountExpr rhs) {
-    return Expr::Create<LogicalCountExpr>(
-        MakeBinary(opcode, expr::LOGICAL_COUNT, lhs, rhs));
+      expr::Kind kind, NumericExpr lhs, CountExpr rhs) {
+    return MakeBinary<LogicalCountExpr>(kind, lhs, rhs, "logical count");
   }
 
   ImplicationExpr MakeImplication(
       LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
     return Expr::Create<ImplicationExpr>(
-        MakeIf(OPIMPELSE, condition, true_expr, false_expr));
+        MakeIf(expr::IMPLICATION, condition, true_expr, false_expr));
   }
 
   IteratedLogicalExpr MakeIteratedLogical(
-      int opcode, ArrayRef<LogicalExpr> args);
+      expr::Kind kind, ArrayRef<LogicalExpr> args);
 
   AllDiffExpr MakeAllDiff(ArrayRef<NumericExpr> args) {
-    return MakeIterated<expr::ALLDIFF>(OPALLDIFF, args);
+    return MakeIterated<AllDiffExpr>(expr::ALLDIFF, args);
   }
 
   // Constructs a StringLiteral object.

@@ -147,16 +147,23 @@ endif ()
 set(MP_DATE 20140617)
 set(MP_SYSINFO "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 
+add_library(format OBJECT
+  include/mp/format.h include/mp/posix.h src/format.cc src/posix.cc)
+
+set(MP_EXPR_INFO_FILE ${MP_BINARY_DIR}/src/expr-info.cc)
+add_executable(gen-expr-info src/gen-expr-info.cc $<TARGET_OBJECTS:format>)
+add_custom_command(OUTPUT ${MP_EXPR_INFO_FILE}
+  COMMAND gen-expr-info ${MP_EXPR_INFO_FILE} DEPENDS gen-expr-info)
+
 add_prefix(MP_HEADERS include/mp/
-  clock.h error.h format.h nl.h os.h posix.h
-  problem-base.h rstparser.h safeint.h solver.h)
+  clock.h error.h nl.h os.h problem-base.h rstparser.h safeint.h solver.h)
 add_prefix(MP_SOURCES src/
-  clock.cc format.cc nl.cc os.cc posix.cc problem-base.cc
-  rstparser.cc solver.cc)
-add_library(mp ${MP_HEADERS} ${MP_SOURCES})
+  clock.cc nl.cc os.cc precedence.h rstparser.cc solver.cc)
+add_library(mp ${MP_HEADERS} ${MP_SOURCES}
+  ${MP_EXPR_INFO_FILE} $<TARGET_OBJECTS:format>)
 target_compile_definitions(mp PRIVATE
   MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}")
-target_include_directories(mp PRIVATE)
+target_include_directories(mp PRIVATE src)
 
 include(CheckCXXSourceCompiles)
 check_cxx_source_compiles(

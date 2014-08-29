@@ -245,14 +245,16 @@ TEST(ProblemTest, ProblemAccessors) {
     EXPECT_EQ(2, expr.begin()->var_index());
   }
 
-  EXPECT_EQ(OP_sin, p.nonlinear_obj_expr(0).opcode());
-  EXPECT_EQ(OP_cos, p.nonlinear_obj_expr(p.num_nonlinear_objs() - 1).opcode());
+  EXPECT_EQ(mp::expr::SIN, p.nonlinear_obj_expr(0).kind());
+  EXPECT_EQ(mp::expr::COS,
+            p.nonlinear_obj_expr(p.num_nonlinear_objs() - 1).kind());
 
-  EXPECT_EQ(OP_log, p.nonlinear_con_expr(0).opcode());
-  EXPECT_EQ(OP_exp, p.nonlinear_con_expr(p.num_nonlinear_cons() - 1).opcode());
+  EXPECT_EQ(mp::expr::LOG, p.nonlinear_con_expr(0).kind());
+  EXPECT_EQ(mp::expr::EXP,
+            p.nonlinear_con_expr(p.num_nonlinear_cons() - 1).kind());
 
-  EXPECT_EQ(NE, p.logical_con_expr(0).opcode());
-  EXPECT_EQ(OPAND, p.logical_con_expr(p.num_logical_cons() - 1).opcode());
+  EXPECT_EQ(mp::expr::NE, p.logical_con_expr(0).kind());
+  EXPECT_EQ(mp::expr::AND, p.logical_con_expr(p.num_logical_cons() - 1).kind());
 
   EXPECT_EQ(-1, p.solve_code());
   p.set_solve_code(42);
@@ -485,7 +487,7 @@ TEST(ProblemTest, AddCon) {
   EXPECT_EQ(0, p.num_logical_cons());
   TestASLBuilder builder;
   mp::LogicalExpr expr = builder.MakeRelational(
-        EQ, builder.MakeVariable(0), builder.MakeNumericConstant(0));
+        mp::expr::EQ, builder.MakeVariable(0), builder.MakeNumericConstant(0));
   p.AddCon(expr);
   EXPECT_EQ(0, p.num_cons());
   EXPECT_EQ(1, p.num_logical_cons());
@@ -501,7 +503,7 @@ TEST(ProblemTest, AddObj) {
   EXPECT_EQ(0, p.num_objs());
   TestASLBuilder builder;
   mp::NumericExpr expr = builder.MakeBinary(
-        OPPLUS, builder.MakeVariable(0), builder.MakeNumericConstant(1));
+        mp::expr::ADD, builder.MakeVariable(0), builder.MakeNumericConstant(1));
   p.AddObj(obj::MAX, expr);
   EXPECT_EQ(1, p.num_objs());
   EXPECT_EQ(obj::MAX, p.obj_type(0));

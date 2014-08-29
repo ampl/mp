@@ -47,7 +47,6 @@
 extern "C" {
 #include "asl.h"
 #include "nlp.h"
-#include "opcode.hd"
 }
 
 #include "solver-test.h"
@@ -128,7 +127,7 @@ TEST_P(FunctionTest, ElementExprAtConstantIndex) {
 
 TEST_P(FunctionTest, ElementExprPlusConstantAtConstantIndex) {
   Expr args[] = {
-      MakeConst(11), MakeBinary(OPPLUS, x, MakeConst(2)), MakeConst(1)
+      MakeConst(11), MakeBinary(mp::expr::ADD, x, MakeConst(2)), MakeConst(1)
   };
   EXPECT_EQ(44, Eval(MakeCall(element_, args), 42));
 }
@@ -150,7 +149,7 @@ TEST_P(FunctionTest, ElementExprAtVariableIndex) {
 
 TEST_P(FunctionTest, ElementExprPlusConstantAtVariableIndex) {
   Expr args[] = {
-      MakeConst(11), MakeBinary(OPPLUS, x, MakeConst(2)), y
+      MakeConst(11), MakeBinary(mp::expr::ADD, x, MakeConst(2)), y
   };
   EXPECT_EQ(44, Eval(MakeCall(element_, args), 42, 1));
 }
@@ -163,13 +162,14 @@ TEST_P(FunctionTest, InRelationConstraint) {
   p.AddVar(0, 100, var::INTEGER);
   p.AddObj(obj::MIN, MakeVariable(0));
   Expr args[] = {MakeVariable(0), MakeConst(42)};
-  p.AddCon(MakeRelational(NE, MakeCall(in_relation_, args), MakeConst(0)));
+  p.AddCon(MakeRelational(
+             mp::expr::NE, MakeCall(in_relation_, args), MakeConst(0)));
   EXPECT_EQ(42, Solve(p).obj_value());
 }
 
 TEST_P(FunctionTest, NestedInRelationNotSupported) {
   Expr args[] = {MakeVariable(0), MakeConst(42)};
-  EXPECT_THROW_MSG(Eval(MakeBinary(OPPLUS,
+  EXPECT_THROW_MSG(Eval(MakeBinary(mp::expr::ADD,
       MakeCall(in_relation_, args), MakeConst(1)));,
       mp::UnsupportedExprError,
       "unsupported expression: nested 'in_relation'");
@@ -179,7 +179,7 @@ TEST_P(FunctionTest, TooFewArgsToInRelationConstraint) {
   Problem p;
   p.AddVar(0, 100, var::INTEGER);
   p.AddObj(obj::MIN, MakeVariable(0));
-  p.AddCon(MakeRelational(NE, MakeCall(in_relation_,
+  p.AddCon(MakeRelational(mp::expr::NE, MakeCall(in_relation_,
     mp::ArrayRef<Expr>(0, 0)), MakeConst(0)));
   EXPECT_THROW_MSG(Solve(p), mp::Error, "in_relation: too few arguments");
 }
@@ -193,7 +193,8 @@ TEST_P(FunctionTest, InRelationSizeIsNotMultipleOfArity) {
       MakeVariable(0), MakeVariable(1),
       MakeConst(1), MakeConst(2), MakeConst(3)
   };
-  p.AddCon(MakeRelational(NE, MakeCall(in_relation_, args), MakeConst(0)));
+  p.AddCon(MakeRelational(
+             mp::expr::NE, MakeCall(in_relation_, args), MakeConst(0)));
   EXPECT_THROW_MSG(Solve(p), mp::Error,
       "in_relation: the number of arguments 5 is not a multiple of arity 2");
 }
@@ -202,11 +203,13 @@ TEST_P(FunctionTest, InRelationTuple) {
   Problem p;
   p.AddVar(0, 100, var::INTEGER);
   p.AddVar(0, 100, var::INTEGER);
-  p.AddObj(obj::MIN, MakeBinary(OPPLUS, MakeVariable(0), MakeVariable(1)));
+  p.AddObj(obj::MIN, MakeBinary(
+             mp::expr::ADD, MakeVariable(0), MakeVariable(1)));
   Expr args[] = {
     MakeVariable(0), MakeVariable(1), MakeConst(11), MakeConst(22)
   };
-  p.AddCon(MakeRelational(NE, MakeCall(in_relation_, args), MakeConst(0)));
+  p.AddCon(MakeRelational(
+             mp::expr::NE, MakeCall(in_relation_, args), MakeConst(0)));
   EXPECT_EQ(33, Solve(p).obj_value());
 }
 
@@ -214,7 +217,8 @@ TEST_P(FunctionTest, InRelationEmptySet) {
   Problem p;
   p.AddVar(0, 100, var::INTEGER);
   Expr args[] = {MakeVariable(0)};
-  p.AddCon(MakeRelational(NE, MakeCall(in_relation_, args), MakeConst(0)));
+  p.AddCon(MakeRelational(
+             mp::expr::NE, MakeCall(in_relation_, args), MakeConst(0)));
   EXPECT_EQ(mp::INFEASIBLE, Solve(p).solve_code());
 }
 
@@ -222,7 +226,8 @@ TEST_P(FunctionTest, InRelationNonConstantSetElement) {
   Problem p;
   p.AddVar(0, 100, var::INTEGER);
   Expr args[] = { MakeVariable(0), MakeConst(0), MakeVariable(0) };
-  p.AddCon(MakeRelational(NE, MakeCall(in_relation_, args), MakeConst(0)));
+  p.AddCon(MakeRelational(
+             mp::expr::NE, MakeCall(in_relation_, args), MakeConst(0)));
   EXPECT_THROW_MSG(Solve(p), mp::Error,
       "in_relation: argument 3 is not constant");
 }
@@ -354,7 +359,7 @@ TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
   p.AddVar(0, 0, var::INTEGER);
   p.AddVar(0, 0, var::INTEGER);
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
-  p.AddCon(MakeRelational(EQ, MakeConst(0), MakeNumberOf(args)));
+  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
   s.Solve(p);
   ASSERT_EQ(1, CountIloDistribute());
 }
@@ -365,8 +370,8 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
   p.AddVar(0, 0, var::INTEGER);
   p.AddVar(0, 0, var::INTEGER);
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
-  p.AddCon(MakeRelational(EQ, MakeConst(0), MakeNumberOf(args)));
-  p.AddCon(MakeRelational(EQ, MakeConst(0), MakeNumberOf(args)));
+  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
+  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
   s.Solve(p);
   ASSERT_EQ(1, CountIloDistribute());
 }
@@ -377,9 +382,9 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
   p.AddVar(0, 0, var::INTEGER);
   p.AddVar(0, 0, var::INTEGER);
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
-  p.AddCon(MakeRelational(EQ, MakeConst(0), MakeNumberOf(args)));
+  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
   args[0] = MakeConst(43);
-  p.AddCon(MakeRelational(EQ, MakeConst(0), MakeNumberOf(args)));
+  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
   s.Solve(p);
   ASSERT_EQ(1, CountIloDistribute());
 }
@@ -390,9 +395,9 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
   p.AddVar(0, 0, var::INTEGER);
   p.AddVar(0, 0, var::INTEGER);
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
-  p.AddCon(MakeRelational(EQ, MakeConst(0), MakeNumberOf(args)));
+  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
   NumericExpr args2[] = {MakeConst(42), MakeVariable(1)};
-  p.AddCon(MakeRelational(EQ, MakeConst(0), MakeNumberOf(args2)));
+  p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args2)));
   s.Solve(p);
   ASSERT_EQ(2, CountIloDistribute());
 }
@@ -606,9 +611,9 @@ TEST_F(IlogCPTest, CPOptions) {
 TEST_P(SolverTest, MultiObjOption) {
   Problem p;
   p.AddVar(0, 10, var::INTEGER);
-  p.AddObj(obj::MIN, MakeBinary(OPREM, MakeVariable(0), MakeConst(3)));
-  p.AddObj(obj::MIN,
-      MakeUnary(OP2POW, MakeBinary(OPMINUS, MakeVariable(0), MakeConst(5))));
+  p.AddObj(obj::MIN, MakeBinary(mp::expr::MOD, MakeVariable(0), MakeConst(3)));
+  p.AddObj(obj::MIN, MakeUnary(mp::expr::POW2,
+             MakeBinary(mp::expr::SUB, MakeVariable(0), MakeConst(5))));
   EXPECT_EQ(0, Solve(p));
   solver_->SetIntOption("multiobj", 1);
   EXPECT_EQ(6, Solve(p));

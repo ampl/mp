@@ -4,7 +4,8 @@
  This header is used to decouple the .nl reader from a specific problem
  representation as the reader can be used to construct different types of
  problems. So instead of including problem.h and expr.h from nl.h, this
- header containing common stuff is included from problem.h, expr.h and nl.h.
+ header containing common definitions is included from problem.h, expr.h
+ and nl.h.
 
  Copyright (C) 2014 AMPL Optimization Inc
 
@@ -29,9 +30,7 @@
 #define MP_PROBLEM_BASE_H_
 
 #include <cassert>
-#include <cstddef>
-
-#include "mp/opcode.hd"
+#include <cstddef>  // for std::size_t
 
 namespace mp {
 
@@ -44,66 +43,159 @@ enum Kind {
   // An unknown expression.
   UNKNOWN = 0,
 
-  EXPR_START,
+  FIRST_EXPR,
 
   // To simplify checks, numeric expression kinds are in a range
-  // [NUMERIC_START, NUMERIC_END].
-  NUMERIC_START = EXPR_START,
-  VARIABLE = NUMERIC_START,
-  UNARY,
-  BINARY,
+  // [FIRST_NUMERIC, LAST_NUMERIC].
+  FIRST_NUMERIC = FIRST_EXPR,
+  VARIABLE = FIRST_NUMERIC,
+
+  // Unary expressions.
+  FIRST_UNARY,
+  FLOOR = FIRST_UNARY,
+  CEIL,
+  ABS,
+  MINUS,
+  TANH,
+  TAN,
+  SQRT,
+  SINH,
+  SIN,
+  LOG10,
+  LOG,
+  EXP,
+  COSH,
+  COS,
+  ATANH,
+  ATAN,
+  ASINH,
+  ASIN,
+  ACOSH,
+  ACOS,
+  POW2,
+  LAST_UNARY = POW2,
+
+  // Binary expressions.
+  FIRST_BINARY,
+  ADD = FIRST_BINARY,
+  SUB,
+  MUL,
+  DIV,
+  INT_DIV,
+  MOD,
+  POW,
+  POW_CONST_BASE,
+  POW_CONST_EXP,
+  LESS,
+  ATAN2,
+  PRECISION,
+  ROUND,
+  TRUNC,
+  LAST_BINARY = TRUNC,
+
   IF,
+  IFSYM,
   PLTERM,
   CALL,
-  VARARG,
+
+  // Variable argument expressions.
+  FIRST_VARARG,
+  MIN = FIRST_VARARG,
+  MAX,
+  LAST_VARARG = MAX,
+
   SUM,
   COUNT,
   NUMBEROF,
-  NUMERIC_END,
+  LAST_NUMERIC,
 
   // CONSTANT belongs both to numeric and logical expressions therefore
-  // the [NUMERIC_START, NUMERIC_END] and [LOGICAL_START, LOGICAL_END]
-  // ranges overlap at CONSTANT = NUMERIC_END = LOGICAL_START.
-  CONSTANT = NUMERIC_END,
+  // the [FIRST_NUMERIC, LAST_NUMERIC] and [FIRST_LOGICAL, LAST_LOGICAL]
+  // ranges overlap at CONSTANT = LAST_NUMERIC = FIRST_LOGICAL.
+  CONSTANT = LAST_NUMERIC,
 
   // To simplify checks, logical expression kinds are in a range
-  // [LOGICAL_START, LOGICAL_END].
-  LOGICAL_START = CONSTANT,
+  // [FIRST_LOGICAL, LAST_LOGICAL].
+  FIRST_LOGICAL = CONSTANT,
   NOT,
-  BINARY_LOGICAL,
-  RELATIONAL,
-  LOGICAL_COUNT,
+
+  // Binary logical expressions.
+  FIRST_BINARY_LOGICAL,
+  OR = FIRST_BINARY_LOGICAL,
+  AND,
+  IFF,
+  LAST_BINARY_LOGICAL = IFF,
+
+  // Relational expressions.
+  FIRST_RELATIONAL,
+  LT = FIRST_RELATIONAL,  // <
+  LE,                     // <=
+  EQ,                     // =
+  GE,                     // >=
+  GT,                     // >
+  NE,                     // !=
+  LAST_RELATIONAL = NE,
+
+  FIRST_LOGICAL_COUNT,
+  ATLEAST = FIRST_LOGICAL_COUNT,
+  ATMOST,
+  EXACTLY,
+  NOT_ATLEAST,
+  NOT_ATMOST,
+  NOT_EXACTLY,
+  LAST_LOGICAL_COUNT = NOT_EXACTLY,
+
   IMPLICATION,
-  ITERATED_LOGICAL,
+
+  FIRST_ITERATED_LOGICAL,
+  FORALL = FIRST_ITERATED_LOGICAL,
+  EXISTS,
+  LAST_ITERATED_LOGICAL = EXISTS,
+
   ALLDIFF,
-  LOGICAL_END = ALLDIFF,
+  LAST_LOGICAL = ALLDIFF,
 
   STRING,
-  EXPR_END = STRING
+  LAST_EXPR = STRING
 };
 
 Kind kind(int opcode);
 
-// Expression information.
-class Info {
- private:
-  static const Info INFO[N_OPS];
+// Maximum opcode index.
+enum { MAX_OPCODE = 81 };
 
-  friend class mp::Expr;
+class OpCodeInfo {
+ private:
+  static const OpCodeInfo INFO[MAX_OPCODE + 1];
 
  public:
   expr::Kind kind;
-  int precedence;
-  const char *str;
+  expr::Kind first_kind;  // First member of a kind.
 
-  // Returns the expression kind for the opcode which should be in the
-  // range [0, N_OPS).
-  friend Kind kind(int opcode) {
-    assert(opcode >= 0 && opcode < N_OPS);
-    return INFO[opcode].kind;
-  }
+  friend const OpCodeInfo &GetOpCodeInfo(int opcode);
 };
+
+inline const OpCodeInfo &GetOpCodeInfo(int opcode) {
+  assert(opcode >= 0 && opcode <= MAX_OPCODE);
+  return OpCodeInfo::INFO[opcode];
+}
 }  // namespace expr
+
+class Expr;
+
+namespace internal {
+// Expression information.
+class ExprInfo {
+ private:
+  static const ExprInfo INFO[];
+
+  friend class mp::Expr;
+
+public:
+ int precedence;
+ const char *str;
+};
+}
 
 namespace func {
 // Function type.

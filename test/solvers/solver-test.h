@@ -128,7 +128,7 @@ class SolverTest
   // Evaluates a numeric expression by constructing and solving a problem.
   EvalResult Eval(mp::NumericExpr e,
       int var1 = 0, int var2 = 0, int var3 = 0) {
-    return Solve(MakeRelational(EQ, MakeVariable(0), e),
+    return Solve(MakeRelational(mp::expr::EQ, MakeVariable(0), e),
                  var1, var2, var3, true);
   }
 

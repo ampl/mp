@@ -47,7 +47,8 @@ INSTANTIATE_TEST_CASE_P(Gecode, SolverTest,
     ::testing::Values(SolverTestParam(CreateSolver, 0)));
 
 TEST_P(SolverTest, FloorSqrt) {
-  EXPECT_EQ(6, Eval(MakeUnary(FLOOR, MakeUnary(OP_sqrt, x)), 42));
+  EXPECT_EQ(6, Eval(MakeUnary(mp::expr::FLOOR,
+                              MakeUnary(mp::expr::SQRT, x)), 42));
 }
 
 TEST_P(SolverTest, SolveFlowshp0) {

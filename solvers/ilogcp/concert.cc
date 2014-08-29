@@ -355,7 +355,7 @@ void NLToConcertConverter::Convert(const Problem &p) {
     IloConstraintArray cons(env_, n_lcons);
     for (int i = 0; i < n_lcons; ++i) {
       LogicalExpr expr = p.logical_con_expr(i);
-      if (expr.opcode() == NE) {
+      if (expr.kind() == expr::NE) {
         RelationalExpr rel = Cast<RelationalExpr>(expr);
         NumericConstant const_rhs = Cast<NumericConstant>(rel.rhs());
         if (const_rhs && const_rhs.value() == 0) {

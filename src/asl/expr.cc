@@ -33,25 +33,10 @@ using mp::Expr;
 using mp::NumericConstant;
 using mp::NumericExpr;
 using mp::LogicalExpr;
+using mp::internal::HashCombine;
 namespace prec = mp::prec;
 
 namespace {
-// An operation type.
-// Numeric values for the operation types should be in sync with the ones in
-// op_type.hd.
-enum OpType {
-  OPTYPE_UNARY    =  1,  // Unary operation
-  OPTYPE_BINARY   =  2,  // Binary operation
-  OPTYPE_VARARG   =  3,  // Variable-argument function such as min or max
-  OPTYPE_PLTERM   =  4,  // Piecewise-linear term
-  OPTYPE_IF       =  5,  // The if-then-else expression
-  OPTYPE_SUM      =  6,  // The sum expression
-  OPTYPE_FUNCALL  =  7,  // Function call
-  OPTYPE_STRING   =  8,  // String
-  OPTYPE_NUMBER   =  9,  // Number
-  OPTYPE_VARIABLE = 10,  // Variable
-  OPTYPE_COUNT    = 11   // The count expression
-};
 
 // An expression visitor that writes AMPL expressions in a textual form
 // to fmt::Writer. It takes into account precedence and associativity
@@ -203,7 +188,7 @@ void ExprWriter::WriteCallArg(Expr arg) {
     Visit(e, prec::UNKNOWN);
     return;
   }
-  assert(arg.opcode() == OPHOL);
+  assert(arg.kind() == mp::expr::STRING);
   writer_ << "'";
   const char *s = Cast<mp::StringLiteral>(arg).value();
   for ( ; *s; ++s) {
@@ -302,7 +287,7 @@ void ExprWriter::VisitIteratedLogical(mp::IteratedLogicalExpr e) {
   writer_ << "/* " << e.opstr() << " */ ";
   int precedence = prec::LOGICAL_AND + 1;
   const char *op = " && ";
-  if (e.opcode() == ORLIST) {
+  if (e.kind() == mp::expr::EXISTS) {
     precedence = prec::LOGICAL_OR + 1;
     op = " || ";
   }
@@ -320,24 +305,114 @@ void ExprWriter::VisitImplication(mp::ImplicationExpr e) {
     Visit(false_expr);
   }
 }
-}
 
-#ifdef MP_USE_UNORDERED_MAP
+// Compares expressions for equality.
+class ExprEqual : public mp::ExprVisitor<ExprEqual, bool> {
+ private:
+  Expr expr_;
 
-namespace std {
-template <>
-struct hash<Expr> {
-  std::size_t operator()(Expr e) const;
+ public:
+  explicit ExprEqual(Expr e) : expr_(e) {}
+
+  template <typename T>
+  bool VisitNumericConstant(T c) { return Cast<T>(expr_).value() == c.value(); }
+
+  bool VisitVariable(mp::Variable v) {
+    return Cast<mp::Variable>(expr_).index() == v.index();
+  }
+
+  template <typename E>
+  bool VisitUnary(E e) {
+    return Equal(Cast<E>(expr_).arg(), e.arg());
+  }
+
+  template <typename E>
+  bool VisitBinary(E e) {
+    E binary = Cast<E>(expr_);
+    return Equal(binary.lhs(), e.lhs()) && Equal(binary.rhs(), e.rhs());
+  }
+
+  template <typename E>
+  bool VisitIf(E e) {
+    E if_expr = Cast<E>(expr_);
+    return Equal(if_expr.condition(), e.condition()) &&
+           Equal(if_expr.true_expr(), e.true_expr()) &&
+           Equal(if_expr.false_expr(), e.false_expr());
+  }
+
+  bool VisitPiecewiseLinear(mp::PiecewiseLinearExpr e) {
+    mp::PiecewiseLinearExpr pl = Cast<mp::PiecewiseLinearExpr>(expr_);
+    int num_breakpoints = pl.num_breakpoints();
+    if (num_breakpoints != e.num_breakpoints())
+      return false;
+    for (int i = 0; i < num_breakpoints; ++i) {
+      if (pl.slope(i) != e.slope(i) || pl.breakpoint(i) != e.breakpoint(i))
+        return false;
+    }
+    return pl.slope(num_breakpoints) == e.slope(num_breakpoints) &&
+           pl.var_index() == e.var_index();
+  }
+
+  bool VisitCall(mp::CallExpr e) {
+    mp::CallExpr call = Cast<mp::CallExpr>(expr_);
+    int num_args = call.num_args();
+    if (call.function() != e.function() || num_args != e.num_args())
+      return false;
+    for (int i = 0; i < num_args; ++i) {
+      Expr arg = call[i], other_arg = e[i];
+      if (arg.kind() != other_arg.kind())
+        return false;
+      if (NumericExpr num_arg = Cast<NumericExpr>(arg)) {
+        if (!Equal(num_arg, Cast<NumericExpr>(other_arg)))
+          return false;
+      } else if (std::strcmp(
+              Cast<mp::StringLiteral>(arg).value(),
+              Cast<mp::StringLiteral>(other_arg).value()) != 0)
+        return false;
+    }
+    return true;
+  }
+
+  template <typename E>
+  bool VisitVarArg(E e) {
+    E vararg = Cast<E>(expr_);
+    typename E::iterator i = vararg.begin(), iend = vararg.end();
+    typename E::iterator j = e.begin(), jend = e.end();
+    for (; i != iend; ++i, ++j) {
+      if (j == jend || !Equal(*i, *j))
+        return false;
+    }
+    return j == jend;
+  }
+
+  bool VisitSum(mp::SumExpr e) { return VisitVarArg(e); }
+  bool VisitCount(mp::CountExpr e) { return VisitVarArg(e); }
+  bool VisitNumberOf(mp::NumberOfExpr e) { return VisitVarArg(e); }
+
+  bool VisitLogicalConstant(mp::LogicalConstant c) {
+    return VisitNumericConstant(c);
+  }
+
+  bool VisitNot(mp::NotExpr e) { return VisitUnary(e); }
+
+  bool VisitBinaryLogical(mp::BinaryLogicalExpr e) { return VisitBinary(e); }
+  bool VisitRelational(mp::RelationalExpr e) { return VisitBinary(e); }
+  bool VisitLogicalCount(mp::LogicalCountExpr e) { return VisitBinary(e); }
+
+  bool VisitImplication(mp::ImplicationExpr e) { return VisitIf(e); }
+
+  bool VisitIteratedLogical(mp::IteratedLogicalExpr e) {
+    return VisitVarArg(e);
+  }
+
+  bool VisitAllDiff(mp::AllDiffExpr e) { return VisitVarArg(e); }
 };
-}
-
-using mp::internal::HashCombine;
 
 // Computes a hash value for an expression.
 class ExprHasher : public mp::ExprVisitor<ExprHasher, size_t> {
  private:
   static size_t Hash(Expr e) {
-    return HashCombine(0, e.opcode());
+    return HashCombine<int>(0, e.kind());
   }
 
   template <typename T>
@@ -349,8 +424,7 @@ class ExprHasher : public mp::ExprVisitor<ExprHasher, size_t> {
   size_t VisitNumericConstant(NumericConstant c) { return Hash(c, c.value()); }
   size_t VisitVariable(mp::Variable v) { return Hash(v, v.index()); }
 
-  template <typename E>
-  size_t VisitUnary(E e) { return Hash(e, e.arg()); }
+  size_t VisitUnary(mp::UnaryExpr e) { return Hash(e, e.arg()); }
 
   template <typename E>
   size_t VisitBinary(E e) { return HashCombine(Hash(e, e.lhs()), e.rhs()); }
@@ -399,10 +473,7 @@ class ExprHasher : public mp::ExprVisitor<ExprHasher, size_t> {
 
   size_t VisitNot(mp::NotExpr e) { return Hash(e, e.arg()); }
 
-  size_t VisitBinaryLogical(mp::BinaryLogicalExpr e) {
-    return VisitBinary(e);
-  }
-
+  size_t VisitBinaryLogical(mp::BinaryLogicalExpr e) { return VisitBinary(e); }
   size_t VisitRelational(mp::RelationalExpr e) { return VisitBinary(e); }
 
   size_t VisitLogicalCount(mp::LogicalCountExpr e) {
@@ -425,6 +496,16 @@ class ExprHasher : public mp::ExprVisitor<ExprHasher, size_t> {
     return hash;
   }
 };
+}  // namespace
+
+#ifdef MP_USE_UNORDERED_MAP
+
+namespace std {
+template <>
+struct hash<Expr> {
+  std::size_t operator()(Expr e) const;
+};
+}
 
 size_t std::hash<Expr>::operator()(Expr expr) const {
   ExprHasher hasher;
@@ -457,80 +538,16 @@ namespace mp {
 
 const de VarArgExpr::END = de();
 
-bool Equal(Expr expr1, Expr expr2) {
-  if (expr1.opcode() != expr2.opcode())
+bool Equal(NumericExpr e1, NumericExpr e2) {
+  if (e1.kind() != e2.kind())
     return false;
-
-  ::expr *e1 = expr1.expr_;
-  ::expr *e2 = expr2.expr_;
-  switch (optype[expr1.opcode()]) {
-  case OPTYPE_UNARY:
-    return Equal(Expr(e1->L.e), Expr(e2->L.e));
-
-  case OPTYPE_BINARY:
-    return Equal(Expr(e1->L.e), Expr(e2->L.e)) &&
-           Equal(Expr(e1->R.e), Expr(e2->R.e));
-
-  case OPTYPE_VARARG: {
-    de *d1 = reinterpret_cast<const expr_va*>(e1)->L.d;
-    de *d2 = reinterpret_cast<const expr_va*>(e2)->L.d;
-    for (; d1->e && d2->e; d1++, d2++)
-      if (!Equal(Expr(d1->e), Expr(d2->e)))
-        return false;
-    return !d1->e && !d2->e;
-  }
-
-  case OPTYPE_PLTERM: {
-    plterm *p1 = e1->L.p, *p2 = e2->L.p;
-    if (p1->n != p2->n)
-      return false;
-    double *pce1 = p1->bs, *pce2 = p2->bs;
-    for (int i = 0, n = p1->n * 2 - 1; i < n; i++) {
-      if (pce1[i] != pce2[i])
-        return false;
-    }
-    return Equal(Expr(e1->R.e), Expr(e2->R.e));
-  }
-
-  case OPTYPE_IF: {
-    const expr_if *eif1 = reinterpret_cast<const expr_if*>(e1);
-    const expr_if *eif2 = reinterpret_cast<const expr_if*>(e2);
-    return Equal(Expr(eif1->e), Expr(eif2->e)) &&
-           Equal(Expr(eif1->T), Expr(eif2->T)) &&
-           Equal(Expr(eif1->F), Expr(eif2->F));
-  }
-
-  case OPTYPE_SUM:
-  case OPTYPE_COUNT: {
-    ::expr **ep1 = e1->L.ep;
-    ::expr **ep2 = e2->L.ep;
-    for (; ep1 < e1->R.ep && ep2 < e2->R.ep; ep1++, ep2++)
-      if (!Equal(Expr(*ep1), Expr(*ep2)))
-        return false;
-    return ep1 == e1->R.ep && ep2 == e2->R.ep;
-  }
-
-  case OPTYPE_STRING:
-    return std::strcmp(
-        reinterpret_cast<const expr_h*>(e1)->sym,
-        reinterpret_cast<const expr_h*>(e2)->sym) == 0;
-
-  case OPTYPE_NUMBER:
-    return reinterpret_cast<const expr_n*>(e1)->v ==
-           reinterpret_cast<const expr_n*>(e2)->v;
-
-  case OPTYPE_VARIABLE:
-    return e1->a == e2->a;
-
-  default:
-    throw UnsupportedExprError::CreateFromExprString(expr1.opstr());
-  }
+  return ExprEqual(e1).Visit(e2);
 }
 
-std::string internal::FormatOpCode(Expr e) {
-  char buffer[64];
-  snprintf(buffer, sizeof(buffer), "%d", e.opcode());
-  return buffer;
+bool Equal(LogicalExpr e1, LogicalExpr e2) {
+  if (e1.kind() != e2.kind())
+    return false;
+  return ExprEqual(e1).Visit(e2);
 }
 
 #ifdef MP_USE_UNORDERED_MAP

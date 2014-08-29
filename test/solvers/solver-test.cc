@@ -100,26 +100,26 @@ SolveResult SolverTest::Solve(
   return SolveResult(solved, sh.obj_value(), message);
 }
 
-TEST_P(SolverTest, Plus) {
-  NumericExpr e = MakeBinary(OPPLUS, x, y);
+TEST_P(SolverTest, Add) {
+  NumericExpr e = MakeBinary(mp::expr::ADD, x, y);
   EXPECT_EQ(25, Eval(e, 10, 15));
   EXPECT_EQ(12, Eval(e, 19, -7));
 }
 
-TEST_P(SolverTest, Minus) {
-  NumericExpr e = MakeBinary(OPMINUS, x, y);
+TEST_P(SolverTest, Sub) {
+  NumericExpr e = MakeBinary(mp::expr::SUB, x, y);
   EXPECT_EQ(-5, Eval(e, 10, 15));
   EXPECT_EQ(26, Eval(e, 19, -7));
 }
 
-TEST_P(SolverTest, Mult) {
-  NumericExpr e = MakeBinary(OPMULT, x, y);
+TEST_P(SolverTest, Mul) {
+  NumericExpr e = MakeBinary(mp::expr::MUL, x, y);
   EXPECT_EQ(150, Eval(e, 10, 15));
   EXPECT_EQ(-133, Eval(e, 19, -7));
 }
 
 TEST_P(SolverTest, Div) {
-  NumericExpr e = MakeBinary(OPDIV, x, y);
+  NumericExpr e = MakeBinary(mp::expr::DIV, x, y);
   if (!HasFeature(feature::DIV)) {
     EXPECT_THROW(Eval(e, 150, 15);, UnsupportedExprError);
     return;
@@ -128,8 +128,8 @@ TEST_P(SolverTest, Div) {
   EXPECT_EQ(-7, Eval(e, -133, 19));
 }
 
-TEST_P(SolverTest, Rem) {
-  NumericExpr e = MakeBinary(OPREM, x, y);
+TEST_P(SolverTest, Mod) {
+  NumericExpr e = MakeBinary(mp::expr::MOD, x, y);
   EXPECT_EQ(0, Eval(e, 9, 3));
   EXPECT_EQ(2, Eval(e, 8, 3));
   EXPECT_EQ(-2, Eval(e, -8, 3));
@@ -138,7 +138,7 @@ TEST_P(SolverTest, Rem) {
 }
 
 TEST_P(SolverTest, Pow) {
-  NumericExpr e = MakeBinary(OPPOW, x, y);
+  NumericExpr e = MakeBinary(mp::expr::POW, x, y);
   if (!HasFeature(feature::POW)) {
     EXPECT_THROW(Eval(e, 2, 3);, UnsupportedExprError);
     return;
@@ -147,58 +147,58 @@ TEST_P(SolverTest, Pow) {
   EXPECT_EQ(81, Eval(e, 3, 4));
 }
 
-TEST_P(SolverTest, NumericLess) {
-  NumericExpr e = MakeBinary(OPLESS, x, y);
+TEST_P(SolverTest, Less) {
+  NumericExpr e = MakeBinary(mp::expr::LESS, x, y);
   EXPECT_EQ(0, Eval(e, 10, 15));
   EXPECT_EQ(26, Eval(e, 19, -7));
 }
 
 TEST_P(SolverTest, Min) {
   NumericExpr args[] = {x, y, z};
-  NumericExpr e = MakeVarArg(MINLIST, args);
+  NumericExpr e = MakeVarArg(mp::expr::MIN, args);
   EXPECT_EQ(-7, Eval(e, 3, -7, 5));
   EXPECT_EQ(10, Eval(e, 10, 20, 30));
 }
 
 TEST_P(SolverTest, Max) {
   NumericExpr args[] = {x, y, z};
-  NumericExpr e = MakeVarArg(MAXLIST, args);
+  NumericExpr e = MakeVarArg(mp::expr::MAX, args);
   EXPECT_EQ(5, Eval(e, 3, -7, 5));
   EXPECT_EQ(30, Eval(e, 30, 20, 10));
 }
 
 TEST_P(SolverTest, Floor) {
-  NumericExpr e = MakeUnary(FLOOR, x);
+  NumericExpr e = MakeUnary(mp::expr::FLOOR, x);
   EXPECT_EQ(-42, Eval(e, -42));
   EXPECT_EQ(42, Eval(e, 42));
   if (!HasFeature(feature::FLOAT_CONST)) return;
-  EXPECT_EQ(4, Eval(MakeUnary(FLOOR, MakeConst(4.9))));
-  EXPECT_EQ(-5, Eval(MakeUnary(FLOOR, MakeConst(-4.1))));
+  EXPECT_EQ(4, Eval(MakeUnary(mp::expr::FLOOR, MakeConst(4.9))));
+  EXPECT_EQ(-5, Eval(MakeUnary(mp::expr::FLOOR, MakeConst(-4.1))));
 }
 
 TEST_P(SolverTest, Ceil) {
-  NumericExpr e = MakeUnary(CEIL, x);
+  NumericExpr e = MakeUnary(mp::expr::CEIL, x);
   EXPECT_EQ(-42, Eval(e, -42));
   EXPECT_EQ(42, Eval(e, 42));
   if (!HasFeature(feature::FLOAT_CONST)) return;
-  EXPECT_EQ(5, Eval(MakeUnary(CEIL, MakeConst(4.1))));
-  EXPECT_EQ(-4, Eval(MakeUnary(CEIL, MakeConst(-4.9))));
+  EXPECT_EQ(5, Eval(MakeUnary(mp::expr::CEIL, MakeConst(4.1))));
+  EXPECT_EQ(-4, Eval(MakeUnary(mp::expr::CEIL, MakeConst(-4.9))));
 }
 
 TEST_P(SolverTest, Abs) {
-  NumericExpr e = MakeUnary(ABS, x);
+  NumericExpr e = MakeUnary(mp::expr::ABS, x);
   EXPECT_EQ(42, Eval(e, -42));
   EXPECT_EQ(42, Eval(e, 42));
 }
 
-TEST_P(SolverTest, UnaryMinus) {
-  NumericExpr e = MakeUnary(OPUMINUS, x);
+TEST_P(SolverTest, Minus) {
+  NumericExpr e = MakeUnary(mp::expr::MINUS, x);
   EXPECT_EQ(42, Eval(e, -42));
   EXPECT_EQ(-42, Eval(e, 42));
 }
 
 TEST_P(SolverTest, If) {
-  NumericExpr e = MakeIf(MakeRelational(EQ, x, MakeConst(1)), y, z);
+  NumericExpr e = MakeIf(MakeRelational(mp::expr::EQ, x, MakeConst(1)), y, z);
   EXPECT_EQ(42, Eval(e, 1, 42, 10));
   EXPECT_EQ(10, Eval(e, 0, 42, 10));
   EXPECT_EQ(42, Eval(e, 1, 42, 42));
@@ -206,8 +206,8 @@ TEST_P(SolverTest, If) {
 
 TEST_P(SolverTest, Tanh) {
   double arg = (std::log(1.5) - std::log(0.5)) / 2;
-  NumericExpr e = MakeBinary(OPMULT,
-      MakeConst(2), MakeUnary(OP_tanh, MakeConst(arg)));
+  NumericExpr e = MakeBinary(mp::expr::MUL,
+      MakeConst(2), MakeUnary(mp::expr::TANH, MakeConst(arg)));
   if (!HasFeature(feature::HYPERBOLIC)) {
     EXPECT_THROW(Eval(e);, UnsupportedExprError);
     return;
@@ -216,11 +216,11 @@ TEST_P(SolverTest, Tanh) {
 }
 
 TEST_P(SolverTest, Tan) {
-  EXPECT_THROW(Eval(MakeUnary(OP_tan, x)), UnsupportedExprError);
+  EXPECT_THROW(Eval(MakeUnary(mp::expr::TAN, x)), UnsupportedExprError);
 }
 
 TEST_P(SolverTest, Sqrt) {
-  NumericExpr e = MakeUnary(OP_sqrt, x);
+  NumericExpr e = MakeUnary(mp::expr::SQRT, x);
   if (!HasFeature(feature::SQRT)) {
     EXPECT_THROW(Eval(e, 64);, UnsupportedExprError);
     return;
@@ -229,7 +229,8 @@ TEST_P(SolverTest, Sqrt) {
 }
 
 TEST_P(SolverTest, Sinh) {
-  NumericExpr e = MakeUnary(OP_sinh, MakeConst(std::log(2 + std::sqrt(5.0))));
+  NumericExpr e = MakeUnary(
+        mp::expr::SINH, MakeConst(std::log(2 + std::sqrt(5.0))));
   if (!HasFeature(feature::HYPERBOLIC)) {
     EXPECT_THROW(Eval(e);, UnsupportedExprError);
     return;
@@ -238,11 +239,11 @@ TEST_P(SolverTest, Sinh) {
 }
 
 TEST_P(SolverTest, Sin) {
-  EXPECT_THROW(Eval(MakeUnary(OP_sin, x)), UnsupportedExprError);
+  EXPECT_THROW(Eval(MakeUnary(mp::expr::SIN, x)), UnsupportedExprError);
 }
 
 TEST_P(SolverTest, Log10) {
-  NumericExpr e = MakeUnary(OP_log10, MakeConst(1000));
+  NumericExpr e = MakeUnary(mp::expr::LOG10, MakeConst(1000));
   if (!HasFeature(feature::LOG)) {
     EXPECT_THROW(Eval(e);, UnsupportedExprError);
     return;
@@ -251,7 +252,7 @@ TEST_P(SolverTest, Log10) {
 }
 
 TEST_P(SolverTest, Log) {
-  NumericExpr e = MakeUnary(OP_log, MakeConst(std::exp(5.0)));
+  NumericExpr e = MakeUnary(mp::expr::LOG, MakeConst(std::exp(5.0)));
   if (!HasFeature(feature::LOG)) {
     EXPECT_THROW(Eval(e);, UnsupportedExprError);
     return;
@@ -260,7 +261,7 @@ TEST_P(SolverTest, Log) {
 }
 
 TEST_P(SolverTest, Exp) {
-  NumericExpr e = MakeUnary(OP_exp, MakeConst(std::log(5.0)));
+  NumericExpr e = MakeUnary(mp::expr::EXP, MakeConst(std::log(5.0)));
   if (!HasFeature(feature::EXP)) {
     EXPECT_THROW(Eval(e);, UnsupportedExprError);
     return;
@@ -270,7 +271,7 @@ TEST_P(SolverTest, Exp) {
 
 TEST_P(SolverTest, Cosh) {
   double x = 5;
-  NumericExpr e = MakeUnary(OP_cosh,
+  NumericExpr e = MakeUnary(mp::expr::COSH,
       MakeConst(std::log(x + std::sqrt(x + 1) * std::sqrt(x - 1))));
   if (!HasFeature(feature::HYPERBOLIC)) {
     EXPECT_THROW(Eval(e);, UnsupportedExprError);
@@ -280,13 +281,13 @@ TEST_P(SolverTest, Cosh) {
 }
 
 TEST_P(SolverTest, Cos) {
-  EXPECT_THROW(Eval(MakeUnary(OP_cos, x)), UnsupportedExprError);
+  EXPECT_THROW(Eval(MakeUnary(mp::expr::COS, x)), UnsupportedExprError);
 }
 
 TEST_P(SolverTest, Atanh) {
-  mp::UnaryExpr x = MakeUnary(OP_atanh, MakeConst(std::tanh(5.0)));
-  NumericExpr e = MakeUnary(FLOOR, MakeBinary(OPPLUS,
-      MakeConst(0.5), MakeBinary(OPMULT, MakeConst(1000000), x)));
+  mp::UnaryExpr x = MakeUnary(mp::expr::ATANH, MakeConst(std::tanh(5.0)));
+  NumericExpr e = MakeUnary(mp::expr::FLOOR, MakeBinary(mp::expr::ADD,
+      MakeConst(0.5), MakeBinary(mp::expr::MUL, MakeConst(1000000), x)));
   if (!HasFeature(feature::HYPERBOLIC)) {
     EXPECT_THROW(Eval(e);, UnsupportedExprError);
     return;
@@ -295,15 +296,15 @@ TEST_P(SolverTest, Atanh) {
 }
 
 TEST_P(SolverTest, Atan2) {
-  EXPECT_THROW(Eval(MakeBinary(OP_atan2, x, y)), UnsupportedExprError);
+  EXPECT_THROW(Eval(MakeBinary(mp::expr::ATAN2, x, y)), UnsupportedExprError);
 }
 
 TEST_P(SolverTest, Atan) {
-  EXPECT_THROW(Eval(MakeUnary(OP_atan, x)), UnsupportedExprError);
+  EXPECT_THROW(Eval(MakeUnary(mp::expr::ATAN, x)), UnsupportedExprError);
 }
 
 TEST_P(SolverTest, Asinh) {
-  NumericExpr e = MakeUnary(OP_asinh, MakeConst(std::sinh(5.0)));
+  NumericExpr e = MakeUnary(mp::expr::ASINH, MakeConst(std::sinh(5.0)));
   if (!HasFeature(feature::HYPERBOLIC)) {
     EXPECT_THROW(Eval(e);, UnsupportedExprError);
     return;
@@ -312,11 +313,11 @@ TEST_P(SolverTest, Asinh) {
 }
 
 TEST_P(SolverTest, Asin) {
-  EXPECT_THROW(Eval(MakeUnary(OP_asin, x)), UnsupportedExprError);
+  EXPECT_THROW(Eval(MakeUnary(mp::expr::ASIN, x)), UnsupportedExprError);
 }
 
 TEST_P(SolverTest, Acosh) {
-  NumericExpr e = MakeUnary(OP_acosh, MakeConst(std::cosh(5.0)));
+  NumericExpr e = MakeUnary(mp::expr::ACOSH, MakeConst(std::cosh(5.0)));
   if (!HasFeature(feature::HYPERBOLIC)) {
     EXPECT_THROW(Eval(e);, UnsupportedExprError);
     return;
@@ -325,7 +326,7 @@ TEST_P(SolverTest, Acosh) {
 }
 
 TEST_P(SolverTest, Acos) {
-  EXPECT_THROW(Eval(MakeUnary(OP_acos, x)), UnsupportedExprError);
+  EXPECT_THROW(Eval(MakeUnary(mp::expr::ACOS, x)), UnsupportedExprError);
 }
 
 TEST_P(SolverTest, Sum) {
@@ -337,7 +338,7 @@ TEST_P(SolverTest, Sum) {
 }
 
 TEST_P(SolverTest, IntDiv) {
-  NumericExpr e = MakeBinary(OPintDIV, x, y);
+  NumericExpr e = MakeBinary(mp::expr::INT_DIV, x, y);
   EXPECT_EQ(3, Eval(e, 9, 3));
   EXPECT_EQ(2, Eval(e, 8, 3));
   EXPECT_EQ(-2, Eval(e, -8, 3));
@@ -346,38 +347,41 @@ TEST_P(SolverTest, IntDiv) {
 }
 
 TEST_P(SolverTest, Precision) {
-  EXPECT_THROW(Eval(MakeBinary(OPprecision, x, y)), UnsupportedExprError);
+  EXPECT_THROW(Eval(MakeBinary(mp::expr::PRECISION, x, y)),
+               UnsupportedExprError);
 }
 
 TEST_P(SolverTest, Round) {
-  EXPECT_EQ(42, Eval(MakeBinary(OPround, x, MakeConst(0)), 42));
+  mp::expr::Kind round = mp::expr::ROUND;
+  EXPECT_EQ(42, Eval(MakeBinary(round, x, MakeConst(0)), 42));
   if (HasFeature(feature::FLOAT_CONST)) {
-    EXPECT_EQ(4, Eval(MakeBinary(OPround, MakeConst(4.4), MakeConst(0))));
-    EXPECT_EQ(5, Eval(MakeBinary(OPround, MakeConst(4.6), MakeConst(0))));
-    EXPECT_EQ(-4, Eval(MakeBinary(OPround, MakeConst(-4.4), MakeConst(0))));
-    EXPECT_EQ(-5, Eval(MakeBinary(OPround, MakeConst(-4.6), MakeConst(0))));
+    EXPECT_EQ(4, Eval(MakeBinary(round, MakeConst(4.4), MakeConst(0))));
+    EXPECT_EQ(5, Eval(MakeBinary(round, MakeConst(4.6), MakeConst(0))));
+    EXPECT_EQ(-4, Eval(MakeBinary(round, MakeConst(-4.4), MakeConst(0))));
+    EXPECT_EQ(-5, Eval(MakeBinary(round, MakeConst(-4.6), MakeConst(0))));
   }
-  EXPECT_THROW(Eval(MakeBinary(OPround, x, MakeConst(1))), UnsupportedExprError);
-  EXPECT_THROW(Eval(MakeBinary(OPround, x, y)), UnsupportedExprError);
+  EXPECT_THROW(Eval(MakeBinary(round, x, MakeConst(1))), UnsupportedExprError);
+  EXPECT_THROW(Eval(MakeBinary(round, x, y)), UnsupportedExprError);
 }
 
 TEST_P(SolverTest, Trunc) {
-  EXPECT_EQ(42, Eval(MakeBinary(OPtrunc, x, MakeConst(0)), 42));
+  mp::expr::Kind trunc = mp::expr::TRUNC;
+  EXPECT_EQ(42, Eval(MakeBinary(trunc, x, MakeConst(0)), 42));
   if (HasFeature(feature::FLOAT_CONST)) {
-    EXPECT_EQ(4, Eval(MakeBinary(OPtrunc, MakeConst(4.4), MakeConst(0))));
-    EXPECT_EQ(4, Eval(MakeBinary(OPtrunc, MakeConst(4.6), MakeConst(0))));
-    EXPECT_EQ(-4, Eval(MakeBinary(OPtrunc, MakeConst(-4.4), MakeConst(0))));
-    EXPECT_EQ(-4, Eval(MakeBinary(OPtrunc, MakeConst(-4.6), MakeConst(0))));
+    EXPECT_EQ(4, Eval(MakeBinary(trunc, MakeConst(4.4), MakeConst(0))));
+    EXPECT_EQ(4, Eval(MakeBinary(trunc, MakeConst(4.6), MakeConst(0))));
+    EXPECT_EQ(-4, Eval(MakeBinary(trunc, MakeConst(-4.4), MakeConst(0))));
+    EXPECT_EQ(-4, Eval(MakeBinary(trunc, MakeConst(-4.6), MakeConst(0))));
   }
-  EXPECT_THROW(Eval(MakeBinary(OPtrunc, x, MakeConst(1))), UnsupportedExprError);
-  EXPECT_THROW(Eval(MakeBinary(OPtrunc, x, y)), UnsupportedExprError);
+  EXPECT_THROW(Eval(MakeBinary(trunc, x, MakeConst(1))), UnsupportedExprError);
+  EXPECT_THROW(Eval(MakeBinary(trunc, x, y)), UnsupportedExprError);
 }
 
 TEST_P(SolverTest, Count) {
   LogicalExpr args[] = {
-    MakeRelational(NE, x, MakeConst(0)),
-    MakeRelational(NE, y, MakeConst(0)),
-    MakeRelational(NE, z, MakeConst(0))
+    MakeRelational(mp::expr::NE, x, MakeConst(0)),
+    MakeRelational(mp::expr::NE, y, MakeConst(0)),
+    MakeRelational(mp::expr::NE, z, MakeConst(0))
   };
   EXPECT_EQ(0, Eval(MakeCount(args)));
   EXPECT_EQ(1, Eval(MakeCount(args), 1));
@@ -428,15 +432,15 @@ TEST_P(SolverTest, UnsupportedFunctionCall) {
 }
 
 TEST_P(SolverTest, PowConstExp) {
-  EXPECT_EQ(16, Eval(MakeBinary(OP1POW, x, MakeConst(4)), 2));
+  EXPECT_EQ(16, Eval(MakeBinary(mp::expr::POW_CONST_EXP, x, MakeConst(4)), 2));
 }
 
 TEST_P(SolverTest, Pow2) {
-  EXPECT_EQ(49, Eval(MakeUnary(OP2POW, x), 7));
+  EXPECT_EQ(49, Eval(MakeUnary(mp::expr::POW2, x), 7));
 }
 
 TEST_P(SolverTest, PowConstBase) {
-  NumericExpr e = MakeBinary(OPCPOW, MakeConst(5), x);
+  NumericExpr e = MakeBinary(mp::expr::POW_CONST_BASE, MakeConst(5), x);
   if (!HasFeature(feature::POW)) {
     EXPECT_THROW(Eval(e, 3);, UnsupportedExprError);
     return;
@@ -447,7 +451,7 @@ TEST_P(SolverTest, PowConstBase) {
 TEST_P(SolverTest, NumericConstant) {
   EXPECT_EQ(42, Eval(MakeConst(42)));
   if (HasFeature(feature::FLOAT_CONST)) {
-    EXPECT_EQ(42, Eval(MakeBinary(OPMULT, MakeConst(0.42), MakeConst(100))));
+    EXPECT_EQ(42, Eval(MakeBinary(mp::expr::MUL, MakeConst(0.42), MakeConst(100))));
     return;
   }
   EXPECT_THROW_MSG(Eval(MakeConst(0.42));, UnsupportedExprError,
@@ -464,7 +468,8 @@ TEST_P(SolverTest, Var) {
 TEST_P(SolverTest, Or) {
   NumericExpr one = MakeConst(1);
   LogicalExpr e = MakeBinaryLogical(
-      OPOR, MakeRelational(EQ, x, one), MakeRelational(EQ, y, one));
+      mp::expr::OR, MakeRelational(mp::expr::EQ, x, one),
+        MakeRelational(mp::expr::EQ, y, one));
   EXPECT_EQ(0, Eval(e, 0, 0));
   EXPECT_EQ(1, Eval(e, 0, 1));
   EXPECT_EQ(1, Eval(e, 1, 0));
@@ -474,67 +479,68 @@ TEST_P(SolverTest, Or) {
 TEST_P(SolverTest, And) {
   NumericExpr one = MakeConst(1);
   LogicalExpr e = MakeBinaryLogical(
-      OPAND, MakeRelational(EQ, x, one), MakeRelational(EQ, y, one));
+      mp::expr::AND, MakeRelational(mp::expr::EQ, x, one),
+        MakeRelational(mp::expr::EQ, y, one));
   EXPECT_EQ(0, Eval(e, 0, 0));
   EXPECT_EQ(0, Eval(e, 0, 1));
   EXPECT_EQ(0, Eval(e, 1, 0));
   EXPECT_EQ(1, Eval(e, 1, 1));
 }
 
-TEST_P(SolverTest, Less) {
-  LogicalExpr e = MakeRelational(LT, x, y);
+TEST_P(SolverTest, LT) {
+  LogicalExpr e = MakeRelational(mp::expr::LT, x, y);
   EXPECT_EQ(0, Eval(e, 3, 3));
   EXPECT_EQ(1, Eval(e, 3, 5));
   EXPECT_EQ(0, Eval(e, 5, 3));
 }
 
-TEST_P(SolverTest, LessEqual) {
-  LogicalExpr e = MakeRelational(LE, x, y);
+TEST_P(SolverTest, LE) {
+  LogicalExpr e = MakeRelational(mp::expr::LE, x, y);
   EXPECT_EQ(1, Eval(e, 3, 3));
   EXPECT_EQ(1, Eval(e, 3, 5));
   EXPECT_EQ(0, Eval(e, 5, 3));
 }
 
-TEST_P(SolverTest, Equal) {
-  LogicalExpr e = MakeRelational(EQ, x, y);
+TEST_P(SolverTest, EQ) {
+  LogicalExpr e = MakeRelational(mp::expr::EQ, x, y);
   EXPECT_EQ(1, Eval(e, 3, 3));
   EXPECT_EQ(0, Eval(e, 3, 5));
   EXPECT_EQ(0, Eval(e, 5, 3));
 }
 
-TEST_P(SolverTest, GreaterEqual) {
-  LogicalExpr e = MakeRelational(GE, x, y);
+TEST_P(SolverTest, GE) {
+  LogicalExpr e = MakeRelational(mp::expr::GE, x, y);
   EXPECT_EQ(1, Eval(e, 3, 3));
   EXPECT_EQ(0, Eval(e, 3, 5));
   EXPECT_EQ(1, Eval(e, 5, 3));
 }
 
-TEST_P(SolverTest, Greater) {
-  LogicalExpr e = MakeRelational(GT, x, y);
+TEST_P(SolverTest, GT) {
+  LogicalExpr e = MakeRelational(mp::expr::GT, x, y);
   EXPECT_EQ(0, Eval(e, 3, 3));
   EXPECT_EQ(0, Eval(e, 3, 5));
   EXPECT_EQ(1, Eval(e, 5, 3));
 }
 
-TEST_P(SolverTest, NotEqual) {
-  LogicalExpr e = MakeRelational(NE, x, y);
+TEST_P(SolverTest, NE) {
+  LogicalExpr e = MakeRelational(mp::expr::NE, x, y);
   EXPECT_EQ(0, Eval(e, 3, 3));
   EXPECT_EQ(1, Eval(e, 3, 5));
   EXPECT_EQ(1, Eval(e, 5, 3));
 }
 
 TEST_P(SolverTest, Not) {
-  LogicalExpr e = MakeNot(MakeRelational(EQ, x, MakeConst(1)));
+  LogicalExpr e = MakeNot(MakeRelational(mp::expr::EQ, x, MakeConst(1)));
   EXPECT_EQ(1, Eval(e, 0));
   EXPECT_EQ(0, Eval(e, 1));
 }
 
 TEST_P(SolverTest, AtLeast) {
   LogicalExpr args[] = {
-    MakeRelational(NE, y, MakeConst(0)),
-    MakeRelational(NE, z, MakeConst(0))
+    MakeRelational(mp::expr::NE, y, MakeConst(0)),
+    MakeRelational(mp::expr::NE, z, MakeConst(0))
   };
-  LogicalExpr e = MakeLogicalCount(OPATLEAST, x, MakeCount(args));
+  LogicalExpr e = MakeLogicalCount(mp::expr::ATLEAST, x, MakeCount(args));
   EXPECT_EQ(1, Eval(e, 0, 0, 0));
   EXPECT_EQ(1, Eval(e, 0, 1, 0));
   EXPECT_EQ(0, Eval(e, 1, 0, 0));
@@ -546,10 +552,10 @@ TEST_P(SolverTest, AtLeast) {
 
 TEST_P(SolverTest, AtMost) {
   LogicalExpr args[] = {
-    MakeRelational(NE, y, MakeConst(0)),
-    MakeRelational(NE, z, MakeConst(0))
+    MakeRelational(mp::expr::NE, y, MakeConst(0)),
+    MakeRelational(mp::expr::NE, z, MakeConst(0))
   };
-  LogicalExpr e = MakeLogicalCount(OPATMOST, x, MakeCount(args));
+  LogicalExpr e = MakeLogicalCount(mp::expr::ATMOST, x, MakeCount(args));
   EXPECT_EQ(1, Eval(e, 0, 0, 0));
   EXPECT_EQ(0, Eval(e, 0, 1, 0));
   EXPECT_EQ(1, Eval(e, 1, 0, 0));
@@ -561,10 +567,10 @@ TEST_P(SolverTest, AtMost) {
 
 TEST_P(SolverTest, Exactly) {
   LogicalExpr args[] = {
-    MakeRelational(NE, y, MakeConst(0)),
-    MakeRelational(NE, z, MakeConst(0))
+    MakeRelational(mp::expr::NE, y, MakeConst(0)),
+    MakeRelational(mp::expr::NE, z, MakeConst(0))
   };
-  LogicalExpr e = MakeLogicalCount(OPEXACTLY, x, MakeCount(args));
+  LogicalExpr e = MakeLogicalCount(mp::expr::EXACTLY, x, MakeCount(args));
   EXPECT_EQ(1, Eval(e, 0, 0, 0));
   EXPECT_EQ(0, Eval(e, 0, 1, 0));
   EXPECT_EQ(0, Eval(e, 1, 0, 0));
@@ -576,10 +582,10 @@ TEST_P(SolverTest, Exactly) {
 
 TEST_P(SolverTest, NotAtLeast) {
   LogicalExpr args[] = {
-    MakeRelational(NE, y, MakeConst(0)),
-    MakeRelational(NE, z, MakeConst(0))
+    MakeRelational(mp::expr::NE, y, MakeConst(0)),
+    MakeRelational(mp::expr::NE, z, MakeConst(0))
   };
-  LogicalExpr e = MakeLogicalCount(OPNOTATLEAST, x, MakeCount(args));
+  LogicalExpr e = MakeLogicalCount(mp::expr::NOT_ATLEAST, x, MakeCount(args));
   EXPECT_EQ(0, Eval(e, 0, 0, 0));
   EXPECT_EQ(0, Eval(e, 0, 1, 0));
   EXPECT_EQ(1, Eval(e, 1, 0, 0));
@@ -591,10 +597,10 @@ TEST_P(SolverTest, NotAtLeast) {
 
 TEST_P(SolverTest, NotAtMost) {
   LogicalExpr args[] = {
-    MakeRelational(NE, y, MakeConst(0)),
-    MakeRelational(NE, z, MakeConst(0))
+    MakeRelational(mp::expr::NE, y, MakeConst(0)),
+    MakeRelational(mp::expr::NE, z, MakeConst(0))
   };
-  LogicalExpr e = MakeLogicalCount(OPNOTATMOST, x, MakeCount(args));
+  LogicalExpr e = MakeLogicalCount(mp::expr::NOT_ATMOST, x, MakeCount(args));
   EXPECT_EQ(0, Eval(e, 0, 0, 0));
   EXPECT_EQ(1, Eval(e, 0, 1, 0));
   EXPECT_EQ(0, Eval(e, 1, 0, 0));
@@ -606,10 +612,10 @@ TEST_P(SolverTest, NotAtMost) {
 
 TEST_P(SolverTest, NotExactly) {
   LogicalExpr args[] = {
-    MakeRelational(NE, y, MakeConst(0)),
-    MakeRelational(NE, z, MakeConst(0))
+    MakeRelational(mp::expr::NE, y, MakeConst(0)),
+    MakeRelational(mp::expr::NE, z, MakeConst(0))
   };
-  LogicalExpr e = MakeLogicalCount(OPNOTEXACTLY, x, MakeCount(args));
+  LogicalExpr e = MakeLogicalCount(mp::expr::NOT_EXACTLY, x, MakeCount(args));
   EXPECT_EQ(0, Eval(e, 0, 0, 0));
   EXPECT_EQ(1, Eval(e, 0, 1, 0));
   EXPECT_EQ(1, Eval(e, 1, 0, 0));
@@ -621,11 +627,11 @@ TEST_P(SolverTest, NotExactly) {
 
 TEST_P(SolverTest, ForAll) {
   LogicalExpr args[] = {
-    MakeRelational(EQ, x, MakeConst(1)),
-    MakeRelational(EQ, y, MakeConst(1)),
-    MakeRelational(EQ, z, MakeConst(1))
+    MakeRelational(mp::expr::EQ, x, MakeConst(1)),
+    MakeRelational(mp::expr::EQ, y, MakeConst(1)),
+    MakeRelational(mp::expr::EQ, z, MakeConst(1))
   };
-  LogicalExpr e = MakeIteratedLogical(ANDLIST, args);
+  LogicalExpr e = MakeIteratedLogical(mp::expr::FORALL, args);
   EXPECT_EQ(0, Eval(e, 0, 0, 0));
   EXPECT_EQ(0, Eval(e, 0, 0, 1));
   EXPECT_EQ(0, Eval(e, 0, 1, 0));
@@ -638,11 +644,11 @@ TEST_P(SolverTest, ForAll) {
 
 TEST_P(SolverTest, Exists) {
   LogicalExpr args[] = {
-    MakeRelational(EQ, x, MakeConst(1)),
-    MakeRelational(EQ, y, MakeConst(1)),
-    MakeRelational(EQ, z, MakeConst(1))
+    MakeRelational(mp::expr::EQ, x, MakeConst(1)),
+    MakeRelational(mp::expr::EQ, y, MakeConst(1)),
+    MakeRelational(mp::expr::EQ, z, MakeConst(1))
   };
-  LogicalExpr e = MakeIteratedLogical(ORLIST, args);
+  LogicalExpr e = MakeIteratedLogical(mp::expr::EXISTS, args);
   EXPECT_EQ(0, Eval(e, 0, 0, 0));
   EXPECT_EQ(1, Eval(e, 0, 0, 1));
   EXPECT_EQ(1, Eval(e, 0, 1, 0));
@@ -655,9 +661,9 @@ TEST_P(SolverTest, Exists) {
 
 TEST_P(SolverTest, Implication) {
   LogicalExpr e = MakeImplication(
-      MakeRelational(EQ, x, MakeConst(1)),
-      MakeRelational(EQ, y, MakeConst(1)),
-      MakeRelational(EQ, z, MakeConst(1)));
+      MakeRelational(mp::expr::EQ, x, MakeConst(1)),
+      MakeRelational(mp::expr::EQ, y, MakeConst(1)),
+      MakeRelational(mp::expr::EQ, z, MakeConst(1)));
   EXPECT_EQ(0, Eval(e, 0, 0, 0));
   EXPECT_EQ(1, Eval(e, 0, 0, 1));
   EXPECT_EQ(0, Eval(e, 0, 1, 0));
@@ -669,9 +675,9 @@ TEST_P(SolverTest, Implication) {
 }
 
 TEST_P(SolverTest, Iff) {
-  LogicalExpr e = MakeBinaryLogical(OP_IFF,
-      MakeRelational(EQ, x, MakeConst(1)),
-      MakeRelational(EQ, y, MakeConst(1)));
+  LogicalExpr e = MakeBinaryLogical(mp::expr::IFF,
+      MakeRelational(mp::expr::EQ, x, MakeConst(1)),
+      MakeRelational(mp::expr::EQ, y, MakeConst(1)));
   EXPECT_EQ(1, Eval(e, 0, 0));
   EXPECT_EQ(0, Eval(e, 0, 1));
   EXPECT_EQ(0, Eval(e, 1, 0));
@@ -700,7 +706,7 @@ TEST_P(SolverTest, NonlinearObj) {
   Problem p;
   p.AddVar(2, 2, var::INTEGER);
   mp::Variable x = MakeVariable(0);
-  p.AddObj(obj::MIN, MakeBinary(OPMULT, x, x));
+  p.AddObj(obj::MIN, MakeBinary(mp::expr::MUL, x, x));
   EXPECT_EQ(4, Solve(p).obj_value());
 }
 

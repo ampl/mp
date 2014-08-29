@@ -404,6 +404,7 @@ class Solver : private ErrorHandler, private OutputHandler {
   };
   std::vector<SuffixInfo> suffixes_;
 
+  // TODO: remove
   void RegisterSuffixes(Problem &p);
 
   void HandleOutput(fmt::StringRef output) {

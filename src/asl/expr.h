@@ -176,16 +176,24 @@ class ASLBuilder;
 
 // Returns true if the non-null expression e is of type ExprT.
 template <typename ExprT>
-bool Is(Expr e);
+bool Is(expr::Kind k);
 }
 
 // Specialize Is<ExprT> for the class ExprClass corresponding to a single
-// expression kind with the specified operation code.
-#define AMPL_SPECIALIZE_IS(ExprClass, code) \
+// expression kind.
+#define MP_SPECIALIZE_IS(ExprT, expr_kind) \
 namespace internal { \
 template <> \
-inline bool Is<ExprClass>(Expr e) { \
-  return e.opcode() == code; \
+inline bool Is<ExprT>(expr::Kind k) { return k == expr::expr_kind; } \
+}
+
+// Specialize Is<ExprT> for the class ExprClass corresponding to a range
+// of expression kinds [start, end].
+#define MP_SPECIALIZE_IS_RANGE(ExprT, expr_kind) \
+namespace internal { \
+template <> \
+inline bool Is<ExprT>(expr::Kind k) { \
+  return k >= expr::FIRST_##expr_kind && k <= expr::LAST_##expr_kind; \
 } \
 }
 
@@ -195,9 +203,6 @@ inline bool Is<ExprClass>(Expr e) { \
 // process expressions of different types is by using ExprVisitor.
 class Expr {
  private:
-  // Returns the kind of this expression.
-  expr::Kind kind() const { return expr::kind(opcode()); }
-
   void True() const {}
   typedef void (Expr::*SafeBool)() const;
 
@@ -207,13 +212,12 @@ class Expr {
   template <typename Impl, typename Result, typename LResult>
   friend class ExprConverter;
 
-  friend class ExprBuilder;
   friend class internal::ASLBuilder;
   friend class Problem;
 
   template <typename ExprT>
   static ExprT Create(Expr e) {
-    assert(!e || internal::Is<ExprT>(e));
+    assert(!e || internal::Is<ExprT>(e.kind()));
     ExprT expr;
     expr.expr_ = e.expr_;
     return expr;
@@ -223,7 +227,7 @@ class Expr {
   // expression e. Only a minimal check is performed when assertions are
   // enabled to make sure that the opcode is within the valid range.
   explicit Expr(::expr *e) : expr_(e) {
-    assert(!expr_ || (kind() >= expr::EXPR_START && kind() <= expr::EXPR_END));
+    assert(!expr_ || (kind() >= expr::FIRST_EXPR && kind() <= expr::LAST_EXPR));
   }
 
  protected:
@@ -295,10 +299,9 @@ class Expr {
   //   }
   operator SafeBool() const { return expr_ ? &Expr::True : 0; }
 
-  // Returns the operation code (opcode) of this expression.
-  // The opcodes are defined in opcode.hd.
-  int opcode() const {
-    return static_cast<int>(reinterpret_cast<std::size_t>(expr_->op));
+  // Returns the expression kind.
+  expr::Kind kind() const {
+    return static_cast<expr::Kind>(reinterpret_cast<std::size_t>(expr_->op));
   }
 
   // Returns the function name or operator for this expression as a
@@ -306,27 +309,26 @@ class Expr {
   // strings. For example, OPPOW, OP1POW and OPCPOW all use the
   // same operator "^".
   const char *opstr() const {
-    assert(opcode() >= 0 && opcode() < N_OPS);
-    return expr::Info::INFO[opcode()].str;
+    assert(kind() >= expr::FIRST_EXPR && kind() <= expr::LAST_EXPR);
+    return internal::ExprInfo::INFO[kind()].str;
   }
 
   int precedence() const {
-    assert(opcode() >= 0 && opcode() < N_OPS);
-    return expr::Info::INFO[opcode()].precedence;
+    assert(kind() >= expr::FIRST_EXPR && kind() <= expr::LAST_EXPR);
+    return internal::ExprInfo::INFO[kind()].precedence;
   }
 
   bool operator==(Expr other) const { return expr_ == other.expr_; }
   bool operator!=(Expr other) const { return expr_ != other.expr_; }
 
   template <typename ExprT>
-  friend bool internal::Is(Expr e);
-
-  template <typename ExprT>
   friend ExprT Cast(Expr e);
-
-  // Recursively compares two expressions and returns true if they are equal.
-  friend bool Equal(Expr e1, Expr e2);
 };
+
+namespace internal {
+template <typename ExprT>
+inline bool Is(Expr e) { return Is<ExprT>(e.kind()); }
+}
 
 // Casts an expression to type ExprT. Returns a null expression if the cast
 // is not possible.
@@ -335,17 +337,7 @@ ExprT Cast(Expr e) {
   return internal::Is<ExprT>(e) ? Expr::Create<ExprT>(e) : ExprT();
 }
 
-namespace internal {
-template <typename ExprT>
-inline bool Is(Expr e) {
-  return e.kind() == ExprT::KIND;
-}
-
-template <>
-inline bool Is<Expr>(Expr e) {
-  return e.kind() >= expr::EXPR_START && e.kind() <= expr::EXPR_END;
-}
-}
+MP_SPECIALIZE_IS_RANGE(Expr, EXPR)
 
 // A numeric expression.
 class NumericExpr : public Expr {
@@ -353,13 +345,7 @@ class NumericExpr : public Expr {
   NumericExpr() {}
 };
 
-namespace internal {
-template <>
-inline bool Is<NumericExpr>(Expr e) {
-  expr::Kind k = e.kind();
-  return k >= expr::NUMERIC_START && k <= expr::NUMERIC_END;
-}
-}
+MP_SPECIALIZE_IS_RANGE(NumericExpr, NUMERIC)
 
 // A logical or constraint expression.
 class LogicalExpr : public Expr {
@@ -367,13 +353,7 @@ class LogicalExpr : public Expr {
   LogicalExpr() {}
 };
 
-namespace internal {
-template <>
-inline bool Is<LogicalExpr>(Expr e) {
-  expr::Kind k = e.kind();
-  return k >= expr::LOGICAL_START && k <= expr::LOGICAL_END;
-}
-}
+MP_SPECIALIZE_IS_RANGE(LogicalExpr, LOGICAL)
 
 // A numeric constant.
 // Examples: 42, -1.23e-4
@@ -385,7 +365,7 @@ class NumericConstant : public NumericExpr {
   double value() const { return reinterpret_cast<expr_n*>(expr_)->v; }
 };
 
-AMPL_SPECIALIZE_IS(NumericConstant, OPNUM)
+MP_SPECIALIZE_IS(NumericConstant, CONSTANT)
 
 // A reference to a variable.
 // Example: x
@@ -397,13 +377,11 @@ class Variable : public NumericExpr {
   int index() const { return expr_->a; }
 };
 
-AMPL_SPECIALIZE_IS(Variable, OPVARVAL)
+MP_SPECIALIZE_IS(Variable, VARIABLE)
 
-template <expr::Kind K, typename Base>
+template <typename Base>
 class BasicUnaryExpr : public Base {
  public:
-  static const expr::Kind KIND = K;
-
   BasicUnaryExpr() {}
 
   // Returns the argument of this expression.
@@ -412,16 +390,15 @@ class BasicUnaryExpr : public Base {
 
 // A unary numeric expression.
 // Examples: -x, sin(x), where x is a variable.
-typedef BasicUnaryExpr<expr::UNARY, NumericExpr> UnaryExpr;
+typedef BasicUnaryExpr<NumericExpr> UnaryExpr;
+MP_SPECIALIZE_IS_RANGE(UnaryExpr, UNARY)
 
 // A binary expression.
 // Base: base expression class.
 // Arg: argument expression class.
-template <expr::Kind K, typename Base, typename Arg = Base>
+template <typename Base, typename Arg = Base>
 class BasicBinaryExpr : public Base {
  public:
-  static const expr::Kind KIND = K;
-
   BasicBinaryExpr() {}
 
   // Returns the left-hand side (the first argument) of this expression.
@@ -433,7 +410,8 @@ class BasicBinaryExpr : public Base {
 
 // A binary numeric expression.
 // Examples: x / y, atan2(x, y), where x and y are variables.
-typedef BasicBinaryExpr<expr::BINARY, NumericExpr> BinaryExpr;
+typedef BasicBinaryExpr<NumericExpr> BinaryExpr;
+MP_SPECIALIZE_IS_RANGE(BinaryExpr, BINARY)
 
 template <typename Base>
 class BasicIfExpr : public Base {
@@ -457,7 +435,7 @@ class BasicIfExpr : public Base {
 // An if-then-else expression.
 // Example: if x != 0 then y else z, where x, y and z are variables.
 typedef BasicIfExpr<NumericExpr> IfExpr;
-AMPL_SPECIALIZE_IS(IfExpr, OPIFnl)
+MP_SPECIALIZE_IS(IfExpr, IF)
 
 // A piecewise-linear expression.
 // Example: <<0; -1, 1>> x, where x is a variable.
@@ -493,7 +471,7 @@ class PiecewiseLinearExpr : public NumericExpr {
   }
 };
 
-AMPL_SPECIALIZE_IS(PiecewiseLinearExpr, OPPLTERM)
+MP_SPECIALIZE_IS(PiecewiseLinearExpr, PLTERM)
 
 class Function {
  private:
@@ -560,7 +538,7 @@ class CallExpr : public NumericExpr {
   }
 };
 
-AMPL_SPECIALIZE_IS(CallExpr, OPFUNCALL)
+MP_SPECIALIZE_IS(CallExpr, CALL)
 
 // A numeric expression with a variable number of arguments.
 // The min and max functions always have at least one argument.
@@ -570,8 +548,6 @@ class VarArgExpr : public NumericExpr {
   static const de END;
 
  public:
-  static const expr::Kind KIND = expr::VARARG;
-
   VarArgExpr() {}
 
   // An argument iterator.
@@ -617,21 +593,15 @@ class VarArgExpr : public NumericExpr {
   }
 };
 
-template <expr::Kind>
-struct ExprInfo;
+MP_SPECIALIZE_IS_RANGE(VarArgExpr, VARARG)
 
-template <typename BaseT = void, typename ArgT = BaseT>
-struct BasicExprInfo {
-  typedef BaseT Base;
-  typedef ArgT Arg;
-};
-
-template <expr::Kind K>
-class BasicIteratedExpr : public ExprInfo<K>::Base {
+// An iterated expression.
+// ID is used to distinguish between expression types that have the same
+// base and argument type, namely SumExpr and NumberOfExpr.
+template <typename BaseT, typename ArgT = BaseT, int ID = 0>
+class BasicIteratedExpr : public BaseT {
  public:
-  static const expr::Kind KIND = K;
-
-  typedef typename ExprInfo<K>::Arg Arg;
+  typedef ArgT Arg;
 
   BasicIteratedExpr() {}
 
@@ -651,30 +621,21 @@ class BasicIteratedExpr : public ExprInfo<K>::Base {
   iterator end() const { return iterator(this->expr_->R.ep); }
 };
 
-template <>
-struct ExprInfo<expr::SUM> : BasicExprInfo<NumericExpr> {};
-
 // A sum expression.
 // Example: sum{i in I} x[i], where I is a set and x is a variable.
-typedef BasicIteratedExpr<expr::SUM> SumExpr;
-AMPL_SPECIALIZE_IS(SumExpr, OPSUMLIST)
-
-template <>
-struct ExprInfo<expr::COUNT> : BasicExprInfo<NumericExpr, LogicalExpr> {};
+typedef BasicIteratedExpr<NumericExpr> SumExpr;
+MP_SPECIALIZE_IS(SumExpr, SUM)
 
 // A count expression.
 // Example: count{i in I} (x[i] >= 0), where I is a set and x is a variable.
-typedef BasicIteratedExpr<expr::COUNT> CountExpr;
-AMPL_SPECIALIZE_IS(CountExpr, OPCOUNT)
-
-template <>
-struct ExprInfo<expr::NUMBEROF> : BasicExprInfo<NumericExpr> {};
+typedef BasicIteratedExpr<NumericExpr, LogicalExpr> CountExpr;
+MP_SPECIALIZE_IS(CountExpr, COUNT)
 
 // A numberof expression.
 // Example: numberof 42 in ({i in I} x[i]),
 // where I is a set and x is a variable.
-typedef BasicIteratedExpr<expr::NUMBEROF> NumberOfExpr;
-AMPL_SPECIALIZE_IS(NumberOfExpr, OPNUMBEROF)
+typedef BasicIteratedExpr<NumericExpr, NumericExpr, 1> NumberOfExpr;
+MP_SPECIALIZE_IS(NumberOfExpr, NUMBEROF)
 
 // A logical constant.
 // Examples: 0, 1
@@ -686,28 +647,27 @@ class LogicalConstant : public LogicalExpr {
   bool value() const { return reinterpret_cast<expr_n*>(expr_)->v != 0; }
 };
 
-AMPL_SPECIALIZE_IS(LogicalConstant, OPNUM)
+MP_SPECIALIZE_IS(LogicalConstant, CONSTANT)
 
 // A logical NOT expression.
 // Example: not a, where a is a logical expression.
-typedef BasicUnaryExpr<expr::NOT, LogicalExpr> NotExpr;
-AMPL_SPECIALIZE_IS(NotExpr, OPNOT)
+typedef BasicUnaryExpr<LogicalExpr> NotExpr;
+MP_SPECIALIZE_IS(NotExpr, NOT)
 
 // A binary logical expression.
 // Examples: a || b, a && b, where a and b are logical expressions.
-typedef BasicBinaryExpr<expr::BINARY_LOGICAL, LogicalExpr> BinaryLogicalExpr;
+typedef BasicBinaryExpr<LogicalExpr> BinaryLogicalExpr;
+MP_SPECIALIZE_IS_RANGE(BinaryLogicalExpr, BINARY_LOGICAL)
 
 // A relational expression.
 // Examples: x < y, x != y, where x and y are variables.
-typedef BasicBinaryExpr<
-    expr::RELATIONAL, LogicalExpr, NumericExpr> RelationalExpr;
+typedef BasicBinaryExpr<LogicalExpr, NumericExpr> RelationalExpr;
+MP_SPECIALIZE_IS_RANGE(RelationalExpr, RELATIONAL)
 
 // A logical count expression.
 // Examples: atleast 1 (x < y, x != y), where x and y are variables.
 class LogicalCountExpr : public LogicalExpr {
  public:
-  static const expr::Kind KIND = expr::LOGICAL_COUNT;
-
   LogicalCountExpr() {}
 
   // Returns the left-hand side (the first argument) of this expression.
@@ -717,25 +677,22 @@ class LogicalCountExpr : public LogicalExpr {
   CountExpr rhs() const { return Create<CountExpr>(expr_->R.e); }
 };
 
+MP_SPECIALIZE_IS_RANGE(LogicalCountExpr, LOGICAL_COUNT)
+
 // An implication expression.
 // Example: a ==> b else c, where a, b and c are logical expressions.
 typedef BasicIfExpr<LogicalExpr> ImplicationExpr;
-AMPL_SPECIALIZE_IS(ImplicationExpr, OPIMPELSE)
-
-template <>
-struct ExprInfo<expr::ITERATED_LOGICAL> : BasicExprInfo<LogicalExpr> {};
+MP_SPECIALIZE_IS(ImplicationExpr, IMPLICATION)
 
 // An iterated logical expression.
 // Example: exists{i in I} x[i] >= 0, where I is a set and x is a variable.
-typedef BasicIteratedExpr<expr::ITERATED_LOGICAL> IteratedLogicalExpr;
-
-template <>
-struct ExprInfo<expr::ALLDIFF> : BasicExprInfo<LogicalExpr, NumericExpr> {};
+typedef BasicIteratedExpr<LogicalExpr> IteratedLogicalExpr;
+MP_SPECIALIZE_IS_RANGE(IteratedLogicalExpr, ITERATED_LOGICAL)
 
 // An alldiff expression.
 // Example: alldiff{i in I} x[i], where I is a set and x is a variable.
-typedef BasicIteratedExpr<expr::ALLDIFF> AllDiffExpr;
-AMPL_SPECIALIZE_IS(AllDiffExpr, OPALLDIFF)
+typedef BasicIteratedExpr<LogicalExpr, NumericExpr> AllDiffExpr;
+MP_SPECIALIZE_IS(AllDiffExpr, ALLDIFF)
 
 class StringLiteral : public Expr {
  public:
@@ -744,13 +701,17 @@ class StringLiteral : public Expr {
   const char *value() const { return reinterpret_cast<expr_h*>(expr_)->sym; }
 };
 
-AMPL_SPECIALIZE_IS(StringLiteral, OPHOL)
+MP_SPECIALIZE_IS(StringLiteral, STRING)
 
 // Returns true iff e is a zero constant.
 inline bool IsZero(NumericExpr e) {
   NumericConstant c = Cast<NumericConstant>(e);
   return c && c.value() == 0;
 }
+
+// Recursively compares two expressions and returns true if they are equal.
+bool Equal(NumericExpr e1, NumericExpr e2);
+bool Equal(LogicalExpr e1, LogicalExpr e2);
 
 // An exception that is thrown when an ASL expression not supported
 // by the solver is encountered.
@@ -769,16 +730,12 @@ class UnsupportedExprError : public Error {
   }
 };
 
-namespace internal {
-std::string FormatOpCode(Expr e);
-}
-
 // An exception that is thrown when an invalid numeric expression
 // is encountered.
 class InvalidNumericExprError : public Error {
  public:
   explicit InvalidNumericExprError(NumericExpr e) :
-    Error("invalid numeric expression: " + internal::FormatOpCode(e)) {}
+    Error("invalid numeric expression: {}", e.kind()) {}
 };
 
 // An exception that is thrown when an invalid logical or constraint
@@ -786,7 +743,7 @@ class InvalidNumericExprError : public Error {
 class InvalidLogicalExprError : public Error {
  public:
   explicit InvalidLogicalExprError(LogicalExpr e) :
-    Error("invalid logical expression: " + internal::FormatOpCode(e)) {}
+    Error("invalid logical expression: {}", e.kind()) {}
 };
 
 #define AMPL_DISPATCH(call) static_cast<Impl*>(this)->call
@@ -1020,7 +977,7 @@ class ExprVisitor {
     return AMPL_DISPATCH(VisitVarArg(e));
   }
 
-   Result VisitSum(SumExpr e) {
+  Result VisitSum(SumExpr e) {
     return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
@@ -1135,100 +1092,99 @@ class ExprVisitor {
 
 template <typename Impl, typename Result, typename LResult>
 Result ExprVisitor<Impl, Result, LResult>::Visit(NumericExpr e) {
-  // All expressions except OPNUMBEROFs, OPIFSYM, OPFUNCALL and OPHOL
-  // are supported.
-  switch (e.opcode()) {
-  case OPPLUS:
+  // All expressions except OPNUMBEROFs, OPIFSYM are supported.
+  switch (e.kind()) {
+  case expr::ADD:
     return AMPL_DISPATCH(VisitPlus(Expr::Create<BinaryExpr>(e)));
-  case OPMINUS:
+  case expr::SUB:
     return AMPL_DISPATCH(VisitMinus(Expr::Create<BinaryExpr>(e)));
-  case OPMULT:
+  case expr::MUL:
     return AMPL_DISPATCH(VisitMult(Expr::Create<BinaryExpr>(e)));
-  case OPDIV:
+  case expr::DIV:
     return AMPL_DISPATCH(VisitDiv(Expr::Create<BinaryExpr>(e)));
-  case OPREM:
+  case expr::MOD:
     return AMPL_DISPATCH(VisitRem(Expr::Create<BinaryExpr>(e)));
-  case OPPOW:
+  case expr::POW:
     return AMPL_DISPATCH(VisitPow(Expr::Create<BinaryExpr>(e)));
-  case OPLESS:
+  case expr::LESS:
     return AMPL_DISPATCH(VisitNumericLess(Expr::Create<BinaryExpr>(e)));
-  case MINLIST:
+  case expr::MIN:
     return AMPL_DISPATCH(VisitMin(Expr::Create<VarArgExpr>(e)));
-  case MAXLIST:
+  case expr::MAX:
     return AMPL_DISPATCH(VisitMax(Expr::Create<VarArgExpr>(e)));
-  case FLOOR:
+  case expr::FLOOR:
     return AMPL_DISPATCH(VisitFloor(Expr::Create<UnaryExpr>(e)));
-  case CEIL:
+  case expr::CEIL:
     return AMPL_DISPATCH(VisitCeil(Expr::Create<UnaryExpr>(e)));
-  case ABS:
+  case expr::ABS:
     return AMPL_DISPATCH(VisitAbs(Expr::Create<UnaryExpr>(e)));
-  case OPUMINUS:
+  case expr::MINUS:
     return AMPL_DISPATCH(VisitUnaryMinus(Expr::Create<UnaryExpr>(e)));
-  case OPIFnl:
+  case expr::IF:
     return AMPL_DISPATCH(VisitIf(Expr::Create<IfExpr>(e)));
-  case OP_tanh:
+  case expr::TANH:
     return AMPL_DISPATCH(VisitTanh(Expr::Create<UnaryExpr>(e)));
-  case OP_tan:
+  case expr::TAN:
     return AMPL_DISPATCH(VisitTan(Expr::Create<UnaryExpr>(e)));
-  case OP_sqrt:
+  case expr::SQRT:
     return AMPL_DISPATCH(VisitSqrt(Expr::Create<UnaryExpr>(e)));
-  case OP_sinh:
+  case expr::SINH:
     return AMPL_DISPATCH(VisitSinh(Expr::Create<UnaryExpr>(e)));
-  case OP_sin:
+  case expr::SIN:
     return AMPL_DISPATCH(VisitSin(Expr::Create<UnaryExpr>(e)));
-  case OP_log10:
+  case expr::LOG10:
     return AMPL_DISPATCH(VisitLog10(Expr::Create<UnaryExpr>(e)));
-  case OP_log:
+  case expr::LOG:
     return AMPL_DISPATCH(VisitLog(Expr::Create<UnaryExpr>(e)));
-  case OP_exp:
+  case expr::EXP:
     return AMPL_DISPATCH(VisitExp(Expr::Create<UnaryExpr>(e)));
-  case OP_cosh:
+  case expr::COSH:
     return AMPL_DISPATCH(VisitCosh(Expr::Create<UnaryExpr>(e)));
-  case OP_cos:
+  case expr::COS:
     return AMPL_DISPATCH(VisitCos(Expr::Create<UnaryExpr>(e)));
-  case OP_atanh:
+  case expr::ATANH:
     return AMPL_DISPATCH(VisitAtanh(Expr::Create<UnaryExpr>(e)));
-  case OP_atan2:
+  case expr::ATAN2:
     return AMPL_DISPATCH(VisitAtan2(Expr::Create<BinaryExpr>(e)));
-  case OP_atan:
+  case expr::ATAN:
     return AMPL_DISPATCH(VisitAtan(Expr::Create<UnaryExpr>(e)));
-  case OP_asinh:
+  case expr::ASINH:
     return AMPL_DISPATCH(VisitAsinh(Expr::Create<UnaryExpr>(e)));
-  case OP_asin:
+  case expr::ASIN:
     return AMPL_DISPATCH(VisitAsin(Expr::Create<UnaryExpr>(e)));
-  case OP_acosh:
+  case expr::ACOSH:
     return AMPL_DISPATCH(VisitAcosh(Expr::Create<UnaryExpr>(e)));
-  case OP_acos:
+  case expr::ACOS:
     return AMPL_DISPATCH(VisitAcos(Expr::Create<UnaryExpr>(e)));
-  case OPSUMLIST:
+  case expr::SUM:
     return AMPL_DISPATCH(VisitSum(Expr::Create<SumExpr>(e)));
-  case OPintDIV:
+  case expr::INT_DIV:
     return AMPL_DISPATCH(VisitIntDiv(Expr::Create<BinaryExpr>(e)));
-  case OPprecision:
+  case expr::PRECISION:
     return AMPL_DISPATCH(VisitPrecision(Expr::Create<BinaryExpr>(e)));
-  case OPround:
+  case expr::ROUND:
     return AMPL_DISPATCH(VisitRound(Expr::Create<BinaryExpr>(e)));
-  case OPtrunc:
+  case expr::TRUNC:
     return AMPL_DISPATCH(VisitTrunc(Expr::Create<BinaryExpr>(e)));
-  case OPCOUNT:
+  case expr::COUNT:
     return AMPL_DISPATCH(VisitCount(Expr::Create<CountExpr>(e)));
-  case OPNUMBEROF:
+  case expr::NUMBEROF:
     return AMPL_DISPATCH(VisitNumberOf(Expr::Create<NumberOfExpr>(e)));
-  case OPPLTERM:
+  case expr::PLTERM:
     return AMPL_DISPATCH(VisitPiecewiseLinear(
         Expr::Create<PiecewiseLinearExpr>(e)));
-  case OP1POW:
+  case expr::POW_CONST_EXP:
     return AMPL_DISPATCH(VisitPowConstExp(Expr::Create<BinaryExpr>(e)));
-  case OP2POW:
+  case expr::POW2:
     return AMPL_DISPATCH(VisitPow2(Expr::Create<UnaryExpr>(e)));
-  case OPCPOW:
+  case expr::POW_CONST_BASE:
     return AMPL_DISPATCH(VisitPowConstBase(Expr::Create<BinaryExpr>(e)));
-  case OPFUNCALL:
+  case expr::CALL:
     return AMPL_DISPATCH(VisitCall(Expr::Create<CallExpr>(e)));
-  case OPNUM:
+  case expr::CONSTANT:
     return AMPL_DISPATCH(VisitNumericConstant(
         Expr::Create<NumericConstant>(e)));
-  case OPVARVAL:
+  case expr::VARIABLE:
     return AMPL_DISPATCH(VisitVariable(Expr::Create<Variable>(e)));
   default:
     // Normally this branch shouldn't be executed.
@@ -1238,48 +1194,48 @@ Result ExprVisitor<Impl, Result, LResult>::Visit(NumericExpr e) {
 
 template <typename Impl, typename Result, typename LResult>
 LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
-  switch (e.opcode()) {
-  case OPOR:
+  switch (e.kind()) {
+  case expr::OR:
     return AMPL_DISPATCH(VisitOr(Expr::Create<BinaryLogicalExpr>(e)));
-  case OPAND:
+  case expr::AND:
     return AMPL_DISPATCH(VisitAnd(Expr::Create<BinaryLogicalExpr>(e)));
-  case LT:
+  case expr::LT:
     return AMPL_DISPATCH(VisitLess(Expr::Create<RelationalExpr>(e)));
-  case LE:
+  case expr::LE:
     return AMPL_DISPATCH(VisitLessEqual(Expr::Create<RelationalExpr>(e)));
-  case EQ:
+  case expr::EQ:
     return AMPL_DISPATCH(VisitEqual(Expr::Create<RelationalExpr>(e)));
-  case GE:
+  case expr::GE:
     return AMPL_DISPATCH(VisitGreaterEqual(Expr::Create<RelationalExpr>(e)));
-  case GT:
+  case expr::GT:
     return AMPL_DISPATCH(VisitGreater(Expr::Create<RelationalExpr>(e)));
-  case NE:
+  case expr::NE:
     return AMPL_DISPATCH(VisitNotEqual(Expr::Create<RelationalExpr>(e)));
-  case OPNOT:
+  case expr::NOT:
     return AMPL_DISPATCH(VisitNot(Expr::Create<NotExpr>(e)));
-  case OPATLEAST:
+  case expr::ATLEAST:
     return AMPL_DISPATCH(VisitAtLeast(Expr::Create<LogicalCountExpr>(e)));
-  case OPATMOST:
+  case expr::ATMOST:
     return AMPL_DISPATCH(VisitAtMost(Expr::Create<LogicalCountExpr>(e)));
-  case OPEXACTLY:
+  case expr::EXACTLY:
     return AMPL_DISPATCH(VisitExactly(Expr::Create<LogicalCountExpr>(e)));
-  case OPNOTATLEAST:
+  case expr::NOT_ATLEAST:
     return AMPL_DISPATCH(VisitNotAtLeast(Expr::Create<LogicalCountExpr>(e)));
-  case OPNOTATMOST:
+  case expr::NOT_ATMOST:
     return AMPL_DISPATCH(VisitNotAtMost(Expr::Create<LogicalCountExpr>(e)));
-  case OPNOTEXACTLY:
+  case expr::NOT_EXACTLY:
     return AMPL_DISPATCH(VisitNotExactly(Expr::Create<LogicalCountExpr>(e)));
-  case ANDLIST:
+  case expr::FORALL:
     return AMPL_DISPATCH(VisitForAll(Expr::Create<IteratedLogicalExpr>(e)));
-  case ORLIST:
+  case expr::EXISTS:
     return AMPL_DISPATCH(VisitExists(Expr::Create<IteratedLogicalExpr>(e)));
-  case OPIMPELSE:
+  case expr::IMPLICATION:
     return AMPL_DISPATCH(VisitImplication(Expr::Create<ImplicationExpr>(e)));
-  case OP_IFF:
+  case expr::IFF:
     return AMPL_DISPATCH(VisitIff(Expr::Create<BinaryLogicalExpr>(e)));
-  case OPALLDIFF:
+  case expr::ALLDIFF:
     return AMPL_DISPATCH(VisitAllDiff(Expr::Create<AllDiffExpr>(e)));
-  case OPNUM:
+  case expr::CONSTANT:
     return AMPL_DISPATCH(VisitLogicalConstant(
         Expr::Create<LogicalConstant>(e)));
   default:
@@ -1296,31 +1252,31 @@ class ExprConverter : public ExprVisitor<Impl, Result, LResult> {
  private:
   std::vector< ::expr> exprs_;
 
-  RelationalExpr Convert(LogicalCountExpr e, int opcode) {
+  RelationalExpr Convert(LogicalCountExpr e, expr::Kind kind) {
     exprs_.push_back(*e.expr_);
     ::expr *result = &exprs_.back();
-    result->op = reinterpret_cast<efunc*>(opcode);
+    result->op = reinterpret_cast<efunc*>(kind);
     return Expr::Create<RelationalExpr>(result);
   }
 
  public:
   LResult VisitAtLeast(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitLessEqual(Convert(e, LE)));
+    return AMPL_DISPATCH(VisitLessEqual(Convert(e, expr::LE)));
   }
   LResult VisitAtMost(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitGreaterEqual(Convert(e, GE)));
+    return AMPL_DISPATCH(VisitGreaterEqual(Convert(e, expr::GE)));
   }
   LResult VisitExactly(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitEqual(Convert(e, EQ)));
+    return AMPL_DISPATCH(VisitEqual(Convert(e, expr::EQ)));
   }
   LResult VisitNotAtLeast(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitGreater(Convert(e, GT)));
+    return AMPL_DISPATCH(VisitGreater(Convert(e, expr::GT)));
   }
   LResult VisitNotAtMost(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitLess(Convert(e, LT)));
+    return AMPL_DISPATCH(VisitLess(Convert(e, expr::LT)));
   }
   LResult VisitNotExactly(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitNotEqual(Convert(e, NE)));
+    return AMPL_DISPATCH(VisitNotEqual(Convert(e, expr::NE)));
   }
 };
 

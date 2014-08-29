@@ -66,7 +66,7 @@ void SSDSolver::DoSolve(Problem &p) {
   for (int i = 0; i < num_scenarios; ++i) {
     LogicalExpr logical_expr = p.logical_con_expr(i);
     RelationalExpr rel_expr = Cast<RelationalExpr>(logical_expr);
-    if (!rel_expr || rel_expr.opcode() != NE ||
+    if (!rel_expr || rel_expr.kind() != expr::NE ||
         Cast<NumericConstant>(rel_expr.rhs()).value() != 0) {
       throw UnsupportedExprError::CreateFromExprString(logical_expr.opstr());
     }

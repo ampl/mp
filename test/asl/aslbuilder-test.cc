@@ -801,7 +801,7 @@ TEST(ASLBuilderTest, SetObj) {
   EXPECT_EQ(0, obj_de[1].e);
   builder.SetObj(1, mp::obj::MAX, builder.MakeNumericConstant(42));
   EXPECT_EQ(mp::obj::MAX, asl->i.objtype_[1]);
-  EXPECT_EQ(reinterpret_cast<efunc*>(OPNUM), obj_de[1].e->op);
+  EXPECT_EQ(reinterpret_cast<efunc*>(mp::expr::CONSTANT), obj_de[1].e->op);
 }
 
 #ifndef NDEBUG
@@ -822,7 +822,7 @@ TEST(ASLBuilderTest, SetCon) {
   cde *con_de = reinterpret_cast<ASL_fg*>(asl.get())->I.con_de_;
   EXPECT_EQ(0, con_de[2].e);
   builder.SetCon(2, builder.MakeNumericConstant(42));
-  EXPECT_EQ(reinterpret_cast<efunc*>(OPNUM), con_de[2].e->op);
+  EXPECT_EQ(reinterpret_cast<efunc*>(mp::expr::CONSTANT), con_de[2].e->op);
 }
 
 #ifndef NDEBUG
@@ -843,7 +843,7 @@ TEST(ASLBuilderTest, SetLogicalCon) {
   cde *lcon_de = reinterpret_cast<ASL_fg*>(asl.get())->I.lcon_de_;
   EXPECT_EQ(0, lcon_de[2].e);
   builder.SetLogicalCon(2, builder.MakeLogicalConstant(true));
-  EXPECT_EQ(reinterpret_cast<efunc*>(OPNUM), lcon_de[2].e->op);
+  EXPECT_EQ(reinterpret_cast<efunc*>(mp::expr::CONSTANT), lcon_de[2].e->op);
 }
 
 #ifndef NDEBUG
@@ -966,9 +966,9 @@ TEST(ASLBuilderTest, SizeOverflow) {
 
   num_args = (INT_MAX - sizeof(expr*)) / sizeof(de) + 1;
   EXPECT_THROW(builder.MakeVarArg(
-                 MINLIST, MakeArrayRef(args, num_args)), OverflowError);
+                 mp::expr::MIN, MakeArrayRef(args, num_args)), OverflowError);
   EXPECT_THROW(builder.MakeVarArg(
-                 MINLIST, MakeArrayRef(args, max_size)), OverflowError);
+                 mp::expr::MIN, MakeArrayRef(args, max_size)), OverflowError);
 
   num_args = (INT_MAX - sizeof(expr) + sizeof(double)) / sizeof(expr*);
   EXPECT_THROW(builder.MakeSum(MakeArrayRef(args, num_args)), OverflowError);
@@ -984,9 +984,11 @@ TEST(ASLBuilderTest, SizeOverflow) {
                  MakeArrayRef(args, max_size)), OverflowError);
 
   EXPECT_THROW(builder.MakeIteratedLogical(
-                 ORLIST, MakeArrayRef(largs, num_args)), OverflowError);
+                 mp::expr::EXISTS, MakeArrayRef(largs, num_args)),
+               OverflowError);
   EXPECT_THROW(builder.MakeIteratedLogical(
-                 ORLIST, MakeArrayRef(largs, max_size)), OverflowError);
+                 mp::expr::EXISTS, MakeArrayRef(largs, max_size)),
+               OverflowError);
 
   EXPECT_THROW(builder.MakeAllDiff(
                  MakeArrayRef(args, num_args)), OverflowError);

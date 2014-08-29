@@ -446,7 +446,7 @@ class NLReader {
   struct CountExprReader {
     typedef typename Handler::CountExpr Expr;
     Expr Read(NLReader &r, int opcode) const {
-      if (opcode != OPCOUNT)
+      if (opcode != expr::COUNT)
         r.reader_.ReportError("expected count expression opcode");
       return r.ReadCountExpr();
     }
@@ -483,7 +483,7 @@ class NLReader {
   template <typename ExprReader>
   typename ExprReader::Expr ReadExpr() {
     int opcode = reader_.ReadUInt();
-    if (opcode >= N_OPS)
+    if (opcode > expr::MAX_OPCODE)
       reader_.ReportError("invalid opcode {}", opcode);
     reader_.ReadTillEndOfLine();
     return ExprReader().Read(*this, opcode);
@@ -665,12 +665,14 @@ typename Handler::NumericExpr
 template <typename Reader, typename Handler>
 typename Handler::NumericExpr
     NLReader<Reader, Handler>::ReadNumericExpr(int opcode) {
-  switch (expr::kind(opcode)) {
-  case expr::UNARY:
-    return handler_.MakeUnary(opcode, ReadNumericExpr());
-  case expr::BINARY: {
+  const expr::OpCodeInfo &info = expr::GetOpCodeInfo(opcode);
+  expr::Kind kind = info.kind;
+  switch (info.first_kind) {
+  case expr::FIRST_UNARY:
+    return handler_.MakeUnary(kind, ReadNumericExpr());
+  case expr::FIRST_BINARY: {
     BinaryArgReader<> args(*this);
-    return handler_.MakeBinary(opcode, args.lhs, args.rhs);
+    return handler_.MakeBinary(kind, args.lhs, args.rhs);
   }
   case expr::IF: {
     LogicalExpr condition = ReadLogicalExpr();
@@ -694,8 +696,8 @@ typename Handler::NumericExpr
     return handler_.MakePiecewiseLinear(
           num_slopes - 1, &breakpoints[0], &slopes[0], ReadVariable());
   }
-  case expr::VARARG:
-    return handler_.MakeVarArg(opcode, ReadArgs<>(*this, 1));
+  case expr::FIRST_VARARG:
+    return handler_.MakeVarArg(kind, ReadArgs<>(*this, 1));
   case expr::SUM:
     return handler_.MakeSum(ReadArgs<>(*this));
   case expr::COUNT:
@@ -723,23 +725,25 @@ typename Handler::LogicalExpr NLReader<Reader, Handler>::ReadLogicalExpr() {
 template <typename Reader, typename Handler>
 typename Handler::LogicalExpr
     NLReader<Reader, Handler>::ReadLogicalExpr(int opcode) {
-  switch (expr::kind(opcode)) {
+  const expr::OpCodeInfo &info = expr::GetOpCodeInfo(opcode);
+  expr::Kind kind = info.kind;
+  switch (info.first_kind) {
   case expr::NOT:
     return handler_.MakeNot(ReadLogicalExpr());
-  case expr::BINARY_LOGICAL: {
+  case expr::FIRST_BINARY_LOGICAL: {
     BinaryArgReader<LogicalExprReader> args(*this);
-    return handler_.MakeBinaryLogical(opcode, args.lhs, args.rhs);
+    return handler_.MakeBinaryLogical(kind, args.lhs, args.rhs);
   }
-  case expr::RELATIONAL: {
+  case expr::FIRST_RELATIONAL: {
     BinaryArgReader<> args(*this);
-    return handler_.MakeRelational(opcode, args.lhs, args.rhs);
+    return handler_.MakeRelational(kind, args.lhs, args.rhs);
   }
-  case expr::LOGICAL_COUNT: {
+  case expr::FIRST_LOGICAL_COUNT: {
     NumericExpr lhs = ReadNumericExpr();
     char c = reader_.ReadChar();
     if (c != 'o')
       reader_.ReportError("expected count expression");
-    return handler_.MakeLogicalCount(opcode, lhs, ReadExpr<CountExprReader>());
+    return handler_.MakeLogicalCount(kind, lhs, ReadExpr<CountExprReader>());
   }
   case expr::IMPLICATION: {
     LogicalExpr condition = ReadLogicalExpr();
@@ -747,9 +751,9 @@ typename Handler::LogicalExpr
     LogicalExpr false_expr = ReadLogicalExpr();
     return handler_.MakeImplication(condition, true_expr, false_expr);
   }
-  case expr::ITERATED_LOGICAL:
+  case expr::FIRST_ITERATED_LOGICAL:
     return handler_.MakeIteratedLogical(
-          opcode, ReadArgs<LogicalExprReader>(*this));
+          kind, ReadArgs<LogicalExprReader>(*this));
   case expr::ALLDIFF:
     return handler_.MakeAllDiff(ReadArgs<>(*this));
   default:

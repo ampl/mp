@@ -405,7 +405,7 @@ LinExpr NLToGecodeConverter::VisitFloor(UnaryExpr e) {
   // floor does nothing because Gecode supports only integer expressions
   // currently.
   NumericExpr arg = e.arg();
-  if (arg.opcode() == OP_sqrt)
+  if (arg.kind() == expr::SQRT)
     return sqrt(Visit(Cast<UnaryExpr>(arg).arg()));
   return Visit(arg);
 }

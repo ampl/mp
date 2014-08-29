@@ -29,8 +29,6 @@ extern "C" {
 #include "mp/solver.h"
 #include "problem.h"
 
-extern "C" const char *Version_Qualifier_ASL;
-
 void mp::Solver::RegisterSuffixes(Problem &p) {
   std::size_t num_suffixes = suffixes_.size();
   std::vector<SufDecl> suffix_decls(num_suffixes);
