@@ -175,17 +175,22 @@ int parse_nonnegative_int(const Char *&s) {
   return value;
 }
 
-template <typename Char>
-const Char *find_closing_brace(const Char *s, int num_open_braces = 1) {
-  for (int n = num_open_braces; *s; ++s) {
-    if (*s == '{') {
-      ++n;
-    } else if (*s == '}') {
-      if (--n == 0)
-        return s;
-    }
+inline void require_numeric_argument(const Arg &arg, char spec) {
+  if (arg.type > Arg::LAST_NUMERIC_TYPE) {
+    throw fmt::FormatError(
+          fmt::format("format specifier '{}' requires numeric argument", spec));
   }
-  throw fmt::FormatError("unmatched '{' in format");
+}
+
+template <typename Char>
+void check_sign(const Char *&s, const Arg &arg) {
+  char sign = static_cast<char>(*s);
+  require_numeric_argument(arg, sign);
+  if (arg.type == Arg::UINT || arg.type == Arg::ULONG_LONG) {
+    throw fmt::FormatError(fmt::format(
+      "format specifier '{}' requires signed argument", sign));
+  }
+  ++s;
 }
 
 // Checks if an argument is a valid printf width specifier and sets
@@ -560,7 +565,7 @@ class fmt::internal::ArgFormatter :
   }
 
   void visit_custom(Arg::CustomValue c) {
-    c.format(&formatter_, c.value, format_);
+    c.format(&formatter_, c.value, &format_);
   }
 };
 
@@ -759,43 +764,28 @@ inline const Arg &fmt::BasicFormatter<Char>::parse_arg_index(const Char *&s) {
   return *arg;
 }
 
-template <typename Char>
-void fmt::BasicFormatter<Char>::check_sign(
-    const Char *&s, const Arg &arg) {
-  char sign = static_cast<char>(*s);
-  if (arg.type > Arg::LAST_NUMERIC_TYPE) {
-    throw FormatError(fmt::format(
-      "format specifier '{}' requires numeric argument", sign));
-  }
-  if (arg.type == Arg::UINT || arg.type == Arg::ULONG_LONG) {
-    throw FormatError(fmt::format(
-      "format specifier '{}' requires signed argument", sign));
-  }
-  ++s;
-}
-
-const Arg *fmt::internal::FormatterBase::next_arg(const char *&error) {
-  if (next_arg_index_ < 0) {
-    error = "cannot switch from manual to automatic argument indexing";
-    return 0;
-  }
-  unsigned arg_index = next_arg_index_++;
+const Arg *fmt::internal::FormatterBase::do_get_arg(
+    unsigned arg_index, const char *&error) {
   if (arg_index < args_.size())
     return &args_[arg_index];
-  error = "argument index is out of range in format";
+  error = "argument index out of range";
   return 0;
 }
 
-const Arg *fmt::internal::FormatterBase::get_arg(
+inline const Arg *fmt::internal::FormatterBase::next_arg(const char *&error) {
+  if (next_arg_index_ >= 0)
+    return do_get_arg(next_arg_index_++, error);
+  error = "cannot switch from manual to automatic argument indexing";
+  return 0;
+}
+
+inline const Arg *fmt::internal::FormatterBase::get_arg(
     unsigned arg_index, const char *&error) {
-  if (next_arg_index_ > 0) {
-    error = "cannot switch from automatic to manual argument indexing";
-    return 0;
+  if (next_arg_index_ <= 0) {
+    next_arg_index_ = -1;
+    return do_get_arg(arg_index, error);
   }
-  next_arg_index_ = -1;
-  if (arg_index < args_.size())
-    return &args_[arg_index];
-  error = "argument index is out of range in format";
+  error = "cannot switch from automatic to manual argument indexing";
   return 0;
 }
 
@@ -876,8 +866,7 @@ void fmt::internal::PrintfFormatter<Char>::format(
     BasicWriter<Char> &writer, BasicStringRef<Char> format,
     const ArgList &args) {
   const Char *start = format.c_str();
-  args_ = args;
-  next_arg_index_ = 0;
+  set_args(args);
   const Char *s = start;
   while (*s) {
     Char c = *s++;
@@ -1020,11 +1009,13 @@ void fmt::internal::PrintfFormatter<Char>::format(
       spec.type_ = 'x';
       writer.write_int(reinterpret_cast<uintptr_t>(arg.pointer_value), spec);
       break;
-    case Arg::CUSTOM:
+    case Arg::CUSTOM: {
       if (spec.type_)
         internal::report_unknown_type(spec.type_, "object");
-      arg.custom.format(&writer, arg.custom.value, "s");
+      const void *s = "s";
+      arg.custom.format(&writer, arg.custom.value, &s);
       break;
+    }
     default:
       assert(false);
       break;
@@ -1035,14 +1026,14 @@ void fmt::internal::PrintfFormatter<Char>::format(
 
 template <typename Char>
 const Char *fmt::BasicFormatter<Char>::format(
-    const Char *format_str, const Arg &arg) {
+    const Char *&format_str, const Arg &arg) {
   const Char *s = format_str;
   const char *error = 0;
   FormatSpec spec;
   if (*s == ':') {
     if (arg.type == Arg::CUSTOM) {
-      arg.custom.format(this, arg.custom.value, s);
-      return find_closing_brace(s) + 1;
+      arg.custom.format(this, arg.custom.value, &s);
+      return s;
     }
     ++s;
     // Parse fill and alignment.
@@ -1072,8 +1063,8 @@ const Char *fmt::BasicFormatter<Char>::format(
             s += 2;
             spec.fill_ = c;
           } else ++s;
-          if (spec.align_ == ALIGN_NUMERIC && arg.type > Arg::LAST_NUMERIC_TYPE)
-            throw FormatError("format specifier '=' requires numeric argument");
+          if (spec.align_ == ALIGN_NUMERIC)
+            require_numeric_argument(arg, '=');
           break;
         }
       } while (--p >= s);
@@ -1096,9 +1087,7 @@ const Char *fmt::BasicFormatter<Char>::format(
     }
 
     if (*s == '#') {
-      if (arg.type > Arg::LAST_NUMERIC_TYPE)
-        // TODO: make FormatError accept arguments
-        throw FormatError("format specifier '#' requires numeric argument");
+      require_numeric_argument(arg, '#');
       spec.flags_ |= HASH_FLAG;
       ++s;
     }
@@ -1106,8 +1095,7 @@ const Char *fmt::BasicFormatter<Char>::format(
     // Parse width and zero flag.
     if ('0' <= *s && *s <= '9') {
       if (*s == '0') {
-        if (arg.type > Arg::LAST_NUMERIC_TYPE)
-          throw FormatError("format specifier '0' requires numeric argument");
+        require_numeric_argument(arg, '0');
         spec.align_ = ALIGN_NUMERIC;
         spec.fill_ = '0';
       }
@@ -1130,12 +1118,12 @@ const Char *fmt::BasicFormatter<Char>::format(
         ++s;
         const Arg &precision_arg = parse_arg_index(s);
         if (*s++ != '}')
-          throw FormatError("unmatched '{' in format");
+          throw FormatError("invalid format string");
         ULongLong value = 0;
         switch (precision_arg.type) {
           case Arg::INT:
             if (precision_arg.int_value < 0)
-              throw FormatError("negative precision in format");
+              throw FormatError("negative precision");
             value = precision_arg.int_value;
             break;
           case Arg::UINT:
@@ -1143,7 +1131,7 @@ const Char *fmt::BasicFormatter<Char>::format(
             break;
           case Arg::LONG_LONG:
             if (precision_arg.long_long_value < 0)
-              throw FormatError("negative precision in format");
+              throw FormatError("negative precision");
             value = precision_arg.long_long_value;
             break;
           case Arg::ULONG_LONG:
@@ -1156,7 +1144,7 @@ const Char *fmt::BasicFormatter<Char>::format(
           throw FormatError("number is too big");
         spec.precision_ = static_cast<int>(value);
       } else {
-        throw FormatError("missing precision in format");
+        throw FormatError("missing precision specifier");
       }
       if (arg.type != Arg::DOUBLE && arg.type != Arg::LONG_DOUBLE) {
         throw FormatError(
@@ -1170,7 +1158,7 @@ const Char *fmt::BasicFormatter<Char>::format(
   }
 
   if (*s++ != '}')
-    throw FormatError("unmatched '{' in format");
+    throw FormatError("missing '}' in format string");
   start_ = s;
 
   // Format argument.
@@ -1182,8 +1170,7 @@ template <typename Char>
 void fmt::BasicFormatter<Char>::format(
     BasicStringRef<Char> format_str, const ArgList &args) {
   const Char *s = start_ = format_str.c_str();
-  args_ = args;
-  next_arg_index_ = 0;
+  set_args(args);
   while (*s) {
     Char c = *s++;
     if (c != '{' && c != '}') continue;
@@ -1193,7 +1180,7 @@ void fmt::BasicFormatter<Char>::format(
       continue;
     }
     if (c == '}')
-      throw FormatError("unmatched '}' in format");
+      throw FormatError("unmatched '}' in format string");
     write(writer_, start_, s - 1);
     Arg arg = parse_arg_index(s);
     s = format(s, arg);

@@ -132,7 +132,7 @@ template <typename Char>
 class BasicFormatter;
 
 template <typename Char, typename T>
-void format(BasicFormatter<Char> &f, const Char *format_str, const T &value);
+void format(BasicFormatter<Char> &f, const Char *&format_str, const T &value);
 
 /**
   \rst
@@ -215,8 +215,8 @@ typedef BasicStringRef<wchar_t> WStringRef;
 */
 class FormatError : public std::runtime_error {
 public:
-  explicit FormatError(const std::string &message)
-  : std::runtime_error(message) {}
+  explicit FormatError(StringRef message)
+  : std::runtime_error(message.c_str()) {}
 };
 
 namespace internal {
@@ -583,7 +583,7 @@ struct Arg {
   };
 
   typedef void (*FormatFunc)(
-      void *formatter, const void *arg, const void *format_str);
+      void *formatter, const void *arg, void *format_str_ptr);
 
   struct CustomValue {
     const void *value;
@@ -634,9 +634,9 @@ class MakeArg : public Arg {
   // Formats an argument of a custom type, such as a user-defined class.
   template <typename T>
   static void format_custom_arg(
-      void *formatter, const void *arg, const void *format_str) {
+      void *formatter, const void *arg, void *format_str_ptr) {
     format(*static_cast<BasicFormatter<Char>*>(formatter),
-        static_cast<const Char*>(format_str), *static_cast<const T*>(arg));
+        *static_cast<const Char**>(format_str_ptr), *static_cast<const T*>(arg));
   }
 
 public:
@@ -842,14 +842,24 @@ struct FormatSpec;
 namespace internal {
 
 class FormatterBase {
-protected:
+ private:
   ArgList args_;
   int next_arg_index_;
+
+  // Returns the argument with specified index.
+  const Arg *do_get_arg(unsigned arg_index, const char *&error);
+
+ protected:
+  void set_args(const ArgList &args) {
+    args_ = args;
+    next_arg_index_ = 0;
+  }
 
   // Returns the next argument.
   const Arg *next_arg(const char *&error);
 
-  // Returns the argument with specified index.
+  // Checks if manual indexing is used and returns the argument with
+  // specified index.
   const Arg *get_arg(unsigned arg_index, const char *&error);
 
   template <typename Char>
@@ -889,8 +899,6 @@ private:
   // Parses argument index and returns corresponding argument.
   const internal::Arg &parse_arg_index(const Char *&s);
 
-  void check_sign(const Char *&s, const internal::Arg &arg);
-
 public:
   explicit BasicFormatter(BasicWriter<Char> &w) : writer_(w) {}
 
@@ -898,7 +906,7 @@ public:
 
   void format(BasicStringRef<Char> format_str, const ArgList &args);
 
-  const Char *format(const Char *format_str, const internal::Arg &arg);
+  const Char *format(const Char *&format_str, const internal::Arg &arg);
 };
 
 enum Alignment {
@@ -1683,10 +1691,10 @@ void BasicWriter<Char>::write_int(T value, const Spec &spec) {
 
 // Formats a value.
 template <typename Char, typename T>
-void format(BasicFormatter<Char> &f, const Char *format_str, const T &value) {
+void format(BasicFormatter<Char> &f, const Char *&format_str, const T &value) {
   std::basic_ostringstream<Char> os;
   os << value;
-  f.format(format_str, internal::MakeArg<Char>(os.str()));
+  format_str = f.format(format_str, internal::MakeArg<Char>(os.str()));
 }
 
 // Reports a system error without throwing an exception.
