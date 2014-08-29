@@ -21,6 +21,7 @@
  */
 
 #include <algorithm>
+#include <vector>
 
 #include "mp/posix.h"
 #include "mp/problem-base.h"
@@ -184,7 +185,7 @@ int main(int argc, char **argv) {
     expr_info[info[i].kind] = info + i;
 
   f.print("const mp::internal::ExprInfo mp::internal::ExprInfo::INFO[] = {{\n");
-  f.print("  {{prec::UNKNOWN, \"unknown\"}}");
+  f.print("  {{-1, prec::UNKNOWN, \"unknown\"}}");
   for (std::size_t i = 1; i <= expr::LAST_EXPR; ++i) {
     f.print(",\n");
     const ExprInfo *ei = expr_info[i];
@@ -192,7 +193,7 @@ int main(int argc, char **argv) {
       fmt::print(stderr, "unknown expression kind {}", i);
       return 1;
     }
-    f.print("  {{prec::{}, \"{}\"}}", ei->prec_str, ei->str);
+    f.print("  {{{}, prec::{}, \"{}\"}}", ei->opcode, ei->prec_str, ei->str);
   }
   f.print("\n}};\n");
   return 0;
