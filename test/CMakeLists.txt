@@ -75,3 +75,7 @@ add_dependencies(os-test test-helper)
 add_mp_test(rstparser-test rstparser-test.cc)
 add_mp_test(safeint-test safeint-test.cc)
 
+add_library(ampltestsolver SHARED testsolver.cc ../../src/solver-c.cc)
+target_link_libraries(ampltestsolver asl)
+
+add_mp_test(solver-c-test solver-c-test.cc LIBS ampltestsolver)

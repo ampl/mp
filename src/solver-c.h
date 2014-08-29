@@ -28,63 +28,63 @@ extern "C" {
 #endif
 
 #ifndef _WIN32
-# define ASL_API
+# define MP_API
 #else
-# ifdef ASL_EXPORT
-#  define ASL_API __declspec(dllexport)
+# ifdef MP_EXPORT
+#  define MP_API __declspec(dllexport)
 # else
-#  define ASL_API __declspec(dllimport)
+#  define MP_API __declspec(dllimport)
 # endif
 #endif  // _WIN32
 
 /**
  * An error.
  */
-typedef struct ASL_Error ASL_Error;
+typedef struct MP_Error MP_Error;
 
 /**
  * An AMPL solver.
  */
-typedef struct ASL_Solver ASL_Solver;
+typedef struct MP_Solver MP_Solver;
 
 /**
  * Creates a solver object. In case of an error it returns a null
  * pointer and, if e is non-null, stores a pointer to an error object
  * in a location pointed to by e. The returned solver object should be
- * destroyed with ASL_DestroySolver once it is no longer needed.
+ * destroyed with MP_DestroySolver once it is no longer needed.
  *
  * options: A string containing solver initialization options.
  * e: A pointer to a location where to store an error, can be null
  *    in which case the error object is discarded. If it is non-null
  *    and there was an error, the error object should be destroyed
- *    with ASL_DestroyError once it is no longer needed.
+ *    with MP_DestroyError once it is no longer needed.
  */
-ASL_API ASL_Solver *ASL_CreateSolver(const char *options, ASL_Error **e);
+MP_API MP_Solver *MP_CreateSolver(const char *options, MP_Error **e);
 
 /**
  * Destroys the solver object and deallocates memory where it was stored.
  *
  * s: The solver object to destroy.
  */
-ASL_API void ASL_DestroySolver(ASL_Solver *s);
+MP_API void MP_DestroySolver(MP_Solver *s);
 
 /**
  * Returns a pointer to an object that provides information about the
  * last error that occurred in the context of solver s or a null pointer
  * if there was no error. The error object is stored in the solver
- * and has the same lifetime. There is no need to call ASL_DestroyError
+ * and has the same lifetime. There is no need to call MP_DestroyError
  * on the returned object.
  *
  * s: The solver in the context of which the error has occurred.
  */
-ASL_API ASL_Error *ASL_GetLastError(ASL_Solver *s);
+MP_API MP_Error *MP_GetLastError(MP_Solver *s);
 
 /**
  * Destroys the error object and deallocates memory where it was stored.
  *
  * s: The error object to destroy.
  */
-ASL_API void ASL_DestroyError(ASL_Error *e);
+MP_API void MP_DestroyError(MP_Error *e);
 
 /**
  * Returns a pointer to the error message or a null pointer if there was an
@@ -92,7 +92,7 @@ ASL_API void ASL_DestroyError(ASL_Error *e);
  *
  * e: The error object to query.
  */
-ASL_API const char *ASL_GetErrorMessage(ASL_Error *e);
+MP_API const char *MP_GetErrorMessage(MP_Error *e);
 
 /**
  * Returns a pointer to the option header. The option header is a text printed
@@ -100,12 +100,12 @@ ASL_API const char *ASL_GetErrorMessage(ASL_Error *e);
  *
  * s: The solver object to query.
  */
-ASL_API const char *ASL_GetOptionHeader(ASL_Solver *s);
+MP_API const char *MP_GetOptionHeader(MP_Solver *s);
 
 /**
  * A solver option.
  */
-typedef struct ASL_SolverOption ASL_SolverOption;
+typedef struct MP_SolverOption MP_SolverOption;
 
 /**
  * Solver option flags.
@@ -113,20 +113,20 @@ typedef struct ASL_SolverOption ASL_SolverOption;
 enum {
   /**
    * If set the option contains information about possible values that can be
-   * obtained via ASL_GetOptionValues.
+   * obtained via MP_GetOptionValues.
    */
-  ASL_OPT_HAS_VALUES = 1
+  MP_OPT_HAS_VALUES = 1
 };
 
 /**
  * Solver option information.
  */
-typedef struct ASL_SolverOptionInfo {
+typedef struct MP_SolverOptionInfo {
   const char *name;         /**< The option name. */
   const char *description;  /**< The option description. */
   int flags;                /**< The option flags. */
-  ASL_SolverOption *option;
-} ASL_SolverOptionInfo;
+  MP_SolverOption *option;
+} MP_SolverOptionInfo;
 
 /**
  * Retrieves the information about solver options. Returns the number of
@@ -138,13 +138,13 @@ typedef struct ASL_SolverOptionInfo {
  *          only returns the number of options.
  * size: The size of the options array. Ignored if options is null.
  */
-ASL_API int ASL_GetSolverOptions(
-    ASL_Solver *s, ASL_SolverOptionInfo *options, int size);
+MP_API int MP_GetSolverOptions(
+    MP_Solver *s, MP_SolverOptionInfo *options, int size);
 
 /**
  * Information about a possible option value.
  */
-struct ASL_OptionValueInfo {
+struct MP_OptionValueInfo {
   const char *value;        /**< The value. */
   const char *description;  /**< The value description. */
 };
@@ -160,8 +160,8 @@ struct ASL_OptionValueInfo {
  *         only returns the number of values.
  * size: The size of the values array. Ignored if values is null.
  */
-ASL_API int ASL_GetOptionValues(ASL_Solver *s,
-    ASL_SolverOption *option, ASL_OptionValueInfo *values, int size);
+MP_API int MP_GetOptionValues(MP_Solver *s,
+    MP_SolverOption *option, MP_OptionValueInfo *values, int size);
 
 /**
  * Runs the solver. This is a programmatic alternative to running the solver
@@ -175,7 +175,7 @@ ASL_API int ASL_GetOptionValues(ASL_Solver *s,
  * argv: The array of arguments of size argc + 1 with argv[argc] being
  *       a null pointer.
  */
-ASL_API int ASL_RunSolver(ASL_Solver *s, int argc, char **argv);
+MP_API int MP_RunSolver(MP_Solver *s, int argc, char **argv);
 
 #ifdef __cplusplus
 }  // extern "C"

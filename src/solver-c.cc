@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#define ASL_EXPORT
+#define MP_EXPORT
 #include "solver-c.h"
 
 #include "mp/solver.h"
@@ -31,21 +31,21 @@
 
 extern "C" {
 
-// Flags for ASL_Error.
+// Flags for MP_Error.
 enum {
   DELETE_MESSAGE = 1,  // The message has to be deleted.
   DELETE_OBJECT  = 2   // The object has to be deleted.
 };
 
-struct ASL_Error {
+struct MP_Error {
   const char *message;
   unsigned flags;
 };
 
-struct ASL_Solver {
+struct MP_Solver {
   mp::SolverPtr solver;
-  ASL_Error last_error;
-  explicit ASL_Solver(const char *options)
+  MP_Error last_error;
+  explicit MP_Solver(const char *options)
   : solver(mp::CreateSolver(options)) {
     last_error.message = 0;
     last_error.flags = 0;
@@ -56,10 +56,10 @@ struct ASL_Solver {
 namespace {
 
 const char OUT_OF_MEMORY_MSG[] = "out of memory";
-ASL_Error out_of_memory = {OUT_OF_MEMORY_MSG, 0};
+MP_Error out_of_memory = {OUT_OF_MEMORY_MSG, 0};
 
 // Sets the error message deleting the old one if necessary.
-void SetErrorMessage(ASL_Error &e, const char *message) FMT_NOEXCEPT(true) {
+void SetErrorMessage(MP_Error &e, const char *message) FMT_NOEXCEPT(true) {
   if (e.message && (e.flags & DELETE_MESSAGE) != 0)
     delete [] e.message;
   char *error_message = new (std::nothrow) char[std::strlen(message) + 1];
@@ -73,9 +73,9 @@ void SetErrorMessage(ASL_Error &e, const char *message) FMT_NOEXCEPT(true) {
   }
 }
 
-void SetError(ASL_Error **e, const char *message) FMT_NOEXCEPT(true) {
+void SetError(MP_Error **e, const char *message) FMT_NOEXCEPT(true) {
   if (!e) return;
-  ASL_Error *error = new (std::nothrow) ASL_Error;
+  MP_Error *error = new (std::nothrow) MP_Error;
   error->flags = 0;
   if (error) {
     SetErrorMessage(*error, message);
@@ -86,16 +86,16 @@ void SetError(ASL_Error **e, const char *message) FMT_NOEXCEPT(true) {
   *e = error;
 }
 
-inline void SetError(ASL_Solver *s, const char *message) FMT_NOEXCEPT(true) {
+inline void SetError(MP_Solver *s, const char *message) FMT_NOEXCEPT(true) {
   SetErrorMessage(s->last_error, message);
 }
 }
 
 extern "C" {
 
-ASL_Solver *ASL_CreateSolver(const char *options, ASL_Error **error) {
+MP_Solver *MP_CreateSolver(const char *options, MP_Error **error) {
   try {
-    return new ASL_Solver(options);
+    return new MP_Solver(options);
   } catch (const std::exception &e) {
     SetError(error, e.what());
   } catch (...) {
@@ -104,15 +104,15 @@ ASL_Solver *ASL_CreateSolver(const char *options, ASL_Error **error) {
   return 0;
 }
 
-void ASL_DestroySolver(ASL_Solver *s) {
+void MP_DestroySolver(MP_Solver *s) {
   delete s;  // Doesn't throw.
 }
 
-ASL_Error *ASL_GetLastError(ASL_Solver *s) {
+MP_Error *MP_GetLastError(MP_Solver *s) {
   return s->last_error.message ? &s->last_error : 0;  // Doesn't throw.
 }
 
-void ASL_DestroyError(ASL_Error *e) {
+void MP_DestroyError(MP_Error *e) {
   // Doesn't throw.
   if (!e) return;
   if ((e->flags & DELETE_MESSAGE) != 0)
@@ -121,11 +121,11 @@ void ASL_DestroyError(ASL_Error *e) {
     delete e;
 }
 
-const char *ASL_GetErrorMessage(ASL_Error *e) {
+const char *MP_GetErrorMessage(MP_Error *e) {
   return e->message;  // Doesn't throw.
 }
 
-const char *ASL_GetOptionHeader(ASL_Solver *s) {
+const char *MP_GetOptionHeader(MP_Solver *s) {
   try {
     return s->solver->option_header();
   } catch (const std::exception &e) {
@@ -136,8 +136,8 @@ const char *ASL_GetOptionHeader(ASL_Solver *s) {
   return 0;
 }
 
-int ASL_GetSolverOptions(
-    ASL_Solver *s, ASL_SolverOptionInfo *options, int size) {
+int MP_GetSolverOptions(
+    MP_Solver *s, MP_SolverOptionInfo *options, int size) {
   try {
     const mp::Solver &solver = *s->solver;
     int num_options = solver.num_options();
@@ -149,8 +149,8 @@ int ASL_GetSolverOptions(
       const mp::SolverOption &opt = *i;
       options[index].name = opt.name();
       options[index].description = opt.description();
-      options[index].flags = opt.values().size() != 0 ? ASL_OPT_HAS_VALUES : 0;
-      options[index].option = reinterpret_cast<ASL_SolverOption*>(
+      options[index].flags = opt.values().size() != 0 ? MP_OPT_HAS_VALUES : 0;
+      options[index].option = reinterpret_cast<MP_SolverOption*>(
           const_cast<mp::SolverOption*>(&opt));
     }
     return num_options;
@@ -162,8 +162,8 @@ int ASL_GetSolverOptions(
   return -1;
 }
 
-int ASL_GetOptionValues(ASL_Solver *s,
-    ASL_SolverOption *option, ASL_OptionValueInfo *values, int size) {
+int MP_GetOptionValues(MP_Solver *s,
+    MP_SolverOption *option, MP_OptionValueInfo *values, int size) {
   try {
     mp::ValueArrayRef val =
         reinterpret_cast<mp::SolverOption*>(option)->values();
@@ -185,7 +185,7 @@ int ASL_GetOptionValues(ASL_Solver *s,
   return -1;
 }
 
-int ASL_RunSolver(ASL_Solver *s, int, char **argv) {
+int MP_RunSolver(MP_Solver *s, int, char **argv) {
   try {
     return s->solver->Run(argv);
   } catch (const std::exception &e) {

@@ -21,7 +21,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "asl/solver-c.h"
+#include "solver-c.h"
 
 #include <stdlib.h>
 
@@ -29,127 +29,131 @@
 # define putenv _putenv
 #endif
 
+#ifndef MP_TEST_DATA_DIR
+# define MP_TEST_DATA_DIR "../data"
+#endif
+
 namespace {
 
 TEST(SolverCTest, CreateSolver) {
-  ASL_Solver *s = ASL_CreateSolver(0, 0);
+  MP_Solver *s = MP_CreateSolver(0, 0);
   EXPECT_TRUE(s != 0);
-  ASL_DestroySolver(s);
+  MP_DestroySolver(s);
 }
 
 TEST(SolverCTest, DestroyNullSolver) {
-  ASL_DestroySolver(0);
+  MP_DestroySolver(0);
 }
 
 TEST(SolverCTest, CreateSolverError) {
-  ASL_Error *error = 0;
-  ASL_Solver *s = ASL_CreateSolver("", &error);
+  MP_Error *error = 0;
+  MP_Solver *s = MP_CreateSolver("", &error);
   EXPECT_TRUE(!s);
   ASSERT_TRUE(error != 0);
-  EXPECT_STREQ("epic fail", ASL_GetErrorMessage(error));
-  ASL_DestroyError(error);
+  EXPECT_STREQ("epic fail", MP_GetErrorMessage(error));
+  MP_DestroyError(error);
 }
 
 TEST(SolverCTest, DestroyNullError) {
-  ASL_DestroyError(0);
+  MP_DestroyError(0);
 }
 
 TEST(SolverCTest, GetLastError) {
-  ASL_Solver *s = ASL_CreateSolver(0, 0);
-  EXPECT_TRUE(!ASL_GetLastError(s));
+  MP_Solver *s = MP_CreateSolver(0, 0);
+  EXPECT_TRUE(!MP_GetLastError(s));
   char arg0[] = "test";
-  char arg1[] = "../data/test";
+  char arg1[] = MP_TEST_DATA_DIR "/test";
   char arg2[] = "opt1=die";
   char *argv[] = {arg0, arg1, arg2, 0};
-  EXPECT_EQ(-1, ASL_RunSolver(s, 2, argv));
-  ASL_Error *error = ASL_GetLastError(s);
+  EXPECT_EQ(-1, MP_RunSolver(s, 2, argv));
+  MP_Error *error = MP_GetLastError(s);
   EXPECT_TRUE(error != 0);
-  EXPECT_STREQ("epic fail", ASL_GetErrorMessage(error));
-  ASL_DestroyError(error);
-  ASL_DestroySolver(s);
+  EXPECT_STREQ("epic fail", MP_GetErrorMessage(error));
+  MP_DestroyError(error);
+  MP_DestroySolver(s);
 }
 
 TEST(SolverCTest, GetOptionHeader) {
-  ASL_Solver *s = ASL_CreateSolver(0, 0);
-  EXPECT_STREQ("Options rock!", ASL_GetOptionHeader(s));
-  ASL_DestroySolver(s);
+  MP_Solver *s = MP_CreateSolver(0, 0);
+  EXPECT_STREQ("Options rock!", MP_GetOptionHeader(s));
+  MP_DestroySolver(s);
 }
 
 TEST(SolverCTest, GetSolverOptions) {
-  ASL_Solver *s = ASL_CreateSolver(0, 0);
-  int num_options = ASL_GetSolverOptions(s, 0, 0);
+  MP_Solver *s = MP_CreateSolver(0, 0);
+  int num_options = MP_GetSolverOptions(s, 0, 0);
   EXPECT_EQ(5, num_options);
-  std::vector<ASL_SolverOptionInfo> options(num_options);
-  EXPECT_EQ(num_options, ASL_GetSolverOptions(s, &options[0], num_options));
+  std::vector<MP_SolverOptionInfo> options(num_options);
+  EXPECT_EQ(num_options, MP_GetSolverOptions(s, &options[0], num_options));
   EXPECT_STREQ("opt1", options[0].name);
   EXPECT_STREQ("desc1", options[0].description);
   EXPECT_EQ(0, options[0].flags);
   EXPECT_STREQ("opt2", options[1].name);
   EXPECT_STREQ("desc2", options[1].description);
-  EXPECT_EQ(ASL_OPT_HAS_VALUES, options[1].flags);
+  EXPECT_EQ(MP_OPT_HAS_VALUES, options[1].flags);
   EXPECT_STREQ("timing", options[2].name);
   EXPECT_STREQ("version", options[3].name);
   EXPECT_STREQ("wantsol", options[4].name);
-  ASL_DestroySolver(s);
+  MP_DestroySolver(s);
 }
 
 TEST(SolverCTest, GetPartOfSolverOptions) {
-  ASL_Solver *s = ASL_CreateSolver(0, 0);
-  int num_options = ASL_GetSolverOptions(s, 0, 0);
+  MP_Solver *s = MP_CreateSolver(0, 0);
+  int num_options = MP_GetSolverOptions(s, 0, 0);
   EXPECT_EQ(5, num_options);
-  std::vector<ASL_SolverOptionInfo> options(3);
-  EXPECT_EQ(num_options, ASL_GetSolverOptions(s, &options[0], 2));
+  std::vector<MP_SolverOptionInfo> options(3);
+  EXPECT_EQ(num_options, MP_GetSolverOptions(s, &options[0], 2));
   EXPECT_STREQ("opt1", options[0].name);
   EXPECT_STREQ("opt2", options[1].name);
   EXPECT_TRUE(!options[2].name);
   EXPECT_TRUE(!options[2].description);
   EXPECT_TRUE(!options[2].flags);
   EXPECT_TRUE(!options[2].option);
-  ASL_DestroySolver(s);
+  MP_DestroySolver(s);
 }
 
 TEST(SolverCTest, GetOptionValues) {
-  ASL_Solver *s = ASL_CreateSolver(0, 0);
-  ASL_SolverOptionInfo info[2];
-  ASL_GetSolverOptions(s, info, 2);
-  int num_values = ASL_GetOptionValues(s, info[1].option, 0, 0);
+  MP_Solver *s = MP_CreateSolver(0, 0);
+  MP_SolverOptionInfo info[2];
+  MP_GetSolverOptions(s, info, 2);
+  int num_values = MP_GetOptionValues(s, info[1].option, 0, 0);
   EXPECT_EQ(3, num_values);
-  std::vector<ASL_OptionValueInfo> values(num_values);
+  std::vector<MP_OptionValueInfo> values(num_values);
   EXPECT_EQ(num_values,
-      ASL_GetOptionValues(s, info[1].option, &values[0], num_values));
+      MP_GetOptionValues(s, info[1].option, &values[0], num_values));
   EXPECT_STREQ("val1", values[0].value);
   EXPECT_STREQ("valdesc1", values[0].description);
   EXPECT_STREQ("val2", values[1].value);
   EXPECT_STREQ("valdesc2", values[1].description);
   EXPECT_STREQ("val3", values[2].value);
   EXPECT_STREQ("valdesc3", values[2].description);
-  ASL_DestroySolver(s);
+  MP_DestroySolver(s);
 }
 
 TEST(SolverCTest, GetPartOfOptionValues) {
-  ASL_Solver *s = ASL_CreateSolver(0, 0);
-  ASL_SolverOptionInfo info[2];
-  ASL_GetSolverOptions(s, info, 2);
-  int num_values = ASL_GetOptionValues(s, info[1].option, 0, 0);
+  MP_Solver *s = MP_CreateSolver(0, 0);
+  MP_SolverOptionInfo info[2];
+  MP_GetSolverOptions(s, info, 2);
+  int num_values = MP_GetOptionValues(s, info[1].option, 0, 0);
   EXPECT_EQ(3, num_values);
-  std::vector<ASL_OptionValueInfo> values(num_values);
+  std::vector<MP_OptionValueInfo> values(num_values);
   EXPECT_EQ(num_values,
-      ASL_GetOptionValues(s, info[1].option, &values[0], 2));
+      MP_GetOptionValues(s, info[1].option, &values[0], 2));
   EXPECT_STREQ("val1", values[0].value);
   EXPECT_STREQ("valdesc1", values[0].description);
   EXPECT_STREQ("val2", values[1].value);
   EXPECT_STREQ("valdesc2", values[1].description);
   EXPECT_TRUE(!values[2].value);
   EXPECT_TRUE(!values[2].description);
-  ASL_DestroySolver(s);
+  MP_DestroySolver(s);
 }
 
 TEST(SolverCTest, RunSolver) {
-  ASL_Solver *s = ASL_CreateSolver(0, 0);
+  MP_Solver *s = MP_CreateSolver(0, 0);
   char arg0[] = "test";
-  char arg1[] = "../data/test";
+  char arg1[] = MP_TEST_DATA_DIR "/test";
   char *argv[] = {arg0, arg1, 0};
-  EXPECT_EQ(0, ASL_RunSolver(s, 2, argv));
-  ASL_DestroySolver(s);
+  EXPECT_EQ(0, MP_RunSolver(s, 2, argv));
+  MP_DestroySolver(s);
 }
 }
