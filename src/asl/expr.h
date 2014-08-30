@@ -301,7 +301,7 @@ class Expr {
 
   // Returns the expression kind.
   expr::Kind kind() const {
-    return static_cast<expr::Kind>(reinterpret_cast<std::size_t>(expr_->op));
+    return expr::GetOpCodeInfo(reinterpret_cast<std::size_t>(expr_->op)).kind;
   }
 
   // Returns the function name or operator for this expression as a

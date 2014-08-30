@@ -264,7 +264,7 @@ void Problem::Read(fmt::StringRef stub, unsigned flags) {
       static_cast<ftnlen>(stub.size()));
   efunc *r_ops_int[expr::MAX_OPCODE + 1];
   for (int i = 0; i <= expr::MAX_OPCODE; ++i)
-    r_ops_int[i] = reinterpret_cast<efunc*>(expr::GetOpCodeInfo(i).kind);
+    r_ops_int[i] = reinterpret_cast<efunc*>(i);
   asl_->I.r_ops_ = r_ops_int;
   asl_->p.want_derivs_ = 0;
   asl_->i.want_xpi0_ = (flags & READ_INITIAL_VALUES) != 0;

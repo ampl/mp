@@ -24,6 +24,7 @@
 #include "aslbuilder.h"
 
 #include "mp/nl.h"
+#include "opcode.hd"
 
 #include <algorithm>
 #include <cstring>
@@ -135,35 +136,37 @@ void ASLBuilder::SetObjOrCon(
 
 ::expr *ASLBuilder::MakeConstant(double value) {
   expr_n *result = Allocate<expr_n>(asl_->i.size_expr_n_);
-  result->op = reinterpret_cast<efunc_n*>(expr::CONSTANT);
+  result->op = reinterpret_cast<efunc_n*>(OPNUM);
   result->v = value;
   return reinterpret_cast< ::expr*>(result);
 }
 
 ::expr *ASLBuilder::DoMakeUnary(expr::Kind kind, Expr arg) {
   ::expr *e = Allocate< ::expr>();
-  e->op = reinterpret_cast<efunc*>(kind);
+  int opcode = expr::opcode(kind);
+  e->op = reinterpret_cast<efunc*>(opcode);
   e->L.e = arg.expr_;
   e->a = asl_->i.n_var_ + asl_->i.nsufext[ASL_Sufkind_var];
-  //e->dL = DVALUE[kind];  // for UMINUS, FLOOR, CEIL
+  e->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
   return e;
 }
 
 ::expr *ASLBuilder::DoMakeBinary(expr::Kind kind, Expr lhs, Expr rhs) {
   ::expr *e = Allocate< ::expr>();
-  e->op = reinterpret_cast<efunc*>(kind);
+  int opcode = expr::opcode(kind);
+  e->op = reinterpret_cast<efunc*>(opcode);
   e->L.e = lhs.expr_;
   e->R.e = rhs.expr_;
   e->a = asl_->i.n_var_ + asl_->i.nsufext[ASL_Sufkind_var];
   e->dL = 1;
-  //e->dR = DVALUE[kind];  // for PLUS, MINUS, REM
+  e->dR = DVALUE[opcode];  // for PLUS, MINUS, REM
   return e;
 }
 
 ::expr *ASLBuilder::MakeIf(
     expr::Kind kind, LogicalExpr condition, Expr true_expr, Expr false_expr) {
   expr_if *e = Allocate<expr_if>();
-  e->op = reinterpret_cast<efunc*>(kind);
+  e->op = r_ops_[opcode(kind)];
   e->e = condition.expr_;
   e->T = true_expr.expr_;
   e->F = false_expr.expr_;
@@ -175,7 +178,7 @@ void ASLBuilder::SetObjOrCon(
   ::expr *e = Allocate< ::expr>(
       sizeof(::expr) - sizeof(double) +
       SafeInt<int>(num_args + 1) * sizeof(::expr*));
-  e->op = reinterpret_cast<efunc*>(kind);
+  e->op = reinterpret_cast<efunc*>(opcode(kind));
   e->L.ep = reinterpret_cast< ::expr**>(&e->dR);
   e->R.ep = e->L.ep + num_args;
   ::expr **arg_ptrs = e->L.ep;
@@ -400,7 +403,7 @@ void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
     info1.var_ex_ = e + static_->_nv1;
     info1.var_ex1_ = info1.var_ex_ + info.ncom0_;
     for (int k = 0; k < nv; ++e, ++k) {
-      e->op = reinterpret_cast<efunc*>(expr::VARIABLE);
+      e->op = r_ops_[OPVARVAL];
       e->a = k;
     }
     if (info.skip_int_derivs_) {
@@ -592,7 +595,7 @@ Variable ASLBuilder::MakeVariable(int var_index) {
 UnaryExpr ASLBuilder::MakeUnary(expr::Kind kind, NumericExpr arg) {
   CheckKind<UnaryExpr>(kind, "unary");
   UnaryExpr expr = MakeUnary<UnaryExpr>(kind, arg);
-  //expr.expr_->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
+  expr.expr_->dL = DVALUE[opcode(kind)];  // for UMINUS, FLOOR, CEIL
   return expr;
 }
 
@@ -611,7 +614,7 @@ PiecewiseLinearExpr ASLBuilder::MakePiecewiseLinear(
   }
   data[2 * num_breakpoints] = slopes[num_breakpoints];
   ::expr *result = Allocate< ::expr>();
-  result->op = reinterpret_cast<efunc*>(expr::PLTERM);
+  result->op = r_ops_[OPPLTERM];
   result->L.p = term;
   result->R.e = var.expr_;
   return Expr::Create<PiecewiseLinearExpr>(result);
@@ -626,7 +629,7 @@ CallExpr ASLBuilder::MakeCall(Function f, ArrayRef<Expr> args) {
   }
   expr_f *result = Allocate<expr_f>(
         sizeof(expr_f) + SafeInt<int>(num_args - 1) * sizeof(::expr*));
-  result->op = reinterpret_cast<efunc*>(expr::CALL);
+  result->op = r_ops_[OPFUNCALL];
   result->fi = f.fi_;
   ::expr **arg_ptrs = result->args;
   int num_symbolic_args = 0, num_ifsyms = 0, num_constants = 0;
@@ -661,7 +664,7 @@ CallExpr ASLBuilder::MakeCall(Function f, ArrayRef<Expr> args) {
 VarArgExpr ASLBuilder::MakeVarArg(expr::Kind kind, ArrayRef<NumericExpr> args) {
   CheckKind<VarArgExpr>(kind, "vararg");
   expr_va *result = Allocate<expr_va>();
-  result->op = reinterpret_cast<efunc*>(kind);
+  result->op = r_ops_[opcode(kind)];
   int num_args = SafeInt<int>(args.size()).value();
   de *d = result->L.d = Allocate<de>(
         SafeInt<int>(num_args) * sizeof(de) + sizeof(::expr*));
@@ -681,7 +684,7 @@ StringLiteral ASLBuilder::MakeStringLiteral(fmt::StringRef value) {
   std::size_t size = value.size();
   expr_h *result = Allocate<expr_h>(
         SafeInt<int>(AddPadding(sizeof(expr_h)) + size));
-  result->op = reinterpret_cast<efunc*>(expr::STRING);
+  result->op = r_ops_[OPHOL];
   // Passing result->sym to std::copy causes an assertion failure in MSVC.
   char *dest = result->sym;
   const char *str = value.c_str();
