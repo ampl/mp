@@ -8,7 +8,7 @@ before_install:
 install:
   - tar xzf cmake-2.8.12.2-Linux-i386.tar.gz
   - sudo apt-get update
-  - sudo apt-get install libc6:i386 gfortran
+  - sudo apt-get install libc6:i386 gfortran unixodbc-dev
 
 script:
   - cmake-2.8.12.2-Linux-i386/bin/cmake -DBUILD=all .

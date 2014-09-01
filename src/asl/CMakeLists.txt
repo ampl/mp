@@ -206,7 +206,7 @@ if (ODBC_FOUND)
   target_include_directories(amplodbc PRIVATE ${ODBC_INCLUDE_DIR})
   target_compile_definitions(amplodbc PRIVATE funcadd_ASL=funcaddodbc_ASL)
   add_c_compiler_flags(amplodbc -Wno-deprecated-declarations)
-  target_link_libraries(amplodbc asl)
+  target_link_libraries(amplodbc asl ${ODBC_LIBRARIES})
   set(AMPLODBC amplodbc ${ODBC_LIBRARIES})
 endif ()
 
