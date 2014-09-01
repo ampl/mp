@@ -152,6 +152,10 @@ add_library(format OBJECT
 
 set(MP_EXPR_INFO_FILE ${MP_BINARY_DIR}/src/expr-info.cc)
 add_executable(gen-expr-info src/gen-expr-info.cc $<TARGET_OBJECTS:format>)
+if (MINGW)
+  SET_TARGET_PROPERTIES(gen-expr-info PROPERTIES
+    LINK_FLAGS "-static-libgcc -static-libstdc++")
+endif ()
 # use wine if cross compiling from unix to windows
 if (CMAKE_HOST_UNIX AND WIN32)
   set(WINE wine)
