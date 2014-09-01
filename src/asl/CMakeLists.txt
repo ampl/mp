@@ -128,6 +128,7 @@ add_prefix(ASL_SOURCES solvers/
   xp2known.c)
 
 include(CheckSymbolExists)
+include(CheckLibraryExists)
 
 check_symbol_exists(mkstemps stdlib.h HAVE_MKSTEMPS)
 if (NOT HAVE_MKSTEMPS)
@@ -136,6 +137,13 @@ endif ()
 
 add_library(asl-core ${ASL_SOURCES})
 target_include_directories(asl-core PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+if (NOT WIN32)
+  target_link_libraries(asl-core m)
+endif ()
+check_library_exists(dl dlopen "" HAVE_LIBDL)
+if (HAVE_LIBDL)
+  target_link_libraries(asl-core dl)
+endif ()
 
 # Suppress warnings.
 if (MSVC)
@@ -198,7 +206,7 @@ if (ODBC_FOUND)
   target_include_directories(amplodbc PRIVATE ${ODBC_INCLUDE_DIR})
   target_compile_definitions(amplodbc PRIVATE funcadd_ASL=funcaddodbc_ASL)
   add_c_compiler_flags(amplodbc -Wno-deprecated-declarations)
-  target_link_libraries(amplodbc asl)
+  target_link_libraries(amplodbc asl ${ODBC_LIBRARIES})
   set(AMPLODBC amplodbc ${ODBC_LIBRARIES})
 endif ()
 
