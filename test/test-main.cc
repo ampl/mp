@@ -21,6 +21,9 @@
  */
 
 #include <gtest/gtest.h>
+#ifdef _WIN32
+# include <crtdbg.h>
+#endif
 
 int main(int argc, char **argv) {
 #ifdef _WIN32
