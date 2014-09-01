@@ -157,14 +157,16 @@ add_custom_command(OUTPUT ${MP_EXPR_INFO_FILE}
 
 add_prefix(MP_HEADERS include/mp/
   clock.h error.h nl.h os.h problem-base.h rstparser.h safeint.h solver.h)
+set(MP_SOURCES test/testsolver.cc)
 add_prefix(MP_SOURCES src/
   clock.cc nl.cc os.cc precedence.h rstparser.cc
-  solver.cc solver-c.cc solver-c.h)
+  solver.cc solver-c.cc solver-c.h asl/aslsolver.cc asl/problem.cc asl/expr.cc)
 add_library(mp ${MP_HEADERS} ${MP_SOURCES}
   ${MP_EXPR_INFO_FILE} $<TARGET_OBJECTS:format>)
 target_compile_definitions(mp PRIVATE
   MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}")
 target_include_directories(mp PRIVATE src)
+target_link_libraries(mp asl-core)
 
 include(CheckCXXSourceCompiles)
 check_cxx_source_compiles(

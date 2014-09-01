@@ -1,5 +1,5 @@
 add_library(solver-test ../args.cc solver-test.cc)
-target_link_libraries(solver-test asl)
+target_link_libraries(solver-test asl gtest-extra)
 
 if (TARGET gecode)
   add_mp_test(gecode-test PREFIX gecode-test.cc
