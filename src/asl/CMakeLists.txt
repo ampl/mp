@@ -16,7 +16,8 @@ else ()
   target_compile_definitions(arithchk PRIVATE ASL_NO_FPINITMT)
   target_link_libraries(arithchk m)
 endif ()
-add_custom_command(OUTPUT arith.h DEPENDS arithchk COMMAND arithchk > arith.h)
+add_custom_command(OUTPUT arith.h DEPENDS arithchk
+  COMMAND ${WINE} $<TARGET_FILE:arithchk> > arith.h)
 
 if (NOT MSVC)
   string(REPLACE "-Wall -Wextra -pedantic" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
