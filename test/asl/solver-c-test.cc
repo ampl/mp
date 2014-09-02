@@ -21,7 +21,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "solver-c.h"
+#include "asl/solver-c.h"
 
 #include <stdlib.h>
 

@@ -11,3 +11,9 @@ add_mp_test(problem-test problem-test.cc stderr-redirect.h LIBS asl)
 add_mp_test(solver-test PREFIX ../args.cc solver-test.cc LIBS asl)
 target_compile_definitions(mpsolver-test PRIVATE
   MP_SYSINFO="${MP_SYSINFO}" MP_DATE=${MP_DATE})
+
+add_library(ampltestsolver SHARED
+  testsolver.cc ${PROJECT_SOURCE_DIR}/src/asl/solver-c.cc)
+target_link_libraries(ampltestsolver asl)
+
+add_mp_test(solver-c-test solver-c-test.cc LIBS ampltestsolver)

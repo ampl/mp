@@ -24,22 +24,14 @@ if (NOT MSVC)
   target_compile_options(arithchk PUBLIC -Wno-format-security)
 endif ()
 
-set(ASL_SOURCES
-  ${CMAKE_CURRENT_BINARY_DIR}/arith.h
-  ${CMAKE_CURRENT_BINARY_DIR}/stdio1.h
-  ${CMAKE_CURRENT_BINARY_DIR}/details.c)
+set(ASL_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/details.c ${CMAKE_CURRENT_BINARY_DIR}/arith.h)
 add_prefix(ASL_SOURCES solvers/
-  asl.h
   asl_pfg.h
   asl_pfgh.h
-  avltree.h
   errchk.h
-  funcadd.h
-  getstub.h
   jac2dim.h
   jacpdim.h
   nlp2.h
-  nlp.h
   obj_adj.h
   psinfo.h
   asldate.c
@@ -136,15 +128,9 @@ if (NOT HAVE_MKSTEMPS)
   set(ASL_SOURCES ${ASL_SOURCES} mkstemps.c)
 endif ()
 
-add_library(asl-core ${ASL_SOURCES})
+# Compile C sources separately to be able to specify compile options.
+add_library(asl-core OBJECT ${ASL_SOURCES})
 target_include_directories(asl-core PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-if (NOT WIN32)
-  target_link_libraries(asl-core m)
-endif ()
-check_library_exists(dl dlopen "" HAVE_LIBDL)
-if (HAVE_LIBDL)
-  target_link_libraries(asl-core dl)
-endif ()
 
 # Suppress warnings.
 if (MSVC)
@@ -153,10 +139,22 @@ else ()
   add_c_compiler_flags(asl-core -Wno-unused-result -Wno-parentheses)
 endif ()
 
-add_library(asl
-  aslbuilder.cc aslbuilder.h aslsolver.cc expr.cc expr.h problem.cc problem.h)
-target_include_directories(asl-core PUBLIC solvers ${PROJECT_SOURCE_DIR}/src)
-target_link_libraries(asl asl-core mp)
+# Public ASL headers.
+set(ASL_HEADERS aslbuilder.h expr.h problem.h solver-c.h
+  ${CMAKE_CURRENT_BINARY_DIR}/arith.h ${CMAKE_CURRENT_BINARY_DIR}/stdio1.h)
+add_prefix(ASL_HEADERS solvers/ avltree.h funcadd.h getstub.h nlp.h)
+
+add_library(asl aslbuilder.cc aslsolver.cc expr.cc problem.cc solver-c.cc
+  ${ASL_HEADERS} $<TARGET_OBJECTS:asl-core>)
+target_include_directories(asl PUBLIC solvers ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(asl mp)
+if (NOT WIN32)
+  target_link_libraries(asl m)
+endif ()
+check_library_exists(dl dlopen "" HAVE_LIBDL)
+if (HAVE_LIBDL)
+  target_link_libraries(asl dl)
+endif ()
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
   # Changing the floating point precision is not supported on x64.
@@ -195,8 +193,8 @@ if (DL_LIBRARY)
   target_link_libraries(asl dl)
 endif ()
 
-add_ampl_library(simpbit tables/simpbit.c)
-add_ampl_library(fullbit tables/fullbit.c)
+add_ampl_library(simpbit PRIVATE tables/simpbit.c)
+add_ampl_library(fullbit PRIVATE tables/fullbit.c)
 
 add_c_compiler_flags(simpbit -Wno-parentheses)
 add_c_compiler_flags(fullbit -Wno-parentheses)
@@ -234,3 +232,6 @@ if (WIN32)
   target_link_libraries(tableproxy wsock32)
   target_compile_definitions(tableproxy PRIVATE NO_sockaddr_in6)
 endif ()
+
+install(FILES ${ASL_HEADERS} DESTINATION include/asl)
+install(TARGETS asl tableproxy DESTINATION lib RUNTIME DESTINATION bin)

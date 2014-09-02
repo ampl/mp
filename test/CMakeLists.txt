@@ -42,7 +42,7 @@ function(add_mp_test name)
   add_test(NAME ${name} COMMAND $<TARGET_FILE:${target_name}>)
 endfunction()
 
-add_ampl_library(testlib testlib.cc)
+add_ampl_library(testlib PRIVATE testlib.cc)
 add_library(function function.cc function.h)
 target_link_libraries(function asl)
 
@@ -74,8 +74,3 @@ add_dependencies(os-test test-helper)
 
 add_mp_test(rstparser-test rstparser-test.cc)
 add_mp_test(safeint-test safeint-test.cc)
-
-add_library(ampltestsolver SHARED testsolver.cc ../src/solver-c.cc)
-target_link_libraries(ampltestsolver asl)
-
-add_mp_test(solver-c-test solver-c-test.cc LIBS ampltestsolver)

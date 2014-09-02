@@ -129,10 +129,14 @@ endfunction ()
 # Adds a shared AMPL library which by convention doesn't have any prefix
 # and has a suffix ".dll".
 macro(add_ampl_library name)
-  add_library(${name} SHARED ${ARGN})
+  cmake_parse_arguments(add_ampl_library PRIVATE "" "" ${ARGN})
+  add_library(${name} SHARED ${add_ampl_library_UNPARSED_ARGUMENTS})
   set_target_properties(${name} PROPERTIES PREFIX "")
   set_target_properties(${name} PROPERTIES SUFFIX ".dll")
   target_link_libraries(${name} asl)
+  if (NOT add_ampl_library_PRIVATE)
+    install(TARGETS ${name} DESTINATION bin)
+  endif ()
 endmacro()
 
 include_directories(include)
@@ -167,16 +171,14 @@ add_custom_command(OUTPUT ${MP_EXPR_INFO_FILE} COMMAND ${WINE}
 
 add_prefix(MP_HEADERS include/mp/
   clock.h error.h nl.h os.h problem-base.h rstparser.h safeint.h solver.h)
-set(MP_SOURCES test/testsolver.cc)
+set(MP_SOURCES )
 add_prefix(MP_SOURCES src/
-  clock.cc nl.cc os.cc precedence.h rstparser.cc
-  solver.cc solver-c.cc solver-c.h asl/aslsolver.cc asl/problem.cc asl/expr.cc)
+  clock.cc nl.cc os.cc precedence.h rstparser.cc solver.cc)
 add_library(mp ${MP_HEADERS} ${MP_SOURCES}
   ${MP_EXPR_INFO_FILE} $<TARGET_OBJECTS:format>)
 target_compile_definitions(mp PRIVATE
   MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}")
 target_include_directories(mp PRIVATE src)
-target_link_libraries(mp asl-core)
 
 include(CheckCXXSourceCompiles)
 check_cxx_source_compiles(
@@ -232,3 +234,7 @@ endforeach ()
 
 enable_testing()
 add_subdirectory(test)
+
+install(DIRECTORY include/mp DESTINATION include)
+install(TARGETS mp DESTINATION lib RUNTIME DESTINATION bin)
+install(FILES LICENSE.rst DESTINATION share/mp)
