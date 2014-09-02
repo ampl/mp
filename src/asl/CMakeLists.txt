@@ -201,19 +201,17 @@ add_ampl_library(fullbit tables/fullbit.c)
 add_c_compiler_flags(simpbit -Wno-parentheses)
 add_c_compiler_flags(fullbit -Wno-parentheses)
 
+add_ampl_library(ampltabl tables/tableproxy.c tables/tableproxyver.h)
+
 find_package(ODBC)
 if (ODBC_FOUND)
-  add_library(amplodbc ${CMAKE_CURRENT_BINARY_DIR}/arith.h tables/amplodbc.c)
+  add_library(amplodbc STATIC
+    ${CMAKE_CURRENT_BINARY_DIR}/arith.h tables/amplodbc.c)
   target_include_directories(amplodbc PRIVATE ${ODBC_INCLUDE_DIR})
   target_compile_definitions(amplodbc PRIVATE funcadd_ASL=funcaddodbc_ASL)
   add_c_compiler_flags(amplodbc -Wno-deprecated-declarations)
   target_link_libraries(amplodbc asl ${ODBC_LIBRARIES})
-  set(AMPLODBC amplodbc ${ODBC_LIBRARIES})
-endif ()
-
-add_ampl_library(ampltabl tables/tableproxy.c tables/tableproxyver.h)
-target_link_libraries(ampltabl ${AMPLODBC})
-if (ODBC_FOUND)
+  target_link_libraries(ampltabl amplodbc)
   target_compile_definitions(ampltabl PRIVATE OTHER_FUNCADD=funcaddodbc_ASL)
 endif ()
 
