@@ -1,9 +1,6 @@
 Licenses
 ========
 
-AMPL Solver Library
--------------------
-
 Copyright (C) 1990 - 2001 Lucent Technologies
 
 Permission to use, copy, modify, and distribute this software and
