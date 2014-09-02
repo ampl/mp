@@ -152,8 +152,18 @@ add_library(format OBJECT
 
 set(MP_EXPR_INFO_FILE ${MP_BINARY_DIR}/src/expr-info.cc)
 add_executable(gen-expr-info src/gen-expr-info.cc $<TARGET_OBJECTS:format>)
-add_custom_command(OUTPUT ${MP_EXPR_INFO_FILE}
-  COMMAND gen-expr-info ${MP_EXPR_INFO_FILE} DEPENDS gen-expr-info)
+if (MINGW)
+  SET_TARGET_PROPERTIES(gen-expr-info PROPERTIES
+    LINK_FLAGS "-static-libgcc -static-libstdc++")
+endif ()
+# use wine if cross compiling from unix to windows
+if (CMAKE_HOST_UNIX AND WIN32)
+  set(WINE wine)
+else ()
+  set(WINE "")
+endif ()
+add_custom_command(OUTPUT ${MP_EXPR_INFO_FILE} COMMAND ${WINE}
+  $<TARGET_FILE:gen-expr-info> ${MP_EXPR_INFO_FILE} DEPENDS gen-expr-info)
 
 add_prefix(MP_HEADERS include/mp/
   clock.h error.h nl.h os.h problem-base.h rstparser.h safeint.h solver.h)
