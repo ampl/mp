@@ -1255,7 +1255,7 @@ class ExprConverter : public ExprVisitor<Impl, Result, LResult> {
   RelationalExpr Convert(LogicalCountExpr e, expr::Kind kind) {
     exprs_.push_back(*e.expr_);
     ::expr *result = &exprs_.back();
-    result->op = reinterpret_cast<efunc*>(kind);
+    result->op = reinterpret_cast<efunc*>(opcode(kind));
     return Expr::Create<RelationalExpr>(result);
   }
 
