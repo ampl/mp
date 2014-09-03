@@ -257,7 +257,7 @@ extern const char *i_option_ASL, *ix_details_ASL[];
 
 #define funcadd funcadd_ASL
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__MINGW32__)
 __declspec(dllexport)
 #endif
 extern void funcadd ANSI((AmplExports*));	/* dynamically linked */
