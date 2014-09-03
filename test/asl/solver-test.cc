@@ -21,7 +21,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "mp/solver.h"
+#include "asl/aslsolver.h"
 #include "../args.h"
 #include "../solution-handler.h"
 #include "../util.h"
@@ -48,10 +48,10 @@ namespace {
 
 typedef Solver::OptionPtr SolverOptionPtr;
 
-struct TestSolver : Solver {
+struct TestSolver : mp::ASLSolver {
   TestSolver(const char *name = "testsolver",
       const char *long_name = 0, long date = 0)
-  : Solver(name, long_name, date) {}
+  : ASLSolver(name, long_name, date) {}
 
   using Solver::set_long_name;
   using Solver::set_version;
@@ -1111,9 +1111,9 @@ TEST(SolverTest, OutputSuffix) {
 
 const int NUM_SOLUTIONS = 3;
 
-struct SolCountingSolver : Solver {
+struct SolCountingSolver : mp::ASLSolver {
   explicit SolCountingSolver(bool multiple_sol)
-  : Solver("", "", 0, multiple_sol ? MULTIPLE_SOL : 0) {}
+  : ASLSolver("", "", 0, multiple_sol ? MULTIPLE_SOL : 0) {}
   void DoSolve(Problem &p) {
     for (int i = 0; i < NUM_SOLUTIONS; ++i)
       HandleFeasibleSolution(p, "", 0, 0, 0);

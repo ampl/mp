@@ -25,13 +25,13 @@
 
 #include <vector>
 
-#include "mp/solver.h"
+#include "asl/aslsolver.h"
 
 namespace mp {
 
 class FileWriter;
 
-class SMPSWriter : public Solver {
+class SMPSWriter : public ASLSolver {
  private:
   // Information about a variable or constraint.
   struct VarConInfo {

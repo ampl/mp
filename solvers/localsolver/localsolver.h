@@ -24,7 +24,7 @@
 #define MP_SOLVERS_LOCALSOLVER_H_
 
 #include <localsolver.h>
-#include "mp/solver.h"
+#include "asl/aslsolver.h"
 #include "asl/expr.h"
 
 namespace mp {
@@ -251,7 +251,7 @@ public:
   }
 };
 
-class LocalSolver : public Solver {
+class LocalSolver : public ASLSolver {
  private:
   ls::LocalSolver solver_;
   int timelimit_;

@@ -27,7 +27,7 @@
 #include <vector>
 
 #include "asl/expr.h"
-#include "mp/solver.h"
+#include "asl/aslsolver.h"
 
 #define SSDSOLVER_VERSION 20130226
 
@@ -86,7 +86,7 @@ class SSDExtractor : public ExprVisitor<SSDExtractor, void, void> {
   const std::vector<double> &rhs() const { return rhs_; }
 };
 
-class SSDSolver : public Solver {
+class SSDSolver : public ASLSolver {
  private:
   bool output_;
   bool scaled_;

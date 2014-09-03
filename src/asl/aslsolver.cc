@@ -26,10 +26,17 @@ extern "C" {
 }
 
 #include "mp/clock.h"
-#include "mp/solver.h"
+#include "aslsolver.h"
 #include "problem.h"
 
-void mp::Solver::RegisterSuffixes(Problem &p) {
+mp::ASLSolver::ASLSolver(
+    fmt::StringRef name, fmt::StringRef long_name, long date, int flags)
+  : Solver(name, long_name, date, flags) {
+  sol_writer_.set_solver(this);
+  sol_handler_ = &sol_writer_;
+}
+
+void mp::ASLSolver::RegisterSuffixes(Problem &p) {
   std::size_t num_suffixes = suffixes_.size();
   std::vector<SufDecl> suffix_decls(num_suffixes);
   for (std::size_t i = 0; i < num_suffixes; ++i) {
@@ -45,7 +52,7 @@ void mp::Solver::RegisterSuffixes(Problem &p) {
     suf_declare_ASL(asl, &suffix_decls[0], static_cast<int>(num_suffixes));
 }
 
-void mp::Solver::SolutionWriter::HandleFeasibleSolution(
+void mp::ASLSolver::SolutionWriter::HandleFeasibleSolution(
     Problem &p, fmt::StringRef message, const double *values,
     const double *dual_values, double) {
   ++solver_->num_solutions_;
@@ -61,7 +68,7 @@ void mp::Solver::SolutionWriter::HandleFeasibleSolution(
       const_cast<double*>(dual_values), &option_info, w.c_str());
 }
 
-void mp::Solver::SolutionWriter::HandleSolution(
+void mp::ASLSolver::SolutionWriter::HandleSolution(
     Problem &p, fmt::StringRef message, const double *values,
     const double *dual_values, double) {
   if (solver_->need_multiple_solutions()) {
@@ -77,7 +84,7 @@ void mp::Solver::SolutionWriter::HandleSolution(
       const_cast<double*>(dual_values), &option_info);
 }
 
-bool mp::Solver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
+bool mp::ASLSolver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
   ASL *asl = reinterpret_cast<ASL*>(p.asl_);
   RegisterSuffixes(p);
 
@@ -141,7 +148,13 @@ bool mp::Solver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
   return result;
 }
 
-int mp::Solver::Run(char **argv) {
+void mp::ASLSolver::Solve(Problem &p) {
+  num_solutions_ = 0;
+  RegisterSuffixes(p);
+  DoSolve(p);
+}
+
+int mp::ASLSolver::Run(char **argv) {
   Problem p;
   if (!ProcessArgs(argv, p))
     return 1;

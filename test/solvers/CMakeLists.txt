@@ -1,4 +1,4 @@
-add_library(solver-test ../args.cc solver-test.cc)
+add_library(solver-test STATIC ../args.cc solver-test.cc)
 target_compile_definitions(solver-test
   PUBLIC MP_TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test/data")
 target_link_libraries(solver-test asl gtest-extra)

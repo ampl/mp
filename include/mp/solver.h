@@ -369,21 +369,6 @@ class Solver : private ErrorHandler, private OutputHandler {
   // Specifies whether to return the number of solutions in the .nsol suffix.
   bool count_solutions_;
 
-  class SolutionWriter : public SolutionHandler {
-   private:
-    Solver *solver_;
-
-   public:
-    SolutionWriter() : solver_() {}
-    void set_solver(Solver *s) { solver_ = s; }
-
-    void HandleFeasibleSolution(Problem &p, fmt::StringRef message,
-          const double *values, const double *dual_values, double);
-    void HandleSolution(Problem &p, fmt::StringRef message,
-          const double *values, const double *dual_values, double);
-  };
-  SolutionWriter sol_writer_;
-
   unsigned read_flags_;  // flags passed to Problem::Read
 
   struct OptionNameLess {
@@ -404,8 +389,7 @@ class Solver : private ErrorHandler, private OutputHandler {
   };
   std::vector<SuffixInfo> suffixes_;
 
-  // TODO: remove
-  void RegisterSuffixes(Problem &p);
+  friend class ASLSolver;
 
   void HandleOutput(fmt::StringRef output) {
     std::fputs(output.c_str(), stdout);
@@ -754,15 +738,6 @@ class Solver : private ErrorHandler, private OutputHandler {
   // Sets the solution handler.
   void set_solution_handler(SolutionHandler *sh) { sol_handler_ = sh; }
 
-  // Processes command-line arguments, reads a problem from an .nl file
-  // if the file name (stub) is specified and parses solver options.
-  // Returns true if the arguments contain the file name and options were
-  // parsed successfully; false otherwise.
-  // If there was an  error parsing arguments or reading the problem
-  // ProcessArgs will print an error message and call std::exit (this is
-  // likely to change in the future version).
-  bool ProcessArgs(char **&argv, Problem &p, unsigned flags = 0);
-
   // Returns the number of options.
   int num_options() const { return static_cast<int>(options_.size()); }
 
@@ -882,27 +857,7 @@ class Solver : private ErrorHandler, private OutputHandler {
   // Usage:
   //   Print("objective {}", FormatObjValue(obj_value));
   DoubleFormatter FormatObjValue(double value);
-
-  // Solves a problem.
-  // The solutions are reported via the registered solution handler.
-  void Solve(Problem &p);
-
-  // Runs the solver.
-  int Run(char **argv);
 };
-
-#ifdef MP_USE_UNIQUE_PTR
-typedef std::unique_ptr<Solver> SolverPtr;
-#else
-typedef std::auto_ptr<Solver> SolverPtr;
-inline SolverPtr move(SolverPtr p) { return p; }
-#endif
-
-// Implement this function in your code returning a new concrete solver object.
-// options: Solver initialization options.
-// Example:
-//   SolverPtr CreateSolver(const char *) { return SolverPtr(new MySolver()); }
-SolverPtr CreateSolver(const char *options);
 }
 
 #endif  // MP_SOLVER_H_

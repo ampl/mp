@@ -24,12 +24,12 @@
 #define MP_SOLVERS_SULUM_H_
 
 #include <sulumc.h>
-#include "mp/solver.h"
+#include "asl/aslsolver.h"
 
 namespace mp {
 
 // Sulum solver.
-class SulumSolver : public Solver {
+class SulumSolver : public ASLSolver {
  private:
   SlmEnv_t env_;
   SlmModel_t model_;

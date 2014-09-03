@@ -38,7 +38,7 @@
 #endif
 
 #include "mp/clock.h"
-#include "mp/solver.h"
+#include "asl/aslsolver.h"
 #include "asl/problem.h"
 
 namespace mp {
@@ -264,7 +264,7 @@ class NLToGecodeConverter :
 };
 
 // Gecode solver.
-class GecodeSolver : public Solver {
+class GecodeSolver : public ASLSolver {
  private:
   bool output_;
   double output_frequency_;

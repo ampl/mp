@@ -24,7 +24,8 @@ if (NOT MSVC)
   target_compile_options(arithchk PUBLIC -Wno-format-security)
 endif ()
 
-set(ASL_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/details.c ${CMAKE_CURRENT_BINARY_DIR}/arith.h)
+set(ASL_SOURCES
+  ${CMAKE_CURRENT_BINARY_DIR}/details.c ${CMAKE_CURRENT_BINARY_DIR}/arith.h)
 add_prefix(ASL_SOURCES solvers/
   asl_pfg.h
   asl_pfgh.h
@@ -140,13 +141,14 @@ else ()
 endif ()
 
 # Public ASL headers.
-set(ASL_HEADERS aslbuilder.h expr.h problem.h solver-c.h
+set(ASL_HEADERS aslbuilder.h aslsolver.h expr.h problem.h solver-c.h
   ${CMAKE_CURRENT_BINARY_DIR}/arith.h ${CMAKE_CURRENT_BINARY_DIR}/stdio1.h)
 add_prefix(ASL_HEADERS solvers/ avltree.h funcadd.h getstub.h nlp.h)
 
-add_library(asl aslbuilder.cc aslsolver.cc expr.cc problem.cc solver-c.cc
+add_library(asl aslbuilder.cc aslsolver.cc expr.cc problem.cc
   ${ASL_HEADERS} $<TARGET_OBJECTS:asl-core>)
-target_include_directories(asl PUBLIC solvers ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(asl PUBLIC
+  solvers ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(asl mp)
 if (NOT WIN32)
   target_link_libraries(asl m)

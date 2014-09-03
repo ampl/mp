@@ -53,14 +53,14 @@
 #include <string>
 
 #include "mp/clock.h"
-#include "mp/solver.h"
+#include "asl/aslsolver.h"
 
 namespace mp {
 
 class NLToConcertConverter;
 
 // IlogCP solver.
-class IlogCPSolver : public Solver {
+class IlogCPSolver : public ASLSolver {
  private:
   IloEnv env_;
   IloCP cp_;

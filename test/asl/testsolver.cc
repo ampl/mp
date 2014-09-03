@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "mp/solver.h"
+#include "asl/aslsolver.h"
 
 #undef getenv
 
@@ -29,7 +29,7 @@
 
 namespace mp {
 
-class TestSolver : public Solver {
+class TestSolver : public ASLSolver {
  protected:
   void DoSolve(Problem &) {}
 
@@ -39,7 +39,7 @@ class TestSolver : public Solver {
   }
 
  public:
-  TestSolver() : Solver("testsolver") {
+  TestSolver() : ASLSolver("testsolver") {
     set_option_header("Options rock!");
     AddStrOption("opt1", "desc1",
         &TestSolver::GetOption, &TestSolver::SetOption);

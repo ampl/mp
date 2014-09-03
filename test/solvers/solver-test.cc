@@ -81,7 +81,7 @@ SolverTest::SolverTest()
 }
 
 SolveResult SolverTest::Solve(
-    mp::Solver &s, Problem &p, const char *stub, const char *opt) {
+    mp::ASLSolver &s, Problem &p, const char *stub, const char *opt) {
   TestSolutionHandler sh;
   s.set_solution_handler(&sh);
   const std::string DATA_DIR = MP_TEST_DATA_DIR "/";

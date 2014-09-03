@@ -288,8 +288,7 @@ Solver::Solver(
   version_ = long_name_;
   error_handler_ = this;
   output_handler_ = this;
-  sol_writer_.set_solver(this);
-  sol_handler_ = &sol_writer_;
+  sol_handler_ = 0;
 
   struct VersionOption : SolverOption {
     Solver &s;
@@ -477,11 +476,5 @@ Solver::DoubleFormatter Solver::FormatObjValue(double value) {
   }
   DoubleFormatter formatter = {value, obj_precision_};
   return formatter;
-}
-
-void Solver::Solve(Problem &p) {
-  num_solutions_ = 0;
-  RegisterSuffixes(p);
-  DoSolve(p);
 }
 }  // namespace mp

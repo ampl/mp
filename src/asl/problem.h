@@ -31,6 +31,8 @@
 
 namespace mp {
 
+class ASLSolver;
+
 // Solution status.
 enum SolutionStatus {
   NOT_SOLVED   =  -1,
@@ -158,7 +160,7 @@ class Problem {
     array = new_array;
   }
 
-  friend class Solver;
+  friend class ASLSolver;
 
   // Frees all the arrays that were allocated by modifications to the problem.
   void Free();

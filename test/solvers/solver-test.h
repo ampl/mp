@@ -23,8 +23,8 @@
 #ifndef TESTS_SOLVER_TEST_H_
 #define TESTS_SOLVER_TEST_H_
 
-#include "mp/solver.h"
 #include "asl/aslbuilder.h"
+#include "asl/aslsolver.h"
 #include "../args.h"
 #include "../solution-handler.h"
 #include "gtest/gtest.h"
@@ -49,9 +49,9 @@ enum Feature {
 }
 
 #ifdef MP_USE_UNIQUE_PTR
-typedef std::unique_ptr<mp::Solver> SolverPtr;
+typedef std::unique_ptr<mp::ASLSolver> SolverPtr;
 #else
-typedef std::auto_ptr<mp::Solver> SolverPtr;
+typedef std::auto_ptr<mp::ASLSolver> SolverPtr;
 #endif
 
 struct SolverTestParam {
@@ -150,7 +150,7 @@ class SolverTest
  public:
   SolverTest();
 
-  static SolveResult Solve(mp::Solver &s,
+  static SolveResult Solve(mp::ASLSolver &s,
       mp::Problem &p, const char *stub, const char *opt = 0);
 };
 

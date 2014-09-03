@@ -26,7 +26,7 @@
 #include <vector>
 
 #include "mp/clock.h"
-#include "mp/solver.h"
+#include "asl/aslsolver.h"
 #include "asl/problem.h"
 #include "jacop/java.h"
 
@@ -382,7 +382,7 @@ class NLToJaCoPConverter : public ExprConverter<NLToJaCoPConverter, jobject> {
 };
 
 // JaCoP solver.
-class JaCoPSolver : public Solver {
+class JaCoPSolver : public ASLSolver {
  private:
   std::vector<std::string> jvm_options_;
   jlong outlev_;

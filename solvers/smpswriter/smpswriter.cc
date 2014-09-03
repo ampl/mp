@@ -88,7 +88,7 @@ class FileWriter {
   FMT_VARIADIC(void, Write, fmt::StringRef)
 };
 
-SMPSWriter::SMPSWriter() : Solver("smpswriter", "SMPSWriter", 20130709) {
+SMPSWriter::SMPSWriter() : ASLSolver("smpswriter", "SMPSWriter", 20130709) {
   AddSuffix("stage", 0, ASL_Sufkind_var);
   set_read_flags(Problem::READ_COLUMNWISE);
 }

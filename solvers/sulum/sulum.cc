@@ -109,7 +109,8 @@ class SulumSolver::DblSulumOption : public TypedSolverOption<double> {
   }
 };
 
-SulumSolver::SulumSolver() : Solver("sulum", "", 20130908), env_(), model_() {
+SulumSolver::SulumSolver()
+  : ASLSolver("sulum", "", 20130908), env_(), model_() {
   int major = 0, minor = 0, interim = 0;
   SlmGetSulumVersion(&major, &minor, &interim);
   std::string version = fmt::format("sulum {}.{}.{}", major, minor, interim);
