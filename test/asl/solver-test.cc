@@ -363,11 +363,14 @@ TEST(SolverTest, ReadProblemNoStub) {
 
 TEST(SolverTest, ReadProblemError) {
   TestSolver s("test");
-  EXPECT_EXIT({
-    Stderr = stderr;
-    Problem p;
+  Problem p;
+  std::string message;
+  try {
     s.ProcessArgs(Args("testprogram", "nonexistent"), p);
-  }, ::testing::ExitedWithCode(1), "testprogram: can't open nonexistent.nl");
+  } catch (const fmt::SystemError &e) {
+    message = e.what();
+  }
+  EXPECT_EQ(message.find("cannot open file nonexistent.nl"), 0);
 }
 
 TEST(SolverTest, ReadingMinOrMaxWithZeroArgsFails) {
@@ -375,12 +378,9 @@ TEST(SolverTest, ReadingMinOrMaxWithZeroArgsFails) {
   for (size_t i = 0, n = sizeof(names) / sizeof(*names); i < n; ++i) {
     std::string stub =
         fmt::format(MP_TEST_DATA_DIR "/{}-with-zero-args", names[i]);
-    EXPECT_EXIT({
-      Stderr = stderr;
-      Problem p;
-      p.Read(stub);
-    }, ::testing::ExitedWithCode(1),
-        fmt::format("bad line 13 of {}.nl: 0", stub));
+    Problem p;
+    EXPECT_THROW_MSG(p.Read(stub), mp::Error,
+                     fmt::format("{}.nl:13:1: too few arguments", stub));
   }
 }
 
@@ -419,11 +419,10 @@ TEST(SolverTest, ProcessArgsWithouStub) {
 
 TEST(SolverTest, ProcessArgsError) {
   TestSolver s;
-  EXPECT_EXIT({
-    Stderr = stderr;
-    Problem p;
-    s.ProcessArgs(Args("testprogram", "nonexistent"), p);
-  }, ::testing::ExitedWithCode(1), "testprogram: can't open nonexistent.nl");
+  Problem p;
+  EXPECT_THROW_MSG(
+        s.ProcessArgs(Args("testprogram", "nonexistent"), p), fmt::SystemError,
+        "cannot open file nonexistent.nl: No such file or directory");
 }
 
 TEST(SolverTest, SignalHandler) {

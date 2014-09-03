@@ -260,23 +260,24 @@ void Problem::AddCon(LogicalExpr expr) {
 
 void Problem::Read(fmt::StringRef stub, unsigned flags) {
   Free();
-  name_.assign(stub.c_str(), stub.size());
 
   // Add the .nl extension if necessary.
   const char EXT[] = ".nl";
   std::size_t ext_size = sizeof(EXT) - 1;
   fmt::Writer name;
-  name << name_;
+  name << stub;
   if (name.size() < ext_size ||
       std::strcmp(name.c_str() + name.size() - ext_size, EXT) != 0) {
     name << EXT;
   }
+  name_.assign(name.c_str(), name.size() - ext_size);
 
   asl_->p.want_derivs_ = 0;
   asl_->i.want_xpi0_ = (flags & READ_INITIAL_VALUES) != 0;
   internal::ASLBuilder builder(reinterpret_cast<ASL*>(asl_));
   builder.set_flags(ASL_allow_CLP | ASL_sep_U_arrays |
                     ASL_allow_missing_funcs | internal::ASL_STANDARD_OPCODES);
+  builder.set_stub(name_.c_str());
   ReadNLFile(name.c_str(), builder);
 
   // TODO

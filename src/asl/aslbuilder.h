@@ -139,6 +139,7 @@ class ASLBuilder {
   ~ASLBuilder();
 
   void set_flags(int flags) { flags_ = flags; }
+  void set_stub(const char *stub);
 
   // Initializes the ASL object in a similar way to jac0dim, but
   // doesn't read the .nl file as it is the responsibility of NLReader.

@@ -196,16 +196,19 @@ ASLBuilder::~ASLBuilder() {
     delete static_;
 }
 
-void ASLBuilder::InitASL(const char *stub, const NLHeader &h) {
-  if (!static_)
-    static_ = new Static();
+void ASLBuilder::set_stub(const char *stub) {
   std::size_t stub_len = std::strlen(stub);
   Edaginfo &info = asl_->i;
   info.filename_ = reinterpret_cast<char*>(M1alloc_ASL(&info, stub_len + 5));
   std::strcpy(info.filename_, stub);
   info.stub_end_ = info.filename_ + stub_len;
   std::strcpy(info.filename_ + stub_len, ".nl");
+}
 
+void ASLBuilder::InitASL(const char *, const NLHeader &h) {
+  if (!static_)
+    static_ = new Static();
+  Edaginfo &info = asl_->i;
   info.binary_nl_ = h.format;
   if (h.arith_kind != arith::UNKNOWN) {
     arith::Kind arith_kind = arith::GetKind();
