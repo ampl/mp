@@ -174,7 +174,7 @@ add_prefix(MP_HEADERS include/mp/
 set(MP_SOURCES )
 add_prefix(MP_SOURCES src/
   clock.cc nl.cc os.cc precedence.h rstparser.cc solver.cc)
-add_library(mp ${MP_HEADERS} ${MP_SOURCES}
+add_library(mp STATIC ${MP_HEADERS} ${MP_SOURCES}
   ${MP_EXPR_INFO_FILE} $<TARGET_OBJECTS:format>)
 target_compile_definitions(mp PRIVATE
   MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}")
