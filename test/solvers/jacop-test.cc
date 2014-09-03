@@ -165,7 +165,7 @@ TEST_F(JaCoPSolverTest, OutLevOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
   Problem p;
-  p.Read("../data/objconstint.nl");
+  p.Read(MP_TEST_DATA_DIR "/objconstint.nl");
   solver_.Solve(p);
   EXPECT_EQ("", h.output);
 
@@ -188,7 +188,7 @@ TEST_F(JaCoPSolverTest, OutFreqOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
   Problem p;
-  p.Read("../data/party1.nl");
+  p.Read(MP_TEST_DATA_DIR "/party1.nl");
   solver_.SetIntOption("outlev", 1);
   solver_.SetIntOption("timelimit", 1);
 

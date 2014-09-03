@@ -36,10 +36,6 @@ using mp::UnsupportedExprError;
 namespace var = mp::var;
 namespace obj = mp::obj;
 
-#ifndef MP_TEST_DATA_DIR
-# define MP_TEST_DATA_DIR "../data"
-#endif
-
 SolverTest::EvalResult SolverTest::Solve(Problem &p) {
   struct TestSolutionHandler : mp::BasicSolutionHandler {
     EvalResult result;

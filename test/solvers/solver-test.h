@@ -156,4 +156,8 @@ class SolverTest
 
 void Interrupt();
 
+#ifndef MP_TEST_DATA_DIR
+# define MP_TEST_DATA_DIR "../data"
+#endif
+
 #endif  // TESTS_SOLVER_TEST_H_
