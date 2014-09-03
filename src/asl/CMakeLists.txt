@@ -27,14 +27,10 @@ endif ()
 set(ASL_SOURCES
   ${CMAKE_CURRENT_BINARY_DIR}/details.c ${CMAKE_CURRENT_BINARY_DIR}/arith.h)
 add_prefix(ASL_SOURCES solvers/
-  asl_pfg.h
-  asl_pfgh.h
   errchk.h
   jac2dim.h
   jacpdim.h
-  nlp2.h
   obj_adj.h
-  psinfo.h
   asldate.c
   atof.c
   auxinfo.c
@@ -143,7 +139,9 @@ endif ()
 # Public ASL headers.
 set(ASL_HEADERS aslbuilder.h aslsolver.h expr.h problem.h solver-c.h
   ${CMAKE_CURRENT_BINARY_DIR}/arith.h ${CMAKE_CURRENT_BINARY_DIR}/stdio1.h)
-add_prefix(ASL_HEADERS solvers/ avltree.h funcadd.h getstub.h nlp.h)
+add_prefix(ASL_HEADERS solvers/
+  asl.h asl_pfg.h asl_pfgh.h avltree.h funcadd.h getstub.h nlp.h nlp2.h psinfo.h
+  opcode.hd r_opn.hd)
 
 add_library(asl aslbuilder.cc aslsolver.cc expr.cc problem.cc
   ${ASL_HEADERS} $<TARGET_OBJECTS:asl-core>)
