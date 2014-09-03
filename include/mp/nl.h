@@ -758,7 +758,7 @@ typename Handler::LogicalExpr
     return handler_.MakeIteratedLogical(
           kind, ReadArgs<LogicalExprReader>(*this));
   case expr::ALLDIFF:
-    return handler_.MakeAllDiff(ReadArgs<>(*this));
+    return handler_.MakeAllDiff(ReadArgs<>(*this, 1));
   default:
     reader_.ReportError("expected logical expression opcode");
   }

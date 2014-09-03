@@ -798,7 +798,8 @@ TEST(NLTest, ReadIteratedLogicalExpr) {
 
 TEST(NLTest, ReadAllDiffExpr) {
   EXPECT_READ("l0: alldiff(v4, 5, v1);", "L0\no74\n3\nv4\nn5\nv1\n");
-  EXPECT_READ_ERROR("L0\no74\n2\nv4\nn5\n", "(input):13:1: too few arguments");
+  EXPECT_READ("l0: alldiff(v4);", "L0\no74\n1\nv4\n");
+  EXPECT_READ_ERROR("L0\no74\n0\n", "(input):13:1: too few arguments");
 }
 
 TEST(NLTest, ReadStringLiteral) {
