@@ -719,7 +719,7 @@ TEST(ASLBuilderTest, ASLBuilderLinear) {
   NLHeader header = MakeHeader();
   ASLPtr actual(ASL_read_f);
   ASLBuilder builder(actual.get());
-  builder.BeginBuild("test", header, 0);
+  builder.BeginBuild("test", header);
   builder.EndBuild();
   ASLPtr expected(ASL_read_f);
   EXPECT_EQ(0,
@@ -731,7 +731,7 @@ TEST(ASLBuilderTest, ASLBuilderTrivialProblem) {
   NLHeader header = MakeHeader();
   ASLPtr actual;
   ASLBuilder builder(actual.get());
-  builder.BeginBuild("test", header, 0);
+  builder.BeginBuild("test", header);
   builder.EndBuild();
   ASLPtr expected;
   EXPECT_EQ(0, ReadASL(*expected, header, "", 0));
@@ -743,7 +743,8 @@ TEST(ASLBuilderTest, ASLBuilderDisallowCLPByDefault) {
   header.num_logical_cons = 1;
   ASLPtr actual;
   ASLBuilder builder(actual.get());
-  CHECK_THROW_ASL_ERROR(builder.BeginBuild("test", header, ASL_return_read_err),
+  builder.set_flags(ASL_return_read_err);
+  CHECK_THROW_ASL_ERROR(builder.BeginBuild("test", header),
       ASL_readerr_CLP, "cannot handle logical constraints");
   ASLPtr expected;
   EXPECT_EQ(ASL_readerr_CLP,
@@ -756,11 +757,12 @@ TEST(ASLBuilderTest, ASLBuilderAllowCLP) {
   header.num_logical_cons = 1;
   ASLPtr actual;
   ASLBuilder builder(actual.get());
-  mp::internal::ASLError error(0, "");
-  builder.BeginBuild("test", header, ASL_return_read_err | ASL_allow_CLP);
+  int flags = ASL_return_read_err | ASL_allow_CLP;
+  builder.set_flags(flags);
+  builder.BeginBuild("test", header);
   builder.EndBuild();
   ASLPtr expected;
-  ReadASL(*expected, header, "", ASL_return_read_err | ASL_allow_CLP);
+  ReadASL(*expected, header, "", flags);
   CheckASL(*expected, *actual, false);
 }
 
@@ -777,7 +779,8 @@ class TestASLBuilder : public ASLBuilder {
     int flags = mp::internal::ASL_STANDARD_OPCODES | ASL_allow_CLP;
     if (allow_missing_funcs)
       flags |= ASL_allow_missing_funcs;
-    BeginBuild("", header, flags);
+    set_flags(flags);
+    BeginBuild("", header);
   }
 };
 
@@ -953,8 +956,9 @@ TEST(ASLBuilderTest, SizeOverflow) {
   ASLBuilder builder;
   NLHeader header = MakeHeader();
   header.num_funcs = 1;
-  builder.BeginBuild("", header,
-    mp::internal::ASL_STANDARD_OPCODES | ASL_allow_missing_funcs);
+  builder.set_flags(
+        mp::internal::ASL_STANDARD_OPCODES | ASL_allow_missing_funcs);
+  builder.BeginBuild("", header);
   NumericExpr args[] = {builder.MakeNumericConstant(0)};
 
   std::size_t num_args = (INT_MAX - sizeof(expr_f)) / sizeof(expr*) + 2;

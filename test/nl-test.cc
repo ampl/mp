@@ -93,7 +93,7 @@ class TestNLHandler {
   typedef std::string CountExpr;
   typedef std::string Variable;
 
-  void BeginBuild(const char *, const NLHeader &h, int) {
+  void BeginBuild(const char *, const NLHeader &h) {
     header = h;
     log.clear();
   }
@@ -124,6 +124,8 @@ class TestNLHandler {
       str_ += fmt::format("{} * v{}", coef, var_index);
     }
   };
+  typedef LinearExprHandler LinearObjHandler;
+  typedef LinearExprHandler LinearConHandler;
 
   LinearExprHandler GetLinearVarHandler(int index, int num_terms) {
     WriteSep().write("v{} {}: ", index, num_terms);
@@ -394,23 +396,26 @@ struct TestNLHandler2 {
   typedef struct TestCountExpr : TestNumericExpr {} CountExpr;
   typedef struct TestLogicalExpr : TestExpr {} LogicalExpr;
 
-  void BeginBuild(const char *, const NLHeader &, int) {}
+  void BeginBuild(const char *, const NLHeader &) {}
 
   void SetVarBounds(int, double, double) {}
   void SetConBounds(int, double, double) {}
   void SetComplement(int, int, int) {}
 
-  struct LinearExprHandler {
+  struct LinearObjHandler {
     void AddTerm(int, double) {}
   };
-  LinearExprHandler GetLinearVarHandler(int, int) {
-    return LinearExprHandler();
+  struct LinearConHandler {
+    void AddTerm(int, double) {}
+  };
+  LinearConHandler GetLinearVarHandler(int, int) {
+    return LinearConHandler();
   }
-  LinearExprHandler GetLinearObjHandler(int, int) {
-    return LinearExprHandler();
+  LinearObjHandler GetLinearObjHandler(int, int) {
+    return LinearObjHandler();
   }
-  LinearExprHandler GetLinearConHandler(int, int) {
-    return LinearExprHandler();
+  LinearConHandler GetLinearConHandler(int, int) {
+    return LinearConHandler();
   }
 
   struct ColumnSizeHandler {

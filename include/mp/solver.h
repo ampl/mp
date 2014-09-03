@@ -320,7 +320,7 @@ class TypedSolverOption : public SolverOption {
   virtual void SetValue(typename internal::OptionHelper<T>::Arg value) = 0;
 };
 
-// An AMPL solver.
+// A mathematical optimization solver.
 //
 // Example:
 //

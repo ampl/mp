@@ -32,7 +32,9 @@
 # define close _close
 #endif
 
+#include "mp/nl.h"
 #include "mp/os.h"
+#include "aslbuilder.h"
 
 #ifndef MP_HAVE_MKSTEMPS
 extern "C" int mkstemps(char *pattern, int suffix_len);
@@ -259,10 +261,23 @@ void Problem::AddCon(LogicalExpr expr) {
 void Problem::Read(fmt::StringRef stub, unsigned flags) {
   Free();
   name_.assign(stub.c_str(), stub.size());
-  ASL *asl = reinterpret_cast<ASL*>(asl_);
-  FILE *nl = jac0dim_ASL(asl, const_cast<char*>(stub.c_str()),
-      static_cast<ftnlen>(stub.size()));
-  efunc *r_ops_int[expr::MAX_OPCODE + 1];
+
+  // Add the .nl extension if necessary.
+  const char EXT[] = ".nl";
+  std::size_t ext_size = sizeof(EXT) - 1;
+  fmt::Writer name;
+  name << name_;
+  if (name.size() < ext_size ||
+      std::strcmp(name.c_str() + name.size() - ext_size, EXT) != 0) {
+    name << EXT;
+  }
+
+  internal::ASLBuilder builder(reinterpret_cast<ASL*>(asl_));
+  builder.set_flags(ASL_allow_CLP | ASL_sep_U_arrays | ASL_allow_missing_funcs);
+  ReadNLFile(name.c_str(), builder); // TODO: extension .nl
+
+  // TODO
+  /*efunc *r_ops_int[expr::MAX_OPCODE + 1];
   for (int i = 0; i <= expr::MAX_OPCODE; ++i)
     r_ops_int[i] = reinterpret_cast<efunc*>(i);
   asl_->I.r_ops_ = r_ops_int;
@@ -272,9 +287,7 @@ void Problem::Read(fmt::StringRef stub, unsigned flags) {
     asl_->i.A_vals_ = reinterpret_cast<double*>(
         Malloc(asl->i.nzc_ * sizeof(*asl_->i.A_vals_)));
   }
-  fg_read_ASL(asl, nl,
-      ASL_allow_CLP | ASL_sep_U_arrays | ASL_allow_missing_funcs);
-  asl_->I.r_ops_ = 0;
+  asl_->I.r_ops_ = 0;*/
 }
 
 void Problem::WriteNL(fmt::StringRef stub, ProblemChanges *pc, unsigned flags) {

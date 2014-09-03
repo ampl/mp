@@ -72,13 +72,6 @@ const double ASLBuilder::DVALUE[] = {
 };
 
 template <typename T>
-inline T *ASLBuilder::Allocate(SafeInt<int> size) {
-  if (size.value() > std::numeric_limits<int>::max())
-    throw std::bad_alloc();
-  return reinterpret_cast<T*>(mem_ASL(asl_, size.value()));
-}
-
-template <typename T>
 inline T *ASLBuilder::ZapAllocate(std::size_t size) {
   return reinterpret_cast<T*>(M1zapalloc_ASL(&asl_->i, size));
 }
@@ -188,8 +181,8 @@ void ASLBuilder::SetObjOrCon(
 }
 
 ASLBuilder::ASLBuilder(ASL *asl)
-: asl_(asl), own_asl_(false), r_ops_(0), flags_(0), nz_(0), nderp_(0),
-  static_(0) {
+: asl_(asl), own_asl_(false), r_ops_(0), flags_(ASL_STANDARD_OPCODES),
+  nz_(0), nderp_(0), static_(0) {
   if (!asl) {
     asl_ = ASL_alloc(ASL_read_fg);
     own_asl_ = true;
@@ -290,30 +283,29 @@ void ASLBuilder::InitASL(const char *stub, const NLHeader &h) {
   info.c_vars_ = info.o_vars_ = info.n_var_;
 }
 
-void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h, int flags) {
-  flags_ = flags;
+void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h) {
   InitASL(stub, h);
 
   bool linear = asl_->i.ASLtype == ASL_read_f;
 
   // Includes allocation of LUv, LUrhs, A_vals or Cgrad, etc.
-  flagsave_ASL(asl_, flags);
+  flagsave_ASL(asl_, flags_);
   ed_reset(static_, asl_);
 
   Edaginfo &info = asl_->i;
   int nlcon = info.n_lcon_;
-  if (nlcon && (flags & ASL_allow_CLP) == 0)
+  if (nlcon && (flags_ & ASL_allow_CLP) == 0)
     throw ASLError(ASL_readerr_CLP, "cannot handle logical constraints");
 
   // TODO: test
-  bool readall = (flags & ASL_keep_all_suffixes) != 0;
+  bool readall = (flags_ & ASL_keep_all_suffixes) != 0;
   if (!info.size_expr_n_)
     info.size_expr_n_ = sizeof(expr_n);
 
   Edag1info &info1 = reinterpret_cast<ASL_fg*>(asl_)->I;
   int ncom = 0;
   if (!linear) {
-    if ((flags & ASL_STANDARD_OPCODES) != 0) {
+    if ((flags_ & ASL_STANDARD_OPCODES) != 0) {
       for (int i = 0; i < N_OPS; ++i)
         standard_opcodes_[i] = reinterpret_cast<efunc*>(i);
       r_ops_ = standard_opcodes_;

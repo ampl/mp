@@ -87,7 +87,11 @@ class ASLBuilder {
   }
 
   template <typename T>
-  T *Allocate(SafeInt<int> size = SafeInt<int>(sizeof(T)));
+  T *Allocate(SafeInt<int> size = SafeInt<int>(sizeof(T))) {
+    if (size.value() > std::numeric_limits<int>::max())
+      throw std::bad_alloc();
+    return reinterpret_cast<T*>(mem_ASL(asl_, size.value()));
+  }
 
   template <typename T>
   T *ZapAllocate(std::size_t size);
@@ -134,6 +138,8 @@ class ASLBuilder {
   explicit ASLBuilder(ASL *asl = 0);
   ~ASLBuilder();
 
+  void set_flags(int flags) { flags_ = flags | ASL_STANDARD_OPCODES; }
+
   // Initializes the ASL object in a similar way to jac0dim, but
   // doesn't read the .nl file as it is the responsibility of NLReader.
   // Instead it uses the information provided in NLHeader.
@@ -142,8 +148,7 @@ class ASLBuilder {
   // Begins building the ASL object.
   // flags: reader flags, see ASL_reader_flag_bits.
   // Throws ASLError on error.
-  void BeginBuild(const char *stub, const NLHeader &h,
-                  int flags = ASL_STANDARD_OPCODES);
+  void BeginBuild(const char *stub, const NLHeader &h);
 
   // Ends building the ASL object.
   void EndBuild();
@@ -175,23 +180,37 @@ class ASLBuilder {
   // index: Index of a logical contraint; 0 <= index < num_logical_cons.
   void SetLogicalCon(int index, LogicalExpr expr);
 
+  template <typename Grad>
   class LinearExprHandler {
+   private:
+    ASLBuilder *builder_;
+    Grad **term_;
+
    public:
-    void AddTerm(int, double) {
-      // TODO
+    LinearExprHandler(ASLBuilder *b, Grad **term) : builder_(b), term_(term) {}
+    ~LinearExprHandler() { *term_ = 0; }
+
+    void AddTerm(int var_index, double coef) {
+      Grad *og = builder_->Allocate<Grad>();
+      *term_ = og;
+      term_ = &og->next;
+      og->varno = var_index;
+      og->coef = coef;
     }
   };
-  LinearExprHandler GetLinearVarHandler(int, int) {
+
+  typedef LinearExprHandler<ograd> LinearObjHandler;
+  typedef LinearExprHandler<cgrad> LinearConHandler;
+
+  LinearConHandler GetLinearVarHandler(int, int) {
     // TODO
-    return LinearExprHandler();
+    return LinearConHandler(0, 0);
   }
-  LinearExprHandler GetLinearObjHandler(int, int) {
-    // TODO
-    return LinearExprHandler();
+  LinearObjHandler GetLinearObjHandler(int index, int) {
+    return LinearObjHandler(this, asl_->i.Ograd_ + index);
   }
-  LinearExprHandler GetLinearConHandler(int, int) {
-    // TODO
-    return LinearExprHandler();
+  LinearConHandler GetLinearConHandler(int index, int) {
+    return LinearConHandler(this, asl_->i.Cgrad_ + index);
   }
 
   struct ColumnSizeHandler {

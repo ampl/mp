@@ -530,7 +530,7 @@ class NLReader {
 
     int num_items() const { return this->reader_.header_.num_objs; }
 
-    typename Handler::LinearExprHandler
+    typename Handler::LinearObjHandler
         GetLinearExprHandler(int index, int num_terms) {
       return this->reader_.handler_.GetLinearObjHandler(index, num_terms);
     }
@@ -541,7 +541,7 @@ class NLReader {
 
     int num_items() const { return this->reader_.header_.num_algebraic_cons; }
 
-    typename Handler::LinearExprHandler
+    typename Handler::LinearConHandler
         GetLinearExprHandler(int index, int num_terms) {
       return this->reader_.handler_.GetLinearConHandler(index, num_terms);
     }
@@ -574,8 +574,8 @@ class NLReader {
   template <typename LinearHandler>
   void ReadLinearExpr();
 
-  void ReadLinearExpr(
-      int num_terms, typename Handler::LinearExprHandler linear_expr);
+  template <typename LinearHandler>
+  void ReadLinearExpr(int num_terms, LinearHandler linear_expr);
 
   // Reads variable or constraint bounds.
   template <typename BoundHandler>
@@ -775,8 +775,9 @@ void NLReader<Reader, Handler>::ReadLinearExpr() {
 }
 
 template <typename Reader, typename Handler>
+template <typename LinearHandler>
 void NLReader<Reader, Handler>::ReadLinearExpr(
-    int num_terms, typename Handler::LinearExprHandler linear_expr) {
+    int num_terms, LinearHandler linear_expr) {
   for (int i = 0; i < num_terms; ++i) {
     int var_index = ReadUInt(total_num_vars_);
     double coef = reader_.ReadDouble();
@@ -1038,7 +1039,7 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
   TextReader reader(str, name);
   NLHeader header = NLHeader();
   reader.ReadHeader(header);
-  handler.BeginBuild(name.c_str(), header, 0);
+  handler.BeginBuild(name.c_str(), header);
   switch (header.format) {
   case NLHeader::TEXT:
     NLReader<TextReader, Handler>(reader, header, handler).Read();
