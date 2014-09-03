@@ -395,19 +395,21 @@ class NLReader {
   double ReadConstant() { return ReadConstant(reader_.ReadChar()); }
 
   // Reads a nonnegative integer and checks that it is less than ub.
-  int ReadUInt(int ub) {
-    int index = reader_.ReadUInt();
-    if (index >= ub)
-      reader_.ReportError("integer {} out of bounds", index);
-    return index;
+  // ub is unsigned so that it can hold value INT_MAX + 1u.
+  int ReadUInt(unsigned ub) {
+    int value = reader_.ReadUInt();
+    unsigned unsigned_value = value;
+    if (unsigned_value >= ub)
+      reader_.ReportError("integer {} out of bounds", value);
+    return value;
   }
 
   // Reads a nonnegative integer and checks that it is in the range [lb, ub).
   int ReadUInt(int lb, int ub) {
-    int index = reader_.ReadUInt();
-    if (index < lb || index >= ub)
-      reader_.ReportError("integer {} out of bounds", index);
-    return index;
+    int value = reader_.ReadUInt();
+    if (value < lb || value >= ub)
+      reader_.ReportError("integer {} out of bounds", value);
+    return value;
   }
 
   Variable DoReadVariable() {
@@ -767,7 +769,7 @@ template <typename LinearHandler>
 void NLReader<Reader, Handler>::ReadLinearExpr() {
   LinearHandler lh(*this);
   int index = ReadUInt(lh.num_items());
-  int num_terms = ReadUInt(1, total_num_vars_); // TODO: inclusive
+  int num_terms = ReadUInt(1, total_num_vars_ + 1u);
   reader_.ReadTillEndOfLine();
   ReadLinearExpr(num_terms, lh.GetLinearExprHandler(index, num_terms));
 }
