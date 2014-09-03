@@ -862,7 +862,6 @@ TEST(NLTest, ReadConBounds) {
                handler);
   EXPECT_EQ(fmt::format("c0 complements v{} 1;", INT_MAX - 1),
             handler.log.str());
-
 }
 
 TEST(NLTest, ReadLinearObjExpr) {
@@ -872,7 +871,7 @@ TEST(NLTest, ReadLinearObjExpr) {
   EXPECT_READ_ERROR("G-1", "(input):11:2: expected unsigned integer");
   EXPECT_READ_ERROR("G6", "(input):11:2: integer 6 out of bounds");
   EXPECT_READ_ERROR("G0 0", "(input):11:4: integer 0 out of bounds");
-  EXPECT_READ_ERROR("G0 6", "(input):11:4: integer 6 out of bounds");
+  EXPECT_READ_ERROR("G0 7", "(input):11:4: integer 7 out of bounds");
   EXPECT_READ_ERROR("G0 1\n-1 0\n", "(input):12:1: expected unsigned integer");
   EXPECT_READ_ERROR("G0 1\n6 0\n", "(input):12:1: integer 6 out of bounds");
 }
@@ -884,7 +883,7 @@ TEST(NLTest, ReadLinearConExpr) {
   EXPECT_READ_ERROR("J-1", "(input):11:2: expected unsigned integer");
   EXPECT_READ_ERROR("J8", "(input):11:2: integer 8 out of bounds");
   EXPECT_READ_ERROR("J0 0", "(input):11:4: integer 0 out of bounds");
-  EXPECT_READ_ERROR("J0 6", "(input):11:4: integer 6 out of bounds");
+  EXPECT_READ_ERROR("J0 7", "(input):11:4: integer 7 out of bounds");
   EXPECT_READ_ERROR("J0 1\n-1 0\n", "(input):12:1: expected unsigned integer");
   EXPECT_READ_ERROR("J0 1\n6 0\n", "(input):12:1: integer 6 out of bounds");
 }
