@@ -248,6 +248,7 @@ class IlogCPTest : public ::testing::Test, public mp::internal::ASLBuilder {
     mp::NLHeader h = mp::NLHeader();
     h.num_vars = 3;
     h.num_objs = 1;
+    set_flags(mp::internal::ASL_STANDARD_OPCODES);
     BeginBuild(h);
   }
 
