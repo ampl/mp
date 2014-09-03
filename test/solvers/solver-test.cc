@@ -74,6 +74,7 @@ SolverTest::SolverTest()
   header.num_vars = 4;
   header.num_objs = 1;
   header.num_funcs = 2;
+  set_flags(mp::internal::ASL_STANDARD_OPCODES);
   BeginBuild(header);
   x = MakeVariable(1);
   y = MakeVariable(2);
