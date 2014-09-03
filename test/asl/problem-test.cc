@@ -477,6 +477,7 @@ class TestASLBuilder : public mp::internal::ASLBuilder {
   TestASLBuilder() {
     mp::NLHeader header = mp::NLHeader();
     header.num_vars = header.num_objs = 1;
+    set_flags(mp::internal::ASL_STANDARD_OPCODES);
     BeginBuild("", header);
   }
 };

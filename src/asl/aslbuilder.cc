@@ -181,7 +181,7 @@ void ASLBuilder::SetObjOrCon(
 }
 
 ASLBuilder::ASLBuilder(ASL *asl)
-: asl_(asl), own_asl_(false), r_ops_(0), flags_(ASL_STANDARD_OPCODES),
+: asl_(asl), own_asl_(false), r_ops_(0), flags_(0),
   nz_(0), nderp_(0), static_(0) {
   if (!asl) {
     asl_ = ASL_alloc(ASL_read_fg);

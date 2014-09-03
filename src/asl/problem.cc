@@ -272,17 +272,18 @@ void Problem::Read(fmt::StringRef stub, unsigned flags) {
     name << EXT;
   }
 
+  asl_->p.want_derivs_ = 0;
+  asl_->i.want_xpi0_ = (flags & READ_INITIAL_VALUES) != 0;
   internal::ASLBuilder builder(reinterpret_cast<ASL*>(asl_));
-  builder.set_flags(ASL_allow_CLP | ASL_sep_U_arrays | ASL_allow_missing_funcs);
-  ReadNLFile(name.c_str(), builder); // TODO: extension .nl
+  builder.set_flags(ASL_allow_CLP | ASL_sep_U_arrays |
+                    ASL_allow_missing_funcs | internal::ASL_STANDARD_OPCODES);
+  ReadNLFile(name.c_str(), builder);
 
   // TODO
   /*efunc *r_ops_int[expr::MAX_OPCODE + 1];
   for (int i = 0; i <= expr::MAX_OPCODE; ++i)
     r_ops_int[i] = reinterpret_cast<efunc*>(i);
   asl_->I.r_ops_ = r_ops_int;
-  asl_->p.want_derivs_ = 0;
-  asl_->i.want_xpi0_ = (flags & READ_INITIAL_VALUES) != 0;
   if ((flags & READ_COLUMNWISE) != 0) {
     asl_->i.A_vals_ = reinterpret_cast<double*>(
         Malloc(asl->i.nzc_ * sizeof(*asl_->i.A_vals_)));

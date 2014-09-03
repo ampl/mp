@@ -138,7 +138,7 @@ class ASLBuilder {
   explicit ASLBuilder(ASL *asl = 0);
   ~ASLBuilder();
 
-  void set_flags(int flags) { flags_ = flags | ASL_STANDARD_OPCODES; }
+  void set_flags(int flags) { flags_ = flags; }
 
   // Initializes the ASL object in a similar way to jac0dim, but
   // doesn't read the .nl file as it is the responsibility of NLReader.
