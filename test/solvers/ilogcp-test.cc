@@ -248,7 +248,7 @@ class IlogCPTest : public ::testing::Test, public mp::internal::ASLBuilder {
     mp::NLHeader h = mp::NLHeader();
     h.num_vars = 3;
     h.num_objs = 1;
-    BeginBuild("", h);
+    BeginBuild(h);
   }
 
   int CountIloDistribute();

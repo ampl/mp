@@ -619,7 +619,9 @@ FILE *ReadHeader(ASL &asl, const NLHeader &h, const char *body) {
 void CheckInitASL(const NLHeader &h) {
   ASLPtr expected, actual;
   fclose(ReadHeader(*expected, h, ""));
-  ASLBuilder(actual.get()).InitASL("test", h);
+  ASLBuilder builder(actual.get());
+  builder.set_stub("test");
+  builder.InitASL(h);
   CheckASL(*expected, *actual);
 }
 
@@ -679,16 +681,16 @@ TEST(ASLBuilderTest, ASLBuilderAdjFcn) {
 
 TEST(ASLBuilderTest, ASLBuilderInvalidProblemDim) {
   NLHeader header = NLHeader();
-  CHECK_THROW_ASL_ERROR(ASLBuilder().InitASL("test", header),
+  CHECK_THROW_ASL_ERROR(ASLBuilder().InitASL(header),
       ASL_readerr_corrupt, "invalid problem dimensions: M = 0, N = 0, NO = 0");
   header.num_vars = 1;
-  ASLBuilder().InitASL("test", header);
+  ASLBuilder().InitASL(header);
   header.num_algebraic_cons = -1;
-  CHECK_THROW_ASL_ERROR(ASLBuilder().InitASL("test", header),
+  CHECK_THROW_ASL_ERROR(ASLBuilder().InitASL(header),
       ASL_readerr_corrupt, "invalid problem dimensions: M = -1, N = 1, NO = 0");
   header.num_objs = -1;
   header.num_algebraic_cons = 0;
-  CHECK_THROW_ASL_ERROR(ASLBuilder().InitASL("test", header),
+  CHECK_THROW_ASL_ERROR(ASLBuilder().InitASL(header),
       ASL_readerr_corrupt, "invalid problem dimensions: M = 0, N = 1, NO = -1");
 }
 
@@ -719,7 +721,8 @@ TEST(ASLBuilderTest, ASLBuilderLinear) {
   NLHeader header = MakeHeader();
   ASLPtr actual(ASL_read_f);
   ASLBuilder builder(actual.get());
-  builder.BeginBuild("test", header);
+  builder.set_stub("test");
+  builder.BeginBuild(header);
   builder.EndBuild();
   ASLPtr expected(ASL_read_f);
   EXPECT_EQ(0,
@@ -731,7 +734,8 @@ TEST(ASLBuilderTest, ASLBuilderTrivialProblem) {
   NLHeader header = MakeHeader();
   ASLPtr actual;
   ASLBuilder builder(actual.get());
-  builder.BeginBuild("test", header);
+  builder.set_stub("test");
+  builder.BeginBuild(header);
   builder.EndBuild();
   ASLPtr expected;
   EXPECT_EQ(0, ReadASL(*expected, header, "", 0));
@@ -744,7 +748,8 @@ TEST(ASLBuilderTest, ASLBuilderDisallowCLPByDefault) {
   ASLPtr actual;
   ASLBuilder builder(actual.get());
   builder.set_flags(ASL_return_read_err);
-  CHECK_THROW_ASL_ERROR(builder.BeginBuild("test", header),
+  builder.set_stub("test");
+  CHECK_THROW_ASL_ERROR(builder.BeginBuild(header),
       ASL_readerr_CLP, "cannot handle logical constraints");
   ASLPtr expected;
   EXPECT_EQ(ASL_readerr_CLP,
@@ -759,7 +764,8 @@ TEST(ASLBuilderTest, ASLBuilderAllowCLP) {
   ASLBuilder builder(actual.get());
   int flags = ASL_return_read_err | ASL_allow_CLP;
   builder.set_flags(flags);
-  builder.BeginBuild("test", header);
+  builder.set_stub("test");
+  builder.BeginBuild(header);
   builder.EndBuild();
   ASLPtr expected;
   ReadASL(*expected, header, "", flags);
@@ -780,7 +786,7 @@ class TestASLBuilder : public ASLBuilder {
     if (allow_missing_funcs)
       flags |= ASL_allow_missing_funcs;
     set_flags(flags);
-    BeginBuild("", header);
+    BeginBuild(header);
   }
 };
 
@@ -958,7 +964,7 @@ TEST(ASLBuilderTest, SizeOverflow) {
   header.num_funcs = 1;
   builder.set_flags(
         mp::internal::ASL_STANDARD_OPCODES | ASL_allow_missing_funcs);
-  builder.BeginBuild("", header);
+  builder.BeginBuild(header);
   NumericExpr args[] = {builder.MakeNumericConstant(0)};
 
   std::size_t num_args = (INT_MAX - sizeof(expr_f)) / sizeof(expr*) + 2;

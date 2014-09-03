@@ -1040,7 +1040,7 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
   TextReader reader(str, name);
   NLHeader header = NLHeader();
   reader.ReadHeader(header);
-  handler.BeginBuild(name.c_str(), header);
+  handler.BeginBuild(header);
   switch (header.format) {
   case NLHeader::TEXT:
     NLReader<TextReader, Handler>(reader, header, handler).Read();

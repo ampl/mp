@@ -12,7 +12,7 @@ int main() {
   mp::NLHeader h = mp::NLHeader();
   h.num_vars = num_exprs;
   h.num_objs = 1;
-  b.BeginBuild("", h);
+  b.BeginBuild(h);
   mp::NumberOfMap<int, CreateVar> map((CreateVar()));
   mp::NumericConstant n = b.MakeNumericConstant(0);
   std::vector<mp::NumberOfExpr> exprs(num_exprs);

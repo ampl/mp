@@ -93,7 +93,7 @@ class TestNLHandler {
   typedef std::string CountExpr;
   typedef std::string Variable;
 
-  void BeginBuild(const char *, const NLHeader &h) {
+  void BeginBuild(const NLHeader &h) {
     header = h;
     log.clear();
   }
@@ -396,7 +396,7 @@ struct TestNLHandler2 {
   typedef struct TestCountExpr : TestNumericExpr {} CountExpr;
   typedef struct TestLogicalExpr : TestExpr {} LogicalExpr;
 
-  void BeginBuild(const char *, const NLHeader &) {}
+  void BeginBuild(const NLHeader &) {}
 
   void SetVarBounds(int, double, double) {}
   void SetConBounds(int, double, double) {}

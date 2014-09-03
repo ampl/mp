@@ -74,7 +74,7 @@ SolverTest::SolverTest()
   header.num_vars = 4;
   header.num_objs = 1;
   header.num_funcs = 2;
-  BeginBuild("", header);
+  BeginBuild(header);
   x = MakeVariable(1);
   y = MakeVariable(2);
   z = MakeVariable(3);

@@ -205,7 +205,7 @@ void ASLBuilder::set_stub(const char *stub) {
   std::strcpy(info.filename_ + stub_len, ".nl");
 }
 
-void ASLBuilder::InitASL(const char *, const NLHeader &h) {
+void ASLBuilder::InitASL(const NLHeader &h) {
   if (!static_)
     static_ = new Static();
   Edaginfo &info = asl_->i;
@@ -286,8 +286,8 @@ void ASLBuilder::InitASL(const char *, const NLHeader &h) {
   info.c_vars_ = info.o_vars_ = info.n_var_;
 }
 
-void ASLBuilder::BeginBuild(const char *stub, const NLHeader &h) {
-  InitASL(stub, h);
+void ASLBuilder::BeginBuild(const NLHeader &h) {
+  InitASL(h);
 
   bool linear = asl_->i.ASLtype == ASL_read_f;
 

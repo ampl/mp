@@ -144,12 +144,12 @@ class ASLBuilder {
   // Initializes the ASL object in a similar way to jac0dim, but
   // doesn't read the .nl file as it is the responsibility of NLReader.
   // Instead it uses the information provided in NLHeader.
-  void InitASL(const char *stub, const NLHeader &h);
+  void InitASL(const NLHeader &h);
 
   // Begins building the ASL object.
   // flags: reader flags, see ASL_reader_flag_bits.
   // Throws ASLError on error.
-  void BeginBuild(const char *stub, const NLHeader &h);
+  void BeginBuild(const NLHeader &h);
 
   // Ends building the ASL object.
   void EndBuild();
