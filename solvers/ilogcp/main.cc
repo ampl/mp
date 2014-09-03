@@ -30,7 +30,7 @@ int main(int, char **argv) {
     return s->Run(argv);
   } catch (const IloException &e) {
     fmt::print(stderr, "Error: {}\n", e);
-  } catch (const mp::Error &e) {
+  } catch (const std::exception &e) {
     fmt::print(stderr, "Error: {}\n", e.what());
   }
   return 1;
