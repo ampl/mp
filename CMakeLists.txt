@@ -200,6 +200,7 @@ add_subdirectory(solvers)
 
 set(GSL_DISABLE_WARNINGS TRUE)
 set(GSL_DISABLE_TESTS TRUE) # GSL tests are run separately
+set(GSL_INSTALL FALSE)
 check_module(gsl build_gsl EXTERNAL)
 if (build_gsl)
   add_subdirectory(src/gsl)
