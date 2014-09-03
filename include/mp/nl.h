@@ -233,12 +233,24 @@ struct NLHeader {
 // Writes NLHeader in the .nl file format.
 fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h);
 
-class TextReader {
- private:
+class ReaderBase {
+ protected:
   const char *ptr_, *end_;
-  const char *line_start_;
   const char *token_;  // start of the current token
   std::string name_;
+
+ public:
+  ReaderBase(fmt::StringRef data, fmt::StringRef name);
+
+  char ReadChar() {
+    token_ = ptr_;
+    return *ptr_++;
+  }
+};
+
+class TextReader : public ReaderBase {
+ private:
+  const char *line_start_;
   int line_;
 
   // Reads an integer without a sign.
@@ -291,6 +303,15 @@ class TextReader {
     return value;
   }
 
+  bool ReadOptionalInt(int &value) { return DoReadOptionalInt(value); }
+
+  bool ReadOptionalUInt(int &value) {
+    SkipSpace();
+    return ReadIntWithoutSign(value);
+  }
+
+  bool ReadOptionalDouble(double &value);
+
   void DoReportError(
       const char *loc, fmt::StringRef format_str,
       const fmt::ArgList &args = fmt::ArgList());
@@ -309,11 +330,6 @@ class TextReader {
   }
   FMT_VARIADIC(void, ReportError, fmt::StringRef)
 
-  char ReadChar() {
-    token_ = ptr_;
-    return *ptr_++;
-  }
-
   void ReadTillEndOfLine() {
     while (char c = *ptr_) {
       ++ptr_;
@@ -325,14 +341,6 @@ class TextReader {
     }
     DoReportError(ptr_, "expected newline");
   }
-
-  bool ReadOptionalInt(int &value) { return DoReadOptionalInt(value); }
-
-  bool ReadOptionalUInt(int &value) {
-    SkipSpace();
-    return ReadIntWithoutSign(value);
-  }
-
   template <typename Int>
   Int ReadInt() {
     Int value = 0;
@@ -361,8 +369,6 @@ class TextReader {
     return value;
   }
 
-  bool ReadOptionalDouble(double &value);
-
   // Reads a function or suffix name.
   fmt::StringRef ReadName();
 
@@ -371,6 +377,49 @@ class TextReader {
   // Reads an .nl file header. The header is always in text format, so this
   // function doesn't have a counterpart in BinaryReader.
   void ReadHeader(NLHeader &header);
+};
+
+class BinaryReader : public ReaderBase {
+ public:
+  explicit BinaryReader(const ReaderBase &base) : ReaderBase(base) {}
+
+  void ReportError(fmt::StringRef format_str, const fmt::ArgList &args) {
+    // TODO
+  }
+  FMT_VARIADIC(void, ReportError, fmt::StringRef)
+
+  void ReadTillEndOfLine() {
+    // Do nothing.
+  }
+
+  template <typename Int>
+  Int ReadInt() {
+    token_ = ptr_;
+    // TODO: check EOF
+    Int value = *reinterpret_cast<const Int*>(ptr_);
+    ptr_ += sizeof(Int);
+    // TODO: check sign
+    return value;
+  }
+
+  int ReadUInt() {
+    // TODO
+    return ReadInt<int>();
+  }
+
+  double ReadDouble() {
+    token_ = ptr_;
+    // TODO: check EOF
+    double value = *reinterpret_cast<const double*>(ptr_);
+    ptr_ += sizeof(double);
+    // TODO: check sign
+    return value;
+  }
+
+  // Reads a function or suffix name.
+  fmt::StringRef ReadName() { return ""; }  // TODO
+
+  fmt::StringRef ReadString() { return ""; } // TODO
 };
 
 // An .nl file reader.
@@ -804,7 +853,7 @@ void NLReader<Reader, Handler>::ReadBounds() {
   int num_bounds = bh.num_items();
   double infinity = std::numeric_limits<double>::infinity();
   for (int i = 0; i < num_bounds; ++i) {
-    switch (reader_.ReadUInt()) {
+    switch (reader_.ReadChar() - '0') {
     case RANGE:
       lb = reader_.ReadDouble();
       ub = reader_.ReadDouble();
@@ -1053,7 +1102,8 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
       else
         throw ReadError(name, 0, 0, "unsupported floating-point arithmetic");
     } else {
-      // TODO: use binary reader
+      BinaryReader bin_reader(reader);
+      NLReader<BinaryReader, Handler>(bin_reader, header, handler).Read();
     }
     break;
   }

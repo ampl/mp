@@ -76,9 +76,11 @@ fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h) {
   return w;
 }
 
+ReaderBase::ReaderBase(fmt::StringRef data, fmt::StringRef name)
+: ptr_(data.c_str()), end_(ptr_ + data.size()), token_(ptr_), name_(name) {}
+
 TextReader::TextReader(fmt::StringRef data, fmt::StringRef name)
-: ptr_(data.c_str()), end_(ptr_ + data.size()),
-  line_start_(ptr_), token_(ptr_), name_(name), line_(1) {}
+: ReaderBase(data, name), line_start_(ptr_), line_(1) {}
 
 void TextReader::DoReportError(
     const char *loc, fmt::StringRef format_str, const fmt::ArgList &args) {

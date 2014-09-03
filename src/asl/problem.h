@@ -356,10 +356,7 @@ class Problem {
   void AddCon(LogicalExpr expr);
 
   // Flags for the Read method.
-  enum {
-    READ_INITIAL_VALUES = 1,
-    READ_COLUMNWISE     = 2
-  };
+  enum { READ_INITIAL_VALUES = 1 };
 
   // Reads a problem from the file <stub>.nl.
   void Read(fmt::StringRef stub, unsigned flags = 0);

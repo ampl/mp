@@ -21,6 +21,7 @@
  */
 
 #include "smpswriter/smpswriter.h"
+#include "asl/aslbuilder.h"
 #include "asl/problem.h"
 
 #include <cmath>
@@ -90,7 +91,7 @@ class FileWriter {
 
 SMPSWriter::SMPSWriter() : ASLSolver("smpswriter", "SMPSWriter", 20130709) {
   AddSuffix("stage", 0, ASL_Sufkind_var);
-  set_read_flags(Problem::READ_COLUMNWISE);
+  set_read_flags(mp::internal::ASL_COLUMNWISE);
 }
 
 void SMPSWriter::SplitConRHSIntoScenarios(

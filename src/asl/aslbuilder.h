@@ -48,8 +48,11 @@ public:
   int error_code() const { return error_code_; }
 };
 
-// Use standard opcodes when building expressions.
-enum { ASL_STANDARD_OPCODES = 0x1000000 };
+enum {
+  // Use standard opcodes when building expressions.
+  ASL_STANDARD_OPCODES = 0x1000000,
+  ASL_COLUMNWISE       = 0x2000000
+};
 
 // Provides methods for building an ASL problem object.
 class ASLBuilder {

@@ -63,7 +63,7 @@ TEST(SMPSWriterTest, SMPSOutput) {
   int count = 0;
   for (size_t i = 0, n = sizeof(PROBLEMS) / sizeof(*PROBLEMS); i != n; ++i) {
     mp::SMPSWriter w;
-    std::string path("../data/smps/");
+    std::string path(MP_TEST_DATA_DIR "/smps/");
     path += PROBLEMS[i];
     WriteFile("test.nl", ReadFile(path + ".nl"));
     WriteFile("test.col", ReadFile(path + ".col"));
@@ -79,29 +79,28 @@ TEST(SMPSWriterTest, SMPSOutput) {
 
 TEST(SMPSWriterTest, NonlinearNotSupported) {
   mp::SMPSWriter w;
-  WriteFile("test.nl", ReadFile("../data/smps/nonlinear.nl"));
+  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/smps/nonlinear.nl"));
   EXPECT_THROW(w.Run(Args("", "test.nl")), mp::Error);
 }
 
 TEST(SMPSWriterTest, MoreThan2StagesNotSupported) {
   mp::SMPSWriter w;
-  WriteFile("test.nl", ReadFile("../data/smps/three-stage.nl"));
+  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/smps/three-stage.nl"));
   EXPECT_THROW(w.Run(Args("", "test.nl")), mp::Error);
 }
 
 TEST(SMPSWriterTest, RangesNotSupported) {
   mp::SMPSWriter w;
-  WriteFile("test.nl", ReadFile("../data/smps/range-con.nl"));
+  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/smps/range-con.nl"));
   EXPECT_THROW(w.Run(Args("", "test.nl")), mp::Error);
 }
 
 TEST(SMPSWriterTest, InconsistentProbabilities) {
   mp::SMPSWriter w;
-  WriteFile("test.nl", ReadFile("../data/smps/inconsistent-probabilities.nl"));
-  WriteFile("test.row",
-      ReadFile("../data/smps/inconsistent-probabilities.row"));
-  WriteFile("test.col",
-      ReadFile("../data/smps/inconsistent-probabilities.col"));
+  std::string filename = MP_TEST_DATA_DIR "/smps/inconsistent-probabilities";
+  WriteFile("test.nl", ReadFile(filename + ".nl"));
+  WriteFile("test.row", ReadFile(filename + ".row"));
+  WriteFile("test.col", ReadFile(filename + ".col"));
   EXPECT_THROW(w.Run(Args("", "test.nl")), mp::Error);
 }
 }

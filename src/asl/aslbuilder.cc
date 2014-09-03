@@ -432,6 +432,11 @@ void ASLBuilder::BeginBuild(const NLHeader &h) {
   int *ka = 0;
   nz_ = 0;
   nderp_ = 0;
+
+  if ((flags_ & ASL_COLUMNWISE) != 0) {
+    info.A_vals_ = reinterpret_cast<double*>(
+        Malloc(info.nzc_ * sizeof(*info.A_vals_)));
+  }
 }
 
 void ASLBuilder::EndBuild() {
