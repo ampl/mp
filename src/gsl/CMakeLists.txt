@@ -10,3 +10,5 @@ target_link_libraries(gsl-info amplgsl)
 
 add_custom_command(OUTPUT gsl.ampl COMMAND gsl-info DEPENDS amplgsl gsl-info)
 add_custom_target(gsl-ampl ALL DEPENDS gsl.ampl)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gsl.ampl DESTINATION share/mp)
