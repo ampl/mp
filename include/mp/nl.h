@@ -405,9 +405,10 @@ class NLReader {
   }
 
   // Reads a nonnegative integer and checks that it is in the range [lb, ub).
-  int ReadUInt(int lb, int ub) {
+  int ReadUInt(unsigned lb, unsigned ub) {
     int value = reader_.ReadUInt();
-    if (value < lb || value >= ub)
+    unsigned unsigned_value = value;
+    if (unsigned_value < lb || unsigned_value >= ub)
       reader_.ReportError("integer {} out of bounds", value);
     return value;
   }
