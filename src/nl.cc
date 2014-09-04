@@ -78,7 +78,7 @@ mp::internal::ReaderBase::ReaderBase(fmt::StringRef data, fmt::StringRef name)
 : ptr_(data.c_str()), end_(ptr_ + data.size()), token_(ptr_), name_(name) {}
 
 mp::internal::TextReader::TextReader(fmt::StringRef data, fmt::StringRef name)
-: ReaderBase(data, name), line_start_(ptr_), line_(1) {}
+: ReaderBase(data, name), start_(ptr_), line_start_(ptr_), line_(1) {}
 
 void mp::internal::TextReader::DoReportError(
     const char *loc, fmt::StringRef format_str, const fmt::ArgList &args) {
@@ -87,10 +87,13 @@ void mp::internal::TextReader::DoReportError(
   if (loc < line_start) {
     --line;
     // Find the beginning of the previous line.
-    line_start = loc - 1;
-    while (*line_start != '\n')
+    line_start = loc;
+    if (*line_start == '\n')
       --line_start;
-    ++line_start;
+    while (*line_start != '\n' && line_start != start_)
+      --line_start;
+    if (*line_start == '\n')
+      ++line_start;
   }
   int column = static_cast<int>(loc - line_start + 1);
   fmt::Writer w;

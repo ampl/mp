@@ -252,6 +252,7 @@ class ReaderBase {
 
 class TextReader : public ReaderBase {
  private:
+  const char *start_;
   const char *line_start_;
   int line_;
 

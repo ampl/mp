@@ -34,10 +34,26 @@ namespace expr = mp::expr;
 
 namespace {
 
+TEST(ReaderBaseTest, ReadChar) {
+  mp::internal::ReaderBase rb(" b", "test");
+  EXPECT_EQ(' ', rb.ReadChar());
+  EXPECT_EQ('b', rb.ReadChar());
+  EXPECT_EQ(0, rb.ReadChar());
+  TextReader reader("abc\nd", "test");
+  reader.ReadTillEndOfLine();
+  // ReadTillEndOfLine doesn't change token location
+  EXPECT_THROW_MSG(reader.ReportError("oops"), mp::ReadError,
+                   "test:1:1: oops");
+  // while ReadChar does.
+  reader.ReadChar();
+  EXPECT_THROW_MSG(reader.ReportError("oops"), mp::ReadError,
+                   "test:2:1: oops");
+}
+
 TEST(TextReaderTest, ReportError) {
-  TextReader reader("x", "somewhere");
-  EXPECT_THROW_MSG(reader.ReportError("out {} space", "in"), mp::ReadError,
-                   "somewhere:1:1: out in space");
+  TextReader reader("x\n", "test");
+  EXPECT_THROW_MSG(reader.ReportError("a{}c", 'b'), mp::ReadError,
+                   "test:1:1: abc");
 }
 
 TEST(TextReaderTest, ReadTillEndOfLine) {
@@ -96,9 +112,140 @@ TEST(TextReaderTest, ReadString) {
                    "test:6:5: expected newline");
 }
 
-// TODO: test ReadHeader (refactor)
+// Formats header as a string.
+std::string FormatHeader(const NLHeader &h) {
+  fmt::Writer w;
+  w << h;
+  return w.str();
+}
 
-// TODO: test BinaryReader & ReaderBase
+// Reads a header from the specified string.
+NLHeader ReadHeader(const std::string &s) {
+  TextReader reader(s, "(input)");
+  NLHeader header = NLHeader();
+  reader.ReadHeader(header);
+  return header;
+}
+
+// Reads a zero header with one modified line.
+NLHeader ReadHeader(int line_index, fmt::StringRef line) {
+  return ReadHeader(ReplaceLine(
+      FormatHeader(NLHeader()), line_index, line.c_str()));
+}
+
+TEST(TextReaderTest, InvalidFormat) {
+  EXPECT_THROW_MSG(ReadHeader(0, "x"),
+      ReadError, "(input):1:1: expected format specifier");
+}
+
+TEST(TextReaderTest, InvalidNumOptions) {
+  EXPECT_EQ(0, ReadHeader(0, "ga").num_options);
+  EXPECT_EQ(0, ReadHeader(0, "g-1").num_options);
+  EXPECT_THROW_MSG(ReadHeader(0, "g10"),
+      ReadError, "(input):1:2: too many options");
+  EXPECT_THROW_MSG(ReadHeader(0,
+      fmt::format("g{}", static_cast<unsigned>(INT_MAX) + 1)),
+      ReadError, "(input):1:2: number is too big");
+}
+
+void CheckReadOptions(int num_options,
+    int num_options_to_write, const int *options) {
+  fmt::Writer w;
+  w << 'g' << num_options;
+  for (int i = 0; i < num_options_to_write; ++i)
+    w << ' ' << options[i];
+  NLHeader header = ReadHeader(0, w.c_str());
+  ASSERT_EQ(num_options, header.num_options);
+  int min_num_options = std::min(num_options, num_options_to_write);
+  for (int i = 0; i < min_num_options; ++i)
+    EXPECT_EQ(options[i], header.options[i]);
+  for (int i = min_num_options; i < num_options_to_write; ++i)
+    EXPECT_EQ(0, header.options[i]);
+}
+
+TEST(TextReaderTest, ReadOptions) {
+  const int options[mp::MAX_NL_OPTIONS + 1] = {
+      3, 5, 7, 11, 13, 17, 19, 23, 29, 31
+  };
+  for (int i = 0; i < mp::MAX_NL_OPTIONS; ++i) {
+    for (int j = 0; j < mp::MAX_NL_OPTIONS + 1; ++j)
+      CheckReadOptions(i, j, options);
+  }
+  EXPECT_EQ(0, ReadHeader(0, "g").num_options);
+}
+
+TEST(TextReaderTest, ReadAMPLVBTol) {
+  EXPECT_EQ(4.2, ReadHeader(0, "g2 0 3 4.2").ampl_vbtol);
+  EXPECT_EQ(0, ReadHeader(0, "g2 0 0 4.2").ampl_vbtol);
+  EXPECT_EQ(0, ReadHeader(0, "g2 0 3").ampl_vbtol);
+}
+
+TEST(TextReaderTest, NumComplDblIneq) {
+  EXPECT_EQ(42, ReadHeader(2, " 0 0 0 0 42").num_compl_dbl_ineqs);
+  EXPECT_EQ(-1, ReadHeader(2, " 0 0 70 0 42").num_compl_dbl_ineqs);
+}
+
+TEST(TextReaderTest, ReadArithKind) {
+  EXPECT_EQ(NLHeader::TEXT, ReadHeader(5, " 0 0").format);
+  EXPECT_EQ(NLHeader::TEXT, ReadHeader(5, " 0 0 0").format);
+  EXPECT_EQ(NLHeader::TEXT,
+      ReadHeader(5, fmt::format(" 0 0 {}", mp::arith::LAST)).format);
+  EXPECT_THROW_MSG(
+      ReadHeader(5, fmt::format(" 0 0 {}", mp::arith::LAST + 1)),
+      ReadError, "(input):6:6: unknown floating-point arithmetic kind");
+}
+
+TEST(TextReaderTest, IncompleteHeader) {
+  ReadHeader(0, "g");
+  EXPECT_THROW_MSG(
+      ReadHeader(0, "\n"),
+      ReadError, "(input):1:1: expected format specifier");
+  ReadHeader(1, " 1 0 0");
+  EXPECT_THROW_MSG(
+      ReadHeader(1, " 1 0"),
+      ReadError, "(input):2:5: expected unsigned integer");
+  for (int i = 2; i <= 8; ++i) {
+    if (i == 6)
+      continue;
+    ReadHeader(i, " 0 0");
+    EXPECT_THROW_MSG(
+        ReadHeader(i, " 0"), ReadError,
+        fmt::format("(input):{}:3: expected unsigned integer", i + 1));
+  }
+  for (int i = 6; i <= 9; i += 3) {
+    ReadHeader(1, " 0 0 0 0 0");
+    EXPECT_THROW_MSG(
+        ReadHeader(i, " 0 0 0 0"), ReadError,
+        fmt::format("(input):{}:9: expected unsigned integer", i + 1));
+  }
+  std::string input = ReplaceLine(FormatHeader(NLHeader()), 4, " 0 0");
+  ReadHeader(ReplaceLine(input, 6, " 0 0"));
+  EXPECT_THROW_MSG(
+      ReadHeader(ReplaceLine(input, 6, " 0")),
+      ReadError, "(input):7:3: expected unsigned integer");
+}
+
+#define CHECK_INT_OVERFLOW(field, col) { \
+  NLHeader h = NLHeader(); \
+  h.format = NLHeader::TEXT; \
+  h.num_vars = INT_MAX; \
+  h.field = 1; \
+  fmt::Writer w; \
+  w << h; \
+  NLHeader actual = NLHeader(); \
+  EXPECT_THROW_MSG(TextReader(w.str(), "in").ReadHeader(actual), \
+                   ReadError, fmt::format("in:10:{}: integer overflow", col)); \
+}
+
+TEST(TextReaderTest, ReadHeaderIntegerOverflow) {
+  CHECK_INT_OVERFLOW(num_common_exprs_in_both, 2);
+  CHECK_INT_OVERFLOW(num_common_exprs_in_cons, 4);
+  CHECK_INT_OVERFLOW(num_common_exprs_in_objs, 6);
+  CHECK_INT_OVERFLOW(num_common_exprs_in_single_cons, 8);
+  CHECK_INT_OVERFLOW(num_common_exprs_in_single_objs, 10);
+}
+
+// TODO: test BinaryReader
 
 TEST(NLTest, ArithKind) {
   namespace arith = mp::arith;
@@ -151,7 +298,6 @@ class TestNLHandler {
   }
 
  public:
-  NLHeader header;
   fmt::Writer log;  // Call log.
 
   typedef std::string Expr;
@@ -160,10 +306,7 @@ class TestNLHandler {
   typedef std::string CountExpr;
   typedef std::string Variable;
 
-  void BeginBuild(const NLHeader &h) {
-    header = h;
-    log.clear();
-  }
+  void BeginBuild(const NLHeader &) { log.clear(); }
 
   void SetVarBounds(int index, double lb, double ub) {
     WriteBounds('v', index, lb, ub);
@@ -436,26 +579,6 @@ TEST(NLTest, WriteBinaryHeader) {
       w.str());
 }
 
-// Formats header as a string.
-std::string FormatHeader(const NLHeader &h) {
-  fmt::Writer w;
-  w << h;
-  return w.str();
-}
-
-// Reads a header from the specified string.
-NLHeader ReadHeader(const std::string &s) {
-  TestNLHandler handler;
-  ReadNLString(s, handler, "(input)");
-  return handler.header;
-}
-
-// Reads a zero header with one modified line.
-NLHeader ReadHeader(int line_index, fmt::StringRef line) {
-  return ReadHeader(ReplaceLine(
-      FormatHeader(NLHeader()), line_index, line.c_str()));
-}
-
 struct TestNLHandler2 {
   typedef struct TestExpr {} Expr;
   typedef struct TestNumericExpr : TestExpr {} NumericExpr;
@@ -605,118 +728,6 @@ TEST(NLTest, NoNewlineAtEOF) {
     " 0 0 0 0 0\n"
     "k0\0deadbeef", handler),
       ReadError, "(input):11:3: expected newline");
-}
-
-TEST(NLTest, InvalidFormat) {
-  EXPECT_THROW_MSG(ReadHeader(0, "x"),
-      ReadError, "(input):1:1: expected format specifier");
-}
-
-TEST(NLTest, InvalidNumOptions) {
-  EXPECT_EQ(0, ReadHeader(0, "ga").num_options);
-  EXPECT_EQ(0, ReadHeader(0, "g-1").num_options);
-  EXPECT_THROW_MSG(ReadHeader(0, "g10"),
-      ReadError, "(input):1:2: too many options");
-  EXPECT_THROW_MSG(ReadHeader(0,
-      fmt::format("g{}", static_cast<unsigned>(INT_MAX) + 1)),
-      ReadError, "(input):1:2: number is too big");
-}
-
-void CheckReadOptions(int num_options,
-    int num_options_to_write, const int *options) {
-  fmt::Writer w;
-  w << 'g' << num_options;
-  for (int i = 0; i < num_options_to_write; ++i)
-    w << ' ' << options[i];
-  NLHeader header = ReadHeader(0, w.c_str());
-  ASSERT_EQ(num_options, header.num_options);
-  int min_num_options = std::min(num_options, num_options_to_write);
-  for (int i = 0; i < min_num_options; ++i)
-    EXPECT_EQ(options[i], header.options[i]);
-  for (int i = min_num_options; i < num_options_to_write; ++i)
-    EXPECT_EQ(0, header.options[i]);
-}
-
-TEST(NLTest, ReadOptions) {
-  const int options[mp::MAX_NL_OPTIONS + 1] = {
-      3, 5, 7, 11, 13, 17, 19, 23, 29, 31
-  };
-  for (int i = 0; i < mp::MAX_NL_OPTIONS; ++i) {
-    for (int j = 0; j < mp::MAX_NL_OPTIONS + 1; ++j)
-      CheckReadOptions(i, j, options);
-  }
-  EXPECT_EQ(0, ReadHeader(0, "g").num_options);
-}
-
-TEST(NLTest, ReadAMPLVBTol) {
-  EXPECT_EQ(4.2, ReadHeader(0, "g2 0 3 4.2").ampl_vbtol);
-  EXPECT_EQ(0, ReadHeader(0, "g2 0 0 4.2").ampl_vbtol);
-  EXPECT_EQ(0, ReadHeader(0, "g2 0 3").ampl_vbtol);
-}
-
-TEST(NLTest, NumComplDblIneq) {
-  EXPECT_EQ(42, ReadHeader(2, " 0 0 0 0 42").num_compl_dbl_ineqs);
-  EXPECT_EQ(-1, ReadHeader(2, " 0 0 70 0 42").num_compl_dbl_ineqs);
-}
-
-TEST(NLTest, ReadArithKind) {
-  EXPECT_EQ(NLHeader::TEXT, ReadHeader(5, " 0 0").format);
-  EXPECT_EQ(NLHeader::TEXT, ReadHeader(5, " 0 0 0").format);
-  EXPECT_EQ(NLHeader::TEXT,
-      ReadHeader(5, fmt::format(" 0 0 {}", mp::arith::LAST)).format);
-  EXPECT_THROW_MSG(
-      ReadHeader(5, fmt::format(" 0 0 {}", mp::arith::LAST + 1)),
-      ReadError, "(input):6:6: unknown floating-point arithmetic kind");
-}
-
-TEST(NLTest, IncompleteHeader) {
-  ReadHeader(0, "g");
-  EXPECT_THROW_MSG(
-      ReadHeader(0, "\n"),
-      ReadError, "(input):1:1: expected format specifier");
-  ReadHeader(1, " 1 0 0");
-  EXPECT_THROW_MSG(
-      ReadHeader(1, " 1 0"),
-      ReadError, "(input):2:5: expected unsigned integer");
-  for (int i = 2; i <= 8; ++i) {
-    if (i == 6)
-      continue;
-    ReadHeader(i, " 0 0");
-    EXPECT_THROW_MSG(
-        ReadHeader(i, " 0"), ReadError,
-        fmt::format("(input):{}:3: expected unsigned integer", i + 1));
-  }
-  for (int i = 6; i <= 9; i += 3) {
-    ReadHeader(1, " 0 0 0 0 0");
-    EXPECT_THROW_MSG(
-        ReadHeader(i, " 0 0 0 0"), ReadError,
-        fmt::format("(input):{}:9: expected unsigned integer", i + 1));
-  }
-  std::string input = ReplaceLine(FormatHeader(NLHeader()), 4, " 0 0");
-  ReadHeader(ReplaceLine(input, 6, " 0 0"));
-  EXPECT_THROW_MSG(
-      ReadHeader(ReplaceLine(input, 6, " 0")),
-      ReadError, "(input):7:3: expected unsigned integer");
-}
-
-#define CHECK_INT_OVERFLOW(field, col) { \
-  NLHeader h = NLHeader(); \
-  h.format = NLHeader::TEXT; \
-  h.num_vars = INT_MAX; \
-  h.field = 1; \
-  fmt::Writer w; \
-  w << h; \
-  NLHeader actual = NLHeader(); \
-  EXPECT_THROW_MSG(TextReader(w.str(), "in").ReadHeader(actual), \
-                   ReadError, fmt::format("in:10:{}: integer overflow", col)); \
-}
-
-TEST(NLTest, ReadHeaderIntegerOverflow) {
-  CHECK_INT_OVERFLOW(num_common_exprs_in_both, 2);
-  CHECK_INT_OVERFLOW(num_common_exprs_in_cons, 4);
-  CHECK_INT_OVERFLOW(num_common_exprs_in_objs, 6);
-  CHECK_INT_OVERFLOW(num_common_exprs_in_single_cons, 8);
-  CHECK_INT_OVERFLOW(num_common_exprs_in_single_objs, 10);
 }
 
 std::string ReadNL(std::string body) {
