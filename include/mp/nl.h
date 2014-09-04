@@ -233,6 +233,8 @@ struct NLHeader {
 // Writes NLHeader in the .nl file format.
 fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h);
 
+namespace internal {
+
 class ReaderBase {
  protected:
   const char *ptr_, *end_;
@@ -303,6 +305,14 @@ class TextReader : public ReaderBase {
     return value;
   }
 
+  std::size_t ReadSize() {
+    SkipSpace();
+    std::size_t value = 0;
+    if (!ReadIntWithoutSign(value))
+      ReportError("expected unsigned integer");
+    return value;
+  }
+
   bool ReadOptionalInt(int &value) { return DoReadOptionalInt(value); }
 
   bool ReadOptionalUInt(int &value) {
@@ -353,14 +363,6 @@ class TextReader : public ReaderBase {
   int ReadUInt() {
     SkipSpace();
     int value = 0;
-    if (!ReadIntWithoutSign(value))
-      ReportError("expected unsigned integer");
-    return value;
-  }
-
-  std::size_t ReadSize() {
-    SkipSpace();
-    std::size_t value = 0;
     if (!ReadIntWithoutSign(value))
       ReportError("expected unsigned integer");
     return value;
@@ -1098,19 +1100,21 @@ void NLReader<Reader, Handler>::Read() {
     }
   }
 }
+}  // namespace internal
 
 // Reads a string containing an optimization problem in .nl format.
 // name: Name to be used when reporting errors.
 template <typename Handler>
 void ReadNLString(fmt::StringRef str, Handler &handler,
                   fmt::StringRef name = "(input)") {
-  TextReader reader(str, name);
+  internal::TextReader reader(str, name);
   NLHeader header = NLHeader();
   reader.ReadHeader(header);
   handler.BeginBuild(header);
   switch (header.format) {
   case NLHeader::TEXT:
-    NLReader<TextReader, Handler>(reader, header, handler).Read();
+    internal::NLReader<internal::TextReader, Handler>(
+          reader, header, handler).Read();
     break;
   case NLHeader::BINARY: {
     arith::Kind arith_kind = arith::GetKind();
@@ -1120,8 +1124,9 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
       else
         throw ReadError(name, 0, 0, "unsupported floating-point arithmetic");
     } else {
-      BinaryReader bin_reader(reader);
-      NLReader<BinaryReader, Handler>(bin_reader, header, handler).Read();
+      internal::BinaryReader bin_reader(reader);
+      internal::NLReader<internal::BinaryReader, Handler>(
+            bin_reader, header, handler).Read();
     }
     break;
   }

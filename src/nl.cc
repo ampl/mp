@@ -22,9 +22,7 @@
 
 #include "mp/nl.h"
 
-namespace mp {
-
-arith::Kind arith::GetKind() {
+mp::arith::Kind mp::arith::GetKind() {
   // Unlike ASL, we don't try detecting floating-point arithmetic at
   // configuration time because it doesn't work with cross-compiling.
   if (sizeof(double) != 2 * sizeof(uint32_t))
@@ -42,7 +40,7 @@ arith::Kind arith::GetKind() {
   return UNKNOWN;
 }
 
-fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h) {
+fmt::Writer &mp::operator<<(fmt::Writer &w, const NLHeader &h) {
   w << (h.format == NLHeader::TEXT ? 'g' : 'b') << h.num_options;
   for (int i = 0; i < h.num_options; ++i)
     w << ' ' << h.options[i];
@@ -76,13 +74,13 @@ fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h) {
   return w;
 }
 
-ReaderBase::ReaderBase(fmt::StringRef data, fmt::StringRef name)
+mp::internal::ReaderBase::ReaderBase(fmt::StringRef data, fmt::StringRef name)
 : ptr_(data.c_str()), end_(ptr_ + data.size()), token_(ptr_), name_(name) {}
 
-TextReader::TextReader(fmt::StringRef data, fmt::StringRef name)
+mp::internal::TextReader::TextReader(fmt::StringRef data, fmt::StringRef name)
 : ReaderBase(data, name), line_start_(ptr_), line_(1) {}
 
-void TextReader::DoReportError(
+void mp::internal::TextReader::DoReportError(
     const char *loc, fmt::StringRef format_str, const fmt::ArgList &args) {
   int line = line_;
   const char *line_start = line_start_;
@@ -101,7 +99,7 @@ void TextReader::DoReportError(
       fmt::format("{}:{}:{}: {}", name_, line, column, w.c_str()));
 }
 
-bool TextReader::ReadOptionalDouble(double &value) {
+bool mp::internal::TextReader::ReadOptionalDouble(double &value) {
   SkipSpace();
   if (*ptr_ == '\n')
     return false;
@@ -112,7 +110,7 @@ bool TextReader::ReadOptionalDouble(double &value) {
   return has_value;
 }
 
-fmt::StringRef TextReader::ReadName() {
+fmt::StringRef mp::internal::TextReader::ReadName() {
   SkipSpace();
   const char *start = ptr_;
   if (*ptr_ == '\n' || !*ptr_)
@@ -122,7 +120,7 @@ fmt::StringRef TextReader::ReadName() {
   return fmt::StringRef(start, ptr_ - start);
 }
 
-fmt::StringRef TextReader::ReadString() {
+fmt::StringRef mp::internal::TextReader::ReadString() {
   int length = ReadUInt();
   if (*ptr_ != ':')
     DoReportError(ptr_, "expected ':'");
@@ -139,11 +137,12 @@ fmt::StringRef TextReader::ReadString() {
   }
   if (*ptr_ != '\n')
     DoReportError(ptr_, "expected newline");
-  ++ptr_;
+  ++line_;
+  line_start_ = ++ptr_;
   return fmt::StringRef(length != 0 ? start : 0, length);
 }
 
-void TextReader::ReadHeader(NLHeader &header) {
+void mp::internal::TextReader::ReadHeader(NLHeader &header) {
   // Read the format (text or binary).
   switch (ReadChar()) {
   case 'g':
@@ -245,4 +244,3 @@ void TextReader::ReadHeader(NLHeader &header) {
   header.num_common_exprs_in_single_objs = ReadUInt(max_vars);
   ReadTillEndOfLine();
 }
-}  // namespace mp

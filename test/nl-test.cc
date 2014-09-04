@@ -29,9 +29,76 @@
 using mp::NLHeader;
 using mp::ReadError;
 using mp::ReadNLString;
+using mp::internal::TextReader;
 namespace expr = mp::expr;
 
 namespace {
+
+TEST(TextReaderTest, ReportError) {
+  TextReader reader("x", "somewhere");
+  EXPECT_THROW_MSG(reader.ReportError("out {} space", "in"), mp::ReadError,
+                   "somewhere:1:1: out in space");
+}
+
+TEST(TextReaderTest, ReadTillEndOfLine) {
+  TextReader reader("ab cde\nfg h", "test");
+  reader.ReadTillEndOfLine();
+  EXPECT_THROW_MSG(reader.ReadTillEndOfLine(), mp::ReadError,
+                   "test:2:5: expected newline");
+}
+
+TEST(TextReaderTest, ReadInt) {
+  TextReader reader("  11   -22 ", "test");
+  EXPECT_EQ(11, reader.ReadInt<int>());
+  EXPECT_EQ(-22, reader.ReadInt<long>());
+  EXPECT_THROW_MSG(reader.ReadInt<int>(), mp::ReadError,
+                   "test:1:12: expected integer");
+}
+
+TEST(TextReaderTest, ReadUInt) {
+  TextReader reader("  11   -22 ", "test");
+  EXPECT_EQ(11, reader.ReadUInt());
+  EXPECT_THROW_MSG(reader.ReadUInt(), mp::ReadError,
+                   "test:1:8: expected unsigned integer");
+}
+
+TEST(TextReaderTest, ReadDouble) {
+  TextReader reader("  11   -2.2 ", "test");
+  EXPECT_EQ(11, reader.ReadDouble());
+  EXPECT_EQ(-2.2, reader.ReadDouble());
+  EXPECT_THROW_MSG(reader.ReadDouble(), mp::ReadError,
+                   "test:1:13: expected double");
+}
+
+TEST(TextReaderTest, ReadName) {
+  TextReader reader("  abc  \n  ", "test");
+  fmt::StringRef name = reader.ReadName();
+  EXPECT_EQ("abc", std::string(name.c_str(), name.size()));
+  EXPECT_THROW_MSG(reader.ReadName(), mp::ReadError, "test:1:8: expected name");
+  reader.ReadTillEndOfLine();
+  EXPECT_THROW_MSG(reader.ReadName(), mp::ReadError, "test:2:3: expected name");
+}
+
+TEST(TextReaderTest, ReadString) {
+  TextReader reader("  3:a\nb\nc\n2x\n2:de \n2:fg", "test");
+  fmt::StringRef name = reader.ReadString();
+  EXPECT_EQ("a\nb", std::string(name.c_str(), name.size()));
+  EXPECT_THROW_MSG(reader.ReadString(), mp::ReadError,
+                   "test:3:1: expected unsigned integer");
+  reader.ReadTillEndOfLine();
+  EXPECT_THROW_MSG(reader.ReadString(), mp::ReadError,
+                   "test:4:2: expected ':'");
+  reader.ReadTillEndOfLine();
+  EXPECT_THROW_MSG(reader.ReadString(), mp::ReadError,
+                   "test:5:5: expected newline");
+  reader.ReadTillEndOfLine();
+  EXPECT_THROW_MSG(reader.ReadString(), mp::ReadError,
+                   "test:6:5: expected newline");
+}
+
+// TODO: test ReadHeader (refactor)
+
+// TODO: test BinaryReader & ReaderBase
 
 TEST(NLTest, ArithKind) {
   namespace arith = mp::arith;
@@ -640,7 +707,7 @@ TEST(NLTest, IncompleteHeader) {
   fmt::Writer w; \
   w << h; \
   NLHeader actual = NLHeader(); \
-  EXPECT_THROW_MSG(mp::TextReader(w.str(), "in").ReadHeader(actual), \
+  EXPECT_THROW_MSG(TextReader(w.str(), "in").ReadHeader(actual), \
                    ReadError, fmt::format("in:10:{}: integer overflow", col)); \
 }
 
@@ -939,7 +1006,4 @@ TEST(NLTest, ReadSuffix) {
   EXPECT_READ_ERROR("S0 0 foo\n", "(input):11:4: integer 0 out of bounds");
   EXPECT_READ_ERROR("S0 6 foo\n", "(input):11:4: integer 6 out of bounds");
 }
-
-// TODO: test TextReader & BinaryReader
-
 }  // namespace

@@ -454,7 +454,7 @@ std::string HeaderToStr(const NLHeader &h) {
 void CheckHeader(const NLHeader &h) {
   NLHeader actual_header = NLHeader();
   std::string nl = HeaderToStr(h);
-  mp::TextReader(nl, "(input)").ReadHeader(actual_header);
+  mp::internal::TextReader(nl, "(input)").ReadHeader(actual_header);
 
   EXPECT_EQ(h.format, actual_header.format);
 
