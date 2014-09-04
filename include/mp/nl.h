@@ -341,6 +341,7 @@ class TextReader : public ReaderBase {
     }
     DoReportError(ptr_, "expected newline");
   }
+
   template <typename Int>
   Int ReadInt() {
     Int value = 0;
@@ -380,11 +381,23 @@ class TextReader : public ReaderBase {
 };
 
 class BinaryReader : public ReaderBase {
+ private:
+  // Reads length chars.
+  const char *Read(int length) {
+    if (end_ - ptr_ < length) {
+      token_ = end_;
+      ReportError("unexpected end of file");
+    }
+    const char *start = ptr_;
+    ptr_ += length;
+    return start;
+  }
+
  public:
   explicit BinaryReader(const ReaderBase &base) : ReaderBase(base) {}
 
   void ReportError(fmt::StringRef format_str, const fmt::ArgList &args) {
-    // TODO
+    // TODO: throw exception with offset
   }
   FMT_VARIADIC(void, ReportError, fmt::StringRef)
 
@@ -395,31 +408,28 @@ class BinaryReader : public ReaderBase {
   template <typename Int>
   Int ReadInt() {
     token_ = ptr_;
-    // TODO: check EOF
-    Int value = *reinterpret_cast<const Int*>(ptr_);
-    ptr_ += sizeof(Int);
-    // TODO: check sign
-    return value;
+    return *reinterpret_cast<const Int*>(Read(sizeof(Int)));
   }
 
   int ReadUInt() {
-    // TODO
-    return ReadInt<int>();
+    int value = ReadInt<int>();
+    if (value < 0)
+      ReportError("expected unsigned integer");
+    return value;
   }
 
   double ReadDouble() {
     token_ = ptr_;
-    // TODO: check EOF
-    double value = *reinterpret_cast<const double*>(ptr_);
-    ptr_ += sizeof(double);
-    // TODO: check sign
-    return value;
+    return *reinterpret_cast<const double*>(Read(sizeof(double)));
   }
 
   // Reads a function or suffix name.
   fmt::StringRef ReadName() { return ""; }  // TODO
 
-  fmt::StringRef ReadString() { return ""; } // TODO
+  fmt::StringRef ReadString() {
+    int length = ReadUInt();
+    return fmt::StringRef(length != 0 ? Read(length) : 0, length);
+  }
 };
 
 // An .nl file reader.

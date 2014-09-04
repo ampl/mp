@@ -127,14 +127,13 @@ fmt::StringRef TextReader::ReadString() {
   if (*ptr_ != ':')
     DoReportError(ptr_, "expected ':'");
   ++ptr_;
+  if (end_ - ptr_ < length)
+    DoReportError(end_, "unexpected end of file in string");
   const char *start = ptr_;
   for (int i = 0; i < length; ++i, ++ptr_) {
-    char c = *ptr_;
-    if (c == '\n') {
+    if (*ptr_ == '\n') {
       line_start_ = ptr_  + 1;
       ++line_;
-    } else if (c == 0 && ptr_ == end_) {
-      DoReportError(ptr_, "unexpected end of file in string");
     }
   }
   if (*ptr_ != '\n')

@@ -938,9 +938,8 @@ TEST(NLTest, ReadSuffix) {
   EXPECT_READ_ERROR("S8 1 foo\n", "(input):11:2: invalid suffix kind");
   EXPECT_READ_ERROR("S0 0 foo\n", "(input):11:4: integer 0 out of bounds");
   EXPECT_READ_ERROR("S0 6 foo\n", "(input):11:4: integer 6 out of bounds");
-  // TODO: test
 }
 
-// TODO: test TextReader
+// TODO: test TextReader & BinaryReader
 
 }  // namespace
