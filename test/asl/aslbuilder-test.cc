@@ -775,9 +775,10 @@ TEST(ASLBuilderTest, ASLBuilderAllowCLP) {
 class TestASLBuilder : public ASLBuilder {
  public:
   enum {NUM_FUNCS = 2, NUM_OBJS = 3, NUM_CONS = 4, NUM_LOGICAL_CONS = 5};
-  explicit TestASLBuilder(ASLPtr &asl, bool allow_missing_funcs = false)
+  explicit TestASLBuilder(
+      ASLPtr &asl, int num_vars = 1, bool allow_missing_funcs = false)
   : ASLBuilder(asl.get()) {
-    NLHeader header = MakeHeader();
+    NLHeader header = MakeHeader(num_vars);
     header.num_funcs = NUM_FUNCS;
     header.num_objs = NUM_OBJS;
     header.num_algebraic_cons = NUM_CONS;
@@ -945,7 +946,7 @@ TEST(ASLBuilderTest, SetMissingFunction) {
   CHECK_THROW_ASL_ERROR(builder.SetFunction(0, "f", 0),
     ASL_readerr_unavail, "function f not available");
   ASLPtr asl2;
-  TestASLBuilder builder2(asl2, true);
+  TestASLBuilder builder2(asl2, 1, true);
   builder2.SetFunction(0, "f", 0);
   EXPECT_STREQ("f", asl2->i.funcs_[0]->name);
   arglist al = arglist();
@@ -1011,6 +1012,19 @@ TEST(ASLBuilderTest, SizeOverflow) {
                  fmt::StringRef("", size)), OverflowError);
   EXPECT_THROW(builder.MakeStringLiteral(
                  fmt::StringRef("", max_size)), OverflowError);
+}
+
+TEST(ASLBuilderTest, ColumnSizeHandler) {
+  ASLPtr asl;
+  TestASLBuilder builder(asl, 3);
+  ASLBuilder::ColumnSizeHandler handler = builder.GetColumnSizeHandler();
+  handler.Add(3);
+  handler.Add(0);
+  handler.Add(1);
+  EXPECT_EQ(0, asl->i.A_colstarts_[0]);
+  EXPECT_EQ(3, asl->i.A_colstarts_[1]);
+  EXPECT_EQ(3, asl->i.A_colstarts_[2]);
+  EXPECT_EQ(4, asl->i.A_colstarts_[3]);
 }
 
 // Test that ASLBuilder can act as a handler for NLReader.

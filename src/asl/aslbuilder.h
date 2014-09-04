@@ -186,13 +186,16 @@ class ASLBuilder {
 
   template <typename Grad>
   class LinearExprHandler {
-   private:
+   protected:
     ASLBuilder *builder_;
     Grad **term_;
 
    public:
     LinearExprHandler(ASLBuilder *b, Grad **term) : builder_(b), term_(term) {}
-    ~LinearExprHandler() { *term_ = 0; }
+    ~LinearExprHandler() {
+      if (term_)
+        *term_ = 0;
+    }
 
     void AddTerm(int var_index, double coef) {
       Grad *og = builder_->Allocate<Grad>();
@@ -204,7 +207,34 @@ class ASLBuilder {
   };
 
   typedef LinearExprHandler<ograd> LinearObjHandler;
-  typedef LinearExprHandler<cgrad> LinearConHandler;
+
+  class LinearConHandler : private LinearExprHandler<cgrad> {
+   private:
+    int con_index_;
+    double *a_vals_;
+    int *a_rownos_;
+    int *a_colstarts_;
+
+   public:
+    LinearConHandler(ASLBuilder *b, int con_index)
+      : LinearExprHandler<cgrad>(b, builder_->asl_->i.Cgrad_ + con_index) {
+      Edaginfo &info = builder_->asl_->i;
+      con_index_ = con_index + info.Fortran_;
+      a_vals_ = info.A_vals_;
+      a_rownos_ = info.A_rownos_;
+      a_colstarts_ = info.A_colstarts_;
+      if (a_vals_)
+        term_ = 0;
+    }
+
+    void AddTerm(int var_index, double coef) {
+      if (!a_vals_)
+        return LinearExprHandler<cgrad>::AddTerm(var_index, coef);
+      std::size_t col_offset = a_colstarts_[var_index]++;
+      a_vals_[col_offset] = coef;
+      a_rownos_[col_offset] = con_index_;
+    }
+  };
 
   LinearConHandler GetLinearVarHandler(int, int) {
     // TODO
@@ -214,17 +244,32 @@ class ASLBuilder {
     return LinearObjHandler(this, asl_->i.Ograd_ + index);
   }
   LinearConHandler GetLinearConHandler(int index, int) {
-    return LinearConHandler(this, asl_->i.Cgrad_ + index);
+    return LinearConHandler(this, index);
   }
 
-  struct ColumnSizeHandler {
-    void Add(int) {
-      // TODO
+  class ColumnSizeHandler {
+   private:
+    int *colstarts_;
+    std::size_t index_;
+
+   public:
+    explicit ColumnSizeHandler(int *colstarts)
+      : colstarts_(colstarts), index_(0) {}
+
+    void Add(int size) {
+      colstarts_[index_ + 1] = colstarts_[index_] + size;
+      ++index_;
     }
   };
+
   ColumnSizeHandler GetColumnSizeHandler() {
-    // TODO
-    return ColumnSizeHandler();
+    // TODO: support A_colstartsZ_
+    Edaginfo &info = asl_->i;
+    int size = std::max(info.n_var0, info.n_var_) + 1;
+    info.A_colstarts_ =
+        reinterpret_cast<int*>(M1alloc_ASL(&info, size * sizeof(int)));
+    info.A_colstarts_[0] = 0;
+    return ColumnSizeHandler(info.A_colstarts_);
   }
 
   void SetInitialValue(int, double) {}
