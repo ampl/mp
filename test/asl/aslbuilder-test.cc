@@ -1020,7 +1020,7 @@ TEST(ASLBuilderTest, ColumnSizeHandler) {
   handler.Add(3);
   handler.Add(0);
   handler.Add(1);
-  const int COLSTARTS[] = {0, 3, 3, 4};
+  const int COLSTARTS[] = {0, 0, 3, 3, 4};
   for (std::size_t i = 0; i < sizeof(COLSTARTS) / sizeof(*COLSTARTS); ++i)
     EXPECT_EQ(COLSTARTS[i], asl->i.A_colstarts_[i]);
 }
