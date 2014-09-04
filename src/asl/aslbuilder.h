@@ -217,7 +217,7 @@ class ASLBuilder {
 
    public:
     LinearConHandler(ASLBuilder *b, int con_index)
-      : LinearExprHandler<cgrad>(b, builder_->asl_->i.Cgrad_ + con_index) {
+      : LinearExprHandler<cgrad>(b, b->asl_->i.Cgrad_ + con_index) {
       Edaginfo &info = builder_->asl_->i;
       con_index_ = con_index + info.Fortran_;
       a_vals_ = info.A_vals_;
