@@ -222,7 +222,8 @@ class ASLBuilder {
       con_index_ = con_index + info.Fortran_;
       a_vals_ = info.A_vals_;
       a_rownos_ = info.A_rownos_;
-      a_colstarts_ = info.A_colstarts_;
+      // info.A_colstarts_[0] should be zero and not incremented.
+      a_colstarts_ = info.A_colstarts_ + 1;
       if (a_vals_)
         term_ = 0;
     }
@@ -230,9 +231,9 @@ class ASLBuilder {
     void AddTerm(int var_index, double coef) {
       if (!a_vals_)
         return LinearExprHandler<cgrad>::AddTerm(var_index, coef);
-      std::size_t col_offset = a_colstarts_[var_index]++;
-      a_vals_[col_offset] = coef;
-      a_rownos_[col_offset] = con_index_;
+      std::size_t elt_index = a_colstarts_[var_index]++;
+      a_vals_[elt_index] = coef;
+      a_rownos_[elt_index] = con_index_;
     }
   };
 
@@ -268,8 +269,10 @@ class ASLBuilder {
     int size = std::max(info.n_var0, info.n_var_) + 1;
     info.A_colstarts_ =
         reinterpret_cast<int*>(M1alloc_ASL(&info, size * sizeof(int)));
-    info.A_colstarts_[0] = 0;
-    return ColumnSizeHandler(info.A_colstarts_);
+    // Set first two elements to zero because colstarts[1], ... will be
+    // incremented in LinearConHandler.
+    info.A_colstarts_[0] = info.A_colstarts_[1] = 0;
+    return ColumnSizeHandler(info.A_colstarts_ + 1);
   }
 
   void SetInitialValue(int, double) {}
