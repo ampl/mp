@@ -776,16 +776,15 @@ class TestASLBuilder : public ASLBuilder {
  public:
   enum {NUM_FUNCS = 2, NUM_OBJS = 3, NUM_CONS = 4, NUM_LOGICAL_CONS = 5};
   explicit TestASLBuilder(
-      ASLPtr &asl, int num_vars = 1, bool allow_missing_funcs = false)
+      ASLPtr &asl, int num_vars = 1, int extra_flags = 0)
   : ASLBuilder(asl.get()) {
     NLHeader header = MakeHeader(num_vars);
     header.num_funcs = NUM_FUNCS;
     header.num_objs = NUM_OBJS;
     header.num_algebraic_cons = NUM_CONS;
     header.num_logical_cons = NUM_LOGICAL_CONS;
-    int flags = mp::internal::ASL_STANDARD_OPCODES | ASL_allow_CLP;
-    if (allow_missing_funcs)
-      flags |= ASL_allow_missing_funcs;
+    int flags =
+        mp::internal::ASL_STANDARD_OPCODES | ASL_allow_CLP | extra_flags;
     set_flags(flags);
     BeginBuild(header);
   }
@@ -946,7 +945,7 @@ TEST(ASLBuilderTest, SetMissingFunction) {
   CHECK_THROW_ASL_ERROR(builder.SetFunction(0, "f", 0),
     ASL_readerr_unavail, "function f not available");
   ASLPtr asl2;
-  TestASLBuilder builder2(asl2, 1, true);
+  TestASLBuilder builder2(asl2, 1, ASL_allow_missing_funcs);
   builder2.SetFunction(0, "f", 0);
   EXPECT_STREQ("f", asl2->i.funcs_[0]->name);
   arglist al = arglist();
@@ -1021,10 +1020,31 @@ TEST(ASLBuilderTest, ColumnSizeHandler) {
   handler.Add(3);
   handler.Add(0);
   handler.Add(1);
-  EXPECT_EQ(0, asl->i.A_colstarts_[0]);
-  EXPECT_EQ(3, asl->i.A_colstarts_[1]);
-  EXPECT_EQ(3, asl->i.A_colstarts_[2]);
-  EXPECT_EQ(4, asl->i.A_colstarts_[3]);
+  const int COLSTARTS[] = {0, 3, 3, 4};
+  for (std::size_t i = 0; i < sizeof(COLSTARTS) / sizeof(*COLSTARTS); ++i)
+    EXPECT_EQ(COLSTARTS[i], asl->i.A_colstarts_[i]);
+}
+
+TEST(ASLBuilderTest, BuildColumnwiseMatrix) {
+  ASLPtr asl;
+  TestASLBuilder builder(asl, 3, mp::internal::ASL_COLUMNWISE);
+  ASLBuilder::ColumnSizeHandler handler = builder.GetColumnSizeHandler();
+  handler.Add(0);
+  handler.Add(2);
+  handler.Add(1);
+  ASLBuilder::LinearConHandler con = builder.GetLinearConHandler(0, 0);
+  con = builder.GetLinearConHandler(1, 2);
+  con.AddTerm(1, 5);
+  con.AddTerm(2, 3);
+  con = builder.GetLinearConHandler(2, 0);
+  con = builder.GetLinearConHandler(3, 1);
+  con.AddTerm(1, 1);
+  const int ROWNOS[]  = {1, 3, 1};
+  const double VALS[] = {5, 1, 3};
+  for (std::size_t i = 0; i < sizeof(ROWNOS) / sizeof(*ROWNOS); ++i) {
+    EXPECT_EQ(ROWNOS[i], asl->i.A_rownos_[i]);
+    EXPECT_EQ(VALS[i], asl->i.A_vals_[i]);
+  }
 }
 
 // Test that ASLBuilder can act as a handler for NLReader.
