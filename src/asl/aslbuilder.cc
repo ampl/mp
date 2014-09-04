@@ -256,8 +256,11 @@ void ASLBuilder::InitASL(const NLHeader &h) {
   info.nlvci_ = h.num_nl_integer_vars_in_cons;
   info.nlvoi_ = h.num_nl_integer_vars_in_objs;
 
-  info.nzc_ = h.num_con_nonzeros;
-  info.nzo_ = h.num_obj_nonzeros;
+  info.nZc_ = h.num_con_nonzeros;
+  std::size_t int_max = std::numeric_limits<int>::max();
+  info.nzc_ = info.nZc_ <= int_max ? static_cast<int>(info.nZc_) : 0;
+  info.nZo_ = h.num_obj_nonzeros;
+  info.nzo_ = info.nZo_ <= int_max ? static_cast<int>(info.nZo_) : 0;
 
   info.maxrownamelen_ = h.max_con_name_len;
   info.maxcolnamelen_ = h.max_var_name_len;
@@ -295,7 +298,6 @@ void ASLBuilder::BeginBuild(const NLHeader &h) {
   if ((flags_ & ASL_COLUMNWISE) != 0) {
     info.A_vals_ = reinterpret_cast<double*>(
         Malloc(info.nzc_ * sizeof(*info.A_vals_)));
-    assert(asl_->i.A_vals_ != 0);
   }
 
   // Includes allocation of LUv, LUrhs, A_vals or Cgrad, etc.

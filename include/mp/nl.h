@@ -199,11 +199,11 @@ struct NLHeader {
   // --------------------------
 
   // Number of nonzeros in constraints' Jacobian.
-  int num_con_nonzeros;
+  std::size_t num_con_nonzeros;
 
 
   // Number of nonzeros in all objective gradients.
-  int num_obj_nonzeros;
+  std::size_t num_obj_nonzeros;
 
   // Information about names
   // -----------------------
@@ -353,6 +353,14 @@ class TextReader : public ReaderBase {
   int ReadUInt() {
     SkipSpace();
     int value = 0;
+    if (!ReadIntWithoutSign(value))
+      ReportError("expected unsigned integer");
+    return value;
+  }
+
+  std::size_t ReadSize() {
+    SkipSpace();
+    std::size_t value = 0;
     if (!ReadIntWithoutSign(value))
       ReportError("expected unsigned integer");
     return value;

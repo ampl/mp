@@ -226,8 +226,8 @@ void TextReader::ReadHeader(NLHeader &header) {
   ReadTillEndOfLine();
 
   // Read the information about nonzeros.
-  header.num_con_nonzeros = ReadUInt();
-  header.num_obj_nonzeros = ReadUInt();
+  header.num_con_nonzeros = ReadSize();
+  header.num_obj_nonzeros = ReadSize();
   ReadTillEndOfLine();
 
   // Read the information about names.
