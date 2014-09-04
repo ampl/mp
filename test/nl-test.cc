@@ -837,21 +837,19 @@ TEST(NLTest, ReadInvalidLogicalExpr) {
 
 TEST(NLTest, ReadVarBounds) {
   EXPECT_READ("1.1 <= v0; v1 <= 22; v2 = 33; v3; 44 <= v4 <= 55;",
-              "b\n2 1.1\n1 22\n4 33\n3\n0 44 55\n");
-  EXPECT_READ_ERROR("b\n-1\n", "(input):12:1: expected unsigned integer");
-  EXPECT_READ_ERROR("b\n5 1\n", "(input):12:1: invalid bound type");
-  EXPECT_READ_ERROR("b\n2 11\n1 22\n4 33\n3\n",
-                    "(input):16:1: expected unsigned integer");
+              "b\n21.1\n1 22\n4 33\n3\n0 44 55\n");
+  EXPECT_READ_ERROR("b\n-1\n", "(input):12:1: expected bound");
+  EXPECT_READ_ERROR("b\n5 1\n", "(input):12:1: expected bound");
+  EXPECT_READ_ERROR("b\n2 11\n1 22\n4 33\n3\n", "(input):16:1: expected bound");
 }
 
 TEST(NLTest, ReadConBounds) {
   EXPECT_READ("1.1 <= c0; c1 <= 22; c2 = 33; c3; 44 <= c4 <= 55; "
               "c5 complements v1 3; c6 complements v4 2;",
-              "r\n2 1.1\n1 22\n4 33\n3\n0 44 55\n5 7 2\n5 2 5\n");
-  EXPECT_READ_ERROR("r\n-1\n", "(input):12:1: expected unsigned integer");
-  EXPECT_READ_ERROR("r\n6 1\n", "(input):12:1: invalid bound type");
-  EXPECT_READ_ERROR("r\n2 11\n1 22\n4 33\n3\n",
-                    "(input):16:1: expected unsigned integer");
+              "r\n21.1\n1 22\n4 33\n3\n0 44 55\n5 7 2\n5 2 5\n");
+  EXPECT_READ_ERROR("r\n-1\n", "(input):12:1: expected bound");
+  EXPECT_READ_ERROR("r\n6 1\n", "(input):12:1: expected bound");
+  EXPECT_READ_ERROR("r\n2 11\n1 22\n4 33\n3\n", "(input):16:1: expected bound");
   EXPECT_READ_ERROR("r\n5 1 0\n", "(input):12:5: integer 0 out of bounds");
   EXPECT_READ_ERROR("r\n5 1 6\n", "(input):12:5: integer 6 out of bounds");
   // Check that there is no overflow for largest possible var index.

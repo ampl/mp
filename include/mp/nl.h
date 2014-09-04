@@ -888,7 +888,7 @@ void NLReader<Reader, Handler>::ReadBounds() {
       }
       // Fall through as COMPL bound type is invalid for variables.
     default:
-      reader_.ReportError("invalid bound type");
+      reader_.ReportError("expected bound");
     }
     reader_.ReadTillEndOfLine();
     bh.SetBounds(i, lb, ub);
