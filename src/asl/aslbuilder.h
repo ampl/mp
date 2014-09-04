@@ -216,17 +216,7 @@ class ASLBuilder {
     int *a_colstarts_;
 
    public:
-    LinearConHandler(ASLBuilder *b, int con_index)
-      : LinearExprHandler<cgrad>(b, b->asl_->i.Cgrad_ + con_index) {
-      Edaginfo &info = builder_->asl_->i;
-      con_index_ = con_index + info.Fortran_;
-      a_vals_ = info.A_vals_;
-      a_rownos_ = info.A_rownos_;
-      // info.A_colstarts_[0] should be zero and not incremented.
-      a_colstarts_ = info.A_colstarts_ + 1;
-      if (a_vals_)
-        term_ = 0;
-    }
+    LinearConHandler(ASLBuilder *b, int con_index);
 
     void AddTerm(int var_index, double coef) {
       if (!a_vals_)
@@ -263,20 +253,14 @@ class ASLBuilder {
     }
   };
 
-  ColumnSizeHandler GetColumnSizeHandler() {
-    // TODO: support A_colstartsZ_
-    Edaginfo &info = asl_->i;
-    int size = std::max(info.n_var0, info.n_var_) + 1;
-    info.A_colstarts_ =
-        reinterpret_cast<int*>(M1alloc_ASL(&info, size * sizeof(int)));
-    // Set first two elements to zero because colstarts[1], ... will be
-    // incremented in LinearConHandler.
-    info.A_colstarts_[0] = info.A_colstarts_[1] = 0;
-    return ColumnSizeHandler(info.A_colstarts_ + 1);
-  }
+  ColumnSizeHandler GetColumnSizeHandler();
 
-  void SetInitialValue(int, double) {}
-  void SetInitialDualValue(int, double) {}
+  void SetInitialValue(int, double) {
+    // TODO
+  }
+  void SetInitialDualValue(int, double) {
+    // TODO
+  }
 
   Function AddFunction(const char *name, ufunc f, int num_args,
                        func::Type type = func::NUMERIC, void *info = 0);
@@ -370,7 +354,9 @@ class ASLBuilder {
     return Expr::Create<LogicalConstant>(MakeConstant(value));
   }
 
-  NotExpr MakeNot(LogicalExpr arg) { return MakeUnary<NotExpr>(expr::NOT, arg); }
+  NotExpr MakeNot(LogicalExpr arg) {
+    return MakeUnary<NotExpr>(expr::NOT, arg);
+  }
 
   BinaryLogicalExpr MakeBinaryLogical(
       expr::Kind kind, LogicalExpr lhs, LogicalExpr rhs) {

@@ -497,6 +497,30 @@ void ASLBuilder::SetLogicalCon(int index, LogicalExpr expr) {
               0, expr.expr_, 0);
 }
 
+ASLBuilder::LinearConHandler::LinearConHandler(ASLBuilder *b, int con_index)
+  : LinearExprHandler<cgrad>(b, b->asl_->i.Cgrad_ + con_index) {
+  Edaginfo &info = builder_->asl_->i;
+  con_index_ = con_index + info.Fortran_;
+  a_vals_ = info.A_vals_;
+  a_rownos_ = info.A_rownos_;
+  // info.A_colstarts_[0] should be zero and not incremented.
+  a_colstarts_ = info.A_colstarts_ + 1;
+  if (a_vals_)
+    term_ = 0;
+}
+
+ASLBuilder::ColumnSizeHandler ASLBuilder::GetColumnSizeHandler() {
+  // TODO: support A_colstartsZ_
+  Edaginfo &info = asl_->i;
+  int size = std::max(info.n_var0, info.n_var_) + 1;
+  info.A_colstarts_ =
+      reinterpret_cast<int*>(M1alloc_ASL(&info, size * sizeof(int)));
+  // Set first two elements to zero because colstarts[1], ... will be
+  // incremented in LinearConHandler.
+  info.A_colstarts_[0] = info.A_colstarts_[1] = 0;
+  return ColumnSizeHandler(info.A_colstarts_ + 1);
+}
+
 Function ASLBuilder::AddFunction(
     const char *name, ufunc f, int num_args, func::Type type, void *info) {
   func_info *fi = func_lookup(asl_, name, 1);
