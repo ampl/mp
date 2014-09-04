@@ -294,16 +294,11 @@ void ASLBuilder::BeginBuild(const NLHeader &h) {
 
   bool linear = asl_->i.ASLtype == ASL_read_f;
 
-  Edaginfo &info = asl_->i;
-  if ((flags_ & ASL_COLUMNWISE) != 0) {
-    info.A_vals_ = reinterpret_cast<double*>(
-        Malloc(info.nzc_ * sizeof(*info.A_vals_)));
-  }
-
   // Includes allocation of LUv, LUrhs, A_vals or Cgrad, etc.
   flagsave_ASL(asl_, flags_);
   ed_reset(static_, asl_);
 
+  Edaginfo &info = asl_->i;
   int nlcon = info.n_lcon_;
   if (nlcon && (flags_ & ASL_allow_CLP) == 0)
     throw ASLError(ASL_readerr_CLP, "cannot handle logical constraints");

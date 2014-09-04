@@ -1027,7 +1027,7 @@ TEST(ASLBuilderTest, ColumnSizeHandler) {
 
 TEST(ASLBuilderTest, BuildColumnwiseMatrix) {
   ASLPtr asl;
-  TestASLBuilder builder(asl, 3, mp::internal::ASL_COLUMNWISE);
+  TestASLBuilder builder(asl, 3, ASL_want_A_vals);
   ASLBuilder::ColumnSizeHandler handler = builder.GetColumnSizeHandler();
   handler.Add(0);
   handler.Add(2);
