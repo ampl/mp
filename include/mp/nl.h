@@ -35,6 +35,7 @@
 
 namespace mp {
 
+// A read error with location information.
 class ReadError : public Error {
  private:
   std::string filename_;
@@ -52,6 +53,7 @@ class ReadError : public Error {
   int column() const { return column_; }
 };
 
+// A read error with information about offset in a binary input.
 class BinaryReadError : public Error {
  private:
   std::string filename_;
