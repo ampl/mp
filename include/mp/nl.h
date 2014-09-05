@@ -390,10 +390,10 @@ class TextReader : public ReaderBase {
     return value;
   }
 
+  fmt::StringRef ReadString();
+
   // Reads a function or suffix name.
   fmt::StringRef ReadName();
-
-  fmt::StringRef ReadString();
 
   // Reads an .nl file header. The header is always in text format, so this
   // function doesn't have a counterpart in BinaryReader.
@@ -441,13 +441,13 @@ class BinaryReader : public ReaderBase {
     return *reinterpret_cast<const double*>(Read(sizeof(double)));
   }
 
-  // Reads a function or suffix name.
-  fmt::StringRef ReadName() { return ""; }  // TODO
-
   fmt::StringRef ReadString() {
     int length = ReadUInt();
     return fmt::StringRef(length != 0 ? Read(length) : 0, length);
   }
+
+  // Reads a function or suffix name.
+  fmt::StringRef ReadName() { return ReadString(); }
 };
 
 // An .nl file reader.

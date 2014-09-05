@@ -21,6 +21,7 @@
  */
 
 #include <climits>
+#include <cstring>
 
 #include <gtest/gtest.h>
 #include "mp/nl.h"
@@ -30,6 +31,7 @@ using mp::NLHeader;
 using mp::ReadError;
 using mp::ReadNLString;
 using mp::internal::TextReader;
+using mp::internal::BinaryReader;
 namespace expr = mp::expr;
 
 namespace {
@@ -251,8 +253,7 @@ class TestReaderBase : public mp::internal::ReaderBase {
      : ReaderBase(data, name) {}
 };
 
-class TestBinaryReader :
-    private TestReaderBase, public mp::internal::BinaryReader {
+class TestBinaryReader : private TestReaderBase, public BinaryReader {
  public:
   TestBinaryReader(fmt::StringRef data, fmt::StringRef name = "test")
     : TestReaderBase(data, name),
@@ -282,7 +283,59 @@ TEST(BinaryReaderTest, ReadLong) {
   EXPECT_EQ(42, reader.ReadInt<long>());
 }
 
-// TODO: test ReadUInt, ReadDouble, ReadName & ReadString
+TEST(BinaryReaderTest, ReadUInt) {
+  int data[] = {11, -22};
+  std::size_t size = sizeof(data);
+  TestBinaryReader reader(fmt::StringRef(reinterpret_cast<char*>(data), size));
+  EXPECT_EQ(11, reader.ReadUInt());
+  std::string message =
+      fmt::format("test:offset {}: expected unsigned integer", sizeof(int));
+  EXPECT_THROW_MSG(reader.ReadUInt(), mp::BinaryReadError, message);
+}
+
+TEST(BinaryReaderTest, ReadDouble) {
+  double data[] = {11, -2.2};
+  std::size_t size = sizeof(data);
+  TestBinaryReader reader(fmt::StringRef(reinterpret_cast<char*>(data), size));
+  EXPECT_EQ(11, reader.ReadDouble());
+  EXPECT_EQ(-2.2, reader.ReadDouble());
+  EXPECT_THROW_MSG(reader.ReadDouble(), mp::BinaryReadError,
+                   fmt::format("test:offset {}: unexpected end of file", size));
+}
+
+void TestReadString(fmt::StringRef (BinaryReader::*read)()) {
+  int data[] = {3, 0, 0};
+  std::strcpy(reinterpret_cast<char*>(data + 1), "abc");
+  {
+    TestBinaryReader reader(
+          fmt::StringRef(reinterpret_cast<char*>(data), sizeof(int) + 3));
+    fmt::StringRef name = (reader.*read)();
+    EXPECT_EQ("abc", std::string(name.c_str(), name.size()));
+  }
+  {
+    std::size_t size = sizeof(int) + 2;
+    TestBinaryReader reader(
+          fmt::StringRef(reinterpret_cast<char*>(data), size));
+    std::string message =
+        fmt::format("test:offset {}: unexpected end of file", size);
+    EXPECT_THROW_MSG((reader.*read)(), mp::BinaryReadError, message);
+  }
+  data[0] = -1;
+  {
+    TestBinaryReader reader(
+          fmt::StringRef(reinterpret_cast<char*>(data), sizeof(data)));
+    EXPECT_THROW_MSG((reader.*read)(), mp::BinaryReadError,
+                     "test:offset 0: expected unsigned integer");
+  }
+}
+
+TEST(BinaryReaderTest, ReadName) {
+  TestReadString(&BinaryReader::ReadName);
+}
+
+TEST(BinaryReaderTest, ReadString) {
+  TestReadString(&BinaryReader::ReadString);
+}
 
 TEST(NLTest, ArithKind) {
   namespace arith = mp::arith;

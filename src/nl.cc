@@ -114,16 +114,6 @@ bool mp::internal::TextReader::ReadOptionalDouble(double &value) {
   return has_value;
 }
 
-fmt::StringRef mp::internal::TextReader::ReadName() {
-  SkipSpace();
-  const char *start = ptr_;
-  if (*ptr_ == '\n' || !*ptr_)
-    ReportError("expected name");
-  do ++ptr_;
-  while (!std::isspace(*ptr_) && *ptr_);
-  return fmt::StringRef(start, ptr_ - start);
-}
-
 fmt::StringRef mp::internal::TextReader::ReadString() {
   int length = ReadUInt();
   if (*ptr_ != ':')
@@ -144,6 +134,16 @@ fmt::StringRef mp::internal::TextReader::ReadString() {
   ++line_;
   line_start_ = ++ptr_;
   return fmt::StringRef(length != 0 ? start : 0, length);
+}
+
+fmt::StringRef mp::internal::TextReader::ReadName() {
+  SkipSpace();
+  const char *start = ptr_;
+  if (*ptr_ == '\n' || !*ptr_)
+    ReportError("expected name");
+  do ++ptr_;
+  while (!std::isspace(*ptr_) && *ptr_);
+  return fmt::StringRef(start, ptr_ - start);
 }
 
 void mp::internal::TextReader::ReadHeader(NLHeader &header) {
@@ -252,7 +252,7 @@ void mp::internal::TextReader::ReadHeader(NLHeader &header) {
 void mp::internal::BinaryReader::ReportError(
     fmt::StringRef format_str, const fmt::ArgList &args) {
   fmt::Writer w;
-  std::size_t offset = ptr_ - start_;
+  std::size_t offset = token_ - start_;
   w.write("{}:offset {}: ", name_, offset);
   w.write(format_str, args);
   throw BinaryReadError(name_, offset, w.c_str());
