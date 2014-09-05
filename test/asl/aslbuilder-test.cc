@@ -776,9 +776,8 @@ class TestASLBuilder : public ASLBuilder {
  public:
   enum {NUM_FUNCS = 2, NUM_OBJS = 3, NUM_CONS = 4, NUM_LOGICAL_CONS = 5};
   explicit TestASLBuilder(
-      ASLPtr &asl, int num_vars = 1, int extra_flags = 0)
+      ASLPtr &asl, NLHeader header = MakeHeader(1), int extra_flags = 0)
   : ASLBuilder(asl.get()) {
-    NLHeader header = MakeHeader(num_vars);
     header.num_funcs = NUM_FUNCS;
     header.num_objs = NUM_OBJS;
     header.num_algebraic_cons = NUM_CONS;
@@ -945,7 +944,7 @@ TEST(ASLBuilderTest, SetMissingFunction) {
   CHECK_THROW_ASL_ERROR(builder.SetFunction(0, "f", 0),
     ASL_readerr_unavail, "function f not available");
   ASLPtr asl2;
-  TestASLBuilder builder2(asl2, 1, ASL_allow_missing_funcs);
+  TestASLBuilder builder2(asl2, MakeHeader(1), ASL_allow_missing_funcs);
   builder2.SetFunction(0, "f", 0);
   EXPECT_STREQ("f", asl2->i.funcs_[0]->name);
   arglist al = arglist();
@@ -1015,7 +1014,7 @@ TEST(ASLBuilderTest, SizeOverflow) {
 
 TEST(ASLBuilderTest, ColumnSizeHandler) {
   ASLPtr asl;
-  TestASLBuilder builder(asl, 3);
+  TestASLBuilder builder(asl, MakeHeader(4));
   ASLBuilder::ColumnSizeHandler handler = builder.GetColumnSizeHandler();
   handler.Add(3);
   handler.Add(0);
@@ -1027,11 +1026,12 @@ TEST(ASLBuilderTest, ColumnSizeHandler) {
 
 TEST(ASLBuilderTest, BuildColumnwiseMatrix) {
   ASLPtr asl;
-  TestASLBuilder builder(asl, 3, ASL_want_A_vals);
+  NLHeader header = MakeHeader(3);
+  header.num_con_nonzeros = 3;
+  TestASLBuilder builder(asl, header, ASL_want_A_vals);
   ASLBuilder::ColumnSizeHandler handler = builder.GetColumnSizeHandler();
   handler.Add(0);
   handler.Add(2);
-  handler.Add(1);
   ASLBuilder::LinearConHandler con = builder.GetLinearConHandler(0, 0);
   con = builder.GetLinearConHandler(1, 2);
   con.AddTerm(1, 5);
