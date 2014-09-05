@@ -10,7 +10,8 @@ if (NOSE2)
 endif ()
 
 # Add gtest library with some extra features.
-set(GTEST_SRC ../thirdparty/gtest/gtest-all.cc util.h util.cc test-main.cc)
+set(GTEST_SRC ../thirdparty/gtest/gtest-all.cc
+  gtest-extra.cc gtest-extra.h util.cc util.h test-main.cc)
 add_library(gtest-extra STATIC ${GTEST_SRC})
 find_package(Threads)
 target_link_libraries(gtest-extra ${CMAKE_THREAD_LIBS_INIT})

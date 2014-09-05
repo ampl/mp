@@ -136,16 +136,71 @@ struct IntChecker<true> {
 
 const char RESET_COLOR[] = "\x1b[0m";
 
-typedef void (*FormatFunc)(fmt::Writer &, int , fmt::StringRef);
+typedef void (*FormatFunc)(fmt::Writer &, int, fmt::StringRef);
+
+// Portable thread-safe version of strerror.
+// Sets buffer to point to a string describing the error code.
+// This can be either a pointer to a string stored in buffer,
+// or a pointer to some static immutable string.
+// Returns one of the following values:
+//   0      - success
+//   ERANGE - buffer is not large enough to store the error message
+//   other  - failure
+// Buffer should be at least of size 1.
+int safe_strerror(
+    int error_code, char *&buffer, std::size_t buffer_size) FMT_NOEXCEPT(true) {
+  assert(buffer != 0 && buffer_size != 0);
+  int result = 0;
+#ifdef _GNU_SOURCE
+  char *message = strerror_r(error_code, buffer, buffer_size);
+  // If the buffer is full then the message is probably truncated.
+  if (message == buffer && strlen(buffer) == buffer_size - 1)
+    result = ERANGE;
+  buffer = message;
+#elif __MINGW32__
+  errno = 0;
+  (void)buffer_size;
+  buffer = strerror(error_code);
+  result = errno;
+#elif _WIN32
+  result = strerror_s(buffer, buffer_size, error_code);
+  // If the buffer is full then the message is probably truncated.
+  if (result == 0 && std::strlen(buffer) == buffer_size - 1)
+    result = ERANGE;
+#else
+  result = strerror_r(error_code, buffer, buffer_size);
+  if (result == -1)
+    result = errno;  // glibc versions before 2.13 return result in errno.
+#endif
+  return result;
+}
+
+void format_error_code(fmt::Writer &out, int error_code,
+                       fmt::StringRef message) FMT_NOEXCEPT(true) {
+  // Report error code making sure that the output fits into
+  // INLINE_BUFFER_SIZE to avoid dynamic memory allocation and potential
+  // bad_alloc.
+  out.clear();
+  static const char SEP[] = ": ";
+  static const char ERROR[] = "error ";
+  fmt::internal::IntTraits<int>::MainType ec_value = error_code;
+  // Subtract 2 to account for terminating null characters in SEP and ERROR.
+  std::size_t error_code_size =
+      sizeof(SEP) + sizeof(ERROR) + fmt::internal::count_digits(ec_value) - 2;
+  if (message.size() <= fmt::internal::INLINE_BUFFER_SIZE - error_code_size)
+    out << message << SEP;
+  out << ERROR << error_code;
+  assert(out.size() <= fmt::internal::INLINE_BUFFER_SIZE);
+}
 
 void report_error(FormatFunc func,
     int error_code, fmt::StringRef message) FMT_NOEXCEPT(true) {
-  try {
-    fmt::Writer full_message;
-    func(full_message, error_code, message); // TODO: make sure this doesn't throw
-    std::fwrite(full_message.c_str(), full_message.size(), 1, stderr);
-    std::fputc('\n', stderr);
-  } catch (...) {}
+  fmt::Writer full_message;
+  func(full_message, error_code, message);
+  // Use Writer::data instead of Writer::c_str to avoid potential memory
+  // allocation.
+  std::fwrite(full_message.data(), full_message.size(), 1, stderr);
+  std::fputc('\n', stderr);
 }
 
 // IsZeroInt::visit(arg) returns true iff arg is a zero integer.
@@ -424,57 +479,32 @@ void fmt::WindowsError::init(
 
 #endif
 
-int fmt::internal::safe_strerror(
-    int error_code, char *&buffer, std::size_t buffer_size) FMT_NOEXCEPT(true) {
-  assert(buffer != 0 && buffer_size != 0);
-  int result = 0;
-#ifdef _GNU_SOURCE
-  char *message = strerror_r(error_code, buffer, buffer_size);
-  // If the buffer is full then the message is probably truncated.
-  if (message == buffer && strlen(buffer) == buffer_size - 1)
-    result = ERANGE;
-  buffer = message;
-#elif __MINGW32__
-  errno = 0;
-  (void)buffer_size;
-  buffer = strerror(error_code);
-  result = errno;
-#elif _WIN32
-  result = strerror_s(buffer, buffer_size, error_code);
-  // If the buffer is full then the message is probably truncated.
-  if (result == 0 && std::strlen(buffer) == buffer_size - 1)
-    result = ERANGE;
-#else
-  result = strerror_r(error_code, buffer, buffer_size);
-  if (result == -1)
-    result = errno;  // glibc versions before 2.13 return result in errno.
-#endif
-  return result;
-}
-
 void fmt::internal::format_system_error(
-    fmt::Writer &out, int error_code, fmt::StringRef message) {
-  Array<char, INLINE_BUFFER_SIZE> buffer;
-  buffer.resize(INLINE_BUFFER_SIZE);
-  char *system_message = 0;
-  for (;;) {
-    system_message = &buffer[0];
-    int result = safe_strerror(error_code, system_message, buffer.size());
-    if (result == 0)
-      break;
-    if (result != ERANGE) {
-      // Can't get error message, report error code instead.
-      out << message << ": error code = " << error_code;
-      return;
+    fmt::Writer &out, int error_code,
+    fmt::StringRef message) FMT_NOEXCEPT(true) {
+  try {
+    Array<char, INLINE_BUFFER_SIZE> buffer;
+    buffer.resize(INLINE_BUFFER_SIZE);
+    char *system_message = 0;
+    for (;;) {
+      system_message = &buffer[0];
+      int result = safe_strerror(error_code, system_message, buffer.size());
+      if (result == 0) {
+        out << message << ": " << system_message;
+        return;
+      }
+      if (result != ERANGE)
+        break;  // Can't get error message, report error code instead.
+      buffer.resize(buffer.size() * 2);
     }
-    buffer.resize(buffer.size() * 2);
-  }
-  out << message << ": " << system_message;
+  } catch (...) {}
+  format_error_code(out, error_code, message);
 }
 
 #ifdef _WIN32
 void fmt::internal::format_windows_error(
-    fmt::Writer &out, int error_code, fmt::StringRef message) {
+    fmt::Writer &out, int error_code,
+    fmt::StringRef message) FMT_NOEXCEPT(true) {
   class String {
    private:
     LPWSTR str_;
@@ -485,19 +515,20 @@ void fmt::internal::format_windows_error(
     LPWSTR *ptr() { return &str_; }
     LPCWSTR c_str() const { return str_; }
   };
-  String system_message;
-  if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-      FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 0,
-      error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-      reinterpret_cast<LPWSTR>(system_message.ptr()), 0, 0)) {
-    UTF16ToUTF8 utf8_message;
-    if (!utf8_message.convert(system_message.c_str())) {
-      out << message << ": " << utf8_message;
-      return;
+  try {
+    String system_message;
+    if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 0,
+        error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        reinterpret_cast<LPWSTR>(system_message.ptr()), 0, 0)) {
+      UTF16ToUTF8 utf8_message;
+      if (utf8_message.convert(system_message.c_str()) == ERROR_SUCCESS) {
+        out << message << ": " << utf8_message;
+        return;
+      }
     }
-  }
-  // Can't get error message, report error code instead.
-  out << message << ": error code = " << error_code;
+  } catch (...) {}
+  format_error_code(out, error_code, message);
 }
 #endif
 
@@ -1190,14 +1221,12 @@ void fmt::BasicFormatter<Char>::format(
 
 void fmt::report_system_error(
     int error_code, fmt::StringRef message) FMT_NOEXCEPT(true) {
-  // FIXME: format_system_error may throw
   report_error(internal::format_system_error, error_code, message);
 }
 
 #ifdef _WIN32
 void fmt::report_windows_error(
     int error_code, fmt::StringRef message) FMT_NOEXCEPT(true) {
-  // FIXME: format_windows_error may throw
   report_error(internal::format_windows_error, error_code, message);
 }
 #endif

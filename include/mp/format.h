@@ -307,7 +307,7 @@ class Array {
       grow(capacity);
   }
 
-  void clear() { size_ = 0; }
+  void clear() FMT_NOEXCEPT(true) { size_ = 0; }
 
   void push_back(const T &value) {
     if (size_ == capacity_)
@@ -528,29 +528,18 @@ class UTF16ToUTF8 {
   std::string str() const { return std::string(&buffer_[0], size()); }
 
   // Performs conversion returning a system error code instead of
-  // throwing exception on error.
+  // throwing exception on conversion error. This method may still throw
+  // in case of memory allocation error.
   int convert(WStringRef s);
 };
 #endif
 
-// Portable thread-safe version of strerror.
-// Sets buffer to point to a string describing the error code.
-// This can be either a pointer to a string stored in buffer,
-// or a pointer to some static immutable string.
-// Returns one of the following values:
-//   0      - success
-//   ERANGE - buffer is not large enough to store the error message
-//   other  - failure
-// Buffer should be at least of size 1.
-int safe_strerror(int error_code,
-    char *&buffer, std::size_t buffer_size) FMT_NOEXCEPT(true);
-
-void format_system_error(
-    fmt::Writer &out, int error_code, fmt::StringRef message);
+void format_system_error(fmt::Writer &out, int error_code,
+                         fmt::StringRef message) FMT_NOEXCEPT(true);
 
 #ifdef _WIN32
-void format_windows_error(
-    fmt::Writer &out, int error_code, fmt::StringRef message);
+void format_windows_error(fmt::Writer &out, int error_code,
+                          fmt::StringRef message) FMT_NOEXCEPT(true);
 #endif
 
 // Computes max(Arg, 1) at compile time. It is used to avoid errors about
@@ -1394,7 +1383,7 @@ class BasicWriter {
     Returns a pointer to the output buffer content. No terminating null
     character is appended.
    */
-  const Char *data() const { return &buffer_[0]; }
+  const Char *data() const FMT_NOEXCEPT(true) { return &buffer_[0]; }
 
   /**
     Returns a pointer to the output buffer content with terminating null
@@ -1518,7 +1507,7 @@ class BasicWriter {
     return *this;
   }
 
-  void clear() { buffer_.clear(); }
+  void clear() FMT_NOEXCEPT(true) { buffer_.clear(); }
 };
 
 template <typename Char>

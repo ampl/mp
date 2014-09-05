@@ -7,6 +7,7 @@ project_dir = os.path.join(os.path.dirname(__file__), '..')
 
 include_files = ['format.h', 'posix.h']
 src_files = ['format.cc', 'posix.cc']
+test_files = ['gtest-extra.h', 'gtest-extra.cc']
 
 def copyfile(src, dst):
   for line in src:
@@ -34,3 +35,4 @@ with d.download('https://github.com/cppformat/cppformat/archive/master.zip') as 
     root = 'cppformat-master/'
     extract(zf, include_files, 'include/mp', root)
     extract(zf, src_files, 'src', root)
+    extract(zf, test_files, 'test', root + 'test/')
