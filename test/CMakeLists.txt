@@ -13,6 +13,7 @@ endif ()
 set(GTEST_SRC ../thirdparty/gtest/gtest-all.cc
   gtest-extra.cc gtest-extra.h util.cc util.h test-main.cc)
 add_library(gtest-extra STATIC ${GTEST_SRC})
+target_compile_definitions(gtest-extra PUBLIC FMT_USE_FILE_DESCRIPTORS)
 find_package(Threads)
 target_link_libraries(gtest-extra ${CMAKE_THREAD_LIBS_INIT})
 

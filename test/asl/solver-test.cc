@@ -25,6 +25,7 @@
 #include "../args.h"
 #include "../solution-handler.h"
 #include "../util.h"
+#include "../gtest-extra.h"
 #include "stderr-redirect.h"
 
 #include <cstdio>
@@ -231,15 +232,13 @@ TEST(SolverTest, BasicSolverVirtualDtor) {
 }
 
 TEST(SolverTest, NameInUsage) {
-  {
-    StderrRedirect redirect("out");
-    TestSolver s("solver-name", "long-solver-name");
-    s.set_version("solver-version");
-    Problem p;
-    s.ProcessArgs(Args("program-name"), p);
-  }
+  TestSolver s("solver-name", "long-solver-name");
+  s.set_version("solver-version");
+  Problem p;
+  OutputRedirect redirect(stderr);
+  s.ProcessArgs(Args("program-name"), p);
   std::string usage = "usage: solver-name ";
-  EXPECT_EQ(usage, ReadFile("out").substr(0, usage.size()));
+  EXPECT_EQ(usage, redirect.restore_and_read().substr(0, usage.size()));
 }
 
 TEST(SolverTest, LongName) {
