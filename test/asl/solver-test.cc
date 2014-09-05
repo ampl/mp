@@ -224,6 +224,7 @@ TEST(SolverTest, BasicSolverVirtualDtor) {
     : Solver("test", 0, 0), destroyed_(destroyed) {}
     ~DtorTestSolver() { destroyed_ = true; }
     void DoSolve(Problem &) {}
+    void ReadNL(fmt::StringRef) {}
   };
   (DtorTestSolver(destroyed));
   EXPECT_TRUE(destroyed);
@@ -637,6 +638,7 @@ struct TestSolverWithOptions : Solver {
   }
 
   void DoSolve(Problem &) {}
+  void ReadNL(fmt::StringRef) {}
 };
 
 TEST(SolverTest, AddOption) {
@@ -665,6 +667,7 @@ TEST(SolverTest, OptionHeader) {
       Solver::set_option_header("test header");
     }
     void DoSolve(Problem &) {}
+    void ReadNL(fmt::StringRef) {}
   } s;
   EXPECT_STREQ("", s.option_header());
   s.set_option_header();
@@ -769,6 +772,7 @@ TEST(SolverTest, HandleUnknownOption) {
     std::string option_name;
     TestSolver() : Solver("test", 0, 0) {}
     void DoSolve(Problem &) {}
+    void ReadNL(fmt::StringRef) {}
     void HandleUnknownOption(const char *name) { option_name = name; }
   };
   TestSolver s;
@@ -914,6 +918,7 @@ struct ExceptionTestSolver : public Solver {
         &ExceptionTestSolver::GetIntOption, &ExceptionTestSolver::Throw);
   }
   void DoSolve(Problem &) {}
+  void ReadNL(fmt::StringRef) {}
 };
 
 TEST(SolverTest, ExceptionInOptionHandler) {

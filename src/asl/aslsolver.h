@@ -24,10 +24,11 @@
 #define MP_ASL_SOLVER_H_
 
 #include "mp/solver.h"
+#include "asl/aslbuilder.h"
 
 namespace mp {
 
-class ASLSolver : public Solver {
+class ASLSolver : public SolverImpl<internal::ASLBuilder> {
  private:
   class SolutionWriter : public SolutionHandler {
    private:

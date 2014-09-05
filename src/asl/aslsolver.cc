@@ -23,15 +23,51 @@
 extern "C" {
 #include "solvers/getstub.h"
 #undef Char
+#undef filename
+#undef ampl_vbtol
 }
 
 #include "mp/clock.h"
 #include "aslsolver.h"
 #include "problem.h"
 
+// Flags for PrintUsage.
+enum {
+  // Print usage to stderr.
+  USE_STDERR   = 1,
+  // Make "-?" show some command-line options that are relevant when
+  // importing functions.
+  FUNC_OPTIONS = 2
+};
+
+static void PrintUsage(const mp::Solver &solver, unsigned flags) {
+  FILE *f = (flags & USE_STDERR) != 0 ? stderr : stdout;
+  fmt::print(f, "usage: {} [options] stub [-AMPL] [<assignment> ...]\n",
+             solver.name());
+  fmt::print(f, "\nOptions:\n");
+  static const char *options[] = {
+    "-",  "end of options",
+    "=",  "show name= possibilities",
+    "?",  "show usage",
+    "e",  "suppress echoing of assignments",
+    "ix", "import user-defined functions from x; -i? gives details",
+    "s",  "write .sol file (without -AMPL)",
+    "u",  "just show available user-defined functions",
+    "v",  "just show version",
+    0
+  };
+  for (const char **s = options; *s; s += 2) {
+    // Filter out -ix & -u options if FUNC_OPTIONS flags is not set.
+    char c = **s;
+    if ((flags & FUNC_OPTIONS) == 0 && (c == 'i' || c == 'u'))
+      continue;
+    fmt::print(f, "\t-{:3}{{{}}}\n", s[0], s[1]);
+  }
+}
+
 mp::ASLSolver::ASLSolver(
     fmt::StringRef name, fmt::StringRef long_name, long date, int flags)
-  : Solver(name, long_name, date, flags) {
+  : SolverImpl<internal::ASLBuilder>(name, long_name, date, flags) {
   sol_writer_.set_solver(this);
   sol_handler_ = &sol_writer_;
 }
@@ -88,8 +124,6 @@ bool mp::ASLSolver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
   ASL *asl = reinterpret_cast<ASL*>(p.asl_);
   RegisterSuffixes(p);
 
-  // Workaround for GCC bug 30111 that prevents value-initialization of
-  // the base POD class.
   Option_Info option_info = Option_Info();
   keyword cl_option = keyword();  // command-line option '='
   cl_option.name = const_cast<char*>("=");
@@ -128,13 +162,9 @@ bool mp::ASLSolver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
   option_info.version = const_cast<char*>(version_.c_str());;
   option_info.driver_date = date_;
 
-  // Make "-?" show some command-line options that are relevant when
-  // importing functions.
-  option_info.flags |= ASL_OI_want_funcadd;
-
   char *stub = getstub_ASL(asl, &argv, &option_info);
   if (!stub) {
-    usage_noexit_ASL(&option_info, 1);
+    PrintUsage(*this, USE_STDERR | FUNC_OPTIONS);
     return false;
   }
   steady_clock::time_point start = steady_clock::now();

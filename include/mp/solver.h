@@ -37,6 +37,7 @@
 
 #include "mp/error.h"
 #include "mp/format.h"
+#include "mp/nl.h"
 
 namespace mp {
 
@@ -857,7 +858,23 @@ class Solver : private ErrorHandler, private OutputHandler {
   // Usage:
   //   Print("objective {}", FormatObjValue(obj_value));
   DoubleFormatter FormatObjValue(double value);
+
+  // Reads a problem from an .nl file.
+  virtual void ReadNL(fmt::StringRef filename) = 0;
 };
-}
+
+template <typename ProblemBuilder>
+class SolverImpl : public Solver {
+ public:
+  SolverImpl(fmt::StringRef name, fmt::StringRef long_name,
+             long date, int flags)
+    : Solver(name, long_name, date, flags) {}
+
+  virtual void ReadNL(fmt::StringRef filename) {
+    ProblemBuilder builder;
+    ReadNLFile(filename, builder);
+  }
+};
+}  // namespace mp
 
 #endif  // MP_SOLVER_H_
