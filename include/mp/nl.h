@@ -861,12 +861,12 @@ template <typename Reader, typename Handler>
 template <typename BoundHandler>
 void NLReader<Reader, Handler>::ReadBounds() {
   enum BoundType {
-    RANGE,  // Both lower and upper bounds: l <= body <= u.
-    UPPER,  // Only upper bound: body <= u.
-    LOWER,  // Only lower bound: l <= body.
-    FREE,   // No constraints on body (free variable or constraint).
-    CONST,  // Equal to constant: body = c.
-    COMPL   // Body complements variable v[i - 1].
+    RANGE,     // Both lower and upper bounds: l <= body <= u.
+    UPPER,     // Only upper bound: body <= u.
+    LOWER,     // Only lower bound: l <= body.
+    FREE,      // No constraints on body (free variable or constraint).
+    CONSTANT,  // Equal to constant: body = c.
+    COMPL      // Body complements variable v[i - 1].
   };
   reader_.ReadTillEndOfLine();
   double lb = 0, ub = 0;
@@ -891,7 +891,7 @@ void NLReader<Reader, Handler>::ReadBounds() {
       lb = -infinity;
       ub =  infinity;
       break;
-    case CONST:
+    case CONSTANT:
       lb = ub = reader_.ReadDouble();
       break;
     case COMPL:
