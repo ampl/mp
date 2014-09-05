@@ -75,10 +75,11 @@ fmt::Writer &mp::operator<<(fmt::Writer &w, const NLHeader &h) {
 }
 
 mp::internal::ReaderBase::ReaderBase(fmt::StringRef data, fmt::StringRef name)
-: ptr_(data.c_str()), end_(ptr_ + data.size()), token_(ptr_), name_(name) {}
+: ptr_(data.c_str()), start_(ptr_), end_(ptr_ + data.size()),
+  token_(ptr_), name_(name) {}
 
 mp::internal::TextReader::TextReader(fmt::StringRef data, fmt::StringRef name)
-: ReaderBase(data, name), start_(ptr_), line_start_(ptr_), line_(1) {}
+: ReaderBase(data, name), line_start_(ptr_), line_(1) {}
 
 void mp::internal::TextReader::DoReportError(
     const char *loc, fmt::StringRef format_str, const fmt::ArgList &args) {
@@ -97,9 +98,9 @@ void mp::internal::TextReader::DoReportError(
   }
   int column = static_cast<int>(loc - line_start + 1);
   fmt::Writer w;
+  w.write("{}:{}:{}: ", name_, line, column);
   w.write(format_str, args);
-  throw ReadError(name_, line, column,
-      fmt::format("{}:{}:{}: {}", name_, line, column, w.c_str()));
+  throw ReadError(name_, line, column, w.c_str());
 }
 
 bool mp::internal::TextReader::ReadOptionalDouble(double &value) {
@@ -228,8 +229,8 @@ void mp::internal::TextReader::ReadHeader(NLHeader &header) {
   ReadTillEndOfLine();
 
   // Read the information about nonzeros.
-  header.num_con_nonzeros = ReadSize();
-  header.num_obj_nonzeros = ReadSize();
+  header.num_con_nonzeros = ReadUInt<std::size_t>();
+  header.num_obj_nonzeros = ReadUInt<std::size_t>();
   ReadTillEndOfLine();
 
   // Read the information about names.
@@ -246,4 +247,13 @@ void mp::internal::TextReader::ReadHeader(NLHeader &header) {
   header.num_common_exprs_in_single_cons = ReadUInt(max_vars);
   header.num_common_exprs_in_single_objs = ReadUInt(max_vars);
   ReadTillEndOfLine();
+}
+
+void mp::internal::BinaryReader::ReportError(
+    fmt::StringRef format_str, const fmt::ArgList &args) {
+  fmt::Writer w;
+  std::size_t offset = ptr_ - start_;
+  w.write("{}:offset {}: ", name_, offset);
+  w.write(format_str, args);
+  throw BinaryReadError(name_, offset, w.c_str());
 }

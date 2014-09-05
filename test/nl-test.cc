@@ -245,7 +245,44 @@ TEST(TextReaderTest, ReadHeaderIntegerOverflow) {
   CHECK_INT_OVERFLOW(num_common_exprs_in_single_objs, 10);
 }
 
-// TODO: test BinaryReader
+class TestReaderBase : public mp::internal::ReaderBase {
+ public:
+   TestReaderBase(fmt::StringRef data, fmt::StringRef name)
+     : ReaderBase(data, name) {}
+};
+
+class TestBinaryReader :
+    private TestReaderBase, public mp::internal::BinaryReader {
+ public:
+  TestBinaryReader(fmt::StringRef data, fmt::StringRef name = "test")
+    : TestReaderBase(data, name),
+      BinaryReader(static_cast<TestReaderBase&>(*this)) {}
+};
+
+TEST(BinaryReaderTest, ReportError) {
+  TestBinaryReader reader("x");
+  EXPECT_THROW_MSG(reader.ReportError("a{}c", 'b'), mp::BinaryReadError,
+                   "test:offset 0: abc");
+}
+
+TEST(BinaryReaderTest, ReadInt) {
+  int data[] = {11, -22};
+  std::size_t size = sizeof(data);
+  TestBinaryReader reader(fmt::StringRef(reinterpret_cast<char*>(data), size));
+  EXPECT_EQ(11, reader.ReadInt<int>());
+  EXPECT_EQ(-22, reader.ReadInt<int>());
+  EXPECT_THROW_MSG(reader.ReadInt<int>(), mp::BinaryReadError,
+                   fmt::format("test:offset {}: unexpected end of file", size));
+}
+
+TEST(BinaryReaderTest, ReadLong) {
+  long data[] = {42};
+  std::size_t size = sizeof(data);
+  TestBinaryReader reader(fmt::StringRef(reinterpret_cast<char*>(data), size));
+  EXPECT_EQ(42, reader.ReadInt<long>());
+}
+
+// TODO: test ReadUInt, ReadDouble, ReadName & ReadString
 
 TEST(NLTest, ArithKind) {
   namespace arith = mp::arith;

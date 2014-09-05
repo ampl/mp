@@ -52,6 +52,21 @@ class ReadError : public Error {
   int column() const { return column_; }
 };
 
+class BinaryReadError : public Error {
+ private:
+  std::string filename_;
+  std::size_t offset_;
+
+ public:
+  BinaryReadError(
+      fmt::StringRef filename, std::size_t offset, fmt::StringRef message)
+  : Error(message), filename_(filename), offset_(offset) {}
+  ~BinaryReadError() throw() {}
+
+  const std::string &filename() const { return filename_; }
+  std::size_t offset() const { return offset_; }
+};
+
 enum {
   MAX_NL_OPTIONS = 9,
   VBTOL_OPTION   = 1,
@@ -237,7 +252,7 @@ namespace internal {
 
 class ReaderBase {
  protected:
-  const char *ptr_, *end_;
+  const char *ptr_, *start_, *end_;
   const char *token_;  // start of the current token
   std::string name_;
 
@@ -252,7 +267,6 @@ class ReaderBase {
 
 class TextReader : public ReaderBase {
  private:
-  const char *start_;
   const char *line_start_;
   int line_;
 
@@ -306,9 +320,10 @@ class TextReader : public ReaderBase {
     return value;
   }
 
-  std::size_t ReadSize() {
+  template <typename Int>
+  Int ReadUInt() {
     SkipSpace();
-    std::size_t value = 0;
+    Int value = 0;
     if (!ReadIntWithoutSign(value))
       ReportError("expected unsigned integer");
     return value;
@@ -361,13 +376,7 @@ class TextReader : public ReaderBase {
     return value;
   }
 
-  int ReadUInt() {
-    SkipSpace();
-    int value = 0;
-    if (!ReadIntWithoutSign(value))
-      ReportError("expected unsigned integer");
-    return value;
-  }
+  int ReadUInt() { return ReadUInt<int>(); }
 
   double ReadDouble() {
     SkipSpace();
@@ -407,9 +416,7 @@ class BinaryReader : public ReaderBase {
  public:
   explicit BinaryReader(const ReaderBase &base) : ReaderBase(base) {}
 
-  void ReportError(fmt::StringRef format_str, const fmt::ArgList &args) {
-    // TODO: throw exception with offset
-  }
+  void ReportError(fmt::StringRef format_str, const fmt::ArgList &args);
   FMT_VARIADIC(void, ReportError, fmt::StringRef)
 
   void ReadTillEndOfLine() {
