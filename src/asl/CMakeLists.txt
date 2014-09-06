@@ -126,8 +126,15 @@ if (NOT HAVE_MKSTEMPS)
 endif ()
 
 # Compile C sources separately to be able to specify compile options.
-add_library(asl-core OBJECT ${ASL_SOURCES})
+add_library(asl-core ${ASL_SOURCES})
 target_include_directories(asl-core PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+if (NOT WIN32)
+  target_link_libraries(asl-core m)
+endif ()
+check_library_exists(dl dlopen "" HAVE_LIBDL)
+if (HAVE_LIBDL)
+  target_link_libraries(asl-core dl)
+endif ()
 
 # Suppress warnings.
 if (MSVC)
@@ -143,18 +150,11 @@ add_prefix(ASL_HEADERS solvers/
   asl.h asl_pfg.h asl_pfgh.h avltree.h funcadd.h getstub.h nlp.h nlp2.h psinfo.h
   opcode.hd r_opn.hd)
 
-add_library(asl aslbuilder.cc aslsolver.cc expr.cc problem.cc
-  ${ASL_HEADERS} $<TARGET_OBJECTS:asl-core>)
+add_library(asl STATIC aslbuilder.cc aslsolver.cc expr.cc problem.cc
+  ${ASL_HEADERS})
 target_include_directories(asl PUBLIC
   solvers ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(asl mp)
-if (NOT WIN32)
-  target_link_libraries(asl m)
-endif ()
-check_library_exists(dl dlopen "" HAVE_LIBDL)
-if (HAVE_LIBDL)
-  target_link_libraries(asl dl)
-endif ()
+target_link_libraries(asl asl-core mp)
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
   # Changing the floating point precision is not supported on x64.
