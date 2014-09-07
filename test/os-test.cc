@@ -122,7 +122,7 @@ TEST(OSTest, GetExecutablePath) {
   path p = mp::GetExecutablePath();
   EXPECT_EQ(filename, p.filename().string());
   p.remove_filename();
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__MINGW32__)
   p.remove_filename();
 #endif
   EXPECT_EQ("bin", p.filename().string());

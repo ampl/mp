@@ -28,6 +28,10 @@ function(add_mp_test name)
   endif ()
   add_executable(${target_name} ${add_mp_test_UNPARSED_ARGUMENTS})
   set_target_properties(${target_name} PROPERTIES OUTPUT_NAME ${name})
+  if (MINGW)
+    set_target_properties(${target_name} PROPERTIES
+      LINK_FLAGS "-static-libgcc -static-libstdc++")
+  endif ()
   if (NOT add_mp_test_LIBS)
     set(add_mp_test_LIBS mp)
   endif ()
@@ -63,6 +67,10 @@ add_mp_test(nl-test nl-test.cc)
 
 add_executable(test-helper test-helper.cc)
 target_link_libraries(test-helper mp)
+if (MINGW)
+  set_target_properties(test-helper PROPERTIES
+    LINK_FLAGS "-static-libgcc -static-libstdc++")
+endif ()
 
 add_mp_test(os-test os-test.cc)
 add_dependencies(os-test test-helper)
