@@ -126,14 +126,19 @@ if (NOT HAVE_MKSTEMPS)
 endif ()
 
 # Compile C sources separately to be able to specify compile options.
-add_library(asl-core ${ASL_SOURCES})
+add_library(asl-core OBJECT ${ASL_SOURCES})
 target_include_directories(asl-core PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-if (NOT WIN32)
-  target_link_libraries(asl-core m)
-endif ()
-check_library_exists(dl dlopen "" HAVE_LIBDL)
-if (HAVE_LIBDL)
-  target_link_libraries(asl-core dl)
+
+if (BUILD_SHARED_LIBS)
+  add_library(asl-shared $<TARGET_OBJECTS:asl-core>)
+  set_target_properties(asl-shared PROPERTIES OUTPUT_NAME asl)
+  if (NOT WIN32)
+    target_link_libraries(asl-shared m)
+  endif ()
+  check_library_exists(dl dlopen "" HAVE_LIBDL)
+  if (HAVE_LIBDL)
+    target_link_libraries(asl-shared dl)
+  endif ()
 endif ()
 
 # Suppress warnings.
@@ -151,10 +156,10 @@ add_prefix(ASL_HEADERS solvers/
   opcode.hd r_opn.hd)
 
 add_library(asl STATIC aslbuilder.cc aslsolver.cc expr.cc problem.cc
-  ${ASL_HEADERS})
+  ${ASL_HEADERS} $<TARGET_OBJECTS:asl-core>)
 target_include_directories(asl PUBLIC
   solvers ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(asl asl-core mp)
+target_link_libraries(asl mp)
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
   # Changing the floating point precision is not supported on x64.
