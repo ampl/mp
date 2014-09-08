@@ -361,18 +361,6 @@ TEST(SolverTest, ReadProblemNoStub) {
   EXPECT_EQ(0, p.num_vars());
 }
 
-TEST(SolverTest, ReadProblemError) {
-  TestSolver s("test");
-  Problem p;
-  std::string message;
-  try {
-    s.ProcessArgs(Args("testprogram", "nonexistent"), p);
-  } catch (const fmt::SystemError &e) {
-    message = e.what();
-  }
-  EXPECT_EQ(message.find("cannot open file nonexistent.nl"), 0);
-}
-
 TEST(SolverTest, ReadingMinOrMaxWithZeroArgsFails) {
   const char *names[] = {"min", "max"};
   for (size_t i = 0, n = sizeof(names) / sizeof(*names); i < n; ++i) {
@@ -420,9 +408,12 @@ TEST(SolverTest, ProcessArgsWithouStub) {
 TEST(SolverTest, ProcessArgsError) {
   TestSolver s;
   Problem p;
-  EXPECT_THROW_MSG(
-        s.ProcessArgs(Args("testprogram", "nonexistent"), p), fmt::SystemError,
-        "cannot open file nonexistent.nl: No such file or directory");
+  try {
+    s.ProcessArgs(Args("testprogram", "nonexistent"), p);
+  } catch (const fmt::SystemError &e) {
+    message = e.what();
+  }
+  EXPECT_EQ(message.find("cannot open file nonexistent.nl"), 0);
 }
 
 TEST(SolverTest, SignalHandler) {
