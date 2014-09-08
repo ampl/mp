@@ -129,6 +129,18 @@ endif ()
 add_library(asl-core OBJECT ${ASL_SOURCES})
 target_include_directories(asl-core PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
+if (BUILD_SHARED_LIBS)
+  add_library(asl-shared $<TARGET_OBJECTS:asl-core>)
+  set_target_properties(asl-shared PROPERTIES OUTPUT_NAME asl)
+  if (NOT WIN32)
+    target_link_libraries(asl-shared m)
+  endif ()
+  check_library_exists(dl dlopen "" HAVE_LIBDL)
+  if (HAVE_LIBDL)
+    target_link_libraries(asl-shared dl)
+  endif ()
+endif ()
+
 # Suppress warnings.
 if (MSVC)
   target_compile_options(asl-core PRIVATE /wd4244 /wd4267)
@@ -148,13 +160,6 @@ add_library(asl STATIC aslbuilder.cc aslsolver.cc expr.cc problem.cc
 target_include_directories(asl PUBLIC
   solvers ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(asl mp)
-if (NOT WIN32)
-  target_link_libraries(asl m)
-endif ()
-check_library_exists(dl dlopen "" HAVE_LIBDL)
-if (HAVE_LIBDL)
-  target_link_libraries(asl dl)
-endif ()
 
 if (BUILD_SHARED_LIBS)
   add_library(asl-shared $<TARGET_OBJECTS:asl-core>)
