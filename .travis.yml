@@ -1,5 +1,22 @@
 language: cpp
 
+env:
+  matrix:
+    - CMAKEFLAGS="-DBUILD=all"
+      PACKAGES="gfortran unixodbc-dev"
+      PPAS=""
+    - CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=Windows
+                  -DBUILD_SHARED_LIBS:BOOL=ON
+                  -DCMAKE_C_COMPILER=/opt/mingw64/bin/x86_64-w64-mingw32-gcc
+                  -DCMAKE_CXX_COMPILER=/opt/mingw64/bin/x86_64-w64-mingw32-g++
+                  -DCMAKE_RC_COMPILER=/opt/mingw64/bin/x86_64-w64-mingw32-windres
+                  -DCMAKE_FIND_ROOT_PATH=/opt/mingw64
+                  -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY
+                  -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY
+                  -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER"
+      PACKAGES="mingw64-x-gcc wine1.7"
+      PPAS="tobydox/mingw ubuntu-wine/ppa"
+
 # Install newer version of CMake as the one that comes preinstalled on
 # travis-ci doesn't support CMakeAddFortranSubdirectory.
 before_install:
@@ -7,10 +24,11 @@ before_install:
 
 install:
   - tar xzf cmake-2.8.12.2-Linux-i386.tar.gz
+  - for i in $PPAS; do sudo add-apt-repository ppa:$i -y; done
   - sudo apt-get update
-  - sudo apt-get install libc6:i386 gfortran unixodbc-dev
+  - sudo apt-get install libc6:i386 $PACKAGES
 
 script:
-  - cmake-2.8.12.2-Linux-i386/bin/cmake -DBUILD=all .
+  - cmake-2.8.12.2-Linux-i386/bin/cmake $CMAKEFLAGS .
   - make -j3
-  - make test
+  - ctest -V
