@@ -408,6 +408,7 @@ TEST(SolverTest, ProcessArgsWithouStub) {
 TEST(SolverTest, ProcessArgsError) {
   TestSolver s;
   Problem p;
+  std::string message;
   try {
     s.ProcessArgs(Args("testprogram", "nonexistent"), p);
   } catch (const fmt::SystemError &e) {
