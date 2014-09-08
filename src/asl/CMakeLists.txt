@@ -143,7 +143,7 @@ add_prefix(ASL_HEADERS solvers/
   asl.h asl_pfg.h asl_pfgh.h avltree.h funcadd.h getstub.h nlp.h nlp2.h psinfo.h
   opcode.hd r_opn.hd)
 
-add_library(asl aslbuilder.cc aslsolver.cc expr.cc problem.cc
+add_library(asl STATIC aslbuilder.cc aslsolver.cc expr.cc problem.cc
   ${ASL_HEADERS} $<TARGET_OBJECTS:asl-core>)
 target_include_directories(asl PUBLIC
   solvers ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
@@ -154,6 +154,12 @@ endif ()
 check_library_exists(dl dlopen "" HAVE_LIBDL)
 if (HAVE_LIBDL)
   target_link_libraries(asl dl)
+endif ()
+
+if (BUILD_SHARED_LIBS)
+  add_library(asl-shared $<TARGET_OBJECTS:asl-core>)
+  set_target_properties(asl-shared PROPERTIES OUTPUT_NAME asl)
+  target_link_libraries(asl-shared asl)
 endif ()
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
