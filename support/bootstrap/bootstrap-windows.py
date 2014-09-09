@@ -91,14 +91,16 @@ for bits in [32, 64]:
     shutil.rmtree(tempdir)
 
 # Copy optional dependencies.
-opt_dir = r'opt\win64'
+opt_dir = r'\vagrant\opt\win64'
 if os.path.exists(opt_dir):
   for entry in os.listdir(opt_dir):
     subdir = os.path.join(opt_dir, entry)
     for subentry in os.listdir(subdir):
       dest = os.path.join('C:\\', entry, subentry)
       if not os.path.exists(dest):
-        shutil.copytree(os.path.join(subdir, subentry), dest)
+        source = os.path.join(subdir, subentry)
+        print('Copying {} to {}'.format(source, dest))
+        shutil.copytree(source, dest)
 
 # Install pywin32 - buildbot dependency.
 if not module_exists('win32api'):
