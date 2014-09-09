@@ -26,3 +26,18 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(MATLAB DEFAULT_MSG MATLAB_MEX)
 
 mark_as_advanced(MATLAB_MEX)
+
+function (add_mex name)
+  cmake_parse_arguments(add_mex "" "" "COMPILE_FLAGS;LIBRARIES" ${ARGN})
+  set(filename ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name}.mexa64)
+  set(sources ${add_mex_UNPARSED_ARGUMENTS})
+  set(libs)
+  foreach (lib ${LIBRARIES})
+    set(libs ${libs} $<TARGET_FILE:${lib}>)
+  endforeach ()
+  add_custom_command(OUTPUT ${filename}
+    COMMAND ${MATLAB_MEX} ${add_mex_COMPILE_FLAGS}
+      ${sources} $<TARGET_FILE:asl> -output ${filename}
+    DEPENDS ${sources} ${add_mex_LIBRARIES})
+  add_custom_target(${name} ALL SOURCES ${filename})
+endfunction ()
