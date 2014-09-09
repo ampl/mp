@@ -21,7 +21,11 @@ class Downloader:
         opener.addheaders.append(('Cookie', cookie))
       num_tries = 2
       for i in range(num_tries):
-        f = opener.open(url)
+        try:
+          f = opener.open(url)
+        except urllib2.URLError, e:
+          print('Failed to open url', url)
+          continue
         length = f.headers.get('content-length')
         if not length:
           print('Failed to get content-length')
