@@ -136,6 +136,19 @@ else ()
   add_c_compiler_flags(asl-core -Wno-unused-result -Wno-parentheses)
 endif ()
 
+if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+  # Changing the floating point precision is not supported on x64.
+  target_compile_definitions(asl-core PRIVATE No_Control87)
+endif ()
+
+check_symbol_exists(strtoull stdlib.h HAVE_STRTOULL)
+if (NOT HAVE_STRTOULL)
+  check_symbol_exists(_strtoui64 stdlib.h HAVE_STRTOUI64)
+  if (HAVE_STRTOUI64)
+    target_compile_definitions(asl-core PRIVATE strtoull=_strtoui64)
+  endif ()
+endif ()
+
 # Public ASL headers.
 set(ASL_HEADERS aslbuilder.h aslsolver.h expr.h problem.h solver-c.h
   ${CMAKE_CURRENT_BINARY_DIR}/arith.h ${CMAKE_CURRENT_BINARY_DIR}/stdio1.h)
@@ -162,22 +175,9 @@ if (BUILD_SHARED_LIBS)
   target_link_libraries(asl-shared asl)
 endif ()
 
-if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-  # Changing the floating point precision is not supported on x64.
-  target_compile_definitions(asl PRIVATE No_Control87)
-endif ()
-
 check_symbol_exists(mkstemps stdlib.h HAVE_MKSTEMPS)
 if (HAVE_MKSTEMPS)
   target_compile_definitions(asl PRIVATE MP_HAVE_MKSTEMPS=1)
-endif ()
-
-check_symbol_exists(strtoull stdlib.h HAVE_STRTOULL)
-if (NOT HAVE_STRTOULL)
-  check_symbol_exists(_strtoui64 stdlib.h HAVE_STRTOUI64)
-  if (HAVE_STRTOUI64)
-    target_compile_definitions(asl-core PRIVATE strtoull=_strtoui64)
-  endif ()
 endif ()
 
 include(CheckFunctionExists)
