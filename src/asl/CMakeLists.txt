@@ -199,9 +199,28 @@ if (DL_LIBRARY)
   target_link_libraries(asl dl)
 endif ()
 
+function (add_mex name)
+  cmake_parse_arguments(add_mex "" "" "COMPILE_FLAGS;LIBRARIES" ${ARGN})
+  set(filename ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name}.mexa64)
+  set(sources ${add_mex_UNPARSED_ARGUMENTS})
+  set(libs)
+  foreach (lib ${LIBRARIES})
+    set(libs ${libs} $<TARGET_FILE:${lib}>)
+  endforeach ()
+  add_custom_command(OUTPUT ${filename}
+    COMMAND ${MATLAB_MEX} ${add_mex_COMPILE_FLAGS}
+      ${sources} $<TARGET_FILE:asl> -output ${filename}
+    DEPENDS ${sources} ${add_mex_LIBRARIES})
+  add_custom_target(${name} ALL SOURCES ${filename})
+endfunction ()
+
 find_package(MATLAB)
 if (MATLAB_FOUND)
-  # TODO: build amplfunc and spamfunc
+  set(solvers_dir ${CMAKE_CURRENT_SOURCE_DIR}/solvers)
+  add_mex(spamfunc
+    ${solvers_dir}/examples/spamfunc.c ${solvers_dir}/funcadd.c
+    LIBRARIES asl COMPILE_FLAGS -I${CMAKE_CURRENT_BINARY_DIR} -I${solvers_dir})
+  # TODO: build amplfunc
 endif ()
 
 add_ampl_library(simpbit PRIVATE tables/simpbit.c)
