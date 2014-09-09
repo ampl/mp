@@ -199,6 +199,11 @@ if (DL_LIBRARY)
   target_link_libraries(asl dl)
 endif ()
 
+find_package(MATLAB)
+if (MATLAB_FOUND)
+  # TODO: build amplfunc and spamfunc
+endif ()
+
 add_ampl_library(simpbit PRIVATE tables/simpbit.c)
 add_ampl_library(fullbit PRIVATE tables/fullbit.c)
 
