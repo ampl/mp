@@ -93,9 +93,6 @@ function(add_ampl_solver name)
     set(sources ${source_names})
     set(dir )
   endif ()
-  if (use_dll_runtime)
-    set(sources ${sources} ${PROJECT_SOURCE_DIR}/solvers/util/util-all.cc)
-  endif ()
 
   # Add a solver static library to be linked with the shared library and
   # the exectuable.
