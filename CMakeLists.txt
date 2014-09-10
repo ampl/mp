@@ -186,6 +186,17 @@ function (add_mp_library name)
   endforeach ()
 endfunction ()
 
+# Link target with libraries built with dynamic runtime.
+function (target_link_libraries_dynrt target)
+  foreach (lib ${ARGN})
+    if (TARGET ${lib}-dynrt)
+      target_link_libraries(${target} ${lib}-dynrt)
+    else ()
+      target_link_libraries(${target} ${lib})
+    endif ()
+  endforeach ()
+endfunction ()
+
 add_mp_library(format OBJECT
   include/mp/format.h include/mp/posix.h src/format.cc src/posix.cc)
 
