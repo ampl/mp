@@ -151,9 +151,32 @@ endif ()
 set(MP_DATE 20140617)
 set(MP_SYSINFO "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 
-set(MP_FORMAT_SOURCES
+function (add_mp_library name)
+  cmake_parse_arguments(add_mp_library
+    OBJECT "" "COMPILE_DEFINITIONS;INCLUDE_DIRECTORIES;OBJECT_LIBRARIES" ${ARGN})
+  set(objects)
+  set(dynrt-objects)
+  foreach (lib ${add_mp_library_OBJECT_LIBRARIES})
+    set(objects ${objects} $<TARGET_OBJECTS:${lib}>)
+    set(dynrt-objects ${dynrt-objects} $<TARGET_OBJECTS:${lib}-dynrt>)
+  endforeach ()
+  set(libtype STATIC)
+  if (add_mp_library_OBJECT)
+    set(libtype OBJECT)
+  endif ()
+  add_library(${name} ${libtype} ${add_mp_library_UNPARSED_ARGUMENTS} ${objects})
+  target_compile_definitions(${name} PRIVATE ${add_mp_library_COMPILE_DEFINITIONS})
+  target_include_directories(${name} PRIVATE ${add_mp_library_INCLUDE_DIRECTORIES})
+  if (MSVC)
+    add_library(${name}-dynrt ${libtype} EXCLUDE_FROM_ALL
+      ${add_mp_library_UNPARSED_ARGUMENTS} ${dynrt-objects})
+    target_compile_definitions(${name}-dynrt PRIVATE ${add_mp_library_COMPILE_DEFINITIONS})
+    target_include_directories(${name}-dynrt PRIVATE ${add_mp_library_INCLUDE_DIRECTORIES})
+  endif ()
+endfunction ()
+
+add_mp_library(format OBJECT
   include/mp/format.h include/mp/posix.h src/format.cc src/posix.cc)
-add_library(format OBJECT ${MP_FORMAT_SOURCES})
 
 set(MP_EXPR_INFO_FILE ${MP_BINARY_DIR}/src/expr-info.cc)
 add_executable(gen-expr-info src/gen-expr-info.cc $<TARGET_OBJECTS:format>)
@@ -175,16 +198,10 @@ add_prefix(MP_HEADERS include/mp/
 set(MP_SOURCES )
 add_prefix(MP_SOURCES src/
   clock.cc nl.cc os.cc precedence.h rstparser.cc solver.cc)
-add_library(mp STATIC ${MP_HEADERS} ${MP_SOURCES}
-  ${MP_EXPR_INFO_FILE} $<TARGET_OBJECTS:format>)
-target_compile_definitions(mp PRIVATE
-  MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}")
-target_include_directories(mp PRIVATE src)
 
-if (MSVC)
-  add_library(mp-dynrt STATIC EXCLUDE_FROM_ALL ${MP_HEADERS} ${MP_SOURCES}
-    ${MP_EXPR_INFO_FILE} ${MP_FORMAT_SOURCES})
-endif ()
+add_mp_library(mp ${MP_HEADERS} ${MP_SOURCES} ${MP_EXPR_INFO_FILE}
+  COMPILE_DEFINITIONS MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}"
+  INCLUDE_DIRECTORIES src OBJECT_LIBRARIES format)
 
 include(CheckCXXSourceCompiles)
 check_cxx_source_compiles(
