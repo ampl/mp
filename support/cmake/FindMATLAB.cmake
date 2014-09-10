@@ -23,12 +23,14 @@ else ()
     set(MATLAB_MEX_SUFFIX w64)
   endif ()
   set(MATLAB_DIR "${PROGRAM_FILES_DIR}/MATLAB")
+  set(MEX_EXT .bat)
 endif ()
 
 file(GLOB MATLAB_DIRS "${MATLAB_DIR}/*")
 message("MATLAB directory: ${MATLAB_DIRS}")
 
-find_program(MATLAB_MEX mex PATHS ${MATLAB_DIRS} PATH_SUFFIXES bin NO_DEFAULT_PATH)
+find_program(MATLAB_MEX mex${MEX_EXT}
+  PATHS ${MATLAB_DIRS} PATH_SUFFIXES bin NO_DEFAULT_PATH)
 
 include(FindPackageHandleStandardArgs)
 # Handle the QUIETLY and REQUIRED arguments and set MATLAB_FOUND to TRUE
