@@ -151,8 +151,9 @@ endif ()
 set(MP_DATE 20140617)
 set(MP_SYSINFO "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 
-add_library(format OBJECT
+set(MP_FORMAT_SOURCES
   include/mp/format.h include/mp/posix.h src/format.cc src/posix.cc)
+add_library(format OBJECT ${MP_FORMAT_SOURCES})
 
 set(MP_EXPR_INFO_FILE ${MP_BINARY_DIR}/src/expr-info.cc)
 add_executable(gen-expr-info src/gen-expr-info.cc $<TARGET_OBJECTS:format>)
@@ -179,6 +180,11 @@ add_library(mp STATIC ${MP_HEADERS} ${MP_SOURCES}
 target_compile_definitions(mp PRIVATE
   MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}")
 target_include_directories(mp PRIVATE src)
+
+if (MSVC)
+  add_library(mp-dynrt STATIC EXCLUDE_FROM_ALL ${MP_HEADERS} ${MP_SOURCES}
+    ${MP_EXPR_INFO_FILE} ${MP_FORMAT_SOURCES})
+endif ()
 
 include(CheckCXXSourceCompiles)
 check_cxx_source_compiles(

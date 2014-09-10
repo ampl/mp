@@ -177,6 +177,7 @@ if (MSVC)
     ${ASL_SOURCES} ${ASL_HEADERS} ${ASL_CORE_SOURCES})
   target_compile_options(asl-dynrt PUBLIC /MD)
   target_include_directories(asl-dynrt PUBLIC ${ASL_INCLUDE_DIRS})
+  target_link_libraries(asl-dynrt mp-dynrt)
   set(MP_MATLAB_ASL asl-dynrt)
 endif ()
 
