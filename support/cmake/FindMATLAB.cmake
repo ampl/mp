@@ -26,6 +26,7 @@ else ()
 endif ()
 
 file(GLOB MATLAB_DIRS "${MATLAB_DIR}/*")
+message("MATLAB directory: ${MATLAB_DIRS}")
 
 find_program(MATLAB_MEX mex PATHS ${MATLAB_DIRS} PATH_SUFFIXES bin NO_DEFAULT_PATH)
 
