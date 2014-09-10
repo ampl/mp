@@ -153,13 +153,15 @@ set(MP_SYSINFO "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 
 function (add_mp_library name)
   cmake_parse_arguments(add_mp_library
-    OBJECT "" "COMPILE_DEFINITIONS;INCLUDE_DIRECTORIES;OBJECT_LIBRARIES" ${ARGN})
+    OBJECT "" "COMPILE_DEFINITIONS;INCLUDE_DIRECTORIES;LIBRARIES;OBJECT_LIBRARIES" ${ARGN})
+  # Get object files.
   set(objects)
   set(dynrt-objects)
   foreach (lib ${add_mp_library_OBJECT_LIBRARIES})
     set(objects ${objects} $<TARGET_OBJECTS:${lib}>)
     set(dynrt-objects ${dynrt-objects} $<TARGET_OBJECTS:${lib}-dynrt>)
   endforeach ()
+  # Add library.
   set(libtype STATIC)
   if (add_mp_library_OBJECT)
     set(libtype OBJECT)
@@ -167,6 +169,7 @@ function (add_mp_library name)
   add_library(${name} ${libtype} ${add_mp_library_UNPARSED_ARGUMENTS} ${objects})
   target_compile_definitions(${name} PRIVATE ${add_mp_library_COMPILE_DEFINITIONS})
   target_include_directories(${name} PUBLIC ${add_mp_library_INCLUDE_DIRECTORIES})
+  # Add library linked with dynamic runtime.
   if (MSVC)
     add_library(${name}-dynrt ${libtype} EXCLUDE_FROM_ALL
       ${add_mp_library_UNPARSED_ARGUMENTS} ${dynrt-objects})
@@ -174,6 +177,13 @@ function (add_mp_library name)
     target_compile_definitions(${name}-dynrt PRIVATE ${add_mp_library_COMPILE_DEFINITIONS})
     target_include_directories(${name}-dynrt PUBLIC ${add_mp_library_INCLUDE_DIRECTORIES})
   endif ()
+  # Link libraries.
+  foreach (lib ${add_mp_library_LIBRARIES})
+    target_link_libraries(${name} ${lib})
+    if (MSVC)
+      target_link_libraries(${name}-dynrt ${lib}-dynrt)
+    endif ()
+  endforeach ()
 endfunction ()
 
 add_mp_library(format OBJECT

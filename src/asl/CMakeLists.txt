@@ -125,29 +125,30 @@ if (NOT HAVE_MKSTEMPS)
   set(ASL_CORE_SOURCES ${ASL_CORE_SOURCES} mkstemps.c)
 endif ()
 
-# Compile C sources separately to be able to specify compile options.
-add_library(asl-core OBJECT ${ASL_CORE_SOURCES})
-target_include_directories(asl-core PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-
-# Suppress warnings.
-if (MSVC)
-  target_compile_options(asl-core PRIVATE /wd4244 /wd4267)
-else ()
-  add_c_compiler_flags(asl-core -Wno-unused-result -Wno-parentheses)
-endif ()
-
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
   # Changing the floating point precision is not supported on x64.
-  target_compile_definitions(asl-core PRIVATE No_Control87)
+  set(ASL_COMPILE_DEFINITIONS No_Control87)
 endif ()
 
 check_symbol_exists(strtoull stdlib.h HAVE_STRTOULL)
 if (NOT HAVE_STRTOULL)
   check_symbol_exists(_strtoui64 stdlib.h HAVE_STRTOUI64)
   if (HAVE_STRTOUI64)
-    target_compile_definitions(asl-core PRIVATE strtoull=_strtoui64)
+    set(ASL_COMPILE_DEFINTIONS ${ASL_COMPILE_DEFINTIONS} strtoull=_strtoui64)
     set(MP_MEX_OPTIONS "-Dstrtoull=_strtoui64")
   endif ()
+endif ()
+
+# Compile C sources separately to be able to specify compile options.
+add_mp_library(asl-core OBJECT ${ASL_CORE_SOURCES}
+  COMPILE_DEFINITIONS ${ASL_COMPILE_DEFINITIONS}
+  INCLUDE_DIRECTORIES ${CMAKE_CURRENT_BINARY_DIR})
+
+# Suppress warnings.
+if (MSVC)
+  target_compile_options(asl-core PRIVATE /wd4244 /wd4267)
+else ()
+  add_c_compiler_flags(asl-core -Wno-unused-result -Wno-parentheses)
 endif ()
 
 # Public ASL headers.
@@ -158,28 +159,16 @@ add_prefix(ASL_HEADERS solvers/
   opcode.hd r_opn.hd)
 set(ASL_SOURCES aslbuilder.cc aslsolver.cc expr.cc problem.cc)
 
-add_library(asl STATIC ${ASL_SOURCES} ${ASL_HEADERS} $<TARGET_OBJECTS:asl-core>)
-set(ASL_INCLUDE_DIRS solvers ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
-target_include_directories(asl PUBLIC ${ASL_INCLUDE_DIRS})
-target_link_libraries(asl mp)
+add_mp_library(asl
+  ${ASL_SOURCES} ${ASL_HEADERS} OBJECT_LIBRARIES asl-core LIBRARIES mp
+  INCLUDE_DIRECTORIES solvers ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
+
 if (NOT WIN32)
   target_link_libraries(asl m)
 endif ()
 check_library_exists(dl dlopen "" HAVE_LIBDL)
 if (HAVE_LIBDL)
   target_link_libraries(asl dl)
-endif ()
-
-# Adds asl-dynrt, a version of asl built with dynamic runtime.
-# This is required by the IlogCP solver.
-set(MP_MATLAB_ASL asl)
-if (MSVC)
-  add_library(asl-dynrt EXCLUDE_FROM_ALL
-    ${ASL_SOURCES} ${ASL_HEADERS} ${ASL_CORE_SOURCES})
-  target_compile_options(asl-dynrt PUBLIC /MD)
-  target_include_directories(asl-dynrt PUBLIC ${ASL_INCLUDE_DIRS})
-  target_link_libraries(asl-dynrt mp-dynrt)
-  set(MP_MATLAB_ASL asl-dynrt)
 endif ()
 
 if (BUILD_SHARED_LIBS)
@@ -214,12 +203,16 @@ endif ()
 
 find_package(MATLAB)
 if (MATLAB_FOUND)
+  set(matlab_asl asl)
+  if (MSVC)
+    set(matlab_asl asl-dynrt)
+  endif ()
   set(solvers_dir ${CMAKE_CURRENT_SOURCE_DIR}/solvers)
   foreach (name amplfunc spamfunc)
     add_mex(${name}
       ${solvers_dir}/examples/${name}.c ${solvers_dir}/funcadd.c
       COMPILE_FLAGS -I${CMAKE_CURRENT_BINARY_DIR} -I${solvers_dir} ${MP_MEX_OPTIONS}
-      LIBRARIES ${MP_MATLAB_ASL})
+      LIBRARIES ${matlab_asl})
   endforeach ()
 endif ()
 
