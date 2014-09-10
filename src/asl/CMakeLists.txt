@@ -205,7 +205,8 @@ if (MATLAB_FOUND)
   foreach (name amplfunc spamfunc)
     add_mex(${name}
       ${solvers_dir}/examples/${name}.c ${solvers_dir}/funcadd.c
-      LIBRARIES asl COMPILE_FLAGS -I${CMAKE_CURRENT_BINARY_DIR} -I${solvers_dir})
+      COMPILE_FLAGS -I${CMAKE_CURRENT_BINARY_DIR} -I${solvers_dir}
+      LIBRARIES asl)
   endforeach ()
 endif ()
 
