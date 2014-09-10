@@ -497,6 +497,7 @@ class NLReader {
     int num_args = reader_.ReadUInt();
     if (num_args < min_args)
       reader_.ReportError("too few arguments");
+    return num_args;
   }
 
   Variable DoReadVariable() {
