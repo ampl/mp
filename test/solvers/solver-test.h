@@ -64,6 +64,12 @@ struct SolverTestParam {
   : create_solver(cs), features(features) {}
 };
 
+// Define a dummy operator<< because otherwise GTest produces uninitialized
+// memory access under valgrind when trying to format SolverTestParam.
+inline std::ostream &operator<<(std::ostream &os, const SolverTestParam &) {
+  return os << "[SolverTestParam]";
+}
+
 // Abstract solver test.
 class SolverTest
     : public ::testing::TestWithParam<SolverTestParam>,
