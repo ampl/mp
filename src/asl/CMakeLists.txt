@@ -24,9 +24,9 @@ if (NOT MSVC)
   target_compile_options(arithchk PUBLIC -Wno-format-security)
 endif ()
 
-set(ASL_SOURCES
+set(ASL_CORE_SOURCES
   ${CMAKE_CURRENT_BINARY_DIR}/details.c ${CMAKE_CURRENT_BINARY_DIR}/arith.h)
-add_prefix(ASL_SOURCES solvers/
+add_prefix(ASL_CORE_SOURCES solvers/
   errchk.h
   jac2dim.h
   jacpdim.h
@@ -122,11 +122,11 @@ include(CheckLibraryExists)
 
 check_symbol_exists(mkstemps stdlib.h HAVE_MKSTEMPS)
 if (NOT HAVE_MKSTEMPS)
-  set(ASL_SOURCES ${ASL_SOURCES} mkstemps.c)
+  set(ASL_CORE_SOURCES ${ASL_CORE_SOURCES} mkstemps.c)
 endif ()
 
 # Compile C sources separately to be able to specify compile options.
-add_library(asl-core OBJECT ${ASL_SOURCES})
+add_library(asl-core OBJECT ${ASL_CORE_SOURCES})
 target_include_directories(asl-core PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 # Suppress warnings.
@@ -155,9 +155,9 @@ set(ASL_HEADERS aslbuilder.h aslsolver.h expr.h problem.h solver-c.h
 add_prefix(ASL_HEADERS solvers/
   asl.h asl_pfg.h asl_pfgh.h avltree.h funcadd.h getstub.h nlp.h nlp2.h psinfo.h
   opcode.hd r_opn.hd)
+set(ASL_SOURCES aslbuilder.cc aslsolver.cc expr.cc problem.cc)
 
-add_library(asl STATIC aslbuilder.cc aslsolver.cc expr.cc problem.cc
-  ${ASL_HEADERS} $<TARGET_OBJECTS:asl-core>)
+add_library(asl STATIC ${ASL_SOURCES} ${ASL_HEADERS} $<TARGET_OBJECTS:asl-core>)
 target_include_directories(asl PUBLIC
   solvers ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(asl mp)
@@ -168,6 +168,15 @@ check_library_exists(dl dlopen "" HAVE_LIBDL)
 if (HAVE_LIBDL)
   target_link_libraries(asl dl)
 endif ()
+
+# Adds asl-dynrt, a version of asl built with dynamic runtime.
+# This is required by the IlogCP solver.
+function (add_asl_dynrt)
+  if (MSVC AND NOT TARGET asl-dynrt)
+    add_library(asl-dynrt ${ASL_SOURCES} ${ASL_HEADERS} ${ASL_CORE_SOURCES})
+    target_compile_options(asl-dynrt PUBLIC /MD)
+  endif ()
+endfunction ()
 
 if (BUILD_SHARED_LIBS)
   add_library(asl-shared $<TARGET_OBJECTS:asl-core>)
