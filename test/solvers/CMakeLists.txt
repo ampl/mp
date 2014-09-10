@@ -13,9 +13,9 @@ if (TARGET ilogcp)
   include_directories(${PROJECT_SOURCE_DIR}/thirdparty/gtest)
   # Include the gtest source in test instead of linking with the library to
   # avoid a problem when gtest is built with a different runtime than ilogcp.
-  add_prefix(ILOGCP_TEST_SRC ../ ${GTEST_SRC} ${SOLVER_TEST_SRC})
-  add_executable(ilogcp-test ilogcp-test.cc)
-  target_link_libraries(ilogcp-test amplilogcp-static solver-test)
+  add_prefix(ILOGCP_TEST_SRC ../ ${GTEST_SRC})
+  add_executable(ilogcp-test ilogcp-test.cc ${ILOGCP_TEST_SRC} ${SOLVER_TEST_SRC})
+  target_link_libraries(ilogcp-test amplilogcp-static)
   add_test(NAME ilogcp-test COMMAND $<TARGET_FILE:ilogcp-test>)
 endif ()
 

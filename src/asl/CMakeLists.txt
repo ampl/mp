@@ -146,6 +146,7 @@ if (NOT HAVE_STRTOULL)
   check_symbol_exists(_strtoui64 stdlib.h HAVE_STRTOUI64)
   if (HAVE_STRTOUI64)
     target_compile_definitions(asl-core PRIVATE strtoull=_strtoui64)
+    set(MP_MEX_OPTIONS "-Dstrtoull=_strtoui64")
   endif ()
 endif ()
 
@@ -217,7 +218,7 @@ if (MATLAB_FOUND)
   foreach (name amplfunc spamfunc)
     add_mex(${name}
       ${solvers_dir}/examples/${name}.c ${solvers_dir}/funcadd.c
-      COMPILE_FLAGS -I${CMAKE_CURRENT_BINARY_DIR} -I${solvers_dir}
+      COMPILE_FLAGS -I${CMAKE_CURRENT_BINARY_DIR} -I${solvers_dir} ${MP_MEX_OPTIONS}
       LIBRARIES ${MP_MATLAB_ASL})
   endforeach ()
 endif ()
