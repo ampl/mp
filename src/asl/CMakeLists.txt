@@ -202,10 +202,11 @@ endif ()
 find_package(MATLAB)
 if (MATLAB_FOUND)
   set(solvers_dir ${CMAKE_CURRENT_SOURCE_DIR}/solvers)
-  add_mex(spamfunc
-    ${solvers_dir}/examples/spamfunc.c ${solvers_dir}/funcadd.c
-    LIBRARIES asl COMPILE_FLAGS -I${CMAKE_CURRENT_BINARY_DIR} -I${solvers_dir})
-  # TODO: build amplfunc
+  foreach (name amplfunc spamfunc)
+    add_mex(${name}
+      ${solvers_dir}/examples/${name}.c ${solvers_dir}/funcadd.c
+      LIBRARIES asl COMPILE_FLAGS -I${CMAKE_CURRENT_BINARY_DIR} -I${solvers_dir})
+  endforeach ()
 endif ()
 
 add_ampl_library(simpbit PRIVATE tables/simpbit.c)
