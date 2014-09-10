@@ -66,13 +66,14 @@ THIS SOFTWARE.
 
 #include "mex.h"
 #undef printf
-#include "asl_pfgh.h"
 
 #ifdef _WIN32
 /* Omit sw "signal" catching and x86 precision adjustment. */
 #define ASL_NO_FP_INIT
 #include "fpinit.c"
 #endif /* _WIN32 */
+
+#include "asl_pfgh.h"
 
 static char msgbuf[256];
 
