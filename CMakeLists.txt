@@ -170,6 +170,7 @@ function (add_mp_library name)
   if (MSVC)
     add_library(${name}-dynrt ${libtype} EXCLUDE_FROM_ALL
       ${add_mp_library_UNPARSED_ARGUMENTS} ${dynrt-objects})
+    target_compile_options(${name}-dynrt PUBLIC /MD)
     target_compile_definitions(${name}-dynrt PRIVATE ${add_mp_library_COMPILE_DEFINITIONS})
     target_include_directories(${name}-dynrt PRIVATE ${add_mp_library_INCLUDE_DIRECTORIES})
   endif ()
