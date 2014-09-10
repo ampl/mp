@@ -171,10 +171,12 @@ endif ()
 
 # Adds asl-dynrt, a version of asl built with dynamic runtime.
 # This is required by the IlogCP solver.
+set(MP_MATLAB_ASL asl)
 if (MSVC)
   add_library(asl-dynrt EXCLUDE_FROM_ALL
     ${ASL_SOURCES} ${ASL_HEADERS} ${ASL_CORE_SOURCES})
   target_compile_options(asl-dynrt PUBLIC /MD)
+  set(MP_MATLAB_ASL asl-dynrt)
 endif ()
 
 if (BUILD_SHARED_LIBS)
@@ -214,7 +216,7 @@ if (MATLAB_FOUND)
     add_mex(${name}
       ${solvers_dir}/examples/${name}.c ${solvers_dir}/funcadd.c
       COMPILE_FLAGS -I${CMAKE_CURRENT_BINARY_DIR} -I${solvers_dir}
-      LIBRARIES asl)
+      LIBRARIES ${MP_MATLAB_ASL})
   endforeach ()
 endif ()
 
