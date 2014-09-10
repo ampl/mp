@@ -71,6 +71,7 @@ THIS SOFTWARE.
 #ifdef _WIN32
 /* Omit sw "signal" catching and x86 precision adjustment. */
 #define ASL_NO_FP_INIT
+#undef Long
 #include "fpinit.c"
 #endif /* _WIN32 */
 
