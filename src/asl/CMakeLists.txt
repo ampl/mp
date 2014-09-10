@@ -171,12 +171,11 @@ endif ()
 
 # Adds asl-dynrt, a version of asl built with dynamic runtime.
 # This is required by the IlogCP solver.
-function (add_asl_dynrt)
-  if (MSVC AND NOT TARGET asl-dynrt)
-    add_library(asl-dynrt ${ASL_SOURCES} ${ASL_HEADERS} ${ASL_CORE_SOURCES})
-    target_compile_options(asl-dynrt PUBLIC /MD)
-  endif ()
-endfunction ()
+if (MSVC)
+  add_library(asl-dynrt EXCLUDE_FORM_ALL
+    ${ASL_SOURCES} ${ASL_HEADERS} ${ASL_CORE_SOURCES})
+  target_compile_options(asl-dynrt PUBLIC /MD)
+endif ()
 
 if (BUILD_SHARED_LIBS)
   add_library(asl-shared $<TARGET_OBJECTS:asl-core>)

@@ -104,7 +104,6 @@ function(add_ampl_solver name)
   target_compile_options(${static_lib} PUBLIC ${definitions})
 
   if (use_dll_runtime)
-    add_asl_dynrt()
     target_link_libraries(${static_lib} PUBLIC asl-dynrt)
   else ()
     target_link_libraries(${static_lib} PUBLIC asl)
