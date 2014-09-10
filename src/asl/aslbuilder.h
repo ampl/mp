@@ -189,15 +189,12 @@ class ASLBuilder {
 
    public:
     LinearExprHandler(ASLBuilder *b, Grad **term) : builder_(b), term_(term) {}
-    ~LinearExprHandler() {
-      if (term_)
-        *term_ = 0;
-    }
 
     void AddTerm(int var_index, double coef) {
       Grad *og = builder_->Allocate<Grad>();
       *term_ = og;
       term_ = &og->next;
+      og->next = 0;
       og->varno = var_index;
       og->coef = coef;
     }
