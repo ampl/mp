@@ -329,10 +329,45 @@ class ASLBuilder {
     return MakeCall(f, args);
   }
 
+  template <typename Arg>
+  class ArgHandler {
+   private:
+    ::expr *expr_;
+    int arg_index_;
+
+    friend class ASLBuilder;
+
+    ArgHandler(::expr *e) : expr_(e), arg_index_(0) {}
+
+   public:
+    void AddArg(Arg arg) { expr_->L.ep[arg_index_++] = arg.expr_; }
+  };
+
+  typedef ArgHandler<LogicalExpr> LogicalArgHandler;
+  typedef ArgHandler<NumericExpr> NumericArgHandler;
+
+  NumericArgHandler BeginVarArg(expr::Kind kind, int num_args) {
+    return NumericArgHandler(
+          MakeIterated(kind, ArrayRef<NumericExpr>(0, num_args)));
+  }
+
+  VarArgExpr EndVarArg(NumericArgHandler handler) {
+    return Expr::Create<VarArgExpr>(handler.expr_);
+  }
+
   VarArgExpr MakeVarArg(expr::Kind kind, ArrayRef<NumericExpr> args);
 
   SumExpr MakeSum(ArrayRef<NumericExpr> args) {
     return MakeIterated<SumExpr>(expr::SUM, args);
+  }
+
+  LogicalArgHandler BeginCount(int num_args) {
+    return LogicalArgHandler(
+          MakeIterated(expr::COUNT, ArrayRef<LogicalExpr>(0, num_args)));
+  }
+
+  CountExpr EndCount(LogicalArgHandler handler) {
+    return Expr::Create<CountExpr>(handler.expr_);
   }
 
   CountExpr MakeCount(ArrayRef<LogicalExpr> args) {

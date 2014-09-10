@@ -258,6 +258,9 @@ class ArrayRef {
   template <typename U>
   ArrayRef(ArrayRef<U> other) : data_(other.data()), size_(other.size()) {}
 
+  template <typename Vector>
+  ArrayRef(const Vector &other) : data_(other.data()), size_(other.size()) {}
+
   template <std::size_t SIZE>
   ArrayRef(const T (&data)[SIZE]) : data_(data), size_(SIZE) {}
 

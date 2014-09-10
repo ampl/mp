@@ -174,9 +174,11 @@ void ASLBuilder::SetObjOrCon(
   e->op = reinterpret_cast<efunc*>(opcode(kind));
   e->L.ep = reinterpret_cast< ::expr**>(&e->dR);
   e->R.ep = e->L.ep + num_args;
-  ::expr **arg_ptrs = e->L.ep;
-  for (int i = 0; i < num_args; ++i)
-    arg_ptrs[i] = args[i].expr_;
+  if (args.data()) {
+    ::expr **arg_ptrs = e->L.ep;
+    for (int i = 0; i < num_args; ++i)
+      arg_ptrs[i] = args[i].expr_;
+  }
   return e;
 }
 

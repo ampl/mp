@@ -50,7 +50,7 @@ extern "C" {
 }
 
 #include "solver-test.h"
-#include "../util.h"
+#include "../gtest-extra.h"
 
 using mp::Expr;
 using mp::NumericExpr;

@@ -26,6 +26,7 @@
 #include <gtest/gtest.h>
 #include "mp/nl.h"
 #include "util.h"
+#include "gtest-extra.h"
 
 using mp::NLHeader;
 using mp::ReadError;
@@ -555,16 +556,34 @@ class TestNLHandler {
     return w.str();
   }
 
-  std::string MakeVarArg(expr::Kind kind, mp::ArrayRef<std::string> args) {
-    return MakeVarArg(fmt::format("v{}", opcode(kind)), args);
+  class ArgHandler {
+   private:
+    std::string name_;
+    std::vector<std::string> args_;
+    friend class TestNLHandler;
+
+   public:
+    explicit ArgHandler(std::string name) : name_(name) {}
+    void AddArg(std::string arg) { args_.push_back(arg); }
+  };
+
+  typedef ArgHandler NumericArgHandler;
+  typedef ArgHandler LogicalArgHandler;
+
+  ArgHandler BeginVarArg(expr::Kind kind, int) {
+    return ArgHandler(fmt::format("v{}", opcode(kind)));
+  }
+  std::string EndVarArg(ArgHandler h) {
+    return MakeVarArg(h.name_, h.args_);
   }
 
   std::string MakeSum(mp::ArrayRef<std::string> args) {
     return MakeVarArg("sum", args);
   }
 
-  std::string MakeCount(mp::ArrayRef<std::string> args) {
-    return MakeVarArg("count", args);
+  ArgHandler BeginCount(int) { return ArgHandler("count"); }
+  std::string EndCount(ArgHandler h) {
+    return MakeVarArg(h.name_, h.args_);
   }
 
   std::string MakeNumberOf(mp::ArrayRef<std::string> args) {
@@ -739,7 +758,18 @@ struct TestNLHandler2 {
     return TestNumericExpr();
   }
 
-  TestNumericExpr MakeVarArg(int, mp::ArrayRef<TestNumericExpr>) {
+  struct NumericArgHandler {
+    void AddArg(NumericExpr) {}
+  };
+
+  struct LogicalArgHandler {
+    void AddArg(LogicalExpr) {}
+  };
+
+  NumericArgHandler BeginVarArg(expr::Kind, int) {
+    return NumericArgHandler();
+  }
+  TestNumericExpr EndVarArg(NumericArgHandler) {
     return TestNumericExpr();
   }
 
@@ -747,9 +777,8 @@ struct TestNLHandler2 {
     return TestNumericExpr();
   }
 
-  TestCountExpr MakeCount(mp::ArrayRef<TestLogicalExpr>) {
-    return TestCountExpr();
-  }
+  LogicalArgHandler BeginCount(int) { return LogicalArgHandler(); }
+  TestCountExpr EndCount(LogicalArgHandler) { return TestCountExpr(); }
 
   TestNumericExpr MakeNumberOf(mp::ArrayRef<TestNumericExpr>) {
     return TestNumericExpr();

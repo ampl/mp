@@ -26,7 +26,6 @@
 #include "mp/error.h"
 #include "mp/os.h"
 #include "mp/problem-base.h"
-#include "mp/safeint.h"
 
 #include <cctype>
 #include <cstdlib>
@@ -34,6 +33,8 @@
 #include <string>
 
 namespace mp {
+
+using fmt::internal::MakeUnsigned;
 
 // A read error with location information.
 class ReadError : public Error {
@@ -462,10 +463,6 @@ class NLReader {
   Handler &handler_;
   int total_num_vars_;  // Total number of variables including defined ones.
 
-  // Minimum number of arguments for an iterated expression that has a
-  // binary counterpart. Examples: sum (+), forall (&&), exists (||).
-  enum {MIN_ITER_ARGS = 3};
-
   typedef typename Handler::NumericExpr NumericExpr;
   typedef typename Handler::LogicalExpr LogicalExpr;
   typedef typename Handler::Variable Variable;
@@ -492,6 +489,16 @@ class NLReader {
     return value;
   }
 
+  // Minimum number of arguments for an iterated expression that has a
+  // binary counterpart. Examples: sum (+), forall (&&), exists (||).
+  enum {MIN_ITER_ARGS = 3};
+
+  int ReadNumArgs(int min_args = MIN_ITER_ARGS) {
+    int num_args = reader_.ReadUInt();
+    if (num_args < min_args)
+      reader_.ReportError("too few arguments");
+  }
+
   Variable DoReadVariable() {
     int var_index = ReadUInt(total_num_vars_);
     reader_.ReadTillEndOfLine();
@@ -504,8 +511,19 @@ class NLReader {
     return DoReadVariable();
   }
 
+  template <typename ExprReader, typename ArgHandler>
+  void DoReadArgs(int num_args, ArgHandler &arg_handler) {
+    reader_.ReadTillEndOfLine();
+    ExprReader expr_reader;
+    for (int i = 0; i < num_args; ++i)
+      arg_handler.AddArg(expr_reader.Read(*this));
+  }
+
   typename Handler::CountExpr ReadCountExpr() {
-    return handler_.MakeCount(ReadArgs<LogicalExprReader>(*this, 1));
+    int num_args = ReadNumArgs();
+    typename Handler::LogicalArgHandler args = handler_.BeginCount(num_args);
+    DoReadArgs<LogicalExprReader>(num_args, args);
+    return handler_.EndCount(args);
   }
 
   // Helper structs to provide a uniform interface to Read{Numeric,Logical}Expr
@@ -534,11 +552,11 @@ class NLReader {
     }
   };
 
+  // TODO: remove
   template <typename ExprReader = NumericExprReader>
   class ReadArgs {
    private:
     typedef typename ExprReader::Expr Expr;
-    // TODO: pass arguments directly to handler
     fmt::internal::Array<Expr, 10> args_;
 
    public:
@@ -778,8 +796,13 @@ typename Handler::NumericExpr
     return handler_.MakePiecewiseLinear(
           num_slopes - 1, &breakpoints[0], &slopes[0], ReadVariable());
   }
-  case expr::FIRST_VARARG:
-    return handler_.MakeVarArg(kind, ReadArgs<>(*this, 1));
+  case expr::FIRST_VARARG: {
+    int num_args = ReadNumArgs(1);
+    typename Handler::NumericArgHandler args =
+        handler_.BeginVarArg(kind, num_args);
+    DoReadArgs<NumericExprReader>(num_args, args);
+    return handler_.EndVarArg(args);
+  }
   case expr::SUM:
     return handler_.MakeSum(ReadArgs<>(*this));
   case expr::COUNT:

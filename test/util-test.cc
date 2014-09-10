@@ -24,6 +24,7 @@
 #include "mp/error.h"
 #include "mp/os.h"
 #include "util.h"
+#include "gtest-extra.h"
 #include <string>
 
 namespace {
