@@ -43,7 +43,7 @@ function (add_mex name)
   set(filename ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name}.mex${MATLAB_MEX_SUFFIX})
   set(sources ${add_mex_UNPARSED_ARGUMENTS})
   set(libs)
-  foreach (lib ${LIBRARIES})
+  foreach (lib ${add_mex_LIBRARIES})
     set(libs ${libs} $<TARGET_FILE:${lib}>)
   endforeach ()
   add_custom_command(OUTPUT ${filename}
