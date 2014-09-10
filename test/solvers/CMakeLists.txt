@@ -1,4 +1,5 @@
-add_library(solver-test STATIC ../args.cc solver-test.cc)
+set(SOLVER_TEST_SRC ../args.cc solver-test.cc)
+add_mp_library(solver-test STATIC ${SOLVER_TEST_SRC})
 target_compile_definitions(solver-test
   PUBLIC MP_TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test/data")
 target_link_libraries(solver-test asl gtest-extra)
@@ -12,8 +13,8 @@ if (TARGET ilogcp)
   include_directories(${PROJECT_SOURCE_DIR}/thirdparty/gtest)
   # Include the gtest source in test instead of linking with the library to
   # avoid a problem when gtest is built with a different runtime than ilogcp.
-  add_prefix(ILOGCP_TEST_SRC ../ ${GTEST_SRC})
-  add_executable(ilogcp-test ilogcp-test.cc ${ILOGCP_TEST_SRC})
+  add_prefix(ILOGCP_TEST_SRC ../ ${GTEST_SRC} ${SOLVER_TEST_SRC})
+  add_executable(ilogcp-test ilogcp-test.cc)
   target_link_libraries(ilogcp-test amplilogcp-static solver-test)
   add_test(NAME ilogcp-test COMMAND $<TARGET_FILE:ilogcp-test>)
 endif ()
