@@ -158,8 +158,8 @@ add_prefix(ASL_HEADERS solvers/
 set(ASL_SOURCES aslbuilder.cc aslsolver.cc expr.cc problem.cc)
 
 add_library(asl STATIC ${ASL_SOURCES} ${ASL_HEADERS} $<TARGET_OBJECTS:asl-core>)
-target_include_directories(asl PUBLIC
-  solvers ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
+set(ASL_INCLUDE_DIRS solvers ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(asl PUBLIC ${ASL_INCLUDE_DIRS})
 target_link_libraries(asl mp)
 if (NOT WIN32)
   target_link_libraries(asl m)
@@ -176,6 +176,7 @@ if (MSVC)
   add_library(asl-dynrt EXCLUDE_FROM_ALL
     ${ASL_SOURCES} ${ASL_HEADERS} ${ASL_CORE_SOURCES})
   target_compile_options(asl-dynrt PUBLIC /MD)
+  target_include_directories(asl-dynrt PUBLIC ${ASL_INCLUDE_DIRS})
   set(MP_MATLAB_ASL asl-dynrt)
 endif ()
 
