@@ -6,10 +6,10 @@
 #  MATLAB_MEX   - path to the MATLAB mex executable
 
 if (APPLE)
-  set(MATLAB_DIR /Applications)
+  set(MATLAB_GLOB "/Applications/MATLAB*")
   set(MATLAB_MEX_SUFFIX mac)
 elseif (UNIX)
-  set(MATLAB_DIR /opt/MATLAB)
+  set(MATLAB_GLOB "/opt/MATLAB/*")
   set(MATLAB_MEX_SUFFIX a64)
 else ()
   set(PROGRAM_FILES_DIR "C:/Program Files")
@@ -22,12 +22,11 @@ else ()
   else ()
     set(MATLAB_MEX_SUFFIX w64)
   endif ()
-  set(MATLAB_DIR "${PROGRAM_FILES_DIR}/MATLAB")
+  set(MATLAB_GLOB "${PROGRAM_FILES_DIR}/MATLAB/*")
   set(MEX_EXT .bat)
 endif ()
 
-file(GLOB MATLAB_DIRS "${MATLAB_DIR}/*")
-message("MATLAB directory: ${MATLAB_DIRS}")
+file(GLOB MATLAB_DIRS "${MATLAB_GLOB}")
 
 find_program(MATLAB_MEX mex${MEX_EXT}
   PATHS ${MATLAB_DIRS} PATH_SUFFIXES bin NO_DEFAULT_PATH)
@@ -49,7 +48,7 @@ function (add_mex name)
   endforeach ()
   add_custom_command(OUTPUT ${filename}
     COMMAND ${MATLAB_MEX} ${add_mex_COMPILE_FLAGS}
-      ${sources} $<TARGET_FILE:asl> -output ${filename}
+      ${sources} ${libs} -output ${filename}
     DEPENDS ${sources} ${add_mex_LIBRARIES})
   add_custom_target(${name} ALL SOURCES ${filename})
 endfunction ()
