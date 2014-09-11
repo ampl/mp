@@ -557,8 +557,17 @@ void CheckHeader(const NLHeader &h) {
   EXPECT_EQ(asl->i.nlvci_, actual_header.num_nl_integer_vars_in_cons);
   EXPECT_EQ(asl->i.nlvoi_, actual_header.num_nl_integer_vars_in_objs);
 
-  EXPECT_EQ(asl->i.nzc_, actual_header.num_con_nonzeros);
-  EXPECT_EQ(asl->i.nzo_, actual_header.num_obj_nonzeros);
+  EXPECT_GE(asl->i.nzc_, 0);
+  EXPECT_EQ(static_cast<std::size_t>(asl->i.nzc_),
+            actual_header.num_con_nonzeros);
+  EXPECT_EQ(static_cast<std::size_t>(asl->i.nZc_),
+            actual_header.num_con_nonzeros);
+
+  EXPECT_GE(asl->i.nzo_, 0);
+  EXPECT_EQ(static_cast<std::size_t>(asl->i.nzo_),
+            actual_header.num_obj_nonzeros);
+  EXPECT_EQ(static_cast<std::size_t>(asl->i.nZo_),
+            actual_header.num_obj_nonzeros);
 
   EXPECT_EQ(asl->i.maxrownamelen_, actual_header.max_con_name_len);
   EXPECT_EQ(asl->i.maxcolnamelen_, actual_header.max_var_name_len);
