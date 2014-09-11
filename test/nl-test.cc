@@ -361,7 +361,7 @@ class TestNLHandler {
     }
   }
 
-  std::string MakeVarArg(std::string op, mp::ArrayRef<std::string> args) {
+  std::string MakeVarArg(std::string op, const std::vector<std::string> &args) {
     fmt::Writer w;
     w << op << '(';
     WriteList(w, args.size(), args.data());
@@ -536,22 +536,52 @@ class TestNLHandler {
                        condition, true_expr, false_expr);
   }
 
-  std::string MakePiecewiseLinear(
-      int num_breakpoints, const double *breakpoints,
-      const double *slopes, std::string var) {
+  class PLTermHandler {
+   private:
+    std::vector<double> slopes_;
+    std::vector<double> breakpoints_;
+
+    friend class TestNLHandler;
+
+   public:
+    void AddSlope(double slope) { slopes_.push_back(slope); }
+    void AddBreakpoint(double breakpoint) {
+      breakpoints_.push_back(breakpoint);
+    }
+  };
+
+  PLTermHandler BeginPLTerm(int num_breakpoints) {
+    return PLTermHandler();
+  }
+  std::string EndPLTerm(PLTermHandler h, std::string var) {
     fmt::Writer w;
     w << "<<";
-    WriteList(w, num_breakpoints, breakpoints);
+    WriteList(w, h.breakpoints_.size(), h.breakpoints_.data());
     w << "; ";
-    WriteList(w, num_breakpoints + 1, slopes);
+    WriteList(w, h.slopes_.size(), h.slopes_.data());
     w << ">> " << var;
     return w.str();
   }
 
-  std::string MakeCall(int func_index, mp::ArrayRef<std::string> args) {
+  class CallArgHandler {
+   private:
+    int func_index_;
+    std::vector<std::string> args_;
+    friend class TestNLHandler;
+
+   public:
+    explicit CallArgHandler(int func_index) : func_index_(func_index) {}
+    void AddArg(std::string arg) { args_.push_back(arg); }
+  };
+
+  CallArgHandler BeginCall(int func_index, int) {
+    return CallArgHandler(func_index);
+  }
+
+  std::string EndCall(CallArgHandler h) {
     fmt::Writer w;
-    w << 'f' << func_index << '(';
-    WriteList(w, args.size(), args.data());
+    w << 'f' << h.func_index_ << '(';
+    WriteList(w, h.args_.size(), h.args_.data());
     w << ')';
     return w.str();
   }
@@ -736,7 +766,9 @@ struct TestNLHandler2 {
 
   TestNumericExpr MakeNumericConstant(double) { return TestNumericExpr(); }
   TestVariable MakeVariable(int) { return TestVariable(); }
-  TestNumericExpr MakeUnary(expr::Kind, TestNumericExpr) { return TestNumericExpr(); }
+  TestNumericExpr MakeUnary(expr::Kind, TestNumericExpr) {
+    return TestNumericExpr();
+  }
 
   TestNumericExpr MakeBinary(expr::Kind, TestNumericExpr, TestNumericExpr) {
     return TestNumericExpr();
@@ -746,14 +778,23 @@ struct TestNLHandler2 {
     return TestNumericExpr();
   }
 
-  TestNumericExpr MakePiecewiseLinear(
-      int, const double *, const double *, TestVariable) {
+  struct PLTermHandler {
+    void AddSlope(double) {}
+    void AddBreakpoint(double) {}
+  };
+
+  PLTermHandler BeginPLTerm(int) { return PLTermHandler(); }
+  TestNumericExpr EndPLTerm(PLTermHandler, TestVariable) {
     return TestNumericExpr();
   }
 
-  TestNumericExpr MakeCall(int, mp::ArrayRef<TestExpr>) {
-    return TestNumericExpr();
-  }
+  struct CallArgHandler {
+    void AddArg(TestNumericExpr) {}
+    void AddArg(TestExpr) {}
+  };
+
+  CallArgHandler BeginCall(int, int) { return CallArgHandler(); }
+  TestNumericExpr EndCall(CallArgHandler) { return TestNumericExpr(); }
 
   struct NumericArgHandler {
     void AddArg(NumericExpr) {}

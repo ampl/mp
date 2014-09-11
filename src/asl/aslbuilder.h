@@ -32,6 +32,36 @@ struct Static;
 
 namespace mp {
 
+// A reference to an immutable array.
+template <typename T>
+class ArrayRef {
+ private:
+  const T *data_;
+  std::size_t size_;
+
+ public:
+  ArrayRef(const T *data, std::size_t size) : data_(data), size_(size) {}
+
+  template <typename U>
+  ArrayRef(ArrayRef<U> other) : data_(other.data()), size_(other.size()) {}
+
+  template <typename Vector>
+  ArrayRef(const Vector &other) : data_(other.data()), size_(other.size()) {}
+
+  template <std::size_t SIZE>
+  ArrayRef(const T (&data)[SIZE]) : data_(data), size_(SIZE) {}
+
+  const T *data() const { return data_; }
+  std::size_t size() const { return size_; }
+
+  const T &operator[](std::size_t i) const { return data_[i]; }
+};
+
+template <typename T>
+ArrayRef<T> MakeArrayRef(const T *data, std::size_t size) {
+  return ArrayRef<T>(data, size);
+}
+
 struct NLHeader;
 
 namespace internal {
@@ -127,6 +157,41 @@ class ASLBuilder {
   IteratedExpr MakeIterated(expr::Kind kind, ArrayRef<Expr> args) {
     return Expr::Create<IteratedExpr>(MakeIterated(kind, args));
   }
+
+ public:
+  class CallArgHandler {
+   private:
+    expr_f *expr_;
+    int arg_index_, num_args_, num_constants_, num_symbolic_args_, num_ifsyms_;
+
+    friend class ASLBuilder;
+
+    explicit CallArgHandler(expr_f *expr, int num_args)
+      : expr_(expr), arg_index_(0), num_args_(num_args),
+        num_constants_(0), num_symbolic_args_(0), num_ifsyms_(0) {}
+
+    void AddArg(Expr arg) {
+      expr_->args[arg_index_] = arg.expr_;
+      ++arg_index_;
+    }
+
+   public:
+    void AddArg(NumericExpr arg) {
+      AddArg(arg);
+      if (Is<NumericConstant>(arg))
+        ++num_constants_;
+      // TODO
+      //if (args[i].kind() == expr::IFSYM)
+      //  ++num_ifsyms;
+    }
+    void AddArg(StringLiteral arg) {
+      AddArg(arg);
+      ++num_symbolic_args_;
+    }
+  };
+
+ private:
+  CallArgHandler DoBeginCall(Function f, int num_args);
 
  public:
   typedef mp::Expr Expr;
@@ -317,16 +382,44 @@ class ASLBuilder {
         MakeIf(expr::IF, condition, true_expr, false_expr));
   }
 
+  class PLTermHandler {
+   private:
+    ::expr *expr_;
+    double *data_;
+
+    friend class ASLBuilder;
+
+    explicit PLTermHandler(::expr *e) : expr_(e), data_(e->L.p->bs) {}
+
+   public:
+
+    void AddSlope(double slope) { *data_++ = slope; }
+    void AddBreakpoint(double breakpoint) { *data_++ = breakpoint; }
+  };
+
+  PLTermHandler BeginPLTerm(int num_breakpoints);
+  PiecewiseLinearExpr EndPLTerm(PLTermHandler h, Variable var) {
+    h.expr_->R.e = var.expr_;
+    return Expr::Create<PiecewiseLinearExpr>(h.expr_);
+  }
+
   PiecewiseLinearExpr MakePiecewiseLinear(int num_breakpoints,
       const double *breakpoints, const double *slopes, Variable var);
 
-  CallExpr MakeCall(Function f, ArrayRef<Expr> args);
-
-  CallExpr MakeCall(int func_index, ArrayRef<Expr> args) {
+  CallArgHandler BeginCall(int func_index, int num_args) {
     Function f(asl_->i.funcs_[func_index]);
     if (!f)
       throw Error("function {} undefined", func_index);
-    return MakeCall(f, args);
+    return DoBeginCall(f, num_args);
+  }
+  CallExpr EndCall(CallArgHandler h);
+
+  CallExpr MakeCall(Function f, ArrayRef<Expr> args) {
+    int num_args = SafeInt<int>(args.size()).value();
+    CallArgHandler handler = DoBeginCall(f, num_args);
+    for (int i = 0; i < num_args; ++i)
+      handler.AddArg(args[i]);
+    return EndCall(handler);
   }
 
   template <typename Arg>

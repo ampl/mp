@@ -244,36 +244,6 @@ enum {
   OUTONLY = 64   // Output only: reject as an input value.
 };
 }
-
-// A reference to an immutable array.
-template <typename T>
-class ArrayRef {
- private:
-  const T *data_;
-  std::size_t size_;
-
- public:
-  ArrayRef(const T *data, std::size_t size) : data_(data), size_(size) {}
-
-  template <typename U>
-  ArrayRef(ArrayRef<U> other) : data_(other.data()), size_(other.size()) {}
-
-  template <typename Vector>
-  ArrayRef(const Vector &other) : data_(other.data()), size_(other.size()) {}
-
-  template <std::size_t SIZE>
-  ArrayRef(const T (&data)[SIZE]) : data_(data), size_(SIZE) {}
-
-  const T *data() const { return data_; }
-  std::size_t size() const { return size_; }
-
-  const T &operator[](std::size_t i) const { return data_[i]; }
-};
-
-template <typename T>
-ArrayRef<T> MakeArrayRef(const T *data, std::size_t size) {
-  return ArrayRef<T>(data, size);
-}
 }  // namespace mp
 
 #endif  // MP_PROBLEM_BASE_H_

@@ -182,6 +182,19 @@ void ASLBuilder::SetObjOrCon(
   return e;
 }
 
+ASLBuilder::CallArgHandler ASLBuilder::DoBeginCall(Function f, int num_args) {
+  int num_func_args = f.num_args();
+  if ((num_func_args >= 0 && num_args != num_func_args) ||
+      (num_func_args < 0 && num_args < -(num_func_args + 1))) {
+    throw Error("function {}: invalid number of arguments", f.name());
+  }
+  expr_f *result = Allocate<expr_f>(
+        sizeof(expr_f) + SafeInt<int>(num_args - 1) * sizeof(::expr*));
+  result->op = r_ops_[OPFUNCALL];
+  result->fi = f.fi_;
+  return CallArgHandler(result, num_args);
+}
+
 ASLBuilder::ASLBuilder(ASL *asl)
 : asl_(asl), own_asl_(false), r_ops_(0), flags_(0),
   nz_(0), nderp_(0), static_(0) {
@@ -623,66 +636,49 @@ UnaryExpr ASLBuilder::MakeUnary(expr::Kind kind, NumericExpr arg) {
   return expr;
 }
 
-PiecewiseLinearExpr ASLBuilder::MakePiecewiseLinear(
-    int num_breakpoints, const double *breakpoints,
-    const double *slopes, Variable var) {
+ASLBuilder::PLTermHandler ASLBuilder::BeginPLTerm(int num_breakpoints) {
   assert(num_breakpoints >= 1);
   ++asl_->i.plterms_;
   plterm *term = Allocate<plterm>(
       sizeof(plterm) + 2 * num_breakpoints * sizeof(double));
   term->n = num_breakpoints + 1;
-  double *data = term->bs;
-  for (int i = 0; i < num_breakpoints; ++i) {
-    data[2 * i] = slopes[i];
-    data[2 * i + 1] = breakpoints[i];
-  }
-  data[2 * num_breakpoints] = slopes[num_breakpoints];
   ::expr *result = Allocate< ::expr>();
   result->op = r_ops_[OPPLTERM];
   result->L.p = term;
-  result->R.e = var.expr_;
-  return Expr::Create<PiecewiseLinearExpr>(result);
+  return PLTermHandler(result);
 }
 
-CallExpr ASLBuilder::MakeCall(Function f, ArrayRef<Expr> args) {
-  int num_func_args = f.num_args();
-  int num_args = SafeInt<int>(args.size()).value();
-  if ((num_func_args >= 0 && num_args != num_func_args) ||
-      (num_func_args < 0 && num_args < -(num_func_args + 1))) {
-    throw Error("function {}: invalid number of arguments", f.name());
+PiecewiseLinearExpr ASLBuilder::MakePiecewiseLinear(
+    int num_breakpoints, const double *breakpoints,
+    const double *slopes, Variable var) {
+  PLTermHandler handler = BeginPLTerm(num_breakpoints);
+  for (int i = 0; i < num_breakpoints; ++i) {
+    handler.AddSlope(slopes[i]);
+    handler.AddBreakpoint(breakpoints[i]);
   }
-  expr_f *result = Allocate<expr_f>(
-        sizeof(expr_f) + SafeInt<int>(num_args - 1) * sizeof(::expr*));
-  result->op = r_ops_[OPFUNCALL];
-  result->fi = f.fi_;
-  ::expr **arg_ptrs = result->args;
-  int num_symbolic_args = 0, num_ifsyms = 0, num_constants = 0;
-  for (int i = 0; i < num_args; ++i) {
-    arg_ptrs[i] = args[i].expr_;
-    if (Is<StringLiteral>(args[i]))
-      ++num_symbolic_args;
-    else if (args[i].kind() == expr::IFSYM)
-      ++num_ifsyms;
-    else if (Is<NumericConstant>(args[i]))
-      ++num_constants;
-  }
-  num_symbolic_args += num_ifsyms;
-  if (num_symbolic_args != 0 && (f.fi_->ftype & func::SYMBOLIC) == 0)
-    throw Error("function {}: symbolic arguments not allowed", f.name());
-  int num_numeric_args = num_args - num_symbolic_args;
+  handler.AddSlope(slopes[num_breakpoints]);
+  return EndPLTerm(handler, var);
+}
+
+CallExpr ASLBuilder::EndCall(CallArgHandler h) {
+  int num_symbolic_args = h.num_symbolic_args_ + h.num_ifsyms_;
+  const func_info *info = h.expr_->fi;
+  if (num_symbolic_args != 0 && (info->ftype & func::SYMBOLIC) == 0)
+    throw Error("function {}: symbolic arguments not allowed", info->name);
+  int num_numeric_args = h.num_args_ - num_symbolic_args;
   int kd = 0;
   double *ra = Allocate<double>(
       sizeof(arglist) +
-      SafeInt<int>(num_constants + num_ifsyms) * sizeof(argpair) +
+      SafeInt<int>(h.num_constants_ + h.num_ifsyms_) * sizeof(argpair) +
       SafeInt<int>(num_numeric_args + kd) * sizeof(double) +
       SafeInt<int>(num_symbolic_args) * sizeof(char*) +
-      SafeInt<int>(num_args) * sizeof(int));
+      SafeInt<int>(h.num_args_) * sizeof(int));
   double *b = ra + kd;
-  arglist *al = result->al = reinterpret_cast<arglist*>(b + num_numeric_args);
-  al->n = num_args;
+  arglist *al = h.expr_->al = reinterpret_cast<arglist*>(b + num_numeric_args);
+  al->n = h.num_args_;
   al->ra = ra;
-  al->funcinfo = f.fi_->funcinfo;
-  return Expr::Create<CallExpr>(reinterpret_cast< ::expr*>(result));
+  al->funcinfo = info->funcinfo;
+  return Expr::Create<CallExpr>(reinterpret_cast< ::expr*>(h.expr_));
 }
 
 VarArgExpr ASLBuilder::MakeVarArg(expr::Kind kind, ArrayRef<NumericExpr> args) {

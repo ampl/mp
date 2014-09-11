@@ -266,6 +266,8 @@ class ReaderBase {
     token_ = ptr_;
     return *ptr_++;
   }
+
+  bool IsEOF() const { return ptr_ >= end_; }
 };
 
 class TextReader : public ReaderBase {
@@ -712,15 +714,16 @@ typename Handler::NumericExpr
     int func_index = ReadUInt(header_.num_funcs);
     int num_args = reader_.ReadUInt();
     reader_.ReadTillEndOfLine();
-    typedef typename Handler::Expr Expr;
-    fmt::internal::Array<Expr, 10> args(num_args); // TODO
+    typename Handler::CallArgHandler args =
+        handler_.BeginCall(func_index, num_args);
     for (int i = 0; i < num_args; ++i) {
       char c = reader_.ReadChar();
-      args[i] = c == 'h' ?
-            handler_.MakeStringLiteral(reader_.ReadString()) :
-            args[i] = ReadNumericExpr(c);
+      if (c == 'h')
+        args.AddArg(handler_.MakeStringLiteral(reader_.ReadString()));
+      else
+        args.AddArg(ReadNumericExpr(c));
     }
-    return handler_.MakeCall(func_index, ArrayRef<Expr>(&args[0], args.size()));
+    return handler_.EndCall(args);
   }
   case 'n': case 'l': case 's':
     return handler_.MakeNumericConstant(ReadConstant(code));
@@ -757,16 +760,14 @@ typename Handler::NumericExpr
     if (num_slopes <= 1)
       reader_.ReportError("too few slopes in piecewise-linear term");
     reader_.ReadTillEndOfLine();
-    using fmt::internal::Array; // TODO
-    Array<double, 10> breakpoints(num_slopes - 1);
-    Array<double, 10> slopes(num_slopes);
+    typename Handler::PLTermHandler pl_handler =
+        handler_.BeginPLTerm(num_slopes - 1);
     for (int i = 0; i < num_slopes - 1; ++i) {
-      slopes[i] = ReadConstant();
-      breakpoints[i] = ReadConstant();
+      pl_handler.AddSlope(ReadConstant());
+      pl_handler.AddBreakpoint(ReadConstant());
     }
-    slopes[num_slopes - 1] = ReadConstant();
-    return handler_.MakePiecewiseLinear(
-          num_slopes - 1, &breakpoints[0], &slopes[0], ReadVariable());
+    pl_handler.AddSlope(ReadConstant());
+    return handler_.EndPLTerm(pl_handler, ReadVariable());
   }
   case expr::FIRST_VARARG: {
     int num_args = ReadNumArgs(1);
@@ -1113,8 +1114,10 @@ void NLReader<Reader, Handler>::Read() {
       ReadInitialValues<AlgebraicConHandler>();
       break;
     case '\0':
-      // TODO: check for end of input
-      return;
+      // TODO: test
+      if (reader_.IsEOF())
+        return;
+      // Fall through.
     default:
       // TODO: handle unprintable chars
       reader_.ReportError("invalid segment type '{}'", c);
