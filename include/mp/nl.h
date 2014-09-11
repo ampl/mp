@@ -784,7 +784,7 @@ typename Handler::NumericExpr
   case expr::COUNT:
     return ReadCountExpr();
   case expr::NUMBEROF: {
-    int num_args = ReadNumArgs();
+    int num_args = ReadNumArgs(1);
     typename Handler::NumericArgHandler args = handler_.BeginNumberOf(num_args);
     ReadArgs<NumericExprReader>(num_args, args);
     return handler_.EndNumberOf(args);
@@ -844,7 +844,7 @@ typename Handler::LogicalExpr
     return handler_.EndIteratedLogical(args);
   }
   case expr::ALLDIFF: {
-    int num_args = ReadNumArgs();
+    int num_args = ReadNumArgs(1);
     typename Handler::NumericArgHandler args = handler_.BeginAllDiff(num_args);
     ReadArgs<NumericExprReader>(num_args, args);
     return handler_.EndAllDiff(args);
