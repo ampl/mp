@@ -170,14 +170,14 @@ class ASLBuilder {
       : expr_(expr), arg_index_(0), num_args_(num_args),
         num_constants_(0), num_symbolic_args_(0), num_ifsyms_(0) {}
 
-    void AddArg(Expr arg) {
+    void DoAddArg(Expr arg) {
       expr_->args[arg_index_] = arg.expr_;
       ++arg_index_;
     }
 
    public:
     void AddArg(NumericExpr arg) {
-      AddArg(arg);
+      DoAddArg(arg);
       if (Is<NumericConstant>(arg))
         ++num_constants_;
       // TODO
@@ -185,7 +185,7 @@ class ASLBuilder {
       //  ++num_ifsyms;
     }
     void AddArg(StringLiteral arg) {
-      AddArg(arg);
+      DoAddArg(arg);
       ++num_symbolic_args_;
     }
   };
@@ -417,8 +417,12 @@ class ASLBuilder {
   CallExpr MakeCall(Function f, ArrayRef<Expr> args) {
     int num_args = SafeInt<int>(args.size()).value();
     CallArgHandler handler = DoBeginCall(f, num_args);
-    for (int i = 0; i < num_args; ++i)
-      handler.AddArg(args[i]);
+    for (int i = 0; i < num_args; ++i) {
+      if (NumericExpr num = Cast<NumericExpr>(args[i]))
+        handler.AddArg(num);
+      else
+        handler.AddArg(Cast<StringLiteral>(args[i]));
+    }
     return EndCall(handler);
   }
 
