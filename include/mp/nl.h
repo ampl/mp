@@ -521,7 +521,7 @@ class NLReader {
   }
 
   typename Handler::CountExpr ReadCountExpr() {
-    int num_args = ReadNumArgs();
+    int num_args = ReadNumArgs(1);
     typename Handler::LogicalArgHandler args = handler_.BeginCount(num_args);
     DoReadArgs<LogicalExprReader>(num_args, args);
     return handler_.EndCount(args);
@@ -804,8 +804,13 @@ typename Handler::NumericExpr
     DoReadArgs<NumericExprReader>(num_args, args);
     return handler_.EndVarArg(args);
   }
-  case expr::SUM:
-    return handler_.MakeSum(ReadArgs<>(*this));
+  case expr::SUM: {
+    int num_args = ReadNumArgs();
+    typename Handler::NumericArgHandler args =
+        handler_.BeginSum(num_args);
+    DoReadArgs<NumericExprReader>(num_args, args);
+    return handler_.EndSum(args);
+  }
   case expr::COUNT:
     return ReadCountExpr();
   case expr::NUMBEROF:

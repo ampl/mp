@@ -357,6 +357,14 @@ class ASLBuilder {
 
   VarArgExpr MakeVarArg(expr::Kind kind, ArrayRef<NumericExpr> args);
 
+  NumericArgHandler BeginSum(int num_args) {
+    return NumericArgHandler(
+          MakeIterated(expr::SUM, ArrayRef<NumericExpr>(0, num_args)));
+  }
+  SumExpr EndSum(NumericArgHandler handler) {
+    return Expr::Create<SumExpr>(handler.expr_);
+  }
+
   SumExpr MakeSum(ArrayRef<NumericExpr> args) {
     return MakeIterated<SumExpr>(expr::SUM, args);
   }
@@ -365,7 +373,6 @@ class ASLBuilder {
     return LogicalArgHandler(
           MakeIterated(expr::COUNT, ArrayRef<LogicalExpr>(0, num_args)));
   }
-
   CountExpr EndCount(LogicalArgHandler handler) {
     return Expr::Create<CountExpr>(handler.expr_);
   }

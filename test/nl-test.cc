@@ -573,18 +573,13 @@ class TestNLHandler {
   ArgHandler BeginVarArg(expr::Kind kind, int) {
     return ArgHandler(fmt::format("v{}", opcode(kind)));
   }
-  std::string EndVarArg(ArgHandler h) {
-    return MakeVarArg(h.name_, h.args_);
-  }
+  std::string EndVarArg(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
 
-  std::string MakeSum(mp::ArrayRef<std::string> args) {
-    return MakeVarArg("sum", args);
-  }
+  ArgHandler BeginSum(int) { return ArgHandler("sum"); }
+  std::string EndSum(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
 
   ArgHandler BeginCount(int) { return ArgHandler("count"); }
-  std::string EndCount(ArgHandler h) {
-    return MakeVarArg(h.name_, h.args_);
-  }
+  std::string EndCount(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
 
   std::string MakeNumberOf(mp::ArrayRef<std::string> args) {
     fmt::Writer w;
@@ -773,9 +768,8 @@ struct TestNLHandler2 {
     return TestNumericExpr();
   }
 
-  TestNumericExpr MakeSum(mp::ArrayRef<TestNumericExpr>) {
-    return TestNumericExpr();
-  }
+  NumericArgHandler BeginSum(int) { return NumericArgHandler(); }
+  TestNumericExpr EndSum(NumericArgHandler) { return TestNumericExpr(); }
 
   LogicalArgHandler BeginCount(int) { return LogicalArgHandler(); }
   TestCountExpr EndCount(LogicalArgHandler) { return TestCountExpr(); }
