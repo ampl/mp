@@ -513,7 +513,7 @@ class NLReader {
   }
 
   template <typename ExprReader, typename ArgHandler>
-  void DoReadArgs(int num_args, ArgHandler &arg_handler) {
+  void ReadArgs(int num_args, ArgHandler &arg_handler) {
     reader_.ReadTillEndOfLine();
     ExprReader expr_reader;
     for (int i = 0; i < num_args; ++i)
@@ -523,7 +523,7 @@ class NLReader {
   typename Handler::CountExpr ReadCountExpr() {
     int num_args = ReadNumArgs(1);
     typename Handler::LogicalArgHandler args = handler_.BeginCount(num_args);
-    DoReadArgs<LogicalExprReader>(num_args, args);
+    ReadArgs<LogicalExprReader>(num_args, args);
     return handler_.EndCount(args);
   }
 
@@ -550,21 +550,6 @@ class NLReader {
       if (expr::GetOpCodeInfo(opcode).kind != expr::COUNT)
         r.reader_.ReportError("expected count expression opcode");
       return r.ReadCountExpr();
-    }
-  };
-
-  // TODO: remove
-  template <typename ExprReader = NumericExprReader>
-  class ReadArgs {
-   private:
-    typedef typename ExprReader::Expr Expr;
-    fmt::internal::Array<Expr, 10> args_;
-
-   public:
-    ReadArgs(NLReader &r, int min_args = MIN_ITER_ARGS);
-
-    operator ArrayRef<Expr>() const {
-      return ArrayRef<Expr>(&args_[0], args_.size());
     }
   };
 
@@ -720,20 +705,6 @@ double NLReader<Reader, Handler>::ReadConstant(char code) {
 }
 
 template <typename Reader, typename Handler>
-template <typename ExprReader>
-NLReader<Reader, Handler>::ReadArgs<ExprReader>::ReadArgs(
-    NLReader &r, int min_args) {
-  int num_args = r.reader_.ReadUInt();
-  if (num_args < min_args)
-    r.reader_.ReportError("too few arguments");
-  r.reader_.ReadTillEndOfLine();
-  args_.resize(num_args);
-  ExprReader expr_reader;
-  for (int i = 0; i < num_args; ++i)
-    args_[i] = expr_reader.Read(r);
-}
-
-template <typename Reader, typename Handler>
 typename Handler::NumericExpr
     NLReader<Reader, Handler>::ReadNumericExpr(char code) {
   switch (code) {
@@ -801,20 +772,23 @@ typename Handler::NumericExpr
     int num_args = ReadNumArgs(1);
     typename Handler::NumericArgHandler args =
         handler_.BeginVarArg(kind, num_args);
-    DoReadArgs<NumericExprReader>(num_args, args);
+    ReadArgs<NumericExprReader>(num_args, args);
     return handler_.EndVarArg(args);
   }
   case expr::SUM: {
     int num_args = ReadNumArgs();
-    typename Handler::NumericArgHandler args =
-        handler_.BeginSum(num_args);
-    DoReadArgs<NumericExprReader>(num_args, args);
+    typename Handler::NumericArgHandler args = handler_.BeginSum(num_args);
+    ReadArgs<NumericExprReader>(num_args, args);
     return handler_.EndSum(args);
   }
   case expr::COUNT:
     return ReadCountExpr();
-  case expr::NUMBEROF:
-    return handler_.MakeNumberOf(ReadArgs<>(*this, 1));
+  case expr::NUMBEROF: {
+    int num_args = ReadNumArgs();
+    typename Handler::NumericArgHandler args = handler_.BeginNumberOf(num_args);
+    ReadArgs<NumericExprReader>(num_args, args);
+    return handler_.EndNumberOf(args);
+  }
   default:
     reader_.ReportError("expected numeric expression opcode");
   }
@@ -862,11 +836,19 @@ typename Handler::LogicalExpr
     LogicalExpr false_expr = ReadLogicalExpr();
     return handler_.MakeImplication(condition, true_expr, false_expr);
   }
-  case expr::FIRST_ITERATED_LOGICAL:
-    return handler_.MakeIteratedLogical(
-          kind, ReadArgs<LogicalExprReader>(*this));
-  case expr::ALLDIFF:
-    return handler_.MakeAllDiff(ReadArgs<>(*this, 1));
+  case expr::FIRST_ITERATED_LOGICAL: {
+    int num_args = ReadNumArgs();
+    typename Handler::LogicalArgHandler args =
+        handler_.BeginIteratedLogical(kind, num_args);
+    ReadArgs<LogicalExprReader>(num_args, args);
+    return handler_.EndIteratedLogical(args);
+  }
+  case expr::ALLDIFF: {
+    int num_args = ReadNumArgs();
+    typename Handler::NumericArgHandler args = handler_.BeginAllDiff(num_args);
+    ReadArgs<NumericExprReader>(num_args, args);
+    return handler_.EndAllDiff(args);
+  }
   default:
     reader_.ReportError("expected logical expression opcode");
   }

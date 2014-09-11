@@ -581,10 +581,11 @@ class TestNLHandler {
   ArgHandler BeginCount(int) { return ArgHandler("count"); }
   std::string EndCount(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
 
-  std::string MakeNumberOf(mp::ArrayRef<std::string> args) {
+  ArgHandler BeginNumberOf(int) { return ArgHandler("numberof"); }
+  std::string EndNumberOf(ArgHandler h) {
     fmt::Writer w;
-    w << "numberof " << args[0] << " in (";
-    WriteList(w, args.size() - 1, args.data() + 1);
+    w << "numberof " << h.args_[0] << " in (";
+    WriteList(w, h.args_.size() - 1, h.args_.data() + 1);
     w << ')';
     return w.str();
   }
@@ -616,14 +617,15 @@ class TestNLHandler {
                        condition, true_expr, false_expr);
   }
 
-  std::string MakeIteratedLogical(
-      expr::Kind kind, mp::ArrayRef<std::string> args) {
-    return MakeVarArg(fmt::format("il{}", opcode(kind)), args);
+  ArgHandler BeginIteratedLogical(expr::Kind kind, int) {
+    return ArgHandler(fmt::format("il{}", opcode(kind)));
+  }
+  std::string EndIteratedLogical(ArgHandler h) {
+    return MakeVarArg(h.name_, h.args_);
   }
 
-  std::string MakeAllDiff(mp::ArrayRef<std::string> args) {
-    return MakeVarArg("alldiff", args);
-  }
+  ArgHandler BeginAllDiff(int) { return ArgHandler("alldiff"); }
+  std::string EndAllDiff(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
 
   std::string MakeStringLiteral(fmt::StringRef value) {
     return fmt::format("'{}'", std::string(value.c_str(), value.size()));
@@ -734,9 +736,9 @@ struct TestNLHandler2 {
 
   TestNumericExpr MakeNumericConstant(double) { return TestNumericExpr(); }
   TestVariable MakeVariable(int) { return TestVariable(); }
-  TestNumericExpr MakeUnary(int, TestNumericExpr) { return TestNumericExpr(); }
+  TestNumericExpr MakeUnary(expr::Kind, TestNumericExpr) { return TestNumericExpr(); }
 
-  TestNumericExpr MakeBinary(int, TestNumericExpr, TestNumericExpr) {
+  TestNumericExpr MakeBinary(expr::Kind, TestNumericExpr, TestNumericExpr) {
     return TestNumericExpr();
   }
 
@@ -774,22 +776,22 @@ struct TestNLHandler2 {
   LogicalArgHandler BeginCount(int) { return LogicalArgHandler(); }
   TestCountExpr EndCount(LogicalArgHandler) { return TestCountExpr(); }
 
-  TestNumericExpr MakeNumberOf(mp::ArrayRef<TestNumericExpr>) {
-    return TestNumericExpr();
-  }
+  NumericArgHandler BeginNumberOf(int) { return NumericArgHandler(); }
+  TestNumericExpr EndNumberOf(NumericArgHandler) { return TestNumericExpr(); }
 
   TestLogicalExpr MakeLogicalConstant(bool) { return TestLogicalExpr(); }
   TestLogicalExpr MakeNot(TestLogicalExpr) { return TestLogicalExpr(); }
 
-  TestLogicalExpr MakeBinaryLogical(int, TestLogicalExpr, TestLogicalExpr) {
+  TestLogicalExpr MakeBinaryLogical(
+      expr::Kind, TestLogicalExpr, TestLogicalExpr) {
     return TestLogicalExpr();
   }
 
-  TestLogicalExpr MakeRelational(int, TestNumericExpr, TestNumericExpr) {
+  TestLogicalExpr MakeRelational(expr::Kind, TestNumericExpr, TestNumericExpr) {
     return TestLogicalExpr();
   }
 
-  TestLogicalExpr MakeLogicalCount(int, TestNumericExpr, TestCountExpr) {
+  TestLogicalExpr MakeLogicalCount(expr::Kind, TestNumericExpr, TestCountExpr) {
     return TestLogicalExpr();
   }
 
@@ -798,13 +800,15 @@ struct TestNLHandler2 {
     return TestLogicalExpr();
   }
 
-  TestLogicalExpr MakeIteratedLogical(int, mp::ArrayRef<TestLogicalExpr>) {
+  LogicalArgHandler BeginIteratedLogical(expr::Kind, int) {
+    return LogicalArgHandler();
+  }
+  TestLogicalExpr EndIteratedLogical(LogicalArgHandler) {
     return TestLogicalExpr();
   }
 
-  TestLogicalExpr MakeAllDiff(mp::ArrayRef<TestNumericExpr>) {
-    return TestLogicalExpr();
-  }
+  NumericArgHandler BeginAllDiff(int) { return NumericArgHandler(); }
+  TestLogicalExpr EndAllDiff(NumericArgHandler) { return TestLogicalExpr(); }
 
   TestExpr MakeStringLiteral(fmt::StringRef) { return TestExpr(); }
 };

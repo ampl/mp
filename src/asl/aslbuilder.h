@@ -381,6 +381,14 @@ class ASLBuilder {
     return MakeIterated<CountExpr>(expr::COUNT, args);
   }
 
+  NumericArgHandler BeginNumberOf(int num_args) {
+    return NumericArgHandler(
+          MakeIterated(expr::NUMBEROF, ArrayRef<NumericExpr>(0, num_args)));
+  }
+  NumberOfExpr EndNumberOf(NumericArgHandler handler) {
+    return Expr::Create<NumberOfExpr>(handler.expr_);
+  }
+
   NumberOfExpr MakeNumberOf(ArrayRef<NumericExpr> args) {
     assert(args.size() >= 1);
     return MakeIterated<NumberOfExpr>(expr::NUMBEROF, args);
@@ -415,8 +423,24 @@ class ASLBuilder {
         MakeIf(expr::IMPLICATION, condition, true_expr, false_expr));
   }
 
+  LogicalArgHandler BeginIteratedLogical(expr::Kind kind, int num_args) {
+    return LogicalArgHandler(
+          MakeIterated(kind, ArrayRef<LogicalExpr>(0, num_args)));
+  }
+  IteratedLogicalExpr EndIteratedLogical(LogicalArgHandler handler) {
+    return Expr::Create<IteratedLogicalExpr>(handler.expr_);
+  }
+
   IteratedLogicalExpr MakeIteratedLogical(
       expr::Kind kind, ArrayRef<LogicalExpr> args);
+
+  NumericArgHandler BeginAllDiff(int num_args) {
+    return NumericArgHandler(
+          MakeIterated(expr::ALLDIFF, ArrayRef<NumericExpr>(0, num_args)));
+  }
+  AllDiffExpr EndAllDiff(NumericArgHandler handler) {
+    return Expr::Create<AllDiffExpr>(handler.expr_);
+  }
 
   AllDiffExpr MakeAllDiff(ArrayRef<NumericExpr> args) {
     return MakeIterated<AllDiffExpr>(expr::ALLDIFF, args);
