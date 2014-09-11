@@ -1020,7 +1020,7 @@ TEST(NLTest, ReadLogicalCountExpr) {
   EXPECT_READ_ERROR("L0\no63\nv1\nn0\n",
     "(input):14:1: expected count expression");
   EXPECT_READ_ERROR("L0\no63\nv1\no16\nn0\n",
-    "(input):14:2: expected count expression opcode");
+    "(input):14:2: expected count expression");
 }
 
 TEST(NLTest, ReadImplicationExpr) {
@@ -1174,5 +1174,11 @@ TEST(NLTest, ReadSuffix) {
   EXPECT_READ_ERROR("S8 1 foo\n", "(input):11:2: invalid suffix kind");
   EXPECT_READ_ERROR("S0 0 foo\n", "(input):11:4: integer 0 out of bounds");
   EXPECT_READ_ERROR("S0 6 foo\n", "(input):11:4: integer 6 out of bounds");
+}
+
+TEST(NLTest, InvalidSegmentType) {
+  EXPECT_READ_ERROR("?", "(input):11:1: invalid segment type");
+  EXPECT_READ_ERROR(std::string("C0\nn4.2\n") + '\0',
+                    "(input):13:1: invalid segment type");
 }
 }  // namespace

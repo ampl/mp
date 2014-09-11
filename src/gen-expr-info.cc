@@ -103,7 +103,7 @@ const ExprInfo info[] = {
   EXPR(SUM,            54, ITERATIVE,      "sum"),
   EXPR(COUNT,          59, CALL,           "count"),
   EXPR(NUMBEROF,       60, CALL,           "numberof"),
-  // TODO: EXPR(NUMBEROF_SYM, 61, CALL,    "string numberof"),
+  EXPR(NUMBEROF_SYM,   61, CALL,           "symbolic numberof"),
 
   EXPR(CONSTANT,       79, PRIMARY,        "constant"),
 

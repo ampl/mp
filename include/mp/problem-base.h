@@ -107,6 +107,7 @@ enum Kind {
   SUM,
   COUNT,
   NUMBEROF,
+  NUMBEROF_SYM,
   LAST_NUMERIC,
 
   // CONSTANT belongs both to numeric and logical expressions therefore

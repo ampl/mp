@@ -267,7 +267,7 @@ class ReaderBase {
     return *ptr_++;
   }
 
-  bool IsEOF() const { return ptr_ >= end_; }
+  bool IsEOF() const { return ptr_ == end_ + 1; }
 };
 
 class TextReader : public ReaderBase {
@@ -522,6 +522,14 @@ class NLReader {
       arg_handler.AddArg(expr_reader.Read(*this));
   }
 
+  int ReadOpCode() {
+    int opcode = reader_.ReadUInt();
+    if (opcode > expr::MAX_OPCODE)
+      reader_.ReportError("invalid opcode {}", opcode);
+    reader_.ReadTillEndOfLine();
+    return opcode;
+  }
+
   typename Handler::CountExpr ReadCountExpr() {
     int num_args = ReadNumArgs(1);
     typename Handler::LogicalArgHandler args = handler_.BeginCount(num_args);
@@ -535,24 +543,10 @@ class NLReader {
   struct NumericExprReader {
     typedef NumericExpr Expr;
     Expr Read(NLReader &r) const { return r.ReadNumericExpr(); }
-    Expr Read(NLReader &r, int opcode) const {
-      return r.ReadNumericExpr(opcode);
-    }
   };
   struct LogicalExprReader {
     typedef LogicalExpr Expr;
     Expr Read(NLReader &r) const { return r.ReadLogicalExpr(); }
-    Expr Read(NLReader &r, int opcode) const {
-      return r.ReadLogicalExpr(opcode);
-    }
-  };
-  struct CountExprReader {
-    typedef typename Handler::CountExpr Expr;
-    Expr Read(NLReader &r, int opcode) const {
-      if (expr::GetOpCodeInfo(opcode).kind != expr::COUNT)
-        r.reader_.ReportError("expected count expression opcode");
-      return r.ReadCountExpr();
-    }
   };
 
   // A helper struct used to make sure that the arguments to a binary
@@ -567,15 +561,6 @@ class NLReader {
     BinaryArgReader(NLReader &r)
       : lhs(ExprReader().Read(r)), rhs(ExprReader().Read(r)) {}
   };
-
-  template <typename ExprReader>
-  typename ExprReader::Expr ReadExpr() {
-    int opcode = reader_.ReadUInt();
-    if (opcode > expr::MAX_OPCODE)
-      reader_.ReportError("invalid opcode {}", opcode);
-    reader_.ReadTillEndOfLine();
-    return ExprReader().Read(*this, opcode);
-  }
 
   // Reads a numeric expression.
   NumericExpr ReadNumericExpr() { return ReadNumericExpr(reader_.ReadChar()); }
@@ -718,17 +703,28 @@ typename Handler::NumericExpr
         handler_.BeginCall(func_index, num_args);
     for (int i = 0; i < num_args; ++i) {
       char c = reader_.ReadChar();
-      if (c == 'h')
+      switch (c) {
+      case 'h':
         args.AddArg(handler_.MakeStringLiteral(reader_.ReadString()));
-      else
+        break;
+      case 'o': {
+        int opcode = ReadOpCode();
+        if (opcode == expr::IFSYM) {
+          // TODO: read symbolic if
+        }
+        args.AddArg(ReadNumericExpr(opcode));
+        break;
+      }
+      default:
         args.AddArg(ReadNumericExpr(c));
+      }
     }
     return handler_.EndCall(args);
   }
   case 'n': case 'l': case 's':
     return handler_.MakeNumericConstant(ReadConstant(code));
   case 'o':
-    return ReadExpr<NumericExprReader>();
+    return ReadNumericExpr(ReadOpCode());
   case 'v':
     return DoReadVariable();
   default:
@@ -790,6 +786,9 @@ typename Handler::NumericExpr
     ReadArgs<NumericExprReader>(num_args, args);
     return handler_.EndNumberOf(args);
   }
+  case expr::NUMBEROF_SYM: {
+    // TODO: read symbolic numberof
+  }
   default:
     reader_.ReportError("expected numeric expression opcode");
   }
@@ -802,7 +801,7 @@ typename Handler::LogicalExpr NLReader<Reader, Handler>::ReadLogicalExpr() {
   case 'n': case 'l': case 's':
     return handler_.MakeLogicalConstant(ReadConstant(c) != 0);
   case 'o':
-    return ReadExpr<LogicalExprReader>();
+    return ReadLogicalExpr(ReadOpCode());
   }
   reader_.ReportError("expected logical expression");
   return LogicalExpr();
@@ -827,9 +826,9 @@ typename Handler::LogicalExpr
   case expr::FIRST_LOGICAL_COUNT: {
     NumericExpr lhs = ReadNumericExpr();
     char c = reader_.ReadChar();
-    if (c != 'o')
+    if (c != 'o' || expr::GetOpCodeInfo(ReadOpCode()).kind != expr::COUNT)
       reader_.ReportError("expected count expression");
-    return handler_.MakeLogicalCount(kind, lhs, ReadExpr<CountExprReader>());
+    return handler_.MakeLogicalCount(kind, lhs, ReadCountExpr());
   }
   case expr::IMPLICATION: {
     LogicalExpr condition = ReadLogicalExpr();
@@ -1114,13 +1113,11 @@ void NLReader<Reader, Handler>::Read() {
       ReadInitialValues<AlgebraicConHandler>();
       break;
     case '\0':
-      // TODO: test
       if (reader_.IsEOF())
         return;
       // Fall through.
     default:
-      // TODO: handle unprintable chars
-      reader_.ReportError("invalid segment type '{}'", c);
+      reader_.ReportError("invalid segment type");
     }
   }
 }
