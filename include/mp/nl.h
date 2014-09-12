@@ -25,6 +25,7 @@
 
 #include "mp/error.h"
 #include "mp/os.h"
+#include "mp/posix.h"
 #include "mp/problem-base.h"
 
 #include <cctype>
@@ -1157,13 +1158,15 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
 // Reads an .nl file.
 template <typename Handler>
 void ReadNLFile(fmt::StringRef filename, Handler &h) {
-  MemoryMappedFile file(filename);
+  fmt::File f(filename, fmt::File::RDONLY);
+  fmt::LongLong file_size = f.size();
+  // Check if file size fits in size_t.
+  std::size_t size = static_cast<std::size_t>(file_size);
+  if (size != file_size)
+    throw Error("file {} is too big", filename);
   // TODO: use a buffer instead of mmap if mmap is not available or the
   //       file length is a multiple of the page size
-  std::size_t size = static_cast<std::size_t>(file.size());
-  // Check if file size fits in size_t.
-  if (size != file.size())
-    throw Error("file {} is too big", filename);
+  MemoryMappedFile file(filename);
   ReadNLString(fmt::StringRef(file.start(), size), h, filename);
 }
 }  // namespace mp

@@ -33,7 +33,6 @@
 #include <stdio.h>
 
 #include <cstddef>
-#include <ios>
 
 #include "mp/format.h"
 
@@ -61,6 +60,20 @@
 # else
 #  define FMT_POSIX_CALL(call) ::call
 # endif
+#endif
+
+#if FMT_GCC_VERSION >= 407
+# define FMT_UNUSED __attribute__((unused))
+#else
+# define FMT_UNUSED
+#endif
+
+#if FMT_USE_STATIC_ASSERT
+# define FMT_STATIC_ASSERT(cond, message) static_assert(cond, message)
+#else
+# define FMT_CONCAT_(a, b) FMT_CONCAT(a, b)
+# define FMT_STATIC_ASSERT(cond, message) \
+  typedef int FMT_CONCAT_(Assert, __LINE__)[(cond) ? 1 : -1] FMT_UNUSED
 #endif
 
 // Retries the expression while it evaluates to error_result and errno
@@ -207,7 +220,7 @@ class File {
   File() FMT_NOEXCEPT(true) : fd_(-1) {}
 
   // Opens a file and constructs a File object representing this file.
-  File(const char *path, int oflag);
+  File(fmt::StringRef path, int oflag);
 
 #if !FMT_USE_RVALUE_REFERENCES
   // Emulate a move constructor and a move assignment operator if rvalue
@@ -278,11 +291,14 @@ class File {
   // Closes the file.
   void close();
 
+  // Returns the file size.
+  fmt::LongLong size() const;
+
   // Attempts to read count bytes from the file into the specified buffer.
-  std::streamsize read(void *buffer, std::size_t count);
+  std::size_t read(void *buffer, std::size_t count);
 
   // Attempts to write count bytes from the specified buffer to the file.
-  std::streamsize write(const void *buffer, std::size_t count);
+  std::size_t write(const void *buffer, std::size_t count);
 
   // Duplicates a file descriptor with the dup function and returns
   // the duplicate as a file object.

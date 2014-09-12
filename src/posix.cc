@@ -34,6 +34,7 @@
 #ifndef _WIN32
 # include <unistd.h>
 #else
+# include <windows.h>
 # include <io.h>
 
 # define O_CREAT _O_CREAT
@@ -55,12 +56,18 @@
 
 namespace {
 #ifdef _WIN32
+// Return type of read and write functions.
+typedef int RWResult;
+
 // On Windows the count argument to read and write is unsigned, so convert
 // it from size_t preventing integer overflow.
 inline unsigned convert_rwcount(std::size_t count) {
   return count <= UINT_MAX ? static_cast<unsigned>(count) : UINT_MAX;
 }
 #else
+// Return type of read and write functions.
+typedef ssize_t RWResult;
+
 inline std::size_t convert_rwcount(std::size_t count) { return count; }
 #endif
 }
@@ -92,13 +99,13 @@ int fmt::BufferedFile::fileno() const {
   return fd;
 }
 
-fmt::File::File(const char *path, int oflag) {
+fmt::File::File(fmt::StringRef path, int oflag) {
   int mode = S_IRUSR | S_IWUSR;
 #ifdef _WIN32
   fd_ = -1;
-  FMT_POSIX_CALL(sopen_s(&fd_, path, oflag, _SH_DENYNO, mode));
+  FMT_POSIX_CALL(sopen_s(&fd_, path.c_str(), oflag, _SH_DENYNO, mode));
 #else
-  FMT_RETRY(fd_, FMT_POSIX_CALL(open(path, oflag, mode)));
+  FMT_RETRY(fd_, FMT_POSIX_CALL(open(path.c_str(), oflag, mode)));
 #endif
   if (fd_ == -1)
     throw SystemError(errno, "cannot open file {}", path);
@@ -122,18 +129,37 @@ void fmt::File::close() {
     throw SystemError(errno, "cannot close file");
 }
 
-std::streamsize fmt::File::read(void *buffer, std::size_t count) {
-  std::streamsize result = 0;
+fmt::LongLong fmt::File::size() const {
+#ifdef _WIN32
+  LARGE_INTEGER size = {};
+  if (!FMT_SYSTEM(GetFileSizeEx(_get_osfhandle(fd_), &size)))
+    throw WindowsError(GetLastError(), "cannot get file size");
+  FMT_STATIC_ASSERT(sizeof(fmt::LongLong) >= sizeof(size.QuadPart),
+      "return type of File::size is not large enough");
+  return size.QuadPart;
+#else
+  typedef struct stat Stat;
+  Stat file_stat = Stat();
+  if (FMT_POSIX_CALL(fstat(fd_, &file_stat)) == -1)
+    throw SystemError(errno, "cannot get file attributes");
+  FMT_STATIC_ASSERT(sizeof(fmt::LongLong) >= sizeof(file_stat.st_size),
+      "return type of File::size is not large enough");
+  return file_stat.st_size;
+#endif
+}
+
+std::size_t fmt::File::read(void *buffer, std::size_t count) {
+  RWResult result = 0;
   FMT_RETRY(result, FMT_POSIX_CALL(read(fd_, buffer, convert_rwcount(count))));
-  if (result == -1)
+  if (result < 0)
     throw SystemError(errno, "cannot read from file");
   return result;
 }
 
-std::streamsize fmt::File::write(const void *buffer, std::size_t count) {
-  std::streamsize result = 0;
+std::size_t fmt::File::write(const void *buffer, std::size_t count) {
+  RWResult result = 0;
   FMT_RETRY(result, FMT_POSIX_CALL(write(fd_, buffer, convert_rwcount(count))));
-  if (result == -1)
+  if (result < 0)
     throw SystemError(errno, "cannot write to file");
   return result;
 }
