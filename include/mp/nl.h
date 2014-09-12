@@ -1160,9 +1160,11 @@ template <typename Handler>
 void ReadNLFile(fmt::StringRef filename, Handler &h) {
   fmt::File f(filename, fmt::File::RDONLY);
   fmt::LongLong file_size = f.size();
+  assert(file_size >= 0);
+  fmt::ULongLong unsigned_file_size = file_size;
   // Check if file size fits in size_t.
-  std::size_t size = static_cast<std::size_t>(file_size);
-  if (size != file_size)
+  std::size_t size = static_cast<std::size_t>(unsigned_file_size);
+  if (size != unsigned_file_size)
     throw Error("file {} is too big", filename);
   // TODO: use a buffer instead of mmap if mmap is not available or the
   //       file length is a multiple of the page size
