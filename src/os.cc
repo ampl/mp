@@ -56,18 +56,6 @@ using mp::path;
 const char path::preferred_separator;
 #endif
 
-namespace {
-
-// Round n up to a multiple of page_size.
-size_t RoundUpToMultipleOf(size_t n, size_t page_size) {
-  size_t extra_bytes = n % page_size;
-  if (extra_bytes == 0) {
-    // TODO: don' use mmap
-  }
-  return n += page_size - extra_bytes;
-}
-}
-
 #ifndef _WIN32
 
 #ifdef __APPLE__
@@ -122,23 +110,12 @@ path path::temp_directory_path() {
   return path(dir);
 }
 
-mp::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
-: start_(), size_() {
-  // Open file and check that its size is not a multiple of memory page size.
-  fmt::File file(filename.c_str(), fmt::File::RDONLY);
-  typedef struct stat Stat;
-  Stat file_stat = Stat();
-  if (fstat(file.descriptor(), &file_stat) == -1)
-    throw fmt::SystemError(errno, "cannot get attributes of file {}", filename);
-  size_ = file_stat.st_size;
-  // TODO: don't use mmap if file size is a multiple of page size
-  //size_t full_size = RoundUpToMultipleOf(size_, sysconf(_SC_PAGESIZE));
-
-  // Map file to memory.
+mp::MemoryMappedFile::MemoryMappedFile(const fmt::File &file, std::size_t size)
+: start_(), size_(size) {
   start_ = reinterpret_cast<char*>(
       mmap(0, size_, PROT_READ, MAP_FILE | MAP_PRIVATE, file.descriptor(), 0));
   if (start_ == MAP_FAILED)
-    throw fmt::SystemError(errno, "cannot map file {}", filename);
+    throw fmt::SystemError(errno, "cannot map file");
 }
 
 mp::MemoryMappedFile::~MemoryMappedFile() {
@@ -183,8 +160,8 @@ path mp::GetExecutablePath() {
   return path(s, s + utf8_str.size());
 }
 
-mp::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
-: start_(), size_() {
+mp::MemoryMappedFile::MemoryMappedFile(fmt::File file, std::size_t size)
+: start_(), size_(size) {
   class Handle {
     HANDLE handle_;
     Handle(const Handle &);
@@ -194,26 +171,8 @@ mp::MemoryMappedFile::MemoryMappedFile(fmt::StringRef filename)
     ~Handle() { CloseHandle(handle_); }
     operator HANDLE() const { return handle_; }
   };
-
-  // Open file.
-  Handle file(CreateFileW(
-      fmt::internal::UTF8ToUTF16(filename).c_str(), GENERIC_READ,
-      FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0));
-  if (file == INVALID_HANDLE_VALUE)
-    throw WindowsError(GetLastError(), "cannot open file {}", filename);
-
-  // Get file size and check if it is not a multiple of a memory page size.
-  LARGE_INTEGER size = {};
-  if (!GetFileSizeEx(file, &size))
-    throw WindowsError(GetLastError(), "cannot get size of file {}", filename);
-  SYSTEM_INFO si = {};
-  GetSystemInfo(&si);
-  size_ = size.QuadPart;
-  // TODO: don't use mmap if file size is a multiple of page size
-  //size_ = RoundUpToMultipleOf(size.QuadPart, si.dwPageSize);
-
-  // Map file to memory.
-  Handle mapping(CreateFileMappingW(file, 0, PAGE_READONLY, 0, 0, 0));
+  HANDLE handle = reinterpret_cast<HANDLE>(_get_osfhandle(file.descriptor()));
+  Handle mapping(CreateFileMappingW(handle, 0, PAGE_READONLY, 0, 0, 0));
   if (!mapping) {
     throw WindowsError(GetLastError(),
         "cannot create file mapping for {}", filename);

@@ -37,6 +37,7 @@
 # include <windows.h>
 #endif
 
+using fmt::File;
 using mp::MemoryMappedFile;
 using mp::path;
 
@@ -183,7 +184,8 @@ TEST(MemoryMappedFileTest, MapZeroTerminated) {
   const char *content = "some content";
   std::string filename = GetExecutableDir() + "test";
   WriteFile(filename, content);
-  MemoryMappedFile f(filename);
+  File file(filename, File::RDONLY);
+  MemoryMappedFile f(file, file.size());
   EXPECT_STREQ(content, f.start());
   EXPECT_EQ(std::strlen(content), f.size());
 }
@@ -193,7 +195,8 @@ TEST(MemoryMappedFileTest, DtorUnmapsFile) {
   WriteFile(filename, "abc");
   const volatile char *start = 0;
   {
-    MemoryMappedFile f(filename);
+    File file(filename, File::RDONLY);
+    MemoryMappedFile f(file, file.size());
     start = f.start();
   }
   EXPECT_DEATH((void)*start, "");
@@ -254,7 +257,7 @@ TEST(MemoryMappedFileTest, CloseFile) {
 }
 #endif
 
-TEST(MemoryMappedFileTest, NonexistentFile) {
-  EXPECT_THROW(MemoryMappedFile("nonexistent"), fmt::SystemError);
+TEST(MemoryMappedFileTest, InvalidFile) {
+  EXPECT_THROW(MemoryMappedFile(fmt::File(), 1), fmt::SystemError);
 }
 }

@@ -25,7 +25,6 @@
 
 #include "mp/error.h"
 #include "mp/os.h"
-#include "mp/posix.h"
 #include "mp/problem-base.h"
 
 #include <cctype>
@@ -1158,18 +1157,25 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
 // Reads an .nl file.
 template <typename Handler>
 void ReadNLFile(fmt::StringRef filename, Handler &h) {
-  fmt::File f(filename, fmt::File::RDONLY);
-  fmt::LongLong file_size = f.size();
+  fmt::File file(filename, fmt::File::RDONLY);
+  fmt::LongLong file_size = file.size();
   assert(file_size >= 0);
   fmt::ULongLong unsigned_file_size = file_size;
   // Check if file size fits in size_t.
   std::size_t size = static_cast<std::size_t>(unsigned_file_size);
   if (size != unsigned_file_size)
     throw Error("file {} is too big", filename);
-  // TODO: use a buffer instead of mmap if mmap is not available or the
-  //       file length is a multiple of the page size
-  MemoryMappedFile file(filename);
-  ReadNLString(fmt::StringRef(file.start(), size), h, filename);
+  std::size_t page_size = fmt::getpagesize();
+  size_t remainder = file_size % page_size;
+  if (remainder == 0) {
+    // File size is a multiple of the page size, so there will be no
+    // zero padding. Don't use mmap.
+    // TODO: don' use mmap
+  }
+  // Round size up to a multiple of page_size.
+  size += page_size - remainder;
+  MemoryMappedFile mapped_file(file, size);
+  ReadNLString(fmt::StringRef(mapped_file.start(), size), h, filename);
 }
 }  // namespace mp
 

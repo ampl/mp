@@ -23,7 +23,7 @@
 #ifndef MP_OS_H_
 #define MP_OS_H_
 
-#include "mp/format.h"
+#include "mp/posix.h"
 
 namespace mp {
 
@@ -84,7 +84,7 @@ class MemoryMappedFile {
   FMT_DISALLOW_COPY_AND_ASSIGN(MemoryMappedFile);
 
  public:
-  explicit MemoryMappedFile(fmt::StringRef filename);
+  MemoryMappedFile(const fmt::File &file, std::size_t size);
   ~MemoryMappedFile();
 
   const char *start() const { return start_; }
