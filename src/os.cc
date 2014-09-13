@@ -39,6 +39,7 @@
 # include <mach-o/dyld.h>
 #elif defined(_WIN32)
 # include <windows.h>
+# include <io.h>
 # undef min
 #else
 # include <unistd.h>
