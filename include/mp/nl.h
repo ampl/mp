@@ -1170,12 +1170,20 @@ void ReadNLFile(fmt::StringRef filename, Handler &h) {
   if (remainder == 0) {
     // File size is a multiple of the page size, so there will be no
     // zero padding. Don't use mmap.
-    // TODO: don' use mmap
+    fmt::internal::Array<char, 1> array;
+    array.resize(size + 1);
+    std::size_t offset = 0;
+    while (offset < size)
+      offset += file.read(&array[offset], size - offset);
+    array[size] = 0;
+    return ReadNLString(fmt::StringRef(&array[0], size), h, filename);
   }
-  // Round size up to a multiple of page_size.
-  size += page_size - remainder;
-  MemoryMappedFile mapped_file(file, size);
+  // Round size up to a multiple of page_size. The remainded of the last
+  // partial page is zero-filled both on POSIX and Windows so the resulting
+  // memory buffer is zero terminated.
+  MemoryMappedFile mapped_file(file, size + page_size - remainder);
   ReadNLString(fmt::StringRef(mapped_file.start(), size), h, filename);
+  // TODO: test
 }
 }  // namespace mp
 
