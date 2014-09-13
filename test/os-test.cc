@@ -248,7 +248,7 @@ TEST(MemoryMappedFileTest, CloseFile) {
   DWORD handle_count_before = 0;
   ASSERT_TRUE(GetProcessHandleCount(
       GetCurrentProcess(), &handle_count_before) != 0);
-  fmt::File file("test");
+  fmt::File file("test", File::RDONLY);
   MemoryMappedFile f(file, file.size());
   DWORD handle_count_after = 0;
   ASSERT_TRUE(GetProcessHandleCount(
