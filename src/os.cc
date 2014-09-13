@@ -160,7 +160,7 @@ path mp::GetExecutablePath() {
   return path(s, s + utf8_str.size());
 }
 
-mp::MemoryMappedFile::MemoryMappedFile(fmt::File file, std::size_t size)
+mp::MemoryMappedFile::MemoryMappedFile(const fmt::File &file, std::size_t size)
 : start_(), size_(size) {
   class Handle {
     HANDLE handle_;
