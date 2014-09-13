@@ -174,14 +174,12 @@ mp::MemoryMappedFile::MemoryMappedFile(const fmt::File &file, std::size_t size)
   };
   HANDLE handle = reinterpret_cast<HANDLE>(_get_osfhandle(file.descriptor()));
   Handle mapping(CreateFileMappingW(handle, 0, PAGE_READONLY, 0, 0, 0));
-  if (!mapping) {
-    throw WindowsError(GetLastError(),
-        "cannot create file mapping for {}", filename);
-  }
+  if (!mapping)
+    throw WindowsError(GetLastError(), "cannot create file mapping");
   start_ = reinterpret_cast<char*>(
       MapViewOfFile(mapping, FILE_MAP_READ, 0, 0, 0));
   if (!start_)
-    throw WindowsError(GetLastError(), "cannot map file {}", filename);
+    throw WindowsError(GetLastError(), "cannot map file");
 }
 
 mp::MemoryMappedFile::~MemoryMappedFile() {
