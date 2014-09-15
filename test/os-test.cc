@@ -208,7 +208,9 @@ TEST(MemoryMappedFileTest, CloseFile) {
   std::string path =
       mp::GetExecutablePath().remove_filename().string() + "/test";
   WriteFile(path, "abc");
-  MemoryMappedFile f(path);
+  File file(path, File::RDONLY);
+  MemoryMappedFile f(file, file.size());
+  file.close();
   int exit_code = ExecuteShellCommand("lsof " + path + " > out", false);
   std::string out = ReadFile("out");
   std::vector<string> results = Split(out, '\n');
@@ -240,6 +242,7 @@ TEST(MemoryMappedFileTest, CloseFile) {
              << "\nExit code = " << exit_code << "\nPath = "<< path;
     }
   }
+  EXPECT_STREQ("abc", f.start());
 }
 # endif
 #else
@@ -248,8 +251,9 @@ TEST(MemoryMappedFileTest, CloseFile) {
   DWORD handle_count_before = 0;
   ASSERT_TRUE(GetProcessHandleCount(
       GetCurrentProcess(), &handle_count_before) != 0);
-  fmt::File file("test", File::RDONLY);
+  File file("test", File::RDONLY);
   MemoryMappedFile f(file, file.size());
+  file.close();
   DWORD handle_count_after = 0;
   ASSERT_TRUE(GetProcessHandleCount(
       GetCurrentProcess(), &handle_count_after) != 0);

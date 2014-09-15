@@ -75,5 +75,10 @@ endif ()
 add_mp_test(os-test os-test.cc)
 add_dependencies(os-test test-helper)
 
+find_program(LSOF lsof)
+if (LSOF)
+  target_compile_definitions(os-test PRIVATE HAVE_LSOF=1)
+endif ()
+
 add_mp_test(rstparser-test rstparser-test.cc)
 add_mp_test(safeint-test safeint-test.cc)
