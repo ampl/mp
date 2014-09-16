@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #ifdef _WIN32
 # include <crtdbg.h>
 #endif
@@ -33,6 +33,6 @@ int main(int argc, char **argv) {
   _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_FILE | _CRTDBG_MODE_DEBUG);
   _CrtSetReportFile(_CRT_ASSERT, _CRTDBG_FILE_STDERR);
 #endif
-  testing::InitGoogleTest(&argc, argv);
+  testing::InitGoogleMock(&argc, argv);
   return RUN_ALL_TESTS();
 }

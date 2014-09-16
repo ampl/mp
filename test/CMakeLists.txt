@@ -10,7 +10,7 @@ if (NOSE2)
 endif ()
 
 # Add gtest library with some extra features.
-set(GTEST_SRC ../thirdparty/gtest/gtest-all.cc
+set(GTEST_SRC ../thirdparty/gmock/gmock-gtest-all.cc
   gtest-extra.cc gtest-extra.h util.cc util.h test-main.cc)
 add_library(gtest-extra STATIC ${GTEST_SRC})
 target_compile_definitions(gtest-extra PUBLIC FMT_USE_FILE_DESCRIPTORS)
