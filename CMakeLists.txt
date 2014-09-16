@@ -216,7 +216,8 @@ add_custom_command(OUTPUT ${MP_EXPR_INFO_FILE} COMMAND ${WINE}
   $<TARGET_FILE:gen-expr-info> ${MP_EXPR_INFO_FILE} DEPENDS gen-expr-info)
 
 add_prefix(MP_HEADERS include/mp/
-  clock.h error.h nl.h os.h problem-base.h rstparser.h safeint.h solver.h)
+  clock.h error.h nl.h os.h problem-base.h problem-builder.h
+  rstparser.h safeint.h solver.h)
 set(MP_SOURCES )
 add_prefix(MP_SOURCES src/
   clock.cc nl.cc os.cc precedence.h rstparser.cc solver.cc)

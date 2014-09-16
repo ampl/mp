@@ -550,7 +550,7 @@ class TestNLHandler {
     }
   };
 
-  PLTermHandler BeginPLTerm(int num_breakpoints) {
+  PLTermHandler BeginPLTerm(int) {
     return PLTermHandler();
   }
   std::string EndPLTerm(PLTermHandler h, std::string var) {
@@ -653,6 +653,8 @@ class TestNLHandler {
   std::string EndIteratedLogical(ArgHandler h) {
     return MakeVarArg(h.name_, h.args_);
   }
+
+  typedef ArgHandler AllDiffArgHandler;
 
   ArgHandler BeginAllDiff(int) { return ArgHandler("alldiff"); }
   std::string EndAllDiff(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
@@ -848,8 +850,12 @@ struct TestNLHandler2 {
     return TestLogicalExpr();
   }
 
-  NumericArgHandler BeginAllDiff(int) { return NumericArgHandler(); }
-  TestLogicalExpr EndAllDiff(NumericArgHandler) { return TestLogicalExpr(); }
+  struct AllDiffArgHandler {
+    void AddArg(NumericExpr) {}
+  };
+
+  AllDiffArgHandler BeginAllDiff(int) { return AllDiffArgHandler(); }
+  TestLogicalExpr EndAllDiff(AllDiffArgHandler) { return TestLogicalExpr(); }
 
   TestExpr MakeStringLiteral(fmt::StringRef) { return TestExpr(); }
 };

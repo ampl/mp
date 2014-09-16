@@ -222,7 +222,7 @@ TEST(SolverTest, BasicSolverVirtualDtor) {
 
    public:
     DtorTestSolver(bool &destroyed)
-    : Solver("test", 0, 0), destroyed_(destroyed) {}
+    : Solver("test", 0, 0, 0), destroyed_(destroyed) {}
     ~DtorTestSolver() { destroyed_ = true; }
     void DoSolve(Problem &) {}
     void ReadNL(fmt::StringRef) {}
@@ -601,7 +601,7 @@ struct TestSolverWithOptions : Solver {
     EXPECT_EQ(INFO, info);
   }
 
-  TestSolverWithOptions() : Solver("testsolver"),
+  TestSolverWithOptions() : Solver("testsolver", 0, 0, 0),
     intopt1(0), intopt2(0), dblopt1(0), dblopt2(0) {
     AddIntOption("intopt1", "Integer option 1",
         &TestSolverWithOptions::GetIntOption,
@@ -653,7 +653,7 @@ TEST(SolverTest, AddOption) {
 
 TEST(SolverTest, OptionHeader) {
   struct OptionTestSolver : Solver {
-    OptionTestSolver() : Solver("testsolver") {}
+    OptionTestSolver() : Solver("testsolver", 0, 0, 0) {}
     void set_option_header() {
       Solver::set_option_header("test header");
     }
@@ -761,7 +761,7 @@ TEST(SolverTest, UnknownOption) {
 TEST(SolverTest, HandleUnknownOption) {
   struct TestSolver : Solver {
     std::string option_name;
-    TestSolver() : Solver("test", 0, 0) {}
+    TestSolver() : Solver("test", 0, 0, 0) {}
     void DoSolve(Problem &) {}
     void ReadNL(fmt::StringRef) {}
     void HandleUnknownOption(const char *name) { option_name = name; }
@@ -904,7 +904,7 @@ class TestException {};
 struct ExceptionTestSolver : public Solver {
   int GetIntOption(const SolverOption &) const { return 0; }
   void Throw(const SolverOption &, int) { throw TestException(); }
-  ExceptionTestSolver() : Solver("") {
+  ExceptionTestSolver() : Solver("", 0, 0, 0) {
     AddIntOption("throw", "",
         &ExceptionTestSolver::GetIntOption, &ExceptionTestSolver::Throw);
   }

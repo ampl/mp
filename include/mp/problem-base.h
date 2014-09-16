@@ -32,6 +32,8 @@
 #include <cassert>
 #include <cstddef>  // for std::size_t
 
+#define MP_DISPATCH(call) static_cast<Impl*>(this)->call
+
 namespace mp {
 
 class Expr;

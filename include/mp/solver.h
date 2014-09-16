@@ -516,8 +516,7 @@ class Solver : private ErrorHandler, private OutputHandler {
 
   // Constructs a Solver object.
   // date: The solver date in YYYYMMDD format.
-  Solver(fmt::StringRef name, fmt::StringRef long_name = 0,
-      long date = 0, int flags = 0);
+  Solver(fmt::StringRef name, fmt::StringRef long_name, long date, int flags);
 
   void set_long_name(fmt::StringRef name) { long_name_ = name; }
   void set_version(fmt::StringRef version) { version_ = version; }
@@ -858,22 +857,14 @@ class Solver : private ErrorHandler, private OutputHandler {
   // Usage:
   //   Print("objective {}", FormatObjValue(obj_value));
   DoubleFormatter FormatObjValue(double value);
-
-  // Reads a problem from an .nl file.
-  virtual void ReadNL(fmt::StringRef filename) = 0;
 };
 
 template <typename ProblemBuilder>
 class SolverImpl : public Solver {
  public:
-  SolverImpl(fmt::StringRef name, fmt::StringRef long_name,
-             long date, int flags)
+  SolverImpl(fmt::StringRef name, fmt::StringRef long_name = 0,
+             long date = 0, int flags = 0)
     : Solver(name, long_name, date, flags) {}
-
-  virtual void ReadNL(fmt::StringRef filename) {
-    ProblemBuilder builder;
-    ReadNLFile(filename, builder);
-  }
 };
 }  // namespace mp
 

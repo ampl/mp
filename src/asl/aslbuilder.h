@@ -531,11 +531,13 @@ class ASLBuilder {
   IteratedLogicalExpr MakeIteratedLogical(
       expr::Kind kind, ArrayRef<LogicalExpr> args);
 
-  NumericArgHandler BeginAllDiff(int num_args) {
+  typedef NumericArgHandler AllDiffArgHandler;
+
+  AllDiffArgHandler BeginAllDiff(int num_args) {
     return NumericArgHandler(
           MakeIterated(expr::ALLDIFF, ArrayRef<NumericExpr>(0, num_args)));
   }
-  AllDiffExpr EndAllDiff(NumericArgHandler handler) {
+  AllDiffExpr EndAllDiff(AllDiffArgHandler handler) {
     return Expr::Create<AllDiffExpr>(handler.expr_);
   }
 

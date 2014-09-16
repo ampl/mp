@@ -246,6 +246,14 @@ struct NLHeader {
   // Number of common expressions that only appear in a single objective
   // and don't appear in constraints.
   int num_common_exprs_in_single_objs;
+
+  int num_integer_vars() const {
+    return num_linear_binary_vars + num_linear_integer_vars +
+        num_nl_integer_vars_in_both + num_nl_integer_vars_in_cons +
+        num_nl_integer_vars_in_objs;
+  }
+
+  int num_continuous_vars() const { return num_vars - num_integer_vars(); }
 };
 
 // Writes NLHeader in the .nl file format.
@@ -456,7 +464,8 @@ class BinaryReader : public ReaderBase {
 };
 
 // An .nl file reader.
-// Handler is a class that receives notifications of the content of a file.
+// Handler: a class implementing the ProblemHandler concept that receives
+//          notifications of problem components
 template <typename Reader, typename Handler>
 class NLReader {
  private:
@@ -845,7 +854,7 @@ typename Handler::LogicalExpr
   }
   case expr::ALLDIFF: {
     int num_args = ReadNumArgs(1);
-    typename Handler::NumericArgHandler args = handler_.BeginAllDiff(num_args);
+    typename Handler::AllDiffArgHandler args = handler_.BeginAllDiff(num_args);
     ReadArgs<NumericExprReader>(num_args, args);
     return handler_.EndAllDiff(args);
   }

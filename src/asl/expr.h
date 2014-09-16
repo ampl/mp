@@ -746,8 +746,6 @@ class InvalidLogicalExprError : public Error {
     Error("invalid logical expression: {}", e.kind()) {}
 };
 
-#define AMPL_DISPATCH(call) static_cast<Impl*>(this)->call
-
 // An expression visitor.
 // To use ExprVisitor define a subclass that implements some or all of the
 // Visit* methods with the same signatures as the methods in ExprVisitor,
@@ -791,302 +789,302 @@ class ExprVisitor {
   }
 
   Result VisitNumericConstant(NumericConstant c) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(c));
+    return MP_DISPATCH(VisitUnhandledNumericExpr(c));
   }
 
   Result VisitVariable(Variable v) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(v));
+    return MP_DISPATCH(VisitUnhandledNumericExpr(v));
   }
 
   // Visits a unary expression or a function taking one argument.
   Result VisitUnary(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
   Result VisitUnaryMinus(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitPow2(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitFloor(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitCeil(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitAbs(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitTanh(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitTan(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitSqrt(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitSinh(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitSin(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitLog10(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitLog(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitExp(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitCosh(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitCos(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitAtanh(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitAtan(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitAsinh(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitAsin(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitAcosh(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   Result VisitAcos(UnaryExpr e) {
-    return AMPL_DISPATCH(VisitUnary(e));
+    return MP_DISPATCH(VisitUnary(e));
   }
 
   // Visits a binary expression or a function taking two arguments.
   Result VisitBinary(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
   Result VisitPlus(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitBinary(e));
+    return MP_DISPATCH(VisitBinary(e));
   }
 
   Result VisitMinus(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitBinary(e));
+    return MP_DISPATCH(VisitBinary(e));
   }
 
   Result VisitMult(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitBinary(e));
+    return MP_DISPATCH(VisitBinary(e));
   }
 
   Result VisitDiv(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitBinary(e));
+    return MP_DISPATCH(VisitBinary(e));
   }
 
   Result VisitRem(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitBinary(e));
+    return MP_DISPATCH(VisitBinary(e));
   }
 
   Result VisitPow(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitBinary(e));
+    return MP_DISPATCH(VisitBinary(e));
   }
 
   Result VisitPowConstExp(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitBinary(e));
+    return MP_DISPATCH(VisitBinary(e));
   }
 
   Result VisitPowConstBase(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitBinary(e));
+    return MP_DISPATCH(VisitBinary(e));
   }
 
   Result VisitNumericLess(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitBinary(e));
+    return MP_DISPATCH(VisitBinary(e));
   }
 
   Result VisitIntDiv(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitBinary(e));
+    return MP_DISPATCH(VisitBinary(e));
   }
 
   // Visits a function taking two arguments.
   Result VisitBinaryFunc(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitBinary(e));
+    return MP_DISPATCH(VisitBinary(e));
   }
 
   Result VisitAtan2(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitBinaryFunc(e));
+    return MP_DISPATCH(VisitBinaryFunc(e));
   }
 
   Result VisitPrecision(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitBinaryFunc(e));
+    return MP_DISPATCH(VisitBinaryFunc(e));
   }
 
   Result VisitRound(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitBinaryFunc(e));
+    return MP_DISPATCH(VisitBinaryFunc(e));
   }
 
   Result VisitTrunc(BinaryExpr e) {
-    return AMPL_DISPATCH(VisitBinaryFunc(e));
+    return MP_DISPATCH(VisitBinaryFunc(e));
   }
 
   Result VisitIf(IfExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
   Result VisitPiecewiseLinear(PiecewiseLinearExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
   Result VisitCall(CallExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
   Result VisitVarArg(VarArgExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
   Result VisitMin(VarArgExpr e) {
-    return AMPL_DISPATCH(VisitVarArg(e));
+    return MP_DISPATCH(VisitVarArg(e));
   }
 
   Result VisitMax(VarArgExpr e) {
-    return AMPL_DISPATCH(VisitVarArg(e));
+    return MP_DISPATCH(VisitVarArg(e));
   }
 
   Result VisitSum(SumExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
   Result VisitCount(CountExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
   Result VisitNumberOf(NumberOfExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledNumericExpr(e));
+    return MP_DISPATCH(VisitUnhandledNumericExpr(e));
   }
 
   LResult VisitLogicalConstant(LogicalConstant c) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(c));
+    return MP_DISPATCH(VisitUnhandledLogicalExpr(c));
   }
 
   LResult VisitNot(NotExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
   LResult VisitBinaryLogical(BinaryLogicalExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
   LResult VisitOr(BinaryLogicalExpr e) {
-    return AMPL_DISPATCH(VisitBinaryLogical(e));
+    return MP_DISPATCH(VisitBinaryLogical(e));
   }
 
   LResult VisitAnd(BinaryLogicalExpr e) {
-    return AMPL_DISPATCH(VisitBinaryLogical(e));
+    return MP_DISPATCH(VisitBinaryLogical(e));
   }
 
   LResult VisitIff(BinaryLogicalExpr e) {
-    return AMPL_DISPATCH(VisitBinaryLogical(e));
+    return MP_DISPATCH(VisitBinaryLogical(e));
   }
 
   LResult VisitRelational(RelationalExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
   LResult VisitLess(RelationalExpr e) {
-    return AMPL_DISPATCH(VisitRelational(e));
+    return MP_DISPATCH(VisitRelational(e));
   }
 
   LResult VisitLessEqual(RelationalExpr e) {
-    return AMPL_DISPATCH(VisitRelational(e));
+    return MP_DISPATCH(VisitRelational(e));
   }
 
   LResult VisitEqual(RelationalExpr e) {
-    return AMPL_DISPATCH(VisitRelational(e));
+    return MP_DISPATCH(VisitRelational(e));
   }
 
   LResult VisitGreaterEqual(RelationalExpr e) {
-    return AMPL_DISPATCH(VisitRelational(e));
+    return MP_DISPATCH(VisitRelational(e));
   }
 
   LResult VisitGreater(RelationalExpr e) {
-    return AMPL_DISPATCH(VisitRelational(e));
+    return MP_DISPATCH(VisitRelational(e));
   }
 
   LResult VisitNotEqual(RelationalExpr e) {
-    return AMPL_DISPATCH(VisitRelational(e));
+    return MP_DISPATCH(VisitRelational(e));
   }
 
   LResult VisitLogicalCount(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
   LResult VisitAtLeast(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitLogicalCount(e));
+    return MP_DISPATCH(VisitLogicalCount(e));
   }
 
   LResult VisitAtMost(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitLogicalCount(e));
+    return MP_DISPATCH(VisitLogicalCount(e));
   }
 
   LResult VisitExactly(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitLogicalCount(e));
+    return MP_DISPATCH(VisitLogicalCount(e));
   }
 
   LResult VisitNotAtLeast(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitLogicalCount(e));
+    return MP_DISPATCH(VisitLogicalCount(e));
   }
 
   LResult VisitNotAtMost(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitLogicalCount(e));
+    return MP_DISPATCH(VisitLogicalCount(e));
   }
 
   LResult VisitNotExactly(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitLogicalCount(e));
+    return MP_DISPATCH(VisitLogicalCount(e));
   }
 
   LResult VisitImplication(ImplicationExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
   LResult VisitIteratedLogical(IteratedLogicalExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 
   LResult VisitForAll(IteratedLogicalExpr e) {
-    return AMPL_DISPATCH(VisitIteratedLogical(e));
+    return MP_DISPATCH(VisitIteratedLogical(e));
   }
 
   LResult VisitExists(IteratedLogicalExpr e) {
-    return AMPL_DISPATCH(VisitIteratedLogical(e));
+    return MP_DISPATCH(VisitIteratedLogical(e));
   }
 
   LResult VisitAllDiff(AllDiffExpr e) {
-    return AMPL_DISPATCH(VisitUnhandledLogicalExpr(e));
+    return MP_DISPATCH(VisitUnhandledLogicalExpr(e));
   }
 };
 
@@ -1095,100 +1093,100 @@ Result ExprVisitor<Impl, Result, LResult>::Visit(NumericExpr e) {
   // All expressions except OPNUMBEROFs, OPIFSYM are supported.
   switch (e.kind()) {
   case expr::ADD:
-    return AMPL_DISPATCH(VisitPlus(Expr::Create<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitPlus(Expr::Create<BinaryExpr>(e)));
   case expr::SUB:
-    return AMPL_DISPATCH(VisitMinus(Expr::Create<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitMinus(Expr::Create<BinaryExpr>(e)));
   case expr::MUL:
-    return AMPL_DISPATCH(VisitMult(Expr::Create<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitMult(Expr::Create<BinaryExpr>(e)));
   case expr::DIV:
-    return AMPL_DISPATCH(VisitDiv(Expr::Create<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitDiv(Expr::Create<BinaryExpr>(e)));
   case expr::MOD:
-    return AMPL_DISPATCH(VisitRem(Expr::Create<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitRem(Expr::Create<BinaryExpr>(e)));
   case expr::POW:
-    return AMPL_DISPATCH(VisitPow(Expr::Create<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitPow(Expr::Create<BinaryExpr>(e)));
   case expr::LESS:
-    return AMPL_DISPATCH(VisitNumericLess(Expr::Create<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitNumericLess(Expr::Create<BinaryExpr>(e)));
   case expr::MIN:
-    return AMPL_DISPATCH(VisitMin(Expr::Create<VarArgExpr>(e)));
+    return MP_DISPATCH(VisitMin(Expr::Create<VarArgExpr>(e)));
   case expr::MAX:
-    return AMPL_DISPATCH(VisitMax(Expr::Create<VarArgExpr>(e)));
+    return MP_DISPATCH(VisitMax(Expr::Create<VarArgExpr>(e)));
   case expr::FLOOR:
-    return AMPL_DISPATCH(VisitFloor(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitFloor(Expr::Create<UnaryExpr>(e)));
   case expr::CEIL:
-    return AMPL_DISPATCH(VisitCeil(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitCeil(Expr::Create<UnaryExpr>(e)));
   case expr::ABS:
-    return AMPL_DISPATCH(VisitAbs(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitAbs(Expr::Create<UnaryExpr>(e)));
   case expr::MINUS:
-    return AMPL_DISPATCH(VisitUnaryMinus(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitUnaryMinus(Expr::Create<UnaryExpr>(e)));
   case expr::IF:
-    return AMPL_DISPATCH(VisitIf(Expr::Create<IfExpr>(e)));
+    return MP_DISPATCH(VisitIf(Expr::Create<IfExpr>(e)));
   case expr::TANH:
-    return AMPL_DISPATCH(VisitTanh(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitTanh(Expr::Create<UnaryExpr>(e)));
   case expr::TAN:
-    return AMPL_DISPATCH(VisitTan(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitTan(Expr::Create<UnaryExpr>(e)));
   case expr::SQRT:
-    return AMPL_DISPATCH(VisitSqrt(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitSqrt(Expr::Create<UnaryExpr>(e)));
   case expr::SINH:
-    return AMPL_DISPATCH(VisitSinh(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitSinh(Expr::Create<UnaryExpr>(e)));
   case expr::SIN:
-    return AMPL_DISPATCH(VisitSin(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitSin(Expr::Create<UnaryExpr>(e)));
   case expr::LOG10:
-    return AMPL_DISPATCH(VisitLog10(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitLog10(Expr::Create<UnaryExpr>(e)));
   case expr::LOG:
-    return AMPL_DISPATCH(VisitLog(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitLog(Expr::Create<UnaryExpr>(e)));
   case expr::EXP:
-    return AMPL_DISPATCH(VisitExp(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitExp(Expr::Create<UnaryExpr>(e)));
   case expr::COSH:
-    return AMPL_DISPATCH(VisitCosh(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitCosh(Expr::Create<UnaryExpr>(e)));
   case expr::COS:
-    return AMPL_DISPATCH(VisitCos(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitCos(Expr::Create<UnaryExpr>(e)));
   case expr::ATANH:
-    return AMPL_DISPATCH(VisitAtanh(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitAtanh(Expr::Create<UnaryExpr>(e)));
   case expr::ATAN2:
-    return AMPL_DISPATCH(VisitAtan2(Expr::Create<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitAtan2(Expr::Create<BinaryExpr>(e)));
   case expr::ATAN:
-    return AMPL_DISPATCH(VisitAtan(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitAtan(Expr::Create<UnaryExpr>(e)));
   case expr::ASINH:
-    return AMPL_DISPATCH(VisitAsinh(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitAsinh(Expr::Create<UnaryExpr>(e)));
   case expr::ASIN:
-    return AMPL_DISPATCH(VisitAsin(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitAsin(Expr::Create<UnaryExpr>(e)));
   case expr::ACOSH:
-    return AMPL_DISPATCH(VisitAcosh(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitAcosh(Expr::Create<UnaryExpr>(e)));
   case expr::ACOS:
-    return AMPL_DISPATCH(VisitAcos(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitAcos(Expr::Create<UnaryExpr>(e)));
   case expr::SUM:
-    return AMPL_DISPATCH(VisitSum(Expr::Create<SumExpr>(e)));
+    return MP_DISPATCH(VisitSum(Expr::Create<SumExpr>(e)));
   case expr::INT_DIV:
-    return AMPL_DISPATCH(VisitIntDiv(Expr::Create<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitIntDiv(Expr::Create<BinaryExpr>(e)));
   case expr::PRECISION:
-    return AMPL_DISPATCH(VisitPrecision(Expr::Create<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitPrecision(Expr::Create<BinaryExpr>(e)));
   case expr::ROUND:
-    return AMPL_DISPATCH(VisitRound(Expr::Create<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitRound(Expr::Create<BinaryExpr>(e)));
   case expr::TRUNC:
-    return AMPL_DISPATCH(VisitTrunc(Expr::Create<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitTrunc(Expr::Create<BinaryExpr>(e)));
   case expr::COUNT:
-    return AMPL_DISPATCH(VisitCount(Expr::Create<CountExpr>(e)));
+    return MP_DISPATCH(VisitCount(Expr::Create<CountExpr>(e)));
   case expr::NUMBEROF:
-    return AMPL_DISPATCH(VisitNumberOf(Expr::Create<NumberOfExpr>(e)));
+    return MP_DISPATCH(VisitNumberOf(Expr::Create<NumberOfExpr>(e)));
   case expr::PLTERM:
-    return AMPL_DISPATCH(VisitPiecewiseLinear(
+    return MP_DISPATCH(VisitPiecewiseLinear(
         Expr::Create<PiecewiseLinearExpr>(e)));
   case expr::POW_CONST_EXP:
-    return AMPL_DISPATCH(VisitPowConstExp(Expr::Create<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitPowConstExp(Expr::Create<BinaryExpr>(e)));
   case expr::POW2:
-    return AMPL_DISPATCH(VisitPow2(Expr::Create<UnaryExpr>(e)));
+    return MP_DISPATCH(VisitPow2(Expr::Create<UnaryExpr>(e)));
   case expr::POW_CONST_BASE:
-    return AMPL_DISPATCH(VisitPowConstBase(Expr::Create<BinaryExpr>(e)));
+    return MP_DISPATCH(VisitPowConstBase(Expr::Create<BinaryExpr>(e)));
   case expr::CALL:
-    return AMPL_DISPATCH(VisitCall(Expr::Create<CallExpr>(e)));
+    return MP_DISPATCH(VisitCall(Expr::Create<CallExpr>(e)));
   case expr::CONSTANT:
-    return AMPL_DISPATCH(VisitNumericConstant(
+    return MP_DISPATCH(VisitNumericConstant(
         Expr::Create<NumericConstant>(e)));
   case expr::VARIABLE:
-    return AMPL_DISPATCH(VisitVariable(Expr::Create<Variable>(e)));
+    return MP_DISPATCH(VisitVariable(Expr::Create<Variable>(e)));
   default:
     // Normally this branch shouldn't be executed.
-    return AMPL_DISPATCH(VisitInvalidNumericExpr(e));
+    return MP_DISPATCH(VisitInvalidNumericExpr(e));
   }
 }
 
@@ -1196,51 +1194,51 @@ template <typename Impl, typename Result, typename LResult>
 LResult ExprVisitor<Impl, Result, LResult>::Visit(LogicalExpr e) {
   switch (e.kind()) {
   case expr::OR:
-    return AMPL_DISPATCH(VisitOr(Expr::Create<BinaryLogicalExpr>(e)));
+    return MP_DISPATCH(VisitOr(Expr::Create<BinaryLogicalExpr>(e)));
   case expr::AND:
-    return AMPL_DISPATCH(VisitAnd(Expr::Create<BinaryLogicalExpr>(e)));
+    return MP_DISPATCH(VisitAnd(Expr::Create<BinaryLogicalExpr>(e)));
   case expr::LT:
-    return AMPL_DISPATCH(VisitLess(Expr::Create<RelationalExpr>(e)));
+    return MP_DISPATCH(VisitLess(Expr::Create<RelationalExpr>(e)));
   case expr::LE:
-    return AMPL_DISPATCH(VisitLessEqual(Expr::Create<RelationalExpr>(e)));
+    return MP_DISPATCH(VisitLessEqual(Expr::Create<RelationalExpr>(e)));
   case expr::EQ:
-    return AMPL_DISPATCH(VisitEqual(Expr::Create<RelationalExpr>(e)));
+    return MP_DISPATCH(VisitEqual(Expr::Create<RelationalExpr>(e)));
   case expr::GE:
-    return AMPL_DISPATCH(VisitGreaterEqual(Expr::Create<RelationalExpr>(e)));
+    return MP_DISPATCH(VisitGreaterEqual(Expr::Create<RelationalExpr>(e)));
   case expr::GT:
-    return AMPL_DISPATCH(VisitGreater(Expr::Create<RelationalExpr>(e)));
+    return MP_DISPATCH(VisitGreater(Expr::Create<RelationalExpr>(e)));
   case expr::NE:
-    return AMPL_DISPATCH(VisitNotEqual(Expr::Create<RelationalExpr>(e)));
+    return MP_DISPATCH(VisitNotEqual(Expr::Create<RelationalExpr>(e)));
   case expr::NOT:
-    return AMPL_DISPATCH(VisitNot(Expr::Create<NotExpr>(e)));
+    return MP_DISPATCH(VisitNot(Expr::Create<NotExpr>(e)));
   case expr::ATLEAST:
-    return AMPL_DISPATCH(VisitAtLeast(Expr::Create<LogicalCountExpr>(e)));
+    return MP_DISPATCH(VisitAtLeast(Expr::Create<LogicalCountExpr>(e)));
   case expr::ATMOST:
-    return AMPL_DISPATCH(VisitAtMost(Expr::Create<LogicalCountExpr>(e)));
+    return MP_DISPATCH(VisitAtMost(Expr::Create<LogicalCountExpr>(e)));
   case expr::EXACTLY:
-    return AMPL_DISPATCH(VisitExactly(Expr::Create<LogicalCountExpr>(e)));
+    return MP_DISPATCH(VisitExactly(Expr::Create<LogicalCountExpr>(e)));
   case expr::NOT_ATLEAST:
-    return AMPL_DISPATCH(VisitNotAtLeast(Expr::Create<LogicalCountExpr>(e)));
+    return MP_DISPATCH(VisitNotAtLeast(Expr::Create<LogicalCountExpr>(e)));
   case expr::NOT_ATMOST:
-    return AMPL_DISPATCH(VisitNotAtMost(Expr::Create<LogicalCountExpr>(e)));
+    return MP_DISPATCH(VisitNotAtMost(Expr::Create<LogicalCountExpr>(e)));
   case expr::NOT_EXACTLY:
-    return AMPL_DISPATCH(VisitNotExactly(Expr::Create<LogicalCountExpr>(e)));
+    return MP_DISPATCH(VisitNotExactly(Expr::Create<LogicalCountExpr>(e)));
   case expr::FORALL:
-    return AMPL_DISPATCH(VisitForAll(Expr::Create<IteratedLogicalExpr>(e)));
+    return MP_DISPATCH(VisitForAll(Expr::Create<IteratedLogicalExpr>(e)));
   case expr::EXISTS:
-    return AMPL_DISPATCH(VisitExists(Expr::Create<IteratedLogicalExpr>(e)));
+    return MP_DISPATCH(VisitExists(Expr::Create<IteratedLogicalExpr>(e)));
   case expr::IMPLICATION:
-    return AMPL_DISPATCH(VisitImplication(Expr::Create<ImplicationExpr>(e)));
+    return MP_DISPATCH(VisitImplication(Expr::Create<ImplicationExpr>(e)));
   case expr::IFF:
-    return AMPL_DISPATCH(VisitIff(Expr::Create<BinaryLogicalExpr>(e)));
+    return MP_DISPATCH(VisitIff(Expr::Create<BinaryLogicalExpr>(e)));
   case expr::ALLDIFF:
-    return AMPL_DISPATCH(VisitAllDiff(Expr::Create<AllDiffExpr>(e)));
+    return MP_DISPATCH(VisitAllDiff(Expr::Create<AllDiffExpr>(e)));
   case expr::CONSTANT:
-    return AMPL_DISPATCH(VisitLogicalConstant(
+    return MP_DISPATCH(VisitLogicalConstant(
         Expr::Create<LogicalConstant>(e)));
   default:
     // Normally this branch shouldn't be executed.
-    return AMPL_DISPATCH(VisitInvalidLogicalExpr(e));
+    return MP_DISPATCH(VisitInvalidLogicalExpr(e));
   }
 }
 
@@ -1261,26 +1259,24 @@ class ExprConverter : public ExprVisitor<Impl, Result, LResult> {
 
  public:
   LResult VisitAtLeast(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitLessEqual(Convert(e, expr::LE)));
+    return MP_DISPATCH(VisitLessEqual(Convert(e, expr::LE)));
   }
   LResult VisitAtMost(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitGreaterEqual(Convert(e, expr::GE)));
+    return MP_DISPATCH(VisitGreaterEqual(Convert(e, expr::GE)));
   }
   LResult VisitExactly(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitEqual(Convert(e, expr::EQ)));
+    return MP_DISPATCH(VisitEqual(Convert(e, expr::EQ)));
   }
   LResult VisitNotAtLeast(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitGreater(Convert(e, expr::GT)));
+    return MP_DISPATCH(VisitGreater(Convert(e, expr::GT)));
   }
   LResult VisitNotAtMost(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitLess(Convert(e, expr::LT)));
+    return MP_DISPATCH(VisitLess(Convert(e, expr::LT)));
   }
   LResult VisitNotExactly(LogicalCountExpr e) {
-    return AMPL_DISPATCH(VisitNotEqual(Convert(e, expr::NE)));
+    return MP_DISPATCH(VisitNotEqual(Convert(e, expr::NE)));
   }
 };
-
-#undef AMPL_DISPATCH
 
 template <typename Grad>
 class LinearExpr;
