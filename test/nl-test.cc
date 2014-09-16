@@ -23,6 +23,7 @@
 #include <climits>
 #include <cstring>
 
+#include "gmock/gmock.h"
 #include "gtest-extra.h"
 #include "mp/nl.h"
 #include "util.h"
@@ -33,6 +34,8 @@ using mp::ReadNLString;
 using mp::internal::TextReader;
 using mp::internal::BinaryReader;
 namespace expr = mp::expr;
+
+using testing::StrictMock;
 
 namespace {
 
@@ -1174,6 +1177,166 @@ TEST(NLTest, InvalidSegmentType) {
                     "(input):13:1: invalid segment type");
 }
 
-// TODO: test ProblemBuilderToNLAdapter
+class TestNumericExpr {
+ private:
+  int id_;
+
+ public:
+  TestNumericExpr() : id_(0) {}
+  TestNumericExpr(int id) : id_(id) {}
+
+  friend bool operator==(TestNumericExpr lhs, TestNumericExpr rhs) {
+    return lhs.id_ == rhs.id_;
+  }
+};
+
+class MockProblemBuilder {
+ public:
+  typedef std::string Expr;
+  typedef TestNumericExpr NumericExpr;
+  typedef Expr LogicalExpr;
+  typedef Expr CountExpr;
+  typedef Expr Variable;
+
+  MOCK_METHOD1(SetInfo, void (const mp::ProblemInfo &info));
+  MOCK_METHOD3(SetObj, void (int index, mp::obj::Type type, NumericExpr expr));
+  MOCK_METHOD2(SetCon, void (int index, NumericExpr expr));
+  MOCK_METHOD2(SetLogicalCon, void (int index, LogicalExpr expr));
+  MOCK_METHOD3(SetVar, void (int index, NumericExpr expr, int position));
+  MOCK_METHOD3(SetComplement, void (int con_index, int var_index, int flags));
+
+  struct LinearExprHandler {
+    // TODO
+    void AddTerm(int var_index, double coef) {}
+  };
+
+  typedef LinearExprHandler LinearObjHandler;
+
+  MOCK_METHOD2(GetLinearObjHandler,
+               LinearObjHandler (int obj_index, int num_linear_terms));
+
+  typedef LinearExprHandler LinearConHandler;
+
+  MOCK_METHOD2(GetLinearConHandler,
+               LinearConHandler (int con_index, int num_linear_terms));
+
+  typedef LinearExprHandler LinearVarHandler;
+
+  MOCK_METHOD2(GetLinearVarHandler,
+               LinearVarHandler (int var_index, int num_linear_terms));
+
+  MOCK_METHOD3(SetVarBounds, void (int index, double lb, double ub));
+  MOCK_METHOD3(SetConBounds, void (int index, double lb, double ub));
+
+  MOCK_METHOD2(SetInitialValue, void (int var_index, double value));
+  MOCK_METHOD2(SetInitialDualValue, void (int con_index, double value));
+
+  struct ColumnSizeHandler {
+    void Add(int size) {} // TODO
+  };
+
+  MOCK_METHOD0(GetColumnSizeHandler, ColumnSizeHandler ());
+
+  MOCK_METHOD4(SetFunction, void (int index, fmt::StringRef name,
+                                  int num_args, mp::func::Type type));
+
+  struct SuffixHandler {
+    void SetValue(int index, int value) {
+      // TODO
+    }
+    void SetValue(int index, double value) {
+      // TODO
+    }
+  };
+
+  MOCK_METHOD3(AddSuffix,
+               SuffixHandler (int kind, int num_values, fmt::StringRef name));
+
+  struct ArgHandler {
+    // TODO
+    void AddArg(Expr arg) {}
+  };
+
+  typedef ArgHandler NumericArgHandler;
+  typedef ArgHandler LogicalArgHandler;
+  typedef ArgHandler CallArgHandler;
+
+  MOCK_METHOD1(MakeNumericConstant, NumericExpr (double value));
+  MOCK_METHOD1(MakeVariable, Variable (int var_index));
+  MOCK_METHOD2(MakeUnary, NumericExpr (expr::Kind kind, NumericExpr arg));
+  MOCK_METHOD3(MakeBinary,
+               NumericExpr (expr::Kind kind, NumericExpr lhs, NumericExpr rhs));
+
+  MOCK_METHOD3(MakeIf,
+               NumericExpr (LogicalExpr condition,
+                            NumericExpr true_expr, NumericExpr false_expr));
+
+  struct PLTermHandler {
+    // TODO
+    void AddSlope(double slope) {}
+    void AddBreakpoint(double breakpoint) {}
+  };
+
+  MOCK_METHOD1(BeginPLTerm, PLTermHandler (int num_breakpoints));
+  MOCK_METHOD2(EndPLTerm, NumericExpr (PLTermHandler handler, Variable var));
+
+  MOCK_METHOD2(BeginCall, CallArgHandler (int func_index, int num_args));
+  MOCK_METHOD1(EndCall, NumericExpr (CallArgHandler handler));
+
+  MOCK_METHOD2(BeginVarArg, NumericArgHandler (expr::Kind kind, int num_args));
+  MOCK_METHOD1(EndVarArg, NumericExpr (NumericArgHandler handler));
+
+  MOCK_METHOD1(BeginSum, NumericArgHandler (int num_args));
+  MOCK_METHOD1(EndSum, NumericExpr (NumericArgHandler handler));
+
+  MOCK_METHOD1(BeginCount, LogicalArgHandler (int num_args));
+  MOCK_METHOD1(EndCount, NumericExpr (LogicalArgHandler handler));
+
+  MOCK_METHOD1(BeginNumberOf, NumericArgHandler (int num_args));
+  MOCK_METHOD1(EndNumberOf, NumericExpr (NumericArgHandler handler));
+
+  MOCK_METHOD1(MakeLogicalConstant, LogicalExpr (bool value));
+  MOCK_METHOD1(MakeNot, LogicalExpr (LogicalExpr arg));
+  MOCK_METHOD3(MakeBinaryLogical,
+               LogicalExpr (expr::Kind kind, LogicalExpr lhs, LogicalExpr rhs));
+  MOCK_METHOD3(MakeRelational,
+               LogicalExpr (expr::Kind kind, NumericExpr lhs, NumericExpr rhs));
+  MOCK_METHOD3(MakeLogicalCount,
+               LogicalExpr (expr::Kind kind, NumericExpr lhs, CountExpr rhs));
+  MOCK_METHOD3(MakeImplication,
+               LogicalExpr (LogicalExpr condition,
+                            LogicalExpr true_expr, LogicalExpr false_expr));
+
+  MOCK_METHOD2(BeginIteratedLogical,
+               LogicalArgHandler (expr::Kind kind, int num_args));
+  MOCK_METHOD1(EndIteratedLogical, LogicalExpr (LogicalArgHandler handler));
+
+  typedef ArgHandler AllDiffArgHandler;
+
+  MOCK_METHOD1(BeginAllDiff, AllDiffArgHandler (int num_args));
+  MOCK_METHOD1(EndAllDiff, LogicalExpr (AllDiffArgHandler handler));
+
+  MOCK_METHOD1(MakeStringLiteral, Expr (fmt::StringRef value));
+};
+
+#define EXPECT_FORWARD(adapter_func, builder_func, args) { \
+  StrictMock<MockProblemBuilder> builder; \
+  EXPECT_CALL(builder, builder_func args); \
+  mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder); \
+  adapter.adapter_func args; \
+}
+
+TEST(NLTest, ProblemBuilderToNLAdapter) {
+  {
+    StrictMock<MockProblemBuilder> builder;
+    NLHeader h;
+    EXPECT_CALL(builder, SetInfo(testing::Ref(h)));
+    mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+    adapter.OnHeader(h);
+  }
+  EXPECT_FORWARD(OnObj, SetObj, (0, mp::obj::MAX, TestNumericExpr(42)));
+  EXPECT_FORWARD(OnAlgebraicCon, SetCon, (0, TestNumericExpr(42)));
+  // TODO: more tests
+}
 
 }  // namespace
