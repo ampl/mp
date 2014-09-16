@@ -140,70 +140,96 @@ class BuildingNLHandler {
   typedef typename ProblemBuilder::CountExpr CountExpr;
   typedef typename ProblemBuilder::Variable Variable;
 
-  void SetHeader(const NLHeader &h) { builder_.SetInfo(h); }
+  // Receives notification of an .nl header.
+  void OnHeader(const NLHeader &h) { builder_.SetInfo(h); }
 
-  void SetVar(int index, NumericExpr expr, int position) {
-    builder_.SetVar(index, expr, position);
-  }
-  void SetObj(int index, obj::Type type, NumericExpr expr) {
+  // Receives notification of an objective type and the nonlinear part of
+  // an objective expression.
+  void OnObj(int index, obj::Type type, NumericExpr expr) {
     builder_.SetObj(index, type, expr);
   }
-  void SetCon(int index, NumericExpr expr) {
+
+  // Receives notification of the nonlinear part of an algebraic constraint
+  // expression.
+  void OnAlgebraicCon(int index, NumericExpr expr) {
     builder_.SetCon(index, expr);
   }
-  void SetLogicalCon(int index, LogicalExpr expr) {
+
+  // Receives notification of the nonlinear part of a logical constraint
+  // expression.
+  void OnLogicalCon(int index, LogicalExpr expr) {
     builder_.SetLogicalCon(index, expr);
   }
-  void SetComplement(int con_index, int var_index, int flags) {
-    builder_.SetComplement(con_index, var_index, flags);
+
+  // Receives notification of the nonlinear part of a defined variable
+  // expression.
+  void OnDefinedVar(int index, NumericExpr expr, int position) {
+    builder_.SetVar(index, expr, position);
   }
 
-  typedef typename ProblemBuilder::LinearVarHandler LinearVarHandler;
-
-  LinearVarHandler GetLinearVarHandler(int var_index, int num_linear_terms) {
-    return builder_.GetLinearVarHandler(var_index, num_linear_terms);
+  // Receives notification of a complementarity relation.
+  void OnComplement(int con_index, int var_index, int flags) {
+    builder_.SetComplement(con_index, var_index, flags);
   }
 
   typedef typename ProblemBuilder::LinearObjHandler LinearObjHandler;
 
-  LinearObjHandler GetLinearObjHandler(int obj_index, int num_linear_terms) {
+  // Receives notification of the linear part of an objective expression.
+  LinearObjHandler OnLinearObjExpr(int obj_index, int num_linear_terms) {
     return builder_.GetLinearObjHandler(obj_index, num_linear_terms);
   }
 
   typedef typename ProblemBuilder::LinearConHandler LinearConHandler;
 
-  LinearConHandler GetLinearConHandler(int con_index, int num_linear_terms) {
+  // Receives notification of the linear part of a constraint expression.
+  LinearConHandler OnLinearConExpr(int con_index, int num_linear_terms) {
     return builder_.GetLinearConHandler(con_index, num_linear_terms);
   }
 
-  void SetVarBounds(int index, double lb, double ub) {
+  typedef typename ProblemBuilder::LinearVarHandler LinearVarHandler;
+
+  // Receives notification of the linear part of a defined variable expression.
+  LinearVarHandler OnLinearVarExpr(int var_index, int num_linear_terms) {
+    return builder_.GetLinearVarHandler(var_index, num_linear_terms);
+  }
+
+  // Receives notification of variable bounds.
+  void OnVarBounds(int index, double lb, double ub) {
     builder_.SetVarBounds(index, lb, ub);
   }
-  void SetConBounds(int index, double lb, double ub) {
+
+  // Receives notification of constraint bounds (ranges).
+  void OnConBounds(int index, double lb, double ub) {
     builder_.SetConBounds(index, lb, ub);
   }
 
-  void SetInitialValue(int var_index, double value) {
+  // Receives notification of the initial value for a variable.
+  void OnInitialValue(int var_index, double value) {
     builder_.SetInitialValue(var_index, value);
   }
-  void SetInitialDualValue(int con_index, double value) {
+
+  // Receives notification of the initial value for a dual variable.
+  void OnInitialDualValue(int con_index, double value) {
     builder_.SetInitialDualValue(con_index, value);
   }
 
   typedef typename ProblemBuilder::ColumnSizeHandler ColumnSizeHandler;
 
-  ColumnSizeHandler GetColumnSizeHandler() {
+  // Receives notification of Jacobian column sizes.
+  ColumnSizeHandler OnColumnSizes() {
     return builder_.GetColumnSizeHandler();
   }
 
-  void SetFunction(int index, fmt::StringRef name,
-                   int num_args, func::Type type) {
+  // Receives notification of a function.
+  void OnFunction(int index, fmt::StringRef name,
+                  int num_args, func::Type type) {
     builder_.SetFunction(index, name, num_args, type);
   }
 
   typedef typename ProblemBuilder::SuffixHandler SuffixHandler;
 
-  SuffixHandler AddSuffix(int kind, int num_values, fmt::StringRef name) {
+  // Receives notification of a suffix.
+  SuffixHandler OnSuffix(int kind, int num_values, fmt::StringRef name) {
     return builder_.AddSuffix(kind, num_values, name);
   }
 
@@ -211,116 +237,144 @@ class BuildingNLHandler {
   typedef typename ProblemBuilder::LogicalArgHandler LogicalArgHandler;
   typedef typename ProblemBuilder::CallArgHandler CallArgHandler;
 
-  NumericExpr MakeNumericConstant(double value) {
+  // Receives notification of a numeric constant in a nonlinear expression.
+  NumericExpr OnNumericConstant(double value) {
     return builder_.MakeNumericConstant(value);
   }
 
-  Variable MakeVariable(int var_index) {
+  // Receives notification of a variable in a nonlinear expression.
+  Variable OnVariable(int var_index) {
     return builder_.MakeVariable(var_index);
   }
 
-  NumericExpr MakeUnary(expr::Kind kind, NumericExpr arg) {
+  // Receives notification of a unary expression.
+  NumericExpr OnUnary(expr::Kind kind, NumericExpr arg) {
     return builder_.MakeUnary(kind, arg);
   }
 
-  NumericExpr MakeBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
+  // Receives notification of a binary expression.
+  NumericExpr OnBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
     return builder_.MakeBinary(kind, lhs, rhs);
   }
 
-  NumericExpr MakeIf(LogicalExpr condition,
+  // Receives notification of an if expression.
+  NumericExpr OnIf(LogicalExpr condition,
       NumericExpr true_expr, NumericExpr false_expr) {
     return builder_.MakeIf(condition, true_expr, false_expr);
   }
 
   typedef typename ProblemBuilder::PLTermHandler PLTermHandler;
 
+  // Receives notification of the beginning of a piecewise-linear term.
   PLTermHandler BeginPLTerm(int num_breakpoints) {
     return builder_.BeginPLTerm(num_breakpoints);
   }
+  // Receives notification of the end of a piecewise-linear term.
   NumericExpr EndPLTerm(PLTermHandler handler, Variable var) {
     return builder_.EndPLTerm(handler, var);
   }
 
+  // Receives notification of the beginning of a call expression.
   CallArgHandler BeginCall(int func_index, int num_args) {
     return builder_.BeginCall(func_index, num_args);
   }
+  // Receives notification of the end of a call expression.
   NumericExpr EndCall(CallArgHandler handler) {
     return builder_.EndCall(handler);
   }
 
+  // Receives notification of the beginning of a vararg expression (min or max).
   NumericArgHandler BeginVarArg(expr::Kind kind, int num_args) {
     return builder_.BeginVarArg(kind, num_args);
   }
+  // Receives notification of the end of a vararg expression (min or max).
   NumericExpr EndVarArg(NumericArgHandler handler) {
     return builder_.EndVarArg(handler);
   }
 
+  // Receives notification of the beginning of a sum expression.
   NumericArgHandler BeginSum(int num_args) {
     return builder_.BeginSum(num_args);
   }
+  // Receives notification of the end of a sum expression.
   NumericExpr EndSum(NumericArgHandler handler) {
     return builder_.EndSum(handler);
   }
 
+  // Receives notification of the beginning of a count expression.
   LogicalArgHandler BeginCount(int num_args) {
     return builder_.BeginCount(num_args);
   }
+  // Receives notification of the end of a count expression.
   CountExpr EndCount(LogicalArgHandler handler) {
     return builder_.EndCount(handler);
   }
 
+  // Receives notification of the beginning of a numberof expression.
   NumericArgHandler BeginNumberOf(int num_args) {
     return builder_.BeginNumberOf(num_args);
   }
+  // Receives notification of the end of a numberof expression.
   NumericExpr EndNumberOf(NumericArgHandler handler) {
     return builder_.EndNumberOf(handler);
   }
 
-  LogicalExpr MakeLogicalConstant(bool value) {
+  // Receives notification of a logical constant.
+  LogicalExpr OnLogicalConstant(bool value) {
     return builder_.MakeLogicalConstant(value);
   }
 
-  LogicalExpr MakeNot(LogicalExpr arg) {
+  // Receives notification of a logical not expression.
+  LogicalExpr OnNot(LogicalExpr arg) {
     return builder_.MakeNot(arg);
   }
 
-  LogicalExpr MakeBinaryLogical(
+  // Receives notification of a binary logical expression.
+  LogicalExpr OnBinaryLogical(
       expr::Kind kind, LogicalExpr lhs, LogicalExpr rhs) {
     return builder_.MakeBinaryLogical(kind, lhs, rhs);
   }
 
-  LogicalExpr MakeRelational(
+  // Receives notification of a relational expression.
+  LogicalExpr OnRelational(
       expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
     return builder_.MakeRelational(kind, lhs, rhs);
   }
 
-  LogicalExpr MakeLogicalCount(
+  // Receives notification of a logical count expression.
+  LogicalExpr OnLogicalCount(
       expr::Kind kind, NumericExpr lhs, CountExpr rhs) {
     return builder_.MakeLogicalCount(kind, lhs, rhs);
   }
 
-  LogicalExpr MakeImplication(
+  // Receives notification of an implication expression.
+  LogicalExpr OnImplication(
       LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
     return builder_.MakeImplication(condition, true_expr, false_expr);
   }
 
+  // Receives notification of the beginning of an iterated logical expression.
   LogicalArgHandler BeginIteratedLogical(expr::Kind kind, int num_args) {
     return builder_.BeginIteratedLogical(kind, num_args);
   }
+  // Receives notification of the end of an iterated logical expression.
   LogicalExpr EndIteratedLogical(LogicalArgHandler handler) {
     return builder_.EndIteratedLogical(handler);
   }
 
   typedef typename ProblemBuilder::AllDiffArgHandler AllDiffArgHandler;
 
+  // Receives notification of the beginning of an alldiff expression.
   AllDiffArgHandler BeginAllDiff(int num_args) {
     return builder_.BeginAllDiff(num_args);
   }
+  // Receives notification of the end of an alldiff expression.
   LogicalExpr EndAllDiff(AllDiffArgHandler handler) {
     return builder_.EndAllDiff(handler);
   }
 
-  Expr MakeStringLiteral(fmt::StringRef value) {
+  // Receives notification of a string literal.
+  Expr OnStringLiteral(fmt::StringRef value) {
     return builder_.MakeStringLiteral(value);
   }
 };
@@ -580,7 +634,7 @@ class NLReader {
   Variable DoReadVariable() {
     int var_index = ReadUInt(total_num_vars_);
     reader_.ReadTillEndOfLine();
-    return handler_.MakeVariable(var_index);
+    return handler_.OnVariable(var_index);
   }
 
   Variable ReadVariable() {
@@ -664,10 +718,10 @@ class NLReader {
     int num_items() const { return this->reader_.header_.num_vars; }
 
     void SetBounds(int index, double lb, double ub) {
-      this->reader_.handler_.SetVarBounds(index, lb, ub);
+      this->reader_.handler_.OnVarBounds(index, lb, ub);
     }
     void SetInitialValue(int index, double value) {
-      this->reader_.handler_.SetInitialValue(index, value);
+      this->reader_.handler_.OnInitialValue(index, value);
     }
   };
 
@@ -676,9 +730,8 @@ class NLReader {
 
     int num_items() const { return this->reader_.header_.num_objs; }
 
-    typename Handler::LinearObjHandler
-        GetLinearExprHandler(int index, int num_terms) {
-      return this->reader_.handler_.GetLinearObjHandler(index, num_terms);
+    typename Handler::LinearObjHandler OnLinearExpr(int index, int num_terms) {
+      return this->reader_.handler_.OnLinearObjExpr(index, num_terms);
     }
   };
 
@@ -687,16 +740,15 @@ class NLReader {
 
     int num_items() const { return this->reader_.header_.num_algebraic_cons; }
 
-    typename Handler::LinearConHandler
-        GetLinearExprHandler(int index, int num_terms) {
-      return this->reader_.handler_.GetLinearConHandler(index, num_terms);
+    typename Handler::LinearConHandler OnLinearExpr(int index, int num_terms) {
+      return this->reader_.handler_.OnLinearConExpr(index, num_terms);
     }
 
     void SetBounds(int index, double lb, double ub) {
-      this->reader_.handler_.SetConBounds(index, lb, ub);
+      this->reader_.handler_.OnConBounds(index, lb, ub);
     }
     void SetInitialValue(int index, double value) {
-      this->reader_.handler_.SetInitialDualValue(index, value);
+      this->reader_.handler_.OnInitialDualValue(index, value);
     }
   };
 
@@ -780,7 +832,7 @@ typename Handler::NumericExpr
       char c = reader_.ReadChar();
       switch (c) {
       case 'h':
-        args.AddArg(handler_.MakeStringLiteral(reader_.ReadString()));
+        args.AddArg(handler_.OnStringLiteral(reader_.ReadString()));
         break;
       case 'o': {
         int opcode = ReadOpCode();
@@ -797,7 +849,7 @@ typename Handler::NumericExpr
     return handler_.EndCall(args);
   }
   case 'n': case 'l': case 's':
-    return handler_.MakeNumericConstant(ReadConstant(code));
+    return handler_.OnNumericConstant(ReadConstant(code));
   case 'o':
     return ReadNumericExpr(ReadOpCode());
   case 'v':
@@ -815,16 +867,16 @@ typename Handler::NumericExpr
   expr::Kind kind = info.kind;
   switch (info.first_kind) {
   case expr::FIRST_UNARY:
-    return handler_.MakeUnary(kind, ReadNumericExpr());
+    return handler_.OnUnary(kind, ReadNumericExpr());
   case expr::FIRST_BINARY: {
     BinaryArgReader<> args(*this);
-    return handler_.MakeBinary(kind, args.lhs, args.rhs);
+    return handler_.OnBinary(kind, args.lhs, args.rhs);
   }
   case expr::IF: {
     LogicalExpr condition = ReadLogicalExpr();
     NumericExpr true_expr = ReadNumericExpr();
     NumericExpr false_expr = ReadNumericExpr();
-    return handler_.MakeIf(condition, true_expr, false_expr);
+    return handler_.OnIf(condition, true_expr, false_expr);
   }
   case expr::PLTERM: {
     int num_slopes = reader_.ReadUInt();
@@ -874,7 +926,7 @@ template <typename Reader, typename Handler>
 typename Handler::LogicalExpr NLReader<Reader, Handler>::ReadLogicalExpr() {
   switch (char c = reader_.ReadChar()) {
   case 'n': case 'l': case 's':
-    return handler_.MakeLogicalConstant(ReadConstant(c) != 0);
+    return handler_.OnLogicalConstant(ReadConstant(c) != 0);
   case 'o':
     return ReadLogicalExpr(ReadOpCode());
   }
@@ -889,27 +941,27 @@ typename Handler::LogicalExpr
   expr::Kind kind = info.kind;
   switch (info.first_kind) {
   case expr::NOT:
-    return handler_.MakeNot(ReadLogicalExpr());
+    return handler_.OnNot(ReadLogicalExpr());
   case expr::FIRST_BINARY_LOGICAL: {
     BinaryArgReader<LogicalExprReader> args(*this);
-    return handler_.MakeBinaryLogical(kind, args.lhs, args.rhs);
+    return handler_.OnBinaryLogical(kind, args.lhs, args.rhs);
   }
   case expr::FIRST_RELATIONAL: {
     BinaryArgReader<> args(*this);
-    return handler_.MakeRelational(kind, args.lhs, args.rhs);
+    return handler_.OnRelational(kind, args.lhs, args.rhs);
   }
   case expr::FIRST_LOGICAL_COUNT: {
     NumericExpr lhs = ReadNumericExpr();
     char c = reader_.ReadChar();
     if (c != 'o' || expr::GetOpCodeInfo(ReadOpCode()).kind != expr::COUNT)
       reader_.ReportError("expected count expression");
-    return handler_.MakeLogicalCount(kind, lhs, ReadCountExpr());
+    return handler_.OnLogicalCount(kind, lhs, ReadCountExpr());
   }
   case expr::IMPLICATION: {
     LogicalExpr condition = ReadLogicalExpr();
     LogicalExpr true_expr = ReadLogicalExpr();
     LogicalExpr false_expr = ReadLogicalExpr();
-    return handler_.MakeImplication(condition, true_expr, false_expr);
+    return handler_.OnImplication(condition, true_expr, false_expr);
   }
   case expr::FIRST_ITERATED_LOGICAL: {
     int num_args = ReadNumArgs();
@@ -937,7 +989,7 @@ void NLReader<Reader, Handler>::ReadLinearExpr() {
   int index = ReadUInt(lh.num_items());
   int num_terms = ReadUInt(1, total_num_vars_ + 1u);
   reader_.ReadTillEndOfLine();
-  ReadLinearExpr(num_terms, lh.GetLinearExprHandler(index, num_terms));
+  ReadLinearExpr(num_terms, lh.OnLinearExpr(index, num_terms));
 }
 
 template <typename Reader, typename Handler>
@@ -998,7 +1050,7 @@ void NLReader<Reader, Handler>::ReadBounds() {
           reader_.ReportError("integer {} out of bounds", var_index);
         --var_index;
         int mask = comp::INF_LB | comp::INF_UB;
-        handler_.SetComplement(i, var_index, flags & mask);
+        handler_.OnComplement(i, var_index, flags & mask);
         reader_.ReadTillEndOfLine();
         continue;
       }
@@ -1018,8 +1070,7 @@ void NLReader<Reader, Handler>::ReadColumnSizes() {
   if (reader_.ReadUInt() != num_sizes)
     reader_.ReportError("expected {}", num_sizes);
   reader_.ReadTillEndOfLine();
-  typename Handler::ColumnSizeHandler
-      size_handler = handler_.GetColumnSizeHandler();
+  typename Handler::ColumnSizeHandler size_handler = handler_.OnColumnSizes();
   int prev_size = 0;
   for (int i = 0; i < num_sizes; ++i) {
     int size = reader_.ReadUInt();
@@ -1059,7 +1110,7 @@ void NLReader<Reader, Handler>::ReadSuffix(int kind) {
   reader_.ReadTillEndOfLine();
   bool is_float = (kind & suf::FLOAT) != 0;
   typename Handler::SuffixHandler
-      suffix_handler = handler_.AddSuffix(kind, num_values, name);
+      suffix_handler = handler_.OnSuffix(kind, num_values, name);
   for (int i = 0; i < num_values; ++i) {
     int index = ReadUInt(num_items);
     if (is_float)
@@ -1086,14 +1137,14 @@ void NLReader<Reader, Handler>::Read() {
       // Nonlinear part of an algebraic constraint body.
       int index = ReadUInt(header_.num_algebraic_cons);
       reader_.ReadTillEndOfLine();
-      handler_.SetCon(index, ReadNumericExpr());
+      handler_.OnAlgebraicCon(index, ReadNumericExpr());
       break;
     }
     case 'L': {
       // Logical constraint expression.
       int index = ReadUInt(header_.num_logical_cons);
       reader_.ReadTillEndOfLine();
-      handler_.SetLogicalCon(index, ReadLogicalExpr());
+      handler_.OnLogicalCon(index, ReadLogicalExpr());
       break;
     }
     case 'O': {
@@ -1101,8 +1152,8 @@ void NLReader<Reader, Handler>::Read() {
       int index = ReadUInt(header_.num_objs);
       int obj_type = reader_.ReadUInt();
       reader_.ReadTillEndOfLine();
-      handler_.SetObj(index, obj_type != 0 ? obj::MAX : obj::MIN,
-                      ReadNumericExpr());
+      handler_.OnObj(index, obj_type != 0 ? obj::MAX : obj::MIN,
+                     ReadNumericExpr());
       break;
     }
     case 'V': {
@@ -1114,9 +1165,9 @@ void NLReader<Reader, Handler>::Read() {
       reader_.ReadTillEndOfLine();
       if (num_linear_terms != 0) {
         ReadLinearExpr(num_linear_terms,
-            handler_.GetLinearVarHandler(var_index, num_linear_terms));
+            handler_.OnLinearVarExpr(var_index, num_linear_terms));
       }
-      handler_.SetVar(var_index, ReadNumericExpr(), position);
+      handler_.OnDefinedVar(var_index, ReadNumericExpr(), position);
       break;
     }
     case 'F': {
@@ -1128,8 +1179,7 @@ void NLReader<Reader, Handler>::Read() {
       int num_args = reader_.template ReadInt<int>();
       fmt::StringRef name = reader_.ReadName();
       reader_.ReadTillEndOfLine();
-      handler_.SetFunction(index, name, num_args,
-                           static_cast<func::Type>(type));
+      handler_.OnFunction(index, name, num_args, static_cast<func::Type>(type));
       break;
     }
     case 'G':
@@ -1206,7 +1256,7 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
   internal::TextReader reader(str, name);
   NLHeader header = NLHeader();
   reader.ReadHeader(header);
-  handler.SetHeader(header);
+  handler.OnHeader(header);
   switch (header.format) {
   case NLHeader::TEXT:
     internal::NLReader<internal::TextReader, Handler>(

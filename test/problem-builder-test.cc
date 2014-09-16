@@ -30,7 +30,7 @@ class TestProblemBuilder :
 TEST(ProblemBuilderTest, AdaptForNL) {
   TestProblemBuilder builder;
   mp::BuildingNLHandler<TestProblemBuilder> handler(builder);
-  EXPECT_THROW_MSG(handler.MakeNumericConstant(0), mp::Error,
+  EXPECT_THROW_MSG(handler.OnNumericConstant(0), mp::Error,
                    "unsupported: numeric constant in nonlinear expression");
 }
 

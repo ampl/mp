@@ -396,17 +396,17 @@ class TestNLHandler {
   typedef std::string CountExpr;
   typedef std::string Variable;
 
-  void SetHeader(const NLHeader &) { log.clear(); }
+  void OnHeader(const NLHeader &) { log.clear(); }
 
-  void SetVarBounds(int index, double lb, double ub) {
+  void OnVarBounds(int index, double lb, double ub) {
     WriteBounds('v', index, lb, ub);
   }
 
-  void SetConBounds(int index, double lb, double ub) {
+  void OnConBounds(int index, double lb, double ub) {
     WriteBounds('c', index, lb, ub);
   }
 
-  void SetComplement(int con_index, int var_index, int flags) {
+  void OnComplement(int con_index, int var_index, int flags) {
     WriteSep().write("c{} complements v{} {};", con_index, var_index, flags);
   }
 
@@ -427,16 +427,16 @@ class TestNLHandler {
   typedef LinearExprHandler LinearObjHandler;
   typedef LinearExprHandler LinearConHandler;
 
-  LinearExprHandler GetLinearVarHandler(int index, int num_terms) {
-    WriteSep().write("v{} {}: ", index, num_terms);
-    return LinearExprHandler(log);
-  }
-  LinearExprHandler GetLinearObjHandler(int index, int num_terms) {
+  LinearExprHandler OnLinearObjExpr(int index, int num_terms) {
     WriteSep().write("o{} {}: ", index, num_terms);
     return LinearExprHandler(log);
   }
-  LinearExprHandler GetLinearConHandler(int index, int num_terms) {
+  LinearExprHandler OnLinearConExpr(int index, int num_terms) {
     WriteSep().write("c{} {}: ", index, num_terms);
+    return LinearExprHandler(log);
+  }
+  LinearExprHandler OnLinearVarExpr(int index, int num_terms) {
+    WriteSep().write("v{} {}: ", index, num_terms);
     return LinearExprHandler(log);
   }
 
@@ -449,37 +449,37 @@ class TestNLHandler {
     ~ColumnSizeHandler() { log_ << ';'; }
     void Add(int offset) { log_ << ' ' << offset; }
   };
-  ColumnSizeHandler GetColumnSizeHandler() {
+  ColumnSizeHandler OnColumnSizes() {
     log << "sizes:";
     return ColumnSizeHandler(log);
   }
 
-  void SetVar(int index, std::string expr, int position) {
-    WriteSep().write("v{}/{} = {};", index, position, expr);
-  }
-
-  void SetObj(int index, mp::obj::Type type, std::string expr) {
+  void OnObj(int index, mp::obj::Type type, std::string expr) {
     WriteSep() << (type == mp::obj::MAX ? "maximize" : "minimize")
         << " o" << index << ": " << expr << ";";
   }
 
-  void SetCon(int index, std::string expr) {
+  void OnAlgebraicCon(int index, std::string expr) {
     WriteSep() << "c" << index << ": " << expr << ";";
   }
 
-  void SetLogicalCon(int index, std::string expr) {
+  void OnLogicalCon(int index, std::string expr) {
     WriteSep() << "l" << index << ": " << expr << ";";
   }
 
-  void SetInitialValue(int var_index, double value) {
+  void OnDefinedVar(int index, std::string expr, int position) {
+    WriteSep().write("v{}/{} = {};", index, position, expr);
+  }
+
+  void OnInitialValue(int var_index, double value) {
     WriteSep().write("v{} := {};", var_index, value);
   }
 
-  void SetInitialDualValue(int con_index, double value) {
+  void OnInitialDualValue(int con_index, double value) {
     WriteSep().write("c{} := {};", con_index, value);
   }
 
-  void SetFunction(
+  void OnFunction(
       int index, fmt::StringRef name, int num_args, mp::func::Type type) {
     WriteSep().write("f{}: {} {} {};", index,
                      std::string(name.c_str(), name.size()), num_args, type);
@@ -508,29 +508,29 @@ class TestNLHandler {
     }
   };
 
-  SuffixHandler AddSuffix(int kind, int num_values, fmt::StringRef name) {
+  SuffixHandler OnSuffix(int kind, int num_values, fmt::StringRef name) {
     WriteSep().write("suffix {}:{}:{}:", name, kind, num_values);
     return SuffixHandler(log);
   }
 
-  std::string MakeNumericConstant(double value) {
+  std::string OnNumericConstant(double value) {
     return fmt::format("{}", value);
   }
 
-  std::string MakeVariable(int index) {
+  std::string OnVariable(int index) {
     return fmt::format("v{}", index);
   }
 
-  std::string MakeUnary(expr::Kind kind, std::string arg) {
+  std::string OnUnary(expr::Kind kind, std::string arg) {
     return fmt::format("u{}({})", opcode(kind), arg);
   }
 
-  std::string MakeBinary(expr::Kind kind, std::string lhs, std::string rhs) {
+  std::string OnBinary(expr::Kind kind, std::string lhs, std::string rhs) {
     return fmt::format("b{}({}, {})", opcode(kind), lhs, rhs);
   }
 
-  std::string MakeIf(std::string condition,
-                     std::string true_expr, std::string false_expr) {
+  std::string OnIf(std::string condition,
+                   std::string true_expr, std::string false_expr) {
     return fmt::format("if {} then {} else {}",
                        condition, true_expr, false_expr);
   }
@@ -619,29 +619,28 @@ class TestNLHandler {
     return w.str();
   }
 
-  std::string MakeLogicalConstant(bool value) {
+  std::string OnLogicalConstant(bool value) {
     return fmt::format("l{}", value);
   }
 
-  std::string MakeNot(std::string arg) { return fmt::format("not {}", arg); }
+  std::string OnNot(std::string arg) { return fmt::format("not {}", arg); }
 
-  std::string MakeBinaryLogical(
+  std::string OnBinaryLogical(
       expr::Kind kind, std::string lhs, std::string rhs) {
     return fmt::format("bl{}({}, {})", opcode(kind), lhs, rhs);
   }
 
-  std::string MakeRelational(
-      expr::Kind kind, std::string lhs, std::string rhs) {
+  std::string OnRelational(expr::Kind kind, std::string lhs, std::string rhs) {
     return fmt::format("r{}({}, {})", opcode(kind), lhs, rhs);
   }
 
-  std::string MakeLogicalCount(
+  std::string OnLogicalCount(
       expr::Kind kind, std::string lhs, std::string rhs) {
     return fmt::format("lc{}({}, {})", opcode(kind), lhs, rhs);
   }
 
-  std::string MakeImplication(std::string condition,
-                              std::string true_expr, std::string false_expr) {
+  std::string OnImplication(std::string condition,
+                            std::string true_expr, std::string false_expr) {
     return fmt::format("{} ==> {} else {}",
                        condition, true_expr, false_expr);
   }
@@ -658,7 +657,7 @@ class TestNLHandler {
   ArgHandler BeginAllDiff(int) { return ArgHandler("alldiff"); }
   std::string EndAllDiff(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
 
-  std::string MakeStringLiteral(fmt::StringRef value) {
+  std::string OnStringLiteral(fmt::StringRef value) {
     return fmt::format("'{}'", std::string(value.c_str(), value.size()));
   }
 };
@@ -711,11 +710,11 @@ struct TestNLHandler2 {
   typedef struct TestCountExpr : TestNumericExpr {} CountExpr;
   typedef struct TestLogicalExpr : TestExpr {} LogicalExpr;
 
-  void SetHeader(const NLHeader &) {}
+  void OnHeader(const NLHeader &) {}
 
-  void SetVarBounds(int, double, double) {}
-  void SetConBounds(int, double, double) {}
-  void SetComplement(int, int, int) {}
+  void OnVarBounds(int, double, double) {}
+  void OnConBounds(int, double, double) {}
+  void OnComplement(int, int, int) {}
 
   struct LinearObjHandler {
     void AddTerm(int, double) {}
@@ -723,47 +722,47 @@ struct TestNLHandler2 {
   struct LinearConHandler {
     void AddTerm(int, double) {}
   };
-  LinearConHandler GetLinearVarHandler(int, int) {
-    return LinearConHandler();
-  }
-  LinearObjHandler GetLinearObjHandler(int, int) {
+  LinearObjHandler OnLinearObjExpr(int, int) {
     return LinearObjHandler();
   }
-  LinearConHandler GetLinearConHandler(int, int) {
+  LinearConHandler OnLinearConExpr(int, int) {
+    return LinearConHandler();
+  }
+  LinearConHandler OnLinearVarExpr(int, int) {
     return LinearConHandler();
   }
 
   struct ColumnSizeHandler {
     void Add(int) {}
   };
-  ColumnSizeHandler GetColumnSizeHandler() { return ColumnSizeHandler(); }
+  ColumnSizeHandler OnColumnSizes() { return ColumnSizeHandler(); }
 
-  void SetVar(int, TestNumericExpr, int) {}
-  void SetObj(int, mp::obj::Type, TestNumericExpr) {}
-  void SetCon(int, TestNumericExpr) {}
-  void SetLogicalCon(int, TestLogicalExpr) {}
+  void OnObj(int, mp::obj::Type, TestNumericExpr) {}
+  void OnAlgebraicCon(int, TestNumericExpr) {}
+  void OnLogicalCon(int, TestLogicalExpr) {}
+  void OnDefinedVar(int, TestNumericExpr, int) {}
 
-  void SetInitialValue(int, double) {}
-  void SetInitialDualValue(int, double) {}
+  void OnInitialValue(int, double) {}
+  void OnInitialDualValue(int, double) {}
 
-  void SetFunction(int, fmt::StringRef, int, mp::func::Type) {}
+  void OnFunction(int, fmt::StringRef, int, mp::func::Type) {}
 
   struct SuffixHandler {
     void SetValue(int, double) {}
   };
-  SuffixHandler AddSuffix(int, int, fmt::StringRef) { return SuffixHandler(); }
+  SuffixHandler OnSuffix(int, int, fmt::StringRef) { return SuffixHandler(); }
 
-  TestNumericExpr MakeNumericConstant(double) { return TestNumericExpr(); }
-  TestVariable MakeVariable(int) { return TestVariable(); }
-  TestNumericExpr MakeUnary(expr::Kind, TestNumericExpr) {
+  TestNumericExpr OnNumericConstant(double) { return TestNumericExpr(); }
+  TestVariable OnVariable(int) { return TestVariable(); }
+  TestNumericExpr OnUnary(expr::Kind, TestNumericExpr) {
     return TestNumericExpr();
   }
 
-  TestNumericExpr MakeBinary(expr::Kind, TestNumericExpr, TestNumericExpr) {
+  TestNumericExpr OnBinary(expr::Kind, TestNumericExpr, TestNumericExpr) {
     return TestNumericExpr();
   }
 
-  TestNumericExpr MakeIf(TestLogicalExpr, TestNumericExpr, TestNumericExpr) {
+  TestNumericExpr OnIf(TestLogicalExpr, TestNumericExpr, TestNumericExpr) {
     return TestNumericExpr();
   }
 
@@ -809,23 +808,23 @@ struct TestNLHandler2 {
   NumericArgHandler BeginNumberOf(int) { return NumericArgHandler(); }
   TestNumericExpr EndNumberOf(NumericArgHandler) { return TestNumericExpr(); }
 
-  TestLogicalExpr MakeLogicalConstant(bool) { return TestLogicalExpr(); }
-  TestLogicalExpr MakeNot(TestLogicalExpr) { return TestLogicalExpr(); }
+  TestLogicalExpr OnLogicalConstant(bool) { return TestLogicalExpr(); }
+  TestLogicalExpr OnNot(TestLogicalExpr) { return TestLogicalExpr(); }
 
-  TestLogicalExpr MakeBinaryLogical(
+  TestLogicalExpr OnBinaryLogical(
       expr::Kind, TestLogicalExpr, TestLogicalExpr) {
     return TestLogicalExpr();
   }
 
-  TestLogicalExpr MakeRelational(expr::Kind, TestNumericExpr, TestNumericExpr) {
+  TestLogicalExpr OnRelational(expr::Kind, TestNumericExpr, TestNumericExpr) {
     return TestLogicalExpr();
   }
 
-  TestLogicalExpr MakeLogicalCount(expr::Kind, TestNumericExpr, TestCountExpr) {
+  TestLogicalExpr OnLogicalCount(expr::Kind, TestNumericExpr, TestCountExpr) {
     return TestLogicalExpr();
   }
 
-  TestLogicalExpr MakeImplication(
+  TestLogicalExpr OnImplication(
       TestLogicalExpr, TestLogicalExpr, TestLogicalExpr) {
     return TestLogicalExpr();
   }
@@ -844,7 +843,7 @@ struct TestNLHandler2 {
   AllDiffArgHandler BeginAllDiff(int) { return AllDiffArgHandler(); }
   TestLogicalExpr EndAllDiff(AllDiffArgHandler) { return TestLogicalExpr(); }
 
-  TestExpr MakeStringLiteral(fmt::StringRef) { return TestExpr(); }
+  TestExpr OnStringLiteral(fmt::StringRef) { return TestExpr(); }
 };
 
 NLHeader MakeHeader() {

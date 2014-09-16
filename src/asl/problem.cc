@@ -56,8 +56,8 @@ class ASLHandler : public mp::BuildingNLHandler<ASLBuilder> {
 
   int flags() const { return flags_; }
 
-  void SetHeader(const mp::NLHeader &h) {
-    Base::SetHeader(h);
+  void OnHeader(const mp::NLHeader &h) {
+    Base::OnHeader(h);
     flags_ = h.flags;
   }
 };
