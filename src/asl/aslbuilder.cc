@@ -554,7 +554,10 @@ Function ASLBuilder::AddFunction(
 Function ASLBuilder::SetFunction(
     int index, fmt::StringRef name, int num_args, func::Type type) {
   assert(index >= 0 && index < asl_->i.nfunc_);
-  func_info *fi = func_lookup_ASL(asl_, name.c_str(), 0);
+  // Make sure the name is null-terminated for C API.
+  fmt::Writer cname;
+  cname << name;
+  func_info *fi = func_lookup_ASL(asl_, cname.c_str(), 0);
   if (fi) {
     if (fi->nargs != num_args && fi->nargs >= 0 &&
         (num_args >= 0 || fi->nargs < -(num_args + 1))) {
@@ -568,10 +571,9 @@ Function ASLBuilder::SetFunction(
     fi->nargs = num_args;
     fi->funcp = 0;
     int length = AddPadding(name.size() + 1);
-    // TODO: name may not be null terminated
-    fi->name = std::strcpy(Allocate<char>(length), name.c_str());
+    fi->name = std::strcpy(Allocate<char>(length), cname.c_str());
   }
-  if (!fi->funcp && !(fi->funcp = dynlink(name.c_str()))) {
+  if (!fi->funcp && !(fi->funcp = dynlink(cname.c_str()))) {
     if (!(flags_ & ASL_allow_missing_funcs)) {
       throw ASLError(ASL_readerr_unavail,
                      fmt::format("function {} not available", name));
