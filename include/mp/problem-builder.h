@@ -25,14 +25,12 @@
 
 #include <memory>
 
-#include "mp/format.h"
+#include "mp/error.h"
 #include "mp/problem-base.h"
 
 #define MP_UNUSED(x) (void)(x)
 
 namespace mp {
-
-struct NLHeader;
 
 // A minimal implementation of the ProblemBuilder concept.
 template <typename Impl, typename Expr>
@@ -59,7 +57,7 @@ class ProblemBuilder {
     throw Error("unsupported: {}", name);
   }
 
-  void BeginBuild(const NLHeader &) {}
+  void SetInfo(const ProblemInfo &) {}
 
   // Sets a defined variable expression.
   // index: Index of a defined variable;
@@ -181,13 +179,14 @@ class ProblemBuilder {
 
   NumericExpr MakeNumericConstant(double value) {
     MP_UNUSED(value);
-    MP_DISPATCH(ReportUnhandledConstruct("numeric constant"));
+    MP_DISPATCH(ReportUnhandledConstruct(
+                  "numeric constant in nonlinear expression"));
     return NumericExpr();
   }
 
   Variable MakeVariable(int var_index) {
     MP_UNUSED(var_index);
-    MP_DISPATCH(ReportUnhandledConstruct("variable"));
+    MP_DISPATCH(ReportUnhandledConstruct("nonlinear variable"));
     return Variable();
   }
 
@@ -345,9 +344,6 @@ class ProblemBuilder {
     return StringLiteral();
   }
 };
-
-// TODO: test
-
 }  // namespace mp
 
 #endif  // MP_PROBLEM_BUILDER_H_

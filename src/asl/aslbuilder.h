@@ -211,10 +211,9 @@ class ASLBuilder {
   // Instead it uses the information provided in NLHeader.
   void InitASL(const NLHeader &h);
 
-  // Begins building the ASL object.
-  // flags: reader flags, see ASL_reader_flag_bits.
+  // Sets problem information.
   // Throws ASLError on error.
-  void BeginBuild(const NLHeader &h);
+  void SetInfo(const ProblemInfo &pi);
 
   // Ends building the ASL object.
   void EndBuild();

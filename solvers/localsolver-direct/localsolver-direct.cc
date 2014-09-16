@@ -178,7 +178,7 @@ ls::LSExpression NLToLocalSolverConverter::VisitLog10(UnaryExpr e) {
 }*/
 
 LocalSolver::LocalSolver()
-  : SolverImpl("localsolver", 0, 20140710), timelimit_(0) {
+  : SolverImpl<LSProblemBuilder>("localsolver", 0, 20140710), timelimit_(0) {
   std::string version = fmt::format("{}.{}",
       localsolver::LSVersion::getMajorVersionNumber(),
       localsolver::LSVersion::getMinorVersionNumber());

@@ -23,10 +23,9 @@
 #include <climits>
 #include <cstring>
 
-#include <gtest/gtest.h>
+#include "gtest-extra.h"
 #include "mp/nl.h"
 #include "util.h"
-#include "gtest-extra.h"
 
 using mp::NLHeader;
 using mp::ReadError;
@@ -397,7 +396,7 @@ class TestNLHandler {
   typedef std::string CountExpr;
   typedef std::string Variable;
 
-  void BeginBuild(const NLHeader &) { log.clear(); }
+  void SetInfo(const mp::ProblemInfo &) { log.clear(); }
 
   void SetVarBounds(int index, double lb, double ub) {
     WriteBounds('v', index, lb, ub);
@@ -665,21 +664,60 @@ class TestNLHandler {
 };
 
 TEST(NLTest, WriteTextHeader) {
-  NLHeader header = {
-    NLHeader::TEXT,
-    9, {2, 3, 5, 7, 11, 13, 17, 19, 23}, 1.23,
-    29, 47, 37, 41, 43, 31,
-    53, 59, 67, 61, 71, 73,
-    79, 83,
-    89, 97, 101,
-    103, 107, mp::arith::IEEE_LITTLE_ENDIAN, 109,
-    113, 127, 131, 137, 139,
-    149, 151,
-    157, 163,
-    167, 173, 179, 181, 191
-  };
+  NLHeader h = NLHeader();
+  h.format = NLHeader::TEXT;
+  h.num_options = 9;
+  int options[] = {2, 3, 5, 7, 11, 13, 17, 19, 23};
+  for (int i = 0; i < h.num_options; ++i)
+    h.options[i] = options[i];
+  h.ampl_vbtol = 1.23;
+
+  h.num_vars = 29;
+  h.num_algebraic_cons = 47;
+  h.num_objs = 37;
+  h.num_ranges = 41;
+  h.num_eqns = 43;
+  h.num_logical_cons = 31;
+
+  h.num_nl_cons = 53;
+  h.num_nl_objs = 59;
+  h.num_compl_conds = 67;
+  h.num_nl_compl_conds = 61;
+  h.num_compl_dbl_ineqs = 71;
+  h.num_compl_vars_with_nz_lb = 73;
+
+  h.num_nl_net_cons = 79;
+  h.num_linear_net_cons = 83;
+
+  h.num_nl_vars_in_cons = 89;
+  h.num_nl_vars_in_objs = 97;
+  h.num_nl_vars_in_both = 101;
+
+  h.num_linear_net_vars = 103;
+  h.num_funcs = 107;
+  h.arith_kind = mp::arith::IEEE_LITTLE_ENDIAN;
+  h.flags = 109;
+
+  h.num_linear_binary_vars = 113;
+  h.num_linear_integer_vars = 127;
+  h.num_nl_integer_vars_in_both = 131;
+  h.num_nl_integer_vars_in_cons = 137;
+  h.num_nl_integer_vars_in_objs = 139;
+
+  h.num_con_nonzeros = 149;
+  h.num_obj_nonzeros = 151;
+
+  h.max_con_name_len = 157;
+  h.max_var_name_len = 163;
+
+  h.num_common_exprs_in_both = 167;
+  h.num_common_exprs_in_cons = 173;
+  h.num_common_exprs_in_objs = 179;
+  h.num_common_exprs_in_single_cons = 181;
+  h.num_common_exprs_in_single_objs = 191;
+
   fmt::Writer w;
-  w << header;
+  w << h;
   EXPECT_EQ(
       "g9 2 3 5 7 11 13 17 19 23 1.23\n"
       " 29 47 37 41 43 31\n"
@@ -724,7 +762,7 @@ struct TestNLHandler2 {
   typedef struct TestCountExpr : TestNumericExpr {} CountExpr;
   typedef struct TestLogicalExpr : TestExpr {} LogicalExpr;
 
-  void BeginBuild(const NLHeader &) {}
+  void SetInfo(const mp::ProblemInfo &) {}
 
   void SetVarBounds(int, double, double) {}
   void SetConBounds(int, double, double) {}

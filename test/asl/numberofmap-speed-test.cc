@@ -9,10 +9,10 @@ struct CreateVar {
 int main() {
   mp::internal::ASLBuilder b;
   int num_exprs = 10000;
-  mp::NLHeader h = mp::NLHeader();
-  h.num_vars = num_exprs;
-  h.num_objs = 1;
-  b.BeginBuild(h);
+  mp::ProblemInfo pi = mp::ProblemInfo();
+  pi.num_vars = num_exprs;
+  pi.num_objs = 1;
+  b.SetInfo(pi);
   mp::NumberOfMap<int, CreateVar> map((CreateVar()));
   mp::NumericConstant n = b.MakeNumericConstant(0);
   std::vector<mp::NumberOfExpr> exprs(num_exprs);

@@ -304,8 +304,11 @@ void ASLBuilder::InitASL(const NLHeader &h) {
   info.c_vars_ = info.o_vars_ = info.n_var_;
 }
 
-void ASLBuilder::BeginBuild(const NLHeader &h) {
-  InitASL(h);
+void ASLBuilder::SetInfo(const ProblemInfo &pi) {
+  NLHeader header = NLHeader();
+  ProblemInfo &header_pi = header;
+  header_pi = pi;
+  InitASL(header);
 
   bool linear = asl_->i.ASLtype == ASL_read_f;
 
