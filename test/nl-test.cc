@@ -1173,4 +1173,7 @@ TEST(NLTest, InvalidSegmentType) {
   EXPECT_READ_ERROR(std::string("C0\nn4.2\n") + '\0',
                     "(input):13:1: invalid segment type");
 }
+
+// TODO: test ProblemBuilderToNLAdapter
+
 }  // namespace

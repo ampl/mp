@@ -127,12 +127,12 @@ fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h);
 
 // Adapts ProblemBuilder for use as an .nl handler.
 template <typename ProblemBuilder>
-class BuildingNLHandler {
+class ProblemBuilderToNLAdapter {
  private:
   ProblemBuilder &builder_;
 
  public:
-  BuildingNLHandler(ProblemBuilder &builder) : builder_(builder) {}
+  ProblemBuilderToNLAdapter(ProblemBuilder &builder) : builder_(builder) {}
 
   typedef typename ProblemBuilder::Expr Expr;
   typedef typename ProblemBuilder::NumericExpr NumericExpr;

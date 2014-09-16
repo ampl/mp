@@ -45,11 +45,11 @@ using mp::internal::ASLBuilder;
 namespace {
 
 // An .nl handler that builds an ASL problem using ASLBuilder.
-class ASLHandler : public mp::BuildingNLHandler<ASLBuilder> {
+class ASLHandler : public mp::ProblemBuilderToNLAdapter<ASLBuilder> {
  private:
   int flags_;
 
-  typedef mp::BuildingNLHandler<ASLBuilder> Base;
+  typedef mp::ProblemBuilderToNLAdapter<ASLBuilder> Base;
 
  public:
   ASLHandler(ASLBuilder &b) : Base(b) {}
