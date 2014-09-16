@@ -477,4 +477,9 @@ Solver::DoubleFormatter Solver::FormatObjValue(double value) {
   DoubleFormatter formatter = {value, obj_precision_};
   return formatter;
 }
+
+int Solver::Run(char **argv) {
+  // TODO
+  return 1;
+}
 }  // namespace mp

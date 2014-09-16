@@ -23,7 +23,7 @@
 #define MP_EXPORT
 #include "solver-c.h"
 
-#include "aslsolver.h"
+#include "mp/solver.h"
 
 #include <cstring>
 #include <exception>

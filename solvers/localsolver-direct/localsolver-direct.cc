@@ -290,5 +290,5 @@ void LocalSolver::Solve(LSProblemBuilder &pb) {
 }
 
 // TODO
-//SolverPtr CreateSolver(const char *) { return SolverPtr(new LocalSolver()); }
-}
+SolverPtr CreateSolver(const char *) { return SolverPtr(new LocalSolver()); }
+}  // namespace mp

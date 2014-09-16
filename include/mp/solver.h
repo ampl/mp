@@ -857,6 +857,9 @@ class Solver : private ErrorHandler, private OutputHandler {
   // Usage:
   //   Print("objective {}", FormatObjValue(obj_value));
   DoubleFormatter FormatObjValue(double value);
+
+  // Runs the solver.
+  virtual int Run(char **argv);
 };
 
 template <typename ProblemBuilder>
@@ -866,6 +869,19 @@ class SolverImpl : public Solver {
              long date = 0, int flags = 0)
     : Solver(name, long_name, date, flags) {}
 };
+
+#ifdef MP_USE_UNIQUE_PTR
+typedef std::unique_ptr<Solver> SolverPtr;
+#else
+typedef std::auto_ptr<Solver> SolverPtr;
+inline SolverPtr move(SolverPtr p) { return p; }
+#endif
+
+// Implement this function in your code returning a new concrete solver object.
+// options: Solver initialization options.
+// Example:
+//   SolverPtr CreateSolver(const char *) { return SolverPtr(new MySolver()); }
+SolverPtr CreateSolver(const char *options);
 }  // namespace mp
 
 #endif  // MP_SOLVER_H_

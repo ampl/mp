@@ -220,7 +220,7 @@ add_prefix(MP_HEADERS include/mp/
   rstparser.h safeint.h solver.h)
 set(MP_SOURCES )
 add_prefix(MP_SOURCES src/
-  clock.cc nl.cc os.cc precedence.h rstparser.cc solver.cc)
+  clock.cc nl.cc os.cc precedence.h rstparser.cc solver.cc solver-c.h)
 
 add_mp_library(mp ${MP_HEADERS} ${MP_SOURCES} ${MP_EXPR_INFO_FILE}
   COMPILE_DEFINITIONS MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}"

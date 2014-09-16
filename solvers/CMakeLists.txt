@@ -110,7 +110,7 @@ function(add_ampl_solver name)
   endif ()
 
   # Add a solver shared library.
-  add_library(ampl${name} SHARED ${PROJECT_SOURCE_DIR}/src/asl/solver-c.cc)
+  add_library(ampl${name} SHARED ${PROJECT_SOURCE_DIR}/src/solver-c.cc)
   target_link_libraries(ampl${name} ${static_lib})
 
   # Add a solver executable.

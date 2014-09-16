@@ -67,19 +67,6 @@ class ASLSolver : public SolverImpl<internal::ASLBuilder> {
   // Runs the solver.
   int Run(char **argv);
 };
-
-#ifdef MP_USE_UNIQUE_PTR
-typedef std::unique_ptr<ASLSolver> SolverPtr;
-#else
-typedef std::auto_ptr<ASLSolver> SolverPtr;
-inline SolverPtr move(SolverPtr p) { return p; }
-#endif
-
-// Implement this function in your code returning a new concrete solver object.
-// options: Solver initialization options.
-// Example:
-//   SolverPtr CreateSolver(const char *) { return SolverPtr(new MySolver()); }
-SolverPtr CreateSolver(const char *options);
 }
 
 #endif  // MP_ASL_SOLVER_H_
