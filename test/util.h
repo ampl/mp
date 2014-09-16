@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "mp/format.h"
+#include "mp/nl.h"
 #include "mp/os.h"
 
 std::string ReadFile(fmt::StringRef name);
@@ -55,5 +56,7 @@ std::vector<std::string> Split(const std::string &s, char sep);
 
 // Replace line at line_index in s with new_line.
 std::string ReplaceLine(std::string s, int line_index, const char *new_line);
+
+mp::NLHeader MakeTestHeader();
 
 #endif  // TEST_UTIL_H_

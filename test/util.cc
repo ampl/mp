@@ -120,3 +120,58 @@ std::string ReplaceLine(std::string s, int line_index, const char *new_line) {
   s.replace(start, end - start, new_line);
   return s;
 }
+
+mp::NLHeader MakeTestHeader() {
+  mp::NLHeader h = mp::NLHeader();
+  h.format = mp::NLHeader::TEXT;
+  h.num_options = 9;
+  int options[] = {2, 3, 5, 7, 11, 13, 17, 19, 23};
+  for (int i = 0; i < h.num_options; ++i)
+    h.options[i] = options[i];
+  h.ampl_vbtol = 1.23;
+
+  h.num_vars = 29;
+  h.num_algebraic_cons = 47;
+  h.num_objs = 37;
+  h.num_ranges = 41;
+  h.num_eqns = 43;
+  h.num_logical_cons = 31;
+
+  h.num_nl_cons = 53;
+  h.num_nl_objs = 59;
+  h.num_compl_conds = 67;
+  h.num_nl_compl_conds = 61;
+  h.num_compl_dbl_ineqs = 71;
+  h.num_compl_vars_with_nz_lb = 73;
+
+  h.num_nl_net_cons = 79;
+  h.num_linear_net_cons = 83;
+
+  h.num_nl_vars_in_cons = 89;
+  h.num_nl_vars_in_objs = 97;
+  h.num_nl_vars_in_both = 101;
+
+  h.num_linear_net_vars = 103;
+  h.num_funcs = 107;
+  h.arith_kind = mp::arith::IEEE_LITTLE_ENDIAN;
+  h.flags = 109;
+
+  h.num_linear_binary_vars = 113;
+  h.num_linear_integer_vars = 127;
+  h.num_nl_integer_vars_in_both = 131;
+  h.num_nl_integer_vars_in_cons = 137;
+  h.num_nl_integer_vars_in_objs = 139;
+
+  h.num_con_nonzeros = 149;
+  h.num_obj_nonzeros = 151;
+
+  h.max_con_name_len = 157;
+  h.max_var_name_len = 163;
+
+  h.num_common_exprs_in_both = 167;
+  h.num_common_exprs_in_cons = 173;
+  h.num_common_exprs_in_objs = 179;
+  h.num_common_exprs_in_single_cons = 181;
+  h.num_common_exprs_in_single_objs = 191;
+  return h;
+}

@@ -245,11 +245,11 @@ class IlogCPTest : public ::testing::Test, public mp::internal::ASLBuilder {
   IlogCPSolver s;
 
   IlogCPTest() {
-    mp::NLHeader h = mp::NLHeader();
-    h.num_vars = 3;
-    h.num_objs = 1;
     set_flags(mp::internal::ASL_STANDARD_OPCODES);
-    BeginBuild(h);
+    mp::ProblemInfo info = mp::ProblemInfo();
+    info.num_vars = 3;
+    info.num_objs = 1;
+    SetInfo(info);
   }
 
   int CountIloDistribute();
