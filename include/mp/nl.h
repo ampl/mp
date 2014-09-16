@@ -125,6 +125,206 @@ struct NLHeader : ProblemInfo {
 // Writes NLHeader in the .nl file format.
 fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h);
 
+// Adapts ProblemBuilder for use as an .nl handler.
+template <typename ProblemBuilder>
+class BuildingNLHandler {
+ private:
+  ProblemBuilder &builder_;
+
+ public:
+  BuildingNLHandler(ProblemBuilder &builder) : builder_(builder) {}
+
+  typedef typename ProblemBuilder::Expr Expr;
+  typedef typename ProblemBuilder::NumericExpr NumericExpr;
+  typedef typename ProblemBuilder::LogicalExpr LogicalExpr;
+  typedef typename ProblemBuilder::CountExpr CountExpr;
+  typedef typename ProblemBuilder::Variable Variable;
+
+  void SetHeader(const NLHeader &h) { builder_.SetInfo(h); }
+
+  void SetVar(int index, NumericExpr expr, int position) {
+    builder_.SetVar(index, expr, position);
+  }
+  void SetObj(int index, obj::Type type, NumericExpr expr) {
+    builder_.SetObj(index, type, expr);
+  }
+  void SetCon(int index, NumericExpr expr) {
+    builder_.SetCon(index, expr);
+  }
+  void SetLogicalCon(int index, LogicalExpr expr) {
+    builder_.SetLogicalCon(index, expr);
+  }
+  void SetComplement(int con_index, int var_index, int flags) {
+    builder_.SetComplement(con_index, var_index, flags);
+  }
+
+  typedef typename ProblemBuilder::LinearVarHandler LinearVarHandler;
+
+  LinearVarHandler GetLinearVarHandler(int var_index, int num_linear_terms) {
+    return builder_.GetLinearVarHandler(var_index, num_linear_terms);
+  }
+
+  typedef typename ProblemBuilder::LinearObjHandler LinearObjHandler;
+
+  LinearObjHandler GetLinearObjHandler(int obj_index, int num_linear_terms) {
+    return builder_.GetLinearObjHandler(obj_index, num_linear_terms);
+  }
+
+  typedef typename ProblemBuilder::LinearConHandler LinearConHandler;
+
+  LinearConHandler GetLinearConHandler(int con_index, int num_linear_terms) {
+    return builder_.GetLinearConHandler(con_index, num_linear_terms);
+  }
+
+  void SetVarBounds(int index, double lb, double ub) {
+    builder_.SetVarBounds(index, lb, ub);
+  }
+  void SetConBounds(int index, double lb, double ub) {
+    builder_.SetConBounds(index, lb, ub);
+  }
+
+  void SetInitialValue(int var_index, double value) {
+    builder_.SetInitialValue(var_index, value);
+  }
+  void SetInitialDualValue(int con_index, double value) {
+    builder_.SetInitialDualValue(con_index, value);
+  }
+
+  typedef typename ProblemBuilder::ColumnSizeHandler ColumnSizeHandler;
+
+  ColumnSizeHandler GetColumnSizeHandler() {
+    return builder_.GetColumnSizeHandler();
+  }
+
+  void SetFunction(int index, fmt::StringRef name,
+                   int num_args, func::Type type) {
+    builder_.SetFunction(index, name, num_args, type);
+  }
+
+  typedef typename ProblemBuilder::SuffixHandler SuffixHandler;
+
+  SuffixHandler AddSuffix(int kind, int num_values, fmt::StringRef name) {
+    return builder_.AddSuffix(kind, num_values, name);
+  }
+
+  typedef typename ProblemBuilder::NumericArgHandler NumericArgHandler;
+  typedef typename ProblemBuilder::LogicalArgHandler LogicalArgHandler;
+  typedef typename ProblemBuilder::CallArgHandler CallArgHandler;
+
+  NumericExpr MakeNumericConstant(double value) {
+    return builder_.MakeNumericConstant(value);
+  }
+
+  Variable MakeVariable(int var_index) {
+    return builder_.MakeVariable(var_index);
+  }
+
+  NumericExpr MakeUnary(expr::Kind kind, NumericExpr arg) {
+    return builder_.MakeUnary(kind, arg);
+  }
+
+  NumericExpr MakeBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
+    return builder_.MakeBinary(kind, lhs, rhs);
+  }
+
+  NumericExpr MakeIf(LogicalExpr condition,
+      NumericExpr true_expr, NumericExpr false_expr) {
+    return builder_.MakeIf(condition, true_expr, false_expr);
+  }
+
+  typedef typename ProblemBuilder::PLTermHandler PLTermHandler;
+
+  PLTermHandler BeginPLTerm(int num_breakpoints) {
+    return builder_.BeginPLTerm(num_breakpoints);
+  }
+  NumericExpr EndPLTerm(PLTermHandler handler, Variable var) {
+    return builder_.EndPLTerm(handler, var);
+  }
+
+  CallArgHandler BeginCall(int func_index, int num_args) {
+    return builder_.BeginCall(func_index, num_args);
+  }
+  NumericExpr EndCall(CallArgHandler handler) {
+    return builder_.EndCall(handler);
+  }
+
+  NumericArgHandler BeginVarArg(expr::Kind kind, int num_args) {
+    return builder_.BeginVarArg(kind, num_args);
+  }
+  NumericExpr EndVarArg(NumericArgHandler handler) {
+    return builder_.EndVarArg(handler);
+  }
+
+  NumericArgHandler BeginSum(int num_args) {
+    return builder_.BeginSum(num_args);
+  }
+  NumericExpr EndSum(NumericArgHandler handler) {
+    return builder_.EndSum(handler);
+  }
+
+  LogicalArgHandler BeginCount(int num_args) {
+    return builder_.BeginCount(num_args);
+  }
+  CountExpr EndCount(LogicalArgHandler handler) {
+    return builder_.EndCount(handler);
+  }
+
+  NumericArgHandler BeginNumberOf(int num_args) {
+    return builder_.BeginNumberOf(num_args);
+  }
+  NumericExpr EndNumberOf(NumericArgHandler handler) {
+    return builder_.EndNumberOf(handler);
+  }
+
+  LogicalExpr MakeLogicalConstant(bool value) {
+    return builder_.MakeLogicalConstant(value);
+  }
+
+  LogicalExpr MakeNot(LogicalExpr arg) {
+    return builder_.MakeNot(arg);
+  }
+
+  LogicalExpr MakeBinaryLogical(
+      expr::Kind kind, LogicalExpr lhs, LogicalExpr rhs) {
+    return builder_.MakeBinaryLogical(kind, lhs, rhs);
+  }
+
+  LogicalExpr MakeRelational(
+      expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
+    return builder_.MakeRelational(kind, lhs, rhs);
+  }
+
+  LogicalExpr MakeLogicalCount(
+      expr::Kind kind, NumericExpr lhs, CountExpr rhs) {
+    return builder_.MakeLogicalCount(kind, lhs, rhs);
+  }
+
+  LogicalExpr MakeImplication(
+      LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
+    return builder_.MakeImplication(condition, true_expr, false_expr);
+  }
+
+  LogicalArgHandler BeginIteratedLogical(expr::Kind kind, int num_args) {
+    return builder_.BeginIteratedLogical(kind, num_args);
+  }
+  LogicalExpr EndIteratedLogical(LogicalArgHandler handler) {
+    return builder_.EndIteratedLogical(handler);
+  }
+
+  typedef typename ProblemBuilder::AllDiffArgHandler AllDiffArgHandler;
+
+  AllDiffArgHandler BeginAllDiff(int num_args) {
+    return builder_.BeginAllDiff(num_args);
+  }
+  LogicalExpr EndAllDiff(AllDiffArgHandler handler) {
+    return builder_.EndAllDiff(handler);
+  }
+
+  Expr MakeStringLiteral(fmt::StringRef value) {
+    return builder_.MakeStringLiteral(value);
+  }
+};
+
 namespace internal {
 
 class ReaderBase {
@@ -1006,8 +1206,7 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
   internal::TextReader reader(str, name);
   NLHeader header = NLHeader();
   reader.ReadHeader(header);
-  // TODO: pass options to the handler
-  handler.SetInfo(header);
+  handler.SetHeader(header);
   switch (header.format) {
   case NLHeader::TEXT:
     internal::NLReader<internal::TextReader, Handler>(

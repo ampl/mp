@@ -29,7 +29,8 @@ int main(int, char **argv) {
     // TODO: parse command-line arguments
     solver.ParseOptions(argv);
     mp::LSProblemBuilder builder(solver);
-    mp::ReadNLFile(argv[1] + std::string(".nl"), builder);
+    mp::BuildingNLHandler<mp::LSProblemBuilder> handler(builder);
+    mp::ReadNLFile(argv[1] + std::string(".nl"), handler);
     solver.Solve(builder);
     // TODO: write solution
     return 0;

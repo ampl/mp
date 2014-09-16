@@ -396,7 +396,7 @@ class TestNLHandler {
   typedef std::string CountExpr;
   typedef std::string Variable;
 
-  void SetInfo(const mp::ProblemInfo &) { log.clear(); }
+  void SetHeader(const NLHeader &) { log.clear(); }
 
   void SetVarBounds(int index, double lb, double ub) {
     WriteBounds('v', index, lb, ub);
@@ -711,7 +711,7 @@ struct TestNLHandler2 {
   typedef struct TestCountExpr : TestNumericExpr {} CountExpr;
   typedef struct TestLogicalExpr : TestExpr {} LogicalExpr;
 
-  void SetInfo(const mp::ProblemInfo &) {}
+  void SetHeader(const NLHeader &) {}
 
   void SetVarBounds(int, double, double) {}
   void SetConBounds(int, double, double) {}

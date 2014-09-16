@@ -184,7 +184,7 @@ class ASLBuilder {
       //if (args[i].kind() == expr::IFSYM)
       //  ++num_ifsyms;
     }
-    void AddArg(StringLiteral arg) {
+    void AddArg(Expr arg) {
       DoAddArg(arg);
       ++num_symbolic_args_;
     }
@@ -285,7 +285,9 @@ class ASLBuilder {
     }
   };
 
-  LinearConHandler GetLinearVarHandler(int, int) {
+  typedef LinearConHandler LinearVarHandler;
+
+  LinearVarHandler GetLinearVarHandler(int, int) {
     // TODO
     return LinearConHandler(0, 0);
   }

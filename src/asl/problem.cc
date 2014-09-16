@@ -40,6 +40,29 @@
 extern "C" int mkstemps(char *pattern, int suffix_len);
 #endif
 
+using mp::internal::ASLBuilder;
+
+namespace {
+
+// An .nl handler that builds an ASL problem using ASLBuilder.
+class ASLHandler : public mp::BuildingNLHandler<ASLBuilder> {
+ private:
+  int flags_;
+
+  typedef BuildingNLHandler<ASLBuilder> Base;
+
+ public:
+  ASLHandler(ASLBuilder &b) : Base(b) {}
+
+  int flags() const { return flags_; }
+
+  void SetHeader(const mp::NLHeader &h) {
+    Base::SetHeader(h);
+    flags_ = h.flags;
+  }
+};
+}
+
 namespace mp {
 
 Solution::Solution()
@@ -279,7 +302,9 @@ void Problem::Read(fmt::StringRef stub, unsigned flags) {
                     ASL_allow_missing_funcs |
                     internal::ASL_STANDARD_OPCODES | flags);
   builder.set_stub(name_.c_str());
-  ReadNLFile(name.c_str(), builder);
+  ASLHandler handler(builder);
+  ReadNLFile(name.c_str(), handler);
+  asl_->i.flags = handler.flags();
 }
 
 void Problem::WriteNL(fmt::StringRef stub, ProblemChanges *pc, unsigned flags) {

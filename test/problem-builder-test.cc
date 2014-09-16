@@ -27,16 +27,10 @@
 class TestProblemBuilder :
     public mp::ProblemBuilder<TestProblemBuilder, int> {};
 
-TEST(ProblemBuilderTest, ReadNL) {
-  fmt::Writer w;
-  mp::NLHeader header = mp::NLHeader();
-  header.format = mp::NLHeader::TEXT;
-  header.arith_kind = mp::arith::GetKind();
-  header.num_algebraic_cons = 1;
-  w << header;
-  w << "C0\nn0\n";
-  TestProblemBuilder pb;
-  EXPECT_THROW_MSG(mp::ReadNLString(w.str(), pb), mp::Error,
+TEST(ProblemBuilderTest, AdaptForNL) {
+  TestProblemBuilder builder;
+  mp::BuildingNLHandler<TestProblemBuilder> handler(builder);
+  EXPECT_THROW_MSG(handler.MakeNumericConstant(0), mp::Error,
                    "unsupported: numeric constant in nonlinear expression");
 }
 

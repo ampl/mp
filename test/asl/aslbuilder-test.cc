@@ -1035,7 +1035,8 @@ TEST(ASLBuilderTest, BuildColumnwiseMatrix) {
 // Test that ASLBuilder can act as a handler for NLReader.
 TEST(ASLBuilderTest, NLHandler) {
   ASLBuilder builder;
-  mp::ReadNLString(HeaderToStr(MakeHeader()), builder);
+  mp::BuildingNLHandler<ASLBuilder> handler(builder);
+  mp::ReadNLString(HeaderToStr(MakeHeader()), handler);
 }
 
 // TODO: test SetVarBounds, SetConBounds, AddSuffix

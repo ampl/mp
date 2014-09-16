@@ -33,7 +33,7 @@
 namespace mp {
 
 // A minimal implementation of the ProblemBuilder concept.
-template <typename Impl, typename Expr>
+template <typename Impl, typename ExprT>
 class ProblemBuilder {
  private:
   struct LinearExprHandler {
@@ -43,15 +43,15 @@ class ProblemBuilder {
   };
 
   struct ArgHandler {
-    void AddArg(Expr arg) { MP_UNUSED(arg); }
+    void AddArg(ExprT arg) { MP_UNUSED(arg); }
   };
 
  public:
+  typedef ExprT Expr;
   typedef Expr NumericExpr;
   typedef Expr LogicalExpr;
   typedef Expr CountExpr;
   typedef Expr Variable;
-  typedef Expr StringLiteral;
 
   void ReportUnhandledConstruct(fmt::StringRef name) {
     throw Error("unsupported: {}", name);
@@ -338,10 +338,10 @@ class ProblemBuilder {
 
   // Constructs a StringLiteral object.
   // value: string value which may not be null-terminated.
-  StringLiteral MakeStringLiteral(fmt::StringRef value) {
+  Expr MakeStringLiteral(fmt::StringRef value) {
     MP_UNUSED(value);
     MP_DISPATCH(ReportUnhandledConstruct("string literal"));
-    return StringLiteral();
+    return Expr();
   }
 };
 }  // namespace mp
