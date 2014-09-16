@@ -49,7 +49,7 @@ class ASLHandler : public mp::BuildingNLHandler<ASLBuilder> {
  private:
   int flags_;
 
-  typedef BuildingNLHandler<ASLBuilder> Base;
+  typedef mp::BuildingNLHandler<ASLBuilder> Base;
 
  public:
   ASLHandler(ASLBuilder &b) : Base(b) {}
