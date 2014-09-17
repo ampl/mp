@@ -1178,49 +1178,75 @@ TEST(NLTest, InvalidSegmentType) {
                     "(input):13:1: invalid segment type");
 }
 
-enum IDType { ID = 42 };
+enum IDType { ID = 42, ID2, ID3, ID4 };
+
+// Defines a field of type IDType, a construtor to set it and operator==
+// that compares objects by their ids. The constructor takes an argument of
+// type IDType, a distinct type used to make sure that the constructor is not
+// called by mistake in the tested code.
+#define DEFINE_ID(Class) \
+ public: \
+  explicit Class(IDType id) : id_(id) {} \
+  friend bool operator==(Class lhs, Class rhs) { return lhs.id_ == rhs.id_; } \
+ private: \
+  IDType id_
 
 template <int I>
-class TestExpr {
- private:
-  IDType id_;
-
- public:
-  // Use IDType, a distinct type, to make sure that the constructor is not
-  // called by mistake in the tested code.
-  explicit TestExpr(IDType id) : id_(id) {}
-
-  friend bool operator==(TestExpr lhs, TestExpr rhs) {
-    return lhs.id_ == rhs.id_;
-  }
+struct BasicTestExpr {
+  DEFINE_ID(BasicTestExpr);
 };
 
-typedef TestExpr<0> TestNumericExpr;
-typedef TestExpr<1> TestLogicalExpr;
+typedef BasicTestExpr<0> TestExpr;
+typedef BasicTestExpr<1> TestNumericExpr;
+typedef BasicTestExpr<2> TestLogicalExpr;
+typedef BasicTestExpr<3> TestVariable;
+typedef BasicTestExpr<4> TestCountExpr;
 
 template <int I>
-class TestLinearExprHandler {
- private:
-  IDType id_;
-
- public:
-  // Use IDType, a distinct type, to make sure that the constructor is not
-  // called by mistake in the tested code.
-  explicit TestLinearExprHandler(IDType id) : id_(id) {}
+struct TestLinearExprHandler {
   void AddTerm(int, double) {}
+  DEFINE_ID(TestLinearExprHandler);
 };
 
 typedef TestLinearExprHandler<0> TestLinearObjHandler;
 typedef TestLinearExprHandler<1> TestLinearConHandler;
 typedef TestLinearExprHandler<2> TestLinearVarHandler;
 
+struct TestColumnSizeHandler {
+  void Add(int) {}
+  DEFINE_ID(TestColumnSizeHandler);
+};
+
+struct TestSuffixHandler {
+  void SetValue(int, int) {}
+  void SetValue(int, double) {}
+  DEFINE_ID(TestSuffixHandler);
+};
+
+template <int I, typename Arg = TestNumericExpr>
+struct TestArgHandler {
+  void AddArg(Arg) {}
+  DEFINE_ID(TestArgHandler);
+};
+
+typedef TestArgHandler<0> TestNumericArgHandler;
+typedef TestArgHandler<1, TestLogicalExpr> TestLogicalArgHandler;
+typedef TestArgHandler<2> TestCallArgHandler;
+typedef TestArgHandler<3> TestAllDiffArgHandler;
+
+struct TestPLTermHandler {
+  void AddSlope(double) {}
+  void AddBreakpoint(double) {}
+  DEFINE_ID(TestPLTermHandler);
+};
+
 class MockProblemBuilder {
  public:
-  typedef std::string Expr;
+  typedef TestExpr Expr;
   typedef TestNumericExpr NumericExpr;
   typedef TestLogicalExpr LogicalExpr;
-  typedef Expr CountExpr;
-  typedef Expr Variable;
+  typedef TestCountExpr CountExpr;
+  typedef TestVariable Variable;
 
   MOCK_METHOD1(SetInfo, void (const mp::ProblemInfo &info));
   MOCK_METHOD3(SetObj, void (int index, mp::obj::Type type, NumericExpr expr));
@@ -1250,35 +1276,21 @@ class MockProblemBuilder {
   MOCK_METHOD2(SetInitialValue, void (int var_index, double value));
   MOCK_METHOD2(SetInitialDualValue, void (int con_index, double value));
 
-  struct ColumnSizeHandler {
-    void Add(int size) {} // TODO
-  };
+  typedef TestColumnSizeHandler ColumnSizeHandler;
 
   MOCK_METHOD0(GetColumnSizeHandler, ColumnSizeHandler ());
 
   MOCK_METHOD4(SetFunction, void (int index, fmt::StringRef name,
                                   int num_args, mp::func::Type type));
 
-  struct SuffixHandler {
-    void SetValue(int index, int value) {
-      // TODO
-    }
-    void SetValue(int index, double value) {
-      // TODO
-    }
-  };
+  typedef TestSuffixHandler SuffixHandler;
 
   MOCK_METHOD3(AddSuffix,
                SuffixHandler (int kind, int num_values, fmt::StringRef name));
 
-  struct ArgHandler {
-    // TODO
-    void AddArg(Expr arg) {}
-  };
-
-  typedef ArgHandler NumericArgHandler;
-  typedef ArgHandler LogicalArgHandler;
-  typedef ArgHandler CallArgHandler;
+  typedef TestNumericArgHandler NumericArgHandler;
+  typedef TestLogicalArgHandler LogicalArgHandler;
+  typedef TestCallArgHandler CallArgHandler;
 
   MOCK_METHOD1(MakeNumericConstant, NumericExpr (double value));
   MOCK_METHOD1(MakeVariable, Variable (int var_index));
@@ -1290,11 +1302,7 @@ class MockProblemBuilder {
                NumericExpr (LogicalExpr condition,
                             NumericExpr true_expr, NumericExpr false_expr));
 
-  struct PLTermHandler {
-    // TODO
-    void AddSlope(double slope) {}
-    void AddBreakpoint(double breakpoint) {}
-  };
+  typedef TestPLTermHandler PLTermHandler;
 
   MOCK_METHOD1(BeginPLTerm, PLTermHandler (int num_breakpoints));
   MOCK_METHOD2(EndPLTerm, NumericExpr (PLTermHandler handler, Variable var));
@@ -1309,7 +1317,7 @@ class MockProblemBuilder {
   MOCK_METHOD1(EndSum, NumericExpr (NumericArgHandler handler));
 
   MOCK_METHOD1(BeginCount, LogicalArgHandler (int num_args));
-  MOCK_METHOD1(EndCount, NumericExpr (LogicalArgHandler handler));
+  MOCK_METHOD1(EndCount, CountExpr (LogicalArgHandler handler));
 
   MOCK_METHOD1(BeginNumberOf, NumericArgHandler (int num_args));
   MOCK_METHOD1(EndNumberOf, NumericExpr (NumericArgHandler handler));
@@ -1330,7 +1338,7 @@ class MockProblemBuilder {
                LogicalArgHandler (expr::Kind kind, int num_args));
   MOCK_METHOD1(EndIteratedLogical, LogicalExpr (LogicalArgHandler handler));
 
-  typedef ArgHandler AllDiffArgHandler;
+  typedef TestAllDiffArgHandler AllDiffArgHandler;
 
   MOCK_METHOD1(BeginAllDiff, AllDiffArgHandler (int num_args));
   MOCK_METHOD1(EndAllDiff, LogicalExpr (AllDiffArgHandler handler));
@@ -1363,6 +1371,7 @@ TEST(NLTest, ProblemBuilderToNLAdapter) {
     mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
     adapter.OnHeader(h);
   }
+
   EXPECT_FORWARD(OnObj, SetObj, (11, mp::obj::MAX, TestNumericExpr(ID)));
   EXPECT_FORWARD(OnAlgebraicCon, SetCon, (22, TestNumericExpr(ID)));
   EXPECT_FORWARD(OnLogicalCon, SetLogicalCon, (33, TestLogicalExpr(ID)));
@@ -1381,7 +1390,82 @@ TEST(NLTest, ProblemBuilderToNLAdapter) {
   EXPECT_FORWARD(OnInitialValue, SetInitialValue, (33, 4.4));
   EXPECT_FORWARD(OnInitialDualValue, SetInitialDualValue, (55, 6.6));
 
-  // TODO: more tests
-}
+  EXPECT_FORWARD_RET(OnColumnSizes, GetColumnSizeHandler, (),
+                     TestColumnSizeHandler(ID));
 
+  EXPECT_FORWARD(OnFunction, SetFunction,
+                 (77, fmt::StringRef("foo"), 88, mp::func::SYMBOLIC));
+
+  EXPECT_FORWARD_RET(OnSuffix, AddSuffix,
+                 (99, 11, fmt::StringRef("bar")), TestSuffixHandler(ID));
+
+  EXPECT_FORWARD_RET(OnNumericConstant, MakeNumericConstant,
+                     (2.2), TestNumericExpr(ID));
+  EXPECT_FORWARD_RET(OnVariable, MakeVariable, (33), TestVariable(ID));
+  EXPECT_FORWARD_RET(OnUnary, MakeUnary, (expr::ABS, TestNumericExpr(ID)),
+                     TestNumericExpr(ID2));
+  EXPECT_FORWARD_RET(OnBinary, MakeBinary,
+                     (expr::ADD, TestNumericExpr(ID), TestNumericExpr(ID2)),
+                     TestNumericExpr(ID3));
+  EXPECT_FORWARD_RET(OnIf, MakeIf,
+                     (TestLogicalExpr(ID), TestNumericExpr(ID2),
+                      TestNumericExpr(ID3)), TestNumericExpr(ID4));
+
+  EXPECT_FORWARD_RET(BeginPLTerm, BeginPLTerm, (44), TestPLTermHandler(ID));
+  EXPECT_FORWARD_RET(EndPLTerm, EndPLTerm,
+                     (TestPLTermHandler(ID), TestVariable(ID2)),
+                     TestNumericExpr(ID3));
+
+  EXPECT_FORWARD_RET(BeginCall, BeginCall, (55, 66), TestCallArgHandler(ID));
+  EXPECT_FORWARD_RET(EndCall, EndCall, (TestCallArgHandler(ID)),
+                     TestNumericExpr(ID2));
+
+  EXPECT_FORWARD_RET(BeginVarArg, BeginVarArg, (expr::MAX, 77),
+                     TestNumericArgHandler(ID));
+  EXPECT_FORWARD_RET(EndVarArg, EndVarArg, (TestNumericArgHandler(ID)),
+                     TestNumericExpr(ID2));
+
+  EXPECT_FORWARD_RET(BeginSum, BeginSum, (88), TestNumericArgHandler(ID));
+  EXPECT_FORWARD_RET(EndSum, EndSum, (TestNumericArgHandler(ID)),
+                     TestNumericExpr(ID2));
+
+  EXPECT_FORWARD_RET(BeginCount, BeginCount, (99), TestLogicalArgHandler(ID));
+  EXPECT_FORWARD_RET(EndCount, EndCount, (TestLogicalArgHandler(ID)),
+                     TestCountExpr(ID2));
+
+  EXPECT_FORWARD_RET(BeginNumberOf, BeginNumberOf, (11),
+                     TestNumericArgHandler(ID));
+  EXPECT_FORWARD_RET(EndNumberOf, EndNumberOf, (TestNumericArgHandler(ID)),
+                     TestNumericExpr(ID2));
+
+  EXPECT_FORWARD_RET(OnLogicalConstant, MakeLogicalConstant, (true),
+                     TestLogicalExpr(ID));
+  EXPECT_FORWARD_RET(OnNot, MakeNot, (TestLogicalExpr(ID)),
+                     TestLogicalExpr(ID2));
+  EXPECT_FORWARD_RET(OnBinaryLogical, MakeBinaryLogical,
+                     (expr::OR, TestLogicalExpr(ID), TestLogicalExpr(ID2)),
+                     TestLogicalExpr(ID3));
+  EXPECT_FORWARD_RET(OnRelational, MakeRelational,
+                     (expr::LT, TestNumericExpr(ID), TestNumericExpr(ID2)),
+                     TestLogicalExpr(ID3));
+  EXPECT_FORWARD_RET(OnLogicalCount, MakeLogicalCount,
+                     (expr::ATLEAST, TestNumericExpr(ID), TestCountExpr(ID2)),
+                     TestLogicalExpr(ID3));
+  EXPECT_FORWARD_RET(OnImplication, MakeImplication,
+                     (TestLogicalExpr(ID), TestLogicalExpr(ID2),
+                      TestLogicalExpr(ID3)), TestLogicalExpr(ID4));
+
+  EXPECT_FORWARD_RET(BeginIteratedLogical, BeginIteratedLogical,
+                     (expr::EXISTS, 22), TestLogicalArgHandler(ID));
+  EXPECT_FORWARD_RET(EndIteratedLogical, EndIteratedLogical,
+                     (TestLogicalArgHandler(ID)), TestLogicalExpr(ID2));
+
+  EXPECT_FORWARD_RET(BeginAllDiff, BeginAllDiff, (33),
+                     TestAllDiffArgHandler(ID));
+  EXPECT_FORWARD_RET(EndAllDiff, EndAllDiff,
+                     (TestAllDiffArgHandler(ID)), TestLogicalExpr(ID2));
+
+  EXPECT_FORWARD_RET(OnStringLiteral, MakeStringLiteral,
+                     (fmt::StringRef("test")), TestExpr(ID));
+}
 }  // namespace
