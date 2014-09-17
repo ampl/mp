@@ -155,8 +155,7 @@ class ProblemBuilderToNLAdapter {
     builder_.SetCon(index, expr);
   }
 
-  // Receives notification of the nonlinear part of a logical constraint
-  // expression.
+  // Receives notification of a logical constraint expression.
   void OnLogicalCon(int index, LogicalExpr expr) {
     builder_.SetLogicalCon(index, expr);
   }

@@ -59,14 +59,6 @@ class ProblemBuilder {
 
   void SetInfo(const ProblemInfo &) {}
 
-  // Sets a defined variable expression.
-  // index: Index of a defined variable;
-  // num_vars <= index < num_vars + num_defined_vars.
-  void SetVar(int index, NumericExpr expr, int position) {
-    MP_UNUSED(index); MP_UNUSED(expr); MP_UNUSED(position);
-    MP_DISPATCH(ReportUnhandledConstruct("nonlinear defined variable"));
-  }
-
   // Sets an objective type and expression.
   // index: Index of an objective; 0 <= index < num_objs.
   void SetObj(int index, obj::Type type, NumericExpr expr) {
@@ -88,20 +80,18 @@ class ProblemBuilder {
     MP_DISPATCH(ReportUnhandledConstruct("logical constraint"));
   }
 
+  // Sets a defined variable expression.
+  // index: Index of a defined variable;
+  // num_vars <= index < num_vars + num_defined_vars.
+  void SetVar(int index, NumericExpr expr, int position) {
+    MP_UNUSED(index); MP_UNUSED(expr); MP_UNUSED(position);
+    MP_DISPATCH(ReportUnhandledConstruct("nonlinear defined variable"));
+  }
+
   // Sets a complementarity relation.
   void SetComplement(int con_index, int var_index, int flags) {
     MP_UNUSED(con_index); MP_UNUSED(var_index); MP_UNUSED(flags);
     MP_DISPATCH(ReportUnhandledConstruct("complementarity constraint"));
-  }
-
-  typedef LinearExprHandler LinearVarHandler;
-
-  // Returns a handler for receiving linear terms in a defined variable
-  // expression.
-  LinearVarHandler GetLinearVarHandler(int var_index, int num_linear_terms) {
-    MP_UNUSED(var_index); MP_UNUSED(num_linear_terms);
-    MP_DISPATCH(ReportUnhandledConstruct("linear defined variable"));
-    return LinearVarHandler();
   }
 
   typedef LinearExprHandler LinearObjHandler;
@@ -120,6 +110,16 @@ class ProblemBuilder {
     MP_UNUSED(con_index); MP_UNUSED(num_linear_terms);
     MP_DISPATCH(ReportUnhandledConstruct("linear constraint"));
     return LinearConHandler();
+  }
+
+  typedef LinearExprHandler LinearVarHandler;
+
+  // Returns a handler for receiving linear terms in a defined variable
+  // expression.
+  LinearVarHandler GetLinearVarHandler(int var_index, int num_linear_terms) {
+    MP_UNUSED(var_index); MP_UNUSED(num_linear_terms);
+    MP_DISPATCH(ReportUnhandledConstruct("linear defined variable"));
+    return LinearVarHandler();
   }
 
   void SetVarBounds(int index, double lb, double ub) {
