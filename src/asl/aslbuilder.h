@@ -246,13 +246,13 @@ class ASLBuilder {
   void SetLogicalCon(int index, LogicalExpr expr);
 
   template <typename Grad>
-  class LinearExprHandler {
+  class LinearExprBuilder {
    protected:
     ASLBuilder *builder_;
     Grad **term_;
 
    public:
-    LinearExprHandler(ASLBuilder *b, Grad **term) : builder_(b), term_(term) {}
+    LinearExprBuilder(ASLBuilder *b, Grad **term) : builder_(b), term_(term) {}
 
     void AddTerm(int var_index, double coef) {
       Grad *og = builder_->Allocate<Grad>();
@@ -264,9 +264,9 @@ class ASLBuilder {
     }
   };
 
-  typedef LinearExprHandler<ograd> LinearObjHandler;
+  typedef LinearExprBuilder<ograd> LinearObjBuilder;
 
-  class LinearConHandler : private LinearExprHandler<cgrad> {
+  class LinearConBuilder : private LinearExprBuilder<cgrad> {
    private:
     int con_index_;
     double *a_vals_;
@@ -274,28 +274,28 @@ class ASLBuilder {
     int *a_colstarts_;
 
    public:
-    LinearConHandler(ASLBuilder *b, int con_index);
+    LinearConBuilder(ASLBuilder *b, int con_index);
 
     void AddTerm(int var_index, double coef) {
       if (!a_vals_)
-        return LinearExprHandler<cgrad>::AddTerm(var_index, coef);
+        return LinearExprBuilder<cgrad>::AddTerm(var_index, coef);
       std::size_t elt_index = a_colstarts_[var_index]++;
       a_vals_[elt_index] = coef;
       a_rownos_[elt_index] = con_index_;
     }
   };
 
-  typedef LinearConHandler LinearVarHandler;
+  typedef LinearConBuilder LinearVarBuilder;
 
-  LinearVarHandler GetLinearVarHandler(int, int) {
+  LinearObjBuilder GetLinearObjBuilder(int index, int) {
+    return LinearObjBuilder(this, asl_->i.Ograd_ + index);
+  }
+  LinearConBuilder GetLinearConBuilder(int index, int) {
+    return LinearConBuilder(this, index);
+  }
+  LinearVarBuilder GetLinearVarBuilder(int, int) {
     // TODO
-    return LinearConHandler(0, 0);
-  }
-  LinearObjHandler GetLinearObjHandler(int index, int) {
-    return LinearObjHandler(this, asl_->i.Ograd_ + index);
-  }
-  LinearConHandler GetLinearConHandler(int index, int) {
-    return LinearConHandler(this, index);
+    return LinearVarBuilder(0, 0);
   }
 
   class ColumnSizeHandler {

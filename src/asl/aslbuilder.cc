@@ -512,8 +512,8 @@ void ASLBuilder::SetLogicalCon(int index, LogicalExpr expr) {
               0, expr.expr_, 0);
 }
 
-ASLBuilder::LinearConHandler::LinearConHandler(ASLBuilder *b, int con_index)
-  : LinearExprHandler<cgrad>(b, b->asl_->i.Cgrad_ + con_index) {
+ASLBuilder::LinearConBuilder::LinearConBuilder(ASLBuilder *b, int con_index)
+  : LinearExprBuilder<cgrad>(b, b->asl_->i.Cgrad_ + con_index) {
   Edaginfo &info = builder_->asl_->i;
   con_index_ = con_index + info.Fortran_;
   a_vals_ = info.A_vals_;

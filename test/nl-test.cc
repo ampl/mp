@@ -1203,14 +1203,14 @@ typedef BasicTestExpr<3> TestVariable;
 typedef BasicTestExpr<4> TestCountExpr;
 
 template <int I>
-struct TestLinearExprHandler {
+struct TestLinearExprBuilder {
   void AddTerm(int, double) {}
-  DEFINE_ID(TestLinearExprHandler);
+  DEFINE_ID(TestLinearExprBuilder);
 };
 
-typedef TestLinearExprHandler<0> TestLinearObjHandler;
-typedef TestLinearExprHandler<1> TestLinearConHandler;
-typedef TestLinearExprHandler<2> TestLinearVarHandler;
+typedef TestLinearExprBuilder<0> TestLinearObjBuilder;
+typedef TestLinearExprBuilder<1> TestLinearConBuilder;
+typedef TestLinearExprBuilder<2> TestLinearVarBuilder;
 
 struct TestColumnSizeHandler {
   void Add(int) {}
@@ -1255,20 +1255,20 @@ class MockProblemBuilder {
   MOCK_METHOD3(SetVar, void (int index, NumericExpr expr, int position));
   MOCK_METHOD3(SetComplement, void (int con_index, int var_index, int flags));
 
-  typedef TestLinearObjHandler LinearObjHandler;
+  typedef TestLinearObjBuilder LinearObjBuilder;
 
-  MOCK_METHOD2(GetLinearObjHandler,
-               LinearObjHandler (int obj_index, int num_linear_terms));
+  MOCK_METHOD2(GetLinearObjBuilder,
+               LinearObjBuilder (int obj_index, int num_linear_terms));
 
-  typedef TestLinearConHandler LinearConHandler;
+  typedef TestLinearConBuilder LinearConBuilder;
 
-  MOCK_METHOD2(GetLinearConHandler,
-               LinearConHandler (int con_index, int num_linear_terms));
+  MOCK_METHOD2(GetLinearConBuilder,
+               LinearConBuilder (int con_index, int num_linear_terms));
 
-  typedef TestLinearVarHandler LinearVarHandler;
+  typedef TestLinearVarBuilder LinearVarBuilder;
 
-  MOCK_METHOD2(GetLinearVarHandler,
-               LinearVarHandler (int var_index, int num_linear_terms));
+  MOCK_METHOD2(GetLinearVarBuilder,
+               LinearVarBuilder (int var_index, int num_linear_terms));
 
   MOCK_METHOD3(SetVarBounds, void (int index, double lb, double ub));
   MOCK_METHOD3(SetConBounds, void (int index, double lb, double ub));
@@ -1378,12 +1378,12 @@ TEST(NLTest, ProblemBuilderToNLAdapter) {
   EXPECT_FORWARD(OnDefinedVar, SetVar, (44, TestNumericExpr(ID), 55));
   EXPECT_FORWARD(OnComplement, SetComplement, (66, 77, 88));
 
-  EXPECT_FORWARD_RET(OnLinearObjExpr, GetLinearObjHandler,
-                     (99, 11), TestLinearObjHandler(ID));
-  EXPECT_FORWARD_RET(OnLinearConExpr, GetLinearConHandler,
-                     (22, 33), TestLinearConHandler(ID));
-  EXPECT_FORWARD_RET(OnLinearVarExpr, GetLinearVarHandler,
-                     (44, 55), TestLinearVarHandler(ID));
+  EXPECT_FORWARD_RET(OnLinearObjExpr, GetLinearObjBuilder,
+                     (99, 11), TestLinearObjBuilder(ID));
+  EXPECT_FORWARD_RET(OnLinearConExpr, GetLinearConBuilder,
+                     (22, 33), TestLinearConBuilder(ID));
+  EXPECT_FORWARD_RET(OnLinearVarExpr, GetLinearVarBuilder,
+                     (44, 55), TestLinearVarBuilder(ID));
 
   EXPECT_FORWARD(OnVarBounds, SetVarBounds, (66, 7.7, 8.8));
   EXPECT_FORWARD(OnConBounds, SetConBounds, (99, 1.1, 2.2));
@@ -1393,11 +1393,13 @@ TEST(NLTest, ProblemBuilderToNLAdapter) {
   EXPECT_FORWARD_RET(OnColumnSizes, GetColumnSizeHandler, (),
                      TestColumnSizeHandler(ID));
 
-  EXPECT_FORWARD(OnFunction, SetFunction,
-                 (77, fmt::StringRef("foo"), 88, mp::func::SYMBOLIC));
+  // Use the same StringRef object in arguments, because StringRef objects
+  // are compared as pointers and string literals they point to may not
+  // be merged.
+  fmt::StringRef str("foo");
+  EXPECT_FORWARD(OnFunction, SetFunction, (77, str, 88, mp::func::SYMBOLIC));
 
-  EXPECT_FORWARD_RET(OnSuffix, AddSuffix,
-                 (99, 11, fmt::StringRef("bar")), TestSuffixHandler(ID));
+  EXPECT_FORWARD_RET(OnSuffix, AddSuffix, (99, 11, str), TestSuffixHandler(ID));
 
   EXPECT_FORWARD_RET(OnNumericConstant, MakeNumericConstant,
                      (2.2), TestNumericExpr(ID));
@@ -1465,7 +1467,6 @@ TEST(NLTest, ProblemBuilderToNLAdapter) {
   EXPECT_FORWARD_RET(EndAllDiff, EndAllDiff,
                      (TestAllDiffArgHandler(ID)), TestLogicalExpr(ID2));
 
-  EXPECT_FORWARD_RET(OnStringLiteral, MakeStringLiteral,
-                     (fmt::StringRef("test")), TestExpr(ID));
+  EXPECT_FORWARD_RET(OnStringLiteral, MakeStringLiteral, (str), TestExpr(ID));
 }
 }  // namespace

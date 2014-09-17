@@ -24,14 +24,32 @@
 #include "mp/problem-builder.h"
 #include "mp/nl.h"
 
-class TestProblemBuilder :
-    public mp::ProblemBuilder<TestProblemBuilder, int> {};
+class TestExpr {};
 
-TEST(ProblemBuilderTest, AdaptForNL) {
+class TestProblemBuilder :
+    public mp::ProblemBuilder<TestProblemBuilder, TestExpr> {};
+
+// Test that ProblemBuilder can be used with ProblemBuilderToNLAdapter.
+TEST(ProblemBuilderTest, UseWithProblemBuilderToNLAdapter) {
   TestProblemBuilder builder;
   mp::ProblemBuilderToNLAdapter<TestProblemBuilder> handler(builder);
   EXPECT_THROW_MSG(handler.OnNumericConstant(0), mp::Error,
                    "unsupported: numeric constant in nonlinear expression");
+}
+
+#define EXPECT_ERROR(call, construct) { \
+  TestProblemBuilder builder; \
+  EXPECT_THROW_MSG(builder.call, mp::Error, \
+                   fmt::format("unsupported: {}", construct)); \
+}
+
+TEST(ProblemBuilderTest, ReportUnhandled) {
+  EXPECT_ERROR(SetObj(0, mp::obj::MIN, TestExpr()), "objective");
+  EXPECT_ERROR(SetCon(0, TestExpr()), "nonlinear constraint");
+  EXPECT_ERROR(SetLogicalCon(0, TestExpr()), "logical constraint");
+  EXPECT_ERROR(SetVar(0, TestExpr(), 0), "nonlinear defined variable");
+  EXPECT_ERROR(SetComplement(0, 0, 0), "complementarity constraint");
+  // TODO
 }
 
 // TODO: more tests

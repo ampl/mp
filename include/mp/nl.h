@@ -178,25 +178,25 @@ class ProblemBuilderToNLAdapter {
     builder_.SetComplement(con_index, var_index, flags);
   }
 
-  typedef typename ProblemBuilder::LinearObjHandler LinearObjHandler;
+  typedef typename ProblemBuilder::LinearObjBuilder LinearObjHandler;
 
   // Receives notification of the linear part of an objective expression.
   LinearObjHandler OnLinearObjExpr(int obj_index, int num_linear_terms) {
-    return builder_.GetLinearObjHandler(obj_index, num_linear_terms);
+    return builder_.GetLinearObjBuilder(obj_index, num_linear_terms);
   }
 
-  typedef typename ProblemBuilder::LinearConHandler LinearConHandler;
+  typedef typename ProblemBuilder::LinearConBuilder LinearConHandler;
 
   // Receives notification of the linear part of a constraint expression.
   LinearConHandler OnLinearConExpr(int con_index, int num_linear_terms) {
-    return builder_.GetLinearConHandler(con_index, num_linear_terms);
+    return builder_.GetLinearConBuilder(con_index, num_linear_terms);
   }
 
-  typedef typename ProblemBuilder::LinearVarHandler LinearVarHandler;
+  typedef typename ProblemBuilder::LinearVarBuilder LinearVarHandler;
 
   // Receives notification of the linear part of a defined variable expression.
   LinearVarHandler OnLinearVarExpr(int var_index, int num_linear_terms) {
-    return builder_.GetLinearVarHandler(var_index, num_linear_terms);
+    return builder_.GetLinearVarBuilder(var_index, num_linear_terms);
   }
 
   // Receives notification of variable bounds.

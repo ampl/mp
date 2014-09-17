@@ -36,7 +36,7 @@ namespace mp {
 template <typename Impl, typename ExprT>
 class ProblemBuilder {
  private:
-  struct LinearExprHandler {
+  struct LinearExprBuilder {
     void AddTerm(int var_index, double coef) {
       MP_UNUSED(var_index); MP_UNUSED(coef);
     }
@@ -63,7 +63,7 @@ class ProblemBuilder {
   // index: Index of an objective; 0 <= index < num_objs.
   void SetObj(int index, obj::Type type, NumericExpr expr) {
     MP_UNUSED(index); MP_UNUSED(type); MP_UNUSED(expr);
-    MP_DISPATCH(ReportUnhandledConstruct("nonlinear objective"));
+    MP_DISPATCH(ReportUnhandledConstruct("objective"));
   }
 
   // Sets an algebraic constraint expression.
@@ -94,32 +94,32 @@ class ProblemBuilder {
     MP_DISPATCH(ReportUnhandledConstruct("complementarity constraint"));
   }
 
-  typedef LinearExprHandler LinearObjHandler;
+  typedef LinearExprBuilder LinearObjBuilder;
 
   // Returns a handler for receiving linear terms in an objective.
-  LinearObjHandler GetLinearObjHandler(int obj_index, int num_linear_terms) {
+  LinearObjBuilder GetLinearObjBuilder(int obj_index, int num_linear_terms) {
     MP_UNUSED(obj_index); MP_UNUSED(num_linear_terms);
     MP_DISPATCH(ReportUnhandledConstruct("linear objective"));
-    return LinearObjHandler();
+    return LinearObjBuilder();
   }
 
-  typedef LinearExprHandler LinearConHandler;
+  typedef LinearExprBuilder LinearConBuilder;
 
   // Returns a handler for receiving linear terms in a constraint.
-  LinearConHandler GetLinearConHandler(int con_index, int num_linear_terms) {
+  LinearConBuilder GetLinearConBuilder(int con_index, int num_linear_terms) {
     MP_UNUSED(con_index); MP_UNUSED(num_linear_terms);
     MP_DISPATCH(ReportUnhandledConstruct("linear constraint"));
-    return LinearConHandler();
+    return LinearConBuilder();
   }
 
-  typedef LinearExprHandler LinearVarHandler;
+  typedef LinearExprBuilder LinearVarBuilder;
 
   // Returns a handler for receiving linear terms in a defined variable
   // expression.
-  LinearVarHandler GetLinearVarHandler(int var_index, int num_linear_terms) {
+  LinearVarBuilder GetLinearVarBuilder(int var_index, int num_linear_terms) {
     MP_UNUSED(var_index); MP_UNUSED(num_linear_terms);
     MP_DISPATCH(ReportUnhandledConstruct("linear defined variable"));
-    return LinearVarHandler();
+    return LinearVarBuilder();
   }
 
   void SetVarBounds(int index, double lb, double ub) {

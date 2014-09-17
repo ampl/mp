@@ -1017,12 +1017,12 @@ TEST(ASLBuilderTest, BuildColumnwiseMatrix) {
   ASLBuilder::ColumnSizeHandler handler = builder.GetColumnSizeHandler();
   handler.Add(0);
   handler.Add(2);
-  ASLBuilder::LinearConHandler con = builder.GetLinearConHandler(0, 0);
-  con = builder.GetLinearConHandler(1, 2);
+  ASLBuilder::LinearConBuilder con = builder.GetLinearConBuilder(0, 0);
+  con = builder.GetLinearConBuilder(1, 2);
   con.AddTerm(1, 5);
   con.AddTerm(2, 3);
-  con = builder.GetLinearConHandler(2, 0);
-  con = builder.GetLinearConHandler(3, 1);
+  con = builder.GetLinearConBuilder(2, 0);
+  con = builder.GetLinearConBuilder(3, 1);
   con.AddTerm(1, 1);
   const int ROWNOS[]  = {1, 3, 1};
   const double VALS[] = {5, 1, 3};
