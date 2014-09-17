@@ -27,6 +27,7 @@
 #include "mp/os.h"
 #include "mp/problem-base.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cstdlib>
 #include <limits>
@@ -120,6 +121,12 @@ struct NLHeader : ProblemInfo {
 
   // Flags: 1 = want output suffixes.
   int flags;
+
+  NLHeader()
+    : ProblemInfo(), format(TEXT), num_options(0), ampl_vbtol(0),
+      arith_kind(arith::UNKNOWN), flags(0) {
+    std::fill(options, options + MAX_NL_OPTIONS - 1, 0);
+  }
 };
 
 // Writes NLHeader in the .nl file format.
