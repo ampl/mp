@@ -75,4 +75,10 @@ if not installed('localsolver'):
     install_pkg(f)
 
 copy_optional_dependencies('osx')
+for dir in ['Xcode.app', 'MATLAB_R2014a.app']:
+  if os.path.exists('/opt/' + dir):
+    create_symlink('/opt/' + dir, '/Applications/' + dir)
+
+check_call([vagrant_dir + '/support/bootstrap/accept-xcode-license'])
+
 install_buildbot_slave('osx-ml')
