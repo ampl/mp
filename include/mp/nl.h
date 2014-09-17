@@ -1,5 +1,23 @@
 /*
- .nl file support.
+ .nl format support.
+
+ .nl is a format for representing optimization problems such as linear,
+ quadratic, nonlinear, complementarity and constraint programming problems
+ in discrete or continuous variables. It is described in the technical report
+ "Writing .nl Files" (http://www.cs.sandia.gov/~dmgay/nlwrite.pdf).
+
+ This is a complete reusable C++ implementation of an .nl reader.
+
+ Usage:
+   // Read an .nl file:
+   ReadNLFile(filename, handler);
+
+   // Read an .nl string:
+   ReadNLFile(nl_string, handler);
+
+ where handler is an object that receives notifications of problem
+ components. See ProblemBuilderToNLAdapter for an example of a handler
+ class.
 
  Copyright (C) 2013 AMPL Optimization Inc
 
@@ -100,8 +118,6 @@ inline bool IsIEEE(arith::Kind k) {
 }
 
 // .nl file header.
-// The .nl file format is described in the technical report
-// "Writing .nl Files" (http://www.cs.sandia.gov/~dmgay/nlwrite.pdf).
 struct NLHeader : ProblemInfo {
   // .nl file format.
   enum Format { TEXT = 0, BINARY = 1 };
