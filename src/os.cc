@@ -48,6 +48,7 @@
 #undef getenv
 
 using std::size_t;
+using fmt::SystemError;
 using mp::path;
 
 // Workaround for a bug in MSVC.
@@ -69,7 +70,7 @@ path mp::GetExecutablePath() {
   if (_NSGetExecutablePath(&buffer[0], &size) != 0) {
     buffer.resize(size);
     if (_NSGetExecutablePath(&buffer[0], &size) != 0)
-      throw fmt::SystemError(errno, "cannot get executable path");
+      throw SystemError(errno, "cannot get executable path");
   }
   if (size == BUFFER_SIZE)
     size = std::strlen(&buffer[0]);
@@ -87,7 +88,7 @@ path mp::GetExecutablePath() {
   for (;;) {
     size = readlink("/proc/self/exe", &buffer[0], buffer.size());
     if (size < 0)
-      throw fmt::SystemError(errno, "cannot get executable path");
+      throw SystemError(errno, "cannot get executable path");
     if (static_cast<size_t>(size) != buffer.size()) break;
     buffer.resize(2 * buffer.size());
   }
@@ -116,7 +117,7 @@ mp::MemoryMappedFile::MemoryMappedFile(const fmt::File &file, std::size_t size)
   start_ = reinterpret_cast<char*>(
       mmap(0, size_, PROT_READ, MAP_FILE | MAP_PRIVATE, file.descriptor(), 0));
   if (start_ == MAP_FAILED)
-    throw fmt::SystemError(errno, "cannot map file");
+    throw SystemError(errno, "cannot map file");
 }
 
 mp::MemoryMappedFile::~MemoryMappedFile() {
