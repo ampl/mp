@@ -245,6 +245,9 @@ TEST(MemoryMappedFileTest, CloseFile) {
   EXPECT_STREQ("abc", f.start());
 }
 # endif
+
+class StandardErrorHandling {};
+
 #else
 TEST(MemoryMappedFileTest, CloseFile) {
   WriteFile("test", "abc");
@@ -260,9 +263,35 @@ TEST(MemoryMappedFileTest, CloseFile) {
   EXPECT_EQ(handle_count_before, handle_count_after);
   EXPECT_STREQ("abc", f.start());
 }
+
+// Enables standard handling of invalid arguments in the current scope by
+// setting _set_invalid_parameter_handler in ctor and restoring the old
+// handler in dtor.
+// Usage:
+//   {
+//     StandardErrorHandling seh;
+//     // do something dangerous
+//   }
+class StandardErrorHandling {
+ private:
+  _invalid_parameter_handler saved_handler_;
+
+  FMT_DISALLOW_COPY_AND_ASSIGN(StandardErrorHandling);
+
+  static void handler(const wchar_t* expression, const wchar_t* function,
+                      const wchar_t* file, unsigned int line,
+                      uintptr_t pReserved) {}
+
+ public:
+  StandardErrorHandling()
+    : saved_handler_(_set_invalid_parameter_handler(handler)) {}
+  ~StandardErrorHandling() { _set_invalid_parameter_handler(saved_handler_); }
+};
+
 #endif
 
 TEST(MemoryMappedFileTest, InvalidFile) {
+  StandardErrorHandling seh;
   EXPECT_THROW(MemoryMappedFile(fmt::File(), 1), fmt::SystemError);
 }
 }

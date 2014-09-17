@@ -173,6 +173,8 @@ mp::MemoryMappedFile::MemoryMappedFile(const fmt::File &file, std::size_t size)
     operator HANDLE() const { return handle_; }
   };
   HANDLE handle = reinterpret_cast<HANDLE>(_get_osfhandle(file.descriptor()));
+  if (handle == INVALID_HANDLE_VALUE)
+    return SystemError(errno, "cannot get file handle");
   Handle mapping(CreateFileMappingW(handle, 0, PAGE_READONLY, 0, 0, 0));
   if (!mapping)
     throw WindowsError(GetLastError(), "cannot create file mapping");
