@@ -22,9 +22,13 @@ target_link_libraries(gtest-extra ${CMAKE_THREAD_LIBS_INIT})
 check_cxx_source_compiles("
   template <class T, class ...Types>
   struct S { typedef typename S<Types...>::type type; };
-  int main() {}
-  " MP_VARIADIC_TEMPLATES)
-if (NOT MP_VARIADIC_TEMPLATES)
+  int main() {}" MP_VARIADIC_TEMPLATES)
+
+check_cxx_source_compiles("
+  #include <initializer_list>
+  int main() {}" MP_INITIALIZER_LISTS)
+
+if (NOT MP_VARIADIC_TEMPLATES OR NOT MP_INITIALIZER_LISTS)
   target_compile_definitions(gtest-extra PUBLIC GTEST_LANG_CXX11=0)
 endif ()
 
