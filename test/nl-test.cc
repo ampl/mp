@@ -36,6 +36,7 @@ using mp::internal::BinaryReader;
 namespace expr = mp::expr;
 
 using testing::StrictMock;
+using testing::Return;
 
 namespace {
 
@@ -1177,24 +1178,47 @@ TEST(NLTest, InvalidSegmentType) {
                     "(input):13:1: invalid segment type");
 }
 
-class TestNumericExpr {
+enum IDType { ID = 42 };
+
+template <int I>
+class TestExpr {
  private:
-  int id_;
+  IDType id_;
 
  public:
-  TestNumericExpr() : id_(0) {}
-  TestNumericExpr(int id) : id_(id) {}
+  // Use IDType, a distinct type, to make sure that the constructor is not
+  // called by mistake in the tested code.
+  explicit TestExpr(IDType id) : id_(id) {}
 
-  friend bool operator==(TestNumericExpr lhs, TestNumericExpr rhs) {
+  friend bool operator==(TestExpr lhs, TestExpr rhs) {
     return lhs.id_ == rhs.id_;
   }
 };
+
+typedef TestExpr<0> TestNumericExpr;
+typedef TestExpr<1> TestLogicalExpr;
+
+template <int I>
+class TestLinearExprHandler {
+ private:
+  IDType id_;
+
+ public:
+  // Use IDType, a distinct type, to make sure that the constructor is not
+  // called by mistake in the tested code.
+  explicit TestLinearExprHandler(IDType id) : id_(id) {}
+  void AddTerm(int, double) {}
+};
+
+typedef TestLinearExprHandler<0> TestLinearObjHandler;
+typedef TestLinearExprHandler<1> TestLinearConHandler;
+typedef TestLinearExprHandler<2> TestLinearVarHandler;
 
 class MockProblemBuilder {
  public:
   typedef std::string Expr;
   typedef TestNumericExpr NumericExpr;
-  typedef Expr LogicalExpr;
+  typedef TestLogicalExpr LogicalExpr;
   typedef Expr CountExpr;
   typedef Expr Variable;
 
@@ -1205,22 +1229,17 @@ class MockProblemBuilder {
   MOCK_METHOD3(SetVar, void (int index, NumericExpr expr, int position));
   MOCK_METHOD3(SetComplement, void (int con_index, int var_index, int flags));
 
-  struct LinearExprHandler {
-    // TODO
-    void AddTerm(int var_index, double coef) {}
-  };
-
-  typedef LinearExprHandler LinearObjHandler;
+  typedef TestLinearObjHandler LinearObjHandler;
 
   MOCK_METHOD2(GetLinearObjHandler,
                LinearObjHandler (int obj_index, int num_linear_terms));
 
-  typedef LinearExprHandler LinearConHandler;
+  typedef TestLinearConHandler LinearConHandler;
 
   MOCK_METHOD2(GetLinearConHandler,
                LinearConHandler (int con_index, int num_linear_terms));
 
-  typedef LinearExprHandler LinearVarHandler;
+  typedef TestLinearVarHandler LinearVarHandler;
 
   MOCK_METHOD2(GetLinearVarHandler,
                LinearVarHandler (int var_index, int num_linear_terms));
@@ -1319,9 +1338,19 @@ class MockProblemBuilder {
   MOCK_METHOD1(MakeStringLiteral, Expr (fmt::StringRef value));
 };
 
+// Checks if ProblemBuilderToNLAdapter forwargs arguments passed to
+// adapter_func to ProblemBuilder's builder_func.
 #define EXPECT_FORWARD(adapter_func, builder_func, args) { \
   StrictMock<MockProblemBuilder> builder; \
   EXPECT_CALL(builder, builder_func args); \
+  mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder); \
+  adapter.adapter_func args; \
+}
+
+// Version of EXPECT_FORWARD for methods with a return value.
+#define EXPECT_FORWARD_RET(adapter_func, builder_func, args, result) { \
+  StrictMock<MockProblemBuilder> builder; \
+  EXPECT_CALL(builder, builder_func args).WillOnce(Return(result)); \
   mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder); \
   adapter.adapter_func args; \
 }
@@ -1334,8 +1363,24 @@ TEST(NLTest, ProblemBuilderToNLAdapter) {
     mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
     adapter.OnHeader(h);
   }
-  EXPECT_FORWARD(OnObj, SetObj, (0, mp::obj::MAX, TestNumericExpr(42)));
-  EXPECT_FORWARD(OnAlgebraicCon, SetCon, (0, TestNumericExpr(42)));
+  EXPECT_FORWARD(OnObj, SetObj, (11, mp::obj::MAX, TestNumericExpr(ID)));
+  EXPECT_FORWARD(OnAlgebraicCon, SetCon, (22, TestNumericExpr(ID)));
+  EXPECT_FORWARD(OnLogicalCon, SetLogicalCon, (33, TestLogicalExpr(ID)));
+  EXPECT_FORWARD(OnDefinedVar, SetVar, (44, TestNumericExpr(ID), 55));
+  EXPECT_FORWARD(OnComplement, SetComplement, (66, 77, 88));
+
+  EXPECT_FORWARD_RET(OnLinearObjExpr, GetLinearObjHandler,
+                     (99, 11), TestLinearObjHandler(ID));
+  EXPECT_FORWARD_RET(OnLinearConExpr, GetLinearConHandler,
+                     (22, 33), TestLinearConHandler(ID));
+  EXPECT_FORWARD_RET(OnLinearVarExpr, GetLinearVarHandler,
+                     (44, 55), TestLinearVarHandler(ID));
+
+  EXPECT_FORWARD(OnVarBounds, SetVarBounds, (66, 7.7, 8.8));
+  EXPECT_FORWARD(OnConBounds, SetConBounds, (99, 1.1, 2.2));
+  EXPECT_FORWARD(OnInitialValue, SetInitialValue, (33, 4.4));
+  EXPECT_FORWARD(OnInitialDualValue, SetInitialDualValue, (55, 6.6));
+
   // TODO: more tests
 }
 
