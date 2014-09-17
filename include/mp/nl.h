@@ -13,7 +13,7 @@
    ReadNLFile(filename, handler);
 
    // Read an .nl string:
-   ReadNLFile(nl_string, handler);
+   ReadNLString(nl_string, handler);
 
  where handler is an object that receives notifications of problem
  components. See ProblemBuilderToNLAdapter for an example of a handler
