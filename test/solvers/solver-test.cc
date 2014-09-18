@@ -40,14 +40,14 @@ SolverTest::EvalResult SolverTest::Solve(Problem &p) {
   struct TestSolutionHandler : mp::BasicSolutionHandler {
     EvalResult result;
     virtual ~TestSolutionHandler() {}
-    void HandleSolution(mp::Problem &p, fmt::StringRef,
+    void HandleSolution(fmt::StringRef,
           const double *values, const double *, double obj_value) {
-      result = values ? EvalResult(values[0], obj_value, p.solve_code())
-          : EvalResult(p.solve_code());
+      result = values ? EvalResult(values[0], obj_value) : EvalResult();
     }
   };
   TestSolutionHandler sh;
   solver_->Solve(p, sh);
+  sh.result.set_solve_code(p.solve_code());
   return sh.result;
 }
 
@@ -78,7 +78,7 @@ SolverTest::SolverTest()
 
 SolveResult SolverTest::Solve(
     mp::ASLSolver &s, Problem &p, const char *stub, const char *opt) {
-  TestSolutionHandler sh;
+  TestSolutionHandler sh(p);
   const std::string DATA_DIR = MP_TEST_DATA_DIR "/";
   if (s.ProcessArgs(Args(s.name(), "-s", (DATA_DIR + stub).c_str(), opt), p))
     s.Solve(p, sh);
@@ -872,8 +872,8 @@ TEST_P(SolverTest, InterruptSolution) {
 struct SolutionCounter : mp::BasicSolutionHandler {
   int num_solutions;
   SolutionCounter() : num_solutions(0) {}
-  void HandleFeasibleSolution(Problem &, fmt::StringRef,
-        const double *, const double *, double) {
+  void HandleFeasibleSolution(
+      fmt::StringRef, const double *, const double *, double) {
     ++num_solutions;
   }
 };

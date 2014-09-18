@@ -104,9 +104,9 @@ class SolverTest
     explicit EvalResult(int solve_code = mp::NOT_SOLVED)
     : has_value_(false), value_(), obj_value_(), solve_code_(solve_code) {}
 
-    EvalResult(double value, double obj_value, int solve_code)
+    EvalResult(double value, double obj_value)
     : has_value_(true), value_(value), obj_value_(obj_value),
-      solve_code_(solve_code) {}
+      solve_code_(mp::NOT_SOLVED) {}
 
     bool has_value() const { return has_value_; }
 
@@ -122,6 +122,7 @@ class SolverTest
       return obj_value_;
     }
     int solve_code() const { return solve_code_; }
+    void set_solve_code(int code) { solve_code_ = code; }
   };
 
   EvalResult Solve(mp::Problem &p);
