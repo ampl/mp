@@ -383,6 +383,9 @@ struct ProblemInfo {
   // and don't appear in constraints.
   int num_common_exprs_in_single_objs;
 };
+
+// Maximum number of options in .nl and .sol formats.
+enum {MAX_NL_OPTIONS = 9};
 }  // namespace mp
 
 #endif  // MP_PROBLEM_BASE_H_

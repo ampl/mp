@@ -90,7 +90,6 @@ class BinaryReadError : public Error {
 };
 
 enum {
-  MAX_NL_OPTIONS = 9,
   VBTOL_OPTION   = 1,
   READ_VBTOL     = 3
 };
