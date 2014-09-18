@@ -137,10 +137,9 @@ class OutputHandler {
 
 // An interface for receiving solutions.
 class SolutionHandler {
- protected:
-  ~SolutionHandler() {}
-
  public:
+  virtual ~SolutionHandler() {}
+
   // Receives a feasible solution.
   virtual void HandleFeasibleSolution(Problem &p, fmt::StringRef message,
       const double *values, const double *dual_values, double obj_value) = 0;
@@ -152,9 +151,6 @@ class SolutionHandler {
 };
 
 class BasicSolutionHandler : public SolutionHandler {
- protected:
-  ~BasicSolutionHandler() {}
-
  public:
   virtual void HandleFeasibleSolution(Problem &, fmt::StringRef,
       const double *, const double *, double) {}
@@ -359,13 +355,9 @@ class Solver : private ErrorHandler, private OutputHandler {
   bool has_errors_;
   OutputHandler *output_handler_;
   ErrorHandler *error_handler_;
-  SolutionHandler *sol_handler_;
 
   // The filename stub for returning multiple solutions.
   std::string solution_stub_;
-
-  // The number of feasible solutions found so far.
-  int num_solutions_;
 
   // Specifies whether to return the number of solutions in the .nsol suffix.
   bool count_solutions_;
@@ -524,26 +516,7 @@ class Solver : private ErrorHandler, private OutputHandler {
   // Sets the flags for Problem::Read.
   void set_read_flags(unsigned flags) { read_flags_ = flags; }
 
-  virtual void DoSolve(Problem &p) = 0;
-
-  bool need_multiple_solutions() const {
-    return count_solutions_ || !solution_stub_.empty();
-  }
-
-  // Passes a solution to the solution handler.
-  void HandleSolution(Problem &p, fmt::StringRef message,
-      const double *values, const double *dual_values,
-      double obj_value = std::numeric_limits<double>::quiet_NaN()) {
-    sol_handler_->HandleSolution(p, message, values, dual_values, obj_value);
-  }
-
-  // Passes a feasible solution to the solution handler.
-  void HandleFeasibleSolution(Problem &p, fmt::StringRef message,
-      const double *values, const double *dual_values,
-      double obj_value = std::numeric_limits<double>::quiet_NaN()) {
-    sol_handler_->HandleFeasibleSolution(
-        p, message, values, dual_values, obj_value);
-  }
+  virtual void DoSolve(Problem &p, SolutionHandler &sh) = 0;
 
   // Sets a text to be displayed before option descriptions.
   void set_option_header(const char *header) { option_header_ = header; }
@@ -732,11 +705,11 @@ class Solver : private ErrorHandler, private OutputHandler {
   // Sets the output handler.
   void set_output_handler(OutputHandler *oh) { output_handler_ = oh; }
 
-  // Returns the solution handler.
-  SolutionHandler *solution_handler() { return sol_handler_; }
+  const char *solution_stub() const { return solution_stub_.c_str(); }
 
-  // Sets the solution handler.
-  void set_solution_handler(SolutionHandler *sh) { sol_handler_ = sh; }
+  bool need_multiple_solutions() const {
+    return count_solutions_ || !solution_stub_.empty();
+  }
 
   // Returns the number of options.
   int num_options() const { return static_cast<int>(options_.size()); }

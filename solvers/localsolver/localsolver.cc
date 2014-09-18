@@ -131,7 +131,8 @@ ls::LSExpression NLToLocalSolverConverter::VisitLog10(UnaryExpr e) {
       ls::O_Div, ConvertUnary(ls::O_Log, e), std::log(10.0));
 }
 
-LocalSolver::LocalSolver() : ASLSolver("localsolver", 0, 20140710), timelimit_(0) {
+LocalSolver::LocalSolver()
+  : ASLSolver("localsolver", 0, 20140710), timelimit_(0) {
   std::string version = fmt::format("{}.{}",
       localsolver::LSVersion::getMajorVersionNumber(),
       localsolver::LSVersion::getMinorVersionNumber());
@@ -165,7 +166,7 @@ ls::LSExpression NLToLocalSolverConverter::VisitAllDiff(AllDiffExpr e) {
   return result;
 }
 
-void LocalSolver::DoSolve(Problem &p) {
+void LocalSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
   // Set up an optimization problem in LocalSolver.
@@ -232,7 +233,7 @@ void LocalSolver::DoSolve(Problem &p) {
     obj_val = GetValue(model.getObjective(0));
     w.write("objective {}", FormatObjValue(obj_val));
   }
-  HandleSolution(p, w.c_str(),
+  sh.HandleSolution(p, w.c_str(),
       solution.empty() ? 0 : solution.data(), 0, obj_val);
   double output_time = GetTimeAndReset(time);
 

@@ -356,11 +356,11 @@ class GecodeSolver : public ASLSolver {
 #endif
 
   template<template<template<typename> class, typename> class Meta>
-  ProblemPtr Search(Problem &p,
-      GecodeProblem &gecode_problem, Gecode::Search::Statistics &stats);
+  ProblemPtr Search(Problem &p, GecodeProblem &gecode_problem,
+                    Gecode::Search::Statistics &stats, SolutionHandler &sh);
 
  protected:
-  void DoSolve(Problem &p);
+  void DoSolve(Problem &p, SolutionHandler &sh);
 
  public:
   GecodeSolver();

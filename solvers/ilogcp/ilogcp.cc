@@ -592,7 +592,8 @@ void IlogCPSolver::SetCPLEXIntOption(
 }
 
 void IlogCPSolver::SolveWithCP(
-    Problem &p, const NLToConcertConverter &converter, Stats &stats) {
+    Problem &p, const NLToConcertConverter &converter,
+    Stats &stats, SolutionHandler &sh) {
   IloNumVarArray vars = converter.vars();
   IloIntVarArray priority_vars(env_);
   Suffix priority_suffix = p.suffix("priority", ASL_Sufkind_var);
@@ -610,7 +611,7 @@ void IlogCPSolver::SolveWithCP(
     explicit InteruptCP(IloCP &cp) : cp_(cp) {}
     void Interrupt() { cp_.abortSearch(); }
   } interrupt(cp_);
-  SignalHandler sh(*this, &interrupt);
+  SignalHandler sig_handler(*this, &interrupt);
 
   int num_objs = p.num_objs();
   vector<double> solution(p.num_vars());
@@ -643,7 +644,7 @@ void IlogCPSolver::SolveWithCP(
     if (multiple_sols) {
       double obj_value = num_objs > 0 ?
           cp_.getObjValue() : std::numeric_limits<double>::quiet_NaN();
-      HandleFeasibleSolution(p, feasible_sol_message,
+      sh.HandleFeasibleSolution(p, feasible_sol_message,
           solution.data(), 0, obj_value);
     }
     if (++num_solutions >= solution_limit) {
@@ -659,7 +660,7 @@ void IlogCPSolver::SolveWithCP(
 
   // Convert solution status.
   if (solve_code == -1) {
-    status = ConvertSolutionStatus(cp_, sh, solve_code);
+    status = ConvertSolutionStatus(cp_, sig_handler, solve_code);
     if (p.num_objs() > 0) {
       if (cp_.getInfo(IloCP::FailStatus) == IloCP::SearchStoppedByLimit) {
         solve_code = LIMIT;
@@ -690,12 +691,13 @@ void IlogCPSolver::SolveWithCP(
   } else {
     solution.clear();
   }
-  HandleSolution(p, writer.c_str(),
+  sh.HandleSolution(p, writer.c_str(),
       solution.empty() ? 0 : &solution[0], 0, obj_value);
 }
 
 void IlogCPSolver::SolveWithCPLEX(
-    Problem &p, const NLToConcertConverter &converter, Stats &stats) {
+    Problem &p, const NLToConcertConverter &converter,
+    Stats &stats, SolutionHandler &sh) {
   IloCplex::Aborter aborter(env_);
   struct InteruptCPLEX : public Interruptible {
   private:
@@ -705,7 +707,7 @@ void IlogCPSolver::SolveWithCPLEX(
     void Interrupt() { aborter_.abort(); }
   } interrupt(aborter);
   cplex_.use(aborter);
-  SignalHandler sh(*this, &interrupt);
+  SignalHandler sig_handler(*this, &interrupt);
 
   stats.setup_time = GetTimeAndReset(stats.time);
   cplex_.solve();
@@ -713,7 +715,7 @@ void IlogCPSolver::SolveWithCPLEX(
 
   // Convert solution status.
   int solve_code = 0;
-  std::string status = ConvertSolutionStatus(cplex_, sh, solve_code);
+  std::string status = ConvertSolutionStatus(cplex_, sig_handler, solve_code);
   p.set_solve_code(solve_code);
 
   fmt::Writer writer;
@@ -745,12 +747,12 @@ void IlogCPSolver::SolveWithCPLEX(
       writer.write(", objective {}", FormatObjValue(obj_value));
     }
   }
-  HandleSolution(p, writer.c_str(),
+  sh.HandleSolution(p, writer.c_str(),
       solution.empty() ? 0 : solution.data(),
       dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
 }
 
-void IlogCPSolver::DoSolve(Problem &p) {
+void IlogCPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   Stats stats = Stats();
   stats.time = steady_clock::now();
 
@@ -791,9 +793,9 @@ void IlogCPSolver::DoSolve(Problem &p) {
   }
 
   if (optimizer == CP)
-    SolveWithCP(p, converter, stats);
+    SolveWithCP(p, converter, stats, sh);
   else
-    SolveWithCPLEX(p, converter, stats);
+    SolveWithCPLEX(p, converter, stats, sh);
   double output_time = GetTimeAndReset(stats.time);
 
   if (timing()) {

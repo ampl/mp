@@ -28,23 +28,24 @@
 
 namespace mp {
 
+class SolutionWriter : public SolutionHandler {
+ private:
+  Solver &solver_;
+
+  // The number of feasible solutions found so far.
+  int num_solutions_;
+
+ public:
+  explicit SolutionWriter(Solver &s) : solver_(s), num_solutions_(0) {}
+
+  void HandleFeasibleSolution(Problem &p, fmt::StringRef message,
+        const double *values, const double *dual_values, double);
+  void HandleSolution(Problem &p, fmt::StringRef message,
+        const double *values, const double *dual_values, double);
+};
+
 class ASLSolver : public SolverImpl<internal::ASLBuilder> {
  private:
-  class SolutionWriter : public SolutionHandler {
-   private:
-    Solver *solver_;
-
-   public:
-    SolutionWriter() : solver_() {}
-    void set_solver(Solver *s) { solver_ = s; }
-
-    void HandleFeasibleSolution(Problem &p, fmt::StringRef message,
-          const double *values, const double *dual_values, double);
-    void HandleSolution(Problem &p, fmt::StringRef message,
-          const double *values, const double *dual_values, double);
-  };
-  SolutionWriter sol_writer_;
-
   void RegisterSuffixes(Problem &p);
 
  public:
@@ -60,9 +61,8 @@ class ASLSolver : public SolverImpl<internal::ASLBuilder> {
   // likely to change in the future version).
   bool ProcessArgs(char **&argv, Problem &p, unsigned flags = 0);
 
-  // Solves a problem.
-  // The solutions are reported via the registered solution handler.
-  void Solve(Problem &p);
+  // Solves a problem and report solutions via the solution handler.
+  void Solve(Problem &p, SolutionHandler &sh);
 
   // Runs the solver.
   int Run(char **argv);

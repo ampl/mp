@@ -47,8 +47,7 @@ SolverTest::EvalResult SolverTest::Solve(Problem &p) {
     }
   };
   TestSolutionHandler sh;
-  solver_->set_solution_handler(&sh);
-  solver_->Solve(p);
+  solver_->Solve(p, sh);
   return sh.result;
 }
 
@@ -80,10 +79,9 @@ SolverTest::SolverTest()
 SolveResult SolverTest::Solve(
     mp::ASLSolver &s, Problem &p, const char *stub, const char *opt) {
   TestSolutionHandler sh;
-  s.set_solution_handler(&sh);
   const std::string DATA_DIR = MP_TEST_DATA_DIR "/";
   if (s.ProcessArgs(Args(s.name(), "-s", (DATA_DIR + stub).c_str(), opt), p))
-    s.Solve(p);
+    s.Solve(p, sh);
   const string &message = sh.message();
   int solve_code = sh.solve_code();
   EXPECT_GE(solve_code, 0);
@@ -745,13 +743,14 @@ TEST_P(SolverTest, TimingOption) {
   p.AddObj(obj::MIN, MakeVariable(0));
 
   solver_->SetIntOption("timing", 0);
-  solver_->Solve(p);
+  mp::BasicSolutionHandler sol_handler;
+  solver_->Solve(p, sol_handler);
   EXPECT_TRUE(oh.output.find("Setup time = ") == std::string::npos);
   EXPECT_TRUE(oh.output.find("Solution time = ") == std::string::npos);
   EXPECT_TRUE(oh.output.find("Output time = ") == std::string::npos);
 
   solver_->SetIntOption("timing", 1);
-  solver_->Solve(p);
+  solver_->Solve(p, sol_handler);
   EXPECT_TRUE(oh.output.find("Setup time = ") != std::string::npos);
   EXPECT_TRUE(oh.output.find("Solution time = ") != std::string::npos);
   EXPECT_TRUE(oh.output.find("Output time = ") != std::string::npos);
@@ -886,11 +885,10 @@ TEST_P(SolverTest, CountSolutions) {
   p.AddVar(1, 3, var::INTEGER);
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeVariable(2)};
   p.AddCon(MakeAllDiff(args));
-  SolutionCounter sc;
   solver_->SetIntOption("solutionlimit", 10);
   solver_->SetIntOption("countsolutions", 1);
-  solver_->set_solution_handler(&sc);
-  solver_->Solve(p);
+  SolutionCounter sc;
+  solver_->Solve(p, sc);
   EXPECT_EQ(6, sc.num_solutions);
 }
 
@@ -902,7 +900,8 @@ TEST_P(SolverTest, SatisfactionSolutionLimit) {
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeVariable(2)};
   p.AddCon(MakeAllDiff(args));
   solver_->SetIntOption("solutionlimit", 5);
-  solver_->Solve(p);
+  mp::BasicSolutionHandler sh;
+  solver_->Solve(p, sh);
   EXPECT_EQ(0, p.solve_code());
 }
 
@@ -910,7 +909,8 @@ TEST_P(SolverTest, OptimizationSolutionLimit) {
   mp::Problem p;
   p.Read(MP_TEST_DATA_DIR "/photo9");
   solver_->SetIntOption("solutionlimit", 2);
-  solver_->Solve(p);
+  mp::BasicSolutionHandler sh;
+  solver_->Solve(p, sh);
   EXPECT_GE(p.solve_code(), 400);
   EXPECT_LT(p.solve_code(), 499);
 }
@@ -922,11 +922,10 @@ TEST_P(SolverTest, MultipleSolutions) {
   p.AddVar(1, 3, var::INTEGER);
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeVariable(2)};
   p.AddCon(MakeAllDiff(args));
-  SolutionCounter sc;
-  solver_->set_solution_handler(&sc);
   solver_->SetIntOption("solutionlimit", 3);
   solver_->SetStrOption("solutionstub", "test");
-  solver_->Solve(p);
+  SolutionCounter sc;
+  solver_->Solve(p, sc);
   EXPECT_EQ(0, p.solve_code());
   EXPECT_EQ(3, sc.num_solutions);
 }

@@ -323,7 +323,7 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
   }
 
  private:
-  void DoSolve(Problem &) {} // TODO
+  void DoSolve(Problem &, SolutionHandler &) {} // TODO
 
  public:
   LocalSolver();

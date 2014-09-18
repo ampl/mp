@@ -166,12 +166,13 @@ TEST_F(JaCoPSolverTest, OutLevOption) {
   solver_.set_output_handler(&h);
   Problem p;
   p.Read(MP_TEST_DATA_DIR "/objconstint.nl");
-  solver_.Solve(p);
+  mp::BasicSolutionHandler sh;
+  solver_.Solve(p, sh);
   EXPECT_EQ("", h.output);
 
   h.output.clear();
   solver_.SetIntOption("outlev", 1);
-  solver_.Solve(p);
+  solver_.Solve(p, sh);
   EXPECT_EQ(
       " Max Depth      Nodes      Fails      Best Obj\n"
       "                                            42\n", h.output);
@@ -193,13 +194,14 @@ TEST_F(JaCoPSolverTest, OutFreqOption) {
   solver_.SetIntOption("timelimit", 1);
 
   solver_.SetDblOption("outfreq", 0.4);
-  solver_.Solve(p);
+  mp::BasicSolutionHandler sh;
+  solver_.Solve(p, sh);
   string out = h.output;
   EXPECT_EQ(3, std::count(out.begin(), out.end(), '\n'));
 
   h.output.clear();
   solver_.SetDblOption("outfreq", 0.8);
-  solver_.Solve(p);
+  solver_.Solve(p, sh);
   out = h.output;
   EXPECT_EQ(2, std::count(out.begin(), out.end(), '\n'));
 

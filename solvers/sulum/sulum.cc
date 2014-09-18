@@ -152,7 +152,7 @@ SulumSolver::~SulumSolver() {
   SlmFreeEnv(&env_);
 }
 
-void SulumSolver::DoSolve(Problem &p) {
+void SulumSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
   if (p.num_nonlinear_objs() != 0 || p.num_nonlinear_cons() != 0)
@@ -280,7 +280,8 @@ void SulumSolver::DoSolve(Problem &p) {
   w << status;
   if (p.num_objs() > 0)
     w.write("; objective {}", FormatObjValue(obj_val));
-  HandleSolution(p, w.c_str(), solution.data(), dual_solution.data(), obj_val);
+  sh.HandleSolution(
+        p, w.c_str(), solution.data(), dual_solution.data(), obj_val);
 
   double output_time = GetTimeAndReset(time);
 

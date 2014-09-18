@@ -283,12 +283,11 @@ Solver::Solver(
     fmt::StringRef name, fmt::StringRef long_name, long date, int flags)
 : name_(name), long_name_(long_name.c_str() ? long_name : name), date_(date),
   wantsol_(0), obj_precision_(-1), flags_(0),
-  has_errors_(false), num_solutions_(0), count_solutions_(false),
+  has_errors_(false), count_solutions_(false),
   read_flags_(0), timing_(false) {
   version_ = long_name_;
   error_handler_ = this;
   output_handler_ = this;
-  sol_handler_ = 0;
 
   struct VersionOption : SolverOption {
     Solver &s;

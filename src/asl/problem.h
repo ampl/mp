@@ -161,6 +161,7 @@ class Problem {
   }
 
   friend class ASLSolver;
+  friend class SolutionWriter;
 
   // Frees all the arrays that were allocated by modifications to the problem.
   void Free();

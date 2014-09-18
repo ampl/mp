@@ -43,6 +43,7 @@ using mp::OptionError;
 using mp::Problem;
 using mp::Solver;
 using mp::SolverOption;
+using mp::SolutionHandler;
 using mp::internal::OptionHelper;
 
 namespace {
@@ -58,14 +59,13 @@ struct TestSolver : mp::ASLSolver {
   using Solver::set_version;
   using Solver::AddOption;
   using Solver::AddSuffix;
-  using Solver::HandleSolution;
 
   bool ParseOptions(char **argv,
       unsigned flags = Solver::NO_OPTION_ECHO, const Problem *p = 0) {
     return Solver::ParseOptions(argv, flags, p);
   }
 
-  void DoSolve(Problem &) {}
+  void DoSolve(Problem &, SolutionHandler &) {}
 };
 
 void CheckObjPrecision(int precision) {
@@ -224,7 +224,7 @@ TEST(SolverTest, BasicSolverVirtualDtor) {
     DtorTestSolver(bool &destroyed)
     : Solver("test", 0, 0, 0), destroyed_(destroyed) {}
     ~DtorTestSolver() { destroyed_ = true; }
-    void DoSolve(Problem &) {}
+    void DoSolve(Problem &, SolutionHandler &) {}
     void ReadNL(fmt::StringRef) {}
   };
   (DtorTestSolver(destroyed));
@@ -328,21 +328,6 @@ TEST(SolverTest, OutputHandler) {
   s.Print("line {}\n", 1);
   s.Print("line {}\n", 2);
   EXPECT_EQ("line 1\nline 2\n", oh.output);
-}
-
-TEST(SolverTest, SolutionHandler) {
-  TestSolutionHandler sh;
-  TestSolver s("test");
-  s.set_solution_handler(&sh);
-  EXPECT_TRUE(&sh == s.solution_handler());
-  Problem p;
-  double primal = 0, dual = 0, obj = 42;
-  s.HandleSolution(p, "test message", &primal, &dual, obj);
-  EXPECT_EQ(&p, sh.problem());
-  EXPECT_EQ("test message", sh.message());
-  EXPECT_EQ(&primal, sh.primal());
-  EXPECT_EQ(&dual, sh.dual());
-  EXPECT_EQ(42.0, sh.obj_value());
 }
 
 TEST(SolverTest, ReadProblem) {
@@ -628,7 +613,7 @@ struct TestSolverWithOptions : Solver {
     return Solver::ParseOptions(argv, flags, p);
   }
 
-  void DoSolve(Problem &) {}
+  void DoSolve(Problem &, SolutionHandler &) {}
   void ReadNL(fmt::StringRef) {}
 };
 
@@ -657,7 +642,7 @@ TEST(SolverTest, OptionHeader) {
     void set_option_header() {
       Solver::set_option_header("test header");
     }
-    void DoSolve(Problem &) {}
+    void DoSolve(Problem &, SolutionHandler &) {}
     void ReadNL(fmt::StringRef) {}
   } s;
   EXPECT_STREQ("", s.option_header());
@@ -762,7 +747,7 @@ TEST(SolverTest, HandleUnknownOption) {
   struct TestSolver : Solver {
     std::string option_name;
     TestSolver() : Solver("test", 0, 0, 0) {}
-    void DoSolve(Problem &) {}
+    void DoSolve(Problem &, SolutionHandler &) {}
     void ReadNL(fmt::StringRef) {}
     void HandleUnknownOption(const char *name) { option_name = name; }
   };
@@ -908,7 +893,7 @@ struct ExceptionTestSolver : public Solver {
     AddIntOption("throw", "",
         &ExceptionTestSolver::GetIntOption, &ExceptionTestSolver::Throw);
   }
-  void DoSolve(Problem &) {}
+  void DoSolve(Problem &, SolutionHandler &) {}
   void ReadNL(fmt::StringRef) {}
 };
 
@@ -1109,10 +1094,10 @@ const int NUM_SOLUTIONS = 3;
 struct SolCountingSolver : mp::ASLSolver {
   explicit SolCountingSolver(bool multiple_sol)
   : ASLSolver("", "", 0, multiple_sol ? MULTIPLE_SOL : 0) {}
-  void DoSolve(Problem &p) {
+  void DoSolve(Problem &p, SolutionHandler &sh) {
     for (int i = 0; i < NUM_SOLUTIONS; ++i)
-      HandleFeasibleSolution(p, "", 0, 0, 0);
-    HandleSolution(p, "", 0, 0, 0);
+      sh.HandleFeasibleSolution(p, "", 0, 0, 0);
+    sh.HandleSolution(p, "", 0, 0, 0);
   }
 };
 
@@ -1131,7 +1116,8 @@ TEST(SolverTest, SolutionsAreNotCountedByDefault) {
   WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
   Problem p;
   p.Read("test.nl");
-  s.Solve(p);
+  mp::SolutionWriter sol_writer(s);
+  s.Solve(p, sol_writer);
   EXPECT_TRUE(ReadFile("test.sol").find(
       fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) == std::string::npos);
 }
@@ -1143,7 +1129,8 @@ TEST(SolverTest, CountSolutions) {
   WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
   Problem p;
   p.Read("test.nl");
-  s.Solve(p);
+  mp::SolutionWriter sol_writer(s);
+  s.Solve(p, sol_writer);
   EXPECT_TRUE(ReadFile("test.sol").find(
       fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) != std::string::npos);
 }
@@ -1170,7 +1157,8 @@ TEST(SolverTest, SolutionsAreNotWrittenByDefault) {
   WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
   Problem p;
   p.Read("test.nl");
-  s.Solve(p);
+  mp::SolutionWriter sol_writer(s);
+  s.Solve(p, sol_writer);
   EXPECT_TRUE(!Exists("1.sol"));
   EXPECT_TRUE(ReadFile("test.sol").find(
       fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) == std::string::npos);
@@ -1185,7 +1173,8 @@ TEST(SolverTest, WriteSolutions) {
   p.Read("test.nl");
   for (int i = 1; i <= NUM_SOLUTIONS; ++i)
     std::remove(fmt::format("abc{}.sol", i).c_str());
-  s.Solve(p);
+  mp::SolutionWriter sol_writer(s);
+  s.Solve(p, sol_writer);
   for (int i = 1; i <= NUM_SOLUTIONS; ++i)
     EXPECT_TRUE(Exists(fmt::format("abc{}.sol", i)));
   EXPECT_TRUE(ReadFile("test.sol").find(

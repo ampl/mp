@@ -227,7 +227,7 @@ void SMPSWriter::WriteColumns(
     writer.Write("    INT{:<5}    'MARKER'      'INTEND'\n", int_var_index);
 }
 
-void SMPSWriter::DoSolve(Problem &p) {
+void SMPSWriter::DoSolve(Problem &p, SolutionHandler &) {
   if (p.num_nonlinear_objs() != 0 || p.num_nonlinear_cons() != 0)
     throw Error("SMPS writer doesn't support nonlinear problems");
 

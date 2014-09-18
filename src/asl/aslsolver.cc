@@ -65,11 +65,42 @@ static void PrintUsage(const mp::Solver &solver, unsigned flags) {
   }
 }
 
+void mp::SolutionWriter::HandleFeasibleSolution(
+    Problem &p, fmt::StringRef message, const double *values,
+    const double *dual_values, double) {
+  ++num_solutions_;
+  const char *solution_stub = solver_.solution_stub();
+  if (!*solution_stub)
+    return;
+  fmt::Writer w;
+  w << solution_stub << num_solutions_ << ".sol";
+  Option_Info option_info = Option_Info();
+  option_info.bsname = const_cast<char*>(solver_.long_name());
+  option_info.wantsol = solver_.wantsol();
+  write_solf_ASL(reinterpret_cast<ASL*>(p.asl_),
+      const_cast<char*>(message.c_str()), const_cast<double*>(values),
+      const_cast<double*>(dual_values), &option_info, w.c_str());
+}
+
+void mp::SolutionWriter::HandleSolution(
+    Problem &p, fmt::StringRef message, const double *values,
+    const double *dual_values, double) {
+  if (solver_.need_multiple_solutions()) {
+    Suffix nsol_suffix = p.suffix("nsol", ASL_Sufkind_prob);
+    if (nsol_suffix)
+      nsol_suffix.set_values(&num_solutions_);
+  }
+  Option_Info option_info = Option_Info();
+  option_info.bsname = const_cast<char*>(solver_.long_name());
+  option_info.wantsol = solver_.wantsol();
+  write_sol_ASL(reinterpret_cast<ASL*>(p.asl_),
+      const_cast<char*>(message.c_str()), const_cast<double*>(values),
+      const_cast<double*>(dual_values), &option_info);
+}
+
 mp::ASLSolver::ASLSolver(
     fmt::StringRef name, fmt::StringRef long_name, long date, int flags)
   : SolverImpl<internal::ASLBuilder>(name, long_name, date, flags) {
-  sol_writer_.set_solver(this);
-  sol_handler_ = &sol_writer_;
 }
 
 void mp::ASLSolver::RegisterSuffixes(Problem &p) {
@@ -86,38 +117,6 @@ void mp::ASLSolver::RegisterSuffixes(Problem &p) {
   ASL *asl = reinterpret_cast<ASL*>(p.asl_);
   if (asl->i.nsuffixes == 0 && num_suffixes != 0)
     suf_declare_ASL(asl, &suffix_decls[0], static_cast<int>(num_suffixes));
-}
-
-void mp::ASLSolver::SolutionWriter::HandleFeasibleSolution(
-    Problem &p, fmt::StringRef message, const double *values,
-    const double *dual_values, double) {
-  ++solver_->num_solutions_;
-  if (solver_->solution_stub_.empty())
-    return;
-  fmt::Writer w;
-  w << solver_->solution_stub_ << solver_->num_solutions_ << ".sol";
-  Option_Info option_info = Option_Info();
-  option_info.bsname = const_cast<char*>(solver_->long_name_.c_str());
-  option_info.wantsol = solver_->wantsol_;
-  write_solf_ASL(reinterpret_cast<ASL*>(p.asl_),
-      const_cast<char*>(message.c_str()), const_cast<double*>(values),
-      const_cast<double*>(dual_values), &option_info, w.c_str());
-}
-
-void mp::ASLSolver::SolutionWriter::HandleSolution(
-    Problem &p, fmt::StringRef message, const double *values,
-    const double *dual_values, double) {
-  if (solver_->need_multiple_solutions()) {
-    Suffix nsol_suffix = p.suffix("nsol", ASL_Sufkind_prob);
-    if (nsol_suffix)
-      nsol_suffix.set_values(&solver_->num_solutions_);
-  }
-  Option_Info option_info = Option_Info();
-  option_info.bsname = const_cast<char*>(solver_->long_name_.c_str());
-  option_info.wantsol = solver_->wantsol_;
-  write_sol_ASL(reinterpret_cast<ASL*>(p.asl_),
-      const_cast<char*>(message.c_str()), const_cast<double*>(values),
-      const_cast<double*>(dual_values), &option_info);
 }
 
 bool mp::ASLSolver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
@@ -178,16 +177,16 @@ bool mp::ASLSolver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
   return result;
 }
 
-void mp::ASLSolver::Solve(Problem &p) {
-  num_solutions_ = 0;
+void mp::ASLSolver::Solve(Problem &p, SolutionHandler &sh) {
   RegisterSuffixes(p);
-  DoSolve(p);
+  DoSolve(p, sh);
 }
 
 int mp::ASLSolver::Run(char **argv) {
   Problem p;
   if (!ProcessArgs(argv, p))
     return 1;
-  Solve(p);
+  SolutionWriter sol_writer(*this);
+  Solve(p, sol_writer);
   return 0;
 }

@@ -461,20 +461,21 @@ void JaCoPSolver::PrintLogEntry() {
   next_output_time_ += GetOutputInterval();
 }
 
-bool JaCoPSolver::SolutionHandler::DoHandleSolution() {
+bool JaCoPSolver::SolutionRelay::DoHandleSolution() {
   try {
     ++num_solutions_;
     if (solver_.outlev_ != 0 && obj_var_) {
       jint value = solver_.env_.CallIntMethodKeepException(
           obj_var_, solver_.value_);
-      solver_.Output("{:46}\n", (problem_.obj_type(0) == obj::MIN ? value : -value));
+      solver_.Output("{:46}\n",
+                     (problem_.obj_type(0) == obj::MIN ? value : -value));
     }
     if (multiple_sol_) {
       double obj_value = obj_var_ ?
         solver_.env_.CallIntMethod(obj_var_, solver_.value_) : 0;
       for (int j = 0, n = problem_.num_vars(); j < n; ++j)
         solution_[j] = solver_.env_.CallIntMethod(vars_[j], solver_.value_);
-      solver_.HandleFeasibleSolution(problem_, feasible_sol_message_,
+      sol_handler_.HandleFeasibleSolution(problem_, feasible_sol_message_,
           solution_.empty() ? 0 : solution_.data(), 0, obj_value);
     }
     if (solver_.solution_limit_ != -1 &&
@@ -508,7 +509,7 @@ JNIEXPORT jboolean JNICALL JaCoPSolver::Stop(JNIEnv *, jobject, jlong data) {
   return JNI_FALSE;
 }
 
-void JaCoPSolver::DoSolve(Problem &p) {
+void JaCoPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
   std::vector<const char*> jvm_options(jvm_options_.size() + 2);
@@ -572,7 +573,7 @@ void JaCoPSolver::DoSolve(Problem &p) {
     JNINativeMethod method = {
         NAME, SIG,
         reinterpret_cast<void*>(
-            reinterpret_cast<jlong>(SolutionHandler::HandleSolution))
+            reinterpret_cast<jlong>(SolutionRelay::HandleSolution))
     };
     env_.RegisterNatives(solution_listener_class.get(), &method, 1);
   }
@@ -581,9 +582,9 @@ void JaCoPSolver::DoSolve(Problem &p) {
     obj_var = env_.NewGlobalRef(converter.obj());
   jclass var_class = converter.var_class().get();
   value_ = env_.GetMethod(var_class, "value", "()I");
-  SolutionHandler sol_handler(*this, p, converter.vars().data(), obj_var.get());
+  SolutionRelay sol_relay(*this, sh, p, converter.vars().data(), obj_var.get());
   jobject solution_listener = solution_listener_class.NewObject(
-      env_, reinterpret_cast<jlong>(&sol_handler));
+      env_, reinterpret_cast<jlong>(&sol_relay));
   env_.CallVoidMethod(solution_listener, env_.GetMethod(
       solution_listener_class.get(),
       "setSolutionLimit", "(I)V"), std::numeric_limits<jint>::max());
@@ -699,7 +700,7 @@ void JaCoPSolver::DoSolve(Problem &p) {
       env_.CallIntMethod(search_.get(), get_fails_));
   if (has_obj && found)
     w.write(", objective {}", FormatObjValue(obj_val));
-  HandleSolution(p, w.c_str(),
+  sh.HandleSolution(p, w.c_str(),
       final_solution.empty() ? 0 : final_solution.data(), 0, obj_val);
 
   double output_time = GetTimeAndReset(time);

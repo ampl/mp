@@ -361,7 +361,8 @@ TEST_F(IlogCPTest, ConvertSingleNumberOfToIloDistribute) {
   p.AddVar(0, 0, var::INTEGER);
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
   p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
-  s.Solve(p);
+  mp::BasicSolutionHandler sh;
+  s.Solve(p, sh);
   ASSERT_EQ(1, CountIloDistribute());
 }
 
@@ -373,7 +374,8 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithSameValuesToIloDistribute) {
   NumericExpr args[] = {MakeConst(42), MakeVariable(0), MakeVariable(1)};
   p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
   p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
-  s.Solve(p);
+  mp::BasicSolutionHandler sh;
+  s.Solve(p, sh);
   ASSERT_EQ(1, CountIloDistribute());
 }
 
@@ -386,7 +388,8 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffValuesToIloDistribute) {
   p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
   args[0] = MakeConst(43);
   p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
-  s.Solve(p);
+  mp::BasicSolutionHandler sh;
+  s.Solve(p, sh);
   ASSERT_EQ(1, CountIloDistribute());
 }
 
@@ -399,7 +402,8 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
   p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args)));
   NumericExpr args2[] = {MakeConst(42), MakeVariable(1)};
   p.AddCon(MakeRelational(mp::expr::EQ, MakeConst(0), MakeNumberOf(args2)));
-  s.Solve(p);
+  mp::BasicSolutionHandler sh;
+  s.Solve(p, sh);
   ASSERT_EQ(2, CountIloDistribute());
 }
 
@@ -427,10 +431,9 @@ TEST_F(IlogCPTest, DefaultSolutionLimit) {
   p.AddVar(1, 3, var::INTEGER);
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeVariable(2)};
   p.AddCon(MakeAllDiff(args));
-  TestSolutionHandler sh;
-  s.set_solution_handler(&sh);
   s.SetIntOption("solutionlimit", 100);
-  s.Solve(p);
+  TestSolutionHandler sh;
+  s.Solve(p, sh);
   EXPECT_EQ(1, sh.num_solutions);
 }
 
@@ -438,7 +441,8 @@ TEST_F(IlogCPTest, CPOptimizerDoesntSupportContinuousVars) {
   Problem p;
   p.AddVar(0, 1);
   p.AddObj(mp::obj::MIN, MakeVariable(0));
-  EXPECT_THROW(s.Solve(p), mp::Error);
+  mp::BasicSolutionHandler sh;
+  EXPECT_THROW(s.Solve(p, sh), mp::Error);
 }
 
 // ----------------------------------------------------------------------------
@@ -452,12 +456,13 @@ TEST_F(IlogCPTest, OptimizerOption) {
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1)};
   p.AddCon(MakeAllDiff(args));
   s.SetStrOption("optimizer", "cp");
-  s.Solve(p);
+  mp::BasicSolutionHandler sh;
+  s.Solve(p, sh);
   EXPECT_EQ(0, p.solve_code());
   s.SetStrOption("optimizer", "cplex");
-  EXPECT_THROW(s.Solve(p), mp::UnsupportedExprError);
+  EXPECT_THROW(s.Solve(p, sh), mp::UnsupportedExprError);
   s.SetStrOption("optimizer", "auto");
-  s.Solve(p);
+  s.Solve(p, sh);
   EXPECT_EQ(0, p.solve_code());
 }
 
@@ -488,7 +493,8 @@ TEST_F(IlogCPTest, UseCplexForLinearProblem) {
   Problem p;
   p.AddVar(1, 2);
   p.AddObj(obj::MIN, MakeConst(42));
-  s.Solve(p);
+  mp::BasicSolutionHandler sh;
+  s.Solve(p, sh);
   EXPECT_EQ(0, p.solve_code());
 }
 

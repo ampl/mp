@@ -703,7 +703,8 @@ void GetSolution(GecodeProblem &gecode_problem, std::vector<double> &solution) {
 
 template<template<template<typename> class, typename> class Meta>
 GecodeSolver::ProblemPtr GecodeSolver::Search(
-    Problem &p, GecodeProblem &problem, Search::Statistics &stats) {
+    Problem &p, GecodeProblem &problem,
+    Search::Statistics &stats, SolutionHandler &sh) {
   ProblemPtr final_problem;
   unsigned solution_limit = solution_limit_;
   unsigned num_solutions = 0;
@@ -733,7 +734,8 @@ GecodeSolver::ProblemPtr GecodeSolver::Search(
       final_problem.reset(next);
       if (multiple_sol) {
         GetSolution(*final_problem, solution);
-        HandleFeasibleSolution(p, feasible_sol_message, solution.data(), 0, 0);
+        sh.HandleFeasibleSolution(
+              p, feasible_sol_message, solution.data(), 0, 0);
       }
       if (++num_solutions >= solution_limit_)
         break;
@@ -743,7 +745,7 @@ GecodeSolver::ProblemPtr GecodeSolver::Search(
   return final_problem;
 }
 
-void GecodeSolver::DoSolve(Problem &p) {
+void GecodeSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
   SetStatus(-1, "");
@@ -791,9 +793,10 @@ void GecodeSolver::DoSolve(Problem &p) {
   GecodeSolver::ProblemPtr solution;
   if (restart_ != Gecode::RM_NONE) {
     options_.cutoff = Gecode::Driver::createCutoff(*this);
-    solution = Search<Gecode::RBS>(p, gecode_problem, stats);
+    solution = Search<Gecode::RBS>(p, gecode_problem, stats, sh);
   } else {
-    solution = Search<Gecode::Driver::EngineToMeta>(p, gecode_problem, stats);
+    solution =
+        Search<Gecode::Driver::EngineToMeta>(p, gecode_problem, stats, sh);
   }
 
   // Convert solution status.
@@ -827,7 +830,7 @@ void GecodeSolver::DoSolve(Problem &p) {
   w.write("{} nodes, {} fails", stats.node, stats.fail);
   if (has_obj && solution.get())
     w.write(", objective {}", FormatObjValue(obj_val));
-  HandleSolution(p, w.c_str(),
+  sh.HandleSolution(p, w.c_str(),
       final_solution.empty() ? 0 : final_solution.data(), 0, obj_val);
 
   double output_time = GetTimeAndReset(time);

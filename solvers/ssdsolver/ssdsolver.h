@@ -113,7 +113,7 @@ class SSDSolver : public ASLSolver {
   }
 
  protected:
-  void DoSolve(Problem &p);
+  void DoSolve(Problem &p, SolutionHandler &sh);
 
  public:
   SSDSolver();

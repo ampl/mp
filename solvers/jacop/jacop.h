@@ -456,9 +456,11 @@ class JaCoPSolver : public ASLSolver {
 
   static JNIEXPORT jboolean JNICALL Stop(JNIEnv *, jobject, jlong data);
 
-  class SolutionHandler {
+  // Relays the solution from JaCoP to the solution handler.
+  class SolutionRelay {
    private:
     JaCoPSolver &solver_;
+    SolutionHandler &sol_handler_;
     Problem &problem_;
     const jobject *vars_;
     jobject obj_var_;
@@ -470,9 +472,9 @@ class JaCoPSolver : public ASLSolver {
     bool DoHandleSolution();
 
    public:
-    SolutionHandler(JaCoPSolver &s,
+    SolutionRelay(JaCoPSolver &s, SolutionHandler &sh,
         Problem &p, const jobject *vars, jobject obj_var)
-    : solver_(s), problem_(p), vars_(vars), obj_var_(obj_var),
+    : solver_(s), sol_handler_(sh), problem_(p), vars_(vars), obj_var_(obj_var),
       multiple_sol_(s.need_multiple_solutions()), num_solutions_(0) {
       if (multiple_sol_) {
         feasible_sol_message_ =
@@ -483,12 +485,12 @@ class JaCoPSolver : public ASLSolver {
 
     static JNIEXPORT jboolean JNICALL HandleSolution(
         JNIEnv *, jobject, jlong data) {
-      return reinterpret_cast<SolutionHandler*>(data)->DoHandleSolution();
+      return reinterpret_cast<SolutionRelay*>(data)->DoHandleSolution();
     }
   };
 
  protected:
-  void DoSolve(Problem &p);
+  void DoSolve(Problem &p, SolutionHandler &sh);
 
   void HandleUnknownOption(const char *name);
 
