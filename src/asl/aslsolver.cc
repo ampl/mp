@@ -66,7 +66,7 @@ static void PrintUsage(const mp::Solver &solver, unsigned flags) {
 }
 
 void mp::SolutionWriter::HandleFeasibleSolution(
-    Problem &p, fmt::StringRef message, const double *values,
+    fmt::StringRef message, const double *values,
     const double *dual_values, double) {
   ++num_solutions_;
   const char *solution_stub = solver_.solution_stub();
@@ -77,23 +77,23 @@ void mp::SolutionWriter::HandleFeasibleSolution(
   Option_Info option_info = Option_Info();
   option_info.bsname = const_cast<char*>(solver_.long_name());
   option_info.wantsol = solver_.wantsol();
-  write_solf_ASL(reinterpret_cast<ASL*>(p.asl_),
+  write_solf_ASL(reinterpret_cast<ASL*>(problem_.asl_),
       const_cast<char*>(message.c_str()), const_cast<double*>(values),
       const_cast<double*>(dual_values), &option_info, w.c_str());
 }
 
 void mp::SolutionWriter::HandleSolution(
-    Problem &p, fmt::StringRef message, const double *values,
+    fmt::StringRef message, const double *values,
     const double *dual_values, double) {
   if (solver_.need_multiple_solutions()) {
-    Suffix nsol_suffix = p.suffix("nsol", ASL_Sufkind_prob);
+    Suffix nsol_suffix = problem_.suffix("nsol", ASL_Sufkind_prob);
     if (nsol_suffix)
       nsol_suffix.set_values(&num_solutions_);
   }
   Option_Info option_info = Option_Info();
   option_info.bsname = const_cast<char*>(solver_.long_name());
   option_info.wantsol = solver_.wantsol();
-  write_sol_ASL(reinterpret_cast<ASL*>(p.asl_),
+  write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_),
       const_cast<char*>(message.c_str()), const_cast<double*>(values),
       const_cast<double*>(dual_values), &option_info);
 }
@@ -186,7 +186,7 @@ int mp::ASLSolver::Run(char **argv) {
   Problem p;
   if (!ProcessArgs(argv, p))
     return 1;
-  SolutionWriter sol_writer(*this);
+  SolutionWriter sol_writer(*this, p);
   Solve(p, sol_writer);
   return 0;
 }

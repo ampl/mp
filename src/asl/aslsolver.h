@@ -25,22 +25,25 @@
 
 #include "mp/solver.h"
 #include "asl/aslbuilder.h"
+#include "asl/problem.h"
 
 namespace mp {
 
 class SolutionWriter : public SolutionHandler {
  private:
   Solver &solver_;
+  const Problem &problem_;
 
   // The number of feasible solutions found so far.
   int num_solutions_;
 
  public:
-  explicit SolutionWriter(Solver &s) : solver_(s), num_solutions_(0) {}
+  SolutionWriter(Solver &s, const Problem &p)
+    : solver_(s), problem_(p), num_solutions_(0) {}
 
-  void HandleFeasibleSolution(Problem &p, fmt::StringRef message,
+  void HandleFeasibleSolution(fmt::StringRef message,
         const double *values, const double *dual_values, double);
-  void HandleSolution(Problem &p, fmt::StringRef message,
+  void HandleSolution(fmt::StringRef message,
         const double *values, const double *dual_values, double);
 };
 

@@ -475,7 +475,7 @@ bool JaCoPSolver::SolutionRelay::DoHandleSolution() {
         solver_.env_.CallIntMethod(obj_var_, solver_.value_) : 0;
       for (int j = 0, n = problem_.num_vars(); j < n; ++j)
         solution_[j] = solver_.env_.CallIntMethod(vars_[j], solver_.value_);
-      sol_handler_.HandleFeasibleSolution(problem_, feasible_sol_message_,
+      sol_handler_.HandleFeasibleSolution(feasible_sol_message_,
           solution_.empty() ? 0 : solution_.data(), 0, obj_value);
     }
     if (solver_.solution_limit_ != -1 &&
@@ -700,7 +700,7 @@ void JaCoPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
       env_.CallIntMethod(search_.get(), get_fails_));
   if (has_obj && found)
     w.write(", objective {}", FormatObjValue(obj_val));
-  sh.HandleSolution(p, w.c_str(),
+  sh.HandleSolution(w.c_str(),
       final_solution.empty() ? 0 : final_solution.data(), 0, obj_val);
 
   double output_time = GetTimeAndReset(time);

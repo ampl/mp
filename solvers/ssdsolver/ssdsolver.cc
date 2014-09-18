@@ -205,7 +205,7 @@ void SSDSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   if (sol.status() == SOLVED)
     w.write("; dominance {}", dominance_ub);
   w.write("\n{} iteration(s)", iteration);
-  sh.HandleSolution(p, w.c_str(), solution.data(), 0, 0);
+  sh.HandleSolution(w.c_str(), solution.data(), 0, 0);
 }
 
 SolverPtr CreateSolver(const char *) { return SolverPtr(new SSDSolver()); }

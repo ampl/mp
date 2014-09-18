@@ -1094,10 +1094,10 @@ const int NUM_SOLUTIONS = 3;
 struct SolCountingSolver : mp::ASLSolver {
   explicit SolCountingSolver(bool multiple_sol)
   : ASLSolver("", "", 0, multiple_sol ? MULTIPLE_SOL : 0) {}
-  void DoSolve(Problem &p, SolutionHandler &sh) {
+  void DoSolve(Problem &, SolutionHandler &sh) {
     for (int i = 0; i < NUM_SOLUTIONS; ++i)
-      sh.HandleFeasibleSolution(p, "", 0, 0, 0);
-    sh.HandleSolution(p, "", 0, 0, 0);
+      sh.HandleFeasibleSolution("", 0, 0, 0);
+    sh.HandleSolution("", 0, 0, 0);
   }
 };
 
@@ -1116,7 +1116,7 @@ TEST(SolverTest, SolutionsAreNotCountedByDefault) {
   WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
   Problem p;
   p.Read("test.nl");
-  mp::SolutionWriter sol_writer(s);
+  mp::SolutionWriter sol_writer(s, p);
   s.Solve(p, sol_writer);
   EXPECT_TRUE(ReadFile("test.sol").find(
       fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) == std::string::npos);
@@ -1129,7 +1129,7 @@ TEST(SolverTest, CountSolutions) {
   WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
   Problem p;
   p.Read("test.nl");
-  mp::SolutionWriter sol_writer(s);
+  mp::SolutionWriter sol_writer(s, p);
   s.Solve(p, sol_writer);
   EXPECT_TRUE(ReadFile("test.sol").find(
       fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) != std::string::npos);
@@ -1157,7 +1157,7 @@ TEST(SolverTest, SolutionsAreNotWrittenByDefault) {
   WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
   Problem p;
   p.Read("test.nl");
-  mp::SolutionWriter sol_writer(s);
+  mp::SolutionWriter sol_writer(s, p);
   s.Solve(p, sol_writer);
   EXPECT_TRUE(!Exists("1.sol"));
   EXPECT_TRUE(ReadFile("test.sol").find(
@@ -1173,7 +1173,7 @@ TEST(SolverTest, WriteSolutions) {
   p.Read("test.nl");
   for (int i = 1; i <= NUM_SOLUTIONS; ++i)
     std::remove(fmt::format("abc{}.sol", i).c_str());
-  mp::SolutionWriter sol_writer(s);
+  mp::SolutionWriter sol_writer(s, p);
   s.Solve(p, sol_writer);
   for (int i = 1; i <= NUM_SOLUTIONS; ++i)
     EXPECT_TRUE(Exists(fmt::format("abc{}.sol", i)));

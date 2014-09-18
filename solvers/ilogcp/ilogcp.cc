@@ -644,7 +644,7 @@ void IlogCPSolver::SolveWithCP(
     if (multiple_sols) {
       double obj_value = num_objs > 0 ?
           cp_.getObjValue() : std::numeric_limits<double>::quiet_NaN();
-      sh.HandleFeasibleSolution(p, feasible_sol_message,
+      sh.HandleFeasibleSolution(feasible_sol_message,
           solution.data(), 0, obj_value);
     }
     if (++num_solutions >= solution_limit) {
@@ -691,7 +691,7 @@ void IlogCPSolver::SolveWithCP(
   } else {
     solution.clear();
   }
-  sh.HandleSolution(p, writer.c_str(),
+  sh.HandleSolution(writer.c_str(),
       solution.empty() ? 0 : &solution[0], 0, obj_value);
 }
 
@@ -747,7 +747,7 @@ void IlogCPSolver::SolveWithCPLEX(
       writer.write(", objective {}", FormatObjValue(obj_value));
     }
   }
-  sh.HandleSolution(p, writer.c_str(),
+  sh.HandleSolution(writer.c_str(),
       solution.empty() ? 0 : solution.data(),
       dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
 }

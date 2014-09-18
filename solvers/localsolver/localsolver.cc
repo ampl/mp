@@ -233,7 +233,7 @@ void LocalSolver::DoSolve(Problem &p, SolutionHandler &sh) {
     obj_val = GetValue(model.getObjective(0));
     w.write("objective {}", FormatObjValue(obj_val));
   }
-  sh.HandleSolution(p, w.c_str(),
+  sh.HandleSolution(w.c_str(),
       solution.empty() ? 0 : solution.data(), 0, obj_val);
   double output_time = GetTimeAndReset(time);
 

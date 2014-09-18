@@ -141,20 +141,20 @@ class SolutionHandler {
   virtual ~SolutionHandler() {}
 
   // Receives a feasible solution.
-  virtual void HandleFeasibleSolution(Problem &p, fmt::StringRef message,
+  virtual void HandleFeasibleSolution(fmt::StringRef message,
       const double *values, const double *dual_values, double obj_value) = 0;
 
   // Receives a final solution or a notification that the problem is
   // infeasible or unbounded.
-  virtual void HandleSolution(Problem &p, fmt::StringRef message,
+  virtual void HandleSolution(fmt::StringRef message,
       const double *values, const double *dual_values, double obj_value) = 0;
 };
 
 class BasicSolutionHandler : public SolutionHandler {
  public:
-  virtual void HandleFeasibleSolution(Problem &, fmt::StringRef,
+  virtual void HandleFeasibleSolution(fmt::StringRef,
       const double *, const double *, double) {}
-  virtual void HandleSolution(Problem &, fmt::StringRef,
+  virtual void HandleSolution(fmt::StringRef,
       const double *, const double *, double) {}
 };
 

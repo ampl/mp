@@ -734,8 +734,7 @@ GecodeSolver::ProblemPtr GecodeSolver::Search(
       final_problem.reset(next);
       if (multiple_sol) {
         GetSolution(*final_problem, solution);
-        sh.HandleFeasibleSolution(
-              p, feasible_sol_message, solution.data(), 0, 0);
+        sh.HandleFeasibleSolution(feasible_sol_message, solution.data(), 0, 0);
       }
       if (++num_solutions >= solution_limit_)
         break;
@@ -830,7 +829,7 @@ void GecodeSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   w.write("{} nodes, {} fails", stats.node, stats.fail);
   if (has_obj && solution.get())
     w.write(", objective {}", FormatObjValue(obj_val));
-  sh.HandleSolution(p, w.c_str(),
+  sh.HandleSolution(w.c_str(),
       final_solution.empty() ? 0 : final_solution.data(), 0, obj_val);
 
   double output_time = GetTimeAndReset(time);
