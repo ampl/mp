@@ -186,7 +186,7 @@ class ProblemBuilder {
 
   Variable MakeVariable(int var_index) {
     MP_UNUSED(var_index);
-    MP_DISPATCH(ReportUnhandledConstruct("nonlinear variable"));
+    MP_DISPATCH(ReportUnhandledConstruct("variable in nonlinear expression"));
     return Variable();
   }
 
@@ -221,6 +221,7 @@ class ProblemBuilder {
   }
   NumericExpr EndPLTerm(PLTermHandler handler, Variable var) {
     MP_UNUSED(handler); MP_UNUSED(var);
+    MP_DISPATCH(ReportUnhandledConstruct("piecewise-linear term"));
     return NumericExpr();
   }
 
@@ -231,16 +232,18 @@ class ProblemBuilder {
   }
   NumericExpr EndCall(CallArgHandler handler) {
     MP_UNUSED(handler);
+    MP_DISPATCH(ReportUnhandledConstruct("function call"));
     return NumericExpr();
   }
 
   NumericArgHandler BeginVarArg(expr::Kind kind, int num_args) {
     MP_UNUSED(kind); MP_UNUSED(num_args);
-    MP_DISPATCH(ReportUnhandledConstruct("variable-argument expression"));
+    MP_DISPATCH(ReportUnhandledConstruct("vararg expression"));
     return NumericArgHandler();
   }
   NumericExpr EndVarArg(NumericArgHandler handler) {
     MP_UNUSED(handler);
+    MP_DISPATCH(ReportUnhandledConstruct("vararg expression"));
     return NumericExpr();
   }
 
@@ -251,6 +254,7 @@ class ProblemBuilder {
   }
   NumericExpr EndSum(NumericArgHandler handler) {
     MP_UNUSED(handler);
+    MP_DISPATCH(ReportUnhandledConstruct("sum"));
     return NumericExpr();
   }
 
@@ -261,6 +265,7 @@ class ProblemBuilder {
   }
   NumericExpr EndCount(LogicalArgHandler handler) {
     MP_UNUSED(handler);
+    MP_DISPATCH(ReportUnhandledConstruct("count expression"));
     return NumericExpr();
   }
 
@@ -271,6 +276,7 @@ class ProblemBuilder {
   }
   NumericExpr EndNumberOf(NumericArgHandler handler) {
     MP_UNUSED(handler);
+    MP_DISPATCH(ReportUnhandledConstruct("numberof expression"));
     return NumericExpr();
   }
 
@@ -321,6 +327,7 @@ class ProblemBuilder {
   }
   LogicalExpr EndIteratedLogical(LogicalArgHandler handler) {
     MP_UNUSED(handler);
+    MP_DISPATCH(ReportUnhandledConstruct("iterated logical expression"));
     return LogicalExpr();
   }
 
@@ -333,6 +340,7 @@ class ProblemBuilder {
   }
   LogicalExpr EndAllDiff(AllDiffArgHandler handler) {
     MP_UNUSED(handler);
+    MP_DISPATCH(ReportUnhandledConstruct("alldiff expression"));
     return LogicalExpr();
   }
 
