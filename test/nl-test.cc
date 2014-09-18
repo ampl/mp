@@ -1,5 +1,5 @@
 /*
- An .nl reader tests.
+ .nl reader tests.
 
  Copyright (C) 2013 AMPL Optimization Inc
 
