@@ -34,7 +34,9 @@ using mp::LinearObjExpr;
 using mp::Problem;
 using mp::ProblemChanges;
 using mp::Solution;
+
 namespace obj = mp::obj;
+namespace suf = mp::suf;
 
 #ifdef _WIN32
 # define putenv _putenv
@@ -522,3 +524,28 @@ TEST(ProblemTest, ReadFunctionWithoutLibrary) {
   p.Read(MP_TEST_DATA_DIR "/element");
   EXPECT_EQ(1, p.num_objs());
 }
+
+typedef ::testing::TestWithParam<int> SuffixTest;
+
+TEST_P(SuffixTest, FindSuffix) {
+  TestASLBuilder builder;
+  builder.set_flags(ASL_keep_all_suffixes);
+  int kind = GetParam();
+  builder.AddSuffix(kind, 2, "foo");
+  Problem p(builder.GetProblem());
+  mp::Suffix suffix = p.FindSuffix("foo", kind);
+  EXPECT_TRUE(suffix);
+  EXPECT_STREQ("foo", suffix.name());
+  EXPECT_EQ(kind, suffix.kind() & suf::MASK);
+  int kinds[] = {suf::VAR, suf::CON, suf::OBJ, suf::PROBLEM};
+  for (std::size_t i = 0, n = sizeof(kinds) / sizeof(*kinds); i != n; ++i) {
+    if (kinds[i] != kind)
+      EXPECT_FALSE(p.FindSuffix("foo", kinds[i]));
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(, SuffixTest, ::testing::Values<int>(
+                          suf::VAR, suf::CON, suf::OBJ, suf::PROBLEM));
+
+// TODO: test SuffixList and Problem::*_suffixes()
+// TODO: test Proxy
