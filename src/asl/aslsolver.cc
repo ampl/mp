@@ -75,7 +75,7 @@ class SolutionRef {
  private:
   const mp::Problem &problem_;
   const char *message_;
-  mp::ArrayRef<int> options_;
+  mp::ArrayRef<fint> options_;
   mp::ArrayRef<double> values_;
   mp::ArrayRef<double> dual_values_;
 
