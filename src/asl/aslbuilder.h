@@ -24,9 +24,9 @@
 #define MP_ASLBUILDER_H_
 
 #include "mp/format.h"
-#include "mp/problem-base.h"
 #include "mp/safeint.h"
 #include "expr.h"
+#include "problem.h"
 
 struct Static;
 
@@ -202,6 +202,17 @@ class ASLBuilder {
 
   explicit ASLBuilder(ASL *asl = 0);
   ~ASLBuilder();
+
+  // Returns a built problem via proxy. No builder methods other than
+  // the destructor should be called after calling this method.
+  Problem::Proxy GetProblem() {
+    if (!own_asl_)
+      throw Error("ASL problem is not transferable");
+    ASL *asl = asl_;
+    asl_ = 0;
+    own_asl_ = false;
+    return Problem::Proxy(reinterpret_cast<ASL_fg*>(asl));
+  }
 
   void set_flags(int flags) { flags_ = flags; }
   void set_stub(const char *stub);

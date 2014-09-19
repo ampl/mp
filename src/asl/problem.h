@@ -33,6 +33,10 @@ namespace mp {
 
 class ASLSolver;
 
+namespace internal {
+class ASLBuilder;
+}
+
 // Solution status.
 enum SolutionStatus {
   NOT_SOLVED   =  -1,
@@ -272,7 +276,34 @@ class Problem {
   void WriteNL(fmt::StringRef stub, ProblemChanges *pc = 0, unsigned flags = 0);
 
  public:
+  class Proxy {
+   private:
+    mutable ASL_fg *asl_;
+
+    Proxy(ASL_fg *asl) : asl_(asl) {}
+
+    friend class Problem;
+    friend class internal::ASLBuilder;
+
+    void Free() {
+      if (asl_)
+        ASL_free(reinterpret_cast<ASL**>(&asl_));
+    }
+
+   public:
+    Proxy(const Proxy &other) : asl_(other.asl_) { other.asl_ = 0;}
+    Proxy &operator=(const Proxy &other) {
+      Free();
+      asl_ = other.asl_;
+      other.asl_ = 0;
+      return *this;
+    }
+    ~Proxy() { Free(); }
+  };
+
   Problem();
+  Problem(Proxy proxy);
+
   ~Problem();
 
   const char *name() const { return name_.c_str(); }

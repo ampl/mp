@@ -131,6 +131,12 @@ Problem::Problem()
   var_capacity_(0), obj_capacity_(0), logical_con_capacity_(0), var_types_(0) {
 }
 
+Problem::Problem(Proxy proxy)
+: asl_(proxy.asl_), var_capacity_(0), obj_capacity_(0),
+  logical_con_capacity_(0), var_types_(0) {
+  proxy.asl_ = 0;
+}
+
 Problem::~Problem() {
   Free();
   ASL_free(reinterpret_cast<ASL**>(&asl_));
