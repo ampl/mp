@@ -446,8 +446,8 @@ class Problem {
     asl_->p.solve_code_ = value;
   }
 
-  // Returns a suffix.
-  Suffix suffix(const char *name, unsigned flags) const;
+  // Finds a suffix with specified name.
+  Suffix FindSuffix(const char *name, unsigned flags) const;
 
   SuffixView var_suffixes() const { return SuffixView(asl_, suf::VAR); }
   SuffixView con_suffixes() const { return SuffixView(asl_, suf::CON); }

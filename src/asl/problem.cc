@@ -211,7 +211,7 @@ TempFiles::TempFiles() {
   close(fd);
 }
 
-Suffix Problem::suffix(const char *name, unsigned flags) const {
+Suffix Problem::FindSuffix(const char *name, unsigned flags) const {
   unsigned kind = flags & ASL_Sufkind_mask;
   for (SufDesc *d = asl_->i.suffixes[kind],
       *end = d + asl_->i.nsuff[kind]; d < end; ++d) {

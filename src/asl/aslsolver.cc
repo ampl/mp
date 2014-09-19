@@ -125,7 +125,7 @@ void mp::SolutionWriter::HandleSolution(
     fmt::StringRef message, const double *values,
     const double *dual_values, double) {
   if (solver_.need_multiple_solutions()) {
-    Suffix nsol_suffix = problem_.suffix("nsol", ASL_Sufkind_prob);
+    Suffix nsol_suffix = problem_.FindSuffix("nsol", ASL_Sufkind_prob);
     if (nsol_suffix)
       nsol_suffix.set_values(&num_solutions_);
   }
