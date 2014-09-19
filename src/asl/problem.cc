@@ -216,11 +216,11 @@ Suffix Problem::suffix(const char *name, unsigned flags) const {
   for (SufDesc *d = asl_->i.suffixes[kind],
       *end = d + asl_->i.nsuff[kind]; d < end; ++d) {
     if (!std::strcmp(name, d->sufname)) {
-      return Suffix((flags & ASL_Sufkind_input) != 0 &&
+      return Suffix(asl_, (flags & ASL_Sufkind_input) != 0 &&
           (d->kind & ASL_Sufkind_input) == 0 ? 0 : d);
     }
   }
-  return Suffix(0);
+  return Suffix();
 }
 
 void Problem::AddVar(double lb, double ub, var::Type type) {

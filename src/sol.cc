@@ -22,19 +22,8 @@
 
 #include "mp/sol.h"
 
-#include <cstdio>
-#include "mp/posix.h"
-
-template <typename T>
-static void WriteArray(fmt::BufferedFile &file, int size, const T *values) {
-  for (int i = 0; i < size; ++i)
-    file.print("{}\n", values[i]);
-}
-
-void mp::WriteSol(fmt::StringRef filename, const SolutionRef &sol) {
-  fmt::BufferedFile file(filename, "w");
-  const char *line_start = sol.message.c_str();
-  for (;;) {
+void mp::internal::WriteMessage(fmt::BufferedFile &file, const char *message) {
+  for (const char *line_start = message;;) {
     const char *line_end = line_start;
     while (*line_end && *line_end != '\n')
       ++line_end;
@@ -45,13 +34,9 @@ void mp::WriteSol(fmt::StringRef filename, const SolutionRef &sol) {
     else
       std::fwrite(line_start, 1, line_end - line_start, file.get());
     std::fputc('\n', file.get());
+    if (!*line_end)
+      break;
+    line_start = line_end + 1;
   }
   std::fputc('\n', file.get());
-  // Write options.
-  if (sol.num_options) {
-    file.print("{}\n", sol.num_options);
-    WriteArray(file, sol.num_options, sol.options);
-  }
-  // TODO: write dual values
-  WriteArray(file, sol.num_vars, sol.values);
 }

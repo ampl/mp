@@ -27,21 +27,82 @@
 #ifndef MP_SOL_H_
 #define MP_SOL_H_
 
-#include "mp/format.h"
+#include <cstdio>
+#include <cstring>
+
+#include "mp/posix.h"
 #include "mp/problem-base.h"
 
 namespace mp {
 
-struct SolutionRef {
-  fmt::StringRef message;
-  int num_options;
-  int options[MAX_NL_OPTIONS];
-  int num_vars;
-  const double *values;
+namespace internal {
+
+void WriteMessage(fmt::BufferedFile &file, const char *message);
+
+// Suffix value visitor that counts values.
+class SuffixValueCounter {
+ private:
+  int num_values_;
+
+ public:
+  SuffixValueCounter() : num_values_(0) {}
+
+  int num_values() const { return num_values_; }
+
+  template <typename T>
+  void Visit(int, T) { ++num_values_; }
 };
 
-// Writes a solution in .sol format.
-void WriteSol(fmt::StringRef filename, const SolutionRef &sol);
+// Suffix value visitor that writes values to a file.
+class SuffixValueWriter {
+ private:
+  fmt::BufferedFile &file_;
+
+ public:
+  explicit SuffixValueWriter(fmt::BufferedFile &file) : file_(file) {}
+
+  template <typename T>
+  void Visit(int index, T value) { file_.print("{} {}\n", index, value); }
+};
+
+template <typename SuffixView>
+void WriteSuffixes(fmt::BufferedFile &file, const SuffixView &suffixes) {
+  for (typename SuffixView::iterator
+       i = suffixes.begin(), e = suffixes.end(); i != e; ++i) {
+    const char *name = i->name();
+    namespace suf = mp::suf;
+    SuffixValueCounter counter;
+    i->VisitValues(counter);
+    file.print("suffix {} {} {} {} {}\n{}\n",
+               i->kind() & (suf::MASK | suf::FLOAT | suf::IODECL),
+               counter.num_values(), std::strlen(name) + 1, 0, 0, name);
+    // TODO: write table
+    SuffixValueWriter writer(file);
+    i->VisitValues(writer);
+  }
 }
+}  // namespace internal
+
+// Writes a solution in .sol format.
+template <typename Solution>
+void WriteSol(fmt::StringRef filename, const Solution &sol) {
+  fmt::BufferedFile file(filename, "w");
+  internal::WriteMessage(file, sol.message());
+  // Write options.
+  if (int num_options = sol.num_options()) {
+    file.print("{}\n", num_options);
+    for (int i = 0; i < num_options; ++i)
+      file.print("{}\n", sol.option(i));
+  }
+  // TODO: check precision
+  for (int i = 0, n = sol.num_values(); i < n; ++i)
+    file.print("{}\n", sol.value(i));
+  for (int i = 0, n = sol.num_dual_values(); i < n; ++i)
+    file.print("{}\n", sol.dual_value(i));
+  file.print("objno 0 0\n"); // TODO: solve codes for objectives
+  internal::WriteSuffixes(file, sol.problem_suffixes());
+  // TODO: test
+}
+}  // namepace mp
 
 #endif  // MP_SOL_H_

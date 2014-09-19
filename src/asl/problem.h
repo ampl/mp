@@ -104,17 +104,26 @@ class Solution {
 
 class Suffix {
  private:
+  ASL_fg *asl_;
   SufDesc *suffix_;
 
   friend class Problem;
+  friend class SuffixView;
 
-  explicit Suffix(SufDesc *s) : suffix_(s) {}
+  Suffix(ASL_fg *asl, SufDesc *s) : asl_(asl), suffix_(s) {}
 
   void True() const {}
   typedef void (Suffix::*SafeBool)() const;
 
+  template <typename T, typename Visitor>
+  static void VisitValues(
+      int num_items, const T *values, const int *map, Visitor &visitor);
+
  public:
   Suffix() : suffix_() {}
+
+  const char *name() const { return suffix_->sufname; }
+  int kind() const { return suffix_->kind; }
 
   operator SafeBool() const { return suffix_ ? &Suffix::True : 0; }
 
@@ -125,6 +134,99 @@ class Suffix {
     suffix_->kind |= ASL_Sufkind_output;
     suffix_->u.i = values;
   }
+
+  // Iterates over nonzero suffix values and sends them to the visitor.
+  template <typename Visitor>
+  void VisitValues(Visitor &visitor) const;
+};
+
+template <typename T, typename Visitor>
+void Suffix::VisitValues(
+    int num_items, const T *values, const int *map, Visitor &visitor) {
+  if (!values) return;
+  if (map) {
+    for (int i = 0; i < num_items; ++i) {
+      int index = map[i];
+      T value = values[i];
+      if (value != 0 && index >= 0)
+        visitor.Visit(index, value);
+    }
+  } else {
+    for (int i = 0; i < num_items; ++i) {
+      if (T value = values[i])
+        visitor.Visit(i, value);
+    }
+  }
+}
+
+template <typename Visitor>
+void Suffix::VisitValues(Visitor &visitor) const {
+  int kind = suffix_->kind & ASL_Sufkind_mask;
+  int num_items = (&asl_->i.n_var_)[kind];
+  const int *map = kind < 2 ? (&asl_->i.vmap)[kind] : 0;
+  if ((suffix_->kind & ASL_Sufkind_real) != 0)
+    VisitValues(num_items, suffix_->u.r, map, visitor);
+  else
+    VisitValues(num_items, suffix_->u.i, map, visitor);
+}
+
+// A view on a collection of suffixes.
+// Unlike a real collection, a view doesn't own elements, but only provides
+// access to them, like an iterator. In fact, the view can be considered as
+// a pair of iterators. Therefore a SuffixView object should only be used
+// while the Problem object containing suffixes is alive and hasn't been
+// modified since the view was obtained.
+class SuffixView {
+ private:
+  ASL_fg *asl_;
+  int kind_;
+
+  friend class Problem;
+
+  SuffixView(ASL_fg *asl, int kind) : asl_(asl), kind_(kind) {}
+
+ public:
+  class iterator :
+    public std::iterator<std::forward_iterator_tag, mp::Suffix> {
+   private:
+    ASL_fg *asl_;
+    SufDesc *ptr_;
+
+    class Proxy {
+     private:
+      Suffix suffix_;
+
+     public:
+      Proxy(ASL_fg *asl, SufDesc *s) : suffix_(asl, s) {}
+
+      const Suffix *operator->() const { return &suffix_; }
+    };
+
+   public:
+    iterator() : asl_(0), ptr_(0) {}
+    iterator(ASL_fg *asl, SufDesc *p) : asl_(asl), ptr_(p) {}
+
+    mp::Suffix operator*() const { return mp::Suffix(asl_, ptr_); }
+
+    Proxy operator->() const { return Proxy(asl_, ptr_); }
+
+    iterator &operator++() {
+      ptr_ = ptr_->next;
+      return *this;
+    }
+
+    iterator operator++(int ) {
+      iterator it(*this);
+      ++*this;
+      return it;
+    }
+
+    bool operator==(iterator other) const { return ptr_ == other.ptr_; }
+    bool operator!=(iterator other) const { return ptr_ != other.ptr_; }
+  };
+
+  iterator begin() const { return iterator(asl_, asl_->i.suffixes[kind_]); }
+  iterator end() const { return iterator(); }
 };
 
 class ProblemChanges;
@@ -346,6 +448,11 @@ class Problem {
 
   // Returns a suffix.
   Suffix suffix(const char *name, unsigned flags) const;
+
+  SuffixView var_suffixes() const { return SuffixView(asl_, suf::VAR); }
+  SuffixView con_suffixes() const { return SuffixView(asl_, suf::CON); }
+  SuffixView obj_suffixes() const { return  SuffixView(asl_, suf::OBJ); }
+  SuffixView problem_suffixes() const { return SuffixView(asl_, suf::PROBLEM); }
 
   // Adds a variable.
   void AddVar(double lb, double ub, var::Type type = var::CONTINUOUS);

@@ -28,8 +28,13 @@ extern "C" {
 }
 
 #include "mp/clock.h"
+#include "mp/sol.h"
 #include "aslsolver.h"
 #include "problem.h"
+
+using mp::SuffixView;
+
+namespace {
 
 // Flags for PrintUsage.
 enum {
@@ -40,7 +45,7 @@ enum {
   FUNC_OPTIONS = 2
 };
 
-static void PrintUsage(const mp::Solver &solver, unsigned flags) {
+void PrintUsage(const mp::Solver &solver, unsigned flags) {
   FILE *f = (flags & USE_STDERR) != 0 ? stderr : stdout;
   fmt::print(f, "usage: {} [options] stub [-AMPL] [<assignment> ...]\n",
              solver.name());
@@ -64,6 +69,42 @@ static void PrintUsage(const mp::Solver &solver, unsigned flags) {
     fmt::print(f, "\t-{:3}{{{}}}\n", s[0], s[1]);
   }
 }
+
+// A solution reference.
+class SolutionRef {
+ private:
+  const mp::Problem &problem_;
+  const char *message_;
+  mp::ArrayRef<int> options_;
+  mp::ArrayRef<double> values_;
+  mp::ArrayRef<double> dual_values_;
+
+ public:
+  SolutionRef(const mp::Problem &p, const char *message,
+              mp::ArrayRef<int> options, mp::ArrayRef<double> values,
+              mp::ArrayRef<double> dual_values)
+    : problem_(p), message_(message), options_(options),
+      values_(values), dual_values_(dual_values) {}
+
+  const char *message() const { return message_; }
+
+  int num_options() const { return options_.size(); }
+  int option(int index) const { return options_[index]; }
+
+  int num_values() const { return values_.size(); }
+  int value(int index) const { return values_[index]; }
+
+  int num_dual_values() const { return dual_values_.size(); }
+  int dual_value(int index) const { return dual_values_[index]; }
+
+  SuffixView var_suffixes() const { return problem_.var_suffixes(); }
+  SuffixView con_suffixes() const { return problem_.con_suffixes(); }
+  SuffixView obj_suffixes() const { return problem_.obj_suffixes(); }
+  SuffixView problem_suffixes() const { return problem_.problem_suffixes(); }
+
+  // TODO: test suffix views
+};
+}  // namespace
 
 void mp::SolutionWriter::HandleFeasibleSolution(
     fmt::StringRef message, const double *values,
@@ -90,12 +131,15 @@ void mp::SolutionWriter::HandleSolution(
     if (nsol_suffix)
       nsol_suffix.set_values(&num_solutions_);
   }
-  Option_Info option_info = Option_Info();
-  option_info.bsname = const_cast<char*>(solver_.long_name());
-  option_info.wantsol = solver_.wantsol();
-  write_sol_ASL(reinterpret_cast<ASL*>(problem_.asl_),
-      const_cast<char*>(message.c_str()), const_cast<double*>(values),
-      const_cast<double*>(dual_values), &option_info);
+  // TODO: remove
+  //option_info.bsname = const_cast<char*>(solver_.long_name());
+  //option_info.wantsol = solver_.wantsol();
+  const int *options = problem_.asl_->i.ampl_options_;
+  SolutionRef sol(problem_,
+      message.c_str(), MakeArrayRef(options + 1, options[0]),
+      MakeArrayRef(values, values ? problem_.num_vars() : 0),
+      MakeArrayRef(dual_values, dual_values ? problem_.num_vars() : 0));
+  WriteSol(fmt::format("{}.sol", problem_.name()), sol);
 }
 
 mp::ASLSolver::ASLSolver(
