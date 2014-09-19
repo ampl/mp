@@ -525,18 +525,29 @@ TEST(ProblemTest, ReadFunctionWithoutLibrary) {
   EXPECT_EQ(1, p.num_objs());
 }
 
-typedef ::testing::TestWithParam<int> SuffixTest;
+struct Param {
+  int kind;
+
+  typedef mp::SuffixView (Problem::*GetView)() const;
+  GetView get_view;
+
+  Param(int kind, GetView get_view) : kind(kind), get_view(get_view) {}
+};
+
+typedef ::testing::TestWithParam<Param> SuffixTest;
 
 TEST_P(SuffixTest, FindSuffix) {
   TestASLBuilder builder;
   builder.set_flags(ASL_keep_all_suffixes);
-  int kind = GetParam();
-  builder.AddSuffix(kind, 2, "foo");
+  int kind = GetParam().kind;
+  builder.AddSuffix(kind, 1, "foo");
+  builder.AddSuffix(kind, 2, "bar");
   Problem p(builder.GetProblem());
   mp::Suffix suffix = p.FindSuffix("foo", kind);
   EXPECT_TRUE(suffix);
   EXPECT_STREQ("foo", suffix.name());
   EXPECT_EQ(kind, suffix.kind() & suf::MASK);
+  EXPECT_STREQ("bar", p.FindSuffix("bar", kind).name());
   int kinds[] = {suf::VAR, suf::CON, suf::OBJ, suf::PROBLEM};
   for (std::size_t i = 0, n = sizeof(kinds) / sizeof(*kinds); i != n; ++i) {
     if (kinds[i] != kind)
@@ -544,10 +555,36 @@ TEST_P(SuffixTest, FindSuffix) {
   }
 }
 
-int kind(int value, int) { return value; }
-INSTANTIATE_TEST_CASE_P(
-    , SuffixTest, ::testing::Values<int>(
-      FMT_FOR_EACH4(kind, suf::VAR, suf::CON, suf::OBJ, suf::PROBLEM)));
+TEST_P(SuffixTest, SuffixView) {
+  TestASLBuilder builder;
+  builder.set_flags(ASL_keep_all_suffixes);
+  int kind = GetParam().kind;
+  builder.AddSuffix(kind, 1, "foo");
+  builder.AddSuffix(kind, 2, "bar");
+  Problem p(builder.GetProblem());
+  mp::SuffixView view = (p.*GetParam().get_view)();
+  mp::SuffixView::iterator it = view.begin();
+  ASSERT_NE(it, view.end());
+  // Suffixes are returned in the reverse order of insertion.
+  EXPECT_EQ(p.FindSuffix("bar", kind), *it);
+  mp::Suffix foo = p.FindSuffix("foo", kind);
+  EXPECT_EQ(foo, *++it);
+  EXPECT_STREQ("foo", it->name());
+  EXPECT_EQ(foo, *it++);
+  EXPECT_EQ(it, view.end());
+}
 
-// TODO: test SuffixList and Problem::*_suffixes()
-// TODO: test Proxy
+TEST_P(SuffixTest, EmptySuffixView) {
+  Problem p;
+  mp::SuffixView view = (p.*GetParam().get_view)();
+  EXPECT_EQ(view.begin(), view.end());
+}
+
+INSTANTIATE_TEST_CASE_P(, SuffixTest, ::testing::Values(
+                          Param(suf::VAR, &Problem::var_suffixes),
+                          Param(suf::CON, &Problem::con_suffixes),
+                          Param(suf::OBJ, &Problem::obj_suffixes),
+                          Param(suf::PROBLEM, &Problem::problem_suffixes)));
+
+// TODO: test VisitValues
+// TODO: test Problem::Proxy

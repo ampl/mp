@@ -219,8 +219,7 @@ TempFiles::TempFiles() {
 
 Suffix Problem::FindSuffix(const char *name, unsigned flags) const {
   unsigned kind = flags & ASL_Sufkind_mask;
-  for (SufDesc *d = asl_->i.suffixes[kind],
-      *end = d + asl_->i.nsuff[kind]; d < end; ++d) {
+  for (SufDesc *d = asl_->i.suffixes[kind]; d; d = d->next) {
     if (!std::strcmp(name, d->sufname)) {
       return Suffix(asl_, (flags & ASL_Sufkind_input) != 0 &&
           (d->kind & ASL_Sufkind_input) == 0 ? 0 : d);

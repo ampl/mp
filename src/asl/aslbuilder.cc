@@ -620,11 +620,9 @@ ASLBuilder::SuffixHandler ASLBuilder::AddSuffix(
   if ((d->kind & suf::FLOAT) != 0) {
     d->u.i = 0;
     return SuffixHandler(AllocateSuffixValues(d->u.r, num_values, nx, nx1));
-  } else {
-    d->u.r = 0;
-    return SuffixHandler(AllocateSuffixValues(d->u.i, num_values, nx, nx1));
   }
-  return SuffixHandler();
+  d->u.r = 0;
+  return SuffixHandler(AllocateSuffixValues(d->u.i, num_values, nx, nx1));
 }
 
 Variable ASLBuilder::MakeVariable(int var_index) {
