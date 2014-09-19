@@ -70,8 +70,8 @@ void PrintUsage(const mp::Solver &solver, unsigned flags) {
   }
 }
 
-// A solution reference.
-class SolutionRef {
+// Adapts an ASL solution for WriteSol.
+class ASLSolutionAdapter {
  private:
   const mp::Problem &problem_;
   const char *message_;
@@ -80,9 +80,9 @@ class SolutionRef {
   mp::ArrayRef<double> dual_values_;
 
  public:
-  SolutionRef(const mp::Problem &p, const char *message,
-              mp::ArrayRef<int> options, mp::ArrayRef<double> values,
-              mp::ArrayRef<double> dual_values)
+  ASLSolutionAdapter(const mp::Problem &p, const char *message,
+                     mp::ArrayRef<int> options, mp::ArrayRef<double> values,
+                     mp::ArrayRef<double> dual_values)
     : problem_(p), message_(message), options_(options),
       values_(values), dual_values_(dual_values) {}
 
@@ -101,8 +101,6 @@ class SolutionRef {
   SuffixView con_suffixes() const { return problem_.con_suffixes(); }
   SuffixView obj_suffixes() const { return problem_.obj_suffixes(); }
   SuffixView problem_suffixes() const { return problem_.problem_suffixes(); }
-
-  // TODO: test suffix views
 };
 }  // namespace
 
@@ -131,11 +129,11 @@ void mp::SolutionWriter::HandleSolution(
     if (nsol_suffix)
       nsol_suffix.set_values(&num_solutions_);
   }
-  // TODO: remove
+  // TODO: pass to WriteSol
   //option_info.bsname = const_cast<char*>(solver_.long_name());
   //option_info.wantsol = solver_.wantsol();
   const fint *options = problem_.asl_->i.ampl_options_;
-  SolutionRef sol(problem_,
+  ASLSolutionAdapter sol(problem_,
       message.c_str(), MakeArrayRef(options + 1, options[0]),
       MakeArrayRef(values, values ? problem_.num_vars() : 0),
       MakeArrayRef(dual_values, dual_values ? problem_.num_vars() : 0));
