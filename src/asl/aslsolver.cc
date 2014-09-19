@@ -134,7 +134,7 @@ void mp::SolutionWriter::HandleSolution(
   // TODO: remove
   //option_info.bsname = const_cast<char*>(solver_.long_name());
   //option_info.wantsol = solver_.wantsol();
-  const int *options = problem_.asl_->i.ampl_options_;
+  const fint *options = problem_.asl_->i.ampl_options_;
   SolutionRef sol(problem_,
       message.c_str(), MakeArrayRef(options + 1, options[0]),
       MakeArrayRef(values, values ? problem_.num_vars() : 0),
