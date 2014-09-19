@@ -544,8 +544,10 @@ TEST_P(SuffixTest, FindSuffix) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(, SuffixTest, ::testing::Values<int>(
-                          suf::VAR, suf::CON, suf::OBJ, suf::PROBLEM));
+int kind(int value, int) { return value; }
+INSTANTIATE_TEST_CASE_P(
+    , SuffixTest, ::testing::Values<int>(
+      FMT_FOR_EACH4(kind, suf::VAR, suf::CON, suf::OBJ, suf::PROBLEM)));
 
 // TODO: test SuffixList and Problem::*_suffixes()
 // TODO: test Proxy
