@@ -81,7 +81,7 @@ class ASLSolutionAdapter {
 
  public:
   ASLSolutionAdapter(const mp::Problem &p, const char *message,
-                     mp::ArrayRef<int> options, mp::ArrayRef<double> values,
+                     mp::ArrayRef<fint> options, mp::ArrayRef<double> values,
                      mp::ArrayRef<double> dual_values)
     : problem_(p), message_(message), options_(options),
       values_(values), dual_values_(dual_values) {}
