@@ -16,8 +16,8 @@
    ReadNLString(nl_string, handler);
 
  where handler is an object that receives notifications of problem
- components. See ProblemBuilderToNLAdapter for an example of a handler
- class.
+ components. See NLHandler and ProblemBuilderToNLAdapter for examples of
+ handler classes.
 
  Copyright (C) 2013 AMPL Optimization Inc
 
@@ -149,6 +149,301 @@ struct NLHeader : ProblemInfo {
 // Writes NLHeader in the .nl file format.
 fmt::Writer &operator<<(fmt::Writer &w, const NLHeader &h);
 
+// An .nl handler that ignores all input.
+template <typename ExprT>
+class NLHandler {
+ protected:
+  ~NLHandler() {}
+
+ public:
+  typedef ExprT Expr;
+  typedef Expr NumericExpr;
+  typedef Expr LogicalExpr;
+  typedef Expr CountExpr;
+  typedef Expr Variable;
+
+  // Receives notification of an .nl header.
+  void OnHeader(const NLHeader &h) { MP_UNUSED(h); }
+
+  // Receives notification of an objective type and the nonlinear part of
+  // an objective expression.
+  void OnObj(int index, obj::Type type, NumericExpr expr) {
+    MP_UNUSED3(index, type, expr);
+  }
+
+  // Receives notification of the nonlinear part of an algebraic constraint
+  // expression.
+  void OnAlgebraicCon(int index, NumericExpr expr) {
+    MP_UNUSED2(index, expr);
+  }
+
+  // Receives notification of a logical constraint expression.
+  void OnLogicalCon(int index, LogicalExpr expr) {
+    MP_UNUSED2(index, expr);
+  }
+
+  // Receives notification of the nonlinear part of a defined variable
+  // expression.
+  void OnDefinedVar(int index, NumericExpr expr, int position) {
+    MP_UNUSED3(index, expr, position);
+  }
+
+  // Receives notification of a complementarity relation.
+  void OnComplement(int con_index, int var_index, int flags) {
+    MP_UNUSED3(con_index, var_index, flags);
+  }
+
+  struct LinearExprHandler {
+    void AddTerm(int var_index, double coef) { MP_UNUSED2(var_index, coef); }
+  };
+
+  typedef LinearExprHandler LinearObjHandler;
+
+  // Receives notification of the linear part of an objective expression.
+  LinearObjHandler OnLinearObjExpr(int obj_index, int num_linear_terms) {
+    MP_UNUSED2(obj_index, num_linear_terms);
+    return LinearObjHandler();
+  }
+
+  typedef LinearExprHandler LinearConHandler;
+
+  // Receives notification of the linear part of a constraint expression.
+  LinearConHandler OnLinearConExpr(int con_index, int num_linear_terms) {
+    MP_UNUSED2(con_index, num_linear_terms);
+    return LinearConHandler();
+  }
+
+  typedef LinearExprHandler LinearVarHandler;
+
+  // Receives notification of the linear part of a defined variable expression.
+  LinearVarHandler OnLinearVarExpr(int var_index, int num_linear_terms) {
+    MP_UNUSED2(var_index, num_linear_terms);
+    return LinearVarHandler();
+  }
+
+  // Receives notification of variable bounds.
+  void OnVarBounds(int index, double lb, double ub) {
+    MP_UNUSED3(index, lb, ub);
+  }
+
+  // Receives notification of constraint bounds (ranges).
+  void OnConBounds(int index, double lb, double ub) {
+    MP_UNUSED3(index, lb, ub);
+  }
+
+  // Receives notification of the initial value for a variable.
+  void OnInitialValue(int var_index, double value) {
+    MP_UNUSED2(var_index, value);
+  }
+
+  // Receives notification of the initial value for a dual variable.
+  void OnInitialDualValue(int con_index, double value) {
+    MP_UNUSED2(con_index, value);
+  }
+
+  struct ColumnSizeHandler {
+    void Add(int size) { MP_UNUSED(size); }
+  };
+
+  // Receives notification of Jacobian column sizes.
+  ColumnSizeHandler OnColumnSizes() { return ColumnSizeHandler(); }
+
+  // Receives notification of a function.
+  void OnFunction(int index, fmt::StringRef name,
+                  int num_args, func::Type type) {
+    MP_UNUSED3(index, name, num_args); MP_UNUSED(type);
+  }
+
+  struct SuffixHandler {
+    void SetValue(int index, int value) { MP_UNUSED2(index, value); }
+    void SetValue(int index, double value) { MP_UNUSED2(index, value); }
+  };
+
+  // Receives notification of a suffix.
+  SuffixHandler OnSuffix(int kind, int num_values, fmt::StringRef name) {
+    MP_UNUSED3(kind, num_values, name);
+    return SuffixHandler();
+  }
+
+  struct ArgHandler {
+    void AddArg(Expr arg) { MP_UNUSED(arg); }
+  };
+
+  typedef ArgHandler NumericArgHandler;
+  typedef ArgHandler LogicalArgHandler;
+  typedef ArgHandler CallArgHandler;
+
+  // Receives notification of a numeric constant in a nonlinear expression.
+  NumericExpr OnNumericConstant(double value) {
+    MP_UNUSED(value);
+    return NumericExpr();
+  }
+
+  // Receives notification of a variable in a nonlinear expression.
+  Variable OnVariable(int var_index) {
+    MP_UNUSED(var_index);
+    return Variable();
+  }
+
+  // Receives notification of a unary expression.
+  NumericExpr OnUnary(expr::Kind kind, NumericExpr arg) {
+    MP_UNUSED2(kind, arg);
+    return NumericExpr();
+  }
+
+  // Receives notification of a binary expression.
+  NumericExpr OnBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
+    MP_UNUSED3(kind, lhs, rhs);
+    return NumericExpr();
+  }
+
+  // Receives notification of an if expression.
+  NumericExpr OnIf(LogicalExpr condition,
+      NumericExpr true_expr, NumericExpr false_expr) {
+    MP_UNUSED3(condition, true_expr, false_expr);
+    return NumericExpr();
+  }
+
+  struct PLTermHandler {
+    void AddSlope(double slope) { MP_UNUSED(slope); }
+    void AddBreakpoint(double breakpoint) { MP_UNUSED(breakpoint); }
+  };
+
+  // Receives notification of the beginning of a piecewise-linear term.
+  PLTermHandler BeginPLTerm(int num_breakpoints) {
+    MP_UNUSED(num_breakpoints);
+    return PLTermHandler();
+  }
+  // Receives notification of the end of a piecewise-linear term.
+  NumericExpr EndPLTerm(PLTermHandler handler, Variable var) {
+    MP_UNUSED2(handler, var);
+    return NumericExpr();
+  }
+
+  // Receives notification of the beginning of a call expression.
+  CallArgHandler BeginCall(int func_index, int num_args) {
+    MP_UNUSED2(func_index, num_args);
+    return CallArgHandler();
+  }
+  // Receives notification of the end of a call expression.
+  NumericExpr EndCall(CallArgHandler handler) {
+    MP_UNUSED(handler);
+    return NumericExpr();
+  }
+
+  // Receives notification of the beginning of a vararg expression (min or max).
+  NumericArgHandler BeginVarArg(expr::Kind kind, int num_args) {
+    MP_UNUSED2(kind, num_args);
+    return NumericArgHandler();
+  }
+  // Receives notification of the end of a vararg expression (min or max).
+  NumericExpr EndVarArg(NumericArgHandler handler) {
+    MP_UNUSED(handler);
+    return NumericExpr();
+  }
+
+  // Receives notification of the beginning of a sum expression.
+  NumericArgHandler BeginSum(int num_args) {
+    MP_UNUSED(num_args);
+    return NumericArgHandler();
+  }
+  // Receives notification of the end of a sum expression.
+  NumericExpr EndSum(NumericArgHandler handler) {
+    MP_UNUSED(handler);
+    return NumericExpr();
+  }
+
+  // Receives notification of the beginning of a count expression.
+  LogicalArgHandler BeginCount(int num_args) {
+    MP_UNUSED(num_args);
+    return LogicalArgHandler();
+  }
+  // Receives notification of the end of a count expression.
+  CountExpr EndCount(LogicalArgHandler handler) {
+    MP_UNUSED(handler);
+    return NumericExpr();
+  }
+
+  // Receives notification of the beginning of a numberof expression.
+  NumericArgHandler BeginNumberOf(int num_args) {
+    MP_UNUSED(num_args);
+    return NumericArgHandler();
+  }
+  // Receives notification of the end of a numberof expression.
+  NumericExpr EndNumberOf(NumericArgHandler handler) {
+    MP_UNUSED(handler);
+    return NumericExpr();
+  }
+
+  // Receives notification of a logical constant.
+  LogicalExpr OnLogicalConstant(bool value) {
+    MP_UNUSED(value);
+    return LogicalExpr();
+  }
+
+  // Receives notification of a logical not expression.
+  LogicalExpr OnNot(LogicalExpr arg) {
+    MP_UNUSED(arg);
+    return LogicalExpr();
+  }
+
+  // Receives notification of a binary logical expression.
+  LogicalExpr OnBinaryLogical(
+      expr::Kind kind, LogicalExpr lhs, LogicalExpr rhs) {
+    MP_UNUSED3(kind, lhs, rhs);
+    return LogicalExpr();
+  }
+
+  // Receives notification of a relational expression.
+  LogicalExpr OnRelational(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
+    MP_UNUSED3(kind, lhs, rhs);
+    return LogicalExpr();
+  }
+
+  // Receives notification of a logical count expression.
+  LogicalExpr OnLogicalCount(expr::Kind kind, NumericExpr lhs, CountExpr rhs) {
+    MP_UNUSED3(kind, lhs, rhs);
+    return LogicalExpr();
+  }
+
+  // Receives notification of an implication expression.
+  LogicalExpr OnImplication(
+      LogicalExpr condition, LogicalExpr true_expr, LogicalExpr false_expr) {
+    MP_UNUSED3(condition, true_expr, false_expr);
+    return LogicalExpr();
+  }
+
+  // Receives notification of the beginning of an iterated logical expression.
+  LogicalArgHandler BeginIteratedLogical(expr::Kind kind, int num_args) {
+    MP_UNUSED2(kind, num_args);
+    return LogicalArgHandler();
+  }
+  // Receives notification of the end of an iterated logical expression.
+  LogicalExpr EndIteratedLogical(LogicalArgHandler handler) {
+    MP_UNUSED(handler);
+    return LogicalExpr();
+  }
+
+  typedef ArgHandler AllDiffArgHandler;
+
+  // Receives notification of the beginning of an alldiff expression.
+  AllDiffArgHandler BeginAllDiff(int num_args) {
+    MP_UNUSED(num_args);
+    return AllDiffArgHandler();
+  }
+  // Receives notification of the end of an alldiff expression.
+  LogicalExpr EndAllDiff(AllDiffArgHandler handler) {
+    MP_UNUSED(handler);
+    return LogicalExpr();
+  }
+
+  // Receives notification of a string literal.
+  Expr OnStringLiteral(fmt::StringRef value) {
+    MP_UNUSED(value);
+    return Expr();
+  }
+};
+
 // Adapts ProblemBuilder for use as an .nl handler.
 template <typename ProblemBuilder>
 class ProblemBuilderToNLAdapter {
@@ -156,7 +451,8 @@ class ProblemBuilderToNLAdapter {
   ProblemBuilder &builder_;
 
  public:
-  ProblemBuilderToNLAdapter(ProblemBuilder &builder) : builder_(builder) {}
+  explicit ProblemBuilderToNLAdapter(ProblemBuilder &builder)
+    : builder_(builder) {}
 
   typedef typename ProblemBuilder::Expr Expr;
   typedef typename ProblemBuilder::NumericExpr NumericExpr;

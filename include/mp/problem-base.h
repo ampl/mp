@@ -34,6 +34,11 @@
 
 #define MP_DISPATCH(call) static_cast<Impl*>(this)->call
 
+// Suppresses warnings about unused variables.
+#define MP_UNUSED(x) (void)(x)
+#define MP_UNUSED2(x, y) MP_UNUSED(x); MP_UNUSED(y)
+#define MP_UNUSED3(x, y, z) MP_UNUSED2(x, y); MP_UNUSED(z)
+
 namespace mp {
 
 class Expr;
