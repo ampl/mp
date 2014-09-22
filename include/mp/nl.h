@@ -1565,6 +1565,46 @@ void NLReader<Reader, Handler>::Read() {
     }
   }
 }
+
+// An .nl file.
+class NLFile {
+ private:
+  fmt::File file_;
+  std::size_t size_;
+  std::size_t rounded_size_;  // Size rounded up to a multiple of page size.
+
+ public:
+  explicit NLFile(fmt::StringRef filename)
+    : file_(filename, fmt::File::RDONLY) {
+    fmt::LongLong file_size = file_.size();
+    assert(file_size >= 0);
+    fmt::ULongLong unsigned_file_size = file_size;
+    // Check if file size fits in size_t.
+    size_ = static_cast<std::size_t>(unsigned_file_size);
+    if (size_ != unsigned_file_size)
+      throw Error("file {} is too big", filename);
+    // Round size up to a multiple of page_size. The remainded of the last
+    // partial page is zero-filled both on POSIX and Windows so the resulting
+    // memory buffer is zero terminated.
+    std::size_t page_size = fmt::getpagesize();
+    std::size_t remainder = size_ % page_size;
+    rounded_size_ = remainder != 0 ? (size_ + page_size - remainder) : size_;
+  }
+
+  // Reads the file into an array.
+  void Read(fmt::internal::Array<char, 1> &array) {
+    array.resize(size_ + 1);
+    std::size_t offset = 0;
+    while (offset < size_)
+      offset += file_.read(&array[offset], size_ - offset);
+    array[size_] = 0;
+  }
+
+  std::size_t size() { return size_; }
+  std::size_t rounded_size() { return rounded_size_; }
+
+  fmt::File &get() { return file_; }
+};
 }  // namespace internal
 
 // Reads a string containing an optimization problem in .nl format.
@@ -1601,33 +1641,17 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
 // Reads an .nl file.
 template <typename Handler>
 void ReadNLFile(fmt::StringRef filename, Handler &h) {
-  fmt::File file(filename, fmt::File::RDONLY);
-  fmt::LongLong file_size = file.size();
-  assert(file_size >= 0);
-  fmt::ULongLong unsigned_file_size = file_size;
-  // Check if file size fits in size_t.
-  std::size_t size = static_cast<std::size_t>(unsigned_file_size);
-  if (size != unsigned_file_size)
-    throw Error("file {} is too big", filename);
-  std::size_t page_size = fmt::getpagesize();
-  size_t remainder = file_size % page_size;
-  if (remainder == 0) {
-    // File size is a multiple of the page size, so there will be no
-    // zero padding. Don't use mmap.
+  internal::NLFile file(filename);
+  std::size_t size = file.size(), rounded_size = file.rounded_size();
+  if (size == rounded_size) {
+    // Don't use mmap, because the file size is a multiple of the page size
+    // and therefore the mmap'ed buffer won't be zero terminated.
     fmt::internal::Array<char, 1> array;
-    array.resize(size + 1);
-    std::size_t offset = 0;
-    while (offset < size)
-      offset += file.read(&array[offset], size - offset);
-    array[size] = 0;
+    file.Read(array);
     return ReadNLString(fmt::StringRef(&array[0], size), h, filename);
   }
-  // Round size up to a multiple of page_size. The remainded of the last
-  // partial page is zero-filled both on POSIX and Windows so the resulting
-  // memory buffer is zero terminated.
-  MemoryMappedFile mapped_file(file, size + page_size - remainder);
+  MemoryMappedFile mapped_file(file.get(), rounded_size);
   ReadNLString(fmt::StringRef(mapped_file.start(), size), h, filename);
-  // TODO: test
 }
 }  // namespace mp
 

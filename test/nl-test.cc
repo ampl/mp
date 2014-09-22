@@ -1469,4 +1469,46 @@ TEST(NLTest, ProblemBuilderToNLAdapter) {
 
   EXPECT_FORWARD_RET(OnStringLiteral, MakeStringLiteral, (str), TestExpr(ID));
 }
+
+TEST(NLTest, ErrorOnNonexistentNLFile) {
+  TestNLHandler handler;
+  EXPECT_THROW(mp::ReadNLFile("nonexistent", handler), fmt::SystemError);
+}
+
+void CheckReadFile(std::string nl) {
+  const char *filename = "test.nl";
+  WriteFile(filename, nl);
+  TestNLHandler handler;
+  mp::ReadNLFile(filename, handler);
+  EXPECT_EQ("c0: 4.2;", handler.log.str());
+  mp::internal::NLFile file(filename);
+  EXPECT_EQ(nl.size(), file.size());
+  EXPECT_EQ(fmt::getpagesize(), file.rounded_size());
+}
+
+TEST(NLTest, ReadNLFile) {
+  std::string header = FormatHeader(MakeHeader());
+  std::string nl = header + "C0\nn4.2";
+  std::size_t page_size = fmt::getpagesize();
+  EXPECT_LT(nl.size() + 1, page_size);
+  CheckReadFile(nl + "\n");
+  for (std::size_t i = nl.size(); i < page_size - 2; ++i)
+    nl.push_back(' ');
+  EXPECT_EQ(page_size, nl.size() + 2);
+  CheckReadFile(nl + "\n");
+}
+
+TEST(NLTest, ReadNLFileMultipleOfPageSize) {
+  std::string header = FormatHeader(MakeHeader());
+  std::string nl = header + "C0\nn4.2";
+  std::size_t page_size = fmt::getpagesize();
+  for (std::size_t i = nl.size(); i < page_size - 1; ++i)
+    nl.push_back(' ');
+  EXPECT_EQ(page_size, nl.size() + 1);
+  CheckReadFile(nl + "\n");
+}
+
 }  // namespace
+
+// TODO: test if exception is thrown if file is too big
+// TODO: test NLHanlder
