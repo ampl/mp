@@ -54,8 +54,10 @@ std::string ReadFile(fmt::StringRef name) {
 }
 
 void WriteFile(fmt::StringRef name, fmt::StringRef data) {
-  std::ofstream ofs(name.c_str());
-  ofs.write(data.c_str(), data.size());
+  fmt::BufferedFile file(name, "wb");
+  std::size_t size = data.size();
+  if (std::fwrite(data.c_str(), 1, size, file.get()) != size)
+    throw fmt::SystemError(errno, "cannot write file {}", name);
 }
 
 std::string FixPath(fmt::StringRef path, char sep) {
