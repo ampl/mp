@@ -1508,7 +1508,12 @@ TEST(NLTest, ReadNLFileMultipleOfPageSize) {
   CheckReadFile(nl + "\n");
 }
 
+struct TestNLHandler3 : mp::NLHandler<int> {};
+
+TEST(NLTest, NLHandler) {
+  TestNLHandler3 handler;
+  ReadNLString(FormatHeader(MakeHeader()) + "C0\nn4.2\n", handler);
+}
 }  // namespace
 
-// TODO: test if exception is thrown if file is too big
-// TODO: test NLHanlder
+// TODO: test that exception is thrown if file is too big
