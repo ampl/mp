@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include "asl/aslbuilder.h"
 #include "asl/problem.h"
 #include "mp/nl.h"
@@ -475,10 +475,15 @@ TEST(ProblemTest, AddVar) {
 }
 
 class TestASLBuilder : public mp::internal::ASLBuilder {
- public:
-  TestASLBuilder() {
+ private:
+  static mp::ProblemInfo MakeProblemInfo() {
     mp::ProblemInfo info = mp::ProblemInfo();
     info.num_vars = info.num_objs = 1;
+    return info;
+  }
+
+ public:
+  explicit TestASLBuilder(mp::ProblemInfo info = MakeProblemInfo()) {
     set_flags(mp::internal::ASL_STANDARD_OPCODES);
     SetInfo(info);
   }
@@ -580,11 +585,39 @@ TEST_P(SuffixTest, EmptySuffixView) {
   EXPECT_EQ(view.begin(), view.end());
 }
 
+struct MockValueVisitor {
+  MOCK_METHOD2(Visit, void (int index, int value));
+};
+
+TEST_P(SuffixTest, VisitValues) {
+  mp::ProblemInfo info = mp::ProblemInfo();
+  info.num_vars = info.num_objs = info.num_algebraic_cons = 3;
+  TestASLBuilder builder(info);
+  builder.set_flags(ASL_keep_all_suffixes);
+  int kind = GetParam().kind;
+  mp::internal::ASLBuilder::SuffixHandler handler =
+      builder.AddSuffix(kind, 3, "foo");
+  handler.SetValue(0, 11);
+  if (kind != mp::suf::PROBLEM) {
+    handler.SetValue(1, 22);
+    handler.SetValue(2, 33);
+  }
+  Problem p(builder.GetProblem());
+  testing::StrictMock<MockValueVisitor> visitor;
+  mp::Suffix suffix = p.FindSuffix("foo", kind);
+  testing::InSequence dummy;
+  EXPECT_CALL(visitor, Visit(0, 11));
+  if (kind != mp::suf::PROBLEM) {
+    EXPECT_CALL(visitor, Visit(1, 22));
+    EXPECT_CALL(visitor, Visit(2, 33));
+  }
+  suffix.VisitValues(visitor);
+}
+
 INSTANTIATE_TEST_CASE_P(, SuffixTest, ::testing::Values(
                           Param(suf::VAR, &Problem::var_suffixes),
                           Param(suf::CON, &Problem::con_suffixes),
                           Param(suf::OBJ, &Problem::obj_suffixes),
                           Param(suf::PROBLEM, &Problem::problem_suffixes)));
 
-// TODO: test VisitValues
 // TODO: test Problem::Proxy
