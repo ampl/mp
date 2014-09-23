@@ -346,14 +346,16 @@ class ASLBuilder {
    private:
     int *int_values_;
     double *dbl_values_;
+    int num_items_;
 
    public:
-    explicit SuffixHandler(int *values = 0)
-      : int_values_(values), dbl_values_(0) {}
-    explicit SuffixHandler(double *values)
-      : int_values_(0), dbl_values_(values) {}
+    explicit SuffixHandler(int *values = 0, int num_items = 0)
+      : int_values_(values), dbl_values_(0), num_items_(num_items) {}
+    explicit SuffixHandler(double *values, int num_items)
+      : int_values_(0), dbl_values_(values), num_items_(num_items) {}
 
     void SetValue(int index, int value) {
+      assert(index < num_items_);
       if (int_values_)
         int_values_[index] = value;
       else if (dbl_values_)
@@ -361,6 +363,7 @@ class ASLBuilder {
     }
 
     void SetValue(int index, double value) {
+      assert(0 <= index && index < num_items_);
       if (int_values_)
         int_values_[index] = static_cast<int>(value + 0.5);
       else if (dbl_values_)
