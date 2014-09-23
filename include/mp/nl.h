@@ -1592,13 +1592,7 @@ class NLFile {
   }
 
   // Reads the file into an array.
-  void Read(fmt::internal::Array<char, 1> &array) {
-    array.resize(size_ + 1);
-    std::size_t offset = 0;
-    while (offset < size_)
-      offset += file_.read(&array[offset], size_ - offset);
-    array[size_] = 0;
-  }
+  void Read(fmt::internal::Array<char, 1> &array);
 
   std::size_t size() { return size_; }
   std::size_t rounded_size() { return rounded_size_; }
