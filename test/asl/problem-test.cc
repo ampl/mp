@@ -530,6 +530,17 @@ TEST(ProblemTest, ReadFunctionWithoutLibrary) {
   EXPECT_EQ(1, p.num_objs());
 }
 
+TEST(ProblemTest, Proxy) {
+  mp::ProblemInfo info = mp::ProblemInfo();
+  info.num_vars = 42;
+  info.num_objs = 1;
+  TestASLBuilder builder(info);
+  builder.MakeVariable(0);
+  Problem p(builder.GetProblem());
+  EXPECT_DEATH(builder.MakeVariable(0), "");
+  EXPECT_EQ(info.num_vars, p.num_vars());
+}
+
 struct Param {
   int kind;
 
@@ -619,5 +630,3 @@ INSTANTIATE_TEST_CASE_P(, SuffixTest, ::testing::Values(
                           Param(suf::CON, &Problem::con_suffixes),
                           Param(suf::OBJ, &Problem::obj_suffixes),
                           Param(suf::PROBLEM, &Problem::problem_suffixes)));
-
-// TODO: test Problem::Proxy

@@ -266,6 +266,7 @@ class Problem {
     array = new_array;
   }
 
+  friend class internal::ASLBuilder;
   friend class ASLSolver;
   friend class SolutionWriter;
 
@@ -275,7 +276,6 @@ class Problem {
   // Write an .nl file.
   void WriteNL(fmt::StringRef stub, ProblemChanges *pc = 0, unsigned flags = 0);
 
- public:
   class Proxy {
    private:
     mutable ASL_fg *asl_;
@@ -301,6 +301,7 @@ class Problem {
     ~Proxy() { Free(); }
   };
 
+ public:
   Problem();
   Problem(Proxy proxy);
 
