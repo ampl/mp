@@ -41,7 +41,11 @@ using testing::Return;
 namespace {
 
 TEST(ReaderBaseTest, ReadChar) {
-  mp::internal::ReaderBase rb(" b", "test");
+  struct TestReaderBase : mp::internal::ReaderBase {
+    TestReaderBase(fmt::StringRef data, fmt::StringRef name)
+         : ReaderBase(data, name) {}
+  };
+  TestReaderBase rb(" b", "test");
   EXPECT_EQ(' ', rb.ReadChar());
   EXPECT_EQ('b', rb.ReadChar());
   EXPECT_EQ(0, rb.ReadChar());

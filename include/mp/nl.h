@@ -706,6 +706,8 @@ class ReaderBase {
   const char *token_;  // start of the current token
   std::string name_;
 
+  ~ReaderBase() {}
+
  public:
   ReaderBase(fmt::StringRef data, fmt::StringRef name);
 
