@@ -32,14 +32,8 @@ namespace mp {
 
 namespace ls = localsolver;
 
-// Converter of optimization problems from NL to LocalSolver format.
-/*class NLToLocalSolverConverter :
-  public ExprConverter<NLToLocalSolverConverter, ls::LSExpression> {
- private:
-  ls::LSModel &model_;
-  std::vector<ls::LSExpression> vars_;
-
-public:
+// TODO: remove
+/*
   ls::LSExpression VisitRem(BinaryExpr e) {
     return ConvertBinary(ls::O_Mod, e);
   }
@@ -54,8 +48,7 @@ public:
         rem.getOperand(1));
   }
 
-  // TODO
-  /*ls::LSExpression VisitRound(BinaryExpr e) {
+  ls::LSExpression VisitRound(BinaryExpr e) {
     // round does nothing because Gecode supports only integer expressions.
     RequireZeroRHS(e, "round");
     return Visit(e.lhs());
@@ -66,8 +59,6 @@ public:
     RequireZeroRHS(e, "trunc");
     return Visit(e.lhs());
   }
-
-  ls::LSExpression VisitCount(CountExpr e);
 
   ls::LSExpression VisitNumberOf(NumberOfExpr e);
 
@@ -109,14 +100,6 @@ public:
 
   ls::LSExpression VisitNotEqual(RelationalExpr e) {
     return ConvertBinary(ls::O_Neq, e);
-  }
-
-  ls::LSExpression VisitForAll(IteratedLogicalExpr e) {
-    return ConvertVarArg(ls::O_And, e);
-  }
-
-  ls::LSExpression VisitExists(IteratedLogicalExpr e) {
-    return ConvertVarArg(ls::O_Or, e);
   }
 
   ls::LSExpression VisitImplication(ImplicationExpr e) {
@@ -265,46 +248,60 @@ class LSProblemBuilder :
 
   // LocalSolver doesn't support piecewise-liner terms and functions.
 
-  class NumericArgHandler {
+  class ArgHandler {
    private:
     ls::LSExpression expr_;
 
    public:
-    explicit NumericArgHandler(ls::LSExpression expr) : expr_(expr) {}
+    explicit ArgHandler(ls::LSExpression expr) : expr_(expr) {}
 
     ls::LSExpression expr() const { return expr_; }
 
     void AddArg(ls::LSExpression arg) { expr_.addOperand(arg); }
   };
 
-  NumericArgHandler BeginVarArg(expr::Kind kind, int) {
-    return NumericArgHandler(
-          model_.createExpression(kind == expr::MIN ? ls::O_Min : ls::O_Max));
-  }
-  ls::LSExpression EndVarArg(NumericArgHandler handler) {
-    return handler.expr();
-  }
+  typedef ArgHandler NumericArgHandler;
+  typedef ArgHandler LogicalArgHandler;
 
-  NumericArgHandler BeginSum(int) {
-    return NumericArgHandler(model_.createExpression(ls::O_Sum));
+  ArgHandler BeginVarArg(expr::Kind kind, int num_args) {
+    ls::LSOperator op = ls::O_Min;
+    if (kind == expr::MAX)
+      op = ls::O_Max;
+    else if (kind != expr::MIN)
+      Base::BeginVarArg(kind, num_args);
+    return ArgHandler(model_.createExpression(op));
   }
-  ls::LSExpression EndSum(NumericArgHandler handler) {
-    return handler.expr();
+  ls::LSExpression EndVarArg(ArgHandler handler) { return handler.expr(); }
+
+  ArgHandler BeginSum(int) {
+    return ArgHandler(model_.createExpression(ls::O_Sum));
   }
+  ls::LSExpression EndSum(ArgHandler handler) { return handler.expr(); }
 
-  // TODO: count
+  ArgHandler BeginCount(int num_args) { return BeginSum(num_args); }
+  NumericExpr EndCount(ArgHandler handler) { return EndSum(handler); }
 
-  NumericArgHandler BeginNumberOf(int num_args) {
+  ArgHandler BeginNumberOf(int num_args) {
     // TODO
     Base::BeginNumberOf(num_args);
-    return NumericArgHandler(ls::LSExpression());
+    return ArgHandler(ls::LSExpression());
   }
-  ls::LSExpression EndNumberOf(NumericArgHandler) {
+  ls::LSExpression EndNumberOf(ArgHandler) {
     // TODO
     return ls::LSExpression();
   }
 
   // TODO
+
+  ArgHandler BeginIteratedLogical(expr::Kind kind, int num_args) {
+    ls::LSOperator op = ls::O_Or;
+    if (kind == expr::FORALL)
+      op = ls::O_And;
+    else if (kind != expr::EXISTS)
+      Base::BeginIteratedLogical(kind, num_args);
+    return ArgHandler(model_.createExpression(op));
+  }
+  LogicalExpr EndIteratedLogical(ArgHandler handler) { return handler.expr(); }
 };
 
 class LocalSolver : public SolverImpl<LSProblemBuilder> {

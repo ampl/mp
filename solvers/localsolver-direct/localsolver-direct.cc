@@ -95,7 +95,9 @@ ls::LSExpression LSProblemBuilder::MakeUnary(
     case expr::SQRT:  return model_.createExpression(ls::O_Sqrt, arg);
     case expr::SINH:  break; // TODO
     case expr::SIN:   return model_.createExpression(ls::O_Sin, arg);
-    case expr::LOG10: break; // TODO
+    case expr::LOG10:
+      return model_.createExpression(
+            ls::O_Div, model_.createExpression(ls::O_Log, arg), std::log(10.0));
     case expr::LOG:   return model_.createExpression(ls::O_Log, arg);
     case expr::EXP:   return model_.createExpression(ls::O_Exp, arg);
     case expr::COSH:  break; // TODO
@@ -107,11 +109,12 @@ ls::LSExpression LSProblemBuilder::MakeUnary(
     case expr::POW2:
       return model_.createExpression(ls::O_Pow, arg, MakeInt(2));
     case expr::ATAN: case expr::ASIN: case expr::ACOS:
-      // LocalSolver doesn't support atan, asin and acos.
+      // LocalSolver doesn't support these expressions.
       // Fall through.
     default:
       break;
   }
+  // TODO: report type of expression
   return Base::MakeUnary(kind, arg);
 }
 
@@ -150,7 +153,7 @@ ls::LSExpression LSProblemBuilder::MakeBinary(
 /*
 void NLToLocalSolverConverter::Convert(const Problem &p) {
   // Convert logical constraints.
-/*  int num_logical_cons = p.num_logical_cons();
+  int num_logical_cons = p.num_logical_cons();
   for (int i = 0; i < num_logical_cons; ++i) {
     LogicalExpr e = p.logical_con_expr(i);
     AllDiffExpr alldiff = Cast<AllDiffExpr>(e);
@@ -169,12 +172,7 @@ void NLToLocalSolverConverter::Convert(const Problem &p) {
         args[i] = Gecode::expr(problem_, Visit(arg), icl_);
     }
     distinct(problem_, args, icl_);
-  }*/
-/*}
-
-ls::LSExpression NLToLocalSolverConverter::VisitLog10(UnaryExpr e) {
-  return model_.createExpression(
-      ls::O_Div, ConvertUnary(ls::O_Log, e), std::log(10.0));
+  }
 }*/
 
 LocalSolver::LocalSolver()
