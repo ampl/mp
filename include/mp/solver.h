@@ -38,6 +38,7 @@
 #include "mp/error.h"
 #include "mp/format.h"
 #include "mp/nl.h"
+#include "mp/option.h"
 
 namespace mp {
 
@@ -208,12 +209,6 @@ class SignalHandler {
   static bool stop() { return stop_ != 0; }
 };
 
-// An option error.
-class OptionError : public Error {
-public:
-  explicit OptionError(fmt::StringRef message) : Error(message) {}
-};
-
 // A solver option.
 class SolverOption {
  private:
@@ -364,6 +359,9 @@ class Solver : private ErrorHandler, private OutputHandler {
 
   unsigned read_flags_;  // flags passed to Problem::Read
 
+  // Command-line options.
+  OptionList cl_options_;
+
   struct OptionNameLess {
     bool operator()(const SolverOption *lhs, const SolverOption *rhs) const;
   };
@@ -392,6 +390,11 @@ class Solver : private ErrorHandler, private OutputHandler {
     std::fputs(message.c_str(), stderr);
     std::fputc('\n', stderr);
   }
+
+  bool ShowUsage();
+  bool ShowVersion();
+  bool ShowOptions();
+  bool EndOptions() { return false; }
 
   // Finds an option and returns a pointer to it if found or null otherwise.
   SolverOption *FindOption(const char *name) const;

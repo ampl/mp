@@ -222,11 +222,12 @@ add_custom_command(OUTPUT ${MP_EXPR_INFO_FILE} COMMAND ${WINE}
   $<TARGET_FILE:gen-expr-info> ${MP_EXPR_INFO_FILE} DEPENDS gen-expr-info)
 
 add_prefix(MP_HEADERS include/mp/
-  clock.h error.h nl.h os.h problem-base.h problem-builder.h
+  clock.h error.h nl.h option.h os.h problem-base.h problem-builder.h
   rstparser.h safeint.h sol.h solver.h)
 set(MP_SOURCES )
 add_prefix(MP_SOURCES src/
-  clock.cc nl.cc os.cc precedence.h rstparser.cc sol.cc solver.cc solver-c.h)
+  clock.cc nl.cc option.cc os.cc precedence.h rstparser.cc sol.cc
+  solver.cc solver-c.h)
 
 add_mp_library(mp ${MP_HEADERS} ${MP_SOURCES} ${MP_EXPR_INFO_FILE}
   COMPILE_DEFINITIONS MP_DATE=${MP_DATE} MP_SYSINFO="${MP_SYSINFO}"

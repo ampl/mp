@@ -172,21 +172,7 @@ bool mp::ASLSolver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
   struct OptionPrinter {
     static char *PrintOptionsAndExit(Option_Info *, keyword *kw, char *) {
       Solver *solver = static_cast<Solver*>(kw->info);
-      fmt::Writer writer;
-      internal::FormatRST(writer, solver->option_header_);
-      if (!solver->option_header_.empty())
-        writer << '\n';
-      writer << "Options:\n";
-      const int DESC_INDENT = 6;
-      const OptionSet &options = solver->options_;
-      for (OptionSet::const_iterator
-           i = options.begin(); i != options.end(); ++i) {
-        SolverOption *opt = *i;
-        writer << '\n' << opt->name() << '\n';
-        internal::FormatRST(writer, opt->description(),
-                            DESC_INDENT, opt->values());
-      }
-      std::fwrite(writer.data(), writer.size(), 1, stdout);
+      solver->ShowOptions();
       exit(0);
       return 0;
     }

@@ -289,6 +289,13 @@ Solver::Solver(
   error_handler_ = this;
   output_handler_ = this;
 
+  OptionList::Builder<Solver> options(cl_options_, *this);
+  options.Add<&Solver::ShowUsage>('?', "show usage and exit");
+  options.Add<&Solver::ShowVersion>('v', "show version and exit");
+  options.Add<&Solver::ShowOptions>('=', "show solver options and exit");
+  options.Add<&Solver::EndOptions>('-', "end of options");
+  // TODO: add options e, s and, if solver supports functions, -ix and -u
+
   struct VersionOption : SolverOption {
     Solver &s;
     VersionOption(Solver &s) : SolverOption("version",
@@ -363,6 +370,45 @@ Solver::Solver(
 
 Solver::~Solver() {
   std::for_each(options_.begin(), options_.end(), Deleter());
+}
+
+bool Solver::ShowUsage() {
+  Print("usage: {} [options] stub [-AMPL] [<assignment> ...]\n", name_);
+  Print("\nOptions:\n");
+  for (OptionList::iterator
+       i = cl_options_.begin(), end = cl_options_.end(); i != end; ++i) {
+    Print("\t-{}  {}\n", i->name, i->description);
+  }
+  return false;
+}
+
+bool Solver::ShowVersion() {
+  Print("{} ({})", version_, MP_SYSINFO);
+  if (date_ > 0)
+    Print(", driver({})", date_);
+  Print(", ASL({})\n", MP_DATE);
+  if (!license_info_.empty())
+    Print("{}\n", license_info_);
+  return false;
+}
+
+bool Solver::ShowOptions() {
+  fmt::Writer writer;
+  internal::FormatRST(writer, option_header_);
+  if (!option_header_.empty())
+    writer << '\n';
+  Print("{}", writer.c_str());
+  Print("Options:\n");
+  const int DESC_INDENT = 6;
+  const OptionSet &options = options_;
+  for (OptionSet::const_iterator i = options.begin(); i != options.end(); ++i) {
+    SolverOption *opt = *i;
+    writer.clear();
+    writer << '\n' << opt->name() << '\n';
+    internal::FormatRST(writer, opt->description(), DESC_INDENT, opt->values());
+    Print("{}", fmt::StringRef(writer.data(), writer.size()));
+  }
+  return false;
 }
 
 SolverOption *Solver::FindOption(const char *name) const {
@@ -455,14 +501,8 @@ bool Solver::ParseOptions(char **argv, unsigned flags, const Problem *) {
     ParseOptionString(s, flags);
   while (const char *s = *argv++)
     ParseOptionString(s, flags);
-  if ((flags_ & SHOW_VERSION) != 0) {
-    Print("{} ({})", version_, MP_SYSINFO);
-    if (date_ > 0)
-      Print(", driver({})", date_);
-    Print(", ASL({})\n", MP_DATE);
-    if (!license_info_.empty())
-      Print("{}\n", license_info_);
-  }
+  if ((flags_ & SHOW_VERSION) != 0)
+    ShowVersion();
   return !has_errors_;
 }
 
