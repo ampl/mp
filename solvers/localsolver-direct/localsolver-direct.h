@@ -325,6 +325,8 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
  public:
   LocalSolver();
 
+  typedef LSProblemBuilder ProblemBuilder;
+
   ls::LSModel model() { return solver_.getModel(); }
 
   void Solve(LSProblemBuilder &pb);

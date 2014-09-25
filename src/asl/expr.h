@@ -144,6 +144,7 @@ extern "C" {
 # undef zac
 # undef zao
 # undef zerograds
+# undef write_sol
 #endif  // ASL_PRESERVE_DEFINES
 
 #include "mp/error.h"

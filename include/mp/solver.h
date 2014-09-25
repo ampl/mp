@@ -43,6 +43,7 @@
 namespace mp {
 
 class Problem;
+class Solver;
 
 // Information about a possible option value.
 struct OptionValueInfo {
@@ -116,7 +117,38 @@ struct OptionHelper<std::string> {
   static std::string Parse(const char *&s);
   static const char *CastArg(const std::string &s) { return s.c_str(); }
 };
-}
+
+// Command-line options for a solver application.
+class SolverAppOptions {
+ private:
+  Solver &solver_;
+
+  // Command-line options.
+  OptionList options_;
+
+  // Specifies whether to write the solution (.sol) file.
+  bool write_sol_;
+
+  // Prints usage information and stops processing options.
+  bool ShowUsage();
+
+  // Prints information about solver options.
+  bool ShowSolverOptions();
+
+  bool SetWriteSol() { return write_sol_ = true; }
+
+  // Stops processing options.
+  bool EndOptions() { return false; }
+
+ public:
+  explicit SolverAppOptions(Solver &s);
+
+  bool write_sol() { return write_sol_; }
+
+  // Parses command-line options.
+  const char *Parse(char **&argv);
+};
+}  // namespace internal
 
 // An interface for receiving errors reported via Solver::ReportError.
 class ErrorHandler {
@@ -359,9 +391,6 @@ class Solver : private ErrorHandler, private OutputHandler {
 
   unsigned read_flags_;  // flags passed to Problem::Read
 
-  // Command-line options.
-  OptionList cl_options_;
-
   struct OptionNameLess {
     bool operator()(const SolverOption *lhs, const SolverOption *rhs) const;
   };
@@ -390,11 +419,6 @@ class Solver : private ErrorHandler, private OutputHandler {
     std::fputs(message.c_str(), stderr);
     std::fputc('\n', stderr);
   }
-
-  bool ShowUsage();
-  bool ShowVersion();
-  bool ShowOptions();
-  bool EndOptions() { return false; }
 
   // Finds an option and returns a pointer to it if found or null otherwise.
   SolverOption *FindOption(const char *name) const;
@@ -825,6 +849,9 @@ class Solver : private ErrorHandler, private OutputHandler {
   }
   FMT_VARIADIC(void, Print, fmt::StringRef)
 
+  // Prints version information.
+  bool ShowVersion();
+
   // The default precision used in FormatObjValue if the objective_precision
   // option is not specified or 0.
   enum { DEFAULT_PRECISION = 15 };
@@ -833,9 +860,6 @@ class Solver : private ErrorHandler, private OutputHandler {
   // Usage:
   //   Print("objective {}", FormatObjValue(obj_value));
   DoubleFormatter FormatObjValue(double value);
-
-  // Runs the solver.
-  virtual int Run(char **argv);
 };
 
 template <typename ProblemBuilder>
@@ -852,6 +876,43 @@ typedef std::unique_ptr<Solver> SolverPtr;
 typedef std::auto_ptr<Solver> SolverPtr;
 inline SolverPtr move(SolverPtr p) { return p; }
 #endif
+
+// A solver application.
+template <typename Solver>
+class SolverApp {
+ private:
+  Solver solver_;
+  internal::SolverAppOptions options_;
+
+ public:
+  SolverApp() : options_(solver_) {}
+
+  // Runs the application.
+  // It processes command-line arguments and solver options from argv
+  // and environment variables and, if the arguments contain the filename
+  // stub, reads the problem, solves it and writes the solution.
+  // argv: an array of command-line arguments terminated by a null pointer
+  void Run(char **argv);
+};
+
+template <typename Solver>
+void SolverApp<Solver>::Run(char **argv) {
+  // Parse command-line arguments.
+  const char *stub = options_.Parse(argv);
+  if (!stub) return;
+  // Read the problem.
+  typedef typename Solver::ProblemBuilder ProblemBuilder;
+  ProblemBuilder builder(solver_);
+  ProblemBuilderToNLAdapter<ProblemBuilder> adapter(builder);
+  ReadNLFile(stub + std::string(".nl"), adapter);
+  // Parse solver options.
+  solver_.ParseOptions(argv);
+  solver_.Solve(builder);
+  // TODO: solve problem
+  if (options_.write_sol()) {
+    // TODO: write solution
+  }
+}
 
 // Implement this function in your code returning a new concrete solver object.
 // options: Solver initialization options.

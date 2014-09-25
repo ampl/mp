@@ -22,10 +22,12 @@
 
 extern "C" {
 #include "solvers/getstub.h"
+}
+
 #undef Char
 #undef filename
 #undef ampl_vbtol
-}
+#undef write_sol
 
 #include "mp/clock.h"
 #include "mp/sol.h"
@@ -172,7 +174,7 @@ bool mp::ASLSolver::ProcessArgs(char **&argv, Problem &p, unsigned flags) {
   struct OptionPrinter {
     static char *PrintOptionsAndExit(Option_Info *, keyword *kw, char *) {
       Solver *solver = static_cast<Solver*>(kw->info);
-      solver->ShowOptions();
+      //solver->ShowOptions();
       exit(0);
       return 0;
     }

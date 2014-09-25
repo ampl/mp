@@ -185,9 +185,11 @@ int MP_GetOptionValues(MP_Solver *s,
   return -1;
 }
 
-int MP_RunSolver(MP_Solver *s, int, char **argv) {
+MP_API int MP_SetStrOption(
+    MP_Solver *s, const char *option, const char *value) {
   try {
-    return s->solver->Run(argv);
+    s->solver->SetStrOption(option, value);
+    return 0;
   } catch (const std::exception &e) {
     SetError(s, e.what());
   } catch (...) {
@@ -195,4 +197,5 @@ int MP_RunSolver(MP_Solver *s, int, char **argv) {
   }
   return -1;
 }
+
 }  // extern "C"

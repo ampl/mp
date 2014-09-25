@@ -164,18 +164,13 @@ MP_API int MP_GetOptionValues(MP_Solver *s,
     MP_SolverOption *option, MP_OptionValueInfo *values, int size);
 
 /**
- * Runs the solver. This is a programmatic alternative to running the solver
- * executable. It processes command-line arguments and solver options from
- * argv and environment variables and, if the arguments contain the filename
- * stub, reads the problem, solves it and writes the solution. Returns the
- * solver exit code.
+ * Sets the value of a string option. Returns 0 if succeeded, -1 otherwise.
  *
- * s: The solver to run.
- * argc: The number of arguments.
- * argv: The array of arguments of size argc + 1 with argv[argc] being
- *       a null pointer.
+ * s: The solver object containing the option.
+ * option: The option name.
+ * value: The option value.
  */
-MP_API int MP_RunSolver(MP_Solver *s, int argc, char **argv);
+MP_API int MP_SetStrOption(MP_Solver *s, const char *option, const char *value);
 
 #ifdef __cplusplus
 }  // extern "C"

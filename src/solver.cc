@@ -234,6 +234,64 @@ std::string OptionHelper<std::string>::Parse(const char *&s) {
   s = SkipNonSpaces(s);
   return std::string(start, s - start);
 }
+
+SolverAppOptions::SolverAppOptions(Solver &s) : solver_(s), write_sol_(false) {
+  // Add command-line options.
+  OptionList::Builder<SolverAppOptions> app_options(options_, *this);
+  app_options.Add<&SolverAppOptions::ShowUsage>('?', "show usage and exit");
+  app_options.Add<&SolverAppOptions::EndOptions>('-', "end of options");
+  app_options.Add<&SolverAppOptions::ShowSolverOptions>(
+        '=', "show solver options and exit");
+  OptionList::Builder<mp::Solver> options(options_, s);
+  options.Add<&mp::Solver::ShowVersion>('v', "show version and exit");
+  // TODO: add options -e, -s and, if solver supports functions, -ix and -u
+}
+
+bool SolverAppOptions::ShowUsage() {
+  solver_.Print("usage: {} [options] stub [-AMPL] [<assignment> ...]\n",
+                solver_.name());
+  solver_.Print("\nOptions:\n");
+  for (OptionList::iterator
+       i = options_.begin(), end = options_.end(); i != end; ++i) {
+    solver_.Print("\t-{}  {}\n", i->name, i->description);
+  }
+  return false;
+}
+
+bool SolverAppOptions::ShowSolverOptions() {
+  fmt::Writer writer;
+  const char *option_header = solver_.option_header();
+  internal::FormatRST(writer, option_header);
+  if (!*option_header)
+    writer << '\n';
+  solver_.Print("{}", writer.c_str());
+  solver_.Print("Options:\n");
+  const int DESC_INDENT = 6;
+  for (Solver::option_iterator
+       i = solver_.option_begin(), end = solver_.option_end(); i != end; ++i) {
+    writer.clear();
+    writer << '\n' << i->name() << '\n';
+    internal::FormatRST(writer, i->description(), DESC_INDENT, i->values());
+    solver_.Print("{}", fmt::StringRef(writer.data(), writer.size()));
+  }
+  return false;
+}
+
+const char *SolverAppOptions::Parse(char **&argv) {
+  argv = ParseOptions(argv, options_);
+  if (!argv) return 0;
+  const char *stub = *argv;
+  if (!stub) {
+    ShowUsage();
+    return 0;
+  }
+  ++argv;
+  if (std::strcmp(*argv, "-AMPL") == 0) {
+    write_sol_ = true;
+    ++argv;
+  }
+  return stub;
+}
 }  // namespace internal
 
 std::string SignalHandler::signal_message_;
@@ -288,13 +346,6 @@ Solver::Solver(
   version_ = long_name_;
   error_handler_ = this;
   output_handler_ = this;
-
-  OptionList::Builder<Solver> options(cl_options_, *this);
-  options.Add<&Solver::ShowUsage>('?', "show usage and exit");
-  options.Add<&Solver::ShowVersion>('v', "show version and exit");
-  options.Add<&Solver::ShowOptions>('=', "show solver options and exit");
-  options.Add<&Solver::EndOptions>('-', "end of options");
-  // TODO: add options e, s and, if solver supports functions, -ix and -u
 
   struct VersionOption : SolverOption {
     Solver &s;
@@ -372,16 +423,6 @@ Solver::~Solver() {
   std::for_each(options_.begin(), options_.end(), Deleter());
 }
 
-bool Solver::ShowUsage() {
-  Print("usage: {} [options] stub [-AMPL] [<assignment> ...]\n", name_);
-  Print("\nOptions:\n");
-  for (OptionList::iterator
-       i = cl_options_.begin(), end = cl_options_.end(); i != end; ++i) {
-    Print("\t-{}  {}\n", i->name, i->description);
-  }
-  return false;
-}
-
 bool Solver::ShowVersion() {
   Print("{} ({})", version_, MP_SYSINFO);
   if (date_ > 0)
@@ -389,25 +430,6 @@ bool Solver::ShowVersion() {
   Print(", ASL({})\n", MP_DATE);
   if (!license_info_.empty())
     Print("{}\n", license_info_);
-  return false;
-}
-
-bool Solver::ShowOptions() {
-  fmt::Writer writer;
-  internal::FormatRST(writer, option_header_);
-  if (!option_header_.empty())
-    writer << '\n';
-  Print("{}", writer.c_str());
-  Print("Options:\n");
-  const int DESC_INDENT = 6;
-  const OptionSet &options = options_;
-  for (OptionSet::const_iterator i = options.begin(); i != options.end(); ++i) {
-    SolverOption *opt = *i;
-    writer.clear();
-    writer << '\n' << opt->name() << '\n';
-    internal::FormatRST(writer, opt->description(), DESC_INDENT, opt->values());
-    Print("{}", fmt::StringRef(writer.data(), writer.size()));
-  }
   return false;
 }
 
@@ -515,10 +537,5 @@ Solver::DoubleFormatter Solver::FormatObjValue(double value) {
   }
   DoubleFormatter formatter = {value, obj_precision_};
   return formatter;
-}
-
-int Solver::Run(char **argv) {
-  // TODO
-  return 1;
 }
 }  // namespace mp

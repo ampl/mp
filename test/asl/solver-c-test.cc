@@ -61,11 +61,7 @@ TEST(SolverCTest, DestroyNullError) {
 TEST(SolverCTest, GetLastError) {
   MP_Solver *s = MP_CreateSolver(0, 0);
   EXPECT_TRUE(!MP_GetLastError(s));
-  char arg0[] = "test";
-  char arg1[] = MP_TEST_DATA_DIR "/test";
-  char arg2[] = "opt1=die";
-  char *argv[] = {arg0, arg1, arg2, 0};
-  EXPECT_EQ(-1, MP_RunSolver(s, 2, argv));
+  EXPECT_EQ(-1, MP_SetStrOption(s, "opt1", ""));
   MP_Error *error = MP_GetLastError(s);
   EXPECT_TRUE(error != 0);
   EXPECT_STREQ("epic fail", MP_GetErrorMessage(error));
@@ -145,15 +141,6 @@ TEST(SolverCTest, GetPartOfOptionValues) {
   EXPECT_STREQ("valdesc2", values[1].description);
   EXPECT_TRUE(!values[2].value);
   EXPECT_TRUE(!values[2].description);
-  MP_DestroySolver(s);
-}
-
-TEST(SolverCTest, RunSolver) {
-  MP_Solver *s = MP_CreateSolver(0, 0);
-  char arg0[] = "test";
-  char arg1[] = MP_TEST_DATA_DIR "/test";
-  char *argv[] = {arg0, arg1, 0};
-  EXPECT_EQ(0, MP_RunSolver(s, 2, argv));
   MP_DestroySolver(s);
 }
 }

@@ -22,17 +22,11 @@
 
 #include "localsolver-direct/localsolver-direct.h"
 #include "mp/nl.h"
+#include "mp/option.h"
 
 int main(int, char **argv) {
   try {
-    mp::LocalSolver solver;
-    // TODO: parse command-line arguments
-    solver.ParseOptions(argv);
-    mp::LSProblemBuilder builder(solver);
-    mp::ProblemBuilderToNLAdapter<mp::LSProblemBuilder> handler(builder);
-    mp::ReadNLFile(argv[1] + std::string(".nl"), handler);
-    solver.Solve(builder);
-    // TODO: write solution
+    mp::SolverApp<mp::LocalSolver>().Run(argv);
     return 0;
   } catch (const std::exception &e) {
     fmt::print(stderr, "Error: {}\n", e.what());
