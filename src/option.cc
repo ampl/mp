@@ -23,6 +23,7 @@
 #include "mp/option.h"
 
 #include <algorithm>
+#include <cassert>
 #include <cctype>
 
 using mp::Option;
@@ -49,6 +50,7 @@ void mp::OptionList::Sort() {
 }
 
 const Option *mp::OptionList::Find(char name) const {
+  assert(sorted_);
   OptionContainer::const_iterator it =
       std::lower_bound(options_.begin(), options_.end(), name, OptionLess());
   return it != options_.end() && it->name == name ? &*it : 0;
@@ -68,9 +70,7 @@ char **mp::ParseOptions(char **args, OptionList &options) {
             fmt::format("invalid option '-{}'", MakePrintable(name)));
     }
     if (!opt->on_option(opt->handler))
-      break;
+      return 0;
   }
   return arg_ptr;
 }
-
-// TODO: test

@@ -85,8 +85,13 @@ class OptionList {
   iterator begin() const { return options_.begin(); }
   iterator end() const { return options_.end(); }
 
+  bool sorted() const { return sorted_; }
+
+  // Sorts the option list.
   void Sort();
 
+  // Finds an option with the specified name in the list.
+  // Requires list to be sorted.
   const Option *Find(char name) const;
 };
 
