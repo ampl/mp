@@ -286,7 +286,7 @@ const char *SolverAppOptions::Parse(char **&argv) {
     return 0;
   }
   ++argv;
-  if (std::strcmp(*argv, "-AMPL") == 0) {
+  if (*argv && std::strcmp(*argv, "-AMPL") == 0) {
     write_sol_ = true;
     ++argv;
   }
