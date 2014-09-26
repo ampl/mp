@@ -301,6 +301,16 @@ class Problem {
     ~Proxy() { Free(); }
   };
 
+  static double lb(int index, int size, const double *lbs, const double *ubs) {
+    assert(index >= 0 && index < size);
+    return lbs[ubs ? index : (index * 2)];
+  }
+
+  static double ub(int index, int size, const double *lbs, const double *ubs) {
+    assert(index >= 0 && index < size);
+    return ubs ? ubs[index] : lbs[index * 2 + 1];
+  }
+
  public:
   Problem();
   Problem(Proxy proxy);
@@ -354,8 +364,7 @@ class Problem {
 
   // Returns the lower bound for the variable.
   double var_lb(int var_index) const {
-    assert(var_index >= 0 && var_index < num_vars());
-    return asl_->i.LUv_[var_index];
+    return lb(var_index, num_vars(), asl_->i.LUv_, asl_->i.Uvx_);
   }
 
   // Returns the upper bounds for the variables.
@@ -363,8 +372,7 @@ class Problem {
 
   // Returns the upper bound for the variable.
   double var_ub(int var_index) const {
-    assert(var_index >= 0 && var_index < num_vars());
-    return asl_->i.Uvx_[var_index];
+    return ub(var_index, num_vars(), asl_->i.LUv_, asl_->i.Uvx_);
   }
 
   // Returns the initial values for the variables.
@@ -375,8 +383,7 @@ class Problem {
 
   // Returns the lower bound for the constraint.
   double con_lb(int con_index) const {
-    assert(con_index >= 0 && con_index < num_cons());
-    return asl_->i.LUrhs_[con_index];
+    return lb(con_index, num_cons(), asl_->i.LUrhs_, asl_->i.Urhsx_);
   }
 
   // Returns the upper bounds for the constraints.
@@ -384,8 +391,7 @@ class Problem {
 
   // Returns the upper bound for the constraint.
   double con_ub(int con_index) const {
-    assert(con_index >= 0 && con_index < num_cons());
-    return asl_->i.Urhsx_[con_index];
+    return lb(con_index, num_cons(), asl_->i.LUrhs_, asl_->i.Urhsx_);
   }
 
   // Returns the objective type.
