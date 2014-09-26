@@ -391,7 +391,7 @@ class Problem {
 
   // Returns the upper bound for the constraint.
   double con_ub(int con_index) const {
-    return lb(con_index, num_cons(), asl_->i.LUrhs_, asl_->i.Urhsx_);
+    return ub(con_index, num_cons(), asl_->i.LUrhs_, asl_->i.Urhsx_);
   }
 
   // Returns the objective type.
