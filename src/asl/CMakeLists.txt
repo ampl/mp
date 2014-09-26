@@ -216,6 +216,9 @@ if (MATLAB_FOUND)
   endforeach ()
 endif ()
 
+add_executable(gjh solvers/examples/gjh.c)
+target_link_libraries(gjh asl)
+
 add_ampl_library(simpbit PRIVATE tables/simpbit.c)
 add_ampl_library(fullbit PRIVATE tables/fullbit.c)
 
