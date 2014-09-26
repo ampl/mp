@@ -211,7 +211,7 @@ class ASLBuilder {
     ASL *asl = asl_;
     asl_ = 0;
     own_asl_ = false;
-    return Problem::Proxy(reinterpret_cast<ASL_fg*>(asl));
+    return Problem::Proxy(asl);
   }
 
   void set_flags(int flags) { flags_ = flags; }
