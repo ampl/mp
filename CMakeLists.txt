@@ -206,7 +206,7 @@ endfunction ()
 add_mp_library(format OBJECT
   include/mp/format.h include/mp/posix.h src/format.cc src/posix.cc)
 
-set(MP_EXPR_INFO_FILE ${MP_BINARY_DIR}/src/expr-info.cc)
+set(MP_EXPR_INFO_FILE ${MP_SOURCE_DIR}/src/expr-info.cc)
 add_executable(gen-expr-info src/gen-expr-info.cc $<TARGET_OBJECTS:format>)
 if (MINGW)
   SET_TARGET_PROPERTIES(gen-expr-info PROPERTIES
