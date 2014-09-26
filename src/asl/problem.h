@@ -108,13 +108,13 @@ class Solution {
 
 class Suffix {
  private:
-  ASL_fg *asl_;
+  ASL *asl_;
   SufDesc *suffix_;
 
   friend class Problem;
   friend class SuffixView;
 
-  Suffix(ASL_fg *asl, SufDesc *s) : asl_(asl), suffix_(s) {}
+  Suffix(ASL *asl, SufDesc *s) : asl_(asl), suffix_(s) {}
 
   void True() const {}
   typedef void (Suffix::*SafeBool)() const;
@@ -182,18 +182,18 @@ void Suffix::VisitValues(Visitor &visitor) const {
 // modified since the view was obtained.
 class SuffixView {
  private:
-  ASL_fg *asl_;
+  ASL *asl_;
   int kind_;
 
   friend class Problem;
 
-  SuffixView(ASL_fg *asl, int kind) : asl_(asl), kind_(kind) {}
+  SuffixView(ASL *asl, int kind) : asl_(asl), kind_(kind) {}
 
  public:
   class iterator :
     public std::iterator<std::forward_iterator_tag, mp::Suffix> {
    private:
-    ASL_fg *asl_;
+    ASL *asl_;
     SufDesc *ptr_;
 
     class Proxy {
@@ -201,14 +201,14 @@ class SuffixView {
       Suffix suffix_;
 
      public:
-      Proxy(ASL_fg *asl, SufDesc *s) : suffix_(asl, s) {}
+      Proxy(ASL *asl, SufDesc *s) : suffix_(asl, s) {}
 
       const Suffix *operator->() const { return &suffix_; }
     };
 
    public:
     iterator() : asl_(0), ptr_(0) {}
-    iterator(ASL_fg *asl, SufDesc *p) : asl_(asl), ptr_(p) {}
+    iterator(ASL *asl, SufDesc *p) : asl_(asl), ptr_(p) {}
 
     mp::Suffix operator*() const { return mp::Suffix(asl_, ptr_); }
 
@@ -238,7 +238,7 @@ class ProblemChanges;
 // An optimization problem.
 class Problem {
  private:
-  ASL_fg *asl_;
+  ASL *asl_;
   std::string name_;
   int var_capacity_;
   int obj_capacity_;
@@ -278,16 +278,16 @@ class Problem {
 
   class Proxy {
    private:
-    mutable ASL_fg *asl_;
+    mutable ASL *asl_;
 
-    Proxy(ASL_fg *asl) : asl_(asl) {}
+    Proxy(ASL *asl) : asl_(asl) {}
 
     friend class Problem;
     friend class internal::ASLBuilder;
 
     void Free() {
       if (asl_)
-        ASL_free(reinterpret_cast<ASL**>(&asl_));
+        ASL_free(&asl_);
     }
 
    public:
@@ -412,40 +412,47 @@ class Problem {
     return LinearConExpr(asl_->i.Cgrad_[con_index]);
   }
 
+  template <typename ExprT = NumericExpr>
+  ExprT GetExpr(cde *Edag1info::*ptr, int index, int size) const {
+    assert(index >= 0 && index < size);
+    if (asl_->i.ASLtype != ASL_read_fg)
+      return ExprT();
+    return Expr::Create<ExprT>(
+          (reinterpret_cast<ASL_fg*>(asl_)->I.*ptr)[index].e);
+  }
+
   // Returns the nonlinear part of an objective expression.
   NumericExpr nonlinear_obj_expr(int obj_index) const {
-    assert(obj_index >= 0 && obj_index < num_objs());
-    return Expr::Create<NumericExpr>(asl_->I.obj_de_[obj_index].e);
+    return GetExpr(&Edag1info::obj_de_, obj_index, num_objs());
   }
 
   // Returns the nonlinear part of a constraint expression.
   NumericExpr nonlinear_con_expr(int con_index) const {
-    assert(con_index >= 0 && con_index < num_cons());
-    return Expr::Create<NumericExpr>(asl_->I.con_de_[con_index].e);
+    return GetExpr(&Edag1info::con_de_, con_index, num_cons());
   }
 
   // Returns a logical constraint expression.
   LogicalExpr logical_con_expr(int lcon_index) const {
-    assert(lcon_index >= 0 && lcon_index < num_logical_cons());
-    return Expr::Create<LogicalExpr>(asl_->I.lcon_de_[lcon_index].e);
+    return GetExpr<LogicalExpr>(
+          &Edag1info::lcon_de_, lcon_index, num_logical_cons());
   }
 
   // Returns the name of the variable or a null pointer if the name is not
   // available.
   const char *var_name(int var_index) const {
-    return var_name_ASL(reinterpret_cast<ASL*>(asl_), var_index);
+    return var_name_ASL(asl_, var_index);
   }
 
   // Returns the name of the constraint or a null pointer if the name is not
   // available.
   const char *con_name(int con_index) const {
-    return con_name_ASL(reinterpret_cast<ASL*>(asl_), con_index);
+    return con_name_ASL(asl_, con_index);
   }
 
   // Returns the name of the logical constraint or a null pointer if the
   // name is not available.
   const char *logical_con_name(int lcon_index) const {
-    return lcon_name_ASL(reinterpret_cast<ASL*>(asl_), lcon_index);
+    return lcon_name_ASL(asl_, lcon_index);
   }
 
   class ColMatrix {

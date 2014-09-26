@@ -110,25 +110,31 @@ void Problem::Free() {
     asl_->i.LUv_ = asl_->i.Uvx_ = 0;
     var_capacity_ = 0;
   }
+  ASL_fg *fg = asl_->i.ASLtype == ASL_read_fg ?
+        reinterpret_cast<ASL_fg*>(asl_) : 0;
   if (obj_capacity_) {
-    delete [] asl_->I.obj_de_;
+    if (fg) {
+      delete [] fg->I.obj_de_;
+      fg->I.obj_de_ = 0;
+    }
     delete [] asl_->i.objtype_;
     delete [] asl_->i.Ograd_;
-    asl_->I.obj_de_ = 0;
     asl_->i.objtype_ = 0;
     asl_->i.Ograd_ = 0;
     obj_capacity_ = 0;
   }
   if (logical_con_capacity_) {
-    delete [] asl_->I.lcon_de_;
-    asl_->I.lcon_de_ = 0;
+    if (fg) {
+      delete [] fg->I.lcon_de_;
+      fg->I.lcon_de_ = 0;
+    }
     logical_con_capacity_ = 0;
   }
 }
 
 Problem::Problem()
-: asl_(reinterpret_cast<ASL_fg*>(ASL_alloc(ASL_read_fg))),
-  var_capacity_(0), obj_capacity_(0), logical_con_capacity_(0), var_types_(0) {
+: asl_(ASL_alloc(ASL_read_fg)), var_capacity_(0), obj_capacity_(0),
+  logical_con_capacity_(0), var_types_(0) {
 }
 
 Problem::Problem(Proxy proxy)
@@ -259,15 +265,19 @@ void Problem::AddVar(double lb, double ub, var::Type type) {
 
 void Problem::AddObj(obj::Type type, NumericExpr expr) {
   int &num_objs = asl_->i.n_obj_;
+  ASL_fg *fg = asl_->i.ASLtype == ASL_read_fg ?
+        reinterpret_cast<ASL_fg*>(asl_) : 0;
   if (num_objs >= obj_capacity_) {
     IncreaseCapacity(num_objs, obj_capacity_);
-    Grow(asl_->I.obj_de_, num_objs, obj_capacity_);
+    if (fg)
+      Grow(fg->I.obj_de_, num_objs, obj_capacity_);
     Grow(asl_->i.objtype_, num_objs, obj_capacity_);
     Grow(asl_->i.Ograd_, num_objs, obj_capacity_);
   }
   cde e = cde();
   e.e = expr.expr_;
-  asl_->I.obj_de_[num_objs] = e;
+  if (fg)
+    fg->I.obj_de_[num_objs] = e;
   asl_->i.objtype_[num_objs] = type;
   asl_->i.Ograd_[num_objs] = 0;
   ++num_objs;
@@ -275,14 +285,17 @@ void Problem::AddObj(obj::Type type, NumericExpr expr) {
 }
 
 void Problem::AddCon(LogicalExpr expr) {
+  if (asl_->i.ASLtype != ASL_read_fg)
+    throw Error("problem doesn't support logical constraints");
+  ASL_fg *fg = reinterpret_cast<ASL_fg*>(asl_);
   int &num_logical_cons = asl_->i.n_lcon_;
   if (num_logical_cons >= logical_con_capacity_) {
     IncreaseCapacity(num_logical_cons, logical_con_capacity_);
-    Grow(asl_->I.lcon_de_, num_logical_cons, logical_con_capacity_);
+    Grow(fg->I.lcon_de_, num_logical_cons, logical_con_capacity_);
   }
   cde e = cde();
   e.e = expr.expr_;
-  asl_->I.lcon_de_[num_logical_cons] = e;
+  fg->I.lcon_de_[num_logical_cons] = e;
   ++num_logical_cons;
 }
 
