@@ -302,11 +302,13 @@ class Problem {
   };
 
   static double lb(int index, int size, const double *lbs, const double *ubs) {
+    MP_UNUSED(size);
     assert(index >= 0 && index < size);
     return lbs[ubs ? index : (index * 2)];
   }
 
   static double ub(int index, int size, const double *lbs, const double *ubs) {
+    MP_UNUSED(size);
     assert(index >= 0 && index < size);
     return ubs ? ubs[index] : lbs[index * 2 + 1];
   }
