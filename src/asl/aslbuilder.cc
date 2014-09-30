@@ -35,7 +35,7 @@
 #undef asl
 #undef max
 
-extern "C" void bswap_ASL(void *x, unsigned long L);
+extern "C" void bswap_ASL(void *x, size_t L);
 
 namespace {
 
