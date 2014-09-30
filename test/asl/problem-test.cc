@@ -537,7 +537,6 @@ TEST(ProblemTest, Proxy) {
   TestASLBuilder builder(info);
   builder.MakeVariable(0);
   Problem p(builder.GetProblem());
-  EXPECT_DEATH(builder.MakeVariable(0), "");
   EXPECT_EQ(info.num_vars, p.num_vars());
 }
 

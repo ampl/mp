@@ -26,8 +26,7 @@
 
 int main(int, char **argv) {
   try {
-    mp::SolverApp<mp::LocalSolver>().Run(argv);
-    return 0;
+    return mp::SolverApp<mp::LocalSolver>().Run(argv);
   } catch (const std::exception &e) {
     fmt::print(stderr, "Error: {}\n", e.what());
   }

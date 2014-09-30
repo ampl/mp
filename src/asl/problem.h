@@ -268,7 +268,6 @@ class Problem {
 
   friend class internal::ASLBuilder;
   friend class ASLSolver;
-  friend class SolutionWriter;
 
   // Frees all the arrays that were allocated by modifications to the problem.
   void Free();
@@ -283,6 +282,7 @@ class Problem {
     Proxy(ASL *asl) : asl_(asl) {}
 
     friend class Problem;
+    friend class ASLSolver;
     friend class internal::ASLBuilder;
 
     void Free() {

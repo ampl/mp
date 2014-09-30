@@ -34,26 +34,6 @@ namespace ls = localsolver;
 
 // TODO: remove
 /*
-  ls::LSExpression VisitRem(BinaryExpr e) {
-    return ConvertBinary(ls::O_Mod, e);
-  }
-  ls::LSExpression VisitNumericLess(BinaryExpr e) {
-    return model_.createExpression(ls::O_Max,
-        ConvertBinary(ls::O_Sub, e), MakeConst(0));
-  }
-  ls::LSExpression VisitIntDiv(BinaryExpr e) {
-    ls::LSExpression rem = VisitRem(e);
-    return model_.createExpression(ls::O_Div,
-        model_.createExpression(ls::O_Sub, rem.getOperand(0), rem),
-        rem.getOperand(1));
-  }
-
-  ls::LSExpression VisitRound(BinaryExpr e) {
-    // round does nothing because Gecode supports only integer expressions.
-    RequireZeroRHS(e, "round");
-    return Visit(e.lhs());
-  }
-
   ls::LSExpression VisitTrunc(BinaryExpr e) {
     // trunc does nothing because Gecode supports only integer expressions.
     RequireZeroRHS(e, "trunc");
@@ -115,6 +95,7 @@ namespace ls = localsolver;
 };*/
 
 class LocalSolver;
+class LSProblem;
 
 // This class provides methods for building a problem in LocalSolver format.
 class LSProblemBuilder :
@@ -141,6 +122,8 @@ class LSProblemBuilder :
 
   typedef ProblemBuilder<LSProblemBuilder, ls::LSExpression> Base;
 
+  friend class LSProblem;
+
   static ls::lsint MakeInt(int value) { return value; }
 
   ls::lsint ConvertToInt(double value) {
@@ -152,12 +135,25 @@ class LSProblemBuilder :
     return model_.createExpression(ls::O_Sub, MakeInt(0), arg);
   }
 
+  void RequireZero(ls::LSExpression e, const char *where) {
+    switch (e.getOperator()) {
+    case ls::O_Const:
+      if (e.getValue() == 0)
+        return;
+    case ls::O_Float:
+      if (e.getDoubleValue() == 0)
+        return;
+    }
+    // TODO: throw exception
+  }
+
  public:
-  explicit LSProblemBuilder(LocalSolver &solver);
+  explicit LSProblemBuilder(ls::LSModel model);
 
   int num_vars() const { return vars_.size(); }
   int num_continuous_vars() const { return num_continuous_vars_; }
-  int num_objs() const { return objs_.size(); }
+  int num_objs() const { return model_.getNbObjectives(); }
+  int num_cons() const { return cons_.size(); }
 
   // TODO
 
@@ -309,9 +305,7 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
   ls::LocalSolver solver_;
   int timelimit_;
 
-  int GetTimeLimit(const SolverOption &) const {
-    return timelimit_;
-  }
+  int GetTimeLimit(const SolverOption &) const { return timelimit_; }
 
   void SetTimeLimit(const SolverOption &opt, int value) {
     if (value <= 0)
@@ -320,16 +314,20 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
   }
 
  private:
-  void DoSolve(Problem &, SolutionHandler &) {} // TODO
+  int DoSolve(Problem &, SolutionHandler &) { return 0; } // TODO
 
  public:
-  LocalSolver();
+  typedef LSProblem Problem;
 
-  typedef LSProblemBuilder ProblemBuilder;
+  LocalSolver();
 
   ls::LSModel model() { return solver_.getModel(); }
 
-  void Solve(LSProblemBuilder &pb);
+  // ProblemBuilder is passed to Solve because if the problem has been
+  // transformed, it should apply transformations to the solution too.
+  void Solve(ProblemBuilder &builder, SolutionHandler &sh);
+
+  ls::LSModel GetProblemBuilder() { return solver_.getModel(); }
 };
 }  // namespace mp
 

@@ -53,6 +53,8 @@ namespace {
 #define EXPECT_FILES_EQ(expected_file, actual_file) \
     EXPECT_PRED_FORMAT2(AssertFilesEqual, expected_file, actual_file)
 
+typedef mp::SolverApp<mp::SMPSWriter> SMPSWriterApp;
+
 TEST(SMPSWriterTest, SMPSOutput) {
   static const char *const EXTS[] = {".cor", ".sto", ".tim"};
   static const char *const PROBLEMS[] = {
@@ -62,13 +64,13 @@ TEST(SMPSWriterTest, SMPSOutput) {
   };
   int count = 0;
   for (size_t i = 0, n = sizeof(PROBLEMS) / sizeof(*PROBLEMS); i != n; ++i) {
-    mp::SMPSWriter w;
+    SMPSWriterApp app;
     std::string path(MP_TEST_DATA_DIR "/smps/");
     path += PROBLEMS[i];
     WriteFile("test.nl", ReadFile(path + ".nl"));
     WriteFile("test.col", ReadFile(path + ".col"));
     WriteFile("test.row", ReadFile(path + ".row"));
-    EXPECT_EQ(0, w.Run(Args("", "test.nl")));
+    EXPECT_EQ(0, app.Run(Args("", "test.nl")));
     for (size_t j = 0, n = sizeof(EXTS) / sizeof(*EXTS); j != n; ++j, ++count) {
       EXPECT_FILES_EQ(
           std::string(path) + EXTS[j], std::string("test") + EXTS[j]);
@@ -78,29 +80,29 @@ TEST(SMPSWriterTest, SMPSOutput) {
 }
 
 TEST(SMPSWriterTest, NonlinearNotSupported) {
-  mp::SMPSWriter w;
+  SMPSWriterApp app;
   WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/smps/nonlinear.nl"));
-  EXPECT_THROW(w.Run(Args("", "test.nl")), mp::Error);
+  EXPECT_THROW(app.Run(Args("", "test.nl")), mp::Error);
 }
 
 TEST(SMPSWriterTest, MoreThan2StagesNotSupported) {
-  mp::SMPSWriter w;
+  SMPSWriterApp app;
   WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/smps/three-stage.nl"));
-  EXPECT_THROW(w.Run(Args("", "test.nl")), mp::Error);
+  EXPECT_THROW(app.Run(Args("", "test.nl")), mp::Error);
 }
 
 TEST(SMPSWriterTest, RangesNotSupported) {
-  mp::SMPSWriter w;
+  SMPSWriterApp app;
   WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/smps/range-con.nl"));
-  EXPECT_THROW(w.Run(Args("", "test.nl")), mp::Error);
+  EXPECT_THROW(app.Run(Args("", "test.nl")), mp::Error);
 }
 
 TEST(SMPSWriterTest, InconsistentProbabilities) {
-  mp::SMPSWriter w;
+  SMPSWriterApp app;
   std::string filename = MP_TEST_DATA_DIR "/smps/inconsistent-probabilities";
   WriteFile("test.nl", ReadFile(filename + ".nl"));
   WriteFile("test.row", ReadFile(filename + ".row"));
   WriteFile("test.col", ReadFile(filename + ".col"));
-  EXPECT_THROW(w.Run(Args("", "test.nl")), mp::Error);
+  EXPECT_THROW(app.Run(Args("", "test.nl")), mp::Error);
 }
 }

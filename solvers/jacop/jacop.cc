@@ -509,7 +509,7 @@ JNIEXPORT jboolean JNICALL JaCoPSolver::Stop(JNIEnv *, jobject, jlong data) {
   return JNI_FALSE;
 }
 
-void JaCoPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
+int JaCoPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
   std::vector<const char*> jvm_options(jvm_options_.size() + 2);
@@ -680,7 +680,6 @@ void JaCoPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
     solve_code_ = 200;
     status_ = "infeasible problem";
   }
-  p.set_solve_code(solve_code_);
 
   std::vector<double> final_solution;
   if (found) {
@@ -711,6 +710,7 @@ void JaCoPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
           "Output time = {:.6f}s\n",
           setup_time, solution_time, output_time);
   }
+  return solve_code_;
 }
 
 SolverPtr CreateSolver(const char *) { return SolverPtr(new JaCoPSolver()); }

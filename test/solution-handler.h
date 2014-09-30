@@ -11,17 +11,15 @@ class TestSolutionHandler : public mp::BasicSolutionHandler {
   mp::Problem &problem_;
   std::string message_;
   double obj_value_;
-  int solve_code_;
   const double *primal_;
   const double *dual_;
 
  public:
   explicit TestSolutionHandler(mp::Problem &p)
   : problem_(p), obj_value_(std::numeric_limits<double>::quiet_NaN()),
-    solve_code_(0), primal_(0), dual_(0) {}
+    primal_(0), dual_(0) {}
   virtual ~TestSolutionHandler() {}
 
-  int solve_code() const { return solve_code_; }
   double obj_value() const { return obj_value_; }
   const std::string &message() const { return message_; }
   const double *primal() const { return primal_; }
@@ -29,7 +27,6 @@ class TestSolutionHandler : public mp::BasicSolutionHandler {
 
   void HandleSolution(fmt::StringRef message,
         const double *primal, const double *dual, double obj_value) {
-    solve_code_ = problem_.solve_code();
     message_ = message;
     obj_value_ = obj_value;
     primal_ = primal;

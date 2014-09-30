@@ -23,6 +23,7 @@
 #ifndef MP_ASLBUILDER_H_
 #define MP_ASLBUILDER_H_
 
+#include "mp/arrayref.h"
 #include "mp/format.h"
 #include "mp/safeint.h"
 #include "expr.h"
@@ -31,36 +32,6 @@
 struct Static;
 
 namespace mp {
-
-// A reference to an immutable array.
-template <typename T>
-class ArrayRef {
- private:
-  const T *data_;
-  std::size_t size_;
-
- public:
-  ArrayRef(const T *data, std::size_t size) : data_(data), size_(size) {}
-
-  template <typename U>
-  ArrayRef(ArrayRef<U> other) : data_(other.data()), size_(other.size()) {}
-
-  template <typename Vector>
-  ArrayRef(const Vector &other) : data_(other.data()), size_(other.size()) {}
-
-  template <std::size_t SIZE>
-  ArrayRef(const T (&data)[SIZE]) : data_(data), size_(SIZE) {}
-
-  const T *data() const { return data_; }
-  std::size_t size() const { return size_; }
-
-  const T &operator[](std::size_t i) const { return data_[i]; }
-};
-
-template <typename T>
-ArrayRef<T> MakeArrayRef(const T *data, std::size_t size) {
-  return ArrayRef<T>(data, size);
-}
 
 struct NLHeader;
 
@@ -99,14 +70,12 @@ class ASLBuilder {
   FMT_DISALLOW_COPY_AND_ASSIGN(ASLBuilder);
 
   void SetBounds(double *lbs, double *&ubs, int index, double lb, double ub) {
-    if (!ubs)
-      ubs = lbs;
-    if (lbs != ubs) {
+    if (ubs) {
       lbs[index] = lb;
       ubs[index] = ub;
     } else {
       lbs[2 * index] = lb;
-      ubs[2 * index + 1] = ub;
+      lbs[2 * index + 1] = ub;
     }
   }
 
@@ -159,6 +128,9 @@ class ASLBuilder {
   }
 
  public:
+  int num_vars() const { return asl_->i.n_var_; }
+  int num_cons() const { return asl_->i.n_con_; }
+
   class CallArgHandler {
    private:
     expr_f *expr_;
@@ -193,6 +165,8 @@ class ASLBuilder {
  private:
   CallArgHandler DoBeginCall(Function f, int num_args);
 
+  void Init(ASL *asl);
+
  public:
   typedef mp::Expr Expr;
   typedef mp::NumericExpr NumericExpr;
@@ -200,7 +174,12 @@ class ASLBuilder {
   typedef mp::Variable Variable;
   typedef mp::CountExpr CountExpr;
 
-  explicit ASLBuilder(ASL *asl = 0);
+  explicit ASLBuilder(ASL *asl = 0) { Init(asl); }
+  explicit ASLBuilder(Problem::Proxy proxy) {
+    Init(proxy.asl_);
+    proxy.asl_ = 0;
+    own_asl_ = true;
+  }
   ~ASLBuilder();
 
   // Returns a built problem via proxy. No builder methods other than
@@ -209,7 +188,6 @@ class ASLBuilder {
     if (!own_asl_)
       throw Error("ASL problem is not transferable");
     ASL *asl = asl_;
-    asl_ = 0;
     own_asl_ = false;
     return Problem::Proxy(asl);
   }
@@ -296,7 +274,19 @@ class ASLBuilder {
     }
   };
 
-  typedef LinearConBuilder LinearVarBuilder;
+  class LinearVarBuilder {
+   private:
+    linpart *linpart_;
+
+   public:
+    explicit LinearVarBuilder(linpart *lp) : linpart_(lp) {}
+
+    void AddTerm(int var_index, double coef) {
+      linpart_->v.i = var_index;
+      linpart_->fac = coef;
+      ++linpart_;
+    }
+  };
 
   LinearObjBuilder GetLinearObjBuilder(int index, int) {
     return LinearObjBuilder(this, asl_->i.Ograd_ + index);
@@ -304,10 +294,7 @@ class ASLBuilder {
   LinearConBuilder GetLinearConBuilder(int index, int) {
     return LinearConBuilder(this, index);
   }
-  LinearVarBuilder GetLinearVarBuilder(int, int) {
-    // TODO
-    return LinearVarBuilder(0, 0);
-  }
+  LinearVarBuilder GetLinearVarBuilder(int index, int num_terms);
 
   class ColumnSizeHandler {
    private:

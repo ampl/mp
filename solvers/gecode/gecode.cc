@@ -744,7 +744,7 @@ GecodeSolver::ProblemPtr GecodeSolver::Search(
   return final_problem;
 }
 
-void GecodeSolver::DoSolve(Problem &p, SolutionHandler &sh) {
+int GecodeSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
   SetStatus(-1, "");
@@ -814,7 +814,6 @@ void GecodeSolver::DoSolve(Problem &p, SolutionHandler &sh) {
     solve_code_ = INFEASIBLE;
     status_ = "infeasible problem";
   }
-  p.set_solve_code(solve_code_);
 
   std::vector<double> final_solution;
   if (solution.get()) {
@@ -840,6 +839,7 @@ void GecodeSolver::DoSolve(Problem &p, SolutionHandler &sh) {
           "Output time = {:.6f}s\n",
           setup_time, solution_time, output_time);
   }
+  return solve_code_;
 }
 
 SolverPtr CreateSolver(const char *) { return SolverPtr(new GecodeSolver()); }

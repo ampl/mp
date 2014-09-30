@@ -360,7 +360,7 @@ class GecodeSolver : public ASLSolver {
                     Gecode::Search::Statistics &stats, SolutionHandler &sh);
 
  protected:
-  void DoSolve(Problem &p, SolutionHandler &sh);
+  int DoSolve(Problem &p, SolutionHandler &sh);
 
  public:
   GecodeSolver();

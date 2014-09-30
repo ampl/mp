@@ -46,8 +46,7 @@ SolverTest::EvalResult SolverTest::Solve(Problem &p) {
     }
   };
   TestSolutionHandler sh;
-  solver_->Solve(p, sh);
-  sh.result.set_solve_code(p.solve_code());
+  sh.result.set_solve_code(solver_->Solve(p, sh));
   return sh.result;
 }
 
@@ -80,10 +79,11 @@ SolveResult SolverTest::Solve(
     mp::ASLSolver &s, Problem &p, const char *stub, const char *opt) {
   TestSolutionHandler sh(p);
   const std::string DATA_DIR = MP_TEST_DATA_DIR "/";
-  if (s.ProcessArgs(Args(s.name(), "-s", (DATA_DIR + stub).c_str(), opt), p))
-    s.Solve(p, sh);
+  p.Read(DATA_DIR + stub);
+  int solve_code = 0;
+  if (s.ParseOptions(Args(opt), 0, &p))
+    solve_code = s.Solve(p, sh);
   const string &message = sh.message();
-  int solve_code = sh.solve_code();
   EXPECT_GE(solve_code, 0);
   bool solved = true;
   if (solve_code < 100) {

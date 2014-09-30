@@ -195,9 +195,14 @@ ASLBuilder::CallArgHandler ASLBuilder::DoBeginCall(Function f, int num_args) {
   return CallArgHandler(result, num_args);
 }
 
-ASLBuilder::ASLBuilder(ASL *asl)
-: asl_(asl), own_asl_(false), r_ops_(0), flags_(0),
-  nz_(0), nderp_(0), static_(0) {
+void ASLBuilder::Init(ASL *asl) {
+  asl_ = asl;
+  own_asl_ = false;
+  r_ops_ = 0;
+  flags_ = ASL_STANDARD_OPCODES;
+  nz_ = 0;
+  nderp_ = 0;
+  static_ = 0;
   if (!asl) {
     asl_ = ASL_alloc(ASL_read_fg);
     own_asl_ = true;
@@ -522,6 +527,15 @@ ASLBuilder::LinearConBuilder::LinearConBuilder(ASLBuilder *b, int con_index)
   a_colstarts_ = info.A_colstarts_ + 1;
   if (a_vals_)
     term_ = 0;
+}
+
+ASLBuilder::LinearVarBuilder ASLBuilder::GetLinearVarBuilder(
+    int index, int num_terms) {
+  // TODO: handle position (not passed yet)
+  cexp *e = reinterpret_cast<ASL_fg*>(asl_)->I.cexps_ + index - static_->_nv0;
+  e->nlin = num_terms;
+  e->L = Allocate<linpart>(num_terms * sizeof(linpart));
+  return LinearVarBuilder(e->L);
 }
 
 ASLBuilder::ColumnSizeHandler ASLBuilder::GetColumnSizeHandler() {

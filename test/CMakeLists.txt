@@ -78,7 +78,7 @@ add_mp_test(util-test util-test.cc)
 
 add_mp_test(clock-test clock-test.cc)
 add_mp_test(error-test error-test.cc)
-add_mp_test(nl-test nl-test.cc)
+add_mp_test(nl-test nl-test.cc mock-problem-builder.h)
 add_mp_test(option-test option-test.cc)
 
 add_executable(test-helper test-helper.cc)

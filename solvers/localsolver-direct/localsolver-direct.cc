@@ -35,8 +35,8 @@ inline double GetValue(localsolver::LSExpression e) {
 
 namespace mp {
 
-LSProblemBuilder::LSProblemBuilder(LocalSolver &solver)
-  : model_(solver.model()), num_continuous_vars_(0) {
+LSProblemBuilder::LSProblemBuilder(ls::LSModel model)
+  : model_(model), num_continuous_vars_(0) {
 }
 
 void LSProblemBuilder::BeginBuild(const NLHeader &header) {
@@ -79,40 +79,51 @@ void LSProblemBuilder::EndBuild() {
 ls::LSExpression LSProblemBuilder::MakeUnary(
     expr::Kind kind, ls::LSExpression arg) {
   switch (kind) {
-    case expr::FLOOR: return model_.createExpression(ls::O_Floor, arg);
-    case expr::CEIL:  return model_.createExpression(ls::O_Ceil, arg);
-    case expr::ABS:   return model_.createExpression(ls::O_Abs, arg);
-    case expr::MINUS: return Negate(arg);
-    case expr::TANH: {
-      ls::LSExpression exp_x = model_.createExpression(ls::O_Exp, arg);
-      ls::LSExpression exp_minus_x =
-          model_.createExpression(ls::O_Exp, Negate(arg));
-      return model_.createExpression(
-            ls::O_Div, model_.createExpression(ls::O_Sub, exp_x, exp_minus_x),
-            model_.createExpression(ls::O_Sum, exp_x, exp_minus_x));
-    }
-    case expr::TAN:   return model_.createExpression(ls::O_Tan, arg);
-    case expr::SQRT:  return model_.createExpression(ls::O_Sqrt, arg);
-    case expr::SINH:  break; // TODO
-    case expr::SIN:   return model_.createExpression(ls::O_Sin, arg);
-    case expr::LOG10:
-      return model_.createExpression(
-            ls::O_Div, model_.createExpression(ls::O_Log, arg), std::log(10.0));
-    case expr::LOG:   return model_.createExpression(ls::O_Log, arg);
-    case expr::EXP:   return model_.createExpression(ls::O_Exp, arg);
-    case expr::COSH:  break; // TODO
-    case expr::COS:   return model_.createExpression(ls::O_Cos, arg);
-    case expr::ATANH:
-    case expr::ASINH:
-    case expr::ACOSH:
-      break; // TODO
-    case expr::POW2:
-      return model_.createExpression(ls::O_Pow, arg, MakeInt(2));
-    case expr::ATAN: case expr::ASIN: case expr::ACOS:
-      // LocalSolver doesn't support these expressions.
-      // Fall through.
-    default:
-      break;
+  case expr::FLOOR:
+    return model_.createExpression(ls::O_Floor, arg);
+  case expr::CEIL:
+    return model_.createExpression(ls::O_Ceil, arg);
+  case expr::ABS:
+    return model_.createExpression(ls::O_Abs, arg);
+  case expr::MINUS:
+    return Negate(arg);
+  case expr::TANH: {
+    ls::LSExpression exp_x = model_.createExpression(ls::O_Exp, arg);
+    ls::LSExpression exp_minus_x =
+        model_.createExpression(ls::O_Exp, Negate(arg));
+    return model_.createExpression(
+          ls::O_Div, model_.createExpression(ls::O_Sub, exp_x, exp_minus_x),
+          model_.createExpression(ls::O_Sum, exp_x, exp_minus_x));
+  }
+  case expr::TAN:
+    return model_.createExpression(ls::O_Tan, arg);
+  case expr::SQRT:
+    return model_.createExpression(ls::O_Sqrt, arg);
+  case expr::SINH:
+    break; // TODO
+  case expr::SIN:   return model_.createExpression(ls::O_Sin, arg);
+  case expr::LOG10:
+    return model_.createExpression(
+          ls::O_Div, model_.createExpression(ls::O_Log, arg), std::log(10.0));
+  case expr::LOG:
+    return model_.createExpression(ls::O_Log, arg);
+  case expr::EXP:
+    return model_.createExpression(ls::O_Exp, arg);
+  case expr::COSH:
+    break; // TODO
+  case expr::COS:
+    return model_.createExpression(ls::O_Cos, arg);
+  case expr::ATANH:
+  case expr::ASINH:
+  case expr::ACOSH:
+    break; // TODO
+  case expr::POW2:
+    return model_.createExpression(ls::O_Pow, arg, MakeInt(2));
+  case expr::ATAN: case expr::ASIN: case expr::ACOS:
+    // LocalSolver doesn't support these expressions.
+    // Fall through.
+  default:
+    break;
   }
   // TODO: report type of expression
   return Base::MakeUnary(kind, arg);
@@ -121,31 +132,40 @@ ls::LSExpression LSProblemBuilder::MakeUnary(
 ls::LSExpression LSProblemBuilder::MakeBinary(
     expr::Kind kind, ls::LSExpression lhs, ls::LSExpression rhs) {
   switch (kind) {
-    case expr::ADD:
-      return model_.createExpression(ls::O_Sum, lhs, rhs);
-    case expr::SUB:
-      return model_.createExpression(ls::O_Sub, lhs, rhs);
-    case expr::MUL:
-      return model_.createExpression(ls::O_Prod, lhs, rhs);
-    case expr::DIV:
-      return model_.createExpression(ls::O_Div, lhs, rhs);
-    case expr::INT_DIV:
-    case expr::MOD:
-      break; // TODO
-    case expr::POW:
-    case expr::POW_CONST_BASE:
-    case expr::POW_CONST_EXP:
-      return model_.createExpression(ls::O_Pow, lhs, rhs);
-    case expr::LESS:
-    case expr::PRECISION:
-    case expr::ROUND:
-    case expr::TRUNC:
-      break; // TODO
-    case expr::ATAN2:
-      // LocalSolver doesn't support atan2.
-      // Fall through.
-    default:
-      break;
+  case expr::ADD:
+    return model_.createExpression(ls::O_Sum, lhs, rhs);
+  case expr::SUB:
+    return model_.createExpression(ls::O_Sub, lhs, rhs);
+  case expr::MUL:
+    return model_.createExpression(ls::O_Prod, lhs, rhs);
+  case expr::DIV:
+    return model_.createExpression(ls::O_Div, lhs, rhs);
+  case expr::INT_DIV: {
+    ls::LSExpression rem = model_.createExpression(ls::O_Mod, lhs, rhs);
+    return model_.createExpression(ls::O_Div,
+        model_.createExpression(ls::O_Sub, lhs, rem), rhs);
+  }
+  case expr::MOD:
+    return model_.createExpression(ls::O_Mod, lhs, rhs);
+  case expr::POW:
+  case expr::POW_CONST_BASE:
+  case expr::POW_CONST_EXP:
+    return model_.createExpression(ls::O_Pow, lhs, rhs);
+  case expr::LESS:
+    return model_.createExpression(ls::O_Max,
+        model_.createExpression(ls::O_Sub, lhs, rhs), MakeInt(0));
+  case expr::PRECISION:
+    break; // TODO
+  case expr::ROUND:
+    RequireZero(rhs, "round");
+    return model_.createExpression(ls::O_Round, lhs);
+  case expr::TRUNC:
+    break; // TODO
+  case expr::ATAN2:
+    // LocalSolver doesn't support atan2.
+    // Fall through.
+  default:
+    break;
   }
   return Base::MakeBinary(kind, lhs, rhs);
 }
@@ -210,10 +230,8 @@ LocalSolver::LocalSolver()
   return result;
 }*/
 
-void LocalSolver::Solve(LSProblemBuilder &pb) {
+void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
-
-  pb.EndBuild();
 
   // Set options. LS requires this to be done after the model is closed.
   ls::LSPhase phase = solver_.createPhase();
@@ -256,10 +274,10 @@ void LocalSolver::Solve(LSProblemBuilder &pb) {
   // TODO
   //p.set_solve_code(solve_code);
 
-  int num_vars = pb.num_vars();
+  int num_vars = builder.num_vars();
   ls::LSExpression const *vars = 0; //converter.vars();
   std::vector<double> solution(num_vars);
-  int num_continuous_vars = pb.num_continuous_vars();
+  int num_continuous_vars = builder.num_continuous_vars();
   for (int i = 0; i < num_continuous_vars; ++i)
     solution[i] = vars[i].getDoubleValue();
   for (int i = num_continuous_vars; i < num_vars; ++i)
@@ -270,13 +288,12 @@ void LocalSolver::Solve(LSProblemBuilder &pb) {
   w.write("{}: {}\n", long_name(), status);
   w.write("{}", solver_.getStatistics().toString());
   double obj_val = std::numeric_limits<double>::quiet_NaN();
-  if (pb.num_objs() != 0) {
+  if (builder.num_objs() != 0) {
     obj_val = GetValue(solver_.getModel().getObjective(0));
     w.write("objective {}", FormatObjValue(obj_val));
   }
-  // TODO: write solution
-  //HandleSolution(pb, w.c_str(),
-  //    solution.empty() ? 0 : solution.data(), 0, obj_val);
+  sh.HandleSolution(w.c_str(),
+                    solution.empty() ? 0 : solution.data(), 0, obj_val);
   double output_time = GetTimeAndReset(time);
 
   if (timing()) {

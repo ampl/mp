@@ -24,7 +24,7 @@
 
 int main(int, char **argv) {
   try {
-    return mp::SMPSWriter().Run(argv);
+    return mp::SolverApp<mp::SMPSWriter>().Run(argv);
   } catch (const std::exception &e) {
     fmt::print(stderr, "Error: {}\n", e.what());
   }

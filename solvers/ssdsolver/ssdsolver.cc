@@ -58,7 +58,7 @@ SSDSolver::SSDSolver() : ASLSolver("ssdsolver", 0, SSDSOLVER_VERSION),
       &SSDSolver::GetSolverName, &SSDSolver::SetSolverName);
 }
 
-void SSDSolver::DoSolve(Problem &p, SolutionHandler &sh) {
+int SSDSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   Function ssd_uniform;
   int num_scenarios = p.num_logical_cons();
   int num_vars = p.num_vars();
@@ -198,7 +198,6 @@ void SSDSolver::DoSolve(Problem &p, SolutionHandler &sh) {
     message = "error";
     break;
   }
-  p.set_solve_code(sol.solve_code());
 
   fmt::Writer w;
   w.write("{}: {}", long_name(), message);
@@ -206,6 +205,7 @@ void SSDSolver::DoSolve(Problem &p, SolutionHandler &sh) {
     w.write("; dominance {}", dominance_ub);
   w.write("\n{} iteration(s)", iteration);
   sh.HandleSolution(w.c_str(), solution.data(), 0, 0);
+  return sol.solve_code();
 }
 
 SolverPtr CreateSolver(const char *) { return SolverPtr(new SSDSolver()); }

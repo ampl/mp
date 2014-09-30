@@ -35,10 +35,13 @@
 #include <string>
 #include <vector>
 
+#include "mp/arrayref.h"
+#include "mp/clock.h"
 #include "mp/error.h"
 #include "mp/format.h"
 #include "mp/nl.h"
 #include "mp/option.h"
+#include "mp/sol.h"
 
 namespace mp {
 
@@ -543,7 +546,7 @@ class Solver : private ErrorHandler, private OutputHandler {
   // Sets the flags for Problem::Read.
   void set_read_flags(unsigned flags) { read_flags_ = flags; }
 
-  virtual void DoSolve(Problem &p, SolutionHandler &sh) = 0;
+  virtual int DoSolve(Problem &p, SolutionHandler &sh) = 0;
 
   // Sets a text to be displayed before option descriptions.
   void set_option_header(const char *header) { option_header_ = header; }
@@ -862,20 +865,106 @@ class Solver : private ErrorHandler, private OutputHandler {
   DoubleFormatter FormatObjValue(double value);
 };
 
-template <typename ProblemBuilder>
+template <typename ProblemBuilderT>
 class SolverImpl : public Solver {
  public:
+  typedef ProblemBuilderT ProblemBuilder;
+
   SolverImpl(fmt::StringRef name, fmt::StringRef long_name = 0,
              long date = 0, int flags = 0)
     : Solver(name, long_name, date, flags) {}
 };
 
-#ifdef MP_USE_UNIQUE_PTR
-typedef std::unique_ptr<Solver> SolverPtr;
-#else
-typedef std::auto_ptr<Solver> SolverPtr;
-inline SolverPtr move(SolverPtr p) { return p; }
-#endif
+// Adapts a solution for WriteSol.
+class SolutionAdapter {
+ private:
+  const char *message_;
+  mp::ArrayRef<int> options_;
+  mp::ArrayRef<double> values_;
+  mp::ArrayRef<double> dual_values_;
+
+ public:
+  SolutionAdapter(const char *message, mp::ArrayRef<int> options,
+                  mp::ArrayRef<double> values, mp::ArrayRef<double> dual_values)
+    : message_(message), options_(options),
+      values_(values), dual_values_(dual_values) {}
+
+  const char *message() const { return message_; }
+
+  int num_options() const { return options_.size(); }
+  int option(int index) const { return options_[index]; }
+
+  int num_values() const { return values_.size(); }
+  int value(int index) const { return values_[index]; }
+
+  int num_dual_values() const { return dual_values_.size(); }
+  int dual_value(int index) const { return dual_values_[index]; }
+
+  // TODO
+  //SuffixView var_suffixes() const { return problem_.var_suffixes(); }
+  //SuffixView con_suffixes() const { return problem_.con_suffixes(); }
+  //SuffixView obj_suffixes() const { return problem_.obj_suffixes(); }
+  //SuffixView problem_suffixes() const { return problem_.problem_suffixes(); }
+};
+
+template <typename Solver>
+class SolutionWriter : public SolutionHandler {
+ private:
+  std::string filename_;
+
+  Solver &solver_;
+
+  typedef typename Solver::ProblemBuilder ProblemBuilder;
+  ProblemBuilder &builder_;
+
+  // The number of feasible solutions found.
+  int num_solutions_;
+
+ public:
+  SolutionWriter(fmt::StringRef stub, Solver &s, ProblemBuilder &b)
+    : filename_(stub.c_str() + std::string(".sol")), solver_(s), builder_(b),
+      num_solutions_(0) {}
+
+  void HandleFeasibleSolution(fmt::StringRef message,
+        const double *values, const double *dual_values, double);
+  void HandleSolution(fmt::StringRef message,
+        const double *values, const double *dual_values, double);
+};
+
+template <typename Solver>
+void SolutionWriter<Solver>::HandleFeasibleSolution(
+    fmt::StringRef message, const double *values,
+    const double *dual_values, double) {
+  ++num_solutions_;
+  const char *solution_stub = solver_.solution_stub();
+  if (!*solution_stub)
+    return;
+  fmt::Writer w;
+  w << solution_stub << num_solutions_ << ".sol";
+  // TODO
+  //WriteSol(w.c_str(), message, values, dual_values);
+}
+
+template <typename Solver>
+void SolutionWriter<Solver>::HandleSolution(
+    fmt::StringRef message, const double *values,
+    const double *dual_values, double) {
+  // TODO: how to communicate information from the problem?
+  /*if (solver_.need_multiple_solutions()) {
+    Suffix nsol_suffix = problem_.FindSuffix("nsol", ASL_Sufkind_prob);
+    if (nsol_suffix)
+      nsol_suffix.set_values(&num_solutions_);
+  }
+  // TODO: pass to WriteSol
+  //option_info.bsname = const_cast<char*>(solver_.long_name());
+  //option_info.wantsol = solver_.wantsol();
+  const fint *options = problem_.asl_->i.ampl_options_;*/
+  // TODO: where to get num_vars and num_cons?
+  SolutionAdapter sol(message.c_str(), ArrayRef<int>(0, 0),
+      MakeArrayRef(values, values ? builder_.num_vars() : 0),
+      MakeArrayRef(dual_values, dual_values ? builder_.num_cons() : 0));
+  WriteSol(filename_, sol);
+}
 
 // A solver application.
 template <typename Solver>
@@ -888,31 +977,67 @@ class SolverApp {
   SolverApp() : options_(solver_) {}
 
   // Runs the application.
-  // It processes command-line arguments and solver options from argv
-  // and environment variables and, if the arguments contain the filename
-  // stub, reads the problem, solves it and writes the solution.
+  // It processes command-line arguments and, if the file name (stub) is
+  // specified, reads a problem from an .nl file, parses solver options
+  // from argv and environment variables, solves the problem and writes
+  // solution(s).
   // argv: an array of command-line arguments terminated by a null pointer
-  void Run(char **argv);
+  int Run(char **argv);
 };
 
 template <typename Solver>
-void SolverApp<Solver>::Run(char **argv) {
+int SolverApp<Solver>::Run(char **argv) {
   // Parse command-line arguments.
-  const char *stub = options_.Parse(argv);
-  if (!stub) return;
+  ++argv;
+  const char *filename = options_.Parse(argv);
+  if (!filename) return 0;
+
+  // Add .nl extension if necessary.
+  std::string nl_filename = filename, filename_no_ext = nl_filename;
+  const char *ext = std::strrchr(filename, '.');
+  if (!ext || std::strcmp(ext, ".nl") != 0)
+    nl_filename += ".nl";
+  else
+    filename_no_ext.resize(filename_no_ext.size() - 3);
+
   // Read the problem.
+  steady_clock::time_point start = steady_clock::now();
   typedef typename Solver::ProblemBuilder ProblemBuilder;
-  ProblemBuilder builder(solver_);
+  ProblemBuilder builder(solver_.GetProblemBuilder());
   ProblemBuilderToNLAdapter<ProblemBuilder> adapter(builder);
-  ReadNLFile(stub + std::string(".nl"), adapter);
+  ReadNLFile(nl_filename, adapter);
+  builder.EndBuild();
+  double read_time = GetTimeAndReset(start);
+
   // Parse solver options.
   solver_.ParseOptions(argv);
-  solver_.Solve(builder);
-  // TODO: solve problem
+  if (solver_.timing())
+    solver_.Print("Input time = {:.6f}s\n", read_time);
+
+  // Solve the problem writing solution(s) if necessary.
+  std::auto_ptr<SolutionHandler> sol_handler;
+  struct NullSolutionHandler : SolutionHandler {
+    void HandleFeasibleSolution(
+          fmt::StringRef, const double *, const double *, double) {}
+    void HandleSolution(
+          fmt::StringRef, const double *, const double *, double) {}
+  };
   if (options_.write_sol()) {
-    // TODO: write solution
+    sol_handler.reset(
+          new SolutionWriter<Solver>(filename_no_ext, solver_, builder));
+  } else {
+    sol_handler.reset(new NullSolutionHandler());
   }
+  solver_.Solve(builder, *sol_handler);
+  return 0;
 }
+
+#ifdef MP_USE_UNIQUE_PTR
+typedef std::unique_ptr<Solver> SolverPtr;
+#else
+typedef std::auto_ptr<Solver> SolverPtr;
+inline SolverPtr move(SolverPtr p) { return p; }
+#endif
 
 // Implement this function in your code returning a new concrete solver object.
 // options: Solver initialization options.

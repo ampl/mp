@@ -100,7 +100,7 @@ void WriteSol(fmt::StringRef filename, const Solution &sol) {
   for (int i = 0, n = sol.num_dual_values(); i < n; ++i)
     file.print("{}\n", sol.dual_value(i));
   file.print("objno 0 0\n"); // TODO: solve codes for objectives
-  internal::WriteSuffixes(file, sol.problem_suffixes());
+  //internal::WriteSuffixes(file, sol.problem_suffixes());
   // TODO: test
 }
 }  // namepace mp

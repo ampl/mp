@@ -113,14 +113,14 @@ class IlogCPSolver : public ASLSolver {
     double solution_time;
   };
 
-  void SolveWithCP(Problem &p, const NLToConcertConverter &converter,
-                   Stats &stats, SolutionHandler &sh);
-  void SolveWithCPLEX(Problem &p, const NLToConcertConverter &converter,
-                      Stats &stats, SolutionHandler &sh);
+  int SolveWithCP(Problem &p, const NLToConcertConverter &converter,
+                  Stats &stats, SolutionHandler &sh);
+  int SolveWithCPLEX(Problem &p, const NLToConcertConverter &converter,
+                     Stats &stats, SolutionHandler &sh);
 
  protected:
 
-  void DoSolve(Problem &p, SolutionHandler &sh);
+  int DoSolve(Problem &p, SolutionHandler &sh);
 
  public:
   IlogCPSolver();

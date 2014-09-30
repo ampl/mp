@@ -166,7 +166,7 @@ ls::LSExpression NLToLocalSolverConverter::VisitAllDiff(AllDiffExpr e) {
   return result;
 }
 
-void LocalSolver::DoSolve(Problem &p, SolutionHandler &sh) {
+int LocalSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
   // Set up an optimization problem in LocalSolver.
@@ -213,7 +213,6 @@ void LocalSolver::DoSolve(Problem &p, SolutionHandler &sh) {
     status = "unknown solution status";
     break;
   }
-  p.set_solve_code(solve_code);
 
   int num_vars = p.num_vars();;
   ls::LSExpression const *vars = converter.vars();
@@ -243,6 +242,7 @@ void LocalSolver::DoSolve(Problem &p, SolutionHandler &sh) {
           "Output time = {:.6f}s\n",
           setup_time, solution_time, output_time);
   }
+  return solve_code;
 }
 
 SolverPtr CreateSolver(const char *) { return SolverPtr(new LocalSolver()); }

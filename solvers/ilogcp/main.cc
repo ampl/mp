@@ -24,9 +24,10 @@
 
 int main(int, char **argv) {
   // Solver should be destroyed after any IloException is handled.
-  std::auto_ptr<mp::IlogCPSolver> s;
+  typedef mp::SolverApp<mp::IlogCPSolver> IlogCPApp;
+  std::auto_ptr<IlogCPApp> s;
   try {
-    s.reset(new mp::IlogCPSolver());
+    s.reset(new IlogCPApp());
     return s->Run(argv);
   } catch (const IloException &e) {
     fmt::print(stderr, "Error: {}\n", e);

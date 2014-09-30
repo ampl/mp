@@ -706,6 +706,7 @@ TEST(ASLBuilderTest, ASLBuilderLinear) {
   NLHeader header = MakeHeader();
   ASLPtr actual(ASL_read_f);
   ASLBuilder builder(actual.get());
+  builder.set_flags(0);
   builder.set_stub("test");
   builder.SetInfo(header);
   builder.EndBuild();
@@ -719,6 +720,7 @@ TEST(ASLBuilderTest, ASLBuilderTrivialProblem) {
   NLHeader header = MakeHeader();
   ASLPtr actual;
   ASLBuilder builder(actual.get());
+  builder.set_flags(0);
   builder.set_stub("test");
   builder.SetInfo(header);
   builder.EndBuild();
