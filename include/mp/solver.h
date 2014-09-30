@@ -546,8 +546,6 @@ class Solver : private ErrorHandler, private OutputHandler {
   // Sets the flags for Problem::Read.
   void set_read_flags(unsigned flags) { read_flags_ = flags; }
 
-  virtual int DoSolve(Problem &p, SolutionHandler &sh) = 0;
-
   // Sets a text to be displayed before option descriptions.
   void set_option_header(const char *header) { option_header_ = header; }
 
@@ -966,15 +964,29 @@ void SolutionWriter<Solver>::HandleSolution(
   WriteSol(filename_, sol);
 }
 
+// The default .nl reader.
+class NLReader {
+ public:
+  template <typename Handler>
+  void Read(fmt::StringRef filename, Handler &handler) {
+    ReadNLFile(filename, handler);
+  }
+};
+
 // A solver application.
-template <typename Solver>
-class SolverApp {
+// Solver: optimization solver class; normally a subclass of SolverImpl
+// Reader: .nl reader
+template <typename Solver, typename Reader = NLReader>
+class SolverApp : private Reader {
  private:
   Solver solver_;
   internal::SolverAppOptions options_;
 
  public:
   SolverApp() : options_(solver_) {}
+
+  Solver &solver() { return solver_; }
+  Reader &reader() { return *this; }
 
   // Runs the application.
   // It processes command-line arguments and, if the file name (stub) is
@@ -985,8 +997,8 @@ class SolverApp {
   int Run(char **argv);
 };
 
-template <typename Solver>
-int SolverApp<Solver>::Run(char **argv) {
+template <typename Solver, typename NLReaderT>
+int SolverApp<Solver, NLReaderT>::Run(char **argv) {
   // Parse command-line arguments.
   ++argv;
   const char *filename = options_.Parse(argv);
@@ -1006,7 +1018,7 @@ int SolverApp<Solver>::Run(char **argv) {
   // TODO: use name provider instead of passing filename to builder
   ProblemBuilder builder(solver_.GetProblemBuilder(filename_no_ext));
   ProblemBuilderToNLAdapter<ProblemBuilder> adapter(builder);
-  ReadNLFile(nl_filename, adapter);
+  this->Read(nl_filename, adapter);
   builder.EndBuild();
   double read_time = GetTimeAndReset(start);
 

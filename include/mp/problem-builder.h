@@ -54,6 +54,7 @@ class ProblemBuilder {
   }
 
   void SetInfo(const ProblemInfo &) {}
+  void EndBuild() {}
 
   // Sets an objective type and expression.
   // index: Index of an objective; 0 <= index < num_objs.

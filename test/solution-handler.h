@@ -4,11 +4,9 @@
 #include <limits>
 
 #include "mp/solver.h"
-#include "asl/problem.h"
 
 class TestSolutionHandler : public mp::BasicSolutionHandler {
  private:
-  mp::Problem &problem_;
   std::string message_;
   double obj_value_;
   const double *primal_;
@@ -16,7 +14,7 @@ class TestSolutionHandler : public mp::BasicSolutionHandler {
 
  public:
   explicit TestSolutionHandler(mp::Problem &p)
-  : problem_(p), obj_value_(std::numeric_limits<double>::quiet_NaN()),
+  : obj_value_(std::numeric_limits<double>::quiet_NaN()),
     primal_(0), dual_(0) {}
   virtual ~TestSolutionHandler() {}
 

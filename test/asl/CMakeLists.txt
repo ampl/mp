@@ -8,9 +8,7 @@ add_executable(numberofmap-speed-test numberofmap-speed-test.cc)
 target_link_libraries(numberofmap-speed-test asl)
 
 add_mp_test(problem-test problem-test.cc stderr-redirect.h LIBS asl)
-add_mp_test(solver-test PREFIX ../args.cc solver-test.cc LIBS asl)
-target_compile_definitions(mpsolver-test PRIVATE
-  MP_SYSINFO="${MP_SYSINFO}" MP_DATE=${MP_DATE})
+add_mp_test(aslsolver-test ../args.cc aslsolver-test.cc LIBS asl)
 
 add_library(ampltestsolver SHARED
   testsolver.cc ${PROJECT_SOURCE_DIR}/src/solver-c.cc)

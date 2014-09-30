@@ -454,6 +454,8 @@ class ProblemBuilderToNLAdapter {
   explicit ProblemBuilderToNLAdapter(ProblemBuilder &builder)
     : builder_(builder) {}
 
+  ProblemBuilder &builder() { return builder_; }
+
   typedef typename ProblemBuilder::Expr Expr;
   typedef typename ProblemBuilder::NumericExpr NumericExpr;
   typedef typename ProblemBuilder::LogicalExpr LogicalExpr;
@@ -1636,7 +1638,7 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
 
 // Reads an .nl file.
 template <typename Handler>
-void ReadNLFile(fmt::StringRef filename, Handler &h) {
+void ReadNLFile(fmt::StringRef filename, Handler &handler) {
   internal::NLFile file(filename);
   std::size_t size = file.size(), rounded_size = file.rounded_size();
   if (size == rounded_size) {
@@ -1644,10 +1646,10 @@ void ReadNLFile(fmt::StringRef filename, Handler &h) {
     // and therefore the mmap'ed buffer won't be zero terminated.
     fmt::internal::Array<char, 1> array;
     file.Read(array);
-    return ReadNLString(fmt::StringRef(&array[0], size), h, filename);
+    return ReadNLString(fmt::StringRef(&array[0], size), handler, filename);
   }
   MemoryMappedFile mapped_file(file.get(), rounded_size);
-  ReadNLString(fmt::StringRef(mapped_file.start(), size), h, filename);
+  ReadNLString(fmt::StringRef(mapped_file.start(), size), handler, filename);
 }
 }  // namespace mp
 

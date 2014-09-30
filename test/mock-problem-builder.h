@@ -26,15 +26,15 @@
 #include "gmock/gmock.h"
 #include "mp/problem-base.h"
 
-enum IDType { ID = 42, ID2, ID3, ID4 };
+enum IDType { NULL_ID = 0, ID = 42, ID2, ID3, ID4 };
 
 // Defines a field of type IDType, a construtor to set it and operator==
 // that compares objects by their ids. The constructor takes an argument of
 // type IDType, a distinct type used to make sure that the constructor is not
-// called by mistake in the tested code.
+// called with a wrong argument in the tested code.
 #define DEFINE_ID(Class) \
  public: \
-  explicit Class(IDType id) : id_(id) {} \
+  explicit Class(IDType id = NULL_ID) : id_(id) {} \
   friend bool operator==(Class lhs, Class rhs) { return lhs.id_ == rhs.id_; } \
  private: \
   IDType id_
@@ -47,8 +47,9 @@ struct BasicTestExpr {
 typedef BasicTestExpr<0> TestExpr;
 typedef BasicTestExpr<1> TestNumericExpr;
 typedef BasicTestExpr<2> TestLogicalExpr;
-typedef BasicTestExpr<3> TestVariable;
-typedef BasicTestExpr<4> TestCountExpr;
+
+struct TestVariable : TestNumericExpr { DEFINE_ID(TestVariable); };
+struct TestCountExpr : TestNumericExpr { DEFINE_ID(TestCountExpr); };
 
 template <int I>
 struct TestLinearExprBuilder {
@@ -79,8 +80,13 @@ struct TestArgHandler {
 
 typedef TestArgHandler<0> TestNumericArgHandler;
 typedef TestArgHandler<1, TestLogicalExpr> TestLogicalArgHandler;
-typedef TestArgHandler<2> TestCallArgHandler;
-typedef TestArgHandler<3> TestAllDiffArgHandler;
+typedef TestArgHandler<2> TestAllDiffArgHandler;
+
+struct TestCallArgHandler {
+  void AddArg(TestNumericExpr) {}
+  void AddArg(TestExpr) {}
+  DEFINE_ID(TestCallArgHandler);
+};
 
 struct TestPLTermHandler {
   void AddSlope(double) {}
@@ -88,6 +94,7 @@ struct TestPLTermHandler {
   DEFINE_ID(TestPLTermHandler);
 };
 
+// A mock problem builder.
 class MockProblemBuilder {
  public:
   typedef TestExpr Expr;
@@ -96,7 +103,18 @@ class MockProblemBuilder {
   typedef TestCountExpr CountExpr;
   typedef TestVariable Variable;
 
+  MockProblemBuilder() {}
+
+  // Constructs a MockProblemBuilder object and stores a pointer to it
+  // in ``builder``.
+  explicit MockProblemBuilder(MockProblemBuilder *&builder) { builder = this; }
+
+  MOCK_METHOD0(num_vars, int ());
+  MOCK_METHOD0(num_cons, int ());
+
   MOCK_METHOD1(SetInfo, void (const mp::ProblemInfo &info));
+  MOCK_METHOD0(EndBuild, void ());
+
   MOCK_METHOD3(SetObj, void (int index, mp::obj::Type type, NumericExpr expr));
   MOCK_METHOD2(SetCon, void (int index, NumericExpr expr));
   MOCK_METHOD2(SetLogicalCon, void (int index, LogicalExpr expr));

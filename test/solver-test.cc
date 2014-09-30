@@ -1,7 +1,7 @@
 /*
  Solver tests.
 
- Copyright (C) 2012 AMPL Optimization Inc
+ Copyright (C) 2014 AMPL Optimization Inc
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
@@ -20,13 +20,13 @@
  Author: Victor Zverovich
  */
 
-#include <gtest/gtest.h>
-#include "asl/aslsolver.h"
-#include "../args.h"
-#include "../solution-handler.h"
-#include "../util.h"
-#include "../gtest-extra.h"
-#include "stderr-redirect.h"
+#include "mp/problem-builder.h"
+
+#include "args.h"
+#include "gtest-extra.h"
+#include "mock-problem-builder.h"
+#include "solution-handler.h"
+#include "util.h"
 
 #include <cstdio>
 
@@ -50,22 +50,30 @@ namespace {
 
 typedef Solver::OptionPtr SolverOptionPtr;
 
-struct TestSolver : mp::ASLSolver {
+class TestSolver : public mp::Solver {
+ private:
+  MockProblemBuilder *builder;
+
+ public:
   TestSolver(const char *name = "testsolver",
       const char *long_name = 0, long date = 0)
-  : ASLSolver(name, long_name, date) {}
+  : Solver(name, long_name, date, 0), builder(0) {}
 
   using Solver::set_long_name;
   using Solver::set_version;
   using Solver::AddOption;
   using Solver::AddSuffix;
 
+  typedef MockProblemBuilder ProblemBuilder;
+
+  MockProblemBuilder *&GetProblemBuilder(fmt::StringRef) { return builder; }
+
   bool ParseOptions(char **argv,
       unsigned flags = Solver::NO_OPTION_ECHO, const Problem *p = 0) {
     return Solver::ParseOptions(argv, flags, p);
   }
 
-  int DoSolve(Problem &, SolutionHandler &) { return 0; }
+  int Solve(ProblemBuilder &, SolutionHandler &) { return 0; }
 };
 
 void CheckObjPrecision(int precision) {
@@ -282,17 +290,6 @@ TEST(SolverTest, OutputHandler) {
   s.Print("line {}\n", 1);
   s.Print("line {}\n", 2);
   EXPECT_EQ("line 1\nline 2\n", oh.output);
-}
-
-TEST(SolverTest, ReadingMinOrMaxWithZeroArgsFails) {
-  const char *names[] = {"min", "max"};
-  for (size_t i = 0, n = sizeof(names) / sizeof(*names); i < n; ++i) {
-    std::string stub =
-        fmt::format(MP_TEST_DATA_DIR "/{}-with-zero-args", names[i]);
-    Problem p;
-    EXPECT_THROW_MSG(p.Read(stub), mp::Error,
-                     fmt::format("{}.nl:13:1: too few arguments", stub));
-  }
 }
 
 TEST(SolverTest, ReportError) {
@@ -944,9 +941,9 @@ TEST(SolverTest, TimingOption) {
 
 const int NUM_SOLUTIONS = 3;
 
-struct SolCountingSolver : mp::ASLSolver {
+struct SolCountingSolver : mp::Solver {
   explicit SolCountingSolver(bool multiple_sol)
-  : ASLSolver("", "", 0, multiple_sol ? MULTIPLE_SOL : 0) {}
+  : Solver("", "", 0, multiple_sol ? MULTIPLE_SOL : 0) {}
   int DoSolve(Problem &, SolutionHandler &sh) {
     for (int i = 0; i < NUM_SOLUTIONS; ++i)
       sh.HandleFeasibleSolution("", 0, 0, 0);
@@ -980,27 +977,33 @@ bool Exists(fmt::StringRef filename) {
   return f != 0;
 }
 
+struct MockNLReader {
+  typedef mp::ProblemBuilderToNLAdapter<MockProblemBuilder> Handler;
+  MOCK_METHOD2(Read, void (fmt::StringRef filename, Handler &h));
+};
+
+// Matcher that compares a StringRef with a C string for equality.
+MATCHER_P(StringRefEq, str, "") { return std::strcmp(arg.c_str(), str) == 0; }
+
+// Matcher that checks if the argument of type ProblemBuilderToNLAdapter
+// points to the solver's problem builder.
+MATCHER_P(MatchBuilder, solver, "") {
+  return &arg.builder() == solver->GetProblemBuilder("");
+}
+
+// Test that SolverApp::Run reads the problem.
 TEST(SolverAppTest, ReadProblem) {
-  mp::SolverApp<TestSolver> app;
-  app.Run(Args("test", MP_TEST_DATA_DIR "/objconst"));
-  // TODO: test that Run reads the problem
-  //TestSolver s("test");
-  //Problem p;
-  //EXPECT_TRUE(s.ProcessArgs(
-  //              , p));
-  //EXPECT_EQ(1, p.num_vars());
+  mp::SolverApp<TestSolver, MockNLReader> app;
+  TestSolver &solver = app.solver();
+  MockNLReader &reader = app.reader();
+  EXPECT_CALL(reader, Read(StringRefEq("testproblem.nl"),
+                           MatchBuilder(&solver)));
+  app.Run(Args("test", "testproblem"));
 }
 
 // TODO
-/*
-TEST(SolverTest, ProcessArgsReadsProblem) {
-  TestSolver s;
-  Problem p;
-  EXPECT_TRUE(s.ProcessArgs(
-                Args("testprogram", MP_TEST_DATA_DIR "/objconst.nl"), p));
-  EXPECT_EQ(1, p.num_vars());
-}
 
+/*
 TEST(SolverTest, ProcessArgsParsesSolverOptions) {
   TestSolver s;
   Problem p;
@@ -1010,29 +1013,9 @@ TEST(SolverTest, ProcessArgsParsesSolverOptions) {
   EXPECT_EQ(5, s.wantsol());
 }
 
-TEST(SolverTest, ProcessArgsWithouStub) {
+TEST(SolverTest, ProcessArgsWithoutStub) {
   StderrRedirect redirect("out");
   TestSolver s;
-  Problem p;
-  EXPECT_FALSE(s.ProcessArgs(Args("testprogram"), p));
-  EXPECT_EQ(0, p.num_vars());
-}
-
-TEST(SolverTest, ProcessArgsError) {
-  TestSolver s;
-  Problem p;
-  std::string message;
-  try {
-    s.ProcessArgs(Args("testprogram", "nonexistent"), p);
-  } catch (const fmt::SystemError &e) {
-    message = e.what();
-  }
-  EXPECT_EQ(message.find("cannot open file nonexistent.nl"), 0);
-}
-
-TEST(SolverTest, ReadProblemNoStub) {
-  StderrRedirect redirect("out");
-  TestSolver s("test");
   Problem p;
   EXPECT_FALSE(s.ProcessArgs(Args("testprogram"), p));
   EXPECT_EQ(0, p.num_vars());
@@ -1196,5 +1179,4 @@ TEST(SolverTest, WriteSolutions) {
 */
 
 // TODO: separate SolverApp tests
-// TODO: split test into ASLSolverTest and SolverTest
 }

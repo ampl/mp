@@ -81,6 +81,10 @@ add_mp_test(error-test error-test.cc)
 add_mp_test(nl-test nl-test.cc mock-problem-builder.h)
 add_mp_test(option-test option-test.cc)
 
+add_mp_test(solver-test args.cc solver-test.cc)
+target_compile_definitions(solver-test
+  PRIVATE MP_SYSINFO="${MP_SYSINFO}" MP_DATE=${MP_DATE})
+
 add_executable(test-helper test-helper.cc)
 target_link_libraries(test-helper mp)
 if (MINGW)

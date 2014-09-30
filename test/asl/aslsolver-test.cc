@@ -1,7 +1,7 @@
 /*
- ASL solver.
+ ASLSolver tests.
 
- Copyright (C) 2014 AMPL Optimization Inc
+ Copyright (C) 2012 AMPL Optimization Inc
 
  Permission to use, copy, modify, and distribute this software and its
  documentation for any purpose and without fee is hereby granted,
@@ -20,35 +20,4 @@
  Author: Victor Zverovich
  */
 
-#ifndef MP_ASL_SOLVER_H_
-#define MP_ASL_SOLVER_H_
-
-#include "mp/solver.h"
-#include "asl/aslbuilder.h"
-
-namespace mp {
-
-class ASLSolver : public SolverImpl<internal::ASLBuilder> {
- private:
-  void RegisterSuffixes(ASL *asl);
-
- protected:
-  virtual int DoSolve(Problem &p, SolutionHandler &sh) = 0;
-
- public:
-  ASLSolver(fmt::StringRef name, fmt::StringRef long_name = 0,
-            long date = 0, int flags = 0);
-
-  Problem::Proxy GetProblemBuilder(fmt::StringRef stub);
-
-  // Solves a problem and report solutions via the solution handler.
-  int Solve(Problem &problem, SolutionHandler &sh);
-
-  int Solve(internal::ASLBuilder &builder, SolutionHandler &sh) {
-    Problem problem(builder.GetProblem());
-    return Solve(problem, sh);
-  }
-};
-}
-
-#endif  // MP_ASL_SOLVER_H_
+// TODO: test ASLSolver
