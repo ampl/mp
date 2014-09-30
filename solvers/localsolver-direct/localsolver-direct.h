@@ -143,6 +143,8 @@ class LSProblemBuilder :
     case ls::O_Float:
       if (e.getDoubleValue() == 0)
         return;
+      // The default clause silences warnings about unhandled enum values.
+    default: break;
     }
     // TODO: throw exception
   }
