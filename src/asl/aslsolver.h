@@ -36,11 +36,7 @@ class ASLSolver : public SolverImpl<internal::ASLBuilder> {
   ASLSolver(fmt::StringRef name, fmt::StringRef long_name = 0,
             long date = 0, int flags = 0);
 
-  Problem::Proxy GetProblemBuilder() {
-    Problem::Proxy proxy(ASL_alloc(ASL_read_fg));
-    RegisterSuffixes(proxy.asl_);
-    return proxy;
-  }
+  Problem::Proxy GetProblemBuilder(fmt::StringRef stub);
 
   // Solves a problem and report solutions via the solution handler.
   int Solve(Problem &problem, SolutionHandler &sh);

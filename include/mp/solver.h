@@ -1003,7 +1003,8 @@ int SolverApp<Solver>::Run(char **argv) {
   // Read the problem.
   steady_clock::time_point start = steady_clock::now();
   typedef typename Solver::ProblemBuilder ProblemBuilder;
-  ProblemBuilder builder(solver_.GetProblemBuilder());
+  // TODO: use name provider instead of passing filename to builder
+  ProblemBuilder builder(solver_.GetProblemBuilder(filename_no_ext));
   ProblemBuilderToNLAdapter<ProblemBuilder> adapter(builder);
   ReadNLFile(nl_filename, adapter);
   builder.EndBuild();

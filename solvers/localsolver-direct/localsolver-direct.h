@@ -327,7 +327,7 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
   // transformed, it should apply transformations to the solution too.
   void Solve(ProblemBuilder &builder, SolutionHandler &sh);
 
-  ls::LSModel GetProblemBuilder() { return solver_.getModel(); }
+  ls::LSModel GetProblemBuilder(fmt::StringRef) { return solver_.getModel(); }
 };
 }  // namespace mp
 
