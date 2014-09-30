@@ -179,6 +179,7 @@ class ASLBuilder {
     Init(proxy.asl_);
     proxy.asl_ = 0;
     own_asl_ = true;
+    flags_ = proxy.flags_ | ASL_STANDARD_OPCODES;
   }
   ~ASLBuilder();
 

@@ -54,7 +54,7 @@ void mp::ASLSolver::RegisterSuffixes(ASL *asl) {
 }
 
 mp::Problem::Proxy mp::ASLSolver::GetProblemBuilder(fmt::StringRef stub) {
-  Problem::Proxy proxy(ASL_alloc(ASL_read_fg));
+  Problem::Proxy proxy(ASL_alloc(ASL_read_fg), read_flags_);
   std::size_t stub_len = stub.size();
   Edaginfo &info = proxy.asl_->i;
   info.filename_ = reinterpret_cast<char*>(M1alloc_ASL(&info, stub_len + 5));

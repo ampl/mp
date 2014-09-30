@@ -278,8 +278,9 @@ class Problem {
   class Proxy {
    private:
     mutable ASL *asl_;
+    unsigned flags_;
 
-    Proxy(ASL *asl) : asl_(asl) {}
+    Proxy(ASL *asl, unsigned flags = 0) : asl_(asl), flags_(flags) {}
 
     friend class Problem;
     friend class ASLSolver;
@@ -291,11 +292,14 @@ class Problem {
     }
 
    public:
-    Proxy(const Proxy &other) : asl_(other.asl_) { other.asl_ = 0;}
+    Proxy(const Proxy &other) : asl_(other.asl_), flags_(other.flags_) {
+      other.asl_ = 0;
+    }
     Proxy &operator=(const Proxy &other) {
       Free();
       asl_ = other.asl_;
       other.asl_ = 0;
+      flags_ = other.flags_;
       return *this;
     }
     ~Proxy() { Free(); }
