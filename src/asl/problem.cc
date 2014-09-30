@@ -311,7 +311,6 @@ void Problem::Read(fmt::StringRef stub, unsigned flags) {
       std::strcmp(name.c_str() + name.size() - ext_size, EXT) != 0) {
     name << EXT;
   }
-  name_.assign(name.c_str(), name.size() - ext_size);
 
   asl_->p.want_derivs_ = 0;
   asl_->i.want_xpi0_ = (flags & READ_INITIAL_VALUES) != 0;
@@ -319,7 +318,7 @@ void Problem::Read(fmt::StringRef stub, unsigned flags) {
   builder.set_flags(ASL_allow_CLP | ASL_sep_U_arrays |
                     ASL_allow_missing_funcs |
                     internal::ASL_STANDARD_OPCODES | flags);
-  builder.set_stub(name_.c_str());
+  builder.set_stub(name.c_str());
   ASLHandler handler(builder);
   ReadNLFile(name.c_str(), handler);
   asl_->i.flags = handler.flags();

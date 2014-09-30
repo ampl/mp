@@ -239,7 +239,6 @@ class ProblemChanges;
 class Problem {
  private:
   ASL *asl_;
-  std::string name_;
   int var_capacity_;
   int obj_capacity_;
   int logical_con_capacity_;
@@ -323,7 +322,7 @@ class Problem {
 
   ~Problem();
 
-  const char *name() const { return name_.c_str(); }
+  const char *name() const { return asl_->i.filename_; }
 
   // Returns the number of variables.
   int num_vars() const { return asl_->i.n_var_; }

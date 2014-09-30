@@ -357,6 +357,9 @@ int SMPSWriter::DoSolve(Problem &p, SolutionHandler &) {
   SplitVarBoundsIntoScenarios(p, core_vars);
 
   std::string smps_basename = p.name();
+  std::string::size_type ext_pos = smps_basename.rfind('.');
+  if (ext_pos != std::string::npos)
+    smps_basename.resize(ext_pos);
 
   // Write the .tim file.
   {
