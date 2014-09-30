@@ -1,8 +1,3 @@
-20140617
-  asl.h com2eval.c conpval.c fgh_read.c jac2dim.h jacpdim.h misc.c
-pfg_read.c pshvprod.c psinfo.h xp2known.c:  new functions with
-apparent signatures
-    void hvcompd(real *hv, real *p, int co);
-    varno_t hvcomps(real *hv, real *p, int co, varno_t nz, varno_t *z);
-See netlib/ampl/solvers/changes for more details.  Becuase of new
-components in struct ASL, the entire library needs to be recompiled.
+20140929
+  pfg_read.c, pfghread.c:  fix a rarely seen bug in pfgh_read() that
+could cause Jacobians and Hessians to be miscomputed.

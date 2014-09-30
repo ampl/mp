@@ -2290,3 +2290,50 @@ sometimes required an intervening call on hvinit(nobj, ow, y) to
 function correctly.  This is no longer necessary.
   Because of new components in struct ASL, the entire library needs
 to be recompiled.
+
+20140618
+  obj_adj.c:  fix a possible fault.
+
+20140709
+  fg_write.c pfg_read.c qp_read.c stderr.c: change some (long), (Long)
+or (unsigned long) casts to (ssize_t) or (size_t).  Should be invisible.
+
+20140711
+  printf.c:  fix a glitch whereby
+	printf "%x\n", 0xabcd1234;
+printed "ffffffffabcd1234" rather than "abcd1234" on 64-bit MS Windows
+systems.
+
+20140718
+  asl.h fgh_read.c fg_read.c getstub.c jac0dim.c misc.c pfghread.c
+pfg_read.c writesol.c:  add command-line options "-b boundsfile" for
+a file that supplies primal bounds and an initial guess, overriding
+those in the .nl file, and "-o solfile" to specify the name of the
+.sol file.  (Compiling getstub.c and misc.c with
+-DNO_BOUNDSFILE_OPTION disables the new options.)
+  Because of changes to asl.h, the whole library needs to be
+recompiled.
+  Some of the above, plus con2val.c conpval.c jac2dim.c jacdim.c:
+argument stub to the jac*dim functions changed from char* to
+const char*, a change that should be invisible.
+
+20140723
+  readsol.c:  update to reflect AMPL changes over the years.
+
+20140826
+  getstub.[ch]: suppress echoing options when $solver_msg == 0; add
+Option_Info.option_echo flag ASL_OI_defer_bsname to print an initial
+"bsname:  " only if options are present (in $solver_options or on the
+command line).  Recognize variants -AMPLln and -AMPLls of -AMPL:
+-AMPLln assumes ASL_OI_never_echo and -AMPLls assumes
+ASL_OI_defer_bsname.
+
+20140924
+  writesol.c: if argument oi to write_sol_ASL, write_solf_ASL,
+and write_solx_ASL is not NULL and the amplflag is 0, honor
+the "8" bit of oi->wantsol:  echo the solution message only if
+oi->wantsol & 8 is zero.
+
+20140929
+  pfg_read.c, pfghread.c:  fix a rarely seen bug in pfgh_read() that
+could cause Jacobians and Hessians to be miscomputed.

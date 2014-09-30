@@ -106,7 +106,9 @@ Option_Info {
 	ASL_OI_tabexpand  = 32,	/* have shownames() expand tabs */
 	ASL_OI_addnewline = 64, /* have shownames() add a newline */
 				/* after each keyword description */
-	ASL_OI_showname_bits = 96
+	ASL_OI_showname_bits = 96,
+	ASL_OI_defer_bsname = 128 /* print "bsname: " only if there */
+				  /* are options to echo */
 	} ;
 
 #ifdef __cplusplus

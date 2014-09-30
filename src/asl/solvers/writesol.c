@@ -220,7 +220,12 @@ write_solfx_ASL(ASL *asl, const char *msg, double *x, double *y, Option_Info *oi
 			}
 		}
 	xycopy = 0;
-	if ((wantsol = oi ? oi->wantsol : 1) || amplflag) {
+	wantsol = 1;
+	if (!solfname)
+		solfname = asl->i.solfile;
+	if (oi && !solfname)
+		wantsol = oi->wantsol;
+	if (wantsol || amplflag) {
 		k = 0;
 		y1 = 0;
 		if ((x0 = x)) {
@@ -499,7 +504,7 @@ write_solfx_ASL(ASL *asl, const char *msg, double *x, double *y, Option_Info *oi
 			}
 		}
 	if (!amplflag) {
-		if (!(wantsol & 8))
+		if (!oi || !(oi->wantsol & 8))
 			printf("%s\n", msg);
 		if (wantsol & 2)
 			showsol(asl, x, n_var, asl->i.n_var0,

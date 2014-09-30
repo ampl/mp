@@ -380,7 +380,7 @@ jacpval_ASL(ASL *a, real *X, real *G, fint *nerror)
 	}
 
  int
-jacpdim_ASL(ASL *asl, char *stub, fint *M, fint *N, fint *NO, fint *NZ,
+jacpdim_ASL(ASL *asl, const char *stub, fint *M, fint *N, fint *NO, fint *NZ,
 	fint *MXROW, fint *MXCOL, ftnlen stub_len)
 {
 	FILE *nl;

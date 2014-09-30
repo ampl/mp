@@ -30,11 +30,7 @@ extern "C" {
 
 extern void fpinit_ASL(VOID);
 
-#ifdef KR_headers
- extern int Sscanf();
-#else
  extern int Sscanf(char*, const char*, ...);
-#endif
 
 #undef Want_bswap
 #ifdef IEEE_MC68k
@@ -46,11 +42,7 @@ extern void fpinit_ASL(VOID);
 #ifdef Want_bswap
 
  void
-#ifdef KR_headers
-bswap_ASL(x, L) void *x; unsigned long L;
-#else
-bswap_ASL(void *x, unsigned long L)
-#endif
+bswap_ASL(void *x, size_t L)
 {
 	char *s = (char*)x;
 	int t;
@@ -73,11 +65,7 @@ bswap_ASL(void *x, unsigned long L)
 #endif /* Want_bswap */
 
  static void
-#ifdef KR_headers
-badfmt(R) EdRead *R;
-#else
 badfmt(EdRead *R)
-#endif
 {
 	badread(R);
 	fprintf(Stderr, "Unrecognized binary format.\n");
@@ -85,11 +73,7 @@ badfmt(EdRead *R)
 	}
 
  static void
-#ifdef KR_headers
-badints(R, got, wanted) EdRead *R; int got, wanted;
-#else
 badints(EdRead *R, int got, int wanted)
-#endif
 {
 	badread(R);
 	fprintf(Stderr, "got only %d integers; wanted %d\n", got, wanted);
@@ -97,11 +81,7 @@ badints(EdRead *R, int got, int wanted)
 	}
 
  static void
-#ifdef KR_headers
-read2(R, x, y) EdRead *R; int *x, *y;
-#else
 read2(EdRead *R, int *x, int *y)
-#endif
 {
 	char *s;
 	int k;
@@ -116,11 +96,7 @@ read2(EdRead *R, int *x, int *y)
 #define nzlb asl->i.nzlb_
 
  FILE *
-#ifdef KR_headers
-jac0dim_ASL(asl, stub, stub_len) ASL *asl; char *stub; ftnlen stub_len;
-#else
-jac0dim_ASL(ASL *asl, char *stub, ftnlen stub_len)
-#endif
+jac0dim_ASL(ASL *asl, const char *stub, ftnlen stub_len)
 {
 	FILE *nl;
 	int i, k, nlv;
@@ -302,15 +278,8 @@ jac0dim_ASL(ASL *asl, char *stub, ftnlen stub_len)
 	}
 
  FILE *
-#ifdef KR_headers
-jac_dim_ASL(asl, stub, M, N, NO, NZ, MXROW, MXCOL, stub_len)
- ASL *asl; char *stub;
- fint *M, *N, *NO, *NZ, *MXROW, *MXCOL;
- fint stub_len;
-#else
-jac_dim_ASL(ASL *asl, char *stub, fint *M, fint *N, fint *NO, fint *NZ,
+jac_dim_ASL(ASL *asl, const char *stub, fint *M, fint *N, fint *NO, fint *NZ,
 		fint *MXROW, fint *MXCOL, fint stub_len)
-#endif
 {
 	FILE *nl;
 

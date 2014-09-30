@@ -20,19 +20,13 @@ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
 IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
 ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
 THIS SOFTWARE.
-****************************************************************/
+***************************************************************/
 
 #include "asl.h"
+
  int
-#ifdef KR_headers
-jac1dim_ASL(asl, stub, M, N, NO, NZ, MXROW, MXCOL, stub_len)
- ASL *asl; char *stub;
- fint *M, *N, *NO, *NZ, *MXROW, *MXCOL;
- ftnlen stub_len;
-#else
-jac1dim_ASL(ASL *asl, char *stub, fint *M, fint *N, fint *NO, fint *NZ,
+jac1dim_ASL(ASL *asl, const char *stub, fint *M, fint *N, fint *NO, fint *NZ,
 		fint *MXROW, fint *MXCOL, ftnlen stub_len)
-#endif
 {
 	FILE *nl;
 
@@ -44,15 +38,8 @@ jac1dim_ASL(ASL *asl, char *stub, fint *M, fint *N, fint *NO, fint *NZ,
 	}
 
  int
-#ifdef KR_headers
-jacdim_(stub, M, N, NO, NZ, MXROW, MXCOL, stub_len)
- char *stub;
- fint *M, *N, *NO, *NZ, *MXROW, *MXCOL;
- ftnlen stub_len;
-#else
-jacdim_(char *stub, fint *M, fint *N, fint *NO, fint *NZ,
+jacdim_(const char *stub, fint *M, fint *N, fint *NO, fint *NZ,
 		fint *MXROW, fint *MXCOL, ftnlen stub_len)
-#endif
 {
 	ASL *asl;
 

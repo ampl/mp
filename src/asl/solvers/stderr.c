@@ -55,7 +55,7 @@ Stderr_init_ASL(void)
 
 	AllocConsole();	/* fails if unnecessary */
 	h = GetStdHandle(STD_OUTPUT_HANDLE);
-	ih = _open_osfhandle((Long)h, _O_TEXT);
+	ih = _open_osfhandle((ssize_t)h, _O_TEXT);
 	if (ih == -1)
 		Stderr = fopen("con","w");
 	else

@@ -226,8 +226,8 @@ EdRead_ASL {
 	int lineinc;
 	int can_end;
 	char rl_buf[80];
-	void (*iadjfcn)(void*, unsigned long);
-	void (*dadjfcn)(void*, unsigned long);
+	void (*iadjfcn)(void*, size_t);
+	void (*dadjfcn)(void*, size_t);
 	} EdRead_ASL;
 #define EdRead EdRead_ASL
 
@@ -575,8 +575,8 @@ Edaginfo {
 	void *uinfo;
 
 	/* for reading alternate binary formats */
-	void (*iadjfcn)(void*, unsigned long);
-	void (*dadjfcn)(void*, unsigned long);
+	void (*iadjfcn)(void*, size_t);
+	void (*dadjfcn)(void*, size_t);
 	const char *opfmt;	/* format of opcodes */
 
 	/* for scaling */
@@ -615,6 +615,10 @@ Edaginfo {
 
 	/* for derivative errors */
 	DerivErrInfo *Derrs, *Derrs0;
+
+	/* bounds and solution filenames */
+	char *boundsfile;
+	char *solfile;
 	} Edaginfo;
 
  struct
@@ -997,19 +1001,19 @@ enum ASL_writer_error_codes {
  extern void intcatch_ASL(ASL*, void (*)(int,void*), void*);
  extern void introuble_ASL(ASL*, const char *who, real a, int jv);
  extern void introuble2_ASL(ASL*, const char *who, real a, real b, int jv);
- extern FILE *jac0dim_ASL(ASL*, char *stub, ftnlen stub_len);
- extern int  jac1dim_ASL(ASL*,char *stub, fint *M, fint *N, fint *NO,
+ extern FILE *jac0dim_ASL(ASL*, const char *stub, ftnlen stub_len);
+ extern int  jac1dim_ASL(ASL*, const char *stub, fint *M, fint *N, fint *NO,
 			fint *NZ, fint *MXROW, fint *MXCOL, ftnlen stub_len);
- extern int  jac2dim_ASL (ASL*,char *stub, fint *M, fint *N, fint *NO,
+ extern int  jac2dim_ASL (ASL*, const char *stub, fint *M, fint *N, fint *NO,
 		fint *NZ, fint *MXROW, fint *MXCOL, ftnlen stub_len);
- extern FILE *jac_dim_ASL(ASL*, char *stub, fint *M, fint *N, fint *NO,
+ extern FILE *jac_dim_ASL(ASL*, const char *stub, fint *M, fint *N, fint *NO,
 			fint *NZ, fint *MXROW, fint *MXCOL, ftnlen stub_len);
- extern int  jacdim_(char *stub, fint *M, fint *N, fint *NO, fint *NZ,
+ extern int  jacdim_(const char *stub, fint *M, fint *N, fint *NO, fint *NZ,
 			fint *MXROW, fint *MXCOL, ftnlen stub_len);
  extern void jacinc_(fint *M, fint *N, fint *NZ,
 			fint *JP, short *JI, real *X, real *L, real *U,
 			real *Lrhs, real *Urhs, real *Inf);
- extern int  jacpdim_ASL(ASL*,char *stub, fint *M, fint *N, fint *NO,
+ extern int  jacpdim_ASL(ASL*, const char *stub, fint *M, fint *N, fint *NO,
 		fint *NZ, fint *MXROW, fint *MXCOL, ftnlen stub_len);
  extern void jacval_(fint *M, fint *N, fint *NZ, real *X,
 			real *JAC, fint *nerror);

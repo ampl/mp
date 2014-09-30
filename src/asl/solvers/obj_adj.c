@@ -234,14 +234,16 @@ obj_adj1(ASL *asl, int no)
 objval_adj(ASL *asl, int no, real *X, fint *nerror)
 {
 	Objrep *od;
-	cgrad *cg, *cg0, **pcg;
+	cgrad *cg, *cg0, **gr0, **pcg;
 	int i;
 	real c;
 
 	if (!(od = asl->i.Or[no]))
 		return asl->p.Objval_nomap(asl, no, X, nerror);
 	if ((cg = od->cg)) {
-		pcg = &asl->i.Cgrad0[i = od->ico];
+		if (!(gr0 = asl->i.Cgrad0))
+			asl->i.Cgrad0 = gr0 = asl->i.Cgrad_;
+		pcg = &gr0[i = od->ico];
 		cg0 = *pcg;
 		*pcg = cg;
 		c = asl->p.Conival_nomap(asl, od->ico, X, nerror);

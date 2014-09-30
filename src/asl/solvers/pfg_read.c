@@ -477,7 +477,7 @@ new_expr(Static *S, int o, expr *L, expr *R)
 		else if (Intcast L->op == f_OPNUM)
 			o = f_OPCPOW;
 		}
-	rv->op = (efunc *)(long)o;
+	rv->op = (efunc *)(size_t)o;
 	rv->L.e = L;
 	rv->R.e = R;
 #ifdef DEBUG
@@ -719,7 +719,7 @@ eread(EdRead *R)
 				badline(R);
 			rva = (expr_va *)mem(sizeof(expr_va));
 			PSHV(rva->val = 0;)
-			rva->op = (efunc *)(long)k;
+			rva->op = (efunc *)(size_t)k;
 			rva->L.d = d = (de *)mem(i*sizeof(de) + sizeof(expr *));
 			rva->next = varglist;
 			varglist = rva;
@@ -760,7 +760,7 @@ eread(EdRead *R)
 				}
 				while(--j > 0);
 			rv = (expr *)mem(sizeof(expr));
-			rv->op = (efunc *)(long)k;
+			rv->op = (efunc *)(size_t)k;
 			rv->L.p = p;
 			rv->R.e = eread(R);
 			return rv;
@@ -768,7 +768,7 @@ eread(EdRead *R)
 		case 5: /* if */
 			rvif = (expr_if *)mem(sizeof(expr_if));
 			PSHV(rvif->val = 0;)
-			rvif->op = (efunc *)(long)k;
+			rvif->op = (efunc *)(size_t)k;
 			rvif->next = iflist;
 			iflist = rvif;
 			rvif->e = eread(R);
@@ -1057,8 +1057,7 @@ uhash(Static *S, range *r)
 	n = r->n;
 	if (S->asl->P.merge)
 	    while((r1 = *rp)) {
-		if (r1->nv == nv && r1->n == n
-		 && !memcmp(ui, r1->ui, len)) {
+		if (r1->nv == nv && !memcmp(ui, r1->ui, len)) {
 			ucopy((ASL*)asl, r, rp);
 			return rp;
 			}
@@ -2943,7 +2942,7 @@ ewalk(Static *S, expr *e, int deriv)
 				arg = ap->e;
 				op = Intcast arg->op;
 				ewalk(S, arg, deriv);
-				arg->op = (efunc *)(long)op;
+				arg->op = (efunc *)(size_t)op;
 				if (arg->a != noa)
 					i += deriv;
 				}
@@ -3006,7 +3005,7 @@ ewalk(Static *S, expr *e, int deriv)
 					case f_OPNUM:
 						goto loopend;
 					case f_OPVARVAL:
-						arg->op = (efunc *)(long)op;
+						arg->op = (efunc *)(size_t)op;
 					}
 				b = b0 + (j = ap->u.v - ra);
 				*b = 0;
@@ -4399,7 +4398,6 @@ pfg_read_ASL(ASL *a, FILE *nl, int flags)
 #else
 			a->p.Xknown = xp1known_ASL;
 #endif
-			a->i.err_jmp_ = 0;
 			return prob_adj_ASL(a);
 			}
 		ER.can_end = 0;

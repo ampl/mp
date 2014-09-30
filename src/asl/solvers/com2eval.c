@@ -739,7 +739,7 @@ hv2comps_ASL(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
 	int n, no;
 	ograd *og;
 	real *cscale, *hve, t, *vscale;
-	varno_t i, rv, *ze;
+	varno_t f, i, rv, *ze;
 
 	ASL_CHECK(a, ASL_read_fgh, "hv2comp");
 	asl = (ASL_fgh*)a;
@@ -844,6 +844,7 @@ hv2comps_ASL(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
 	if (comb)
 		hv_back0(asl, 0, comb);
 	rv = 0;
+	f = Fortran;
 	if ((ze = z))
 		ze += nz;
 	if ((hve = hv))
@@ -862,7 +863,7 @@ hv2comps_ASL(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
 				++rv;
 				i = cg->varno;
 				if (z < ze)
-					*z++ = i;
+					*z++ = f + i;
 				if (hv < hve)
 					*hv++ = vscale[i]*x0[i].aO;
 				cg = cg->next;
@@ -873,7 +874,7 @@ hv2comps_ASL(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
 				++rv;
 				i = cg->varno;
 				if (z < ze)
-					*z++ = i;
+					*z++ = f + i;
 				if (hv < hve)
 					*hv++ = x0[i].aO;
 				cg = cg->next;
@@ -895,7 +896,7 @@ hv2comps_ASL(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
 				++rv;
 				i = og->varno;
 				if (z < ze)
-					*z++ = i;
+					*z++ = f + i;
 				if (hv < hve)
 					*hv++ = vscale[i]*x0[i].aO;
 				og = og->next;
@@ -906,7 +907,7 @@ hv2comps_ASL(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
 				++rv;
 				i = og->varno;
 				if (z < ze)
-					*z++ = i;
+					*z++ = f + i;
 				if (hv < hve)
 					*hv++ = x0[i].aO;
 				og = og->next;

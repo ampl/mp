@@ -83,7 +83,7 @@ read_sol_ASL(ASL *asl, real **xp, real **yp)
 	char buf[512], *s, *se;
 	real vbtol, *y;
 	ftnlen L, L1, L2;
-	fint Objno[2], nOpts, *z;
+	fint Objno[2], Options[14], nOpts, *z;
 	msginfo mi;
 
 	if (!asl || asl->i.ASLtype < 1 || asl->i.ASLtype > 5)
@@ -149,30 +149,32 @@ read_sol_ASL(ASL *asl, real **xp, real **yp)
 		L1 = n_con * sizeof(real);
 		if (!fread(&L, sizeof(ftnlen), 1, f))
 			goto badbinary;
-		if (L == 8*sizeof(fint) + 7
-		 || L == 9*sizeof(fint) + 7
-		 || L == 8*sizeof(fint) + 7 + sizeof(real)
-		 || L == 9*sizeof(fint) + 7 + sizeof(real)) {
+		if (L >= 3*sizeof(fint) + 7) {
 			/* check for Options */
 			if (!fread(buf, 7, 1, f))
 				goto badbinary;
 			if (strncmp(buf, "Options", 7))
 				goto badbinary;
-			if (!fread(&nOpts, sizeof(fint), 1, f))
+			if (!fread(&Options, sizeof(fint), 3, f))
 				goto badbinary;
-			if (nOpts < 3 || nOpts > 6) {
+			nOpts = Options[0];
+			if (nOpts < 3 || nOpts > 9) {
  bad_nOpts:
 				fprintf(Stderr,
-				"expected nOpts between 3 and 6; got %ld: ",
+				"expected nOpts between 3 and 9; got %ld: ",
 					(long)nOpts);
 				goto badbinary;
 				}
-			if (nOpts > 4) {
+			if (Options[2] == 3) {
 				nOpts -= 2;
 				need_vbtol = 1;
 				}
-			if (!fread((ampl_options+1), sizeof(fint),
-					(size_t)(nOpts+4), f))
+			L2 = (nOpts + 5)*sizeof(fint) + 7;
+			if (need_vbtol)
+				L2 += sizeof(real);
+			if (L != L2)
+				goto badbinary;
+			if (!fread(Options+3, sizeof(fint), nOpts + 2, f))
 				goto badbinary;
 			if (need_vbtol
 			 && !fread(&vbtol, sizeof(real), 1, f))
@@ -207,22 +209,25 @@ read_sol_ASL(ASL *asl, real **xp, real **yp)
 			if (!fgets(buf, sizeof(buf), f))
 				goto early_eof;
 			if (!strncmp(buf, "ptions", 6)) {
-				if (!fgets(buf, sizeof(buf), f))
-					goto early_eof;
-				nOpts = strtol(buf,&se,10);
-				if (se == buf)
-					goto badline;
-				if (nOpts < 3 || nOpts > 6)
+				for(j = 0; j <3; j++) {
+					if (!fgets(buf, sizeof(buf), f))
+						goto early_eof;
+					Options[j] = strtol(buf,&se,10);
+					if (se == buf)
+						goto badline;
+					}
+				nOpts = Options[0];
+				if (nOpts < 3 || nOpts > 9)
 					goto bad_nOpts;
-				if (nOpts > 4) {
+				if (Options[2] == 3) {
 					nOpts -= 2;
 					need_vbtol = 1;
 					}
 				je = (int)nOpts + 4;
-				for(j = 1; j <= je; j++) {
+				for(j = 3; j <= je; j++) {
 					if (!fgets(buf, sizeof(buf), f))
 						goto early_eof;
-					ampl_options[j] = strtol(buf,&se,10);
+					Options[j] = strtol(buf,&se,10);
 					if (se == buf)
 						goto badline;
 					}
@@ -233,13 +238,14 @@ read_sol_ASL(ASL *asl, real **xp, real **yp)
 				}
 			}
 		}
+	memcpy(ampl_options, Options, (nOpts+1)*sizeof(fint));
 	msgput(&mi, "", 1);	/* add null to end */
 
 	if (i)
 		fflush(stdout);
 
-	if ((ampl_options[0] = nOpts)) {
-		z = ampl_options + nOpts + 1;
+	if (nOpts) {
+		z = Options + nOpts + 1;
 		j = (int)z[3];
 		if (j > n_var || j < 0) {
 			badnumber(asl, j, n_var, "variables");

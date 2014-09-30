@@ -70,6 +70,7 @@ scream(EdRead *R, int n, const char *fmt, ...)
 	va_list ap;
 	va_start(ap, fmt);
 	vfprintf(Stderr, fmt, ap);
+	va_end(ap);
 	exit_ASL(R, n);
 	}
 
@@ -1024,11 +1025,41 @@ adjust_zerograds_ASL(ASL *asl, int nnv)
 		}
 	}
 
+
+#ifndef NO_BOUNDSFILE_OPTION /*{*/
+ extern void bswap_ASL(void *, size_t);
+
+ static void
+bad_bounds(ASL *asl, const char *fmt, ...)
+{
+	Jmp_buf *J;
+	va_list ap;
+	va_start(ap, fmt);
+	if (progname)
+		fprintf(Stderr, "\n%s: ", progname);
+	else
+		fprintf(Stderr, "\n");
+	vfprintf(Stderr, fmt, ap);
+	fprintf(Stderr, "\n");
+	va_end(ap);
+	if ((J = asl->i.err_jmp_))
+		longjmp(J->jb, 1);
+	exit(1);
+	}
+#endif /*}*/
+
  int
 prob_adj_ASL(ASL *asl)
 {
 	cgrad *cg, **pcg, **pcge;
 	int flags, k;
+#ifndef NO_BOUNDSFILE_OPTION /*{*/
+	FILE *f;
+	char *bf, buf[4096], *s, *s1, *se;
+	int a, i, n1, nr, nv, swap;
+	real *L, *U, *x;
+	size_t inc, m, n;
+#endif /*}*/
 
 	if (n_obj)
 		adjust_zerograds_ASL(asl, 0);
@@ -1050,6 +1081,141 @@ prob_adj_ASL(ASL *asl)
 		}
 	if (n_obj)
 		zerograd_chk(asl);
+#ifndef NO_BOUNDSFILE_OPTION /*{*/
+	if ((bf = asl->i.boundsfile)) {
+		if (!(f = fopen(bf, "rb")))
+			bad_bounds(asl, "Cannot open boundsfile \"%s\".", bf);
+		m = sizeof(buf);
+		if ((n = fread(buf, 1, m, f)) < 24
+		 || strncmp(buf, "Bounds, x; arith ", 17)) {
+ badmagic:
+			bad_bounds(asl, "Bad magic in boundsfile \"%s\".", bf);
+			}
+		a = (int)strtol(s = buf+17, &se, 10);
+		if (se <= s || a < 0 || a > 2 || *se >= ' ')
+			goto badmagic;
+		if (a == 0 && *se == '\r')
+			++se;
+		if (*se++ != '\n')
+			goto badmagic;
+		nv = n_var;
+		L = LUv;
+		if ((U = Uvx))
+			inc = 1;
+		else {
+			U = L + 1;
+			inc = 2;
+			}
+		if (!(x = X0))
+			X0 = x = (real*)M1alloc(nv*sizeof(real));
+		swap = 0;
+		if (a) {
+			if (a != Arith_Kind_ASL)
+				swap = 1;
+			s = buf + 20;
+			n1 = *(int*)s;
+			if (swap)
+				bswap_ASL(&n1, sizeof(n1));
+			if (n1 != nv) {
+ bad_n1:
+				bad_bounds(asl, "Expected %d bounds triples in boundsfile"
+					" \"%s\"; got %d.", nv, bf, n1);
+				}
+			s += sizeof(int);
+			se = buf + n;
+			for(i = 1; i <= nv; ++i) {
+				if (se-s < 3*sizeof(real)) {
+					for(s1 = buf; s < se; ++s, ++s1)
+						*s1 = *s;
+					m = s1 - buf;
+					m  += n = fread(s1, 1, sizeof(buf) - m, f);
+					se = buf + m;
+					if (m < 3*sizeof(real)) {
+ too_few:
+						bad_bounds(asl, "%d too few bound triples "
+							"in boundsfile \"%s\".",
+							nv - i + 1, bf);
+						}
+					s = buf;
+					}
+				*L = *(real*)s;
+				s += sizeof(real);
+				*x = *(real*)s;
+				s += sizeof(real);
+				*U = *(real*)s;
+				s += sizeof(real);
+				if (swap) {
+					bswap_ASL(L, sizeof(real));
+					bswap_ASL(x, sizeof(real));
+					bswap_ASL(U, sizeof(real));
+					}
+				if (*L > *U || *x < *L || *x > *U) {
+ bad_triple:
+					bad_bounds(asl, "bad bound triple %d in bounds file "
+						"\"%s\":\n\tL = %.g\n\tx = %.g\n\tU = %.g",
+						i, bf, *L, *x, *U);
+					}
+				L += inc;
+				U += inc;
+				++x;
+				}
+			}
+		else {
+			n1 = (int)strtol(se, &s, 10);
+			if (n1 != nv)
+				goto bad_n1;
+			se = buf + n;
+			for(i = 1; i <= nv; ++i) {
+				nr = 0;
+ tryagain:
+				while(s < se && *s <= ' ')
+					++s;
+				s1 = s;
+				for(k = 0; k < 3 && s1 < se; ++k) {
+					while(s1 < se && *s1 > ' ')
+						++s1;
+					while(s1 < se && *s1 <= ' ')
+						++s1;
+					}
+				if (k < 3) {
+					if (nr)
+						goto too_few;
+					for(s1 = buf; s < se; ++s, ++s1)
+						*s1 = *s;
+					m = sizeof(buf) - (s1 - buf);
+					n = fread(s1, 1, m, f);
+					se = s1 + n;
+					s = buf;
+					nr = 1;
+					goto tryagain;
+					}
+				*L = strtod(s, &s1);
+				if (s1 <= s || *s1 > ' ') {
+ badnumber:
+					while(s1 < se && *s1 > ' ')
+						++s1;
+					bad_bounds(asl, "Bound triple %d: bad number \"%.*s\""
+						" in boundsfile \"%s\".", i,
+						(int)(s1-s), s, bf);
+					}
+				*x = strtod(s = s1, &s1);
+				if (s1 <= s || *s1 > ' ')
+					goto badnumber;
+				*U = strtod(s = s1, &s1);
+				if (s1 <= s || *s1 > ' ')
+					goto badnumber;
+				if (*L > *U || *x < *L || *x > *U)
+					goto bad_triple;
+				L += inc;
+				U += inc;
+				++x;
+				s = s1;
+				}
+			}
+		fclose(f);
+		}
+#endif /*}*/
+	asl->i.err_jmp_ = 0;
 	return 0;
 	}
 

@@ -295,8 +295,7 @@ valid_param(char *t, int ekeep)
 	switch(*t) {
 	 case '0':
 		if ((t[1] == 'x' || t[1] == 'X')) {
-			double unused = strtod(t,&se);
-			(void)unused;
+			strtod(t,&se);
 			return *se == 0;
 			}
 		break;
@@ -398,11 +397,13 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 #ifdef QUOTIFY
 	int quote;
 #endif /*QUOTIFY*/
+	long sl;
 	short sh;
 	size_t Ltmp, *ip, j, u;
 	ssize_t i;
-	unsigned short us;
 	unsigned int ui;
+	unsigned long ul;
+	unsigned short us;
 #ifndef NO_PRINTF_A_FMT /*{*/
 #ifdef IEEE_8087 /*{{*/
 #define I0 1
@@ -522,7 +523,8 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 					i = ui;
 					break;
 				  case 1:
-					i = va_arg(ap, long);
+					sl = va_arg(ap, long);
+					i = sl;
 					break;
 				  case 2:
 					us = va_arg(ap, int);
@@ -541,7 +543,8 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 					i = k;
 					break;
 				  case 1:
-					i = va_arg(ap, long);
+					sl = va_arg(ap, long);
+					i = sl;
 					break;
 				  case 2:
 					sh = va_arg(ap, int);
@@ -659,7 +662,8 @@ x_sprintf(char *obe, Putfunc fput, Finfo *f, const char *fmt, va_list ap)
 					u = ui;
 					break;
 				  case 1:
-					u = va_arg(ap, long);
+					ul = va_arg(ap, long);
+					u = ul;
 					break;
 				  case 2:
 					us = va_arg(ap, int);

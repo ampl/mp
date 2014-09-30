@@ -132,15 +132,22 @@ shownames(Option_Info *oi)
 	}
 
  static void
-ofix(char **o, int k)
+ofix(char **o)
 {
 	/* get rid of "ix" and possibly "u" */
-	while(*o)
-		o++;
-	o -= 8;
-	o[0] = o[2];
-	o[1] = o[3];
-	for(o += 2; (*o = o[k]); o++);
+	char **o1, *s;
+
+	for(o1 = o; (s = *o); o += 2) {
+		switch(*s) {
+		  case 'i':
+		  case 'u':
+			continue;
+		  }
+		o1[0] = o[0];
+		o1[1] = o[1];
+		o1 += 2;
+		}
+	*o1 = 0;
 	}
 
  void
@@ -153,8 +160,14 @@ usage_noexit_ASL(Option_Info *oi, int rc)
 #ifdef SYMANTEC
 		"E", "force floating-point emulation (Symantec only)",
 #endif
+#ifndef NO_BOUNDSFILE_OPTION
+		"bf","read boundsfile f",
+#endif
 		"e", "suppress echoing of assignments",
 		"ix","import user-defined functions from x; -i? gives details",
+#ifndef NO_BOUNDSFILE_OPTION
+		"of", "write .sol file to file f",
+#endif
 		"s", "write .sol file (without -AMPL)",
 		"u", "just show available user-defined functions",
 		"v", "just show version",
@@ -186,10 +199,8 @@ usage_noexit_ASL(Option_Info *oi, int rc)
 			fprintf(f, "%s\n", s);
 	fprintf(f, "\nOptions:\n");
 	o = (char**)opts;
-	if (!oi || !(oi->flags & ASL_OI_want_funcadd))
-		ofix(o, 4);
-	else if (!ix_details_ASL[0])
-		ofix(o, 2);
+	if (!oi || !(oi->flags & ASL_OI_want_funcadd) || !ix_details_ASL[0])
+		ofix(o);
 	s = *o;
 	for(;;) {
 		if (kw < kwe)
@@ -244,6 +255,11 @@ get_opt_ASL(Option_Info *oi, char *s)
 	if (!*s)
 		return s;
 	oi->nnl = 0;
+	if (oi->option_echo & ASL_OI_defer_bsname) {
+		printf("%s: ", oi->bsname);
+		oi->option_echo &= ~ASL_OI_defer_bsname;
+		oi->option_echo |= ASL_OI_echo | ASL_OI_echothis;
+		}
 	s0 = s;
 	if ((kw = (keyword *)b_search_ASL(oi->keywds, (int)sizeof(keyword),
 			oi->n_keywds, &s, &oi->eqsign))) {
@@ -271,7 +287,8 @@ get_opt_ASL(Option_Info *oi, char *s)
 				goto bad;
 		s = s1;
 		while(*++s1 > ' ');
-		printf("%.*s\n", s1-s0, s0);
+		if (!(oi->option_echo & ASL_OI_never_echo))
+			printf("%.*s\n", s1-s0, s0);
 		if ((*oi->feq)(&N, s, (fint)(s1-s)))
 			oi->n_badopts++;
 		}
@@ -298,7 +315,8 @@ get_opt_ASL(Option_Info *oi, char *s)
 				b++;
 			}
 		*b = 0;
-		printf("%.*s\n", s-s0, s0);
+		if (!(oi->option_echo & ASL_OI_never_echo))
+			printf("%.*s\n", s-s0, s0);
 		if ((*oi->kwf)(buf, (fint)(b-buf)))
 			oi->n_badopts++;
 		return s;
@@ -439,6 +457,16 @@ getstub_ASL(ASL *asl, char ***pargv, Option_Info *oi)
 					_8087 = 0;
 					continue;
 #endif
+#ifndef NO_BOUNDSFILE_OPTION
+				case 'b':
+					if ((asl->i.boundsfile = *++argv))
+						continue;
+					break;
+				case 'o':
+					if ((asl->i.solfile = *++argv))
+						continue;
+					break;
+#endif
 				case 'e':
 					if (oi)
 						oi->option_echo &= ~ASL_OI_echo;
@@ -474,6 +502,16 @@ getstub_ASL(ASL *asl, char ***pargv, Option_Info *oi)
 				i_option_ASL = s1 + 1;
 				continue;
 				}
+#ifndef NO_BOUNDSFILE_OPTION
+			if (*s1 == 'b' && s1[1]) {
+				asl->i.boundsfile = s1 + 1;
+				continue;
+				}
+			if (*s1 == 'o' && s1[1]) {
+				asl->i.solfile =  s1 + 1;
+				continue;
+				}
+#endif
 			if (*s1 == '-') {
 				if (!strcmp(++s1, "help")) {
 					if (oi)
@@ -494,10 +532,20 @@ getstub_ASL(ASL *asl, char ***pargv, Option_Info *oi)
 		if ((s1 = *++argv) && !strncmp(s1,"-AMPL",5)) {
 			amplflag = 1;
 			argv++;
+			if (s1[5] == 'l') {
+				switch(s1[6]) {
+				  case 'n':
+					oi->option_echo = ASL_OI_never_echo;
+					goto no_echo;
+				  case 's':
+					oi->option_echo = ASL_OI_defer_bsname;
+					goto no_echo;
+				}}
 			if (oi && oi->bsname
 			 && !(oi->option_echo & ASL_OI_never_echo))
 				need_nl = oi->nnl = printf("%s: ", oi->bsname);
 			}
+ no_echo:
 		i = strlen(s) - 3;
 		if (i > 0 && !strcmp(s+i,".nl"))
 			s[i] = 0;
@@ -520,7 +568,7 @@ getopts_ASL(ASL *asl, char **argv, Option_Info *oi)
 		badasl_ASL(asl,0,"getopts");
 	if (!oi->option_echo)
 		oi->option_echo = ASL_OI_echo;
-	oi->option_echo &= ASL_OI_echo;
+	oi->option_echo &= ASL_OI_echo | ASL_OI_never_echo | ASL_OI_defer_bsname;
 	oi->n_badopts = 0;
 
 	if (oi->opname && (s = getenv(oi->opname)))

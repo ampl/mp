@@ -27,13 +27,13 @@ THIS SOFTWARE.
 
 #ifdef __cplusplus
 extern "C" {
-extern int jac2dim_(char *stub, fint *M, fint *N, fint *NO, fint *NZ,
+extern int jac2dim_(const char *stub, fint *M, fint *N, fint *NO, fint *NZ,
 		fint *MXROW, fint *MXCOL, ftnlen stub_len);
 }
 #endif
 
  int
-jac2dim_(char *stub, fint *M, fint *N, fint *NO, fint *NZ,
+jac2dim_(const char *stub, fint *M, fint *N, fint *NO, fint *NZ,
 		fint *MXROW, fint *MXCOL, ftnlen stub_len)
 {
 	ASL *asl;

@@ -1303,7 +1303,7 @@ hvpcomps_ASL(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
 	psb_elem *b, *be;
 	psg_elem *g, *ge;
 	real *hve, *p0, *s, t, t2, *vscale;
-	varno_t i, rv, *ze;
+	varno_t F, i, rv, *ze;
 
 #ifdef IGNORE_BOGUS_WARNINGS
 	c1 = ce = 0;
@@ -1500,6 +1500,7 @@ hvpcomps_ASL(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
 		ze += nz;
 	if ((hve = hv))
 		hve += nz;
+	F = Fortran;
 	if ((cg = cg0)) {
 		if (!hv) {
 			while(cg) {
@@ -1514,7 +1515,7 @@ hvpcomps_ASL(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
 				++rv;
 				i = cg->varno;
 				if (z < ze)
-					*z++ = i;
+					*z++ = F + i;
 				if (hv < hve)
 					*hv++ = vscale[i]*x0[i].aO;
 				cg = cg->next;
@@ -1525,7 +1526,7 @@ hvpcomps_ASL(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
 				++rv;
 				i = cg->varno;
 				if (z < ze)
-					*z++ = i;
+					*z++ = F + i;
 				if (hv < hve)
 					*hv++ = x0[i].aO;
 				cg = cg->next;
@@ -1547,7 +1548,7 @@ hvpcomps_ASL(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
 				++rv;
 				i = og->varno;
 				if (z < ze)
-					*z++ = i;
+					*z++ = F + i;
 				if (hv < hve)
 					*hv++ = vscale[i]*x0[i].aO;
 				og = og->next;
@@ -1558,7 +1559,7 @@ hvpcomps_ASL(ASL *a, real *hv, real *p, int co, varno_t nz, varno_t *z)
 				++rv;
 				i = og->varno;
 				if (z < ze)
-					*z++ = i;
+					*z++ = F + i;
 				if (hv < hve)
 					*hv++ = x0[i].aO;
 				og = og->next;

@@ -1523,7 +1523,6 @@ fgh_read_ASL(ASL *a, FILE *nl, int flags)
 			a->p.Congrd  = a->p.Congrd_nomap  = con2grd_ASL;
 			a->p.Lconval = lcon2val_ASL;
 			a->p.Xknown  = x2known_ASL;
-			a->i.err_jmp_ = 0;
 			return prob_adj_ASL(a);
 			}
 		ER.can_end = 0;
