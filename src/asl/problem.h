@@ -414,13 +414,16 @@ class Problem {
     return LinearConExpr(asl_->i.Cgrad_[con_index]);
   }
 
-  template <typename ExprT = NumericExpr>
+  template <typename ExprT>
   ExprT GetExpr(cde *Edag1info::*ptr, int index, int size) const {
     assert(index >= 0 && index < size);
     if (asl_->i.ASLtype != ASL_read_fg)
       return ExprT();
     return Expr::Create<ExprT>(
           (reinterpret_cast<ASL_fg*>(asl_)->I.*ptr)[index].e);
+  }
+  NumericExpr GetExpr(cde *Edag1info::*ptr, int index, int size) const {
+    return GetExpr<NumericExpr>(ptr, index, size);
   }
 
   // Returns the nonlinear part of an objective expression.
