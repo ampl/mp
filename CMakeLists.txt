@@ -247,6 +247,7 @@ if (RT_LIBRARY)
   target_link_libraries(mp ${RT_LIBRARY})
 endif ()
 
+add_subdirectory(src/amplsig)
 add_subdirectory(src/asl)
 add_subdirectory(src/cp)
 add_subdirectory(solvers)
