@@ -121,8 +121,8 @@ struct OptionHelper<std::string> {
   static const char *CastArg(const std::string &s) { return s.c_str(); }
 };
 
-// Command-line options for a solver application.
-class SolverAppOptions {
+// Command-line option parser for a solver application.
+class SolverAppOptionParser {
  private:
   Solver &solver_;
 
@@ -144,7 +144,9 @@ class SolverAppOptions {
   bool EndOptions() { return false; }
 
  public:
-  explicit SolverAppOptions(Solver &s);
+  explicit SolverAppOptionParser(Solver &s);
+
+  OptionList &options() { return options_; }
 
   bool write_sol() { return write_sol_; }
 
@@ -980,11 +982,12 @@ template <typename Solver, typename Reader = NLReader>
 class SolverApp : private Reader {
  private:
   Solver solver_;
-  internal::SolverAppOptions options_;
+  internal::SolverAppOptionParser option_parser_;
 
  public:
-  SolverApp() : options_(solver_) {}
+  SolverApp() : option_parser_(solver_) {}
 
+  OptionList &options() { return option_parser_.options(); }
   Solver &solver() { return solver_; }
   Reader &reader() { return *this; }
 
@@ -1001,7 +1004,7 @@ template <typename Solver, typename NLReaderT>
 int SolverApp<Solver, NLReaderT>::Run(char **argv) {
   // Parse command-line arguments.
   ++argv;
-  const char *filename = options_.Parse(argv);
+  const char *filename = option_parser_.Parse(argv);
   if (!filename) return 0;
 
   // Add .nl extension if necessary.
@@ -1035,7 +1038,7 @@ int SolverApp<Solver, NLReaderT>::Run(char **argv) {
     void HandleSolution(
           fmt::StringRef, const double *, const double *, double) {}
   };
-  if (options_.write_sol()) {
+  if (option_parser_.write_sol()) {
     sol_handler.reset(
           new SolutionWriter<Solver>(filename_no_ext, solver_, builder));
   } else {

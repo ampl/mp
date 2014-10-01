@@ -235,19 +235,35 @@ std::string OptionHelper<std::string>::Parse(const char *&s) {
   return std::string(start, s - start);
 }
 
-SolverAppOptions::SolverAppOptions(Solver &s) : solver_(s), write_sol_(false) {
+SolverAppOptionParser::SolverAppOptionParser(Solver &s)
+  : solver_(s), write_sol_(false) {
   // Add command-line options.
-  OptionList::Builder<SolverAppOptions> app_options(options_, *this);
-  app_options.Add<&SolverAppOptions::ShowUsage>('?', "show usage and exit");
-  app_options.Add<&SolverAppOptions::EndOptions>('-', "end of options");
-  app_options.Add<&SolverAppOptions::ShowSolverOptions>(
+  OptionList::Builder<SolverAppOptionParser> app_options(options_, *this);
+  app_options.Add<&SolverAppOptionParser::ShowUsage>(
+        '?', "show usage and exit");
+  app_options.Add<&SolverAppOptionParser::EndOptions>('-', "end of options");
+  app_options.Add<&SolverAppOptionParser::ShowSolverOptions>(
         '=', "show solver options and exit");
   OptionList::Builder<mp::Solver> options(options_, s);
   options.Add<&mp::Solver::ShowVersion>('v', "show version and exit");
   // TODO: add options -e, -s and, if solver supports functions, -ix and -u
+  /*
+  static const char *options[] = {
+    "e",  "suppress echoing of assignments",
+    "ix", "import user-defined functions from x; -i? gives details",
+    "s",  "write .sol file (without -AMPL)",
+    "u",  "just show available user-defined functions",
+  for (const char **s = options; *s; s += 2) {
+    // Filter out -ix & -u options if FUNC_OPTIONS flags is not set.
+    char c = **s;
+    if ((flags & FUNC_OPTIONS) == 0 && (c == 'i' || c == 'u'))
+      continue;
+    fmt::print(f, "\t-{:3}{{{}}}\n", s[0], s[1]);
+  }
+  */
 }
 
-bool SolverAppOptions::ShowUsage() {
+bool SolverAppOptionParser::ShowUsage() {
   solver_.Print("usage: {} [options] stub [-AMPL] [<assignment> ...]\n",
                 solver_.name());
   solver_.Print("\nOptions:\n");
@@ -258,7 +274,7 @@ bool SolverAppOptions::ShowUsage() {
   return false;
 }
 
-bool SolverAppOptions::ShowSolverOptions() {
+bool SolverAppOptionParser::ShowSolverOptions() {
   fmt::Writer writer;
   const char *option_header = solver_.option_header();
   internal::FormatRST(writer, option_header);
@@ -277,7 +293,7 @@ bool SolverAppOptions::ShowSolverOptions() {
   return false;
 }
 
-const char *SolverAppOptions::Parse(char **&argv) {
+const char *SolverAppOptionParser::Parse(char **&argv) {
   argv = ParseOptions(argv, options_);
   if (!argv) return 0;
   const char *stub = *argv;
