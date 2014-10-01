@@ -44,56 +44,56 @@ BOOL APIENTRY DllMain(HMODULE, DWORD, LPVOID) {
 
 class Thread {
  private:
-  WSADATA wsaData;
-  addrinfo* addr;
-  SOCKET socket;
-  int debugLevel;
+  WSADATA wsa_data_;
+  addrinfo* addr_;
+  SOCKET socket_;
+  int debug_level_;
 
   // Do not implement!
   Thread(const Thread&);
   void operator=(const Thread&);
 
-  void fail(const char* funcName, int code);
-  void log(const char* message) {
-    if (debugLevel > 1)
+  void Fail(const char* func_name, int code);
+  void Log(const char* message) {
+    if (debug_level_ > 1)
       fprintf(stderr, "amplsig: %s\n", message);
   }
 
   Thread();
   ~Thread();
 
-  void doRun();
+  void DoRun();
 
  public:
-  static DWORD WINAPI run(LPVOID);
+  static DWORD WINAPI Run(LPVOID);
 };
 
-void Thread::fail(const char* funcName, int code) {
-  if (debugLevel > 0)
-    fprintf(stderr, "amplsig: %s failed: %d\n", funcName, code);
+void Thread::Fail(const char* func_name, int code) {
+  if (debug_level_ > 0)
+    fprintf(stderr, "amplsig: %s failed: %d\n", func_name, code);
   throw code;
 }
 
-Thread::Thread() : addr(0), socket(INVALID_SOCKET), debugLevel(0) {
+Thread::Thread() : addr_(0), socket_(INVALID_SOCKET), debug_level_(0) {
   const char* debug = getenv("AMPLSIG_DEBUG");
-  if (debug) debugLevel = atoi(debug);
-  int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  if (debug) debug_level_ = atoi(debug);
+  int result = WSAStartup(MAKEWORD(2, 2), &wsa_data_);
   if (result != 0)
-    fail("WSAStartup", result);
+    Fail("WSAStartup", result);
 }
 
 Thread::~Thread() {
-  if (socket != INVALID_SOCKET)
-    closesocket(socket);
-  if (addr)
-    freeaddrinfo(addr);
+  if (socket_ != INVALID_SOCKET)
+    closesocket(socket_);
+  if (addr_)
+    freeaddrinfo(addr_);
   WSACleanup();
 }
 
-void Thread::doRun() {
+void Thread::DoRun() {
   const char* port = getenv("AMPLSIG_PORT");
   if (!port) {
-    log("Port is not specified");
+    Log("Port is not specified");
     return;
   }
 
@@ -101,40 +101,40 @@ void Thread::doRun() {
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_protocol = IPPROTO_TCP;
-  int result = getaddrinfo("127.0.0.1", port, &hints, &addr);
+  int result = getaddrinfo("127.0.0.1", port, &hints, &addr_);
   if (result != 0)
-    fail("getaddrinfo", result);
-  socket = ::socket(addr->ai_family,
-    addr->ai_socktype, addr->ai_protocol);
-  if (socket == INVALID_SOCKET)
-    fail("socket", WSAGetLastError());
-  log("Connecting");
-  result = connect(socket, addr->ai_addr, (int)addr->ai_addrlen);
+    Fail("getaddrinfo", result);
+  socket_ = ::socket(addr_->ai_family,
+    addr_->ai_socktype, addr_->ai_protocol);
+  if (socket_ == INVALID_SOCKET)
+    Fail("socket", WSAGetLastError());
+  Log("Connecting");
+  result = connect(socket_, addr_->ai_addr, (int)addr_->ai_addrlen);
   if (result == SOCKET_ERROR)
-    fail("connect", WSAGetLastError());
-  log("Connected");
+    Fail("connect", WSAGetLastError());
+  Log("Connected");
 
   enum { BUFFER_LEN = 512 };
   char buffer[BUFFER_LEN];
   do {
-    result = recv(socket, buffer, BUFFER_LEN, 0);
+    result = recv(socket_, buffer, BUFFER_LEN, 0);
     if (result > 0) {
       if (strncmp(buffer, "SIGINT", 6) == 0 &&
           !GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0)) {
-        fail("GenerateConsoleCtrlEvent", GetLastError());
+        Fail("GenerateConsoleCtrlEvent", GetLastError());
       }
     } else if (result != 0)
-      fail("recv", WSAGetLastError());
+      Fail("recv", WSAGetLastError());
   } while (result > 0);
 }
 
-DWORD WINAPI Thread::run(LPVOID) {
+DWORD WINAPI Thread::Run(LPVOID) {
   try {
-    Thread().doRun();
+    Thread().DoRun();
   } catch (...) {}
   return 0;
 }
 
 extern "C" __declspec(dllexport) void funcadd_ASL(void*) {
-  CreateThread(NULL, 0, Thread::run, NULL, 0, NULL);
+  CreateThread(NULL, 0, Thread::Run, NULL, 0, NULL);
 }
