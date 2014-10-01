@@ -34,8 +34,6 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
-#pragma comment(lib, "Ws2_32.lib")
-
 using namespace std;
 
 BOOL APIENTRY DllMain(HMODULE, DWORD, LPVOID) {
