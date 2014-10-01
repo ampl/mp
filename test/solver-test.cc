@@ -47,6 +47,7 @@ using mp::SolutionHandler;
 using mp::internal::OptionHelper;
 
 using testing::_;
+using testing::StrictMock;
 
 namespace {
 
@@ -987,25 +988,76 @@ struct MockNLReader {
   }
 };
 
-// Test that SolverApp::Run parses command-line options.
-TEST(SolverAppTest, ParseCommandLineOptions) {
-  mp::SolverApp<TestSolver, testing::StrictMock<MockNLReader> > app;
-  MockOptionHandler handler;
-  mp::OptionList::Builder<MockOptionHandler> builder(app.options(), handler);
-  builder.Add<&MockOptionHandler::on_option>('e', "Excellent choice.");
-  EXPECT_CALL(handler, on_option()).WillOnce(testing::Return(true));
-  EXPECT_EQ(0, app.Run(Args("test", "-e")));
-  {
-    // Test that options are parsed before reading the problem.
-    testing::InSequence sequence;
-    EXPECT_CALL(handler, on_option()).WillOnce(testing::Return(true));
-    EXPECT_CALL(app.reader(), DoRead(_, _));
-    EXPECT_EQ(0, app.Run(Args("test", "-e", "testproblem")));
+class SolverAppTest : public ::testing::Test {
+ protected:
+  typedef mp::SolverApp<TestSolver, StrictMock<MockNLReader> > App;
+  App app_;
+
+  struct OptionHandler : StrictMock<MockOptionHandler> {
+    bool on_option() { return StrictMock<MockOptionHandler>::on_option(); }
+  };
+  OptionHandler handler_;
+
+  void AddOption() {
+    mp::OptionList::Builder<OptionHandler> builder(app_.options(), handler_);
+    builder.Add<&OptionHandler::on_option>('e', "Excellent choice.");
   }
+
+  struct NullOutputHandler : mp::OutputHandler {
+    void HandleOutput(fmt::StringRef) {}
+  } null_output_handler_;
+
+  void IgnoreOutput() {
+    app_.solver().set_output_handler(&null_output_handler_);
+  }
+};
+
+// Test that SolverApp::Run parses command-line options and doesn't read
+// a problem if the filename is not specified.
+TEST_F(SolverAppTest, ParseOptions) {
+  AddOption();
+  IgnoreOutput();
+  EXPECT_CALL(handler_, on_option()).WillOnce(testing::Return(true));
+  EXPECT_EQ(0, app_.Run(Args("test", "-e")));
+}
+
+// Test that SolverApp::Run ignores the first argument.
+TEST_F(SolverAppTest, IgnoreFirstArgument) {
+  AddOption();
+  IgnoreOutput();
+  EXPECT_EQ(0, app_.Run(Args("-e")));
 }
 
 // Matcher that compares a StringRef with a C string for equality.
 MATCHER_P(StringRefEq, str, "") { return std::strcmp(arg.c_str(), str) == 0; }
+
+// Test that SolverApp::Run adds the .nl extension to the filename without one.
+TEST_F(SolverAppTest, AddNLExtension) {
+  AddOption();
+  testing::InSequence sequence;
+  EXPECT_CALL(handler_, on_option()).WillOnce(testing::Return(true));
+  EXPECT_CALL(app_.reader(), DoRead(StringRefEq("testproblem.nl"), _));
+  EXPECT_EQ(0, app_.Run(Args("test", "-e", "testproblem")));
+}
+
+// Test that SolverApp::Run doesn't add the .nl extension to the filename
+// if it has one already.
+TEST_F(SolverAppTest, DontAddNLExtension) {
+  AddOption();
+  testing::InSequence sequence;
+  EXPECT_CALL(handler_, on_option()).WillOnce(testing::Return(true));
+  EXPECT_CALL(app_.reader(), DoRead(StringRefEq("testproblem.nl"), _));
+  EXPECT_EQ(0, app_.Run(Args("test", "-e", "testproblem.nl")));
+}
+
+// Test that SolverApp::Run parses options before reading the problem.
+TEST_F(SolverAppTest, ParseOptionsBeforeReadingProblem) {
+  AddOption();
+  testing::InSequence sequence;
+  EXPECT_CALL(handler_, on_option()).WillOnce(testing::Return(true));
+  EXPECT_CALL(app_.reader(), DoRead(_, _));
+  EXPECT_EQ(0, app_.Run(Args("test", "-e", "testproblem")));
+}
 
 // Matcher that checks if the argument of type ProblemBuilderToNLAdapter
 // points to the solver's problem builder.
@@ -1014,17 +1066,16 @@ MATCHER_P(MatchBuilder, solver, "") {
 }
 
 // Test that SolverApp::Run reads the problem.
-TEST(SolverAppTest, Run) {
-  mp::SolverApp<TestSolver, testing::StrictMock<MockNLReader> > app;
-  EXPECT_CALL(app.reader(), DoRead(StringRefEq("testproblem.nl"),
-                                   MatchBuilder(&app.solver())));
-  EXPECT_EQ(0, app.Run(Args("test", "testproblem")));
+TEST_F(SolverAppTest, ReadProblem) {
+  EXPECT_CALL(app_.reader(), DoRead(StringRefEq("testproblem.nl"),
+                                    MatchBuilder(&app_.solver())));
+  EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
   // Check that the default reader is NLReader.
   mp::NLReader &reader = mp::SolverApp<TestSolver>().reader();
   MP_UNUSED(reader);
 }
 
-// TODO: test parsing options
+// TODO: test parsing standard options
 
 /*
 TEST(SolverTest, ProcessArgsParsesSolverOptions) {
@@ -1034,14 +1085,6 @@ TEST(SolverTest, ProcessArgsParsesSolverOptions) {
       Args("testprogram", MP_TEST_DATA_DIR "/objconst.nl", "wantsol=5"),
       p, Solver::NO_OPTION_ECHO));
   EXPECT_EQ(5, s.wantsol());
-}
-
-TEST(SolverTest, ProcessArgsWithoutStub) {
-  StderrRedirect redirect("out");
-  TestSolver s;
-  Problem p;
-  EXPECT_FALSE(s.ProcessArgs(Args("testprogram"), p));
-  EXPECT_EQ(0, p.num_vars());
 }
 
 TEST(SolverTest, NameInUsage) {

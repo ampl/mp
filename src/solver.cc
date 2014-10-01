@@ -235,8 +235,7 @@ std::string OptionHelper<std::string>::Parse(const char *&s) {
   return std::string(start, s - start);
 }
 
-SolverAppOptionParser::SolverAppOptionParser(Solver &s)
-  : solver_(s), write_sol_(false) {
+SolverAppOptionParser::SolverAppOptionParser(Solver &s) : solver_(s) {
   // Add command-line options.
   OptionList::Builder<SolverAppOptionParser> app_options(options_, *this);
   app_options.Add<&SolverAppOptionParser::ShowUsage>(
@@ -303,7 +302,7 @@ const char *SolverAppOptionParser::Parse(char **&argv) {
   }
   ++argv;
   if (*argv && std::strcmp(*argv, "-AMPL") == 0) {
-    write_sol_ = true;
+    solver_.set_wantsol(1);
     ++argv;
   }
   return stub;

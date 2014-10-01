@@ -120,39 +120,6 @@ struct OptionHelper<std::string> {
   static std::string Parse(const char *&s);
   static const char *CastArg(const std::string &s) { return s.c_str(); }
 };
-
-// Command-line option parser for a solver application.
-class SolverAppOptionParser {
- private:
-  Solver &solver_;
-
-  // Command-line options.
-  OptionList options_;
-
-  // Specifies whether to write the solution (.sol) file.
-  bool write_sol_;
-
-  // Prints usage information and stops processing options.
-  bool ShowUsage();
-
-  // Prints information about solver options.
-  bool ShowSolverOptions();
-
-  bool SetWriteSol() { return write_sol_ = true; }
-
-  // Stops processing options.
-  bool EndOptions() { return false; }
-
- public:
-  explicit SolverAppOptionParser(Solver &s);
-
-  OptionList &options() { return options_; }
-
-  bool write_sol() { return write_sol_; }
-
-  // Parses command-line options.
-  const char *Parse(char **&argv);
-};
 }  // namespace internal
 
 // An interface for receiving errors reported via Solver::ReportError.
@@ -719,6 +686,7 @@ class Solver : private ErrorHandler, private OutputHandler {
   //   4 = dual variables to stdout
   //   8 = suppress solution message
   int wantsol() const { return wantsol_; }
+  void set_wantsol(int value) { wantsol_ = value; }
 
   // Returns true if the timing is enabled.
   bool timing() const { return timing_; }
@@ -975,6 +943,40 @@ class NLReader {
   }
 };
 
+namespace internal {
+
+// Command-line option parser for a solver application.
+class SolverAppOptionParser {
+ private:
+  Solver &solver_;
+
+  // Command-line options.
+  OptionList options_;
+
+  // Prints usage information and stops processing options.
+  bool ShowUsage();
+
+  // Prints information about solver options.
+  bool ShowSolverOptions();
+
+  bool SetWriteSol() {
+    solver_.set_wantsol(1);
+    return true;
+  }
+
+  // Stops processing options.
+  bool EndOptions() { return false; }
+
+ public:
+  explicit SolverAppOptionParser(Solver &s);
+
+  OptionList &options() { return options_; }
+
+  // Parses command-line options.
+  const char *Parse(char **&argv);
+};
+}
+
 // A solver application.
 // Solver: optimization solver class; normally a subclass of SolverImpl
 // Reader: .nl reader
@@ -1038,7 +1040,7 @@ int SolverApp<Solver, NLReaderT>::Run(char **argv) {
     void HandleSolution(
           fmt::StringRef, const double *, const double *, double) {}
   };
-  if (option_parser_.write_sol()) {
+  if (solver_.wantsol() != 0) {
     sol_handler.reset(
           new SolutionWriter<Solver>(filename_no_ext, solver_, builder));
   } else {
