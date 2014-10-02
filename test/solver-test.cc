@@ -56,11 +56,14 @@ typedef Solver::OptionPtr SolverOptionPtr;
 class TestSolver : public mp::Solver {
  private:
   MockProblemBuilder *builder;
+  bool mock_solve_;
 
  public:
   TestSolver(const char *name = "testsolver",
       const char *long_name = 0, long date = 0)
-  : Solver(name, long_name, date, 0), builder(0) {}
+  : Solver(name, long_name, date, 0), builder(0), mock_solve_(false) {}
+
+  void mock_solve() { mock_solve_ = true; }
 
   using Solver::set_long_name;
   using Solver::set_version;
@@ -76,7 +79,11 @@ class TestSolver : public mp::Solver {
     return Solver::ParseOptions(argv, flags, p);
   }
 
-  int Solve(ProblemBuilder &, SolutionHandler &) { return 0; }
+  MOCK_METHOD2(DoSolve, int (ProblemBuilder &, SolutionHandler &));
+
+  int Solve(ProblemBuilder &pb, SolutionHandler &sh) {
+    return mock_solve_ ? DoSolve(pb, sh) : 0;
+  }
 };
 
 void CheckObjPrecision(int precision) {
@@ -1082,14 +1089,14 @@ TEST_F(SolverAppTest, ParseOptionsBeforeReadingProblem) {
 
 // Matcher that checks if the argument of type ProblemBuilderToNLAdapter
 // points to the solver's problem builder.
-MATCHER_P(MatchBuilder, solver, "") {
+MATCHER_P(MatchAdapterToBuilder, solver, "") {
   return &arg.builder() == solver->GetProblemBuilder("");
 }
 
 // Test that SolverApp::Run reads the problem.
 TEST_F(SolverAppTest, ReadProblem) {
   EXPECT_CALL(app_.reader(), DoRead(StringRefEq("testproblem.nl"),
-                                    MatchBuilder(&app_.solver())));
+                                    MatchAdapterToBuilder(&app_.solver())));
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
   // Check that the default reader is NLReader.
   mp::NLReader &reader = mp::SolverApp<TestSolver>().reader();
@@ -1134,7 +1141,21 @@ TEST_F(SolverAppTest, ReportInputTime) {
   EXPECT_THAT(output_, testing::MatchesRegex("timing=1\nInput time = .+s\n"));
 }
 
-// TODO: test SolverAppOptionParser
+// Matcher that checks if the argument points to the solver's problem builder.
+MATCHER_P(MatchBuilder, solver, "") {
+  return &arg == solver->GetProblemBuilder("");
+}
+
+// Test that SolverApp::Run solves the problem.
+TEST_F(SolverAppTest, Solve) {
+  EXPECT_CALL(app_.reader(), DoRead(_,_));
+  TestSolver &solver = app_.solver();
+  solver.mock_solve();
+  EXPECT_CALL(solver, DoSolve(MatchBuilder(&solver), _));
+  EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
+}
+
+// TODO: test solution output and SolverAppOptionParser
 
 /*
 TEST(SolverTest, NameInUsage) {

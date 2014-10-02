@@ -1012,8 +1012,8 @@ class SolverApp : private Reader {
   int Run(char **argv);
 };
 
-template <typename Solver, typename NLReaderT>
-int SolverApp<Solver, NLReaderT>::Run(char **argv) {
+template <typename Solver, typename Reader>
+int SolverApp<Solver, Reader>::Run(char **argv) {
   // Parse command-line arguments.
   ++argv;
   const char *filename = option_parser_.Parse(argv);
