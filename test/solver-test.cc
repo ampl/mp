@@ -1000,7 +1000,7 @@ class SolverAppTest : public ::testing::Test {
 
   void AddOption() {
     mp::OptionList::Builder<OptionHandler> builder(app_.options(), handler_);
-    builder.Add<&OptionHandler::on_option>('e', "Excellent choice.");
+    builder.Add<&OptionHandler::on_option>('w', "Wonderful choice.");
   }
 
   struct NullOutputHandler : mp::OutputHandler {
@@ -1018,14 +1018,25 @@ TEST_F(SolverAppTest, ParseOptions) {
   AddOption();
   IgnoreOutput();
   EXPECT_CALL(handler_, on_option()).WillOnce(testing::Return(true));
-  EXPECT_EQ(0, app_.Run(Args("test", "-e")));
+  EXPECT_EQ(0, app_.Run(Args("test", "-w")));
+}
+
+// Test that SolverApp handles standard options.
+TEST_F(SolverAppTest, StandardOptions) {
+  mp::OptionList &options = app_.options();
+  options.Sort();
+  char std_options[] = {'-', '=', '?', 'e', 's', 'v'};
+  for (std::size_t i = 0, n = sizeof(std_options); i < n; ++i) {
+    char opt = std_options[i];
+    EXPECT_TRUE(options.Find(opt) != 0) << "option -" << opt;
+  }
 }
 
 // Test that SolverApp::Run ignores the first argument.
 TEST_F(SolverAppTest, IgnoreFirstArgument) {
   AddOption();
   IgnoreOutput();
-  EXPECT_EQ(0, app_.Run(Args("-e")));
+  EXPECT_EQ(0, app_.Run(Args("-w")));
 }
 
 // Matcher that compares a StringRef with a C string for equality.
@@ -1037,7 +1048,7 @@ TEST_F(SolverAppTest, AddNLExtension) {
   testing::InSequence sequence;
   EXPECT_CALL(handler_, on_option()).WillOnce(testing::Return(true));
   EXPECT_CALL(app_.reader(), DoRead(StringRefEq("testproblem.nl"), _));
-  EXPECT_EQ(0, app_.Run(Args("test", "-e", "testproblem")));
+  EXPECT_EQ(0, app_.Run(Args("test", "-w", "testproblem")));
 }
 
 // Test that SolverApp::Run doesn't add the .nl extension to the filename
@@ -1047,7 +1058,7 @@ TEST_F(SolverAppTest, DontAddNLExtension) {
   testing::InSequence sequence;
   EXPECT_CALL(handler_, on_option()).WillOnce(testing::Return(true));
   EXPECT_CALL(app_.reader(), DoRead(StringRefEq("testproblem.nl"), _));
-  EXPECT_EQ(0, app_.Run(Args("test", "-e", "testproblem.nl")));
+  EXPECT_EQ(0, app_.Run(Args("test", "-w", "testproblem.nl")));
 }
 
 // Test that SolverApp::Run parses options before reading the problem.
@@ -1056,7 +1067,7 @@ TEST_F(SolverAppTest, ParseOptionsBeforeReadingProblem) {
   testing::InSequence sequence;
   EXPECT_CALL(handler_, on_option()).WillOnce(testing::Return(true));
   EXPECT_CALL(app_.reader(), DoRead(_, _));
-  EXPECT_EQ(0, app_.Run(Args("test", "-e", "testproblem")));
+  EXPECT_EQ(0, app_.Run(Args("test", "-w", "testproblem")));
 }
 
 // Matcher that checks if the argument of type ProblemBuilderToNLAdapter
@@ -1075,18 +1086,18 @@ TEST_F(SolverAppTest, ReadProblem) {
   MP_UNUSED(reader);
 }
 
-// TODO: test parsing standard options
-
-/*
-TEST(SolverTest, ProcessArgsParsesSolverOptions) {
-  TestSolver s;
-  Problem p;
-  EXPECT_TRUE(s.ProcessArgs(
-      Args("testprogram", MP_TEST_DATA_DIR "/objconst.nl", "wantsol=5"),
-      p, Solver::NO_OPTION_ECHO));
-  EXPECT_EQ(5, s.wantsol());
+// Test that SolverApp::Run parses solver options.
+TEST_F(SolverAppTest, ParseSolverOptions) {
+  Solver &solver = app_.solver();
+  EXPECT_EQ(0, solver.wantsol());
+  EXPECT_CALL(app_.reader(), DoRead(_, _));
+  EXPECT_EQ(0, app_.Run(Args("test", "testproblem", "wantsol=1")));
+  EXPECT_EQ(1, solver.wantsol());
 }
 
+// TODO: test SolverAppOptionParser
+
+/*
 TEST(SolverTest, NameInUsage) {
   TestSolver s("solver-name", "long-solver-name");
   s.set_version("solver-version");
@@ -1121,22 +1132,6 @@ TEST(SolverTest, VersionWithDate) {
   fmt::Writer w;
   w.write("Test Solver ({}), driver(20121227), ASL({})\n",
     MP_SYSINFO, MP_DATE);
-  EXPECT_EQ(w.str(), ReadFile("out"));
-}
-
-TEST(SolverTest, SetVersion) {
-  TestSolver s("testsolver", "Test Solver");
-  const char *VERSION = "Solver Version 3.0";
-  s.set_version(VERSION);
-  EXPECT_STREQ(VERSION, s.version());
-  EXPECT_EXIT({
-    FILE *f = freopen("out", "w", stdout);
-    Problem p;
-    s.ProcessArgs(Args("program-name", "-v"), p);
-    fclose(f);
-  }, ::testing::ExitedWithCode(0), "");
-  fmt::Writer w;
-  w.write("{} ({}), ASL({})\n", VERSION, MP_SYSINFO, MP_DATE);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
 
