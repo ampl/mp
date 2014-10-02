@@ -48,6 +48,7 @@ using mp::internal::OptionHelper;
 
 using testing::_;
 using testing::StrictMock;
+using testing::Not;
 
 namespace {
 
@@ -63,7 +64,8 @@ class TestSolver : public mp::Solver {
       const char *long_name = 0, long date = 0)
   : Solver(name, long_name, date, 0), builder(0), mock_solve_(false) {}
 
-  void mock_solve() { mock_solve_ = true; }
+  // Enables mocking of the Solve method.
+  void MockSolve() { mock_solve_ = true; }
 
   using Solver::set_long_name;
   using Solver::set_version;
@@ -980,6 +982,129 @@ TEST(SolverTest, SolutionStubOption) {
   EXPECT_EQ("abc", s2.GetStrOption("solutionstub"));
 }
 
+// TODO: test SolverAppOptionParser and SolutionWriter
+
+/*
+TEST(SolverTest, NameInUsage) {
+  TestSolver s("solver-name", "long-solver-name");
+  s.set_version("solver-version");
+  Problem p;
+  OutputRedirect redirect(stderr);
+  s.ProcessArgs(Args("program-name"), p);
+  std::string usage = "usage: solver-name ";
+  EXPECT_EQ(usage, redirect.restore_and_read().substr(0, usage.size()));
+}
+
+TEST(SolverTest, Version) {
+  TestSolver s("testsolver", "Test Solver");
+  EXPECT_EXIT({
+    FILE *f = freopen("out", "w", stdout);
+    Problem p;
+    s.ProcessArgs(Args("program-name", "-v"), p);
+    fclose(f);
+  }, ::testing::ExitedWithCode(0), "");
+  fmt::Writer w;
+  w.write("Test Solver ({}), ASL({})\n", MP_SYSINFO, MP_DATE);
+  EXPECT_EQ(w.str(), ReadFile("out"));
+}
+
+TEST(SolverTest, VersionWithDate) {
+  TestSolver s("testsolver", "Test Solver", 20121227);
+  EXPECT_EXIT({
+    FILE *f = freopen("out", "w", stdout);
+    Problem p;
+    s.ProcessArgs(Args("program-name", "-v"), p);
+    fclose(f);
+  }, ::testing::ExitedWithCode(0), "");
+  fmt::Writer w;
+  w.write("Test Solver ({}), driver(20121227), ASL({})\n",
+    MP_SYSINFO, MP_DATE);
+  EXPECT_EQ(w.str(), ReadFile("out"));
+}
+
+TEST(SolverTest, InputSuffix) {
+  TestSolver s("");
+  s.AddSuffix("answer", 0, ASL_Sufkind_var, 0);
+  Problem p;
+  s.ProcessArgs(Args("program-name", MP_TEST_DATA_DIR "/suffix.nl"), p);
+  mp::Suffix suffix = p.FindSuffix("answer", ASL_Sufkind_var);
+  EXPECT_EQ(42, suffix.int_value(0));
+}
+
+TEST(SolverTest, OutputSuffix) {
+  TestSolver s("");
+  s.AddSuffix("answer", 0, ASL_Sufkind_var | ASL_Sufkind_outonly, 0);
+  Problem p;
+  s.ProcessArgs(Args("program-name"), p);
+  mp::Suffix suffix = p.FindSuffix("answer", ASL_Sufkind_var);
+  int value = 42;
+  suffix.set_values(&value);
+  EXPECT_EQ(42, suffix.int_value(0));
+}
+
+TEST(SolverTest, SolutionsAreNotCountedByDefault) {
+  SolCountingSolver s(true);
+  s.SetIntOption("wantsol", 1);
+  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
+  Problem p;
+  p.Read("test.nl");
+  mp::SolutionWriter sol_writer(s, p);
+  s.Solve(p, sol_writer);
+  EXPECT_TRUE(ReadFile("test.sol").find(
+      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) == std::string::npos);
+}
+
+TEST(SolverTest, CountSolutions) {
+  SolCountingSolver s(true);
+  s.SetIntOption("countsolutions", 1);
+  s.SetIntOption("wantsol", 1);
+  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
+  Problem p;
+  p.Read("test.nl");
+  mp::SolutionWriter sol_writer(s, p);
+  s.Solve(p, sol_writer);
+  EXPECT_TRUE(ReadFile("test.sol").find(
+      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) != std::string::npos);
+}
+
+bool Exists(fmt::StringRef filename) {
+  std::FILE *f = std::fopen(filename.c_str(), "r");
+  if (f)
+    std::fclose(f);
+  return f != 0;
+}
+
+TEST(SolverTest, SolutionsAreNotWrittenByDefault) {
+  SolCountingSolver s(true);
+  s.SetIntOption("wantsol", 1);
+  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
+  Problem p;
+  p.Read("test.nl");
+  mp::SolutionWriter sol_writer(s, p);
+  s.Solve(p, sol_writer);
+  EXPECT_TRUE(!Exists("1.sol"));
+  EXPECT_TRUE(ReadFile("test.sol").find(
+      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) == std::string::npos);
+}
+
+TEST(SolverTest, WriteSolutions) {
+  SolCountingSolver s(true);
+  s.SetStrOption("solutionstub", "abc");
+  s.SetIntOption("wantsol", 1);
+  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
+  Problem p;
+  p.Read("test.nl");
+  for (int i = 1; i <= NUM_SOLUTIONS; ++i)
+    std::remove(fmt::format("abc{}.sol", i).c_str());
+  mp::SolutionWriter sol_writer(s, p);
+  s.Solve(p, sol_writer);
+  for (int i = 1; i <= NUM_SOLUTIONS; ++i)
+    EXPECT_TRUE(Exists(fmt::format("abc{}.sol", i)));
+  EXPECT_TRUE(ReadFile("test.sol").find(
+      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) != std::string::npos);
+}
+*/
+
 struct MockOptionHandler {
   MOCK_METHOD0(on_option, bool ());
 };
@@ -1136,7 +1261,7 @@ TEST_F(SolverAppTest, InputTimeIsNotReportedByDefault) {
 
 TEST_F(SolverAppTest, ReportInputTime) {
   RedirectOutput();
-  EXPECT_CALL(app_.reader(), DoRead(_,_));
+  EXPECT_CALL(app_.reader(), DoRead(_, _));
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem", "timing=1")));
   EXPECT_THAT(output_, testing::MatchesRegex("timing=1\nInput time = .+s\n"));
 }
@@ -1148,133 +1273,34 @@ MATCHER_P(MatchBuilder, solver, "") {
 
 // Test that SolverApp::Run solves the problem.
 TEST_F(SolverAppTest, Solve) {
-  EXPECT_CALL(app_.reader(), DoRead(_,_));
+  EXPECT_CALL(app_.reader(), DoRead(_, _));
   TestSolver &solver = app_.solver();
-  solver.mock_solve();
+  solver.MockSolve();
   EXPECT_CALL(solver, DoSolve(MatchBuilder(&solver), _));
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
 }
 
-// TODO: test solution output and SolverAppOptionParser
-
-/*
-TEST(SolverTest, NameInUsage) {
-  TestSolver s("solver-name", "long-solver-name");
-  s.set_version("solver-version");
-  Problem p;
-  OutputRedirect redirect(stderr);
-  s.ProcessArgs(Args("program-name"), p);
-  std::string usage = "usage: solver-name ";
-  EXPECT_EQ(usage, redirect.restore_and_read().substr(0, usage.size()));
+// Matcher that checks if the argument is a solution writer.
+MATCHER(MatchSolutionWriter, "") {
+  return dynamic_cast<mp::SolutionWriter<TestSolver>*>(&arg) != 0;
 }
 
-TEST(SolverTest, Version) {
-  TestSolver s("testsolver", "Test Solver");
-  EXPECT_EXIT({
-    FILE *f = freopen("out", "w", stdout);
-    Problem p;
-    s.ProcessArgs(Args("program-name", "-v"), p);
-    fclose(f);
-  }, ::testing::ExitedWithCode(0), "");
-  fmt::Writer w;
-  w.write("Test Solver ({}), ASL({})\n", MP_SYSINFO, MP_DATE);
-  EXPECT_EQ(w.str(), ReadFile("out"));
+// Test that SolverApp::Run doesn't use the SolutionWriter by default.
+TEST_F(SolverAppTest, DontUseSolutionWriterByDefault) {
+  EXPECT_CALL(app_.reader(), DoRead(_, _));
+  TestSolver &solver = app_.solver();
+  solver.MockSolve();
+  EXPECT_CALL(solver, DoSolve(_, Not(MatchSolutionWriter())));
+  EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
 }
 
-TEST(SolverTest, VersionWithDate) {
-  TestSolver s("testsolver", "Test Solver", 20121227);
-  EXPECT_EXIT({
-    FILE *f = freopen("out", "w", stdout);
-    Problem p;
-    s.ProcessArgs(Args("program-name", "-v"), p);
-    fclose(f);
-  }, ::testing::ExitedWithCode(0), "");
-  fmt::Writer w;
-  w.write("Test Solver ({}), driver(20121227), ASL({})\n",
-    MP_SYSINFO, MP_DATE);
-  EXPECT_EQ(w.str(), ReadFile("out"));
+// Test that SolverApp::Run uses SolutionWriter when wantsol() returns nonzero.
+TEST_F(SolverAppTest, UseSolutionWriter) {
+  EXPECT_CALL(app_.reader(), DoRead(_, _));
+  TestSolver &solver = app_.solver();
+  solver.set_wantsol(1);
+  solver.MockSolve();
+  EXPECT_CALL(solver, DoSolve(_, MatchSolutionWriter()));
+  EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
 }
-
-TEST(SolverTest, InputSuffix) {
-  TestSolver s("");
-  s.AddSuffix("answer", 0, ASL_Sufkind_var, 0);
-  Problem p;
-  s.ProcessArgs(Args("program-name", MP_TEST_DATA_DIR "/suffix.nl"), p);
-  mp::Suffix suffix = p.FindSuffix("answer", ASL_Sufkind_var);
-  EXPECT_EQ(42, suffix.int_value(0));
-}
-
-TEST(SolverTest, OutputSuffix) {
-  TestSolver s("");
-  s.AddSuffix("answer", 0, ASL_Sufkind_var | ASL_Sufkind_outonly, 0);
-  Problem p;
-  s.ProcessArgs(Args("program-name"), p);
-  mp::Suffix suffix = p.FindSuffix("answer", ASL_Sufkind_var);
-  int value = 42;
-  suffix.set_values(&value);
-  EXPECT_EQ(42, suffix.int_value(0));
-}
-
-TEST(SolverTest, SolutionsAreNotCountedByDefault) {
-  SolCountingSolver s(true);
-  s.SetIntOption("wantsol", 1);
-  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
-  Problem p;
-  p.Read("test.nl");
-  mp::SolutionWriter sol_writer(s, p);
-  s.Solve(p, sol_writer);
-  EXPECT_TRUE(ReadFile("test.sol").find(
-      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) == std::string::npos);
-}
-
-TEST(SolverTest, CountSolutions) {
-  SolCountingSolver s(true);
-  s.SetIntOption("countsolutions", 1);
-  s.SetIntOption("wantsol", 1);
-  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
-  Problem p;
-  p.Read("test.nl");
-  mp::SolutionWriter sol_writer(s, p);
-  s.Solve(p, sol_writer);
-  EXPECT_TRUE(ReadFile("test.sol").find(
-      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) != std::string::npos);
-}
-
-bool Exists(fmt::StringRef filename) {
-  std::FILE *f = std::fopen(filename.c_str(), "r");
-  if (f)
-    std::fclose(f);
-  return f != 0;
-}
-
-TEST(SolverTest, SolutionsAreNotWrittenByDefault) {
-  SolCountingSolver s(true);
-  s.SetIntOption("wantsol", 1);
-  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
-  Problem p;
-  p.Read("test.nl");
-  mp::SolutionWriter sol_writer(s, p);
-  s.Solve(p, sol_writer);
-  EXPECT_TRUE(!Exists("1.sol"));
-  EXPECT_TRUE(ReadFile("test.sol").find(
-      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) == std::string::npos);
-}
-
-TEST(SolverTest, WriteSolutions) {
-  SolCountingSolver s(true);
-  s.SetStrOption("solutionstub", "abc");
-  s.SetIntOption("wantsol", 1);
-  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
-  Problem p;
-  p.Read("test.nl");
-  for (int i = 1; i <= NUM_SOLUTIONS; ++i)
-    std::remove(fmt::format("abc{}.sol", i).c_str());
-  mp::SolutionWriter sol_writer(s, p);
-  s.Solve(p, sol_writer);
-  for (int i = 1; i <= NUM_SOLUTIONS; ++i)
-    EXPECT_TRUE(Exists(fmt::format("abc{}.sol", i)));
-  EXPECT_TRUE(ReadFile("test.sol").find(
-      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) != std::string::npos);
-}
-*/
 }
