@@ -953,14 +953,21 @@ class SolverAppOptionParser {
   // Command-line options.
   OptionList options_;
 
+  bool echo_solver_options_;
+
   // Prints usage information and stops processing options.
   bool ShowUsage();
 
   // Prints information about solver options.
   bool ShowSolverOptions();
 
-  bool SetWriteSol() {
+  bool WantSol() {
     solver_.set_wantsol(1);
+    return true;
+  }
+
+  bool DontEchoSolverOptions() {
+    echo_solver_options_ = false;
     return true;
   }
 
@@ -971,6 +978,9 @@ class SolverAppOptionParser {
   explicit SolverAppOptionParser(Solver &s);
 
   OptionList &options() { return options_; }
+
+  // Retruns true if assignments of solver options should be echoed.
+  bool echo_solver_options() const { return echo_solver_options_; }
 
   // Parses command-line options.
   const char *Parse(char **&argv);
@@ -1028,7 +1038,9 @@ int SolverApp<Solver, NLReaderT>::Run(char **argv) {
   double read_time = GetTimeAndReset(start);
 
   // Parse solver options.
-  solver_.ParseOptions(argv);
+  unsigned flags =
+      option_parser_.echo_solver_options() ? 0 : Solver::NO_OPTION_ECHO;
+  solver_.ParseOptions(argv, flags);
   if (solver_.timing())
     solver_.Print("Input time = {:.6f}s\n", read_time);
 

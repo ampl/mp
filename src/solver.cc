@@ -235,31 +235,24 @@ std::string OptionHelper<std::string>::Parse(const char *&s) {
   return std::string(start, s - start);
 }
 
-SolverAppOptionParser::SolverAppOptionParser(Solver &s) : solver_(s) {
-  // Add command-line options.
+SolverAppOptionParser::SolverAppOptionParser(Solver &s)
+  : solver_(s), echo_solver_options_(true) {
+  // Add standard command-line options.
   OptionList::Builder<SolverAppOptionParser> app_options(options_, *this);
   app_options.Add<&SolverAppOptionParser::ShowUsage>(
         '?', "show usage and exit");
   app_options.Add<&SolverAppOptionParser::EndOptions>('-', "end of options");
   app_options.Add<&SolverAppOptionParser::ShowSolverOptions>(
         '=', "show solver options and exit");
+  app_options.Add<&SolverAppOptionParser::DontEchoSolverOptions>(
+        'e', "suppress echoing of assignments");
+  app_options.Add<&SolverAppOptionParser::WantSol>(
+        's', "write .sol file (without -AMPL)");
   OptionList::Builder<mp::Solver> options(options_, s);
   options.Add<&mp::Solver::ShowVersion>('v', "show version and exit");
-  // TODO: add options -e, -s and, if solver supports functions, -ix and -u
-  /*
-  static const char *options[] = {
-    "e",  "suppress echoing of assignments",
-    "ix", "import user-defined functions from x; -i? gives details",
-    "s",  "write .sol file (without -AMPL)",
-    "u",  "just show available user-defined functions",
-  for (const char **s = options; *s; s += 2) {
-    // Filter out -ix & -u options if FUNC_OPTIONS flags is not set.
-    char c = **s;
-    if ((flags & FUNC_OPTIONS) == 0 && (c == 'i' || c == 'u'))
-      continue;
-    fmt::print(f, "\t-{:3}{{{}}}\n", s[0], s[1]);
-  }
-  */
+  // TODO: if solver supports functions add options -ix and -u
+  // "ix", "import user-defined functions from x; -i? gives details",
+  // "u",  "just show available user-defined functions"
 }
 
 bool SolverAppOptionParser::ShowUsage() {
