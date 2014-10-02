@@ -49,15 +49,15 @@ the following requirements:
    (scenario-dependent) parameters and expression should have the form of
    expectation:
 
-  .. code-block:: python
+   .. code-block:: python
 
-    param P{Scenarios}; # probabilities
+      param P{Scenarios}; # probabilities
 
-    maximize profit: sum{s in Scenarios} P[s] * (
-      ExcessSellingPrice * sellExcess[s] +
-      sum{c in Crops} (SellingPrice[c] * sell[c, s] -
-                       PurchasePrice[c] * buy[c, s]) -
-      sum{c in Crops} PlantingCost[c] * area[c]);
+      maximize profit: sum{s in Scenarios} P[s] * (
+        ExcessSellingPrice * sellExcess[s] +
+        sum{c in Crops} (SellingPrice[c] * sell[c, s] -
+                         PurchasePrice[c] * buy[c, s]) -
+        sum{c in Crops} PlantingCost[c] * area[c]);
 
 Usage example
 -------------
