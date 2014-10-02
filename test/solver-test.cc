@@ -1003,12 +1003,22 @@ class SolverAppTest : public ::testing::Test {
     builder.Add<&OptionHandler::on_option>('w', "Wonderful choice.");
   }
 
-  struct NullOutputHandler : mp::OutputHandler {
-    void HandleOutput(fmt::StringRef) {}
-  } null_output_handler_;
+  std::string output_;
 
-  void IgnoreOutput() {
-    app_.solver().set_output_handler(&null_output_handler_);
+  struct OutputHandler : mp::OutputHandler {
+    std::string &output;
+
+    explicit OutputHandler(std::string &output) : output(output) {}
+
+    void HandleOutput(fmt::StringRef message) {
+      output += message.c_str();
+    }
+  } output_handler_;
+
+  SolverAppTest() : output_handler_(output_) {}
+
+  void RedirectOutput() {
+    app_.solver().set_output_handler(&output_handler_);
   }
 };
 
@@ -1016,7 +1026,7 @@ class SolverAppTest : public ::testing::Test {
 // a problem if the filename is not specified.
 TEST_F(SolverAppTest, ParseOptions) {
   AddOption();
-  IgnoreOutput();
+  RedirectOutput();
   EXPECT_CALL(handler_, on_option()).WillOnce(testing::Return(true));
   EXPECT_EQ(0, app_.Run(Args("test", "-w")));
 }
@@ -1035,7 +1045,7 @@ TEST_F(SolverAppTest, StandardOptions) {
 // Test that SolverApp::Run ignores the first argument.
 TEST_F(SolverAppTest, IgnoreFirstArgument) {
   AddOption();
-  IgnoreOutput();
+  RedirectOutput();
   EXPECT_EQ(0, app_.Run(Args("-w")));
 }
 
@@ -1088,11 +1098,40 @@ TEST_F(SolverAppTest, ReadProblem) {
 
 // Test that SolverApp::Run parses solver options.
 TEST_F(SolverAppTest, ParseSolverOptions) {
+  RedirectOutput();
   Solver &solver = app_.solver();
   EXPECT_EQ(0, solver.wantsol());
   EXPECT_CALL(app_.reader(), DoRead(_, _));
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem", "wantsol=1")));
   EXPECT_EQ(1, solver.wantsol());
+}
+
+TEST_F(SolverAppTest, SolverOptionsEchoedByDefault) {
+  RedirectOutput();
+  EXPECT_CALL(app_.reader(), DoRead(_, _));
+  EXPECT_EQ(0, app_.Run(Args("test", "testproblem", "wantsol=1")));
+  EXPECT_EQ("wantsol=1\n", output_);
+}
+
+TEST_F(SolverAppTest, DisableSolverOptionEcho) {
+  RedirectOutput();
+  EXPECT_CALL(app_.reader(), DoRead(_, _));
+  EXPECT_EQ(0, app_.Run(Args("test", "-e", "testproblem", "wantsol=1")));
+  EXPECT_EQ("", output_);
+}
+
+TEST_F(SolverAppTest, InputTimeIsNotReportedByDefault) {
+  RedirectOutput();
+  EXPECT_CALL(app_.reader(), DoRead(_, _));
+  EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
+  EXPECT_EQ("", output_);
+}
+
+TEST_F(SolverAppTest, ReportInputTime) {
+  RedirectOutput();
+  EXPECT_CALL(app_.reader(), DoRead(_,_));
+  EXPECT_EQ(0, app_.Run(Args("test", "testproblem", "timing=1")));
+  EXPECT_THAT(output_, testing::MatchesRegex("timing=1\nInput time = .+s\n"));
 }
 
 // TODO: test SolverAppOptionParser
@@ -1133,34 +1172,6 @@ TEST(SolverTest, VersionWithDate) {
   w.write("Test Solver ({}), driver(20121227), ASL({})\n",
     MP_SYSINFO, MP_DATE);
   EXPECT_EQ(w.str(), ReadFile("out"));
-}
-
-TEST(SolverTest, InputTiming) {
-  struct TestOutputHandler : mp::OutputHandler {
-    std::string output;
-
-    virtual ~TestOutputHandler() {}
-    void HandleOutput(fmt::StringRef output) {
-      this->output += output;
-    }
-  };
-  TestOutputHandler oh;
-  TestSolver s("");
-  s.set_output_handler(&oh);
-
-  s.SetIntOption("timing", 0);
-  {
-    Problem p;
-    s.ProcessArgs(Args("test", MP_TEST_DATA_DIR "/objconst.nl"), p);
-    EXPECT_TRUE(oh.output.find("Input time = ") == std::string::npos);
-  }
-
-  {
-    s.SetIntOption("timing", 1);
-    Problem p;
-    s.ProcessArgs(Args("test", MP_TEST_DATA_DIR "/objconst.nl"), p);
-    EXPECT_TRUE(oh.output.find("Input time = ") != std::string::npos);
-  }
 }
 
 TEST(SolverTest, InputSuffix) {
@@ -1245,6 +1256,4 @@ TEST(SolverTest, WriteSolutions) {
       fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) != std::string::npos);
 }
 */
-
-// TODO: separate SolverApp tests
 }
