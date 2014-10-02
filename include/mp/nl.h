@@ -445,6 +445,8 @@ class NLHandler {
 };
 
 // Adapts ProblemBuilder for use as an .nl handler.
+// It doesn't call ProblemBuilder::EndBuild to allow for modification
+// of a problem after it has been read.
 template <typename ProblemBuilder>
 class ProblemBuilderToNLAdapter {
  private:
