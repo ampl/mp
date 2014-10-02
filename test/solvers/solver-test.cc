@@ -81,7 +81,8 @@ SolveResult SolverTest::Solve(
   const std::string DATA_DIR = MP_TEST_DATA_DIR "/";
   p.Read(DATA_DIR + stub);
   int solve_code = 0;
-  if (s.ParseOptions(Args(opt), 0, &p))
+  char *args[] = {const_cast<char*>(opt), 0};
+  if (s.ParseOptions(args, 0, &p))
     solve_code = s.Solve(p, sh);
   const string &message = sh.message();
   EXPECT_GE(solve_code, 0);

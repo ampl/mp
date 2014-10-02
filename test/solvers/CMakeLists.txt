@@ -1,4 +1,4 @@
-add_mp_library(solver-impl-test STATIC ../args.cc solver-test.cc LIBRARIES asl)
+add_mp_library(solver-impl-test STATIC solver-test.cc LIBRARIES asl)
 target_compile_definitions(solver-impl-test
   PUBLIC MP_TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test/data")
 target_link_libraries(solver-impl-test gtest-extra)
@@ -28,5 +28,5 @@ if (TARGET jacop)
 endif ()
 
 if (TARGET amplsmpswriter)
-  add_mp_test(smpswriter-test ../args.cc smpswriter-test.cc LIBS amplsmpswriter)
+  add_mp_test(smpswriter-test smpswriter-test.cc LIBS amplsmpswriter)
 endif ()

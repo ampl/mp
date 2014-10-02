@@ -22,7 +22,6 @@
 
 #include "mp/problem-builder.h"
 
-#include "args.h"
 #include "gtest-extra.h"
 #include "mock-problem-builder.h"
 #include "solution-handler.h"
@@ -87,6 +86,52 @@ class TestSolver : public mp::Solver {
     return mock_solve_ ? DoSolve(pb, sh) : 0;
   }
 };
+
+// Helper class that copies arguments to comply with the main function
+// signature and avoid unwanted modification.
+class Args {
+ private:
+  std::size_t argc_;
+  std::vector<char> store_;
+  std::vector<char*> argv_;
+  char **pargv_;
+
+  void Add(const char *arg);
+
+ public:
+  explicit Args(const char *arg1, const char *arg2 = 0,
+      const char *arg3 = 0, const char *arg4 = 0,
+      const char *arg5 = 0, const char *arg6 = 0);
+
+  operator char **&();
+};
+
+void Args::Add(const char *arg) {
+  if (!arg) return;
+  ++argc_;
+  store_.insert(store_.end(), arg, arg + std::strlen(arg) + 1);
+}
+
+Args::Args(const char *arg1, const char *arg2,
+      const char *arg3, const char *arg4, const char *arg5, const char *arg6)
+: argc_(0), pargv_(0) {
+  Add(arg1);
+  Add(arg2);
+  Add(arg3);
+  Add(arg4);
+  Add(arg5);
+  Add(arg6);
+}
+
+Args::operator char **&() {
+  argv_.resize(argc_ + 1);
+  for (std::size_t i = 0, j = 0; i < argc_;
+      j += std::strlen(&store_[j]) + 1, ++i) {
+    argv_[i] = &store_[j];
+  }
+  pargv_ = &argv_[0];
+  return pargv_;
+}
 
 void CheckObjPrecision(int precision) {
   double value = 12.3456789123456789;
