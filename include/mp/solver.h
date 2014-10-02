@@ -875,6 +875,13 @@ class SolutionAdapter {
   //SuffixView problem_suffixes() const { return problem_.problem_suffixes(); }
 };
 
+struct NullSolutionHandler : SolutionHandler {
+  void HandleFeasibleSolution(
+        fmt::StringRef, const double *, const double *, double) {}
+  void HandleSolution(
+        fmt::StringRef, const double *, const double *, double) {}
+};
+
 template <typename Solver>
 class SolutionWriter : public SolutionHandler {
  private:
@@ -946,6 +953,7 @@ class NLReader {
 namespace internal {
 
 // Command-line option parser for a solver application.
+// Not to be mistaken with solver option parser built into the Solver class.
 class SolverAppOptionParser {
  private:
   Solver &solver_;
@@ -1046,12 +1054,6 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
 
   // Solve the problem writing solution(s) if necessary.
   std::auto_ptr<SolutionHandler> sol_handler;
-  struct NullSolutionHandler : SolutionHandler {
-    void HandleFeasibleSolution(
-          fmt::StringRef, const double *, const double *, double) {}
-    void HandleSolution(
-          fmt::StringRef, const double *, const double *, double) {}
-  };
   if (solver_.wantsol() != 0) {
     sol_handler.reset(
           new SolutionWriter<Solver>(filename_no_ext, solver_, builder));
