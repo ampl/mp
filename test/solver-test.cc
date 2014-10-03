@@ -48,6 +48,7 @@ using mp::internal::OptionHelper;
 using testing::_;
 using testing::StrictMock;
 using testing::Not;
+using testing::StartsWith;
 
 namespace {
 
@@ -1027,46 +1028,68 @@ TEST(SolverTest, SolutionStubOption) {
   EXPECT_EQ("abc", s2.GetStrOption("solutionstub"));
 }
 
-// TODO: test SolverAppOptionParser and SolutionWriter
+struct OutputHandler : mp::OutputHandler {
+  std::string output;
+
+  void HandleOutput(fmt::StringRef message) { output += message.c_str(); }
+};
+
+class SolverAppOptionParserTest : public ::testing::Test {
+ protected:
+  TestSolver solver_;
+  OutputHandler handler_;
+  mp::internal::SolverAppOptionParser parser_;
+
+  SolverAppOptionParserTest()
+    : solver_("solver-name", "long-solver-name"), parser_(solver_) {
+    solver_.set_output_handler(&handler_);
+  }
+};
+
+// Test that SolverAppOptionParser prints usage if the filename is not
+// specified.
+TEST_F(SolverAppOptionParserTest, ShowUsageIfNoFilename) {
+  Args args("unused");
+  char **argp = args, **argp_copy = argp;
+  EXPECT_EQ(0, parser_.Parse(argp_copy));
+  EXPECT_EQ(argp + 1, argp_copy);
+  EXPECT_THAT(handler_.output, StartsWith("usage: solver-name "));
+
+  // Test the same, but with some options.
+  handler_.output.clear();
+  EXPECT_EQ(0, parser_.Parse(Args("unused", "-e", "-s")));
+  EXPECT_THAT(handler_.output, StartsWith("usage: solver-name "));
+}
+
+TEST_F(SolverAppOptionParserTest, HelpOption) {
+  EXPECT_EQ(0, parser_.Parse(Args("unused", "-?", "whatever")));
+  EXPECT_THAT(handler_.output, StartsWith("usage: solver-name "));
+}
+
+TEST_F(SolverAppOptionParserTest, EndOptions) {
+  Args args("unused", "--", "-?", "whatever");
+  char **argp = args, **argp_copy = argp;
+  EXPECT_STREQ("-?", parser_.Parse(argp_copy));
+  EXPECT_EQ(argp + 3, argp_copy);
+  EXPECT_EQ("", handler_.output);
+}
+
+TEST_F(SolverAppOptionParserTest, VersionOption) {
+  EXPECT_EQ(0, parser_.Parse(Args("unused", "-v", "whatever")));
+  EXPECT_EQ(
+        fmt::format("long-solver-name ({}), ASL({})\n", MP_SYSINFO, MP_DATE),
+        handler_.output);
+}
+
+TEST_F(SolverAppOptionParserTest, EQOption) {
+  EXPECT_EQ(0, parser_.Parse(Args("unused", "-=", "whatever")));
+  EXPECT_THAT(handler_.output, StartsWith("\nOptions:\n\ntiming\n"));
+}
+
+// TODO: test -e, -s, -AMPL
+// TODO: test SolutionWriter
 
 /*
-TEST(SolverTest, NameInUsage) {
-  TestSolver s("solver-name", "long-solver-name");
-  s.set_version("solver-version");
-  Problem p;
-  OutputRedirect redirect(stderr);
-  s.ProcessArgs(Args("program-name"), p);
-  std::string usage = "usage: solver-name ";
-  EXPECT_EQ(usage, redirect.restore_and_read().substr(0, usage.size()));
-}
-
-TEST(SolverTest, Version) {
-  TestSolver s("testsolver", "Test Solver");
-  EXPECT_EXIT({
-    FILE *f = freopen("out", "w", stdout);
-    Problem p;
-    s.ProcessArgs(Args("program-name", "-v"), p);
-    fclose(f);
-  }, ::testing::ExitedWithCode(0), "");
-  fmt::Writer w;
-  w.write("Test Solver ({}), ASL({})\n", MP_SYSINFO, MP_DATE);
-  EXPECT_EQ(w.str(), ReadFile("out"));
-}
-
-TEST(SolverTest, VersionWithDate) {
-  TestSolver s("testsolver", "Test Solver", 20121227);
-  EXPECT_EXIT({
-    FILE *f = freopen("out", "w", stdout);
-    Problem p;
-    s.ProcessArgs(Args("program-name", "-v"), p);
-    fclose(f);
-  }, ::testing::ExitedWithCode(0), "");
-  fmt::Writer w;
-  w.write("Test Solver ({}), driver(20121227), ASL({})\n",
-    MP_SYSINFO, MP_DATE);
-  EXPECT_EQ(w.str(), ReadFile("out"));
-}
-
 TEST(SolverTest, InputSuffix) {
   TestSolver s("");
   s.AddSuffix("answer", 0, ASL_Sufkind_var, 0);
@@ -1180,19 +1203,9 @@ class SolverAppTest : public ::testing::Test {
     builder.Add<&OptionHandler::on_option>('w', "Wonderful choice.");
   }
 
-  std::string output_;
+  OutputHandler output_handler_;
 
-  struct OutputHandler : mp::OutputHandler {
-    std::string &output;
-
-    explicit OutputHandler(std::string &output) : output(output) {}
-
-    void HandleOutput(fmt::StringRef message) {
-      output += message.c_str();
-    }
-  } output_handler_;
-
-  SolverAppTest() : output_handler_(output_) {}
+  const std::string &output() const { return output_handler_.output; }
 
   void RedirectOutput() {
     app_.solver().set_output_handler(&output_handler_);
@@ -1287,28 +1300,28 @@ TEST_F(SolverAppTest, SolverOptionsEchoedByDefault) {
   RedirectOutput();
   EXPECT_CALL(app_.reader(), DoRead(_, _));
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem", "wantsol=1")));
-  EXPECT_EQ("wantsol=1\n", output_);
+  EXPECT_EQ("wantsol=1\n", output());
 }
 
 TEST_F(SolverAppTest, DisableSolverOptionEcho) {
   RedirectOutput();
   EXPECT_CALL(app_.reader(), DoRead(_, _));
   EXPECT_EQ(0, app_.Run(Args("test", "-e", "testproblem", "wantsol=1")));
-  EXPECT_EQ("", output_);
+  EXPECT_EQ("", output());
 }
 
 TEST_F(SolverAppTest, InputTimeIsNotReportedByDefault) {
   RedirectOutput();
   EXPECT_CALL(app_.reader(), DoRead(_, _));
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
-  EXPECT_EQ("", output_);
+  EXPECT_EQ("", output());
 }
 
 TEST_F(SolverAppTest, ReportInputTime) {
   RedirectOutput();
   EXPECT_CALL(app_.reader(), DoRead(_, _));
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem", "timing=1")));
-  EXPECT_THAT(output_, testing::MatchesRegex("timing=1\nInput time = .+s\n"));
+  EXPECT_THAT(output(), testing::MatchesRegex("timing=1\nInput time = .+s\n"));
 }
 
 // Matcher that checks if the argument points to the solver's problem builder.

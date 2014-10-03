@@ -96,7 +96,9 @@ class OptionList {
 };
 
 // Parses command-line options.
-char **ParseOptions(char **args, OptionList &options);
+// Returns the option that terminated parsing or 0 if parsing continued
+// till the end.
+char ParseOptions(char **&args, OptionList &options);
 }  // namespace mp
 
 #endif  // MP_OPTION_H_

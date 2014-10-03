@@ -56,13 +56,12 @@ const Option *mp::OptionList::Find(char name) const {
   return it != options_.end() && it->name == name ? &*it : 0;
 }
 
-char **mp::ParseOptions(char **args, OptionList &options) {
+char mp::ParseOptions(char **&args, OptionList &options) {
   options.Sort();
-  char **arg_ptr = args;
-  for (; *arg_ptr; ++arg_ptr) {
-    const char *arg = *arg_ptr;
+  while (const char *arg = *args) {
     if (*arg != '-')
       break;
+    ++args;
     char name = arg[1];
     const Option *opt = options.Find(name);
     if (!opt) {
@@ -70,7 +69,7 @@ char **mp::ParseOptions(char **args, OptionList &options) {
             fmt::format("invalid option '-{}'", MakePrintable(name)));
     }
     if (!opt->on_option(opt->handler))
-      return 0;
+      return name;
   }
-  return arg_ptr;
+  return 0;
 }

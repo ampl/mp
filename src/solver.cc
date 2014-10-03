@@ -286,8 +286,9 @@ bool SolverAppOptionParser::ShowSolverOptions() {
 }
 
 const char *SolverAppOptionParser::Parse(char **&argv) {
-  argv = ParseOptions(argv, options_);
-  if (!argv) return 0;
+  ++argv;
+  char opt = ParseOptions(argv, options_);
+  if (opt && opt != '-') return 0;
   const char *stub = *argv;
   if (!stub) {
     ShowUsage();

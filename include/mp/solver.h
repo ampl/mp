@@ -1023,7 +1023,6 @@ class SolverApp : private Reader {
 template <typename Solver, typename Reader>
 int SolverApp<Solver, Reader>::Run(char **argv) {
   // Parse command-line arguments.
-  ++argv;
   const char *filename = option_parser_.Parse(argv);
   if (!filename) return 0;
 
