@@ -1573,29 +1573,17 @@ void NLReader<Reader, Handler>::Read() {
 }
 
 // An .nl file.
+template <typename File = fmt::File>
 class NLFile {
  private:
-  fmt::File file_;
+  File file_;
   std::size_t size_;
   std::size_t rounded_size_;  // Size rounded up to a multiple of page size.
 
  public:
-  explicit NLFile(fmt::StringRef filename)
-    : file_(filename, fmt::File::RDONLY) {
-    fmt::LongLong file_size = file_.size();
-    assert(file_size >= 0);
-    fmt::ULongLong unsigned_file_size = file_size;
-    // Check if file size fits in size_t.
-    size_ = static_cast<std::size_t>(unsigned_file_size);
-    if (size_ != unsigned_file_size)
-      throw Error("file {} is too big", filename);
-    // Round size up to a multiple of page_size. The remainded of the last
-    // partial page is zero-filled both on POSIX and Windows so the resulting
-    // memory buffer is zero terminated.
-    std::size_t page_size = fmt::getpagesize();
-    std::size_t remainder = size_ % page_size;
-    rounded_size_ = remainder != 0 ? (size_ + page_size - remainder) : size_;
-  }
+  NLFile() : size_(0), rounded_size_(0) {}
+
+  void Open(fmt::StringRef filename);
 
   // Reads the file into an array.
   void Read(fmt::internal::Array<char, 1> &array);
@@ -1603,8 +1591,35 @@ class NLFile {
   std::size_t size() { return size_; }
   std::size_t rounded_size() { return rounded_size_; }
 
-  fmt::File &get() { return file_; }
+  File &get() { return file_; }
 };
+
+template <typename File>
+void NLFile<File>::Open(fmt::StringRef filename) {
+  file_ = File(filename, fmt::File::RDONLY);
+  fmt::LongLong file_size = file_.size();
+  assert(file_size >= 0);
+  fmt::ULongLong unsigned_file_size = file_size;
+  // Check if file size fits in size_t.
+  size_ = static_cast<std::size_t>(unsigned_file_size);
+  if (size_ != unsigned_file_size)
+    throw Error("file {} is too big", filename);
+  // Round size up to a multiple of page_size. The remainded of the last
+  // partial page is zero-filled both on POSIX and Windows so the resulting
+  // memory buffer is zero terminated.
+  std::size_t page_size = fmt::getpagesize();
+  std::size_t remainder = size_ % page_size;
+  rounded_size_ = remainder != 0 ? (size_ + page_size - remainder) : size_;
+}
+
+template <typename File>
+void NLFile<File>::Read(fmt::internal::Array<char, 1> &array) {
+  array.resize(size_ + 1);
+  std::size_t offset = 0;
+  while (offset < size_)
+    offset += file_.read(&array[offset], size_ - offset);
+  array[size_] = 0;
+}
 }  // namespace internal
 
 // Reads a string containing an optimization problem in .nl format.
@@ -1641,7 +1656,8 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
 // Reads an .nl file.
 template <typename Handler>
 void ReadNLFile(fmt::StringRef filename, Handler &handler) {
-  internal::NLFile file(filename);
+  internal::NLFile<> file;
+  file.Open(filename);
   std::size_t size = file.size(), rounded_size = file.rounded_size();
   if (size == rounded_size) {
     // Don't use mmap, because the file size is a multiple of the page size

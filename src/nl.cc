@@ -257,11 +257,3 @@ void mp::internal::BinaryReader::ReportError(
   w.write(format_str, args);
   throw BinaryReadError(name_, offset, w.c_str());
 }
-
-void mp::internal::NLFile::Read(fmt::internal::Array<char, 1> &array) {
-  array.resize(size_ + 1);
-  std::size_t offset = 0;
-  while (offset < size_)
-    offset += file_.read(&array[offset], size_ - offset);
-  array[size_] = 0;
-}

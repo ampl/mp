@@ -1318,7 +1318,8 @@ void CheckReadFile(std::string nl) {
   TestNLHandler handler;
   mp::ReadNLFile(filename, handler);
   EXPECT_EQ("c0: 4.2;", handler.log.str());
-  mp::internal::NLFile file(filename);
+  mp::internal::NLFile<> file;
+  file.Open(filename);
   EXPECT_EQ(nl.size(), file.size());
   EXPECT_EQ(fmt::getpagesize(), file.rounded_size());
 }
@@ -1345,6 +1346,30 @@ TEST(NLTest, ReadNLFileMultipleOfPageSize) {
   CheckReadFile(nl + "\n");
 }
 
+struct MockFile {
+  MockFile() {}
+  MockFile(fmt::StringRef, int) {}
+  MockFile(const MockFile &) {}
+  MockFile &operator=(const MockFile &) { return *this; }
+
+  MOCK_CONST_METHOD0(size, fmt::LongLong ());
+};
+
+TEST(NLTest, FileTooBig) {
+  fmt::ULongLong max_size = std::numeric_limits<std::size_t>::max();
+  fmt::ULongLong max_long_long = std::numeric_limits<fmt::LongLong>::max();
+  mp::internal::NLFile<MockFile> file;
+  if (max_size < max_long_long) {
+    EXPECT_CALL(file.get(), size()).WillOnce(Return(max_size));
+    file.Open("test");
+    EXPECT_CALL(file.get(), size()).WillOnce(Return(max_size + 1));
+    EXPECT_THROW_MSG(file.Open("test"), mp::Error, "file test is too big");
+  } else {
+    EXPECT_CALL(file.get(), size()).WillOnce(Return(max_long_long));
+    file.Open("test");
+  }
+}
+
 struct TestNLHandler3 : mp::NLHandler<int> {};
 
 TEST(NLTest, NLHandler) {
@@ -1352,5 +1377,3 @@ TEST(NLTest, NLHandler) {
   ReadNLString(FormatHeader(MakeHeader()) + "C0\nn4.2\n", handler);
 }
 }  // namespace
-
-// TODO: test that exception is thrown if file is too big
