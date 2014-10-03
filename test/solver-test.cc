@@ -1108,7 +1108,30 @@ TEST_F(SolverAppOptionParserTest, SOption) {
   EXPECT_EQ(1, solver_.wantsol());
 }
 
-// TODO: test -AMPL
+// Test -AMPL option.
+TEST_F(SolverAppOptionParserTest, AMPLOption) {
+  EXPECT_EQ(0, solver_.wantsol());
+  Args args("unused", "problem", "-AMPL");
+  char **argp = args, **argp_copy = argp;
+  EXPECT_STREQ("problem", parser_.Parse(argp_copy));
+  EXPECT_EQ(argp + 3, argp_copy);
+  EXPECT_EQ(1, solver_.wantsol());
+}
+
+// Test -AMPL option in invalid position.
+TEST_F(SolverAppOptionParserTest, InvalidAMPLOption) {
+  EXPECT_THROW_MSG(parser_.Parse(Args("unused", "-AMPL", "problem")),
+                   OptionError, "invalid option '-AMPL'");
+}
+
+// Test error reporting on invalid option.
+TEST_F(SolverAppOptionParserTest, InvalidOption) {
+  EXPECT_THROW_MSG(parser_.Parse(Args("unused", "-vv")),
+                   OptionError, "invalid option '-vv'");
+  EXPECT_THROW_MSG(parser_.Parse(Args("unused", "-w")),
+                   OptionError, "invalid option '-w'");
+}
+
 // TODO: test SolutionWriter
 
 /*

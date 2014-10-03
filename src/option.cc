@@ -37,10 +37,6 @@ struct OptionLess {
   bool operator()(const Option &lhs, char rhs) const { return lhs.name < rhs; }
   bool operator()(char lhs, const Option &rhs) const { return lhs < rhs.name; }
 };
-
-std::string MakePrintable(char c) {
-  return std::isprint(c) ? std::string(1, c) : fmt::format("\\x{:02d}", c);
-}
 }  // namespace
 
 void mp::OptionList::Sort() {
@@ -62,12 +58,12 @@ char mp::ParseOptions(char **&args, OptionList &options) {
     if (*arg != '-')
       break;
     ++args;
+    const Option *opt = 0;
     char name = arg[1];
-    const Option *opt = options.Find(name);
-    if (!opt) {
-      throw OptionError(
-            fmt::format("invalid option '-{}'", MakePrintable(name)));
-    }
+    if (name && !arg[2])
+      opt = options.Find(name);
+    if (!opt)
+      throw OptionError(fmt::format("invalid option '{}'", arg));
     if (!opt->on_option(opt->handler))
       return name;
   }
