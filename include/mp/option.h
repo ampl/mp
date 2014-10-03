@@ -72,6 +72,9 @@ class OptionList {
     Builder(OptionList &options, Handler &h)
       : options_(options), handler_(h) {}
 
+    // Adds an option.
+    // on_option: method called when option has been parsed; returns true
+    //            to continue parsing, false to stop
     template <bool (Handler::*on_option)()>
     void Add(char name, const char *description) {
       options_.Add<Handler, on_option>(name, description, handler_);
@@ -95,9 +98,9 @@ class OptionList {
   const Option *Find(char name) const;
 };
 
-// Parses command-line options.
-// Returns the option that terminated parsing or 0 if parsing continued
-// till the end.
+// Parses command-line options until the first argument that doesn't
+// start with '-'. Returns the option that terminated parsing or 0 if
+// parsing continued till the end.
 char ParseOptions(char **&args, OptionList &options);
 }  // namespace mp
 

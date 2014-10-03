@@ -21,8 +21,10 @@
  */
 
 #include "gmock/gmock.h"
-
+#include "gtest-extra.h"
 #include "mp/option.h"
+
+using testing::Return;
 
 TEST(OptionTest, OptionError) {
   const char *message = "don't panic!";
@@ -93,7 +95,55 @@ TEST(OptionTest, SortOptionList) {
 }
 
 TEST(OptionTest, FindInOptionList) {
-  // TODO
+  mp::OptionList options;
+  MockHandler handler;
+  EXPECT_EQ(0, options.Find('a'));
+  mp::OptionList::Builder<MockHandler> builder(options, handler);
+  builder.Add<&MockHandler::OnOption1>('a', "test option 1");
+  EXPECT_DEBUG_DEATH(options.Find('a'), "Assertion");
+  builder.Add<&MockHandler::OnOption1>('b', "test option 2");
+  builder.Add<&MockHandler::OnOption1>('c', "test option 3");
+  options.Sort();
+  for (char c = 'a'; c <= 'c'; ++c)
+    EXPECT_EQ(c, options.Find(c)->name);
+  EXPECT_EQ(0, options.Find('d'));
 }
 
-// TODO: test ParseOptions
+TEST(OptionTest, ParseOptions) {
+  mp::OptionList options;
+  testing::StrictMock<MockHandler> handler;
+  mp::OptionList::Builder<MockHandler> builder(options, handler);
+  builder.Add<&MockHandler::OnOption1>('a', "test option 1");
+  builder.Add<&MockHandler::OnOption2>('b', "test option 2");
+  char arg0[] = "-b";
+  char arg1[] = "-a";
+  char *args[] = {arg0, arg1, 0}, **argp = args;
+  testing::InSequence sequence;
+  EXPECT_CALL(handler, OnOption2()).WillOnce(Return(true));
+  EXPECT_CALL(handler, OnOption1()).WillOnce(Return(true));
+  EXPECT_EQ(0, ParseOptions(argp, options));
+}
+
+TEST(OptionTest, StopParseOptions) {
+  mp::OptionList options;
+  testing::StrictMock<MockHandler> handler;
+  mp::OptionList::Builder<MockHandler> builder(options, handler);
+  builder.Add<&MockHandler::OnOption1>('a', "test option 1");
+  builder.Add<&MockHandler::OnOption2>('b', "test option 2");
+  char arg0[] = "-b";
+  char arg1[] = "-a";
+  char *args[] = {arg0, arg1, 0}, **argp = args;
+  EXPECT_CALL(handler, OnOption2()).WillOnce(Return(false));
+  EXPECT_EQ('b', ParseOptions(argp, options));
+}
+
+TEST(OptionTest, InvalidOption) {
+  mp::OptionList options;
+  testing::StrictMock<MockHandler> handler;
+  mp::OptionList::Builder<MockHandler> builder(options, handler);
+  builder.Add<&MockHandler::OnOption1>('a', "test option 1");
+  char arg0[] = "-bad";
+  char *args[] = {arg0, 0}, **argp = args;
+  EXPECT_THROW_MSG(ParseOptions(argp, options), mp::OptionError,
+                   "invalid option '-bad'");
+}
