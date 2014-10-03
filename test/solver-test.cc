@@ -1061,12 +1061,14 @@ TEST_F(SolverAppOptionParserTest, ShowUsageIfNoFilename) {
   EXPECT_THAT(handler_.output, StartsWith("usage: solver-name "));
 }
 
-TEST_F(SolverAppOptionParserTest, HelpOption) {
+// Test -? option.
+TEST_F(SolverAppOptionParserTest, QuestionMarkOption) {
   EXPECT_EQ(0, parser_.Parse(Args("unused", "-?", "whatever")));
   EXPECT_THAT(handler_.output, StartsWith("usage: solver-name "));
 }
 
-TEST_F(SolverAppOptionParserTest, EndOptions) {
+// Test -- option.
+TEST_F(SolverAppOptionParserTest, MinusOption) {
   Args args("unused", "--", "-?", "whatever");
   char **argp = args, **argp_copy = argp;
   EXPECT_STREQ("-?", parser_.Parse(argp_copy));
@@ -1074,31 +1076,42 @@ TEST_F(SolverAppOptionParserTest, EndOptions) {
   EXPECT_EQ("", handler_.output);
 }
 
-TEST_F(SolverAppOptionParserTest, VersionOption) {
+// Test -v option.
+TEST_F(SolverAppOptionParserTest, VOption) {
   EXPECT_EQ(0, parser_.Parse(Args("unused", "-v", "whatever")));
   EXPECT_EQ(
         fmt::format("long-solver-name ({}), ASL({})\n", MP_SYSINFO, MP_DATE),
         handler_.output);
 }
 
+// Test -= option.
 TEST_F(SolverAppOptionParserTest, EQOption) {
   EXPECT_EQ(0, parser_.Parse(Args("unused", "-=", "whatever")));
   EXPECT_THAT(handler_.output, StartsWith("\nOptions:\n\ntiming\n"));
 }
 
-// TODO: test -e, -s, -AMPL
+// Test -e option.
+TEST_F(SolverAppOptionParserTest, EOption) {
+  Args args("unused", "-e", "problem");
+  char **argp = args, **argp_copy = argp;
+  EXPECT_STREQ("problem", parser_.Parse(argp_copy));
+  EXPECT_EQ(argp + 3, argp_copy);
+}
+
+// Test -s option.
+TEST_F(SolverAppOptionParserTest, SOption) {
+  EXPECT_EQ(0, solver_.wantsol());
+  Args args("unused", "-s", "problem");
+  char **argp = args, **argp_copy = argp;
+  EXPECT_STREQ("problem", parser_.Parse(argp_copy));
+  EXPECT_EQ(argp + 3, argp_copy);
+  EXPECT_EQ(1, solver_.wantsol());
+}
+
+// TODO: test -AMPL
 // TODO: test SolutionWriter
 
 /*
-TEST(SolverTest, InputSuffix) {
-  TestSolver s("");
-  s.AddSuffix("answer", 0, ASL_Sufkind_var, 0);
-  Problem p;
-  s.ProcessArgs(Args("program-name", MP_TEST_DATA_DIR "/suffix.nl"), p);
-  mp::Suffix suffix = p.FindSuffix("answer", ASL_Sufkind_var);
-  EXPECT_EQ(42, suffix.int_value(0));
-}
-
 TEST(SolverTest, OutputSuffix) {
   TestSolver s("");
   s.AddSuffix("answer", 0, ASL_Sufkind_var | ASL_Sufkind_outonly, 0);
