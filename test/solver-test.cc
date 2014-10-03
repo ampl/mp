@@ -1135,16 +1135,6 @@ TEST_F(SolverAppOptionParserTest, InvalidOption) {
 // TODO: test SolutionWriter
 
 /*
-TEST(SolverTest, OutputSuffix) {
-  TestSolver s("");
-  s.AddSuffix("answer", 0, ASL_Sufkind_var | ASL_Sufkind_outonly, 0);
-  Problem p;
-  s.ProcessArgs(Args("program-name"), p);
-  mp::Suffix suffix = p.FindSuffix("answer", ASL_Sufkind_var);
-  int value = 42;
-  suffix.set_values(&value);
-  EXPECT_EQ(42, suffix.int_value(0));
-}
 
 TEST(SolverTest, SolutionsAreNotCountedByDefault) {
   SolCountingSolver s(true);

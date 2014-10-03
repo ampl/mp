@@ -20,4 +20,22 @@
  Author: Victor Zverovich
  */
 
-// TODO: test ASLSolver
+#include "gtest/gtest.h"
+#include "asl/aslsolver.h"
+
+struct TestSolver : mp::ASLSolver {
+  TestSolver() : ASLSolver("testsolver") {
+    AddSuffix("answer", 0, mp::suf::VAR | mp::suf::OUTONLY, 0);
+  }
+  int DoSolve(mp::Problem &, mp::SolutionHandler &) { return 0; }
+};
+
+TEST(ASLSolverTest, RegisterSuffixes) {
+  TestSolver s;
+  mp::internal::ASLBuilder builder(s.GetProblemBuilder(""));
+  mp::Problem p(builder.GetProblem());
+  mp::Suffix suffix = p.FindSuffix("answer", mp::suf::VAR);
+  int value = 42;
+  suffix.set_values(&value);
+  EXPECT_EQ(42, suffix.int_value(0));
+}
