@@ -29,12 +29,15 @@
 # include <unistd.h>
 #else
 # include <io.h>
-# define close _close
 #endif
 
 #include "mp/nl.h"
 #include "mp/os.h"
 #include "aslbuilder.h"
+
+#ifdef _WIN32
+# define close _close
+#endif
 
 #ifndef MP_HAVE_MKSTEMPS
 extern "C" int mkstemps(char *pattern, int suffix_len);
