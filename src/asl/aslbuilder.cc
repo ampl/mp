@@ -139,7 +139,7 @@ void ASLBuilder::SetObjOrCon(
   int opcode = expr::opcode(kind);
   e->op = reinterpret_cast<efunc*>(opcode);
   e->L.e = arg.expr_;
-  e->a = asl_->i.n_var_ + asl_->i.nsufext[ASL_Sufkind_var];
+  e->a = asl_->i.n_var_ + asl_->i.nsufext[suf::VAR];
   e->dL = DVALUE[opcode];  // for UMINUS, FLOOR, CEIL
   return e;
 }
@@ -150,7 +150,7 @@ void ASLBuilder::SetObjOrCon(
   e->op = reinterpret_cast<efunc*>(opcode);
   e->L.e = lhs.expr_;
   e->R.e = rhs.expr_;
-  e->a = asl_->i.n_var_ + asl_->i.nsufext[ASL_Sufkind_var];
+  e->a = asl_->i.n_var_ + asl_->i.nsufext[suf::VAR];
   e->dL = 1;
   e->dR = DVALUE[opcode];  // for PLUS, MINUS, REM
   return e;
@@ -353,7 +353,7 @@ void ASLBuilder::SetInfo(const ProblemInfo &pi) {
   }
 
   int nc0 = info.n_con_;
-  int nc = nc0 + info.nsufext[ASL_Sufkind_con];
+  int nc = nc0 + info.nsufext[suf::CON];
   int no = info.n_obj_;
   int nvc = info.c_vars_;
   int nvo = info.o_vars_;
@@ -368,7 +368,7 @@ void ASLBuilder::SetInfo(const ProblemInfo &pi) {
     if (info.havepi0_)
       std::memset(info.havepi0_, 0, nc);
   }
-  int nxv = info.nsufext[ASL_Sufkind_var];
+  int nxv = info.nsufext[suf::VAR];
   int nvr = info.n_var_;  // nv for reading
   static_->_nv0 = nvr + nxv;
   static_->_nv1 = static_->_nv0;

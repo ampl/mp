@@ -89,7 +89,7 @@ class FileWriter {
 };
 
 SMPSWriter::SMPSWriter() : ASLSolver("smpswriter", "SMPSWriter", 20130709) {
-  AddSuffix("stage", 0, ASL_Sufkind_var);
+  AddSuffix("stage", 0, suf::VAR);
   set_read_flags(ASL_want_A_vals);
 }
 
@@ -154,7 +154,7 @@ void SMPSWriter::WriteColumns(
   nonzero_coef_indices.reserve(num_core_cons);
   int num_continuous_vars = p.num_continuous_vars();
   int int_var_index = 0;
-  Suffix stage_suffix = p.FindSuffix("stage", ASL_Sufkind_var);
+  ASLSuffix stage_suffix = p.FindSuffix("stage", suf::VAR);
   bool integer_block = false;
   for (int stage = 0; stage < num_stages; ++stage) {
     for (int i = 0, n = p.num_vars(); i < n; ++i) {
@@ -233,7 +233,7 @@ int SMPSWriter::DoSolve(Problem &p, SolutionHandler &) {
 
   // Count the number of stages and the number of variables in stage 0.
   int num_vars = p.num_vars();
-  Suffix stage_suffix = p.FindSuffix("stage", ASL_Sufkind_var);
+  ASLSuffix stage_suffix = p.FindSuffix("stage", suf::VAR);
   int num_stage0_vars = num_vars;
   int num_stages = 1;
   if (stage_suffix && stage_suffix.has_values()) {

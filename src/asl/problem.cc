@@ -223,15 +223,15 @@ TempFiles::TempFiles() {
   close(fd);
 }
 
-Suffix Problem::FindSuffix(const char *name, unsigned flags) const {
-  unsigned kind = flags & ASL_Sufkind_mask;
+ASLSuffix Problem::FindSuffix(const char *name, unsigned flags) const {
+  unsigned kind = flags & suf::MASK;
   for (SufDesc *d = asl_->i.suffixes[kind]; d; d = d->next) {
     if (!std::strcmp(name, d->sufname)) {
-      return Suffix(asl_, (flags & ASL_Sufkind_input) != 0 &&
-          (d->kind & ASL_Sufkind_input) == 0 ? 0 : d);
+      return ASLSuffix(asl_, (flags & suf::INPUT) != 0 &&
+          (d->kind & suf::INPUT) == 0 ? 0 : d);
     }
   }
-  return Suffix();
+  return ASLSuffix();
 }
 
 void Problem::AddVar(double lb, double ub, var::Type type) {

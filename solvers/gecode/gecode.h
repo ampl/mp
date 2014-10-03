@@ -76,7 +76,7 @@ class NLToGecodeConverter :
  private:
   GecodeProblem problem_;
   Gecode::IntConLevel icl_;
-  Suffix icl_suffix_;
+  ASLSuffix icl_suffix_;
 
   typedef Gecode::BoolExpr BoolExpr;
 

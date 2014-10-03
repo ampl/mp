@@ -276,7 +276,7 @@ IlogCPSolver::IlogCPSolver() :
       IloConcertVersion::_ILO_MINOR_VERSION,
       IloConcertVersion::_ILO_TECH_VERSION));
 
-  AddSuffix("priority", 0, ASL_Sufkind_var);
+  AddSuffix("priority", 0, suf::VAR);
 
   set_option_header(
       "IBM ILOG CPLEX CP Optimizer Options for AMPL\n"
@@ -596,7 +596,7 @@ int IlogCPSolver::SolveWithCP(
     Stats &stats, SolutionHandler &sh) {
   IloNumVarArray vars = converter.vars();
   IloIntVarArray priority_vars(env_);
-  Suffix priority_suffix = p.FindSuffix("priority", ASL_Sufkind_var);
+  ASLSuffix priority_suffix = p.FindSuffix("priority", suf::VAR);
   if (priority_suffix && priority_suffix.has_values()) {
     for (int i = 0, n = p.num_vars(); i < n; ++i) {
       if (priority_suffix.int_value(i) > 0)

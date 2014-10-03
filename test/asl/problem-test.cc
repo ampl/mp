@@ -558,7 +558,7 @@ TEST_P(SuffixTest, FindSuffix) {
   builder.AddSuffix(kind, 1, "foo");
   builder.AddSuffix(kind, 2, "bar");
   Problem p(builder.GetProblem());
-  mp::Suffix suffix = p.FindSuffix("foo", kind);
+  mp::ASLSuffix suffix = p.FindSuffix("foo", kind);
   EXPECT_TRUE(suffix);
   EXPECT_STREQ("foo", suffix.name());
   EXPECT_EQ(kind, suffix.kind() & suf::MASK);
@@ -582,7 +582,7 @@ TEST_P(SuffixTest, SuffixView) {
   ASSERT_NE(it, view.end());
   // Suffixes are returned in the reverse order of insertion.
   EXPECT_EQ(p.FindSuffix("bar", kind), *it);
-  mp::Suffix foo = p.FindSuffix("foo", kind);
+  mp::ASLSuffix foo = p.FindSuffix("foo", kind);
   EXPECT_EQ(foo, *++it);
   EXPECT_STREQ("foo", it->name());
   EXPECT_EQ(foo, *it++);
@@ -614,7 +614,7 @@ TEST_P(SuffixTest, VisitValues) {
   }
   Problem p(builder.GetProblem());
   testing::StrictMock<MockValueVisitor> visitor;
-  mp::Suffix suffix = p.FindSuffix("foo", kind);
+  mp::ASLSuffix suffix = p.FindSuffix("foo", kind);
   testing::InSequence dummy;
   EXPECT_CALL(visitor, Visit(0, 11));
   if (kind != mp::suf::PROBLEM) {

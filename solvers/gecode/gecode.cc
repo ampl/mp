@@ -338,7 +338,7 @@ void NLToGecodeConverter::Convert(const Problem &p) {
         ConvertExpr(p.linear_obj_expr(0), p.nonlinear_obj_expr(0)));
   }
 
-  icl_suffix_ = p.FindSuffix("icl", ASL_Sufkind_con);
+  icl_suffix_ = p.FindSuffix("icl", suf::CON);
 
   class ICLSetter {
    private:
