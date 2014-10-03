@@ -875,15 +875,28 @@ class SolutionAdapter {
   //SuffixView problem_suffixes() const { return problem_.problem_suffixes(); }
 };
 
-struct NullSolutionHandler : SolutionHandler {
+class NullSolutionHandler : public SolutionHandler {
+ public:
   void HandleFeasibleSolution(
         fmt::StringRef, const double *, const double *, double) {}
   void HandleSolution(
         fmt::StringRef, const double *, const double *, double) {}
 };
 
-template <typename Solver>
-class SolutionWriter : public SolutionHandler {
+// The default .sol file writer.
+class SolFileWriter {
+ public:
+  template <typename Solution>
+  void Write(fmt::StringRef filename, const Solution &sol) {
+    WriteSolFile(filename, sol);
+  }
+};
+
+// A solution writer.
+// Solver: optimization solver class
+// Writer: .sol writer
+template <typename Solver, typename Writer = SolFileWriter>
+class SolutionWriter : private Writer, public SolutionHandler {
  private:
   std::string filename_;
 
@@ -900,14 +913,19 @@ class SolutionWriter : public SolutionHandler {
     : filename_(stub.c_str() + std::string(".sol")), solver_(s), builder_(b),
       num_solutions_(0) {}
 
+  // Returns the .sol writer.
+  Writer &sol_writer() { return *this; }
+
   void HandleFeasibleSolution(fmt::StringRef message,
         const double *values, const double *dual_values, double);
+
+  // Writes the solution to a .sol file.
   void HandleSolution(fmt::StringRef message,
         const double *values, const double *dual_values, double);
 };
 
-template <typename Solver>
-void SolutionWriter<Solver>::HandleFeasibleSolution(
+template <typename Solver, typename Writer>
+void SolutionWriter<Solver, Writer>::HandleFeasibleSolution(
     fmt::StringRef message, const double *values,
     const double *dual_values, double) {
   ++num_solutions_;
@@ -917,11 +935,11 @@ void SolutionWriter<Solver>::HandleFeasibleSolution(
   fmt::Writer w;
   w << solution_stub << num_solutions_ << ".sol";
   // TODO
-  //WriteSol(w.c_str(), message, values, dual_values);
+  //this->Write(w.c_str(), message, values, dual_values);
 }
 
-template <typename Solver>
-void SolutionWriter<Solver>::HandleSolution(
+template <typename Solver, typename Writer>
+void SolutionWriter<Solver, Writer>::HandleSolution(
     fmt::StringRef message, const double *values,
     const double *dual_values, double) {
   // TODO: how to communicate information from the problem?
@@ -938,11 +956,11 @@ void SolutionWriter<Solver>::HandleSolution(
   SolutionAdapter sol(message.c_str(), ArrayRef<int>(0, 0),
       MakeArrayRef(values, values ? builder_.num_vars() : 0),
       MakeArrayRef(dual_values, dual_values ? builder_.num_cons() : 0));
-  WriteSol(filename_, sol);
+  this->Write(filename_, sol);
 }
 
-// The default .nl reader.
-class NLReader {
+// The default .nl file reader.
+class NLFileReader {
  public:
   template <typename Handler>
   void Read(fmt::StringRef filename, Handler &handler) {
@@ -993,12 +1011,12 @@ class SolverAppOptionParser {
   // Parses command-line options.
   const char *Parse(char **&argv);
 };
-}
+}  // namespace internal
 
 // A solver application.
 // Solver: optimization solver class; normally a subclass of SolverImpl
 // Reader: .nl reader
-template <typename Solver, typename Reader = NLReader>
+template <typename Solver, typename Reader = NLFileReader>
 class SolverApp : private Reader {
  private:
   Solver solver_;
@@ -1007,8 +1025,13 @@ class SolverApp : private Reader {
  public:
   SolverApp() : option_parser_(solver_) {}
 
+  // Returns the list of command-line options.
   OptionList &options() { return option_parser_.options(); }
+
+  // Returns the solver.
   Solver &solver() { return solver_; }
+
+  // Returns the .nl reader.
   Reader &reader() { return *this; }
 
   // Runs the application.

@@ -48,6 +48,7 @@ using mp::internal::OptionHelper;
 using testing::_;
 using testing::StrictMock;
 using testing::Not;
+using testing::Return;
 using testing::StartsWith;
 
 namespace {
@@ -1132,10 +1133,52 @@ TEST_F(SolverAppOptionParserTest, InvalidOption) {
                    OptionError, "invalid option '-w'");
 }
 
+struct MockSolWriter {
+  MOCK_METHOD2(Write, void (fmt::StringRef filename,
+                            const mp::SolutionAdapter &sol));
+};
+
+// Matcher that compares a StringRef with a C string for equality.
+MATCHER_P(StringRefEq, str, "") { return std::strcmp(arg.c_str(), str) == 0; }
+
+MATCHER_P2(MatchSolution, values, dual_values, "") {
+  if (std::strcmp(arg.message(), "test message") != 0 || arg.num_options() != 0)
+    return false;
+  int num_values = 3, num_dual_values = 2;
+  if (arg.num_values() != num_values ||
+      arg.num_dual_values() != num_dual_values) {
+    return false;
+  }
+  for (int i = 0; i < num_values; ++i) {
+    if (values[i] != arg.value(i))
+      return false;
+  }
+  for (int i = 0; i < num_dual_values; ++i) {
+    if (dual_values[i] != arg.dual_value(i))
+      return false;
+  }
+  return true;
+}
+
+// Test that SolutionWriter::HandleSolution writes .sol file.
+TEST(SolutionWriterTest, WriteSolution) {
+  TestSolver solver;
+  MockProblemBuilder problem_builder;
+  mp::SolutionWriter<TestSolver, MockSolWriter>
+      writer("test", solver, problem_builder);
+  MockSolWriter &sol_writer = writer.sol_writer();
+  const double values[] = {11, 22, 33};
+  const double dual_values[] = {44, 55};
+  EXPECT_CALL(problem_builder, num_vars()).WillOnce(Return(3));
+  EXPECT_CALL(problem_builder, num_cons()).WillOnce(Return(2));
+  EXPECT_CALL(sol_writer, Write(StringRefEq("test.sol"),
+                                MatchSolution(values, dual_values)));
+  writer.HandleSolution("test message", values, dual_values, 42);
+}
+
 // TODO: test SolutionWriter
 
 /*
-
 TEST(SolverTest, SolutionsAreNotCountedByDefault) {
   SolCountingSolver s(true);
   s.SetIntOption("wantsol", 1);
@@ -1265,9 +1308,6 @@ TEST_F(SolverAppTest, IgnoreFirstArgument) {
   EXPECT_EQ(0, app_.Run(Args("-w")));
 }
 
-// Matcher that compares a StringRef with a C string for equality.
-MATCHER_P(StringRefEq, str, "") { return std::strcmp(arg.c_str(), str) == 0; }
-
 // Test that SolverApp::Run adds the .nl extension to the filename without one.
 TEST_F(SolverAppTest, AddNLExtension) {
   AddOption();
@@ -1308,7 +1348,7 @@ TEST_F(SolverAppTest, ReadProblem) {
                                     MatchAdapterToBuilder(&app_.solver())));
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
   // Check that the default reader is NLReader.
-  mp::NLReader &reader = mp::SolverApp<TestSolver>().reader();
+  mp::NLFileReader &reader = mp::SolverApp<TestSolver>().reader();
   MP_UNUSED(reader);
 }
 

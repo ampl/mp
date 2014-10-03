@@ -83,9 +83,9 @@ void WriteSuffixes(fmt::BufferedFile &file, const SuffixView &suffixes) {
 }
 }  // namespace internal
 
-// Writes a solution in .sol format.
+// Writes a solution to a .sol file.
 template <typename Solution>
-void WriteSol(fmt::StringRef filename, const Solution &sol) {
+void WriteSolFile(fmt::StringRef filename, const Solution &sol) {
   fmt::BufferedFile file(filename, "w");
   internal::WriteMessage(file, sol.message());
   // Write options.
