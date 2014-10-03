@@ -1210,7 +1210,7 @@ TEST(SolverTest, WriteSolutions) {
 */
 
 struct MockOptionHandler {
-  MOCK_METHOD0(on_option, bool ());
+  MOCK_METHOD0(OnOption, bool ());
 };
 
 struct MockNLReader {
@@ -1230,13 +1230,13 @@ class SolverAppTest : public ::testing::Test {
   App app_;
 
   struct OptionHandler : StrictMock<MockOptionHandler> {
-    bool on_option() { return StrictMock<MockOptionHandler>::on_option(); }
+    bool OnOption() { return StrictMock<MockOptionHandler>::OnOption(); }
   };
   OptionHandler handler_;
 
   void AddOption() {
     mp::OptionList::Builder<OptionHandler> builder(app_.options(), handler_);
-    builder.Add<&OptionHandler::on_option>('w', "Wonderful choice.");
+    builder.Add<&OptionHandler::OnOption>('w', "Wonderful choice.");
   }
 
   OutputHandler output_handler_;
@@ -1253,7 +1253,7 @@ class SolverAppTest : public ::testing::Test {
 TEST_F(SolverAppTest, ParseOptions) {
   AddOption();
   RedirectOutput();
-  EXPECT_CALL(handler_, on_option()).WillOnce(testing::Return(true));
+  EXPECT_CALL(handler_, OnOption()).WillOnce(testing::Return(true));
   EXPECT_EQ(0, app_.Run(Args("test", "-w")));
 }
 
@@ -1282,7 +1282,7 @@ MATCHER_P(StringRefEq, str, "") { return std::strcmp(arg.c_str(), str) == 0; }
 TEST_F(SolverAppTest, AddNLExtension) {
   AddOption();
   testing::InSequence sequence;
-  EXPECT_CALL(handler_, on_option()).WillOnce(testing::Return(true));
+  EXPECT_CALL(handler_, OnOption()).WillOnce(testing::Return(true));
   EXPECT_CALL(app_.reader(), DoRead(StringRefEq("testproblem.nl"), _));
   EXPECT_EQ(0, app_.Run(Args("test", "-w", "testproblem")));
 }
@@ -1292,7 +1292,7 @@ TEST_F(SolverAppTest, AddNLExtension) {
 TEST_F(SolverAppTest, DontAddNLExtension) {
   AddOption();
   testing::InSequence sequence;
-  EXPECT_CALL(handler_, on_option()).WillOnce(testing::Return(true));
+  EXPECT_CALL(handler_, OnOption()).WillOnce(testing::Return(true));
   EXPECT_CALL(app_.reader(), DoRead(StringRefEq("testproblem.nl"), _));
   EXPECT_EQ(0, app_.Run(Args("test", "-w", "testproblem.nl")));
 }
@@ -1301,7 +1301,7 @@ TEST_F(SolverAppTest, DontAddNLExtension) {
 TEST_F(SolverAppTest, ParseOptionsBeforeReadingProblem) {
   AddOption();
   testing::InSequence sequence;
-  EXPECT_CALL(handler_, on_option()).WillOnce(testing::Return(true));
+  EXPECT_CALL(handler_, OnOption()).WillOnce(testing::Return(true));
   EXPECT_CALL(app_.reader(), DoRead(_, _));
   EXPECT_EQ(0, app_.Run(Args("test", "-w", "testproblem")));
 }
