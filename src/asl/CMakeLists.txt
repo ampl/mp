@@ -161,7 +161,8 @@ set(ASL_SOURCES aslbuilder.cc aslsolver.cc expr.cc problem.cc)
 
 add_mp_library(asl
   ${ASL_SOURCES} ${ASL_HEADERS} OBJECT_LIBRARIES asl-core LIBRARIES mp
-  INCLUDE_DIRECTORIES solvers ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_BINARY_DIR})
+  INCLUDE_DIRECTORIES solvers ${PROJECT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_BINARY_DIR})
 
 if (NOT WIN32)
   target_link_libraries(asl m)
@@ -211,7 +212,8 @@ if (MATLAB_FOUND)
   foreach (name amplfunc spamfunc)
     add_mex(${name}
       ${solvers_dir}/examples/${name}.c ${solvers_dir}/funcadd.c
-      COMPILE_FLAGS -I${CMAKE_CURRENT_BINARY_DIR} -I${solvers_dir} ${MP_MEX_OPTIONS}
+      COMPILE_FLAGS -I${CMAKE_CURRENT_BINARY_DIR}
+                    -I${solvers_dir} ${MP_MEX_OPTIONS}
       LIBRARIES ${matlab_asl})
   endforeach ()
 endif ()
