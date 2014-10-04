@@ -81,7 +81,7 @@ class OptionList {
     }
   };
 
-  explicit OptionList() : sorted_(true) {}
+  OptionList() : sorted_(true) {}
 
   typedef OptionContainer::const_iterator iterator;
 
