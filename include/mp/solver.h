@@ -662,8 +662,7 @@ class Solver : private ErrorHandler, private OutputHandler {
   // Adds a suffix.
   void AddSuffix(const char *name, const char *table,
                  int kind, int nextra = 0) {
-    SuffixInfo suffix = {name, table, kind, nextra};
-    suffixes_.push_back(suffix);
+    suffixes_.push_back(SuffixInfo(name, table, kind, nextra));
   }
 
  public:
