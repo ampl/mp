@@ -149,7 +149,7 @@ class SolutionHandler {
   virtual void HandleFeasibleSolution(fmt::StringRef message,
       const double *values, const double *dual_values, double obj_value) = 0;
 
-  // Receives a final solution or a notification that the problem is
+  // Receives the final solution or a notification that the problem is
   // infeasible or unbounded.
   virtual void HandleSolution(fmt::StringRef message,
       const double *values, const double *dual_values, double obj_value) = 0;
@@ -373,13 +373,24 @@ class Solver : private ErrorHandler, private OutputHandler {
 
   bool timing_;
 
-  struct SuffixInfo {
-    const char *name;
-    const char *table;
-    int kind;
-    int nextra;
+  class SuffixInfo {
+   private:
+    const char *name_;
+    const char *table_;
+    int kind_;
+    int nextra_;
+
+   public:
+    SuffixInfo(const char *name, const char *table, int kind, int nextra)
+      : name_(name), table_(table), kind_(kind), nextra_(nextra) {}
+
+    const char *name() const { return name_; }
+    const char *table() const { return table_; }
+    int kind() const { return kind_; }
+    int nextra() const { return nextra_; }
   };
-  std::vector<SuffixInfo> suffixes_;
+  typedef std::vector<SuffixInfo> SuffixList;
+  SuffixList suffixes_;
 
   friend class ASLSolver;
 
@@ -801,6 +812,8 @@ class Solver : private ErrorHandler, private OutputHandler {
     SetOptionValue<std::string>(name, value.c_str());
   }
 
+  const SuffixList &suffixes() const { return suffixes_; }
+
   // Reports an error printing the formatted error message to stderr.
   // Usage: ReportError("File not found: {}") << filename;
   void ReportError(fmt::StringRef format, const fmt::ArgList &args) {
@@ -942,17 +955,17 @@ template <typename Solver, typename Writer>
 void SolutionWriter<Solver, Writer>::HandleSolution(
     fmt::StringRef message, const double *values,
     const double *dual_values, double) {
-  // TODO: how to communicate information from the problem?
-  /*if (solver_.need_multiple_solutions()) {
-    Suffix nsol_suffix = problem_.FindSuffix("nsol", ASL_Sufkind_prob);
-    if (nsol_suffix)
-      nsol_suffix.set_values(&num_solutions_);
+  if (solver_.need_multiple_solutions()) {
+    typedef typename ProblemBuilder::SuffixPtr SuffixPtr;
+    SuffixPtr nsol_suffix = builder_.suffixes(suf::PROBLEM).Find("nsol");
+    // TODO: set suffix
+    //if (nsol_suffix)
+    //  nsol_suffix.set_values(&num_solutions_);
   }
   // TODO: pass to WriteSol
   //option_info.bsname = const_cast<char*>(solver_.long_name());
   //option_info.wantsol = solver_.wantsol();
-  const fint *options = problem_.asl_->i.ampl_options_;*/
-  // TODO: where to get num_vars and num_cons?
+  //const fint *options = problem_.asl_->i.ampl_options_;
   SolutionAdapter sol(message.c_str(), ArrayRef<int>(0, 0),
       MakeArrayRef(values, values ? builder_.num_vars() : 0),
       MakeArrayRef(dual_values, dual_values ? builder_.num_cons() : 0));

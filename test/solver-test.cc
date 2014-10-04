@@ -62,8 +62,8 @@ class TestSolver : public mp::Solver {
 
  public:
   TestSolver(const char *name = "testsolver",
-      const char *long_name = 0, long date = 0)
-  : Solver(name, long_name, date, 0), builder(0), mock_solve_(false) {}
+      const char *long_name = 0, long date = 0, int flags = 0)
+  : Solver(name, long_name, date, flags), builder(0), mock_solve_(false) {}
 
   // Enables mocking of the Solve method.
   void MockSolve() { mock_solve_ = true; }
@@ -1000,14 +1000,14 @@ TEST(SolverTest, TimingOption) {
 
 const int NUM_SOLUTIONS = 3;
 
-struct SolCountingSolver : mp::Solver {
+struct SolCountingSolver : TestSolver {
   explicit SolCountingSolver(bool multiple_sol)
-  : Solver("", "", 0, multiple_sol ? MULTIPLE_SOL : 0) {}
-  int DoSolve(Problem &, SolutionHandler &sh) {
+  : TestSolver("", "", 0, multiple_sol ? MULTIPLE_SOL : 0) {}
+
+  void Solve(SolutionHandler &sh) {
     for (int i = 0; i < NUM_SOLUTIONS; ++i)
       sh.HandleFeasibleSolution("", 0, 0, 0);
     sh.HandleSolution("", 0, 0, 0);
-    return 0;
   }
 };
 
@@ -1176,21 +1176,30 @@ TEST(SolutionWriterTest, WriteSolution) {
   writer.HandleSolution("test message", values, dual_values, 42);
 }
 
-// TODO: test SolutionWriter
-
-/*
-TEST(SolverTest, SolutionsAreNotCountedByDefault) {
-  SolCountingSolver s(true);
-  s.SetIntOption("wantsol", 1);
+TEST(SolutionWriterTest, SolutionsAreNotCountedByDefault) {
+  // TODO: split the test in two parts:
+  // 1. test that the nsol suffix is added to the Solver - SolverTest
+  // 2. test that the nsol suffix is set by SolutionWriter - SolutionWriterTest
+  SolCountingSolver solver(true);
+  MockProblemBuilder problem_builder;
+  mp::SolutionWriter<SolCountingSolver, MockSolWriter>
+      writer("test", solver, problem_builder);
+  writer.HandleFeasibleSolution("", 0, 0, 0);
+  writer.HandleSolution("", 0, 0, 0);
+  // TODO: check that the nsol suffix is set
+  /*s.SetIntOption("wantsol", 1);
   WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
   Problem p;
   p.Read("test.nl");
   mp::SolutionWriter sol_writer(s, p);
   s.Solve(p, sol_writer);
   EXPECT_TRUE(ReadFile("test.sol").find(
-      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) == std::string::npos);
+      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) == std::string::npos);*/
 }
 
+// TODO: test SolutionWriter
+
+/*
 TEST(SolverTest, CountSolutions) {
   SolCountingSolver s(true);
   s.SetIntOption("countsolutions", 1);

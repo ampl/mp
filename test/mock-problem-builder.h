@@ -94,6 +94,12 @@ struct TestPLTermHandler {
   DEFINE_ID(TestPLTermHandler);
 };
 
+struct TestSuffix {};
+
+struct TestSuffixMap {
+  TestSuffix *Find(const char *) { return 0; }
+};
+
 // A mock problem builder.
 class MockProblemBuilder {
  public:
@@ -108,6 +114,10 @@ class MockProblemBuilder {
   // Constructs a MockProblemBuilder object and stores a pointer to it
   // in ``builder``.
   explicit MockProblemBuilder(MockProblemBuilder *&builder) { builder = this; }
+
+  typedef TestSuffix *SuffixPtr;
+
+  MOCK_METHOD1(suffixes, TestSuffixMap (int));
 
   MOCK_METHOD0(num_vars, int ());
   MOCK_METHOD0(num_cons, int ());

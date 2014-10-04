@@ -44,10 +44,10 @@ void mp::ASLSolver::RegisterSuffixes(ASL *asl) {
   for (std::size_t i = 0; i < num_suffixes; ++i) {
     const SuffixInfo &si = suffixes_[i];
     SufDecl &sd = suffix_decls[i];
-    sd.name = const_cast<char*>(si.name);
-    sd.table = const_cast<char*>(si.table);
-    sd.kind = si.kind;
-    sd.nextra = si.nextra;
+    sd.name = const_cast<char*>(si.name());
+    sd.table = const_cast<char*>(si.table());
+    sd.kind = si.kind();
+    sd.nextra = si.nextra();
   }
   if (asl->i.nsuffixes == 0 && num_suffixes != 0)
     suf_declare_ASL(asl, &suffix_decls[0], static_cast<int>(num_suffixes));

@@ -540,58 +540,48 @@ TEST(ProblemTest, Proxy) {
   EXPECT_EQ(info.num_vars, p.num_vars());
 }
 
-struct Param {
-  int kind;
-
-  typedef mp::SuffixView (Problem::*GetView)() const;
-  GetView get_view;
-
-  Param(int kind, GetView get_view) : kind(kind), get_view(get_view) {}
-};
-
-typedef ::testing::TestWithParam<Param> SuffixTest;
+typedef ::testing::TestWithParam<int> SuffixTest;
 
 TEST_P(SuffixTest, FindSuffix) {
   TestASLBuilder builder;
   builder.set_flags(ASL_keep_all_suffixes);
-  int kind = GetParam().kind;
+  int kind = GetParam();
   builder.AddSuffix(kind, 1, "foo");
   builder.AddSuffix(kind, 2, "bar");
   Problem p(builder.GetProblem());
-  mp::ASLSuffix suffix = p.FindSuffix("foo", kind);
+  mp::ASLSuffixPtr suffix = p.suffixes(kind).Find("foo");
   EXPECT_TRUE(suffix);
-  EXPECT_STREQ("foo", suffix.name());
-  EXPECT_EQ(kind, suffix.kind() & suf::MASK);
-  EXPECT_STREQ("bar", p.FindSuffix("bar", kind).name());
+  EXPECT_STREQ("foo", suffix->name());
+  EXPECT_EQ(kind, suffix->kind() & suf::MASK);
+  EXPECT_STREQ("bar", p.suffixes(kind).Find("bar")->name());
   int kinds[] = {suf::VAR, suf::CON, suf::OBJ, suf::PROBLEM};
   for (std::size_t i = 0, n = sizeof(kinds) / sizeof(*kinds); i != n; ++i) {
     if (kinds[i] != kind)
-      EXPECT_FALSE(p.FindSuffix("foo", kinds[i]));
+      EXPECT_FALSE(p.suffixes(kinds[i]).Find("foo"));
   }
 }
 
 TEST_P(SuffixTest, SuffixView) {
   TestASLBuilder builder;
   builder.set_flags(ASL_keep_all_suffixes);
-  int kind = GetParam().kind;
+  int kind = GetParam();
   builder.AddSuffix(kind, 1, "foo");
   builder.AddSuffix(kind, 2, "bar");
   Problem p(builder.GetProblem());
-  mp::SuffixView view = (p.*GetParam().get_view)();
+  mp::SuffixView view = p.suffixes(kind);
   mp::SuffixView::iterator it = view.begin();
   ASSERT_NE(it, view.end());
   // Suffixes are returned in the reverse order of insertion.
-  EXPECT_EQ(p.FindSuffix("bar", kind), *it);
-  mp::ASLSuffix foo = p.FindSuffix("foo", kind);
-  EXPECT_EQ(foo, *++it);
+  EXPECT_STREQ("bar", (*it).name());
+  EXPECT_STREQ("foo", (*++it).name());
   EXPECT_STREQ("foo", it->name());
-  EXPECT_EQ(foo, *it++);
+  EXPECT_STREQ("foo", (*it++).name());
   EXPECT_EQ(it, view.end());
 }
 
 TEST_P(SuffixTest, EmptySuffixView) {
   Problem p;
-  mp::SuffixView view = (p.*GetParam().get_view)();
+  mp::SuffixView view = p.suffixes(GetParam());
   EXPECT_EQ(view.begin(), view.end());
 }
 
@@ -604,7 +594,7 @@ TEST_P(SuffixTest, VisitValues) {
   info.num_vars = info.num_objs = info.num_algebraic_cons = 3;
   TestASLBuilder builder(info);
   builder.set_flags(ASL_keep_all_suffixes);
-  int kind = GetParam().kind;
+  int kind = GetParam();
   mp::internal::ASLBuilder::SuffixHandler handler =
       builder.AddSuffix(kind, 3, "foo");
   handler.SetValue(0, 11);
@@ -614,18 +604,15 @@ TEST_P(SuffixTest, VisitValues) {
   }
   Problem p(builder.GetProblem());
   testing::StrictMock<MockValueVisitor> visitor;
-  mp::ASLSuffix suffix = p.FindSuffix("foo", kind);
+  mp::ASLSuffixPtr suffix = p.suffixes(kind).Find("foo");
   testing::InSequence dummy;
   EXPECT_CALL(visitor, Visit(0, 11));
   if (kind != mp::suf::PROBLEM) {
     EXPECT_CALL(visitor, Visit(1, 22));
     EXPECT_CALL(visitor, Visit(2, 33));
   }
-  suffix.VisitValues(visitor);
+  suffix->VisitValues(visitor);
 }
 
 INSTANTIATE_TEST_CASE_P(, SuffixTest, ::testing::Values(
-                          Param(suf::VAR, &Problem::var_suffixes),
-                          Param(suf::CON, &Problem::con_suffixes),
-                          Param(suf::OBJ, &Problem::obj_suffixes),
-                          Param(suf::PROBLEM, &Problem::problem_suffixes)));
+                          suf::VAR, suf::CON, suf::OBJ, suf::PROBLEM));

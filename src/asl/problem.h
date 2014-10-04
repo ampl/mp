@@ -31,8 +31,6 @@
 
 namespace mp {
 
-class ASLSolver;
-
 namespace internal {
 class ASLBuilder;
 }
@@ -106,46 +104,64 @@ class Solution {
   void Read(fmt::StringRef stub, int num_vars, int num_cons);
 };
 
-class ASLSuffix {
+class ASLSuffixPtr {
  private:
-  ASL *asl_;
-  SufDesc *suffix_;
+  class Proxy {
+   private:
+    ASL *asl_;
+    SufDesc *ptr_;
+
+    friend class ASLSuffixPtr;
+    friend class SuffixView;
+
+    template <typename T, typename Visitor>
+    static void VisitValues(
+        int num_items, const T *values, const int *map, Visitor &visitor);
+
+    Proxy(ASL *asl, SufDesc *p) : asl_(asl), ptr_(p) {}
+
+   public:
+    const char *name() const { return ptr_->sufname; }
+    int kind() const { return ptr_->kind; }
+
+    bool has_values() const { return ptr_->u.i != 0; }
+
+    int int_value(int index) const { return ptr_->u.i[index]; }
+    void set_values(int *values) {
+      ptr_->kind |= suf::OUTPUT;
+      ptr_->u.i = values;
+    }
+
+    // Iterates over nonzero suffix values and sends them to the visitor.
+    template <typename Visitor>
+    void VisitValues(Visitor &visitor) const;
+  };
+
+  mutable Proxy proxy_;
 
   friend class Problem;
   friend class SuffixView;
 
-  ASLSuffix(ASL *asl, SufDesc *s) : asl_(asl), suffix_(s) {}
+  ASLSuffixPtr(ASL *asl, SufDesc *s) : proxy_(asl, s) {}
 
   void True() const {}
-  typedef void (ASLSuffix::*SafeBool)() const;
-
-  template <typename T, typename Visitor>
-  static void VisitValues(
-      int num_items, const T *values, const int *map, Visitor &visitor);
+  typedef void (ASLSuffixPtr::*SafeBool)() const;
 
  public:
-  ASLSuffix() : suffix_() {}
+  // Constructs an ASLSuffixPtr object representing a null pointer.
+  ASLSuffixPtr() : proxy_(0, 0) {}
 
-  const char *name() const { return suffix_->sufname; }
-  int kind() const { return suffix_->kind; }
-
-  operator SafeBool() const { return suffix_ ? &ASLSuffix::True : 0; }
-
-  bool has_values() const { return suffix_->u.i != 0; }
-
-  int int_value(int index) const { return suffix_->u.i[index]; }
-  void set_values(int *values) {
-    suffix_->kind |= suf::OUTPUT;
-    suffix_->u.i = values;
+  operator SafeBool() const {
+    return proxy_.ptr_ ? &ASLSuffixPtr::True : 0;
   }
 
-  // Iterates over nonzero suffix values and sends them to the visitor.
-  template <typename Visitor>
-  void VisitValues(Visitor &visitor) const;
+  Proxy *operator->() const { return &proxy_; }
+
+  Proxy operator*() const { return proxy_; }
 };
 
 template <typename T, typename Visitor>
-void ASLSuffix::VisitValues(
+void ASLSuffixPtr::Proxy::VisitValues(
     int num_items, const T *values, const int *map, Visitor &visitor) {
   if (!values) return;
   if (map) {
@@ -164,14 +180,14 @@ void ASLSuffix::VisitValues(
 }
 
 template <typename Visitor>
-void ASLSuffix::VisitValues(Visitor &visitor) const {
-  int kind = suffix_->kind & suf::MASK;
+void ASLSuffixPtr::Proxy::VisitValues(Visitor &visitor) const {
+  int kind = ptr_->kind & suf::MASK;
   int num_items = (&asl_->i.n_var_)[kind];
   const int *map = kind < 2 ? (&asl_->i.vmap)[kind] : 0;
-  if ((suffix_->kind & suf::FLOAT) != 0)
-    VisitValues(num_items, suffix_->u.r, map, visitor);
+  if ((ptr_->kind & suf::FLOAT) != 0)
+    VisitValues(num_items, ptr_->u.r, map, visitor);
   else
-    VisitValues(num_items, suffix_->u.i, map, visitor);
+    VisitValues(num_items, ptr_->u.i, map, visitor);
 }
 
 // A view on a collection of suffixes.
@@ -186,33 +202,26 @@ class SuffixView {
   int kind_;
 
   friend class Problem;
+  friend class internal::ASLBuilder;
 
   SuffixView(ASL *asl, int kind) : asl_(asl), kind_(kind) {}
 
  public:
   class iterator :
-    public std::iterator<std::forward_iterator_tag, mp::ASLSuffix> {
+    public std::iterator<std::forward_iterator_tag, ASLSuffixPtr::Proxy> {
    private:
     ASL *asl_;
     SufDesc *ptr_;
-
-    class Proxy {
-     private:
-      ASLSuffix suffix_;
-
-     public:
-      Proxy(ASL *asl, SufDesc *s) : suffix_(asl, s) {}
-
-      const ASLSuffix *operator->() const { return &suffix_; }
-    };
 
    public:
     iterator() : asl_(0), ptr_(0) {}
     iterator(ASL *asl, SufDesc *p) : asl_(asl), ptr_(p) {}
 
-    mp::ASLSuffix operator*() const { return mp::ASLSuffix(asl_, ptr_); }
+    ASLSuffixPtr::Proxy operator*() const {
+      return ASLSuffixPtr::Proxy(asl_, ptr_);
+    }
 
-    Proxy operator->() const { return Proxy(asl_, ptr_); }
+    ASLSuffixPtr operator->() const { return ASLSuffixPtr(asl_, ptr_); }
 
     iterator &operator++() {
       ptr_ = ptr_->next;
@@ -228,6 +237,9 @@ class SuffixView {
     bool operator==(iterator other) const { return ptr_ == other.ptr_; }
     bool operator!=(iterator other) const { return ptr_ != other.ptr_; }
   };
+
+  // Finds a suffix with specified name.
+  ASLSuffixPtr Find(const char *name, unsigned flags = 0) const;
 
   iterator begin() const { return iterator(asl_, asl_->i.suffixes[kind_]); }
   iterator end() const { return iterator(); }
@@ -499,13 +511,10 @@ class Problem {
     asl_->p.solve_code_ = value;
   }
 
-  // Finds a suffix with specified name.
-  ASLSuffix FindSuffix(const char *name, unsigned flags) const;
-
-  SuffixView var_suffixes() const { return SuffixView(asl_, suf::VAR); }
-  SuffixView con_suffixes() const { return SuffixView(asl_, suf::CON); }
-  SuffixView obj_suffixes() const { return  SuffixView(asl_, suf::OBJ); }
-  SuffixView problem_suffixes() const { return SuffixView(asl_, suf::PROBLEM); }
+  SuffixView suffixes(int kind) const {
+    assert(kind <= suf::NUM_KINDS);
+    return SuffixView(asl_, kind);
+  }
 
   // Adds a variable.
   void AddVar(double lb, double ub, var::Type type = var::CONTINUOUS);
@@ -581,6 +590,6 @@ class ProblemChanges {
   // Adds a constraint.
   void AddCon(const double *coefs, double lb, double ub);
 };
-}
+}  // namespace mp
 
 #endif  // MP_PROBLEM_H_

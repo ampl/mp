@@ -23,6 +23,8 @@
 #ifndef MP_PROBLEM_BUILDER_H_
 #define MP_PROBLEM_BUILDER_H_
 
+#include <cassert>
+#include <map>
 #include <memory>
 
 #include "mp/error.h"
@@ -30,10 +32,38 @@
 
 namespace mp {
 
+class Suffix {};
+
+class SuffixMap {
+ private:
+  typedef std::map<std::string, Suffix> Map;
+  Map map_;
+
+ public:
+  // Finds a suffix with specified name.
+  Suffix *Find(const char *name) {
+    Map::iterator i = map_.find(name);
+    return i != map_.end() ? &i->second : 0;
+  }
+};
+
+class SuffixManager {
+ private:
+  SuffixMap suffixes_[suf::NUM_KINDS];
+
+ public:
+  SuffixMap &get(int kind) {
+    assert(kind < suf::NUM_KINDS);
+    return suffixes_[kind];
+  }
+};
+
 // A minimal implementation of the ProblemBuilder concept.
 template <typename Impl, typename ExprT>
 class ProblemBuilder {
  private:
+  SuffixManager suffixes_;
+
   struct LinearExprBuilder {
     void AddTerm(int var_index, double coef) { MP_UNUSED2(var_index, coef); }
   };
@@ -48,6 +78,10 @@ class ProblemBuilder {
   typedef Expr LogicalExpr;
   typedef Expr CountExpr;
   typedef Expr Variable;
+
+  typedef Suffix *SuffixPtr;
+
+  SuffixMap &suffixes(int kind) { return suffixes_.get(kind); }
 
   void ReportUnhandledConstruct(fmt::StringRef name) {
     throw Error("unsupported: {}", name);

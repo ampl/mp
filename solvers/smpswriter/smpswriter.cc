@@ -154,12 +154,12 @@ void SMPSWriter::WriteColumns(
   nonzero_coef_indices.reserve(num_core_cons);
   int num_continuous_vars = p.num_continuous_vars();
   int int_var_index = 0;
-  ASLSuffix stage_suffix = p.FindSuffix("stage", suf::VAR);
+  ASLSuffixPtr stage_suffix = p.suffixes(suf::VAR).Find("stage");
   bool integer_block = false;
   for (int stage = 0; stage < num_stages; ++stage) {
     for (int i = 0, n = p.num_vars(); i < n; ++i) {
-      int var_stage = stage_suffix && stage_suffix.has_values() ?
-          std::max(stage_suffix.int_value(i) - 1, 0) : 0;
+      int var_stage = stage_suffix && stage_suffix->has_values() ?
+          std::max(stage_suffix->int_value(i) - 1, 0) : 0;
       if (var_stage != stage) continue;
       int core_var_index = var_info[i].core_index;
       Problem::ColMatrix matrix = p.col_matrix();
@@ -233,13 +233,13 @@ int SMPSWriter::DoSolve(Problem &p, SolutionHandler &) {
 
   // Count the number of stages and the number of variables in stage 0.
   int num_vars = p.num_vars();
-  ASLSuffix stage_suffix = p.FindSuffix("stage", suf::VAR);
+  ASLSuffixPtr stage_suffix = p.suffixes(suf::VAR).Find("stage");
   int num_stage0_vars = num_vars;
   int num_stages = 1;
-  if (stage_suffix && stage_suffix.has_values()) {
+  if (stage_suffix && stage_suffix->has_values()) {
     num_stage0_vars = 0;
     for (int i = 0; i < num_vars; ++i) {
-      int stage_plus_1 = stage_suffix.int_value(i);
+      int stage_plus_1 = stage_suffix->int_value(i);
       if (stage_plus_1 > 0)
         num_stages = std::max(stage_plus_1, num_stages);
       else
@@ -255,12 +255,12 @@ int SMPSWriter::DoSolve(Problem &p, SolutionHandler &) {
   var_info.resize(num_vars);
   con_info.resize(num_cons);
   scenarios.clear();
-  if (stage_suffix && stage_suffix.has_values()) {
+  if (stage_suffix && stage_suffix->has_values()) {
     std::map<std::string, int> scenario_indices;
     int stage0_var_count = 0;
     std::map<std::string, int> stage1_vars;
     for (int i = 0; i < num_vars; ++i) {
-      int stage = stage_suffix.int_value(i) - 1;
+      int stage = stage_suffix->int_value(i) - 1;
       VarConInfo &info = var_info[i];
       if (stage > 0) {
         // Split the name into scenario and the rest and merge variables that
@@ -284,7 +284,7 @@ int SMPSWriter::DoSolve(Problem &p, SolutionHandler &) {
     std::vector<int> con_stages(num_cons);
     std::map<std::string, int> stage1_cons;
     for (int j = 0; j < num_vars; ++j) {
-      int stage = stage_suffix.int_value(j) - 1;
+      int stage = stage_suffix->int_value(j) - 1;
       if (stage <= 0) continue;
       // Update stages of all constraints containing this variable.
       for (int k = matrix.col_start(j),
@@ -396,7 +396,7 @@ int SMPSWriter::DoSolve(Problem &p, SolutionHandler &) {
         // Deduce probabilities from objective coefficients.
         for (LinearObjExpr::iterator
              i = obj_expr.begin(), end = obj_expr.end(); i != end; ++i) {
-          int stage = stage_suffix.int_value(i->var_index()) - 1;
+          int stage = stage_suffix->int_value(i->var_index()) - 1;
           if (stage > 0) {
             reference_var_index = i->var_index();
             core_reference_var_index = var_info[i->var_index()].core_index;
@@ -423,16 +423,16 @@ int SMPSWriter::DoSolve(Problem &p, SolutionHandler &) {
         const VarConInfo &info = var_info[i->var_index()];
         if (info.scenario_index == 0) {
           double coef = i->coef();
-          if (stage_suffix && stage_suffix.has_values() &&
-              stage_suffix.int_value(i->var_index()) - 1 > 0) {
+          if (stage_suffix && stage_suffix->has_values() &&
+              stage_suffix->int_value(i->var_index()) - 1 > 0) {
             coef /= probabilities[0];
           }
           core_obj_coefs[info.core_index] = coef;
         }
         // Check probabilities deduced using other variables.
         if (probabilities.size() != 1 &&
-            stage_suffix && stage_suffix.has_values() &&
-            stage_suffix.int_value(i->var_index()) - 1 > 0) {
+            stage_suffix && stage_suffix->has_values() &&
+            stage_suffix->int_value(i->var_index()) - 1 > 0) {
           double ref_prob = probabilities[info.scenario_index];
           double prob = i->coef() / sum_core_obj_coefs[info.core_index];
           double prob_tolerance = 1e-5;

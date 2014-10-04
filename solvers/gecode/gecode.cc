@@ -311,9 +311,9 @@ LinExpr NLToGecodeConverter::ConvertExpr(
 }
 
 Gecode::IntConLevel NLToGecodeConverter::GetICL(int con_index) const {
-  if (!icl_suffix_ || !icl_suffix_.has_values())
+  if (!icl_suffix_ || !icl_suffix_->has_values())
     return icl_;
-  int value = icl_suffix_.int_value(con_index);
+  int value = icl_suffix_->int_value(con_index);
   assert(value == Gecode::ICL_VAL || value == Gecode::ICL_BND ||
          value == Gecode::ICL_DOM || value == Gecode::ICL_DEF);
   if (value < 0 || value > Gecode::ICL_DEF)
@@ -338,7 +338,7 @@ void NLToGecodeConverter::Convert(const Problem &p) {
         ConvertExpr(p.linear_obj_expr(0), p.nonlinear_obj_expr(0)));
   }
 
-  icl_suffix_ = p.FindSuffix("icl", suf::CON);
+  icl_suffix_ = p.suffixes(suf::CON).Find("icl");
 
   class ICLSetter {
    private:

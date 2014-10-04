@@ -596,10 +596,10 @@ int IlogCPSolver::SolveWithCP(
     Stats &stats, SolutionHandler &sh) {
   IloNumVarArray vars = converter.vars();
   IloIntVarArray priority_vars(env_);
-  ASLSuffix priority_suffix = p.FindSuffix("priority", suf::VAR);
-  if (priority_suffix && priority_suffix.has_values()) {
+  ASLSuffixPtr priority_suffix = p.suffixes(suf::VAR).Find("priority");
+  if (priority_suffix && priority_suffix->has_values()) {
     for (int i = 0, n = p.num_vars(); i < n; ++i) {
-      if (priority_suffix.int_value(i) > 0)
+      if (priority_suffix->int_value(i) > 0)
         priority_vars.add(vars[i]);
     }
   }

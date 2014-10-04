@@ -193,6 +193,13 @@ class ASLBuilder {
     return Problem::Proxy(asl);
   }
 
+  typedef ASLSuffixPtr SuffixPtr;
+
+  SuffixView suffixes(int kind) {
+    assert(kind < suf::NUM_KINDS);
+    return SuffixView(asl_, kind);
+  }
+
   void set_flags(int flags) { flags_ = flags; }
   void set_stub(const char *stub);
 

@@ -226,15 +226,14 @@ TempFiles::TempFiles() {
   close(fd);
 }
 
-ASLSuffix Problem::FindSuffix(const char *name, unsigned flags) const {
-  unsigned kind = flags & suf::MASK;
-  for (SufDesc *d = asl_->i.suffixes[kind]; d; d = d->next) {
+ASLSuffixPtr SuffixView::Find(const char *name, unsigned flags) const {
+  for (SufDesc *d = asl_->i.suffixes[kind_]; d; d = d->next) {
     if (!std::strcmp(name, d->sufname)) {
-      return ASLSuffix(asl_, (flags & suf::INPUT) != 0 &&
+      return ASLSuffixPtr(asl_, (flags & suf::INPUT) != 0 &&
           (d->kind & suf::INPUT) == 0 ? 0 : d);
     }
   }
-  return ASLSuffix();
+  return ASLSuffixPtr();
 }
 
 void Problem::AddVar(double lb, double ub, var::Type type) {

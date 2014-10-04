@@ -244,6 +244,7 @@ enum {
   CON     =  1,  // Applies to constraints.
   OBJ     =  2,  // Applies to objectives.
   PROBLEM =  3,  // Applies to problems.
+  NUM_KINDS,     // The number of suffix kinds.
   MASK    =  3,  // Mask for the above.
   FLOAT   =  4,  // Suffix values are floating-point numbers.
   IODECL  =  8,  // Tell AMPL to make this an INOUT suffix.
