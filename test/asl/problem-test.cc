@@ -614,5 +614,6 @@ TEST_P(SuffixTest, VisitValues) {
   suffix->VisitValues(visitor);
 }
 
-INSTANTIATE_TEST_CASE_P(, SuffixTest, ::testing::Values<int>(
-                          suf::VAR, suf::CON, suf::OBJ, suf::PROBLEM));
+INSTANTIATE_TEST_CASE_P(, SuffixTest, ::testing::Values(
+                          int(suf::VAR), int(suf::CON), int(suf::OBJ),
+                          int(suf::PROBLEM)));
