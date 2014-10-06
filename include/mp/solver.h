@@ -374,6 +374,7 @@ class Solver : private ErrorHandler, private OutputHandler {
 
   bool timing_;
 
+ public:
   class SuffixInfo {
    private:
     const char *name_;
@@ -390,7 +391,10 @@ class Solver : private ErrorHandler, private OutputHandler {
     int kind() const { return kind_; }
     int nextra() const { return nextra_; }
   };
+
   typedef std::vector<SuffixInfo> SuffixList;
+
+ private:
   SuffixList suffixes_;
 
   friend class ASLSolver;
@@ -966,7 +970,7 @@ void SolutionWriter<Solver, Writer>::HandleSolution(
     data.Attach(nsol_suffix, 1);
     data.set_value(0, num_solutions_);
   }
-  // TODO: pass to WriteSol
+  // TODO: handle options
   //option_info.bsname = const_cast<char*>(solver_.long_name());
   //option_info.wantsol = solver_.wantsol();
   //const fint *options = problem_.asl_->i.ampl_options_;

@@ -1035,6 +1035,27 @@ TEST(SolverTest, SolutionStubOption) {
   EXPECT_EQ("abc", s2.GetStrOption("solutionstub"));
 }
 
+struct SuffixNameIsNsol {
+  bool operator()(const Solver::SuffixInfo &info) const {
+    return std::strcmp(info.name(), "nsol") == 0;
+  }
+};
+
+// Test that the nsol suffix is added to the Solver if MULTIPLE_SOL flag
+// is specified in the Solver's ctor.
+TEST(SolverTest, NSolSuffix) {
+  SolCountingSolver s1(false);
+  const Solver::SuffixList *suffixes = &s1.suffixes();
+  EXPECT_EQ(suffixes->end(),
+            std::find_if(suffixes->begin(), suffixes->end(),
+                         SuffixNameIsNsol()));
+  SolCountingSolver s2(true);
+  suffixes = &s2.suffixes();
+  Solver::SuffixList::const_iterator i =
+      std::find_if(suffixes->begin(), suffixes->end(), SuffixNameIsNsol());
+  EXPECT_STREQ("nsol", i->name());
+}
+
 struct OutputHandler : mp::OutputHandler {
   std::string output;
 
@@ -1441,6 +1462,3 @@ TEST_F(SolverAppTest, UseSolutionWriter) {
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
 }
 }
-
-// TODO: test that the nsol suffix is added to the Solver if MULTIPLE_SOL flag
-//       is specified
