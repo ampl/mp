@@ -439,6 +439,7 @@ class Problem {
 
   template <typename ExprT>
   ExprT GetExpr(cde *Edag1info::*ptr, int index, int size) const {
+    MP_UNUSED(size);
     assert(index >= 0 && index < size);
     if (asl_->i.ASLtype != ASL_read_fg)
       return ExprT();
