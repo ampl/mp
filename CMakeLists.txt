@@ -227,7 +227,7 @@ add_custom_command(OUTPUT ${MP_EXPR_INFO_FILE} COMMAND ${WINE}
 
 add_prefix(MP_HEADERS include/mp/
   arrayref.h clock.h error.h nl.h option.h os.h problem-base.h
-  problem-builder.h rstparser.h safeint.h sol.h solver.h)
+  problem-builder.h rstparser.h safeint.h sol.h solver.h suffix.h)
 set(MP_SOURCES )
 add_prefix(MP_SOURCES src/
   clock.cc nl.cc option.cc os.cc precedence.h rstparser.cc sol.cc
