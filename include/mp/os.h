@@ -76,19 +76,29 @@ class path {
 // Throws Error on error.
 path GetExecutablePath();
 
-class MemoryMappedFile {
+namespace internal {
+class MemoryMappedFileBase {
  private:
   char *start_;
   unsigned long long size_;
 
-  FMT_DISALLOW_COPY_AND_ASSIGN(MemoryMappedFile);
+  FMT_DISALLOW_COPY_AND_ASSIGN(MemoryMappedFileBase);
+
+ protected:
+  MemoryMappedFileBase(int fd, std::size_t size);
+  ~MemoryMappedFileBase();
 
  public:
-  MemoryMappedFile(const fmt::File &file, std::size_t size);
-  ~MemoryMappedFile();
-
   const char *start() const { return start_; }
   unsigned long long size() const { return size_; }
+};
+}
+
+template <typename File = fmt::File>
+class MemoryMappedFile : public internal::MemoryMappedFileBase {
+ public:
+  MemoryMappedFile(const File &file, std::size_t size)
+    : MemoryMappedFileBase(file.descriptor(), size) {}
 };
 
 // The default buffer size.

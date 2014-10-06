@@ -112,15 +112,16 @@ path path::temp_directory_path() {
   return path(dir);
 }
 
-mp::MemoryMappedFile::MemoryMappedFile(const fmt::File &file, std::size_t size)
+mp::internal::MemoryMappedFileBase::MemoryMappedFileBase(
+    int fd, std::size_t size)
 : start_(), size_(size) {
   start_ = reinterpret_cast<char*>(
-      mmap(0, size_, PROT_READ, MAP_FILE | MAP_PRIVATE, file.descriptor(), 0));
+      mmap(0, size_, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0));
   if (start_ == MAP_FAILED)
     throw SystemError(errno, "cannot map file");
 }
 
-mp::MemoryMappedFile::~MemoryMappedFile() {
+mp::internal::MemoryMappedFileBase::~MemoryMappedFileBase() {
   if (munmap(start_, size_) == -1)
     fmt::report_system_error(errno, "cannot unmap file");
 }
@@ -162,7 +163,8 @@ path mp::GetExecutablePath() {
   return path(s, s + utf8_str.size());
 }
 
-mp::MemoryMappedFile::MemoryMappedFile(const fmt::File &file, std::size_t size)
+mp::internal::MemoryMappedFileBase::MemoryMappedFileBase(
+    int fd, std::size_t size)
 : start_(), size_(size) {
   class Handle {
     HANDLE handle_;
@@ -173,7 +175,7 @@ mp::MemoryMappedFile::MemoryMappedFile(const fmt::File &file, std::size_t size)
     ~Handle() { CloseHandle(handle_); }
     operator HANDLE() const { return handle_; }
   };
-  HANDLE handle = reinterpret_cast<HANDLE>(_get_osfhandle(file.descriptor()));
+  HANDLE handle = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
   if (handle == INVALID_HANDLE_VALUE)
     throw SystemError(errno, "cannot get file handle");
   Handle mapping(CreateFileMappingW(handle, 0, PAGE_READONLY, 0, 0, 0));
@@ -185,7 +187,7 @@ mp::MemoryMappedFile::MemoryMappedFile(const fmt::File &file, std::size_t size)
     throw WindowsError(GetLastError(), "cannot map file");
 }
 
-mp::MemoryMappedFile::~MemoryMappedFile() {
+mp::internal::MemoryMappedFileBase::~MemoryMappedFileBase() {
   if (!UnmapViewOfFile(start_))
     throw WindowsError(GetLastError(), "cannot unmap file");
 }

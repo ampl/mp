@@ -185,7 +185,7 @@ TEST(MemoryMappedFileTest, MapZeroTerminated) {
   std::string filename = GetExecutableDir() + "test";
   WriteFile(filename, content);
   File file(filename, File::RDONLY);
-  MemoryMappedFile f(file, file.size());
+  MemoryMappedFile<> f(file, file.size());
   EXPECT_STREQ(content, f.start());
   EXPECT_EQ(std::strlen(content), f.size());
 }
@@ -196,7 +196,7 @@ TEST(MemoryMappedFileTest, DtorUnmapsFile) {
   const volatile char *start = 0;
   {
     File file(filename, File::RDONLY);
-    MemoryMappedFile f(file, file.size());
+    MemoryMappedFile<> f(file, file.size());
     start = f.start();
   }
   EXPECT_DEATH((void)*start, "");
@@ -209,7 +209,7 @@ TEST(MemoryMappedFileTest, CloseFile) {
       mp::GetExecutablePath().remove_filename().string() + "/test";
   WriteFile(path, "abc");
   File file(path, File::RDONLY);
-  MemoryMappedFile f(file, file.size());
+  MemoryMappedFile<> f(file, file.size());
   file.close();
   int exit_code = ExecuteShellCommand("lsof " + path + " > out", false);
   std::string out = ReadFile("out");
@@ -255,7 +255,7 @@ TEST(MemoryMappedFileTest, CloseFile) {
   ASSERT_TRUE(GetProcessHandleCount(
       GetCurrentProcess(), &handle_count_before) != 0);
   File file("test", File::RDONLY);
-  MemoryMappedFile f(file, file.size());
+  MemoryMappedFile<> f(file, file.size());
   file.close();
   DWORD handle_count_after = 0;
   ASSERT_TRUE(GetProcessHandleCount(
@@ -292,6 +292,6 @@ class StandardErrorHandling {
 
 TEST(MemoryMappedFileTest, InvalidFile) {
   StandardErrorHandling seh;
-  EXPECT_THROW(MemoryMappedFile(fmt::File(), 1), fmt::SystemError);
+  EXPECT_THROW(MemoryMappedFile<>(fmt::File(), 1), fmt::SystemError);
 }
 }

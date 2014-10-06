@@ -981,15 +981,6 @@ void SolutionWriter<Solver, Writer>::HandleSolution(
   this->Write(filename_, sol);
 }
 
-// The default .nl file reader.
-class NLFileReader {
- public:
-  template <typename Handler>
-  void Read(fmt::StringRef filename, Handler &handler) {
-    ReadNLFile(filename, handler);
-  }
-};
-
 namespace internal {
 
 // Command-line option parser for a solver application.
@@ -1038,7 +1029,7 @@ class SolverAppOptionParser {
 // A solver application.
 // Solver: optimization solver class; normally a subclass of SolverImpl
 // Reader: .nl reader
-template <typename Solver, typename Reader = NLFileReader>
+template <typename Solver, typename Reader = internal::NLFileReader<> >
 class SolverApp : private Reader {
  private:
   Solver solver_;

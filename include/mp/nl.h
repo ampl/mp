@@ -55,6 +55,10 @@ namespace mp {
 
 using fmt::internal::MakeUnsigned;
 
+template <typename Handler>
+void ReadNLString(fmt::StringRef str, Handler &handler,
+                  fmt::StringRef name = "(input)");
+
 // A read error with location information.
 class ReadError : public Error {
  private:
@@ -1572,30 +1576,42 @@ void NLReader<Reader, Handler>::Read() {
   }
 }
 
-// An .nl file.
+// An .nl file reader.
 template <typename File = fmt::File>
-class NLFile {
+class NLFileReader {
  private:
   File file_;
   std::size_t size_;
   std::size_t rounded_size_;  // Size rounded up to a multiple of page size.
-
- public:
-  NLFile() : size_(0), rounded_size_(0) {}
 
   void Open(fmt::StringRef filename);
 
   // Reads the file into an array.
   void Read(fmt::internal::Array<char, 1> &array);
 
-  std::size_t size() { return size_; }
-  std::size_t rounded_size() { return rounded_size_; }
+ public:
+  NLFileReader() : size_(0), rounded_size_(0) {}
 
-  File &get() { return file_; }
+  File &file() { return file_; }
+
+  // Opens and reads the file.
+  template <typename Handler>
+  void Read(fmt::StringRef filename, Handler &handler) {
+    Open(filename);
+    if (size_ == rounded_size_) {
+      // Don't use mmap, because the file size is a multiple of the page size
+      // and therefore the mmap'ed buffer won't be zero terminated.
+      fmt::internal::Array<char, 1> array;
+      Read(array);
+      return ReadNLString(fmt::StringRef(&array[0], size_), handler, filename);
+    }
+    MemoryMappedFile<File> mapped_file(file_, rounded_size_);
+    ReadNLString(fmt::StringRef(mapped_file.start(), size_), handler, filename);
+  }
 };
 
 template <typename File>
-void NLFile<File>::Open(fmt::StringRef filename) {
+void NLFileReader<File>::Open(fmt::StringRef filename) {
   file_ = File(filename, fmt::File::RDONLY);
   fmt::LongLong file_size = file_.size();
   assert(file_size >= 0);
@@ -1613,7 +1629,7 @@ void NLFile<File>::Open(fmt::StringRef filename) {
 }
 
 template <typename File>
-void NLFile<File>::Read(fmt::internal::Array<char, 1> &array) {
+void NLFileReader<File>::Read(fmt::internal::Array<char, 1> &array) {
   array.resize(size_ + 1);
   std::size_t offset = 0;
   while (offset < size_)
@@ -1626,7 +1642,7 @@ void NLFile<File>::Read(fmt::internal::Array<char, 1> &array) {
 // name: Name to be used when reporting errors.
 template <typename Handler>
 void ReadNLString(fmt::StringRef str, Handler &handler,
-                  fmt::StringRef name = "(input)") {
+                  fmt::StringRef name) {
   internal::TextReader reader(str, name);
   NLHeader header = NLHeader();
   reader.ReadHeader(header);
@@ -1655,19 +1671,8 @@ void ReadNLString(fmt::StringRef str, Handler &handler,
 
 // Reads an .nl file.
 template <typename Handler>
-void ReadNLFile(fmt::StringRef filename, Handler &handler) {
-  internal::NLFile<> file;
-  file.Open(filename);
-  std::size_t size = file.size(), rounded_size = file.rounded_size();
-  if (size == rounded_size) {
-    // Don't use mmap, because the file size is a multiple of the page size
-    // and therefore the mmap'ed buffer won't be zero terminated.
-    fmt::internal::Array<char, 1> array;
-    file.Read(array);
-    return ReadNLString(fmt::StringRef(&array[0], size), handler, filename);
-  }
-  MemoryMappedFile mapped_file(file.get(), rounded_size);
-  ReadNLString(fmt::StringRef(mapped_file.start(), size), handler, filename);
+inline void ReadNLFile(fmt::StringRef filename, Handler &handler) {
+  internal::NLFileReader<>().Read(filename, handler);
 }
 }  // namespace mp
 

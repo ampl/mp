@@ -1381,7 +1381,7 @@ TEST_F(SolverAppTest, ReadProblem) {
                                     MatchAdapterToBuilder(&app_.solver())));
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
   // Check that the default reader is NLReader.
-  mp::NLFileReader &reader = mp::SolverApp<TestSolver>().reader();
+  mp::internal::NLFileReader<> &reader = mp::SolverApp<TestSolver>().reader();
   MP_UNUSED(reader);
 }
 
