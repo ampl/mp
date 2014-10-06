@@ -195,7 +195,7 @@ class ASLBuilder {
   }
 
   typedef ASLSuffixPtr SuffixPtr;
-  typedef SuffixView SuffixMap;
+  typedef SuffixView SuffixSet;
 
   SuffixView &suffixes(int kind) {
     assert(kind < suf::NUM_KINDS);

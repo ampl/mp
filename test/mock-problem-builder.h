@@ -110,9 +110,9 @@ class MockProblemBuilder {
   explicit MockProblemBuilder(MockProblemBuilder *&builder) { builder = this; }
 
   typedef mp::Suffix *SuffixPtr;
-  typedef mp::SuffixMap SuffixMap;
+  typedef mp::SuffixSet SuffixSet;
 
-  MOCK_METHOD1(suffixes, SuffixMap &(int));
+  MOCK_METHOD1(suffixes, SuffixSet &(int));
 
   MOCK_METHOD0(num_vars, int ());
   MOCK_METHOD0(num_cons, int ());

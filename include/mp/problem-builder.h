@@ -24,8 +24,9 @@
 #define MP_PROBLEM_BUILDER_H_
 
 #include <cassert>
-#include <map>
+#include <cstring>
 #include <memory>
+#include <set>
 #include <vector>
 
 #include "mp/error.h"
@@ -35,12 +36,22 @@ namespace mp {
 
 class Suffix {
  private:
+  std::string name_;
+  int kind_;
   std::vector<int> values_;
 
  public:
-  explicit Suffix(std::size_t size = 0) : values_(size) {}
+  explicit Suffix(const std::string &name, int kind = 0, std::size_t size = 0)
+    : name_(name), kind_(kind), values_(size) {}
 
-  void Swap(Suffix &other) { values_.swap(other.values_); }
+  const char *name() const { return name_.c_str(); }
+
+  int kind() const { return kind_; }
+
+  void Swap(Suffix &other) {
+    name_.swap(other.name_);
+    values_.swap(other.values_);
+  }
 
   int value(std::size_t index) const {
     assert(index <= values_.size());
@@ -50,41 +61,75 @@ class Suffix {
     assert(index <= values_.size());
     values_[index] = value;
   }
+
+  // Iterates over nonzero suffix values and sends them to the visitor.
+  template <typename Visitor>
+  void VisitValues(Visitor &visitor) const {
+    for (std::size_t i = 0, n = values_.size(); i < n; ++i) {
+      int value = values_[i];
+      if (value != 0)
+        visitor.Visit(i, value);
+    }
+  }
 };
 
-class SuffixMap {
+class SuffixSet {
  private:
-  typedef std::map<std::string, Suffix> Map;
-  Map map_;
+  int kind_;
+
+  struct SuffixLess {
+    bool operator()(const Suffix &lhs, const Suffix &rhs) const {
+      return std::strcmp(lhs.name(), rhs.name()) < 0;
+    }
+  };
+
+  typedef std::set<Suffix, SuffixLess> Set;
+  Set set_;
 
  public:
+  explicit SuffixSet(int kind = 0) : kind_(kind) {
+    assert(0 <= kind && kind <= suf::NUM_KINDS);
+  }
+
   // Finds a suffix with specified name.
   Suffix *Find(const char *name) {
-    Map::iterator i = map_.find(name);
-    return i != map_.end() ? &i->second : 0;
+    Set::iterator i = set_.find(Suffix(name));
+    return const_cast<Suffix*>(i != set_.end() ? &*i : 0);
   }
   const Suffix *Find(const char *name) const {
-    Map::const_iterator i = map_.find(name);
-    return i != map_.end() ? &i->second : 0;
+    Set::const_iterator i = set_.find(Suffix(name));
+    return i != set_.end() ? &*i : 0;
   }
 
   Suffix &Add(const char *name, std::size_t num_values) {
-    Suffix &suffix = map_.insert(std::make_pair(name, Suffix())).first->second;
-    Suffix(num_values).Swap(suffix);
+    Suffix &suffix = const_cast<Suffix&>(*set_.insert(Suffix(name)).first);
+    Suffix(name, kind_, num_values).Swap(suffix);
     return suffix;
   }
+
+  typedef Set::const_iterator iterator;
+
+  iterator begin() const { return set_.begin(); }
+  iterator end() const { return set_.end(); }
 };
 
 class SuffixManager {
  private:
-  SuffixMap suffixes_[suf::NUM_KINDS];
+  SuffixSet suffixes_[suf::NUM_KINDS];
 
  public:
-  SuffixMap &get(int kind) {
+  SuffixManager() {
+    for (int kind = 0; kind < suf::NUM_KINDS; ++kind)
+      suffixes_[kind] = SuffixSet(kind);
+  }
+
+  SuffixSet &get(int kind) {
     assert(kind < suf::NUM_KINDS);
     return suffixes_[kind];
   }
 };
+
+// TODO: test suffixes
 
 // A minimal implementation of the ProblemBuilder concept.
 template <typename Impl, typename ExprT>
@@ -108,9 +153,9 @@ class ProblemBuilder {
   typedef Expr Variable;
 
   typedef Suffix *SuffixPtr;
-  typedef mp::SuffixMap SuffixMap;
+  typedef mp::SuffixSet SuffixSet;
 
-  SuffixMap &suffixes(int kind) { return suffixes_.get(kind); }
+  SuffixSet &suffixes(int kind) { return suffixes_.get(kind); }
 
   void ReportUnhandledConstruct(fmt::StringRef name) {
     throw Error("unsupported: {}", name);
