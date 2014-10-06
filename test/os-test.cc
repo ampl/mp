@@ -246,7 +246,9 @@ TEST(MemoryMappedFileTest, CloseFile) {
 }
 # endif
 
-class StandardErrorHandling {};
+struct StandardErrorHandling {
+  StandardErrorHandling() {}
+};
 
 #else
 TEST(MemoryMappedFileTest, CloseFile) {
