@@ -49,6 +49,7 @@ using testing::_;
 using testing::StrictMock;
 using testing::Not;
 using testing::Return;
+using testing::ReturnRef;
 using testing::StartsWith;
 
 namespace {
@@ -1000,9 +1001,14 @@ TEST(SolverTest, TimingOption) {
 
 const int NUM_SOLUTIONS = 3;
 
-struct SolCountingSolver : TestSolver {
+struct SolCountingSolver : mp::Solver {
   explicit SolCountingSolver(bool multiple_sol)
-  : TestSolver("", "", 0, multiple_sol ? MULTIPLE_SOL : 0) {}
+  : mp::Solver("", "", 0, multiple_sol ? MULTIPLE_SOL : 0) {}
+
+  struct ProblemBuilder : mp::ProblemBuilder<ProblemBuilder, int> {
+    int num_vars() const { return 0; }
+    int num_cons() const { return 0; }
+  };
 
   void Solve(SolutionHandler &sh) {
     for (int i = 0; i < NUM_SOLUTIONS; ++i)
@@ -1133,14 +1139,20 @@ TEST_F(SolverAppOptionParserTest, InvalidOption) {
                    OptionError, "invalid option '-w'");
 }
 
+template <typename ProblemBuilder = MockProblemBuilder>
 struct MockSolWriter {
-  MOCK_METHOD2(Write, void (fmt::StringRef filename,
-                            const mp::SolutionAdapter &sol));
+  MOCK_METHOD2_T(Write,
+                 void (fmt::StringRef filename,
+                       const mp::SolutionAdapter<ProblemBuilder> &sol));
 };
 
 // Matcher that compares a StringRef with a C string for equality.
-MATCHER_P(StringRefEq, str, "") { return std::strcmp(arg.c_str(), str) == 0; }
+MATCHER_P(StringRefEq, str, "") {
+  return std::strcmp(arg.c_str(), fmt::StringRef(str).c_str()) == 0;
+}
 
+// Matcher that checks that the solution being written has the specified
+// values and dual values.
 MATCHER_P2(MatchSolution, values, dual_values, "") {
   if (std::strcmp(arg.message(), "test message") != 0 || arg.num_options() != 0)
     return false;
@@ -1164,92 +1176,83 @@ MATCHER_P2(MatchSolution, values, dual_values, "") {
 TEST(SolutionWriterTest, WriteSolution) {
   TestSolver solver;
   MockProblemBuilder problem_builder;
-  mp::SolutionWriter<TestSolver, MockSolWriter>
+  mp::SolutionWriter<TestSolver, MockSolWriter<> >
       writer("test", solver, problem_builder);
-  MockSolWriter &sol_writer = writer.sol_writer();
   const double values[] = {11, 22, 33};
   const double dual_values[] = {44, 55};
   EXPECT_CALL(problem_builder, num_vars()).WillOnce(Return(3));
   EXPECT_CALL(problem_builder, num_cons()).WillOnce(Return(2));
-  EXPECT_CALL(sol_writer, Write(StringRefEq("test.sol"),
-                                MatchSolution(values, dual_values)));
+  EXPECT_CALL(writer.sol_writer(), Write(StringRefEq("test.sol"),
+                                         MatchSolution(values, dual_values)));
   writer.HandleSolution("test message", values, dual_values, 42);
 }
 
-TEST(SolutionWriterTest, SolutionsAreNotCountedByDefault) {
-  // TODO: split the test in two parts:
-  // 1. test that the nsol suffix is added to the Solver - SolverTest
-  // 2. test that the nsol suffix is set by SolutionWriter - SolutionWriterTest
+// Matcher that returns true if the argument is a solution that doesn't
+// containt an nsol suffix.
+MATCHER(MatchNoNSol, "") {
+  return arg.suffixes(mp::suf::PROBLEM)->Find("nsol") == 0;
+}
+
+// Matcher that returns true if the argument is a solution that contains
+// an nsol suffix with the specified value.
+MATCHER_P(MatchNSol, nsol, "") {
+  const mp::Suffix *suffix = arg.suffixes(mp::suf::PROBLEM)->Find("nsol");
+  return suffix != 0 && suffix->value(0) == nsol;
+}
+
+// Test that SolutionWriter::HandleSolution doesn't set the nsol suffix
+// or writes feasible solutions by default.
+TEST(SolutionWriterTest, IgnoreFeasibleSolutions) {
   SolCountingSolver solver(true);
-  MockProblemBuilder problem_builder;
-  mp::SolutionWriter<SolCountingSolver, MockSolWriter>
+  typedef SolCountingSolver::ProblemBuilder ProblemBuilder;
+  ProblemBuilder problem_builder;
+  mp::SolutionWriter<SolCountingSolver,
+      StrictMock<MockSolWriter<ProblemBuilder> > >
       writer("test", solver, problem_builder);
   writer.HandleFeasibleSolution("", 0, 0, 0);
+  EXPECT_CALL(writer.sol_writer(), Write(_, MatchNoNSol()));
   writer.HandleSolution("", 0, 0, 0);
-  // TODO: check that the nsol suffix is set
-  /*s.SetIntOption("wantsol", 1);
-  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
-  Problem p;
-  p.Read("test.nl");
-  mp::SolutionWriter sol_writer(s, p);
-  s.Solve(p, sol_writer);
-  EXPECT_TRUE(ReadFile("test.sol").find(
-      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) == std::string::npos);*/
 }
 
-// TODO: test SolutionWriter
-
-/*
-TEST(SolverTest, CountSolutions) {
-  SolCountingSolver s(true);
-  s.SetIntOption("countsolutions", 1);
-  s.SetIntOption("wantsol", 1);
-  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
-  Problem p;
-  p.Read("test.nl");
-  mp::SolutionWriter sol_writer(s, p);
-  s.Solve(p, sol_writer);
-  EXPECT_TRUE(ReadFile("test.sol").find(
-      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) != std::string::npos);
+// Test that SolutionWriter::HandleSolution sets the nsol suffix before
+// calling SolWriter::Write, if the countsolutions option is set.
+TEST(SolutionWriterTest, CountSolutions) {
+  SolCountingSolver solver(true);
+  solver.SetIntOption("countsolutions", 1);
+  typedef SolCountingSolver::ProblemBuilder ProblemBuilder;
+  ProblemBuilder problem_builder;
+  mp::SolutionWriter<SolCountingSolver,
+      StrictMock<MockSolWriter<ProblemBuilder> > >
+      writer("test", solver, problem_builder);
+  int nsol = 5;
+  for (int i = 0; i < nsol; ++i)
+    writer.HandleFeasibleSolution("", 0, 0, 0);
+  problem_builder.suffixes(mp::suf::PROBLEM).Add("nsol", 1);
+  EXPECT_CALL(writer.sol_writer(), Write(_, MatchNSol(nsol)));
+  writer.HandleSolution("", 0, 0, 0);
 }
 
-bool Exists(fmt::StringRef filename) {
-  std::FILE *f = std::fopen(filename.c_str(), "r");
-  if (f)
-    std::fclose(f);
-  return f != 0;
+// Test that SolutionWriter::HandleSolution sets the nsol suffix before
+// calling SolWriter::Write, if the solutionstub option is set.
+TEST(SolutionWriterTest, WriteFeasibleSolutions) {
+  SolCountingSolver solver(true);
+  solver.SetStrOption("solutionstub", "foo");
+  typedef SolCountingSolver::ProblemBuilder ProblemBuilder;
+  ProblemBuilder problem_builder;
+  typedef StrictMock<MockSolWriter<ProblemBuilder> > SolWriter;
+  mp::SolutionWriter<SolCountingSolver, SolWriter>
+      writer("test", solver, problem_builder);
+  SolWriter &sol_writer = writer.sol_writer();
+  int nsol = 5;
+  for (int i = 0; i < nsol; ++i) {
+    std::string filename = fmt::format("foo{}.sol", i + 1);
+    EXPECT_CALL(sol_writer, Write(StringRefEq(filename), _));
+    writer.HandleFeasibleSolution("", 0, 0, 0);
+  }
+  problem_builder.suffixes(mp::suf::PROBLEM).Add("nsol", 1);
+  EXPECT_CALL(sol_writer, Write(_, MatchNSol(nsol)));
+  writer.HandleSolution("", 0, 0, 0);
 }
-
-TEST(SolverTest, SolutionsAreNotWrittenByDefault) {
-  SolCountingSolver s(true);
-  s.SetIntOption("wantsol", 1);
-  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
-  Problem p;
-  p.Read("test.nl");
-  mp::SolutionWriter sol_writer(s, p);
-  s.Solve(p, sol_writer);
-  EXPECT_TRUE(!Exists("1.sol"));
-  EXPECT_TRUE(ReadFile("test.sol").find(
-      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) == std::string::npos);
-}
-
-TEST(SolverTest, WriteSolutions) {
-  SolCountingSolver s(true);
-  s.SetStrOption("solutionstub", "abc");
-  s.SetIntOption("wantsol", 1);
-  WriteFile("test.nl", ReadFile(MP_TEST_DATA_DIR "/objconst.nl"));
-  Problem p;
-  p.Read("test.nl");
-  for (int i = 1; i <= NUM_SOLUTIONS; ++i)
-    std::remove(fmt::format("abc{}.sol", i).c_str());
-  mp::SolutionWriter sol_writer(s, p);
-  s.Solve(p, sol_writer);
-  for (int i = 1; i <= NUM_SOLUTIONS; ++i)
-    EXPECT_TRUE(Exists(fmt::format("abc{}.sol", i)));
-  EXPECT_TRUE(ReadFile("test.sol").find(
-      fmt::format("nsol\n0 {}\n", NUM_SOLUTIONS)) != std::string::npos);
-}
-*/
 
 struct MockOptionHandler {
   MOCK_METHOD0(OnOption, bool ());
@@ -1437,3 +1440,6 @@ TEST_F(SolverAppTest, UseSolutionWriter) {
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
 }
 }
+
+// TODO: test that the nsol suffix is added to the Solver if MULTIPLE_SOL flag
+//       is specified

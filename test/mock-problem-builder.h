@@ -24,7 +24,7 @@
 #define MP_MOCK_PROBLEM_BUILDER_H_
 
 #include "gmock/gmock.h"
-#include "mp/problem-base.h"
+#include "mp/problem-builder.h"
 
 enum IDType { NULL_ID = 0, ID = 42, ID2, ID3, ID4 };
 
@@ -94,12 +94,6 @@ struct TestPLTermHandler {
   DEFINE_ID(TestPLTermHandler);
 };
 
-struct TestSuffix {};
-
-struct TestSuffixMap {
-  TestSuffix *Find(const char *) { return 0; }
-};
-
 // A mock problem builder.
 class MockProblemBuilder {
  public:
@@ -115,9 +109,10 @@ class MockProblemBuilder {
   // in ``builder``.
   explicit MockProblemBuilder(MockProblemBuilder *&builder) { builder = this; }
 
-  typedef TestSuffix *SuffixPtr;
+  typedef mp::Suffix *SuffixPtr;
+  typedef mp::SuffixMap SuffixMap;
 
-  MOCK_METHOD1(suffixes, TestSuffixMap (int));
+  MOCK_METHOD1(suffixes, SuffixMap &(int));
 
   MOCK_METHOD0(num_vars, int ());
   MOCK_METHOD0(num_cons, int ());

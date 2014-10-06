@@ -856,17 +856,20 @@ class SolverImpl : public Solver {
 };
 
 // Adapts a solution for WriteSol.
+template <typename ProblemBuilder>
 class SolutionAdapter {
  private:
+  ProblemBuilder *builder_;
   const char *message_;
   mp::ArrayRef<int> options_;
   mp::ArrayRef<double> values_;
   mp::ArrayRef<double> dual_values_;
 
  public:
-  SolutionAdapter(const char *message, mp::ArrayRef<int> options,
-                  mp::ArrayRef<double> values, mp::ArrayRef<double> dual_values)
-    : message_(message), options_(options),
+  SolutionAdapter(ProblemBuilder *pb, const char *message,
+                  mp::ArrayRef<int> options, mp::ArrayRef<double> values,
+                  mp::ArrayRef<double> dual_values)
+    : builder_(pb), message_(message), options_(options),
       values_(values), dual_values_(dual_values) {}
 
   const char *message() const { return message_; }
@@ -880,11 +883,9 @@ class SolutionAdapter {
   int num_dual_values() const { return dual_values_.size(); }
   int dual_value(int index) const { return dual_values_[index]; }
 
-  // TODO
-  //SuffixView var_suffixes() const { return problem_.var_suffixes(); }
-  //SuffixView con_suffixes() const { return problem_.con_suffixes(); }
-  //SuffixView obj_suffixes() const { return problem_.obj_suffixes(); }
-  //SuffixView problem_suffixes() const { return problem_.problem_suffixes(); }
+  const typename ProblemBuilder::SuffixMap *suffixes(int kind) const {
+    return builder_ ? &builder_->suffixes(kind) : 0;
+  }
 };
 
 class NullSolutionHandler : public SolutionHandler {
@@ -944,10 +945,13 @@ void SolutionWriter<Solver, Writer>::HandleFeasibleSolution(
   const char *solution_stub = solver_.solution_stub();
   if (!*solution_stub)
     return;
-  fmt::Writer w;
-  w << solution_stub << num_solutions_ << ".sol";
-  // TODO
-  //this->Write(w.c_str(), message, values, dual_values);
+  SolutionAdapter<ProblemBuilder> sol(
+        0, message.c_str(), ArrayRef<int>(0, 0),
+        MakeArrayRef(values, values ? builder_.num_vars() : 0),
+        MakeArrayRef(dual_values, dual_values ? builder_.num_cons() : 0));
+  fmt::Writer filename;
+  filename << solution_stub << num_solutions_ << ".sol";
+  this->Write(filename.c_str(), sol);
 }
 
 template <typename Solver, typename Writer>
@@ -957,17 +961,17 @@ void SolutionWriter<Solver, Writer>::HandleSolution(
   if (solver_.need_multiple_solutions()) {
     typedef typename ProblemBuilder::SuffixPtr SuffixPtr;
     SuffixPtr nsol_suffix = builder_.suffixes(suf::PROBLEM).Find("nsol");
-    // TODO: set suffix
-    //if (nsol_suffix)
-    //  nsol_suffix.set_values(&num_solutions_);
+    if (nsol_suffix)
+      nsol_suffix->set_value(0, num_solutions_);
   }
   // TODO: pass to WriteSol
   //option_info.bsname = const_cast<char*>(solver_.long_name());
   //option_info.wantsol = solver_.wantsol();
   //const fint *options = problem_.asl_->i.ampl_options_;
-  SolutionAdapter sol(message.c_str(), ArrayRef<int>(0, 0),
-      MakeArrayRef(values, values ? builder_.num_vars() : 0),
-      MakeArrayRef(dual_values, dual_values ? builder_.num_cons() : 0));
+  SolutionAdapter<ProblemBuilder> sol(
+        &builder_, message.c_str(), ArrayRef<int>(0, 0),
+        MakeArrayRef(values, values ? builder_.num_vars() : 0),
+        MakeArrayRef(dual_values, dual_values ? builder_.num_cons() : 0));
   this->Write(filename_, sol);
 }
 

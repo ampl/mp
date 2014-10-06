@@ -63,6 +63,7 @@ class ASLBuilder {
   int nz_;
   int nderp_;
   static const double DVALUE[];
+  SuffixView suffixes_[suf::NUM_KINDS];
 
   // "Static" data for the functions in fg_read.
   Static *static_;
@@ -194,10 +195,11 @@ class ASLBuilder {
   }
 
   typedef ASLSuffixPtr SuffixPtr;
+  typedef SuffixView SuffixMap;
 
-  SuffixView suffixes(int kind) {
+  SuffixView &suffixes(int kind) {
     assert(kind < suf::NUM_KINDS);
-    return SuffixView(asl_, kind);
+    return suffixes_[kind];
   }
 
   void set_flags(int flags) { flags_ = flags; }

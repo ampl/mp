@@ -207,6 +207,8 @@ void ASLBuilder::Init(ASL *asl) {
     asl_ = ASL_alloc(ASL_read_fg);
     own_asl_ = true;
   }
+  for (int i = 0; i < suf::NUM_KINDS; ++i)
+    suffixes_[i] = SuffixView(asl_, i);
 }
 
 ASLBuilder::~ASLBuilder() {

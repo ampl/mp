@@ -65,9 +65,9 @@ class SuffixValueWriter {
   void Visit(int index, T value) { file_.print("{} {}\n", index, value); }
 };
 
-template <typename SuffixView>
-void WriteSuffixes(fmt::BufferedFile &file, const SuffixView &suffixes) {
-  for (typename SuffixView::iterator
+template <typename SuffixMap>
+void WriteSuffixes(fmt::BufferedFile &file, const SuffixMap &suffixes) {
+  for (typename SuffixMap::iterator
        i = suffixes.begin(), e = suffixes.end(); i != e; ++i) {
     const char *name = i->name();
     namespace suf = mp::suf;
@@ -100,7 +100,8 @@ void WriteSolFile(fmt::StringRef filename, const Solution &sol) {
   for (int i = 0, n = sol.num_dual_values(); i < n; ++i)
     file.print("{}\n", sol.dual_value(i));
   file.print("objno 0 0\n"); // TODO: solve codes for objectives
-  //internal::WriteSuffixes(file, sol.problem_suffixes());
+  //for (int suf_kind = 0; suf_kind < suf::NUM_KINDS; ++suf_kind)
+    //internal::WriteSuffixes(file, sol.suffixes(suf_kind));
   // TODO: test
 }
 }  // namepace mp

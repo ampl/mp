@@ -32,7 +32,24 @@
 
 namespace mp {
 
-class Suffix {};
+class Suffix {
+ private:
+  std::vector<int> values_;
+
+ public:
+  explicit Suffix(std::size_t size = 0) : values_(size) {}
+
+  void Swap(Suffix &other) { values_.swap(other.values_); }
+
+  int value(std::size_t index) const {
+    assert(index <= values_.size());
+    return values_[index];
+  }
+  void set_value(std::size_t index, int value) {
+    assert(index <= values_.size());
+    values_[index] = value;
+  }
+};
 
 class SuffixMap {
  private:
@@ -44,6 +61,16 @@ class SuffixMap {
   Suffix *Find(const char *name) {
     Map::iterator i = map_.find(name);
     return i != map_.end() ? &i->second : 0;
+  }
+  const Suffix *Find(const char *name) const {
+    Map::const_iterator i = map_.find(name);
+    return i != map_.end() ? &i->second : 0;
+  }
+
+  Suffix &Add(const char *name, std::size_t num_values) {
+    Suffix &suffix = map_.insert(std::make_pair(name, Suffix())).first->second;
+    Suffix(num_values).Swap(suffix);
+    return suffix;
   }
 };
 
@@ -80,6 +107,7 @@ class ProblemBuilder {
   typedef Expr Variable;
 
   typedef Suffix *SuffixPtr;
+  typedef mp::SuffixMap SuffixMap;
 
   SuffixMap &suffixes(int kind) { return suffixes_.get(kind); }
 

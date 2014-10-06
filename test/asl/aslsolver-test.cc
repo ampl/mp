@@ -35,7 +35,6 @@ TEST(ASLSolverTest, RegisterSuffixes) {
   mp::internal::ASLBuilder builder(s.GetProblemBuilder(""));
   mp::Problem p(builder.GetProblem());
   mp::ASLSuffixPtr suffix = p.suffixes(mp::suf::VAR).Find("answer");
-  int value = 42;
-  suffix->set_values(&value);
+  suffix->set_value(0, 42);
   EXPECT_EQ(42, suffix->int_value(0));
 }

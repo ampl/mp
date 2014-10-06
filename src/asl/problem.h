@@ -127,10 +127,7 @@ class ASLSuffixPtr {
     bool has_values() const { return ptr_->u.i != 0; }
 
     int int_value(int index) const { return ptr_->u.i[index]; }
-    void set_values(int *values) {
-      ptr_->kind |= suf::OUTPUT;
-      ptr_->u.i = values;
-    }
+    void set_value(int index, int value) { ptr_->u.i[index] = value; }
 
     // Iterates over nonzero suffix values and sends them to the visitor.
     template <typename Visitor>
@@ -207,6 +204,8 @@ class SuffixView {
   SuffixView(ASL *asl, int kind) : asl_(asl), kind_(kind) {}
 
  public:
+  SuffixView() : asl_(0), kind_(0) {}
+
   class iterator :
     public std::iterator<std::forward_iterator_tag, ASLSuffixPtr::Proxy> {
    private:
