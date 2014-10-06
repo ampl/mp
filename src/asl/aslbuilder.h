@@ -59,7 +59,7 @@ class ASLBuilder {
   bool own_asl_;
   efunc **r_ops_;
   efunc *standard_opcodes_[expr::MAX_OPCODE + 1];
-  int flags_;  // Flags passed to BeginBuild.
+  int flags_;
   int nz_;
   int nderp_;
   static const double DVALUE[];
@@ -180,7 +180,7 @@ class ASLBuilder {
     Init(proxy.asl_);
     proxy.asl_ = 0;
     own_asl_ = true;
-    flags_ = proxy.flags_ | ASL_STANDARD_OPCODES;
+    flags_ = proxy.flags_ | ASL_STANDARD_OPCODES | ASL_allow_CLP;
   }
   ~ASLBuilder();
 
