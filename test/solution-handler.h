@@ -13,7 +13,7 @@ class TestSolutionHandler : public mp::BasicSolutionHandler {
   const double *dual_;
 
  public:
-  explicit TestSolutionHandler(mp::Problem &p)
+  TestSolutionHandler()
   : obj_value_(std::numeric_limits<double>::quiet_NaN()),
     primal_(0), dual_(0) {}
   virtual ~TestSolutionHandler() {}

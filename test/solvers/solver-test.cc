@@ -77,7 +77,7 @@ SolverTest::SolverTest()
 
 SolveResult SolverTest::Solve(
     mp::ASLSolver &s, Problem &p, const char *stub, const char *opt) {
-  TestSolutionHandler sh(p);
+  TestSolutionHandler sh;
   const std::string DATA_DIR = MP_TEST_DATA_DIR "/";
   p.Read(DATA_DIR + stub);
   int solve_code = 0;
