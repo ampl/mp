@@ -31,6 +31,9 @@
 
 namespace mp {
 
+template <typename SuffixPtr>
+class SuffixData;
+
 namespace internal {
 class ASLBuilder;
 }
@@ -119,6 +122,12 @@ class ASLSuffixPtr {
         int num_items, const T *values, const int *map, Visitor &visitor);
 
     Proxy(ASL *asl, SufDesc *p) : asl_(asl), ptr_(p) {}
+
+    friend class mp::SuffixData<ASLSuffixPtr>;
+
+    void set_data(int *values, std::size_t) {
+      ptr_->u.i = values;
+    }
 
    public:
     const char *name() const { return ptr_->sufname; }

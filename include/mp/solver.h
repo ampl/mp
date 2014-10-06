@@ -42,6 +42,7 @@
 #include "mp/nl.h"
 #include "mp/option.h"
 #include "mp/sol.h"
+#include "mp/suffix.h"
 
 namespace mp {
 
@@ -958,11 +959,12 @@ template <typename Solver, typename Writer>
 void SolutionWriter<Solver, Writer>::HandleSolution(
     fmt::StringRef message, const double *values,
     const double *dual_values, double) {
+  typedef typename ProblemBuilder::SuffixPtr SuffixPtr;
+  SuffixData<SuffixPtr> data;
   if (solver_.need_multiple_solutions()) {
-    typedef typename ProblemBuilder::SuffixPtr SuffixPtr;
     SuffixPtr nsol_suffix = builder_.suffixes(suf::PROBLEM).Find("nsol");
-    if (nsol_suffix)
-      nsol_suffix->set_value(0, num_solutions_);
+    data.Attach(nsol_suffix, 1);
+    data.set_value(0, num_solutions_);
   }
   // TODO: pass to WriteSol
   //option_info.bsname = const_cast<char*>(solver_.long_name());

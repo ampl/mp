@@ -1227,7 +1227,7 @@ TEST(SolutionWriterTest, CountSolutions) {
   int nsol = 5;
   for (int i = 0; i < nsol; ++i)
     writer.HandleFeasibleSolution("", 0, 0, 0);
-  problem_builder.suffixes(mp::suf::PROBLEM).Add("nsol", 1);
+  problem_builder.suffixes(mp::suf::PROBLEM).Add("nsol");
   EXPECT_CALL(writer.sol_writer(), Write(_, MatchNSol(nsol)));
   writer.HandleSolution("", 0, 0, 0);
 }
@@ -1249,7 +1249,7 @@ TEST(SolutionWriterTest, WriteFeasibleSolutions) {
     EXPECT_CALL(sol_writer, Write(StringRefEq(filename), _));
     writer.HandleFeasibleSolution("", 0, 0, 0);
   }
-  problem_builder.suffixes(mp::suf::PROBLEM).Add("nsol", 1);
+  problem_builder.suffixes(mp::suf::PROBLEM).Add("nsol");
   EXPECT_CALL(sol_writer, Write(_, MatchNSol(nsol)));
   writer.HandleSolution("", 0, 0, 0);
 }
@@ -1348,7 +1348,7 @@ TEST_F(SolverAppTest, ParseOptionsBeforeReadingProblem) {
   EXPECT_EQ(0, app_.Run(Args("test", "-w", "testproblem")));
 }
 
-// Matcher that checks if the argument of type ProblemBuilderToNLAdapter
+// Matcher that return true if the argument of type ProblemBuilderToNLAdapter
 // points to the solver's problem builder.
 MATCHER_P(MatchAdapterToBuilder, solver, "") {
   return &arg.builder() == solver->GetProblemBuilder("");
@@ -1402,7 +1402,8 @@ TEST_F(SolverAppTest, ReportInputTime) {
   EXPECT_THAT(output(), testing::MatchesRegex("timing=1\nInput time = .+s\n"));
 }
 
-// Matcher that checks if the argument points to the solver's problem builder.
+// Matcher that returns true if the argument points to the solver's problem
+// builder.
 MATCHER_P(MatchBuilder, solver, "") {
   return &arg == solver->GetProblemBuilder("");
 }
@@ -1416,7 +1417,7 @@ TEST_F(SolverAppTest, Solve) {
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
 }
 
-// Matcher that checks if the argument is a solution writer.
+// Matcher that returns true if the argument is a solution writer.
 MATCHER(MatchSolutionWriter, "") {
   return dynamic_cast<mp::SolutionWriter<TestSolver>*>(&arg) != 0;
 }
