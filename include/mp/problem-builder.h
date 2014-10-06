@@ -26,6 +26,7 @@
 #include <cassert>
 #include <map>
 #include <memory>
+#include <vector>
 
 #include "mp/error.h"
 #include "mp/problem-base.h"
