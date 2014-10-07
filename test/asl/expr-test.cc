@@ -1770,14 +1770,12 @@ size_t HashString(const char *s) {
 }
 
 TEST_F(ExprTest, HashCallExpr) {
-  enum {NUM_ARGS = 3};
   Variable var = MakeVariable(9);
-  Expr args[NUM_ARGS] = {n1, builder.MakeStringLiteral("test"), var};
-  Function f = builder.AddFunction("foo", TestFunc, NUM_ARGS, func::SYMBOLIC);
+  Expr args[2] = {n1, var};
+  Function f = builder.AddFunction("foo", TestFunc, 2, func::SYMBOLIC);
   size_t hash = HashCombine<int>(0, ex::CALL);
   hash = HashCombine(hash, f.name());
   hash = HashCombine<NumericExpr>(hash, n1);
-  hash = HashCombine(hash, HashString("test"));
   hash = HashCombine<NumericExpr>(hash, var);
   EXPECT_EQ(hash, std::hash<NumericExpr>()(builder.MakeCall(f, args)));
 }
