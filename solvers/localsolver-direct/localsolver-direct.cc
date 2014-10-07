@@ -267,6 +267,34 @@ ls::LSExpression LSProblemBuilder::MakeRelational(
   return MakeBinary(op, lhs, rhs);
 }
 
+ls::LSExpression LSProblemBuilder::MakeLogicalCount(
+    expr::Kind kind, ls::LSExpression lhs, ls::LSExpression rhs) {
+  ls::LSOperator op = ls::O_Bool;
+  switch (kind) {
+  case expr::ATLEAST:
+    op = ls::O_Leq;
+    break;
+  case expr::ATMOST:
+    op = ls::O_Geq;
+    break;
+  case expr::EXACTLY:
+    op = ls::O_Eq;
+    break;
+  case expr::NOT_ATLEAST:
+    op = ls::O_Gt;
+    break;
+  case expr::NOT_ATMOST:
+    op = ls::O_Lt;
+    break;
+  case expr::NOT_EXACTLY:
+    op = ls::O_Neq;
+    break;
+  default:
+    return Base::MakeLogicalCount(kind, lhs, rhs);
+  }
+  return MakeBinary(op, lhs, rhs);
+}
+
 /*
 void NLToLocalSolverConverter::Convert(const Problem &p) {
   // Convert logical constraints.

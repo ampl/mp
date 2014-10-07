@@ -256,6 +256,9 @@ class LSProblemBuilder :
   ls::LSExpression MakeRelational(
       expr::Kind kind, ls::LSExpression lhs, ls::LSExpression rhs);
 
+  ls::LSExpression MakeLogicalCount(
+      expr::Kind kind, ls::LSExpression lhs, ls::LSExpression rhs);
+
   // TODO
 
   ArgHandler BeginIteratedLogical(expr::Kind kind, int num_args) {
