@@ -1016,13 +1016,15 @@ TEST_F(ExprTest, ExprVisitorUnhandledThrows) {
   EXPECT_THROW(NullVisitor().Visit(l0), UnsupportedExprError);
 }
 
-TEST_F(ExprTest, ExprVisitorInvalidThrows) {
+TEST_F(ExprTest, ExprVisitorInvalidExpr) {
   expr raw = {reinterpret_cast<efunc*>(opcode(ex::CONSTANT))};
   NumericExpr ne(::MakeExpr<NumericExpr>(&raw));
   LogicalExpr le(::MakeExpr<LogicalExpr>(&raw));
   raw.op = reinterpret_cast<efunc*>(-1);
+#ifndef NDEBUG
   EXPECT_DEBUG_DEATH(NullVisitor().Visit(ne), "Assertion");
   EXPECT_DEBUG_DEATH(NullVisitor().Visit(le), "Assertion");
+#endif
 }
 
 struct TestConverter : mp::ExprConverter<TestConverter, void, TestLResult> {
