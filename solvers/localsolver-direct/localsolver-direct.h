@@ -156,6 +156,7 @@ class LSProblemBuilder :
 
   HyperbolicTerms MakeHyperbolicTerms(ls::LSExpression arg);
 
+  // Makes a binary expression.
   template <typename LHS, typename RHS>
   ls::LSExpression MakeBinary(ls::LSOperator op, LHS lhs, RHS rhs) {
     return model_.createExpression(op, lhs, rhs);
@@ -169,6 +170,13 @@ class LSProblemBuilder :
   // Makes an expression representing arg + 1.
   ls::LSExpression Plus1(ls::LSExpression arg) {
     return MakeBinary(ls::O_Sum, arg, MakeInt(1));
+  }
+
+  // Makes an expression representing lhs div rhs.
+  template <typename RHS>
+  ls::LSExpression IntDiv(ls::LSExpression lhs, RHS rhs) {
+    return MakeBinary(ls::O_Div, MakeBinary(
+                        ls::O_Sub, lhs, MakeBinary(ls::O_Mod, lhs, rhs)), rhs);
   }
 
  public:

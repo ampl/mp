@@ -163,40 +163,47 @@ ls::LSExpression LSProblemBuilder::MakeUnary(
 
 ls::LSExpression LSProblemBuilder::MakeBinary(
     expr::Kind kind, ls::LSExpression lhs, ls::LSExpression rhs) {
+  ls::LSOperator op = ls::O_Bool;
   switch (kind) {
   case expr::ADD:
-    return MakeBinary(ls::O_Sum, lhs, rhs);
+    op = ls::O_Sum;
+    break;
   case expr::SUB:
-    return MakeBinary(ls::O_Sub, lhs, rhs);
+    op = ls::O_Sub;
+    break;
   case expr::MUL:
-    return MakeBinary(ls::O_Prod, lhs, rhs);
+    op = ls::O_Prod;
+    break;
   case expr::DIV:
-    return MakeBinary(ls::O_Div, lhs, rhs);
+    op = ls::O_Div;
+    break;
   case expr::INT_DIV:
-    return MakeBinary(ls::O_Div,
-        MakeBinary(ls::O_Sub, lhs, MakeBinary(ls::O_Mod, lhs, rhs)), rhs);
+    return IntDiv(lhs, rhs);
   case expr::MOD:
-    return MakeBinary(ls::O_Mod, lhs, rhs);
+    op = ls::O_Mod;
+    break;
   case expr::POW:
   case expr::POW_CONST_BASE:
   case expr::POW_CONST_EXP:
-    return MakeBinary(ls::O_Pow, lhs, rhs);
+    op = ls::O_Pow;
+    break;
   case expr::LESS:
     return MakeBinary(ls::O_Max, MakeBinary(ls::O_Sub, lhs, rhs), MakeInt(0));
-  case expr::PRECISION:
-    break; // TODO
   case expr::ROUND:
     RequireZero(rhs, "round");
     return model_.createExpression(ls::O_Round, lhs);
   case expr::TRUNC:
-    break; // TODO
+    RequireZero(rhs, "trunc");
+    return IntDiv(lhs, MakeInt(1));
+  case expr::PRECISION:
   case expr::ATAN2:
-    // LocalSolver doesn't support atan2.
+    // LocalSolver doesn't support these functions.
     // Fall through.
   default:
-    break;
+    // TODO: report type of expression
+    return Base::MakeBinary(kind, lhs, rhs);
   }
-  return Base::MakeBinary(kind, lhs, rhs);
+  return MakeBinary(op, lhs, rhs);
 }
 
 /*
