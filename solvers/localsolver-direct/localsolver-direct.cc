@@ -206,6 +206,25 @@ ls::LSExpression LSProblemBuilder::MakeBinary(
   return MakeBinary(op, lhs, rhs);
 }
 
+ls::LSExpression LSProblemBuilder::MakeBinaryLogical(
+    expr::Kind kind, ls::LSExpression lhs, ls::LSExpression rhs) {
+  ls::LSOperator op = ls::O_Bool;
+  switch (kind) {
+  case expr::OR:
+    op = ls::O_Or;
+    break;
+  case expr::AND:
+    op = ls::O_And;
+    break;
+  case expr::IFF:
+    op = ls::O_Eq;
+    break;
+  default:
+    return Base::MakeBinaryLogical(kind, lhs, rhs);
+  }
+  return MakeBinary(op, lhs, rhs);
+}
+
 /*
 void NLToLocalSolverConverter::Convert(const Problem &p) {
   // Convert logical constraints.

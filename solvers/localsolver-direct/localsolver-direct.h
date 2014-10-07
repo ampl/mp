@@ -319,6 +319,17 @@ class LSProblemBuilder :
     return ls::LSExpression();
   }
 
+  ls::LSExpression MakeLogicalConstant(bool value) {
+    return model_.createConstant(MakeInt(value));
+  }
+
+  ls::LSExpression MakeNot(ls::LSExpression arg) {
+    return model_.createExpression(ls::O_Not, arg);
+  }
+
+  ls::LSExpression MakeBinaryLogical(
+      expr::Kind kind, ls::LSExpression lhs, ls::LSExpression rhs);
+
   // TODO
 
   ArgHandler BeginIteratedLogical(expr::Kind kind, int num_args) {
