@@ -259,7 +259,11 @@ class LSProblemBuilder :
   ls::LSExpression MakeLogicalCount(
       expr::Kind kind, ls::LSExpression lhs, ls::LSExpression rhs);
 
-  // TODO
+  ls::LSExpression MakeImplication(
+      ls::LSExpression condition, ls::LSExpression true_expr,
+      ls::LSExpression false_expr) {
+    return MakeIf(condition, true_expr, false_expr);
+  }
 
   ArgHandler BeginIteratedLogical(expr::Kind kind, int num_args) {
     ls::LSOperator op = ls::O_Or;
@@ -270,6 +274,8 @@ class LSProblemBuilder :
     return ArgHandler(model_.createExpression(op));
   }
   LogicalExpr EndIteratedLogical(ArgHandler handler) { return handler.expr(); }
+
+  // TODO: alldiff
 };
 
 class LocalSolver : public SolverImpl<LSProblemBuilder> {
