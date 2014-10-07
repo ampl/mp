@@ -139,7 +139,7 @@ macro(add_ampl_library name)
   set_target_properties(${name} PROPERTIES SUFFIX ".dll")
   target_link_libraries(${name} asl)
   if (NOT add_ampl_library_PRIVATE)
-    install(TARGETS ${name} DESTINATION bin)
+    install(TARGETS ${name} DESTINATION bin ARCHIVE DESTINATION lib)
   endif ()
 endmacro()
 
