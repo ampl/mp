@@ -24,7 +24,6 @@
 #define MP_SOLVERS_LOCALSOLVER_H_
 
 #include <localsolver.h>
-#include "asl/expr.h"
 #include "mp/problem-builder.h"
 #include "mp/solver.h"
 
