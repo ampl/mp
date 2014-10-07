@@ -97,9 +97,12 @@ void WriteSolFile(fmt::StringRef filename, const Solution &sol) {
       file.print("{}\n", sol.option(i));
   }
   // TODO: check precision
-  for (int i = 0, n = sol.num_values(); i < n; ++i)
+  file.print("Options\n3\n0\n0\n0\n");
+  int num_values = sol.num_values(), num_dual_values = sol.num_dual_values();
+  file.print("{0}\n{0}\n{1}\n{1}\n", num_dual_values, num_values);
+  for (int i = 0; i < num_values; ++i)
     file.print("{}\n", sol.value(i));
-  for (int i = 0, n = sol.num_dual_values(); i < n; ++i)
+  for (int i = 0, n = num_dual_values; i < n; ++i)
     file.print("{}\n", sol.dual_value(i));
   file.print("objno 0 0\n"); // TODO: solve codes for objectives
   for (int suf_kind = 0; suf_kind < suf::NUM_KINDS; ++suf_kind)
