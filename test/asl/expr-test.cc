@@ -69,6 +69,12 @@ namespace func = mp::func;
 
 namespace {
 
+expr RawExpr(int opcode) {
+  expr e = expr();
+  e.op = reinterpret_cast<efunc*>(opcode);
+  return e;
+}
+
 class TestExpr : public Expr {
  public:
   static void TestProxy();
@@ -408,7 +414,7 @@ const OpInfo OP_INFO[] = {
 
 template <typename ExprT>
 void TestAssertInCreate(int opcode) {
-  expr e = {reinterpret_cast<efunc*>(opcode)};
+  expr e = RawExpr(opcode);
   EXPECT_DEBUG_DEATH(MakeExpr<ExprT>(&e), "Assertion") << opcode;  // NOLINT(*)
 }
 
@@ -429,7 +435,7 @@ int CheckExpr(ex::Kind start, ex::Kind end = ex::UNKNOWN,
     const OpInfo &info = OP_INFO[i];
     int opcode = i - 1;
     const char *opstr = info.str;
-    expr raw = {reinterpret_cast<efunc*>(opcode)};
+    expr raw = RawExpr(opcode);
     bool is_this_kind = info.kind >= start && info.kind <= end;
     if (info.kind != ex::UNKNOWN) {
       Expr e(::MakeExpr(&raw));
