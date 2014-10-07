@@ -1587,7 +1587,7 @@ class NLFileReader {
   void Open(fmt::StringRef filename);
 
   // Reads the file into an array.
-  void Read(fmt::internal::Array<char, 1> &array);
+  void Read(fmt::internal::MemoryBuffer<char, 1> &array);
 
  public:
   NLFileReader() : size_(0), rounded_size_(0) {}
@@ -1601,7 +1601,7 @@ class NLFileReader {
     if (size_ == rounded_size_) {
       // Don't use mmap, because the file size is a multiple of the page size
       // and therefore the mmap'ed buffer won't be zero terminated.
-      fmt::internal::Array<char, 1> array;
+      fmt::internal::MemoryBuffer<char, 1> array;
       Read(array);
       return ReadNLString(fmt::StringRef(&array[0], size_), handler, filename);
     }
@@ -1629,7 +1629,7 @@ void NLFileReader<File>::Open(fmt::StringRef filename) {
 }
 
 template <typename File>
-void NLFileReader<File>::Read(fmt::internal::Array<char, 1> &array) {
+void NLFileReader<File>::Read(fmt::internal::MemoryBuffer<char, 1> &array) {
   array.resize(size_ + 1);
   std::size_t offset = 0;
   while (offset < size_)

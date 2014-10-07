@@ -64,7 +64,7 @@ const char path::preferred_separator;
 
 // Mac OS X implementation.
 path mp::GetExecutablePath() {
-  fmt::internal::Array<char, BUFFER_SIZE> buffer;
+  fmt::internal::MemoryBuffer<char, BUFFER_SIZE> buffer;
   uint32_t size = BUFFER_SIZE;
   buffer.resize(size);
   if (_NSGetExecutablePath(&buffer[0], &size) != 0) {
@@ -82,7 +82,7 @@ path mp::GetExecutablePath() {
 
 // Linux implementation.
 path mp::GetExecutablePath() {
-  fmt::internal::Array<char, BUFFER_SIZE> buffer;
+  fmt::internal::MemoryBuffer<char, BUFFER_SIZE> buffer;
   buffer.resize(BUFFER_SIZE);
   ssize_t size = 0;
   for (;;) {
@@ -148,7 +148,7 @@ path path::temp_directory_path() {
 }
 
 path mp::GetExecutablePath() {
-  fmt::internal::Array<wchar_t, BUFFER_SIZE> buffer;
+  fmt::internal::MemoryBuffer<wchar_t, BUFFER_SIZE> buffer;
   buffer.resize(BUFFER_SIZE);
   DWORD size = 0;
   for (;;) {

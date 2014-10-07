@@ -434,7 +434,7 @@ TEST(ProblemTest, SolveWithUnknownSolver) {
 TEST(ProblemTest, Write) {
   Problem p;
   p.Read(MP_TEST_DATA_DIR "/simple");
-  fmt::Writer writer;
+  fmt::MemoryWriter writer;
   writer << p;
   EXPECT_EQ(
       "var x1 >= 0;\n"
@@ -446,7 +446,7 @@ TEST(ProblemTest, Write) {
 TEST(ProblemTest, WriteVarBounds) {
   Problem p;
   p.AddVar(42, 42);
-  fmt::Writer writer;
+  fmt::MemoryWriter writer;
   writer << p;
   EXPECT_EQ("var x1 = 42;\n", writer.str());
 }

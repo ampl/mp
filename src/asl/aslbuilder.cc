@@ -574,7 +574,7 @@ Function ASLBuilder::SetFunction(
     int index, fmt::StringRef name, int num_args, func::Type type) {
   assert(index >= 0 && index < asl_->i.nfunc_);
   // Make sure the name is null-terminated for C API.
-  fmt::Writer cname;
+  fmt::MemoryWriter cname;
   cname << name;
   func_info *fi = func_lookup_ASL(asl_, cname.c_str(), 0);
   if (fi) {

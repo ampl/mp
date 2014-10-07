@@ -199,7 +199,7 @@ TEST(SolverTest, ValueArrayRefInvalidOffset) {
 // A wrapper around mp::internal::FormatRST used to simplify testing.
 std::string FormatRST(fmt::StringRef s,
     int indent = 0, mp::ValueArrayRef values = mp::ValueArrayRef()) {
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   mp::internal::FormatRST(w, s, indent, values);
   return w.str();
 }
@@ -428,7 +428,7 @@ TEST(SolverTest, SolverOption) {
     EXPECT_FALSE(opt.formatted);
     EXPECT_FALSE(opt.parsed);
     SolverOption &so = opt;
-    fmt::Writer w;
+    fmt::MemoryWriter w;
     so.Write(w);
     EXPECT_TRUE(opt.formatted);
     const char *s = 0;
@@ -438,7 +438,7 @@ TEST(SolverTest, SolverOption) {
 }
 
 TEST(SolverTest, IntOptionHelper) {
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   OptionHelper<int>::Write(w, 42);
   EXPECT_EQ("42", w.str());
   const char *start = "123 ";
@@ -449,7 +449,7 @@ TEST(SolverTest, IntOptionHelper) {
 }
 
 TEST(SolverTest, DoubleOptionHelper) {
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   OptionHelper<double>::Write(w, 4.2);
   EXPECT_EQ("4.2", w.str());
   const char *start = "1.23 ";
@@ -460,7 +460,7 @@ TEST(SolverTest, DoubleOptionHelper) {
 }
 
 TEST(SolverTest, StringOptionHelper) {
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   OptionHelper<std::string>::Write(w, "abc");
   EXPECT_EQ("abc", w.str());
   const char *start = "def ";
@@ -487,7 +487,7 @@ TEST(SolverTest, TypedSolverOption) {
   opt.Parse(s);
   EXPECT_EQ(start + 2, s);
   EXPECT_EQ(42, opt.value);
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   opt.Write(w);
   EXPECT_EQ("42", w.str());
 }
@@ -958,7 +958,7 @@ TEST(SolverTest, VersionOption) {
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   w.write("Test Solver ({}), ASL({})\n", MP_SYSINFO, MP_DATE);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }
@@ -973,7 +973,7 @@ TEST(SolverTest, VersionOptionReset) {
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   w.write("Test Solver ({}), ASL({})\nend\n", MP_SYSINFO, MP_DATE);
   EXPECT_EQ(w.str(), ReadFile("out"));
 }

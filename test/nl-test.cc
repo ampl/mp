@@ -126,7 +126,7 @@ TEST(TextReaderTest, ReadString) {
 
 // Formats header as a string.
 std::string FormatHeader(const NLHeader &h) {
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   w << h;
   return w.str();
 }
@@ -162,7 +162,7 @@ TEST(TextReaderTest, InvalidNumOptions) {
 
 void CheckReadOptions(int num_options,
     int num_options_to_write, const int *options) {
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   w << 'g' << num_options;
   for (int i = 0; i < num_options_to_write; ++i)
     w << ' ' << options[i];
@@ -242,7 +242,7 @@ TEST(TextReaderTest, IncompleteHeader) {
   h.format = NLHeader::TEXT; \
   h.num_vars = INT_MAX; \
   h.field = 1; \
-  fmt::Writer w; \
+  fmt::MemoryWriter w; \
   w << h; \
   NLHeader actual = NLHeader(); \
   EXPECT_THROW_MSG(TextReader(w.str(), "in").ReadHeader(actual), \
@@ -371,7 +371,7 @@ class TestNLHandler {
   }
 
   std::string MakeVarArg(std::string op, const std::vector<std::string> &args) {
-    fmt::Writer w;
+    fmt::MemoryWriter w;
     w << op << '(';
     WriteList(w, args.size(), args.data());
     w << ')';
@@ -398,7 +398,7 @@ class TestNLHandler {
   }
 
  public:
-  fmt::Writer log;  // Call log.
+  fmt::MemoryWriter log;  // Call log.
 
   typedef std::string Expr;
   typedef std::string NumericExpr;
@@ -563,7 +563,7 @@ class TestNLHandler {
     return PLTermHandler();
   }
   std::string EndPLTerm(PLTermHandler h, std::string var) {
-    fmt::Writer w;
+    fmt::MemoryWriter w;
     w << "<<";
     WriteList(w, h.breakpoints_.size(), h.breakpoints_.data());
     w << "; ";
@@ -588,7 +588,7 @@ class TestNLHandler {
   }
 
   std::string EndCall(CallArgHandler h) {
-    fmt::Writer w;
+    fmt::MemoryWriter w;
     w << 'f' << h.func_index_ << '(';
     WriteList(w, h.args_.size(), h.args_.data());
     w << ')';
@@ -622,7 +622,7 @@ class TestNLHandler {
 
   ArgHandler BeginNumberOf(int) { return ArgHandler("numberof"); }
   std::string EndNumberOf(ArgHandler h) {
-    fmt::Writer w;
+    fmt::MemoryWriter w;
     w << "numberof " << h.args_[0] << " in (";
     WriteList(w, h.args_.size() - 1, h.args_.data() + 1);
     w << ')';
@@ -674,7 +674,7 @@ class TestNLHandler {
 
 TEST(NLTest, WriteTextHeader) {
   NLHeader h = MakeTestHeader();
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   w << h;
   EXPECT_EQ(
       "g9 2 3 5 7 11 13 17 19 23 1.23\n"
@@ -697,7 +697,7 @@ TEST(NLTest, WriteBinaryHeader) {
   for (int i = 0; i < header.num_options; ++i)
     header.options[i] = 11 * (i + 1);
   header.arith_kind = mp::arith::CRAY;
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   w << header;
   EXPECT_EQ(
       "b3 11 22 33\n"

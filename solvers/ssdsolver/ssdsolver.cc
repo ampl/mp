@@ -199,7 +199,7 @@ int SSDSolver::DoSolve(Problem &p, SolutionHandler &sh) {
     break;
   }
 
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   w.write("{}: {}", long_name(), message);
   if (sol.status() == SOLVED)
     w.write("; dominance {}", dominance_ub);

@@ -446,7 +446,7 @@ void CheckASL(const ASL &expected, const ASL &actual, bool complete = true) {
 }
 
 std::string HeaderToStr(const NLHeader &h) {
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   w << h;
   return w.str();
 }
@@ -604,7 +604,7 @@ class ASLPtr {
 
 // Reads ASL header from a file with the specified header and body.
 FILE *ReadHeader(ASL &asl, const NLHeader &h, const char *body) {
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   w << h << body;
   WriteFile("test.nl", w.str());
   char stub[] = "test";

@@ -670,7 +670,7 @@ int IlogCPSolver::SolveWithCP(
       solve_code = 0;
   }
 
-  fmt::Writer writer;
+  fmt::MemoryWriter writer;
   writer.write("{}: {}\n", long_name(), status);
   double obj_value = std::numeric_limits<double>::quiet_NaN();
   writer.write("{} choice points, {} fails",
@@ -717,7 +717,7 @@ int IlogCPSolver::SolveWithCPLEX(
   int solve_code = 0;
   std::string status = ConvertSolutionStatus(cplex_, sig_handler, solve_code);
 
-  fmt::Writer writer;
+  fmt::MemoryWriter writer;
   writer.write("{}: {}\n", long_name(), status);
   double obj_value = std::numeric_limits<double>::quiet_NaN();
   vector<double> solution, dual_solution;

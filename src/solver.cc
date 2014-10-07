@@ -267,7 +267,7 @@ bool SolverAppOptionParser::ShowUsage() {
 }
 
 bool SolverAppOptionParser::ShowSolverOptions() {
-  fmt::Writer writer;
+  fmt::MemoryWriter writer;
   const char *option_header = solver_.option_header();
   internal::FormatRST(writer, option_header);
   if (!*option_header)
@@ -463,7 +463,7 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
     const char *name_start = s;
     while (*s && !std::isspace(*s) && *s != '=')
       ++s;
-    fmt::internal::Array<char, 50> name;
+    fmt::internal::MemoryBuffer<char, 50> name;
     std::size_t name_size = s - name_start;
     name.resize(name_size + 1);
     for (std::size_t i = 0; i < name_size; ++i)
@@ -501,7 +501,7 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
       if (!next || std::isspace(next)) {
         ++s;
         if ((flags & NO_OPTION_ECHO) == 0) {
-          fmt::Writer w;
+          fmt::MemoryWriter w;
           w << &name[0] << '=';
           opt->Write(w);
           w << '\n';

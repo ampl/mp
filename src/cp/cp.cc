@@ -44,7 +44,7 @@ double element(arglist *al) {
   double index = al->ra[al->n - 1];
   int int_index = static_cast<int>(index);
   if (int_index != index || int_index < 0 || int_index >= al->n - 1) {
-    fmt::Writer message;
+    fmt::MemoryWriter message;
     message.write("invalid index {}", index);
     error(al, message.c_str());
     return 0;

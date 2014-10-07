@@ -439,7 +439,7 @@ class Solver : private ErrorHandler, private OutputHandler {
   }
 
   static OptionError OptionTypeError(fmt::StringRef name, fmt::StringRef type) {
-    fmt::Writer msg;
+    fmt::MemoryWriter msg;
     msg.write("Option \"{}\" is not of type \"{}\"", name, type);
     return OptionError(msg.c_str());
   }
@@ -822,7 +822,7 @@ class Solver : private ErrorHandler, private OutputHandler {
   // Usage: ReportError("File not found: {}") << filename;
   void ReportError(fmt::StringRef format, const fmt::ArgList &args) {
     has_errors_ = true;
-    fmt::Writer w;
+    fmt::MemoryWriter w;
     w.write(format, args);
     error_handler_->HandleError(fmt::StringRef(w.c_str(), w.size()));
   }
@@ -831,7 +831,7 @@ class Solver : private ErrorHandler, private OutputHandler {
   // Formats a string and prints it to stdout or, if an output handler
   // is registered, sends it to the output handler.
   void Print(fmt::StringRef format, const fmt::ArgList &args) {
-    fmt::Writer w;
+    fmt::MemoryWriter w;
     w.write(format, args);
     output_handler_->HandleOutput(fmt::StringRef(w.c_str(), w.size()));
   }
@@ -954,7 +954,7 @@ void SolutionWriter<Solver, Writer>::HandleFeasibleSolution(
         0, message.c_str(), ArrayRef<int>(0, 0),
         MakeArrayRef(values, values ? builder_.num_vars() : 0),
         MakeArrayRef(dual_values, dual_values ? builder_.num_cons() : 0));
-  fmt::Writer filename;
+  fmt::MemoryWriter filename;
   filename << solution_stub << num_solutions_ << ".sol";
   this->Write(filename.c_str(), sol);
 }

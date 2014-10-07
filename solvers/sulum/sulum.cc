@@ -268,7 +268,7 @@ int SulumSolver::DoSolve(Problem &p, SolutionHandler &sh) {
 
   double solution_time = GetTimeAndReset(time);
 
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   w.write("{}: {}\n", long_name(), status);
   double obj_val = 0;
   Check(SlmGetDbInfo(model_, SlmInfoDbPrimObj, &obj_val));

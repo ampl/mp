@@ -196,7 +196,7 @@ fmt::Writer &operator<<(fmt::Writer &w, const Problem &p) {
 // A manager of temporary files.
 class TempFiles {
  private:
-  fmt::internal::Array<char, fmt::internal::INLINE_BUFFER_SIZE> name_;
+  fmt::internal::MemoryBuffer<char, fmt::internal::INLINE_BUFFER_SIZE> name_;
 
   FMT_DISALLOW_COPY_AND_ASSIGN(TempFiles);
 
@@ -307,7 +307,7 @@ void Problem::Read(fmt::StringRef stub, unsigned flags) {
   // Add the .nl extension if necessary.
   const char EXT[] = ".nl";
   std::size_t ext_size = sizeof(EXT) - 1;
-  fmt::Writer name;
+  fmt::MemoryWriter name;
   name << stub;
   if (name.size() < ext_size ||
       std::strcmp(name.c_str() + name.size() - ext_size, EXT) != 0) {
@@ -342,7 +342,7 @@ void Problem::Solve(fmt::StringRef solver_name,
   TempFiles temp;
   WriteNL(temp.stub(), pc, flags);
   // Run the solver and read the solution file.
-  fmt::Writer command;
+  fmt::MemoryWriter command;
   command.write("{} {} -AMPL", solver_name.c_str(), temp.stub());
   int exit_code = std::system(command.c_str());
   if (exit_code != 0) {

@@ -97,7 +97,7 @@ void mp::internal::TextReader::DoReportError(
       ++line_start;
   }
   int column = static_cast<int>(loc - line_start + 1);
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   w.write("{}:{}:{}: ", name_, line, column);
   w.write(format_str, args);
   throw ReadError(name_, line, column, w.c_str());
@@ -251,7 +251,7 @@ void mp::internal::TextReader::ReadHeader(NLHeader &header) {
 
 void mp::internal::BinaryReader::ReportError(
     fmt::StringRef format_str, const fmt::ArgList &args) {
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   std::size_t offset = token_ - start_;
   w.write("{}:offset {}: ", name_, offset);
   w.write(format_str, args);

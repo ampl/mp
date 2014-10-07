@@ -224,7 +224,7 @@ int LocalSolver::DoSolve(Problem &p, SolutionHandler &sh) {
     solution[i] = vars[i].getValue();
   double solution_time = GetTimeAndReset(time);
 
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   w.write("{}: {}\n", long_name(), status);
   w.write("{}", solver_.getStatistics().toString());
   double obj_val = std::numeric_limits<double>::quiet_NaN();

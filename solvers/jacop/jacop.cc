@@ -692,7 +692,7 @@ int JaCoPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
 
   double solution_time = GetTimeAndReset(time);
 
-  fmt::Writer w;
+  fmt::MemoryWriter w;
   w.write("{}: {}\n", long_name(), status_);
   w.write("{} nodes, {} fails",
       env_.CallIntMethod(search_.get(), get_nodes_),
