@@ -35,6 +35,14 @@ inline double GetValue(localsolver::LSExpression e) {
 
 namespace mp {
 
+LSProblemBuilder::HyperbolicTerms
+    LSProblemBuilder::MakeHyperbolicTerms(ls::LSExpression arg) {
+  HyperbolicTerms terms;
+  terms.exp_x = model_.createExpression(ls::O_Exp, arg);
+  terms.exp_minus_x = model_.createExpression(ls::O_Exp, Negate(arg));
+  return terms;
+}
+
 LSProblemBuilder::LSProblemBuilder(ls::LSModel model)
   : model_(model), num_continuous_vars_(0) {
 }
@@ -78,82 +86,103 @@ void LSProblemBuilder::EndBuild() {
 
 ls::LSExpression LSProblemBuilder::MakeUnary(
     expr::Kind kind, ls::LSExpression arg) {
+  ls::LSOperator op = ls::O_Bool;
   switch (kind) {
   case expr::FLOOR:
-    return model_.createExpression(ls::O_Floor, arg);
+    op = ls::O_Floor;
+    break;
   case expr::CEIL:
-    return model_.createExpression(ls::O_Ceil, arg);
+    op = ls::O_Ceil;
+    break;
   case expr::ABS:
-    return model_.createExpression(ls::O_Abs, arg);
+    op = ls::O_Abs;
+    break;
   case expr::MINUS:
     return Negate(arg);
   case expr::TANH: {
-    ls::LSExpression exp_x = model_.createExpression(ls::O_Exp, arg);
-    ls::LSExpression exp_minus_x =
-        model_.createExpression(ls::O_Exp, Negate(arg));
-    return model_.createExpression(
-          ls::O_Div, model_.createExpression(ls::O_Sub, exp_x, exp_minus_x),
-          model_.createExpression(ls::O_Sum, exp_x, exp_minus_x));
+    HyperbolicTerms terms = MakeHyperbolicTerms(arg);
+    return MakeBinary(ls::O_Div,
+                      MakeBinary(ls::O_Sub, terms.exp_x, terms.exp_minus_x),
+                      MakeBinary(ls::O_Sum, terms.exp_x, terms.exp_minus_x));
   }
   case expr::TAN:
-    return model_.createExpression(ls::O_Tan, arg);
+    op = ls::O_Tan;
+    break;
   case expr::SQRT:
-    return model_.createExpression(ls::O_Sqrt, arg);
-  case expr::SINH:
-    break; // TODO
-  case expr::SIN:   return model_.createExpression(ls::O_Sin, arg);
+    op = ls::O_Sqrt;
+    break;
+  case expr::SINH: {
+    HyperbolicTerms terms = MakeHyperbolicTerms(arg);
+    return Half(MakeBinary(ls::O_Sub, terms.exp_x, terms.exp_minus_x));
+  }
+  case expr::SIN:
+    op = ls::O_Sin;
+    break;
   case expr::LOG10:
-    return model_.createExpression(
-          ls::O_Div, model_.createExpression(ls::O_Log, arg), std::log(10.0));
+    return MakeBinary(ls::O_Div,
+                      model_.createExpression(ls::O_Log, arg), std::log(10.0));
   case expr::LOG:
-    return model_.createExpression(ls::O_Log, arg);
+    op = ls::O_Log;
+    break;
   case expr::EXP:
-    return model_.createExpression(ls::O_Exp, arg);
-  case expr::COSH:
-    break; // TODO
+    op = ls::O_Exp;
+    break;
+  case expr::COSH:{
+    HyperbolicTerms terms = MakeHyperbolicTerms(arg);
+    return Half(MakeBinary(ls::O_Sum, terms.exp_x, terms.exp_minus_x));
+  }
   case expr::COS:
     return model_.createExpression(ls::O_Cos, arg);
   case expr::ATANH:
-  case expr::ASINH:
-  case expr::ACOSH:
-    break; // TODO
+    arg = MakeBinary(ls::O_Div, Plus1(arg),                    // (1 + x) /
+                     MakeBinary(ls::O_Sub, MakeInt(1), arg));  // (1 - x)
+    return Half(model_.createExpression(ls::O_Log, arg));
+  case expr::ASINH: {
+    ls::LSExpression arg2 = model_.createExpression(
+          ls::O_Sqrt, Plus1(MakeBinary(ls::O_Pow, arg, MakeInt(2))));
+    return model_.createExpression(ls::O_Log, MakeBinary(ls::O_Sum, arg, arg2));
+  }
+  case expr::ACOSH: {
+    ls::LSExpression x_minus_1 = MakeBinary(ls::O_Sub, arg, MakeInt(1));
+    ls::LSExpression arg2 = MakeBinary(
+          ls::O_Prod, model_.createExpression(ls::O_Sqrt, Plus1(arg)),
+          model_.createExpression(ls::O_Sqrt, x_minus_1));
+    return model_.createExpression(ls::O_Log, MakeBinary(ls::O_Sum, arg, arg2));
+  }
   case expr::POW2:
-    return model_.createExpression(ls::O_Pow, arg, MakeInt(2));
+    return MakeBinary(ls::O_Pow, arg, MakeInt(2));
   case expr::ATAN: case expr::ASIN: case expr::ACOS:
     // LocalSolver doesn't support these expressions.
     // Fall through.
   default:
-    break;
+    // TODO: report type of expression
+    return Base::MakeUnary(kind, arg);
   }
-  // TODO: report type of expression
-  return Base::MakeUnary(kind, arg);
+  return model_.createExpression(op, arg);
 }
 
 ls::LSExpression LSProblemBuilder::MakeBinary(
     expr::Kind kind, ls::LSExpression lhs, ls::LSExpression rhs) {
   switch (kind) {
   case expr::ADD:
-    return model_.createExpression(ls::O_Sum, lhs, rhs);
+    return MakeBinary(ls::O_Sum, lhs, rhs);
   case expr::SUB:
-    return model_.createExpression(ls::O_Sub, lhs, rhs);
+    return MakeBinary(ls::O_Sub, lhs, rhs);
   case expr::MUL:
-    return model_.createExpression(ls::O_Prod, lhs, rhs);
+    return MakeBinary(ls::O_Prod, lhs, rhs);
   case expr::DIV:
-    return model_.createExpression(ls::O_Div, lhs, rhs);
-  case expr::INT_DIV: {
-    ls::LSExpression rem = model_.createExpression(ls::O_Mod, lhs, rhs);
-    return model_.createExpression(ls::O_Div,
-        model_.createExpression(ls::O_Sub, lhs, rem), rhs);
-  }
+    return MakeBinary(ls::O_Div, lhs, rhs);
+  case expr::INT_DIV:
+    return MakeBinary(ls::O_Div,
+        MakeBinary(ls::O_Sub, lhs, MakeBinary(ls::O_Mod, lhs, rhs)), rhs);
   case expr::MOD:
-    return model_.createExpression(ls::O_Mod, lhs, rhs);
+    return MakeBinary(ls::O_Mod, lhs, rhs);
   case expr::POW:
   case expr::POW_CONST_BASE:
   case expr::POW_CONST_EXP:
-    return model_.createExpression(ls::O_Pow, lhs, rhs);
+    return MakeBinary(ls::O_Pow, lhs, rhs);
   case expr::LESS:
-    return model_.createExpression(ls::O_Max,
-        model_.createExpression(ls::O_Sub, lhs, rhs), MakeInt(0));
+    return MakeBinary(ls::O_Max, MakeBinary(ls::O_Sub, lhs, rhs), MakeInt(0));
   case expr::PRECISION:
     break; // TODO
   case expr::ROUND:
