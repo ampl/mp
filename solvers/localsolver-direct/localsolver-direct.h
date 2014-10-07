@@ -32,70 +32,7 @@ namespace mp {
 
 namespace ls = localsolver;
 
-// TODO: remove
-/*
-  ls::LSExpression VisitTrunc(BinaryExpr e) {
-    // trunc does nothing because Gecode supports only integer expressions.
-    RequireZeroRHS(e, "trunc");
-    return Visit(e.lhs());
-  }
-
-  ls::LSExpression VisitNumberOf(NumberOfExpr e);
-
-  ls::LSExpression VisitNot(NotExpr e) {
-    return ConvertUnary(ls::O_Not, e);
-  }
-
-  ls::LSExpression VisitOr(BinaryLogicalExpr e) {
-    return ConvertBinary(ls::O_Or, e);
-  }
-
-  ls::LSExpression VisitAnd(BinaryLogicalExpr e) {
-    return ConvertBinary(ls::O_And, e);
-  }
-
-  ls::LSExpression VisitIff(BinaryLogicalExpr e) {
-    return ConvertBinary(ls::O_Eq, e);
-  }
-
-  ls::LSExpression VisitLess(RelationalExpr e) {
-    return ConvertBinary(ls::O_Lt, e);
-  }
-
-  ls::LSExpression VisitLessEqual(RelationalExpr e) {
-    return ConvertBinary(ls::O_Leq, e);
-  }
-
-  ls::LSExpression VisitEqual(RelationalExpr e) {
-    return ConvertBinary(ls::O_Eq, e);
-  }
-
-  ls::LSExpression VisitGreaterEqual(RelationalExpr e) {
-    return ConvertBinary(ls::O_Geq, e);
-  }
-
-  ls::LSExpression VisitGreater(RelationalExpr e) {
-    return ConvertBinary(ls::O_Gt, e);
-  }
-
-  ls::LSExpression VisitNotEqual(RelationalExpr e) {
-    return ConvertBinary(ls::O_Neq, e);
-  }
-
-  ls::LSExpression VisitImplication(ImplicationExpr e) {
-    return VisitIf(e);
-  }
-
-  ls::LSExpression VisitAllDiff(AllDiffExpr e);
-
-  ls::LSExpression VisitLogicalConstant(LogicalConstant c) {
-    ls::lsint value = c.value();
-    return model_.createConstant(value);
-  }
-};*/
-
 class LocalSolver;
-class LSProblem;
 
 // This class provides methods for building a problem in LocalSolver format.
 class LSProblemBuilder :
@@ -122,8 +59,6 @@ class LSProblemBuilder :
 
   typedef ProblemBuilder<LSProblemBuilder, ls::LSExpression> Base;
 
-  friend class LSProblem;
-
   static ls::lsint MakeInt(int value) { return value; }
 
   ls::lsint ConvertToInt(double value) {
@@ -135,19 +70,7 @@ class LSProblemBuilder :
     return model_.createExpression(ls::O_Sub, MakeInt(0), arg);
   }
 
-  void RequireZero(ls::LSExpression e, const char *where) {
-    switch (e.getOperator()) {
-    case ls::O_Const:
-      if (e.getValue() == 0)
-        return;
-    case ls::O_Float:
-      if (e.getDoubleValue() == 0)
-        return;
-      // The default clause silences warnings about unhandled enum values.
-    default: break;
-    }
-    // TODO: throw exception
-  }
+  void RequireZero(ls::LSExpression e, const char *where);
 
   struct HyperbolicTerms {
     ls::LSExpression exp_x;
@@ -330,6 +253,9 @@ class LSProblemBuilder :
   ls::LSExpression MakeBinaryLogical(
       expr::Kind kind, ls::LSExpression lhs, ls::LSExpression rhs);
 
+  ls::LSExpression MakeRelational(
+      expr::Kind kind, ls::LSExpression lhs, ls::LSExpression rhs);
+
   // TODO
 
   ArgHandler BeginIteratedLogical(expr::Kind kind, int num_args) {
@@ -360,8 +286,6 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
   int DoSolve(Problem &, SolutionHandler &) { return 0; } // TODO
 
  public:
-  typedef LSProblem Problem;
-
   LocalSolver();
 
   ls::LSModel model() { return solver_.getModel(); }

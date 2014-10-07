@@ -35,6 +35,20 @@ inline double GetValue(localsolver::LSExpression e) {
 
 namespace mp {
 
+void LSProblemBuilder::RequireZero(ls::LSExpression e, const char *where) {
+  switch (e.getOperator()) {
+  case ls::O_Const:
+    if (e.getValue() == 0)
+      return;
+  case ls::O_Float:
+    if (e.getDoubleValue() == 0)
+      return;
+    // The default clause silences warnings about unhandled enum values.
+  default: break;
+  }
+  // TODO: throw exception
+}
+
 LSProblemBuilder::HyperbolicTerms
     LSProblemBuilder::MakeHyperbolicTerms(ls::LSExpression arg) {
   HyperbolicTerms terms;
@@ -221,6 +235,34 @@ ls::LSExpression LSProblemBuilder::MakeBinaryLogical(
     break;
   default:
     return Base::MakeBinaryLogical(kind, lhs, rhs);
+  }
+  return MakeBinary(op, lhs, rhs);
+}
+
+ls::LSExpression LSProblemBuilder::MakeRelational(
+    expr::Kind kind, ls::LSExpression lhs, ls::LSExpression rhs) {
+  ls::LSOperator op = ls::O_Bool;
+  switch (kind) {
+  case expr::LT:
+    op = ls::O_Lt;
+    break;
+  case expr::LE:
+    op = ls::O_Leq;
+    break;
+  case expr::EQ:
+    op = ls::O_Eq;
+    break;
+  case expr::GE:
+    op = ls::O_Geq;
+    break;
+  case expr::GT:
+    op = ls::O_Gt;
+    break;
+  case expr::NE:
+    op = ls::O_Neq;
+    break;
+  default:
+    return Base::MakeRelational(kind, lhs, rhs);
   }
   return MakeBinary(op, lhs, rhs);
 }
