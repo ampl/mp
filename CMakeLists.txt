@@ -131,7 +131,7 @@ function (add_prefix var prefix)
 endfunction ()
 
 # Adds a shared AMPL library which by convention doesn't have any prefix
-# and has a suffix ".dll".
+# and has a suffix ".dll" on all platforms.
 macro(add_ampl_library name)
   cmake_parse_arguments(add_ampl_library PRIVATE "" "" ${ARGN})
   add_library(${name} SHARED ${add_ampl_library_UNPARSED_ARGUMENTS})
@@ -139,7 +139,10 @@ macro(add_ampl_library name)
   set_target_properties(${name} PROPERTIES SUFFIX ".dll")
   target_link_libraries(${name} asl)
   if (NOT add_ampl_library_PRIVATE)
-    install(TARGETS ${name} DESTINATION bin ARCHIVE DESTINATION lib)
+    # Specify RUNTIME DESTINATION and LIBRARY DESTINATION, but not
+    # DESTINATION or ARCHIVE_DESTINATION because we don't want import
+    # libraries installed.
+    install(TARGETS ${name} RUNTIME DESTINATION bin LIBRARY DESTINATION bin)
   endif ()
 endmacro()
 
