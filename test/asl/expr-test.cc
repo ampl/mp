@@ -67,23 +67,6 @@ using mp::InvalidLogicalExprError;
 namespace ex = mp::expr;
 namespace func = mp::func;
 
-struct TestString {
-  const char *str;
-};
-
-namespace std {
-
-template <>
-struct hash<TestString> {
-  std::size_t operator()(TestString ts) const {
-    size_t hash = mp::internal::HashCombine<int>(0, ex::STRING);
-    for (const char *s = ts.str; *s; ++s)
-      hash = mp::internal::HashCombine(hash, *s);
-    return hash;
-  }
-};
-}
-
 namespace {
 
 expr RawExpr(int opcode) {
@@ -130,8 +113,6 @@ class LinearExpr< LinearTerm<TestGrad> > {
   LinearTerm<TestGrad> get() { return LinearTerm<TestGrad>(&grad_); }
 };
 }
-
-namespace {
 
 template <typename ExprT>
 ExprT MakeExpr(expr *e) { return TestExpr::MakeExpr<ExprT>(e); }
@@ -1867,6 +1848,23 @@ TEST_F(ExprTest, HashAllDiff) {
   CheckHash(builder.MakeAllDiff(args));
 }
 
+struct TestString {
+  const char *str;
+};
+
+namespace std {
+
+template <>
+struct hash<TestString> {
+  std::size_t operator()(TestString ts) const {
+    size_t hash = mp::internal::HashCombine<int>(0, ex::STRING);
+    for (const char *s = ts.str; *s; ++s)
+      hash = mp::internal::HashCombine(hash, *s);
+    return hash;
+  }
+};
+}
+
 TEST_F(ExprTest, HashStringLiteral) {
   // String literal can only occur as a function argument, so test
   // it as a part of a call expression.
@@ -1921,4 +1919,3 @@ TEST_F(ExprTest, MatchNumberOfArgs) {
       builder.MakeNumberOf(args4))(TestNumberOf(builder.MakeNumberOf(args2))));
 }
 #endif
-}
