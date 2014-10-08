@@ -69,7 +69,16 @@ class LSProblemBuilder :
     return model_.createExpression(ls::O_Sub, MakeInt(0), arg);
   }
 
-  void RequireZero(ls::LSExpression e, const char *where);
+  // Returns true if e is a zero constant.
+  static bool IsZero(ls::LSExpression e) {
+    return e.getOperator() == ls::O_Float && e.getDoubleValue() == 0;
+  }
+
+  void RequireZero(ls::LSExpression e, const char *where) {
+    if (!IsZero(e)) {
+      // TODO: throw exception
+    }
+  }
 
   struct HyperbolicTerms {
     ls::LSExpression exp_x;
@@ -109,27 +118,32 @@ class LSProblemBuilder :
   int num_objs() const { return model_.getNbObjectives(); }
   int num_cons() const { return cons_.size(); }
 
+  const ls::LSExpression *vars() const { return &vars_[0]; }
   // TODO
 
-  void BeginBuild(const NLHeader &header);
+  void SetInfo(const NLHeader &header);
   void EndBuild();
 
   void SetObj(int index, obj::Type type, ls::LSExpression expr) {
     ObjInfo &obj_info = objs_[index];
     if (type == obj::MAX)
       obj_info.direction = ls::OD_Maximize;
-    obj_info.expr = expr;
+    if (!IsZero(expr))
+      obj_info.expr = expr;
   }
 
-  void SetCon(int index, ls::LSExpression expr) { cons_[index].expr = expr; }
+  void SetCon(int index, ls::LSExpression expr) {
+    if (!IsZero(expr))
+      cons_[index].expr = expr;
+  }
 
-  class LinearExprHandler {
+  class LinearExprBuilder {
    private:
     LSProblemBuilder &builder_;
     ls::LSExpression expr_;
 
    public:
-    LinearExprHandler(LSProblemBuilder &builder,
+    LinearExprBuilder(LSProblemBuilder &builder,
                       ls::LSExpression &expr, ls::LSExpression sum)
       : builder_(builder), expr_(sum) {
       if (expr != ls::LSExpression()) {
@@ -147,17 +161,17 @@ class LSProblemBuilder :
     }
   };
 
-  typedef LinearExprHandler LinearObjHandler;
+  typedef LinearExprBuilder LinearObjBuilder;
 
-  LinearObjHandler GetLinearObjHandler(int obj_index, int) {
-    return LinearObjHandler(
+  LinearObjBuilder GetLinearObjBuilder(int obj_index, int) {
+    return LinearObjBuilder(
           *this, objs_[obj_index].expr, model_.createExpression(ls::O_Sum));
   }
 
-  typedef LinearExprHandler LinearConHandler;
+  typedef LinearExprBuilder LinearConBuilder;
 
-  LinearConHandler GetLinearConHandler(int con_index, int) {
-    return LinearObjHandler(
+  LinearConBuilder GetLinearConBuilder(int con_index, int) {
+    return LinearConBuilder(
           *this, cons_[con_index].expr, model_.createExpression(ls::O_Sum));
   }
 
@@ -274,7 +288,18 @@ class LSProblemBuilder :
   }
   LogicalExpr EndIteratedLogical(ArgHandler handler) { return handler.expr(); }
 
-  // TODO: alldiff
+  struct AllDiffArgHandler {
+    std::vector<ls::LSExpression> args;
+
+    explicit AllDiffArgHandler(int num_args) { args.reserve(num_args); }
+    void AddArg(ls::LSExpression arg) { args.push_back(arg); }
+  };
+
+  AllDiffArgHandler BeginAllDiff(int num_args) {
+    return AllDiffArgHandler(num_args);
+  }
+
+  ls::LSExpression EndAllDiff(AllDiffArgHandler handler);
 };
 
 class LocalSolver : public SolverImpl<LSProblemBuilder> {
@@ -290,16 +315,11 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
     timelimit_ = value;
   }
 
- private:
-  int DoSolve(Problem &, SolutionHandler &) { return 0; } // TODO
-
  public:
   LocalSolver();
 
   ls::LSModel model() { return solver_.getModel(); }
 
-  // ProblemBuilder is passed to Solve because if the problem has been
-  // transformed, it should apply transformations to the solution too.
   void Solve(ProblemBuilder &builder, SolutionHandler &sh);
 
   ls::LSModel GetProblemBuilder(fmt::StringRef) { return solver_.getModel(); }

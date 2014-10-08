@@ -35,20 +35,6 @@ inline double GetValue(localsolver::LSExpression e) {
 
 namespace mp {
 
-void LSProblemBuilder::RequireZero(ls::LSExpression e, const char *where) {
-  switch (e.getOperator()) {
-  case ls::O_Const:
-    if (e.getValue() == 0)
-      return;
-  case ls::O_Float:
-    if (e.getDoubleValue() == 0)
-      return;
-    // The default clause silences warnings about unhandled enum values.
-  default: break;
-  }
-  // TODO: throw exception
-}
-
 LSProblemBuilder::HyperbolicTerms
     LSProblemBuilder::MakeHyperbolicTerms(ls::LSExpression arg) {
   HyperbolicTerms terms;
@@ -61,7 +47,7 @@ LSProblemBuilder::LSProblemBuilder(ls::LSModel model)
   : model_(model), num_continuous_vars_(0) {
 }
 
-void LSProblemBuilder::BeginBuild(const NLHeader &header) {
+void LSProblemBuilder::SetInfo(const NLHeader &header) {
   vars_.resize(header.num_vars);
   objs_.resize(header.num_objs);
   cons_.resize(header.num_algebraic_cons + header.num_logical_cons);
@@ -295,6 +281,11 @@ ls::LSExpression LSProblemBuilder::MakeLogicalCount(
   return MakeBinary(op, lhs, rhs);
 }
 
+ls::LSExpression LSProblemBuilder::EndAllDiff(AllDiffArgHandler handler) {
+  // TODO
+  return ls::LSExpression();
+}
+
 /*
 void NLToLocalSolverConverter::Convert(const Problem &p) {
   // Convert logical constraints.
@@ -400,7 +391,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   //p.set_solve_code(solve_code);
 
   int num_vars = builder.num_vars();
-  ls::LSExpression const *vars = 0; //converter.vars();
+  const ls::LSExpression *vars = builder.vars();
   std::vector<double> solution(num_vars);
   int num_continuous_vars = builder.num_continuous_vars();
   for (int i = 0; i < num_continuous_vars; ++i)
