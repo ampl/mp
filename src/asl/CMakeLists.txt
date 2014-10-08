@@ -176,6 +176,7 @@ if (BUILD_SHARED_LIBS)
   add_library(asl-shared $<TARGET_OBJECTS:asl-core>)
   set_target_properties(asl-shared PROPERTIES OUTPUT_NAME asl)
   target_link_libraries(asl-shared asl)
+  install(TARGETS asl-shared DESTINATION lib RUNTIME DESTINATION bin)
 endif ()
 
 check_symbol_exists(mkstemps stdlib.h HAVE_MKSTEMPS)
