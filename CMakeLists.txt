@@ -226,14 +226,12 @@ if (CMAKE_HOST_UNIX AND WIN32)
 else ()
   set(WINE "")
 endif ()
-message("CMAKE_CROSSCOMPILING: ${CMAKE_CROSSCOMPILING}")
 if (CMAKE_CROSSCOMPILING)
-  # Produce an error if expr-info.cc is out of date but cannot be
-  # regenerated because we are cross compiling.
+  # Produce a warning because expr-info.cc can be out of date but cannot be
+  # re-generated because we are cross compiling.
   add_custom_command(OUTPUT ${MP_EXPR_INFO_FILE}
     COMMAND ${CMAKE_COMMAND} -E echo
-      "error: ${MP_EXPR_INFO_FILE} is out of date" && false
-    DEPENDS include/mp/problem-base.h src/gen-expr-info.cc src/precedence.h)
+      "warning: cannot re-generate ${MP_EXPR_INFO_FILE}")
 else ()
   add_custom_command(OUTPUT ${MP_EXPR_INFO_FILE}
     COMMAND ${WINE} $<TARGET_FILE:gen-expr-info> ${MP_EXPR_INFO_FILE}
