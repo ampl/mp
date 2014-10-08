@@ -49,6 +49,7 @@ class LSProblemBuilder :
   };
   std::vector<ObjInfo> objs_;
 
+  // Algebraic constraints
   struct ConInfo {
     ls::LSExpression expr;
     double lb, ub;
@@ -135,6 +136,10 @@ class LSProblemBuilder :
   void SetCon(int index, ls::LSExpression expr) {
     if (!IsZero(expr))
       cons_[index].expr = expr;
+  }
+
+  void SetLogicalCon(int, ls::LSExpression expr) {
+    model_.addConstraint(expr);
   }
 
   class LinearExprBuilder {

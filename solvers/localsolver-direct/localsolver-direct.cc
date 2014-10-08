@@ -50,7 +50,7 @@ LSProblemBuilder::LSProblemBuilder(ls::LSModel model)
 void LSProblemBuilder::SetInfo(const NLHeader &header) {
   vars_.resize(header.num_vars);
   objs_.resize(header.num_objs);
-  cons_.resize(header.num_algebraic_cons + header.num_logical_cons);
+  cons_.resize(header.num_algebraic_cons);
   num_continuous_vars_ = header.num_continuous_vars();
   for (int i = 0; i < num_continuous_vars_; ++i)
     vars_[i] = model_.createExpression(ls::O_Float);
