@@ -133,9 +133,9 @@ void TestExpr::TestArrayIterator() {
     EXPECT_EQ(ArrayIterator<NumericExpr>(), i);
   }
   expr exprs[] = {
-      {reinterpret_cast<efunc*>(opcode(ex::DIV))},
-      {reinterpret_cast<efunc*>(opcode(ex::ADD))},
-      {reinterpret_cast<efunc*>(opcode(ex::ATAN))},
+      RawExpr(opcode(ex::DIV)),
+      RawExpr(opcode(ex::ADD)),
+      RawExpr(opcode(ex::ATAN)),
   };
   expr *const ptrs[] = {exprs, exprs + 1, exprs + 2};
   ArrayIterator<NumericExpr> i(ptrs);
@@ -218,7 +218,7 @@ class ExprTest : public ::testing::Test {
 
 public:
   ExprTest() {
-    mp::ProblemInfo info = {};
+    mp::ProblemInfo info = mp::ProblemInfo();
     info.num_vars = NUM_VARS;
     info.num_objs = 1;
     info.num_funcs = 2;
@@ -299,12 +299,12 @@ TEST_F(ExprTest, ExprCtor) {
     EXPECT_FALSE(e);
   }
   {
-    expr raw = {reinterpret_cast<efunc*>(opcode(ex::SUB))};
+    expr raw = RawExpr(opcode(ex::SUB));
     Expr e(::MakeExpr(&raw));
     EXPECT_EQ(ex::SUB, e.kind());
   }
   {
-    expr raw = {reinterpret_cast<efunc*>(opcode(ex::OR))};
+    expr raw = RawExpr(opcode(ex::OR));
     Expr e(::MakeExpr(&raw));
     EXPECT_EQ(ex::OR, e.kind());
   }
