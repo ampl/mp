@@ -64,6 +64,9 @@ void LSProblemBuilder::EndBuild() {
     const ObjInfo &obj = objs_[i];
     model_.addObjective(obj.expr, obj.direction);
   }
+  // LocalSolver requires at least one objective - create a dummy one.
+  if (objs_.empty())
+    model_.addObjective(model_.createConstant(MakeInt(0)), ls::OD_Minimize);
   // Add constraints.
   double inf = std::numeric_limits<double>::infinity();
   for (std::size_t i = 0, n = cons_.size(); i < n; ++i) {
