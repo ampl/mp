@@ -67,6 +67,23 @@ using mp::InvalidLogicalExprError;
 namespace ex = mp::expr;
 namespace func = mp::func;
 
+struct TestString {
+  const char *str;
+};
+
+namespace std {
+
+template <>
+struct hash<TestString> {
+  std::size_t operator()(TestString ts) const {
+    size_t hash = mp::internal::HashCombine<int>(0, ex::STRING);
+    for (const char *s = ts.str; *s; ++s)
+      hash = mp::internal::HashCombine(hash, *s);
+    return hash;
+  }
+};
+}
+
 namespace {
 
 expr RawExpr(int opcode) {
@@ -1768,13 +1785,6 @@ TEST_F(ExprTest, HashPiecewiseLinearExpr) {
                                 builder.MakeVariable(9))));
 }
 
-size_t HashString(const char *s) {
-  size_t hash = HashCombine<int>(0, ex::STRING);
-  for (; *s; ++s)
-    hash = HashCombine(hash, *s);
-  return hash;
-}
-
 TEST_F(ExprTest, HashCallExpr) {
   Variable var = MakeVariable(9);
   Expr args[2] = {n1, var};
@@ -1864,7 +1874,8 @@ TEST_F(ExprTest, HashStringLiteral) {
   Function f = builder.AddFunction("foo", TestFunc, 1, func::SYMBOLIC);
   size_t hash = HashCombine<int>(0, ex::CALL);
   hash = HashCombine(hash, f.name());
-  hash = HashCombine(hash, HashString("test"));
+  TestString ts = {"test"};
+  hash = HashCombine(hash, ts);
   EXPECT_EQ(hash, std::hash<NumericExpr>()(builder.MakeCall(f, args)));
 }
 
