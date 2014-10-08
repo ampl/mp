@@ -1,9 +1,5 @@
-check_cxx_source_compiles(
-  "int main() { auto n = 42; }" HAVE_AUTO)
-if (HAVE_AUTO)
-  add_mp_test(expr-test expr-test.cc no-unordered-map-test.cc)
-  target_link_libraries(expr-test asl)
-endif ()
+add_mp_test(expr-test expr-test.cc no-unordered-map-test.cc)
+target_link_libraries(expr-test asl)
 
 add_mp_test(aslbuilder-test aslbuilder-test.cc LIBS asl)
 
