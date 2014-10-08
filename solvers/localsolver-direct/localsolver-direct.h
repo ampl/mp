@@ -186,8 +186,11 @@ class LSProblemBuilder :
       var.addOperand(lb);
       var.addOperand(ub);
     } else {
-      var.addOperand(ConvertToInt(lb));
-      var.addOperand(ConvertToInt(ub));
+      double inf = std::numeric_limits<double>::infinity();
+      var.addOperand(
+            lb == -inf ? std::numeric_limits<int>::min() : ConvertToInt(lb));
+      var.addOperand(
+            ub ==  inf ? std::numeric_limits<int>::max() : ConvertToInt(ub));
     }
   }
 
