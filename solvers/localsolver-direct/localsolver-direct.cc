@@ -284,35 +284,25 @@ ls::LSExpression LSProblemBuilder::MakeLogicalCount(
   return MakeBinary(op, lhs, rhs);
 }
 
-ls::LSExpression LSProblemBuilder::EndAllDiff(AllDiffArgHandler handler) {
-  // TODO
-  return ls::LSExpression();
+LSProblemBuilder::ArgHandler LSProblemBuilder::BeginIteratedLogical(
+    expr::Kind kind, int num_args) {
+  ls::LSOperator op = ls::O_Or;
+  if (kind == expr::FORALL)
+    op = ls::O_And;
+  else if (kind != expr::EXISTS)
+    Base::BeginIteratedLogical(kind, num_args);
+  return ArgHandler(model_.createExpression(op));
 }
 
-/*
-void NLToLocalSolverConverter::Convert(const Problem &p) {
-  // Convert logical constraints.
-  int num_logical_cons = p.num_logical_cons();
-  for (int i = 0; i < num_logical_cons; ++i) {
-    LogicalExpr e = p.logical_con_expr(i);
-    AllDiffExpr alldiff = Cast<AllDiffExpr>(e);
-    ICLSetter icl_setter(icl_, GetICL(p.num_cons() + i));
-    if (!alldiff) {
-      rel(problem_, Visit(e), icl_);
-      continue;
-    }
-    int num_args = alldiff.num_args();
-    IntVarArgs args(num_args);
-    for (int i = 0; i < num_args; ++i) {
-      NumericExpr arg(alldiff[i]);
-      if (Variable var = ampl::Cast<Variable>(arg))
-        args[i] = vars[var.index()];
-      else
-        args[i] = Gecode::expr(problem_, Visit(arg), icl_);
-    }
-    distinct(problem_, args, icl_);
+ls::LSExpression LSProblemBuilder::EndAllDiff(AllDiffArgHandler handler) {
+  std::vector<ls::LSExpression> &args = handler.args;
+  ls::LSExpression alldiff = model_.createExpression(ls::O_And);
+  for (std::size_t i = 0, n = args.size(); i < n; ++i) {
+    for (std::size_t j = i + 1; j < n; ++j)
+      alldiff.addOperand(MakeBinary(ls::O_Neq, args[i], args[j]));
   }
-}*/
+  return alldiff;
+}
 
 LocalSolver::LocalSolver()
   : SolverImpl<LSProblemBuilder>("localsolver", 0, 20140710), timelimit_(0) {
@@ -335,19 +325,6 @@ LocalSolver::LocalSolver()
       "Time limit in seconds (positive integer). Default = no limit.",
       &LocalSolver::GetTimeLimit, &LocalSolver::SetTimeLimit);
 }
-
-/*ls::LSExpression NLToLocalSolverConverter::VisitAllDiff(AllDiffExpr e) {
-  ls::LSExpression result = model_.createExpression(ls::O_And);
-  int num_args = e.num_args();
-  std::vector<ls::LSExpression > args(num_args);
-  for (int i = 0; i < num_args; ++i)
-    args[i] = Visit(e[i]);
-  for (int i = 0; i < num_args; ++i) {
-    for (int j = i + 1; j < num_args; ++j)
-      result.addOperand(model_.createExpression(ls::O_Neq, args[i], args[j]));
-  }
-  return result;
-}*/
 
 void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();

@@ -286,14 +286,7 @@ class LSProblemBuilder :
     return MakeIf(condition, true_expr, false_expr);
   }
 
-  ArgHandler BeginIteratedLogical(expr::Kind kind, int num_args) {
-    ls::LSOperator op = ls::O_Or;
-    if (kind == expr::FORALL)
-      op = ls::O_And;
-    else if (kind != expr::EXISTS)
-      Base::BeginIteratedLogical(kind, num_args);
-    return ArgHandler(model_.createExpression(op));
-  }
+  ArgHandler BeginIteratedLogical(expr::Kind kind, int num_args);
   LogicalExpr EndIteratedLogical(ArgHandler handler) { return handler.expr(); }
 
   struct AllDiffArgHandler {
