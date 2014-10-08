@@ -214,7 +214,8 @@ add_mp_library(format OBJECT
   include/mp/format.h include/mp/posix.h src/format.cc src/posix.cc)
 
 set(MP_EXPR_INFO_FILE ${MP_SOURCE_DIR}/src/expr-info.cc)
-add_executable(gen-expr-info src/gen-expr-info.cc $<TARGET_OBJECTS:format>)
+add_executable(gen-expr-info EXCLUDE_FROM_ALL
+  src/gen-expr-info.cc $<TARGET_OBJECTS:format>)
 if (MINGW)
   SET_TARGET_PROPERTIES(gen-expr-info PROPERTIES
     LINK_FLAGS "-static-libgcc -static-libstdc++")
@@ -225,8 +226,19 @@ if (CMAKE_HOST_UNIX AND WIN32)
 else ()
   set(WINE "")
 endif ()
-add_custom_command(OUTPUT ${MP_EXPR_INFO_FILE} COMMAND ${WINE}
-  $<TARGET_FILE:gen-expr-info> ${MP_EXPR_INFO_FILE} DEPENDS gen-expr-info)
+message("CMAKE_CROSSCOMPILING: ${CMAKE_CROSSCOMPILING}")
+if (CMAKE_CROSSCOMPILING)
+  # Produce an error if expr-info.cc is out of date but cannot be
+  # regenerated because we are cross compiling.
+  add_custom_command(OUTPUT ${MP_EXPR_INFO_FILE}
+    COMMAND ${CMAKE_COMMAND} -E echo
+      "error: ${MP_EXPR_INFO_FILE} is out of date" && false
+    DEPENDS include/mp/problem-base.h src/gen-expr-info.cc src/precedence.h)
+else ()
+  add_custom_command(OUTPUT ${MP_EXPR_INFO_FILE}
+    COMMAND ${WINE} $<TARGET_FILE:gen-expr-info> ${MP_EXPR_INFO_FILE}
+    DEPENDS gen-expr-info)
+endif ()
 
 add_prefix(MP_HEADERS include/mp/
   arrayref.h clock.h error.h nl.h option.h os.h problem-base.h
