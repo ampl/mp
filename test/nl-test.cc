@@ -903,7 +903,7 @@ std::string ReadNL(std::string body) {
   EXPECT_THROW_MSG(ReadNL(nl_body), ReadError, error)
 
 TEST(NLTest, ReadObj) {
-  EXPECT_READ("minimize o1: 0;", "O1 0\nn0\n");
+  EXPECT_READ("minimize o1: ;", "O1 0\nn0\n");
   EXPECT_READ("maximize o0: v0;", "O0 1\nv0\n");
   EXPECT_READ("maximize o5: v0;", "O5 10\nv0\n");
   EXPECT_READ_ERROR("O0 -1\nn0\n", "(input):11:4: expected unsigned integer");
@@ -922,6 +922,11 @@ void CheckReadInt(char code) {
                fmt::format("C0\n{}{}\n", code, max));
   EXPECT_READ_ERROR(fmt::format("C0\n{}{}\n", code, max + 1),
     "(input):12:2: number is too big");
+}
+
+TEST(NLTest, ReadCon) {
+  EXPECT_READ("c0: ;", "C0\nn0\n");
+  EXPECT_READ("c0: u13(0);", "C0\no13\nn0\n");
 }
 
 TEST(NLTest, ReadNumericConstant) {

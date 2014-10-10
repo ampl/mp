@@ -1021,8 +1021,11 @@ class NLReader {
   };
 
   // Reads a numeric expression.
-  NumericExpr ReadNumericExpr() { return ReadNumericExpr(reader_.ReadChar()); }
-  NumericExpr ReadNumericExpr(char code);
+  // ignore_zero: if true, zero constants are ignored
+  NumericExpr ReadNumericExpr(bool ignore_zero = false) {
+    return ReadNumericExpr(reader_.ReadChar(), ignore_zero);
+  }
+  NumericExpr ReadNumericExpr(char code, bool ignore_zero);
   NumericExpr ReadNumericExpr(int opcode);
 
   // Reads a logical expression.
@@ -1149,7 +1152,7 @@ double NLReader<Reader, Handler>::ReadConstant(char code) {
 
 template <typename Reader, typename Handler>
 typename Handler::NumericExpr
-    NLReader<Reader, Handler>::ReadNumericExpr(char code) {
+    NLReader<Reader, Handler>::ReadNumericExpr(char code, bool ignore_zero) {
   switch (code) {
   case 'f': {
     int func_index = ReadUInt(header_.num_funcs);
@@ -1172,13 +1175,17 @@ typename Handler::NumericExpr
         break;
       }
       default:
-        args.AddArg(ReadNumericExpr(c));
+        args.AddArg(ReadNumericExpr(c, false));
       }
     }
     return handler_.EndCall(args);
   }
-  case 'n': case 'l': case 's':
-    return handler_.OnNumericConstant(ReadConstant(code));
+  case 'n': case 'l': case 's': {
+    double value = ReadConstant(code);
+    if (ignore_zero && value == 0)
+      break;  // Ignore zero constant.
+    return handler_.OnNumericConstant(value);
+  }
   case 'o':
     return ReadNumericExpr(ReadOpCode());
   case 'v':
@@ -1466,7 +1473,7 @@ void NLReader<Reader, Handler>::Read() {
       // Nonlinear part of an algebraic constraint body.
       int index = ReadUInt(header_.num_algebraic_cons);
       reader_.ReadTillEndOfLine();
-      handler_.OnAlgebraicCon(index, ReadNumericExpr());
+      handler_.OnAlgebraicCon(index, ReadNumericExpr(true));
       break;
     }
     case 'L': {
@@ -1482,7 +1489,7 @@ void NLReader<Reader, Handler>::Read() {
       int obj_type = reader_.ReadUInt();
       reader_.ReadTillEndOfLine();
       handler_.OnObj(index, obj_type != 0 ? obj::MAX : obj::MIN,
-                     ReadNumericExpr());
+                     ReadNumericExpr(true));
       break;
     }
     case 'V': {
