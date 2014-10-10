@@ -39,6 +39,7 @@ class LSProblemBuilder :
  private:
   ls::LSModel model_;
   int num_continuous_vars_;
+  bool all_binary_;  // true iff all variables are binary
 
   std::vector<ls::LSExpression> vars_;
 
@@ -72,7 +73,7 @@ class LSProblemBuilder :
 
   // Returns true if e is a zero constant.
   static bool IsZero(ls::LSExpression e) {
-    return e.getOperator() == ls::O_Float && e.getDoubleValue() == 0;
+    return e.getOperator() == ls::O_Const && e.getDoubleValue() == 0;
   }
 
   void RequireZero(ls::LSExpression e, const char *where) {
@@ -120,7 +121,6 @@ class LSProblemBuilder :
   int num_cons() const { return cons_.size(); }
 
   const ls::LSExpression *vars() const { return &vars_[0]; }
-  // TODO
 
   void SetInfo(const NLHeader &header);
   void EndBuild();
@@ -129,12 +129,12 @@ class LSProblemBuilder :
     ObjInfo &obj_info = objs_[index];
     if (type == obj::MAX)
       obj_info.direction = ls::OD_Maximize;
-    if (!IsZero(expr))
+    if (expr != ls::LSExpression())
       obj_info.expr = expr;
   }
 
   void SetCon(int index, ls::LSExpression expr) {
-    if (!IsZero(expr))
+    if (expr != ls::LSExpression())
       cons_[index].expr = expr;
   }
 
@@ -185,6 +185,12 @@ class LSProblemBuilder :
     if (index < num_continuous_vars_) {
       var.addOperand(lb);
       var.addOperand(ub);
+    } else if (all_binary_) {
+      // All variables are binary, just check bounds.
+      if (lb != 0)
+        throw Error("Invalid lower bound {} for binary variable", lb);
+      if (ub != 1)
+        throw Error("Invalid upper bound {} for binary variable", ub);
     } else {
       double inf = std::numeric_limits<double>::infinity();
       var.addOperand(

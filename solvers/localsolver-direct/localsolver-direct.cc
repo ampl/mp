@@ -44,7 +44,7 @@ LSProblemBuilder::HyperbolicTerms
 }
 
 LSProblemBuilder::LSProblemBuilder(ls::LSModel model)
-  : model_(model), num_continuous_vars_(0) {
+  : model_(model), num_continuous_vars_(0), all_binary_(false) {
 }
 
 void LSProblemBuilder::SetInfo(const NLHeader &header) {
@@ -54,8 +54,10 @@ void LSProblemBuilder::SetInfo(const NLHeader &header) {
   num_continuous_vars_ = header.num_continuous_vars();
   for (int i = 0; i < num_continuous_vars_; ++i)
     vars_[i] = model_.createExpression(ls::O_Float);
+  all_binary_ = header.num_linear_binary_vars == header.num_integer_vars();
+  ls::LSOperator var_op = all_binary_ ? ls::O_Bool : ls::O_Int;
   for (int i = num_continuous_vars_; i < header.num_vars; ++i)
-    vars_[i] = model_.createExpression(ls::O_Int);
+    vars_[i] = model_.createExpression(var_op);
 }
 
 void LSProblemBuilder::EndBuild() {
@@ -340,7 +342,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   solver_.solve();
 
   // Convert solution status.
-  int solve_code = 0;
+  int solve_code = 0; // TODO: return solve_code
   ls::LSSolution sol = solver_.getSolution();
   const char *status = "unknown";
   switch (sol.getStatus()) {
@@ -400,6 +402,5 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   }
 }
 
-// TODO
 SolverPtr CreateSolver(const char *) { return SolverPtr(new LocalSolver()); }
 }  // namespace mp
