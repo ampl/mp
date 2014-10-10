@@ -503,12 +503,16 @@ void ASLBuilder::EndBuild() {
 void ASLBuilder::SetObj(int index, obj::Type type, NumericExpr expr) {
   assert(0 <= index && index < asl_->i.n_obj_);
   asl_->i.objtype_[index] = type;
+  if (!expr)
+    expr = MakeNumericConstant(0);
   SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.obj_de_,
               asl_->i.o_cexp1st_, expr.expr_, asl_->i.zao_);
 }
 
 void ASLBuilder::SetCon(int index, NumericExpr expr) {
   assert(0 <= index && index < asl_->i.n_con_);
+  if (!expr)
+    expr = MakeNumericConstant(0);
   SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.con_de_,
               asl_->i.c_cexp1st_, expr.expr_, asl_->i.zac_);
 }
