@@ -80,12 +80,12 @@ class LSProblemBuilder :
   }
 
   // Returns true if e is a zero constant.
-  static bool IsZero(ls::LSExpression e) {
-    return e.isConstant() && e.getDoubleValue() == 0;
+  static bool IsConst(ls::LSExpression e, double value) {
+    return e.isConstant() && e.getDoubleValue() == value;
   }
 
   void RequireZero(ls::LSExpression e, const char *where) {
-    if (!IsZero(e)) {
+    if (!IsConst(e, 0)) {
       // TODO: throw exception
     }
   }
@@ -177,8 +177,11 @@ class LSProblemBuilder :
     }
 
     void AddTerm(int var_index, double coef) {
-      expr_.addOperand(builder_.model_.createExpression(
-                         ls::O_Prod, coef, builder_.vars_[var_index]));
+      if (coef == 0)
+        return;
+      ls::LSExpression var = builder_.vars_[var_index];
+      expr_.addOperand(coef == 1 ? var : builder_.model_.createExpression(
+                                     ls::O_Prod, coef, var));
     }
   };
 
@@ -237,6 +240,8 @@ class LSProblemBuilder :
 
   ls::LSExpression MakeIf(ls::LSExpression condition,
       ls::LSExpression true_expr, ls::LSExpression false_expr) {
+    if (IsConst(true_expr, 1) && IsConst(false_expr, 0))
+      return condition;
     return model_.createExpression(ls::O_If, condition, true_expr, false_expr);
   }
 

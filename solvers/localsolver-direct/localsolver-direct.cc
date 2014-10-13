@@ -245,7 +245,7 @@ ls::LSExpression LSProblemBuilder::MakeRelational(
     op = ls::O_Gt;
     break;
   case expr::NE:
-    if (lhs.getOperator() == ls::O_Bool && IsZero(rhs))
+    if (lhs.getOperator() == ls::O_Bool && IsConst(rhs, 0))
       return lhs;
     op = ls::O_Neq;
     break;
