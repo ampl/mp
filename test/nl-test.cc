@@ -124,10 +124,15 @@ TEST(TextReaderTest, ReadString) {
                    "test:6:5: expected newline");
 }
 
-// Formats header as a string.
-std::string FormatHeader(const NLHeader &h) {
+// Formats header and variable bounds as a string.
+std::string FormatHeader(const NLHeader &h, bool var_bounds = true) {
   fmt::MemoryWriter w;
   w << h;
+  if (var_bounds) {
+    w << "b\n";
+    for (int i = 0; i < h.num_vars; ++i)
+      w << "1 0\n";
+  }
   return w.str();
 }
 
@@ -460,7 +465,7 @@ class TestNLHandler {
     void Add(int offset) { log_ << ' ' << offset; }
   };
   ColumnSizeHandler OnColumnSizes() {
-    log << "sizes:";
+    WriteSep() << "sizes:";
     return ColumnSizeHandler(log);
   }
 
@@ -891,18 +896,19 @@ TEST(NLTest, NoNewlineAtEOF) {
     " 0 0\n"
     " 0 0\n"
     " 0 0 0 0 0\n"
-    "k0\0deadbeef", handler),
-      ReadError, "(input):11:3: expected newline");
+    "b\0deadbeef", handler),
+      ReadError, "(input):11:2: expected newline");
 }
 
-std::string ReadNL(std::string body) {
+std::string ReadNL(std::string body, bool var_bounds = true) {
   TestNLHandler handler;
-  ReadNLString(FormatHeader(MakeHeader()) + body, handler);
+  ReadNLString(FormatHeader(MakeHeader(), var_bounds) + body, handler);
   return handler.log.str();
 }
 
 #define EXPECT_READ(expected_output, nl_body) \
-  EXPECT_EQ(expected_output, ReadNL(nl_body))
+  EXPECT_EQ(std::string("v0 <= 0; v1 <= 0; v2 <= 0; v3 <= 0; v4 <= 0; ") + \
+            expected_output, ReadNL(nl_body))
 
 #define EXPECT_READ_ERROR(nl_body, error) \
   EXPECT_THROW_MSG(ReadNL(nl_body), ReadError, error)
@@ -911,9 +917,9 @@ TEST(NLTest, ReadObj) {
   EXPECT_READ("minimize o1: ;", "O1 0\nn0\n");
   EXPECT_READ("maximize o0: v0;", "O0 1\nv0\n");
   EXPECT_READ("maximize o5: v0;", "O5 10\nv0\n");
-  EXPECT_READ_ERROR("O0 -1\nn0\n", "(input):11:4: expected unsigned integer");
-  EXPECT_READ_ERROR("O-1 0\nn0\n", "(input):11:2: expected unsigned integer");
-  EXPECT_READ_ERROR("O6 0\nn0\n", "(input):11:2: integer 6 out of bounds");
+  EXPECT_READ_ERROR("O0 -1\nn0\n", "(input):17:4: expected unsigned integer");
+  EXPECT_READ_ERROR("O-1 0\nn0\n", "(input):17:2: expected unsigned integer");
+  EXPECT_READ_ERROR("O6 0\nn0\n", "(input):17:2: integer 6 out of bounds");
 }
 
 template <typename Int>
@@ -926,7 +932,7 @@ void CheckReadInt(char code) {
   EXPECT_READ(fmt::format("c0: {};", max + 0.),
                fmt::format("C0\n{}{}\n", code, max));
   EXPECT_READ_ERROR(fmt::format("C0\n{}{}\n", code, max + 1),
-    "(input):12:2: number is too big");
+    "(input):18:2: number is too big");
 }
 
 TEST(NLTest, ReadCon) {
@@ -943,8 +949,8 @@ TEST(NLTest, ReadNumericConstant) {
 
 TEST(NLTest, ReadVariable) {
   EXPECT_READ("c0: v4;", "C0\nv4\n");
-  EXPECT_READ_ERROR("C0\nv-1\n", "(input):12:2: expected unsigned integer");
-  EXPECT_READ_ERROR("C0\nv6\n", "(input):12:2: integer 6 out of bounds");
+  EXPECT_READ_ERROR("C0\nv-1\n", "(input):18:2: expected unsigned integer");
+  EXPECT_READ_ERROR("C0\nv6\n", "(input):18:2: integer 6 out of bounds");
 }
 
 TEST(NLTest, ReadCommonExprRef) {
@@ -966,48 +972,48 @@ TEST(NLTest, ReadIfExpr) {
 TEST(NLTest, ReadPiecewiseLinearExpr) {
   EXPECT_READ("c0: <<0; -1, 1>> v1;", "C0\no64\n2\nn-1.0\ns0\nl1\nv1\n");
   EXPECT_READ_ERROR("C0\no64\n-1\nn0\nv1\n",
-    "(input):13:1: expected unsigned integer");
+    "(input):19:1: expected unsigned integer");
   EXPECT_READ_ERROR("C0\no64\n1\nn0\nv1\n",
-    "(input):13:1: too few slopes in piecewise-linear term");
+    "(input):19:1: too few slopes in piecewise-linear term");
   EXPECT_READ_ERROR("C0\no64\n2\nv1\nn0\nn1\nv1\n",
-    "(input):14:1: expected constant");
+    "(input):20:1: expected constant");
   EXPECT_READ_ERROR("C0\no64\n2\nn-1\nv0\nn1\nv1\n",
-    "(input):15:1: expected constant");
+    "(input):21:1: expected constant");
   EXPECT_READ_ERROR("C0\no64\n2\nn-1\nn0\nn1\nn1\n",
-    "(input):17:1: expected variable");
+    "(input):23:1: expected variable");
 }
 
 TEST(NLTest, ReadCallExpr) {
   EXPECT_READ("c0: f1(v1, 0);", "C0\nf1 2\nv1\nn0\n");
   EXPECT_READ_ERROR("C0\nf-1 1\nn0\n",
-    "(input):12:2: expected unsigned integer");
+    "(input):18:2: expected unsigned integer");
   EXPECT_READ_ERROR("C0\nf10 1\nn0\n",
-                    "(input):12:2: integer 10 out of bounds");
-  EXPECT_READ_ERROR("C0\nf1 1\nx\n", "(input):13:1: expected expression");
+                    "(input):18:2: integer 10 out of bounds");
+  EXPECT_READ_ERROR("C0\nf1 1\nx\n", "(input):19:1: expected expression");
 }
 
 TEST(NLTest, ReadVarArgExpr) {
   EXPECT_READ("c0: v11(v4, 5, v1);", "C0\no11\n3\nv4\nn5\nv1\n");
   EXPECT_READ("c0: v12(v4);", "C0\no12\n1\nv4\n");
-  EXPECT_READ_ERROR("C0\no12\n0\n" , "(input):13:1: too few arguments");
+  EXPECT_READ_ERROR("C0\no12\n0\n" , "(input):19:1: too few arguments");
 }
 
 TEST(NLTest, ReadSumExpr) {
   EXPECT_READ("c0: sum(v4, 5, v1);", "C0\no54\n3\nv4\nn5\nv1\n");
-  EXPECT_READ_ERROR("C0\no54\n2\nv4\nn5\n", "(input):13:1: too few arguments");
+  EXPECT_READ_ERROR("C0\no54\n2\nv4\nn5\n", "(input):19:1: too few arguments");
 }
 
 TEST(NLTest, ReadCountExpr) {
   EXPECT_READ("c0: count(l1, r24(v1, 42), l0);",
                "C0\no59\n3\nn1\no24\nv1\nn42\nn0\n");
   EXPECT_READ("c0: count(l1);", "C0\no59\n1\nn1\n");
-  EXPECT_READ_ERROR("C0\no59\n0\n", "(input):13:1: too few arguments");
+  EXPECT_READ_ERROR("C0\no59\n0\n", "(input):19:1: too few arguments");
 }
 
 TEST(NLTest, ReadNumberOfExpr) {
   EXPECT_READ("c0: numberof v4 in (5, v1);", "C0\no60\n3\nv4\nn5\nv1\n");
   EXPECT_READ("c0: numberof v4 in ();", "C0\no60\n1\nv4\n");
-  EXPECT_READ_ERROR( "C0\no60\n0\n", "(input):13:1: too few arguments");
+  EXPECT_READ_ERROR( "C0\no60\n0\n", "(input):19:1: too few arguments");
 }
 
 TEST(NLTest, ReadLogicalConstant) {
@@ -1033,9 +1039,9 @@ TEST(NLTest, ReadRelationalExpr) {
 TEST(NLTest, ReadLogicalCountExpr) {
   EXPECT_READ("l0: lc63(v1, count(l1));", "L0\no63\nv1\no59\n1\nn1\n");
   EXPECT_READ_ERROR("L0\no63\nv1\nn0\n",
-    "(input):14:1: expected count expression");
+    "(input):20:1: expected count expression");
   EXPECT_READ_ERROR("L0\no63\nv1\no16\nn0\n",
-    "(input):14:2: expected count expression");
+    "(input):20:2: expected count expression");
 }
 
 TEST(NLTest, ReadImplicationExpr) {
@@ -1044,13 +1050,13 @@ TEST(NLTest, ReadImplicationExpr) {
 
 TEST(NLTest, ReadIteratedLogicalExpr) {
   EXPECT_READ("l0: il71(l1, l0, l1);", "L0\no71\n3\nn1\nn0\nn1\n");
-  EXPECT_READ_ERROR("L0\no71\n2\nn1\nn0\n", "(input):13:1: too few arguments");
+  EXPECT_READ_ERROR("L0\no71\n2\nn1\nn0\n", "(input):19:1: too few arguments");
 }
 
 TEST(NLTest, ReadAllDiffExpr) {
   EXPECT_READ("l0: alldiff(v4, 5, v1);", "L0\no74\n3\nv4\nn5\nv1\n");
   EXPECT_READ("l0: alldiff(v4);", "L0\no74\n1\nv4\n");
-  EXPECT_READ_ERROR("L0\no74\n0\n", "(input):13:1: too few arguments");
+  EXPECT_READ_ERROR("L0\no74\n0\n", "(input):19:1: too few arguments");
 }
 
 TEST(NLTest, ReadStringLiteral) {
@@ -1062,54 +1068,66 @@ TEST(NLTest, ReadStringLiteral) {
   EXPECT_READ(std::string(output, sizeof(output) - 1),
               std::string(input, sizeof(input) - 1));
   EXPECT_READ_ERROR("C0\nf1 1\nh3:ab",
-        "(input):13:6: unexpected end of file in string");
+        "(input):19:6: unexpected end of file in string");
   EXPECT_READ_ERROR("C0\nf1 1\nh3:a\n",
-        "(input):14:1: unexpected end of file in string");
-  EXPECT_READ_ERROR("C0\nf1 1\nh3:abc", "(input):13:7: expected newline");
-  EXPECT_READ_ERROR("C0\nf1 1\nh3:ab\n", "(input):14:1: expected newline");
+        "(input):20:1: unexpected end of file in string");
+  EXPECT_READ_ERROR("C0\nf1 1\nh3:abc", "(input):19:7: expected newline");
+  EXPECT_READ_ERROR("C0\nf1 1\nh3:ab\n", "(input):20:1: expected newline");
 }
 
 TEST(NLTest, ReadInvalidOpCode) {
-  EXPECT_READ_ERROR("C0\no-1\n", "(input):12:2: expected unsigned integer");
-  EXPECT_READ_ERROR("C0\no82\n", "(input):12:2: invalid opcode 82");
+  EXPECT_READ_ERROR("C0\no-1\n", "(input):18:2: expected unsigned integer");
+  EXPECT_READ_ERROR("C0\no82\n", "(input):18:2: invalid opcode 82");
 }
 
 TEST(NLTest, ReadInvalidNumericExpr) {
-  EXPECT_READ_ERROR("C0\nx\n", "(input):12:1: expected expression");
+  EXPECT_READ_ERROR("C0\nx\n", "(input):18:1: expected expression");
   EXPECT_READ_ERROR("C0\no22\nv1\nn0\n",
-        "(input):12:2: expected numeric expression opcode");
+        "(input):18:2: expected numeric expression opcode");
 }
 
 TEST(NLTest, ReadInvalidLogicalExpr) {
-  EXPECT_READ_ERROR("L0\nx\n", "(input):12:1: expected logical expression");
+  EXPECT_READ_ERROR("L0\nx\n", "(input):18:1: expected logical expression");
   EXPECT_READ_ERROR("L0\no0\nv1\nn0\n",
-        "(input):12:2: expected logical expression opcode");
+        "(input):18:2: expected logical expression opcode");
 }
 
 TEST(NLTest, ReadVarBounds) {
-  EXPECT_READ("1.1 <= v0; v1 <= 22; v2 = 33; v3; 44 <= v4 <= 55;",
-              "b\n21.1\n1 22\n4 33\n3\n0 44 55\n");
-  EXPECT_READ_ERROR("b\n-1\n", "(input):12:1: expected bound");
-  EXPECT_READ_ERROR("b\n5 1\n", "(input):12:1: expected bound");
-  EXPECT_READ_ERROR("b\n2 11\n1 22\n4 33\n3\n", "(input):16:1: expected bound");
+  // TODO: test missing 'b' segment and multiple segments
+  EXPECT_THROW_MSG(ReadNL("", false), ReadError,
+                   "(input):11:1: segment 'b' missing");
+  EXPECT_THROW_MSG(ReadNL("b\n"), ReadError,
+                   "(input):17:1: duplicate 'b' segment");
+  EXPECT_EQ("1.1 <= v0; v1 <= 22; v2 = 33; v3; 44 <= v4 <= 55;",
+            ReadNL("b\n21.1\n1 22\n4 33\n3\n0 44 55\n", false));
+  EXPECT_THROW_MSG(ReadNL("b\n-1\n", false), ReadError,
+                   "(input):12:1: expected bound");
+  EXPECT_THROW_MSG(ReadNL("b\n5 1\n", false), ReadError,
+                   "(input):12:1: expected bound");
+  EXPECT_THROW_MSG(ReadNL("b\n2 11\n1 22\n4 33\n3\n", false), ReadError,
+                   "(input):16:1: expected bound");
 }
 
 TEST(NLTest, ReadConBounds) {
   EXPECT_READ("1.1 <= c0; c1 <= 22; c2 = 33; c3; 44 <= c4 <= 55; "
               "c5 complements v1 3; c6 complements v4 2;",
               "r\n21.1\n1 22\n4 33\n3\n0 44 55\n5 7 2\n5 2 5\n");
-  EXPECT_READ_ERROR("r\n-1\n", "(input):12:1: expected bound");
-  EXPECT_READ_ERROR("r\n6 1\n", "(input):12:1: expected bound");
-  EXPECT_READ_ERROR("r\n2 11\n1 22\n4 33\n3\n", "(input):16:1: expected bound");
-  EXPECT_READ_ERROR("r\n5 1 0\n", "(input):12:5: integer 0 out of bounds");
-  EXPECT_READ_ERROR("r\n5 1 6\n", "(input):12:5: integer 6 out of bounds");
+  EXPECT_READ_ERROR("r\n-1\n", "(input):18:1: expected bound");
+  EXPECT_READ_ERROR("r\n6 1\n", "(input):18:1: expected bound");
+  EXPECT_READ_ERROR("r\n2 11\n1 22\n4 33\n3\n", "(input):22:1: expected bound");
+  EXPECT_READ_ERROR("r\n5 1 0\n", "(input):18:5: integer 0 out of bounds");
+  EXPECT_READ_ERROR("r\n5 1 6\n", "(input):18:5: integer 6 out of bounds");
   // Check that there is no overflow for largest possible var index.
   TestNLHandler handler;
   NLHeader header = NLHeader();
   header.num_vars = INT_MAX;
   header.num_algebraic_cons = 1;
-  ReadNLString(FormatHeader(header) + fmt::format("r\n5 1 {}\n", INT_MAX),
-               handler);
+  std::string input = fmt::format("r\n5 1 {}\n", INT_MAX);
+  using mp::internal::TextReader;
+  TextReader text_reader(input, "(intput");
+  typedef mp::internal::NLReader<TextReader, TestNLHandler> NLReader;
+  NLReader reader(text_reader, header, handler);
+  reader.ReadBounds<NLReader::AlgebraicConHandler>();
   EXPECT_EQ(fmt::format("c0 complements v{} 1;", INT_MAX - 1),
             handler.log.str());
 }
@@ -1118,83 +1136,83 @@ TEST(NLTest, ReadLinearObjExpr) {
   EXPECT_READ("o0 2: 1.3 * v1 + 5 * v3;", "G0 2\n1 1.3\n3 5\n");
   EXPECT_READ("o5 5: 1 * v1 + 1 * v2 + 1 * v3 + 1 * v4 + 1 * v5;",
               "G5 5\n1 1\n2 1\n3 1\n4 1\n5 1\n");
-  EXPECT_READ_ERROR("G-1", "(input):11:2: expected unsigned integer");
-  EXPECT_READ_ERROR("G6", "(input):11:2: integer 6 out of bounds");
-  EXPECT_READ_ERROR("G0 0", "(input):11:4: integer 0 out of bounds");
-  EXPECT_READ_ERROR("G0 7", "(input):11:4: integer 7 out of bounds");
-  EXPECT_READ_ERROR("G0 1\n-1 0\n", "(input):12:1: expected unsigned integer");
-  EXPECT_READ_ERROR("G0 1\n6 0\n", "(input):12:1: integer 6 out of bounds");
+  EXPECT_READ_ERROR("G-1", "(input):17:2: expected unsigned integer");
+  EXPECT_READ_ERROR("G6", "(input):17:2: integer 6 out of bounds");
+  EXPECT_READ_ERROR("G0 0", "(input):17:4: integer 0 out of bounds");
+  EXPECT_READ_ERROR("G0 7", "(input):17:4: integer 7 out of bounds");
+  EXPECT_READ_ERROR("G0 1\n-1 0\n", "(input):18:1: expected unsigned integer");
+  EXPECT_READ_ERROR("G0 1\n6 0\n", "(input):18:1: integer 6 out of bounds");
 }
 
 TEST(NLTest, ReadLinearConExpr) {
   EXPECT_READ("c0 2: 1.3 * v1 + 5 * v3;", "J0 2\n1 1.3\n3 5\n");
   EXPECT_READ("c5 5: 1 * v1 + 1 * v2 + 1 * v3 + 1 * v4 + 1 * v5;",
               "J5 5\n1 1\n2 1\n3 1\n4 1\n5 1\n");
-  EXPECT_READ_ERROR("J-1", "(input):11:2: expected unsigned integer");
-  EXPECT_READ_ERROR("J8", "(input):11:2: integer 8 out of bounds");
-  EXPECT_READ_ERROR("J0 0", "(input):11:4: integer 0 out of bounds");
-  EXPECT_READ_ERROR("J0 7", "(input):11:4: integer 7 out of bounds");
-  EXPECT_READ_ERROR("J0 1\n-1 0\n", "(input):12:1: expected unsigned integer");
-  EXPECT_READ_ERROR("J0 1\n6 0\n", "(input):12:1: integer 6 out of bounds");
+  EXPECT_READ_ERROR("J-1", "(input):17:2: expected unsigned integer");
+  EXPECT_READ_ERROR("J8", "(input):17:2: integer 8 out of bounds");
+  EXPECT_READ_ERROR("J0 0", "(input):17:4: integer 0 out of bounds");
+  EXPECT_READ_ERROR("J0 7", "(input):17:4: integer 7 out of bounds");
+  EXPECT_READ_ERROR("J0 1\n-1 0\n", "(input):18:1: expected unsigned integer");
+  EXPECT_READ_ERROR("J0 1\n6 0\n", "(input):18:1: integer 6 out of bounds");
 }
 
 TEST(NLTest, ReadColumnSizes) {
   EXPECT_READ("sizes: 1 2 2 4;", "k4\n1\n3\n5\n9\n");
   EXPECT_READ("sizes: 1 2 2 4;", "K4\n1\n2\n2\n4\n");
-  EXPECT_READ_ERROR("k3\n", "(input):11:2: expected 4");
-  EXPECT_READ_ERROR("k4\n-1\n", "(input):12:1: expected unsigned integer");
-  EXPECT_READ_ERROR("k4\n2\n1\n", "(input):13:1: invalid column offset");
+  EXPECT_READ_ERROR("k3\n", "(input):17:2: expected 4");
+  EXPECT_READ_ERROR("k4\n-1\n", "(input):18:1: expected unsigned integer");
+  EXPECT_READ_ERROR("k4\n2\n1\n", "(input):19:1: invalid column offset");
 }
 
 TEST(NLTest, ReadInitialValues) {
   EXPECT_READ("v4 := 1.1; v3 := 0; v2 := 1; v1 := 2; v0 := 3;",
               "x5\n4 1.1\n3 0\n2 1\n1 2\n0 3\n");
-  EXPECT_READ_ERROR("x6\n", "(input):11:2: too many initial values");
-  EXPECT_READ_ERROR("x1\n-1 0\n", "(input):12:1: expected unsigned integer");
-  EXPECT_READ_ERROR("x1\n5 0\n", "(input):12:1: integer 5 out of bounds");
-  EXPECT_READ_ERROR("x2\n4 1.1\n\n", "(input):13:1: expected unsigned integer");
+  EXPECT_READ_ERROR("x6\n", "(input):17:2: too many initial values");
+  EXPECT_READ_ERROR("x1\n-1 0\n", "(input):18:1: expected unsigned integer");
+  EXPECT_READ_ERROR("x1\n5 0\n", "(input):18:1: integer 5 out of bounds");
+  EXPECT_READ_ERROR("x2\n4 1.1\n\n", "(input):19:1: expected unsigned integer");
 }
 
 TEST(NLTest, ReadInitialDualValues) {
   EXPECT_READ("c4 := 1.1; c3 := 0; c2 := 1; c1 := 2; "
               "c0 := 3; c5 := 1; c6 := 2;",
               "d7\n4 1.1\n3 0\n2 1\n1 2\n0 3\n5 1\n6 2\n");
-  EXPECT_READ_ERROR("d8\n", "(input):11:2: too many initial values");
-  EXPECT_READ_ERROR("d1\n-1 0\n", "(input):12:1: expected unsigned integer");
-  EXPECT_READ_ERROR("d1\n7 0\n", "(input):12:1: integer 7 out of bounds");
-  EXPECT_READ_ERROR("d2\n4 1.1\n\n", "(input):13:1: expected unsigned integer");
+  EXPECT_READ_ERROR("d8\n", "(input):17:2: too many initial values");
+  EXPECT_READ_ERROR("d1\n-1 0\n", "(input):18:1: expected unsigned integer");
+  EXPECT_READ_ERROR("d1\n7 0\n", "(input):18:1: integer 7 out of bounds");
+  EXPECT_READ_ERROR("d2\n4 1.1\n\n", "(input):19:1: expected unsigned integer");
 }
 
 TEST(NLTest, ReadFunction) {
   EXPECT_READ("f0: foo 2 1;", "F0 1 2 foo\n");
   EXPECT_READ("f0: foo -1 0;", "F0 0 -1 foo\n");
-  EXPECT_READ_ERROR("F0 1 2 \n", "(input):11:8: expected name");
-  EXPECT_READ_ERROR("F-1 0 0 f\n", "(input):11:2: expected unsigned integer");
-  EXPECT_READ_ERROR("F9 0 0 f\n", "(input):11:2: integer 9 out of bounds");
-  EXPECT_READ_ERROR("F0 -1 0 f\n", "(input):11:4: expected unsigned integer");
-  EXPECT_READ_ERROR("F0 2 0 f\n", "(input):11:4: invalid function type");
+  EXPECT_READ_ERROR("F0 1 2 \n", "(input):17:8: expected name");
+  EXPECT_READ_ERROR("F-1 0 0 f\n", "(input):17:2: expected unsigned integer");
+  EXPECT_READ_ERROR("F9 0 0 f\n", "(input):17:2: integer 9 out of bounds");
+  EXPECT_READ_ERROR("F0 -1 0 f\n", "(input):17:4: expected unsigned integer");
+  EXPECT_READ_ERROR("F0 2 0 f\n", "(input):17:4: invalid function type");
 }
 
 TEST(NLTest, ReadCommonExpr) {
   EXPECT_READ("v0/1 = b2(v0, 42);", "V5 0 1\no2\nv0\nn42\n");
   EXPECT_READ("v0 2: 2 * v1 + 3 * v0; v0/1 = 0;", "V5 2 1\n1 2.0\n0 3\nn0\n");
-  EXPECT_READ_ERROR("V4 0 1\nv0\n", "(input):11:2: integer 4 out of bounds");
-  EXPECT_READ_ERROR("V6 0 1\nv0\n", "(input):11:2: integer 6 out of bounds");
+  EXPECT_READ_ERROR("V4 0 1\nv0\n", "(input):17:2: integer 4 out of bounds");
+  EXPECT_READ_ERROR("V6 0 1\nv0\n", "(input):17:2: integer 6 out of bounds");
 }
 
 TEST(NLTest, ReadSuffix) {
   EXPECT_READ("suffix foo:0:5: i0 = 3, i1 = 2, i2 = 1, i3 = 2, i4 = 3;",
               "S0 5 foo\n0 3\n1 2\n2 1\n3 2\n4 3\n");
-  EXPECT_READ_ERROR("S-1 1 foo\n", "(input):11:2: expected unsigned integer");
-  EXPECT_READ_ERROR("S8 1 foo\n", "(input):11:2: invalid suffix kind");
-  EXPECT_READ_ERROR("S0 0 foo\n", "(input):11:4: integer 0 out of bounds");
-  EXPECT_READ_ERROR("S0 6 foo\n", "(input):11:4: integer 6 out of bounds");
+  EXPECT_READ_ERROR("S-1 1 foo\n", "(input):17:2: expected unsigned integer");
+  EXPECT_READ_ERROR("S8 1 foo\n", "(input):17:2: invalid suffix kind");
+  EXPECT_READ_ERROR("S0 0 foo\n", "(input):17:4: integer 0 out of bounds");
+  EXPECT_READ_ERROR("S0 6 foo\n", "(input):17:4: integer 6 out of bounds");
 }
 
 TEST(NLTest, InvalidSegmentType) {
-  EXPECT_READ_ERROR("?", "(input):11:1: invalid segment type");
+  EXPECT_READ_ERROR("?", "(input):17:1: invalid segment type");
   EXPECT_READ_ERROR(std::string("C0\nn4.2\n") + '\0',
-                    "(input):13:1: invalid segment type");
+                    "(input):19:1: invalid segment type");
 }
 
 // Checks if ProblemBuilderToNLAdapter forwargs arguments passed to
@@ -1331,7 +1349,8 @@ void CheckReadFile(std::string nl) {
   WriteFile(filename, nl);
   TestNLHandler handler;
   mp::ReadNLFile(filename, handler);
-  EXPECT_EQ("c0: 4.2;", handler.log.str());
+  EXPECT_EQ("v0 <= 0; v1 <= 0; v2 <= 0; v3 <= 0; v4 <= 0; c0: 4.2;",
+            handler.log.str());
   mp::internal::NLFileReader<> reader;
   reader.Read(filename, handler);
 }

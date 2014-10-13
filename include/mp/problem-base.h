@@ -388,6 +388,12 @@ struct ProblemInfo {
   // Number of common expressions that only appear in a single objective
   // and don't appear in constraints.
   int num_common_exprs_in_single_objs;
+
+  int num_common_exprs() const {
+    return num_common_exprs_in_both + num_common_exprs_in_cons +
+        num_common_exprs_in_objs + num_common_exprs_in_single_cons +
+        num_common_exprs_in_single_objs;
+  }
 };
 }  // namespace mp
 

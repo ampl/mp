@@ -735,7 +735,11 @@ class ReaderBase {
     return *ptr_++;
   }
 
-  bool IsEOF() const { return ptr_ == end_ + 1; }
+  const char *ptr() const { return ptr_; }
+  void set_ptr(const char *ptr) { token_ = ptr_ = ptr; }
+
+  bool IsEOF(const char *ptr) const { return ptr == end_ + 1; }
+  bool IsEOF() const { return IsEOF(ptr_); }
 };
 
 class TextReader : public ReaderBase {
@@ -1080,23 +1084,6 @@ class NLReader {
     }
   };
 
-  struct AlgebraicConHandler : ItemHandler<CON> {
-    explicit AlgebraicConHandler(NLReader &r) : ItemHandler<CON>(r) {}
-
-    int num_items() const { return this->reader_.header_.num_algebraic_cons; }
-
-    typename Handler::LinearConHandler OnLinearExpr(int index, int num_terms) {
-      return this->reader_.handler_.OnLinearConExpr(index, num_terms);
-    }
-
-    void SetBounds(int index, double lb, double ub) {
-      this->reader_.handler_.OnConBounds(index, lb, ub);
-    }
-    void SetInitialValue(int index, double value) {
-      this->reader_.handler_.OnInitialDualValue(index, value);
-    }
-  };
-
   struct ConHandler : ItemHandler<CON> {
     explicit ConHandler(NLReader &r) : ItemHandler<CON>(r) {}
 
@@ -1120,10 +1107,6 @@ class NLReader {
   template <typename LinearHandler>
   void ReadLinearExpr(int num_terms, LinearHandler linear_expr);
 
-  // Reads variable or constraint bounds.
-  template <typename BoundHandler>
-  void ReadBounds();
-
   // Reads column sizes, numbers of nonzeros in the first num_var − 1
   // columns of the Jacobian sparsity matrix.
   template <bool CUMULATIVE>
@@ -1136,9 +1119,57 @@ class NLReader {
   template <typename SuffixHandler>
   void ReadSuffix(int kind);
 
+  // Reads bounds on variables and returns the pointer to the end of
+  // the 'b' segment.
+  const char *ReadVarBounds() {
+    const char *start = reader_.ptr();
+    const char *ptr = start;
+    if (*ptr != 'b') {
+      for (;;) {
+        char c = *ptr++;
+        if (c == '\n') {
+          if (*ptr == 'b')
+            break;
+        } else if (c == '\0' && reader_.IsEOF(ptr)) {
+          // The 'b' segment is required, because without it ASL leaves
+          // variable bounds uninitialized.
+          reader_.set_ptr(ptr - 1);
+          reader_.ReportError("segment 'b' missing");
+        }
+      }
+    }
+    reader_.set_ptr(ptr);
+    ReadBounds<VarHandler>();
+    ptr = reader_.ptr();
+    reader_.set_ptr(start);
+    return ptr;
+  }
+
  public:
   NLReader(Reader &reader, NLHeader &header, Handler &handler)
     : reader_(reader), header_(header), handler_(handler), total_num_vars_(0) {}
+
+  // Algebraic constraint handler.
+  struct AlgebraicConHandler : ItemHandler<CON> {
+    explicit AlgebraicConHandler(NLReader &r) : ItemHandler<CON>(r) {}
+
+    int num_items() const { return this->reader_.header_.num_algebraic_cons; }
+
+    typename Handler::LinearConHandler OnLinearExpr(int index, int num_terms) {
+      return this->reader_.handler_.OnLinearConExpr(index, num_terms);
+    }
+
+    void SetBounds(int index, double lb, double ub) {
+      this->reader_.handler_.OnConBounds(index, lb, ub);
+    }
+    void SetInitialValue(int index, double value) {
+      this->reader_.handler_.OnInitialDualValue(index, value);
+    }
+  };
+
+  // Reads variable or constraint bounds.
+  template <typename BoundHandler>
+  void ReadBounds();
 
   void Read();
 };
@@ -1479,6 +1510,9 @@ void NLReader<Reader, Handler>::Read() {
       header_.num_common_exprs_in_objs +
       header_.num_common_exprs_in_single_cons +
       header_.num_common_exprs_in_single_objs;
+  // Read variable bounds first because this allows more efficient
+  // problem construction.
+  const char *var_bounds_end = ReadVarBounds();
   for (;;) {
     char c = reader_.ReadChar();
     switch (c) {
@@ -1563,7 +1597,10 @@ void NLReader<Reader, Handler>::Read() {
     }
     case 'b':
       // Bounds on variables.
-      ReadBounds<VarHandler>();
+      if (!var_bounds_end)
+        reader_.ReportError("duplicate 'b' segment");
+      reader_.set_ptr(var_bounds_end);
+      var_bounds_end = 0;
       break;
     case 'r':
       // Bounds on algebraic constraint bodies ("ranges").
