@@ -927,6 +927,21 @@ class BinaryReader : public ReaderBase {
   fmt::StringRef ReadName() { return ReadString(); }
 };
 
+// An NLHandler that forwards notification of variable bounds to another
+// handler and ignores all other notifications.
+template <typename Handler>
+class VarBoundHandler : public NLHandler<typename Handler::Expr> {
+ private:
+  Handler &handler_;
+
+ public:
+  explicit VarBoundHandler(Handler &h) : handler_(h) {}
+
+  void OnVarBounds(int index, double lb, double ub) {
+    handler_.OnVarBounds(index, lb, ub);
+  }
+};
+
 // An .nl file reader.
 // Handler: a class implementing the ProblemHandler concept that receives
 //          notifications of problem components
@@ -1119,32 +1134,6 @@ class NLReader {
   template <typename SuffixHandler>
   void ReadSuffix(int kind);
 
-  // Reads bounds on variables and returns the pointer to the end of
-  // the 'b' segment.
-  const char *ReadVarBounds() {
-    const char *start = reader_.ptr();
-    const char *ptr = start;
-    if (*ptr != 'b') {
-      for (;;) {
-        char c = *ptr++;
-        if (c == '\n') {
-          if (*ptr == 'b')
-            break;
-        } else if (c == '\0' && reader_.IsEOF(ptr)) {
-          // The 'b' segment is required, because without it ASL leaves
-          // variable bounds uninitialized.
-          reader_.set_ptr(ptr - 1);
-          reader_.ReportError("segment 'b' missing");
-        }
-      }
-    }
-    reader_.set_ptr(ptr);
-    ReadBounds<VarHandler>();
-    ptr = reader_.ptr();
-    reader_.set_ptr(start);
-    return ptr;
-  }
-
  public:
   NLReader(Reader &reader, NLHeader &header, Handler &handler)
     : reader_(reader), header_(header), handler_(handler), total_num_vars_(0) {}
@@ -1170,6 +1159,9 @@ class NLReader {
   // Reads variable or constraint bounds.
   template <typename BoundHandler>
   void ReadBounds();
+
+  // bound_reader: a reader after variable bounds section input
+  void Read(Reader *bound_reader);
 
   void Read();
 };
@@ -1502,7 +1494,8 @@ void NLReader<Reader, Handler>::ReadSuffix(int kind) {
 }
 
 template <typename Reader, typename Handler>
-void NLReader<Reader, Handler>::Read() {
+void NLReader<Reader, Handler>::Read(Reader *bound_reader) {
+  bool read_bounds = bound_reader == 0;
   // TextReader::ReadHeader checks that this doesn't overflow.
   total_num_vars_ = header_.num_vars +
       header_.num_common_exprs_in_both +
@@ -1510,9 +1503,6 @@ void NLReader<Reader, Handler>::Read() {
       header_.num_common_exprs_in_objs +
       header_.num_common_exprs_in_single_cons +
       header_.num_common_exprs_in_single_objs;
-  // Read variable bounds first because this allows more efficient
-  // problem construction.
-  const char *var_bounds_end = ReadVarBounds();
   for (;;) {
     char c = reader_.ReadChar();
     switch (c) {
@@ -1597,10 +1587,15 @@ void NLReader<Reader, Handler>::Read() {
     }
     case 'b':
       // Bounds on variables.
-      if (!var_bounds_end)
+      if (read_bounds) {
+        ReadBounds<VarHandler>();
+        reader_.ptr();
+        return;
+      }
+      if (!bound_reader)
         reader_.ReportError("duplicate 'b' segment");
-      reader_.set_ptr(var_bounds_end);
-      var_bounds_end = 0;
+      reader_ = *bound_reader;
+      bound_reader = 0;
       break;
     case 'r':
       // Bounds on algebraic constraint bodies ("ranges").
@@ -1625,13 +1620,29 @@ void NLReader<Reader, Handler>::Read() {
       ReadInitialValues<AlgebraicConHandler>();
       break;
     case '\0':
-      if (reader_.IsEOF())
+      if (reader_.IsEOF()) {
+        if (read_bounds)
+          reader_.ReportError("segment 'b' missing");
         return;
+      }
       // Fall through.
     default:
       reader_.ReportError("invalid segment type");
     }
   }
+}
+
+template <typename Reader, typename Handler>
+void NLReader<Reader, Handler>::Read() {
+  // Read variable bounds first because this allows more efficient
+  // problem construction.
+  VarBoundHandler<Handler> bound_handler(handler_);
+  Reader bound_reader(reader_);
+  NLReader< Reader, VarBoundHandler<Handler> >
+      reader(bound_reader, header_, bound_handler);
+  reader.Read(0);
+  // Read everything else.
+  Read(&bound_reader);
 }
 
 // An .nl file reader.
