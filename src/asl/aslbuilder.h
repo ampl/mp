@@ -228,7 +228,7 @@ class ASLBuilder {
     // TODO
   }
 
-  void SetVar(int, NumericExpr, int) {
+  void SetCommonExpr(int, NumericExpr, int) {
     // TODO
   }
 
@@ -389,6 +389,8 @@ class ASLBuilder {
 
   Variable MakeVariable(int var_index);
 
+  Variable MakeCommonExprRef(int index);
+
   UnaryExpr MakeUnary(expr::Kind kind, NumericExpr arg);
 
   BinaryExpr MakeBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
@@ -417,7 +419,7 @@ class ASLBuilder {
   };
 
   PLTermHandler BeginPLTerm(int num_breakpoints);
-  PiecewiseLinearExpr EndPLTerm(PLTermHandler h, Variable var) {
+  PiecewiseLinearExpr EndPLTerm(PLTermHandler h, NumericExpr var) {
     h.expr_->R.e = var.expr_;
     return Expr::Create<PiecewiseLinearExpr>(h.expr_);
   }

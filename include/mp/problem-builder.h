@@ -89,10 +89,9 @@ class ProblemBuilder {
     MP_DISPATCH(ReportUnhandledConstruct("logical constraint"));
   }
 
-  // Sets a defined variable expression.
-  // index: Index of a defined variable;
-  // num_vars <= index < num_vars + num_defined_vars.
-  void SetVar(int index, NumericExpr expr, int position) {
+  // Sets a common expression (defined variable).
+  // index: Index of a common expression; 0 <= index < num_defined_vars.
+  void SetCommonExpr(int index, NumericExpr expr, int position) {
     MP_UNUSED3(index, expr, position);
     MP_DISPATCH(ReportUnhandledConstruct("nonlinear defined variable"));
   }
@@ -193,6 +192,12 @@ class ProblemBuilder {
     MP_UNUSED(var_index);
     MP_DISPATCH(ReportUnhandledConstruct("variable in nonlinear expression"));
     return Variable();
+  }
+
+  NumericExpr MakeCommonExprRef(int index) {
+    MP_UNUSED(index);
+    MP_DISPATCH(ReportUnhandledConstruct("named subexpressions"));
+    return NumericExpr();
   }
 
   NumericExpr MakeUnary(expr::Kind kind, NumericExpr arg) {

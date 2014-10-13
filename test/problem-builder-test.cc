@@ -57,7 +57,8 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   EXPECT_DISPATCH(SetObj(0, mp::obj::MIN, TestExpr()), "objective");
   EXPECT_DISPATCH(SetCon(0, TestExpr()), "nonlinear constraint");
   EXPECT_DISPATCH(SetLogicalCon(0, TestExpr()), "logical constraint");
-  EXPECT_DISPATCH(SetVar(0, TestExpr(), 0), "nonlinear defined variable");
+  EXPECT_DISPATCH(SetCommonExpr(0, TestExpr(), 0),
+                  "nonlinear defined variable");
   EXPECT_DISPATCH(SetComplement(0, 0, 0), "complementarity constraint");
   EXPECT_DISPATCH(GetLinearObjBuilder(0, 0), "linear objective");
   EXPECT_DISPATCH(GetLinearConBuilder(0, 0), "linear constraint");

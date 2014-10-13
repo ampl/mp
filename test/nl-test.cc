@@ -477,7 +477,7 @@ class TestNLHandler {
     WriteSep() << "l" << index << ": " << expr << ";";
   }
 
-  void OnDefinedVar(int index, std::string expr, int position) {
+  void OnCommonExpr(int index, std::string expr, int position) {
     WriteSep().write("v{}/{} = {};", index, position, expr);
   }
 
@@ -529,6 +529,10 @@ class TestNLHandler {
 
   std::string OnVariable(int index) {
     return fmt::format("v{}", index);
+  }
+
+  std::string OnCommonExprRef(int index) {
+    return fmt::format("e{}", index);
   }
 
   std::string OnUnary(expr::Kind kind, std::string arg) {
@@ -750,7 +754,7 @@ struct TestNLHandler2 {
   void OnObj(int, mp::obj::Type, TestNumericExpr) {}
   void OnAlgebraicCon(int, TestNumericExpr) {}
   void OnLogicalCon(int, TestLogicalExpr) {}
-  void OnDefinedVar(int, TestNumericExpr, int) {}
+  void OnCommonExpr(int, TestNumericExpr, int) {}
 
   void OnInitialValue(int, double) {}
   void OnInitialDualValue(int, double) {}
@@ -764,6 +768,7 @@ struct TestNLHandler2 {
 
   TestNumericExpr OnNumericConstant(double) { return TestNumericExpr(); }
   TestVariable OnVariable(int) { return TestVariable(); }
+  TestNumericExpr OnCommonExprRef(int) { return TestNumericExpr(); }
   TestNumericExpr OnUnary(expr::Kind, TestNumericExpr) {
     return TestNumericExpr();
   }
@@ -782,7 +787,7 @@ struct TestNLHandler2 {
   };
 
   PLTermHandler BeginPLTerm(int) { return PLTermHandler(); }
-  TestNumericExpr EndPLTerm(PLTermHandler, TestVariable) {
+  TestNumericExpr EndPLTerm(PLTermHandler, TestNumericExpr) {
     return TestNumericExpr();
   }
 
@@ -938,9 +943,12 @@ TEST(NLTest, ReadNumericConstant) {
 
 TEST(NLTest, ReadVariable) {
   EXPECT_READ("c0: v4;", "C0\nv4\n");
-  EXPECT_READ("c0: v5;", "C0\nv5\n");
   EXPECT_READ_ERROR("C0\nv-1\n", "(input):12:2: expected unsigned integer");
   EXPECT_READ_ERROR("C0\nv6\n", "(input):12:2: integer 6 out of bounds");
+}
+
+TEST(NLTest, ReadCommonExprRef) {
+  EXPECT_READ("c0: e0;", "C0\nv5\n");
 }
 
 TEST(NLTest, ReadUnaryExpr) {
@@ -1167,9 +1175,9 @@ TEST(NLTest, ReadFunction) {
   EXPECT_READ_ERROR("F0 2 0 f\n", "(input):11:4: invalid function type");
 }
 
-TEST(NLTest, ReadDefinedVars) {
-  EXPECT_READ("v5/1 = b2(v0, 42);", "V5 0 1\no2\nv0\nn42\n");
-  EXPECT_READ("v5 2: 2 * v1 + 3 * v0; v5/1 = 0;", "V5 2 1\n1 2.0\n0 3\nn0\n");
+TEST(NLTest, ReadCommonExpr) {
+  EXPECT_READ("v0/1 = b2(v0, 42);", "V5 0 1\no2\nv0\nn42\n");
+  EXPECT_READ("v0 2: 2 * v1 + 3 * v0; v0/1 = 0;", "V5 2 1\n1 2.0\n0 3\nn0\n");
   EXPECT_READ_ERROR("V4 0 1\nv0\n", "(input):11:2: integer 4 out of bounds");
   EXPECT_READ_ERROR("V6 0 1\nv0\n", "(input):11:2: integer 6 out of bounds");
 }
@@ -1218,7 +1226,7 @@ TEST(NLTest, ProblemBuilderToNLAdapter) {
   EXPECT_FORWARD(OnObj, SetObj, (11, mp::obj::MAX, TestNumericExpr(ID)));
   EXPECT_FORWARD(OnAlgebraicCon, SetCon, (22, TestNumericExpr(ID)));
   EXPECT_FORWARD(OnLogicalCon, SetLogicalCon, (33, TestLogicalExpr(ID)));
-  EXPECT_FORWARD(OnDefinedVar, SetVar, (44, TestNumericExpr(ID), 55));
+  EXPECT_FORWARD(OnCommonExpr, SetCommonExpr, (44, TestNumericExpr(ID), 55));
   EXPECT_FORWARD(OnComplement, SetComplement, (66, 77, 88));
 
   EXPECT_FORWARD_RET(OnLinearObjExpr, GetLinearObjBuilder,

@@ -186,9 +186,9 @@ class NLHandler {
     MP_UNUSED2(index, expr);
   }
 
-  // Receives notification of the nonlinear part of a defined variable
-  // expression.
-  void OnDefinedVar(int index, NumericExpr expr, int position) {
+  // Receives notification of the nonlinear part of a common expression
+  // (defined variable).
+  void OnCommonExpr(int index, NumericExpr expr, int position) {
     MP_UNUSED3(index, expr, position);
   }
 
@@ -289,6 +289,12 @@ class NLHandler {
     return Variable();
   }
 
+  // Receives notification of a common expression (defined variable) reference.
+  NumericExpr OnCommonExprRef(int index) {
+    MP_UNUSED(index);
+    return NumericExpr();
+  }
+
   // Receives notification of a unary expression.
   NumericExpr OnUnary(expr::Kind kind, NumericExpr arg) {
     MP_UNUSED2(kind, arg);
@@ -319,8 +325,8 @@ class NLHandler {
     return PLTermHandler();
   }
   // Receives notification of the end of a piecewise-linear term.
-  NumericExpr EndPLTerm(PLTermHandler handler, Variable var) {
-    MP_UNUSED2(handler, var);
+  NumericExpr EndPLTerm(PLTermHandler handler, NumericExpr arg) {
+    MP_UNUSED2(handler, arg);
     return NumericExpr();
   }
 
@@ -488,10 +494,10 @@ class ProblemBuilderToNLAdapter {
     builder_.SetLogicalCon(index, expr);
   }
 
-  // Receives notification of the nonlinear part of a defined variable
-  // expression.
-  void OnDefinedVar(int index, NumericExpr expr, int position) {
-    builder_.SetVar(index, expr, position);
+  // Receives notification of the nonlinear part of a common expression
+  // (defined variable).
+  void OnCommonExpr(int index, NumericExpr expr, int position) {
+    builder_.SetCommonExpr(index, expr, position);
   }
 
   // Receives notification of a complementarity relation.
@@ -574,6 +580,11 @@ class ProblemBuilderToNLAdapter {
     return builder_.MakeVariable(var_index);
   }
 
+  // Receives notification of a common expression (defined variable) reference.
+  NumericExpr OnCommonExprRef(int index) {
+    return builder_.MakeCommonExprRef(index);
+  }
+
   // Receives notification of a unary expression.
   NumericExpr OnUnary(expr::Kind kind, NumericExpr arg) {
     return builder_.MakeUnary(kind, arg);
@@ -597,8 +608,8 @@ class ProblemBuilderToNLAdapter {
     return builder_.BeginPLTerm(num_breakpoints);
   }
   // Receives notification of the end of a piecewise-linear term.
-  NumericExpr EndPLTerm(PLTermHandler handler, Variable var) {
-    return builder_.EndPLTerm(handler, var);
+  NumericExpr EndPLTerm(PLTermHandler handler, NumericExpr arg) {
+    return builder_.EndPLTerm(handler, arg);
   }
 
   // Receives notification of the beginning of a call expression.
@@ -960,13 +971,15 @@ class NLReader {
     return num_args;
   }
 
-  Variable DoReadVariable() {
-    int var_index = ReadUInt(total_num_vars_);
+  NumericExpr DoReadVariable() {
+    int index = ReadUInt(total_num_vars_);
     reader_.ReadTillEndOfLine();
-    return handler_.OnVariable(var_index);
+    return index < header_.num_vars ?
+          handler_.OnVariable(index) :
+          handler_.OnCommonExprRef(index - header_.num_vars);
   }
 
-  Variable ReadVariable() {
+  NumericExpr ReadVariable() {
     if (reader_.ReadChar() != 'v')
       reader_.ReportError("expected variable");
     return DoReadVariable();
@@ -1496,6 +1509,7 @@ void NLReader<Reader, Handler>::Read() {
       // Defined variable definition (must precede V, C, L, O segments
       // where used).
       int var_index = ReadUInt(header_.num_vars, total_num_vars_);
+      var_index -= header_.num_vars;
       int num_linear_terms = reader_.ReadUInt();
       int position = reader_.ReadUInt();
       reader_.ReadTillEndOfLine();
@@ -1503,7 +1517,7 @@ void NLReader<Reader, Handler>::Read() {
         ReadLinearExpr(num_linear_terms,
             handler_.OnLinearVarExpr(var_index, num_linear_terms));
       }
-      handler_.OnDefinedVar(var_index, ReadNumericExpr(), position);
+      handler_.OnCommonExpr(var_index, ReadNumericExpr(), position);
       break;
     }
     case 'F': {

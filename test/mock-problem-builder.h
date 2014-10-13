@@ -123,7 +123,7 @@ class MockProblemBuilder {
   MOCK_METHOD3(SetObj, void (int index, mp::obj::Type type, NumericExpr expr));
   MOCK_METHOD2(SetCon, void (int index, NumericExpr expr));
   MOCK_METHOD2(SetLogicalCon, void (int index, LogicalExpr expr));
-  MOCK_METHOD3(SetVar, void (int index, NumericExpr expr, int position));
+  MOCK_METHOD3(SetCommonExpr, void (int index, NumericExpr expr, int position));
   MOCK_METHOD3(SetComplement, void (int con_index, int var_index, int flags));
 
   typedef TestLinearObjBuilder LinearObjBuilder;
@@ -177,7 +177,7 @@ class MockProblemBuilder {
   typedef TestPLTermHandler PLTermHandler;
 
   MOCK_METHOD1(BeginPLTerm, PLTermHandler (int num_breakpoints));
-  MOCK_METHOD2(EndPLTerm, NumericExpr (PLTermHandler handler, Variable var));
+  MOCK_METHOD2(EndPLTerm, NumericExpr (PLTermHandler handler, NumericExpr arg));
 
   MOCK_METHOD2(BeginCall, CallArgHandler (int func_index, int num_args));
   MOCK_METHOD1(EndCall, NumericExpr (CallArgHandler handler));

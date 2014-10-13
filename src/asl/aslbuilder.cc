@@ -653,6 +653,14 @@ Variable ASLBuilder::MakeVariable(int var_index) {
           + var_index));
 }
 
+Variable ASLBuilder::MakeCommonExprRef(int index) {
+  assert(index >= 0 && index < static_->_max_var - asl_->i.n_var_);
+  index += asl_->i.n_var_;
+  return Expr::Create<Variable>(
+      reinterpret_cast< ::expr*>(reinterpret_cast<ASL_fg*>(asl_)->I.var_e_
+          + index));
+}
+
 UnaryExpr ASLBuilder::MakeUnary(expr::Kind kind, NumericExpr arg) {
   CheckKind<UnaryExpr>(kind, "unary");
   UnaryExpr expr = MakeUnary<UnaryExpr>(kind, arg);
