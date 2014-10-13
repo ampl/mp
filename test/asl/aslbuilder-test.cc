@@ -447,7 +447,9 @@ void CheckASL(const ASL &expected, const ASL &actual, bool complete = true) {
 
 std::string HeaderToStr(const NLHeader &h) {
   fmt::MemoryWriter w;
-  w << h;
+  w << h << "b\n";
+  for (int i = 0; i < h.num_vars; ++i)
+    w << "1 0\n";
   return w.str();
 }
 
