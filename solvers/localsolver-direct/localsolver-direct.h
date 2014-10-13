@@ -23,7 +23,12 @@
 #ifndef MP_SOLVERS_LOCALSOLVER_H_
 #define MP_SOLVERS_LOCALSOLVER_H_
 
+#include <cassert>
+#include <limits>
+#include <vector>
+
 #include <localsolver.h>
+
 #include "mp/problem-builder.h"
 #include "mp/solver.h"
 
@@ -58,11 +63,14 @@ class LSProblemBuilder :
   };
   std::vector<ConInfo> cons_;
 
+  // Common subexpressions
+  std::vector<ls::LSExpression> exprs_;
+
   typedef ProblemBuilder<LSProblemBuilder, ls::LSExpression> Base;
 
   static ls::lsint MakeInt(int value) { return value; }
 
-  ls::lsint ConvertToInt(double value) {
+  static ls::lsint ConvertToInt(double value) {
     // TODO
     return static_cast<ls::lsint>(value);
   }
@@ -73,7 +81,7 @@ class LSProblemBuilder :
 
   // Returns true if e is a zero constant.
   static bool IsZero(ls::LSExpression e) {
-    return e.getOperator() == ls::O_Const && e.getDoubleValue() == 0;
+    return e.isConstant() && e.getDoubleValue() == 0;
   }
 
   void RequireZero(ls::LSExpression e, const char *where) {
@@ -112,6 +120,10 @@ class LSProblemBuilder :
                         ls::O_Sub, lhs, MakeBinary(ls::O_Mod, lhs, rhs)), rhs);
   }
 
+  void CheckBounds(int index, std::size_t ub) {
+    assert(0 <= index && static_cast<std::size_t>(index) <= ub);
+  }
+
  public:
   explicit LSProblemBuilder(ls::LSModel model);
 
@@ -140,6 +152,10 @@ class LSProblemBuilder :
 
   void SetLogicalCon(int, ls::LSExpression expr) {
     model_.addConstraint(expr);
+  }
+
+  void SetCommonExpr(int index, ls::LSExpression expr, int) {
+    exprs_[index] = expr;
   }
 
   class LinearExprBuilder {
@@ -181,22 +197,14 @@ class LSProblemBuilder :
   }
 
   void SetVarBounds(int index, double lb, double ub) {
-    ls::LSExpression var = vars_[index];
+    ls::LSExpression &var = vars_[index];
     if (index < num_continuous_vars_) {
-      var.addOperand(lb);
-      var.addOperand(ub);
-    } else if (all_binary_) {
-      // All variables are binary, just check bounds.
-      if (lb != 0)
-        throw Error("Invalid lower bound {} for binary variable", lb);
-      if (ub != 1)
-        throw Error("Invalid upper bound {} for binary variable", ub);
+      var = model_.createExpression(ls::O_Float, lb, ub);
+    } else if (lb == 0 && ub == 1) {
+      var = model_.createExpression(ls::O_Bool);
     } else {
-      double inf = std::numeric_limits<double>::infinity();
-      var.addOperand(
-            lb == -inf ? std::numeric_limits<int>::min() : ConvertToInt(lb));
-      var.addOperand(
-            ub ==  inf ? std::numeric_limits<int>::max() : ConvertToInt(ub));
+      var = model_.createExpression(
+            ls::O_Int, ConvertToInt(lb), ConvertToInt(ub));
     }
   }
 
@@ -213,7 +221,15 @@ class LSProblemBuilder :
     return model_.createConstant(value);
   }
 
-  ls::LSExpression MakeVariable(int var_index) { return vars_[var_index]; }
+  ls::LSExpression MakeVariable(int var_index) {
+    CheckBounds(var_index, vars_.size());
+    return vars_[var_index];
+  }
+
+  ls::LSExpression MakeCommonExprRef(int index) {
+    CheckBounds(index, exprs_.size());
+    return exprs_[index];
+  }
 
   ls::LSExpression MakeUnary(expr::Kind kind, ls::LSExpression arg);
   ls::LSExpression MakeBinary(

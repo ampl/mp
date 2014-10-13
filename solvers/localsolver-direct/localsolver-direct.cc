@@ -51,13 +51,8 @@ void LSProblemBuilder::SetInfo(const NLHeader &header) {
   vars_.resize(header.num_vars);
   objs_.resize(header.num_objs);
   cons_.resize(header.num_algebraic_cons);
+  exprs_.resize(header.num_common_exprs());
   num_continuous_vars_ = header.num_continuous_vars();
-  for (int i = 0; i < num_continuous_vars_; ++i)
-    vars_[i] = model_.createExpression(ls::O_Float);
-  all_binary_ = header.num_linear_binary_vars == header.num_integer_vars();
-  ls::LSOperator var_op = all_binary_ ? ls::O_Bool : ls::O_Int;
-  for (int i = num_continuous_vars_; i < header.num_vars; ++i)
-    vars_[i] = model_.createExpression(var_op);
 }
 
 void LSProblemBuilder::EndBuild() {
@@ -250,6 +245,8 @@ ls::LSExpression LSProblemBuilder::MakeRelational(
     op = ls::O_Gt;
     break;
   case expr::NE:
+    if (lhs.getOperator() == ls::O_Bool && IsZero(rhs))
+      return lhs;
     op = ls::O_Neq;
     break;
   default:
