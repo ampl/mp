@@ -66,10 +66,11 @@ class LSProblemBuilder :
 
   typedef ProblemBuilder<LSProblemBuilder, ls::LSExpression> Base;
 
-  static ls::lsint MakeInt(int value) { return value; }
+  // Converts int to lsint.
+  static ls::lsint AsLSInt(int value) { return value; }
 
   ls::LSExpression Negate(ls::LSExpression arg) {
-    return model_.createExpression(ls::O_Sub, MakeInt(0), arg);
+    return model_.createExpression(ls::O_Sub, AsLSInt(0), arg);
   }
 
   // Returns true if e is a zero constant.
@@ -99,12 +100,12 @@ class LSProblemBuilder :
 
   // Makes an expression representing arg / 2.
   ls::LSExpression Half(ls::LSExpression arg) {
-    return MakeBinary(ls::O_Div, arg, MakeInt(2));
+    return MakeBinary(ls::O_Div, arg, AsLSInt(2));
   }
 
   // Makes an expression representing arg + 1.
   ls::LSExpression Plus1(ls::LSExpression arg) {
-    return MakeBinary(ls::O_Sum, arg, MakeInt(1));
+    return MakeBinary(ls::O_Sum, arg, AsLSInt(1));
   }
 
   // Makes an expression representing lhs div rhs.
@@ -277,7 +278,7 @@ class LSProblemBuilder :
   }
 
   ls::LSExpression MakeLogicalConstant(bool value) {
-    return model_.createConstant(MakeInt(value));
+    return model_.createConstant(AsLSInt(value));
   }
 
   ls::LSExpression MakeNot(ls::LSExpression arg) {

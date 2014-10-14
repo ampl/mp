@@ -71,7 +71,7 @@ void LSProblemBuilder::EndBuild() {
   }
   // LocalSolver requires at least one objective - create a dummy one.
   if (objs_.empty())
-    model_.addObjective(model_.createConstant(MakeInt(0)), ls::OD_Minimize);
+    model_.addObjective(model_.createConstant(AsLSInt(0)), ls::OD_Minimize);
   // Add constraints.
   double inf = std::numeric_limits<double>::infinity();
   for (std::size_t i = 0, n = cons_.size(); i < n; ++i) {
@@ -108,8 +108,12 @@ void LSProblemBuilder::SetVarBounds(int index, double lb, double ub) {
   } else if (lb == 0 && ub == 1) {
     var = model_.createExpression(ls::O_Bool);
   } else {
-    var = model_.createExpression(
-          ls::O_Int, ConvertToInt(lb), ConvertToInt(ub));
+    double inf = std::numeric_limits<double>::infinity();
+    ls::lsint int_lb = lb == -inf ?
+          std::numeric_limits<int>::min() : ConvertToInt(lb);
+    ls::lsint int_ub = ub == inf ?
+          std::numeric_limits<int>::max() : ConvertToInt(ub);
+    var = model_.createExpression(ls::O_Int, int_lb, int_ub);
   }
 }
 
@@ -164,22 +168,22 @@ ls::LSExpression LSProblemBuilder::MakeUnary(
     return model_.createExpression(ls::O_Cos, arg);
   case expr::ATANH:
     arg = MakeBinary(ls::O_Div, Plus1(arg),                    // (1 + x) /
-                     MakeBinary(ls::O_Sub, MakeInt(1), arg));  // (1 - x)
+                     MakeBinary(ls::O_Sub, AsLSInt(1), arg));  // (1 - x)
     return Half(model_.createExpression(ls::O_Log, arg));
   case expr::ASINH: {
     ls::LSExpression arg2 = model_.createExpression(
-          ls::O_Sqrt, Plus1(MakeBinary(ls::O_Pow, arg, MakeInt(2))));
+          ls::O_Sqrt, Plus1(MakeBinary(ls::O_Pow, arg, AsLSInt(2))));
     return model_.createExpression(ls::O_Log, MakeBinary(ls::O_Sum, arg, arg2));
   }
   case expr::ACOSH: {
-    ls::LSExpression x_minus_1 = MakeBinary(ls::O_Sub, arg, MakeInt(1));
+    ls::LSExpression x_minus_1 = MakeBinary(ls::O_Sub, arg, AsLSInt(1));
     ls::LSExpression arg2 = MakeBinary(
           ls::O_Prod, model_.createExpression(ls::O_Sqrt, Plus1(arg)),
           model_.createExpression(ls::O_Sqrt, x_minus_1));
     return model_.createExpression(ls::O_Log, MakeBinary(ls::O_Sum, arg, arg2));
   }
   case expr::POW2:
-    return MakeBinary(ls::O_Pow, arg, MakeInt(2));
+    return MakeBinary(ls::O_Pow, arg, AsLSInt(2));
   case expr::ATAN: case expr::ASIN: case expr::ACOS:
     // LocalSolver doesn't support these expressions.
     // Fall through.
@@ -216,13 +220,13 @@ ls::LSExpression LSProblemBuilder::MakeBinary(
     op = ls::O_Pow;
     break;
   case expr::LESS:
-    return MakeBinary(ls::O_Max, MakeBinary(ls::O_Sub, lhs, rhs), MakeInt(0));
+    return MakeBinary(ls::O_Max, MakeBinary(ls::O_Sub, lhs, rhs), AsLSInt(0));
   case expr::ROUND:
     RequireZero(rhs, "round");
     return model_.createExpression(ls::O_Round, lhs);
   case expr::TRUNC:
     RequireZero(rhs, "trunc");
-    return IntDiv(lhs, MakeInt(1));
+    return IntDiv(lhs, AsLSInt(1));
   case expr::PRECISION:
   case expr::ATAN2:
     // LocalSolver doesn't support these functions.
@@ -369,6 +373,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   ls::LSPhase phase = solver_.createPhase();
   if (timelimit_ != 0)
     phase.setTimeLimit(timelimit_);
+  // TODO: more options
 
   double setup_time = GetTimeAndReset(time);
 
