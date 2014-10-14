@@ -28,7 +28,7 @@
 
 #include "gecode/gecode.h"
 
-#include "solver-test.h"
+#include "solver-impl-test.h"
 #include "../util.h"
 
 using std::string;
@@ -43,35 +43,35 @@ namespace {
 
 SolverPtr CreateSolver() { return SolverPtr(new mp::GecodeSolver()); }
 
-INSTANTIATE_TEST_CASE_P(Gecode, SolverTest,
+INSTANTIATE_TEST_CASE_P(Gecode, SolverImplTest,
     ::testing::Values(SolverTestParam(CreateSolver, 0)));
 
-TEST_P(SolverTest, FloorSqrt) {
+TEST_P(SolverImplTest, FloorSqrt) {
   EXPECT_EQ(6, Eval(MakeUnary(mp::expr::FLOOR,
                               MakeUnary(mp::expr::SQRT, x)), 42));
 }
 
-TEST_P(SolverTest, SolveFlowshp0) {
+TEST_P(SolverImplTest, SolveFlowshp0) {
   EXPECT_EQ(22, Solve("flowshp0").obj);
 }
 
-TEST_P(SolverTest, SolveFlowshp2) {
+TEST_P(SolverImplTest, SolveFlowshp2) {
   EXPECT_EQ(22, Solve("flowshp2").obj);
 }
 
 // ----------------------------------------------------------------------------
 // Option tests
 
-class GecodeSolverTest : public ::testing::Test {
+class GecodeTest : public ::testing::Test {
  protected:
   mp::GecodeSolver solver_;
 
   SolveResult Solve(Problem &p, const char *stub, const char *opt = 0) {
-    return SolverTest::Solve(solver_, p, stub, opt);
+    return SolverImplTest::Solve(solver_, p, stub, opt);
   }
 };
 
-TEST_F(GecodeSolverTest, ADOption) {
+TEST_F(GecodeTest, ADOption) {
   EXPECT_EQ(Gecode::Search::Options().a_d, solver_.options().a_d);
   solver_.SetIntOption("a_d", 42);
   EXPECT_EQ(42u, solver_.options().a_d);
@@ -79,7 +79,7 @@ TEST_F(GecodeSolverTest, ADOption) {
   EXPECT_THROW(solver_.SetIntOption("a_d", -1), InvalidOptionValue);
 }
 
-TEST_F(GecodeSolverTest, CDOption) {
+TEST_F(GecodeTest, CDOption) {
   EXPECT_EQ(Gecode::Search::Options().c_d, solver_.options().c_d);
   solver_.SetIntOption("c_d", 42);
   EXPECT_EQ(42u, solver_.options().c_d);
@@ -87,7 +87,7 @@ TEST_F(GecodeSolverTest, CDOption) {
   EXPECT_THROW(solver_.SetIntOption("c_d", -1), InvalidOptionValue);
 }
 
-TEST_F(GecodeSolverTest, FailLimitOption) {
+TEST_F(GecodeTest, FailLimitOption) {
   Problem p;
   string message = Solve(p, "miplib/assign1", "faillimit=10").message;
   EXPECT_EQ(402, p.solve_code());
@@ -96,7 +96,7 @@ TEST_F(GecodeSolverTest, FailLimitOption) {
   EXPECT_THROW(solver_.SetIntOption("faillimit", -1), InvalidOptionValue);
 }
 
-TEST_F(GecodeSolverTest, NodeLimitOption) {
+TEST_F(GecodeTest, NodeLimitOption) {
   Problem p;
   string message = Solve(p, "miplib/assign1", "nodelimit=10").message;
   EXPECT_EQ(401, p.solve_code());
@@ -105,7 +105,7 @@ TEST_F(GecodeSolverTest, NodeLimitOption) {
   EXPECT_THROW(solver_.SetIntOption("nodelimit", -1), InvalidOptionValue);
 }
 
-TEST_F(GecodeSolverTest, TimeLimitOption) {
+TEST_F(GecodeTest, TimeLimitOption) {
   Problem p;
   Solve(p, "miplib/assign1", "timelimit=0.1");
   EXPECT_EQ(400, p.solve_code());
@@ -113,7 +113,7 @@ TEST_F(GecodeSolverTest, TimeLimitOption) {
   EXPECT_THROW(solver_.SetDblOption("timelimit", -1), InvalidOptionValue);
 }
 
-TEST_F(GecodeSolverTest, ThreadsOption) {
+TEST_F(GecodeTest, ThreadsOption) {
   EXPECT_EQ(Gecode::Search::Options().threads, solver_.options().threads);
   solver_.SetDblOption("threads", 0.5);
   EXPECT_EQ(0.5, solver_.GetDblOption("threads"));
@@ -136,7 +136,7 @@ const OptionValue<Gecode::IntConLevel> INT_CON_LEVELS[] = {
     {0,     Gecode::ICL_VAL}
 };
 
-TEST_F(GecodeSolverTest, IntConLevelOption) {
+TEST_F(GecodeTest, IntConLevelOption) {
   EXPECT_EQ(Gecode::ICL_DEF, solver_.icl());
   unsigned count = 0;
   for (const OptionValue<Gecode::IntConLevel>
@@ -162,7 +162,7 @@ const OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
     {0,            Gecode::INT_VAL_MIN()}
 };
 
-TEST_F(GecodeSolverTest, ValBranchingOption) {
+TEST_F(GecodeTest, ValBranchingOption) {
   EXPECT_EQ(Gecode::INT_VAL_MIN().select(), solver_.val_branching().select());
   unsigned count = 0;
   for (const OptionValue<Gecode::IntValBranch>
@@ -202,7 +202,7 @@ const OptionValue<IntVarBranch::Select> VAR_BRANCHINGS[] = {
     {0,                   IntVarBranch::SEL_NONE}
 };
 
-TEST_F(GecodeSolverTest, VarBranchingOption) {
+TEST_F(GecodeTest, VarBranchingOption) {
   EXPECT_EQ(IntVarBranch::SEL_SIZE_MIN, solver_.var_branching());
   unsigned count = 0;
   for (const OptionValue<IntVarBranch::Select>
@@ -214,7 +214,7 @@ TEST_F(GecodeSolverTest, VarBranchingOption) {
   EXPECT_EQ(24u, count);
 }
 
-TEST_F(GecodeSolverTest, DecayOption) {
+TEST_F(GecodeTest, DecayOption) {
   EXPECT_EQ(1, solver_.decay());
   solver_.SetDblOption("decay", 0.000001);
   EXPECT_EQ(0.000001, solver_.GetDblOption("decay"));
@@ -237,7 +237,7 @@ const OptionValue<Gecode::RestartMode> RESTARTS[] = {
     {0,           Gecode::RM_NONE}
 };
 
-TEST_F(GecodeSolverTest, RestartOption) {
+TEST_F(GecodeTest, RestartOption) {
   EXPECT_EQ(Gecode::RM_NONE, solver_.restart());
   unsigned count = 0;
   for (const OptionValue<Gecode::RestartMode>
@@ -249,7 +249,7 @@ TEST_F(GecodeSolverTest, RestartOption) {
   EXPECT_EQ(5u, count);
 }
 
-TEST_F(GecodeSolverTest, RestartBaseOption) {
+TEST_F(GecodeTest, RestartBaseOption) {
   EXPECT_EQ(1.5, solver_.restart_base());
   solver_.SetDblOption("restart_base", 0.000001);
   EXPECT_EQ(0.000001, solver_.GetDblOption("restart_base"));
@@ -263,7 +263,7 @@ TEST_F(GecodeSolverTest, RestartBaseOption) {
   solver_.SetDblOption("restart_base", 100);
 }
 
-TEST_F(GecodeSolverTest, RestartScaleOption) {
+TEST_F(GecodeTest, RestartScaleOption) {
   EXPECT_EQ(250u, solver_.restart_scale());
   solver_.SetIntOption("restart_scale", 42);
   EXPECT_EQ(42u, solver_.restart_scale());
@@ -271,7 +271,7 @@ TEST_F(GecodeSolverTest, RestartScaleOption) {
   EXPECT_THROW(solver_.SetIntOption("restart_scale", -1), InvalidOptionValue);
 }
 
-TEST_F(GecodeSolverTest, OutLevOption) {
+TEST_F(GecodeTest, OutLevOption) {
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
     Problem p;
@@ -300,7 +300,7 @@ TEST_F(GecodeSolverTest, OutLevOption) {
   EXPECT_THROW(solver_.SetIntOption("outlev", 2), InvalidOptionValue);
 }
 
-TEST_F(GecodeSolverTest, OutFreqOption) {
+TEST_F(GecodeTest, OutFreqOption) {
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
     Problem p;

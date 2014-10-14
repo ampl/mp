@@ -1,5 +1,5 @@
 /*
- Solver test suite.
+ Solver implementation test
 
  Copyright (C) 2012 AMPL Optimization Inc
 
@@ -70,7 +70,7 @@ inline std::ostream &operator<<(std::ostream &os, const SolverTestParam &) {
 }
 
 // Abstract solver test.
-class SolverTest
+class SolverImplTest
     : public ::testing::TestWithParam<SolverTestParam>,
       public mp::internal::ASLBuilder {
  protected:
@@ -80,7 +80,7 @@ class SolverTest
   mp::Variable y;
   mp::Variable z;
 
-  FMT_DISALLOW_COPY_AND_ASSIGN(SolverTest);
+  FMT_DISALLOW_COPY_AND_ASSIGN(SolverImplTest);
 
   mp::NumericConstant MakeConst(double value) {
     return MakeNumericConstant(value);
@@ -154,7 +154,7 @@ class SolverTest
   }
 
  public:
-  SolverTest();
+  SolverImplTest();
 
   static SolveResult Solve(mp::ASLSolver &s,
       mp::Problem &p, const char *stub, const char *opt = 0);

@@ -1,4 +1,4 @@
-add_mp_library(solver-impl-test STATIC solver-test.cc LIBRARIES asl)
+add_mp_library(solver-impl-test STATIC solver-impl-test.cc LIBRARIES asl)
 target_compile_definitions(solver-impl-test
   PUBLIC MP_TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test/data")
 target_link_libraries(solver-impl-test gtest-extra)

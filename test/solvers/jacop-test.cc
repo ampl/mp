@@ -28,7 +28,7 @@
 
 #include "jacop/jacop.h"
 
-#include "solver-test.h"
+#include "solver-impl-test.h"
 #include "../util.h"
 
 using std::string;
@@ -42,30 +42,30 @@ namespace {
 
 SolverPtr CreateSolver() { return SolverPtr(new mp::JaCoPSolver()); }
 
-INSTANTIATE_TEST_CASE_P(JaCoP, SolverTest,
+INSTANTIATE_TEST_CASE_P(JaCoP, SolverImplTest,
     ::testing::Values(SolverTestParam(CreateSolver, feature::POW)));
 
-TEST_P(SolverTest, SolveFlowshp0) {
+TEST_P(SolverImplTest, SolveFlowshp0) {
   EXPECT_EQ(22, Solve("flowshp0").obj);
 }
 
-TEST_P(SolverTest, SolveFlowshp2) {
+TEST_P(SolverImplTest, SolveFlowshp2) {
   EXPECT_EQ(22, Solve("flowshp2").obj);
 }
 
-class JaCoPSolverTest : public ::testing::Test {
+class JaCoPTest : public ::testing::Test {
  protected:
   mp::JaCoPSolver solver_;
 
   SolveResult Solve(Problem &p, const char *stub, const char *opt = 0) {
-    return SolverTest::Solve(solver_, p, stub, opt);
+    return SolverImplTest::Solve(solver_, p, stub, opt);
   }
 };
 
 // ----------------------------------------------------------------------------
 // Option tests
 
-TEST_F(JaCoPSolverTest, BacktrackLimitOption) {
+TEST_F(JaCoPTest, BacktrackLimitOption) {
   Problem p;
   Solve(p, "miplib/assign1", "backtracklimit=42");
   EXPECT_EQ(400, p.solve_code());
@@ -73,7 +73,7 @@ TEST_F(JaCoPSolverTest, BacktrackLimitOption) {
   EXPECT_THROW(solver_.SetIntOption("backtracklimit", -1), InvalidOptionValue);
 }
 
-TEST_F(JaCoPSolverTest, DecisionLimitOption) {
+TEST_F(JaCoPTest, DecisionLimitOption) {
   Problem p;
   Solve(p, "miplib/assign1", "decisionlimit=42");
   EXPECT_EQ(400, p.solve_code());
@@ -81,7 +81,7 @@ TEST_F(JaCoPSolverTest, DecisionLimitOption) {
   EXPECT_THROW(solver_.SetIntOption("decisionlimit", -1), InvalidOptionValue);
 }
 
-TEST_F(JaCoPSolverTest, FailLimitOption) {
+TEST_F(JaCoPTest, FailLimitOption) {
   Problem p;
   string message = Solve(p, "miplib/assign1", "faillimit=42").message;
   EXPECT_EQ(400, p.solve_code());
@@ -90,7 +90,7 @@ TEST_F(JaCoPSolverTest, FailLimitOption) {
   EXPECT_THROW(solver_.SetIntOption("faillimit", -1), InvalidOptionValue);
 }
 
-TEST_F(JaCoPSolverTest, NodeLimitOption) {
+TEST_F(JaCoPTest, NodeLimitOption) {
   Problem p;
   string message = Solve(p, "miplib/assign1", "nodelimit=42").message;
   EXPECT_EQ(400, p.solve_code());
@@ -99,7 +99,7 @@ TEST_F(JaCoPSolverTest, NodeLimitOption) {
   EXPECT_THROW(solver_.SetIntOption("nodelimit", -1), InvalidOptionValue);
 }
 
-TEST_F(JaCoPSolverTest, TimeLimitOption) {
+TEST_F(JaCoPTest, TimeLimitOption) {
   Problem p;
   Solve(p, "miplib/assign1", "timelimit=1");
   EXPECT_EQ(400, p.solve_code());
@@ -117,7 +117,7 @@ const char *const VAL_SELECT[] = {
   0
 };
 
-TEST_F(JaCoPSolverTest, ValSelectOption) {
+TEST_F(JaCoPTest, ValSelectOption) {
   EXPECT_EQ("indomainmin", solver_.GetStrOption("val_select"));
   unsigned count = 0;
   for (const char *const *s = VAL_SELECT; *s; ++s, ++count) {
@@ -144,7 +144,7 @@ const char *const VAR_SELECT[] = {
   0
 };
 
-TEST_F(JaCoPSolverTest, VarSelectOption) {
+TEST_F(JaCoPTest, VarSelectOption) {
   EXPECT_EQ("smallestdomain", solver_.GetStrOption("var_select"));
   unsigned count = 0;
   for (const char *const *s = VAR_SELECT; *s; ++s, ++count) {
@@ -161,7 +161,7 @@ struct TestOutputHandler : public mp::OutputHandler {
   void HandleOutput(fmt::StringRef output) { this->output += output; }
 };
 
-TEST_F(JaCoPSolverTest, OutLevOption) {
+TEST_F(JaCoPTest, OutLevOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
   Problem p;
@@ -185,7 +185,7 @@ TEST_F(JaCoPSolverTest, OutLevOption) {
   EXPECT_THROW(solver_.SetIntOption("outlev", 2), InvalidOptionValue);
 }
 
-TEST_F(JaCoPSolverTest, OutFreqOption) {
+TEST_F(JaCoPTest, OutFreqOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
   Problem p;

@@ -49,7 +49,7 @@ extern "C" {
 #include "nlp.h"
 }
 
-#include "solver-test.h"
+#include "solver-impl-test.h"
 #include "../gtest-extra.h"
 
 using mp::Expr;
@@ -68,21 +68,21 @@ namespace {
 
 SolverPtr CreateSolver() { return SolverPtr(new IlogCPSolver()); }
 
-INSTANTIATE_TEST_CASE_P(IlogCP, SolverTest,
+INSTANTIATE_TEST_CASE_P(IlogCP, SolverImplTest,
     ::testing::Values(SolverTestParam(CreateSolver, feature::ALL)));
 
-TEST_P(SolverTest, SolveBalassign0) {
+TEST_P(SolverImplTest, SolveBalassign0) {
   EXPECT_EQ(14, Solve("balassign0").obj);
 }
 
-TEST_P(SolverTest, SolveBalassign1) {
+TEST_P(SolverImplTest, SolveBalassign1) {
   EXPECT_EQ(14, Solve("balassign1").obj);
 }
 
 // ----------------------------------------------------------------------------
 // element constraint tests
 
-class FunctionTest : public SolverTest {
+class FunctionTest : public SolverImplTest {
  protected:
   mp::Function element_;
   mp::Function in_relation_;
@@ -259,7 +259,7 @@ class IlogCPTest : public ::testing::Test, public mp::internal::ASLBuilder {
   }
 
   SolveResult Solve(Problem &p, const char *stub, const char *opt = 0) {
-    return SolverTest::Solve(s, p, stub, opt);
+    return SolverImplTest::Solve(s, p, stub, opt);
   }
 
   template <typename T>
@@ -467,7 +467,7 @@ TEST_F(IlogCPTest, OptimizerOption) {
 }
 
 // TODO: move to solver-test
-TEST_P(SolverTest, ObjnoOption) {
+TEST_P(SolverImplTest, ObjnoOption) {
   EXPECT_EQ(1, solver_->GetIntOption("objno"));
   Problem p;
   p.AddVar(11, 22, var::INTEGER);
@@ -615,7 +615,7 @@ TEST_F(IlogCPTest, CPOptions) {
     CheckIntCPOption("workers", IloCP::Workers, 1, 4, 0, false);
 }
 
-TEST_P(SolverTest, MultiObjOption) {
+TEST_P(SolverImplTest, MultiObjOption) {
   Problem p;
   p.AddVar(0, 10, var::INTEGER);
   p.AddObj(obj::MIN, MakeBinary(mp::expr::MOD, MakeVariable(0), MakeConst(3)));
