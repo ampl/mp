@@ -187,6 +187,7 @@ inline const OpCodeInfo &GetOpCodeInfo(int opcode) {
 }
 
 int opcode(expr::Kind kind);
+const char *str(expr::Kind kind);
 }  // namespace expr
 
 class Expr;
@@ -199,6 +200,7 @@ class ExprInfo {
 
   friend class mp::Expr;
   friend int expr::opcode(expr::Kind kind);
+  friend const char *expr::str(expr::Kind kind);
 
  public:
   int opcode;
@@ -210,6 +212,11 @@ class ExprInfo {
 inline int expr::opcode(expr::Kind kind) {
   assert(kind >= expr::UNKNOWN && kind <= expr::LAST_EXPR);
   return internal::ExprInfo::INFO[kind].opcode;
+}
+
+inline const char *expr::str(expr::Kind kind) {
+  assert(kind >= expr::UNKNOWN && kind <= expr::LAST_EXPR);
+  return internal::ExprInfo::INFO[kind].str;
 }
 
 namespace func {

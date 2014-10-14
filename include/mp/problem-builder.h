@@ -203,13 +203,13 @@ class ProblemBuilder {
 
   NumericExpr MakeUnary(expr::Kind kind, NumericExpr arg) {
     MP_UNUSED2(kind, arg);
-    MP_DISPATCH(ReportUnhandledConstruct("unary expression"));
+    MP_DISPATCH(ReportUnhandledConstruct(str(kind)));
     return NumericExpr();
   }
 
   NumericExpr MakeBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
     MP_UNUSED3(kind, lhs, rhs);
-    MP_DISPATCH(ReportUnhandledConstruct("binary expression"));
+    MP_DISPATCH(ReportUnhandledConstruct(str(kind)));
     return NumericExpr();
   }
 
@@ -249,7 +249,7 @@ class ProblemBuilder {
 
   NumericArgHandler BeginVarArg(expr::Kind kind, int num_args) {
     MP_UNUSED2(kind, num_args);
-    MP_DISPATCH(ReportUnhandledConstruct("vararg expression"));
+    MP_DISPATCH(ReportUnhandledConstruct(str(kind)));
     return NumericArgHandler();
   }
   NumericExpr EndVarArg(NumericArgHandler handler) {
@@ -306,21 +306,21 @@ class ProblemBuilder {
   LogicalExpr MakeBinaryLogical(
       expr::Kind kind, LogicalExpr lhs, LogicalExpr rhs) {
     MP_UNUSED3(kind, lhs, rhs);
-    MP_DISPATCH(ReportUnhandledConstruct("binary logical expression"));
+    MP_DISPATCH(ReportUnhandledConstruct(str(kind)));
     return LogicalExpr();
   }
 
   LogicalExpr MakeRelational(
       expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
     MP_UNUSED3(kind, lhs, rhs);
-    MP_DISPATCH(ReportUnhandledConstruct("relational expression"));
+    MP_DISPATCH(ReportUnhandledConstruct(str(kind)));
     return LogicalExpr();
   }
 
   LogicalExpr MakeLogicalCount(
       expr::Kind kind, NumericExpr lhs, CountExpr rhs) {
     MP_UNUSED3(kind, lhs, rhs);
-    MP_DISPATCH(ReportUnhandledConstruct("logical count expression"));
+    MP_DISPATCH(ReportUnhandledConstruct(str(kind)));
     return LogicalExpr();
   }
 
@@ -333,7 +333,7 @@ class ProblemBuilder {
 
   LogicalArgHandler BeginIteratedLogical(expr::Kind kind, int num_args) {
     MP_UNUSED2(kind, num_args);
-    MP_DISPATCH(ReportUnhandledConstruct("iterated logical expression"));
+    MP_DISPATCH(ReportUnhandledConstruct(str(kind)));
     return LogicalArgHandler();
   }
   LogicalExpr EndIteratedLogical(LogicalArgHandler handler) {

@@ -183,7 +183,6 @@ ls::LSExpression LSProblemBuilder::MakeUnary(
     // LocalSolver doesn't support these expressions.
     // Fall through.
   default:
-    // TODO: report type of expression
     return Base::MakeUnary(kind, arg);
   }
   return model_.createExpression(op, arg);
@@ -228,7 +227,6 @@ ls::LSExpression LSProblemBuilder::MakeBinary(
     // LocalSolver doesn't support these functions.
     // Fall through.
   default:
-    // TODO: report type of expression
     return Base::MakeBinary(kind, lhs, rhs);
   }
   return MakeBinary(op, lhs, rhs);
