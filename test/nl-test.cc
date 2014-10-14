@@ -629,6 +629,8 @@ class TestNLHandler {
   ArgHandler BeginCount(int) { return ArgHandler("count"); }
   std::string EndCount(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
 
+  typedef ArgHandler NumberOfArgHandler;
+
   ArgHandler BeginNumberOf(int, std::string value) {
     return ArgHandler("numberof " + value + " in ");
   }
@@ -821,10 +823,14 @@ struct TestNLHandler2 {
   LogicalArgHandler BeginCount(int) { return LogicalArgHandler(); }
   TestCountExpr EndCount(LogicalArgHandler) { return TestCountExpr(); }
 
-  NumericArgHandler BeginNumberOf(int, TestNumericExpr) {
-    return NumericArgHandler();
+  struct NumberOfArgHandler {
+    void AddArg(NumericExpr) {}
+  };
+
+  NumberOfArgHandler BeginNumberOf(int, TestNumericExpr) {
+    return NumberOfArgHandler();
   }
-  TestNumericExpr EndNumberOf(NumericArgHandler) { return TestNumericExpr(); }
+  TestNumericExpr EndNumberOf(NumberOfArgHandler) { return TestNumericExpr(); }
 
   TestLogicalExpr OnLogicalConstant(bool) { return TestLogicalExpr(); }
   TestLogicalExpr OnNot(TestLogicalExpr) { return TestLogicalExpr(); }
@@ -1303,8 +1309,8 @@ TEST(NLTest, ProblemBuilderToNLAdapter) {
                      TestCountExpr(ID2));
 
   EXPECT_FORWARD_RET(BeginNumberOf, BeginNumberOf, (11, TestNumericExpr(ID)),
-                     TestNumericArgHandler(ID2));
-  EXPECT_FORWARD_RET(EndNumberOf, EndNumberOf, (TestNumericArgHandler(ID)),
+                     TestNumberOfArgHandler(ID2));
+  EXPECT_FORWARD_RET(EndNumberOf, EndNumberOf, (TestNumberOfArgHandler(ID)),
                      TestNumericExpr(ID2));
 
   EXPECT_FORWARD_RET(OnLogicalConstant, MakeLogicalConstant, (true),

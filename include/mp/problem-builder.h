@@ -180,6 +180,7 @@ class ProblemBuilder {
   typedef ArgHandler NumericArgHandler;
   typedef ArgHandler LogicalArgHandler;
   typedef ArgHandler CallArgHandler;
+  typedef ArgHandler NumberOfArgHandler;
 
   NumericExpr MakeNumericConstant(double value) {
     MP_UNUSED(value);
@@ -279,12 +280,12 @@ class ProblemBuilder {
     return NumericExpr();
   }
 
-  NumericArgHandler BeginNumberOf(int num_args, NumericExpr value) {
+  NumberOfArgHandler BeginNumberOf(int num_args, NumericExpr value) {
     MP_UNUSED2(num_args, value);
     MP_DISPATCH(ReportUnhandledConstruct("numberof expression"));
-    return NumericArgHandler();
+    return NumberOfArgHandler();
   }
-  NumericExpr EndNumberOf(NumericArgHandler handler) {
+  NumericExpr EndNumberOf(NumberOfArgHandler handler) {
     MP_UNUSED(handler);
     MP_DISPATCH(ReportUnhandledConstruct("numberof expression"));
     return NumericExpr();

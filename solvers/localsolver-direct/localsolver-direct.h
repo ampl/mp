@@ -257,14 +257,29 @@ class LSProblemBuilder :
   ArgHandler BeginCount(int num_args) { return BeginSum(num_args); }
   NumericExpr EndCount(ArgHandler handler) { return EndSum(handler); }
 
-  ArgHandler BeginNumberOf(int num_args, NumericExpr value) {
-    // TODO
-    Base::BeginNumberOf(num_args, value);
-    return ArgHandler(ls::LSExpression());
+  class NumberOfArgHandler {
+   private:
+    ls::LSModel model_;
+    ls::LSExpression numberof_;
+    ls::LSExpression value_;
+
+   public:
+    NumberOfArgHandler(ls::LSModel model, ls::LSExpression value)
+      : model_(model), numberof_(model.createExpression(ls::O_Sum)),
+        value_(value) {}
+
+    ls::LSExpression numberof() const { return numberof_; }
+
+    void AddArg(ls::LSExpression arg) {
+      numberof_.addOperand(model_.createExpression(ls::O_Eq, arg, value_));
+    }
+  };
+
+  NumberOfArgHandler BeginNumberOf(int, ls::LSExpression value) {
+    return NumberOfArgHandler(model_, value);
   }
-  ls::LSExpression EndNumberOf(ArgHandler) {
-    // TODO
-    return ls::LSExpression();
+  ls::LSExpression EndNumberOf(NumberOfArgHandler handler) {
+    return handler.numberof();
   }
 
   ls::LSExpression MakeLogicalConstant(bool value) {

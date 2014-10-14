@@ -79,8 +79,9 @@ struct TestArgHandler {
 };
 
 typedef TestArgHandler<0> TestNumericArgHandler;
-typedef TestArgHandler<1, TestLogicalExpr> TestLogicalArgHandler;
-typedef TestArgHandler<2> TestAllDiffArgHandler;
+typedef TestArgHandler<1> TestNumberOfArgHandler;
+typedef TestArgHandler<2, TestLogicalExpr> TestLogicalArgHandler;
+typedef TestArgHandler<3> TestAllDiffArgHandler;
 
 struct TestCallArgHandler {
   void AddArg(TestNumericExpr) {}
@@ -192,9 +193,11 @@ class MockProblemBuilder {
   MOCK_METHOD1(BeginCount, LogicalArgHandler (int num_args));
   MOCK_METHOD1(EndCount, CountExpr (LogicalArgHandler handler));
 
+  typedef TestNumberOfArgHandler NumberOfArgHandler;
+
   MOCK_METHOD2(BeginNumberOf,
-               NumericArgHandler (int num_args, NumericExpr value));
-  MOCK_METHOD1(EndNumberOf, NumericExpr (NumericArgHandler handler));
+               NumberOfArgHandler (int num_args, NumericExpr value));
+  MOCK_METHOD1(EndNumberOf, NumericExpr (NumberOfArgHandler handler));
 
   MOCK_METHOD1(MakeLogicalConstant, LogicalExpr (bool value));
   MOCK_METHOD1(MakeNot, LogicalExpr (LogicalExpr arg));

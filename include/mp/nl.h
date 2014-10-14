@@ -276,6 +276,7 @@ class NLHandler {
   typedef ArgHandler NumericArgHandler;
   typedef ArgHandler LogicalArgHandler;
   typedef ArgHandler CallArgHandler;
+  typedef ArgHandler NumberOfArgHandler;
 
   // Receives notification of a numeric constant in a nonlinear expression.
   NumericExpr OnNumericConstant(double value) {
@@ -375,12 +376,12 @@ class NLHandler {
   }
 
   // Receives notification of the beginning of a numberof expression.
-  NumericArgHandler BeginNumberOf(int num_args, NumericExpr value) {
+  NumberOfArgHandler BeginNumberOf(int num_args, NumericExpr value) {
     MP_UNUSED2(num_args, value);
     return NumericArgHandler();
   }
   // Receives notification of the end of a numberof expression.
-  NumericExpr EndNumberOf(NumericArgHandler handler) {
+  NumericExpr EndNumberOf(NumberOfArgHandler handler) {
     MP_UNUSED(handler);
     return NumericExpr();
   }
@@ -569,6 +570,7 @@ class ProblemBuilderToNLAdapter {
   typedef typename ProblemBuilder::NumericArgHandler NumericArgHandler;
   typedef typename ProblemBuilder::LogicalArgHandler LogicalArgHandler;
   typedef typename ProblemBuilder::CallArgHandler CallArgHandler;
+  typedef typename ProblemBuilder::NumberOfArgHandler NumberOfArgHandler;
 
   // Receives notification of a numeric constant in a nonlinear expression.
   NumericExpr OnNumericConstant(double value) {
@@ -649,11 +651,11 @@ class ProblemBuilderToNLAdapter {
   }
 
   // Receives notification of the beginning of a numberof expression.
-  NumericArgHandler BeginNumberOf(int num_args, NumericExpr value) {
+  NumberOfArgHandler BeginNumberOf(int num_args, NumericExpr value) {
     return builder_.BeginNumberOf(num_args, value);
   }
   // Receives notification of the end of a numberof expression.
-  NumericExpr EndNumberOf(NumericArgHandler handler) {
+  NumericExpr EndNumberOf(NumberOfArgHandler handler) {
     return builder_.EndNumberOf(handler);
   }
 
@@ -1287,7 +1289,7 @@ typename Handler::NumericExpr
   case expr::NUMBEROF: {
     int num_args = ReadNumArgs(1);
     reader_.ReadTillEndOfLine();
-    typename Handler::NumericArgHandler args =
+    typename Handler::NumberOfArgHandler args =
         handler_.BeginNumberOf(num_args, ReadNumericExpr());
     DoReadArgs<NumericExprReader>(num_args - 1, args);
     return handler_.EndNumberOf(args);
