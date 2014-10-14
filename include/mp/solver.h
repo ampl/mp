@@ -923,13 +923,16 @@ class SolutionWriter : private Writer, public SolutionHandler {
   typedef typename Solver::ProblemBuilder ProblemBuilder;
   ProblemBuilder &builder_;
 
+  ArrayRef<int> options_;
+
   // The number of feasible solutions found.
   int num_solutions_;
 
  public:
-  SolutionWriter(fmt::StringRef stub, Solver &s, ProblemBuilder &b)
+  SolutionWriter(fmt::StringRef stub, Solver &s, ProblemBuilder &b,
+                 ArrayRef<int> options = mp::ArrayRef<int>(0, 0))
     : filename_(stub.c_str() + std::string(".sol")), solver_(s), builder_(b),
-      num_solutions_(0) {}
+      options_(options), num_solutions_(0) {}
 
   // Returns the .sol writer.
   Writer &sol_writer() { return *this; }
@@ -975,7 +978,7 @@ void SolutionWriter<Solver, Writer>::HandleSolution(
   //option_info.wantsol = solver_.wantsol();
   //const fint *options = problem_.asl_->i.ampl_options_;
   SolutionAdapter<ProblemBuilder> sol(
-        &builder_, message.c_str(), ArrayRef<int>(0, 0),
+        &builder_, message.c_str(), options_,
         MakeArrayRef(values, values ? builder_.num_vars() : 0),
         MakeArrayRef(dual_values, dual_values ? builder_.num_cons() : 0));
   this->Write(filename_, sol);
@@ -1075,8 +1078,21 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   typedef typename Solver::ProblemBuilder ProblemBuilder;
   // TODO: use name provider instead of passing filename to builder
   ProblemBuilder builder(solver_.GetProblemBuilder(filename_no_ext));
-  ProblemBuilderToNLAdapter<ProblemBuilder> adapter(builder);
-  this->Read(nl_filename, adapter);
+  typedef ProblemBuilderToNLAdapter<ProblemBuilder> Adapter;
+  struct NLHandler : Adapter {
+    int num_options;
+    int options[MAX_NL_OPTIONS];
+
+    explicit NLHandler(ProblemBuilder &pb) : Adapter(pb), num_options(0) {}
+
+    void OnHeader(const NLHeader &h) {
+      num_options = h.num_options;
+      std::copy(h.options, h.options + num_options, options);
+      Adapter::OnHeader(h);
+    }
+  };
+  NLHandler handler(builder);
+  this->Read(nl_filename, handler);
   builder.EndBuild();
   double read_time = GetTimeAndReset(start);
 
@@ -1090,8 +1106,9 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   // Solve the problem writing solution(s) if necessary.
   std::auto_ptr<SolutionHandler> sol_handler;
   if (solver_.wantsol() != 0) {
-    sol_handler.reset(
-          new SolutionWriter<Solver>(filename_no_ext, solver_, builder));
+    ArrayRef<int> options(handler.options, handler.num_options);
+    sol_handler.reset(new SolutionWriter<Solver>(filename_no_ext, solver_,
+                                                 builder, options));
   } else {
     sol_handler.reset(new NullSolutionHandler());
   }

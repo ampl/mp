@@ -91,13 +91,13 @@ void WriteSolFile(fmt::StringRef filename, const Solution &sol) {
   fmt::BufferedFile file(filename, "w");
   internal::WriteMessage(file, sol.message());
   // Write options.
+  file.print("Options\n");
   if (int num_options = sol.num_options()) {
     file.print("{}\n", num_options);
     for (int i = 0; i < num_options; ++i)
       file.print("{}\n", sol.option(i));
   }
   // TODO: check precision
-  file.print("Options\n3\n0\n0\n0\n");
   int num_values = sol.num_values(), num_dual_values = sol.num_dual_values();
   file.print("{0}\n{0}\n{1}\n{1}\n", num_dual_values, num_values);
   for (int i = 0; i < num_values; ++i)
