@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "localsolver-direct/localsolver-direct.h"
+#include "localsolver/localsolver.h"
 
 #include <cmath>
 #include "mp/clock.h"

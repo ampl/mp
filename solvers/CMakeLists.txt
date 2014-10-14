@@ -146,8 +146,9 @@ endif ()
 
 add_subdirectory(jacop)
 
-add_ampl_solver(localsolver-asl MODULE LocalSolver LIBRARIES localsolver-library)
-add_ampl_solver(localsolver-direct MODULE LocalSolver LIBRARIES localsolver-library)
+add_ampl_solver(localsolver)
+add_ampl_solver(localsolver-asl
+  MODULE LocalSolver LIBRARIES localsolver-library)
 add_subdirectory(path)
 
 add_ampl_solver(smpswriter)

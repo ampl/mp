@@ -20,9 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "localsolver-direct/localsolver-direct.h"
-#include "mp/nl.h"
-#include "mp/option.h"
+#include "localsolver/localsolver.h"
 
 int main(int, char **argv) {
   try {
