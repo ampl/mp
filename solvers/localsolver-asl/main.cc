@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "localsolver/localsolver.h"
+#include "localsolver-asl/localsolver-asl.h"
 
 int main(int, char **argv) {
   try {
