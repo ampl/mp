@@ -411,7 +411,7 @@ struct TestSolutionHandler : mp::BasicSolutionHandler {
   int num_solutions;
   TestSolutionHandler() : num_solutions(0) {}
   virtual ~TestSolutionHandler() {}
-  void HandleSolution(fmt::StringRef,
+  void HandleSolution(int, fmt::StringRef,
         const double *values, const double *, double) {
     ++num_solutions;
     for (int i = 0; i < 3; ++i) {
