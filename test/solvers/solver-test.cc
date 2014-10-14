@@ -40,13 +40,14 @@ SolverTest::EvalResult SolverTest::Solve(Problem &p) {
   struct TestSolutionHandler : mp::BasicSolutionHandler {
     EvalResult result;
     virtual ~TestSolutionHandler() {}
-    void HandleSolution(fmt::StringRef,
+    void HandleSolution(int status, fmt::StringRef,
           const double *values, const double *, double obj_value) {
       result = values ? EvalResult(values[0], obj_value) : EvalResult();
+      result.set_solve_code(status);
     }
   };
   TestSolutionHandler sh;
-  sh.result.set_solve_code(solver_->Solve(p, sh));
+  solver_->Solve(p, sh);
   return sh.result;
 }
 
@@ -80,14 +81,14 @@ SolveResult SolverTest::Solve(
   TestSolutionHandler sh;
   const std::string DATA_DIR = MP_TEST_DATA_DIR "/";
   p.Read(DATA_DIR + stub);
-  int solve_code = 0;
   char *args[] = {const_cast<char*>(opt), 0};
   if (s.ParseOptions(args, 0, &p))
-    solve_code = s.Solve(p, sh);
+    s.Solve(p, sh);
   const string &message = sh.message();
-  EXPECT_GE(solve_code, 0);
+  int solve_result = sh.status();
+  EXPECT_GE(solve_result, 0);
   bool solved = true;
-  if (solve_code < 100) {
+  if (solve_result < 100) {
     EXPECT_TRUE(message.find("optimal solution") != string::npos ||
         (p.num_objs() == 0 &&
             message.find("feasible solution") != string::npos));

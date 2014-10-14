@@ -133,7 +133,7 @@ class SMPSWriter : public ASLSolver {
       int num_core_cons, const std::vector<double> &core_obj_coefs);
 
  protected:
-  int DoSolve(Problem &p, SolutionHandler &sh);
+  void DoSolve(Problem &p, SolutionHandler &sh);
 
  public:
   SMPSWriter();

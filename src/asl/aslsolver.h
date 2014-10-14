@@ -33,7 +33,7 @@ class ASLSolver : public SolverImpl<internal::ASLBuilder> {
   void RegisterSuffixes(ASL *asl);
 
  protected:
-  virtual int DoSolve(Problem &p, SolutionHandler &sh) = 0;
+  virtual void DoSolve(Problem &p, SolutionHandler &sh) = 0;
 
  public:
   ASLSolver(fmt::StringRef name, fmt::StringRef long_name = 0,
@@ -42,11 +42,11 @@ class ASLSolver : public SolverImpl<internal::ASLBuilder> {
   Problem::Proxy GetProblemBuilder(fmt::StringRef stub);
 
   // Solves a problem and report solutions via the solution handler.
-  int Solve(Problem &problem, SolutionHandler &sh);
+  void Solve(Problem &problem, SolutionHandler &sh);
 
-  int Solve(internal::ASLBuilder &builder, SolutionHandler &sh) {
+  void Solve(internal::ASLBuilder &builder, SolutionHandler &sh) {
     Problem problem(builder.GetProblem());
-    return Solve(problem, sh);
+    Solve(problem, sh);
   }
 };
 }

@@ -376,7 +376,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   solver_.solve();
 
   // Convert solution status.
-  int solve_code = 0; // TODO: return solve_code
+  int solve_code = sol::UNKNOWN;
   ls::LSSolution sol = solver_.getSolution();
   const char *status = "unknown";
   switch (sol.getStatus()) {
@@ -403,8 +403,6 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
     status = "unknown solution status";
     break;
   }
-  // TODO
-  //p.set_solve_code(solve_code);
 
   int num_vars = builder.num_vars();
   const ls::LSExpression *vars = builder.vars();
@@ -424,7 +422,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
     obj_val = GetValue(solver_.getModel().getObjective(0));
     w.write("objective {}", FormatObjValue(obj_val));
   }
-  sh.HandleSolution(w.c_str(),
+  sh.HandleSolution(solve_code, w.c_str(),
                     solution.empty() ? 0 : solution.data(), 0, obj_val);
   double output_time = GetTimeAndReset(time);
 

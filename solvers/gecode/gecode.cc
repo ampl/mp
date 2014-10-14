@@ -744,7 +744,7 @@ GecodeSolver::ProblemPtr GecodeSolver::Search(
   return final_problem;
 }
 
-int GecodeSolver::DoSolve(Problem &p, SolutionHandler &sh) {
+void GecodeSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
   SetStatus(-1, "");
@@ -828,7 +828,7 @@ int GecodeSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   w.write("{} nodes, {} fails", stats.node, stats.fail);
   if (has_obj && solution.get())
     w.write(", objective {}", FormatObjValue(obj_val));
-  sh.HandleSolution(w.c_str(),
+  sh.HandleSolution(solve_code_, w.c_str(),
       final_solution.empty() ? 0 : final_solution.data(), 0, obj_val);
 
   double output_time = GetTimeAndReset(time);
@@ -839,7 +839,6 @@ int GecodeSolver::DoSolve(Problem &p, SolutionHandler &sh) {
           "Output time = {:.6f}s\n",
           setup_time, solution_time, output_time);
   }
-  return solve_code_;
 }
 
 SolverPtr CreateSolver(const char *) { return SolverPtr(new GecodeSolver()); }

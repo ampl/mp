@@ -592,7 +592,7 @@ void IlogCPSolver::SetCPLEXIntOption(
     throw InvalidOptionValue(opt, value);
 }
 
-int IlogCPSolver::SolveWithCP(
+void IlogCPSolver::SolveWithCP(
     Problem &p, const NLToConcertConverter &converter,
     Stats &stats, SolutionHandler &sh) {
   IloNumVarArray vars = converter.vars();
@@ -691,12 +691,11 @@ int IlogCPSolver::SolveWithCP(
   } else {
     solution.clear();
   }
-  sh.HandleSolution(writer.c_str(),
+  sh.HandleSolution(solve_code, writer.c_str(),
       solution.empty() ? 0 : &solution[0], 0, obj_value);
-  return solve_code;
 }
 
-int IlogCPSolver::SolveWithCPLEX(
+void IlogCPSolver::SolveWithCPLEX(
     Problem &p, const NLToConcertConverter &converter,
     Stats &stats, SolutionHandler &sh) {
   IloCplex::Aborter aborter(env_);
@@ -747,13 +746,12 @@ int IlogCPSolver::SolveWithCPLEX(
       writer.write(", objective {}", FormatObjValue(obj_value));
     }
   }
-  sh.HandleSolution(writer.c_str(),
+  sh.HandleSolution(solve_code, writer.c_str(),
       solution.empty() ? 0 : solution.data(),
       dual_solution.empty() ? 0 : dual_solution.data(), obj_value);
-  return solve_code;
 }
 
-int IlogCPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
+void IlogCPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   Stats stats = Stats();
   stats.time = steady_clock::now();
 
@@ -793,9 +791,10 @@ int IlogCPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
         fmt::format("{}", extractables[0]));
   }
 
-  int solve_code = optimizer == CP ?
-        SolveWithCP(p, converter, stats, sh) :
-        SolveWithCPLEX(p, converter, stats, sh);
+  if (optimizer == CP)
+    SolveWithCP(p, converter, stats, sh);
+  else
+    SolveWithCPLEX(p, converter, stats, sh);
   double output_time = GetTimeAndReset(stats.time);
 
   if (timing()) {
@@ -804,7 +803,6 @@ int IlogCPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
           "Output time = {:.6f}s\n",
           stats.setup_time, stats.solution_time, output_time);
   }
-  return solve_code;
 }
 
 SolverPtr CreateSolver(const char *) { return SolverPtr(new IlogCPSolver()); }

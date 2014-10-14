@@ -152,7 +152,7 @@ class SolutionHandler {
 
   // Receives the final solution or a notification that the problem is
   // infeasible or unbounded.
-  virtual void HandleSolution(fmt::StringRef message,
+  virtual void HandleSolution(int status, fmt::StringRef message,
       const double *values, const double *dual_values, double obj_value) = 0;
 };
 
@@ -160,7 +160,7 @@ class BasicSolutionHandler : public SolutionHandler {
  public:
   virtual void HandleFeasibleSolution(fmt::StringRef,
       const double *, const double *, double) {}
-  virtual void HandleSolution(fmt::StringRef,
+  virtual void HandleSolution(int, fmt::StringRef,
       const double *, const double *, double) {}
 };
 
@@ -864,6 +864,7 @@ class SolverImpl : public Solver {
 template <typename ProblemBuilder>
 class SolutionAdapter {
  private:
+  int status_;
   ProblemBuilder *builder_;
   const char *message_;
   mp::ArrayRef<int> options_;
@@ -871,11 +872,13 @@ class SolutionAdapter {
   mp::ArrayRef<double> dual_values_;
 
  public:
-  SolutionAdapter(ProblemBuilder *pb, const char *message,
+  SolutionAdapter(int status, ProblemBuilder *pb, const char *message,
                   mp::ArrayRef<int> options, mp::ArrayRef<double> values,
                   mp::ArrayRef<double> dual_values)
-    : builder_(pb), message_(message), options_(options),
+    : status_(status), builder_(pb), message_(message), options_(options),
       values_(values), dual_values_(dual_values) {}
+
+  int status() const { return status_; }
 
   const char *message() const { return message_; }
 
@@ -898,7 +901,7 @@ class NullSolutionHandler : public SolutionHandler {
   void HandleFeasibleSolution(
         fmt::StringRef, const double *, const double *, double) {}
   void HandleSolution(
-        fmt::StringRef, const double *, const double *, double) {}
+        int, fmt::StringRef, const double *, const double *, double) {}
 };
 
 // The default .sol file writer.
@@ -941,7 +944,7 @@ class SolutionWriter : private Writer, public SolutionHandler {
         const double *values, const double *dual_values, double);
 
   // Writes the solution to a .sol file.
-  void HandleSolution(fmt::StringRef message,
+  void HandleSolution(int status, fmt::StringRef message,
         const double *values, const double *dual_values, double);
 };
 
@@ -954,7 +957,7 @@ void SolutionWriter<Solver, Writer>::HandleFeasibleSolution(
   if (!*solution_stub)
     return;
   SolutionAdapter<ProblemBuilder> sol(
-        0, message.c_str(), ArrayRef<int>(0, 0),
+        sol::UNSOLVED, 0, message.c_str(), ArrayRef<int>(0, 0),
         MakeArrayRef(values, values ? builder_.num_vars() : 0),
         MakeArrayRef(dual_values, dual_values ? builder_.num_cons() : 0));
   fmt::MemoryWriter filename;
@@ -964,7 +967,7 @@ void SolutionWriter<Solver, Writer>::HandleFeasibleSolution(
 
 template <typename Solver, typename Writer>
 void SolutionWriter<Solver, Writer>::HandleSolution(
-    fmt::StringRef message, const double *values,
+    int status, fmt::StringRef message, const double *values,
     const double *dual_values, double) {
   typedef typename ProblemBuilder::SuffixPtr SuffixPtr;
   SuffixData<SuffixPtr> data;
@@ -976,9 +979,8 @@ void SolutionWriter<Solver, Writer>::HandleSolution(
   // TODO: handle options
   //option_info.bsname = const_cast<char*>(solver_.long_name());
   //option_info.wantsol = solver_.wantsol();
-  //const fint *options = problem_.asl_->i.ampl_options_;
   SolutionAdapter<ProblemBuilder> sol(
-        &builder_, message.c_str(), options_,
+        status, &builder_, message.c_str(), options_,
         MakeArrayRef(values, values ? builder_.num_vars() : 0),
         MakeArrayRef(dual_values, dual_values ? builder_.num_cons() : 0));
   this->Write(filename_, sol);

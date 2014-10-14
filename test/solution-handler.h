@@ -7,28 +7,31 @@
 
 class TestSolutionHandler : public mp::BasicSolutionHandler {
  private:
+  int status_;
   std::string message_;
-  double obj_value_;
   const double *primal_;
   const double *dual_;
+  double obj_value_;
 
  public:
   TestSolutionHandler()
-  : obj_value_(std::numeric_limits<double>::quiet_NaN()),
-    primal_(0), dual_(0) {}
+  : status_(mp::sol::UNKNOWN), primal_(0), dual_(0),
+    obj_value_(std::numeric_limits<double>::quiet_NaN()) {}
   virtual ~TestSolutionHandler() {}
 
+  int status() const { return status_; }
   double obj_value() const { return obj_value_; }
   const std::string &message() const { return message_; }
   const double *primal() const { return primal_; }
   const double *dual() const { return dual_; }
 
-  void HandleSolution(fmt::StringRef message,
+  void HandleSolution(int status, fmt::StringRef message,
         const double *primal, const double *dual, double obj_value) {
+    status_ = status;
     message_ = message;
-    obj_value_ = obj_value;
     primal_ = primal;
     dual_ = dual;
+    obj_value_ = obj_value;
   }
 };
 

@@ -509,7 +509,7 @@ JNIEXPORT jboolean JNICALL JaCoPSolver::Stop(JNIEnv *, jobject, jlong data) {
   return JNI_FALSE;
 }
 
-int JaCoPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
+void JaCoPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
   std::vector<const char*> jvm_options(jvm_options_.size() + 2);
@@ -699,7 +699,7 @@ int JaCoPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
       env_.CallIntMethod(search_.get(), get_fails_));
   if (has_obj && found)
     w.write(", objective {}", FormatObjValue(obj_val));
-  sh.HandleSolution(w.c_str(),
+  sh.HandleSolution(solve_code_, w.c_str(),
       final_solution.empty() ? 0 : final_solution.data(), 0, obj_val);
 
   double output_time = GetTimeAndReset(time);
@@ -710,7 +710,6 @@ int JaCoPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
           "Output time = {:.6f}s\n",
           setup_time, solution_time, output_time);
   }
-  return solve_code_;
 }
 
 SolverPtr CreateSolver(const char *) { return SolverPtr(new JaCoPSolver()); }

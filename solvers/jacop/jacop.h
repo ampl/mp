@@ -490,7 +490,7 @@ class JaCoPSolver : public ASLSolver {
   };
 
  protected:
-  int DoSolve(Problem &p, SolutionHandler &sh);
+  void DoSolve(Problem &p, SolutionHandler &sh);
 
   void HandleUnknownOption(const char *name);
 

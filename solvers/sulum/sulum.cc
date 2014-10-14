@@ -152,7 +152,7 @@ SulumSolver::~SulumSolver() {
   SlmFreeEnv(&env_);
 }
 
-int SulumSolver::DoSolve(Problem &p, SolutionHandler &sh) {
+void SulumSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
   if (p.num_nonlinear_objs() != 0 || p.num_nonlinear_cons() != 0)
@@ -279,7 +279,7 @@ int SulumSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   w << status;
   if (p.num_objs() > 0)
     w.write("; objective {}", FormatObjValue(obj_val));
-  sh.HandleSolution(w.c_str(), solution.data(), dual_solution.data(), obj_val);
+  sh.HandleSolution(solve_code, w.c_str(), solution.data(), dual_solution.data(), obj_val);
 
   double output_time = GetTimeAndReset(time);
 
@@ -289,7 +289,6 @@ int SulumSolver::DoSolve(Problem &p, SolutionHandler &sh) {
           "Output time = {:.6f}s\n",
           setup_time, solution_time, output_time);
   }
-  return solve_code;
 }
 
 SolverPtr CreateSolver(const char *) { return SolverPtr(new SulumSolver()); }

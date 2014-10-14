@@ -1013,7 +1013,7 @@ struct SolCountingSolver : mp::Solver {
   void Solve(SolutionHandler &sh) {
     for (int i = 0; i < NUM_SOLUTIONS; ++i)
       sh.HandleFeasibleSolution("", 0, 0, 0);
-    sh.HandleSolution("", 0, 0, 0);
+    sh.HandleSolution(0, "", 0, 0, 0);
   }
 };
 
@@ -1205,7 +1205,7 @@ TEST(SolutionWriterTest, WriteSolution) {
   EXPECT_CALL(problem_builder, num_cons()).WillOnce(Return(2));
   EXPECT_CALL(writer.sol_writer(), Write(StringRefEq("test.sol"),
                                          MatchSolution(values, dual_values)));
-  writer.HandleSolution("test message", values, dual_values, 42);
+  writer.HandleSolution(0, "test message", values, dual_values, 42);
 }
 
 // Matcher that returns true if the argument is a solution that doesn't
@@ -1232,7 +1232,7 @@ TEST(SolutionWriterTest, IgnoreFeasibleSolutions) {
       writer("test", solver, problem_builder);
   writer.HandleFeasibleSolution("", 0, 0, 0);
   EXPECT_CALL(writer.sol_writer(), Write(_, MatchNoNSol()));
-  writer.HandleSolution("", 0, 0, 0);
+  writer.HandleSolution(0, "", 0, 0, 0);
 }
 
 // Test that SolutionWriter::HandleSolution sets the nsol suffix before
@@ -1250,7 +1250,7 @@ TEST(SolutionWriterTest, CountSolutions) {
     writer.HandleFeasibleSolution("", 0, 0, 0);
   problem_builder.suffixes(mp::suf::PROBLEM).Add("nsol");
   EXPECT_CALL(writer.sol_writer(), Write(_, MatchNSol(nsol)));
-  writer.HandleSolution("", 0, 0, 0);
+  writer.HandleSolution(0, "", 0, 0, 0);
 }
 
 // Test that SolutionWriter::HandleSolution sets the nsol suffix before
@@ -1272,7 +1272,7 @@ TEST(SolutionWriterTest, WriteFeasibleSolutions) {
   }
   problem_builder.suffixes(mp::suf::PROBLEM).Add("nsol");
   EXPECT_CALL(sol_writer, Write(_, MatchNSol(nsol)));
-  writer.HandleSolution("", 0, 0, 0);
+  writer.HandleSolution(0, "", 0, 0, 0);
 }
 
 struct MockOptionHandler {

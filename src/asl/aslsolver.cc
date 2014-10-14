@@ -65,9 +65,7 @@ mp::Problem::Proxy mp::ASLSolver::GetProblemBuilder(fmt::StringRef stub) {
   return proxy;
 }
 
-int mp::ASLSolver::Solve(Problem &p, SolutionHandler &sh) {
+void mp::ASLSolver::Solve(Problem &p, SolutionHandler &sh) {
   RegisterSuffixes(p.asl_);
-  int solve_code = DoSolve(p, sh);
-  p.set_solve_code(solve_code);
-  return solve_code;
+  DoSolve(p, sh);
 }

@@ -27,7 +27,7 @@ struct TestSolver : mp::ASLSolver {
   TestSolver() : ASLSolver("testsolver") {
     AddSuffix("answer", 0, mp::suf::VAR | mp::suf::OUTONLY, 0);
   }
-  int DoSolve(mp::Problem &, mp::SolutionHandler &) { return 0; }
+  void DoSolve(mp::Problem &, mp::SolutionHandler &) {}
 };
 
 TEST(ASLSolverTest, RegisterSuffixes) {

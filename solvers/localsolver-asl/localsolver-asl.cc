@@ -166,7 +166,7 @@ ls::LSExpression NLToLocalSolverConverter::VisitAllDiff(AllDiffExpr e) {
   return result;
 }
 
-int LocalSolver::DoSolve(Problem &p, SolutionHandler &sh) {
+void LocalSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
   // Set up an optimization problem in LocalSolver.
@@ -232,7 +232,7 @@ int LocalSolver::DoSolve(Problem &p, SolutionHandler &sh) {
     obj_val = GetValue(model.getObjective(0));
     w.write("objective {}", FormatObjValue(obj_val));
   }
-  sh.HandleSolution(w.c_str(),
+  sh.HandleSolution(solve_code, w.c_str(),
       solution.empty() ? 0 : solution.data(), 0, obj_val);
   double output_time = GetTimeAndReset(time);
 
@@ -242,7 +242,6 @@ int LocalSolver::DoSolve(Problem &p, SolutionHandler &sh) {
           "Output time = {:.6f}s\n",
           setup_time, solution_time, output_time);
   }
-  return solve_code;
 }
 
 SolverPtr CreateSolver(const char *) { return SolverPtr(new LocalSolver()); }
