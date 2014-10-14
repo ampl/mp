@@ -117,6 +117,7 @@ class LSProblemBuilder :
 
   void CheckBounds(int index, std::size_t ub) {
     assert(0 <= index && static_cast<std::size_t>(index) <= ub);
+    MP_UNUSED2(index, ub);
   }
 
  public:
