@@ -201,7 +201,7 @@ int SSDSolver::DoSolve(Problem &p, SolutionHandler &sh) {
 
   fmt::MemoryWriter w;
   w.write("{}: {}", long_name(), message);
-  if (sol.status() == SOLVED)
+  if (sol.status() == sol::SOLVED)
     w.write("; dominance {}", dominance_ub);
   w.write("\n{} iteration(s)", iteration);
   sh.HandleSolution(w.c_str(), solution.data(), 0, 0);
