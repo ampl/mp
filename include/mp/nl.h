@@ -1184,7 +1184,11 @@ double NLReader<Reader, Handler>::ReadConstant(char code) {
     value = reader_.template ReadInt<short>();
     break;
   case 'l':
-    value = reader_.template ReadInt<long>();
+    // The following check is necessary for compatibility with ASL.
+    if (sizeof(double) == 2 * sizeof(int))
+      value = reader_.template ReadInt<int>();
+    else
+      value = reader_.template ReadInt<long>();
     break;
   default:
     reader_.ReportError("expected constant");
