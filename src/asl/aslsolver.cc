@@ -67,5 +67,6 @@ mp::Problem::Proxy mp::ASLSolver::GetProblemBuilder(fmt::StringRef stub) {
 
 void mp::ASLSolver::Solve(Problem &p, SolutionHandler &sh) {
   RegisterSuffixes(p.asl_);
-  DoSolve(p, sh);
+  ASLSolutionHandler asl_sol_handler(sh, p);
+  DoSolve(p, asl_sol_handler);
 }

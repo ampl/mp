@@ -32,6 +32,27 @@ class ASLSolver : public SolverImpl<internal::ASLBuilder> {
  private:
   void RegisterSuffixes(ASL *asl);
 
+ class ASLSolutionHandler : public SolutionHandler {
+  private:
+   SolutionHandler &handler_;
+   Problem &problem_;
+
+  public:
+   ASLSolutionHandler(SolutionHandler &h, Problem &p)
+     : handler_(h), problem_(p) {}
+
+   void HandleFeasibleSolution(fmt::StringRef message,
+       const double *values, const double *dual_values, double obj_value) {
+     handler_.HandleFeasibleSolution(message, values, dual_values, obj_value);
+   }
+
+   void HandleSolution(int status, fmt::StringRef message,
+       const double *values, const double *dual_values, double obj_value) {
+     problem_.set_solve_code(status);
+     handler_.HandleSolution(status, message, values, dual_values, obj_value);
+   }
+ };
+
  protected:
   virtual void DoSolve(Problem &p, SolutionHandler &sh) = 0;
 
