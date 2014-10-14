@@ -23,6 +23,8 @@
 #include "localsolver/localsolver.h"
 
 #include <cmath>
+#include <limits>
+
 #include "mp/clock.h"
 #include "asl/problem.h"
 

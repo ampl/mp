@@ -24,8 +24,6 @@
 #define MP_SOLVERS_LOCALSOLVER_H_
 
 #include <cassert>
-#include <limits>
-#include <string>
 #include <vector>
 
 #include <localsolver.h>
