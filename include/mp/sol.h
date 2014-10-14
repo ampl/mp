@@ -104,7 +104,7 @@ void WriteSolFile(fmt::StringRef filename, const Solution &sol) {
     file.print("{}\n", sol.value(i));
   for (int i = 0, n = num_dual_values; i < n; ++i)
     file.print("{}\n", sol.dual_value(i));
-  file.print("objno 0 0\n"); // TODO: solve codes for objectives
+  file.print("objno 0 {}\n", sol.status());
   for (int suf_kind = 0; suf_kind < suf::NUM_KINDS; ++suf_kind)
     internal::WriteSuffixes(file, sol.suffixes(suf_kind));
   // TODO: test
