@@ -948,7 +948,10 @@ TEST(NLTest, ReadNumericConstant) {
   EXPECT_READ("c0: 4.2;", "C0\nn4.2\n");
   EXPECT_READ("c0: -100;", "C0\nn-1e+2\n");
   CheckReadInt<short>('s');
-  CheckReadInt<long>('l');
+  if (sizeof(double) == 2 * sizeof(int))
+    CheckReadInt<int>('l');
+  else
+    CheckReadInt<long>('l');
 }
 
 TEST(NLTest, ReadVariable) {
