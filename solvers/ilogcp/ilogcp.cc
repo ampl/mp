@@ -217,6 +217,7 @@ bool HasNonlinearObj(const mp::Problem &p) {
 
 std::string ConvertSolutionStatus(
     IloAlgorithm alg, const mp::SignalHandler &sh, int &solve_code) {
+  namespace sol = mp::sol;
   switch (alg.getStatus()) {
   default:
     // Fall through.
@@ -225,29 +226,29 @@ std::string ConvertSolutionStatus(
       solve_code = 600;
       return "interrupted";
     }
-    solve_code = 501;
+    solve_code = sol::FAILURE + 1;
     return "unknown solution status";
   case IloAlgorithm::Feasible:
     if (sh.stop()) {
       solve_code = 600;
       return "interrupted";
     }
-    solve_code = 100;
+    solve_code = sol::UNSOLVED;
     return "feasible solution";
   case IloAlgorithm::Optimal:
-    solve_code = 0;
+    solve_code = sol::SOLVED;
     return "optimal solution";
   case IloAlgorithm::Infeasible:
-    solve_code = 200;
+    solve_code = sol::INFEASIBLE;
     return "infeasible problem";
   case IloAlgorithm::Unbounded:
-    solve_code = 300;
+    solve_code = sol::UNBOUNDED;
     return "unbounded problem";
   case IloAlgorithm::InfeasibleOrUnbounded:
-    solve_code = 201;
+    solve_code = sol::INFEASIBLE + 1;
     return "infeasible or unbounded problem";
   case IloAlgorithm::Error:
-    solve_code = 500;
+    solve_code = sol::FAILURE;
     return "error";
   }
 }
