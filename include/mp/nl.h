@@ -375,8 +375,8 @@ class NLHandler {
   }
 
   // Receives notification of the beginning of a numberof expression.
-  NumericArgHandler BeginNumberOf(int num_args) {
-    MP_UNUSED(num_args);
+  NumericArgHandler BeginNumberOf(int num_args, NumericExpr value) {
+    MP_UNUSED2(num_args, value);
     return NumericArgHandler();
   }
   // Receives notification of the end of a numberof expression.
@@ -649,8 +649,8 @@ class ProblemBuilderToNLAdapter {
   }
 
   // Receives notification of the beginning of a numberof expression.
-  NumericArgHandler BeginNumberOf(int num_args) {
-    return builder_.BeginNumberOf(num_args);
+  NumericArgHandler BeginNumberOf(int num_args, NumericExpr value) {
+    return builder_.BeginNumberOf(num_args, value);
   }
   // Receives notification of the end of a numberof expression.
   NumericExpr EndNumberOf(NumericArgHandler handler) {
@@ -1005,11 +1005,16 @@ class NLReader {
   }
 
   template <typename ExprReader, typename ArgHandler>
-  void ReadArgs(int num_args, ArgHandler &arg_handler) {
-    reader_.ReadTillEndOfLine();
+  void DoReadArgs(int num_args, ArgHandler &arg_handler) {
     ExprReader expr_reader;
     for (int i = 0; i < num_args; ++i)
       arg_handler.AddArg(expr_reader.Read(*this));
+  }
+
+  template <typename ExprReader, typename ArgHandler>
+  void ReadArgs(int num_args, ArgHandler &arg_handler) {
+    reader_.ReadTillEndOfLine();
+    DoReadArgs<ExprReader>(num_args, arg_handler);
   }
 
   int ReadOpCode() {
@@ -1281,8 +1286,10 @@ typename Handler::NumericExpr
     return ReadCountExpr();
   case expr::NUMBEROF: {
     int num_args = ReadNumArgs(1);
-    typename Handler::NumericArgHandler args = handler_.BeginNumberOf(num_args);
-    ReadArgs<NumericExprReader>(num_args, args);
+    reader_.ReadTillEndOfLine();
+    typename Handler::NumericArgHandler args =
+        handler_.BeginNumberOf(num_args, ReadNumericExpr());
+    DoReadArgs<NumericExprReader>(num_args - 1, args);
     return handler_.EndNumberOf(args);
   }
   case expr::NUMBEROF_SYM: {

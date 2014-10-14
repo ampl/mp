@@ -91,7 +91,7 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   EXPECT_DISPATCH(BeginCount(0), "count expression");
   EXPECT_DISPATCH(EndCount(TestProblemBuilder::LogicalArgHandler()),
                "count expression");
-  EXPECT_DISPATCH(BeginNumberOf(0), "numberof expression");
+  EXPECT_DISPATCH(BeginNumberOf(0, TestExpr()), "numberof expression");
   EXPECT_DISPATCH(EndNumberOf(TestProblemBuilder::NumericArgHandler()),
                "numberof expression");
   EXPECT_DISPATCH(MakeLogicalConstant(true), "logical constant");

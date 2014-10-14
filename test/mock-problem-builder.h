@@ -192,7 +192,8 @@ class MockProblemBuilder {
   MOCK_METHOD1(BeginCount, LogicalArgHandler (int num_args));
   MOCK_METHOD1(EndCount, CountExpr (LogicalArgHandler handler));
 
-  MOCK_METHOD1(BeginNumberOf, NumericArgHandler (int num_args));
+  MOCK_METHOD2(BeginNumberOf,
+               NumericArgHandler (int num_args, NumericExpr value));
   MOCK_METHOD1(EndNumberOf, NumericExpr (NumericArgHandler handler));
 
   MOCK_METHOD1(MakeLogicalConstant, LogicalExpr (bool value));

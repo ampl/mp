@@ -499,9 +499,11 @@ class ASLBuilder {
     return MakeIterated<CountExpr>(expr::COUNT, args);
   }
 
-  NumericArgHandler BeginNumberOf(int num_args) {
-    return NumericArgHandler(
+  NumericArgHandler BeginNumberOf(int num_args, NumericExpr value) {
+    NumericArgHandler handler(
           MakeIterated(expr::NUMBEROF, ArrayRef<NumericExpr>(0, num_args)));
+    handler.AddArg(value);
+    return handler;
   }
   NumberOfExpr EndNumberOf(NumericArgHandler handler) {
     return Expr::Create<NumberOfExpr>(handler.expr_);

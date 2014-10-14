@@ -279,8 +279,8 @@ class ProblemBuilder {
     return NumericExpr();
   }
 
-  NumericArgHandler BeginNumberOf(int num_args) {
-    MP_UNUSED(num_args);
+  NumericArgHandler BeginNumberOf(int num_args, NumericExpr value) {
+    MP_UNUSED2(num_args, value);
     MP_DISPATCH(ReportUnhandledConstruct("numberof expression"));
     return NumericArgHandler();
   }

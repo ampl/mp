@@ -280,9 +280,9 @@ class LSProblemBuilder :
   ArgHandler BeginCount(int num_args) { return BeginSum(num_args); }
   NumericExpr EndCount(ArgHandler handler) { return EndSum(handler); }
 
-  ArgHandler BeginNumberOf(int num_args) {
+  ArgHandler BeginNumberOf(int num_args, NumericExpr value) {
     // TODO
-    Base::BeginNumberOf(num_args);
+    Base::BeginNumberOf(num_args, value);
     return ArgHandler(ls::LSExpression());
   }
   ls::LSExpression EndNumberOf(ArgHandler) {
