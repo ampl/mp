@@ -722,7 +722,7 @@ int IlogCPSolver::SolveWithCPLEX(
   writer.write("{}: {}\n", long_name(), status);
   double obj_value = std::numeric_limits<double>::quiet_NaN();
   vector<double> solution, dual_solution;
-  if (solve_code < 200) {
+  if (solve_code < sol::INFEASIBLE) {
     int num_vars = p.num_vars();
     solution.resize(num_vars);
     IloNumVarArray vars = converter.vars();
