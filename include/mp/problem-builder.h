@@ -61,7 +61,7 @@ class ProblemBuilder {
 
   SuffixSet &suffixes(int kind) { return suffixes_.get(kind); }
 
-  void ReportUnhandledConstruct(fmt::StringRef name) {
+  static void ReportUnhandledConstruct(fmt::StringRef name) {
     throw Error("unsupported: {}", name);
   }
 

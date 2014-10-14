@@ -31,6 +31,13 @@ namespace {
 inline double GetValue(localsolver::LSExpression e) {
   return e.isDouble() ? e.getDoubleValue() : e.getValue();
 }
+
+inline localsolver::lsint ConvertToInt(double value) {
+  localsolver::lsint int_value = value;
+  if (int_value != value)
+    throw mp::Error("value {} can't be represented as int", value);
+  return int_value;
+}
 }
 
 namespace mp {
@@ -44,15 +51,15 @@ LSProblemBuilder::HyperbolicTerms
 }
 
 LSProblemBuilder::LSProblemBuilder(ls::LSModel model)
-  : model_(model), num_continuous_vars_(0), all_binary_(false) {
+  : model_(model), num_continuous_vars_(0) {
 }
 
-void LSProblemBuilder::SetInfo(const NLHeader &header) {
-  vars_.resize(header.num_vars);
-  objs_.resize(header.num_objs);
-  cons_.resize(header.num_algebraic_cons);
-  exprs_.resize(header.num_common_exprs());
-  num_continuous_vars_ = header.num_continuous_vars();
+void LSProblemBuilder::SetInfo(const ProblemInfo &info) {
+  vars_.resize(info.num_vars);
+  objs_.resize(info.num_objs);
+  cons_.resize(info.num_algebraic_cons);
+  exprs_.resize(info.num_common_exprs());
+  num_continuous_vars_ = info.num_continuous_vars();
 }
 
 void LSProblemBuilder::EndBuild() {

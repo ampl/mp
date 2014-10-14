@@ -25,6 +25,7 @@
 
 #include <cassert>
 #include <limits>
+#include <string>
 #include <vector>
 
 #include <localsolver.h>
@@ -44,7 +45,6 @@ class LSProblemBuilder :
  private:
   ls::LSModel model_;
   int num_continuous_vars_;
-  bool all_binary_;  // true iff all variables are binary
 
   std::vector<ls::LSExpression> vars_;
 
@@ -70,11 +70,6 @@ class LSProblemBuilder :
 
   static ls::lsint MakeInt(int value) { return value; }
 
-  static ls::lsint ConvertToInt(double value) {
-    // TODO
-    return static_cast<ls::lsint>(value);
-  }
-
   ls::LSExpression Negate(ls::LSExpression arg) {
     return model_.createExpression(ls::O_Sub, MakeInt(0), arg);
   }
@@ -84,9 +79,10 @@ class LSProblemBuilder :
     return e.isConstant() && e.getDoubleValue() == value;
   }
 
-  void RequireZero(ls::LSExpression e, const char *where) {
+  static void RequireZero(ls::LSExpression e, const char *func_name) {
     if (!IsConst(e, 0)) {
-      // TODO: throw exception
+      Base::ReportUnhandledConstruct(
+            fmt::format("{} with nonzero second parameter", func_name));
     }
   }
 
@@ -134,7 +130,7 @@ class LSProblemBuilder :
 
   const ls::LSExpression *vars() const { return &vars_[0]; }
 
-  void SetInfo(const NLHeader &header);
+  void SetInfo(const ProblemInfo &info);
   void EndBuild();
 
   void SetObj(int index, obj::Type type, ls::LSExpression expr);
