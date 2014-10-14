@@ -176,7 +176,7 @@ int SSDSolver::DoSolve(Problem &p, SolutionHandler &sh) {
     pc.AddCon(&cut_coefs[0], ref_tails[max_rel_violation_scen], Infinity);
 
     p.Solve(solver_name_, sol, &pc, Problem::IGNORE_FUNCTIONS);
-    if (sol.status() != SOLVED) break;
+    if (sol.status() != sol::SOLVED) break;
     dominance_ub = sol.value(dominance_var);
     const double *values = sol.values();
     solution.assign(values, values + num_vars);
@@ -185,13 +185,13 @@ int SSDSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   // Convert solution status.
   const char *message = 0;
   switch (sol.status()) {
-  case SOLVED:
+  case sol::SOLVED:
     message = "optimal solution";
     break;
-  case INFEASIBLE:
+  case sol::INFEASIBLE:
     message = "infeasible problem";
     break;
-  case UNBOUNDED:
+  case sol::UNBOUNDED:
     message = "unbounded problem";
     break;
   default:
