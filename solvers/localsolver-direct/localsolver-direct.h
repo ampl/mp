@@ -137,13 +137,7 @@ class LSProblemBuilder :
   void SetInfo(const NLHeader &header);
   void EndBuild();
 
-  void SetObj(int index, obj::Type type, ls::LSExpression expr) {
-    ObjInfo &obj_info = objs_[index];
-    if (type == obj::MAX)
-      obj_info.direction = ls::OD_Maximize;
-    if (expr != ls::LSExpression())
-      obj_info.expr = expr;
-  }
+  void SetObj(int index, obj::Type type, ls::LSExpression expr);
 
   void SetCon(int index, ls::LSExpression expr) {
     if (expr != ls::LSExpression())
@@ -199,17 +193,7 @@ class LSProblemBuilder :
           *this, cons_[con_index].expr, model_.createExpression(ls::O_Sum));
   }
 
-  void SetVarBounds(int index, double lb, double ub) {
-    ls::LSExpression &var = vars_[index];
-    if (index < num_continuous_vars_) {
-      var = model_.createExpression(ls::O_Float, lb, ub);
-    } else if (lb == 0 && ub == 1) {
-      var = model_.createExpression(ls::O_Bool);
-    } else {
-      var = model_.createExpression(
-            ls::O_Int, ConvertToInt(lb), ConvertToInt(ub));
-    }
-  }
+  void SetVarBounds(int index, double lb, double ub);
 
   void SetConBounds(int index, double lb, double ub) {
     ConInfo &con = cons_[index];
@@ -262,14 +246,7 @@ class LSProblemBuilder :
   typedef ArgHandler NumericArgHandler;
   typedef ArgHandler LogicalArgHandler;
 
-  ArgHandler BeginVarArg(expr::Kind kind, int num_args) {
-    ls::LSOperator op = ls::O_Min;
-    if (kind == expr::MAX)
-      op = ls::O_Max;
-    else if (kind != expr::MIN)
-      Base::BeginVarArg(kind, num_args);
-    return ArgHandler(model_.createExpression(op));
-  }
+  ArgHandler BeginVarArg(expr::Kind kind, int num_args);
   ls::LSExpression EndVarArg(ArgHandler handler) { return handler.expr(); }
 
   ArgHandler BeginSum(int) {

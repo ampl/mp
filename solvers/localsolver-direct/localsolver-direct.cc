@@ -84,6 +84,27 @@ void LSProblemBuilder::EndBuild() {
   model_.close();
 }
 
+void LSProblemBuilder::SetObj(
+    int index, obj::Type type, ls::LSExpression expr) {
+  ObjInfo &obj_info = objs_[index];
+  if (type == obj::MAX)
+    obj_info.direction = ls::OD_Maximize;
+  if (expr != ls::LSExpression())
+    obj_info.expr = expr;
+}
+
+void LSProblemBuilder::SetVarBounds(int index, double lb, double ub) {
+  ls::LSExpression &var = vars_[index];
+  if (index < num_continuous_vars_) {
+    var = model_.createExpression(ls::O_Float, lb, ub);
+  } else if (lb == 0 && ub == 1) {
+    var = model_.createExpression(ls::O_Bool);
+  } else {
+    var = model_.createExpression(
+          ls::O_Int, ConvertToInt(lb), ConvertToInt(ub));
+  }
+}
+
 ls::LSExpression LSProblemBuilder::MakeUnary(
     expr::Kind kind, ls::LSExpression arg) {
   ls::LSOperator op = ls::O_Bool;
@@ -204,6 +225,16 @@ ls::LSExpression LSProblemBuilder::MakeBinary(
     return Base::MakeBinary(kind, lhs, rhs);
   }
   return MakeBinary(op, lhs, rhs);
+}
+
+LSProblemBuilder::ArgHandler LSProblemBuilder::BeginVarArg(
+    expr::Kind kind, int num_args) {
+  ls::LSOperator op = ls::O_Min;
+  if (kind == expr::MAX)
+    op = ls::O_Max;
+  else if (kind != expr::MIN)
+    Base::BeginVarArg(kind, num_args);
+  return ArgHandler(model_.createExpression(op));
 }
 
 ls::LSExpression LSProblemBuilder::MakeBinaryLogical(
