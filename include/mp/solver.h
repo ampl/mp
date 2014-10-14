@@ -1040,6 +1040,22 @@ class SolverApp : private Reader {
   Solver solver_;
   internal::SolverAppOptionParser option_parser_;
 
+  typedef typename Solver::ProblemBuilder ProblemBuilder;
+  typedef ProblemBuilderToNLAdapter<ProblemBuilder> Adapter;
+
+  struct NLHandler : Adapter {
+    int num_options;
+    int options[MAX_NL_OPTIONS];
+
+    explicit NLHandler(ProblemBuilder &pb) : Adapter(pb), num_options(0) {}
+
+    void OnHeader(const NLHeader &h) {
+      num_options = h.num_options;
+      std::copy(h.options, h.options + num_options, options);
+      Adapter::OnHeader(h);
+    }
+  };
+
  public:
   SolverApp() : option_parser_(solver_) {}
 
@@ -1077,22 +1093,8 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
 
   // Read the problem.
   steady_clock::time_point start = steady_clock::now();
-  typedef typename Solver::ProblemBuilder ProblemBuilder;
   // TODO: use name provider instead of passing filename to builder
   ProblemBuilder builder(solver_.GetProblemBuilder(filename_no_ext));
-  typedef ProblemBuilderToNLAdapter<ProblemBuilder> Adapter;
-  struct NLHandler : Adapter {
-    int num_options;
-    int options[MAX_NL_OPTIONS];
-
-    explicit NLHandler(ProblemBuilder &pb) : Adapter(pb), num_options(0) {}
-
-    void OnHeader(const NLHeader &h) {
-      num_options = h.num_options;
-      std::copy(h.options, h.options + num_options, options);
-      Adapter::OnHeader(h);
-    }
-  };
   NLHandler handler(builder);
   this->Read(nl_filename, handler);
   builder.EndBuild();
