@@ -663,10 +663,10 @@ int IlogCPSolver::SolveWithCP(
     status = ConvertSolutionStatus(cp_, sig_handler, solve_code);
     if (p.num_objs() > 0) {
       if (cp_.getInfo(IloCP::FailStatus) == IloCP::SearchStoppedByLimit) {
-        solve_code = LIMIT;
+        solve_code = sol::LIMIT;
         status = "limit";
       }
-    } else if (solve_code == SOLVED_MAYBE)
+    } else if (solve_code == sol::UNSOLVED)
       solve_code = 0;
   }
 

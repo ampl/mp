@@ -38,17 +38,6 @@ namespace internal {
 class ASLBuilder;
 }
 
-// Solution status.
-enum SolutionStatus {
-  NOT_SOLVED   =  -1,
-  SOLVED       =   0,
-  SOLVED_MAYBE = 100,
-  INFEASIBLE   = 200,
-  UNBOUNDED    = 300,
-  LIMIT        = 400,
-  FAILURE      = 500
-};
-
 // A solution of an optimization problem.
 class Solution {
  private:
@@ -71,9 +60,9 @@ class Solution {
   void Swap(Solution &other);
 
   // Returns the solution status.
-  SolutionStatus status() const {
-    return solve_code_ < 0 || solve_code_ >= 600 ? NOT_SOLVED
-        : static_cast<SolutionStatus>(solve_code_ / 100 * 100);
+  sol::Status status() const {
+    return solve_code_ < 0 || solve_code_ >= 600 ? sol::UNKNOWN
+        : static_cast<sol::Status>(solve_code_ / 100 * 100);
   }
 
   // Returns the solve code.

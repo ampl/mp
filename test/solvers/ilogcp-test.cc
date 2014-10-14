@@ -134,7 +134,7 @@ TEST_P(FunctionTest, ElementExprPlusConstantAtConstantIndex) {
 
 TEST_P(FunctionTest, ElementVariableIndexOutOfBounds) {
   Expr args[] = { MakeConst(11), MakeConst(22), x };
-  EXPECT_EQ(mp::INFEASIBLE, Eval(MakeCall(element_, args), 2).solve_code());
+  EXPECT_EQ(mp::sol::INFEASIBLE, Eval(MakeCall(element_, args), 2).solve_code());
 }
 
 TEST_P(FunctionTest, ElementConstantAtVariableIndex) {
@@ -219,7 +219,7 @@ TEST_P(FunctionTest, InRelationEmptySet) {
   Expr args[] = {MakeVariable(0)};
   p.AddCon(MakeRelational(
              mp::expr::NE, MakeCall(in_relation_, args), MakeConst(0)));
-  EXPECT_EQ(mp::INFEASIBLE, Solve(p).solve_code());
+  EXPECT_EQ(mp::sol::INFEASIBLE, Solve(p).solve_code());
 }
 
 TEST_P(FunctionTest, InRelationNonConstantSetElement) {

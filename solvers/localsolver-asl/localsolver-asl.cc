@@ -191,25 +191,25 @@ int LocalSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   const char *status = "unknown";
   switch (sol.getStatus()) {
   case ls::SS_Inconsistent:
-    solve_code = INFEASIBLE;
+    solve_code = sol::INFEASIBLE;
     status = "infeasible problem";
     break;
   case ls::SS_Infeasible:
     // Solution is infeasible, but problem may be feasible.
     // This can only happen if stopped by a limit.
-    solve_code = LIMIT;
+    solve_code = sol::LIMIT;
     status = "infeasible solution";
     break;
   case ls::SS_Feasible:
-    solve_code = SOLVED_MAYBE;
+    solve_code = sol::UNSOLVED;
     status = "feasible solution";
     break;
   case ls::SS_Optimal:
-    solve_code = SOLVED;
+    solve_code = sol::SOLVED;
     status = "optimal solution";
     break;
   default:
-    solve_code = FAILURE;
+    solve_code = sol::FAILURE;
     status = "unknown solution status";
     break;
   }

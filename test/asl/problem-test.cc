@@ -48,7 +48,7 @@ namespace suf = mp::suf;
 
 TEST(SolutionTest, DefaultCtor) {
   Solution s;
-  EXPECT_EQ(mp::NOT_SOLVED, s.status());
+  EXPECT_EQ(mp::sol::UNKNOWN, s.status());
   EXPECT_EQ(-1, s.solve_code());
   EXPECT_EQ(0, s.num_vars());
   EXPECT_EQ(0, s.num_cons());
@@ -60,7 +60,7 @@ TEST(SolutionTest, Read) {
   WriteFile("test.sol", "test\n\n1\n3\n5\n7\n11\n");
   Solution s;
   s.Read("test", 3, 2);
-  EXPECT_EQ(mp::NOT_SOLVED, s.status());
+  EXPECT_EQ(mp::sol::UNKNOWN, s.status());
   EXPECT_EQ(-1, s.solve_code());
   EXPECT_EQ(3, s.num_vars());
   EXPECT_EQ(2, s.num_cons());
@@ -105,13 +105,14 @@ TEST(SolutionTest, DoubleRead) {
 }
 
 TEST(SolutionTest, SolveCodes) {
-  const mp::SolutionStatus STATES[] = {
-      mp::SOLVED,
-      mp::SOLVED_MAYBE,
-      mp::INFEASIBLE,
-      mp::UNBOUNDED,
-      mp::LIMIT,
-      mp::FAILURE
+  namespace sol = mp::sol;
+  const sol::Status STATES[] = {
+      sol::SOLVED,
+      sol::UNSOLVED,
+      sol::INFEASIBLE,
+      sol::UNBOUNDED,
+      sol::LIMIT,
+      sol::FAILURE
   };
   for (int i = 0,
          n = static_cast<int>(sizeof(STATES) / sizeof(*STATES)); i < n; ++i) {
@@ -140,7 +141,7 @@ TEST(SolutionTest, SolveCodes) {
         fmt::format("test\n\n2\n2\nobjno 0 {}\n", CODES[i]));
     Solution s;
     s.Read("test", 1, 1);
-    EXPECT_EQ(mp::NOT_SOLVED, s.status());
+    EXPECT_EQ(sol::UNKNOWN, s.status());
     EXPECT_EQ(CODES[i], s.solve_code());
   }
 }

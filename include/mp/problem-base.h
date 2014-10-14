@@ -261,6 +261,31 @@ enum {
 };
 }
 
+namespace sol {
+// Solution status.
+enum Status {
+  UNKNOWN    =  -1,
+
+  // An optimal solution found for an optimization problem or a feasible
+  // solution found for a satisfaction problem.
+  SOLVED     =   0,
+
+  // Solution returned but it can be non-optimal or even infeasible.
+  UNSOLVED   = 100,
+
+  // Problem is infeasible.
+  INFEASIBLE = 200,
+
+  // Problem is unbounded.
+  UNBOUNDED  = 300,
+
+  // Stopped by a limit, e.g. on iterations or time.
+  LIMIT      = 400,
+
+  FAILURE    = 500
+};
+}
+
 // Information about an optimization problem.
 struct ProblemInfo {
   // Total number of variables.

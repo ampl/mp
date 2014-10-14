@@ -100,12 +100,12 @@ class SolverTest
     int solve_code_;
 
    public:
-    explicit EvalResult(int solve_code = mp::NOT_SOLVED)
+    explicit EvalResult(int solve_code = mp::sol::UNKNOWN)
     : has_value_(false), value_(), obj_value_(), solve_code_(solve_code) {}
 
     EvalResult(double value, double obj_value)
     : has_value_(true), value_(value), obj_value_(obj_value),
-      solve_code_(mp::NOT_SOLVED) {}
+      solve_code_(mp::sol::UNKNOWN) {}
 
     bool has_value() const { return has_value_; }
 
