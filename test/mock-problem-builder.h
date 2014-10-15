@@ -142,7 +142,7 @@ class MockProblemBuilder {
   MOCK_METHOD2(GetLinearVarBuilder,
                LinearVarBuilder (int var_index, int num_linear_terms));
 
-  MOCK_METHOD3(SetVarBounds, void (int index, double lb, double ub));
+  MOCK_METHOD3(AddVar, void (double lb, double ub, mp::var::Type));
   MOCK_METHOD3(SetConBounds, void (int index, double lb, double ub));
 
   MOCK_METHOD2(SetInitialValue, void (int var_index, double value));

@@ -462,10 +462,11 @@ template <typename ProblemBuilder>
 class ProblemBuilderToNLAdapter {
  private:
   ProblemBuilder &builder_;
+  int num_continuous_vars_;
 
  public:
   explicit ProblemBuilderToNLAdapter(ProblemBuilder &builder)
-    : builder_(builder) {}
+    : builder_(builder), num_continuous_vars_(0) {}
 
   ProblemBuilder &builder() { return builder_; }
 
@@ -476,7 +477,10 @@ class ProblemBuilderToNLAdapter {
   typedef typename ProblemBuilder::Variable Variable;
 
   // Receives notification of an .nl header.
-  void OnHeader(const NLHeader &h) { builder_.SetInfo(h); }
+  void OnHeader(const NLHeader &h) {
+    num_continuous_vars_ = h.num_continuous_vars();
+    builder_.SetInfo(h);
+  }
 
   // Receives notification of an objective type and the nonlinear part of
   // an objective expression.
@@ -529,7 +533,9 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of variable bounds.
   void OnVarBounds(int index, double lb, double ub) {
-    builder_.SetVarBounds(index, lb, ub);
+    var::Type type =
+        index < num_continuous_vars_ ? var::CONTINUOUS : var::INTEGER;
+    builder_.AddVar(lb, ub, type);
   }
 
   // Receives notification of constraint bounds (ranges).

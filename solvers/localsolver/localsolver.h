@@ -189,7 +189,7 @@ class LSProblemBuilder :
           *this, cons_[con_index].expr, model_.createExpression(ls::O_Sum));
   }
 
-  void SetVarBounds(int index, double lb, double ub);
+  void AddVar(double lb, double ub, var::Type type);
 
   void SetConBounds(int index, double lb, double ub) {
     ConInfo &con = cons_[index];

@@ -64,6 +64,7 @@ class ASLBuilder {
   int nderp_;
   static const double DVALUE[];
   SuffixView suffixes_[suf::NUM_KINDS];
+  int var_index_;
 
   // "Static" data for the functions in fg_read.
   Static *static_;
@@ -217,8 +218,9 @@ class ASLBuilder {
   // Ends building the ASL object.
   void EndBuild();
 
-  void SetVarBounds(int index, double lb, double ub) {
-    SetBounds(asl_->i.LUv_, asl_->i.Uvx_, index, lb, ub);
+  void AddVar(double lb, double ub, var::Type) {
+    // TODO: check type
+    SetBounds(asl_->i.LUv_, asl_->i.Uvx_, var_index_++, lb, ub);
   }
   void SetConBounds(int index, double lb, double ub) {
     SetBounds(asl_->i.LUrhs_, asl_->i.Urhsx_, index, lb, ub);

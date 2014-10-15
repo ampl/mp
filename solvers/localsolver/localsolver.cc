@@ -56,7 +56,7 @@ LSProblemBuilder::LSProblemBuilder(ls::LSModel model)
 }
 
 void LSProblemBuilder::SetInfo(const ProblemInfo &info) {
-  vars_.resize(info.num_vars);
+  vars_.reserve(info.num_vars);
   objs_.resize(info.num_objs);
   cons_.resize(info.num_algebraic_cons);
   exprs_.resize(info.num_common_exprs());
@@ -101,9 +101,10 @@ void LSProblemBuilder::SetObj(
     obj_info.expr = expr;
 }
 
-void LSProblemBuilder::SetVarBounds(int index, double lb, double ub) {
-  ls::LSExpression &var = vars_[index];
-  if (index < num_continuous_vars_) {
+void LSProblemBuilder::AddVar(double lb, double ub, var::Type type) {
+  vars_.push_back(ls::LSExpression());
+  ls::LSExpression &var = vars_.back();
+  if (type == var::CONTINUOUS) {
     var = model_.createExpression(ls::O_Float, lb, ub);
   } else if (lb == 0 && ub == 1) {
     var = model_.createExpression(ls::O_Bool);

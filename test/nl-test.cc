@@ -1261,7 +1261,13 @@ TEST(NLTest, ProblemBuilderToNLAdapter) {
   EXPECT_FORWARD_RET(OnLinearVarExpr, GetLinearVarBuilder,
                      (44, 55), TestLinearVarBuilder(ID));
 
-  EXPECT_FORWARD(OnVarBounds, SetVarBounds, (66, 7.7, 8.8));
+  {
+    StrictMock<MockProblemBuilder> builder;
+    EXPECT_CALL(builder, AddVar(7.7, 8.8, mp::var::INTEGER));
+    mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+    adapter.OnVarBounds(66, 7.7, 8.8);
+  }
+
   EXPECT_FORWARD(OnConBounds, SetConBounds, (99, 1.1, 2.2));
   EXPECT_FORWARD(OnInitialValue, SetInitialValue, (33, 4.4));
   EXPECT_FORWARD(OnInitialDualValue, SetInitialDualValue, (55, 6.6));

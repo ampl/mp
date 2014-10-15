@@ -63,7 +63,7 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   EXPECT_DISPATCH(GetLinearObjBuilder(0, 0), "linear objective");
   EXPECT_DISPATCH(GetLinearConBuilder(0, 0), "linear constraint");
   EXPECT_DISPATCH(GetLinearVarBuilder(0, 0), "linear defined variable");
-  EXPECT_DISPATCH(SetVarBounds(0, 0, 0), "variable bound");
+  EXPECT_DISPATCH(AddVar(0, 0, mp::var::INTEGER), "variable");
   EXPECT_DISPATCH(SetConBounds(0, 0, 0), "constraint bound");
   EXPECT_DISPATCH(SetInitialValue(0, 0), "initial value");
   EXPECT_DISPATCH(SetInitialDualValue(0, 0), "initial dual value");

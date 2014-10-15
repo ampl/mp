@@ -130,9 +130,9 @@ class ProblemBuilder {
     return LinearVarBuilder();
   }
 
-  void SetVarBounds(int index, double lb, double ub) {
-    MP_UNUSED3(index, lb, ub);
-    MP_DISPATCH(ReportUnhandledConstruct("variable bound"));
+  void AddVar(double lb, double ub, var::Type type) {
+    MP_UNUSED3(lb, ub, type);
+    MP_DISPATCH(ReportUnhandledConstruct("variable"));
   }
   void SetConBounds(int index, double lb, double ub) {
     MP_UNUSED3(index, lb, ub);
