@@ -103,12 +103,18 @@ void LSProblemBuilder::SetObj(
 void LSProblemBuilder::AddVar(double lb, double ub, var::Type type) {
   vars_.push_back(ls::LSExpression());
   ls::LSExpression &var = vars_.back();
+  double inf = std::numeric_limits<double>::infinity();
   if (type == var::CONTINUOUS) {
+    // LocalSolver doesn't allow infinite bounds, so use min an max double
+    // values instead.
+    if (lb == -inf)
+      lb = std::numeric_limits<double>::min();
+    if (ub == inf)
+      ub = std::numeric_limits<double>::max();
     var = model_.createExpression(ls::O_Float, lb, ub);
   } else if (lb == 0 && ub == 1) {
     var = model_.createExpression(ls::O_Bool);
   } else {
-    double inf = std::numeric_limits<double>::infinity();
     ls::lsint int_lb = lb == -inf ?
           std::numeric_limits<int>::min() : ConvertToInt(lb);
     ls::lsint int_ub = ub == inf ?
