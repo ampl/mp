@@ -121,29 +121,27 @@ class MockProblemBuilder {
   MOCK_METHOD1(SetInfo, void (const mp::ProblemInfo &info));
   MOCK_METHOD0(EndBuild, void ());
 
-  MOCK_METHOD3(SetObj, void (int index, mp::obj::Type type, NumericExpr expr));
-  MOCK_METHOD2(SetCon, void (int index, NumericExpr expr));
-  MOCK_METHOD2(SetLogicalCon, void (int index, LogicalExpr expr));
   MOCK_METHOD3(SetCommonExpr, void (int index, NumericExpr expr, int position));
   MOCK_METHOD3(SetComplement, void (int con_index, int var_index, int flags));
 
+  MOCK_METHOD3(AddVar, void (double lb, double ub, mp::var::Type));
+
   typedef TestLinearObjBuilder LinearObjBuilder;
 
-  MOCK_METHOD2(GetLinearObjBuilder,
-               LinearObjBuilder (int obj_index, int num_linear_terms));
+  MOCK_METHOD3(AddObj, LinearObjBuilder (mp::obj::Type type, NumericExpr expr,
+                                         int num_linear_terms));
 
   typedef TestLinearConBuilder LinearConBuilder;
 
-  MOCK_METHOD2(GetLinearConBuilder,
-               LinearConBuilder (int con_index, int num_linear_terms));
+  MOCK_METHOD4(AddCon, LinearConBuilder (NumericExpr expr, double lb, double ub,
+                                         int num_linear_terms));
+
+  MOCK_METHOD1(AddCon, void (LogicalExpr expr));
 
   typedef TestLinearVarBuilder LinearVarBuilder;
 
   MOCK_METHOD2(GetLinearVarBuilder,
                LinearVarBuilder (int var_index, int num_linear_terms));
-
-  MOCK_METHOD3(AddVar, void (double lb, double ub, mp::var::Type));
-  MOCK_METHOD3(SetConBounds, void (int index, double lb, double ub));
 
   MOCK_METHOD2(SetInitialValue, void (int var_index, double value));
   MOCK_METHOD2(SetInitialDualValue, void (int con_index, double value));
@@ -196,7 +194,7 @@ class MockProblemBuilder {
   typedef TestNumberOfArgHandler NumberOfArgHandler;
 
   MOCK_METHOD2(BeginNumberOf,
-               NumberOfArgHandler (int num_args, NumericExpr value));
+               NumberOfArgHandler (NumericExpr value, int num_args));
   MOCK_METHOD1(EndNumberOf, NumericExpr (NumberOfArgHandler handler));
 
   MOCK_METHOD1(MakeLogicalConstant, LogicalExpr (bool value));

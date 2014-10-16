@@ -40,8 +40,6 @@ namespace {
 // ----------------------------------------------------------------------------
 // Solver tests
 
-SolverPtr CreateSolver() { return SolverPtr(new mp::JaCoPSolver()); }
-
 INSTANTIATE_TEST_CASE_P(JaCoP, SolverImplTest,
     ::testing::Values(SolverTestParam(CreateSolver, feature::POW)));
 

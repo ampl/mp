@@ -51,53 +51,19 @@ LSProblemBuilder::HyperbolicTerms
 }
 
 LSProblemBuilder::LSProblemBuilder(ls::LSModel model)
-  : model_(model), num_continuous_vars_(0) {
+  : model_(model), num_objs_(0), num_cons_(0) {
 }
 
 void LSProblemBuilder::SetInfo(const ProblemInfo &info) {
   vars_.reserve(info.num_vars);
-  objs_.resize(info.num_objs);
-  cons_.resize(info.num_algebraic_cons);
   exprs_.resize(info.num_common_exprs());
-  num_continuous_vars_ = info.num_continuous_vars();
 }
 
 void LSProblemBuilder::EndBuild() {
-  // Add objectives.
-  for (std::size_t i = 0, n = objs_.size(); i < n; ++i) {
-    const ObjInfo &obj = objs_[i];
-    model_.addObjective(obj.expr, obj.direction);
-  }
   // LocalSolver requires at least one objective - create a dummy one.
-  if (objs_.empty())
+  if (model_.getNbObjectives() == 0)
     model_.addObjective(model_.createConstant(AsLSInt(0)), ls::OD_Minimize);
-  // Add constraints.
-  double inf = std::numeric_limits<double>::infinity();
-  for (std::size_t i = 0, n = cons_.size(); i < n; ++i) {
-    const ConInfo &con = cons_[i];
-    ls::LSExpression expr;
-    if (con.lb <= -inf) {
-      expr = model_.createExpression(ls::O_Leq, con.expr, con.ub);
-    } else if (con.ub >= inf) {
-      expr = model_.createExpression(ls::O_Geq, con.expr, con.lb);
-    } else if (con.lb == con.ub) {
-      expr = model_.createExpression(ls::O_Eq, con.expr, con.lb);
-    } else {
-      expr = model_.createExpression(ls::O_Geq, con.expr, con.lb);
-      expr = model_.createExpression(ls::O_Leq, con.expr, con.ub);
-    }
-    model_.addConstraint(expr);
-  }
   model_.close();
-}
-
-void LSProblemBuilder::SetObj(
-    int index, obj::Type type, ls::LSExpression expr) {
-  ObjInfo &obj_info = objs_[index];
-  if (type == obj::MAX)
-    obj_info.direction = ls::OD_Maximize;
-  if (expr != ls::LSExpression())
-    obj_info.expr = expr;
 }
 
 void LSProblemBuilder::AddVar(double lb, double ub, var::Type type) {
@@ -121,6 +87,34 @@ void LSProblemBuilder::AddVar(double lb, double ub, var::Type type) {
           std::numeric_limits<int>::max() : ConvertToInt(ub);
     var = model_.createExpression(ls::O_Int, int_lb, int_ub);
   }
+}
+
+LSProblemBuilder::LinearObjBuilder
+    LSProblemBuilder::AddObj(obj::Type type, ls::LSExpression expr, int) {
+  ++num_objs_;
+  ls::LSObjectiveDirection dir =
+      type == obj::MIN ? ls::OD_Minimize : ls::OD_Maximize;
+  ls::LSExpression sum = model_.createExpression(ls::O_Sum);
+  model_.addObjective(sum, dir);
+  return LinearObjBuilder(*this, expr, sum);
+}
+
+LSProblemBuilder::LinearConBuilder
+    LSProblemBuilder::AddCon(ls::LSExpression expr, double lb, double ub, int) {
+  ++num_cons_;
+  double inf = std::numeric_limits<double>::infinity();
+  ls::LSExpression sum = model_.createExpression(ls::O_Sum);
+  if (lb <= -inf) {
+    model_.addConstraint(model_.createExpression(ls::O_Leq, sum, ub));
+  } else if (ub >= inf) {
+    model_.addConstraint(model_.createExpression(ls::O_Geq, sum, lb));
+  } else if (lb == ub) {
+    model_.addConstraint(model_.createExpression(ls::O_Eq, sum, lb));
+  } else {
+    model_.addConstraint(model_.createExpression(ls::O_Geq, sum, lb));
+    model_.addConstraint(model_.createExpression(ls::O_Leq, sum, ub));
+  }
+  return LinearConBuilder(*this, expr, sum);
 }
 
 ls::LSExpression LSProblemBuilder::MakeUnary(
@@ -418,11 +412,8 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   int num_vars = builder.num_vars();
   const ls::LSExpression *vars = builder.vars();
   std::vector<double> solution(num_vars);
-  int num_continuous_vars = builder.num_continuous_vars();
-  for (int i = 0; i < num_continuous_vars; ++i)
-    solution[i] = vars[i].getDoubleValue();
-  for (int i = num_continuous_vars; i < num_vars; ++i)
-    solution[i] = vars[i].getValue();
+  for (int i = 0; i < num_vars; ++i)
+    solution[i] = GetValue(vars[i]);
   double solution_time = GetTimeAndReset(time);
 
   fmt::MemoryWriter w;

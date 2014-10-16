@@ -68,25 +68,48 @@ class ProblemBuilder {
   void SetInfo(const ProblemInfo &) {}
   void EndBuild() {}
 
-  // Sets an objective type and expression.
-  // index: Index of an objective; 0 <= index < num_objs.
-  void SetObj(int index, obj::Type type, NumericExpr expr) {
-    MP_UNUSED3(index, type, expr);
+  // Adds a variable.
+  void AddVar(double lb, double ub, var::Type type) {
+    MP_UNUSED3(lb, ub, type);
+    MP_DISPATCH(ReportUnhandledConstruct("variable"));
+  }
+
+  typedef LinearExprBuilder LinearObjBuilder;
+
+  // Adds an objective.
+  // Returns a handler for receiving linear terms in an objective.
+  LinearObjBuilder AddObj(
+      obj::Type type, NumericExpr expr, int num_linear_terms) {
+    MP_UNUSED3(type, expr, num_linear_terms);
     MP_DISPATCH(ReportUnhandledConstruct("objective"));
+    return LinearObjBuilder();
   }
 
-  // Sets an algebraic constraint expression.
-  // index: Index of an algebraic contraint; 0 <= index < num_algebraic_cons.
-  void SetCon(int index, NumericExpr expr) {
-    MP_UNUSED2(index, expr);
-    MP_DISPATCH(ReportUnhandledConstruct("nonlinear constraint"));
+  typedef LinearExprBuilder LinearConBuilder;
+
+  // Adds an algebraic constraint.
+  // Returns a handler for receiving linear terms in a constraint.
+  LinearConBuilder AddCon(NumericExpr expr, double lb, double ub,
+                          int num_linear_terms) {
+    MP_UNUSED3(expr, lb, ub); MP_UNUSED(num_linear_terms);
+    MP_DISPATCH(ReportUnhandledConstruct("algebraic constraint"));
+    return LinearConBuilder();
   }
 
-  // Sets a logical constraint expression.
-  // index: Index of a logical contraint; 0 <= index < num_logical_cons.
-  void SetLogicalCon(int index, LogicalExpr expr) {
-    MP_UNUSED2(index, expr);
+  // Adds a logical constraint..
+  void AddCon(LogicalExpr expr) {
+    MP_UNUSED(expr);
     MP_DISPATCH(ReportUnhandledConstruct("logical constraint"));
+  }
+
+  typedef LinearExprBuilder LinearVarBuilder;
+
+  // Returns a handler for receiving linear terms in a defined variable
+  // expression.
+  LinearVarBuilder GetLinearVarBuilder(int var_index, int num_linear_terms) {
+    MP_UNUSED2(var_index, num_linear_terms);
+    MP_DISPATCH(ReportUnhandledConstruct("linear defined variable"));
+    return LinearVarBuilder();
   }
 
   // Sets a common expression (defined variable).
@@ -102,38 +125,6 @@ class ProblemBuilder {
     MP_DISPATCH(ReportUnhandledConstruct("complementarity constraint"));
   }
 
-  typedef LinearExprBuilder LinearObjBuilder;
-
-  // Returns a handler for receiving linear terms in an objective.
-  LinearObjBuilder GetLinearObjBuilder(int obj_index, int num_linear_terms) {
-    MP_UNUSED2(obj_index, num_linear_terms);
-    MP_DISPATCH(ReportUnhandledConstruct("linear objective"));
-    return LinearObjBuilder();
-  }
-
-  typedef LinearExprBuilder LinearConBuilder;
-
-  // Returns a handler for receiving linear terms in a constraint.
-  LinearConBuilder GetLinearConBuilder(int con_index, int num_linear_terms) {
-    MP_UNUSED2(con_index, num_linear_terms);
-    MP_DISPATCH(ReportUnhandledConstruct("linear constraint"));
-    return LinearConBuilder();
-  }
-
-  typedef LinearExprBuilder LinearVarBuilder;
-
-  // Returns a handler for receiving linear terms in a defined variable
-  // expression.
-  LinearVarBuilder GetLinearVarBuilder(int var_index, int num_linear_terms) {
-    MP_UNUSED2(var_index, num_linear_terms);
-    MP_DISPATCH(ReportUnhandledConstruct("linear defined variable"));
-    return LinearVarBuilder();
-  }
-
-  void AddVar(double lb, double ub, var::Type type) {
-    MP_UNUSED3(lb, ub, type);
-    MP_DISPATCH(ReportUnhandledConstruct("variable"));
-  }
   void SetConBounds(int index, double lb, double ub) {
     MP_UNUSED3(index, lb, ub);
     MP_DISPATCH(ReportUnhandledConstruct("constraint bound"));

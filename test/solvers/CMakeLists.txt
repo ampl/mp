@@ -1,8 +1,3 @@
-add_mp_library(solver-impl-test STATIC solver-impl-test.cc LIBRARIES asl)
-target_compile_definitions(solver-impl-test
-  PUBLIC MP_TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test/data")
-target_link_libraries(solver-impl-test gtest-extra)
-
 if (TARGET gecode)
   add_mp_test(gecode-test PREFIX gecode-test.cc
     LIBS amplgecode-static solver-impl-test)
@@ -13,8 +8,8 @@ if (TARGET ilogcp)
   # Include the gtest source in test instead of linking with the library to
   # avoid a problem when gtest is built with a different runtime than ilogcp.
   add_prefix(ILOGCP_TEST_SRC ../ ${GTEST_SRC})
-  add_executable(ilogcp-test ilogcp-test.cc ${ILOGCP_TEST_SRC})
-  target_link_libraries_dynrt(ilogcp-test solver-impl-test)
+  add_executable(ilogcp-test ilogcp-test.cc feature.h solver-impl-test.h
+                 ${ILOGCP_TEST_SRC})
   target_link_libraries(ilogcp-test amplilogcp-static)
   add_test(NAME ilogcp-test COMMAND $<TARGET_FILE:ilogcp-test>)
 endif ()

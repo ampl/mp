@@ -790,68 +790,71 @@ void CheckFunctionList(const ASLPtr &asl, const func_info *(&funcs)[SIZE]) {
   EXPECT_EQ(SIZE, index);
 }
 
-TEST(ASLBuilderTest, SetObj) {
+TEST(ASLBuilderTest, AddObj) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
 #undef obj_de
   cde *obj_de = reinterpret_cast<ASL_fg*>(asl.get())->I.obj_de_;
   EXPECT_EQ(mp::obj::MIN, asl->i.objtype_[1]);
   EXPECT_EQ(0, obj_de[1].e);
-  builder.SetObj(1, mp::obj::MAX, builder.MakeNumericConstant(42));
+  builder.AddObj(mp::obj::MIN, builder.MakeVariable(0), 0);
+  builder.AddObj(mp::obj::MAX, builder.MakeNumericConstant(42), 0);
   EXPECT_EQ(mp::obj::MAX, asl->i.objtype_[1]);
   EXPECT_EQ(reinterpret_cast<efunc*>(OPNUM), obj_de[1].e->op);
 }
 
 #ifndef NDEBUG
-TEST(ASLBuilderTest, SetObjIndexOutOfRange) {
+TEST(ASLBuilderTest, AddObjIndexOutOfRange) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
-  NumericExpr expr = builder.MakeNumericConstant(42);
-  EXPECT_DEBUG_DEATH(builder.SetObj(-1, mp::obj::MIN, expr), "Assertion");
-  EXPECT_DEBUG_DEATH(builder.SetObj(TestASLBuilder::NUM_OBJS,
-                                    mp::obj::MIN, expr), "Assertion");
+  auto expr = builder.MakeNumericConstant(42);
+  for (int i = 0; i < TestASLBuilder::NUM_OBJS; ++i)
+    builder.AddObj(mp::obj::MIN, expr, 0);
+  EXPECT_DEBUG_DEATH(builder.AddObj(mp::obj::MIN, expr, 0), "Assertion");
 }
 #endif
 
-TEST(ASLBuilderTest, SetCon) {
+TEST(ASLBuilderTest, AddCon) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
 #undef con_de
   cde *con_de = reinterpret_cast<ASL_fg*>(asl.get())->I.con_de_;
   EXPECT_EQ(0, con_de[2].e);
-  builder.SetCon(2, builder.MakeNumericConstant(42));
-  EXPECT_EQ(reinterpret_cast<efunc*>(OPNUM), con_de[2].e->op);
+  builder.AddCon(builder.MakeVariable(0), 0, 0, 0);
+  builder.AddCon(builder.MakeNumericConstant(42), 11, 22, 0);
+  EXPECT_EQ(reinterpret_cast<efunc*>(OPNUM), con_de[1].e->op);
 }
 
 #ifndef NDEBUG
-TEST(ASLBuilderTest, SetConIndexOutOfRange) {
+TEST(ASLBuilderTest, AddConIndexOutOfRange) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
-  NumericExpr expr = builder.MakeNumericConstant(42);
-  EXPECT_DEBUG_DEATH(builder.SetCon(-1, expr), "Assertion");
-  EXPECT_DEBUG_DEATH(
-        builder.SetCon(TestASLBuilder::NUM_CONS, expr), "Assertion");
+  auto expr = builder.MakeNumericConstant(42);
+  for (int i = 0; i < TestASLBuilder::NUM_CONS; ++i)
+    builder.AddCon(expr, 0, 0, 0);
+  EXPECT_DEBUG_DEATH(builder.AddCon(expr, 0, 0, 0), "Assertion");
 }
 #endif
 
-TEST(ASLBuilderTest, SetLogicalCon) {
+TEST(ASLBuilderTest, AddLogicalCon) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
 #undef lcon_de
   cde *lcon_de = reinterpret_cast<ASL_fg*>(asl.get())->I.lcon_de_;
   EXPECT_EQ(0, lcon_de[2].e);
-  builder.SetLogicalCon(2, builder.MakeLogicalConstant(true));
-  EXPECT_EQ(reinterpret_cast<efunc*>(OPNUM), lcon_de[2].e->op);
+  builder.AddCon(builder.MakeNot(builder.MakeLogicalConstant(true)));
+  builder.AddCon(builder.MakeLogicalConstant(true));
+  EXPECT_EQ(reinterpret_cast<efunc*>(OPNUM), lcon_de[1].e->op);
 }
 
 #ifndef NDEBUG
-TEST(ASLBuilderTest, SetLogicalConIndexOutOfRange) {
+TEST(ASLBuilderTest, AddLogicalConIndexOutOfRange) {
   ASLPtr asl;
   TestASLBuilder builder(asl);
-  LogicalExpr expr = builder.MakeLogicalConstant(true);
-  EXPECT_DEBUG_DEATH(builder.SetLogicalCon(-1, expr), "Assertion");
-  EXPECT_DEBUG_DEATH(builder.SetLogicalCon(
-                       TestASLBuilder::NUM_LOGICAL_CONS, expr), "Assertion");
+  auto expr = builder.MakeLogicalConstant(true);
+  for (int i = 0; i < TestASLBuilder::NUM_LOGICAL_CONS; ++i)
+    builder.AddCon(expr);
+  EXPECT_DEBUG_DEATH(builder.AddCon(expr), "Assertion");
 }
 #endif
 
@@ -1021,12 +1024,13 @@ TEST(ASLBuilderTest, BuildColumnwiseMatrix) {
   ASLBuilder::ColumnSizeHandler handler = builder.GetColumnSizeHandler();
   handler.Add(0);
   handler.Add(2);
-  ASLBuilder::LinearConBuilder con = builder.GetLinearConBuilder(0, 0);
-  con = builder.GetLinearConBuilder(1, 2);
+  auto expr = NumericExpr();
+  ASLBuilder::LinearConBuilder con = builder.AddCon(expr, 0, 0, 0);
+  con = builder.AddCon(expr, 0, 0, 0);
   con.AddTerm(1, 5);
   con.AddTerm(2, 3);
-  con = builder.GetLinearConBuilder(2, 0);
-  con = builder.GetLinearConBuilder(3, 1);
+  con = builder.AddCon(expr, 0, 0, 0);
+  con = builder.AddCon(expr, 0, 0, 0);
   con.AddTerm(1, 1);
   const int ROWNOS[]  = {1, 3, 1};
   const double VALS[] = {5, 1, 3};
@@ -1043,5 +1047,5 @@ TEST(ASLBuilderTest, NLHandler) {
   mp::ReadNLString(HeaderToStr(MakeHeader()), handler);
 }
 
-// TODO: test SetVarBounds, SetConBounds, AddSuffix
+// TODO: test AddVar, SetConBounds, AddSuffix
 }

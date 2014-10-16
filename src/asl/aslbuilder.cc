@@ -210,6 +210,9 @@ void ASLBuilder::Init(ASL *asl) {
   for (int i = 0; i < suf::NUM_KINDS; ++i)
     suffixes_[i] = SuffixView(asl_, i);
   var_index_ = 0;
+  obj_index_ = 0;
+  con_index_ = 0;
+  lcon_index_ = 0;
 }
 
 ASLBuilder::~ASLBuilder() {
@@ -501,29 +504,6 @@ void ASLBuilder::EndBuild() {
   prob_adj_ASL(asl_);
 }
 
-void ASLBuilder::SetObj(int index, obj::Type type, NumericExpr expr) {
-  assert(0 <= index && index < asl_->i.n_obj_);
-  asl_->i.objtype_[index] = type;
-  if (!expr)
-    expr = MakeNumericConstant(0);
-  SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.obj_de_,
-              asl_->i.o_cexp1st_, expr.expr_, asl_->i.zao_);
-}
-
-void ASLBuilder::SetCon(int index, NumericExpr expr) {
-  assert(0 <= index && index < asl_->i.n_con_);
-  if (!expr)
-    expr = MakeNumericConstant(0);
-  SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.con_de_,
-              asl_->i.c_cexp1st_, expr.expr_, asl_->i.zac_);
-}
-
-void ASLBuilder::SetLogicalCon(int index, LogicalExpr expr) {
-  assert(0 <= index && index < asl_->i.n_lcon_);
-  SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.lcon_de_,
-              0, expr.expr_, 0);
-}
-
 ASLBuilder::LinearConBuilder::LinearConBuilder(ASLBuilder *b, int con_index)
   : LinearExprBuilder<cgrad>(b, b->asl_->i.Cgrad_ + con_index) {
   Edaginfo &info = builder_->asl_->i;
@@ -534,6 +514,37 @@ ASLBuilder::LinearConBuilder::LinearConBuilder(ASLBuilder *b, int con_index)
   a_colstarts_ = info.A_colstarts_ + 1;
   if (a_vals_)
     term_ = 0;
+}
+
+ASLBuilder::LinearObjBuilder
+    ASLBuilder::AddObj(obj::Type type, NumericExpr expr, int) {
+  int index = obj_index_++;
+  assert(0 <= index && index < asl_->i.n_obj_);
+  asl_->i.objtype_[index] = type;
+  if (!expr)
+    expr = MakeNumericConstant(0);
+  SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.obj_de_,
+              asl_->i.o_cexp1st_, expr.expr_, asl_->i.zao_);
+  return LinearObjBuilder(this, asl_->i.Ograd_ + index);
+}
+
+ASLBuilder::LinearConBuilder
+    ASLBuilder::AddCon(NumericExpr expr, double lb, double ub, int) {
+  int index = con_index_++;
+  assert(0 <= index && index < asl_->i.n_con_);
+  SetBounds(asl_->i.LUrhs_, asl_->i.Urhsx_, index, lb, ub);
+  if (!expr)
+    expr = MakeNumericConstant(0);
+  SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.con_de_,
+              asl_->i.c_cexp1st_, expr.expr_, asl_->i.zac_);
+  return LinearConBuilder(this, index);
+}
+
+void ASLBuilder::AddCon(LogicalExpr expr) {
+  int index = lcon_index_++;
+  assert(0 <= index && index < asl_->i.n_lcon_);
+  SetObjOrCon(index, reinterpret_cast<ASL_fg*>(asl_)->I.lcon_de_,
+              0, expr.expr_, 0);
 }
 
 ASLBuilder::LinearVarBuilder ASLBuilder::GetLinearVarBuilder(

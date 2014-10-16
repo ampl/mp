@@ -50,6 +50,7 @@
 #include <cstdlib>
 #include <limits>
 #include <string>
+#include <vector>
 
 namespace mp {
 
@@ -376,8 +377,8 @@ class NLHandler {
   }
 
   // Receives notification of the beginning of a numberof expression.
-  NumberOfArgHandler BeginNumberOf(int num_args, NumericExpr value) {
-    MP_UNUSED2(num_args, value);
+  NumberOfArgHandler BeginNumberOf(NumericExpr value, int num_args) {
+    MP_UNUSED2(value, num_args);
     return NumericArgHandler();
   }
   // Receives notification of the end of a numberof expression.
@@ -460,9 +461,31 @@ class NLHandler {
 // of a problem after it has been read.
 template <typename ProblemBuilder>
 class ProblemBuilderToNLAdapter {
+ public:
+  typedef typename ProblemBuilder::Expr Expr;
+  typedef typename ProblemBuilder::NumericExpr NumericExpr;
+  typedef typename ProblemBuilder::LogicalExpr LogicalExpr;
+  typedef typename ProblemBuilder::CountExpr CountExpr;
+  typedef typename ProblemBuilder::Variable Variable;
+
  private:
   ProblemBuilder &builder_;
   int num_continuous_vars_;
+
+  struct ObjInfo {
+    obj::Type type;
+    NumericExpr expr;
+    ObjInfo() : type(obj::MIN), expr() {}
+  };
+  std::vector<ObjInfo> objs_;
+
+  // Algebraic constraints
+  struct ConInfo {
+    NumericExpr expr;
+    double lb, ub;
+    ConInfo() : expr(), lb(0), ub(0) {}
+  };
+  std::vector<ConInfo> cons_;
 
  public:
   explicit ProblemBuilderToNLAdapter(ProblemBuilder &builder)
@@ -470,33 +493,33 @@ class ProblemBuilderToNLAdapter {
 
   ProblemBuilder &builder() { return builder_; }
 
-  typedef typename ProblemBuilder::Expr Expr;
-  typedef typename ProblemBuilder::NumericExpr NumericExpr;
-  typedef typename ProblemBuilder::LogicalExpr LogicalExpr;
-  typedef typename ProblemBuilder::CountExpr CountExpr;
-  typedef typename ProblemBuilder::Variable Variable;
-
   // Receives notification of an .nl header.
   void OnHeader(const NLHeader &h) {
     num_continuous_vars_ = h.num_continuous_vars();
+    objs_.resize(h.num_objs);
+    cons_.resize(h.num_algebraic_cons);
     builder_.SetInfo(h);
   }
 
   // Receives notification of an objective type and the nonlinear part of
   // an objective expression.
   void OnObj(int index, obj::Type type, NumericExpr expr) {
-    builder_.SetObj(index, type, expr);
+    assert(0 <= index && index < objs_.size());
+    ObjInfo &obj_info = objs_[index];
+    obj_info.type = type;
+    obj_info.expr = expr;
   }
 
   // Receives notification of the nonlinear part of an algebraic constraint
   // expression.
   void OnAlgebraicCon(int index, NumericExpr expr) {
-    builder_.SetCon(index, expr);
+    assert(0 <= index && index < cons_.size());
+    cons_[index].expr = expr;
   }
 
-  // Receives notification of a logical constraint expression.
-  void OnLogicalCon(int index, LogicalExpr expr) {
-    builder_.SetLogicalCon(index, expr);
+  // Receives notification of a logical constraint.
+  void OnLogicalCon(int, LogicalExpr expr) {
+    builder_.AddCon(expr);
   }
 
   // Receives notification of the nonlinear part of a common expression
@@ -514,14 +537,16 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of the linear part of an objective expression.
   LinearObjHandler OnLinearObjExpr(int obj_index, int num_linear_terms) {
-    return builder_.GetLinearObjBuilder(obj_index, num_linear_terms);
+    const ObjInfo &obj_info = objs_[obj_index];
+    return builder_.AddObj(obj_info.type, obj_info.expr, num_linear_terms);
   }
 
   typedef typename ProblemBuilder::LinearConBuilder LinearConHandler;
 
   // Receives notification of the linear part of a constraint expression.
   LinearConHandler OnLinearConExpr(int con_index, int num_linear_terms) {
-    return builder_.GetLinearConBuilder(con_index, num_linear_terms);
+    const ConInfo &con = cons_[con_index];
+    return builder_.AddCon(con.expr, con.lb, con.ub, num_linear_terms);
   }
 
   typedef typename ProblemBuilder::LinearVarBuilder LinearVarHandler;
@@ -540,7 +565,9 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of constraint bounds (ranges).
   void OnConBounds(int index, double lb, double ub) {
-    builder_.SetConBounds(index, lb, ub);
+    ConInfo &con = cons_[index];
+    con.lb = lb;
+    con.ub = ub;
   }
 
   // Receives notification of the initial value for a variable.
@@ -657,8 +684,8 @@ class ProblemBuilderToNLAdapter {
   }
 
   // Receives notification of the beginning of a numberof expression.
-  NumberOfArgHandler BeginNumberOf(int num_args, NumericExpr value) {
-    return builder_.BeginNumberOf(num_args, value);
+  NumberOfArgHandler BeginNumberOf(NumericExpr value, int num_args) {
+    return builder_.BeginNumberOf(value, num_args);
   }
   // Receives notification of the end of a numberof expression.
   NumericExpr EndNumberOf(NumberOfArgHandler handler) {
@@ -1300,7 +1327,7 @@ typename Handler::NumericExpr
     int num_args = ReadNumArgs(1);
     reader_.ReadTillEndOfLine();
     typename Handler::NumberOfArgHandler args =
-        handler_.BeginNumberOf(num_args, ReadNumericExpr());
+        handler_.BeginNumberOf(ReadNumericExpr(), num_args);
     DoReadArgs<NumericExprReader>(num_args - 1, args);
     return handler_.EndNumberOf(args);
   }

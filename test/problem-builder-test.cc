@@ -54,16 +54,14 @@ TEST(ProblemBuilderTest, SetInfo) {
 }
 
 TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
-  EXPECT_DISPATCH(SetObj(0, mp::obj::MIN, TestExpr()), "objective");
-  EXPECT_DISPATCH(SetCon(0, TestExpr()), "nonlinear constraint");
-  EXPECT_DISPATCH(SetLogicalCon(0, TestExpr()), "logical constraint");
+  EXPECT_DISPATCH(AddVar(0, 0, mp::var::INTEGER), "variable");
+  EXPECT_DISPATCH(AddObj(mp::obj::MIN, TestExpr(), 0), "objective");
+  EXPECT_DISPATCH(AddCon(TestExpr(), 0, 0, 0), "algebraic constraint");
+  EXPECT_DISPATCH(AddCon(TestExpr()), "logical constraint");
+  EXPECT_DISPATCH(GetLinearVarBuilder(0, 0), "linear defined variable");
   EXPECT_DISPATCH(SetCommonExpr(0, TestExpr(), 0),
                   "nonlinear defined variable");
   EXPECT_DISPATCH(SetComplement(0, 0, 0), "complementarity constraint");
-  EXPECT_DISPATCH(GetLinearObjBuilder(0, 0), "linear objective");
-  EXPECT_DISPATCH(GetLinearConBuilder(0, 0), "linear constraint");
-  EXPECT_DISPATCH(GetLinearVarBuilder(0, 0), "linear defined variable");
-  EXPECT_DISPATCH(AddVar(0, 0, mp::var::INTEGER), "variable");
   EXPECT_DISPATCH(SetConBounds(0, 0, 0), "constraint bound");
   EXPECT_DISPATCH(SetInitialValue(0, 0), "initial value");
   EXPECT_DISPATCH(SetInitialDualValue(0, 0), "initial dual value");

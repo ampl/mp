@@ -42,24 +42,10 @@ class LSProblemBuilder :
     public ProblemBuilder<LSProblemBuilder, ls::LSExpression> {
  private:
   ls::LSModel model_;
-  int num_continuous_vars_;
+  int num_objs_;
+  int num_cons_;
 
   std::vector<ls::LSExpression> vars_;
-
-  struct ObjInfo {
-    ls::LSObjectiveDirection direction;
-    ls::LSExpression expr;
-    ObjInfo() : direction(ls::OD_Minimize) {}
-  };
-  std::vector<ObjInfo> objs_;
-
-  // Algebraic constraints
-  struct ConInfo {
-    ls::LSExpression expr;
-    double lb, ub;
-    ConInfo() : lb(0), ub(0) {}
-  };
-  std::vector<ConInfo> cons_;
 
   // Common subexpressions
   std::vector<ls::LSExpression> exprs_;
@@ -124,25 +110,23 @@ class LSProblemBuilder :
   explicit LSProblemBuilder(ls::LSModel model);
 
   int num_vars() const { return vars_.size(); }
-  int num_continuous_vars() const { return num_continuous_vars_; }
-  int num_objs() const { return model_.getNbObjectives(); }
-  int num_cons() const { return cons_.size(); }
+
+  // Returns the number of objectives.
+  // The return value may be different from the one returned by
+  // model_.getNbObjectives() because a dummy LocalSolver objective is
+  // added if the problem doesn't containt objectives.
+  int num_objs() const { return num_objs_; }
+
+  // Returns the number of constraints.
+  // The return value may be different from the one returned by
+  // model_.getNbConstraints() because two LocalSolver constaints are
+  // added for a single range constraint.
+  int num_cons() const { return num_cons_; }
 
   const ls::LSExpression *vars() const { return &vars_[0]; }
 
   void SetInfo(const ProblemInfo &info);
   void EndBuild();
-
-  void SetObj(int index, obj::Type type, ls::LSExpression expr);
-
-  void SetCon(int index, ls::LSExpression expr) {
-    if (expr != ls::LSExpression())
-      cons_[index].expr = expr;
-  }
-
-  void SetLogicalCon(int, ls::LSExpression expr) {
-    model_.addConstraint(expr);
-  }
 
   void SetCommonExpr(int index, ls::LSExpression expr, int) {
     exprs_[index] = expr;
@@ -175,26 +159,20 @@ class LSProblemBuilder :
     }
   };
 
+  void AddVar(double lb, double ub, var::Type type);
+
   typedef LinearExprBuilder LinearObjBuilder;
 
-  LinearObjBuilder GetLinearObjBuilder(int obj_index, int) {
-    return LinearObjBuilder(
-          *this, objs_[obj_index].expr, model_.createExpression(ls::O_Sum));
-  }
+  LinearObjBuilder AddObj(obj::Type type, ls::LSExpression expr, int);
 
   typedef LinearExprBuilder LinearConBuilder;
 
-  LinearConBuilder GetLinearConBuilder(int con_index, int) {
-    return LinearConBuilder(
-          *this, cons_[con_index].expr, model_.createExpression(ls::O_Sum));
-  }
+  // Adds an algebraic constraint.
+  LinearConBuilder AddCon(ls::LSExpression expr, double lb, double ub, int);
 
-  void AddVar(double lb, double ub, var::Type type);
-
-  void SetConBounds(int index, double lb, double ub) {
-    ConInfo &con = cons_[index];
-    con.lb = lb;
-    con.ub = ub;
+  // Adds a logical constraint.
+  void AddCon(ls::LSExpression expr) {
+    model_.addConstraint(expr);
   }
 
   // Ignore Jacobian column sizes.
@@ -271,7 +249,7 @@ class LSProblemBuilder :
     }
   };
 
-  NumberOfArgHandler BeginNumberOf(int, ls::LSExpression value) {
+  NumberOfArgHandler BeginNumberOf(ls::LSExpression value, int) {
     return NumberOfArgHandler(model_, value);
   }
   ls::LSExpression EndNumberOf(NumberOfArgHandler handler) {

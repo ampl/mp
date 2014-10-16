@@ -65,6 +65,9 @@ class ASLBuilder {
   static const double DVALUE[];
   SuffixView suffixes_[suf::NUM_KINDS];
   int var_index_;
+  int obj_index_;
+  int con_index_;
+  int lcon_index_;
 
   // "Static" data for the functions in fg_read.
   Static *static_;
@@ -222,29 +225,6 @@ class ASLBuilder {
     // TODO: check type
     SetBounds(asl_->i.LUv_, asl_->i.Uvx_, var_index_++, lb, ub);
   }
-  void SetConBounds(int index, double lb, double ub) {
-    SetBounds(asl_->i.LUrhs_, asl_->i.Urhsx_, index, lb, ub);
-  }
-
-  void SetComplement(int, int, int) {
-    // TODO
-  }
-
-  void SetCommonExpr(int, NumericExpr, int) {
-    // TODO
-  }
-
-  // Sets objective type and expression.
-  // index: Index of an objective; 0 <= index < num_objs.
-  void SetObj(int index, obj::Type type, NumericExpr expr);
-
-  // Sets an algebraic constraint expression.
-  // index: Index of an algebraic contraint; 0 <= index < num_algebraic_cons.
-  void SetCon(int index, NumericExpr expr);
-
-  // Sets a logical constraint expression.
-  // index: Index of a logical contraint; 0 <= index < num_logical_cons.
-  void SetLogicalCon(int index, LogicalExpr expr);
 
   template <typename Grad>
   class LinearExprBuilder {
@@ -300,13 +280,24 @@ class ASLBuilder {
     }
   };
 
-  LinearObjBuilder GetLinearObjBuilder(int index, int) {
-    return LinearObjBuilder(this, asl_->i.Ograd_ + index);
-  }
-  LinearConBuilder GetLinearConBuilder(int index, int) {
-    return LinearConBuilder(this, index);
-  }
+  // Adds and objective.
+  LinearObjBuilder AddObj(obj::Type type, NumericExpr expr, int);
+
+  // Adds an algebraic constraint.
+  LinearConBuilder AddCon(NumericExpr expr, double lb, double ub, int);
+
+  // Adds a logical constraint.
+  void AddCon(LogicalExpr expr);
+
   LinearVarBuilder GetLinearVarBuilder(int index, int num_terms);
+
+  void SetComplement(int, int, int) {
+    // TODO
+  }
+
+  void SetCommonExpr(int, NumericExpr, int) {
+    // TODO
+  }
 
   class ColumnSizeHandler {
    private:
@@ -503,7 +494,7 @@ class ASLBuilder {
 
   typedef NumericArgHandler NumberOfArgHandler;
 
-  NumberOfArgHandler BeginNumberOf(int num_args, NumericExpr value) {
+  NumberOfArgHandler BeginNumberOf(NumericExpr value, int num_args) {
     NumericArgHandler handler(
           MakeIterated(expr::NUMBEROF, ArrayRef<NumericExpr>(0, num_args)));
     handler.AddArg(value);

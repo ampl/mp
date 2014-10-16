@@ -43,14 +43,17 @@
 #include "ilogcp/ilogcp.h"
 #include "asl/aslbuilder.h"
 #include "mp/nl.h"
+#include "feature.h"
 
 extern "C" {
 #include "asl.h"
 #include "nlp.h"
 }
 
+typedef mp::IlogCPSolver Solver;
+enum {FEATURES = feature::ALL};
+
 #include "solver-impl-test.h"
-#include "../gtest-extra.h"
 
 using mp::Expr;
 using mp::NumericExpr;
@@ -64,20 +67,11 @@ namespace obj = mp::obj;
 
 using std::string;
 
-namespace {
-
-SolverPtr CreateSolver() { return SolverPtr(new IlogCPSolver()); }
+// TODO
+/*namespace {
 
 INSTANTIATE_TEST_CASE_P(IlogCP, SolverImplTest,
-    ::testing::Values(SolverTestParam(CreateSolver, feature::ALL)));
-
-TEST_P(SolverImplTest, SolveBalassign0) {
-  EXPECT_EQ(14, Solve("balassign0").obj);
-}
-
-TEST_P(SolverImplTest, SolveBalassign1) {
-  EXPECT_EQ(14, Solve("balassign1").obj);
-}
+    ::testing::Values(SolverTestParam(CreateSolver, )));
 
 // ----------------------------------------------------------------------------
 // element constraint tests
@@ -685,3 +679,4 @@ TEST_P(SolverTest, CPLEXInterruptSolution) {
 #endif
 }
 
+*/
