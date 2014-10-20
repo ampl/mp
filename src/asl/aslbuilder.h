@@ -478,7 +478,7 @@ class ASLBuilder {
   VarArgHandler BeginVarArg(expr::Kind kind, int num_args);
 
   VarArgExpr EndVarArg(VarArgHandler handler) {
-    return Expr::Create<VarArgExpr>(reinterpret_cast<::expr*>(handler.expr_));
+    return Expr::Create<VarArgExpr>(reinterpret_cast< ::expr*>(handler.expr_));
   }
 
   VarArgExpr MakeVarArg(expr::Kind kind, ArrayRef<NumericExpr> args);
