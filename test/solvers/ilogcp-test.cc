@@ -64,19 +64,28 @@ class FunctionTest : public SolverImplTest {
   mp::Function element_;
   mp::Function in_relation_;
 
+  template <typename IndexFactory>
   struct CallFactory : NumericExprFactory {
     int num_args_;
+    IndexFactory factory_;
 
-    CallFactory(int num_args) : num_args_(num_args) {}
+    CallFactory(int num_args, IndexFactory factory)
+      : num_args_(num_args), factory_(factory) {}
 
     NumericExpr Create(ProblemBuilder &pb) const {
       auto args = pb.BeginCall(0, num_args_);
       for (int i = 1; i < num_args_; ++i)
         args.AddArg(pb.MakeNumericConstant(11 * i));
-      args.AddArg(pb.MakeVariable(1));
+      args.AddArg(factory_(pb));
       return pb.EndCall(args);
     }
   };
+
+  template <typename IndexFactory>
+  CallFactory<IndexFactory> MakeCallFactory(
+      int num_args, IndexFactory factory) {
+    return CallFactory<IndexFactory>(num_args, factory);
+  }
 
   virtual void SetInfo(ProblemBuilder &pb, mp::ProblemInfo &info) {
     info.num_funcs = 2;
@@ -92,63 +101,90 @@ class FunctionTest : public SolverImplTest {
 // element constraint tests
 
 TEST_F(FunctionTest, ElementConstraint) {
-  EXPECT_EQ(22, Eval(CallFactory(4), 1));
+  EXPECT_EQ(22, Eval(MakeCallFactory(4, VariableFactory(1)), 1));
 }
 
 TEST_F(FunctionTest, TooFewArgsToElementConstraint) {
-  EXPECT_THROW_MSG(Eval(CallFactory(1), 0),
+  EXPECT_THROW_MSG(Eval(MakeCallFactory(1, VariableFactory(1)), 0),
       mp::Error, "element: too few arguments");
 }
 
-/*TEST_F(FunctionTest, ElementConstantIndexOutOfBounds) {
-  Expr args[] = { MakeConst(11), MakeConst(22), MakeConst(2) };
-  EXPECT_THROW_MSG(Eval(MakeCall(element_, args)),
+TEST_F(FunctionTest, ElementConstantIndexOutOfBounds) {
+  EXPECT_THROW_MSG(Eval(MakeCallFactory(3, NumericConstantFactory(2))),
         mp::Error, "element: index 2 is out of bounds");
 }
 
-TEST_F(FunctionTest, ElementConstantAtConstantIndex) {
-  Expr args[] = { MakeConst(11), MakeConst(22), MakeConst(1) };
-  EXPECT_EQ(22, Eval(MakeCall(element_, args)));
+TEST_F(FunctionTest, ElementAtConstantIndex) {
+  EXPECT_EQ(22, Eval(MakeCallFactory(3, NumericConstantFactory(1))));
 }
 
 TEST_F(FunctionTest, ElementExprAtConstantIndex) {
-  Expr args[] = { x, MakeConst(22), MakeConst(0) };
-  EXPECT_EQ(42, Eval(MakeCall(element_, args), 42));
+  struct Factory : NumericExprFactory {
+    NumericExpr Create(ProblemBuilder &pb) const {
+      auto args = pb.BeginCall(0, 3);
+      args.AddArg(x);
+      args.AddArg(pb.MakeNumericConstant(22));
+      args.AddArg(pb.MakeNumericConstant(0));
+      return pb.EndCall(args);
+    }
+  } factory;
+  EXPECT_EQ(42, Eval(factory, 42));
 }
 
 TEST_F(FunctionTest, ElementExprPlusConstantAtConstantIndex) {
-  Expr args[] = {
-      MakeConst(11), MakeBinary(mp::expr::ADD, x, MakeConst(2)), MakeConst(1)
-  };
-  EXPECT_EQ(44, Eval(MakeCall(element_, args), 42));
+  struct Factory : NumericExprFactory {
+    NumericExpr Create(ProblemBuilder &pb) const {
+      auto args = pb.BeginCall(0, 3);
+      args.AddArg(pb.MakeNumericConstant(11));
+      args.AddArg(pb.MakeBinary(mp::expr::ADD, x, pb.MakeNumericConstant(2)));
+      args.AddArg(pb.MakeNumericConstant(1));
+      return pb.EndCall(args);
+    }
+  } factory;
+  EXPECT_EQ(42, Eval(factory, 40));
 }
 
 TEST_F(FunctionTest, ElementVariableIndexOutOfBounds) {
-  Expr args[] = { MakeConst(11), MakeConst(22), x };
-  EXPECT_EQ(mp::sol::INFEASIBLE, Eval(MakeCall(element_, args), 2).solve_code());
+  EXPECT_EQ(mp::sol::INFEASIBLE,
+            Eval(MakeCallFactory(3, VariableFactory(1)), 2).solve_code());
 }
 
 TEST_F(FunctionTest, ElementConstantAtVariableIndex) {
-  Expr args[] = { MakeConst(11), MakeConst(22), x };
-  EXPECT_EQ(22, Eval(MakeCall(element_, args), 1));
+  EXPECT_EQ(22, Eval(MakeCallFactory(3, VariableFactory(1)), 1));
 }
 
 TEST_F(FunctionTest, ElementExprAtVariableIndex) {
-  Expr args[] = { x, MakeConst(22), y };
-  EXPECT_EQ(42, Eval(MakeCall(element_, args), 42, 0));
+  struct Factory : NumericExprFactory {
+    NumericExpr Create(ProblemBuilder &pb) const {
+      auto args = pb.BeginCall(0, 3);
+      args.AddArg(x);
+      args.AddArg(pb.MakeNumericConstant(22));
+      args.AddArg(y);
+      return pb.EndCall(args);
+    }
+  } factory;
+  EXPECT_EQ(42, Eval(factory, 42, 0));
 }
 
 TEST_F(FunctionTest, ElementExprPlusConstantAtVariableIndex) {
-  Expr args[] = {
-      MakeConst(11), MakeBinary(mp::expr::ADD, x, MakeConst(2)), y
-  };
-  EXPECT_EQ(44, Eval(MakeCall(element_, args), 42, 1));
+  struct Factory : NumericExprFactory {
+    NumericExpr Create(ProblemBuilder &pb) const {
+      auto args = pb.BeginCall(0, 3);
+      args.AddArg(pb.MakeNumericConstant(11));
+      args.AddArg(pb.MakeBinary(mp::expr::ADD, x, pb.MakeNumericConstant(2)));
+      args.AddArg(y);
+      return pb.EndCall(args);
+    }
+  } factory;
+  EXPECT_EQ(42, Eval(factory, 40, 1));
 }
 
 // ----------------------------------------------------------------------------
 // in_relation constraint tests
 
-TEST_F(FunctionTest, InRelationConstraint) {
+// TODO: update
+
+/*TEST_F(FunctionTest, InRelationConstraint) {
   Problem p;
   p.AddVar(0, 100, var::INTEGER);
   p.AddObj(obj::MIN, MakeVariable(0));
