@@ -213,6 +213,7 @@ void ASLBuilder::Init(ASL *asl) {
   obj_index_ = 0;
   con_index_ = 0;
   lcon_index_ = 0;
+  expr_index_ = 0;
 }
 
 ASLBuilder::~ASLBuilder() {
@@ -505,7 +506,7 @@ void ASLBuilder::EndBuild() {
 }
 
 ASLBuilder::LinearConBuilder::LinearConBuilder(ASLBuilder *b, int con_index)
-  : LinearExprBuilder<cgrad>(b, b->asl_->i.Cgrad_ + con_index) {
+  : BasicLinearExprBuilder<cgrad>(b, b->asl_->i.Cgrad_ + con_index) {
   Edaginfo &info = builder_->asl_->i;
   con_index_ = con_index + info.Fortran_;
   a_vals_ = info.A_vals_;
@@ -547,13 +548,23 @@ void ASLBuilder::AddCon(LogicalExpr expr) {
               0, expr.expr_, 0);
 }
 
-ASLBuilder::LinearVarBuilder ASLBuilder::GetLinearVarBuilder(
-    int index, int num_terms) {
-  // TODO: handle position (not passed yet)
+ASLBuilder::LinearExprBuilder ASLBuilder::BeginCommonExpr(int num_terms) {
+  return LinearExprBuilder(
+        Allocate<linpart>(num_terms * sizeof(linpart)), num_terms);
+}
+
+NumericExpr ASLBuilder::EndCommonExpr(LinearExprBuilder builder,
+                                      NumericExpr expr, int position) {
+  // TODO: handle position and expr
+  int index = expr_index_++;
   cexp *e = reinterpret_cast<ASL_fg*>(asl_)->I.cexps_ + index - static_->_nv0;
-  e->nlin = num_terms;
-  e->L = Allocate<linpart>(num_terms * sizeof(linpart));
-  return LinearVarBuilder(e->L);
+  e->nlin = builder.num_terms();
+  e->L = builder.get();
+  assert(index >= 0 && index < static_->_max_var - asl_->i.n_var_);
+  index += asl_->i.n_var_;
+  return Expr::Create<Variable>(
+      reinterpret_cast< ::expr*>(reinterpret_cast<ASL_fg*>(asl_)->I.var_e_
+          + index));
 }
 
 ASLBuilder::ColumnSizeHandler ASLBuilder::GetColumnSizeHandler() {
@@ -665,14 +676,6 @@ Variable ASLBuilder::MakeVariable(int var_index) {
           + var_index));
 }
 
-Variable ASLBuilder::MakeCommonExprRef(int index) {
-  assert(index >= 0 && index < static_->_max_var - asl_->i.n_var_);
-  index += asl_->i.n_var_;
-  return Expr::Create<Variable>(
-      reinterpret_cast< ::expr*>(reinterpret_cast<ASL_fg*>(asl_)->I.var_e_
-          + index));
-}
-
 UnaryExpr ASLBuilder::MakeUnary(expr::Kind kind, NumericExpr arg) {
   CheckKind<UnaryExpr>(kind, "unary");
   UnaryExpr expr = MakeUnary<UnaryExpr>(kind, arg);
@@ -725,17 +728,23 @@ CallExpr ASLBuilder::EndCall(CallArgHandler h) {
   return Expr::Create<CallExpr>(reinterpret_cast< ::expr*>(h.expr_));
 }
 
-VarArgExpr ASLBuilder::MakeVarArg(expr::Kind kind, ArrayRef<NumericExpr> args) {
+ASLBuilder::VarArgHandler
+    ASLBuilder::BeginVarArg(expr::Kind kind, int num_args) {
   CheckKind<VarArgExpr>(kind, "vararg");
   expr_va *result = Allocate<expr_va>();
   result->op = r_ops_[opcode(kind)];
-  int num_args = SafeInt<int>(args.size()).value();
   de *d = result->L.d = Allocate<de>(
         SafeInt<int>(num_args) * sizeof(de) + sizeof(::expr*));
-  for (int i = 0; i < num_args; ++i)
-    d[i].e = args[i].expr_;
   d[num_args].e = 0;
-  return Expr::Create<VarArgExpr>(reinterpret_cast< ::expr*>(result));
+  return VarArgHandler(result);
+}
+
+VarArgExpr ASLBuilder::MakeVarArg(expr::Kind kind, ArrayRef<NumericExpr> args) {
+  int num_args = SafeInt<int>(args.size()).value();
+  VarArgHandler handler(BeginVarArg(kind, num_args));
+  for (int i = 0; i < num_args; ++i)
+    handler.AddArg(args[i]);
+  return EndVarArg(handler);
 }
 
 IteratedLogicalExpr ASLBuilder::MakeIteratedLogical(

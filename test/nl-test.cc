@@ -429,10 +429,17 @@ class TestNLHandler {
    private:
     std::string str_;
     fmt::Writer &log_;
+    bool terminate_;
 
    public:
-    explicit LinearExprHandler(fmt::Writer &log) : log_(log) {}
-    ~LinearExprHandler() { log_ << str_ << ';'; }
+    explicit LinearExprHandler(fmt::Writer &log, bool terminate = true)
+      : log_(log), terminate_(terminate) {}
+    ~LinearExprHandler() {
+      log_ << str_;
+      if (terminate_)
+        log_ << ';';
+    }
+
     void AddTerm(int var_index, double coef) {
       if (!str_.empty())
         str_ += " + ";
@@ -448,10 +455,6 @@ class TestNLHandler {
   }
   LinearExprHandler OnLinearConExpr(int index, int num_terms) {
     WriteSep().write("c{} {}: ", index, num_terms);
-    return LinearExprHandler(log);
-  }
-  LinearExprHandler OnLinearVarExpr(int index, int num_terms) {
-    WriteSep().write("v{} {}: ", index, num_terms);
     return LinearExprHandler(log);
   }
 
@@ -482,8 +485,13 @@ class TestNLHandler {
     WriteSep() << "l" << index << ": " << expr << ";";
   }
 
-  void OnCommonExpr(int index, std::string expr, int position) {
-    WriteSep().write("v{}/{} = {};", index, position, expr);
+  LinearExprHandler BeginCommonExpr(int num_terms) {
+    WriteSep().write("e{}: ", num_terms);
+    return LinearExprHandler(log, false);
+  }
+  void EndCommonExpr(int index, LinearExprHandler handler,
+                     std::string expr, int position) {
+    log.write(" + {} {}/{};", expr, index, position);
   }
 
   void OnInitialValue(int var_index, double value) {
@@ -618,10 +626,14 @@ class TestNLHandler {
   typedef ArgHandler NumericArgHandler;
   typedef ArgHandler LogicalArgHandler;
 
-  ArgHandler BeginVarArg(expr::Kind kind, int) {
-    return ArgHandler(fmt::format("v{}", opcode(kind)));
+  typedef ArgHandler VarArgHandler;
+
+  VarArgHandler BeginVarArg(expr::Kind kind, int) {
+    return VarArgHandler(fmt::format("v{}", opcode(kind)));
   }
-  std::string EndVarArg(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
+  std::string EndVarArg(VarArgHandler h) {
+    return MakeVarArg(h.name_, h.args_);
+  }
 
   ArgHandler BeginSum(int) { return ArgHandler("sum"); }
   std::string EndSum(ArgHandler h) { return MakeVarArg(h.name_, h.args_); }
@@ -736,18 +748,28 @@ struct TestNLHandler2 {
   struct LinearObjHandler {
     void AddTerm(int, double) {}
   };
-  struct LinearConHandler {
-    void AddTerm(int, double) {}
-  };
+
   LinearObjHandler OnLinearObjExpr(int, int) {
     return LinearObjHandler();
   }
+
+  struct LinearConHandler {
+    void AddTerm(int, double) {}
+  };
+
   LinearConHandler OnLinearConExpr(int, int) {
     return LinearConHandler();
   }
-  LinearConHandler OnLinearVarExpr(int, int) {
-    return LinearConHandler();
+
+  struct LinearExprHandler {
+    void AddTerm(int, double) {}
+  };
+
+  LinearExprHandler BeginCommonExpr(int) {
+    return LinearExprHandler();
   }
+
+  void EndCommonExpr(int, LinearExprHandler, TestNumericExpr, int) {}
 
   struct ColumnSizeHandler {
     void Add(int) {}
@@ -757,7 +779,6 @@ struct TestNLHandler2 {
   void OnObj(int, mp::obj::Type, TestNumericExpr) {}
   void OnAlgebraicCon(int, TestNumericExpr) {}
   void OnLogicalCon(int, TestLogicalExpr) {}
-  void OnCommonExpr(int, TestNumericExpr, int) {}
 
   void OnInitialValue(int, double) {}
   void OnInitialDualValue(int, double) {}
@@ -810,12 +831,12 @@ struct TestNLHandler2 {
     void AddArg(LogicalExpr) {}
   };
 
-  NumericArgHandler BeginVarArg(expr::Kind, int) {
-    return NumericArgHandler();
-  }
-  TestNumericExpr EndVarArg(NumericArgHandler) {
-    return TestNumericExpr();
-  }
+  struct VarArgHandler {
+    void AddArg(NumericExpr) {}
+  };
+
+  VarArgHandler BeginVarArg(expr::Kind, int) { return VarArgHandler(); }
+  TestNumericExpr EndVarArg(VarArgHandler) { return TestNumericExpr(); }
 
   NumericArgHandler BeginSum(int) { return NumericArgHandler(); }
   TestNumericExpr EndSum(NumericArgHandler) { return TestNumericExpr(); }
@@ -1201,8 +1222,8 @@ TEST(NLTest, ReadFunction) {
 }
 
 TEST(NLTest, ReadCommonExpr) {
-  EXPECT_READ("v0/1 = b2(v0, 42);", "V5 0 1\no2\nv0\nn42\n");
-  EXPECT_READ("v0 2: 2 * v1 + 3 * v0; v0/1 = 0;", "V5 2 1\n1 2.0\n0 3\nn0\n");
+  EXPECT_READ("e0:  + b2(v0, 42) 0/1;", "V5 0 1\no2\nv0\nn42\n");
+  EXPECT_READ("e2: 2 * v1 + 3 * v0 + 0 0/1;", "V5 2 1\n1 2.0\n0 3\nn0\n");
   EXPECT_READ_ERROR("V4 0 1\nv0\n", "(input):17:2: integer 4 out of bounds");
   EXPECT_READ_ERROR("V6 0 1\nv0\n", "(input):17:2: integer 6 out of bounds");
 }
@@ -1240,11 +1261,7 @@ TEST(NLTest, InvalidSegmentType) {
 }
 
 TEST(NLProblemBuilderTest, Forward) {
-  EXPECT_FORWARD(OnCommonExpr, SetCommonExpr, (44, TestNumericExpr(ID), 55));
   EXPECT_FORWARD(OnComplement, SetComplement, (66, 77, 88));
-
-  EXPECT_FORWARD_RET(OnLinearVarExpr, GetLinearVarBuilder,
-                     (44, 55), TestLinearVarBuilder(ID));
 
   EXPECT_FORWARD(OnInitialValue, SetInitialValue, (33, 4.4));
   EXPECT_FORWARD(OnInitialDualValue, SetInitialDualValue, (55, 6.6));
@@ -1282,8 +1299,8 @@ TEST(NLProblemBuilderTest, Forward) {
                      TestNumericExpr(ID2));
 
   EXPECT_FORWARD_RET(BeginVarArg, BeginVarArg, (expr::MAX, 77),
-                     TestNumericArgHandler(ID));
-  EXPECT_FORWARD_RET(EndVarArg, EndVarArg, (TestNumericArgHandler(ID)),
+                     TestVarArgHandler(ID));
+  EXPECT_FORWARD_RET(EndVarArg, EndVarArg, (TestVarArgHandler(ID)),
                      TestNumericExpr(ID2));
 
   EXPECT_FORWARD_RET(BeginSum, BeginSum, (88), TestNumericArgHandler(ID));
@@ -1380,6 +1397,24 @@ TEST(NLProblemBuilderTest, OnLogicalCon) {
   auto expr = TestLogicalExpr(ID);
   EXPECT_CALL(builder, AddCon(expr));
   adapter.OnLogicalCon(0, expr);
+}
+
+TEST(NLProblemBuilderTest, OnCommonExpr) {
+  StrictMock<MockProblemBuilder> builder;
+  mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  auto header = mp::NLHeader();
+  header.num_common_exprs_in_cons = 1;
+  EXPECT_CALL(builder, SetInfo(testing::Ref(header)));
+  adapter.OnHeader(header);
+  auto expr_builder = TestLinearExprBuilder(ID);
+  EXPECT_CALL(builder, BeginCommonExpr(11)).WillOnce(Return(expr_builder));
+  adapter.BeginCommonExpr(11);
+  auto expr = TestNumericExpr(ID);
+  auto result = TestNumericExpr(ID2);
+  EXPECT_CALL(builder, EndCommonExpr(expr_builder, expr, 22)).
+      WillOnce(Return(result));
+  adapter.EndCommonExpr(0, expr_builder, expr, 22);
+  EXPECT_EQ(result, adapter.OnCommonExprRef(0));
 }
 
 TEST(NLTest, ErrorOnNonexistentNLFile) {

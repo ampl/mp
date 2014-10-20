@@ -68,6 +68,7 @@ class ASLBuilder {
   int obj_index_;
   int con_index_;
   int lcon_index_;
+  int expr_index_;
 
   // "Static" data for the functions in fg_read.
   Static *static_;
@@ -227,13 +228,14 @@ class ASLBuilder {
   }
 
   template <typename Grad>
-  class LinearExprBuilder {
+  class BasicLinearExprBuilder {
    protected:
     ASLBuilder *builder_;
     Grad **term_;
 
    public:
-    LinearExprBuilder(ASLBuilder *b, Grad **term) : builder_(b), term_(term) {}
+    BasicLinearExprBuilder(ASLBuilder *b, Grad **term)
+      : builder_(b), term_(term) {}
 
     void AddTerm(int var_index, double coef) {
       Grad *og = builder_->Allocate<Grad>();
@@ -245,9 +247,9 @@ class ASLBuilder {
     }
   };
 
-  typedef LinearExprBuilder<ograd> LinearObjBuilder;
+  typedef BasicLinearExprBuilder<ograd> LinearObjBuilder;
 
-  class LinearConBuilder : private LinearExprBuilder<cgrad> {
+  class LinearConBuilder : private BasicLinearExprBuilder<cgrad> {
    private:
     int con_index_;
     double *a_vals_;
@@ -259,24 +261,30 @@ class ASLBuilder {
 
     void AddTerm(int var_index, double coef) {
       if (!a_vals_)
-        return LinearExprBuilder<cgrad>::AddTerm(var_index, coef);
+        return BasicLinearExprBuilder<cgrad>::AddTerm(var_index, coef);
       std::size_t elt_index = a_colstarts_[var_index]++;
       a_vals_[elt_index] = coef;
       a_rownos_[elt_index] = con_index_;
     }
   };
 
-  class LinearVarBuilder {
+  class LinearExprBuilder {
    private:
     linpart *linpart_;
+    int num_terms_;
+    int index_;
 
    public:
-    explicit LinearVarBuilder(linpart *lp) : linpart_(lp) {}
+    LinearExprBuilder(linpart *lp, int num_terms)
+      : linpart_(lp), num_terms_(num_terms), index_(0) {}
+
+    linpart *get() const { return linpart_; }
+    int num_terms() const { return num_terms_; }
 
     void AddTerm(int var_index, double coef) {
-      linpart_->v.i = var_index;
-      linpart_->fac = coef;
-      ++linpart_;
+      linpart_[index_].v.i = var_index;
+      linpart_[index_].fac = coef;
+      ++index_;
     }
   };
 
@@ -289,13 +297,12 @@ class ASLBuilder {
   // Adds a logical constraint.
   void AddCon(LogicalExpr expr);
 
-  LinearVarBuilder GetLinearVarBuilder(int index, int num_terms);
+  LinearExprBuilder BeginCommonExpr(int num_terms);
+
+  NumericExpr EndCommonExpr(LinearExprBuilder builder,
+                            NumericExpr expr, int position);
 
   void SetComplement(int, int, int) {
-    // TODO
-  }
-
-  void SetCommonExpr(int, NumericExpr, int) {
     // TODO
   }
 
@@ -382,8 +389,6 @@ class ASLBuilder {
 
   Variable MakeVariable(int var_index);
 
-  Variable MakeCommonExprRef(int index);
-
   UnaryExpr MakeUnary(expr::Kind kind, NumericExpr arg);
 
   BinaryExpr MakeBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
@@ -457,13 +462,23 @@ class ASLBuilder {
   typedef ArgHandler<LogicalExpr> LogicalArgHandler;
   typedef ArgHandler<NumericExpr> NumericArgHandler;
 
-  NumericArgHandler BeginVarArg(expr::Kind kind, int num_args) {
-    return NumericArgHandler(
-          MakeIterated(kind, ArrayRef<NumericExpr>(0, num_args)));
-  }
+  class VarArgHandler {
+   private:
+    expr_va *expr_;
+    int arg_index_;
 
-  VarArgExpr EndVarArg(NumericArgHandler handler) {
-    return Expr::Create<VarArgExpr>(handler.expr_);
+    friend class ASLBuilder;
+
+    VarArgHandler(expr_va *e) : expr_(e), arg_index_(0) {}
+
+   public:
+    void AddArg(NumericExpr arg) { expr_->L.d[arg_index_++].e = arg.expr_; }
+  };
+
+  VarArgHandler BeginVarArg(expr::Kind kind, int num_args);
+
+  VarArgExpr EndVarArg(VarArgHandler handler) {
+    return Expr::Create<VarArgExpr>(reinterpret_cast<::expr*>(handler.expr_));
   }
 
   VarArgExpr MakeVarArg(expr::Kind kind, ArrayRef<NumericExpr> args);
@@ -496,7 +511,7 @@ class ASLBuilder {
 
   NumberOfArgHandler BeginNumberOf(NumericExpr value, int num_args) {
     NumericArgHandler handler(
-          MakeIterated(expr::NUMBEROF, ArrayRef<NumericExpr>(0, num_args)));
+          MakeIterated(expr::NUMBEROF, ArrayRef<NumericExpr>(0, num_args + 1)));
     handler.AddArg(value);
     return handler;
   }

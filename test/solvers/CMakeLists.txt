@@ -1,3 +1,10 @@
+check_cxx_source_compiles("
+  #include <thread>
+  int main() {}" MP_THREAD)
+if (MP_THREAD)
+  add_definitions(-DMP_THREAD=1)
+endif ()
+
 if (TARGET gecode)
   add_mp_test(gecode-test PREFIX gecode-test.cc
     LIBS amplgecode-static solver-impl-test)

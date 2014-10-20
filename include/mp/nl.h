@@ -187,20 +187,25 @@ class NLHandler {
     MP_UNUSED2(index, expr);
   }
 
-  // Receives notification of the nonlinear part of a common expression
-  // (defined variable).
-  void OnCommonExpr(int index, NumericExpr expr, int position) {
-    MP_UNUSED3(index, expr, position);
+  struct LinearExprHandler {
+    void AddTerm(int var_index, double coef) { MP_UNUSED2(var_index, coef); }
+  };
+
+  // Receives notification of a common expression (defined variable).
+  LinearExprHandler BeginCommonExpr(int num_linear_terms) {
+    MP_UNUSED(num_linear_terms);
+    return LinearExprHandler();
+  }
+
+  void EndCommonExpr(int index, LinearExprHandler handler,
+                     NumericExpr expr, int position) {
+    MP_UNUSED3(index, handler, expr); MP_UNUSED(position);
   }
 
   // Receives notification of a complementarity relation.
   void OnComplement(int con_index, int var_index, int flags) {
     MP_UNUSED3(con_index, var_index, flags);
   }
-
-  struct LinearExprHandler {
-    void AddTerm(int var_index, double coef) { MP_UNUSED2(var_index, coef); }
-  };
 
   typedef LinearExprHandler LinearObjHandler;
 
@@ -220,8 +225,8 @@ class NLHandler {
 
   typedef LinearExprHandler LinearVarHandler;
 
-  // Receives notification of the linear part of a defined variable expression.
-  LinearVarHandler OnLinearVarExpr(int var_index, int num_linear_terms) {
+  // Receives notification of the linear part of a common expression.
+  LinearVarHandler OnLinearCommonExpr(int var_index, int num_linear_terms) {
     MP_UNUSED2(var_index, num_linear_terms);
     return LinearVarHandler();
   }
@@ -276,6 +281,7 @@ class NLHandler {
 
   typedef ArgHandler NumericArgHandler;
   typedef ArgHandler LogicalArgHandler;
+  typedef ArgHandler VarArgHandler;
   typedef ArgHandler CallArgHandler;
   typedef ArgHandler NumberOfArgHandler;
 
@@ -344,12 +350,12 @@ class NLHandler {
   }
 
   // Receives notification of the beginning of a vararg expression (min or max).
-  NumericArgHandler BeginVarArg(expr::Kind kind, int num_args) {
+  VarArgHandler BeginVarArg(expr::Kind kind, int num_args) {
     MP_UNUSED2(kind, num_args);
     return NumericArgHandler();
   }
   // Receives notification of the end of a vararg expression (min or max).
-  NumericExpr EndVarArg(NumericArgHandler handler) {
+  NumericExpr EndVarArg(VarArgHandler handler) {
     MP_UNUSED(handler);
     return NumericExpr();
   }
@@ -487,6 +493,9 @@ class ProblemBuilderToNLAdapter {
   };
   std::vector<ConInfo> cons_;
 
+  // Common expressions
+  std::vector<NumericExpr> exprs_;
+
  public:
   explicit ProblemBuilderToNLAdapter(ProblemBuilder &builder)
     : builder_(builder), num_continuous_vars_(0) {}
@@ -498,6 +507,7 @@ class ProblemBuilderToNLAdapter {
     num_continuous_vars_ = h.num_continuous_vars();
     objs_.resize(h.num_objs);
     cons_.resize(h.num_algebraic_cons);
+    exprs_.resize(h.num_common_exprs());
     builder_.SetInfo(h);
   }
 
@@ -505,9 +515,9 @@ class ProblemBuilderToNLAdapter {
   // an objective expression.
   void OnObj(int index, obj::Type type, NumericExpr expr) {
     assert(0 <= index && index < objs_.size());
-    ObjInfo &obj_info = objs_[index];
-    obj_info.type = type;
-    obj_info.expr = expr;
+    ObjInfo &obj = objs_[index];
+    obj.type = type;
+    obj.expr = expr;
   }
 
   // Receives notification of the nonlinear part of an algebraic constraint
@@ -520,12 +530,6 @@ class ProblemBuilderToNLAdapter {
   // Receives notification of a logical constraint.
   void OnLogicalCon(int, LogicalExpr expr) {
     builder_.AddCon(expr);
-  }
-
-  // Receives notification of the nonlinear part of a common expression
-  // (defined variable).
-  void OnCommonExpr(int index, NumericExpr expr, int position) {
-    builder_.SetCommonExpr(index, expr, position);
   }
 
   // Receives notification of a complementarity relation.
@@ -549,11 +553,16 @@ class ProblemBuilderToNLAdapter {
     return builder_.AddCon(con.expr, con.lb, con.ub, num_linear_terms);
   }
 
-  typedef typename ProblemBuilder::LinearVarBuilder LinearVarHandler;
+  typedef typename ProblemBuilder::LinearExprBuilder LinearExprHandler;
 
-  // Receives notification of the linear part of a defined variable expression.
-  LinearVarHandler OnLinearVarExpr(int var_index, int num_linear_terms) {
-    return builder_.GetLinearVarBuilder(var_index, num_linear_terms);
+  // Receives notification of a commmon expression (defined variable).
+  LinearExprHandler BeginCommonExpr(int num_linear_terms) {
+    return builder_.BeginCommonExpr(num_linear_terms);
+  }
+  void EndCommonExpr(int index, LinearExprHandler handler,
+                     NumericExpr expr, int position) {
+    assert(0 <= index && index < exprs_.size());
+    exprs_[index] = builder_.EndCommonExpr(handler, expr, position);
   }
 
   // Receives notification of variable bounds.
@@ -602,6 +611,7 @@ class ProblemBuilderToNLAdapter {
 
   typedef typename ProblemBuilder::NumericArgHandler NumericArgHandler;
   typedef typename ProblemBuilder::LogicalArgHandler LogicalArgHandler;
+  typedef typename ProblemBuilder::VarArgHandler VarArgHandler;
   typedef typename ProblemBuilder::CallArgHandler CallArgHandler;
   typedef typename ProblemBuilder::NumberOfArgHandler NumberOfArgHandler;
 
@@ -617,7 +627,8 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of a common expression (defined variable) reference.
   NumericExpr OnCommonExprRef(int index) {
-    return builder_.MakeCommonExprRef(index);
+    assert(0 <= index && index < exprs_.size());
+    return exprs_[index];
   }
 
   // Receives notification of a unary expression.
@@ -657,11 +668,11 @@ class ProblemBuilderToNLAdapter {
   }
 
   // Receives notification of the beginning of a vararg expression (min or max).
-  NumericArgHandler BeginVarArg(expr::Kind kind, int num_args) {
+  VarArgHandler BeginVarArg(expr::Kind kind, int num_args) {
     return builder_.BeginVarArg(kind, num_args);
   }
   // Receives notification of the end of a vararg expression (min or max).
-  NumericExpr EndVarArg(NumericArgHandler handler) {
+  NumericExpr EndVarArg(VarArgHandler handler) {
     return builder_.EndVarArg(handler);
   }
 
@@ -1310,8 +1321,7 @@ typename Handler::NumericExpr
   }
   case expr::FIRST_VARARG: {
     int num_args = ReadNumArgs(1);
-    typename Handler::NumericArgHandler args =
-        handler_.BeginVarArg(kind, num_args);
+    typename Handler::VarArgHandler args = handler_.BeginVarArg(kind, num_args);
     ReadArgs<NumericExprReader>(num_args, args);
     return handler_.EndVarArg(args);
   }
@@ -1578,16 +1588,17 @@ void NLReader<Reader, Handler>::Read(Reader *bound_reader) {
     case 'V': {
       // Defined variable definition (must precede V, C, L, O segments
       // where used).
-      int var_index = ReadUInt(header_.num_vars, total_num_vars_);
-      var_index -= header_.num_vars;
+      int expr_index = ReadUInt(header_.num_vars, total_num_vars_);
+      expr_index -= header_.num_vars;
       int num_linear_terms = reader_.ReadUInt();
       int position = reader_.ReadUInt();
       reader_.ReadTillEndOfLine();
-      if (num_linear_terms != 0) {
-        ReadLinearExpr(num_linear_terms,
-            handler_.OnLinearVarExpr(var_index, num_linear_terms));
-      }
-      handler_.OnCommonExpr(var_index, ReadNumericExpr(), position);
+      typename Handler::LinearExprHandler
+          expr_handler(handler_.BeginCommonExpr(num_linear_terms));
+      if (num_linear_terms != 0)
+        ReadLinearExpr(num_linear_terms, expr_handler);
+      handler_.EndCommonExpr(
+            expr_index, expr_handler, ReadNumericExpr(), position);
       break;
     }
     case 'F': {

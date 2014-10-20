@@ -52,14 +52,14 @@ struct TestVariable : TestNumericExpr { DEFINE_ID(TestVariable); };
 struct TestCountExpr : TestNumericExpr { DEFINE_ID(TestCountExpr); };
 
 template <int I>
-struct TestLinearExprBuilder {
+struct BasicTestLinearExprBuilder {
   void AddTerm(int, double) {}
-  DEFINE_ID(TestLinearExprBuilder);
+  DEFINE_ID(BasicTestLinearExprBuilder);
 };
 
-typedef TestLinearExprBuilder<0> TestLinearObjBuilder;
-typedef TestLinearExprBuilder<1> TestLinearConBuilder;
-typedef TestLinearExprBuilder<2> TestLinearVarBuilder;
+typedef BasicTestLinearExprBuilder<0> TestLinearObjBuilder;
+typedef BasicTestLinearExprBuilder<1> TestLinearConBuilder;
+typedef BasicTestLinearExprBuilder<1> TestLinearExprBuilder;
 
 struct TestColumnSizeHandler {
   void Add(int) {}
@@ -79,9 +79,10 @@ struct TestArgHandler {
 };
 
 typedef TestArgHandler<0> TestNumericArgHandler;
-typedef TestArgHandler<1> TestNumberOfArgHandler;
-typedef TestArgHandler<2, TestLogicalExpr> TestLogicalArgHandler;
-typedef TestArgHandler<3> TestAllDiffArgHandler;
+typedef TestArgHandler<1> TestVarArgHandler;
+typedef TestArgHandler<2> TestNumberOfArgHandler;
+typedef TestArgHandler<3, TestLogicalExpr> TestLogicalArgHandler;
+typedef TestArgHandler<4> TestAllDiffArgHandler;
 
 struct TestCallArgHandler {
   void AddArg(TestNumericExpr) {}
@@ -121,9 +122,6 @@ class MockProblemBuilder {
   MOCK_METHOD1(SetInfo, void (const mp::ProblemInfo &info));
   MOCK_METHOD0(EndBuild, void ());
 
-  MOCK_METHOD3(SetCommonExpr, void (int index, NumericExpr expr, int position));
-  MOCK_METHOD3(SetComplement, void (int con_index, int var_index, int flags));
-
   MOCK_METHOD3(AddVar, void (double lb, double ub, mp::var::Type));
 
   typedef TestLinearObjBuilder LinearObjBuilder;
@@ -138,10 +136,13 @@ class MockProblemBuilder {
 
   MOCK_METHOD1(AddCon, void (LogicalExpr expr));
 
-  typedef TestLinearVarBuilder LinearVarBuilder;
+  typedef TestLinearExprBuilder LinearExprBuilder;
 
-  MOCK_METHOD2(GetLinearVarBuilder,
-               LinearVarBuilder (int var_index, int num_linear_terms));
+  MOCK_METHOD1(BeginCommonExpr, LinearExprBuilder (int num_linear_terms));
+  MOCK_METHOD3(EndCommonExpr, NumericExpr (LinearExprBuilder builder,
+                                           NumericExpr expr, int position));
+
+  MOCK_METHOD3(SetComplement, void (int con_index, int var_index, int flags));
 
   MOCK_METHOD2(SetInitialValue, void (int var_index, double value));
   MOCK_METHOD2(SetInitialDualValue, void (int con_index, double value));
@@ -160,6 +161,7 @@ class MockProblemBuilder {
 
   typedef TestNumericArgHandler NumericArgHandler;
   typedef TestLogicalArgHandler LogicalArgHandler;
+  typedef TestVarArgHandler VarArgHandler;
   typedef TestCallArgHandler CallArgHandler;
 
   MOCK_METHOD1(MakeNumericConstant, NumericExpr (double value));
@@ -181,9 +183,8 @@ class MockProblemBuilder {
   MOCK_METHOD2(BeginCall, CallArgHandler (int func_index, int num_args));
   MOCK_METHOD1(EndCall, NumericExpr (CallArgHandler handler));
 
-  MOCK_METHOD2(BeginVarArg,
-               NumericArgHandler (mp::expr::Kind kind, int num_args));
-  MOCK_METHOD1(EndVarArg, NumericExpr (NumericArgHandler handler));
+  MOCK_METHOD2(BeginVarArg, VarArgHandler (mp::expr::Kind kind, int num_args));
+  MOCK_METHOD1(EndVarArg, NumericExpr (VarArgHandler handler));
 
   MOCK_METHOD1(BeginSum, NumericArgHandler (int num_args));
   MOCK_METHOD1(EndSum, NumericExpr (NumericArgHandler handler));

@@ -267,6 +267,7 @@ IlogCPSolver::IlogCPSolver() :
   options_[SOLUTION_LIMIT] = -1;
   options_[MULTIOBJ] = false;
   options_[OBJNO] = 1;
+  set_read_flags(ASL_allow_missing_funcs);
 
   set_long_name(fmt::format("ilogcp {}.{}.{}",
       IloConcertVersion::_ILO_MAJOR_VERSION,

@@ -41,10 +41,6 @@ class ProblemBuilder {
  private:
   SuffixManager suffixes_;
 
-  struct LinearExprBuilder {
-    void AddTerm(int var_index, double coef) { MP_UNUSED2(var_index, coef); }
-  };
-
   struct ArgHandler {
     void AddArg(ExprT arg) { MP_UNUSED(arg); }
   };
@@ -74,6 +70,10 @@ class ProblemBuilder {
     MP_DISPATCH(ReportUnhandledConstruct("variable"));
   }
 
+  struct LinearExprBuilder {
+    void AddTerm(int var_index, double coef) { MP_UNUSED2(var_index, coef); }
+  };
+
   typedef LinearExprBuilder LinearObjBuilder;
 
   // Adds an objective.
@@ -96,38 +96,30 @@ class ProblemBuilder {
     return LinearConBuilder();
   }
 
-  // Adds a logical constraint..
+  // Adds a logical constraint.
   void AddCon(LogicalExpr expr) {
     MP_UNUSED(expr);
     MP_DISPATCH(ReportUnhandledConstruct("logical constraint"));
   }
 
-  typedef LinearExprBuilder LinearVarBuilder;
-
+  // Adds a common expression (defined variable).
   // Returns a handler for receiving linear terms in a defined variable
   // expression.
-  LinearVarBuilder GetLinearVarBuilder(int var_index, int num_linear_terms) {
-    MP_UNUSED2(var_index, num_linear_terms);
-    MP_DISPATCH(ReportUnhandledConstruct("linear defined variable"));
-    return LinearVarBuilder();
+  LinearExprBuilder BeginCommonExpr(NumericExpr expr, int position,
+                                    int num_linear_terms) {
+    MP_UNUSED3(expr, position, num_linear_terms);
+    MP_DISPATCH(ReportUnhandledConstruct("common expression"));
+    return LinearExprBuilder();
   }
 
-  // Sets a common expression (defined variable).
-  // index: Index of a common expression; 0 <= index < num_defined_vars.
-  void SetCommonExpr(int index, NumericExpr expr, int position) {
-    MP_UNUSED3(index, expr, position);
-    MP_DISPATCH(ReportUnhandledConstruct("nonlinear defined variable"));
+  NumericExpr EndCommonExpr(LinearExprBuilder builder) {
+    MP_UNUSED(builder);
   }
 
   // Sets a complementarity relation.
   void SetComplement(int con_index, int var_index, int flags) {
     MP_UNUSED3(con_index, var_index, flags);
     MP_DISPATCH(ReportUnhandledConstruct("complementarity constraint"));
-  }
-
-  void SetConBounds(int index, double lb, double ub) {
-    MP_UNUSED3(index, lb, ub);
-    MP_DISPATCH(ReportUnhandledConstruct("constraint bound"));
   }
 
   void SetInitialValue(int var_index, double value) {
@@ -170,6 +162,7 @@ class ProblemBuilder {
 
   typedef ArgHandler NumericArgHandler;
   typedef ArgHandler LogicalArgHandler;
+  typedef ArgHandler VarArgHandler;
   typedef ArgHandler CallArgHandler;
   typedef ArgHandler NumberOfArgHandler;
 
@@ -184,12 +177,6 @@ class ProblemBuilder {
     MP_UNUSED(var_index);
     MP_DISPATCH(ReportUnhandledConstruct("variable in nonlinear expression"));
     return Variable();
-  }
-
-  NumericExpr MakeCommonExprRef(int index) {
-    MP_UNUSED(index);
-    MP_DISPATCH(ReportUnhandledConstruct("named subexpressions"));
-    return NumericExpr();
   }
 
   NumericExpr MakeUnary(expr::Kind kind, NumericExpr arg) {
@@ -238,12 +225,12 @@ class ProblemBuilder {
     return NumericExpr();
   }
 
-  NumericArgHandler BeginVarArg(expr::Kind kind, int num_args) {
+  VarArgHandler BeginVarArg(expr::Kind kind, int num_args) {
     MP_UNUSED2(kind, num_args);
     MP_DISPATCH(ReportUnhandledConstruct(str(kind)));
     return NumericArgHandler();
   }
-  NumericExpr EndVarArg(NumericArgHandler handler) {
+  NumericExpr EndVarArg(VarArgHandler handler) {
     MP_UNUSED(handler);
     MP_DISPATCH(ReportUnhandledConstruct("vararg expression"));
     return NumericExpr();

@@ -47,9 +47,6 @@ class LSProblemBuilder :
 
   std::vector<ls::LSExpression> vars_;
 
-  // Common subexpressions
-  std::vector<ls::LSExpression> exprs_;
-
   typedef ProblemBuilder<LSProblemBuilder, ls::LSExpression> Base;
 
   // Converts int to lsint.
@@ -128,10 +125,6 @@ class LSProblemBuilder :
   void SetInfo(const ProblemInfo &info);
   void EndBuild();
 
-  void SetCommonExpr(int index, ls::LSExpression expr, int) {
-    exprs_[index] = expr;
-  }
-
   class LinearExprBuilder {
    private:
     LSProblemBuilder &builder_;
@@ -149,6 +142,8 @@ class LSProblemBuilder :
         expr = sum;
       }
     }
+
+    ls::LSExpression expr() { return expr_; }
 
     void AddTerm(int var_index, double coef) {
       if (coef == 0)
@@ -175,6 +170,19 @@ class LSProblemBuilder :
     model_.addConstraint(expr);
   }
 
+  LinearExprBuilder BeginCommonExpr(int) {
+    ls::LSExpression expr;
+    return LinearExprBuilder(*this, expr, model_.createExpression(ls::O_Sum));
+  }
+
+  ls::LSExpression EndCommonExpr(
+      LinearExprBuilder builder, ls::LSExpression expr, int ) {
+    ls::LSExpression result = builder.expr();
+    if (expr != ls::LSExpression())
+      result.addOperand(expr);
+    return result;
+  }
+
   // Ignore Jacobian column sizes.
   ColumnSizeHandler GetColumnSizeHandler() { return ColumnSizeHandler(); }
 
@@ -185,11 +193,6 @@ class LSProblemBuilder :
   ls::LSExpression MakeVariable(int var_index) {
     CheckBounds(var_index, vars_.size());
     return vars_[var_index];
-  }
-
-  ls::LSExpression MakeCommonExprRef(int index) {
-    CheckBounds(index, exprs_.size());
-    return exprs_[index];
   }
 
   ls::LSExpression MakeUnary(expr::Kind kind, ls::LSExpression arg);
@@ -219,9 +222,10 @@ class LSProblemBuilder :
 
   typedef ArgHandler NumericArgHandler;
   typedef ArgHandler LogicalArgHandler;
+  typedef ArgHandler VarArgHandler;
 
-  ArgHandler BeginVarArg(expr::Kind kind, int num_args);
-  ls::LSExpression EndVarArg(ArgHandler handler) { return handler.expr(); }
+  VarArgHandler BeginVarArg(expr::Kind kind, int num_args);
+  ls::LSExpression EndVarArg(VarArgHandler handler) { return handler.expr(); }
 
   ArgHandler BeginSum(int) {
     return ArgHandler(model_.createExpression(ls::O_Sum));

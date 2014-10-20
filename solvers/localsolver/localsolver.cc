@@ -56,7 +56,6 @@ LSProblemBuilder::LSProblemBuilder(ls::LSModel model)
 
 void LSProblemBuilder::SetInfo(const ProblemInfo &info) {
   vars_.reserve(info.num_vars);
-  exprs_.resize(info.num_common_exprs());
 }
 
 void LSProblemBuilder::EndBuild() {

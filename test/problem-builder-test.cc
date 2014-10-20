@@ -58,11 +58,8 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   EXPECT_DISPATCH(AddObj(mp::obj::MIN, TestExpr(), 0), "objective");
   EXPECT_DISPATCH(AddCon(TestExpr(), 0, 0, 0), "algebraic constraint");
   EXPECT_DISPATCH(AddCon(TestExpr()), "logical constraint");
-  EXPECT_DISPATCH(GetLinearVarBuilder(0, 0), "linear defined variable");
-  EXPECT_DISPATCH(SetCommonExpr(0, TestExpr(), 0),
-                  "nonlinear defined variable");
+  EXPECT_DISPATCH(BeginCommonExpr(TestExpr(), 0, 0), "common expression");
   EXPECT_DISPATCH(SetComplement(0, 0, 0), "complementarity constraint");
-  EXPECT_DISPATCH(SetConBounds(0, 0, 0), "constraint bound");
   EXPECT_DISPATCH(SetInitialValue(0, 0), "initial value");
   EXPECT_DISPATCH(SetInitialDualValue(0, 0), "initial dual value");
   EXPECT_DISPATCH(GetColumnSizeHandler(), "Jacobian column size");
