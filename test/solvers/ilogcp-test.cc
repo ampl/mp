@@ -38,8 +38,6 @@
 #include <stdexcept>
 #include <string>
 
-#include "gtest/gtest.h"
-
 #include "ilogcp/ilogcp.h"
 #include "asl/aslbuilder.h"
 #include "mp/nl.h"
@@ -67,81 +65,86 @@ namespace obj = mp::obj;
 
 using std::string;
 
-// TODO
-/*namespace {
-
-INSTANTIATE_TEST_CASE_P(IlogCP, SolverImplTest,
-    ::testing::Values(SolverTestParam(CreateSolver, )));
-
-// ----------------------------------------------------------------------------
-// element constraint tests
-
 class FunctionTest : public SolverImplTest {
  protected:
   mp::Function element_;
   mp::Function in_relation_;
 
- public:
-  // Create functions permitting less arguments than necessary.
-  // This is done to be able to test calls with invalid arguments.
-  FunctionTest()
-  : element_(AddFunction("element", TestFunc, -2)),
-    in_relation_(AddFunction("in_relation", TestFunc, -1)) {}
+  struct CallFactory : NumericExprFactory {
+    int num_args_;
+
+    CallFactory(int num_args) : num_args_(num_args) {}
+
+    NumericExpr Create(ProblemBuilder &pb) const {
+      auto args = pb.BeginCall(0, num_args_);
+      for (int i = 1; i < num_args_; ++i)
+        args.AddArg(pb.MakeNumericConstant(11 * i));
+      args.AddArg(pb.MakeVariable(1));
+      return pb.EndCall(args);
+    }
+  };
+
+  virtual void SetInfo(ProblemBuilder &pb, mp::ProblemInfo &info) {
+    info.num_funcs = 2;
+    SolverImplTest::SetInfo(pb, info);
+    // Create functions permitting less arguments than necessary.
+    // This is done to be able to test calls with invalid arguments.
+    element_ = pb.SetFunction(0, "element", -2, mp::func::NUMERIC);
+    in_relation_ = pb.SetFunction(1, "in_relation", -1, mp::func::NUMERIC);
+  }
 };
 
-INSTANTIATE_TEST_CASE_P(IlogCP, FunctionTest,
-    ::testing::Values(SolverTestParam(CreateSolver, feature::ALL)));
+// ----------------------------------------------------------------------------
+// element constraint tests
 
-TEST_P(FunctionTest, ElementConstraint) {
-  Expr args[] = { MakeConst(11), MakeConst(22), MakeConst(33), x };
-  EXPECT_EQ(22, Eval(MakeCall(element_, args), 1));
+TEST_F(FunctionTest, ElementConstraint) {
+  EXPECT_EQ(22, Eval(CallFactory(4), 1));
 }
 
-TEST_P(FunctionTest, TooFewArgsToElementConstraint) {
-  Expr args[] = {x};
-  EXPECT_THROW_MSG(Eval(MakeCall(element_, args), 0),
+TEST_F(FunctionTest, TooFewArgsToElementConstraint) {
+  EXPECT_THROW_MSG(Eval(CallFactory(1), 0),
       mp::Error, "element: too few arguments");
 }
 
-TEST_P(FunctionTest, ElementConstantIndexOutOfBounds) {
+/*TEST_F(FunctionTest, ElementConstantIndexOutOfBounds) {
   Expr args[] = { MakeConst(11), MakeConst(22), MakeConst(2) };
   EXPECT_THROW_MSG(Eval(MakeCall(element_, args)),
         mp::Error, "element: index 2 is out of bounds");
 }
 
-TEST_P(FunctionTest, ElementConstantAtConstantIndex) {
+TEST_F(FunctionTest, ElementConstantAtConstantIndex) {
   Expr args[] = { MakeConst(11), MakeConst(22), MakeConst(1) };
   EXPECT_EQ(22, Eval(MakeCall(element_, args)));
 }
 
-TEST_P(FunctionTest, ElementExprAtConstantIndex) {
+TEST_F(FunctionTest, ElementExprAtConstantIndex) {
   Expr args[] = { x, MakeConst(22), MakeConst(0) };
   EXPECT_EQ(42, Eval(MakeCall(element_, args), 42));
 }
 
-TEST_P(FunctionTest, ElementExprPlusConstantAtConstantIndex) {
+TEST_F(FunctionTest, ElementExprPlusConstantAtConstantIndex) {
   Expr args[] = {
       MakeConst(11), MakeBinary(mp::expr::ADD, x, MakeConst(2)), MakeConst(1)
   };
   EXPECT_EQ(44, Eval(MakeCall(element_, args), 42));
 }
 
-TEST_P(FunctionTest, ElementVariableIndexOutOfBounds) {
+TEST_F(FunctionTest, ElementVariableIndexOutOfBounds) {
   Expr args[] = { MakeConst(11), MakeConst(22), x };
   EXPECT_EQ(mp::sol::INFEASIBLE, Eval(MakeCall(element_, args), 2).solve_code());
 }
 
-TEST_P(FunctionTest, ElementConstantAtVariableIndex) {
+TEST_F(FunctionTest, ElementConstantAtVariableIndex) {
   Expr args[] = { MakeConst(11), MakeConst(22), x };
   EXPECT_EQ(22, Eval(MakeCall(element_, args), 1));
 }
 
-TEST_P(FunctionTest, ElementExprAtVariableIndex) {
+TEST_F(FunctionTest, ElementExprAtVariableIndex) {
   Expr args[] = { x, MakeConst(22), y };
   EXPECT_EQ(42, Eval(MakeCall(element_, args), 42, 0));
 }
 
-TEST_P(FunctionTest, ElementExprPlusConstantAtVariableIndex) {
+TEST_F(FunctionTest, ElementExprPlusConstantAtVariableIndex) {
   Expr args[] = {
       MakeConst(11), MakeBinary(mp::expr::ADD, x, MakeConst(2)), y
   };
@@ -151,7 +154,7 @@ TEST_P(FunctionTest, ElementExprPlusConstantAtVariableIndex) {
 // ----------------------------------------------------------------------------
 // in_relation constraint tests
 
-TEST_P(FunctionTest, InRelationConstraint) {
+TEST_F(FunctionTest, InRelationConstraint) {
   Problem p;
   p.AddVar(0, 100, var::INTEGER);
   p.AddObj(obj::MIN, MakeVariable(0));
@@ -161,7 +164,7 @@ TEST_P(FunctionTest, InRelationConstraint) {
   EXPECT_EQ(42, Solve(p).obj_value());
 }
 
-TEST_P(FunctionTest, NestedInRelationNotSupported) {
+TEST_F(FunctionTest, NestedInRelationNotSupported) {
   Expr args[] = {MakeVariable(0), MakeConst(42)};
   EXPECT_THROW_MSG(Eval(MakeBinary(mp::expr::ADD,
       MakeCall(in_relation_, args), MakeConst(1)));,
@@ -169,7 +172,7 @@ TEST_P(FunctionTest, NestedInRelationNotSupported) {
       "unsupported expression: nested 'in_relation'");
 }
 
-TEST_P(FunctionTest, TooFewArgsToInRelationConstraint) {
+TEST_F(FunctionTest, TooFewArgsToInRelationConstraint) {
   Problem p;
   p.AddVar(0, 100, var::INTEGER);
   p.AddObj(obj::MIN, MakeVariable(0));
@@ -178,7 +181,7 @@ TEST_P(FunctionTest, TooFewArgsToInRelationConstraint) {
   EXPECT_THROW_MSG(Solve(p), mp::Error, "in_relation: too few arguments");
 }
 
-TEST_P(FunctionTest, InRelationSizeIsNotMultipleOfArity) {
+TEST_F(FunctionTest, InRelationSizeIsNotMultipleOfArity) {
   Problem p;
   p.AddVar(0, 100, var::INTEGER);
   p.AddVar(0, 100, var::INTEGER);
@@ -193,7 +196,7 @@ TEST_P(FunctionTest, InRelationSizeIsNotMultipleOfArity) {
       "in_relation: the number of arguments 5 is not a multiple of arity 2");
 }
 
-TEST_P(FunctionTest, InRelationTuple) {
+TEST_F(FunctionTest, InRelationTuple) {
   Problem p;
   p.AddVar(0, 100, var::INTEGER);
   p.AddVar(0, 100, var::INTEGER);
@@ -207,7 +210,7 @@ TEST_P(FunctionTest, InRelationTuple) {
   EXPECT_EQ(33, Solve(p).obj_value());
 }
 
-TEST_P(FunctionTest, InRelationEmptySet) {
+TEST_F(FunctionTest, InRelationEmptySet) {
   Problem p;
   p.AddVar(0, 100, var::INTEGER);
   Expr args[] = {MakeVariable(0)};
@@ -216,7 +219,7 @@ TEST_P(FunctionTest, InRelationEmptySet) {
   EXPECT_EQ(mp::sol::INFEASIBLE, Solve(p).solve_code());
 }
 
-TEST_P(FunctionTest, InRelationNonConstantSetElement) {
+TEST_F(FunctionTest, InRelationNonConstantSetElement) {
   Problem p;
   p.AddVar(0, 100, var::INTEGER);
   Expr args[] = { MakeVariable(0), MakeConst(0), MakeVariable(0) };
@@ -461,7 +464,7 @@ TEST_F(IlogCPTest, OptimizerOption) {
 }
 
 // TODO: move to solver-test
-TEST_P(SolverImplTest, ObjnoOption) {
+TEST_F(SolverImplTest, ObjnoOption) {
   EXPECT_EQ(1, solver_->GetIntOption("objno"));
   Problem p;
   p.AddVar(11, 22, var::INTEGER);
@@ -609,7 +612,7 @@ TEST_F(IlogCPTest, CPOptions) {
     CheckIntCPOption("workers", IloCP::Workers, 1, 4, 0, false);
 }
 
-TEST_P(SolverImplTest, MultiObjOption) {
+TEST_F(SolverImplTest, MultiObjOption) {
   Problem p;
   p.AddVar(0, 10, var::INTEGER);
   p.AddObj(obj::MIN, MakeBinary(mp::expr::MOD, MakeVariable(0), MakeConst(3)));
@@ -656,8 +659,8 @@ TEST_F(IlogCPTest, MIPIntervalOption) {
 // ----------------------------------------------------------------------------
 // Interrupt tests
 
-#ifdef HAVE_THREADS
-TEST_P(SolverTest, CPInterruptSolution) {
+#ifdef MP_THREAD
+TEST_F(SolverTest, CPInterruptSolution) {
   std::thread t(Interrupt);
   Problem p;
   solver_->SetStrOption("optimizer", "cp");
@@ -667,7 +670,7 @@ TEST_P(SolverTest, CPInterruptSolution) {
   EXPECT_TRUE(message.find("interrupted") != string::npos);
 }
 
-TEST_P(SolverTest, CPLEXInterruptSolution) {
+TEST_F(SolverTest, CPLEXInterruptSolution) {
   std::thread t(Interrupt);
   Problem p;
   solver_->SetStrOption("optimizer", "cplex");
@@ -677,6 +680,4 @@ TEST_P(SolverTest, CPLEXInterruptSolution) {
   EXPECT_TRUE(message.find("interrupted") != string::npos);
 }
 #endif
-}
-
 */

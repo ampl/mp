@@ -332,6 +332,10 @@ class SolverImplTest : public ::testing::Test {
       handler.AddArg(args[i]);
   }
 
+  virtual void SetInfo(ProblemBuilder &pb, mp::ProblemInfo &info) {
+    pb.SetInfo(info);
+  }
+
  public:
   SolverImplTest() {}
 
@@ -400,7 +404,7 @@ SolverImplTest::EvalResult SolverImplTest::Eval(
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_nl_integer_vars_in_cons = 4;
   info.num_algebraic_cons = info.num_nl_cons = 1;
-  pb.SetInfo(info);
+  SetInfo(pb, info);
   auto inf = std::numeric_limits<double>::infinity();
   pb.AddVar(-inf, inf, mp::var::INTEGER);
   pb.AddVar(var1, var1, mp::var::INTEGER);
