@@ -1,11 +1,5 @@
 /*
- Base types and functions related to the optimization problem.
-
- This header is used to decouple the .nl reader from a specific problem
- representation as the reader can be used to construct different types of
- problems. So instead of including problem.h and expr.h from nl.h, this
- header containing common definitions is included from problem.h, expr.h
- and nl.h.
+ Base types and functions related to an optimization problem
 
  Copyright (C) 2014 AMPL Optimization Inc
 

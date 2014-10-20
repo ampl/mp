@@ -182,7 +182,7 @@ class Solver;
 // from a separate method like RunFromMain & pass an interface that allows
 // interrupting the Solver:
 //   DoSolve(Interrupter *interrupter);  // better name?
-// To make sure that SignalHandler is no used by mistake make it local to
+// To make sure that SignalHandler is not used by mistake make it local to
 // the RunFromMain method.
 
 // A signal handler.
