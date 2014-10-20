@@ -61,9 +61,6 @@ using std::string;
 
 class FunctionTest : public SolverImplTest {
  protected:
-  mp::Function element_;
-  mp::Function in_relation_;
-
   template <typename IndexFactory>
   struct CallFactory : NumericExprFactory {
     int num_args_;
@@ -92,8 +89,8 @@ class FunctionTest : public SolverImplTest {
     SolverImplTest::SetInfo(pb, info);
     // Create functions permitting less arguments than necessary.
     // This is done to be able to test calls with invalid arguments.
-    element_ = pb.SetFunction(0, "element", -2, mp::func::NUMERIC);
-    in_relation_ = pb.SetFunction(1, "in_relation", -1, mp::func::NUMERIC);
+    pb.SetFunction(0, "element", -2, mp::func::NUMERIC);
+    pb.SetFunction(1, "in_relation", -1, mp::func::NUMERIC);
   }
 };
 
@@ -182,87 +179,110 @@ TEST_F(FunctionTest, ElementExprPlusConstantAtVariableIndex) {
 // ----------------------------------------------------------------------------
 // in_relation constraint tests
 
-// TODO: update
+// Makes a problem for testing in_relation constraint.
+void MakeInRelationProblem(mp::internal::ASLBuilder &pb) {
+  auto info = mp::ProblemInfo();
+  info.num_vars = info.num_nl_integer_vars_in_cons = 1;
+  info.num_objs = info.num_logical_cons = info.num_funcs = 1;
+  pb.SetInfo(info);
+  pb.SetFunction(0, "in_relation", -1, mp::func::NUMERIC);
+  pb.AddVar(0, 100, var::INTEGER);
+  pb.AddObj(obj::MIN, NumericExpr(), 0).AddTerm(0, 1);
+}
 
-/*TEST_F(FunctionTest, InRelationConstraint) {
-  Problem p;
-  p.AddVar(0, 100, var::INTEGER);
-  p.AddObj(obj::MIN, MakeVariable(0));
-  Expr args[] = {MakeVariable(0), MakeConst(42)};
-  p.AddCon(MakeRelational(
-             mp::expr::NE, MakeCall(in_relation_, args), MakeConst(0)));
-  EXPECT_EQ(42, Solve(p).obj_value());
+TEST_F(FunctionTest, InRelationConstraint) {
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  MakeInRelationProblem(pb);
+  auto args = pb.BeginCall(0, 2);
+  args.AddArg(pb.MakeVariable(0));
+  args.AddArg(pb.MakeNumericConstant(42));
+  pb.AddCon(pb.MakeRelational(
+              mp::expr::NE, pb.EndCall(args), pb.MakeNumericConstant(0)));
+  EXPECT_EQ(42, Solve(pb).obj_value());
 }
 
 TEST_F(FunctionTest, NestedInRelationNotSupported) {
-  Expr args[] = {MakeVariable(0), MakeConst(42)};
-  EXPECT_THROW_MSG(Eval(MakeBinary(mp::expr::ADD,
-      MakeCall(in_relation_, args), MakeConst(1)));,
-      mp::UnsupportedExprError,
+  struct Factory : NumericExprFactory {
+    NumericExpr Create(ProblemBuilder &pb) const {
+      auto args = pb.BeginCall(1, 2);
+      args.AddArg(x);
+      args.AddArg(pb.MakeNumericConstant(42));
+      return pb.MakeBinary(mp::expr::ADD, pb.EndCall(args), one);
+    }
+  } factory;
+  EXPECT_THROW_MSG(Eval(factory), mp::UnsupportedExprError,
       "unsupported expression: nested 'in_relation'");
 }
 
 TEST_F(FunctionTest, TooFewArgsToInRelationConstraint) {
-  Problem p;
-  p.AddVar(0, 100, var::INTEGER);
-  p.AddObj(obj::MIN, MakeVariable(0));
-  p.AddCon(MakeRelational(mp::expr::NE, MakeCall(in_relation_,
-    mp::ArrayRef<Expr>(0, 0)), MakeConst(0)));
-  EXPECT_THROW_MSG(Solve(p), mp::Error, "in_relation: too few arguments");
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  MakeInRelationProblem(pb);
+  auto args = pb.BeginCall(0, 0);
+  pb.AddCon(pb.MakeRelational(
+              mp::expr::NE, pb.EndCall(args), pb.MakeNumericConstant(0)));
+  EXPECT_THROW_MSG(Solve(pb), mp::Error, "in_relation: too few arguments");
+}
+
+void MakeInRelationProblem2(mp::internal::ASLBuilder &pb, int num_const_args) {
+  auto info = mp::ProblemInfo();
+  info.num_vars = info.num_nl_integer_vars_in_cons = 2;
+  info.num_objs = info.num_logical_cons = info.num_funcs = 1;
+  pb.SetInfo(info);
+  pb.SetFunction(0, "in_relation", -1, mp::func::NUMERIC);
+  pb.AddVar(0, 100, var::INTEGER);
+  pb.AddVar(0, 100, var::INTEGER);
+  auto obj = pb.AddObj(obj::MIN, NumericExpr(), 2);
+  obj.AddTerm(0, 1);
+  obj.AddTerm(1, 1);
+  auto args = pb.BeginCall(0, num_const_args + 2);
+  args.AddArg(pb.MakeVariable(0));
+  args.AddArg(pb.MakeVariable(1));
+  for (int i = 1; i <= num_const_args; ++i)
+    args.AddArg(pb.MakeNumericConstant(11 * i));
+  pb.AddCon(pb.MakeRelational(
+              mp::expr::NE, pb.EndCall(args), pb.MakeNumericConstant(0)));
 }
 
 TEST_F(FunctionTest, InRelationSizeIsNotMultipleOfArity) {
-  Problem p;
-  p.AddVar(0, 100, var::INTEGER);
-  p.AddVar(0, 100, var::INTEGER);
-  p.AddObj(obj::MIN, MakeVariable(0));
-  Expr args[] = {
-      MakeVariable(0), MakeVariable(1),
-      MakeConst(1), MakeConst(2), MakeConst(3)
-  };
-  p.AddCon(MakeRelational(
-             mp::expr::NE, MakeCall(in_relation_, args), MakeConst(0)));
-  EXPECT_THROW_MSG(Solve(p), mp::Error,
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  MakeInRelationProblem2(pb, 3);
+  EXPECT_THROW_MSG(Solve(pb), mp::Error,
       "in_relation: the number of arguments 5 is not a multiple of arity 2");
 }
 
 TEST_F(FunctionTest, InRelationTuple) {
-  Problem p;
-  p.AddVar(0, 100, var::INTEGER);
-  p.AddVar(0, 100, var::INTEGER);
-  p.AddObj(obj::MIN, MakeBinary(
-             mp::expr::ADD, MakeVariable(0), MakeVariable(1)));
-  Expr args[] = {
-    MakeVariable(0), MakeVariable(1), MakeConst(11), MakeConst(22)
-  };
-  p.AddCon(MakeRelational(
-             mp::expr::NE, MakeCall(in_relation_, args), MakeConst(0)));
-  EXPECT_EQ(33, Solve(p).obj_value());
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  MakeInRelationProblem2(pb, 2);
+  EXPECT_EQ(33, Solve(pb).obj_value());
 }
 
 TEST_F(FunctionTest, InRelationEmptySet) {
-  Problem p;
-  p.AddVar(0, 100, var::INTEGER);
-  Expr args[] = {MakeVariable(0)};
-  p.AddCon(MakeRelational(
-             mp::expr::NE, MakeCall(in_relation_, args), MakeConst(0)));
-  EXPECT_EQ(mp::sol::INFEASIBLE, Solve(p).solve_code());
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  MakeInRelationProblem(pb);
+  auto args = pb.BeginCall(0, 1);
+  args.AddArg(pb.MakeVariable(0));
+  pb.AddCon(pb.MakeRelational(
+              mp::expr::NE, pb.EndCall(args), pb.MakeNumericConstant(0)));
+  EXPECT_EQ(mp::sol::INFEASIBLE, Solve(pb).solve_code());
 }
 
 TEST_F(FunctionTest, InRelationNonConstantSetElement) {
-  Problem p;
-  p.AddVar(0, 100, var::INTEGER);
-  Expr args[] = { MakeVariable(0), MakeConst(0), MakeVariable(0) };
-  p.AddCon(MakeRelational(
-             mp::expr::NE, MakeCall(in_relation_, args), MakeConst(0)));
-  EXPECT_THROW_MSG(Solve(p), mp::Error,
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  MakeInRelationProblem(pb);
+  auto args = pb.BeginCall(0, 3);
+  args.AddArg(pb.MakeVariable(0));
+  args.AddArg(pb.MakeNumericConstant(0));
+  args.AddArg(pb.MakeVariable(0));
+  pb.AddCon(pb.MakeRelational(
+              mp::expr::NE, pb.EndCall(args), pb.MakeNumericConstant(0)));
+  EXPECT_THROW_MSG(Solve(pb), mp::Error,
       "in_relation: argument 3 is not constant");
 }
 
 // ----------------------------------------------------------------------------
 // Other test
 
-struct EnumValue {
+/*struct EnumValue {
   const char *name;
   IloCP::ParameterValues value;
 };
