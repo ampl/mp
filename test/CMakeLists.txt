@@ -29,7 +29,7 @@ check_cxx_source_compiles("
   int main() {}" MP_INITIALIZER_LISTS)
 
 if (NOT MP_VARIADIC_TEMPLATES OR NOT MP_INITIALIZER_LISTS)
-  target_compile_definitions(gtest-extra PUBLIC GTEST_LANG_CXX11=0)
+  add_definitions(-DGTEST_LANG_CXX11=0)
 endif ()
 
 # Adds an MP test.
