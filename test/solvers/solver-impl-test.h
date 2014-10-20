@@ -40,10 +40,6 @@ class SolverImplTest : public ::testing::Test {
   typedef ProblemBuilder::LogicalExpr LogicalExpr;
   typedef ProblemBuilder::Variable Variable;
 
-  Variable x;
-  Variable y;
-  Variable z;
-
   FMT_DISALLOW_COPY_AND_ASSIGN(SolverImplTest);
 
   bool HasFeature(feature::Feature f) const {
@@ -341,7 +337,7 @@ class SolverImplTest : public ::testing::Test {
 
   // Creates a test count expression with arguments var[i] != 0 for
   // i = start_var_index, ..., 3.
-  static typename ProblemBuilder::CountExpr MakeCount(
+  static ProblemBuilder::CountExpr MakeCount(
       ProblemBuilder &pb, int start_var_index) {
     int num_args = 3 - start_var_index + 1;
     auto args = pb.BeginCount(num_args);

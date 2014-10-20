@@ -39,14 +39,8 @@
 #include <string>
 
 #include "ilogcp/ilogcp.h"
-#include "asl/aslbuilder.h"
 #include "mp/nl.h"
 #include "feature.h"
-
-extern "C" {
-#include "asl.h"
-#include "nlp.h"
-}
 
 typedef mp::IlogCPSolver Solver;
 enum {FEATURES = feature::ALL};
