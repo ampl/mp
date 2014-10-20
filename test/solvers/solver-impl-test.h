@@ -27,6 +27,11 @@
 #include "../solution-handler.h"
 
 #if MP_THREAD
+// Workaround the error "'yield' is not a member of 'std::this_thread'"
+// on older gcc.
+# if FMT_GCC_VERSION < 408
+#  define _GLIBCXX_USE_SCHED_YIELD 1
+# endif
 # include <thread>
 #endif
 
