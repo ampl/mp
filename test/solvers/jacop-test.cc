@@ -24,9 +24,10 @@
 #include <memory>
 #include <string>
 
-#include "gtest/gtest.h"
-
 #include "jacop/jacop.h"
+
+typedef mp::JaCoPSolver Solver;
+enum {FEATURES = feature::POW};
 
 #include "solver-impl-test.h"
 #include "../util.h"
@@ -36,20 +37,6 @@ using mp::InvalidOptionValue;
 using mp::Problem;
 
 namespace {
-
-// ----------------------------------------------------------------------------
-// Solver tests
-
-INSTANTIATE_TEST_CASE_P(JaCoP, SolverImplTest,
-    ::testing::Values(SolverTestParam(CreateSolver, feature::POW)));
-
-TEST_P(SolverImplTest, SolveFlowshp0) {
-  EXPECT_EQ(22, Solve("flowshp0").obj);
-}
-
-TEST_P(SolverImplTest, SolveFlowshp2) {
-  EXPECT_EQ(22, Solve("flowshp2").obj);
-}
 
 class JaCoPTest : public ::testing::Test {
  protected:
