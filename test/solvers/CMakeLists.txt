@@ -29,6 +29,6 @@ if (TARGET jacop)
   endif ()
 endif ()
 
-if (TARGET amplsmpswriter)
+if (TARGET smpswriter)
   add_mp_test(smpswriter-test smpswriter-test.cc LIBS amplsmpswriter)
 endif ()
