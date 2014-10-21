@@ -253,15 +253,15 @@ void SulumSolver::DoSolve(Problem &p, SolutionHandler &sh) {
     status = "infeasible or unbounded";
     break;
   case SlmSolStatIntFeas:
-    solve_code = sol::UNSOLVED;
+    solve_code = sol::UNSOLVED + 2;
     status = "integer feasible solution";
     break;
   case SlmSolStatIntInf:
-    solve_code = sol::INFEASIBLE + 1;
+    solve_code = sol::INFEASIBLE + 2;
     status = "integer infeasible";
     break;
   case SlmSolStatIntUnBndInf:
-    solve_code = sol::INFEASIBLE + 2;
+    solve_code = sol::INFEASIBLE + 3;
     status = "integer infeasible or unbounded";
     break;
   }
