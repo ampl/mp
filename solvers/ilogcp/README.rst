@@ -8,17 +8,15 @@ constraint programming problems.
 
 Normally the ilogcp solver is invoked by AMPL's ``solve`` command, which
 gives the invocation
-
 ::
 
      ilogcp stub -AMPL
 
 in which ``stub.nl`` is an AMPL generic output file (possibly written
-by ``ampl -obstub`` or ``ampl -ogstub``).  After solving the problem,
+by ``ampl -obstub`` or ``ampl -ogstub``). After solving the problem,
 the solver writes a ``stub.sol`` file for use by ampl's ``solve`` and
-``solution`` commands.  When you run ampl, this all happens automatically
+``solution`` commands. When you run ampl, this all happens automatically
 if you give the AMPL commands
-
 ::
 
      option solver ilogcp;
@@ -26,9 +24,9 @@ if you give the AMPL commands
 
 You can control the solver by setting the environment variable
 ``ilogcp_options`` appropriately (either by using ampl's ``option`` command,
-or by using the shell's set and export commands before you invoke ampl).
+or by using the shell's ``set`` and ``export`` commands before you invoke ampl).
 You can put one or more (white-space separated) option assignments in
-``$ilogcp_options``.  The ``version`` option doesn't take a value:
+``$ilogcp_options``.  The option ``version`` doesn't take a value:
 
 =======      ==================================================
 Phrase       Meaning
@@ -36,34 +34,19 @@ Phrase       Meaning
 version      Report version details before solving the problem.
 =======      ==================================================
 
-Others are name-value pairs, possibly separated by '=', as in
-
-::
-
-     timelimit 600
-
-or
-
+Others are name-value pairs separated by '=', as in
 ::
 
      timelimit=600
 
-or
-
-::
-
-     timelimit = 600
-
-any of which limits CP Optimizer search time to 600 seconds.  Options such
+which limits CP Optimizer search time to 600 seconds.  Options such
 as ``logverbosity``, that take enumerated list of values, accept both numeric
 and string values, so
-
 ::
 
      logverbosity=terse
 
 is equivalent to
-
 ::
 
      logverbosity=1
@@ -109,7 +92,6 @@ Such arguments override specifications in ``$ilogcp_options``.  Example::
      nohup ilogcp -s foo timing=1 2>>times&
 
 to solve a problem whose solution will take a while; after it finishes,
-
 ::
 
      ampl foo.model foo.data -
