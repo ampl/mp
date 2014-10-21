@@ -70,19 +70,23 @@ TEST_F(SolverImplTest, FailLimitOption) {
   EXPECT_THROW(solver_.SetIntOption("faillimit", -1), InvalidOptionValue);
 }
 
-/*TEST_F(SolverImplTest, NodeLimitOption) {
-  Problem p;
-  string message = Solve(p, "miplib/assign1", "nodelimit=42").message;
-  EXPECT_EQ(400, p.solve_code());
-  EXPECT_TRUE(message.find("43 nodes") != string::npos);
+TEST_F(SolverImplTest, NodeLimitOption) {
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  MakeTSP(pb);
+  solver_.SetIntOption("nodelimit", 42);
+  TestSolutionHandler sh;
+  solver_.Solve(pb, sh);
+  EXPECT_EQ(400, sh.status());
+  EXPECT_TRUE(sh.message().find("43 nodes") != string::npos);
   EXPECT_EQ(42, solver_.GetIntOption("nodelimit"));
   EXPECT_THROW(solver_.SetIntOption("nodelimit", -1), InvalidOptionValue);
 }
 
 TEST_F(SolverImplTest, TimeLimitOption) {
-  Problem p;
-  Solve(p, "miplib/assign1", "timelimit=1");
-  EXPECT_EQ(400, p.solve_code());
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  MakeTSP(pb);
+  solver_.SetIntOption("timelimit", 1);
+  EXPECT_EQ(400, Solve(pb).solve_code());
   EXPECT_EQ(1, solver_.GetIntOption("timelimit"));
   EXPECT_THROW(solver_.SetIntOption("timelimit", -1), InvalidOptionValue);
 }
@@ -189,4 +193,4 @@ TEST_F(SolverImplTest, OutFreqOption) {
   EXPECT_EQ(1.23, solver_.GetDblOption("outfreq"));
   EXPECT_THROW(solver_.SetDblOption("outfreq", -1), InvalidOptionValue);
   EXPECT_THROW(solver_.SetDblOption("outfreq", 0), InvalidOptionValue);
-}*/
+}
