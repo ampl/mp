@@ -140,11 +140,6 @@ TEST_F(SolverImplTest, VarSelectOption) {
   EXPECT_EQ(11u, count);
 }
 
-struct TestOutputHandler : public mp::OutputHandler {
-  string output;
-  void HandleOutput(fmt::StringRef output) { this->output += output; }
-};
-
 TEST_F(SolverImplTest, OutLevOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);

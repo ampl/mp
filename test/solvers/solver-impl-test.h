@@ -23,6 +23,8 @@
 #ifndef TESTS_SOLVER_IMPL_TEST_H_
 #define TESTS_SOLVER_IMPL_TEST_H_
 
+#include <string>
+
 #include "../gtest-extra.h"
 #include "../solution-handler.h"
 
@@ -1286,5 +1288,10 @@ TEST_F(SolverImplTest, OptionValues) {
 TEST_F(SolverImplTest, CreateSolver) {
   EXPECT_STREQ(solver_.name(), mp::CreateSolver(0)->name());
 }
+
+struct TestOutputHandler : public mp::OutputHandler {
+  std::string output;
+  void HandleOutput(fmt::StringRef output) { this->output += output; }
+};
 
 #endif  // TESTS_SOLVER_IMPL_TEST_H_

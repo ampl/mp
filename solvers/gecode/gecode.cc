@@ -789,6 +789,7 @@ void GecodeSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   Search::Statistics stats;
   header_ = fmt::format("{:>10} {:>10} {:>10} {:>13}\n",
     "Max Depth", "Nodes", "Fails", (has_obj ? "Best Obj" : ""));
+  output_count_ = 0;
   GecodeSolver::ProblemPtr solution;
   if (restart_ != Gecode::RM_NONE) {
     options_.cutoff = Gecode::Driver::createCutoff(*this);
