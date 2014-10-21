@@ -1,18 +1,11 @@
-Jacop
-=====
+The solver ``sulum`` uses `Sulum <http://www.sulumoptimization.com/>`_
+to solve LP or MIP problems.
 
-The solver ``jacop`` uses `Java Constraint Programming solver (JaCoP)
-<http://jacop.osolpro.com/>`_ to solve constraint programming problems.
-It fully supports `AMPL extensions for constraint programming
-<http://www.ampl.com/NEW/LOGIC>`_. Solver binaries are available for
-download from the `Open Source Solvers
-<http://ampl.com/products/solvers/open-source#jacop>`_ page.
-
-Normally the jacop solver is invoked by AMPL's ``solve`` command,
+Normally the ``sulum`` solver is invoked by AMPL's ``solve`` command,
 which gives the invocation
 ::
 
-     jacop stub -AMPL
+     sulum stub -AMPL
 
 in which ``stub.nl`` is an AMPL generic output file (possibly written
 by ``ampl -obstub`` or ``ampl -ogstub``).  After solving the problem,
@@ -21,14 +14,14 @@ the solver writes a ``stub.sol`` file for use by ampl's ``solve`` and
 if you give the AMPL commands
 ::
 
-     option solver jacop;
+     option solver sulum;
      solve;
 
 You can control the solver by setting the environment variable
-``jacop_options`` appropriately (either by using ampl's ``option`` command,
+``sulum_options`` appropriately (either by using ampl's ``option`` command,
 or by using the shell's ``set`` and ``export`` commands before you invoke ampl).
 You can put one or more (white-space separated) option assignments in
-``$jacop_options``. The option ``version`` doesn't take a value:
+``$sulum_options``. The option ``version`` doesn't take a value:
 
 =======      ==================================================
 Phrase       Meaning
@@ -39,40 +32,44 @@ version      Report version details before solving the problem.
 Others are name-value pairs separated by '=', as in
 ::
 
-     timelimit=600
+     simtimelimit=600
 
-which limits solution time to 600 seconds.
+which limits the simplex optimizer time to 600 seconds.
 
-The following command prints the full list of options with descriptions::
+The following command prints the full list of options with descriptions:
+::
 
-     jacop -=
+     sulum -=
 
 solve_result_num values
 -----------------------
 
-Here is a table of ``solve_result_num`` values that ``jacop`` can return
+Here is a table of ``solve_result_num`` values that ``sulum`` can return
 to an AMPL session, along with the text that appears in the associated
 ``solve_message``.
 
-=====   =================================================
+=====   ===============================
 Value   Message
-=====   =================================================
-    0   optimal solution (for an optimization problem) or
-        feasible solution (for a satisfaction problem)
+=====   ===============================
+    0   optimal solution
   100   feasible solution
+  101   dual feasible solution
+  102   integer feasible solution
   200   infeasible problem
-  400   limit
+  201   infeasible or unbounded
+  202   integer infeasible
+  203   integer infeasible or unbounded
   600   interrupted
-=====   =================================================
+=====   ===============================
 
-------------
+-------------------
 
-If you invoke ``jacop stub -AMPL`` or ``jacop stub``, you can also
+If you invoke ``sulum stub -AMPL`` or ``sulum stub``, you can also
 supply additional command-line arguments of the form name=value.
-Such arguments override specifications in ``$jacop_options``.  Example::
+Such arguments override specifications in ``$sulum_options``.  Example::
 
      ampl -obfoo foo.model foo.data
-     nohup jacop -s foo 2>>err&
+     nohup sulum -s foo 2>>err&
 
 to solve a problem whose solution will take a while; after it finishes,
 ::
@@ -84,7 +81,7 @@ to solve a problem whose solution will take a while; after it finishes,
 (Here, ``-`` denotes standard input, and ampl reads the ``solution...``
 and ``display...`` lines.)
 
-------------
+-------------------
 
 If you have questions about or find bugs with this stuff,
 please contact `Victor Zverovich <mailto:Victor Zverovich%3cviz@ampl.com%3e>`_.

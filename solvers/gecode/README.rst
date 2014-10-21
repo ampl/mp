@@ -102,8 +102,5 @@ Requires AMPL version 20130906 or later.
 
 ------------
 
-See also `AMPL extensions for constraint programming
-<http://ampl.com/resources/logic-and-constraint-programming-extensions/>`_.
-
 If you have questions about or find bugs with this stuff,
 please contact `Victor Zverovich <mailto:Victor Zverovich%3cviz@ampl.com%3e>`_.
