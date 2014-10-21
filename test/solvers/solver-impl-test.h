@@ -511,7 +511,7 @@ TEST_F(SolverImplTest, Tanh) {
   auto factory = MakeBinaryExprFactory(
         mp::expr::MUL, MakeUnaryExprFactory(mp::expr::TANH, arg), 2);
   if (!HasFeature(feature::HYPERBOLIC))
-    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported: tanh");
+    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: tanh");
   else
     EXPECT_EQ(1, Eval(factory));
 }
@@ -522,17 +522,19 @@ TEST_F(SolverImplTest, Tan) {
 
 TEST_F(SolverImplTest, Sqrt) {
   auto kind = mp::expr::SQRT;
-  if (!HasFeature(feature::SQRT))
-    EXPECT_THROW_MSG(EvalUnary(kind, 64), mp::Error, "unsupported: sqrt");
-  else
+  if (!HasFeature(feature::SQRT)) {
+    EXPECT_THROW_MSG(EvalUnary(kind, 64), mp::Error,
+                     "unsupported expression: sqrt");
+  } else {
     EXPECT_EQ(8, EvalUnary(kind, 64));
+  }
 }
 
 TEST_F(SolverImplTest, Sinh) {
   auto factory = MakeUnaryExprFactory(
         mp::expr::SINH, std::log(2 + std::sqrt(5.0)));
   if (!HasFeature(feature::HYPERBOLIC))
-    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported: sinh");
+    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: sinh");
   else
     EXPECT_EQ(2, Eval(factory));
 }
@@ -544,7 +546,7 @@ TEST_F(SolverImplTest, Sin) {
 TEST_F(SolverImplTest, Log10) {
   auto factory = MakeUnaryExprFactory(mp::expr::LOG10, 1000.0);
   if (!HasFeature(feature::LOG))
-    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported: log10");
+    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: log10");
   else
     EXPECT_EQ(3, Eval(factory));
 }
@@ -552,7 +554,7 @@ TEST_F(SolverImplTest, Log10) {
 TEST_F(SolverImplTest, Log) {
   auto factory = MakeUnaryExprFactory(mp::expr::LOG, std::exp(5.0));
   if (!HasFeature(feature::LOG))
-    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported: log");
+    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: log");
   else
     EXPECT_EQ(5, Eval(factory));
 }
@@ -560,7 +562,7 @@ TEST_F(SolverImplTest, Log) {
 TEST_F(SolverImplTest, Exp) {
   auto factory = MakeUnaryExprFactory(mp::expr::EXP, std::log(5.0));
   if (!HasFeature(feature::EXP))
-    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported: exp");
+    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: exp");
   else
     EXPECT_EQ(5, Eval(factory));
 }
@@ -570,7 +572,7 @@ TEST_F(SolverImplTest, Cosh) {
   auto factory = MakeUnaryExprFactory(
         mp::expr::COSH, std::log(x + std::sqrt(x + 1) * std::sqrt(x - 1)));
   if (!HasFeature(feature::HYPERBOLIC))
-    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported: cosh");
+    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: cosh");
   else
     EXPECT_EQ(5, Eval(factory));
 }
@@ -580,15 +582,16 @@ TEST_F(SolverImplTest, Cos) {
 }
 
 TEST_F(SolverImplTest, Atanh) {
-  auto x = MakeUnaryExprFactory(mp::expr::ATANH, std::tanh(5.0));
+  auto atanh = MakeUnaryExprFactory(mp::expr::ATANH, std::tanh(5.0));
+  if (!HasFeature(feature::HYPERBOLIC)) {
+    EXPECT_THROW_MSG(Eval(atanh), mp::Error, "unsupported expression: atanh");
+    return;
+  }
   auto factory = MakeUnaryExprFactory(
         mp::expr::FLOOR, MakeBinaryExprFactory(
           mp::expr::ADD,
-          MakeBinaryExprFactory(mp::expr::MUL, x, 1000000.0), 0.5));
-  if (!HasFeature(feature::HYPERBOLIC))
-    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported: atanh");
-  else
-    EXPECT_EQ(5000000, Eval(factory));
+          MakeBinaryExprFactory(mp::expr::MUL, atanh, 1000000.0), 0.5));
+  EXPECT_EQ(5000000, Eval(factory));
 }
 
 TEST_F(SolverImplTest, Atan) {
@@ -598,7 +601,7 @@ TEST_F(SolverImplTest, Atan) {
 TEST_F(SolverImplTest, Asinh) {
   auto factory = MakeUnaryExprFactory(mp::expr::ASINH, std::sinh(5.0));
   if (!HasFeature(feature::HYPERBOLIC))
-    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported: asinh");
+    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: asinh");
   else
     EXPECT_EQ(5, Eval(factory));
 }
@@ -610,7 +613,7 @@ TEST_F(SolverImplTest, Asin) {
 TEST_F(SolverImplTest, Acosh) {
   auto factory = MakeUnaryExprFactory(mp::expr::ACOSH, std::cosh(5.0));
   if (!HasFeature(feature::HYPERBOLIC))
-    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported: acosh");
+    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: acosh");
   else
     EXPECT_EQ(5, Eval(factory));
 }
@@ -644,7 +647,8 @@ TEST_F(SolverImplTest, Mul) {
 TEST_F(SolverImplTest, Div) {
   auto kind = mp::expr::DIV;
   if (!HasFeature(feature::DIV)) {
-    EXPECT_THROW_MSG(EvalBinary(kind, 150, 15), mp::Error, "unsupported: /");
+    EXPECT_THROW_MSG(EvalBinary(kind, 150, 15), mp::Error,
+                     "unsupported expression: /");
     return;
   }
   EXPECT_EQ(10, EvalBinary(kind, 150, 15));
@@ -784,7 +788,7 @@ TEST_F(SolverImplTest, PLTerm) {
   } factory;
   if (!HasFeature(feature::PLTERM)) {
     EXPECT_THROW_MSG(Eval(factory, 42), mp::Error,
-                     "unsupported: piecewise-linear term");
+                     "unsupported expression: pl term");
     return;
   }
   EXPECT_EQ(33, Eval(factory, 42));
@@ -800,6 +804,12 @@ TEST_F(SolverImplTest, Call) {
   info.num_funcs = 1;
   pb.SetInfo(info);
   pb.AddVar(0, 0, mp::var::INTEGER);
+  try {
+    pb.SetFunction(0, "foo", 2, mp::func::NUMERIC);
+  } catch (const mp::Error &e) {
+    EXPECT_STREQ("function foo not available", e.what());
+    return;
+  }
   EXPECT_THROW({
       pb.SetFunction(0, "foo", 2, mp::func::NUMERIC);
       auto call = pb.BeginCall(0, 2);
@@ -1155,15 +1165,15 @@ void MakeTSP(ProblemBuilder &pb) {
 }
 
 TEST_F(SolverImplTest, InterruptSolution) {
-  //std::thread t(Interrupt);
+  std::thread t(Interrupt);
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeTSP(pb);
   pb.EndBuild();
   TestSolutionHandler sh;
   solver_.Solve(pb, sh);
-  // TODO
+  // TODO: check status
   //string message = Solve(p, ).message;
-  //t.join();
+  t.join();
   //EXPECT_EQ(600, p.solve_code());
   //EXPECT_TRUE(message.find("interrupted") != string::npos);
 }

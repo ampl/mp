@@ -25,57 +25,52 @@
 #include <string>
 
 #include "jacop/jacop.h"
+#include "feature.h"
+#include "../util.h"
 
 typedef mp::JaCoPSolver Solver;
 enum {FEATURES = feature::POW};
 
 #include "solver-impl-test.h"
-#include "../util.h"
 
 using std::string;
 using mp::InvalidOptionValue;
 using mp::Problem;
 
-namespace {
-
-class JaCoPTest : public ::testing::Test {
- protected:
-  mp::JaCoPSolver solver_;
-
-  SolveResult Solve(Problem &p, const char *stub, const char *opt = 0) {
-    return SolverImplTest::Solve(solver_, p, stub, opt);
-  }
-};
-
 // ----------------------------------------------------------------------------
 // Option tests
 
-TEST_F(JaCoPTest, BacktrackLimitOption) {
-  Problem p;
-  Solve(p, "miplib/assign1", "backtracklimit=42");
-  EXPECT_EQ(400, p.solve_code());
+TEST_F(SolverImplTest, BacktrackLimitOption) {
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  MakeTSP(pb);
+  solver_.SetIntOption("backtracklimit", 42);
   EXPECT_EQ(42, solver_.GetIntOption("backtracklimit"));
+  EXPECT_EQ(400, Solve(pb).solve_code());
   EXPECT_THROW(solver_.SetIntOption("backtracklimit", -1), InvalidOptionValue);
 }
 
-TEST_F(JaCoPTest, DecisionLimitOption) {
-  Problem p;
-  Solve(p, "miplib/assign1", "decisionlimit=42");
-  EXPECT_EQ(400, p.solve_code());
+TEST_F(SolverImplTest, DecisionLimitOption) {
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  MakeTSP(pb);
+  solver_.SetIntOption("decisionlimit", 42);
+  EXPECT_EQ(400, Solve(pb).solve_code());
   EXPECT_EQ(42, solver_.GetIntOption("decisionlimit"));
   EXPECT_THROW(solver_.SetIntOption("decisionlimit", -1), InvalidOptionValue);
 }
 
-TEST_F(JaCoPTest, FailLimitOption) {
-  Problem p;
-  string message = Solve(p, "miplib/assign1", "faillimit=42").message;
-  EXPECT_EQ(400, p.solve_code());
-  EXPECT_TRUE(message.find(" 43 fails") != string::npos);
+TEST_F(SolverImplTest, FailLimitOption) {
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  MakeTSP(pb);
+  solver_.SetIntOption("faillimit", 42);
+  TestSolutionHandler sh;
+  solver_.Solve(pb, sh);
+  EXPECT_EQ(400, sh.status());
+  EXPECT_TRUE(sh.message().find(" 43 fails") != string::npos);
   EXPECT_EQ(42, solver_.GetIntOption("faillimit"));
   EXPECT_THROW(solver_.SetIntOption("faillimit", -1), InvalidOptionValue);
 }
 
-TEST_F(JaCoPTest, NodeLimitOption) {
+/*TEST_F(SolverImplTest, NodeLimitOption) {
   Problem p;
   string message = Solve(p, "miplib/assign1", "nodelimit=42").message;
   EXPECT_EQ(400, p.solve_code());
@@ -84,7 +79,7 @@ TEST_F(JaCoPTest, NodeLimitOption) {
   EXPECT_THROW(solver_.SetIntOption("nodelimit", -1), InvalidOptionValue);
 }
 
-TEST_F(JaCoPTest, TimeLimitOption) {
+TEST_F(SolverImplTest, TimeLimitOption) {
   Problem p;
   Solve(p, "miplib/assign1", "timelimit=1");
   EXPECT_EQ(400, p.solve_code());
@@ -102,7 +97,7 @@ const char *const VAL_SELECT[] = {
   0
 };
 
-TEST_F(JaCoPTest, ValSelectOption) {
+TEST_F(SolverImplTest, ValSelectOption) {
   EXPECT_EQ("indomainmin", solver_.GetStrOption("val_select"));
   unsigned count = 0;
   for (const char *const *s = VAL_SELECT; *s; ++s, ++count) {
@@ -129,7 +124,7 @@ const char *const VAR_SELECT[] = {
   0
 };
 
-TEST_F(JaCoPTest, VarSelectOption) {
+TEST_F(SolverImplTest, VarSelectOption) {
   EXPECT_EQ("smallestdomain", solver_.GetStrOption("var_select"));
   unsigned count = 0;
   for (const char *const *s = VAR_SELECT; *s; ++s, ++count) {
@@ -146,7 +141,7 @@ struct TestOutputHandler : public mp::OutputHandler {
   void HandleOutput(fmt::StringRef output) { this->output += output; }
 };
 
-TEST_F(JaCoPTest, OutLevOption) {
+TEST_F(SolverImplTest, OutLevOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
   Problem p;
@@ -170,7 +165,7 @@ TEST_F(JaCoPTest, OutLevOption) {
   EXPECT_THROW(solver_.SetIntOption("outlev", 2), InvalidOptionValue);
 }
 
-TEST_F(JaCoPTest, OutFreqOption) {
+TEST_F(SolverImplTest, OutFreqOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
   Problem p;
@@ -194,5 +189,4 @@ TEST_F(JaCoPTest, OutFreqOption) {
   EXPECT_EQ(1.23, solver_.GetDblOption("outfreq"));
   EXPECT_THROW(solver_.SetDblOption("outfreq", -1), InvalidOptionValue);
   EXPECT_THROW(solver_.SetDblOption("outfreq", 0), InvalidOptionValue);
-}
-}
+}*/

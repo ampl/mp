@@ -22,7 +22,7 @@ if (TARGET ilogcp)
 endif ()
 
 if (TARGET jacop)
-  add_mp_test(jacop-test jacop-test.cc LIBS ampljacop-static solver-impl-test)
+  add_mp_test(jacop-test jacop-test.cc solver-impl-test.h LIBS ampljacop-static)
   if (MSVC)
     set_target_properties(jacop-test PROPERTIES LINK_FLAGS "/DELAYLOAD:jvm.dll")
     target_link_libraries(jacop-test delayimp)
