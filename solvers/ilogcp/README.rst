@@ -27,8 +27,8 @@ if you give the AMPL commands
 You can control the solver by setting the environment variable
 ``ilogcp_options`` appropriately (either by using ampl's ``option`` command,
 or by using the shell's set and export commands before you invoke ampl).
-You can put one or more (white-space separated) phrases in
-``$ilogcp_options``.  A few of the phrases are single words:
+You can put one or more (white-space separated) option assignments in
+``$ilogcp_options``.  The ``version`` option doesn't take a value:
 
 =======      ==================================================
 Phrase       Meaning
@@ -121,7 +121,8 @@ and ``display...`` lines.)
 
 ------------
 
-See also `AMPL extensions for constraint programming <http://www.ampl.com/NEW/LOGIC>`__.
+See also `AMPL extensions for constraint programming
+<http://ampl.com/resources/logic-and-constraint-programming-extensions/>`__.
 
 If you have questions about or find bugs with this stuff,
 please contact `Victor Zverovich <mailto:viz@ampl.com>`__.
