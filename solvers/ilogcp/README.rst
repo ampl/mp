@@ -1,8 +1,8 @@
-The solver ``ilogcp`` connects IBM ILOG
-`CPLEX CP Optimizer <http://www-01.ibm.com/software/integration/optimization/cplex-cp-optimizer/>`__
-and `CPLEX <http://www-01.ibm.com/software/integration/optimization/cplex-optimizer/>`__
+The solver ``ilogcp`` connects IBM ILOG `CPLEX CP Optimizer
+<http://www-01.ibm.com/software/integration/optimization/cplex-cp-optimizer/>`_
+and `CPLEX <http://www-01.ibm.com/software/integration/optimization/cplex-optimizer/>`_
 to AMPL via the Concert API. It fully supports
-`AMPL extensions for constraint programming <http://www.ampl.com/NEW/LOGIC>`__ and
+`AMPL extensions for constraint programming <http://www.ampl.com/NEW/LOGIC>`_ and
 can handle wide range of problems including linear, mixed-integer, quadratic and
 constraint programming problems.
 
@@ -59,7 +59,7 @@ The following command prints the full list of options with descriptions::
      ilogcp -=
 
 See `IBM ILOG CPLEX CP Optimizer Options for AMPL
-<http://ampl.com/products/solvers/ilogcp-options/>`__ for the full list of options.
+<http://ampl.com/products/solvers/ilogcp-options/>`_ for the full list of options.
 
 solve_result_num values
 =======================
@@ -104,7 +104,7 @@ and ``display...`` lines.)
 ------------
 
 See also `AMPL extensions for constraint programming
-<http://ampl.com/resources/logic-and-constraint-programming-extensions/>`__.
+<http://ampl.com/resources/logic-and-constraint-programming-extensions/>`_.
 
 If you have questions about or find bugs with this stuff,
-please contact `Victor Zverovich <mailto:viz@ampl.com>`__.
+please contact `Victor Zverovich <mailto:viz@ampl.com>`_.

@@ -44,7 +44,7 @@ The following command prints the full list of options with descriptions::
      gecode -=
 
 See `Gecode Options for AMPL
-<http://ampl.com/products/solvers/gecode-options/>`__ for the full list of options.
+<http://ampl.com/products/solvers/gecode-options/>`_ for the full list of options.
 
 solve_result_num values
 =======================
@@ -97,7 +97,7 @@ Requires AMPL version 20130906 or later.
 ------------
 
 See also `AMPL extensions for constraint programming
-<http://ampl.com/resources/logic-and-constraint-programming-extensions/>`__.
+<http://ampl.com/resources/logic-and-constraint-programming-extensions/>`_.
 
 If you have questions about or find bugs with this stuff,
-please contact `Victor Zverovich <mailto:viz@ampl.com>`__.
+please contact `Victor Zverovich <mailto:viz@ampl.com>`_.
