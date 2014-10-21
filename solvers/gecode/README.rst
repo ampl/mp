@@ -1,7 +1,11 @@
+Gecode
+======
+
 The solver ``gecode`` uses `Gecode constraint development environment
 <http://www.gecode.org/>`_ to solve constraint programming problems.
-Solver binaries are available for download from the
-`Open Source Solvers <http://ampl.com/products/solvers/open-source#gecode>`_
+It fully supports `AMPL extensions for constraint programming
+<http://www.ampl.com/NEW/LOGIC>`_. Solver binaries are available for download from
+the `Open Source Solvers <http://ampl.com/products/solvers/open-source#gecode>`_
 page.
 
 Normally the gecode solver is invoked by AMPL's ``solve`` command,
@@ -47,7 +51,7 @@ See `Gecode Options for AMPL
 <http://ampl.com/products/solvers/gecode-options/>`_ for the full list of options.
 
 solve_result_num values
-=======================
+-----------------------
 
 Here is a table of ``solve_result_num`` values that ``ilogcp`` can return
 to an AMPL session, along with the text that appears in the associated
@@ -65,6 +69,8 @@ Value   Message
   403   solution limit
   600   interrupted
 =====   =================================================
+
+------------
 
 If you invoke ``gecode stub -AMPL`` or ``gecode stub``, you can also
 supply additional command-line arguments of the form name=value.
@@ -84,7 +90,7 @@ to solve a problem whose solution will take a while; after it finishes,
 and ``display...`` lines.)
 
 Suffixes
-========
+--------
 
 You can use the suffix ``icl`` to specify integer consistency level for
 constraints::

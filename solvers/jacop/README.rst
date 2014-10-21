@@ -1,4 +1,8 @@
-The solver "jacop" uses JaCoP (http://jacop.osolpro.com/) to solve
+Jacop
+=====
+
+The solver ``jacop`` uses `Java Constraint Programming solver (JaCoP)
+<http://jacop.osolpro.com/>`_ to solve
 constraint programming problems.  Solver binaries are available for
 download from http://ampl.com/products/solvers/open-source#jacop.
 
@@ -58,7 +62,7 @@ solve_message.
         403     solution limit
         600     interrupted
 
--------------------
+------------
 
 If you invoke "jacop stub -AMPL" or "jacop stub", you can also
 supply additional command-line arguments of the form name=value.
@@ -76,7 +80,7 @@ to solve a problem whose solution will take a while; after it finishes,
 (Here, - denotes standard input, and ampl reads the "solution..."
 and "display..." lines.)
 
-*************************
+------------
 
 See also http://ampl.com/resources/logic-and-constraint-programming-extensions/
 

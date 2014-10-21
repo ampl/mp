@@ -1,3 +1,6 @@
+Ilogcp
+======
+
 The solver ``ilogcp`` connects IBM ILOG `CPLEX CP Optimizer
 <http://www-01.ibm.com/software/integration/optimization/cplex-cp-optimizer/>`_
 and `CPLEX <http://www-01.ibm.com/software/integration/optimization/cplex-optimizer/>`_
@@ -62,7 +65,7 @@ See `IBM ILOG CPLEX CP Optimizer Options for AMPL
 <http://ampl.com/products/solvers/ilogcp-options/>`_ for the full list of options.
 
 solve_result_num values
-=======================
+-----------------------
 
 Here is a table of ``solve_result_num`` values that ``ilogcp`` can return
 to an AMPL session, along with the text that appears in the associated
