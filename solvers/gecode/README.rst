@@ -57,6 +57,7 @@ to an AMPL session, along with the text that appears in the associated
 Value   Message
 =====   ==============================================
     0   optimal solution (for an optimization problem)
+
         feasible solution (for a satisfaction problem)
   200   infeasible problem
   400   time limit
