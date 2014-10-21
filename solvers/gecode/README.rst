@@ -4,9 +4,9 @@ Gecode
 The solver ``gecode`` uses `Gecode constraint development environment
 <http://www.gecode.org/>`_ to solve constraint programming problems.
 It fully supports `AMPL extensions for constraint programming
-<http://www.ampl.com/NEW/LOGIC>`_. Solver binaries are available for download from
-the `Open Source Solvers <http://ampl.com/products/solvers/open-source#gecode>`_
-page.
+<http://www.ampl.com/NEW/LOGIC>`_. Solver binaries are available for
+download from the `Open Source Solvers
+<http://ampl.com/products/solvers/open-source#gecode>`_ page.
 
 Normally the gecode solver is invoked by AMPL's ``solve`` command,
 which gives the invocation
