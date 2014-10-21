@@ -676,7 +676,8 @@ TEST_F(SolverImplTest, Mod) {
 TEST_F(SolverImplTest, Pow) {
   auto kind = mp::expr::POW;
   if (!HasFeature(feature::POW)) {
-    EXPECT_THROW_MSG(EvalBinary(kind, 2, 3), mp::Error, "unsupported: ^");
+    EXPECT_THROW_MSG(EvalBinary(kind, 2, 3), mp::Error,
+                     "unsupported expression: ^");
     return;
   }
   EXPECT_EQ(8, EvalBinary(kind, 2, 3));
@@ -691,7 +692,7 @@ TEST_F(SolverImplTest, PowConstBase) {
     }
   } factory;
   if (!HasFeature(feature::POW))
-    EXPECT_THROW_MSG(Eval(factory, 3), mp::Error, "unsupported: ^");
+    EXPECT_THROW_MSG(Eval(factory, 3), mp::Error, "unsupported expression: ^");
   else
     EXPECT_EQ(125, Eval(factory, 3));
 }

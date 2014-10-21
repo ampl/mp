@@ -6,8 +6,8 @@ if (MP_THREAD)
 endif ()
 
 if (TARGET gecode)
-  add_mp_test(gecode-test PREFIX gecode-test.cc
-    LIBS amplgecode-static solver-impl-test)
+  add_mp_test(gecode-test PREFIX gecode-test.cc solver-impl-test.h
+    LIBS amplgecode-static)
 endif ()
 
 if (TARGET ilogcp)
