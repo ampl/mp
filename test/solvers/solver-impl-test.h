@@ -450,6 +450,35 @@ TEST_F(SolverImplTest, Maximize) {
   EXPECT_EQ(22, Solve(pb).obj_value());
 }
 
+// Creates a test travelling salesman problem.
+template <typename ProblemBuilder>
+void MakeTSP(ProblemBuilder &pb) {
+  int n = 10;
+  auto info = mp::ProblemInfo();
+  info.num_vars = info.num_linear_binary_vars = n * n;
+  info.num_objs = 1;
+  info.num_algebraic_cons = 2 * n;
+  pb.SetInfo(info);
+  typedef typename ProblemBuilder::NumericExpr NumericExpr;
+  // Add variables.
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j)
+      pb.AddVar(0, 1, mp::var::INTEGER);
+  }
+  // Add objective and constraints.
+  auto obj = pb.AddObj(mp::obj::MIN, NumericExpr(), n * n);
+  for (int i = 0; i < n; ++i) {
+    auto in_con = pb.AddCon(NumericExpr(), 1, 1, n);   // exactly one incoming
+    auto out_con = pb.AddCon(NumericExpr(), 1, 1, n);  // exactly one outgoing
+    for (int j = 0; j < n; ++j) {
+      // Distance is arbitrarily chosen to be i + j + 1.
+      obj.AddTerm(i * n + j, i * j + 1);
+      in_con.AddTerm(j * n + i, 1);
+      out_con.AddTerm(i * n + j, 1);
+    }
+  }
+}
+
 // ----------------------------------------------------------------------------
 // Expression tests
 
@@ -1134,35 +1163,6 @@ void Interrupt() {
   while (mp::SignalHandler::stop())
     std::this_thread::yield();
   std::raise(SIGINT);
-}
-
-// Creates a test travelling salesman problem.
-template <typename ProblemBuilder>
-void MakeTSP(ProblemBuilder &pb) {
-  int n = 100;
-  auto info = mp::ProblemInfo();
-  info.num_vars = info.num_linear_binary_vars = n * n;
-  info.num_objs = 1;
-  info.num_algebraic_cons = 2 * n;
-  pb.SetInfo(info);
-  typedef typename ProblemBuilder::NumericExpr NumericExpr;
-  // Add variables.
-  for (int i = 0; i < n; ++i) {
-    for (int j = 0; j < n; ++j)
-      pb.AddVar(0, 1, mp::var::INTEGER);
-  }
-  // Add objective and constraints.
-  auto obj = pb.AddObj(mp::obj::MIN, NumericExpr(), n * n);
-  for (int i = 0; i < n; ++i) {
-    auto in_con = pb.AddCon(NumericExpr(), 1, 1, n);   // exactly one incoming
-    auto out_con = pb.AddCon(NumericExpr(), 1, 1, n);  // exactly one outgoing
-    for (int j = 0; j < n; ++j) {
-      // Distance is arbitrarily chosen to be i + j + 1.
-      obj.AddTerm(i * n + j, i * j + 1);
-      in_con.AddTerm(j * n + i, 1);
-      out_con.AddTerm(i * n + j, 1);
-    }
-  }
 }
 
 TEST_F(SolverImplTest, InterruptSolution) {
