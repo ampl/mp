@@ -53,11 +53,10 @@ Here is a table of ``solve_result_num`` values that ``ilogcp`` can return
 to an AMPL session, along with the text that appears in the associated
 ``solve_message``.
 
-=====   ==============================================
+=====   =================================================
 Value   Message
-=====   ==============================================
-    0   optimal solution (for an optimization problem)
-
+=====   =================================================
+    0   optimal solution (for an optimization problem) or
         feasible solution (for a satisfaction problem)
   200   infeasible problem
   400   time limit
@@ -65,7 +64,7 @@ Value   Message
   402   fail limit
   403   solution limit
   600   interrupted
-=====   ==============================================
+=====   =================================================
 
 If you invoke ``gecode stub -AMPL`` or ``gecode stub``, you can also
 supply additional command-line arguments of the form name=value.
