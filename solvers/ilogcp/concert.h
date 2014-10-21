@@ -39,7 +39,6 @@
 namespace mp {
 
 class Problem;
-class SignalHandler;
 
 class NLToConcertConverter;
 

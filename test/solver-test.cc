@@ -365,11 +365,11 @@ TEST(SolverTest, SignalHandler) {
   TestSolver s;
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
-    mp::SignalHandler sh(s);
-    fmt::print("{}", mp::SignalHandler::stop());
+    mp::internal::SignalHandler sh(s);
+    fmt::print("{}", mp::internal::SignalHandler::stop());
     std::fflush(stdout);
     std::raise(SIGINT);
-    fmt::print("{}", mp::SignalHandler::stop());
+    fmt::print("{}", mp::internal::SignalHandler::stop());
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
@@ -380,7 +380,7 @@ TEST(SolverTest, SignalHandlerExitOnTwoSIGINTs) {
   std::signal(SIGINT, SIG_DFL);
   TestSolver s;
   EXPECT_EXIT({
-    mp::SignalHandler sh(s);
+    mp::internal::SignalHandler sh(s);
     FILE *f = freopen("out", "w", stdout);
     std::raise(SIGINT);
     std::raise(SIGINT);

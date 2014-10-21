@@ -43,7 +43,7 @@ if (build_jacop)
     
     include(UseJava)
     set(CMAKE_JAVA_INCLUDE_PATH ${JACOP_JAR_PATH})
-    add_jar(ampljacop-java Interrupter.java SolutionListener.java
+    add_jar(ampljacop-java InterruptingListener.java SolutionListener.java
       OUTPUT_NAME ampljacop OUTPUT_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
     add_custom_command(TARGET ampljacop-java
       COMMAND ${CMAKE_COMMAND} -E copy_if_different

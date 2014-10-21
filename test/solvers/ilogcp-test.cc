@@ -723,25 +723,26 @@ TEST_F(IlogCPTest, MIPIntervalOption) {
 // ----------------------------------------------------------------------------
 // Interrupt tests
 
-#ifdef MP_THREAD
-// TODO
-/*TEST_F(SolverImplTest, CPInterruptSolution) {
-  std::thread t(Interrupt);
-  Problem p;
+TEST_F(SolverImplTest, InterruptCP) {
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  MakeTSP(pb);
+  pb.EndBuild();
   solver_.SetStrOption("optimizer", "cp");
-  string message = Solve(p, "miplib/assign1").message;
-  t.join();
-  EXPECT_EQ(600, p.solve_code());
-  EXPECT_TRUE(message.find("interrupted") != string::npos);
+  TestInterrupter interrupter(solver_);
+  TestSolutionHandler sh;
+  solver_.Solve(pb, sh);
+  EXPECT_EQ(600, sh.status());
+  EXPECT_TRUE(sh.message().find("interrupted") != std::string::npos);
 }
 
-TEST_F(SolverImplTest, CPLEXInterruptSolution) {
-  std::thread t(Interrupt);
-  Problem p;
+TEST_F(SolverImplTest, InterruptCPLEX) {
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  MakeTSP(pb);
+  pb.EndBuild();
   solver_.SetStrOption("optimizer", "cplex");
-  string message = Solve(p, "miplib/assign1").message;
-  t.join();
-  EXPECT_EQ(600, p.solve_code());
-  EXPECT_TRUE(message.find("interrupted") != string::npos);
-}*/
-#endif
+  TestInterrupter interrupter(solver_);
+  TestSolutionHandler sh;
+  solver_.Solve(pb, sh);
+  EXPECT_EQ(600, sh.status());
+  EXPECT_TRUE(sh.message().find("interrupted") != std::string::npos);
+}

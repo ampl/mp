@@ -96,7 +96,7 @@ CLASS_INFO(Alldiff, "org/jacop/constraints/Alldiff", "([Lorg/jacop/core/IntVar;)
 CLASS_INFO(DepthFirstSearch, "org/jacop/search/DepthFirstSearch", "()V")
 CLASS_INFO(SimpleTimeOut, "org/jacop/search/SimpleTimeOut", "()V")
 CLASS_INFO(InterruptSearch, "InterruptSearch", "()V")
-CLASS_INFO(Interrupter, "Interrupter", "(J)V")
+CLASS_INFO(InterruptingListener, "InterruptingListener", "(J)V")
 CLASS_INFO(SolutionListener, "SolutionListener", "(J)V")
 
 // Converter of constraint programming problems from NL to JaCoP format.

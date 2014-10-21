@@ -28,15 +28,6 @@
 #include "../gtest-extra.h"
 #include "../solution-handler.h"
 
-#if MP_THREAD
-// Workaround the error "'yield' is not a member of 'std::this_thread'"
-// on older gcc.
-# if FMT_GCC_VERSION < 408
-#  define _GLIBCXX_USE_SCHED_YIELD 1
-# endif
-# include <thread>
-#endif
-
 class EvalResult {
  private:
   bool has_value_;
@@ -1159,26 +1150,29 @@ TEST_F(SolverImplTest, InfeasibleSolveCode) {
 // ----------------------------------------------------------------------------
 // Interrupt tests
 
-#if MP_THREAD
-void Interrupt() {
-  // Wait until started.
-  while (mp::SignalHandler::stop())
-    std::this_thread::yield();
-  std::raise(SIGINT);
-}
+class TestInterrupter : public mp::Interrupter {
+ private:
+  Solver &solver_;
 
-TEST_F(SolverImplTest, InterruptSolve) {
-  std::thread t(Interrupt);
+ public:
+  explicit TestInterrupter(Solver &s) : solver_(s) { s.set_interrupter(this); }
+  ~TestInterrupter() { solver_.set_interrupter(0); }
+  bool Stop() const { return true; }
+  void SetHandler(mp::InterruptHandler handler, void *data) {
+    handler(data);
+  }
+};
+
+TEST_F(SolverImplTest, Interrupt) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeTSP(pb);
   pb.EndBuild();
+  TestInterrupter interrupter(solver_);
   TestSolutionHandler sh;
   solver_.Solve(pb, sh);
-  t.join();
   EXPECT_EQ(600, sh.status());
   EXPECT_TRUE(sh.message().find("interrupted") != std::string::npos);
 }
-#endif
 
 struct SolutionCounter : TestSolutionHandler {
   int num_solutions;

@@ -5,13 +5,13 @@ class InterruptSearch extends RuntimeException {}
 /**
  * ConsistencyListener that allows to interrupt search.
  */
-public class Interrupter implements ConsistencyListener {
+public class InterruptingListener implements ConsistencyListener {
   private ConsistencyListener[] consistencyListeners;
   private long data;
 
   private static native boolean stop(long data);
   
-  public Interrupter(long data) {
+  public InterruptingListener(long data) {
     this.data = data;
   }
 

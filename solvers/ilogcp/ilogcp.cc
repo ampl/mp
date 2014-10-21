@@ -216,20 +216,20 @@ bool HasNonlinearObj(const mp::Problem &p) {
 }
 
 std::string ConvertSolutionStatus(
-    IloAlgorithm alg, const mp::SignalHandler &sh, int &solve_code) {
+    IloAlgorithm alg, const mp::Interrupter &interrupter, int &solve_code) {
   namespace sol = mp::sol;
   switch (alg.getStatus()) {
   default:
     // Fall through.
   case IloAlgorithm::Unknown:
-    if (sh.stop()) {
+    if (interrupter.Stop()) {
       solve_code = 600;
       return "interrupted";
     }
     solve_code = sol::FAILURE + 1;
     return "unknown solution status";
   case IloAlgorithm::Feasible:
-    if (sh.stop()) {
+    if (interrupter.Stop()) {
       solve_code = 600;
       return "interrupted";
     }
@@ -252,7 +252,15 @@ std::string ConvertSolutionStatus(
     return "error";
   }
 }
+
+void InterruptCP(void *cp) {
+  static_cast<IloCP*>(cp)->abortSearch();
 }
+
+void InterruptCPLEX(void *aborter) {
+  static_cast<IloCplex::Aborter*>(aborter)->abort();
+}
+}  // namespace
 
 namespace mp {
 
@@ -606,14 +614,7 @@ void IlogCPSolver::SolveWithCP(
     }
   }
 
-  class InteruptCP : public Interruptible {
-  private:
-    IloCP &cp_;
-  public:
-    explicit InteruptCP(IloCP &cp) : cp_(cp) {}
-    void Interrupt() { cp_.abortSearch(); }
-  } interrupt(cp_);
-  SignalHandler sig_handler(*this, &interrupt);
+  interrupter()->SetHandler(InterruptCP, &cp_);
 
   int num_objs = p.num_objs();
   vector<double> solution(p.num_vars());
@@ -662,7 +663,7 @@ void IlogCPSolver::SolveWithCP(
 
   // Convert solution status.
   if (solve_code == -1) {
-    status = ConvertSolutionStatus(cp_, sig_handler, solve_code);
+    status = ConvertSolutionStatus(cp_, *interrupter(), solve_code);
     if (p.num_objs() > 0) {
       if (cp_.getInfo(IloCP::FailStatus) == IloCP::SearchStoppedByLimit) {
         solve_code = sol::LIMIT;
@@ -700,15 +701,8 @@ void IlogCPSolver::SolveWithCPLEX(
     Problem &p, const NLToConcertConverter &converter,
     Stats &stats, SolutionHandler &sh) {
   IloCplex::Aborter aborter(env_);
-  struct InteruptCPLEX : public Interruptible {
-  private:
-    IloCplex::Aborter &aborter_;
-  public:
-    explicit InteruptCPLEX(IloCplex::Aborter &aborter) : aborter_(aborter) {}
-    void Interrupt() { aborter_.abort(); }
-  } interrupt(aborter);
   cplex_.use(aborter);
-  SignalHandler sig_handler(*this, &interrupt);
+  interrupter()->SetHandler(InterruptCPLEX, &aborter);
 
   stats.setup_time = GetTimeAndReset(stats.time);
   cplex_.solve();
@@ -716,7 +710,8 @@ void IlogCPSolver::SolveWithCPLEX(
 
   // Convert solution status.
   int solve_code = 0;
-  std::string status = ConvertSolutionStatus(cplex_, sig_handler, solve_code);
+  std::string status =
+      ConvertSolutionStatus(cplex_, *interrupter(), solve_code);
 
   fmt::MemoryWriter writer;
   writer.write("{}: {}\n", long_name(), status);

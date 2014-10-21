@@ -496,7 +496,7 @@ JNIEXPORT jboolean JNICALL JaCoPSolver::Stop(JNIEnv *, jobject, jlong data) {
   try {
     JaCoPSolver* solver = reinterpret_cast<JaCoPSolver*>(data);
     solver->PrintLogEntry();
-    if (SignalHandler::stop()) {
+    if (solver->interrupter()->Stop()) {
       solver->solve_code_ = 600;
       solver->status_ = "interrupted";
       return JNI_TRUE;
@@ -548,8 +548,7 @@ void JaCoPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   bool has_obj = p.num_objs() != 0;
 
-  SignalHandler signal_handler(*this);
-  Class<Interrupter> interrupter_class;
+  Class<InterruptingListener> interrupter_class;
   interrupter_class.Init(env_);
   {
     char NAME[] = "stop";

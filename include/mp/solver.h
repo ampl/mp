@@ -164,54 +164,25 @@ class BasicSolutionHandler : public SolutionHandler {
       const double *, const double *, double) {}
 };
 
-// An interface for receiving interrupt notifications.
-class Interruptible {
- protected:
-  ~Interruptible() {}
+typedef void (*InterruptHandler)(void *);
 
- public:
-  virtual void Interrupt() = 0;
-};
-
-class Solver;
-
-// TODO:
-// Don't use SignalHandler in the solvers' DoSolve methods, because DoSolve
-// can be called from multiple threads & SignalHandler has static data.
-// Instead, move SignalHandler to the implementation of Solve, use it
-// from a separate method like RunFromMain & pass an interface that allows
-// interrupting the Solver:
-//   DoSolve(Interrupter *interrupter);  // better name?
-// To make sure that SignalHandler is not used by mistake make it local to
-// the RunFromMain method.
-
-// A signal handler.
+// An interface for interrupting solution process.
 // When a solver is run in a terminal it should respond to SIGINT (Ctrl-C)
 // by interrupting its execution and returning the best solution found.
 // This can be done in two ways. The first one is to check the return value
-// of SignalHandler::stop() periodically. The second is to register an object
-// that implements the Interruptible interface. In both cases you should
-// create a SignalHandler object before solving.
-class SignalHandler {
- private:
-  static std::string signal_message_;
-  static const char *signal_message_ptr_;
-  static unsigned signal_message_size_;
-  static volatile std::sig_atomic_t stop_;
-  static Interruptible *interruptible_;
-
-  static void HandleSigInt(int sig);
-
+// of Interrupter::Stop() periodically. The second is to register an object
+// that implements the Interruptible interface.
+class Interrupter {
  public:
-  explicit SignalHandler(const Solver &s, Interruptible *i = 0);
+  virtual ~Interrupter() {}
 
-  ~SignalHandler() {
-    stop_ = 1;
-    interruptible_ = 0;
-  }
+  // Returns true if the solution process should be stopped.
+  virtual bool Stop() const = 0;
 
-  // Returns true if the execution should be stopped due to SIGINT.
-  static bool stop() { return stop_ != 0; }
+  // Sets a handler function.
+  // The handler function must be safe to call from a signal handler.
+  // In particular, it must only call async-signal-safe library functions.
+  virtual void SetHandler(InterruptHandler handler, void *data) = 0;
 };
 
 // A solver option.
@@ -339,7 +310,8 @@ class TypedSolverOption : public SolverOption {
 //                  &MySolver::GetTestOption, &MySolver::SetTestOption, 42);
 //   }
 // };
-class Solver : private ErrorHandler, private OutputHandler {
+class Solver : private ErrorHandler,
+    private OutputHandler, private Interrupter {
  private:
   std::string name_;
   std::string long_name_;
@@ -351,10 +323,6 @@ class Solver : private ErrorHandler, private OutputHandler {
 
   enum {SHOW_VERSION = 1};
   int flags_;
-
-  bool has_errors_;
-  OutputHandler *output_handler_;
-  ErrorHandler *error_handler_;
 
   // The filename stub for returning multiple solutions.
   std::string solution_stub_;
@@ -373,6 +341,11 @@ class Solver : private ErrorHandler, private OutputHandler {
   OptionSet options_;
 
   bool timing_;
+
+  bool has_errors_;
+  OutputHandler *output_handler_;
+  ErrorHandler *error_handler_;
+  Interrupter *interrupter_;
 
  public:
   class SuffixInfo {
@@ -407,6 +380,10 @@ class Solver : private ErrorHandler, private OutputHandler {
     std::fputs(message.c_str(), stderr);
     std::fputc('\n', stderr);
   }
+
+  // The default implementation of Interrupter does nothing.
+  bool Stop() const { return false; }
+  void SetHandler(InterruptHandler, void *) {}
 
   // Finds an option and returns a pointer to it if found or null otherwise.
   SolverOption *FindOption(const char *name) const;
@@ -717,6 +694,11 @@ class Solver : private ErrorHandler, private OutputHandler {
 
   // Sets the output handler.
   void set_output_handler(OutputHandler *oh) { output_handler_ = oh; }
+
+  Interrupter *interrupter() { return interrupter_; }
+  void set_interrupter(Interrupter *interrupter) {
+    interrupter_ = interrupter ? interrupter : this;
+  }
 
   const char *solution_stub() const { return solution_stub_.c_str(); }
 
@@ -1029,6 +1011,32 @@ class SolverAppOptionParser {
   // Parses command-line options.
   const char *Parse(char **&argv);
 };
+
+// A SIGINT handler
+class SignalHandler : public Interrupter {
+ private:
+  Solver &solver_;
+  std::string message_;
+  static const char *signal_message_ptr_;
+  static unsigned signal_message_size_;
+  static volatile std::sig_atomic_t stop_;
+  static InterruptHandler handler_;
+  static void *data_;
+
+  static void HandleSigInt(int sig);
+
+ public:
+  explicit SignalHandler(Solver &s);
+
+  ~SignalHandler();
+
+  // Returns true if the execution should be stopped due to SIGINT.
+  static bool stop() { return stop_ != 0; }
+
+  bool Stop() const { return stop_; }
+
+  void SetHandler(InterruptHandler handler, void *data);
+};
 }  // namespace internal
 
 // A solver application.
@@ -1116,6 +1124,7 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   } else {
     sol_handler.reset(new NullSolutionHandler());
   }
+  internal::SignalHandler sig_handler(solver_);
   solver_.Solve(builder, *sol_handler);
   return 0;
 }

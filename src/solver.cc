@@ -34,10 +34,10 @@
 #ifndef _WIN32
 # include <strings.h>
 # include <unistd.h>
-# define AMPL_WRITE write
+# define MP_WRITE write
 #else
 # include <io.h>
-# define AMPL_WRITE _write
+# define MP_WRITE _write
 # define strcasecmp _stricmp
 # undef max
 #endif
@@ -301,30 +301,42 @@ const char *SolverAppOptionParser::Parse(char **&argv) {
   }
   return stub;
 }
-}  // namespace internal
 
-std::string SignalHandler::signal_message_;
+// TODO: atomic
 const char *SignalHandler::signal_message_ptr_;
 unsigned SignalHandler::signal_message_size_;
-Interruptible *SignalHandler::interruptible_;
+InterruptHandler SignalHandler::handler_;
+void *SignalHandler::data_;
 
 // Set stop_ to 1 initially to avoid accessing handler_ which may not be atomic.
 volatile std::sig_atomic_t SignalHandler::stop_ = 1;
 
-SignalHandler::SignalHandler(const Solver &s, Interruptible *i) {
-  signal_message_ = fmt::format("\n<BREAK> ({})\n", s.name());
-  signal_message_ptr_ = signal_message_.c_str();
-  signal_message_size_ = static_cast<unsigned>(signal_message_.size());
-  interruptible_ = i;
+SignalHandler::SignalHandler(Solver &s)
+  : solver_(s), message_(fmt::format("\n<BREAK> ({})\n", s.name())) {
+  solver_.set_interrupter(this);
+  signal_message_ptr_ = message_.c_str();
+  signal_message_size_ = static_cast<unsigned>(message_.size());
   std::signal(SIGINT, HandleSigInt);
   stop_ = 0;
+}
+
+SignalHandler::~SignalHandler() {
+  solver_.set_interrupter(0);
+  stop_ = 1;
+  handler_ = 0;
+  signal_message_size_ = 0;
+}
+
+void SignalHandler::SetHandler(InterruptHandler handler, void *data) {
+  handler_ = handler;
+  data_ = data;
 }
 
 void SignalHandler::HandleSigInt(int sig) {
   unsigned count = 0;
   do {
     // Use asynchronous-safe function write instead of printf!
-    int result = AMPL_WRITE(1, signal_message_ptr_ + count,
+    int result = MP_WRITE(1, signal_message_ptr_ + count,
         signal_message_size_ - count);
     if (result < 0) break;
     count += result;
@@ -334,12 +346,13 @@ void SignalHandler::HandleSigInt(int sig) {
     _exit(1);
   }
   stop_ = 1;
-  if (interruptible_)
-    interruptible_->Interrupt();
+  if (handler_)
+    handler_(data_);
   // Restore the handler since it might have been reset before the handler
   // is called (this is implementation defined).
   std::signal(sig, HandleSigInt);
 }
+}  // namespace internal
 
 bool Solver::OptionNameLess::operator()(
     const SolverOption *lhs, const SolverOption *rhs) const {
@@ -350,11 +363,12 @@ Solver::Solver(
     fmt::StringRef name, fmt::StringRef long_name, long date, int flags)
 : name_(name), long_name_(long_name.c_str() ? long_name : name), date_(date),
   wantsol_(0), obj_precision_(-1), flags_(0),
-  has_errors_(false), count_solutions_(false),
-  read_flags_(0), timing_(false) {
+  count_solutions_(false), read_flags_(0), timing_(false),
+  has_errors_(false) {
   version_ = long_name_;
   error_handler_ = this;
   output_handler_ = this;
+  interrupter_ = this;
 
   struct VersionOption : SolverOption {
     Solver &s;

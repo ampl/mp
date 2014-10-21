@@ -478,13 +478,14 @@ BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr) {
   return BoolExpr();
 }
 
-GecodeSolver::Stop::Stop(GecodeSolver &s)
-: sh_(s), solver_(s) {
-  output_or_limit_ = s.output_ || s.time_limit_ < DBL_MAX ||
-      s.node_limit_ != ULONG_MAX || s.fail_limit_ != ULONG_MAX;
+GecodeSolver::Stop::Stop(GecodeSolver &solver)
+: solver_(solver) {
+  output_or_limit_ = solver.output_ || solver.time_limit_ < DBL_MAX ||
+      solver.node_limit_ != ULONG_MAX || solver.fail_limit_ != ULONG_MAX;
   steady_clock::time_point start = steady_clock::now();
   double end_time_in_ticks = start.time_since_epoch().count() +
-      s.time_limit_ * steady_clock::period::den / steady_clock::period::num;
+      solver.time_limit_ * steady_clock::period::den /
+      steady_clock::period::num;
   end_time_ = steady_clock::time_point(steady_clock::duration(
       end_time_in_ticks >= std::numeric_limits<steady_clock::rep>::max() ?
           std::numeric_limits<steady_clock::rep>::max() :
@@ -494,7 +495,7 @@ GecodeSolver::Stop::Stop(GecodeSolver &s)
 
 bool GecodeSolver::Stop::stop(
     const Search::Statistics &s, const Search::Options &) {
-  if (SignalHandler::stop()) {
+  if (solver_.interrupter()->Stop()) {
     solver_.SetStatus(600, "interrupted");
     return true;
   }

@@ -330,7 +330,6 @@ class GecodeSolver : public ASLSolver {
 
   class Stop : public Gecode::Search::Stop {
    private:
-    SignalHandler sh_;
     GecodeSolver &solver_;
     steady_clock::time_point end_time_;
     steady_clock::time_point next_output_time_;
