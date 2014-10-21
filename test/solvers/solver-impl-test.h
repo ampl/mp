@@ -35,6 +35,38 @@
 # include <thread>
 #endif
 
+class EvalResult {
+ private:
+  bool has_value_;
+  double value_;
+  double obj_value_;
+  int solve_code_;
+
+ public:
+  explicit EvalResult(int solve_code = mp::sol::UNKNOWN)
+  : has_value_(false), value_(), obj_value_(), solve_code_(solve_code) {}
+
+  EvalResult(double value, double obj_value)
+  : has_value_(true), value_(value), obj_value_(obj_value),
+    solve_code_(mp::sol::UNKNOWN) {}
+
+  bool has_value() const { return has_value_; }
+
+  friend bool operator==(double lhs, const EvalResult &rhs) {
+    if (!rhs.has_value_)
+      throw std::runtime_error("no value");
+    return lhs == rhs.value_;
+  }
+
+  double obj_value() const {
+    if (!has_value_)
+      throw std::runtime_error("no value");
+    return obj_value_;
+  }
+  int solve_code() const { return solve_code_; }
+  void set_solve_code(int code) { solve_code_ = code; }
+};
+
 // Solver implementation test
 class SolverImplTest : public ::testing::Test {
  protected:
@@ -57,38 +89,6 @@ class SolverImplTest : public ::testing::Test {
     info.num_objs = info.num_nl_objs = 1;
     pb.SetInfo(info);
   }
-
-  class EvalResult {
-   private:
-    bool has_value_;
-    double value_;
-    double obj_value_;
-    int solve_code_;
-
-   public:
-    explicit EvalResult(int solve_code = mp::sol::UNKNOWN)
-    : has_value_(false), value_(), obj_value_(), solve_code_(solve_code) {}
-
-    EvalResult(double value, double obj_value)
-    : has_value_(true), value_(value), obj_value_(obj_value),
-      solve_code_(mp::sol::UNKNOWN) {}
-
-    bool has_value() const { return has_value_; }
-
-    friend bool operator==(double lhs, const EvalResult &rhs) {
-      if (!rhs.has_value_)
-        throw std::runtime_error("no value");
-      return lhs == rhs.value_;
-    }
-
-    double obj_value() const {
-      if (!has_value_)
-        throw std::runtime_error("no value");
-      return obj_value_;
-    }
-    int solve_code() const { return solve_code_; }
-    void set_solve_code(int code) { solve_code_ = code; }
-  };
 
   EvalResult Solve(ProblemBuilder &pb);
 
@@ -366,7 +366,7 @@ void Interrupt();
 namespace var = mp::var;
 namespace obj = mp::obj;
 
-SolverImplTest::EvalResult SolverImplTest::Solve(ProblemBuilder &pb) {
+EvalResult SolverImplTest::Solve(ProblemBuilder &pb) {
   struct TestSolutionHandler : mp::BasicSolutionHandler {
     EvalResult result;
     virtual ~TestSolutionHandler() {}
@@ -381,9 +381,9 @@ SolverImplTest::EvalResult SolverImplTest::Solve(ProblemBuilder &pb) {
   return sh.result;
 }
 
-SolverImplTest::EvalResult
-    SolverImplTest::Solve(const LogicalExprFactory &factory,
-                          int var1, int var2, int var3, bool need_result) {
+EvalResult SolverImplTest::Solve(
+    const LogicalExprFactory &factory,
+    int var1, int var2, int var3, bool need_result) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_nl_integer_vars_in_cons = 4;
@@ -399,7 +399,7 @@ SolverImplTest::EvalResult
 }
 
 // Constructs and evaluates a numeric expression expression.
-SolverImplTest::EvalResult SolverImplTest::Eval(
+EvalResult SolverImplTest::Eval(
     const NumericExprFactory &factory, int var1, int var2, int var3) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   auto info = mp::ProblemInfo();
@@ -1275,9 +1275,5 @@ TEST_F(SolverImplTest, OptionValues) {
 TEST_F(SolverImplTest, CreateSolver) {
   EXPECT_STREQ(solver_.name(), mp::CreateSolver(0)->name());
 }
-
-#ifndef MP_TEST_DATA_DIR
-# define MP_TEST_DATA_DIR "../data"
-#endif
 
 #endif  // TESTS_SOLVER_IMPL_TEST_H_

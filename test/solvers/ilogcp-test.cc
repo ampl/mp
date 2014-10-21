@@ -282,7 +282,7 @@ TEST_F(FunctionTest, InRelationNonConstantSetElement) {
 // ----------------------------------------------------------------------------
 // Other test
 
-/*struct EnumValue {
+struct EnumValue {
   const char *name;
   IloCP::ParameterValues value;
 };
@@ -299,14 +299,19 @@ class IlogCPTest : public ::testing::Test, public mp::internal::ASLBuilder {
     SetInfo(info);
   }
 
+  EvalResult Solve(mp::Problem &p) {
+    TestSolutionHandler sh(1);
+    s.Solve(p, sh);
+    const double *sol = sh.primal();
+    EvalResult result(sol ? sol[0] : 0, sh.obj_value());
+    result.set_solve_code(sh.status());
+    return result;
+  }
+
   int CountIloDistribute();
 
   mp::NumericConstant MakeConst(double value) {
     return MakeNumericConstant(value);
-  }
-
-  SolveResult Solve(Problem &p, const char *stub, const char *opt = 0) {
-    return SolverImplTest::Solve(s, p, stub, opt);
   }
 
   template <typename T>
@@ -454,23 +459,6 @@ TEST_F(IlogCPTest, ConvertTwoNumberOfsWithDiffExprs) {
   ASSERT_EQ(2, CountIloDistribute());
 }
 
-struct TestSolutionHandler : mp::BasicSolutionHandler {
-  int num_solutions;
-  TestSolutionHandler() : num_solutions(0) {}
-  virtual ~TestSolutionHandler() {}
-  void HandleSolution(int, fmt::StringRef,
-        const double *values, const double *, double) {
-    ++num_solutions;
-    for (int i = 0; i < 3; ++i) {
-      EXPECT_GE(values[i], 1);
-      EXPECT_LE(values[i], 3);
-    }
-    EXPECT_NE(values[0], values[1]);
-    EXPECT_NE(values[0], values[2]);
-    EXPECT_NE(values[1], values[2]);
-  }
-};
-
 TEST_F(IlogCPTest, DefaultSolutionLimit) {
   Problem p;
   p.AddVar(1, 3, var::INTEGER);
@@ -479,7 +467,22 @@ TEST_F(IlogCPTest, DefaultSolutionLimit) {
   NumericExpr args[] = {MakeVariable(0), MakeVariable(1), MakeVariable(2)};
   p.AddCon(MakeAllDiff(args));
   s.SetIntOption("solutionlimit", 100);
-  TestSolutionHandler sh;
+
+  struct TestSolutionHandler : mp::BasicSolutionHandler {
+    int num_solutions;
+    TestSolutionHandler() : num_solutions(0) {}
+    void HandleSolution(int, fmt::StringRef,
+          const double *values, const double *, double) {
+      ++num_solutions;
+      for (int i = 0; i < 3; ++i) {
+        EXPECT_GE(values[i], 1);
+        EXPECT_LE(values[i], 3);
+      }
+      EXPECT_NE(values[0], values[1]);
+      EXPECT_NE(values[0], values[2]);
+      EXPECT_NE(values[1], values[2]);
+    }
+  } sh;
   s.Solve(p, sh);
   EXPECT_EQ(1, sh.num_solutions);
 }
@@ -514,25 +517,29 @@ TEST_F(IlogCPTest, OptimizerOption) {
 }
 
 // TODO: move to solver-test
-TEST_F(SolverImplTest, ObjnoOption) {
-  EXPECT_EQ(1, solver_->GetIntOption("objno"));
-  Problem p;
-  p.AddVar(11, 22, var::INTEGER);
-  mp::Variable var = MakeVariable(0);
-  p.AddObj(obj::MIN, var);
-  p.AddObj(obj::MAX, var);
+TEST_F(IlogCPTest, ObjnoOption) {
+  EXPECT_EQ(1, s.GetIntOption("objno"));
+  ASLBuilder pb(s.GetProblemBuilder(""));
+  auto info = mp::ProblemInfo();
+  info.num_vars = 1;
+  info.num_objs = 2;
+  pb.SetInfo(info);
+  pb.AddVar(11, 22, var::INTEGER);
+  pb.AddObj(obj::MIN, NumericExpr(), 1).AddTerm(0, 1);
+  pb.AddObj(obj::MAX, NumericExpr(), 1).AddTerm(0, 1);
+  Problem p(pb.GetProblem());
   EXPECT_EQ(11, Solve(p).obj_value());
-  solver_->SetIntOption("objno", 0);
-  EXPECT_EQ(0, solver_->GetIntOption("objno"));
+  s.SetIntOption("objno", 0);
+  EXPECT_EQ(0, s.GetIntOption("objno"));
   EXPECT_EQ(0, Solve(p).obj_value());
-  solver_->SetIntOption("objno", 2);
-  EXPECT_EQ(2, solver_->GetIntOption("objno"));
+  s.SetIntOption("objno", 2);
+  EXPECT_EQ(2, s.GetIntOption("objno"));
   EXPECT_EQ(22, Solve(p).obj_value());
-  solver_->SetStrOption("optimizer", "cplex");
-  EXPECT_EQ(2, solver_->GetIntOption("objno"));
+  s.SetStrOption("optimizer", "cplex");
+  EXPECT_EQ(2, s.GetIntOption("objno"));
   EXPECT_EQ(22, Solve(p).obj_value());
-  EXPECT_THROW(solver_->SetIntOption("objno", -1), InvalidOptionValue);
-  solver_->SetIntOption("objno", 3);
+  EXPECT_THROW(s.SetIntOption("objno", -1), InvalidOptionValue);
+  s.SetIntOption("objno", 3);
   EXPECT_THROW(Solve(p), InvalidOptionValue);
 }
 
@@ -662,16 +669,23 @@ TEST_F(IlogCPTest, CPOptions) {
     CheckIntCPOption("workers", IloCP::Workers, 1, 4, 0, false);
 }
 
-TEST_F(SolverImplTest, MultiObjOption) {
-  Problem p;
-  p.AddVar(0, 10, var::INTEGER);
-  p.AddObj(obj::MIN, MakeBinary(mp::expr::MOD, MakeVariable(0), MakeConst(3)));
-  p.AddObj(obj::MIN, MakeUnary(mp::expr::POW2,
-             MakeBinary(mp::expr::SUB, MakeVariable(0), MakeConst(5))));
+TEST_F(IlogCPTest, MultiObjOption) {
+  ASLBuilder pb(s.GetProblemBuilder(""));
+  auto info = mp::ProblemInfo();
+  info.num_vars = info.num_nl_integer_vars_in_objs = 1;
+  info.num_objs = info.num_nl_objs = 2;
+  pb.SetInfo(info);
+  pb.AddVar(0, 10, var::INTEGER);
+  pb.AddObj(mp::obj::MIN, pb.MakeBinary(
+              mp::expr::MOD, pb.MakeVariable(0), pb.MakeNumericConstant(3)), 0);
+  pb.AddObj(mp::obj::MIN, pb.MakeUnary(
+              mp::expr::POW2, pb.MakeBinary(mp::expr::SUB, pb.MakeVariable(0),
+                                            pb.MakeNumericConstant(5))), 0);
+  Problem p(pb.GetProblem());
   EXPECT_EQ(0, Solve(p));
-  solver_->SetIntOption("multiobj", 1);
+  s.SetIntOption("multiobj", 1);
   EXPECT_EQ(6, Solve(p));
-  solver_->SetIntOption("multiobj", 0);
+  s.SetIntOption("multiobj", 0);
   EXPECT_EQ(0, Solve(p));
 }
 
@@ -710,24 +724,24 @@ TEST_F(IlogCPTest, MIPIntervalOption) {
 // Interrupt tests
 
 #ifdef MP_THREAD
-TEST_F(SolverTest, CPInterruptSolution) {
+// TODO
+/*TEST_F(SolverImplTest, CPInterruptSolution) {
   std::thread t(Interrupt);
   Problem p;
-  solver_->SetStrOption("optimizer", "cp");
+  solver_.SetStrOption("optimizer", "cp");
   string message = Solve(p, "miplib/assign1").message;
   t.join();
   EXPECT_EQ(600, p.solve_code());
   EXPECT_TRUE(message.find("interrupted") != string::npos);
 }
 
-TEST_F(SolverTest, CPLEXInterruptSolution) {
+TEST_F(SolverImplTest, CPLEXInterruptSolution) {
   std::thread t(Interrupt);
   Problem p;
-  solver_->SetStrOption("optimizer", "cplex");
+  solver_.SetStrOption("optimizer", "cplex");
   string message = Solve(p, "miplib/assign1").message;
   t.join();
   EXPECT_EQ(600, p.solve_code());
   EXPECT_TRUE(message.find("interrupted") != string::npos);
-}
+}*/
 #endif
-*/
