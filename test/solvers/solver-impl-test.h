@@ -1167,18 +1167,16 @@ void Interrupt() {
   std::raise(SIGINT);
 }
 
-TEST_F(SolverImplTest, InterruptSolution) {
+TEST_F(SolverImplTest, InterruptSolve) {
   std::thread t(Interrupt);
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeTSP(pb);
   pb.EndBuild();
   TestSolutionHandler sh;
   solver_.Solve(pb, sh);
-  // TODO: check status
-  //string message = Solve(p, ).message;
   t.join();
-  //EXPECT_EQ(600, p.solve_code());
-  //EXPECT_TRUE(message.find("interrupted") != string::npos);
+  EXPECT_EQ(600, sh.status());
+  EXPECT_TRUE(sh.message().find("interrupted") != std::string::npos);
 }
 #endif
 
