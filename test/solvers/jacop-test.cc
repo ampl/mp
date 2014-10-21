@@ -105,7 +105,7 @@ TEST_F(SolverImplTest, ValSelectOption) {
   EXPECT_EQ("indomainmin", solver_.GetStrOption("val_select"));
   unsigned count = 0;
   for (const char *const *s = VAL_SELECT; *s; ++s, ++count) {
-    std::string value = *s;
+    string value = *s;
     std::transform(value.begin(), value.end(), value.begin(), ::tolower);
     solver_.SetStrOption("val_select", value.c_str());
     EXPECT_EQ(value, solver_.GetStrOption("val_select"));
@@ -132,7 +132,7 @@ TEST_F(SolverImplTest, VarSelectOption) {
   EXPECT_EQ("smallestdomain", solver_.GetStrOption("var_select"));
   unsigned count = 0;
   for (const char *const *s = VAR_SELECT; *s; ++s, ++count) {
-    std::string value = *s;
+    string value = *s;
     std::transform(value.begin(), value.end(), value.begin(), ::tolower);
     solver_.SetStrOption("var_select", value.c_str());
     EXPECT_EQ(value, solver_.GetStrOption("var_select"));
@@ -141,7 +141,7 @@ TEST_F(SolverImplTest, VarSelectOption) {
 }
 
 struct TestOutputHandler : public mp::OutputHandler {
-  std::string output;
+  string output;
   void HandleOutput(fmt::StringRef output) { this->output += output; }
 };
 
