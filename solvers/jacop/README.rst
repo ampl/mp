@@ -90,4 +90,4 @@ See also `AMPL extensions for constraint programming
 <http://ampl.com/resources/logic-and-constraint-programming-extensions/>`_.
 
 If you have questions about or find bugs with this stuff,
-please contact `Victor Zverovich <mailto:Victor Zverovich<viz@ampl.com>>`_.
+please contact `Victor Zverovich <mailto:Victor Zverovich&lt;viz@ampl.com&gt;>`_.
