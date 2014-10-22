@@ -47,8 +47,8 @@ The following command prints the full list of options with descriptions::
 
      gecode -=
 
-See `Gecode Options for AMPL
-<http://ampl.com/products/solvers/gecode-options/>`_ for the full list of options.
+See `Gecode Options for AMPL <http://ampl.com/products/solvers/gecode-options/>`_
+for the full list of options.
 
 solve_result_num values
 -----------------------

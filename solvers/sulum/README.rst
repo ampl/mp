@@ -44,6 +44,9 @@ The following command prints the full list of options with descriptions:
 
      sulum -=
 
+See `Sulum Options for AMPL <http://ampl.com/products/solvers/sulum-options/>`_
+for the full list of options.
+
 solve_result_num values
 -----------------------
 
