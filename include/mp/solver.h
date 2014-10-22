@@ -978,9 +978,6 @@ void SolutionWriter<Solver, Writer>::HandleSolution(
     data.Attach(nsol_suffix, 1);
     data.set_value(0, num_solutions_);
   }
-  // TODO: handle options
-  //option_info.bsname = const_cast<char*>(solver_.long_name());
-  //option_info.wantsol = solver_.wantsol();
   SolutionAdapter<ProblemBuilder> sol(
         status, &builder_, message.c_str(), options_,
         MakeArrayRef(values, values ? builder_.num_vars() : 0),

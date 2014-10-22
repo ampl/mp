@@ -197,5 +197,4 @@ MP_API int MP_SetStrOption(
   }
   return -1;
 }
-
 }  // extern "C"
