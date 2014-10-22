@@ -213,7 +213,7 @@ class NLToJaCoPConverter : public ExprConverter<NLToJaCoPConverter, jobject> {
   // Converts a logical constraint.
   void ConvertLogicalCon(LogicalExpr e);
 
-  void Convert(const Problem &p);
+  void Convert(const Problem &p, int objno);
 
   jobject store() const { return store_; }
   jobjectArray var_array() const { return var_array_; }

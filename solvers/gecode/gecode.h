@@ -108,7 +108,7 @@ class NLToGecodeConverter :
   NLToGecodeConverter(int num_vars, Gecode::IntConLevel icl)
   : problem_(num_vars, icl), icl_(icl) {}
 
-  void Convert(const Problem &p);
+  void Convert(const Problem &p, int objno);
 
   GecodeProblem &problem() { return problem_; }
 

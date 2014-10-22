@@ -81,9 +81,8 @@ IloIntVar NLToConcertConverter::ConvertArg(
   return ilo_var;
 }
 
-NLToConcertConverter::NLToConcertConverter(
-    IloEnv env, int objno, unsigned flags)
-: env_(env), model_(env), vars_(env), cons_(env), objno_(objno), flags_(flags),
+NLToConcertConverter::NLToConcertConverter(IloEnv env, unsigned flags)
+: env_(env), model_(env), vars_(env), cons_(env), flags_(flags),
   numberofs_(CreateVar(env)) {
 }
 
@@ -292,7 +291,7 @@ bool NLToConcertConverter::ConvertGlobalConstraint(
   return true;
 }
 
-void NLToConcertConverter::Convert(const Problem &p) {
+void NLToConcertConverter::Convert(const Problem &p, int objno) {
   int num_continuous_vars = p.num_continuous_vars();
 
   // Set up optimization problem using the Concert API.
@@ -307,8 +306,8 @@ void NLToConcertConverter::Convert(const Problem &p) {
     int obj_start = 0, obj_end = 0;
     if ((flags_ & MULTIOBJ) != 0) {
       obj_end = num_objs;
-    } else if (objno_ > 0) {
-      obj_start = objno_ <= num_objs ? objno_ - 1 : 0;
+    } else if (objno >= 0) {
+      obj_start = objno;
       obj_end = obj_start + 1;
     }
     obj::Type main_obj_type = p.obj_type(obj_start);

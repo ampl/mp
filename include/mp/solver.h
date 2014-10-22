@@ -321,6 +321,10 @@ class Solver : private ErrorHandler,
   int wantsol_;
   int obj_precision_;
 
+  // One-based index of the objective to optimize, 0 to ignore objective, or
+  // -1 to use the first objective if there is one.
+  int objno_;
+
   enum {SHOW_VERSION = 1};
   int flags_;
 
@@ -469,6 +473,13 @@ class Solver : private ErrorHandler,
     T GetValue() const { return (handler_.*get_)(*this, info_); }
     void SetValue(Arg value) { (handler_.*set_)(*this, value, info_); }
   };
+
+  int GetObjNo(const SolverOption &) const { return std::abs(objno_); }
+  void SetObjNo(const SolverOption &opt, int value) {
+    if (value < 0)
+      throw InvalidOptionValue(opt, value);
+    objno_ = value;
+  }
 
  public:
 #ifdef MP_USE_UNIQUE_PTR
@@ -679,6 +690,15 @@ class Solver : private ErrorHandler,
   //   8 = suppress solution message
   int wantsol() const { return wantsol_; }
   void set_wantsol(int value) { wantsol_ = value; }
+
+  // Returns the index of the objective to optimize or -1 to not use objective.
+  int objno(int num_objs) const {
+    if (objno_ == -1)
+      return num_objs > 0 ? 0 : -1;
+    if (objno_ > num_objs)
+      throw InvalidOptionValue("objno", objno_);
+    return objno_ - 1;
+  }
 
   // Returns true if the timing is enabled.
   bool timing() const { return timing_; }

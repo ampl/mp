@@ -362,7 +362,7 @@ bool Solver::OptionNameLess::operator()(
 Solver::Solver(
     fmt::StringRef name, fmt::StringRef long_name, long date, int flags)
 : name_(name), long_name_(long_name.c_str() ? long_name : name), date_(date),
-  wantsol_(0), obj_precision_(-1), flags_(0),
+  wantsol_(0), obj_precision_(-1), objno_(-1), flags_(0),
   count_solutions_(false), read_flags_(0), timing_(false),
   has_errors_(false) {
   version_ = long_name_;
@@ -400,6 +400,14 @@ Solver::Solver(
     }
   };
   AddOption(OptionPtr(new WantSolOption(*this)));
+
+  AddIntOption("objno",
+      "Objective to optimize:\n"
+      "\n"
+      "| 0 - none\n"
+      "| 1 - first (default, if available)\n"
+      "| 2 - second (if available), etc.\n",
+      &Solver::GetObjNo, &Solver::SetObjNo);
 
   struct BoolOption : TypedSolverOption<int> {
     bool &value_;

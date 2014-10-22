@@ -82,7 +82,7 @@ class NLToConcertConverter : public Converter {
     DEBUG       = 2,
     MULTIOBJ   = 4
   };
-  NLToConcertConverter(IloEnv env, int objno, unsigned flags);
+  NLToConcertConverter(IloEnv env, unsigned flags);
 
   IloModel model() const { return model_; }
   IloNumVarArray vars() const { return vars_; }
@@ -321,7 +321,7 @@ class NLToConcertConverter : public Converter {
   // which are much more useful to the solution procedure.
   void FinishBuildingNumberOf();
 
-  void Convert(const Problem &p);
+  void Convert(const Problem &p, int objno);
 };
 }
 

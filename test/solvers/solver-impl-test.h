@@ -330,6 +330,19 @@ class SolverImplTest : public ::testing::Test {
     pb.SetInfo(info);
   }
 
+  // Creates and solves a problem for testing the objno option.
+  double SolveObjNoProblem() {
+    ProblemBuilder pb(solver_.GetProblemBuilder(""));
+    auto info = mp::ProblemInfo();
+    info.num_vars = info.num_linear_integer_vars = 1;
+    info.num_objs = 2;
+    pb.SetInfo(info);
+    pb.AddVar(11, 22, mp::var::INTEGER);
+    pb.AddObj(mp::obj::MIN, NumericExpr(), 1).AddTerm(0, 1);
+    pb.AddObj(mp::obj::MAX, NumericExpr(), 1).AddTerm(0, 1);
+    return Solve(pb).obj_value();
+  }
+
  public:
   SolverImplTest() {}
 
@@ -1275,6 +1288,21 @@ TEST_F(SolverImplTest, OptionValues) {
       EXPECT_TRUE(j->value != 0);
     }
   }
+}
+
+TEST_F(SolverImplTest, ObjnoOption) {
+  EXPECT_EQ(1, solver_.GetIntOption("objno"));
+  EXPECT_EQ(11, SolveObjNoProblem());
+  solver_.SetIntOption("objno", 0);
+  EXPECT_EQ(0, solver_.GetIntOption("objno"));
+  double obj = SolveObjNoProblem();
+  EXPECT_NE(obj, obj);
+  solver_.SetIntOption("objno", 2);
+  EXPECT_EQ(2, solver_.GetIntOption("objno"));
+  EXPECT_EQ(22, SolveObjNoProblem());
+  EXPECT_THROW(solver_.SetIntOption("objno", -1), mp::InvalidOptionValue);
+  solver_.SetIntOption("objno", 3);
+  EXPECT_THROW(SolveObjNoProblem(), mp::InvalidOptionValue);
 }
 
 TEST_F(SolverImplTest, CreateSolver) {

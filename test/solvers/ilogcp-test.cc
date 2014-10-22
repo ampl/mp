@@ -516,33 +516,6 @@ TEST_F(IlogCPTest, OptimizerOption) {
   EXPECT_EQ(0, p.solve_code());
 }
 
-// TODO: move to solver-test
-TEST_F(IlogCPTest, ObjnoOption) {
-  EXPECT_EQ(1, s.GetIntOption("objno"));
-  ASLBuilder pb(s.GetProblemBuilder(""));
-  auto info = mp::ProblemInfo();
-  info.num_vars = 1;
-  info.num_objs = 2;
-  pb.SetInfo(info);
-  pb.AddVar(11, 22, var::INTEGER);
-  pb.AddObj(obj::MIN, NumericExpr(), 1).AddTerm(0, 1);
-  pb.AddObj(obj::MAX, NumericExpr(), 1).AddTerm(0, 1);
-  Problem p(pb.GetProblem());
-  EXPECT_EQ(11, Solve(p).obj_value());
-  s.SetIntOption("objno", 0);
-  EXPECT_EQ(0, s.GetIntOption("objno"));
-  EXPECT_EQ(0, Solve(p).obj_value());
-  s.SetIntOption("objno", 2);
-  EXPECT_EQ(2, s.GetIntOption("objno"));
-  EXPECT_EQ(22, Solve(p).obj_value());
-  s.SetStrOption("optimizer", "cplex");
-  EXPECT_EQ(2, s.GetIntOption("objno"));
-  EXPECT_EQ(22, Solve(p).obj_value());
-  EXPECT_THROW(s.SetIntOption("objno", -1), InvalidOptionValue);
-  s.SetIntOption("objno", 3);
-  EXPECT_THROW(Solve(p), InvalidOptionValue);
-}
-
 TEST_F(IlogCPTest, UseCplexForLinearProblem) {
   Problem p;
   p.AddVar(1, 2);
@@ -550,6 +523,18 @@ TEST_F(IlogCPTest, UseCplexForLinearProblem) {
   mp::BasicSolutionHandler sh;
   s.Solve(p, sh);
   EXPECT_EQ(0, p.solve_code());
+}
+
+TEST_F(SolverImplTest, ObjnoOptionCP) {
+  solver_.SetStrOption("optimizer", "cp");
+  solver_.SetIntOption("objno", 2);
+  EXPECT_EQ(22, SolveObjNoProblem());
+}
+
+TEST_F(SolverImplTest, ObjnoOptionCPLEX) {
+  solver_.SetStrOption("optimizer", "cplex");
+  solver_.SetIntOption("objno", 2);
+  EXPECT_EQ(22, SolveObjNoProblem());
 }
 
 TEST_F(IlogCPTest, DebugExprOption) {

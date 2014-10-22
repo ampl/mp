@@ -249,7 +249,7 @@ jobject NLToJaCoPConverter::VisitNumericLess(BinaryExpr e) {
   return CreateCon(max_class_, args);
 }
 
-void NLToJaCoPConverter::Convert(const Problem &p) {
+void NLToJaCoPConverter::Convert(const Problem &p, int objno) {
   if (p.num_continuous_vars() != 0)
     throw Error("JaCoP doesn't support continuous variables");
 
@@ -271,10 +271,11 @@ void NLToJaCoPConverter::Convert(const Problem &p) {
     env_.SetObjectArrayElement(var_array_, j, var);
   }
 
-  if (p.num_objs() != 0) {
+  if (objno >= 0) {
     jobject result_var = var_class_.NewObject(env_, store_, min_int_, max_int_);
-    ConvertExpr(p.linear_obj_expr(0), p.nonlinear_obj_expr(0), result_var);
-    obj_ = p.obj_type(0) == obj::MIN ?
+    ConvertExpr(p.linear_obj_expr(objno),
+                p.nonlinear_obj_expr(objno), result_var);
+    obj_ = p.obj_type(objno) == obj::MIN ?
         result_var : CreateCon(mul_const_class_, result_var, -1);
   }
 
@@ -525,7 +526,8 @@ void JaCoPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
 
   // Set up an optimization problem in JaCoP.
   NLToJaCoPConverter converter;
-  converter.Convert(p);
+  int objno = this->objno(p.num_objs());
+  converter.Convert(p, objno);
 
   Class<DepthFirstSearch> dfs_class;
   search_ = env_.NewGlobalRef(dfs_class.NewObject(env_));
@@ -546,7 +548,7 @@ void JaCoPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
       "Lorg/jacop/search/Indomain;)V", converter.var_array(),
       var_select, val_select);
   double obj_val = std::numeric_limits<double>::quiet_NaN();
-  bool has_obj = p.num_objs() != 0;
+  bool has_obj = objno >= 0;
 
   Class<InterruptingListener> interrupter_class;
   interrupter_class.Init(env_);
@@ -671,7 +673,7 @@ void JaCoPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
     } else if (solve_code_ == -1) {
       solve_code_ = 0;
       obj_val = env_.CallIntMethod(obj_var.get(), value_);
-      if (p.obj_type(0) == obj::MAX)
+      if (p.obj_type(objno) == obj::MAX)
         obj_val = -obj_val;
       status_ = "optimal solution";
     }

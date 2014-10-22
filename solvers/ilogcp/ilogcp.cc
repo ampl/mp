@@ -274,7 +274,6 @@ IlogCPSolver::IlogCPSolver() :
   options_[USENUMBEROF] = true;
   options_[SOLUTION_LIMIT] = -1;
   options_[MULTIOBJ] = false;
-  options_[OBJNO] = 1;
   set_read_flags(ASL_allow_missing_funcs);
 
   set_long_name(fmt::format("ilogcp {}.{}.{}",
@@ -305,14 +304,6 @@ IlogCPSolver::IlogCPSolver() :
       "\n"
       "The default value is ``auto``.",
       &IlogCPSolver::GetOptimizer, &IlogCPSolver::SetOptimizer, OPTIMIZERS);
-
-  AddIntOption("objno",
-      "Objective to optimize:\n"
-      "\n"
-      "| 0 - none\n"
-      "| 1 - first (default, if available)\n"
-      "| 2 - second (if available), etc.\n",
-      &IlogCPSolver::DoGetIntOption, &IlogCPSolver::DoSetIntOption, OBJNO);
 
   // CP options:
 
@@ -684,7 +675,7 @@ void IlogCPSolver::SolveWithCP(
     GetSolution(cp_, vars, solution);
     if (num_objs == 0) {
       // Do nothing.
-    } else if (GetOption(OBJNO) != 0) {
+    } else if (objno(p.num_objs()) >= 0) {
       obj_value = cp_.getObjValue();
       writer.write(", objective {}", FormatObjValue(obj_value));
     } else {
@@ -737,7 +728,7 @@ void IlogCPSolver::SolveWithCPLEX(
     }
     writer << cplex_.getNiterations() << " iterations";
 
-    if (p.num_objs() > 0) {
+    if (objno(p.num_objs()) >= 0) {
       obj_value = cplex_.getObjValue();
       writer.write(", objective {}", FormatObjValue(obj_value));
     }
@@ -770,11 +761,8 @@ void IlogCPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
     flags |= NLToConcertConverter::DEBUG;
   if (optimizer == CP && GetOption(MULTIOBJ) != 0)
     flags |= NLToConcertConverter::MULTIOBJ;
-  int objno = GetOption(OBJNO);
-  if (p.num_objs() > 0 && objno > p.num_objs())
-    throw InvalidOptionValue("objno", objno);
-  NLToConcertConverter converter(env_, objno, flags);
-  converter.Convert(p);
+  NLToConcertConverter converter(env_, flags);
+  converter.Convert(p, objno(p.num_objs()));
 
   try {
     IloAlgorithm &cp_alg = cp_;

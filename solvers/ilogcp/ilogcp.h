@@ -75,7 +75,6 @@ class IlogCPSolver : public ASLSolver {
     USENUMBEROF,
     SOLUTION_LIMIT,
     MULTIOBJ,
-    OBJNO,
     NUM_OPTIONS
   };
 
