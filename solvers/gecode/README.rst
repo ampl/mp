@@ -53,7 +53,7 @@ for the full list of options.
 solve_result_num values
 -----------------------
 
-Here is a table of ``solve_result_num`` values that ``ilogcp`` can return
+Here is a table of ``solve_result_num`` values that ``gecode`` can return
 to an AMPL session, along with the text that appears in the associated
 ``solve_message``.
 
