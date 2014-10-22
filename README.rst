@@ -30,10 +30,10 @@ Features
 
   - `JaCoP <https://github.com/ampl/mp/tree/master/solvers/jacop>`_
 
-* Interfaces to the following solvers:
-
   - `LocalSolver <https://github.com/ampl/mp/tree/master/solvers/localsolver>`_
-  - `Sulum <https://github.com/ampl/mp/tree/master/solvers/sulum>`_
+
+* Interfaces to `Sulum <https://github.com/ampl/mp/tree/master/solvers/sulum>`_
+  LP and MIP solver
 
 * Interfaces to other solvers via AMPL Solver Library
 
