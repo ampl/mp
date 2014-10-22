@@ -344,8 +344,8 @@ void SignalHandler::HandleSigInt(int sig) {
     _exit(1);
   }
   stop_ = 1;
-  if (handler_)
-    handler_(data_);
+  if (InterruptHandler handler = handler_)
+    handler(data_);
   // Restore the handler since it might have been reset before the handler
   // is called (this is implementation defined).
   std::signal(sig, HandleSigInt);
