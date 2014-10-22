@@ -392,7 +392,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
     // Solution is infeasible, but problem may be feasible.
     // This can only happen if stopped by a limit.
     solve_code = sol::LIMIT;
-    status = "infeasible solution";
+    status = "limit";
     break;
   case ls::SS_Feasible:
     solve_code = sol::UNSOLVED;
@@ -400,7 +400,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
     break;
   case ls::SS_Optimal:
     solve_code = sol::SOLVED;
-    status = "optimal solution";
+    status = builder.num_objs() > 0 ? "optimal solution" : "feasible solution";
     break;
   default:
     solve_code = sol::FAILURE;
