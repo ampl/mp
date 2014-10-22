@@ -23,8 +23,8 @@ Features
 
   __ http://ampl.com/resources/logic-and-constraint-programming-extensions/
 
-  - IBM ILOG CPLEX and CPLEX CP Optimizer
-    (`ilogcp <https://github.com/ampl/mp/tree/master/solvers/ilogcp>`_)
+  - `Ilogcp <https://github.com/ampl/mp/tree/master/solvers/ilogcp>`_:
+    IBM ILOG CPLEX and CPLEX CP Optimizer
 
   - `Gecode <https://github.com/ampl/mp/tree/master/solvers/gecode>`_
 
