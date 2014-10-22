@@ -99,8 +99,3 @@ constraints::
 
 This suffix and possible values for it are defined in ``gecode.ampl``.
 Requires AMPL version 20130906 or later.
-
-------------
-
-If you have questions about or find bugs with this stuff,
-please contact `Victor Zverovich <mailto:Victor Zverovich%3cviz@ampl.com%3e>`_.

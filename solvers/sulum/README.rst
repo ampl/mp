@@ -86,8 +86,3 @@ to solve a problem whose solution will take a while; after it finishes,
 
 (Here, ``-`` denotes standard input, and ampl reads the ``solution...``
 and ``display...`` lines.)
-
--------------------
-
-If you have questions about or find bugs with this stuff,
-please contact `Victor Zverovich <mailto:Victor Zverovich%3cviz@ampl.com%3e>`_.
