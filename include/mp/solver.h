@@ -35,6 +35,10 @@
 #include <string>
 #include <vector>
 
+#if MP_USE_ATOMIC
+# include <atomic>
+#endif
+
 #include "mp/arrayref.h"
 #include "mp/clock.h"
 #include "mp/error.h"
@@ -1029,16 +1033,32 @@ class SolverAppOptionParser {
   const char *Parse(char **&argv);
 };
 
+#if MP_USE_ATOMIC
+using std::atomic;
+#else
+// Dummy "atomic" for compatibility with legacy compilers.
+template <typename T>
+class atomic {
+ private:
+  T value_;
+
+ public:
+  atomic(T value = T()) : value_(value) {}
+  operator T() const { return value_; }
+};
+#endif
+
 // A SIGINT handler
 class SignalHandler : public Interrupter {
  private:
   Solver &solver_;
   std::string message_;
-  static const char *signal_message_ptr_;
-  static unsigned signal_message_size_;
   static volatile std::sig_atomic_t stop_;
-  static InterruptHandler handler_;
-  static void *data_;
+
+  static atomic<const char*> signal_message_ptr_;
+  static atomic<unsigned> signal_message_size_;
+  static atomic<InterruptHandler> handler_;
+  static atomic<void*> data_;
 
   static void HandleSigInt(int sig);
 

@@ -302,13 +302,11 @@ const char *SolverAppOptionParser::Parse(char **&argv) {
   return stub;
 }
 
-// TODO: atomic
-const char *SignalHandler::signal_message_ptr_;
-unsigned SignalHandler::signal_message_size_;
-InterruptHandler SignalHandler::handler_;
-void *SignalHandler::data_;
+mp::internal::atomic<const char*> SignalHandler::signal_message_ptr_;
+mp::internal::atomic<unsigned> SignalHandler::signal_message_size_;
+mp::internal::atomic<InterruptHandler> SignalHandler::handler_;
+mp::internal::atomic<void*> SignalHandler::data_;
 
-// Set stop_ to 1 initially to avoid accessing handler_ which may not be atomic.
 volatile std::sig_atomic_t SignalHandler::stop_ = 1;
 
 SignalHandler::SignalHandler(Solver &s)

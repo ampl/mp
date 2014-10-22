@@ -251,12 +251,21 @@ add_mp_library(mp ${MP_HEADERS} ${MP_SOURCES} ${MP_EXPR_INFO_FILE}
   INCLUDE_DIRECTORIES src OBJECT_LIBRARIES format)
 
 include(CheckCXXSourceCompiles)
+
 check_cxx_source_compiles(
   "#include <memory>
   int main() { std::unique_ptr<int> p; }" HAVE_UNIQUE_PTR)
 if (HAVE_UNIQUE_PTR)
   target_compile_definitions(mp PUBLIC MP_USE_UNIQUE_PTR)
 endif ()
+
+check_cxx_source_compiles(
+  "#include <atomic>
+  int main() { std::atomic<int> n; }" HAVE_ATOMIC)
+if (HAVE_ATOMIC)
+  target_compile_definitions(mp PUBLIC MP_USE_ATOMIC)
+endif ()
+
 
 # Link with librt for clock_gettime (Linux on i386).
 find_library(RT_LIBRARY rt)
