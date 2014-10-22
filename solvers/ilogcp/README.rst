@@ -4,8 +4,9 @@ Ilogcp
 The solver ``ilogcp`` connects IBM ILOG `CPLEX CP Optimizer
 <http://www-01.ibm.com/software/integration/optimization/cplex-cp-optimizer/>`_
 and `CPLEX <http://www-01.ibm.com/software/integration/optimization/cplex-optimizer/>`_
-to AMPL via the Concert API. It fully supports
-`AMPL extensions for constraint programming <http://www.ampl.com/NEW/LOGIC>`_ and
+to AMPL via the Concert API.
+It fully supports `AMPL extensions for logic and constraint programming
+<http://ampl.com/resources/logic-and-constraint-programming-extensions/>`_ and
 can handle wide range of problems including linear, mixed-integer, quadratic and
 constraint programming problems.
 

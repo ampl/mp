@@ -4,8 +4,8 @@ LocalSolver
 The solver ``localsolver`` uses `LocalSolver <http://www.localsolver.com/>`_
 to solve linear and nonlinear mixed-integer programming problems as well
 as constraint programming problems.
-It fully supports `AMPL extensions for constraint programming
-<http://www.ampl.com/NEW/LOGIC>`_.
+It fully supports `AMPL extensions for logic and constraint programming
+<http://ampl.com/resources/logic-and-constraint-programming-extensions/>`_.
 
 Normally ``localsolver`` is invoked by AMPL's ``solve`` command,
 which gives the invocation
