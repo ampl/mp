@@ -117,7 +117,7 @@ SulumSolver::SulumSolver()
   set_long_name(version);
   version[0] = 'S';
   set_version(version);
-  set_read_flags(ASL_want_A_vals);
+  set_read_flags(ASL_want_A_vals | ASL_sep_U_arrays);
 
   Check(SlmMakeEnv(&env_));
   SlmReturn ret = SlmMakeModel(env_, &model_);
@@ -155,8 +155,10 @@ SulumSolver::~SulumSolver() {
 void SulumSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
-  if (p.num_nonlinear_objs() != 0 || p.num_nonlinear_cons() != 0)
+  if (p.num_nonlinear_objs() != 0 || p.num_nonlinear_cons() != 0 ||
+      p.num_logical_cons() != 0) {
     throw Error("Sulum doesn't support nonlinear problems");
+  }
 
   // Convert variables.
   int num_vars = p.num_vars();
@@ -279,7 +281,8 @@ void SulumSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   w << status;
   if (p.num_objs() > 0)
     w.write("; objective {}", FormatObjValue(obj_val));
-  sh.HandleSolution(solve_code, w.c_str(), solution.data(), dual_solution.data(), obj_val);
+  sh.HandleSolution(solve_code, w.c_str(), solution.data(),
+                    dual_solution.data(), obj_val);
 
   double output_time = GetTimeAndReset(time);
 
