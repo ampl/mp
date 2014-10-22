@@ -1,7 +1,7 @@
 LocalSolver
 ===========
 
-The solver ``localsolver`` uses `LocalSolver <http://www.localsolver.org/>`_
+The solver ``localsolver`` uses `LocalSolver <http://www.localsolver.com/>`_
 to solve linear and nonlinear mixed-integer programming problems as well
 as constraint programming problems.
 It fully supports `AMPL extensions for constraint programming
