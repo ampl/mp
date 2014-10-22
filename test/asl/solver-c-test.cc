@@ -78,45 +78,47 @@ TEST(SolverCTest, GetOptionHeader) {
 TEST(SolverCTest, GetSolverOptions) {
   MP_Solver *s = MP_CreateSolver(0, 0);
   int num_options = MP_GetSolverOptions(s, 0, 0);
-  EXPECT_EQ(5, num_options);
+  EXPECT_EQ(6, num_options);
   std::vector<MP_SolverOptionInfo> options(num_options);
   EXPECT_EQ(num_options, MP_GetSolverOptions(s, &options[0], num_options));
-  EXPECT_STREQ("opt1", options[0].name);
-  EXPECT_STREQ("desc1", options[0].description);
+  EXPECT_STREQ("objno", options[0].name);
+  EXPECT_STREQ("opt1", options[1].name);
+  EXPECT_STREQ("desc1", options[1].description);
   EXPECT_EQ(0, options[0].flags);
-  EXPECT_STREQ("opt2", options[1].name);
-  EXPECT_STREQ("desc2", options[1].description);
-  EXPECT_EQ(MP_OPT_HAS_VALUES, options[1].flags);
-  EXPECT_STREQ("timing", options[2].name);
-  EXPECT_STREQ("version", options[3].name);
-  EXPECT_STREQ("wantsol", options[4].name);
+  EXPECT_STREQ("opt2", options[2].name);
+  EXPECT_STREQ("desc2", options[2].description);
+  EXPECT_EQ(MP_OPT_HAS_VALUES, options[2].flags);
+  EXPECT_STREQ("timing", options[3].name);
+  EXPECT_STREQ("version", options[4].name);
+  EXPECT_STREQ("wantsol", options[5].name);
   MP_DestroySolver(s);
 }
 
 TEST(SolverCTest, GetPartOfSolverOptions) {
   MP_Solver *s = MP_CreateSolver(0, 0);
   int num_options = MP_GetSolverOptions(s, 0, 0);
-  EXPECT_EQ(5, num_options);
-  std::vector<MP_SolverOptionInfo> options(3);
-  EXPECT_EQ(num_options, MP_GetSolverOptions(s, &options[0], 2));
-  EXPECT_STREQ("opt1", options[0].name);
-  EXPECT_STREQ("opt2", options[1].name);
-  EXPECT_TRUE(!options[2].name);
-  EXPECT_TRUE(!options[2].description);
-  EXPECT_TRUE(!options[2].flags);
-  EXPECT_TRUE(!options[2].option);
+  EXPECT_EQ(6, num_options);
+  std::vector<MP_SolverOptionInfo> options(4);
+  EXPECT_EQ(num_options, MP_GetSolverOptions(s, &options[0], 3));
+  EXPECT_STREQ("objno", options[0].name);
+  EXPECT_STREQ("opt1", options[1].name);
+  EXPECT_STREQ("opt2", options[2].name);
+  EXPECT_TRUE(!options[3].name);
+  EXPECT_TRUE(!options[3].description);
+  EXPECT_TRUE(!options[3].flags);
+  EXPECT_TRUE(!options[3].option);
   MP_DestroySolver(s);
 }
 
 TEST(SolverCTest, GetOptionValues) {
   MP_Solver *s = MP_CreateSolver(0, 0);
-  MP_SolverOptionInfo info[2];
-  MP_GetSolverOptions(s, info, 2);
-  int num_values = MP_GetOptionValues(s, info[1].option, 0, 0);
+  MP_SolverOptionInfo info[3];
+  MP_GetSolverOptions(s, info, 3);
+  int num_values = MP_GetOptionValues(s, info[2].option, 0, 0);
   EXPECT_EQ(3, num_values);
   std::vector<MP_OptionValueInfo> values(num_values);
   EXPECT_EQ(num_values,
-      MP_GetOptionValues(s, info[1].option, &values[0], num_values));
+      MP_GetOptionValues(s, info[2].option, &values[0], num_values));
   EXPECT_STREQ("val1", values[0].value);
   EXPECT_STREQ("valdesc1", values[0].description);
   EXPECT_STREQ("val2", values[1].value);
@@ -128,13 +130,13 @@ TEST(SolverCTest, GetOptionValues) {
 
 TEST(SolverCTest, GetPartOfOptionValues) {
   MP_Solver *s = MP_CreateSolver(0, 0);
-  MP_SolverOptionInfo info[2];
-  MP_GetSolverOptions(s, info, 2);
-  int num_values = MP_GetOptionValues(s, info[1].option, 0, 0);
+  MP_SolverOptionInfo info[3];
+  MP_GetSolverOptions(s, info, 3);
+  int num_values = MP_GetOptionValues(s, info[2].option, 0, 0);
   EXPECT_EQ(3, num_values);
   std::vector<MP_OptionValueInfo> values(num_values);
   EXPECT_EQ(num_values,
-      MP_GetOptionValues(s, info[1].option, &values[0], 2));
+      MP_GetOptionValues(s, info[2].option, &values[0], 2));
   EXPECT_STREQ("val1", values[0].value);
   EXPECT_STREQ("valdesc1", values[0].description);
   EXPECT_STREQ("val2", values[1].value);
