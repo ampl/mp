@@ -45,7 +45,7 @@
 typedef mp::IlogCPSolver Solver;
 enum {FEATURES = feature::ALL};
 
-#include "solver-impl-test.h"
+#include "nl-solver-test.h"
 
 using mp::Expr;
 using mp::NumericExpr;
@@ -59,7 +59,7 @@ namespace obj = mp::obj;
 
 using std::string;
 
-class FunctionTest : public SolverImplTest {
+class FunctionTest : public NLSolverTest {
  protected:
   template <typename IndexFactory>
   struct CallFactory : NumericExprFactory {
@@ -86,7 +86,7 @@ class FunctionTest : public SolverImplTest {
 
   virtual void SetInfo(ProblemBuilder &pb, mp::ProblemInfo &info) {
     info.num_funcs = 2;
-    SolverImplTest::SetInfo(pb, info);
+    NLSolverTest::SetInfo(pb, info);
     // Create functions permitting less arguments than necessary.
     // This is done to be able to test calls with invalid arguments.
     pb.SetFunction(0, "element", -2, mp::func::NUMERIC);
@@ -525,13 +525,13 @@ TEST_F(IlogCPTest, UseCplexForLinearProblem) {
   EXPECT_EQ(0, p.solve_code());
 }
 
-TEST_F(SolverImplTest, ObjnoOptionCP) {
+TEST_F(NLSolverTest, ObjnoOptionCP) {
   solver_.SetStrOption("optimizer", "cp");
   solver_.SetIntOption("objno", 2);
   EXPECT_EQ(22, SolveObjNoProblem());
 }
 
-TEST_F(SolverImplTest, ObjnoOptionCPLEX) {
+TEST_F(NLSolverTest, ObjnoOptionCPLEX) {
   solver_.SetStrOption("optimizer", "cplex");
   solver_.SetIntOption("objno", 2);
   EXPECT_EQ(22, SolveObjNoProblem());
@@ -708,7 +708,7 @@ TEST_F(IlogCPTest, MIPIntervalOption) {
 // ----------------------------------------------------------------------------
 // Interrupt tests
 
-TEST_F(SolverImplTest, InterruptCP) {
+TEST_F(NLSolverTest, InterruptCP) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeTSP(pb);
   pb.EndBuild();
@@ -720,7 +720,7 @@ TEST_F(SolverImplTest, InterruptCP) {
   EXPECT_TRUE(sh.message().find("interrupted") != std::string::npos);
 }
 
-TEST_F(SolverImplTest, InterruptCPLEX) {
+TEST_F(NLSolverTest, InterruptCPLEX) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeTSP(pb);
   pb.EndBuild();

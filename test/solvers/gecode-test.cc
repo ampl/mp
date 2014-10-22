@@ -31,7 +31,7 @@
 typedef mp::GecodeSolver Solver;
 enum {FEATURES = 0};
 
-#include "solver-impl-test.h"
+#include "nl-solver-test.h"
 
 using std::string;
 using Gecode::IntVarBranch;
@@ -41,7 +41,7 @@ using mp::Problem;
 // ----------------------------------------------------------------------------
 // Solver tests
 
-TEST_F(SolverImplTest, FloorSqrt) {
+TEST_F(NLSolverTest, FloorSqrt) {
   auto factory = MakeUnaryExprFactory(
         mp::expr::FLOOR, MakeUnaryExprFactory(
           mp::expr::SQRT, VariableFactory(1)));
@@ -51,7 +51,7 @@ TEST_F(SolverImplTest, FloorSqrt) {
 // ----------------------------------------------------------------------------
 // Option tests
 
-TEST_F(SolverImplTest, ADOption) {
+TEST_F(NLSolverTest, ADOption) {
   EXPECT_EQ(Gecode::Search::Options().a_d, solver_.options().a_d);
   solver_.SetIntOption("a_d", 42);
   EXPECT_EQ(42u, solver_.options().a_d);
@@ -59,7 +59,7 @@ TEST_F(SolverImplTest, ADOption) {
   EXPECT_THROW(solver_.SetIntOption("a_d", -1), InvalidOptionValue);
 }
 
-TEST_F(SolverImplTest, CDOption) {
+TEST_F(NLSolverTest, CDOption) {
   EXPECT_EQ(Gecode::Search::Options().c_d, solver_.options().c_d);
   solver_.SetIntOption("c_d", 42);
   EXPECT_EQ(42u, solver_.options().c_d);
@@ -67,7 +67,7 @@ TEST_F(SolverImplTest, CDOption) {
   EXPECT_THROW(solver_.SetIntOption("c_d", -1), InvalidOptionValue);
 }
 
-TEST_F(SolverImplTest, FailLimitOption) {
+TEST_F(NLSolverTest, FailLimitOption) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeTSP(pb);
   solver_.SetIntOption("faillimit", 10);
@@ -79,7 +79,7 @@ TEST_F(SolverImplTest, FailLimitOption) {
   EXPECT_THROW(solver_.SetIntOption("faillimit", -1), InvalidOptionValue);
 }
 
-TEST_F(SolverImplTest, NodeLimitOption) {
+TEST_F(NLSolverTest, NodeLimitOption) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeTSP(pb);
   solver_.SetIntOption("nodelimit", 10);
@@ -91,7 +91,7 @@ TEST_F(SolverImplTest, NodeLimitOption) {
   EXPECT_THROW(solver_.SetIntOption("nodelimit", -1), InvalidOptionValue);
 }
 
-TEST_F(SolverImplTest, TimeLimitOption) {
+TEST_F(NLSolverTest, TimeLimitOption) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeTSP(pb);
   solver_.SetDblOption("timelimit", 0.1);
@@ -100,7 +100,7 @@ TEST_F(SolverImplTest, TimeLimitOption) {
   EXPECT_THROW(solver_.SetDblOption("timelimit", -1), InvalidOptionValue);
 }
 
-TEST_F(SolverImplTest, ThreadsOption) {
+TEST_F(NLSolverTest, ThreadsOption) {
   EXPECT_EQ(Gecode::Search::Options().threads, solver_.options().threads);
   solver_.SetDblOption("threads", 0.5);
   EXPECT_EQ(0.5, solver_.GetDblOption("threads"));
@@ -123,7 +123,7 @@ const OptionValue<Gecode::IntConLevel> INT_CON_LEVELS[] = {
     {0,     Gecode::ICL_VAL}
 };
 
-TEST_F(SolverImplTest, IntConLevelOption) {
+TEST_F(NLSolverTest, IntConLevelOption) {
   EXPECT_EQ(Gecode::ICL_DEF, solver_.icl());
   unsigned count = 0;
   for (const OptionValue<Gecode::IntConLevel>
@@ -149,7 +149,7 @@ const OptionValue<Gecode::IntValBranch> VAL_BRANCHINGS[] = {
     {0,            Gecode::INT_VAL_MIN()}
 };
 
-TEST_F(SolverImplTest, ValBranchingOption) {
+TEST_F(NLSolverTest, ValBranchingOption) {
   EXPECT_EQ(Gecode::INT_VAL_MIN().select(), solver_.val_branching().select());
   unsigned count = 0;
   for (const OptionValue<Gecode::IntValBranch>
@@ -189,7 +189,7 @@ const OptionValue<IntVarBranch::Select> VAR_BRANCHINGS[] = {
     {0,                   IntVarBranch::SEL_NONE}
 };
 
-TEST_F(SolverImplTest, VarBranchingOption) {
+TEST_F(NLSolverTest, VarBranchingOption) {
   EXPECT_EQ(IntVarBranch::SEL_SIZE_MIN, solver_.var_branching());
   unsigned count = 0;
   for (const OptionValue<IntVarBranch::Select>
@@ -201,7 +201,7 @@ TEST_F(SolverImplTest, VarBranchingOption) {
   EXPECT_EQ(24u, count);
 }
 
-TEST_F(SolverImplTest, DecayOption) {
+TEST_F(NLSolverTest, DecayOption) {
   EXPECT_EQ(1, solver_.decay());
   solver_.SetDblOption("decay", 0.000001);
   EXPECT_EQ(0.000001, solver_.GetDblOption("decay"));
@@ -224,7 +224,7 @@ const OptionValue<Gecode::RestartMode> RESTARTS[] = {
     {0,           Gecode::RM_NONE}
 };
 
-TEST_F(SolverImplTest, RestartOption) {
+TEST_F(NLSolverTest, RestartOption) {
   EXPECT_EQ(Gecode::RM_NONE, solver_.restart());
   unsigned count = 0;
   for (const OptionValue<Gecode::RestartMode>
@@ -236,7 +236,7 @@ TEST_F(SolverImplTest, RestartOption) {
   EXPECT_EQ(5u, count);
 }
 
-TEST_F(SolverImplTest, RestartBaseOption) {
+TEST_F(NLSolverTest, RestartBaseOption) {
   EXPECT_EQ(1.5, solver_.restart_base());
   solver_.SetDblOption("restart_base", 0.000001);
   EXPECT_EQ(0.000001, solver_.GetDblOption("restart_base"));
@@ -250,7 +250,7 @@ TEST_F(SolverImplTest, RestartBaseOption) {
   solver_.SetDblOption("restart_base", 100);
 }
 
-TEST_F(SolverImplTest, RestartScaleOption) {
+TEST_F(NLSolverTest, RestartScaleOption) {
   EXPECT_EQ(250u, solver_.restart_scale());
   solver_.SetIntOption("restart_scale", 42);
   EXPECT_EQ(42u, solver_.restart_scale());
@@ -258,7 +258,7 @@ TEST_F(SolverImplTest, RestartScaleOption) {
   EXPECT_THROW(solver_.SetIntOption("restart_scale", -1), InvalidOptionValue);
 }
 
-TEST_F(SolverImplTest, OutLevOption) {
+TEST_F(NLSolverTest, OutLevOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
   Problem p;
@@ -282,7 +282,7 @@ TEST_F(SolverImplTest, OutLevOption) {
   EXPECT_THROW(solver_.SetIntOption("outlev", 2), InvalidOptionValue);
 }
 
-TEST_F(SolverImplTest, OutFreqOption) {
+TEST_F(NLSolverTest, OutFreqOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
   Problem p;

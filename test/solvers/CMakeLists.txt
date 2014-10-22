@@ -6,7 +6,7 @@ if (MP_THREAD)
 endif ()
 
 if (TARGET gecode)
-  add_mp_test(gecode-test PREFIX gecode-test.cc solver-impl-test.h
+  add_mp_test(gecode-test PREFIX gecode-test.cc nl-solver-test.h
     LIBS amplgecode-static)
 endif ()
 
@@ -15,14 +15,14 @@ if (TARGET ilogcp)
   # Include the gtest source in test instead of linking with the library to
   # avoid a problem when gtest is built with a different runtime than ilogcp.
   add_prefix(ILOGCP_TEST_SRC ../ ${GTEST_SRC})
-  add_executable(ilogcp-test ilogcp-test.cc feature.h solver-impl-test.h
+  add_executable(ilogcp-test ilogcp-test.cc feature.h nl-solver-test.h
                  ${ILOGCP_TEST_SRC})
   target_link_libraries(ilogcp-test amplilogcp-static)
   add_test(NAME ilogcp-test COMMAND $<TARGET_FILE:ilogcp-test>)
 endif ()
 
 if (TARGET jacop)
-  add_mp_test(jacop-test jacop-test.cc solver-impl-test.h LIBS ampljacop-static)
+  add_mp_test(jacop-test jacop-test.cc nl-solver-test.h LIBS ampljacop-static)
   if (MSVC)
     set_target_properties(jacop-test PROPERTIES LINK_FLAGS "/DELAYLOAD:jvm.dll")
     target_link_libraries(jacop-test delayimp)

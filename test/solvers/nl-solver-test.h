@@ -1,5 +1,5 @@
 /*
- Solver implementation test
+ Nonliner solver test
 
  Copyright (C) 2012 AMPL Optimization Inc
 
@@ -61,7 +61,7 @@ class EvalResult {
 };
 
 // Solver implementation test
-class SolverImplTest : public ::testing::Test {
+class NLSolverTest : public ::testing::Test {
  protected:
   Solver solver_;
 
@@ -70,7 +70,7 @@ class SolverImplTest : public ::testing::Test {
   typedef ProblemBuilder::LogicalExpr LogicalExpr;
   typedef ProblemBuilder::Variable Variable;
 
-  FMT_DISALLOW_COPY_AND_ASSIGN(SolverImplTest);
+  FMT_DISALLOW_COPY_AND_ASSIGN(NLSolverTest);
 
   bool HasFeature(feature::Feature f) const {
     return (FEATURES & f) != 0;
@@ -344,7 +344,7 @@ class SolverImplTest : public ::testing::Test {
   }
 
  public:
-  SolverImplTest() {}
+  NLSolverTest() {}
 
   // Creates a test count expression with arguments var[i] != 0 for
   // i = start_var_index, ..., 3.
@@ -372,7 +372,7 @@ void Interrupt();
 namespace var = mp::var;
 namespace obj = mp::obj;
 
-EvalResult SolverImplTest::Solve(ProblemBuilder &pb) {
+EvalResult NLSolverTest::Solve(ProblemBuilder &pb) {
   struct TestSolutionHandler : mp::BasicSolutionHandler {
     EvalResult result;
     virtual ~TestSolutionHandler() {}
@@ -387,7 +387,7 @@ EvalResult SolverImplTest::Solve(ProblemBuilder &pb) {
   return sh.result;
 }
 
-EvalResult SolverImplTest::Solve(
+EvalResult NLSolverTest::Solve(
     const LogicalExprFactory &factory,
     int var1, int var2, int var3, bool need_result) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
@@ -405,24 +405,29 @@ EvalResult SolverImplTest::Solve(
 }
 
 // Constructs and evaluates a numeric expression expression.
-EvalResult SolverImplTest::Eval(
+EvalResult NLSolverTest::Eval(
     const NumericExprFactory &factory, int var1, int var2, int var3) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_nl_integer_vars_in_cons = 4;
   info.num_algebraic_cons = info.num_nl_cons = 1;
+  info.num_con_nonzeros = 1;
   SetInfo(pb, info);
   auto inf = std::numeric_limits<double>::infinity();
   pb.AddVar(-inf, inf, mp::var::INTEGER);
   pb.AddVar(var1, var1, mp::var::INTEGER);
   pb.AddVar(var2, var2, mp::var::INTEGER);
   pb.AddVar(var3, var3, mp::var::INTEGER);
+  auto cols = pb.GetColumnSizeHandler();
+  cols.Add(1);
+  for (int i = 1; i < info.num_vars - 1; ++i)
+    cols.Add(0);
   auto con_builder = pb.AddCon(factory(pb), 0, 0, 0);
   con_builder.AddTerm(0, -1);
   return Solve(pb);
 }
 
-TEST_F(SolverImplTest, NonlinearObj) {
+TEST_F(NLSolverTest, NonlinearObj) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   SetInfo(pb);
   pb.AddVar(2, 2, var::INTEGER);
@@ -431,7 +436,7 @@ TEST_F(SolverImplTest, NonlinearObj) {
   EXPECT_EQ(4, Solve(pb).obj_value());
 }
 
-TEST_F(SolverImplTest, ObjConst) {
+TEST_F(NLSolverTest, ObjConst) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   SetInfo(pb);
   pb.AddVar(0, 0, var::INTEGER);
@@ -440,7 +445,7 @@ TEST_F(SolverImplTest, ObjConst) {
   EXPECT_EQ(42, Solve(pb).obj_value());
 }
 
-TEST_F(SolverImplTest, Minimize) {
+TEST_F(NLSolverTest, Minimize) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   SetInfo(pb);
   pb.AddVar(11, 22, var::INTEGER);
@@ -448,7 +453,7 @@ TEST_F(SolverImplTest, Minimize) {
   EXPECT_EQ(11, Solve(pb).obj_value());
 }
 
-TEST_F(SolverImplTest, Maximize) {
+TEST_F(NLSolverTest, Maximize) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   SetInfo(pb);
   pb.AddVar(11, 22, var::INTEGER);
@@ -488,7 +493,7 @@ void MakeTSP(ProblemBuilder &pb) {
 // ----------------------------------------------------------------------------
 // Expression tests
 
-TEST_F(SolverImplTest, NumericConstant) {
+TEST_F(NLSolverTest, NumericConstant) {
   EXPECT_EQ(42, Eval(NumericConstantFactory(42)));
   if (HasFeature(feature::FLOAT_CONST)) {
     EXPECT_EQ(42, Eval(MakeBinaryExprFactory(mp::expr::MUL, 0.42, 100.0)));
@@ -498,18 +503,18 @@ TEST_F(SolverImplTest, NumericConstant) {
     "value 0.42 can't be represented as int");
 }
 
-TEST_F(SolverImplTest, Variable) {
+TEST_F(NLSolverTest, Variable) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_nl_integer_vars_in_objs = 1;
-  info.num_objs = 1;
+  info.num_objs = info.num_nl_objs = 1;
   pb.SetInfo(info);
   pb.AddVar(42, 43, mp::var::INTEGER);
   pb.AddObj(mp::obj::MIN, pb.MakeVariable(0), 0);
   EXPECT_EQ(42, Solve(pb));
 }
 
-TEST_F(SolverImplTest, Floor) {
+TEST_F(NLSolverTest, Floor) {
   auto kind = mp::expr::FLOOR;
   EXPECT_EQ(-42, EvalUnary(kind, -42));
   EXPECT_EQ(42, EvalUnary(kind, 42));
@@ -519,7 +524,7 @@ TEST_F(SolverImplTest, Floor) {
   EXPECT_EQ(-5, Eval(Factory(kind, -4.1)));
 }
 
-TEST_F(SolverImplTest, Ceil) {
+TEST_F(NLSolverTest, Ceil) {
   auto kind = mp::expr::CEIL;
   EXPECT_EQ(-42, EvalUnary(kind, -42));
   EXPECT_EQ(42, EvalUnary(kind, 42));
@@ -529,19 +534,19 @@ TEST_F(SolverImplTest, Ceil) {
   EXPECT_EQ(-4, Eval(Factory(kind, -4.9)));
 }
 
-TEST_F(SolverImplTest, Abs) {
+TEST_F(NLSolverTest, Abs) {
   auto kind = mp::expr::ABS;
   EXPECT_EQ(42, EvalUnary(kind, -42));
   EXPECT_EQ(42, EvalUnary(kind, 42));
 }
 
-TEST_F(SolverImplTest, Minus) {
+TEST_F(NLSolverTest, Minus) {
   auto kind = mp::expr::MINUS;
   EXPECT_EQ(42, EvalUnary(kind, -42));
   EXPECT_EQ(-42, EvalUnary(kind, 42));
 }
 
-TEST_F(SolverImplTest, Tanh) {
+TEST_F(NLSolverTest, Tanh) {
   double arg = (std::log(1.5) - std::log(0.5)) / 2;
   auto factory = MakeBinaryExprFactory(
         mp::expr::MUL, MakeUnaryExprFactory(mp::expr::TANH, arg), 2);
@@ -551,11 +556,11 @@ TEST_F(SolverImplTest, Tanh) {
     EXPECT_EQ(1, Eval(factory));
 }
 
-TEST_F(SolverImplTest, Tan) {
+TEST_F(NLSolverTest, Tan) {
   EXPECT_THROW(EvalUnary(mp::expr::TAN, 0), mp::UnsupportedExprError);
 }
 
-TEST_F(SolverImplTest, Sqrt) {
+TEST_F(NLSolverTest, Sqrt) {
   auto kind = mp::expr::SQRT;
   if (!HasFeature(feature::SQRT)) {
     EXPECT_THROW_MSG(EvalUnary(kind, 64), mp::Error,
@@ -565,7 +570,7 @@ TEST_F(SolverImplTest, Sqrt) {
   }
 }
 
-TEST_F(SolverImplTest, Sinh) {
+TEST_F(NLSolverTest, Sinh) {
   auto factory = MakeUnaryExprFactory(
         mp::expr::SINH, std::log(2 + std::sqrt(5.0)));
   if (!HasFeature(feature::HYPERBOLIC))
@@ -574,11 +579,11 @@ TEST_F(SolverImplTest, Sinh) {
     EXPECT_EQ(2, Eval(factory));
 }
 
-TEST_F(SolverImplTest, Sin) {
+TEST_F(NLSolverTest, Sin) {
   EXPECT_THROW(EvalUnary(mp::expr::SIN, 0), mp::UnsupportedExprError);
 }
 
-TEST_F(SolverImplTest, Log10) {
+TEST_F(NLSolverTest, Log10) {
   auto factory = MakeUnaryExprFactory(mp::expr::LOG10, 1000.0);
   if (!HasFeature(feature::LOG))
     EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: log10");
@@ -586,7 +591,7 @@ TEST_F(SolverImplTest, Log10) {
     EXPECT_EQ(3, Eval(factory));
 }
 
-TEST_F(SolverImplTest, Log) {
+TEST_F(NLSolverTest, Log) {
   auto factory = MakeUnaryExprFactory(mp::expr::LOG, std::exp(5.0));
   if (!HasFeature(feature::LOG))
     EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: log");
@@ -594,7 +599,7 @@ TEST_F(SolverImplTest, Log) {
     EXPECT_EQ(5, Eval(factory));
 }
 
-TEST_F(SolverImplTest, Exp) {
+TEST_F(NLSolverTest, Exp) {
   auto factory = MakeUnaryExprFactory(mp::expr::EXP, std::log(5.0));
   if (!HasFeature(feature::EXP))
     EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: exp");
@@ -602,7 +607,7 @@ TEST_F(SolverImplTest, Exp) {
     EXPECT_EQ(5, Eval(factory));
 }
 
-TEST_F(SolverImplTest, Cosh) {
+TEST_F(NLSolverTest, Cosh) {
   double x = 5;
   auto factory = MakeUnaryExprFactory(
         mp::expr::COSH, std::log(x + std::sqrt(x + 1) * std::sqrt(x - 1)));
@@ -612,11 +617,11 @@ TEST_F(SolverImplTest, Cosh) {
     EXPECT_EQ(5, Eval(factory));
 }
 
-TEST_F(SolverImplTest, Cos) {
+TEST_F(NLSolverTest, Cos) {
   EXPECT_THROW(EvalUnary(mp::expr::COS, 0), mp::UnsupportedExprError);
 }
 
-TEST_F(SolverImplTest, Atanh) {
+TEST_F(NLSolverTest, Atanh) {
   auto atanh = MakeUnaryExprFactory(mp::expr::ATANH, std::tanh(5.0));
   if (!HasFeature(feature::HYPERBOLIC)) {
     EXPECT_THROW_MSG(Eval(atanh), mp::Error, "unsupported expression: atanh");
@@ -629,11 +634,11 @@ TEST_F(SolverImplTest, Atanh) {
   EXPECT_EQ(5000000, Eval(factory));
 }
 
-TEST_F(SolverImplTest, Atan) {
+TEST_F(NLSolverTest, Atan) {
   EXPECT_THROW(EvalUnary(mp::expr::ATAN, 0), mp::UnsupportedExprError);
 }
 
-TEST_F(SolverImplTest, Asinh) {
+TEST_F(NLSolverTest, Asinh) {
   auto factory = MakeUnaryExprFactory(mp::expr::ASINH, std::sinh(5.0));
   if (!HasFeature(feature::HYPERBOLIC))
     EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: asinh");
@@ -641,11 +646,11 @@ TEST_F(SolverImplTest, Asinh) {
     EXPECT_EQ(5, Eval(factory));
 }
 
-TEST_F(SolverImplTest, Asin) {
+TEST_F(NLSolverTest, Asin) {
   EXPECT_THROW(EvalUnary(mp::expr::ASIN, 0), mp::UnsupportedExprError);
 }
 
-TEST_F(SolverImplTest, Acosh) {
+TEST_F(NLSolverTest, Acosh) {
   auto factory = MakeUnaryExprFactory(mp::expr::ACOSH, std::cosh(5.0));
   if (!HasFeature(feature::HYPERBOLIC))
     EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: acosh");
@@ -653,33 +658,33 @@ TEST_F(SolverImplTest, Acosh) {
     EXPECT_EQ(5, Eval(factory));
 }
 
-TEST_F(SolverImplTest, Acos) {
+TEST_F(NLSolverTest, Acos) {
   EXPECT_THROW(EvalUnary(mp::expr::ACOS, 0), mp::UnsupportedExprError);
 }
 
-TEST_F(SolverImplTest, Pow2) {
+TEST_F(NLSolverTest, Pow2) {
   EXPECT_EQ(49, EvalUnary(mp::expr::POW2, 7));
 }
 
-TEST_F(SolverImplTest, Add) {
+TEST_F(NLSolverTest, Add) {
   auto kind = mp::expr::ADD;
   EXPECT_EQ(25, EvalBinary(kind, 10, 15));
   EXPECT_EQ(12, EvalBinary(kind, 19, -7));
 }
 
-TEST_F(SolverImplTest, Sub) {
+TEST_F(NLSolverTest, Sub) {
   auto kind = mp::expr::SUB;
   EXPECT_EQ(-5, EvalBinary(kind, 10, 15));
   EXPECT_EQ(26, EvalBinary(kind, 19, -7));
 }
 
-TEST_F(SolverImplTest, Mul) {
+TEST_F(NLSolverTest, Mul) {
   auto kind = mp::expr::MUL;
   EXPECT_EQ(150, EvalBinary(kind, 10, 15));
   EXPECT_EQ(-133, EvalBinary(kind, 19, -7));
 }
 
-TEST_F(SolverImplTest, Div) {
+TEST_F(NLSolverTest, Div) {
   auto kind = mp::expr::DIV;
   if (!HasFeature(feature::DIV)) {
     EXPECT_THROW_MSG(EvalBinary(kind, 150, 15), mp::Error,
@@ -690,7 +695,7 @@ TEST_F(SolverImplTest, Div) {
   EXPECT_EQ(-7, EvalBinary(kind, -133, 19));
 }
 
-TEST_F(SolverImplTest, IntDiv) {
+TEST_F(NLSolverTest, IntDiv) {
   auto kind = mp::expr::INT_DIV;
   EXPECT_EQ( 3, EvalBinary(kind,  9,  3));
   EXPECT_EQ( 2, EvalBinary(kind,  8,  3));
@@ -699,7 +704,7 @@ TEST_F(SolverImplTest, IntDiv) {
   EXPECT_EQ( 2, EvalBinary(kind, -8, -3));
 }
 
-TEST_F(SolverImplTest, Mod) {
+TEST_F(NLSolverTest, Mod) {
   auto kind = mp::expr::MOD;
   EXPECT_EQ( 0, EvalBinary(kind,  9,  3));
   EXPECT_EQ( 2, EvalBinary(kind,  8,  3));
@@ -708,7 +713,7 @@ TEST_F(SolverImplTest, Mod) {
   EXPECT_EQ(-2, EvalBinary(kind, -8, -3));
 }
 
-TEST_F(SolverImplTest, Pow) {
+TEST_F(NLSolverTest, Pow) {
   auto kind = mp::expr::POW;
   if (!HasFeature(feature::POW)) {
     EXPECT_THROW_MSG(EvalBinary(kind, 2, 3), mp::Error,
@@ -719,7 +724,7 @@ TEST_F(SolverImplTest, Pow) {
   EXPECT_EQ(81, EvalBinary(kind, 3, 4));
 }
 
-TEST_F(SolverImplTest, PowConstBase) {
+TEST_F(NLSolverTest, PowConstBase) {
   struct Factory : NumericExprFactory {
     NumericExpr Create(ProblemBuilder &pb) const {
       return pb.MakeBinary(mp::expr::POW_CONST_BASE,
@@ -732,27 +737,27 @@ TEST_F(SolverImplTest, PowConstBase) {
     EXPECT_EQ(125, Eval(factory, 3));
 }
 
-TEST_F(SolverImplTest, PowConstExp) {
+TEST_F(NLSolverTest, PowConstExp) {
   auto factory = MakeBinaryExprFactory(
         mp::expr::POW_CONST_EXP, VariableFactory(1), 4.0);
   EXPECT_EQ(16, Eval(factory, 2));
 }
 
-TEST_F(SolverImplTest, Less) {
+TEST_F(NLSolverTest, Less) {
   auto kind = mp::expr::LESS;
   EXPECT_EQ(0, EvalBinary(kind, 10, 15));
   EXPECT_EQ(26, EvalBinary(kind, 19, -7));
 }
 
-TEST_F(SolverImplTest, Atan2) {
+TEST_F(NLSolverTest, Atan2) {
   EXPECT_THROW(EvalBinary(mp::expr::ATAN2, 0, 0), mp::UnsupportedExprError);
 }
 
-TEST_F(SolverImplTest, Precision) {
+TEST_F(NLSolverTest, Precision) {
   EXPECT_THROW(EvalBinary(mp::expr::PRECISION, 0, 0), mp::UnsupportedExprError);
 }
 
-TEST_F(SolverImplTest, Round) {
+TEST_F(NLSolverTest, Round) {
   auto kind = mp::expr::ROUND;
   EXPECT_EQ(42, Eval(MakeBinaryExprFactory(kind, VariableFactory(1), 0.0), 42));
   if (HasFeature(feature::FLOAT_CONST)) {
@@ -769,7 +774,7 @@ TEST_F(SolverImplTest, Round) {
   EXPECT_THROW_MSG(EvalBinary(kind, 0, 0), mp::Error, message);
 }
 
-TEST_F(SolverImplTest, Trunc) {
+TEST_F(NLSolverTest, Trunc) {
   auto kind = mp::expr::TRUNC;
   EXPECT_EQ(42, Eval(MakeBinaryExprFactory(kind, VariableFactory(1), 0.0), 42));
   if (HasFeature(feature::FLOAT_CONST)) {
@@ -786,7 +791,7 @@ TEST_F(SolverImplTest, Trunc) {
   EXPECT_THROW_MSG(EvalBinary(kind, 0, 0), mp::Error, message);
 }
 
-TEST_F(SolverImplTest, If) {
+TEST_F(NLSolverTest, If) {
   struct IfFactory : NumericExprFactory {
     NumericExpr Create(ProblemBuilder &pb) const {
       return pb.MakeIf(pb.MakeRelational(mp::expr::EQ, x, one), y, z);
@@ -797,7 +802,7 @@ TEST_F(SolverImplTest, If) {
   EXPECT_EQ(42, Eval(factory, 1, 42, 42));
 }
 
-TEST_F(SolverImplTest, PLTerm) {
+TEST_F(NLSolverTest, PLTerm) {
   // Test on the following piecewise-linear function:
   //
   //     y^
@@ -832,7 +837,7 @@ TEST_F(SolverImplTest, PLTerm) {
   EXPECT_EQ(1, Eval(factory, -1));
 }
 
-TEST_F(SolverImplTest, Call) {
+TEST_F(NLSolverTest, Call) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_linear_integer_vars = 1;
@@ -854,19 +859,19 @@ TEST_F(SolverImplTest, Call) {
   }, mp::UnsupportedExprError);
 }
 
-TEST_F(SolverImplTest, Min) {
+TEST_F(NLSolverTest, Min) {
   auto factory = VarArgFactory(mp::expr::MIN);
   EXPECT_EQ(-7, Eval(factory, 3, -7, 5));
   EXPECT_EQ(10, Eval(factory, 10, 20, 30));
 }
 
-TEST_F(SolverImplTest, Max) {
+TEST_F(NLSolverTest, Max) {
   auto factory = VarArgFactory(mp::expr::MAX);
   EXPECT_EQ(5, Eval(factory, 3, -7, 5));
   EXPECT_EQ(30, Eval(factory, 30, 20, 10));
 }
 
-TEST_F(SolverImplTest, Sum) {
+TEST_F(NLSolverTest, Sum) {
   struct SumFactory : NumericExprFactory {
     int num_args_;
     explicit SumFactory(int num_args) : num_args_(num_args) {}
@@ -882,7 +887,7 @@ TEST_F(SolverImplTest, Sum) {
   EXPECT_EQ(123, Eval(SumFactory(3), 100, 20, 3));
 }
 
-TEST_F(SolverImplTest, Count) {
+TEST_F(NLSolverTest, Count) {
   class CountFactory : public NumericExprFactory {
     NumericExpr Create(ProblemBuilder &pb) const { return MakeCount(pb, 1); }
   } factory;
@@ -892,7 +897,7 @@ TEST_F(SolverImplTest, Count) {
   EXPECT_EQ(3, Eval(factory, 1, 1, 1));
 }
 
-TEST_F(SolverImplTest, NumberOf) {
+TEST_F(NLSolverTest, NumberOf) {
   struct NumberOfFactory : NumericExprFactory {
     int num_args_;
     explicit NumberOfFactory(int num_args) : num_args_(num_args) {}
@@ -912,7 +917,7 @@ TEST_F(SolverImplTest, NumberOf) {
   EXPECT_EQ(2, Eval(factory, 42, 42));
 }
 
-TEST_F(SolverImplTest, LogicalConstant) {
+TEST_F(NLSolverTest, LogicalConstant) {
   struct LogicalConstantFactory : LogicalExprFactory {
     bool value_;
     explicit LogicalConstantFactory(bool value) : value_(value) {}
@@ -924,7 +929,7 @@ TEST_F(SolverImplTest, LogicalConstant) {
   EXPECT_EQ(1, Eval(LogicalConstantFactory(true)));
 }
 
-TEST_F(SolverImplTest, Not) {
+TEST_F(NLSolverTest, Not) {
   struct NotFactory : LogicalExprFactory {
     LogicalExpr Create(ProblemBuilder &pb) const {
       return pb.MakeNot(pb.MakeRelational(mp::expr::EQ, x, one));
@@ -934,7 +939,7 @@ TEST_F(SolverImplTest, Not) {
   EXPECT_EQ(0, Eval(factory, 1));
 }
 
-TEST_F(SolverImplTest, Or) {
+TEST_F(NLSolverTest, Or) {
   BinaryLogicalExprFactory factory(mp::expr::OR);
   EXPECT_EQ(0, Eval(factory, 0, 0));
   EXPECT_EQ(1, Eval(factory, 0, 1));
@@ -942,7 +947,7 @@ TEST_F(SolverImplTest, Or) {
   EXPECT_EQ(1, Eval(factory, 1, 1));
 }
 
-TEST_F(SolverImplTest, And) {
+TEST_F(NLSolverTest, And) {
   BinaryLogicalExprFactory factory(mp::expr::AND);
   EXPECT_EQ(0, Eval(factory, 0, 0));
   EXPECT_EQ(0, Eval(factory, 0, 1));
@@ -950,7 +955,7 @@ TEST_F(SolverImplTest, And) {
   EXPECT_EQ(1, Eval(factory, 1, 1));
 }
 
-TEST_F(SolverImplTest, Iff) {
+TEST_F(NLSolverTest, Iff) {
   BinaryLogicalExprFactory factory(mp::expr::IFF);
   EXPECT_EQ(1, Eval(factory, 0, 0));
   EXPECT_EQ(0, Eval(factory, 0, 1));
@@ -958,49 +963,49 @@ TEST_F(SolverImplTest, Iff) {
   EXPECT_EQ(1, Eval(factory, 1, 1));
 }
 
-TEST_F(SolverImplTest, LT) {
+TEST_F(NLSolverTest, LT) {
   RelationalExprFactory factory(mp::expr::LT);
   EXPECT_EQ(0, Eval(factory, 3, 3));
   EXPECT_EQ(1, Eval(factory, 3, 5));
   EXPECT_EQ(0, Eval(factory, 5, 3));
 }
 
-TEST_F(SolverImplTest, LE) {
+TEST_F(NLSolverTest, LE) {
   RelationalExprFactory factory(mp::expr::LE);
   EXPECT_EQ(1, Eval(factory, 3, 3));
   EXPECT_EQ(1, Eval(factory, 3, 5));
   EXPECT_EQ(0, Eval(factory, 5, 3));
 }
 
-TEST_F(SolverImplTest, EQ) {
+TEST_F(NLSolverTest, EQ) {
   RelationalExprFactory factory(mp::expr::EQ);
   EXPECT_EQ(1, Eval(factory, 3, 3));
   EXPECT_EQ(0, Eval(factory, 3, 5));
   EXPECT_EQ(0, Eval(factory, 5, 3));
 }
 
-TEST_F(SolverImplTest, GE) {
+TEST_F(NLSolverTest, GE) {
   RelationalExprFactory factory(mp::expr::GE);
   EXPECT_EQ(1, Eval(factory, 3, 3));
   EXPECT_EQ(0, Eval(factory, 3, 5));
   EXPECT_EQ(1, Eval(factory, 5, 3));
 }
 
-TEST_F(SolverImplTest, GT) {
+TEST_F(NLSolverTest, GT) {
   RelationalExprFactory factory(mp::expr::GT);
   EXPECT_EQ(0, Eval(factory, 3, 3));
   EXPECT_EQ(0, Eval(factory, 3, 5));
   EXPECT_EQ(1, Eval(factory, 5, 3));
 }
 
-TEST_F(SolverImplTest, NE) {
+TEST_F(NLSolverTest, NE) {
   RelationalExprFactory factory(mp::expr::NE);
   EXPECT_EQ(0, Eval(factory, 3, 3));
   EXPECT_EQ(1, Eval(factory, 3, 5));
   EXPECT_EQ(1, Eval(factory, 5, 3));
 }
 
-TEST_F(SolverImplTest, AtLeast) {
+TEST_F(NLSolverTest, AtLeast) {
   LogicalCountExprFactory factory(mp::expr::ATLEAST);
   EXPECT_EQ(1, Eval(factory, 0, 0, 0));
   EXPECT_EQ(1, Eval(factory, 0, 1, 0));
@@ -1011,7 +1016,7 @@ TEST_F(SolverImplTest, AtLeast) {
   EXPECT_EQ(1, Eval(factory, 2, 1, 1));
 }
 
-TEST_F(SolverImplTest, AtMost) {
+TEST_F(NLSolverTest, AtMost) {
   LogicalCountExprFactory factory(mp::expr::ATMOST);
   EXPECT_EQ(1, Eval(factory, 0, 0, 0));
   EXPECT_EQ(0, Eval(factory, 0, 1, 0));
@@ -1022,7 +1027,7 @@ TEST_F(SolverImplTest, AtMost) {
   EXPECT_EQ(1, Eval(factory, 2, 1, 1));
 }
 
-TEST_F(SolverImplTest, Exactly) {
+TEST_F(NLSolverTest, Exactly) {
   LogicalCountExprFactory factory(mp::expr::EXACTLY);
   EXPECT_EQ(1, Eval(factory, 0, 0, 0));
   EXPECT_EQ(0, Eval(factory, 0, 1, 0));
@@ -1033,7 +1038,7 @@ TEST_F(SolverImplTest, Exactly) {
   EXPECT_EQ(1, Eval(factory, 2, 1, 1));
 }
 
-TEST_F(SolverImplTest, NotAtLeast) {
+TEST_F(NLSolverTest, NotAtLeast) {
   LogicalCountExprFactory factory(mp::expr::NOT_ATLEAST);
   EXPECT_EQ(0, Eval(factory, 0, 0, 0));
   EXPECT_EQ(0, Eval(factory, 0, 1, 0));
@@ -1044,7 +1049,7 @@ TEST_F(SolverImplTest, NotAtLeast) {
   EXPECT_EQ(0, Eval(factory, 2, 1, 1));
 }
 
-TEST_F(SolverImplTest, NotAtMost) {
+TEST_F(NLSolverTest, NotAtMost) {
   LogicalCountExprFactory factory(mp::expr::NOT_ATMOST);
   EXPECT_EQ(0, Eval(factory, 0, 0, 0));
   EXPECT_EQ(1, Eval(factory, 0, 1, 0));
@@ -1055,7 +1060,7 @@ TEST_F(SolverImplTest, NotAtMost) {
   EXPECT_EQ(0, Eval(factory, 2, 1, 1));
 }
 
-TEST_F(SolverImplTest, NotExactly) {
+TEST_F(NLSolverTest, NotExactly) {
   LogicalCountExprFactory factory(mp::expr::NOT_EXACTLY);
   EXPECT_EQ(0, Eval(factory, 0, 0, 0));
   EXPECT_EQ(1, Eval(factory, 0, 1, 0));
@@ -1066,7 +1071,7 @@ TEST_F(SolverImplTest, NotExactly) {
   EXPECT_EQ(0, Eval(factory, 2, 1, 1));
 }
 
-TEST_F(SolverImplTest, ForAll) {
+TEST_F(NLSolverTest, ForAll) {
   IteratedLogicalExprFactory factory(mp::expr::FORALL);
   EXPECT_EQ(0, Eval(factory, 0, 0, 0));
   EXPECT_EQ(0, Eval(factory, 0, 0, 1));
@@ -1078,7 +1083,7 @@ TEST_F(SolverImplTest, ForAll) {
   EXPECT_EQ(1, Eval(factory, 1, 1, 1));
 }
 
-TEST_F(SolverImplTest, Exists) {
+TEST_F(NLSolverTest, Exists) {
   IteratedLogicalExprFactory factory(mp::expr::EXISTS);
   EXPECT_EQ(0, Eval(factory, 0, 0, 0));
   EXPECT_EQ(1, Eval(factory, 0, 0, 1));
@@ -1090,7 +1095,7 @@ TEST_F(SolverImplTest, Exists) {
   EXPECT_EQ(1, Eval(factory, 1, 1, 1));
 }
 
-TEST_F(SolverImplTest, Implication) {
+TEST_F(NLSolverTest, Implication) {
   struct ImplicationFactory : LogicalExprFactory {
     LogicalExpr Create(ProblemBuilder &pb) const {
       return pb.MakeImplication(
@@ -1109,7 +1114,7 @@ TEST_F(SolverImplTest, Implication) {
   EXPECT_EQ(1, Eval(factory, 1, 1, 1));
 }
 
-TEST_F(SolverImplTest, AllDiff) {
+TEST_F(NLSolverTest, AllDiff) {
   struct AllDiffFactory : LogicalExprFactory {
     LogicalExpr Create(ProblemBuilder &pb) const { return MakeAllDiff(pb); }
   } alldiff;
@@ -1118,7 +1123,7 @@ TEST_F(SolverImplTest, AllDiff) {
   EXPECT_FALSE(Solve(alldiff, 1, 1, 1).has_value());
 }
 
-TEST_F(SolverImplTest, NestedAllDiff) {
+TEST_F(NLSolverTest, NestedAllDiff) {
   struct Factory : LogicalExprFactory {
     LogicalExpr Create(ProblemBuilder &pb) const {
       return pb.MakeNot(MakeAllDiff(pb));
@@ -1130,17 +1135,19 @@ TEST_F(SolverImplTest, NestedAllDiff) {
 // ----------------------------------------------------------------------------
 // Solve code tests
 
-TEST_F(SolverImplTest, OptimalSolveCode) {
+TEST_F(NLSolverTest, OptimalSolveCode) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_linear_integer_vars = info.num_objs = 1;
+  info.num_obj_nonzeros = 1;
   pb.SetInfo(info);
+  pb.GetColumnSizeHandler();
   pb.AddVar(0, 0, mp::var::INTEGER);
   pb.AddObj(obj::MIN, NumericExpr(), 1).AddTerm(0, 1);
   EXPECT_EQ(mp::sol::SOLVED, Solve(pb).solve_code());
 }
 
-TEST_F(SolverImplTest, FeasibleSolveCode) {
+TEST_F(NLSolverTest, FeasibleSolveCode) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_linear_integer_vars = info.num_algebraic_cons = 1;
@@ -1150,7 +1157,7 @@ TEST_F(SolverImplTest, FeasibleSolveCode) {
   EXPECT_EQ(mp::sol::SOLVED, Solve(pb).solve_code());
 }
 
-TEST_F(SolverImplTest, InfeasibleSolveCode) {
+TEST_F(NLSolverTest, InfeasibleSolveCode) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_linear_integer_vars = info.num_algebraic_cons = 1;
@@ -1176,7 +1183,7 @@ class TestInterrupter : public mp::Interrupter {
   }
 };
 
-TEST_F(SolverImplTest, Interrupt) {
+TEST_F(NLSolverTest, Interrupt) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeTSP(pb);
   pb.EndBuild();
@@ -1206,10 +1213,10 @@ void MakeAllDiffProblem(ProblemBuilder &pb) {
   pb.AddVar(1, 3, var::INTEGER);
   pb.AddVar(1, 3, var::INTEGER);
   pb.AddVar(1, 3, var::INTEGER);
-  pb.AddCon(SolverImplTest::MakeAllDiff(pb, 0));
+  pb.AddCon(NLSolverTest::MakeAllDiff(pb, 0));
 }
 
-TEST_F(SolverImplTest, CountSolutions) {
+TEST_F(NLSolverTest, CountSolutions) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeAllDiffProblem(pb);
   solver_.SetIntOption("solutionlimit", 10);
@@ -1219,7 +1226,7 @@ TEST_F(SolverImplTest, CountSolutions) {
   EXPECT_EQ(6, sc.num_solutions);
 }
 
-TEST_F(SolverImplTest, SolutionLimit) {
+TEST_F(NLSolverTest, SolutionLimit) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeAllDiffProblem(pb);
   solver_.SetIntOption("solutionlimit", 5);
@@ -1230,7 +1237,7 @@ TEST_F(SolverImplTest, SolutionLimit) {
   EXPECT_EQ(5, sc.num_solutions);
 }
 
-TEST_F(SolverImplTest, MultipleSolutions) {
+TEST_F(NLSolverTest, MultipleSolutions) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeAllDiffProblem(pb);
   solver_.SetIntOption("solutionlimit", 3);
@@ -1240,7 +1247,7 @@ TEST_F(SolverImplTest, MultipleSolutions) {
   EXPECT_EQ(3, sc.num_solutions);
 }
 
-TEST_F(SolverImplTest, TimingOption) {
+TEST_F(NLSolverTest, TimingOption) {
   struct TestOutputHandler : mp::OutputHandler {
     std::string output;
 
@@ -1281,7 +1288,7 @@ TEST_F(SolverImplTest, TimingOption) {
   }
 }
 
-TEST_F(SolverImplTest, OptionValues) {
+TEST_F(NLSolverTest, OptionValues) {
   for (auto i = solver_.option_begin(), e = solver_.option_end(); i != e; ++i) {
     for (mp::ValueArrayRef::iterator j = i->values().begin(),
         value_end = i->values().end(); j != value_end; ++j) {
@@ -1290,7 +1297,7 @@ TEST_F(SolverImplTest, OptionValues) {
   }
 }
 
-TEST_F(SolverImplTest, ObjnoOption) {
+TEST_F(NLSolverTest, ObjnoOption) {
   EXPECT_EQ(1, solver_.GetIntOption("objno"));
   EXPECT_EQ(11, SolveObjNoProblem());
   solver_.SetIntOption("objno", 0);
@@ -1305,7 +1312,7 @@ TEST_F(SolverImplTest, ObjnoOption) {
   EXPECT_THROW(SolveObjNoProblem(), mp::InvalidOptionValue);
 }
 
-TEST_F(SolverImplTest, CreateSolver) {
+TEST_F(NLSolverTest, CreateSolver) {
   EXPECT_STREQ(solver_.name(), mp::CreateSolver(0)->name());
 }
 

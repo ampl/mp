@@ -31,7 +31,7 @@
 typedef mp::JaCoPSolver Solver;
 enum {FEATURES = feature::POW};
 
-#include "solver-impl-test.h"
+#include "nl-solver-test.h"
 
 using std::string;
 using mp::InvalidOptionValue;
@@ -40,7 +40,7 @@ using mp::Problem;
 // ----------------------------------------------------------------------------
 // Option tests
 
-TEST_F(SolverImplTest, BacktrackLimitOption) {
+TEST_F(NLSolverTest, BacktrackLimitOption) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeTSP(pb);
   solver_.SetIntOption("backtracklimit", 42);
@@ -49,7 +49,7 @@ TEST_F(SolverImplTest, BacktrackLimitOption) {
   EXPECT_THROW(solver_.SetIntOption("backtracklimit", -1), InvalidOptionValue);
 }
 
-TEST_F(SolverImplTest, DecisionLimitOption) {
+TEST_F(NLSolverTest, DecisionLimitOption) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeTSP(pb);
   solver_.SetIntOption("decisionlimit", 42);
@@ -58,7 +58,7 @@ TEST_F(SolverImplTest, DecisionLimitOption) {
   EXPECT_THROW(solver_.SetIntOption("decisionlimit", -1), InvalidOptionValue);
 }
 
-TEST_F(SolverImplTest, FailLimitOption) {
+TEST_F(NLSolverTest, FailLimitOption) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeTSP(pb);
   solver_.SetIntOption("faillimit", 42);
@@ -70,7 +70,7 @@ TEST_F(SolverImplTest, FailLimitOption) {
   EXPECT_THROW(solver_.SetIntOption("faillimit", -1), InvalidOptionValue);
 }
 
-TEST_F(SolverImplTest, NodeLimitOption) {
+TEST_F(NLSolverTest, NodeLimitOption) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeTSP(pb);
   solver_.SetIntOption("nodelimit", 42);
@@ -82,7 +82,7 @@ TEST_F(SolverImplTest, NodeLimitOption) {
   EXPECT_THROW(solver_.SetIntOption("nodelimit", -1), InvalidOptionValue);
 }
 
-TEST_F(SolverImplTest, TimeLimitOption) {
+TEST_F(NLSolverTest, TimeLimitOption) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeTSP(pb);
   solver_.SetIntOption("timelimit", 1);
@@ -101,7 +101,7 @@ const char *const VAL_SELECT[] = {
   0
 };
 
-TEST_F(SolverImplTest, ValSelectOption) {
+TEST_F(NLSolverTest, ValSelectOption) {
   EXPECT_EQ("indomainmin", solver_.GetStrOption("val_select"));
   unsigned count = 0;
   for (const char *const *s = VAL_SELECT; *s; ++s, ++count) {
@@ -128,7 +128,7 @@ const char *const VAR_SELECT[] = {
   0
 };
 
-TEST_F(SolverImplTest, VarSelectOption) {
+TEST_F(NLSolverTest, VarSelectOption) {
   EXPECT_EQ("smallestdomain", solver_.GetStrOption("var_select"));
   unsigned count = 0;
   for (const char *const *s = VAR_SELECT; *s; ++s, ++count) {
@@ -140,7 +140,7 @@ TEST_F(SolverImplTest, VarSelectOption) {
   EXPECT_EQ(11u, count);
 }
 
-TEST_F(SolverImplTest, OutLevOption) {
+TEST_F(NLSolverTest, OutLevOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
   Problem p;
@@ -164,7 +164,7 @@ TEST_F(SolverImplTest, OutLevOption) {
   EXPECT_THROW(solver_.SetIntOption("outlev", 2), InvalidOptionValue);
 }
 
-TEST_F(SolverImplTest, OutFreqOption) {
+TEST_F(NLSolverTest, OutFreqOption) {
   TestOutputHandler h;
   solver_.set_output_handler(&h);
   Problem p;
