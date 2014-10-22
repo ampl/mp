@@ -1115,7 +1115,7 @@ TEST_F(SolverAppOptionParserTest, VOption) {
 // Test -= option.
 TEST_F(SolverAppOptionParserTest, EQOption) {
   EXPECT_EQ(0, parser_.Parse(Args("unused", "-=", "whatever")));
-  EXPECT_THAT(handler_.output, StartsWith("\nOptions:\n\ntiming\n"));
+  EXPECT_THAT(handler_.output, StartsWith("\nOptions:\n\nobjno\n"));
 }
 
 // Test -e option.
