@@ -206,7 +206,7 @@ class LSProblemBuilder :
     return model_.createExpression(ls::O_If, condition, true_expr, false_expr);
   }
 
-  // LocalSolver doesn't support piecewise-liner terms and functions.
+  // LocalSolver doesn't support piecewise-liner terms and arbitrary functions.
 
   class ArgHandler {
    private:
