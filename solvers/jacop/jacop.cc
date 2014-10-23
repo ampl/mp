@@ -134,7 +134,7 @@ namespace mp {
 jint NLToJaCoPConverter::CastToInt(double value) const {
   jint int_value = static_cast<jint>(value);
   if (int_value != value) {
-    throw UnsupportedExprError::CreateFromMessage(
+    throw UnsupportedError(
         fmt::format("value {} can't be represented as int", value));
   }
   if (int_value < min_int_ || int_value > max_int_)
@@ -343,6 +343,33 @@ jobject NLToJaCoPConverter::VisitImplication(ImplicationExpr e) {
   jobject condition = Visit(e.condition());
   return if_else_class_.NewObject(env_, condition,
       Visit(e.true_expr()), Visit(e.false_expr()));
+}
+
+jobject NLToJaCoPConverter::VisitAllDiff(AllDiffExpr e) {
+  int n = e.num_args();
+  std::vector<jobject> args(n);
+  int index = 0;
+  for (AllDiffExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+    args[index++] = Visit(*i);
+  if (!and_array_ctor_) {
+    and_class_.Init(env_);
+    and_array_ctor_ = env_.GetMethod(and_class_.get(),
+        "<init>", "([Lorg/jacop/constraints/PrimitiveConstraint;)V");
+  }
+  if (!constraint_class_) {
+    constraint_class_ = env_.FindClass(
+        "org/jacop/constraints/PrimitiveConstraint");
+  }
+  jobjectArray and_args = env_.NewObjectArray(
+        n * (n - 1) / 2, constraint_class_, 0);
+  index = 0;
+  for (int i = 0; i < n; ++i) {
+    for (int j = i + 1; j < n; ++j) {
+      env_.SetObjectArrayElement(and_args, index++,
+                                 ne_class_.NewObject(env_, args[i], args[j]));
+    }
+  }
+  return env_.NewObject(and_class_.get(), and_array_ctor_, and_args);
 }
 
 void JaCoPSolver::SetOutputFrequency(const SolverOption &opt, double value) {
@@ -714,4 +741,4 @@ void JaCoPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
 }
 
 SolverPtr CreateSolver(const char *) { return SolverPtr(new JaCoPSolver()); }
-}
+}  // namespace mp

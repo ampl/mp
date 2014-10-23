@@ -253,12 +253,14 @@ std::string ConvertSolutionStatus(
   }
 }
 
-void InterruptCP(void *cp) {
+bool InterruptCP(void *cp) {
   static_cast<IloCP*>(cp)->abortSearch();
+  return true;
 }
 
-void InterruptCPLEX(void *aborter) {
+bool InterruptCPLEX(void *aborter) {
   static_cast<IloCplex::Aborter*>(aborter)->abort();
+  return true;
 }
 }  // namespace
 

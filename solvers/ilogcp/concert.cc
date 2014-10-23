@@ -187,7 +187,7 @@ IloExpr NLToConcertConverter::VisitCall(CallExpr e) {
     return IloElement(elements, index_var);
   } else if (std::strcmp(function_name, "in_relation") == 0)
     throw UnsupportedExprError::CreateFromExprString("nested 'in_relation'");
-  throw UnsupportedExprError::CreateFromMessage(
+  throw UnsupportedError(
       fmt::format("unsupported function: {}", function_name));
 }
 
@@ -216,17 +216,17 @@ IloConstraint NLToConcertConverter::VisitImplication(ImplicationExpr e) {
 }
 
 IloConstraint NLToConcertConverter::VisitAllDiff(AllDiffExpr e) {
-  IloIntVarArray vars(env_);
-  for (AllDiffExpr::iterator i = e.begin(), end = e.end(); i != end; ++i) {
-    if (Variable v = Cast<Variable>(*i)) {
-      vars.add(vars_[v.index()]);
-      continue;
-    }
-    IloIntVar var(env_, IloIntMin, IloIntMax);
-    model_.add(var == Visit(*i));
-    vars.add(var);
+  int n = e.num_args();
+  std::vector<IloExpr> args(n);
+  int index = 0;
+  for (AllDiffExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+    args[index++] = Visit(*i);
+  IloAnd alldiff(env_);
+  for (int i = 0; i < n; ++i) {
+    for (int j = i + 1; j < n; ++j)
+      alldiff.add(args[i] != args[j]);
   }
-  return IloAllDiff(env_, vars);
+  return alldiff;
 }
 
 void NLToConcertConverter::FinishBuildingNumberOf() {
@@ -362,6 +362,23 @@ void NLToConcertConverter::Convert(const Problem &p, int objno) {
           if (call && ConvertGlobalConstraint(call, cons[i]))
             continue;
         }
+      } else if (AllDiffExpr alldiff = Cast<AllDiffExpr>(expr)) {
+        // IloAllDiff is a global constraint that cannot be used
+        // as a subexpression (the Concert API allows this, but
+        // IloAlgorithm::extract throws CannotExtractException).
+        IloIntVarArray vars(env_);
+        for (AllDiffExpr::iterator
+             i = alldiff.begin(), end = alldiff.end(); i != end; ++i) {
+          if (Variable v = Cast<Variable>(*i)) {
+            vars.add(vars_[v.index()]);
+            continue;
+          }
+          IloIntVar var(env_, IloIntMin, IloIntMax);
+          model_.add(var == Visit(*i));
+          vars.add(var);
+        }
+        cons[i] = IloAllDiff(env_, vars);
+        continue;
       }
       cons[i] = Visit(expr);
     }
@@ -370,4 +387,4 @@ void NLToConcertConverter::Convert(const Problem &p, int objno) {
 
   FinishBuildingNumberOf();
 }
-}
+}  // namespace mp

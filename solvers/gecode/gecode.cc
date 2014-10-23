@@ -473,9 +473,21 @@ BoolExpr NLToGecodeConverter::VisitImplication(ImplicationExpr e) {
         (!condition && Visit(e.false_expr()));
 }
 
-BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr) {
-  throw UnsupportedExprError::CreateFromExprString("nested 'alldiff'");
-  return BoolExpr();
+BoolExpr NLToGecodeConverter::VisitAllDiff(AllDiffExpr e) {
+  int n = e.num_args();
+  std::vector<LinExpr> args(n);
+  int index = 0;
+  for (AllDiffExpr::iterator i = e.begin(), end = e.end(); i != end; ++i)
+    args[index++] = Visit(*i);
+  Gecode::BoolVarArgs and_args(n * (n - 1) / 2);
+  index = 0;
+  for (int i = 0; i < n; ++i) {
+    for (int j = i + 1; j < n; ++j)
+      and_args[index++] = Gecode::expr(problem_, args[i] != args[j], icl_);
+  }
+  Gecode::BoolVar var(problem_, 0, 1);
+  rel(problem_, Gecode::BOT_AND, and_args, var, icl_);
+  return var;
 }
 
 GecodeSolver::Stop::Stop(GecodeSolver &solver)
@@ -845,4 +857,4 @@ void GecodeSolver::DoSolve(Problem &p, SolutionHandler &sh) {
 }
 
 SolverPtr CreateSolver(const char *) { return SolverPtr(new GecodeSolver()); }
-}
+}  // namespace mp
