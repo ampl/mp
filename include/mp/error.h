@@ -39,6 +39,12 @@ class Error : public fmt::internal::RuntimeError {
   FMT_VARIADIC_(char, , Error, init, fmt::StringRef)
   ~Error() throw() {}
 };
-}
+
+// The operation is not supported by the object.
+class UnsupportedError : public Error {
+ public:
+  explicit UnsupportedError(fmt::StringRef message) : Error(message) {}
+};
+}  // namespace mp
 
 #endif  // MP_ERROR_H_
