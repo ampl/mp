@@ -43,7 +43,7 @@
 #include "feature.h"
 
 typedef mp::IlogCPSolver Solver;
-enum {FEATURES = feature::ALL};
+enum {FEATURES = ~feature::TRIGONOMETRIC};
 
 #include "nl-solver-test.h"
 
@@ -211,7 +211,7 @@ TEST_F(FunctionTest, NestedInRelationNotSupported) {
     }
   } factory;
   EXPECT_THROW_MSG(Eval(factory), mp::UnsupportedExprError,
-      "unsupported expression: nested 'in_relation'");
+      "unsupported: nested 'in_relation'");
 }
 
 TEST_F(FunctionTest, TooFewArgsToInRelationConstraint) {

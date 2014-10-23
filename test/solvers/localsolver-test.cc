@@ -1,5 +1,5 @@
 /*
- Solver features
+ LocalSolver tests
 
  Copyright (C) 2014 AMPL Optimization Inc
 
@@ -20,23 +20,12 @@
  Author: Victor Zverovich
  */
 
-#ifndef TESTS_SOLVER_FEATURE_H_
-#define TESTS_SOLVER_FEATURE_H_
+#include "localsolver/localsolver.h"
+#include "feature.h"
 
-// Solver features.
-namespace feature {
-enum Feature {
-  FLOAT_CONST   = 0x001,
-  DIV           = 0x002,
-  POW           = 0x004,
-  SQRT          = 0x008,
-  LOG           = 0x010,
-  EXP           = 0x020,
-  TRIGONOMETRIC = 0x040,
-  HYPERBOLIC    = 0x080,
-  PLTERM        = 0x100,
-  ALL           = 0xfff
-};
-}
+typedef mp::LocalSolver Solver;
+enum { FEATURES = ~feature::PLTERM };
 
-#endif  // TESTS_SOLVER_FEATURE_H_
+#define MP_THREAD_INTERRUPT 1
+
+#include "nl-solver-test.h"

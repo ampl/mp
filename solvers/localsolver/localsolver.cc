@@ -38,7 +38,16 @@ inline localsolver::lsint ConvertToInt(double value) {
     throw mp::Error("value {} can't be represented as int", value);
   return int_value;
 }
+
+bool StopSolver(void *data) {
+  localsolver::LocalSolver* solver =
+      static_cast<localsolver::LocalSolver*>(data);
+  if (solver->getState() != localsolver::S_Running)
+    return false;
+  solver->stop();
+  return true;
 }
+}  // namespace
 
 namespace mp {
 
@@ -50,19 +59,13 @@ LSProblemBuilder::HyperbolicTerms
   return terms;
 }
 
-LSProblemBuilder::LSProblemBuilder(ls::LSModel model)
-  : model_(model), num_objs_(0), num_cons_(0) {
+LSProblemBuilder::LSProblemBuilder(LocalSolver &)
+  : model_(solver_.getModel()), num_objs_(0), num_cons_(0) {
+  solver_.getParam().setVerbosity(0);
 }
 
 void LSProblemBuilder::SetInfo(const ProblemInfo &info) {
   vars_.reserve(info.num_vars);
-}
-
-void LSProblemBuilder::EndBuild() {
-  // LocalSolver requires at least one objective - create a dummy one.
-  if (model_.getNbObjectives() == 0)
-    model_.addObjective(model_.createConstant(AsLSInt(0)), ls::OD_Minimize);
-  model_.close();
 }
 
 void LSProblemBuilder::AddVar(double lb, double ub, var::Type type) {
@@ -94,6 +97,7 @@ LSProblemBuilder::LinearObjBuilder
   ls::LSObjectiveDirection dir =
       type == obj::MIN ? ls::OD_Minimize : ls::OD_Maximize;
   ls::LSExpression sum = model_.createExpression(ls::O_Sum);
+  // TODO: multiobjective optimization support
   model_.addObjective(sum, dir);
   return LinearObjBuilder(*this, expr, sum);
 }
@@ -225,7 +229,9 @@ ls::LSExpression LSProblemBuilder::MakeBinary(
     return model_.createExpression(ls::O_Round, lhs);
   case expr::TRUNC:
     RequireZero(rhs, "trunc");
-    return IntDiv(lhs, AsLSInt(1));
+    return MakeIf(MakeBinary(ls::O_Geq, lhs, AsLSInt(0)),
+                  model_.createExpression(ls::O_Floor, lhs),
+                  model_.createExpression(ls::O_Ceil, lhs));
   case expr::PRECISION:
   case expr::ATAN2:
     // LocalSolver doesn't support these functions.
@@ -368,59 +374,78 @@ LocalSolver::LocalSolver()
 void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   steady_clock::time_point time = steady_clock::now();
 
+  ls::LocalSolver &solver = builder.solver();
+  ls::LSModel model = solver.getModel();
+
+  // LocalSolver requires at least one objective - create a dummy one.
+  if (model.getNbObjectives() == 0)
+    model.addObjective(model.createConstant(AsLSInt(0)), ls::OD_Minimize);
+  model.close();
+
   // Set options. LS requires this to be done after the model is closed.
-  ls::LSPhase phase = solver_.createPhase();
+  ls::LSPhase phase = solver.createPhase();
   if (timelimit_ != 0)
     phase.setTimeLimit(timelimit_);
+  interrupter()->SetHandler(StopSolver, &solver);
+
   // TODO: more options
 
   double setup_time = GetTimeAndReset(time);
 
   // Solve the problem.
-  solver_.solve();
+  solver.solve();
 
   // Convert solution status.
   int solve_code = sol::UNKNOWN;
-  ls::LSSolution sol = solver_.getSolution();
+  ls::LSSolution sol = solver.getSolution();
   const char *status = "unknown";
-  switch (sol.getStatus()) {
-  case ls::SS_Inconsistent:
-    solve_code = sol::INFEASIBLE;
-    status = "infeasible problem";
-    break;
-  case ls::SS_Infeasible:
-    // Solution is infeasible, but problem may be feasible.
-    // This can only happen if stopped by a limit.
-    solve_code = sol::LIMIT;
-    status = "limit";
-    break;
-  case ls::SS_Feasible:
-    solve_code = sol::UNSOLVED;
-    status = "feasible solution";
-    break;
-  case ls::SS_Optimal:
-    solve_code = sol::SOLVED;
-    status = builder.num_objs() > 0 ? "optimal solution" : "feasible solution";
-    break;
-  default:
-    solve_code = sol::FAILURE;
-    status = "unknown solution status";
-    break;
+  if (interrupter()->Stop()) {
+    solve_code = sol::INTERRUPTED;
+    status = "interrupted";
+  } else {
+    switch (sol.getStatus()) {
+    case ls::SS_Inconsistent:
+      solve_code = sol::INFEASIBLE;
+      status = "infeasible problem";
+      break;
+    case ls::SS_Infeasible:
+      // Solution is infeasible, but problem may be feasible.
+      // This can only happen if stopped by a limit.
+      solve_code = sol::LIMIT;
+      status = "limit";
+      break;
+    case ls::SS_Feasible:
+      solve_code = sol::UNSOLVED;
+      status = "feasible solution";
+      break;
+    case ls::SS_Optimal:
+      solve_code = sol::SOLVED;
+      status = builder.num_objs() > 0 ?
+            "optimal solution" : "feasible solution";
+      break;
+    default:
+      solve_code = sol::FAILURE;
+      status = "unknown solution status";
+      break;
+    }
   }
 
-  int num_vars = builder.num_vars();
-  const ls::LSExpression *vars = builder.vars();
-  std::vector<double> solution(num_vars);
-  for (int i = 0; i < num_vars; ++i)
-    solution[i] = GetValue(vars[i]);
+  std::vector<double> solution;
+  if (solve_code < sol::INFEASIBLE) {
+    int num_vars = builder.num_vars();
+    const ls::LSExpression *vars = builder.vars();
+    solution.resize(num_vars);
+    for (int i = 0; i < num_vars; ++i)
+      solution[i] = GetValue(vars[i]);
+  }
   double solution_time = GetTimeAndReset(time);
 
   fmt::MemoryWriter w;
   w.write("{}: {}\n", long_name(), status);
-  w.write("{}", solver_.getStatistics().toString());
+  w.write("{}", solver.getStatistics().toString());
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   if (builder.num_objs() != 0) {
-    obj_val = GetValue(solver_.getModel().getObjective(0));
+    obj_val = GetValue(model.getObjective(0));
     w.write("objective {}", FormatObjValue(obj_val));
   }
   sh.HandleSolution(solve_code, w.c_str(),

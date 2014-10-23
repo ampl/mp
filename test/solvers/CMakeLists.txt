@@ -6,7 +6,7 @@ if (MP_THREAD)
 endif ()
 
 if (TARGET gecode)
-  add_mp_test(gecode-test PREFIX gecode-test.cc nl-solver-test.h
+  add_mp_test(gecode-test PREFIX gecode-test.cc feature.h nl-solver-test.h
     LIBS amplgecode-static)
 endif ()
 
@@ -22,11 +22,17 @@ if (TARGET ilogcp)
 endif ()
 
 if (TARGET jacop)
-  add_mp_test(jacop-test jacop-test.cc nl-solver-test.h LIBS ampljacop-static)
+  add_mp_test(jacop-test jacop-test.cc feature.h nl-solver-test.h
+    LIBS ampljacop-static)
   if (MSVC)
     set_target_properties(jacop-test PROPERTIES LINK_FLAGS "/DELAYLOAD:jvm.dll")
     target_link_libraries(jacop-test delayimp)
   endif ()
+endif ()
+
+if (TARGET localsolver)
+  add_mp_test(localsolver-test localsolver-test.cc feature.h nl-solver-test.h
+    LIBS ampllocalsolver-static)
 endif ()
 
 if (TARGET smpswriter)

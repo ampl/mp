@@ -37,10 +37,15 @@ namespace ls = localsolver;
 
 class LocalSolver;
 
+// Converts int to lsint.
+inline ls::lsint AsLSInt(int value) { return value; }
+
 // This class provides methods for building a problem in LocalSolver format.
 class LSProblemBuilder :
     public ProblemBuilder<LSProblemBuilder, ls::LSExpression> {
  private:
+  // LocalSolver only supports one model per solver.
+  ls::LocalSolver solver_;
   ls::LSModel model_;
   int num_objs_;
   int num_cons_;
@@ -48,9 +53,6 @@ class LSProblemBuilder :
   std::vector<ls::LSExpression> vars_;
 
   typedef ProblemBuilder<LSProblemBuilder, ls::LSExpression> Base;
-
-  // Converts int to lsint.
-  static ls::lsint AsLSInt(int value) { return value; }
 
   ls::LSExpression Negate(ls::LSExpression arg) {
     return model_.createExpression(ls::O_Sub, AsLSInt(0), arg);
@@ -104,7 +106,9 @@ class LSProblemBuilder :
   }
 
  public:
-  explicit LSProblemBuilder(ls::LSModel model);
+  explicit LSProblemBuilder(LocalSolver &);
+
+  ls::LocalSolver &solver() { return solver_; }
 
   int num_vars() const { return vars_.size(); }
 
@@ -123,7 +127,6 @@ class LSProblemBuilder :
   const ls::LSExpression *vars() const { return &vars_[0]; }
 
   void SetInfo(const ProblemInfo &info);
-  void EndBuild();
 
   class LinearExprBuilder {
    private:
@@ -302,7 +305,6 @@ class LSProblemBuilder :
 
 class LocalSolver : public SolverImpl<LSProblemBuilder> {
  private:
-  ls::LocalSolver solver_;
   int timelimit_;
 
   int GetTimeLimit(const SolverOption &) const { return timelimit_; }
@@ -316,11 +318,9 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
  public:
   LocalSolver();
 
-  ls::LSModel model() { return solver_.getModel(); }
-
   void Solve(ProblemBuilder &builder, SolutionHandler &sh);
 
-  ls::LSModel GetProblemBuilder(fmt::StringRef) { return solver_.getModel(); }
+  LocalSolver &GetProblemBuilder(fmt::StringRef) { return *this; }
 };
 }  // namespace mp
 

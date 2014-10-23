@@ -168,7 +168,9 @@ class BasicSolutionHandler : public SolutionHandler {
       const double *, const double *, double) {}
 };
 
-typedef void (*InterruptHandler)(void *);
+// Interrupt handler.
+// Returns true if the solver was interrupted, false if it is not running.
+typedef bool (*InterruptHandler)(void *);
 
 // An interface for interrupting solution process.
 // When a solver is run in a terminal it should respond to SIGINT (Ctrl-C)

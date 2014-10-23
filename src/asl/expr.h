@@ -716,18 +716,14 @@ bool Equal(LogicalExpr e1, LogicalExpr e2);
 
 // An exception that is thrown when an ASL expression not supported
 // by the solver is encountered.
-class UnsupportedExprError : public Error {
+class UnsupportedExprError : public UnsupportedError {
  private:
-  explicit UnsupportedExprError(fmt::StringRef message) : Error(message) {}
+  explicit UnsupportedExprError(fmt::StringRef message)
+    : UnsupportedError(message) {}
 
  public:
-  static UnsupportedExprError CreateFromMessage(fmt::StringRef message) {
-    return UnsupportedExprError(message);
-  }
-
   static UnsupportedExprError CreateFromExprString(fmt::StringRef expr) {
-    return UnsupportedExprError(
-        std::string("unsupported expression: ") + expr.c_str());
+    return UnsupportedExprError(std::string("unsupported: ") + expr.c_str());
   }
 };
 

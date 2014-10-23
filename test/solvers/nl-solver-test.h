@@ -25,6 +25,15 @@
 
 #include <string>
 
+#if MP_THREAD && MP_THREAD_INTERRUPT
+// Workaround the error "'yield' is not a member of 'std::this_thread'"
+// on older gcc.
+# if FMT_GCC_VERSION < 408
+#  define _GLIBCXX_USE_SCHED_YIELD 1
+# endif
+# include <thread>
+#endif
+
 #include "../gtest-extra.h"
 #include "../solution-handler.h"
 
@@ -334,12 +343,13 @@ class NLSolverTest : public ::testing::Test {
   double SolveObjNoProblem() {
     ProblemBuilder pb(solver_.GetProblemBuilder(""));
     auto info = mp::ProblemInfo();
-    info.num_vars = info.num_linear_integer_vars = 1;
+    info.num_vars = info.num_linear_integer_vars = 2;
     info.num_objs = 2;
     pb.SetInfo(info);
-    pb.AddVar(11, 22, mp::var::INTEGER);
+    pb.AddVar(11, 11, mp::var::INTEGER);
+    pb.AddVar(22, 22, mp::var::INTEGER);
     pb.AddObj(mp::obj::MIN, NumericExpr(), 1).AddTerm(0, 1);
-    pb.AddObj(mp::obj::MAX, NumericExpr(), 1).AddTerm(0, 1);
+    pb.AddObj(mp::obj::MIN, NumericExpr(), 1).AddTerm(1, 1);
     return Solve(pb).obj_value();
   }
 
@@ -551,42 +561,48 @@ TEST_F(NLSolverTest, Tanh) {
   auto factory = MakeBinaryExprFactory(
         mp::expr::MUL, MakeUnaryExprFactory(mp::expr::TANH, arg), 2);
   if (!HasFeature(feature::HYPERBOLIC))
-    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: tanh");
+    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported: tanh");
   else
     EXPECT_EQ(1, Eval(factory));
 }
 
 TEST_F(NLSolverTest, Tan) {
-  EXPECT_THROW(EvalUnary(mp::expr::TAN, 0), mp::UnsupportedExprError);
+  auto factory = MakeUnaryExprFactory(mp::expr::TAN, M_PI / 4);
+  if (!HasFeature(feature::TRIGONOMETRIC))
+    EXPECT_THROW(EvalUnary(mp::expr::TAN, 0), mp::UnsupportedError);
+  else
+    EXPECT_EQ(1, Eval(factory));
 }
 
 TEST_F(NLSolverTest, Sqrt) {
   auto kind = mp::expr::SQRT;
-  if (!HasFeature(feature::SQRT)) {
-    EXPECT_THROW_MSG(EvalUnary(kind, 64), mp::Error,
-                     "unsupported expression: sqrt");
-  } else {
+  if (!HasFeature(feature::SQRT))
+    EXPECT_THROW_MSG(EvalUnary(kind, 64), mp::Error, "unsupported: sqrt");
+  else
     EXPECT_EQ(8, EvalUnary(kind, 64));
-  }
 }
 
 TEST_F(NLSolverTest, Sinh) {
   auto factory = MakeUnaryExprFactory(
         mp::expr::SINH, std::log(2 + std::sqrt(5.0)));
   if (!HasFeature(feature::HYPERBOLIC))
-    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: sinh");
+    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported: sinh");
   else
     EXPECT_EQ(2, Eval(factory));
 }
 
 TEST_F(NLSolverTest, Sin) {
-  EXPECT_THROW(EvalUnary(mp::expr::SIN, 0), mp::UnsupportedExprError);
+  auto factory = MakeUnaryExprFactory(mp::expr::SIN, M_PI / 2);
+  if (!HasFeature(feature::TRIGONOMETRIC))
+    EXPECT_THROW(EvalUnary(mp::expr::SIN, 0), mp::UnsupportedError);
+  else
+    EXPECT_EQ(1, Eval(factory));
 }
 
 TEST_F(NLSolverTest, Log10) {
   auto factory = MakeUnaryExprFactory(mp::expr::LOG10, 1000.0);
   if (!HasFeature(feature::LOG))
-    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: log10");
+    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported: log10");
   else
     EXPECT_EQ(3, Eval(factory));
 }
@@ -594,7 +610,7 @@ TEST_F(NLSolverTest, Log10) {
 TEST_F(NLSolverTest, Log) {
   auto factory = MakeUnaryExprFactory(mp::expr::LOG, std::exp(5.0));
   if (!HasFeature(feature::LOG))
-    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: log");
+    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported: log");
   else
     EXPECT_EQ(5, Eval(factory));
 }
@@ -602,7 +618,7 @@ TEST_F(NLSolverTest, Log) {
 TEST_F(NLSolverTest, Exp) {
   auto factory = MakeUnaryExprFactory(mp::expr::EXP, std::log(5.0));
   if (!HasFeature(feature::EXP))
-    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: exp");
+    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported: exp");
   else
     EXPECT_EQ(5, Eval(factory));
 }
@@ -612,19 +628,23 @@ TEST_F(NLSolverTest, Cosh) {
   auto factory = MakeUnaryExprFactory(
         mp::expr::COSH, std::log(x + std::sqrt(x + 1) * std::sqrt(x - 1)));
   if (!HasFeature(feature::HYPERBOLIC))
-    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: cosh");
+    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported: cosh");
   else
     EXPECT_EQ(5, Eval(factory));
 }
 
 TEST_F(NLSolverTest, Cos) {
-  EXPECT_THROW(EvalUnary(mp::expr::COS, 0), mp::UnsupportedExprError);
+  auto factory = MakeUnaryExprFactory(mp::expr::COS, 0.0);
+  if (!HasFeature(feature::TRIGONOMETRIC))
+    EXPECT_THROW(EvalUnary(mp::expr::COS, 0), mp::UnsupportedError);
+  else
+    EXPECT_EQ(1, Eval(factory));
 }
 
 TEST_F(NLSolverTest, Atanh) {
   auto atanh = MakeUnaryExprFactory(mp::expr::ATANH, std::tanh(5.0));
   if (!HasFeature(feature::HYPERBOLIC)) {
-    EXPECT_THROW_MSG(Eval(atanh), mp::Error, "unsupported expression: atanh");
+    EXPECT_THROW_MSG(Eval(atanh), mp::Error, "unsupported: atanh");
     return;
   }
   auto factory = MakeUnaryExprFactory(
@@ -635,31 +655,31 @@ TEST_F(NLSolverTest, Atanh) {
 }
 
 TEST_F(NLSolverTest, Atan) {
-  EXPECT_THROW(EvalUnary(mp::expr::ATAN, 0), mp::UnsupportedExprError);
+  EXPECT_THROW(EvalUnary(mp::expr::ATAN, 0), mp::UnsupportedError);
 }
 
 TEST_F(NLSolverTest, Asinh) {
   auto factory = MakeUnaryExprFactory(mp::expr::ASINH, std::sinh(5.0));
   if (!HasFeature(feature::HYPERBOLIC))
-    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: asinh");
+    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported: asinh");
   else
     EXPECT_EQ(5, Eval(factory));
 }
 
 TEST_F(NLSolverTest, Asin) {
-  EXPECT_THROW(EvalUnary(mp::expr::ASIN, 0), mp::UnsupportedExprError);
+  EXPECT_THROW(EvalUnary(mp::expr::ASIN, 0), mp::UnsupportedError);
 }
 
 TEST_F(NLSolverTest, Acosh) {
   auto factory = MakeUnaryExprFactory(mp::expr::ACOSH, std::cosh(5.0));
   if (!HasFeature(feature::HYPERBOLIC))
-    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported expression: acosh");
+    EXPECT_THROW_MSG(Eval(factory), mp::Error, "unsupported: acosh");
   else
     EXPECT_EQ(5, Eval(factory));
 }
 
 TEST_F(NLSolverTest, Acos) {
-  EXPECT_THROW(EvalUnary(mp::expr::ACOS, 0), mp::UnsupportedExprError);
+  EXPECT_THROW(EvalUnary(mp::expr::ACOS, 0), mp::UnsupportedError);
 }
 
 TEST_F(NLSolverTest, Pow2) {
@@ -687,8 +707,7 @@ TEST_F(NLSolverTest, Mul) {
 TEST_F(NLSolverTest, Div) {
   auto kind = mp::expr::DIV;
   if (!HasFeature(feature::DIV)) {
-    EXPECT_THROW_MSG(EvalBinary(kind, 150, 15), mp::Error,
-                     "unsupported expression: /");
+    EXPECT_THROW_MSG(EvalBinary(kind, 150, 15), mp::Error, "unsupported: /");
     return;
   }
   EXPECT_EQ(10, EvalBinary(kind, 150, 15));
@@ -716,8 +735,7 @@ TEST_F(NLSolverTest, Mod) {
 TEST_F(NLSolverTest, Pow) {
   auto kind = mp::expr::POW;
   if (!HasFeature(feature::POW)) {
-    EXPECT_THROW_MSG(EvalBinary(kind, 2, 3), mp::Error,
-                     "unsupported expression: ^");
+    EXPECT_THROW_MSG(EvalBinary(kind, 2, 3), mp::Error, "unsupported: ^");
     return;
   }
   EXPECT_EQ(8, EvalBinary(kind, 2, 3));
@@ -732,7 +750,7 @@ TEST_F(NLSolverTest, PowConstBase) {
     }
   } factory;
   if (!HasFeature(feature::POW))
-    EXPECT_THROW_MSG(Eval(factory, 3), mp::Error, "unsupported expression: ^");
+    EXPECT_THROW_MSG(Eval(factory, 3), mp::Error, "unsupported: ^");
   else
     EXPECT_EQ(125, Eval(factory, 3));
 }
@@ -750,11 +768,11 @@ TEST_F(NLSolverTest, Less) {
 }
 
 TEST_F(NLSolverTest, Atan2) {
-  EXPECT_THROW(EvalBinary(mp::expr::ATAN2, 0, 0), mp::UnsupportedExprError);
+  EXPECT_THROW(EvalBinary(mp::expr::ATAN2, 0, 0), mp::UnsupportedError);
 }
 
 TEST_F(NLSolverTest, Precision) {
-  EXPECT_THROW(EvalBinary(mp::expr::PRECISION, 0, 0), mp::UnsupportedExprError);
+  EXPECT_THROW(EvalBinary(mp::expr::PRECISION, 0, 0), mp::UnsupportedError);
 }
 
 TEST_F(NLSolverTest, Round) {
@@ -766,8 +784,7 @@ TEST_F(NLSolverTest, Round) {
     EXPECT_EQ(-4, Eval(MakeBinaryExprFactory(kind, -4.4, 0.0)));
     EXPECT_EQ(-5, Eval(MakeBinaryExprFactory(kind, -4.6, 0.0)));
   }
-  const char *message =
-      "unsupported expression: round with nonzero second parameter";
+  const char *message = "unsupported: round with nonzero second parameter";
   EXPECT_THROW_MSG(
         Eval(MakeBinaryExprFactory(kind, VariableFactory(1), 1.0), 0),
         mp::Error, message);
@@ -783,8 +800,7 @@ TEST_F(NLSolverTest, Trunc) {
     EXPECT_EQ(-4, Eval(MakeBinaryExprFactory(kind, -4.4, 0.0)));
     EXPECT_EQ(-4, Eval(MakeBinaryExprFactory(kind, -4.6, 0.0)));
   }
-  const char *message =
-      "unsupported expression: trunc with nonzero second parameter";
+  const char *message = "unsupported: trunc with nonzero second parameter";
   EXPECT_THROW_MSG(
         Eval(MakeBinaryExprFactory(kind, VariableFactory(1), 1.0), 0),
         mp::Error, message);
@@ -829,7 +845,7 @@ TEST_F(NLSolverTest, PLTerm) {
   } factory;
   if (!HasFeature(feature::PLTERM)) {
     EXPECT_THROW_MSG(Eval(factory, 42), mp::Error,
-                     "unsupported expression: pl term");
+                     "unsupported: piecewise-linear term");
     return;
   }
   EXPECT_EQ(33, Eval(factory, 42));
@@ -847,6 +863,9 @@ TEST_F(NLSolverTest, Call) {
   pb.AddVar(0, 0, mp::var::INTEGER);
   try {
     pb.SetFunction(0, "foo", 2, mp::func::NUMERIC);
+  } catch (const mp::UnsupportedError &) {
+    // SetFunction may throw UnsupportedError.
+    return;
   } catch (const mp::Error &e) {
     EXPECT_STREQ("function foo not available", e.what());
     return;
@@ -856,7 +875,7 @@ TEST_F(NLSolverTest, Call) {
       auto call = pb.BeginCall(0, 2);
       pb.AddObj(mp::obj::MIN, pb.EndCall(call), 0);
       Solve(pb);
-  }, mp::UnsupportedExprError);
+  }, mp::UnsupportedError);
 }
 
 TEST_F(NLSolverTest, Min) {
@@ -1129,7 +1148,8 @@ TEST_F(NLSolverTest, NestedAllDiff) {
       return pb.MakeNot(MakeAllDiff(pb));
     }
   } factory;
-  EXPECT_THROW(Eval(factory, 1, 2), mp::UnsupportedExprError);
+  EXPECT_FALSE(Solve(factory, 2, 1, 3).has_value());
+  EXPECT_TRUE(Solve(factory, 2, 1, 1).has_value());
 }
 
 // ----------------------------------------------------------------------------
@@ -1170,18 +1190,45 @@ TEST_F(NLSolverTest, InfeasibleSolveCode) {
 // ----------------------------------------------------------------------------
 // Interrupt tests
 
-class TestInterrupter : public mp::Interrupter {
+#if MP_THREAD || !MP_THREAD_INTERRUPT
+
+class TestInterrupterBase : public mp::Interrupter {
  private:
   Solver &solver_;
 
  public:
-  explicit TestInterrupter(Solver &s) : solver_(s) { s.set_interrupter(this); }
-  ~TestInterrupter() { solver_.set_interrupter(0); }
+  explicit TestInterrupterBase(Solver &s) : solver_(s) {
+    s.set_interrupter(this);
+  }
+
+  ~TestInterrupterBase() { solver_.set_interrupter(0); }
+
   bool Stop() const { return true; }
+
+  void SetHandler(mp::InterruptHandler handler, void *data) { handler(data); }
+};
+
+#if !MP_THREAD_INTERRUPT
+typedef TestInterrupterBase TestInterrupter;
+#else
+class TestInterrupter : public TestInterrupterBase {
+ private:
+  std::thread thread_;
+
+  static void Run(mp::InterruptHandler handler, void *data) {
+    while (!handler(data))
+      std::this_thread::yield();
+  }
+
+ public:
+  explicit TestInterrupter(Solver &s) : TestInterrupterBase(s) {}
+  ~TestInterrupter() { thread_.join(); }
+
   void SetHandler(mp::InterruptHandler handler, void *data) {
-    handler(data);
+    thread_ = std::thread(Run, handler, data);
   }
 };
+#endif
 
 TEST_F(NLSolverTest, Interrupt) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
@@ -1193,6 +1240,8 @@ TEST_F(NLSolverTest, Interrupt) {
   EXPECT_EQ(600, sh.status());
   EXPECT_TRUE(sh.message().find("interrupted") != std::string::npos);
 }
+
+#endif
 
 struct SolutionCounter : TestSolutionHandler {
   int num_solutions;
@@ -1217,6 +1266,8 @@ void MakeAllDiffProblem(ProblemBuilder &pb) {
 }
 
 TEST_F(NLSolverTest, CountSolutions) {
+  if (!solver_.FindOption("solutionlimit"))
+    return;
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeAllDiffProblem(pb);
   solver_.SetIntOption("solutionlimit", 10);
@@ -1227,6 +1278,8 @@ TEST_F(NLSolverTest, CountSolutions) {
 }
 
 TEST_F(NLSolverTest, SolutionLimit) {
+  if (!solver_.FindOption("solutionlimit"))
+    return;
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeAllDiffProblem(pb);
   solver_.SetIntOption("solutionlimit", 5);
@@ -1238,6 +1291,8 @@ TEST_F(NLSolverTest, SolutionLimit) {
 }
 
 TEST_F(NLSolverTest, MultipleSolutions) {
+  if (!solver_.FindOption("solutionlimit"))
+    return;
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeAllDiffProblem(pb);
   solver_.SetIntOption("solutionlimit", 3);

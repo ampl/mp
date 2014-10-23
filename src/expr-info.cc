@@ -128,7 +128,7 @@ const mp::internal::ExprInfo mp::internal::ExprInfo::INFO[] = {
   {58, prec::CALL, "trunc"},
   {35, prec::CONDITIONAL, "if"},
   {65, prec::CONDITIONAL, "symbolic if"},
-  {64, prec::CALL, "pl term"},
+  {64, prec::CALL, "piecewise-linear term"},
   {78, prec::CALL, "function call"},
   {11, prec::CALL, "min"},
   {12, prec::CALL, "max"},

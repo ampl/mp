@@ -94,7 +94,7 @@ const ExprInfo info[] = {
 
   EXPR(IF,     35, CONDITIONAL,  "if"),
   EXPR(IFSYM,  65, CONDITIONAL,  "symbolic if"),
-  EXPR(PLTERM, 64, CALL,         "pl term"),
+  EXPR(PLTERM, 64, CALL,         "piecewise-linear term"),
   EXPR(CALL,   78, CALL,         "function call"),
 
   EXPR_(MIN, FIRST_VARARG, 11, CALL, "min"),
