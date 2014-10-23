@@ -1,7 +1,7 @@
 Gecode
 ======
 
-The solver ``gecode`` uses `Gecode constraint development environment
+The solver ``gecode`` uses `Generic constraint development environment (Gecode)
 <http://www.gecode.org/>`_ to solve constraint programming problems.
 It fully supports `AMPL extensions for logic and constraint programming
 <http://ampl.com/resources/logic-and-constraint-programming-extensions/>`_.
