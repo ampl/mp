@@ -393,9 +393,6 @@ class Solver : private ErrorHandler,
   bool Stop() const { return false; }
   void SetHandler(InterruptHandler, void *) {}
 
-  // Finds an option and returns a pointer to it if found or null otherwise.
-  SolverOption *FindOption(const char *name) const;
-
   // Returns the option with specified name.
   SolverOption *GetOption(const char *name) const {
     SolverOption *opt = FindOption(name);
@@ -732,6 +729,9 @@ class Solver : private ErrorHandler,
 
   // Returns the number of options.
   int num_options() const { return static_cast<int>(options_.size()); }
+
+  // Finds an option and returns a pointer to it if found or null otherwise.
+  SolverOption *FindOption(const char *name) const;
 
   // Option iterator.
   class option_iterator :
