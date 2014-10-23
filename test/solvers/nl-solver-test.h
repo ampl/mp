@@ -23,6 +23,7 @@
 #ifndef TESTS_SOLVER_IMPL_TEST_H_
 #define TESTS_SOLVER_IMPL_TEST_H_
 
+#include <cmath>
 #include <string>
 
 #if MP_THREAD && MP_THREAD_INTERRUPT
