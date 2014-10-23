@@ -258,25 +258,28 @@ enum {
 namespace sol {
 // Solution status.
 enum Status {
-  UNKNOWN    =  -1,
+  UNKNOWN     =  -1,
 
   // An optimal solution found for an optimization problem or a feasible
   // solution found for a satisfaction problem.
-  SOLVED     =   0,
+  SOLVED      =   0,
 
   // Solution returned but it can be non-optimal or even infeasible.
-  UNSOLVED   = 100,
+  UNSOLVED    = 100,
 
   // Problem is infeasible.
-  INFEASIBLE = 200,
+  INFEASIBLE  = 200,
 
   // Problem is unbounded.
-  UNBOUNDED  = 300,
+  UNBOUNDED   = 300,
 
   // Stopped by a limit, e.g. on iterations or time.
-  LIMIT      = 400,
+  LIMIT       = 400,
 
-  FAILURE    = 500
+  FAILURE     = 500,
+
+  // Interrupted by the user.
+  INTERRUPTED = 600
 };
 }
 
