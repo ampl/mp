@@ -23,7 +23,6 @@
 #ifndef TESTS_NL_SOLVER_TEST_H_
 #define TESTS_NL_SOLVER_TEST_H_
 
-#define _USE_MATH_DEFINES
 #include <cmath>
 #include <string>
 
@@ -559,7 +558,7 @@ TEST_F(NLSolverTest, Tanh) {
 }
 
 TEST_F(NLSolverTest, Tan) {
-  auto factory = MakeUnaryExprFactory(mp::expr::TAN, M_PI / 4);
+  auto factory = MakeUnaryExprFactory(mp::expr::TAN, std::atan(1));
   if (!HasFeature(feature::TRIGONOMETRIC))
     EXPECT_THROW(EvalUnary(mp::expr::TAN, 0), mp::UnsupportedError);
   else
@@ -584,7 +583,7 @@ TEST_F(NLSolverTest, Sinh) {
 }
 
 TEST_F(NLSolverTest, Sin) {
-  auto factory = MakeUnaryExprFactory(mp::expr::SIN, M_PI / 2);
+  auto factory = MakeUnaryExprFactory(mp::expr::SIN, std::asin(1));
   if (!HasFeature(feature::TRIGONOMETRIC))
     EXPECT_THROW(EvalUnary(mp::expr::SIN, 0), mp::UnsupportedError);
   else
