@@ -1132,7 +1132,6 @@ TEST(NLTest, ReadInvalidLogicalExpr) {
 }
 
 TEST(NLTest, ReadVarBounds) {
-  // TODO: test missing 'b' segment and multiple segments
   EXPECT_THROW_MSG(ReadNL("", false), ReadError,
                    "(input):11:1: segment 'b' missing");
   EXPECT_THROW_MSG(ReadNL("b\n"), ReadError,
