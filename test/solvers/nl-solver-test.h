@@ -461,7 +461,7 @@ TEST_F(NLSolverTest, Maximize) {
 // Creates a test travelling salesman problem.
 template <typename ProblemBuilder>
 void MakeTSP(ProblemBuilder &pb) {
-  int n = 10;
+  int n = 9;
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_linear_binary_vars = n * n;
   info.num_objs = 1;
