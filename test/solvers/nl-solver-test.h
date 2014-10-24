@@ -558,7 +558,7 @@ TEST_F(NLSolverTest, Tanh) {
 }
 
 TEST_F(NLSolverTest, Tan) {
-  auto factory = MakeUnaryExprFactory(mp::expr::TAN, std::atan(1));
+  auto factory = MakeUnaryExprFactory(mp::expr::TAN, std::atan(1.0));
   if (!HasFeature(feature::TRIGONOMETRIC))
     EXPECT_THROW(EvalUnary(mp::expr::TAN, 0), mp::UnsupportedError);
   else
@@ -583,7 +583,7 @@ TEST_F(NLSolverTest, Sinh) {
 }
 
 TEST_F(NLSolverTest, Sin) {
-  auto factory = MakeUnaryExprFactory(mp::expr::SIN, std::asin(1));
+  auto factory = MakeUnaryExprFactory(mp::expr::SIN, std::asin(1.0));
   if (!HasFeature(feature::TRIGONOMETRIC))
     EXPECT_THROW(EvalUnary(mp::expr::SIN, 0), mp::UnsupportedError);
   else
