@@ -23,9 +23,8 @@
 #include <climits>
 #include <cstring>
 
-#include "gmock/gmock.h"
-#include "gtest-extra.h"
 #include "mp/nl.h"
+#include "gtest-extra.h"
 #include "mock-problem-builder.h"
 #include "util.h"
 
@@ -36,11 +35,19 @@ using mp::internal::TextReader;
 using mp::internal::BinaryReader;
 namespace expr = mp::expr;
 
+using testing::_;
 using testing::StrictMock;
 using testing::Return;
 using testing::Throw;
 
 namespace {
+
+class MockNLHandler : public mp::NLHandler<TestExpr> {
+ public:
+  MOCK_CONST_METHOD1(NeedObj, bool (int obj_index));
+  MOCK_METHOD2(OnLinearObjExpr,
+               LinearObjHandler (int obj_index, int num_linear_terms));
+};
 
 TEST(ReaderBaseTest, ReadChar) {
   struct TestReaderBase : mp::internal::ReaderBase {
@@ -1174,6 +1181,27 @@ TEST(NLTest, ReadLinearObjExpr) {
   EXPECT_READ_ERROR("G0 7", "(input):17:4: integer 7 out of bounds");
   EXPECT_READ_ERROR("G0 1\n-1 0\n", "(input):18:1: expected unsigned integer");
   EXPECT_READ_ERROR("G0 1\n6 0\n", "(input):18:1: integer 6 out of bounds");
+}
+
+// Test that handler's OnLinearObjExpr is not called if NeedObj returns false.
+TEST(NLTest, SkipObj) {
+  MockNLHandler handler;
+  EXPECT_CALL(handler, NeedObj(0)).WillOnce(Return(false));
+  EXPECT_CALL(handler, OnLinearObjExpr(_, _)).Times(0);
+  auto header = NLHeader();
+  header.num_vars = header.num_objs = 1;
+  ReadNLString(FormatHeader(header) + "G0 1\n0 1\n", handler);
+}
+
+// Test that handler's OnLinearObjExpr is called if NeedObj returns true.
+TEST(NLTest, PassObj) {
+  MockNLHandler handler;
+  EXPECT_CALL(handler, NeedObj(0)).WillOnce(Return(true));
+  EXPECT_CALL(handler, OnLinearObjExpr(0, 1)).
+      WillOnce(Return(MockNLHandler::LinearObjHandler()));
+  auto header = NLHeader();
+  header.num_vars = header.num_objs = 1;
+  ReadNLString(FormatHeader(header) + "G0 1\n0 1\n", handler);
 }
 
 TEST(NLTest, ReadLinearConExpr) {
