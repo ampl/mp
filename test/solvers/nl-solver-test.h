@@ -20,8 +20,8 @@
  Author: Victor Zverovich
  */
 
-#ifndef TESTS_SOLVER_IMPL_TEST_H_
-#define TESTS_SOLVER_IMPL_TEST_H_
+#ifndef TESTS_NL_SOLVER_TEST_H_
+#define TESTS_NL_SOLVER_TEST_H_
 
 #include <cmath>
 #include <string>
@@ -1359,4 +1359,4 @@ struct TestOutputHandler : public mp::OutputHandler {
   void HandleOutput(fmt::StringRef output) { this->output += output; }
 };
 
-#endif  // TESTS_SOLVER_IMPL_TEST_H_
+#endif  // TESTS_NL_SOLVER_TEST_H_
