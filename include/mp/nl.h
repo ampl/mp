@@ -491,7 +491,8 @@ class ProblemBuilderToNLAdapter {
   };
   std::vector<ObjInfo> objs_;
 
-  // Index of the objective to optimize or -1 to not use an objective
+  // Index of the objective to pass to the builder, SKIP_ALL_OBJS to
+  // skip all objectives, NEED_ALL_OBJS to pass all objectives.
   int obj_index_;
 
   // Algebraic constraints
@@ -510,6 +511,15 @@ class ProblemBuilderToNLAdapter {
   void set_obj_index(int index) { obj_index_ = index; }
 
  public:
+  // Possible values for the objective index.
+  enum {
+    // Skip all objectives.
+    SKIP_ALL_OBJS = -1,
+
+    // Pass all objectives to the builder.
+    NEED_ALL_OBJS = -2
+  };
+
   explicit ProblemBuilderToNLAdapter(ProblemBuilder &builder, int obj_index = 0)
     : builder_(builder), num_continuous_vars_(0), obj_index_(obj_index) {}
 
@@ -526,14 +536,16 @@ class ProblemBuilderToNLAdapter {
 
   // Returns true if objective should be handled.
   bool NeedObj(int obj_index) const {
-    return obj_index == obj_index_;
+    if (obj_index == obj_index_)
+      return true;
+    return obj_index_ == NEED_ALL_OBJS;
   }
 
   // Receives notification of an objective type and the nonlinear part of
   // an objective expression.
   void OnObj(int index, obj::Type type, NumericExpr expr) {
     assert(0 <= index && index < objs_.size());
-    if (index != obj_index_)
+    if (!NeedObj(index))
       return;  // Ignore inactive objective.
     ObjInfo &obj = objs_[index];
     obj.type = type;

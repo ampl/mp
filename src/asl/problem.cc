@@ -55,7 +55,7 @@ class ASLHandler : public mp::ProblemBuilderToNLAdapter<ASLBuilder> {
   typedef mp::ProblemBuilderToNLAdapter<ASLBuilder> Base;
 
  public:
-  ASLHandler(ASLBuilder &b) : Base(b) {}
+  explicit ASLHandler(ASLBuilder &b, int obj_index = 0) : Base(b, obj_index) {}
 
   int flags() const { return flags_; }
 
@@ -321,7 +321,7 @@ void Problem::Read(fmt::StringRef stub, unsigned flags) {
                     ASL_allow_missing_funcs |
                     internal::ASL_STANDARD_OPCODES | flags);
   builder.set_stub(name.c_str());
-  ASLHandler handler(builder);
+  ASLHandler handler(builder, ASLHandler::NEED_ALL_OBJS);
   ReadNLFile(name.c_str(), handler);
   asl_->i.flags = handler.flags();
 }
