@@ -531,7 +531,20 @@ class ProblemBuilderToNLAdapter {
     objs_.resize(h.num_objs);
     cons_.resize(h.num_algebraic_cons);
     exprs_.resize(h.num_common_exprs());
-    builder_.SetInfo(h);
+
+    // Update the number of objectives if necessary.
+    int num_objs = 0;
+    if (obj_index_ >= 0)
+      num_objs = std::min(h.num_objs, 1);
+    else if (obj_index_ == NEED_ALL_OBJS)
+      num_objs = h.num_objs;
+    if (num_objs == h.num_objs) {
+      builder_.SetInfo(h);
+    } else {
+      ProblemInfo info(h);
+      info.num_objs = num_objs;
+      builder_.SetInfo(info);
+    }
   }
 
   // Returns true if objective should be handled.

@@ -36,6 +36,7 @@ using mp::internal::BinaryReader;
 namespace expr = mp::expr;
 
 using testing::_;
+using testing::Field;
 using testing::StrictMock;
 using testing::Return;
 using testing::Throw;
@@ -1379,10 +1380,48 @@ TEST(NLProblemBuilderTest, Forward) {
 
 TEST(NLProblemBuilderTest, OnHeader) {
   StrictMock<MockProblemBuilder> builder;
+  mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
   NLHeader h;
   EXPECT_CALL(builder, SetInfo(testing::Ref(h)));
-  mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
   adapter.OnHeader(h);
+}
+
+// Test that ProblemBuilderToNLAdapter passes 0 as the number of objectives
+// if obj_index is set to SKIP_ALL_OBJS.
+TEST(NLProblemBuilderTest, SkipAllObjs) {
+  MockProblemBuilder builder;
+  typedef mp::ProblemBuilderToNLAdapter<MockProblemBuilder> Adapter;
+  Adapter adapter(builder, Adapter::SKIP_ALL_OBJS);
+  auto header = NLHeader();
+  header.num_objs = 10;
+  EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 0)));
+  adapter.OnHeader(header);
+}
+
+// Test that ProblemBuilderToNLAdapter passes the total number of objectives
+// if obj_index is set to NEED_ALL_OBJS.
+TEST(NLProblemBuilderTest, NeedAllObjs) {
+  MockProblemBuilder builder;
+  typedef mp::ProblemBuilderToNLAdapter<MockProblemBuilder> Adapter;
+  Adapter adapter(builder, Adapter::NEED_ALL_OBJS);
+  auto header = NLHeader();
+  header.num_objs = 10;
+  EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 10)));
+  adapter.OnHeader(header);
+}
+
+// Test that ProblemBuilderToNLAdapter passes min(1, num_objs) as the
+// number of objectives by default.
+TEST(NLProblemBuilderTest, SingleObjective) {
+  MockProblemBuilder builder;
+  mp::ProblemBuilderToNLAdapter<MockProblemBuilder> adapter(builder);
+  auto header = NLHeader();
+  header.num_objs = 10;
+  EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 1)));
+  adapter.OnHeader(header);
+  header.num_objs = 0;
+  EXPECT_CALL(builder, SetInfo(Field(&mp::ProblemInfo::num_objs, 0)));
+  adapter.OnHeader(header);
 }
 
 TEST(NLProblemBuilderTest, OnVarBounds) {
