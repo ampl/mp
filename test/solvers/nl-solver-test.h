@@ -458,10 +458,14 @@ TEST_F(NLSolverTest, Maximize) {
   EXPECT_EQ(22, Solve(pb).obj_value());
 }
 
+#ifndef MP_TSP_SIZE
+# define MP_TSP_SIZE 10
+#endif
+
 // Creates a test travelling salesman problem.
 template <typename ProblemBuilder>
 void MakeTSP(ProblemBuilder &pb) {
-  int n = 9;
+  int n = MP_TSP_SIZE;
   auto info = mp::ProblemInfo();
   info.num_vars = info.num_linear_binary_vars = n * n;
   info.num_objs = 1;

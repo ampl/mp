@@ -28,4 +28,7 @@ enum { FEATURES = ~feature::PLTERM };
 
 #define MP_THREAD_INTERRUPT 1
 
+// Demo version of LocalSolver cannot handle a TSP problem with n > 9.
+#define MP_TSP_SIZE 9
+
 #include "nl-solver-test.h"
