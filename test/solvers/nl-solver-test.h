@@ -23,6 +23,7 @@
 #ifndef TESTS_NL_SOLVER_TEST_H_
 #define TESTS_NL_SOLVER_TEST_H_
 
+#define _USE_MATH_DEFINES
 #include <cmath>
 #include <string>
 
