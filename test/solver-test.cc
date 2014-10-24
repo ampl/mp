@@ -1490,10 +1490,10 @@ TEST_F(SolverAppTest, UseSolutionWriter) {
 // An NLReader for testing objno option.
 // It simulates reading a problem with two objectives.
 struct TestNLReader {
-  // Expected objective type.
-  mp::obj::Type obj_type;
+  // Index of the active objective.
+  int obj_index;
 
-  TestNLReader() : obj_type(mp::obj::MIN) {}
+  TestNLReader() : obj_index(0) {}
 
   template <typename NLHandler>
   void Read(fmt::StringRef, NLHandler &adapter) {
@@ -1503,12 +1503,8 @@ struct TestNLReader {
     auto &builder = adapter.builder();
     EXPECT_CALL(builder, SetInfo(_));
     adapter.OnHeader(header);
-    adapter.OnObj(0, mp::obj::MIN, TestNumericExpr());
-    adapter.OnObj(1, mp::obj::MAX, TestNumericExpr());
-    EXPECT_CALL(builder, AddObj(obj_type, _, _)).
-        WillOnce(Return(TestLinearObjBuilder()));
-    adapter.OnLinearObjExpr(0, 1);
-    adapter.OnLinearObjExpr(1, 1);
+    EXPECT_TRUE(adapter.NeedObj(obj_index));
+    EXPECT_FALSE(adapter.NeedObj(!obj_index));
     EXPECT_CALL(builder, EndBuild());
   }
 };
@@ -1516,14 +1512,13 @@ struct TestNLReader {
 TEST(ObjNoTest, UseFirstObjByDefault) {
   mp::SolverApp<TestSolver, TestNLReader> app;
   EXPECT_EQ(1, app.solver().GetIntOption("objno"));
-  app.reader().obj_type = mp::obj::MIN;
   app.Run(Args("test", "testproblem"));
 }
 
 TEST(ObjNoTest, UseSecondObj) {
   mp::SolverApp<TestSolver, TestNLReader> app;
   app.solver().SetIntOption("objno", 2);
-  app.reader().obj_type = mp::obj::MAX;
+  app.reader().obj_index = 1;
   app.Run(Args("test", "testproblem"));
 }
 
