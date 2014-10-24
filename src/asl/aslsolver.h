@@ -1,5 +1,5 @@
-/*
- ASL solver.
+﻿/*
+ ASL solver
 
  Copyright (C) 2014 AMPL Optimization Inc
 

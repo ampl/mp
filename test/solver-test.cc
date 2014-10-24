@@ -52,13 +52,22 @@ using testing::Return;
 using testing::ReturnRef;
 using testing::StartsWith;
 
-namespace {
-
 typedef Solver::OptionPtr SolverOptionPtr;
+
+class StrictMockProblemBuilder : public StrictMock<MockProblemBuilder> {
+ public:
+  StrictMockProblemBuilder() {}
+
+  // Constructs a MockProblemBuilder object and stores a pointer to it
+  // in ``builder``.
+  explicit StrictMockProblemBuilder(StrictMockProblemBuilder *&builder) {
+    builder = this;
+  }
+};
 
 class TestSolver : public mp::Solver {
  private:
-  MockProblemBuilder *builder;
+  StrictMockProblemBuilder *builder;
   bool mock_solve_;
 
  public:
@@ -74,9 +83,11 @@ class TestSolver : public mp::Solver {
   using Solver::AddOption;
   using Solver::AddSuffix;
 
-  typedef MockProblemBuilder ProblemBuilder;
+  typedef StrictMockProblemBuilder ProblemBuilder;
 
-  MockProblemBuilder *&GetProblemBuilder(fmt::StringRef) { return builder; }
+  ProblemBuilder *&GetProblemBuilder(fmt::StringRef) {
+    return builder;
+  }
 
   bool ParseOptions(char **argv,
       unsigned flags = Solver::NO_OPTION_ECHO, const Problem *p = 0) {
@@ -999,6 +1010,19 @@ TEST(SolverTest, TimingOption) {
   EXPECT_THROW(s.SetIntOption("timing", 2), InvalidOptionValue);
 }
 
+TEST(SolverTest, ObjNoOption) {
+  TestSolver s("");
+  EXPECT_EQ(-1, s.objno());
+  EXPECT_EQ(1, s.GetIntOption("objno"));
+  s.SetIntOption("objno", 0);
+  EXPECT_EQ(0, s.objno());
+  EXPECT_EQ(0, s.GetIntOption("objno"));
+  s.SetIntOption("objno", INT_MAX);
+  EXPECT_EQ(INT_MAX, s.objno());
+  EXPECT_EQ(INT_MAX, s.GetIntOption("objno"));
+  EXPECT_THROW(s.SetIntOption("objno", -1), InvalidOptionValue);
+}
+
 const int NUM_SOLUTIONS = 3;
 
 struct SolCountingSolver : mp::Solver {
@@ -1160,7 +1184,7 @@ TEST_F(SolverAppOptionParserTest, InvalidOption) {
                    OptionError, "invalid option '-w'");
 }
 
-template <typename ProblemBuilder = MockProblemBuilder>
+template <typename ProblemBuilder = StrictMockProblemBuilder >
 struct MockSolWriter {
   MOCK_METHOD2_T(Write,
                  void (fmt::StringRef filename,
@@ -1196,7 +1220,7 @@ MATCHER_P2(MatchSolution, values, dual_values, "") {
 // Test that SolutionWriter::HandleSolution writes .sol file.
 TEST(SolutionWriterTest, WriteSolution) {
   TestSolver solver;
-  MockProblemBuilder problem_builder;
+  StrictMockProblemBuilder problem_builder;
   mp::SolutionWriter<TestSolver, MockSolWriter<> >
       writer("test", solver, problem_builder);
   const double values[] = {11, 22, 33};
@@ -1280,7 +1304,8 @@ struct MockOptionHandler {
 };
 
 struct MockNLReader {
-  typedef mp::ProblemBuilderToNLAdapter<MockProblemBuilder> Handler;
+  typedef mp::ProblemBuilderToNLAdapter<
+    StrictMockProblemBuilder > Handler;
 
   MOCK_METHOD2(DoRead, void (fmt::StringRef filename, Handler &h));
 
@@ -1461,4 +1486,59 @@ TEST_F(SolverAppTest, UseSolutionWriter) {
   EXPECT_CALL(solver, DoSolve(_, MatchSolutionWriter()));
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
 }
+
+// An NLReader for testing objno option.
+// It simulates reading a problem with two objectives.
+struct TestNLReader {
+  // Expected objective type.
+  mp::obj::Type obj_type;
+
+  TestNLReader() : obj_type(mp::obj::MIN) {}
+
+  template <typename NLHandler>
+  void Read(fmt::StringRef, NLHandler &adapter) {
+    auto header = mp::NLHeader();
+    header.num_vars = 1;
+    header.num_objs = 2;
+    auto &builder = adapter.builder();
+    EXPECT_CALL(builder, SetInfo(_));
+    adapter.OnHeader(header);
+    adapter.OnObj(0, mp::obj::MIN, TestNumericExpr());
+    adapter.OnObj(1, mp::obj::MAX, TestNumericExpr());
+    EXPECT_CALL(builder, AddObj(obj_type, _, _)).
+        WillOnce(Return(TestLinearObjBuilder()));
+    adapter.OnLinearObjExpr(0, 1);
+    adapter.OnLinearObjExpr(1, 1);
+    EXPECT_CALL(builder, EndBuild());
+  }
+};
+
+TEST(ObjNoTest, UseFirstObjByDefault) {
+  mp::SolverApp<TestSolver, TestNLReader> app;
+  EXPECT_EQ(1, app.solver().GetIntOption("objno"));
+  app.reader().obj_type = mp::obj::MIN;
+  app.Run(Args("test", "testproblem"));
+}
+
+TEST(ObjNoTest, UseSecondObj) {
+  mp::SolverApp<TestSolver, TestNLReader> app;
+  app.solver().SetIntOption("objno", 2);
+  app.reader().obj_type = mp::obj::MAX;
+  app.Run(Args("test", "testproblem"));
+}
+
+struct TestNLReader2 {
+  template <typename NLHandler>
+  void Read(fmt::StringRef, NLHandler &adapter) {
+    auto header = mp::NLHeader();
+    header.num_vars = 1;
+    header.num_objs = 2;
+    adapter.OnHeader(header);
+  }
+};
+
+TEST(ObjNoTest, InvalidObjNo) {
+  mp::SolverApp<TestSolver, TestNLReader2> app;
+  app.solver().SetIntOption("objno", 3);
+  EXPECT_THROW(app.Run(Args("test", "testproblem")), mp::InvalidOptionValue);
 }

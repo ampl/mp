@@ -413,6 +413,8 @@ class TestNLHandler {
 
   void OnHeader(const NLHeader &) { log.clear(); }
 
+  bool NeedObj(int) const { return true; }
+
   void OnVarBounds(int index, double lb, double ub) {
     WriteBounds('v', index, lb, ub);
   }
@@ -740,6 +742,8 @@ struct TestNLHandler2 {
   typedef struct TestLogicalExpr : TestExpr {} LogicalExpr;
 
   void OnHeader(const NLHeader &) {}
+
+  bool NeedObj(int) const { return true; }
 
   void OnVarBounds(int, double, double) {}
   void OnConBounds(int, double, double) {}

@@ -321,7 +321,7 @@ class NLToConcertConverter : public Converter {
   // which are much more useful to the solution procedure.
   void FinishBuildingNumberOf();
 
-  void Convert(const Problem &p, int objno);
+  void Convert(const Problem &p);
 };
 }
 

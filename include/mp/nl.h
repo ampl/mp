@@ -170,6 +170,12 @@ class NLHandler {
   // Receives notification of an .nl header.
   void OnHeader(const NLHeader &h) { MP_UNUSED(h); }
 
+  // Returns true if objective should be handled.
+  bool NeedObj(int obj_index) const {
+    MP_UNUSED(obj_index);
+    return true;
+  }
+
   // Receives notification of an objective type and the nonlinear part of
   // an objective expression.
   void OnObj(int index, obj::Type type, NumericExpr expr) {
@@ -485,6 +491,9 @@ class ProblemBuilderToNLAdapter {
   };
   std::vector<ObjInfo> objs_;
 
+  // Index of the objective to optimize or -1 to not use an objective
+  int obj_index_;
+
   // Algebraic constraints
   struct ConInfo {
     NumericExpr expr;
@@ -496,9 +505,13 @@ class ProblemBuilderToNLAdapter {
   // Common expressions
   std::vector<NumericExpr> exprs_;
 
+ protected:
+  int obj_index() const { return obj_index_; }
+  void set_obj_index(int index) { obj_index_ = index; }
+
  public:
-  explicit ProblemBuilderToNLAdapter(ProblemBuilder &builder)
-    : builder_(builder), num_continuous_vars_(0) {}
+  explicit ProblemBuilderToNLAdapter(ProblemBuilder &builder, int obj_index = 0)
+    : builder_(builder), num_continuous_vars_(0), obj_index_(obj_index) {}
 
   ProblemBuilder &builder() { return builder_; }
 
@@ -511,10 +524,17 @@ class ProblemBuilderToNLAdapter {
     builder_.SetInfo(h);
   }
 
+  // Returns true if objective should be handled.
+  bool NeedObj(int obj_index) const {
+    return obj_index == obj_index_;
+  }
+
   // Receives notification of an objective type and the nonlinear part of
   // an objective expression.
   void OnObj(int index, obj::Type type, NumericExpr expr) {
     assert(0 <= index && index < objs_.size());
+    if (index != obj_index_)
+      return;  // Ignore inactive objective.
     ObjInfo &obj = objs_[index];
     obj.type = type;
     obj.expr = expr;
@@ -541,6 +561,7 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of the linear part of an objective expression.
   LinearObjHandler OnLinearObjExpr(int obj_index, int num_linear_terms) {
+    assert(0 <= obj_index && obj_index < objs_.size());
     const ObjInfo &obj_info = objs_[obj_index];
     return builder_.AddObj(obj_info.type, obj_info.expr, num_linear_terms);
   }
@@ -988,6 +1009,11 @@ class VarBoundHandler : public NLHandler<typename Handler::Expr> {
   }
 };
 
+// Linear expression handler that ignores input.
+struct NullLinearExprHandler {
+  void AddTerm(int, double) {}
+};
+
 // An .nl file reader.
 // Handler: a class implementing the ProblemHandler concept that receives
 //          notifications of problem components
@@ -1145,6 +1171,11 @@ class NLReader {
 
     int num_items() const { return this->reader_.header_.num_objs; }
 
+    // Returns true if objective expression should be read.
+    bool NeedExpr(int obj_index) const {
+      return this->reader_.handler_.NeedObj(obj_index);
+    }
+
     typename Handler::LinearObjHandler OnLinearExpr(int index, int num_terms) {
       return this->reader_.handler_.OnLinearObjExpr(index, num_terms);
     }
@@ -1194,6 +1225,9 @@ class NLReader {
     explicit AlgebraicConHandler(NLReader &r) : ItemHandler<CON>(r) {}
 
     int num_items() const { return this->reader_.header_.num_algebraic_cons; }
+
+    // Returns true because constraint expressions are always read.
+    bool NeedExpr(int) const { return true; }
 
     typename Handler::LinearConHandler OnLinearExpr(int index, int num_terms) {
       return this->reader_.handler_.OnLinearConExpr(index, num_terms);
@@ -1417,7 +1451,10 @@ void NLReader<Reader, Handler>::ReadLinearExpr() {
   int index = ReadUInt(lh.num_items());
   int num_terms = ReadUInt(1, total_num_vars_ + 1u);
   reader_.ReadTillEndOfLine();
-  ReadLinearExpr(num_terms, lh.OnLinearExpr(index, num_terms));
+  if (lh.NeedExpr(index))
+    ReadLinearExpr(num_terms, lh.OnLinearExpr(index, num_terms));
+  else
+    ReadLinearExpr(num_terms, NullLinearExprHandler());
 }
 
 template <typename Reader, typename Handler>

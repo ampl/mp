@@ -340,20 +340,6 @@ class NLSolverTest : public ::testing::Test {
     pb.SetInfo(info);
   }
 
-  // Creates and solves a problem for testing the objno option.
-  double SolveObjNoProblem() {
-    ProblemBuilder pb(solver_.GetProblemBuilder(""));
-    auto info = mp::ProblemInfo();
-    info.num_vars = info.num_linear_integer_vars = 2;
-    info.num_objs = 2;
-    pb.SetInfo(info);
-    pb.AddVar(11, 11, mp::var::INTEGER);
-    pb.AddVar(22, 22, mp::var::INTEGER);
-    pb.AddObj(mp::obj::MIN, NumericExpr(), 1).AddTerm(0, 1);
-    pb.AddObj(mp::obj::MIN, NumericExpr(), 1).AddTerm(1, 1);
-    return Solve(pb).obj_value();
-  }
-
  public:
   NLSolverTest() {}
 
@@ -1353,19 +1339,15 @@ TEST_F(NLSolverTest, OptionValues) {
   }
 }
 
-TEST_F(NLSolverTest, ObjnoOption) {
-  EXPECT_EQ(1, solver_.GetIntOption("objno"));
-  EXPECT_EQ(11, SolveObjNoProblem());
-  solver_.SetIntOption("objno", 0);
-  EXPECT_EQ(0, solver_.GetIntOption("objno"));
-  double obj = SolveObjNoProblem();
-  EXPECT_NE(obj, obj);
-  solver_.SetIntOption("objno", 2);
-  EXPECT_EQ(2, solver_.GetIntOption("objno"));
-  EXPECT_EQ(22, SolveObjNoProblem());
-  EXPECT_THROW(solver_.SetIntOption("objno", -1), mp::InvalidOptionValue);
-  solver_.SetIntOption("objno", 3);
-  EXPECT_THROW(SolveObjNoProblem(), mp::InvalidOptionValue);
+// Solver should not use objno.
+TEST_F(NLSolverTest, IgnoreObjNo) {
+  solver_.SetIntOption("objno", 10);
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  SetInfo(pb);
+  pb.AddVar(2, 2, var::INTEGER);
+  NumericExpr x = pb.MakeVariable(0);
+  pb.AddObj(obj::MIN, pb.MakeBinary(mp::expr::MUL, x, x), 0);
+  EXPECT_EQ(4, Solve(pb).obj_value());
 }
 
 TEST_F(NLSolverTest, CreateSolver) {

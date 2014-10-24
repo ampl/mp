@@ -291,7 +291,7 @@ bool NLToConcertConverter::ConvertGlobalConstraint(
   return true;
 }
 
-void NLToConcertConverter::Convert(const Problem &p, int objno) {
+void NLToConcertConverter::Convert(const Problem &p) {
   int num_continuous_vars = p.num_continuous_vars();
 
   // Set up optimization problem using the Concert API.
@@ -303,16 +303,10 @@ void NLToConcertConverter::Convert(const Problem &p, int objno) {
     vars_[j] = IloNumVar(env_, p.var_lb(j), p.var_ub(j), ILOINT);
 
   if (int num_objs = p.num_objs()) {
-    int obj_start = 0, obj_end = 0;
-    if ((flags_ & MULTIOBJ) != 0) {
-      obj_end = num_objs;
-    } else if (objno >= 0) {
-      obj_start = objno;
-      obj_end = obj_start + 1;
-    }
-    obj::Type main_obj_type = p.obj_type(obj_start);
+    int obj_end = (flags_ & MULTIOBJ) != 0 ? num_objs : 1;
+    obj::Type main_obj_type = p.obj_type(0);
     IloNumExprArray objs(env_);
-    for (int i = obj_start; i < obj_end; ++i) {
+    for (int i = 0; i < obj_end; ++i) {
       NumericExpr expr(p.nonlinear_obj_expr(i));
       NumericConstant constant(Cast<NumericConstant>(expr));
       IloExpr ilo_expr(env_, constant ? constant.value() : 0);

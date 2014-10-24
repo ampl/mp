@@ -321,7 +321,7 @@ Gecode::IntConLevel NLToGecodeConverter::GetICL(int con_index) const {
   return static_cast<Gecode::IntConLevel>(value);
 }
 
-void NLToGecodeConverter::Convert(const Problem &p, int objno) {
+void NLToGecodeConverter::Convert(const Problem &p) {
   if (p.num_continuous_vars() != 0)
     throw Error("Gecode doesn't support continuous variables");
 
@@ -333,9 +333,9 @@ void NLToGecodeConverter::Convert(const Problem &p, int objno) {
         ub >= Infinity ? Gecode::Int::Limits::max : CastToInt(ub));
   }
 
-  if (objno >= 0) {
-    problem_.SetObj(p.obj_type(objno),
-        ConvertExpr(p.linear_obj_expr(objno), p.nonlinear_obj_expr(objno)));
+  if (p.num_objs() > 0) {
+    problem_.SetObj(p.obj_type(0),
+        ConvertExpr(p.linear_obj_expr(0), p.nonlinear_obj_expr(0)));
   }
 
   icl_suffix_ = p.suffixes(suf::CON).Find("icl");
@@ -764,8 +764,7 @@ void GecodeSolver::DoSolve(Problem &p, SolutionHandler &sh) {
 
   // Set up an optimization problem in Gecode.
   NLToGecodeConverter converter(p.num_vars(), icl_);
-  int objno = this->objno(p.num_objs());
-  converter.Convert(p, objno);
+  converter.Convert(p);
 
   // Post branching.
   GecodeProblem &gecode_problem = converter.problem();
@@ -799,7 +798,7 @@ void GecodeSolver::DoSolve(Problem &p, SolutionHandler &sh) {
 
   // Solve the problem.
   double obj_val = std::numeric_limits<double>::quiet_NaN();
-  bool has_obj = objno >= 0;
+  bool has_obj = p.num_objs() > 0;
   Search::Statistics stats;
   header_ = fmt::format("{:>10} {:>10} {:>10} {:>13}\n",
     "Max Depth", "Nodes", "Fails", (has_obj ? "Best Obj" : ""));

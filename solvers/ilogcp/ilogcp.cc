@@ -552,7 +552,8 @@ void IlogCPSolver::SetBoolOption(
   options_[id] = value;
 }
 
-void IlogCPSolver::DoSetIntOption(const SolverOption &opt, int value, Option id) {
+void IlogCPSolver::DoSetIntOption(
+    const SolverOption &opt, int value, Option id) {
   if (value < 0)
     throw InvalidOptionValue(opt, value);
   options_[id] = value;
@@ -644,7 +645,7 @@ void IlogCPSolver::SolveWithCP(
           solution.data(), 0, obj_value);
     }
     if (++num_solutions >= solution_limit) {
-      if (p.num_objs() > 0) {
+      if (num_objs > 0) {
         solve_code = 403;
         status = "solution limit";
       }
@@ -657,7 +658,7 @@ void IlogCPSolver::SolveWithCP(
   // Convert solution status.
   if (solve_code == -1) {
     status = ConvertSolutionStatus(cp_, *interrupter(), solve_code);
-    if (p.num_objs() > 0) {
+    if (num_objs > 0) {
       if (cp_.getInfo(IloCP::FailStatus) == IloCP::SearchStoppedByLimit) {
         solve_code = sol::LIMIT;
         status = "limit";
@@ -675,13 +676,9 @@ void IlogCPSolver::SolveWithCP(
   IloAlgorithm::Status cpstatus = cp_.getStatus();
   if (cpstatus == IloAlgorithm::Feasible || cpstatus == IloAlgorithm::Optimal) {
     GetSolution(cp_, vars, solution);
-    if (num_objs == 0) {
-      // Do nothing.
-    } else if (objno(p.num_objs()) >= 0) {
+    if (num_objs > 0) {
       obj_value = cp_.getObjValue();
       writer.write(", objective {}", FormatObjValue(obj_value));
-    } else {
-      obj_value = 0;
     }
   } else {
     solution.clear();
@@ -730,7 +727,7 @@ void IlogCPSolver::SolveWithCPLEX(
     }
     writer << cplex_.getNiterations() << " iterations";
 
-    if (objno(p.num_objs()) >= 0) {
+    if (p.num_objs() > 0) {
       obj_value = cplex_.getObjValue();
       writer.write(", objective {}", FormatObjValue(obj_value));
     }
@@ -764,7 +761,7 @@ void IlogCPSolver::DoSolve(Problem &p, SolutionHandler &sh) {
   if (optimizer == CP && GetOption(MULTIOBJ) != 0)
     flags |= NLToConcertConverter::MULTIOBJ;
   NLToConcertConverter converter(env_, flags);
-  converter.Convert(p, objno(p.num_objs()));
+  converter.Convert(p);
 
   try {
     IloAlgorithm &cp_alg = cp_;

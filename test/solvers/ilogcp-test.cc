@@ -525,18 +525,6 @@ TEST_F(IlogCPTest, UseCplexForLinearProblem) {
   EXPECT_EQ(0, p.solve_code());
 }
 
-TEST_F(NLSolverTest, ObjnoOptionCP) {
-  solver_.SetStrOption("optimizer", "cp");
-  solver_.SetIntOption("objno", 2);
-  EXPECT_EQ(22, SolveObjNoProblem());
-}
-
-TEST_F(NLSolverTest, ObjnoOptionCPLEX) {
-  solver_.SetStrOption("optimizer", "cplex");
-  solver_.SetIntOption("objno", 2);
-  EXPECT_EQ(22, SolveObjNoProblem());
-}
-
 TEST_F(IlogCPTest, DebugExprOption) {
   s.SetIntOption("debugexpr", 0);
   EXPECT_EQ(0, s.GetOption(IlogCPSolver::DEBUGEXPR));

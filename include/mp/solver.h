@@ -327,8 +327,8 @@ class Solver : private ErrorHandler,
   int wantsol_;
   int obj_precision_;
 
-  // One-based index of the objective to optimize, 0 to ignore objective, or
-  // -1 to use the first objective if there is one.
+  // Index of the objective to optimize starting from 1, 0 to ignore
+  // objective, or -1 to use the first objective if there is one.
   int objno_;
 
   enum {SHOW_VERSION = 1};
@@ -694,14 +694,11 @@ class Solver : private ErrorHandler,
   int wantsol() const { return wantsol_; }
   void set_wantsol(int value) { wantsol_ = value; }
 
-  // Returns the index of the objective to optimize or -1 to not use objective.
-  int objno(int num_objs) const {
-    if (objno_ == -1)
-      return num_objs > 0 ? 0 : -1;
-    if (objno_ > num_objs)
-      throw InvalidOptionValue("objno", objno_);
-    return objno_ - 1;
-  }
+  // Returns the index of the objective to optimize starting from 1,
+  // 0 to not use objective, or -1 to use the first objective is there is one.
+  // It is used in SolverApp to select the objective, solvers should not
+  // use this option.
+  int objno() const { return objno_; }
 
   // Returns true if the timing is enabled.
   bool timing() const { return timing_; }
@@ -1094,9 +1091,15 @@ class SolverApp : private Reader {
     int num_options;
     int options[MAX_NL_OPTIONS];
 
-    explicit NLHandler(ProblemBuilder &pb) : Adapter(pb), num_options(0) {}
+    NLHandler(ProblemBuilder &pb, int obj_index)
+      : Adapter(pb, obj_index), num_options(0) {}
 
     void OnHeader(const NLHeader &h) {
+      int obj_index = this->obj_index();
+      if (obj_index >= h.num_objs)
+        throw InvalidOptionValue("objno", obj_index + 1);
+      if (obj_index == -2 && h.num_objs > 0)
+        this->set_obj_index(0);
       num_options = h.num_options;
       std::copy(h.options, h.options + num_options, options);
       Adapter::OnHeader(h);
@@ -1138,19 +1141,20 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   else
     filename_no_ext.resize(filename_no_ext.size() - 3);
 
-  // Read the problem.
-  steady_clock::time_point start = steady_clock::now();
-  // TODO: use name provider instead of passing filename to builder
-  ProblemBuilder builder(solver_.GetProblemBuilder(filename_no_ext));
-  NLHandler handler(builder);
-  this->Read(nl_filename, handler);
-  builder.EndBuild();
-  double read_time = GetTimeAndReset(start);
-
   // Parse solver options.
   unsigned flags =
       option_parser_.echo_solver_options() ? 0 : Solver::NO_OPTION_ECHO;
   solver_.ParseOptions(argv, flags);
+
+  // Read the problem.
+  steady_clock::time_point start = steady_clock::now();
+  // TODO: use name provider instead of passing filename to builder
+  ProblemBuilder builder(solver_.GetProblemBuilder(filename_no_ext));
+  NLHandler handler(builder, solver_.objno() - 1);
+  this->Read(nl_filename, handler);
+
+  builder.EndBuild();
+  double read_time = GetTimeAndReset(start);
   if (solver_.timing())
     solver_.Print("Input time = {:.6f}s\n", read_time);
 
