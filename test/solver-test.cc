@@ -1139,7 +1139,7 @@ TEST_F(SolverAppOptionParserTest, VOption) {
 // Test -= option.
 TEST_F(SolverAppOptionParserTest, EQOption) {
   EXPECT_EQ(0, parser_.Parse(Args("unused", "-=", "whatever")));
-  EXPECT_THAT(handler_.output, StartsWith("\nOptions:\n\nobjno\n"));
+  EXPECT_THAT(handler_.output, StartsWith("Options:\n\nobjno\n"));
 }
 
 // Test -e option.
@@ -1488,35 +1488,52 @@ TEST_F(SolverAppTest, UseSolutionWriter) {
 }
 
 // A solver for testing multiple objective support.
+template <int FLAGS = Solver::MULTIPLE_OBJ>
 struct MultiObjTestSolver : mp::SolverImpl<MockProblemBuilder> {
-  explicit MultiObjTestSolver(int flags = Solver::MULTIPLE_OBJ)
-    : mp::SolverImpl<MockProblemBuilder>("", 0, 0, flags) {}
+  explicit MultiObjTestSolver()
+    : mp::SolverImpl<MockProblemBuilder>("", 0, 0, FLAGS) {}
   MockProblemBuilder **GetProblemBuilder(fmt::StringRef) { return 0; }
   void Solve(ProblemBuilder &, SolutionHandler &) {}
 };
+
 // Test that SolverApp sets NLAdapter's obj_index to NEED_ALL_OBJS
 // if solver supports multiple objectives.
 TEST(MultiObjTest, NeedAllObjs) {
-  typedef MockNLReader<MultiObjTestSolver> NLReader;
-  mp::SolverApp<MultiObjTestSolver, NLReader> app;
+  typedef MockNLReader<MultiObjTestSolver<> > NLReader;
+  mp::SolverApp<MultiObjTestSolver<>, NLReader> app;
   struct Test {
-    static void CheckObjIndex(fmt::StringRef, NLReader::Handler &h) {
+    static void OnHeader(NLReader::Handler &h) {
       // Invoke OnHeader first, because the obj_index is set there.
       auto header = mp::NLHeader();
       header.num_objs = 2;
       EXPECT_CALL(h.builder(), SetInfo(_));
       h.OnHeader(header);
+    }
+
+    static void ExpectUseObj0(fmt::StringRef, NLReader::Handler &h) {
+      OnHeader(h);
+      EXPECT_EQ(0, h.obj_index());
+    }
+
+    static void ExpectNeedAllObjs(fmt::StringRef, NLReader::Handler &h) {
+      OnHeader(h);
       EXPECT_EQ(NLReader::Handler::NEED_ALL_OBJS, h.obj_index());
     }
   };
+
   EXPECT_CALL(app.reader(), DoRead(_, _)).
-      WillOnce(testing::Invoke(Test::CheckObjIndex));
+      WillOnce(testing::Invoke(Test::ExpectUseObj0));
+  app.Run(Args("test", "testproblem"));
+
+  app.solver().SetIntOption("multiobj", 1);
+  EXPECT_CALL(app.reader(), DoRead(_, _)).
+      WillOnce(testing::Invoke(Test::ExpectNeedAllObjs));
   app.Run(Args("test", "testproblem"));
 }
 
 TEST(MultiObjTest, MultiObjOption) {
-  EXPECT_FALSE(MultiObjTestSolver(0).FindOption("multiobj"));
-  EXPECT_TRUE(MultiObjTestSolver().FindOption("multiobj"));
+  EXPECT_FALSE(MultiObjTestSolver<0>().FindOption("multiobj"));
+  EXPECT_TRUE(MultiObjTestSolver<>().FindOption("multiobj"));
 }
 
 // An NLReader for testing objno option.

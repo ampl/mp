@@ -270,9 +270,9 @@ bool SolverAppOptionParser::ShowSolverOptions() {
   fmt::MemoryWriter writer;
   const char *option_header = solver_.option_header();
   internal::FormatRST(writer, option_header);
-  if (!*option_header)
+  if (*option_header)
     writer << '\n';
-  solver_.Print("{}\n", writer.c_str());
+  solver_.Print("{}", writer.c_str());
   solver_.Print("Options:\n");
   const int DESC_INDENT = 6;
   for (Solver::option_iterator
