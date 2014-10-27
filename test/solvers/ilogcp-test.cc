@@ -495,6 +495,11 @@ TEST_F(IlogCPTest, CPOptimizerDoesntSupportContinuousVars) {
   EXPECT_THROW(s.Solve(p, sh), mp::Error);
 }
 
+// Test that ilogcp supports multiple objectives.
+TEST_F(IlogCPTest, MultiObj) {
+  EXPECT_EQ(Solver::MULTIPLE_OBJ, s.flags());
+}
+
 // ----------------------------------------------------------------------------
 // Option tests
 
