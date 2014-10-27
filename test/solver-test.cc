@@ -1490,7 +1490,8 @@ TEST_F(SolverAppTest, UseSolutionWriter) {
 
 // A solver for testing multiple objective support.
 struct MultiObjTestSolver : mp::SolverImpl<MockProblemBuilder> {
-  MultiObjTestSolver() : SolverImpl("", 0, 0, Solver::MULTIPLE_OBJ) {}
+  explicit MultiObjTestSolver(int flags = Solver::MULTIPLE_OBJ)
+    : mp::SolverImpl<MockProblemBuilder>("", 0, 0, flags) {}
   MockProblemBuilder **GetProblemBuilder(fmt::StringRef) { return 0; }
   void Solve(ProblemBuilder &, SolutionHandler &) {}
 };
