@@ -120,7 +120,7 @@ ExprT MakeExpr(expr *e) { return TestExpr::MakeExpr<ExprT>(e); }
 Expr MakeExpr(expr *e) { return TestExpr::MakeExpr<Expr>(e); }
 
 void TestExpr::TestProxy() {
-  expr e = {reinterpret_cast<efunc*>(opcode(ex::DIV))};
+  expr e = RawExpr(opcode(ex::DIV));
   Proxy<NumericExpr> p(&e);
   EXPECT_EQ(ex::DIV, p->kind());
 }
@@ -311,7 +311,7 @@ TEST_F(ExprTest, ExprCtor) {
 TEST_F(ExprTest, SafeBool) {
   Expr e1;
   EXPECT_FALSE(e1);
-  expr raw2 = {reinterpret_cast<efunc*>(42)};
+  expr raw2 = RawExpr(42);
   Expr e2(::MakeExpr(&raw2));
   EXPECT_TRUE(e2);
 }
@@ -463,9 +463,9 @@ TEST_F(ExprTest, Expr) {
 // expensive death tests. Is() is specialized for TestExpr to accept unary
 // and binary but not other expression kinds.
 TEST_F(ExprTest, CreateUsesIs) {
-  expr raw1 = {reinterpret_cast<efunc*>(opcode(ex::ADD))};  // binary
+  expr raw1 = RawExpr(opcode(ex::ADD));  // binary
   ::MakeExpr<TestExpr>(&raw1);
-  expr raw2 = {reinterpret_cast<efunc*>(opcode(ex::MINUS))};  // unary
+  expr raw2 = RawExpr(opcode(ex::MINUS));  // unary
   ::MakeExpr<TestExpr>(&raw2);
   TestAssertInCreate<TestExpr>(opcode(ex::PLTERM));  // neither
 }
@@ -973,7 +973,7 @@ TEST_F(ExprTest, ExprVisitorHandlesAll) {
     FullTestVisitor v;
     const OpInfo &info = OP_INFO[i];
     if (info.kind == ex::UNKNOWN || info.kind == ex::STRING) continue;
-    expr raw = {reinterpret_cast<efunc*>(i - 1)};
+    expr raw = RawExpr(i - 1);
     Expr e(::MakeExpr(&raw));
     Expr result;
     if (NumericExpr ne = Cast<NumericExpr>(e))
