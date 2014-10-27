@@ -5,7 +5,7 @@
 #  localsolver-library - the LocalSolver library
 
 if (UNIX)
-  set(LOCALSOLVER_DIR /opt)
+  set(INSTALL_DIRS /opt)
   set(LOCALSOLVER_LIB_NAME localsolver)
 else ()
   set(PROGRAM_FILES_DIR "C:/Program Files")
@@ -13,15 +13,18 @@ else ()
   if (CMAKE_SIZEOF_VOID_P EQUAL 4 AND EXISTS ${PROGRAM_FILES_X86_DIR})
     set(PROGRAM_FILES_DIR ${PROGRAM_FILES_X86_DIR})
   endif ()
-  set(LOCALSOLVER_DIR ${PROGRAM_FILES_DIR})
+  set(INSTALL_DIRS ${PROGRAM_FILES_DIR} "C:")
   set(LOCALSOLVER_LIB_NAME localsolver.dll)
 endif ()
 
-file(GLOB LOCALSOLVER_DIRS "${LOCALSOLVER_DIR}/localsolver*")
-if (LOCALSOLVER_DIRS)
-  list(GET LOCALSOLVER_DIRS 0 LOCALSOLVER_DIR)
-  message(STATUS "Found LocalSolver directory: ${LOCALSOLVER_DIR}")
-endif ()
+foreach (dir ${INSTALL_DIRS})
+  file(GLOB LOCALSOLVER_DIRS "${dir}/localsolver*")
+  if (LOCALSOLVER_DIRS)
+    list(GET LOCALSOLVER_DIRS 0 LOCALSOLVER_DIR)
+    message(STATUS "Found LocalSolver directory: ${LOCALSOLVER_DIR}")
+    break ()
+  endif ()
+endforeach ()
 
 find_path(LOCALSOLVER_INCLUDE_DIR
   localsolver.h PATHS ${LOCALSOLVER_DIR}/include)
