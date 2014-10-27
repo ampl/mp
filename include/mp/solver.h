@@ -331,8 +331,6 @@ class Solver : private ErrorHandler,
   // objective, or -1 to use the first objective if there is one.
   int objno_;
 
-  int flags_;
-
   enum {SHOW_VERSION = 1};
   int bool_options_;
 
@@ -353,6 +351,7 @@ class Solver : private ErrorHandler,
   OptionSet options_;
 
   bool timing_;
+  bool multiobj_;
 
   bool has_errors_;
   OutputHandler *output_handler_;
@@ -518,7 +517,10 @@ class Solver : private ErrorHandler,
 
  protected:
   // Constructs a Solver object.
-  // date: The solver date in YYYYMMDD format.
+  // date:  The solver date in YYYYMMDD format.
+  // flags: Bitwise OR of zero or more of the following values
+  //          MULTIPLE_SOL
+  //          MULTIPLE_OBJ
   Solver(fmt::StringRef name, fmt::StringRef long_name, long date, int flags);
 
   void set_long_name(fmt::StringRef name) { long_name_ = name; }
@@ -682,12 +684,6 @@ class Solver : private ErrorHandler,
   // Returns the solver date in YYYYMMDD format.
   long date() const { return date_; }
 
-  // Returns the solver flags.
-  // Possible values that can be combined with bitwise OR:
-  //   MULTIPLE_SOL
-  //   MULTIPLE_OBJ
-  int flags() const { return flags_; }
-
   // Returns the value of the wantsol option which specifies what solution
   // information to write in a stand-alone invocation (no -AMPL on the
   // command line).  Possible values that can be combined with bitwise OR:
@@ -706,6 +702,9 @@ class Solver : private ErrorHandler,
 
   // Returns true if the timing is enabled.
   bool timing() const { return timing_; }
+
+  // Returns true if multiobjective optimization is enabled.
+  bool multiobj() const { return multiobj_; }
 
   // Returns the error handler.
   ErrorHandler *error_handler() { return error_handler_; }
@@ -1104,7 +1103,7 @@ void SolverNLHandler<Solver>::OnHeader(const NLHeader &h) {
   int objno = solver_.objno();
   if (objno > h.num_objs)
     throw InvalidOptionValue("objno", objno);
-  if ((solver_.flags() & Solver::MULTIPLE_OBJ) != 0)
+  if (solver_.multiobj())
     this->set_obj_index(Base::NEED_ALL_OBJS);
   else if (objno != -1)
     this->set_obj_index(objno - 1);

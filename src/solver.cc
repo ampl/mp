@@ -272,7 +272,7 @@ bool SolverAppOptionParser::ShowSolverOptions() {
   internal::FormatRST(writer, option_header);
   if (!*option_header)
     writer << '\n';
-  solver_.Print("{}", writer.c_str());
+  solver_.Print("{}\n", writer.c_str());
   solver_.Print("Options:\n");
   const int DESC_INDENT = 6;
   for (Solver::option_iterator
@@ -360,8 +360,8 @@ bool Solver::OptionNameLess::operator()(
 Solver::Solver(
     fmt::StringRef name, fmt::StringRef long_name, long date, int flags)
 : name_(name), long_name_(long_name.c_str() ? long_name : name), date_(date),
-  wantsol_(0), obj_precision_(-1), objno_(-1), flags_(flags), bool_options_(0),
-  count_solutions_(false), read_flags_(0), timing_(false),
+  wantsol_(0), obj_precision_(-1), objno_(-1), bool_options_(0),
+  count_solutions_(false), read_flags_(0), timing_(false), multiobj_(false),
   has_errors_(false) {
   version_ = long_name_;
   error_handler_ = this;
@@ -419,6 +419,15 @@ Solver::Solver(
       value_ = value != 0;
     }
   };
+
+  if ((flags & MULTIPLE_OBJ) != 0) {
+    AddOption(OptionPtr(new BoolOption(multiobj_, "multiobj",
+       "0 or 1 (default 0):  Whether to use multi-objective optimization. "
+       "If set to 1 multi-objective optimization is performed using "
+       "lexicographic method with the first objective treated as the most "
+       "important, then the second objective and so on.")));
+  }
+
   AddOption(OptionPtr(new BoolOption(timing_, "timing",
       "0 or 1 (default 0): Whether to display timings for the run.\n")));
 

@@ -35,6 +35,7 @@ enum Feature {
   TRIGONOMETRIC = 0x040,
   HYPERBOLIC    = 0x080,
   PLTERM        = 0x100,
+  MULTIOBJ      = 0x200,
   ALL           = 0xfff
 };
 }

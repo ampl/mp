@@ -303,10 +303,9 @@ void NLToConcertConverter::Convert(const Problem &p) {
     vars_[j] = IloNumVar(env_, p.var_lb(j), p.var_ub(j), ILOINT);
 
   if (int num_objs = p.num_objs()) {
-    int obj_end = (flags_ & MULTIOBJ) != 0 ? num_objs : 1;
     obj::Type main_obj_type = p.obj_type(0);
     IloNumExprArray objs(env_);
-    for (int i = 0; i < obj_end; ++i) {
+    for (int i = 0; i < num_objs; ++i) {
       NumericExpr expr(p.nonlinear_obj_expr(i));
       NumericConstant constant(Cast<NumericConstant>(expr));
       IloExpr ilo_expr(env_, constant ? constant.value() : 0);
@@ -319,13 +318,11 @@ void NLToConcertConverter::Convert(const Problem &p) {
       }
       objs.add(p.obj_type(i) == main_obj_type ? ilo_expr : -ilo_expr);
     }
-    if (objs.getSize() > 0) {
-      IloObjective::Sense sense = main_obj_type == obj::MIN ?
-          IloObjective::Minimize : IloObjective::Maximize;
-      IloAdd(model_, objs.getSize() == 1 ?
-          IloObjective(env_, objs[0], sense) :
-          IloObjective(env_, IloStaticLex(env_, objs), sense));
-    }
+    IloObjective::Sense sense = main_obj_type == obj::MIN ?
+        IloObjective::Minimize : IloObjective::Maximize;
+    IloAdd(model_, num_objs == 1 ?
+        IloObjective(env_, objs[0], sense) :
+        IloObjective(env_, IloStaticLex(env_, objs), sense));
   }
 
   if (int n_cons = p.num_cons()) {

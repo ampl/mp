@@ -290,7 +290,6 @@ TEST(SolverTest, BasicSolverCtor) {
   EXPECT_STREQ("testsolver", s.long_name());
   EXPECT_STREQ("testsolver", s.version());
   EXPECT_EQ(0, s.date());
-  EXPECT_EQ(0, s.flags());
   EXPECT_EQ(0, s.wantsol());
 }
 
@@ -1495,7 +1494,6 @@ struct MultiObjTestSolver : mp::SolverImpl<MockProblemBuilder> {
   MockProblemBuilder **GetProblemBuilder(fmt::StringRef) { return 0; }
   void Solve(ProblemBuilder &, SolutionHandler &) {}
 };
-
 // Test that SolverApp sets NLAdapter's obj_index to NEED_ALL_OBJS
 // if solver supports multiple objectives.
 TEST(MultiObjTest, NeedAllObjs) {
@@ -1514,6 +1512,11 @@ TEST(MultiObjTest, NeedAllObjs) {
   EXPECT_CALL(app.reader(), DoRead(_, _)).
       WillOnce(testing::Invoke(Test::CheckObjIndex));
   app.Run(Args("test", "testproblem"));
+}
+
+TEST(MultiObjTest, MultiObjOption) {
+  EXPECT_FALSE(MultiObjTestSolver(0).FindOption("multiobj"));
+  EXPECT_TRUE(MultiObjTestSolver().FindOption("multiobj"));
 }
 
 // An NLReader for testing objno option.

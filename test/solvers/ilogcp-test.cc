@@ -495,11 +495,6 @@ TEST_F(IlogCPTest, CPOptimizerDoesntSupportContinuousVars) {
   EXPECT_THROW(s.Solve(p, sh), mp::Error);
 }
 
-// Test that ilogcp supports multiple objectives.
-TEST_F(IlogCPTest, MultiObj) {
-  EXPECT_EQ(Solver::MULTIPLE_OBJ, s.flags());
-}
-
 // ----------------------------------------------------------------------------
 // Option tests
 
@@ -645,26 +640,6 @@ TEST_F(IlogCPTest, CPOptions) {
     CheckIntCPOption("workers", IloCP::Workers, 0, INT_MAX, 0, true);
   else
     CheckIntCPOption("workers", IloCP::Workers, 1, 4, 0, false);
-}
-
-TEST_F(IlogCPTest, MultiObjOption) {
-  ASLBuilder pb(s.GetProblemBuilder(""));
-  auto info = mp::ProblemInfo();
-  info.num_vars = info.num_nl_integer_vars_in_objs = 1;
-  info.num_objs = info.num_nl_objs = 2;
-  pb.SetInfo(info);
-  pb.AddVar(0, 10, var::INTEGER);
-  pb.AddObj(mp::obj::MIN, pb.MakeBinary(
-              mp::expr::MOD, pb.MakeVariable(0), pb.MakeNumericConstant(3)), 0);
-  pb.AddObj(mp::obj::MIN, pb.MakeUnary(
-              mp::expr::POW2, pb.MakeBinary(mp::expr::SUB, pb.MakeVariable(0),
-                                            pb.MakeNumericConstant(5))), 0);
-  Problem p(pb.GetProblem());
-  EXPECT_EQ(0, Solve(p));
-  s.SetIntOption("multiobj", 1);
-  EXPECT_EQ(6, Solve(p));
-  s.SetIntOption("multiobj", 0);
-  EXPECT_EQ(0, Solve(p));
 }
 
 TEST_F(IlogCPTest, SolutionLimitOption) {

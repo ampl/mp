@@ -79,8 +79,7 @@ class NLToConcertConverter : public Converter {
   // Flags.
   enum {
     USENUMBEROF = 1,
-    DEBUG       = 2,
-    MULTIOBJ   = 4
+    DEBUG       = 2
   };
   NLToConcertConverter(IloEnv env, unsigned flags);
 

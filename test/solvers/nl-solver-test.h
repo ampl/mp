@@ -70,6 +70,22 @@ class EvalResult {
   void set_solve_code(int code) { solve_code_ = code; }
 };
 
+template <typename Solver>
+EvalResult Solve(Solver &solver, typename Solver::ProblemBuilder &pb) {
+  struct TestSolutionHandler : mp::BasicSolutionHandler {
+    EvalResult result;
+    virtual ~TestSolutionHandler() {}
+    void HandleSolution(int status, fmt::StringRef,
+          const double *values, const double *, double obj_value) {
+      result = values ? EvalResult(values[0], obj_value) : EvalResult();
+      result.set_solve_code(status);
+    }
+  };
+  TestSolutionHandler sh;
+  solver.Solve(pb, sh);
+  return sh.result;
+}
+
 // Solver implementation test
 class NLSolverTest : public ::testing::Test {
  protected:
@@ -93,7 +109,7 @@ class NLSolverTest : public ::testing::Test {
     pb.SetInfo(info);
   }
 
-  EvalResult Solve(ProblemBuilder &pb);
+  EvalResult Solve(ProblemBuilder &pb) { return ::Solve(solver_, pb); }
 
   class ExprFactory {
    protected:
@@ -368,21 +384,6 @@ void Interrupt();
 
 namespace var = mp::var;
 namespace obj = mp::obj;
-
-EvalResult NLSolverTest::Solve(ProblemBuilder &pb) {
-  struct TestSolutionHandler : mp::BasicSolutionHandler {
-    EvalResult result;
-    virtual ~TestSolutionHandler() {}
-    void HandleSolution(int status, fmt::StringRef,
-          const double *values, const double *, double obj_value) {
-      result = values ? EvalResult(values[0], obj_value) : EvalResult();
-      result.set_solve_code(status);
-    }
-  };
-  TestSolutionHandler sh;
-  solver_.Solve(pb, sh);
-  return sh.result;
-}
 
 EvalResult NLSolverTest::Solve(
     const LogicalExprFactory &factory,
@@ -1356,6 +1357,32 @@ TEST_F(NLSolverTest, IgnoreObjNo) {
 
 TEST_F(NLSolverTest, CreateSolver) {
   EXPECT_STREQ(solver_.name(), mp::CreateSolver(0)->name());
+}
+
+// Makes a problem for testing multiple objectives support and solves it.
+template <typename Solver>
+EvalResult SolveMultiObjTestProblem(Solver &solver, bool multiobj = false) {
+  typename Solver::ProblemBuilder pb(solver.GetProblemBuilder(""));
+  auto info = mp::ProblemInfo();
+  info.num_vars = info.num_nl_integer_vars_in_objs = 1;
+  info.num_objs = info.num_nl_objs = multiobj ? 2 : 1;
+  pb.SetInfo(info);
+  pb.AddVar(0, 2, var::INTEGER);
+  auto var = pb.MakeVariable(0);
+  pb.AddObj(mp::obj::MIN, pb.MakeBinary(
+              mp::expr::MOD, var, pb.MakeNumericConstant(2)), 0);
+  if (multiobj)
+    pb.AddObj(mp::obj::MAX, var, 0);
+  return Solve(solver, pb);
+}
+
+TEST_F(NLSolverTest, MultiObjOption) {
+  if (!HasFeature(feature::MULTIOBJ)) {
+    EXPECT_FALSE(solver_.FindOption("multiobj"));
+    return;
+  }
+  EXPECT_EQ(0, SolveMultiObjTestProblem(solver_));
+  EXPECT_EQ(2, SolveMultiObjTestProblem(solver_, true));
 }
 
 struct TestOutputHandler : public mp::OutputHandler {
