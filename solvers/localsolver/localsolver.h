@@ -190,7 +190,9 @@ class LSProblemBuilder :
   ColumnSizeHandler GetColumnSizeHandler() { return ColumnSizeHandler(); }
 
   ls::LSExpression MakeNumericConstant(double value) {
-    return model_.createConstant(value);
+    ls::lsint int_value = value;
+    return int_value == value ?
+          model_.createConstant(int_value) : model_.createConstant(value);
   }
 
   ls::LSExpression MakeVariable(int var_index) {
