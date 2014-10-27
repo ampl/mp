@@ -60,8 +60,9 @@ class StrictMockProblemBuilder : public StrictMock<MockProblemBuilder> {
 
   // Constructs a MockProblemBuilder object and stores a pointer to it
   // in ``builder``.
-  explicit StrictMockProblemBuilder(StrictMockProblemBuilder *&builder) {
-    builder = this;
+  explicit StrictMockProblemBuilder(StrictMockProblemBuilder **builder) {
+    if (builder)
+      *builder = this;
   }
 };
 
@@ -85,8 +86,8 @@ class TestSolver : public mp::Solver {
 
   typedef StrictMockProblemBuilder ProblemBuilder;
 
-  ProblemBuilder *&GetProblemBuilder(fmt::StringRef) {
-    return builder;
+  ProblemBuilder **GetProblemBuilder(fmt::StringRef) {
+    return &builder;
   }
 
   bool ParseOptions(char **argv,
@@ -1303,11 +1304,11 @@ struct MockOptionHandler {
   MOCK_METHOD0(OnOption, bool ());
 };
 
+template <typename Solver = TestSolver>
 struct MockNLReader {
-  typedef mp::ProblemBuilderToNLAdapter<
-    StrictMockProblemBuilder > Handler;
+  typedef mp::internal::SolverNLHandler<Solver> Handler;
 
-  MOCK_METHOD2(DoRead, void (fmt::StringRef filename, Handler &h));
+  MOCK_METHOD2_T(DoRead, void (fmt::StringRef filename, Handler &h));
 
   void Read(fmt::StringRef filename, Handler &h) {
     DoRead(filename, h);
@@ -1317,7 +1318,7 @@ struct MockNLReader {
 
 class SolverAppTest : public ::testing::Test {
  protected:
-  typedef mp::SolverApp<TestSolver, StrictMock<MockNLReader> > App;
+  typedef mp::SolverApp<TestSolver, StrictMock<MockNLReader<> > > App;
   App app_;
 
   struct OptionHandler : StrictMock<MockOptionHandler> {
@@ -1397,7 +1398,7 @@ TEST_F(SolverAppTest, ParseOptionsBeforeReadingProblem) {
 // Matcher that return true if the argument of type ProblemBuilderToNLAdapter
 // points to the solver's problem builder.
 MATCHER_P(MatchAdapterToBuilder, solver, "") {
-  return &arg.builder() == solver->GetProblemBuilder("");
+  return &arg.builder() == *solver->GetProblemBuilder("");
 }
 
 // Test that SolverApp::Run reads the problem.
@@ -1451,7 +1452,7 @@ TEST_F(SolverAppTest, ReportInputTime) {
 // Matcher that returns true if the argument points to the solver's problem
 // builder.
 MATCHER_P(MatchBuilder, solver, "") {
-  return &arg == solver->GetProblemBuilder("");
+  return &arg == *solver->GetProblemBuilder("");
 }
 
 // Test that SolverApp::Run solves the problem.
@@ -1485,6 +1486,33 @@ TEST_F(SolverAppTest, UseSolutionWriter) {
   solver.MockSolve();
   EXPECT_CALL(solver, DoSolve(_, MatchSolutionWriter()));
   EXPECT_EQ(0, app_.Run(Args("test", "testproblem")));
+}
+
+// A solver for testing multiple objective support.
+struct MultiObjTestSolver : mp::SolverImpl<MockProblemBuilder> {
+  MultiObjTestSolver() : SolverImpl("", 0, 0, Solver::MULTIPLE_OBJ) {}
+  MockProblemBuilder **GetProblemBuilder(fmt::StringRef) { return 0; }
+  void Solve(ProblemBuilder &, SolutionHandler &) {}
+};
+
+// Test that SolverApp sets NLAdapter's obj_index to NEED_ALL_OBJS
+// if solver supports multiple objectives.
+TEST(MultiObjTest, NeedAllObjs) {
+  typedef MockNLReader<MultiObjTestSolver> NLReader;
+  mp::SolverApp<MultiObjTestSolver, NLReader> app;
+  struct Test {
+    static void CheckObjIndex(fmt::StringRef, NLReader::Handler &h) {
+      // Invoke OnHeader first, because the obj_index is set there.
+      auto header = mp::NLHeader();
+      header.num_objs = 2;
+      EXPECT_CALL(h.builder(), SetInfo(_));
+      h.OnHeader(header);
+      EXPECT_EQ(NLReader::Handler::NEED_ALL_OBJS, h.obj_index());
+    }
+  };
+  EXPECT_CALL(app.reader(), DoRead(_, _)).
+      WillOnce(testing::Invoke(Test::CheckObjIndex));
+  app.Run(Args("test", "testproblem"));
 }
 
 // An NLReader for testing objno option.

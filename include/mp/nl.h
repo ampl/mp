@@ -491,8 +491,6 @@ class ProblemBuilderToNLAdapter {
   };
   std::vector<ObjInfo> objs_;
 
-  // Index of the objective to pass to the builder, SKIP_ALL_OBJS to
-  // skip all objectives, NEED_ALL_OBJS to pass all objectives.
   int obj_index_;
 
   // Algebraic constraints
@@ -507,7 +505,6 @@ class ProblemBuilderToNLAdapter {
   std::vector<NumericExpr> exprs_;
 
  protected:
-  int obj_index() const { return obj_index_; }
   void set_obj_index(int index) { obj_index_ = index; }
 
  public:
@@ -519,6 +516,10 @@ class ProblemBuilderToNLAdapter {
     // Pass all objectives to the builder.
     NEED_ALL_OBJS = -2
   };
+
+  // Index of the objective to pass to the builder, SKIP_ALL_OBJS to
+  // skip all objectives, NEED_ALL_OBJS to pass all objectives.
+  int obj_index() const { return obj_index_; }
 
   explicit ProblemBuilderToNLAdapter(ProblemBuilder &builder, int obj_index = 0)
     : builder_(builder), num_continuous_vars_(0), obj_index_(obj_index) {}

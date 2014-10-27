@@ -331,8 +331,10 @@ class Solver : private ErrorHandler,
   // objective, or -1 to use the first objective if there is one.
   int objno_;
 
-  enum {SHOW_VERSION = 1};
   int flags_;
+
+  enum {SHOW_VERSION = 1};
+  int bool_options_;
 
   // The filename stub for returning multiple solutions.
   std::string solution_stub_;
@@ -502,16 +504,19 @@ class Solver : private ErrorHandler,
     }
   };
 
- protected:
-  // Flags for the Solver constructor.
+  // Solver flags
   enum {
-    // Multiple solution support.
+    // Multiple solutions support.
     // Makes Solver register "countsolutions" and "solutionstub" options
     // and write every solution passed to HandleFeastibleSolution to a file
     // solutionstub & i & ".sol" where i is a solution number.
-    MULTIPLE_SOL = 1
+    MULTIPLE_SOL = 1,
+
+    // Multiple objectives support.
+    MULTIPLE_OBJ = 2
   };
 
+ protected:
   // Constructs a Solver object.
   // date: The solver date in YYYYMMDD format.
   Solver(fmt::StringRef name, fmt::StringRef long_name, long date, int flags);
@@ -679,9 +684,8 @@ class Solver : private ErrorHandler,
 
   // Returns the solver flags.
   // Possible values that can be combined with bitwise OR:
-  //   ASL_OI_want_funcadd
-  //   ASL_OI_keep_underscores
-  //   ASL_OI_show_version
+  //   MULTIPLE_SOL
+  //   MULTIPLE_OBJ
   int flags() const { return flags_; }
 
   // Returns the value of the wantsol option which specifies what solution
@@ -1073,6 +1077,41 @@ class SignalHandler : public Interrupter {
 
   void SetHandler(InterruptHandler handler, void *data);
 };
+
+// An .nl handler for SolverApp.
+template <typename Solver>
+class SolverNLHandler :
+    public ProblemBuilderToNLAdapter<typename Solver::ProblemBuilder> {
+ private:
+  Solver &solver_;
+  int num_options_;
+  int options_[MAX_NL_OPTIONS];
+
+  typedef ProblemBuilderToNLAdapter<typename Solver::ProblemBuilder> Base;
+
+ public:
+  SolverNLHandler(typename Solver::ProblemBuilder &pb, Solver &s)
+    : Base(pb), solver_(s), num_options_(0) {}
+
+  int num_options() const { return num_options_; }
+  const int *options() const { return options_; }
+
+  void OnHeader(const NLHeader &h);
+};
+
+template <typename Solver>
+void SolverNLHandler<Solver>::OnHeader(const NLHeader &h) {
+  int objno = solver_.objno();
+  if (objno > h.num_objs)
+    throw InvalidOptionValue("objno", objno);
+  if ((solver_.flags() & Solver::MULTIPLE_OBJ) != 0)
+    this->set_obj_index(Base::NEED_ALL_OBJS);
+  else if (objno != -1)
+    this->set_obj_index(objno - 1);
+  num_options_ = h.num_options;
+  std::copy(h.options, h.options + num_options_, options_);
+  Base::OnHeader(h);
+}
 }  // namespace internal
 
 // A solver application.
@@ -1085,26 +1124,6 @@ class SolverApp : private Reader {
   internal::SolverAppOptionParser option_parser_;
 
   typedef typename Solver::ProblemBuilder ProblemBuilder;
-  typedef ProblemBuilderToNLAdapter<ProblemBuilder> Adapter;
-
-  struct NLHandler : Adapter {
-    int num_options;
-    int options[MAX_NL_OPTIONS];
-
-    NLHandler(ProblemBuilder &pb, int obj_index)
-      : Adapter(pb, obj_index), num_options(0) {}
-
-    void OnHeader(const NLHeader &h) {
-      int obj_index = this->obj_index();
-      if (obj_index >= h.num_objs)
-        throw InvalidOptionValue("objno", obj_index + 1);
-      if (obj_index == -2 && h.num_objs > 0)
-        this->set_obj_index(0);
-      num_options = h.num_options;
-      std::copy(h.options, h.options + num_options, options);
-      Adapter::OnHeader(h);
-    }
-  };
 
  public:
   SolverApp() : option_parser_(solver_) {}
@@ -1150,7 +1169,7 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   steady_clock::time_point start = steady_clock::now();
   // TODO: use name provider instead of passing filename to builder
   ProblemBuilder builder(solver_.GetProblemBuilder(filename_no_ext));
-  NLHandler handler(builder, solver_.objno() - 1);
+  internal::SolverNLHandler<Solver> handler(builder, solver_);
   this->Read(nl_filename, handler);
 
   builder.EndBuild();
@@ -1161,7 +1180,7 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   // Solve the problem writing solution(s) if necessary.
   std::auto_ptr<SolutionHandler> sol_handler;
   if (solver_.wantsol() != 0) {
-    ArrayRef<int> options(handler.options, handler.num_options);
+    ArrayRef<int> options(handler.options(), handler.num_options());
     sol_handler.reset(new SolutionWriter<Solver>(filename_no_ext, solver_,
                                                  builder, options));
   } else {

@@ -109,7 +109,10 @@ class MockProblemBuilder {
 
   // Constructs a MockProblemBuilder object and stores a pointer to it
   // in ``builder``.
-  explicit MockProblemBuilder(MockProblemBuilder *&builder) { builder = this; }
+  explicit MockProblemBuilder(MockProblemBuilder **builder) {
+    if (builder)
+      *builder = this;
+  }
 
   typedef mp::Suffix *SuffixPtr;
   typedef mp::SuffixSet SuffixSet;

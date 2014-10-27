@@ -360,7 +360,7 @@ bool Solver::OptionNameLess::operator()(
 Solver::Solver(
     fmt::StringRef name, fmt::StringRef long_name, long date, int flags)
 : name_(name), long_name_(long_name.c_str() ? long_name : name), date_(date),
-  wantsol_(0), obj_precision_(-1), objno_(-1), flags_(0),
+  wantsol_(0), obj_precision_(-1), objno_(-1), flags_(flags), bool_options_(0),
   count_solutions_(false), read_flags_(0), timing_(false),
   has_errors_(false) {
   version_ = long_name_;
@@ -374,8 +374,8 @@ Solver::Solver(
         "Single-word phrase: report version details "
         "before solving the problem.", ValueArrayRef(), true), s(s) {}
 
-    void Write(fmt::Writer &w) { w << ((s.flags_ & SHOW_VERSION) != 0); }
-    void Parse(const char *&) { s.flags_ |= SHOW_VERSION; }
+    void Write(fmt::Writer &w) { w << ((s.bool_options_ & SHOW_VERSION) != 0); }
+    void Parse(const char *&) { s.bool_options_ |= SHOW_VERSION; }
   };
   AddOption(OptionPtr(new VersionOption(*this)));
 
@@ -547,12 +547,12 @@ void Solver::ParseOptionString(const char *s, unsigned flags) {
 
 bool Solver::ParseOptions(char **argv, unsigned flags, const Problem *) {
   has_errors_ = false;
-  flags_ &= ~SHOW_VERSION;
+  bool_options_ &= ~SHOW_VERSION;
   if (const char *s = std::getenv((name_ + "_options").c_str()))
     ParseOptionString(s, flags);
   while (const char *s = *argv++)
     ParseOptionString(s, flags);
-  if ((flags_ & SHOW_VERSION) != 0)
+  if ((bool_options_ & SHOW_VERSION) != 0)
     ShowVersion();
   return !has_errors_;
 }
