@@ -1162,7 +1162,8 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   // Parse solver options.
   unsigned flags =
       option_parser_.echo_solver_options() ? 0 : Solver::NO_OPTION_ECHO;
-  solver_.ParseOptions(argv, flags);
+  if (!solver_.ParseOptions(argv, flags))
+    return 1;
 
   // Read the problem.
   steady_clock::time_point start = steady_clock::now();
