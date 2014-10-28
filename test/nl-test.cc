@@ -499,7 +499,7 @@ class TestNLHandler {
     WriteSep().write("e{}: ", num_terms);
     return LinearExprHandler(log, false);
   }
-  void EndCommonExpr(int index, LinearExprHandler handler,
+  void EndCommonExpr(int index, LinearExprHandler,
                      std::string expr, int position) {
     log.write(" + {} {}/{};", expr, index, position);
   }

@@ -359,13 +359,13 @@ void NLToConcertConverter::Convert(const Problem &p) {
         // IloAlgorithm::extract throws CannotExtractException).
         IloIntVarArray vars(env_);
         for (AllDiffExpr::iterator
-             i = alldiff.begin(), end = alldiff.end(); i != end; ++i) {
-          if (Variable v = Cast<Variable>(*i)) {
+             j = alldiff.begin(), end = alldiff.end(); j != end; ++j) {
+          if (Variable v = Cast<Variable>(*j)) {
             vars.add(vars_[v.index()]);
             continue;
           }
           IloIntVar var(env_, IloIntMin, IloIntMax);
-          model_.add(var == Visit(*i));
+          model_.add(var == Visit(*j));
           vars.add(var);
         }
         cons[i] = IloAllDiff(env_, vars);
