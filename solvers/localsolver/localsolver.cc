@@ -413,7 +413,8 @@ LocalSolver::LocalSolver()
   AddIntOption("seed",
       "Seed of the pseudo-random number generator used by the solver. "
       "Default = 0.",
-      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<>, SEED);
+      &LocalSolver::DoGetIntOption, &LocalSolver::SetNonnegativeIntOption,
+      SEED);
 
   AddIntOption("threads",
       "Number of threads used to parallelize the search. Default = 2.",
@@ -445,12 +446,14 @@ LocalSolver::LocalSolver()
   AddIntOption("timelimit",
       "Time limit in seconds (positive integer) or 0 for no limit. "
       "Default = no limit.",
-      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<>, TIMELIMIT);
+      &LocalSolver::DoGetIntOption, &LocalSolver::SetNonnegativeIntOption,
+      TIMELIMIT);
 
   AddIntOption("iterlimit",
       "Iteration limit (positive integer) or 0 for no limit. "
       "Default = no limit.",
-      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<>, ITERLIMIT);
+      &LocalSolver::DoGetIntOption, &LocalSolver::SetNonnegativeIntOption,
+      ITERLIMIT);
 }
 
 void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {

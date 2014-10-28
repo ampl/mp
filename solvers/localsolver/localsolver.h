@@ -327,11 +327,15 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
     return options_[id];
   }
 
-  template <int LB = 0, int UB = INT8_MAX>
+  template <int LB, int UB>
   void DoSetIntOption(const SolverOption &opt, int value, Option id) {
     if (value < LB || value > UB)
       throw InvalidOptionValue(opt, value);
     options_[id] = value;
+  }
+
+  void SetNonnegativeIntOption(const SolverOption &opt, int value, Option id) {
+    return DoSetIntOption<0, INT_MAX>(opt, value, id);
   }
 
   std::string GetVerbosity(const SolverOption &opt) const;
