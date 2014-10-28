@@ -121,4 +121,44 @@ IntOption options[] = {
 };
 INSTANTIATE_TEST_CASE_P(, OptionTest, testing::ValuesIn(options));
 
-// TODO: test solver options verbosity, logfile, timelimit, iterlimit
+TEST(LocalSolverTest, Verbosity) {
+  enum {TEST_VALUE = 1};
+  struct TestLocalSolver : mp::LocalSolver {
+    void DoSolve(localsolver::LocalSolver &s) {
+      EXPECT_EQ(TEST_VALUE, s.getParam().getVerbosity());
+    }
+  } solver;
+  EXPECT_EQ("quiet", solver.GetStrOption("verbosity"));
+  mp::LSProblemBuilder builder(solver.GetProblemBuilder(""));
+  EXPECT_EQ(0, builder.solver().getParam().getVerbosity());
+
+  // Test option values.
+  auto values = solver.FindOption("verbosity")->values();
+  EXPECT_EQ(3, values.size());
+  struct ValueInfo {
+    const char *value;
+    int data;
+  };
+  ValueInfo value_info[] = {{"quiet", 0}, {"normal", 1}, {"detailed", 10}};
+  int index = 0;
+  for (auto i: values) {
+    const auto &info = value_info[index++];
+    EXPECT_STREQ(info.value, i.value);
+    EXPECT_EQ(info.data, i.data);
+    solver.SetStrOption("verbosity", info.value);
+    EXPECT_EQ(info.value, solver.GetStrOption("verbosity"));
+    solver.SetStrOption("verbosity", fmt::format("{}", info.data));
+    EXPECT_EQ(info.value, solver.GetStrOption("verbosity"));
+  }
+
+  // Test that value is passed to LocalSolver.
+  solver.SetStrOption("verbosity", "normal");
+  SolveTestProblem(solver);
+
+  EXPECT_THROW(solver.SetDblOption("verbosity", 1.2),
+               mp::OptionError);
+  EXPECT_THROW(solver.SetStrOption("verbosity", "oops"),
+               mp::InvalidOptionValue);
+}
+
+// TODO: test solver options logfile, timelimit, iterlimit
