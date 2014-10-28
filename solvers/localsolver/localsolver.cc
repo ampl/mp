@@ -350,8 +350,12 @@ ls::LSExpression LSProblemBuilder::EndAllDiff(AllDiffArgHandler handler) {
 }
 
 LocalSolver::LocalSolver()
-  : SolverImpl<LSProblemBuilder>("localsolver", 0, 20140710, MULTIPLE_OBJ),
-    timelimit_(0) {
+  : SolverImpl<LSProblemBuilder>("localsolver", 0, 20140710, MULTIPLE_OBJ) {
+  options_[SEED] = 0;
+  options_[THREADS] = 2;
+  options_[ANNEALING_LEVEL] = 1;
+  options_[TIMELIMIT] = 0;
+
   std::string version = fmt::format("{}.{}",
       localsolver::LSVersion::getMajorVersionNumber(),
       localsolver::LSVersion::getMinorVersionNumber());
@@ -367,9 +371,25 @@ LocalSolver::LocalSolver()
       "\n"
       "  ampl: option localsolver_options 'version timelimit=30;\n");
 
+  AddIntOption("seed",
+      "Seed of the pseudo-random number generator used by the solver. "
+      "Default = 0.",
+      &LocalSolver::DoGetIntOption, &LocalSolver::SetNonnegativeOption, SEED);
+
+  AddIntOption("threads",
+      "Number of threads used to parallelize the search. Default = 2.",
+      &LocalSolver::DoGetIntOption, &LocalSolver::SetThreads, THREADS);
+
+  AddIntOption("annealing_level",
+      "Simulated annealing level. Default = 1.",
+      &LocalSolver::DoGetIntOption, &LocalSolver::SetAnnealingLevel,
+      ANNEALING_LEVEL);
+
   AddIntOption("timelimit",
-      "Time limit in seconds (positive integer). Default = no limit.",
-      &LocalSolver::GetTimeLimit, &LocalSolver::SetTimeLimit);
+      "Time limit in seconds (positive integer) or 0 for no limit. "
+      "Default = no limit.",
+      &LocalSolver::DoGetIntOption, &LocalSolver::SetNonnegativeOption,
+      TIMELIMIT);
 }
 
 void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
@@ -384,9 +404,13 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   model.close();
 
   // Set options. LS requires this to be done after the model is closed.
+  ls::LSParam param = solver.getParam();
+  param.setSeed(options_[SEED]);
+  param.setNbThreads(options_[THREADS]);
+  param.setAnnealingLevel(options_[ANNEALING_LEVEL]);
   ls::LSPhase phase = solver.createPhase();
-  if (timelimit_ != 0)
-    phase.setTimeLimit(timelimit_);
+  if (int timelimit = options_[TIMELIMIT])
+    phase.setTimeLimit(timelimit);
   interrupter()->SetHandler(StopSolver, &solver);
 
   // TODO: more options

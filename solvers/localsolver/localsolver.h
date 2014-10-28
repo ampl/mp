@@ -307,14 +307,37 @@ class LSProblemBuilder :
 
 class LocalSolver : public SolverImpl<LSProblemBuilder> {
  private:
-  int timelimit_;
+  // Integer options.
+  enum Option {
+    SEED,
+    THREADS,
+    ANNEALING_LEVEL,
+    TIMELIMIT,
+    NUM_OPTIONS
+  };
 
-  int GetTimeLimit(const SolverOption &) const { return timelimit_; }
+  int options_[NUM_OPTIONS];
 
-  void SetTimeLimit(const SolverOption &opt, int value) {
-    if (value <= 0)
+  int DoGetIntOption(const SolverOption &, Option id) const {
+    return options_[id];
+  }
+
+  void SetNonnegativeOption(const SolverOption &opt, int value, Option id) {
+    if (value < 0)
       throw InvalidOptionValue(opt, value);
-    timelimit_ = value;
+    options_[id] = value;
+  }
+
+  void SetThreads(const SolverOption &opt, int value, Option id) {
+    if (value < 1 || value > 1024)
+      throw InvalidOptionValue(opt, value);
+    options_[id] = value;
+  }
+
+  void SetAnnealingLevel(const SolverOption &opt, int value, Option id) {
+    if (value < 0 || value > 9)
+      throw InvalidOptionValue(opt, value);
+    options_[id] = value;
   }
 
  public:
