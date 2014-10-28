@@ -116,8 +116,9 @@ IntOption options[] = {
   {"threads", 2, 1, 1024, &LSParam::getNbThreads, &LSParam::setNbThreads},
   {"annealing_level", 1, 0, 9,
    &LSParam::getAnnealingLevel, &LSParam::setAnnealingLevel},
+  {"time_between_displays", 1, 1, 65535,
+   &LSParam::getTimeBetweenDisplays, &LSParam::setTimeBetweenDisplays},
 };
 INSTANTIATE_TEST_CASE_P(, OptionTest, testing::ValuesIn(options));
 
-// TODO: test solver options verbosity,
-//       time_between_displays, logfile, timelimit, iterlimit
+// TODO: test solver options verbosity, logfile, timelimit, iterlimit
