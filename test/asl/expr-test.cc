@@ -417,7 +417,7 @@ void TestAssertInCreate(int opcode) {
 }
 
 template <typename ExprT>
-int CheckExpr(ex::Kind start, ex::Kind end = ex::UNKNOWN,
+std::size_t CheckExpr(ex::Kind start, ex::Kind end = ex::UNKNOWN,
     ex::Kind bad_kind = ex::PLTERM) {
   if (end == ex::UNKNOWN)
     end = start;
@@ -427,7 +427,7 @@ int CheckExpr(ex::Kind start, ex::Kind end = ex::UNKNOWN,
     EXPECT_FALSE(e);
   }
   TestAssertInCreate<ExprT>(opcode(bad_kind));
-  int expr_count = 0;
+  std::size_t expr_count = 0;
   int size = sizeof(OP_INFO) / sizeof(*OP_INFO);
   for (int i = 0; i < size; ++i) {
     const OpInfo &info = OP_INFO[i];
@@ -447,7 +447,7 @@ int CheckExpr(ex::Kind start, ex::Kind end = ex::UNKNOWN,
     EXPECT_STREQ(opstr, e.opstr());
     ++expr_count;
   }
-  EXPECT_GT(expr_count, 0);
+  EXPECT_GT(expr_count, 0u);
   return expr_count;
 }
 
