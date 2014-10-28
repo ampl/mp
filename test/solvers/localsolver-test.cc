@@ -57,10 +57,14 @@ TEST(LocalSolverTest, SeedOption) {
     }
   } solver;
 
-  // Check that the default value agrees with LocalSolver.
+  // Check that the default value and range agrees with LocalSolver.
   localsolver::LocalSolver ls;
   CreateTestModel(ls);
-  EXPECT_EQ(ls.getParam().getSeed(), TestLocalSolver().GetIntOption("seed"));
+  localsolver::LSParam param = ls.getParam();
+  EXPECT_EQ(param.getSeed(), TestLocalSolver().GetIntOption("seed"));
+  param.setSeed(0);
+  param.setSeed(INT_MAX);
+  EXPECT_THROW(param.setSeed(-1), localsolver::LSException);
 
   solver.SetIntOption("seed", 100);
   EXPECT_EQ(100, solver.GetIntOption("seed"));
@@ -70,5 +74,30 @@ TEST(LocalSolverTest, SeedOption) {
   EXPECT_THROW(solver.SetStrOption("seed", "oops"), mp::OptionError);
 }
 
-// TODO: test solver options threads, annealing_level, verbosity,
+TEST(LocalSolverTest, ThreadsOption) {
+  struct TestLocalSolver : mp::LocalSolver {
+    void DoSolve(localsolver::LocalSolver &s) {
+      EXPECT_EQ(10, s.getParam().getNbThreads());
+    }
+  } solver;
+
+  // Check that the default value agrees with LocalSolver.
+  localsolver::LocalSolver ls;
+  CreateTestModel(ls);
+  localsolver::LSParam param = ls.getParam();
+  EXPECT_EQ(param.getNbThreads(), TestLocalSolver().GetIntOption("threads"));
+  param.setNbThreads(1);
+  param.setNbThreads(1024);
+  EXPECT_THROW(param.setNbThreads(0), localsolver::LSException);
+  EXPECT_THROW(param.setNbThreads(1025), localsolver::LSException);
+
+  solver.SetIntOption("threads", 10);
+  EXPECT_EQ(10, solver.GetIntOption("threads"));
+  SolveTestProblem(solver);
+  solver.SetIntOption("threads", 1);
+  EXPECT_THROW(solver.SetIntOption("threads", 0), mp::InvalidOptionValue);
+  EXPECT_THROW(solver.SetStrOption("threads", "oops"), mp::OptionError);
+}
+
+// TODO: test solver options annealing_level, verbosity,
 //       time_between_displays, logfile, timelimit, iterlimit
