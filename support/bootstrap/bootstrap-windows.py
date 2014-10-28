@@ -89,6 +89,11 @@ for bits in [32, 64]:
     shutil.move(os.path.join(tempdir, '$_OUTDIR'), install_dir)
   finally:
     shutil.rmtree(tempdir)
+localsolver_license_dir = r'C:\localsolver_4_5'
+if not os.path.exists(localsolver_license_dir):
+  os.mkdir(localsolver_license_dir)
+with open(os.path.join(localsolver_license_dir, 'license.dat'), 'w') as f:
+  f.write("FREE_TRIAL = 1\n")
 
 # Copy optional dependencies.
 opt_dir = r'\vagrant\opt\win64'
