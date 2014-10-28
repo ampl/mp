@@ -33,6 +33,8 @@ enum { FEATURES = ~feature::PLTERM };
 
 #include "nl-solver-test.h"
 
+using localsolver::LSParam;
+
 // Creates and solves a test problem.
 void SolveTestProblem(mp::LocalSolver &s) {
   mp::LSProblemBuilder pb(s.GetProblemBuilder(""));
@@ -50,54 +52,72 @@ void CreateTestModel(localsolver::LocalSolver &s) {
   model.close();
 }
 
-TEST(LocalSolverTest, SeedOption) {
-  struct TestLocalSolver : mp::LocalSolver {
-    void DoSolve(localsolver::LocalSolver &s) {
-      EXPECT_EQ(100, s.getParam().getSeed());
-    }
-  } solver;
+struct IntOption {
+  const char *name;
+  int default_value;
+  int lb;
+  int ub;
+  int (LSParam::*get)() const;
+  void (LSParam::*set)(int);
+};
 
-  // Check that the default value and range agrees with LocalSolver.
+class OptionTest : public testing::TestWithParam<IntOption> {
+};
+
+// Test that the default value agrees with LocalSolver.
+TEST_P(OptionTest, DefaultValue) {
+  auto opt = GetParam();
   localsolver::LocalSolver ls;
   CreateTestModel(ls);
-  localsolver::LSParam param = ls.getParam();
-  EXPECT_EQ(param.getSeed(), TestLocalSolver().GetIntOption("seed"));
-  param.setSeed(0);
-  param.setSeed(INT_MAX);
-  EXPECT_THROW(param.setSeed(-1), localsolver::LSException);
-
-  solver.SetIntOption("seed", 100);
-  EXPECT_EQ(100, solver.GetIntOption("seed"));
-  SolveTestProblem(solver);
-  solver.SetIntOption("seed", 0);
-  EXPECT_THROW(solver.SetIntOption("seed", -1), mp::InvalidOptionValue);
-  EXPECT_THROW(solver.SetStrOption("seed", "oops"), mp::OptionError);
+  auto param = ls.getParam();
+  EXPECT_EQ((param.*opt.get)(), mp::LocalSolver().GetIntOption(opt.name));
 }
 
-TEST(LocalSolverTest, ThreadsOption) {
-  struct TestLocalSolver : mp::LocalSolver {
-    void DoSolve(localsolver::LocalSolver &s) {
-      EXPECT_EQ(10, s.getParam().getNbThreads());
-    }
-  } solver;
-
-  // Check that the default value agrees with LocalSolver.
+// Test that the range agrees with LocalSolver.
+TEST_P(OptionTest, Range) {
+  auto opt = GetParam();
   localsolver::LocalSolver ls;
   CreateTestModel(ls);
-  localsolver::LSParam param = ls.getParam();
-  EXPECT_EQ(param.getNbThreads(), TestLocalSolver().GetIntOption("threads"));
-  param.setNbThreads(1);
-  param.setNbThreads(1024);
-  EXPECT_THROW(param.setNbThreads(0), localsolver::LSException);
-  EXPECT_THROW(param.setNbThreads(1025), localsolver::LSException);
-
-  solver.SetIntOption("threads", 10);
-  EXPECT_EQ(10, solver.GetIntOption("threads"));
-  SolveTestProblem(solver);
-  solver.SetIntOption("threads", 1);
-  EXPECT_THROW(solver.SetIntOption("threads", 0), mp::InvalidOptionValue);
-  EXPECT_THROW(solver.SetStrOption("threads", "oops"), mp::OptionError);
+  auto param = ls.getParam();
+  mp::LocalSolver solver;
+  (param.*opt.set)(opt.lb);
+  solver.SetIntOption(opt.name, opt.lb);
+  (param.*opt.set)(opt.ub);
+  solver.SetIntOption(opt.name, opt.ub);
+  EXPECT_THROW((param.*opt.set)(opt.lb - 1), localsolver::LSException);
+  EXPECT_THROW(solver.SetIntOption(opt.name, opt.lb - 1),
+               mp::InvalidOptionValue);
+  if (opt.ub != INT_MAX) {
+    EXPECT_THROW((param.*opt.set)(opt.ub + 1), localsolver::LSException);
+    EXPECT_THROW(solver.SetIntOption(opt.name, opt.ub + 1),
+                 mp::InvalidOptionValue);
+  }
 }
 
-// TODO: test solver options annealing_level, verbosity,
+// Test that the option value is passed to LocalSolver.
+TEST_P(OptionTest, PassValue) {
+  auto opt = GetParam();
+  enum {TEST_VALUE = 7};
+  struct TestLocalSolver : mp::LocalSolver {
+    IntOption opt;
+    void DoSolve(localsolver::LocalSolver &s) {
+      EXPECT_EQ(TEST_VALUE, (s.getParam().*opt.get)());
+    }
+    TestLocalSolver(IntOption opt) : opt(opt) {}
+  } solver(opt);
+  solver.SetIntOption(opt.name, TEST_VALUE);
+  EXPECT_EQ(TEST_VALUE, solver.GetIntOption(opt.name));
+  SolveTestProblem(solver);
+  EXPECT_THROW(solver.SetStrOption(opt.name, "oops"), mp::OptionError);
+}
+
+IntOption options[] = {
+  {"seed", 0, 0, INT_MAX, &LSParam::getSeed, &LSParam::setSeed},
+  {"threads", 2, 1, 1024, &LSParam::getNbThreads, &LSParam::setNbThreads},
+  {"annealing_level", 1, 0, 9,
+   &LSParam::getAnnealingLevel, &LSParam::setAnnealingLevel},
+};
+INSTANTIATE_TEST_CASE_P(, OptionTest, testing::ValuesIn(options));
+
+// TODO: test solver options verbosity,
 //       time_between_displays, logfile, timelimit, iterlimit
