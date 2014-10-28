@@ -105,7 +105,6 @@ LSProblemBuilder::LinearObjBuilder
   ls::LSObjectiveDirection dir =
       type == obj::MIN ? ls::OD_Minimize : ls::OD_Maximize;
   ls::LSExpression sum = model_.createExpression(ls::O_Sum);
-  // TODO: multiobjective optimization support
   model_.addObjective(sum, dir);
   return LinearObjBuilder(*this, expr, sum);
 }
