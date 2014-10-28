@@ -471,7 +471,7 @@ TEST_F(ExprTest, CreateUsesIs) {
 }
 
 TEST_F(ExprTest, EqualityOperator) {
-  expr raw1 = {}, raw2 = {};
+  expr raw1 = expr(), raw2 = expr();
   EXPECT_TRUE(::MakeExpr(&raw1) != Expr());
   EXPECT_TRUE(::MakeExpr(&raw1) != ::MakeExpr(&raw2));
   EXPECT_TRUE(Expr() == Expr());
@@ -1002,7 +1002,7 @@ TEST_F(ExprTest, ExprVisitorForwardsUnhandled) {
     TestVisitor v;
     const OpInfo &info = OP_INFO[i];
     if (info.kind == ex::UNKNOWN || info.kind == ex::STRING) continue;
-    expr raw = {reinterpret_cast<efunc*>(i - 1)};
+    expr raw = RawExpr(i - 1);
     Expr e(::MakeExpr(&raw));
     Expr result;
     if (NumericExpr ne = Cast<NumericExpr>(e))
@@ -1021,7 +1021,7 @@ TEST_F(ExprTest, ExprVisitorUnhandledThrows) {
 }
 
 TEST_F(ExprTest, ExprVisitorInvalidExpr) {
-  expr raw = {reinterpret_cast<efunc*>(opcode(ex::CONSTANT))};
+  expr raw = RawExpr(opcode(ex::CONSTANT));
   NumericExpr ne(::MakeExpr<NumericExpr>(&raw));
   LogicalExpr le(::MakeExpr<LogicalExpr>(&raw));
   raw.op = reinterpret_cast<efunc*>(-1);
@@ -1041,8 +1041,8 @@ struct TestConverter : mp::ExprConverter<TestConverter, void, TestLResult> {
 };
 
 void CheckConversion(ex::Kind from_kind, ex::Kind to_kind) {
-  expr lhs = {reinterpret_cast<efunc*>(opcode(ex::CONSTANT))}, rhs = lhs;
-  expr raw = {reinterpret_cast<efunc*>(opcode(from_kind))};
+  expr lhs = RawExpr(opcode(ex::CONSTANT)), rhs = lhs;
+  expr raw = RawExpr(opcode(from_kind));
   raw.L.e = &lhs;
   raw.R.e = &rhs;
   TestConverter converter;
@@ -1077,8 +1077,9 @@ struct TestTerm {
 };
 
 TEST_F(ExprTest, LinearExprIterator) {
-  TestGrad g2 = {0};
-  TestGrad g1 = {&g2};
+  auto g2 = TestGrad();
+  auto g1 = TestGrad();
+  g1.next = &g2;
   LinearExpr<TestTerm>::iterator i(&g1), i2(i), i3(&g2), end(0);
   EXPECT_TRUE(i == i2);
   EXPECT_TRUE(i != i3);
