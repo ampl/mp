@@ -27,6 +27,14 @@
 #include "mp/clock.h"
 
 namespace {
+
+const mp::OptionValueInfo VERBOSITIES[] = {
+  {"quiet", "All the traces are disabled (default).", 0},
+  {"normal", "Normal verbosity.", 1},
+  {"detailed",
+   "Detailed verbosity. Displays extended statistics on the model.", 10}
+};
+
 // Returns the value of an expression.
 inline double GetValue(localsolver::LSExpression e) {
   return e.isDouble() ? e.getDoubleValue() : e.getValue();
@@ -349,11 +357,41 @@ ls::LSExpression LSProblemBuilder::EndAllDiff(AllDiffArgHandler handler) {
   return alldiff;
 }
 
+std::string LocalSolver::GetVerbosity(const SolverOption &opt) const {
+  int value = options_[VERBOSITY];
+  for (mp::ValueArrayRef::iterator
+      i = opt.values().begin(), e = opt.values().end(); i != e; ++i) {
+    if (i->data == value)
+      return i->value;
+  }
+  return fmt::format("{}", value);
+}
+
+void LocalSolver::SetVerbosity(const SolverOption &opt, const char *value) {
+  char *end = 0;
+  long intval = std::strtol(value, &end, 0);
+  if (!*end) {
+    if (intval != 0 && intval != 1 && intval != 10)
+      throw InvalidOptionValue(opt, value);
+    options_[VERBOSITY] = intval;
+    return;
+  }
+  for (mp::ValueArrayRef::iterator
+      i = opt.values().begin(), e = opt.values().end(); i != e; ++i) {
+    if (std::strcmp(i->value, value) == 0) {
+      options_[VERBOSITY] = i->data;
+      return;
+    }
+  }
+  throw InvalidOptionValue(opt, value);
+}
+
 LocalSolver::LocalSolver()
   : SolverImpl<LSProblemBuilder>("localsolver", 0, 20140710, MULTIPLE_OBJ) {
   options_[SEED] = 0;
   options_[THREADS] = 2;
   options_[ANNEALING_LEVEL] = 1;
+  options_[VERBOSITY] = 0;
   options_[TIMELIMIT] = 0;
 
   std::string version = fmt::format("{}.{}",
@@ -385,6 +423,13 @@ LocalSolver::LocalSolver()
       &LocalSolver::DoGetIntOption, &LocalSolver::SetAnnealingLevel,
       ANNEALING_LEVEL);
 
+  AddStrOption("verbosity",
+      "Verbosity level of the solver. Possible values:\n"
+      "\n"
+      ".. value-table::\n"
+      "\n",
+      &LocalSolver::GetVerbosity, &LocalSolver::SetVerbosity, VERBOSITIES);
+
   AddIntOption("timelimit",
       "Time limit in seconds (positive integer) or 0 for no limit. "
       "Default = no limit.",
@@ -408,6 +453,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   param.setSeed(options_[SEED]);
   param.setNbThreads(options_[THREADS]);
   param.setAnnealingLevel(options_[ANNEALING_LEVEL]);
+  param.setVerbosity(options_[VERBOSITY]);
   ls::LSPhase phase = solver.createPhase();
   if (int timelimit = options_[TIMELIMIT])
     phase.setTimeLimit(timelimit);

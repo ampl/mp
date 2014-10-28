@@ -312,6 +312,7 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
     SEED,
     THREADS,
     ANNEALING_LEVEL,
+    VERBOSITY,
     TIMELIMIT,
     NUM_OPTIONS
   };
@@ -339,6 +340,9 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
       throw InvalidOptionValue(opt, value);
     options_[id] = value;
   }
+
+  std::string GetVerbosity(const SolverOption &opt) const;
+  void SetVerbosity(const SolverOption &opt, const char *value);
 
  public:
   LocalSolver();
