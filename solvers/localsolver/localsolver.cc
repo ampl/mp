@@ -483,7 +483,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   double setup_time = GetTimeAndReset(time);
 
   // Solve the problem.
-  solver.solve();
+  DoSolve(solver);
 
   // Convert solution status.
   int solve_code = sol::UNKNOWN;

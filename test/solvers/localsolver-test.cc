@@ -32,3 +32,43 @@ enum { FEATURES = ~feature::PLTERM };
 #define MP_TSP_SIZE 9
 
 #include "nl-solver-test.h"
+
+// Creates and solves a test problem.
+void SolveTestProblem(mp::LocalSolver &s) {
+  mp::LSProblemBuilder pb(s.GetProblemBuilder(""));
+  MakeAllDiffProblem(pb);
+  TestSolutionHandler sh;
+  s.Solve(pb, sh);
+}
+
+// Creates a test LocalSolver model.
+void CreateTestModel(localsolver::LocalSolver &s) {
+  s.getParam().setVerbosity(0);
+  localsolver::LSModel model = s.getModel();
+  model.addObjective(model.createConstant(localsolver::lsint(0)),
+                     localsolver::OD_Minimize);
+  model.close();
+}
+
+TEST(LocalSolverTest, SeedOption) {
+  struct TestLocalSolver : mp::LocalSolver {
+    void DoSolve(localsolver::LocalSolver &s) {
+      EXPECT_EQ(100, s.getParam().getSeed());
+    }
+  } solver;
+
+  // Check that the default value agrees with LocalSolver.
+  localsolver::LocalSolver ls;
+  CreateTestModel(ls);
+  EXPECT_EQ(ls.getParam().getSeed(), TestLocalSolver().GetIntOption("seed"));
+
+  solver.SetIntOption("seed", 100);
+  EXPECT_EQ(100, solver.GetIntOption("seed"));
+  SolveTestProblem(solver);
+  solver.SetIntOption("seed", 0);
+  EXPECT_THROW(solver.SetIntOption("seed", -1), mp::InvalidOptionValue);
+  EXPECT_THROW(solver.SetStrOption("seed", "oops"), mp::OptionError);
+}
+
+// TODO: test solver options threads, annealing_level, verbosity,
+//       time_between_displays, logfile, timelimit, iterlimit

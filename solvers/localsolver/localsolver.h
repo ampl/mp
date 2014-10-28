@@ -339,6 +339,11 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
   std::string GetLogFile(const SolverOption &) const { return logfile_; }
   void SetLogFile(const SolverOption &, const char *value) { logfile_ = value; }
 
+ protected:
+  virtual void DoSolve(ls::LocalSolver &s) {
+    s.solve();
+  }
+
  public:
   LocalSolver();
 
