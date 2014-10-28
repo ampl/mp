@@ -558,7 +558,7 @@ class ProblemBuilderToNLAdapter {
   // Receives notification of an objective type and the nonlinear part of
   // an objective expression.
   void OnObj(int index, obj::Type type, NumericExpr expr) {
-    assert(0 <= index && index < objs_.size());
+    assert(0 <= index && static_cast<unsigned>(index) < objs_.size());
     if (!NeedObj(index))
       return;  // Ignore inactive objective.
     ObjInfo &obj = objs_[index];
@@ -569,7 +569,7 @@ class ProblemBuilderToNLAdapter {
   // Receives notification of the nonlinear part of an algebraic constraint
   // expression.
   void OnAlgebraicCon(int index, NumericExpr expr) {
-    assert(0 <= index && index < cons_.size());
+    assert(0 <= index && static_cast<unsigned>(index) < cons_.size());
     cons_[index].expr = expr;
   }
 
@@ -587,7 +587,7 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of the linear part of an objective expression.
   LinearObjHandler OnLinearObjExpr(int obj_index, int num_linear_terms) {
-    assert(0 <= obj_index && obj_index < objs_.size());
+    assert(0 <= obj_index && static_cast<unsigned>(obj_index) < objs_.size());
     const ObjInfo &obj_info = objs_[obj_index];
     return builder_.AddObj(obj_info.type, obj_info.expr, num_linear_terms);
   }
@@ -608,7 +608,7 @@ class ProblemBuilderToNLAdapter {
   }
   void EndCommonExpr(int index, LinearExprHandler handler,
                      NumericExpr expr, int position) {
-    assert(0 <= index && index < exprs_.size());
+    assert(0 <= index && static_cast<unsigned>(index) < exprs_.size());
     exprs_[index] = builder_.EndCommonExpr(handler, expr, position);
   }
 
@@ -674,7 +674,7 @@ class ProblemBuilderToNLAdapter {
 
   // Receives notification of a common expression (defined variable) reference.
   NumericExpr OnCommonExprRef(int index) {
-    assert(0 <= index && index < exprs_.size());
+    assert(0 <= index && static_cast<unsigned>(index) < exprs_.size());
     return exprs_[index];
   }
 
