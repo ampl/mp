@@ -313,12 +313,14 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
     THREADS,
     ANNEALING_LEVEL,
     VERBOSITY,
-    TIMELIMIT,
     TIME_BETWEEN_DISPLAYS,
+    TIMELIMIT,
+    ITERLIMIT,
     NUM_OPTIONS
   };
 
   int options_[NUM_OPTIONS];
+  std::string logfile_;
 
   int DoGetIntOption(const SolverOption &, Option id) const {
     return options_[id];
@@ -333,6 +335,9 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
 
   std::string GetVerbosity(const SolverOption &opt) const;
   void SetVerbosity(const SolverOption &opt, const char *value);
+
+  std::string GetLogFile(const SolverOption &) const { return logfile_; }
+  void SetLogFile(const SolverOption &, const char *value) { logfile_ = value; }
 
  public:
   LocalSolver();

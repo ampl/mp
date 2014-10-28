@@ -393,6 +393,7 @@ LocalSolver::LocalSolver()
   options_[VERBOSITY] = 0;
   options_[TIME_BETWEEN_DISPLAYS] = 1;
   options_[TIMELIMIT] = 0;
+  options_[ITERLIMIT] = 0;
 
   std::string version = fmt::format("{}.{}",
       localsolver::LSVersion::getMajorVersionNumber(),
@@ -437,10 +438,19 @@ LocalSolver::LocalSolver()
       &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<1, 65535>,
       TIME_BETWEEN_DISPLAYS);
 
+  AddStrOption("logfile",
+      "Path of the LocalSolver log file. Default = "" (no log file).",
+      &LocalSolver::GetLogFile, &LocalSolver::SetLogFile);
+
   AddIntOption("timelimit",
       "Time limit in seconds (positive integer) or 0 for no limit. "
       "Default = no limit.",
       &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption, TIMELIMIT);
+
+  AddIntOption("iterlimit",
+      "Iteration limit (positive integer) or 0 for no limit. "
+      "Default = no limit.",
+      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption, ITERLIMIT);
 }
 
 void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
@@ -461,12 +471,14 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   param.setAnnealingLevel(options_[ANNEALING_LEVEL]);
   param.setVerbosity(options_[VERBOSITY]);
   param.setTimeBetweenDisplays(options_[TIME_BETWEEN_DISPLAYS]);
+  if (!logfile_.empty())
+    param.setLogFile(logfile_);
   ls::LSPhase phase = solver.createPhase();
-  if (int timelimit = options_[TIMELIMIT])
-    phase.setTimeLimit(timelimit);
+  if (int limit = options_[TIMELIMIT])
+    phase.setTimeLimit(limit);
+  if (int limit = options_[ITERLIMIT])
+    phase.setIterationLimit(limit);
   interrupter()->SetHandler(StopSolver, &solver);
-
-  // TODO: more options
 
   double setup_time = GetTimeAndReset(time);
 
