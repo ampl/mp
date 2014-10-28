@@ -24,6 +24,7 @@
 #define MP_SOLVERS_LOCALSOLVER_H_
 
 #include <cassert>
+#include <climits>
 #include <vector>
 
 #include <localsolver.h>
@@ -326,7 +327,7 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
     return options_[id];
   }
 
-  template <int LB = 0, int UB = std::numeric_limits<int>::max()>
+  template <int LB = 0, int UB = INT8_MAX>
   void DoSetIntOption(const SolverOption &opt, int value, Option id) {
     if (value < LB || value > UB)
       throw InvalidOptionValue(opt, value);
