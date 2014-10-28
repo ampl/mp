@@ -314,6 +314,7 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
     ANNEALING_LEVEL,
     VERBOSITY,
     TIMELIMIT,
+    TIME_BETWEEN_DISPLAYS,
     NUM_OPTIONS
   };
 
@@ -323,20 +324,9 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
     return options_[id];
   }
 
-  void SetNonnegativeOption(const SolverOption &opt, int value, Option id) {
-    if (value < 0)
-      throw InvalidOptionValue(opt, value);
-    options_[id] = value;
-  }
-
-  void SetThreads(const SolverOption &opt, int value, Option id) {
-    if (value < 1 || value > 1024)
-      throw InvalidOptionValue(opt, value);
-    options_[id] = value;
-  }
-
-  void SetAnnealingLevel(const SolverOption &opt, int value, Option id) {
-    if (value < 0 || value > 9)
+  template <int LB = 0, int UB = std::numeric_limits<int>::max()>
+  void DoSetIntOption(const SolverOption &opt, int value, Option id) {
+    if (value < LB || value > UB)
       throw InvalidOptionValue(opt, value);
     options_[id] = value;
   }

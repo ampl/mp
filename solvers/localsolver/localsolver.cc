@@ -391,6 +391,7 @@ LocalSolver::LocalSolver()
   options_[THREADS] = 2;
   options_[ANNEALING_LEVEL] = 1;
   options_[VERBOSITY] = 0;
+  options_[TIME_BETWEEN_DISPLAYS] = 1;
   options_[TIMELIMIT] = 0;
 
   std::string version = fmt::format("{}.{}",
@@ -411,15 +412,16 @@ LocalSolver::LocalSolver()
   AddIntOption("seed",
       "Seed of the pseudo-random number generator used by the solver. "
       "Default = 0.",
-      &LocalSolver::DoGetIntOption, &LocalSolver::SetNonnegativeOption, SEED);
+      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption, SEED);
 
   AddIntOption("threads",
       "Number of threads used to parallelize the search. Default = 2.",
-      &LocalSolver::DoGetIntOption, &LocalSolver::SetThreads, THREADS);
+      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<1, 1024>,
+      THREADS);
 
   AddIntOption("annealing_level",
       "Simulated annealing level. Default = 1.",
-      &LocalSolver::DoGetIntOption, &LocalSolver::SetAnnealingLevel,
+      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<0, 9>,
       ANNEALING_LEVEL);
 
   AddStrOption("verbosity",
@@ -429,11 +431,16 @@ LocalSolver::LocalSolver()
       "\n",
       &LocalSolver::GetVerbosity, &LocalSolver::SetVerbosity, VERBOSITIES);
 
+  AddIntOption("time_between_displays",
+      "Time in seconds between two consecutive displays in console while "
+      "the solver is running. Default = 1.",
+      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<1, 65535>,
+      TIME_BETWEEN_DISPLAYS);
+
   AddIntOption("timelimit",
       "Time limit in seconds (positive integer) or 0 for no limit. "
       "Default = no limit.",
-      &LocalSolver::DoGetIntOption, &LocalSolver::SetNonnegativeOption,
-      TIMELIMIT);
+      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption, TIMELIMIT);
 }
 
 void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
@@ -453,6 +460,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   param.setNbThreads(options_[THREADS]);
   param.setAnnealingLevel(options_[ANNEALING_LEVEL]);
   param.setVerbosity(options_[VERBOSITY]);
+  param.setTimeBetweenDisplays(options_[TIME_BETWEEN_DISPLAYS]);
   ls::LSPhase phase = solver.createPhase();
   if (int timelimit = options_[TIMELIMIT])
     phase.setTimeLimit(timelimit);
