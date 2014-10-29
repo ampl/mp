@@ -35,27 +35,6 @@ enum { FEATURES = ~feature::PLTERM };
 
 using localsolver::LSParam;
 
-template <typename T = int>
-struct TestLocalSolver : mp::LocalSolver {
-  T (LSParam::*get)() const;
-  T value;
-  void DoSolve(localsolver::LocalSolver &s) {
-    value = (s.getParam().*get)();
-  }
-  TestLocalSolver() : value() {}
-};
-
-// Creates and solves a test problem.
-template <typename T>
-T GetOption(TestLocalSolver<T> &solver, T (LSParam::*get)() const) {
-  mp::LSProblemBuilder pb(solver.GetProblemBuilder(""));
-  MakeAllDiffProblem(pb);
-  TestSolutionHandler sh;
-  solver.get = get;
-  solver.Solve(pb, sh);
-  return solver.value;
-}
-
 // Creates a test LocalSolver model.
 void CreateTestModel(localsolver::LocalSolver &s) {
   s.getParam().setVerbosity(0);
@@ -65,42 +44,91 @@ void CreateTestModel(localsolver::LocalSolver &s) {
   model.close();
 }
 
-struct IntOption {
+template <typename T>
+struct BasicOption {
   const char *name;
   int default_value;
   int lb;
   int ub;
-  int (LSParam::*get)() const;
-  void (LSParam::*set)(int);
+
+  BasicOption(const char *name, int default_value, int lb, int ub)
+    : name(name), default_value(default_value), lb(lb), ub(ub) {}
+  virtual ~BasicOption() {}
+
+  typedef localsolver::LocalSolver Solver;
+
+  virtual T get(Solver &s) const = 0;
+  virtual void set(Solver &s, T value) const = 0;
 };
 
-class OptionTest : public testing::TestWithParam<IntOption> {};
+template <typename T>
+struct Option : public BasicOption<T> {
+  typedef T (LSParam::*Getter)() const;
+  Getter get_;
+  typedef void (LSParam::*Setter)(T);
+  Setter set_;
+
+  explicit Option(Getter get)
+    : BasicOption<T>(0, 0, 0, 0), get_(get), set_(0) {}
+
+  Option(const char *name, int default_value,
+         int lb, int ub, Getter get, Setter set)
+    : BasicOption<T>(name, default_value, lb, ub), get_(get), set_(set) {}
+
+  typedef localsolver::LocalSolver Solver;
+
+  T get(Solver &s) const { return (s.getParam().*get_)(); }
+  void set(Solver &s, T value) const { (s.getParam().*set_)(value); }
+};
+
+typedef Option<int> IntOption;
+
+template <typename T = int>
+struct TestLocalSolver : mp::LocalSolver {
+  const BasicOption<T> *opt;
+  T value;
+  void DoSolve(localsolver::LocalSolver &s) {
+    value = opt->get(s);
+  }
+  TestLocalSolver() : opt(), value() {}
+};
+
+// Creates and solves a test problem.
+template <typename T>
+T GetOption(TestLocalSolver<T> &solver, const BasicOption<T> &opt) {
+  mp::LSProblemBuilder pb(solver.GetProblemBuilder(""));
+  MakeAllDiffProblem(pb);
+  TestSolutionHandler sh;
+  solver.opt = &opt;
+  solver.Solve(pb, sh);
+  return solver.value;
+}
+
+class OptionTest : public testing::TestWithParam<BasicOption<int>*> {};
 
 // Test that the default value agrees with LocalSolver.
 TEST_P(OptionTest, DefaultValue) {
-  auto opt = GetParam();
+  auto &opt = *GetParam();
   localsolver::LocalSolver ls;
   CreateTestModel(ls);
-  auto param = ls.getParam();
-  EXPECT_EQ((param.*opt.get)(), mp::LocalSolver().GetIntOption(opt.name));
+  EXPECT_EQ(opt.get(ls), mp::LocalSolver().GetIntOption(opt.name));
 }
 
 // Test that the range agrees with LocalSolver.
 TEST_P(OptionTest, Range) {
-  auto opt = GetParam();
+  auto &opt = *GetParam();
   localsolver::LocalSolver ls;
   CreateTestModel(ls);
-  auto param = ls.getParam();
   mp::LocalSolver solver;
-  (param.*opt.set)(opt.lb);
+  opt.set(ls, opt.lb);
   solver.SetIntOption(opt.name, opt.lb);
-  (param.*opt.set)(opt.ub);
+  opt.set(ls, opt.ub);
   solver.SetIntOption(opt.name, opt.ub);
-  EXPECT_THROW((param.*opt.set)(opt.lb - 1), localsolver::LSException);
+  EXPECT_THROW(opt.set(ls, opt.lb - 1), localsolver::LSException);
   EXPECT_THROW(solver.SetIntOption(opt.name, opt.lb - 1),
                mp::InvalidOptionValue);
   if (opt.ub != INT_MAX) {
-    EXPECT_THROW((param.*opt.set)(opt.ub + 1), localsolver::LSException);
+    EXPECT_THROW(opt.set(ls, opt.ub + 1), localsolver::LSException);
     EXPECT_THROW(solver.SetIntOption(opt.name, opt.ub + 1),
                  mp::InvalidOptionValue);
   }
@@ -108,24 +136,26 @@ TEST_P(OptionTest, Range) {
 
 // Test that the option value is passed to LocalSolver.
 TEST_P(OptionTest, PassValue) {
-  auto opt = GetParam();
+  auto &opt = *GetParam();
   TestLocalSolver<> solver;
   enum {TEST_VALUE = 7};
   solver.SetIntOption(opt.name, TEST_VALUE);
   EXPECT_EQ(TEST_VALUE, solver.GetIntOption(opt.name));
-  EXPECT_EQ(TEST_VALUE, GetOption(solver, opt.get));
+  EXPECT_EQ(TEST_VALUE, GetOption(solver, opt));
   EXPECT_THROW(solver.SetStrOption(opt.name, "oops"), mp::OptionError);
 }
 
-IntOption options[] = {
-  {"seed", 0, 0, INT_MAX, &LSParam::getSeed, &LSParam::setSeed},
-  {"threads", 2, 1, 1024, &LSParam::getNbThreads, &LSParam::setNbThreads},
-  {"annealing_level", 1, 0, 9,
-   &LSParam::getAnnealingLevel, &LSParam::setAnnealingLevel},
-  {"time_between_displays", 1, 1, 65535,
-   &LSParam::getTimeBetweenDisplays, &LSParam::setTimeBetweenDisplays},
-};
-INSTANTIATE_TEST_CASE_P(, OptionTest, testing::ValuesIn(options));
+IntOption seed("seed", 0, 0, INT_MAX, &LSParam::getSeed, &LSParam::setSeed);
+IntOption threads(
+    "threads", 2, 1, 1024, &LSParam::getNbThreads, &LSParam::setNbThreads);
+IntOption annealing_level(
+    "annealing_level", 1, 0, 9,
+    &LSParam::getAnnealingLevel, &LSParam::setAnnealingLevel);
+IntOption time_between_displays(
+    "time_between_displays", 1, 1, 65535,
+    &LSParam::getTimeBetweenDisplays, &LSParam::setTimeBetweenDisplays);
+INSTANTIATE_TEST_CASE_P(, OptionTest, testing::Values(
+                          &seed, &annealing_level, &time_between_displays));
 
 TEST(LocalSolverTest, VerbosityOption) {
   TestLocalSolver<> solver;
@@ -156,7 +186,7 @@ TEST(LocalSolverTest, VerbosityOption) {
 
   // Test that value is passed to LocalSolver.
   solver.SetStrOption("verbosity", "normal");
-  EXPECT_EQ(1, GetOption(solver, &LSParam::getVerbosity));
+  EXPECT_EQ(1, GetOption(solver, IntOption(&LSParam::getVerbosity)));
 
   EXPECT_THROW(solver.SetDblOption("verbosity", 1.2), mp::OptionError);
   EXPECT_THROW(solver.SetStrOption("verbosity", "oops"),
@@ -167,7 +197,8 @@ TEST(LocalSolverTest, LogFileOption) {
   TestLocalSolver<std::string> solver;
   EXPECT_EQ("", solver.GetStrOption("logfile"));
   solver.SetStrOption("logfile", "testlog");
-  EXPECT_EQ("testlog", GetOption(solver, &LSParam::getLogFile));
+  EXPECT_EQ("testlog",
+            GetOption(solver, Option<std::string>(&LSParam::getLogFile)));
   EXPECT_THROW(solver.SetIntOption("logfile", 1), mp::OptionError);
 }
 
