@@ -108,8 +108,8 @@ class SSDSolver : public ASLSolver {
   }
 
   std::string GetSolverName(const SolverOption &) const { return solver_name_; }
-  void SetSolverName(const SolverOption &, const char *value) {
-    solver_name_ = value;
+  void SetSolverName(const SolverOption &, fmt::StringRef value) {
+    solver_name_ = value.c_str();
   }
 
  protected:
