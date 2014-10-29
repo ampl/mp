@@ -174,14 +174,18 @@ class LSProblemBuilder :
     model_.addConstraint(expr);
   }
 
-  LinearExprBuilder BeginCommonExpr(int) {
+  LinearExprBuilder BeginCommonExpr(int num_terms) {
     ls::LSExpression expr;
-    return LinearExprBuilder(*this, expr, model_.createExpression(ls::O_Sum));
+    return LinearExprBuilder(
+          *this, expr,
+          num_terms != 0 ? model_.createExpression(ls::O_Sum) : expr);
   }
 
   ls::LSExpression EndCommonExpr(
       LinearExprBuilder builder, ls::LSExpression expr, int ) {
     ls::LSExpression result = builder.expr();
+    if (result == ls::LSExpression())
+      return expr;
     if (expr != ls::LSExpression())
       result.addOperand(expr);
     return result;
