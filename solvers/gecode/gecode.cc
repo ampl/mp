@@ -553,10 +553,10 @@ std::string GecodeSolver::GetEnumOption(const SolverOption &opt, T *ptr) const {
 
 template <typename T>
 void GecodeSolver::SetEnumOption(
-    const SolverOption &opt, const char *value, T *ptr) {
+    const SolverOption &opt, fmt::StringRef value, T *ptr) {
   for (mp::ValueArrayRef::iterator
       i = opt.values().begin(), e = opt.values().end(); i != e; ++i) {
-    if (std::strcmp(value, i->value) == 0) {
+    if (std::strcmp(value.c_str(), i->value) == 0) {
       *ptr = static_cast<T>(i->data);
       return;
     }

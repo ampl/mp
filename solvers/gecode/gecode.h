@@ -298,7 +298,7 @@ class GecodeSolver : public ASLSolver {
   std::string GetEnumOption(const SolverOption &opt, T *ptr) const;
 
   template <typename T>
-  void SetEnumOption(const SolverOption &opt, const char *value, T *ptr);
+  void SetEnumOption(const SolverOption &opt, fmt::StringRef value, T *ptr);
 
   template <typename T, typename OptionT>
   T GetOption(const SolverOption &, OptionT *option) const {
