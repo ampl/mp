@@ -432,7 +432,7 @@ class JaCoPSolver : public ASLSolver {
   std::string GetEnumOption(
       const SolverOption &opt, const char **ptr) const;
   void SetEnumOption(const SolverOption &opt,
-      const char *value, const char **ptr);
+      fmt::StringRef value, const char **ptr);
 
   double GetOutputFrequency(const SolverOption &) const {
     return output_frequency_;

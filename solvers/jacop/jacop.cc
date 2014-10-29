@@ -461,10 +461,10 @@ std::string JaCoPSolver::GetEnumOption(
 }
 
 void JaCoPSolver::SetEnumOption(
-    const SolverOption &opt, const char *value, const char **ptr) {
+    const SolverOption &opt, fmt::StringRef value, const char **ptr) {
   for (mp::ValueArrayRef::iterator
       i = opt.values().begin(), e = opt.values().end(); i != e; ++i) {
-    if (std::strcmp(value, i->value) == 0) {
+    if (std::strcmp(value.c_str(), i->value) == 0) {
       *ptr = reinterpret_cast<const char*>(i->data);
       return;
     }
