@@ -212,10 +212,6 @@ void FormatRST(fmt::Writer &w,
   parser.Parse(s.c_str());
 }
 
-const char OptionHelper<int>::TYPE_NAME[] = "int";
-const char OptionHelper<double>::TYPE_NAME[] = "double";
-const char OptionHelper<std::string>::TYPE_NAME[] = "string";
-
 int OptionHelper<int>::Parse(const char *&s) {
   char *end = 0;
   long value = std::strtol(s, &end, 10);
@@ -380,41 +376,33 @@ Solver::Solver(
   };
   AddOption(OptionPtr(new VersionOption(*this)));
 
-  struct WantSolOption : TypedSolverOption<int> {
-    Solver &s;
-    WantSolOption(Solver &s) : TypedSolverOption<int>("wantsol",
+  AddIntOption(
+        "wantsol",
         "In a stand-alone invocation (no ``-AMPL`` on the command line), "
         "what solution information to write.  Sum of\n"
         "\n"
         "| 1 - write ``.sol`` file\n"
         "| 2 - primal variables to stdout\n"
         "| 4 - dual variables to stdout\n"
-        "| 8 - suppress solution message\n"), s(s) {}
+        "| 8 - suppress solution message\n",
+        &Solver::GetWantSol, &Solver::SetWantSol);
 
-    int GetValue() const { return s.wantsol(); }
-    void SetValue(int value) {
-      if ((value & ~0xf) != 0)
-        throw InvalidOptionValue("wantsol", value);
-      s.wantsol_ = value;
-    }
-  };
-  AddOption(OptionPtr(new WantSolOption(*this)));
-
-  AddIntOption("objno",
-      "Objective to optimize:\n"
-      "\n"
-      "| 0 - none\n"
-      "| 1 - first (default, if available)\n"
-      "| 2 - second (if available), etc.\n",
-      &Solver::GetObjNo, &Solver::SetObjNo);
+  AddIntOption(
+        "objno",
+        "Objective to optimize:\n"
+        "\n"
+        "| 0 - none\n"
+        "| 1 - first (default, if available)\n"
+        "| 2 - second (if available), etc.\n",
+        &Solver::GetObjNo, &Solver::SetObjNo);
 
   struct BoolOption : TypedSolverOption<int> {
     bool &value_;
     BoolOption(bool &value, const char *name, const char *description)
     : TypedSolverOption<int>(name, description), value_(value) {}
 
-    int GetValue() const { return value_; }
-    void SetValue(int value) {
+    void GetValue(fmt::LongLong &value) const { value = value_; }
+    void SetValue(fmt::LongLong value) {
       if (value != 0 && value != 1)
         throw InvalidOptionValue(name(), value);
       value_ = value != 0;
@@ -439,22 +427,15 @@ Solver::Solver(
         "0 or 1 (default 0): Whether to count the number of solutions "
         "and return it in the ``.nsol`` problem suffix.")));
 
-    struct StringOption : TypedSolverOption<std::string> {
-      std::string &value_;
-      StringOption(std::string &value,
-          const char *name, const char *description)
-      : TypedSolverOption<std::string>(name, description), value_(value) {}
-
-      std::string GetValue() const { return value_; }
-      void SetValue(const char *value) { value_ = value; }
-    };
-    AddOption(OptionPtr(new StringOption(solution_stub_, "solutionstub",
-        "Stub for solution files.  If ``solutionstub`` is specified, "
-        "found solutions are written to files (``solutionstub & '1' & "
-        "'.sol'``) ... (``solutionstub & Current.nsol & '.sol'``), where "
-        "``Current.nsol`` holds the number of returned solutions.  That is, "
-        "file names are obtained by appending 1, 2, ... ``Current.nsol`` to "
-        "``solutionstub``.")));
+    AddStrOption(
+          "solutionstub",
+          "Stub for solution files.  If ``solutionstub`` is specified, "
+          "found solutions are written to files (``solutionstub & '1' & "
+          "'.sol'``) ... (``solutionstub & Current.nsol & '.sol'``), where "
+          "``Current.nsol`` holds the number of returned solutions.  That is, "
+          "file names are obtained by appending 1, 2, ... ``Current.nsol`` to "
+          "``solutionstub``.",
+          &Solver::GetSolutionStub, &Solver::SetSolutionStub);
   }
 }
 

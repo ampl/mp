@@ -486,8 +486,8 @@ TEST(SolverTest, TypedSolverOption) {
     int value;
     TestOption(const char *name, const char *description)
     : mp::TypedSolverOption<int>(name, description), value(0) {}
-    int GetValue() const { return value; }
-    void SetValue(int value) { this->value = value; }
+    void GetValue(fmt::LongLong &value) const { value = this->value; }
+    void SetValue(fmt::LongLong value) { this->value = value; }
   };
   TestOption opt("abc", "def");
   EXPECT_STREQ("abc", opt.name());

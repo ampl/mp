@@ -102,16 +102,24 @@ struct OptionHelper;
 template <>
 struct OptionHelper<int> {
   typedef int Arg;
-  static const char TYPE_NAME[];
   static void Write(fmt::Writer &w, Arg value) { w << value; }
   static int Parse(const char *&s);
-  static int CastArg(int value) { return value; }
+  static fmt::LongLong CastArg(int value) { return value; }
+};
+
+template <>
+struct OptionHelper<fmt::LongLong> {
+  typedef fmt::LongLong Arg;
+  static void Write(fmt::Writer &w, Arg value) { w << value; }
+  static fmt::LongLong Parse(const char *&s) {
+    return OptionHelper<int>::Parse(s); // TODO
+  }
+  static fmt::LongLong CastArg(fmt::LongLong value) { return value; }
 };
 
 template <>
 struct OptionHelper<double> {
   typedef double Arg;
-  static const char TYPE_NAME[];
   static void Write(fmt::Writer &w, double value) { w << value; }
   static double Parse(const char *&s);
   static double CastArg(double value) { return value; }
@@ -120,7 +128,6 @@ struct OptionHelper<double> {
 template <>
 struct OptionHelper<std::string> {
   typedef fmt::StringRef Arg;
-  static const char TYPE_NAME[];
   static void Write(fmt::Writer &w, const std::string &s) { w << s; }
   static std::string Parse(const char *&s);
   static const char *CastArg(const std::string &s) { return s.c_str(); }
@@ -245,7 +252,7 @@ class SolverOption {
   bool is_flag() const { return is_flag_; }
 
   // Returns the option value.
-  virtual void GetValue(int &) const {
+  virtual void GetValue(fmt::LongLong &) const {
     throw internal::OptionTypeError(name_, "int");
   }
   virtual void GetValue(double &) const {
@@ -253,6 +260,16 @@ class SolverOption {
   }
   virtual void GetValue(std::string &) const {
     throw internal::OptionTypeError(name_, "string");
+  }
+
+  void GetValue(int &int_value) const {
+    fmt::LongLong value = 0;
+    GetValue(value);
+    if (value < std::numeric_limits<int>::min() ||
+        value > std::numeric_limits<int>::max()) {
+      throw Error("Value {} doesn't fit in int", value);
+    }
+    int_value = value;
   }
 
   template <typename T>
@@ -263,7 +280,7 @@ class SolverOption {
   }
 
   // Sets the option value or throws InvalidOptionValue if the value is invalid.
-  virtual void SetValue(int) {
+  virtual void SetValue(fmt::LongLong) {
     throw internal::OptionTypeError(name_, "int");
   }
   virtual void SetValue(double) {
@@ -306,9 +323,7 @@ class TypedSolverOption : public SolverOption {
       ValueArrayRef values = ValueArrayRef())
   : SolverOption(name, description, values) {}
 
-  void Write(fmt::Writer &w) {
-    internal::OptionHelper<T>::Write(w, GetValue<T>());
-  }
+  void Write(fmt::Writer &w) { w << GetValue<T>(); }
 
   void Parse(const char *&s) {
     const char *start = s;
@@ -386,6 +401,20 @@ class Solver : private ErrorHandler,
   ErrorHandler *error_handler_;
   Interrupter *interrupter_;
 
+  int GetWantSol(const SolverOption &) const { return wantsol_; }
+  void SetWantSol(const SolverOption &, int value) {
+    if ((value & ~0xf) != 0)
+      throw InvalidOptionValue("wantsol", value);
+    wantsol_ = value;
+  }
+
+  std::string GetSolutionStub(const SolverOption &) const {
+    return solution_stub_;
+  }
+  void SetSolutionStub(const SolverOption &, fmt::StringRef value) {
+    solution_stub_ = value.c_str();
+  }
+
  public:
   class SuffixInfo {
    private:
@@ -437,12 +466,12 @@ class Solver : private ErrorHandler,
 
   // Handler should be a class derived from Solver that will receive
   // notifications about parsed options.
-  template <typename Handler, typename T>
+  template <typename Handler, typename T, typename AccessorT = T>
   class ConcreteOption : public TypedSolverOption<T> {
    private:
-    typedef typename internal::OptionHelper<T>::Arg Arg;
-    typedef T (Handler::*Get)(const SolverOption &) const;
-    typedef void (Handler::*Set)(const SolverOption &, Arg);
+    typedef AccessorT (Handler::*Get)(const SolverOption &) const;
+    typedef void (Handler::*Set)(
+        const SolverOption &, typename internal::OptionHelper<AccessorT>::Arg);
 
     Handler &handler_;
     Get get_;
@@ -455,16 +484,19 @@ class Solver : private ErrorHandler,
       handler_(static_cast<Handler&>(*s)), get_(get), set_(set) {}
 
     void GetValue(T &value) const { value = (handler_.*get_)(*this); }
-    void SetValue(Arg value) { (handler_.*set_)(*this, value); }
+    void SetValue(typename internal::OptionHelper<T>::Arg value) {
+      (handler_.*set_)(*this, value);
+    }
   };
 
   template <typename Handler, typename T,
-            typename Info, typename InfoArg = Info>
+            typename Info, typename InfoArg = Info, typename AccessorT = T>
   class ConcreteOptionWithInfo : public TypedSolverOption<T> {
    private:
-    typedef typename internal::OptionHelper<T>::Arg Arg;
-    typedef T (Handler::*Get)(const SolverOption &, InfoArg) const;
-    typedef void (Handler::*Set)(const SolverOption &, Arg, InfoArg);
+    typedef AccessorT (Handler::*Get)(const SolverOption &, InfoArg) const;
+    typedef void (Handler::*Set)(
+        const SolverOption &,
+        typename internal::OptionHelper<AccessorT>::Arg, InfoArg);
 
     Handler &handler_;
     Get get_;
@@ -478,7 +510,9 @@ class Solver : private ErrorHandler,
       handler_(static_cast<Handler&>(*s)), get_(get), set_(set), info_(info) {}
 
     void GetValue(T &value) const { value = (handler_.*get_)(*this, info_); }
-    void SetValue(Arg value) { (handler_.*set_)(*this, value, info_); }
+    void SetValue(typename internal::OptionHelper<T>::Arg value) {
+      (handler_.*set_)(*this, value, info_);
+    }
   };
 
   int GetObjNo(const SolverOption &) const { return std::abs(objno_); }
@@ -552,7 +586,7 @@ class Solver : private ErrorHandler,
   void AddIntOption(const char *name, const char *description,
       Int (Handler::*get)(const SolverOption &) const,
       void (Handler::*set)(const SolverOption &, Int)) {
-    AddOption(OptionPtr(new ConcreteOption<Handler, Int>(
+    AddOption(OptionPtr(new ConcreteOption<Handler, fmt::LongLong, Int>(
         name, description, this, get, set)));
   }
 
@@ -567,9 +601,9 @@ class Solver : private ErrorHandler,
       int (Handler::*get)(const SolverOption &, const Info &) const,
       void (Handler::*set)(const SolverOption &, int, const Info &),
       const Info &info) {
-    AddOption(OptionPtr(
-        new ConcreteOptionWithInfo<Handler, int, Info, const Info &>(
-            name, description, this, get, set, info)));
+    AddOption(OptionPtr(new ConcreteOptionWithInfo<
+                        Handler, fmt::LongLong, Info, const Info &, int>(
+                          name, description, this, get, set, info)));
   }
 
   // The same as above but with Info argument passed by value.
@@ -577,8 +611,9 @@ class Solver : private ErrorHandler,
   void AddIntOption(const char *name, const char *description,
       int (Handler::*get)(const SolverOption &, Info) const,
       void (Handler::*set)(const SolverOption &, int, Info), Info info) {
-    AddOption(OptionPtr(new ConcreteOptionWithInfo<Handler, int, Info>(
-            name, description, this, get, set, info)));
+    AddOption(OptionPtr(new ConcreteOptionWithInfo<
+                        Handler, fmt::LongLong, Info, Info, int>(
+                          name, description, this, get, set, info)));
   }
 
   // Adds a double option.
@@ -793,13 +828,13 @@ class Solver : private ErrorHandler,
 
   // Returns the value of an integer option.
   // Throws OptionError if there is no such option or it has a different type.
-  int GetIntOption(const char *name) const {
-    return GetOption(name)->GetValue<int>();
+  fmt::LongLong GetIntOption(const char *name) const {
+    return GetOption(name)->GetValue<fmt::LongLong>();
   }
 
   // Sets the value of an integer option.
   // Throws OptionError if there is no such option or it has a different type.
-  void SetIntOption(const char *name, int value) {
+  void SetIntOption(const char *name, fmt::LongLong value) {
     GetOption(name)->SetValue(value);
   }
 

@@ -346,8 +346,8 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
     logfile_.assign(value.c_str(), value.size());
   }
 
-  int GetIterLimit(const SolverOption &) const { return iterlimit_; }
-  void SetIterLimit(const SolverOption &opt, int value) {
+  fmt::LongLong GetIterLimit(const SolverOption &) const { return iterlimit_; }
+  void SetIterLimit(const SolverOption &opt, fmt::LongLong value) {
     if (value < 1)
       throw InvalidOptionValue(opt, value);
     iterlimit_ = value;
