@@ -409,7 +409,7 @@ LocalSolver::LocalSolver()
       "To set these options, assign a string specifying their values to "
       "the AMPL option ``localsolver_options``. For example::\n"
       "\n"
-      "  ampl: option localsolver_options 'version timelimit=30;\n");
+      "  ampl: option localsolver_options 'version timelimit=30';\n");
 
   AddIntOption("seed",
       "Seed of the pseudo-random number generator used by the solver. "
@@ -441,7 +441,7 @@ LocalSolver::LocalSolver()
       TIME_BETWEEN_DISPLAYS);
 
   AddStrOption("logfile",
-      "Path of the LocalSolver log file. Default = "" (no log file).",
+      "Path of the LocalSolver log file. Default = \"\" (no log file).",
       &LocalSolver::GetLogFile, &LocalSolver::SetLogFile);
 
   AddIntOption("timelimit",
