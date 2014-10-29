@@ -392,7 +392,7 @@ LocalSolver::LocalSolver()
   options_[ANNEALING_LEVEL] = 1;
   options_[VERBOSITY] = 0;
   options_[TIME_BETWEEN_DISPLAYS] = 1;
-  options_[TIMELIMIT] = 0;
+  options_[TIMELIMIT] = INT_MAX;
   options_[ITERLIMIT] = 0;
 
   std::string version = fmt::format("{}.{}",
@@ -444,9 +444,9 @@ LocalSolver::LocalSolver()
       &LocalSolver::GetLogFile, &LocalSolver::SetLogFile);
 
   AddIntOption("timelimit",
-      "Time limit in seconds (positive integer) or 0 for no limit. "
-      "Default = no limit.",
-      &LocalSolver::DoGetIntOption, &LocalSolver::SetNonnegativeIntOption,
+      "Time limit in seconds (positive integer). "
+      "Default = largest positive integer.",
+      &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<1, INT_MAX>,
       TIMELIMIT);
 
   AddIntOption("iterlimit",
@@ -477,8 +477,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
   if (!logfile_.empty())
     param.setLogFile(logfile_);
   ls::LSPhase phase = solver.createPhase();
-  if (int limit = options_[TIMELIMIT])
-    phase.setTimeLimit(limit);
+  phase.setTimeLimit(options_[TIMELIMIT]);
   if (int limit = options_[ITERLIMIT])
     phase.setIterationLimit(limit);
   interrupter()->SetHandler(StopSolver, &solver);

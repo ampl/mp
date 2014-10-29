@@ -34,6 +34,7 @@ enum { FEATURES = ~feature::PLTERM };
 #include "nl-solver-test.h"
 
 using localsolver::LSParam;
+using localsolver::LSPhase;
 
 // Creates a test LocalSolver model.
 void CreateTestModel(localsolver::LocalSolver &s) {
@@ -42,8 +43,10 @@ void CreateTestModel(localsolver::LocalSolver &s) {
   model.addObjective(model.createConstant(localsolver::lsint(0)),
                      localsolver::OD_Minimize);
   model.close();
+  s.createPhase();
 }
 
+// Basic LocalSolver option
 template <typename T>
 struct BasicOption {
   const char *name;
@@ -61,6 +64,7 @@ struct BasicOption {
   virtual void set(Solver &s, T value) const = 0;
 };
 
+// LocalSolver option stored in LSParam
 template <typename T>
 struct Option : public BasicOption<T> {
   typedef T (LSParam::*Getter)() const;
@@ -202,4 +206,28 @@ TEST(LocalSolverTest, LogFileOption) {
   EXPECT_THROW(solver.SetIntOption("logfile", 1), mp::OptionError);
 }
 
-// TODO: test solver options timelimit, iterlimit
+// LocalSolver option stored in LSPhase
+template <typename T>
+struct PhaseOption : public BasicOption<T> {
+  typedef T (LSPhase::*Getter)() const;
+  Getter get_;
+  typedef void (LSPhase::*Setter)(T);
+  Setter set_;
+
+  PhaseOption(const char *name, int default_value,
+              int lb, int ub, Getter get, Setter set)
+    : BasicOption<T>(name, default_value, lb, ub), get_(get), set_(set) {}
+
+  typedef localsolver::LocalSolver Solver;
+
+  T get(Solver &s) const { return (s.getPhase(0).*get_)(); }
+  void set(Solver &s, T value) const { (s.getPhase(0).*set_)(value); }
+};
+
+PhaseOption<int> timelimit(
+    "timelimit", INT_MAX, 1, INT_MAX,
+    &LSPhase::getTimeLimit, &LSPhase::setTimeLimit);
+INSTANTIATE_TEST_CASE_P(
+    Limit, OptionTest, testing::Values(&timelimit, &timelimit));
+
+// TODO: test solver options iterlimit
