@@ -316,11 +316,11 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
     VERBOSITY,
     TIME_BETWEEN_DISPLAYS,
     TIMELIMIT,
-    ITERLIMIT,
     NUM_OPTIONS
   };
 
   int options_[NUM_OPTIONS];
+  fmt::LongLong iterlimit_;
   std::string logfile_;
 
   int DoGetIntOption(const SolverOption &, Option id) const {
@@ -339,10 +339,19 @@ class LocalSolver : public SolverImpl<LSProblemBuilder> {
   }
 
   std::string GetVerbosity(const SolverOption &opt) const;
-  void SetVerbosity(const SolverOption &opt, const char *value);
+  void SetVerbosity(const SolverOption &opt, fmt::StringRef value);
 
   std::string GetLogFile(const SolverOption &) const { return logfile_; }
-  void SetLogFile(const SolverOption &, const char *value) { logfile_ = value; }
+  void SetLogFile(const SolverOption &, fmt::StringRef value) {
+    logfile_.assign(value.c_str(), value.size());
+  }
+
+  int GetIterLimit(const SolverOption &) const { return iterlimit_; }
+  void SetIterLimit(const SolverOption &opt, int value) {
+    if (value < 1)
+      throw InvalidOptionValue(opt, value);
+    iterlimit_ = value;
+  }
 
  protected:
   virtual void DoSolve(ls::LocalSolver &s) {

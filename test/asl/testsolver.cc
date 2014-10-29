@@ -34,7 +34,7 @@ class TestSolver : public ASLSolver {
   void DoSolve(Problem &, SolutionHandler &) {}
 
   std::string GetOption(const SolverOption &) const { return ""; }
-  void SetOption(const SolverOption &, const char * ) {
+  void SetOption(const SolverOption &, fmt::StringRef ) {
     throw std::runtime_error("epic fail");
   }
 

@@ -84,7 +84,7 @@ class IlogCPSolver : public ASLSolver {
   int options_[NUM_OPTIONS];
 
   std::string GetOptimizer(const SolverOption &) const;
-  void SetOptimizer(const SolverOption &opt, const char *value);
+  void SetOptimizer(const SolverOption &opt, fmt::StringRef value);
 
   int DoGetIntOption(const SolverOption &, Option id) const {
     return options_[id];

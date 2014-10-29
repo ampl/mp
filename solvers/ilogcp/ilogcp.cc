@@ -527,12 +527,13 @@ std::string IlogCPSolver::GetOptimizer(const SolverOption &) const {
   }
 }
 
-void IlogCPSolver::SetOptimizer(const SolverOption &opt, const char *value) {
-  if (strcmp(value, "auto") == 0)
+void IlogCPSolver::SetOptimizer(const SolverOption &opt, fmt::StringRef value) {
+  const char *str = value.c_str();
+  if (strcmp(str, "auto") == 0)
     optimizer_ = AUTO;
-  else if (strcmp(value, "cp") == 0)
+  else if (strcmp(str, "cp") == 0)
     optimizer_ = CP;
-  else if (strcmp(value, "cplex") == 0)
+  else if (strcmp(str, "cplex") == 0)
     optimizer_ = CPLEX;
   else
     throw InvalidOptionValue(opt, value);

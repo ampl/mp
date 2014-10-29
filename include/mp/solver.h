@@ -119,12 +119,17 @@ struct OptionHelper<double> {
 
 template <>
 struct OptionHelper<std::string> {
-  typedef const char *Arg;
+  typedef fmt::StringRef Arg;
   static const char TYPE_NAME[];
   static void Write(fmt::Writer &w, const std::string &s) { w << s; }
   static std::string Parse(const char *&s);
   static const char *CastArg(const std::string &s) { return s.c_str(); }
 };
+
+inline OptionError OptionTypeError(fmt::StringRef name, fmt::StringRef type) {
+  return OptionError(
+        fmt::format("Option \"{}\" is not of type \"{}\"", name, type));
+}
 }  // namespace internal
 
 // An interface for receiving errors reported via Solver::ReportError.
@@ -239,6 +244,35 @@ class SolverOption {
   // Returns true if this option is a flag, i.e. it doesn't take a value.
   bool is_flag() const { return is_flag_; }
 
+  // Returns the option value.
+  virtual void GetValue(int &) const {
+    throw internal::OptionTypeError(name_, "int");
+  }
+  virtual void GetValue(double &) const {
+    throw internal::OptionTypeError(name_, "double");
+  }
+  virtual void GetValue(std::string &) const {
+    throw internal::OptionTypeError(name_, "string");
+  }
+
+  template <typename T>
+  T GetValue() const {
+    T value = T();
+    GetValue(value);
+    return value;
+  }
+
+  // Sets the option value or throws InvalidOptionValue if the value is invalid.
+  virtual void SetValue(int) {
+    throw internal::OptionTypeError(name_, "int");
+  }
+  virtual void SetValue(double) {
+    throw internal::OptionTypeError(name_, "double");
+  }
+  virtual void SetValue(fmt::StringRef) {
+    throw internal::OptionTypeError(name_, "string");
+  }
+
   // Formats the option value. Throws OptionError in case of error.
   virtual void Write(fmt::Writer &w) = 0;
 
@@ -273,7 +307,7 @@ class TypedSolverOption : public SolverOption {
   : SolverOption(name, description, values) {}
 
   void Write(fmt::Writer &w) {
-    internal::OptionHelper<T>::Write(w, GetValue());
+    internal::OptionHelper<T>::Write(w, GetValue<T>());
   }
 
   void Parse(const char *&s) {
@@ -286,12 +320,6 @@ class TypedSolverOption : public SolverOption {
     }
     SetValue(internal::OptionHelper<T>::CastArg(value));
   }
-
-  // Returns the option value.
-  virtual T GetValue() const = 0;
-
-  // Sets the option value or throws InvalidOptionValue if the value is invalid.
-  virtual void SetValue(typename internal::OptionHelper<T>::Arg value) = 0;
 };
 
 // A mathematical optimization solver.
@@ -404,31 +432,6 @@ class Solver : private ErrorHandler,
     return opt;
   }
 
-  template <typename T>
-  T GetOptionValue(const char *name) const {
-    const TypedSolverOption<T> *opt =
-        dynamic_cast<TypedSolverOption<T> *>(GetOption(name));
-    if (!opt)
-      throw OptionTypeError(name, internal::OptionHelper<T>::TYPE_NAME);
-    return opt->GetValue();
-  }
-
-  template <typename T>
-  void SetOptionValue(const char *name,
-      typename internal::OptionHelper<T>::Arg value) {
-    TypedSolverOption<T> *opt =
-        dynamic_cast<TypedSolverOption<T> *>(GetOption(name));
-    if (!opt)
-      throw OptionTypeError(name, internal::OptionHelper<T>::TYPE_NAME);
-    opt->SetValue(value);
-  }
-
-  static OptionError OptionTypeError(fmt::StringRef name, fmt::StringRef type) {
-    fmt::MemoryWriter msg;
-    msg.write("Option \"{}\" is not of type \"{}\"", name, type);
-    return OptionError(msg.c_str());
-  }
-
   // Parses an option string.
   void ParseOptionString(const char *s, unsigned flags);
 
@@ -451,7 +454,7 @@ class Solver : private ErrorHandler,
     : TypedSolverOption<T>(name, description, values),
       handler_(static_cast<Handler&>(*s)), get_(get), set_(set) {}
 
-    T GetValue() const { return (handler_.*get_)(*this); }
+    void GetValue(T &value) const { value = (handler_.*get_)(*this); }
     void SetValue(Arg value) { (handler_.*set_)(*this, value); }
   };
 
@@ -474,7 +477,7 @@ class Solver : private ErrorHandler,
     : TypedSolverOption<T>(name, description, values),
       handler_(static_cast<Handler&>(*s)), get_(get), set_(set), info_(info) {}
 
-    T GetValue() const { return (handler_.*get_)(*this, info_); }
+    void GetValue(T &value) const { value = (handler_.*get_)(*this, info_); }
     void SetValue(Arg value) { (handler_.*set_)(*this, value, info_); }
   };
 
@@ -545,11 +548,11 @@ class Solver : private ErrorHandler,
   // string literals).
   // The arguments get and set should be pointers to member functions in the
   // solver class. They are used to get and set an option value respectively.
-  template <typename Handler>
+  template <typename Handler, typename Int>
   void AddIntOption(const char *name, const char *description,
-      int (Handler::*get)(const SolverOption &) const,
-      void (Handler::*set)(const SolverOption &, int)) {
-    AddOption(OptionPtr(new ConcreteOption<Handler, int>(
+      Int (Handler::*get)(const SolverOption &) const,
+      void (Handler::*set)(const SolverOption &, Int)) {
+    AddOption(OptionPtr(new ConcreteOption<Handler, Int>(
         name, description, this, get, set)));
   }
 
@@ -626,7 +629,7 @@ class Solver : private ErrorHandler,
   template <typename Handler>
   void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const SolverOption &) const,
-      void (Handler::*set)(const SolverOption &, const char *),
+      void (Handler::*set)(const SolverOption &, fmt::StringRef),
       ValueArrayRef values = ValueArrayRef()) {
     AddOption(OptionPtr(new ConcreteOption<Handler, std::string>(
         name, description, this, get, set, values)));
@@ -641,7 +644,7 @@ class Solver : private ErrorHandler,
   template <typename Handler, typename Info>
   void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const SolverOption &, const Info &) const,
-      void (Handler::*set)(const SolverOption &, const char *, const Info &),
+      void (Handler::*set)(const SolverOption &, fmt::StringRef, const Info &),
       const Info &info, ValueArrayRef values = ValueArrayRef()) {
     AddOption(OptionPtr(
         new ConcreteOptionWithInfo<Handler, std::string, Info, const Info &>(
@@ -652,7 +655,7 @@ class Solver : private ErrorHandler,
   template <typename Handler, typename Info>
   void AddStrOption(const char *name, const char *description,
       std::string (Handler::*get)(const SolverOption &, Info) const,
-      void (Handler::*set)(const SolverOption &, const char *, Info),
+      void (Handler::*set)(const SolverOption &, fmt::StringRef, Info),
       Info info, ValueArrayRef values = ValueArrayRef()) {
     AddOption(OptionPtr(new ConcreteOptionWithInfo<Handler, std::string, Info>(
             name, description, this, get, set, info, values)));
@@ -791,37 +794,37 @@ class Solver : private ErrorHandler,
   // Returns the value of an integer option.
   // Throws OptionError if there is no such option or it has a different type.
   int GetIntOption(const char *name) const {
-    return GetOptionValue<int>(name);
+    return GetOption(name)->GetValue<int>();
   }
 
   // Sets the value of an integer option.
   // Throws OptionError if there is no such option or it has a different type.
   void SetIntOption(const char *name, int value) {
-    SetOptionValue<int>(name, value);
+    GetOption(name)->SetValue(value);
   }
 
   // Returns the value of a double option.
   // Throws OptionError if there is no such option or it has a different type.
   double GetDblOption(const char *name) const {
-    return GetOptionValue<double>(name);
+    return GetOption(name)->GetValue<double>();
   }
 
   // Sets the value of a double option.
   // Throws OptionError if there is no such option or it has a different type.
   void SetDblOption(const char *name, double value) {
-    SetOptionValue<double>(name, value);
+    GetOption(name)->SetValue(value);
   }
 
   // Returns the value of a string option.
   // Throws OptionError if there is no such option or it has a different type.
   std::string GetStrOption(const char *name) const {
-    return GetOptionValue<std::string>(name);
+    return GetOption(name)->GetValue<std::string>();
   }
 
   // Sets the value of a string option.
   // Throws OptionError if there is no such option or it has a different type.
   void SetStrOption(const char *name, fmt::StringRef value) {
-    SetOptionValue<std::string>(name, value.c_str());
+    GetOption(name)->SetValue(value);
   }
 
   const SuffixList &suffixes() const { return suffixes_; }

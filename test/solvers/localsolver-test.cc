@@ -50,11 +50,11 @@ void CreateTestModel(localsolver::LocalSolver &s) {
 template <typename T>
 struct BasicOption {
   const char *name;
-  int default_value;
-  int lb;
-  int ub;
+  T default_value;
+  T lb;
+  T ub;
 
-  BasicOption(const char *name, int default_value, int lb, int ub)
+  BasicOption(const char *name, T default_value, T lb, T ub)
     : name(name), default_value(default_value), lb(lb), ub(ub) {}
   virtual ~BasicOption() {}
 
@@ -65,18 +65,17 @@ struct BasicOption {
 };
 
 // LocalSolver option stored in LSParam
-template <typename T>
+template <typename T, typename ParamT = T>
 struct Option : public BasicOption<T> {
-  typedef T (LSParam::*Getter)() const;
+  typedef ParamT (LSParam::*Getter)() const;
   Getter get_;
-  typedef void (LSParam::*Setter)(T);
+  typedef void (LSParam::*Setter)(ParamT);
   Setter set_;
 
   explicit Option(Getter get)
-    : BasicOption<T>(0, 0, 0, 0), get_(get), set_(0) {}
+    : BasicOption<T>(0, T(), T(), T()), get_(get), set_(0) {}
 
-  Option(const char *name, int default_value,
-         int lb, int ub, Getter get, Setter set)
+  Option(const char *name, T default_value, T lb, T ub, Getter get, Setter set)
     : BasicOption<T>(name, default_value, lb, ub), get_(get), set_(set) {}
 
   typedef localsolver::LocalSolver Solver;
@@ -85,9 +84,9 @@ struct Option : public BasicOption<T> {
   void set(Solver &s, T value) const { (s.getParam().*set_)(value); }
 };
 
-typedef Option<int> IntOption;
+typedef Option<fmt::LongLong, int> IntOption;
 
-template <typename T = int>
+template <typename T = fmt::LongLong>
 struct TestLocalSolver : mp::LocalSolver {
   const BasicOption<T> *opt;
   T value;
@@ -108,7 +107,8 @@ T GetOption(TestLocalSolver<T> &solver, const BasicOption<T> &opt) {
   return solver.value;
 }
 
-class OptionTest : public testing::TestWithParam<BasicOption<int>*> {};
+class OptionTest :
+    public testing::TestWithParam<BasicOption<fmt::LongLong>*> {};
 
 // Test that the default value agrees with LocalSolver.
 TEST_P(OptionTest, DefaultValue) {
@@ -208,26 +208,31 @@ TEST(LocalSolverTest, LogFileOption) {
 
 // LocalSolver option stored in LSPhase
 template <typename T>
-struct PhaseOption : public BasicOption<T> {
+struct PhaseOption : public BasicOption<fmt::LongLong> {
   typedef T (LSPhase::*Getter)() const;
   Getter get_;
   typedef void (LSPhase::*Setter)(T);
   Setter set_;
 
-  PhaseOption(const char *name, int default_value,
+  PhaseOption(const char *name, fmt::LongLong default_value,
               int lb, int ub, Getter get, Setter set)
-    : BasicOption<T>(name, default_value, lb, ub), get_(get), set_(set) {}
+    : BasicOption<fmt::LongLong>(name, default_value, lb, ub),
+      get_(get), set_(set) {}
 
   typedef localsolver::LocalSolver Solver;
 
-  T get(Solver &s) const { return (s.getPhase(0).*get_)(); }
-  void set(Solver &s, T value) const { (s.getPhase(0).*set_)(value); }
+  fmt::LongLong get(Solver &s) const { return (s.getPhase(0).*get_)(); }
+  void set(Solver &s, fmt::LongLong value) const {
+    (s.getPhase(0).*set_)(value);
+  }
 };
 
 PhaseOption<int> timelimit(
     "timelimit", INT_MAX, 1, INT_MAX,
     &LSPhase::getTimeLimit, &LSPhase::setTimeLimit);
+const fmt::LongLong long_long_max = std::numeric_limits<fmt::LongLong>::max();
+PhaseOption<fmt::LongLong> iterlimit(
+    "iterlimit", long_long_max, 1, INT_MAX,
+    &LSPhase::getIterationLimit, &LSPhase::setIterationLimit);
 INSTANTIATE_TEST_CASE_P(
-    Limit, OptionTest, testing::Values(&timelimit, &timelimit));
-
-// TODO: test solver options iterlimit
+    Limit, OptionTest, testing::Values(&timelimit, &iterlimit));

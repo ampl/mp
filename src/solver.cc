@@ -215,6 +215,7 @@ void FormatRST(fmt::Writer &w,
 const char OptionHelper<int>::TYPE_NAME[] = "int";
 const char OptionHelper<double>::TYPE_NAME[] = "double";
 const char OptionHelper<std::string>::TYPE_NAME[] = "string";
+
 int OptionHelper<int>::Parse(const char *&s) {
   char *end = 0;
   long value = std::strtol(s, &end, 10);

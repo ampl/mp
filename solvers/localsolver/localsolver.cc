@@ -366,23 +366,24 @@ std::string LocalSolver::GetVerbosity(const SolverOption &opt) const {
   return fmt::format("{}", value);
 }
 
-void LocalSolver::SetVerbosity(const SolverOption &opt, const char *value) {
+void LocalSolver::SetVerbosity(const SolverOption &opt, fmt::StringRef value) {
   char *end = 0;
-  long intval = std::strtol(value, &end, 0);
+  const char *str = value.c_str();
+  long intval = std::strtol(str, &end, 0);
   if (!*end) {
     if (intval != 0 && intval != 1 && intval != 10)
-      throw InvalidOptionValue(opt, value);
+      throw InvalidOptionValue(opt, str);
     options_[VERBOSITY] = intval;
     return;
   }
   for (mp::ValueArrayRef::iterator
       i = opt.values().begin(), e = opt.values().end(); i != e; ++i) {
-    if (std::strcmp(i->value, value) == 0) {
+    if (std::strcmp(i->value, str) == 0) {
       options_[VERBOSITY] = i->data;
       return;
     }
   }
-  throw InvalidOptionValue(opt, value);
+  throw InvalidOptionValue(opt, str);
 }
 
 LocalSolver::LocalSolver()
@@ -392,8 +393,8 @@ LocalSolver::LocalSolver()
   options_[ANNEALING_LEVEL] = 1;
   options_[VERBOSITY] = 0;
   options_[TIME_BETWEEN_DISPLAYS] = 1;
-  options_[TIMELIMIT] = INT_MAX;
-  options_[ITERLIMIT] = 0;
+  options_[TIMELIMIT] = std::numeric_limits<int>::max();
+  iterlimit_ = std::numeric_limits<fmt::LongLong>::max();
 
   std::string version = fmt::format("{}.{}",
       localsolver::LSVersion::getMajorVersionNumber(),
@@ -451,9 +452,8 @@ LocalSolver::LocalSolver()
 
   AddIntOption("iterlimit",
       "Iteration limit (positive integer) or 0 for no limit. "
-      "Default = no limit.",
-      &LocalSolver::DoGetIntOption, &LocalSolver::SetNonnegativeIntOption,
-      ITERLIMIT);
+      "Default = largest positive integer.",
+      &LocalSolver::GetIterLimit, &LocalSolver::SetIterLimit);
 }
 
 void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
@@ -478,8 +478,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
     param.setLogFile(logfile_);
   ls::LSPhase phase = solver.createPhase();
   phase.setTimeLimit(options_[TIMELIMIT]);
-  if (int limit = options_[ITERLIMIT])
-    phase.setIterationLimit(limit);
+  phase.setIterationLimit(iterlimit_);
   interrupter()->SetHandler(StopSolver, &solver);
 
   double setup_time = GetTimeAndReset(time);

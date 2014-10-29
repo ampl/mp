@@ -540,18 +540,18 @@ struct TestSolverWithOptions : Solver {
   }
 
   std::string GetStrOption(const SolverOption &) const { return stropt1; }
-  void SetStrOption(const SolverOption &opt, const char *value) {
+  void SetStrOption(const SolverOption &opt, fmt::StringRef value) {
     EXPECT_STREQ("stropt1", opt.name());
-    stropt1 = value;
+    stropt1 = value.c_str();
   }
 
   std::string GetStrOptionWithInfo(const SolverOption &, Info) const {
     return "";
   }
   void SetStrOptionWithInfo(
-      const SolverOption &opt, const char *value, Info info) {
+      const SolverOption &opt, fmt::StringRef value, Info info) {
     EXPECT_STREQ("stropt2", opt.name());
-    stropt2 = value;
+    stropt2 = value.c_str();
     EXPECT_EQ(INFO, info);
   }
 
