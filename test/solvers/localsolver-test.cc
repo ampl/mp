@@ -121,13 +121,15 @@ IntOption options[] = {
 };
 INSTANTIATE_TEST_CASE_P(, OptionTest, testing::ValuesIn(options));
 
-TEST(LocalSolverTest, Verbosity) {
+TEST(LocalSolverTest, VerbosityOption) {
   enum {TEST_VALUE = 1};
   struct TestLocalSolver : mp::LocalSolver {
     void DoSolve(localsolver::LocalSolver &s) {
       EXPECT_EQ(TEST_VALUE, s.getParam().getVerbosity());
     }
   } solver;
+
+  // Test default value.
   EXPECT_EQ("quiet", solver.GetStrOption("verbosity"));
   mp::LSProblemBuilder builder(solver.GetProblemBuilder(""));
   EXPECT_EQ(0, builder.solver().getParam().getVerbosity());
@@ -141,10 +143,10 @@ TEST(LocalSolverTest, Verbosity) {
   };
   ValueInfo value_info[] = {{"quiet", 0}, {"normal", 1}, {"detailed", 10}};
   int index = 0;
-  for (auto i: values) {
+  for (auto i = values.begin(), end = values.end(); i != end; ++i) {
     const auto &info = value_info[index++];
-    EXPECT_STREQ(info.value, i.value);
-    EXPECT_EQ(info.data, i.data);
+    EXPECT_STREQ(info.value, i->value);
+    EXPECT_EQ(info.data, i->data);
     solver.SetStrOption("verbosity", info.value);
     EXPECT_EQ(info.value, solver.GetStrOption("verbosity"));
     solver.SetStrOption("verbosity", fmt::format("{}", info.data));
@@ -155,10 +157,23 @@ TEST(LocalSolverTest, Verbosity) {
   solver.SetStrOption("verbosity", "normal");
   SolveTestProblem(solver);
 
-  EXPECT_THROW(solver.SetDblOption("verbosity", 1.2),
-               mp::OptionError);
+  EXPECT_THROW(solver.SetDblOption("verbosity", 1.2), mp::OptionError);
   EXPECT_THROW(solver.SetStrOption("verbosity", "oops"),
                mp::InvalidOptionValue);
 }
 
-// TODO: test solver options logfile, timelimit, iterlimit
+TEST(LocalSolverTest, LogFileOption) {
+  struct TestLocalSolver : mp::LocalSolver {
+    void DoSolve(localsolver::LocalSolver &s) {
+      EXPECT_EQ("testlog", s.getParam().getLogFile());
+    }
+  } solver;
+
+  EXPECT_EQ("", solver.GetStrOption("logfile"));
+  solver.SetStrOption("logfile", "testlog");
+  SolveTestProblem(solver);
+
+  EXPECT_THROW(solver.SetIntOption("logfile", 1), mp::OptionError);
+}
+
+// TODO: test solver options timelimit, iterlimit
