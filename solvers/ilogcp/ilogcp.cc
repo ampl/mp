@@ -123,19 +123,19 @@ class IntOption : public mp::TypedSolverOption<int> {
       IloCP cp, IloCP::IntParam p)
   : mp::TypedSolverOption<int>(name, description), cp_(cp), param_(p) {}
 
-  int GetValue() const;
-  void SetValue(int value);
+  void GetValue(fmt::LongLong &value) const;
+  void SetValue(fmt::LongLong value);
 };
 
-int IntOption::GetValue() const {
+void IntOption::GetValue(fmt::LongLong &value) const {
   try {
-    return static_cast<int>(cp_.getParameter(param_));
+    value = static_cast<int>(cp_.getParameter(param_));
   } catch (const IloException &e) {
     throw GetOptionValueError(*this, e.getMessage());
   }
 }
 
-void IntOption::SetValue(int value) {
+void IntOption::SetValue(fmt::LongLong value) {
   try {
     cp_.setParameter(param_, value);
   } catch (const IloException &) {
@@ -159,29 +159,32 @@ class EnumOption : public mp::TypedSolverOption<std::string> {
     cp_(cp), param_(p), start_(start), accepts_auto_(accepts_auto) {
   }
 
-  std::string GetValue() const;
-  void SetValue(const char *value);
+  void GetValue(std::string &value) const;
+  void SetValue(fmt::StringRef value);
 };
 
-std::string EnumOption::GetValue() const {
-  IloInt value = 0;
+void EnumOption::GetValue(std::string &value) const {
+  IloInt int_value = 0;
   try {
-    value = cp_.getParameter(param_);
+    int_value = cp_.getParameter(param_);
   } catch (const IloException &e) {
     throw GetOptionValueError(*this, e.getMessage());
   }
   for (mp::ValueArrayRef::iterator
       i = values().begin(), e = values().end(); i != e; ++i) {
-    if (i->data == value)
-      return i->value;
+    if (i->data == int_value) {
+      value = i->value;
+      return;
+    }
   }
-  return fmt::format("{}", value);
+  value = fmt::format("{}", int_value);
 }
 
-void EnumOption::SetValue(const char *value) {
+void EnumOption::SetValue(fmt::StringRef value) {
   try {
+    const char *str = value.c_str();
     char *end = 0;
-    long intval = std::strtol(value, &end, 0);
+    long intval = std::strtol(str, &end, 0);
     if (!*end) {
       if (intval != -1 || !accepts_auto_)
         intval += start_;
@@ -192,7 +195,7 @@ void EnumOption::SetValue(const char *value) {
     // Use linear search since the number of values is small.
     for (mp::ValueArrayRef::iterator
         i = values().begin(), e = values().end(); i != e; ++i) {
-      if (strcmp(value, i->value) == 0) {
+      if (strcmp(str, i->value) == 0) {
         cp_.setParameter(param_, i->data);
         return;
       }
