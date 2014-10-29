@@ -35,12 +35,25 @@ enum { FEATURES = ~feature::PLTERM };
 
 using localsolver::LSParam;
 
+template <typename T = int>
+struct TestLocalSolver : mp::LocalSolver {
+  T (LSParam::*get)() const;
+  T value;
+  void DoSolve(localsolver::LocalSolver &s) {
+    value = (s.getParam().*get)();
+  }
+  TestLocalSolver() : value() {}
+};
+
 // Creates and solves a test problem.
-void SolveTestProblem(mp::LocalSolver &s) {
-  mp::LSProblemBuilder pb(s.GetProblemBuilder(""));
+template <typename T>
+T GetOption(TestLocalSolver<T> &solver, T (LSParam::*get)() const) {
+  mp::LSProblemBuilder pb(solver.GetProblemBuilder(""));
   MakeAllDiffProblem(pb);
   TestSolutionHandler sh;
-  s.Solve(pb, sh);
+  solver.get = get;
+  solver.Solve(pb, sh);
+  return solver.value;
 }
 
 // Creates a test LocalSolver model.
@@ -61,8 +74,7 @@ struct IntOption {
   void (LSParam::*set)(int);
 };
 
-class OptionTest : public testing::TestWithParam<IntOption> {
-};
+class OptionTest : public testing::TestWithParam<IntOption> {};
 
 // Test that the default value agrees with LocalSolver.
 TEST_P(OptionTest, DefaultValue) {
@@ -97,17 +109,11 @@ TEST_P(OptionTest, Range) {
 // Test that the option value is passed to LocalSolver.
 TEST_P(OptionTest, PassValue) {
   auto opt = GetParam();
+  TestLocalSolver<> solver;
   enum {TEST_VALUE = 7};
-  struct TestLocalSolver : mp::LocalSolver {
-    IntOption opt;
-    void DoSolve(localsolver::LocalSolver &s) {
-      EXPECT_EQ(TEST_VALUE, (s.getParam().*opt.get)());
-    }
-    TestLocalSolver(IntOption opt) : opt(opt) {}
-  } solver(opt);
   solver.SetIntOption(opt.name, TEST_VALUE);
   EXPECT_EQ(TEST_VALUE, solver.GetIntOption(opt.name));
-  SolveTestProblem(solver);
+  EXPECT_EQ(TEST_VALUE, GetOption(solver, opt.get));
   EXPECT_THROW(solver.SetStrOption(opt.name, "oops"), mp::OptionError);
 }
 
@@ -122,12 +128,7 @@ IntOption options[] = {
 INSTANTIATE_TEST_CASE_P(, OptionTest, testing::ValuesIn(options));
 
 TEST(LocalSolverTest, VerbosityOption) {
-  enum {TEST_VALUE = 1};
-  struct TestLocalSolver : mp::LocalSolver {
-    void DoSolve(localsolver::LocalSolver &s) {
-      EXPECT_EQ(TEST_VALUE, s.getParam().getVerbosity());
-    }
-  } solver;
+  TestLocalSolver<> solver;
 
   // Test default value.
   EXPECT_EQ("quiet", solver.GetStrOption("verbosity"));
@@ -155,7 +156,7 @@ TEST(LocalSolverTest, VerbosityOption) {
 
   // Test that value is passed to LocalSolver.
   solver.SetStrOption("verbosity", "normal");
-  SolveTestProblem(solver);
+  EXPECT_EQ(1, GetOption(solver, &LSParam::getVerbosity));
 
   EXPECT_THROW(solver.SetDblOption("verbosity", 1.2), mp::OptionError);
   EXPECT_THROW(solver.SetStrOption("verbosity", "oops"),
@@ -163,16 +164,10 @@ TEST(LocalSolverTest, VerbosityOption) {
 }
 
 TEST(LocalSolverTest, LogFileOption) {
-  struct TestLocalSolver : mp::LocalSolver {
-    void DoSolve(localsolver::LocalSolver &s) {
-      EXPECT_EQ("testlog", s.getParam().getLogFile());
-    }
-  } solver;
-
+  TestLocalSolver<std::string> solver;
   EXPECT_EQ("", solver.GetStrOption("logfile"));
   solver.SetStrOption("logfile", "testlog");
-  SolveTestProblem(solver);
-
+  EXPECT_EQ("testlog", GetOption(solver, &LSParam::getLogFile));
   EXPECT_THROW(solver.SetIntOption("logfile", 1), mp::OptionError);
 }
 
