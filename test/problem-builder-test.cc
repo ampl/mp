@@ -20,6 +20,7 @@
  Author: Victor Zverovich
  */
 
+#include "gmock/gmock.h"
 #include "gtest-extra.h"
 #include "mp/problem-builder.h"
 #include "mp/nl.h"
@@ -27,18 +28,16 @@
 class TestExpr {};
 
 struct TestProblemBuilder : mp::ProblemBuilder<TestProblemBuilder, TestExpr> {
-  std::string name;
-  void ReportUnhandledConstruct(fmt::StringRef name) {
-    this->name = name.c_str();
-  }
+  MOCK_METHOD1(ReportUnhandledConstruct, void (const std::string &name));
 };
 
 // Test that ProblemBuilder can be used with ProblemBuilderToNLAdapter.
 TEST(ProblemBuilderTest, UseWithProblemBuilderToNLAdapter) {
   TestProblemBuilder builder;
   mp::ProblemBuilderToNLAdapter<TestProblemBuilder> handler(builder);
+  EXPECT_CALL(builder, ReportUnhandledConstruct(
+                "numeric constant in nonlinear expression"));
   handler.OnNumericConstant(0);
-  EXPECT_EQ("numeric constant in nonlinear expression", builder.name);
 }
 
 // Check that handling problem info doesn't throw an exception.
@@ -49,8 +48,8 @@ TEST(ProblemBuilderTest, SetInfo) {
 
 #define EXPECT_DISPATCH(call, construct) { \
   TestProblemBuilder builder; \
+  EXPECT_CALL(builder, ReportUnhandledConstruct(construct)); \
   builder.call; \
-  EXPECT_EQ(construct, builder.name); \
 }
 
 TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
@@ -60,8 +59,13 @@ TEST(ProblemBuilderTest, ReportUnhandledConstruct) {
   EXPECT_DISPATCH(AddCon(TestExpr()), "logical constraint");
   EXPECT_DISPATCH(BeginCommonExpr(TestExpr(), 0, 0), "common expression");
   EXPECT_DISPATCH(SetComplement(0, 0, 0), "complementarity constraint");
-  EXPECT_DISPATCH(SetInitialValue(0, 0), "initial value");
-  EXPECT_DISPATCH(SetInitialDualValue(0, 0), "initial dual value");
+
+  // Initial (dual) values are not reported as unhandled.
+  TestProblemBuilder builder;
+  EXPECT_CALL(builder, ReportUnhandledConstruct("")).Times(0);
+  builder.SetInitialValue(0, 0);
+  builder.SetInitialDualValue(0, 0);
+
   EXPECT_DISPATCH(GetColumnSizeHandler(), "Jacobian column size");
   EXPECT_DISPATCH(SetFunction(0, "foo", 0, mp::func::NUMERIC), "function");
   EXPECT_DISPATCH(AddSuffix(0, 0, "foo"), "suffix");
