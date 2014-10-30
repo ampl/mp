@@ -1390,4 +1390,22 @@ struct TestOutputHandler : public mp::OutputHandler {
   void HandleOutput(fmt::StringRef output) { this->output += output; }
 };
 
+// Test that providing an initial value doesn't cause an error.
+TEST_F(NLSolverTest, InitialValue) {
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  auto info = mp::ProblemInfo();
+  info.num_vars = info.num_algebraic_cons = 1;
+  pb.SetInfo(info);
+  pb.SetInitialValue(0, 0);
+}
+
+// Test that providing an initial dual value doesn't cause an error.
+TEST_F(NLSolverTest, InitialDualValue) {
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  auto info = mp::ProblemInfo();
+  info.num_vars = info.num_algebraic_cons = 1;
+  pb.SetInfo(info);
+  pb.SetInitialDualValue(0, 0);
+}
+
 #endif  // TESTS_NL_SOLVER_TEST_H_

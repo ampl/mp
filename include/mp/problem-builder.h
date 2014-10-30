@@ -124,11 +124,11 @@ class ProblemBuilder {
 
   void SetInitialValue(int var_index, double value) {
     MP_UNUSED2(var_index, value);
-    MP_DISPATCH(ReportUnhandledConstruct("initial value"));
+    // Initial values are ignored by default.
   }
   void SetInitialDualValue(int con_index, double value) {
     MP_UNUSED2(con_index, value);
-    MP_DISPATCH(ReportUnhandledConstruct("initial dual value"));
+    // Initial dual values are ignored by default.
   }
 
   struct ColumnSizeHandler {
