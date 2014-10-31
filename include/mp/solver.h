@@ -1162,8 +1162,21 @@ class SolverApp : private Reader {
 
   typedef typename Solver::ProblemBuilder ProblemBuilder;
 
+  struct AppOutputHandler : OutputHandler {
+    bool has_output;
+    AppOutputHandler() : has_output(false) {}
+    void HandleOutput(fmt::StringRef output) {
+      has_output = true;
+      std::fputs(output.c_str(), stdout);
+      std::fflush(stdout);
+    }
+  };
+  AppOutputHandler output_handler_;
+
  public:
-  SolverApp() : option_parser_(solver_) {}
+  SolverApp() : option_parser_(solver_) {
+    solver_.set_output_handler(&output_handler_);
+  }
 
   // Returns the list of command-line options.
   OptionList &options() { return option_parser_.options(); }
@@ -1188,6 +1201,12 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   // Parse command-line arguments.
   const char *filename = option_parser_.Parse(argv);
   if (!filename) return 0;
+
+  fmt::MemoryWriter banner;
+  banner.write("{}: ", solver_.long_name());
+  solver_.Print(banner.c_str());
+  output_handler_.has_output = false;
+  // TODO: test output
 
   // Add .nl extension if necessary.
   std::string nl_filename = filename, filename_no_ext = nl_filename;
@@ -1226,6 +1245,10 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   }
   internal::SignalHandler sig_handler(solver_);
   solver_.Solve(builder, *sol_handler);
+  if (!output_handler_.has_output) {
+    for (std::size_t i = 0, n = banner.size(); i != n; ++i)
+      std::putchar('\b');
+  }
   return 0;
 }
 
