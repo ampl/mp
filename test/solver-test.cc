@@ -22,6 +22,7 @@
 
 #include "mp/problem-builder.h"
 
+#define FMT_USE_FILE_DESCRIPTORS 1
 #include "gtest-extra.h"
 #include "mock-problem-builder.h"
 #include "solution-handler.h"
@@ -1317,6 +1318,7 @@ struct MockNLReader {
 
 class SolverAppTest : public ::testing::Test {
  protected:
+  OutputRedirect redir_;
   typedef mp::SolverApp<TestSolver, StrictMock<MockNLReader<> > > App;
   App app_;
 
@@ -1333,6 +1335,8 @@ class SolverAppTest : public ::testing::Test {
   OutputHandler output_handler_;
 
   const std::string &output() const { return output_handler_.output; }
+
+  SolverAppTest() : redir_(stdout) {}
 
   void RedirectOutput() {
     app_.solver().set_output_handler(&output_handler_);
@@ -1521,6 +1525,7 @@ TEST(MultiObjTest, NeedAllObjs) {
     }
   };
 
+  OutputRedirect redir(stdout);
   EXPECT_CALL(app.reader(), DoRead(_, _)).
       WillOnce(testing::Invoke(Test::ExpectUseObj0));
   app.Run(Args("test", "testproblem"));
@@ -1561,6 +1566,7 @@ struct TestNLReader {
 TEST(ObjNoTest, UseFirstObjByDefault) {
   mp::SolverApp<TestSolver, TestNLReader> app;
   EXPECT_EQ(1, app.solver().GetIntOption("objno"));
+  OutputRedirect redir(stdout);
   app.Run(Args("test", "testproblem"));
 }
 
@@ -1568,6 +1574,7 @@ TEST(ObjNoTest, UseSecondObj) {
   mp::SolverApp<TestSolver, TestNLReader> app;
   app.solver().SetIntOption("objno", 2);
   app.reader().obj_index = 1;
+  OutputRedirect redir(stdout);
   app.Run(Args("test", "testproblem"));
 }
 
@@ -1584,5 +1591,6 @@ struct TestNLReader2 {
 TEST(ObjNoTest, InvalidObjNo) {
   mp::SolverApp<TestSolver, TestNLReader2> app;
   app.solver().SetIntOption("objno", 3);
+  OutputRedirect redir(stdout);
   EXPECT_THROW(app.Run(Args("test", "testproblem")), mp::InvalidOptionValue);
 }
