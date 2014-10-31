@@ -53,9 +53,12 @@ struct BasicOption {
   T default_value;
   T lb;
   T ub;
+  bool check_default;
 
-  BasicOption(const char *name, T default_value, T lb, T ub)
-    : name(name), default_value(default_value), lb(lb), ub(ub) {}
+  BasicOption(const char *name, T default_value,
+              T lb, T ub, bool check_default = true)
+    : name(name), default_value(default_value),
+      lb(lb), ub(ub), check_default(check_default) {}
   virtual ~BasicOption() {}
 
   typedef localsolver::LocalSolver Solver;
@@ -113,6 +116,8 @@ class OptionTest :
 // Test that the default value agrees with LocalSolver.
 TEST_P(OptionTest, DefaultValue) {
   auto &opt = *GetParam();
+  if (!opt.check_default)
+    return;
   localsolver::LocalSolver ls;
   CreateTestModel(ls);
   EXPECT_EQ(opt.get(ls), mp::LocalSolver().GetIntOption(opt.name));
@@ -215,8 +220,8 @@ struct PhaseOption : public BasicOption<fmt::LongLong> {
   Setter set_;
 
   PhaseOption(const char *name, fmt::LongLong default_value,
-              int lb, int ub, Getter get, Setter set)
-    : BasicOption<fmt::LongLong>(name, default_value, lb, ub),
+              int lb, int ub, Getter get, Setter set, bool check_default = true)
+    : BasicOption<fmt::LongLong>(name, default_value, lb, ub, check_default),
       get_(get), set_(set) {}
 
   typedef localsolver::LocalSolver Solver;
@@ -228,8 +233,8 @@ struct PhaseOption : public BasicOption<fmt::LongLong> {
 };
 
 PhaseOption<int> timelimit(
-    "timelimit", INT_MAX, 1, INT_MAX,
-    &LSPhase::getTimeLimit, &LSPhase::setTimeLimit);
+    "timelimit", 10, 1, INT_MAX,
+    &LSPhase::getTimeLimit, &LSPhase::setTimeLimit, false);
 const fmt::LongLong long_long_max = std::numeric_limits<fmt::LongLong>::max();
 PhaseOption<fmt::LongLong> iterlimit(
     "iterlimit", long_long_max, 1, INT_MAX,

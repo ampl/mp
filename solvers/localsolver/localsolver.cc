@@ -393,7 +393,7 @@ LocalSolver::LocalSolver()
   options_[ANNEALING_LEVEL] = 1;
   options_[VERBOSITY] = 0;
   options_[TIME_BETWEEN_DISPLAYS] = 1;
-  options_[TIMELIMIT] = std::numeric_limits<int>::max();
+  options_[TIMELIMIT] = 10;
   iterlimit_ = std::numeric_limits<fmt::LongLong>::max();
 
   std::string version = fmt::format("{}.{}",
@@ -445,8 +445,7 @@ LocalSolver::LocalSolver()
       &LocalSolver::GetLogFile, &LocalSolver::SetLogFile);
 
   AddIntOption("timelimit",
-      "Time limit in seconds (positive integer). "
-      "Default = largest positive integer.",
+      "Time limit in seconds (positive integer). Default = 10.",
       &LocalSolver::DoGetIntOption, &LocalSolver::DoSetIntOption<1, INT_MAX>,
       TIMELIMIT);
 
@@ -533,7 +532,10 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
 
   fmt::MemoryWriter w;
   w.write("{}: {}\n", long_name(), status);
-  w.write("{}", solver.getStatistics().toString());
+  ls::LSStatistics stats = solver.getStatistics();
+  if (stats.getRunningTime() >= options_[TIMELIMIT])
+    w.write("Stopped at time limit of {} seconds\n", options_[TIMELIMIT]);
+  w.write("{}", stats.toString());
   double obj_val = std::numeric_limits<double>::quiet_NaN();
   if (builder.num_objs() != 0) {
     obj_val = GetValue(model.getObjective(0));
