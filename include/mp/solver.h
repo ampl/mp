@@ -1204,7 +1204,7 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
 
   fmt::MemoryWriter banner;
   banner.write("{}: ", solver_.long_name());
-  solver_.Print(banner.c_str());
+  std::fputs(banner.c_str(), stdout);
   output_handler_.has_output = false;
   // TODO: test output
 
@@ -1246,6 +1246,8 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   internal::SignalHandler sig_handler(solver_);
   solver_.Solve(builder, *sol_handler);
   if (!output_handler_.has_output) {
+    // "Erase" the banner so that it is not duplicated when printing
+    // the solver message.
     for (std::size_t i = 0, n = banner.size(); i != n; ++i)
       std::putchar('\b');
   }
