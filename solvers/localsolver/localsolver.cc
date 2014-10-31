@@ -535,7 +535,7 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
     for (int i = 0; i < num_vars; ++i)
       solution[i] = GetValue(vars[i]);
   }
-  w.write("\n");
+  w << "\n";
   double solution_time = GetTimeAndReset(time);
 
   ls::LSStatistics stats = solver.getStatistics();
