@@ -966,7 +966,6 @@ template <typename Solver, typename Writer = SolFileWriter>
 class SolutionWriter : private Writer, public SolutionHandler {
  private:
   std::string filename_;
-
   Solver &solver_;
 
   typedef typename Solver::ProblemBuilder ProblemBuilder;
@@ -1242,7 +1241,8 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
       std::size_t banner_size_;
 
      public:
-      AppSolutionWriter(fmt::StringRef stub, Solver &s, ProblemBuilder &b,
+      AppSolutionWriter(fmt::StringRef stub, Solver &s,
+                        typename Solver::ProblemBuilder &b,
                         ArrayRef<int> options, std::size_t banner_size)
       : SolutionWriter<Solver>(stub, s, b, options),
         banner_size_(banner_size) {}
