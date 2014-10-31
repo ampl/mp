@@ -22,7 +22,7 @@
 
 #include "sulum/sulum.h"
 #include "mp/clock.h"
-#include "asl/problem.h"
+#include "asl/aslproblem.h"
 
 #include <limits>
 

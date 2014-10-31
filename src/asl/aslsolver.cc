@@ -30,8 +30,8 @@ extern "C" {
 #undef write_sol
 
 #include "mp/clock.h"
+#include "aslproblem.h"
 #include "aslsolver.h"
-#include "problem.h"
 
 mp::ASLSolver::ASLSolver(
     fmt::StringRef name, fmt::StringRef long_name, long date, int flags)

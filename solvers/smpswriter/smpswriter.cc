@@ -21,7 +21,7 @@
  */
 
 #include "smpswriter/smpswriter.h"
-#include "asl/problem.h"
+#include "asl/aslproblem.h"
 
 #include <cmath>
 #include <cstdio>

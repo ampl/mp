@@ -22,7 +22,7 @@
  */
 
 #include "ssdsolver/ssdsolver.h"
-#include "asl/problem.h"
+#include "asl/aslproblem.h"
 
 #ifdef _WIN32
 # define putenv _putenv

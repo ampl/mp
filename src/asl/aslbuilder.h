@@ -27,7 +27,7 @@
 #include "mp/format.h"
 #include "mp/safeint.h"
 #include "expr.h"
-#include "problem.h"
+#include "aslproblem.h"
 
 struct Static;
 

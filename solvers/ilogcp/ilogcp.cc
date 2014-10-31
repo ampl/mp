@@ -31,7 +31,7 @@
  */
 
 #include "ilogcp/ilogcp.h"
-#include "asl/problem.h"
+#include "asl/aslproblem.h"
 
 #include <cctype>
 #include <cstdlib>

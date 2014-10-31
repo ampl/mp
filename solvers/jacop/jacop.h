@@ -26,8 +26,8 @@
 #include <vector>
 
 #include "mp/clock.h"
+#include "asl/aslproblem.h"
 #include "asl/aslsolver.h"
-#include "asl/problem.h"
 #include "jacop/java.h"
 
 namespace mp {

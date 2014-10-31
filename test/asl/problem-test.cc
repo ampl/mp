@@ -22,7 +22,7 @@
 
 #include <gmock/gmock.h>
 #include "asl/aslbuilder.h"
-#include "asl/problem.h"
+#include "asl/aslproblem.h"
 #include "mp/nl.h"
 #include "../util.h"
 #include "stderr-redirect.h"

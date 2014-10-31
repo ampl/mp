@@ -20,7 +20,7 @@
  Author: Victor Zverovich
  */
 
-#include "problem.h"
+#include "aslproblem.h"
 
 #include <stdlib.h>
 #include <cstring>

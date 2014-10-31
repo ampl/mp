@@ -20,8 +20,8 @@
  Author: Victor Zverovich
  */
 
-#ifndef MP_PROBLEM_H_
-#define MP_PROBLEM_H_
+#ifndef MP_ASLPROBLEM_H_
+#define MP_ASLPROBLEM_H_
 
 #include <algorithm>
 #include <deque>
@@ -590,4 +590,4 @@ class ProblemChanges {
 };
 }  // namespace mp
 
-#endif  // MP_PROBLEM_H_
+#endif  // MP_ASLPROBLEM_H_

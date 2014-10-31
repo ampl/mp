@@ -27,7 +27,7 @@
 
 #include "mp/nl.h"
 #include "asl/aslbuilder.h"
-#include "asl/problem.h"
+#include "asl/aslproblem.h"
 
 using mp::Function;
 using mp::Cast;
