@@ -1168,7 +1168,6 @@ class SolverApp : private Reader {
     void HandleOutput(fmt::StringRef output) {
       has_output = true;
       std::fputs(output.c_str(), stdout);
-      std::fflush(stdout);
     }
   };
   AppOutputHandler output_handler_;
@@ -1205,6 +1204,7 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   fmt::MemoryWriter banner;
   banner.write("{}: ", solver_.long_name());
   std::fputs(banner.c_str(), stdout);
+  std::fflush(stdout);
   output_handler_.has_output = false;
   // TODO: test output
 
@@ -1237,20 +1237,36 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   // Solve the problem writing solution(s) if necessary.
   std::auto_ptr<SolutionHandler> sol_handler;
   if (solver_.wantsol() != 0) {
+    class AppSolutionWriter : public SolutionWriter<Solver> {
+     private:
+      std::size_t banner_size_;
+
+     public:
+      AppSolutionWriter(fmt::StringRef stub, Solver &s, ProblemBuilder &b,
+                        ArrayRef<int> options, std::size_t banner_size)
+      : SolutionWriter<Solver>(stub, s, b, options),
+        banner_size_(banner_size) {}
+
+      void HandleSolution(int status, fmt::StringRef message,
+            const double *values, const double *dual_values, double obj_value) {
+        fmt::MemoryWriter w;
+        // "Erase" the banner so that it is not duplicated when printing
+        // the solver message.
+        w << fmt::pad("", banner_size_, '\b') << message;
+        SolutionWriter<Solver>::HandleSolution(
+              status, w.c_str(), values, dual_values, obj_value);
+      }
+    };
+    std::size_t banner_size = output_handler_.has_output ? 0 : banner.size();
     ArrayRef<int> options(handler.options(), handler.num_options());
-    sol_handler.reset(new SolutionWriter<Solver>(filename_no_ext, solver_,
-                                                 builder, options));
+    sol_handler.reset(new AppSolutionWriter(
+                        filename_no_ext, solver_, builder,
+                        options, banner_size));
   } else {
     sol_handler.reset(new NullSolutionHandler());
   }
   internal::SignalHandler sig_handler(solver_);
   solver_.Solve(builder, *sol_handler);
-  if (!output_handler_.has_output) {
-    // "Erase" the banner so that it is not duplicated when printing
-    // the solver message.
-    for (std::size_t i = 0, n = banner.size(); i != n; ++i)
-      std::putchar('\b');
-  }
   return 0;
 }
 
