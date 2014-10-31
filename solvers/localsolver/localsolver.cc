@@ -487,13 +487,13 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
 
   // Convert solution status.
   int solve_code = sol::UNKNOWN;
-  ls::LSSolution sol = solver.getSolution();
+  ls::LSSolutionStatus ls_status = solver.getSolution().getStatus();
   const char *status = "unknown";
   if (interrupter()->Stop()) {
     solve_code = sol::INTERRUPTED;
     status = "interrupted";
   } else {
-    switch (sol.getStatus()) {
+    switch (ls_status) {
     case ls::SS_Inconsistent:
       solve_code = sol::INFEASIBLE;
       status = "infeasible problem";
@@ -520,27 +520,28 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
     }
   }
 
+  fmt::MemoryWriter w;
+  w.write("{}: {}", long_name(), status);
+  double obj_val = std::numeric_limits<double>::quiet_NaN();
   std::vector<double> solution;
-  if (solve_code < sol::INFEASIBLE) {
+  if (ls_status == ls::SS_Optimal || ls_status == ls::SS_Feasible) {
+    if (builder.num_objs() != 0) {
+      obj_val = GetValue(model.getObjective(0));
+      w.write("; objective {}", FormatObjValue(obj_val));
+    }
     int num_vars = builder.num_vars();
     const ls::LSExpression *vars = builder.vars();
     solution.resize(num_vars);
     for (int i = 0; i < num_vars; ++i)
       solution[i] = GetValue(vars[i]);
   }
+  w.write("\n");
   double solution_time = GetTimeAndReset(time);
 
-  fmt::MemoryWriter w;
-  w.write("{}: {}\n", long_name(), status);
   ls::LSStatistics stats = solver.getStatistics();
   if (stats.getRunningTime() >= options_[TIMELIMIT])
     w.write("Stopped at time limit of {} seconds\n", options_[TIMELIMIT]);
   w.write("{}", stats.toString());
-  double obj_val = std::numeric_limits<double>::quiet_NaN();
-  if (builder.num_objs() != 0) {
-    obj_val = GetValue(model.getObjective(0));
-    w.write("objective {}", FormatObjValue(obj_val));
-  }
   sh.HandleSolution(solve_code, w.c_str(),
                     solution.empty() ? 0 : solution.data(), 0, obj_val);
   double output_time = GetTimeAndReset(time);
