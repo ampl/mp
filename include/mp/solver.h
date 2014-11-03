@@ -269,7 +269,7 @@ class SolverOption {
         value > std::numeric_limits<int>::max()) {
       throw Error("Value {} doesn't fit in int", value);
     }
-    int_value = value;
+    int_value = static_cast<int>(value);
   }
 
   template <typename T>
