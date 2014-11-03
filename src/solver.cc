@@ -39,6 +39,7 @@
 #else
 # include <io.h>
 # include <process.h>
+# include <windows.h>
 # define MP_WRITE _write
 # define strcasecmp _stricmp
 # undef max
@@ -367,7 +368,7 @@ void RunSignalRepeater(void *arg) {
 
 // Starts a signal repeater.
 void StartSignalRepeater() {
-  const char *s = getenv("SW_sigpipe");
+  char *s = getenv("SW_sigpipe");
   if (!s)
     return;
   static Pipe pipe;
