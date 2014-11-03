@@ -309,26 +309,15 @@ mp::internal::atomic<void*> SignalHandler::data_;
 
 volatile std::sig_atomic_t SignalHandler::stop_ = 1;
 
-SignalHandler::SignalHandler(Solver &s)
-  : solver_(s), message_(fmt::format("\n<BREAK> ({})\n", s.name())) {
-  solver_.set_interrupter(this);
-  signal_message_ptr_ = message_.c_str();
-  signal_message_size_ = static_cast<unsigned>(message_.size());
-  std::signal(SIGINT, HandleSigInt);
-  stop_ = 0;
-}
-
 #ifdef _WIN32
-struct Pipe {
-  HANDLE in;
-  HANDLE out;
-};
-
 // Signal repeater for Windows.
 // It is required since GenerateConsoleCtrlEvent doesn't
 // work reliably with CTRL_C_EVENT across processes.
 void RunSignalRepeater(void *arg) {
-  Pipe *pipe = reinterpret_cast<Pipe*>(arg);
+  using mp::internal::SignalRepeater;
+  SignalRepeater *repeater = reinterpret_cast<SignalRepeater*>(arg);
+  HANDLE in = reinterpret_cast<HANDLE>(repeater->in());
+  HANDLE out = reinterpret_cast<HANDLE>(repeater->out());
   for (;;) {
     struct {
       int sig;
@@ -336,7 +325,7 @@ void RunSignalRepeater(void *arg) {
       int num;
     } data = {0, 0, 0};
     DWORD count = 0;
-    if (!ReadFile(pipe->in, &data, sizeof(data), &count, 0) || count == 0)
+    if (!ReadFile(in, &data, sizeof(data), &count, 0) || count == 0)
       break;
     if (data.pid > 0 && data.pid != GetCurrentProcessId())
       data.sig = 0;
@@ -359,37 +348,42 @@ void RunSignalRepeater(void *arg) {
       if (data.pid >= 0)
         data.sig = 0;
     }
-    WriteFile(pipe->out, &data, count, &count, 0);
+    WriteFile(out, &data, count, &count, 0);
     if (sig)
       std::raise(sig);
     Sleep(50);
   }
 }
 
-// Starts a signal repeater.
-void StartSignalRepeater() {
-  char *s = getenv("SW_sigpipe");
+mp::internal::SignalRepeater::SignalRepeater(const char *s) : in_(0), out_(0) {
   if (!s)
     return;
-  static Pipe pipe;
-  if ((pipe.in = reinterpret_cast<HANDLE>(_strtoui64(s, &s, 10))) != 0 &&
-      *s == ',' &&
-      (pipe.out = reinterpret_cast<HANDLE>(_strtoui64(s, &s, 10))) != 0) {
-    _beginthread(RunSignalRepeater, 0, &pipe);
-  }
-}
-#else
-void StartSignalRepeater() {
-  // Signals don't need to be repeated on normal systems.
+  char *end = 0;
+  in_ = _strtoui64(s, &end, 10);
+  if (in_ == 0 || *end != ',')
+    return;
+  s = end + 1;
+  out_ = _strtoui64(s, &end, 10);
+  if (out_ != 0)
+    _beginthread(RunSignalRepeater, 0, this);
 }
 #endif
+
+SignalHandler::SignalHandler(Solver &s)
+  : solver_(s), message_(fmt::format("\n<BREAK> ({})\n", s.name())),
+    repeater_(std::getenv("SW_sigpipe")) {
+  solver_.set_interrupter(this);
+  signal_message_ptr_ = message_.c_str();
+  signal_message_size_ = static_cast<unsigned>(message_.size());
+  std::signal(SIGINT, HandleSigInt);
+  stop_ = 0;
+}
 
 SignalHandler::~SignalHandler() {
   solver_.set_interrupter(0);
   stop_ = 1;
   handler_ = 0;
   signal_message_size_ = 0;
-  StartSignalRepeater();
 }
 
 void SignalHandler::SetHandler(InterruptHandler handler, void *data) {

@@ -402,6 +402,20 @@ TEST(SolverTest, SignalHandlerExitOnTwoSIGINTs) {
       ReadFile("out"));
 }
 
+#ifdef _WIN32
+TEST(SignalRepeaterTest, NullPipeInfo) {
+  mp::internal::SignalRepeater repeater(0);
+  EXPECT_EQ(0, repeater.in());
+  EXPECT_EQ(0, repeater.out());
+}
+
+TEST(SignalRepeaterTest, ParsePipeInfo) {
+  mp::internal::SignalRepeater repeater("100,200");
+  EXPECT_EQ(100, repeater.in());
+  EXPECT_EQ(200, repeater.out());
+}
+#endif
+
 // ----------------------------------------------------------------------------
 // Option tests
 

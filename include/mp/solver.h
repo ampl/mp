@@ -1087,6 +1087,27 @@ class atomic {
 };
 #endif
 
+#ifdef _WIN32
+// Signal repeater used to pass signals across processes on Windows.
+class SignalRepeater {
+ private:
+  fmt::ULongLong in_;
+  fmt::ULongLong out_;
+
+ public:
+  // s: String in the "<int>,<int>" with integers representing the
+  //    handles for the input and output ends of the pipe.
+  explicit SignalRepeater(const char *s);
+
+  fmt::ULongLong in() const { return in_; }
+  fmt::ULongLong out() const { return out_; }
+};
+#else
+struct SignalRepeater {
+  explicit SignalRepeater(const char *) {}
+};
+#endif
+
 // A SIGINT handler
 class SignalHandler : public Interrupter {
  private:
@@ -1100,6 +1121,8 @@ class SignalHandler : public Interrupter {
   static atomic<void*> data_;
 
   static void HandleSigInt(int sig);
+
+  SignalRepeater repeater_;
 
  public:
   explicit SignalHandler(Solver &s);
