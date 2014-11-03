@@ -155,7 +155,8 @@ if (LOCALSOLVER_DLL)
   get_filename_component(LOCALSOLVER_DLL_NAME "${LOCALSOLVER_DLL}" NAME)
   add_custom_command(TARGET localsolver
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${LOCALSOLVER_DLL}" "$<TARGET_FILE_DIR:ilogcp>/${LOCALSOLVER_DLL_NAME}")
+    "${LOCALSOLVER_DLL}"
+    "$<TARGET_FILE_DIR:localvolver>/${LOCALSOLVER_DLL_NAME}")
 endif ()
 
 add_subdirectory(path)
