@@ -1106,10 +1106,10 @@ class SignalHandler : public Interrupter {
 
   ~SignalHandler();
 
-  // Returns true if the execution should be stopped due to SIGINT.
-  static bool stop() { return stop_ != 0; }
+  //static bool stop() { return stop_ != 0; }
 
-  bool Stop() const { return stop_; }
+  // Returns true if the execution should be stopped due to SIGINT.
+  bool Stop() const { return stop_ != 0; }
 
   void SetHandler(InterruptHandler handler, void *data);
 };

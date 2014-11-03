@@ -378,10 +378,10 @@ TEST(SolverTest, SignalHandler) {
   EXPECT_EXIT({
     FILE *f = freopen("out", "w", stdout);
     mp::internal::SignalHandler sh(s);
-    fmt::print("{}", mp::internal::SignalHandler::stop());
+    fmt::print("{}", sh.Stop());
     std::fflush(stdout);
     std::raise(SIGINT);
-    fmt::print("{}", mp::internal::SignalHandler::stop());
+    fmt::print("{}", sh.Stop());
     fclose(f);
     exit(0);
   }, ::testing::ExitedWithCode(0), "");
