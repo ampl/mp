@@ -26,6 +26,7 @@
 #include <cctype>
 #include <cstdarg>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 #include <algorithm>
@@ -37,6 +38,7 @@
 # define MP_WRITE write
 #else
 # include <io.h>
+# include <process.h>
 # define MP_WRITE _write
 # define strcasecmp _stricmp
 # undef max
@@ -315,11 +317,78 @@ SignalHandler::SignalHandler(Solver &s)
   stop_ = 0;
 }
 
+#ifdef _WIN32
+struct Pipe {
+  HANDLE in;
+  HANDLE out;
+};
+
+// Signal repeater for Windows.
+// It is required since GenerateConsoleCtrlEvent doesn't
+// work reliably with CTRL_C_EVENT across processes.
+void RunSignalRepeater(void *arg) {
+  Pipe *pipe = reinterpret_cast<Pipe*>(arg);
+  for (;;) {
+    struct {
+      int sig;
+      int pid;
+      int num;
+    } data = {0, 0, 0};
+    DWORD count = 0;
+    if (!ReadFile(pipe.in, &data, sizeof(data), &count, 0) || count == 0)
+      break;
+    if (data.pid > 0 && data.pid != GetCurrentProcessId())
+      data.sig = 0;
+    int sig = 0;
+    // Translate signal codes.
+    enum { SigInt = 2, SigTerm = 15, SigBreak = 21 };
+    switch (data.sig) {
+    case SigInt:
+      sig = SIGINT;
+      break;
+    case SigBreak:
+      sig = SIGBREAK;
+      break;
+    case SigTerm:
+      sig = SIGTERM;
+      break;
+    }
+    if (sig != 0) {
+      data.num++;
+      if (data.pid >= 0)
+        data.sig = 0;
+    }
+    WriteFile(pipe.out, data, count, &count, 0);
+    if (sig)
+      std::raise(sig);
+    Sleep(50);
+  }
+}
+
+// Starts a signal repeater.
+void StartSignalRepeater() {
+  const char *s = getenv("SW_sigpipe");
+  if (!s)
+    return;
+  static Pipe pipe;
+  if ((pipe.in = reinterpret_cast<HANDLE>(_strtoui64(s, &s, 10))) != 0 &&
+      *s == ',' &&
+      (pipe.out = reinterpret_cast<HANDLE>(_strtoui64(s, &s, 10))) != 0) {
+    _beginthread(RunSignalRepeater, 0, &pipe);
+  }
+}
+#else
+void StartSignalRepeater() {
+  // Signals don't need to be repeated on normal systems.
+}
+#endif
+
 SignalHandler::~SignalHandler() {
   solver_.set_interrupter(0);
   stop_ = 1;
   handler_ = 0;
   signal_message_size_ = 0;
+  StartSignalRepeater();
 }
 
 void SignalHandler::SetHandler(InterruptHandler handler, void *data) {

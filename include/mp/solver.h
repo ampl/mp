@@ -1196,6 +1196,8 @@ class SolverApp : private Reader {
 
 template <typename Solver, typename Reader>
 int SolverApp<Solver, Reader>::Run(char **argv) {
+  internal::SignalHandler sig_handler(solver_);
+
   // Parse command-line arguments.
   const char *filename = option_parser_.Parse(argv);
   if (!filename) return 0;
@@ -1265,7 +1267,6 @@ int SolverApp<Solver, Reader>::Run(char **argv) {
   } else {
     sol_handler.reset(new NullSolutionHandler());
   }
-  internal::SignalHandler sig_handler(solver_);
   solver_.Solve(builder, *sol_handler);
   return 0;
 }
