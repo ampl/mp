@@ -156,7 +156,7 @@ if (LOCALSOLVER_DLL)
   add_custom_command(TARGET localsolver
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${LOCALSOLVER_DLL}"
-    "$<TARGET_FILE_DIR:localvolver>/${LOCALSOLVER_DLL_NAME}")
+    "$<TARGET_FILE_DIR:localsolver>/${LOCALSOLVER_DLL_NAME}")
 endif ()
 
 add_subdirectory(path)
