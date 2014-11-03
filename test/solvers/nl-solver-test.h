@@ -1237,7 +1237,7 @@ TEST_F(NLSolverTest, Interrupt) {
   EXPECT_TRUE(sh.message().find("interrupted") != std::string::npos);
 }
 
-TEST_F(NLSolverTest, InitialSolution) {
+TEST_F(NLSolverTest, InitialValues) {
   ProblemBuilder pb(solver_.GetProblemBuilder(""));
   MakeTSP(pb);
   for (int i = 0; i < MP_TSP_SIZE; ++i) {
@@ -1249,6 +1249,10 @@ TEST_F(NLSolverTest, InitialSolution) {
   TestSolutionHandler sh(MP_TSP_SIZE * MP_TSP_SIZE);
   solver_.Solve(pb, sh);
   const double *primal = sh.primal();
+  if (!HasFeature(feature::INITIAL_VALUES)) {
+    ASSERT_TRUE(primal == 0);
+    return;
+  }
   ASSERT_TRUE(primal != 0);
   for (int i = 0; i < MP_TSP_SIZE; ++i) {
     for (int j = 0; j < MP_TSP_SIZE; ++j)
@@ -1412,15 +1416,6 @@ struct TestOutputHandler : public mp::OutputHandler {
   std::string output;
   void HandleOutput(fmt::StringRef output) { this->output += output; }
 };
-
-// Test that providing an initial value doesn't cause an error.
-TEST_F(NLSolverTest, InitialValue) {
-  ProblemBuilder pb(solver_.GetProblemBuilder(""));
-  auto info = mp::ProblemInfo();
-  info.num_vars = info.num_algebraic_cons = 1;
-  pb.SetInfo(info);
-  pb.SetInitialValue(0, 0);
-}
 
 // Test that providing an initial dual value doesn't cause an error.
 TEST_F(NLSolverTest, InitialDualValue) {
