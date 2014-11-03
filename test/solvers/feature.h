@@ -26,17 +26,18 @@
 // Solver features.
 namespace feature {
 enum Feature {
-  FLOAT_CONST   = 0x001,
-  DIV           = 0x002,
-  POW           = 0x004,
-  SQRT          = 0x008,
-  LOG           = 0x010,
-  EXP           = 0x020,
-  TRIGONOMETRIC = 0x040,
-  HYPERBOLIC    = 0x080,
-  PLTERM        = 0x100,
-  MULTIOBJ      = 0x200,
-  ALL           = 0xfff
+  FLOAT_CONST    = 0x001,
+  DIV            = 0x002,
+  POW            = 0x004,
+  SQRT           = 0x008,
+  LOG            = 0x010,
+  EXP            = 0x020,
+  TRIGONOMETRIC  = 0x040,
+  HYPERBOLIC     = 0x080,
+  PLTERM         = 0x100,
+  MULTIOBJ       = 0x200,
+  INITIAL_VALUES = 0x400,
+  ALL            = 0xfff
 };
 }
 

@@ -43,7 +43,7 @@
 #include "feature.h"
 
 typedef mp::IlogCPSolver Solver;
-enum {FEATURES = ~feature::TRIGONOMETRIC};
+enum {FEATURES = ~feature::TRIGONOMETRIC & ~feature::INITIAL_VALUES};
 
 #include "nl-solver-test.h"
 

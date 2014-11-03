@@ -1249,6 +1249,7 @@ TEST_F(NLSolverTest, InitialSolution) {
   TestSolutionHandler sh(MP_TSP_SIZE * MP_TSP_SIZE);
   solver_.Solve(pb, sh);
   const double *primal = sh.primal();
+  ASSERT_TRUE(primal != 0);
   for (int i = 0; i < MP_TSP_SIZE; ++i) {
     for (int j = 0; j < MP_TSP_SIZE; ++j)
       EXPECT_EQ(i + j == MP_TSP_SIZE - 1 ? 1 : 0, primal[i * MP_TSP_SIZE + j]);
