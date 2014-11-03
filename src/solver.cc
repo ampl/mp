@@ -336,7 +336,7 @@ void RunSignalRepeater(void *arg) {
       int num;
     } data = {0, 0, 0};
     DWORD count = 0;
-    if (!ReadFile(pipe.in, &data, sizeof(data), &count, 0) || count == 0)
+    if (!ReadFile(pipe->in, &data, sizeof(data), &count, 0) || count == 0)
       break;
     if (data.pid > 0 && data.pid != GetCurrentProcessId())
       data.sig = 0;
@@ -359,7 +359,7 @@ void RunSignalRepeater(void *arg) {
       if (data.pid >= 0)
         data.sig = 0;
     }
-    WriteFile(pipe.out, data, count, &count, 0);
+    WriteFile(pipe->out, &data, count, &count, 0);
     if (sig)
       std::raise(sig);
     Sleep(50);
