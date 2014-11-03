@@ -20,8 +20,8 @@
  Author: Victor Zverovich
  */
 
-#ifndef MP_EXPR_H_
-#define MP_EXPR_H_
+#ifndef MP_ASLEXPR_H_
+#define MP_ASLEXPR_H_
 
 #ifdef MP_USE_UNORDERED_MAP
 # include <unordered_map>
@@ -1459,4 +1459,4 @@ Var NumberOfMap<Var, CreateVar>::Add(double value, NumberOfExpr e) {
 }
 }  // namespace mp
 
-#endif  // MP_EXPR_H_
+#endif  // MP_ASLEXPR_H_
