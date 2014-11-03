@@ -1214,7 +1214,11 @@ class TestInterrupter : public TestInterrupterBase {
 
  public:
   explicit TestInterrupter(Solver &s) : TestInterrupterBase(s) {}
-  ~TestInterrupter() { thread_.join(); }
+
+  ~TestInterrupter() {
+    if (thread_.joinable())
+      thread_.join();
+  }
 
   void SetHandler(mp::InterruptHandler handler, void *data) {
     thread_ = std::thread(Run, handler, data);
@@ -1231,6 +1235,24 @@ TEST_F(NLSolverTest, Interrupt) {
   solver_.Solve(pb, sh);
   EXPECT_EQ(600, sh.status());
   EXPECT_TRUE(sh.message().find("interrupted") != std::string::npos);
+}
+
+TEST_F(NLSolverTest, InitialSolution) {
+  ProblemBuilder pb(solver_.GetProblemBuilder(""));
+  MakeTSP(pb);
+  for (int i = 0; i < MP_TSP_SIZE; ++i) {
+    for (int j = 0; j < MP_TSP_SIZE; ++j)
+      pb.SetInitialValue(i * MP_TSP_SIZE + j, i + j == MP_TSP_SIZE - 1 ? 1 : 0);
+  }
+  pb.EndBuild();
+  TestInterrupter interrupter(solver_);
+  TestSolutionHandler sh(MP_TSP_SIZE * MP_TSP_SIZE);
+  solver_.Solve(pb, sh);
+  const double *primal = sh.primal();
+  for (int i = 0; i < MP_TSP_SIZE; ++i) {
+    for (int j = 0; j < MP_TSP_SIZE; ++j)
+      EXPECT_EQ(i + j == MP_TSP_SIZE - 1 ? 1 : 0, primal[i * MP_TSP_SIZE + j]);
+  }
 }
 
 #endif

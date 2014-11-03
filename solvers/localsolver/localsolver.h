@@ -52,6 +52,7 @@ class LSProblemBuilder :
   int num_cons_;
 
   std::vector<ls::LSExpression> vars_;
+  std::vector<double> initial_values_;
 
   typedef ProblemBuilder<LSProblemBuilder, ls::LSExpression> Base;
 
@@ -125,7 +126,11 @@ class LSProblemBuilder :
   // added for a single range constraint.
   int num_cons() const { return num_cons_; }
 
-  const ls::LSExpression *vars() const { return &vars_[0]; }
+  ls::LSExpression *vars() { return &vars_[0]; }
+
+  const double *initial_values() const {
+    return !initial_values_.empty() ? &initial_values_[0] : 0;
+  }
 
   void SetInfo(const ProblemInfo &info);
 
@@ -189,6 +194,14 @@ class LSProblemBuilder :
     if (expr != ls::LSExpression())
       result.addOperand(expr);
     return result;
+  }
+
+  void SetInitialValue(int var_index, double value) {
+    // Store initial values because it is not possible to assign them
+    // until the model is closed.
+    if (initial_values_.empty())
+      initial_values_.resize(vars_.size());
+    initial_values_[var_index] = value;
   }
 
   // Ignore Jacobian column sizes.

@@ -466,6 +466,19 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
     model.addObjective(model.createConstant(AsLSInt(0)), ls::OD_Minimize);
   model.close();
 
+  // Set initial values.
+  ls::LSExpression *vars = builder.vars();
+  if (const double *initial_values = builder.initial_values()) {
+    for (int i = 0; i < builder.num_vars(); ++i) {
+      double value = initial_values[i];
+      ls::lsint int_value = value;
+      if (int_value == value)
+        vars[i].setValue(int_value);
+      else
+        vars[i].setValue(value);
+    }
+  }
+
   // Set options. LS requires this to be done after the model is closed.
   ls::LSParam param = solver.getParam();
   param.setSeed(options_[SEED]);
@@ -530,7 +543,6 @@ void LocalSolver::Solve(ProblemBuilder &builder, SolutionHandler &sh) {
       w.write("; objective {}", FormatObjValue(obj_val));
     }
     int num_vars = builder.num_vars();
-    const ls::LSExpression *vars = builder.vars();
     solution.resize(num_vars);
     for (int i = 0; i < num_vars; ++i)
       solution[i] = GetValue(vars[i]);
