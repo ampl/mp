@@ -156,6 +156,16 @@ TEST(ExprTest, TooManySlopes) {
   EXPECT_DEBUG_DEATH(builder.AddSlope(2), "too many slopes");
 }
 
+TEST(ExprTest, InvalidPLTermArgument) {
+  mp::ExprFactory factory;
+  auto builder = factory.BeginPLTerm(1);
+  builder.AddSlope(0);
+  builder.AddBreakpoint(0);
+  builder.AddSlope(1);
+  EXPECT_DEBUG_DEATH(factory.EndPLTerm(builder, mp::Variable()),
+                     "invalid argument");
+}
+
 #endif
 
 TEST(ExprTest, TooFewBreakpoints) {
@@ -174,16 +184,6 @@ TEST(ExprTest, TooFewSlopes) {
   builder.AddSlope(0);
   EXPECT_DEBUG_DEATH(factory.EndPLTerm(builder, factory.MakeVariable(0)),
                      "too few slopes");
-}
-
-TEST(ExprTest, InvalidPLTermArgument) {
-  mp::ExprFactory factory;
-  auto builder = factory.BeginPLTerm(1);
-  builder.AddSlope(0);
-  builder.AddBreakpoint(0);
-  builder.AddSlope(1);
-  EXPECT_DEBUG_DEATH(factory.EndPLTerm(builder, mp::Variable()),
-                     "invalid argument");
 }
 
 TEST(ExprTest, Function) {
