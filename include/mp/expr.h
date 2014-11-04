@@ -416,6 +416,12 @@ class VarArgExpr : public NumericExpr {
   // Returns the number of arguments.
   int num_args() const { return impl()->num_args; }
 
+  // Returns an argument with the specified index.
+  Expr arg(int index) {
+    assert(index >= 0 && index < num_args() && "index out of bounds");
+    return Create<Expr>(impl()->args[index]);
+  }
+
   // An argument iterator.
   typedef ArrayIterator<NumericExpr> iterator;
 
@@ -425,7 +431,7 @@ class VarArgExpr : public NumericExpr {
 
 MP_SPECIALIZE_IS_RANGE(VarArgExpr, VARARG)
 
-// TODO: numeric expressions vararg, sum, count, numberof
+// TODO: numeric expressions sum, count, numberof
 
 // A logical constant.
 // Examples: 0, 1
@@ -500,6 +506,7 @@ class ExprFactory {
 
   // Makes a unary expression.
   UnaryExpr MakeUnary(expr::Kind kind, NumericExpr arg) {
+    assert(internal::Is<UnaryExpr>(kind) && "invalid expression kind");
     assert(arg != 0 && "invalid argument");
     UnaryExpr::Impl *impl = Allocate<UnaryExpr::Impl>(kind);
     impl->arg = arg.impl_;
@@ -508,6 +515,7 @@ class ExprFactory {
 
   // Makes a binary expression.
   BinaryExpr MakeBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
+    assert(internal::Is<BinaryExpr>(kind) && "invalid expression kind");
     assert(lhs != 0 && rhs != 0 && "invalid argument");
     BinaryExpr::Impl *impl = Allocate<BinaryExpr::Impl>(kind);
     impl->lhs = lhs.impl_;
@@ -636,6 +644,7 @@ class ExprFactory {
 
   // Begins building a variable argument expression.
   VarArgExprBuilder BeginVarArg(expr::Kind kind, int num_args) {
+    assert(internal::Is<VarArgExpr>(kind) && "invalid expression kind");
     assert(num_args >= 1 && "invalid number of arguments");
     VarArgExpr::Impl *impl = Allocate<VarArgExpr::Impl>(
           kind, sizeof(Expr::Impl*) * (num_args - 1));
