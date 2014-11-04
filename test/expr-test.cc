@@ -124,6 +124,8 @@ TEST(ExprTest, PLTerm) {
   EXPECT_DEBUG_DEATH(factory.BeginPLTerm(0), "invalid number of breakpoints");
 }
 
+#ifndef NDEBUG
+
 TEST(ExprTest, TooManyBreakpoints) {
   mp::ExprFactory factory;
   auto builder = factory.BeginPLTerm(1);
@@ -138,6 +140,8 @@ TEST(ExprTest, TooManySlopes) {
   builder.AddSlope(1);
   EXPECT_DEBUG_DEATH(builder.AddSlope(2), "too many slopes");
 }
+
+#endif
 
 TEST(ExprTest, TooFewBreakpoints) {
   mp::ExprFactory factory;
