@@ -255,7 +255,7 @@ TEST(ExprTest, VarArgExpr) {
   EXPECT_TRUE(e == 0);
   ExprFactory factory;
   ExprFactory::VarArgExprBuilder builder = factory.BeginVarArg(expr::MAX, 3);
-  mp::Expr args[] = {
+  mp::NumericExpr args[] = {
     factory.MakeNumericConstant(11),
     factory.MakeVariable(0),
     factory.MakeNumericConstant(22)
@@ -267,7 +267,8 @@ TEST(ExprTest, VarArgExpr) {
   EXPECT_EQ(3, e.num_args());
   mp::VarArgExpr::iterator it = e.begin();
   for (int i = 0; i < 3; ++i, ++it) {
-    EXPECT_EQ(args[i], e.arg(i));
+    mp::NumericExpr arg = e.arg(i);
+    EXPECT_EQ(args[i], arg);
     EXPECT_EQ(args[i], *it);
   }
   EXPECT_EQ(e.end(), it);
@@ -279,4 +280,33 @@ TEST(ExprTest, VarArgExpr) {
   EXPECT_DEBUG_DEATH(factory.BeginVarArg(expr::SUM, 1),
                      "invalid expression kind");
 }
+
+TEST(ExprTest, SumExpr) {
+  mp::SumExpr e;
+  EXPECT_TRUE(e == 0);
+  ExprFactory factory;
+  ExprFactory::SumExprBuilder builder = factory.BeginSum(3);
+  mp::NumericExpr args[] = {
+    factory.MakeNumericConstant(11),
+    factory.MakeVariable(0),
+    factory.MakeNumericConstant(22)
+  };
+  for (int i = 0; i < 3; ++i)
+    builder.AddArg(args[i]);
+  e = factory.EndSum(builder);
+  EXPECT_EQ(expr::SUM, e.kind());
+  EXPECT_EQ(3, e.num_args());
+  mp::SumExpr::iterator it = e.begin();
+  for (int i = 0; i < 3; ++i, ++it) {
+    mp::NumericExpr arg = e.arg(i);
+    EXPECT_EQ(args[i], arg);
+    EXPECT_EQ(args[i], *it);
+  }
+  EXPECT_EQ(e.end(), it);
+  EXPECT_DEBUG_DEATH(e.arg(-1), "index out of bounds");
+  EXPECT_DEBUG_DEATH(e.arg(3), "index out of bounds");
+  EXPECT_DEBUG_DEATH(factory.BeginSum(-1), "invalid number of arguments");
+  factory.BeginSum(0);
+}
+
 // TODO

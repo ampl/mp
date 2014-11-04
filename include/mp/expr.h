@@ -398,10 +398,8 @@ class CallExpr : public NumericExpr {
 
 MP_SPECIALIZE_IS(CallExpr, CALL)
 
-// A numeric expression with a variable number of arguments.
-// The min and max functions always have at least one argument.
-// Example: min{i in I} x[i], where I is a set and x is a variable.
-class VarArgExpr : public NumericExpr {
+template <expr::Kind KIND, typename Arg = NumericExpr>
+class BasicIteratedExpr : public NumericExpr {
  private:
   struct Impl : Expr::Impl {
     int num_args;
@@ -417,21 +415,39 @@ class VarArgExpr : public NumericExpr {
   int num_args() const { return impl()->num_args; }
 
   // Returns an argument with the specified index.
-  Expr arg(int index) {
+  Arg arg(int index) {
     assert(index >= 0 && index < num_args() && "index out of bounds");
-    return Create<Expr>(impl()->args[index]);
+    return Create<Arg>(impl()->args[index]);
   }
 
   // An argument iterator.
-  typedef ArrayIterator<NumericExpr> iterator;
+  typedef ArrayIterator<Arg> iterator;
 
   iterator begin() const { return iterator(impl()->args); }
   iterator end() const { return iterator(impl()->args + num_args()); }
 };
 
+// A numeric expression with a variable number of arguments.
+// The min and max functions always have at least one argument.
+// Example: min{i in I} x[i], where I is a set and x is a variable.
+typedef BasicIteratedExpr<expr::FIRST_VARARG> VarArgExpr;
 MP_SPECIALIZE_IS_RANGE(VarArgExpr, VARARG)
 
-// TODO: numeric expressions sum, count, numberof
+// A sum expression.
+// Example: sum{i in I} x[i], where I is a set and x is a variable.
+typedef BasicIteratedExpr<expr::SUM> SumExpr;
+MP_SPECIALIZE_IS(SumExpr, SUM)
+
+// A count expression.
+// Example: count{i in I} (x[i] >= 0), where I is a set and x is a variable.
+typedef BasicIteratedExpr<expr::COUNT, mp::LogicalExpr> CountExpr;
+MP_SPECIALIZE_IS(CountExpr, COUNT)
+
+// A numberof expression.
+// Example: numberof 42 in ({i in I} x[i]),
+// where I is a set and x is a variable.
+typedef BasicIteratedExpr<expr::NUMBEROF> NumberOfExpr;
+MP_SPECIALIZE_IS(NumberOfExpr, NUMBEROF)
 
 // A logical constant.
 // Examples: 0, 1
@@ -451,6 +467,8 @@ class LogicalConstant : public LogicalExpr {
 };
 
 MP_SPECIALIZE_IS(LogicalConstant, CONSTANT)
+
+// TODO: logical expressions
 
 class ExprFactory {
  private:
@@ -472,6 +490,43 @@ class ExprFactory {
     impl->kind_ = kind;
     exprs_.back() = impl;
     return impl;
+  }
+
+  // A variable argument expression builder.
+  template <typename ExprClass>
+  class IteratedExprBuilder {
+   private:
+    typename ExprClass::Impl *impl_;
+    int arg_index_;
+
+    friend class ExprFactory;
+
+    explicit IteratedExprBuilder(typename ExprClass::Impl *impl)
+      : impl_(impl), arg_index_(0) {}
+
+   public:
+    void AddArg(NumericExpr arg) {
+      assert(arg_index_ < impl_->num_args && "too many arguments");
+      impl_->args[arg_index_++] = arg.impl_;
+    }
+  };
+
+  template <typename ExprClass>
+  IteratedExprBuilder<ExprClass> BeginIteratedExpr(
+        expr::Kind kind, int num_args, int min_args) {
+    assert(num_args >= min_args && "invalid number of arguments");
+    typename ExprClass::Impl *impl = Allocate<typename ExprClass::Impl>(
+          kind, sizeof(Expr::Impl*) * (num_args - 1));
+    impl->num_args = num_args;
+    return IteratedExprBuilder<ExprClass>(impl);
+  }
+
+  template <typename ExprClass>
+  ExprClass EndIteratedExpr(IteratedExprBuilder<ExprClass> &builder) {
+    typename ExprClass::Impl *impl = builder.impl_;
+    // Check that all arguments provided.
+    assert(builder.arg_index_ == impl->num_args && "too few arguments");
+    return Expr::Create<ExprClass>(impl);
   }
 
  public:
@@ -624,43 +679,32 @@ class ExprFactory {
     return Expr::Create<CallExpr>(impl);
   }
 
-  // A variable argument expression builder.
-  class VarArgExprBuilder {
-   private:
-    VarArgExpr::Impl *impl_;
-    int arg_index_;
-
-    friend class ExprFactory;
-
-    explicit VarArgExprBuilder(VarArgExpr::Impl *impl)
-      : impl_(impl), arg_index_(0) {}
-
-   public:
-    void AddArg(Expr arg) {
-      assert(arg_index_ < impl_->num_args && "too many arguments");
-      impl_->args[arg_index_++] = arg.impl_;
-    }
-  };
+  typedef IteratedExprBuilder<VarArgExpr> VarArgExprBuilder;
 
   // Begins building a variable argument expression.
   VarArgExprBuilder BeginVarArg(expr::Kind kind, int num_args) {
     assert(internal::Is<VarArgExpr>(kind) && "invalid expression kind");
-    assert(num_args >= 1 && "invalid number of arguments");
-    VarArgExpr::Impl *impl = Allocate<VarArgExpr::Impl>(
-          kind, sizeof(Expr::Impl*) * (num_args - 1));
-    impl->num_args = num_args;
-    return VarArgExprBuilder(impl);
+    return BeginIteratedExpr<VarArgExpr>(kind, num_args, 1);
   }
 
   // Ends building a variable argument expression.
   VarArgExpr EndVarArg(VarArgExprBuilder &builder) {
-    VarArgExpr::Impl *impl = builder.impl_;
-    // Check that all arguments provided.
-    assert(builder.arg_index_ == impl->num_args && "too few arguments");
-    return Expr::Create<VarArgExpr>(impl);
+    return EndIteratedExpr<VarArgExpr>(builder);
   }
 
-  // TODO: more numeric expressions
+  typedef IteratedExprBuilder<SumExpr> SumExprBuilder;
+
+  // Begins building a sum expression.
+  SumExprBuilder BeginSum(int num_args) {
+    return BeginIteratedExpr<SumExpr>(expr::SUM, num_args, 0);
+  }
+
+  // Ends building a sum expression.
+  SumExpr EndSum(SumExprBuilder &builder) {
+    return EndIteratedExpr<SumExpr>(builder);
+  }
+
+  // TODO: count, numberof
 
   // Makes a logical constant.
   LogicalConstant MakeLogicalConstant(bool value) {
