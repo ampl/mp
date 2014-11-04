@@ -23,30 +23,6 @@
 #include "mp/expr.h"
 #include "gtest-extra.h"
 
-struct TestExpr : mp::Expr {
-  typedef ArrayIterator<mp::Expr> iterator;
-};
-
-TEST(ExprTest, ArrayIterator) {
-  mp::internal::ExprImpl exprs[3] = {
-    mp::expr::ABS, mp::expr::SUM, mp::expr::AND
-  };
-  mp::internal::ExprImpl *args[] = {exprs + 1, exprs, exprs + 2};
-  TestExpr::iterator i = TestExpr::iterator(args);
-  EXPECT_EQ(mp::expr::SUM, (*i).kind());
-  EXPECT_EQ(mp::expr::SUM, i->kind());
-  EXPECT_EQ(TestExpr::iterator(args), i);
-  EXPECT_NE(TestExpr::iterator(args + 1), i);
-  TestExpr::iterator j = i;
-  EXPECT_EQ(j, i);
-  j = i++;
-  EXPECT_EQ(mp::expr::SUM, j->kind());
-  EXPECT_EQ(mp::expr::ABS, i->kind());
-  j = ++i;
-  EXPECT_EQ(j, i);
-  EXPECT_EQ(mp::expr::AND, i->kind());
-}
-
 TEST(ExprTest, Expr) {
   mp::Expr e;
   EXPECT_TRUE(e == 0);
@@ -242,6 +218,39 @@ TEST(ExprTest, CallExpr) {
   EXPECT_DEBUG_DEATH(factory.BeginCall(f, -1), "invalid number of arguments");
   factory.BeginCall(f, 0);
   EXPECT_DEBUG_DEATH(factory.BeginCall(mp::Function(), 0), "invalid function");
+}
+
+struct TestExpr : public mp::Expr {
+  void f() {
+    mp::Expr::Impl impl;
+  }
+};
+
+TEST(ExprTest, CallExprIterator) {
+  mp::ExprFactory factory;
+  mp::Function f = factory.AddFunction("foo");
+  mp::ExprFactory::CallExprBuilder builder = factory.BeginCall(f, 3);
+  mp::Expr args[] = {
+    factory.MakeNumericConstant(11),
+    factory.MakeVariable(0),
+    factory.MakeNumericConstant(22)
+  };
+  for (int i = 0; i < 3; ++i)
+    builder.AddArg(args[i]);
+  auto e = factory.EndCall(builder);
+  mp::CallExpr::iterator i = e.begin();
+  EXPECT_EQ(args[0], *i);
+  EXPECT_EQ(mp::expr::CONSTANT, i->kind());
+  EXPECT_EQ(mp::CallExpr::iterator(e.begin()), i);
+  auto j = i;
+  EXPECT_TRUE(i == j);
+  j = i++;
+  EXPECT_TRUE(i != j);
+  EXPECT_EQ(args[0], *j);
+  EXPECT_EQ(args[1], *i);
+  j = ++i;
+  EXPECT_EQ(j, i);
+  EXPECT_EQ(args[2], *i);
 }
 
 // TODO

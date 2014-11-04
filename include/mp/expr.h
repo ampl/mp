@@ -31,58 +31,13 @@
 
 namespace mp {
 
+class ExprFactory;
+
 namespace internal {
-
-struct ExprImpl {
-  expr::Kind kind;
-};
-
-struct NumericConstantImpl : ExprImpl {
-  double value;
-};
-
-struct VariableImpl : ExprImpl {
-  int index;
-};
-
-struct UnaryExprImpl : ExprImpl {
-  const ExprImpl *arg;
-};
-
-struct BinaryExprImpl : ExprImpl {
-  const ExprImpl *lhs;
-  const ExprImpl *rhs;
-};
-
-struct IfExprImpl : ExprImpl {
-  const ExprImpl *condition;
-  const ExprImpl *true_expr;
-  const ExprImpl *false_expr;
-};
-
-struct PLTermImpl : ExprImpl {
-  int num_breakpoints;
-  int var_index;
-  double data[1];
-};
-
-struct FunctionImpl {};
-
-struct CallExprImpl : ExprImpl {
-  const FunctionImpl *func;
-  int num_args;
-  const ExprImpl *args[1];
-};
-
-struct LogicalConstantImpl : ExprImpl {
-  bool value;
-};
-
 // Returns true if the non-null expression e is of type ExprClass.
 template <typename ExprClass>
 bool Is(expr::Kind k);
-
-}  // namespace internal
+}
 
 // Specialize Is<Expr> for the class ExprClass corresponding to a single
 // expression kind.
@@ -107,29 +62,26 @@ inline bool Is<ExprClass>(expr::Kind k) { \
 // it is cheap to construct and pass by value. A type safe way to
 // process expressions of different types is by using ExprVisitor.
 class Expr {
+ protected:
+  class Impl {
+   private:
+    // Only ExprFactory should be able to set Impl::kind_.
+    expr::Kind kind_;
+
+    friend class mp::ExprFactory;
+
+   public:
+    expr::Kind kind() const { return kind_; }
+  };
+
  private:
-  const internal::ExprImpl *impl_;
+  const Impl *impl_;
 
   // A member function representing the true value of SafeBool.
   void True() const {}
 
   // Safe bool type.
   typedef void (Expr::*SafeBool)() const;
-
- protected:
-  const internal::ExprImpl *impl() const { return impl_; }
-
-  // Creates an expression from an implementation.
-  template <typename TargetExpr>
-  static TargetExpr Create(const internal::ExprImpl *impl) {
-    assert((!impl || internal::Is<TargetExpr>(impl->kind)) &&
-           "invalid expression kind");
-    TargetExpr expr;
-    expr.impl_ = impl;
-    return expr;
-  }
-
-  friend class ExprFactory;
 
   // An expression proxy used for implementing operator-> in iterators.
   template <typename ExprClass>
@@ -138,21 +90,36 @@ class Expr {
     ExprClass expr_;
 
    public:
-    explicit Proxy(const internal::ExprImpl *e)
-      : expr_(Create<ExprClass>(e)) {}
+    explicit Proxy(const Expr::Impl *e) : expr_(Create<ExprClass>(e)) {}
 
     const ExprClass *operator->() const { return &expr_; }
   };
+
+ protected:
+  // Returns a pointer to the implementation.
+  const Impl *impl() const { return impl_; }
+
+  // Creates an expression from an implementation.
+  template <typename TargetExpr>
+  static TargetExpr Create(const Expr::Impl *impl) {
+    assert((!impl || internal::Is<TargetExpr>(impl->kind())) &&
+           "invalid expression kind");
+    TargetExpr expr;
+    expr.impl_ = impl;
+    return expr;
+  }
+
+  friend class ExprFactory;
 
   // An expression array iterator.
   template <typename ExprClass>
   class ArrayIterator :
     public std::iterator<std::forward_iterator_tag, ExprClass> {
    private:
-    const internal::ExprImpl *const *ptr_;
+    const Expr::Impl *const *ptr_;
 
    public:
-    explicit ArrayIterator(const internal::ExprImpl *const *p = 0) : ptr_(p) {}
+    explicit ArrayIterator(const Expr::Impl *const *p = 0) : ptr_(p) {}
 
     ExprClass operator*() const { return Create<ExprClass>(*ptr_); }
 
@@ -180,7 +147,7 @@ class Expr {
   Expr() : impl_(0) {}
 
   // Returns the expression kind.
-  expr::Kind kind() const { return impl_->kind; }
+  expr::Kind kind() const { return impl_->kind(); }
 
   // Returns a value convertible to bool that can be used in conditions but not
   // in comparisons and evaluates to "true" if this expression is not null
@@ -211,7 +178,15 @@ MP_SPECIALIZE_IS_RANGE(LogicalExpr, LOGICAL)
 // A numeric constant.
 // Examples: 42, -1.23e-4
 class NumericConstant : public NumericExpr {
-  MP_EXPR(NumericConstantImpl)
+ private:
+  struct Impl : Expr::Impl {
+    double value;
+  };
+
+  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
+
+  friend class ExprFactory;
+
  public:
   // Returns the value of this constant.
   double value() const { return impl()->value; }
@@ -222,7 +197,15 @@ MP_SPECIALIZE_IS(NumericConstant, CONSTANT)
 // A reference to a variable.
 // Example: x
 class Variable : public NumericExpr {
-  MP_EXPR(VariableImpl)
+ private:
+  struct Impl : Expr::Impl {
+    int index;
+  };
+
+  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
+
+  friend class ExprFactory;
+
  public:
   // Returns the index of the referenced variable.
   int index() const { return impl()->index; }
@@ -234,7 +217,15 @@ MP_SPECIALIZE_IS(Variable, VARIABLE)
 // Base: base expression class.
 template <typename Base>
 class BasicUnaryExpr : public Base {
-  MP_EXPR(UnaryExprImpl)
+ private:
+  struct Impl : Expr::Impl {
+    const Expr::Impl *arg;
+  };
+
+  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
+
+  friend class ExprFactory;
+
  public:
   // Returns the argument of this expression.
   Base arg() const { return Expr::Create<Base>(impl()->arg); }
@@ -250,7 +241,16 @@ MP_SPECIALIZE_IS_RANGE(UnaryExpr, UNARY)
 // Arg: argument expression class.
 template <typename Base, typename Arg = Base>
 class BasicBinaryExpr : public Base {
-  MP_EXPR(BinaryExprImpl)
+ private:
+  struct Impl : Expr::Impl {
+    const Expr::Impl *lhs;
+    const Expr::Impl *rhs;
+  };
+
+  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
+
+  friend class ExprFactory;
+
  public:
   // Returns the left-hand side (the first argument) of this expression.
   Arg lhs() const { return Expr::Create<Arg>(impl()->lhs); }
@@ -266,7 +266,17 @@ MP_SPECIALIZE_IS_RANGE(BinaryExpr, BINARY)
 
 template <typename Base>
 class BasicIfExpr : public Base {
-  MP_EXPR(IfExprImpl)
+ private:
+  struct Impl : Expr::Impl {
+    const Expr::Impl *condition;
+    const Expr::Impl *true_expr;
+    const Expr::Impl *false_expr;
+  };
+
+  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
+
+  friend class ExprFactory;
+
  public:
   LogicalExpr condition() const {
     return Expr::Create<LogicalExpr>(impl()->condition);
@@ -284,7 +294,17 @@ MP_SPECIALIZE_IS(IfExpr, IF)
 // A piecewise-linear term.
 // Example: <<0; -1, 1>> x, where x is a variable.
 class PLTerm : public NumericExpr {
-  MP_EXPR(PLTermImpl)
+ private:
+  struct Impl : Expr::Impl {
+    int num_breakpoints;
+    int var_index;
+    double data[1];
+  };
+
+  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
+
+  friend class ExprFactory;
+
  public:
   // Returns the number of breakpoints in this term.
   int num_breakpoints() const { return impl()->num_breakpoints; }
@@ -312,7 +332,9 @@ MP_SPECIALIZE_IS(PLTerm, PLTERM)
 // A reference to a function.
 class Function {
  private:
-  const internal::FunctionImpl *impl_;
+  struct Impl {};
+
+  const Impl *impl_;
 
   // A member function representing the true value of SafeBool.
   void True() const {}
@@ -320,7 +342,7 @@ class Function {
   // Safe bool type.
   typedef void (Function::*SafeBool)() const;
 
-  explicit Function(const internal::FunctionImpl *impl) : impl_(impl) {}
+  explicit Function(const Impl *impl) : impl_(impl) {}
 
   friend class CallExpr;
   friend class ExprFactory;
@@ -344,7 +366,17 @@ class Function {
 // A function call expression.
 // Example: f(x), where f is a function and x is a variable.
 class CallExpr : public NumericExpr {
-  MP_EXPR(CallExprImpl)
+ private:
+  struct Impl : Expr::Impl {
+    const Function::Impl *func;
+    int num_args;
+    const Expr::Impl *args[1];
+  };
+
+  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
+
+  friend class ExprFactory;
+
  public:
   Function function() const { return Function(impl()->func); }
 
@@ -366,12 +398,47 @@ class CallExpr : public NumericExpr {
 
 MP_SPECIALIZE_IS(CallExpr, CALL)
 
+// A numeric expression with a variable number of arguments.
+// The min and max functions always have at least one argument.
+// Example: min{i in I} x[i], where I is a set and x is a variable.
+class VarArgExpr : public NumericExpr {
+ private:
+  struct Impl : Expr::Impl {
+    int num_args;
+    const Expr::Impl *args[1];
+  };
+
+  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
+
+  friend class ExprFactory;
+
+ public:
+  // Returns the number of arguments.
+  int num_args() const { return impl()->num_args; }
+
+  // An argument iterator.
+  typedef ArrayIterator<NumericExpr> iterator;
+
+  iterator begin() const { return iterator(impl()->args); }
+  iterator end() const { return iterator(impl()->args + num_args()); }
+};
+
+MP_SPECIALIZE_IS_RANGE(VarArgExpr, VARARG)
+
 // TODO: numeric expressions vararg, sum, count, numberof
 
 // A logical constant.
 // Examples: 0, 1
 class LogicalConstant : public LogicalExpr {
-  MP_EXPR(LogicalConstantImpl)
+ private:
+  struct Impl : Expr::Impl {
+    bool value;
+  };
+
+  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
+
+  friend class ExprFactory;
+
  public:
   // Returns the value of this constant.
   bool value() const { return impl()->value; }
@@ -381,8 +448,8 @@ MP_SPECIALIZE_IS(LogicalConstant, CONSTANT)
 
 class ExprFactory {
  private:
-  std::vector<internal::FunctionImpl*> funcs_;
-  std::vector<internal::ExprImpl*> exprs_;
+  std::vector<Function::Impl*> funcs_;
+  std::vector<Expr::Impl*> exprs_;
 
   FMT_DISALLOW_COPY_AND_ASSIGN(ExprFactory);
 
@@ -396,7 +463,7 @@ class ExprFactory {
     exprs_.push_back(0);
     Impl *impl = reinterpret_cast<Impl*>(
           ::operator new(sizeof(Impl) + extra_bytes));
-    impl->kind = kind;
+    impl->kind_ = kind;
     exprs_.back() = impl;
     return impl;
   }
@@ -411,23 +478,22 @@ class ExprFactory {
     // Call push_back first to make sure that the impl pointer doesn't leak
     // if push_back throws an exception.
     funcs_.push_back(0);
-    internal::FunctionImpl *impl = new internal::FunctionImpl();
+    Function::Impl *impl = new Function::Impl();
     funcs_.back() = impl;
     return Function(impl);
   }
 
   // Makes a numeric constant.
   NumericConstant MakeNumericConstant(double value) {
-    internal::NumericConstantImpl *impl =
-        Allocate<internal::NumericConstantImpl>(expr::CONSTANT);
+    NumericConstant::Impl *impl =
+        Allocate<NumericConstant::Impl>(expr::CONSTANT);
     impl->value = value;
     return Expr::Create<NumericConstant>(impl);
   }
 
   // Makes a variable reference.
   Variable MakeVariable(int index) {
-    internal::VariableImpl *impl =
-        Allocate<internal::VariableImpl>(expr::VARIABLE);
+    Variable::Impl *impl = Allocate<Variable::Impl>(expr::VARIABLE);
     impl->index = index;
     return Expr::Create<Variable>(impl);
   }
@@ -435,7 +501,7 @@ class ExprFactory {
   // Makes a unary expression.
   UnaryExpr MakeUnary(expr::Kind kind, NumericExpr arg) {
     assert(arg != 0 && "invalid argument");
-    internal::UnaryExprImpl *impl = Allocate<internal::UnaryExprImpl>(kind);
+    UnaryExpr::Impl *impl = Allocate<UnaryExpr::Impl>(kind);
     impl->arg = arg.impl_;
     return Expr::Create<UnaryExpr>(impl);
   }
@@ -443,7 +509,7 @@ class ExprFactory {
   // Makes a binary expression.
   BinaryExpr MakeBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
     assert(lhs != 0 && rhs != 0 && "invalid argument");
-    internal::BinaryExprImpl *impl = Allocate<internal::BinaryExprImpl>(kind);
+    BinaryExpr::Impl *impl = Allocate<BinaryExpr::Impl>(kind);
     impl->lhs = lhs.impl_;
     impl->rhs = rhs.impl_;
     return Expr::Create<BinaryExpr>(impl);
@@ -454,7 +520,7 @@ class ExprFactory {
                 NumericExpr true_expr, NumericExpr false_expr) {
     // false_expr can be null.
     assert(condition != 0 && true_expr != 0 && "invalid argument");
-    internal::IfExprImpl *impl = Allocate<internal::IfExprImpl>(expr::IF);
+    IfExpr::Impl *impl = Allocate<IfExpr::Impl>(expr::IF);
     impl->condition = condition.impl_;
     impl->true_expr = true_expr.impl_;
     impl->false_expr = false_expr.impl_;
@@ -464,13 +530,13 @@ class ExprFactory {
   // A piecewise-linear term builder.
   class PLTermBuilder {
    private:
-    internal::PLTermImpl *impl_;
+    PLTerm::Impl *impl_;
     int slope_index_;
     int breakpoint_index_;
 
     friend class ExprFactory;
 
-    explicit PLTermBuilder(internal::PLTermImpl *impl)
+    explicit PLTermBuilder(PLTerm::Impl *impl)
       : impl_(impl), slope_index_(0), breakpoint_index_(0) {}
 
    public:
@@ -491,7 +557,7 @@ class ExprFactory {
   // Begins building a piecewise-linear term.
   PLTermBuilder BeginPLTerm(int num_breakpoints) {
     assert(num_breakpoints > 0 && "invalid number of breakpoints");
-    internal::PLTermImpl *impl = Allocate<internal::PLTermImpl>(
+    PLTerm::Impl *impl = Allocate<PLTerm::Impl>(
           expr::PLTERM, sizeof(double) * num_breakpoints * 2);
     impl->num_breakpoints = num_breakpoints;
     return PLTermBuilder(impl);
@@ -499,7 +565,7 @@ class ExprFactory {
 
   // Ends building a piecewise-linear term.
   PLTerm EndPLTerm(PLTermBuilder &builder, Variable var) {
-    internal::PLTermImpl *impl = builder.impl_;
+    PLTerm::Impl *impl = builder.impl_;
     // Check that all slopes and breakpoints provided.
     assert(builder.slope_index_ == impl->num_breakpoints + 1 &&
            "too few slopes");
@@ -513,12 +579,12 @@ class ExprFactory {
   // A call expression builder.
   class CallExprBuilder {
    private:
-    internal::CallExprImpl *impl_;
+    CallExpr::Impl *impl_;
     int arg_index_;
 
     friend class ExprFactory;
 
-    explicit CallExprBuilder(internal::CallExprImpl *impl)
+    explicit CallExprBuilder(CallExpr::Impl *impl)
       : impl_(impl), arg_index_(0) {}
 
    public:
@@ -535,8 +601,8 @@ class ExprFactory {
     // num_args - 1 can be -1 in which case the allocated size can be smaller
     // than sizeof(CallExprImpl), but that's OK because we won't access
     // the argument array which has size zero in this case.
-    internal::CallExprImpl *impl = Allocate<internal::CallExprImpl>(
-          expr::CALL, sizeof(internal::ExprImpl*) * (num_args - 1));
+    CallExpr::Impl *impl = Allocate<CallExpr::Impl>(
+          expr::CALL, sizeof(Expr::Impl*) * (num_args - 1));
     impl->func = func.impl_;
     impl->num_args = num_args;
     return CallExprBuilder(impl);
@@ -544,18 +610,53 @@ class ExprFactory {
 
   // Ends building a call expression.
   CallExpr EndCall(CallExprBuilder &builder) {
-    internal::CallExprImpl *impl = builder.impl_;
+    CallExpr::Impl *impl = builder.impl_;
     // Check that all arguments provided.
     assert(builder.arg_index_ == impl->num_args && "too few arguments");
     return Expr::Create<CallExpr>(impl);
+  }
+
+  // A variable argument expression builder.
+  class VarArgExprBuilder {
+   private:
+    VarArgExpr::Impl *impl_;
+    int arg_index_;
+
+    friend class ExprFactory;
+
+    explicit VarArgExprBuilder(VarArgExpr::Impl *impl)
+      : impl_(impl), arg_index_(0) {}
+
+   public:
+    void AddArg(Expr arg) {
+      assert(arg_index_ < impl_->num_args && "too many arguments");
+      impl_->args[arg_index_++] = arg.impl_;
+    }
+  };
+
+  // Begins building a variable argument expression.
+  VarArgExprBuilder BeginVarArg(expr::Kind kind, int num_args) {
+    assert(num_args >= 1 && "invalid number of arguments");
+    VarArgExpr::Impl *impl = Allocate<VarArgExpr::Impl>(
+          kind, sizeof(Expr::Impl*) * (num_args - 1));
+    impl->num_args = num_args;
+    return VarArgExprBuilder(impl);
+  }
+
+  // Ends building a variable argument expression.
+  VarArgExpr EndVarArg(VarArgExprBuilder &builder) {
+    VarArgExpr::Impl *impl = builder.impl_;
+    // Check that all arguments provided.
+    assert(builder.arg_index_ == impl->num_args && "too few arguments");
+    return Expr::Create<VarArgExpr>(impl);
   }
 
   // TODO: more numeric expressions
 
   // Makes a logical constant.
   LogicalConstant MakeLogicalConstant(bool value) {
-    internal::LogicalConstantImpl *impl =
-        Allocate<internal::LogicalConstantImpl>(expr::CONSTANT);
+    LogicalConstant::Impl *impl =
+        Allocate<LogicalConstant::Impl>(expr::CONSTANT);
     impl->value = value;
     return Expr::Create<LogicalConstant>(impl);
   }
