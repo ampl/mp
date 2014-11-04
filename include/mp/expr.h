@@ -66,6 +66,14 @@ struct PLTermImpl : ExprImpl {
   double data[1];
 };
 
+struct FunctionImpl {};
+
+struct CallExprImpl : ExprImpl {
+  const FunctionImpl *func;
+  int num_args;
+  const ExprImpl *args[1];
+};
+
 struct LogicalConstantImpl : ExprImpl {
   bool value;
 };
@@ -99,7 +107,7 @@ inline bool Is<ExprClass>(expr::Kind k) { \
 // it is cheap to construct and pass by value. A type safe way to
 // process expressions of different types is by using ExprVisitor.
 class Expr {
- protected:
+ private:
   const internal::ExprImpl *impl_;
 
   // A member function representing the true value of SafeBool.
@@ -107,6 +115,9 @@ class Expr {
 
   // Safe bool type.
   typedef void (Expr::*SafeBool)() const;
+
+ protected:
+  const internal::ExprImpl *impl() const { return impl_; }
 
   // Creates an expression from an implementation.
   template <typename TargetExpr>
@@ -120,10 +131,52 @@ class Expr {
 
   friend class ExprFactory;
 
+  // An expression proxy used for implementing operator-> in iterators.
+  template <typename ExprClass>
+  class Proxy {
+   private:
+    ExprClass expr_;
+
+   public:
+    explicit Proxy(const internal::ExprImpl *e)
+      : expr_(Create<ExprClass>(e)) {}
+
+    const ExprClass *operator->() const { return &expr_; }
+  };
+
+  // An expression array iterator.
+  template <typename ExprClass>
+  class ArrayIterator :
+    public std::iterator<std::forward_iterator_tag, ExprClass> {
+   private:
+    const internal::ExprImpl *const *ptr_;
+
+   public:
+    explicit ArrayIterator(const internal::ExprImpl *const *p = 0) : ptr_(p) {}
+
+    ExprClass operator*() const { return Create<ExprClass>(*ptr_); }
+
+    Proxy<ExprClass> operator->() const { return Proxy<ExprClass>(*ptr_); }
+
+    ArrayIterator &operator++() {
+      ++ptr_;
+      return *this;
+    }
+
+    ArrayIterator operator++(int ) {
+      ArrayIterator it(*this);
+      ++ptr_;
+      return it;
+    }
+
+    bool operator==(ArrayIterator other) const { return ptr_ == other.ptr_; }
+    bool operator!=(ArrayIterator other) const { return ptr_ != other.ptr_; }
+  };
+
  public:
-  // Constructs an Expr object representing a null reference to an AMPL
-  // expression. The only operation permitted for such expression is
-  // copying, assignment and check whether it is null using operator SafeBool.
+  // Constructs an Expr object representing a null reference to an
+  // expression. The only operation permitted for such object is copying,
+  // assignment and check whether it is null using operator SafeBool.
   Expr() : impl_(0) {}
 
   // Returns the expression kind.
@@ -133,10 +186,8 @@ class Expr {
   // in comparisons and evaluates to "true" if this expression is not null
   // and "false" otherwise.
   // Example:
-  //   void foo(Expr e) {
-  //     if (e) {
-  //       // Do something if e is not null.
-  //     }
+  //   if (e) {
+  //     // Do something if e is not null.
   //   }
   operator SafeBool() const { return impl_ != 0 ? &Expr::True : 0; }
 };
@@ -144,7 +195,7 @@ class Expr {
 #define MP_EXPR(Impl) \
  private: \
   const internal::Impl *impl() const { \
-    return static_cast<const internal::Impl*>(this->impl_); \
+    return static_cast<const internal::Impl*>(Expr::impl()); \
   }
 
 MP_SPECIALIZE_IS_RANGE(Expr, EXPR)
@@ -243,13 +294,13 @@ class PLTerm : public NumericExpr {
 
   // Returns a breakpoint with the specified index.
   double breakpoint(int index) const {
-    assert(index >= 0 && index < num_breakpoints());
+    assert(index >= 0 && index < num_breakpoints() && "index out of bounds");
     return impl()->data[2 * index + 1];
   }
 
   // Returns a slope with the specified index.
   double slope(int index) const {
-    assert(index >= 0 && index < num_slopes());
+    assert(index >= 0 && index < num_slopes() && "index out of bounds");
     return impl()->data[2 * index];
   }
 
@@ -258,7 +309,64 @@ class PLTerm : public NumericExpr {
 
 MP_SPECIALIZE_IS(PLTerm, PLTERM)
 
-// TODO: numeric expressions
+// A reference to a function.
+class Function {
+ private:
+  const internal::FunctionImpl *impl_;
+
+  // A member function representing the true value of SafeBool.
+  void True() const {}
+
+  // Safe bool type.
+  typedef void (Function::*SafeBool)() const;
+
+  explicit Function(const internal::FunctionImpl *impl) : impl_(impl) {}
+
+  friend class CallExpr;
+  friend class ExprFactory;
+
+ public:
+  // Constructs a Function object representing a null reference to a
+  // function. The only operation permitted for such object is copying,
+  // assignment and check whether it is null using operator SafeBool.
+  Function() : impl_(0) {}
+
+  // Returns a value convertible to bool that can be used in conditions but not
+  // in comparisons and evaluates to "true" if this function is not null
+  // and "false" otherwise.
+  // Example:
+  //   if (f) {
+  //     // Do something if f is not null.
+  //   }
+  operator SafeBool() const { return impl_ != 0 ? &Function::True : 0; }
+};
+
+// A function call expression.
+// Example: f(x), where f is a function and x is a variable.
+class CallExpr : public NumericExpr {
+  MP_EXPR(CallExprImpl)
+ public:
+  Function function() const { return Function(impl()->func); }
+
+  // Returns the number of arguments.
+  int num_args() const { return impl()->num_args; }
+
+  // Returns an argument with the specified index.
+  Expr arg(int index) {
+    assert(index >= 0 && index < num_args() && "index out of bounds");
+    return Create<Expr>(impl()->args[index]);
+  }
+
+  // An argument iterator.
+  typedef ArrayIterator<Expr> iterator;
+
+  iterator begin() const { return iterator(impl()->args); }
+  iterator end() const { return iterator(impl()->args + num_args()); }
+};
+
+MP_SPECIALIZE_IS(CallExpr, CALL)
+
+// TODO: numeric expressions vararg, sum, count, numberof
 
 // A logical constant.
 // Examples: 0, 1
@@ -273,6 +381,7 @@ MP_SPECIALIZE_IS(LogicalConstant, CONSTANT)
 
 class ExprFactory {
  private:
+  std::vector<internal::FunctionImpl*> funcs_;
   std::vector<internal::ExprImpl*> exprs_;
 
   FMT_DISALLOW_COPY_AND_ASSIGN(ExprFactory);
@@ -298,6 +407,15 @@ class ExprFactory {
     // TODO: delete expressions
   }
 
+  Function AddFunction(const char *) {
+    // Call push_back first to make sure that the impl pointer doesn't leak
+    // if push_back throws an exception.
+    funcs_.push_back(0);
+    internal::FunctionImpl *impl = new internal::FunctionImpl();
+    funcs_.back() = impl;
+    return Function(impl);
+  }
+
   // Makes a numeric constant.
   NumericConstant MakeNumericConstant(double value) {
     internal::NumericConstantImpl *impl =
@@ -316,6 +434,7 @@ class ExprFactory {
 
   // Makes a unary expression.
   UnaryExpr MakeUnary(expr::Kind kind, NumericExpr arg) {
+    assert(arg != 0 && "invalid argument");
     internal::UnaryExprImpl *impl = Allocate<internal::UnaryExprImpl>(kind);
     impl->arg = arg.impl_;
     return Expr::Create<UnaryExpr>(impl);
@@ -323,6 +442,7 @@ class ExprFactory {
 
   // Makes a binary expression.
   BinaryExpr MakeBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
+    assert(lhs != 0 && rhs != 0 && "invalid argument");
     internal::BinaryExprImpl *impl = Allocate<internal::BinaryExprImpl>(kind);
     impl->lhs = lhs.impl_;
     impl->rhs = rhs.impl_;
@@ -332,6 +452,8 @@ class ExprFactory {
   // Makes an if expression.
   IfExpr MakeIf(LogicalExpr condition,
                 NumericExpr true_expr, NumericExpr false_expr) {
+    // false_expr can be null.
+    assert(condition != 0 && true_expr != 0 && "invalid argument");
     internal::IfExprImpl *impl = Allocate<internal::IfExprImpl>(expr::IF);
     impl->condition = condition.impl_;
     impl->true_expr = true_expr.impl_;
@@ -348,10 +470,10 @@ class ExprFactory {
 
     friend class ExprFactory;
 
-   public:
     explicit PLTermBuilder(internal::PLTermImpl *impl)
       : impl_(impl), slope_index_(0), breakpoint_index_(0) {}
 
+   public:
     void AddSlope(double slope) {
       assert(slope_index_ < impl_->num_breakpoints + 1 && "too many slopes");
       impl_->data[2 * slope_index_] = slope;
@@ -376,15 +498,56 @@ class ExprFactory {
   }
 
   // Ends building a piecewise-linear term.
-  PLTerm EndPLTerm(PLTermBuilder builder, Variable var) {
+  PLTerm EndPLTerm(PLTermBuilder &builder, Variable var) {
     internal::PLTermImpl *impl = builder.impl_;
-    impl->var_index = var.index();
-    // Make sure that all slopes and breakpoints provided.
+    // Check that all slopes and breakpoints provided.
     assert(builder.slope_index_ == impl->num_breakpoints + 1 &&
            "too few slopes");
     assert(builder.breakpoint_index_ == impl->num_breakpoints &&
            "too few breakpoints");
+    assert(var != 0 && "invalid argument");
+    impl->var_index = var.index();
     return Expr::Create<PLTerm>(impl);
+  }
+
+  // A call expression builder.
+  class CallExprBuilder {
+   private:
+    internal::CallExprImpl *impl_;
+    int arg_index_;
+
+    friend class ExprFactory;
+
+    explicit CallExprBuilder(internal::CallExprImpl *impl)
+      : impl_(impl), arg_index_(0) {}
+
+   public:
+    void AddArg(Expr arg) {
+      assert(arg_index_ < impl_->num_args && "too many arguments");
+      impl_->args[arg_index_++] = arg.impl_;
+    }
+  };
+
+  // Begins building a call expression.
+  CallExprBuilder BeginCall(Function func, int num_args) {
+    assert(func != 0 && "invalid function");
+    assert(num_args >= 0 && "invalid number of arguments");
+    // num_args - 1 can be -1 in which case the allocated size can be smaller
+    // than sizeof(CallExprImpl), but that's OK because we won't access
+    // the argument array which has size zero in this case.
+    internal::CallExprImpl *impl = Allocate<internal::CallExprImpl>(
+          expr::CALL, sizeof(internal::ExprImpl*) * (num_args - 1));
+    impl->func = func.impl_;
+    impl->num_args = num_args;
+    return CallExprBuilder(impl);
+  }
+
+  // Ends building a call expression.
+  CallExpr EndCall(CallExprBuilder &builder) {
+    internal::CallExprImpl *impl = builder.impl_;
+    // Check that all arguments provided.
+    assert(builder.arg_index_ == impl->num_args && "too few arguments");
+    return Expr::Create<CallExpr>(impl);
   }
 
   // TODO: more numeric expressions
