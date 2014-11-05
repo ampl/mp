@@ -433,4 +433,61 @@ TEST(ExprTest, NotExpr) {
   EXPECT_ASSERT(factory.MakeNot(mp::LogicalExpr()), "invalid argument");
 }
 
+TEST(ExprTest, BinaryLogicalExpr) {
+  mp::BinaryLogicalExpr e;
+  EXPECT_TRUE(e == 0);
+  ExprFactory factory;
+  auto lhs = factory.MakeLogicalConstant(true);
+  auto rhs = factory.MakeLogicalConstant(false);
+  e = factory.MakeBinaryLogical(expr::AND, lhs, rhs);
+  EXPECT_TRUE(e != 0);
+  EXPECT_EQ(expr::AND, e.kind());
+  EXPECT_EQ(lhs, e.lhs());
+  EXPECT_EQ(rhs, e.rhs());
+  EXPECT_ASSERT(factory.MakeBinaryLogical(expr::LT, lhs, rhs),
+                "invalid expression kind");
+  EXPECT_ASSERT(factory.MakeBinaryLogical(expr::AND, mp::LogicalExpr(), rhs),
+                "invalid argument");
+  EXPECT_ASSERT(factory.MakeBinaryLogical(expr::AND, lhs, mp::LogicalExpr()),
+                "invalid argument");
+}
+
+TEST(ExprTest, RelationalExpr) {
+  mp::RelationalExpr e;
+  EXPECT_TRUE(e == 0);
+  ExprFactory factory;
+  auto lhs = factory.MakeNumericConstant(42);
+  auto rhs = factory.MakeVariable(0);
+  e = factory.MakeRelational(expr::EQ, lhs, rhs);
+  EXPECT_TRUE(e != 0);
+  EXPECT_EQ(expr::EQ, e.kind());
+  EXPECT_EQ(lhs, e.lhs());
+  EXPECT_EQ(rhs, e.rhs());
+  EXPECT_ASSERT(factory.MakeRelational(expr::ATLEAST, lhs, rhs),
+                "invalid expression kind");
+  EXPECT_ASSERT(factory.MakeRelational(expr::EQ, mp::NumericExpr(), rhs),
+                "invalid argument");
+  EXPECT_ASSERT(factory.MakeRelational(expr::EQ, lhs, mp::NumericExpr()),
+                "invalid argument");
+}
+
+TEST(ExprTest, LogicalCountExpr) {
+  mp::LogicalCountExpr e;
+  EXPECT_TRUE(e == 0);
+  ExprFactory factory;
+  auto lhs = factory.MakeNumericConstant(42);
+  auto rhs = factory.EndCount(factory.BeginCount(0));
+  e = factory.MakeLogicalCount(expr::ATMOST, lhs, rhs);
+  EXPECT_TRUE(e != 0);
+  EXPECT_EQ(expr::ATMOST, e.kind());
+  EXPECT_EQ(lhs, e.lhs());
+  EXPECT_EQ(rhs, e.rhs());
+  EXPECT_ASSERT(factory.MakeLogicalCount(expr::IMPLICATION, lhs, rhs),
+                "invalid expression kind");
+  EXPECT_ASSERT(factory.MakeLogicalCount(expr::ATMOST, mp::NumericExpr(), rhs),
+                "invalid argument");
+  EXPECT_ASSERT(factory.MakeLogicalCount(expr::ATMOST, lhs, mp::CountExpr()),
+                "invalid argument");
+}
+
 // TODO: test logical expressions

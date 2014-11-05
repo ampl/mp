@@ -164,11 +164,9 @@ class Expr {
   operator SafeBool() const { return impl_ != 0 ? &Expr::True : 0; }
 };
 
-#define MP_EXPR(Impl) \
- private: \
-  const internal::Impl *impl() const { \
-    return static_cast<const internal::Impl*>(Expr::impl()); \
-  }
+#define MP_EXPR \
+  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); } \
+  friend class ExprFactory
 
 MP_SPECIALIZE_IS_RANGE(Expr, EXPR)
 
@@ -187,10 +185,7 @@ class NumericConstant : public NumericExpr {
   struct Impl : Expr::Impl {
     double value;
   };
-
-  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
-
-  friend class ExprFactory;
+  MP_EXPR;
 
  public:
   // Returns the value of this constant.
@@ -206,10 +201,7 @@ class Variable : public NumericExpr {
   struct Impl : Expr::Impl {
     int index;
   };
-
-  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
-
-  friend class ExprFactory;
+  MP_EXPR;
 
  public:
   // Returns the index of the referenced variable.
@@ -226,10 +218,7 @@ class BasicUnaryExpr : public Base {
   struct Impl : Expr::Impl {
     const Expr::Impl *arg;
   };
-
-  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
-
-  friend class ExprFactory;
+  MP_EXPR;
 
  public:
   // Returns the argument of this expression.
@@ -251,10 +240,7 @@ class BasicBinaryExpr : public Base {
     const Expr::Impl *lhs;
     const Expr::Impl *rhs;
   };
-
-  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
-
-  friend class ExprFactory;
+  MP_EXPR;
 
  public:
   // Returns the left-hand side (the first argument) of this expression.
@@ -277,10 +263,7 @@ class BasicIfExpr : public Base {
     const Expr::Impl *true_expr;
     const Expr::Impl *false_expr;
   };
-
-  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
-
-  friend class ExprFactory;
+  MP_EXPR;
 
  public:
   LogicalExpr condition() const {
@@ -305,10 +288,7 @@ class PLTerm : public NumericExpr {
     int var_index;
     double data[1];
   };
-
-  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
-
-  friend class ExprFactory;
+  MP_EXPR;
 
  public:
   // Returns the number of breakpoints in this term.
@@ -377,10 +357,7 @@ class CallExpr : public NumericExpr {
     int num_args;
     const Expr::Impl *args[1];
   };
-
-  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
-
-  friend class ExprFactory;
+  MP_EXPR;
 
  public:
   Function function() const { return Function(impl()->func); }
@@ -412,10 +389,7 @@ class BasicIteratedExpr : public NumericExpr {
     int num_args;
     const Expr::Impl *args[1];
   };
-
-  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
-
-  friend class ExprFactory;
+  MP_EXPR;
 
  public:
   typedef ArgType Arg;
@@ -465,10 +439,7 @@ class LogicalConstant : public LogicalExpr {
   struct Impl : Expr::Impl {
     bool value;
   };
-
-  const Impl *impl() const { return static_cast<const Impl*>(Expr::impl()); }
-
-  friend class ExprFactory;
+  MP_EXPR;
 
  public:
   // Returns the value of this constant.
@@ -482,7 +453,37 @@ MP_SPECIALIZE_IS(LogicalConstant, CONSTANT)
 typedef BasicUnaryExpr<LogicalExpr> NotExpr;
 MP_SPECIALIZE_IS(NotExpr, NOT)
 
-// TODO: logical expressions
+// A binary logical expression.
+// Examples: a || b, a && b, where a and b are logical expressions.
+typedef BasicBinaryExpr<LogicalExpr> BinaryLogicalExpr;
+MP_SPECIALIZE_IS_RANGE(BinaryLogicalExpr, BINARY_LOGICAL)
+
+// A relational expression.
+// Examples: x < y, x != y, where x and y are variables.
+typedef BasicBinaryExpr<LogicalExpr, NumericExpr> RelationalExpr;
+MP_SPECIALIZE_IS_RANGE(RelationalExpr, RELATIONAL)
+
+// A logical count expression.
+// Examples: atleast 1 (x < y, x != y), where x and y are variables.
+class LogicalCountExpr : public LogicalExpr {
+ private:
+  struct Impl : Expr::Impl {
+    const Expr::Impl *lhs;
+    const Expr::Impl *rhs;
+  };
+  MP_EXPR;
+
+ public:
+  // Returns the left-hand side (the first argument) of this expression.
+  NumericExpr lhs() const { return Create<NumericExpr>(impl()->lhs); }
+
+  // Returns the right-hand side (the second argument) of this expression.
+  CountExpr rhs() const { return Create<CountExpr>(impl()->rhs); }
+};
+
+MP_SPECIALIZE_IS_RANGE(LogicalCountExpr, LOGICAL_COUNT)
+
+// TODO: logical expressions: implication, iterated logical, alldiff
 
 class ExprFactory {
  private:
@@ -511,6 +512,17 @@ class ExprFactory {
     MP_ASSERT(arg != 0, "invalid argument");
     typename ExprType::Impl *impl = Allocate<typename  ExprType::Impl>(kind);
     impl->arg = arg.impl_;
+    return Expr::Create<ExprType>(impl);
+  }
+
+
+  template <typename ExprType, typename LHS, typename RHS>
+  ExprType MakeBinary(expr::Kind kind, LHS lhs, RHS rhs) {
+    MP_ASSERT(internal::Is<ExprType>(kind), "invalid expression kind");
+    MP_ASSERT(lhs != 0 && rhs != 0, "invalid argument");
+    typename ExprType::Impl *impl = Allocate<typename ExprType::Impl>(kind);
+    impl->lhs = lhs.impl_;
+    impl->rhs = rhs.impl_;
     return Expr::Create<ExprType>(impl);
   }
 
@@ -545,7 +557,7 @@ class ExprFactory {
   }
 
   template <typename ExprType>
-  ExprType EndIteratedExpr(IteratedExprBuilder<ExprType> &builder) {
+  ExprType EndIteratedExpr(IteratedExprBuilder<ExprType> builder) {
     typename ExprType::Impl *impl = builder.impl_;
     // Check that all arguments provided.
     MP_ASSERT(builder.arg_index_ == impl->num_args, "too few arguments");
@@ -590,12 +602,7 @@ class ExprFactory {
 
   // Makes a binary expression.
   BinaryExpr MakeBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
-    MP_ASSERT(internal::Is<BinaryExpr>(kind), "invalid expression kind");
-    MP_ASSERT(lhs != 0 && rhs != 0, "invalid argument");
-    BinaryExpr::Impl *impl = Allocate<BinaryExpr::Impl>(kind);
-    impl->lhs = lhs.impl_;
-    impl->rhs = rhs.impl_;
-    return Expr::Create<BinaryExpr>(impl);
+    return MakeBinary<BinaryExpr>(kind, lhs, rhs);
   }
 
   // Makes an if expression.
@@ -647,7 +654,7 @@ class ExprFactory {
   }
 
   // Ends building a piecewise-linear term.
-  PLTerm EndPLTerm(PLTermBuilder &builder, Variable var) {
+  PLTerm EndPLTerm(PLTermBuilder builder, Variable var) {
     PLTerm::Impl *impl = builder.impl_;
     // Check that all slopes and breakpoints provided.
     MP_ASSERT(builder.slope_index_ == impl->num_breakpoints + 1,
@@ -671,7 +678,7 @@ class ExprFactory {
   }
 
   // Ends building a call expression.
-  CallExpr EndCall(CallExprBuilder &builder) {
+  CallExpr EndCall(CallExprBuilder builder) {
     return EndIteratedExpr<CallExpr>(builder);
   }
 
@@ -684,7 +691,7 @@ class ExprFactory {
   }
 
   // Ends building a variable argument expression.
-  VarArgExpr EndVarArg(VarArgExprBuilder &builder) {
+  VarArgExpr EndVarArg(VarArgExprBuilder builder) {
     return EndIteratedExpr<VarArgExpr>(builder);
   }
 
@@ -696,7 +703,7 @@ class ExprFactory {
   }
 
   // Ends building a sum expression.
-  SumExpr EndSum(SumExprBuilder &builder) {
+  SumExpr EndSum(SumExprBuilder builder) {
     return EndIteratedExpr<SumExpr>(builder);
   }
 
@@ -708,7 +715,7 @@ class ExprFactory {
   }
 
   // Ends building a count expression.
-  CountExpr EndCount(CountExprBuilder &builder) {
+  CountExpr EndCount(CountExprBuilder builder) {
     return EndIteratedExpr<CountExpr>(builder);
   }
 
@@ -723,7 +730,7 @@ class ExprFactory {
   }
 
   // Ends building a numberof expression.
-  NumberOfExpr EndNumberOf(NumberOfExprBuilder &builder) {
+  NumberOfExpr EndNumberOf(NumberOfExprBuilder builder) {
     return EndIteratedExpr<NumberOfExpr>(builder);
   }
 
@@ -738,6 +745,24 @@ class ExprFactory {
   // Makes a logical NOT expression.
   NotExpr MakeNot(LogicalExpr arg) {
     return MakeUnary<NotExpr>(expr::NOT, arg);
+  }
+
+  // Makes a binary logical expression.
+  BinaryLogicalExpr MakeBinaryLogical(
+        expr::Kind kind, LogicalExpr lhs, LogicalExpr rhs) {
+    return MakeBinary<BinaryLogicalExpr>(kind, lhs, rhs);
+  }
+
+  // Makes a relational expression.
+  RelationalExpr MakeRelational(
+        expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
+    return MakeBinary<RelationalExpr>(kind, lhs, rhs);
+  }
+
+  // Makes a logical count expression.
+  LogicalCountExpr MakeLogicalCount(
+        expr::Kind kind, NumericExpr lhs, CountExpr rhs) {
+    return MakeBinary<LogicalCountExpr>(kind, lhs, rhs);
   }
 };
 }  // namespace mp
