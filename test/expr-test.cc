@@ -400,8 +400,10 @@ TEST(ExprTest, NumberOfExpr) {
   EXPECT_EQ(e.end(), it);
   EXPECT_DEBUG_DEATH(e.arg(-1), "index out of bounds");
   EXPECT_DEBUG_DEATH(e.arg(NUM_ARGS), "index out of bounds");
+#ifndef NDEBUG
   EXPECT_DEBUG_DEATH(factory.BeginNumberOf(0, args[0]),
       "invalid number of arguments");
+#endif
   EXPECT_DEBUG_DEATH(factory.BeginNumberOf(1, mp::NumericExpr()),
       "invalid argument");
   factory.BeginNumberOf(1, args[1]);
