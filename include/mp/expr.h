@@ -34,25 +34,25 @@ namespace mp {
 class ExprFactory;
 
 namespace internal {
-// Returns true if the non-null expression e is of type ExprClass.
-template <typename ExprClass>
+// Returns true if the non-null expression e is of type ExprType.
+template <typename ExprType>
 bool Is(expr::Kind k);
 }
 
-// Specialize Is<Expr> for the class ExprClass corresponding to a single
+// Specialize Is<Expr> for the class ExprType corresponding to a single
 // expression kind.
-#define MP_SPECIALIZE_IS(ExprClass, expr_kind) \
+#define MP_SPECIALIZE_IS(ExprType, expr_kind) \
 namespace internal { \
 template <> \
-inline bool Is<ExprClass>(expr::Kind k) { return k == expr::expr_kind; } \
+inline bool Is<ExprType>(expr::Kind k) { return k == expr::expr_kind; } \
 }
 
-// Specialize Is<Expr> for the class ExprClass corresponding to a range
+// Specialize Is<Expr> for the class ExprType corresponding to a range
 // of expression kinds [start, end].
-#define MP_SPECIALIZE_IS_RANGE(ExprClass, expr_kind) \
+#define MP_SPECIALIZE_IS_RANGE(ExprType, expr_kind) \
 namespace internal { \
 template <> \
-inline bool Is<ExprClass>(expr::Kind k) { \
+inline bool Is<ExprType>(expr::Kind k) { \
   return k >= expr::FIRST_##expr_kind && k <= expr::LAST_##expr_kind; \
 } \
 }
@@ -84,15 +84,15 @@ class Expr {
   typedef void (Expr::*SafeBool)() const;
 
   // An expression proxy used for implementing operator-> in iterators.
-  template <typename ExprClass>
+  template <typename ExprType>
   class Proxy {
    private:
-    ExprClass expr_;
+    ExprType expr_;
 
    public:
-    explicit Proxy(const Expr::Impl *e) : expr_(Create<ExprClass>(e)) {}
+    explicit Proxy(const Expr::Impl *e) : expr_(Create<ExprType>(e)) {}
 
-    const ExprClass *operator->() const { return &expr_; }
+    const ExprType *operator->() const { return &expr_; }
   };
 
  protected:
@@ -111,33 +111,33 @@ class Expr {
 
   friend class ExprFactory;
 
-  // An expression array iterator.
-  template <typename ExprClass>
-  class ArrayIterator :
-    public std::iterator<std::forward_iterator_tag, ExprClass> {
+  // An expression iterator.
+  template <typename ExprType>
+  class BasicIterator :
+      public std::iterator<std::forward_iterator_tag, ExprType> {
    private:
     const Expr::Impl *const *ptr_;
 
    public:
-    explicit ArrayIterator(const Expr::Impl *const *p = 0) : ptr_(p) {}
+    explicit BasicIterator(const Expr::Impl *const *p = 0) : ptr_(p) {}
 
-    ExprClass operator*() const { return Create<ExprClass>(*ptr_); }
+    ExprType operator*() const { return Create<ExprType>(*ptr_); }
 
-    Proxy<ExprClass> operator->() const { return Proxy<ExprClass>(*ptr_); }
+    Proxy<ExprType> operator->() const { return Proxy<ExprType>(*ptr_); }
 
-    ArrayIterator &operator++() {
+    BasicIterator &operator++() {
       ++ptr_;
       return *this;
     }
 
-    ArrayIterator operator++(int ) {
-      ArrayIterator it(*this);
+    BasicIterator operator++(int ) {
+      BasicIterator it(*this);
       ++ptr_;
       return it;
     }
 
-    bool operator==(ArrayIterator other) const { return ptr_ == other.ptr_; }
-    bool operator!=(ArrayIterator other) const { return ptr_ != other.ptr_; }
+    bool operator==(BasicIterator other) const { return ptr_ == other.ptr_; }
+    bool operator!=(BasicIterator other) const { return ptr_ != other.ptr_; }
   };
 
  public:
@@ -380,6 +380,8 @@ class CallExpr : public NumericExpr {
  public:
   Function function() const { return Function(impl()->func); }
 
+  typedef Expr Arg;
+
   // Returns the number of arguments.
   int num_args() const { return impl()->num_args; }
 
@@ -390,7 +392,7 @@ class CallExpr : public NumericExpr {
   }
 
   // An argument iterator.
-  typedef ArrayIterator<Expr> iterator;
+  typedef BasicIterator<Expr> iterator;
 
   iterator begin() const { return iterator(impl()->args); }
   iterator end() const { return iterator(impl()->args + num_args()); }
@@ -398,7 +400,7 @@ class CallExpr : public NumericExpr {
 
 MP_SPECIALIZE_IS(CallExpr, CALL)
 
-template <expr::Kind KIND, typename Arg = NumericExpr>
+template <expr::Kind KIND, typename ArgType = NumericExpr>
 class BasicIteratedExpr : public NumericExpr {
  private:
   struct Impl : Expr::Impl {
@@ -411,6 +413,8 @@ class BasicIteratedExpr : public NumericExpr {
   friend class ExprFactory;
 
  public:
+  typedef ArgType Arg;
+
   // Returns the number of arguments.
   int num_args() const { return impl()->num_args; }
 
@@ -421,7 +425,7 @@ class BasicIteratedExpr : public NumericExpr {
   }
 
   // An argument iterator.
-  typedef ArrayIterator<Arg> iterator;
+  typedef BasicIterator<Arg> iterator;
 
   iterator begin() const { return iterator(impl()->args); }
   iterator end() const { return iterator(impl()->args + num_args()); }
@@ -493,40 +497,41 @@ class ExprFactory {
   }
 
   // A variable argument expression builder.
-  template <typename ExprClass>
+  template <typename ExprType>
   class IteratedExprBuilder {
    private:
-    typename ExprClass::Impl *impl_;
+    typename ExprType::Impl *impl_;
     int arg_index_;
 
     friend class ExprFactory;
 
-    explicit IteratedExprBuilder(typename ExprClass::Impl *impl)
+    explicit IteratedExprBuilder(typename ExprType::Impl *impl)
       : impl_(impl), arg_index_(0) {}
 
    public:
-    void AddArg(NumericExpr arg) {
+    void AddArg(typename ExprType::Arg arg) {
       assert(arg_index_ < impl_->num_args && "too many arguments");
+      assert(arg != 0 && "invalid argument");
       impl_->args[arg_index_++] = arg.impl_;
     }
   };
 
-  template <typename ExprClass>
-  IteratedExprBuilder<ExprClass> BeginIteratedExpr(
+  template <typename ExprType>
+  IteratedExprBuilder<ExprType> BeginIteratedExpr(
         expr::Kind kind, int num_args, int min_args) {
     assert(num_args >= min_args && "invalid number of arguments");
-    typename ExprClass::Impl *impl = Allocate<typename ExprClass::Impl>(
+    typename ExprType::Impl *impl = Allocate<typename ExprType::Impl>(
           kind, sizeof(Expr::Impl*) * (num_args - 1));
     impl->num_args = num_args;
-    return IteratedExprBuilder<ExprClass>(impl);
+    return IteratedExprBuilder<ExprType>(impl);
   }
 
-  template <typename ExprClass>
-  ExprClass EndIteratedExpr(IteratedExprBuilder<ExprClass> &builder) {
-    typename ExprClass::Impl *impl = builder.impl_;
+  template <typename ExprType>
+  ExprType EndIteratedExpr(IteratedExprBuilder<ExprType> &builder) {
+    typename ExprType::Impl *impl = builder.impl_;
     // Check that all arguments provided.
     assert(builder.arg_index_ == impl->num_args && "too few arguments");
-    return Expr::Create<ExprClass>(impl);
+    return Expr::Create<ExprType>(impl);
   }
 
  public:
@@ -639,44 +644,20 @@ class ExprFactory {
     return Expr::Create<PLTerm>(impl);
   }
 
-  // A call expression builder.
-  class CallExprBuilder {
-   private:
-    CallExpr::Impl *impl_;
-    int arg_index_;
-
-    friend class ExprFactory;
-
-    explicit CallExprBuilder(CallExpr::Impl *impl)
-      : impl_(impl), arg_index_(0) {}
-
-   public:
-    void AddArg(Expr arg) {
-      assert(arg_index_ < impl_->num_args && "too many arguments");
-      impl_->args[arg_index_++] = arg.impl_;
-    }
-  };
+  typedef IteratedExprBuilder<CallExpr> CallExprBuilder;
 
   // Begins building a call expression.
   CallExprBuilder BeginCall(Function func, int num_args) {
     assert(func != 0 && "invalid function");
-    assert(num_args >= 0 && "invalid number of arguments");
-    // num_args - 1 can be -1 in which case the allocated size can be smaller
-    // than sizeof(CallExprImpl), but that's OK because we won't access
-    // the argument array which has size zero in this case.
-    CallExpr::Impl *impl = Allocate<CallExpr::Impl>(
-          expr::CALL, sizeof(Expr::Impl*) * (num_args - 1));
-    impl->func = func.impl_;
-    impl->num_args = num_args;
-    return CallExprBuilder(impl);
+    CallExprBuilder builder =
+        BeginIteratedExpr<CallExpr>(expr::CALL, num_args, 0);
+    builder.impl_->func = func.impl_;
+    return builder;
   }
 
   // Ends building a call expression.
   CallExpr EndCall(CallExprBuilder &builder) {
-    CallExpr::Impl *impl = builder.impl_;
-    // Check that all arguments provided.
-    assert(builder.arg_index_ == impl->num_args && "too few arguments");
-    return Expr::Create<CallExpr>(impl);
+    return EndIteratedExpr<CallExpr>(builder);
   }
 
   typedef IteratedExprBuilder<VarArgExpr> VarArgExprBuilder;
@@ -704,7 +685,33 @@ class ExprFactory {
     return EndIteratedExpr<SumExpr>(builder);
   }
 
-  // TODO: count, numberof
+  typedef IteratedExprBuilder<CountExpr> CountExprBuilder;
+
+  // Begins building a count expression.
+  CountExprBuilder BeginCount(int num_args) {
+    return BeginIteratedExpr<CountExpr>(expr::COUNT, num_args, 0);
+  }
+
+  // Ends building a count expression.
+  CountExpr EndCount(CountExprBuilder &builder) {
+    return EndIteratedExpr<CountExpr>(builder);
+  }
+
+  typedef IteratedExprBuilder<NumberOfExpr> NumberOfExprBuilder;
+
+  // Begins building a numberof expression.
+  NumberOfExprBuilder BeginNumberOf(int num_args, NumericExpr arg0) {
+    assert(arg0 != 0 && "invalid argument");
+    NumberOfExprBuilder builder =
+        BeginIteratedExpr<NumberOfExpr>(expr::NUMBEROF, num_args, 1);
+    builder.AddArg(arg0);
+    return builder;
+  }
+
+  // Ends building a numberof expression.
+  NumberOfExpr EndNumberOf(NumberOfExprBuilder &builder) {
+    return EndIteratedExpr<NumberOfExpr>(builder);
+  }
 
   // Makes a logical constant.
   LogicalConstant MakeLogicalConstant(bool value) {

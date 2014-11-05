@@ -199,40 +199,74 @@ TEST(ExprTest, CallExpr) {
   EXPECT_TRUE(e == 0);
   ExprFactory factory;
   mp::Function f = factory.AddFunction("foo");
-  ExprFactory::CallExprBuilder builder = factory.BeginCall(f, 3);
-  mp::Expr args[] = {
+  enum {NUM_ARGS = 3};
+  ExprFactory::CallExprBuilder builder = factory.BeginCall(f, NUM_ARGS);
+  mp::Expr args[NUM_ARGS] = {
     factory.MakeNumericConstant(11),
     factory.MakeVariable(0),
     factory.MakeNumericConstant(22)
   };
-  for (int i = 0; i < 3; ++i)
+  for (int i = 0; i < NUM_ARGS; ++i)
     builder.AddArg(args[i]);
   e = factory.EndCall(builder);
   EXPECT_EQ(expr::CALL, e.kind());
   EXPECT_EQ(3, e.num_args());
   mp::CallExpr::iterator it = e.begin();
-  for (int i = 0; i < 3; ++i, ++it) {
+  for (int i = 0; i < NUM_ARGS; ++i, ++it) {
     EXPECT_EQ(args[i], e.arg(i));
     EXPECT_EQ(args[i], *it);
   }
   EXPECT_EQ(e.end(), it);
   EXPECT_DEBUG_DEATH(e.arg(-1), "index out of bounds");
-  EXPECT_DEBUG_DEATH(e.arg(3), "index out of bounds");
+  EXPECT_DEBUG_DEATH(e.arg(NUM_ARGS), "index out of bounds");
   EXPECT_DEBUG_DEATH(factory.BeginCall(f, -1), "invalid number of arguments");
   factory.BeginCall(f, 0);
   EXPECT_DEBUG_DEATH(factory.BeginCall(mp::Function(), 0), "invalid function");
 }
 
-TEST(ExprTest, CallExprIterator) {
+// Iterated expressions share the same builder so it is enough to test
+// CallExprBuilder.
+
+#ifndef NDEBUG
+
+TEST(ExprTest, TooManyCallArgs) {
   ExprFactory factory;
   mp::Function f = factory.AddFunction("foo");
-  ExprFactory::CallExprBuilder builder = factory.BeginCall(f, 3);
-  mp::Expr args[] = {
+  auto builder = factory.BeginCall(f, 1);
+  auto arg = factory.MakeNumericConstant(0);
+  builder.AddArg(arg);
+  EXPECT_DEBUG_DEATH(builder.AddArg(arg), "too many arguments");
+}
+
+TEST(ExprTest, InvalidCallArg) {
+  ExprFactory factory;
+  mp::Function f = factory.AddFunction("foo");
+  auto builder = factory.BeginCall(f, 1);
+  EXPECT_DEBUG_DEATH(builder.AddArg(mp::NumericExpr()), "invalid argument");
+}
+
+#endif
+
+TEST(ExprTest, TooFewCallArgs) {
+  ExprFactory factory;
+  mp::Function f = factory.AddFunction("foo");
+  auto builder = factory.BeginCall(f, 1);
+  EXPECT_DEBUG_DEATH(factory.EndCall(builder), "too few arguments");
+}
+
+// Expression iterators share the same implementation so it is enough to
+// test CallExpr::iterator.
+TEST(ExprTest, ExprIterator) {
+  ExprFactory factory;
+  mp::Function f = factory.AddFunction("foo");
+  enum {NUM_ARGS = 3};
+  ExprFactory::CallExprBuilder builder = factory.BeginCall(f, NUM_ARGS);
+  mp::Expr args[NUM_ARGS] = {
     factory.MakeNumericConstant(11),
     factory.MakeVariable(0),
     factory.MakeNumericConstant(22)
   };
-  for (int i = 0; i < 3; ++i)
+  for (int i = 0; i < NUM_ARGS; ++i)
     builder.AddArg(args[i]);
   auto e = factory.EndCall(builder);
   mp::CallExpr::iterator i = e.begin();
@@ -254,26 +288,28 @@ TEST(ExprTest, VarArgExpr) {
   mp::VarArgExpr e;
   EXPECT_TRUE(e == 0);
   ExprFactory factory;
-  ExprFactory::VarArgExprBuilder builder = factory.BeginVarArg(expr::MAX, 3);
-  mp::NumericExpr args[] = {
+  enum {NUM_ARGS = 3};
+  ExprFactory::VarArgExprBuilder builder =
+      factory.BeginVarArg(expr::MAX, NUM_ARGS);
+  mp::NumericExpr args[NUM_ARGS] = {
     factory.MakeNumericConstant(11),
     factory.MakeVariable(0),
     factory.MakeNumericConstant(22)
   };
-  for (int i = 0; i < 3; ++i)
+  for (int i = 0; i < NUM_ARGS; ++i)
     builder.AddArg(args[i]);
   e = factory.EndVarArg(builder);
   EXPECT_EQ(expr::MAX, e.kind());
   EXPECT_EQ(3, e.num_args());
   mp::VarArgExpr::iterator it = e.begin();
-  for (int i = 0; i < 3; ++i, ++it) {
+  for (int i = 0; i < NUM_ARGS; ++i, ++it) {
     mp::NumericExpr arg = e.arg(i);
     EXPECT_EQ(args[i], arg);
     EXPECT_EQ(args[i], *it);
   }
   EXPECT_EQ(e.end(), it);
   EXPECT_DEBUG_DEATH(e.arg(-1), "index out of bounds");
-  EXPECT_DEBUG_DEATH(e.arg(3), "index out of bounds");
+  EXPECT_DEBUG_DEATH(e.arg(NUM_ARGS), "index out of bounds");
   EXPECT_DEBUG_DEATH(factory.BeginVarArg(expr::MAX, 0),
                      "invalid number of arguments");
   factory.BeginVarArg(expr::MIN, 1);
@@ -285,28 +321,88 @@ TEST(ExprTest, SumExpr) {
   mp::SumExpr e;
   EXPECT_TRUE(e == 0);
   ExprFactory factory;
-  ExprFactory::SumExprBuilder builder = factory.BeginSum(3);
-  mp::NumericExpr args[] = {
+  enum {NUM_ARGS = 3};
+  ExprFactory::SumExprBuilder builder = factory.BeginSum(NUM_ARGS);
+  mp::NumericExpr args[NUM_ARGS] = {
     factory.MakeNumericConstant(11),
     factory.MakeVariable(0),
     factory.MakeNumericConstant(22)
   };
-  for (int i = 0; i < 3; ++i)
+  for (int i = 0; i < NUM_ARGS; ++i)
     builder.AddArg(args[i]);
   e = factory.EndSum(builder);
   EXPECT_EQ(expr::SUM, e.kind());
   EXPECT_EQ(3, e.num_args());
   mp::SumExpr::iterator it = e.begin();
-  for (int i = 0; i < 3; ++i, ++it) {
+  for (int i = 0; i < NUM_ARGS; ++i, ++it) {
     mp::NumericExpr arg = e.arg(i);
     EXPECT_EQ(args[i], arg);
     EXPECT_EQ(args[i], *it);
   }
   EXPECT_EQ(e.end(), it);
   EXPECT_DEBUG_DEATH(e.arg(-1), "index out of bounds");
-  EXPECT_DEBUG_DEATH(e.arg(3), "index out of bounds");
+  EXPECT_DEBUG_DEATH(e.arg(NUM_ARGS), "index out of bounds");
   EXPECT_DEBUG_DEATH(factory.BeginSum(-1), "invalid number of arguments");
   factory.BeginSum(0);
 }
 
-// TODO
+TEST(ExprTest, CountExpr) {
+  mp::CountExpr e;
+  EXPECT_TRUE(e == 0);
+  ExprFactory factory;
+  enum {NUM_ARGS = 2};
+  ExprFactory::CountExprBuilder builder = factory.BeginCount(NUM_ARGS);
+  mp::LogicalExpr args[NUM_ARGS] = {
+    factory.MakeLogicalConstant(true),
+    factory.MakeLogicalConstant(false)
+  };
+  for (int i = 0; i < NUM_ARGS; ++i)
+    builder.AddArg(args[i]);
+  e = factory.EndCount(builder);
+  EXPECT_EQ(expr::COUNT, e.kind());
+  EXPECT_EQ(2, e.num_args());
+  mp::CountExpr::iterator it = e.begin();
+  for (int i = 0; i < NUM_ARGS; ++i, ++it) {
+    mp::LogicalExpr arg = e.arg(i);
+    EXPECT_EQ(args[i], arg);
+    EXPECT_EQ(args[i], *it);
+  }
+  EXPECT_EQ(e.end(), it);
+  EXPECT_DEBUG_DEATH(e.arg(-1), "index out of bounds");
+  EXPECT_DEBUG_DEATH(e.arg(NUM_ARGS), "index out of bounds");
+  EXPECT_DEBUG_DEATH(factory.BeginCount(-1), "invalid number of arguments");
+  factory.BeginCount(0);
+}
+
+TEST(ExprTest, NumberOfExpr) {
+  mp::NumberOfExpr e;
+  EXPECT_TRUE(e == 0);
+  ExprFactory factory;
+  enum {NUM_ARGS = 3};
+  mp::NumericExpr args[NUM_ARGS] = {
+    factory.MakeNumericConstant(11),
+    factory.MakeVariable(0),
+    factory.MakeNumericConstant(22)
+  };
+  ExprFactory::NumberOfExprBuilder builder =
+      factory.BeginNumberOf(NUM_ARGS, args[0]);
+  for (int i = 1; i < NUM_ARGS; ++i)
+    builder.AddArg(args[i]);
+  e = factory.EndNumberOf(builder);
+  EXPECT_EQ(expr::NUMBEROF, e.kind());
+  EXPECT_EQ(3, e.num_args());
+  mp::NumberOfExpr::iterator it = e.begin();
+  for (int i = 0; i < NUM_ARGS; ++i, ++it) {
+    mp::NumericExpr arg = e.arg(i);
+    EXPECT_EQ(args[i], arg);
+    EXPECT_EQ(args[i], *it);
+  }
+  EXPECT_EQ(e.end(), it);
+  EXPECT_DEBUG_DEATH(e.arg(-1), "index out of bounds");
+  EXPECT_DEBUG_DEATH(e.arg(NUM_ARGS), "index out of bounds");
+  EXPECT_DEBUG_DEATH(factory.BeginNumberOf(0, args[0]),
+      "invalid number of arguments");
+  EXPECT_DEBUG_DEATH(factory.BeginNumberOf(1, mp::NumericExpr()),
+      "invalid argument");
+  factory.BeginNumberOf(1, args[1]);
+}
