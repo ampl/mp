@@ -701,7 +701,6 @@ class ExprFactory {
 
   // Begins building a numberof expression.
   NumberOfExprBuilder BeginNumberOf(int num_args, NumericExpr arg0) {
-    assert(arg0 != 0 && "invalid argument");
     NumberOfExprBuilder builder =
         BeginIteratedExpr<NumberOfExpr>(expr::NUMBEROF, num_args, 1);
     builder.AddArg(arg0);
