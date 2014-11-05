@@ -20,11 +20,25 @@
  Author: Victor Zverovich
  */
 
+#include <stdexcept>
+
+class AssertionFailure : public std::logic_error {
+ public:
+  explicit AssertionFailure(const char *message) : std::logic_error(message) {}
+};
+
+#define MP_ASSERT(condition, message) \
+  if (!(condition)) throw AssertionFailure(message);
+
 #include "mp/expr.h"
 #include "gtest-extra.h"
 
 using mp::ExprFactory;
 namespace expr = mp::expr;
+
+// Expects an assertion failure.
+#define EXPECT_ASSERT(stmt, message) \
+  EXPECT_THROW_MSG(stmt, AssertionFailure, message)
 
 TEST(ExprTest, Expr) {
   mp::Expr e;
@@ -70,10 +84,9 @@ TEST(ExprTest, UnaryExpr) {
   EXPECT_TRUE(e != 0);
   EXPECT_EQ(expr::ABS, e.kind());
   EXPECT_EQ(arg, e.arg());
-  EXPECT_DEBUG_DEATH(factory.MakeUnary(expr::ADD, arg),
-                     "invalid expression kind");
-  EXPECT_DEBUG_DEATH(factory.MakeUnary(expr::ABS, mp::NumericExpr()),
-                     "invalid argument");
+  EXPECT_ASSERT(factory.MakeUnary(expr::ADD, arg), "invalid expression kind");
+  EXPECT_ASSERT(factory.MakeUnary(expr::ABS, mp::NumericExpr()),
+                "invalid argument");
 }
 
 TEST(ExprTest, BinaryExpr) {
@@ -87,12 +100,12 @@ TEST(ExprTest, BinaryExpr) {
   EXPECT_EQ(expr::MUL, e.kind());
   EXPECT_EQ(lhs, e.lhs());
   EXPECT_EQ(rhs, e.rhs());
-  EXPECT_DEBUG_DEATH(factory.MakeBinary(expr::IF, lhs, rhs),
-                     "invalid expression kind");
-  EXPECT_DEBUG_DEATH(factory.MakeBinary(expr::MUL, mp::NumericExpr(), rhs),
-                     "invalid argument");
-  EXPECT_DEBUG_DEATH(factory.MakeBinary(expr::MUL, lhs, mp::NumericExpr()),
-                     "invalid argument");
+  EXPECT_ASSERT(factory.MakeBinary(expr::IF, lhs, rhs),
+                "invalid expression kind");
+  EXPECT_ASSERT(factory.MakeBinary(expr::MUL, mp::NumericExpr(), rhs),
+                "invalid argument");
+  EXPECT_ASSERT(factory.MakeBinary(expr::MUL, lhs, mp::NumericExpr()),
+                "invalid argument");
 }
 
 TEST(ExprTest, IfExpr) {
@@ -108,10 +121,10 @@ TEST(ExprTest, IfExpr) {
   EXPECT_EQ(condition, e.condition());
   EXPECT_EQ(true_expr, e.true_expr());
   EXPECT_EQ(false_expr, e.false_expr());
-  EXPECT_DEBUG_DEATH(factory.MakeIf(mp::LogicalExpr(), true_expr, false_expr),
-                     "invalid argument");
-  EXPECT_DEBUG_DEATH(factory.MakeIf(condition, mp::NumericExpr(), false_expr),
-                     "invalid argument");
+  EXPECT_ASSERT(factory.MakeIf(mp::LogicalExpr(), true_expr, false_expr),
+                "invalid argument");
+  EXPECT_ASSERT(factory.MakeIf(condition, mp::NumericExpr(), false_expr),
+                "invalid argument");
   factory.MakeIf(condition, true_expr, mp::NumericExpr());
 }
 
@@ -132,23 +145,21 @@ TEST(ExprTest, PLTerm) {
   EXPECT_EQ(11, e.slope(0));
   EXPECT_EQ(22, e.slope(1));
   EXPECT_EQ(33, e.slope(2));
-  EXPECT_DEBUG_DEATH(e.slope(-1), "index out of bounds");
-  EXPECT_DEBUG_DEATH(e.slope(3), "index out of bounds");
+  EXPECT_ASSERT(e.slope(-1), "index out of bounds");
+  EXPECT_ASSERT(e.slope(3), "index out of bounds");
   EXPECT_EQ(111, e.breakpoint(0));
   EXPECT_EQ(222, e.breakpoint(1));
-  EXPECT_DEBUG_DEATH(e.breakpoint(-1), "index out of bounds");
-  EXPECT_DEBUG_DEATH(e.breakpoint(2), "index out of bounds");
+  EXPECT_ASSERT(e.breakpoint(-1), "index out of bounds");
+  EXPECT_ASSERT(e.breakpoint(2), "index out of bounds");
   EXPECT_EQ(42, e.var_index());
-  EXPECT_DEBUG_DEATH(factory.BeginPLTerm(0), "invalid number of breakpoints");
+  EXPECT_ASSERT(factory.BeginPLTerm(0), "invalid number of breakpoints");
 }
-
-#ifndef NDEBUG
 
 TEST(ExprTest, TooManyBreakpoints) {
   ExprFactory factory;
   auto builder = factory.BeginPLTerm(1);
   builder.AddBreakpoint(0);
-  EXPECT_DEBUG_DEATH(builder.AddBreakpoint(1), "too many breakpoints");
+  EXPECT_ASSERT(builder.AddBreakpoint(1), "too many breakpoints");
 }
 
 TEST(ExprTest, TooManySlopes) {
@@ -156,7 +167,7 @@ TEST(ExprTest, TooManySlopes) {
   auto builder = factory.BeginPLTerm(1);
   builder.AddSlope(0);
   builder.AddSlope(1);
-  EXPECT_DEBUG_DEATH(builder.AddSlope(2), "too many slopes");
+  EXPECT_ASSERT(builder.AddSlope(2), "too many slopes");
 }
 
 TEST(ExprTest, InvalidPLTermArgument) {
@@ -165,19 +176,16 @@ TEST(ExprTest, InvalidPLTermArgument) {
   builder.AddSlope(0);
   builder.AddBreakpoint(0);
   builder.AddSlope(1);
-  EXPECT_DEBUG_DEATH(factory.EndPLTerm(builder, mp::Variable()),
-                     "invalid argument");
+  EXPECT_ASSERT(factory.EndPLTerm(builder, mp::Variable()), "invalid argument");
 }
-
-#endif
 
 TEST(ExprTest, TooFewBreakpoints) {
   ExprFactory factory;
   auto builder = factory.BeginPLTerm(1);
   builder.AddSlope(0);
   builder.AddSlope(1);
-  EXPECT_DEBUG_DEATH(factory.EndPLTerm(builder, factory.MakeVariable(0)),
-                     "too few breakpoints");
+  EXPECT_ASSERT(factory.EndPLTerm(builder, factory.MakeVariable(0)),
+                "too few breakpoints");
 }
 
 TEST(ExprTest, TooFewSlopes) {
@@ -185,8 +193,8 @@ TEST(ExprTest, TooFewSlopes) {
   auto builder = factory.BeginPLTerm(1);
   builder.AddBreakpoint(0);
   builder.AddSlope(0);
-  EXPECT_DEBUG_DEATH(factory.EndPLTerm(builder, factory.MakeVariable(0)),
-                     "too few slopes");
+  EXPECT_ASSERT(factory.EndPLTerm(builder, factory.MakeVariable(0)),
+                "too few slopes");
 }
 
 TEST(ExprTest, Function) {
@@ -217,17 +225,15 @@ TEST(ExprTest, CallExpr) {
     EXPECT_EQ(args[i], *it);
   }
   EXPECT_EQ(e.end(), it);
-  EXPECT_DEBUG_DEATH(e.arg(-1), "index out of bounds");
-  EXPECT_DEBUG_DEATH(e.arg(NUM_ARGS), "index out of bounds");
-  EXPECT_DEBUG_DEATH(factory.BeginCall(f, -1), "invalid number of arguments");
+  EXPECT_ASSERT(e.arg(-1), "index out of bounds");
+  EXPECT_ASSERT(e.arg(NUM_ARGS), "index out of bounds");
+  EXPECT_ASSERT(factory.BeginCall(f, -1), "invalid number of arguments");
   factory.BeginCall(f, 0);
-  EXPECT_DEBUG_DEATH(factory.BeginCall(mp::Function(), 0), "invalid function");
+  EXPECT_ASSERT(factory.BeginCall(mp::Function(), 0), "invalid function");
 }
 
 // Iterated expressions share the same builder so it is enough to test
 // CallExprBuilder.
-
-#ifndef NDEBUG
 
 TEST(ExprTest, TooManyCallArgs) {
   ExprFactory factory;
@@ -235,23 +241,21 @@ TEST(ExprTest, TooManyCallArgs) {
   auto builder = factory.BeginCall(f, 1);
   auto arg = factory.MakeNumericConstant(0);
   builder.AddArg(arg);
-  EXPECT_DEBUG_DEATH(builder.AddArg(arg), "too many arguments");
+  EXPECT_ASSERT(builder.AddArg(arg), "too many arguments");
 }
 
 TEST(ExprTest, InvalidCallArg) {
   ExprFactory factory;
   mp::Function f = factory.AddFunction("foo");
   auto builder = factory.BeginCall(f, 1);
-  EXPECT_DEBUG_DEATH(builder.AddArg(mp::NumericExpr()), "invalid argument");
+  EXPECT_ASSERT(builder.AddArg(mp::NumericExpr()), "invalid argument");
 }
-
-#endif
 
 TEST(ExprTest, TooFewCallArgs) {
   ExprFactory factory;
   mp::Function f = factory.AddFunction("foo");
   auto builder = factory.BeginCall(f, 1);
-  EXPECT_DEBUG_DEATH(factory.EndCall(builder), "too few arguments");
+  EXPECT_ASSERT(factory.EndCall(builder), "too few arguments");
 }
 
 // Expression iterators share the same implementation so it is enough to
@@ -308,13 +312,12 @@ TEST(ExprTest, VarArgExpr) {
     EXPECT_EQ(args[i], *it);
   }
   EXPECT_EQ(e.end(), it);
-  EXPECT_DEBUG_DEATH(e.arg(-1), "index out of bounds");
-  EXPECT_DEBUG_DEATH(e.arg(NUM_ARGS), "index out of bounds");
-  EXPECT_DEBUG_DEATH(factory.BeginVarArg(expr::MAX, 0),
-                     "invalid number of arguments");
+  EXPECT_ASSERT(e.arg(-1), "index out of bounds");
+  EXPECT_ASSERT(e.arg(NUM_ARGS), "index out of bounds");
+  EXPECT_ASSERT(factory.BeginVarArg(expr::MAX, 0),
+                "invalid number of arguments");
   factory.BeginVarArg(expr::MIN, 1);
-  EXPECT_DEBUG_DEATH(factory.BeginVarArg(expr::SUM, 1),
-                     "invalid expression kind");
+  EXPECT_ASSERT(factory.BeginVarArg(expr::SUM, 1), "invalid expression kind");
 }
 
 TEST(ExprTest, SumExpr) {
@@ -340,9 +343,9 @@ TEST(ExprTest, SumExpr) {
     EXPECT_EQ(args[i], *it);
   }
   EXPECT_EQ(e.end(), it);
-  EXPECT_DEBUG_DEATH(e.arg(-1), "index out of bounds");
-  EXPECT_DEBUG_DEATH(e.arg(NUM_ARGS), "index out of bounds");
-  EXPECT_DEBUG_DEATH(factory.BeginSum(-1), "invalid number of arguments");
+  EXPECT_ASSERT(e.arg(-1), "index out of bounds");
+  EXPECT_ASSERT(e.arg(NUM_ARGS), "index out of bounds");
+  EXPECT_ASSERT(factory.BeginSum(-1), "invalid number of arguments");
   factory.BeginSum(0);
 }
 
@@ -368,9 +371,9 @@ TEST(ExprTest, CountExpr) {
     EXPECT_EQ(args[i], *it);
   }
   EXPECT_EQ(e.end(), it);
-  EXPECT_DEBUG_DEATH(e.arg(-1), "index out of bounds");
-  EXPECT_DEBUG_DEATH(e.arg(NUM_ARGS), "index out of bounds");
-  EXPECT_DEBUG_DEATH(factory.BeginCount(-1), "invalid number of arguments");
+  EXPECT_ASSERT(e.arg(-1), "index out of bounds");
+  EXPECT_ASSERT(e.arg(NUM_ARGS), "index out of bounds");
+  EXPECT_ASSERT(factory.BeginCount(-1), "invalid number of arguments");
   factory.BeginCount(0);
 }
 
@@ -398,13 +401,36 @@ TEST(ExprTest, NumberOfExpr) {
     EXPECT_EQ(args[i], *it);
   }
   EXPECT_EQ(e.end(), it);
-  EXPECT_DEBUG_DEATH(e.arg(-1), "index out of bounds");
-  EXPECT_DEBUG_DEATH(e.arg(NUM_ARGS), "index out of bounds");
-#ifndef NDEBUG
-  EXPECT_DEBUG_DEATH(factory.BeginNumberOf(0, args[0]),
+  EXPECT_ASSERT(e.arg(-1), "index out of bounds");
+  EXPECT_ASSERT(e.arg(NUM_ARGS), "index out of bounds");
+  EXPECT_ASSERT(factory.BeginNumberOf(0, args[0]),
       "invalid number of arguments");
-#endif
-  EXPECT_DEBUG_DEATH(factory.BeginNumberOf(1, mp::NumericExpr()),
+  EXPECT_ASSERT(factory.BeginNumberOf(1, mp::NumericExpr()),
       "invalid argument");
   factory.BeginNumberOf(1, args[1]);
 }
+
+TEST(ExprTest, LogicalConstant) {
+  mp::LogicalConstant e;
+  EXPECT_TRUE(e == 0);
+  ExprFactory factory;
+  e = factory.MakeLogicalConstant(false);
+  EXPECT_EQ(expr::CONSTANT, e.kind());
+  EXPECT_TRUE(e != 0);
+  EXPECT_FALSE(e.value());
+  EXPECT_TRUE(factory.MakeLogicalConstant(true).value());
+}
+
+TEST(ExprTest, NotExpr) {
+  mp::NotExpr e;
+  EXPECT_TRUE(e == 0);
+  ExprFactory factory;
+  auto arg = factory.MakeLogicalConstant(false);
+  e = factory.MakeNot(arg);
+  EXPECT_TRUE(e != 0);
+  EXPECT_EQ(expr::NOT, e.kind());
+  EXPECT_EQ(arg, e.arg());
+  EXPECT_ASSERT(factory.MakeNot(mp::LogicalExpr()), "invalid argument");
+}
+
+// TODO: test logical expressions

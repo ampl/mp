@@ -23,11 +23,16 @@
 #ifndef MP_EXPR_H_
 #define MP_EXPR_H_
 
+#include <cassert>
 #include <memory>
 #include <vector>
 
 #include "mp/format.h"
 #include "mp/problem-base.h"
+
+#ifndef MP_ASSERT
+# define MP_ASSERT(condition, message) assert((condition) && message)
+#endif
 
 namespace mp {
 
@@ -102,8 +107,8 @@ class Expr {
   // Creates an expression from an implementation.
   template <typename TargetExpr>
   static TargetExpr Create(const Expr::Impl *impl) {
-    assert((!impl || internal::Is<TargetExpr>(impl->kind())) &&
-           "invalid expression kind");
+    MP_ASSERT((!impl || internal::Is<TargetExpr>(impl->kind())),
+              "invalid expression kind");
     TargetExpr expr;
     expr.impl_ = impl;
     return expr;
@@ -314,13 +319,13 @@ class PLTerm : public NumericExpr {
 
   // Returns a breakpoint with the specified index.
   double breakpoint(int index) const {
-    assert(index >= 0 && index < num_breakpoints() && "index out of bounds");
+    MP_ASSERT(index >= 0 && index < num_breakpoints(), "index out of bounds");
     return impl()->data[2 * index + 1];
   }
 
   // Returns a slope with the specified index.
   double slope(int index) const {
-    assert(index >= 0 && index < num_slopes() && "index out of bounds");
+    MP_ASSERT(index >= 0 && index < num_slopes(), "index out of bounds");
     return impl()->data[2 * index];
   }
 
@@ -387,7 +392,7 @@ class CallExpr : public NumericExpr {
 
   // Returns an argument with the specified index.
   Expr arg(int index) {
-    assert(index >= 0 && index < num_args() && "index out of bounds");
+    MP_ASSERT(index >= 0 && index < num_args(), "index out of bounds");
     return Create<Expr>(impl()->args[index]);
   }
 
@@ -420,7 +425,7 @@ class BasicIteratedExpr : public NumericExpr {
 
   // Returns an argument with the specified index.
   Arg arg(int index) {
-    assert(index >= 0 && index < num_args() && "index out of bounds");
+    MP_ASSERT(index >= 0 && index < num_args(), "index out of bounds");
     return Create<Arg>(impl()->args[index]);
   }
 
@@ -472,6 +477,11 @@ class LogicalConstant : public LogicalExpr {
 
 MP_SPECIALIZE_IS(LogicalConstant, CONSTANT)
 
+// A logical NOT expression.
+// Example: not a, where a is a logical expression.
+typedef BasicUnaryExpr<LogicalExpr> NotExpr;
+MP_SPECIALIZE_IS(NotExpr, NOT)
+
 // TODO: logical expressions
 
 class ExprFactory {
@@ -496,6 +506,14 @@ class ExprFactory {
     return impl;
   }
 
+  template <typename ExprType, typename Arg>
+  ExprType MakeUnary(expr::Kind kind, Arg arg) {
+    MP_ASSERT(arg != 0, "invalid argument");
+    typename ExprType::Impl *impl = Allocate<typename  ExprType::Impl>(kind);
+    impl->arg = arg.impl_;
+    return Expr::Create<ExprType>(impl);
+  }
+
   // A variable argument expression builder.
   template <typename ExprType>
   class IteratedExprBuilder {
@@ -510,8 +528,8 @@ class ExprFactory {
 
    public:
     void AddArg(typename ExprType::Arg arg) {
-      assert(arg_index_ < impl_->num_args && "too many arguments");
-      assert(arg != 0 && "invalid argument");
+      MP_ASSERT(arg_index_ < impl_->num_args, "too many arguments");
+      MP_ASSERT(arg != 0, "invalid argument");
       impl_->args[arg_index_++] = arg.impl_;
     }
   };
@@ -519,7 +537,7 @@ class ExprFactory {
   template <typename ExprType>
   IteratedExprBuilder<ExprType> BeginIteratedExpr(
         expr::Kind kind, int num_args, int min_args) {
-    assert(num_args >= min_args && "invalid number of arguments");
+    MP_ASSERT(num_args >= min_args, "invalid number of arguments");
     typename ExprType::Impl *impl = Allocate<typename ExprType::Impl>(
           kind, sizeof(Expr::Impl*) * (num_args - 1));
     impl->num_args = num_args;
@@ -530,7 +548,7 @@ class ExprFactory {
   ExprType EndIteratedExpr(IteratedExprBuilder<ExprType> &builder) {
     typename ExprType::Impl *impl = builder.impl_;
     // Check that all arguments provided.
-    assert(builder.arg_index_ == impl->num_args && "too few arguments");
+    MP_ASSERT(builder.arg_index_ == impl->num_args, "too few arguments");
     return Expr::Create<ExprType>(impl);
   }
 
@@ -566,17 +584,14 @@ class ExprFactory {
 
   // Makes a unary expression.
   UnaryExpr MakeUnary(expr::Kind kind, NumericExpr arg) {
-    assert(internal::Is<UnaryExpr>(kind) && "invalid expression kind");
-    assert(arg != 0 && "invalid argument");
-    UnaryExpr::Impl *impl = Allocate<UnaryExpr::Impl>(kind);
-    impl->arg = arg.impl_;
-    return Expr::Create<UnaryExpr>(impl);
+    MP_ASSERT(internal::Is<UnaryExpr>(kind), "invalid expression kind");
+    return MakeUnary<UnaryExpr>(kind, arg);
   }
 
   // Makes a binary expression.
   BinaryExpr MakeBinary(expr::Kind kind, NumericExpr lhs, NumericExpr rhs) {
-    assert(internal::Is<BinaryExpr>(kind) && "invalid expression kind");
-    assert(lhs != 0 && rhs != 0 && "invalid argument");
+    MP_ASSERT(internal::Is<BinaryExpr>(kind), "invalid expression kind");
+    MP_ASSERT(lhs != 0 && rhs != 0, "invalid argument");
     BinaryExpr::Impl *impl = Allocate<BinaryExpr::Impl>(kind);
     impl->lhs = lhs.impl_;
     impl->rhs = rhs.impl_;
@@ -587,7 +602,7 @@ class ExprFactory {
   IfExpr MakeIf(LogicalExpr condition,
                 NumericExpr true_expr, NumericExpr false_expr) {
     // false_expr can be null.
-    assert(condition != 0 && true_expr != 0 && "invalid argument");
+    MP_ASSERT(condition != 0 && true_expr != 0, "invalid argument");
     IfExpr::Impl *impl = Allocate<IfExpr::Impl>(expr::IF);
     impl->condition = condition.impl_;
     impl->true_expr = true_expr.impl_;
@@ -609,14 +624,14 @@ class ExprFactory {
 
    public:
     void AddSlope(double slope) {
-      assert(slope_index_ < impl_->num_breakpoints + 1 && "too many slopes");
+      MP_ASSERT(slope_index_ < impl_->num_breakpoints + 1, "too many slopes");
       impl_->data[2 * slope_index_] = slope;
       ++slope_index_;
     }
 
     void AddBreakpoint(double breakpoint) {
-      assert(breakpoint_index_ < impl_->num_breakpoints &&
-             "too many breakpoints");
+      MP_ASSERT(breakpoint_index_ < impl_->num_breakpoints,
+                "too many breakpoints");
       impl_->data[2 * breakpoint_index_ + 1] = breakpoint;
       ++breakpoint_index_;
     }
@@ -624,7 +639,7 @@ class ExprFactory {
 
   // Begins building a piecewise-linear term.
   PLTermBuilder BeginPLTerm(int num_breakpoints) {
-    assert(num_breakpoints > 0 && "invalid number of breakpoints");
+    MP_ASSERT(num_breakpoints > 0, "invalid number of breakpoints");
     PLTerm::Impl *impl = Allocate<PLTerm::Impl>(
           expr::PLTERM, sizeof(double) * num_breakpoints * 2);
     impl->num_breakpoints = num_breakpoints;
@@ -635,11 +650,11 @@ class ExprFactory {
   PLTerm EndPLTerm(PLTermBuilder &builder, Variable var) {
     PLTerm::Impl *impl = builder.impl_;
     // Check that all slopes and breakpoints provided.
-    assert(builder.slope_index_ == impl->num_breakpoints + 1 &&
-           "too few slopes");
-    assert(builder.breakpoint_index_ == impl->num_breakpoints &&
-           "too few breakpoints");
-    assert(var != 0 && "invalid argument");
+    MP_ASSERT(builder.slope_index_ == impl->num_breakpoints + 1,
+              "too few slopes");
+    MP_ASSERT(builder.breakpoint_index_ == impl->num_breakpoints,
+              "too few breakpoints");
+    MP_ASSERT(var != 0, "invalid argument");
     impl->var_index = var.index();
     return Expr::Create<PLTerm>(impl);
   }
@@ -648,7 +663,7 @@ class ExprFactory {
 
   // Begins building a call expression.
   CallExprBuilder BeginCall(Function func, int num_args) {
-    assert(func != 0 && "invalid function");
+    MP_ASSERT(func != 0, "invalid function");
     CallExprBuilder builder =
         BeginIteratedExpr<CallExpr>(expr::CALL, num_args, 0);
     builder.impl_->func = func.impl_;
@@ -664,7 +679,7 @@ class ExprFactory {
 
   // Begins building a variable argument expression.
   VarArgExprBuilder BeginVarArg(expr::Kind kind, int num_args) {
-    assert(internal::Is<VarArgExpr>(kind) && "invalid expression kind");
+    MP_ASSERT(internal::Is<VarArgExpr>(kind), "invalid expression kind");
     return BeginIteratedExpr<VarArgExpr>(kind, num_args, 1);
   }
 
@@ -718,6 +733,11 @@ class ExprFactory {
         Allocate<LogicalConstant::Impl>(expr::CONSTANT);
     impl->value = value;
     return Expr::Create<LogicalConstant>(impl);
+  }
+
+  // Makes a logical NOT expression.
+  NotExpr MakeNot(LogicalExpr arg) {
+    return MakeUnary<NotExpr>(expr::NOT, arg);
   }
 };
 }  // namespace mp
