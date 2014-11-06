@@ -97,7 +97,8 @@ def prepare_unix_package(amplcml, ampl_demo_dir, system):
       sysdir = system + '/x86_32'
     elif system == 'linux32':
       sysdir = 'linux'
-    retrieved_file = retrieve_cached('{}/{}/{}'.format(student_url, sysdir, filename), system)
+    retrieved_file = retrieve_cached(
+      '{}/{}/{}'.format(student_url, sysdir, filename), system)
     # Unpack if necessary.
     outfilename = filename
     if filename.endswith('.gz'):
@@ -176,7 +177,8 @@ if __name__ == '__main__':
       amplide_demo_dir = os.path.join(package_dir, 'amplide-demo')
       amplide_url = 'http://www.ampl.com/dl/IDE/amplide.' + sys2ide[system]
       amplide = retrieve_cached(amplide_url)
-      archive_open = zipfile.ZipFile if amplide_url.endswith('zip') else tarfile.open
+      iszip = amplide_url.endswith('zip')
+      archive_open = zipfile.ZipFile if iszip else tarfile.open
       with archive_open(amplide) as archive:
         archive.extractall(package_dir)
       shutil.move(os.path.join(package_dir, 'amplide'), amplide_demo_dir)
