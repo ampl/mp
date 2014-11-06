@@ -136,7 +136,8 @@ def package(basename, archive_format, package_dir):
       # Use command-line tar instead of shutil.make_archive because the
       # latter is too slow.
       archive = os.path.join(os.getcwd(), basename + '.tar.gz')
-      subprocess.check_call(['tar', 'czf', archive, '.'], cwd=package_dir)
+      command = ['tar', 'czf', archive] + os.listdir(package_dir)
+      subprocess.check_call(command, cwd=package_dir)
     else:
       shutil.make_archive(basename, archive_format, package_dir, '.')
 
