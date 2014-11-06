@@ -1117,7 +1117,7 @@ TEST(NLTest, ReadStringLiteral) {
 
 TEST(NLTest, ReadInvalidOpCode) {
   EXPECT_READ_ERROR("C0\no-1\n", "(input):18:2: expected unsigned integer");
-  EXPECT_READ_ERROR("C0\no82\n", "(input):18:2: invalid opcode 82");
+  EXPECT_READ_ERROR("C0\no83\n", "(input):18:2: invalid opcode 83");
 }
 
 TEST(NLTest, ReadInvalidNumericExpr) {
