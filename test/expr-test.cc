@@ -484,6 +484,18 @@ TYPED_TEST(IteratedExprTest, Test) {
   info.BeginBuild(factory, info.min_args());
 }
 
+TEST(ExprTest, StringLiteral) {
+  mp::StringLiteral e;
+  EXPECT_TRUE(e == 0);
+  (void)mp::Expr(e);
+  ExprFactory factory;
+  const char STR[] = "abc\0def";
+  e = factory.MakeStringLiteral(fmt::StringRef(STR, sizeof(STR)));
+  EXPECT_EQ(expr::STRING, e.kind());
+  EXPECT_TRUE(e != 0);
+  EXPECT_EQ(std::string(STR, sizeof(STR)), std::string(e.value(), sizeof(STR)));
+}
+
 TEST(ExprFactoryTest, InvalidCallExprFunction) {
   ExprFactory factory;
   EXPECT_ASSERT(factory.BeginCall(mp::Function(), 0), "invalid function");
@@ -507,4 +519,4 @@ TEST(ExprFactoryTest, InvalidIteratedLogicalExprKind) {
                 "invalid expression kind");
 }
 
-// TODO: test string literal
+// TODO: test deallocation
