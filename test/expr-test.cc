@@ -548,7 +548,7 @@ TEST(ExprTest, IteratedLogicalExpr) {
   e = factory.EndIteratedLogical(builder);
   EXPECT_EQ(expr::EXISTS, e.kind());
   EXPECT_EQ(2, e.num_args());
-  mp::CountExpr::iterator it = e.begin();
+  mp::IteratedLogicalExpr::iterator it = e.begin();
   for (int i = 0; i < NUM_ARGS; ++i, ++it) {
     mp::LogicalExpr arg = e.arg(i);
     EXPECT_EQ(args[i], arg);
@@ -560,6 +560,36 @@ TEST(ExprTest, IteratedLogicalExpr) {
   EXPECT_ASSERT(factory.BeginIteratedLogical(expr::EXISTS, -1),
                 "invalid number of arguments");
   factory.BeginIteratedLogical(expr::EXISTS, 0);
+}
+
+TEST(ExprTest, AllDiffExpr) {
+  mp::AllDiffExpr e;
+  EXPECT_TRUE(e == 0);
+  (void)mp::LogicalExpr(e);
+  ExprFactory factory;
+  enum {NUM_ARGS = 3};
+  mp::NumericExpr args[NUM_ARGS] = {
+    factory.MakeNumericConstant(11),
+    factory.MakeVariable(0),
+    factory.MakeNumericConstant(22)
+  };
+  ExprFactory::AllDiffExprBuilder builder = factory.BeginAllDiff(NUM_ARGS);
+  for (int i = 0; i < NUM_ARGS; ++i)
+    builder.AddArg(args[i]);
+  e = factory.EndAllDiff(builder);
+  EXPECT_EQ(expr::ALLDIFF, e.kind());
+  EXPECT_EQ(3, e.num_args());
+  mp::AllDiffExpr::iterator it = e.begin();
+  for (int i = 0; i < NUM_ARGS; ++i, ++it) {
+    mp::NumericExpr arg = e.arg(i);
+    EXPECT_EQ(args[i], arg);
+    EXPECT_EQ(args[i], *it);
+  }
+  EXPECT_EQ(e.end(), it);
+  EXPECT_ASSERT(e.arg(-1), "index out of bounds");
+  EXPECT_ASSERT(e.arg(NUM_ARGS), "index out of bounds");
+  EXPECT_ASSERT(factory.BeginAllDiff(-1), "invalid number of arguments");
+  factory.BeginAllDiff(0);
 }
 
 // TODO: test logical expressions

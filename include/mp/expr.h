@@ -496,7 +496,12 @@ typedef BasicIteratedExpr<
   expr::FIRST_ITERATED_LOGICAL, LogicalExpr> IteratedLogicalExpr;
 MP_SPECIALIZE_IS_RANGE(IteratedLogicalExpr, ITERATED_LOGICAL)
 
-// TODO: expressions: alldiff and string literal
+// An alldiff expression.
+// Example: alldiff{i in I} x[i], where I is a set and x is a variable.
+typedef BasicIteratedExpr<expr::ALLDIFF, LogicalExpr, NumericExpr> AllDiffExpr;
+MP_SPECIALIZE_IS(AllDiffExpr, ALLDIFF)
+
+// TODO: string literal
 
 class ExprFactory {
  private:
@@ -791,15 +796,27 @@ class ExprFactory {
 
   typedef IteratedExprBuilder<IteratedLogicalExpr> IteratedLogicalExprBuilder;
 
-  // Begins building a sum expression.
+  // Begins building an iterated logical expression.
   IteratedLogicalExprBuilder BeginIteratedLogical(
         expr::Kind kind, int num_args) {
     return BeginIteratedExpr<IteratedLogicalExpr>(kind, num_args);
   }
 
-  // Ends building a sum expression.
+  // Ends building an iterated logical expression.
   IteratedLogicalExpr EndIteratedLogical(IteratedLogicalExprBuilder builder) {
     return EndIteratedExpr<IteratedLogicalExpr>(builder);
+  }
+
+  typedef IteratedExprBuilder<AllDiffExpr> AllDiffExprBuilder;
+
+  // Begins building an alldiff expression.
+  AllDiffExprBuilder BeginAllDiff(int num_args) {
+    return BeginIteratedExpr<AllDiffExpr>(expr::ALLDIFF, num_args);
+  }
+
+  // Ends building an alldiff expression.
+  AllDiffExpr EndAllDiff(AllDiffExprBuilder builder) {
+    return EndIteratedExpr<AllDiffExpr>(builder);
   }
 };
 }  // namespace mp
