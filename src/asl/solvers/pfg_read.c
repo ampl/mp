@@ -276,7 +276,7 @@ ed_reset(ASLTYPE *asl)
  static derp *dzork;
  static ograd *ogzork;
  static expr *ezork;
- static expr_n *enzork;
+ static EU *enzork;
  static int dzork1, dzork2, izork = -1;
 #endif
 
@@ -805,7 +805,7 @@ ogfree(Static *S, ograd *og)
 		if (ogzork) {
 			do if (og == ogzork)
 				printf("");
-			   while(og = og->next);
+			   while((og = og->next));
 			og = og1;
 			}
 #endif
@@ -946,96 +946,25 @@ lacompar(const void *a, const void *b, void *v)
 	}
 
  static int
-ndiff(range *r, range *r1, int *nn1p)
-{	/* Return the number of linargs in r but not r1; */
-	/* set *nn1p to the number of linargs in r1 but not r. */
+ndiff(range *r, range *r1)
+{
+	/* Return 0 if r and r1 have the same linargs; else return 1. */
 
-	int i, nn, nn1;
 	linarg **la, **la1, **la1e, **lae;
 
-	nn = nn1 = 0;
 	la = r->lap;
 	lae = la + r->n;
 	la1 = r1->lap;
 	la1e = la1 + r1->n;
-	for(;;) {
-		if (la >= lae) {
-			nn1 += la1e - la1;
-			break;
-			}
-		if (la1 >= la1e) {
-			nn += lae - la;
-			break;
-			}
-		if (!(i = lacompar((char*)la, (char *)la1, NULL))) {
-			la++;
-			la1++;
-			}
-		else if (i < 0) {
-			nn++;
-			la++;
-			}
-		else {
-			nn1++;
-			la1++;
-			}
+	for(;;++la, ++la1) {
+		if (la >= lae)
+			return la1 < la1e;
+		if (la1 >= la1e)
+			return 1;
+		if (lacompar((char*)la, (char *)la1, NULL))
+			return 1;
 		}
-	if (nn1p)
-		*nn1p = nn1;
-	return nn;
-	}
-
- static void
-lap_merge(ASL *asl, int nn, range *r, range *r1)
-{	/* merge nn new linargs from r into r1 */
-
-	int i, n1;
-	linarg **la, **la1, **la1e, **lae, **lap, **lap0;
-
-	la = r->lap;
-	lae = la + r->n;
-	la1 = r1->lap;
-	la1e = la1 + r1->n;
-	n1 = r1->n + nn;
-	lap = lap0 = (linarg**)new_mblk(htcl(n1*sizeof(linarg*)));
-	for(;;) {
-		if (la >= lae) {
-			while(la1 < la1e)
-				*lap++ = *la1++;
-			break;
-			}
-		if (la1 >= la1e) {
-			do *lap++ = *la++;
-				while(la < lae);
-			break;
-			}
-		if (!(i = lacompar((char*)la, (char *)la1, NULL))) {
-			*lap++ = *la++;
-			la1++;
-			}
-		else if (i < 0)
-			*lap++ = *la++;
-		else
-			*lap++ = *la1++;
-		}
-	del_mblk(htcl(r1->n*sizeof(linarg*)), r1->lap);
-	r1->lap = lap0;
-	r1->n = n1;
-	}
-
- static void
-ucopy(ASL *asl, range *r, range **rp)
-{
-	range *r1;
-	int nn;
-
-	r1 = *rp;
-	/* see whether to update this copy */
-	if (r->n == r1->n && !memcmp(r->lap, r1->lap, r->n*sizeof(linarg*)))
-		return;
-	if (!(nn = ndiff(r, r1, 0)))
-		return;
-	lap_merge(asl, nn, r, r1);
+	return 0;
 	}
 
  static range **
@@ -1057,9 +986,11 @@ uhash(Static *S, range *r)
 	n = r->n;
 	if (S->asl->P.merge)
 	    while((r1 = *rp)) {
-		if (r1->nv == nv && !memcmp(ui, r1->ui, len)) {
-			ucopy((ASL*)asl, r, rp);
-			return rp;
+		if (r1->nv == nv && r1->n == n && !memcmp(ui, r1->ui, len)) {
+			if (!memcmp(r->lap, r1->lap, n*sizeof(linarg*)))
+				return rp;
+			if (!ndiff(r, r1))
+				return rp;
 			}
 		rp = &r1->hunext;
 		}
@@ -3238,10 +3169,11 @@ imap_alloc(Static *S)
 comsubs(Static *S, int alen, cde *d)
 {
 	list *L;
-	int a, i, j, k;
+	int a, i, j, jx, k, nzc1;
 	int *r, *re;
 	cexp *ce;
 	derp *D, *dnext;
+	dv_info *dvi;
 	relo *R;
 	expr *e;
 	split_ce *cs;
@@ -3252,20 +3184,22 @@ comsubs(Static *S, int alen, cde *d)
 	a = lasta00;
 	dnext = 0;
 	R = 0;
-	for(i = j = 0; i < nzc; i++)
+	nzc1 = nzc;
+	nzc = 0;
+	for(i = j = 0; i < nzc1; i++)
 		if ((k = zci[i]) >= nv0x && k < max_var1)
 			zci[j++] = k;
 		else
 			zc[k] = 0;
-	if ((nzc = j)) {
-		for(i = 0; i < nzc; i++) {
+	if ((nzc1 = j)) {
+		for(i = 0; i < nzc1; i++) {
 			if ((j = zci[i] - nv0x) >= Ncom) {
 				cs = asl->P.Split_ce + (j-Ncom);
 				if ((r = cs->ce)) {
 					re = r + *r;
 					while(r++ < re)
 						if (!zc[j = *r + nv0x]++)
-							zci[nzc++] = j;
+							zci[nzc1++] = j;
 					}
 				}
 			else if (j >= 0 && (L = cexps[j].cref)) {
@@ -3274,31 +3208,30 @@ comsubs(Static *S, int alen, cde *d)
 					 || asl->P.dv[j-nv0x].ll)
 						continue;
 					zc[j] = 1;
-					zci[nzc++] = j;
+					zci[nzc1++] = j;
 					}
 					while((L = L->next));
 				else do {
 					if (!zc[L->item.i]++)
-						zci[nzc++] = L->item.i;
+						zci[nzc1++] = L->item.i;
 					}
 					while((L = L->next));
 				}
 			}
-		if (nzc > 1)
-			zcsort(S, zc, zci, 0, nzc, -1);
-		}
-	if (nzc > 0) {
+		if (nzc1 > 1)
+			zcsort(S, zc, zci, 0, nzc1, -1);
 		R = new_relo1(S, dnext);
 		i = 0;
 		do {
 			j = zci[i];
+			jx = j - nv0x;
 			zc[j] = 0;
-			ce = &cexps[j - nv0x];
+			ce = &cexps[jx];
 			e = ce->e;
-			k = varp[j-nv0x]->a;
+			k = varp[jx]->a;
 			if (ce->funneled) {
 				if (j >= max_var)
-					imap[((expr_vx*)varp[j-nv0x])->a0] = a;
+					imap[((expr_vx*)varp[jx])->a0] = a;
 				imap[k] = a++;
 				}
 			else {
@@ -3309,8 +3242,9 @@ comsubs(Static *S, int alen, cde *d)
 				/* zlen == 1 if e->op == OPNUM */
 				imap[k] = e->op == OPNUM ? a-1 : imap[e->a];
 				if (!ce->d
-				 && (k = j - nv0x) < Ncom
-				 && (og = asl->P.dv[k].ll)) {
+				 && jx < Ncom
+				 && (og = (dvi = &asl->P.dv[jx])->ll)
+				 && (dvi->nl || dvi->lt)) {
 					dnext = R->D =
 						derp_ogcopy(S,og,R->D,imap[j]);
 					continue;
@@ -3318,8 +3252,7 @@ comsubs(Static *S, int alen, cde *d)
 				}
 			dnext = R->D = derpcopy(S, ce, R->D);
 			}
-			while(++i < nzc);
-		nzc = 0;
+			while(++i < nzc1);
 		}
 	if (D || R) {
 		if (!R)

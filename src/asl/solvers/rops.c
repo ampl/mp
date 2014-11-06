@@ -1085,7 +1085,7 @@ f_OPFUNCALL(expr *e A_ASL)
 	rv = (*fi->funcp)(al);
 	errno_set(0);
 	jv = 0; /* silence bogus "not-initialized" warning */
-	if ((s = al->Errmsg) && !err_jmp)
+	if ((s = al->Errmsg))
 		fintrouble_ASL(asl, fi, s, &T);
 	for(T1 = T.u.prev; T1; T1 = T1prev) {
 		T1prev = T1->u.prev;
@@ -1160,6 +1160,13 @@ f_OPALLDIFF(expr *e A_ASL)
 	if (r != rbuf)
 		free(r);
 	return t;
+	}
+
+ static real
+f_OPSOMESAME(expr *e A_ASL)
+{
+	real t = f_OPALLDIFF(e K_ASL);
+	return t == 0. ? 1. : 0.;
 	}
 
  static real

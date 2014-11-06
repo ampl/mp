@@ -173,7 +173,7 @@ suf_sos_ASL(ASL *asl, int flags, int *nsosnz_p, char **sostype_p,
 	int nsos, nsos1, nsos2, nsosnz, nsosnz1;
 	ograd *og, **ogp;
 	real *a, *g, *g0, *ge, *gn, *gnos, *sosref, *sufref, t, t1;
-	size_t L, *jZa, *jZa1, *jZae;
+	size_t fs, is, js, ks, L, *jZa, *jZa1, *jZae;
 
 	nsos1 = nsos2 = 0;
 	gd = grefd = vd = 0;	/* silence buggy "not-initialized" warning */
@@ -535,34 +535,37 @@ suf_sos_ASL(ASL *asl, int flags, int *nsosnz_p, char **sostype_p,
 				}
 			} while(ja < jae);
 		*ja1 = (nzc = i) + f;
+		nZc = i;
 		}
 	else if ((jZa = A_colstartsZ)) {
 		jZae = jZa + n;
+		fs = f;
 		if (nsos1)
 			for(rt = sosind - nsosnz1; rt < sosind; rt++)
 				*rt = zv[*rt - f] + f;
-		for(j = 0; *zv >= 0; jZa++, zv++) {
-			k = jZa[1] - f;
-			while(j < k)
-				if (rn[j++] - f >= i)
+		for(js = 0; *zv >= 0; jZa++, zv++) {
+			ks = jZa[1] - fs;
+			while(js < ks)
+				if (rn[js++] - fs >= i)
 					goto copystartZ;
 			}
  copystartZ:
 		a = A_vals;
-		i = k = jZa[0] - f;
+		is = ks = jZa[0] - fs;
 		jZa1 = jZa;
 		do {
-			j = k;
-			k = *++jZa - f;
+			js = ks;
+			ks = *++jZa - fs;
 			if (*zv++ >= 0) {
-				for(*jZa1++ = i + f; j < k; j++)
-					if ((jz = zc[rn[j]-f]) >= 0) {
-						rn[i] = jz + f;
-						a[i++] = a[j];
+				for(*jZa1++ = is + fs; js < ks; js++)
+					if ((jz = zc[rn[js]-fs]) >= 0) {
+						rn[is] = jz + f;
+						a[is++] = a[js];
 						}
 				}
 			} while(jZa < jZae);
-		*jZa1 = (nZc = i) + f;
+		*jZa1 = (nZc = is) + fs;
+		nzc = (int)is;
 		}
 	else
 		return 0; /* should not happen */

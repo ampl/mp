@@ -28,9 +28,6 @@ THIS SOFTWARE.
 #include "arith.h"	/* for Long and Double_Align */
 #include "math.h"
 #include "stdio1.h"
-#ifndef Stderr
-extern FILE *Stderr;
-#endif
 #include "string.h"
 
 #ifdef KR_headers
@@ -50,6 +47,10 @@ extern double strtod();
 extern "C" {
 #else
 #define Cextern extern
+#endif
+
+#ifndef Stderr
+extern FILE *Stderr;
 #endif
 
 #ifndef real

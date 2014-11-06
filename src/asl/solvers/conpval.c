@@ -561,8 +561,9 @@ INchk(ASL *asl, const char *who, int i, int ix)
 cpval(ASL_pfgh *asl, int i, real *X, fint *nerror)
 {
 	Jmp_buf err_jmp0;
+	expr *e;
 	expr_n *en;
-	int L;
+	int L, nc;
 	ps_func *p;
 	real f;
 
@@ -576,12 +577,13 @@ cpval(ASL_pfgh *asl, int i, real *X, fint *nerror)
 	errno = 0;	/* in case f77 set errno opening files */
 	if (!asl->i.x_known)
 		xp_check_ASL(asl, X);
-	if (i >= asl->i.n_con0) {
-		f = 0.;
-		goto done;
-		}
 	co_index = i;
 	asl->i.ncxval[i] = asl->i.nxval;
+	if (i >= (nc = asl->i.n_con0)) {
+		e = lcon_de[i-nc].e;
+		f = (*e->op)(e C_ASL);
+		goto done;
+		}
 	p = asl->P.cps + i;
 	if (p->nb) {
 		f = copeval(p C_ASL);

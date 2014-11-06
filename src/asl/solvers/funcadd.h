@@ -76,8 +76,19 @@ arglist {			/* Information sent to user-defined functions */
 	AmplExports *AE;	/* functions made visible (via #defines below) */
 	function *f;		/* for internal use by AMPL */
 	TVA *tva;		/* for internal use by AMPL */
-	char *Errmsg;		/* to indicate an error, set this to a */
-				/* description of the error */
+	char *Errmsg;		/* To indicate an error, set this to a */
+				/* description of the error.  When derivs */
+				/* is nonzero and the error is that first */
+				/* derivatives cannot or are not computed, */
+				/* a single quote character (') should be */
+				/* the first character in the text assigned */
+				/* to Errmsg, followed by the actual error */
+				/* message.  Similarly, if hes is nonzero */
+				/* and the error is that second derivatives */
+				/* are not or cannot be computed, a double */
+				/* quote character (") should be the first */
+				/* character in Errmsg, followed by the */
+				/* actual error message text. */
 	TMInfo *TMI;		/* used in Tempmem calls */
 	Char *Private;
 				/* The following fields are relevant */
@@ -257,7 +268,7 @@ extern const char *i_option_ASL, *ix_details_ASL[];
 
 #define funcadd funcadd_ASL
 
-#if defined(_WIN32) && !defined(__MINGW32__)
+#ifdef _WIN32
 __declspec(dllexport)
 #endif
 extern void funcadd ANSI((AmplExports*));	/* dynamically linked */

@@ -448,6 +448,7 @@ fintrouble_ASL(ASL *asl, func_info *fi, const char *s, TMInfo *T)
 		return;
 		}
 #endif /*}*/
+	jmp_check(err_jmp, jv);
 	report_where(asl);
 	fprintf(Stderr, fmt, fi->name, s);
 	fflush(Stderr);
@@ -455,7 +456,6 @@ fintrouble_ASL(ASL *asl, func_info *fi, const char *s, TMInfo *T)
 		T1prev = T1->u.prev;
 		free(T1);
 		}
-	jmp_check(err_jmp, jv);
 	jmp_check(err_jmp1,jv);
 	exit(1);
 	}

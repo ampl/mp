@@ -73,6 +73,7 @@
 	5 /* OPIMPELSE */,
 	2 /* OP_IFF */,
 	11 /* OPALLDIFF */,
+	11 /* OPSOMESAME */,
 	1 /* OP1POW */,
 	1 /* f_OP2POW */,
 	2 /* f_OPCPOW */,
